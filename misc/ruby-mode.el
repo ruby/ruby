@@ -632,17 +632,30 @@ An end of a defun is found by moving forward from the beginning of one."
      ("^\\s *\\(include\\|alias\\|undef\\).*$" nil decl)
      ("^\\s *\\<\\(class\\|def\\|module\\)\\>" "[)\n;]" defun)
      ("[^_]\\<\\(begin\\|case\\|else\\|elsif\\|end\\|ensure\\|for\\|if\\|unless\\|rescue\\|then\\|when\\|while\\|until\\|do\\)\\>[^_]" 1 defun)
-     ("[^_]\\<\\(and\\|break\\|next\\|raise\\|fail\\|in\\|not\\|or\\|redo\\|retry\\|return\\|super\\|yield\\|self\\|nil\\)\\>[^_]" 1 keyword)
+     ("[^_]\\<\\(and\\|break\\|next\\|raise\\|fail\\|in\\|not\\|or\\|redo\\|retry\\|return\\|super\\|yield\\|catch\\|throw\\|self\\|nil\\)\\>[^_]" 1 keyword)
      ("\\$\\(.\\|\\sw+\\)" nil type)
      ("[$@].[a-zA-Z_0-9]*" nil struct)
      ("^__END__" nil label))))
  )
-  (or (boundp 'font-lock-variable-name-face)
-      (setq font-lock-variable-name-face font-lock-type-face))
-  (defvar ruby-font-lock-keywords
-    (list
-     (cons (concat
-	    "\\(^\\|[^_:.]\\|\\.\\.\\)\\b\\("
+
+(or (boundp 'font-lock-variable-name-face)
+    (setq font-lock-variable-name-face font-lock-type-face))
+
+(defun ruby-font-lock-docs (limit)
+  (if (re-search-forward "^=begin\\s *" limit t)
+      (let (beg)
+	(beginning-of-line)
+	(setq beg (point))
+	(forward-line 1)
+	(if (re-search-forward "^=end\\s *" limit t)
+	    (progn
+	      (set-match-data (list beg (point)))
+	      t)))))
+
+(defvar ruby-font-lock-keywords
+  (list
+   (cons (concat
+	  "\\(^\\|[^_:.]\\|\\.\\.\\)\\b\\("
 	    (mapconcat
 	     'identity
 	     '("alias"
@@ -650,6 +663,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "begin"
 	       "break"
 	       "case"
+	       "catch"
 	       "class"
 	       "def"
 	       "do"
@@ -671,6 +685,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "retry"
 	       "return"
 	       "then"
+	       "throw"
 	       "self"
 	       "super"
 	       "unless"
@@ -681,19 +696,25 @@ An end of a defun is found by moving forward from the beginning of one."
 	       )
 	     "\\|")
 	    "\\)\\b")
-	   2)
-     ;; variables
-     '("\\b\\(nil\\|self\\|true\\|false\\)\\b"
-       1 font-lock-variable-name-face)
-     ;; variables
-     '("[$@].[a-zA-Z0-9_]*"
-       0 font-lock-variable-name-face)
-     ;; constants
-     '("\\(^\\|[^_]\\)\\b\\([A-Z]+[a-zA-Z0-9_]*\\)"
-       2 font-lock-type-face)
-     ;; functions
-     '("^\\s *def\\s *\\<\\(\\(\\w\\|\\s_\\)+\\.\\)?\\(\\(\\w\\|\\s_\\)+\\)\\>"
-       3 font-lock-function-name-face t))
-    "*Additional expressions to highlight in ruby mode.")
+	 2)
+   ;; variables
+   '("\\b\\(nil\\|self\\|true\\|false\\)\\b"
+     1 font-lock-variable-name-face)
+   ;; variables
+   '("[$@].\\(\\w\\|_\\)*"
+     0 font-lock-variable-name-face)
+   ;; embedded document
+   '(ruby-font-lock-docs
+     0 font-lock-comment-face t)
+   ;; constants
+   '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
+     2 font-lock-type-face)
+   ;; functions
+   '("^\\s *def\\s *\\<\\(\\(\\w\\|_\\)+\\(\\.\\|::\\)\\)?\\(\\(\\w\\|_\\)+\\??\\)\\>"
+     4 font-lock-function-name-face t)
+   ;; symbols
+   '("\\(^\\|[^:]\\)\\(:\\(\\w\\|_\\)+\\??\\)\\b"
+     2 font-lock-reference-face t))
+  "*Additional expressions to highlight in ruby mode.")
 
 (provide 'ruby-mode)

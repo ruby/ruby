@@ -8,7 +8,7 @@
 (defvar gud-rubydb-history nil)
 
 (defun gud-rubydb-massage-args (file args)
-  (cons "-r" (cons "debug" args)))
+  (cons "-r" (cons "debug" (cons file args))))
 
 ;; There's no guarantee that Emacs will hand the filter the entire
 ;; marker at once; it could be broken up across several strings.  We
@@ -19,46 +19,46 @@
 (defvar gud-rubydb-marker-acc "")
 
 (defun gud-rubydb-marker-filter (string)
-  (setq gud-marker-acc (concat gud-marker-acc string))
+  (setq gud-rubydb-marker-acc (concat gud-rubydb-marker-acc string))
   (let ((output ""))
 
     ;; Process all the complete markers in this chunk.
     (while (string-match "\032\032\\([^:\n]*\\):\\([0-9]*\\):.*\n"
-			 gud-marker-acc)
+			 gud-rubydb-marker-acc)
       (setq
 
        ;; Extract the frame position from the marker.
        gud-last-frame
-       (cons (substring gud-marker-acc (match-beginning 1) (match-end 1))
-	     (string-to-int (substring gud-marker-acc
+       (cons (substring gud-rubydb-marker-acc (match-beginning 1) (match-end 1))
+	     (string-to-int (substring gud-rubydb-marker-acc
 				       (match-beginning 2)
 				       (match-end 2))))
 
        ;; Append any text before the marker to the output we're going
        ;; to return - we don't include the marker in this text.
        output (concat output
-		      (substring gud-marker-acc 0 (match-beginning 0)))
+		      (substring gud-rubydb-marker-acc 0 (match-beginning 0)))
 
        ;; Set the accumulator to the remaining text.
-       gud-marker-acc (substring gud-marker-acc (match-end 0))))
+       gud-rubydb-marker-acc (substring gud-rubydb-marker-acc (match-end 0))))
 
     ;; Does the remaining text look like it might end with the
     ;; beginning of another marker?  If it does, then keep it in
-    ;; gud-marker-acc until we receive the rest of it.  Since we
+    ;; gud-rubydb-marker-acc until we receive the rest of it.  Since we
     ;; know the full marker regexp above failed, it's pretty simple to
     ;; test for marker starts.
-    (if (string-match "\032.*\\'" gud-marker-acc)
+    (if (string-match "\032.*\\'" gud-rubydb-marker-acc)
 	(progn
 	  ;; Everything before the potential marker start can be output.
-	  (setq output (concat output (substring gud-marker-acc
+	  (setq output (concat output (substring gud-rubydb-marker-acc
 						 0 (match-beginning 0))))
 
 	  ;; Everything after, we save, to combine with later input.
-	  (setq gud-marker-acc
-		(substring gud-marker-acc (match-beginning 0))))
+	  (setq gud-rubydb-marker-acc
+		(substring gud-rubydb-marker-acc (match-beginning 0))))
 
-      (setq output (concat output gud-marker-acc)
-	    gud-marker-acc ""))
+      (setq output (concat output gud-rubydb-marker-acc)
+	    gud-rubydb-marker-acc ""))
 
     output))
 
@@ -66,7 +66,7 @@
   (save-excursion
     (let ((buf (find-file-noselect f)))
       (set-buffer buf)
-      (gud-make-debug-menu)
+;;      (gud-make-debug-menu)
       buf)))
 
 (defvar rubydb-command-name "ruby"
@@ -85,8 +85,10 @@ and source-file directory for your debugger."
 			       nil nil
 			       '(gud-rubydb-history . 1))))
 
-  (gud-common-init command-line 'gud-rubydb-massage-args
-		   'gud-rubydb-marker-filter 'gud-rubydb-find-file)
+  (gud-overload-functions '((gud-massage-args . gud-rubydb-massage-args)
+			    (gud-marker-filter . gud-rubydb-marker-filter)
+			    (gud-find-file . gud-rubydb-find-file)))
+  (gud-common-init command-line rubydb-command-name)
 
   (gud-def gud-break  "b %l"         "\C-b" "Set breakpoint at current line.")
 ;  (gud-def gud-remove "clear %l"     "\C-d" "Remove breakpoint at current line")

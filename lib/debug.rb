@@ -130,6 +130,9 @@ class DEBUGGER__
 	else
 	  lev = 1
 	end
+	unless @frame_pos
+	  @frame_pos = @frames.size - 1
+	end
 	if lev >= @frames.size or @frame_pos and @frame_pos+lev >= @frames.size 
 	  STDOUT.print "at stack bottom\n"
 	  @frame_pos = nil

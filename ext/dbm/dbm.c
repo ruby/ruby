@@ -12,6 +12,9 @@
 
 #include "ruby.h"
 
+#ifdef HAVE_CDEFS_H
+# include <cdefs.h>
+#endif
 #include <ndbm.h>
 #include <fcntl.h>
 #include <errno.h>

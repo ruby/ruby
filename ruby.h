@@ -276,7 +276,6 @@ struct RData {
     void *data;
 };
 
-extern VALUE rb_cData;
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
 VALUE rb_data_object_alloc _((VALUE,void*,void (*)(),void (*)()));

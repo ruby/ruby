@@ -33,7 +33,7 @@ end
 File.makedirs libdir, true
 for lib in ["libruby.so.LIB", CONFIG["LIBRUBY_SO"]]
   if File.exist? lib
-    File.install lib, libdir, 0644, true
+    File.install lib, libdir, 0555, true
   end
 end
 Dir.chdir libdir

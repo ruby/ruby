@@ -83,6 +83,9 @@ AC_PROG_RANLIB
 AC_SUBST(AR)
 AC_CHECK_PROGS(AR, ar aal, ar)
 AC_PROG_INSTALL
+test -z "$INSTALL_DLLIB" && INSTALL_DLLIB='${INSTALL} -m 555'
+AC_SUBST(INSTALL_DLLIB)
+
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
 
@@ -667,7 +670,7 @@ AC_ARG_ENABLE(enable-shared,
        [enable_shared=$enableval])
 if test "$enable_shared" = 'yes'; then
   LIBRUBY='$(LIBRUBY_SO)'
-  LIBRUBYARG='-L./ -l$(RUBY_INSTALL_NAME)'
+  LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
   CFLAGS="$CFLAGS $CCDLFLAGS"
   case "$host_os" in
     sunos4*|linux*)
@@ -688,7 +691,11 @@ if test "$enable_shared" = 'yes'; then
  	*) LIBRUBY_ALIASES= ;;  # a.out platforms
 	esac
  	;;
+    solaris*)
+	XLDFLAGS='-R${prefix}/lib'
+ 	;;
     hpux*)
+	XLDFLAGS='-Wl,+s,+b,$(prefix)/lib'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR).$(TEENY)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).sl.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).sl'
 	;;
@@ -700,7 +707,7 @@ if test "$enable_shared" = 'yes'; then
 	    LIBRUBY_LDSHARED='/usr/ccs/bin/ld'
 	    LIBRUBY_DLDFLAGS='-bE:ruby.imp -bM:SRE -bnoentry'
 	fi
-	LIBRUBYARG='-L./ -Wl,lib$(RUBY_INSTALL_NAME).so'
+	LIBRUBYARG='-L${prefix}/lib -Wl,lib$(RUBY_INSTALL_NAME).so'
 	SOLIBS='-lm -lc'
 	;;
     cygwin*)

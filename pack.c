@@ -289,8 +289,8 @@ static char *toofew = "too few arguments";
 static void encodes _((VALUE,char*,int,int));
 static void qpencode _((VALUE,VALUE,int));
 
-static long uv_to_utf8 _((char*,long));
-static long utf8_to_uv _((char*,int*));
+static int uv_to_utf8 _((char*,unsigned long));
+static unsigned long utf8_to_uv _((char*,int*));
 
 static void
 pack_add_ptr(str, add)
@@ -396,7 +396,7 @@ pack_pack(ary, fmt)
 	      case 'b':
 		{
 		    int byte = 0;
-		    int i, j;
+		    int i, j = 0;
 
 		    if (len > plen) {
 			j = (len - plen + 1)/2;
@@ -428,7 +428,7 @@ pack_pack(ary, fmt)
 	      case 'B':
 		{
 		    int byte = 0;
-		    int i, j;
+		    int i, j = 0;
 
 		    if (len > plen) {
 			j = (len - plen + 1)/2;
@@ -459,7 +459,7 @@ pack_pack(ary, fmt)
 	      case 'h':
 		{
 		    int byte = 0;
-		    int i, j;
+		    int i, j = 0;
 
 		    if (len > plen) {
 			j = (len - plen + 1)/2;
@@ -491,7 +491,7 @@ pack_pack(ary, fmt)
 	      case 'H':
 		{
 		    int byte = 0;
-		    int i, j;
+		    int i, j = 0;
 
 		    if (len > plen) {
 			j = (len - plen + 1)/2;
@@ -790,14 +790,15 @@ pack_pack(ary, fmt)
 	    while (len-- > 0) {
 		unsigned long l;
 		char buf[8];
+		int le;
 
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
 		    l = NUM2ULONG(from);
 		}
-		l = uv_to_utf8(buf, l);
-		rb_str_cat(res, (char*)&buf, l);
+		le = uv_to_utf8(buf, l);
+		rb_str_cat(res, (char*)&buf, le);
 	    }
 	    break;
 
@@ -1399,7 +1400,7 @@ pack_unpack(str, fmt)
 
 		l = utf8_to_uv(s, &alen);
 		s += alen;
-		rb_ary_push(ary, INT2NUM(l));
+		rb_ary_push(ary, rb_uint2inum(l));
 	    }
 	    break;
 
@@ -1585,56 +1586,64 @@ pack_unpack(str, fmt)
 
 #define BYTEWIDTH 8
 
-static long
+static int
 uv_to_utf8(buf, uv)
     char *buf;
-    long uv;
+    unsigned long uv;
 {
-    if (uv < 0x80) {
+    if (uv <= 0x7f) {
 	buf[0] = (char)uv;
 	return 1;
     }
-    if (uv < 0x7ff) {
+    if (uv <= 0x7ff) {
 	buf[0] = ((uv>>6)&0xff)|0xc0;
-	buf[1] = uv&0x3f;
+	buf[1] = (uv&0x3f)|0x80;
 	return 2;
     }
-    if (uv < 0xffff) {
+    if (uv <= 0xffff) {
 	buf[0] = ((uv>>12)&0xff)|0xe0;
-	buf[1] = (uv>>6)&0x3f;
-	buf[2] = uv&0x3f;
+	buf[1] = ((uv>>6)&0x3f)|0x80;
+	buf[2] = (uv&0x3f)|0x80;
 	return 3;
     }
-    if (uv < 0x1fffff) {
+    if (uv <= 0x1fffff) {
 	buf[0] = ((uv>>18)&0xff)|0xf0;
-	buf[1] = (uv>>12)&0x3f;
-	buf[2] = (uv>>6)&0x3f;
-	buf[3] = uv&0x3f;
+	buf[1] = ((uv>>12)&0x3f)|0x80;
+	buf[2] = ((uv>>6)&0x3f)|0x80;
+	buf[3] = (uv&0x3f)|0x80;
 	return 4;
     }
-    if (uv < 0x3ffffff) {
-	buf[0] = ((uv>>24)&0xff)|0xf0;
-	buf[1] = (uv>>18)&0x3f;
-	buf[2] = (uv>>12)&0x3f;
-	buf[3] = (uv>>6)&0x3f;
-	buf[4] = uv&0x3f;
+    if (uv <= 0x3ffffff) {
+	buf[0] = ((uv>>24)&0xff)|0xf8;
+	buf[1] = ((uv>>18)&0x3f)|0x80;
+	buf[2] = ((uv>>12)&0x3f)|0x80;
+	buf[3] = ((uv>>6)&0x3f)|0x80;
+	buf[4] = (uv&0x3f)|0x80;
 	return 5;
     }
-    if (uv < 0x7fffffff) {
+    if (uv <= 0x7fffffff) {
 	buf[0] = ((uv>>30)&0xff)|0xfc;
-	buf[1] = (uv>>24)&0x3f;
-	buf[2] = (uv>>18)&0x3f;
-	buf[3] = (uv>>12)&0x3f;
-	buf[4] = (uv>>6)&0x3f;
-	buf[5] = uv&0x3f;
+	buf[1] = ((uv>>24)&0x3f)|0x80;
+	buf[2] = ((uv>>18)&0x3f)|0x80;
+	buf[3] = ((uv>>12)&0x3f)|0x80;
+	buf[4] = ((uv>>6)&0x3f)|0x80;
+	buf[5] = (uv&0x3f)|0x80;
 	return 6;
     }
-    buf[0] = uv>>BYTEWIDTH;
-    buf[1] = uv&0xff;
-    return 2;
+    if (uv <= 0xfffffffff) {
+	buf[0] = 0xfe;
+	buf[1] = ((uv>>30)&0x3f)|0x80;
+	buf[2] = ((uv>>24)&0x3f)|0x80;
+	buf[3] = ((uv>>18)&0x3f)|0x80;
+	buf[4] = ((uv>>12)&0x3f)|0x80;
+	buf[5] = ((uv>>6)&0x3f)|0x80;
+	buf[6] = (uv&0x3f)|0x80;
+	return 7;
+    }
+    rb_raise(rb_eArgError, "uv_to_utf8(); too big value");
 }
 
-static long
+static unsigned long
 utf8_to_uv(p, lenp)
     char *p;
     int *lenp;
@@ -1649,12 +1658,15 @@ utf8_to_uv(p, lenp)
     else if (c < 0xf8) n = 4;
     else if (c < 0xfc) n = 5;
     else if (c < 0xfe) n = 6;
+    else if (c == 0xfe) n = 7;
     *lenp = n--;
 
     uv = c;
-    uv &= (1<<(BYTEWIDTH-2-n)) - 1;
-    while (n--) {
-	uv = uv << 6 | *p++ & ((1<<6)-1);
+    if (n != 0) {
+	uv &= (1<<(BYTEWIDTH-2-n)) - 1;
+	while (n--) {
+	    uv = uv << 6 | *p++ & ((1<<6)-1);
+	}
     }
     return uv;
 }

@@ -392,6 +392,7 @@ TARGET = #{target}
 DLLIB = $(TARGET).#{$static ? "a" : "@DLEXT@"}
 
 INSTALL = #{$dots}@INSTALL@
+INSTALL_DLLIB = @INSTALL_DLLIB@
 INSTALL_DATA = @INSTALL_DATA@
 
 binsuffix = @binsuffix@
@@ -414,7 +415,7 @@ install:
 EOS
   if !$static
     mfile.printf "\
-	$(INSTALL) $(DLLIB) $(DESTDIR)$(archdir)/$(DLLIB)
+	$(INSTALL_DLLIB) $(DLLIB) $(DESTDIR)$(archdir)/$(DLLIB)
 "
   end
   install_rb(mfile)

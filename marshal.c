@@ -253,7 +253,7 @@ w_object(obj, arg, limit)
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
 	    if (TYPE(v) != T_STRING) {
-		rb_raise(rb_eTypeError, "_dump_to must return String");
+		rb_raise(rb_eTypeError, "_dump() must return String");
 	    }
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
 	    return;
@@ -457,9 +457,19 @@ static int
 r_byte(arg)
     struct load_arg *arg;
 {
-    if (arg->fp) return rb_getc(arg->fp);
-    if (arg->ptr < arg->end) return *(unsigned char*)arg->ptr++;
-    return EOF;
+    int c;
+
+    if (arg->fp) {
+	c = rb_getc(arg->fp);
+	if (c == EOF) rb_eof_error();
+    }
+    else if (arg->ptr < arg->end) {
+	c = *(unsigned char*)arg->ptr++;
+    }
+    else {
+	rb_raise(rb_eArgError, "marshal data too short");
+    }
+    return c;
 }
 
 static unsigned short
@@ -604,10 +614,6 @@ r_object(arg)
     int type = r_byte(arg);
 
     switch (type) {
-      case EOF:
-	rb_eof_error();
-	return Qnil;
-
       case TYPE_LINK:
 	if (st_lookup(arg->data, r_long(arg), &v)) {
 	    return v;

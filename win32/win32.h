@@ -175,6 +175,9 @@ extern void  myfdclose(FILE *);
 extern SOCKET  myaccept(SOCKET, struct sockaddr *, int *);
 extern int  mybind(SOCKET, struct sockaddr *, int);
 extern int  myconnect(SOCKET, struct sockaddr *, int);
+extern void myfdset(int, fd_set*);
+extern int  myfdisset(int, fd_set*);
+extern long myselect(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 extern int  mygetpeername(SOCKET, struct sockaddr *, int *);
 extern int  mygetsockname(SOCKET, struct sockaddr *, int *);
 extern int  mygetsockopt(SOCKET, int, int, char *, int *);
@@ -273,6 +276,15 @@ extern char *mystrerror(int);
 #undef connect
 #endif
 #define connect myconnect
+
+#undef FD_SET
+#define FD_SET myfdset
+
+#undef FD_ISSET
+#define FD_ISSET myfdisset
+
+#undef select
+#define select myselect
 
 #ifdef getpeername
 #undef getpeername

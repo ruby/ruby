@@ -27,6 +27,8 @@ EXPORTS
 	rb_mErrno;
 ;eval.c:
 	rb_cProc
+        rb_thread_tick
+        rb_thread_critical
 ;file.c:
 	rb_cFile
 ;hash.c:
@@ -35,6 +37,7 @@ EXPORTS
 	ruby_unsetenv
 ;io.c:
 	rb_cIO
+        rb_io_check_closed
 ;numeric.c:
 	rb_cNumeric
 	rb_cFloat
@@ -52,6 +55,10 @@ EXPORTS
 	rb_cFalseClass
 ;re.c:
 	rb_cRegexp
+;signal.c:
+        rb_trap_immediate
+        rb_trap_pending
+        rb_prohibit_interrupt
 ;string.c:
 	rb_cString
 	rb_cStruct
@@ -60,9 +67,13 @@ EXPORTS
 ;missing/nt.c
 	NtInitialize
 	myfdopen
+	myfdclose
 	myaccept
 	mybind
 	myconnect
+        myfdset
+        myfdisset
+        myselect
 	mygetpeername
 	mygetsockname
 	mygetsockopt
@@ -82,10 +93,11 @@ EXPORTS
 	mygetprotobynumber
 	mygetservbyname
 	mygetservbyport
+        myget_osfhandle
 ;array.c
 	rb_ary_freeze
-	rb_ary_new2
 	rb_ary_new
+	rb_ary_new2
 	rb_ary_new3
 	rb_ary_new4
 	rb_assoc_new
@@ -118,6 +130,7 @@ EXPORTS
 	rb_uint2inum
 	rb_int2inum
 	rb_str2inum
+        rb_str2cstr
 	rb_big2str
 	rb_big2ulong
 	rb_big2long
@@ -236,6 +249,11 @@ EXPORTS
 	rb_thread_scope_shared_p
 	rb_thread_interrupt
 	rb_thread_trap_eval
+        rb_thread_fd_close
+        rb_thread_stop
+        rb_thread_wakeup
+        rb_thread_run
+        rb_thread_create
 	rb_catch
 	rb_throw
 	rb_yield
@@ -293,6 +311,7 @@ EXPORTS
 	rb_obj_is_instance_of
 	rb_obj_is_kind_of
 	rb_obj_alloc
+        rb_obj_taint
 	rb_to_id
 	rb_class_of
 	rb_type
@@ -301,6 +320,7 @@ EXPORTS
 	rb_Float
 	rb_String
 	rb_Array
+        rb_num2dbl
 ; parse.c
 	rb_node_newnode
 	rb_id_attrset
@@ -334,6 +354,9 @@ EXPORTS
 	rb_get_kcode
 	rb_set_kcode
 ; ruby.c
+        rb_argv
+        rb_argv0
+        rb_progname
 	rb_load_file
 	ruby_script
 	ruby_prog_init

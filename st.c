@@ -10,6 +10,10 @@ static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
 #include <stdlib.h>
 #endif
 
+#ifdef NT
+#include <malloc.h>
+#endif
+
 typedef struct st_table_entry st_table_entry;
 
 struct st_table_entry {

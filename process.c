@@ -592,7 +592,7 @@ rb_f_system(argc, argv)
     int argc;
     VALUE *argv;
 {
-#ifdef NT
+#if defined(NT) || defined(__EMX__)
     VALUE cmd;
     int state;
 
@@ -611,7 +611,7 @@ rb_f_system(argc, argv)
     if (state == 0) return Qtrue;
     return Qfalse;
 #else
-#if defined(DJGPP) || defined(__EMX__)
+#ifdef DJGPP
     VALUE cmd;
     int state;
 

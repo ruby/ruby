@@ -52,8 +52,7 @@ md5_hexdigest(obj)
 {
     MD5_CTX *md5, ctx;
     unsigned char digest[16];
-    char buf[35];
-    char *p = buf;
+    char buf[33];
     int i;
 
     Data_Get_Struct(obj, MD5_CTX, md5);
@@ -61,7 +60,7 @@ md5_hexdigest(obj)
     MD5Final(digest, &ctx);
 
     for (i=0; i<16; i++) {
-	sprintf(buf+i*2, "%x", digest[i]);
+	sprintf(buf+i*2, "%02x", digest[i]);
     }
     return rb_str_new(buf, 32);
 }
@@ -70,7 +69,6 @@ static VALUE
 md5_clone(obj)
     VALUE obj;
 {
-    VALUE clone;
     MD5_CTX *md5, *md5_new;
 
     Data_Get_Struct(obj, MD5_CTX, md5);
@@ -86,7 +84,6 @@ md5_new(argc, argv, class)
     VALUE* argv;
     VALUE class;
 {
-    int i;
     VALUE arg, obj;
     MD5_CTX *md5;
 
@@ -103,6 +100,7 @@ md5_new(argc, argv, class)
     return obj;
 }
 
+void
 Init_md5()
 {
     cMD5 = rb_define_class("MD5", rb_cObject);

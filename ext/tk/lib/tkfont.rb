@@ -817,6 +817,7 @@ class TkFont
     #if JAPANIZED_TK
     if @kanjifont != ""
       configure_core(@kanjifont, slot, value)
+      configure('size'=>configinfo('size')) # to reflect new configuration
     else
       #""
       configure(slot, value)
@@ -841,10 +842,12 @@ class TkFont
 
   def latin_replace(ltn)
     latin_replace_core(ltn)
+    reset_pointadjust
   end
 
   def kanji_replace(knj)
     kanji_replace_core(knj)
+    reset_pointadjust
   end
 
   def measure(text)
@@ -889,6 +892,17 @@ class TkFont
     else
       metrics_core_tk4x(nil, window, option)
     end
+  end
+
+  def reset_pointadjust
+    begin
+      if /^8\.*/ === Tk::TK_VERSION  && JAPANIZED_TK
+        configure('pointadjust' => latin_actual.assoc('size')[1].to_f / 
+                                      kanji_actual.assoc('size')[1].to_f )
+      end
+    rescue
+    end
+    self
   end
 
   ###################################

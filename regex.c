@@ -193,7 +193,7 @@ init_syntax_once()
 
    memset(re_syntax_table, 0, sizeof re_syntax_table);
 
-   for (c=0; c<0x7f; c++)
+   for (c=0; c<=0x7f; c++)
      if (isalnum(c)) 
        re_syntax_table[c] = Sword;
    re_syntax_table['_'] = Sword;
@@ -467,11 +467,12 @@ utf8_firstbyte(c)
      unsigned int c;
 {
   if (c < 0x80) return c;
-  if (c < 0x7ff) return ((c>>6)&0xff)|0xc0;
-  if (c < 0xffff) return ((c>>12)&0xff)|0xe0;
-  if (c < 0x1fffff) return ((c>>18)&0xff)|0xf0;
-  if (c < 0x3ffffff) return ((c>>24)&0xff)|0xf8;
-  if (c < 0x7fffffff) return ((c>>30)&0xff)|0xfc;
+  if (c <= 0x7ff) return ((c>>6)&0xff)|0xc0;
+  if (c <= 0xffff) return ((c>>12)&0xff)|0xe0;
+  if (c <= 0x1fffff) return ((c>>18)&0xff)|0xf0;
+  if (c <= 0x3ffffff) return ((c>>24)&0xff)|0xf8;
+  if (c <= 0x7fffffff) return ((c>>30)&0xff)|0xfc;
+  if (c <= 0xfffffffff) return 0xfe;
 }
 
 static void
@@ -481,15 +482,15 @@ print_mbc(c)
   if (current_mbctype == MBCTYPE_UTF8) {
     if (c < 0x80)
       printf("%c", c);
-    else if (c < 0x7ff)
+    else if (c <= 0x7ff)
       printf("%c%c", utf8_firstbyte(c), c&0x3f);
-    else if (c < 0xffff)
+    else if (c <= 0xffff)
       printf("%c%c%c", utf8_firstbyte(c), (c>>6)&0x3f, c&0x3f);
-    else if (c < 0x1fffff) 
+    else if (c <= 0x1fffff) 
       printf("%c%c%c%c", utf8_firstbyte(c), (c>>12)&0x3f, (c>>6)&0x3f, c&0x3f);
-    else if (c < 0x3ffffff)
+    else if (c <= 0x3ffffff)
       printf("%c%c%c%c%c", utf8_firstbyte(c), (c>>18)&0x3f, (c>>12)&0x3f, (c>>6)&0x3f, c&0x3f);
-    else if (c < 0x7fffffff)
+    else if (c <= 0x7fffffff)
       printf("%c%c%c%c%c%c", utf8_firstbyte(c), (c>>24)&0x3f, (c>>18)&0x3f, (c>>12)&0x3f, (c>>6)&0x3f, c&0x3f);
   }
   else {
@@ -2483,8 +2484,7 @@ slow_search(little, llen, big, blen, translate)
     if (slow_match(little, little+llen, big, bend, translate))
       return big - bsave;
 
-    if (ismbchar(*big)) big+=mbclen(*big);
-    big++;
+    big+=mbclen(*big);
   }
   return -1;
 }

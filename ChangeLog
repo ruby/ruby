@@ -1,4 +1,124 @@
+Thu Jun 24 13:00:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (print_mbc): wrong boundary.
+
+	* pack.c (uv_to_utf8): raises ArgError for too big value.
+
+Thu Jun 24 11:02:51 1999  Yoshida Masato  <yoshidam@yoshidam.net>
+
+	* pack.c (uv_to_utf8): mask needed.
+
+Wed Jun 23 22:06:26 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* pack.c (utf8_to_uv): pack to 7 bytes sequence.
+
+	* pack.c (uv_to_utf8): wrong boundary.
+
+	* pack.c (pack_unpack): should treat as unsigned long.
+
+Wed Jun 23 15:10:11 1999  Inaba Hiroto  <inaba@sdd.tokyo-sc.toshiba.co.jp>
+
+	* parse.y (parse_string): failed to parse nested braces.
+
+	* parse.y (parse_regx): nested braces within #{} available.
+
+Wed Jun 23 11:18:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (slow_search): wrong shift width for mbcs.
+
+	* eval.c (rb_thread_save_context): should not clear th->locals.
+
+Wed Jun 23 02:06:14 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): UMINUS binds too tight with digits. changed so
+	  that -2**2 => -4.
+
+	* parse.y (close_paren): `do' for expr termination now works it
+	  used to be.
+
+Wed Jun 22 18:26:42 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* pack.c (pack_pack): should initialize local variable `j'.
+
+Wed Jun 22 15:24:59 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* parse.y (here_document): a bug for multiline heredoc.
+
+Tue Jun 22 15:06:36 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ext/socket/socket.c (ruby_socket): forgot to return fd
+	  explicitly.
+
+Tue Jun 22 13:34:12 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* rubyio.h (MakeOpenFile): should initialize member `iv_tbl'.
+
+Wed Jun 22 10:35:51 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* io.c (rb_io_gets_internal): getc(3) may not set errno on
+	  interrupt.
+
+Mon Jun 21 22:39:28 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (call_required_libraries): ruby_sourceline should be
+	  cleared before loading libraries.
+
+	* io.c (set_stdin): do not use reopen(), so that we don't need to
+	  dup original stdin before assigning $stdin.
+
+Mon Jun 21 18:04:27 1999  Ryo HAYASAKA  <hayasaka@univ21.u-aizu.ac.jp>
+
+	* ext/dbm/dbm.c: include <cdefs.h> for solaris 2.6.
+
+Mon Jun 21 15:59:47 1999  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/socket/socket.c (ip_addrsetup): forgot to put `else'.
+
+Mon Jun 21 15:38:37 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (fptr_finalize): remove rb_syswait() invocation to avoid
+	  wait4(2) within GC.  rb_syswait() moved to rb_io_fptr_close().
+
+Mon Jun 21 12:05:59 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* dir.c (dir_s_glob): remove MAXPATHLEN restriction.
+
+	* ext/md5/md5init.c (md5_hexdigest): should have used "%02x".
+
+Sun Jun 20 19:50:38 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* string.c (rb_str_each_line): should have checked string
+	  boundary.
+
+Sat Jun 19 22:24:12 1999  Kenji Nagasawa  <kenn@hma.att.ne.jp>
+
+	* OS/2 patch improved.
+
+Fri Jun 18 08:30:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (r_byte): add data length check.
+
+	* ext/tcltklib/tcltklib.c (_timer_for_tcl): was doing busy-wait.
+
+Tue Jun 15 10:01:21 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* configure.in: remove trailing slash from interpreter embedded
+	  shared library path.
+
+	* configure.in (INSTALL_DLLIB): install shared lib with 0555.
+
+	* instruby.rb: changed mode for shared library into 0555.
+
+Fri Jun 11 23:27:00 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* ext/etc/etc.c (etc_passwd): should return nil, not exception for
+	  call after last passwd entry.
+
 Fri Jun 11 15:21:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (rb_gc_mark_locations): add safty margin 1.
+
+	* eval.c (ruby_run): should protect toplevel node tree.
 
 	* ext/etc/etc.c (etc_group): dumps core if there's no more group.
 
@@ -495,7 +615,7 @@ Mon Apr 19 13:49:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (eval): should restore ruby_dyna_vars.
 
-Fri Apr 16 21:40:43 1999  Nobuetsu Nokada  <gea02117@nifty.ne.jp>
+Fri Apr 16 21:40:43 1999  Nobuyoshu Nakada  <gea02117@nifty.ne.jp>
 
 	* io.c (f_backquote): pipe_open may return nil.
 
@@ -748,7 +868,7 @@ Tue Mar  9 00:19:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* range.c (range_each): no longer use upto for generic cases.
 
-Sun Mar  7 14:21:32 1999  IKARASHI Akira <ikarashi@itlb.te.noda.sut.ac.jp>
+Sun Mar  7 14:21:32 1999  IKARASHI Akira  <ikarashi@itlb.te.noda.sut.ac.jp>
 
 	* string.c (rb_str_index): wrong end point calculation.
 
@@ -1282,7 +1402,7 @@ Tue Jan 19 05:01:16 1999  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* array.c (beg_len): round range value too much.
 
-Mon Jan 18 13:02:27 1999  Kuroda Jun  <jkuro@dwe.co.j>
+Mon Jan 18 13:02:27 1999  Kuroda Jun  <jkuro@dwe.co.jp>
 
 	* hash.c (env_keys): strchr() may return NULL.
 
@@ -1703,7 +1823,7 @@ Sat Oct 31 23:18:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* string.c (rb_str_split_method): if LIMIT is unspecified,
 	  trailing null fields are stripped.
 
-Sat Oct 31 04:16:14 1998  Inaba Hiroto   <inaba@st.rim.or.jp>
+Sat Oct 31 04:16:14 1998  Inaba Hiroto  <inaba@st.rim.or.jp>
 
 	* string.c (str_aref): regexp index SEGVed.
 
@@ -1965,7 +2085,7 @@ Sat Aug 29 16:31:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): mask \nnn over 256.
 
-Sat Aug 29 02:09:46 1998 1998  Koji Arai  <JCA02266@nifty.ne.jp>
+Sat Aug 29 02:09:46 1998  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* sprintf.c (f_sprintf): wrong buffer size check.
 
@@ -2553,7 +2673,7 @@ Thu May 14 14:03:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* random.c (f_rand): use drand48 if possible.
 
-Wed May 13 19:05:20 1998 1998  MAEDA shugo  <shugo@aianet.ne.jp>
+Wed May 13 19:05:20 1998  MAEDA shugo  <shugo@aianet.ne.jp>
 
 	* BeOS patches for io.c, error.c and config.guess.
 

@@ -1,3 +1,9 @@
+#ifdef HAVE_STRING_H
+# include <string.h>
+#else
+# include <strings.h>
+#endif
+
 static double zero()	{ return 0.0; }
 static double one()	{ return 1.0; }
 static double inf()	{ return one() / zero(); }

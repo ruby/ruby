@@ -348,7 +348,7 @@ rb_gc_mark_locations(start, end)
 	start = end;
 	end = tmp;
     }
-    n = end - start;
+    n = end - start + 1;
     mark_locations_array(start,n);
 }
 

@@ -44,8 +44,6 @@ int *tclDummyMathPtr = (int *) matherr;
 
 /*---- module TclTkLib ----*/
 
-static VALUE main_thread;
-
 struct invoke_queue {
     int argc;
     VALUE *argv;
@@ -55,35 +53,52 @@ struct invoke_queue {
     VALUE thread;
     struct invoke_queue *next;
 };
-
+ 
 static struct invoke_queue *iqueue;
+static VALUE main_thread;
+
+/* Tk_ThreadTimer */
+static Tcl_TimerToken timer_token;
+
+/* timer callback */
+static void
+_timer_for_tcl(clientData)
+    ClientData clientData;
+{
+    struct invoke_queue *q, *tmp;
+    VALUE thread;
+
+    Tk_DeleteTimerHandler(timer_token);
+    timer_token = Tk_CreateTimerHandler(100, _timer_for_tcl, 
+					(ClientData)0);
+
+    CHECK_INTS;
+    q = iqueue;
+    while (q) {
+	tmp = q;
+	q = q->next;
+	if (!tmp->done) {
+	    tmp->done = 1;
+	    tmp->result = ip_invoke_real(tmp->argc, tmp->argv, tmp->obj);
+	    thread = tmp->thread;
+	    tmp = tmp->next;
+	    rb_thread_run(thread);
+	}
+    }
+    rb_thread_schedule();
+}
 
 /* execute Tk_MainLoop */
 static VALUE
 lib_mainloop(self)
     VALUE self;
 {
-    struct invoke_queue *q, *tmp;
-    VALUE thread;
-
+    timer_token = Tk_CreateTimerHandler(100, _timer_for_tcl, 
+					(ClientData)0);
     DUMP1("start Tk_Mainloop");
-    while (Tk_GetNumMainWindows() > 0) {
-        Tcl_DoOneEvent(TCL_DONT_WAIT);
-	CHECK_INTS;
-	q = iqueue;
-	while (q) {
-	    tmp = q;
-	    q = q->next;
-	    if (!tmp->done) {
-		tmp->done = 1;
-		tmp->result = ip_invoke_real(tmp->argc, tmp->argv, tmp->obj);
-		thread = tmp->thread;
-		tmp = tmp->next;
-		rb_thread_run(thread);
-	    }
-	}
-    }
+    Tk_MainLoop();
     DUMP1("stop Tk_Mainloop");
+    Tk_DeleteTimerHandler(timer_token);
 
     return Qnil;
 }

@@ -125,7 +125,7 @@ static VALUE
 etc_passwd(obj)
     VALUE obj;
 {
-#if defined(HAVE_GETPWENT)
+#ifdef HAVE_GETPWENT
     struct passwd *pw;
 
     if (rb_iterator_p()) {
@@ -136,12 +136,11 @@ etc_passwd(obj)
 	endpwent();
 	return obj;
     }
-    pw = getpwent();
-    if (pw == 0) rb_raise(rb_eRuntimeError, "can't fetch next -- /etc/passwd");
-    return setup_passwd(pw);
-#else 
-    return Qnil;
+    if (pw = getpwent()) {
+	return setup_passwd(pw);
+    }
 #endif
+    return Qnil;
 }
 
 #ifdef HAVE_GETGRENT

@@ -429,7 +429,7 @@ class TkTextTag<TkObject
   include TkTreatTagFont
 
   $tk_text_tag = 'tag0000'
-  def initialize(parent, keys=nil)
+  def initialize(parent, *args)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end

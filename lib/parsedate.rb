@@ -46,7 +46,7 @@ module ParseDate
       if $3
 	year = $3.to_i
       end
-    elsif date.sub!(/(#{MONTHPAT})\S*\s+(\d+)\S*\s*,?(?:\s+(\d+))?/i, ' ')
+    elsif date.sub!(/(#{MONTHPAT})\S*\s+(\d+)\S*,?(?:\s+(\d+))?/i, ' ')
       mon = MONTHS[$1.downcase]
       mday = $2.to_i
       if $3

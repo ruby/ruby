@@ -1692,11 +1692,12 @@ dln_find_1(fname, path, exe_flag)
 #if defined(DJGPP)
 		".btm", ".sh", ".ksh", ".pl", ".sed",
 #endif
-#else
-#if defined(__EMX__)
+#elif defined(__EMX__) || defined(NT)
 		".exe", ".com", ".cmd", ".bat",
+/* end of __EMX__ or NT*/
+#else
 		".r", ".R", ".x", ".X", ".bat", ".BAT",
-#endif /*__EMX__*/
+/* __human68k__ */
 #endif
 		(char *) NULL
 	    };

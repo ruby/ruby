@@ -54,7 +54,7 @@ class Tracer
 	off
       end
     else
-      set_trace_func proc{|event, file, line, id, binding|
+      set_trace_func proc{|event, file, line, id, binding, klass|
 	trace_func event, file, line, id, binding
       }
       print "Trace on\n" if Tracer.verbose?

@@ -2005,11 +2005,9 @@ class TkLabel<TkWindow
 end
 
 class TkButton<TkLabel
-  WidgetClassName = 'Button'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
-#  def TkButton.to_eval
-  def self.to_eval
-    WidgetClassName
+  TkClassBind::WidgetClassNameTBL['Button'] = self
+  def TkButton.to_eval
+    'Button'
   end
   def create_self
     tk_call 'button', @path
@@ -2023,10 +2021,9 @@ class TkButton<TkLabel
 end
 
 class TkRadioButton<TkButton
-  WidgetClassName = 'Radiobutton'.freeze
-  TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
+  TkClassBind::WidgetClassNameTBL['Radiobutton'] = self
   def TkRadioButton.to_eval
-    WidgetClassName
+    'Radiobutton'
   end
   def create_self
     tk_call 'radiobutton', @path

@@ -34,9 +34,11 @@ $srcdir = CONFIG["srcdir"]
 $libdir = CONFIG["libdir"]+"/ruby/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
 $archdir = $libdir+"/"+CONFIG["arch"]
 $install = CONFIG["INSTALL_PROGRAM"]
+$install_dllib = CONFIG["INSTALL_DLLIB"]
 $install_data = CONFIG["INSTALL_DATA"]
 if $install =~ %r!^[^\s/]+/! then
   $install = CONFIG["compile_dir"]+"/"+$install
+  $install_dllib = CONFIG["compile_dir"]+"/"+$install_dllib
   $install_data = CONFIG["compile_dir"]+"/"+$install_data
 end
 
@@ -371,6 +373,7 @@ TARGET = #{target}
 DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 INSTALL = #{$install}
+INSTALL_DLLIB = #{$install_dllib}
 INSTALL_DATA = #{$install_data}
 
 binsuffix = #{CONFIG["binsuffix"]}
@@ -388,7 +391,7 @@ install:	$(archdir)/$(DLLIB)
 $(archdir)/$(DLLIB): $(DLLIB)
 	@test -d $(libdir) || mkdir $(libdir)
 	@test -d $(archdir) || mkdir $(archdir)
-	$(INSTALL) $(DLLIB) $(archdir)/$(DLLIB)
+	$(INSTALL_DLLIB) $(DLLIB) $(archdir)/$(DLLIB)
 EOMF
   install_rb(mfile)
   mfile.printf "\n"

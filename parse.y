@@ -55,6 +55,7 @@ static enum lex_state {
     EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
 
+static int cond_nest = 0;
 static int class_nest = 0;
 static int in_single = 0;
 static int compile_for_eval = 0;
@@ -209,6 +210,8 @@ static void top_local_setup();
  *	precedence table
  */
 
+%nonassoc kDO
+%nonassoc kDO2
 %left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
 %left  kOR kAND
 %right kNOT
@@ -700,11 +703,24 @@ arg		: lhs '=' arg
 		    }
 		| tUPLUS arg
 		    {
-			$$ = call_op($2, tUPLUS, 0);
+			if (nd_type($2) == NODE_LIT) {
+			    $$ = $2;
+			}
+			else {
+			    $$ = call_op($2, tUPLUS, 0);
+			}
 		    }
 		| tUMINUS arg
 		    {
-		        $$ = call_op($2, tUMINUS, 0);
+			if (nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
+			    long i = FIX2LONG($2->nd_lit);
+
+			    $2->nd_lit = INT2FIX(-i);
+			    $$ = $2;
+			}
+			else {
+			    $$ = call_op($2, tUMINUS, 0);
+			}
 		    }
 		| arg '|' arg
 		    {
@@ -1046,21 +1062,21 @@ primary		: literal
 			$$ = NEW_UNLESS(cond($2), $4, $5);
 		        fixpos($$, $2);
 		    }
-		| kWHILE expr do
+		| kWHILE {cond_nest++;} expr do {cond_nest--;} 
 		  compstmt
 		  kEND
 		    {
-			value_expr($2);
-			$$ = NEW_WHILE(cond($2), $4, 1);
-		        fixpos($$, $2);
+			value_expr($3);
+			$$ = NEW_WHILE(cond($3), $6, 1);
+		        fixpos($$, $3);
 		    }
-		| kUNTIL expr do
+		| kUNTIL {cond_nest++;} expr do {cond_nest--;} 
 		  compstmt
 		  kEND
 		    {
-			value_expr($2);
-			$$ = NEW_UNTIL(cond($2), $4, 1);
-		        fixpos($$, $2);
+			value_expr($3);
+			$$ = NEW_UNTIL(cond($3), $6, 1);
+		        fixpos($$, $3);
 		    }
 		| kCASE compstmt
 		  case_body
@@ -1070,12 +1086,12 @@ primary		: literal
 			$$ = NEW_CASE($2, $3);
 		        fixpos($$, $2);
 		    }
-		| kFOR block_var kIN expr do
+		| kFOR block_var kIN {cond_nest++;} expr do {cond_nest--;}
 		  compstmt
 		  kEND
 		    {
 			value_expr($2);
-			$$ = NEW_FOR($2, $4, $6);
+			$$ = NEW_FOR($2, $5, $8);
 		        fixpos($$, $2);
 		    }
 		| kBEGIN
@@ -1350,7 +1366,8 @@ method_call	: operation '(' opt_call_args close_paren
 
 close_paren	: ')'
 		    {
-			lex_state = EXPR_PAREN;
+			if (cond_nest == 0)
+			    lex_state = EXPR_PAREN;
 		    }
 
 stmt_rhs	: block_call
@@ -1720,6 +1737,7 @@ yycompile(f)
     n = yyparse();
     compile_for_eval = 0;
     ruby_in_compile = 0;
+    cond_nest = 0;
     class_nest = 0;
     in_single = 0;
     cur_mid = 0;
@@ -1977,7 +1995,7 @@ read_escape()
 
 static int
 parse_regx(term, paren)
-    int term;
+    int term, paren;
 {
     register int c;
     char kcode = 0;
@@ -1990,7 +2008,7 @@ parse_regx(term, paren)
 
     newtok();
     while ((c = nextc()) != -1) {
-	if ((!in_brack && c == term) || nest > 0) {
+	if (!in_brack && c == term && nest == 0) {
 	    goto regx_end;
 	}
 
@@ -2040,29 +2058,12 @@ parse_regx(term, paren)
 		}
 		/* fall through */
 	      default:
-		if (paren)  {
-		    if (c == paren) nest++;
-		    if (c == term) nest--;
-		}
 		if (c == term) {
 		    tokadd(c);
 		}
 		else {
-#if 0
-		    int c1;
-		    pushback(c);
-		    c1 = read_escape();
-		    if (c1 != c) {
-			tokadd(c1);
-		    }
-		    else {
-			tokadd('\\');
-			tokadd(c);
-		    }
-#else
 		    tokadd('\\');
 		    tokadd(c);
-#endif
 		}
 	    }
 	    continue;
@@ -2072,6 +2073,10 @@ parse_regx(term, paren)
 	    return 0;
 
 	  default:
+	    if (paren && !in_brack)  {
+	      if (c == paren) nest++;
+	      if (c == term) nest--;
+	    }
 	    if (ismbchar(c)) {
 		int i, len = mbclen(c)-1;
 
@@ -2198,10 +2203,7 @@ parse_string(func, term, paren)
 	}
 	if (paren) {
 	    if (c == paren) nest++;
-	    if (c == term) {
-		nest--;
-		if (nest == 0) break;
-	    }
+	    if (c == term && nest-- == 0) break;
 	}
 	tokadd(c);
     }
@@ -2276,10 +2278,7 @@ parse_qstring(term, paren)
 	}
 	if (paren) {
 	    if (c == paren) nest++;
-	    if (c == term) {
-		nest--;
-		if (nest == 0) break;
-	    }
+	    if (c == term && nest-- == 0) break;
 	}
 	tokadd(c);
     }
@@ -2388,10 +2387,13 @@ here_document(term, indent)
 	    }
 	    break;
 	  case tDSTRING:
+	    if (!list) list = NEW_DSTR(str);
+	    /* fall through */
 	  case tDXSTRING:
+	    if (!list) list = NEW_DXSTR(str);
+
 	    list_append(yylval.node, NEW_STR(rb_str_new2("\n")));
 	    nd_set_type(yylval.node, NODE_STR);
-	    if (!list) list = NEW_DSTR(str);
 	    yylval.node = NEW_LIST(yylval.node);
 	    yylval.node->nd_next = yylval.node->nd_head->nd_next;
 	    list_concat(list, yylval.node);
@@ -2427,6 +2429,7 @@ here_document(term, indent)
 	return tSTRING;
       case '`':
 	if (list) return tDXSTRING;
+	yylval.val = str;
 	return tXSTRING;
     }
     return 0;
@@ -2727,11 +2730,6 @@ yylex()
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
 	    (lex_state == EXPR_ARG && space_seen && !ISSPACE(c))) {
-	    if (ISDIGIT(c)) {
-		pushback(c);
-		c = '-';
-		goto start_num;
-	    }
 	    lex_state = EXPR_BEG;
 	    pushback(c);
 	    return tUMINUS;
@@ -3034,11 +3032,12 @@ yylex()
 		rb_compile_error("unterminated quoted string meets end of file");
 		return 0;
 	    }
-	    paren = 0;
+	    paren = term;
 	    if (term == '(') term = ')';
 	    else if (term == '[') term = ']';
 	    else if (term == '{') term = '}';
 	    else if (term == '<') term = '>';
+	    else paren = 0;
 
 	    switch (c) {
 	      case 'Q':

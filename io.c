@@ -544,7 +544,7 @@ rb_io_gets_internal(argc, argv, io)
 		c = getc(f);
 		TRAP_END;
 		if (c == EOF) {
-		    if (errno == EINTR) continue;
+		    if (ferror(f) && errno == EINTR) continue;
 		    break;
 		}
 		if ((*bp++ = c) == newline) break;
@@ -633,7 +633,7 @@ rb_io_gets(io)
 	c = getc(f);
 	TRAP_END;
 	if (c == EOF) {
-	    if (errno == EINTR) continue;
+	    if (ferror(f) && errno == EINTR) continue;
 	    break;
 	}
 	if ((*bp++ = c) == '\n') break;
@@ -883,10 +883,6 @@ fptr_finalize(fptr)
     if (fptr->f2 != NULL) {
 	fclose(fptr->f2);
     }
-    if (fptr->pid) {
-	rb_syswait(fptr->pid);
-	fptr->pid = 0;
-    }
 }
 
 static void
@@ -903,6 +899,10 @@ rb_io_fptr_close(fptr)
     }
     else {
 	fptr_finalize(fptr);
+	if (fptr->pid) {
+	    rb_syswait(fptr->pid);
+	    fptr->pid = 0;
+	}
     }
     fptr->f = fptr->f2 = NULL;
     rb_thread_fd_close(fd);
@@ -2031,31 +2031,118 @@ rb_io_defset(val, id)
     rb_defout = val;
 }
 
+static int
+rb_dup(orig)
+    int orig;
+{
+    int fd;
+
+    fd = dup(orig);
+    if (fd < 0) {
+	if (errno == EMFILE || errno == ENFILE) {
+	    rb_gc();
+	    fd = dup(orig);
+	}
+	if (fd < 0) {
+	    rb_sys_fail(0);
+	}
+    }
+    return fd;
+}
+
 static void
-rb_io_stdio_set(val, id, var)
+set_stdin(val, id, var)
     VALUE val;
     ID id;
     VALUE *var;
 {
     OpenFile *fptr;
     int fd;
+    char *mode;
+
+    if (val == *var) return;
+    if (TYPE(val) != T_FILE) {
+	rb_raise(rb_eTypeError, "%s must be IO object", rb_id2name(id));
+    }
+
+    GetOpenFile(val, fptr);
+    rb_io_check_readable(fptr);
+
+    GetOpenFile(*var, fptr);
+    mode = rb_io_mode_string(fptr);
+    fd = rb_dup(fileno(fptr->f));
+    if (fileno(fptr->f) > 2) {
+	fclose(fptr->f);
+    }
+    fptr->f = rb_fdopen(fd, mode);
+
+    GetOpenFile(val, fptr);
+    dup2(fileno(fptr->f), 0);
+    fclose(fptr->f);
+    fptr->f = stdin;
+
+    *var = val;
+}
+
+static void
+set_outfile(val, id, var, stdf)
+    VALUE val;
+    ID id;
+    VALUE *var;
+    FILE *stdf;
+{
+    OpenFile *fptr;
+    FILE *f;
+    int fd;
+    char *mode;
+
+    if (val == *var) return;
+    rb_io_flush(*var);
 
     if (TYPE(val) != T_FILE) {
 	rb_raise(rb_eTypeError, "%s must be IO object", rb_id2name(id));
     }
-    if (ruby_verbose) {
-	rb_warn("assignment for %s is done by reopen", rb_id2name(id));
-    }
-    GetOpenFile(*var, fptr);
-    fd = fileno(fptr->f);
+
     GetOpenFile(val, fptr);
-    if (fd == 0) {
-	rb_io_check_readable(fptr);
+    rb_io_check_writable(fptr);
+
+    GetOpenFile(*var, fptr);
+    mode = rb_io_mode_string(fptr);
+    f = GetWriteFile(fptr);
+    fd = rb_dup(fileno(f));
+    if (fileno(f) > 2) {
+	fclose(fptr->f);
     }
-    else {
-	rb_io_check_writable(fptr);
-    }
-    rb_io_reopen(*var, val);
+    f = rb_fdopen(fd, mode);
+    if (fptr->f2) fptr->f2 = f;
+    else          fptr->f = f;
+
+    GetOpenFile(val, fptr);
+    f = GetWriteFile(fptr);
+    dup2(fileno(f), fileno(stdf));
+    fclose(f);
+    if (fptr->f2) fptr->f2 = stdf;
+    else          fptr->f = stdf;
+
+    *var = val;
+}
+
+static void
+set_stdout(val, id, var)
+    VALUE val;
+    ID id;
+    VALUE *var;
+{
+    set_outfile(val, id, var, stdout);
+}
+
+static void
+set_stderr(val, id, var)
+    VALUE val;
+    ID id;
+    VALUE *var;
+{
+    set_outfile(val, id, var, stderr);
 }
 
 static VALUE
@@ -2329,9 +2416,6 @@ rb_f_backquote(obj, str)
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
-#endif
-#ifdef NT
-#define select(v, w, x, y, z) (-1) /* anytime fail */
 #endif
 
 static VALUE
@@ -3099,11 +3183,11 @@ Init_IO()
     rb_define_method(rb_cIO, "fcntl", rb_io_fcntl, -1);
 
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
-    rb_define_hooked_variable("$stdin", &rb_stdin, 0, rb_io_stdio_set);
+    rb_define_hooked_variable("$stdin", &rb_stdin, 0, set_stdin);
     rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO);
-    rb_define_hooked_variable("$stdout", &rb_stdout, 0, rb_io_stdio_set);
+    rb_define_hooked_variable("$stdout", &rb_stdout, 0, set_stdout);
     rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
-    rb_define_hooked_variable("$stderr", &rb_stderr, 0, rb_io_stdio_set);
+    rb_define_hooked_variable("$stderr", &rb_stderr, 0, set_stderr);
     rb_defout = rb_stdout;
     rb_define_hooked_variable("$>", &rb_defout, 0, rb_io_defset);
 

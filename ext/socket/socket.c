@@ -487,7 +487,7 @@ ip_addrsetup(host, port)
 	if (*name == 0) {
 	    mkinetaddr(INADDR_ANY, hbuf, sizeof(hbuf));
 	}
-	if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
+	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
 	    mkinetaddr(INADDR_BROADCAST, hbuf, sizeof(hbuf));
 	}
 	else {
@@ -594,6 +594,7 @@ ruby_socket(domain, type, proto)
 	    fd = socket(domain, type, proto);
 	}
     }
+    return fd;
 }
 
 static int

@@ -1780,6 +1780,36 @@ ioctl(int i, unsigned int u, long data)
 }
 
 
+#undef FD_SET
+
+void
+myfdset(int fd, fd_set *set)
+{
+    unsigned int i;
+    SOCKET s = TO_SOCKET(fd);
+
+    for (i = 0; i < set->fd_count; i++) {
+        if (set->fd_array[i] == s) {
+            return;
+        }
+    }
+    if (i == set->fd_count) {
+        if (set->fd_count < FD_SETSIZE) {
+            set->fd_array[i] = s;
+            set->fd_count++;
+        }
+    }
+}
+
+
+#undef FD_ISSET
+
+int
+myfdisset(int fd, fd_set *set)
+{
+       return __WSAFDIsSet(TO_SOCKET(fd), set);
+}
+
 //
 // Networking trampolines
 // These are used to avoid socket startup/shutdown overhead in case 

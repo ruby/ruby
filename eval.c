@@ -974,23 +974,32 @@ static void rb_thread_wait_other_threads _((void));
 
 static int exit_status;
 
+static void
+call_required_libraries()
+{
+    NODE *save;
+
+    ruby_sourcefile = 0;
+    if (!ext_init) Init_ext();
+    save = ruby_eval_tree;
+    ruby_require_libraries();
+    ruby_eval_tree = save;
+}
+
 void
 ruby_run()
 {
     int state;
     static int ex;
-    NODE *save;
+    volatile NODE *tmp;
 
     if (ruby_nerrs > 0) exit(ruby_nerrs);
 
-    Init_stack(&save);
+    Init_stack(&tmp);
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
-	if (!ext_init) Init_ext();
-	save = ruby_eval_tree;
-	ruby_require_libraries();
-	ruby_eval_tree = save;
+	call_required_libraries();
 	eval_node(ruby_top_self);
     }
     POP_ITER();
@@ -2250,15 +2259,16 @@ rb_eval(self, node)
 	    rval = node->nd_args->nd_head;
 	    SETUP_ARGS(node->nd_args->nd_next);
 	    val = rb_funcall2(recv, aref, argc-1, argv);
-	    if (node->nd_mid == 0) {      /* OR */
-		if (RTEST(val)) break;
+	    switch (node->nd_mid) {
+	    case 0: /* OR */
+		if (RTEST(val)) RETURN(val);
 		val = rb_eval(self, rval);
-	    }
-	    else if (node->nd_mid == 1) { /* AND */
-		if (!RTEST(val)) break;
+		break;
+	    case 1: /* AND */
+		if (!RTEST(val)) RETURN(val);
 		val = rb_eval(self, rval);
-	    }
-	    else {
+		break;
+	    default:
 		val = rb_funcall(val, node->nd_mid, 1, rb_eval(self, rval));
 	    }
 	    argv[argc-1] = val;
@@ -2274,15 +2284,16 @@ rb_eval(self, node)
 
 	    recv = rb_eval(self, node->nd_recv);
 	    val = rb_funcall(recv, id, 0);
-	    if (node->nd_next->nd_mid == 0) {      /* OR */
-		if (RTEST(val)) break;
+	    switch (node->nd_next->nd_mid) {
+	    case 0: /* OR */
+		if (RTEST(val)) RETURN(val);
 		val = rb_eval(self, node->nd_value);
-	    }
-	    else if (node->nd_next->nd_mid == 1) { /* AND */
-		if (!RTEST(val)) break;
+		break;
+	    case 1: /* AND */
+		if (!RTEST(val)) RETURN(val);
 		val = rb_eval(self, node->nd_value);
-	    }
-	    else {
+		break;
+	    default:
 		val = rb_funcall(val, node->nd_next->nd_mid, 1,
 				 rb_eval(self, node->nd_value));
 	    }
@@ -6042,8 +6053,6 @@ rb_thread_save_context(th)
     th->trace = trace_func;
     th->file = ruby_sourcefile;
     th->line = ruby_sourceline;
-
-    th->locals = 0;
 }
 
 static void rb_thread_restore_context _((thread_t,int));

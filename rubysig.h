@@ -10,7 +10,7 @@
 #ifndef SIG_H
 #define SIG_H
 
-extern int rb_trap_immediate;
+EXTERN int rb_trap_immediate;
 #define TRAP_BEG (rb_trap_immediate=1)
 #define TRAP_END (rb_trap_immediate=0)
 

@@ -55,6 +55,7 @@
 #include <unistd.h>
 #else
 #include <winsock2.h>
+#include <io.h>
 #endif
 #include <string.h>
 #include <stdio.h>
