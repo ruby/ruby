@@ -786,11 +786,11 @@ Default options, which never appear in option summary.
   attr_writer :version, :release
 
   def version
-    @version || (defined?(::Version) && ::Version)
+    @version || (defined?(::Version) && ::Version) || (defined?(::VERSION) && ::VERSION)
   end
 
   def release
-    @release || (defined?(::Release) && ::Release)
+    @release || (defined?(::Release) && ::Release) || (defined?(::RELEASE) && ::RELEASE)
   end
 
   def ver

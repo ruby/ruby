@@ -1,3 +1,8 @@
+Mon Sep  8 20:00:12 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb, lib/optparse/version.rb: search also all
+	  capital versions.
+
 Mon Sep  8 19:26:33 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.h: include openssl/conf.h and openssl/conf_api.h.
@@ -15,7 +20,7 @@ Mon Sep  8 19:26:33 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509ext.c (ossl_x509_set_config): add for config=.
 
-	* ext/openssl/ossl_x509ext.c (Xossl_x509extfactory_initialize): 
+	* ext/openssl/ossl_x509ext.c (Xossl_x509extfactory_initialize):
 	  add attr readers: issuer_certificate, subject_certificate,
 	  subject_request, crl and config.
 
@@ -28,7 +33,7 @@ Mon Sep  8 18:26:41 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/filehandler.rb (FileHandler#dir_list): ditto.
 
-	* lib/webrick/config.rb: :Listen option never be used. 
+	* lib/webrick/config.rb: :Listen option never be used.
 
 	* lib/webrick/server.rb (GenericServer#initialize): don't use :Listen
 	  option and add warning message.
@@ -54,7 +59,7 @@ Sat Sep  6 18:45:46 2003  Mauricio Fernandez <batsman.geo@yahoo.com>
 
 Sat Sep  6 17:40:41 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openssl/ruby_missing.c: rid of unnecessary backward 
+	* ext/openssl/ruby_missing.c: rid of unnecessary backward
 	  compatibility stuff. and remove DEFINE_ALLOC_WRAPPER from
 	  all sources.
 
