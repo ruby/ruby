@@ -90,6 +90,9 @@ module Test
           end
 
           def stop # :nodoc:
+	    if @run_suite_thread and @run_suite_thread.alive?
+	      @run_suite_thread.kill
+	    end
             ::Tk.exit
           end
 
@@ -178,25 +181,56 @@ module Test
             @failure_count_label = create_count_label(info_frame, 'Failures:')
             @error_count_label = create_count_label(info_frame, 'Errors:')
 
-            fault_list_frame = TkFrame.new.pack('fill'=>'both', 'expand'=>true)
+	    if (::Tk.info('command', TkPanedWindow::TkCommandNames[0]) != "")
+	      # use panedwindow
+	      paned_frame = TkPanedWindow.new("orient"=>"vertical").pack('fill'=>'both', 'expand'=>true)
 
-            fault_scrollbar = TkScrollbar.new(fault_list_frame)
-            fault_scrollbar.pack('side'=>'right', 'fill'=>'y')
+	      fault_list_frame = TkFrame.new(paned_frame)
+	      detail_frame = TkFrame.new(paned_frame)
+
+	      paned_frame.add(fault_list_frame, detail_frame)
+	    else
+	      # no panedwindow
+	      paned_frame = nil
+	      fault_list_frame = TkFrame.new.pack('fill'=>'both', 'expand'=>true)
+	      detail_frame = TkFrame.new.pack('fill'=>'both', 'expand'=>true)
+	    end
+
+	    TkGrid.rowconfigure(fault_list_frame, 0, 'weight'=>1, 'minsize'=>0)
+	    TkGrid.columnconfigure(fault_list_frame, 0, 'weight'=>1, 'minsize'=>0)
+
+            fault_scrollbar_y = TkScrollbar.new(fault_list_frame)
+            fault_scrollbar_x = TkScrollbar.new(fault_list_frame)
             @fault_list = TkListbox.new(fault_list_frame)
-            @fault_list.pack('fill'=>'both', 'expand'=>true)
-            @fault_list.yscrollbar(fault_scrollbar)
+            @fault_list.yscrollbar(fault_scrollbar_y)
+            @fault_list.xscrollbar(fault_scrollbar_x)
 
-            detail_frame = TkFrame.new.pack('fill'=>'both', 'expand'=>true)
+	    TkGrid.rowconfigure(detail_frame, 0, 'weight'=>1, 'minsize'=>0)
+	    TkGrid.columnconfigure(detail_frame, 0, 'weight'=>1, 'minsize'=>0)
+
+	    ::Tk.grid(@fault_list, fault_scrollbar_y, 'sticky'=>'news')
+	    ::Tk.grid(fault_scrollbar_x, 'sticky'=>'news')
+
             detail_scrollbar_y = TkScrollbar.new(detail_frame)
-            detail_scrollbar_y.pack('side'=>'right', 'fill'=>'y')
             detail_scrollbar_x = TkScrollbar.new(detail_frame)
-            detail_scrollbar_x.pack('side'=>'bottom', 'fill'=>'x')
             @detail_text = TkText.new(detail_frame, 'height'=>10, 'wrap'=>'none') {
               bindtags(bindtags - [TkText])
-            }
-            @detail_text.pack('fill'=>'both', 'expand'=>true)
-            @detail_text.yscrollbar(detail_scrollbar_y)
-            @detail_text.xscrollbar(detail_scrollbar_x)
+	    }
+	    @detail_text.yscrollbar(detail_scrollbar_y)
+	    @detail_text.xscrollbar(detail_scrollbar_x)
+
+	    ::Tk.grid(@detail_text, detail_scrollbar_y, 'sticky'=>'news')
+	    ::Tk.grid(detail_scrollbar_x, 'sticky'=>'news')
+
+	    # rubber-style pane
+	    if paned_frame
+	      ::Tk.update
+	      @height = paned_frame.winfo_height
+	      paned_frame.bind('Configure', proc{|h|
+		paned_frame.sash_place(0, 0, paned_frame.sash_coord(0)[1] * h / @height)
+		@height = h
+	      }, '%h')
+	    end
           end
 
           def create_count_label(parent, label) # :nodoc:

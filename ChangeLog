@@ -1,3 +1,8 @@
+Thu Nov 13 19:17:00 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/test/unit/ui/tk/testrunner.rb: use grid and panedwindow 
+	  (if available)
+
 Thu Nov 13 17:56:41 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (OpenURI.open_uri): use File::RDONLY.
