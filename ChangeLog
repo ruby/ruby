@@ -1,3 +1,7 @@
+Fri Sep  6 10:34:32 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* io.c (rb_io_puts): RSTRING(line)->ptr might be NULL.
+
 Fri Sep  6 10:26:37 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y: should not put non-NODE-VALUEs in the semantic stack.
