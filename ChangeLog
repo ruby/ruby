@@ -1,3 +1,9 @@
+Wed Jul  5 01:02:53 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/extmk.rb.in: join ' ' -> join(' ').
+
+	* lib/mkmf.rb: ditto.
+
 Tue Jul  4 13:51:29 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/dbm/dbm.c: add methods added to Hash in 1.5.x.
