@@ -4853,8 +4853,10 @@ parser_tokadd_string(parser, func, term, paren, nest)
     long *nest;
 {
     int c;
+    unsigned char uc;
 
     while ((c = nextc()) != -1) {
+        uc = (unsigned char)c;
 	if (paren && c == paren) {
 	    ++*nest;
 	}
@@ -4905,8 +4907,8 @@ parser_tokadd_string(parser, func, term, paren, nest)
 		}
 	    }
 	}
-	else if (ismbchar(c)) {
-	    int i, len = mbclen(c)-1;
+	else if (ismbchar(uc)) {
+	    int i, len = mbclen(uc)-1;
 
 	    for (i = 0; i < len; i++) {
 		tokadd(c);
@@ -5002,6 +5004,7 @@ parser_heredoc_identifier(parser)
     struct parser_params *parser;
 {
     int c = nextc(), term, func = 0, len;
+    unsigned int uc;
 
     if (c == '-') {
 	c = nextc();
@@ -5019,7 +5022,8 @@ parser_heredoc_identifier(parser)
 	tokadd(func);
 	term = c;
 	while ((c = nextc()) != -1 && c != term) {
-	    len = mbclen(c);
+            uc = (unsigned int)c;
+	    len = mbclen(uc);
 	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
 	}
 	if (c == -1) {
@@ -5029,7 +5033,8 @@ parser_heredoc_identifier(parser)
 	break;
 
       default:
-	if (!is_identchar(c)) {
+        uc = (unsigned int)c;
+	if (!is_identchar(uc)) {
 	    pushback(c);
 	    if (func & STR_FUNC_INDENT) {
 		pushback('-');
@@ -5040,9 +5045,11 @@ parser_heredoc_identifier(parser)
 	term = '"';
 	tokadd(func |= str_dquote);
 	do {
-	    len = mbclen(c);
+            uc = (unsigned int)c;
+	    len = mbclen(uc);
 	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
-	} while ((c = nextc()) != -1 && is_identchar(c));
+	} while ((c = nextc()) != -1 && 
+		 (uc = (unsigned char)c, is_identchar(uc)));
 	pushback(c);
 	break;
     }
@@ -5233,6 +5240,7 @@ parser_yylex(parser)
     register int c;
     int space_seen = 0;
     int cmd_state;
+    unsigned char uc;
 #ifdef RIPPER
     int fallthru = Qfalse;
 #endif
@@ -5519,6 +5527,7 @@ parser_yylex(parser)
 	    rb_compile_error(PARSER_ARG  "incomplete character syntax");
 	    return 0;
 	}
+        uc = (unsigned char)c;
 	if (ISSPACE(c)){
 	    if (!IS_ARG()){
 		int c2 = 0;
@@ -5551,7 +5560,7 @@ parser_yylex(parser)
 	    lex_state = EXPR_TERNARY;
 	    return '?';
 	}
-	else if (ismbchar(c)) {
+	else if (ismbchar(uc)) {
 	    rb_warnI("multibyte character literal not supported yet; use ?\\%.3o", c);
 	    goto ternary;
 	}
@@ -6098,7 +6107,8 @@ parser_yylex(parser)
 	    }
 	    else {
 		term = nextc();
-		if (ISALNUM(term) || ismbchar(term)) {
+                uc = (unsigned char)c;
+		if (ISALNUM(term) || ismbchar(uc)) {
 		    yyerror("unknown type of %string");
 		    return 0;
 		}
@@ -6177,7 +6187,8 @@ parser_yylex(parser)
 	switch (c) {
 	  case '_':		/* $_: last read line string */
 	    c = nextc();
-	    if (is_identchar(c)) {
+            uc = (unsigned char)c;
+	    if (is_identchar(uc)) {
 		tokadd('$');
 		tokadd('_');
 		break;
@@ -6243,7 +6254,8 @@ parser_yylex(parser)
 	    return tNTH_REF;
 
 	  default:
-	    if (!is_identchar(c)) {
+            uc = (unsigned char)c;
+	    if (!is_identchar(uc)) {
 		pushback(c);
 		return '$';
 	    }
@@ -6268,7 +6280,8 @@ parser_yylex(parser)
 		rb_compile_error(PARSER_ARG  "`@@%c' is not allowed as a class variable name", c);
 	    }
 	}
-	if (!is_identchar(c)) {
+        uc = (unsigned char)c;
+	if (!is_identchar(uc)) {
 	    pushback(c);
 	    return '@';
 	}
@@ -6290,7 +6303,8 @@ parser_yylex(parser)
 	break;
 
       default:
-	if (!is_identchar(c)) {
+	uc = (unsigned char)c;
+	if (!is_identchar(uc)) {
 	    rb_compile_error(PARSER_ARG  "Invalid char `\\%03o' in expression", c);
 	    goto retry;
 	}
@@ -6299,10 +6313,11 @@ parser_yylex(parser)
 	break;
     }
 
+    uc = (unsigned char)c;
     do {
 	tokadd(c);
-	if (ismbchar(c)) {
-	    int i, len = mbclen(c)-1;
+	if (ismbchar(uc)) {
+	    int i, len = mbclen(uc)-1;
 
 	    for (i = 0; i < len; i++) {
 		c = nextc();
@@ -6310,7 +6325,8 @@ parser_yylex(parser)
 	    }
 	}
 	c = nextc();
-    } while (is_identchar(c));
+        uc = (unsigned char)c;
+    } while (is_identchar(uc));
     if ((c == '!' || c == '?') && is_identchar(tok()[0]) && !peek('=')) {
 	tokadd(c);
     }

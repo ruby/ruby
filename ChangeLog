@@ -1,3 +1,13 @@
+Thu Nov  4 23:41:55 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* ascii.c, euc_jp.c, oniggnu.h, oniguruma.h, regcomp.c,
+	regenc.c, regenc.h, regerror.c, regexec.c, reggnu.c,
+	regint.h, regparse.c, regparse.h, sjis.c, utf8.c:
+	imported Oni Guruma 3.4.0.
+
+	* parse.y, re.c: Now mbclen() takes unsigned char as
+	its argument.
+
 Thu Nov  4 21:25:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_gsub): string modify check no longer based on

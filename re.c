@@ -248,11 +248,12 @@ rb_reg_mbclen2(c, re)
     VALUE re;
 {
     int len;
+    unsigned char uc = (unsigned char)c;
 
     if (!FL_TEST(re, KCODE_FIXED))
-	return mbclen(c);
+	return mbclen(uc);
     kcode_set_option(re);
-    len = mbclen(c);
+    len = mbclen(uc);
     kcode_reset_option();
     return len;
 }
@@ -1775,8 +1776,8 @@ rb_reg_quote(str)
     send = s + RSTRING(str)->len;
     for (; s < send; s++) {
 	c = *s;
-	if (ismbchar(c)) {
-	    int n = mbclen(c);
+	if (ismbchar(*s)) {
+	    int n = mbclen(*s);
 
 	    while (n-- && s < send)
 		s++;
@@ -1804,8 +1805,8 @@ rb_reg_quote(str)
 
     for (; s < send; s++) {
 	c = *s;
-	if (ismbchar(c)) {
-	    int n = mbclen(c);
+	if (ismbchar(*s)) {
+	    int n = mbclen(*s);
 
 	    while (n-- && s < send)
 		*t++ = *s++;
@@ -2044,8 +2045,10 @@ rb_reg_regsub(str, src, regs)
     struct re_registers *regs;
 {
     VALUE val = 0;
-    char *p, *s, *e, c;
+    char *p, *s, *e;
+    unsigned char uc;
     int no;
+
 
     p = s = RSTRING(str)->ptr;
     e = s + RSTRING(str)->len;
@@ -2053,12 +2056,12 @@ rb_reg_regsub(str, src, regs)
     while (s < e) {
 	char *ss = s;
 
-	c = *s++;
-	if (ismbchar(c)) {
-	    s += mbclen(c) - 1;
+	uc = (unsigned char)*s++;
+	if (ismbchar(uc)) {
+	    s += mbclen(uc) - 1;
 	    continue;
 	}
-	if (c != '\\' || s == e) continue;
+	if (uc != '\\' || s == e) continue;
 
 	if (!val) {
 	    val = rb_str_buf_new(ss-p);
@@ -2068,12 +2071,12 @@ rb_reg_regsub(str, src, regs)
 	    rb_str_buf_cat(val, p, ss-p);
 	}
 
-	c = *s++;
+	uc = (unsigned char)*s++;
 	p = s;
-	switch (c) {
+	switch (uc) {
 	  case '0': case '1': case '2': case '3': case '4':
 	  case '5': case '6': case '7': case '8': case '9':
-	    no = c - '0';
+	    no = uc - '0';
 	    break;
 	  case '&':
 	    no = 0;
