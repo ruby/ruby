@@ -620,11 +620,17 @@ module Generators
       atts = @context.attributes.sort
       res = []
       atts.each do |att|
-        res << {
-          "name"   => CGI.escapeHTML(att.name), 
-          "rw"     => att.rw, 
-          "a_desc" => markup(att.comment, true)
-        }
+        if att.visibility == :public || @options.show_all
+          entry = {
+            "name"   => CGI.escapeHTML(att.name), 
+            "rw"     => att.rw, 
+            "a_desc" => markup(att.comment, true)
+          }
+          unless att.visibility == :public
+            entry["rw"] << "-"
+          end
+          res << entry
+        end
       end
       res
     end

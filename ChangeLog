@@ -1,3 +1,8 @@
+Thu Feb 19 23:24:16 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb (Generators::HtmlClass::build_attribute_list): 
+	  Support visibility modifiers for attributes
+
 Thu Feb 19 22:39:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/ostruct.rb: documented
