@@ -1,6 +1,7 @@
 Fri Jan  7 21:12:29 2005  TAMURA Takashi  <sheepman@tcn.zaq.ne.jp>
 
 	* random.c (rand_init): use ALLOC_N instead of ALLOCA_N
+	  [ruby-dev:25426]
 
 Fri Jan  7 20:01:31 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
