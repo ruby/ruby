@@ -1,3 +1,7 @@
+Tue Dec 11 03:17:19 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* object.c (rb_class_real): follow included modules.
+
 Mon Dec 10 23:37:51 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* util.h: change prototype of ruby_qsort() to accord with its
