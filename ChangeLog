@@ -1,7 +1,12 @@
+Sat Jan  1 04:20:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ns_spki.c (ossl_spki_set_challenge): should call 
+	  StringValue before GetSPKI. fixed: [ruby-dev:25359].
+
 Fri Dec 31 14:10:43 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::display_flow_item): Fix problem
-	  if heading contains formatting.
+	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::display_flow_item):
+	  Fix problem if heading contains formatting.
 
 Fri Dec 31 00:08:02 2004  Tanaka Akira  <akr@m17n.org>
 
