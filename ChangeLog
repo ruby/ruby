@@ -2,6 +2,10 @@ Thu Nov 25 10:14:26 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (push_braces): do not reuse buffer strings.  [ruby-core:03806]
 
+Thu Nov 25 07:59:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): [ruby-dev:24955]
+
 Wed Nov 24 01:01:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_read): [ruby-dev:24952]
@@ -705,6 +709,16 @@ Mon Oct 18 23:37:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Oct 18 15:58:01 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* range.c (range_step, range_each): need cast.
+
+Fri Oct 29 16:34:19 2004  Daiki Ueno  <ueno@unixuser.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): Parse the rest of the
+	line after opening heredoc identifier.  [ruby-dev:24635]
+
+Fri Oct 29 16:34:19 2004  Daiki Ueno  <ueno@unixuser.org>
+
+	* misc/ruby-mode.el (ruby-parse-partial): Parse the rest of the
+	line after opening heredoc identifier.  [ruby-dev:24635]
 
 Mon Oct 18 07:26:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
