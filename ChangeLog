@@ -1,3 +1,8 @@
+Thu Feb 12 20:31:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_tmpsrc): cpp32 of Borland C++ ignores #error
+	  directives in DOS line-ending files at all.
+
 Thu Feb 12 02:23:56 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: use assert_raise instead of assert_raises.
@@ -13,10 +18,10 @@ Wed Feb 11 20:01:12 2004  akira yamada  <akira@ruby-lang.org>
 
 	* test/ruby/test_file.rb (TestFile::test_fnmatch): added tests for
 	  File.fnmatch. [ruby-dev:22815][ruby-dev:22819]
-	
+
 	* test/ruby/test_proc.rb (TestProc::test_eq): added a
 	  test.  [ruby-dev:22599]
-	
+
 	* test/ruby/test_proc.rb (TestProc::test_eq): added tests for
 	   Proc#==.  [ruby-dev:22592], [ruby-dev:22601]
 
