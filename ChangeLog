@@ -1,3 +1,9 @@
+Tue Dec 14 19:17:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* utf8.c (utf8_is_mbc_ambiguous): [ruby-talk:123561]
+
+	* utf8.c (utf8_mbc_to_normalize): ditto.
+
 Tue Dec 14 17:08:15 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_close): need to reset osfhnd().
@@ -6,6 +12,11 @@ Tue Dec 14 14:03:57 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.c (ossl_raise): avoid buffer overrun.
           [ruby-dev:25187]
+
+Tue Dec 14 12:36:04 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session::initialize): generate new
+	  session if given session_id does not exist.  [ruby-list:40368]
 
 Tue Dec 14 08:47:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
