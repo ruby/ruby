@@ -1,3 +1,9 @@
+Tue Dec 24 23:37:40 2002  TADA Tadashi <sho@spc.gr.jp>
+
+	* lib/cgi.rb (Cookie::parse), lib/cgi-lib.rb (initialize): Do not
+	  pass to split() a bare string longer than 2 characters as
+	  separator.
+
 Tue Dec 24 19:19:24 2002  Tietew <tietew@tietew.net>
 
 	* numeric.c (DBL_MAX_10_EXP): fix typo. [ruby-dev:36826]

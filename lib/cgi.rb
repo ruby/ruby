@@ -698,7 +698,7 @@ convert string charset, and set language to "ja".
     cookies = Hash.new([])
     return cookies unless raw_cookie
 
-    raw_cookie.split('; ').each do |pairs|
+    raw_cookie.split(/; /).each do |pairs|
       name, values = pairs.split('=',2)
       name = CGI::unescape(name)
       values ||= ""
