@@ -4,6 +4,22 @@ Thu Apr 11 09:31:19 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl/sym.c: ditto.
 
+Thu Apr 11 07:57:48 2002  Michal Rokos  <m.rokos@sh.cvut.cz>
+
+	* eval.c (assign): ruby_verbose should be surrounded by RTEST().
+
+	* object.c (rb_str2cstr): ditto.
+
+	* parse.y (void_expr): ditto.
+
+	* parse.y (void_stmts): ditto.
+
+	* variable.c (rb_ivar_get): ditto.
+
+	* variable.c (rb_cvar_set): ditto.
+
+	* variable.c (rb_cvar_get): ditto.
+
 Thu Apr 11 07:02:31 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl: Add dl.txt instead of README and README.html.

@@ -3935,7 +3935,7 @@ assign(self, lhs, val, pcall)
 	break;
 
       case NODE_CVDECL:
-	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	if (RTEST(ruby_verbose) && FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    rb_warn("declaring singleton class variable");
 	}
 	rb_cvar_set(cvar_cbase(), lhs->nd_vid, val, Qtrue);

@@ -88,6 +88,15 @@ math_atan(obj, x)
     return rb_float_new(atan(RFLOAT(x)->value));
 }
 
+#ifndef HAVE_COSH
+double
+cosh(x)
+    double x;
+{
+    return (exp(x) + exp(-x)) / 2;
+}
+#endif
+
 static VALUE
 math_cosh(obj, x)
     VALUE obj, x;
@@ -96,6 +105,15 @@ math_cosh(obj, x)
     return rb_float_new(cosh(RFLOAT(x)->value));
 }
 
+#ifndef HAVE_SINH
+double
+sinh(x)
+    double x;
+{
+    return (exp(x) - exp(-x)) / 2;
+}
+#endif
+
 static VALUE
 math_sinh(obj, x)
     VALUE obj, x;
@@ -103,6 +121,15 @@ math_sinh(obj, x)
     Need_Float(x);
     return rb_float_new(sinh(RFLOAT(x)->value));
 }
+
+#ifndef HAVE_SINH
+double
+tanh(x)
+    double x;
+{
+    return sinh(x) / cosh(x);
+}
+#endif
 
 static VALUE
 math_tanh(obj, x)

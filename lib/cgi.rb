@@ -1166,12 +1166,12 @@ convert string charset, and set language to "ja".
 
   checkbox_group("name", ["foo"], ["bar", true], "baz")
     # <INPUT TYPE="checkbox" NAME="name" VALUE="foo">foo
-    # <INPUT TYPE="checkbox" SELECTED NAME="name" VALUE="bar">bar
+    # <INPUT TYPE="checkbox" CHECKED NAME="name" VALUE="bar">bar
     # <INPUT TYPE="checkbox" NAME="name" VALUE="baz">baz
 
   checkbox_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
     # <INPUT TYPE="checkbox" NAME="name" VALUE="1">Foo
-    # <INPUT TYPE="checkbox" SELECTED NAME="name" VALUE="2">Bar
+    # <INPUT TYPE="checkbox" CHECKED NAME="name" VALUE="2">Bar
     # <INPUT TYPE="checkbox" NAME="name" VALUE="Baz">Baz
 
   checkbox_group({ "NAME" => "name",
@@ -1213,7 +1213,7 @@ convert string charset, and set language to "ja".
     # <INPUT TYPE="file" NAME="name" SIZE="40">
 
   file_field("name", 40, 100)
-    # <INPUT TYPE="file" NAME="name" SIZE="40", MAXLENGTH="100">
+    # <INPUT TYPE="file" NAME="name" SIZE="40" MAXLENGTH="100">
 
   file_field({ "NAME" => "name", "SIZE" => 40 })
     # <INPUT TYPE="file" NAME="name" SIZE="40">
@@ -1372,7 +1372,7 @@ The hash keys are case sensitive. Ask the samples.
     # <INPUT TYPE="image" SRC="url">
 
   image_button("url", "name", "string")
-    # <INPUT TYPE="image" SRC="url" NAME="name", ALT="string">
+    # <INPUT TYPE="image" SRC="url" NAME="name" ALT="string">
 
   image_button({ "SRC" => "url", "ATL" => "strng" })
     # <INPUT TYPE="image" SRC="url" ALT="string">
@@ -1393,10 +1393,10 @@ The hash keys are case sensitive. Ask the samples.
 =begin
 === IMG ELEMENT
   img("src", "alt", 100, 50)
-    # <IMG SRC="src" ALT="alt" WIDTH="100", HEIGHT="50">
+    # <IMG SRC="src" ALT="alt" WIDTH="100" HEIGHT="50">
 
   img({ "SRC" => "src", "ALT" => "alt", "WIDTH" => 100, "HEIGHT" => 50 })
-    # <IMG SRC="src" ALT="alt" WIDTH="100", HEIGHT="50">
+    # <IMG SRC="src" ALT="alt" WIDTH="100" HEIGHT="50">
 =end
     def img(src = "", alt = "", width = nil, height = nil)
       attributes = if src.kind_of?(String)
@@ -1450,7 +1450,7 @@ The hash keys are case sensitive. Ask the samples.
     # <INPUT TYPE="password" NAME="name" VALUE="value" SIZE="40">
 
   password_field("password", "value", 80, 200)
-    # <INPUT TYPE="password" NAME="name" VALUE="value", SIZE="80", MAXLENGTH="200">
+    # <INPUT TYPE="password" NAME="name" VALUE="value" SIZE="80" MAXLENGTH="200">
 
   password_field({ "NAME" => "name", "VALUE" => "value" })
     # <INPUT TYPE="password" NAME="name" VALUE="value">
@@ -1536,10 +1536,10 @@ The hash keys are case sensitive. Ask the samples.
 =begin
 === RADIO_BUTTON
   radio_button("name", "value")
-    # <INPUT TYPE="radio" NAME="name", VALUE="value">
+    # <INPUT TYPE="radio" NAME="name" VALUE="value">
 
   radio_button("name", "value", true)
-    # <INPUT TYPE="radio" NAME="name", VALUE="value", CHECKED>
+    # <INPUT TYPE="radio" NAME="name" VALUE="value" CHECKED>
 
   radio_button({ "NAME" => "name", "VALUE" => "value", "ID" => "foo" })
     # <INPUT TYPE="radio" NAME="name" VALUE="value" ID="foo">
@@ -1565,12 +1565,12 @@ The hash keys are case sensitive. Ask the samples.
 
   radio_group("name", ["foo"], ["bar", true], "baz")
     # <INPUT TYPE="radio" NAME="name" VALUE="foo">foo
-    # <INPUT TYPE="radio" SELECTED NAME="name" VALUE="bar">bar
+    # <INPUT TYPE="radio" CHECKED NAME="name" VALUE="bar">bar
     # <INPUT TYPE="radio" NAME="name" VALUE="baz">baz
 
   radio_group("name", ["1", "Foo"], ["2", "Bar", true], "Baz")
     # <INPUT TYPE="radio" NAME="name" VALUE="1">Foo
-    # <INPUT TYPE="radio" SELECTED NAME="name" VALUE="2">Bar
+    # <INPUT TYPE="radio" CHECKED NAME="name" VALUE="2">Bar
     # <INPUT TYPE="radio" NAME="name" VALUE="Baz">Baz
 
   radio_group({ "NAME" => "name",
@@ -1672,10 +1672,10 @@ The hash keys are case sensitive. Ask the samples.
     # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="40">
 
   text_field("name", "value", 80)
-    # <INPUT TYPE="text" NAME="name" VALUE="value", SIZE="80">
+    # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="80">
 
   text_field("name", "value", 80, 200)
-    # <INPUT TYPE="text" NAME="name" VALUE="value", SIZE="80", MAXLENGTH="200">
+    # <INPUT TYPE="text" NAME="name" VALUE="value" SIZE="80" MAXLENGTH="200">
 
   text_field({ "NAME" => "name", "VALUE" => "value" })
     # <INPUT TYPE="text" NAME="name" VALUE="value">

@@ -353,9 +353,8 @@ static VALUE
 undef_getter(id)
     ID id;
 {
-    if (ruby_verbose) {
-	rb_warning("global variable `%s' not initialized", rb_id2name(id));
-    }
+    rb_warning("global variable `%s' not initialized", rb_id2name(id));
+
     return Qnil;
 }
 
@@ -945,9 +944,8 @@ rb_ivar_get(obj, id)
 	    return generic_ivar_get(obj, id);
 	break;
     }
-    if (ruby_verbose) {
-	rb_warning("instance variable %s not initialized", rb_id2name(id));
-    }
+    rb_warning("instance variable %s not initialized", rb_id2name(id));
+
     return Qnil;
 }
 
@@ -1461,11 +1459,11 @@ rb_cvar_set(klass, id, val, warn)
 	    if (OBJ_FROZEN(tmp)) rb_error_frozen("class/module");
 	    if (!OBJ_TAINTED(tmp) && rb_safe_level() >= 4)
 		rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
-	    if (warn && ruby_verbose && klass != tmp) {
+	    if (warn && RTEST(ruby_verbose) && klass != tmp) {
 		rb_warning("already initialized class variable %s", rb_id2name(id));
 	    }
 	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
-	    if (ruby_verbose) {
+	    if (RTEST(ruby_verbose)) {
 		cvar_override_check(id, tmp);
 	    }
 	    return;
@@ -1488,7 +1486,7 @@ rb_cvar_get(klass, id)
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl) {
 	    if (st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
-		if (ruby_verbose) {
+		if (RTEST(ruby_verbose)) {
 		    cvar_override_check(id, tmp);
 		}
 		return value;
