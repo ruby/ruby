@@ -1,3 +1,7 @@
+Sun Oct  6 06:11:19 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* eval.c (rb_load): should not pass block to the loaded file.
+
 Fri Oct  4 14:23:08 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RUBY_PROG_GNU_LD): check whether the linker is GNU ld.

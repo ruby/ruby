@@ -5242,6 +5242,7 @@ rb_load(fname, wrap)
 	rb_extend_object(self, ruby_class);
 	PUSH_CREF(ruby_wrapper);
     }
+    PUSH_ITER(ITER_NOT);
     PUSH_FRAME();
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
@@ -5275,6 +5276,7 @@ rb_load(fname, wrap)
     ruby_cref = saved_cref;
     POP_SCOPE();
     POP_FRAME();
+    POP_ITER();
     POP_CLASS();
     POP_VARS();
     ruby_wrapper = wrapper;
