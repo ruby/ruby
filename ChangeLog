@@ -1,3 +1,17 @@
+Wed Dec  1 09:47:33 1999  Kazunori NISHI  <kazunori@swlab.csce.kyushu-u.ac.jp>
+
+	* string.c (rb_str_split_method): should increment end too.
+
+Tue Nov 30 01:46:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_source): generated source string must be tainted if
+	  regex is tainted.
+
+	* file.c (rb_file_s_basename): basename should not be tainted
+	  unless the original path is tainted.
+
+	* file.c (rb_file_s_dirname): ditto.
+
 Mon Nov 29 15:28:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c (rb_path2class): evaluated value from path should be

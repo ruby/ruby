@@ -275,7 +275,9 @@ static VALUE
 rb_reg_source(re)
     VALUE re;
 {
-    return rb_str_new(RREGEXP(re)->str,RREGEXP(re)->len);
+    VALUE str = rb_str_new(RREGEXP(re)->str,RREGEXP(re)->len);
+    if (OBJ_TAINTED(re)) OBJ_TAINT(str);
+    return str;
 }
 
 static VALUE

@@ -2065,7 +2065,7 @@ rb_str_split_method(argc, argv, str)
 		    if (!NIL_P(limit) && lim <= ++i) break;
 		}
 		end++;
-		if (ismbchar(*ptr)) ptr++;
+		if (ismbchar(*ptr)) {ptr++; end++;}
 	    }
 	}
     }

@@ -20,7 +20,7 @@ typedef unsigned short USHORT;
 #define BIGRAD (1L << BITSPERDIG)
 #define DIGSPERINT ((unsigned int)(sizeof(long)/sizeof(short)))
 #define BIGUP(x) ((unsigned long)(x) << BITSPERDIG)
-#define BIGDN(x) (((x)<0) ? ~((~(x))>>BITSPERDIG) : (x)>>BITSPERDIG)
+#define BIGDN(x) RSHIFT(x,BITSPERDIG)
 #define BIGLO(x) ((USHORT)((x) & (BIGRAD-1)))
 
 static VALUE
