@@ -3,6 +3,11 @@ Sun Aug 24 01:02:48 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* file.c (file_expand_path): performance improvement.
 	  [ruby-talk:79748]
 
+Sat Aug 23 23:41:16 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_s_expand_path): avoid calling rb_scan_args() for
+	  apparent cases. [ruby-talk:79748]
+
 Sat Aug 23 18:56:53 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/nkf/nkf.c (rb_nkf_putchar): should use rb_str_resize() to just

@@ -1758,6 +1758,10 @@ rb_file_s_expand_path(argc, argv)
     VALUE *argv;
 {
     VALUE fname, dname;
+
+    if (argc == 1) {
+	return rb_file_expand_path(argv[0], Qnil);
+    }
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
     return rb_file_expand_path(fname, dname);

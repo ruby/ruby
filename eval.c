@@ -4256,16 +4256,13 @@ VALUE
 rb_yield_splat(values)
     VALUE values;
 {
-    VALUE tmp;
     int avalue = Qfalse;
 
-    tmp = rb_check_array_type(values);
-    if (!NIL_P(tmp)) {
-	if (RARRAY(tmp)->len == 0) {
+    if (TYPE(values) == T_ARRAY) {
+	if (RARRAY(values)->len == 0) {
 	    values = Qundef;
 	}
 	else {
-	    values = tmp;
 	    avalue = Qtrue;
 	}
     }
