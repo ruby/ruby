@@ -80,7 +80,7 @@ int eaccess();
 #endif
 
 #ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) ||  (defined(__NetBSD__) && (!defined(__alpha__) && !defined(__mips__))) || defined(__BORLANDC__) || (defined(__FreeBSD__) && __FreeBSD__ < 3) || defined(NeXT) || defined(__WATCOMC__) || defined(__APPLE__)
+# if defined(__hp9000s300) ||  (defined(__NetBSD__) && (!defined(__alpha__) && !defined(__mips__))) || defined(__BORLANDC__) || (defined(__FreeBSD__) && __FreeBSD__ < 3) || defined(__OpenBSD__) || defined(NeXT) || defined(__WATCOMC__) || defined(__APPLE__)
 #  define FUNCNAME_PATTERN "_Init_%.200s"
 # else
 #  define FUNCNAME_PATTERN "Init_%.200s"
