@@ -8,17 +8,23 @@ require 'tk'
 require 'tkextlib/setup.rb'
 
 # call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tktrans/setup.rb'
 
 TkPackage.require('tktrans') rescue Tk.load_tcllibrary('tktrans')
 
-class TkWindow
-  begin
-    TkTrans_VERSION = TkPackage.require('tktrans')
-  rescue
-    TkTrans_VERSION = nil
+module Tk
+  module TkTrans
+    def self.package_version
+      begin
+	TkPackage.require('tktrans')
+      rescue
+	''
+      end
+    end
   end
+end
 
+class TkWindow
   def tktrans_set_image(img)
     tk_send('tktrans::setwidget', @path, img)
     self

@@ -88,11 +88,15 @@ class TkText<TkTextWin
   end
 
   def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('text', @path, *hash_kv(keys, true))
-    else
-      tk_call_without_enc('text', @path)
-    end
+    #if keys and keys != None
+    #  #tk_call_without_enc('text', @path, *hash_kv(keys, true))
+    #  tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+    #			  *hash_kv(keys, true))
+    #else
+    #  #tk_call_without_enc('text', @path)
+    #  tk_call_without_enc(self.class::TkCommandNames[0], @path)
+    #end
+    super(keys)
     init_instance_variable
   end
   private :create_self
@@ -131,7 +135,8 @@ class TkText<TkTextWin
       || tag.kind_of?(TkTextWindow)
       tag.id
     else
-      tag
+      # tag
+      _get_eval_string(tag)
     end
   end
   private :tagid

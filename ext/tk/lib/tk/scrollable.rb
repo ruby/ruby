@@ -52,8 +52,8 @@ module Tk
 	@xscrollbar.orient 'horizontal'
 	self.xscrollcommand {|*arg| @xscrollbar.set(*arg)}
 	@xscrollbar.command {|*arg| self.xview(*arg)}
+	Tk.update  # avoid scrollbar trouble
       end
-      Tk.update  # avoid scrollbar trouble
       @xscrollbar
     end
     def yscrollbar(bar=nil)
@@ -62,8 +62,8 @@ module Tk
 	@yscrollbar.orient 'vertical'
 	self.yscrollcommand {|*arg| @yscrollbar.set(*arg)}
 	@yscrollbar.command {|*arg| self.yview(*arg)}
+	Tk.update  # avoid scrollbar trouble
       end
-      Tk.update  # avoid scrollbar trouble
       @yscrollbar
     end
   end

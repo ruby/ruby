@@ -8,12 +8,7 @@
 
 require 'tk'
 require 'tk/canvas'
-
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('tkpiechart', '6.6')
 TkPackage.require('tkpiechart')
@@ -26,6 +21,14 @@ module Tk
 end
 
 module Tk::Tcllib::Tkpiechart
+  def self.package_version
+    begin
+      TkPackage.require('tkpiechart')
+    rescue
+      ''
+    end
+  end
+
   module ConfigMethod
     include TkConfigMethod
 

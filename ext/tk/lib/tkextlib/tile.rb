@@ -9,10 +9,7 @@ require 'tk'
 require 'tkextlib/setup.rb'
 
 # library directory
-dir = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}$/, '')
-
-# call setup script
-require File.join(dir, 'setup.rb')
+require 'tkextlib/tile/setup.rb'
 
 # load package
 # TkPackage.require('tile', '0.4')
@@ -21,6 +18,14 @@ TkPackage.require('tile')
 # autoload
 module Tk
   module Tile
+    def self.package_version
+      begin
+	TkPackage.require('tile')
+      rescue
+	''
+      end
+    end
+
     module TileWidget
       def instate(state, script=nil, &b)
 	if script
@@ -41,33 +46,22 @@ module Tk
       end
     end
 
+    ######################################
 
-    # library directory
-    dir = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}$/, '')
+    autoload :TButton,       'tkextlib/tile/tbutton'
 
-    #autoload :TButton,       'tkextlib/tile/tbutton'
-    autoload :TButton,       File.join(dir, 'tbutton')
+    autoload :TCheckButton,  'tkextlib/tile/tcheckbutton'
+    autoload :TCheckbutton,  'tkextlib/tile/tcheckbutton'
 
-    #autoload :TCheckButton,  'tkextlib/tile/tcheckbutton'
-    #autoload :TCheckbutton,  'tkextlib/tile/tcheckbutton'
-    autoload :TCheckButton,  File.join(dir, 'tcheckbutton')
-    autoload :TCheckbutton,  File.join(dir, 'tcheckbutton')
+    autoload :TLabel,        'tkextlib/tile/tlabel'
 
-    #autoload :TLabel,        'tkextlib/tile/tlabel'
-    autoload :TLabel,        File.join(dir, 'tlabel')
+    autoload :TMenubutton,   'tkextlib/tile/tmenubutton'
 
-    #autoload :TMenubutton,   'tkextlib/tile/tmenubutton'
-    autoload :TMenubutton,   File.join(dir, 'tmenubutton')
+    autoload :TNotebook,     'tkextlib/tile/tnotebook'
 
-    #autoload :TNotebook,     'tkextlib/tile/tnotebook'
-    autoload :TNotebook,     File.join(dir, 'tnotebook')
+    autoload :TRadioButton,  'tkextlib/tile/tradiobutton'
+    autoload :TRadiobutton,  'tkextlib/tile/tradiobutton'
 
-    #autoload :TRadioButton,  'tkextlib/tile/tradiobutton'
-    #autoload :TRadiobutton,  'tkextlib/tile/tradiobutton'
-    autoload :TRadioButton,  File.join(dir, 'tradiobutton')
-    autoload :TRadiobutton,  File.join(dir, 'tradiobutton')
-
-    #autoload :Style,         'tkextlib/tile/style'
-    autoload :Style,         File.join(dir, 'style')
+    autoload :Style,         'tkextlib/tile/style'
   end
 end

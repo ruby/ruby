@@ -1,3 +1,13 @@
+2004-07-06  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* support BWidget extension
+
+	* add BWidget extension demo
+
+	* add ICONS extension demo
+
+	* many bug fix 
+
 2004-07-01  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* 1st release of tkextlib ( to support Tcl/Tk extensions )

@@ -8,33 +8,34 @@ require 'tk'
 # call setup script for general 'tkextlib' libraries
 require 'tkextlib/setup.rb'
 
-# library directory
-dir = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}$/, '')
-
 # call setup script
-require File.join(dir, 'setup.rb')
+require 'tkextlib/vu/setup.rb'
 
 # load package
 # TkPackage.require('vu', '2.1')
-#TkPackage.require('vu')
+TkPackage.require('vu')
 
 # autoload
 module Tk
   module Vu
-    # load package
-    # VERSION = TkPackage.require('vu', '2.1')
-    VERSION = TkPackage.require('vu')
+    def self.package_version
+      begin
+	TkPackage.require('vu')
+      rescue
+	''
+      end
+    end
 
-    dir = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}$/, '')
+    ##########################################
 
-    autoload :Dial,          File.join(dir, 'dial')
+    autoload :Dial,          'tkextlib/vu/dial'
 
-    autoload :Pie,           File.join(dir, 'pie')
-    autoload :PieSlice,      File.join(dir, 'pie')
-    autoload :NamedPieSlice, File.join(dir, 'pie')
+    autoload :Pie,           'tkextlib/vu/pie'
+    autoload :PieSlice,      'tkextlib/vu/pie'
+    autoload :NamedPieSlice, 'tkextlib/vu/pie'
 
-    autoload :Spinbox,       File.join(dir, 'spinbox')
+    autoload :Spinbox,       'tkextlib/vu/spinbox'
 
-    autoload :Bargraph,      File.join(dir, 'bargraph')
+    autoload :Bargraph,      'tkextlib/vu/bargraph'
   end
 end

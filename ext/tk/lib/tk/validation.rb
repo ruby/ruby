@@ -158,6 +158,15 @@ module TkValidation
       ]
 
       _setup_subst_table(KEY_TBL, PROC_TBL);
+
+      def self.ret_val(val)
+	(val)? '1': '0'
+      end
+
+      #def self._get_extra_args_tbl
+      #  # return an array of convert procs
+      #  []
+      #end
     end
 
     ##############################
@@ -168,6 +177,8 @@ module TkValidation
     end
 
     def _initialize_for_cb_class(klass, cmd = Proc.new, *args)
+      extra_args_tbl = klass._get_extra_args_tbl
+
       if args.compact.size > 0
 	args = args.join(' ')
 	keys = klass._get_subst_key(args)
@@ -177,7 +188,11 @@ module TkValidation
 	  @id = install_cmd(cmd)
 	else
 	  @id = install_cmd(proc{|*arg|
-	     (cmd.call(*klass.scan_args(keys, arg)))? '1':'0'
+	     ex_args = []
+	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(args.pop)}
+	     klass.ret_val(cmd.call(
+               *(ex_args.concat(klass.scan_args(keys, arg)))
+             ))
 	  }) + ' ' + args
 	end
       else
@@ -188,9 +203,11 @@ module TkValidation
 	  @id = install_cmd(cmd)
 	else
 	  @id = install_cmd(proc{|*arg|
-	     (cmd.call(
-                klass.new(*klass.scan_args(keys,arg)))
-             )? '1': '0'
+	     ex_args = []
+	     extra_args_tbl.reverse_each{|conv| ex_args << conv.call(args.pop)}
+	     klass.ret_val(cmd.call(
+               *(ex_args << klass.new(*klass.scan_args(keys,arg)))
+	     ))
 	  }) + ' ' + args
 	end
       end

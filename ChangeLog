@@ -1,3 +1,8 @@
+Tue Jul  6 18:38:45 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib : improve framework of developping Tcl/Tk extension 
+	  wrappers
+
 Mon Jul  5 23:56:42 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/{trackback,syndication,dublincore,content}.rb: worked

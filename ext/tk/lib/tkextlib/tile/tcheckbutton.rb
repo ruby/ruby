@@ -3,12 +3,15 @@
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 require 'tk'
+require 'tkextlib/tile.rb'
 
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script  --  <libdir>/tkextlib/tile.rb
-require(File.dirname(File.expand_path(__FILE__)) + '.rb')
+module Tk
+  module Tile
+    class TCheckButton < TkCheckButton
+    end
+    TCheckbutton = TCheckButton
+  end
+end
 
 class Tk::Tile::TCheckButton < TkCheckButton
   include Tk::Tile::TileWidget
@@ -25,9 +28,4 @@ class Tk::Tile::TCheckButton < TkCheckButton
     end
   end
   private :create_self
-end
-module Tk
-  module Tile
-    TCheckbutton = TCheckButton
-  end
 end

@@ -9,21 +9,27 @@ require 'tk'
 require 'tkextlib/setup.rb'
 
 # call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tkHTML/setup.rb'
 
 # TkPackage.require('Tkhtml', '2.0')
 TkPackage.require('Tkhtml')
 
 module Tk
   class HTML_Widget < TkWindow
+    def self.package_version
+      begin
+	TkPackage.require('Tkhtml')
+      rescue
+	''
+      end
+    end
+
     class ClippingWindow < TkWindow
     end
   end
 end
 
 class Tk::HTML_Widget::ClippingWindow
-  extend TkUtil
-
   WidgetClassName = 'HtmlClip'.freeze
   WidgetClassNames[WidgetClassName] = self
 
@@ -32,7 +38,7 @@ class Tk::HTML_Widget::ClippingWindow
 
   def self.new(parent, keys={})
     if parent.kind_of?(Hash)
-      keys = _symbolkey2str(parent)
+      keys = TkComm._symbolkey2str(parent)
       parent = keys.delete('parent')
     end
 

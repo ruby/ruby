@@ -8,16 +8,24 @@ require 'tk'
 # call setup script for general 'tkextlib' libraries
 require 'tkextlib/setup.rb'
 
-# library directory
-dir = File.expand_path(__FILE__).sub(/#{File.extname(__FILE__)}$/, '')
-
 # call setup script
-require File.join(dir, 'setup.rb')
+require 'tkextlib/tkimg/setup.rb'
 
 # load all image format handlers
 #TkPackage.require('Img', '1.3')
 TkPackage.require('Img')
 
+module Tk
+  module Img
+    def self.package_version
+      begin
+	TkPackage.require('Img')
+      rescue
+	''
+      end
+    end
+  end
+end
+
 # autoload
-#autoload :TkPixmapImage, 'tkextlib/tkimg/pixmap'
-autoload :TkPixmapImage, File.join(dir, 'pixmap')
+autoload :TkPixmapImage, 'tkextlib/tkimg/pixmap'

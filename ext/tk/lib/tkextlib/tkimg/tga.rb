@@ -8,7 +8,21 @@ require 'tk'
 require 'tkextlib/setup.rb'
 
 # call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tkimg/setup.rb'
 
 # TkPackage.require('img::tga', '1.3')
 TkPackage.require('img::tga')
+
+module Tk
+  module Img
+    module TGA
+      def self.package_version
+	begin
+	  TkPackage.require('img::tga')
+	rescue
+	  ''
+	end
+      end
+    end
+  end
+end

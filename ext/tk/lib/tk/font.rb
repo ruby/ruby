@@ -197,7 +197,7 @@ class TkFont
 
   def TkFont.init_widget_font(pathname, *args)
     win, tag, key = pathname.split(';')
-    key = 'font' unless key
+    key = 'font' if key == nil || key == ''
     path = [win, tag, key].join(';')
 
     case (Tk::TK_VERSION)
@@ -868,7 +868,7 @@ class TkFont
 	begin
 	  if w.include?(';')
 	    win, tag, optkey = w.split(';')
-	    optkey = 'font' unless optkey
+	    optkey = 'font' if optkey == nil || optkey == ''
 	    winobj = tk_tcl2ruby(win)
 #	    winobj.tagfont_configure(tag, {'font'=>@latinfont})
 	    if winobj.kind_of? TkText

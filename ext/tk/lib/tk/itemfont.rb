@@ -28,7 +28,7 @@ module TkTreatItemFont
       fail ArgumentError, "unknown font option name `#{key}'"
     end
 
-    win, tag = __item_pathname(tagid(tagOrId)).split(':')
+    win, tag = __item_pathname(tagid(tagOrId)).split(';')
 
     if key
       pathname = [win, tag, key].join(';')
@@ -130,7 +130,7 @@ module TkTreatItemFont
       fail ArgumentError, "unknown font option name `#{key}'"
     end
 
-    win, tag = __item_pathname(tagid(tagOrId)).split(':')
+    win, tag = __item_pathname(tagid(tagOrId)).split(';')
 
     optkeys = [key] if key
 
@@ -181,7 +181,7 @@ module TkTreatItemFont
       fail ArgumentError, "unknown font option name `#{key}'"
     end
 
-    win, tag = __item_pathname(tagid(tagOrId)).split(':')
+    win, tag = __item_pathname(tagid(tagOrId)).split(';')
 
     optkeys = [key] if key
 

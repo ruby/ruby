@@ -11,13 +11,13 @@ class TkSpinbox<TkEntry
   WidgetClassName = 'Spinbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
-  def create_self(keys)
-    tk_call_without_enc('spinbox', @path)
-    if keys and keys != None
-      configure(keys)
-    end
-  end
-  private :create_self
+  #def create_self(keys)
+  #  tk_call_without_enc('spinbox', @path)
+  #  if keys and keys != None
+  #    configure(keys)
+  #  end
+  #end
+  #private :create_self
 
   def identify(x, y)
     tk_send_without_enc('identify', x, y)

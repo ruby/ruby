@@ -34,7 +34,8 @@ module TkOptionDB
   def readfile(file, pri=None)
     tk_call('option', 'readfile', file, pri)
   end
-  module_function :add, :clear, :get, :readfile
+  alias read_file readfile
+  module_function :add, :clear, :get, :readfile, :read_file
 
   def read_entries(file, f_enc=nil)
     if TkCore::INTERP.safe?

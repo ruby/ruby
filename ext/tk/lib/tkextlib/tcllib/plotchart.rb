@@ -58,12 +58,7 @@
 #
 
 require 'tk'
-
-# call setup script for general 'tkextlib' libraries
-require 'tkextlib/setup.rb'
-
-# call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('Plotchart', '0.9')
 TkPackage.require('Plotchart')
@@ -71,6 +66,13 @@ TkPackage.require('Plotchart')
 module Tk
   module Tcllib
     module Plotchart
+      def self.package_version
+	begin
+	  TkPackage.require('Plotchart')
+	rescue
+	  ''
+	end
+      end
     end
   end
 end
@@ -122,7 +124,7 @@ module Tk::Tcllib::Plotchart
 
   ############################
   module ChartMethod
-    include TkUtil
+    include TkCore
 
     def title(str)
       tk_call_without_enc(@chart, 'title', _get_eval_enc_str(str))

@@ -178,9 +178,12 @@ module Tk
 	self
       end
     end
-    def protocol(name=nil, cmd=nil)
+    def protocol(name=nil, cmd=nil, &b)
       if cmd
 	tk_call_without_enc('wm', 'protocol', path, name, cmd)
+	self
+      elsif b
+	tk_call_without_enc('wm', 'protocol', path, name, proc(&b))
 	self
       elsif name
 	result = tk_call_without_enc('wm', 'protocol', path, name)

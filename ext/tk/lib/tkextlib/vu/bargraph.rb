@@ -12,8 +12,9 @@ module Tk
   end
 end
 
+
 # call setup script  --  <libdir>/tkextlib/vu.rb
-require(File.dirname(File.expand_path(__FILE__)) + '.rb')
+require 'tkextlib/vu.rb'
 
 class Tk::Vu::Bargraph < TkWindow
   TkCommandNames = ['::vu::bargraph'.freeze].freeze

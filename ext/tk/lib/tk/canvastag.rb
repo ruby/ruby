@@ -316,7 +316,8 @@ end
 
 class TkcGroup<TkcTag
   Tk_cGroup_ID = ['tkcg'.freeze, '00000'.taint].freeze
-  def create_self(parent, *args)
+  #def create_self(parent, *args)
+  def initialize(parent, *args)
     unless parent.kind_of?(TkCanvas)
       fail ArguemntError, "expect TkCanvas for 1st argument"
     end
@@ -329,7 +330,7 @@ class TkcGroup<TkcTag
     Tk_cGroup_ID[1].succ!
     add(*args) if args != []
   end
-  private :create_self
+  #private :create_self
   
   def include(*tags)
     for i in tags

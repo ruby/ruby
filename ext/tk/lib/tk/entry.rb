@@ -16,14 +16,13 @@ class TkEntry<TkLabel
   WidgetClassName = 'Entry'.freeze
   WidgetClassNames[WidgetClassName] = self
 
-
-  def create_self(keys)
-    tk_call_without_enc('entry', @path)
-    if keys and keys != None
-      configure(keys)
-    end
-  end
-  private :create_self
+  #def create_self(keys)
+  #  tk_call_without_enc('entry', @path)
+  #  if keys and keys != None
+  #    configure(keys)
+  #  end
+  #end
+  #private :create_self
 
   def bbox(index)
     list(tk_send_without_enc('bbox', index))

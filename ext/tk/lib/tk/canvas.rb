@@ -40,20 +40,21 @@ class TkCanvas<TkWindow
     TkcItem::CItemID_TBL.delete(@path)
   end
 
-  def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('canvas', @path, *hash_kv(keys, true))
-    else
-      tk_call_without_enc('canvas', @path)
-    end
-  end
-  private :create_self
+  #def create_self(keys)
+  #  if keys and keys != None
+  #    tk_call_without_enc('canvas', @path, *hash_kv(keys, true))
+  #  else
+  #    tk_call_without_enc('canvas', @path)
+  #  end
+  #end
+  #private :create_self
 
   def tagid(tag)
     if tag.kind_of?(TkcItem) || tag.kind_of?(TkcTag)
       tag.id
     else
-      tag
+      # tag
+      _get_eval_string(tag)
     end
   end
   private :tagid

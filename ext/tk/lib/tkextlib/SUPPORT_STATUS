@@ -47,32 +47,34 @@ script may give you some hints about that.
 ===< support with some examples (may be beta quality) >=======================
 
 Tcllib      http://sf.net/projects/tcllib
-              ==>  tcllib  (partial support; Tklib part only)
+              ==> tcllib  (partial support; Tklib part only)
+
+BWidgets    http://sf.net/projects/tcllib               ==> bwidget
 
 vu          http://tktable.sourceforge.net              ==> vu
 
-TkHTML      http://www.hwaci.com/sw/tkhtml/index.html   ==>  tkHTML
+TkHTML      http://www.hwaci.com/sw/tkhtml/index.html   ==> tkHTML
+
+ICONS       http://www.satisoft.com/tcltk/icons/        ==> ICONS
 
 
 
 ===< support (may be alpha or beta quality) >=================================
 
-TkImg       http://sf.net/projects/tkimg   ==>  tkimg
+TkImg       http://sf.net/projects/tkimg                ==>  tkimg
 
-TkTreeCtrl  http://tktreectrl.sourceforge.net/          ==>  treectrl
+TkTreeCtrl  http://tktreectrl.sourceforge.net/          ==> treectrl
 
-Tile        http://tktable.sourceforge.net/tile/        ==>  tile
+Tile        http://tktable.sourceforge.net/tile/        ==> tile
 
 
 
-===< possibly support (not tested; alpha quality) >===========================
+===< possibly available (not tested; alpha quality) >=========================
 
 TkTrans     http://www2.cmp.uea.ac.uk/~fuzz/tktrans/default.html
                ==>  tktrans (win32 only)
 
 TkDND       http://sourceforge.net/projects/tkdnd  ==> tkDND
-
-ICONS       http://www.satisoft.com/tcltk/icons/   ==> ICONS
 
 
 
@@ -86,8 +88,6 @@ IWidgets    http://sf.net/projects/incrTcl
 
 TkTable     http://sf.net/projects/tktable
                 * see http://www.korus.hu/~fery/ruby/tktable.rb
-
-BWidgets    http://sf.net/projects/tcllib
 
 winico      http://tktable.sourceforge.net
 

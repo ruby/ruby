@@ -9,7 +9,7 @@ require 'tk'
 require 'tkextlib/setup.rb'
 
 # call setup script
-require File.join(File.dirname(File.expand_path(__FILE__)), 'setup.rb')
+require 'tkextlib/tkDND/setup.rb'
 
 # TkPackage.require('shape', '0.3')
 TkPackage.require('shape')
@@ -17,9 +17,29 @@ TkPackage.require('shape')
 module Tk
   module TkDND
     module Shape
+=begin
+      def self.package_version
+	begin
+	  TkPackage.require('shape')
+	rescue
+	  ''
+	end
+      end
+=end
+      def self.package_version
+	Tk.tk_call('set', 'shape_version')
+      end
+      alias shape_version package_version
+
+      def self.package_patchlevel
+	Tk.tk_call('set', 'shape_patchlevel')
+      end
+      alias shape_patchlevel package_patchlevel
+
       def self.version
 	tk_call('shape', 'version')
       end
+      alias xshape_version version
 
       ############################
 
