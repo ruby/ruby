@@ -1,3 +1,9 @@
+Wed Jul  2 11:45:34 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: synchronize document with source code.
+
+	* lib/net/pop.rb: ditto.
+
 Wed Jul  2 11:39:50 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: unify SMTP and SMTPCommand.
