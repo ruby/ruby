@@ -1232,7 +1232,7 @@ rb_f_exec(argc, argv)
     e.argv = argv;
     e.prog = prog ? RSTRING(prog)->ptr : 0;
     rb_exec(&e);
-    rb_sys_fail(e.prog);
+    rb_sys_fail(prog ? e.prog : RSTRING(argv[0])->ptr);
     return Qnil;		/* dummy */
 }
 

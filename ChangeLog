@@ -1,6 +1,7 @@
-Thu Feb 26 02:19:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Feb 26 02:35:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* process.c (rb_f_exec): get rid of SEGV when exec failed.
+	* process.c (rb_f_exec): get rid of SEGV when exec failed for command
+	  in single string.
 
 Wed Feb 25 21:17:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
