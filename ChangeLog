@@ -1,3 +1,9 @@
+Sun Dec 28 00:46:25 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_class_comment):
+		  Some Ruby source uses lower-case class names for the
+		  Init_Xxx C function name.
+
 Sat Dec 27 23:41:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: fix "test: too many arguments" error.

@@ -185,7 +185,7 @@ module RDoc
     def find_class_comment(class_name, class_meth)
       comment = nil
       if @body =~ %r{((?>/\*.*?\*/\s+))
-                     (static\s+)?void\s+Init_#{class_name}\s*\(\)}xm
+                     (static\s+)?void\s+Init_#{class_name}\s*\(\)}xmi
         comment = $1
       elsif @body =~ %r{Document-(class|module):\s#{class_name}.*?\n((?>.*?\*/))}m
         comment = $2
@@ -332,6 +332,8 @@ module RDoc
         meth_obj.add_token(RubyToken::Token.new(1,1).set_text(body_text))
         meth_obj.comment = mangle_comment(comment)
         
+      else
+        $stderr.puts "No definition for #{meth_name}"
       end
     end
 
