@@ -2192,7 +2192,7 @@ p_gid_sw_ensure(id)
     int id;
 {
     under_gid_switch = 0;
-    rb_setegid_core(id);
+    return rb_setegid_core(id);
 }
 
 static VALUE
@@ -2236,7 +2236,7 @@ p_gid_sw_ensure(obj)
     VALUE obj;
 {
     under_gid_switch = 0;
-    p_gid_exchange(obj);
+    return p_gid_exchange(obj);
 }
 
 static VALUE
