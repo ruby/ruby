@@ -427,7 +427,17 @@ this margin are formatted verbatim.
 	<tt>:section:</tt> is used as the section heading, and the
 	remainder of the comment containing the section is used as
 	introductory text. Subsequent methods, aliases, attributes,
-	and classes will be documented in this section.
+	and classes will be documented in this section. A :section:
+	comment block may have one or more lines before the :section:
+	directive. These will be removed, and any identical lines at
+	the end of the block are also removed. This allows you to add
+	visual cues such as
+
+           # ----------------------------------------
+	   # :section: My Section
+	   # This is the section that I wrote.
+	   # See it glisten in the noon-day sun.
+           # ----------------------------------------
 
     [<tt>call-seq:</tt>]
         lines up to the next blank line in the comment are treated as

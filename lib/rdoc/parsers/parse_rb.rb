@@ -2312,7 +2312,7 @@ module RDoc
         when "section"
           context.set_current_section(param, comment)
           comment.clear
-          break
+          break 
         else
           warn "Unrecognized directive '#{directive}'"
           break
