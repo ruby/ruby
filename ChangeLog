@@ -1,3 +1,8 @@
+Thu Dec 25 05:08:09 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (search_required): search actual file name once when no
+	  extension specified.
+
 Thu Dec 25 04:00:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.8.1 released.

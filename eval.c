@@ -6084,6 +6084,7 @@ search_required(fname, featurep, path)
 {
     VALUE tmp;
     char *ext, *ftptr;
+    int type;
 
     *featurep = fname;
     *path = 0;
@@ -6116,24 +6117,22 @@ search_required(fname, featurep, path)
 	    if (*path = rb_find_file(fname)) return 's';
 	}
     }
-    if ((ext = rb_feature_p(ftptr, 0, Qfalse)) != 0) {
-	return strcmp(ext, ".rb") == 0 ? 'r' : 's';
-    }
     tmp = fname;
-    switch (rb_find_file_ext(&tmp, loadable_ext)) {
+    switch (type = rb_find_file_ext(&tmp, loadable_ext)) {
       case 0:
+	if ((ext = rb_feature_p(ftptr, 0, Qfalse))) {
+	    type = strcmp(".rb", ext);
+	    break;
+	}
 	return 0;
-
-      case 1:
-	*featurep = tmp;
-	*path = rb_find_file(tmp);
-	return 'r';
 
       default:
 	*featurep = tmp;
+	ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+	if (rb_feature_p(ftptr, ext, !--type)) break;
 	*path = rb_find_file(tmp);
-	return 's';
     }
+    return type ? 's' : 'r';
 }
 
 static void
