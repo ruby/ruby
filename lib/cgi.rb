@@ -1,10 +1,10 @@
 =begin
 
-== CGI SUPPORT LIBRARY
+== NAME
 
-cgi.rb
+cgi.rb - cgi support library
 
-Version 1.7.0
+Version 2.0.0
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
@@ -176,6 +176,7 @@ HTTP_REFERER HTTP_USER_AGENT
 
 =end
 
+raise "Please, use ruby1.5.4 or later." if RUBY_VERSION < "1.5.4"
 
 require 'English'
 
@@ -184,10 +185,10 @@ class CGI
   CR  = "\015"
   LF  = "\012"
   EOL = CR + LF
-  VERSION = "1.7.0"
-  RELEASE_DATE = "2000-06-19"
-  VERSION_CODE = 170
-  RELEASE_CODE = 20000619
+  VERSION = "2.0.0"
+  RELEASE_DATE = "2000-09-12"
+  VERSION_CODE = 200
+  RELEASE_CODE = 20000912
 
   NEEDS_BINMODE = true if /WIN/ni === RUBY_PLATFORM
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
@@ -239,13 +240,9 @@ class CGI
   url_encoded_string = CGI::escape("string")
 =end
   def CGI::escape(string)
-    string.gsub(/([^a-zA-Z0-9_.-])/n) do
-      if " " == $1
-        "+"
-      else
-        sprintf("%%%02X", $1.unpack("C")[0])
-      end
-    end
+    string.gsub(/([^ a-zA-Z0-9_.-]+)/n) do
+      '%' + $1.unpack('H2' * $1.size).join('%').upcase
+    end.tr(' ', '+')
   end
 
 
@@ -254,8 +251,8 @@ class CGI
   string = CGI::unescape("url encoded string")
 =end
   def CGI::unescape(string)
-    string.gsub(/\+/n, ' ').gsub(/%([0-9a-fA-F]{2})/n) do
-      [$1.hex].pack("c")
+    string.tr('+', ' ').gsub(/((?:%[0-9a-fA-F]{2})+)/n) do
+      [$1.delete('%')].pack('H*')
     end
   end
 
@@ -285,13 +282,24 @@ class CGI
         if Integer($1) < 256
           Integer($1).chr
         else
-          if $KCODE[0] == ?u or $KCODE[0] == ?U
+          if Integer($1) < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
             [Integer($1)].pack("U")
           else
-            "#" + $1
+            "&##{$1};"
           end
         end
-      when /\A#x([0-9a-f]+)\z/ni then $1.hex.chr
+      when /\A#x([0-9a-f]+)\z/ni then
+        if $1.hex < 256
+          $1.hex.chr
+        else
+          if $1.hex < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
+            [$1.hex].pack("U")
+          else
+            "&#x#{$1};"
+          end
+        end
+      else
+        "&#{$1};"
       end
     end
   end
@@ -299,15 +307,19 @@ class CGI
 
 =begin
 === ESCAPE ELEMENT
-  print CGI::escapeElement("<BR><A HREF="url"></A>", "A", "IMG")
+  print CGI::escapeElement('<BR><A HREF="url"></A>', "A", "IMG")
     # "<BR>&lt;A HREF="url"&gt;&lt;/A&gt"
 
-  print CGI::escapeElement("<BR><A HREF="url"></A>", ["A", "IMG"])
+  print CGI::escapeElement('<BR><A HREF="url"></A>', ["A", "IMG"])
     # "<BR>&lt;A HREF="url"&gt;&lt;/A&gt"
 =end
   def CGI::escapeElement(string, *element)
-    string.gsub(/<\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?>/ni) do
-      CGI::escapeHTML($&)
+    unless element.empty?
+      string.gsub(/<\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?>/ni) do
+        CGI::escapeHTML($&)
+      end
+    else
+      string
     end
   end
 
@@ -315,11 +327,11 @@ class CGI
 =begin
 === UNESCAPE ELEMENT
   print CGI::unescapeElement(
-          CGI::escapeHTML("<BR><A HREF="url"></A>"), "A", "IMG")
+          CGI::escapeHTML('<BR><A HREF="url"></A>'), "A", "IMG")
     # "&lt;BR&gt;<A HREF="url"></A>"
 
   print CGI::unescapeElement(
-          CGI::escapeHTML("<BR><A HREF="url"></A>"), ["A", "IMG"])
+          CGI::escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
     # "&lt;BR&gt;<A HREF="url"></A>"
 =end
   def CGI::unescapeElement(string, *element)
@@ -332,11 +344,11 @@ class CGI
 =begin
 === MAKE RFC1123 DATE STRING
   CGI::rfc1123_date(Time.now)
-    # Sut, 1 Jan 2000 00:00:00 GMT
+    # Sat, 1 Jan 2000 00:00:00 GMT
 =end
   def CGI::rfc1123_date(time)
     t = time.clone.gmtime
-    return format("%s, %.2d %s %d %.2d:%.2d:%.2d GMT",
+    return format("%s, %d %s %d %.2d:%.2d:%.2d GMT",
                 RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
                 t.hour, t.min, t.sec)
   end
@@ -1732,7 +1744,7 @@ convert string charset, and set language to "ja".
   module Html4
 
     def doctype
-      %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd">|
+      %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">|
     end
 
     def element_init
@@ -1778,7 +1790,7 @@ convert string charset, and set language to "ja".
   module Html4Tr
 
     def doctype
-      %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN" "http://www.w3.org/TR/REC-html40/loose.dtd">|
+      %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">|
     end
 
     def element_init
@@ -1826,7 +1838,7 @@ convert string charset, and set language to "ja".
   module Html4Fr
 
     def doctype
-      %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Frameset//EN" "http://www.w3.org/TR/REC-html40/frameset.dtd">|
+      %|<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">|
     end
 
     def element_init
@@ -1907,6 +1919,21 @@ end
 =begin
 
 == HISTORY
+
+* Tue Sep 12 06:56:51 JST 2000 - wakou
+  * version 2.0.0
+  * require ruby1.5.4 or later. (ruby1.4 doesn't have block_given? method.)
+  * improvement: CGI::escape(), CGI::unescape().
+    thanks to WATANABE Hirofumi <eban@os.rim.or.jp>
+  * bug fix: CGI::escapeElement().
+  * improvement: CGI::unescapeHTML().
+    thanks to Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+
+* 2000/08/09 04:32:22 - matz
+  * improvement: CGI::pretty()
+
+* 2000/06/23 07:01:34 - matz
+  * change: iterator? --> block_given?
 
 * Sun Jun 18 23:31:44 JST 2000 - wakou
   * version 1.7.0

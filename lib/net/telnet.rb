@@ -1,10 +1,10 @@
 =begin
 
-== SIMPLE TELNET CLIENT LIBRARY
+== NAME
 
-net/telnet.rb
+net/telnet.rb - simple telnet client library
 
-Version 1.5.0
+Version 1.6.0
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -71,7 +71,7 @@ of cource, set sync=true or flush is necessary.
 
   line = host.cmd("string")
   line = host.cmd({"String" => "string",
-                   "Prompt" => /[$%#>] \z/n,
+                   "Match" => /[$%#>] \z/n,
                    "Timeout" => 10})
 
 
@@ -79,7 +79,7 @@ of cource, set sync=true or flush is necessary.
 
   host.cmd("string"){|c| print c }
   host.cmd({"String" => "string",
-            "Prompt" => /[$%#>] \z/n,
+            "Match" => /[$%#>] \z/n,
             "Timeout" => 10}){|c| print c }
 
 of cource, set sync=true or flush is necessary.
@@ -88,7 +88,17 @@ of cource, set sync=true or flush is necessary.
 === SEND STRING
 
   host.print("string")
-    # == host.write("string\n")
+  host.puts("string")
+
+Telnet#puts() adds "\n" to the last of "string".
+
+WARNING: Telnet#print() NOT adds "\n" to the last of "string", in the future.
+
+If "Telnetmode" option is true, then escape IAC code ("\xFF"). If
+"Binmode" option is false, then convert "\n" to EOL(end of line) code.
+
+If "WILL SGA" and "DO BIN", then EOL is CR. If "WILL SGA", then EOL is
+CR + NULL. If the other cases, EOL is CR + LF.
 
 
 === TOGGLE TELNET COMMAND INTERPRETATION
@@ -109,25 +119,19 @@ of cource, set sync=true or flush is necessary.
 
   host.login("username", "password")
   host.login({"Name" => "username",
-              "Password" => "password",
-              "Prompt" => /[$%#>] \z/n,
-              "Timeout" => 10})
+              "Password" => "password"})
 
 if no password prompt:
 
   host.login("username")
-  host.login({"Name" => "username",
-              "Prompt" => /[$%#>] \z/n,
-              "Timeout" => 10})
+  host.login({"Name" => "username"})
 
 
 ==== REALTIME OUTPUT
 
   host.login("username", "password"){|c| print c }
   host.login({"Name" => "username",
-              "Password" => "password",
-              "Prompt" => /[$%#>] \z/n,
-              "Timeout" => 10}){|c| print c }
+              "Password" => "password"}){|c| print c }
 
 of cource, set sync=true or flush is necessary.
 
@@ -235,10 +239,10 @@ module Net
     CR   = "\015"
     LF   = "\012"
     EOL  = CR + LF
-    VERSION = "1.5.0"
-    RELEASE_DATE = "2000-06-19"
-    VERSION_CODE = 150
-    RELEASE_CODE = 20000619
+    VERSION = "1.6.0"
+    RELEASE_DATE = "2000-09-12"
+    VERSION_CODE = 160
+    RELEASE_CODE = 20000912
 
     def initialize(options)
       @options = options
@@ -507,6 +511,10 @@ module Net
     end
 
     def print(string)
+      if $VERBOSE
+        $stderr.puts 'WARNING: Telnet#print("string") NOT adds "\n" to the last of "string", in the future.'
+        $stderr.puts '         cf. Telnet#puts().'
+      end
       string = string + "\n"
       string = string.gsub(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
 
@@ -524,6 +532,10 @@ module Net
           self.write(string.gsub(/\n/n, EOL))
         end
       end
+    end
+
+    def puts(string)
+      self.print(string)
     end
 
     def cmd(options)
@@ -583,6 +595,12 @@ end
 =begin
 
 == HISTORY
+
+* Tue Sep 12 06:52:48 JST 2000 - wakou
+  * version 1.6.0
+  * correct: document.
+    thanks to Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
+  * add: Telnet#puts().
 
 * Sun Jun 18 23:31:44 JST 2000 - wakou
   * version 1.5.0
