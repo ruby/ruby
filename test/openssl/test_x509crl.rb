@@ -37,11 +37,13 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     crl = issue_crl([], 1, now, now+1600, [],
                     cert, @rsa2048, OpenSSL::Digest::SHA1.new)
     assert_equal(1, crl.version)
+    assert_equal(cert.issuer.to_der, crl.issuer.to_der)
     assert_equal(now, crl.last_update)
     assert_equal(now+1600, crl.next_update)
 
     crl = OpenSSL::X509::CRL.new(crl.to_der)
     assert_equal(1, crl.version)
+    assert_equal(cert.issuer.to_der, crl.issuer.to_der)
     assert_equal(now, crl.last_update)
     assert_equal(now+1600, crl.next_update)
   end
