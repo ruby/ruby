@@ -19,7 +19,7 @@ typedef unsigned short USHORT;
 #define BITSPERDIG (sizeof(short)*CHAR_BIT)
 #define BIGRAD (1L << BITSPERDIG)
 #define DIGSPERINT ((unsigned int)(sizeof(long)/sizeof(short)))
-#define BIGUP(x) ((unsigned int)(x) << BITSPERDIG)
+#define BIGUP(x) ((unsigned long)(x) << BITSPERDIG)
 #define BIGDN(x) (((x)<0) ? ~((~(x))>>BITSPERDIG) : (x)>>BITSPERDIG)
 #define BIGLO(x) ((x) & (BIGRAD-1))
 
@@ -85,17 +85,17 @@ bignorm(x)
     while (len-- && !ds[len]) ;
     RBIGNUM(x)->len = ++len;
 
-    if (len*sizeof(USHORT) < sizeof(VALUE) ||
-	(len*sizeof(USHORT) == sizeof(VALUE) &&
-	 ds[sizeof(VALUE)/sizeof(USHORT)-1] <= 0x3fff)) {
+    if (len*sizeof(USHORT) <= sizeof(VALUE)) {
 	long num = 0;
 	while (len--) {
 	    num = BIGUP(num) + ds[len];
 	}
-	if (RBIGNUM(x)->sign) {
-	    if (POSFIXABLE(num)) return INT2FIX(num);
+	if (num >= 0) {
+	    if (RBIGNUM(x)->sign) {
+		if (POSFIXABLE(num)) return INT2FIX(num);
+	    }
+	    else if (NEGFIXABLE(-num)) return INT2FIX(-num);
 	}
-	else if (NEGFIXABLE(-num)) return INT2FIX(-num);
     }
     return x;
 }

@@ -1094,12 +1094,13 @@ static VALUE
 fix_lshift(x, y)
     VALUE x, y;
 {
-    long val, width;
+    long val;
+    int width;
 
     val = NUM2LONG(x);
-    width = NUM2LONG(y);
+    width = NUM2INT(y);
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
-	|| (unsigned long)val>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
+	|| ((unsigned long)val)>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
 	return big_lshift(int2big(val), y);
     }
     val = val << width;

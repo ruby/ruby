@@ -2,8 +2,8 @@
 #
 #   matrix.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.4 $
-#   	$Date: 1998/07/08 06:39:13 $
+#   	$Revision: 1.5 $
+#   	$Date: 1998/07/14 14:35:18 $
 #       Original Version from Smalltalk-80 version
 #	   on July 23, 1985 at 8:37:17 am
 #   	by Keiju ISHITSUKA
@@ -180,8 +180,8 @@ module ExceptionForMatrix
 end
 
 class Matrix
-  @RCS_ID='-$Id: matrix.rb,v 1.4 1998/07/08 06:39:13 keiju Exp keiju $-'
-  
+  @RCS_ID='-$Id: matrix.rb,v 1.5 1998/07/14 14:35:18 keiju Exp keiju $-'
+
   include ExceptionForMatrix
   
   # instance creations
@@ -857,7 +857,7 @@ class Vector
   end
   
   def clone
-    Vector.elements(@rows)
+    Vector.elements(@elements)
   end
   
   def hash

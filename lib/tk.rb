@@ -33,6 +33,8 @@ module TkComm
       return val.split.collect{|v| tk_tcl2ruby(v)}
     end
     case val
+    when /^@font/
+      TkFont.get_obj(val)
     when /^-?\d+$/
       val.to_i
     when /^\./
@@ -277,11 +279,11 @@ module TkComm
   end
 
   def _bind(path, context, cmd, args=nil)
-    _bind_core('', path, context, cmd, args=nil)
+    _bind_core('', path, context, cmd, args)
   end
 
   def _bind_append(path, context, cmd, args=nil)
-    _bind_core('+', path, context, cmd, args=nil)
+    _bind_core('+', path, context, cmd, args)
   end
   private :install_bind, :tk_event_sequence, :_bind_core, :_bind, :_bind_append
 
@@ -412,6 +414,10 @@ module TkCore
     TclTkLib.mainloop
   end
 
+  def messageBox(keys)
+    tk_call 'tk_messageBox', *hash_kv(keys)
+  end
+
   def tk_call(*args)
     print args.join(" "), "\n" if $DEBUG
     args.filter {|x|_get_eval_string(x)}
@@ -443,6 +449,7 @@ module Tk
 
   TCL_VERSION = INTERP._invoke("info", "tclversion")
   TK_VERSION  = INTERP._invoke("set", "tk_version")
+  JAPANIZED_TK = (INTERP._invoke("info", "commands", "kanji") != "")
 
   def root
     TkRoot.new
@@ -450,6 +457,14 @@ module Tk
 
   def bell
     tk_call 'bell'
+  end
+
+  def toUTF8(str,encoding)
+    INTERP._toUTF8(str,encoding)
+  end
+  
+  def fromUTF8(str,encoding)
+    INTERP._fromUTF8(str,encoding)
   end
 
   module Scrollable
@@ -1312,8 +1327,109 @@ module TkOption
   module_function :add, :clear, :get, :readfile
 end
 
+module TkTreatFont
+  def font_configinfo
+    ret = TkFont.used_on(self.path)
+    if ret == nil
+      ret = TkFont.init_widget_font(self.path, self.path, 'configure')
+    end
+    ret
+  end
+  alias fontobj font_configinfo
+
+  def font_configure(slot)
+    if (fnt = slot['font'])
+      slot['font'] = nil
+      if fnt.kind_of? TkFont
+	return fnt.call_font_configure(self.path, self.path,'configure',slot)
+      else
+	latinfont_configure(fnt) if fnt
+      end
+    end
+    if (ltn = slot['latinfont'])
+      slot['latinfont'] = nil
+      latinfont_configure(ltn) if ltn
+    end
+    if (ltn = slot['asciifont'])
+      slot['asciifont'] = nil
+      latinfont_configure(ltn) if ltn
+    end
+    if (knj = slot['kanjifont'])
+      slot['kanjifont'] = nil
+      kanjifont_configure(knj) if knj
+    end
+
+    tk_call(self.path, 'configure', *hash_kv(slot)) if slot != {}
+    self
+  end
+
+  def latinfont_configure(ltn, keys=nil)
+    fobj = fontobj
+    if ltn.kind_of? TkFont
+      conf = {}
+      ltn.latin_configinfo.each{|key,val| conf[key] = val}
+      if keys
+	fobj.latin_configure(conf.update(keys))
+      else
+	fobj.latin_configure(conf)
+      end
+    else
+      fobj.latin_replace(ltn)
+    end
+  end
+  alias asciifont_configure latinfont_configure
+
+  def kanjifont_configure(knj, keys=nil)
+    fobj = fontobj
+    if knj.kind_of? TkFont
+      conf = {}
+      knj.kanji_configinfo.each{|key,val| conf[key] = val}
+      if keys
+	fobj.kanji_configure(conf.update(keys))
+      else
+	fobj.kanji_configure(cond)
+      end
+    else
+      fobj.kanji_replace(knj)
+    end
+  end
+
+  def font_copy(window, tag=nil)
+    if tag
+      window.tagfontobj(tag).configinfo.each{|key,value|
+	fontobj.configure(key,value)
+      }
+      fontobj.replace(window.tagfontobj(tag).latin_font, 
+		      window.tagfontobj(tag).kanji_font)
+    else
+      window.fontobj.configinfo.each{|key,value|
+	fontobj.configure(key,value)
+      }
+      fontobj.replace(window.fontobj.latin_font, window.fontobj.kanji_font)
+    end
+  end
+
+  def latinfont_copy(window, tag=nil)
+    if tag
+      fontobj.latin_replace(window.tagfontobj(tag).latin_font)
+    else
+      fontobj.latin_replace(window.fontobj.latin_font)
+    end
+  end
+  alias asciifont_copy latinfont_copy
+
+  def kanjifont_copy(window, tag=nil)
+    if tag
+      fontobj.kanji_replace(window.tagfontobj(tag).kanji_font)
+    else
+      fontobj.kanji_replace(window.fontobj.kanji_font)
+    end
+  end
+end
+
 class TkObject<TkKernel
   include Tk
+  include TkTreatFont
 
   def path
     return @path
@@ -1356,12 +1472,23 @@ class TkObject<TkKernel
     tk_tcl2ruby tk_call path, 'cget', "-#{slot}"
   end
 
- def configure(slot, value=None)
-   if slot.kind_of? Hash
-     tk_call path, 'configure', *hash_kv(slot)
-   else
-     tk_call path, 'configure', "-#{slot}", value
-   end
+  def configure(slot, value=None)
+    if slot.kind_of? Hash
+      if ( slot['font'] || slot['kanjifont'] \
+	  || slot['latinfont'] || slot['asciifont'] )
+	font_configure(slot.dup)
+      else
+	tk_call path, 'configure', *hash_kv(slot)
+      end
+
+    else
+      if ( slot == 'font' || slot == 'kanjifont' \
+	  || slot == 'latinfont' || slot == 'asciifont' )
+	font_configure({slot=>value})
+      else
+	tk_call path, 'configure', "-#{slot}", value
+      end
+    end
   end
 
   def configure_cmd(slot, value)
@@ -1369,15 +1496,27 @@ class TkObject<TkKernel
   end
 
   def configinfo(slot = nil)
-    if slot
-      conf = tk_split_list(tk_send('configure', "-#{slot}") )
-      conf[0] = conf[0][1..-1]
-      conf
+    if slot == 'font' || slot == 'kanjifont'
+      fontobj
+
     else
-      tk_split_list(tk_send('configure') ).collect{|conf|
-        conf[0] = conf[0][1..-1]
-        conf
-      }
+      if slot
+	conf = tk_split_list(tk_send('configure', "-#{slot}") )
+	conf[0] = conf[0][1..-1]
+	conf
+
+      else
+	ret = tk_split_list(tk_send('configure') ).collect{|conf|
+	  conf[0] = conf[0][1..-1]
+	  conf
+	}
+	if ret.assoc('font')
+	  ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
+	  ret.push(['font', fontobj])
+	else
+	  ret
+	end
+      end
     end
   end
 
@@ -1429,7 +1568,8 @@ class TkWindow<TkObject
     install_win(if parent then parent.path end)
     create_self
     if keys
-      tk_call @path, 'configure', *hash_kv(keys)
+      # tk_call @path, 'configure', *hash_kv(keys)
+      configure(keys)
     end
   end
 
@@ -1996,3 +2136,4 @@ autoload :TkDialog, 'tkdialog'
 autoload :TkMenubar, 'tkmenubar'
 autoload :TkAfter, 'tkafter'
 autoload :TkPalette, 'tkpalette'
+autoload :TkFont, 'tkfont'

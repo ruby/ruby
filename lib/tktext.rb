@@ -4,8 +4,124 @@
 #			by Yukihiro Matsumoto <matz@caelum.co.jp>
 
 require 'tk.rb'
+require 'tkfont'
+
+module TkTreatTextTagFont
+  def tagfont_configinfo(tag)
+    if tag.kind_of? TkTextTag
+      pathname = self.path + ';' + tag.id
+    else
+      pathname = self.path + ';' + tag
+    end
+    ret = TkFont.used_on(pathname)
+    if ret == nil
+      ret = TkFont.init_widget_font(pathname, 
+				    self.path, 'tag', 'configure', tag)
+    end
+    ret
+  end
+  alias tagfontobj tagfont_configinfo
+
+  def tagfont_configure(tag, slot)
+    if tag.kind_of? TkTextTag
+      pathname = self.path + ';' + tag.id
+    else
+      pathname = self.path + ';' + tag
+    end
+    if (fnt = slot['font'])
+      slot['font'] = nil
+      if fnt.kind_of? TkFont
+	return fnt.call_font_configure(pathname, 
+				       self.path,'tag','configure',tag,slot)
+      else
+	latintagfont_configure(tag, fnt) if fnt
+      end
+    end
+    if (ltn = slot['latinfont'])
+      slot['latinfont'] = nil
+      latintagfont_configure(tag, ltn) if ltn
+    end
+    if (ltn = slot['asciifont'])
+      slot['asciifont'] = nil
+      latintagfont_configure(tag, ltn) if ltn
+    end
+    if (knj = slot['kanjifont'])
+      slot['kanjifont'] = nil
+      kanjitagfont_configure(tag, knj) if knj
+    end
+
+    tk_call(self.path, 'tag', 'configure', tag, *hash_kv(slot)) if slot != {}
+    self
+  end
+
+  def latintagfont_configure(tag, ltn, keys=nil)
+    fobj = tagfontobj(tag)
+    if ltn.kind_of? TkFont
+      conf = {}
+      ltn.latin_configinfo.each{|key,val| conf[key] = val}
+      if keys
+	fobj.latin_configure(conf.update(keys))
+      else
+	fobj.latin_configure(conf)
+      end
+    else
+      fobj.latin_replace(ltn)
+    end
+  end
+  alias asciitagfont_configure latintagfont_configure
+
+  def kanjitagfont_configure(tag, knj, keys=nil)
+    fobj = tagfontobj(tag)
+    if knj.kind_of? TkFont
+      conf = {}
+      knj.kanji_configinfo.each{|key,val| conf[key] = val}
+      if keys
+	fobj.kanji_configure(conf.update(keys))
+      else
+	fobj.kanji_configure(conf)
+      end
+    else
+      fobj.kanji_replace(knj)
+    end
+  end
+
+  def tagfont_copy(tag, window, wintag=nil)
+    if wintag
+      window.tagfontobj(wintag).configinfo.each{|key,value|
+	tagfontobj(tag).configure(key,value)
+      }
+      tagfontobj(tag).replace(window.tagfontobj(wintag).latin_font, 
+			      window.tagfontobj(wintag).kanji_font)
+    else
+      window.tagfont(tag).configinfo.each{|key,value|
+	tagfontobj(tag).configure(key,value)
+      }
+      tagfontobj(tag).replace(window.fontobj.latin_font, 
+			      window.fontobj.kanji_font)
+    end
+  end
+
+  def latintagfont_copy(tag, window, wintag=nil)
+    if wintag
+      tagfontobj(tag).latin_replace(window.tagfontobj(wintag).latin_font)
+    else
+      tagfontobj(tag).latin_replace(window.fontobj.latin_font)
+    end
+  end
+  alias asciitagfont_copy latintagfont_copy
+
+  def kanjitagfont_copy(tag, window, wintag=nil)
+    if wintag
+      tagfontobj(tag).kanji_replace(window.tagfontobj(wintag).kanji_font)
+    else
+      tagfontobj(tag).kanji_replace(window.fontobj.kanji_font)
+    end
+  end
+end
 
 class TkText<TkTextWin
+  include TkTreatTextTagFont
+
   WidgetClassName = 'Text'.freeze
   TkClassBind::WidgetClassNameTBL[WidgetClassName] = self
   def self.to_eval
@@ -32,31 +148,28 @@ class TkText<TkTextWin
   def _addtag(name, obj)
     @tags[name] = obj
   end
+
+  def tagid2obj(tagid)
+    if not @tags[tagid]
+      tagid
+    else
+      @tags[tagid]
+    end
+  end
+
   def tag_names(index=None)
     tk_split_list(tk_send('tag', 'names', index)).collect{|elt|
-      if not @tags[elt]
-	elt
-      else
-	@tags[elt]
-      end
+      tagid2obj(elt)
     }
   end
   def window_names
     tk_send('window', 'names').collect{|elt|
-      if not @tags[elt]
-	elt
-      else
-	@tags[elt]
-      end
+      tagid2obj(elt)
     }
   end
   def image_names
     tk_send('image', 'names').collect{|elt|
-      if not @tags[elt]
-	elt
-      else
-	@tags[elt]
-      end
+      tagid2obj(elt)
     }
   end
 
@@ -158,13 +271,24 @@ class TkText<TkTextWin
 
   def tag_configure(tag, key, val=None)
     if key.kind_of? Hash
-      tk_send 'tag', 'configure', tag, *hash_kv(key)
+      if ( key['font'] || key['kanjifont'] \
+	  || key['latinfont'] || key['asciifont'] )
+	tagfont_configure(tag, key.dup)
+      else
+	tk_send 'tag', 'configure', tag, *hash_kv(key)
+      end
+
     else
-      tk_send 'tag', 'configure', tag, "-#{key}", val
+      if ( key == 'font' || key == 'kanjifont' \
+	  || key == 'latinfont' || key == 'asciifont' )
+	tagfont_configure({key=>val})
+      else
+	tk_call 'tag', 'configure', tag, "-#{key}", val
+      end
     end
   end
 
-  def configinfo(tag, key=nil)
+  def tag_configinfo(tag, key=nil)
     if key
       conf = tk_split_list(tk_send('tag','configure',tag,"-#{key}"))
       conf[0] = conf[0][1..-1]
@@ -296,19 +420,30 @@ class TkText<TkTextWin
 end
 
 class TkTextTag<TkObject
+  include TkTreatTagFont
+
   $tk_text_tag = 'tag0000'
   def initialize(parent, keys=nil)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
-    @t = parent
+    @parent = @t = parent
     @path = @id = $tk_text_tag
     $tk_text_tag = $tk_text_tag.succ
-    tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
+    #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
+    configure(keys) if keys
     @t._addtag id, self
   end
   def id
     return @id
+  end
+
+  def first
+    @id + '.first'
+  end
+
+  def last
+    @id + '.last'
   end
 
   def add(*index)
@@ -349,12 +484,15 @@ class TkTextTag<TkObject
   end
 
   def configure(key, val=None)
-    if key.kind_of? Hash
-      tk_call @t.path, 'tag', 'configure', @id, *hash_kv(key)
-    else
-      tk_call @t.path, 'tag', 'configure', @id, "-#{key}", val
-    end
+    @t.tag_configure @id, key, val
   end
+#  def configure(key, val=None)
+#    if key.kind_of? Hash
+#      tk_call @t.path, 'tag', 'configure', @id, *hash_kv(key)
+#    else
+#      tk_call @t.path, 'tag', 'configure', @id, "-#{key}", val
+#    end
+#  end
 #  def configure(key, value)
 #    if value == FALSE
 #      value = "0"
@@ -365,17 +503,20 @@ class TkTextTag<TkObject
 #  end
 
   def configinfo(key=nil)
-    if key
-      conf = tk_split_list(tk_call(@t.path, 'tag','configure',@id,"-#{key}"))
-      conf[0] = conf[0][1..-1]
-      conf
-    else
-      tk_split_list(tk_call(@t.path, 'tag', 'configure', @id)).collect{|conf|
-	conf[0] = conf[0][1..-1]
-	conf
-      }
-    end
+    @t.tag_configinfo @id, key
   end
+#  def configinfo(key=nil)
+#    if key
+#      conf = tk_split_list(tk_call(@t.path, 'tag','configure',@id,"-#{key}"))
+#      conf[0] = conf[0][1..-1]
+#      conf
+#    else
+#      tk_split_list(tk_call(@t.path, 'tag', 'configure', @id)).collect{|conf|
+#	conf[0] = conf[0][1..-1]
+#	conf
+#      }
+#    end
+#  end
 
   def bind(seq, cmd=Proc.new, args=nil)
     id = install_bind(cmd, args)
@@ -420,7 +561,8 @@ class TkTextTagSel<TkTextTag
     end
     @t = parent
     @path = @id = 'sel'
-    tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
+    #tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
+    configure(keys) if keys
     @t._addtag id, self
   end
 end

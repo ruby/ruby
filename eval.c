@@ -5649,7 +5649,6 @@ thread_remove()
     curr_thread->status = THREAD_KILLED;
     curr_thread->prev->next = curr_thread->next;
     curr_thread->next->prev = curr_thread->prev;
-    thread_schedule();
 }
 
 static int
@@ -6230,6 +6229,8 @@ catch_timer(sig)
 int thread_tick = THREAD_TICK;
 #endif
 
+static VALUE thread_raise _((int, VALUE*, VALUE));
+
 VALUE
 thread_create(fn, arg)
     VALUE (*fn)();
@@ -6274,36 +6275,29 @@ thread_create(fn, arg)
 	}
     }
     POP_TAG();
+    thread_remove();
     if (state && th->status != THREAD_TO_KILL && !NIL_P(errinfo)) {
-	if (state == TAG_FATAL || obj_is_kind_of(errinfo, eSystemExit) ||
-	    thread_abort || curr_thread->abort || RTEST(debug)) {
-	    /* fatal error or global exit within this thread */
-	    /* need to stop whole script */
+	if (state == TAG_FATAL) { 
+	    /* fatal error within this thread, need to stop whole script */
 	    main_thread->errinfo = errinfo;
 	    thread_cleanup();
 	}
-#if 0
-	else if (thread_abort || curr_thread->abort || RTEST(debug)) {
-	    thread_critical = 0;
-	    thread_ready(main_thread);
-	    main_thread->errinfo = errinfo;
-	    if (curr_thread == main_thread) {
-		rb_raise(errinfo);
-	    }
-	    curr_thread = main_thread;
-	    th_raise_argc = 1;
-	    th_raise_argv[0] = errinfo;
-	    th_raise_file = sourcefile;
-	    th_raise_line = sourceline;
-	    thread_restore_context(curr_thread, 4);
+	else if (obj_is_kind_of(errinfo, eSystemExit)) {
+	    /* delegate exception to main_thread */
+	    thread_raise(1, &errinfo, main_thread->thread);
 	}
-#endif
+	else if (thread_abort || curr_thread->abort || RTEST(debug)) {
+	    VALUE err = exc_new(eSystemExit, 0, 0);
+	    error_print();
+	    /* exit on main_thread */
+	    thread_raise(1, &err, main_thread->thread);
+	}
 	else {
 	    curr_thread->errinfo = errinfo;
 	}
     }
-    thread_remove();
-    return 0;
+    thread_schedule();
+    return 0;			/* not reached */
 }
 
 static VALUE

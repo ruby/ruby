@@ -242,6 +242,72 @@ ip_eval(VALUE self, VALUE str)
     return(str_new2(ptr->ip->result));
 }
 
+
+static VALUE
+ip_toUTF8(VALUE self, VALUE str, VALUE encodename)
+{
+#ifndef TCL_UTF_MAX
+  return str;
+#else
+  Tcl_Interp *interp;
+  Tcl_Encoding encoding;
+  Tcl_DString dstr;
+  struct tcltkip *ptr;
+  char *buff1,*buff2;
+
+  Data_Get_Struct(self,struct tcltkip, ptr);
+  interp = ptr->ip;
+
+  encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
+  buff1 = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
+  strcpy(buff1,STR2CSTR(str));
+
+  Tcl_DStringInit(&dstr);
+  Tcl_DStringFree(&dstr);
+  Tcl_ExternalToUtfDString(encoding,buff1,strlen(buff1),&dstr);
+  buff2 = ALLOCA_N(char,Tcl_DStringLength(&dstr)+1);
+  strcpy(buff2,Tcl_DStringValue(&dstr));
+
+  Tcl_FreeEncoding(encoding);
+  Tcl_DStringFree(&dstr);
+
+  return str_new2(buff2);
+#endif
+}
+
+static VALUE
+ip_fromUTF8(VALUE self, VALUE str, VALUE encodename)
+{
+#ifndef TCL_UTF_MAX
+  return str;
+#else
+  Tcl_Interp *interp;
+  Tcl_Encoding encoding;
+  Tcl_DString dstr;
+  struct tcltkip *ptr;
+  char *buff1,*buff2;
+
+  Data_Get_Struct(self,struct tcltkip, ptr);
+  interp = ptr->ip;
+
+  encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
+  buff1 = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
+  strcpy(buff1,STR2CSTR(str));
+
+  Tcl_DStringInit(&dstr);
+  Tcl_DStringFree(&dstr);
+  Tcl_UtfToExternalDString(encoding,buff1,strlen(buff1),&dstr);
+  buff2 = ALLOCA_N(char,Tcl_DStringLength(&dstr)+1);
+  strcpy(buff2,Tcl_DStringValue(&dstr));
+
+  Tcl_FreeEncoding(encoding);
+  Tcl_DStringFree(&dstr);
+
+  return str_new2(buff2);
+#endif
+}
+
+
 static VALUE
 ip_invoke(int argc, VALUE *argv, VALUE obj)
 {
@@ -356,6 +422,8 @@ void Init_tcltklib()
 
     rb_define_singleton_method(ip, "new", ip_new, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
+    rb_define_method(ip, "_toUTF8",ip_toUTF8,2);
+    rb_define_method(ip, "_fromUTF8",ip_fromUTF8,2);
     rb_define_method(ip, "_invoke", ip_invoke, -1);
     rb_define_method(ip, "_return_value", ip_retval, 0);
     rb_define_method(ip, "mainloop", lib_mainloop, 0);

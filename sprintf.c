@@ -612,9 +612,6 @@ fmt_setup(buf, c, flags, width, prec)
     int flags, width, prec;
 {
     *buf++ = '%';
-    if (strchr("doOXx", c)) {
-	*buf++ = 'l';
-    }
     if (flags & FSHARP) *buf++ = '#';
     if (flags & FPLUS)  *buf++ = '+';
     if (flags & FMINUS) *buf++ = '-';
@@ -630,6 +627,9 @@ fmt_setup(buf, c, flags, width, prec)
 	buf += strlen(buf);
     }
 
+    if (strchr("doOXx", c)) {
+	*buf++ = 'l';
+    }
     *buf++ = c;
     *buf = '\0';
 }

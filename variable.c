@@ -650,7 +650,7 @@ rb_gvar_defined(entry)
 }
 
 static int
-var_i(key, entry, ary)
+gvar_i(key, entry, ary)
     ID key;
     struct global_entry *entry;
     VALUE ary;
@@ -666,7 +666,7 @@ f_global_variables()
     char buf[4];
     char *s = "&`'+123456789";
 
-    st_foreach(global_tbl, var_i, ary);
+    st_foreach(global_tbl, gvar_i, ary);
     if (!NIL_P(backref_get())) {
 	while (*s) {
 	    sprintf(buf, "$%c", *s++);
@@ -757,6 +757,18 @@ rb_ivar_defined(obj, id)
     return FALSE;
 }
 
+static int
+ivar_i(key, entry, ary)
+    ID key;
+    struct global_entry *entry;
+    VALUE ary;
+{
+    if (rb_is_instance_id(key)) {
+	ary_push(ary, str_new2(rb_id2name(key)));
+    }
+    return ST_CONTINUE;
+}
+
 VALUE
 obj_instance_variables(obj)
     VALUE obj;
@@ -769,7 +781,7 @@ obj_instance_variables(obj)
       case T_MODULE:
 	ary = ary_new();
 	if (ROBJECT(obj)->iv_tbl) {
-	    st_foreach(ROBJECT(obj)->iv_tbl, var_i, ary);
+	    st_foreach(ROBJECT(obj)->iv_tbl, ivar_i, ary);
 	}
 	return ary;
     }

@@ -1,6 +1,26 @@
+Wed Jul 15 15:11:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_31.
+
+Wed Jul 15 15:05:27 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (thread_create): exit() and abort() in threads now
+ 	  forwarded to main_thread.
+
+Tue Jul 14 14:03:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (obj_instance_variables): list names that is not
+	  instance variables.
+
+	* gc.c (GC_MALLOC_LIMIT): choose smaller limit value.
+
 Mon Jul 13 12:39:38 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* object.c (str2cstr): should not return NULL.
+
+Fri Jul 10 11:51:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (gettable): needed to add dyna_in_block() check.
 
 Thu Jul  9 17:38:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -3436,7 +3436,7 @@ gettable(id)
 	return NEW_LIT(INT2FIX(sourceline));
     }
     else if (is_local_id(id)) {
-	if (dyna_var_defined(id)) return NEW_DVAR(id);
+	if (dyna_in_block() && dyna_var_defined(id)) return NEW_DVAR(id);
 	if (local_id(id)) return NEW_LVAR(id);
 	/* method call without arguments */
 	return NEW_VCALL(id);

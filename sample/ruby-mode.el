@@ -47,8 +47,11 @@
 	    ruby-block-end-re "\\)\\>\\|\\}\\|\\]\\)")
   )
 
-(defconst ruby-operator-chars "[,.+*/%-&|^~=<>:]")
-(defconst ruby-symbol-chars "[a-zA-Z0-9_]")
+(defconst ruby-operator-chars ",.+*/%-&|^~=<>:")
+(defconst ruby-operator-re (concat "[" ruby-operator-chars "]"))
+
+(defconst ruby-symbol-chars "a-zA-Z0-9_")
+(defconst ruby-symbol-re (concat "[" ruby-symbol-chars "]"))
 
 (defvar ruby-mode-abbrev-table nil
   "Abbrev table in use in ruby-mode buffers.")
@@ -184,34 +187,29 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (indent-to x)
 	  (move-to-column (+ x shift))))))
 
-(defun ruby-expr-beg (&optional modifier)
+(defun ruby-expr-beg (&optional modifier pnt)
   (save-excursion
     (if (looking-at "\\?")
 	(progn
 	  (or (bolp) (forward-char -1))
 	  (not (looking-at "\\sw")))
+      (store-match-data nil)
       (skip-chars-backward " \t")
       (or (bolp) (forward-char -1))
-      (or (looking-at ruby-operator-chars)
+      (or (bolp)
+	  (looking-at ruby-operator-re)
 	  (looking-at "[\\[({]")
 	  (and (not modifier) (looking-at "[!?]"))
-	  (bolp)
-	  (and (looking-at ruby-symbol-chars)
+	  (and (looking-at ruby-symbol-re)
 	       (forward-word -1)
-	       (or 
-		(and (not modifier) (bolp))
-		(looking-at ruby-block-beg-re)
-		(looking-at ruby-block-op-re)
-		(looking-at ruby-block-mid-re)
-		(and modifier
-		     (save-excursion
-		       (forward-char -1)
-		       (let ((c (char-after (point))))
-			 (or (eq c ?.)
-			     (eq c ? )
-			     (eq c ?\t))))))
-	       (goto-char (match-end 0))
-	       (looking-at "[^_]"))))))
+	       (if (and (not modifier) (bolp))
+		   t
+		 (if (or (looking-at ruby-block-beg-re)
+			 (looking-at ruby-block-op-re)
+			 (looking-at ruby-block-mid-re))
+		     (progn
+		       (goto-char (match-end 0))
+		       (looking-at "[^_]")))))))))
 
 (defun ruby-parse-region (start end)
   (let ((indent-point end)
@@ -468,13 +466,13 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (skip-chars-backward " \t")
 	    (or (bobp) (forward-char -1))
 	    (and
-	     (or (and (looking-at ruby-symbol-chars)
+	     (or (and (looking-at ruby-symbol-re)
 		      (skip-chars-backward ruby-symbol-chars)
 		      (looking-at ruby-block-op-re)
 		      (save-excursion
 			(goto-char (match-end 0))
 			(not (looking-at "[a-z_]"))))
-		 (and (looking-at ruby-operator-chars)
+		 (and (looking-at ruby-operator-re)
 		      (or (not (or (eq ?/ (char-after (point)))))
 			  (null (nth 0 (ruby-parse-region parse-start (point)))))
 		      (not (eq (char-after (1- (point))) ?$))

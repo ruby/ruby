@@ -37,9 +37,9 @@ static void run_final();
 
 #ifndef GC_MALLOC_LIMIT
 #if defined(MSDOS) || defined(__human68k__)
-#define GC_MALLOC_LIMIT 200000
+#define GC_MALLOC_LIMIT 100000
 #else
-#define GC_MALLOC_LIMIT 400000
+#define GC_MALLOC_LIMIT 200000
 #endif
 #endif
 
@@ -55,12 +55,10 @@ xmalloc(size)
 	ArgError("negative allocation size (or too big)");
     }
     if (size == 0) size = 1;
-#if 0
     malloc_memories += size;
     if (malloc_memories > GC_MALLOC_LIMIT) {
 	gc_gc();
     }
-#endif
     mem = malloc(size);
     if (!mem) {
 	gc_gc();
@@ -95,6 +93,10 @@ xrealloc(ptr, size)
 	ArgError("negative re-allocation size");
     }
     if (!ptr) return xmalloc(size);
+    malloc_memories += size;
+    if (malloc_memories > GC_MALLOC_LIMIT) {
+	gc_gc();
+    }
     mem = realloc(ptr, size);
     if (!mem) {
 	gc_gc();

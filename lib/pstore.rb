@@ -89,6 +89,9 @@ class PStore
 	catch(:pstore_abort_transaction) do
 	  value = yield(self)
 	end
+      rescue Exception
+	@abort = true
+	raise
       ensure
 	unless @abort
 	  begin

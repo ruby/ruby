@@ -1,3 +1,10 @@
+#
+#  tkfont.rb - the class to treat fonts on Ruby/Tk
+#
+#                               by  Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
+#
+require 'tk'
+
 class TkFont
   include Tk
   extend TkCore
@@ -14,10 +21,10 @@ class TkFont
   ###################################
   def TkFont.families(window=nil)
     case (Tk::TK_VERSION)
-    when /^4.*/
+    when /^4\.*/
       ['fixed']
 
-    when /^8.*/
+    when /^8\.*/
       if window
 	list(tk_call('font', 'families', '-displayof', window))
       else
@@ -27,21 +34,69 @@ class TkFont
   end
 
   def TkFont.names
-    r = []
     case (Tk::TK_VERSION)
-    when /^4.*/
-      r += ['fixed', 'a14', 'k14']
+    when /^4\.*/
+      r = ['fixed']
+      r += ['a14', 'k14'] if JAPANIZED_TK
       Tk_FontNameTBL.each_value{|obj| r.push(obj)}
-    when /^8.*/
-      list(tk_call('font', 'names')).each{|f|
-	if f =~ /^(@font[0-9]+)(c|l|k)$/
-	  r.push(Tk_FontNameTBL[$1]) if $2 == 'c'
-	else
-	  r.push(f)
-	end
-      }
+      r | []
+
+    when /^8\.*/
+      list(tk_call('font', 'names'))
+
     end
-    r
+  end
+
+  def TkFont.create_copy(font)
+    keys = {}
+    font.configure.each{|key,value| keys[key] = value }
+    new_font = TkFont.new(font.latin_font, font.kanji_font, keys)
+  end
+
+  def TkFont.get_obj(name)
+    if name =~ /^(@font[0-9]+)(|c|l|k)$/
+      Tk_FontNameTBL[$1]
+    else
+      nil
+    end
+  end
+
+  def TkFont.init_widget_font(path, *args)
+    case (Tk::TK_VERSION)
+    when /^4\.*/
+      conf = tk_split_list(tk_call(*args))
+      ltn = conf.assoc('font')[4]
+      ltn = nil if ltn == []
+      knj = conf.assoc('kanjifont')[4]
+      knj = nil if knj == []
+      TkFont.new(ltn, knj).call_font_configure(path, *args)
+
+    when /^8\.*/
+      fnt = tk_split_list(tk_call(*(args + ['-font'])))[4]
+      if fnt == []
+	TkFont.new(nil, nil).call_font_configure(path, *(args + [{}]))
+      else
+	compound = Hash[*list(tk_call('font', 'configure', 
+				      fnt))].collect{|key,value|
+	  [key[1..-1], value]
+	}.assoc('compound')[1]
+	if compound == []
+	  TkFont.new(fnt, DEFAULT_KANJI_FONT_NAME) \
+	  .call_font_configure(path, *(args + [{}]))
+	else
+	  TkFont.new(compound[0], compound[1]) \
+	  .call_font_configure(path, *(args + [{}]))
+	end
+      end
+    end
+  end
+
+  def TkFont.used_on(path=nil)
+    if path
+      Tk_FontUseTBL[path]
+    else
+      Tk_FontUseTBL.values | []
+    end
   end
 
   ###################################
@@ -81,7 +136,7 @@ class TkFont
 	    pixels, points, resx, resy, space, avgWidth, charset, encoding])
   end
 
-  def create_latinfont_tk4x(font=nil)
+  def create_latinfont_tk4x(font)
     if font.kind_of? Hash
       @latinfont = '-' + _get_font_info_from_hash(font).join('-') + '-'
 
@@ -119,7 +174,12 @@ class TkFont
     end
   end
 
-  def create_kanjifont_tk4x(font=nil)
+  def create_kanjifont_tk4x(font)
+    unless JAPANIZED_TK
+      @kanjifont = ""
+      return
+    end
+
     if font.kind_of? Hash
       @kanjifont = '-' + _get_font_info_from_hash(font).join('-') + '-'
 
@@ -160,25 +220,51 @@ class TkFont
   end
 
   def create_compoundfont_tk4x(keys)
-    @compoundfont = [[@latinfont], [@kanjifont]]
-    @fontslot = {'font'=>@latinfont, 'kanjifont'=>@kanjifont}
-  end
-
-  def create_latinfont_tk80(font=nil)
-    @latinfont = @id + 'l'
-
-    if font.kind_of? Hash
-      tk_call('font', 'create', @latinfont, *hash_kv(font))
-    elsif font.kind_of? Array
-      tk_call('font', 'create', @latinfont, '-copy', array2tk_list(font))
-    elsif font.kind_of? TkFont
-      tk_call('font', 'create', @latinfont, '-copy', font.latin_font)
+    if JAPANIZED_TK
+      @compoundfont = [[@latinfont], [@kanjifont]]
+      @fontslot = {'font'=>@latinfont, 'kanjifont'=>@kanjifont}
     else
-      tk_call('font', 'create', @latinfont, '-copy', font)
+      @compoundfont = @latinfont
+      @fontslot = {'font'=>@latinfont}
     end
   end
 
-  def create_kanjifont_tk80(font=nil)
+  def create_latinfont_tk8x(font)
+    @latinfont = @id + 'l'
+
+    if JAPANIZED_TK
+      if font.kind_of? Hash
+	tk_call('font', 'create', @latinfont, *hash_kv(font))
+      elsif font.kind_of? Array
+	tk_call('font', 'create', @latinfont, '-copy', array2tk_list(font))
+      elsif font.kind_of? TkFont
+	tk_call('font', 'create', @latinfont, '-copy', font.latin_font)
+      else
+	tk_call('font', 'create', @latinfont, '-copy', font)
+      end
+    else
+      if font.kind_of? Hash
+	tk_call('font', 'create', @latinfont, *hash_kv(font))
+      else
+	keys = {}
+	if font.kind_of? Array
+	  actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
+	elsif font.kind_of? TkFont
+	  actual_core(font.latin_font).each{|key,val| keys[key] = val}
+	else
+	  actual_core(font).each{|key,val| keys[key] = val}
+	end
+	tk_call('font', 'create', @latinfont, *hash_kv(keys))
+      end
+    end
+  end
+
+  def create_kanjifont_tk80(font)
+    unless JAPANIZED_TK
+      @kanjifont = ""
+      return
+    end
+
     @kanjifont = @id + 'k'
 
     if font.kind_of? Hash
@@ -202,20 +288,79 @@ class TkFont
     end
   end
 
+  def create_kanjifont_tk81(font)
+    @kanjifont = @id + 'k'
+
+    if font.kind_of? Hash
+      tk_call('font', 'create', @kanjifont, *hash_kv(font))
+    else
+      keys = {}
+      if font.kind_of? Array
+	actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
+      elsif font.kind_of? TkFont
+	actual_core(font.kanji_font).each{|key,val| keys[key] = val}
+      else
+	actual_core(font).each{|key,val| keys[key] = val}
+      end
+      tk_call('font', 'create', @kanjifont, *hash_kv(keys))
+    end
+
+    keys = {}
+    actual_core(@kanjifont).each{|key,val| keys[key] = val}
+    begin
+      tk_call('font', 'configure', @compoundfont, *hash_kv(keys))
+    rescue
+    end
+  end
+
   def create_compoundfont_tk80(keys)
     @compoundfont = @id + 'c'
+    if JAPANIZED_TK
+      @fontslot = {'font'=>@compoundfont}
+      tk_call('font', 'create', @compoundfont, 
+	      '-compound', "#{@latinfont} #{@kanjifont}", *hash_kv(keys))
+    else
+      tk_call('font', 'create', @compoundfont)
+      latinkeys = {}
+      begin
+	actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
+      rescue
+	latinkeys {}
+      end
+      if latinkeys != {}
+	tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
+      end
+      @fontslot = {'font'=>@compoundfont}
+      tk_call('font', 'configure', @compoundfont, *hash_kv(keys))
+    end
+  end
+
+  def create_compoundfont_tk81(keys)
+    @compoundfont = @id + 'c'
+    tk_call('font', 'create', @compoundfont)
+
+    latinkeys = {}
+    begin
+      actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
+    rescue
+      latinkeys {}
+    end
+    if latinkeys != {}
+      tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
+    end
+
+    kanjikeys = {}
+    begin
+      actual_core(@kanjifont).each{|key,val| kanjikeys[key] = val}
+    rescue
+      kanjikeys {}
+    end
+    if kanjikeys != {}
+      tk_call('font', 'configure', @compoundfont, *hash_kv(kanjikeys))
+    end
+
     @fontslot = {'font'=>@compoundfont}
-    tk_call('font', 'create', @compoundfont, 
-	    '-compound', "#{@latinfont} #{@kanjifont}", *hash_kv(keys))
-  end
-
-  def set_font_core_tk4x(window)
-    Tk_FontUseTBL[window.path] = @id
-    window.configure(@fontslot)
-  end
-
-  def set_font_core_tk80(window)
-    window.configure(@fontslot)
+    tk_call('font', 'configure', @compoundfont, *hash_kv(keys))
   end
 
   def actual_core_tk4x(font, window=nil, option=nil)
@@ -229,7 +374,7 @@ class TkFont
     end
   end
 
-  def actual_core_tk80(font, window=nil, option=nil)
+  def actual_core_tk8x(font, window=nil, option=nil)
     if option == 'compound'
       ""
     elsif option
@@ -271,7 +416,7 @@ class TkFont
     end
   end
 
-  def configure_core_tk80(font, slot, value=None)
+  def configure_core_tk8x(font, slot, value=None)
     if slot.kind_of? Hash
       tk_call 'font', 'configure', font, *hash_kv(slot)
     else
@@ -279,7 +424,7 @@ class TkFont
     end
   end
 
-  def configinfo_core_tk80(font, option=nil)
+  def configinfo_core_tk8x(font, option=nil)
     if option == 'compound'
       ""
     elsif option
@@ -300,12 +445,18 @@ class TkFont
 
   def latin_replace_core_tk4x(ltn)
     create_latinfont_tk4x(ltn)
-    @compoundfont[0] = [@latinfont]
+    @compoundfont[0] = [@latinfont] if JAPANIZED_TK
     @fontslot['font'] = @latinfont
-    Tk_FontUseTBL.dup.each{|w, id|
-      if id == @id
+    Tk_FontUseTBL.dup.each{|w, fobj|
+      if self == fobj
 	begin
-	  w.configure('font', @latinfont)
+	  if w.include?(';')
+	    win, tag = w.split(';')
+	    winobj = tk_tcl2ruby(win)
+	    winobj.tagfont_configure(tag, {'font'=>@latinfont})
+	  else
+	    tk_tcl2ruby(w).configure('font', @latinfont)
+	  end
 	rescue
 	  Tk_FontUseTBL[w] = nil
 	end
@@ -315,13 +466,21 @@ class TkFont
   end
 
   def kanji_replace_core_tk4x(knj)
+    return self unless JAPANIZED_TK
+
     create_kanjifont_tk4x(knj)
     @compoundfont[1] = [@kanjifont]
     @fontslot['kanjifont'] = @kanjifont
-    Tk_FontUseTBL.dup.each{|w, id|
-      if id == @id
+    Tk_FontUseTBL.dup.each{|w, fobj|
+      if self == fobj
 	begin
-	  w.configure('kanjifont', @kanjifont)
+	  if w.include?(';')
+	    win, tag = w.split(';')
+	    winobj = tk_tcl2ruby(win)
+	    winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
+	  else
+	    tk_tcl2ruby(w).configure('kanjifont', @kanjifont)
+	  end
 	rescue
 	  Tk_FontUseTBL[w] = nil
 	end
@@ -330,15 +489,34 @@ class TkFont
     self
   end
 
-  def latin_replace_core_tk80(ltn)
+  def latin_replace_core_tk8x(ltn)
     tk_call('font', 'delete', @latinfont)
-    create_latinfont_tk80(ltn)
+    create_latinfont(ltn)
     self
   end
 
   def kanji_replace_core_tk80(knj)
+    return self unless JAPANIZED_TK
+
     tk_call('font', 'delete', @kanjifont)
-    create_kanjifont_tk80(knj)
+    create_kanjifont(knj)
+    self
+  end
+
+  def kanji_replace_core_tk81(knj)
+    if font.kind_of? Hash
+      tk_call('font', 'configure', @compoundfont, *hash_kv(font))
+    else
+      keys = {}
+      if font.kind_of? Array
+	actual_core(array2tk_list(font)).each{|key,val| keys[key] = val}
+      elsif font.kind_of? TkFont
+	actual_core(font.latin_font).each{|key,val| keys[key] = val}
+      else
+	actual_core(font).each{|key,val| keys[key] = val}
+      end
+      tk_call('font', 'configure', @compoundfont, *hash_kv(keys))
+    end
     self
   end
 
@@ -346,7 +524,7 @@ class TkFont
     0
   end
 
-  def measure_core_tk80(window, text)
+  def measure_core_tk8x(window, text)
     if window
       number(tk_call('font', 'measure', @compoundfont, 
 		     '-displayof', window, text))
@@ -364,7 +542,7 @@ class TkFont
     end
   end
 
-  def metrics_core_tk80(font, window, option=nil)
+  def metrics_core_tk8x(font, window, option=nil)
     if option
       if window
 	number(tk_call('font', 'metrics', font, "-#{option}"))
@@ -390,11 +568,10 @@ class TkFont
   # private alias
   ###################################
   case (Tk::TK_VERSION)
-  when /^4.*/
+  when /^4\.*/
     alias create_latinfont    create_latinfont_tk4x
     alias create_kanjifont    create_kanjifont_tk4x
     alias create_compoundfont create_compoundfont_tk4x
-    alias set_font_core       set_font_core_tk4x
     alias actual_core         actual_core_tk4x
     alias configure_core      configure_core_tk4x
     alias configinfo_core     configinfo_core_tk4x
@@ -404,25 +581,77 @@ class TkFont
     alias metrics_core        metrics_core_tk4x
 
   when /^8\.0/
-    alias create_latinfont    create_latinfont_tk80
+    alias create_latinfont    create_latinfont_tk8x
     alias create_kanjifont    create_kanjifont_tk80
     alias create_compoundfont create_compoundfont_tk80
-    alias set_font_core       set_font_core_tk80
-    alias actual_core         actual_core_tk80
-    alias configure_core      configure_core_tk80
-    alias configinfo_core     configinfo_core_tk80
-    alias latin_replace_core  latin_replace_core_tk80
+    alias actual_core         actual_core_tk8x
+    alias configure_core      configure_core_tk8x
+    alias configinfo_core     configinfo_core_tk8x
+    alias latin_replace_core  latin_replace_core_tk8x
     alias kanji_replace_core  kanji_replace_core_tk80
-    alias measure_core        measure_core_tk80
-    alias metrics_core        metrics_core_tk80
+    alias measure_core        measure_core_tk8x
+    alias metrics_core        metrics_core_tk8x
+
+  when /^8\.1/
+    alias create_latinfont    create_latinfont_tk8x
+    alias create_kanjifont    create_kanjifont_tk81
+    alias create_compoundfont create_compoundfont_tk81
+    alias actual_core         actual_core_tk8x
+    alias configure_core      configure_core_tk8x
+    alias configinfo_core     configinfo_core_tk8x
+    alias latin_replace_core  latin_replace_core_tk8x
+    alias kanji_replace_core  kanji_replace_core_tk81
+    alias measure_core        measure_core_tk8x
+    alias metrics_core        metrics_core_tk8x
 
   end
 
   ###################################
   public
   ###################################
-  def set_font(window)
-    set_font_core(window)
+  def call_font_configure(path, *args)
+    args += hash_kv(args.pop.update(@fontslot))
+    tk_call *args
+    Tk_FontUseTBL[path] = self
+    self
+  end
+
+  def used
+    ret = []
+    Tk_FontUseTBL.each{|key,value|
+      if key.include?(';')
+	win, tag = key.split(';')
+	winobj = tk_tcl2ruby(win)
+	if winobj.kind_of? TkText
+	  ret.push([winobj, winobj.tagid2obj(tag)])
+	elsif winobj.kind_of? TkCanvas
+	  if (tagobj = TkcTag.id2obj(tag)).kind_of? TkcTag
+	    ret.push([winobj, tagobj])
+	  elsif (tagobj = TkcItem.id2obj(tag)).kind_of? TkcItem
+	    ret.push([winobj, tagobj])
+	  else
+	    ret.push([winobj, tag])
+	  end
+	else
+	  ret.push([win, tag])
+	end
+      else
+	ret.push(tk_tcl2ruby(key)) if value == self
+      end
+    }
+    ret
+  end
+
+  def id
+    @id
+  end
+
+  def to_eval
+    font
+  end
+
+  def font
+    @compoundfont
   end
 
   def latin_font
@@ -452,12 +681,22 @@ class TkFont
   end
 
   def kanji_actual(option=nil)
-    actual_core(@kanjifont, nil, option)
+    #if JAPANIZED_TK
+    if @kanjifont != ""
+      actual_core(@kanjifont, nil, option)
+    else
+      actual_core_tk4x(nil, nil, option)
+    end
   end
 
   def kanji_actual_displayof(window, option=nil)
-    window = '.' unless window
-    actual_core(@kanjifont, window, option)
+    #if JAPANIZED_TK
+    if @kanjifont != ""
+      window = '.' unless window
+      actual_core(@kanjifont, window, option)
+    else
+      actual_core_tk4x(nil, window, option)
+    end
   end
 
   def [](slot)
@@ -477,24 +716,45 @@ class TkFont
   end
 
   def latin_configure(slot, value=None)
-    configure_core(@latinfont, slot, value)
+    if JAPANIZED_TK
+      configure_core(@latinfont, slot, value)
+    else
+      configure(slot, value)
+    end
   end
 
   def latin_configinfo(slot=nil)
-    configinfo_core(@latinfont, slot)
+    if JAPANIZED_TK
+      configinfo_core(@latinfont, slot)
+    else
+      configure(slot, value)
+    end
   end
 
   def kanji_configure(slot, value=None)
-    configure_core(@kanjifont, slot, value)
+    #if JAPANIZED_TK
+    if @kanjifont != ""
+      configure_core(@kanjifont, slot, value)
+    else
+      #""
+      configure(slot, value)
+    end
   end
 
   def kanji_configinfo(slot=nil)
-    configinfo_core(@kanjifont, slot)
+    #if JAPANIZED_TK
+    if @kanjifont != ""
+      configinfo_core(@kanjifont, slot)
+    else
+      #[]
+      configinfo(slot)
+    end
   end
 
   def replace(ltn, knj)
     latin_replace(ltn)
-    kanji_replace(ltn)
+    kanji_replace(knj)
+    self
   end
 
   def latin_replace(ltn)
@@ -533,12 +793,20 @@ class TkFont
   end
 
   def kanji_metrics(option=nil)
-    metrics_core(@kanjifont, nil, option)
+    if JAPANIZED_TK
+      metrics_core(@kanjifont, nil, option)
+    else
+      metrics_core_tk4x(nil, nil, option)
+    end
   end
 
   def kanji_metrics_displayof(window, option=nil)
-    window = '.' unless window
-    metrics_core(@kanjifont, window, option)
+    if JAPANIZED_TK
+      window = '.' unless window
+      metrics_core(@kanjifont, window, option)
+    else
+      metrics_core_tk4x(nil, window, option)
+    end
   end
 
   ###################################
@@ -553,4 +821,37 @@ class TkFont
   alias ascii_replace          latin_replace
   alias ascii_metrics          latin_metrics
 
+end
+
+module TkTreatTagFont
+  def font_configinfo
+    @parent.tagfont_configinfo(@id)
+  end
+  alias font font_configinfo
+
+  def font_configure(slot)
+    @parent.tagfont_configure(@id, slot)
+  end
+
+  def latinfont_configure(ltn, keys=nil)
+    @parent.latintagfont_configure(@id, ltn, keys)
+  end
+  alias asciifont_configure latinfont_configure
+
+  def kanjifont_configure(knj, keys=nil)
+    @parent.kanjitagfont_configure(@id, ltn, keys)
+  end
+
+  def font_copy(window, wintag=nil)
+    @parent.tagfont_copy(@id, window, wintag)
+  end
+
+  def latinfont_copy(window, wintag=nil)
+    @parent.latintagfont_copy(@id, window, wintag)
+  end
+  alias asciifont_copy latinfont_copy
+
+  def kanjifont_copy(window, wintag=nil)
+    @parent.kanjitagfont_copy(@id, window, wintag)
+  end
 end

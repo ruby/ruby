@@ -32,10 +32,10 @@ class WeakRef<Delegator
 			    
   def initialize(orig)
     super
-    @__id = orig.id
+    @__id = orig.__id__
     ObjectSpace.call_finalizer orig
     ObjectSpace.call_finalizer self
-    ID_MAP[@__id] = self.id
+    ID_MAP[@__id] = self.__id__
     ID_REV_MAP[self.id] = @__id
   end
 
