@@ -1,3 +1,8 @@
+Mon Nov 22 00:13:35 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_seek): should retrieve dir_data after NUM2INT().
+	  [ruby-dev:24941]
+
 Sat Nov 20 23:57:33 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/README (et al): Add a new directive, :section:, and
@@ -137,6 +142,13 @@ Thu Nov 18 20:47:24 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch] (rb_w32_isatty): new function to replace MSVCRT's
 	  isatty because it never sets errno.
+
+Thu Nov 18 18:41:08 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_stringchar.rb (test_bang): added.
+
+	* string.c (rb_str_upcase_bang, rb_str_capitalize_bang)
+	(rb_str_swapcase_bang): missing rb_str_modify().
 
 Thu Nov 18 17:05:01 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
