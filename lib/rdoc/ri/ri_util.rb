@@ -59,7 +59,7 @@ class NameDescriptor
       if @method_name =~ /::|\.|#/ or !tokens.empty?
         raise RiError.new("Bad argument: #{arg}") 
       end
-      if separator
+      if separator && separator != '.'
         @is_class_method = separator == "::"
       end
     end

@@ -77,7 +77,7 @@ module RI
 
 
     # Return our full name
-    def full_namep
+    def full_name
       res = @in_class.full_name
       res << "::" unless res.empty?
       res << @name
@@ -95,7 +95,7 @@ module RI
              when nil then  @class_methods + @instance_methods
              when true then @class_methods
              when false then @instance_methods
-             else fail "Unknown is_class_method"
+             else fail "Unknown is_class_method: #{is_class_method.inspect}"
              end
 
       list.find_all {|m| m.name;  m.name[name]}

@@ -214,6 +214,12 @@ module RDoc
         handle_class_module(var_name, "class", class_name, parent, nil)
       end
       
+      @body.scan(/(\w+)\s*=\s*boot_defclass\(\s*"(\w+?)",\s*(\w+?)\)/) do
+        |var_name, class_name, parent|
+        parent = nil if parent == "0"
+        handle_class_module(var_name, "class", class_name, parent, nil)
+      end
+
       @body.scan(/(\w+)\s* = \s*rb_define_class_under
                 \( 
                    \s*(\w+),

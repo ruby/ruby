@@ -14,6 +14,7 @@
 
 void Init_Array _((void));
 void Init_Bignum _((void));
+void Init_Binding _((void));
 void Init_Comparable _((void));
 void Init_Dir _((void));
 void Init_Enumerable _((void));
@@ -75,6 +76,7 @@ rb_call_inits()
     Init_process();
     Init_load();
     Init_Proc();
+    Init_Binding();
     Init_Math();
     Init_GC();
     Init_marshal();

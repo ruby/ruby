@@ -872,12 +872,31 @@ rb_big2dbl(x)
     return d;
 }
 
+/*
+ *  call-seq:
+ *     big.to_f -> float
+ *  
+ *  Converts <i>big</i> to a <code>Float</code>. If <i>big</i> doesn't
+ *  fit in a <code>Float</code>, the result is infinity.
+ *     
+ */
+
 static VALUE
 rb_big_to_f(x)
     VALUE x;
 {
     return rb_float_new(rb_big2dbl(x));
 }
+
+/*
+ *  call-seq:
+ *     big <=> numeric   => -1, 0, +1
+ *  
+ *  Comparison---Returns -1, 0, or +1 depending on whether <i>big</i> is
+ *  less than, equal to, or greater than <i>numeric</i>. This is the
+ *  basis for the tests in <code>Comparable</code>.
+ *     
+ */
 
 static VALUE
 rb_big_cmp(x, y)
@@ -914,6 +933,17 @@ rb_big_cmp(x, y)
 	    (RBIGNUM(x)->sign ? INT2FIX(-1) : INT2FIX(1));
 }
 
+/*
+ *  call-seq:
+ *     big == obj  => true or false
+ *  
+ *  Returns <code>true</code> only if <i>obj</i> has the same value
+ *  as <i>big</i>. Contrast this with <code>Bignum#eql?</code>, which
+ *  requires <i>obj</i> to be a <code>Bignum</code>.
+ *     
+ *     68719476736 == 68719476736.0   #=> true
+ */
+
 static VALUE
 rb_big_eq(x, y)
     VALUE x, y;
@@ -937,6 +967,17 @@ rb_big_eq(x, y)
     if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,RBIGNUM(y)->len) != 0) return Qfalse;
     return Qtrue;
 }
+
+/*
+ *  call-seq:
+ *     big.eql?(obj)   => true or false
+ *  
+ *  Returns <code>true</code> only if <i>obj</i> is a
+ *  <code>Bignum</code> with the same value as <i>big</i>. Contrast this
+ *  with <code>Bignum#==</code>, which performs type conversions.
+ *     
+ *     68719476736.eql?(68719476736.0)   #=> false
+ */
 
 static VALUE
 rb_big_eql(x, y)
@@ -966,6 +1007,18 @@ rb_big_uminus(x)
 
     return bignorm(z);
 }
+
+/*
+ * call-seq:
+ *     ~big  =>  integer
+ *
+ * Inverts the bits in big. As Bignums are conceptually infinite
+ * length, the result acts as if it had an infinite number of one
+ * bits to the left. In hex representations, this is displayed
+ * as two periods to the left of the digits.
+ *  
+ *   sprintf("%X", ~0x1122334455)    #=> "..FEEDDCCBBAA"
+ */
 
 static VALUE
 rb_big_neg(x)
@@ -1602,6 +1655,13 @@ rb_big_and(x, y)
     return bignorm(z);
 }
 
+/*
+ * call-seq:
+ *     big | numeric   =>  integer
+ *
+ * Performs bitwise +or+ between _big_ and _numeric_.
+ */
+
 VALUE
 rb_big_or(x, y)
     VALUE x, y;
@@ -1651,6 +1711,13 @@ rb_big_or(x, y)
 
     return bignorm(z);
 }
+
+/*
+ * call-seq:
+ *     big ^ numeric   =>  integer
+ *
+ * Performs bitwise +exclusive or+ between _big_ and _numeric_.
+ */
 
 VALUE
 rb_big_xor(x, y)
@@ -1706,6 +1773,13 @@ rb_big_xor(x, y)
 
 static VALUE rb_big_rshift _((VALUE,VALUE));
 
+/*
+ * call-seq:
+ *     big << numeric   =>  integer
+ *
+ * Shifts big left _numeric_ positions (right if _numeric_ is negative).
+ */
+
 VALUE
 rb_big_lshift(x, y)
     VALUE x, y;
@@ -1734,6 +1808,13 @@ rb_big_lshift(x, y)
     *zds = BIGLO(num);
     return bignorm(z);
 }
+
+/*
+ * call-seq:
+ *     big >> numeric   =>  integer
+ *
+ * Shifts big right _numeric_ positions (left if _numeric_ is negative).
+ */
 
 static VALUE
 rb_big_rshift(x, y)
@@ -1776,6 +1857,25 @@ rb_big_rshift(x, y)
     }
     return bignorm(z);
 }
+
+/*
+ *  call-seq:
+ *     big[n] -> 0, 1
+ *  
+ *  Bit Reference---Returns the <em>n</em>th bit in the (assumed) binary
+ *  representation of <i>big</i>, where <i>big</i>[0] is the least
+ *  significant bit.
+ *     
+ *     a = 9**15
+ *     50.downto(0) do |n|
+ *       print a[n]
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     000101110110100000111000011110010100111100010111001
+ *     
+ */
 
 static VALUE
 rb_big_aref(x, y)
@@ -1842,6 +1942,15 @@ rb_big_coerce(x, y)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     big.abs -> aBignum
+ *  
+ *  Returns the absolute value of <i>big</i>.
+ *     
+ *     -1234567890987654321.abs   #=> 1234567890987654321
+ */
+
 static VALUE
 rb_big_abs(x)
     VALUE x;
@@ -1871,6 +1980,18 @@ rb_big_rand(max, rand_buf)
 
     return rb_big_modulo((VALUE)v, max);
 }
+
+/*
+ *  call-seq:
+ *     big.size -> integer
+ *  
+ *  Returns the number of bytes in the machine representation of
+ *  <i>big</i>.
+ *     
+ *     (256**10 - 1).size   #=> 12
+ *     (256**20 - 1).size   #=> 20
+ *     (256**40 - 1).size   #=> 40
+ */
 
 static VALUE
 rb_big_size(big)

@@ -6954,6 +6954,10 @@ frame_dup(frame)
     }
 }
 
+/*
+ * MISSING: documentation
+ */
+
 static VALUE
 proc_clone(self)
     VALUE self;
@@ -7855,12 +7859,6 @@ Init_Proc()
     rb_define_global_function("proc", proc_lambda, 0);
     rb_define_global_function("lambda", proc_lambda, 0);
 
-    rb_cBinding = rb_define_class("Binding", rb_cObject);
-    rb_undef_alloc_func(rb_cBinding);
-    rb_undef_method(CLASS_OF(rb_cBinding), "new");
-    rb_define_method(rb_cBinding, "clone", proc_clone, 0);
-    rb_define_global_function("binding", rb_f_binding, 0);
-
     rb_cMethod = rb_define_class("Method", rb_cObject);
     rb_undef_alloc_func(rb_cMethod);
     rb_undef_method(CLASS_OF(rb_cMethod), "new");
@@ -7885,6 +7883,51 @@ Init_Proc()
     rb_define_method(rb_cUnboundMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cUnboundMethod, "bind", umethod_bind, 1);
     rb_define_method(rb_cModule, "instance_method", rb_mod_method, 1);
+}
+
+/*
+ *  Objects of class <code>Binding</code> encapsulate the execution
+ *  context at some particular place in the code and retain this context 
+ *  for future use. The variables, methods, value of <code>self</code>,
+ *  and possibly an iterator block that can be accessed in this context
+ *  are all retained. Binding objects can be created using
+ *  <code>Kernel#binding</code>, and are made available to the callback
+ *  of <code>Kernel#set_trace_func</code>.
+ *     
+ *  These binding objects can be passed as the second argument of the
+ *  <code>Kernel#eval</code> method, establishing an environment for the
+ *  evaluation.
+ *     
+ *     class Demo
+ *       def initialize(n)
+ *         @secret = n
+ *       end
+ *       def getBinding
+ *         return binding()
+ *       end
+ *     end
+ *     
+ *     k1 = Demo.new(99)
+ *     b1 = k1.getBinding
+ *     k2 = Demo.new(-3)
+ *     b2 = k2.getBinding
+ *     
+ *     eval("@secret", b1)   #=> 99
+ *     eval("@secret", b2)   #=> -3
+ *     eval("@secret")       #=> nil
+ *     
+ *  Binding objects have no class-specific methods.
+ *     
+ */
+
+void 
+Init_Binding() 
+{
+    rb_cBinding = rb_define_class("Binding", rb_cObject);
+    rb_undef_alloc_func(rb_cBinding);
+    rb_undef_method(CLASS_OF(rb_cBinding), "new");
+    rb_define_method(rb_cBinding, "clone", proc_clone, 0);
+    rb_define_global_function("binding", rb_f_binding, 0);
 }
 
 #ifdef __ia64__

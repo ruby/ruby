@@ -10,6 +10,8 @@
 # All names may be abbreviated to their minimum unbiguous form. If a name
 # _is_ ambiguous, all valid options will be listed.
 #
+# The form '.' method matches either class or instance methods, while 
+# #method matches only instance and ::method matches only class methods.
 
 require 'rdoc/ri/ri_paths'
 require 'rdoc/ri/ri_cache'
@@ -199,14 +201,15 @@ end
 
 ######################################################################
 
-def report_class_stuff(namespaces)
-  if namespaces.size > 1
+def report_class_stuff(requested_class_name, namespaces)
+  if namespaces.size == 1
+    display_class_info(namespaces[0])
+  elsif (entry = namespaces.find {|m| m.name == requested_class_name})
+    display_class_info(entry)
+  else
     puts "More than one class or module matched your request. You can refine"
     puts "your search by asking for information on one of:\n\n"
-    puts @formatter.wrap("", namespaces.map {|m| m.full_name} .join(", "))
-  else
-    class_desc = @ri_reader.get_class(namespaces[0])
-    display_class_info(namespaces[0])
+    @formatter.wrap(namespaces.map {|m| m.full_name}.join(", "))
   end
 end
 
@@ -229,7 +232,7 @@ def display_info_for(arg)
   
   begin
     if desc.method_name.nil?
-      report_class_stuff(namespaces)
+      report_class_stuff(desc.class_names.join('::'), namespaces)
     else
       methods = @ri_reader.find_methods(desc.method_name, 
                                         desc.is_class_method,
