@@ -1169,6 +1169,8 @@ inspect2(p)
    ======================================================================= */
 
 /*
+ * Document-class: StringScanner
+ * 
  * StringScanner provides for lexical scanning operations on a String.  Here is
  * an example of its usage:
  *
@@ -1194,8 +1196,9 @@ inspect2(p)
  *   p s.scan(/\w+/)      # -> nil
  *
  * Scanning a string means remembering the position of a <i>scan pointer</i>,
- * which is just an index.  The scan pointer effectively points _between_
- * characters.  (XXX: get this right - is it between or not?)
+ * which is just an index.  The point of scanning is to move forward a bit at
+ * a time, so matches are sought after the scan pointer; usually immediately
+ * after it.
  *
  * Given the string "test string", here are the pertinent scan pointer
  * positions:
@@ -1220,49 +1223,51 @@ inspect2(p)
  * 
  * === Advancing the Scan Pointer
  *
- * getch
- * getbyte
- * scan
- * scan_until
- * skip
- * skip_until
+ * - #getch
+ * - #getbyte
+ * - #scan
+ * - #scan_until
+ * - #skip
+ * - #skip_until
  *
  * === Looking Ahead
  *
- * check
- * check_until
- * exist?
- * match?
- * peek
+ * - #check
+ * - #check_until
+ * - #exist?
+ * - #match?
+ * - #peek
  *
  * === Finding Where we Are
  *
- * bol?
- * eos?
- * pos
+ * - #bol?
+ * - #eos?
+ * - #rest?
+ * - #rest_size
+ * - #pos
  *
  * === Setting Where we Are
  *
- * reset
- * terminate
- * pos=
+ * - #reset
+ * - #terminate
+ * - #pos=
  * 
  * === Match Data
  *
- * matched
- * matched?
- * matched_size
- * []
- * pre_match
- * post_match
+ * - #matched
+ * - #matched?
+ * - #matched_size
+ * - []
+ * - #pre_match
+ * - #post_match
  *
  * === Miscellaneous
  *
- * <<
- * concat
- * string
- * string=
- * unscan
+ * - <<
+ * - #concat
+ * - #string
+ * - #string=
+ * - #unscan
  *
  * There are aliases to several of the methods.
  */

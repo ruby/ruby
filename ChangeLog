@@ -1,3 +1,7 @@
+Thu Feb 19 18:08:18 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* ext/strscan/strscan.c: improved documentation
+
 Thu Feb 19 18:08:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c, win32/win32.h: fixed prototypes.
