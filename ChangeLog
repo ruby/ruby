@@ -103,7 +103,7 @@ Fri Dec 24 01:21:00 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Thu Dec 23 23:43:24 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* process.c (proc_setgroups): check if the argument lenght is
+	* process.c (proc_setgroups): check if the argument length is
 	  modified.  fixed: [ruby-dev:25285]
 
 	* process.c (SIZEOF_RLIM_T): err if size of rlim_t is not set.
@@ -209,7 +209,7 @@ Mon Dec 20 22:40:31 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 	  * HTTP client/server gzipped content encoding support.
 
 	  * improved WSDL schema definition support; still is far from
-	    complete, but is making step by step improovement.
+	    complete, but is making step by step improvement.
 
 Mon Dec 20 14:45:19 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -1046,7 +1046,7 @@ Sun Nov 28 12:08:15 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 Sun Nov 28 12:07:04 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
-	* regexec.c, test/ruby/test_regexp.rb: fixed segmentation falut
+	* regexec.c, test/ruby/test_regexp.rb: fixed segmentation fault
 	([ruby-dev:24887]).
 
 Sun Nov 28 12:05:48 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
@@ -1204,7 +1204,7 @@ Mon Nov 22 00:13:35 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Nov 20 23:57:33 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/README (et al): Add a new directive, :section:, and
-	  change the output format to accomodate. :section: allows to to
+	  change the output format to accommodate. :section: allows to to
 	  group together methods, attributes, constants, etc under
 	  headings in the output. If used, a table of contents is
 	  generated.
@@ -1248,7 +1248,7 @@ Tue Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 Sat Nov 20 01:45:04 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* test/xmlrpc/test_webrick_server.rb : move `requrie "webrick/https"'
-	  into #setup_http_server mohtod to avoid soap test errors.
+	  into #setup_http_server method to avoid soap test errors.
 
 Sat Nov 20 01:37:34 2004  Johan Holmberg  <holmberg@iar.se>
 
@@ -1350,7 +1350,7 @@ Thu Nov 18 18:41:08 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 Thu Nov 18 17:05:01 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* parse.y (f_rest_arg): store rest args into invisible local variabe
+	* parse.y (f_rest_arg): store rest args into invisible local variable
 	  in order to get rid of SEGV at ZSUPER.  [ruby-dev:24913]
 
 Thu Nov 18 15:39:52 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1406,7 +1406,7 @@ Wed Nov 17 13:05:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Nov 17 11:48:17 2004  Michael Neumann  <mneumann@ruby-lang.org>
 
-	* lib/xmlrpc/parser.rb, test/xmlrpc/test_features.rb: fixed "assinging
+	* lib/xmlrpc/parser.rb, test/xmlrpc/test_features.rb: fixed "assigning
 	  to constants" warnings
 
 Wed Nov 17 09:38:18 2004  Johan Holmberg  <holmberg@iar.se>
