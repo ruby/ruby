@@ -1,3 +1,8 @@
+Sun Dec 12 10:14:03 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/rdoc.rb (RDoc::RDoc::parse_files): Never exclude files
+	  explicitly given on the command line.
+
 Sat Dec 11 21:10:16 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: add DRbRemoteError. [ruby-list:40348],
