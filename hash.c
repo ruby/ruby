@@ -986,44 +986,6 @@ ruby_setenv(name, value)
     const char *value;
 {
 #if defined(WIN32) && !defined(__CYGWIN32__)
-#ifdef USE_WIN32_RTL_ENV
-    register char *envstr;
-    STRLEN namlen = strlen(name);
-    STRLEN vallen;
-    char *oldstr = environ[envix(name)];
-
-    /* putenv() has totally broken semantics in both the Borland
-     * and Microsoft CRTLs.  They either store the passed pointer in
-     * the environment without making a copy, or make a copy and don't
-     * free it. And on top of that, they dont free() old entries that
-     * are being replaced/deleted.  This means the caller must
-     * free any old entries somehow, or we end up with a memory
-     * leak every time setenv() is called.  One might think
-     * one could directly manipulate environ[], like the UNIX code
-     * above, but direct changes to environ are not allowed when
-     * calling putenv(), since the RTLs maintain an internal
-     * *copy* of environ[]. Bad, bad, *bad* stink.
-     * GSAR 97-06-07
-     */
-
-    if (!value) {
-	if (!oldstr)
-	    return;
-	value = "";
-	vallen = 0;
-    }
-    else
-	vallen = strlen(val);
-    envstr = ALLOC_N(char, namelen + vallen + 3);
-    sprintf(envstr,"%s=%s",name,value);
-    putenv(envstr);
-    if (oldstr) free(oldstr);
-#ifdef _MSC_VER
-    free(envstr);		/* MSVCRT leaks without this */
-#endif
-
-#else /* !USE_WIN32_RTL_ENV */
-
     /* The sane way to deal with the environment.
      * Has these advantages over putenv() & co.:
      *  * enables us to store a truly empty value in the
@@ -1037,10 +999,11 @@ ruby_setenv(name, value)
      *    not see changes made by extensions that call the Win32
      *    functions directly, either.
      * GSAR 97-06-07
+     *
+     * REMARK: USE_WIN32_RTL_ENV is already obsoleted since we don't use
+     *         RTL's environ global variable directly yet.
      */
     SetEnvironmentVariable(name,value);
-#endif
-
 #elif defined __CYGWIN__
 #undef setenv
 #undef unsetenv

@@ -20,51 +20,6 @@
 // Definitions for NT port of Perl
 //
 
-//
-// GRRRR!!!!  Windows Nonsense.
-// Define the following so we don't get tons of extra stuff
-// when we include windows.h 
-//
-#if 0
-#define NOGDICAPMASKS     
-#define NOVIRTUALKEYCODES 
-#define NOWINMESSAGES     
-#define NOWINSTYLES       
-#define NOSYSMETRICS      
-#define NOMENUS           
-#define NOICONS           
-#define NOKEYSTATES       
-#define NOSYSCOMMANDS     
-#define NORASTEROPS       
-#define NOSHOWWINDOW      
-#define OEMRESOURCE       
-#define NOATOM            
-#define NOCLIPBOARD       
-#define NOCOLOR           
-#define NOCTLMGR          
-#define NODRAWTEXT        
-#define NOGDI             
-//#define NOKERNEL        
-//#define NOUSER          
-#define NONLS             
-#define NOMB              
-#define NOMEMMGR          
-#define NOMETAFILE        
-#define NOMINMAX          
-#define NOMSG             
-#define NOOPENFILE        
-#define NOSCROLL          
-#define NOSERVICE         
-#define NOSOUND           
-#define NOTEXTMETRIC      
-#define NOWH              
-#define NOWINOFFSETS      
-#define NOCOMM            
-#define NOKANJI           
-#define NOHELP            
-#define NOPROFILER        
-#define NODEFERWINDOWPOS  
-#endif
 
 //
 // Ok now we can include the normal include files.
@@ -79,7 +34,7 @@
 #undef OpenFile
 #endif
 //
-// We\'re not using Microsoft\'s "extensions" to C for
+// We're not using Microsoft's "extensions" to C for
 // Structured Exception Handling (SEH) so we can nuke these
 //
 #undef try
@@ -264,11 +219,6 @@ extern GIDTYPE   getegid (void);
 extern int       setuid (int);
 extern int       setgid (int);
 
-
-#if 0
-extern int sys_nerr;
-extern char *sys_errlist[];
-#endif
 extern char *mystrerror(int);
 
 #define strerror(e) mystrerror(e)

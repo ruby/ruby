@@ -67,10 +67,6 @@
 #define TO_SOCKET(x)	_get_osfhandle(x)
 
 bool NtSyncProcess = TRUE;
-#if 0  // declared in header file
-extern char **environ;
-#define environ _environ
-#endif
 
 static struct ChildRecord *CreateChild(char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static bool NtHasRedirection (char *);
@@ -246,7 +242,6 @@ flock(int fd, int oper)
 //#undef const
 //FILE *fdopen(int, const char *);
 
-
 //
 // Initialization stuff
 //
@@ -258,7 +253,7 @@ NtInitialize(int *argc, char ***argv)
     int ret;
 
     //
-    // subvert cmd.exe\'s feeble attempt at command line parsing
+    // subvert cmd.exe's feeble attempt at command line parsing
     //
     *argc = NtMakeCmdVector((char *)GetCommandLine(), argv, TRUE);
 
@@ -272,7 +267,6 @@ NtInitialize(int *argc, char ***argv)
     StartSockets();
 }
 
-
 char *getlogin()
 {
     char buffer[200];
@@ -292,9 +286,6 @@ char *getlogin()
     return NTLoginName;
 }
 
-
-
-#if 1
 #define MAXCHILDNUM 256	/* max num of child processes */
 
 struct ChildRecord {
@@ -458,7 +449,7 @@ mypopen (char *cmd, char *mode)
     int fd;
 
     //
-    // Figure out what we\'re doing...
+    // Figure out what we're doing...
     //
 
     reading = (*mode == 'r') ? TRUE : FALSE;
@@ -540,11 +531,7 @@ mypclose(FILE *fp)
     rb_syswait(child->pid);
     return NUM2INT(rb_last_status);
 }
-#endif
 
-#if 1
-
-
 int
 do_spawn(cmd)
 char *cmd;
@@ -646,8 +633,6 @@ CreateChild(char *cmd, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, 
     return child;
 }
 
-#endif
-
 typedef struct _NtCmdLineElement {
     struct _NtCmdLineElement *next, *prev;
     char *str;
@@ -682,85 +667,9 @@ NtFreeCmdLine(void)
 // This function expands wild card characters that were spotted 
 // during the parse phase. The idea here is to call FindFirstFile and
 // FindNextFile with the wildcard pattern specified, and splice in the
-// resulting list of new names. If the wildcard pattern doesn\'t match 
+// resulting list of new names. If the wildcard pattern doesn't match 
 // any existing files, just leave it in the list.
 //
-
-#if 0
-void
-NtCmdGlob (NtCmdLineElement *patt)
-{
-    WIN32_FIND_DATA fd;
-    HANDLE fh;
-    char buffer[512];
-    NtCmdLineElement *tmphead, *tmptail, *tmpcurr;
-
-    strncpy(buffer, patt->str, patt->len);
-    buffer[patt->len] = '\0';
-    if ((fh = FindFirstFile (buffer, &fd)) == INVALID_HANDLE_VALUE) {
-	return;
-    }
-    tmphead = tmptail = NULL;
-    do {
-	tmpcurr = ALLOC(NtCmdLineElement);
-	if (tmpcurr == NULL) {
-	    fprintf(stderr, "Out of Memory in globbing!\n");
-	    while (tmphead) {
-		tmpcurr = tmphead;
-		tmphead = tmphead->next;
-		free(tmpcurr->str);
-		free(tmpcurr);
-	    }
-	    return;
-	}
-	memset (tmpcurr, 0, sizeof(*tmpcurr));
-	tmpcurr->len = strlen(fd.cFileName);
-	tmpcurr->str = ALLOC_N(char, tmpcurr->len+1);
-	if (tmpcurr->str == NULL) {
-	    fprintf(stderr, "Out of Memory in globbing!\n");
-	    while (tmphead) {
-		tmpcurr = tmphead;
-		tmphead = tmphead->next;
-		free(tmpcurr->str);
-		free(tmpcurr);
-	    }
-	    return;
-	}
-	strcpy(tmpcurr->str, fd.cFileName);
-	tmpcurr->flags |= NTMALLOC;
-	if (tmptail) {
-	    tmptail->next = tmpcurr;
-	    tmpcurr->prev = tmptail;
-	    tmptail = tmpcurr;
-	}
-	else {
-	    tmptail = tmphead = tmpcurr;
-	}
-    } while(FindNextFile(fh, &fd));
-
-    //
-    // ok, now we\'ve got a list of files that matched the wildcard
-    // specification. Put it in place of the pattern structure.
-    //
-    
-    tmphead->prev = patt->prev;
-    tmptail->next = patt->next;
-
-    if (tmphead->prev)
-	tmphead->prev->next = tmphead;
-
-    if (tmptail->next)
-	tmptail->next->prev = tmptail;
-
-    //
-    // Now get rid of the pattern structure
-    //
-
-    if (patt->flags & NTMALLOC)
-	free(patt->str);
-    // free(patt);  //TODO:  memory leak occures here. we have to fix it.
-}
-#else
 typedef struct {
     NtCmdLineElement *head;
     NtCmdLineElement *tail;
@@ -826,7 +735,6 @@ NtCmdGlob (NtCmdLineElement *patt)
 	free(patt->str);
     // free(patt);  //TODO:  memory leak occures here. we have to fix it.
 }
-#endif
 
 // 
 // Check a command string to determine if it has I/O redirection
@@ -839,7 +747,7 @@ NtHasRedirection (char *cmd)
     int inquote = 0;
     char quote = '\0';
     char *ptr ;
-    
+
     //
     // Scan the string, looking for redirection (< or >) or pipe 
     // characters (|) that are not in a quoted string
@@ -889,7 +797,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     NtCmdLineElement *curr;
 
     //
-    // just return if we don\'t have a command line
+    // just return if we don't have a command line
     //
 
     if (cmdlen == 0) {
@@ -911,8 +819,8 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 
     //
     // Ok, parse the command line, building a list of CmdLineElements.
-    // When we\'ve finished, and it\'s an input command (meaning that it\'s
-    // the processes argv), we\'ll do globing and then build the argument 
+    // When we've finished, and it's an input command (meaning that it's
+    // the processes argv), we'll do globing and then build the argument 
     // vector.
     // The outer loop does one interation for each element seen. 
     // The inner loop does one interation for each character in the element.
@@ -947,14 +855,14 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	      case '/':  // have to do this for NT/DOS option strings
 
 		//
-		// check to see if we\'re parsing an option switch
+		// check to see if we're parsing an option switch
 		//
 
 		if (*ptr == '/' && base == ptr)
 		    continue;
 #endif
 		//
-		// if we\'re not in a string, then we\'re finished with this
+		// if we're not in a string, then we're finished with this
 		// element
 		//
 
@@ -967,7 +875,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 
 		// 
 		// record the fact that this element has a wildcard character
-		// N.B. Don\'t glob if inside a single quoted string
+		// N.B. Don't glob if inside a single quoted string
 		//
 
 		if (!(instring && quote == '\''))
@@ -979,7 +887,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 		//
 		// If this string contains a newline, mark it as such so
 		// we can replace it with the two character sequence "\n"
-		// (cmd.exe doesn\'t like raw newlines in strings...sigh).
+		// (cmd.exe doesn't like raw newlines in strings...sigh).
 		//
 
 		newline++;
@@ -989,10 +897,10 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	      case '\"':
 
 		//
-		// if we\'re already in a string, see if this is the
-		// terminating close-quote. If it is, we\'re finished with 
+		// if we're already in a string, see if this is the
+		// terminating close-quote. If it is, we're finished with 
 		// the string, but not neccessarily with the element.
-		// If we\'re not already in a string, start one.
+		// If we're not already in a string, start one.
 		//
 
 		if (instring) {
@@ -1019,7 +927,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	    ptr--;
 
 	//
-	// when we get here, we\'ve got a pair of pointers to the element,
+	// when we get here, we've got a pair of pointers to the element,
 	// base and ptr. Base points to the start of the element while ptr
 	// points to the character following the element.
 	//
@@ -1030,7 +938,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	len = ptr - base;
 
 	//
-	// if it\'s an input vector element and it\'s enclosed by quotes, 
+	// if it's an input vector element and it's enclosed by quotes, 
 	// we can remove them.
 	//
 
@@ -1071,7 +979,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     if (InputCmd) {
 
 	//
-	// When we get here we\'ve finished parsing the command line. Now 
+	// When we get here we've finished parsing the command line. Now 
 	// we need to run the list, expanding any globbing patterns.
 	//
 	
@@ -1100,7 +1008,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 
     //
     // make vptr point to the start of the buffer
-    // and ptr point to the area we\'ll consider the string table.
+    // and ptr point to the area we'll consider the string table.
     //
     //   buffer (*vec)
     //   |
@@ -1126,7 +1034,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     return elements;
 }
 
-
 //
 // UNIX compatible directory access functions for NT
 //
@@ -1152,7 +1059,7 @@ opendir(const char *filename)
     HANDLE          fh;
 
     //
-    // check to see if we\'ve got a directory
+    // check to see if we've got a directory
     //
 
     if ((win32_stat (filename, &sbuf) < 0 ||
@@ -1303,7 +1210,7 @@ rewinddir(DIR *dirp)
 }
 
 //
-// This just free\'s the memory allocated by opendir
+// This just free's the memory allocated by opendir
 //
 
 void
@@ -1312,133 +1219,6 @@ closedir(DIR *dirp)
 	free(dirp->start);
 	free(dirp);
 }
-
-
-//
-// 98.2% of this code was lifted from the OS2 port. (JCW)
-//
-
-#if 0
-// add_suffix is in util.c too.
-/*
- * Suffix appending for in-place editing under MS-DOS and OS/2 (and now NT!).
- *
- * Here are the rules:
- *
- * Style 0:  Append the suffix exactly as standard perl would do it.
- *           If the filesystem groks it, use it.  (HPFS will always
- *           grok it.  So will NTFS. FAT will rarely accept it.)
- *
- * Style 1:  The suffix begins with a '.'.  The extension is replaced.
- *           If the name matches the original name, use the fallback method.
- *
- * Style 2:  The suffix is a single character, not a '.'.  Try to add the 
- *           suffix to the following places, using the first one that works.
- *               [1] Append to extension.  
- *               [2] Append to filename, 
- *               [3] Replace end of extension, 
- *               [4] Replace end of filename.
- *           If the name matches the original name, use the fallback method.
- *
- * Style 3:  Any other case:  Ignore the suffix completely and use the
- *           fallback method.
- *
- * Fallback method:  Change the extension to ".$$$".  If that matches the
- *           original name, then change the extension to ".~~~".
- *
- * If filename is more than 1000 characters long, we die a horrible
- * death.  Sorry.
- *
- * The filename restriction is a cheat so that we can use buf[] to store
- * assorted temporary goo.
- *
- * Examples, assuming style 0 failed.
- *
- * suffix = ".bak" (style 1)
- *                foo.bar => foo.bak
- *                foo.bak => foo.$$$	(fallback)
- *                foo.$$$ => foo.~~~	(fallback)
- *                makefile => makefile.bak
- *
- * suffix = "~" (style 2)
- *                foo.c => foo.c~
- *                foo.c~ => foo.c~~
- *                foo.c~~ => foo~.c~~
- *                foo~.c~~ => foo~~.c~~
- *                foo~~~~~.c~~ => foo~~~~~.$$$ (fallback)
- *
- *                foo.pas => foo~.pas
- *                makefile => makefile.~
- *                longname.fil => longname.fi~
- *                longname.fi~ => longnam~.fi~
- *                longnam~.fi~ => longnam~.$$$
- *                
- */
-
-
-static char suffix1[] = ".$$$";
-static char suffix2[] = ".~~~";
-
-#define ext (&buf[1000])
-
-#define strEQ(s1,s2) (strcmp(s1,s2) == 0)
-
-void
-add_suffix(struct RString *str, char *suffix)
-{
-    int baselen;
-    int extlen = strlen(suffix);
-    char *s, *t, *p;
-    int slen;
-    char buf[1024];
-
-    if (str->len > 1000)
-        rb_fatal("Cannot do inplace edit on long filename (%d characters)", str->len);
-
-    /* Style 0 */
-    slen = str->len;
-    str_cat(str, suffix, extlen);
-    if (valid_filename(str->ptr)) return;
-
-    /* Fooey, style 0 failed.  Fix str before continuing. */
-    str->ptr[str->len = slen] = '\0';
-
-    slen = extlen;
-    t = buf; baselen = 0; s = str->ptr;
-    while ( (*t = *s) && *s != '.') {
-	baselen++;
-	if (*s == '\\' || *s == '/') baselen = 0;
- 	s++; t++;
-    }
-    p = t;
-
-    t = ext; extlen = 0;
-    while (*t++ = *s++) extlen++;
-    if (extlen == 0) { ext[0] = '.'; ext[1] = 0; extlen++; }
-
-    if (*suffix == '.') {        /* Style 1 */
-        if (strEQ(ext, suffix)) goto fallback;
-	strcpy(p, suffix);
-    } else if (suffix[1] == '\0') {  /* Style 2 */
-        if (extlen < 4) { 
-	    ext[extlen] = *suffix;
-	    ext[++extlen] = '\0';
-        } else if (baselen < 8) {
-   	    *p++ = *suffix;
-	} else if (ext[3] != *suffix) {
-	    ext[3] = *suffix;
-	} else if (buf[7] != *suffix) {
-	    buf[7] = *suffix;
-	} else goto fallback;
-	strcpy(p, ext);
-    } else { /* Style 3:  Panic */
-fallback:
-	(void)memcpy(p, strEQ(ext, suffix1) ? suffix2 : suffix1, 5);
-    }
-    str_grow(str, strlen(buf));
-    memcpy(str->ptr, buf, str->len);
-}
-#endif
 
 static int 
 valid_filename(char *s)
@@ -1446,7 +1226,7 @@ valid_filename(char *s)
     int fd;
 
     //
-    // if the file exists, then it\'s a valid filename!
+    // if the file exists, then it's a valid filename!
     //
 
     if (_access(s, 0) == 0) {
@@ -1454,26 +1234,25 @@ valid_filename(char *s)
     }
 
     //
-    // It doesn\'t exist, so see if we can open it.
+    // It doesn't exist, so see if we can open it.
     //
     
     if ((fd = _open(s, _O_CREAT, 0666)) >= 0) {
 	close(fd);
-	_unlink (s);	// don\'t leave it laying around
+	_unlink (s);	// don't leave it laying around
 	return 1;
     }
     return 0;
 }
 
-
 //
 // This is a clone of fdopen so that we can handle the 
 // brain damaged version of sockets that NT gets to use.
 //
 // The problem is that sockets are not real file handles and 
-// cannot be fdopen\'ed. This causes problems in the do_socket
+// cannot be fdopen'ed. This causes problems in the do_socket
 // routine in doio.c, since it tries to create two file pointers
-// for the socket just created. We\'ll fake out an fdopen and see
+// for the socket just created. We'll fake out an fdopen and see
 // if we can prevent perl from trying to do stdio on sockets.
 //
 
@@ -1616,7 +1395,6 @@ myfdclose(FILE *fp)
     });
 }
 
-
 //
 // Since the errors returned by the socket error function 
 // WSAGetLastError() are not known by the library routine strerror
@@ -1651,7 +1429,7 @@ mystrerror(int e)
     }
     return strerror(e);
 }
-
+
 //
 // various stubs
 //
@@ -1660,7 +1438,7 @@ mystrerror(int e)
 // Ownership
 //
 // Just pretend that everyone is a superuser. NT will let us know if
-// we don\'t really have permission to do something.
+// we don't really have permission to do something.
 //
 
 #define ROOT_UID	0
@@ -1713,7 +1491,6 @@ ioctl(int i, unsigned int u, long data)
     return -1;
 }
 
-
 #undef FD_SET
 
 void
@@ -1766,7 +1543,7 @@ myfdisset(int fd, fd_set *set)
 //
 // Networking trampolines
 // These are used to avoid socket startup/shutdown overhead in case 
-// the socket routines aren\'t used.
+// the socket routines aren't used.
 //
 
 #undef select
@@ -1870,7 +1647,7 @@ StartSockets ()
 	int iSockOpt;
     
     //
-    // initalize the winsock interface and insure that it\'s
+    // initalize the winsock interface and insure that it's
     // cleaned up at exit.
     //
     version = MAKEWORD(1, 1);
@@ -2263,7 +2040,6 @@ void setnetent (int stayopen) {}
 void setprotoent (int stayopen) {}
 
 void setservent (int stayopen) {}
-
 
 #ifndef WNOHANG
 #define WNOHANG -1
@@ -2646,7 +2422,6 @@ mytimes(struct tms *tmbuf)
     return 0;
 }
 
-
 #undef Sleep
 #define yield_once() Sleep(0)
 #define yield_until(condition) do yield_once(); while (!(condition))
@@ -2961,6 +2736,15 @@ char **win32_get_environ(void)
     char **myenvtop, **myenv;
     int num;
 
+    /*
+     * We avoid values started with `='. If you want to deal those values,
+     * change this function, and some functions in hash.c which recognize
+     * `=' as delimiter or win32_getenv() and ruby_setenv().
+     * CygWin deals these values by changing first `=' to '!'. But we don't
+     * use such trick and follow cmd.exe's way that just doesn't show these
+     * values.
+     * (U.N. 2001-11-15)
+     */
     envtop = GetEnvironmentStrings();
     for (env = envtop, num = 0; *env; env += strlen(env) + 1)
 	if (*env != '=') num++;
