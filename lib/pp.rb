@@ -324,7 +324,7 @@ class Struct
   end
 
   def pretty_print_cycle(q)
-    q.text sprintf("#<%s:...>", self.class.name)
+    q.text sprintf("#<struct %s:...>", self.class.name)
   end
 end
 
@@ -542,7 +542,7 @@ if __FILE__ == $0
       result = PP.pp(a, '')
       assert_equal("#{a.inspect}\n", result)
       assert_match(/\A#<Object.*>\n\z/m, result)
-      a = 1
+      a = 1.0
       a.instance_eval { @a = nil }
       result = PP.pp(a, '')
       assert_equal("#{a.inspect}\n", result)
@@ -562,19 +562,22 @@ if __FILE__ == $0
       a = []
       a << a
       assert_equal("[[...]]\n", PP.pp(a, ''))
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
     end
 
     def test_hash
       a = {}
       a[0] = a
       assert_equal("{0=>{...}}\n", PP.pp(a, ''))
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
     end
 
     S = Struct.new("S", :a, :b)
     def test_struct
       a = S.new(1,2)
       a.b = a
-      assert_equal("#<struct Struct::S a=1, b=#<Struct::S:...>>\n", PP.pp(a, ''))
+      assert_equal("#<struct Struct::S a=1, b=#<struct Struct::S:...>>\n", PP.pp(a, ''))
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
     end
 
     def test_object
@@ -592,6 +595,7 @@ if __FILE__ == $0
       a = []
       a << HasInspect.new(a)
       assert_equal("[<inspect:[...]>]\n", PP.pp(a, ''))
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
     end
 
     def test_share_nil

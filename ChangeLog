@@ -1,3 +1,7 @@
+Tue Feb  3 08:04:57 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pp.rb (Struct#pretty_print_cycle): follow 1.8 style.
+
 Mon Feb  2 19:33:49 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: backport from 1.9 for Interix.
