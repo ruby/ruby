@@ -1,0 +1,172 @@
+LEGAL NOTICE INFORMATION
+------------------------
+
+All the files in this distribution are covered under either the Ruby's
+license (see the file COPYING) or public-domain except some files
+mentioned below.
+
+regex.[ch]:
+
+  These files are under LGPL.  Treat them as LGPL says. (See the
+  file LGPL for details)
+
+    Extended regular expression matching and search library.
+    Copyright (C) 1993, 94, 95, 96, 97, 98 Free Software Foundation, Inc.
+
+    The GNU C Library is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Library General Public License as
+    published by the Free Software Foundation; either version 2 of the
+    License, or (at your option) any later version.
+
+    The GNU C Library is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Library General Public License for more details.
+
+    You should have received a copy of the GNU Library General Public
+    License along with the GNU C Library; see the file LGPL.  If not,
+    write to the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+    Boston, MA 02111-1307, USA.  */
+
+    Multi-byte extension added May, 1993 by t^2 (Takahiro Tanimoto)
+    Last change: May 21, 1993 by t^2
+    removed gapped buffer support, multiple syntax support by matz <matz@nts.co.jp>
+    Perl5 extension added by matz <matz@caelum.co.jp>
+    UTF-8 extension added Jan 16 1999 by Yoshida Masato  <yoshidam@tau.bekkoame.ne.jp>
+
+util.c (partly):
+win32/win32.[ch]:
+
+  You can apply the Artistic Licence to these files. (or GPL,
+  alternatively)
+
+    Copyright (c) 1993, Intergraph Corporation
+
+    You may distribute under the terms of either the GNU General Public
+    License or the Artistic License, as specified in the perl README file.
+
+st.[ch]:
+x68/*:
+missing/alloca.c:
+missing/dup2.c:
+missing/finite.c:
+missing/hypot.c:
+missing/isinf.c:
+missing/isnan.c:
+missing/memcmp.c:
+missing/memmove.c:
+missing/mkdir.c:
+missing/strcasecmp.c:
+missing/strchr.c:
+missing/streror.c:
+missing/strftime.c:
+missing/strncasecmp.c:
+missing/strstr.c:
+missing/strtol.c:
+ext/sha1/sha1.[ch]:
+
+  These files are all under public domain.
+
+missing/strtod.c:
+
+  This file will not be used on most platforms depending on how the
+  configure script results.  In any case you must not receive any fee
+  with the file itself.
+
+    Copyright (c) 1988-1993 The Regents of the University of California.
+    Copyright (c) 1994 Sun Microsystems, Inc.
+
+    Permission to use, copy, modify, and distribute this
+    software and its documentation for any purpose and without
+    fee is hereby granted, provided that the above copyright
+    notice appear in all copies.  The University of California
+    makes no representations about the suitability of this
+    software for any purpose.  It is provided "as is" without
+    express or implied warranty.
+
+missing/strtoul.c:
+
+  This file will not be used on most platforms depending on how the
+  configure script results.  In any case you must not receive any fee
+  with the file itself.
+
+    Copyright 1988 Regents of the University of California
+
+    Permission to use, copy, modify, and distribute this
+    software and its documentation for any purpose and without
+    fee is hereby granted, provided that the above copyright
+    notice appear in all copies.  The University of California
+    makes no representations about the suitability of this
+    software for any purpose.  It is provided "as is" without
+    express or implied warranty.
+
+missing/vsnprintf.c:
+
+  This file is under the old-style BSD licence.  Note that the
+  paragraph 3 below is now null and void.
+
+    Copyright (c) 1990, 1993
+         The Regents of the University of California.  All rights reserved.
+
+    This code is derived from software contributed to Berkeley by
+    Chris Torek.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+    3. All advertising materials mentioning features or use of this software
+       must display the following acknowledgement:
+         This product includes software developed by the University of
+         California, Berkeley and its contributors.
+    4. Neither the name of the University nor the names of its contributors
+       may be used to endorse or promote products derived from this software
+       without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+    SUCH DAMAGE.
+
+    IMPORTANT NOTE:
+    --------------
+    From ftp://ftp.cs.berkeley.edu/pub/4bsd/README.Impt.License.Change
+    paragraph 3 above is now null and void.
+
+ext/md5/md5c.c:
+ext/md5/md5.h:
+
+  These files are under the following license.  Ruby uses modified
+  versions of them.
+
+    Copyright (C) 1999, 2000 Aladdin Enterprises.  All rights reserved.
+
+    This software is provided 'as-is', without any express or implied
+    warranty.  In no event will the authors be held liable for any damages
+    arising from the use of this software.
+
+    Permission is granted to anyone to use this software for any purpose,
+    including commercial applications, and to alter it and redistribute it
+    freely, subject to the following restrictions:
+
+    1. The origin of this software must not be misrepresented; you must not
+       claim that you wrote the original software. If you use this software
+       in a product, an acknowledgment in the product documentation would be
+       appreciated but is not required.
+    2. Altered source versions must be plainly marked as such, and must not be
+       misrepresented as being the original software.
+    3. This notice may not be removed or altered from any source distribution.
+
+    L. Peter Deutsch
+    ghost@aladdin.com
