@@ -1,3 +1,8 @@
+Mon Sep  2 23:01:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* re.c (rb_reg_search): MatchData must be rb_cMatch.
+	  (ruby-bugs-ja:PR#319)
+
 Mon Sep  2 21:21:46 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* gc.c (gc_sweep): does reclaim nodes in also compile time, if we

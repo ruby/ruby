@@ -237,10 +237,9 @@ rb_reg_expr_str(str, s, len)
 	p = s; 
 	while (p<pend) {
 	    if (*p == '\\') {
-		rb_str_buf_cat(str, p, 1);
-		p++;
-	    	rb_str_buf_cat(str, p, mbclen(*p));
-		p += mbclen(*p);
+		int n = mbclen(p[1]) + 1;
+		rb_str_buf_cat(str, p, n);
+		p += n;
 		continue;
 	    }
 	    else if (*p == '/') {
@@ -251,7 +250,6 @@ rb_reg_expr_str(str, s, len)
 	    else if (ismbchar(*p)) {
 	    	rb_str_buf_cat(str, p, mbclen(*p));
 		p += mbclen(*p);
-		need_escape = 1;
 		continue;
 	    }
 	    else if (ISPRINT(*p)) {
@@ -725,7 +723,7 @@ rb_reg_search(re, str, pos, reverse)
 
     match = rb_backref_get();
     if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
-	match = match_alloc(rb_obj_class(re));
+	match = match_alloc(rb_cMatch);
     }
     else {
 	if (rb_safe_level() >= 3) 
