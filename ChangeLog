@@ -1,6 +1,8 @@
-Tue Dec  9 12:49:22 2003  Tanaka Akira  <akr@m17n.org>
+Tue Dec  9 14:10:48 2003  Tanaka Akira  <akr@m17n.org>
 
-	* io.c (rb_io_check_readable): Don't clear EOF flag by io_seek.
+	* io.c (rb_io_check_readable): don't call io_seek if EOF flag is set,
+	  to avoid clearing EOF flag.
+	  (rb_io_check_writable): ditto.
 
 Tue Dec  9 02:53:55 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

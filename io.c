@@ -243,7 +243,7 @@ rb_io_check_writable(fptr)
 	rb_raise(rb_eIOError, "not opened for writing");
     }
 #if NEED_IO_SEEK_BETWEEN_RW
-    if ((fptr->mode & FMODE_RBUF) && !fptr->f2) {
+    if ((fptr->mode & FMODE_RBUF) && !feof(fptr->f) && !fptr->f2) {
 	io_seek(fptr, 0, SEEK_CUR);
     }
 #endif
