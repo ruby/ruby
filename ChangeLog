@@ -1,3 +1,12 @@
+Thu Oct  2 20:33:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (iconv_failure_initialize): conform with
+	  orthodox initialization method.
+
+	* ext/iconv/iconv.c (iconv_fail): initialize exception instance
+	  from the class, and do not share instance variables with the
+	  others.  [ruby-dev:21470]
+
 Thu Oct  2 18:20:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* time.c (Init_Time): define initialize.  [ruby-dev:21469]
