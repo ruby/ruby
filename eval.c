@@ -1401,7 +1401,6 @@ superclass(self, node)
     }
     POP_TAG();
     if (state) {
-      superclass_error:
 	switch (nd_type(node)) {
 	  case NODE_COLON2:
 	    rb_raise(rb_eTypeError, "undefined superclass `%s'",
@@ -1414,7 +1413,10 @@ superclass(self, node)
 	}
 	JUMP_TAG(state);
     }
-    if (TYPE(val) != T_CLASS) goto superclass_error;
+    if (TYPE(val) != T_CLASS) {
+	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
+		 rb_class2name(CLASS_OF(val)));
+    }
     if (FL_TEST(val, FL_SINGLETON)) {
 	rb_raise(rb_eTypeError, "can't make subclass of virtual class");
     }
