@@ -157,10 +157,10 @@ EXCEPTION_ZERODIVIDE のとき、+Infinity か -Infinity<BR>
 </BLOCKQUOTE>
 EXCEPTION_INFINITY、EXCEPTION_OVERFLOW、EXCEPTION_ZERODIVIDE
 は今のところ同じです。<BR>
-戻り値は、設定前の値です。「値」の意味は、例えば
+戻り値は、設定後の値です。「値」の意味は、例えば
 BigDecimal::EXCEPTION_NaNと「値」の & が ゼロ以外ならば
 EXCEPTION_NaNが設定されているという意味です。<BR>
-引数に正しくないものが指定された場合は nil が返ります。
+第２引数に nil を指定すると、現状の設定値が返ります。
 
 <P>
 <B>[丸め処理指定]</B><P>
@@ -181,8 +181,7 @@ f = BigDecimal::mode(BigDecimal::ROUND_MODE,flag)
 
 </TABLE>
 戻り値は指定後の flag の値です。
-引数に数値以外が指定された場合は nil が返ります。正しくない ROUND_MODE が指定されたときは
-無視され、現状の ROUND_MODE が返ります。<BR>
+第２引数に nil を指定すると、現状の設定値が返ります。
 mode メソッドでは丸め操作の位置をユーザが指定することはできません。
 丸め操作と位置を自分で制御したい場合は truncate/round/ceil/floor や 
 add/sub/mult/div といったインスタンスメソッドを使用して下さい。
@@ -375,10 +374,28 @@ Float オブジェクトに変換します。
 ください。
 </BLOCKQUOTE>
 <LI><B>to_s[(n)]</B></LI><BLOCKQUOTE>
-文字列に変換します("0.xxxxxEn"の形になります）。<BR>
-s = a.to_s<BR>
-n が指定されたときは、仮数部分を n 桁毎に空白で区切ります。<BR>
-s = a.to_s(n)
+文字列に変換します(デフォルトは "0.xxxxxEn" の形になります）。
+<CODE><PRE>
+BigDecimal("1.23456").to_s  #  ==> "0.123456E1"
+</PRE></CODE>
+引数 n に正の整数が指定されたときは、少数点で分けられる左右部分を、それぞれ n 桁毎
+に空白で区切ります。
+<CODE><PRE>
+BigDecimal("0.1234567890123456789").to_s(10)   #  ==> "0.1234567890 123456789E0"
+</PRE></CODE>
+引数 n に正の整数を表す文字列を指定することもできます。
+<CODE><PRE>
+BigDecimal("0.1234567890123456789").to_s("10") #  ==> "0.1234567890 123456789E0"
+</PRE></CODE>
+さらに文字列の最後に E(または e) か F(または f) を指定することで、以下のように
+表示形式を変更することができます。
+<CODE><PRE>
+BigDecimal("1234567890.123456789").to_s("E")  #  ==> "0.1234567890123456789E10"
+BigDecimal("1234567890.123456789").to_s("F")  #  ==> "1234567890.123456789"
+BigDecimal("1234567890.123456789").to_s("5E") #  ==> "0.12345 67890 12345 6789E10"
+BigDecimal("1234567890.123456789").to_s("5F") #  ==> "12345 67890.12345 6789"
+</PRE></CODE>
+
 </BLOCKQUOTE>
 <LI><B>exponent</B></LI><BLOCKQUOTE>
 指数部を整数値で返します。
@@ -386,8 +403,8 @@ n = a.exponent <BR>
 は a の値が 0.xxxxxxx*10**n を意味します。
 </BLOCKQUOTE>
 
-<LI><B>prec</B></LI><BLOCKQUOTE>
-n,m  = a.prec<BR>
+<LI><B>precs</B></LI><BLOCKQUOTE>
+n,m  = a.precs<BR>
 a の有効数字 (n) と最大有効数字 (m) の配列を返します。
 
 </BLOCKQUOTE>

@@ -148,8 +148,8 @@ EXCEPTION_ZERODIVIDE results to +Infinity or -Infinity<BR>
 </BLOCKQUOTE>
 EXCEPTION_INFINITY,EXCEPTION_OVERFLOW, and EXCEPTION_ZERODIVIDE are
  currently the same.<BR>
-The return value of mode method is the previous value set.<BR>
-nil is returned if any argument is wrong.<BR>
+The return value of mode method is the value set.<BR>
+If nil is specified for the second argument,then current setting is returned.<BR>
 Suppose the return value of the mode method is f,then 
  f &amp; BigDecimal::EXCEPTION_NaN !=0 means EXCEPTION_NaN is set to on.
 <P>
@@ -169,8 +169,7 @@ where flag must be one of:
 <TR><TD>ROUND_CEILING</TD><TD>round towards positive infinity(ceil).</TD></TR>
 <TR><TD>ROUND_FLOOR</TD><TD>round towards negative infinity(floor).</TD></TR>
 </TABLE>
-New rounding mode is returned,nil is returned if any argument is not an integer.
-Bad specification is ignored.<BR>
+New rounding mode is returned. If nil is specified for the second argument,then current setting is returned.<BR>
 The digit location for rounding operation can not be specified by this mode method,
 use truncate/round/ceil/floor/add/sub/mult/div mthods for each instance instead.
 </BLOCKQUOTE>
@@ -359,10 +358,27 @@ If a is Infinity or NaN,then i becomes to nil.
 
 </BLOCKQUOTE>
 <LI><B>to_s[(n)]</B></LI><BLOCKQUOTE>
-converts to string(results look like "0.xxxxxEn").<BR>
-s = a.to_s<BR>
-If n is given,then a space is inserted after every n digits for readability.<BR>
-s = a.to_s(n)
+converts to string(default results look like "0.xxxxxEn").
+<CODE><PRE>
+BigDecimal("1.23456").to_s  #  ==> "0.123456E1"
+</PRE></CODE>
+If n(>0) is given,then a space is inserted to each of two parts divided by the decimal point 
+after every n digits for readability.
+<CODE><PRE>
+BigDecimal("0.1234567890123456789").to_s(10)   #  ==> "0.1234567890 123456789E0"
+</PRE></CODE>
+n can be an string representing a positive integer number.
+<CODE><PRE>
+BigDecimal("0.1234567890123456789").to_s("10") #  ==> "0.1234567890 123456789E0"
+</PRE></CODE>
+At the end of the string,'E'(or 'e') or 'F'(or 'f') can be specified to change 
+number representation.
+<CODE><PRE>
+BigDecimal("1234567890.123456789").to_s("E")  #  ==> "0.1234567890123456789E10"
+BigDecimal("1234567890.123456789").to_s("F")  #  ==> "1234567890.123456789"
+BigDecimal("1234567890.123456789").to_s("5E") #  ==> "0.12345 67890 12345 6789E10"
+BigDecimal("1234567890.123456789").to_s("5F") #  ==> "12345 67890.12345 6789"
+</PRE></CODE>
 
 </BLOCKQUOTE>
 <LI><B>exponent</B></LI><BLOCKQUOTE>
@@ -371,8 +387,8 @@ n = a.exponent <BR>
 means a = 0.xxxxxxx*10**n.
 </BLOCKQUOTE>
 
-<LI><B>prec</B></LI><BLOCKQUOTE>
-n,m = a.prec <BR>
+<LI><B>precs</B></LI><BLOCKQUOTE>
+n,m = a.precs <BR>
 prec returns number of significant digits (n) and maximum number of 
 significant digits (m) of a.
 </BLOCKQUOTE>

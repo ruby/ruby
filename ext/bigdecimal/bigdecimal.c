@@ -197,7 +197,7 @@ BigDecimal_dump(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "01", &dummy);
     GUARD_OBJ(vp,GetVpValue(self,1));
     sprintf(sz,"%lu:",VpMaxPrec(vp)*VpBaseFig());
-    psz = ALLOCA_N(char,(unsigned int)VpNumOfChars(vp)+strlen(sz));
+    psz = ALLOCA_N(char,(unsigned int)VpNumOfChars(vp,"E")+strlen(sz));
     sprintf(psz,"%s",sz);
     VpToString(vp, psz+strlen(psz), 0);
     return rb_str_new2(psz);
@@ -233,13 +233,17 @@ BigDecimal_mode(VALUE self, VALUE which, VALUE val)
 {
     unsigned long f,fo;
  
-    if(TYPE(which)!=T_FIXNUM)     return Qnil;
+    Check_Type(which, T_FIXNUM);
     f = (unsigned long)FIX2INT(which);
 
-	if(f&VP_EXCEPTION_ALL) {
+    if(f&VP_EXCEPTION_ALL) {
         /* Exception mode setting */
         fo = VpGetException();
-        if(val!=Qfalse && val!=Qtrue) return Qnil;
+        if(val==Qnil) return INT2FIX(fo);
+        if(val!=Qfalse && val!=Qtrue) {
+            rb_raise(rb_eTypeError, "The second argument must be true or false.");
+            return Qnil; /* Not reached */
+        }
         if(f&VP_EXCEPTION_INFINITY) {
             VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_INFINITY):
                            (fo&(~VP_EXCEPTION_INFINITY))));
@@ -248,14 +252,22 @@ BigDecimal_mode(VALUE self, VALUE which, VALUE val)
             VpSetException((unsigned short)((val==Qtrue)?(fo|VP_EXCEPTION_NaN):
                            (fo&(~VP_EXCEPTION_NaN))));
         }
+        fo = VpGetException();
         return INT2FIX(fo);
     }
     if(VP_ROUND_MODE==f) {
         /* Rounding mode setting */
-        if(TYPE(val)!=T_FIXNUM)     return Qnil;
+        fo = VpGetRoundMode();
+        if(val==Qnil) return INT2FIX(fo);
+        Check_Type(val, T_FIXNUM);
+        if(!VpIsRoundMode(FIX2INT(val))) {
+            rb_raise(rb_eTypeError, "Invalid rounding mode.");
+            return Qnil;
+        }
         fo = VpSetRoundMode((unsigned long)FIX2INT(val));
         return INT2FIX(fo);
     }
+    rb_raise(rb_eTypeError, "The first argument for BigDecimal#mode is invalid.");
     return Qnil;
 }
 
@@ -919,13 +931,14 @@ BigDecimal_round(int argc, VALUE *argv, VALUE self)
         Check_Type(vLoc, T_FIXNUM);
         iLoc = FIX2INT(vLoc);
         break;
-    case 2:{
-        int sws = sw;
+    case 2:
         Check_Type(vLoc, T_FIXNUM);
         iLoc = FIX2INT(vLoc);
         Check_Type(vRound, T_FIXNUM);
-        sw = VpSetRoundMode(FIX2INT(vRound));
-        VpSetRoundMode(sws);
+        sw   = FIX2INT(vRound);
+        if(!VpIsRoundMode(sw)) {
+            rb_raise(rb_eTypeError, "Invalid rounding mode.");
+            return Qnil;
         }
         break;
     }
@@ -1024,20 +1037,45 @@ static VALUE
 BigDecimal_to_s(int argc, VALUE *argv, VALUE self)
 {
     ENTER(5);
-    Real *vp;
-    char *psz;
+    int   fmt=0; /* 0:E format */
+    Real  *vp;
+    char  *psz;
+    char   ch;
     U_LONG nc;
-    S_INT mc = 0;
-    VALUE f;
+    S_INT  mc = 0;
+    VALUE  f;
 
     GUARD_OBJ(vp,GetVpValue(self,1));
-    nc = VpNumOfChars(vp)+1;
+    
     if(rb_scan_args(argc,argv,"01",&f)==1) {
-        mc  = GetPositiveInt(f);
-        nc += (nc + mc - 1) / mc + 1;
+        if(TYPE(f)==T_STRING) {
+            SafeStringValue(f);
+            psz = RSTRING(f)->ptr;
+            while(ch=*psz++) {
+                if(!ISDIGIT(ch)) {
+                    if(ch=='F' || ch=='f') fmt = 1; /* F format */
+                    break;
+                }
+                mc = mc * 10 + ch - '0';
+            }
+        } else {
+            mc  = GetPositiveInt(f);
+        }
+        if(fmt) {
+            nc = VpNumOfChars(vp,"F");
+        } else {
+            nc = VpNumOfChars(vp,"E");
+        }
+        if(mc>0) nc += (nc + mc - 1) / mc + 1;
     }
+
     psz = ALLOCA_N(char,(unsigned int)nc);
-    VpToString(vp, psz, mc);
+
+    if(fmt) {
+        VpToFString(vp, psz, mc);
+    } else {
+        VpToString (vp, psz, mc);
+    }
     return rb_str_new2(psz);
 }
 
@@ -1052,7 +1090,7 @@ BigDecimal_split(VALUE self)
     char *psz1;
 
     GUARD_OBJ(vp,GetVpValue(self,1));
-    psz1 = ALLOCA_N(char,(unsigned int)VpNumOfChars(vp));
+    psz1 = ALLOCA_N(char,(unsigned int)VpNumOfChars(vp,"E"));
     VpSzMantissa(vp,psz1);
     s = 1;
     if(psz1[0]=='-') {
@@ -1087,7 +1125,7 @@ BigDecimal_inspect(VALUE self)
     char *pszAll;
 
     GUARD_OBJ(vp,GetVpValue(self,1));
-    nc = VpNumOfChars(vp);
+    nc = VpNumOfChars(vp,"E");
     nc +=(nc + 9) / 10;
 
     psz1   = ALLOCA_N(char,nc);
@@ -1298,7 +1336,7 @@ Init_bigdecimal(void)
     rb_define_const(rb_cBigDecimal, "SIGN_NEGATIVE_INFINITE",INT2FIX(VP_SIGN_NEGATIVE_INFINITE));
 
     /* instance methods */
-    rb_define_method(rb_cBigDecimal, "prec", BigDecimal_prec, 0);
+    rb_define_method(rb_cBigDecimal, "precs", BigDecimal_prec, 0);
     rb_define_method(rb_cBigDecimal, "add", BigDecimal_add2, 2);
     rb_define_method(rb_cBigDecimal, "sub", BigDecimal_sub2, 2);
     rb_define_method(rb_cBigDecimal, "mult", BigDecimal_mult2, 2);
@@ -1478,14 +1516,21 @@ VpGetRoundMode(void)
     return gfRoundMode;
 }
 
-VP_EXPORT unsigned long
-VpSetRoundMode(unsigned long n)
+VP_EXPORT int
+VpIsRoundMode(unsigned long n)
 {
     if(n==VP_ROUND_UP      || n!=VP_ROUND_DOWN      ||
        n==VP_ROUND_HALF_UP || n!=VP_ROUND_HALF_DOWN ||
        n==VP_ROUND_CEIL    || n!=VP_ROUND_FLOOR     ||
        n==VP_ROUND_HALF_EVEN
-      ) gfRoundMode = n;
+      ) return 1;
+    return 0;
+}
+
+VP_EXPORT unsigned long
+VpSetRoundMode(unsigned long n)
+{
+    if(VpIsRoundMode(n)) gfRoundMode = n;
     return gfRoundMode;
 }
 
@@ -1630,13 +1675,13 @@ raise:
 static int
 VpIsDefOP(Real *c,Real *a,Real *b,int sw)
 {
- if(VpIsNaN(a) || VpIsNaN(b)) {
+    if(VpIsNaN(a) || VpIsNaN(b)) {
         /* at least a or b is NaN */
         VpSetNaN(c);
         goto NaN;
- }
+    }
 
- if(VpIsInf(a)) {
+    if(VpIsInf(a)) {
         if(VpIsInf(b)) {
             switch(sw)
             {
@@ -1686,7 +1731,7 @@ VpIsDefOP(Real *c,Real *a,Real *b,int sw)
                 VpSetInf(c,VpGetSign(a)*VpGetSign(b));
         }
         goto Inf;
- }
+    }
 
     if(VpIsInf(b)) {
         switch(sw)
@@ -1722,14 +1767,35 @@ NaN:
 */
 
 /*
- *    returns number of chars needed to represent vp.
+ *    returns number of chars needed to represent vp in specified format.
  */
 VP_EXPORT U_LONG
-VpNumOfChars(Real *vp)
+VpNumOfChars(Real *vp,char *pszFmt)
 {
+    S_INT  ex;
+    U_LONG nc;
+
     if(vp == NULL)   return BASE_FIG*2+6;
     if(!VpIsDef(vp)) return 32; /* not sure,may be OK */
-    return     BASE_FIG *(vp->Prec + 2)+6; /* 3: sign + exponent chars */
+
+    switch(*pszFmt)
+    {
+    case 'F':
+         nc = BASE_FIG*(vp->Prec + 1)+2;
+         ex = vp->exponent;
+         if(ex<0) {
+             nc += BASE_FIG*(-ex);
+         } else {
+             if(ex > (S_INT)vp->Prec) {
+                 nc += BASE_FIG*(ex - (S_INT)vp->Prec);
+             }
+         }
+         break;
+    case 'E':
+    default:
+         nc = BASE_FIG*(vp->Prec + 2)+6; /* 3: sign + exponent chars */
+    }
+    return nc;
 }
 
 /*
@@ -2110,10 +2176,10 @@ end_if:
     isw = VpGetSign(a) + sw *VpGetSign(b);
     /*
      *  isw = 0 ...( 1)+(-1),( 1)-( 1),(-1)+(1),(-1)-(-1)
-     *   = 2 ...( 1)+( 1),( 1)-(-1)
-     *   =-2 ...(-1)+(-1),(-1)-( 1)
+     *      = 2 ...( 1)+( 1),( 1)-(-1)
+     *      =-2 ...(-1)+(-1),(-1)-( 1)
      *   If isw==0, then c =(Sign a_ptr)(|a_ptr|-|b_ptr|)
-     *     else c =(Sign of isw)(|a_ptr|+|b_ptr|)
+     *              else c =(Sign ofisw)(|a_ptr|+|b_ptr|)
     */
     if(isw) {            /* addition */
         VpSetSign(c,(S_INT)1);
@@ -2363,12 +2429,12 @@ Exit:
  *      a =  xxxxxxxxxxx
  *      b =    xxxxxxxxxx
  *      c =xxxxxxxxxxxxxxx
- *   word_shift =  |   |
- *   right_word =  |    | (Total digits in RHSV)
- *   left_word  = |   |   (Total digits in LHSV)
- *   a_pos   =    |
- *   b_pos   =     |
- *   c_pos   =      |
+ *      word_shift =  |   |
+ *      right_word =  |    | (Total digits in RHSV)
+ *      left_word  = |   |   (Total digits in LHSV)
+ *      a_pos      =    |
+ *      b_pos      =     |
+ *      c_pos      =      |
  */
 static U_LONG
 VpSetPTR(Real *a, Real *b, Real *c, U_LONG *a_pos, U_LONG *b_pos, U_LONG *c_pos, U_LONG *av, U_LONG *bv)
@@ -2381,17 +2447,17 @@ VpSetPTR(Real *a, Real *b, Real *c, U_LONG *a_pos, U_LONG *b_pos, U_LONG *c_pos,
     right_word = Max((a->Prec),left_word);
     left_word =(c->MaxPrec) - 1;    /* -1 ... prepare for round up */
     /*
-     * check if 'round off' is needed.
+     * check if 'round' is needed.
      */
-    if(right_word > left_word) {    /* round off ? */
+    if(right_word > left_word) {    /* round ? */
         /*---------------------------------
          *  Actual size of a = xxxxxxAxx
          *  Actual size of b = xxxBxxxxx
          *  Max. size of   c = xxxxxx
-         *  Round off  =   |-----|
-         *  c_pos   =   |
-         *  right_word    =   |
-         *  a_pos   =    |
+         *  Round off        =   |-----|
+         *  c_pos            =   |
+         *  right_word       =   |
+         *  a_pos            =    |
          */
         *c_pos = right_word = left_word + 1;    /* Set resulting precision */
         /* be equal to that of c */
@@ -3036,7 +3102,8 @@ VpFormatSt(char *psz,S_INT fFmt)
     U_LONG i;
     S_INT nf = 0;
     char ch;
-    int fDot = 0;
+
+    if(fFmt<=0) return;
 
     ie = strlen(psz);
     for(i = 0; i < ie; ++i) {
@@ -3044,10 +3111,8 @@ VpFormatSt(char *psz,S_INT fFmt)
         if(!ch) break;
         if(ch == '.') {
             nf = 0;
-            fDot = 1;
             continue;
         }
-        if(!fDot)  continue;
         if(ch == 'E') break;
         nf++;
         if(nf > fFmt) {
@@ -3123,6 +3188,29 @@ VpSzMantissa(Real *a,char *psz)
     }
 }
 
+VP_EXPORT int
+VpToSpecialString(Real *a,char *psz)
+{
+    if(VpIsNaN(a)) {
+        sprintf(psz,SZ_NaN);
+        return 1;
+    }
+    if(VpIsPosInf(a)) {
+        sprintf(psz,SZ_INF);
+        return 1;
+    }
+    if(VpIsNegInf(a)) {
+        sprintf(psz,SZ_NINF);
+        return 1;
+    }
+    if(VpIsZero(a)) {
+        if(VpIsPosZero(a)) sprintf(psz, "0.0");
+        else      sprintf(psz, "-0.0");
+        return 1;
+    }
+    return 0;
+}
+
 VP_EXPORT void
 VpToString(Real *a,char *psz,int fFmt)
 {
@@ -3131,52 +3219,87 @@ VpToString(Real *a,char *psz,int fFmt)
     char *pszSav = psz;
     S_LONG ex;
 
-    if(VpIsNaN(a)) {
-        sprintf(psz,SZ_NaN);
-        return;
-    }
-    if(VpIsPosInf(a)) {
-        sprintf(psz,SZ_INF);
-        return;
-    }
-    if(VpIsNegInf(a)) {
-        sprintf(psz,SZ_NINF);
-        return;
-    }
+    if(VpToSpecialString(a,psz)) return;
 
     ZeroSup = 1;    /* Flag not to print the leading zeros as 0.00xxxxEnn */
-    if(!VpIsZero(a)) {
-        if(VpGetSign(a) < 0) *psz++ = '-';
-        *psz++ = '0';
-        *psz++ = '.';
-        n = a->Prec;
-        for(i=0;i < n;++i) {
-            m = BASE1;
-            e = a->frac[i];
-            while(m) {
-                nn = e / m;
-                if((!ZeroSup) || nn) {
-                    sprintf(psz, "%lu", nn);    /* The reading zero(s) */
-                    psz += strlen(psz);
-                    /* as 0.00xx will be ignored. */
-                    ZeroSup = 0;    /* Set to print succeeding zeros */
-                }
-                e = e - nn * m;
-                m /= 10;
+
+    if(VpGetSign(a) < 0) *psz++ = '-';
+    *psz++ = '0';
+    *psz++ = '.';
+    n = a->Prec;
+    for(i=0;i < n;++i) {
+        m = BASE1;
+        e = a->frac[i];
+        while(m) {
+            nn = e / m;
+            if((!ZeroSup) || nn) {
+                sprintf(psz, "%lu", nn);    /* The reading zero(s) */
+                psz += strlen(psz);
+                /* as 0.00xx will be ignored. */
+                ZeroSup = 0;    /* Set to print succeeding zeros */
             }
+            e = e - nn * m;
+            m /= 10;
         }
-        ex =(a->exponent) * BASE_FIG;
-        n = BASE1;
-        while((a->frac[0] / n) == 0) {
-            --ex;
-            n /= 10;
-        }
-        while(psz[-1]=='0') *(--psz) = 0;
-        sprintf(psz, "E%ld", ex);
-    } else {
-        if(VpIsPosZero(a)) sprintf(psz, "0.0");
-        else      sprintf(psz, "-0.0");
     }
+    ex =(a->exponent) * BASE_FIG;
+    n = BASE1;
+    while((a->frac[0] / n) == 0) {
+        --ex;
+        n /= 10;
+    }
+    while(psz[-1]=='0') *(--psz) = 0;
+    sprintf(psz, "E%ld", ex);
+    if(fFmt) VpFormatSt(pszSav, fFmt);
+}
+
+VP_EXPORT void
+VpToFString(Real *a,char *psz,int fFmt)
+{
+    U_LONG i;
+    U_LONG n, m, e, nn;
+    char *pszSav = psz;
+    S_LONG ex;
+
+    if(VpToSpecialString(a,psz)) return;
+
+    if(VpGetSign(a) < 0) *psz++ = '-';
+    n  = a->Prec;
+    ex = a->exponent;
+    if(ex<=0) {
+       *psz++ = '0';*psz++ = '.';
+       while(ex<0) {
+          for(i=0;i<BASE_FIG;++i) *psz++ = '0';
+          ++ex;
+       }
+       ex = -1;
+    }
+
+    for(i=0;i < n;++i) {
+       --ex;
+       if(i==0 && ex >= 0) {
+           sprintf(psz, "%lu", a->frac[i]);
+           psz += strlen(psz);
+       } else {
+           m = BASE1;
+           e = a->frac[i];
+           while(m) {
+               nn = e / m;
+               *psz++ = nn + '0';
+               e = e - nn * m;
+               m /= 10;
+           }
+       }
+       if(ex == 0) *psz++ = '.';
+    }
+    while(--ex>=0) {
+       m = BASE;
+       while(m/=10) *psz++ = '0';
+       if(ex == 0) *psz++ = '.';
+    }
+    *psz = 0;
+    while(psz[-1]=='0') *(--psz) = 0;
+    if(psz[-1]=='.') sprintf(psz, "0");
     if(fFmt) VpFormatSt(pszSav, fFmt);
 }
 

@@ -122,12 +122,13 @@ VP_EXPORT U_LONG VpGetPrecLimit(void);
 VP_EXPORT U_LONG VpSetPrecLimit(U_LONG n);
 
 /* Round mode */
+VP_EXPORT int           VpIsRoundMode(unsigned long n);
 VP_EXPORT unsigned long VpGetRoundMode(void);
 VP_EXPORT unsigned long VpSetRoundMode(unsigned long n);
 
 VP_EXPORT int VpException(unsigned short f,char *str,int always);
 VP_EXPORT int VpIsNegDoubleZero(double v);
-VP_EXPORT U_LONG VpNumOfChars(Real *vp);
+VP_EXPORT U_LONG VpNumOfChars(Real *vp,char *pszFmt);
 VP_EXPORT U_LONG VpInit(U_LONG BaseVal);
 VP_EXPORT void *VpMemAlloc(U_LONG mb);
 VP_EXPORT void VpFree(Real *pv);
@@ -139,7 +140,9 @@ VP_EXPORT int VpDivd(Real *c,Real *r,Real *a,Real *b);
 VP_EXPORT int VpComp(Real *a,Real *b);
 VP_EXPORT S_LONG VpExponent10(Real *a);
 VP_EXPORT void VpSzMantissa(Real *a,char *psz);
+VP_EXPORT int VpToSpecialString(Real *a,char *psz);
 VP_EXPORT void VpToString(Real *a,char *psz,int fFmt);
+VP_EXPORT void VpToFString(Real *a,char *psz,int fFmt);
 VP_EXPORT int VpCtoV(Real *a,char *int_chr,U_LONG ni,char *frac,U_LONG nf,char *exp_chr,U_LONG ne);
 VP_EXPORT int VpVtoD(double *d,S_LONG *e,Real *m);
 VP_EXPORT void VpDtoV(Real *m,double d);
