@@ -194,11 +194,13 @@ class MultiTkIp
 	  ip._invoke(name, 'eval', 'destroy', '.')
 	rescue Exception
 	end
-	begin
-	  # safe_base?
-	  ip._eval_without_enc("::safe::interpConfigure #{name}")
-	  ip._eval_without_enc("::safe::interpDelete #{name}")
-	rescue Exception
+
+	# safe_base?
+	if ip._eval_without_enc("catch {::safe::interpConfigure #{name}}") == '0'
+	  begin
+	    ip._eval_without_enc("::safe::interpDelete #{name}")
+	  rescue Exception
+	  end
 	end
 =begin
 	if ip._invoke('interp', 'exists', name) == '1'
@@ -240,23 +242,26 @@ class MultiTkIp
 	  rescue Exception
 	  end
 =end
-	  begin
-	    # safe_base?
-	    @interp._eval_without_enc("::safe::interpConfigure #{name}")
-	    @interp._eval_without_enc("::safe::interpDelete #{name}")
-	  rescue Exception
-	    if subip.respond_to?(:safe_base?) && subip.safe_base? && 
-		!subip.deleted?
-	      # do 'exit' to call the delete_hook procedure
-	      begin
-		subip._eval_without_enc('exit') 
-	      rescue Exception
-	      end
+	  # safe_base?
+	  if @interp._eval_without_enc("catch {::safe::interpConfigure #{name}}") == '0'
+	    begin
+	      @interp._eval_without_enc("::safe::interpDelete #{name}")
+	    rescue Exception
 	    else
-	      begin
-		subip.delete unless subip.deleted?
-	      rescue Exception
-	      end
+	      next if subip.deleted?
+	    end
+	  end
+	  if subip.respond_to?(:safe_base?) && subip.safe_base? && 
+	      !subip.deleted?
+	    # do 'exit' to call the delete_hook procedure
+	    begin
+	      subip._eval_without_enc('exit') 
+	    rescue Exception
+	    end
+	  else
+	    begin
+	      subip.delete unless subip.deleted?
+	    rescue Exception
 	    end
 	  end
 	}
@@ -298,7 +303,7 @@ class MultiTkIp
       if e.backtrace[0] =~ /^(.+?):(\d+):in `(exit|exit!|abort)'/
 	ret = ($3 == 'exit')
 	unless @interp.deleted?
-	  @slave_ip_tbl.each_value{|subip|
+	  @slave_ip_tbl.each{|name, subip|
 	    _destroy_slaves_of_slaveIP(subip)
 	    begin
 	      subip._eval_without_enc("foreach i [after info] {after cancel $i}")
@@ -310,23 +315,26 @@ class MultiTkIp
 	    rescue Exception
 	    end
 =end
-	    begin
-	      # safe_base?
-	      @interp._eval_without_enc("::safe::interpConfigure #{name}")
-	      @interp._eval_without_enc("::safe::interpDelete #{name}")
-	    rescue Exception
-	      if subip.respond_to?(:safe_base?) && subip.safe_base? && 
-		  !subip.deleted?
-		# do 'exit' to call the delete_hook procedure
-		begin
-		  subip._eval_without_enc('exit') 
-		rescue Exception
-		end
+	    # safe_base?
+	    if @interp._eval_without_enc("catch {::safe::interpConfigure #{name}}") == '0'
+	      begin
+		@interp._eval_without_enc("::safe::interpDelete #{name}")
+	      rescue Exception
 	      else
-		begin
-		  subip.delete unless subip.deleted?
-		rescue Exception
-		end
+		next if subip.deleted?
+	      end
+	    end
+	    if subip.respond_to?(:safe_base?) && subip.safe_base? && 
+		!subip.deleted?
+	      # do 'exit' to call the delete_hook procedure
+	      begin
+		subip._eval_without_enc('exit') 
+	      rescue Exception
+	      end
+	    else
+	      begin
+		subip.delete unless subip.deleted?
+	      rescue Exception
 	      end
 	    end
 	  }
@@ -1784,7 +1792,7 @@ class MultiTkIp
   end
 
   def delete
-    @slave_ip_tbl.each_value{|subip|
+    @slave_ip_tbl.each{|name, subip|
       _destroy_slaves_of_slaveIP(subip)
 =begin
       begin
@@ -1796,23 +1804,27 @@ class MultiTkIp
 	subip._eval_without_enc("foreach i [after info] {after cancel $i}")
       rescue Exception
       end
-      begin
-	# safe_base?
-	@interp._eval_without_enc("::safe::interpConfigure #{name}")
-	@interp._eval_without_enc("::safe::interpDelete #{name}")
-      rescue Exception
-	if subip.respond_to?(:safe_base?) && subip.safe_base? && 
-	    !subip.deleted?
-	  # do 'exit' to call the delete_hook procedure
-	  begin
-	    subip._eval_without_enc('exit') 
-	  rescue Exception
-	  end
+
+      # safe_base?
+      if @interp._eval_without_enc("catch {::safe::interpConfigure #{name}}") == '0'
+	begin
+	  @interp._eval_without_enc("::safe::interpDelete #{name}")
+	rescue Exception
 	else
-	  begin
-	    subip.delete unless subip.deleted?
-	  rescue Exception
-	  end
+	  next if subip.deleted?
+	end
+      end
+      if subip.respond_to?(:safe_base?) && subip.safe_base? && 
+	  !subip.deleted?
+	# do 'exit' to call the delete_hook procedure
+	begin
+	  subip._eval_without_enc('exit') 
+	rescue Exception
+	end
+      else
+	begin
+	  subip.delete unless subip.deleted?
+	rescue Exception
 	end
       end
     }
