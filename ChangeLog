@@ -1,3 +1,7 @@
+Tue Jun 24 04:54:46 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* configure.in: always add -mieee for gcc/alpha. [ruby-dev:20429]
+
 Tue Jun 24 02:40:09 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* array.c (rb_ary_unshift_m): need to check number of arguments.
@@ -5,7 +9,7 @@ Tue Jun 24 02:40:09 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Mon Jun 23 23:59:56 2003  Minero Aoki  <aamine@loveruby.net>
 
-	* io.c (io_close): missing prototype.
+	* io.c (io_close): missing prototype. [ruby-dev:20422]
 
 	* ext/socket/socket.c (bsock_do_not_rev_lookup_set): ditto.
 

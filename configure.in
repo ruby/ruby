@@ -328,23 +328,18 @@ freebsd*)	LIBS="-lm $LIBS"
 			fi
 		fi
 		;;
-linux*)		LIBS="-lm $LIBS"
-		case "$target_cpu" in
-		alpha*)
-		    CFLAGS="-mieee $CFLAGS" ;;
-		esac ;;
-osf*)		LIBS="-lm $LIBS"
-		case "$target_cpu"::"$GCC" in
-		alpha*::yes)
-		    CFLAGS="-mieee $CFLAGS" ;;
-		alpha*::no|alpha*::)
-		    CFLAGS="-ieee $CFLAGS" ;;
-		esac ;;
 *) LIBS="-lm $LIBS";;
 esac
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
+
+case "$target_cpu" in
+alpha*)		case "$target_os"::"$GCC" in
+		*::yes)	CFLAGS="-mieee $CFLAGS" ;;   # gcc
+		osf*)   CFLAGS="-ieee $CFLAGS" ;;    # ccc
+		esac ;;
+esac
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
