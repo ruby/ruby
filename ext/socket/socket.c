@@ -1033,8 +1033,6 @@ make_hostent(addr, ipaddr)
 
     ary = rb_ary_new();
     rb_ary_push(ary, rb_str_new2(addr->ai_canonname));
-    names = rb_ary_new();
-    rb_ary_push(ary, names);
 #if defined(HAVE_GETIPNODEBYNAME)
     {
 	int error;
@@ -1046,14 +1044,21 @@ make_hostent(addr, ipaddr)
 #else
     h = gethostbyname(addr->ai_canonname);
 #endif
-    if (h->h_aliases != NULL) {
-	for (pch = h->h_aliases; *pch; pch++) {
-	    rb_ary_push(names, rb_str_new2(*pch));
+    if (h) {
+	names = rb_ary_new();
+	if (h->h_aliases != NULL) {
+	    for (pch = h->h_aliases; *pch; pch++) {
+		rb_ary_push(names, rb_str_new2(*pch));
+	    }
 	}
-    }
 #if defined(HAVE_GETIPNODEBYNAME)
-    freehostent(h);
+	freehostent(h);
 #endif
+    }
+    else {
+	names = rb_ary_new2(0);
+    }
+    rb_ary_push(ary, names);
     rb_ary_push(ary, INT2NUM(addr->ai_family));
     for (ai = addr; ai; ai = ai->ai_next) {
 	rb_ary_push(ary, (*ipaddr)(ai->ai_addr, ai->ai_addrlen));

@@ -1,7 +1,12 @@
+Fri Nov  7 10:23:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (make_hostent): get rid of SEGV on aliases
+	  lookup failure.  (ruby-bugs:PR#1215)
+
 Fri Nov  7 04:08:05 2003  UENO Katsuhiro  <katsu@blue.sky.or.jp>
 
 	* ext/zlib/zlib.c (Init_zlib): define Zlib::GzipReader#each_line as
-	an alias of Zlib::GzipReader#each.
+	  an alias of Zlib::GzipReader#each.
 
 Fri Nov  7 01:03:16 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
