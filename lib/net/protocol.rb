@@ -2,8 +2,8 @@
 # = net/protocol.rb
 #
 #--
-# Copyright (c) 1999-2003 Yukihiro Matsumoto
-# Copyright (c) 1999-2003 Minero Aoki
+# Copyright (c) 1999-2004 Yukihiro Matsumoto
+# Copyright (c) 1999-2004 Minero Aoki
 #
 # written and maintained by Minero Aoki <aamine@loveruby.net>
 #
@@ -193,10 +193,9 @@ module Net # :nodoc:
     private
 
     def rbuf_fill
-      until IO.select([@socket], nil, nil, @read_timeout)
-        raise TimeoutError, "socket read timeout (#{@read_timeout} sec)"
-      end
-      @rbuf << @socket.sysread(1024)
+      timeout(@read_timeout) {
+        @rbuf << @socket.sysread(1024)
+      }
     end
 
     def rbuf_moveto( dest, len )
