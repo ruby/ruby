@@ -99,9 +99,10 @@ module DL
       # example:
       #  typealias("uint", "unsigned int")
       #
-      def typealias(*args)
+      def typealias(alias_type, ty1, enc1=nil, dec1=nil, ty2=nil, enc2=nil, dec2=nil)
 	init_types()
-	@types.typealias(*args)
+	@types.typealias(alias_type, ty1, enc1, dec1,
+                                     ty2||ty1, enc2, dec2)
       end
 
       # example:
