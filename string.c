@@ -1631,7 +1631,7 @@ rb_str_update(str, beg, len, val)
     VALUE val;
 {
     rb_str_modify(str);
-    return rb_str_splice(str, beg, len, val);
+    rb_str_splice(str, beg, len, val);
 }
 
 static void
