@@ -228,6 +228,7 @@ lib/rdoc/options.rb
 lib/rdoc/rdoc.rb
 lib/rdoc/template.rb
 lib/rdoc/tokenstream.rb
+lib/rdoc/dot/dot.rb
 lib/rdoc/generators/chm_generator.rb
 lib/rdoc/generators/html_generator.rb
 lib/rdoc/generators/xml_generator.rb
