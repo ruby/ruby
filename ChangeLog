@@ -1,9 +1,14 @@
+Sat Mar 19 23:48:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg): returned true always.
+	  fixed: [ruby-list:40683]
+
 Sat Mar 19 00:41:02 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/font.rb: add some TkFont class methods to get font
-	  information without creating a TkFont object. 
+	  information without creating a TkFont object.
 
-	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: bug fix and define some 
+	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: bug fix and define some
 	  classes for components of Tk::TreeCtrl
 
 Thu Mar 17 17:42:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -871,7 +876,8 @@ Fri Feb 11 11:33:53 2005  Tanaka Akira  <akr@m17n.org>
 
 Fri Feb 11 06:30:07 2005  George Ogata  <g_ogata@optushome.com.au>
 
-	* misc/ruby-mode.el: [ruby-core:04415]
+	* misc/ruby-mode.el: ignore parenthesis inside heredoc.
+	  [ruby-core:04415]
 
 Fri Feb 11 04:54:13 2005  Tilman Sauerbeck  <tilman@code-monkey.de>
 
