@@ -1,3 +1,9 @@
+Wed Jun 18 23:41:27 2003  Marc Cartright  <marc@isri.unlv.edu>
+
+	* ext/zlib/zlib.c (zstream_run): In a particular situation,
+	deflate/inflate will return Z_BUF_ERROR, even though another call
+	is required by the zlib library.
+
 Wed Jun 18 01:13:36 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/rubyext.c (rb_syck_load_handler): merge key implemented.
@@ -73,7 +79,7 @@ Fri Jun 13 09:24:39 2003  Shugo Maeda  <shugo@ruby-lang.org>
 	* lib/net/ftp.rb (storebinary): seek correctly. Thanks, William Webber.
 
 	* lib/net/ftp.rb (putbinaryfile): rescue FTPPermError.
-	
+
 Tue Jun 10 14:26:30 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/token.c: preserve newlines prepended to a block.
@@ -156,7 +162,7 @@ Fri Jun  6 18:33:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (sig_trap): ditto.
 
-	* hash.c (rb_hash_initialize): ditto. 
+	* hash.c (rb_hash_initialize): ditto.
 
 	* variable.c (rb_f_trace_var): ditto.
 
@@ -1584,6 +1590,11 @@ Mon Apr  7 01:33:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  returning error causing Proc.  Following the principle of "fail
 	  early".  [ruby-core:00927]
 
+Sun Apr  6 18:29:21 2003  UENO Katsuhiro  <katsu@blue.sky.or.jp>
+
+	* ext/zlib/zlib.c: the return value of GzipReader#getc must be
+	unsigned.
+
 Sun Apr  6 00:35:37 2003  Tanaka Akira  <akr@m17n.org>
 
 	* sample/exyacc.rb: use Regexp in gsub!.
@@ -1656,6 +1667,10 @@ Sat Mar 29 09:48:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Mar 29 09:47:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* MANIFEST (ext/aix_mksym.rb): remove obsolete file.
+
+Fri Mar 29 06:21:24 2003  UENO Katsuhiro  <katsu@blue.sky.or.jp>
+
+	* ext/zlib: merge from rough.
 
 Fri Mar 28 19:33:39 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
