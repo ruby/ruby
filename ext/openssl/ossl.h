@@ -34,6 +34,8 @@ extern "C" {
 #include <openssl/ssl.h>
 #include <openssl/hmac.h>
 #include <openssl/rand.h>
+#undef X509_NAME
+#undef PKCS7_SIGNER_INFO
 #if defined(HAVE_OPENSSL_OCSP_H)
 #  define OSSL_OCSP_ENABLED
 #  include <openssl/ocsp.h>

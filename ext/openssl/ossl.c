@@ -207,7 +207,7 @@ BIO *
 ossl_protect_obj2bio(VALUE obj, int *status)
 {
      BIO *ret = NULL;
-     ret = (BIO*)rb_protect((VALUE(*)())ossl_obj2bio, obj, status);
+     ret = (BIO*)rb_protect((VALUE(*)_((VALUE)))ossl_obj2bio, obj, status);
      return ret;
 }
 
@@ -226,7 +226,7 @@ ossl_membio2str(BIO *bio)
 VALUE
 ossl_protect_membio2str(BIO *bio, int *status)
 {
-    return rb_protect((VALUE(*)())ossl_membio2str, (VALUE)bio, status);
+    return rb_protect((VALUE(*)_((VALUE)))ossl_membio2str, (VALUE)bio, status);
 }
 
 STACK_OF(X509) *
@@ -256,7 +256,7 @@ ossl_x509_ary2sk(VALUE ary)
 STACK_OF(X509) *
 ossl_protect_x509_ary2sk(VALUE ary, int *status)
 {
-    return (STACK_OF(X509)*)rb_protect((VALUE(*)())ossl_x509_ary2sk, ary, status);
+    return (STACK_OF(X509)*)rb_protect((VALUE(*)_((VALUE)))ossl_x509_ary2sk, ary, status);
 }
 
 #if 0
