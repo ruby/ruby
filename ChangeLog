@@ -1,3 +1,7 @@
+Fri Feb 22 03:34:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (get2comp): need to specify to carry or not.
+
 Wed Feb 20 15:15:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* intern.h: prototypes; rb_io_addstr(), rb_io_printf(),
