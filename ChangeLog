@@ -1,3 +1,14 @@
+Fri Jul 30 16:10:54 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (lib_fromUTF8_core): raise ArgumentError when
+	  the unknown encoding name is given.
+
+	* ext/tcltklib/tcltklib.c (lib_toUTF8_core): ditto.
+
+	* ext/tk/lib/tk.rb (Tk::Encoding.encoding_convertfrom): bug fix.
+
+	* ext/tk/lib/tk.rb (Tk::Encoding.encoding_convertto): ditto.
+
 Wed Jul 28 18:59:17 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::initialize): remove at_exit code for CGI_PARAMS

@@ -3524,7 +3524,12 @@ lib_toUTF8_core(ip_obj, src, encodename)
 	StringValue(encodename);
 	encoding = Tcl_GetEncoding(interp, RSTRING(encodename)->ptr);
 	if (encoding == (Tcl_Encoding)NULL) {
-	    rb_warning("unknown encoding name '%s'", RSTRING(encodename)->ptr);
+	    /*
+	    rb_warning("unknown encoding name '%s'", 
+		       RSTRING(encodename)->ptr);
+	    */
+	    rb_raise(rb_eArgError, "unknown encoding name '%s'", 
+		     RSTRING(encodename)->ptr);
 	}
     }
 
@@ -3667,8 +3672,13 @@ lib_fromUTF8_core(ip_obj, src, encodename)
 
 	encoding = Tcl_GetEncoding(interp, RSTRING(encodename)->ptr);
 	if (encoding == (Tcl_Encoding)NULL) {
-	    rb_warning("unknown encoding name '%s'", RSTRING(encodename)->ptr);
+	    /* 
+	    rb_warning("unknown encoding name '%s'", 
+		       RSTRING(encodename)->ptr);
 	    encodename = Qnil;
+	    */
+	    rb_raise(rb_eArgError, "unknown encoding name '%s'", 
+		     RSTRING(encodename)->ptr);
 	}
     }
 
