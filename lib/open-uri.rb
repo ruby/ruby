@@ -488,6 +488,15 @@ module URI
         proxy_uri = ENV[name] || ENV[name.upcase]
       end
 
+      if proxy_uri && self.host
+        require 'socket'
+        begin
+          addr = IPSocket.getaddress(self.host)
+          proxy_uri = nil if /\A127\.|\A::1\z/ =~ addr
+        rescue SocketError
+        end
+      end
+
       if proxy_uri
         proxy_uri = URI.parse(proxy_uri)
         unless URI::HTTP === proxy_uri

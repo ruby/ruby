@@ -1,4 +1,7 @@
-Mon Feb  2 00:01:19 2004  Tanaka Akira  <akr@m17n.org>
+Mon Feb  2 00:28:54 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (URI::Generic#find_proxy): return nil on loopback
+	  address.
 
 	* lib/resolv-replace.rb (BasicSocket#send): don't replace because
 	  it has no hostname argument.
