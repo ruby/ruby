@@ -1,3 +1,11 @@
+Wed Aug  6 01:18:50 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: update document.
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/protocol.rb: ditto.
+
 Tue Aug  5 17:58:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/fileutils.rb (install): should preserve timestamp only.

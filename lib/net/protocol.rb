@@ -1,30 +1,29 @@
-=begin
-
-= net/protocol.rb
-
-Copyright (c) 1999-2003 Yukihiro Matsumoto
-Copyright (c) 1999-2003 Minero Aoki
-
-written and maintained by Minero Aoki <aamine@loveruby.net>
-
-This program is free software. You can re-distribute and/or
-modify this program under the same terms as Ruby itself,
-Ruby Distribute License or GNU General Public License.
-
-$Id$
-
-WARNING: This file is going to remove.
-Do not rely on the implementation written in this file.
-
-=end
+#
+# = net/protocol.rb
+#
+#--
+# Copyright (c) 1999-2003 Yukihiro Matsumoto
+# Copyright (c) 1999-2003 Minero Aoki
+#
+# written and maintained by Minero Aoki <aamine@loveruby.net>
+#
+# This program is free software. You can re-distribute and/or
+# modify this program under the same terms as Ruby itself,
+# Ruby Distribute License or GNU General Public License.
+#
+# $Id$
+#++
+#
+# WARNING: This file is going to remove.
+# Do not rely on the implementation written in this file.
+#
 
 require 'socket'
 require 'timeout'
 
-
 module Net
 
-  class Protocol
+  class Protocol   #:nodoc: internal use only
     private
     def Protocol.protocol_param( name, val )
       module_eval(<<-End, __FILE__, __LINE__ + 1)
@@ -46,7 +45,7 @@ module Net
   ProtocRetryError = ProtoRetriableError
 
 
-  class InternetMessageIO
+  class InternetMessageIO   #:nodoc: internal use only
 
     class << self
       alias open new
@@ -415,10 +414,7 @@ module Net
   end
 
 
-  #
-  # The reader adapter class for internal use only.
-  #
-  class ReadAdapter
+  class ReadAdapter   #:nodoc: internal use only
 
     def initialize( block )
       @block = block
@@ -446,8 +442,7 @@ module Net
   end
 
 
-  # For backward compatibility
-  module NetPrivate
+  module NetPrivate   #:nodoc: obsolete
     Socket = ::Net::InternetMessageIO
   end
 

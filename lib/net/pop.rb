@@ -165,13 +165,14 @@
 # The POPMail#unique_id() method returns the unique-id of the message as a
 # String. Normally the unique-id is a hash of the message.
 # 
+
 require 'net/protocol'
 require 'digest/md5'
 
 module Net
 
-  # Non-authentication POP3 protocol error (reply code "-ERR", except
-  # authentication.
+  # Non-authentication POP3 protocol error
+  # (reply code "-ERR", except authentication).
   class POPError < ProtocolError; end
 
   # POP3 authentication error.
@@ -199,8 +200,7 @@ module Net
       110
     end
 
-    # obsolete
-    def POP3.socket_type # :nodoc:
+    def POP3.socket_type   #:nodoc: obsolete
       Net::InternetMessageIO
     end
 
@@ -218,6 +218,7 @@ module Net
     #     Net::POP3::APOP($is_apop).start(addr, port) {|pop|
     #       ....
     #     }
+    #
     def POP3.APOP( isapop )
       isapop ? APOP : POP3
     end
@@ -240,6 +241,7 @@ module Net
     #       file.write m.pop
     #       m.delete if $DELETE
     #     end
+    #
     def POP3.foreach( address, port = nil,
                       account = nil, password = nil,
                       isapop = false, &block )  # :yields: message
@@ -259,6 +261,7 @@ module Net
     #                          'YourAccount', 'YourPassword') do |m|
     #       file.write m.pop
     #     end
+    #
     def POP3.delete_all( address, port = nil,
                          account = nil, password = nil,
                          isapop = false, &block )
@@ -278,6 +281,7 @@ module Net
     #     # Example 2: APOP
     #     Net::POP3.auth_only('pop.example.com', 110,
     #                         'YourAccount', 'YourPassword', true)
+    #
     def POP3.auth_only( address, port = nil,
                         account = nil, password = nil,
                         isapop = false )
@@ -363,6 +367,7 @@ module Net
     #   pop.start(account, passwd) {
     #     ....
     #   }
+    #
     def set_debug_output( arg )
       @debug_output = arg
     end
@@ -394,7 +399,7 @@ module Net
       @started
     end
 
-    alias active? started?   # obsolete
+    alias active? started?   #:nodoc: obsolete
 
     # Starts a POP3 session.
     #
@@ -540,8 +545,7 @@ module Net
       end
     end
 
-    # internal use only (called from POPMail#uidl).
-    def set_all_uids
+    def set_all_uids   #:nodoc: internal use only (called from POPMail#uidl)
       command().uidl.each do |num, uid|
         @mails.find {|m| m.number == num }.uid = uid
       end
@@ -554,23 +558,27 @@ module Net
   POPSession  = POP3
   POP3Session = POP3
 
+  #
   # This class is equivalent to POP3, except that it uses APOP authentication.
+  #
   class APOP < POP3
-
     # Always returns true.
     def apop?
       true
     end
   end
 
+  # class aliases
   APOPSession = APOP
 
+  #
   # This class represents a message which exists on the POP server.
   # Instances of this class are created by the POP3 class; they should
   # not be directly created by the user.
+  #
   class POPMail
 
-    def initialize( num, len, pop, cmd ) # :nodoc:
+    def initialize( num, len, pop, cmd )   #:nodoc:
       @number = num
       @length = len
       @pop = pop
@@ -637,8 +645,8 @@ module Net
       end
     end
 
-    alias all pop    # backward compatibility
-    alias mail pop   # backward compatibility
+    alias all pop    #:nodoc: obsolete
+    alias mail pop   #:nodoc: obsolete
 
     # Fetches the message header and +lines+ lines of body. 
     # The optional +dest+ argument is obsolete.
@@ -677,12 +685,13 @@ module Net
     #         n += 1
     #       end
     #     }
+    #
     def delete
       @command.dele @number
       @deleted = true
     end
 
-    alias delete! delete    # backward compatibility
+    alias delete! delete    #:nodoc: obsolete
 
     # True if the mail has been deleted.
     def deleted?
@@ -701,15 +710,14 @@ module Net
 
     alias uidl unique_id
 
-    # internal use only (used from POP3#set_all_uids).
-    def uid=( uid )
+    def uid=( uid )   #:nodoc: internal use only (used from POP3#set_all_uids)
       @uid = uid
     end
 
   end   # class POPMail
 
 
-  class POP3Command # :nodoc:
+  class POP3Command   #:nodoc: internal use only
 
     def initialize( sock )
       @socket = sock
@@ -718,7 +726,6 @@ module Net
       @apop_stamp = res.slice(/<.+>/)
     end
 
-    # Provide human-readable stringification of class state.
     def inspect
       "#<#{self.class} socket=#{@socket}>"
     end

@@ -308,7 +308,7 @@ module Net
       80
     end
 
-    def HTTP.socket_type   #:nodoc:
+    def HTTP.socket_type   #:nodoc: obsolete
       InternetMessageIO
     end
 
@@ -358,8 +358,17 @@ module Net
       "#<#{self.class} #{@address}:#{@port} open=#{started?}>"
     end
 
-    def set_debug_output( arg )   # :nodoc:
-      @debug_output = arg
+    # *WARNING* This method causes serious security hole.
+    # Never use this method in product code.
+    #
+    # Set an output stream for debugging.
+    #
+    #   http = Net::HTTP.new
+    #   http.set_debug_output $stderr
+    #   http.start { .... }
+    #
+    def set_debug_output( output )
+      @debug_output = output
     end
 
     # The host name to connect to.
@@ -389,7 +398,7 @@ module Net
       @started
     end
 
-    alias active? started?   #:nodoc:
+    alias active? started?   #:nodoc: obsolete
 
     attr_accessor :close_on_empty_response
 
@@ -521,8 +530,8 @@ module Net
       self.class.proxy_pass
     end
 
-    alias proxyaddr proxy_address   #:nodoc:
-    alias proxyport proxy_port      #:nodoc:
+    alias proxyaddr proxy_address   #:nodoc: obsolete
+    alias proxyport proxy_port      #:nodoc: obsolete
 
     private
 
@@ -540,7 +549,7 @@ module Net
       path
     end
 
-    module ProxyDelta   #:nodoc:
+    module ProxyDelta   #:nodoc: internal use only
       private
 
       # with proxy
@@ -687,7 +696,7 @@ module Net
       res
     end
 
-    def put( path, data, initheader = nil ) #:nodoc:
+    def put( path, data, initheader = nil )   #:nodoc:
       res = request(Put.new(path, initheader), data)
       @newimpl or res.value
       res
@@ -769,10 +778,10 @@ module Net
       request Put.new(path, initheader), data, &block
     end
 
-    alias get2   request_get    #:nodoc:
-    alias head2  request_head   #:nodoc:
-    alias post2  request_post   #:nodoc:
-    alias put2   request_put    #:nodoc:
+    alias get2   request_get    #:nodoc: obsolete
+    alias head2  request_head   #:nodoc: obsolete
+    alias post2  request_post   #:nodoc: obsolete
+    alias put2   request_put    #:nodoc: obsolete
 
 
     # Sends an HTTP request to the HTTP server.
@@ -904,11 +913,11 @@ module Net
   #
   module HTTPHeader
 
-    def size   #:nodoc:
+    def size   #:nodoc: obsolete
       @header.size
     end
 
-    alias length size   #:nodoc:
+    alias length size   #:nodoc: obsolete
 
     # Returns the header field corresponding to the case-insensitive key.
     # For example, a key of "Content-Type" might return "text/html"
@@ -1122,8 +1131,7 @@ module Net
     # write
     #
 
-    # internal use only
-    def exec( sock, ver, path, body )   #:nodoc:
+    def exec( sock, ver, path, body )   #:nodoc: internal use only
       if body
         check_body_permitted
         send_request_with_body sock, ver, path, body
@@ -1221,7 +1229,7 @@ module Net
       @response = res
     end
     attr_reader :response
-    alias data response
+    alias data response    #:nodoc: obsolete
   end
   class HTTPError < ProtocolError
     include HTTPExceptions
@@ -1306,7 +1314,7 @@ module Net
       self::HAS_BODY
     end
 
-    def HTTPResponse.exception_type   # :nodoc:
+    def HTTPResponse.exception_type   # :nodoc: internal use only
       self::EXCEPTION_TYPE
     end
   end   # redefined after
@@ -1524,7 +1532,7 @@ module Net
 
     class << self
 
-      def read_new( sock )   #:nodoc:
+      def read_new( sock )   #:nodoc: internal use only
         httpv, code, msg = read_status_line(sock)
         res = response_class(code).new(httpv, code, msg)
         each_response_header(sock) do |k,v|
@@ -1571,7 +1579,7 @@ module Net
 
     include HTTPHeader
 
-    def initialize( httpv, code, msg )   #:nodoc:
+    def initialize( httpv, code, msg )   #:nodoc: internal use only
       @http_version = httpv
       @code         = code
       @message      = msg
@@ -1591,7 +1599,7 @@ module Net
 
     # HTTP result message. For example, 'Not Found'.
     attr_reader :message
-    alias msg message   # :nodoc:
+    alias msg message   # :nodoc: obsolete
 
     def inspect
       "#<#{self.class} #{@code} readbody=#{@read}>"
@@ -1623,7 +1631,8 @@ module Net
       self.class::EXCEPTION_TYPE
     end
 
-    def value   #:nodoc:
+    # Raises HTTP error if the response is not 2xx.
+    def value
       error! unless HTTPSuccess === self
     end
 
@@ -1642,7 +1651,7 @@ module Net
     # body
     #
 
-    def reading_body( sock, reqmethodallowbody )  #:nodoc:
+    def reading_body( sock, reqmethodallowbody )  #:nodoc: internal use only
       @socket = sock
       @body_exist = reqmethodallowbody && self.class.body_permitted?
       begin
@@ -1712,7 +1721,7 @@ module Net
       read_body()
     end
 
-    alias entity body   #:nodoc:
+    alias entity body   #:nodoc: obsolete
 
     private
 
@@ -1774,7 +1783,7 @@ module Net
   class HTTP
     ProxyMod = ProxyDelta
   end
-  module NetPrivate #:nodoc:
+  module NetPrivate   #:nodoc:
     HTTPRequest = ::Net::HTTPRequest
   end
 
