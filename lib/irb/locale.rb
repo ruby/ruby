@@ -62,7 +62,7 @@ module IRB
 
     def print(*opts)
       ary = opts.collect{|opt| String(opt)}
-      super *ary
+      super(*ary)
     end
 
     def printf(*opts)
@@ -72,7 +72,7 @@ module IRB
 
     def puts(*opts)
       ary = opts.collect{|opt| String(opts)}
-      super *ary
+      super(*ary)
     end
 
     def require(file, priv = nil)

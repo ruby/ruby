@@ -90,7 +90,7 @@ module IRB
 	IRB.fail NoSuchJob, key unless @jobs[key]
 	@jobs[key] = nil
       else
-	catch (:EXISTS) do
+	catch(:EXISTS) do
 	  @jobs.each_index do
 	    |i|
 	    if @jobs[i] and (@jobs[i][0] == key ||
