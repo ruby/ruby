@@ -1,3 +1,8 @@
+Wed Apr 14 11:29:56 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* numeric.c (flo_eq): workaround for bcc32's bug.
+	  (ruby-bugs-ja:PR#594)
+
 Wed Apr 14 10:57:40  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* defines.h: include <net/socket.h> to get fd_set definition in BeOS.
