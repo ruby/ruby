@@ -437,8 +437,8 @@ get_syserr(int n)
     VALUE error;
 
     if (!st_lookup(syserr_tbl, n, &error)) {
-	char name[6];
-      
+	char name[8];	/* some Windows' errno have 5 digits. */
+
 	sprintf(name, "E%03d", n);
 	error = set_syserr(n, name);
     }
