@@ -1,3 +1,7 @@
+Sun Feb 15 20:56:22 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (push_braces): remove wrong const.
+
 Sun Feb 15 20:41:15 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* sample/soap/calc/httpd.rb, sample/soap/exchange/httpd.rb,

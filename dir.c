@@ -1348,8 +1348,8 @@ push_braces(ary, s, flags)
     const char *s;
     int flags;
 {
-    char *buf;
-    const char *p, *t, *b;
+    char *buf, *b;
+    const char *p, *t;
     const char *lbrace, *rbrace;
     int nest = 0;
 
