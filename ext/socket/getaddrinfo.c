@@ -40,7 +40,7 @@
 
 #include "config.h"
 #include <sys/types.h>
-#ifndef _WIN32
+#if !defined(__WIN32) && !defined(__VMS)
 #include <sys/param.h>
 #if defined(__BEOS__)
 # include <net/socket.h>
@@ -62,6 +62,11 @@
 #include <resolv.h>
 #endif
 #include <unistd.h>
+#elif defined(__VMS )
+#include <socket.h>
+#include <inet.h>
+#include <in.h>
+#include <netdb.h>
 #else
 #include <winsock2.h>
 #include <io.h>

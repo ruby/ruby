@@ -64,6 +64,10 @@
 #endif
 #include "sockport.h"
 
+#if defined(__vms)
+#include <tcp.h>
+#endif
+
 static int do_not_reverse_lookup = 0;
 
 VALUE rb_cBasicSocket;
@@ -1856,7 +1860,7 @@ static VALUE
 sock_s_socketpair(klass, domain, type, protocol)
     VALUE klass, domain, type, protocol;
 {
-#if !defined(_WIN32) && !defined(__BEOS__) && !defined(__EMX__) && !defined(__QNXNTO__)
+#if !defined(_WIN32) && !defined(__BEOS__) && !defined(__EMX__) && !defined(__QNXNTO__) && !defined(__VMS)
     int d, t, sp[2];
 
     setup_domain_and_type(domain, &d, type, &t);
