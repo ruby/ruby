@@ -1,3 +1,26 @@
+Tue Feb  2 23:41:42 1999  Yoshida Masato  <yoshidam@yoshidam.net>
+
+	* regex.c (re_match): wrong boundary.
+
+	* regex.c (IS_A_LETTER): re_mbctab[c] may not be 1 for mbc.
+
+	* regex.c (re_search): mbchar support for shifting ranges.
+
+	* regex.c (MBC2WC): wrong conversion.
+
+Wed Feb  3 15:03:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (parse_regx): need to escape parens if terminators are
+	  not any kind of parenthesis.
+
+	* parse.y (parse_qstring): ditto.
+
+	* parse.y (parse_string): ditto.
+
+Tue Feb  2 17:11:26 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* string.c (rb_str_gsub_bang): too small realoc condition.
+
 Mon Feb  1 10:01:17 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
 	* parse.y (yylex): range check for the float literal.

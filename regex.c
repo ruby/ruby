@@ -400,9 +400,9 @@ re_set_syntax(syntax)
     if (current_mbctype == MBCTYPE_UTF8) {\
       int n = ismbchar(c);\
       int c1;\
-      c &= 1<<(BYTEWIDTH-2-n);\
+      c &= (1<<(BYTEWIDTH-2-n)) - 1;\
       while (n--) {\
-	c = c << 6 | *p++;\
+	c = c << 6 | *p++ & ((1<<6)-1);\
       }\
     }\
     else {\
@@ -502,19 +502,17 @@ print_mbc(c)
 
 /* Get the next unsigned number in the uncompiled pattern.  */
 #define GET_UNSIGNED_NUMBER(num) 					\
-  do { if (p != pend) 							\
-      { 								\
+  do { if (p != pend) { 						\
         PATFETCH(c); 							\
-	while (ISDIGIT(c)) 						\
-	  { 								\
-	    if (num < 0) 						\
-	       num = 0; 						\
-            num = num * 10 + c - '0'; 					\
-	    if (p == pend) 						\
-	       break; 							\
-	    PATFETCH(c); 						\
-	  } 								\
-        } 								\
+	while (ISDIGIT(c)) { 						\
+	  if (num < 0) 							\
+	     num = 0; 							\
+	  num = num * 10 + c - '0'; 					\
+	  if (p == pend) 						\
+	     break; 							\
+	  PATFETCH(c); 							\
+	} 								\
+     } 									\
   } while (0)
 
 #define STREQ(s1, s2) ((strcmp (s1, s2) == 0))
@@ -1969,6 +1967,7 @@ re_compile_pattern(pattern, size, bufp)
 		  p_save = p;
 
 		  had_mbchar = 0;
+		  c1 = 0;
 		  GET_UNSIGNED_NUMBER(c1);
 		  if (!ISDIGIT(c)) PATUNFETCH;
 
@@ -2844,10 +2843,11 @@ re_search(bufp, string, size, startpos, range, regs)
 	      while (range > 0) {
 		c = *p++;
 		if (ismbchar(c)) {
+		  int len = ismbchar(c);
 		  if (fastmap[c])
 		    break;
 		  c = *p++;
-		  range--;
+		  range -= len;
 		  if (fastmap[c] == 2)
 		    break;
 		}
@@ -3092,7 +3092,7 @@ typedef union
 
 #define IS_A_LETTER(d) (SYNTAX(*(d)) == Sword ||			\
 			(current_mbctype ?				\
-			 re_mbctab[*(d)] == 1 :				\
+			 re_mbctab[*(d)] :				\
 			 SYNTAX(*(d)) == Sword2))
 
 #define PREV_IS_A_LETTER(d) ((current_mbctype == MBCTYPE_SJIS)?		\
@@ -3537,7 +3537,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	    PREFETCH;
 	    cc = c = (unsigned char)*d++;
 	    if (ismbchar(c)) {
-	      if (d + ismbchar(c) < dend) {
+	      if (d + ismbchar(c) <= dend) {
 		MBC2WC(c, d);
 	      }
 	    }

@@ -1509,6 +1509,7 @@ Init_Array()
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at, 1);
     rb_define_method(rb_cArray, "delete_if", rb_ary_delete_if, 0);
+    rb_define_method(rb_cArray, "reject!", rb_ary_delete_if, 0);
     rb_define_method(rb_cArray, "filter", rb_ary_filter, 0);
     rb_define_method(rb_cArray, "replace", rb_ary_replace_method, 1);
     rb_define_method(rb_cArray, "clear", rb_ary_clear, 0);

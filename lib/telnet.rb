@@ -356,9 +356,9 @@ class Telnet < SimpleDelegator
     end
 
     line = ''
-    until(not select([@sock], nil, nil, waittime) and prompt === line)
+    until(not IO::select([@sock], nil, nil, waittime) and prompt === line)
       raise TimeOut, "timed-out; wait for the next data" if
-        not select([@sock], nil, nil, timeout)
+        not IO::select([@sock], nil, nil, timeout)
       buf = ''
       begin
         buf = @sock.sysread(1024 * 1024)
@@ -405,7 +405,7 @@ class Telnet < SimpleDelegator
       string = options
     end
 
-    select(nil, [@sock])
+    IO::select(nil, [@sock])
     print(string)
     if iterator?
       waitfor({"Prompt" => match, "Timeout" => timeout}){|c| yield c }

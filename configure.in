@@ -99,6 +99,7 @@ AC_PROG_MAKE_SET
 AC_MINIX
 
 AC_CHECK_SIZEOF(int)
+AC_CHECK_SIZEOF(short)
 AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(void*)
 AC_CHECK_SIZEOF(float)
@@ -113,6 +114,12 @@ AC_MSG_RESULT($rb_cv_have_prototypes)
 if test "$rb_cv_have_prototypes" = yes; then
   AC_DEFINE(HAVE_PROTOTYPES)
 fi
+
+AC_MSG_CHECKING(token paste string)
+AC_TRY_COMPILE([#define paste(a,b) a##b],
+[ int xy = 1; return paste(x,y);],
+AC_DEFINE(TOKEN_PASTE(x,y),[x##y])   AC_MSG_RESULT(ANSI),
+AC_DEFINE(TOKEN_PASTE(x,y),[x/**/y]) AC_MSG_RESULT(KnR1))
 
 AC_MSG_CHECKING(for variable length prototypes and stdarg.h)
 AC_CACHE_VAL(rb_cv_stdarg,
@@ -356,14 +363,14 @@ if test "$with_dln_a_out" != yes; then
     rhapsody*)	;;
     human*)	;;
     cygwin*)	CCDLFLAGS=-DDLLIMPORT;;
-    *) CCDLFLAGS=-fpic;;
+    *) CCDLFLAGS=-fPIC;;
     esac
   else
     case "$host_os" in
 	hpux*)		CCDLFLAGS='+z';;
-	solaris*|irix*)	CCDLFLAGS='-K pic' ;;
-	sunos*)		CCDLFLAGS='-pic' ;;
-	esix*|uxpds*)   CCDLFLAGS='-Kpic' ;;
+	solaris*|irix*)	CCDLFLAGS='-K PIC' ;;
+	sunos*)		CCDLFLAGS='-PIC' ;;
+	esix*|uxpds*)   CCDLFLAGS='-KPIC' ;;
 	*)		CCDLFLAGS='' ;;
     esac
   fi
@@ -391,7 +398,6 @@ if test "$with_dln_a_out" != yes; then
 	netbsd*) 	LDSHARED="ld -Bshareable"
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
-			CCDLFLAGS=-fPIC
 			rb_cv_dlopen=yes ;;
 	nextstep*)	LDSHARED='cc -r'
 			LDFLAGS="-u libsys_s"

@@ -1415,6 +1415,7 @@ Init_Hash()
     rb_define_method(rb_cHash,"shift", rb_hash_shift, 0);
     rb_define_method(rb_cHash,"delete", rb_hash_delete, 1);
     rb_define_method(rb_cHash,"delete_if", rb_hash_delete_if, 0);
+    rb_define_method(rb_cHash,"reject!", rb_hash_delete_if, 0);
     rb_define_method(rb_cHash,"clear", rb_hash_clear, 0);
     rb_define_method(rb_cHash,"invert", rb_hash_invert, 0);
     rb_define_method(rb_cHash,"update", rb_hash_update, 1);
@@ -1439,6 +1440,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
     rb_define_singleton_method(envtbl,"delete", env_delete_method, 1);
     rb_define_singleton_method(envtbl,"delete_if", env_delete_if, 0);
+    rb_define_singleton_method(envtbl,"reject!", env_delete_if, 0);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);

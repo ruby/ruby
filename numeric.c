@@ -186,7 +186,9 @@ flo_to_s(flt)
     char buf[24];
 
     snprintf(buf, 24, "%.10g", RFLOAT(flt)->value);
-    if (strchr(buf, '.') == 0 && strcmp(buf, "Inf") != 0) {
+    if (strchr(buf, '.') == 0 &&
+	strcmp(buf, "Inf") != 0 &&
+	strcmp(buf, "NaN") != 0) {
 	int len = strlen(buf);
 	char *ind = strchr(buf, 'e');
 

@@ -78,7 +78,7 @@ usage(name)
      * Removed -h because the user already knows that opton. Others? */
 
     static char *usage_msg[] = {
-"-0[octal]       specify record separator (\0, if no argument)",
+"-0[octal]       specify record separator (\\0, if no argument)",
 "-a              autosplit mode with -n or -p (splits $_ into $F)",
 "-c              check syntax only",
 "-d              set debugging flags (set $DEBUG to true)",

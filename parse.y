@@ -2029,8 +2029,10 @@ parse_regx(term, paren)
 		}
 		/* fall through */
 	      default:
-		if (c == paren) nest++;
-		if (c == term) nest--;
+		if (paren)  {
+		    if (c == paren) nest++;
+		    if (c == term) nest--;
+		}
 		if (c == '\n') {
 		    ruby_sourceline++;
 		}
@@ -2174,10 +2176,12 @@ parse_string(func, term, paren)
   	    }
 	    continue;
 	}
-	if (c == paren) nest++;
-	if (c == term) {
-	    nest--;
-	    if (nest == 0) break;
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term) {
+		nest--;
+		if (nest == 0) break;
+	    }
 	}
 	tokadd(c);
     }
@@ -2252,10 +2256,12 @@ parse_qstring(term, paren)
 		tokadd('\\');
 	    }
 	}
-	if (c == paren) nest++;
-	if (c == term) {
-	    nest--;
-	    if (nest == 0) break;
+	if (paren) {
+	    if (c == paren) nest++;
+	    if (c == term) {
+		nest--;
+		if (nest == 0) break;
+	    }
 	}
 	tokadd(c);
     }
@@ -2616,7 +2622,7 @@ retry:
 	return parse_string(c,c,c);
 
       case '\'':
-	return parse_qstring(c,c);
+	return parse_qstring(c,0);
 
       case '?':
 	if (lex_state == EXPR_END) {
@@ -3007,7 +3013,7 @@ retry:
 		rb_compile_error("unterminated quoted string meets end of file");
 		return 0;
 	    }
-	    paren = term;
+	    paren = 0;
 	    if (term == '(') term = ')';
 	    else if (term == '[') term = ']';
 	    else if (term == '{') term = '}';

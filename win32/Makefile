@@ -62,6 +62,7 @@ OBJS          = array.obj \
 		object.obj \
 		pack.obj \
 		parse.obj \
+		prec.obj \
 		process.obj \
 		random.obj \
 		range.obj \
@@ -228,3 +229,4 @@ util.obj: util.c defines.h config.h util.h
 variable.obj: variable.c ruby.h config.h defines.h env.h st.h
 version.obj: version.c ruby.h config.h defines.h version.h
 director.obj : director.c dir.h
+prec.obj: prec.c ruby.h config.h defines.h

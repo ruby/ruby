@@ -18,7 +18,7 @@ AUTOCONF = autoconf
 @SET_MAKE@
 
 prefix = @prefix@
-CFLAGS = @CFLAGS@ -I. -I@srcdir@ -I@includedir@
+CFLAGS = @CFLAGS@ -I@srcdir@ -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 EXTLIBS = 
 LIBS = @LIBS@ $(EXTLIBS)
