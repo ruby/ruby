@@ -1,3 +1,9 @@
+Mon Dec 31 14:20:46 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (yycompile): always store copy of filename.
+
+	* parse.y (rb_compile_file): no longer need to strdup() here.
+
 Mon Dec 31 04:27:28 2001  Minero Aoki  <aamine@mx.edit.ne.jp>
 
 	* lib/net/protocol.rb: Protocol#start returns the return value of
