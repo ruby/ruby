@@ -1,3 +1,7 @@
+Sat Jun 19 01:10:12 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* sample/rss/tdiary_plugin/rss-recent.rb: added more information.
+
 Fri Jun 18 23:12:22 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (proc_save_safe_level, rb_set_safe_level, safe_setter): limit
