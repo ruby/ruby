@@ -206,6 +206,7 @@ rb_quad_pack(buf, val)
 	    q = BIGUP(q);
 	    q += ds[len];
 	}
+	if (!RBIGNUM(val)->sign) q = -q;
     }
     memcpy(buf, (char*)&q, SIZEOF_LONG_LONG);
 }

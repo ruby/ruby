@@ -1,3 +1,8 @@
+Sun May 25 23:48:21 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* bignum.c (rb_quad_pack): should negate negative bignum.
+	  (ruby-bugs-ja:PR#474)
+
 Sun May 25 03:27:25 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: support LOGIN authentication, based on
