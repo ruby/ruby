@@ -41,7 +41,7 @@ def Complex(a, b = 0)
   elsif b == 0 and defined? Complex::Unify
     a
   else
-    Complex.new(a, b)
+    Complex.new!(a, b)
   end
 end
 
@@ -70,7 +70,11 @@ class Complex < Numeric
   #
   # Creates a +Complex+ number <tt>a</tt>+<tt>b</tt><i>i</i>.
   #
-  def initialize(a, b = 0)
+  def Complex.new!(a, b=0)
+    new(a,b)
+  end
+
+  def initialize(a, b)
     raise "non numeric 1st arg `#{a.inspect}'" if !a.kind_of? Numeric
     raise "non numeric 2nd arg `#{b.inspect}'" if !b.kind_of? Numeric
     @real = a
@@ -274,7 +278,7 @@ class Complex < Numeric
   #
   def coerce(other)
     if Complex.generic?(other)
-      return Complex.new(other), self
+      return Complex.new!(other), self
     else
       super
     end
@@ -412,7 +416,7 @@ class Fixnum
   # Redefined to handle a Complex argument.
   def ** (other)
     if self < 0
-      Complex.new(self) ** other
+      Complex.new!(self, 0) ** other
     else
       if defined? Rational
 	if other >= 0
