@@ -1,3 +1,4 @@
+MANIFEST
 extconf.rb
 rmd160.c
 rmd160.h
