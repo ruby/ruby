@@ -659,7 +659,7 @@ class RubyLex
     @lex_state = EXPR_END
     
     case ch = getc
-    when /[~_*$?!@/\\;,=:<>".]/   #"
+    when /[~_*$?!@\/\\;,=:<>".]/   #"
       Token(TkGVAR, "$" + ch)
     when "-"
       Token(TkGVAR, "$-" + getc)

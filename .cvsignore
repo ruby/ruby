@@ -10,6 +10,7 @@ config.status
 Makefile
 ppack
 archive
+extmk.rb
 *.orig
 *.rej
 *.bak
