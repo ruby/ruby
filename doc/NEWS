@@ -1,8 +1,92 @@
 This file is not actively maintained.  See ChangeLog for recent changes.
 
-: open-uri.rb
+: -W option
+
+  new option to specify warning level. -W0 to shut up warnings, -W1 for normal level,
+  -W3 for verbose level.  -w equals to -W1.
+
+: Marshal to use marshal_dump and marshal_load
+
+  if a dumping object responds to 'marshal_dump', Marshal.dump calls
+  it, and dumps object returned.  Marshal.load allocates a new instance
+  using "allocate", then calls its "marshal_load" with dumped data.
+
+: lib/un
+
+  Imported.  Used like 'ruby -run -e cp -- -p foo bar'.  Nest, isn't it?
+
+: lib/webrick
+
+  Imported.  Generic Internet server kit.
+
+: $stdin, $stdout, $stderr
+
+  can be assignable again.  the original stdio are preserved as STDIN,
+  STDOUT, STDERR.
+
+: multiple Tk interpreter
+
+  to allow safe Tk, etc.
+
+: ext/openssl
+
+  Imported.
+
+: ext/io/wait
+
+  Imported.
+
+: ext/bigdecimal
+
+  Imported.
+
+: Thread#group
+
+  new method to get belonging  ThreadGroup.
+
+: Kernel#warn(message)
+
+  a method to give warnings.
+
+: Process::detach(pid)
+
+  new method to detach child process.  child process will be "wait"ed
+  automagically.
+
+: Object#instance_variable_set, Object#instance_variable_get
+
+  added.
+
+: ext/Win32API/lib/win32/registry
+
+  added.
+
+: lib/open-uri
 
   Imported.  This is an easy-to-use wrapper for net/http and net/ftp.
+
+: lib/tmpdir
+
+  imported. add Dir::tmpdir() to determine the temporary directory.
+
+: lib/cgi.rb
+
+  cgi[name] returns CGI::QueryExtension::Value that wraps string
+  value, no longer array.
+
+: ext/syck
+: lib/yaml
+
+  Imported.
+
+: lib/rexml
+
+  Imported.
+
+: lib/xmlrpc
+: lib/gserver
+
+  Imported
 
 : Class#inherited
 
@@ -15,6 +99,11 @@ This file is not actively maintained.  See ChangeLog for recent changes.
         class B < A; end
 
         Prints out "A inherited by B"
+
+: String#split
+
+  if "sep" argument is a string, regular expression meta characters
+  are escaped internally.
 
 : String#to_i
 
@@ -129,11 +218,11 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
   Imported.  Racc runtime library. (Racc is a parser generator for ruby)
 
-: tsort module
+: lib/tsort
 
   Imported.  Topological sorting library.
 
-: stringio module
+: ext/stringio
 
   Imported.  Pseudo (({IO})) class from/to (({String})).
 
@@ -561,12 +650,3 @@ This file is not actively maintained.  See ChangeLog for recent changes.
 
   Made to return "UTC" under gmtime.  It used to return a platform
   dependent value, typically "GMT", in 1.6 and prior.
-
-To be investigated:
-
- Sat Feb 24 03:15:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-        * io.c (set_stdin): preserve original stdin.
-
-        * io.c (set_outfile): preserve original stdout/stderr.
-
