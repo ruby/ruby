@@ -615,7 +615,7 @@ def extmake(target)
   end
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
   $CFLAGS = ""
-  $CPPFLAGS = ""
+  $CPPFLAGS = "@CPPFLAGS@"
   $LDFLAGS = ""
   $LIBPATH = [$libdir]
 

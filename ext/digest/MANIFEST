@@ -32,3 +32,4 @@ sha2/sha2hl.c
 sha2/sha2init.c
 test.rb
 test.sh
+depend
