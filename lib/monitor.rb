@@ -69,6 +69,15 @@ module MonitorMixin
 	raise ThreadError, "current thread not owner"
       end
       
+      if timeout
+	ct = Thread.current
+	timeout_thread = Thread.start {
+	  Thread.pass
+	  sleep(timeout)
+	  ct.raise(Timeout.new)
+	}
+      end
+
       Thread.critical = true
       count = @monitor.mon_count
       @monitor.mon_count = 0
@@ -80,22 +89,17 @@ module MonitorMixin
       end
       t.wakeup if t
       @waiters.push(Thread.current)
-      
-      if timeout
-	t = Thread.current
-	timeout_thread = Thread.start {
-	  sleep(timeout)
-	  t.raise(Timeout.new)
-	}
-      end
+
       begin
 	Thread.stop
       rescue Timeout
-	@waiters.delete(Thread.current)
       ensure
 	Thread.critical = true
 	if timeout && timeout_thread.alive?
 	  Thread.kill(timeout_thread)
+	end
+	if @waiters.include?(Thread.current)  # interrupted?
+	  @waiters.delete(Thread.current)
 	end
 	while @monitor.mon_owner &&
 	    @monitor.mon_owner != Thread.current
