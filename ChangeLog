@@ -1,3 +1,7 @@
+Wed Jun 23 00:00:25 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_initialize): should check fcntl result.  [ruby-dev:23742]
+
 Tue Jun 22 21:11:36 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (OLE_FREE): should not call CoFreeUnuse-
