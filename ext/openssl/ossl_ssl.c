@@ -443,15 +443,12 @@ ossl_start_ssl(SSL *ssl, int (*func)())
     for(;;){
 	if((ret = func(ssl)) > 0) break;
 	switch(SSL_get_error(ssl, ret)){
-	case SSL_ERROR_NONE:
-	    break;
 	case SSL_ERROR_WANT_WRITE:
 	case SSL_ERROR_WANT_READ:
-	case SSL_ERROR_WANT_X509_LOOKUP:
 	    rb_thread_schedule();
 	    continue;
 	default:
-	    ossl_raise(eSSLError, "SSL_accept:");
+	    ossl_raise(eSSLError, NULL);
 	}
     }
 }
