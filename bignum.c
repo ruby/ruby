@@ -252,8 +252,8 @@ rb_cstr2inum(str, base)
 
 	if (*end == '_') goto bigparse;
 	if (badcheck) {
-	    while (*end && ISSPACE(*end)) end++;
 	    if (end == str) goto bad; /* no number */
+	    while (*end && ISSPACE(*end)) end++;
 	    if (*end) {		      /* trailing garbage */
 	      bad:
 		rb_invalid_str(s, "Integer");

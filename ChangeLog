@@ -1,3 +1,12 @@
+Wed Jan 16 11:12:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* object.c (rb_Float): remove underscores between digits.
+
+	* bignum.c (rb_cstr2inum): reject prefix followed by spaces only.
+
+	* class.c (rb_class_inherited): should use Object when no super
+	  class.
+
 Fri Jan 11 05:06:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* class.c (rb_make_metaclass): [new]
