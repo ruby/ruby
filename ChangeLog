@@ -1,3 +1,7 @@
+Mon Sep 22 21:28:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* MANIFEST: updated.
+
 Mon Sep 22 19:22:26 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* configure.in (AC_CHECK_FUNCS): add setuid and setgid.
