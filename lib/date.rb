@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.12 2004-03-20 08:05:13+09 tadf Exp $
+# $Id: date.rb,v 2.14 2004-09-25 09:51:25+09 tadf Exp $
 #++
 #
 # == Overview
@@ -695,14 +695,6 @@ class Date
     new_with_hash(elem, sg)
   end
 
-  # Create a new Date object representing today.
-  #
-  # +sg+ specifies the Day of Calendar Reform.
-  def self.today(sg=ITALY)
-    jd = civil_to_jd(*(Time.now.to_a[3..5].reverse << sg))
-    new0(jd_to_ajd(jd, 0, 0), 0, sg)
-  end
-
   class << self
 
     def once(*ids) # :nodoc:
@@ -1258,21 +1250,62 @@ class DateTime < Date
     new_with_hash(elem, sg)
   end
 
+  public :hour, :min, :sec, :sec_fraction, :zone, :offset, :new_offset
+
+end
+
+class Time
+
+  def to_time() getlocal end
+
+  def to_date
+    jd = Date.civil_to_jd(year, mon, mday, Date::ITALY)
+    Date.new0(Date.jd_to_ajd(jd, 0, 0), 0, Date::ITALY)
+  end
+
+  def to_datetime
+    jd = DateTime.civil_to_jd(year, mon, mday, DateTime::ITALY)
+    fr = DateTime.time_to_day_fraction(hour, min, [sec, 59].min) +
+	 usec.to_r/86400000000
+    of = utc_offset.to_r/86400
+    DateTime.new0(DateTime.jd_to_ajd(jd, fr, of), of, DateTime::ITALY)
+  end
+
+end
+
+class Date
+
+  def to_time() Time.local(year, mon, mday) end
+  def to_date() self end
+  def to_datetime() DateTime.new0(self.class.jd_to_ajd(jd, 0, 0), @of, @sg) end
+
+  # Create a new Date object representing today.
+  #
+  # +sg+ specifies the Day of Calendar Reform.
+  def self.today(sg=ITALY) Time.now.to_date.new_start(sg) end
+
+end
+
+class DateTime < Date
+
+  def to_time
+    d = new_offset(0)
+    d.instance_eval do
+      Time.utc(year, mon, mday, hour, min, sec,
+	       (sec_fraction * 86400000000).to_i)
+    end.
+	getlocal
+  end
+
+  def to_date() Date.new0(self.class.jd_to_ajd(jd, 0, 0), 0, @sg) end
+  def to_datetime() self end
+
   class << self; undef_method :today end
 
   # Create a new DateTime object representing the current time.
   #
   # +sg+ specifies the Day of Calendar Reform.
-  def self.now(sg=ITALY)
-    i = Time.now
-    a = i.to_a[0..5].reverse
-    jd = civil_to_jd(*(a[0,3] << sg))
-    fr = time_to_day_fraction(*(a[3,3])) + i.usec.to_r/86400000000
-    of = i.utc_offset.to_r/86400
-    new0(jd_to_ajd(jd, fr, of), of, sg)
-  end
-
-  public :hour, :min, :sec, :sec_fraction, :zone, :offset, :new_offset
+  def self.now(sg=ITALY) Time.now.to_datetime.new_start(sg) end
 
 end
 
