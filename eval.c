@@ -5396,7 +5396,6 @@ rb_f_require(obj, fname)
     obj = fname;
     if (RSTRING(fname)->ptr[0] == '~') {
 	obj = rb_file_s_expand_path(1, &fname);
-	StringValue(obj);
     }
     buf = ALLOCA_N(char, strlen(RSTRING(obj)->ptr) + 5);
     strcpy(buf, RSTRING(fname)->ptr);
