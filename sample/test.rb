@@ -865,6 +865,13 @@ s = "a string"
 s[0..s.size]="another string"
 test_ok(s == "another string")
 
+s = <<EOS
+#{
+[1,2,3].join(",")
+}
+EOS
+test_ok(s == "1,2,3\n")
+
 test_check "assignment"
 a = nil
 test_ok(defined?(a))

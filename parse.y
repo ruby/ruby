@@ -2901,7 +2901,7 @@ here_document(term, indent)
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
       retry:
-	switch (parse_string(term, '\n', '\n')) {
+	switch (parse_string(term, '\n', 0)) {
 	  case tSTRING:
 	  case tXSTRING:
 	    rb_str_cat2(yylval.val, "\n");
@@ -4038,6 +4038,7 @@ str_extend(list, term)
 		    newtok();
 		    return list;
 		}
+	      case '\n':
 		tokadd(c);
 		break;
 	    }

@@ -1,3 +1,8 @@
+Tue Nov 20 01:07:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): should not terminate string interpolation
+	  with newlines in here-docs and newline terminated strings.
+
 Mon Nov 19 17:58:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_mod_modfunc): should follow NODE_ZSUPER link; based
