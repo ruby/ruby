@@ -197,7 +197,7 @@ extern int rb_w32_rmdir(const char *);
 
 #ifdef __BORLANDC__
 extern FILE *rb_w32_fopen(const char *, const char *);
-extern FILE *rb_w32_fdopen(int, char *);
+extern FILE *rb_w32_fdopen(int, const char *);
 extern FILE *rb_w32_fsopen(const char *, const char *, int);
 #endif
 
