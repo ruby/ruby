@@ -87,16 +87,16 @@ class Tracer
       return p.call line
     end
 
-    unless list = LINES__[file]
+    unless list = SCRIPT_LINES__[file]
       begin
 	f = open(file)
 	begin 
-	  LINES__[file] = list = f.readlines
+	  SCRIPT_LINES__[file] = list = f.readlines
 	ensure
 	  f.close
 	end
       rescue
-	LINES__[file] = list = []
+	SCRIPT_LINES__[file] = list = []
       end
     end
     if l = list[line - 1]

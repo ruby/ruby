@@ -2,6 +2,18 @@ Fri Dec 21 16:18:17 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* dln.h, ruby.h, util.h: enable prototypes in C++.
 
+Fri Dec 21 15:12:41 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_plus): result should not be negative unless
+	  NEGATIVE_TIME_T is defined.
+
+	* time.c (time_new_internal): should check tv_sec overflow too.
+
+	* time.c (time_timeval): should check time_t range when time is
+	  initialized from float.
+
+	* time.c (time_plus): uses modf(3).
+
 Fri Dec 21 03:15:52 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_mod_define_method): must not convert Method to Proc.
@@ -17,6 +29,18 @@ Fri Dec 21 01:17:57 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 Thu Dec 20 14:08:20 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: rename Net::Socket to Net::BufferedSocket
+
+Thu Dec 20 13:51:52 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* variable.c (rb_cvar_set): add frozen class/module check.
+
+	* variable.c (rb_cvar_declare): add frozen class/module check.
+
+Thu Dec 20 01:01:50 2001  takuma ozawa  <metal@mine.ne.jp>
+
+	* re.c (match_to_a): should propagate taint.
+
+	* re.c (rb_reg_s_quote): ditto.
 
 Wed Dec 19 16:58:29 2001  Shugo Maeda  <shugo@ruby-lang.org>
 

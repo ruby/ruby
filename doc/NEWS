@@ -1,3 +1,11 @@
+: TCPServer#listen, UNIXServer#listen
+
+  Added.
+
+: String#match
+
+  Added.
+
 : Syslog module
 
   Imported.

@@ -29,6 +29,7 @@ struct timeval {
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#include <math.h>
 
 VALUE rb_cTime;
 
@@ -69,15 +70,24 @@ time_new_internal(klass, sec, usec)
     time_t sec, usec;
 {
     VALUE obj;
+    time_t tmp;
     struct time_object *tobj;
 
     if (usec >= 1000000) {	/* usec positive overflow */
-	sec += usec / 1000000;
+	tmp = sec + usec / 1000000;
 	usec %= 1000000;
+	if (sec > 0 && tmp < 0) {
+	    rb_raise(rb_eRangeError, "out of Time range");
+	}
+	sec = tmp;
     }
     if (usec < 0) {		/* usec negative overflow */
-	sec += NDIV(usec,1000000); /* negative div */
-	usec = NMOD(usec,1000000); /* negative mod */
+	tmp = sec + NDIV(usec,1000000); /* negative div */
+	usec = NMOD(usec,1000000);      /* negative mod */
+	if (sec < 0 && tmp > 0) {
+	    rb_raise(rb_eRangeError, "out of Time range");
+	}
+	sec = tmp;
     }
 #ifndef NEGATIVE_TIME_T
     if (sec < 0 || (sec == 0 && usec < 0))
@@ -122,8 +132,16 @@ time_timeval(time, interval)
       case T_FLOAT:
 	if (interval && RFLOAT(time)->value < 0.0)
 	    rb_raise(rb_eArgError, "%s must be positive", tstr);
-	t.tv_sec = (time_t)RFLOAT(time)->value;
-	t.tv_usec = (time_t)((RFLOAT(time)->value - (double)t.tv_sec)*1e6);
+	else {
+	    double f, d;
+
+	    d = modf(RFLOAT(time)->value, &f);
+	    t.tv_sec = (time_t)f;
+	    if (f != t.tv_sec) {
+		rb_raise(rb_eRangeError, "%f out of Time range", RFLOAT(time)->value);
+	    }
+	    t.tv_usec = (time_t)d*1e6;
+	}
 	break;
 
       case T_BIGNUM:
@@ -925,26 +943,30 @@ time_plus(time1, time2)
 {
     struct time_object *tobj;
     time_t sec, usec;
-    double f, d;
+    double f, d, v;
 
     GetTimeval(time1, tobj);
 
     if (rb_obj_is_kind_of(time2, rb_cTime)) {
 	rb_raise(rb_eTypeError, "time + time?");
     }
-    f = NUM2DBL(time2);
-    sec = (time_t)f;
-    d = f - (double)sec;
-    if (d >= 1.0 || d <= -1.0) {
-	rb_raise(rb_eRangeError, "time + %f out of Time range", f);
+    v = NUM2DBL(time2);
+    d = modf(v, &f);
+    if (f != (double)sec || d >= 1.0 || d <= -1.0) {
+	rb_raise(rb_eRangeError, "time + %f out of Time range", v);
     }
-    usec = tobj->tv.tv_usec + (time_t)(d*1e6);
-    sec = tobj->tv.tv_sec + sec;
+#ifndef NEGATIVE_TIME_T
+    if (f < 0 && -f >= tobj->tv.tv_sec) {
+	rb_raise(rb_eArgError, "time must be positive");
+    }
+#endif
+    usec = tobj->tv.tv_usec + (time_t)d*1e6;
+    sec = tobj->tv.tv_sec + (time_t)f;
 
 #ifdef NEGATIVE_TIME_T
     if ((tobj->tv.tv_sec >= 0 && f >= 0 && sec < 0) ||
 	(tobj->tv.tv_sec <= 0 && f <= 0 && sec > 0)) {
-	rb_raise(rb_eRangeError, "time + %f out of Time range", f);
+	rb_raise(rb_eRangeError, "time + %f out of Time range", v);
     }
 #endif
     time2 = rb_time_new(sec, usec);
@@ -961,7 +983,7 @@ time_minus(time1, time2)
 {
     struct time_object *tobj;
     time_t sec, usec;
-    double f, d;
+    double f, d, v;
 
     GetTimeval(time1, tobj);
     if (rb_obj_is_kind_of(time2, rb_cTime)) {
@@ -970,21 +992,26 @@ time_minus(time1, time2)
 	GetTimeval(time2, tobj2);
 	f = (double)tobj->tv.tv_sec - (double)tobj2->tv.tv_sec;
 	f += ((double)tobj->tv.tv_usec - (double)tobj2->tv.tv_usec)*1e-6;
+	/* XXX: should check float overflow on 64bit time_t platforms */
 
 	return rb_float_new(f);
     }
-    f = NUM2DBL(time2);
-    sec = (time_t)f;
-    d = f - (double)sec;
-    if (d >= 1.0 || d <= -1.0) {
-	rb_raise(rb_eRangeError, "time - %f out of Time range", f);
+    v = NUM2DBL(time2);
+    d = modf(v, &f);
+    if (f != (double)sec || d >= 1.0 || d <= -1.0) {
+	rb_raise(rb_eRangeError, "time - %f out of Time range", v);
     }
+#ifndef NEGATIVE_TIME_T
+    if (f > 0 && f >= tobj->tv.tv_sec) {
+	rb_raise(rb_eArgError, "time must be positive");
+    }
+#endif
     usec = tobj->tv.tv_usec - (time_t)(d*1e6);
-    sec = tobj->tv.tv_sec - sec;
+    sec = tobj->tv.tv_sec - (time_t)f;
 #ifdef NEGATIVE_TIME_T
     if ((tobj->tv.tv_sec <= 0 && f >= 0 && sec > 0) ||
 	(tobj->tv.tv_sec >= 0 && f <= 0 && sec < 0)) {
-	rb_raise(rb_eRangeError, "time - %f out of Time range", f);
+	rb_raise(rb_eRangeError, "time - %f out of Time range", v);
     }
 #endif
 
