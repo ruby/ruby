@@ -4707,7 +4707,6 @@ rb_io_ctl(io, req, arg, io_p)
     int retval;
 
     rb_secure(2);
-    GetOpenFile(io, fptr);
 
     if (NIL_P(arg) || arg == Qfalse) {
 	narg = 0;
@@ -4748,6 +4747,7 @@ rb_io_ctl(io, req, arg, io_p)
 	    narg = (long)RSTRING(arg)->ptr;
 	}
     }
+    GetOpenFile(io, fptr);
     retval = io_cntl(fileno(fptr->f), cmd, narg, io_p);
     if (retval < 0) rb_sys_fail(fptr->path);
     if (TYPE(arg) == T_STRING && RSTRING(arg)->ptr[len] != 17) {

@@ -1,3 +1,7 @@
+Thu Dec  2 07:57:16 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_ctl): [ruby-dev:25019]
+
 Wed Dec  1 06:13:00 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/nkf.c: add constant NKF::VERSION
