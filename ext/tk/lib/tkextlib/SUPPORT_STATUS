@@ -69,6 +69,10 @@ ICONS       http://www.satisoft.com/tcltk/icons/        ==> ICONS
 
 IncrTcl     http://sf.net/projects/incrTcl              ==> itcl, itk
 
+TclX        http://sf.net/projects/tclx
+              ==> tclx  (partial support; infox command and 
+                                          XPG/3 message catalogs only)
+
 TkImg       http://sf.net/projects/tkimg                ==> tkimg
 
 TkTreeCtrl  http://tktreectrl.sourceforge.net/          ==> treectrl
@@ -82,29 +86,25 @@ Tile        http://tktable.sourceforge.net/tile/        ==> tile
 TkTrans     http://www2.cmp.uea.ac.uk/~fuzz/tktrans/default.html
                ==>  tktrans (win32 only)
 
-TkDND       http://sourceforge.net/projects/tkdnd  ==> tkDND
+TkDND       http://sourceforge.net/projects/tkdnd       ==> tkDND
 
 
 
 ===< plan to support (alpha quality libraries may be included) >==============
 
-TclX        http://sf.net/projects/tclx      * may support Tk part only
-
 winico      http://tktable.sourceforge.net
+
+GraphViz    http://www.graphviz.org/
+
+Tkgeomap    http://tkgeomap.sourceforge.net/index.html
 
 
 
 ===< not determined to supprt or not >========================================
 
-GraphViz    http://www.graphviz.org/
-
 BLT         http://sourceforge.net/projects/blt
 
 Tix         http://tixlibrary.sourceforge.net/
-
-Tkgeomap    http://tkgeomap.sourceforge.net/index.html
-
-XBit        http://www.geocities.com/~chengye/
 
 TkZinc      http://www.tkzinc.org/
 
@@ -114,15 +114,23 @@ Mentry      http://home.t-online.de/home/csaba.nemethi/
 
 Tablelist   http://home.t-online.de/home/csaba.nemethi/
 
+ANIGIF      http://cardtable.sourceforge.net/tcltk/
+
+IMG_ROTATE  http://cardtable.sourceforge.net/tcltk/
+
+TclVfs      http://sourceforge.net/projects/tclvfs/
+
 vfwtcl      http://sourceforge.net/projects/avicaptcl
+                * Win32 only
+
+multicast   http://sourceforge.net/projects/avicaptcl
+                * Win32 only
+
+XBit        http://www.geocities.com/~chengye/
+                * current implementation is for Windows only
 
 QuickTimeTcl http://hem.fyristorg.com/matben/qt/
-
-ANIGIF     http://cardtable.sourceforge.net/tcltk/
-
-IMG_ROTATE http://cardtable.sourceforge.net/tcltk/
-
-TclVfs     http://sourceforge.net/projects/tclvfs/
+                * works under Mac OS (8,9,X) or Windows
 
 
 
