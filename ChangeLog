@@ -1,3 +1,8 @@
+Sat Nov 20 01:45:04 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* test/xmlrpc/test_webrick_server.rb : move `requrie "webrick/https"'
+	  into #setup_http_server mohtod to avoid soap test errors.
+
 Fri Nov 19 22:44:43 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb: better support for -p/-x option.

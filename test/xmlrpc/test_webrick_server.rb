@@ -1,6 +1,5 @@
 require 'test/unit'
 require 'webrick'
-require 'webrick/https'
 require File.join(File.dirname(__FILE__), 'webrick_testing')
 require "xmlrpc/server"
 require 'xmlrpc/client'
@@ -34,6 +33,7 @@ class Test_Webrick < Test::Unit::TestCase
   end
 
   def setup_http_server(port, use_ssl)
+    require 'webrick/https'
     start_server(
       :Port => port, 
       :SSLEnable => use_ssl,
