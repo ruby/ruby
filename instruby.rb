@@ -57,7 +57,7 @@ end
 for f in Dir["*.h"]
   File.install f, archdir, 0644, true
 end
-File.install pwd+'/'+CONFIG['LIBRUBY_A'], archdir, 0644, true
+File.install wdir+'/'+CONFIG['LIBRUBY_A'], archdir, 0644, true
 
 File.makedirs mandir, true
 File.install "ruby.1", mandir, 0644, true
