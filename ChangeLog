@@ -1,3 +1,8 @@
+Sat Dec 14 02:03:51 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/dbm/extconf.rb (db_check): support for GNU dbm 1.8.3.
+	  backported from 1.7.
+
 Fri Dec 13 23:39:09 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dbm/extconf.rb: backported from 1.7.
