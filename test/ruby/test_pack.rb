@@ -16,4 +16,42 @@ class TestPack < Test::Unit::TestCase
     $x = [-1073741825]
     assert_equal($x, $x.pack("q").unpack("q"))
   end
+
+  def test_pack_N
+    assert_equal "\000\000\000\000", [0].pack('N')
+    assert_equal "\000\000\000\001", [1].pack('N')
+    assert_equal "\000\000\000\002", [2].pack('N')
+    assert_equal "\000\000\000\003", [3].pack('N')
+    assert_equal "\377\377\377\376", [4294967294].pack('N')
+    assert_equal "\377\377\377\377", [4294967295].pack('N')
+
+    assert_equal "\200\000\000\000", [2**31].pack('N')
+    assert_equal "\177\377\377\377", [-2**31-1].pack('N')
+    assert_equal "\377\377\377\377", [-1].pack('N')
+
+    assert_equal "\000\000\000\001\000\000\000\001", [1,1].pack('N*')
+    assert_equal "\000\000\000\001\000\000\000\001\000\000\000\001", [1,1,1].pack('N*')
+  end
+
+  def test_unpack_N
+    assert_equal 1, "\000\000\000\001".unpack('N')[0]
+    assert_equal 2, "\000\000\000\002".unpack('N')[0]
+    assert_equal 3, "\000\000\000\003".unpack('N')[0]
+    assert_equal 3, "\000\000\000\003".unpack('N')[0]
+    assert_equal 4294967295, "\377\377\377\377".unpack('N')[0]
+    assert_equal [1,1], "\000\000\000\001\000\000\000\001".unpack('N*')
+    assert_equal [1,1,1], "\000\000\000\001\000\000\000\001\000\000\000\001".unpack('N*')
+  end
+
+  def test_pack_U
+    assert_raises(RangeError) { [-0x40000001].pack("U") }
+    assert_raises(RangeError) { [-0x40000000].pack("U") }
+    assert_raises(RangeError) { [-1].pack("U") }
+    assert_equal "\000", [0].pack("U")
+    assert_equal "\374\277\277\277\277\277", [0x3fffffff].pack("U")
+    assert_equal "\375\200\200\200\200\200", [0x40000000].pack("U")
+    assert_equal "\375\277\277\277\277\277", [0x7fffffff].pack("U")
+    assert_raises(RangeError) { [0x80000000].pack("U") }
+    assert_raises(RangeError) { [0x100000000].pack("U") }
+  end
 end
