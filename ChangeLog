@@ -1,3 +1,11 @@
+Mon Sep 20 04:49:22 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/ripper.rb.in: new const Ripper::PARSER_EVENT_TABLE.
+
+	* ext/ripper/ripper.rb.in: new const Ripper::SCANNER_EVENT_TABLE.
+
+	* ext/ripper/lib/ripper.rb: sync with ripper.rb.in.
+
 Mon Sep 20 04:13:00 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ripper/test_scanner_events.rb: test spaces before heredoc
