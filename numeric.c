@@ -23,7 +23,7 @@
 #endif
 
 #ifndef DBL_EPSILON
-#define 2.2204460492503131E-16
+#define DBL_EPSILON 2.2204460492503131E-16
 #endif
 
 static ID id_coerce, id_to_i, id_div;
