@@ -1,3 +1,7 @@
+Tue Jun  6 03:29:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (bigdivmod): modulo by small numbers was wrong.
+
 Sun Jun  4 03:17:36 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cig.rb: improve: CGI::pretty()
@@ -99,6 +103,15 @@ Wed May 17 23:17:38 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 Wed May 17 02:22:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (expr): avoid calling value_expr() twice.
+
+Mon May 15 15:38:09 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.h: exported symbols should be for xmalloc etc. are now
+	  prefixed by 'ruby_', e.g. ruby_xmalloc().
+
+Sun May 14 18:05:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* win32/config.h: undef HAVE_SYS_FILE_H.
 
 Fri May 12 17:33:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
