@@ -75,9 +75,9 @@ module RSS
     
     ELEMENTS = TEXT_ELEMENTS.keys + DATE_ELEMENTS.keys
 
-    ELEMENTS.each do |x, plural_name|
+    ELEMENTS.each do |name, plural_name|
       module_eval(<<-EOC, *get_file_and_line_from_caller(0))
-        class DublinCore#{Utils.to_class_name(x)} < Element
+        class DublinCore#{Utils.to_class_name(name)} < Element
           include RSS10
           
           content_setup
@@ -92,7 +92,7 @@ module RSS
             end
           end
 
-          @tag_name = #{x.dump}
+          @tag_name = #{name.dump}
 
           alias_method(:value, :content)
           alias_method(:value=, :content=)
@@ -107,11 +107,11 @@ module RSS
           end
 
           def maker_target(target)
-            target.new_#{x}
+            target.new_#{name}
           end
 
-          def setup_maker_attributes(#{x})
-            #{x}.content = content
+          def setup_maker_attributes(#{name})
+            #{name}.content = content
           end
         end
       EOC
@@ -120,8 +120,8 @@ module RSS
     DATE_ELEMENTS.each do |name, type|
       module_eval(<<-EOC, *get_file_and_line_from_caller(0))
         class DublinCore#{Utils.to_class_name(name)} < Element
-          undef_method(:content=)
-          undef_method(:value=)
+          remove_method(:content=)
+          remove_method(:value=)
 
           date_writer("content", #{type.dump}, #{name.dump})
           
@@ -151,10 +151,10 @@ module RSS
     class Textinput; include DublinCoreModel; end
   end
 
-  DublinCoreModel::ELEMENTS.each do |x|
-    class_name = Utils.to_class_name(x)
-    BaseListener.install_class_name(DC_URI, x, "DublinCore#{class_name}")
+  DublinCoreModel::ELEMENTS.each do |name|
+    class_name = Utils.to_class_name(name)
+    BaseListener.install_class_name(DC_URI, name, "DublinCore#{class_name}")
   end
 
-  DublinCoreModel::ELEMENTS.collect! {|x| "#{DC_PREFIX}_#{x}"}
+  DublinCoreModel::ELEMENTS.collect! {|name| "#{DC_PREFIX}_#{name}"}
 end

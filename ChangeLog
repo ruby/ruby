@@ -1,3 +1,9 @@
+Tue Apr  5 16:01:12 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/*: refactored.
+	  - gave a name to 'x'.
+	  - undef_method -> remove_method for avoiding a warning in ruby 1.6.
+
 Tue Apr  5 15:45:33 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/tdiary_plugin/rss-recent.rb:

@@ -13,8 +13,8 @@ module RSS
     private
     def trackback_validate(tags)
       counter = {}
-      %w(ping about).each do |x|
-        counter["#{TRACKBACK_PREFIX}_#{x}"] = 0
+      %w(ping about).each do |name|
+        counter["#{TRACKBACK_PREFIX}_#{name}"] = 0
       end
 
       tags.each do |tag|
@@ -40,9 +40,9 @@ module RSS
       unless klass.class == Module
         klass.__send__(:include, TrackBackUtils)
 
-        %w(ping).each do |x|
-          var_name = "#{TRACKBACK_PREFIX}_#{x}"
-          klass_name = x.capitalize
+        %w(ping).each do |name|
+          var_name = "#{TRACKBACK_PREFIX}_#{name}"
+          klass_name = name.capitalize
           klass.install_have_child_element(var_name)
           klass.module_eval(<<-EOC, __FILE__, __LINE__)
             remove_method :#{var_name}

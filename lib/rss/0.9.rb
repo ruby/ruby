@@ -25,8 +25,8 @@ module RSS
       install_model(tag, occurs)
     end
 
-    %w(channel).each do |x|
-      install_have_child_element(x)
+    %w(channel).each do |name|
+      install_have_child_element(name)
     end
 
     attr_accessor :rss_version, :version, :encoding, :standalone
@@ -78,7 +78,9 @@ module RSS
     def _tags
       [
         [nil, 'channel'],
-      ].delete_if {|x| send(x[1]).nil?}
+      ].delete_if do |uri, name|
+        send(name).nil?
+      end
     end
 
     def _attrs
@@ -101,17 +103,17 @@ module RSS
         ["webMaster", "?"],
         ["rating", "?"],
         ["docs", "?"],
-      ].each do |x, occurs|
-        install_text_element(x)
-        install_model(x, occurs)
+      ].each do |name, occurs|
+        install_text_element(name)
+        install_model(name, occurs)
       end
 
       [
         ["pubDate", "?"],
         ["lastBuildDate", "?"],
-      ].each do |x, occurs|
-        install_date_element(x, 'rfc822')
-        install_model(x, occurs)
+      ].each do |name, occurs|
+        install_date_element(name, 'rfc822')
+        install_model(name, occurs)
       end
       alias date pubDate
       alias date= pubDate=
@@ -121,23 +123,23 @@ module RSS
         ["skipHours", "?"],
         ["image", nil],
         ["textInput", "?"],
-      ].each do |x, occurs|
-        install_have_child_element(x)
-        install_model(x, occurs)
+      ].each do |name, occurs|
+        install_have_child_element(name)
+        install_model(name, occurs)
       end
       
       [
         ["cloud", "?"]
-      ].each do |x, occurs|
-        install_have_attribute_element(x)
-        install_model(x, occurs)
+      ].each do |name, occurs|
+        install_have_attribute_element(name)
+        install_model(name, occurs)
       end
       
       [
         ["item", "*"]
-      ].each do |x, occurs|
-        install_have_children_element(x)
-        install_model(x, occurs)
+      ].each do |name, occurs|
+        install_have_children_element(name)
+        install_model(name, occurs)
       end
 
       def initialize()
@@ -192,8 +194,8 @@ module RSS
           "image",
           "textInput",
           "cloud",
-        ].delete_if do |x|
-          send(x).nil?
+        ].delete_if do |name|
+          send(name).nil?
         end.collect do |elem|
           [nil, elem]
         end
@@ -234,9 +236,9 @@ module RSS
 
         [
           ["day", "*"]
-        ].each do |x, occurs|
-          install_have_children_element(x)
-          install_model(x, occurs)
+        ].each do |name, occurs|
+          install_have_children_element(name)
+          install_model(name, occurs)
         end
 
         def to_s(need_convert=true, indent=calc_indent)
@@ -279,9 +281,9 @@ module RSS
 
         [
           ["hour", "*"]
-        ].each do |x, occurs|
-          install_have_children_element(x)
-          install_model(x, occurs)
+        ].each do |name, occurs|
+          install_have_children_element(name)
+          install_model(name, occurs)
         end
 
         def to_s(need_convert=true, indent=calc_indent)
@@ -328,13 +330,13 @@ module RSS
 
         include RSS09
         
-        %w(url title link).each do |x|
-          install_text_element(x)
-          install_model(x, nil)
+        %w(url title link).each do |name|
+          install_text_element(name)
+          install_model(name, nil)
         end
-        %w(width height description).each do |x|
-          install_text_element(x)
-          install_model(x, "?")
+        %w(width height description).each do |name|
+          install_text_element(name)
+          install_model(name, "?")
         end
 
         def to_s(need_convert=true, indent=calc_indent)
@@ -355,8 +357,8 @@ module RSS
 
         private
         def _tags
-          %w(url title link width height description).delete_if do |x|
-            send(x).nil?
+          %w(url title link width height description).delete_if do |name|
+            send(name).nil?
           end.collect do |elem|
             [nil, elem]
           end
@@ -409,12 +411,12 @@ module RSS
         
         include RSS09
 
-        %w(title link description).each do |x|
-          install_text_element(x)
+        %w(title link description).each do |name|
+          install_text_element(name)
         end
 
-        %w(source enclosure).each do |x|
-          install_have_child_element(x)
+        %w(source enclosure).each do |name|
+          install_have_child_element(name)
         end
 
         [
@@ -457,10 +459,10 @@ module RSS
 
         def _tags
           rv = %w(title link description author comments
-            source enclosure).delete_if do |x|
-            send(x).nil?
-          end.collect do |x|
-            [nil, x]
+            source enclosure).delete_if do |name|
+            send(name).nil?
+          end.collect do |name|
+            [nil, name]
           end
 
           @category.each do
@@ -607,9 +609,9 @@ module RSS
 
         include RSS09
 
-        %w(title description name link).each do |x|
-          install_text_element(x)
-          install_model(x, nil)
+        %w(title description name link).each do |name|
+          install_text_element(name)
+          install_model(name, nil)
         end
 
         def to_s(need_convert=true, indent=calc_indent)
@@ -628,8 +630,8 @@ module RSS
 
         private
         def _tags
-          %w(title description name link).each do |x|
-            send(x).nil?
+          %w(title description name link).each do |name|
+            send(name).nil?
           end.collect do |elem|
             [nil, elem]
           end
@@ -644,8 +646,8 @@ module RSS
     
   end
 
-  RSS09::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(nil, x, "#{x}=")
+  RSS09::ELEMENTS.each do |name|
+    BaseListener.install_get_text_element(nil, name, "#{name}=")
   end
 
   module ListenerMixin

@@ -11,17 +11,17 @@ module RSS
 
   TAXO_ELEMENTS = []
 
-  %w(link).each do |x|
-    if const_defined? :Listener
-      Listener.install_get_text_element(TAXO_NS, x, "#{TAXO_PREFIX}_#{x}=")
-    end
-    TAXO_ELEMENTS << "#{TAXO_PREFIX}_#{x}"
+  %w(link).each do |name|
+    full_name = "#{TAXO_PREFIX}_#{name}"
+    BaseListener.install_get_text_element(TAXO_NS, name, "#{full_name}=")
+    TAXO_ELEMENTS << "#{TAXO_PREFIX}_#{name}"
   end
     
   module TaxonomyModel
     attr_writer(*%w(title description creator subject publisher
                     contributor date format identifier source
-                    language relation coverage rights).collect{|x| "#{TAXO_PREFIX}_#{x}"})
+                    language relation coverage rights
+                   ).collect{|name| "#{TAXO_PREFIX}_#{name}"})
   end
   
   class Channel; extend TaxonomyModel;	end

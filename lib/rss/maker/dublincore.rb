@@ -101,8 +101,8 @@ EOC
     class ChannelBase
       include DublinCoreModel
       
-      undef_method(:dc_date)
-      undef_method(:dc_date=)
+      remove_method(:dc_date)
+      remove_method(:dc_date=)
       alias_method(:dc_date, :date)
       alias_method(:dc_date=, :date=)
     end
@@ -112,8 +112,8 @@ EOC
       class ItemBase
         include DublinCoreModel
         
-        undef_method(:dc_date)
-        undef_method(:dc_date=)
+        remove_method(:dc_date)
+        remove_method(:dc_date=)
         alias_method(:dc_date, :date)
         alias_method(:dc_date=, :date=)
       end

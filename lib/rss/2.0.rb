@@ -6,9 +6,9 @@ module RSS
 
     class Channel
 
-      %w(generator ttl).each do |x|
-        install_text_element(x)
-        install_model(x, '?')
+      %w(generator ttl).each do |name|
+        install_text_element(name)
+        install_model(name, '?')
       end
 
       remove_method :ttl=
@@ -26,8 +26,8 @@ module RSS
       [
         ["image", "?"],
         ["language", "?"],
-      ].each do |x, occurs|
-        install_model(x, occurs)
+      ].each do |name, occurs|
+        install_model(name, occurs)
       end
 
       def other_element(need_convert, indent)
@@ -47,8 +47,8 @@ EOT
 
       alias _tags09 _tags
       def _tags
-        rv = %w(generator ttl).delete_if do |x|
-          send(x).nil?
+        rv = %w(generator ttl).delete_if do |name|
+          send(name).nil?
         end.collect do |elem|
           [nil, elem]
         end + _tags09
@@ -67,25 +67,25 @@ EOT
         [
           ["comments", "?"],
           ["author", "?"],
-        ].each do |x, occurs|
-          install_text_element(x)
-          install_model(x, occurs)
+        ].each do |name, occurs|
+          install_text_element(name)
+          install_model(name, occurs)
         end
 
         [
           ["pubDate", '?'],
-        ].each do |x, occurs|
-          install_date_element(x, 'rfc822')
-          install_model(x, occurs)
+        ].each do |name, occurs|
+          install_date_element(name, 'rfc822')
+          install_model(name, occurs)
         end
         alias date pubDate
         alias date= pubDate=
 
         [
           ["guid", '?'],
-        ].each do |x, occurs|
-          install_have_child_element(x)
-          install_model(x, occurs)
+        ].each do |name, occurs|
+          install_have_child_element(name)
+          install_model(name, occurs)
         end
       
         def other_element(need_convert, indent)
@@ -108,8 +108,8 @@ EOT
 
         alias _tags09 _tags
         def _tags
-          %w(comments author pubDate guid).delete_if do |x|
-            send(x).nil?
+          %w(comments author pubDate guid).delete_if do |name|
+            send(name).nil?
           end.collect do |elem|
             [nil, elem]
           end + _tags09
@@ -162,8 +162,8 @@ EOT
 
   end
 
-  RSS09::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(nil, x, "#{x}=")
+  RSS09::ELEMENTS.each do |name|
+    BaseListener.install_get_text_element(nil, name, "#{name}=")
   end
 
 end

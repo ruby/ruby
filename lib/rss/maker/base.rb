@@ -185,10 +185,6 @@ EOC
         end
       end
       
-      def current_element(rss)
-        rss
-      end
-      
       private
       remove_method :make_xml_stylesheets
       def make_xml_stylesheets

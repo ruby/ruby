@@ -17,16 +17,16 @@ module RSS
       super
       
       klass.module_eval(<<-EOC, *get_file_and_line_from_caller(1))
-        %w(encoded).each do |x|
-          install_text_element("\#{CONTENT_PREFIX}_\#{x}")
+        %w(encoded).each do |name|
+          install_text_element("\#{CONTENT_PREFIX}_\#{name}")
         end
       EOC
     end
 
     def content_validate(tags)
       counter = {}
-      ELEMENTS.each do |x|
-        counter[x] = 0
+      ELEMENTS.each do |name|
+        counter[name] = 0
       end
 
       tags.each do |tag|
@@ -45,8 +45,9 @@ module RSS
 
   prefix_size = CONTENT_PREFIX.size + 1
   ContentModel::ELEMENTS.uniq!
-  ContentModel::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(CONTENT_URI, x[prefix_size..-1], "#{x}=")
+  ContentModel::ELEMENTS.each do |full_name|
+    name = full_name[prefix_size..-1]
+    BaseListener.install_get_text_element(CONTENT_URI, name, "#{full_name}=")
   end
 
 end

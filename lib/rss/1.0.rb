@@ -44,8 +44,8 @@ module RSS
       install_model(tag, occurs)
     end
 
-    %w(channel image textinput).each do |x|
-      install_have_child_element(x)
+    %w(channel image textinput).each do |name|
+      install_have_child_element(name)
     end
 
     install_have_children_element("item")
@@ -87,8 +87,8 @@ module RSS
       rv = [
         [::RSS::URI, "channel"],
         [::RSS::URI, "image"],
-      ].delete_if {|x| send(x[1]).nil?}
-      @item.each do |x|
+      ].delete_if {|uri, name| send(name).nil?}
+      @item.each do |item|
         rv << [::RSS::URI, "item"]
       end
       rv << [::RSS::URI, "textinput"] if @textinput
@@ -142,7 +142,7 @@ module RSS
 
       def _tags
         rv = []
-        @li.each do |x|
+        @li.each do |li|
           rv << [URI, "li"]
         end
         rv
@@ -210,12 +210,12 @@ module RSS
         install_get_attribute(name, uri, required)
       end
 
-      %w(title link description).each do |x|
-        install_text_element(x)
+      %w(title link description).each do |name|
+        install_text_element(name)
       end
 
-      %w(image items textinput).each do |x|
-        install_have_child_element(x)
+      %w(image items textinput).each do |name|
+        install_have_child_element(name)
       end
       
       [
@@ -263,8 +263,8 @@ module RSS
           [::RSS::URI, 'image'],
           [::RSS::URI, 'items'],
           [::RSS::URI, 'textinput'],
-        ].delete_if do |x|
-          send(x[1]).nil?
+        ].delete_if do |uri, name|
+          send(name).nil?
         end
       end
 
@@ -431,8 +431,8 @@ module RSS
         install_get_attribute(name, uri, required)
       end
 
-      %w(title url link).each do |x|
-        install_text_element(x)
+      %w(title url link).each do |name|
+        install_text_element(name)
       end
     
       [
@@ -467,8 +467,8 @@ module RSS
           [::RSS::URI, 'title'],
           [::RSS::URI, 'url'],
           [::RSS::URI, 'link'],
-        ].delete_if do |x|
-          send(x[1]).nil?
+        ].delete_if do |uri, name|
+          send(name).nil?
         end
       end
 
@@ -501,8 +501,8 @@ module RSS
         install_get_attribute(name, uri, required)
       end
 
-      %w(title link description).each do |x|
-        install_text_element(x)
+      %w(title link description).each do |name|
+        install_text_element(name)
       end
 
       [
@@ -537,8 +537,8 @@ module RSS
           [::RSS::URI, 'title'],
           [::RSS::URI, 'link'],
           [::RSS::URI, 'description'],
-        ].delete_if do |x|
-          send(x[1]).nil?
+        ].delete_if do |uri, name|
+          send(name).nil?
         end
       end
 
@@ -571,8 +571,8 @@ module RSS
         install_get_attribute(name, uri, required)
       end
 
-      %w(title description name link).each do |x|
-        install_text_element(x)
+      %w(title description name link).each do |name|
+        install_text_element(name)
       end
     
       [
@@ -610,8 +610,8 @@ module RSS
           [::RSS::URI, 'description'],
           [::RSS::URI, 'name'],
           [::RSS::URI, 'link'],
-        ].delete_if do |x|
-          send(x[1]).nil?
+        ].delete_if do |uri, name|
+          send(name).nil?
         end
       end
       
@@ -628,8 +628,8 @@ module RSS
 
   end
 
-  RSS10::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(URI, x, "#{x}=")
+  RSS10::ELEMENTS.each do |name|
+    BaseListener.install_get_text_element(URI, name, "#{name}=")
   end
 
   module ListenerMixin

@@ -17,12 +17,12 @@ module RSS
       super
       
       klass.module_eval(<<-EOC, *get_file_and_line_from_caller(1))
-        %w(updatePeriod updateFrequency).each do |x|
-          install_text_element("\#{SY_PREFIX}_\#{x}")
+        %w(updatePeriod updateFrequency).each do |name|
+          install_text_element("\#{SY_PREFIX}_\#{name}")
         end
 
-        %w(updateBase).each do |x|
-          install_date_element("\#{SY_PREFIX}_\#{x}", 'w3cdtf', x)
+        %w(updateBase).each do |name|
+          install_date_element("\#{SY_PREFIX}_\#{name}", 'w3cdtf', name)
         end
 
         alias_method(:_sy_updatePeriod=, :sy_updatePeriod=)
@@ -42,8 +42,8 @@ module RSS
 
     def sy_validate(tags)
       counter = {}
-      ELEMENTS.each do |x|
-        counter[x] = 0
+      ELEMENTS.each do |name|
+        counter[name] = 0
       end
 
       tags.each do |tag|
@@ -78,8 +78,9 @@ module RSS
 
   prefix_size = SY_PREFIX.size + 1
   SyndicationModel::ELEMENTS.uniq!
-  SyndicationModel::ELEMENTS.each do |x|
-    BaseListener.install_get_text_element(SY_URI, x[prefix_size..-1], "#{x}=")
+  SyndicationModel::ELEMENTS.each do |full_name|
+    name = full_name[prefix_size..-1]
+    BaseListener.install_get_text_element(SY_URI, name, "#{full_name}=")
   end
 
 end
