@@ -49,7 +49,8 @@ CPP = cpp32
 RC = brcc32
 !endif
 !ifndef YACC
-YACC = byacc
+YACC = bison
+YFLAGS = -o y.tab.c
 !endif
 !ifndef AR
 AR = tlib

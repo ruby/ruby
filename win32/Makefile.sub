@@ -38,7 +38,8 @@ CC = cl
 CPP = $(CC) -E
 !endif
 !if !defined(YACC)
-YACC = byacc
+YACC = bison
+YFLAGS = -o y.tab.c
 !endif
 AR = lib -nologo
 PURIFY =

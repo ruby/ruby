@@ -1,3 +1,12 @@
+Fri Sep 17 20:29:33 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* parse.y: add prototypes for Microsoft compiler.
+
+	* ext/ripper/depend (parse.obj): lex.c exists at hdrdir.
+
+	* {bcc32,win32,wince}/Makefile.sub (YACC, YFLAGS, parse.c):
+	  use bison.
+
 Fri Sep 17 17:11:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_delete): element comparison might change array

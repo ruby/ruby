@@ -4412,6 +4412,7 @@ yycompile(parser, f, line)
 }
 #endif /* !RIPPER */
 
+static VALUE lex_get_str _((struct parser_params *, VALUE));
 static VALUE
 lex_get_str(parser, s)
     struct parser_params *parser;
@@ -4468,6 +4469,7 @@ rb_compile_cstr(f, s, len, line)
     return rb_compile_string(f, rb_str_new(s, len), line);
 }
 
+static VALUE lex_io_gets _((struct parser_params *, VALUE));
 static VALUE
 lex_io_gets(parser, io)
     struct parser_params *parser;
@@ -8466,6 +8468,7 @@ ripper_warning0(parser, fmt)
     rb_funcall(parser->value, rb_intern("warning"), 1, rb_str_new2(fmt));
 }
 
+static VALUE ripper_lex_get_generic _((struct parser_params *, VALUE));
 static VALUE
 ripper_lex_get_generic(parser, src)
     struct parser_params *parser;
