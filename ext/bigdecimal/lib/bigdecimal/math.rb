@@ -10,14 +10,15 @@
 #
 # where:
 #   x    ... BigDecimal number to be computed.
+#            |x| must be small enough to get convergence.
 #   prec ... Number of digits to be obtained.
 #
 # Usage:
 #   require "bigdecimal"
 #   require "bigdecimal/math.rb"
 #   include BigMath
-#   a = BigDecimal((PI(1000)/2).to_s)
-#   puts sin(a,1000) # => 0.10000000000000000000......E1
+#   a = BigDecimal((PI(100)/2).to_s)
+#   puts sin(a,100) # => 0.10000000000000000000......E1
 #
 module BigMath
   def sqrt(x,prec)
@@ -28,11 +29,10 @@ module BigMath
     raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
     n    = prec + BigDecimal.double_fig
-    n2   = n+n
     one  = BigDecimal("1")
     two  = BigDecimal("2")
     x1   = x
-    x2   = x * x
+    x2   = x.mult(x,n)
     sign = 1
     y    = x
     d    = y
@@ -41,7 +41,7 @@ module BigMath
     while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
       sign = -sign
-      x1  = x2.mult(x1,n2)
+      x1  = x2.mult(x1,n)
       i  += two
       z  *= (i-one) * i
       d   = sign * x1.div(z,m)
@@ -54,11 +54,10 @@ module BigMath
     raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
     n    = prec + BigDecimal.double_fig
-    n2   = n+n
     one  = BigDecimal("1")
     two  = BigDecimal("2")
     x1 = one
-    x2 = x * x
+    x2 = x.mult(x,n)
     sign = 1
     y = one
     d = y
@@ -67,7 +66,7 @@ module BigMath
     while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
       sign = -sign
-      x1  = x2.mult(x1,n2)
+      x1  = x2.mult(x1,n)
       i  += two
       z  *= (i-one) * i
       d   = sign * x1.div(z,m)
@@ -81,15 +80,14 @@ module BigMath
     return BigDecimal("NaN") if x.infinite? || x.nan?
     raise ArgumentError, "x.abs must be less than 1.0" if x.abs>=1
     n    = prec + BigDecimal.double_fig
-    n2   = n+n
-    y = x;
-    d = y;
-    t = x;
-    r = BigDecimal("3");
-    x2 = x*x
+    y = x
+    d = y
+    t = x
+    r = BigDecimal("3")
+    x2 = x.mult(x,n)
     while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      t = -t.mult(x2,n2)
+      t = -t.mult(x2,n)
       d = t.div(r,m)
       y += d
       r += 2
@@ -101,7 +99,6 @@ module BigMath
     raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
     n    = prec + BigDecimal.double_fig
-    n2   = n+n
     one  = BigDecimal("1")
     x1 = one
     y  = one
@@ -110,7 +107,7 @@ module BigMath
     i  = 0
     while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      x1  = x1.mult(x,n2)
+      x1  = x1.mult(x,n)
       i += 1
       z *= i
       d  = x1.div(z,m)
@@ -125,20 +122,19 @@ module BigMath
     one = BigDecimal("1")
     two = BigDecimal("2")
     n  = prec + BigDecimal.double_fig
-    n2 = n + n
     x  = (x - one).div(x + one,n)
-    x2 = x   * x
-    y  = two * x
+    x2 = x.mult(x,n)
+    y  = x
     d  = y
     i = one
     while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      x  = x2.mult(x,n2)
+      x  = x2.mult(x,n)
       i += two
-      d  = (two * x).div(i,m)
+      d  = x.div(i,m)
       y += d
     end
-    y
+    y*two
   end
 
   def PI(prec)
@@ -171,7 +167,7 @@ module BigMath
     t = BigDecimal("956")
     while d.nonzero? && ((m = n - (pi.exponent - d.exponent).abs) > 0)
       m = BigDecimal.double_fig if m < BigDecimal.double_fig
-      t   = t.div(m57121,m)
+      t   = t.div(m57121,n)
       d   = t.div(k,m)
       pi  = pi + d
       k   = k+two
