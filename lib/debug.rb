@@ -450,7 +450,7 @@ class DEBUGGER__
 	      stdout.print "At toplevel\n"
 	    end
 	    binding, binding_file, binding_line = @frames[frame_pos]
-           stdout.printf "#%d %s:%s\n", frame_pos+1, binding_file, binding_line
+	    stdout.print format_frame(frame_pos)
 
 	  when /^\s*down(?:\s+(\d+))?$/
 	    previous_line = nil
@@ -465,7 +465,7 @@ class DEBUGGER__
 	      stdout.print "At stack bottom\n"
 	    end
 	    binding, binding_file, binding_line = @frames[frame_pos]
-           stdout.printf "#%d %s:%s\n", frame_pos+1, binding_file, binding_line
+	    stdout.print format_frame(frame_pos)
 
 	  when /^\s*fin(?:ish)?$/
 	    if frame_pos == @frames.size
@@ -596,18 +596,20 @@ EOHELP
     end
 
     def display_frames(pos)
-      pos += 1
-      n = 0
-      at = @frames
-      for bind, file, line, id in at
-	n += 1
-	break unless bind
-	if pos == n
-	  stdout.printf "--> #%d  %s:%s%s\n", n, file, line, id ? ":in `#{id.id2name}'":""
-	else
-	  stdout.printf "    #%d  %s:%s%s\n", n, file, line, id ? ":in `#{id.id2name}'":""
-	end
+      0.upto(@frames.size - 1) do |n|
+        if n == pos
+          stdout.print "--> "
+        else
+          stdout.print "    "
+        end
+        stdout.print format_frame(n)
       end
+    end
+
+    def format_frame(pos)
+      bind, file, line, id = @frames[pos]
+      sprintf "#%d %s:%s%s\n", pos + 1, file, line,
+	(id ? ":in `#{id.id2name}'" : "")
     end
 
     def display_list(b, e, file, line)
@@ -778,6 +780,7 @@ EOHELP
         context(th[0]).set_trace arg
       end
       Thread.critical = false
+      arg
     end
 
     def set_last_thread(th)
