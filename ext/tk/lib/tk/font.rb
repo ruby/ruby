@@ -53,7 +53,8 @@ class TkFont
                                                  '-compound'))
         else
           # unknown Tcl/Tk-JP
-          platform = tk_call('set', 'tcl_platform(platform)')
+          #platform = tk_call('set', 'tcl_platform(platform)')
+          platform = Tk::PLATFORM['platform']
           case platform
           when 'unix'
             ltn = {'family'=>'Helvetica'.freeze, 
@@ -79,7 +80,8 @@ class TkFont
 
     else # not JAPANIZED_TK
       begin
-        platform = tk_call('set', 'tcl_platform(platform)')
+        #platform = tk_call('set', 'tcl_platform(platform)')
+        platform = Tk::PLATFORM['platform']
         case platform
         when 'unix'
           ltn = {'family'=>'Helvetica'.freeze, 
