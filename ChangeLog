@@ -1,3 +1,7 @@
+Thu Feb 12 21:25:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/base64.rb: backported from HEAD (modularised and documented)
+
 Thu Feb 12 20:31:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_tmpsrc): cpp32 of Borland C++ ignores #error
