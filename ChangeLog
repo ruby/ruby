@@ -1,3 +1,9 @@
+Fri Sep  5 09:28:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_gc.rb: added.  splitter.rb which I made to split
+	  sample/test.rb into test/ruby/test_* kindly removed GC test (the
+	  last section in the original test) to reduce things to be worried.
+
 Fri Sep  5 03:00:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_iterator.rb (test_block_in_arg): add no block
