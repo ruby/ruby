@@ -10,13 +10,14 @@ module Test
     # Encapsulates a test failure. Created by Test::Unit::TestCase
     # when an assertion fails.
     class Failure
-      attr_reader(:location, :message)
+      attr_reader :test_name, :location, :message
       
       SINGLE_CHARACTER = 'F'
 
       # Creates a new Failure with the given location and
       # message.
-      def initialize(location, message)
+      def initialize(test_name, location, message)
+        @test_name = test_name
         @location = location
         @message = message
       end
@@ -28,12 +29,17 @@ module Test
 
       # Returns a brief version of the error description.
       def short_display
-        "#{@location}:\n#{@message}"
+        "#@test_name: #{@message.split("\n")[0]}"
       end
 
       # Returns a verbose version of the error description.
       def long_display
-        "Failure!!!\n#{short_display}"
+        location_display = if(location.size == 1)
+          location[0].sub(/\A(.+:\d+).*/, ' [\\1]')
+        else
+          "\n    [#{location.join("\n     ")}]"
+        end
+        "Failure:\n#@test_name#{location_display}:\n#@message"
       end
 
       # Overridden to return long_display.

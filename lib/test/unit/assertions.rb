@@ -25,7 +25,7 @@ module Test # :nodoc:
       # The assertion upon which all other assertions are
       # based. Passes if the block yields true.
       public
-      def assert_block(message="") # :yields: 
+      def assert_block(message="assert_block failed") # :yields: 
         _wrap_assertion do
           if (! yield)
             raise AssertionFailedError.new(message.to_s)
@@ -35,7 +35,7 @@ module Test # :nodoc:
 
       # Passes if boolean is true.
       public
-      def assert(boolean, message="")
+      def assert(boolean, message="assert failed")
         _wrap_assertion do
           assert_block("assert should not be called with a block.") { !block_given? }
           assert_block(message) { boolean }
@@ -199,7 +199,7 @@ module Test # :nodoc:
 
       # Always fails.
       public
-      def flunk(message="")
+      def flunk(message="Assertion flunked")
         assert(false, message)
       end
 

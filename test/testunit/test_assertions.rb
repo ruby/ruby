@@ -2,7 +2,7 @@
 # Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
-require 'test/unit/testcase'
+require 'test/unit'
 
 module Test
   module Unit
@@ -66,7 +66,7 @@ module Test
         check_nothing_fails {
           assert_block("successful assert_block") {true}
         }
-        check_fails {
+        check_fails("assert_block failed") {
           assert_block {false}
         }
         check_fails("failed assert_block") {
@@ -81,7 +81,7 @@ module Test
         check_nothing_fails {
           assert(true, "successful assert")
         }
-        check_fails {
+        check_fails("assert failed") {
           assert(false)
         }
         check_fails("failed assert") {
@@ -291,7 +291,7 @@ module Test
       end
       
       def test_flunk
-        check_fails {
+        check_fails("Assertion flunked") {
           flunk
         }
         check_fails("flunk message") {

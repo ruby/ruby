@@ -4,6 +4,8 @@
 # Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
+require 'test/unit/util/backtracefilter'
+
 module Test
   module Unit
 
@@ -11,14 +13,16 @@ module Test
     # Test::Unit::TestCase when it rescues an exception thrown
     # during the processing of a test.
     class Error
-      attr_reader(:location, :exception)
+      include Util::BacktraceFilter
+
+      attr_reader(:test_name, :exception)
 
       SINGLE_CHARACTER = 'E'
 
-      # Creates a new Error with the given location and
+      # Creates a new Error with the given test_name and
       # exception.
-      def initialize(location, exception)
-        @location = location
+      def initialize(test_name, exception)
+        @test_name = test_name
         @exception = exception
       end
 
@@ -34,34 +38,18 @@ module Test
 
       # Returns a brief version of the error description.
       def short_display
-        "#{@location}:\n#{message}"
+        "#@test_name: #{message.split("\n")[0]}"
       end
 
       # Returns a verbose version of the error description.
       def long_display
-        backtrace = self.class.filter(@exception.backtrace).join("\n    ")
-        "Error!!!\n#{short_display}\n    #{backtrace}"
+        backtrace = filter_backtrace(@exception.backtrace).join("\n    ")
+        "Error:\n#@test_name:\n#{message}\n    #{backtrace}"
       end
 
       # Overridden to return long_display.
       def to_s
         long_display
-      end
-
-      SEPARATOR_PATTERN = '[\\\/:]'
-      def self.filter(backtrace) # :nodoc:
-        @test_unit_patterns ||= $:.collect {
-          | path |
-          /^#{Regexp.escape(path)}#{SEPARATOR_PATTERN}test#{SEPARATOR_PATTERN}unit#{SEPARATOR_PATTERN}/
-        }.push(/#{SEPARATOR_PATTERN}test#{SEPARATOR_PATTERN}unit\.rb/)
-
-        return backtrace.delete_if {
-            | line |
-            @test_unit_patterns.detect {
-              | pattern |
-              line =~ pattern
-            }
-          }
       end
     end
   end

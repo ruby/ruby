@@ -1,3 +1,28 @@
+Fri Oct  3 08:01:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb: added a default message for #assert,
+	  #assert_block, and #flunk.
+
+	* test/testunit/test_assertions.rb: ditto.
+
+	* lib/test/unit/failure.rb: failures now show a better trace of where
+	  they occurred.
+
+	* test/testunit/test_failure.rb: ditto (added).
+
+	* lib/test/unit/testcase.rb: ditto.
+
+	* test/testunit/test_testcase.rb: ditto.
+
+	* lib/test/unit/util/backtracefilter.rb: added.
+
+	* test/testunit/util/test_backtracefilter.rb: added.
+
+	* lib/test/unit/error.rb: changed to use BacktraceFilter and improved
+	  output.
+
+	* test/testunit/test_error.rb: ditto.
+
 Thu Oct  2 20:33:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (iconv_failure_initialize): conform with

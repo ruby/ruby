@@ -2,7 +2,7 @@
 # Copyright:: Copyright (c) 2000-2002 Nathaniel Talbott. All rights reserved.
 # License:: Ruby license.
 
-require 'test/unit/testcase'
+require 'test/unit'
 
 module Test
   module Unit
@@ -36,6 +36,12 @@ module Test
           def test_error
             1 / 0
           end
+          def test_nested_failure
+            nested
+          end
+          def nested
+            assert_block("nested"){false}
+          end
           def return_passed?
             return passed?
           end
@@ -55,7 +61,13 @@ module Test
           | fault |
           check("Should have a Failure", fault.instance_of?(Failure))
           check("The Failure should have the correct message", "failure" == fault.message)
-          check("The Failure should have the correct location (was <#{fault.location}>)", fault.location =~ /test_failure\(TC_FailureError\) \[.*#{File.basename(__FILE__)}:\d+\]/)
+          check("The Failure should have the correct test_name (was <#{fault.test_name}>)", fault.test_name == "test_failure(TC_FailureError)")
+          r = /\A.*#{Regexp.escape(File.basename(__FILE__))}:\d+:in `test_failure'\Z/
+
+          location = fault.location
+          check("The location should be an array", location.kind_of?(Array))
+          check("The location should have two lines (was: <#{location.inspect}>)", location.size == 2)
+          check("The Failure should have the correct location (was <#{location[0].inspect}>, expected <#{r.inspect}>)", r =~ location[0])
           called = true
         }
         progress = []
@@ -63,6 +75,30 @@ module Test
         check("The failure should have triggered the listener", called)
         check("The failure should have set passed?", !test_case.return_passed?)
         check("The progress block should have been updated correctly", [[TestCase::STARTED, test_case.name], [TestCase::FINISHED, test_case.name]] == progress)
+      end
+
+      def test_add_failure_nested
+        test_case = @tc_failure_error.new(:test_nested_failure)
+        check("passed? should start out true", test_case.return_passed?)
+
+        result = TestResult.new
+        called = false
+        result.add_listener(TestResult::FAULT) {
+          | fault |
+          check("Should have a Failure", fault.instance_of?(Failure))
+          check("The Failure should have the correct message", "nested" == fault.message)
+          check("The Failure should have the correct test_name (was <#{fault.test_name}>)", fault.test_name == "test_nested_failure(TC_FailureError)")
+          r = 
+
+          location = fault.location
+          check("The location should be an array", location.kind_of?(Array))
+          check("The location should have the correct number of lines (was: <#{location.inspect}>)", location.size == 3)
+          check("The Failure should have the correct location (was <#{location[0].inspect}>)", /\A.*#{Regexp.escape(File.basename(__FILE__))}:\d+:in `nested'\Z/ =~ location[0])
+          check("The Failure should have the correct location (was <#{location[1].inspect}>)", /\A.*#{Regexp.escape(File.basename(__FILE__))}:\d+:in `test_nested_failure'\Z/ =~ location[1])
+          called = true
+        }
+        test_case.run(result){}
+        check("The failure should have triggered the listener", called)
       end
       
       def test_add_error
@@ -74,7 +110,7 @@ module Test
           | fault |
           check("Should have a TestError", fault.instance_of?(Error))
           check("The Error should have the correct message", "ZeroDivisionError: divided by 0" == fault.message)
-          check("The Error should have the correct location", "test_error(TC_FailureError)" == fault.location)
+          check("The Error should have the correct test_name", "test_error(TC_FailureError)" == fault.test_name)
           check("The Error should have the correct exception", fault.exception.instance_of?(ZeroDivisionError))
           called = true
         }

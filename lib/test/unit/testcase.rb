@@ -9,6 +9,7 @@ require 'test/unit/failure'
 require 'test/unit/error'
 require 'test/unit/testsuite'
 require 'test/unit/assertionfailederror'
+require 'test/unit/util/backtracefilter'
 
 module Test
   module Unit
@@ -20,6 +21,7 @@ module Test
     # collecting its results into a Test::Unit::TestResult object.
     class TestCase
       include Assertions
+      include Util::BacktraceFilter
       
       attr_reader :method_name
       
@@ -116,18 +118,7 @@ module Test
 
       def add_failure(message, all_locations=caller()) # :nodoc:
         @test_passed = false
-        assertions_pattern = /[^A-Za-z_]assertions\.rb:/
-        if (all_locations.detect { |entry| entry =~ assertions_pattern })
-          all_locations.shift
-          until (all_locations[0] =~ assertions_pattern || all_locations.empty?)
-            all_locations.shift
-          end
-          location = all_locations.detect { |entry| entry !~ assertions_pattern }
-        else
-          location = all_locations[0]
-        end
-        location = location[/^.+:\d+/]
-        @_result.add_failure(Failure.new("#{name} [#{location}]", message))
+        @_result.add_failure(Failure.new(name, filter_backtrace(all_locations), message))
       end
       private :add_failure
 
