@@ -204,11 +204,16 @@ readline_s_set_completion_append_character(self, str)
 {
 #ifdef READLINE_21_OR_LATER
     rb_secure(4);
-    SafeStringValue(str);
-    if (NIL_P(str) || RSTRING(str)->len == 0) {
+    if (NIL_P(str)) {
 	rl_completion_append_character = '\0';
-    } else {
-	rl_completion_append_character = RSTRING(str)->ptr[0];
+    }
+    else {
+	SafeStringValue(str);
+	if (RSTRING(str)->len == 0) {
+	    rl_completion_append_character = '\0';
+	} else {
+	    rl_completion_append_character = RSTRING(str)->ptr[0];
+	}
     }
 
     return self;

@@ -38,6 +38,15 @@ class TestReadline < Test::Unit::TestCase
     end
   end
 
+  def test_completion_append_character
+    Readline.completion_append_character = nil
+    assert_equal(nil, Readline.completion_append_character)
+    Readline.completion_append_character = "x"
+    assert_equal("x", Readline.completion_append_character)
+    Readline.completion_append_character = "xyz"
+    assert_equal("x", Readline.completion_append_character)
+  end
+
   private
 
   def replace_stdio(stdin, stdout)
