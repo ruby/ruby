@@ -68,4 +68,24 @@ class TestProc < Test::Unit::TestCase
     assert_arity(-1) {|*x|}
     assert_arity(-1) {|*|}
   end
+
+  # [ruby-dev:22592]
+  def m(x)
+    lambda { x }
+  end
+  def test_eq
+    # [ruby-dev:22592]
+    a = m(1)
+    b = m(2)
+    assert_not_equal(a, b)
+    assert_not_equal(a.call, b.call)
+
+    # [ruby-dev:22599]
+    assert_not_equal(proc {||}, proc {|x,y|})
+
+    # [ruby-dev:22601]
+    a = lambda {|x| lambda {} }.call(1)
+    b = lambda {}
+    assert_not_equal(a, b)
+  end
 end

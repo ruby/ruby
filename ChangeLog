@@ -1,3 +1,14 @@
+Wed Feb 11 20:01:12 2004  akira yamada  <akira@ruby-lang.org>
+
+	* test/ruby/test_file.rb (TestFile::test_fnmatch): added tests for
+	  File.fnmatch. [ruby-dev:22815][ruby-dev:22819]
+	
+	* test/ruby/test_proc.rb (TestProc::test_eq): added a
+	  test.  [ruby-dev:22599]
+	
+	* test/ruby/test_proc.rb (TestProc::test_eq): added tests for
+	   Proc#==.  [ruby-dev:22592], [ruby-dev:22601]
+
 Tue Feb 10 16:43:56 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (umethod_bind): purge unused check.  [ruby-dev:22850]
