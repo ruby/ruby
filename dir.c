@@ -107,25 +107,25 @@ range(pat, test, flags)
 
     test = downcase(test);
 
-    while (*pat) {
+    while (*pat != ']') {
 	int cstart, cend;
+        if (escape && *pat == '\\')
+	    pat++;
 	cstart = cend = *pat++;
-	if (cstart == ']')
-	    return ok == not ? 0 : pat;
-        else if (escape && cstart == '\\')
-	    cstart = cend = *pat++;
+	if (!cstart)
+	    return 0;
 	if (*pat == '-' && pat[1] != ']') {
-	    if (escape && pat[1] == '\\')
+	    pat++;
+	    if (escape && *pat == '\\')
 		pat++;
-	    cend = pat[1];
+	    cend = *pat++;
 	    if (!cend)
 		return 0;
-	    pat += 2;
 	}
 	if (downcase(cstart) <= test && test <= downcase(cend))
 	    ok = 1;
     }
-    return 0;
+    return ok == not ? 0 : pat + 1;
 }
 
 #define ISDIRSEP(c) (pathname && isdirsep(c))

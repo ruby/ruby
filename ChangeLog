@@ -1,3 +1,7 @@
+Wed Mar 17 14:44:43  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (range): fix possible "\0" overrun. (in case of "\0-")
+
 Mon Mar 15 07:39:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): should not re-submit TAG_BREAK if this
