@@ -2,6 +2,13 @@ Wed Oct  2 13:03:58 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set ac_cv_func_setitimer to "no" on Cygwin.
 
+Wed Oct  2 10:59:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_sweep): free unused heap page to reduce process size if
+	  possible.
+
+	* object.c (rb_obj_type): deperecated Object#type; use Object#class.
+
 Tue Oct  1 23:48:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/socket/socket.c (init_sock): no need for special finalizer,
