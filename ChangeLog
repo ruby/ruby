@@ -1,3 +1,7 @@
+Sun Mar 28 14:23:02 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb: def m( arg ) -> def m(arg).
+
 Sun Mar 28 14:09:13 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb (auth): failed when account/password include "%".

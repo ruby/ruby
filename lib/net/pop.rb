@@ -151,7 +151,7 @@
 # you can grab only selected mails from the POP server.
 # e.g.
 # 
-#     def need_pop?( id )
+#     def need_pop?(id)
 #       # determine if we need pop this mail...
 #     end
 # 
@@ -220,7 +220,7 @@ module Net
     #       ....
     #     }
     #
-    def POP3.APOP( isapop )
+    def POP3.APOP(isapop)
       isapop ? APOP : POP3
     end
 
@@ -243,9 +243,9 @@ module Net
     #       m.delete if $DELETE
     #     end
     #
-    def POP3.foreach( address, port = nil,
-                      account = nil, password = nil,
-                      isapop = false, &block )  # :yields: message
+    def POP3.foreach(address, port = nil,
+                     account = nil, password = nil,
+                     isapop = false, &block)  # :yields: message
       start(address, port, account, password, isapop) {|pop|
         pop.each_mail(&block)
       }
@@ -263,9 +263,9 @@ module Net
     #       file.write m.pop
     #     end
     #
-    def POP3.delete_all( address, port = nil,
-                         account = nil, password = nil,
-                         isapop = false, &block )
+    def POP3.delete_all(address, port = nil,
+                        account = nil, password = nil,
+                        isapop = false, &block)
       start(address, port, account, password, isapop) {|pop|
         pop.delete_all(&block)
       }
@@ -283,16 +283,16 @@ module Net
     #     Net::POP3.auth_only('pop.example.com', 110,
     #                         'YourAccount', 'YourPassword', true)
     #
-    def POP3.auth_only( address, port = nil,
-                        account = nil, password = nil,
-                        isapop = false )
+    def POP3.auth_only(address, port = nil,
+                       account = nil, password = nil,
+                       isapop = false)
       new(address, port, isapop).auth_only account, password
     end
 
     # Starts a pop3 session, attempts authentication, and quits.
     # This method must not be called while POP3 session is opened.
     # This method raises POPAuthenticationError if authentication fails.
-    def auth_only( account, password )
+    def auth_only(account, password)
       raise IOError, 'opening already opened POP session' if started?
       start(account, password) {
         ;
@@ -318,9 +318,9 @@ module Net
     #      end
     #    }
     #
-    def POP3.start( address, port = nil,
-                    account = nil, password = nil,
-                    isapop = false, &block ) # :yield: pop
+    def POP3.start(address, port = nil,
+                   account = nil, password = nil,
+                   isapop = false, &block)   # :yield: pop
       new(address, port, isapop).start(account, password, &block)
     end
 
@@ -330,7 +330,7 @@ module Net
     # The optional +isapop+ specifies whether this connection is going
     # to use APOP authentication; it defaults to +false+.
     # This method does *not* open the TCP connection.
-    def initialize( addr, port = nil, isapop = false )
+    def initialize(addr, port = nil, isapop = false)
       @address = addr
       @port = port || self.class.default_port
       @apop = isapop
@@ -369,7 +369,7 @@ module Net
     #     ....
     #   }
     #
-    def set_debug_output( arg )
+    def set_debug_output(arg)
       @debug_output = arg
     end
 
@@ -390,7 +390,7 @@ module Net
     attr_reader :read_timeout
 
     # Set the read timeout.
-    def read_timeout=( sec )
+    def read_timeout=(sec)
       @command.socket.read_timeout = sec if @command
       @read_timeout = sec
     end
@@ -408,9 +408,8 @@ module Net
     # closes the session after block call finishes.
     #
     # This method raises a POPAuthenticationError if authentication fails.
-    def start( account, password ) # :yield: pop
+    def start(account, password) # :yield: pop
       raise IOError, 'POP session already started' if @started
-
       if block_given?
         begin
           do_start account, password
@@ -424,7 +423,7 @@ module Net
       end
     end
 
-    def do_start( account, password )
+    def do_start(account, password)
       @socket = InternetMessageIO.new(timeout(@open_timeout) {
                   TCPSocket.open(@address, @port)
                 })
@@ -518,7 +517,7 @@ module Net
     #   end
     #
     # This method raises a POPError if an error occurs.
-    def each_mail( &block )  # :yield: message
+    def each_mail(&block)  # :yield: message
       mails().each(&block)
     end
 
@@ -538,7 +537,7 @@ module Net
     #     end
     #
     # This method raises a POPError if an error occurs.
-    def delete_all # :yield: message
+    def delete_all   # :yield: message
       mails().each do |m|
         yield m if block_given?
         m.delete unless m.deleted?
@@ -594,7 +593,7 @@ module Net
   #
   class POPMail
 
-    def initialize( num, len, pop, cmd )   #:nodoc:
+    def initialize(num, len, pop, cmd)   #:nodoc:
       @number = num
       @length = len
       @pop = pop
@@ -620,6 +619,8 @@ module Net
     # without a block, the message is returned as a String.  The optional 
     # +dest+ argument will be prepended to the returned String; this
     # argument is essentially obsolete.
+    #
+    # This method raises a POPError if an error occurs.
     #
     #     # Example without block
     #     POP3.start('pop.example.com', 110,
@@ -648,8 +649,7 @@ module Net
     #       end
     #     }
     #
-    # This method raises a POPError if an error occurs.
-    def pop( dest = '', &block ) # :yield: message_chunk
+    def pop(dest = '', &block) # :yield: message_chunk
       if block_given?
         @command.retr(@number, &block)
         nil
@@ -668,7 +668,7 @@ module Net
     # The optional +dest+ argument is obsolete.
     #
     # This method raises a POPError if an error occurs.
-    def top( lines, dest = '' )
+    def top(lines, dest = '')
       @command.top(@number, lines) do |chunk|
         dest << chunk
       end
@@ -679,7 +679,7 @@ module Net
     # The optional +dest+ argument is obsolete.
     #
     # This method raises a POPError if an error occurs.
-    def header( dest = '' )
+    def header(dest = '')
       top(0, dest)
     end
 
@@ -726,7 +726,7 @@ module Net
 
     alias uidl unique_id
 
-    def uid=( uid )   #:nodoc: internal use only (used from POP3#set_all_uids)
+    def uid=(uid)   #:nodoc: internal use only
       @uid = uid
     end
 
@@ -735,7 +735,7 @@ module Net
 
   class POP3Command   #:nodoc: internal use only
 
-    def initialize( sock )
+    def initialize(sock)
       @socket = sock
       @error_occured = false
       res = check_response(critical { recv_response() })
@@ -746,14 +746,14 @@ module Net
       "#<#{self.class} socket=#{@socket}>"
     end
 
-    def auth( account, password )
+    def auth(account, password)
       check_response_auth(critical {
         check_response_auth(get_response('USER %s', account))
         get_response('PASS %s', password)
       })
     end
 
-    def apop( account, password )
+    def apop(account, password)
       raise POPAuthenticationError, 'not APOP server; cannot login' \
                                                       unless @apop_stamp
       check_response_auth(critical {
@@ -784,28 +784,28 @@ module Net
     end
 
     def rset
-      check_response(critical { get_response 'RSET' })
+      check_response(critical { get_response('RSET') })
     end
 
-    def top( num, lines = 0, &block )
+    def top(num, lines = 0, &block)
       critical {
         getok('TOP %d %d', num, lines)
         @socket.each_message_chunk(&block)
       }
     end
 
-    def retr( num, &block )
+    def retr(num, &block)
       critical {
         getok('RETR %d', num)
         @socket.each_message_chunk(&block)
       }
     end
     
-    def dele( num )
+    def dele(num)
       check_response(critical { get_response('DELE %d', num) })
     end
 
-    def uidl( num = nil )
+    def uidl(num = nil)
       if num
         res = check_response(critical { get_response('UIDL %d', num) })
         return res.split(/ /)[1]
@@ -828,12 +828,12 @@ module Net
 
     private
 
-    def getok( fmt, *fargs )
+    def getok(fmt, *fargs)
       @socket.writeline sprintf(fmt, *fargs)
       check_response(recv_response())
     end
 
-    def get_response( fmt, *fargs )
+    def get_response(fmt, *fargs)
       @socket.writeline sprintf(fmt, *fargs)
       recv_response()
     end
@@ -842,13 +842,13 @@ module Net
       @socket.readline
     end
 
-    def check_response( res )
-      raise POPError, res unless /\A\+OK/i === res
+    def check_response(res)
+      raise POPError, res unless /\A\+OK/i =~ res
       res
     end
 
-    def check_response_auth( res )
-      raise POPAuthenticationError, res unless /\A\+OK/i === res
+    def check_response_auth(res)
+      raise POPAuthenticationError, res unless /\A\+OK/i =~ res
       res
     end
 
@@ -865,4 +865,3 @@ module Net
   end   # class POP3Command
 
 end   # module Net
-
