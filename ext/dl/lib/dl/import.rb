@@ -67,7 +67,7 @@ module DL
 	  module_eval [
 	    "def #{mname}(*args)",
 	    "  sym,rdec,enc,dec  = @SYM['#{mname}']",
-	    "  args = enc.call(args)",
+	    "  args = enc.call(args) if enc",
 	    if( $DEBUG )
 	      "  p \"[DL] call #{mname} with \#{args.inspect}\""
 	    else
@@ -79,8 +79,10 @@ module DL
 	    else
 	      ""
 	    end,
-	    "  @retval = rdec.call(r)",
-	    "  @args   = dec.call(rs)",
+	    "  r  = rdec.call(r) if rdec",
+	    "  rs = dec.call(rs) if dec",
+	    "  @retval = r",
+	    "  @args   = rs",
 	    "  return @retval",
 	    "end",
 	    "module_function :#{mname}",
@@ -107,21 +109,33 @@ module DL
       def encode_type(ty)
 	check_type
 	orig_ty = ty
-	enc = proc{|v| v}
-	dec = proc{|v| v}
+	enc = nil
+	dec = nil
 	@TYDEFS.each{|t1,t2,c1,c2|
 	  if( t1.is_a?(String) )
 	    t1 = Regexp.new("^" + t1 + "$")
 	  end
 	  if( ty =~ t1 )
 	    ty = ty.gsub(t1,t2)
-	    if( c1 )
-	      conv1 = enc
-	      enc = proc{|v| c1.call(conv1.call(v))}
+	    if( enc )
+	      if( c1 )
+		conv1 = enc
+		enc = proc{|v| c1.call(conv1.call(v))}
+	      end
+	    else
+	      if( c1 )
+		enc = c1
+	      end
 	    end
-	    if( c2 )
-	      conv2 = dec
-	      dec = proc{|v| c2.call(conv2.call(v))}
+	    if( dec )
+	      if( c2 )
+		conv2 = dec
+		dec = proc{|v| c2.call(conv2.call(v))}
+	      end
+	    else
+	      if( c2 )
+		dec = c2
+	      end
 	    end
 	  end
 	}
@@ -134,15 +148,31 @@ module DL
 
       def encode_types(tys)
 	encty = []
-	enc = proc{|v| v}
-	dec = proc{|v| v}
+	enc = nil
+	dec = nil
 	tys.each_with_index{|ty,idx|
 	  ty,c1,c2 = encode_type(ty)
 	  encty.push(ty)
-	  conv1 = enc
-	  enc = proc{|v| v = conv1.call(v); v[idx] = c1.call(v[idx]); v}
-	  conv2 = dec
-	  dec = proc{|v| v = conv2.call(v); v[idx] = c2.call(v[idx]); v}
+	  if( enc )
+	    if( c1 )
+	      conv1 = enc
+	      enc = proc{|v| v = conv1.call(v); v[idx] = c1.call(v[idx]); v}
+	    end
+	  else
+	    if( c1 )
+	      enc = proc{|v| v[idx] = c1.call(v[idx]); v}
+	    end
+	  end
+	  if( dec )
+	    if( c2 )
+	      conv2 = dec
+	      dec = proc{|v| v = conv2.call(v); v[idx] = c2.call(v[idx]); v}
+	    end
+	  else
+	    if( c2 )
+	      dec = proc{|v| v[idx] = c2.call(v[idx]); v}
+	    end
+	  end
 	}
 	return [encty.join, enc, dec]
       end

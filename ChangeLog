@@ -1,3 +1,8 @@
+Thu Apr  4 14:08:52 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* ext/dl/lib/dl/import.rb: Get rid of ineffective
+	  encoding/decoding procedures.
+
 Wed Apr  3 15:37:24 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl: Add dl/types.rb.
