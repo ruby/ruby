@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb version 1.1.32
+= net/pop.rb version 1.2.0
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -126,14 +126,16 @@ Object
 
 === Methods
 
-: pop( dest = '' )
+: all( dest = '' )
+: pop
+: mail
   This method fetches a mail and write to 'dest' using '<<' method.
 
     # usage example
 
     mailarr = []
     POP3.start( 'localhost', 110 ) do |pop|
-      pop.each_mail do |popm|
+      pop.each do |popm|
         mailarr.push popm.pop   # all() returns 'dest' (this time, string)
         # or, you can also
         # popm.pop( $stdout )   # write mail to stdout
@@ -143,16 +145,15 @@ Object
       end
     end
 
-: pop {|str| .... }
-  If pop() is called with block, it gives the block part strings of a mail.
+: all {|str| .... }
+  You can call all/pop/mail with block.
+  argument 'str' is a read string (a part of mail).
 
     # usage example
 
-    POP3.start( 'localhost', 110 ) do |pop3|
-      pop3.each_mail do |m|
-        m.pop do |str|
-          # do anything
-        end
+    POP3.start( 'localhost', 110 ) do |pop|
+      pop.mails[0].pop do |str|               # pop only first mail...
+        _do_anything_( str )
       end
     end
 

@@ -1,3 +1,7 @@
+Mon Dec 25 04:43:02 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/http.rb: does not send HEAD on closing socket.
+
 Sat Dec 23 03:44:16 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: set @closed false in Socket#reopen.
