@@ -1,3 +1,7 @@
+Tue Dec 24 23:49:16 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/irb/completion.rb: Use Object#class rather than Object#type.
+
 Tue Dec 24 23:37:40 2002  TADA Tadashi <sho@spc.gr.jp>
 
 	* lib/cgi.rb (Cookie::parse), lib/cgi-lib.rb (initialize): Do not
