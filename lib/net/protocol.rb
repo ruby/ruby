@@ -36,7 +36,7 @@ module Net
 
     class << self
 
-      def start( address = 'localhost', port = nil, *args )
+      def start( address, port = nil, *args )
         instance = new( address, port )
 
         if block_given? then
@@ -79,7 +79,7 @@ module Net
     protocol_param :socket_type,  '::Net::NetPrivate::Socket'
 
 
-    def initialize( addr = nil, port = nil )
+    def initialize( addr, port = nil )
       @address = addr || 'localhost'
       @port    = port || type.port
 

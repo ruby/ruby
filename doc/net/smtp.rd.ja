@@ -71,12 +71,12 @@ SMTP ではメールを送る側のホストの名前を要求されるのですが、
 
 === クラスメソッド
 
-: new( address = 'localhost', port = 25 )
+: new( address, port = 25 )
     新しい SMTP オブジェクトを生成します。address はSMTPサーバーのFQDNで、
     port は接続するポート番号です。ただし、このメソッドではまだ接続はしません。
 
-: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
-: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
+: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
     以下と同じです。
         Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
 

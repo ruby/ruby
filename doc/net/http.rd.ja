@@ -119,14 +119,14 @@ Ruby 1.6 に入っているのが http.rb 1.1 で 1.7 以降が 1.2 ですが、
 
 === クラスメソッド
 
-: new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
+: new( address, port = 80, proxy_addr = nil, proxy_port = nil )
     新しい HTTP オブジェクトを生成します。address は HTTP サーバーの FQDN で、
     port は接続するポート番号です。このメソッドではまだ接続はしません。
 
     proxy_addr を与えるとプロクシを介して接続するオブジェクトを生成します。
 
-: start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
-: start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
+: start( address, port = 80, proxy_addr = nil, proxy_port = nil )
+: start( address, port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
     以下と同じです。
 
         Net::HTTP.new(address, port, proxy_addr, proxy_port).start(&block)

@@ -116,12 +116,12 @@ net/pop also supports APOP authentication. There's two way to use APOP:
 
 === Class Methods
 
-: new( address = 'localhost', port = 110, apop = false )
+: new( address, port = 110, apop = false )
     creates a new Net::POP3 object.
     This method does not open TCP connection yet.
 
-: start( address = 'localhost', port = 110, account, password )
-: start( address = 'localhost', port = 110, account, password ) {|pop| .... }
+: start( address, port = 110, account, password )
+: start( address, port = 110, account, password ) {|pop| .... }
     equals to Net::POP3.new( address, port ).start( account, password )
 
         Net::POP3.start( addr, port, account, password ) do |pop|
@@ -131,7 +131,7 @@ net/pop also supports APOP authentication. There's two way to use APOP:
           end
         end
 
-: foreach( address = 'localhost', port = 110, account, password ) {|mail| .... }
+: foreach( address, port = 110, account, password ) {|mail| .... }
     starts POP3 protocol and iterates for each POPMail object.
     This method equals to
 
@@ -148,8 +148,8 @@ net/pop also supports APOP authentication. There's two way to use APOP:
           m.delete if $DELETE
         end
 
-: delete_all( address = 'localhost', port = 110, account, password )
-: delete_all( address = 'localhost', port = 110, account, password ) {|mail| .... }
+: delete_all( address, port = 110, account, password )
+: delete_all( address, port = 110, account, password ) {|mail| .... }
     starts POP3 session and delete all mails.
     If block is given, iterates for each POPMail object before delete.
 
@@ -158,7 +158,7 @@ net/pop also supports APOP authentication. There's two way to use APOP:
           m.pop file
         end
 
-: auth_only( address = 'localhost', port = 110, account, password )
+: auth_only( address, port = 110, account, password )
     (just for POP-before-SMTP)
     opens POP3 session and does autholize and quit.
     This method must not be called while POP3 session is opened.
@@ -303,21 +303,21 @@ module Net
 
     class << self
 
-      def foreach( address = nil, port = nil,
+      def foreach( address, port = nil,
                    account = nil, password = nil, &block )
         start( address, port, account, password ) do |pop|
           pop.each_mail( &block )
         end
       end
 
-      def delete_all( address = nil, port = nil,
+      def delete_all( address, port = nil,
                       account = nil, password = nil, &block )
         start( address, port, account, password ) do |pop|
           pop.delete_all( &block )
         end
       end
 
-      def auth_only( address = nil, port = nil,
+      def auth_only( address, port = nil,
                      account = nil, password = nil )
         new( address, port ).auth_only account, password
       end
@@ -325,13 +325,13 @@ module Net
     end
 
 
-    def initialize( addr = nil, port = nil, apop = false )
+    def initialize( addr, port = nil, apop = false )
       super addr, port
       @mails = nil
       @apop = false
     end
 
-    def auth_only( account = nil, password = nil )
+    def auth_only( account, password )
       begin
         connect
         @active = true

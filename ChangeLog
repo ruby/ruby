@@ -1,3 +1,13 @@
+Fri Aug 17 12:13:48 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: Protocol.new requires at least one arg.
+
+	* lib/net/smtp.rb: ditto.
+
+	* lib/net/pop.rb: ditto.
+
+	* lib/net/http.rb: ditto.
+
 Thu Aug 16 13:54:04 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (s_recvfrom): fix typo.
@@ -310,6 +320,8 @@ Tue Jul 17 11:44:40 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 Tue Jul 17 06:01:12 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* doc/net/smtp.rd.ja, pop.rd.ja, http.rd.ja: new files.
+
+	* MANIFEST: add doc/net/{http,pop,smtp}.rd.ja.
 
 Tue Jul 17 11:22:01 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

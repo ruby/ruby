@@ -132,12 +132,12 @@ Yes, this is not thread-safe.
 
 === Class Methods
 
-: new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
+: new( address, port = 80, proxy_addr = nil, proxy_port = nil )
     creates a new Net::HTTP object.
     If proxy_addr is given, creates an Net::HTTP object with proxy support.
 
-: start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
-: start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
+: start( address, port = 80, proxy_addr = nil, proxy_port = nil )
+: start( address, port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
     is equals to
 
         Net::HTTP.new(address, port, proxy_addr, proxy_port).start(&block)
@@ -457,7 +457,7 @@ module Net
 
     protocol_param :port, '80'
 
-    def initialize( addr = nil, port = nil )
+    def initialize( addr, port = nil )
       super
 
       @curr_http_version = HTTPVersion
@@ -492,14 +492,14 @@ module Net
 
       alias orig_new new
 
-      def new( address = nil, port = nil, p_addr = nil, p_port = nil )
+      def new( address, port = nil, p_addr = nil, p_port = nil )
         c = p_addr ? self::Proxy(p_addr, p_port) : self
         i = c.orig_new( address, port )
         setvar i
         i
       end
 
-      def start( address = nil, port = nil, p_addr = nil, p_port = nil, &block )
+      def start( address, port = nil, p_addr = nil, p_port = nil, &block )
         new( address, port, p_addr, p_port ).start( &block )
       end
 

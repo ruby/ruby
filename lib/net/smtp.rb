@@ -90,11 +90,11 @@ send or reject SMTP session by this data.
 
 === Class Methods
 
-: new( address = 'localhost', port = 25 )
+: new( address, port = 25 )
     creates a new Net::SMTP object.
 
-: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
-: start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
+: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
+: start( address, port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
     is equal to
         Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
 
@@ -204,7 +204,7 @@ module Net
     protocol_param :command_type, '::Net::NetPrivate::SMTPCommand'
 
 
-    def initialize( addr = nil, port = nil )
+    def initialize( addr, port = nil )
       super
       @esmtp = true
     end
