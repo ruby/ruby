@@ -91,7 +91,7 @@ Net::Protocol
     private
 
 
-    def do_ready
+    def do_ready( fromaddr, toaddrs )
       @command.mailfrom fromaddr
       @command.rcpt toaddrs
       @command.data
