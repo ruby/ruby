@@ -3772,6 +3772,7 @@ str_extend(list, term, paren)
 		goto refetch;
 	    }
 	    if (!is_identchar(c)) {
+	      pushback(c);
 	      invalid_interporate:
 		{
 		    VALUE s = rb_str_new2("#");

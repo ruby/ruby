@@ -142,13 +142,15 @@ classname(klass)
     VALUE path = Qnil;
     ID classpath = rb_intern("__classpath__");
 
+    if (TYPE(klass) == T_ICLASS) {
+	klass = RBASIC(klass)->klass;
+    }
     while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
 	klass = (VALUE)RCLASS(klass)->super;
     }
     if (!klass) klass = rb_cObject;
-    if (!ROBJECT(klass)->iv_tbl)
-	ROBJECT(klass)->iv_tbl = st_init_numtable();
-    else if (!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
+    if (ROBJECT(klass)->iv_tbl &&
+	!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
 	ID classid = rb_intern("__classid__");
 
 	if (st_lookup(ROBJECT(klass)->iv_tbl, classid, &path)) {
