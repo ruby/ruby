@@ -2739,7 +2739,7 @@ rb_eval(self, n)
 
       case NODE_RESTARY:
       case NODE_RESTARY2:
-	result = rb_ary_to_ary(rb_eval(self, node->nd_head));
+	result = splat_value(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_SPLAT:

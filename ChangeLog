@@ -1,4 +1,6 @@
-Thu May 22 02:42:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu May 22 02:46:38 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_eval): splat NODE_RESTARY.  [ruby-dev:20268]
 
 	* eval.c (rb_thread_fd_close): raise for writing threads.
 	  [ruby-dev:20269]
