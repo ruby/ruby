@@ -1209,15 +1209,16 @@ else
   dir << "/"
 end
 
-def valid_syntax?(code)
-  eval("BEGIN {return true}\n#{code}")
+def valid_syntax?(code, fname)
+  eval("BEGIN {return true}\n#{code}", nil, fname)
 rescue Exception
+  p $!
 ensure
   false
 end
 
 for script in Dir["#{dir}{lib,sample,ext}/**/*.rb"]
-  unless valid_syntax? IO::read(script)
+  unless valid_syntax? IO::read(script), script
     $bad = true
   end
 end

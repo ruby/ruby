@@ -239,8 +239,8 @@ class Ups < SomeSingletonClass
             puts "Before there were #{num_of_instances(self)}"
             sleep 5
             puts "Now there is #{num_of_instances(self)}"
-            puts "#{@enter.join "; "} was the order of threads entering the waiting loop"
-            puts "#{@leave.join "; "} was the order of threads leaving the waiting loop"
+            puts "#{@enter.join '; '} was the order of threads entering the waiting loop"
+            puts "#{@leave.join '; '} was the order of threads leaving the waiting loop"
         end
     end
 end

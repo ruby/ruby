@@ -412,7 +412,7 @@ def create_makefile(target)
   $srcdir = File.join($top_srcdir,"ext",$mdir)
   mfile = open("Makefile", "w")
   mfile.binmode if /mingw/ =~ RUBY_PLATFORM
-  mfile.printf "\
+  mfile.printf <<EOL, if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
 SHELL = /bin/sh
 
 #### Start of system configuration section. ####
@@ -436,7 +436,7 @@ else
   "LDSHARED = @LDSHARED@ #{defflag}\n"
 end
 }
-", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
+EOL
   mfile.puts "LIBPATH = #{libpath}" if libpath
 
   mfile.puts ".SUFFIXES: .@OBJEXT@" unless "@OBJEXT@" == "o"
