@@ -33,13 +33,13 @@ class SLex
   
   def def_rule(token, preproc = nil, postproc = nil)
     #      print node.inspect, "\n" if SLex.debug?
-    postproc = proc if iterator?
+    postproc = Block.new if iterator?
     node = create(token, preproc, postproc)
   end
   
   def def_rules(*tokens)
     if iterator?
-      p = proc
+      p = Block.new
     end
     for token in tokens
       def_rule(token, nil, p)

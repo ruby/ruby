@@ -1,3 +1,11 @@
+Tue Jun 10 01:07:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb.rb (IRB::Irb::eval_input): warn and exit if $SAFE >=3
+	  after input evaluation.
+
+	* lib/irb.rb (IRB::Irb::eval_input): untaint input string.  now
+	  irb works for levels 1 and 2.
+
 Mon Jun  9 19:02:33 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in: checks presence of grp.h and setgroups().
@@ -12,6 +20,10 @@ Sun Jun  8 13:37:21 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 	* wince/stdlib.c: fix mblen() bug.
 
 Sat Jun  7 22:22:03 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_loader_transfer): should not use
+	  rb_cProc directly, since type_proc may be Proc, Block, or
+	  Method.
 
 	* parse.y (value_expr0): class and module statements should not be
 	  warned for "void value expression". [ruby-talk:72989]

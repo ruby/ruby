@@ -141,10 +141,10 @@ module IRB
 	end
       end
 
-      @scanner.each_top_level_statement do
-	|line, line_no|
+      @scanner.each_top_level_statement do |line, line_no|
 	signal_status(:IN_EVAL) do
 	  begin
+            line.untaint
 	    @context.evaluate(line, line_no)
 	    output_value if @context.echo?
 	  rescue StandardError, ScriptError, Abort
@@ -180,6 +180,10 @@ module IRB
 	    end
 	    print "Maybe IRB bug!!\n" if irb_bug
 	  end
+          if $SAFE > 2
+            warn "Error: irb does not work for $SAFE level higher than 2"
+            exit 1
+          end
 	end
       end
     end

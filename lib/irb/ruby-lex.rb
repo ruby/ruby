@@ -69,12 +69,12 @@ class RubyLex
   # io functions
   def set_input(io, p = nil)
     @io = io
-    if p.kind_of?(Proc)
+    if p.respond_to?(:call)
       @input = p
     elsif iterator?
-      @input = proc
+      @input = Block.new
     else
-      @input = proc{@io.gets}
+      @input = Block.new{@io.gets}
     end
   end
 
@@ -183,11 +183,11 @@ class RubyLex
   end
   private :buf_input
 
-  def set_prompt(p = proc)
-    if p.kind_of?(Proc)
+  def set_prompt(p = Block.new)
+    if p.respond_to?(:call)
       @prompt = p
     else
-      @prompt = proc{print p}
+      @prompt = Block.new{print p}
     end
   end
 

@@ -773,7 +773,7 @@ syck_loader_transfer( self, type, val )
                    // rb_funcall(rb_mKernel, rb_intern("p"), 2, name, type_proc);
         }
 
-        if ( rb_obj_is_instance_of( type_proc, rb_cProc ) )
+        if ( rb_respond_to( type_proc, rb_intern("call") ) )
         {
                    val = rb_funcall(type_proc, rb_intern("call"), 2, type_uri, val);
         }

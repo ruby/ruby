@@ -1283,6 +1283,9 @@ proc_setgroups(VALUE obj, VALUE ary)
 	    }
 	    else {
 		gr = getgrnam(RSTRING(g)->ptr);
+		if (gr == NULL)
+		    rb_raise(rb_eArgError, "can't find group for %s", RSTRING(g)->ptr);
+		groups[i] = gr->gr_gid;
 	    }
 	}
     }
