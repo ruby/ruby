@@ -347,11 +347,11 @@ get_gtkprevinfo(value)
 }
 
 static void
-exec_callback(widget, data, nparams, params)
+signal_callback(widget, data, nparams, params)
     GtkWidget *widget;
     VALUE data;
     int nparams;
-    GtkType *params;
+    GtkArg *params;
 {
     VALUE self = get_value_from_gobject(GTK_OBJECT(widget));
     VALUE proc = RARRAY(data)->ptr[0];
@@ -365,6 +365,14 @@ exec_callback(widget, data, nparams, params)
     else {
 	rb_funcall(proc, id_call, 1, self);
     }
+}
+
+static void
+exec_callback(widget, proc)
+    GtkWidget *widget;
+    VALUE proc;
+{
+    rb_funcall(proc, id_call, 1, get_value_from_gobject(GTK_OBJECT(widget)));
 }
 
 static void
@@ -861,13 +869,12 @@ gobj_smethod_added(self, id)
     GtkObject *obj = get_gobject(self);
     char *name = rb_id2name(NUM2INT(id));
     
-
     if (gtk_signal_lookup(name, GTK_OBJECT_TYPE(obj))) {
 	VALUE handler = assoc_new(Qnil, id);
 
 	add_relative(self, handler);
 	gtk_signal_connect_interp(obj, name,
-				  exec_callback, (gpointer)handler,
+				  signal_callback, (gpointer)handler,
 				  NULL, 0);
     }
     return Qnil;
@@ -922,7 +929,7 @@ gobj_sig_connect(argc, argv, self)
     handler = assoc_new(handler, INT2NUM(id));
     add_relative(self, handler);
     n = gtk_signal_connect_interp(GTK_OBJECT(widget), RSTRING(sig)->ptr,
-				  exec_callback, (gpointer)handler,
+				  signal_callback, (gpointer)handler,
 				  NULL, 0);
 
     return INT2FIX(n);
@@ -947,7 +954,7 @@ gobj_sig_connect_after(argc, argv, self)
     }
     add_relative(self, handler);
     n = gtk_signal_connect_interp(GTK_OBJECT(widget), RSTRING(sig)->ptr,
-				  exec_callback, (gpointer)handler,
+				  signal_callback, (gpointer)handler,
 				  NULL, 1);
 
     return INT2FIX(n);
@@ -3715,7 +3722,7 @@ tbar_append_item(self, text, ttext, icon, func)
 			    STR2CSTR(ttext),
 			    get_widget(icon),
 			    exec_callback,
-			    (gpointer)ary_new3(1, func));
+			    (gpointer)func);
     return self;
 }
 
@@ -3733,7 +3740,7 @@ tbar_prepend_item(self, text, ttext, icon, func)
 			     STR2CSTR(ttext),
 			     get_widget(icon),
 			     exec_callback,
-			     (gpointer)ary_new3(1, func));
+			     (gpointer)func);
     return self;
 }
 
@@ -3751,7 +3758,7 @@ tbar_insert_item(self, text, ttext, icon, func, pos)
 			    STR2CSTR(ttext),
 			    get_widget(icon),
 			    exec_callback,
-			    (gpointer)ary_new3(1, func),
+			    (gpointer)func,
 			    NUM2INT(pos));
     return self;
 }

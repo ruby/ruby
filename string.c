@@ -105,7 +105,8 @@ str_assign(str, str2)
     VALUE str, str2;
 {
     if (NIL_P(str2) || str == str2) return;
-    free(RSTRING(str)->ptr);
+    if (!RSTRING(str)->orig && RSTRING(str)->ptr)
+	free(RSTRING(str)->ptr);
     RSTRING(str)->ptr = RSTRING(str2)->ptr;
     RSTRING(str)->len = RSTRING(str2)->len;
     RSTRING(str)->orig = RSTRING(str2)->orig;
