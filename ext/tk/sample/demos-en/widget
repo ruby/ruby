@@ -492,9 +492,9 @@ end
 
 if $tk_major_ver < 8
   alias showVars showVars1
-elsif $tk_major_ver == 8 && $tk_minor_ver < 5
+elsif $tk_major_ver == 8 && $tk_minor_ver < 4
   alias showVars showVars1
-else # ver >= 8.5
+else # ver >= 8.4
   alias showVars showVars2
 end
 
@@ -692,9 +692,9 @@ end
 
 if $tk_major_ver < 8
   alias showCode showCode1
-elsif $tk_major_ver == 8 && $tk_minor_ver < 5
+elsif $tk_major_ver == 8 && $tk_minor_ver < 4
   alias showCode showCode1
-else # ver >= 8.5
+else # ver >= 8.4
   alias showCode showCode2
 end
 
