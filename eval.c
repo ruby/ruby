@@ -283,15 +283,15 @@ static struct FRAME *top_frame;
 static struct SCOPE *top_scope;
 
 #define PUSH_FRAME() {			\
-    struct FRAME *_frame = ALLOCA_N(struct FRAME,1);\
-    _frame->prev = the_frame;		\
-    _frame->file = sourcefile;		\
-    _frame->line = sourceline;		\
-    _frame->iter = the_iter->iter;	\
-    _frame->cbase = the_frame->cbase;	\
-    the_frame = _frame;		\
+    struct FRAME _frame;		\
+    _frame.prev = the_frame;		\
+    _frame.file = sourcefile;		\
+    _frame.line = sourceline;		\
+    _frame.iter = the_iter->iter;	\
+    _frame.cbase = the_frame->cbase;	\
+    the_frame = &_frame;		\
 
-#define POP_FRAME()  the_frame = _frame->prev; }
+#define POP_FRAME()  the_frame = _frame.prev; }
 
 struct BLOCK {
     NODE *var;
@@ -310,29 +310,29 @@ struct BLOCK {
 } *the_block;
 
 #define PUSH_BLOCK(v,b) {		\
-    struct BLOCK *_block = ALLOCA_N(struct BLOCK,1);\
-    _block->tag = prot_tag;		\
-    _block->var = v;			\
-    _block->body = b;			\
-    _block->self = self;		\
-    _block->frame = *the_frame;		\
-    _block->class = the_class;		\
-    _block->frame.file = sourcefile;	\
-    _block->frame.line = sourceline;	\
-    _block->scope = the_scope;		\
-    _block->d_vars = the_dyna_vars;	\
-    _block->prev = the_block;		\
-    _block->iter = the_iter->iter;	\
-    the_block = _block;
+    struct BLOCK _block;		\
+    _block.tag = prot_tag;		\
+    _block.var = v;			\
+    _block.body = b;			\
+    _block.self = self;			\
+    _block.frame = *the_frame;		\
+    _block.class = the_class;		\
+    _block.frame.file = sourcefile;	\
+    _block.frame.line = sourceline;	\
+    _block.scope = the_scope;		\
+    _block.d_vars = the_dyna_vars;	\
+    _block.prev = the_block;		\
+    _block.iter = the_iter->iter;	\
+    the_block = &_block;
 
 #define PUSH_BLOCK2(b) {		\
-    struct BLOCK *_block = ALLOCA_N(struct BLOCK,1);\
-    *_block = *b;			\
-    _block->prev = the_block;		\
-    the_block = _block;
+    struct BLOCK _block;		\
+    _block = *b;			\
+    _block.prev = the_block;		\
+    the_block = &_block;
 
 #define POP_BLOCK() 			\
-   the_block = the_block->prev; 	\
+   the_block = _block.prev; 		\
 }
 
 struct RVarmap *the_dyna_vars;
@@ -417,38 +417,26 @@ static struct iter {
     the_iter = _iter.prev;		\
 }
 
-#ifdef C_ALLOCA
-/* need to protect retval in struct tag from GC. */
-#define tag_retval_dcl VALUE *dd_retval
-#define tag_retval_init VALUE _tag_retval = Qnil;\
-    _tag->dd_retval = &_tag_retval;
-#define tag_retval dd_retval[0]
-#else
-#define tag_retval_dcl VALUE retval
-#define tag_retval_init _tag->retval = Qnil
-#define tag_retval retval
-#endif
-
 static struct tag {
     jmp_buf buf;
     struct FRAME *frame;
     struct iter *iter;
     ID tag;
-    tag_retval_dcl;
+    VALUE retval;
     ID dst;
     struct tag *prev;
 } *prot_tag;
 
 #define PUSH_TAG(ptag) {		\
-    struct tag *_tag = ALLOCA_N(struct tag,1);\
-    tag_retval_init;			\
-    _tag->frame = the_frame;		\
-    _tag->iter = the_iter;		\
-    _tag->prev = prot_tag;		\
-    _tag->tag_retval = Qnil;		\
-    _tag->tag = ptag;			\
-    _tag->dst = 0;			\
-    prot_tag = _tag;
+    struct tag _tag;			\
+    _tag.retval = Qnil;			\
+    _tag.frame = the_frame;		\
+    _tag.iter = the_iter;		\
+    _tag.prev = prot_tag;		\
+    _tag.retval = Qnil;			\
+    _tag.tag = ptag;			\
+    _tag.dst = 0;			\
+    prot_tag = &_tag;
 
 #define PROT_NONE   0
 #define PROT_FUNC   -1
@@ -463,7 +451,7 @@ static struct tag {
 }
 
 #define POP_TAG()			\
-    prot_tag = _tag->prev;		\
+    prot_tag = _tag.prev;		\
 }
 
 #define TAG_RETURN	0x1
@@ -1373,7 +1361,7 @@ call_trace_func(event, file, line, self, id)
 
     prev = the_frame;
     PUSH_FRAME();
-    *the_frame = *_frame->prev;
+    *the_frame = *_frame.prev;
     the_frame->prev = prev;
 
     the_frame->line = sourceline = line;
@@ -1608,7 +1596,7 @@ rb_eval(self, node)
 	    else if (the_block->tag->dst == state) {
 		state &= TAG_MASK;
 		if (state == TAG_RETURN) {
-		    result = prot_tag->tag_retval;
+		    result = prot_tag->retval;
 		}
 	    }
 	    POP_TAG();
@@ -2579,7 +2567,7 @@ f_raise(argc, argv)
     }
 
     PUSH_FRAME();		/* fake frame */
-    *the_frame = *_frame->prev->prev;
+    *the_frame = *_frame.prev->prev;
     rb_longjmp(TAG_RAISE, mesg, arg3);
     POP_FRAME();
 }
@@ -2806,7 +2794,7 @@ rb_iterate(it_proc, data1, bl_proc, data2)
     if (the_block->tag->dst == state) {
 	state &= TAG_MASK;
 	if (state == TAG_RETURN) {
-	    retval = prot_tag->tag_retval;
+	    retval = prot_tag->retval;
 	}
     }
     POP_TAG();
@@ -2979,7 +2967,7 @@ f_missing(argc, argv, obj)
     sourcefile = file;
     sourceline = line;
     PUSH_FRAME();		/* fake frame */
-    *the_frame = *_frame->prev->prev;
+    *the_frame = *_frame.prev->prev;
 
     NameError(format,
 	      rb_id2name(id),
@@ -3312,7 +3300,7 @@ rb_call(class, recv, mid, argc, argv, scope)
 		result = rb_eval(recv, body);
 	    }
 	    else if (state == TAG_RETURN) {
-		result = prot_tag->tag_retval;
+		result = prot_tag->retval;
 		state = 0;
 	    }
 	    POP_VARS();
@@ -3655,8 +3643,8 @@ eval_under(under, self, src)
     PUSH_CLASS();
     the_class = under;
     PUSH_FRAME();
-    the_frame->last_func = _frame->last_func;
-    the_frame->last_class = _frame->last_class;
+    the_frame->last_func = _frame.last_func;
+    the_frame->last_class = _frame.last_class;
     the_frame->argc = 1;
     the_frame->argv = &src;
     the_frame->cbase = (VALUE)node_newnode(NODE_CREF,under,0,cbase);
@@ -5741,7 +5729,7 @@ f_catch(dmy, tag)
 	val = rb_yield(tag);
     }
     else if (state == TAG_THROW && prot_tag->tag == prot_tag->dst) {
-	val = prot_tag->tag_retval;
+	val = prot_tag->retval;
 	state = 0;
     }
     POP_TAG();
@@ -5765,7 +5753,7 @@ f_throw(argc, argv)
     while (tt) {
 	if (tt->tag == t) {
 	    tt->dst = t;
-	    tt->tag_retval = value;
+	    tt->retval = value;
 	    break;
 	}
 #ifdef THREAD
@@ -5793,7 +5781,7 @@ return_value(val)
 	    
     while (tt) {
 	if (tt->tag == PROT_FUNC) {
-	    tt->tag_retval = val;
+	    tt->retval = val;
 	    break;
 	}
 #ifdef THREAD

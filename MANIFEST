@@ -120,6 +120,7 @@ lib/tkcanvas.rb
 lib/tkclass.rb
 lib/tkdialog.rb
 lib/tkentry.rb
+lib/tkmenubar.rb
 lib/tkscrollbox.rb
 lib/tktext.rb
 lib/tracer.rb
