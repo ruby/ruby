@@ -18,6 +18,8 @@ Wed Jan 10 13:54:53 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Wed Jan 10 01:50:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* configure.in (AC_C_INLINE): check inline attribute.
+
 	* string.c (rb_str_reverse_bang): forgot to call rb_str_modify().
 
 Tue Jan  9 17:41:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>

@@ -155,14 +155,6 @@ if test "$rb_cv_stdarg" = yes; then
   AC_DEFINE(HAVE_STDARG_PROTOTYPES)
 fi
 
-dnl AC_CACHE_CHECK(for gcc attribute noreturn, rb_cv_have_attr_noreturn,
-dnl   [AC_TRY_COMPILE([void exit(int x) __attribute__ ((noreturn));], [],
-dnl 	rb_cv_have_attr_noreturn=yes,
-dnl 	rb_cv_have_attr_noreturn=no)])
-dnl if test "$rb_cv_have_attr_noreturn" = yes; then
-dnl   AC_DEFINE(HAVE_ATTR_NORETURN)
-dnl fi
-
 AC_CACHE_CHECK([for noreturn], rb_cv_noreturn,
 [rb_cv_noreturn=no
 for mac in "x __attribute__ ((noreturn))" "__declspec(noreturn) x" x; do
@@ -174,33 +166,6 @@ NORETURN(void exit(int x));],
 done])
 AC_DEFINE_UNQUOTED([NORETURN(x)], $rb_cv_noreturn)
 
-
-AC_MSG_CHECKING(for inline)
-AC_CACHE_VAL(rb_cv_inline,
-[AC_TRY_COMPILE([
-extern __inline__ int foo() {return 0;}
-static __inline__ char* bar() {return "";}
-], [], rb_cv_inline="__inline__", )
-if test "$rb_cv_inline" = ""; then
-  AC_TRY_COMPILE([
-extern __inline int foo() {return 0;}
-static __inline char bar() {return "";}
-], [], rb_cv_inline="__inline", )
-fi
-if test "$rb_cv_inline" = ""; then
-  AC_TRY_COMPILE([
-extern inline int foo() {return 0;}
-static inline char bar() {return "";}
-], [], rb_cv_inline="inline", )
-fi])
-if test "$rb_cv_inline" = ""; then
-  AC_MSG_RESULT([not work])
-  AC_DEFINE(INLINE, /*inline*/)
-else
-  AC_MSG_RESULT($rb_cv_inline)
-  AC_DEFINE(HAVE_INLINE)
-  AC_DEFINE_UNQUOTED(INLINE, $rb_cv_inline)
-fi
 
 dnl Checks for libraries.
 case "$target_os" in
@@ -353,6 +318,7 @@ main()
 ], rb_cv_func_strtod=yes, rb_cv_func_strtod=no, rb_cv_func_strtod=no)])
 test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 
+AC_C_INLINE
 AC_C_BIGENDIAN
 AC_C_CONST
 AC_C_CHAR_UNSIGNED

@@ -185,7 +185,6 @@ rb_f_sprintf(argc, argv)
 	int n;
 
 	for (t = p; t < end && *t != '%'; t++) ;
-	CHECK(t - p);
 	PUSH(p, t - p);
 	if (t >= end) {
 	    /* end of fmt string */
@@ -342,9 +341,7 @@ rb_f_sprintf(argc, argv)
 			break;
 		    }
 		}
-		CHECK(len);
-		memcpy(&buf[blen], RSTRING(str)->ptr, len);
-		blen += len;
+		PUSH(RSTRING(str)->ptr, len);
 	    }
 	    break;
 
@@ -529,9 +526,7 @@ rb_f_sprintf(argc, argv)
 		if (sc) PUSH(&sc, 1);
 		if (prefix) {
 		    int plen = strlen(prefix);
-		    CHECK(plen);
-		    strcpy(&buf[blen], prefix);
-		    blen += plen;
+		    PUSH(prefix, plen);
 		    if (pos) pos += plen;
 		}
 		if (!(flags & FMINUS)) {
@@ -556,9 +551,7 @@ rb_f_sprintf(argc, argv)
 		while (len < prec--) {
 		    buf[blen++] = s[0]=='.'?'.':'0';
 		}
-		CHECK(len);
-		strcpy(&buf[blen], s);
-		blen += len;
+		PUSH(s, len);
 		CHECK(width);
 		while (width-->0) {
 		    buf[blen++] = ' ';
