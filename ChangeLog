@@ -1,3 +1,22 @@
+Sun Jun 13 00:23:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/extconf.rb: [EXPERIMENTAL] MacOS X (darwin) support
+
+	* ext/tcltklib/tcltklib.c: fix thread trouble on callback proc, and
+	                   eliminate warning about instance variable access
+
+	* ext/tk/lib/tk/menubar.rb: improve supported menu_spec
+
+	* ext/tk/lib/tk/menuspec.rb: [add] menu_spec support library
+
+	* ext/tk/lib/tk/root.rb: add menu_spec support
+
+	* ext/tk/lib/tk/text.rb: bug fix
+
+	* ext/tk/lib/tk/toplevel.rb: add menu_spec support
+
+	* ext/tk/sample/menubar?.rb: [add] sample of menu_spec usage
+
 Sat Jun 12 14:15:20  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c: RDOC for File::FNM_CASEFOLD was missed.

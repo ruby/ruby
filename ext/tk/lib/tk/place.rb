@@ -34,14 +34,21 @@ module TkPlace
       # win = win.epath if win.kind_of?(TkObject)
       win = _epath(win)
       if slot
-	conf = tk_split_list(tk_call_without_enc('place', 'configure', 
-						 win, "-#{slot}") )
+	#conf = tk_split_list(tk_call_without_enc('place', 'configure', 
+	#					 win, "-#{slot}") )
+	conf = tk_split_simplelist(tk_call_without_enc('place', 'configure', 
+						       win, "-#{slot}") )
 	conf[0] = conf[0][1..-1]
+	conf[1] = tk_tcl2ruby(conf[1])
+	conf[2] = tk_tcl2ruby(conf[1])
+	conf[3] = tk_tcl2ruby(conf[1])
+	conf[4] = tk_tcl2ruby(conf[1])
 	conf
       else
 	tk_split_simplelist(tk_call_without_enc('place', 'configure', 
 						win)).collect{|conflist|
-	  conf = list(conflist)
+	  #conf = list(conflist)
+	  conf = simplelist(conflist).collect!{|inf| tk_tcl2ruby(inf)}
 	  conf[0] = conf[0][1..-1]
 	  conf
 	}
@@ -55,13 +62,20 @@ module TkPlace
     # win = win.epath if win.kind_of?(TkObject)
     win = _epath(win)
     if slot
-      conf = tk_split_list(tk_call_without_enc('place', 'configure', 
-					       win, "-#{slot}") )
-      { conf[0][1..-1] => conf[1] }
+      #conf = tk_split_list(tk_call_without_enc('place', 'configure', 
+      #                                         win, "-#{slot}") )
+      conf = tk_split_simplelist(tk_call_without_enc('place', 'configure', 
+						     win, "-#{slot}") )
+      # { conf[0][1..-1] => conf[1] }
+      { conf[0][1..-1] => tk_tcl2ruby(conf[4]) }
     else
       ret = {}
-      tk_split_list(tk_call_without_enc('place','configure',win)).each{|conf|
-	ret[conf[0][1..-1]] = conf[1]
+      #tk_split_list(tk_call_without_enc('place','configure',win)).each{|conf|
+      tk_split_simplelist(tk_call_without_enc('place', 'configure', 
+					      win)).each{|conf_list|
+	#ret[conf[0][1..-1]] = conf[1]
+	conf = simplelist(conf_list)
+	ret[conf[0][1..-1]] = tk_tcl2ruby(conf[4])
       }
       ret
     end
@@ -76,10 +90,12 @@ module TkPlace
   def info(win)
     # win = win.epath if win.kind_of?(TkObject)
     win = _epath(win)
-    ilist = list(tk_call_without_enc('place', 'info', win))
+    #ilist = list(tk_call_without_enc('place', 'info', win))
+    ilist = simplelist(tk_call_without_enc('place', 'info', win))
     info = {}
     while key = ilist.shift
-      info[key[1..-1]] = ilist.shift
+      #info[key[1..-1]] = ilist.shift
+      info[key[1..-1]] = tk_tcl2ruby(ilist.shift)
     end
     return info
   end
@@ -90,7 +106,8 @@ module TkPlace
     list(tk_call('place', 'slaves', master))
   end
 
-  module_function :configure, :configinfo, :forget, :info, :slaves
+  module_function :configure, :configinfo, :current_configinfo
+  module_function :forget, :info, :slaves
 end
 =begin
 def TkPlace(win, slot, value=None)

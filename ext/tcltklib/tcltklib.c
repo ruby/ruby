@@ -909,17 +909,20 @@ ip_set_exc_message(interp, exc)
     msg = rb_funcall(exc, ID_message, 0, 0);
 
 #if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION > 0)
-    enc = rb_ivar_get(exc, ID_at_enc);
-    if (NIL_P(enc)) {
-      enc = rb_ivar_get(msg, ID_at_enc);
+    enc = Qnil;
+    if (RTEST(rb_ivar_defined(exc, ID_at_enc))) {
+	enc = rb_ivar_get(exc, ID_at_enc);
+    }
+    if (NIL_P(enc) && RTEST(rb_ivar_defined(msg, ID_at_enc))) {
+	enc = rb_ivar_get(msg, ID_at_enc);
     }
     if (NIL_P(enc)) {
-      encoding = (Tcl_Encoding)NULL;
+	encoding = (Tcl_Encoding)NULL;
     } else if (TYPE(enc) == T_STRING) {
-      encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
+	encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
     } else {
-      enc = rb_funcall(enc, ID_to_s, 0, 0);
-      encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
+	enc = rb_funcall(enc, ID_to_s, 0, 0);
+	encoding = Tcl_GetEncoding(interp, RSTRING(enc)->ptr);
     }
 
     /* to avoid a garbled error message dialog */
@@ -1008,7 +1011,9 @@ ip_ruby_eval_body(arg)
 		      (VALUE)0);
 #else
 
+    rb_thread_critical = Qfalse;
     ret = rb_eval_string_protect(arg->string, &status);
+    rb_thread_critical = Qtrue;
     if (status) {
 	char *errtype, *buf;
 	int  errtype_len, len;
@@ -1288,9 +1293,13 @@ ip_ruby_cmd_core(arg)
     struct cmd_body_arg *arg;
 {
     VALUE ret;
+    int thr_crit_bup;
 
     DUMP1("call ip_ruby_cmd_core");
+    thr_crit_bup = rb_thread_critical;
+    rb_thread_critical = Qfalse;
     ret = rb_apply(arg->receiver, arg->method, arg->args);
+    rb_thread_critical = thr_crit_bup;
     DUMP1("finish ip_ruby_cmd_core");
 
     return ret;
@@ -3464,12 +3473,17 @@ lib_toUTF8_core(ip_obj, src, encodename)
 	if (TYPE(str) == T_STRING) {
 	    volatile VALUE enc;
 
-	    enc = rb_ivar_get(str, ID_at_enc);
+	    enc = Qnil;
+	    if (RTEST(rb_ivar_defined(str, ID_at_enc))) {
+		enc = rb_ivar_get(str, ID_at_enc);
+	    }
 	    if (NIL_P(enc)) {
 		if (NIL_P(ip_obj)) {
 		    encoding = (Tcl_Encoding)NULL;
 		} else {
-		    enc = rb_ivar_get(ip_obj, ID_at_enc);
+		    if (RTEST(rb_ivar_defined(ip_obj, ID_at_enc))) {
+			enc = rb_ivar_get(ip_obj, ID_at_enc);
+		    }
 		    if (NIL_P(enc)) {
 			encoding = (Tcl_Encoding)NULL;
 		    } else {
@@ -3592,7 +3606,10 @@ lib_fromUTF8_core(ip_obj, src, encodename)
 	volatile VALUE enc;
 
 	if (TYPE(str) == T_STRING) {
-	    enc = rb_ivar_get(str, ID_at_enc);
+	    enc = Qnil;
+	    if (RTEST(rb_ivar_defined(str, ID_at_enc))) {
+		enc = rb_ivar_get(str, ID_at_enc);
+	    }
 	    if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
 		rb_thread_critical = thr_crit_bup;
 		return str;
@@ -3602,7 +3619,10 @@ lib_fromUTF8_core(ip_obj, src, encodename)
 	if (NIL_P(ip_obj)) {
 	    encoding = (Tcl_Encoding)NULL;
 	} else {
-	    enc = rb_ivar_get(ip_obj, ID_at_enc);
+	    enc = Qnil;
+	    if (RTEST(rb_ivar_defined(ip_obj, ID_at_enc))) {
+		enc = rb_ivar_get(ip_obj, ID_at_enc);
+	    }
 	    if (NIL_P(enc)) {
 		encoding = (Tcl_Encoding)NULL;
 	    } else {
@@ -3947,7 +3967,10 @@ alloc_invoke_arguments(argc, argv)
 # if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
 	av[i] = Tcl_NewStringObj(s, RSTRING(v)->len);
 # else /* TCL_VERSION >= 8.1 */
-	enc = rb_ivar_get(v, ID_at_enc);
+	enc = Qnil;
+	if (RTEST(rb_ivar_defined(v, ID_at_enc))) {
+	    enc = rb_ivar_get(v, ID_at_enc);
+	}
 	if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
 	    /* binary string */
 	    av[i] = Tcl_NewByteArrayObj(s, RSTRING(v)->len);
@@ -4461,7 +4484,11 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
 	Tcl_IncrRefCount(valobj);
 # else /* TCL_VERSION >= 8.1 */
 	{
-	    VALUE enc = rb_ivar_get(value, ID_at_enc);
+	    VALUE enc = Qnil;
+
+	    if (RTEST(rb_ivar_defined(value, ID_at_enc))) {
+		enc = rb_ivar_get(value, ID_at_enc);
+	    }
 
 	    if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
 		/* binary string */
@@ -4581,7 +4608,11 @@ ip_set_variable2(self, varname_arg, index_arg, value_arg, flag_arg)
 				   RSTRING(value)->len); 
 # else /* TCL_VERSION >= 8.1 */
 	{
-	    VALUE enc = rb_ivar_get(value, ID_at_enc);
+	    VALUE enc = Qnil;
+
+	    if (RTEST(rb_ivar_defined(value, ID_at_enc))) {
+		enc = rb_ivar_get(value, ID_at_enc);
+	    }
 
 	    if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
 		/* binary string */
@@ -4820,7 +4851,11 @@ lib_split_tklist_core(ip_obj, list_str)
 	rb_thread_critical = Qtrue;
 
 	{
-	    VALUE enc = rb_ivar_get(list_str, ID_at_enc);
+	    VALUE enc = Qnil;
+
+	    if (RTEST(rb_ivar_defined(list_str, ID_at_enc))) {
+		enc = rb_ivar_get(list_str, ID_at_enc);
+	    }
 
 	    if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
 		/* binary string */

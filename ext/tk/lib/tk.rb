@@ -114,7 +114,7 @@ module TkComm
   private :_genobj_for_tkwidget
   module_function :_genobj_for_tkwidget
 
-  def tk_tcl2ruby(val, enc_mode = nil)
+  def tk_tcl2ruby(val, enc_mode = nil, listobj = true)
     if val =~ /^rb_out\S* (c(_\d+_)?\d+)/
       #return Tk_CMDTBL[$1]
       return TkCore::INTERP.tk_cmd_tbl[$1]
@@ -141,12 +141,18 @@ module TkComm
       TkImage::Tk_IMGTBL[val]? TkImage::Tk_IMGTBL[val] : val
     when /^-?\d+\.?\d*(e[-+]?\d+)?$/
       val.to_f
-    when /[^\\] /
-      tk_split_escstr(val).collect{|elt|
-        tk_tcl2ruby(elt)
-      }
     when /\\ /
       val.gsub(/\\ /, ' ')
+    when /[^\\] /
+      if listobj
+	tk_split_escstr(val).collect{|elt|
+	  tk_tcl2ruby(elt, enc_mode, listobj)
+	}
+      elsif enc_mode
+	_fromUTF8(val)
+      else
+	val
+      end
     else
       if enc_mode
 	_fromUTF8(val)
@@ -157,6 +163,8 @@ module TkComm
   end
 
   private :tk_tcl2ruby
+  module_function :tk_tcl2ruby
+  private_class_method :tk_tcl2ruby
 
 unless const_defined?(:USE_TCLs_LIST_FUNCTIONS)
   USE_TCLs_LIST_FUNCTIONS = true
@@ -171,19 +179,28 @@ if USE_TCLs_LIST_FUNCTIONS
     TkCore::INTERP._split_tklist(str)
   end
 
-  def tk_split_sublist(str)
-    return [] if str == ""
-    list = TkCore::INTERP._split_tklist(str)
-    if list.size == 1
-      tk_tcl2ruby(list[0])
+  def tk_split_sublist(str, depth=-1)
+    # return [] if str == ""
+    # list = TkCore::INTERP._split_tklist(str)
+    if depth == 0
+      return "" if str == ""
+      list = [str]
     else
-      list.collect{|token| tk_split_sublist(token)}
+      return [] if str == ""
+      list = TkCore::INTERP._split_tklist(str)
+    end
+    if list.size == 1
+      tk_tcl2ruby(list[0], nil, false)
+    else
+      list.collect{|token| tk_split_sublist(token, depth - 1)}
     end
   end
 
-  def tk_split_list(str)
+  def tk_split_list(str, depth=0)
     return [] if str == ""
-    TkCore::INTERP._split_tklist(str).collect{|token| tk_split_sublist(token)}
+    TkCore::INTERP._split_tklist(str).collect{|token| 
+      tk_split_sublist(token, depth - 1)
+    }
   end
 
   def tk_split_simplelist(str)
@@ -239,20 +256,29 @@ else
     list
   end
 
-  def tk_split_sublist(str)
-    return [] if str == ""
-    return [tk_split_sublist(str[1..-2])] if str =~ /^\{.*\}$/
-    list = tk_split_escstr(str)
-    if list.size == 1
-      tk_tcl2ruby(list[0])
+  def tk_split_sublist(str, depth=-1)
+    #return [] if str == ""
+    #return [tk_split_sublist(str[1..-2])] if str =~ /^\{.*\}$/
+    #list = tk_split_escstr(str)
+    if depth == 0
+      return "" if str == ""
+      str = str[1..-2] if str =~ /^\{.*\}$/
+      list = [str]
     else
-      list.collect{|token| tk_split_sublist(token)}
+      return [] if str == []
+      return [tk_split_sublist(str[1..-2], depth - 1)] if str =~ /^\{.*\}$/
+      list = tk_split_escstr(str)
+    end
+    if list.size == 1
+      tk_tcl2ruby(list[0], nil, false)
+    else
+      list.collect{|token| tk_split_sublist(token, depth - 1)}
     end
   end
 
-  def tk_split_list(str)
+  def tk_split_list(str, depth=0)
     return [] if str == ""
-    tk_split_escstr(str).collect{|token| tk_split_sublist(token)}
+    tk_split_escstr(str).collect{|token| tk_split_sublist(token, depth - 1)}
   end
 =begin
   def tk_split_list(str)
@@ -425,8 +451,8 @@ end
   end
 =end
 
-  def list(val)
-    tk_split_list(val)
+  def list(val, depth=0)
+    tk_split_list(val, depth)
   end
   def simplelist(val)
     tk_split_simplelist(val)
@@ -457,9 +483,10 @@ end
       val
     end
   end
-  private :bool, :number, :string, :list, :simplelist, :window, :procedure
-  module_function :bool, :number, :num_or_str, :string, :list, :simplelist
-  module_function :window, :image_obj, :procedure
+  private :bool, :number, :string, :num_or_str
+  private :list, :simplelist, :window, :procedure
+  module_function :bool, :number, :num_or_str, :string
+  module_function :list, :simplelist, :window, :image_obj, :procedure
 
   def _toUTF8(str, encoding = nil)
     TkCore::INTERP._toUTF8(str, encoding)
@@ -2035,9 +2062,10 @@ class TkObject<TkKernel
   include TkTreatFont
   include TkBindCore
 
-  def path
-    @path
-  end
+### --> definition is moved to TkUtil module
+#  def path
+#    @path
+#  end
 
   def epath
     @path
@@ -2433,6 +2461,7 @@ class TkWindow<TkObject
       TkPack.configure(self, slot=>value)
     end
   end
+  alias pack_configure pack_config
 
   def pack_info()
     #ilist = list(tk_call('pack', 'info', epath))
@@ -2510,6 +2539,7 @@ class TkWindow<TkObject
       TkGrid.configure(self, slot=>value)
     end
   end
+  alias grid_configure grid_config
 
   def grid_columnconfig(index, keys)
     #tk_call('grid', 'columnconfigure', epath, index, *hash_kv(keys))
@@ -2625,6 +2655,7 @@ class TkWindow<TkObject
     #end
     TkPlace.configure(self, slot, value)
   end
+  alias place_configure place_config
 
   def place_configinfo(slot = nil)
     # for >= Tk8.4a2 ?
@@ -2640,7 +2671,7 @@ class TkWindow<TkObject
     #	conf
     #  }
     #end
-    TkPlace.configinfo(slot)
+    TkPlace.configinfo(self, slot)
   end
 
   def place_info()

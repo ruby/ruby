@@ -1324,7 +1324,8 @@ class MultiTkIp
     else
       list.push str[0..i-1]
     end
-    list += _lst2ary(str[i+1..-1])
+    #list += _lst2ary(str[i+1..-1])
+    list.concat(_lst2ary(str[i+1..-1]))
     list
   end
   private :_lst2ary
