@@ -770,10 +770,14 @@ arg		: lhs '=' arg
 		    }
 		| arg tDOT2 arg
 		    {
+			value_expr($1);
+			value_expr($3);
 			$$ = NEW_DOT2($1, $3);
 		    }
 		| arg tDOT3 arg
 		    {
+			value_expr($1);
+			value_expr($3);
 			$$ = NEW_DOT3($1, $3);
 		    }
 		| arg '+' arg
@@ -894,7 +898,6 @@ arg		: lhs '=' arg
 		    }
 		| '!' arg
 		    {
-			value_expr($2);
 			$$ = NEW_NOT(cond($2));
 		    }
 		| '~' arg
@@ -1852,18 +1855,24 @@ singleton	: var_ref
 		    }
 		| '(' {lex_state = EXPR_BEG;} expr opt_nl ')'
 		    {
-			switch (nd_type($3)) {
-			  case NODE_STR:
-			  case NODE_DSTR:
-			  case NODE_XSTR:
-			  case NODE_DXSTR:
-			  case NODE_DREGX:
-			  case NODE_LIT:
-			  case NODE_ARRAY:
-			  case NODE_ZARRAY:
-			    yyerror("can't define single method for literals.");
-			  default:
-			    break;
+					if ($3 == 0) {
+			    yyerror("can't define single method for ().");
+			}
+			else {
+			    switch (nd_type($3)) {
+			      case NODE_STR:
+			      case NODE_DSTR:
+			      case NODE_XSTR:
+			      case NODE_DXSTR:
+			      case NODE_DREGX:
+			      case NODE_LIT:
+			      case NODE_ARRAY:
+			      case NODE_ZARRAY:
+				yyerror("can't define single method for literals");
+			      default:
+				value_expr($3);
+				break;
+			    }
 			}
 			$$ = $3;
 		    }
@@ -4240,25 +4249,31 @@ match_gen(node1, node2)
 {
     local_cnt('~');
 
-    switch (nd_type(node1)) {
-      case NODE_DREGX:
-      case NODE_DREGX_ONCE:
-	return NEW_MATCH2(node1, node2);
-
-      case NODE_LIT:
-	if (TYPE(node1->nd_lit) == T_REGEXP) {
+    value_expr(node1);
+    value_expr(node2);
+    if (node1) {
+	switch (nd_type(node1)) {
+	  case NODE_DREGX:
+	  case NODE_DREGX_ONCE:
 	    return NEW_MATCH2(node1, node2);
+
+	  case NODE_LIT:
+	    if (TYPE(node1->nd_lit) == T_REGEXP) {
+		return NEW_MATCH2(node1, node2);
+	    }
 	}
     }
 
-    switch (nd_type(node2)) {
-      case NODE_DREGX:
-      case NODE_DREGX_ONCE:
-	return NEW_MATCH3(node2, node1);
-
-      case NODE_LIT:
-	if (TYPE(node2->nd_lit) == T_REGEXP) {
+    if (node2) {
+	switch (nd_type(node2)) {
+	  case NODE_DREGX:
+	  case NODE_DREGX_ONCE:
 	    return NEW_MATCH3(node2, node1);
+
+	  case NODE_LIT:
+	    if (TYPE(node2->nd_lit) == T_REGEXP) {
+		return NEW_MATCH3(node2, node1);
+	    }
 	}
     }
 
@@ -4374,7 +4389,6 @@ aryset(recv, idx)
     NODE *recv, *idx;
 {
     value_expr(recv);
-
     return NEW_CALL(recv, tASET, idx);
 }
 
@@ -4393,7 +4407,6 @@ attrset(recv, id)
     ID id;
 {
     value_expr(recv);
-
     return NEW_CALL(recv, rb_id_attrset(id), 0);
 }
 
@@ -4500,6 +4513,10 @@ value_expr(node)
 
       case NODE_IF:
 	return value_expr(node->nd_body) && value_expr(node->nd_else);
+
+      case NODE_AND:
+      case NODE_OR:
+	return value_expr(node->nd_2nd);
 
       case NODE_NEWLINE:
 	return value_expr(node->nd_next);
@@ -4676,6 +4693,7 @@ cond0(node)
     enum node_type type = nd_type(node);
 
     assign_in_cond(node);
+    value_expr(node);
     switch (type) {
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
@@ -4726,6 +4744,7 @@ cond2(node)
 {
     enum node_type type;
 
+    if (!node) return node;
     node = cond(node);
     type = nd_type(node);
     if (type == NODE_NEWLINE) node = node->nd_next;

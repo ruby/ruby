@@ -2,6 +2,24 @@ Wed Jun 12 15:00:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (stmt): fix typo.
 
+Wed Jun 12 01:10:40 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (singleton): "def (()).a end" dumped core.
+
+	* parse.y (cond2): node may be null.
+
+	* parse.y (match_gen): ditto.
+
+Tue Jun 11 17:12:04 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): void value check for "..", "...", "!", and "not".
+
+	* parse.y (match_gen): void value check for "=~".
+
+	* parse.y (value_expr): check NODE_AND and NODE_OR recursively.
+
+	* parse.y (cond0): void value check added for conditionals.
+
 Mon Jun 10 19:02:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* numeric.c (fix_lshift): negative shift count means right shift.

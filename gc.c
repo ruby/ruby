@@ -726,7 +726,7 @@ rb_gc_mark(ptr)
       default:
 	rb_bug("rb_gc_mark(): unknown data type 0x%x(0x%x) %s",
 	       obj->as.basic.flags & T_MASK, obj,
-	       is_pointer_to_heap(obj)?"corrupted object":"non object");
+	       is_pointer_to_heap(obj) ? "corrupted object" : "non object");
     }
 }
 
