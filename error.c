@@ -111,10 +111,12 @@ warn_print(fmt, args)
     va_list args;
 {
     char buf[BUFSIZ];
+    int len;
 
     err_snprintf(buf, BUFSIZ, fmt, args);
-    rb_write_error(buf);
-    rb_write_error("\n");
+    len = strlen(buf);
+    buf[len++] = '\n';
+    rb_write_error2(buf, len);
 }
 
 void
@@ -180,16 +182,18 @@ rb_bug(fmt, va_alist)
 {
     char buf[BUFSIZ];
     va_list args;
+    FILE *out = stderr;
+    int len = err_position(buf, BUFSIZ);
 
-    snprintf(buf, BUFSIZ, "[BUG] %s", fmt);
-    ruby_in_eval = 0;
-
-    va_init_list(args, fmt);
-    warn_print(buf, args);
-    va_end(args);
-    snprintf(buf, BUFSIZ, "ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
-    rb_write_error(buf);
-    rb_write_error("\n");
+    if (fwrite(buf, 1, len, out) == len ||
+	fwrite(buf, 1, len, (out = stdout)) == len) {
+	fputs("[BUG] ", out);
+	va_init_list(args, fmt);
+	vfprintf(out, fmt, args);
+	va_end(args);
+	fprintf(out, "\nruby %s (%s) [%s]\n\n",
+		RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
+    }
     abort();
 }
 
@@ -758,7 +762,7 @@ rb_sys_fail(mesg)
 
     errno = 0;
     if (n == 0) {
-	rb_bug("rb_sys_fail() - errno == 0");
+	rb_bug("rb_sys_fail(%s) - errno == 0", mesg ? mesg : "");
     }
 
     arg = mesg ? rb_str_new2(mesg) : Qnil;

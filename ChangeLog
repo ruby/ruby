@@ -1,3 +1,8 @@
+Wed Aug 27 22:33:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (rb_bug): should not use other methods; this function is
+	  not for ordinary use.  [ruby-dev:21259]
+
 Wed Aug 27 15:07:57 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb (check_response): AUTH CRAM-MD5 returns 334
