@@ -1,3 +1,20 @@
+Fri Sep 17 15:01:57 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: fix SEGV when (thread_)vwait or
+	  (thread_)tkwait
+
+	* ext/tk/lib/tk.rb: add alias wait_window to wait_destroy
+
+	* ext/tk/lib/multi-tk.rb: support calling 'mainloop' on slave
+	  interpreters (however, the 'real' eventloop must be run on the
+	  Default Master IP) 
+
+	* ext/tk/lib/remote-tk.rb: follow the changes of ext/tk/lib/multi-tk.rb
+
+	* ext/tk/sample/remote-ip_sample2.rb: ditto
+
+	* ext/tk/sample/tkoptdb-safeTk.rb: ditto
+
 Thu Sep 16 18:12:13 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI#start): should set REMOTE_USER

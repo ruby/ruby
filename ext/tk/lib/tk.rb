@@ -3756,15 +3756,24 @@ class TkWindow<TkObject
       INTERP._invoke('tkwait', 'window', epath)
     end
   end
+  alias wait_window wait_destroy
   def eventloop_wait_destroy
     wait_destroy(false)
   end
+  alias eventloop_wait_window eventloop_wait_destroy
   def thread_wait_destroy
     wait_destroy(true)
   end
+  alias thread_wait_window thread_wait_destroy
+
   alias tkwait_destroy wait_destroy
+  alias tkwait_window wait_destroy
+
   alias eventloop_tkwait_destroy eventloop_wait_destroy
+  alias eventloop_tkwait_window eventloop_wait_destroy
+
   alias thread_tkwait_destroy thread_wait_destroy
+  alias thread_tkwait_window thread_wait_destroy
 
   def bindtags(taglist=nil)
     if taglist

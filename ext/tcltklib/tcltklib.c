@@ -2075,7 +2075,7 @@ rb_threadUpdateProc(clientData)
 
     DUMP1("threadUpdateProc is called");
     param->done = 1;
-    rb_thread_run(param->thread);
+    rb_thread_wakeup(param->thread);
 
     return;
 }
@@ -2171,6 +2171,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
     DUMP1("pass argument check");
 
     param = (struct th_update_param *)Tcl_Alloc(sizeof(struct th_update_param));
+    Tcl_Preserve(param);
     param->thread = current_thread;
     param->done = 0;
 
@@ -2182,12 +2183,13 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 	rb_thread_stop();
     }
 
+    Tcl_Release(param);
     Tcl_Free((char *)param);
 
     DUMP1("finish Ruby's 'thread_update'");
     return TCL_OK;
 }
-#endif  /* update and thread_update don't work internal callback proc */
+#endif  /* update and thread_update don't work */
 
 
 /***************************/
@@ -2245,6 +2247,8 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
     int thr_crit_bup;
 
     DUMP1("Ruby's 'vwait' is called");
+    Tcl_Preserve(interp);
+
     if (objc != 2) {
 #ifdef Tcl_WrongNumArgs
         Tcl_WrongNumArgs(interp, 1, objv, "name");
@@ -2263,6 +2267,8 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
 
 	rb_thread_critical = thr_crit_bup;
 #endif
+
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
 
@@ -2270,6 +2276,7 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = Qtrue;
 
 #if TCL_MAJOR_VERSION >= 8
+    Tcl_IncrRefCount(objv[1]);
     /* nameString = Tcl_GetString(objv[1]); */
     nameString = Tcl_GetStringFromObj(objv[1], &dummy);
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -2290,6 +2297,10 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = thr_crit_bup;
 
     if (ret != TCL_OK) {
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[1]);
+#endif
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
     done = 0;
@@ -2319,8 +2330,17 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
 
 	rb_thread_critical = thr_crit_bup;
 
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[1]);
+#endif
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
+
+#if TCL_MAJOR_VERSION >= 8
+    Tcl_DecrRefCount(objv[1]);
+#endif
+    Tcl_Release(interp);
     return TCL_OK;
 }
 
@@ -2405,6 +2425,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 #endif
 {
     Tk_Window tkwin = (Tk_Window) clientData;
+    Tk_Window window;
     int done, index;
     static CONST char *optionStrings[] = { "variable", "visibility", "window",
 					   (char *) NULL };
@@ -2414,6 +2435,8 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
     int thr_crit_bup;
 
     DUMP1("Ruby's 'tkwait' is called");
+
+    Tcl_Preserve(interp);
 
     if (objc != 3) {
 #ifdef Tcl_WrongNumArgs
@@ -2435,6 +2458,8 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 
 	rb_thread_critical = thr_crit_bup;
 #endif
+
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
 
@@ -2456,6 +2481,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = thr_crit_bup;
 
     if (ret != TCL_OK) {
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -2475,6 +2501,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 	    Tcl_AppendResult(interp, "bad option \"", objv[1],
 			     "\": must be variable, visibility, or window", 
 			     (char *) NULL);
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
     }
@@ -2484,6 +2511,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = Qtrue;
 
 #if TCL_MAJOR_VERSION >= 8
+    Tcl_IncrRefCount(objv[2]);
     /* nameString = Tcl_GetString(objv[2]); */
     nameString = Tcl_GetStringFromObj(objv[2], &dummy);
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -2493,7 +2521,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = thr_crit_bup;
 
     switch ((enum options) index) {
-    case TKWAIT_VARIABLE: {
+    case TKWAIT_VARIABLE:
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
 	/*
@@ -2510,6 +2538,10 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 	rb_thread_critical = thr_crit_bup;
 
 	if (ret != TCL_OK) {
+#if TCL_MAJOR_VERSION >= 8
+	    Tcl_DecrRefCount(objv[2]);
+#endif
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
 	done = 0;
@@ -2522,20 +2554,30 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 		       TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
 		       WaitVariableProc, (ClientData) &done);
 
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[2]);
+#endif
+
 	rb_thread_critical = thr_crit_bup;
 
 	break;
-    }
 
-    case TKWAIT_VISIBILITY: {
-	Tk_Window window;
-
+    case TKWAIT_VISIBILITY:
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
 
-	window = Tk_NameToWindow(interp, nameString, tkwin);
+	if (Tk_MainWindow(interp) == (Tk_Window)NULL) {
+	    window = NULL;
+	} else {
+	    window = Tk_NameToWindow(interp, nameString, tkwin);
+	}
+
 	if (window == NULL) {
 	    rb_thread_critical = thr_crit_bup;
+#if TCL_MAJOR_VERSION >= 8
+	    Tcl_DecrRefCount(objv[2]);
+#endif
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
 
@@ -2562,11 +2604,19 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 
 	    rb_thread_critical = thr_crit_bup;
 
+#if TCL_MAJOR_VERSION >= 8
+	    Tcl_DecrRefCount(objv[2]);
+#endif
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
 
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
+
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[2]);
+#endif
 
 	Tk_DeleteEventHandler(window,
 			      VisibilityChangeMask|StructureNotifyMask,
@@ -2575,17 +2625,24 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 	rb_thread_critical = thr_crit_bup;
 
 	break;
-    }
 
-    case TKWAIT_WINDOW: {
-	Tk_Window window;
-
+    case TKWAIT_WINDOW:
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
             
-	window = Tk_NameToWindow(interp, nameString, tkwin);
+	if (Tk_MainWindow(interp) == (Tk_Window)NULL) {
+	    window = NULL;
+	} else {
+	    window = Tk_NameToWindow(interp, nameString, tkwin);
+	}
+
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[2]);
+#endif
+
 	if (window == NULL) {
 	    rb_thread_critical = thr_crit_bup;
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
 
@@ -2602,7 +2659,6 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 	 */
 	break;
     }
-    }
 
     /*
      * Clear out the interpreter's result, since it may have been set
@@ -2610,6 +2666,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
      */
 
     Tcl_ResetResult(interp);
+    Tcl_Release(interp);
     return TCL_OK;
 }
 
@@ -2645,11 +2702,18 @@ rb_threadVwaitProc(clientData, interp, name1, name2, flags)
 {
     struct th_vwait_param *param = (struct th_vwait_param *) clientData;
 
-    param->done = 1;
-    rb_thread_run(param->thread);
+    if (flags & (TCL_INTERP_DESTROYED | TCL_TRACE_DESTROYED)) {
+	param->done = -1;
+    } else {
+	param->done = 1;
+    }
+    rb_thread_wakeup(param->thread);
 
     return (char *)NULL;
 }
+
+#define TKWAIT_MODE_VISIBILITY 1
+#define TKWAIT_MODE_DESTROY    2
 
 static void rb_threadWaitVisibilityProc _((ClientData, XEvent *));
 static void
@@ -2660,12 +2724,12 @@ rb_threadWaitVisibilityProc(clientData, eventPtr)
     struct th_vwait_param *param = (struct th_vwait_param *) clientData;
 
     if (eventPtr->type == VisibilityNotify) {
-        param->done = 1;
+        param->done = TKWAIT_MODE_VISIBILITY;
     }
     if (eventPtr->type == DestroyNotify) {
-        param->done = 2;
+        param->done = TKWAIT_MODE_DESTROY;
     }
-    rb_thread_run(param->thread);
+    rb_thread_wakeup(param->thread);
 }
 
 static void rb_threadWaitWindowProc _((ClientData, XEvent *));
@@ -2677,9 +2741,9 @@ rb_threadWaitWindowProc(clientData, eventPtr)
     struct th_vwait_param *param = (struct th_vwait_param *) clientData;
 
     if (eventPtr->type == DestroyNotify) {
-        param->done = 1;
+        param->done = TKWAIT_MODE_DESTROY;
     }
-    rb_thread_run(param->thread);
+    rb_thread_wakeup(param->thread);
 }
 
 #if TCL_MAJOR_VERSION >= 8
@@ -2720,6 +2784,8 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 #endif
     }
 
+    Tcl_Preserve(interp);
+
     if (objc != 2) {
 #ifdef Tcl_WrongNumArgs
         Tcl_WrongNumArgs(interp, 1, objv, "name");
@@ -2738,9 +2804,13 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 
 	rb_thread_critical = thr_crit_bup;
 #endif
+
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
+
 #if TCL_MAJOR_VERSION >= 8
+    Tcl_IncrRefCount(objv[1]);
     /* nameString = Tcl_GetString(objv[1]); */
     nameString = Tcl_GetStringFromObj(objv[1], &dummy);
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -2750,6 +2820,7 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = Qtrue;
 
     param = (struct th_vwait_param *)Tcl_Alloc(sizeof(struct th_vwait_param));
+    Tcl_Preserve(param);
     param->thread = current_thread;
     param->done = 0;
 
@@ -2767,6 +2838,10 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = thr_crit_bup;
 
     if (ret != TCL_OK) {
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[1]);
+#endif
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
 
@@ -2775,18 +2850,24 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
 	rb_thread_stop();
     }
 
-
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-    Tcl_UntraceVar(interp, nameString,
-		   TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
-		   rb_threadVwaitProc, (ClientData) param);
+    if (param->done > 0) {
+	Tcl_UntraceVar(interp, nameString,
+		       TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+		       rb_threadVwaitProc, (ClientData) param);
+    }
 
+    Tcl_Release(param);
     Tcl_Free((char *)param);
 
     rb_thread_critical = thr_crit_bup;
 
+#if TCL_MAJOR_VERSION >= 8
+    Tcl_DecrRefCount(objv[1]);
+#endif
+    Tcl_Release(interp);
     return TCL_OK;
 }
 
@@ -2812,6 +2893,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 {
     struct th_vwait_param *param;
     Tk_Window tkwin = (Tk_Window) clientData;
+    Tk_Window window;
     int index;
     static CONST char *optionStrings[] = { "variable", "visibility", "window",
 					   (char *) NULL };
@@ -2833,6 +2915,9 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #endif
     }
 
+    Tcl_Preserve(interp);
+    Tcl_Preserve(tkwin);
+
     if (objc != 3) {
 #ifdef Tcl_WrongNumArgs
         Tcl_WrongNumArgs(interp, 1, objv, "variable|visibility|window name");
@@ -2853,6 +2938,9 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
 	rb_thread_critical = thr_crit_bup;
 #endif
+
+	Tcl_Release(tkwin);
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
 
@@ -2873,6 +2961,8 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = thr_crit_bup;
 
     if (ret != TCL_OK) {
+	Tcl_Release(tkwin);
+	Tcl_Release(interp);
         return TCL_ERROR;
     }
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -2892,6 +2982,8 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 	    Tcl_AppendResult(interp, "bad option \"", objv[1],
 			     "\": must be variable, visibility, or window", 
 			     (char *) NULL);
+	    Tcl_Release(tkwin);
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
     }
@@ -2901,6 +2993,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = Qtrue;
 
 #if TCL_MAJOR_VERSION >= 8
+    Tcl_IncrRefCount(objv[2]);
     /* nameString = Tcl_GetString(objv[2]); */
     nameString = Tcl_GetStringFromObj(objv[2], &dummy);
 #else /* TCL_MAJOR_VERSION < 8 */
@@ -2908,13 +3001,14 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #endif
 
     param = (struct th_vwait_param *)Tcl_Alloc(sizeof(struct th_vwait_param));
+    Tcl_Preserve(param);
     param->thread = current_thread;
     param->done = 0;
 
     rb_thread_critical = thr_crit_bup;
 
     switch ((enum options) index) {
-    case TKWAIT_VARIABLE: {
+    case TKWAIT_VARIABLE:
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
 	/* 
@@ -2931,6 +3025,15 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 	rb_thread_critical = thr_crit_bup;
 
 	if (ret != TCL_OK) {
+	    Tcl_Release(param);
+	    Tcl_Free((char *)param);
+
+#if TCL_MAJOR_VERSION >= 8
+	    Tcl_DecrRefCount(objv[2]);
+#endif
+
+	    Tcl_Release(tkwin);
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
 
@@ -2942,26 +3045,44 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
 
-	Tcl_UntraceVar(interp, nameString,
-		       TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
-		       rb_threadVwaitProc, (ClientData) param);
+	if (param->done > 0) {
+	    Tcl_UntraceVar(interp, nameString,
+			   TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,
+			   rb_threadVwaitProc, (ClientData) param);
+	}
+
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[2]);
+#endif
 
 	rb_thread_critical = thr_crit_bup;
 
 	break;
-    }
 
-    case TKWAIT_VISIBILITY: {
-	Tk_Window window;
-
+    case TKWAIT_VISIBILITY:
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
 
-	window = Tk_NameToWindow(interp, nameString, tkwin);
+	if (Tk_MainWindow(interp) == (Tk_Window)NULL) {
+	    window = NULL;
+	} else {
+	    window = Tk_NameToWindow(interp, nameString, tkwin);
+	}
+
 	if (window == NULL) {
 	    rb_thread_critical = thr_crit_bup;
+
+	    Tcl_Release(param);
+	    Tcl_Free((char *)param);
+
+#if TCL_MAJOR_VERSION >= 8
+	    Tcl_DecrRefCount(objv[2]);
+#endif
+	    Tcl_Release(tkwin);
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
+	Tcl_Preserve(window);
 
 	Tk_CreateEventHandler(window,
 			      VisibilityChangeMask|StructureNotifyMask,
@@ -2970,16 +3091,26 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 	rb_thread_critical = thr_crit_bup;
 
 	/* if (!param->done) { */
+	/*
 	while(!param->done) {
+	    rb_thread_stop();
+	}
+	*/
+	while(param->done != TKWAIT_MODE_VISIBILITY) {
+	    if (param->done == TKWAIT_MODE_DESTROY) break;
 	    rb_thread_stop();
 	}
 
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
 
-	Tk_DeleteEventHandler(window,
-			      VisibilityChangeMask|StructureNotifyMask,
-			      rb_threadWaitVisibilityProc, (ClientData) param);
+	/* when a window is destroyed, no need to call Tk_DeleteEventHandler */
+	if (param->done != TKWAIT_MODE_DESTROY) {
+	    Tk_DeleteEventHandler(window,
+				  VisibilityChangeMask|StructureNotifyMask,
+				  rb_threadWaitVisibilityProc, 
+				  (ClientData) param);
+	}
 
 	if (param->done != 1) {
 	    Tcl_ResetResult(interp);
@@ -2989,25 +3120,56 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 
 	    rb_thread_critical = thr_crit_bup;
 
+	    Tcl_Release(window);
+
+	    Tcl_Release(param);
+	    Tcl_Free((char *)param);
+
+#if TCL_MAJOR_VERSION >= 8
+	    Tcl_DecrRefCount(objv[2]);
+#endif
+
+	    Tcl_Release(tkwin);
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
+
+	Tcl_Release(window);
+
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[2]);
+#endif
 
 	rb_thread_critical = thr_crit_bup;
 
 	break;
-    }
 
-    case TKWAIT_WINDOW: {
-	Tk_Window window;
-
+    case TKWAIT_WINDOW:
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
-            
-	window = Tk_NameToWindow(interp, nameString, tkwin);
+
+	if (Tk_MainWindow(interp) == (Tk_Window)NULL) {
+	    window = NULL;
+	} else {
+	    window = Tk_NameToWindow(interp, nameString, tkwin);
+	}
+
+#if TCL_MAJOR_VERSION >= 8
+	Tcl_DecrRefCount(objv[2]);
+#endif
+
 	if (window == NULL) {
 	    rb_thread_critical = thr_crit_bup;
+
+	    Tcl_Release(param);
+	    Tcl_Free((char *)param);
+
+	    Tcl_Release(tkwin);
+	    Tcl_Release(interp);
 	    return TCL_ERROR;
 	}
+
+	Tcl_Preserve(window);
 
 	Tk_CreateEventHandler(window, StructureNotifyMask,
 			      rb_threadWaitWindowProc, (ClientData) param);
@@ -3015,10 +3177,18 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 	rb_thread_critical = thr_crit_bup;
 
 	/* if (!param->done) { */
+	/* 
 	while(!param->done) {
 	    rb_thread_stop();
 	}
+	*/
+	while(param->done != TKWAIT_MODE_DESTROY) {
+	    rb_thread_stop();
+	}
 
+	Tcl_Release(window);
+
+	/* when a window is destroyed, no need to call Tk_DeleteEventHandler
 	thr_crit_bup = rb_thread_critical;
 	rb_thread_critical = Qtrue;
 
@@ -3026,11 +3196,12 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 			      rb_threadWaitWindowProc, (ClientData) param);
 
 	rb_thread_critical = thr_crit_bup;
+	*/
 
 	break;
-    }
     } /* end of 'switch' statement */
 
+    Tcl_Release(param);
     Tcl_Free((char *)param);
 
     /*
@@ -3039,6 +3210,9 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
      */
 
     Tcl_ResetResult(interp);
+
+    Tcl_Release(tkwin);
+    Tcl_Release(interp);
     return TCL_OK;
 }
 
@@ -3048,8 +3222,9 @@ ip_thread_vwait(self, var)
     VALUE var;
 {
     VALUE argv[2];
+    volatile VALUE cmd_str = rb_str_new2("thread_vwait");
 
-    argv[0] = rb_str_new2("thread_vwait");
+    argv[0] = cmd_str;
     argv[1] = var;
     return ip_invoke_real(2, argv, self);
 }
@@ -3061,8 +3236,9 @@ ip_thread_tkwait(self, mode, target)
     VALUE target;
 {
     VALUE argv[3];
+    volatile VALUE cmd_str = rb_str_new2("thread_tkwait");
 
-    argv[0] = rb_str_new2("thread_tkwait");
+    argv[0] = cmd_str;
     argv[1] = mode;
     argv[2] = target;
     return ip_invoke_real(3, argv, self);
@@ -3955,6 +4131,7 @@ ip_eval(self, str)
 
     /* allocate memory (freed by Tcl_ServiceEvent) */
     evq = (struct eval_queue *)Tcl_Alloc(sizeof(struct eval_queue));
+    Tcl_Preserve(evq);
 
     /* allocate result obj */
     result = rb_ary_new2(1);
@@ -3987,8 +4164,11 @@ ip_eval(self, str)
 
     /* get result & free allocated memory */
     ret = RARRAY(result)->ptr[0];
+
     free(alloc_done);
     free(eval_str);
+    Tcl_Release(evq);
+
     if (rb_obj_is_kind_of(ret, rb_eException)) {
 	rb_exc_raise(ret);
     }
@@ -4862,6 +5042,7 @@ ip_invoke_with_position(argc, argv, obj, position)
 
     /* allocate memory (freed by Tcl_ServiceEvent) */
     ivq = (struct invoke_queue *)Tcl_Alloc(sizeof(struct invoke_queue));
+    Tcl_Preserve(ivq);
 
     /* allocate result obj */
     result = rb_ary_new2(1);
@@ -4894,6 +5075,8 @@ ip_invoke_with_position(argc, argv, obj, position)
     /* get result & free allocated memory */
     ret = RARRAY(result)->ptr[0];
     free(alloc_done);
+
+    Tcl_Release(ivq);
 
     /* free allocated memory */
     free_invoke_arguments(argc, av);
@@ -5250,7 +5433,7 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
 	Tcl_IncrRefCount(valobj);
 # else /* TCL_VERSION >= 8.1 */
 	{
-	    VALUE enc = Qnil;
+	    volatile VALUE enc = Qnil;
 
 	    if (RTEST(rb_ivar_defined(value, ID_at_enc))) {
 		enc = rb_ivar_get(value, ID_at_enc);

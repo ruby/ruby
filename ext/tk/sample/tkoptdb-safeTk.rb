@@ -37,6 +37,18 @@ ip = MultiTkIp.new_safeTk{
 
 print "ip.eval_proc{$SAFE} ==> ", ip.eval_proc{$SAFE}, "\n"
 
+print "\ncall 'ip.wait_on_mainloop = false'\n"
+print "If 'ip.wait_on_mainloop? == true', ", 
+  "when 'mainloop' is called on 'ip.eval_proc', ", 
+  "'ip.eval_proc' does't return while the root window exists.\n", 
+  "If you want to avoid that, set wait_on_mainloop to false. ", 
+  "Then the mainloop in the eval_proc returns soon ", 
+  "and the following steps are evaluated. \n", 
+  "If you hate the both of them, use 'ip.bg_eval_proc' or ", 
+  "wrap 'ip.eval_proc' by a thread.\n"
+
+ip.wait_on_mainloop = false
+
 ret = ip.eval_proc{
   # When a block is given to 'eval_proc' method, 
   # the block is evaluated on the IP's current safe level.
@@ -46,7 +58,7 @@ ret = ip.eval_proc{
 
   load file
 }
-print "ip.eval_proc{}, which includes insecure operiation in the given block, returns an exception object: ", ret.inspect, "\n"
+print "\nip.eval_proc{}, which includes insecure operiation in the given block, returns an exception object: ", ret.inspect, "\n"
 
 print "If a proc object is given, the proc is evaluated on the safe-level which is kept on the proc :: ip.eval_proc( proc{$SAFE} ) ==> ", ip.eval_proc(proc{$SAFE}), "\n"
 
