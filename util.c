@@ -572,7 +572,7 @@ static void mmprepare(base, size) void *base; int size;
  if (size <= 0) die("mmsize <= 0");
 #endif
 
- if (((long)base & (4-1)) == 0 && (long & (4-1)) == 0)
+ if (((long)base & (4-1)) == 0 && ((long)base & (4-1)) == 0)
    if (size >= 16) mmkind = 1;
    else            mmkind = 0;
  else              mmkind = -1;
