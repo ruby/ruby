@@ -558,8 +558,8 @@ extract_elem(path)
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
 
-static void
-glob(path, func, arg)
+void
+rb_glob(path, func, arg)
     char *path;
     void (*func)();
     VALUE arg;
@@ -598,7 +598,7 @@ glob(path, func, arg)
 		recursive = 1;
 		buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
 		sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
-		glob(buf, func, arg);
+		rb_glob(buf, func, arg);
 		free(buf);
 	    }
 	    dirp = opendir(dir);
@@ -614,7 +614,7 @@ glob(path, func, arg)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
 		    sprintf(buf, "%s%s%s/**%s", base, (BASE)?"/":"", dp->d_name, m);
-		    glob(buf, func, arg);
+		    rb_glob(buf, func, arg);
 		    free(buf);
 		    continue;
 		}
@@ -643,7 +643,7 @@ glob(path, func, arg)
 		    char *t = ALLOC_N(char, len+mlen+1);
 
 		    sprintf(t, "%s%s", link->path, m);
-		    glob(t, func, arg);
+		    rb_glob(t, func, arg);
 		    free(t);
 		}
 		tmp = link;
@@ -669,7 +669,7 @@ push_globs(ary, s)
     VALUE ary;
     char *s;
 {
-    glob(s, push_pattern, ary);
+    rb_glob(s, push_pattern, ary);
 }
 
 static void

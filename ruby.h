@@ -389,6 +389,8 @@ void xfree _((void*));
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 
+void rb_glob _((char*,void(*)(),VALUE));
+
 VALUE rb_define_class _((const char*,VALUE));
 VALUE rb_define_module _((const char*));
 VALUE rb_define_class_under _((VALUE, const char*, VALUE));

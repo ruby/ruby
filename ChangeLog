@@ -1,3 +1,23 @@
+Sun May 28 21:37:13 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* eval.c: bug fix: DLEXT2.
+
+Sun May 28 19:21:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* win32/win32.c: use ruby's glob.
+
+	* dir.c: "glob" exported and renamed to "rb_glob".
+
+	* ruby.h: ditto.
+
+	* main.c: turn off command line mingw32's globbing.
+	
+Wed May 25 22:25:13 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+	
+	* ext/extmk.rb.in: use "ftools" instead of "rm -f".
+	
+	* lib/mkmf.rb: ditto.
+
 Wed May 24 23:17:50 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* win32/Makefile: remove unnecessary mv and rm command call.

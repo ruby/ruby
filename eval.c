@@ -4970,8 +4970,11 @@ rb_f_require(obj, fname)
 		strcpy(ext, DLEXT);
 		file = feature = buf;
 	    }
+	    file = rb_find_file(file);
+	    if (file) goto load_dyna;
 #ifdef DLEXT2
-	    else if (strcmp(ext, DLEXT2) != 0) {
+	    file = feature = RSTRING(fname)->ptr;
+	    if (strcmp(ext, DLEXT2) != 0) {
 		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT2)+4);
 		strcpy(buf, feature);
 		ext = strrchr(buf, '.');
@@ -4980,15 +4983,22 @@ rb_f_require(obj, fname)
 		strcpy(ext, DLEXT2);
 		file = feature = buf;
 	    }
-#endif
 	    file = rb_find_file(file);
 	    if (file) goto load_dyna;
+#endif
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
 	    feature = RSTRING(fname)->ptr;
 	    file = rb_find_file(feature);
 	    if (file) goto load_dyna;
 	}
+#ifdef DLEXT2
+	else if (strcmp(DLEXT2, ext) == 0) {
+	    feature = RSTRING(fname)->ptr;
+	    file = rb_find_file(feature);
+	    if (file) goto load_dyna;
+	}
+#endif
     }
     buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
     strcpy(buf, RSTRING(fname)->ptr);

@@ -20,6 +20,10 @@ unsigned int _stklen = 0x180000;
 int _stacksize = 262144;
 #endif
 
+#if defined __MINGW32__
+int _CRT_glob = 0;
+#endif
+
 #if defined(__MACOS__) && defined(__MWERKS__)
 #include <console.h>
 #endif

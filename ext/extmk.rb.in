@@ -32,6 +32,17 @@ $:.push $top_srcdir+"/lib"
 
 require 'find'
 
+def rm_f(*files)
+  targets = []
+  for file in files
+    targets.concat Dir[file]
+  end
+  if not targets.empty?
+    File::chmod 0777, *targets
+    File::unlink *targets
+  end
+end
+
 def older(file1, file2)
   if !File.exist?(file1) then
     return true
@@ -85,7 +96,7 @@ def try_link(src, opt="")
   begin
     try_link0(src, opt)
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
   end
 end
 
@@ -96,7 +107,7 @@ def try_cpp(src, opt="")
   begin
     xsystem(format(CPP, $CFLAGS, opt))
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
   end
 end
 
@@ -107,7 +118,7 @@ def egrep_cpp(pat, src, opt="")
   begin
     xsystem(format(CPP+"|egrep #{pat}", $CFLAGS, opt))
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
   end
 end
 
@@ -123,7 +134,7 @@ def try_run(src, opt="")
       nil
     end
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
   end
 end
 
@@ -318,7 +329,7 @@ end
 def create_makefile(target)
   $target = target
 
-  system "rm -f conftest*"
+  rm_f "conftest*"
   if "@DLEXT@" == $OBJEXT
     libs = $libs.split
     for lib in libs
@@ -406,15 +417,16 @@ TARGET = #{target}
 DLLIB = $(TARGET).#{$static ? $LIBEXT : "@DLEXT@"}
 
 RUBY = #{ruby_interpreter} -I$(topdir) -I$(hdrdir)/lib
+RM = $(RUBY) -r ftools -e "File::rm_f *Dir[ARGV.join ' ']"
 
 EXEEXT = @EXEEXT@
 
 all:		$(DLLIB)
 
-clean:;		@rm -f *.#{$OBJEXT} *.so *.sl *.#{$LIBEXT} $(DLLIB)
-		@rm -f *.ilk *.exp *.pdb *.bak
-		@rm -f Makefile extconf.h conftest.*
-		@rm -f core ruby$(EXEEXT) *~
+clean:;		@$(RM) *.#{$OBJEXT} *.so *.sl *.#{$LIBEXT} $(DLLIB)
+		@$(RM) *.ilk *.exp *.pdb *.bak
+		@$(RM) Makefile extconf.h conftest.*
+		@$(RM) core ruby$(EXEEXT) *~
 
 realclean:	clean
 EOS
@@ -558,7 +570,7 @@ def extmake(target)
       $extlibs += " " + $LOCAL_LIBS unless $LOCAL_LIBS == ""
     end
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
     Dir.chdir ".."
   end
 end
@@ -648,7 +660,7 @@ if $extlist.size > 0
   Dir.chdir ".."
 
   if older(ruby, "#{$top_srcdir}/ext/@setup@") or older(ruby, miniruby)
-    system("rm -f #{ruby}")
+    rm_f ruby
   end
 
   $extobjs = "ext/extinit.#{$OBJEXT} " + $extobjs
@@ -659,7 +671,7 @@ if $extlist.size > 0
 else
   Dir.chdir ".."
   if older(ruby, miniruby)
-    system("rm -f #{ruby}")
+    rm_f ruby
     system("#{$make} #{ruby}")
   end
 end

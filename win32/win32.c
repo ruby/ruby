@@ -194,7 +194,7 @@ NtInitialize(int *argc, char ***argv) {
 char *getlogin()
 {
     char buffer[200];
-    int len = 200;
+    DWORD len = 200;
     extern char *NTLoginName;
 
     if (NTLoginName == NULL) {
@@ -587,7 +587,7 @@ int
 mypclose(FILE *fp)
 {
     int i;
-    int exitcode;
+    DWORD exitcode;
 
     Sleep(100);
     for (i = 0; i < MYPOPENSIZE; i++) {
@@ -771,6 +771,7 @@ NtFreeCmdLine(void)
 // any existing files, just leave it in the list.
 //
 
+#if 0
 void
 NtCmdGlob (NtCmdLineElement *patt)
 {
@@ -844,6 +845,54 @@ NtCmdGlob (NtCmdLineElement *patt)
 	free(patt->str);
     // free(patt);  //TODO:  memory leak occures here. we have to fix it.
 }
+#else
+typedef struct {
+    NtCmdLineElement *head;
+    NtCmdLineElement *tail;
+} ListInfo;
+
+static void
+insert(char *path, ListInfo *listinfo)
+{
+    NtCmdLineElement *tmpcurr;
+
+    tmpcurr = ALLOC(NtCmdLineElement);
+    MEMZERO(tmpcurr, NtCmdLineElement, 1);
+    tmpcurr->len = strlen(path);
+    tmpcurr->str = ALLOC_N(char, tmpcurr->len + 1);
+    tmpcurr->flags |= NTMALLOC;
+    strcpy(tmpcurr->str, path);
+    if (listinfo->tail) {
+	listinfo->tail->next = tmpcurr;
+	tmpcurr->prev = listinfo->tail;
+	listinfo->tail = tmpcurr;
+    }
+    else {
+	listinfo->tail = listinfo->head = tmpcurr;
+    }
+}
+
+NtCmdGlob (NtCmdLineElement *patt)
+{
+    ListInfo listinfo;
+
+    listinfo.head = listinfo.tail = 0;
+
+    rb_glob(patt->str, insert, (VALUE)&listinfo);
+
+    if (listinfo.head && listinfo.tail) {
+	listinfo.head->prev = patt->prev;
+	listinfo.tail->next = patt->next;
+	if (listinfo.head->prev)
+	    listinfo.head->prev->next = listinfo.head;
+	if (listinfo.tail->next)
+	    listinfo.tail->next->prev = listinfo.tail;
+    }
+    if (patt->flags & NTMALLOC)
+	free(patt->str);
+    // free(patt);  //TODO:  memory leak occures here. we have to fix it.
+}
+#endif
 
 // 
 // Check a command string to determine if it has I/O redirection
@@ -913,6 +962,8 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	return 0;
     }
 
+    cmdline = strdup(cmdline);
+
     //
     // strip trailing white space
     //
@@ -922,36 +973,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
         --ptr;
     *++ptr = '\0';
 
-    //
-    // check for newlines and formfeeds. If we find any, make a new
-    // command string that replaces them with escaped sequences (\n or \f)
-    //
-
-    for (ptr = cmdline, newline = 0; *ptr; ptr++) {
-	if (*ptr == '\n' || *ptr == '\f')
-	    newline++;
-    }
-
-    if (newline) {
-	base = ALLOC_N(char, strlen(cmdline) + 1 + newline + slashes);
-	if (base == NULL) {
-	    fprintf(stderr, "malloc failed!\n");
-	    return 0;
-	}
-	for (i = 0, ptr = base; (unsigned) i < strlen(cmdline); i++) {
-	    switch (cmdline[i]) {
-	      case '\n':
-		*ptr++ = '\\';
-		*ptr++ = 'n';
-		break;
-	      default:
-		*ptr++ = cmdline[i];
-	    }
-	}
-	*ptr = '\0';
-	cmdline = base;
-	need_free++;
-    }
 
     //
     // Ok, parse the command line, building a list of CmdLineElements.
@@ -982,6 +1003,9 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	    //
 
 	    switch (*ptr) {
+	      case '\\':
+	        if (ptr[1] == '"') ptr++;
+	        break;
 	      case ' ':
 	      case '\t':
 #if 0
@@ -1066,12 +1090,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	//
 
 	curr = ALLOC(NtCmdLineElement);
-	if (curr == NULL) {
-	    NtFreeCmdLine();
-	    fprintf(stderr, "Out of memory!!\n");
-	    *vec = NULL;
-	    return 0;
-	}
 	memset (curr, 0, sizeof(*curr));
 
 	len = ptr - base;
@@ -1081,9 +1099,19 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	// we can remove them.
 	//
 
-	if (InputCmd &&
-	    ((base[0] == '\"' && base[len-1] == '\"') ||
-	     (base[0] == '\'' && base[len-1] == '\''))) {
+	if (InputCmd && (base[0] == '\"' && base[len-1] == '\"')) {
+	    char *p;
+	    base++;
+	    len -= 2;
+	    base[len] = 0;
+	    for (p = base; p < base + len; p++) {
+		if ((p[0] == '\\' || p[0] == '\"') && p[1] == '"') {
+		    strcpy(p, p + 1);
+		    len--;
+		}
+	    }
+	}
+	else if (InputCmd && (base[0] == '\'' && base[len-1] == '\'')) {
 	    base++;
 	    len -= 2;
 	}
@@ -1132,12 +1160,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 
     len = (elements+1)*sizeof(char *) + strsz;
     buffer = ALLOC_N(char, len);
-    if (buffer == NULL) {
-	fprintf(stderr, "Out of memory!!\n");
-	NtFreeCmdLine();
-	*vec = NULL;
-	return 0;
-    }
     
     memset (buffer, 0, len);
 
@@ -1165,6 +1187,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     }
     NtFreeCmdLine();
     *vec = (char **) buffer;
+    free(cmdline);
     return elements;
 }
 

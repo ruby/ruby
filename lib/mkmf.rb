@@ -41,6 +41,17 @@ end
 LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
 CPP = "#{CONFIG['CPP']} -E -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s conftest.c"
 
+def rm_f(*files)
+  targets = []
+  for file in files
+    targets.concat Dir[file]
+  end
+  if not targets.empty?
+    File::chmod 0777, *targets
+    File::unlink *targets
+  end
+end
+
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
 def xsystem command
@@ -67,7 +78,7 @@ def try_link(src, opt="")
   begin
     try_link0(src, opt)
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
   end
 end
 
@@ -78,7 +89,7 @@ def try_cpp(src, opt="")
   begin
     xsystem(format(CPP, $CFLAGS, opt))
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
   end
 end
 
@@ -89,7 +100,7 @@ def egrep_cpp(pat, src, opt="")
   begin
     xsystem(format(CPP+"|egrep #{pat}", $CFLAGS, opt))
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
   end
 end
 
@@ -105,7 +116,7 @@ def try_run(src, opt="")
       nil
     end
   ensure
-    system "rm -f conftest*"
+    rm_f "conftest*"
   end
 end
 
@@ -317,7 +328,7 @@ end
 
 def create_makefile(target)
   print "creating Makefile\n"
-  system "rm -f conftest*"
+  rm_f "conftest*"
   STDOUT.flush
   if CONFIG["DLEXT"] == $OBJEXT
     libs = $libs.split
@@ -387,15 +398,16 @@ TARGET = #{target}
 DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 RUBY = #{CONFIG["ruby_install_name"]}
+RM = $(RUBY) -r ftools -e 'File::rm_f *Dir[ARGV.join " "]'
 
 EXEEXT = #{CONFIG["EXEEXT"]}
 
 all:		$(DLLIB)
 
-clean:;		@rm -f *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
-		@rm -f $(TARGET).lib $(TARGET).exp
-		@rm -f Makefile extconf.h conftest.*
-		@rm -f core ruby$(EXEEXT) *~
+clean:;		@$(RM) *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
+		@$(RM) $(TARGET).lib $(TARGET).exp
+		@$(RM) Makefile extconf.h conftest.*
+		@$(RM) core ruby$(EXEEXT) *~
 
 realclean:	clean
 
