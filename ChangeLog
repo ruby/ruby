@@ -1,3 +1,14 @@
+Sat Sep  7 23:32:56 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/inf-ruby.el (inferior-ruby-error-regexp-alist): regexp
+	  alist for error message from ruby.
+
+	* misc/inf-ruby.el (inferior-ruby-mode): fixed for Emacs.
+
+	* misc/inf-ruby.el (ruby-send-region): compilation-parse-errors
+	  doesn't parse first line, so insert separators before each
+	  evaluations.
+
 Sat Sep  7 19:46:57 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: Disallow Set.new(false).  Add even more tests.
