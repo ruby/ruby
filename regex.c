@@ -1633,7 +1633,7 @@ re_compile_pattern(pattern, size, bufp)
 		 || *laststart == start_paren
 		 || (*laststart == exactn
 		     && (laststart[1] == 1
-			 || laststart[1] == 2 && ismbchar(laststart[2])))
+			 || (laststart[1] == 2 && ismbchar(laststart[2]))))
 		 || *laststart == duplicate))
 	    {
 	      /* Posix extended syntax is handled in previous
@@ -1957,9 +1957,6 @@ re_compile_pattern(pattern, size, bufp)
   bufp->re_nsub = regnum;
   bufp->must = calculate_must_string(bufp->buffer, b);
   FREE_AND_RETURN(stackb, 0);
-
- invalid_char:
-  FREE_AND_RETURN(stackb, "invalid character in regular expression");
 
  invalid_pattern:
   FREE_AND_RETURN(stackb, "invalid regular expression");
@@ -2502,7 +2499,6 @@ re_search(bufp, string, size, startpos, range, regs)
 {
   register char *fastmap = bufp->fastmap;
   int val, anchor = 0;
-  int options = bufp->options;
 
   /* Check for out-of-range starting position.  */
   if (startpos < 0  ||  startpos > size)

@@ -1535,15 +1535,15 @@ static NODE *str_extend();
 
 static VALUE lex_input;		/* non-nil if File */
 static VALUE lex_lastline;	/* gc protect */
-static UCHAR *lex_pbeg;
-static UCHAR *lex_p;
-static UCHAR *lex_pend;
+static char *lex_pbeg;
+static char *lex_p;
+static char *lex_pend;
 
 static int
 yyerror(msg)
     char *msg;
 {
-    UCHAR *p, *pe, *buf;
+    char *p, *pe, *buf;
     int len, i;
     void Error_Append();
 

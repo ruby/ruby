@@ -1,3 +1,9 @@
+Wed May 27 17:33:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (hash_fetch): new method.
+
+	* regex.c (re_search): check whether translate table is set.
+
 Tue May 26 11:39:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_23.

@@ -341,6 +341,29 @@ hash_aref(hash, key)
 }
 
 static VALUE
+hash_fetch(argc, argv, hash)
+    int argc;
+    VALUE *argv;
+    VALUE hash;
+{
+    VALUE key, if_none;
+    VALUE val;
+
+    rb_scan_args(argc, argv, "11", &key, &if_none);
+
+    if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
+	if (iterator_p()) {
+	    if (argc > 1) {
+		ArgError("wrong # of arguments", argc);
+	    }
+	    return rb_yield(argv[0]);
+	}
+	return if_none;
+    }
+    return val;
+}
+
+static VALUE
 hash_indexes(argc, argv, hash)
     int argc;
     VALUE *argv;
@@ -1159,7 +1182,9 @@ Init_Hash()
 
     rb_define_method(cHash,"==", hash_equal, 1);
     rb_define_method(cHash,"[]", hash_aref, 1);
+    rb_define_method(cHash,"fetch", hash_fetch, -1);
     rb_define_method(cHash,"[]=", hash_aset, 2);
+    rb_define_method(cHash,"store", hash_aset, 2);
     rb_define_method(cHash,"indexes", hash_indexes, -1);
     rb_define_method(cHash,"indices", hash_indexes, -1);
     rb_define_method(cHash,"length", hash_length, 0);
