@@ -1,3 +1,8 @@
+Fri Oct 17 00:12:41 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: (bug fix) instance variable @frame was used
+	  without initializing on TkComposite module 
+
 Thu Oct 16 23:51:04 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: If $DEBUG == true and some exception is caused

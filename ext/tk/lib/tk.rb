@@ -5664,16 +5664,17 @@ module TkComposite
 
   def initialize(parent=nil, *args)
     @delegates = {} 
-    @delegates['DEFAULT'] = @frame
 
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
       parent = keys['parent']
       keys['parent'] = @frame = TkFrame.new(parent)
+      @delegates['DEFAULT'] = @frame
       @path = @epath = @frame.path
       initialize_composite(keys)
     else
       @frame = TkFrame.new(parent)
+      @delegates['DEFAULT'] = @frame
       @path = @epath = @frame.path
       initialize_composite(*args)
     end
