@@ -1,5 +1,5 @@
-# parsedate3.rb: Written by Tadayoshi Funaba 2000, 2001
-# $Id: parsedate3.rb,v 1.3 2001-01-18 12:09:47+09 tadf Exp $
+# parsedate3.rb: Written by Tadayoshi Funaba 2000-2002
+# $Id: parsedate3.rb,v 1.6 2002-05-16 20:03:28+09 tadf Exp $
 
 module ParseDate
 
@@ -19,6 +19,8 @@ module ParseDate
   def parsedate(date, cyear=false)
     date = date.dup
 
+    date.gsub!(/[^-+.\/:0-9a-z]+/ino, ' ')
+
     # day
     if date.sub!(/(#{DAYPAT})\S*/ino, ' ')
       wday = DAYS[$1.downcase]
@@ -29,17 +31,15 @@ module ParseDate
 		 /(\d+):(\d+)(?::(\d+))?
 		  (?:
 		    \s*
-		    ([ap])\.?m\.?
-		    \b
+		    ([ap])(?:m\b|\.m\.)
 		  )?
 		  (?:
 		    \s*
 		    (
-		      [a-z]+(?:\s+dst)?
+		      [a-z]+(?:\s+dst)?\b
 		    |
 		      [-+]\d+(?::?\d+)
 		    )
-		    \b
 		  )?
 		 /inox,
 		 ' ')
@@ -62,7 +62,7 @@ module ParseDate
 		  (#{MONTHPAT})\S*
 		  (?:
 		    \s+
-		    (\d+)
+		    (-?\d+)
 		  )?
 		 /inox,
 		 ' ')
@@ -77,7 +77,7 @@ module ParseDate
 		     (\d+)\S*
 		     (?:
 		       \s+
-		       (\d+)
+		       (-?\d+)
 		     )?
 		    /inox,
 		    ' ')
@@ -86,7 +86,7 @@ module ParseDate
       year = $3.to_i if $3
 
     # iso
-    elsif date.sub!(/(\d+)-(\d+)-(\d+)/no, ' ')
+    elsif date.sub!(/([-+]?\d+)-(\d+)-(-?\d+)/no, ' ')
       year = $1.to_i
       mon = $2.to_i
       mday = $3.to_i
@@ -102,14 +102,14 @@ module ParseDate
       year, mon, mday = $2.to_i + e, $3.to_i, $4.to_i
 
     # vms
-    elsif date.sub!(/(\d+)-(#{MONTHPAT})\S*-(\d+)/ino, ' ')
+    elsif date.sub!(/(-?\d+)-(#{MONTHPAT})[^-]*-(-?\d+)/ino, ' ')
       mday = $1.to_i
       mon = MONTHS[$2.downcase]
       year = $3.to_i
       year, mon, mday = mday, mon, year if $1.size >= 4
 
     # sla
-    elsif date.sub!(%r|(\d+)/(\d+)(?:/(\d+))?|no, ' ')
+    elsif date.sub!(%r|(-?\d+)/(\d+)(?:/(-?\d+))?|no, ' ')
       mon = $1.to_i
       mday = $2.to_i
       year = $3.to_i if $3
@@ -117,7 +117,7 @@ module ParseDate
 
     # ddd
     elsif date.sub!(
-		    /(\d{4,14})
+		    /([-+]?)(\d{4,14})
 		     (?:
 		       \s*
 		       T?
@@ -135,35 +135,35 @@ module ParseDate
 		     )?
 		    /nox,
 		    ' ')
-      case $1.size
+      case $2.size
       when 4
-	mon  = $1[ 0, 2].to_i
-	mday = $1[ 2, 2].to_i
+	mon  = $2[ 0, 2].to_i
+	mday = $2[ 2, 2].to_i
       when 6
-	year = $1[ 0, 2].to_i
-	mon  = $1[ 2, 2].to_i
-	mday = $1[ 4, 2].to_i
+	year = ($1 + $2[ 0, 2]).to_i
+	mon  = $2[ 2, 2].to_i
+	mday = $2[ 4, 2].to_i
       when 8, 10, 12, 14
-	year = $1[ 0, 4].to_i
-	mon  = $1[ 4, 2].to_i
-	mday = $1[ 6, 2].to_i
-	hour = $1[ 8, 2].to_i if $1.size >= 10
-	min  = $1[10, 2].to_i if $1.size >= 12
-	sec  = $1[12, 2].to_i if $1.size >= 14
+	year = ($1 + $2[ 0, 4]).to_i
+	mon  = $2[ 4, 2].to_i
+	mday = $2[ 6, 2].to_i
+	hour = $2[ 8, 2].to_i if $2.size >= 10
+	min  = $2[10, 2].to_i if $2.size >= 12
+	sec  = $2[12, 2].to_i if $2.size >= 14
       end
-      if $2
-	case $2.size
+      if $3
+	case $3.size
 	when 2, 4, 6
-	  hour = $2[ 0, 2].to_i
-	  min  = $2[ 2, 2].to_i if $2.size >= 4
-	  sec  = $2[ 4, 2].to_i if $2.size >= 6
+	  hour = $3[ 0, 2].to_i
+	  min  = $3[ 2, 2].to_i if $3.size >= 4
+	  sec  = $3[ 4, 2].to_i if $3.size >= 6
 	end
       end
-      zone = $3
+      zone = $4
     end
 
     if cyear and year
-      if year < 100
+      if year >= 0 and year <= 99
 	if year >= 69
 	  year += 1900
 	else

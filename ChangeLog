@@ -1,3 +1,7 @@
+Wed May 22 21:36:11 2002  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/parsedate.rb: updated to the new version (based on date2 2.6.1).
+
 Wed May 22 21:26:47 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.c (proc_options): -T consumes digits only.
