@@ -86,22 +86,24 @@ static VALUE
 bignorm(x)
     VALUE x;
 {
-    long len = RBIGNUM(x)->len;
-    USHORT *ds = BDIGITS(x);
+    if (!FIXNUM_P(x)) {
+	long len = RBIGNUM(x)->len;
+	USHORT *ds = BDIGITS(x);
 
-    while (len-- && !ds[len]) ;
-    RBIGNUM(x)->len = ++len;
+	while (len-- && !ds[len]) ;
+	RBIGNUM(x)->len = ++len;
 
-    if (len*sizeof(USHORT) <= sizeof(VALUE)) {
-	long num = 0;
-	while (len--) {
-	    num = BIGUP(num) + ds[len];
-	}
-	if (num >= 0) {
-	    if (RBIGNUM(x)->sign) {
-		if (POSFIXABLE(num)) return INT2FIX(num);
+	if (len*sizeof(USHORT) <= sizeof(VALUE)) {
+	    long num = 0;
+	    while (len--) {
+		num = BIGUP(num) + ds[len];
 	    }
-	    else if (NEGFIXABLE(-(long)num)) return INT2FIX(-(long)num);
+	    if (num >= 0) {
+		if (RBIGNUM(x)->sign) {
+		    if (POSFIXABLE(num)) return INT2FIX(num);
+		}
+		else if (NEGFIXABLE(-(long)num)) return INT2FIX(-(long)num);
+	    }
 	}
     }
     return x;
@@ -636,7 +638,7 @@ bigsub(x, y)
 	i++;
     }
     
-    return bignorm(z);
+    return z;
 }
 
 static VALUE
@@ -681,7 +683,7 @@ bigadd(x, y, sign)
     }
     BDIGITS(z)[i] = (USHORT)num;
 
-    return bignorm(z);
+    return z;
 }
 
 VALUE
@@ -693,7 +695,7 @@ rb_big_plus(x, y)
 	y = rb_int2big(FIX2LONG(y));
 	/* fall through */
       case T_BIGNUM:
-	return bigadd(x, y, 1);
+	return bignorm(bigadd(x, y, 1));
 
       case T_FLOAT:
 	return rb_float_new(rb_big2dbl(x) + RFLOAT(y)->value);
@@ -712,7 +714,7 @@ rb_big_minus(x, y)
 	y = rb_int2big(FIX2LONG(y));
 	/* fall through */
       case T_BIGNUM:
-	return bigadd(x, y, 0);
+	return bignorm(bigadd(x, y, 0));
 
       case T_FLOAT:
 	return rb_float_new(rb_big2dbl(x) - RFLOAT(y)->value);
@@ -770,9 +772,9 @@ rb_big_mul(x, y)
 }
 
 static void
-bigdivrem(x, y, div, mod)
+bigdivrem(x, y, divp, modp)
     VALUE x, y;
-    VALUE *div, *mod;
+    VALUE *divp, *modp;
 {
     long nx = RBIGNUM(x)->len, ny = RBIGNUM(y)->len;
     long i, j;
@@ -785,8 +787,8 @@ bigdivrem(x, y, div, mod)
     yds = BDIGITS(y);
     if (ny == 0 && yds[0] == 0) rb_num_zerodiv();
     if (nx < ny	|| nx == ny && BDIGITS(x)[nx - 1] < BDIGITS(y)[ny - 1]) {
-	if (div) *div = INT2FIX(0);
-	if (mod) *mod = x;
+	if (divp) *divp = INT2FIX(0);
+	if (modp) *modp = x;
 	return;
     }
     xds = BDIGITS(x);
@@ -802,8 +804,8 @@ bigdivrem(x, y, div, mod)
 	}
 	RBIGNUM(z)->sign = RBIGNUM(x)->sign==RBIGNUM(y)->sign;
 	if (!RBIGNUM(x)->sign) t2 = -(long)t2;
-	if (mod) *mod = rb_uint2big(t2);
-	if (div) *div = z;
+	if (modp) *modp = rb_uint2big(t2);
+	if (divp) *divp = z;
 	return;
     }
     z = bignew(nx==ny?nx+2:nx+1, RBIGNUM(x)->sign==RBIGNUM(y)->sign);
@@ -864,17 +866,17 @@ bigdivrem(x, y, div, mod)
 	}
 	zds[j] = q;
     } while (--j >= ny);
-    if (div) {			/* move quotient down in z */
-	*div = rb_big_clone(z);
+    if (divp) {			/* move quotient down in z */
+	*divp = rb_big_clone(z);
 	zds = BDIGITS(*div);
 	j = (nx==ny ? nx+2 : nx+1) - ny;
 	for (i = 0;i < j;i++) zds[i] = zds[i+ny];
 	RBIGNUM(*div)->len = i;
     }
-    if (mod) {			/* just normalize remainder */
-	*mod = rb_big_clone(z);
+    if (modp) {			/* just normalize remainder */
+	*modp = rb_big_clone(z);
 	if (dd) {
-	    zds = BDIGITS(*mod);
+	    zds = BDIGITS(*modp);
 	    t2 = 0; i = ny;
 	    while(i--) {
 		t2 = BIGUP(t2) + zds[i];
@@ -882,8 +884,8 @@ bigdivrem(x, y, div, mod)
 		t2 %= dd;
 	    }
 	}
-	RBIGNUM(*mod)->len = ny;
-	RBIGNUM(*mod)->sign = RBIGNUM(x)->sign;
+	RBIGNUM(*modp)->len = ny;
+	RBIGNUM(*modp)->sign = RBIGNUM(x)->sign;
     }
 }
 
@@ -900,8 +902,8 @@ bigdivmod(x, y, divp, modp)
 	if (modp) *modp = bigadd(mod, y, 1);
     }
     else {
-	if (divp) *divp = bignorm(*divp);
-	if (modp) *modp = bignorm(mod);
+	if (divp) *divp = *divp;
+	if (modp) *modp = mod;
     }
 }
 
@@ -927,7 +929,7 @@ rb_big_div(x, y)
     }
     bigdivmod(x, y, &z, 0);
 
-    return z;
+    return bignorm(z);
 }
 
 
@@ -950,7 +952,7 @@ rb_big_modulo(x, y)
     }
     bigdivmod(x, y, 0, &z);
 
-    return z;
+    return bignorm(z);
 }
 
 static VALUE
@@ -994,7 +996,7 @@ rb_big_divmod(x, y)
     }
     bigdivmod(x, y, &div, &mod);
 
-    return rb_assoc_new(div, mod);
+    return rb_assoc_new(bignorm(div), bignorm(mod));
 }
 
 VALUE

@@ -1,3 +1,10 @@
+Wed Jul 12 15:06:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): use rb_const_get_at().
+
+	* variable.c (rb_const_get_at): retrieve toplevel constants only,
+	  not ones of Object (and its included modules) in general.
+
 Wed Jul 12 15:04:11 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.26.
@@ -6,6 +13,12 @@ Wed Jul 12 15:04:11 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	  add module Net::NetPrivate and its inner classes
 	  {Read,Write}Adapter, Command, Socket,
 	  SMTPCommand, POP3Command, APOPCommand, HTTPCommand
+
+Wed Jul 12 13:10:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (bigdivrem): defer bignorm().
+
+	* bignum.c (bignorm): accepts accidental fixnums.
 
 Tue Jul 11 16:54:17 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

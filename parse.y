@@ -3443,7 +3443,7 @@ yylex()
 
       default:
 	if (!is_identchar(c) || ISDIGIT(c)) {
-	    rb_compile_error("Invalid char '%c'(%03o) in expression", c, c);
+	    rb_compile_error("Invalid char `\\%03o' in expression", c);
 	    goto retry;
 	}
 

@@ -2630,7 +2630,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_COLON3:
-	result = rb_const_get(rb_cObject, node->nd_mid);
+	result = rb_const_get_at(rb_cObject, node->nd_mid);
 	break;
 
       case NODE_NTH_REF:
