@@ -169,86 +169,86 @@ config.h: $(srcdir)/win32/$$@.in
 
 config.status: Makefile $(srcdir)/win32/Makefile.sub $(MINIRUBY)
 	@echo Creating config.status
-	@echo # Generated automatically by Makefile.sub. > config.tmp
-	@echo s,@SHELL@,$$(COMSPEC),g >> config.tmp
-	@echo s,@CFLAGS@,$(CFLAGS),g >> config.tmp
-	@echo s,@CPPFLAGS@,$(CPPFLAGS),g >> config.tmp
-	@echo s,@CXXFLAGS@,$(CXXFLAGS),g >> config.tmp
-	@echo s,@FFLAGS@,$(FFLAGS),g >> config.tmp
-	@echo s,@LDFLAGS@,$(LDFLAGS),g >> config.tmp
-	@echo s,@LIBS@,user32.lib advapi32.lib wsock32.lib,g >> config.tmp
-	@echo s,@exec_prefix@,$${prefix},g >> config.tmp
-	@echo s,@prefix@,$(prefix),g >> config.tmp
-	@echo s,@program_transform_name@,s,,,,g >> config.tmp
-	@echo s,@bindir@,$${exec_prefix}/bin,g >> config.tmp
-	@echo s,@sbindir@,$${exec_prefix}/sbin,g >> config.tmp
-	@echo s,@libexecdir@,$${exec_prefix}/libexec,g >> config.tmp
-	@echo s,@datadir@,$${prefix}/share,g >> config.tmp
-	@echo s,@sysconfdir@,$${prefix}/etc,g >> config.tmp
-	@echo s,@sharedstatedir@,/etc,g >> config.tmp
-	@echo s,@localstatedir@,/var,g >> config.tmp
-	@echo s,@libdir@,$${exec_prefix}/lib,g >> config.tmp
-	@echo s,@includedir@,$${prefix}/include,g >> config.tmp
-	@echo s,@oldincludedir@,/usr/include,g >> config.tmp
-	@echo s,@infodir@,$${prefix}/info,g >> config.tmp
-	@echo s,@mandir@,$${prefix}/man,g >> config.tmp
-	@echo s,@build@,$(CPU)-pc-$(OS),g >> config.tmp
-	@echo s,@build_alias@,$(CPU)-$(OS),g >> config.tmp
-	@echo s,@build_cpu@,$(CPU),g >> config.tmp
-	@echo s,@build_vendor@,pc,g >> config.tmp
-	@echo s,@build_os@,$(OS),g >> config.tmp
-	@echo s,@host@,$(CPU)-pc-$(OS),g >> config.tmp
-	@echo s,@host_alias@,$(CPU)-$(OS),g >> config.tmp
-	@echo s,@host_cpu@,$(CPU),g >> config.tmp
-	@echo s,@host_vendor@,pc,g >> config.tmp
-	@echo s,@host_os@,$(OS),g >> config.tmp
-	@echo s,@target@,$(ARCH)-pc-$(OS),g >> config.tmp
-	@echo s,@target_alias@,$(ARCH)-$(OS),g >> config.tmp
-	@echo s,@target_cpu@,$(ARCH),g >> config.tmp
-	@echo s,@target_vendor@,pc,g >> config.tmp
-	@echo s,@target_os@,$(OS),g >> config.tmp
-	@echo s,@CC@,cl,g >> config.tmp
-	@echo s,@CPP@,$$(CC) -E,g >> config.tmp
-	@echo s,@YACC@,$(YACC),g >> config.tmp
-	@echo s,@RANLIB@,rem,g >> config.tmp
-	@echo s,@AR@,lib -nologo,g >> config.tmp
-	@echo s,@LN_S@,$(LN_S),g >> config.tmp
-	@echo s,@SET_MAKE@,$(SET_MAKE),g >> config.tmp
-	@echo s,@LIBOBJS@, crypt.obj win32.obj isinf.obj isnan.obj,g >> config.tmp
-	@echo s,@ALLOCA@,$(ALLOCA),g >> config.tmp
-	@echo s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),g >> config.tmp
-	@echo s,@EXEEXT@,.exe,g >> config.tmp
-	@echo s,@OBJEXT@,obj,g >> config.tmp
-	@echo s,@XLDFLAGS@,$(XLDFLAGS),g >> config.tmp
-	@echo s,@DLDFLAGS@,$$(CFLAGS),g >> config.tmp
-	@echo s,@STATIC@,$(STATIC),g >> config.tmp
-	@echo s,@CCDLFLAGS@,-DIMPORT,g >> config.tmp
-	@echo s,@LDSHARED@,$$(CC) -LD,g >> config.tmp
-	@echo s,@DLEXT@,so,g >> config.tmp
-	@echo s,@DLEXT2@,dll,g >> config.tmp
-	@echo s,@STRIP@,$(STRIP),g >> config.tmp
-	@echo s,@EXTSTATIC@,$(EXTSTATIC),g >> config.tmp
-	@echo s,@setup@,Setup,g >> config.tmp
-	@echo s,@LIBRUBY_LDSHARED@,$(LIBRUBY_LDSHARED),g >> config.tmp
-	@echo s,@LIBRUBY_DLDFLAGS@,$(LIBRUBY_DLDFLAGS),g >> config.tmp
-	@echo s,@RUBY_INSTALL_NAME@,$(RUBY_INSTALL_NAME),g >> config.tmp
-	@echo s,@RUBY_SO_NAME@,$(RUBY_SO_NAME),g >> config.tmp
-	@echo s,@LIBRUBY_A@,lib$$(RUBY_INSTALL_NAME).lib,g >> config.tmp
-	@echo s,@LIBRUBY_SO@,$$(RUBY_SO_NAME).dll,g >> config.tmp
-	@echo s,@LIBRUBY_ALIASES@,$(LIBRUBY_ALIASES),g >> config.tmp
-	@echo s,@LIBRUBY@,$$(RUBY_SO_NAME).lib,g >> config.tmp
-	@echo s,@LIBRUBYARG@,$$(RUBY_SO_NAME).lib,g >> config.tmp
-	@echo s,@SOLIBS@,$(SOLIBS),g >> config.tmp
-	@echo s,@DLDLIBS@,$(DLDLIBS),g >> config.tmp
-	@echo s,@ENABLE_SHARED@,yes,g >> config.tmp
-	@echo s,@arch@,$(ARCH)-$(OS),g >> config.tmp
-	@echo s,@sitedir@,$${prefix}/lib/ruby/site_ruby,g >> config.tmp
-	@echo s,@configure_args@,--with-make-prog=nmake --enable-shared,g >> config.tmp
-	@echo s,@configure_input@,$$configure_input,g >> config.tmp
-	@echo s,@srcdir@,$(srcdir),g >> config.tmp
-	@echo s,@top_srcdir@,$(srcdir),g >> config.tmp
-	@$(MINIRUBY) -pe "chomp(' ');~/@CFLAGS@/||$$_['$(CFLAGS)']='$$(CFLAGS)'" config.tmp > $@
-	@del config.tmp
+	@$(MINIRUBY) -pe "chomp(' ');~/@CFLAGS@/||$$_['$(CFLAGS)']='$$(CFLAGS)'" << > $@
+# Generated automatically by Makefile.sub.
+s,@SHELL@,$$(COMSPEC),;t t
+s,@CFLAGS@,$(CFLAGS),;t t
+s,@CPPFLAGS@,$(CPPFLAGS),;t t
+s,@CXXFLAGS@,$(CXXFLAGS),;t t
+s,@FFLAGS@,$(FFLAGS),;t t
+s,@LDFLAGS@,$(LDFLAGS),;t t
+s,@LIBS@,user32.lib advapi32.lib wsock32.lib,;t t
+s,@exec_prefix@,$${prefix},;t t
+s,@prefix@,$(prefix),;t t
+s,@program_transform_name@,s,,,,;t t
+s,@bindir@,$${exec_prefix}/bin,;t t
+s,@sbindir@,$${exec_prefix}/sbin,;t t
+s,@libexecdir@,$${exec_prefix}/libexec,;t t
+s,@datadir@,$${prefix}/share,;t t
+s,@sysconfdir@,$${prefix}/etc,;t t
+s,@sharedstatedir@,/etc,;t t
+s,@localstatedir@,/var,;t t
+s,@libdir@,$${exec_prefix}/lib,;t t
+s,@includedir@,$${prefix}/include,;t t
+s,@oldincludedir@,/usr/include,;t t
+s,@infodir@,$${prefix}/info,;t t
+s,@mandir@,$${prefix}/man,;t t
+s,@build@,$(CPU)-pc-$(OS),;t t
+s,@build_alias@,$(CPU)-$(OS),;t t
+s,@build_cpu@,$(CPU),;t t
+s,@build_vendor@,pc,;t t
+s,@build_os@,$(OS),;t t
+s,@host@,$(CPU)-pc-$(OS),;t t
+s,@host_alias@,$(CPU)-$(OS),;t t
+s,@host_cpu@,$(CPU),;t t
+s,@host_vendor@,pc,;t t
+s,@host_os@,$(OS),;t t
+s,@target@,$(ARCH)-pc-$(OS),;t t
+s,@target_alias@,$(ARCH)-$(OS),;t t
+s,@target_cpu@,$(ARCH),;t t
+s,@target_vendor@,pc,;t t
+s,@target_os@,$(OS),;t t
+s,@CC@,cl,;t t
+s,@CPP@,$$(CC) -E,;t t
+s,@YACC@,$(YACC),;t t
+s,@RANLIB@,rem,;t t
+s,@AR@,lib -nologo,;t t
+s,@LN_S@,$(LN_S),;t t
+s,@SET_MAKE@,$(SET_MAKE),;t t
+s,@LIBOBJS@, crypt.obj win32.obj isinf.obj isnan.obj,;t t
+s,@ALLOCA@,$(ALLOCA),;t t
+s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t
+s,@EXEEXT@,.exe,;t t
+s,@OBJEXT@,obj,;t t
+s,@XLDFLAGS@,$(XLDFLAGS),;t t
+s,@DLDFLAGS@,$$(CFLAGS),;t t
+s,@STATIC@,$(STATIC),;t t
+s,@CCDLFLAGS@,-DIMPORT,;t t
+s,@LDSHARED@,$$(CC) -LD,;t t
+s,@DLEXT@,so,;t t
+s,@DLEXT2@,dll,;t t
+s,@STRIP@,$(STRIP),;t t
+s,@EXTSTATIC@,$(EXTSTATIC),;t t
+s,@setup@,Setup,;t t
+s,@LIBRUBY_LDSHARED@,$(LIBRUBY_LDSHARED),;t t
+s,@LIBRUBY_DLDFLAGS@,$(LIBRUBY_DLDFLAGS),;t t
+s,@RUBY_INSTALL_NAME@,$(RUBY_INSTALL_NAME),;t t
+s,@RUBY_SO_NAME@,$(RUBY_SO_NAME),;t t
+s,@LIBRUBY_A@,lib$$(RUBY_INSTALL_NAME).lib,;t t
+s,@LIBRUBY_SO@,$$(RUBY_SO_NAME).dll,;t t
+s,@LIBRUBY_ALIASES@,$(LIBRUBY_ALIASES),;t t
+s,@LIBRUBY@,$$(RUBY_SO_NAME).lib,;t t
+s,@LIBRUBYARG@,$$(RUBY_SO_NAME).lib,;t t
+s,@SOLIBS@,$(SOLIBS),;t t
+s,@DLDLIBS@,$(DLDLIBS),;t t
+s,@ENABLE_SHARED@,yes,;t t
+s,@arch@,$(ARCH)-$(OS),;t t
+s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
+s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
+s,@configure_input@,$$configure_input,;t t
+s,@srcdir@,$(srcdir),;t t
+s,@top_srcdir@,$(srcdir),;t t
+<<
 
 ext/extmk.rb:	$(srcdir)/ext/extmk.rb.in config.status
 		@echo Creating ext/extmk.rb
