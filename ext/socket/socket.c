@@ -1745,7 +1745,7 @@ setup_domain_and_type(domain, dv, type, tv)
     char *ptr;
 
     tmp = rb_check_string_type(domain);
-    if (!NIL_P(domain)) {
+    if (!NIL_P(tmp)) {
 	domain = tmp;
 	rb_check_safe_obj(domain);
 	ptr = RSTRING(domain)->ptr;
