@@ -1674,6 +1674,8 @@ undefine_final(os, obj)
     return obj;
 }
 
+#define NODE_FINAL NODE_LIT
+
 /*
  *  call-seq:
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
@@ -1701,6 +1703,8 @@ define_final(argc, argv, os)
     }
     need_call_final = 1;
     FL_SET(obj, FL_FINALIZE);
+
+    block = (VALUE)rb_node_newnode(NODE_FINAL, block, ruby_safe_level, 0);
 
     if (!finalizer_table) {
 	finalizer_table = st_init_numtable();
@@ -1732,7 +1736,7 @@ static VALUE
 run_single_final(args)
     VALUE *args;
 {
-    rb_eval_cmd(args[0], args[1], 0);
+    rb_eval_cmd(args[0], args[1], (int)args[2]);
     return Qnil;
 }
 
@@ -1742,17 +1746,20 @@ run_final(obj)
 {
     long i;
     int status, critical_save = rb_thread_critical;
-    VALUE args[2], table;
+    VALUE args[3], table;
 
     rb_thread_critical = Qtrue;
     args[1] = rb_ary_new3(1, rb_obj_id(obj)); /* make obj into id */
+    args[2] = (VALUE)ruby_safe_level;
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	args[0] = RARRAY(finalizers)->ptr[i];
 	rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
     }
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
-	    args[0] = RARRAY(table)->ptr[i];
+	    NODE *final = (NODE *)RARRAY(table)->ptr[i];
+	    args[0] = final->nd_lit;
+	    args[2] = final->nd_nth;
 	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
 	}
     }

@@ -1661,19 +1661,29 @@ jump_tag_but_local_jump(state, val)
 }
 
 VALUE
-rb_eval_cmd(cmd, arg, tcheck)
+rb_eval_cmd(cmd, arg, level)
     VALUE cmd, arg;
-    int tcheck;
+    int level;
 {
     int state;
     VALUE val = Qnil;		/* OK */
     struct SCOPE *saved_scope;
     volatile int safe = ruby_safe_level;
 
+    if (OBJ_TAINTED(cmd)) {
+	level = 4;
+    }
     if (TYPE(cmd) != T_STRING) {
 	PUSH_ITER(ITER_NOT);
-	val = rb_funcall2(cmd, rb_intern("call"), RARRAY(arg)->len, RARRAY(arg)->ptr);
+	PUSH_TAG(PROT_NONE);
+	ruby_safe_level = level;
+	if ((state = EXEC_TAG()) == 0) {
+	    val = rb_funcall2(cmd, rb_intern("call"), RARRAY(arg)->len, RARRAY(arg)->ptr);
+	}
+	ruby_safe_level = safe;
+	POP_TAG();
 	POP_ITER();
+	if (state) JUMP_TAG(state);
 	return val;
     }
 
@@ -1686,9 +1696,7 @@ rb_eval_cmd(cmd, arg, tcheck)
     ruby_frame->self = ruby_top_self;
     PUSH_CREF(ruby_wrapper ? ruby_wrapper : rb_cObject);
 
-    if (tcheck && OBJ_TAINTED(cmd)) {
-	ruby_safe_level = 4;
-    }
+    ruby_safe_level = level;
 
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
@@ -9479,9 +9487,9 @@ thread_reset_raised()
 static void rb_thread_ready _((rb_thread_t));
 
 static VALUE
-rb_trap_eval(cmd, sig)
+rb_trap_eval(cmd, sig, safe)
     VALUE cmd;
-    int sig;
+    int sig, safe;
 {
     int state;
     VALUE val = Qnil;		/* OK */
@@ -9492,7 +9500,7 @@ rb_trap_eval(cmd, sig)
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
-	val = rb_eval_cmd(cmd, rb_ary_new3(1, INT2FIX(sig)), 0);
+	val = rb_eval_cmd(cmd, rb_ary_new3(1, INT2FIX(sig)), safe);
     }
     POP_ITER();
     POP_TAG();
@@ -9702,7 +9710,7 @@ static int   th_raise_argc;
 static VALUE th_raise_argv[2];
 static NODE *th_raise_node;
 static VALUE th_cmd;
-static int   th_sig;
+static int   th_sig, th_safe;
 static char *th_signm;
 
 #define RESTORE_NORMAL		1
@@ -9794,7 +9802,7 @@ rb_thread_switch(n)
 	rb_interrupt();
 	break;
       case RESTORE_TRAP:
-	rb_trap_eval(th_cmd, th_sig);
+	rb_trap_eval(th_cmd, th_sig, th_safe);
 	break;
       case RESTORE_RAISE:
 	ruby_frame->last_func = 0;
@@ -11723,9 +11731,9 @@ rb_thread_signal_raise(sig)
 }
 
 void
-rb_thread_trap_eval(cmd, sig)
+rb_thread_trap_eval(cmd, sig, safe)
     VALUE cmd;
-    int sig;
+    int sig, safe;
 {
     rb_thread_critical = 0;
     if (!rb_thread_dead(curr_thread)) {
@@ -11735,6 +11743,7 @@ rb_thread_trap_eval(cmd, sig)
     }
     th_cmd = cmd;
     th_sig = sig;
+    th_safe = safe;
     curr_thread = main_thread;
     rb_thread_restore_context(curr_thread, RESTORE_TRAP);
 }
