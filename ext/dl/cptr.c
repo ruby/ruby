@@ -346,35 +346,38 @@ VALUE
 rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 {
     VALUE arg0, arg1;
+    VALUE retval = Qnil;
     size_t offset, len;
 
     switch( rb_scan_args(argc, argv, "11", &arg0, &arg1) ){
     case 1:
 	offset = NUM2ULONG(arg0);
-	len    = 1;
+	retval = INT2NUM(*((char*)RPTR_DATA(self)->ptr + offset));
 	break;
     case 2:
 	offset = NUM2ULONG(arg0);
 	len    = NUM2ULONG(arg1);
+	retval = rb_tainted_str_new((char *)RPTR_DATA(self)->ptr + offset, len);
 	break;
     defualt:
-	rb_bug("rb_dlptr_aset()");
+	rb_bug("rb_dlptr_aref()");
     }
-    return rb_tainted_str_new((char *)RPTR_DATA(self)->ptr + offset, len);
+    return retval;
 }
 
 VALUE
 rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 {
     VALUE arg0, arg1, arg2;
+    VALUE retval = Qnil;
     size_t offset, len;
     void *mem;
 
     switch( rb_scan_args(argc, argv, "21", &arg0, &arg1, &arg2) ){
     case 2:
 	offset = NUM2ULONG(arg0);
-	len    = 1;
-	mem    = NUM2PTR(arg1);
+	((char*)RPTR_DATA(self)->ptr)[offset] = NUM2UINT(arg1);
+	retval = arg1;
 	break;
     case 3:
 	offset = NUM2ULONG(arg0);
@@ -388,12 +391,13 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	else{
 	    mem    = NUM2PTR(arg2);
 	}
+	memcpy((char *)RPTR_DATA(self)->ptr + offset, mem, len);
+	retval = arg2;
 	break;
     defualt:
 	rb_bug("rb_dlptr_aset()");
     }
-    memcpy((char *)RPTR_DATA(self)->ptr + offset, mem, len);
-    return Qnil;
+    return retval;
 }
 
 VALUE
@@ -423,6 +427,10 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 	fp = fptr->f;
 #endif
 	return rb_dlptr_new(fp, sizeof(FILE), NULL);
+    }
+    else if( rb_obj_is_kind_of(val, rb_cString) == Qtrue ){
+        char *ptr = StringValuePtr(val);
+        return rb_dlptr_new(ptr, RSTRING(val)->len, NULL); 
     }
     else if( rb_respond_to(val, id_to_ptr) ){
 	VALUE vptr = rb_funcall(val, id_to_ptr, 0);
