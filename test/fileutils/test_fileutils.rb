@@ -149,11 +149,11 @@ end
       cp 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
-    File.symlink 'tmp/cptmp', 'tmp/cptmp_symlink'
+    File.symlink 'cptmp', 'tmp/cptmp_symlink'
     assert_raises(ArgumentError) {
       cp 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
-    File.symlink 'tmp/symlink', 'tmp/symlink'
+    File.symlink 'symlink', 'tmp/symlink'
     assert_raises(Errno::ELOOP) {
       cp 'tmp/symlink', 'tmp/symlink'
     }
@@ -180,11 +180,11 @@ end
       mv 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
-    File.symlink 'tmp/cptmp', 'tmp/cptmp_symlink'
+    File.symlink 'cptmp', 'tmp/cptmp_symlink'
     assert_raises(ArgumentError) {
       mv 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
-    File.symlink 'tmp/symlink', 'tmp/symlink'
+    File.symlink 'symlink', 'tmp/symlink'
     assert_raises(Errno::ELOOP) {
       mv 'tmp/symlink', 'tmp/symlink'
     }
@@ -412,11 +412,11 @@ end
       install 'tmp/cptmp', 'tmp/cptmp'
     }
 if have_symlink?
-    File.symlink 'tmp/cptmp', 'tmp/cptmp_symlink'
+    File.symlink 'cptmp', 'tmp/cptmp_symlink'
     assert_raises(ArgumentError) {
       install 'tmp/cptmp', 'tmp/cptmp_symlink'
     }
-    File.symlink 'tmp/symlink', 'tmp/symlink'
+    File.symlink 'symlink', 'tmp/symlink'
     assert_raises(Errno::ELOOP) {
       install 'tmp/symlink', 'tmp/symlink'
     }

@@ -739,35 +739,9 @@ module FileUtils
   end
 
   def fu_same?( a, b )
-    fu_resolve_symlink(a) == fu_resolve_symlink(b)
-  end
-
-  def fu_resolve_symlink( path, limit = 128 )
-    raise Errno::ELOOP, "too many levels of symlic links: #{path}" if limit < 0
-    if File.symlink?(path)
-    then fu_resolve_symlink(fu_readlink(File.expand_path(path)), limit-1)
-    else path
-    end
-  end
-
-  def fu_readlink( path )
-    dest = File.readlink(path)
-    if absolute_path?(dest)
-    then dest
-    else File.dirname(File.expand_path(path)) + '/' + dest
-    path = File.readlink(path)
-    end
-  end
-
-  def absolute_path?( path )
-    if have_drive_letter?
-    then %r<\A([a-z]:)?/> === path
-    else %r<\A/> === path
-    end
-  end
-
-  def have_drive_letter?
-    File::ALT_SEPARATOR ? true : false
+    File.stat(a).ino == File.stat(b).ino
+  rescue Errno::ENOENT
+    return false
   end
 
   def fu_stream_blksize( *streams )

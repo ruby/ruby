@@ -1,3 +1,10 @@
+Tue Nov 18 19:05:04 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (fu_same?): check by inode instead of path
+	  name, to detect two hard links pointing to the same content.
+
+	* test/fileutils.rb: did not create correctly looped symlinks.
+
 Tue Nov 18 18:23:05 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/stringio/stringio.c (strio_read): behave as IO at empty string.
