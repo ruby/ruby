@@ -427,7 +427,12 @@ rb_ary_unshift_m(argc, argv, ary)
     VALUE ary;
 {
     long len = RARRAY(ary)->len;
-    
+
+    if (argc < 0) {
+	rb_raise(rb_eArgError, "negative number of arguments");
+    }
+    if (argc == 0) return ary;
+
     /* make rooms by setting the last item */
     rb_ary_store(ary, len + argc - 1, Qnil);
 

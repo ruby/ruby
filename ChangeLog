@@ -1,3 +1,8 @@
+Tue Jun 24 02:40:09 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* array.c (rb_ary_unshift_m): need to check number of arguments.
+	  [ruby-talk:74189]
+
 Mon Jun 23 23:59:56 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* io.c (io_close): missing prototype.
