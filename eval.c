@@ -1487,15 +1487,15 @@ rb_eval_string_wrap(str, state)
 }
 
 static void
-localjump_error(mesg, status, reason)
+localjump_error(mesg, value, reason)
     const char *mesg;
-    VALUE status;
+    VALUE value;
     int reason;
 {
     VALUE exc = rb_exc_new2(rb_eLocalJumpError, mesg);
     VALUE id;
 
-    rb_iv_set(exc, "@exit_value", status);
+    rb_iv_set(exc, "@exit_value", value);
     switch (reason) {
       case TAG_BREAK:
 	id = rb_intern("break"); break;
@@ -4028,7 +4028,7 @@ localjump_destination(state, scope, retval)
 
     if (retval == Qundef) retval = Qnil;
     while (tt) {
-	if (tt->tag == PROT_PCALL ||
+	if (tt->tag == PROT_PCALL || (tt->tag == PROT_THREAD && state == TAG_BREAK) ||
 	    (tt->tag == PROT_CALL || tt->tag == tag) && tt->scope == scope) {
 	    tt->dst = (VALUE)scope;
 	    tt->retval = retval;
@@ -4036,8 +4036,7 @@ localjump_destination(state, scope, retval)
 	}
 	if (tt->tag == PROT_FUNC && tt->scope == scope) break;
 	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "%s jump can't across threads",
-		     (state == TAG_BREAK) ? "break" : "return");
+	    rb_raise(rb_eThreadError, "return jump can't across threads");
 	}
 	tt = tt->prev;
     }
@@ -7061,7 +7060,7 @@ proc_invoke(proc, args, self, klass)
 	    char mesg[32];
 	    snprintf(mesg, sizeof mesg, "%s from proc-closure",
 		     state == TAG_BREAK ? "break" : "return");
-	    localjump_error(mesg, prot_tag->retval, state);
+	    localjump_error(mesg, result, state);
 	}
 	if (result != Qundef) {
 	    localjump_destination(state, ruby_scope, result);

@@ -1,3 +1,11 @@
+Wed Sep 17 23:41:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (localjump_destination): should not raise ThreadError
+	  exception for "break". [ruby-dev:21348]
+
+	* eval.c (proc_invoke): use result instead of prot_tag->retval.
+	  retval is no longer propagated to the ancestors.
+
 Wed Sep 17 20:34:00 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (tokadd_string, parse_string, yylex): escaped terminator
