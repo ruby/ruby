@@ -255,7 +255,7 @@ class Shell
     return unless yorn
 
     _head = true
-    print *opts.collect{|mes|
+    print opts.collect{|mes|
       mes = mes.dup
       yield mes if iterator?
       if _head
