@@ -849,7 +849,7 @@ case "$target_os" in
 	esac
 	;;
     cygwin*|mingw*)
-	RUBY_SO_NAME='$(RUBY_INSTALL_NAME)'.$target_os
+	RUBY_SO_NAME=$target_os-'$(RUBY_INSTALL_NAME)'-${MAJOR}.${MINOR}
 	if test x"$enable_shared" = xyes; then
 	    LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 	    LIBRUBY_DLDFLAGS='--dllname=$@ --output-lib=$(LIBRUBY) --add-stdcall-alias --def=$(RUBYDEF)'
