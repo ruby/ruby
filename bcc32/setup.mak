@@ -11,7 +11,6 @@ srcdir = $(bcc32dir)../
 OS = bccwin32
 
 all: ext makefile
-	@echo type `make' to make ruby for bccwin32.
 
 makefile: make_s make_e
 
@@ -24,6 +23,7 @@ make_s:
 
 make_e:
 	@echo !INCLUDE $$(srcdir)bcc32/makefile.sub>> makefile
+	@echo type `make' to make ruby for bccwin32.
 
 ext:
 	@if not exist $@\* mkdir $@

@@ -1,3 +1,9 @@
+Thu Sep 12 23:20:10 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* bcc32/setup.mak    : Control of a message.
+
+	* bcc32/makefile.sub : include resource.
+
 Thu Sep 12 18:10:03 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dir.c (glob_helper): fixed freeing buffer.  (ruby-bugs-ja:PR#332)

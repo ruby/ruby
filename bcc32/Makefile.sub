@@ -38,7 +38,7 @@ VPATH = $(srcdir):$(srcdir)/missing
 CC = bcc32
 !endif
 !ifndef RC
-RC = brc32
+RC = brcc32
 !endif
 !ifndef YACC
 YACC = byacc
@@ -99,10 +99,11 @@ MISSING = acosh.obj crypt.obj win32.obj
 STACK = 0x2000000
 !endif
 
-LDSHARED = $(CC) -lS:$(STACK)
-LINK     = $(LDSHARED) -WC
-LINK_W   = $(LDSHARED) -W
-LINK_SO  = $(LDSHARED) -WD
+LDSHARED = ilink32.exe -S:$(STACK)
+LINK     = $(LDSHARED) -Tpe C0X32.OBJ
+LINK_W   = $(LDSHARED) -Tpe C0W32.OBJ
+LINK_SO  = $(LDSHARED) -Tpd C0D32.OBJ
+LDOBJECTS = CW32.LIB IMPORT32.LIB $(MAINOBJ)
 
 DLDFLAGS = 
 SOLIBS = 
@@ -357,13 +358,13 @@ s,@top_srcdir@,$(srcdir),;t t
 miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
 		@echo $(EXTOBJS)
 		@echo $(LIBS)
-		$(LINK) -e$@ $(MAINOBJ) $(EXTOBJS) $(OBJS) $(LIBS)
+		$(LINK) $(LDOBJECTS) $(EXTOBJS) $(OBJS) $(LIBS),$@
 
-$(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(*:.exe=.res)
-		$(LINK) -e$@ $(MAINOBJ) $(LIBRUBYARG)
+$(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
+		$(LINK) $(LDOBJECTS),$@,,$(LIBRUBYARG),,$(RUBY_INSTALL_NAME).res
 
-$(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(*:.exe=.res)
-		$(LINK_W) -e$@ $(MAINOBJ) $(WINMAINOBJ) $(LIBRUBYARG)
+$(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
+		$(LINK_W) $(LDOBJECTS) $(WINMAINOBJ),$@,,$(LIBRUBYARG),,$(RUBYW_INSTALL_NAME).res
 
 $(LIBRUBY_A):	$(OBJS) dmyext.obj
 		@-if exist $@ del $@
@@ -374,8 +375,9 @@ $(OBJS) dmyext.obj
 $(LIBRUBY):	$(LIBRUBY_SO)
 		implib $@ $(LIBRUBY_SO)
 
-$(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $(*:.dll=.res)
-		$(LINK_SO) -e$@ $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS)
+$(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
+		$(LINK_SO) $(LDOBJECTS) $(EXTOBJS) $(LIBS),$@,,$(LIBRUBY_A),$(RUBYDEF), $(RUBY_SO_NAME).res
+
 
 $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 		.\miniruby$(EXEEXT) $(srcdir)bcc32/mkexports.rb -output=$@ $(LIBRUBY_A)
@@ -395,6 +397,7 @@ clean-local:
 		@if exist *.obj del *.obj
 		@if exist *.res del *.res
 		@if exist *.tds del *.tds
+		@if exist *.il? del *.il?
 
 clean-ext:
 		@-.\miniruby$(EXEEXT) $(srcdir)ext/extmk.rb clean
