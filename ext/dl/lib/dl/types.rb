@@ -97,8 +97,9 @@ module DL
       ["long",   "L", nil, nil, nil, nil],
       ["float",  "F", nil, nil, nil, nil],
       ["double", "D", nil, nil, nil, nil],
-      [/^char\s*\*$/,"S",nil, nil, nil, nil],
-      [/^.+\*$/,   "P", nil, nil, nil, nil],
+      [/^char\s*\*$/,"s",nil, nil, nil, nil],
+      [/^const char\s*\*$/,"S",nil, nil, nil, nil],
+      [/^.+\*$/,   "p", nil, nil, nil, nil],
       [/^.+\[\]$/, "a", nil, nil, nil, nil],
       ["void",   "0", nil, nil, nil, nil],
     ]
