@@ -53,4 +53,31 @@ module TestEOF
       assert_equal(nil, f.read(1))
     }
   end
+
+  module Seek
+    def open_file_seek(content, pos)
+      open_file(content) do |f|
+        f.seek(pos)
+        yield f
+      end
+    end
+
+    def test_eof_0_seek
+      open_file_seek("", 10) {|f|
+        assert_equal("", f.read)
+        assert_equal(nil, f.read)
+      }
+    end
+
+    def test_eof_1_seek
+      open_file_seek("a", 10) {|f|
+        assert_equal("", f.read)
+        assert_equal(nil, f.read)
+      }
+      open_file_seek("a", 1) {|f|
+        assert_equal("", f.read)
+        assert_equal(nil, f.read)
+      }
+    end
+  end
 end

@@ -12,4 +12,6 @@ class TestStringIO < Test::Unit::TestCase
     yield f
   end
   alias open_file_rw open_file
+
+  include TestEOF::Seek
 end

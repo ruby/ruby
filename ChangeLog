@@ -1,7 +1,18 @@
+Wed Dec 10 17:16:06 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): adjust behavior at reading
+	  beyond EOF to IO.  [ruby-dev:22205]
+
+	* test/ruby/ut_eof.rb (TestEOF::Seek): test behaviors at reading
+	  beyond EOF.
+
+	* test/ruby/test_file.rb, * test/stringio/test_stringio.rb:
+	  include TestEOF::Seek test case.
+
 Wed Dec 10 15:01:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/monitor/test_monitor.rb (test_cond): use Queue#deq
-	insteadof sleep.
+	  instead of sleep.
 
 Wed Dec 10 14:45:39 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -20,12 +31,12 @@ Wed Dec 10 12:53:05 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Tue Dec  9 23:32:23 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb, ext/tk/lib/tkcanvas.rb, ext/tk/lib/tkdialog.rb, 
-	  ext/tk/lib/tkentry.rb, ext/tk/lib/tkscrollbox.rb, ext/tk/lib/tktext.rb, 
-	  ext/tk/sample/tkalignbox.rb, ext/tk/sample/tkcombobox.rb, 
+	* ext/tk/lib/tk.rb, ext/tk/lib/tkcanvas.rb, ext/tk/lib/tkdialog.rb,
+	  ext/tk/lib/tkentry.rb, ext/tk/lib/tkscrollbox.rb, ext/tk/lib/tktext.rb,
+	  ext/tk/sample/tkalignbox.rb, ext/tk/sample/tkcombobox.rb,
 	  ext/tk/sample/tkmultilistbox.rb, ext/tk/sample/tkoptdb.rb, ext/tk/sample/tktextframe.rb,
-	  ext/tk/sample/demos-en/dialog1.rb, ext/tk/sample/demos-en/dialog2.rb, 
-	  ext/tk/sample/demos-jp/dialog1.rb, ext/tk/sample/demos-jp/dialog2.rb: 
+	  ext/tk/sample/demos-en/dialog1.rb, ext/tk/sample/demos-en/dialog2.rb,
+	  ext/tk/sample/demos-jp/dialog1.rb, ext/tk/sample/demos-jp/dialog2.rb:
 	  overrided instance methods, which are private methods on the super
 	  class, are changed to 'private'
 

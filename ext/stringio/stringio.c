@@ -867,6 +867,7 @@ strio_read(argc, argv, self)
     }
     str = rb_str_substr(ptr->string, ptr->pos, len);
     if (NIL_P(str)) {
+	if (!(ptr->flags & STRIO_EOF)) str = rb_str_new(0, 0);
 	ptr->flags |= STRIO_EOF;
     }
     else {
