@@ -309,11 +309,46 @@ typedef long I32;
 typedef unsigned long U32;
 #define NUM2I32(x) NUM2LONG(x)
 #define NUM2U32(x) NUM2ULONG(x)
-#elif SIZEOF_INT == SIZE32
+#else
 typedef int I32;
 typedef unsigned int U32;
-#define NUM2I32(x) NUM2INT(x)
-#define NUM2U32(x) NUM2UINT(x)
+# if SIZEOF_INT == SIZE32
+#  define NUM2I32(x) NUM2INT(x)
+#  define NUM2U32(x) NUM2UINT(x)
+# else
+
+#define I32_MAX 2147483647
+#define I32_MIN (-I32_MAX-1)
+
+static I32
+num2i32(x)
+    VALUE x;
+{
+    long num = NUM2LONG(x);
+
+    if (num < I32_MIN || I32_MAX < num) {
+	rb_raise(rb_eRangeError, "integer %ld too big to convert to `I32'", num);
+    }
+    return (I32)num;
+}
+    
+#define U32_MAX 4294967295
+
+static U32
+num2u32(x)
+    VALUE x;
+{
+    unsigned long num = NUM2ULONG(x);
+
+    if (U32_MAX < num) {
+	rb_raise(rb_eRangeError, "integer %ld too big to convert to `U32'", num);
+    }
+    return (U32)num;
+}
+
+#  define NUM2I32(x) num2i32(x)
+#  define NUM2U32(x) num2u32(x)
+# endif
 #endif
 
 #ifdef HAVE_LONG_LONG

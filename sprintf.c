@@ -404,7 +404,7 @@ rb_f_sprintf(argc, argv)
 			if (base == 10) {
 			    rb_warning("negative number for %%u specifier");
 			}
-			else {
+			else if (!(flags&FPREC)) {
 			    strcpy(s, "..");
 			    s += 2;
 			}
@@ -463,8 +463,10 @@ rb_f_sprintf(argc, argv)
 			remove_sign_bits(++s, base);
 			val = rb_str_new(0, 3+strlen(s));
 			t = RSTRING(val)->ptr;
-                        strcpy(t, "..");
-                        t += 2;
+			if (!(flags&FPREC)) {
+			    strcpy(t, "..");
+			    t += 2;
+			}
 			switch (base) {
 			  case 16:
 			    if (s[0] != 'f') strcpy(t++, "f"); break;
@@ -492,7 +494,7 @@ rb_f_sprintf(argc, argv)
 		}
 		if (prec < len) prec = len;
 		width -= prec;
-		if (!(flags&(FZERO|FMINUS)) && s[0] != '.') {
+		if (!(flags&(FZERO|FMINUS)) && v >= 0) {
 		    CHECK(width);
 		    while (width-->0) {
 			buf[blen++] = ' ';
@@ -507,7 +509,7 @@ rb_f_sprintf(argc, argv)
 		if (!(flags & FMINUS)) {
 		    char c = ' ';
 
-		    if (s[0] == '.') {
+		    if (v < 0) {
 			c = '.';
 			if ((flags & FPREC) && prec > len) {
 			    pos = blen;
@@ -524,7 +526,7 @@ rb_f_sprintf(argc, argv)
 		}
 		CHECK(prec - len);
 		while (len < prec--) {
-		    buf[blen++] = s[0]=='.'?'.':'0';
+		    buf[blen++] = v < 0 ? '.' : '0';
 		}
 		PUSH(s, len);
 		CHECK(width);
