@@ -1,3 +1,8 @@
+Mon Dec 20 22:56:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c (stack_end_address): gcc noinline attribute is available since 
+	  gcc-3.1.
+
 Mon Dec 20 14:07:02 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: supports new features of Tcl/Tk8.5a2
