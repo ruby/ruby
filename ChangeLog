@@ -1,3 +1,9 @@
+Thu Sep  6 12:02:49 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_find_file_ext): add const qualifiers to ext.
+
+	* intern.h (rb_find_file_ext): ditto.
+
 Wed Sep  5 17:41:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/jcode.rb (_regexp_quote): fix quote handling.
