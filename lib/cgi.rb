@@ -499,10 +499,14 @@ status:
           table.add($1, $2)
         when /^status$/ni
           Apache::request.status_line = value
+          Apache::request.status = value.to_i
         when /^content-type$/ni
           Apache::request.content_type = value
         when /^content-encoding$/ni
           Apache::request.content_encoding = value
+        when /^location$/ni
+          Apache::request.status = 302
+          Apache::request.headers_out[name] = value
         else
           Apache::request.headers_out[name] = value
         end

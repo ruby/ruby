@@ -1,3 +1,8 @@
+Mon Nov 19 04:58:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb (header): support for Apache. thanks to
+	  Shugo Maeda <shugo@ruby-lang.org>.
+
 Sun Nov 18 19:37:55 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y: needless conditional.
