@@ -1,3 +1,8 @@
+Tue Mar  8 13:39:25 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/socket/mkconstants.rb: workaround for some of 4.4BSD-Lite
+	  derived OSs.
+
 Tue Mar  8 10:48:53 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_exec_recursive): declaration should precede statements

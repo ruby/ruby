@@ -1,5 +1,8 @@
 $out ||= $stdout
 
+# workaround for NetBSD, OpenBSD and etc.
+$out.puts("#define pseudo_AF_FTIP pseudo_AF_RTIP")
+
 # skip empty lines and comment lines
 DATA.each_line do |s|
   name, value = s.scan(/\S+/)
