@@ -70,7 +70,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       block.call(server)
     ensure
       if server
-        Process.kill(:KILL, pid)
+        Process.kill(:KILL, pid) if pid > 0
         server.close
       end
     end
@@ -78,6 +78,10 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
 
   def starttls(ssl)
     ssl.puts("STARTTLS")
+
+    sleep 1   # When this line is eliminated, process on Cygwin blocks
+              # forever at ssl.connect. But I don't know why it does.
+
     ssl.connect
   end
 
