@@ -58,7 +58,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.1.2"
+  VERSION = "0.1.3"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -355,93 +355,110 @@ EOC
 
     INDENT = "  "
     
+    MUST_CALL_VALIDATORS = {}
+    MODEL = []
+    GET_ATTRIBUTES = []
+    HAVE_CHILDREN_ELEMENTS = []
+    NEED_INITIALIZE_VARIABLES = []
+    PLURAL_FORMS = {}
+    
     class << self
 
+      def must_call_validators
+        MUST_CALL_VALIDATORS
+      end
+      def model
+        MODEL
+      end
+      def get_attributes
+        GET_ATTRIBUTES
+      end
+      def have_children_elements
+        HAVE_CHILDREN_ELEMENTS
+      end
+      def need_initialize_variables
+        NEED_INITIALIZE_VARIABLES
+      end
+      def plural_forms
+        PLURAL_FORMS
+      end
+
+      
       def inherited(klass)
+        klass.const_set("MUST_CALL_VALIDATORS", {})
+        klass.const_set("MODEL", [])
+        klass.const_set("GET_ATTRIBUTES", [])
+        klass.const_set("HAVE_CHILDREN_ELEMENTS", [])
+        klass.const_set("NEED_INITIALIZE_VARIABLES", [])
+        klass.const_set("PLURAL_FORMS", {})
+
         klass.module_eval(<<-EOC)
         public
         
         @tag_name = name.split(/::/).last
         @tag_name[0,1] = @tag_name[0,1].downcase
         @indent_size = name.split(/::/).size - 2
-
-        @@must_call_validators = {}
+        @have_content = false
 
         def self.must_call_validators
-          @@must_call_validators
+          super.merge(MUST_CALL_VALIDATORS)
+        end
+        def self.model
+          MODEL + super
+        end
+        def self.get_attributes
+          GET_ATTRIBUTES + super
+        end
+        def self.have_children_elements
+          HAVE_CHILDREN_ELEMENTS + super
+        end
+        def self.need_initialize_variables
+          NEED_INITIALIZE_VARIABLES + super
+        end
+        def self.plural_forms
+          super.merge(PLURAL_FORMS)
         end
 
+      
         def self.install_must_call_validator(prefix, uri)
-          @@must_call_validators[uri] = prefix
+          MUST_CALL_VALIDATORS[uri] = prefix
         end
         
-        @@model = []
-
-        def self.model
-          @@model
-        end
-
         def self.install_model(tag, occurs=nil)
-          if m = @@model.find {|t, o| t == tag}
+          if m = MODEL.find {|t, o| t == tag}
             m[1] = occurs
           else
-            @@model << [tag, occurs]
+            MODEL << [tag, occurs]
           end
-        end
-
-        @@get_attributes = []
-        
-        def self.get_attributes()
-          @@get_attributes
         end
 
         def self.install_get_attribute(name, uri, required=true)
           attr_writer name
           convert_attr_reader name
-          @@get_attributes << [name, uri, required]
+          GET_ATTRIBUTES << [name, uri, required]
         end
-
-        @@have_content = false
 
         def self.content_setup
           attr_writer :content
           convert_attr_reader :content
           def_content_only_to_s
-          @@have_content = true
+          @have_content = true
         end
 
         def self.have_content?
-          @@have_content
-        end
-
-        @@have_children_elements = []
-
-        def self.have_children_elements
-          @@have_children_elements
+          @have_content
         end
 
         def self.add_have_children_element(variable_name, plural_name)
-          @@have_children_elements << [variable_name, plural_name]
+          HAVE_CHILDREN_ELEMENTS << [variable_name, plural_name]
         end
-        
-        @@need_initialize_variables = []
         
         def self.add_need_initialize_variable(variable_name)
-          @@need_initialize_variables << variable_name
+          NEED_INITIALIZE_VARIABLES << variable_name
         end
-        
-        def self.need_initialize_variables
-          @@need_initialize_variables
-        end
-
-        @@plural_forms = {}
         
         def self.add_plural_form(singular, plural)
-          @@plural_forms[singular] = plural
-        end
-        
-        def self.plural_forms
-          @@plural_forms
+          PLURAL_FORMS[singular] = plural
         end
         
         EOC
