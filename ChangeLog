@@ -1,3 +1,7 @@
+Thu Jan  9 16:31:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should not discard nested NODE_BLOCK.
+
 Thu Jan  9 15:12:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (stmt): NODE_NOT elimitation for if/unless/while/until node.

@@ -2226,7 +2226,8 @@ rb_eval(self, n)
     switch (nd_type(node)) {
       case NODE_BLOCK:
 	if (contnode) {
-	    rb_bug("nested NODE_BLOCK");
+	    result = rb_eval(self, node);
+	    break;
 	}
 	contnode = node->nd_next;
 	node = node->nd_head;
