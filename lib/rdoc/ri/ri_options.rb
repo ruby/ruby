@@ -6,7 +6,7 @@ module RI
   require 'rdoc/ri/ri_display'
 
   VERSION_STRING = "beta1"
-  CVS_ID         = "$Id";
+  CVS_ID         = "$Id$";
 
   class Options
     
