@@ -2350,7 +2350,6 @@ rb_Array(val)
     VALUE val;
 {
     VALUE tmp = rb_check_array_type(val);
-    ID to_a;
 
     if (NIL_P(tmp)) {
 	/* hack to avoid invoke Object#to_a */
@@ -4080,21 +4079,26 @@ rb_yield_0(val, self, klass, pcall, avalue)
 		massign(self, block->var, val, pcall);
 	    }
 	    else {
+		int len = 0;
 		if (avalue) {
-		    if (RARRAY(val)->len == 0) {
-			goto zero_arg;
-		    }
-		    if (RARRAY(val)->len == 1) {
+		    len = RARRAY(val)->len;
+		    if (len == 1) {
 			val = RARRAY(val)->ptr[0];
 		    }
 		    else {
-			rb_warn("multiple values for a block parameter (%d for 1)", RARRAY(val)->len);
+			goto mult_values;
 		    }
 		}
 		else if (val == Qundef) {
-		  zero_arg:
-		    rb_warn("multiple values for a block parameter (0 for 1)");
 		    val = Qnil;
+		  mult_values:
+		    {
+			NODE *curr = ruby_current_node;
+			ruby_current_node = block->var;
+			rb_warn("multiple values for a block parameter (%d for 1)\n\tfrom %s:%d",
+				len, curr->nd_file, nd_line(curr));
+			ruby_current_node = curr;
+		    }
 		}
 		assign(self, block->var, val, pcall);
 	    }

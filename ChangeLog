@@ -1,3 +1,8 @@
+Tue Jun 24 17:59:30 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_yield_0): show yielded block position not only yielding
+	  point.  [ruby-dev:20441]
+
 Tue Jun 24 16:47:07 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (HTTPHeader#proxy_basic_auth): missing `@'.
