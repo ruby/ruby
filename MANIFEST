@@ -125,7 +125,6 @@ lib/e2mmap.rb
 lib/erb.rb
 lib/eregex.rb
 lib/fileutils.rb
-lib/final.rb
 lib/finalize.rb
 lib/find.rb
 lib/forwardable.rb
