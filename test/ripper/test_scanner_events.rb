@@ -8,27 +8,53 @@ require 'test/unit'
 class TestRipper_ScannerEvents < Test::Unit::TestCase
 
   def scan(target, str)
-    if target
-      sym = "on_#{target}".intern
-      Ripper.scan(str).select {|_,type,_| type == sym }.map {|_,_,tok| tok }
-    else
-      Ripper.scan(str).map {|_,_,tok| tok }
-    end
+    sym = "on_#{target}".intern
+    Ripper.scan(str).select {|_,type,_| type == sym }.map {|_,_,tok| tok }
+  end
+
+  def test_tokenize
+    assert_equal [],
+                 Ripper.tokenize('')
+    assert_equal ['a'],
+                 Ripper.tokenize('a')
+    assert_equal ['1'],
+                 Ripper.tokenize('1')
+    assert_equal ['1', ';', 'def', ' ', 'm', '(', 'arg', ')', 'end'],
+                 Ripper.tokenize("1;def m(arg)end")
+    assert_equal ['print', '(', '<<EOS', ')', "\n", "heredoc\n", "EOS\n"],
+                 Ripper.tokenize("print(<<EOS)\nheredoc\nEOS\n")
+    assert_equal ['print', '(', ' ', '<<EOS', ')', "\n", "heredoc\n", "EOS\n"],
+                 Ripper.tokenize("print( <<EOS)\nheredoc\nEOS\n")
+    assert_equal ["\#\n", "\n", "\#\n", "\n", "nil", "\n"],
+                 Ripper.tokenize("\#\n\n\#\n\nnil\n")
   end
 
   def test_scan
     assert_equal [],
-                 scan(nil, '')
-    assert_equal ['a'],
-                 scan(nil, 'a')
-    assert_equal ['1'],
-                 scan(nil, '1')
-    assert_equal ['1', ';', 'def', ' ', 'm', '(', 'arg', ')', 'end'],
-                 scan(nil, "1;def m(arg)end")
-    assert_equal ['print', '(', '<<EOS', ')', "\n", "heredoc\n", "EOS\n"],
-                 scan(nil, "print(<<EOS)\nheredoc\nEOS\n")
-    assert_equal ['print', '(', ' ', '<<EOS', ')', "\n", "heredoc\n", "EOS\n"],
-                 scan(nil, "print( <<EOS)\nheredoc\nEOS\n")
+                 Ripper.scan('')
+    assert_equal [[[1,0], :on_ident, "a"]],
+                 Ripper.scan('a')
+    assert_equal [[[1, 0], :on_kw, "nil"]],
+                 Ripper.scan("nil")
+    assert_equal [[[1, 0], :on_kw, "def"],
+                  [[1, 3], :on_sp, " "],
+                  [[1, 4], :on_ident, "m"],
+                  [[1, 5], :on_lparen, "("],
+                  [[1, 6], :on_ident, "a"],
+                  [[1, 7], :on_rparen, ")"],
+                  [[1, 8], :on_kw, "end"]],
+                 Ripper.scan("def m(a)end")
+    assert_equal [[[1, 0], :on_int, "1"],
+                  [[1, 1], :on_nl, "\n"],
+                  [[2, 0], :on_int, "2"],
+                  [[2, 1], :on_nl, "\n"],
+                  [[3, 0], :on_int, "3"]],
+                 Ripper.scan("1\n2\n3")
+    assert_equal [[[1, 0], :on_heredoc_beg, "<<EOS"],
+                  [[1, 5], :on_nl, "\n"],
+                  [[2, 0], :on_tstring_content, "heredoc\n"],
+                  [[3, 0], :on_heredoc_end, "EOS"]],
+                 Ripper.scan("<<EOS\nheredoc\nEOS")
   end
 
   def test_location
@@ -739,7 +765,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
     assert_equal ["__END__\n"],
                  scan('__end__', "__END__\n")
     assert_equal ["__END__\n"],
-                 scan(nil, "__END__\njunk junk junk")
+                 Ripper.tokenize("__END__\njunk junk junk")
     assert_equal ["__END__"],
                  scan('__end__', "1\n__END__")
     assert_equal [],
