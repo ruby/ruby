@@ -206,6 +206,9 @@ module Net
     # Returns all response handlers.
     attr_reader :response_handlers
 
+    # The thread to receive exceptions.
+    attr_accessor :client_thread
+
     # Flag indicating a message has been seen
     SEEN = :Seen
 
@@ -841,29 +844,42 @@ module Net
 	raise ByeResponseError, resp[0]
       end
 
+      @client_thread = Thread.current
       @receiver_thread = Thread.start {
 	receive_responses
       }
     end
 
     def receive_responses
-      while resp = get_response
-	synchronize do
-	  case resp
-	  when TaggedResponse
-	    @tagged_responses[resp.tag] = resp
-	    @tag_arrival.broadcast
-	  when UntaggedResponse
-	    record_response(resp.name, resp.data)
-	    if resp.data.instance_of?(ResponseText) &&
-		(code = resp.data.code)
-	      record_response(code.name, code.data)
-	    end
-	  end
-	  @response_handlers.each do |handler|
-	    handler.call(resp)
-	  end
-	end
+      while true
+        begin
+          resp = get_response
+        rescue Exception
+          @sock.close
+          @client_thread.raise($!)
+          break
+        end
+        break unless resp
+        begin
+          synchronize do
+            case resp
+            when TaggedResponse
+              @tagged_responses[resp.tag] = resp
+              @tag_arrival.broadcast
+            when UntaggedResponse
+              record_response(resp.name, resp.data)
+              if resp.data.instance_of?(ResponseText) &&
+                  (code = resp.data.code)
+                record_response(code.name, code.data)
+              end
+            end
+            @response_handlers.each do |handler|
+              handler.call(resp)
+            end
+          end
+        rescue Exception
+          @client_thread.raise($!)
+        end
       end
     end
 
