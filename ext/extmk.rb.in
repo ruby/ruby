@@ -472,7 +472,7 @@ if $cache_mod
 end
 
 exit if $install or $clean
-$extinit += ""
+$extinit = "" unless $extinit
 if $extlist.size > 0
   for s,t in $extlist
     f = format("%s/%s.o", s, t)

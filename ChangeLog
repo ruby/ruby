@@ -1,3 +1,8 @@
+Sat May 30 07:10:02 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (reg_prepare_re): no more needless regular expression
+ 	  recompile on casefold conditions.
+
 Thu May 28 18:02:55 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* object.c (nil_plus): no more `+' method for nil.

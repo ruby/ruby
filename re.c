@@ -89,6 +89,7 @@ str_cicmp(str1, str2)
 }
 
 #define REG_IGNORECASE FL_USER0
+#define REG_CASESTATE  FL_USER1
 
 #define KCODE_NONE  0
 #define KCODE_EUC   FL_USER2
@@ -376,9 +377,10 @@ reg_prepare_re(reg)
     if (FL_TEST(reg, REG_IGNORECASE)) {
 	casefold = TRUE;
     }
-    if ((casefold && !(RREGEXP(reg)->ptr->options & RE_OPTION_IGNORECASE))
-	|| (!casefold && (RREGEXP(reg)->ptr->options & RE_OPTION_IGNORECASE))) {
+    else if ((casefold && !FL_TEST(reg, REG_CASESTATE)) ||
+	     (!casefold && FL_TEST(reg, REG_CASESTATE))) {
 	RREGEXP(reg)->ptr->fastmap_accurate = 0;
+	RBASIC(reg)->flags ^= REG_CASESTATE;
 	need_recompile = 1;
     }
 
@@ -387,7 +389,7 @@ reg_prepare_re(reg)
     }
     else if ((RBASIC(reg)->flags & KCODE_MASK) != reg_kcode) {
 	need_recompile = 1;
-	RBASIC(reg)->flags = RBASIC(reg)->flags & ~KCODE_MASK;
+	RBASIC(reg)->flags &= ~KCODE_MASK;
 	RBASIC(reg)->flags |= reg_kcode;
     }
 
@@ -647,6 +649,10 @@ reg_new_1(klass, s, len, options)
     }
 
     kcode_set_option(re);
+    if (RTEST(ignorecase)) {
+	options |= RE_OPTION_IGNORECASE;
+	FL_SET(re, REG_CASESTATE);
+    }
     re->ptr = make_regexp(s, len, options & 0x3);
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);

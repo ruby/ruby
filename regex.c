@@ -294,7 +294,6 @@ enum regexpcode
 		    and store it in a memory register.  Followed by
                     one byte containing the register number. Register
                     numbers must be in the range 0 through RE_NREGS.  */
-    start_paren,   /* Just a mark for starting(?:). */
     casefold_on,   /* Turn on casefold flag. */
     casefold_off,  /* Turn off casefold flag. */
     start_nowidth, /* Save string point to the stack. */
@@ -661,10 +660,6 @@ print_partial_compiled_pattern(start, end)
 	  printf ("/stop_memory/%d", mcnt);
           break;
 
-	case start_paren:
-	  printf ("/start_paren");
-	  break;
-
 	case casefold_on:
 	  printf ("/casefold_on");
 	  break;
@@ -882,7 +877,6 @@ calculate_must_string(start, end)
 	case casefold_off:
 	  return 0;		/* should not check must_string */
 
-	case start_paren:
 	case start_nowidth:
 	case stop_nowidth:
 	case pop_and_fail:
@@ -1009,6 +1003,10 @@ re_compile_pattern(pattern, size, bufp)
     /* Address of beginning of regexp, or inside of last \(.  */
 
     char *begalt = b;
+
+    /* Place in the uncompiled pattern (i.e., the {) to
+       which to go back if the interval is invalid.  */
+    char *beg_interval;
 
     /* In processing an interval, at least this many matches must be made.  */
     int lower_bound;
@@ -1530,8 +1528,6 @@ re_compile_pattern(pattern, size, bufp)
 	      break;
 
 	    case ':':
-	      if (b > bufp->buffer && b[-1] != start_paren)
-		BUFPUSH(start_paren);
 	      pending_exact = 0;
 	    default:
 	      break;
@@ -1616,62 +1612,40 @@ re_compile_pattern(pattern, size, bufp)
 
 	case '{':
 	  /* If there is no previous pattern, this isn't an interval.  */
-	  if (!laststart)
+	  if (!laststart || p == pend)
 	    {
 		goto normal_backsl;
 	    }
-	  /* It also isn't an interval if not preceded by an re
-	     matching a single character or subexpression, or if
-	     the current type of intervals can't handle back
-	     references and the previous thing is a back reference.  */
 
-	  if (! (*laststart == anychar
-		 || *laststart == charset
-		 || *laststart == charset_not
-		 || *laststart == wordchar
-		 || *laststart == notwordchar
-		 || *laststart == start_memory
-		 || *laststart == start_paren
-		 || (*laststart == exactn
-		     && (laststart[1] == 1
-			 || (laststart[1] == 2 && ismbchar(laststart[2]))))
-		 || *laststart == duplicate))
-	    {
-	      /* Posix extended syntax is handled in previous
-		 statement; this is for Posix basic syntax.  */
-	      goto normal_backsl;
-	    }
+	  beg_interval = p - 1;
+
 	  lower_bound = -1;			/* So can see if are set.  */
 	  upper_bound = -1;
 	  GET_UNSIGNED_NUMBER(lower_bound);
 	  if (c == ',') {
 	    GET_UNSIGNED_NUMBER(upper_bound);
-	    if (upper_bound < 0)
-	      upper_bound = RE_DUP_MAX;
+	    if (upper_bound < 0) upper_bound = RE_DUP_MAX;
 	  }
-	  if (upper_bound < 0)
+	  else
+	    /* Interval such as `{1}' => match exactly once. */
 	    upper_bound = lower_bound;
-	  if (c != '}' || lower_bound < 0 || upper_bound > RE_DUP_MAX
-	      || lower_bound > upper_bound 
-	      || (p != pend  && *p == '{')) {
-	    goto invalid_pattern;
-	  }
+
+	  if (lower_bound < 0 || c != '}')
+	    goto unfetch_interval;
+
+	  if (lower_bound > RE_DUP_MAX || upper_bound > RE_DUP_MAX)
+	    FREE_AND_RETURN(stackb, "too big quantifier in {,}");
+	  if (lower_bound > upper_bound)
+	    FREE_AND_RETURN(stackb, "can't do {n,m} with n > m");
+
+	  beg_interval = 0;
+	  pending_exact = 0;
+
 	  greedy = 1;
 	  if (p != pend) {
 	    PATFETCH(c);
 	    if (c == '?') greedy = 0;
 	    else PATUNFETCH;
-	  }
-
-	  /* If upper_bound is zero, don't want to succeed at all; 
-	     jump from laststart to b + 3, which will be the end of
-	     the buffer after this jump is inserted.  */
-
-	  if (upper_bound == 0) {
-	    GET_BUFFER_SPACE(3);
-	    insert_jump(jump, laststart, b + 3, b);
-	    b += 3;
-	    break;
 	  }
 
 	  if (lower_bound == 0) {
@@ -1685,28 +1659,49 @@ re_compile_pattern(pattern, size, bufp)
 	      goto repeat;
 	    }
 	  }
-	  if (lower_bound == 1 && upper_bound == RE_DUP_MAX) {
-	    many_times_ok = 1;
-	    zero_times_ok = 0;
-	    goto repeat;
+	  if (lower_bound == 1) {
+	    if (upper_bound == 1) {
+	      /* No need to repeat */
+	      break;
+	    }
+	    if (upper_bound == RE_DUP_MAX) {
+	      many_times_ok = 1;
+	      zero_times_ok = 0;
+	      goto repeat;
+	    }
 	  }
 
-	  /* Star, etc. applied to an empty pattern is equivalent
-	     to an empty pattern.  */
-	  if (!laststart)  
-	    break;
+	  /* If upper_bound is zero, don't want to succeed at all; 
+	     jump from laststart to b + 3, which will be the end of
+	     the buffer after this jump is inserted.  */
 
+	  if (upper_bound == 0) {
+	    GET_BUFFER_SPACE(3);
+	    insert_jump(jump, laststart, b + 3, b);
+	    b += 3;
+	    break;
+	  }
+
+	  /* Otherwise, we have a nontrivial interval.  When
+	     we're all done, the pattern will look like:
+	     set_number_at <jump count> <upper bound>
+	     set_number_at <succeed_n count> <lower bound>
+	     succeed_n <after jump addr> <succed_n count>
+	     <body of loop>
+	     jump_n <succeed_n addr> <jump count>
+	     (The upper bound and `jump_n' are omitted if
+	     `upper_bound' is 1, though.)  */
 	  { /* If the upper bound is > 1, we need to insert
 	       more at the end of the loop.  */
-	    unsigned slots_needed = upper_bound == 1 ? 5 : 10;
+	    unsigned nbytes = upper_bound == 1 ? 10 : 20;
 
-	    GET_BUFFER_SPACE(5);
+	    GET_BUFFER_SPACE(nbytes);
 	    /* Initialize lower bound of the `succeed_n', even
 	       though it will be set during matching by its
 	       attendant `set_number_at' (inserted next),
 	       because `re_compile_fastmap' needs to know.
 	       Jump to the `jump_n' we might insert below.  */
-	    insert_jump_n(succeed_n, laststart, b + slots_needed, 
+	    insert_jump_n(succeed_n, laststart, b + (nbytes/2), 
 			  b, lower_bound);
 	    b += 5; 	/* Just increment for the succeed_n here.  */
 
@@ -1714,7 +1709,6 @@ re_compile_pattern(pattern, size, bufp)
 	       before the `succeed_n'.  The `5' is the last two
 	       bytes of this `set_number_at', plus 3 bytes of
 	       the following `succeed_n'.  */
-	    GET_BUFFER_SPACE(5);
 	    insert_op_2(set_number_at, laststart, b, 5, lower_bound);
 	    b += 5;
 
@@ -1727,7 +1721,8 @@ re_compile_pattern(pattern, size, bufp)
 		   we'll have matched the interval once, so
 		   jump back only `upper_bound - 1' times.  */
 		GET_BUFFER_SPACE(5);
-		store_jump_n(b, greedy?jump_n:finalize_push_n, laststart + 5, upper_bound - 1);
+		store_jump_n(b, greedy?jump_n:finalize_push_n, laststart + 5,
+			     upper_bound - 1);
 		b += 5;
 
 		/* The location we want to set is the second
@@ -1744,23 +1739,21 @@ re_compile_pattern(pattern, size, bufp)
 		   We insert this at the beginning of the loop
 		   so that if we fail during matching, we'll
 		   reinitialize the bounds.  */
-		GET_BUFFER_SPACE(5);
-		insert_op_2(set_number_at, laststart, b, b - laststart, upper_bound - 1);
+		insert_op_2(set_number_at, laststart, b, b - laststart,
+			    upper_bound - 1);
 		b += 5;
-
-		GET_BUFFER_SPACE(5);
-		BUFPUSH(set_number_at);
-		STORE_NUMBER_AND_INCR(b, laststart - b + 11);
-		STORE_NUMBER_AND_INCR(b, lower_bound);
-
-		GET_BUFFER_SPACE(5);
-		BUFPUSH(set_number_at);
-		STORE_NUMBER_AND_INCR(b, -10);
-		STORE_NUMBER_AND_INCR(b, upper_bound - 1);
 	      }
-	    pending_exact = 0;
 	  }
 	  break;
+
+	unfetch_interval:
+	  /* If an invalid interval, match the characters as literals.  */
+	  p = beg_interval;
+	  beg_interval = 0;
+
+	  /* normal_char and normal_backslash need `c'.  */
+	  PATFETCH (c);	
+	  goto normal_char;
 
         case '\\':
 	  if (p == pend) goto invalid_pattern;
@@ -2246,7 +2239,6 @@ re_compile_fastmap(bufp)
 	case wordbeg:
 	case wordend:
 	case pop_and_fail:
-	case start_paren:
 	  continue;
 
 	case casefold_on:
@@ -2283,6 +2275,7 @@ re_compile_fastmap(bufp)
 
           if ((enum regexpcode) *p != on_failure_jump
 	      && (enum regexpcode) *p != try_next
+	      && (enum regexpcode) *p != succeed_n
 	      && (enum regexpcode) *p != finalize_push
 	      && (enum regexpcode) *p != finalize_push_n)
 	    continue;
@@ -2718,11 +2711,11 @@ typedef union
       {									\
 	unsigned char **stackx;						\
 	unsigned int len = stacke - stackb;				\
-	if (len > re_max_failures * MAX_NUM_FAILURE_ITEMS)		\
+	/* if (len > re_max_failures * MAX_NUM_FAILURE_ITEMS)		\
 	  {								\
 	    FREE_VARIABLES();						\
 	    FREE_AND_RETURN(stackb,(-2));				\
-	  }								\
+	  }*/								\
 									\
         /* Roughly double the size of the stack.  */			\
         EXPAND_FAIL_STACK(stackx, stackb, len);				\
@@ -3387,7 +3380,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	    EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	    PUSH_FAILURE_POINT(p + mcnt, d);
 	    stackp[-1] = (unsigned char*)1;
-	    p += 7;		/* skip n and set_number_at after destination */
+	    p += 2;		/* skip n */
 	  }
           /* If don't have to push any more, skip over the rest of command.  */
 	  else 
@@ -3397,9 +3390,6 @@ re_match(bufp, string_arg, size, pos, regs)
         /* Ignore these.  Used to ignore the n of succeed_n's which
            currently have n == 0.  */
         case unused:
-	  continue;
-
-        case start_paren:
 	  continue;
 
         case casefold_on:
