@@ -226,7 +226,7 @@ Thu Dec 26 19:22:00 2002  YOSHIDA Kazuhiro <moriq@moriq.com>
 
 Wed Dec 25 18:26:44 2002  K.Kosako  <kosako@sofnec.co.jp>
 
-	* regex.c (re_match):
+	* regex.c (re_match): fixed wrong \G behavior.  (ruby-bugs-ja:PR#377)
 
 Wed Dec 25 16:41:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
