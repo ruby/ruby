@@ -8,6 +8,11 @@ Sat Aug  2 14:53:55 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/extconf.rb: use pkg_config.
 
+Sat Aug  2 13:45:17 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c: add "#pragma weak" for __libc_ia64_register_backing_store_base.
+	  [ruby-dev:21072]
+
 Sat Aug  2 14:02:39 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (classname): find regular class name if not set.
@@ -17,6 +22,9 @@ Sat Aug  2 03:30:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_obj_singleton_methods): should not go up to
 	  ancestors unless the recursive flag is set. [ruby-list:38007]
+
+	* eval.c (rb_yield_0): expand [] to nil if avalue is set.
+	   [ruby-dev:21058]
 
 	* hash.c (env_each_key): use env_keys to avoid environment modify
 	  on the fly.

@@ -32,6 +32,7 @@
 
 #ifdef __ia64__
 #include <ucontext.h>
+#pragma weak __libc_ia64_register_backing_store_base
 extern unsigned long __libc_ia64_register_backing_store_base;
 #endif
 
