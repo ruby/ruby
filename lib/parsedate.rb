@@ -10,8 +10,10 @@ module ParseDate
   DAYPAT = DAYS.keys.join('|')
   
   def parsedate(date) 
-    # ISO 8601?
-    if date =~ /^(\d\d\d\d)-?(?:(\d\d)-?(\d\d)?)? *(?:(\d\d):(\d\d)(?::(\d\d))?)?$/
+    # part of ISO 8601
+    # yyyy-mm-dd | yyyy-mm | yyyy
+    # date hh:mm:ss | date Thh:mm:ss
+    if date =~ /^(\d\d\d\d)-?(?:(\d\d)-?(\d\d)?)? *T?(?:(\d\d):?(\d\d):?(\d\d)?)?$/
       return $1.to_i,
 	if $2 then $2.to_i else 1 end,
 	if $3 then $3.to_i else 1 end,

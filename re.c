@@ -625,8 +625,8 @@ Regexp *rp;
 VALUE cRegexp;
 
 static VALUE
-reg_new_1(class, s, len, flag)
-    VALUE class;
+reg_new_1(klass, s, len, flag)
+    VALUE klass;
     char *s;
     int len;
     int flag;			/* CASEFOLD  = 0x1 */
@@ -635,7 +635,7 @@ reg_new_1(class, s, len, flag)
 				/* CODE_SJIS = 0x6 */
 {
     NEWOBJ(re, struct RRegexp);
-    OBJSETUP(re, class, T_REGEXP);
+    OBJSETUP(re, klass, T_REGEXP);
 
     if (flag & 0x1) {
 	FL_SET(re, REG_IGNORECASE);

@@ -192,6 +192,7 @@ static void top_local_setup();
 %token AREF ASET        /* [] and []= */
 %token LSHFT RSHFT      /* << and >> */
 %token COLON2           /* :: */
+%token COLON3           /* :: at EXPR_BEG */
 %token <id> OP_ASGN     /* +=, -=  etc. */
 %token ASSOC            /* => */
 %token KW_ASSOC         /* -> */
@@ -808,7 +809,12 @@ primary		: literal
 		    }
 		| primary COLON2 cname
 		    {
+			value_expr($1);
 			$$ = NEW_COLON2($1, $3);
+		    }
+		| COLON3 cname
+		    {
+			$$ = NEW_COLON3($2);
 		    }
 		| STRING
 		    {
@@ -1261,7 +1267,7 @@ superclass	: term
 		    {
 			$$ = $3;
 		    }
-		| error term {yyerrok; $$ = 0}
+		| error term {yyerrok; $$ = 0;}
 
 f_arglist	: '(' f_args ')'
 		    {
@@ -2567,6 +2573,11 @@ retry:
       case ':':
 	c = nextc();
 	if (c == ':') {
+	    if (lex_state == EXPR_BEG ||
+		(lex_state == EXPR_ARG && space_seen)) {
+		lex_state = EXPR_BEG;
+		return COLON3;
+	    }
 	    lex_state = EXPR_BEG;
 	    return COLON2;
 	}
@@ -3422,12 +3433,55 @@ value_expr(node)
 
 static NODE *cond2();
 
+int
+assign_in_cond(node)
+    NODE *node;
+{
+    switch (nd_type(node)) {
+      case NODE_MASGN:
+	Error("multiple assignment in conditional");
+	return 0;
+
+      case NODE_LASGN:
+      case NODE_DASGN:
+      case NODE_GASGN:
+      case NODE_IASGN:
+      case NODE_CASGN:
+	break;
+      case NODE_NEWLINE:
+
+      default:
+	return 1;
+    }
+
+    switch (nd_type(node->nd_value)) {
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_DSTR:
+      case NODE_XSTR:
+      case NODE_DXSTR:
+      case NODE_EVSTR:
+      case NODE_DREGX:
+      case NODE_NIL:
+      case NODE_TRUE:
+      case NODE_FALSE:
+	Error("found = in conditional, should be ==");
+	return 0;
+	
+      default:
+	Warning("assignment in condition");
+	break;
+    }
+    if (assign_in_cond(node->nd_value)) return 1;
+}
+
 static NODE*
 cond0(node)
     NODE *node;
 {
     enum node_type type = nd_type(node);
 
+    if (assign_in_cond(node) == 0) return 0;
     switch (type) {
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
@@ -3459,53 +3513,11 @@ cond0(node)
     }
 }
 
-int
-assign_in_cond(node)
-    NODE *node;
-{
-    switch (nd_type(node)) {
-      case NODE_MASGN:
-	Error("multiple assignment in conditional");
-	return 0;
-
-      case NODE_LASGN:
-      case NODE_DASGN:
-      case NODE_GASGN:
-      case NODE_IASGN:
-      case NODE_CASGN:
-	break;
-      default:
-	return 1;
-    }
-
-    switch (nd_type(node->nd_value)) {
-      case NODE_LIT:
-      case NODE_STR:
-      case NODE_DSTR:
-      case NODE_XSTR:
-      case NODE_DXSTR:
-      case NODE_EVSTR:
-      case NODE_DREGX:
-      case NODE_NIL:
-      case NODE_TRUE:
-      case NODE_FALSE:
-	Error("found = in conditional, should be ==");
-	return 0;
-	
-      default:
-	Warning("assignment in condition");
-	break;
-    }
-    if (assign_in_cond(node->nd_value)) return 1;
-}
-
 static NODE*
 cond(node)
     NODE *node;
 {
-    enum node_type type = nd_type(node);
-
-    if (assign_in_cond(node) == 0) return 0;
+    if (node == 0) return 0;
     if (nd_type(node) == NODE_NEWLINE){
 	node->nd_next = cond0(node->nd_next);
 	return node;

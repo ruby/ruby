@@ -41,6 +41,7 @@ free_dbm(dbmp)
     struct dbmdata *dbmp;
 {
     if (dbmp->di_dbm) dbm_close(dbmp->di_dbm);
+    free(dbmp);
 }
 
 static VALUE

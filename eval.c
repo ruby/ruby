@@ -1969,6 +1969,10 @@ rb_eval(self, node)
 	}
 	break;
 
+      case NODE_COLON3:
+	result = rb_const_get_at(cObject, node->nd_mid);
+	break;
+
       case NODE_NTH_REF:
 	result = reg_nth_match(node->nd_nth, MATCH_DATA);
 	break;
@@ -3378,19 +3382,12 @@ f_send(argc, argv, recv)
     VALUE recv;
 {
     VALUE vid;
-    ID mid;
 
     if (argc == 0) ArgError("no method name given");
 
-    vid = argv[0]; argc--; argv++;
-    if (TYPE(vid) == T_STRING) {
-	mid = rb_intern(RSTRING(vid)->ptr);
-    }
-    else {
-	mid = NUM2INT(vid);
-    }
+    vid = *argv++; argc--;
     PUSH_ITER(iterator_p()?ITER_PRE:ITER_NOT);
-    vid = rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
+    vid = rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, 1);
     POP_ITER();
 
     return vid;
@@ -3410,7 +3407,7 @@ f_pass_block(argc, argv, recv)
     if (!f_iterator_p())
 	ArgError("pass_block called out of iterator");
 
-    vid = argv[0]; argc--; argv++;
+    vid = *argv++; argc--;
     PUSH_ITER(ITER_PRE);
     vid = rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, 1);
     POP_ITER();
@@ -4349,19 +4346,45 @@ static void
 blk_mark(data)
     struct BLOCK *data;
 {
-    gc_mark_frame(&data->frame);
-    gc_mark(data->scope);
-    gc_mark(data->var);
-    gc_mark(data->body);
-    gc_mark(data->self);
-    gc_mark(data->d_vars);
+    while (data) {
+	gc_mark_frame(&data->frame);
+	gc_mark(data->scope);
+	gc_mark(data->var);
+	gc_mark(data->body);
+	gc_mark(data->self);
+	gc_mark(data->d_vars);
+	data = data->prev;
+    }
 }
 
 static void
 blk_free(data)
     struct BLOCK *data;
 {
-    free(data->frame.argv);
+    struct BLOCK *tmp;
+
+    while (data) {
+	free(data->frame.argv);
+	tmp = data;
+	data = data->prev;
+	free(tmp);
+    }
+}
+
+static void
+blk_copy_prev(block)
+    struct BLOCK *block;
+{
+    struct BLOCK *tmp;
+
+    while (block->prev) {
+	tmp = ALLOC_N(struct BLOCK, 1);
+	MEMCPY(tmp, block->prev, struct BLOCK, 1);
+	tmp->frame.argv = ALLOC_N(VALUE, tmp->frame.argc);
+	MEMCPY(tmp->frame.argv, block->frame.argv, VALUE, tmp->frame.argc);
+	block->prev = tmp;
+	block = tmp;
+    }
 }
 
 static VALUE
@@ -4375,10 +4398,20 @@ f_binding(self)
     bind = Data_Make_Struct(cData, struct BLOCK, blk_mark, blk_free, data);
     MEMCPY(data, the_block, struct BLOCK, 1);
 
+#ifdef THREAD
+    data->orig_thread = thread_current();
+#endif
     data->iter = f_iterator_p();
     data->frame.last_func = 0;
     data->frame.argv = ALLOC_N(VALUE, data->frame.argc);
     MEMCPY(data->frame.argv, the_block->frame.argv, VALUE, data->frame.argc);
+
+    if (data->iter) {
+	blk_copy_prev(data);
+    }
+    else {
+	data->prev = 0;
+    }
 
     scope_dup(data->scope);
     POP_BLOCK();
@@ -4412,6 +4445,12 @@ proc_s_new(klass)
     data->iter = f_iterator_p();
     data->frame.argv = ALLOC_N(VALUE, data->frame.argc);
     MEMCPY(data->frame.argv, the_block->frame.argv, VALUE, data->frame.argc);
+    if (data->iter) {
+	blk_copy_prev(data);
+    }
+    else {
+	data->prev = 0;
+    }
 
     scope_dup(data->scope);
     if (safe_level >= 3) {
@@ -4794,6 +4833,7 @@ thread_free(th)
 {
     if (th->stk_ptr) free(th->stk_ptr);
     th->stk_ptr = 0;
+    free(th);
 }
 
 static thread_t

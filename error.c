@@ -168,8 +168,19 @@ rb_check_type(x, t)
     if (TYPE(x)!=(t)) {
 	while (type->type >= 0) {
 	    if (type->type == t) {
+		char *etype;
+
+		if (NIL_P(x)) {
+		    etype = "nil";
+		}
+		else if (rb_special_const_p(x)) {
+		    etype = RSTRING(obj_as_string(x))->ptr;
+		}
+		else {
+		    etype = rb_class2name(CLASS_OF(x));
+		}
 		TypeError("wrong argument type %s (expected %s)",
-			  rb_class2name(CLASS_OF(x)), type->name);
+			  etype, type->name);
 	    }
 	    type++;
 	}
@@ -342,7 +353,7 @@ Init_Exception()
     rb_define_global_function("Exception", exception, -1);
 }
 
-#define RAISE_ERROR(class) {\
+#define RAISE_ERROR(klass) {\
     va_list args;\
     char buf[BUFSIZ];\
 \
@@ -350,7 +361,7 @@ Init_Exception()
     vsprintf(buf, fmt, args);\
     va_end(args);\
 \
-    rb_raise(exc_new2(class, buf));\
+    rb_raise(exc_new2(klass, buf));\
 }
 
 void

@@ -1748,7 +1748,7 @@ re_compile_pattern(pattern, size, bufp)
 	  c1 = 0;
 	  if (ismbchar(c)) {
 	    c1 = c;
-	    PATFETCH(c);
+	    PATFETCH_RAW(c);
 	  }
 	  else if (c > 0x7f) {
 	    c1 = 0xff;
@@ -2418,7 +2418,7 @@ re_search(bufp, string, size, startpos, range, regs)
 
       if (fastmap && startpos == size && range >= 0
 	  && (bufp->can_be_null == 0 ||
-	      (bufp->can_be_null == 2 && size > 0
+	      (bufp->can_be_null && size > 0
 	       && string[startpos-1] == '\n')))
 	return -1;
 
@@ -3000,15 +3000,18 @@ re_match(bufp, string_arg, size, pos, regs)
 	    break;
 	  goto fail;
 
-	/* Match at the very beginning of the string.  */
+	/* Match at the very beginning of the string. */
 	case begbuf:
           if (AT_STRINGS_BEG(d))
             break;
           goto fail;
 
-	/* Match at the very end of the data.  */
+	/* Match at the very end of the data. */
         case endbuf:
 	  if (AT_STRINGS_END(d))
+	    break;
+	  /* .. or newline just before the end of the data. */
+	  if (*d == '\n' && AT_STRINGS_END(d+1))
 	    break;
           goto fail;
 

@@ -663,8 +663,17 @@ obj_free(obj)
 	free(RANY(obj)->as.regexp.str);
 	break;
       case T_DATA:
-	if (RANY(obj)->as.data.dfree && DATA_PTR(obj))
-	    (*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+	if (DATA_PTR(obj)) {
+	    if (RANY(obj)->as.data.dfree == (void*)-1) {
+		free(DATA_PTR(obj));
+	    }
+	    if (RANY(obj)->as.data.dfree) {
+		(*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
+	    }
+	    else {
+		free(DATA_PTR(obj));
+	    }
+	}
 	break;
       case T_MATCH:
 	re_free_registers(RANY(obj)->as.match.regs);

@@ -357,11 +357,11 @@ rb_false(obj)
 }
 
 VALUE
-obj_alloc(class)
-    VALUE class;
+obj_alloc(klass)
+    VALUE klass;
 {
     NEWOBJ(obj, struct RObject);
-    OBJSETUP(obj, class, T_OBJECT);
+    OBJSETUP(obj, klass, T_OBJECT);
     obj->iv_tbl = 0;
 
     return (VALUE)obj;
@@ -383,10 +383,10 @@ mod_clone(module)
 }
 
 static VALUE
-mod_to_s(class)
-    VALUE class;
+mod_to_s(klass)
+    VALUE klass;
 {
-    return str_dup(rb_class_path(class));
+    return str_dup(rb_class_path(klass));
 }
 
 static VALUE
@@ -501,10 +501,10 @@ VALUE class_instance_methods();
 VALUE class_private_instance_methods();
 
 static VALUE
-class_superclass(cl)
-    VALUE cl;
+class_superclass(klass)
+    VALUE klass;
 {
-    VALUE super = RCLASS(cl)->super;
+    VALUE super = RCLASS(klass)->super;
 
     while (TYPE(super) == T_ICLASS) {
 	super = RCLASS(super)->super;
@@ -527,56 +527,56 @@ rb_to_id(name)
 }
 
 static VALUE
-mod_attr(argc, argv, class)
+mod_attr(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE name, pub;
 
     rb_scan_args(argc, argv, "11", &name, &pub);
-    rb_define_attr(class, rb_to_id(name), 1, RTEST(pub));
+    rb_define_attr(klass, rb_to_id(name), 1, RTEST(pub));
     return Qnil;
 }
 
 static VALUE
-mod_attr_reader(argc, argv, class)
+mod_attr_reader(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(class, rb_to_id(argv[i]), 1, 0);
+	rb_define_attr(klass, rb_to_id(argv[i]), 1, 0);
     }
     return Qnil;
 }
 
 static VALUE
-mod_attr_writer(argc, argv, class)
+mod_attr_writer(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(class, rb_to_id(argv[i]), 0, 1);
+	rb_define_attr(klass, rb_to_id(argv[i]), 0, 1);
     }
     return Qnil;
 }
 
 static VALUE
-mod_attr_accessor(argc, argv, class)
+mod_attr_accessor(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     int i;
 
     for (i=0; i<argc; i++) {
-	rb_define_attr(class, rb_to_id(argv[i]), 1, 1);
+	rb_define_attr(klass, rb_to_id(argv[i]), 1, 1);
     }
     return Qnil;
 }

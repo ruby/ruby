@@ -192,11 +192,11 @@ obj_each(id, value, arg)
 }
 
 static void
-w_uclass(obj, class, arg)
-    VALUE obj, class;
+w_uclass(obj, klass, arg)
+    VALUE obj, klass;
     struct dump_arg *arg;
 {
-    if (CLASS_OF(obj) != class) {
+    if (CLASS_OF(obj) != klass) {
 	w_byte(TYPE_UCLASS, arg);
 	w_unique(rb_class2name(CLASS_OF(obj)), arg);
     }
@@ -356,13 +356,13 @@ w_object(obj, arg, limit)
 	  case T_OBJECT:
 	    w_byte(TYPE_OBJECT, arg);
 	    {
-		VALUE class = CLASS_OF(obj);
+		VALUE klass = CLASS_OF(obj);
 		char *path;
 
-		if (FL_TEST(class, FL_SINGLETON)) {
+		if (FL_TEST(klass, FL_SINGLETON)) {
 		    TypeError("singleton can't be dumped");
 		}
-		path = rb_class2name(class);
+		path = rb_class2name(klass);
 		w_unique(path, arg);
 		if (ROBJECT(obj)->iv_tbl) {
 		    w_long(ROBJECT(obj)->iv_tbl->num_entries, arg);
@@ -710,13 +710,13 @@ r_object(arg)
 
       case TYPE_STRUCT:
 	{
-	    VALUE class, mem, values;
+	    VALUE klass, mem, values;
 	    volatile int i;	/* gcc 2.7.2.3 -O2 bug?? */
 	    int len;
 	    ID slot;
 
-	    class = rb_path2class(r_unique(arg));
-	    mem = rb_ivar_get(class, rb_intern("__member__"));
+	    klass = rb_path2class(r_unique(arg));
+	    mem = rb_ivar_get(klass, rb_intern("__member__"));
 	    if (mem == Qnil) {
 		Fatal("non-initialized struct");
 	    }
@@ -726,14 +726,14 @@ r_object(arg)
 	    for (i=0; i<len; i++) {
 		ary_push(values, Qnil);
 	    }
-	    v = struct_alloc(class, values);
+	    v = struct_alloc(klass, values);
 	    r_regist(v, arg);
 	    for (i=0; i<len; i++) {
 		slot = r_symbol(arg);
 
 		if (RARRAY(mem)->ptr[i] != INT2FIX(slot)) {
 		    TypeError("struct %s not compatible (:%s for :%s)",
-			      rb_class2name(class),
+			      rb_class2name(klass),
 			      rb_id2name(slot),
 			      rb_id2name(FIX2INT(RARRAY(mem)->ptr[i])));
 		}
@@ -745,27 +745,27 @@ r_object(arg)
 
       case TYPE_USERDEF:
         {
-	    VALUE class;
+	    VALUE klass;
 	    int len;
 
-	    class = rb_path2class(r_unique(arg));
-	    if (rb_respond_to(class, s_load)) {
-		v = rb_funcall(class, s_load, 1, r_string(arg));
+	    klass = rb_path2class(r_unique(arg));
+	    if (rb_respond_to(klass, s_load)) {
+		v = rb_funcall(klass, s_load, 1, r_string(arg));
 		return r_regist(v, arg);
 	    }
 	    TypeError("class %s needs to have method `_load_from'",
-		      rb_class2name(class));
+		      rb_class2name(klass));
 	}
         break;
 
       case TYPE_OBJECT:
 	{
-	    VALUE class;
+	    VALUE klass;
 	    int len;
 
-	    class = rb_path2class(r_unique(arg));
+	    klass = rb_path2class(r_unique(arg));
 	    len = r_long(arg);
-	    v = obj_alloc(class);
+	    v = obj_alloc(klass);
 	    r_regist(v, arg);
 	    if (len > 0) {
 		while (len--) {

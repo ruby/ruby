@@ -18,8 +18,8 @@ extern VALUE cNumeric;
 static ID upto;
 
 static VALUE
-range_s_new(class, first, last)
-    VALUE class, first, last;
+range_s_new(klass, first, last)
+    VALUE klass, first, last;
 {
     VALUE obj;
 
@@ -32,7 +32,7 @@ range_s_new(class, first, last)
 	ArgError("bad value for range");
     }
 
-    obj = obj_alloc(class);
+    obj = obj_alloc(klass);
 
     rb_iv_set(obj, "first", first);
     rb_iv_set(obj, "last", last);

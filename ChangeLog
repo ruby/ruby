@@ -1,10 +1,49 @@
-Mon Feb 16 14:38:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Wed Feb 18 00:41:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (f_pass_block): pass iterator block to other method.
+	* regex.c (re_match): \Z matches newline just before the end of
+	  the string.
+
+Tue Feb 17 00:04:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_arg): Time.gm and Time.local now understands
+ 	  Time#to_a format.
+
+	* string.c (str_sub_s): replace happened twice for null pattern.
+
+	* regex.c (re_search): null pattern should not match after newline 
+	  at the end of string.
+
+	* time.c (time_isdst): now returns boolean value.
+
+	* error.c (rb_check_type): treat special constants in messages.
+
+	* parse.y (yylex): new form `::Const' to see toplevel constants.
+
+	* parse.y (cond): SEGV on `if ()'.
+
+	* gc.c (obj_free): some data needed explicit free().
+
+Mon Feb 16 23:55:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (blk_free): release duplicated block informations.
+
+	* eval.c (blk_copy_prev): duplicate outer block information into
+ 	  the heap, when proc/binding created.
+
+Mon Feb 16 14:38:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* time.c (time_mon): now 1 for January and so on.
 
-	* time.c (time_year): year in 19xx (not + 1900 needed anymore).
+	* time.c (time_year): year in 19xx (no + 1900 needed anymore).
+
+Mon Feb 16 13:28:33 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): need to fetch mbchar's second byte
+ 	  without translation.
+
+Mon Feb 16 12:29:27 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
+
+	* eval.c (f_pass_block): pass iterator block to other method.
 
 Fri Feb 13 08:16:11 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -156,12 +156,12 @@ str_dup(str)
 }
 
 static VALUE
-str_s_new(class, orig)
-    VALUE class;
+str_s_new(klass, orig)
+    VALUE klass;
     VALUE orig;
 {
     NEWOBJ(str, struct RString);
-    OBJSETUP(str, class, T_STRING);
+    OBJSETUP(str, klass, T_STRING);
 
     orig = obj_as_string(orig);
     str->len = RSTRING(orig)->len;
@@ -897,12 +897,12 @@ str_sub_s(str, pat, val, once)
 
 	repl = reg_regsub(val, str, regs);
 	str_cat(result, RSTRING(repl)->ptr, RSTRING(repl)->len);
-	if (END(0) == offset) {
+	if (BEG(0) == END(0)) {
 	    /*
 	     * Always consume at least one character of the input string
 	     * in order to prevent infinite loops.
 	     */
-	    if (RSTRING(str)->len > 0) {
+	    if (RSTRING(str)->len > END(0)) {
 		str_cat(result, RSTRING(str)->ptr+END(0), 1);
 	    }
 	    offset = END(0)+1;

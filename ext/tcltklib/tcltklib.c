@@ -115,6 +115,7 @@ ip_free(struct tcltkip *ptr)
 {
     DUMP1("Tcl_DeleteInterp");
     Tcl_DeleteInterp(ptr->ip);
+    free(ptr);
 }
 
 /* create and initialize interpreter */

@@ -3,9 +3,6 @@ require 'gtk'
 def create_bbox_window(horizontal, title, pos, spacing, cw, ch, layout)
   window = Gtk::Window::new(Gtk::WINDOW_TOPLEVEL)
   window.set_title(title)
-  window.signal_connect("destroy") do
-    window.destroy
-  end
   window.signal_connect("delete_event") do
     window.hide
     window.destroy

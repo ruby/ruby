@@ -199,12 +199,12 @@ static VALUE
 dir_s_getwd(dir)
     VALUE dir;
 {
-    extern char *getwd();
     char path[MAXPATHLEN];
 
 #ifdef HAVE_GETCWD
     if (getcwd(path, sizeof(path)) == 0) rb_sys_fail(path);
 #else
+    extern char *getwd();
     if (getwd(path) == 0) rb_sys_fail(path);
 #endif
 

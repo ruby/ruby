@@ -1187,7 +1187,7 @@ file_s_expand_path(obj, fname)
     VALUE obj, fname;
 {
     char *s, *p;
-    char buf[MAXPATHLEN];
+    char buf[MAXPATHLEN+2];
 
     Check_Type(fname, T_STRING);
     s = RSTRING(fname)->ptr;

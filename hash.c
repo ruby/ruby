@@ -184,16 +184,16 @@ hash_foreach(hash, func, farg)
 }
 
 static VALUE
-hash_s_new(argc, argv, class)
+hash_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE sz;
     int size;
 
     NEWOBJ(hash, struct RHash);
-    OBJSETUP(hash, class, T_HASH);
+    OBJSETUP(hash, klass, T_HASH);
 
     rb_scan_args(argc, argv, "01", &sz);
     if (NIL_P(sz)) size = 0;
@@ -208,10 +208,10 @@ hash_s_new(argc, argv, class)
 }
 
 static VALUE
-hash_new2(class)
-    VALUE class;
+hash_new2(klass)
+    VALUE klass;
 {
-    return hash_s_new(0, 0, class);
+    return hash_s_new(0, 0, klass);
 }
 
 VALUE
@@ -221,19 +221,19 @@ hash_new()
 }
 
 static VALUE
-hash_s_create(argc, argv, class)
+hash_s_create(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE hash;
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	if (class == CLASS_OF(argv[0])) return argv[0];
+	if (klass == CLASS_OF(argv[0])) return argv[0];
 	else {
 	    NEWOBJ(hash, struct RHash);
-	    OBJSETUP(hash, class, T_HASH);
+	    OBJSETUP(hash, klass, T_HASH);
 	    
 	    hash->iter_lev = 0;
 	    hash->status = 0;
@@ -246,7 +246,7 @@ hash_s_create(argc, argv, class)
     if (argc % 2 != 0) {
 	ArgError("odd number args for Hash");
     }
-    hash = hash_new2(class);
+    hash = hash_new2(klass);
 
     for (i=0; i<argc; i+=2) {
 	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);

@@ -1,8 +1,8 @@
 #
 #               Date.rb - 
 #                       $Release Version: $
-#                       $Revision: 1.1.1.1.4.2 $
-#                       $Date: 1998/02/02 04:49:13 $
+#                       $Revision: 1.1.1.1.4.3 $
+#                       $Date: 1998/02/03 10:02:57 $
 #                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -183,7 +183,7 @@ end
 
 def Date.at(d)
   if d.kind_of? Time
-    return Date.new(1900+d.year, d.mon+1, d.mday)
+    return Date.new(d.year, d.mon, d.mday)
   end
   if d.kind_of? Date
     return Date.at(d.period)

@@ -13,7 +13,7 @@
 
 $RCS_ID=%q$Header$
 
-load("getopts.rb")
+require "getopts"
 
 def printUsageAndExit()
   if $USAGE

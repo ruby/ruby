@@ -115,7 +115,12 @@ ary_new4(n, elts)
     VALUE ary;
 
     ary = ary_new2(n);
-    MEMCPY(RARRAY(ary)->ptr, elts, VALUE, n);
+    if (elts) {
+	MEMCPY(RARRAY(ary)->ptr, elts, VALUE, n);
+    }
+    else {
+	memclear(RARRAY(ary)->ptr, n);
+    }
     RARRAY(ary)->len = n;
 
     return ary;
@@ -136,14 +141,14 @@ assoc_new(car, cdr)
 }
 
 static VALUE
-ary_s_new(argc, argv, class)
+ary_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     VALUE size;
     NEWOBJ(ary, struct RArray);
-    OBJSETUP(ary, class, T_ARRAY);
+    OBJSETUP(ary, klass, T_ARRAY);
 
     rb_scan_args(argc, argv, "01", &size);
     ary->len = 0;
@@ -155,13 +160,13 @@ ary_s_new(argc, argv, class)
 }
 
 static VALUE
-ary_s_create(argc, argv, class)
+ary_s_create(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
     NEWOBJ(ary, struct RArray);
-    OBJSETUP(ary, class, T_ARRAY);
+    OBJSETUP(ary, klass, T_ARRAY);
 
     ary->len = argc;
     ary->capa = argc;
