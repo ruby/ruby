@@ -1024,14 +1024,15 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
     end
   end
   dirs << (dir = "$(RUBYLIBDIR)")
-  mfile.print("install-rb: install-rb-default\n")
-  mfile.print("install-rb-default: #{dir}\n")
+  mfile.print("install-rb: pre-install-rb install-rb-default\n")
+  mfile.print("install-rb-default: pre-install-rb-default\n")
+  mfile.print("pre-install-rb pre-install-rb-default: #{dir}\n")
   for sfx, i in [["-default", [["lib/**/*.rb", "$(RUBYLIBDIR)", "lib"]]], ["", $INSTALLFILES]]
     files = install_files(mfile, i, nil, srcprefix) or next
     for dir, *files in files
       unless dirs.include?(dir)
 	dirs << dir
-	mfile.print "install-rb#{sfx}: #{dir}\n"
+	mfile.print "pre-install-rb#{sfx}: #{dir}\n"
       end
       files.each do |f|
 	dest = "#{dir}/#{File.basename(f)}"
