@@ -1008,8 +1008,6 @@ top_const_get(id, klassp)
     ID id;
     VALUE *klassp;
 {
-    VALUE value;
-
     /* pre-defined class */
     if (st_lookup(rb_class_tbl, id, klassp)) return Qtrue;
 

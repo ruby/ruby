@@ -775,7 +775,7 @@ obj_free(obj)
 	}
 	break;
       case T_STRING:
-#define STR_NO_ORIG FL_USER2	/* copied from string.c */
+#define STR_NO_ORIG FL_USER0	/* copied from string.c */
 	if (!RANY(obj)->as.string.orig || FL_TEST(obj, STR_NO_ORIG)) {
 	    RUBY_CRITICAL(free(RANY(obj)->as.string.ptr));
 	}
@@ -1152,8 +1152,6 @@ static VALUE
 undefine_final(os, obj)
     VALUE os, obj;
 {
-    VALUE table;
-
     if (finalizer_table) {
 	st_delete(finalizer_table, &obj, 0);
     }

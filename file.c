@@ -282,7 +282,6 @@ rb_stat_inspect(self)
 
     for (i = 0; i < sizeof(member)/sizeof(member[0]); i++) {
 	VALUE str2;
-	char *p;
 
 	if (i > 0) {
 	    rb_str_cat2(str, ", ");
@@ -2163,6 +2162,7 @@ define_filetest_function(name, func, argc)
     rb_define_singleton_method(rb_cFile, name, func, argc);
 }
 
+void
 Init_File()
 {
     rb_mFileTest = rb_define_module("FileTest");

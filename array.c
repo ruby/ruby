@@ -1440,7 +1440,7 @@ ary_make_hash(ary1, ary2)
     VALUE ary1, ary2;
 {
     VALUE hash = rb_hash_new();
-    int i, n;
+    int i;
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	rb_hash_aset(hash, RARRAY(ary1)->ptr[i], Qtrue);

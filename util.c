@@ -78,19 +78,6 @@ int *retlen;
 #include "missing/file.h"
 #endif
 
-static char *
-check_dir(dir)
-    char *dir;
-{
-    struct stat st;
-
-    if (dir == NULL) return NULL;
-    if (stat(dir, &st) < 0) return NULL;
-    if (!S_ISDIR(st.st_mode)) return NULL;
-    if (eaccess(dir, W_OK) < 0) return NULL;
-    return dir;
-}
-
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT)
 /*
  *  Copyright (c) 1993, Intergraph Corporation

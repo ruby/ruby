@@ -28,17 +28,12 @@ struct RMatch {
 
 #define RMATCH(obj)  (R_CAST(RMatch)(obj))
 
-int rb_str_cicmp _((VALUE, VALUE));
 VALUE rb_reg_regcomp _((VALUE));
 int rb_reg_search _((VALUE, VALUE, int, int));
 VALUE rb_reg_regsub _((VALUE, VALUE, struct re_registers *));
 int rb_reg_adjust_startpos _((VALUE, VALUE, int, int));
-
-int rb_kcode _((void));
 void rb_match_busy _((VALUE));
 
 EXTERN int ruby_ignorecase;
 
-int rb_reg_mbclen2 _((unsigned int, VALUE));
-#define mbclen2(c,re) rb_reg_mbclen2((c),(re))
 #endif

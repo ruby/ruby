@@ -6625,7 +6625,7 @@ rb_mod_define_method(argc, argv, mod)
     VALUE mod;
 {
     ID id;
-    VALUE name, body;
+    VALUE body;
 
     if (argc == 1) {
 	id = rb_to_id(argv[0]);
@@ -8037,8 +8037,6 @@ static VALUE
 rb_thread_start(klass, args)
     VALUE klass, args;
 {
-    rb_thread_t th;
-
     if (!rb_block_given_p()) {
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
