@@ -12,7 +12,7 @@
 #  o When $SAFE > 0, you should specify a directory via the second argument
 #    of Tempfile::new(), or it will end up finding an ENV value tainted and
 #    pick /tmp.  In case you don't have it, an exception will be raised.
-#  o Tempfile#close(true) gets the temporary file removed immediately.
+#  o Tempfile#close! gets the temporary file removed immediately.
 #  o Otherwise, the removal is delayed until the object is finalized.
 #  o With Tempfile#open, you can reopen the temporary file.
 #  o The file mode for the temporary files is 0600.
@@ -21,7 +21,7 @@
 require 'delegate'
 
 class Tempfile < SimpleDelegator
-  Max_try = 10
+  MAX_TRY = 10
   @@cleanlist = []
 
   def Tempfile.callback(data)
@@ -64,7 +64,7 @@ class Tempfile < SimpleDelegator
       Dir.mkdir(lock)
     rescue
       failure += 1
-      retry if failure < Max_try
+      retry if failure < MAX_TRY
       raise "cannot generate tempfile `%s'" % tmpname
     ensure
       Thread.critical = false
@@ -99,14 +99,32 @@ class Tempfile < SimpleDelegator
     __setobj__(@tmpfile)
   end
 
-  def close(real=false)
+  def _close
     @tmpfile.close if @tmpfile
     @data[1] = @tmpfile = nil
+  end    
+  protected :_close
+
+  def close(real=false)
     if real
-      @clean_proc.call
-      ObjectSpace.undefine_finalizer(self)
+      close!
+    else
+      _close
     end
   end
+
+  def close!
+    _close
+    @clean_proc.call
+    ObjectSpace.undefine_finalizer(self)
+  end
+
+  def unlink
+    # keep this order for thread safeness
+    File.unlink(@tmpname) if File.exist?(@tmpname)
+    @@cleanlist.delete(@tmpname) if @@cleanlist
+  end
+  alias delete unlink
 
   def path
     @tmpname
@@ -129,5 +147,5 @@ if __FILE__ == $0
   f.close
   f.open
   p f.gets # => "foo\n"
-  f.close(true)
+  f.close!
 end
