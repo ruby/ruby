@@ -1,3 +1,8 @@
+Thu Sep  9 11:46:18 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_classes): Allow
+	  spaces aroun parameter to define_method_under (James Buck)
+
 Wed Sep  8 18:44:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_write): zero fill a gap if exsts.
