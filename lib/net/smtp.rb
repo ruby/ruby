@@ -324,7 +324,6 @@ module Net
       }
     end
 
-    # "PLAIN" authentication [RFC2554]
     def auth_plain( user, secret )
       atomic {
           getok sprintf('AUTH PLAIN %s',
@@ -332,7 +331,14 @@ module Net
       }
     end
 
-    # "CRAM-MD5" authentication [RFC2195]
+    def auth_login(user, secret)
+      atomic{
+          getok("AUTH LOGIN", ContinueCode)
+          getok([user].pack('m').chomp, ContinueCode)
+          getok([secret].pack('m').chomp)
+      }
+    end
+
     def auth_cram_md5( user, secret )
       atomic {
           rep = getok( 'AUTH CRAM-MD5', ContinueCode )

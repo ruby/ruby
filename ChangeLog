@@ -1,3 +1,8 @@
+Sun May 25 03:33:53 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb: support LOGIN authentication. Thanks to
+	  Kazuhiko Izawa.
+
 Tue May 20 00:45:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (push_braces): do not push_braces() unless rbrace is found.
