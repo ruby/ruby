@@ -1,3 +1,13 @@
+Wed Mar 24 12:32:56 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::handle_class_module):
+	  Don't document methods if we don't know for sure the
+	  class or module.
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class):
+	  Don't store documentation for singleton classes if we
+	  don't know the real class.
+
 Wed Mar 24 11:11:26 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb (Generators::HTMLGenerator::load_html_template): 
