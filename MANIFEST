@@ -222,6 +222,7 @@ lib/runit/testcase.rb
 lib/runit/testresult.rb
 lib/runit/testsuite.rb
 lib/runit/topublic.rb
+lib/scanf.rb
 lib/set.rb
 lib/shell.rb
 lib/shell/builtin-command.rb
