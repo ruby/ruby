@@ -1,3 +1,11 @@
+Mon Sep 13 00:20:39 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y: ripper merged.
+
+	* lex.c: ditto.
+
+	* keywords: ditto.
+
 Sun Sep 12 23:53:17 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* util.c (ruby_strdup): remove unnecessary code. (xmalloc never
