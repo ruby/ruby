@@ -679,7 +679,7 @@ typedef pthread_t rb_nativethread_t;
 # define NATIVETHREAD_CURRENT() pthread_self()
 # define NATIVETHREAD_EQUAL(t1,t2) pthread_equal((t1),(t2))
 # define HAVE_NATIVETHREAD
-#elif defined(_WIN32) || defined(_WIN32_WCE) || defined(__CYGWIN__)
+#elif defined(_WIN32) || defined(_WIN32_WCE)
 typedef DWORD rb_nativethread_t;
 # define NATIVETHREAD_CURRENT() GetCurrentThreadId()
 # define NATIVETHREAD_EQUAL(t1,t2) ((t1) == (t2))

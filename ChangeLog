@@ -1,3 +1,7 @@
+Tue Nov 25 16:15:29 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ruby.h: don't treat Cygwin as Windows.
+
 Tue Nov 25 15:18:28 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* configure.in: change default value of --enable-pthread (default: no)
