@@ -1,5 +1,7 @@
 Wed Jan 21 01:43:42 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* regex.c (re_compile_pattern): too many pops for non register subexpr.
+
 	* parse.y (yylex): open parentheses after identifiers are argument 
 	  list, even if whitespaces have seen.
 
