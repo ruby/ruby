@@ -33,6 +33,7 @@ module WEBrick
       :StartCallback  => nil,
       :StopCallback   => nil,
       :AcceptCallback => nil,
+      :DoNotReverseLookup => nil,
     }
 
     # for HTTPServer, HTTPRequest, HTTPResponse ...
@@ -45,14 +46,15 @@ module WEBrick
       :DirectoryIndex => ["index.html","index.htm","index.cgi","index.rhtml"],
       :DocumentRoot   => nil,
       :DocumentRootOptions => { :FancyIndexing => true },
-
       :RequestHandler => nil,
+      :RequestCallback => nil,  # alias of :RequestHandler
+      :ServerAlias    => nil,
+
+      # for HTTPProxyServer
       :ProxyAuthProc  => nil,
       :ProxyContentHandler => nil,
       :ProxyVia       => true,
       :ProxyTimeout   => true,
-
-      # upstream proxy server
       :ProxyURI       => nil,
 
       :CGIInterpreter => nil,
@@ -71,6 +73,7 @@ module WEBrick
       :DirectoryCallback => nil,
       :FileCallback      => nil,
       :UserDir           => "public_html",
+      :AcceptableLanguages => []  # ["en", "ja", ... ]
     }
 
     BasicAuth = {

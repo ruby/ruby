@@ -115,10 +115,9 @@ module WEBrick
     module_function :load_mime_types
 
     def mime_type(filename, mime_tab)
-      if suffix = (/\.(\w+)$/ =~ filename && $1)
-        mtype = mime_tab[suffix.downcase]
-      end
-      mtype || "application/octet-stream"
+      suffix1 = (/\.(\w+)$/ =~ filename && $1.downcase)
+      suffix2 = (/\.(\w+)\.[\w\-]+$/ =~ filename && $1.downcase)
+      mime_tab[suffix1] || mime_tab[suffix2] || "application/octet-stream"
     end
     module_function :mime_type
 
@@ -174,6 +173,24 @@ module WEBrick
       end
     end
     module_function :parse_range_header
+
+    def parse_qvalues(value)
+      tmp = []
+      if value
+        parts = value.split(/,\s*/)
+        parts.each {|part|
+          if m = %r{^([^\s,]+?)(?:;\s*q=([\d]+(?:\.[\d]+)))?$}.match(part)
+            lang = m[1]
+            q = (m[2] or 1).to_f
+            tmp.push([lang, q])
+          end
+        }
+        tmp = tmp.sort_by{|lang, q| -q}
+        tmp.collect!{|lang, q| lang}
+      end
+      return tmp
+    end
+    module_function :parse_qvalues
 
     #####
 
