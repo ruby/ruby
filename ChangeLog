@@ -9,18 +9,40 @@ Wed Jul  9 15:38:28 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* mkconfig.rb: support text-mount on Cygwin.
 
-Wed Jul 09 11:09:57 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+Wed Jul  9 11:09:57 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* re.c (match_entry): add prototype to avoid VC++ warnings.
+
+Wed Jul  9 03:48:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_load): put rb_load_file() in a thread critical
+	  section. [ruby-dev:20490]
+
+	* eval.c (compile): put rb_compile_string() in a thread critical
+	  section.
+
+Tue Jul  8 02:35:41 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_const_get_0): should not warn if constant is not
+	  defined. (ruby-bugs-ja PR#509)
+
+	* bignum.c (rb_big2dbl): give a warning on overflow.
+	  (ruby-bugs-ja PR#510)
+
+	* util.c (ruby_strtod): change MDMAXEXPT from 511 to 308.
+
+	* pack.c (utf8_to_uv): long is sufficient.  LONG_LONG is not
+	  required.
+
+Tue Jul  8 01:43:16 2003  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* bignum.c (rb_big2str): support 32 bit (without `long long' type)
+	  machines. (ruby-bugs-ja PR#512)
 
 Mon Jul  7 10:22:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dbm/extconf.rb (gdbm_compat, qdbm): add check for gdbm_compat
 	  and qdbm.
-
-Sat Jul  5 00:22:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* node.h (NEW_NODE): cast arguments to rb_node_newnode().
 
 Mon Jul  7 01:34:49 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -33,6 +55,10 @@ Sat Jul  5  23:32:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_mod_remove_method): allow "remove_method" to accept
 	  multiple arguments.
+
+Sat Jul  5 00:22:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* node.h (NEW_NODE): cast arguments to rb_node_newnode().
 
 Fri Jul  4 21:48:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

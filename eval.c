@@ -5339,10 +5339,15 @@ compile(src, file, line)
     int line;
 {
     NODE *node;
+    int critical;
 
     ruby_nerrs = 0;
     StringValue(src);
+    critical = rb_thread_critical;
+    rb_thread_critical = Qtrue;
     node = rb_compile_string(file, src, line);
+    rb_thread_critical = critical;
+    
 
     if (ruby_nerrs == 0) return node;
     return 0;
@@ -5747,17 +5752,22 @@ rb_load(fname, wrap)
     last_func = ruby_frame->last_func;
     if (state == 0) {
 	NODE *node;
+	volatile int critical;
 
 	DEFER_INTS;
 	ruby_in_eval++;
+	critical = rb_thread_critical;
+	rb_thread_critical = Qtrue;
 	rb_load_file(RSTRING(fname)->ptr);
 	ruby_in_eval--;
 	node = ruby_eval_tree;
 	ALLOW_INTS;
+	rb_thread_critical = critical;
 	if (ruby_nerrs == 0) {
 	    eval_node(self, node);
 	}
     }
+    ALLOW_INTS;
     ruby_frame->last_func = last_func;
     if (ruby_scope->flags == SCOPE_ALLOCA && ruby_class == rb_cObject) {
 	if (ruby_scope->local_tbl) /* toplevel was empty */
@@ -8440,6 +8450,7 @@ rb_thread_schedule()
     rb_thread_t curr;
     int found = 0;
 
+    if (ruby_in_compile) abort();
     fd_set readfds;
     fd_set writefds;
     fd_set exceptfds;
@@ -8680,6 +8691,7 @@ rb_thread_wait_fd(fd)
     int fd;
 {
     if (rb_thread_critical) return;
+    if (ruby_in_compile) return;
     if (curr_thread == curr_thread->next) return;
     if (curr_thread->status == THREAD_TO_KILL) return;
 

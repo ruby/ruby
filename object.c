@@ -1140,6 +1140,10 @@ rb_cstr_to_dbl(p, badcheck)
 	while (ISSPACE(*p) || *p == '_') p++;
     }
     d = strtod(p, &end);
+    if (errno == ERANGE) {
+	rb_warn("Float %*s out of range", end-p, p);
+	errno = 0;
+    }
     if (p == end) {
 	if (badcheck) {
 	  bad:
@@ -1170,6 +1174,10 @@ rb_cstr_to_dbl(p, badcheck)
 	*n = '\0';
 	p = buf;
 	d = strtod(p, &end);
+	if (errno == ERANGE) {
+	    rb_warn("Float %*s out of range", end-p, p);
+	    errno = 0;
+	}
 	if (badcheck) {
 	    if (p == end) goto bad;
 	    while (*end && ISSPACE(*end)) end++;

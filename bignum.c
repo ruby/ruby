@@ -647,8 +647,11 @@ rb_big2str(x, base)
 	break;
     }
     j += 2;
+
     hbase = base * base;
+#if SIZEOF_BDIGITS > 2
     hbase *= hbase;
+#endif
 
     t = rb_big_clone(x);
     ds = BDIGITS(t);
@@ -666,7 +669,7 @@ rb_big2str(x, base)
 	    num %= hbase;
 	}
 	if (ds[i-1] == 0) i--;
-	k = 4;
+	k = SIZEOF_BDIGITS;
 	while (k--) {
 	    c = (char)(num % base);
 	    s[--j] = ruby_digitmap[(int)c];
@@ -839,7 +842,10 @@ rb_big2dbl(x)
     while (i--) {
 	d = ds[i] + BIGRAD*d;
     }
-    if (isinf(d)) d = HUGE_VAL;
+    if (isinf(d)) {
+	rb_warn("Bignum out of Float range");
+	d = HUGE_VAL;
+    }
     if (!RBIGNUM(x)->sign) d = -d;
     return d;
 }

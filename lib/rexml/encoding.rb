@@ -8,7 +8,7 @@ module REXML
 			if match
 				ENCODING_CLAIMS[ match ] = encoding_str
 			else
-				ENCODING_CLAIMS[ /^\s*<?xml\s*version=(['"]).*?\1\s*encoding=(["'])#{encoding_str}\2/ ] = encoding_str
+				ENCODING_CLAIMS[ /^\s*<?xml\s*version=(['"]).*?\1\s*encoding=(["'])#{encoding_str}\2/i ] = encoding_str
 			end
 		end
 
@@ -20,9 +20,11 @@ module REXML
 		# ID ---> Encoding name
 		attr_reader :encoding
 		def encoding=( enc )
-			enc = UTF_8 unless enc
-			@encoding = enc.upcase
-			require "rexml/encodings/#@encoding" unless @encoding == UTF_8
+                	enc = UTF_8 unless enc
+                	rv = ENCODING_CLAIMS.find{|k,v| /#{v}/i =~ enc }
+                	enc = rv[1] if rv
+                	@encoding = enc
+                	require "rexml/encodings/#@encoding" unless @encoding == UTF_8
 		end
 
 		def check_encoding str

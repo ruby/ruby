@@ -1284,14 +1284,14 @@ rb_const_get_0(klass, id, exclude)
     tmp = klass;
   retry:
     while (tmp) {
-	if (exclude && tmp == rb_cObject && klass != rb_cObject) {
-	    rb_warn("toplevel constant %s referenced by %s::%s",
-		    rb_id2name(id), rb_class2name(klass), rb_id2name(id));
-	}
 	while (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    if (value == Qundef) {
 		rb_autoload_load(tmp, id);
 		continue;
+	    }
+	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {
+		rb_warn("toplevel constant %s referenced by %s::%s",
+			rb_id2name(id), rb_class2name(klass), rb_id2name(id));
 	    }
 	    return value;
 	}

@@ -1876,7 +1876,7 @@ utf8_to_uv(p, lenp)
     long *lenp;
 {
     int c = *p++ & 0xff;
-    unsigned LONG_LONG uv = c;
+    unsigned long uv = c;
     long n;
 
     if (!(uv & 0x80)) {

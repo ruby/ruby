@@ -665,11 +665,8 @@ ruby_getcwd()
 #define TRUE 1
 #define FALSE 0
 
-static int maxExponent = 511;	/* Largest possible base 10 exponent.  Any
-				 * exponent larger than this will already
-				 * produce underflow or overflow, so there's
-				 * no need to worry about additional digits.
-				 */
+static  int     MDMINEXPT       = -323;
+static  int     MDMAXEXPT       =  309;
 static double powersOf10[] = {	/* Table giving binary powers of 10.  Entry */
     10.0,			/* is 10^2^i.  Used to convert decimal */
     100.0,			/* exponents into floating-point numbers. */
@@ -862,12 +859,12 @@ ruby_strtod(string, endPtr)
 	 * fraction.
 	 */
     
-	if (exp > maxExponent) {
-	    exp = maxExponent;
+	if (exp > MDMAXEXPT - 18) {
+	    exp = MDMAXEXPT;
 	    errno = ERANGE;
 	}
-	else if (exp < -maxExponent) {
-	    exp = -maxExponent;
+	else if (exp < MDMINEXPT + 18) {
+	    exp = MDMINEXPT;
 	    errno = ERANGE;
 	}
 	fracExp = exp;

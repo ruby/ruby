@@ -3,15 +3,30 @@ begin
 
 	module REXML
 		module Encoding
-			def to_shift_jis content
+			def from_shift_jis(str)
 				Uconv::u8tosjis(content)
 			end
 
-			def from_shift_jis(str)
+			def to_shift_jis content
 				Uconv::sjistou8(str)
 			end
 		end
 	end
 rescue LoadError
-	raise "uconv is required for Japanese encoding support."
+  begin
+	require 'iconv'
+	module REXML
+		module Encoding
+			def from_shift_jis(str)
+				return Iconv::iconv("utf-8", "shift-jis", str)[0]
+			end
+
+			def to_shift_jis content
+				return Iconv::iconv("euc-jp", "shift-jis", content)[0]
+			end
+		end
+	end
+  rescue LoadError
+	raise "uconv or iconv is required for Japanese encoding support."
+  end
 end
