@@ -75,7 +75,7 @@ void *xcalloc _((unsigned long,unsigned long));
 void *xrealloc _((void*,unsigned long));
 void free _((void*));
 
-/* #define	NO_ALLOCA	/* try it out for now */
+/* #define	NO_ALLOCA */	/* try it out for now */
 #ifndef NO_ALLOCA
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
@@ -678,11 +678,10 @@ is_in_list(c, b)
 {
   unsigned short size;
   unsigned short i, j;
-  int result = 0;
 
   size = *b++;
   if ((int)c / BYTEWIDTH < (int)size && b[c / BYTEWIDTH] & 1 << c % BYTEWIDTH) {
-    return 2;
+    return 1;
   }
   b += size + 2;
   size = EXTRACT_UNSIGNED(&b[-2]);
@@ -699,7 +698,7 @@ is_in_list(c, b)
   if (i < size && EXTRACT_MBC(&b[i*8]) <= c
       && ((unsigned char)c != '\n' && (unsigned char)c != '\0'))
     return 1;
-  return result;
+  return 0;
 }
 
 static void
@@ -1183,7 +1182,7 @@ re_compile_pattern(pattern, size, bufp)
     switch (c) {
     case '$':
       if (bufp->options & RE_OPTION_POSIXLINE) {
-	BUFPUSH(endbuf2);
+	BUFPUSH(endbuf);
       }
       else {
 	p0 = p;
@@ -1359,7 +1358,7 @@ re_compile_pattern(pattern, size, bufp)
 
 	/* \ escapes characters when inside [...].  */
 	if (c == '\\') {
-	  PATFETCH(c);
+	  PATFETCH_RAW(c);
 	  switch (c) {
 	  case 'w':
 	    for (c = 0; c < (1 << BYTEWIDTH); c++) {
@@ -2610,8 +2609,7 @@ re_compile_fastmap(bufp)
 	  fastmap[translate['\n']] = 1;
 	else
 	  fastmap['\n'] = 1;
-
-	if (bufp->can_be_null == 0)
+	if ((options & RE_OPTION_POSIXLINE) == 0 && bufp->can_be_null == 0)
 	  bufp->can_be_null = 2;
 	break;
 
@@ -2680,7 +2678,7 @@ re_compile_fastmap(bufp)
 	/* Get to the number of times to succeed.  */
 	EXTRACT_NUMBER(k, p + 2);
 	/* Increment p past the n for when k != 0.  */
-	if (k == 0) {
+	if (k != 0) {
 	  p += 4;
 	}
 	else {
@@ -2763,9 +2761,8 @@ re_compile_fastmap(bufp)
 	   multi-byte char.  See set_list_bits().  */
 	for (j = *p++ * BYTEWIDTH - 1; j >= 0; j--)
 	  if (p[j / BYTEWIDTH] & (1 << (j % BYTEWIDTH))) {
-	    if (TRANSLATE_P())
-	      j = translate[j];
-	    fastmap[j] = (j>0x7f?(ismbchar(j)?0:2):1);
+	    int tmp = TRANSLATE_P()?translate[j]:j;
+	    fastmap[tmp] = (tmp>0x7f)?2:1;
 	  }
 	{
 	  unsigned short size;
@@ -2974,11 +2971,12 @@ re_search(bufp, string, size, startpos, range, regs)
 	    int len = mbclen(c) - 1;
 	    if (fastmap[c])
 	      break;
-	    p += len;
-	    range -= len + 1;
-	    c = *p;
-	    if (fastmap[c] == 2)
-	      break;
+	    while (len--) {
+	      c = *p++;
+	      range--;
+	      if (fastmap[c] == 2)
+		goto startpos_adjust;
+	    }
 	  }
 	  else {
 	    if (fastmap[MAY_TRANSLATE() ? translate[c] : c])
@@ -2986,6 +2984,7 @@ re_search(bufp, string, size, startpos, range, regs)
 	    range--;
 	  }
 	}
+      startpos_adjust:
 	startpos += irange - range;
       }
       else {			/* Searching backwards.  */
@@ -3664,7 +3663,10 @@ re_match(bufp, string_arg, size, pos, regs)
 	  else if (TRANSLATE_P())
 	    cc = c = (unsigned char)translate[c];
 
-	  part = not = is_in_list(c, p);
+	  not = is_in_list(c, p);
+	  if (!not) {
+	      not = is_in_list(cc, p);
+	  }
 	  if (*(p - 1) == (unsigned char)charset_not) {
 	    not = !not;
 	  }
@@ -3707,8 +3709,10 @@ re_match(bufp, string_arg, size, pos, regs)
 
 	/* Match at the very end of the data. */
       case endbuf2:
-	if (AT_STRINGS_END(d))
-	  break;
+	if (AT_STRINGS_END(d)) {
+	  if (size == 0 || d[-1] != '\n')
+	    break;
+	}
 	/* .. or newline just before the end of the data. */
 	if (*d == '\n' && AT_STRINGS_END(d+1))
 	  break;

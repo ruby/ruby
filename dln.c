@@ -1348,7 +1348,7 @@ dln_load(file)
 	if (init_fct == NULL) {
 	    aix_loaderror(file);
 	}
-	if (loadbind(0, main_module, init_fct) == -1) {
+	if (loadbind(0, main_module, (void*)init_fct) == -1) {
 	    aix_loaderror(file);
 	}
 	(*init_fct)();

@@ -701,7 +701,7 @@ rb_str_succ(orig)
 {
     VALUE str, str2;
     char *sbeg, *s;
-    char c = -1;
+    int c = -1;
 
     str = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
 
@@ -1708,7 +1708,7 @@ tr_trans(str, src, repl, sflag)
 	}
     }
     else {
-	char r;
+	int r;
 
 	for (i=0; i<256; i++) {
 	    trans[i] = 0;

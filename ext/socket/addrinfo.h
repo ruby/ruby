@@ -154,4 +154,11 @@ extern void freehostent __P((struct hostent *));
 extern void freeaddrent __P((struct addrinfo *));
 extern char *gai_strerror __P((int));
 
+/* In case there is no definition of offsetof() provided - though any proper
+Standard C system should have one. */
+
+#ifndef offsetof
+#define offsetof(p_type,field) ((size_t)&(((p_type *)0)->field))
+#endif
+
 #endif

@@ -1019,6 +1019,8 @@ Init_Object()
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
 
+    rb_define_global_function("singleton_method_added", rb_obj_dummy, 1);
+
     rb_define_global_function("sprintf", rb_f_sprintf, -1);
     rb_define_global_function("format", rb_f_sprintf, -1);
 
@@ -1034,17 +1036,13 @@ Init_Object()
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
+    rb_define_method(rb_cNilClass, "&", false_and, 1);
+    rb_define_method(rb_cNilClass, "|", false_or, 1);
+    rb_define_method(rb_cNilClass, "^", false_xor, 1);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
     rb_define_global_const("NIL", Qnil);
-
-    /* default addition */
-#ifdef NIL_PLUS
-    rb_define_method(rb_cNilClass, "+", nil_plus, 1);
-#endif
-
-    rb_define_global_function("singleton_method_added", rb_obj_dummy, 1);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);

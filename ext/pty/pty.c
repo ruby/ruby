@@ -180,7 +180,7 @@ chld_changed()
 	rb_raise(rb_eRuntimeError, "Stopped: %d",cpid);
     }
 #else
-#error "Either IF_STOPPED or WIFSTOPPED is needed"
+---->> Either IF_STOPPED or WIFSTOPPED is needed <<----
 #endif /* WIFSTOPPED */
 #endif /* IF_STOPPED */
     if (n >= 0) {

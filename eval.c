@@ -681,8 +681,8 @@ static VALUE rb_yield_0 _((VALUE, VALUE, VALUE));
 static VALUE rb_call _((VALUE,VALUE,ID,int,VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
 
-static VALUE massign _((VALUE,NODE*,VALUE));
-static void assign _((VALUE,NODE*,VALUE));
+static VALUE massign _((VALUE,NODE*,VALUE,int));
+static void assign _((VALUE,NODE*,VALUE,int));
 
 static int safe_level = 0;
 /* safe-level:
@@ -2314,7 +2314,7 @@ rb_eval(self, node)
 	break;
 
       case NODE_MASGN:
-	result = massign(self, node, rb_eval(self, node->nd_value));
+	result = massign(self, node, rb_eval(self, node->nd_value),0);
 	break;
 
       case NODE_LASGN:
@@ -3162,10 +3162,15 @@ rb_yield_0(val, self, klass)
     if (!self) self = block->self;
     node = block->body;
     if (block->var) {
-	if (nd_type(block->var) == NODE_MASGN)
-	    massign(self, block->var, val);
-	else
-	    assign(self, block->var, val);
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
+	    if (nd_type(block->var) == NODE_MASGN)
+		massign(self, block->var, val, 1);
+	    else
+		assign(self, block->var, val, 1);
+	}
+	POP_TAG();
+	if (state) goto pop_state;
     }
     PUSH_ITER(block->iter);
     PUSH_TAG(PROT_NONE);
@@ -3201,6 +3206,7 @@ rb_yield_0(val, self, klass)
 	}
     }
     POP_TAG();
+  pop_state:
     POP_ITER();
     POP_CLASS();
     POP_VARS();
@@ -3227,13 +3233,14 @@ rb_f_loop()
 }
 
 static VALUE
-massign(self, node, val)
+massign(self, node, val, check)
     VALUE self;
     NODE *node;
     VALUE val;
+    int check;
 {
     NODE *list;
-    int i, len;
+    int i = 0, len;
 
     list = node->nd_head;
 
@@ -3243,33 +3250,46 @@ massign(self, node, val)
 	}
 	len = RARRAY(val)->len;
 	for (i=0; list && i<len; i++) {
-	    assign(self, list->nd_head, RARRAY(val)->ptr[i]);
+	    assign(self, list->nd_head, RARRAY(val)->ptr[i], check);
 	    list = list->nd_next;
 	}
+	if (check && list) goto arg_error;
 	if (node->nd_args) {
 	    if (!list && i<len) {
-		assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i));
+		assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
 	    }
 	    else {
-		assign(self, node->nd_args, rb_ary_new2(0));
+		assign(self, node->nd_args, rb_ary_new2(0), check);
 	    }
 	}
+	else if (check && i<len) goto arg_error;
     }
     else if (node->nd_args) {
-	assign(self, node->nd_args, Qnil);
+	assign(self, node->nd_args, Qnil, check);
     }
+
+    if (check && list) goto arg_error;
     while (list) {
-	assign(self, list->nd_head, Qnil);
+	i++;
+	assign(self, list->nd_head, Qnil, check);
 	list = list->nd_next;
     }
     return val;
+
+  arg_error:
+    while (list) {
+	i++;
+	list = list->nd_next;
+    }
+    rb_raise(rb_eArgError, "wrong # of arguments (%d for %d)", len, i);
 }
 
 static void
-assign(self, lhs, val)
+assign(self, lhs, val, check)
     VALUE self;
     NODE *lhs;
     VALUE val;
+    int check;
 {
     switch (nd_type(lhs)) {
       case NODE_GASGN:
@@ -3299,7 +3319,7 @@ assign(self, lhs, val)
 	break;
 
       case NODE_MASGN:
-	massign(self, lhs, val);
+	massign(self, lhs, val, check);
 	break;
 
       case NODE_CALL:
@@ -3852,7 +3872,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 			    NODE *opt = node->nd_opt;
 
 			    while (opt && argc) {
-				assign(recv, opt->nd_head, *argv);
+				assign(recv, opt->nd_head, *argv, 1);
 				argv++; argc--;
 				opt = opt->nd_next;
 			    }
@@ -5427,9 +5447,18 @@ proc_call(proc, args)
     struct BLOCK * volatile old_block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
-    int state;
+    int state, n;
     volatile int orphan;
     volatile int safe = safe_level;
+
+    Data_Get_Struct(proc, struct BLOCK, data);
+    orphan = blk_orphan(data);
+
+    /* PUSH BLOCK from data */
+    old_block = ruby_block;
+    ruby_block = data;
+    PUSH_ITER(ITER_CUR);
+    ruby_frame->iter = ITER_CUR;
 
     if (TYPE(args) == T_ARRAY) {
 	switch (RARRAY(args)->len) {
@@ -5441,15 +5470,6 @@ proc_call(proc, args)
 	    break;
 	}
     }
-
-    Data_Get_Struct(proc, struct BLOCK, data);
-    orphan = blk_orphan(data);
-
-    /* PUSH BLOCK from data */
-    old_block = ruby_block;
-    ruby_block = data;
-    PUSH_ITER(ITER_CUR);
-    ruby_frame->iter = ITER_CUR;
 
     if (orphan) {/* orphan procedure */
 	if (rb_iterator_p()) {
@@ -5492,6 +5512,31 @@ proc_call(proc, args)
 	JUMP_TAG(state);
     }
     return result;
+}
+
+static VALUE
+proc_arity(proc)
+    VALUE proc;
+{
+    struct BLOCK *data;
+    NODE *list;
+    int n;
+
+    Data_Get_Struct(proc, struct BLOCK, data);
+    if (data->var == 0) return 0;
+    switch (nd_type(data->var)) {
+      default:
+	return INT2FIX(-1);
+      case NODE_MASGN:
+	list = data->var->nd_head;
+	n = 0;
+	while (list) {
+	    n++;
+	    list = list->nd_next;
+	}
+	if (data->var->nd_args) return INT2FIX(-n);
+	return INT2FIX(n);
+    }
 }
 
 static VALUE
@@ -5646,6 +5691,38 @@ method_call(argc, argv, method)
 }
 
 static VALUE
+method_arity(method)
+    VALUE method;
+{
+    struct METHOD *data;
+    NODE *body;
+    int n;
+
+    Data_Get_Struct(method, struct METHOD, data);
+
+    body = data->body;
+    switch (nd_type(body)) {
+      case NODE_CFUNC:
+	if (body->nd_argc < 0) return INT2FIX(-1);
+	return INT2FIX(body->nd_argc);
+      case NODE_ZSUPER:
+	return INT2FIX(-1);
+      case NODE_ATTRSET:
+	return INT2FIX(1);
+      case NODE_IVAR:
+	return INT2FIX(0);
+      default:
+	body = body->nd_next;	/* skip NODE_SCOPE */
+	if (nd_type(body) == NODE_BLOCK)
+	    body = body->nd_head;
+	if (!body) return INT2FIX(0);
+	n = body->nd_cnt;
+	if (body->nd_rest) n = -n;
+	return INT2FIX(n);
+    }
+}
+
+static VALUE
 method_inspect(method)
     VALUE method;
 {
@@ -5710,6 +5787,7 @@ Init_Proc()
     rb_define_singleton_method(rb_cProc, "new", proc_s_new, 0);
 
     rb_define_method(rb_cProc, "call", proc_call, -2);
+    rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", proc_call, -2);
     rb_define_global_function("proc", rb_f_lambda, 0);
     rb_define_global_function("lambda", rb_f_lambda, 0);
@@ -5722,6 +5800,7 @@ Init_Proc()
     rb_undef_method(CLASS_OF(rb_cMethod), "new");
     rb_define_method(rb_cMethod, "call", method_call, -1);
     rb_define_method(rb_cMethod, "[]", method_call, -1);
+    rb_define_method(rb_cMethod, "arity", method_arity, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_proc", method_proc, 0);

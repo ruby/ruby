@@ -189,7 +189,7 @@ rb_range_beg_len(range, begp, lenp, len, err)
 	beg += len;
 	if (beg < 0) goto out_of_range;
     }
-    if (err == 2) {
+    if (err == 0 || err == 2) {
 	if (beg > len) goto out_of_range;
 	if (end > len || (!EXCL(range) && end == len))
 	    goto out_of_range;
@@ -197,7 +197,7 @@ rb_range_beg_len(range, begp, lenp, len, err)
     if (end < 0) {
 	end += len;
 	if (end < 0) {
-	    if (err == 1 && e == -1 && !EXCL(range)) {
+	    if (beg == 0 && end == -1 && !EXCL(range)) {
 		len = 0;
 		goto length_set;
 	    }

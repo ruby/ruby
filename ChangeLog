@@ -1,3 +1,37 @@
+Mon May 17 12:26:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (read_escape): char may be unsigned.
+
+	* string.c (rb_str_succ): ditto.
+
+	* string.c (tr_trans): ditto.
+
+	* object.c (Init_Object): methods `&', `|', `^' are added to nil.
+
+	* range.c (rb_range_beg_len): it should be OK for [0..-len-1].
+
+	* regex.c (re_search): search for byte literal within mbcs.
+
+	* regex.c (is_in_list): parsh
+
+	* regex.c (re_compile_fastmap): should have not alter the loop
+	  variable `j' if TRASLATE_P().
+
+	* regex.c (re_compile_pattern): escaped characters should be read
+	  by PATFETCH_RAW(c).
+
+Sat May 15 11:23:51 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): endline2 (\Z) should not match at the point
+	  between a newline and end-of-line, like endline ($).
+
+	* class.c (include_class_new): should initialize iv_tbl to share
+	  between module and iclass.
+
+Fri May 14 08:50:27 1999  Akira Endo  <akendo@t3.rim.or.jp>
+
+	* regex.c (re_compile_fastmap): it should be k != 0 to skip.
+
 Fri May 14 12:46:56 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* time.c (time_load): a bug in old marshal format support.

@@ -23,7 +23,10 @@ readline_event()
 }
 
 static VALUE
-readline_readline(int argc, VALUE *argv, VALUE self)
+readline_readline(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
     VALUE tmp, add_hist, result;
     char *prompt = NULL;
@@ -45,7 +48,9 @@ readline_readline(int argc, VALUE *argv, VALUE self)
 }
 
 static VALUE
-readline_s_set_completion_proc(VALUE self, VALUE proc)
+readline_s_set_completion_proc(self, proc)
+    VALUE self;
+    VALUE proc;
 {
     if (!rb_respond_to(proc, rb_intern("call")))
 	rb_raise(rb_eArgError, "argument have to respond to `call'");
@@ -53,25 +58,32 @@ readline_s_set_completion_proc(VALUE self, VALUE proc)
 }
 
 static VALUE
-readline_s_get_completion_proc(VALUE self)
+readline_s_get_completion_proc(self)
+    VALUE self;
 {
     return rb_iv_get(mReadline, COMPLETION_PROC);
 }
 
 static VALUE
-readline_s_set_completion_case_fold(VALUE self, VALUE val)
+readline_s_set_completion_case_fold(self, val)
+    VALUE self;
+    VALUE val;
 {
     return rb_iv_set(mReadline, COMPLETION_CASE_FOLD, val);
 }
 
 static VALUE
-readline_s_get_completion_case_fold(VALUE self)
+readline_s_get_completion_case_fold(self)
+    VALUE self;
 {
     return rb_iv_get(mReadline, COMPLETION_CASE_FOLD);
 }
 
 static char **
-readline_attempted_completion_function(char *text, int start, int end)
+readline_attempted_completion_function(text, start, end)
+    char *text;
+    int start;
+    int end;
 {
     VALUE proc, ary, temp;
     char **result;
@@ -133,27 +145,32 @@ readline_attempted_completion_function(char *text, int start, int end)
 }
 
 static VALUE
-readline_s_vi_editing_mode(VALUE self)
+readline_s_vi_editing_mode(self)
+    VALUE self;
 {
     rl_vi_editing_mode(1,0);
     return Qnil;
 }
 
 static VALUE
-readline_s_emacs_editing_mode(VALUE self)
+readline_s_emacs_editing_mode(self)
+    VALUE self;
 {
     rl_emacs_editing_mode(1,0);
     return Qnil;
 }
 
 static VALUE
-hist_to_s(VALUE self)
+hist_to_s(self)
+    VALUE self;
 {
     return rb_str_new2("HISTORY");
 }
 
 static VALUE
-hist_get(VALUE self, VALUE index)
+hist_get(self, index)
+    VALUE self;
+    VALUE index;
 {
     HISTORY_STATE *state;
     int i;
@@ -167,7 +184,10 @@ hist_get(VALUE self, VALUE index)
 }
 
 static VALUE
-hist_set(VALUE self, VALUE index, VALUE str)
+hist_set(self, index, str)
+    VALUE self;
+    VALUE index;
+    VALUE str;
 {
     HISTORY_STATE *state;
     int i;
@@ -182,15 +202,19 @@ hist_set(VALUE self, VALUE index, VALUE str)
 }
 
 static VALUE
-hist_push(VALUE self, VALUE str)
+hist_push(self, str)
+    VALUE self;
+    VALUE str;
 {
     add_history(STR2CSTR(str));
     return self;
 }
 
 static VALUE
-hist_push_method(int argc, VALUE *argv,
-			      VALUE self)
+hist_push_method(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
     VALUE str;
     
@@ -202,7 +226,8 @@ hist_push_method(int argc, VALUE *argv,
 }
 
 static VALUE
-hist_pop(VALUE self)
+hist_pop(self)
+    VALUE self;
 {
     HISTORY_STATE *state;
     HIST_ENTRY *entry;
@@ -217,7 +242,8 @@ hist_pop(VALUE self)
 }
 
 static VALUE
-hist_shift(VALUE self)
+hist_shift(self)
+    VALUE self;
 {
     HISTORY_STATE *state;
     HIST_ENTRY *entry;
@@ -232,7 +258,8 @@ hist_shift(VALUE self)
 }
 
 static VALUE
-hist_each(VALUE self)
+hist_each(self)
+    VALUE self;
 {
     HISTORY_STATE *state;
     int i;
@@ -245,7 +272,8 @@ hist_each(VALUE self)
 }
 
 static VALUE
-hist_length(VALUE self)
+hist_length(self)
+    VALUE self;
 {
     HISTORY_STATE *state;
 
@@ -254,7 +282,8 @@ hist_length(VALUE self)
 }
 
 static VALUE
-hist_empty_p(VALUE self)
+hist_empty_p(self)
+    VALUE self;
 {
     HISTORY_STATE *state;
 
@@ -266,7 +295,9 @@ hist_empty_p(VALUE self)
 }
 
 static VALUE
-hist_delete_at(VALUE self, VALUE index)
+hist_delete_at(self, index)
+    VALUE self;
+    VALUE index;
 {
     HISTORY_STATE *state;
     HIST_ENTRY *entry;
@@ -282,7 +313,9 @@ hist_delete_at(VALUE self, VALUE index)
 }
 
 static VALUE
-filename_completion_proc_call(VALUE self, VALUE str)
+filename_completion_proc_call(self, str)
+    VALUE self;
+    VALUE str;
 {
     VALUE result;
     char **matches;
@@ -307,7 +340,9 @@ filename_completion_proc_call(VALUE self, VALUE str)
 }
 
 static VALUE
-username_completion_proc_call(VALUE self, VALUE str)
+username_completion_proc_call(self, str)
+    VALUE self;
+    VALUE str;
 {
     VALUE result;
     char **matches;
@@ -332,7 +367,7 @@ username_completion_proc_call(VALUE self, VALUE str)
 }
 
 void
-Init_readline(void)
+Init_readline()
 {
     VALUE histary, fcomp, ucomp;
 

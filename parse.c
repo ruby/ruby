@@ -4945,8 +4945,10 @@ read_escape()
 	    int i;
 
 	    for (i=0; i<2; i++) {
-		buf[i] = nextc();
-		if (buf[i] == -1) goto eof;
+		int cc = nextc();
+
+		if (cc == -1) goto eof;
+		buf[i] = cc;
 		if (!ISXDIGIT(buf[i])) {
 		    pushback(buf[i]);
 		    break;

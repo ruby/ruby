@@ -19,7 +19,7 @@ CFLAGS = -nologo -DNT=1 -Ox -I. -I./missing
 LDFLAGS =  $(CFLAGS) -Fm
 #CFLAGS = -nologo -DNT=1 -Zi -MD 
 #LDFLAGS =  $(CFLAGS) -Fm -MD
-LIBS =  $(EXTLIBS)  advapi32.lib wsock32.lib
+LIBS =  advapi32.lib wsock32.lib
 MISSING = crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj
 
 prefix = 
@@ -85,7 +85,7 @@ miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) $(EXTOBJS)
 		@echo $(EXTOBJS)
 		@echo $(LIBS)
 		@rm -f miniruby$(binsuffix)
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBS) -o $@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) rubymw.dll
 		@rm -f $(PROGRAM)
@@ -105,7 +105,7 @@ install:	rbconfig.rb
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.obj *.obj
-		@-./miniruby$(binsuffix) -Xext extmk.rb clean 2> /dev/null || true
+		@.\miniruby$(binsuffix) -Xext extmk.rb clean 2> nul || true
 
 distclean:	clean
 		@rm -f Makefile ext/extmk.rb config.h
@@ -118,7 +118,7 @@ realclean:	distclean
 		@rm -f lex.c
 
 test:		miniruby$(binsuffix)
-		@./miniruby$(binsuffix) $(srcdir)/rubytest.rb
+		@.\miniruby$(binsuffix) $(srcdir)/rubytest.rb
 
 .c.obj:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<

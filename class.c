@@ -199,8 +199,11 @@ include_class_new(module, super)
     NEWOBJ(klass, struct RClass);
     OBJSETUP(klass, rb_cClass, T_ICLASS);
 
-    klass->m_tbl = RCLASS(module)->m_tbl;
+    if (!RCLASS(module)->iv_tbl) {
+	RCLASS(module)->iv_tbl = st_init_numtable();
+    }
     klass->iv_tbl = RCLASS(module)->iv_tbl;
+    klass->m_tbl = RCLASS(module)->m_tbl;
     klass->super = super;
     if (TYPE(module) == T_ICLASS) {
 	RBASIC(klass)->klass = RBASIC(module)->klass;
