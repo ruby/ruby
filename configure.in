@@ -913,8 +913,9 @@ RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
 sitedir='${prefix}/lib/ruby/site_ruby'
 AC_ARG_WITH(sitedir,
 	    [--with-sitedir=DIR        site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
-            [sitedir=$withval])
-RUBY_SITE_LIB_PATH=`eval "echo ${SITEDIR}"`
+            [sitedir=$withval],
+            [sitedir=`eval "echo ${SITEDIR}"`])
+RUBY_SITE_LIB_PATH="${sitedir}"
 RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${MAJOR}.${MINOR}"
 
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${RUBY_LIB_PATH}")

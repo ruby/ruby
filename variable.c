@@ -1053,6 +1053,10 @@ rb_autoload_load(id)
     VALUE module;
 
     st_delete(autoload_tbl, &id, &modname);
+    if (rb_provided(modname)) {
+	free(modname);
+	return;
+    }
     module = rb_str_new2(modname);
     free(modname);
     FL_UNSET(module, FL_TAINT);

@@ -132,6 +132,7 @@ VALUE rb_obj_instance_eval _((int, VALUE*, VALUE));
 void rb_load _((VALUE, int));
 void rb_load_protect _((VALUE, int, int*));
 void rb_jump_tag _((int)) NORETURN;
+int rb_provided _((const char*));
 void rb_provide _((const char*));
 VALUE rb_f_require _((VALUE, VALUE));
 void rb_obj_call_init _((VALUE, int, VALUE*));

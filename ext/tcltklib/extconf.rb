@@ -18,10 +18,16 @@ tcllib = with_config("tcllib")
 stubs = enable_config("tcltk_stubs") || with_config("tcltk_stubs")
 
 def find_tcl(tcllib, stubs)
-  paths = ["/usr/local/lib", "/usr/pkg"]
+  paths = ["/usr/local/lib", "/usr/pkg", "/usr/lib"]
   func = stubs ? "Tcl_InitStubs" : "Tcl_FindExecutable"
   if tcllib
     find_library(tcllib, func, *paths)
+  elsif RUBY_PLATFORM =~ /mswin32|mingw|cygwin/
+    find_library("tcl", func, *paths) or
+      find_library("tcl83", func, *paths) or
+      find_library("tcl82", func, *paths) or
+      find_library("tcl80", func, *paths) or
+      find_library("tcl76", func, *paths)
   else
     find_library("tcl", func, *paths) or
       find_library("tcl8.3", func, *paths) or
@@ -32,10 +38,16 @@ def find_tcl(tcllib, stubs)
 end
 
 def find_tk(tklib, stubs)
-  paths = ["/usr/local/lib", "/usr/pkg"]
+  paths = ["/usr/local/lib", "/usr/pkg", "/usr/lib"]
   func = stubs ? "Tk_InitStubs" : "Tk_Init"
   if tklib
     find_library(tklib, func, *paths)
+  elsif RUBY_PLATFORM =~ /mswin32|mingw|cygwin/
+    find_library("tk", func, *paths) or
+      find_library("tk83", func, *paths) or
+      find_library("tk82", func, *paths) or
+      find_library("tk80", func, *paths) or
+      find_library("tk42", func, *paths)
   else
     find_library("tk", func, *paths) or
       find_library("tk8.3", func, *paths) or

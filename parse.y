@@ -1204,12 +1204,13 @@ primary		: literal
 			class_nest++;
 			cref_push();
 			local_push();
+		        $<num>$ = ruby_sourceline;
 		    }
 		  compstmt
 		  kEND
 		    {
 		        $$ = NEW_CLASS($2, $5, $3);
-		        fixpos($$, $3);
+		        nd_set_line($$, $<num>4);
 		        local_pop();
 			cref_pop();
 			class_nest--;
@@ -1236,12 +1237,13 @@ primary		: literal
 			class_nest++;
 			cref_push();
 			local_push();
+		        $<num>$ = ruby_sourceline;
 		    }
 		  compstmt
 		  kEND
 		    {
 		        $$ = NEW_MODULE($2, $4);
-		        fixpos($$, $4);
+		        nd_set_line($$, $<num>3);
 		        local_pop();
 			cref_pop();
 			class_nest--;

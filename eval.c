@@ -5025,8 +5025,9 @@ static VALUE rb_features;
 static st_table *loading_tbl;
 
 static int
-rb_provided(feature)
+rb_feature_p(feature, wait)
     const char *feature;
+    int wait;
 {
     VALUE *p, *pend;
     char *f;
@@ -5045,7 +5046,8 @@ rb_provided(feature)
 		return Qtrue;
 	    }
 	    if (strcmp(f+len, ".rb") == 0) {
-		goto load_wait;
+		if (wait) goto load_wait;
+		return Qtrue;
 	    }
 	}
 	p++;
@@ -5070,6 +5072,13 @@ rb_provided(feature)
     return Qtrue;
 }
 
+int
+rb_provided(feature)
+    const char *feature;
+{
+    return rb_feature_p(feature, Qfalse);
+}
+
 void
 rb_provide(feature)
     const char *feature;
@@ -5088,7 +5097,7 @@ rb_provide(feature)
 	strcpy(ext, ".so");
 	feature = buf;
     }
-    if (rb_provided(feature)) return;
+    if (rb_feature_p(feature, Qtrue)) return;
     rb_ary_push(rb_features, rb_str_new2(feature));
 }
 
@@ -5102,7 +5111,8 @@ rb_f_require(obj, fname)
     volatile int safe = ruby_safe_level;
 
     Check_SafeStr(fname);
-    if (rb_provided(RSTRING(fname)->ptr)) return Qfalse;
+    if (rb_feature_p(RSTRING(fname)->ptr, Qtrue))
+	return Qfalse;
     ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext) {
 	feature = file = RSTRING(fname)->ptr;
