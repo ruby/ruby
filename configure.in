@@ -915,6 +915,9 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
   *djgpp*)
     setup=Setup.dj
     ;;
+  atheos*)
+    setup=Setup.atheos
+    ;;
   *)
     setup=Setup
     ;;

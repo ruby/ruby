@@ -20,6 +20,21 @@ Mon Sep 23 19:57:52 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb: refactoring.
 
+Mon Sep 23 08:27:11 2002  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (appendline): forget to terminate with nul.
+
+Mon Sep 23 02:46:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_run): should set toplevel visibility again here. 
+
+	* eval.c (rb_eval): should not rely on ruby_class == rb_cObject
+	  check.   Besides allow implicit publicity for attribute set
+	  methods.
+
+	* parse.y (primary): need not to check class_nest, just set
+	  whether method is an attrset or not.
+
 Sun Sep 22 21:49:42 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (call_trace_func): should not call trace function while
@@ -31,6 +46,21 @@ Sun Sep 22 21:49:42 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.c (require_libraries): preserve source file/line for each
 	  require.
+
+Sun Sep 22 17:08:11 2002  Tanaka Akira  <akr@m17n.org>
+	
+	* string.c (rb_str_each_line): p might be at the top of the
+	  string.
+
+Sat Sep 21 23:28:28 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_make_metaclass): class of metaclass should be
+	  metaclass of superclass, unless class itself is a metaclass;
+	  class of metaclass of metaclass should point back to self.
+	  eh, confusing, isn't it.
+
+	* class.c (rb_singleton_class): check if its class is singleton
+	  AND attached to self.
 
 Sat Sep 21 22:23:41 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -45,6 +75,15 @@ Fri Sep 20 23:02:01 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Fri Sep 20 19:43:40 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: Merge rough/lib/set.rb rev.1.5-1.15.
+
+Wed Sep 18 12:41:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should define class/module under ruby_cbase.
+
+	* eval.c (rb_eval): should set class/module path based on
+	  ruby_cbase, not ruby_class.
+
+	* eval.c (module_setup): use ruby_cbase instead of ruby_class.
 
 Tue Sep 17 21:06:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

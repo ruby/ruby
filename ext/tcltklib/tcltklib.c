@@ -693,8 +693,9 @@ ip_invoke_real(argc, argv, obj)
     else
 #endif
     {
-	ptr->return_value = (*info.proc)(info.clientData,
-					 ptr->ip, argc, av);
+	TRAP_BEG;
+	ptr->return_value = (*info.proc)(info.clientData, ptr->ip, argc, av);
+	TRAP_END;
     }
 
     if (ptr->return_value == TCL_ERROR) {

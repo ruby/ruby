@@ -1255,6 +1255,8 @@ ruby_run()
     Init_stack((void*)&tmp);
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
+    /* default visibility is private at toplevel */
+    SCOPE_SET(SCOPE_PRIVATE);
     if ((state = EXEC_TAG()) == 0) {
 	eval_node(ruby_top_self, ruby_eval_tree);
     }
@@ -2923,7 +2925,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_CDECL:
-	if (NIL_P(ruby_class)) {
+	if (NIL_P(ruby_cbase)) {
 	    rb_raise(rb_eTypeError, "no class/module to define constant");
 	}
 	result = rb_eval(self, node->nd_value);
@@ -3166,14 +3168,14 @@ rb_eval(self, n)
 		}
 	    }
 
-	    if (SCOPE_TEST(SCOPE_PRIVATE) || node->nd_mid == init) {
+	    if (node->nd_noex == NOEX_PUBLIC) {
+		noex = NOEX_PUBLIC; 	/* means is is an attrset */
+	    }
+	    else if (SCOPE_TEST(SCOPE_PRIVATE) || node->nd_mid == init) {
 		noex = NOEX_PRIVATE;
 	    }
 	    else if (SCOPE_TEST(SCOPE_PROTECTED)) {
 		noex = NOEX_PROTECTED;
-	    }
-	    else if (ruby_class == rb_cObject) {
-		noex =  node->nd_noex;
 	    }
 	    else {
 		noex = NOEX_PUBLIC;
@@ -3260,7 +3262,7 @@ rb_eval(self, n)
 	{
 	    VALUE super, klass, tmp;
 
-	    if (NIL_P(ruby_class)) {
+	    if (NIL_P(ruby_cbase)) {
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
 	    if (node->nd_super) {
@@ -3270,11 +3272,11 @@ rb_eval(self, n)
 		super = 0;
 	    }
 
-	    if ((ruby_class == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
+	    if ((ruby_cbase == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
 		rb_autoload_load(node->nd_cname);
 	    }
-	    if (rb_const_defined_at(ruby_class, node->nd_cname)) {
-		klass = rb_const_get(ruby_class, node->nd_cname);
+	    if (rb_const_defined_at(ruby_cbase, node->nd_cname)) {
+		klass = rb_const_get(ruby_cbase, node->nd_cname);
 		if (TYPE(klass) != T_CLASS) {
 		    rb_raise(rb_eTypeError, "%s is not a class",
 			     rb_id2name(node->nd_cname));
@@ -3293,7 +3295,7 @@ rb_eval(self, n)
 	      override_class:
 		if (!super) super = rb_cObject;
 		klass = rb_define_class_id(node->nd_cname, super);
-		rb_set_class_path(klass,ruby_class,rb_id2name(node->nd_cname));
+		rb_set_class_path(klass,ruby_cbase,rb_id2name(node->nd_cname));
 		rb_class_inherited(super, klass);
 		rb_const_set(ruby_cbase, node->nd_cname, klass);
 	    }
@@ -3310,14 +3312,14 @@ rb_eval(self, n)
 	{
 	    VALUE module;
 
-	    if (NIL_P(ruby_class)) {
+	    if (NIL_P(ruby_cbase)) {
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
-	    if ((ruby_class == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
+	    if ((ruby_cbase == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
 		rb_autoload_load(node->nd_cname);
 	    }
-	    if (rb_const_defined_at(ruby_class, node->nd_cname)) {
-		module = rb_const_get(ruby_class, node->nd_cname);
+	    if (rb_const_defined_at(ruby_cbase, node->nd_cname)) {
+		module = rb_const_get(ruby_cbase, node->nd_cname);
 		if (TYPE(module) != T_MODULE) {
 		    rb_raise(rb_eTypeError, "%s is not a module",
 			     rb_id2name(node->nd_cname));
@@ -3328,8 +3330,8 @@ rb_eval(self, n)
 	    }
 	    else {
 		module = rb_define_module_id(node->nd_cname);
+		rb_set_class_path(module,ruby_cbase,rb_id2name(node->nd_cname));
 		rb_const_set(ruby_cbase, node->nd_cname, module);
-		rb_set_class_path(module,ruby_class,rb_id2name(node->nd_cname));
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(module, ruby_wrapper);
@@ -3429,11 +3431,11 @@ module_setup(module, n)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (trace_func) {
-	    call_trace_func("class", ruby_current_node, ruby_class,
+	    call_trace_func("class", ruby_current_node, ruby_cbase,
 			    ruby_frame->last_func,
 			    ruby_frame->last_class);
 	}
-	result = rb_eval(ruby_class, node->nd_next);
+	result = rb_eval(ruby_cbase, node->nd_next);
     }
     POP_TAG();
     POP_CREF();
@@ -7279,7 +7281,7 @@ struct thread {
 
     VALUE result;
 
-    int   stk_len;
+    int    stk_len;
     int   stk_max;
     VALUE*stk_ptr;
     VALUE*stk_pos;

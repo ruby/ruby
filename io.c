@@ -792,6 +792,7 @@ appendline(fptr, delim, strp)
 	    else {
 		*strp = str = rb_str_buf_new(len);
 		RSTRING(str)->len = len;
+		RSTRING(str)->ptr[len] = '\0';
 	    }
 	    if (c != EOF) {
 		RSTRING(str)->ptr[last++] = c;

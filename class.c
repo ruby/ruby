@@ -147,11 +147,12 @@ rb_make_metaclass(obj, super)
     FL_SET(klass, FL_SINGLETON);
     RBASIC(obj)->klass = klass;
     rb_singleton_class_attached(klass, obj);
-    if (BUILTIN_TYPE(obj) == T_CLASS) {
+    if (BUILTIN_TYPE(obj) == T_CLASS && FL_TEST(obj, FL_SINGLETON)) {
 	RBASIC(klass)->klass = klass;
-	if (FL_TEST(obj, FL_SINGLETON)) {
-	    RCLASS(klass)->super = RBASIC(rb_class_real(RCLASS(obj)->super))->klass;
-	}
+	RCLASS(klass)->super = RBASIC(rb_class_real(RCLASS(obj)->super))->klass;
+    }
+    else {
+	RBASIC(klass)->klass = RBASIC(rb_class_real(super))->klass;
     }
 
     return klass;
@@ -699,8 +700,7 @@ rb_singleton_class(obj)
 
     DEFER_INTS;
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
-	(BUILTIN_TYPE(obj) == T_CLASS || /* metaclass (or metaclass of metaclass) */
-	 rb_iv_get(RBASIC(obj)->klass, "__attached__") == obj)) {
+	rb_iv_get(RBASIC(obj)->klass, "__attached__") == obj) {
 	klass = RBASIC(obj)->klass;
     }
     else {
