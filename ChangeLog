@@ -1,3 +1,11 @@
+Wed Jan  9 20:21:09 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* misc/ruby-mode.el (ruby-calculate-indent): indentation after
+	  comment at beginning of buffer failed.
+
+	* misc/ruby-mode.el (font-lock-defaults): unless XEmacs, set
+	  font-lock variables in ruby-mode-hook.
+
 Tue Jan  8 15:54:02 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_add_method): clear replaced method from the cache.
