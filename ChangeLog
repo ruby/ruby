@@ -1,3 +1,7 @@
+Wed Aug 28 23:34:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (appendline): data was lost when raw mode.
+
 Wed Aug 28 19:12:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/stringio/stringio.c (strio_initialize): RSTRING(mode)->ptr

@@ -727,20 +727,32 @@ appendline(fptr, delim, strp)
 	if (pending > 0) {
 	    const char *p = READ_DATA_PENDING_PTR(f);
 	    const char *e = memchr(p, delim, pending);
-	    long last = 0;
+	    long last = 0, len = (c != EOF);
 	    if (e) pending = e - p + 1;
+	    len += pending;
 	    if (!NIL_P(str)) {
 		last = RSTRING(str)->len;
-		rb_str_resize(str, last + (c != EOF) + pending);
+		rb_str_resize(str, last + len);
 	    }
 	    else {
-		*strp = str = rb_str_new(0, (c != EOF) + pending);
+		*strp = str = rb_str_buf_new(len);
+		RSTRING(str)->len = len;
 	    }
 	    if (c != EOF) {
 		RSTRING(str)->ptr[last++] = c;
 	    }
 	    fread(RSTRING(str)->ptr + last, 1, pending, f); /* must not fail */
 	    if (e) return delim;
+	}
+	else if (c != EOF) {
+	    if (!NIL_P(str)) {
+		char ch = c;
+		rb_str_buf_cat(str, &ch, 1);
+	    }
+	    else {
+		*strp = str = rb_str_buf_new(1);
+		RSTRING(str)->ptr[RSTRING(str)->len++] = c;
+	    }
 	}
 	rb_thread_wait_fd(fileno(f));
 	rb_io_check_closed(fptr);
