@@ -16,4 +16,5 @@ marshal
 readline
 sdbm
 #socket
+#syslog
 #tkutil

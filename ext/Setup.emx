@@ -16,5 +16,6 @@ nkf
 #readline
 #sdbm
 socket
+#syslog
 #tcltklib
 #tk
