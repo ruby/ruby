@@ -202,6 +202,9 @@ lib/tkextlib/tcllib/plotchart.rb
 lib/tkextlib/tcllib/setup.rb
 lib/tkextlib/tcllib/style.rb
 lib/tkextlib/tcllib/tkpiechart.rb
+lib/tkextlib/tclx.rb
+lib/tkextlib/tclx/setup.rb
+lib/tkextlib/tclx/tclx.rb
 lib/tkextlib/tile.rb
 lib/tkextlib/tile/setup.rb
 lib/tkextlib/tile/style.rb
@@ -240,6 +243,7 @@ lib/tkextlib/tkimg/xpm.rb
 lib/tkextlib/tktable.rb
 lib/tkextlib/tktable/setup.rb
 lib/tkextlib/tktable/tktable.rb
+lib/tkextlib/tktrans.rb
 lib/tkextlib/tktrans/setup.rb
 lib/tkextlib/tktrans/tktrans.rb
 lib/tkextlib/treectrl.rb
@@ -672,6 +676,7 @@ sample/tkextlib/tktable/debug.rb
 sample/tkextlib/tktable/dynarows.rb
 sample/tkextlib/tktable/maxsize.rb
 sample/tkextlib/tktable/spreadsheet.rb
+sample/tkextlib/tktable/tcllogo.gif
 sample/tkextlib/tktable/valid.rb
 sample/tkextlib/vu/Orig_LICENSE.txt
 sample/tkextlib/vu/README.txt
