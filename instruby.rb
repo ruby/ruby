@@ -51,7 +51,7 @@ arc = CONFIG["LIBRUBY_A"]
 
 makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 
-ruby_bin = File.join(bindir, ruby_install_name)
+ruby_bin = File.join(CONFIG["bindir"], ruby_install_name)
 
 install ruby_install_name+exeext, ruby_bin+exeext, 0755
 if rubyw_install_name and !rubyw_install_name.empty?

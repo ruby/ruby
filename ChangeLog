@@ -1,3 +1,7 @@
+Thu Jan 23 06:37:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* instruby.rb: should not contain destdir in shebang line.
+
 Wed Jan 22 23:19:57 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (pipe_exec): remove unnecessary SetStdHandle().
