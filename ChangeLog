@@ -1,3 +1,8 @@
+Mon Sep  1 18:34:25 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): make tail recursion in ELSE clause of
+	  RESCUE a jump.
+
 Mon Sep  1 18:00:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (aref_args): forgot to call NEW_SPLAT(). reported by

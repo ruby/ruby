@@ -2809,8 +2809,8 @@ rb_eval(self, n)
 	    POP_TAG();
 	    if (state) JUMP_TAG(state);
 	    /* no exception raised */
-	    if (node->nd_else) { /* else clause given */
-		result = rb_eval(self, node->nd_else);
+	    if (node = node->nd_else) { /* else clause given */
+		goto again;
 	    }
 	}
         break;
