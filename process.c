@@ -108,6 +108,9 @@ static VALUE S_Tms;
 #endif
 #endif
 
+#define preserving_errno(stmts) \
+	do {int saved_errno = errno; stmts; errno = saved_errno;} while (0)
+
 
 /*
  *  call-seq:
@@ -915,8 +918,6 @@ proc_exec_v(argv, prog)
     char **argv;
     const char *prog;
 {
-    int err;
-
     if (!prog)
 	prog = argv[0];
     security(prog);
@@ -965,9 +966,7 @@ proc_exec_v(argv, prog)
 #endif /* MSDOS or __human68k__ or __EMX__ */
     before_exec();
     execv(prog, argv);
-    err = errno;
-    after_exec();
-    errno = err;
+    preserving_errno(after_exec());
     return -1;
 }
 
@@ -1030,9 +1029,7 @@ rb_proc_exec(str)
 #else
 	    before_exec();
 	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
-	    status = errno;
-	    after_exec();
-	    errno = status;
+	    preserving_errno(after_exec());
 #endif
 	    return -1;
 	}
@@ -1251,17 +1248,60 @@ rb_exec(e)
     else {
 	rb_proc_exec_n(argc, argv, prog);
     }
-    return errno;
+#ifndef FD_CLOEXEC
+    preserving_errno({
+	fprintf(stderr, "%s:%d: command not found: %s\n",
+		ruby_sourcefile, ruby_sourceline, prog);
+    });
+#endif
+    return -1;
 }
 
 #ifdef HAVE_FORK
+#ifdef FD_CLOEXEC
+#if SIZEOF_INT == SIZEOF_LONG
+#define proc_syswait (VALUE (*)_((VALUE)))rb_syswait
+#else
+static VALUE
+proc_syswait(pid)
+    VALUE pid;
+{
+    rb_syswait((int)pid);
+    return Qnil;
+}
+#endif
+#endif
+
+/*
+ * Forks child process, and returns the process ID in the parent
+ * process.
+ *
+ * If +status+ is given, protects from any exceptions and sets the
+ * jump status to it.
+ *
+ * In the child process, just returns 0 if +chfunc+ is +NULL+.
+ * Otherwise +chfunc+ will be called with +charg+, and then the child
+ * process exits with +EXIT_SUCCESS+ when it returned zero.
+ *
+ * In the case of the function is called and returns non-zero value,
+ * the child process exits with non-+EXIT_SUCCESS+ value (normaly
+ * 127).  And, on the platforms where +FD_CLOEXEC+ is available,
+ * +errno+ is propagated to the parent process, and this function
+ * returns -1 in the parent process.  On the other platforms, just
+ * returns pid.
+ *
+ * +chfunc+ must not raise any exceptions.
+ */
 int
 rb_fork(status, chfunc, charg)
     int *status;
     int (*chfunc) _((void *));
     void *charg;
 {
-    int pid, err, state = 0, ep[2];
+    int pid, err, state = 0;
+#ifdef FD_CLOEXEC
+    int ep[2];
+#endif
 
 #ifndef __VMS
     fflush(stdout);
@@ -1271,12 +1311,8 @@ rb_fork(status, chfunc, charg)
 #ifdef FD_CLOEXEC
     if (chfunc) {
 	if (pipe(ep)) return -1;
-	if (fcntl(ep[0], F_SETFD, FD_CLOEXEC) ||
-	    fcntl(ep[1], F_SETFD, FD_CLOEXEC)) {
-	    err = errno;
-	    close(ep[0]);
-	    close(ep[1]);
-	    errno = err;
+	if (fcntl(ep[1], F_SETFD, FD_CLOEXEC)) {
+	    preserving_errno((close(ep[0]), close(ep[1])));
 	    return -1;
 	}
     }
@@ -1299,10 +1335,7 @@ rb_fork(status, chfunc, charg)
 	  default:
 #ifdef FD_CLOEXEC
 	    if (chfunc) {
-		err = errno;
-		close(ep[0]);
-		close(ep[1]);
-		errno = err;
+		preserving_errno((close(ep[0]), close(ep[1])));
 	    }
 #endif
 	    if (state && !status) rb_jump_tag(state);
@@ -1311,11 +1344,22 @@ rb_fork(status, chfunc, charg)
     }
     if (!pid) {
 	if (chfunc) {
-	    err = (*chfunc)(charg);
+#ifdef FD_CLOEXEC
+	    close(ep[0]);
+#endif
+	    if (!(*chfunc)(charg)) _exit(EXIT_SUCCESS);
+#ifdef FD_CLOEXEC
+	    err = errno;
 	    write(ep[1], &err, sizeof(err));
+#endif
+#if EXIT_SUCCESS == 127
+	    _exit(EXIT_FAILURE);
+#else
 	    _exit(127);
+#endif
 	}
     }
+#ifdef FD_CLOEXEC
     else if (chfunc) {
 	close(ep[1]);
 	if ((state = read(ep[0], &err, sizeof(err))) < 0) {
@@ -1323,11 +1367,17 @@ rb_fork(status, chfunc, charg)
 	}
 	close(ep[0]);
 	if (state) {
-	    rb_syswait(pid);
+	    if (status) {
+		rb_protect(proc_syswait, (VALUE)pid, status);
+	    }
+	    else {
+		rb_syswait(pid);
+	    }
 	    errno = err;
 	    return -1;
 	}
     }
+#endif
     return pid;
 }
 #endif

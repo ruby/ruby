@@ -1,3 +1,11 @@
+Mon Mar 29 20:17:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* process.c (rb_exec): follow older behavior if close-on-exec is not
+	  available.
+
+	* process.c (rb_fork): protect from exceptions while waiting failed
+	  process, if status is given.
+
 Sun Mar 28 16:25:37 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* cygwin/GNUmakefile.in (clean-local, distclean-local): remove
