@@ -338,13 +338,13 @@ rb_dl_set_last_error(VALUE self, VALUE val)
 static ID rb_dl_id_DLW32Error;
 
 static VALUE
-rb_dl_win32_get_lasterror(VALUE self)
+rb_dl_win32_get_last_error(VALUE self)
 {
   return rb_thread_local_aref(rb_thread_current(), rb_dl_id_DLW32Error);
 }
 
 static VALUE
-rb_dl_win32_set_lasterror(VALUE self, VALUE val)
+rb_dl_win32_set_last_error(VALUE self, VALUE val)
 {
     SetLastError(NUM2INT(val));
     rb_thread_local_aset(rb_thread_current(), rb_dl_id_DLW32Error, val);
