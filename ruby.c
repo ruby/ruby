@@ -728,7 +728,7 @@ load_file(fname, script)
 	FILE *fp = fopen(fname, "r");
 
 	if (fp == NULL) {
-	    rb_load_fail(fname);
+	    rb_load_failed(fname);
 	}
 	fclose(fp);
 

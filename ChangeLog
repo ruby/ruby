@@ -1,3 +1,7 @@
+Wed Jan 10 11:30:13 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ruby.c (load_file): typo(rb_load_fail -> rb_load_failed).
+
 Wed Jan 10 01:50:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_reverse_bang): forgot to call rb_str_modify().
