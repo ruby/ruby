@@ -102,7 +102,7 @@ module WEBrick
           rescue Errno::EBADF, IOError => ex
             # if the listening socket was closed in GenericServer#shutdown,
             # IO::select raise it.
-          rescue => ex
+          rescue Exception => ex
             msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
             @logger.error msg
           end
@@ -148,14 +148,20 @@ module WEBrick
           @logger.debug "accept: #{addr[3]}:#{addr[1]}"
           call_callback(:AcceptCallback, sock)
           block ? block.call(sock) : run(sock)
-        rescue ServerError, Errno::ENOTCONN => ex
+        rescue Errno::ENOTCONN
+          @logger.debug "Errno::ENOTCONN raised"
+        rescue ServerError => ex
           msg = "#{ex.class}: #{ex.message}\n\t#{ex.backtrace[0]}"
           @logger.error msg
         rescue Exception => ex
           @logger.error ex
         ensure
           Thread.current[:WEBrickSocket] = nil
-          @logger.debug "close: #{addr[3]}:#{addr[1]}"
+          if addr
+            @logger.debug "close: #{addr[3]}:#{addr[1]}"
+          else
+            @logger.debug "close: <address unknown>"
+          end
           sock.close
         end
         @tokens.push(nil)

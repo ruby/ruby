@@ -84,10 +84,10 @@ module WEBrick
         setup_header()
         send_header(socket)
         send_body(socket)
-      rescue Errno::EPIPE
-        @logger.error("HTTPResponse#send_response: EPIPE occured.")
+      rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ENOTCONN => ex
+        @logger.debug(ex)
         @keep_alive = false
-      rescue => ex
+      rescue Exception => ex
         @logger.error(ex)
         @keep_alive = false
       end
