@@ -108,10 +108,6 @@ static int in_single = 0;
 static int in_def = 0;
 static int compile_for_eval = 0;
 static ID cur_mid = 0;
-static int quoted_term;
-#define quoted_term_char ((unsigned char)quoted_term)
-#define WHEN_QUOTED_TERM(x) ((quoted_term >= 0) && (x))
-#define QUOTED_TERM_P(c) WHEN_QUOTED_TERM((c) == quoted_term_char)
 
 static NODE *cond();
 static NODE *logop();
@@ -174,7 +170,6 @@ static void top_local_setup();
 
 #define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
 #define NODE_HEREDOC NODE_ARRAY 	/* 1, 3 to gc */
-#define ESCAPED_TERM (1 << CHAR_BIT)
 #define SIGN_EXTEND(x,n) (((1<<(n))-1-((x)&~(~0<<(n))))^~(~0<<(n)))
 #define nd_func u1.id
 #if SIZEOF_SHORT == 2
@@ -263,7 +258,7 @@ static void top_local_setup();
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fitem variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg
-%type <num>  f_norm_arg f_arg term_push
+%type <num>  f_norm_arg f_arg
 %token tUPLUS 		/* unary+ */
 %token tUMINUS 		/* unary- */
 %token tPOW		/* ** */
@@ -2050,7 +2045,7 @@ string_content	: tSTRING_CONTENT
 			lex_strterm = $<node>2;
 		        $$ = NEW_EVSTR($3);
 		    }
-		| tSTRING_DBEG term_push
+		| tSTRING_DBEG
 		    {
 			$<node>$ = lex_strterm;
 			lex_strterm = 0;
@@ -2058,11 +2053,10 @@ string_content	: tSTRING_CONTENT
 		    }
 		  compstmt '}'
 		    {
-			quoted_term = $2;
-			lex_strterm = $<node>3;
-			if (($$ = $4) && nd_type($$) == NODE_NEWLINE) {
+			lex_strterm = $<node>2;
+			if (($$ = $3) && nd_type($$) == NODE_NEWLINE) {
 			    $$ = $$->nd_next;
-			    rb_gc_force_recycle((VALUE)$4);
+			    rb_gc_force_recycle((VALUE)$3);
 			}
 			$$ = new_evstr($$);
 		    }
@@ -2072,16 +2066,6 @@ string_dvar	: tGVAR {$$ = NEW_GVAR($1);}
 		| tIVAR {$$ = NEW_IVAR($1);}
 		| tCVAR {$$ = NEW_CVAR($1);}
 		| backref
-		;
-
-term_push	: /* none */
-		    {
-			if (($$ = quoted_term) == -1 &&
-			    nd_type(lex_strterm) == NODE_STRTERM &&
-			    !nd_paren(lex_strterm)) {
-			    quoted_term = nd_term(lex_strterm);
-			}
-		    }
 		;
 
 symbol		: tSYMBEG sym
@@ -2450,7 +2434,7 @@ static char *lex_pend;
 
 static int
 yyerror(msg)
-    char *msg;
+    const char *msg;
 {
     char *p, *pe, *buf;
     int len, i;
@@ -2535,7 +2519,6 @@ yycompile(f, line)
     ruby_eval_tree = 0;
     heredoc_end = 0;
     lex_strterm = 0;
-    quoted_term = -1;
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
     n = yyparse();
@@ -2993,10 +2976,6 @@ tokadd_string(func, term, paren, nest)
 	}
 	else if (c == '\\') {
 	    c = nextc();
-	    if (QUOTED_TERM_P(c)) {
-		pushback(c);
-		return c;
-	    }
 	    switch (c) {
 	      case '\n':
 		if (func & STR_FUNC_QWORDS) break;
@@ -3068,9 +3047,7 @@ parse_string(quote)
 	do {c = nextc();} while (ISSPACE(c));
 	space = 1;
     }
-    if ((c == term && !quote->nd_nest) ||
-	(c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char)) &&
-	 (c = nextc()) == term)) {
+    if (c == term && !quote->nd_nest) {
 	if (func & STR_FUNC_QWORDS) {
 	    quote->nd_func = -1;
 	    return ' ';
@@ -4095,13 +4072,6 @@ yylex()
 	    goto retry; /* skip \\n */
 	}
 	pushback(c);
-	if (QUOTED_TERM_P(c)) {
-	    if (!(quoted_term & ESCAPED_TERM)) {
-		rb_warn("escaped terminator '%c' inside string interpolation", c);
-		quoted_term |= ESCAPED_TERM;
-	    }
-	    goto retry;
-	}
 	return '\\';
 
       case '%':
@@ -4111,14 +4081,6 @@ yylex()
 
 	    c = nextc();
 	  quotation:
-	    if (c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char))) {
-		c = nextc();
-		if (!(quoted_term & ESCAPED_TERM)) {
-		    rb_warn("escaped terminator '%s%c' inside string interpolation",
-			    (c == '\'' ? "\\" : ""), c);
-		    quoted_term |= ESCAPED_TERM;
-		}
-	    }
 	    if (!ISALNUM(c)) {
 		term = c;
 		c = 'Q';
@@ -4856,7 +4818,7 @@ assignable(id, val)
 	return NEW_CVDECL(id, val);
     }
     else {
-      rb_compile_error("identifier %s is not valid", rb_id2name(id));
+	rb_compile_error("identifier %s is not valid", rb_id2name(id));
     }
     return 0;
 }
