@@ -1,3 +1,8 @@
+Mon Jul 28 23:23:08 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (Init_File): IO should include File::Const.
+	  [ruby-dev:20964]
+
 Mon Jul 28 18:53:03 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/openssl/extconf.rb: check again after pkg-config for MinGW on
