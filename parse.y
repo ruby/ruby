@@ -1349,6 +1349,7 @@ opt_block_var	: none
 			$$ = $2;
 		    }
 
+
 do_block	: kDO
 		    {
 		        $<vars>$ = dyna_push();
@@ -1561,7 +1562,7 @@ symbol		: tSYMBEG sym
 sym		: fname
 		| tIVAR
 		| tGVAR
-
+		| tCVAR
 
 numeric		: tINTEGER
 		| tFLOAT

@@ -637,7 +637,6 @@ rb_dvar_ref(id)
     struct RVarmap *vars = ruby_dyna_vars;
 
     while (vars) {
-	if (TYPE(vars) != T_VARMAP) abort();
 	if (vars->id == id) {
 	    return vars->val;
 	}
@@ -728,7 +727,6 @@ struct tag {
     struct SCOPE *scope;
     int dst;
     struct tag *prev;
-    int line;
 };
 static struct tag *prot_tag;
 
@@ -742,7 +740,6 @@ static struct tag *prot_tag;
     _tag.scope = ruby_scope;		\
     _tag.tag = ptag;			\
     _tag.dst = 0;			\
-    _tag.line = __LINE__;		\
     prot_tag = &_tag;
 
 #define PROT_NONE   0
@@ -804,8 +801,7 @@ static void scope_dup _((struct SCOPE *));
 
 #define POP_SCOPE() 			\
     if (ruby_scope->flag & SCOPE_DONT_RECYCLE) {\
-       if (_old)\
-           scope_dup(_old);\
+       if (_old) scope_dup(_old);	\
     }					\
     if (!(ruby_scope->flag & SCOPE_MALLOC)) {\
 	ruby_scope->local_vars = 0;	\
@@ -3495,8 +3491,9 @@ rb_yield_0(val, self, klass, acheck)
 	struct RVarmap *vars = ruby_dyna_vars;
 
 	while (vars && vars->id != 0) {
+	    struct RVarmap *tmp = vars->next;
 	    rb_gc_force_recycle((VALUE)vars);
-	    vars = vars->next;
+	    vars = tmp;
 	}
 	if (ruby_dyna_vars && ruby_dyna_vars->id == 0) {
 	    rb_gc_force_recycle((VALUE)ruby_dyna_vars);
@@ -7621,19 +7618,15 @@ static VALUE
 rb_thread_abort_exc(thread)
     VALUE thread;
 {
-    rb_thread_t th = rb_thread_check(thread);
-
-    return th->abort?Qtrue:Qfalse;
+    return rb_thread_check(thread)->abort?Qtrue:Qfalse;
 }
 
 static VALUE
 rb_thread_abort_exc_set(thread, val)
     VALUE thread, val;
 {
-    rb_thread_t th = rb_thread_check(thread);
-
     rb_secure(4);
-    th->abort = RTEST(val);
+    rb_thread_check(thread)->abort = RTEST(val);
     return val;
 }
 
@@ -7685,18 +7678,6 @@ rb_thread_alloc(klass)
 
     THREAD_ALLOC(th);
     th->thread = Data_Wrap_Struct(klass, thread_mark, thread_free, th);
-
-    if (curr_thread) {
-	th->prev = curr_thread;
-	curr_thread->next->prev = th;
-	th->next = curr_thread->next;
-	curr_thread->next = th;
-	th->priority = curr_thread->priority;
-	th->gid = curr_thread->gid;
-    }
-    else {
-	curr_thread = th->prev = th->next = th;
-    }
 
     for (vars = th->dyna_vars; vars; vars = vars->next) {
 	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
@@ -7789,9 +7770,19 @@ rb_thread_start_0(fn, arg, th_arg)
 	return thread;
     }
 
+    if (!th->next) {
+	/* merge in thread list */
+	th->prev = curr_thread;
+	curr_thread->next->prev = th;
+	th->next = curr_thread->next;
+	curr_thread->next = th;
+	th->priority = curr_thread->priority;
+	th->gid = curr_thread->gid;
+    }
+
     PUSH_TAG(PROT_THREAD);
     if ((state = EXEC_TAG()) == 0) {
-	if ((status = THREAD_SAVE_CONTEXT(th)) == 0) {
+	if (THREAD_SAVE_CONTEXT(th) == 0) {
 	    curr_thread = th;
 	    th->result = (*fn)(arg, th);
 	}
@@ -7807,14 +7798,15 @@ rb_thread_start_0(fn, arg, th_arg)
 	    rb_thread_cleanup();
 	}
 	else if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
-	    if (ruby_safe_level >= 4) {
+	    if (th->safe >= 4) {
 		rb_raise(rb_eSecurityError, "Insecure exit at level %d",
 			 ruby_safe_level);
 	    }
 	    /* delegate exception to main_thread */
 	    rb_thread_raise(1, &ruby_errinfo, main_thread);
 	}
-	else if (thread_abort || th->abort || RTEST(ruby_debug)) {
+	else if (th->safe < 4 &&
+		 (thread_abort || th->abort || RTEST(ruby_debug))) {
 	    VALUE err = rb_exc_new(rb_eSystemExit, 0, 0);
 	    error_print();
 	    /* exit on main_thread */
@@ -7833,8 +7825,7 @@ rb_thread_create(fn, arg)
     VALUE (*fn)();
     void *arg;
 {
-    rb_thread_t th = rb_thread_alloc(rb_cThread);
-    return rb_thread_start_0(fn, arg, th);
+    return rb_thread_start_0(fn, arg, rb_thread_alloc(rb_cThread));
 }
 
 int
@@ -7861,10 +7852,9 @@ rb_thread_s_new(argc, argv, klass)
     rb_thread_t th = rb_thread_alloc(klass);
     volatile VALUE *pos;
 
-    THREAD_SAVE_CONTEXT(th);
     pos = th->stk_pos;
     rb_obj_call_init(th->thread, argc, argv);
-    if (th->stk_pos == pos) {
+    if (th->stk_pos == 0) {
 	rb_raise(rb_eThreadError, "uninitialized thread - check `%s#initialize'",
 		 rb_class2name(klass));
     }
@@ -7876,14 +7866,10 @@ static VALUE
 rb_thread_initialize(thread, args)
     VALUE thread, args;
 {
-    rb_thread_t th;
-
-    th = rb_thread_check(thread);
     if (!rb_block_given_p()) {
-	rb_thread_remove(th);
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
-    return rb_thread_start_0(rb_thread_yield, args, th);
+    return rb_thread_start_0(rb_thread_yield, args, rb_thread_check(thread));
 }
 
 static VALUE
@@ -7891,12 +7877,11 @@ rb_thread_start(klass, args)
     VALUE klass, args;
 {
     rb_thread_t th;
-    VALUE t;
 
     if (!rb_block_given_p()) {
 	rb_raise(rb_eThreadError, "must be called with a block");
     }
-    return rb_thread_start_0(rb_thread_yield, args, rb_thread_alloc(rb_cThread));
+    return rb_thread_start_0(rb_thread_yield, args, rb_thread_alloc(klass));
 }
 
 static VALUE
@@ -8194,7 +8179,7 @@ rb_thread_inspect(thread)
       default:
 	status = "unknown"; break;
     }
-    str = rb_str_new(0, strlen(cname)+6+16+9+1); /* 6:tags 16:addr 9:status 1:nul */ 
+    str = rb_str_new(0, strlen(cname)+7+16+9+1); /* 7:tags 16:addr 9:status 1:nul */ 
     sprintf(RSTRING(str)->ptr, "#<%s:0x%lx %s>", cname, thread, status);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     OBJ_INFECT(str, thread);
@@ -8214,7 +8199,6 @@ rb_callcc(self)
     struct RVarmap *vars;
 
     THREAD_ALLOC(th);
-    th->status = THREAD_RUNNABLE;
     cont = Data_Wrap_Struct(rb_cCont, thread_mark, thread_free, th);
 
     scope_dup(ruby_scope);
@@ -8374,6 +8358,7 @@ Init_Thread()
 
     /* allocate main thread */
     main_thread = rb_thread_alloc(rb_cThread);
+    curr_thread = main_thread->prev = main_thread->next = main_thread;
 
     rb_cCont = rb_define_class("Continuation", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cCont), "new");

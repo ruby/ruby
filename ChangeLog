@@ -1,6 +1,31 @@
+Mon Oct 16 15:37:33 2000  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* eval.c (rb_thread_inspect): tag size was shorter than required.
+
+	* object.c (rb_obj_inspect): ditto.
+
+Mon Oct 16 14:25:18 2000  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* object.c (sym_inspect): used `name' before initialization.
+
+Mon Oct 16 14:06:00 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): use NATINT_U32 for 'l', 'L', and 'N'.
+
+	* pack.c (I32,U32): 32 bit sized integer.
+
+	* pack.c (OFF16,OFF32B): big endien offset for network byteorder.
+
 Mon Oct 16 06:39:32 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: hex-alpha is not [a-h] but [a-f].
+
+Mon Oct 16 01:02:02 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): should not abort on exception if
+	  $SAFE >= 4.
+
+	* parse.y (sym): symbols for class variable names.
 
 Sat Oct 14 03:32:13 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

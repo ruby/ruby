@@ -129,6 +129,7 @@ lib/monitor.rb
 lib/mutex_m.rb
 lib/net/ftp.rb
 lib/net/http.rb
+lib/net/imap.rb
 lib/net/pop.rb
 lib/net/protocol.rb
 lib/net/smtp.rb

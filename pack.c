@@ -22,16 +22,24 @@
 #endif
 
 #ifdef NATINT_PACK
+# define OFF16B(p) ((char*)(p) + (natint?0:(sizeof(short) - SIZE16)))
+# define OFF32B(p) ((char*)(p) + (natint?0:(sizeof(long) - SIZE32)))
+# define NATINT_I32(x) (natint?sizeof(NUM2LONG(x)):(NUM2I32(x)))
+# define NATINT_U32(x) (natint?sizeof(NUM2ULONG(x)):(NUM2U32(x)))
 # define NATINT_LEN(type,len) (natint?sizeof(type):(len))
 # ifdef WORDS_BIGENDIAN
-#   define OFF16(p) ((char*)(p) + (natint?0:(sizeof(short) - 2)))
-#   define OFF32(p) ((char*)(p) + (natint?0:(sizeof(long) - 4)))
+#   define OFF16(p) OFF16B(p)
+#   define OFF32(p) OFF32B(p)
 # endif
 #else
+# define NATINT_I32(x) NUM2I32(x)
+# define NATINT_U32(x) NUM2U32(x)
 # define NATINT_LEN(type,len) sizeof(type)
 #endif
 
 #ifndef OFF16
+# define OFF16B(p) (char*)(p)
+# define OFF32B(p) (char*)(p)
 # define OFF16(p) (char*)(p)
 # define OFF32(p) (char*)(p)
 #endif
@@ -291,6 +299,18 @@ endian()
 #define HTOVD(x,y)	htovd(x)
 #define NTOHD(x,y)	ntohd(x)
 #define VTOHD(x,y)	vtohd(x)
+#endif
+
+#if SIZEOF_LONG == SIZE32
+typedef long I32;
+typedef unsigned long U32;
+#define NUM2I32(x) NUM2LONG(x)
+#define NUM2U32(x) NUM2LONG(x)
+#elif SIZEOF_INT == SIZE32
+typedef int I32;
+typedef unsigned int U32;
+#define NUM2I32(x) NUM2INT(x)
+#define NUM2U32(x) NUM2UINT(x)
 #endif
 
 static char *toofew = "too few arguments";
@@ -569,7 +589,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2ULONG(from);
+		    l = NATINT_U32(from);
 		}
 		rb_str_cat(res, OFF32(&l), NATINT_LEN(long,4));
 	    }
@@ -585,7 +605,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htons(s);
-		rb_str_cat(res, OFF16(&s), NATINT_LEN(short,2));
+		rb_str_cat(res, OFF16B(&s), NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -596,10 +616,10 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2ULONG(from);
+		    l = NATINT_U32(from);
 		}
 		l = htonl(l);
-		rb_str_cat(res, OFF32(&l), NATINT_LEN(long,4));
+		rb_str_cat(res, OFF32B(&l), NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -624,7 +644,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2ULONG(from);
+		    l = NATINT_U32(from);
 		}
 		l = htovl(l);
 		rb_str_cat(res, OFF32(&l), NATINT_LEN(long,4));
@@ -1315,7 +1335,7 @@ pack_unpack(str, fmt)
 	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
 		unsigned short tmp = 0;
-		memcpy(OFF16(&tmp), s, NATINT_LEN(unsigned short,2));
+		memcpy(OFF16B(&tmp), s, NATINT_LEN(unsigned short,2));
 		s += NATINT_LEN(unsigned short,2);
 		rb_ary_push(ary, rb_uint2inum(ntohs(tmp)));
 	    }
@@ -1326,7 +1346,7 @@ pack_unpack(str, fmt)
 	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
 		unsigned long tmp = 0;
-		memcpy(OFF32(&tmp), s, NATINT_LEN(unsigned long,4));
+		memcpy(OFF32B(&tmp), s, NATINT_LEN(unsigned long,4));
 		s += NATINT_LEN(unsigned long,4);
 		rb_ary_push(ary, rb_uint2inum(ntohl(tmp)));
 	    }

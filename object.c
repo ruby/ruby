@@ -198,12 +198,12 @@ rb_obj_inspect(obj)
 
 	c = rb_class2name(CLASS_OF(obj));
 	if (rb_inspecting_p(obj)) {
-	    str = rb_str_new(0, strlen(c)+8+16+1); /* 8:tags 16:addr 1:eos */
+	    str = rb_str_new(0, strlen(c)+10+16+1); /* 10:tags 16:addr 1:eos */
 	    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx ...>", c, obj);
 	    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	    return str;
 	}
-	str = rb_str_new(0, strlen(c)+4+16+1); /* 4:tags 16:addr 1:eos */
+	str = rb_str_new(0, strlen(c)+6+16+1); /* 6:tags 16:addr 1:eos */
 	sprintf(RSTRING(str)->ptr, "-<%s:0x%lx ", c, obj);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return rb_protect_inspect(inspect_obj, obj, str);
@@ -498,8 +498,8 @@ sym_inspect(sym)
     VALUE str;
     char *name;
 
-    str = rb_str_new(0, strlen(name)+2);
     name = rb_id2name(SYM2ID(sym));
+    str = rb_str_new(0, strlen(name)+2);
     sprintf(RSTRING(str)->ptr, ":%s", name);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     return str;
