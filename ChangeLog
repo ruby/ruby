@@ -1,3 +1,7 @@
+Sat Feb 21 22:36:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* ext/zlib/zlib.c: documented, but needs more effort.
+
 Sat Feb 21 11:12:15 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/os2.c, missing/x68.c: typo fix.  pointed out by greentea.
