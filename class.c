@@ -290,6 +290,9 @@ include_class_new(module, super)
     NEWOBJ(klass, struct RClass);
     OBJSETUP(klass, rb_cClass, T_ICLASS);
 
+    if (BUILTIN_TYPE(module) == T_ICLASS) {
+	module = RBASIC(module)->klass;
+    }
     if (!RCLASS(module)->iv_tbl) {
 	RCLASS(module)->iv_tbl = st_init_numtable();
     }
@@ -331,19 +334,27 @@ rb_include_module(klass, module)
 
     c = klass;
     while (module) {
+	int superclass_seen = Qfalse;
+
 	if (RCLASS(klass)->m_tbl == RCLASS(module)->m_tbl)
 	    rb_raise(rb_eArgError, "cyclic include detected");
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
-	    if (BUILTIN_TYPE(p) == T_ICLASS) {
+	    switch (BUILTIN_TYPE(p)) {
+	      case T_ICLASS:
 		if (RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
-		    c = p;
+		    if (!superclass_seen) {
+			c = p;	/* move insertion point */
+		    }
 		    goto skip;
 		}
+		break;
+	      case T_CLASS:
+		superclass_seen = Qtrue;
+		break;
 	    }
 	}
-	RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
-	c = RCLASS(c)->super;
+	c = RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
 	changed = 1;
       skip:
 	module = RCLASS(module)->super;

@@ -228,7 +228,14 @@ rb_reg_expr_str(str, s, len)
     else {
 	p = s; 
 	while (p<pend) {
-	    if (*p == '/' && (s == p || p[-1] != '\\')) {
+	    if (*p == '\\') {
+		rb_str_cat(str, p, 1);
+		p++;
+	    	rb_str_cat(str, p, mbclen(*p));
+		p += mbclen(*p);
+		continue;
+	    }
+	    else if (*p == '/') {
 		char c = '\\';
 		rb_str_cat(str, &c, 1);
 		rb_str_cat(str, p, 1);
@@ -687,19 +694,27 @@ VALUE
 rb_reg_match_pre(match)
     VALUE match;
 {
+    VALUE str;
+
     if (NIL_P(match)) return Qnil;
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
-    return rb_str_new(RSTRING(RMATCH(match)->str)->ptr, RMATCH(match)->BEG(0));
+    str = rb_str_new(RSTRING(RMATCH(match)->str)->ptr, RMATCH(match)->BEG(0));
+    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
+    return str;
 }
 
 VALUE
 rb_reg_match_post(match)
     VALUE match;
 {
+    VALUE str;
+
     if (NIL_P(match)) return Qnil;
     if (RMATCH(match)->BEG(0) == -1) return Qnil;
-    return rb_str_new(RSTRING(RMATCH(match)->str)->ptr+RMATCH(match)->END(0),
-		      RSTRING(RMATCH(match)->str)->len-RMATCH(match)->END(0));
+    str = rb_str_new(RSTRING(RMATCH(match)->str)->ptr+RMATCH(match)->END(0),
+		     RSTRING(RMATCH(match)->str)->len-RMATCH(match)->END(0));
+    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
+    return str;
 }
 
 VALUE

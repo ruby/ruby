@@ -537,6 +537,7 @@ rb_big2dbl(x)
     while (i--) {
 	d = ds[i] + BIGRAD*d;
     }
+    if (isinf(d)) d = HUGE_VAL;
     if (!RBIGNUM(x)->sign) d = -d;
     return d;
 }

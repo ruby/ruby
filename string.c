@@ -1113,7 +1113,9 @@ rb_str_slice_bang(argc, argv, str)
     }
     buf[i] = rb_str_new(0,0);
     result = rb_str_aref_m(argc, buf, str);
-    rb_str_aset_m(argc+1, buf, str);
+    if (!NIL_P(result)) {
+	rb_str_aset_m(argc+1, buf, str);
+    }
     return result;
 }
 
@@ -1374,7 +1376,7 @@ uscore_get()
     line = rb_lastline_get();
     if (TYPE(line) != T_STRING) {
 	rb_raise(rb_eTypeError, "$_ value need to be String (%s given)",
-		 NIL_P(line)?"nil":rb_class2name(CLASS_OF(line)));
+		 NIL_P(line) ? "nil" : rb_class2name(CLASS_OF(line)));
     }
     return line;
 }
@@ -2172,7 +2174,7 @@ rb_str_split_m(argc, argv, str)
 	i = 1;
     }
 
-    if (argc == 0) {
+    if (NIL_P(spat)) {
 	if (!NIL_P(rb_fs)) {
 	    spat = rb_fs;
 	    goto fs_set;
@@ -2669,6 +2671,7 @@ rb_str_crypt(str, salt)
 
     result = rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
     OBJ_INFECT(result, str);
+    OBJ_INFECT(result, salt);
     return result;
 }
 

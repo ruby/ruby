@@ -1,3 +1,12 @@
+Thu Jul 11 09:00:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_slice_bang): if there's no corresponding
+	  substring, slice! should return nil without exception.
+
+Fri Jul  5 09:17:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_split_m): accept separator value nil as well.
+
 Fri Jul  5 05:00:40 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.
@@ -7,6 +16,11 @@ Fri Jul  5 05:00:40 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 Wed Jul  3 02:32:31 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.
+
+Tue Jul  2 14:53:10 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (include_class_new): module may be T_ICLASS; retrieve
+	  original module information.
 
 Tue Jul  2 14:13:11 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
@@ -20,6 +34,10 @@ Sun Jun 30 17:05:29 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 Fri Jun 28 00:51:19 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_stat): fix buffer overflow. (ruby-bugs:PR#329)
+
+Thu Jun 27 03:42:04 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_expr_str): need to process backslashes properly.
 
 Tue Jun 25 18:40:50 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
@@ -55,6 +73,15 @@ Sat Jun 15 19:30:44 2002  Akinori MUSHA  <knu@iDaemons.org>
 	  it catches a dead symlink.  Given a dead symlink named "a",
 	  Dir.glob("?") did catch it but Dir.glob("a") somehow didn't.
 
+Sat Jun 15 01:59:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): no here document after a dot.
+
+	* parse.y (yylex): should have set lex_state properly after '`'.
+
+	* parse.y (yylex): should have set lex_state properly after
+	  tOP_ASGN.
+
 Fri Jun 14 15:22:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (read_escape): deny zero-width hexadecimal character.
@@ -63,6 +90,10 @@ Fri Jun 14 15:22:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (tokadd_escape): ditto.
 
 	* regex.c (re_compile_pattern): ditto.
+
+Fri Jun 14 00:49:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big2dbl): return canonical HUGE_VAL for infinity.
 
 Thu Jun 13 00:33:49 2002  takuma ozawa  <metal@mine.ne.jp>
 

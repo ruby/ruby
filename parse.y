@@ -2973,8 +2973,8 @@ yylex()
       case '*':
 	if ((c = nextc()) == '*') {
 	    if ((c = nextc()) == '=') {
-		lex_state = EXPR_BEG;
 		yylval.id = tPOW;
+		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
 	    pushback(c);
@@ -3064,7 +3064,7 @@ yylex()
       case '<':
 	c = nextc();
 	if (c == '<' &&
-	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
+	    lex_state != EXPR_END && lex_state != EXPR_CLASS && lex_state != EXPR_DOT &&
 	    (lex_state != EXPR_ARG || space_seen)) {
  	    int c2 = nextc();
 	    int indent = 0;
@@ -3095,8 +3095,8 @@ yylex()
 	}
 	if (c == '<') {
 	    if (nextc() == '=') {
-		lex_state = EXPR_BEG;
 		yylval.id = tLSHFT;
+		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
 	    pushback(c);
@@ -3117,8 +3117,8 @@ yylex()
 	}
 	if (c == '>') {
 	    if ((c = nextc()) == '=') {
-		lex_state = EXPR_BEG;
 		yylval.id = tRSHFT;
+		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
 	    pushback(c);
@@ -3130,8 +3130,14 @@ yylex()
       case '"':
 	return parse_string(c,c,0);
       case '`':
-	if (lex_state == EXPR_FNAME) return c;
-	if (lex_state == EXPR_DOT) return c;
+	if (lex_state == EXPR_FNAME) {
+	    lex_state = EXPR_END;
+	    return c;
+	}
+	if (lex_state == EXPR_DOT) {
+	    lex_state = EXPR_ARG;
+	    return c;
+	}
 	return parse_string(c,c,0);
 
       case '\'':
@@ -3144,13 +3150,34 @@ yylex()
 	}
 	c = nextc();
 	if (c == -1) {
-	    rb_compile_error("incomplete character syntax");
-	    return 0;
-	}
-	if (lex_state == EXPR_ARG && ISSPACE(c)){
-	    pushback(c);
-	    lex_state = EXPR_BEG;
 	    return '?';
+	}
+	if (ISSPACE(c)){
+	    if (lex_state != EXPR_ARG){
+		int c = 0;
+		switch (c) {
+		  case ' ':
+		    c = 's';
+		    break;
+		  case '\n':
+		    c = 'n';
+		    break;
+		  case '\t':
+		    c = 't';
+		    break;
+		  case '\v':
+		    c = 'v';
+		    break;
+		}
+		if (c) {
+		    rb_warn("invalid character syntax; use ?\\%c", c);
+		}
+	    }
+	    else {
+		pushback(c);
+		lex_state = EXPR_BEG;
+		return '?';
+	    }
 	}
 	if (c == '\\') {
 	    c = read_escape();
@@ -3165,6 +3192,7 @@ yylex()
 	    lex_state = EXPR_BEG;
 	    if ((c = nextc()) == '=') {
 		yylval.id = tANDOP;
+		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
 	    pushback(c);
@@ -3199,14 +3227,15 @@ yylex()
 	    lex_state = EXPR_BEG;
 	    if ((c = nextc()) == '=') {
 		yylval.id = tOROP;
+		lex_state = EXPR_BEG;
 		return tOP_ASGN;
 	    }
 	    pushback(c);
 	    return tOROP;
 	}
 	if (c == '=') {
-	    lex_state = EXPR_BEG;
 	    yylval.id = '|';
+	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
@@ -3229,8 +3258,8 @@ yylex()
 	    return '+';
 	}
 	if (c == '=') {
-	    lex_state = EXPR_BEG;
 	    yylval.id = '+';
+	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
@@ -3259,8 +3288,8 @@ yylex()
 	    return '-';
 	}
 	if (c == '=') {
-	    lex_state = EXPR_BEG;
 	    yylval.id = '-';
+	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID ||
@@ -3513,8 +3542,8 @@ yylex()
 	    return parse_regx('/', '/');
 	}
 	if ((c = nextc()) == '=') {
-	    lex_state = EXPR_BEG;
 	    yylval.id = '/';
+	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
 	pushback(c);
@@ -3534,8 +3563,8 @@ yylex()
 
       case '^':
 	if ((c = nextc()) == '=') {
-	    lex_state = EXPR_BEG;
 	    yylval.id = '^';
+	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
 	switch (lex_state) {
@@ -3668,6 +3697,7 @@ yylex()
 	}
 	if ((c = nextc()) == '=') {
 	    yylval.id = '%';
+	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
 	}
 	if (lex_state == EXPR_ARG && space_seen && !ISSPACE(c)) {
