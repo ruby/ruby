@@ -44,7 +44,11 @@
 #      include "ndir.h"
 #    endif /* !Xenix */
 #  else /* !USG */
+#    if defined(NT)
+#      include "missing/dir.h"
+#    else 
 #    include <sys/dir.h>
+#    endif /* !NT */
 #  endif /* !USG */
 #endif /* !HAVE_DIRENT_H */
 
@@ -68,7 +72,9 @@
 #  include <strings.h>
 #endif /* !HAVE_STRING_H */
 
+#ifndef bcopy
 # define bcopy(s, d, n) (memcpy ((d), (s), (n)))
+#endif
 
 #ifdef _AIX
 #pragma alloca

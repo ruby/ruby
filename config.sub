@@ -634,6 +634,10 @@ case $basic_machine in
 	orion105)
 		basic_machine=clipper-highlevel
 		;;
+	human)
+		basic_machine=m68k-sharp
+		os=-human
+		;;
 	*)
 		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
 		exit 1
@@ -687,7 +691,7 @@ case $os in
 	      | -ptx* | -coff* | -ecoff* | -winnt* | -domain* | -vsta* \
 	      | -udi* | -eabi* | -lites* | -ieee* | -go32* | -aux* \
 	      | -cygwin32* | -pe* | -psos* | -moss* | -proelf* \
-	      | -linux*)
+	      | -linux* | -bow*)
 	# Remember, each alternative MUST END IN *, to match a version number.
 		;;
 	-sunos5*)
@@ -744,6 +748,11 @@ case $os in
 		;;
 	-xenix)
 		os=-xenix
+		;;
+	-uxpds)
+		os=-uxpds
+		;;
+	-human)
 		;;
 	-none)
 		;;

@@ -14,17 +14,42 @@
 #include <fcntl.h>
 #include <process.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
+/* #include <sys/wait.h> */
+#include <stdio.h>
+#include <stdlib.h>
+#include <errno.h>
 #include <assert.h>
 
-bool NtSyncProcess = FALSE;
+#include <windows.h>
+#include <winbase.h>
+#include <wincon.h>
+#include "nt.h"
+#include "dir.h"
+#ifndef index
+#define index(x, y) strchr((x), (y))
+#endif
+
+#ifndef bool
+#define bool int
+#endif
+
+bool NtSyncProcess = TRUE;
+#if 0  // declared in header file
 extern char **environ;
+#define environ _environ
+#endif
 
 static bool NtHasRedirection (char *);
 static int valid_filename(char *s);
+static void StartSockets ();
+static char *str_grow(struct RString *str, size_t new_size);
 
-FILE *fdopen(int, char *);
+char *NTLoginName;
 
+#undef const
+FILE *fdopen(int, const char *);
+
+#if 0
 void
 sleep(unsigned int len)
 {
@@ -34,15 +59,19 @@ sleep(unsigned int len)
 	while (time((time_t *)0) < end)
 		;
 }
+#endif
 
 //
 // Initialization stuff
 //
+#if (_MSC_VER >= 1000)
+__declspec(dllexport) void __stdcall
+#else
 void
+#endif
 NtInitialize(int *argc, char ***argv) {
 
     WORD version;
-    WSADATA retdata;
     int ret;
 
     //
@@ -55,6 +84,9 @@ NtInitialize(int *argc, char ***argv) {
     //
 
     tzset();
+
+	// Initialize Winsock
+	// StartSockets();
 }
 
 
@@ -79,6 +111,7 @@ char *getlogin()
 
 
 
+#if 1
 // popen stuff
 
 //
@@ -95,8 +128,68 @@ char *getlogin()
 struct {
     int inuse;
     int pid;
+    HANDLE oshandle;
     FILE *pipe;
 } MyPopenRecord[MYPOPENSIZE];
+
+int SafeFree(char **vec, int vecc)
+{
+    //   vec
+    //   |
+    //   V       ^---------------------V
+    //   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    //   |   |       | ....  |  NULL |   | ..... |\0 |   | ..... |\0 |...
+    //   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    //   |-  elements+1             -| ^ 1st element   ^ 2nd element
+
+	char *p;
+
+	p = (char *)(vec - (vecc * sizeof (char *) + 1));
+	free(p);
+
+	return 0;
+}
+
+
+static char *szInternalCmds[] = {
+  "cd",
+  "chdir",
+  "cls",
+  "copy",
+  "date",
+  "del",
+  "dir",
+  "echo",
+  "erase",
+  "label",
+  "md",
+  "mkdir",
+  "path",
+  "rd",
+  "rem",
+  "ren",
+  "rename",
+  "rmdir",
+  "set",
+  "start",
+  "time",
+  "type",
+  "ver",
+  "vol",
+};
+
+int
+isInternalCmd(char *cmd)
+{
+	int fRet;
+	char **vec;
+	int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
+
+	SafeFree (vec, vecc);
+
+	return 0;
+}
+
 
 FILE *
 mypopen (char *cmd, char *mode) 
@@ -118,6 +211,8 @@ mypopen (char *cmd, char *mode)
 	    MyPopenRecord[slot].inuse = FALSE;
     }
 
+    //printf("mypopen %s\n", cmd);
+    
     //
     // find a free popen slot
     //
@@ -140,6 +235,7 @@ mypopen (char *cmd, char *mode)
     // Now get a pipe
     //
 
+#if 0    
     if (_pipe(pipes, NtPipeSize, pipemode) == -1) {
 	return NULL;
     }
@@ -203,11 +299,12 @@ mypopen (char *cmd, char *mode)
 	char **vec;
 	int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
 
-	pid = spawnvpe (_P_NOWAIT, vec[0], vec, environ);
+	//pid = spawnvpe (_P_NOWAIT, vec[0], vec, environ);
+	pid = spawnvpe (_P_WAIT, vec[0], vec, environ);
 	if (pid == -1) {
 	    goto docmd;
 	}
-	Safefree (vec);
+		Safefree (vec, vecc);
     }
 
     if (reading) {
@@ -272,6 +369,126 @@ mypopen (char *cmd, char *mode)
     MyPopenRecord[slot].pid = pid;
 
     return fp;
+#else
+    {
+		int p[2];
+
+		BOOL fRet;
+		HANDLE hInFile, hOutFile, hStdin, hStdout;
+		LPCSTR lpApplicationName = NULL;
+		LPTSTR lpCommandLine;
+		LPTSTR lpCmd2 = NULL;
+		DWORD  dwCreationFlags;
+		STARTUPINFO aStartupInfo;
+		PROCESS_INFORMATION     aProcessInformation;
+		SECURITY_ATTRIBUTES sa;
+		int fd;
+
+		sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
+		sa.lpSecurityDescriptor = NULL;
+		sa.bInheritHandle       = TRUE;
+
+		fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
+		if (!fRet)
+			Fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
+
+		memset(&aStartupInfo, 0, sizeof (STARTUPINFO));
+		memset(&aProcessInformation, 0, sizeof (PROCESS_INFORMATION));
+		aStartupInfo.cb = sizeof (STARTUPINFO);
+		aStartupInfo.dwFlags    = STARTF_USESTDHANDLES;
+
+		if (reading) {
+			aStartupInfo.hStdInput  = GetStdHandle(STD_OUTPUT_HANDLE);//hStdin;
+			aStartupInfo.hStdError  = INVALID_HANDLE_VALUE;
+			//for save
+			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_OUTPUT_HANDLE),
+			  GetCurrentProcess(), &hStdout,
+			  0, FALSE, DUPLICATE_SAME_ACCESS
+			);
+			//for redirect
+			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_INPUT_HANDLE),
+			  GetCurrentProcess(), &hStdin,
+			  0, TRUE, DUPLICATE_SAME_ACCESS
+			);
+			aStartupInfo.hStdOutput = hOutFile;
+		}
+		else {
+			aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE); //hStdout;
+			aStartupInfo.hStdError  = INVALID_HANDLE_VALUE;
+			// for save
+			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_INPUT_HANDLE),
+			  GetCurrentProcess(), &hStdin,
+			  0, FALSE, DUPLICATE_SAME_ACCESS
+			);
+			//for redirect
+			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_OUTPUT_HANDLE),
+			  GetCurrentProcess(), &hStdout,
+			  0, TRUE, DUPLICATE_SAME_ACCESS
+			);
+			aStartupInfo.hStdInput = hInFile;
+		}
+
+		dwCreationFlags = (NORMAL_PRIORITY_CLASS);
+
+		lpCommandLine = cmd;
+		if (NtHasRedirection(cmd) || isInternalCmd(cmd)) {
+		  lpApplicationName = getenv("COMSPEC");
+		  lpCmd2 = malloc(strlen(lpApplicationName) + 1 + strlen(cmd) + sizeof (" /c "));
+		  if (lpCmd2 == NULL)
+		     Fatal("Mypopen: malloc failed");
+		  sprintf(lpCmd2, "%s %s%s", lpApplicationName, " /c ", cmd);
+		  lpCommandLine = lpCmd2;
+		}
+
+		fRet = CreateProcess(lpApplicationName, lpCommandLine, &sa, &sa,
+			sa.bInheritHandle, dwCreationFlags, NULL, NULL, &aStartupInfo, &aProcessInformation);
+
+		if (!fRet) {
+			CloseHandle(hInFile);
+			CloseHandle(hOutFile);
+			Fatal("cannot fork for \"%s\" (%s)", cmd, strerror(errno));
+		}
+
+		CloseHandle(aProcessInformation.hThread);
+
+		if (reading) {
+			HANDLE hDummy;
+
+			fd = _open_osfhandle((long)hInFile,  (_O_RDONLY | pipemode));
+			CloseHandle(hOutFile);
+			DuplicateHandle(GetCurrentProcess(), hStdout,
+			  GetCurrentProcess(), &hDummy,
+			  0, TRUE, (DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)
+			);
+		}
+		else {
+			HANDLE hDummy;
+
+		    fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
+			CloseHandle(hInFile);
+			DuplicateHandle(GetCurrentProcess(), hStdin,
+			  GetCurrentProcess(), &hDummy,
+			  0, TRUE, (DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)
+			);
+		}
+
+		if (fd == -1) 
+		  Fatal("cannot open pipe \"%s\" (%s)", cmd, strerror(errno));
+
+
+		if ((fp = (FILE *) fdopen(fd, mode)) == NULL)
+			return NULL;
+
+		if (lpCmd2)
+			free(lpCmd2);
+
+		MyPopenRecord[slot].inuse = TRUE;
+		MyPopenRecord[slot].pipe  = fp;
+		MyPopenRecord[slot].oshandle = (reading ? hInFile : hOutFile);
+		MyPopenRecord[slot].pid   = (int)aProcessInformation.hProcess;
+		return fp;
+    }
+#endif
 }
 
 int
@@ -280,30 +497,53 @@ mypclose(FILE *fp)
     int i;
     int exitcode;
 
+    Sleep(100);
     for (i = 0; i < MYPOPENSIZE; i++) {
 	if (MyPopenRecord[i].inuse && MyPopenRecord[i].pipe == fp)
 	    break;
     }
     if (i >= MYPOPENSIZE) {
-	fprintf(stderr,"Invalid file pointer passed to mypclose!\n");
-	abort();
+		Fatal("Invalid file pointer passed to mypclose!\n");
     }
 
     //
     // get the return status of the process
     //
 
+#if 0
     if (_cwait(&exitcode, MyPopenRecord[i].pid, WAIT_CHILD) == -1) {
 	if (errno == ECHILD) {
 	    fprintf(stderr, "mypclose: nosuch child as pid %x\n", 
 		    MyPopenRecord[i].pid);
 	}
     }
+#else
+	for (;;) {
+		if (GetExitCodeProcess((HANDLE)MyPopenRecord[i].pid, &exitcode)) {
+			if (exitcode == STILL_ACTIVE) {
+				//printf("Process is Active.\n");
+				Sleep(100);
+				TerminateProcess((HANDLE)MyPopenRecord[i].pid, 0); // ugly...
+				continue;
+			}
+			else if (exitcode == 0) {
+				//printf("done.\n");
+				break;
+			}
+			else {
+				//printf("never.\n");
+				break;
+			}
+		}
+	}
+#endif
+
 
     //
     // close the pipe
     //
-
+    CloseHandle(MyPopenRecord[i].oshandle);
+    fflush(fp);
     fclose(fp);
 
     //
@@ -311,11 +551,17 @@ mypclose(FILE *fp)
     //
 
     MyPopenRecord[i].inuse = FALSE;
+    MyPopenRecord[i].pipe  = NULL;
+    MyPopenRecord[i].pid   = 0;
 
     return exitcode;
 }
+#endif
+
+#if 1
 
 
+typedef char* CHARP;
 /*
  * The following code is based on the do_exec and do_aexec functions
  * in file doio.c
@@ -333,17 +579,43 @@ char *cmd;
     int mode = NtSyncProcess ? P_WAIT : P_NOWAIT;
 
     /* save an extra exec if possible */
-    if ((shell = getenv("COMSPEC")) == 0)
-	shell = "cmd.exe";
+    if ((shell = getenv("RUBYSHELL")) != 0) {
+	if (NtHasRedirection(cmd)) {
+	    int  i;
+	    char *p;
+	    char *argv[4];
+	    char *cmdline = ALLOC_N(char, (strlen(cmd) * 2 + 1));
 
-    /* see if there are shell metacharacters in it */
-    if (NtHasRedirection(cmd)) {
-      doshell:
-        return spawnle(mode, shell, shell, "/c", cmd, (char*)0, environ);
+	    p=cmdline;           
+	    *p++ = '"';
+	    for (s=cmd; *s;) {
+		if (*s == '"') 
+		    *p++ = '\\'; /* Escape d-quote */
+		*p++ = *s++;
+	    }
+	    *p++ = '"';
+	    *p   = '\0';
+
+	    /* fprintf(stderr, "do_spawn: %s %s\n", shell, cmdline); */
+	    argv[0] = shell;
+	    argv[1] = "-c";
+	    argv[2] = cmdline;
+	    argv[4] = NULL;
+	    status = spawnvpe(mode, argv[0], argv, environ);
+	    /* return spawnle(mode, shell, shell, "-c", cmd, (char*)0, environ); */
+	    free(cmdline);
+	    return status;
+	} 
+    }
+    else if ((shell = getenv("COMSPEC")) != 0) {
+	if (NtHasRedirection(cmd) /* || isInternalCmd(cmd) */) {
+	  do_comspec_shell:
+	    return spawnle(mode, shell, shell, "/c", cmd, (char*)0, environ);
+	}
     }
 
-    argv = ALLOC_N(char*, strlen(cmd) / 2 + 2);
-    cmd2 = ALOOC_N(char, strlen(cmd) + 1);
+    argv = ALLOC_N(CHARP, (strlen(cmd) / 2 + 2));
+    cmd2 = ALLOC_N(char, (strlen(cmd) + 1));
     strcpy(cmd2, cmd);
     a = argv;
     for (s = cmd2; *s;) {
@@ -354,12 +626,12 @@ char *cmd;
 	if (*s)
 	    *s++ = '\0';
     }
-    *a = Qnil;
+    *a = NULL;
     if (argv[0]) {
 	if ((status = spawnvpe(mode, argv[0], argv, environ)) == -1) {
 	    free(argv);
 	    free(cmd2);
-	    goto doshell;
+	    return -1;
 	}
     }
     free(cmd2);
@@ -367,7 +639,7 @@ char *cmd;
     return status;
 }
 
-
+#endif
 
 typedef struct _NtCmdLineElement {
     struct _NtCmdLineElement *next, *prev;
@@ -781,6 +1053,13 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     // make vptr point to the start of the buffer
     // and ptr point to the area we\'ll consider the string table.
     //
+    //   buffer (*vec)
+    //   |
+    //   V       ^---------------------V
+    //   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    //   |   |       | ....  | NULL  |   | ..... |\0 |   | ..... |\0 |...
+    //   +---+---+---+---+---+---+---+---+---+---+---+---+---+---+---+
+    //   |-  elements+1             -| ^ 1st element   ^ 2nd element
 
     vptr = (char **) buffer;
 
@@ -798,6 +1077,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 }
 
 
+#if 1
 //
 // UNIX compatible directory access functions for NT
 //
@@ -911,9 +1191,11 @@ opendir(char *filename)
 	// new name and it's null terminator 
 	//
 
+	#define Renew(x, y, z) (x = (z *)realloc(x, y))
+
 	Renew (p->start, idx+len+1, char);
 	if (p->start == NULL) {
-	    fatal ("opendir: malloc failed!\n");
+	    Fatal ("opendir: malloc failed!\n");
 	}
 	strcpy(&p->start[idx], FindData.cFileName);
 	if (downcase) 
@@ -1009,13 +1291,15 @@ closedir(DIR *dirp)
 	free(dirp->start);
 	free(dirp);
 }
-
+#endif
 
 
 //
 // 98.2% of this code was lifted from the OS2 port. (JCW)
 //
 
+#if 0
+// add_suffix is in util.c too.
 /*
  * Suffix appending for in-place editing under MS-DOS and OS/2 (and now NT!).
  *
@@ -1134,6 +1418,7 @@ fallback:
     str_grow(str, strlen(buf));
     memcpy(str->ptr, buf, str->len);
 }
+#endif
 
 static int 
 valid_filename(char *s)
@@ -1173,7 +1458,7 @@ valid_filename(char *s)
 //
 
 FILE *
-fdopen (int fd, char *mode)
+fdopen (int fd, const char *mode)
 {
     FILE *fp;
     char sockbuf[80];
@@ -1182,7 +1467,11 @@ fdopen (int fd, char *mode)
     extern int errno;
 
     retval = getsockopt((SOCKET)fd, SOL_SOCKET, SO_TYPE, sockbuf, &optlen);
-    if (retval == SOCKET_ERROR && WSAGetLastError() == WSAENOTSOCK) {
+    if (retval == SOCKET_ERROR) {
+	int iRet;
+
+	iRet = WSAGetLastError();
+	if (iRet == WSAENOTSOCK || iRet == WSANOTINITIALISED)
 	return (_fdopen(fd, mode));
     }
 
@@ -1195,7 +1484,7 @@ fdopen (int fd, char *mode)
 #else
     fp->_file = fd;
 #endif
-    if (*mode = 'r')
+    if (*mode == 'r')
 	fp->_flag = _IOREAD;
     else
 	fp->_flag = _IOWRT;
@@ -1286,7 +1575,8 @@ setgid(int gid)
 //
 
 int
-ioctl(int i, unsigned int u, char *data)
+/* ioctl(int i, unsigned int u, char *data) */
+ioctl(int i, unsigned int u, long data)
 {
     return -1;
 }
@@ -1327,12 +1617,12 @@ StartSockets () {
     //
     version = MAKEWORD(1, 1);
     if (ret = WSAStartup(version, &retdata))
-	fatal ("Unable to locate winsock library!\n");
+	Fatal ("Unable to locate winsock library!\n");
     if (LOBYTE(retdata.wVersion) != 1)
-	fatal("could not find version 1 of winsock dll\n");
+	Fatal("could not find version 1 of winsock dll\n");
 
     if (HIBYTE(retdata.wVersion) != 1)
-	fatal("could not find version 1 of winsock dll\n");
+	Fatal("could not find version 1 of winsock dll\n");
 
     atexit((void (*)(void)) WSACleanup);
 }
@@ -1678,6 +1968,10 @@ void setprotoent (int stayopen) {}
 void setservent (int stayopen) {}
 
 
+#ifndef WNOHANG
+#define WNOHANG -1
+#endif
+
 pid_t
 waitpid (pid_t pid, int *stat_loc, int options)
 {
@@ -1713,7 +2007,7 @@ getcwd(buffer, size)
     int size;
 {
     int length;
-    char *pb;
+    char *bp;
 
     if (_getcwd(buffer, size) == NULL) {
         return NULL;
@@ -1730,3 +2024,54 @@ getcwd(buffer, size)
     }
     return buffer;
 }
+
+static char *
+str_grow(struct RString *str, size_t new_size)
+{
+	char *p;
+
+	p = realloc(str->ptr, new_size);
+	if (p == NULL)
+		Fatal("cannot grow string\n");
+
+	str->len = new_size;
+	str->ptr = p;
+
+	return p;
+}
+
+int
+chown(char *path, int owner, int group)
+{
+	return 0;
+}
+
+int
+kill(int pid, int sig)
+{
+#if 1
+	if (pid == GetCurrentProcessId())
+		return raise(sig);
+
+	if (sig == 2 && pid > 0)
+		if (GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid))
+			return 0;
+
+	return -1;
+#else
+	return 0;
+#endif
+}
+
+int
+link(char *from, char *to)
+{
+	return -1;
+}
+
+int
+wait()
+{
+	return 0;
+}
+

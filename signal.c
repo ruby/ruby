@@ -14,7 +14,11 @@
 #include <stdio.h>
 
 #ifndef NSIG
+#ifdef DJGPP
+#define NSIG SIGMAX
+#else
 #define NSIG (_SIGMAX + 1)      /* For QNX */
+#endif
 #endif
 
 static struct signals {
@@ -175,6 +179,7 @@ f_kill(argc, argv)
     int i;
     char *s;
 
+    rb_secure(2);
     if (argc < 2)
 	ArgError("wrong # of arguments -- kill(sig, pid...)");
     switch (TYPE(argv[0])) {
@@ -334,6 +339,7 @@ rb_trap_exec()
 #else
 		rb_interrupt();
 #endif
+		return;
 	    }
 	    rb_trap_eval(trap_list[i], i);
 	}
@@ -364,7 +370,7 @@ trap(arg)
 {
     RETSIGTYPE (*func)();
     VALUE command, old;
-    int i, sig;
+    int sig;
 
     func = sighandle;
     command = arg->cmd;
@@ -372,6 +378,7 @@ trap(arg)
 	func = SIG_IGN;
     }
     else if (TYPE(command) == T_STRING) {
+	Check_SafeStr(command);	/* taint check */
 	if (RSTRING(command)->len == 0) {
 	    func = SIG_IGN;
 	}
@@ -448,10 +455,12 @@ trap(arg)
 
     trap_list[sig] = command;
     /* enable at least specified signal. */
+#ifndef NT
 #ifdef HAVE_SIGPROCMASK
     sigdelset(&arg->mask, sig);
 #else
     arg->mask &= ~sigmask(sig);
+#endif
 #endif
     return old;
 }
@@ -477,6 +486,7 @@ f_trap(argc, argv)
 {
     struct trap_arg arg;
 
+    rb_secure(2);
     if (argc == 0 || argc > 2) {
 	ArgError("wrong # of arguments -- trap(sig, cmd)/trap(sig){...}");
     }
@@ -507,9 +517,9 @@ f_trap(argc, argv)
 void
 Init_signal()
 {
-    extern VALUE cKernel;
+    extern VALUE mKernel;
 
-    rb_define_private_method(cKernel, "trap", f_trap, -1);
+    rb_define_global_function("trap", f_trap, -1);
 #ifdef POSIX_SIGNAL
     posix_signal(SIGINT, sighandle);
 #else

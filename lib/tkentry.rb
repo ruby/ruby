@@ -14,11 +14,7 @@ class TkEntry<TkLabel
   end
 
   def delete(s, e=None)
-    if e
-      tk_send 'delete', s
-    else
-      tk_send 'delete', s, e
-    end
+    tk_send 'delete', s, e
   end
 
   def cursor
@@ -28,13 +24,10 @@ class TkEntry<TkLabel
     tk_send 'icursor', index
   end
   def index(index)
-    tk_send 'index', index
+    number(tk_send('index', index))
   end
-  def insert(text, pos=None)
-    if pos
-      tk_send 'icursor', pos
-    end
-    tk_send 'insert', 'insert', text
+  def insert(pos,text)
+    tk_send 'insert', pos, text
   end
   def mark(pos)
     tk_send 'scan', 'mark', pos

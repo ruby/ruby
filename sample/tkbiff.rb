@@ -116,7 +116,7 @@ def pop_up
   outcount = 0;
   $list.delete 0, 'end'
   f = open($spool, "r")
-  while !f.eof
+  while !f.eof?
     mail = Mail.new(f)
     date, from, subj =  mail.header['Date'], mail.header['From'], mail.header['Subject']
     next if !date

@@ -18,8 +18,8 @@ class TkScrollbox<TkListbox
     scroll.configure 'command', list.path+" yview"
     scroll.pack 'side'=>'right','fill'=>'y'
 
-    delegate('DEFALUT', list)
-    delegate('foreground', list, scroll)
+    delegate('DEFAULT', list)
+    delegate('foreground', list)
     delegate('background', list, scroll)
     delegate('borderwidth', @frame)
     delegate('relief', @frame)

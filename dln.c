@@ -29,7 +29,11 @@ void *xcalloc();
 void *xrealloc();
 
 #include <stdio.h>
+#ifndef NT
 #include <sys/file.h>
+#else
+#include "missing/file.h"
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -49,9 +53,11 @@ void *xrealloc();
 #  include <strings.h>
 #endif
 
+#ifndef NT
 char *strdup();
 
 char *getenv();
+#endif
 
 int eaccess();
 
@@ -61,7 +67,7 @@ int eaccess();
 #endif
 
 #ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || defined(__FreeBSD__)
+# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || defined(__FreeBSD__) || defined(NeXT)
 #  define FUNCNAME_PATTERN "_Init_%.200s"
 # else
 #  define FUNCNAME_PATTERN "Init_%.200s"
@@ -92,8 +98,8 @@ init_funcname(buf, file)
 # define LIBC_NAME "libc.a"
 #endif
 
-#ifndef DLN_DEFAULT_PATH
-#  define DLN_DEFAULT_PATH "/lib:/usr/lib:."
+#ifndef DLN_DEFAULT_LIB_PATH
+#  define DLN_DEFAULT_LIB_PATH "/lib:/usr/lib:/usr/local/lib:."
 #endif
 
 #include <errno.h>
@@ -136,12 +142,12 @@ load_header(fd, hdrp, disp)
     int size;
 
     lseek(fd, disp, 0);
-    size = read(fd, hdrp, sizeof(*hdrp));
+    size = read(fd, hdrp, sizeof(struct exec));
     if (size == -1) {
 	dln_errno = errno;
 	return -1;
     }
-    if (size != sizeof(*hdrp) || N_BADMAG(*hdrp)) {
+    if (size != sizeof(struct exec) || N_BADMAG(*hdrp)) {
 	dln_errno = DLN_ENOEXEC;
 	return -1;
     }
@@ -206,11 +212,10 @@ load_reloc(fd, hdrp, disp)
      struct exec *hdrp;
      long disp;
 {
-    struct relocation_info * reloc;
+    struct relocation_info *reloc;
     int size;
 
     lseek(fd, disp + N_TXTOFF(*hdrp) + hdrp->a_text + hdrp->a_data, 0);
-
     size = hdrp->a_trsize + hdrp->a_drsize;
     reloc = (struct relocation_info*)xmalloc(size);
     if (reloc == NULL) {
@@ -295,6 +300,7 @@ sym_hash(hdrp, syms)
 
 static int
 dln_init(prog)
+    char *prog;
 {
     char *file;
     int fd;
@@ -672,7 +678,7 @@ load_1(fd, disp, need_init)
     sym = syms;
     while (sym < end) {
 	struct nlist *new_sym;
-	char *key, *name;
+	char *key;
 
 	switch (sym->n_type) {
 	  case N_COMM:
@@ -856,23 +862,11 @@ search_undef(key, value, lib_tbl)
     int value;
     st_table *lib_tbl;
 {
-#if 0
-    static char *last = "";
-    int offset;
-
-    if (st_lookup(lib_tbl, key, &offset) == 0) return ST_CONTINUE;
-    if (strcmp(last, key) != 0) {
-	last = key;
-	target_offset = offset;
-    }
-    return ST_STOP;
-#else
     int offset;
 
     if (st_lookup(lib_tbl, key, &offset) == 0) return ST_CONTINUE;
     target_offset = offset;
     return ST_STOP;
-#endif
 }
 
 struct symdef {
@@ -880,7 +874,7 @@ struct symdef {
     int lib_offset;
 };
 
-char *dln_library_path = DLN_DEFAULT_PATH;
+char *dln_library_path = DLN_DEFAULT_LIB_PATH;
 
 static int
 load_lib(lib)
@@ -1108,7 +1102,7 @@ dln_strerror()
 #endif
 
 #ifdef USE_DLN_DLOPEN
-    return dlerror();
+    return (char*)dlerror();
 #endif
 }
 
@@ -1259,9 +1253,6 @@ dln_load(file)
 	char *object_files[2] = {NULL, NULL};
 
 	void (*init_fct)();
-	int len = strlen(file);
-	char *point;
-	char init_name[len +7];
 	
 	object_files[0] = file;
 	
@@ -1302,8 +1293,15 @@ dln_find_exe(fname, path)
     char *fname;
     char *path;
 {
+#if defined(__human68k__)
+    if (!path)
+	path = getenv("path");
+    if (!path)
+	path = "/usr/local/bin;/usr/usb;/usr/bin;/bin;.";
+#else
     if (!path) path = getenv("PATH");
     if (!path) path = "/usr/local/bin:/usr/ucb:/usr/bin:/bin:.";
+#endif
     return dln_find_1(fname, path, 1);
 }
 
@@ -1332,6 +1330,12 @@ dln_find_1(fname, path, exe_flag)
     if (fname[0] == '/') return fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+    if (fname[0] == '\\') return fname;
+    if (fname[1] == ':') return fname;
+    if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
+      return fname;
+#endif
 
     for (dp = path;; dp = ++ep) {
 	register int l;
@@ -1339,7 +1343,11 @@ dln_find_1(fname, path, exe_flag)
 	int fspace;
 
 	/* extract a component */
+#if !defined(MSDOS)  && !defined(NT) && !defined(__human68k__)
 	ep = strchr(dp, ':');
+#else
+	ep = strchr(dp, ';');
+#endif
 	if (ep == NULL)
 	    ep = dp+strlen(dp);
 
@@ -1399,6 +1407,34 @@ dln_find_1(fname, path, exe_flag)
 	    /* looking for executable */
 	    if (eaccess(fbuf, X_OK) == 0) return fbuf;
 	}
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+	if (exe_flag) {
+	    static const char *extension[] = {
+#if defined(MSDOS)
+		".com", ".exe", ".bat",
+#if defined(DJGPP)
+		".btm", ".sh", ".ksh", ".pl", ".sed",
+#endif
+#else
+		".r", ".R", ".x", ".X", ".bat", ".BAT",
+#endif
+		(char *) NULL
+	    };
+	    int j;
+
+	    for (j = 0; extension[j]; j++) {
+		if (fspace < strlen(extension[j])) {
+		    fprintf(stderr, "openpath: pathname too long (ignored)\n");
+		    fprintf(stderr, "\tDirectory \"%.*s\"\n", (int) (bp - fbuf), fbuf);
+		    fprintf(stderr, "\tFile \"%s%s\"\n", fname, extension[j]);
+		    continue;
+		}
+		strcpy(bp + i, extension[j]);
+		if (stat(fbuf, &st) == 0)
+		    return fbuf;
+	    }
+	}
+#endif /* MSDOS or NT or __human68k__ */
 	/* if not, and no other alternatives, life is bleak */
 	if (*ep == '\0') {
 	    return NULL;

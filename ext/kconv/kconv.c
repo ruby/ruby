@@ -82,19 +82,12 @@ static char *Patchlevel =
 /* #define DEFAULT_CODE_SJIS */
 /* #define DEFAULT_CODE_EUC */
 /******************************/
-/* プロトタイプの選択         */
-#define ANSI_C_PROTOTYPE
-/******************************/
 
 /* for Kconv: _AUTO, _EUC, _SJIS, _JIS */
 #define	_AUTO	0
 #define	_JIS	1
 #define	_EUC	2
 #define	_SJIS	3
-
-#ifdef __STDC__
-#define ANSI_C_PROTOTYPE
-#endif
 
 #if (defined(__TURBOC__) || defined(LSI_C)) && !defined(MSDOS)
 #define MSDOS
@@ -202,10 +195,6 @@ static unsigned int            mime_input = 0; /* undecoded */
 /* flags */
 static int             unbuf_f = FALSE;
 static int             estab_f = FALSE;
-#ifdef notdef
-static int             nop_f = FALSE;
-static int             binmode_f = TRUE;       /* binary mode */
-#endif
 static int             rot_f = FALSE;          /* rot14/43 mode */
 static int             input_f = FALSE;        /* non fixed input code  */
 static int             alpha_f = FALSE;        /* convert JIx0208 alphbet to ASCII */
@@ -235,7 +224,6 @@ static char     kanji_intro = DEFAULT_J,
 
 /* Folding */
 
-static int fold();
 #define FOLD_MARGIN  10
 #define DEFAULT_FOLD 60
 
@@ -345,43 +333,25 @@ static int      mime_encode[] = {
     0
 };
 
-#ifdef notdef
-static int      file_out = FALSE;
-static int      end_check;
-#endif
 static int      add_cr = FALSE;
 static int      del_cr = FALSE;
 
-/*      function prototype  */
-#ifdef ANSI_C_PROTOTYPE
-static void    (*iconv) (register int c2,register int c1);   /* s_iconv or oconv */
-static void    (*oconv) (register int c2,register int c1);   /* [ejs]_oconv */
-static int     do_kconv(char *i, char *o, int siz, int out_code, int in_code);
-static void    h_conv(register int c2,register int c1);
-static int     push_hold_buf(int c2,int c1);
-static void    s_iconv(register int c2,register int c1);
-static void    e_oconv(register int c2,register int c1);
-static void    s_oconv(register int c2,register int c1);
-static void    j_oconv(register int c2,register int c1);
-static int     fold(register int c2,register int c1);
-static int     pre_convert(register int c1,register int c2);
-static int     mime_begin();
-static int     mime_getc();
-static int     mime_ungetc(unsigned int c);
-static int     mime_integrity(unsigned char *p);
-static int     base64decode(int c);
-#else
-static void    (*iconv) ();   /* s_iconv or oconv */
-static void    (*oconv) ();   /* [ejs]_oconv */
-static int     s_iconv ();
-static int     e_oconv ();
-static int     j_oconv ();
-static int     s_oconv ();
-static int     noconvert ();
-static int     do_kconv();
-static void    h_conv ();
-static int     push_hold_buf ();
-#endif
+static void    (*iconv) _((register int c2,register int c1));   /* s_iconv or oconv */
+static void    (*oconv) _((register int c2,register int c1));   /* [ejs]_oconv */
+static int     do_kconv _((char *i, char *o, int siz, int out_code, int in_code));
+static void    h_conv _((register int c2,register int c1));
+static int     push_hold_buf _((int c2,int c1));
+static void    s_iconv _((register int c2,register int c1));
+static void    e_oconv _((register int c2,register int c1));
+static void    s_oconv _((register int c2,register int c1));
+static void    j_oconv _((register int c2,register int c1));
+static int     fold _((register int c2,register int c1));
+static int     pre_convert _((register int c1,register int c2));
+static int     mime_begin _((void));
+static int     mime_getc _((void));
+static int     mime_ungetc _((unsigned int c));
+static int     mime_integrity _((unsigned char *p));
+static int     base64decode _((int c));
 
 #ifdef notdef
 main (argc, argv)
@@ -413,9 +383,6 @@ main (argc, argv)
                 continue;
             case 'u':           /* non bufferd mode */
                 unbuf_f = TRUE;
-                continue;
-            case 't':           /* transparent mode */
-                nop_f = TRUE;
                 continue;
             case 'j':           /* JIS output */
             case 'n':
@@ -553,10 +520,7 @@ main (argc, argv)
       setbinmode(stdin);
 #endif
       setvbuffer (stdin, stdibuf, IOBUF_SIZE);
-      if(nop_f)
-          noconvert (stdin);
-      else
-          convert (stdin);
+      convert (stdin);
     } else {
       while (argc--) {
           if((fin = fopen (*argv++, "r")) == NULL) {
@@ -594,10 +558,7 @@ main (argc, argv)
                  setbinmode(fin);
 #endif 
               setvbuffer (fin, stdibuf, IOBUF_SIZE);
-              if(nop_f)
-                  noconvert (fin);
-              else
-                  convert (fin);
+	      convert (fin);
               fclose (fin);
           }
       }
@@ -613,18 +574,6 @@ main (argc, argv)
 #endif 
     return (0);
 }
-
-int
-noconvert (f)
-    register FILE  *f;
-{
-    register int    c;
-
-    while ((c = getc (f)) != EOF)
-      putchar (c);
-    return 1;
-}
-
 #endif /* notdef */
 
 static int

@@ -12,6 +12,11 @@
 
 #include "ruby.h"
 #include <math.h>
+#if defined (HAVE_STRING_H)
+#  include <string.h>
+#else
+#  include <strings.h>
+#endif
 
 static ID coerce;
 static ID to_i;
@@ -30,7 +35,7 @@ double big2dbl();
 void
 num_zerodiv()
 {
-    rb_raise(exc_new(eZeroDiv, "divided by 0"));
+    Raise(eZeroDiv, "divided by 0");
 }
 
 static VALUE
@@ -147,15 +152,15 @@ flo_to_s(flt)
     char buf[32];
 
     sprintf(buf, "%g", flt->value);
-    if (index(buf, '.') == 0) {
+    if (strchr(buf, '.') == 0) {
 	int len = strlen(buf);
+	char *ind = strchr(buf, 'e');
 
-	if (len > 1 && buf[1] == 'e') {
-	    memmove(buf+3, buf+1, len-1);
-	    buf[1] = '.';
-	    buf[2] = '0';
-	}
-	else {
+	if (ind) {
+	    memmove(ind+2, ind, len-(ind-buf)+1);
+	    ind[0] = '.';
+	    ind[1] = '0';
+	} else {
 	    strcat(buf, ".0");
 	}
     }
@@ -273,9 +278,7 @@ flo_mod(x, y)
 	return num_coerce_bin(x, y);
     }
 #ifdef HAVE_FMOD
-    {
-	value = fmod(x->value, value);
-    }
+    value = fmod(x->value, value);
 #else
     {
 	double value1 = x->value;
@@ -382,6 +385,15 @@ flo_cmp(x, y)
     if (a == b) return INT2FIX(0);
     if (a > b) return INT2FIX(1);
     return INT2FIX(-1);
+}
+
+static VALUE
+flo_eql(x, y)
+    struct RFloat *x, *y;
+{
+    if (TYPE(y) == T_FLOAT) {
+	if (x->value == y->value) return TRUE;
+    }
 }
 
 static VALUE
@@ -1134,6 +1146,7 @@ Init_Numeric()
     rb_define_method(cFloat, "**", flo_pow, 1);
     rb_define_method(cFloat, "==", flo_eq, 1);
     rb_define_method(cFloat, "<=>", flo_cmp, 1);
+    rb_define_method(cFloat, "eql?", flo_eql, 1);
     rb_define_method(cFloat, "hash", flo_hash, 0);
     rb_define_method(cFloat, "to_i", flo_to_i, 0);
     rb_define_method(cFloat, "to_f", flo_to_f, 0);

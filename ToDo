@@ -1,5 +1,4 @@
+* non-blocking open/write for thread
 * パッケージまたは大域変数のアクセス制御
 * format機能
-* perlのようなsetuid check
-* write debugger for ruby
 * re-write regex code for speed and copyright

@@ -49,7 +49,7 @@ range_new(first, last)
 }
 
 static VALUE
-range_match(rng, obj)
+range_eqq(rng, obj)
     VALUE rng, obj;
 {
     VALUE first, last;
@@ -197,7 +197,7 @@ Init_Range()
     cRange = rb_define_class("Range", cObject);
     rb_include_module(cRange, mEnumerable);
     rb_define_singleton_method(cRange, "new", range_s_new, 2);
-    rb_define_method(cRange, "===", range_match, 1);
+    rb_define_method(cRange, "===", range_eqq, 1);
     rb_define_method(cRange, "each", range_each, 0);
     rb_define_method(cRange, "first", range_first, 0);
     rb_define_method(cRange, "last", range_last, 0);

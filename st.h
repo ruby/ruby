@@ -48,4 +48,4 @@ st_table *st_copy();
 
 int st_strhash();
 
-#endif ST_INCLUDED
+#endif /* ST_INCLUDED */

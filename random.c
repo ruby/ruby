@@ -22,9 +22,7 @@ f_srand(argc, argv, obj)
     VALUE obj;
 {
     int seed, old;
-#ifdef HAVE_RANDOM
     static int saved_seed;
-#endif
 
     if (rb_scan_args(argc, argv, "01", &seed) == 0) {
 	seed = time(0);
@@ -48,7 +46,10 @@ f_srand(argc, argv, obj)
 
     return int2inum(old);
 #else
-    old = srand(seed);
+    srand(seed);
+    old = saved_seed;
+    saved_seed = seed;
+
     return int2inum(old);
 #endif
 }
@@ -92,8 +93,8 @@ f_rand(obj, vmax)
 void
 Init_Random()
 {
-    extern VALUE cKernel;
+    extern VALUE mKernel;
 
-    rb_define_private_method(cKernel, "srand", f_srand, -1);
-    rb_define_private_method(cKernel, "rand", f_rand, 1);
+    rb_define_global_function("srand", f_srand, -1);
+    rb_define_global_function("rand", f_rand, 1);
 }

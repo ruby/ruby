@@ -17,7 +17,7 @@ while TRUE
   re = gets
   break if not re
   re.chop!
-  str.gsub! re, "#{st}&#{en}"
+  str.gsub! re, "#{st}\\&#{en}"
   print str, "\n"
 end
 print "\n"

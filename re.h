@@ -23,8 +23,7 @@ typedef struct re_pattern_buffer Regexp;
 
 struct RMatch {
     struct RBasic basic;
-    UINT len;
-    char *ptr;
+    VALUE str;
     struct re_registers *regs;
 };
 

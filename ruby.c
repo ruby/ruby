@@ -14,6 +14,7 @@
 #include "re.h"
 #include "dln.h"
 #include <stdio.h>
+#include <ctype.h>
 #include <sys/types.h>
 #include <fcntl.h>
 
@@ -25,15 +26,19 @@ char *strrchr();
 char *strstr();
 #endif
 
+char *getenv();
+
 static int version, copyright;
 
 int debug = FALSE;
 int verbose = FALSE;
+int tainting = FALSE;
 static int sflag = FALSE;
 
 char *inplace = FALSE;
 char *strdup();
 
+extern char *sourcefile;
 extern int yydebug;
 extern int nerrs;
 
@@ -41,7 +46,8 @@ static int xflag = FALSE;
 extern VALUE RS, RS_default, ORS, FS;
 
 static void load_stdin();
-static void load_file();
+static void load_file _((char *, int));
+static void forbid_setid _((char *));
 
 static int do_loop = FALSE, do_print = FALSE;
 static int do_check = FALSE, do_line = FALSE;
@@ -50,14 +56,10 @@ static int do_split = FALSE;
 static char *script;
 
 #ifndef RUBY_LIB
-#if defined(MSDOS)
-#define RUBY_LIB "/usr/local/lib/ruby;."
-#else
-#define RUBY_LIB "/usr/local/lib/ruby:."
-#endif
+#define RUBY_LIB "/usr/local/lib/ruby"
 #endif
 
-#if defined(MSDOS)
+#if defined(MSDOS) || defined(NT)
 #define RUBY_LIB_SEP ';'
 #else
 #define RUBY_LIB_SEP ':'
@@ -70,25 +72,64 @@ static void
 addpath(path)
     char *path;
 {
-    char *p, *s;
-    VALUE ary;
-
     if (path == 0) return;
+    if (strchr(path, RUBY_LIB_SEP)) {
+	char *p, *s;
+	VALUE ary = ary_new();
 
-    ary = ary_new();
-    p = s = path;
-    while (*p) {
-	while (*p == RUBY_LIB_SEP) p++;
-	if (s = strrchr(p, RUBY_LIB_SEP)) {
-	    ary_push(ary, str_new(p, (int)(s-p)));
-	    p = s + 1;
+	p = path;
+	while (*p) {
+	    while (*p == RUBY_LIB_SEP) p++;
+	    if (s = strchr(p, RUBY_LIB_SEP)) {
+		ary_push(ary, str_new(p, (int)(s-p)));
+		p = s + 1;
+	    }
+	    else {
+		ary_push(ary, str_new2(p));
+		break;
+	    }
 	}
-	else {
-	    ary_push(ary, str_new2(p));
-	    break;
-	}
+	rb_load_path = ary_plus(ary, rb_load_path);
     }
-    rb_load_path = ary_plus(ary, rb_load_path);
+    else {
+	ary_unshift(rb_load_path, str_new2(path));
+    }
+}
+
+struct req_list {
+    char *name;
+    struct req_list *next;
+} *req_list;
+
+static void
+add_modules(mod)
+    char *mod;
+{
+    struct req_list *list;
+
+    list = ALLOC(struct req_list);
+    list->name = mod;
+    list->next = req_list;
+    req_list = list;
+}
+
+void
+rb_require_modules()
+{
+    struct req_list *list = req_list;
+    struct req_list *tmp;
+    extern void *eval_tree; /* hack to save syntax tree */
+    void *save;
+
+    req_list = 0;
+    save = eval_tree;
+    while (list) {
+	f_require(Qnil, str_new2(list->name));
+	tmp = list->next;
+	free(list);
+	list = tmp;
+    }
+    eval_tree = save;
 }
 
 static void
@@ -150,6 +191,7 @@ proc_options(argcp, argvp)
 	    goto reswitch;
 
 	  case 's':
+	    forbid_setid("-s");
 	    sflag = TRUE;
 	    s++;
 	    goto reswitch;
@@ -161,11 +203,13 @@ proc_options(argcp, argvp)
 	    goto reswitch;
 
 	  case 'S':
+	    forbid_setid("-S");
 	    do_search = TRUE;
 	    s++;
 	    goto reswitch;
 
 	  case 'e':
+	    forbid_setid("-e");
 	    script_given++;
 	    if (script == 0) script = "-e";
 	    if (argv[1]) {
@@ -178,16 +222,19 @@ proc_options(argcp, argvp)
 	    break;
 
 	  case 'r':
+	    forbid_setid("-r");
 	    if (*++s) {
-		f_require(Qnil, str_new2(s));
+		add_modules(s);
 	    }
 	    else if (argv[1]) {
-		f_require(Qnil, str_new2(argv[1]));
+		add_modules(argv[1]);
 		argc--,argv++;
 	    }
 	    break;
 
 	  case 'i':
+	    forbid_setid("-i");
+	    if (inplace) free(inplace);
 	    inplace = strdup(s+1);
 	    break;
 
@@ -220,7 +267,22 @@ proc_options(argcp, argvp)
 	    s++;
 	    goto reswitch;
 
+	  case 'T':
+	    {
+		int numlen;
+		int v = 1;
+
+		if (*++s) {
+		    v = scan_oct(s, 2, &numlen);
+		    if (numlen == 0) v = 1;
+		}
+		rb_set_safe_level(v);
+		tainting = TRUE;
+	    }
+	    break;
+
 	  case 'I':
+	    forbid_setid("-I");
 	    if (*++s)
 		addpath(s);
 	    else if (argv[1]) {
@@ -302,7 +364,14 @@ proc_options(argcp, argvp)
 	    }
 	    else {
 		if (do_search) {
-		    script = dln_find_file(script, getenv("PATH"));
+		    char *path = getenv("RUBYPATH");
+
+		    if (path) {
+			script = dln_find_file(script, path);
+		    }
+		    if (!script) {
+			script = dln_find_file(script, getenv("PATH"));
+		    }
 		    if (!script) script = argv[0];
 		}
 		load_file(script, 1);
@@ -339,12 +408,6 @@ proc_options(argcp, argvp)
 
 }
 
-static VALUE
-open_to_load(fname)
-    char *fname;
-{
-}
-
 static void
 load_file(fname, script)
     char *fname;
@@ -368,6 +431,7 @@ load_file(fname, script)
 
 	RS = RS_default;
 	if (xflag) {
+	    forbid_setid("-x");
 	    xflag = FALSE;
 	    while (!NIL_P(line = io_gets(f))) {
 		line_start++;
@@ -397,7 +461,7 @@ load_file(fname, script)
 	      start_read:
 		if (p = strstr(RSTRING(line)->ptr, "ruby -")) {
 		    int argc; char *argv[2]; char **argvp = argv;
-		    char *s;
+		    UCHAR *s;
 
 		    s = RSTRING(line)->ptr;
 		    while (isspace(*s++))
@@ -430,6 +494,7 @@ rb_load_file(fname)
 static void
 load_stdin()
 {
+    forbid_setid("program input from stdin");
     load_file("-", 1);
 }
 
@@ -437,9 +502,9 @@ VALUE Progname;
 VALUE Argv;
 
 static int origargc;
-static char **origargv, **origenvp;
+static char **origargv;
 
-static VALUE
+static void
 set_arg0(val, id)
     VALUE val;
     ID id;
@@ -448,6 +513,7 @@ set_arg0(val, id)
     int i;
     static int len;
 
+    if (origargv == 0) Fail("$0 not initialized");
     Check_Type(val, T_STRING);
     if (len == 0) {
 	s = origargv[0];
@@ -472,9 +538,7 @@ set_arg0(val, id)
 	while (++i < len)
 	    *s++ = ' ';
     }
-    Progname = str_new2(origargv[0]);
-
-    return val;
+    Progname = str_taint(str_new2(origargv[0]));
 }
 
 void
@@ -482,41 +546,112 @@ ruby_script(name)
     char *name;
 {
     if (name) {
-	Progname = str_new2(name);
+	Progname = str_taint(str_new2(name));
+	sourcefile = name;
+    }
+}
+
+static int uid, euid, gid, egid;
+
+static void
+init_ids()
+{
+    uid = (int)getuid();
+    euid = (int)geteuid();
+    gid = (int)getgid();
+    egid = (int)getegid();
+#ifdef VMS
+    uid |= gid << 16;
+    euid |= egid << 16;
+#endif
+    if (uid && (euid != uid || egid != gid)) {
+	rb_set_safe_level(1);
+    }
+}
+
+static void
+forbid_setid(s)
+    char *s;
+{
+    if (euid != uid)
+        Fatal("No %s allowed while running setuid", s);
+    if (egid != gid)
+        Fatal("No %s allowed while running setgid", s);
+}
+
+void
+ruby_prog_init()
+{
+    init_ids();
+
+    sourcefile = "ruby";
+    rb_define_variable("$VERBOSE", &verbose);
+    rb_define_variable("$-v", &verbose);
+    rb_define_variable("$DEBUG", &debug);
+    rb_define_variable("$-d", &debug);
+    rb_define_readonly_variable("$-p", &do_print);
+    rb_define_readonly_variable("$-l", &do_line);
+
+    if (rb_safe_level() == 0) {
+	addpath(getenv("RUBYLIB"));
+    }
+#ifdef RUBY_ARCHLIB
+    addpath(RUBY_ARCHLIB);
+#endif
+    addpath(RUBY_LIB);
+    if (rb_safe_level() == 0) {
+	addpath(".");
+    }
+
+    rb_define_hooked_variable("$0", &Progname, 0, set_arg0);
+
+    Argv = ary_new();
+    rb_define_readonly_variable("$*", &Argv);
+    rb_define_global_const("ARGV", Argv);
+    rb_define_readonly_variable("$-a", &do_split);
+
+#ifdef MSDOS
+    /*
+     * There is no way we can refer to them from ruby, so close them to save
+     * space.
+     */
+    (void)fclose(stdaux);
+    (void)fclose(stdprn);
+#endif
+}
+
+void
+ruby_set_argv(argc, argv)
+    int argc;
+    char **argv;
+{
+    int i;
+
+#if defined(USE_DLN_A_OUT)
+    if (origargv) dln_argv0 = origargv[0];
+    else          dln_argv0 = argv[0];
+#endif
+    for (i=0; i < argc; i++) {
+	ary_push(Argv, str_taint(str_new2(argv[i])));
     }
 }
 
 void
-ruby_options(argc, argv, envp)
+ruby_process_options(argc, argv)
     int argc;
-    char **argv, **envp;
+    char **argv;
 {
     extern VALUE errat;
     int i;
 
-    origargc = argc; origargv = argv; origenvp = envp;
-
-    errat = str_new2(argv[0]);
-    rb_define_variable("$VERBOSE", &verbose);
-    rb_define_variable("$DEBUG", &debug);
-
-    addpath(getenv("RUBYLIB"));
-    addpath(RUBY_LIB);
-#ifdef RUBY_ARCHLIB
-    addpath(RUBY_ARCHLIB);
-#endif
+    origargc = argc; origargv = argv;
+    ruby_script(argv[0]);	/* for the time being */
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
 #endif
-
-    rb_define_hooked_variable("$0", &Progname, 0, set_arg0);
-
-    Argv = ary_new2(argc);
-    rb_define_readonly_variable("$*", &Argv);
-    rb_define_global_const("ARGV", Argv);
-
     proc_options(&argc, &argv);
     ruby_script(script);
+    ruby_set_argv(argc, argv);
 
     if (do_check && nerrs == 0) {
 	printf("Syntax OK\n");
@@ -527,9 +662,5 @@ ruby_options(argc, argv, envp)
     }
     if (do_loop) {
 	yywhile_loop(do_line, do_split);
-    }
-
-    for (i=0; i < argc; i++) {
-	ary_push(Argv, str_new2(argv[i]));
     }
 }

@@ -9,7 +9,7 @@ class Mail
   def Mail.new(f)
     if !f.kind_of?(IO)
       f = open(f, "r")
-      me = super
+      me = super(f)
       f.close
     else
       me = super
@@ -22,7 +22,7 @@ class Mail
     @body = []
     while f.gets()
       $_.chop!
-      next if /^From /	# skip From-line  
+      next if /^From /		# skip From-line  
       break if /^$/		# end of header
       if /^(\S+):\s*(.*)/
 	@header[attr = $1.capitalize] = $2
@@ -50,7 +50,15 @@ class Mail
 
 end
 
-ARGV[0] = '/usr/spool/mail/' + ENV['USER'] if ARGV.length == 0
+if ARGV.length == 0
+  if ENV['MAIL']
+    ARGV[0] = ENV['MAIL']
+  elsif ENV['USER']
+    ARGV[0] = '/usr/spool/mail/' + ENV['USER']
+  elsif ENV['LOGNAME']
+    ARGV[0] = '/usr/spool/mail/' + ENV['LOGNAME']
+  end
+end
 
 require "tk"
 list = scroll = nil
@@ -90,8 +98,10 @@ for file in ARGV
   f = open(file, "r")
   while !f.eof
     mail = Mail.new(f)
-    date, from, subj =  mail.header['Date'], mail.header['From'], mail.header['Subject']
+    date =  mail.header['Date']
     next if !date
+    from =  mail.header['From']
+    subj =  mail.header['Subject']
     y = m = d = 0
     y, m, d = parsedate(date) if date
     from = "sombody@somewhere" if ! from

@@ -24,27 +24,37 @@ class Mutex
   end
 
   def try_lock
-    Thread.exclusive do
-      if not @locked
-	@locked=TRUE
-	return TRUE
-      end
+    result = FALSE
+    Thread.critical = TRUE
+    unless @locked
+      @locked = TRUE
+      result = TRUE
     end
-    FALSE
+    Thread.critical = FALSE
+    result
   end
 
   def lock
-    while not try_lock
+    while (Thread.critical = TRUE; @locked)
       @waiting.push Thread.current
       Thread.stop
     end
+    @locked = TRUE
+    Thread.critical = FALSE
+    self
   end
 
   def unlock
+    return unless @locked
+    Thread.critical = TRUE
+    wait = @waiting
+    @waiting = []
     @locked = FALSE
-    if w = @waiting.shift
+    Thread.critical = FALSE
+    for w in wait
       w.run
     end
+    self
   end
 
   def synchronize
@@ -57,37 +67,6 @@ class Mutex
   end
 end
 
-class SharedMutex<Mutex
-  def initialize
-    @locking = nil
-    @num_locks = 0;
-    super
-  end
-  def try_lock
-    if @locking == Thread.current
-      @num_locks += 1
-      return TRUE
-    end
-    if super
-      @num_locks = 1
-      @locking = Thread.current
-      TRUE
-    else
-      FALSE
-    end
-  end
-  def unlock
-    unless @locking == Thread.current
-      raise ThreadError, "cannot release shared mutex"
-    end
-    @num_locks -= 1
-    if @num_locks == 0
-      @locking = nil
-      super
-    end
-  end
-end
-
 class Queue
   def initialize
     @que = []
@@ -95,19 +74,30 @@ class Queue
   end
 
   def push(obj)
+    Thread.critical = TRUE
     @que.push obj
-    if t = @waiting.shift
-      t.run
-    end
+    t = @waiting.shift
+    Thread.critical = FALSE
+    t.run if t
   end
 
   def pop non_block=FALSE
-    if @que.length == 0
-      raise ThreadError, "queue empty" if non_block
-      @waiting.push Thread.current
-      Thread.stop
+    item = nil
+    until item
+      Thread.critical = TRUE
+      if @que.length == 0
+	if non_block
+	  Thread.critical = FALSE
+	  raise ThreadError, "queue empty"
+	end
+	@waiting.push Thread.current
+	Thread.stop
+      else
+	item = @que.shift
+      end
     end
-    @que.shift
+    Thread.critical = FALSE
+    item
   end
 
   def empty?
@@ -116,38 +106,5 @@ class Queue
 
   def length
     @que.length
-  end
-end
-
-class Condition
-  def initialize
-    @waiting = []
-  end
-
-  def wait(mut)
-    Thread.exclusive do
-      mut.unlock
-      @waiting.push Thread.current
-    end
-    Thread.sleep
-    mut.lock
-  end
-
-  def signal
-    th = nil
-    Thread.exclusive do
-      th = @waiting.pop
-    end
-    th.run
-  end
-
-  def broadcast
-    w = @waiting
-    Thread.exclusive do
-      th = []
-    end
-    for th in w
-      th.run
-    end
   end
 end

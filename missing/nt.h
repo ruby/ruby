@@ -18,7 +18,7 @@
 // Define the following so we don't get tons of extra stuff
 // when we include windows.h 
 //
-
+#if 0
 #define NOGDICAPMASKS     
 #define NOVIRTUALKEYCODES 
 #define NOWINMESSAGES     
@@ -57,14 +57,20 @@
 #define NOHELP            
 #define NOPROFILER        
 #define NODEFERWINDOWPOS  
-
+#endif
 
 //
 // Ok now we can include the normal include files.
 //
 
-#include <stdarg.h>
+// #include <stdarg.h> conflict with varargs.h?
+// There is function-name conflitct, so we rename it
+#if !defined(IN) && !defined(FLOAT)
+#define OpenFile  WINAPI_OpenFile
 #include <windows.h>
+#include <winsock.h>
+#undef OpenFile
+#endif
 //
 // We\'re not using Microsoft\'s "extensions" to C for
 // Structured Exception Handling (SEH) so we can nuke these
@@ -73,12 +79,15 @@
 #undef except
 #undef finally
 #undef leave
-#include <winsock.h>
-#include <sys/types.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <direct.h>
 #include <process.h>
 #include <io.h>
 #include <time.h>
+#include <math.h>
+#include <sys/types.h>
 #include <sys/utime.h>
 
 //
@@ -127,18 +136,17 @@
 #define fileno	   _fileno
 #endif
 #define utime      _utime
-#define pipe       _pipe
+//#define pipe       _pipe
+#define perror      _perror
 
-#define popen    mypopen
-#define pclose   mypclose
 
 /* these are defined in nt.c */
 
 extern int NtMakeCmdVector(char *, char ***, int);
-extern void NtInitialize(int *, char ***);
-
+/* extern void NtInitialize(int *, char ***); */
 extern char *NtGetLib(void);
 extern char *NtGetBin(void);
+extern FILE *mypopen(char *, char *);
 
 //
 // define this so we can do inplace editing
@@ -149,7 +157,8 @@ extern char *NtGetBin(void);
 //
 // stubs
 //
-extern int       ioctl (int, unsigned int, char *);
+// extern int       ioctl (int, unsigned int, char *);
+extern int       ioctl (int, unsigned int, long);
 #if 0
 extern void      sleep (unsigned int);
 #else
@@ -164,74 +173,12 @@ extern int       setuid (int);
 extern int       setgid (int);
 
 
-//
-// Got the idea and some of the code from the MSDOS implementation
-//
+#undef IN  /* confict in parse.c */
 
-/* 
- *    (C) Copyright 1987, 1990 Diomidis Spinellis.
- *
- *    You may distribute under the terms of either the GNU General Public
- *    License or the Artistic License, as specified in the README file.
- *
- * Included in the nt header file for use by nt port
- *
- * $Log:	dir.h,v $
- * Revision 4.0.1.1  91/06/07  11:22:10  lwall
- * patch4: new copyright notice
- * 
- * Revision 4.0  91/03/20  01:34:20  lwall
- * 4.0 baseline.
- * 
- * Revision 3.0.1.1  90/03/27  16:07:08  lwall
- * patch16: MSDOS support
- * 
- * Revision 1.1  90/03/18  20:32:29  dds
- * Initial revision
- *
- *
- */
-/*
- * defines the type returned by the directory(3) functions
- */
-
-/*Directory entry size */
-#ifdef DIRSIZ
-#undef DIRSIZ
-#endif
-#define DIRSIZ(rp)	(sizeof(struct direct))
-
-/* need this so that directory stuff will compile! */
-#define DIRENT direct
-
-/*
- * Structure of a directory entry
- */
-struct direct	{
-	ino_t	d_ino;			/* inode number (not used by MS-DOS) */
-	int	d_namlen;		/* Name length */
-	char	d_name[257];		/* file name */
-};
-
-struct _dir_struc {			/* Structure used by dir operations */
-	char *start;			/* Starting position */
-	char *curr;			/* Current position */
-	long size;			/* Size of string table */
-	long nfiles;			/* number if filenames in table */
-	struct direct dirstr;		/* Directory structure to return */
-};
-
-typedef struct _dir_struc DIR;		/* Type returned by dir operations */
-
-DIR *cdecl opendir(char *filename);
-struct direct *readdir(DIR *dirp);
-long telldir(DIR *dirp);
-void seekdir(DIR *dirp,long loc);
-void rewinddir(DIR *dirp);
-void closedir(DIR *dirp);
-
+#if 0
 extern int sys_nerr;
 extern char *sys_errlist[];
+#endif
 extern char *mystrerror(int);
 
 #define strerror(e) mystrerror(e)
@@ -242,5 +189,29 @@ extern char *mystrerror(int);
 #define HAVE_GETLOGIN 1
 #define HAVE_WAITPID 1
 #define HAVE_GETCWD 1
+
+#ifdef popen
+#undef popen
+#define popen    mypopen
+#endif
+#ifdef pclose
+#undef pclose
+#define pclose   mypclose
+#endif
+
+#undef va_start
+#undef va_end
+
+#ifdef popen
+#undef popen
+#define popen    mypopen
+#endif
+#ifdef pclose
+#undef pclose
+#define pclose   mypclose
+#endif
+
+#undef va_start
+#undef va_end
 
 #endif

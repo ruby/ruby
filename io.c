@@ -16,17 +16,22 @@
 #include <errno.h>
 
 #include <sys/types.h>
-#ifndef DJGPP
+#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>
+#endif
+#if defined(HAVE_FCNTL)
+#include <fcntl.h>
 #endif
 
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
+#ifndef NT
 struct timeval {
         long    tv_sec;         /* seconds */
         long    tv_usec;        /* and microseconds */
 };
+#endif
 #endif
 #ifdef HAVE_VFORK_H
 #include <vfork.h>
@@ -34,8 +39,14 @@ struct timeval {
 
 #include <sys/stat.h>
 
-#ifdef DJGPP
+#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(__human68k__)
 #include <fcntl.h>
+#endif
+
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#else
+# define NOFILE 64
 #endif
 
 VALUE rb_ad_string();
@@ -53,7 +64,7 @@ VALUE RS_default;
 
 static VALUE argf;
 
-ID id_write, id_fd, id_print_on;
+ID id_write;
 
 VALUE lastline_get();
 void lastline_set();
@@ -116,11 +127,6 @@ closed()
     Raise(eIOError, "closed stream");
 }
 
-void
-io_wrong_type()
-{
-}
-
 /* writing functions */
 VALUE
 io_write(io, str)
@@ -129,23 +135,40 @@ io_write(io, str)
 {
     OpenFile *fptr;
     FILE *f;
-    VALUE out;
     int n;
-
-    GetOpenFile(io, fptr);
-    io_writable(fptr);
-
-    f = (fptr->f2) ? fptr->f2 : fptr->f;
-    if (f == NULL) closed();
 
     if (TYPE(str) != T_STRING)
 	str = (struct RString*)obj_as_string(str);
     if (str->len == 0) return INT2FIX(0);
 
+    if (BUILTIN_TYPE(io) != T_FILE) {
+	return rb_funcall(io, id_write, 1, str);
+    }
+
+    rb_secure(4);
+    GetOpenFile(io, fptr);
+    io_writable(fptr);
+
+    f = GetWriteFile(fptr);
+    if (f == NULL) closed();
+
+#ifdef __human68k__
+    {
+	register UCHAR *ptr = str->ptr;
+	n = (int) str->len;
+	while (--n >= 0)
+	    if (fputc(*ptr++, f) == EOF)
+		rb_sys_fail(fptr->path);
+	n = ptr - str->ptr;
+    }
+    if (ferror(f))
+	rb_sys_fail(fptr->path);
+#else
     n = fwrite(str->ptr, 1, str->len, f);
     if (n == 0 || ferror(f)) {
 	rb_sys_fail(fptr->path);
     }
+#endif
     if (fptr->mode & FMODE_SYNC) {
 	fflush(f);
     }
@@ -170,7 +193,7 @@ io_flush(io)
 
     GetOpenFile(io, fptr);
     io_writable(fptr);
-    f = (fptr->f2) ? fptr->f2 : fptr->f;
+    f = GetWriteFile(fptr);
     if (f == NULL) closed();
 
     if (fflush(f) == EOF) rb_sys_fail(0);
@@ -247,7 +270,7 @@ read_all(port)
     VALUE port;
 {
     OpenFile *fptr;
-    VALUE str;
+    VALUE str = Qnil;
     char buf[BUFSIZ];
     int n;
 
@@ -255,7 +278,6 @@ read_all(port)
     io_readable(fptr);
     if (fptr->f == NULL) closed();
 
-    str = str_new(0, 0);
     for (;;) {
 	READ_CHECK(fptr->f);
 	TRAP_BEG;
@@ -263,9 +285,10 @@ read_all(port)
 	TRAP_END;
 	if (n == 0) break;
 	if (n < 0) rb_sys_fail(0);
-	str_cat(str, buf, n);
+	if (NIL_P(str)) str = str_new(buf, n);
+	else str_cat(str, buf, n);
     }
-    return str;
+    return str_taint(str);
 }
 
 static VALUE
@@ -301,7 +324,7 @@ io_read(argc, argv, io)
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';
 
-    return str;
+    return str_taint(str);
 }
 
 static VALUE lineno;
@@ -320,11 +343,10 @@ io_gets_method(argc, argv, io)
     int rslen, rspara = 0;
     VALUE rs;
 
-    if (rb_scan_args(argc, argv, "01", &rs) == 1) {
-	if (!NIL_P(rs)) Check_Type(rs, T_STRING);
-    }
+    if (argc == 0) rs = RS;
     else {
-	rs = RS;
+	rb_scan_args(argc, argv, "1", &rs);
+	if (!NIL_P(rs)) Check_Type(rs, T_STRING);
     }
 
     GetOpenFile(io, fptr);
@@ -384,8 +406,11 @@ io_gets_method(argc, argv, io)
 	    cnt = bp - buf;
 	}
 	else {
+	    READ_CHECK(f);
+	    TRAP_BEG;
 	    cnt = fread(buf, 1, sizeof(buf), f);
-	    c = cnt ? buf[cnt - 1]: EOF;
+	    TRAP_END;
+	    c = cnt ? 0 : EOF;
 	}
 
 	if (c == EOF) {
@@ -429,7 +454,7 @@ io_gets_method(argc, argv, io)
     }
     lastline_set(str);
 
-    return (VALUE)str;
+    return str_taint(str);
 }
 
 VALUE
@@ -451,6 +476,21 @@ io_readline(argc, argv, io)
 	eof_error();
     }
     return line;
+}
+
+static VALUE
+io_readlines(argc, argv, io)
+    int argc;
+    VALUE argv;
+    VALUE io;
+{
+    VALUE line, ary;
+
+    ary = ary_new();
+    while (!NIL_P(line = io_gets_method(argc, argv, io))) {
+	ary_push(ary, line);
+    }
+    return ary;
 }
 
 static VALUE
@@ -550,12 +590,10 @@ io_isatty(io)
 {
     OpenFile *fptr;
 
-#ifndef NT
     GetOpenFile(io, fptr);
     if (fptr->f == NULL) closed();
     if (isatty(fileno(fptr->f)) == 0)
 	return FALSE;
-#endif
     return TRUE;
 }
 
@@ -623,12 +661,13 @@ io_syswrite(io, str)
     FILE *f;
     int n;
 
+    rb_secure(4);
     if (TYPE(str) != T_STRING)
 	str = obj_as_string(str);
 
     GetOpenFile(io, fptr);
     io_writable(fptr);
-    f = (fptr->f2) ? fptr->f2 : fptr->f;
+    f = GetWriteFile(fptr);
     if (f == NULL) closed();
 
 #ifdef THREAD
@@ -668,21 +707,30 @@ io_sysread(io, len)
 
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';
-    return str;
+    return str_taint(str);
 }
 
-static VALUE
+VALUE
 io_binmode(io)
     VALUE io;
 {
-#if defined(NT) || defined(DJGPP)
+#if defined(NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
+#ifdef __human68k__
+    if (fptr->f)
+	fmode(fptr->f, _IOBIN);
+    if (fptr->f2);
+	fmode(fptr->f2, _IOBIN);
+#else
     if (fptr->f && setmode(fileno(fptr->f), O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
     if (fptr->f2 && setmode(fileno(fptr->f2), O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
+#endif
+
+    fptr->mode |= FMODE_BINMODE;
 #endif
     return io;
 }
@@ -706,8 +754,14 @@ io_mode_flags(mode)
       default:
 	ArgError("illegal access mode");
     }
+
+    if (mode[1] == 'b') {
+	flags |= FMODE_BINMODE;
+	mode++;
+    }
+
     if (mode[1] == '+') {
-	flags |= FMODE_READABLE | FMODE_WRITABLE;
+	flags |= FMODE_READWRITE;
     }
 
     return flags;
@@ -752,7 +806,59 @@ rb_fdopen(fd, mode)
     return f;
 }
 
-#if defined (NT) || defined(DJGPP)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
+static struct pipe_list {
+    OpenFile *fptr;
+    struct pipe_list *next;
+} *pipe_list;
+
+static void
+pipe_add_fptr(fptr)
+    OpenFile *fptr;
+{
+    struct pipe_list *list;
+
+    list = ALLOC(struct pipe_list);
+    list->fptr = fptr;
+    list->next = pipe_list;
+    pipe_list = list;
+}
+
+static void
+pipe_del_fptr(fptr)
+    OpenFile *fptr;
+{
+    struct pipe_list *list = pipe_list;
+    struct pipe_list *tmp;
+
+    if (list->fptr == fptr) {
+	pipe_list = list->next;
+	return;
+    }
+
+    while (list->next) {
+	if (list->next->fptr == fptr) {
+	    tmp = list->next;
+	    list->next = list->next->next;
+	    free(tmp);
+	    return;
+	}
+	list = list->next;
+    }
+}
+
+static void
+pipe_atexit()
+{
+    struct pipe_list *list = pipe_list;
+
+    while (list) {
+	io_fptr_finalize(list->fptr);
+	list = list->next;
+    }
+}
+
+#if !defined (__CYGWIN32__)
 static void
 pipe_finalize(fptr)
     OpenFile *fptr;
@@ -760,9 +866,24 @@ pipe_finalize(fptr)
     if (fptr->f != NULL) {
 	pclose(fptr->f);
     }
+    if (fptr->f2 != NULL) {
+	pclose(fptr->f2);
+    }
     fptr->f = fptr->f2 = NULL;
+    pipe_del_fptr(fptr);
 }
 #endif
+#endif
+
+void
+io_unbuffered(fptr)
+    OpenFile *fptr;
+{
+    if (fptr->f2 == 0) TypeError("non-writable fptr");
+    setbuf(fptr->f, NULL);
+    setbuf(fptr->f2, NULL);
+    fptr->mode |= FMODE_SYNC;
+}
 
 static VALUE
 pipe_open(pname, mode)
@@ -771,7 +892,7 @@ pipe_open(pname, mode)
     int modef = io_mode_flags(mode);
     OpenFile *fptr;
 
-#if defined(NT) || defined(DJGPP)
+#if defined(NT) || defined(DJGPP) || defined(__human68k__)
     FILE *f = popen(pname, mode);
 
     if (f == NULL) rb_sys_fail(pname);
@@ -780,10 +901,14 @@ pipe_open(pname, mode)
 	OBJSETUP(port, cIO, T_FILE);
 	MakeOpenFile(port, fptr);
 	fptr->finalize = pipe_finalize;
+	fptr->mode = modef;
 
+	pipe_add_fptr(fptr);
 	if (modef & FMODE_READABLE) fptr->f  = f;
-	if (modef & FMODE_WRITABLE) fptr->f2 = f;
-	fptr->mode = modef | FMODE_SYNC;
+	if (modef & FMODE_WRITABLE) {
+	    fptr->f2 = f;
+	    io_unbuffered(fptr);
+	}
 	return (VALUE)port;
     }
 #else
@@ -806,32 +931,47 @@ pipe_open(pname, mode)
       case 0:			/* child */
 	if (modef & FMODE_READABLE) {
 	    close(pr[0]);
-	    dup2(pr[1], 1);
-	    close(pr[1]);
+	    if (pr[1] != 1) {
+		dup2(pr[1], 1);
+		close(pr[1]);
+	    }
 	}
 	if (modef & FMODE_WRITABLE) {
 	    close(pw[1]);
-	    dup2(pw[0], 0);
-	    close(pw[0]);
+	    if (pw[0] != 0) {
+		dup2(pw[0], 0);
+		close(pw[0]);
+	    }
 	}
 
 	if (doexec) {
-	    VALUE fd = io_fileno(rb_stderr);
-	    int f = FIX2INT(fd);
+	    VALUE serr = io_fileno(rb_stderr);
+	    int fd = FIX2INT(serr);
+	    extern char *sourcefile;
+	    extern int   sourceline;
 
-	    if (f != 2) {
+	    if (fd != 2) {
 		close(2);
-		dup2(f, 2);
-		close(f);
+		dup2(fd, 2);
+		close(fd);
 	    }
+
+	    for (fd = 3; fd < NOFILE; fd++)
+		close(fd);
 	    rb_proc_exec(pname);
+	    fprintf(stderr, "%s:%d: command not found: %s\n",
+		    sourcefile, sourceline, pname);
 	    _exit(127);
 	}
 	return Qnil;
 
       case -1:			/* fork failed */
 	if (errno == EAGAIN) {
+#ifdef THREAD
+	    thread_sleep(1);
+#else
 	    sleep(1);
+#endif
 	    goto retry;
 	}
 	close(pr[0]); close(pw[1]);
@@ -843,15 +983,24 @@ pipe_open(pname, mode)
 	    NEWOBJ(port, struct RFile);
 	    OBJSETUP(port, cIO, T_FILE);
 	    MakeOpenFile(port, fptr);
-	    if (modef & FMODE_READABLE) close(pr[1]);
-	    if (modef & FMODE_WRITABLE) close(pw[0]);
 	    fptr->mode = modef;
 	    fptr->mode |= FMODE_SYNC;
 	    fptr->pid = pid;
 
-	    if (modef & FMODE_READABLE) fptr->f  = rb_fdopen(pr[0], "r");
-	    if (modef & FMODE_WRITABLE) fptr->f2 = rb_fdopen(pw[1], "w");
+	    if (modef & FMODE_READABLE) {
+		close(pr[1]);
+		fptr->f  = rb_fdopen(pr[0], "r");
+	    }
+	    if (modef & FMODE_WRITABLE) {
+		FILE *f = rb_fdopen(pw[1], "w");
 
+		close(pw[0]);
+		if (fptr->f) fptr->f2 = f;
+		else fptr->f = f;
+	    }
+#if defined (__CYGWIN32__)
+	    pipe_add_fptr(fptr);
+#endif
 	    return (VALUE)port;
 	}
     }
@@ -859,7 +1008,7 @@ pipe_open(pname, mode)
 }
 
 static VALUE
-io_popen(argc, argv, self)
+io_s_popen(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -868,7 +1017,7 @@ io_popen(argc, argv, self)
     VALUE pname, pmode;
 
     rb_scan_args(argc, argv, "11", &pname, &pmode);
-    Check_Type(pname, T_STRING);
+    Check_SafeStr(pname);
     if (NIL_P(pmode)) {
 	mode = "r";
     }
@@ -877,7 +1026,7 @@ io_popen(argc, argv, self)
 	if (RSTRING(pmode)->len == 0 || RSTRING(pmode)->len > 2)
 	    ArgError("illegal access mode");
 	mode = RSTRING(pmode)->ptr;
-    }
+   }
     return pipe_open(RSTRING(pname)->ptr, mode);
 }
 
@@ -903,7 +1052,7 @@ f_open(argc, argv, self)
     VALUE pname, pmode;
 
     rb_scan_args(argc, argv, "11", &pname, &pmode);
-    Check_Type(pname, T_STRING);
+    Check_SafeStr(pname);
     if (NIL_P(pmode)) {
 	mode = "r";
     }
@@ -914,6 +1063,126 @@ f_open(argc, argv, self)
 	mode = RSTRING(pmode)->ptr;
     }
     return io_open(RSTRING(pname)->ptr, mode);
+}
+
+#ifndef NT
+extern char *strdup();
+#endif
+
+VALUE
+io_reopen(io, nfile)
+    VALUE io, nfile;
+{
+    OpenFile *fptr, *orig;
+    char *mode;
+    int fd;
+
+    GetOpenFile(io, fptr);
+    Check_Type(nfile, T_FILE);
+    GetOpenFile(nfile, orig);
+
+    if (orig->f2) {
+	fflush(orig->f2);
+    }
+    else if (orig->mode & FMODE_WRITABLE) {
+	fflush(orig->f);
+    }
+
+    /* copy OpenFile structure */
+    fptr->mode = orig->mode;
+    fptr->pid = orig->pid;
+    fptr->lineno = orig->lineno;
+    if (fptr->path) free(fptr->path);
+    if (orig->path) fptr->path = strdup(orig->path);
+    else fptr->path = 0;
+    fptr->finalize = orig->finalize;
+
+    switch (fptr->mode & FMODE_READWRITE) {
+      case FMODE_READABLE:
+      default:
+	mode = "r"; break;
+      case FMODE_WRITABLE:
+	mode = "w"; break;
+      case FMODE_READWRITE:
+	if (orig->f2) mode = "r";
+	else          mode = "r+";
+	break;
+    }
+    fd = fileno(fptr->f);
+    fclose(fptr->f);
+    dup2(fileno(orig->f), fd);
+    fptr->f = rb_fdopen(fd, mode);
+
+    if (fptr->f2) {
+	fd = fileno(fptr->f2);
+	fclose(fptr->f2);
+	if (orig->f2) {
+	    dup2(fileno(orig->f2), fd);
+	    fptr->f = rb_fdopen(fd, "w");
+	}
+	else {
+	    fptr->f2 = 0;
+	}
+    }
+
+    if (fptr->mode & FMODE_BINMODE) {
+	io_binmode(io);
+    }
+
+    RBASIC(io)->class = RBASIC(nfile)->class;
+    return io;
+}
+
+static VALUE
+io_clone(io)
+    VALUE io;
+{
+    OpenFile *fptr, *orig;
+    int fd;
+    char *mode;
+
+    NEWOBJ(obj, struct RFile);
+    OBJSETUP(obj, CLASS_OF(io), T_FILE);
+
+    GetOpenFile(io, orig);
+    MakeOpenFile(obj, fptr);
+
+    if (orig->f2) {
+	fflush(orig->f2);
+    }
+    else if (orig->mode & FMODE_WRITABLE) {
+	fflush(orig->f);
+    }
+
+    /* copy OpenFile structure */
+    fptr->mode = orig->mode;
+    fptr->pid = orig->pid;
+    fptr->lineno = orig->lineno;
+    if (orig->path) fptr->path = strdup(orig->path);
+    fptr->finalize = orig->finalize;
+
+    switch (fptr->mode & FMODE_READWRITE) {
+      case FMODE_READABLE:
+      default:
+	mode = "r"; break;
+      case FMODE_WRITABLE:
+	mode = "w"; break;
+      case FMODE_READWRITE:
+	if (orig->f2) mode = "r";
+	else          mode = "r+";
+	break;
+    }
+    fd = dup(fileno(orig->f));
+    fptr->f = rb_fdopen(fd, mode);
+    if (fptr->f2) {
+	fd = dup(fileno(orig->f2));
+	fptr->f = rb_fdopen(fd, "w");
+    }
+    if (fptr->mode & FMODE_BINMODE) {
+	io_binmode(obj);
+    }
+
+    return (VALUE)obj;
 }
 
 static VALUE
@@ -971,14 +1240,17 @@ io_print(argc, argv, out)
 	    io_write(out, OFS);
 	}
 	switch (TYPE(argv[i])) {
-	  case T_STRING:
-	    io_write(out, argv[i]);
-	    break;
 	  case T_NIL:
 	    io_write(out, str_new2("nil"));
 	    break;
+	  case T_ARRAY:
+	    ary_print_on(argv[i], out);
+	    break;
+	  case T_HASH:
+	    break;
+	  case T_STRING:
 	  default:
-	    rb_funcall(argv[i], id_print_on, 1, out);
+	    io_write(out, argv[i]);
 	    break;
 	}
     }
@@ -998,8 +1270,9 @@ f_print(argc, argv)
     return Qnil;
 }
 
-VALUE
+static VALUE
 f_p(obj, val)
+    VALUE obj, val;
 {
     VALUE str = rb_inspect(val);
 
@@ -1009,7 +1282,7 @@ f_p(obj, val)
     return Qnil;
 }
 
-static VALUE
+static void
 io_defset(val, id)
     VALUE val;
     ID id;
@@ -1017,17 +1290,11 @@ io_defset(val, id)
     if (TYPE(val) == T_STRING) {
 	val = io_open(RSTRING(val)->ptr, "w");
     }
-    if (!obj_is_kind_of(val, cIO)) {
-	TypeError("$< must be a file, %s given", rb_class2name(CLASS_OF(val)));
+    if (!rb_respond_to(val, id_write)) {
+	TypeError("$< must have write method, %s given",
+		  rb_class2name(CLASS_OF(val)));
     }
-    return rb_defout = val;
-}
-
-static VALUE
-f_print_on(obj, port)
-    VALUE obj, port;
-{
-    return io_write(port, obj);
+    rb_defout = val;
 }
 
 static VALUE
@@ -1044,6 +1311,25 @@ prep_stdio(f, mode)
     fp->mode = mode;
 
     return (VALUE)obj;
+}
+
+static VALUE
+io_s_new(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE fnum, mode;
+    FILE *f;
+    char *m = "r";
+
+    rb_scan_args(argc, argv, "11", &fnum, &mode);
+
+    if (!NIL_P(mode)) {
+	Check_SafeStr(mode);
+	m = RSTRING(mode)->ptr;
+    }
+    f = rb_fdopen(NUM2INT(fnum), m);
+    return prep_stdio(f, io_mode_flags(m));
 }
 
 static VALUE filename, file;
@@ -1094,12 +1380,12 @@ next_argv()
 		    fstat(fileno(fr), &st);
 		    if (*inplace) {
 			str = str_new2(fn);
-#ifdef NT
+#if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT)
 			add_suffix(str, inplace);
 #else
 			str_cat(str, inplace, strlen(inplace));
 #endif
-#if defined(MSDOS) || defined(__BOW__)
+#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN32__) || defined(NT) || defined(__human68k__)
 			(void)fclose(fr);
 			(void)unlink(RSTRING(str)->ptr);
 			(void)rename(fn, RSTRING(str)->ptr);
@@ -1114,7 +1400,7 @@ next_argv()
 #endif
 		    }
 		    else {
-#if !defined(MSDOS) && !defined(__BOW__)
+#if !defined(MSDOS) && !defined(__BOW__) && !defined(__CYGWIN32__) && !defined(NT) && !defined(__human68k__)
 			if (unlink(fn) < 0) {
 			    Warning("Can't remove %s: %s, skipping file",
 				fn, strerror(errno));
@@ -1126,7 +1412,7 @@ next_argv()
 #endif
 		    }
 		    fw = rb_fopen(fn, "w");
-#if !defined(DJGPP) && !defined(__CYGWIN32__)
+#if !defined(MSDOS) && !defined(__CYGWIN32__) && !(NT) && !defined(__human68k__)
 		    fstat(fileno(fw), &st2);
 		    fchmod(fileno(fw), st.st_mode);
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
@@ -1149,7 +1435,7 @@ next_argv()
 static VALUE
 f_gets_method(argc, argv)
     int argc;
-    VALUE argv;
+    VALUE *argv;
 {
     VALUE line;
 
@@ -1168,9 +1454,7 @@ f_gets_method(argc, argv)
 }
 
 VALUE
-f_gets(argc, argv)
-    int argc;
-    VALUE argv;
+f_gets()
 {
     return f_gets_method(0,0);
 }
@@ -1237,14 +1521,14 @@ f_readlines(argc, argv)
     VALUE line, ary;
 
     ary = ary_new();
-    while (RTEST(line = f_gets_method(argc, argv))) {
+    while (!NIL_P(line = f_gets_method(argc, argv))) {
 	ary_push(ary, line);
     }
 
     return ary;
 }
 
-VALUE
+void
 rb_str_setter(val, id, var)
     VALUE val;
     ID id;
@@ -1253,7 +1537,7 @@ rb_str_setter(val, id, var)
     if (!NIL_P(val) && TYPE(val) != T_STRING) {
 	TypeError("value of %s must be String", rb_id2name(id));
     }
-    return *var = val;
+    *var = val;
 }
 
 static VALUE
@@ -1262,19 +1546,22 @@ f_backquote(obj, str)
     struct RString *str;
 {
     VALUE port, result;
-    OpenFile *fptr;
 
-    Check_Type(str, T_STRING);
+    Check_SafeStr(str);
     port = pipe_open(str->ptr, "r");
     result = read_all(port);
 
     io_close(port);
 
+    if (NIL_P(result)) return str_new(0,0);
     return result;
 }
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
+#endif
+#ifdef NT
+#define select(v, w, x, y, z) (-1) /* anytime fail */
 #endif
 
 static VALUE
@@ -1290,6 +1577,7 @@ f_select(argc, argv, obj)
     OpenFile *fptr;
     int i, max = 0, n;
     int interrupt = 0;
+    int pending = 0;
 
     rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout);
     if (NIL_P(timeout)) {
@@ -1302,7 +1590,6 @@ f_select(argc, argv, obj)
 
     FD_ZERO(&pset);
     if (!NIL_P(read)) {
-	int pending = 0;
 
 	Check_Type(read, T_ARRAY);
 	rp = &rset;
@@ -1384,6 +1671,7 @@ f_select(argc, argv, obj)
 	interrupt = 1;
     }
 #endif
+    if (!pending && n == 0) return Qnil; /* returns nil on timeout */
 
     res = ary_new2(3);
     ary_push(res, rp?ary_new():ary_new2(0));
@@ -1391,7 +1679,6 @@ f_select(argc, argv, obj)
     ary_push(res, ep?ary_new():ary_new2(0));
 
     if (interrupt == 0) {
-
 	if (rp) {
 	    list = RARRAY(res)->ptr[0];
 	    for (i=0; i< RARRAY(read)->len; i++) {
@@ -1430,21 +1717,36 @@ f_select(argc, argv, obj)
 	}
     }
 
-    return res;
+    return res;			/* returns an empty array on interrupt */
 }
 
-void
+static VALUE
 io_ctl(io, req, arg, io_p)
     VALUE io, req;
     struct RString *arg;
     int io_p;
 {
-#if !defined(MSDOS)
+#if !defined(MSDOS) && !defined(__human68k__)
     int cmd = NUM2INT(req);
     OpenFile *fptr;
     int len, fd;
+    long narg = 0;
+    int retval;
 
+    rb_secure(2);
     GetOpenFile(io, fptr);
+
+    if (NIL_P(arg) || (VALUE)arg == FALSE) {
+	narg = 0;
+    }
+    else if (FIXNUM_P(arg)) {
+	narg = FIX2INT(arg);
+    }
+    else if ((VALUE)arg == TRUE) {
+	narg = 1;
+    }
+    else {
+	Check_Type(arg, T_STRING);
 
 #ifdef IOCPARM_MASK
 #ifndef IOCPARM_LEN
@@ -1452,42 +1754,63 @@ io_ctl(io, req, arg, io_p)
 #endif
 #endif
 #ifdef IOCPARM_LEN
-    len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
+	len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
 #else
-    len = 256;			/* otherwise guess at what's safe */
+	len = 256;		/* otherwise guess at what's safe */
 #endif
+	str_modify(arg);
 
-    Check_Type(arg, T_STRING);
-    str_modify(arg);
-
-    str_resize(arg, len+1);
-    arg->ptr[len] = 17;
+	if (arg->len < len) {
+	    str_resize(arg, len+1);
+	    arg->ptr[len] = 17;	/* a little sanity check here */
+	    narg = (long)arg->ptr;
+	}
+    }
     fd = fileno(fptr->f);
 #ifdef HAVE_FCNTL
-    if ((io_p?ioctl(fd, cmd, arg->ptr):fcntl(fd, cmd, arg->ptr))<0) {
-	rb_sys_fail(fptr->path);
-    }
+    retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
 #else
     if (!io_p) {
 	rb_notimplement();
     }
-    if (ioctl(fd, cmd, arg->ptr)<0) rb_sys_fail(fptr->path);
+    retval = ioctl(fd, cmd, narg);
 #endif
-    if (arg->ptr[len] != 17) {
-	ArgError("Return value overflowed string");
+    if (retval < 0) rb_sys_fail(fptr->path);
+    if (TYPE(arg) == T_STRING && arg->ptr[len] != 17) {
+	ArgError("return value overflowed string");
     }
+    return INT2NUM(retval);
 #else
-        rb_notimplement();
+    rb_notimplement();
 #endif
 }
 
 static VALUE
-io_ioctl(io, req, arg)
-    VALUE io, req;
-    struct RString *arg;
+io_ioctl(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
 {
-    io_ctl(io, req, arg, 1);
-    return io;
+    VALUE req, arg;
+
+    rb_scan_args(argc, argv, "11", &req, &arg);
+    return io_ctl(io, req, arg, 1);
+}
+
+static VALUE
+io_fcntl(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+#ifdef HAVE_FCNTL
+    VALUE req, arg;
+
+    rb_scan_args(argc, argv, "11", &req, &arg);
+    return io_ctl(io, req, arg, 0);
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -1502,7 +1825,7 @@ f_syscall(argc, argv)
     unsigned long arg[8];
 #endif
     int retval = -1;
-    int i = 0;
+    int i = 1;
     int items = argc - 1;
 
     /* This probably won't work on machines where sizeof(long) != sizeof(int)
@@ -1510,6 +1833,7 @@ f_syscall(argc, argv)
      * not likely have syscall implemented either, so who cares?
      */
 
+    rb_secure(2);
     arg[0] = NUM2INT(argv[0]); argv++;
     while (items--) {
 	if (FIXNUM_P(*argv)) {
@@ -1585,13 +1909,19 @@ f_syscall(argc, argv)
 }
 
 static VALUE
-io_pipe()
+io_s_pipe()
 {
+#ifndef __human68k__
     int pipes[2];
     VALUE r, w, ary;
 
+#ifdef NT
+    if (_pipe(pipes, 1024, O_BINARY) == -1)
+#else
     if (pipe(pipes) == -1)
+#endif
 	rb_sys_fail(0);
+
     r = prep_stdio(fdopen(pipes[0], "r"), FMODE_READABLE);
     w = prep_stdio(fdopen(pipes[1], "w"), FMODE_WRITABLE);
 
@@ -1600,52 +1930,112 @@ io_pipe()
     ary_push(ary, w);
 
     return ary;
+#else
+    rb_notimplement();
+#endif
 }
 
+struct foreach_arg {
+    int argc;
+    VALUE sep;
+    VALUE io;
+};
 
 static VALUE
-io_foreach_line(io)
-    VALUE io;
+io_foreach_line(arg)
+    struct foreach_arg *arg;
 {
     VALUE str;
 
-    while (!NIL_P(str = io_gets(io))) {
+    while (!NIL_P(str = io_gets_method(arg->argc, &arg->sep, arg->io))) {
 	rb_yield(str);
     }
     return Qnil;
 }
 
 static VALUE
-io_foreach(io, fname)
+io_s_foreach(argc, argv, io)
+    int argc;
+    VALUE *argv;
     VALUE io;
-    struct RString *fname;
 {
-    VALUE f, v;
+    struct RString *fname;
+    struct foreach_arg arg;
 
-    Check_Type(fname, T_STRING);
-    f = io_open(fname->ptr, "r");
-    return rb_ensure(io_foreach_line, f, io_close, f);
+    rb_scan_args(argc, argv, "11", &fname, &arg.sep);
+    Check_SafeStr(fname);
+
+    arg.argc = argc - 1;
+    arg.io = io_open(fname->ptr, "r");
+    return rb_ensure(io_foreach_line, &arg, io_close, arg.io);
+}
+
+static VALUE
+io_readline_line(arg)
+    struct foreach_arg *arg;
+{
+    VALUE line, ary;
+
+    ary = ary_new();
+    while (!NIL_P(line = io_gets_method(arg->argc, &arg->sep, arg->io))) {
+	ary_push(ary, line);
+    }
+
+    return ary;
+}
+
+static VALUE
+io_s_readlines(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    struct RString *fname;
+    struct foreach_arg arg;
+
+    rb_scan_args(argc, argv, "11", &fname, &arg.sep);
+    Check_SafeStr(fname);
+
+    arg.argc = argc - 1;
+    arg.io = io_open(fname->ptr, "r");
+    return rb_ensure(io_readline_line, &arg, io_close, arg.io);
+}
+
+static VALUE
+arg_fileno()
+{
+    return io_fileno(file);
 }
 
 static VALUE
 arg_read(argc, argv)
     int argc;
-    VALUE argv;
+    VALUE *argv;
 {
-    VALUE str, str2;
+    VALUE tmp, str;
+    int len;
 
-    str = str_new(0, 0);
-    for (;;) {
-      retry:
-	if (!next_argv()) return Qnil;
-	str2 = io_read(argc, argv, file);
-	if (NIL_P(str2) && next_p != -1) {
-	    io_close(file);
-	    next_p = 1;
-	    goto retry;
-	}
-	if (NIL_P(str2)) break;
-	str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
+    if (argc == 1) len = NUM2INT(argv[0]);
+    str = Qnil;
+
+  retry:
+    if (!next_argv()) return str;
+    tmp = io_read(argc, argv, file);
+    if (NIL_P(tmp) && next_p != -1) {
+	io_close(file);
+	next_p = 1;
+	goto retry;
+    }
+    if (NIL_P(tmp)) return str;
+    else if (NIL_P(str)) str = tmp;
+    else str_cat(str, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
+    if (argc == 0) {
+	goto retry;
+    }
+    if (RSTRING(tmp)->len < len) {
+	len -= RSTRING(tmp)->len;
+	argv[0] = INT2FIX(len);
+	goto retry;
     }
 
     return str;
@@ -1666,6 +2056,17 @@ arg_getc()
     }
 
     return byte;
+}
+
+static VALUE
+arg_readchar()
+{
+    VALUE c = io_getc(file);
+
+    if (NIL_P(c)) {
+	eof_error();
+    }
+    return c;
 }
 
 static VALUE
@@ -1704,68 +2105,116 @@ arg_file()
     return file;
 }
 
+static VALUE
+arg_skip()
+{
+    if (next_p != -1) {
+	io_close(file);
+	next_p = 1;
+    }
+    return argf;
+}
+
+static VALUE
+arg_close()
+{
+    io_close(file);
+    if (next_p != -1) {
+	next_p = 1;
+    }
+    gets_lineno = 0;
+    return argf;
+}
+
+static VALUE
+arg_closed()
+{
+    return io_closed(file);
+}
+
+static VALUE
+opt_i_get()
+{
+    if (!inplace) return Qnil;
+    return str_new2(inplace);
+}
+
+static void
+opt_i_set(val)
+    struct RString *val;
+{
+    if (NIL_P(val)) {
+	inplace = 0;
+	return;
+    }
+    Check_Type(val, T_STRING);
+    inplace = val->ptr;
+}
+
 extern VALUE mEnumerable;
 
 void
 Init_IO()
 {
-    extern VALUE cKernel;
+    extern VALUE mKernel;
     extern VALUE eException;
 
     eEOFError = rb_define_class("EOFError", eException);
 
     id_write = rb_intern("write");
-    id_fd = rb_intern("fd");
-    id_print_on = rb_intern("print_on");
 
-    rb_define_private_method(cKernel, "syscall", f_syscall, -1);
+    rb_define_global_function("syscall", f_syscall, -1);
 
-    rb_define_private_method(cKernel, "open", f_open, -1);
-    rb_define_private_method(cKernel, "printf", f_printf, -1);
-    rb_define_private_method(cKernel, "print", f_print, -1);
-    rb_define_private_method(cKernel, "gets", f_gets_method, -1);
-    rb_define_private_method(cKernel, "readline", f_readline, -1);
-    rb_define_private_method(cKernel, "eof", f_eof, 0);
-    rb_define_private_method(cKernel, "getc", f_getc, 0);
-    rb_define_private_method(cKernel, "readchar", f_readchar, 0);
-    rb_define_private_method(cKernel, "select", f_select, -1);
-    rb_define_private_method(cKernel, "ungetc", f_ungetc, 1);
+    rb_define_global_function("open", f_open, -1);
+    rb_define_global_function("printf", f_printf, -1);
+    rb_define_global_function("print", f_print, -1);
+    rb_define_global_function("gets", f_gets_method, -1);
+    rb_define_global_function("readline", f_readline, -1);
+    rb_define_global_function("eof", f_eof, 0);
+    rb_define_global_function("eof?", f_eof, 0);
+    rb_define_global_function("getc", f_getc, 0);
+    rb_define_global_function("readchar", f_readchar, 0);
+    rb_define_global_function("select", f_select, -1);
+    rb_define_global_function("ungetc", f_ungetc, 1);
 
-    rb_define_private_method(cKernel, "readlines", f_readlines, -1);
+    rb_define_global_function("readlines", f_readlines, -1);
 
-    rb_define_method(cKernel, "print_on", f_print_on, 1);
+    rb_define_global_function("`", f_backquote, 1);
+    rb_define_global_function("pipe", io_s_pipe, 0);
 
-    rb_define_private_method(cKernel, "`", f_backquote, 1);
-    rb_define_private_method(cKernel, "pipe", io_pipe, 0);
-
-    rb_define_private_method(cKernel, "p", f_p, 1);
+    rb_define_global_function("p", f_p, 1);
 
     cIO = rb_define_class("IO", cObject);
     rb_include_module(cIO, mEnumerable);
 
-    rb_undef_method(CLASS_OF(cIO), "new");
-
-    rb_define_singleton_method(cIO, "popen", io_popen, -1);
-    rb_define_singleton_method(cIO, "foreach", io_foreach, 1);
+    rb_define_singleton_method(cIO, "new", io_s_new, -1);
+    rb_define_singleton_method(cIO, "popen", io_s_popen, -1);
+    rb_define_singleton_method(cIO, "foreach", io_s_foreach, -1);
+    rb_define_singleton_method(cIO, "readlines", io_s_readlines, -1);
     rb_define_singleton_method(cIO, "select", f_select, -1);
 
     FS = OFS = Qnil;
     rb_define_hooked_variable("$;", &FS, 0, rb_str_setter);
+    rb_define_hooked_variable("$-F", &FS, 0, rb_str_setter);
     rb_define_hooked_variable("$,", &OFS, 0, rb_str_setter);
 
     RS = RS_default = str_new2("\n"); ORS = Qnil;
     rb_global_variable(&RS_default);
     rb_define_hooked_variable("$/", &RS, 0, rb_str_setter);
+    rb_define_hooked_variable("$-0", &RS, 0, rb_str_setter);
     rb_define_hooked_variable("$\\", &ORS, 0, rb_str_setter);
 
     rb_define_variable("$.", &lineno);
     rb_define_virtual_variable("$_", lastline_get, lastline_set);
 
+    rb_define_method(cIO, "clone", io_clone, 0);
+    rb_define_method(cIO, "reopen", io_reopen, 1);
+
     rb_define_method(cIO, "print", io_print, -1);
     rb_define_method(cIO, "printf", io_printf, -1);
 
     rb_define_method(cIO, "each",  io_each_line, -1);
-    rb_define_method(cIO, "each_line",  io_each_line, 0);
+    rb_define_method(cIO, "each_line",  io_each_line, -1);
     rb_define_method(cIO, "each_byte",  io_each_byte, 0);
 
     rb_define_method(cIO, "syswrite", io_syswrite, 1);
@@ -1777,7 +2226,7 @@ Init_IO()
     rb_define_method(cIO, "sync",   io_sync, 0);
     rb_define_method(cIO, "sync=",  io_set_sync, 1);
 
-    rb_define_alias(cIO, "readlines", "to_a");
+    rb_define_method(cIO, "readlines",  io_readlines, -1);
 
     rb_define_method(cIO, "read",  io_read, -1);
     rb_define_method(cIO, "write", io_write, 1);
@@ -1790,6 +2239,7 @@ Init_IO()
     rb_define_method(cIO, "<<",    io_puts, 1);
     rb_define_method(cIO, "flush", io_flush, 0);
     rb_define_method(cIO, "eof", io_eof, 0);
+    rb_define_method(cIO, "eof?", io_eof, 0);
 
     rb_define_method(cIO, "close", io_close, 0);
     rb_define_method(cIO, "closed?", io_closed, 0);
@@ -1798,7 +2248,8 @@ Init_IO()
     rb_define_method(cIO, "tty?", io_isatty, 0);
     rb_define_method(cIO, "binmode",  io_binmode, 0);
 
-    rb_define_method(cIO, "ioctl", io_ioctl, 2);
+    rb_define_method(cIO, "ioctl", io_ioctl, -1);
+    rb_define_method(cIO, "fcntl", io_fcntl, -1);
 
     rb_stdin = prep_stdio(stdin, FMODE_READABLE);
     rb_define_readonly_variable("$stdin", &rb_stdin);
@@ -1817,18 +2268,21 @@ Init_IO()
     rb_extend_object(argf, mEnumerable);
 
     rb_define_readonly_variable("$<", &argf);
-    rb_define_readonly_variable("$ARGF", &argf);
     rb_define_global_const("ARGF", argf);
 
-    rb_define_singleton_method(argf, "each",  arg_each_line, 0);
+    rb_define_singleton_method(argf, "fileno", arg_fileno, 0);
+    rb_define_singleton_method(argf, "to_i", arg_fileno, 0);
+    rb_define_singleton_method(argf, "each",  arg_each_line, -1);
     rb_define_singleton_method(argf, "each_line",  arg_each_line, -1);
     rb_define_singleton_method(argf, "each_byte",  arg_each_byte, 0);
 
     rb_define_singleton_method(argf, "read",  arg_read, -1);
     rb_define_singleton_method(argf, "readlines", f_readlines, -1);
+    rb_define_singleton_method(argf, "to_a", f_readlines, -1);
     rb_define_singleton_method(argf, "gets", f_gets_method, -1);
     rb_define_singleton_method(argf, "readline", f_readline, -1);
     rb_define_singleton_method(argf, "getc", arg_getc, 0);
+    rb_define_singleton_method(argf, "readchar", arg_readchar, 0);
     rb_define_singleton_method(argf, "eof", f_eof, 0);
     rb_define_singleton_method(argf, "eof?", f_eof, 0);
     rb_define_singleton_method(argf, "ungetc", f_ungetc, 1);
@@ -1836,11 +2290,19 @@ Init_IO()
     rb_define_singleton_method(argf, "to_s", arg_filename, 0);
     rb_define_singleton_method(argf, "filename", arg_filename, 0);
     rb_define_singleton_method(argf, "file", arg_file, 0);
+    rb_define_singleton_method(argf, "skip", arg_skip, 0);
+    rb_define_singleton_method(argf, "close", arg_close, 0);
+    rb_define_singleton_method(argf, "closed?", arg_closed, 0);
 
     filename = str_new2("-");
     rb_define_readonly_variable("$FILENAME", &filename);
     file = rb_stdin;
     rb_global_variable(&file);
 
+    rb_define_virtual_variable("$-i", opt_i_get, opt_i_set);
     Init_File();
+
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
+    atexit(pipe_atexit);
+#endif
 }

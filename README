@@ -23,16 +23,7 @@ perl).  It is simple, straight-forward, and extensible.
 
 The ruby distribution can be found on
 
-  ftp://ftp.caelum.co.jp/pub/lang/ruby/
-
-** by mail
-
-Send the mail which subject is 'send' to the address below.
-
-  ruby-archive@caelum.co.jp
-
-You will receive the uuencoded gzipped tar file of the newest ruby
-distribution.
+  ftp://ftp.netlab.co.jp/pub/lang/ruby/
 
 * How to compile and install
 
@@ -61,13 +52,13 @@ the error log and machine/OS type, to help others.
 
 * Copying
 
-Ruby is copyrighted by Yukihiro Matsumoto <matz@caelum.co.jp>.
+Ruby is copyrighted by Yukihiro Matsumoto <matz@ruby.club.co.jp>.
 
 This source is distributed under the conditions blow:
 
  1. You may make and give away verbatim copies of the source form of
     the software without restriction, provided that you do not modify
-    the original distribution file.
+    the original distribution files.
 
     If you want to distribute the modified version in any way, contact 
     the author.
@@ -80,11 +71,11 @@ This source is distributed under the conditions blow:
      distribute the modified version.
 
   4. You may modify and include the part of the software into any other
-     software (possibly commercial).  But some files in the
-     distribution are not written by the author, so that they are not
-     under this terms.  They are gc.c(partly)，regex.[ch]，fnmatch.[ch]，
-     glob.c, st.[ch] and somme files under ./missing directory.  See
-     each files for the condition.
+     software (possibly commercial).  But some files in the distribution
+     are not written by the author, so that they are not under this terms.
+     They are gc.c(partly)，utils.c(partly), regex.[ch]，fnmatch.[ch]，
+     glob.c, st.[ch] and somme files under the ./missing directory.  See
+     each files for the copying condition.
 
   5. The scripts and library files supplied as input to or produced as 
      output from the software do not automatically fall under the
@@ -101,14 +92,14 @@ This source is distributed under the conditions blow:
 
  The URL of the ruby home-page is:
 
-   http://www.caelum.co.jp/~matz/ruby/index-en.html
+   http://www.netlab.co.jp/ruby/
 
 * The Author
 
 Feel free to send comments and bug reports to the author.  Here is the 
 author's latest mail address:
 
-  matz@ruby.club.or.jp
+  matz@netlab.co.jp
 
 -------------------------------------------------------
 created at: Thu Aug  3 11:57:36 JST 1995

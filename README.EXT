@@ -1,49 +1,50 @@
 .\" README.EXT -  -*- Text -*- created at: Mon Aug  7 16:45:54 JST 1995
 
-rubyの拡張モジュールの作り方を説明します．
+This document explains how to make extention modules for ruby.
 
-1．基礎知識
+1．Basic knowledge
 
-Cの変数には型があり，データには型がありません．ですから，た
-とえばポインタをintの変数に代入すると，その値は整数として取
-り扱われます．逆にrubyの変数には型がなく，データに型がありま
-す．この違いのため，Cとrubyは相互に変換しなければ，お互いの
-データをアクセスできません．
+In C, variables have types and data do not have types.  In contrast,
+ruby variables do not have static type and data themselves have
+types.  So, data need to be converted across the languages.
+
+Data in ruby represented C type `VALUE'.  Each VALUE data have its
+data-type.
 
 rubyのデータはVALUEというCの型で表現されます．VALUE型のデー
 タはそのデータタイプを自分で知っています．このデータタイプと
 いうのはデータ(オブジェクト)の実際の構造を意味していて，ruby
 のクラスとはまた違ったものです．
 
-VALUEからCにとって意味のあるデータを取り出すためには
+To retrieve an C data from the VALUE, you need to:
 
- (1) VALUEのデータタイプを知る
- (2) VALUEをCのデータに変換する
+ (1) Identify VALUE's data type
+ (2) Convert VALUE into C data
 
-の両方が必要です．(1)を忘れると間違ったデータの変換が行われ
-て，最悪プログラムがcore dumpします．
+Converting to wrong data type may cause serious promblems.
 
-1.1 データタイプ
 
-rubyにはユーザが使う可能性のある以下のタイプがあります．
+1.1 Data-types
+
+Ruby interpreter has data-types as below:
 
 	T_NIL		nil
-	T_OBJECT	通常のオブジェクト
-	T_CLASS		クラス
-	T_MODULE	モジュール
-	T_FLOAT		浮動小数点数
-	T_STRING	文字列
-	T_REGEXP	正規表現
-	T_ARRAY		配列
-	T_FIXNUM	Fixnum(31bit長整数)
-	T_HASH		連想配列
-	T_STRUCT	(rubyの)構造体
-	T_BIGNUM	多倍長整数
-	T_TRUE		真
-	T_FALSE		偽
-	T_DATA		データ
+	T_OBJECT	ordinaly object
+	T_CLASS		class
+	T_MODULE	module
+	T_FLOAT		floating point number
+	T_STRING	string
+	T_REGEXP	regular expression
+	T_ARRAY		array
+	T_FIXNUM	Fixnum(31bit integer)
+	T_HASH		assosiative array
+	T_STRUCT	(ruby) structure
+	T_BIGNUM	multi precision integer
+	T_TRUE		true
+	T_FALSE		false
+	T_DATA		data
 
-その他に内部で利用されている以下のタイプがあります．
+Otherwise, there are several other types used internally:
 
 	T_ICLASS
 	T_MATCH
@@ -51,41 +52,42 @@ rubyにはユーザが使う可能性のある以下のタイプがあります．
 	T_SCOPE
 	T_NODE
 
-いくつかのタイプはCの構造体で実装されています．
+Most of the types are represented by C structures.
 
-1.2 VALUEのデータタイプをチェックする
+1.2 Check Data Type of the VALUE
 
-ruby.hではTYPE()というマクロが定義されていて，VALUEのデータ
-タイプを知ることが出来ます．TYPE()マクロは上で紹介したT_XXXX
-の形式の定数を返します．VALUEのデータタイプに応じて処理する
-場合には，TYPE()の値で分岐することになります．
+The macro TYPE() defined in ruby.h shows data-type of the VALUE.
+TYPE() returns the constant number T_XXXX described above.  To handle
+data-types, the code will be like:
 
   switch (TYPE(obj)) {
     case T_FIXNUM:
-      /* FIXNUMの処理 */
+      /* process Fixnum */
       break;
     case T_STRING:
-      /* 文字列の処理 */
+      /* process String */
       break;
     case T_ARRAY:
-      /* 配列の処理 */
+      /* process Array */
       break;
     default:
-      /* 例外を発生させる */
+      /* raise exception */
       Fail("not valid value");
       break;
   }
 
-それとデータタイプをチェックして，正しくなければ例外を発生す
-る関数が用意されています．
+There is the data-type check function.
 
   void Check_Type(VALUE value, int type)
 
-この関数はvalueがtypeで無ければ，例外を発生させます．引数と
-して与えられたVALUEのデータタイプが正しいかどうかチェックす
-るためには，この関数を使います．
+It raises an exception, if the VALUE does not have the type specified.
 
-1.3 VALUEをCのデータに変換する
+There are faster check-macros for fixnums and nil.
+
+  FIXNUM_P(obj)
+  NIL_P(obj)
+
+1.3 Convert VALUE into C data
 
 データタイプがT_NIL, T_FALSE, T_TRUEである時，データはそれぞ
 れnil, FALSE, TRUEです．このデータタイプのオブジェクトはひと
@@ -119,7 +121,7 @@ rubyの構造体を直接アクセスする時に気をつけなければならないこ
 ないことです．直接変更した場合，オブジェクトの内容の整合性が
 とれなくなって，思わぬバグの原因になります．
 
-1.4 CのデータをVALUEに変換する
+1.4 Convert C data into VALUE
 
 VALUEの実際の構造は
 
@@ -151,7 +153,7 @@ FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
 INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
 してくれます(が，少し遅い)．
 
-1.5 rubyのデータを操作する
+1.5 Manipulate ruby data
 
 先程も述べた通り，rubyの構造体をアクセスする時に内容の更新を
 行うことは勧められません．で，rubyのデータを操作する時には
@@ -160,39 +162,39 @@ rubyが用意している関数を用いてください．
 ここではもっとも使われるであろう文字列と配列の生成/操作を行
 い関数をあげます(全部ではないです)．
 
- 文字列に対する関数
+ String funtions
 
   str_new(char *ptr, int len)
 
-    新しいrubyの文字列を生成する．
+    Creates a new ruby string.
 
   str_new2(char *ptr)
 
-    Cの文字列からrubyの文字列を生成する．この関数の機能は
-    str_new(ptr, strlen(ptr))と同等である．
+    Creates a new ruby string from C string.  This is equivalent to
+    str_new(ptr, strlen(ptr)).
 
   str_cat(VALUE str, char *ptr, int len)
 
-    rubyの文字列strにlenバイトの文字列ptrを追加する．
+    Appends len bytes data from ptr to the ruby string.
 
- 配列に対する関数
+ Array functions
 
   ary_new()
 
-    要素が0の配列を生成する．
+    Creates an array with no element.
 
   ary_new2(int len)
 
-    要素が0の配列を生成する．len要素分の領域をあらかじめ割り
-    当てておく．
+    Creates an array with no element, with allocating internal buffer
+    for len elements.
 
   ary_new3(int n, ...)
 
-    引数で指定したn要素を含む配列を生成する．
+    Creates an n-elements array from arguments.
 
-  ary_new4(int n, VALUE elts[])
+  ary_new4(int n, VALUE *elts)
 
-    配列で与えたn要素の配列を生成する．
+    Creates an n-elements array from C array.
 
   ary_push(VALUE ary)
   ary_pop(VALUE ary, VALUE val)
@@ -200,17 +202,17 @@ rubyが用意している関数を用いてください．
   ary_unshift(VALUE ary, VALUE val)
   ary_entry(VALUE ary, int idx)
 
-    Arrayの同名のメソッドと同じ働きをする関数．第1引数は必ず
-    配列でなければならない．
+    Array operations.  The first argument to each functions must be an 
+    array.  They may dump core if other types given.
 
-2．rubyの機能を使う
+2. Extend ruby with C
 
 原理的にrubyで書けることはCでも書けます．rubyそのものがCで記
 述されているんですから，当然といえば当然なんですけど．ここで
 はrubyの拡張に使うことが多いだろうと予測される機能を中心に紹
 介します．
 
-2.1 rubyに機能を追加する
+2.1 Add new features to ruby
 
 rubyで提供されている関数を使えばrubyインタプリタに新しい機能
 を追加することができます．rubyでは以下の機能を追加する関数が
@@ -222,25 +224,25 @@ rubyで提供されている関数を使えばrubyインタプリタに新しい機能
 
 では順に紹介します．
 
-2.1.1 クラス/モジュール定義
+2.1.1 Class/module definition
 
 クラスやモジュールを定義するためには，以下の関数を使います．
 
   VALUE rb_define_class(char *name, VALUE super)
-	                VALUE rb_define_module(char *name)
+  VALUE rb_define_module(char *name)
 
 これらの関数は新しく定義されたクラスやモジュールを返します．
 メソッドや定数の定義にこれらの値が必要なので，ほとんどの場合
 は戻り値を変数に格納しておく必要があるでしょう．
 
-2.1.2 メソッド/特異メソッド定義
+2.1.2 Method/singleton method definition
 
 メソッドや特異メソッドを定義するには以下の関数を使います．
 
   void rb_define_method(VALUE class, char *name, 
 		        VALUE (*func)(), int argc)
 
-  void rb_define_sigleton_method(VALUE object, char *name, 
+  void rb_define_singleton_method(VALUE object, char *name, 
 			         VALUE (*func)(), int argc)
 
 
@@ -282,10 +284,16 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 という形式でも使えます．モジュール関数を定義する関数は以下の
 通りです．
 
-  void rb_define_module_method(VALUE module, char *name, 
-		               VALUE (*func)(), int argc)
+  void rb_define_module_function(VALUE module, char *name, 
+				 VALUE (*func)(), int argc)
 
-2.1.3 定数定義
+関数的メソッド(Kernelモジュールのprivaet method)を定義するた
+めの関数は以下の通りです．
+
+  void rb_define_global_function(char *name, VALUE (*func)(), int argc)
+
+
+2.1.3 Constant definition
 
 拡張モジュールが必要な定数はあらかじめ定義しておいた方が良い
 でしょう．定数を定義する関数は二つあります．
@@ -296,7 +304,7 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 前者は特定のクラス/モジュールに属する定数を定義するもの，後
 者はグローバルな定数を定義するものです．
 
-2.2 rubyの機能をCから呼び出す
+2.2 Use ruby features from C
 
 既に『1.5 rubyのデータを操作する』で一部紹介したような関数を
 使えば，rubyの機能を実現している関数を直接呼び出すことが出来
@@ -315,9 +323,9 @@ Cからrubyの機能を呼び出すもっとも簡単な方法として，文字列で
   VALUE rb_eval_string(char *str)
 
 この評価は現在の環境で行われます．つまり，現在のローカル変数
-やselfなどを受け継ぎます．
+などを受け継ぎます．
 
-2.2.2 IDまたはシンボル
+2.2.2 ID or Symbol
 
 Cから文字列を経由せずにrubyのメソッドを呼び出すこともできま
 す．その前に，rubyインタプリタ内でメソッドや変数名を指定する
@@ -331,9 +339,10 @@ IDとは変数名，メソッド名を表す整数です．rubyの中では
 
   rb_intern(char *name)
 
-を使います．
+を使います．また一文字の演算子はその文字コードがそのままシン
+ボルになっています．
 
-2.2.3 Cからrubyのメソッドを呼び出す
+2.2.3 Invoke ruby method from C
 
 Cから文字列を経由せずにrubyのメソッドを呼び出すためには以下
 の関数を使います．
@@ -353,7 +362,7 @@ Cから関数を使って参照・更新できるのは，クラス定数，インスタ
 りです．
 
   VALUE rb_ivar_get(VALUE obj, ID id)
-  VALUE rb_ivar_get(VALUE obj, ID id, VALUE val)
+  VALUE rb_ivar_set(VALUE obj, ID id, VALUE val)
 
 idはrb_intern()で得られるものを使ってください．
 
@@ -364,24 +373,24 @@ idはrb_intern()で得られるものを使ってください．
 クラス定数を新しく定義するためには『2.1.3 定数定義』で紹介さ
 れている関数を使ってください．
 
-3．rubyとCとの情報共有
+3. Informatin sharing between ruby and C
 
 C言語とrubyの間で情報を共有する方法について解説します．
 
-3.1 Cから参照できるrubyの定数
+3.1 Ruby constant that Cから参照できるrubyの定数
 
-以下のrubyの定数はCのレベルから参照できる．
+Following ruby constants can be referred from C.
 
   TRUE
   FALSE
 
-真偽値．FALSEはC言語でも偽とみなされる．
+Boolean values.  FALSE is false in the C also (i.e. 0).
 
   Qnil
 
-C言語から見た「nil」．
+Ruby nil in C scope.
 
-3.2 Cとrubyで共有される大域変数
+3.2 Global variables shared between C and ruby
 
 Cとrubyで大域変数を使って情報を共有できます．共有できる大域
 変数にはいくつかの種類があります．そのなかでもっとも良く使わ
@@ -399,18 +408,18 @@ Cとrubyで大域変数を使って情報を共有できます．共有できる大域
   void rb_define_readonly_variable(char *name, VALUE *var)
 
 これら変数の他にhookをつけた大域変数を定義できます．hook付き
-の大域変数は以下の関数を用いて定義します．
+の大域変数は以下の関数を用いて定義します．hook付き大域変数の
+値の参照や設定はhookで行う必要があります．
 
   void rb_define_hooked_variable(char *name, VALUE *var,
 				 VALUE (*getter)(), VALUE (*setter)())
 
 この関数はCの関数によってhookのつけられた大域変数を定義しま
 す．変数が参照された時には関数getterが，変数に値がセットされ
-た時には関数setterが呼ばれます．hookを指定しない場合はgetter
-やsetterに0を指定してください．
+た時には関数setterが呼ばれる．hookを指定しない場合はgetterや
+setterに0を指定します．
 
-# getterもsetterも0ならばrb_define_variable()と同じ働きをし
-# ます．
+# getterもsetterも0ならばrb_define_variable()と同じになる．
 
 それから，Cの関数によって実現されるrubyの大域変数を定義する
 関数があります．
@@ -421,7 +430,12 @@ Cとrubyで大域変数を使って情報を共有できます．共有できる大域
 この関数によって定義されたrubyの大域変数が参照された時には
 getterが，変数に値がセットされた時にはsetterが呼ばれます．
 
-3.3 Cのデータをrubyオブジェクトにする
+The prototypes of the getter and setter functions are as following:
+
+  (*getter)(ID id, void *data, struct global_entry* entry);
+  (*setter)(VALUE val, ID id, void *data, struct global_entry* entry);
+
+3.3 Encapsulate C data into ruby object
 
 Cの世界で定義されたデータ(構造体)をrubyのオブジェクトとして
 取り扱いたい場合がありえます．このような場合には，Dataという
@@ -431,41 +445,48 @@ rubyオブジェクトにCの構造体(へのポインタ)をくるむことでruby
 Dataオブジェクトを生成して構造体をrubyオブジェクトにカプセル
 化するためには，以下のマクロを使います．
 
-  Make_Data_Struct(class, type, mark, free, sval)
+  Data_Wrap_Struct(class,mark,free,ptr)
 
-ここでclassは新しく生成されるインスタンスのクラス，，typeは
-カプセル化するCのデータの型(構造体)です．markはこの構造体が
-rubyのオブジェクトへの参照がある時に使う関数です．そのような
-参照を含まない時には0を指定します．freeはこの構造体がもう不
-要になった時に呼ばれる関数です．この関数がガーベージコレクタ
-から呼ばれます．svalはtype型の変数で，Make_Data_Structの中で
-アロケートされます．
+このマクロの戻り値は生成されたDataオブジェクトです．
 
-マクロMake_Data_StructはDataオブジェクトを生成して，それを値
-として返します．
+classはこのDataオブジェクトのクラスです．ptrはカプセル化する
+Cの構造体へのポインタです．markはこの構造体がrubyのオブジェ
+クトへの参照がある時に使う関数です．そのような参照を含まない
+時には0を指定します．
 
-このマクロを呼び出すとsvalに構造体がmalloc()されて代入され，
-かつその構造体をカプセル化したDataオブジェクトがインスタンス
-変数としてobjにセットされます．
+# そのような参照は勧められません．
 
-DataオブジェクトからCポインタを取り出すためには以下のマクロ
-を使います．
+freeはこの構造体がもう不要になった時に呼ばれる関数です．この
+関数がガーベージコレクタから呼ばれます．
 
-  Get_Data_Struct(obj, type, sval)
+Cの構造体の割当とDataオブジェクトの生成を同時に行うマクロと
+して以下のものが提供されています．
 
-Dataオブジェクトからtype型のCポインタを取り出して，svalに代
-入します．
+  Data_Make_Struct(class, type, mark, free, sval)
+
+このマクロの戻り値は生成されたDataオブジェクトです．
+
+class, mark, freeはData_Wrap_Structと同じ働きをします．type
+は割り当てるC構造体の型です．割り当てられた構造体は変数sval
+に代入されます．この変数の型は (type*) である必要があります．
+
+Dataオブジェクトからポインタを取り出すのは以下のマクロを用い
+ます．
+
+  Data_Get_Struct(obj, type, sval)
+
+Cの構造体へのポインタは変数svalに代入されます．
 
 これらのDataの使い方はちょっと分かりにくいので，後で説明する
 例題を参照してください．
 
-4．例題 - dbmパッケージを作る
+4．Example - Create dbm module
 
 ここまでの説明でとりあえず拡張モジュールは作れるはずです．
 rubyのextディレクトリにすでに含まれているdbmモジュールを例に
 して段階的に説明します．
 
-(1) ディレクトリを作る
+(1) make the directory
 
   % mkdir ext/dbm
 
@@ -473,7 +494,7 @@ rubyを展開したディレクトリの下，extディレクトリの中に拡張モ
 ジュール用のディレクトリを作ります．名前は適当に選んで構いま
 せん．
 
-(2) MANIFESTファイルを作る
+(2) create MANIFEST file
 
   % cd ext/dbm
   % touch MANIFEST
@@ -485,14 +506,14 @@ rubyを展開したディレクトリの下，extディレクトリの中に拡張モ
 MANIFESTというファイルは，makeの時にディレクトリが拡張モジュー
 ルを含んでいるかどうか判定するために使われれています．
 
-(3) 設計する
+(3) design the library
 
 まあ，当然なんですけど，どういう機能を実現するかどうかまず設
 計する必要があります．どんなクラスをつくるか，そのクラスには
 どんなメソッドがあるか，クラスが提供する定数などについて設計
 します．dbmクラスについてはext/dbm.docを参照してください．
 
-(4) Cコードを書く
+(4) write C code.
 
 拡張モジュール本体となるC言語のソースを書きます．C言語のソー
 スがひとつの時には「モジュール名.c」を選ぶと良いでしょう．C
@@ -522,34 +543,45 @@ Init_dbm()
     /* DBMクラスのメソッド[]: 引数は1個 */
     rb_define_method(cDBM, "[]", fdbm_fetch, 1);
 		:
+
+    /* DBMデータを格納するインスタンス変数名のためのID */
+    id_dbm = rb_intern("dbm");
 }
 --
 
 DBMモジュールはdbmのデータと対応するオブジェクトになるはずで
 すから，Cの世界のdbmをrubyの世界に取り込む必要があります．
 
-dbm.cではDBMのデータを格納するために以下のような構造体を使っ
-ています．
 
+dbm.cではData_Make_Structを以下のように使っています．
+
+--
 struct dbmdata {
     int  di_size;
     DBM *di_dbm;
 };
 
-RubyのDBMオブジェクトを生成するためには以下のようなコードを
-使っています．
 
-    obj = Make_Data_Struct(class,struct dbmdata,0,free_dbm,dbmp);
-    dbmp->di_dbm = dbm;
-    dbmp->di_size = -1;
+obj = Data_Make_Struct(class,struct dbmdata,0,free_dbm,dbmp);
+--
 
-DBMオブジェクトからCのDBMポインタを取り出すためには以下のよ
-うなマクロを使っています．
+ここではdbmstruct構造体へのポインタをDataにカプセル化してい
+ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
+えてのことです．
 
+Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
+に以下のマクロを使っています．
+
+--
 #define GetDBM(obj, dbmp) {\
-    Get_Data_Struct(obj, struct dbmdata, dbmp);\
-    if (dbmp->di_dbm == 0) closeddbm();\
+    Data_Get_Struct(obj, struct dbmdata, dbmp);\
+    if (dbmp->di_dbm == 0) closed_dbm();\
 }
+--
+
+ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ
+の取り出しと，closeされているかどうかのチェックをまとめてい
+るだけです．
 
 DBMクラスにはたくさんメソッドがありますが，分類すると3種類の
 引数の受け方があります．ひとつは引数の数が固定のもので，例と
@@ -623,12 +655,11 @@ fdbm_indexes(obj, args)
 
 rubyと共有はしないがrubyのオブジェクトを格納する可能性のある
 Cの大域変数は以下の関数を使ってrubyインタプリタに変数の存在
-を教えてあげてください．でないとGCでトラブルを起こす可能性が
-あります．
+を教えてあげてください．でないとGCでトラブルを起こします．
 
   void rb_global_variable(VALUE *var)
 
-(5) extconf.rbを用意する
+(5) prepare extconf.rb
 
 もしディレクトリに「extconf.rb」というファイルが存在すれば，
 make時に実行されます．なければ適当にMakefileが生成されます．
@@ -642,10 +673,16 @@ extconf.rbはモジュールのコンパイルに必要な条件のチェックなど
   have_header(header): ヘッダファイルの存在チェック
   create_makefile(target): Makefileの生成
 
-モジュールをコンパイルする条件が揃わなず，そのモジュールはコ
-ンパイルしない時にはcreate_makefileを呼ばなければ良い．
+以下の変数を使うことができます．
 
-(6) dependを用意する
+  $CFLAGS: コンパイル時に追加的に指定するフラグ(-Iなど)
+  $LDFLAGS: リンク時に追加的に指定するフラグ(-Lなど)
+
+モジュールをコンパイルする条件が揃わなず，そのモジュールはコ
+ンパイルしない時にはcreate_makefileを呼ばなければMakefileは
+生成されず，コンパイルも行われません．
+
+(6) prepare depend (optional)
 
 もし，ディレクトリにdependというファイルが存在すれば，
 Makefileが依存関係をチェックしてくれます．
@@ -661,25 +698,24 @@ Makefileが依存関係をチェックしてくれます．
 
 *.o, *~など不必要なファイル以外はMANIFESTに追加しておきます．
 make時にはMANIFESTの内容は参照しませんので，空のままでも問題
-は起きないんですけど，パッケージングの時に参照することがある
-し，必要なファイルを区別できるんで，用意しておいた方が良いで
-しょう．
+は起きませんが，パッケージングの時に参照することがあるのと，
+必要なファイルを区別できるので，用意しておいた方が良いでしょ
+う．
 
-(8) makeする
+(8) make
 
-rubyのディレクトリでmakeを実行するとMakefileを生成してくれま
-す．一度Makefileが生成されれば拡張モジュールのディレクトリの
-中でmakeすることができます．extconf.rbを書き換えるなどして
-Makefileの再生成が必要な時はまたrubyディレクトリでmakeしてく
-ださい．
+rubyのディレクトリでmakeを実行するとMakefileを生成からmake，
+必要によってはそのモジュールのrubyへのリンクまで自動的に実行
+してくれます．extconf.rbを書き換えるなどしてMakefileの再生成
+が必要な時はまたrubyディレクトリでmakeしてください．
 
-(9) デバッグ
+(9) debug
 
 まあ，デバッグしないと動かないでしょうね．ext/Setupにディレ
 クトリ名を書くと静的にリンクするのでデバッガが使えるようにな
 ります．その分コンパイルが遅くなりますけど．
 
-(10) できあがり
+(10) done, now you have the extension module
 
 後はこっそり使うなり，広く公開するなり，売るなり，ご自由にお
 使いください．rubyの作者は拡張モジュールに関して一切の権利を
@@ -692,7 +728,7 @@ rubyのソースはいくつかに分類することが出来ます．このうちクラ
 ています．これらのソースは今までの説明でほとんど理解できると
 思います．
 
-ruby言語のコア
+coore ruby language
 
   class.c
   error.c
@@ -702,7 +738,7 @@ ruby言語のコア
   parse.y
   variable.c
 
-ユーティリティ関数
+utility functions
 
   dln.c
   fnmatch.c
@@ -711,7 +747,7 @@ ruby言語のコア
   st.c
   util.c
 
-rubyコマンドの実装
+ruby interpreter implementation
 
   dmyext.c
   inits.c
@@ -719,7 +755,7 @@ rubyコマンドの実装
   ruby.c
   version.c
 
-クラスライブラリ
+class library
 
   array.c
   bignum.c
@@ -755,23 +791,23 @@ rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
 体である．VALUE型をこれらにキャストするためにRで始まる構造体
 名を全て大文字にした名前のマクロが用意されている．
 
-** 変数・定数
+** Variables and constants
 
  Qnil
 
-定数: nilオブジェクト
+const: nil object
 
  TRUE
 
-定数: TRUEオブジェクト(真のデフォルト値)
+const: TRUE object(default true value)
 
  FALSE
 
-定数: FALSEオブジェクト
+const: FALSE object
 
 ** Cデータのカプセル化
 
- VALUE data_new(void *sval, void (*mark)(), void (*free)())
+ Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
 
 Cの任意のポインタをカプセル化したrubyオブジェクトを返す．こ
 のポインタがrubyからアクセスされなくなった時，freeで指定した
@@ -779,15 +815,14 @@ Cの任意のポインタをカプセル化したrubyオブジェクトを返す．こ
 ジェクトを指している場合，markに指定する関数でマークする必要
 がある．
 
- Make_Data_Struct(obj, iv, type, mark, free, sval)
+ Data_Make_Struct(class, type, mark, free, sval)
 
 type型のメモリをmallocし，変数svalに代入した後，それをカプセ
-ル化したデータをobjのインスタンス変数ivに代入するマクロ．
+ル化したデータを返すマクロ．
 
- Get_Data_Struct(obj, iv, type, sval)
+ Data_Get_Struct(data, type, sval)
 
-objのインスタンス変数ivが指すデータからtype型のポインタを取
-り出し変数svalに代入するマクロ．
+dataからtype型のポインタを取り出し変数svalに代入するマクロ．
 
 ** クラス/モジュール定義
 

@@ -65,9 +65,17 @@ big_2comp(x)			/* get 2's complement */
 	ds[i++] = BIGLO(num);
 	num = BIGDN(num);
     } while (i < x->len);
+    if (ds[0] == 1 || ds[0] == 0) {
+	for (i=1;i<x->len;i++) {
+	    if (ds[i] != 0) return;
+	}
+	REALLOC_N(BDIGITS(x), USHORT, x->len++);
+	ds = BDIGITS(x);
+	ds[x->len-1] = 1;
+    }
 }
 
-VALUE
+static VALUE
 bignorm(x)
     struct RBignum *x;
 {
@@ -150,7 +158,7 @@ int2inum(n)
 
 VALUE
 str2inum(str, base)
-    char *str;
+    UCHAR *str;
     int base;
 {
     char sign = 1, c;
@@ -189,7 +197,7 @@ str2inum(str, base)
     }
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
-	UINT val = strtoul(str, 0, base);
+	UINT val = strtoul((char*)str, 0, base);
 
 	if (POSFIXABLE(val)) {
 	    if (sign) return INT2FIX(val);
@@ -256,7 +264,7 @@ big2str(x, base)
     USHORT *ds;
     UINT i, j, hbase;
     VALUE ss;
-    char *s, c;
+    UCHAR *s, c;
 
     if (FIXNUM_P(x)) {
 	return fix2str(x, base);
@@ -431,6 +439,14 @@ big_cmp(x, y)
 }
 
 static VALUE
+big_eq(x, y)
+    VALUE x, y;
+{
+    if (big_cmp(x, y) == INT2FIX(0)) return TRUE;
+    return FALSE;
+}
+
+static VALUE
 big_uminus(x)
     struct RBignum *x;
 {
@@ -487,35 +503,20 @@ bigsub(x, y)
     z = (struct RBignum*)bignew(x->len, (z == 0)?1:0);
     zds = BDIGITS(z);
 
-    i = x->len;
-    while (i--) zds[i] = BDIGITS(x)[i];
-
-    i = 0; num = 0;
-    do {
-	num += (long)zds[i] - BDIGITS(y)[i];
-	if (num < 0) {
-	    zds[i] = num + BIGRAD;
-	    num = -1;
-	}
-	else {
-	    zds[i] = BIGLO(num);
-	    num = 0;
-	}
-    } while (++i < y->len);
-    if (num) {
-	while (num && i < x->len) {
-	    num += zds[i];
-	    if (num < 0) {
-		zds[i++] = num + BIGRAD;
-		num = -1;
-	    }
-	    else {
-		zds[i++] = BIGLO(num);
-		num = 0;
-	    }
-	}
+    for (i = 0, num = 0; i < y->len; i++) { 
+	num += (long)BDIGITS(x)[i] - BDIGITS(y)[i];
+	zds[i] = BIGLO(num);
+	num = BIGDN(num);
+    } 
+    while (num && i < x->len) {
+	num += BDIGITS(x)[i];
+	zds[i++] = BIGLO(num);
+	num = BIGDN(num);
     }
-
+    while (i < x->len) {
+	zds[i++] = BDIGITS(x)[i];
+    }
+    
     return bignorm(z);
 }
 
@@ -525,10 +526,8 @@ bigadd(x, y, sign)
     char sign;
 {
     struct RBignum *z;
-    USHORT *zds;
     long num;
     UINT i, len;
-
     if (x->sign == (y->sign ^ sign)) {
 	if (y->sign == sign) return bigsub(y, x);
 	return bigsub(x, y);
@@ -541,27 +540,24 @@ bigadd(x, y, sign)
 	len = y->len + 1;
     }
     z = (struct RBignum*)bignew(len, sign==y->sign);
-    zds = BDIGITS(z);
 
-    i = len;
-    while (i--) zds[i] = 0;
-    i = y->len;
-    while (i--) zds[i] = BDIGITS(y)[i];
-
-    i = 0; num = 0;
-    do {
-	num += (long)zds[i] + BDIGITS(x)[i];
-	zds[i++] = BIGLO(num);
-	    num = BIGDN(num);
-    } while (i < x->len);
-    if (num) {
-	while (i < y->len) {
-	    num += zds[i];
-	    zds[i++] = BIGLO(num);
-	    num = BIGDN(num);
-	}
-	BDIGITS(z)[i] = num;
+    if (x->len > y->len) {
+        struct RBignum* t = x; x = y; y = t;
     }
+    for (i = 0, num = 0; i < x->len; i++) {
+	num += (long)(BDIGITS(x)[i]) + BDIGITS(y)[i];
+	BDIGITS(z)[i] = BIGLO(num);
+	num = BIGDN(num);
+    }
+    while (num && i < y->len) {
+	num += BDIGITS(y)[i];
+	BDIGITS(z)[i++] = BIGLO(num);
+	num = BIGDN(num);
+    }
+    while (i < y->len) {
+	BDIGITS(z)[i++] = BDIGITS(y)[i];
+    }
+    BDIGITS(z)[i] = num;
 
     return bignorm(z);
 }
@@ -570,8 +566,6 @@ VALUE
 big_plus(x, y)
     VALUE x, y;
 {
-    VALUE z;
-
     switch (TYPE(y)) {
       case T_FIXNUM:
 	y = int2big(FIX2INT(y));
@@ -591,8 +585,6 @@ VALUE
 big_minus(x, y)
     VALUE x, y;
 {
-    VALUE cmp;
-
     switch (TYPE(y)) {
       case T_FIXNUM:
 	y = int2big(FIX2INT(y));
@@ -637,20 +629,20 @@ big_mul(x, y)
     z = bignew(j, x->sign==y->sign);
     zds = BDIGITS(z);
     while (j--) zds[j] = 0;
-    do {
-	j = 0;
-	if (BDIGITS(x)[i]) {
-	    do {
-		n += zds[i + j] + ((unsigned long)BDIGITS(x)[i]*BDIGITS(y)[j]);
-		zds[i + j++] = BIGLO(n);
-		n = BIGDN(n);
-	    } while (j < y->len);
-	    if (n) {
-		zds[i + j] = n;
-		n = 0;
-	    }
+    for (i = 0; i < x->len; i++) {
+	unsigned long dd = BDIGITS(x)[i]; 
+	if (dd == 0) continue;
+	n = 0;
+	for (j = 0; j < y->len; j++) {
+	    int ee = n + dd * BDIGITS(y)[j];
+	    n = zds[i + j] + ee;
+	    if (ee) zds[i + j] = BIGLO(n);
+	    n = BIGDN(n);
 	}
-    } while (++i < x->len);
+	if (n) {
+	    zds[i + j] = n;
+	}
+    }
 
     return bignorm(z);
 }
@@ -669,7 +661,7 @@ bigdivmod(x, y, div, mod)
 
     yds = BDIGITS(y);
     if (ny == 0 && yds[0] == 0) num_zerodiv();
-    if (nx < ny) {
+    if (nx < ny	|| nx == ny && BDIGITS(x)[nx - 1] < BDIGITS(y)[ny - 1]) {
 	if (div) *div = INT2FIX(0);
 	if (mod) *mod = bignorm(x);
 	return;
@@ -680,7 +672,7 @@ bigdivmod(x, y, div, mod)
 	z = big_clone(x);
 	zds = BDIGITS(z);
 	t2 = 0; i = nx;
-	while(i--) {
+	while (i--) {
 	    t2 = BIGUP(t2) + zds[i];
 	    zds[i] = t2 / dd;
 	    t2 %= dd;
@@ -728,24 +720,21 @@ bigdivmod(x, y, div, mod)
 	if (q) {
 	    i = 0; num = 0; t2 = 0;
 	    do {			/* multiply and subtract */
+		int ee;
 		t2 += (unsigned long)yds[i] * q;
-		num += zds[j - ny + i] - BIGLO(t2);
-		if (num < 0) {
-		    zds[j - ny + i] = num + BIGRAD;
-		    num = -1;
-		}
-		else {
-		    zds[j - ny + i] = num;
-		    num = 0;
-		}
+		ee = num - BIGLO(t2);
+		num = zds[j - ny + i] + ee;
+		if (ee) zds[j - ny + i] = BIGLO(num);
+		num = BIGDN(num);
 		t2 = BIGDN(t2);
 	    } while (++i < ny);
 	    num += zds[j - ny + i] - t2; /* borrow from high digit; don't update */
 	    while (num) {		/* "add back" required */
 		i = 0; num = 0; q--;
 		do {
-		    num += (long) zds[j - ny + i] + yds[i];
-		    zds[j - ny + i] = BIGLO(num);
+		    int ee = num + yds[i];
+		    num = (long) zds[j - ny + i] + ee;
+		    if (ee) zds[j - ny + i] = BIGLO(num);
 		    num = BIGDN(num);
 		} while (++i < ny);
 		num--;
@@ -1241,6 +1230,8 @@ Init_Bignum()
     rb_define_method(cBignum, "[]", big_aref, 1);
 
     rb_define_method(cBignum, "<=>", big_cmp, 1);
+    rb_define_method(cBignum, "==", big_eq, 1);
+    rb_define_method(cBignum, "eql?", big_eq, 1);
     rb_define_method(cBignum, "hash", big_hash, 0);
     rb_define_method(cBignum, "to_i", big_to_i, 0);
     rb_define_method(cBignum, "to_f", big_to_f, 0);

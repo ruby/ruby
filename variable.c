@@ -13,15 +13,18 @@
 #include "node.h"
 #include "st.h"
 
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+
 static st_table *rb_global_tbl;
 st_table *rb_class_tbl;
 #define global_tbl rb_global_tbl
 #define class_tbl rb_class_tbl
 
 int rb_const_defined();
-VALUE rb_const_get();
 
-st_table *
+st_table*
 new_idhash()
 {
     return st_init_numtable();
@@ -34,8 +37,96 @@ Init_var_tables()
     class_tbl = new_idhash();
 }
 
-char *
-rb_class2path(class)
+struct fc_result {
+    ID name;
+    VALUE class;
+    VALUE path;
+    VALUE track;
+    struct fc_result *prev;
+};
+
+extern VALUE cModule;
+
+static int
+fc_i(key, value, res)
+    ID key;
+    VALUE value;
+    struct fc_result *res;
+{
+    VALUE path;
+    char *name;
+    
+    if (!rb_is_const_id(key)) return ST_CONTINUE;
+
+    name = rb_id2name(key);
+    if (res->path) {
+	path = str_dup(res->path);
+	str_cat(path, "::", 2);
+	str_cat(path, name, strlen(name));
+    }
+    else {
+	path = str_new2(name);
+    }
+    if (value == res->class) {
+	res->name = key;
+	res->path = path;
+	return ST_STOP;
+    }
+    if (obj_is_kind_of(value, cModule)) {
+	struct fc_result arg;
+	struct fc_result *list;
+
+
+	if (!RCLASS(value)->iv_tbl) return ST_CONTINUE;
+
+	list = res;
+	while (list) {
+	    if (list->track == value) return ST_CONTINUE;
+	    list = list->prev;
+	}
+
+	arg.name = 0;
+	arg.path = path;
+	arg.class = res->class;
+	arg.track = value;
+	arg.prev = res;
+	st_foreach(RCLASS(value)->iv_tbl, fc_i, &arg);
+	if (arg.name) {
+	    res->name = arg.name;
+	    res->path = arg.path;
+	    return ST_STOP;
+	}
+    }
+    return ST_CONTINUE;
+}
+
+static VALUE
+find_class_path(class)
+    VALUE class;
+{
+    VALUE c;
+    struct fc_result arg;
+
+    arg.name = 0;
+    arg.path = 0;
+    arg.class = class;
+    arg.track = cObject;
+    arg.prev = 0;
+    if (RCLASS(cObject)->iv_tbl) {
+	st_foreach(RCLASS(cObject)->iv_tbl, fc_i, &arg);
+    }
+    if (arg.name == 0) {
+	st_foreach(class_tbl, fc_i, &arg);
+    }
+    if (arg.name) {
+	rb_iv_set(class, "__classpath__", arg.path);
+	return arg.path;
+    }
+    return Qnil;
+}
+
+static VALUE
+classname(class)
     VALUE class;
 {
     VALUE path;
@@ -43,26 +134,39 @@ rb_class2path(class)
     while (TYPE(class) == T_ICLASS || FL_TEST(class, FL_SINGLETON)) {
 	class = (VALUE)RCLASS(class)->super;
     }
-    path = rb_ivar_get(class, rb_intern("__classpath__"));
+    path = rb_iv_get(class, "__classpath__");
     if (NIL_P(path)) {
-	return rb_class2name(class);
+	path = rb_iv_get(class, "__classid__");
+	if (!NIL_P(path)) {
+	    path = str_new2(rb_id2name(FIX2INT(path)));
+	}
     }
-    if (TYPE(path) != T_STRING) Bug("class path does not set properly");
-    return RSTRING(path)->ptr;
+    if (NIL_P(path)) {
+	path = find_class_path(class);
+	if (NIL_P(path)) {
+	    return 0;
+	}
+	return path;
+    }
+    if (TYPE(path) != T_STRING) Bug("class path is not set properly");
+    return path;
 }
 
 VALUE
 rb_class_path(class)
     VALUE class;
 {
-    char *name = rb_class2path(class);
+    VALUE path = classname(class);
 
-    if (strchr(name, ':')) {
-	VALUE ary = str_split(str_new2(name), ":");
-	ary = ary_reverse(ary);
-	return ary_join(ary, str_new2("::"));
+    if (path) return path;
+    else {
+	char buf[256];
+	char *s = "Class";
+
+	if (TYPE(class) == T_MODULE) s = "Module";
+	sprintf(buf, "#<%s 0x%x>", s, class);
+	return str_new2(buf);
     }
-    return str_new2(name);
 }
 
 void
@@ -73,55 +177,25 @@ rb_set_class_path(class, under, name)
     VALUE str;
     char *s;
 
-    if (cObject == under) return;
-    str = str_new2(name);
-    if (under) {
-	str_cat(str, ":", 1);
-	s = rb_class2path(under);
-	str_cat(str, s, strlen(s));
+    if (under == cObject) {
+	str = str_new2(name);
     }
-    rb_ivar_set(class, rb_intern("__classpath__"), str);
+    else {
+	str = str_dup(rb_class_path(under));
+	str_cat(str, "::", 2);
+	str_cat(str, name, strlen(name));
+    }
+    rb_iv_set(class, "__classpath__", str);
 }
 
 VALUE
 rb_path2class(path)
     char *path;
 {
-    char *p, *name, *s;
-    ID id;
-    VALUE class;
-
-    p = path;
-    while (*p) {
-	if (*p == ':') break;
-	*p++;
+    if (path[0] == '#') {
+	ArgError("can't retrieve anonymous class %s", path);
     }
-    if (*p == '\0') {		/* pre-defined class */
-	if (!st_lookup(RCLASS(cObject)->iv_tbl, rb_intern(path), &class)
-	    && !st_lookup(class_tbl, rb_intern(path), &class)) {
-	    NameError("Undefined class -- %s", path);
-	}
-	return class;
-    }
-    class = rb_path2class(p+1);
-    name = ALLOCA_N(char, p-path+1);
-    s = name;
-    while (path<p) {
-	*s++ = *path++;
-    }
-    *s = '\0';
-    id = rb_intern(name);
-    if (!rb_const_defined(class, id))
-	Fatal("%s not defined", name);
-    class = rb_const_get(class, id);
-    switch (TYPE(class)) {
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default:
-	Fatal("0x%x is not a class/module", class);
-    }
-    return class;
+    return rb_eval_string(path);
 }
 
 void
@@ -129,7 +203,14 @@ rb_name_class(class, id)
     VALUE class;
     ID id;
 {
-    rb_ivar_set(class, rb_intern("__classname__"), id);
+    extern VALUE cString;
+
+    if (cString) {
+	rb_iv_set(class, "__classpath__", str_new2(rb_id2name(id)));
+    }
+    else {
+	rb_iv_set(class, "__classid__", INT2FIX(id));
+    }
 }
 
 static st_table *autoload_tbl = 0;
@@ -139,6 +220,10 @@ rb_autoload_id(id, filename)
     ID id;
     char *filename;
 {
+    if (!rb_is_const_id(id)) {
+	NameError("autoload must be constant name", rb_id2name(id));
+    }
+
     if (!autoload_tbl) {
 	autoload_tbl = new_idhash();
     }
@@ -166,30 +251,9 @@ f_autoload(obj, class, file)
 
 char *
 rb_class2name(class)
-    struct RClass *class;
+    VALUE class;
 {
-    int name;
-
-    switch (TYPE(class)) {
-      case T_ICLASS:
-        class = (struct RClass*)RBASIC(class)->class;
-	break;
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default:
-	Fatal("0x%x is not a class/module", class);
-    }
-
-    while (FL_TEST(class, FL_SINGLETON) || TYPE(class) == T_ICLASS) {
-	class = (struct RClass*)class->super;
-    }
-
-    name = rb_ivar_get(class, rb_intern("__classname__"));
-    if (!NIL_P(name)) {
-	return rb_id2name((ID)name);
-    }
-    Bug("class 0x%x not named", class);
+    return RSTRING(rb_class_path(class))->ptr;
 }
 
 struct trace_var {
@@ -322,9 +386,9 @@ var_marker(var)
 
 static void
 readonly_setter(val, id, var)
+    VALUE val;
     ID id;
     void *var;
-    VALUE val;
 {
     NameError("Can't set variable %s", rb_id2name(id));
 }
@@ -411,7 +475,7 @@ rb_define_virtual_variable(name, getter, setter)
     rb_define_hooked_variable(name, 0, getter, setter);
 }
 
-void
+static void
 rb_trace_eval(cmd, val)
     VALUE cmd, val;
 {
@@ -534,6 +598,10 @@ rb_gvar_set(entry, val)
 {
     struct trace_data trace;
 
+    if (rb_safe_level() >= 4) {
+	extern VALUE eSecurityError;
+	Raise(eSecurityError, "cannot change global variable value");
+    }
     (*entry->setter)(val, entry->id, entry->data, entry);
 
     if (!entry->block_trace) {
@@ -564,6 +632,22 @@ rb_gvar_defined(entry)
     return TRUE;
 }
 
+void
+rb_alias_variable(name1, name2)
+    ID name1;
+    ID name2;
+{
+    struct global_entry *entry1, *entry2;
+
+    entry1 = rb_global_entry(name1);
+    entry2 = rb_global_entry(name2);
+
+    entry1->data   = entry2->data;
+    entry1->getter = entry2->getter;
+    entry1->setter = entry2->setter;
+    entry1->marker = entry2->marker;
+}
+
 VALUE
 rb_ivar_get(obj, id)
     struct RObject *obj;
@@ -579,8 +663,8 @@ rb_ivar_get(obj, id)
 	    return val;
 	return Qnil;
       default:
-	Fatal("class %s can not have instance variables",
-	      rb_class2name(CLASS_OF(obj)));
+	TypeError("class %s can not have instance variables",
+		  rb_class2name(CLASS_OF(obj)));
 	break;
     }
     Warning("instance var %s not initialized", rb_id2name(id));
@@ -593,6 +677,10 @@ rb_ivar_set(obj, id, val)
     ID id;
     VALUE val;
 {
+    if (rb_safe_level() >= 5) {
+	extern VALUE eSecurityError;
+	Raise(eSecurityError, "cannot change object status");
+    }
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -601,8 +689,8 @@ rb_ivar_set(obj, id, val)
 	st_insert(obj->iv_tbl, id, val);
 	break;
       default:
-	Fatal("class %s can not have instance variables",
-	      rb_class2name(CLASS_OF(obj)));
+	TypeError("class %s can not have instance variables",
+		  rb_class2name(CLASS_OF(obj)));
 	break;
     }
     return val;
@@ -633,6 +721,9 @@ rb_const_get_at(class, id)
 
     if (class->iv_tbl && st_lookup(class->iv_tbl, id, &value)) {
 	return value;
+    }
+    if ((VALUE)class == cObject) {
+	return rb_const_get(class, id);
     }
     NameError("Uninitialized constant %s::%s",
 	      RSTRING(rb_class_path(class))->ptr,
@@ -679,9 +770,55 @@ rb_const_get(class, id)
 	NameError("Uninitialized constant %s::%s",
 		  RSTRING(rb_class_path(class))->ptr,
 		  rb_id2name(id));
-    else
+    else {
 	NameError("Uninitialized constant %s",rb_id2name(id));
+    }
     /* not reached */
+}
+
+int
+const_i(key, value, hash)
+    ID key;
+    VALUE value;
+    VALUE hash;
+{
+    if (rb_is_const_id(key)) {
+	hash_aset(hash, str_new2(rb_id2name(key)), value);
+    }
+    return ST_CONTINUE;
+}
+
+VALUE
+mod_constants(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    struct RClass *mod;
+{
+    VALUE option;
+    VALUE hash;
+
+    rb_scan_args(argc, argv, "01", &option);
+    hash = hash_new();
+    st_foreach(mod->iv_tbl, const_i, hash);
+    if (!FL_TEST(mod, FL_SINGLETON)) {
+	mod = mod->super;
+	if (!mod) {
+	    Bug("no superclass for singleton class");
+	}
+	st_foreach(mod->iv_tbl, const_i, hash);
+    }
+    if (RTEST(option)) {
+	for (;;) {
+	    mod = mod->super;
+	    if (!mod) break;
+	    st_foreach(mod->iv_tbl, const_i, hash);
+	}
+	st_foreach(class_tbl, const_i, hash);
+	if (autoload_tbl) {
+	    st_foreach(autoload_tbl, const_i, hash);
+	}
+    }
+    return hash;
 }
 
 int
@@ -692,6 +829,18 @@ rb_const_defined_at(class, id)
     if (class->iv_tbl && st_lookup(class->iv_tbl, id, 0)) {
 	return TRUE;
     }
+    if ((VALUE)class == cObject) {
+	return rb_const_defined(class, id);
+    }
+    return FALSE;
+}
+
+int
+rb_autoload_defined(id)
+    ID id;
+{
+    if (autoload_tbl && st_lookup(autoload_tbl, id, 0))
+	return TRUE;
     return FALSE;
 }
 
@@ -708,18 +857,7 @@ rb_const_defined(class, id)
     }
     if (st_lookup(class_tbl, id, 0))
 	return TRUE;
-    if (autoload_tbl && st_lookup(autoload_tbl, id, 0))
-	return TRUE;
-    return FALSE;
-}
-
-int
-rb_autoload_defined(id)
-    ID id;
-{
-    if (autoload_tbl && st_lookup(autoload_tbl, id, 0))
-	return TRUE;
-    return FALSE;
+    return rb_autoload_defined(id);
 }
 
 void
@@ -732,10 +870,7 @@ rb_const_set(class, id, val)
 	class->iv_tbl = new_idhash();
     }
     else if (st_lookup(class->iv_tbl, id, 0)) {
-	NameError("already initialized constnant %s", rb_id2name(id));
-    }
-    if (!rb_autoload_defined(id) && rb_const_defined(class, id)) {
-	Warning("already initialized constnant %s", rb_id2name(id));
+	NameError("already initialized constant %s", rb_id2name(id));
     }
 
     st_insert(class->iv_tbl, id, val);
@@ -743,21 +878,25 @@ rb_const_set(class, id, val)
 
 void
 rb_define_const(class, name, val)
-    struct RClass *class;
+    VALUE class;
     char *name;
     VALUE val;
 {
-    rb_const_set(class, rb_intern(name), val);
+    ID id = rb_intern(name);
+    if (!rb_is_const_id(id)) {
+	NameError("wrong constant name %s", name);
+    }
+    rb_const_set(class, id, val);
 }
 
-extern VALUE cKernel;
+extern VALUE mKernel;
 
 void
 rb_define_global_const(name, val)
     char *name;
     VALUE val;
 {
-    rb_define_const(cKernel, name, val);
+    rb_define_const(mKernel, name, val);
 }
 
 VALUE

@@ -7,12 +7,16 @@
 
 #include "ruby.h"
 
+#ifndef NT
 extern char **environ;
+#endif
 extern char **origenviron;
 
+#ifndef NT
 char *strdup();
+#endif
 
-int
+static int
 envix(nam)
 char *nam;
 {

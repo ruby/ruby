@@ -1,9 +1,10 @@
 line = ''
 indent=0
+$stdout.sync = TRUE
 print "ruby> "
 while TRUE
   l = gets
-  if not l
+  unless l
     break if line == ''
   else
     line = line + l 
@@ -17,7 +18,7 @@ while TRUE
     if l =~ /^\s*end\b[^_]/
       indent -= 1
     end
-    if l =~ /{\s*(\|.*\|)?\s*$/
+    if l =~ /\{\s*(\|.*\|)?\s*$/
       indent += 1
     end
     if l =~ /^\s*\}/
@@ -31,7 +32,7 @@ while TRUE
   begin
     print eval(line).inspect, "\n"
   rescue
-    $! = 'exception raised' if not $!
+    $! = 'exception raised' unless $!
     print "ERR: ", $!, "\n"
   end
   break if not l

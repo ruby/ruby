@@ -16,6 +16,10 @@
 #include <errno.h>
 #include <ctype.h>
 #include <signal.h>
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifndef NT
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
@@ -24,6 +28,9 @@ struct timeval {
         long    tv_usec;        /* and microseconds */
 };
 #endif
+#endif /* NT */
+
+struct timeval time_timeval();
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
@@ -52,10 +59,6 @@ get_ppid()
 #endif
 }
 
-#ifdef NT
-#define HAVE_WAITPID
-#endif
-
 VALUE last_status = Qnil;
 
 #if !defined(HAVE_WAITPID) && !defined(HAVE_WAIT4)
@@ -71,6 +74,12 @@ rb_waitpid(pid, flags, st)
     int *st;
 {
     int result;
+#if defined(THREAD) && (defined(HAVE_WAITPID) || defined(HAVE_WAIT4))
+    int oflags = flags;
+    if (!thread_alone()) {	/* there're other threads to run */
+	flags |= WNOHANG;
+    }
+#endif
 
 #ifdef HAVE_WAITPID
   retry:
@@ -84,9 +93,18 @@ rb_waitpid(pid, flags, st)
 	}
 	return -1;
     }
+#ifdef THREAD
+    if (result == 0) {
+	if (oflags & WNOHANG) return 0;
+	thread_schedule();
+	if (thread_alone()) flags = oflags;
+	goto retry;
+    }
+#endif
 #else
 #ifdef HAVE_WAIT4
   retry:
+
     result = wait4(pid, st, flags, NULL);
     if (result < 0) {
 	if (errno == EINTR) {
@@ -97,6 +115,14 @@ rb_waitpid(pid, flags, st)
 	}
 	return -1;
     }
+#ifdef THREAD
+    if (result == 0) {
+	if (oflags & WNOHANG) return 0;
+	thread_schedule();
+	if (thread_alone()) flags = oflags;
+	goto retry;
+    }
+#endif
 #else
     if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
 	last_status = INT2FIX(*st);
@@ -136,7 +162,7 @@ rb_waitpid(pid, flags, st)
 struct wait_data {
     int pid;
     int status;
-}
+};
 
 static int
 wait_each(key, value, data)
@@ -161,8 +187,8 @@ f_wait()
     data.status = -1;
     st_foreach(pid_tbl, wait_each, &data);
     if (data.status != -1) {
-	status = data.status;
-	return data.pid;
+	last_status = data.status;
+	return INT2FIX(data.pid);
     }
 #endif
 
@@ -200,27 +226,23 @@ char *strtok();
 static void
 before_exec()
 {
-    {
-	struct itimerval tval;
+    struct itimerval tval;
 
-	tval.it_interval.tv_sec = 0;
-	tval.it_interval.tv_usec = 0;
-	tval.it_value = tval.it_interval;
-	setitimer(ITIMER_VIRTUAL, &tval, NULL);
-    }
+    tval.it_interval.tv_sec = 0;
+    tval.it_interval.tv_usec = 0;
+    tval.it_value = tval.it_interval;
+    setitimer(ITIMER_VIRTUAL, &tval, NULL);
 }
 
 static void
 after_exec()
 {
-    {
-	struct itimerval tval;
+    struct itimerval tval;
 
-	tval.it_interval.tv_sec = 1;
-	tval.it_interval.tv_usec = 0;
-	tval.it_value = tval.it_interval;
-	setitimer(ITIMER_VIRTUAL, &tval, NULL);
-    }
+    tval.it_interval.tv_sec = 0;
+    tval.it_interval.tv_usec = 100000;
+    tval.it_value = tval.it_interval;
+    setitimer(ITIMER_VIRTUAL, &tval, NULL);
 }
 #else
 #define before_exec()
@@ -229,17 +251,63 @@ after_exec()
 
 extern char *dln_find_exe();
 
+static void
+security(str)
+    char *str;
+{
+    extern int env_path_tainted;
+    extern VALUE eSecurityError;
+
+    if (rb_safe_level() > 0 && env_path_tainted) {
+	Raise(eSecurityError, "Insecure PATH - %s", str);
+    }
+}
+
 static int
 proc_exec_v(argv)
     char **argv;
 {
     char *prog;
 
+    security(argv[0]);
     prog = dln_find_exe(argv[0], 0);
     if (!prog) {
 	errno = ENOENT;
 	return -1;
     }
+#if (defined(MSDOS) && !defined(DJGPP)) || defined(__human68k__)
+    {
+#if defined(__human68k__)
+#define COMMAND "command.x"
+#else
+#define COMMAND "command.com"
+#endif
+	char *extension;
+
+	if ((extension = strrchr(prog, '.')) != NULL && strcasecmp(extension, ".bat") == 0) {
+	    char **new_argv;
+	    char *p;
+	    int n;
+
+	    for (n = 0; argv[n]; n++)
+		/* no-op */;
+	    new_argv = ALLOCA_N(char *, n + 2);
+	    for (; n > 0; n--)
+		new_argv[n + 1] = argv[n];
+	    new_argv[1] = strcpy(ALLOCA_N(char, strlen(argv[0]) + 1), argv[0]);
+	    for (p = new_argv[1]; *p != '\0'; p++)
+		if (*p == '/')
+		    *p = '\\';
+	    new_argv[0] = COMMAND;
+	    argv = new_argv;
+	    prog = dln_find_exe(argv[0], 0);
+	    if (!prog) {
+		errno = ENOENT;
+		return -1;
+	    }
+	}
+    }
+#endif /* MSDOS or __human68k__ */
     before_exec();
     execv(prog, argv);
     after_exec();
@@ -256,7 +324,7 @@ proc_exec_n(argc, argv)
 
     args = ALLOCA_N(char*, argc+1);
     for (i=0; i<argc; i++) {
-	Check_Type(argv[i], T_STRING);
+	Check_SafeStr(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
     args[i] = 0;
@@ -273,14 +341,33 @@ rb_proc_exec(str)
     char *s = str, *t;
     char **argv, **a;
 
+    security(str);
     for (s=str; *s; s++) {
 	if (*s != ' ' && !isalpha(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 #if defined(MSDOS)
-	    system(str);
+	    int state;
+	    before_exec();
+	    state = system(str);
+	    after_exec();
+	    if (state != -1)
+		exit(state);
+#else
+#if defined(__human68k__)
+	    char *shell = dln_find_exe("sh", 0);
+	    int state = -1;
+	    before_exec();
+	    if (shell)
+		execl(shell, "sh", "-c", str, (char *) NULL);
+	    else
+		state = system(str);
+	    after_exec();
+	    if (state != -1)
+		exit(state);
 #else
 	    before_exec();
 	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
 	    after_exec();
+#endif
 #endif
 	    return -1;
 	}
@@ -301,13 +388,102 @@ rb_proc_exec(str)
     return -1;
 }
 
+#if defined(__human68k__)
+static int
+proc_spawn_v(argv)
+    char **argv;
+{
+    char *prog;
+    char *extension;
+    int state;
+
+    prog = dln_find_exe(argv[0], 0);
+    if (!prog)
+	return -1;
+
+    if ((extension = strrchr(prog, '.')) != NULL && strcasecmp(extension, ".bat") == 0) {
+	char **new_argv;
+	char *p;
+	int n;
+
+	for (n = 0; argv[n]; n++)
+	    /* no-op */;
+	new_argv = ALLOCA_N(char *, n + 2);
+	for (; n > 0; n--)
+	    new_argv[n + 1] = argv[n];
+	new_argv[1] = strcpy(ALLOCA_N(char, strlen(argv[0]) + 1), argv[0]);
+	for (p = new_argv[1]; *p != '\0'; p++)
+	    if (*p == '/')
+		*p = '\\';
+	new_argv[0] = COMMAND;
+	argv = new_argv;
+	prog = dln_find_exe(argv[0], 0);
+	if (!prog) {
+	    errno = ENOENT;
+	    return -1;
+	}
+    }
+    before_exec();
+    state = spawnv(P_WAIT, prog, argv);
+    after_exec();    
+    return state;
+}
+
+static int
+proc_spawn_n(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    char **args;
+    int i;
+
+    args = ALLOCA_N(char *, argc + 1);
+    for (i = 0; i < argc; i++) {
+	Check_SafeStr(argv[i]);
+	args[i] = RSTRING(argv[i])->ptr;
+    }
+    args[i] = (char *) 0;
+    if (args[0])
+	return proc_exec_v(args);
+    return -1;
+}
+
+static int
+proc_spawn(str)
+    char *str;
+{
+    char *s = str, *t;
+    char **argv, **a;
+    int state;
+
+    for (s = str; *s; s++) {
+	if (*s != ' ' && !isalpha(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
+	    char *shell = dln_find_exe("sh", 0);
+	    before_exec();
+	    state = shell ? spawnl(P_WAIT, shell, "sh", "-c", str, (char *) NULL) : system(str) ;
+	    after_exec();
+	    return state;
+	}
+    }
+    a = argv = ALLOCA_N(char *, (s - str) / 2 + 2);
+    s = ALLOCA_N(char, s - str + 1);
+    strcpy(s, str);
+    if (*a++ = strtok(s, " \t")) {
+	while (t = strtok(NULL, " \t"))
+	    *a++ = t;
+	*a = NULL;
+    }
+    return argv[0] ? proc_spawn_v(argv) : -1 ;
+}
+#endif /* __human68k__ */
+
 static VALUE
 f_exec(argc, argv)
     int argc;
     VALUE *argv;
 {
     if (argc == 1) {
-	Check_Type(argv[0], T_STRING);
+	Check_SafeStr(argv[0]);
 	rb_proc_exec(RSTRING(argv[0])->ptr);
     }
     else {
@@ -320,10 +496,15 @@ static VALUE
 f_fork(obj)
     VALUE obj;
 {
+#if !defined(__human68k__)
     int pid;
 
+    rb_secure(2);
     switch (pid = fork()) {
       case 0:
+#ifdef linux
+	after_exec();
+#endif
 	if (iterator_p()) {
 	    rb_yield(Qnil);
 	    _exit(0);
@@ -337,6 +518,9 @@ f_fork(obj)
       default:
 	return INT2FIX(pid);
     }
+#else
+    rb_notimplement();
+#endif
 }
 
 static VALUE
@@ -345,6 +529,7 @@ f_exit_bang(obj, status)
 {
     int code = -1;
 
+    rb_secure(2);
     if (FIXNUM_P(status)) {
 	code = INT2FIX(status);
     }
@@ -358,18 +543,26 @@ void
 rb_syswait(pid)
     int pid;
 {
-    RETSIGTYPE (*hfunc)(), (*ifunc)(), (*qfunc)();
+    RETSIGTYPE (*hfunc)(), (*qfunc)(), (*ifunc)();
     int status;
 
+#ifdef SIGHUP
     hfunc = signal(SIGHUP, SIG_IGN);
-    ifunc = signal(SIGINT, SIG_IGN);
+#endif
+#ifdef SIGQUIT
     qfunc = signal(SIGQUIT, SIG_IGN);
+#endif
+    ifunc = signal(SIGINT, SIG_IGN);
 
     if (rb_waitpid(pid, 0, &status) < 0) rb_sys_fail("wait");
 
+#ifdef SIGHUP
     signal(SIGHUP, hfunc);
-    signal(SIGINT, ifunc);
+#endif
+#ifdef SIGQUIT
     signal(SIGQUIT, qfunc);
+#endif
+    signal(SIGINT, ifunc);
 }
 
 static VALUE
@@ -383,6 +576,7 @@ f_system(argc, argv)
 
     cmd = ary_join(ary_new4(argc, argv), str_new2(" "));
 
+    Check_SafeStr(cmd);
     state = do_spawn(RSTRING(cmd)->ptr);
     last_status = INT2FIX(state);
 
@@ -395,11 +589,32 @@ f_system(argc, argv)
 
     cmd = ary_join(ary_new4(argc, argv), str_new2(" "));
 
+    Check_SafeStr(cmd);
     state = system(RSTRING(cmd)->ptr);
     last_status = INT2FIX(state);
 
     if (state == 0) return TRUE;
     return FALSE;
+#else
+#if defined(__human68k__)
+    int i;
+    int state;
+
+    fflush(stdin);
+    fflush(stdout);
+    fflush(stderr);
+    if (argc == 0) {
+	last_status = INT2FIX(0);
+	return INT2FIX(0);
+    }
+
+    for (i = 0; i < argc; i++)
+	Check_SafeStr(argv[i]);
+
+    state = argc == 1 ? proc_spawn(RSTRING(argv[0])->ptr) : proc_spawn_n(argc, argv) ;
+    last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
+
+    return state == 0 ? TRUE : FALSE ;
 #else
     int i;
     int pid;
@@ -413,7 +628,7 @@ f_system(argc, argv)
     }
 
     for (i=0; i<argc; i++) {
-	Check_Type(argv[i], T_STRING);
+	Check_SafeStr(argv[i]);
     }
 
   retry:
@@ -430,7 +645,11 @@ f_system(argc, argv)
 
       case -1:
 	if (errno == EAGAIN) {
-	    sleep(5);
+#ifdef THREAD
+	    thread_sleep(1);
+#else
+	    sleep(1);
+#endif
 	    goto retry;
 	}
 	rb_sys_fail(0);
@@ -444,22 +663,20 @@ f_system(argc, argv)
     return FALSE;
 #endif
 #endif
+#endif
 }
 
-struct timeval time_timeval();
-
-VALUE
+static VALUE
 f_sleep(argc, argv)
     int argc;
     VALUE *argv;
 {
     int beg, end;
-    int n;
 
     beg = time(0);
 #ifdef THREAD
     if (argc == 0) {
-	thread_sleep();
+	thread_sleep_forever();
     }
     else if (argc == 1) {
 	thread_wait_for(time_timeval(argv[0]));
@@ -472,10 +689,11 @@ f_sleep(argc, argv)
     }
     else if (argc == 1) {
 	struct timeval tv;
+	int n;
 
 	tv = time_timeval(argv[0]);
 	TRAP_BEG;
-	sleep(tv.tv_sec);
+	n = select(0, 0, 0, 0, &tv);
 	TRAP_END;
 	if (n<0) rb_sys_fail(0);
     }
@@ -489,58 +707,48 @@ f_sleep(argc, argv)
     return INT2FIX(end);
 }
 
-#if !defined(NT) && !defined(DJGPP)
-#ifdef _POSIX_SOURCE
-static VALUE
-proc_getpgrp()
-{
-    int pgrp;
-
-    pgrp = getpgrp();
-    if (pgrp < 0) rb_sys_fail(0);
-    return INT2FIX(pgrp);
-}
-
-static VALUE
-proc_setpgrp(obj)
-    VALUE obj;
-{
-    int pgrp;
-
-    if (setpgrp() < 0) rb_sys_fail(0);
-    return Qnil;
-}
-
-#else
-
+#if !defined(NT) && !defined(DJGPP) && !defined(__human68k__)
 static VALUE
 proc_getpgrp(argc, argv)
     int argc;
     VALUE *argv;
 {
+    int pgrp;
+#ifdef BSD_GETPGRP
     VALUE vpid;
-    int pgrp, pid;
+    int pid;
 
     rb_scan_args(argc, argv, "01", &vpid);
-    if (NIL_P(vpid)) pid = 0;
-    else             pid = NUM2INT(vpid);
-    pgrp = getpgrp(pid);
+    pid = NUM2INT(vpid);
+    pgrp = BSD_GETPGRP(pid);
+#else
+    rb_scan_args(argc, argv, "0");
+    pgrp = getpgrp();
+#endif
     if (pgrp < 0) rb_sys_fail(0);
     return INT2FIX(pgrp);
 }
 
 static VALUE
-proc_setpgrp(obj, pid, pgrp)
-    VALUE obj, pid, pgrp;
+proc_setpgrp(argc, argv)
+    int argc;
+    VALUE *argv;
 {
+#ifdef BSD_SETPGRP
+    VALUE pid, pgrp;
     int ipid, ipgrp;
+
+    rb_scan_args(argc, argv, "02", &pid, &pgrp);
 
     ipid = NUM2INT(pid);
     ipgrp = NUM2INT(pgrp);
-    if (setpgrp(ipid, ipgrp) < 0) rb_sys_fail(0);
+    if (BSD_SETPGRP(ipid, ipgrp) < 0) rb_sys_fail(0);
+#else
+    rb_scan_args(argc, argv, "0");
+    if (setpgrp() < 0) rb_sys_fail(0);
+#endif
     return Qnil;
 }
-#endif
 
 #ifdef HAVE_SETPGID
 static VALUE
@@ -624,7 +832,7 @@ proc_setuid(obj, id)
     }
 #endif
 #endif
-	return INT2FIX(uid);
+    return INT2FIX(uid);
 }
 
 static VALUE
@@ -656,7 +864,7 @@ proc_setgid(obj, id)
     }
 #endif
 #endif
-	return INT2FIX(gid);
+    return INT2FIX(gid);
 }
 
 static VALUE
@@ -722,19 +930,21 @@ extern VALUE f_kill();
 void
 Init_process()
 {
-    extern VALUE cKernel;
+    extern VALUE mKernel;
 
     rb_define_virtual_variable("$$", get_pid, 0);
     rb_define_readonly_variable("$?", &last_status);
+    rb_define_global_function("exec", f_exec, -1);
 #ifndef NT
-    rb_define_private_method(cKernel, "exec", f_exec, -1);
-    rb_define_private_method(cKernel, "fork", f_fork, 0);
-    rb_define_private_method(cKernel, "exit!", f_exit_bang, 1);
-    rb_define_private_method(cKernel, "system", f_system, -1);
-    rb_define_private_method(cKernel, "sleep", f_sleep, -1);
+    rb_define_global_function("fork", f_fork, 0);
+#endif
+    rb_define_global_function("exit!", f_exit_bang, 1);
+    rb_define_global_function("system", f_system, -1);
+    rb_define_global_function("sleep", f_sleep, -1);
 
     mProcess = rb_define_module("Process");
 
+#if !defined(NT) && !defined(DJGPP)
 #ifdef WNOHANG
     rb_define_const(mProcess, "WNOHANG", INT2FIX(WNOHANG));
 #else
@@ -749,23 +959,20 @@ Init_process()
 
 #ifndef NT
     rb_define_singleton_method(mProcess, "fork", f_fork, 0);
-    rb_define_singleton_method(mProcess, "exit!", f_exit_bang, 1);
 #endif
+    rb_define_singleton_method(mProcess, "exit!", f_exit_bang, 1);
     rb_define_module_function(mProcess, "kill", f_kill, -1);
+#ifndef NT
     rb_define_module_function(mProcess, "wait", f_wait, 0);
     rb_define_module_function(mProcess, "waitpid", f_waitpid, 2);
 
     rb_define_module_function(mProcess, "pid", get_pid, 0);
     rb_define_module_function(mProcess, "ppid", get_ppid, 0);
-
-#if !defined(NT) && !defined(DJGPP)
-#ifdef _POSIX_SOURCE
-    rb_define_module_function(mProcess, "getpgrp", proc_getpgrp, 0);
-    rb_define_module_function(mProcess, "setpgrp", proc_setpgrp, 0);
-#else
-    rb_define_module_function(mProcess, "getpgrp", proc_getpgrp, -1);
-    rb_define_module_function(mProcess, "setpgrp", proc_setpgrp, 2);
 #endif
+
+#if !defined(NT) && !defined(DJGPP) && !defined(__human68k__)
+    rb_define_module_function(mProcess, "getpgrp", proc_getpgrp, -1);
+    rb_define_module_function(mProcess, "setpgrp", proc_setpgrp, -1);
 #ifdef HAVE_SETPGID
     rb_define_module_function(mProcess, "setpgid", proc_setpgid, 2);
 #endif

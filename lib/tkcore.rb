@@ -22,7 +22,7 @@ module Tk
       break if wish_path
     end
   }
-  fail 'can\'t find wish' if not wish_path
+  fail 'can\'t find wish' if not wish_path #'
 
   def Tk.tk_exit
     if not PORT.closed?
@@ -31,7 +31,8 @@ module Tk
     end
   end
 
-  PORT = open(format("|%s -n %s", wish_path, File.basename($0)), "w+");
+#  PORT = open(format("|%s -n %s", wish_path, File.basename($0)), "w+");
+  PORT = open(format("|%s", wish_path), "w+");
   trap "EXIT", proc{Tk.tk_exit}
   trap "PIPE", ""
 
@@ -46,8 +47,8 @@ proc rb_out args {
   puts [format %%s $args]
   flush stdout
 }
-proc rb_ans args {
-  if [catch "$args" var] {puts "!$var"} {puts "=$var@@"}
+proc rb_ans arg {
+  if [catch $arg var] {puts "!$var"} {puts "=$var@@"}
   flush stdout
 }
 proc tkerror args { exit }
@@ -85,12 +86,11 @@ after 120000 keepalive'
   }
 
   def error_at
-    n = 1
-    while c = caller(n)
-      break if c !~ /tk\.rb:/
-      n+=1
+    frames = caller(1)
+    frames.delete_if do |c|
+      c =~ %r!/tk(|core|thcore|canvas|text|entry|scrollbox)\.rb:\d+!
     end
-    c
+    frames
   end
 
   def tk_tcl2ruby(val)
@@ -197,17 +197,21 @@ after 120000 keepalive'
 	  s = "1"
 	elsif s.kind_of?(TkObject)
 	  s = s.path
+	elsif s.kind_of?(TkVariable)
+	  s = s.id
 	else
 	  s = s.to_s
-	  s.gsub!(/[{}]/, '\\\\\0')
+	  s.gsub!(/["\\\$\[\]]/, '\\\\\0') #"
+	  s.gsub!(/\{/, '\\\\173')
+	  s.gsub!(/\}/, '\\\\175')
 	end
-	"{#{s}}"
+	"\"#{s}\""
       end
     }
     str += " "
     str += args.join(" ")
     print str, "\n" if $DEBUG
-    tk_write 'rb_ans %s', str
+    tk_write 'rb_ans {%s}', str
     while PORT.gets
       print $_ if $DEBUG
       $_.chop!
@@ -229,10 +233,12 @@ after 120000 keepalive'
 	$@ = error_at
 	msg = $'
 	if msg =~ /unknown option "-(.*)"/
-	  fail NameError, format("undefined method `%s' for %s(%s)", $1, self, self.type) #`'
+	  $! = NameError.new(format("undefined method `%s' for %s(%s)",
+				    $1, self, self.type)) #`'
 	else
-	  fail format("%s - %s", self.type, msg)
+	  $! = RuntimeError.new(format("%s - %s", self.type, msg))
 	end
+	fail
       end
       $tk_event_queue.push $_
     end
@@ -250,7 +256,7 @@ after 120000 keepalive'
     if keys
       for k, v in keys
 	 conf.push("-#{k}")
-	 v = install_cmd(v) if v.type == Proc
+	 v = install_cmd(v) if v.kind_of? Proc
 	 conf.push(v)
       end
     end
@@ -415,10 +421,10 @@ after 120000 keepalive'
   module_function :after, :update, :dispatch, :mainloop, :root, :bell
 
   module Scrollable
-    def xscrollcommand(cmd)
+    def xscrollcommand(cmd=Proc.new)
       configure_cmd 'xscrollcommand', cmd
     end
-    def yscrollcommand(cmd)
+    def yscrollcommand(cmd=Proc.new)
       configure_cmd 'yscrollcommand', cmd
     end
   end

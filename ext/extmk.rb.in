@@ -17,6 +17,14 @@ $cache_mod = FALSE;
 $lib_cache = {}
 $func_cache = {}
 $hdr_cache = {}
+$topdir = "@top_srcdir@"
+if $topdir !~ "^/"
+  # get absolute path
+  save = Dir.pwd
+  Dir.chdir ".."
+  $topdir = Dir.pwd
+  Dir.chdir save
+end
 
 if File.exist?("config.cache") then
   f = open("config.cache", "r")
@@ -46,14 +54,29 @@ def older(file1, file2)
   return FALSE
 end
 
-LINK = "@CC@ -o conftest %s %s conftest.c %s > /dev/null 2>&1"
-CPP = "@CPP@ @CPPFLAGS@ %s conftest.c > /dev/null 2>&1"
+if PLATFORM == "m68k-human"
+CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
+LINK = "@CC@ -o conftest -I#{$topdir} " + CFLAGS + " %s @LDFLAGS@ %s conftest.c @LIBS@ %s > nul 2>&1"
+CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} " + CFLAGS + " %s conftest.c > nul 2>&1"
+else
+CFLAGS = "@CFLAGS@"
+LINK = "@CC@ -o conftest -I#{$topdir} " + CFLAGS + " %s @LDFLAGS@ %s conftest.c %s > /dev/null 2>&1"
+CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} " + CFLAGS + " %s conftest.c > /dev/null 2>&1"
+end
+
+def try_link(libs)
+  system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+end
+
+def try_cpp
+  system(format(CPP, $CFLAGS))
+end
 
 def have_library(lib, func)
   if $lib_cache[lib]
     if $lib_cache[lib] == "yes"
       if $libs
-	$libs = $libs + " -l" + lib
+        $libs = "-l" + lib + " " + $libs 
       else
 	$libs = "-l" + lib
       end
@@ -72,17 +95,17 @@ int t() { %s(); return 0; }
 
   begin
     if $libs
-      libs = "-l" + lib + " " + $libs
+      libs = "-l" + lib + " " + $libs 
     else
       libs = "-l" + lib
     end
-    if !system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+    unless try_link(libs)
       $lib_cache[lib] = 'no'
       $cache_mod = TRUE
       return FALSE
     end
   ensure
-    system "/bin/rm -f conftest*"
+    system "rm -f conftest*"
   end
 
   $libs = libs
@@ -113,13 +136,13 @@ int t() { %s(); return 0; }
   libs = "" if libs == nil
 
   begin
-    if !system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+    unless try_link(libs)
       $func_cache[func] = 'no'
       $cache_mod = TRUE
       return FALSE
     end
   ensure
-    system "/bin/rm -f conftest*"
+    system "rm -f conftest*"
   end
   $defs.push(format("-DHAVE_%s", func.upcase))
   $func_cache[func] = 'yes'
@@ -145,13 +168,13 @@ def have_header(header)
   cfile.close
 
   begin
-    if !system(format(CPP, $CFLAGS))
+    unless try_cpp
       $hdr_cache[header] = 'no'
       $cache_mod = TRUE
       return FALSE
     end
   ensure
-    system "/bin/rm -f conftest*"
+    system "rm -f conftest*"
   end
   $hdr_cache[header] = 'yes'
   header.tr!("a-z./\055", "A-Z___")
@@ -180,39 +203,39 @@ def create_makefile(target)
     end
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
-  $libs = "" if not $libs
+  $libs = "" unless $libs
 
+  $srcdir = $topdir + "/ext/" + target
   mfile = open("Makefile", "w")
   mfile.printf "\
 SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
-srcdir = @srcdir@
-VPATH = @srcdir@
+srcdir = #{$srcdir}
+VPATH = #{$srcdir}
 
 CC = @CC@
 
-CFLAGS = %s #$CFLAGS %s
-LDFLAGS =  @LDFLAGS@
-DLDFLAGS = @DLDFLAGS@
+CFLAGS   = %s -I#{$topdir} %s #$CFLAGS %s
+DLDFLAGS = @DLDFLAGS@ #$LDFLAGS
 LDSHARED = @LDSHARED@
-", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
+", if $static then "" else "@CCDLFLAGS@" end, CFLAGS, $defs.join(" ")
 
   mfile.printf "\
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
-bindir = $(exec_prefix)/bin
-libdir = @archlib@
+libdir = @libdir@/ruby/@arch@
 @SET_MAKE@
 
 #### End of system configuration section. ####
 "
+  mfile.printf "LOCAL_LIBS = %s\n", $local_libs if $local_libs
   mfile.printf "LIBS = %s\n", $libs
   mfile.printf "OBJS = "
   if !$objs then
-    $objs = Dir["*.c"]
+    $objs = Dir["#{$topdir}/ext/#{target}/*.c"]
     for f in $objs
       f.sub!(/\.c$/, ".o")
     end
@@ -220,17 +243,19 @@ libdir = @archlib@
   mfile.printf $objs.join(" ")
   mfile.printf "\n"
 
-  dots = if "@INSTALL@" =~ /^\// then "" else "../" end
+  dots = if "@INSTALL@" =~ /^\// then "" else "#{$topdir}/" end
   mfile.printf "\
 TARGET = %s.%s
 
 INSTALL = %s@INSTALL@
 
+binsuffix = @binsuffix@
+
 all:		$(TARGET)
 
 clean:;		@rm -f *.o *.so *.sl
 		@rm -f Makefile extconf.h conftest.*
-		@rm -f core ruby *~
+		@rm -f core ruby$(binsuffix) *~
 
 realclean:	clean
 ", target,
@@ -255,13 +280,20 @@ install:;
   if !$static && "@DLEXT@" != "o"
     mfile.printf "\
 $(TARGET): $(OBJS)
-	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LIBS)
+	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LOCAL_LIBS) $(LIBS)
 "
-  elsif !File.exist?(target + ".c")
+  elsif not File.exist?(target + ".c")
+    if PLATFORM == "m68k-human"
+      mfile.printf "\
+$(TARGET): $(OBJS)
+	ar cru $(TARGET) $(OBJS)
+"
+    else
     mfile.printf "\
 $(TARGET): $(OBJS)
-	ld $(LDFLAGS) -r -o $(TARGET) $(OBJS)
+	ld $(DLDFLAGS) -r -o $(TARGET) $(OBJS)
 "
+    end
   end
 
   if File.exist?("depend")
@@ -287,16 +319,18 @@ def extmake(target)
 
   return if $nodynamic and not $static
 
+  $local_libs = nil
   $libs = nil
   $objs = nil
-  $CFLAGS = "-I../.. @CFLAGS@"
-  $LDFLAGS = "@STATIC@ @LDFLAGS@"
+  $CFLAGS = nil
+  $LDFLAGS = nil
 
   begin
+    system "mkdir " + target unless File.directory?(target)
     Dir.chdir target
     if $static_ext.size > 0 ||
       !File.exist?("./Makefile") ||
-      older("./Makefile", "../Setup") ||
+      older("./Makefile", "#{$topdir}/ext/@setup@") ||
       older("./Makefile", "../extmk.rb") ||
       older("./Makefile", "./extconf.rb")
     then
@@ -316,7 +350,11 @@ def extmake(target)
 	system "make all"
       end
     end
-    $extlibs += " " + $libs if $static && $libs
+    if $static
+      $extlibs += " " + $LDFLAGS if $LDFLAGS
+      $extlibs += " " + $local_libs if $local_libs
+      $extlibs += " " + $libs if $libs
+    end
   ensure
     Dir.chdir ".."
   end
@@ -324,8 +362,8 @@ end
 
 # get static-link modules
 $static_ext = {}
-if File.file? "./Setup"
-  f = open("./Setup") 
+if File.file? "#{$topdir}/ext/@setup@"
+  f = open("#{$topdir}/ext/@setup@") 
   while f.gets()
     $_.chop!
     sub!(/#.*$/, '')
@@ -339,11 +377,11 @@ if File.file? "./Setup"
   f.close
 end
 
-for d in Dir["*"]
+for d in Dir["#{$topdir}/ext/*"]
   File.directory?(d) || next
   File.file?(d + "/MANIFEST") || next
   
-  d = $1 if d =~ /\/([\/]*)$/
+  d = File.basename(d)
   if $install
     print "installing ", d, "\n"
   elsif $clean
@@ -385,7 +423,7 @@ if $extlist.size > 0
     end
   end
 
-  if older("extinit.c", "Setup")
+  if older("extinit.c", "#{$topdir}/ext/@setup@")
     f = open("extinit.c", "w")
     f.printf "void Init_ext() {\n"
     f.printf $extinit
@@ -393,24 +431,24 @@ if $extlist.size > 0
     f.close
   end
   if older("extinit.o", "extinit.c")
-    cmd = "@CC@ @CFLAGS@ -c extinit.c"
+    cmd = "@CC@ " + CFLAGS + " -c extinit.c"
     print cmd, "\n"
     system cmd or exit 1
   end
 
   Dir.chdir ".."
 
-  if older("ruby", "ext/Setup") or older("ruby", "miniruby")
-    `rm -f ruby`
+  if older("ruby@binsuffix@", "#{$topdir}/ext/@setup@") or older("ruby@binsuffix@", "miniruby@binsuffix@")
+    `rm -f ruby@binsuffix@`
   end
 
   $extobjs = "ext/extinit.o " + $extobjs
-  system format('make ruby PROGRAM=ruby EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
+  system format('make ruby@binsuffix@ EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
 else
   Dir.chdir ".."
-  if older("ruby", "miniruby")
-    `rm -f ruby`
-    `cp miniruby ruby`
+  if older("ruby@binsuffix@", "miniruby@binsuffix@")
+    `rm -f ruby@binsuffix@`
+    `cp miniruby@binsuffix@ ruby@binsuffix@`
   end
 end
 

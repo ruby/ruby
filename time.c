@@ -13,7 +13,12 @@
 #include "ruby.h"
 #include <sys/types.h>
 
+#ifdef HAVE_STRING_H
+# include <string.h>
+#endif
+
 #include <time.h>
+#ifndef NT
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
@@ -22,6 +27,7 @@ struct timeval {
         long    tv_usec;        /* and microseconds */
 };
 #endif
+#endif /* NT */
 
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
@@ -44,7 +50,7 @@ struct time_object {
 };
 
 #define GetTimeval(obj, tobj) {\
-    Get_Data_Struct(obj, struct time_object, tobj);\
+    Data_Get_Struct(obj, struct time_object, tobj);\
 }
 
 static VALUE
@@ -54,7 +60,7 @@ time_s_now(class)
     VALUE obj;
     struct time_object *tobj;
 
-    obj = Make_Data_Struct(class, struct time_object, 0, 0, tobj);
+    obj = Data_Make_Struct(class, struct time_object, 0, 0, tobj);
     tobj->tm_got=0;
 
     if (gettimeofday(&(tobj->tv), 0) == -1) {
@@ -72,8 +78,8 @@ time_new_internal(class, sec, usec)
     VALUE obj;
     struct time_object *tobj;
 
-    obj = Make_Data_Struct(class, struct time_object, 0, 0, tobj);
-    tobj->tm_got=0;
+    obj = Data_Make_Struct(class, struct time_object, 0, 0, tobj);
+    tobj->tm_got = 0;
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;
 
@@ -172,9 +178,16 @@ time_arg(argc, argv, args)
 		break;
 	    }
 	}
+	if (args[1] == -1) {
+	    char c = RSTRING(v[1])->ptr[0];
+
+	    if ('0' <= c && c <= '9') {
+		args[1] = NUM2INT(v[1])-1;
+	    }
+	}
     }
     else {
-	args[1] = NUM2INT(v[1]) - 1;
+	args[1] = NUM2INT(v[1]);
     }
     if (v[2] == Qnil) {
 	args[2] = 1;
@@ -338,6 +351,22 @@ time_cmp(time1, time2)
 }
 
 static VALUE
+time_eql(time1, time2)
+    VALUE time1, time2;
+{
+    struct time_object *tobj1, *tobj2;
+
+    GetTimeval(time1, tobj1);
+    if (obj_is_instance_of(time2, cTime)) {
+	GetTimeval(time2, tobj2);
+	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
+	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return TRUE;
+	}
+    }
+    return FALSE;
+}
+
+static VALUE
 time_hash(time)
     VALUE time;
 {
@@ -357,7 +386,7 @@ time_localtime(time)
     struct tm *tm_tmp;
 
     GetTimeval(time, tobj);
-    tm_tmp = localtime(&tobj->tv.tv_sec);
+    tm_tmp = localtime((const time_t*)&tobj->tv.tv_sec);
     tobj->tm = *tm_tmp;
     tobj->tm_got = 1;
 #ifndef HAVE_TM_ZONE
@@ -374,7 +403,7 @@ time_gmtime(time)
     struct tm *tm_tmp;
 
     GetTimeval(time, tobj);
-    tm_tmp = gmtime(&tobj->tv.tv_sec);
+    tm_tmp = gmtime((const time_t*)&tobj->tv.tv_sec);
     tobj->tm = *tm_tmp;
     tobj->tm_got = 1;
 #ifndef HAVE_TM_ZONE
@@ -388,7 +417,7 @@ time_asctime(time)
     VALUE time;
 {
     struct time_object *tobj;
-    char buf[32];
+    char buf[64];
     int len;
 
     GetTimeval(time, tobj);
@@ -396,12 +425,13 @@ time_asctime(time)
 	time_localtime(time);
     }
 #ifndef HAVE_TM_ZONE
-    if (tobj->gmt == 1)
-	len = strftime(buf, 32, "%a %b %d %H:%M:%S GMT %Y", &(tobj->tm));
+    if (tobj->gmt == 1) {
+	len = strftime(buf, 64, "%a %b %d %H:%M:%S GMT %Y", &(tobj->tm));
+    }
     else
 #endif
     {
-	len = strftime(buf, 32, "%a %b %d %H:%M:%S %Z %Y", &(tobj->tm));
+	len = strftime(buf, 64, "%a %b %d %H:%M:%S %Z %Y", &(tobj->tm));
     }
     return str_new(buf, len);
 }
@@ -429,8 +459,9 @@ time_plus(time1, time2)
 
     GetTimeval(time1, tobj1);
     if (TYPE(time2) == T_FLOAT) {
-	sec = tobj1->tv.tv_sec + (unsigned int)RFLOAT(time2)->value;
-	usec = tobj1->tv.tv_usec + (RFLOAT(time2)->value - (double)sec)*1e6;
+	unsigned int nsec = (unsigned int)RFLOAT(time2)->value;
+	sec = tobj1->tv.tv_sec + nsec;
+	usec = tobj1->tv.tv_usec + (RFLOAT(time2)->value - (double)nsec)*1e6;
     }
     else if (obj_is_instance_of(time2, cTime)) {
 	GetTimeval(time2, tobj2);
@@ -725,6 +756,7 @@ Init_Time()
     rb_define_method(cTime, "to_i", time_to_i, 0);
     rb_define_method(cTime, "to_f", time_to_f, 0);
     rb_define_method(cTime, "<=>", time_cmp, 1);
+    rb_define_method(cTime, "eql?", time_eql, 0);
     rb_define_method(cTime, "hash", time_hash, 0);
 
     rb_define_method(cTime, "localtime", time_localtime, 0);

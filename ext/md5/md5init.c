@@ -26,7 +26,7 @@ md5_update(obj, str)
     MD5_CTX *md5;
 
     Check_Type(str, T_STRING);
-    Get_Data_Struct(obj, MD5_CTX, md5);
+    Data_Get_Struct(obj, MD5_CTX, md5);
     MD5Update(md5, str->ptr, str->len);
 
     return Qnil;
@@ -38,7 +38,7 @@ md5_digest(obj)
     MD5_CTX *md5, ctx;
     unsigned char digest[16];
 
-    Get_Data_Struct(obj, MD5_CTX, md5);
+    Data_Get_Struct(obj, MD5_CTX, md5);
     ctx = *md5;
     MD5Final(digest, &ctx);
 
@@ -52,8 +52,8 @@ md5_clone(obj)
     VALUE clone;
     MD5_CTX *md5, *md5_new;
 
-    Get_Data_Struct(obj, MD5_CTX, md5);
-    obj = Make_Data_Struct(CLASS_OF(obj), MD5_CTX, 0, 0, md5_new);
+    Data_Get_Struct(obj, MD5_CTX, md5);
+    obj = Data_Make_Struct(CLASS_OF(obj), MD5_CTX, 0, 0, md5_new);
     *md5_new = *md5;
 
     return obj;
@@ -69,7 +69,7 @@ md5_new(argc, argv, class)
     rb_scan_args(argc, argv, "01", &arg);
     if (!NIL_P(arg)) Check_Type(arg, T_STRING);
 
-    obj = Make_Data_Struct(class, MD5_CTX, 0, 0, md5);
+    obj = Data_Make_Struct(class, MD5_CTX, 0, 0, md5);
     MD5Init(md5);
     if (!NIL_P(arg)) {
 	md5_update(obj, arg);

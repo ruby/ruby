@@ -35,6 +35,17 @@
 # (but try to keep the structure clean).
 #
 
+# Modified for Human68k by K.Okabe 1997.07.09
+# Last change: 1997.07.09
+
+case "$KSH_VERSION" in
+*X6*)
+  echo m68k-sharp-human
+  exit 0 ;;
+*)
+  ;;
+esac
+
 # This is needed to find uname on a Pyramid OSx when run in the BSD universe.
 # (ghazi@noc.rutgers.edu 8/24/94.)
 if (test -f /.attbin/uname) >/dev/null 2>&1 ; then
@@ -322,6 +333,9 @@ EOF
     *:NetBSD:*:*)
 	echo ${UNAME_MACHINE}-unknown-netbsd`echo ${UNAME_RELEASE}|sed -e 's/[-_].*/\./'`
 	exit 0 ;;
+    *:*:*BOW*:*)
+	echo i386-pc-bow
+	exit 0 ;;
     i*:CYGWIN*:*)
 	echo i386-pc-cygwin32
 	exit 0 ;;
@@ -417,15 +431,39 @@ EOF
     mc68*:A/UX:*:*)
 	echo m68k-apple-aux${UNAME_RELEASE}
 	exit 0 ;;
-    R3000:*System_V*:*:*)
+    X680[02346]0:Human68k:*:*)
+	echo m68k-sharp-human
+	exit 0 ;;
+    R[34]000:*System_V*:*:*)
 	if [ -d /usr/nec ]; then
 	        echo mips-nec-sysv${UNAME_RELEASE}
 	else
 	        echo mips-unknown-sysv${UNAME_RELEASE}
 	fi
         exit 0 ;;
+    R[34]???:UNIX_SV:4.?MP:*)
+	if [ -x /sbin/uversion ]; then
+	    UVERSION_RELEASE=`(/sbin/uversion -r) 2>/dev/null` \
+		|| UVERSION_RELEASE=unknown
+	    UVERSION_SYSTEM=`(/sbin/uversion -s) 2>/dev/null` \
+		|| UVERSION_SYSTEM=unknown
+	    case "${UVERSION_RELEASE}:${UVERSION_SYSTEM}" in
+		Release*:EWS4800/*)
+		    suffix=`echo ${UNAME_RELEASE} | tr '[A-Z]' '[a-z]'`
+		    suffix=${suffix}r`echo ${UVERSION_RELEASE} | \
+			sed -e 's/Release//' -e 's/ Rev.*$//'`
+		    echo mips-nec-sysv${suffix}
+		    exit 0 ;;
+	    esac
+	fi;;
+    *:machten:*:*)
+	echo ${UNAME_MACHINE}-apple-machten
+	exit 0 ;;
     powerpc:JCC_BSD+:*:*)
 	echo powerpc-jcc-bsd4.4
+	exit 0 ;;
+    DS/90*:*:*:V20*)
+	echo sparc-fujitsu-uxpds
 	exit 0 ;;
 esac
 
@@ -526,12 +564,16 @@ main ()
   printf ("i860-alliant-bsd\n"); exit (0);
 #endif
 
+#if defined (__human68k__) || defined (HUMAN68K)
+  printf ("m68k-sharp-human\n"); exit (0);
+#endif
+
   exit (1);
 }
 EOF
 
-${CC-cc} dummy.c -o dummy 2>/dev/null && ./dummy && rm dummy.c dummy && exit 0
-rm -f dummy.c dummy
+${CC-cc} dummy.c -o dummy 2>/dev/null && ./dummy && rm dummy.c dummy.x dummy && exit 0
+rm -f dummy.c dummy.x dummy
 
 # Apollos put the system type in the environment.
 

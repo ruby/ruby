@@ -39,21 +39,23 @@
 #  include <ndir.h>
 # endif
 # ifdef NT
-#  include "missing/dirent.h"
+#  include "missing/dir.h"
 # endif
 #endif
 
 #include <errno.h>
 
+#ifndef NT
 char *getenv();
+#endif
 
 static VALUE cDir;
 
 static void
 free_dir(dir)
-    DIR **dir;
+    DIR *dir;
 {
-    if (dir && *dir) closedir(*dir);
+    if (dir) closedir(dir);
 }
 
 static VALUE
@@ -62,9 +64,9 @@ dir_s_open(dir_class, dirname)
     struct RString *dirname;
 {
     VALUE obj;
-    DIR *dirp, **d;
+    DIR *dirp;
 
-    Check_Type(dirname, T_STRING);
+    Check_SafeStr(dirname);
 
     dirp = opendir(dirname->ptr);
     if (dirp == NULL) {
@@ -77,23 +79,20 @@ dir_s_open(dir_class, dirname)
 	}
     }
 
-    obj = Make_Data_Struct(dir_class, DIR*, 0, free_dir, d);
-    *d = dirp;
+    obj = Data_Wrap_Struct(dir_class, 0, free_dir, dirp);
 
     return obj;
 }
 
 static void
-closeddir()
+dir_closed()
 {
     Fail("closed directory");
 }
 
 #define GetDIR(obj, dirp) {\
-    DIR **_dp;\
-    Get_Data_Struct(obj, DIR*, _dp);\
-    dirp = *_dp;\
-    if (dirp == NULL) closeddir();\
+    Data_Get_Struct(obj, DIR, dirp);\
+    if (dirp == NULL) dir_closed();\
 }
 
 static VALUE
@@ -106,7 +105,7 @@ dir_each(dir)
 
     GetDIR(dir, dirp);
     for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-	file = str_new(dp->d_name, NAMLEN(dp));
+	file = str_taint(str_new(dp->d_name, NAMLEN(dp)));
 	rb_yield(file);
     }
     return dir;
@@ -158,12 +157,12 @@ static VALUE
 dir_close(dir)
     VALUE dir;
 {
-    DIR **dirpp;
+    DIR *dirp;
 
-    Get_Data_Struct(dir, DIR*, dirpp);
-    if (*dirpp == NULL) closeddir();
-    closedir(*dirpp);
-    *dirpp = NULL;
+    Data_Get_Struct(dir, DIR, dirp);
+    if (dirp == NULL) dir_closed();
+    closedir(dirp);
+    DATA_PTR(dir) = NULL;
 
     return Qnil;
 }
@@ -177,9 +176,10 @@ dir_s_chdir(argc, argv, obj)
     VALUE path;
     char *dist = "";
 
+    rb_secure(2);
     rb_scan_args(argc, argv, "01", &path);
     if (path) {
-	Check_Type(path, T_STRING);
+	Check_SafeStr(path);
 	dist = RSTRING(path)->ptr;
     }
     else {
@@ -208,15 +208,16 @@ dir_s_getwd(dir)
     if (getwd(path) == 0) rb_sys_fail(path);
 #endif
 
-    return str_new2(path);
+    return str_taint(str_new2(path));
 }
 
 static VALUE
 dir_s_chroot(dir, path)
     VALUE dir, path;
 {
-#if !defined(DJGPP) && !defined(__CYGWIN32__)
-    Check_Type(path, T_STRING);
+#if !defined(DJGPP) && !defined(__CYGWIN32__)  && !defined(NT) && !defined(__human68k__)
+    rb_secure(2);
+    Check_SafeStr(path);
 
     if (chroot(RSTRING(path)->ptr) == -1)
 	rb_sys_fail(0);
@@ -236,6 +237,7 @@ dir_s_mkdir(argc, argv, obj)
     VALUE path, vmode;
     int mode;
 
+    rb_secure(2);
     if (rb_scan_args(argc, argv, "11", &path, &vmode) == 2) {
 	mode = NUM2INT(vmode);
     }
@@ -243,9 +245,14 @@ dir_s_mkdir(argc, argv, obj)
 	mode = 0777;
     }
 
-    Check_Type(path, T_STRING);
+    Check_SafeStr(path);
+#ifndef NT
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
+#else
+    if (mkdir(RSTRING(path)->ptr) == -1)
+	rb_sys_fail(RSTRING(path)->ptr);
+#endif
 
     return INT2FIX(0);
 }
@@ -255,7 +262,8 @@ dir_s_rmdir(obj, dir)
     VALUE obj;
     struct RString *dir;
 {
-    Check_Type(dir, T_STRING);
+    rb_secure(2);
+    Check_SafeStr(dir);
     if (rmdir(dir->ptr) < 0)
 	rb_sys_fail(dir->ptr);
 
@@ -265,6 +273,7 @@ dir_s_rmdir(obj, dir)
 #define isdelim(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\0')
 
 char **glob_filename();
+extern char *glob_error_return;
 
 static void
 push_globs(ary, s)
@@ -277,11 +286,13 @@ push_globs(ary, s)
     if (fnames == (char**)-1) rb_sys_fail(s);
     ff = fnames;
     while (*ff) {
-	ary_push(ary, str_new2(*ff));
+	ary_push(ary, str_taint(str_new2(*ff)));
 	free(*ff);
 	ff++;
     }
-    free(fnames);
+    if (fnames != &glob_error_return) {
+        free(fnames);
+    }
 }
 
 static void
@@ -332,7 +343,7 @@ dir_s_glob(dir, str)
     int nest;
     VALUE ary;
 
-    Check_Type(str, T_STRING);
+    Check_SafeStr(str);
 
     ary = ary_new();
 

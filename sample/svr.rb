@@ -18,7 +18,7 @@ while TRUE
       socks.push(ns)
       print(s, " is accepted\n")
     else
-      if s.eof
+      if s.eof?
 	print(s, " is gone\n")
 	s.close
 	socks.delete(s)

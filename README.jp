@@ -27,22 +27,13 @@ Rubyはテキスト処理関係の能力などに優れ，perlと同じくらい強力
 
 以下の場所においてあります．
 
-  ftp://ftp.caelum.co.jp/pub/lang/ruby/
-
-** メイルで
-
-以下のアドレスに`send'というSubjectのメイルを送って下さい．
-
-  ruby-archive@caelum.co.jp
-
-本文には何を書いても構いません．折り返し，最新版のrubyが送っ
-て来ます．
+  ftp://ftp.netlab.co.jp/pub/lang/ruby/
 
 * ホームページ
 
  RubyのホームページのURLは
 
-   http://www.caelum.co.jp/~matz/ruby/
+   http://www.netlab.co.jp/ruby/jp/
 
  です．
 
@@ -51,7 +42,7 @@ Rubyはテキスト処理関係の能力などに優れ，perlと同じくらい強力
  Rubyに関わる話題のためのメイリングリストを開設しました．ア
  ドレスは
 
-   ruby-list@caelum.co.jp
+   ruby-list@netlab.co.jp
 
  です．このアドレスにメイルを送れば，自動的に登録されます．
 
@@ -133,9 +124,9 @@ UNIXであればconfigureがほとんどの差異を吸収してくれるはずで
 
     いかなる目的であれ自由です．ただし，rubyに含まれる他の作
     者によるコードは，それぞれの作者の意向による制限が加えら
-    れます．具体的にはgc.c(一部)，regex.[ch]，fnmatch.[ch]，
-    glob.c, st.[ch]とmissingディレクトリ下のファイル群が該当
-    します．
+    れます．具体的にはgc.c(一部)，util.c(一部)，regex.[ch]，
+    fnmatch.[ch]，glob.c，st.[ch]と./missingディレクトリ下の
+    ファイル群が該当します．
 
   + Rubyスクリプトの権利
 
@@ -151,7 +142,7 @@ UNIXであればconfigureがほとんどの差異を吸収してくれるはずで
 
 * 著者
 
-コメント，バグレポートその他は matz@ruby.club.or.jp まで．
+コメント，バグレポートその他は matz@netlab.co.jp まで．
 -------------------------------------------------------
 created at: Thu Aug  3 11:57:36 JST 1995
 Local variables:

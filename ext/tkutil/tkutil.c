@@ -23,13 +23,6 @@ tk_eval_cmd(argc, argv)
 }
 
 static VALUE
-tk_yield(obj)
-    VALUE obj;
-{
-    rb_yield_0(obj, obj);
-}
-
-static VALUE
 tk_s_new(argc, argv, class)
     int argc;
     VALUE *argv;
@@ -38,7 +31,7 @@ tk_s_new(argc, argv, class)
     VALUE obj = obj_alloc(class);
 
     rb_funcall2(obj, rb_intern("initialize"), argc, argv);
-    if (iterator_p()) tk_yield(obj);
+    if (iterator_p()) rb_yield_0(obj, obj);
     return obj;
 }
 

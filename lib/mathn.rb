@@ -2,7 +2,7 @@
 #   mathn.rb - 
 #   	$Release Version: 0.5 $
 #   	$Revision: 1.1 $
-#   	$Date: 1996/11/11 04:25:24 $
+#   	$Date: 1997/07/03 04:43:47 $
 #   	by Keiju ISHITSUKA(SHL Japan Inc.)
 #
 # --
@@ -12,6 +12,7 @@
 
 require "rational.rb"
 require "complex.rb"
+require "matrix.rb"
 
 class Integer
 

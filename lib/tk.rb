@@ -345,7 +345,7 @@ class TkObject<TkKernel
   def configure(slot, value)
     if value == FALSE
       value = "0"
-    elsif value.type == Proc
+    elsif value.kind_of? Proc
       value = install_cmd(value)
     end
     tk_call path, 'configure', "-#{slot}", value
@@ -357,6 +357,61 @@ class TkObject<TkKernel
 
   def bind(context, cmd=Proc.new, args=nil)
     _bind path, context, cmd, args
+  end
+
+  def tk_trace_variable(v)
+    unless v.kind_of?(TkVariable)
+      fail ArgumentError, format("requires TkVariable given %s", v.type)
+    end
+    v
+  end
+  private :tk_trace_variable
+
+  def destroy
+    tk_call 'trace', 'vdelete', @tk_vn, 'w', @var_id if @var_id
+  end
+end
+
+
+class TkVariable
+  include Tk
+  $tk_variable_id = "v00000"
+  def initialize(val="")
+    @id = $tk_variable_id
+    $tk_variable_id = $tk_variable_id.succ
+    tk_call(format('global %s; set %s', @id, @id), val)
+  end
+
+  def id
+    @id
+  end
+
+  def value
+    tk_call(format('global %s; set', @id), @id)
+  end
+
+  def value=(val)
+    tk_call(format('global %s; set %s', @id, @id), val)
+  end
+
+  def to_i
+    Integer(number(value))
+  end
+
+  def to_f
+    Float(number(value))
+  end
+
+  def to_s
+    String(string(value))
+  end
+
+  def inspect
+    format "<TkVariable: %s>", @id
+  end
+
+  def to_a
+    list(value)
   end
 end
 
@@ -389,6 +444,36 @@ class TkWindow<TkObject
   def unpack(keys = nil)
     tk_call 'pack', 'forget', epath
     self
+  end
+
+  def place(keys = nil)
+    tk_call 'place', epath, *hash_kv(keys)
+    self
+  end
+
+  def unplace(keys = nil)
+    tk_call 'place', 'forget', epath, *hash_kv(keys)
+    self
+  end
+  alias place_forget unplace
+
+  def place_config(keys)
+    tk_call "place", 'configure', epath, *hash_kv(keys)
+  end
+
+  def place_info()
+    ilist = list(tk_call('place', 'info', epath))
+    info = {}
+    while key = ilist.shift
+      info[key[1,-1]] = ilist.shift
+    end
+    return info
+  end
+
+  def place_slaves()
+    list(tk_call('place', 'slaves', epath)).collect { |w|
+      window(w)
+    }
   end
 
   def focus
@@ -426,7 +511,7 @@ class TkWindow<TkObject
     self
   end
 
-  def command(cmd)
+  def command(cmd=Proc.new)
     configure_cmd 'command', cmd
   end
 
@@ -443,6 +528,7 @@ class TkWindow<TkObject
       end
     end
     $tk_window_list[path] = nil
+    super
   end
 end
 
@@ -486,14 +572,7 @@ class TkLabel<TkWindow
     tk_call 'label', @path
   end
   def textvariable(v)
-    v = v.id2name unless v.kind_of? String
-    vn = @path + v
-    vset = format("global {%s}; set {%s} %%s", vn, vn)
-    tk_write vset, eval(v).inspect
-    trace_var v, proc{|val|
-      tk_write vset, val.inspect
-    }
-    configure 'textvariable', vn
+    configure 'textvariable', tk_trace_variable(v)
   end
 end
 
@@ -520,26 +599,7 @@ class TkRadioButton<TkButton
     tk_send 'select'
   end
   def variable(v)
-    v = v.id2name unless v.kind_of? String
-    if v =~ /^\$/
-      v = $'
-    else
-      fail ArgumentError, "variable must be global(%s)", v
-    end
-    vn = 'btns_selected_' + v
-    trace_var v, proc{|val|
-      tk_write 'global %s; set %s %s', vn, val
-    }
-    @var_id = install_cmd(proc{|name1,|
-      val = tk_call(format('global %s; set', name1), name1)
-      eval(format("%s = '%s'", v.id2name, val))
-    })
-    tk_call 'trace', 'variable', vn, 'w', @var_id
-    configure 'variable', vn
-  end
-  def destroy
-    tk_call 'trace vdelete', vn, 'w', @var_id
-    super
+    configure 'variable', tk_trace_variable(v)
   end
 end
 
@@ -678,7 +738,7 @@ class TkMenu<TkWindow
     tk_send 'activate', index
   end
   def add(type, keys=nil)
-    tk_send 'add', type, *kv_hash(keys)
+    tk_send 'add', type, *hash_kv(keys)
   end
   def index(index)
     tk_send 'index', index
@@ -686,8 +746,8 @@ class TkMenu<TkWindow
   def invoke
     tk_send 'invoke'
   end
-  def insert(index, type, keys=nil)
-    tk_send 'add', index, type, *kv_hash(keys)
+  def insert(index, type, *keys)
+    tk_send 'add', index, type, *hash_kv(keys)
   end
   def post(x, y)
     tk_send 'post', x, y
@@ -695,7 +755,7 @@ class TkMenu<TkWindow
   def postcascade(index)
     tk_send 'postcascade', index
   end
-  def postcommand(cmd)
+  def postcommand(cmd=Proc.new)
     configure_cmd 'postcommand', cmd
   end
   def menutype(index)

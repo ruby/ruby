@@ -25,11 +25,13 @@ Bitmap = TkcBitmap
 Line = TkcLine
 Oval = TkcOval
 Polygon = TkcPolygon
+Rectangle = TkcRectangle
 TextItem = TkcText
 WindowItem = TkcWindow
 Selection = TkSelection
 Winfo = TkWinfo
 Pack = TkPack
+Variable = TkVariable
 
 def Mainloop
   Tk.mainloop

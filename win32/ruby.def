@@ -1,0 +1,6 @@
+DESCRIPTION 'win32 ruby.dll'
+
+EXPORTS
+	ruby_init
+	ruby_run
+	ruby_options

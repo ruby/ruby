@@ -303,11 +303,24 @@ long re_syntax_options = DEFAULT_MBCTYPE;
 
 /* Macros for re_compile_pattern, which is found below these definitions.  */
 
-/* Fetch the next character in the uncompiled pattern. */
+/* Fetch the next character in the uncompiled pattern---translating it 
+   if necessary.  Also cast from a signed character in the constant
+   string passed to us by the user to an unsigned char that we can use
+   as an array index (in, e.g., `translate').  */
 #define PATFETCH(c)							\
- {if (p == pend) goto end_of_pattern;					\
-  c = *(unsigned char *) p++; }
+  do {if (p == pend) goto end_of_pattern;				\
+    c = (unsigned char) *p++; 						\
+    if (translate) c = (unsigned char)translate[c];			\
+  } while (0)
 
+/* Fetch the next character in the uncompiled pattern, with no
+   translation.  */
+#define PATFETCH_RAW(c)							\
+  do {if (p == pend) goto end_of_pattern;				\
+    c = (unsigned char) *p++; 						\
+  } while (0)
+
+/* Go backwards one character in the pattern.  */
 #define PATUNFETCH p--
 
 
@@ -467,7 +480,7 @@ set_list_bits(c1, c2, b)
     memmove(&b[(beg + 1)*4], &b[end*4], (mbc_size - end)*4);
   STORE_MBC(&b[beg*4 + 0], c1);
   STORE_MBC(&b[beg*4 + 2], c2);
-  mbc_size += beg + 1 - end;
+  mbc_size += beg - end + 1;
   STORE_NUMBER(&b[-2], mbc_size);
 }
 
@@ -477,32 +490,44 @@ is_in_list(c, b)
     const unsigned char *b;
 {
     unsigned short size;
+    unsigned short i, j;
+    int result = 0;
 
     size = *b++;
-    if ((int)c < 1 << BYTEWIDTH) {
+    if ((int)c < 1<<BYTEWIDTH) {
 	if ((int)c / BYTEWIDTH < (int)size && b[c / BYTEWIDTH] & 1 << c % BYTEWIDTH) {
 	    return 1;
 	}
     }
-    else {
-	unsigned short i, j;
+    b += size + 2;
+    size = EXTRACT_UNSIGNED(&b[-2]);
+    if (size == 0) return 0;
 
-	b += size + 2;
-	size = EXTRACT_UNSIGNED(&b[-2]);
-
-	for (i = 0, j = size; i < j; ) {
-	    unsigned short k = (unsigned short)(i + j) >> 1;
-
-	    if (c > EXTRACT_MBC(&b[k*4 + 2]))
-		i = k + 1;
-	    else
-		j = k;
+    if (b[(size-1)*4] == 0xff) {
+	i = c;
+	if ((int)c >= 1<<BYTEWIDTH) {
+	    i = i>>BYTEWIDTH;
 	}
-	if (i < size && EXTRACT_MBC(&b[i*4]) <= c
-	    && ((unsigned char)c != '\n' && (unsigned char)c != '\0'))
-	    return 1;
+	while (size>0 && b[size*4-2] == 0xff) {
+	    size--;
+	    if (b[size*4+1] <= i && i <= b[size*4+3]) {
+		result = 2;
+		break;
+	    }
+	}
     }
-    return 0;
+    for (i = 0, j = size; i < j; ) {
+	unsigned short k = (unsigned short)(i + j) >> 1;
+
+	if (c > EXTRACT_MBC(&b[k*4+2]))
+	    i = k + 1;
+	else
+	    j = k;
+    }
+    if (i < size && EXTRACT_MBC(&b[i*4]) <= c
+	&& ((unsigned char)c != '\n' && (unsigned char)c != '\0'))
+	return 1;
+    return result;
 }
 
 /* re_compile_pattern takes a regular-expression string
@@ -592,6 +617,9 @@ re_compile_pattern(pattern, size, bufp)
     int regnum = 1;
     int range = 0;
 
+    /* How to translate the characters in the pattern.  */
+    char *translate = bufp->translate;
+
     bufp->fastmap_accurate = 0;
 
     /* Initialize the syntax table.  */
@@ -644,8 +672,11 @@ re_compile_pattern(pattern, size, bufp)
 	    /* $ means succeed if at end of line, but only in special contexts.
 	      If validly in the middle of a pattern, it is a normal character. */
 
+#if 0
+	    /* not needed for perl4 compatible */
             if ((re_syntax_options & RE_CONTEXTUAL_INVALID_OPS) && p1 != pend)
 	      goto invalid_pattern;
+#endif
 	    if (p1 == pend || *p1 == '\n'
 		|| (re_syntax_options & RE_CONTEXT_INDEP_OPS)
 		|| (re_syntax_options & RE_NO_BK_PARENS
@@ -678,7 +709,9 @@ re_compile_pattern(pattern, size, bufp)
 	      begalt = b;
 	    }
 	  else
-	    BUFPUSH(begline);
+	    {
+	      BUFPUSH(begline);
+	    }
 	  break;
 
 	case '+':
@@ -828,7 +861,7 @@ re_compile_pattern(pattern, size, bufp)
 	      }
 	      if (ismbchar(c)) {
 		PATFETCH(c1);
-		c = c << 8 | c1;
+		c = c << BYTEWIDTH | c1;
 	      }
 
 	      /* \ escapes characters when inside [...].  */
@@ -843,11 +876,12 @@ re_compile_pattern(pattern, size, bufp)
 		      continue;
 
 		    case 'W':
-		      if (re_syntax_options & RE_MBCTYPE_MASK)
-			  goto invalid_char;
 		      for (c = 0; c < (1 << BYTEWIDTH); c++)
 		          if (SYNTAX(c) != Sword)
 			      SET_LIST_BIT(c);
+		      if (re_syntax_options & RE_MBCTYPE_MASK) {
+			  set_list_bits(0x8000, 0xffff, (unsigned char*)b);
+		      }
 		      last = -1;
 		      continue;
 
@@ -859,11 +893,12 @@ re_compile_pattern(pattern, size, bufp)
 		      continue;
 
 		    case 'S':
-		      if (re_syntax_options & RE_MBCTYPE_MASK)
-			  goto invalid_char;
 		      for (c = 0; c < 256; c++)
 			  if (!isspace(c))
 			      SET_LIST_BIT(c);
+		      if (re_syntax_options & RE_MBCTYPE_MASK) {
+			  set_list_bits(0x8000, 0xffff, (unsigned char*)b);
+		      }
 		      last = -1;
 		      continue;
 
@@ -874,19 +909,19 @@ re_compile_pattern(pattern, size, bufp)
 		      continue;
 
 		    case 'D':
-		      if (re_syntax_options & RE_MBCTYPE_MASK)
-			  goto invalid_char;
-		      for (c = 0; c < '0'; c++)
-			  SET_LIST_BIT(c);
-		      for (c = '9' + 1; c < 256; c++)
-			  SET_LIST_BIT(c);
+		      for (c = 0; c < 256; c++)
+			  if (!isdigit(c))
+			      SET_LIST_BIT(c);
+		      if (re_syntax_options & RE_MBCTYPE_MASK) {
+			  set_list_bits(0x8000, 0xffff, (unsigned char*)b);
+		      }
 		      last = -1;
 		      continue;
 
 		    case 'x':
 		      c = scan_hex(p, 2, &numlen);
-		      if ((re_syntax_options & RE_MBCTYPE_MASK) && (c > 0x7f))
-			  goto invalid_char;
+		      if ((re_syntax_options & RE_MBCTYPE_MASK) && c > 0x7f)
+			  c = 0xff00 | c;
 		      p += numlen;
 		      break;
 
@@ -894,8 +929,8 @@ re_compile_pattern(pattern, size, bufp)
 		    case '5': case '6': case '7': case '8': case '9':
 		      PATUNFETCH;
 		      c = scan_oct(p, 3, &numlen);
-		      if ((re_syntax_options & RE_MBCTYPE_MASK) && (c > 0x7f))
-			  goto invalid_char;
+		      if ((re_syntax_options & RE_MBCTYPE_MASK) && ismbchar(c))
+			  c = 0xff00 | c;
 		      p += numlen;
 		      break;
 
@@ -922,8 +957,9 @@ re_compile_pattern(pattern, size, bufp)
 		      for (;last<=c;last++)
 			  SET_LIST_BIT(last);
 		  }
-		  else
+		  else {
 		      set_list_bits(last, c, (unsigned char*)b);
+		  }
 	      }
               else if (p[0] == '-' && p[1] != ']') {
 		  last = c;
@@ -966,13 +1002,17 @@ re_compile_pattern(pattern, size, bufp)
 	    goto handle_bar;
 
 	case '|':
+#if 0
+	  /* not needed for perl4 compatible */
 	  if ((re_syntax_options & RE_CONTEXTUAL_INVALID_OPS)
               && (! laststart  ||  p == pend))
 	    goto invalid_pattern;
-          else if (! (re_syntax_options & RE_NO_BK_VBAR))
+	  else 
+          if (! (re_syntax_options & RE_NO_BK_VBAR))
 	    goto normal_char;
 	  else
-	    goto handle_bar;
+#endif
+	  goto handle_bar;
 
 	case '{':
            if (! ((re_syntax_options & RE_NO_BK_CURLY_BRACES)
@@ -983,7 +1023,10 @@ re_compile_pattern(pattern, size, bufp)
 
         case '\\':
 	  if (p == pend) goto invalid_pattern;
-	  PATFETCH(c);
+          /* Do not translate the character after the \, so that we can
+             distinguish, e.g., \B from \b, even if we normally would
+             translate, e.g., B to b.  */
+	  PATFETCH_RAW(c);
 	  switch (c)
 	    {
 	    case '(':
@@ -994,6 +1037,7 @@ re_compile_pattern(pattern, size, bufp)
 
               /* Laststart should point to the start_memory that we are about
                  to push (unless the pattern has RE_NREGS or more ('s).  */
+	      /* obsolete: now RE_NREGS is just a default register size. */
               *stackp++ = b - bufp->buffer;    
 	      BUFPUSH(start_memory);
 	      BUFPUSH(regnum);
@@ -1003,6 +1047,8 @@ re_compile_pattern(pattern, size, bufp)
 	      fixup_jump = 0;
 	      laststart = 0;
 	      begalt = b;
+	      /* too many ()'s to fit in a byte.  */
+	      if (regnum >= (1<<BYTEWIDTH)) goto too_big;
 	      break;
 
 	    case ')':
@@ -1077,6 +1123,8 @@ re_compile_pattern(pattern, size, bufp)
               if (! (*laststart == anychar
 		     || *laststart == charset
 		     || *laststart == charset_not
+		     || *laststart == wordchar
+		     || *laststart == notwordchar
 		     || *laststart == start_memory
 		     || (*laststart == exactn
 			 && (laststart[1] == 1
@@ -1235,7 +1283,7 @@ re_compile_pattern(pattern, size, bufp)
 		  b[-1]--; 
 	      if (b[-1] != (1 << BYTEWIDTH) / BYTEWIDTH)
 		  memmove(&b[b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
-		    2 + EXTRACT_UNSIGNED (&b[(1 << BYTEWIDTH) / BYTEWIDTH])*4);
+		    2 + EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH])*4);
 	      b += b[-1] + 2 + EXTRACT_UNSIGNED(&b[b[-1]])*4;
 	      break;
 
@@ -1261,9 +1309,9 @@ re_compile_pattern(pattern, size, bufp)
 	    case 'x':
 	      c1 = 0;
 	      c = scan_hex(p, 2, &numlen);
-	      if ((re_syntax_options & RE_MBCTYPE_MASK) && (c > 0x7f))
-		  goto invalid_char;
 	      p += numlen;
+	      if ((re_syntax_options & RE_MBCTYPE_MASK) && c > 0x7f)
+		  c1 = 0xff;
 	      goto numeric_char;
 
 	      /* octal */
@@ -1271,6 +1319,8 @@ re_compile_pattern(pattern, size, bufp)
 	      c1 = 0;
 	      c = scan_oct(p, 3, &numlen);
 	      p += numlen;
+	      if ((re_syntax_options & RE_MBCTYPE_MASK) && c > 0x7f)
+		  c1 = 0xff;
 	      goto numeric_char;
 
 	      /* back-ref or octal */
@@ -1285,19 +1335,16 @@ re_compile_pattern(pattern, size, bufp)
 
 		  c1 = 0;
 		  GET_UNSIGNED_NUMBER(c1);
-		  PATUNFETCH;
+		  if (p < pend) PATUNFETCH;
 
 		  if (c1 >= regnum) {
-		      if (c1 < RE_NREGS)
-			  goto invalid_pattern;
-
 		      /* need to get octal */
 		      p = p_save;
 		      c = scan_oct(p_save, 3, &numlen);
-		      if ((re_syntax_options & RE_MBCTYPE_MASK) && (c > 0x7f))
-			  goto invalid_char;
 		      p = p_save + numlen;
 		      c1 = 0;
+		      if ((re_syntax_options & RE_MBCTYPE_MASK) && c > 0x7f)
+			  c1 = 0xff;
 		      goto numeric_char;
 		  }
 	      }
@@ -1331,6 +1378,9 @@ re_compile_pattern(pattern, size, bufp)
 	  if (ismbchar(c)) {
 	    c1 = c;
 	    PATFETCH(c);
+	  }
+	  else if (c > 0x7f) {
+	      c1 = 0xff;
 	  }
 	numeric_char:
 	  if (!pending_exact || pending_exact + *pending_exact + 1 != b
@@ -1541,7 +1591,13 @@ re_compile_fastmap(bufp)
 #endif
 	{
 	case exactn:
-	  if (translate)
+	  if (p[1] == 0xff) {
+	      if (translate)
+		fastmap[translate[p[2]]] = 2;
+	      else
+		fastmap[p[2]] = 2;
+	  }
+	  else if (translate)
 	    fastmap[translate[p[1]]] = 1;
 	  else
 	    fastmap[p[1]] = 1;
@@ -1558,7 +1614,7 @@ re_compile_fastmap(bufp)
 	  else
 	    fastmap['\n'] = 1;
 
-	  if (bufp->can_be_null != 1)
+	  if (bufp->can_be_null == 0)
 	    bufp->can_be_null = 2;
 	  break;
 
@@ -1583,7 +1639,7 @@ re_compile_fastmap(bufp)
 	    continue;
           p++;
           EXTRACT_NUMBER_AND_INCR(j, p);
-          p += j;		
+          p += j;	
           if (stackp != stackb && *stackp == p)
             stackp--;
           continue;
@@ -1640,8 +1696,10 @@ re_compile_fastmap(bufp)
 	  break;
 
 	case notwordchar:
-	  for (j = 0; j < (1 << BYTEWIDTH); j++)
+	  for (j = 0; j < 0x80; j++)
 	    if (SYNTAX(j) != Sword)
+	      fastmap[j] = 1;
+	  for (j = 0x80; j < (1 << BYTEWIDTH); j++)
 	      fastmap[j] = 1;
 	  break;
 
@@ -1658,19 +1716,30 @@ re_compile_fastmap(bufp)
 	      }
 	  {
 	    unsigned short size;
-	    unsigned char c, end;
+	    unsigned c, end;
 
 	    p += p[-1] + 2;
 	    size = EXTRACT_UNSIGNED(&p[-2]);
-	    for (j = 0; j < (int)size; j++)
-	      /* set bits for 1st bytes of multi-byte chars.  */
-	      for (c = (unsigned char)p[j*4],
-		   end = (unsigned char)p[j*4 + 2];
-		   c <= end; c++)
-		/* NOTE: Charset for multi-byte chars might contain
-		         single-byte chars.  We must reject them. */
-		if (ismbchar(c))
-		  fastmap[c] = 1;
+	    for (j = 0; j < (int)size; j++) {
+	      if ((unsigned char)p[j*4] == 0xff) {
+		for (c = (unsigned char)p[j*4+1],
+		    end = (unsigned char)p[j*4+3];
+		     c <= end; c++) {
+		  fastmap[c] = 2;
+		}
+	      }
+	      else {
+		/* set bits for 1st bytes of multi-byte chars.  */
+		for (c = (unsigned char)p[j*4],
+		     end = (unsigned char)p[j*4 + 2];
+		     c <= end; c++) {
+		  /* NOTE: Charset for multi-byte chars might contain
+		     single-byte chars.  We must reject them. */
+		  if (ismbchar(c))
+		    fastmap[c] = 1;
+		}
+	      }
+	    }
 	  }
 	  break;
 
@@ -1702,12 +1771,23 @@ re_compile_fastmap(bufp)
 
 	    p += p[-1] + 2;
 	    size = EXTRACT_UNSIGNED(&p[-2]);
-	    c = 0x80;
-	    for (j = 0; j < (int)size; j++) {
-	      for (beg = (unsigned char)p[j*4 + 0]; c < beg; c++)
-		if (ismbchar(c))
-		  fastmap[c] = 1;
-	      c = (unsigned char)p[j*4 + 2] + 1;
+	    if (size == 0) {
+		for (j = 0x80; j < (1 << BYTEWIDTH); j++)
+		    if (ismbchar(j))
+			fastmap[j] = 1;
+	    }
+	    for (j = 0,c = 0x80;j < (int)size; j++) {
+	      if ((unsigned char)p[j*4] == 0xff) {
+	        for (beg = (unsigned char)p[j*4+1]; c < beg; c++)
+		  fastmap[c] = 2;
+	        c = (unsigned char)p[j*4+3] + 1;
+	      }
+	      else {
+	        for (beg = (unsigned char)p[j*4 + 0]; c < beg; c++)
+		  if (ismbchar(c))
+		    fastmap[c] = 1;
+	        c = (unsigned char)p[j*4 + 2] + 1;
+	      }
 	    }
 	  }
 	  break;
@@ -1720,7 +1800,7 @@ re_compile_fastmap(bufp)
          characters of one path of the pattern.  We need not follow this
          path any farther.  Instead, look at the next alternative
          remembered in the stack.  */
-   if (stackp != stackb)
+      if (stackp != stackb)
 	p = *stackp--;
       else
 	break;
@@ -1752,7 +1832,7 @@ re_search(bufp, string, size, startpos, range, regs)
 {
   register char *fastmap = bufp->fastmap;
   register unsigned char *translate = (unsigned char *) bufp->translate;
-  int val;
+  int val, anchor = 0;
 
   /* Check for out-of-range starting position.  */
   if (startpos < 0  ||  startpos > size)
@@ -1763,15 +1843,19 @@ re_search(bufp, string, size, startpos, range, regs)
       re_compile_fastmap (bufp);
   }
 
-  while (1)
-    { 
+  if (bufp->used > 0 && (enum regexpcode)bufp->buffer[0] == begline)
+      anchor = 1;
+
+  for (;;)
+    {
       /* If a fastmap is supplied, skip quickly over characters that
          cannot possibly be the start of a match.  Note, however, that
          if the pattern can possibly match the null string, we must
          test it at each starting point so that we take the first null
          string we get.  */
 
-      if (fastmap && startpos < size && bufp->can_be_null != 1)
+      if (fastmap && startpos < size
+	  && bufp->can_be_null != 1 && !(anchor && startpos == 0))
 	{
 	  if (range > 0)	/* Searching forwards.  */
 	    {
@@ -1787,8 +1871,10 @@ re_search(bufp, string, size, startpos, range, regs)
 		if (ismbchar(c)) {
 		  if (fastmap[c])
 		    break;
-		  p++;
+		  c = *p++;
 		  range--;
+		  if (fastmap[c] == 2)
+		    break;
 		}
 		else 
 		  if (fastmap[translate ? translate[c] : c])
@@ -1797,7 +1883,7 @@ re_search(bufp, string, size, startpos, range, regs)
 	      }
 	      startpos += irange - range;
 	    }
-	  else				/* Searching backwards.  */
+	  else			/* Searching backwards.  */
 	    {
 	      register unsigned char c;
 
@@ -1808,10 +1894,14 @@ re_search(bufp, string, size, startpos, range, regs)
 	    }
 	}
 
-      if (range >= 0 && startpos == size && fastmap) {
-	  if (bufp->can_be_null == 0 || (bufp->can_be_null == 2 && size > 0))
-	      return -1;
-      }
+      if (anchor && startpos > 0 && startpos < size
+	  && string[startpos-1] != '\n') goto advance;
+
+      if (fastmap && startpos == size && range >= 0
+	  && (bufp->can_be_null == 0 ||
+	      (bufp->can_be_null == 2 && size > 0
+	       && string[startpos-1] == '\n')))
+	return -1;
 
       val = re_match(bufp, string, size, startpos, regs);
       if (val >= 0)
@@ -2333,21 +2423,24 @@ re_match(bufp, string_arg, size, pos, regs)
 	case charset_not:
 	  {
 	    int not;	    /* Nonzero for charset_not.  */
+	    int half;	    /* 2 if need to match latter half of mbc */
 	    int c;
 
 	    PREFETCH;
 	    c = (unsigned char)*d;
 	    if (ismbchar(c)) {
-	      c <<= 8;
-	      if (d + 1 != dend)
+	      if (d + 1 != dend) {
+	        c <<= 8;
 		c |= (unsigned char)d[1];
+	      }
 	    }
 	    else if (translate)
 	      c = (unsigned char)translate[c];
 
-	    not = is_in_list(c, p);
-	    if (*(p - 1) == (unsigned char)charset_not)
+	    half = not = is_in_list(c, p);
+	    if (*(p - 1) == (unsigned char)charset_not) {
 		not = !not;
+	    }
 
 	    p += 1 + *p + 2 + EXTRACT_UNSIGNED(&p[1 + *p])*4;
 
@@ -2355,7 +2448,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	    SET_REGS_MATCHED;
 
             d++;
-	    if (d != dend && c >= 1 << BYTEWIDTH)
+	    if (half != 2 && d != dend && c >= 1 << BYTEWIDTH)
 		d++;
 	    break;
 	  }
@@ -2547,6 +2640,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  PREFETCH;
 	  if (IS_A_LETTER(d))
             goto fail;
+	  if (ismbchar(*d) && d + 1 != dend)
+	    d++;
 	  d++;
           SET_REGS_MATCHED;
 	  break;
@@ -2565,11 +2660,18 @@ re_match(bufp, string_arg, size, pos, regs)
 
 		  PREFETCH;
 		  c = *d++;
-		  if (ismbchar(c)) {
+		  if (*p == 0xff) {
+		    p++;  
+		    if (!--mcnt
+			|| d == dend
+			|| (unsigned char)*d++ != (unsigned char)*p++)
+		      goto fail;
+		    continue;
+		  }
+		  else if (ismbchar(c)) {
 		    if (c != (unsigned char)*p++
-			|| !--mcnt	/* パターンが正しくコンパイルさ
-					   れている限り, このチェックは
-					   冗長だが念のため.  */
+			|| !--mcnt	/* redundant check if pattern was
+					   compiled properly. */
 			|| d == dend
 			|| (unsigned char)*d++ != (unsigned char)*p++)
 		      goto fail;
@@ -2587,6 +2689,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	      do
 		{
 		  PREFETCH;
+		  if (*p == 0xff) {p++; mcnt--;}
 		  if (*d++ != *p++) goto fail;
 		}
 	      while (--mcnt);

@@ -248,6 +248,10 @@ struct re_registers
 
 
 
+#ifdef NeXT
+#define re_match rre_match
+#endif
+
 #ifdef __STDC__
 
 extern char *re_compile_pattern (char *, size_t, struct re_pattern_buffer *);

@@ -31,9 +31,8 @@ typedef struct OpenFile {
 #define FMODE_READABLE  1
 #define FMODE_WRITABLE  2
 #define FMODE_READWRITE 3
-#define FMODE_SYNC      4
-
-void io_wrong_type();
+#define FMODE_BINMODE   4
+#define FMODE_SYNC      8
 
 #define GetOpenFile(obj,fp) ((fp) = RFILE(obj)->fptr)
 
@@ -46,6 +45,8 @@ void io_wrong_type();
     fp->path = NULL;\
     fp->finalize = 0;\
 } while (0)
+
+#define GetWriteFile(fptr) (((fptr)->f2) ? (fptr)->f2 : (fptr)->f)
 
 FILE *rb_fopen();
 

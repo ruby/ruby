@@ -159,7 +159,7 @@ static struct types {
 extern void TypeError();
 
 void
-Check_Type(x, t)
+rb_check_type(x, t)
     VALUE x;
     int t;
 {
@@ -191,12 +191,13 @@ VALUE eNameError;
 VALUE eIndexError;
 VALUE eNotImpError;
 VALUE eLoadError;
+VALUE eSecurityError;
 
 VALUE eSystemCallError;
 VALUE mErrno;
 
 VALUE
-exc_new0(etype, ptr, len)
+exc_new(etype, ptr, len)
     VALUE etype;
     char *ptr;
     UINT len;
@@ -215,15 +216,15 @@ exc_new0(etype, ptr, len)
 }
 
 VALUE
-exc_new(etype, s)
+exc_new2(etype, s)
     VALUE etype;
     char *s;
 {
-    return exc_new0(etype, s, strlen(s));
+    return exc_new(etype, s, strlen(s));
 }
 
 VALUE
-exc_new2(etype, str)
+exc_new3(etype, str)
     VALUE etype;
     struct RString *str;
 {
@@ -240,21 +241,70 @@ exc_s_new(argc, argv, etype)
     VALUE arg;
 
     if (rb_scan_args(argc, argv, "01", &arg) == 0) {
-	return exc_new0(etype, 0, 0);
+	return exc_new(etype, 0, 0);
     }
     Check_Type(arg, T_STRING);
-    return exc_new2(etype, arg);
+    return exc_new3(etype, arg);
+}
+
+static VALUE
+exc_inspect(exc)
+    VALUE exc;
+{
+    struct RString *classpath = RSTRING(rb_class_path(CLASS_OF(exc)));
+    VALUE str = str_new(classpath->ptr, classpath->len);
+
+    str_cat(str, ":", 1);
+    if (RSTRING(exc)->len == 0) {
+	str_cat(str, "\"\"", 2);
+    }
+    str_cat(str, RSTRING(exc)->ptr, RSTRING(exc)->len);
+    return str;
+}
+
+static VALUE
+exception(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    void ArgError();
+    VALUE v = Qnil;
+    int i;
+    ID id;
+
+    if (argc == 0) {
+	ArgError("wrong # of arguments");
+    }
+    for (i=0; i<argc; i++) {	/* argument check */
+	id = rb_to_id(argv[i]);
+	if (!rb_id2name(id)) {
+	    ArgError("argument needs to be symbol or string");
+	}
+	if (!rb_is_const_id(id)) {
+	    ArgError("identifier %s needs to be constant", rb_id2name(id));
+	}
+    }
+    for (i=0; i<argc; i++) {
+	v = rb_define_class(rb_id2name(rb_to_id(argv[i])), eException);
+    }
+    return v;
 }
 
 static VALUE *syserr_list;
+
+#ifndef NT
+extern int sys_nerr;
+#endif
 
 static void
 set_syserr(i, name)
     int i;
     char *name;
 {
-    syserr_list[i] = rb_define_class_under(mErrno, name, eSystemCallError);
-    rb_global_variable(&syserr_list[i]);
+    if (i <= sys_nerr) {
+	syserr_list[i] = rb_define_class_under(mErrno, name, eSystemCallError);
+	rb_global_variable(&syserr_list[i]);
+    }
 }
 
 static void init_syserr();
@@ -264,6 +314,7 @@ Init_Exception()
 {
     eGlobalExit  = rb_define_class("GlobalExit", cString);
     rb_define_method(eGlobalExit, "new", exc_s_new, -1);
+    rb_define_method(eGlobalExit, "inspect", exc_inspect, 0);
 
     eSystemExit  = rb_define_class("SystemExit", eGlobalExit);
     eFatal  	 = rb_define_class("fatal", eGlobalExit);
@@ -279,8 +330,11 @@ Init_Exception()
     eLoadError = rb_define_class("LoadError", eException);
 
     eRuntimeError = rb_define_class("RuntimeError", eException);
+    eSecurityError = rb_define_class("SecurityError", eException);
 
     init_syserr();
+
+    rb_define_global_function("Exception", exception, -1);
 }
 
 #define RAISE_ERROR(class) {\
@@ -291,11 +345,12 @@ Init_Exception()
     vsprintf(buf, fmt, args);\
     va_end(args);\
 \
-    rb_raise(exc_new(class, buf));\
+    rb_raise(exc_new2(class, buf));\
 }
 
 void
 Raise(exc, fmt, va_alist)
+    VALUE exc;
     char *fmt;
     va_dcl
 {
@@ -371,14 +426,16 @@ Fatal(fmt, va_alist)
     va_end(args);
 
     rb_in_eval = 0;
-    rb_fatal(exc_new(eFatal, buf));
+    rb_fatal(exc_new2(eFatal, buf));
 }
 
 void
 rb_sys_fail(mesg)
     char *mesg;
 {
+#ifndef NT
     char *strerror();
+#endif
     char buf[BUFSIZ];
     extern int errno;
     int n = errno;
@@ -389,16 +446,14 @@ rb_sys_fail(mesg)
 	sprintf(buf, "%s", strerror(errno));
 
     errno = 0;
-    if (!syserr_list[n]) {
+    if (n > sys_nerr || !syserr_list[n]) {
 	char name[6];
 
 	sprintf(name, "E%03d", n);
 	set_syserr(n, name);
     }
-    rb_raise(exc_new(syserr_list[n], buf));
+    rb_raise(exc_new2(syserr_list[n], buf));
 }
-
-extern int sys_nerr;
 
 static void
 init_syserr()

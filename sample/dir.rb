@@ -3,7 +3,7 @@
 dirp = Dir.open(".")
 for f in dirp
   $_ = f
-  if (~/^\./ || ~/~$/ || ~/\.o/)
+  unless (~/^\./ || ~/~$/ || ~/\.o/)
     print f, "\n"
   end
 end

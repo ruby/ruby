@@ -15,6 +15,95 @@
 
 static void fmt_setup();
 
+static char*
+remove_sign_bits(str, base)
+    char *str;
+    int base;
+{
+    char *s, *t, *end;
+    
+    s = t = str;
+
+    if (base == 16) {
+      x_retry:
+	switch (*t) {
+	  case 'c':
+	    *t = '8';
+	    break;
+	  case 'd':
+	    *t = '9';
+	    break;
+	  case 'e':
+	    *t = '2';
+	    break;
+	  case 'f':
+	    if (t[1] > '8') {
+		t++;
+		goto x_retry;
+	    }
+	    *t = '1';
+	    break;
+	  case '1':
+	  case '3':
+	  case '7':
+	    if (t[1] > '8') {
+		t++;
+		goto x_retry;
+	    }
+	    break;
+	}
+	switch (*t) {
+	  case '1': *t = 'f'; break;
+	  case '2': *t = 'e'; break;
+	  case '3': *t = 'f'; break;
+	  case '4': *t = 'c'; break;
+	  case '5': *t = 'd'; break;
+	  case '6': *t = 'e'; break;
+	  case '7': *t = 'f'; break;
+	}
+    }
+    else if (base == 8) {
+      o_retry:
+	switch (*t) {
+	  case '6':
+	    *t = '2';
+	    break;
+	  case '7':
+	    if (t[1] > '3') {
+		t++;
+		goto o_retry;
+	    }
+	    *t = '1';
+	    break;
+	  case '1':
+	  case '3':
+	    if (t[1] > '3') {
+		t++;
+		goto o_retry;
+	    }
+	    break;
+	}
+	switch (*t) {
+	  case '1': *t = '7'; break;
+	  case '2': *t = '6'; break;
+	  case '3': *t = '7'; break;
+	}
+    }
+    else if (base == 2) {
+	while (t<end && *t == '1') t++;
+	t--;
+    }
+    while (*t) *s++ = *t++;
+    *s = '\0';
+
+    return str;
+}
+
+double big2dbl();
+#ifndef atof
+double atof();
+#endif
+
 VALUE
 f_sprintf(argc, argv)
     int argc;
@@ -221,10 +310,12 @@ f_sprintf(argc, argv)
 	  case 'B':
 	  case 'o':
 	  case 'x':
+	  case 'u':
 	    {
-		VALUE val = GETARG();
-		char fbuf[32], nbuf[64], *s, *t, *end;
+		volatile VALUE val = GETARG();
+		char fbuf[32], nbuf[64], *s, *t;
 		int v, base, bignum = 0;
+		int len, slen, pos;
 
 	      bin_retry:
 		switch (TYPE(val)) {
@@ -246,93 +337,125 @@ f_sprintf(argc, argv)
 		    break;
 		}
 
+		if (*p == 'x') base = 16;
+		else if (*p == 'o') base = 8;
+		else if (*p == 'u') base = 10;
+		else if (*p == 'b' || *p == 'B') base = 2;
 		if (!bignum) {
 		    if (*p == 'b' || *p == 'B') {
 			val = int2big(v);
 		    }
 		    else {
-			int len;
+			s = nbuf;
+			if (v < 0) {
+			    strcpy(s, "..");
+			    s += 2;
+			    bignum = 2;
+			}
+			sprintf(fbuf, "%%%c", *p);
+			sprintf(s, fbuf, v);
+			if (v < 0) {
+			    char d = 0;
 
-			fmt_setup(fbuf, *p, flags, width, prec);
-			sprintf(nbuf, fbuf, v);
-			len = strlen(nbuf);
-
-			if (flags&FPREC) {
-			    CHECK(prec);
+			    remove_sign_bits(s, base);
+			    switch (base) {
+			      case 16:
+				d = 'f'; break;
+			      case 8:
+				d = '7'; break;
+			    }
+			    if (d && *s != d) {
+				memmove(s+1, s, strlen(s)+1);
+				*s = d;
+			    }
 			}
-			else if ((flags&FWIDTH) && width > len) {
-			    CHECK(width);
-			}
-			else {
-			    CHECK(len);
-			}
-			memcpy(&buf[blen], nbuf, len);
-			blen += len;
-			break;
+			s = nbuf;
+			goto unsigned_format;
 		    }
 		}
-		if (*p == 'x') base = 16;
-		else if (*p == 'o') base = 8;
-		else if (*p == 'b' || *p == 'B') base = 2;
 		if (*p != 'B' && !RBIGNUM(val)->sign) {
 		    val = big_clone(val);
 		    big_2comp(val);
 		}
 		val = big2str(val, base);
-		fmt_setup(fbuf, 's', flags, width, prec);
-
-		s = t = RSTRING(val)->ptr;
-		end = s + RSTRING(val)->len;
+		s = RSTRING(val)->ptr;
 		if (*s == '-' && *p != 'B') {
-		    s++; t++;
-		    if (base == 16) {
-			while (t<end && *t == 'f') t++;
-			if (*t == 'e') {
-			    *t = '2';
-			}
-			else if (*t == 'd') {
-			    *t = '5';
-			}
-			else if (*t == 'c') {
-			    *t = '4';
-			}
-			else if (*t < '8') {
-			    *--t = '1';
-			}
+		    remove_sign_bits(++s, base);
+		    val = str_new(0, 3+strlen(s));
+		    t = RSTRING(val)->ptr;
+		    strcpy(t, "..");
+		    t += 2;
+		    switch (base) {
+		      case 16:
+			if (s[0] != 'f') strcpy(t++, "f"); break;
+		      case 8:
+			if (s[0] != '7') strcpy(t++, "7"); break;
 		    }
-		    if (base == 8) {
-			while (t<end && *t == '7') t++;
-			if (*t == '6') {
-			    *t = '2';
-			}
-			else if (*t < '4') {
-			    *--t = '1';
-			}
-		    }
-		    if (base == 2) {
-			while (t<end && *t == '1') t++;
-			t--;
-		    }
-		    while (t<end) *s++ = *t++;
-		    *s = '\0';
-		}
-		else if (flags & FZERO) {
-		    while (*s == ' ') {
-			*s++ = '0';
-		    }
+		    strcpy(t, s);
+		    bignum = 2;
 		}
 		s  = RSTRING(val)->ptr;
+
+	      unsigned_format:
+		slen = len = strlen(s);
+		pos = blen;
+		if (flags&FWIDTH) {
+		    if (width <= len) flags &= ~FWIDTH;
+		    else {
+			slen = width;
+		    }
+		}
 		if (flags&FPREC) {
-		    CHECK(prec);
+		    if (prec <= len) flags &= ~FPREC;
+		    else {
+			if (prec >= slen) {
+			    flags &= ~FWIDTH;
+			    slen = prec;
+			}
+		    }
 		}
-		else if ((flags&FWIDTH) && width > end - s) {
-		    CHECK(width);
+		if (slen > len) {
+		    int n = slen-len;
+		    char d = ' ';
+		    if (flags & FZERO) d = '0';
+		    CHECK(n);
+		    while (n--) {
+			buf[blen++] = d;
+		    }
 		}
-		else {
-		    CHECK(s - end);
+		if ((flags&(FWIDTH|FPREC)) == (FWIDTH|FPREC)) {
+		    if (prec < width) {
+			pos = width - prec;
+		    }
 		}
-		sprintf(&buf[blen], fbuf, s);
-		blen += strlen(&buf[blen]);
+		CHECK(len);
+		strcpy(&buf[blen], s);
+		blen += len;
+		t = &buf[pos];
+		if (bignum == 2) {
+		    char d = '.';
+
+		    switch (base) {
+		      case 16:
+			d = 'f'; break;
+		      case 8:
+			d = '7'; break;
+		      case '2':
+			d = '1'; break;
+		    }
+
+		    if ((flags & FPREC) == 0 || prec <= len-2) {
+			*t++ = '.'; *t++ = '.';
+		    }
+		    while (*t == ' ' || *t == '.') {
+			*t++ = d;
+		    }
+		}
+		else if (flags & (FPREC|FZERO)) {
+		    while (*t == ' ') {
+			*t++ = '0';
+		    }
+		}
 	    }
 	    break;
 
@@ -341,7 +464,7 @@ f_sprintf(argc, argv)
 	  case 'O':
 	  case 'X':
 	    {
-		VALUE val = GETARG();
+		volatile VALUE val = GETARG();
 		char fbuf[32], c = *p;
 		int bignum = 0, base;
 		int v;
@@ -371,28 +494,65 @@ f_sprintf(argc, argv)
 		}
 
 		if (bignum) {
-		    fmt_setup(fbuf, 's', flags, width, prec);
+		    char *s = RSTRING(val)->ptr;
+		    int slen, len, pos_b, pos;
 
+		    slen = len = strlen(s);
+		    pos = pos_b = blen;
+		    if (flags&FWIDTH) {
+			if (width <= len) flags &= ~FWIDTH;
+			else {
+			    slen = width;
+			}
+		    }
 		    if (flags&FPREC) {
-			CHECK(prec);
+			if (prec <= len) flags &= ~FPREC;
+			else {
+			    if (prec >= slen) {
+				flags &= ~FWIDTH;
+				slen = prec;
+			    }
+			}
 		    }
-		    else if ((flags&FWIDTH) && width > RSTRING(val)->len) {
-			CHECK(width);
+		    if (slen > len) {
+			int n = slen-len;
+			CHECK(n);
+			while (n--) {
+			    buf[blen++] = ' ';
+			}
 		    }
-		    else {
-			CHECK(RSTRING(val)->len);
+		    if ((flags&(FWIDTH|FPREC)) == (FWIDTH|FPREC)) {
+			if (prec < width) {
+			    pos = width - prec;
+			}
 		    }
-		    sprintf(&buf[blen], fbuf, RSTRING(val)->ptr);
-		    blen += strlen(&buf[blen]);
+		    CHECK(len);
+		    strcpy(&buf[blen], s);
+		    blen += len;
+		    if (flags & (FPREC|FZERO)) {
+			char *t = &buf[pos];
+			char *b = &buf[pos_b];
+
+			if (s[0] == '-') {
+			    if (slen > len && t != b ) t[-1] = '-';
+			    else *t++ = '-';
+			}
+			while (*t == ' ' || *t == '-') {
+			    *t++ = '0';
+			}
+		    }
 		}
 		else {
-		    fmt_setup(fbuf, c, flags, width, prec);
+		    int max = 11;
 
-		    CHECK(11);
+		    if ((flags & FPREC) && prec > max) max = prec;
+		    if ((flags & FWIDTH) && width > max) max = width;
+		    CHECK(max);
 		    if (v < 0 && (c == 'X' || c == 'O')) {
 			v = -v;
 			PUSH("-", 1);
 		    }
+		    fmt_setup(fbuf, c, flags, width, prec);
 		    sprintf(&buf[blen], fbuf, v);
 		    blen += strlen(&buf[blen]);
 		}
@@ -406,8 +566,6 @@ f_sprintf(argc, argv)
 		VALUE val = GETARG();
 		double fval;
 		char fbuf[32];
-		double big2dbl();
-		double atof();
 
 		switch (TYPE(val)) {
 		  case T_FIXNUM:

@@ -1,9 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT(ruby.h)
 
-PROGS="ruby"
-AC_SUBST(PROGS)dnl
-
 dnl checks for alternative programs
 AC_ARG_WITH(gcc, [--without-gcc             never use gcc], [
 	case $withval in
@@ -31,11 +28,15 @@ if test $rb_thread = yes; then
 fi
 
 AC_CANONICAL_HOST
+AC_ARG_PROGRAM
 
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 AC_PROG_YACC
+AC_PROG_RANLIB
+AC_SUBST(AR)
+AC_CHECK_PROGS(AR, ar aal, ar)
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
@@ -43,6 +44,11 @@ AC_PROG_MAKE_SET
 AC_MINIX
 
 dnl Checks for libraries.
+case "$host_os" in
+nextstep*)	;;
+human*)		;;
+*) LIBS="-lm $LIBS";;
+esac
 AC_CHECK_LIB(crypt, crypt)
 AC_CHECK_LIB(dl, dlopen)	# Dynamic linking for SunOS/Solaris and SYSV
 AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
@@ -50,15 +56,17 @@ AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS(unistd.h limits.h sys/file.h sys/ioctl.h pwd.h sys/select.h\
-		 sys/time.h sys/times.h sys/param.h sys/wait.h\
+AC_CHECK_HEADERS(stdlib.h unistd.h limits.h sys/file.h sys/ioctl.h pwd.h \
+		 sys/select.h sys/time.h sys/times.h sys/param.h sys/wait.h\
 		 syscall.h a.out.h string.h utime.h memory.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
 AC_TYPE_SIZE_T
 AC_STRUCT_ST_BLKSIZE
+save_LIBOJBS="$LIBOBJS"
 AC_STRUCT_ST_BLOCKS
+LIBOBJS="$save_LIBOBJS"
 AC_STRUCT_ST_RDEV
 
 dnl Checks for library functions.
@@ -66,12 +74,13 @@ AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
 AC_FUNC_ALLOCA
 AC_FUNC_VFORK
-AC_REPLACE_FUNCS(dup2 setenv memmove mkdir strerror strftime\
+AC_REPLACE_FUNCS(dup2 setenv memmove mkdir strcasecmp strerror strftime\
 		 strstr strtoul strdup strcasecmp crypt flock)
 AC_CHECK_FUNCS(fmod killpg random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
-	      getgroups getpgid getpriority dlopen sigprocmask sigaction)
+	      setpgrp2 getpgid getgroups getpriority\
+	      dlopen sigprocmask sigaction _setjmp)
 if test "$ac_cv_func_strftime" = no; then
     AC_STRUCT_TIMEZONE
     AC_TRY_LINK([],
@@ -83,18 +92,18 @@ if test "$ac_cv_func_sigprocmask" = yes && test "$ac_cv_func_sigaction" = yes; t
 else
   AC_MSG_CHECKING(for BSD signal semantics)
   AC_CACHE_VAL(rb_cv_bsd_signal,
-  [AC_TRY_RUN([
+    [AC_TRY_RUN([
 #include <stdio.h>
 #include <signal.h>
 
-void sig_handler(dummy)
+void
+sig_handler(dummy)
      int dummy;
 {
 }
 
-int main(argc, argv)
-     int argc;
-     char ** argv;
+int
+main()
 {
   signal(SIGINT, sig_handler);
   kill(getpid(), SIGINT);
@@ -103,11 +112,35 @@ int main(argc, argv)
 }
 ],
 	rb_cv_bsd_signal=yes,
-	rb_cv_bsd_signal=no,
-	[:])])
+	rb_cv_bsd_signal=no)])
   AC_MSG_RESULT($rb_cv_bsd_signal)
   if test "$rb_cv_bsd_signal" = yes; then
     AC_DEFINE(BSD_SIGNAL)
+  fi
+fi
+
+if test "$ac_cv_func_setpgrp2" = yes; then
+  AC_DEFINE(BSD_GETPGRP, getpgrp2)
+  AC_DEFINE(BSD_SETPGRP, setpgrp2)
+else
+  AC_MSG_CHECKING(whether getpgrp() has arg)
+  AC_CACHE_VAL(rb_cv_bsdgetpgrp,
+    [AC_TRY_COMPILE([#include <unistd.h>], [getpgrp(0);],
+      rb_cv_bsdgetpgrp=yes,
+      rb_cv_bsdgetpgrp=no)])
+  AC_MSG_RESULT($rb_cv_bsdgetpgrp)
+  if test "$rb_cv_bsdgetpgrp" = yes; then
+    AC_DEFINE(BSD_GETPGRP, getpgrp)
+  fi
+
+  AC_MSG_CHECKING(whether setpgrp() has args)
+  AC_CACHE_VAL(rb_cv_bsdsetpgrp,
+    [AC_TRY_COMPILE([#include <unistd.h>], [setpgrp(1, 1);],
+	rb_cv_bsdsetpgrp=yes,
+	rb_cv_bsdsetpgrp=no)])
+  AC_MSG_RESULT($rb_cv_bsdsetpgrp)
+  if test "$rb_cv_bsdsetpgrp" = yes; then
+    AC_DEFINE(BSD_SETPGRP, setpgrp)
   fi
 fi
 
@@ -183,6 +216,7 @@ main() {
   AC_MSG_RESULT($rb_cv_linux_elf)
   if test "$rb_cv_linux_elf" = no; then
     with_dln_a_out=yes
+    host_os=linux-a.out
   else
     LDFLAGS="-rdynamic"
   fi;;
@@ -201,33 +235,49 @@ if test "$with_dln_a_out" != yes; then
   rb_cv_dlopen=unknown
   AC_MSG_CHECKING(whether OS depend dynamic link works)
   if test "$GCC" = yes; then
-    CCDLFLAGS=-fpic
+    case "$host_os" in
+    nextstep*)	;;
+    human*)	;;
+    *) CCDLFLAGS=-fpic;;
+    esac
   else
     case "$host_os" in
 	hpux*)	CCDLFLAGS='+z';;
-	solaris*|irix*)	CCDLFLAGS='-K pic' ;;
-	sunos*)		CCDLFLAGS='-pic' ;;
-	svr4*|esix*) 	CCDLFLAGS='-Kpic' ;;
-	*)		CCDLFLAGS='' ;;
+	solaris*|irix*)	 CCDLFLAGS='-K pic' ;;
+	sunos*)		 CCDLFLAGS='-pic' ;;
+	esix*|uxpds*)    CCDLFLAGS='-Kpic' ;;
+	*)		 CCDLFLAGS='' ;;
     esac
   fi
 
   case "$host_os" in
-	hpux*)		DLDFLAGS="-E"
-			LDSHARED='ld -b'
-			LDFLAGS="-Wl,-E"
-			rb_cv_dlopen=yes;;
-	solaris*) 	LDSHARED='ld -G'
-			rb_cv_dlopen=yes;;
-	sunos*) 	LDSHARED='ld -assert nodefinitions'
-			rb_cv_dlopen=yes;;
-	svr4*|esix*) 	LDSHARED="ld -G"
-			rb_cv_dlopen=yes ;;
-	linux*) 	LDSHARED="gcc -shared"
-			rb_cv_dlopen=yes ;;
-	freebsd*) 	LDSHARED="ld -Bshareable"
-			rb_cv_dlopen=yes ;;
-	*) 		LDSHARED='ld' ;;
+	hpux*)		 DLDFLAGS="-E"
+			 LDSHARED='ld -b'
+			 LDFLAGS="-Wl,-E"
+			 rb_cv_dlopen=yes;;
+	solaris*) 	 LDSHARED='ld -G'
+			 rb_cv_dlopen=yes;;
+	sunos*) 	 LDSHARED='ld -assert nodefinitions'
+			 rb_cv_dlopen=yes;;
+	sysv4*) 	 LDSHARED='ld -G'
+			 rb_cv_dlopen=yes;;
+	esix*|uxpds*) 	 LDSHARED="ld -G"
+			 rb_cv_dlopen=yes ;;
+	linux*) 	 LDSHARED="gcc -shared"
+			 rb_cv_dlopen=yes ;;
+	freebsd*) 	 LDSHARED="ld -Bshareable"
+			 rb_cv_dlopen=yes ;;
+	netbsd*) 	 LDSHARED="ld -Bshareable"
+			 rb_cv_dlopen=yes ;;
+	nextstep*)	 LDSHARED='ld'
+			 LDFLAGS="-u libsys_s"
+			 rb_cv_dlopen=yes ;;
+	aix*)		 LDSHARED='../../miniruby ../aix_ld.rb $(TARGET)'
+			 rb_cv_dlopen=yes ;;
+	human*)		 DLDFLAGS=''
+			 LDSHARED=''
+			 LDFLAGS='' ;;
+	*) 		 LDSHARED='ld' ;;
   esac
   AC_MSG_RESULT($rb_cv_dlopen)
 fi
@@ -297,13 +347,71 @@ AC_ARG_WITH(static-linked-ext,
 	     *)	;;
 	     esac])
 
+case "$host_os" in
+  human*)
+    AC_CHECK_LIB(signal, _harderr)
+    AC_CHECK_LIB(hmem, hmemset)
+    AC_CHECK_FUNCS(select)
+    AC_MSG_CHECKING(whether PD libc _dtos18 fail to convert big number)
+    AC_CACHE_VAL(rb_cv_missing__dtos18,
+    [AC_TRY_RUN(
+changequote(<<, >>)dnl
+<<
+#include <stdio.h>
+main ()
+{
+   char buf[256];
+   sprintf (buf, "%g", 1e+300);
+   exit (strcmp (buf, "1e+300") ? 0 : 1);
+}
+>>,
+changequote([, ])dnl
+rb_cv_missing__dtos18=yes, rb_cv_missing__dtos18=no)])
+    AC_MSG_RESULT($rb_cv_missing__dtos18)
+    if test "$rb_cv_missing__dtos18" = yes; then
+      AC_DEFINE(MISSING__DTOS18)
+    fi
+    AC_MSG_CHECKING(whether PD libc fconvert fail to round)
+    AC_CACHE_VAL(rb_cv_missing_fconvert,
+    [AC_TRY_RUN(
+changequote(<<, >>)dnl
+<<
+#include <stdio.h>
+#include <math.h>
+main ()
+{
+  char buf[256];
+  sprintf (buf, "%f", log(exp(1.0)));
+  exit (strcmp (buf, "1.000000") ? 0 : 1);
+}
+>>,
+changequote([, ])dnl
+rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no)])
+    AC_MSG_RESULT($rb_cv_missing_fconvert)
+    if test "$rb_cv_missing_fconvert" = yes; then
+      AC_DEFINE(MISSING_FCONVERT)
+    fi
+    LIBOBJS="$LIBOBJS x68.o"
+    CFLAGS="$CFLAGS -fansi-only -cc1-stack=196608 -cpp-stack=2694144"
+    binsuffix=.x
+    setup=Setup.x68
+    ;;
+  *)
+    binsuffix=
+    setup=Setup
+    ;;
+esac
+AC_SUBST(binsuffix)
+AC_SUBST(setup)
+
 if test "$prefix" = NONE; then
   prefix=$ac_default_prefix
 fi
-AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/ruby:.")
-AC_SUBST(archlib)dnl
-archlib="${prefix}/lib/ruby/${host_cpu}-${host_os}"
-AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "$archlib")
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/ruby")
+AC_SUBST(arch)dnl
+arch="${host_cpu}-${host_os}"
+AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/ruby/${host_cpu}-${host_os}")
+AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "$arch")
 
 echo "creating config.h"
 cat confdefs.h > config.h

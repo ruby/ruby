@@ -90,8 +90,10 @@ enum_find(argc, argv, obj)
     if (arg.found) {
 	return arg.val;
     }
-    if (NIL_P(if_none)) return Qnil;
-    return rb_eval_cmd(if_none, Qnil);
+    if (!NIL_P(if_none)) {
+	rb_eval_cmd(if_none, Qnil);
+    }
+    return Qnil;
 }
 
 static void
@@ -275,7 +277,7 @@ index_i(item, iv)
     VALUE item;
     struct i_v_pair *iv;
 {
-    if (rb_equal(item, 1, iv->v)) {
+    if (rb_equal(item, iv->v)) {
 	iv->found = 1;
 	rb_break();
     }
@@ -357,6 +359,7 @@ Init_Enumerable()
     rb_define_method(mEnumerable,"max", enum_max, 0);
     rb_define_method(mEnumerable,"index", enum_index, 1);
     rb_define_method(mEnumerable,"member?", enum_member, 1);
+    rb_define_method(mEnumerable,"include?", enum_member, 1);
     rb_define_method(mEnumerable,"length", enum_length, 0);
     rb_define_method(mEnumerable,"size", enum_length, 0);
 

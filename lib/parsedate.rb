@@ -14,26 +14,26 @@ module ParseDate
       time = $1
     end
     if date =~ /19(\d\d)/
-      year = $1
+      year = Integer($1)
     end
     if date.sub!(/\s*(\d+)\s+(#{MONTHPAT})\S*\s+/i, ' ')
-      dayofmonth = $1
+      dayofmonth = $1.to_i
       monthname  = $2
     elsif date.sub!(/\s*(#{MONTHPAT})\S*\s+(\d+)\s+/i, ' ')
       monthname  = $1
-      dayofmonth = $2
+      dayofmonth = $2.to_i
     elsif date.sub!(/\s*(#{MONTHPAT})\S*\s+(\d+)\D+/i, ' ')
       monthname  = $1
-      dayofmonth = $2
+      dayofmonth = $2.to_i
     elsif date.sub!(/\s*(\d\d?)\/(\d\d?)/, ' ')
       month  = $1
-      dayofmonth = $2
+      dayofmonth = $2.to_i
     end
     if monthname
       month = MONTHS[monthname.downcase]
     end
     if ! year && date =~ /\d\d/
-      year = $&
+      year = Integer($&)
     end
     return year, month, dayofmonth
   end

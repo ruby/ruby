@@ -30,7 +30,7 @@ def philosopher(n)
     $forks[n].lock
     if not $forks[(n+1)%N].try_lock
       $forks[n].unlock		# avoid deadlock
-      continue
+      next
     end
     $state[n*2] = ?|;
     $state[(n+1)%N*2] = ?|;

@@ -82,17 +82,18 @@ str_cicmp(str1, str2)
     p1 = str1->ptr; p2 = str2->ptr;
 
     for (i = 0; i < len; i++, p1++, p2++) {
-	if (casetable[(int)*p1] != casetable[(int)*p2])
-	    return casetable[(int)*p1] - casetable[(int)*p2];
+	if (casetable[(unsigned)*p1] != casetable[(unsigned)*p2])
+	    return casetable[(unsigned)*p1] - casetable[(unsigned)*p2];
     }
     return str1->len - str2->len;
 }
 
 #define REG_IGNORECASE FL_USER0
 
-#define KCODE_NONE 0
-#define KCODE_EUC  FL_USER1
-#define KCODE_SJIS FL_USER2
+#define KCODE_NONE  0
+#define KCODE_EUC   FL_USER2
+#define KCODE_SJIS  FL_USER3
+#define KCODE_FIXED FL_USER4
 #define KCODE_MASK (KCODE_EUC|KCODE_SJIS)
 
 static int reg_kcode = 
@@ -105,6 +106,69 @@ static int reg_kcode =
     KCODE_NONE;
 # endif
 #endif
+
+static void
+kcode_euc(reg)
+    struct RRegexp *reg;
+{
+    FL_UNSET(reg, KCODE_MASK);
+    FL_SET(reg, KCODE_EUC);
+    FL_SET(reg, KCODE_FIXED);
+}
+
+static void
+kcode_sjis(reg)
+    struct RRegexp *reg;
+{
+    FL_UNSET(reg, KCODE_MASK);
+    FL_SET(reg, KCODE_SJIS);
+    FL_SET(reg, KCODE_FIXED);
+}
+
+static void
+kcode_none(reg)
+    struct RRegexp *reg;
+{
+    FL_UNSET(reg, KCODE_MASK);
+    FL_SET(reg, KCODE_FIXED);
+}
+
+static void
+kcode_set_option(reg)
+    struct RRegexp *reg;
+{
+    if (!FL_TEST(reg, KCODE_FIXED)) return;
+
+    re_syntax_options &= ~RE_MBCTYPE_MASK;
+    switch ((RBASIC(reg)->flags & KCODE_MASK)) {
+      case KCODE_NONE:
+	break;
+      case KCODE_EUC:
+	re_syntax_options |= RE_MBCTYPE_EUC;
+	break;
+      case KCODE_SJIS:
+	re_syntax_options |= RE_MBCTYPE_SJIS;
+	break;
+    }
+    re_set_syntax(re_syntax_options);
+}	  
+
+static void
+kcode_reset_option()
+{
+    re_syntax_options &= ~RE_MBCTYPE_MASK;
+    switch (reg_kcode) {
+      case KCODE_NONE:
+	break;
+      case KCODE_EUC:
+	re_syntax_options |= RE_MBCTYPE_EUC;
+	break;
+      case KCODE_SJIS:
+	re_syntax_options |= RE_MBCTYPE_SJIS;
+	break;
+    }
+    re_set_syntax(re_syntax_options);
+}
 
 extern int rb_in_eval;
 
@@ -144,8 +208,10 @@ reg_desc(s, len, re)
 	}
     }
     str_cat(str, "/", 1);
-    if (re && FL_TEST(re, REG_IGNORECASE)) {
-	str_cat(str, "i", 1);
+    if (re) {
+	if (FL_TEST(re, REG_IGNORECASE)) {
+	    str_cat(str, "i", 1);
+	}
     }
     return str;
 }
@@ -158,25 +224,24 @@ reg_inspect(re)
 }
 
 static void
-reg_raise(s, len, err, compile, re)
+reg_raise(s, len, err, re)
     char *s;
     int len;
     char *err;
-    int compile;
     VALUE re;
 {
     VALUE desc = reg_desc(s, len, re);
 
-    if (!compile)
+    if (rb_in_eval)
 	Raise(eRegxpError, "%s: %s", err, RSTRING(desc)->ptr);
     else
 	Error("%s: %s", err, RSTRING(desc)->ptr);
 }
 
 static Regexp*
-make_regexp(s, len)
+make_regexp(s, len, flag)
     char *s;
-    int len;
+    int len, flag;
 {
     Regexp *rp;
     char *err;
@@ -193,9 +258,13 @@ make_regexp(s, len)
     rp->buffer = ALLOC_N(char, 16);
     rp->allocated = 16;
     rp->fastmap = ALLOC_N(char, 256);
-
-    if ((err = re_compile_pattern(s, (size_t)len, rp)) != NULL) {
-	reg_raise(s, len, err, !rb_in_eval, 0);
+    if (flag) {
+	rp->translate = casetable;
+    }
+    err = re_compile_pattern(s, (size_t)len, rp);
+    kcode_reset_option();
+    if (err != NULL) {
+	reg_raise(s, len, err, 0);
     }
 
     return rp;
@@ -205,44 +274,12 @@ extern VALUE cData;
 static VALUE cMatch;
 
 static VALUE
-match_to_a(match)
-    struct RMatch *match;
-{
-    struct re_registers *regs = match->regs;
-    VALUE ary = ary_new(regs->num_regs);
-    int i;
-
-    for (i=0; i<regs->num_regs; i++) {
-	if (regs->beg[0] == -1) ary_push(ary, Qnil);
-	else ary_push(ary, str_new(match->ptr+regs->beg[i],
-				   regs->end[i]-regs->beg[i]));
-    }
-    return ary;
-}
-
-static VALUE
-match_to_s(match)
-    struct RMatch *match;
-{
-    int beg, len;
-
-    if (match->regs->allocated == 0) return Qnil;
-
-    beg = match->regs->beg[0];
-    if (beg == -1) return Qnil;
-
-    len = match->regs->end[0] - beg;
-    return str_new(match->ptr+beg, len);
-}
-
-static VALUE
 match_alloc()
 {
     NEWOBJ(match, struct RMatch);
     OBJSETUP(match, cMatch, T_MATCH);
 
-    match->ptr = 0;
-    match->len = 0;
+    match->str = 0;
     match->regs = ALLOC(struct re_registers);
     MEMZERO(match->regs, struct re_registers, 1);
 
@@ -262,6 +299,7 @@ reg_search(reg, str, start, regs)
     int casefold = RTEST(ignorecase);
     VALUE match = 0;
     struct re_registers *regs0 = 0;
+    int need_recompile = 0;
 
     if (start > str->len) return -1;
 
@@ -273,11 +311,13 @@ reg_search(reg, str, start, regs)
 	if (reg->ptr->translate != casetable) {
 	    reg->ptr->translate = casetable;
 	    reg->ptr->fastmap_accurate = 0;
+	    need_recompile = 1;
 	}
     }
     else if (reg->ptr->translate) {
 	reg->ptr->translate = NULL;
 	reg->ptr->fastmap_accurate = 0;
+	need_recompile = 1;
     }
 
     if (regs == (struct re_registers*)-1) {
@@ -290,18 +330,28 @@ reg_search(reg, str, start, regs)
 
     if (regs && !match) regs0 = regs;
 
-    if ((RBASIC(reg)->flags & KCODE_MASK) != reg_kcode) {
-	char *err;
-
-	if ((err = re_compile_pattern(reg->str, reg->len, reg->ptr)) != NULL) {
-	    reg_raise(reg->str, reg->len, err, reg);
-	}
+    if (FL_TEST(reg, KCODE_FIXED)) {
+	kcode_set_option(reg);
+    }
+    else if ((RBASIC(reg)->flags & KCODE_MASK) != reg_kcode) {
+	need_recompile = 1;
 	RBASIC(reg)->flags = RBASIC(reg)->flags & ~KCODE_MASK;
 	RBASIC(reg)->flags |= reg_kcode;
     }
 
+    if (need_recompile) {
+	char *err;
+
+	err = re_compile_pattern(reg->str, reg->len, reg->ptr);
+	if (err != NULL) {
+	    kcode_reset_option();
+	    reg_raise(reg->str, reg->len, err, reg);
+	}
+    }
+
     result = re_search(reg->ptr, str->ptr, str->len,
 		       start, str->len - start, regs0);
+    kcode_reset_option();
 
     if (start == -2) {
 	reg_raise(reg->str, reg->len, "Stack overfow in regexp matcher", reg);
@@ -310,10 +360,7 @@ reg_search(reg, str, start, regs)
 	backref_set(Qnil);
     }
     else if (match) {
-	RMATCH(match)->len = str->len;
-	REALLOC_N(RMATCH(match)->ptr, char, str->len+1);
-	memcpy(RMATCH(match)->ptr, str->ptr, str->len);
-	RMATCH(match)->ptr[str->len] = '\0';
+	RMATCH(match)->str = str_new4(str);
 	backref_set(match);
     }
     if (regs && regs0 && regs0 != regs) re_copy_registers(regs, regs0);
@@ -349,7 +396,7 @@ reg_nth_match(nth, match)
     if (start == -1) return Qnil;
     end = match->END(nth);
     len = end - start;
-    return str_new(match->ptr + start, len);
+    return str_new(RSTRING(match->str)->ptr + start, len);
 }
 
 VALUE
@@ -365,7 +412,7 @@ reg_match_pre(match)
 {
     if (NIL_P(match)) return Qnil;
     if (match->BEG(0) == -1) return Qnil;
-    return str_new(match->ptr, match->BEG(0));
+    return str_new(RSTRING(match->str)->ptr, match->BEG(0));
 }
 
 VALUE
@@ -374,8 +421,8 @@ reg_match_post(match)
 {
     if (NIL_P(match)) return Qnil;
     if (match->BEG(0) == -1) return Qnil;
-    return str_new(match->ptr+match->END(0),
-		   match->len-match->END(0));
+    return str_new(RSTRING(match->str)->ptr+match->END(0),
+		   RSTRING(match->str)->len-match->END(0));
 }
 
 VALUE
@@ -393,6 +440,57 @@ reg_match_last(match)
     return reg_nth_match(i, match);
 }
 
+static VALUE
+last_match_getter()
+{
+    return reg_last_match(backref_get());
+}
+
+static VALUE
+prematch_getter()
+{
+    return reg_match_pre(backref_get());
+}
+
+static VALUE
+postmatch_getter()
+{
+    return reg_match_post(backref_get());
+}
+
+static VALUE
+last_paren_match_getter()
+{
+    return reg_match_last(backref_get());
+}
+
+static VALUE
+match_to_a(match)
+    struct RMatch *match;
+{
+    struct re_registers *regs = match->regs;
+    VALUE ary = ary_new(regs->num_regs);
+    char *ptr = RSTRING(match->str)->ptr;
+    int i;
+
+    for (i=0; i<regs->num_regs; i++) {
+	if (regs->beg[0] == -1) ary_push(ary, Qnil);
+	else ary_push(ary, str_new(ptr+regs->beg[i],
+				   regs->end[i]-regs->beg[i]));
+    }
+    return ary;
+}
+
+static VALUE
+match_to_s(match)
+    struct RMatch *match;
+{
+    VALUE str = reg_last_match(match);
+
+    if (NIL_P(str)) return str_new(0,0);
+    return str;
+}
+
 void
 reg_free(rp)
 Regexp *rp;
@@ -405,35 +503,56 @@ Regexp *rp;
 VALUE cRegexp;
 
 static VALUE
-reg_new_1(class, s, len, ci)
+reg_new_1(class, s, len, flag)
     VALUE class;
     char *s;
-    int len, ci;
+    int len;
+    int flag;			/* CASEFOLD  = 0x1 */
+				/* CODE_NONE = 0x2 */
+				/* CODE_EUC  = 0x4 */
+				/* CODE_SJIS = 0x6 */
 {
     NEWOBJ(re, struct RRegexp);
     OBJSETUP(re, class, T_REGEXP);
 
-    re->ptr = make_regexp(s, len);
+    if (flag & 0x1) {
+	FL_SET(re, REG_IGNORECASE);
+    }
+    switch (flag & ~0x1) {
+      case 0:
+      default:
+	FL_SET(re, reg_kcode);
+	break;
+      case 2:
+	kcode_none(re);
+	break;
+      case 4:
+	kcode_euc(re);
+	break;
+      case 6:
+	kcode_sjis(re);
+	break;
+    }
+
+    kcode_set_option(re);
+    re->ptr = make_regexp(s, len, flag & 0x1);
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
 
-    FL_SET(re, reg_kcode);
-    if (ci) FL_SET(re, REG_IGNORECASE);
-
     return (VALUE)re;
 }
 
 VALUE
-reg_new(s, len, ci)
+reg_new(s, len, flag)
     char *s;
-    int len, ci;
+    int len, flag;
 {
-    return reg_new_1(cRegexp, s, len, ci);
+    return reg_new_1(cRegexp, s, len, flag);
 }
 
-int ign_cache;
+static int ign_cache;
 static VALUE reg_cache;
 
 VALUE
@@ -490,23 +609,39 @@ reg_s_new(argc, argv, self)
     VALUE self;
 {
     VALUE src;
-    int ci = 0;
+    int flag = 0;
 
-    if (argc == 0 || argc > 2) {
+    if (argc == 0 || argc > 3) {
 	ArgError("wrong # of argument");
     }
-    if (argc == 2 && argv[1]) {
-	ci = 1;
+    if (argc >= 2 && RTEST(argv[1])) {
+	flag = 1;
+    }
+    if (argc == 3) {
+	Check_Type(argv[2], T_STRING);
+	switch (RSTRING(argv[2])->ptr[0]) {
+	  case 'n': case 'N':
+	    flag |= 2;
+	    break;
+	  case 'e': case 'E':
+	    flag |= 4;
+	    break;
+	  case 's': case 'S':
+	    flag |= 6;
+	    break;
+	  default:
+	    break;
+	}
     }
 
     src = argv[0];
     switch (TYPE(src)) {
       case T_STRING:
-	return reg_new_1(self, RSTRING(src)->ptr, RSTRING(src)->len, ci);
+	return reg_new_1(self, RSTRING(src)->ptr, RSTRING(src)->len, flag);
 	break;
 
       case T_REGEXP:
-	return reg_new_1(self, RREGEXP(src)->str, RREGEXP(src)->len, ci);
+	return reg_new_1(self, RREGEXP(src)->str, RREGEXP(src)->len, flag);
 	break;
 
       default:
@@ -535,6 +670,7 @@ reg_s_quote(re, str)
       if (*s == '[' || *s == ']'
 	  || *s == '{' || *s == '}'
 	  || *s == '(' || *s == ')'
+	  || *s == '|'
 	  || *s == '*' || *s == '.' || *s == '\\'
 	  || *s == '?' || *s == '+'
 	  || *s == '^' || *s == '$') {
@@ -550,8 +686,20 @@ static VALUE
 reg_clone(re)
     struct RRegexp *re;
 {
-    int ci = FL_TEST(re, REG_IGNORECASE);
-    return reg_new_1(CLASS_OF(re), re->str, re->len, ci);
+    int flag = FL_TEST(re, REG_IGNORECASE);
+    if (FL_TEST(re, KCODE_FIXED)) {
+	switch (RBASIC(re)->flags & KCODE_MASK) {
+	  case KCODE_NONE:
+	    flag |= 2; break;
+	  case KCODE_EUC:
+	    flag |= 4; break;
+	  case KCODE_SJIS:
+	    flag |= 6; break;
+	  default:
+	    break;
+	}
+    }
+    return reg_new_1(CLASS_OF(re), re->str, re->len, flag);
 }
 
 VALUE
@@ -560,7 +708,8 @@ reg_regsub(str, src, regs)
     struct RString *src;
     struct re_registers *regs;
 {
-    VALUE val = Qnil;
+    VALUE val = 0;
+    VALUE tmp;
     char *p, *s, *e, c;
     int no;
 
@@ -571,39 +720,57 @@ reg_regsub(str, src, regs)
 	char *ss = s;
 
 	c = *s++;
-	if (c == '&')
-	    no = 0;
-	else if (c == '\\' && '0' <= *s && *s <= '9')
-	    no = *s++ - '0';
-	else
-	    no = -1;
+	if (c != '\\') continue;
 
-	if (no >= 0) {
-	    if (NIL_P(val)) {
-		val = str_new(p, ss-p);
-	    }
-	    else {
-		str_cat(val, p, ss-p);
-	    }
-	    p = s;
+	if (!val) val = str_new(p, ss-p);
+	else      str_cat(val, p, ss-p);
+
+	c = *s++;
+	p = s;
+	switch (c) {
+	  case '0': case '1': case '2': case '3': case '4':
+	  case '5': case '6': case '7': case '8': case '9':
+	    no = c - '0';
+	    break;
+	  case '&':
+	    no = 0;
+	    break;
+
+	  case '`':
+	    str_cat(val, src->ptr, BEG(0));
+	    continue;
+
+	  case '\'':
+	    str_cat(val, src->ptr+END(0), src->len-END(0));
+	    continue;
+
+	  case '+':
+	    no = regs->num_regs-1;
+	    while (BEG(no) == -1 && no > 0) no--;
+	    if (no == 0) continue;
+	    break;
+
+	  case '\\':
+	    str_cat(val, s-1, 1);
+	    continue;
+
+	  default:
+	    str_cat(val, s-2, 2);
+	    continue;
 	}
 
-	if (no < 0) {   /* Ordinary character. */
-	    if (c == '\\' && (*s == '\\' || *s == '&'))
-		p = s++;
-	} else {
+	if (no >= 0) {
 	    if (BEG(no) == -1) continue;
 	    str_cat(val, src->ptr+BEG(no), END(no)-BEG(no));
 	}
     }
 
-    if (NIL_P(val)) return (VALUE)str;
     if (p < e) {
-	str_cat(val, p, e-p);
+	if (!val) val = str_new(p, e-p);
+	else      str_cat(val, p, e-p);
     }
-    if (RSTRING(val)->len == 0) {
-	return (VALUE)str;
-    }
+    if (!val) return (VALUE)str;
+
     return val;
 }
 
@@ -624,19 +791,18 @@ void
 rb_set_kcode(code)
     char *code;
 {
+    re_syntax_options &= ~RE_MBCTYPE_MASK;
     if (code == 0) goto set_no_conversion;
 
     switch (code[0]) {
       case 'E':
       case 'e':
 	reg_kcode = KCODE_EUC;
-	re_syntax_options &= ~RE_MBCTYPE_MASK;
 	re_syntax_options |= RE_MBCTYPE_EUC;
 	break;
       case 'S':
       case 's':
 	reg_kcode = KCODE_SJIS;
-	re_syntax_options &= ~RE_MBCTYPE_MASK;
 	re_syntax_options |= RE_MBCTYPE_SJIS;
 	break;
       default:
@@ -644,19 +810,17 @@ rb_set_kcode(code)
       case 'n':
       set_no_conversion:
 	reg_kcode = KCODE_NONE;
-	re_syntax_options &= ~RE_MBCTYPE_MASK;
 	break;
     }
     re_set_syntax(re_syntax_options);
 }
 
-static VALUE
+static void
 kcode_setter(val)
     struct RString *val;
 {
     Check_Type(val, T_STRING);
     rb_set_kcode(val->ptr);
-    return (VALUE)val;
 }
 
 static VALUE
@@ -667,12 +831,13 @@ match_getter()
 
 static void
 match_setter(val)
+    VALUE val;
 {
     Check_Type(val, T_MATCH);
     backref_set(val);
 }
 
-VALUE krn_to_s();
+VALUE any_to_s();
 
 void
 Init_Regexp()
@@ -684,6 +849,7 @@ Init_Regexp()
     re_set_syntax(RE_NO_BK_PARENS | RE_NO_BK_VBAR
 		  | RE_INTERVALS
 		  | RE_NO_BK_BRACES
+		  | RE_CONTEXTUAL_INVALID_OPS
 		  | RE_BACKSLASH_ESCAPE_IN_LISTS
 #ifdef DEFAULT_MBCTYPE
 		  | DEFAULT_MBCTYPE
@@ -691,9 +857,14 @@ Init_Regexp()
 );
 
     rb_define_virtual_variable("$~", match_getter, match_setter);
+    rb_define_virtual_variable("$&", last_match_getter, 0);
+    rb_define_virtual_variable("$`", prematch_getter, 0);
+    rb_define_virtual_variable("$'", postmatch_getter, 0);
+    rb_define_virtual_variable("$+", last_paren_match_getter, 0);
 
-    rb_define_variable("$=", &ignorecase, 0);
+    rb_define_variable("$=", &ignorecase);
     rb_define_virtual_variable("$KCODE", kcode_getter, kcode_setter);
+    rb_define_virtual_variable("$-K", kcode_getter, kcode_setter);
 
     cRegexp  = rb_define_class("Regexp", cObject);
     rb_define_singleton_method(cRegexp, "new", reg_s_new, -1);
@@ -711,5 +882,5 @@ Init_Regexp()
     cMatch  = rb_define_class("MatchingData", cData);
     rb_define_method(cMatch, "to_a", match_to_a, 0);
     rb_define_method(cMatch, "to_s", match_to_s, 0);
-    rb_define_method(cMatch, "inspect", krn_to_s, 0);
+    rb_define_method(cMatch, "inspect", any_to_s, 0);
 }

@@ -21,7 +21,7 @@ struct_s_members(obj)
     struct RArray *member;
     VALUE ary, *p, *pend;
 
-    member = RARRAY(rb_ivar_get(obj, rb_intern("__member__")));
+    member = RARRAY(rb_iv_get(obj, "__member__"));
     if (NIL_P(member)) {
 	Fatal("non-initialized struct");
     }
@@ -42,26 +42,34 @@ struct_members(obj)
     return struct_s_members(CLASS_OF(obj));
 }
 
-static VALUE
-struct_ref(obj)
+VALUE
+struct_getmember(obj, id)
     struct RStruct *obj;
+    ID id;
 {
     VALUE nstr, member, slot;
     int i;
 
     nstr = CLASS_OF(obj);
-    member = rb_ivar_get(nstr, rb_intern("__member__"));
+    member = rb_iv_get(nstr, "__member__");
     if (NIL_P(member)) {
-	Fatal("non-initialized struct");
+	Bug("non-initialized struct");
     }
-    slot = INT2FIX(rb_frame_last_func());
+    slot = INT2FIX(id);
     for (i=0; i<RARRAY(member)->len; i++) {
 	if (RARRAY(member)->ptr[i] == slot) {
 	    return obj->ptr[i];
 	}
     }
-    NameError("not struct member");
+    NameError("%s is not struct member", rb_id2name(id));
     /* not reached */
+}
+
+static VALUE
+struct_ref(obj)
+    VALUE obj;
+{
+    return struct_getmember(obj, rb_frame_last_func());
 }
 
 static VALUE struct_ref0(obj) struct RStruct *obj; {return obj->ptr[0];}
@@ -97,7 +105,7 @@ struct_set(obj, val)
     int i;
 
     nstr = CLASS_OF(obj);
-    member = rb_ivar_get(nstr, rb_intern("__member__"));
+    member = rb_iv_get(nstr, "__member__");
     if (NIL_P(member)) {
 	Fatal("non-initialized struct");
     }
@@ -119,13 +127,19 @@ make_struct(name, member)
     struct RArray *member;
 {
     VALUE nstr;
+    ID id;
     int i;
 
+    id = rb_intern(name->ptr);
+    if (!rb_is_const_id(id)) {
+	NameError("identifier %s needs to be constant", name->ptr);
+    }
     nstr = rb_define_class_under(cStruct, name->ptr, cStruct);
-    rb_ivar_set(nstr, rb_intern("__size__"), INT2FIX(member->len));
-    rb_ivar_set(nstr, rb_intern("__member__"), member);
+    rb_iv_set(nstr, "__size__", INT2FIX(member->len));
+    rb_iv_set(nstr, "__member__", member);
 
     rb_define_singleton_method(nstr, "new", struct_alloc, -2);
+    rb_define_singleton_method(nstr, "[]", struct_alloc, -2);
     rb_define_singleton_method(nstr, "members", struct_s_members, 0);
     for (i=0; i< member->len; i++) {
 	ID id = FIX2INT(member->ptr[i]);
@@ -172,7 +186,6 @@ struct_s_def(argc, argv)
 {
     struct RString *name;
     struct RArray *rest;
-    VALUE nstr;
     int i;
 
     rb_scan_args(argc, argv, "1*", &name, &rest);
@@ -192,7 +205,7 @@ struct_alloc(class, values)
     VALUE size;
     int n;
 
-    size = rb_ivar_get(class, rb_intern("__size__"));
+    size = rb_iv_get(class, "__size__");
     n = FIX2INT(size);
     if (n < values->len) {
 	ArgError("struct size differs");
@@ -201,6 +214,7 @@ struct_alloc(class, values)
 	NEWOBJ(st, struct RStruct);
 	OBJSETUP(st, class, T_STRUCT);
 	st->len = n;
+	st->ptr = 0;		/* avoid GC crashing  */
 	st->ptr = ALLOC_N(VALUE, n);
 	MEMCPY(st->ptr, values->ptr, VALUE, values->len);
 	memclear(st->ptr+values->len, n - values->len);
@@ -219,7 +233,7 @@ struct_new(class, va_alist)
     int size;
     va_list args;
 
-    val = rb_ivar_get(class, rb_intern("__size__"));
+    val = rb_iv_get(class, "__size__");
     size = FIX2INT(val); 
     mem = ary_new();
     va_start(args);
@@ -245,7 +259,6 @@ struct_each(s)
 }
 
 char *rb_class2name();
-#define HDR "struct "
 
 static VALUE
 struct_to_s(s)
@@ -254,8 +267,8 @@ struct_to_s(s)
     char *name, *buf;
 
     name = rb_class2name(CLASS_OF(s));
-    buf = ALLOCA_N(char, strlen(name)+sizeof(HDR)+1);
-    sprintf(buf, "%s%s", HDR, name);
+    buf = ALLOCA_N(char, strlen(name)+1);
+    sprintf(buf, "%s", name);
     return str_new2(buf);
 }
 
@@ -268,12 +281,12 @@ struct_inspect(s)
     char buf[256];
     int i;
 
-    member = rb_ivar_get(CLASS_OF(s), rb_intern("__member__"));
+    member = rb_iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
 	Fatal("non-initialized struct");
     }
 
-    sprintf(buf, "#<%s%s: ", HDR, name);
+    sprintf(buf, "#<%s ", name);
     str = str_new2(buf);
     for (i=0; i<s->len; i++) {
 	VALUE str2, slot;
@@ -309,6 +322,7 @@ struct_clone(s)
     NEWOBJ(st, struct RStruct);
     CLONESETUP(st, s);
     st->len = s->len;
+    st->ptr = 0;		/* avoid GC crashing  */
     st->ptr = ALLOC_N(VALUE, s->len);
     MEMCPY(st->ptr, s->ptr, VALUE, st->len);
 
@@ -366,15 +380,32 @@ struct_equal(s, s2)
 }
 
 static VALUE
+struct_eql(s, s2)
+    struct RStruct *s, *s2;
+{
+    int i;
+
+    if (TYPE(s2) != T_STRUCT) return FALSE;
+    if (CLASS_OF(s) != CLASS_OF(s2)) return FALSE;
+    if (s->len != s2->len) {
+	Bug("inconsistent struct"); /* should never happen */
+    }
+
+    for (i=0; i<s->len; i++) {
+	if (!rb_eql(s->ptr[i], s2->ptr[i])) return FALSE;
+    }
+    return TRUE;
+}
+
+static VALUE
 struct_hash(s)
     struct RStruct *s;
 {
     int i, h;
-    ID hash = rb_intern("hash");
 
     h = CLASS_OF(s);
     for (i=0; i<s->len; i++) {
-	h ^= rb_funcall(s->ptr[i], hash, 0);
+	h ^= rb_hash(s->ptr[i]);
     }
     return INT2FIX(h);
 }
@@ -386,11 +417,11 @@ Init_Struct()
     rb_include_module(cStruct, mEnumerable);
 
     rb_define_singleton_method(cStruct, "new", struct_s_def, -1);
-    rb_define_singleton_method(cStruct, "members", struct_s_members, 0);
 
     rb_define_method(cStruct, "clone", struct_clone, 0);
 
     rb_define_method(cStruct, "==", struct_equal, 1);
+    rb_define_method(cStruct, "eql?", struct_eql, 1);
     rb_define_method(cStruct, "hash", struct_hash, 0);
 
     rb_define_method(cStruct, "to_s", struct_to_s, 0);

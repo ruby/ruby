@@ -24,10 +24,9 @@ class TkText<TkTextWin
   def _addcmd(cmd)
     @cmdtbl.push id
   end
-  def _addtag(cmd)
-    @cmdtbl.push id
+  def _addtag(name, obj)
+    @tags[name] = obj
   end
-  private :_addcmd, :_addtag
   def tag_names
     tk_send('tag', 'names').collect{|elt|
       if not @tags[elt]
@@ -75,18 +74,25 @@ class TkText<TkTextWin
   def yview_pickplace(*what)
     tk_send 'yview', '-pickplace', *what
   end
+
+  def xview(*what)
+    tk_send 'xview', *what
+  end
+  def xview_pickplace(*what)
+    tk_send 'xview', '-pickplace', *what
+  end
 end
 
 class TkTextTag<TkObject
   $tk_text_tag = 'tag0000'
-  def initialize(parent)
+  def initialize(parent, keys=nil)
     if not parent.kind_of?(TkText)
       fail format("%s need to be TkText", parent.inspect)
     end
     @t = parent
-    @path = parent.path
-    @id = $tk_text_tag
+    @path = @id = $tk_text_tag
     $tk_text_tag = $tk_text_tag.succ
+    tk_call @t.path, "tag", "configure", @id, *hash_kv(keys)
     @t._addtag id, self
   end
   def id
@@ -94,25 +100,25 @@ class TkTextTag<TkObject
   end
 
   def add(*index)
-    tk_call path, 'tag', 'add', @id, *index
+    tk_call @t.path, 'tag', 'add', @id, *index
   end
 
-  def configure(slot, value)
-    tk_call path, 'tag', 'configure', id, "-#{slot}", value
+  def configure(keys)
+    tk_call @t.path, 'tag', 'configure', @id, *hash_kv(keys)
   end
 
   def bind(seq, cmd=Proc.new)
     id = install_cmd(cmd)
-    tk_call path, 'tag', 'bind', tag, "<#{seq}>", id
+    tk_call @t, 'tag', 'bind', tag, "<#{seq}>", id
     @t._addcmd cmd
   end
 
   def lower(below=None)
-    tk_call path, 'tag', 'lower', below
+    tk_call @t.path, 'tag', 'lower', below
   end
 
   def destroy
-    tk_call path, 'tag', 'delete', @id
+    tk_call @t.path, 'tag', 'delete', @id
   end
 end
 
@@ -123,10 +129,9 @@ class TkTextMark<TkObject
       fail format("%s need to be TkText", parent.inspect)
     end
     @t = parent
-    @path = parent.path
-    @id = $tk_text_mark
+    @path = @id = $tk_text_mark
     $tk_text_mark = $tk_text_mark.succ
-    tk_call @t, 'set', @id, index
+    tk_call @t.path, 'set', @id, index
     @t._addtag id, self
   end
   def id
@@ -134,11 +139,11 @@ class TkTextMark<TkObject
   end
 
   def set(where)
-    tk_call path, 'mark', 'unset', @id, where
+    tk_call @t.path, 'mark', 'unset', @id, where
   end
 
   def unset
-    tk_call path, 'mark', 'unset', @id
+    tk_call @t.path, 'mark', 'unset', @id
   end
   alias destroy unset
 end
@@ -149,12 +154,11 @@ class TkTextWindow<TkObject
       fail format("%s need to be TkText", parent.inspect)
     end
     @t = parent
-    @path = parent.path
-    @index = index
-    tk_call @path, 'window', 'create', index, *args
+    @path = @index = index
+    tk_call @t.path, 'window', 'create', index, *args
   end
 
   def configure(slot, value)
-    tk_call path, 'window', 'configure', @index, "-#{slot}", value
+    tk_call @t.path, 'window', 'configure', @index, "-#{slot}", value
   end
 end

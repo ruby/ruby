@@ -1,29 +1,11 @@
 def decode64(str)
-  e = -1;
-  c = ","
-  string=''
+  string = ''
   for line in str.split("\n")
-    line.sub!(/=+$/, '')
-    line.tr! 'A-Za-z0-9+/', "\000-\377"
-    line.each_byte { |ch|
-      n +=1
-      e +=1
-      if e==0
-	c = ch << 2
-      elsif e==1
-	c |= ch >>4
-	string += [c].pack('c')
-	c = ch << 4
-      elsif e == 2
-	c |= ch >> 2
-	string += [c].pack('c'); 
-	c = ch << 6
-      elsif e==3
-	c |= ch
-	string += [c].pack('c')
-	e = -1
-      end
-    }
+    line.delete!('^A-Za-z0-9+/')        # remove non-base64 chars
+    line.tr!('A-Za-z0-9+/', ' -_')	# convert to uuencoded format
+    len = ["#{32 + line.length * 3 / 4}"].pack("c")
+					# compute length byte
+    string += "#{len}#{line}".unpack("u") # uudecode and concatenate
   end
   return string
 end
@@ -53,3 +35,20 @@ def decode_b(str)
   str.gsub!(/\0/, '')
   j2e(str)
 end
+
+def encode64(bin)
+  encode = ""
+  pad = 0
+  [bin].pack("u").each do |uu|
+    len = (2 + (uu[0] - 32)* 4) / 3
+    encode << uu[1, len].tr('` -_', 'AA-Za-z0-9+/')
+    pad += uu.length - 2 - len
+  end
+  encode + "=" * (pad % 3)
+end
+
+def b64encode(bin, len = 60)
+  encode64(bin).scan(/.{1,#{len}}/o) do
+    print $&, "\n"
+  end
+end 

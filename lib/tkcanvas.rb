@@ -110,11 +110,11 @@ class TkCanvas<TkWindow
   def select(*args)
     tk_send 'select', *args
   end
-  def xview(index)
-    tk_send 'xview', index
+  def xview(*index)
+    tk_send 'xview', *index
   end
-  def yview(index)
-    tk_send 'yview', index
+  def yview(*index)
+    tk_send 'yview', *index
   end
 end
 
@@ -125,12 +125,12 @@ class TkcItem<TkObject
     end
     @c = parent
     @path = parent.path
-    if args[-1].type == Hash
+    if args[-1].kind_of? Hash
       keys = args.pop
     end
     @id = create_self(*args)
     if keys
-      tk_call @path, 'itemconfigure', *hash_kv(keys)
+      tk_call @path, 'itemconfigure', @id, *hash_kv(keys)
     end
   end
   def create_self(*args) end
@@ -226,6 +226,11 @@ class TkcPolygon<TkcItem
     tk_call(@path, 'create', 'polygon', *args)
   end
 end
+class TkcRectangle<TkcItem
+  def create_self(*args)
+    tk_call(@path, 'create', 'rectangle', *args)
+  end
+end
 class TkcText<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'text', *args)
@@ -272,7 +277,7 @@ class TkImage<TkObject
   def initialize(keys=nil)
     @path = $tk_image_id
     $tk_image_id = $tk_image_id.succ
-    tk_call 'image', @type, @path, *hash_kv(keys)
+    tk_call 'image', 'create', @type, @path, *hash_kv(keys)
   end
 
   def height
@@ -302,7 +307,7 @@ end
 
 class TkPhotoImage<TkImage
   def initialize(*args)
-    @type = 'bitmap'
+    @type = 'photo'
     super
   end
 

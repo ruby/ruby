@@ -1,15 +1,31 @@
 # jcode.rb - ruby code to handle japanese (EUC/SJIS) string
 
+$vsave, $VERBOSE = $VERBOSE, FALSE
 class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
+  def jlength
+    self.split(//).length
+  end
+
   alias original_succ succ
   private :original_succ
+
+  def mbchar?(c)
+    if $KCODE =~ /^s/i
+      c =~ /[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]/n
+    elsif $KCODE =~ /^e/i
+      c =~ /[\xa1-\xfe][\xa1-\xfe]/n
+    else
+      FALSE
+    end
+  end
 
   def succ
     if self[-2] && self[-2] & 0x80 != 0
       s = self.dup
       s[-1] += 1
+      s[-1] += 1 if !mbchar?(s)
       return s
     else
       original_succ
@@ -23,8 +39,11 @@ class String
     tail = self[-2..-1]
     if tail.length == 2 and tail  =~ /^.$/ then
       if self[0..-2] == to[0..-2]
+	first = self[-2].chr
 	for c in self[-1] .. to[-1]
-	  yield self[0..-2]+c.chr
+	  if mbchar?(first+c.chr)
+	    yield self[0..-2]+c.chr
+	  end
 	end
       end
     else
@@ -171,4 +190,18 @@ class String
     self.dup.tr_s!(from,to)
   end
 
+  alias original_chop! chop!
+  private :original_chop!
+
+  def chop!
+    if self =~ /(.)$/ and $1.size == 2
+      original_chop!
+    end
+    original_chop!
+  end
+
+  def chop
+    self.dup.chop!
+  end
 end
+$VERBOSE = $vsave

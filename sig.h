@@ -17,6 +17,7 @@ extern int trap_immediate;
 extern int prohibit_interrupt;
 #define DEFER_INTS {prohibit_interrupt++;}
 #define ALLOW_INTS {prohibit_interrupt--; CHECK_INTS;}
+#define ENABLE_INTS {prohibit_interrupt--;}
 
 extern int trap_pending;
 #ifdef THREAD

@@ -23,14 +23,22 @@ VALUE cString;
 
 #define STRLEN(s) RSTRING(s)->len
 
+#define STR_FREEZE FL_USER1
+#define STR_TAINT  FL_USER2
+VALUE str_taint();
+VALUE str_tainted();
+
 VALUE
 str_new(ptr, len)
-    char *ptr;
+    UCHAR *ptr;
     UINT len;
 {
     NEWOBJ(str, struct RString);
     OBJSETUP(str, cString, T_STRING);
 
+    if (rb_safe_level() >= 3) {
+	FL_SET(str, STR_TAINT);
+    }
     str->len = len;
     str->orig = 0;
     str->ptr = ALLOC_N(char,len+1);
@@ -43,7 +51,7 @@ str_new(ptr, len)
 
 VALUE
 str_new2(ptr)
-    char *ptr;
+    UCHAR *ptr;
 {
     return str_new(ptr, strlen(ptr));
 }
@@ -59,7 +67,34 @@ str_new3(str)
     str2->ptr = str->ptr;
     str2->orig = str;
 
+    if (rb_safe_level() >= 3) {
+	FL_SET(str2, STR_TAINT);
+    }
+
     return (VALUE)str2;
+}
+
+VALUE
+str_new4(orig)
+    struct RString *orig;
+{
+    NEWOBJ(str, struct RString);
+    OBJSETUP(str, cString, T_STRING);
+
+    str->len = orig->len;
+    str->ptr = orig->ptr;
+    if (orig->orig) {
+	str->orig = orig->orig;
+    }
+    else {
+	orig->orig = str;
+	str->orig = 0;
+    }
+    if (rb_safe_level() >= 3) {
+	FL_SET(str, STR_TAINT);
+    }
+
+    return (VALUE)str;
 }
 
 #define as_str(str) (struct RString*)obj_as_string(str)
@@ -77,48 +112,55 @@ obj_as_string(obj)
     }
     str = rb_funcall(obj, pr_str, 0);
     if (TYPE(str) != T_STRING)
-	return krn_to_s(obj);
+	return any_to_s(obj);
     return str;
 }
 
 static VALUE
-str_clone(str)
-    struct RString *str;
+str_clone(orig)
+    struct RString *orig;
 {
-    VALUE obj;
+    VALUE str;
 
-    if (str->orig)
-	obj = str_new3(str->orig);
+    if (orig->orig)
+	str = str_new3(orig->orig);
     else
-	obj = str_new(str->ptr, str->len);
-    CLONESETUP(obj, str);
-    return obj;
+	str = str_new(orig->ptr, orig->len);
+    CLONESETUP(str, orig);
+    return str;
 }
 
 VALUE
 str_dup(str)
     struct RString *str;
 {
-    return str_new(str->ptr, str->len);
+    VALUE s = str_new(str->ptr, str->len);
+    if (str_tainted(str)) s = str_taint(s);
+    return s;
 }
 
 static VALUE
-str_s_new(class, str)
+str_s_new(class, orig)
     VALUE class;
-    struct RString *str;
+    struct RString *orig;
 {
-    NEWOBJ(str2, struct RString);
-    OBJSETUP(str2, class, T_STRING);
+    NEWOBJ(str, struct RString);
+    OBJSETUP(str, class, T_STRING);
 
-    str = as_str(str);
-    str2->len = str->len;
-    str2->ptr = ALLOC_N(char, str->len+1);
-    if (str2->ptr) {
-	memcpy(str2->ptr, str->ptr, str->len);
+    orig = as_str(orig);
+    str->len = orig->len;
+    str->ptr = ALLOC_N(char, orig->len+1);
+    if (str->ptr) {
+	memcpy(str->ptr, orig->ptr, orig->len);
     }
-    str2->ptr[str->len] = '\0';
-    str2->orig = 0;
-    return (VALUE)str2;
+    str->ptr[orig->len] = '\0';
+    str->orig = 0;
+
+    if (rb_safe_level() >= 3) {
+	FL_SET(str, STR_TAINT);
+    }
+
+    return (VALUE)str;
 }
 
 static VALUE
@@ -140,6 +182,8 @@ str_plus(str1, str2)
     memcpy(str3->ptr+str1->len, str2->ptr, str2->len);
     str3->ptr[str3->len] = '\0';
 
+    if (str_tainted(str1) || str_tainted(str2))
+	return str_taint(str3);
     return (VALUE)str3;
 }
 
@@ -149,15 +193,21 @@ str_times(str, times)
     VALUE times;
 {
     struct RString *str2;
-    int i;
+    int i, len;
 
-    times = NUM2INT(times);
+    len = NUM2INT(times);
+    if (len < 0) {
+	ArgError("negative argument");
+    }
 
-    str2 = (struct RString*)str_new(0, str->len*times);
-    for (i=0; i<times; i++) {
+    str2 = (struct RString*)str_new(0, str->len*len);
+    for (i=0; i<len; i++) {
 	memcpy(str2->ptr+(i*str->len), str->ptr, str->len);
     }
     str2->ptr[str2->len] = '\0';
+
+    if (str_tainted(str))
+	return str_taint(str2);
 
     return (VALUE)str2;
 }
@@ -184,7 +234,7 @@ str_substr(str, start, len)
     return (VALUE)str2;
 }
 
-VALUE
+static VALUE
 str_subseq(str, beg, end)
     struct RString *str;
     int beg, end;
@@ -221,14 +271,16 @@ str_subseq(str, beg, end)
 
 extern VALUE ignorecase;
 
-#define STR_FREEZE FL_USER1
-
 void
 str_modify(str)
     struct RString *str;
 {
-    char *ptr;
+    UCHAR *ptr;
 
+    if (rb_safe_level() >= 5) {
+	extern VALUE eSecurityError;
+	Raise(eSecurityError, "cannot change string status");
+    }
     if (FL_TEST(str, STR_FREEZE))
 	TypeError("can't modify frozen string");
     if (!str->orig) return;
@@ -250,7 +302,7 @@ str_freeze(str)
 }
 
 static VALUE
-str_frozen(str)
+str_frozen_p(str)
     VALUE str;
 {
     if (FL_TEST(str, STR_FREEZE))
@@ -268,9 +320,28 @@ str_dup_freezed(str)
 }
 
 VALUE
+str_taint(str)
+    VALUE str;
+{
+    if (TYPE(str) == T_STRING) {
+	FL_SET(str, STR_TAINT);
+    }
+    return str;
+}
+
+VALUE
+str_tainted(str)
+    VALUE str;
+{
+    if (FL_TEST(str, STR_TAINT))
+	return TRUE;
+    return FALSE;
+}
+
+VALUE
 str_resize(str, len)
     struct RString *str;
-    UINT len;
+    int len;
 {
     str_modify(str);
 
@@ -287,12 +358,11 @@ str_resize(str, len)
 VALUE
 str_cat(str, ptr, len)
     struct RString *str;
-    char *ptr;
+    UCHAR *ptr;
     UINT len;
 {
-    str_modify(str);
-
     if (len > 0) {
+	str_modify(str);
 	REALLOC_N(str->ptr, char, str->len + len + 1);
 	if (ptr)
 	    memcpy(str->ptr + str->len, ptr, len);
@@ -316,17 +386,19 @@ str_hash(str)
     struct RString *str;
 {
     int len = str->len;
-    unsigned char *p = (unsigned char*)str->ptr;
+    UCHAR *p = str->ptr;
     int key = 0;
 
     if (ignorecase) {
 	while (len--) {
-	    key = key*65599 + *p;
+	    key = key*65599 + toupper(*p);
+	    p++;
 	}
     }
     else {
 	while (len--) {
-	    key = key*65599 + toupper(*p);
+	    key = key*65599 + *p;
+	    p++;
 	}
     }
     return key;
@@ -425,7 +497,7 @@ str_index(str, sub, offset)
     struct RString *str, *sub;
     int offset;
 {
-    char *s, *e, *p;
+    UCHAR *s, *e, *p;
     int len;
 
     if (str->len - offset < sub->len) return -1;
@@ -472,7 +544,7 @@ str_index_method(argc, argv, str)
 	TypeError("Type mismatch: %s given", rb_class2name(CLASS_OF(sub)));
     }
 
-    if (pos == -1) return FALSE;
+    if (pos == -1) return Qnil;
     return INT2FIX(pos);
 }
 
@@ -485,7 +557,7 @@ str_rindex(argc, argv, str)
     struct RString *sub;
     VALUE initpos;
     int pos, len;
-    char *s, *sbeg, *t;
+    UCHAR *s, *sbeg, *t;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
 	pos = NUM2INT(initpos);
@@ -509,9 +581,9 @@ str_rindex(argc, argv, str)
     return Qnil;
 }
 
-static char
+static UCHAR
 succ_char(s)
-    char *s;
+    UCHAR *s;
 {
     char c = *s;
 
@@ -539,7 +611,7 @@ str_succ(orig)
     struct RString *orig;
 {
     struct RString *str, *str2;
-    char *sbeg, *s;
+    UCHAR *sbeg, *s;
     char c = -1;
 
     str = (struct RString*)str_new(orig->ptr, orig->len);
@@ -561,6 +633,9 @@ str_succ(orig)
 	    str = str2;
 	}
     }
+
+    if (str_tainted(orig))
+	return str_taint(str);
 
     return (VALUE)str;
 }
@@ -708,9 +783,6 @@ str_sub_s(str, pat, val, once)
     int beg, offset, n;
     struct re_registers *regs;
 
-    val = obj_as_string(val);
-    str_modify(str);
-
     switch (TYPE(pat)) {
       case T_REGEXP:
 	break;
@@ -724,6 +796,7 @@ str_sub_s(str, pat, val, once)
 	Check_Type(pat, T_REGEXP);
     }
 
+    val = obj_as_string(val);
     result = str_new(0,0);
     offset=0; n=0; 
     while ((beg=reg_search(pat, str, offset, 0)) >= 0) {
@@ -750,8 +823,11 @@ str_sub_s(str, pat, val, once)
 	if (offset >= STRLEN(str)) break;
     }
     if (n == 0) return Qnil;
-    str_cat(result, str->ptr+offset, str->len-offset);
+    if (str->len > offset) {
+	str_cat(result, str->ptr+offset, str->len-offset);
+    }
 
+    if (str_tainted(val)) str_taint(result);
     return result;
 }
 
@@ -762,11 +838,15 @@ str_sub_f(str, pat, val, once)
     VALUE val;
     int once;
 {
-    VALUE result = str_sub_s(str, pat, val, once);
+    VALUE result;
+
+    str_modify(str);
+    result = str_sub_s(str, pat, val, once);
 
     if (NIL_P(result)) return Qnil;
     str_resize(str, RSTRING(result)->len);
     memcpy(str->ptr, RSTRING(result)->ptr, RSTRING(result)->len);
+    if (str_tainted(result)) str_taint(str);
 
     return (VALUE)str;
 }
@@ -785,7 +865,6 @@ str_sub_iter_s(str, pat, once)
 	ArgError("Wrong # of arguments(1 for 2)");
     }
 
-    str_modify(str);
     switch (TYPE(pat)) {
       case T_REGEXP:
 	break;
@@ -827,7 +906,9 @@ str_sub_iter_s(str, pat, once)
 	if (offset >= STRLEN(str)) break;
     }
     if (n == 0) return Qnil;
-    str_cat(result, str->ptr+offset, str->len-offset);
+    if (str->len > offset) {
+	str_cat(result, str->ptr+offset, str->len-offset);
+    }
 
     return result;
 }
@@ -838,7 +919,10 @@ str_sub_iter_f(str, pat, once)
     VALUE pat;
     int once;
 {
-    VALUE result = str_sub_iter_s(str, pat, once);
+    VALUE result;
+
+    str_modify(str);
+    result = str_sub_iter_s(str, pat, once);
 
     if (NIL_P(result)) return Qnil;
     str_resize(str, RSTRING(result)->len);
@@ -989,14 +1073,25 @@ str_gsub(argc, argv, str)
 }
 
 static VALUE
+uscore_get()
+{
+    VALUE line;
+
+    line = lastline_get();
+    if (TYPE(line) != T_STRING) {
+	TypeError("$_ value need to be String");
+    }
+    return line;
+}
+
+static VALUE
 f_sub_bang(argc, argv)
     int argc;
     VALUE *argv;
 {
     VALUE pat, val, line;
 
-    line = lastline_get();
-    Check_Type(line, T_STRING);
+    line = uscore_get();
     if (rb_scan_args(argc, argv, "11", &pat, &val) == 1) {
 	return str_sub_iter_f(line, pat, 1);
     }
@@ -1010,8 +1105,7 @@ f_sub(argc, argv)
 {
     VALUE pat, val, line, v;
 
-    line = lastline_get();
-    Check_Type(line, T_STRING);
+    line = uscore_get();
     if (rb_scan_args(argc, argv, "11", &pat, &val) == 1) {
 	v = str_sub_iter_s(line, pat, 1);
     }
@@ -1032,8 +1126,7 @@ f_gsub_bang(argc, argv)
 {
     VALUE pat, val, line;
 
-    line = lastline_get();
-    Check_Type(line, T_STRING);
+    line = uscore_get();
     if (rb_scan_args(argc, argv, "11", &pat, &val) == 1) {
 	return str_sub_iter_f(line, pat, 0);
     }
@@ -1047,8 +1140,7 @@ f_gsub(argc, argv)
 {
     VALUE pat, val, line, v;
 
-    line = lastline_get();
-    Check_Type(line, T_STRING);
+    line = uscore_get();
     if (rb_scan_args(argc, argv, "11", &pat, &val) == 1) {
 	v = str_sub_iter_s(line, pat, 0);
     }
@@ -1066,7 +1158,7 @@ static VALUE
 str_reverse_bang(str)
     struct RString *str;
 {
-    char *s, *e, *p;
+    UCHAR *s, *e, *p;
 
     s = str->ptr;
     e = s + str->len - 1;
@@ -1085,7 +1177,7 @@ str_reverse(str)
     struct RString *str;
 {
     VALUE obj = str_new(0, str->len);
-    char *s, *e, *p;
+    UCHAR *s, *e, *p;
 
     s = str->ptr; e = s + str->len - 1;
     p = RSTRING(obj)->ptr;
@@ -1104,11 +1196,14 @@ str_to_i(str)
     return str2inum(str->ptr, 10);
 }
 
+#ifndef atof
+double atof();
+#endif
+
 static VALUE
 str_to_f(str)
     struct RString *str;
 {
-    double atof();
     double f = atof(str->ptr);
 
     return float_new(f);
@@ -1121,15 +1216,14 @@ str_to_s(str)
     return str;
 }
 
-static VALUE
+VALUE
 str_inspect(str)
     struct RString *str;
 {
 #define STRMAX 80
-    char buf[STRMAX];
-    char *p, *pend;
-    char *b;
-    int offset;
+    UCHAR buf[STRMAX];
+    UCHAR *p, *pend;
+    UCHAR *b;
 
     p = str->ptr; pend = p + str->len;
     b = buf;
@@ -1144,7 +1238,7 @@ str_inspect(str)
 }
 
     while (p < pend) {
-	unsigned char c = *p++;
+	UCHAR c = *p++;
 	if (ismbchar(c) && p < pend) {
 	    CHECK(2);
 	    *b++ = c;
@@ -1214,7 +1308,7 @@ static VALUE
 str_upcase_bang(str)
     struct RString *str;
 {
-    char *s, *send;
+    UCHAR *s, *send;
 
     str_modify(str);
     s = str->ptr; send = s + str->len;
@@ -1222,7 +1316,7 @@ str_upcase_bang(str)
 	if (islower(*s)) {
 	    *s = toupper(*s);
 	}
-	*s++;
+	s++;
     }
 
     return (VALUE)str;
@@ -1239,7 +1333,7 @@ static VALUE
 str_downcase_bang(str)
     struct RString *str;
 {
-    char *s, *send;
+    UCHAR *s, *send;
 
     str_modify(str);
     s = str->ptr; send = s + str->len;
@@ -1247,7 +1341,7 @@ str_downcase_bang(str)
 	if (isupper(*s)) {
 	    *s = tolower(*s);
 	}
-	*s++;
+	s++;
     }
 
     return (VALUE)str;
@@ -1264,7 +1358,7 @@ static VALUE
 str_capitalize_bang(str)
     struct RString *str;
 {
-    char *s, *send;
+    UCHAR *s, *send;
 
     str_modify(str);
     s = str->ptr; send = s + str->len;
@@ -1289,7 +1383,7 @@ static VALUE
 str_swapcase_bang(str)
     struct RString *str;
 {
-    char *s, *send;
+    UCHAR *s, *send;
 
     str_modify(str);
     s = str->ptr; send = s + str->len;
@@ -1300,7 +1394,7 @@ str_swapcase_bang(str)
 	else if (islower(*s)) {
 	    *s = toupper(*s);
 	}
-	*s++;
+	s++;
     }
 
     return (VALUE)str;
@@ -1313,11 +1407,11 @@ str_swapcase(str)
     return str_swapcase_bang(str_dup(str));
 }
 
-typedef unsigned char *USTR;
+typedef UCHAR *USTR;
 
-struct tr {
+static struct tr {
     int gen, now, max;
-    char *p, *pend;
+    UCHAR *p, *pend;
 } trsrc, trrepl;
 
 static int
@@ -1360,9 +1454,9 @@ tr_trans(str, src, repl, sflag)
 {
     struct tr trsrc, trrepl;
     int cflag = 0;
-    char trans[256];
+    UCHAR trans[256];
     int i, c, c0;
-    char *s, *send, *t;
+    UCHAR *s, *send, *t;
 
     Check_Type(src, T_STRING);
     trsrc.p = src->ptr; trsrc.pend = trsrc.p + src->len;
@@ -1453,7 +1547,7 @@ str_tr(str, src, repl)
 static void
 tr_setup_table(str, table)
     struct RString *str;
-    char table[256];
+    UCHAR table[256];
 {
     struct tr tr;
     int i, cflag = 0;
@@ -1478,8 +1572,8 @@ static VALUE
 str_delete_bang(str1, str2)
     struct RString *str1, *str2;
 {
-    char *s, *send, *t;
-    char squeez[256];
+    UCHAR *s, *send, *t;
+    UCHAR squeez[256];
 
     Check_Type(str2, T_STRING);
     tr_setup_table(str2, squeez);
@@ -1511,8 +1605,8 @@ static VALUE
 tr_squeeze(str1, str2)
     struct RString *str1, *str2;
 {
-    char squeez[256];
-    char *s, *send, *t;
+    UCHAR squeez[256];
+    UCHAR *s, *send, *t;
     char c, save;
 
     if (str2) {
@@ -1600,6 +1694,8 @@ str_split_method(argc, argv, str)
     rb_scan_args(argc, argv, "02", &spat, &limit);
     if (!NIL_P(limit)) {
 	lim = NUM2INT(limit);
+	if (lim == 0) limit = Qnil;
+	else if (lim == 1) return ary_new3(1, str);
 	i = 1;
     }
 
@@ -1631,9 +1727,9 @@ str_split_method(argc, argv, str)
     result = ary_new();
     beg = 0;
     if (char_sep != 0) {
-	char *ptr = str->ptr;
+	UCHAR *ptr = str->ptr;
 	int len = str->len;
-	char *eptr = ptr + len;
+	UCHAR *eptr = ptr + len;
 
 	if (char_sep == ' ') {	/* AWK emulation */
 	    int skip = 1;
@@ -1651,9 +1747,9 @@ str_split_method(argc, argv, str)
 		else {
 		    if (isspace(*ptr)) {
 			ary_push(result, str_substr(str, beg, end-beg));
-			if (!NIL_P(limit) && lim <= ++i) break;
 			skip = 1;
 			beg = end + 1;
+			if (!NIL_P(limit) && lim <= ++i) break;
 		    }
 		    else {
 			end++;
@@ -1665,8 +1761,8 @@ str_split_method(argc, argv, str)
 	    for (end = beg = 0; ptr<eptr; ptr++) {
 		if (*ptr == char_sep) {
 		    ary_push(result, str_substr(str, beg, end-beg));
-		    if (!NIL_P(limit) && lim <= ++i) break;
 		    beg = end + 1;
+		    if (!NIL_P(limit) && lim <= ++i) break;
 		}
 		end++;
 	    }
@@ -1687,7 +1783,6 @@ str_split_method(argc, argv, str)
 		    else
 			ary_push(result, str_substr(str, beg, 1));
 		    beg = start;
-		    if (!NIL_P(limit) && lim <= ++i) break;
 		}
 		else {
 		    start += ismbchar(str->ptr[start])?2:1;
@@ -1736,11 +1831,7 @@ f_split(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE line;
-
-    line = lastline_get();
-    Check_Type(line, T_STRING);
-    return str_split_method(argc, argv, line);
+    return str_split_method(argc, argv, uscore_get());
 }
 
 static VALUE
@@ -1753,8 +1844,8 @@ str_each_line(argc, argv, str)
     VALUE rs;
     int newline;
     int rslen;
-    char *p = str->ptr, *pend = p + str->len, *s;
-    char *ptr = p;
+    UCHAR *p = str->ptr, *pend = p + str->len, *s;
+    UCHAR *ptr = p;
     int len = str->len;
     VALUE line;
 
@@ -1824,11 +1915,12 @@ str_chop_bang(str)
     str_modify(str);
 
     str->len--;
-    str->ptr[str->len] = '\0';
-    if (str->len > 1 && str->ptr[str->len-1] == '\r') {
-	str->len--;
-	str->ptr[str->len] = '\0';
+    if (str->ptr[str->len] == '\n') {
+	if (str->len > 0 && str->ptr[str->len-1] == '\r') {
+	    str->len--;
+	}
     }
+    str->ptr[str->len] = '\0';
 
     return (VALUE)str;
 }
@@ -1844,28 +1936,20 @@ static VALUE
 f_chop_bang(str)
     struct RString *str;
 {
-    VALUE line;
-
-    line = lastline_get();
-    Check_Type(line, T_STRING);
-    return str_chop_bang(line);
+    return str_chop_bang(uscore_get());
 }
 
 static VALUE
 f_chop()
 {
-    VALUE line;
-
-    line = lastline_get();
-    Check_Type(line, T_STRING);
-    return str_chop_bang(str_dup(line));
+    return str_chop_bang(str_dup(uscore_get()));
 }
 
 static VALUE
 str_strip_bang(str)
     struct RString *str;
 {
-    char *s, *t, *e;
+    UCHAR *s, *t, *e;
 
     str_modify(str);
 
@@ -1881,7 +1965,7 @@ str_strip_bang(str)
 
     str->len = t-s;
     if (s > str->ptr) { 
-	char *p = str->ptr;
+	UCHAR *p = str->ptr;
 
 	str->ptr = ALLOC_N(char, str->len+1);
 	memcpy(str->ptr, s, str->len);
@@ -1994,10 +2078,12 @@ static VALUE
 str_intern(str)
     struct RString *str;
 {
+    ID id;
+
     if (strlen(str->ptr) != str->len)
 	ArgError("string contains `\0'");
-
-    return rb_intern(str->ptr)|FIXNUM_FLAG;
+    id = rb_intern(str->ptr);
+    return INT2FIX(id);
 }
 
 static VALUE
@@ -2008,7 +2094,7 @@ str_sum(argc, argv, str)
 {
     VALUE vbits;
     int   bits;
-    char *p, *pend;
+    UCHAR *p, *pend;
 
     rb_scan_args(argc, argv, "01", &vbits);
     if (NIL_P(vbits)) bits = 16;
@@ -2042,14 +2128,14 @@ str_sum(argc, argv, str)
     }
 }
 
-VALUE
+static VALUE
 str_ljust(str, w)
     struct RString *str;
     VALUE w;
 {
     int width = NUM2INT(w);
     struct RString *res;
-    char *p, *pend;
+    UCHAR *p, *pend;
 
     if (str->len >= width) return (VALUE)str;
     res = (struct RString*)str_new(0, width);
@@ -2061,14 +2147,14 @@ str_ljust(str, w)
     return (VALUE)res;
 }
 
-VALUE
+static VALUE
 str_rjust(str, w)
     struct RString *str;
     VALUE w;
 {
     int width = NUM2INT(w);
     struct RString *res;
-    char *p, *pend;
+    UCHAR *p, *pend;
 
     if (str->len >= width) return (VALUE)str;
     res = (struct RString*)str_new(0, width);
@@ -2080,14 +2166,14 @@ str_rjust(str, w)
     return (VALUE)res;
 }
 
-VALUE
+static VALUE
 str_center(str, w)
     struct RString *str;
     VALUE w;
 {
     int width = NUM2INT(w);
     struct RString *res;
-    char *p, *pend;
+    UCHAR *p, *pend;
     int n;
 
     if (str->len >= width) return (VALUE)str;
@@ -2105,7 +2191,7 @@ str_center(str, w)
     return (VALUE)res;
 }
 
-extern VALUE cKernel;
+extern VALUE mKernel;
 extern VALUE mComparable;
 extern VALUE mEnumerable;
 
@@ -2121,6 +2207,7 @@ Init_String()
     rb_define_method(cString, "<=>", str_cmp_method, 1);
     rb_define_method(cString, "==", str_equal, 1);
     rb_define_method(cString, "===", str_equal, 1);
+    rb_define_method(cString, "eql?", str_equal, 1);
     rb_define_method(cString, "hash", str_hash_method, 0);
     rb_define_method(cString, "+", str_plus, 1);
     rb_define_method(cString, "*", str_times, 1);
@@ -2136,7 +2223,10 @@ Init_String()
     rb_define_method(cString, "rindex", str_rindex, -1);
 
     rb_define_method(cString, "freeze", str_freeze, 0);
-    rb_define_method(cString, "frozen?", str_frozen, 0);
+    rb_define_method(cString, "frozen?", str_frozen_p, 0);
+
+    rb_define_method(cString, "taint", str_taint, 0);
+    rb_define_method(cString, "tainted?", str_tainted, 0);
 
     rb_define_method(cString, "to_i", str_to_i, 0);
     rb_define_method(cString, "to_f", str_to_f, 0);
@@ -2159,6 +2249,7 @@ Init_String()
     rb_define_method(cString, "reverse", str_reverse, 0);
     rb_define_method(cString, "reverse!", str_reverse_bang, 0);
     rb_define_method(cString, "concat", str_concat, 1);
+    rb_define_method(cString, "<<", str_concat, 1);
     rb_define_method(cString, "crypt", str_crypt, 1);
     rb_define_method(cString, "intern", str_intern, 0);
 
@@ -2194,16 +2285,16 @@ Init_String()
 
     rb_define_method(cString, "sum", str_sum, -1);
 
-    rb_define_private_method(cKernel, "sub", f_sub, -1);
-    rb_define_private_method(cKernel, "gsub", f_gsub, -1);
+    rb_define_global_function("sub", f_sub, -1);
+    rb_define_global_function("gsub", f_gsub, -1);
 
-    rb_define_private_method(cKernel, "sub!", f_sub_bang, -1);
-    rb_define_private_method(cKernel, "gsub!", f_gsub_bang, -1);
+    rb_define_global_function("sub!", f_sub_bang, -1);
+    rb_define_global_function("gsub!", f_gsub_bang, -1);
 
-    rb_define_private_method(cKernel, "chop", f_chop, 0);
-    rb_define_private_method(cKernel, "chop!", f_chop_bang, 0);
+    rb_define_global_function("chop", f_chop, 0);
+    rb_define_global_function("chop!", f_chop_bang, 0);
 
-    rb_define_private_method(cKernel, "split", f_split, -1);
+    rb_define_global_function("split", f_split, -1);
 
     pr_str = rb_intern("to_s");
 }

@@ -13,11 +13,13 @@
 #ifndef RUBY_H
 #define RUBY_H
 
-#ifndef NT
-# include "config.h"
-#endif
+#include "config.h"
 
 #include "defines.h"
+
+#ifdef HAVE_STDLIB_H
+# include <stdlib.h>
+#endif
 
 #ifndef __STDC__
 # define volatile
@@ -26,7 +28,7 @@
 # else
 #  define const
 # endif
-# define _(args)
+# define _(args) ()
 #else
 # define _(args) args
 #endif
@@ -44,6 +46,7 @@ typedef UINT VALUE;
 typedef UINT ID;
 
 typedef unsigned short USHORT;
+typedef unsigned char UCHAR;
 
 #ifdef __STDC__
 # include <limits.h>
@@ -72,7 +75,7 @@ typedef unsigned short USHORT;
 
 #define FIXNUM_FLAG 0x01
 #define INT2FIX(i) (VALUE)(((int)(i))<<1 | FIXNUM_FLAG)
-VALUE int2inum();
+VALUE int2inum _((int));
 #define INT2NUM(v) int2inum(v)
 
 #if (-1==(((-1)<<1)&FIXNUM_FLAG)>>1)
@@ -89,19 +92,20 @@ VALUE int2inum();
 #define FIXABLE(f) (POSFIXABLE(f) && NEGFIXABLE(f))
 
 /* special contants - i.e. non-zero and non-fixnum constants */
+#undef FALSE 
 #define FALSE 0
 #undef TRUE
 #define TRUE  2
 #define Qnil 4
 
-int rb_test_false_or_nil();
-# define RTEST(v) rb_test_false_or_nil(v)
+int rb_test_false_or_nil _((VALUE));
+# define RTEST(v) rb_test_false_or_nil((VALUE)(v))
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
 extern VALUE cObject;
 
-VALUE rb_class_of();
-#define CLASS_OF(v) rb_class_of(v)
+VALUE rb_class_of _((VALUE));
+#define CLASS_OF(v) rb_class_of((VALUE)(v))
 
 #define T_NIL    0x00
 #define T_OBJECT 0x01
@@ -131,16 +135,20 @@ VALUE rb_class_of();
 
 #define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)
 
-int rb_type();
-#define TYPE(x) rb_type(x)
+int rb_type _((VALUE));
+#define TYPE(x) rb_type((VALUE)(x))
 
-void Check_Type();
-#define Need_Fixnum(x)  {if (!FIXNUM_P(x)) (x) = num2fix(x);}
+void rb_check_type _((VALUE,int));
+#define Check_Type(v,t) rb_check_type((VALUE)(v),t)
+void rb_check_safe_str _((VALUE));
+#define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
+void rb_secure _((int));
+
 #define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):num2int(x))
-VALUE num2fix();
-int   num2int();
+VALUE num2fix _((VALUE));
+int   num2int _((VALUE));
 
-#define NEWOBJ(obj,type) type *obj = (type*)newobj()
+#define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
 #define OBJSETUP(obj,c,t) {\
     RBASIC(obj)->class = (c);\
     RBASIC(obj)->flags = (t);\
@@ -173,7 +181,7 @@ struct RFloat {
 struct RString {
     struct RBasic basic;
     UINT len;
-    char *ptr;
+    UCHAR *ptr;
     struct RString *orig;
 };
 
@@ -187,12 +195,14 @@ struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
     UINT len;
-    char *str;
+    UCHAR *str;
 };
 
 struct RHash {
     struct RBasic basic;
     struct st_table *tbl;
+    int iter_lev;
+    UINT status;
 };
 
 struct RFile {
@@ -209,14 +219,18 @@ struct RData {
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
-VALUE data_object_alloc();
-#define Make_Data_Struct(class,type,mark,free,sval) (\
+VALUE data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
+#define Data_Make_Struct(class,type,mark,free,sval) (\
     sval = ALLOC(type),\
     memset(sval, 0, sizeof(type)),\
     data_object_alloc(class,sval,mark,free)\
 )
 
-#define Get_Data_Struct(obj,type,sval) {\
+#define Data_Wrap_Struct(class,mark,free,sval) (\
+    data_object_alloc(class,sval,mark,free)\
+)
+
+#define Data_Get_Struct(obj,type,sval) {\
     Check_Type(obj, T_DATA); \
     sval = (type*)DATA_PTR(obj);\
 }
@@ -250,19 +264,22 @@ struct RBignum {
 
 #define FL_SINGLETON (1<<8)
 #define FL_MARK      (1<<9)
+#define FL_FINALIZE  (1<<10)
 
-#define FL_USER0     (1<<10)
-#define FL_USER1     (1<<11)
-#define FL_USER2     (1<<12)
-#define FL_USER3     (1<<13)
-#define FL_USER4     (1<<14)
-#define FL_USER5     (1<<15)
-#define FL_USER6     (1<<16)
+#define FL_USHIFT    11
 
-#define FL_UMASK  (0x7f<<10)
+#define FL_USER0     (1<<(FL_USHIFT+0))
+#define FL_USER1     (1<<(FL_USHIFT+1))
+#define FL_USER2     (1<<(FL_USHIFT+2))
+#define FL_USER3     (1<<(FL_USHIFT+3))
+#define FL_USER4     (1<<(FL_USHIFT+4))
+#define FL_USER5     (1<<(FL_USHIFT+5))
+#define FL_USER6     (1<<(FL_USHIFT+6))
 
-int rb_special_const_p();
-#define FL_ABLE(x) (!(FIXNUM_P(x)||rb_special_const_p(x)))
+#define FL_UMASK  (0x7f<<FL_USHIFT)
+
+int rb_special_const_p _((VALUE));
+#define FL_ABLE(x) (!(FIXNUM_P(x)||rb_special_const_p((VALUE)(x))))
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
 #define FL_SET(x,f) if (FL_ABLE(x)) {RBASIC(x)->flags |= (f);}
 #define FL_UNSET(x,f) if(FL_ABLE(x)){RBASIC(x)->flags &= ~(f);}
@@ -278,50 +295,52 @@ int rb_special_const_p();
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 
-void *xmalloc();
-void *xcalloc();
-void *xrealloc();
+void *xmalloc _((unsigned long));
+void *xcalloc _((unsigned long,unsigned long));
+void *xrealloc _((void*,unsigned long));
 
-VALUE rb_define_class();
-VALUE rb_define_module();
-void rb_include_module();
-void rb_extend_object();
+VALUE rb_define_class _((char*,VALUE));
+VALUE rb_define_module _((char*));
+void rb_include_module _((VALUE,VALUE));
+void rb_extend_object _((VALUE,VALUE));
 
-void rb_define_variable();
-void rb_define_const();
-void rb_define_global_const();
+void rb_define_variable _((char*,VALUE*));
+void rb_define_virtual_variable _((char*,VALUE(*)(),void(*)()));
+void rb_define_hooked_variable _((char*,VALUE*,VALUE(*)(),void(*)()));
+void rb_define_const _((VALUE,char*,VALUE));
+void rb_define_global_const _((char*,VALUE));
 
-void rb_define_method();
-void rb_define_singleton_method();
-void rb_undef_method();
-void rb_define_alias();
-void rb_define_attr();
+void rb_define_method _((VALUE,char*,VALUE(*)(),int));
+void rb_define_singleton_method _((VALUE,char*,VALUE(*)(),int));
+void rb_undef_method _((VALUE,char*));
+void rb_define_alias _((VALUE,char*,char*));
+void rb_define_attr _((VALUE,ID,int));
 
-ID rb_intern();
-char *rb_id2name();
-ID rb_to_id();
+ID rb_intern _((char*));
+char *rb_id2name _((ID));
+ID rb_to_id _((VALUE));
 
-char *rb_class2name();
-int rb_method_boundp();
+char *rb_class2name _((VALUE));
+int rb_method_boundp _((VALUE,ID,int));
 
-VALUE rb_eval_string();
+VALUE rb_eval_string _((char*));
 VALUE rb_funcall();
-VALUE rb_funcall2();
 int rb_scan_args();
-
-VALUE rb_ivar_get();
-VALUE rb_ivar_set();
 
 VALUE rb_iv_get();
 VALUE rb_iv_set();
 void rb_const_set();
+VALUE rb_const_get();
 
 VALUE rb_yield();
 int iterator_p();
 
-int rb_equal();
+VALUE rb_equal _((VALUE,VALUE));
 
 extern int verbose, debug;
+
+int rb_safe_level();
+void rb_set_safe_level _((int));
 
 #ifdef __GNUC__
 typedef void voidfn ();

@@ -20,19 +20,17 @@ static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
      */
 static int numcmp();
 static int numhash();
-struct st_hash_type type_numhash = {
+static struct st_hash_type type_numhash = {
     numcmp,
     numhash,
 };
 
 extern int strcmp();
 static int strhash();
-struct st_hash_type type_strhash = {
+static struct st_hash_type type_strhash = {
     strcmp,
     strhash,
 };
-
-#include "sig.h"
 
 extern void *xmalloc();
 static void rehash();
@@ -42,35 +40,9 @@ static void rehash();
 #define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
 #define Calloc(n,s) (char*)xcalloc((n),(s))
 
-static int
-call_cmp_func(table, x, y)
-    st_table *table;
-    char *x, *y;
-{
-    int cmp;
+#define EQUAL(table, x, y) ((*table->type->compare)(x, y) == 0)
 
-    DEFER_INTS;
-    cmp = (*table->type->compare)(x, y);
-    ALLOW_INTS;
-    return cmp;
-}
-
-#define EQUAL(table, x, y) (call_cmp_func((table),(x), (y)) == 0)
-
-static int
-call_hash_func(key, table)
-    char *key;
-    st_table *table;
-{
-    int hash;
-
-    DEFER_INTS;
-    hash = (*table->type->hash)((key), table->num_bins);
-    ALLOW_INTS;
-    return hash;
-}
-
-#define do_hash(key, table) call_hash_func((key), table)
+#define do_hash(key, table) (*(table)->type->hash)((key), (table)->num_bins)
 
 st_table*
 st_init_table_with_size(type, size)
@@ -347,6 +319,47 @@ st_delete(table, key, value)
 	    if (value != nil(char*)) *value = tmp->record;
 	    *key = tmp->key;
 	    free((char*)tmp);
+	    return 1;
+	}
+    }
+
+    return 0;
+}
+
+int
+st_delete_safe(table, key, value, never)
+    register st_table *table;
+    register char **key;
+    char **value;
+    char *never;
+{
+    int hash_val;
+    st_table_entry *tmp;
+    register st_table_entry *ptr;
+
+    hash_val = do_hash(*key, table);
+
+    ptr = table->bins[hash_val];
+
+    if (ptr == nil(st_table_entry)) {
+	if (value != nil(char*)) *value = nil(char);
+	return 0;
+    }
+
+    if (EQUAL(table, *key, ptr->key)) {
+	table->num_entries--;
+	*key = ptr->key;
+	if (value != nil(char*)) *value = ptr->record;
+	ptr->key = ptr->record = never;
+	return 1;
+    }
+
+    for(; ptr->next != nil(st_table_entry); ptr = ptr->next) {
+	if (EQUAL(table, ptr->next->key, *key)) {
+	    table->num_entries--;
+	    *key = ptr->key;
+	    if (value != nil(char*)) *value = ptr->record;
+	    ptr->key = ptr->record = never;
 	    return 1;
 	}
     }

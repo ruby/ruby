@@ -1,81 +1,76 @@
 #! /usr/local/bin/ruby
 
 require "parsedate"
-require "base64"
+require "kconv"
+require "mailread"
 
 include ParseDate
+include Kconv
+
+class String
+
+  public :kconv
+
+  def kconv(code = Kconv::EUC)
+    Kconv.kconv(self, code, Kconv::AUTO)
+  end
+
+  def kjust(len)
+    len += 1
+    me = self[0, len].ljust(len)
+    if me =~ /.$/ and $&.size == 2
+      me[-2, 2] = '  '
+    end
+    me.chop!
+  end
+
+end
 
 if ARGV[0] == '-w'
   wait = TRUE
   ARGV.shift
 end
 
-class Mail
-
-  def Mail.new(f)
-    if !f.kind_of?(IO)
-      f = open(f, "r")
-      me = super
-      f.close
-    else
-      me = super
-    end
-    return me
-  end
-
-  def initialize(f)
-    @header = {}
-    @body = []
-    while f.gets()
-      $_.chop!
-      next if /^From /	# skip From-line  
-      break if /^$/		# end of header
-      if /^(\S+):\s*(.*)/
-	@header[attr = $1.capitalize] = $2
-      elsif attr
-	sub(/^\s*/, '')
-	@header[attr] += "\n" + $_
-      end
-    end
-
-    return if ! $_
-
-    while f.gets()
-      break if /^From /
-      @body.push($_)
-    end
-  end
-
-  def header
-    return @header
-  end
-
-  def body
-    return @body
-  end
-
+if ARGV.length == 0
+  user = ENV['USER']
+else
+  user = ARGV[0]
 end
 
-ARGV[0] = '/usr/spool/mail/' + ENV['USER'] if ARGV.length == 0
+[ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
+  break if File.exist? ARGV[0] = "#{m}/mail/#{user}" 
+end
 
 $outcount = 0;
 def fromout(date, from, subj)
   return if !date
   y = m = d = 0
-  esc = "\033\(B"
   y, m, d = parsedate(date) if date
-  from = "sombody@somewhere" if ! from
-  subj = "(nil)" if ! subj
-  from = decode_b(from)
-  subj = decode_b(subj)
-  printf "%-02d/%02d/%02d [%-28.28s%s] %-40.40s%s\n",y,m,d,from,esc,subj,esc
+  if from
+    from.gsub! /\n/, ""
+  else
+    from = "sombody@somewhere"
+  end
+  if subj
+    subj.gsub! /\n/, ""
+  else
+    subj = "(nil)"
+  end
+  if ENV['LANG'] =~ /sjis/i
+    lang = Kconv::SJIS
+  else
+    lang = Kconv::EUC
+  end
+  from = from.kconv(lang).kjust(28)
+  subj = subj.kconv(lang).kjust(40)
+  printf "%02d/%02d/%02d [%s] %s\n",y,m,d,from,subj
   $outcount += 1
 end
 
 for file in ARGV
   next if !File.exist?(file)
   f = open(file, "r")
-  while !f.eof
+  while !f.eof?
     mail = Mail.new(f)
     fromout mail.header['Date'], mail.header['From'], mail.header['Subject']
   end

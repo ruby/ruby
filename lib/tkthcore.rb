@@ -30,7 +30,7 @@ module Tk
       break if wish_path
     end
   }
-  fail 'can\'t find wish' if not wish_path
+  fail 'can\'t find wish' if not wish_path #'
 
   # mark for non-given arguments
   None = Object.new
@@ -66,9 +66,10 @@ module Tk
       ary = [PORT]
       loop do
 	str = Qin.pop
-	print str, "\n" if $DEBUG
+	print "Qin: ", str, "\n" if $DEBUG
 	tk_write 'if [catch {%s} var] {puts "!$var"} {puts "=$var@@"};flush stdout', str
-	Qout.push(tk_recv)
+	line = tk_recv
+	Qout.push(line)
       end
     end
   end
@@ -89,7 +90,7 @@ module Tk
 	    val += $'
 	    return val
 	  else
-	    v>al += $_
+	    val += $_
 	  end
 	end
       elsif /^!/
@@ -101,7 +102,6 @@ module Tk
 	  fail format("%s - %s", self.type, msg)
 	end
       end
-      Qcmd.push line
     end
 
     fail 'wish closed' if PORT.closed?
@@ -122,11 +122,15 @@ module Tk
 	  s = "1"
 	elsif s.kind_of?(TkObject)
 	  s = s.path
+	elsif s.kind_of?(TkVariable)
+	  s = s.id
 	else
 	  s = s.to_s
-	  s.gsub!(/[{}]/, '\\\\\0')
+	  s.gsub!(/["\\\$\[\]]/, '\\\\\0') #"
+	  s.gsub!(/\{/, '\\\\173')
+	  s.gsub!(/\}/, '\\\\175')
 	end
-	"{#{s}}"
+	"\"#{s}\""
       end
     }
     str += " "
@@ -240,12 +244,11 @@ after 120000 keepalive'
   module_function :dispatch
 
   def error_at
-    n = 1
-    while c = caller(n)
-      break if c !~ /tk\.rb:/
-      n+=1
+    frames = caller(1)
+    frames.delete_if do |c|
+      c =~ %r!/tk(|core|thcore|canvas|text|entry|scrollbox)\.rb:\d+!
     end
-    c
+    frames
   end
 
   def bool(val)
@@ -295,7 +298,7 @@ after 120000 keepalive'
     if keys
       for k, v in keys
 	 conf.push("-#{k}")
-	 v = install_cmd(v) if v.type == Proc
+	 v = install_cmd(v) if v.kind_of? Proc
 	 conf.push(v)
       end
     end
@@ -440,10 +443,10 @@ after 120000 keepalive'
   module_function :after, :update, :dispatch, :mainloop, :root, :bell
 
   module Scrollable
-    def xscrollcommand(cmd)
+    def xscrollcommand(cmd=Proc.new)
       configure_cmd 'xscrollcommand', cmd
     end
-    def yscrollcommand(cmd)
+    def yscrollcommand(cmd=Proc.new)
       configure_cmd 'yscrollcommand', cmd
     end
   end

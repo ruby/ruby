@@ -21,7 +21,6 @@ rb_call_inits()
 #ifdef THREAD
     Init_Thread();
 #endif
-    Init_GC();
     Init_eval();
     Init_Comparable();
     Init_Enumerable();
@@ -44,6 +43,6 @@ rb_call_inits()
     Init_load();
     Init_Proc();
     Init_Math();
-    Init_ext();
+    Init_GC();
     Init_version();
 }

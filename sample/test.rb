@@ -96,13 +96,13 @@ tmp.close
 # test break
 
 tmp = open("while_tmp", "r")
-ok(tmp.type == "File")
+ok(tmp.kind_of?(File))
 
 while tmp.gets()
   break if /vt100/
 end
 
-ok(!tmp.eof && /vt100/)
+ok(!tmp.eof? && /vt100/)
 tmp.close
 
 # test next
@@ -112,7 +112,7 @@ while tmp.gets()
     next if /vt100/;
     $bad = 1 if /vt100/;
 end
-ok(!(!tmp.eof || /vt100/ || $bad))
+ok(!(!tmp.eof? || /vt100/ || $bad))
 tmp.close
 
 # test redo
@@ -126,8 +126,18 @@ while tmp.gets()
   $bad = 1 if /vt100/;
   $bad = 1 if /VT100/;
 end
-ok(tmp.eof && !$bad)
+ok(tmp.eof? && !$bad)
 tmp.close
+
+sum=0
+for i in 1..10
+  sum += i
+  i -= 1
+  if i > 0
+    redo
+  end
+end
+ok(sum == 220)
 
 # test interval
 $bad = FALSE
@@ -173,33 +183,23 @@ rescue
 end
 ok(TRUE)
 
-$bad = TRUE
+# exception in rescue clause
 $string = "this must be handled no.3"
 begin
-  fail $string
-rescue
-ensure
-  $bad = FALSE
-  ok(TRUE)
-end
-ok(FALSE) if $bad || $! != $string
-
-# exception in rescue clause
-begin
   begin
-    fail "this must be handled no.4"
-  rescue 
     fail "exception in rescue clause"
+  rescue 
+    fail $string
   end
   ok(FALSE)
 rescue
-  ok(TRUE)
+  ok(TRUE) if $! == $string
 end
   
 # exception in ensure clause
 begin
   begin
-    fail "this must be handled no.5"
+    fail "this must be handled no.4"
   ensure 
     fail "exception in ensure clause"
   end
@@ -222,7 +222,7 @@ ok(!$bad)
 $bad = TRUE
 begin
   begin
-    fail "this must be handled no.5"
+    fail "this must be handled no.6"
   ensure
     $bad = FALSE
   end
@@ -429,8 +429,15 @@ ok($x == [1, 2, 3, 1, 2, 3, 4, 5, 6, 7])
 check "bignum"
 def fact(n)
   return 1 if n == 0
-  return n*fact(n-1)
+  f = 1
+  while n>0
+    f *= n
+    n -= 1
+  end
+  p f
+  return f
 end
+fact(3)
 $x = fact(40)
 ok($x == $x)
 ok($x == fact(40))
@@ -445,11 +452,48 @@ ok($x == -815915283247897734345611269596115894272000000000)
 ok(2-(2**32) == -(2**32-2))
 ok(2**32 - 5 == (2**32-3)-2)
 
+$good = TRUE;
+for i in 1000..3000
+  $good = FALSE if ((1<<i) != (2**i))
+end
+ok($good)
+
+$good = TRUE;
+n1=1
+for i in 0..3000
+  $good = FALSE if ((1<<i) != n1)
+  n1 *= 2
+end
+ok($good)
+
+$good = TRUE;
+n2=n1
+for i in 3000..-1
+  n1 = n1 / 2
+  n2 = n2 >> 1
+  $good = FALSE if (n1 != n2)
+end
+ok($good)
+
+$good = TRUE;
+for i in 3500..4000
+  n1 = 1 << i;
+  $good = FALSE if ((n1**2-1) / (n1+1) != (n1-1))
+end
+ok($good)
+
 check "string & char"
 
 ok("abcd" == "abcd")
 ok("abcd" =~ "abcd")
 ok("abcd" === "abcd")
+ok(("abc" =~ /^$/) == FALSE)
+ok(("abc\n" =~ /^$/) == FALSE)
+ok(("abc" =~ /^d*$/) == FALSE)
+ok(("abc" =~ /d*$/) == 3)
+ok("" =~ /^$/)
+ok("\n" =~ /^$/)
+ok("a\n\n" =~ /^$/)
 
 $foo = "abc"
 ok("#$foo = abc" == "abc = abc")
@@ -466,6 +510,13 @@ foo = '-'
 ok(foo * 5 == '-----')
 ok(foo * 1 == '-')
 ok(foo * 0 == '')
+
+$x = "a.gif"
+ok($x.sub(/.*\.([^\.]+)$/, '\1') == "gif")
+ok($x.sub(/.*\.([^\.]+)$/, 'b.\1') == "b.gif")
+ok($x.sub(/.*\.([^\.]+)$/, '\2') == "")
+ok($x.sub(/.*\.([^\.]+)$/, 'a\2b') == "ab")
+ok($x.sub(/.*\.([^\.]+)$/, '<\&>') == "<a.gif>")
 
 # character constants(assumes ASCII)
 ok("a"[0] == ?a)
@@ -582,7 +633,7 @@ if defined? Process.kill
   check "signal"
 
   $x = 0
-  trap "SIGINT", proc{|sig| $x = sig}
+  trap "SIGINT", proc{|sig| $x = 2}
   Process.kill "SIGINT", $$
   sleep 0.1
   ok($x == 2)
@@ -596,12 +647,13 @@ if defined? Process.kill
   rescue
     x = $!
   end
-  ok(x =~ /Interrupt/)
+  ok(x && x =~ /Interrupt/)
 else
   ok(FALSE)
 end
 
 check "eval"
+ok(eval("") == nil)
 $bad=FALSE
 eval 'while FALSE; $bad = TRUE; print "foo\n" end'
 ok(!$bad)
@@ -696,7 +748,6 @@ tmp.close
 done = TRUE
 tmp = open("script_tmp", "r")
 while tmp.gets
-  print "c: ", $_
   if $_.to_i % 5 != 0
     done = FALSE
     break
@@ -858,6 +909,22 @@ ok(x.baz == "foo+foo")
 
 # check for cache
 ok(x.baz == "foo+foo")
+
+class Alias3<Alias2
+  def foo
+    defined? super
+  end
+  def bar
+    defined? super
+  end
+  def quux
+    defined? super
+  end
+end
+x = Alias3.new
+ok(!x.foo)
+ok(x.bar)
+ok(!x.quux)
 
 check "gc"
 begin
