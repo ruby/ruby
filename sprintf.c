@@ -544,7 +544,7 @@ rb_f_sprintf(argc, argv)
 			    if (base == 10) {
 				rb_warning("negative number for %%u specifier");
 			    }
-			    else if (!(flags&FPREC)) {
+			    else if (!(flags&(FPREC|FZERO))) {
 				strcpy(s, "..");
 				s += 2;
 			    }
@@ -602,7 +602,7 @@ rb_f_sprintf(argc, argv)
 				remove_sign_bits(++s, base);
 				tmp = rb_str_new(0, 3+strlen(s));
 				t = RSTRING(tmp)->ptr;
-				if (!(flags&FPREC)) {
+				if (!(flags&(FPREC|FZERO))) {
 				    strcpy(t, "..");
 				    t += 2;
 				}
@@ -660,7 +660,7 @@ rb_f_sprintf(argc, argv)
 		else {
 		    char c;
 
-		    if (bignum && !RBIGNUM(val)->sign)
+		    if (!sign && bignum && !RBIGNUM(val)->sign)
 			c = sign_bits(base, p);
 		    else
 			c = '0';

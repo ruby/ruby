@@ -126,6 +126,9 @@ module IRB
       when "-r"
 	opt = ARGV.shift
 	@CONF[:LOAD_MODULES].push opt if opt
+      when "-I"
+        opt = ARGV.shift
+        $LOAD_PATH.push opt if opt
       when /^-K(.)/
 	$KCODE = $1
       when "--inspect"

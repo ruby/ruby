@@ -1,3 +1,8 @@
+Fri Feb 20 18:59:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/init.rb (IRB::IRB.parse_opts): add -I option to
+	  irb. [ruby-dev:39243]
+
 Fri Feb 20 12:55:27 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (pipe_open): fix typo.
@@ -93,6 +98,14 @@ Wed Feb 18 18:07:09 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Feb 18 17:18:01 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c: need to include <olectl.h> on Cygwin.
+
+Wed Feb 18 10:40:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): sign bit extension should not be done
+	  if FPLUS flag is specified.  [ruby-list:39224]
+
+	* sprintf.c (rb_f_sprintf): do not prepend dots for negative
+	  numbers if FZERO is specified.  [ruby-dev:39218]
 
 Wed Feb 18 10:23:34 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 

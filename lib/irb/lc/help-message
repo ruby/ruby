@@ -14,6 +14,7 @@ Usage:  irb.rb [options] [programfile] [arguments]
   -m		    Bc mode (load mathn, fraction or matrix are available)
   -d                Set $DEBUG to true (same as `ruby -d')
   -r load-module    Same as `ruby -r'
+  -I path           Specify $LOAD_PATH directory
   --inspect	    Use `inspect' for output (default except for bc mode)
   --noinspect	    Don't use inspect for output
   --readline	    Use Readline extension module
