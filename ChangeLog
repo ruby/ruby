@@ -2,7 +2,7 @@ Fri Dec  5 23:22:30 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb (Test::Unit::Assertions::assert_raises,
 	  Test::Unit::Assertions::assert_nothing_raised): use the last
-	  argument as message unless non-class object.
+	  argument as message unless class object.
 
 	* test/testunit/test_assertions.rb (test_assert_raises): test for
 	  multiple exception list.  [ruby-core:01891]
