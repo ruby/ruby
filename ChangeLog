@@ -1,3 +1,11 @@
+Thu Jul 15 14:12:34 2004  why the lucky stiff  <why@topi.cc>
+
+	* lib/yaml.rb (YAML::load_file, YAML::parse_file): added.
+
+	* ext/syck/token.c: re2c compiled with bit vectors now.
+	* ext/syck/implicit.c: ditto.
+	* ext/syck/bytecode.c: ditto.
+
 Thu Jul 15 10:15:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/, ext/tcltklib/: bug fix

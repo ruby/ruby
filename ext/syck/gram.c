@@ -351,8 +351,8 @@ static const unsigned short yyrline[] =
      184,   194,   195,   196,   197,   198,   204,   210,   216,   217,
      222,   227,   232,   237,   241,   247,   251,   256,   265,   269,
      275,   279,   286,   287,   293,   298,   305,   310,   315,   320,
-     325,   329,   335,   350,   351,   369,   370,   382,   390,   399,
-     407,   411,   417,   418,   427,   434
+     325,   329,   335,   350,   351,   368,   369,   381,   389,   398,
+     406,   410,   416,   417,   426,   433
 };
 #endif
 
@@ -1476,7 +1476,7 @@ yyreduce:
     break;
 
   case 66:
-#line 371 "gram.y"
+#line 370 "gram.y"
     { 
                     if ( yyvsp[-2].nodeData->shortcut == NULL )
                     {
@@ -1491,7 +1491,7 @@ yyreduce:
     break;
 
   case 67:
-#line 383 "gram.y"
+#line 382 "gram.y"
     { 
                     apply_seq_in_map( (SyckParser *)parser, yyvsp[-2].nodeData );
                     syck_map_update( yyvsp[-2].nodeData, yyvsp[0].nodeData );
@@ -1502,14 +1502,14 @@ yyreduce:
     break;
 
   case 68:
-#line 391 "gram.y"
+#line 390 "gram.y"
     { 
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
     break;
 
   case 69:
-#line 400 "gram.y"
+#line 399 "gram.y"
     {
                     yyval.nodeData = syck_new_map( 
                         syck_hdlr_add_node( (SyckParser *)parser, yyvsp[-2].nodeData ), 
@@ -1518,21 +1518,21 @@ yyreduce:
     break;
 
   case 70:
-#line 408 "gram.y"
+#line 407 "gram.y"
     {
                     yyval.nodeData = yyvsp[-1].nodeData;
                 }
     break;
 
   case 71:
-#line 412 "gram.y"
+#line 411 "gram.y"
     {
                     yyval.nodeData = syck_alloc_map();
                 }
     break;
 
   case 73:
-#line 419 "gram.y"
+#line 418 "gram.y"
     {
                     syck_map_update( yyvsp[-2].nodeData, yyvsp[0].nodeData );
                     syck_free_node( yyvsp[0].nodeData );
@@ -1542,7 +1542,7 @@ yyreduce:
     break;
 
   case 74:
-#line 428 "gram.y"
+#line 427 "gram.y"
     {
                     NULL_NODE( parser, n );
                     yyval.nodeData = syck_new_map( 
@@ -1774,7 +1774,7 @@ yyreturn:
 }
 
 
-#line 437 "gram.y"
+#line 436 "gram.y"
 
 
 void
