@@ -1,3 +1,17 @@
+Sat Jan  4 15:18:50 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* process.c (rb_proc_exec): use same logic as DJGPP on win32 ports.
+
+	* process.c (rb_f_system): ditto.
+
+	* win32/win32.c, win32/win32.h (do_aspawn): [new]. for arrayed
+	  arguments.
+
+	* win32/win32.c (CreateChild): add new argument for real filename of
+	  executing process.
+
+	* win32/win32.c (NtHasRedirection, pipe_exec): follow above change.
+
 Sat Jan  4 14:29:52 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* configure.in: set rb_cv_need_io_flush_between_seek=yes.

@@ -577,7 +577,7 @@ rb_proc_exec(str)
     return -1;
 }
 
-#if defined(__human68k__) || defined(__DJGPP__)
+#if defined(__human68k__) || defined(__DJGPP__) || defined(_WIN32)
 static int
 proc_spawn_v(argv, prog)
     char **argv;
@@ -814,7 +814,7 @@ rb_f_system(argc, argv)
     int argc;
     VALUE *argv;
 {
-#if defined(_WIN32) || defined(__EMX__)
+#if defined(__EMX__)
     VALUE cmd;
     int status;
 
@@ -839,7 +839,7 @@ rb_f_system(argc, argv)
 
     if (status == 0) return Qtrue;
     return Qfalse;
-#elif defined(__human68k__) || defined(__DJGPP__)
+#elif defined(__human68k__) || defined(__DJGPP__) || defined(_WIN32)
     volatile VALUE prog = 0;
     int status;
 

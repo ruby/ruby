@@ -88,7 +88,7 @@
 
 bool NtSyncProcess = TRUE;
 
-static struct ChildRecord *CreateChild(char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
+static struct ChildRecord *CreateChild(char *, char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static bool NtHasRedirection (char *);
 static int valid_filename(char *s);
 static void StartSockets ();
@@ -528,7 +528,7 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 	CloseHandle(hCurProc);
 
 	/* create child process */
-	child = CreateChild(cmd, &sa, NULL, NULL, NULL);
+	child = CreateChild(cmd, NULL, &sa, NULL, NULL, NULL);
 	if (!child) {
 	    if (reading) {
 		SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdOut);
@@ -633,7 +633,76 @@ int
 do_spawn(cmd)
 char *cmd;
 {
-    struct ChildRecord *child = CreateChild(cmd, NULL, NULL, NULL, NULL);
+    struct ChildRecord *child = CreateChild(cmd, NULL, NULL, NULL, NULL, NULL);
+    if (!child) {
+	return -1;
+    }
+    rb_syswait(child->pid);
+    return NUM2INT(rb_last_status);
+}
+
+int
+do_aspawn(prog, argv)
+char *prog;
+char **argv;
+{
+    char *cmd, *p, *q, *s, **t;
+    int len, n, bs, quote;
+    struct ChildRecord *child;
+
+    for (t = argv, len = 0; *t; t++) {
+	for (p = *t, n = quote = bs = 0; *p; ++p) {
+	    switch (*p) {
+	      case '\\':
+		++bs;
+		break;
+	      case '"':
+		n += bs + 1; bs = 0;
+		quote = 1;
+		break;
+	      case ' ': case '\t':
+		quote = 1;
+	      default:
+		bs = 0;
+		p = CharNext(p) - 1;
+		break;
+	    }
+	}
+	len += p - *t + n + 1;
+	if (quote) len += 2;
+    }
+    cmd = ALLOCA_N(char, len);
+    for (t = argv, q = cmd; p = *t; t++) {
+	quote = 0;
+	s = p;
+	if (!*p || strpbrk(p, " \t\"")) {
+	    quote = 1;
+	    *q++ = '"';
+	}
+	for (bs = 0; *p; ++p) {
+	    switch (*p) {
+	      case '\\':
+		++bs;
+		break;
+	      case '"':
+		memcpy(q, s, n = p - s); q += n; s = p;
+		memset(q, '\\', ++bs); q += bs; bs = 0;
+		break;
+	      default:
+		bs = 0;
+		p = CharNext(p) - 1;
+		break;
+	    }
+	}
+	memcpy(q, s, n = p - s);
+	q += n;
+	if (quote) *q++ = '"';
+	*q++ = ' ';
+    }
+    if (q > cmd) --q;
+    *q = '\0';
+
+    child = CreateChild(cmd, prog, NULL, NULL, NULL, NULL);
     if (!child) {
 	return -1;
     }
@@ -642,7 +711,7 @@ char *cmd;
 }
 
 static struct ChildRecord *
-CreateChild(char *cmd, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, HANDLE hError)
+CreateChild(char *cmd, char *prog, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, HANDLE hError)
 {
     BOOL fRet;
     DWORD  dwCreationFlags;
@@ -692,19 +761,26 @@ CreateChild(char *cmd, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, 
 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
-    if ((shell = getenv("RUBYSHELL")) && NtHasRedirection(cmd)) {
-	char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) + sizeof (" -c "));
-	sprintf(tmp, "%s -c %s", shell, cmd);
-	cmd = tmp;
-    }
-    else if ((shell = getenv("COMSPEC")) &&
-	     (NtHasRedirection(cmd) || isInternalCmd(cmd))) {
-	char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) + sizeof (" /c "));
-	sprintf(tmp, "%s /c %s", shell, cmd);
-	cmd = tmp;
+    if (prog) {
+	shell = prog;
     }
     else {
-	shell = NULL;
+	if ((shell = getenv("RUBYSHELL")) && NtHasRedirection(cmd)) {
+	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
+				 sizeof (" -c "));
+	    sprintf(tmp, "%s -c %s", shell, cmd);
+	    cmd = tmp;
+	}
+	else if ((shell = getenv("COMSPEC")) &&
+		 (NtHasRedirection(cmd) || isInternalCmd(cmd))) {
+	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
+				 sizeof (" /c "));
+	    sprintf(tmp, "%s /c %s", shell, cmd);
+	    cmd = tmp;
+	}
+	else {
+	    shell = NULL;
+	}
     }
 
     RUBY_CRITICAL({
