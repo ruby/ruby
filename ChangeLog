@@ -1,3 +1,9 @@
+Fri Jul  5 05:00:40 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.
+	thanks to Sean Chittenden <sean@ruby-lang.org>, Shugo Maeda
+	<shugo@modruby.net>
+
 Wed Jul  3 02:32:31 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.
