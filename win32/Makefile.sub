@@ -179,7 +179,7 @@ s,@FFLAGS@,$(FFLAGS),;t t
 s,@LDFLAGS@,$(LDFLAGS),;t t
 s,@LIBS@,user32.lib advapi32.lib wsock32.lib,;t t
 s,@exec_prefix@,$${prefix},;t t
-s,@prefix@,$(prefix),;t t
+s,@prefix@,,;t t
 s,@program_transform_name@,s,,,,;t t
 s,@bindir@,$${exec_prefix}/bin,;t t
 s,@sbindir@,$${exec_prefix}/sbin,;t t
