@@ -766,22 +766,26 @@ window_initialize(obj, h, w, top, left)
     return obj;
 }
 
-/* def subwin(h, w, top, left) */
+/* def subwin(height, width, top, left) */
 static VALUE
-window_subwin(obj, h, w, top, left)
+window_subwin(obj, height, width, top, left)
     VALUE obj;
-    VALUE h;
-    VALUE w;
+    VALUE height;
+    VALUE width;
     VALUE top;
     VALUE left;
 {
     struct windata *winp;
     WINDOW *window;
     VALUE win;
+    int h, w, t, l;
 
+    h = NUM2INT(height);
+    w = NUM2INT(width);
+    t = NUM2INT(top);
+    l = NUM2INT(left);
     GetWINDOW(obj, winp);
-    window = subwin(winp->window, NUM2INT(h), NUM2INT(w),
-		                  NUM2INT(top), NUM2INT(left));
+    window = subwin(winp->window, h, w, t, l);
     win = prep_window(rb_obj_class(obj), window);
 
     return win;

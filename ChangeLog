@@ -1,3 +1,8 @@
+Mon Dec 13 02:45:51 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/curses/curses.c (window_subwin): call NUM2INT() before
+	GetWINDOW(). fixed: [ruby-dev:25161]
+
 Mon Dec 13 00:58:02 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (cleanpath_aggressive): make it private.
