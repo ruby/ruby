@@ -707,6 +707,7 @@ argf_set_lineno(argf, val)
 {
     gets_lineno = NUM2INT(val);
     lineno = INT2FIX(gets_lineno);
+    return Qnil;
 }
 
 static VALUE
@@ -865,8 +866,6 @@ static void
 rb_io_fptr_close(fptr)
     OpenFile *fptr;
 {
-    int fd;
-
     if (fptr->f == NULL && fptr->f2 == NULL) return;
     rb_thread_fd_close(fileno(fptr->f));
 
@@ -2322,7 +2321,6 @@ rb_f_select(argc, argv, obj)
     int i, max = 0, n;
     int interrupt_flag = 0;
     int pending = 0;
-    VALUE io;
 
     rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout);
     if (NIL_P(timeout)) {
@@ -2640,8 +2638,8 @@ rb_f_syscall(argc, argv)
 #endif /* atarist */
     }
     TRAP_END;
-    if (retval == -1) rb_sys_fail(0);
-    return INT2FIX(0);
+    if (retval < 0) rb_sys_fail(0);
+    return INT2NUM(retval);
 #else
     rb_notimplement();
     return Qnil;		/* not reached */
