@@ -1,3 +1,9 @@
+Thu May 13 11:04:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* pack.c (pack_pack): always add with null for 'Z'.
+
+	* pack.c (pack_unpack): terminated by null for 'Z'.  [ruby-talk:98281]
+
 Wed May 12 19:59:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_type, check_sizeof): replace unusable characters.
