@@ -16,6 +16,7 @@
 #define SYCK_VERSION    "0.41"
 #define YAML_DOMAIN     "yaml.org,2002"
 
+#include <stdio.h>
 #include "st.h"
 
 #if defined(__cplusplus)

@@ -162,7 +162,7 @@ enumerator_each(obj)
 				 rb_ivar_get(obj, id_enum_obj),
 				 rb_to_id(rb_ivar_get(obj, id_enum_method)),
 				 rb_ivar_get(obj, id_enum_args));
-    val = rb_iterate(enumerator_iter, obj, rb_yield, 0);
+    val = rb_iterate((VALUE (*)_((VALUE)))enumerator_iter, obj, rb_yield, 0);
     rb_gc_force_recycle(obj);
     return val;
 }

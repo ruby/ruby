@@ -1,3 +1,9 @@
+Wed Oct 15 09:30:34 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/enumerator/enumerator.c (enumerator_each): avoid VC++ warning.
+
+	* ext/syck/syck.h: include stdio.h for definition of FILE.
+
 Wed Oct 15 08:09:07 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
 	* ext/syck/bytecode.c: Checkin of YAML bytecode support.
