@@ -10,7 +10,7 @@ if __FILE__ == $0
 
   $SAFE = 1
 
-  DRb.start_service(nil, [1, 2, 'III', 4, "five", 6])
+  DRb.start_service('druby://localhost:0', [1, 2, 'III', 4, "five", 6])
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
 end

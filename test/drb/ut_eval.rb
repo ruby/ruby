@@ -17,7 +17,7 @@ if __FILE__ == $0
 
   $SAFE = 1
 
-  DRb.start_service(nil, EvalAttack.new)
+  DRb.start_service('druby://localhost:0', EvalAttack.new)
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
 end

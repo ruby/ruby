@@ -1,3 +1,15 @@
+Sat Mar 13 14:56:32 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/ut_drb.rb: use 'druby://localhost:0'. [ruby-dev:23078]
+
+	* test/drb/ut_eval.rb: ditto.
+
+	* test/drb/ut_large.rb: ditto.
+
+	* test/drb/ut_safe1.rb: ditto.
+
+	* test/drb/ut_drb_drbssl.rb: use 'drbssl://localhost:0'.
+
 Fri Mar 12 23:52:56  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (fnmatch):
