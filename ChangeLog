@@ -1,3 +1,16 @@
+Fri Mar 29 16:36:52 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/mkmf.rb (arg_config): should use Shellwords::shellwords like
+	  ext/extmk.rb.in.
+
+	* lib/mkmf.rb (enable_config): default had priority over command
+	  line options and configure_args.
+
+	* lib/mkmf.rb: support autoconf 2.53 style variables from
+	  environment.
+
+	* lib/mkmf.rb: add directory options.
+
 Wed Mar 27 14:38:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (READ_DATA_PENDING): uClibc 0.9.10 support.

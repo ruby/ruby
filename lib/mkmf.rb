@@ -3,13 +3,33 @@
 
 require 'rbconfig'
 require 'find'
+require 'shellwords'
 
 CONFIG = Config::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
 SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 
-$config_cache = CONFIG["compile_dir"]+"/ext/config.cache"
+unless defined? $configure_args
+  $configure_args = {}
+  for arg in Shellwords.shellwords(CONFIG["configure_args"])
+    arg, val = arg.split('=', 2)
+    if arg.sub!(/^(?!--)/, '--')
+      val or next
+      arg.downcase!
+    end
+    next if /^--(?:top|topsrc|src|cur)dir$/ =~ arg
+    $configure_args[arg] = val || true
+  end
+  for arg in ARGV
+    arg, val = arg.split('=', 2)
+    if arg.sub!(/^(?!--)/, '--')
+      val or next
+      arg.downcase!
+    end
+    $configure_args[arg] = val || true
+  end
+end
 
 $srcdir = CONFIG["srcdir"]
 $libdir = CONFIG["libdir"]
@@ -296,14 +316,6 @@ SRC
 end
 
 def arg_config(config, default=nil)
-  unless defined? $configure_args
-    $configure_args = {}
-    for arg in CONFIG["configure_args"].split + ARGV
-      next unless /^--/ =~ arg
-      arg, val = arg.split('=', 2)
-      $configure_args[arg] = val || true
-    end
-  end
   $configure_args.fetch(config, default)
 end
 
@@ -315,9 +327,9 @@ def with_config(config, default=nil)
 end
 
 def enable_config(config, default=nil)
-  if arg_config("--enable-"+config, default)
+  if arg_config("--enable-"+config)
     true
-  elsif arg_config("--disable-"+config, false)
+  elsif arg_config("--disable-"+config)
     false
   else
     default
@@ -362,7 +374,7 @@ def with_destdir(dir)
   /^\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
 end
 
-def create_makefile(target, srcdir = File.dirname($0))
+def create_makefile(target, srcdir =  = $srcdir)
   save_libs = $libs.dup
   save_libpath = $LIBPATH.dup
   print "creating Makefile\n"
@@ -387,6 +399,7 @@ def create_makefile(target, srcdir = File.dirname($0))
   $configure_args['--enable-shared'] or $LIBPATH |= [$topdir]
   $LIBPATH |= [CONFIG["libdir"]]
 
+  srcdir ||= '.'
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/
     deffile = target + '.def'
@@ -414,7 +427,7 @@ def create_makefile(target, srcdir = File.dirname($0))
 
   unless $objs then
     $objs = []
-    for f in Dir[File.join(srcdir || ".", "*.{#{SRC_EXT.join(%q{,})}}")]
+    for f in Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
       f = File.basename(f)
       f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
       $objs.push f
@@ -433,7 +446,7 @@ SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
-srcdir = #{srcdir || $srcdir}
+srcdir = #{srcdir}
 topdir = #{$topdir}
 hdrdir = #{$hdrdir}
 VPATH = $(srcdir)
@@ -605,9 +618,14 @@ $defs = []
 
 $make = with_config("make-prog", ENV["MAKE"] || "make")
 
-$CFLAGS = with_config("cflags", "")
-$CPPFLAGS = with_config("cppflags", "")
-$LDFLAGS = with_config("ldflags", "")
+$CFLAGS = with_config("cflags", arg_config("CFLAGS"))
+$CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS"))
+$LDFLAGS = with_config("ldflags", arg_config("LDFLAGS"))
 $LIBPATH = []
 
 dir_config("opt")
+
+$srcdir = arg_config("--srcdir", File.dirname($0))
+$configure_args["--topsrcdir"] ||= $srcdir
+$curdir = arg_config("--curdir", Dir.pwd)
+$configure_args["--topdir"] ||= $curdir
