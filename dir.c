@@ -409,6 +409,7 @@ dir_s_chdir(argc, argv, obj)
 	dist = getenv("HOME");
 	if (!dist) {
 	    dist = getenv("LOGDIR");
+	    if (!dist) rb_raise(rb_eArgError, "HOME/LOGDIR not set");
 	}
     }
 
@@ -569,8 +570,9 @@ extract_elem(path)
 #endif
 
 void
-rb_glob_helper(path, flags, func, arg)
+rb_glob_helper(path, sub, flags, func, arg)
     char *path;
+    char *sub;
     int flags;
     void (*func) _((const char*, VALUE));
     VALUE arg;
@@ -578,14 +580,14 @@ rb_glob_helper(path, flags, func, arg)
     struct stat st;
     char *p, *m;
 
-    if (!has_magic(path, 0, flags)) {
+    p = sub ? sub : path;
+    if (!has_magic(p, 0, flags)) {
 	if (rb_sys_stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
 	return;
     }
 
-    p = path;
     while (p) {
 	if (*p == '/') p++;
 	m = strchr(p, '/');
@@ -611,10 +613,11 @@ rb_glob_helper(path, flags, func, arg)
 	    }
 	    if (S_ISDIR(st.st_mode)) {
 		if (m && strcmp(magic, "**") == 0) {
+		    int n = strlen(base);
 		    recursive = 1;
-		    buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
+		    buf = ALLOC_N(char, n+strlen(m)+3);
 		    sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
-		    rb_glob_helper(buf, flags, func, arg);
+		    rb_glob_helper(buf, buf+n, flags, func, arg);
 		    free(buf);
 		}
 		dirp = opendir(dir);
@@ -644,9 +647,10 @@ rb_glob_helper(path, flags, func, arg)
 			continue;
 		    }
 		    if (S_ISDIR(st.st_mode)) {
-		        strcat(buf, "/**");
-			strcat(buf, m);
-			rb_glob_helper(buf, flags, func, arg);
+			char *t = buf+strlen(buf);
+		        strcpy(t, "/**");
+			strcpy(t+3, m);
+			rb_glob_helper(buf, t, flags, func, arg);
 		    }
 		    free(buf);
 		    continue;
@@ -676,7 +680,7 @@ rb_glob_helper(path, flags, func, arg)
 		    char *t = ALLOC_N(char, len+mlen+1);
 
 		    sprintf(t, "%s%s", link->path, m);
-		    rb_glob_helper(t, flags, func, arg);
+		    rb_glob_helper(t, t+len, flags, func, arg);
 		    free(t);
 		}
 		tmp = link;
@@ -695,7 +699,7 @@ rb_glob(path, func, arg)
     void (*func)();
     VALUE arg;
 {
-    rb_glob_helper(path, FNM_PERIOD, func, arg);
+    rb_glob_helper(path, 0, FNM_PERIOD, func, arg);
 }
 
 void
@@ -704,7 +708,7 @@ rb_iglob(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    rb_glob_helper(path, FNM_PERIOD|FNM_NOCASE, func, arg);
+    rb_glob_helper(path, 0, FNM_PERIOD|FNM_NOCASE, func, arg);
 }
 
 static void

@@ -1,3 +1,11 @@
+Thu Sep  6 17:38:18 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* dir.c (dir_s_chdir): raise if environment variable HOME/LOGDIR
+	  not set.
+
+	* dir.c (glob_helper): avoid infinite loop on a file name with
+	  wildcard characters. (ruby-bugs#PR177)
+
 Thu Sep  6 03:15:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_include_module): should check whole ancestors to
