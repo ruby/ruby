@@ -93,8 +93,8 @@ char *strchr _((char*,char));
 
 static char *
 range(pat, test, flags)
-    char *pat;
-    char test;
+    const char *pat;
+    int test;
     int flags;
 {
     int not, ok = 0;
@@ -113,19 +113,19 @@ range(pat, test, flags)
 	    pat++;
 	cstart = cend = *pat++;
 	if (!cstart)
-	    return 0;
+	    return NULL;
 	if (*pat == '-' && pat[1] != ']') {
 	    pat++;
 	    if (escape && *pat == '\\')
 		pat++;
 	    cend = *pat++;
 	    if (!cend)
-		return 0;
+		return NULL;
 	}
 	if (downcase(cstart) <= test && test <= downcase(cend))
 	    ok = 1;
     }
-    return ok == not ? 0 : pat + 1;
+    return ok == not ? NULL : (char *)pat + 1;
 }
 
 #define ISDIRSEP(c) (pathname && isdirsep(c))
@@ -191,7 +191,7 @@ fnmatch(pat, string, flags)
 	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
 		return FNM_NOMATCH;
 	    pat = range(pat, *s, flags);
-	    if (!pat)
+	    if (pat == NULL)
 		return FNM_NOMATCH;
 	    s++;
 	    break;
