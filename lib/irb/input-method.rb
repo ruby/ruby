@@ -94,6 +94,7 @@ module IRB
 
       def gets
 	if l = readline(@prompt, true)
+	  HISTORY.pop if l.empty?
 	  @line[@line_no += 1] = l + "\n"
 	else
 	  @eof = true

@@ -1,3 +1,8 @@
+Thu Jul 19 19:16:50 2001 Stephen White <spwhite@chariot.net.au>
+
+	* lib/irb/input-method.rb: patch to irb to remove blank lines from
+	  the readline history buffer.
+	
 Sun Jul 19 06:01:12 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* doc/net/smtp.rd.ja, pop.rd.ja, http.rd.ja: new files.
