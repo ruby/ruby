@@ -1,3 +1,8 @@
+Mon Jul 30 11:12:14 2001  Amos Gouaux <amos+ruby@utdallas.edu>
+
+	* lib/net/imap.rb: added new commands for managing folder quotas
+	and folder ACLs.
+
 Fri Jul 27 18:07:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_provided): extension should be guessed using

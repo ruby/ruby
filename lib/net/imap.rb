@@ -796,6 +796,29 @@ module Net
       end
     end
 
+    def getquota(mailbox)
+      synchronize do
+	send_command("GETQUOTA", mailbox)
+	return @responses.delete("QUOTA")
+      end
+    end
+
+    def setquota(mailbox, quota)
+      data = '(STORAGE ' + quota.to_s + ')'
+      send_command("SETQUOTA", mailbox, RawData.new(data))
+    end
+
+    def setacl(mailbox, user, acl)
+      send_command("SETACL", mailbox, user, acl)
+    end
+
+    def getacl(mailbox)
+      synchronize do
+	send_command("GETACL", mailbox)
+	return @responses.delete("ACL")[-1]
+      end
+    end
+
     def lsub(refname, mailbox)
       synchronize do
 	send_command("LSUB", refname, mailbox)
@@ -1237,6 +1260,7 @@ module Net
     ResponseText = Struct.new(:code, :text)
     ResponseCode = Struct.new(:name, :data)
     MailboxList = Struct.new(:attr, :delim, :name)
+    MailboxQuota = Struct.new(:mailbox, :usage, :quota)
     StatusData = Struct.new(:mailbox, :attr)
     FetchData = Struct.new(:seqno, :attr)
     Envelope = Struct.new(:date, :subject, :from, :sender, :reply_to,
@@ -1418,6 +1442,10 @@ module Net
 	    return flags_response
 	  when /\A(?:LIST|LSUB)\z/ni
 	    return list_response
+	  when /\A(?:QUOTA)\z/ni
+	    return getquota_response
+	  when /\A(?:ACL)\z/ni
+	    return getacl_response
 	  when /\A(?:SEARCH|SORT)\z/ni
 	    return search_response
 	  when /\A(?:STATUS)\z/ni
@@ -1944,6 +1972,57 @@ module Net
 	match(T_SPACE)
 	name = astring
 	return MailboxList.new(attr, delim, name)
+      end
+
+      def getquota_response
+        # If no quota set, get back
+        # `NO Quota root does not exist'.
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        token = match(T_ATOM)
+        mailbox = token.value
+        match(T_SPACE)
+        match(T_LPAR)
+        match(T_ATOM)
+        match(T_SPACE)
+        token = match(T_NUMBER)
+        usage = token.value
+        match(T_SPACE)
+        token = match(T_NUMBER)
+        quota = token.value
+        match(T_RPAR)
+        data = MailboxQuota.new(mailbox, usage, quota)
+        return UntaggedResponse.new(name, data, @str)
+      end
+
+      def getacl_response
+        token = match(T_ATOM)
+        name = token.value.upcase
+        match(T_SPACE)
+        token = match(T_ATOM)
+        mailbox = token.value
+        token = lookahead
+        if token.symbol == T_SPACE
+          shift_token
+          data = []
+          while true
+            token = lookahead
+            case token.symbol
+            when T_CRLF
+              break
+            when T_SPACE
+              shift_token
+            end
+            user = astring
+            match(T_SPACE)
+            acl = astring
+            data.push([user, acl])
+          end
+        else
+          data = []
+        end
+	return UntaggedResponse.new(name, data, @str)
       end
 
       def search_response
