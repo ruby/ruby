@@ -1966,7 +1966,7 @@ rb_open_file(argc, argv, io)
     VALUE *argv;
     VALUE io;
 {
-    VALUE fname, vmode, file, perm;
+    VALUE fname, vmode, perm;
     char *path, *mode;
     int flags, fmode;
 
@@ -1978,11 +1978,11 @@ rb_open_file(argc, argv, io)
 	flags = FIXNUM_P(vmode) ? NUM2INT(vmode) : rb_io_mode_modenum(StringValuePtr(vmode));
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
 
-	file = rb_file_sysopen_internal(io, path, flags, fmode);
+	rb_file_sysopen_internal(io, path, flags, fmode);
     }
     else {
 	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
-	file = rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
+	rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
     }
     return io;
 }
@@ -2000,6 +2000,29 @@ rb_io_s_open(argc, argv, klass)
     }
 
     return io;
+}
+
+static VALUE
+rb_io_s_sysopen(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE fname, vmode, perm;
+    int flags, fmode, fd;
+
+    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
+    SafeStringValue(fname);
+
+    if (NIL_P(vmode)) flags = O_RDONLY;
+    else if (FIXNUM_P(vmode)) flags = NUM2INT(vmode);
+    else {
+	flags = rb_io_mode_modenum(StringValuePtr(vmode));
+    }
+    if (NIL_P(perm)) fmode = 0666;
+    else             fmode = NUM2INT(perm);
+
+    fd = rb_sysopen(RSTRING(fname)->ptr, flags, fmode);
+    return INT2NUM(fd);
 }
 
 static VALUE
@@ -3706,6 +3729,7 @@ Init_IO()
     rb_define_singleton_method(rb_cIO, "allocate", rb_io_s_alloc, 0);
     rb_define_singleton_method(rb_cIO, "new", rb_io_s_new, -1);
     rb_define_singleton_method(rb_cIO, "open",  rb_io_s_open, -1);
+    rb_define_singleton_method(rb_cIO, "sysopen",  rb_io_s_sysopen, -1);
     rb_define_singleton_method(rb_cIO, "for_fd", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_cIO, "popen", rb_io_s_popen, -1);
     rb_define_singleton_method(rb_cIO, "foreach", rb_io_s_foreach, -1);

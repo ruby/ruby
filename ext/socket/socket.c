@@ -1134,6 +1134,7 @@ s_accept(klass, fd, sockaddr, len)
 	}
 	rb_sys_fail(0);
     }
+    if (!klass) return INT2NUM(fd2);
     return init_sock(rb_obj_alloc(klass), fd2);
 }
 
@@ -1149,6 +1150,19 @@ tcp_accept(sock)
     fromlen = sizeof(from);
     return s_accept(rb_cTCPSocket, fileno(fptr->f),
 		    (struct sockaddr*)&from, &fromlen);
+}
+
+static VALUE
+tcp_sysaccept(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+    struct sockaddr_storage from;
+    socklen_t fromlen;
+
+    GetOpenFile(sock, fptr);
+    fromlen = sizeof(from);
+    return s_accept(0, fileno(fptr->f), (struct sockaddr*)&from, &fromlen);
 }
 
 #ifdef HAVE_SYS_UN_H
@@ -1575,6 +1589,19 @@ unix_accept(sock)
 }
 
 static VALUE
+unix_sysaccept(sock)
+    VALUE sock;
+{
+    OpenFile *fptr;
+    struct sockaddr_un from;
+    socklen_t fromlen;
+
+    GetOpenFile(sock, fptr);
+    fromlen = sizeof(struct sockaddr_un);
+    return s_accept(0, fileno(fptr->f), (struct sockaddr*)&from, &fromlen);
+}
+
+static VALUE
 unixaddr(sockaddr)
     struct sockaddr_un *sockaddr;
 {
@@ -1832,6 +1859,21 @@ sock_accept(sock)
 
     GetOpenFile(sock, fptr);
     sock2 = s_accept(rb_cSocket,fileno(fptr->f),(struct sockaddr*)buf,&len);
+
+    return rb_assoc_new(sock2, rb_tainted_str_new(buf, len));
+}
+
+static VALUE
+sock_sysaccept(sock)
+   VALUE sock;
+{
+    OpenFile *fptr;
+    VALUE sock2;
+    char buf[1024];
+    socklen_t len = sizeof buf;
+
+    GetOpenFile(sock, fptr);
+    sock2 = s_accept(0,fileno(fptr->f),(struct sockaddr*)buf,&len);
 
     return rb_assoc_new(sock2, rb_tainted_str_new(buf, len));
 }
@@ -2322,6 +2364,7 @@ Init_socket()
     rb_cTCPServer = rb_define_class("TCPServer", rb_cTCPSocket);
     rb_define_global_const("TCPserver", rb_cTCPServer);
     rb_define_method(rb_cTCPServer, "accept", tcp_accept, 0);
+    rb_define_method(rb_cTCPServer, "sysaccept", tcp_sysaccept, 0);
     rb_define_method(rb_cTCPServer, "initialize", tcp_svr_init, -1);
     rb_define_method(rb_cTCPServer, "listen", sock_listen, 1);
 
@@ -2349,6 +2392,7 @@ Init_socket()
     rb_define_global_const("UNIXserver", rb_cUNIXServer);
     rb_define_method(rb_cUNIXServer, "initialize", unix_svr_init, 1);
     rb_define_method(rb_cUNIXServer, "accept", unix_accept, 0);
+    rb_define_method(rb_cUNIXServer, "sysaccept", unix_sysaccept, 0);
     rb_define_method(rb_cUNIXServer, "listen", sock_listen, 1);
 #endif
 
@@ -2359,6 +2403,7 @@ Init_socket()
     rb_define_method(rb_cSocket, "bind", sock_bind, 1);
     rb_define_method(rb_cSocket, "listen", sock_listen, 1);
     rb_define_method(rb_cSocket, "accept", sock_accept, 0);
+    rb_define_method(rb_cSocket, "sysaccept", sock_sysaccept, 0);
 
     rb_define_method(rb_cSocket, "recvfrom", sock_recvfrom, -1);
 

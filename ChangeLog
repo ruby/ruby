@@ -1,3 +1,15 @@
+Thu May 23 09:13:56 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (proc_options): removed "-*-" support for #! line.
+
+	* io.c (rb_io_s_sysopen): new method to get a raw file
+	  descriptor. [new]
+
+	* ext/socket/socket.c (tcp_sysaccept): new method to return an
+	  accepted socket fd (integer). [new]
+
+	* ext/socket/socket.c (unix_sysaccept,sock_sysaccept): ditto.
+
 Wed May 22 21:26:47 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.c (proc_options): -T consumes digits only.

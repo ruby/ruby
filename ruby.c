@@ -561,6 +561,7 @@ proc_options(argc, argv)
 		    s += numlen;
 		}
 		rb_set_safe_level(v);
+		s += numlen;
 	    }
 	    goto reswitch;
 
@@ -572,7 +573,7 @@ proc_options(argc, argv)
 		ruby_incpush(argv[1]);
 		argc--,argv++;
 	    }
-	    break;
+	    goto reswitch;
 
 	  case '0':
 	    {
@@ -624,11 +625,6 @@ proc_options(argc, argv)
 	    }
 	    break;
 
-	  case '*':
-	  case ' ':
-	    if (s[1] == '-') s+=2;
-	    break;
-
 	  default:
 	    fprintf(stderr, "%s: invalid option -%c  (-h will show valid options)\n",
 		    origargv[0], *s);
@@ -657,10 +653,12 @@ proc_options(argc, argv)
 	}
 	else {
 	    while (s && *s) {
-		while (ISSPACE(*s)) s++;
 		if (*s == '-') {
 		    s++;
-		    if (ISSPACE(*s)) continue;
+		    if (ISSPACE(*s)) {
+			do {s++;} while (ISSPACE(*s));
+			continue;
+		    }
 		}
 		if (!*s) break;
 		if (!strchr("IdvwrK", *s))

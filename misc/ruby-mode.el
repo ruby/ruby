@@ -781,9 +781,10 @@ An end of a defun is found by moving forward from the beginning of one."
 	    '(lambda ()
 	       (make-local-variable 'font-lock-defaults)
 	       (make-local-variable 'font-lock-keywords)
-	       (make-local-variable 'font-lock-syntactic-keywords)
+	       (make-local-variable 'font-lock-syntax-table)
 	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
 	       (setq font-lock-keywords ruby-font-lock-keywords)
+	       (setq font-lock-syntax-table ruby-font-lock-syntax-table)
 	       (setq font-lock-syntactic-keywords ruby-font-lock-syntactic-keywords)))))
 
   (defun ruby-font-lock-docs (limit)
@@ -811,6 +812,11 @@ An end of a defun is found by moving forward from the beginning of one."
 	    (set-match-data (list beg (point)))
 	    t)
 	nil)))
+
+  (defvar ruby-font-lock-syntax-table
+    (let* ((tbl (copy-syntax-table ruby-mode-syntax-table)))
+      (modify-syntax-entry ?_ "w" tbl)
+      tbl))
 
   (defvar ruby-font-lock-keywords
     (list
@@ -855,10 +861,10 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "yield"
 	       )
 	     "\\|")
-	    "\\)\\>\\([^_]\\|$\\)")
+	    "\\)\\>")
 	   2)
      ;; variables
-     '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\b\\([^_]\\|$\\)"
+     '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\>"
        2 font-lock-variable-name-face)
      ;; variables
      '("\\(\\$\\([^a-zA-Z0-9 \n]\\|[0-9]\\)\\)\\W"

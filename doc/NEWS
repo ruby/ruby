@@ -1,3 +1,11 @@
+: IO::sysopen
+
+  a new method to get a raw file descriptor.
+
+: TCPServer#accept, UNIXServer#accept, Socket#accept
+
+  new methods to return an accepted socket fd.
+
 : Date and DateTime
 
   lib/date.rb now provides both Date and DateTime.
