@@ -438,7 +438,7 @@ proc_options(argc, argv)
 	    goto reswitch;
 
 	  case 'v':
-	    if (verbose) {
+	    if (argv0 == 0 || verbose) {
 		s++;
 		goto reswitch;
 	    }
