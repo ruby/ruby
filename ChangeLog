@@ -1,3 +1,12 @@
+Fri Mar  4 16:11:20 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* eval.c (rb_exec_recursive): matched the declaration to prototype.
+
+	* ext/curses/curses.c: don't need to check HAVE_WCOLOR_SET excluding
+	  window_color_set().
+
+	* ext/tk/tcltklib.c: fixed commit mistakes.
+
 Fri Mar  4 12:45:17 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c: replace rb_protect_inspect() and rb_inspecting_p() by

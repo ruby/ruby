@@ -561,7 +561,7 @@ curses_resizeterm(VALUE obj, VALUE lin, VALUE col)
 #endif
 }
 
-#if defined(USE_COLOR) && defined(HAVE_WCOLOR_SET)
+#ifdef USE_COLOR
 static VALUE
 curses_start_color(VALUE obj)
 {
@@ -1207,7 +1207,7 @@ window_color_set(VALUE obj, VALUE col)
   return (res == OK) ? Qtrue : Qfalse;
   return Qfalse;
 }
-#endif /* USE_COLOR */
+#endif /* defined(USE_COLOR) && defined(HAVE_WCOLOR_SET) */
 
 static VALUE
 window_scroll(VALUE obj)

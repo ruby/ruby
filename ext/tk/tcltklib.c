@@ -4353,15 +4353,8 @@ delete_slaves(ip)
                 slave = Tcl_GetSlave(ip, slave_name);
                 if (slave == (Tcl_Interp*)NULL) continue;
 
-<<<<<<< tcltklib.c
-    if (Tcl_Eval(ip, "info slaves") == TCL_ERROR) {
-        DUMP2("ip(%lx) can't get a list of slave IPs", ip);
-        return;
-    }
-=======
                 /* call ip_finalize */
                 ip_finalize(slave);
->>>>>>> 1.3
 
                 Tcl_DeleteInterp(slave);
                 Tcl_Release(slave);
@@ -4493,12 +4486,6 @@ ip_replace_wait_commands(interp, mainWin)
                       (ClientData)mainWin, (Tcl_CmdDeleteProc *)NULL);
 #endif
 
-<<<<<<< tcltklib.c
-    /* security check */
-    if (ruby_safe_level >= 4) {
-        rb_raise(rb_eSecurityError, "can't create a TclTkIp object at level %d", ruby_safe_level);
-    }
-=======
     /* replace 'tkwait' command */
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"tkwait\")");
@@ -4676,7 +4663,6 @@ ip_init(argc, argv, self)
                  "Cannot create a TclTkIp object at level %d", 
                  ruby_safe_level);
     }
->>>>>>> 1.3
 
     /* create object */
     Data_Get_Struct(self, struct tcltkip, ptr);
@@ -4869,16 +4855,6 @@ ip_create_slave_core(interp, argc, argv)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-<<<<<<< tcltklib.c
-    /* ip is deleted? */
-    if (Tcl_InterpDeleted(master->ip)) {
-        DUMP1("master-ip is deleted");
-        rb_thread_critical = thr_crit_bup;
-        rb_raise(rb_eRuntimeError, "deleted master can't create a new slave interpreter");
-    }
-
-=======
->>>>>>> 1.3
     /* create slave-ip */
     slave->ref_count = 0;
     slave->allow_ruby_exit = 0;

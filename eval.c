@@ -12992,7 +12992,7 @@ rb_throw(tag, val)
 
 VALUE
 rb_exec_recursive(func, obj, arg)
-    VALUE (*func) _((VALUE, VALUE, int));
+    VALUE (*func)(ANYARGS);	/* VALUE obj, VALUE arg, int flag */
     VALUE obj, arg;
 {
     VALUE list = rb_thread_local_aref(rb_thread_current(), recursive_key);
