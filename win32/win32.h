@@ -227,6 +227,36 @@ extern int isinf(double);
 extern int isnan(double);
 
 
+#ifndef S_IRUSR
+#define S_IRUSR 0400
+#endif
+#ifndef S_IRGRP
+#define S_IRGRP 0040
+#endif
+#ifndef S_IROTH
+#define S_IROTH 0004
+#endif
+
+#ifndef S_IWUSR
+#define S_IWUSR 0200
+#endif
+#ifndef S_IWGRP
+#define S_IWGRP 0020
+#endif
+#ifndef S_IWOTH
+#define S_IWOTH 0002
+#endif
+
+#ifndef S_IXUSR
+#define S_IXUSR 0100
+#endif
+#ifndef S_IXGRP
+#define S_IXGRP 0010
+#endif
+#ifndef S_IXOTH
+#define S_IXOTH 0001
+#endif
+
 //
 // define this so we can do inplace editing
 //

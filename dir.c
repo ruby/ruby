@@ -715,7 +715,7 @@ rb_glob_helper(path, sub, flags, func, arg)
 void
 rb_glob(path, func, arg)
     char *path;
-    void (*func)();
+    void (*func) _((const char*, VALUE));
     VALUE arg;
 {
     rb_glob_helper(path, 0, FNM_PERIOD, func, arg);
@@ -730,9 +730,11 @@ rb_iglob(path, func, arg)
     rb_glob_helper(path, 0, FNM_PERIOD|FNM_NOCASE, func, arg);
 }
 
+static void push_pattern _((const char *, VALUE));
+
 static void
 push_pattern(path, ary)
-    char *path;
+    const char *path;
     VALUE ary;
 {
     VALUE str = rb_tainted_str_new2(path);

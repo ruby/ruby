@@ -64,6 +64,7 @@ static VALUE main_thread;
 static Tcl_TimerToken timer_token;
 
 /* timer callback */
+static void _timer_for_tcl _((ClientData));
 static void
 _timer_for_tcl(clientData)
     ClientData clientData;
@@ -144,14 +145,17 @@ lib_restart(self)
     return Qnil;
 }
 
-static int
 #if TCL_MAJOR_VERSION >= 8
+static int ip_ruby _((ClientData, Tcl_Interp *, int, Tcl_Obj *CONST []));
+static int
 ip_ruby(clientData, interp, argc, argv)
     ClientData clientData;
     Tcl_Interp *interp; 
     int argc;
     Tcl_Obj *CONST argv[];
 #else
+static int ip_ruby _((ClientData, Tcl_Interp *, int, Tcl_Obj *[]));
+static int
 ip_ruby(clientData, interp, argc, argv)
     ClientData clientData;
     Tcl_Interp *interp;

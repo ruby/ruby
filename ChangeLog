@@ -1,3 +1,19 @@
+Sun Sep  8 19:21:48 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* dir.c (rb_glob): add prototype of 2nd argument to avoid VC++ warning.
+
+	* dir.c (push_pattern): add const directive to 1st argument.
+
+	* dir.c: prototype; push_pattern() to avoid VC++ warning.
+
+	* ext/tcltklib/tcltklib.c: prototype; _timer_for_tcl() and ip_ruby()
+	  to avoid VC++ warning.
+
+	* win32/win32.c (win32_stat): remove S_IWGRP and S_IWOTH bits from
+	  st_mode.
+
+	* win32/win32.h (S_I*): define if not defined.
+
 Sat Sep  7 23:32:56 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/inf-ruby.el (inferior-ruby-error-regexp-alist): regexp
