@@ -19,7 +19,7 @@ require "tcltk"
 $ip = TclTkInterpreter.new()
 $root = $ip.rootwidget()
 $button, $canvas, $checkbutton, $frame, $label, $pack, $update, $wm =
-   $ip.commands().indexes(
+   $ip.commands().values_at(
    "button", "canvas", "checkbutton", "frame", "label", "pack", "update", "wm")
 
 class Othello
@@ -196,10 +196,12 @@ class Othello
          
          def initialize(view, row, col)
             @view = view
-            @id = @view.e("create rectangle", *view.tk_rect(view.left + col,
-                                      view.top + row,
-                                      view.left + col + 1,
-                                      view.top + row + 1))
+            @id = @view.e("create rectangle", 
+                          *(view.tk_rect(view.left + col,
+                                         view.top + row,
+                                         view.left + col + 1,
+                                         view.top + row + 1) \
+                            << "-fill #{BACK_GROUND_COLOR}") )
             @row = row
             @col = col
             @view.e("itemconfigure", @id,

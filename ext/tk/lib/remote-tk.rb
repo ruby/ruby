@@ -282,7 +282,7 @@ class RemoteTkIp
     end
   end
 
-  def null_namespace?
+  def invalid_namespace?
     false
   end
 
