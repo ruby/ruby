@@ -1,3 +1,8 @@
+Tue Apr 13 17:55:16 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (begin_transport): should not overwrite HTTP
+	  request header. [ruby-list:39543]
+
 Tue Apr 13 16:48:00 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: merge POP3S patch.  This patch is contributed by
