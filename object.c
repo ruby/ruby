@@ -779,6 +779,16 @@ rb_class_superclass(klass)
     return super;
 }
 
+static ID
+str_to_id(str)
+    VALUE str;
+{
+    if (!RSTRING(str)->ptr || RSTRING(str)->len == 0) {
+	rb_raise(rb_eArgError, "empty symbol string");
+    }
+    return rb_intern(RSTRING(str)->ptr);
+}
+
 ID
 rb_to_id(name)
     VALUE name;
@@ -788,7 +798,7 @@ rb_to_id(name)
 
     switch (TYPE(name)) {
       case T_STRING:
-	return rb_str_intern(name);
+	return str_to_id(name);
       case T_FIXNUM:
 	rb_warn("do not use Fixnums as Symbols");
 	id = FIX2LONG(name);
@@ -802,7 +812,7 @@ rb_to_id(name)
       default:
 	tmp = rb_check_string_type(name);
 	if (!NIL_P(tmp)) {
-	    return rb_str_intern(tmp);
+	    return str_to_id(tmp);
 	}
 	rb_raise(rb_eTypeError, "%s is not a symbol", RSTRING(rb_inspect(name))->ptr);
     }
