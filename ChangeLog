@@ -1,3 +1,7 @@
+Wed Feb  9 14:42:28 2005  URABE Shyouhei  <shyouhei@ice.uec.ac.jp>
+
+	* eval.c (scope_dup): add volatile not to optimize tbl.
+
 Wed Feb  9 10:02:02 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/tk/make-tkutil, ext/tk/tkutil/subconf.rb: no longer used.

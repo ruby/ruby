@@ -7744,7 +7744,7 @@ static void
 scope_dup(scope)
     struct SCOPE *scope;
 {
-    ID *tbl;
+    volatile ID *tbl;
     VALUE *vars;
 
     scope->flags |= SCOPE_DONT_RECYCLE;
