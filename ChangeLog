@@ -1,7 +1,9 @@
-Wed Dec 18 02:27:34 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Wed Dec 18 03:52:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* string.c (rb_str_new4): handle tail shared string.
 	  (ruby-bugs-ja:PR#370)
+
+	* string.c (rb_str_dup_frozen): ditto.
 
 Tue Dec 17 21:08:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

@@ -517,8 +517,11 @@ rb_str_dup_frozen(str)
     VALUE str;
 {
     if (FL_TEST(str, ELTS_SHARED)) {
-	OBJ_FREEZE(RSTRING(str)->aux.shared);
-	return RSTRING(str)->aux.shared;
+	VALUE shared = RSTRING(str)->aux.shared;
+	if (RSTRING(shared)->len == RSTRING(str)->len) {
+	    OBJ_FREEZE(shared);
+	    return shared;
+	}
     }
     if (OBJ_FROZEN(str)) return str;
     str = rb_str_dup(str);
