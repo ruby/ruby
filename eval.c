@@ -11754,7 +11754,7 @@ rb_thread_start_1()
     ruby_scope = ip->scope;
     ruby_iter = ip->iter;
     ruby_cref = ip->cref;
-    ruby_dyna_vars = 0;
+    ruby_dyna_vars = ((struct BLOCK *)DATA_PTR(proc))->dyna_vars;
     PUSH_FRAME();
     _frame.iter = ITER_CUR;
     PUSH_TAG(PROT_NONE);

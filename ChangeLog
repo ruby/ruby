@@ -1,3 +1,8 @@
+Wed Feb 16 23:54:14 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_1): outer block variables wasn't linked to
+	  threads.  fixed: [ruby-dev:25700]
+
 Wed Feb 16 15:11:43 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::Nonblock#initialize):
