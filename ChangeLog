@@ -1,3 +1,34 @@
+Tue Dec 26 18:46:41 2000  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/debug.rb: Avoid thread deadlock in debugging stopped thread.
+
+	* lib/debug.rb: Uncleared 'finish' state.
+
+Tue Dec 26 16:53:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): remove dvar node by rb_gc_force_recycle()
+	  more eagerly.
+
+	* eval.c (rb_f_binding): recycling should be stopped for outer
+	  scope too.
+
+	* eval.c (proc_new): ditto.
+
+Tue Dec 26 15:45:35 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_inspect): should treat multibyte chracters
+	  properly.
+
+Mon Dec 25 17:49:08 2000  K.Kosako  <kosako@sofnec.co.jp>
+
+	* string.c (rb_str_replace_m): unexpected string share happens if
+	  replace is done for associated (STR_NO_ORIG) string.
+
+Tue Dec 26 15:01:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_p): should not call rb_io_flush() if rb_defout is not
+	  a IO (T_FILE).
+
 Mon Dec 25 15:52:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.2 released.
@@ -837,7 +868,7 @@ Sat Sep 23 03:06:25 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Sep 22 15:46:21 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
-	* lib/net/http.rb: too early parameter expantion in string.
+	* lib/net/http.rb: too early parameter expansion in string.
 
 Fri Sep 22 13:58:51 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -894,7 +925,7 @@ Wed Sep 20 23:21:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Sep 20 14:01:45 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_provided): detect infnite load loop.
+	* eval.c (rb_provided): detect infinite load loop.
 
 	* eval.c (rb_provided): too weak filename comparison.
 
@@ -959,7 +990,7 @@ Thu Sep 14 02:46:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Sep 13 17:01:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* bignum.c (rb_big_eq): imcomplete value compare of bignums.
+	* bignum.c (rb_big_eq): incomplete value comparison of bignums.
 
 Wed Sep 13 06:39:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -1084,7 +1115,7 @@ Fri Sep  1 10:36:29 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (aref_args,opt_call_args): add block_call to allow a
 	  method without parentheses and with block as a last argument.
 
-	* hash.c (rb_hash_sort): should not retrun nil.
+	* hash.c (rb_hash_sort): should not return nil.
 
 	* re.c (match_aref): should use rb_reg_nth_match().
 
@@ -1252,7 +1283,7 @@ Fri Aug 11 15:43:46 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Aug 10 08:05:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_callcc): returned current thread instaed of
+	* eval.c (rb_callcc): returned current thread instead of
 	  continuation wrongly.
 
 Thu Aug 10 05:40:28 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
@@ -1425,7 +1456,7 @@ Tue Jul 18 14:58:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Mon Jul 17 04:29:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
-	* lib/mkmf.rb: converts extention of $objs into $OBJEXT.
+	* lib/mkmf.rb: converts extension of $objs into $OBJEXT.
 
 Sun Jul 16 03:02:34 2000  Dave Thomas <dave@thomases.com>
 
@@ -1522,7 +1553,7 @@ Mon Jul 10 09:07:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Sat Jul  8 23:08:40 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_thread_start_0): should copy previous scopes to
-	  prevent rb_gc_force_recylce().
+	  prevent rb_gc_force_recycle().
 
 Fri Jul  7 23:36:36 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
@@ -1597,7 +1628,7 @@ Wed Jul  5 09:47:14 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* time.c (time_arg): Time::local, Time::gm now take 7th optional
 	  argument for usec.
 
-	* numeric.c (num_ceil, etc): default ceil, floor, round, trancate
+	* numeric.c (num_ceil, etc): default ceil, floor, round, truncate
 	  implementation for Numeric, using `to_f'.
 
 	* io.c (rb_io_reopen): clear fptr->path after free() to prevent
@@ -1688,7 +1719,7 @@ Mon Jul  3 13:15:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* bignum.c (rb_big_divmod): ditto.
 
-	* numeric.c (fixdivmod): does not depend C's undifined %
+	* numeric.c (fixdivmod): does not depend C's undefined %
 	  behavior.  adopt to fmod(3m) behavior.
 
 	* numeric.c (flo_mod): modulo now reserves fmod(3m) behavior.
@@ -1731,7 +1762,7 @@ Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): the value from RTEST() is not valid Ruby
-	  objct.  result should be either true or false.
+	  object.  result should be either true or false.
 
 Sat Jul  1 09:30:06 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
@@ -3924,7 +3955,7 @@ Thu Oct 21 16:14:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* ruby.c (proc_options): use RUBYOPT environment variable to
 	  retrieve the default options.
 
-	* dir.c (fnmatch): use eban's fnmatch; do not depend on systems's
+	* dir.c (fnmatch): use eban's fnmatch; do not depend on system's
 	  fnmatch (which may have portability problem) anymore.
 
 Wed Oct 20 15:14:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -6519,7 +6550,7 @@ Sun Nov  1 01:18:52 1998  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 Sat Oct 31 23:18:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_split_method): negative LIMIT means number of
-	  splitted fields are unlimited, as in perl.
+	  split fields are unlimited, as in perl.
 
 	* string.c (rb_str_split_method): if LIMIT is unspecified,
 	  trailing null fields are stripped.
@@ -8775,7 +8806,7 @@ Wed Nov 12 13:44:47 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Mon Nov 10 11:24:51 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* regex.c (re_compile_pattern): non-resitering parens (?:..).
+	* regex.c (re_compile_pattern): non-registering parens (?:..).
 
 	* regex.c (re_compile_pattern): new meta character \< (wordbeg)
 	  and \> (wordend).
@@ -9031,7 +9062,7 @@ Tue Sep 16 17:54:25 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* ruby.c (ruby_prog_init): close stdaux and stdprn for MSDOS.
 
 	* ruby.c (ruby_prog_init): should not add path from environment
-	  variable, if ruby is running under seuid.
+	  variable, if ruby is running under setuid.
 
 	* process.c (init_ids): check suid check for setuid/seteuid etc.
 

@@ -1,9 +1,9 @@
+.cvsignore
 parse.c
 newver.rb
 ruby
 miniruby
 README.fat-patch
-configure
 config.cache
 config.h
 config.log
@@ -11,7 +11,6 @@ config.status
 Makefile
 ppack
 archive
-extmk.rb
 *.orig
 *.rej
 *.bak

@@ -1316,15 +1316,19 @@ static VALUE
 rb_str_replace_m(str, str2)
     VALUE str, str2;
 {
+    if (str == str2) return str;
     if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
-    rb_str_modify(str);
 
-    if (RSTRING(str2)->orig && FL_TEST(str2, STR_NO_ORIG)) {
+    if (RSTRING(str2)->orig && !FL_TEST(str2, STR_NO_ORIG)) {
+	if (str_independent(str))
+	  free(RSTRING(str)->ptr);
+
 	RSTRING(str)->len = RSTRING(str2)->len;
 	RSTRING(str)->ptr = RSTRING(str2)->ptr;
 	RSTRING(str)->orig = RSTRING(str2)->orig;
     }
     else {
+	rb_str_modify(str);
 	rb_str_resize(str, RSTRING(str2)->len);
 	memcpy(RSTRING(str)->ptr, RSTRING(str2)->ptr, RSTRING(str2)->len);
     }
@@ -1490,8 +1494,8 @@ rb_str_inspect(str)
 	char c = *p++;
 	if (ismbchar(c) && p < pend) {
 	    int len = mbclen(c);
-	    rb_str_cat(result, p, len);
-	    p += len;
+	    rb_str_cat(result, p - 1, len);
+	    p += len - 1;
 	}
 	else if (c == '"'|| c == '\\') {
 	    s[0] = '\\'; s[1] = c;

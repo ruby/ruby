@@ -98,13 +98,25 @@ class DEBUGGER__
       @stop_next = n
     end
 
-    def suspend
+    def set_suspend
       @suspend_next = true
+    end
+
+    def clear_suspend
+      @suspend_next = false
+    end
+
+    def suspend_all
+      DEBUGGER__.suspend
+    end
+
+    def resume_all
+      DEBUGGER__.resume
     end
 
     def check_suspend
       while (Thread.critical = true; @suspend_next)
-	waiting.push Thread.current
+	DEBUGGER__.waiting.push Thread.current
 	@suspend_next = false
 	Thread.stop
       end
@@ -131,12 +143,16 @@ class DEBUGGER__
       DEBUGGER__.display
     end
 
-    def waiting
-      DEBUGGER__.waiting
+    def context(th)
+      DEBUGGER__.context(th)
     end
 
     def set_trace_all(arg)
       DEBUGGER__.set_trace(arg)
+    end
+
+    def set_last_thread(th)
+      DEBUGGER__.set_last_thread(th)
     end
 
     def debug_eval(str, binding)
@@ -237,7 +253,7 @@ class DEBUGGER__
 
     def debug_command(file, line, id, binding)
       MUTEX.lock
-      DEBUGGER__.set_last_thread(Thread.current)
+      set_last_thread(Thread.current)
       frame_pos = 0
       binding_file = file
       binding_line = line
@@ -506,7 +522,7 @@ class DEBUGGER__
 	end
       end
       MUTEX.unlock
-      DEBUGGER__.resume_all_thread
+      resume_all
     end
 
     def debug_print_help
@@ -662,14 +678,14 @@ EOHELP
 	    stdout.printf "\tfrom %s\n", i
 	  end
 	end
-	DEBUGGER__.suspend_all_thread
+	suspend_all
 	debug_command(file, line, id, binding)
       end
     end
 
     def trace_func(event, file, line, id, binding, klass)
       Tracer.trace_func(event, file, line, id, binding, klass) if trace?
-      DEBUGGER__.context(Thread.current).check_suspend
+      context(Thread.current).check_suspend
       @file = file
       @line = line
       case event
@@ -687,7 +703,7 @@ EOHELP
 	    @stop_next = 1
 	  else
 	    @no_step = nil
-	    DEBUGGER__.suspend_all_thread
+	    suspend_all
 	    debug_command(file, line, id, binding)
 	    @last = [file, line]
 	  end
@@ -697,7 +713,7 @@ EOHELP
 	@frames.unshift [binding, file, line, id]
 	if check_break_points(file, id.id2name, binding, id) or
 	    check_break_points(klass.to_s, id.id2name, binding, id)
-	  DEBUGGER__.suspend_all_thread
+	  suspend_all
 	  debug_command(file, line, id, binding)
 	end
 
@@ -710,6 +726,7 @@ EOHELP
       when 'return', 'end'
 	if @frames.size == @finish_pos
 	  @stop_next = 1
+	  @finish_pos = 0
 	end
 	@frames.shift
 
@@ -767,20 +784,25 @@ EOHELP
       @last_thread = th
     end
 
-    def suspend_all_thread
+    def suspend
       Thread.critical = true
       make_thread_list
       for th in @thread_list
 	next if th[0] == Thread.current
-	context(th[0]).suspend
+	context(th[0]).set_suspend
       end
       Thread.critical = false
       # Schedule other threads to suspend as soon as possible.
       Thread.pass
     end
 
-    def resume_all_thread
+    def resume
       Thread.critical = true
+      make_thread_list
+      for th in @thread_list
+	next if th[0] == Thread.current
+	context(th[0]).clear_suspend
+      end
       waiting.each do |th|
 	th.run
       end

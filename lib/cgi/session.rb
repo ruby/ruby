@@ -54,7 +54,9 @@ class CGI
 	@output_cookies =  [
           Cookie::new("name" => session_key,
 		      "value" => id,
-		      "path" => if ENV["SCRIPT_NAME"] then
+                     "path" => if ENV["PATH_INFO"] then
+                                 File::dirname(ENV["PATH_INFO"])
+                               elsif ENV["SCRIPT_NAME"] then
 				  File::dirname(ENV["SCRIPT_NAME"])
 				else
 				  ""
