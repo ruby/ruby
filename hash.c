@@ -1017,8 +1017,8 @@ env_delete(obj, name)
 	VALUE value = env_str_new2(val);
 
 	ruby_setenv(nam, 0);
-#ifdef __BORLANDC__
-	if (strcmpi(nam, "PATH") == 0) {
+#ifdef DOSISH
+	if (strcasecmp(nam, "PATH") == 0) {
 #else
 	if (strcmp(nam, "PATH") == 0) {
 #endif
@@ -1053,8 +1053,8 @@ rb_f_getenv(obj, name)
     }
     env = getenv(nam);
     if (env) {
-#ifdef __BORLANDC__
-	if (strcmpi(nam, "PATH") == 0 && !rb_env_path_tainted())
+#ifdef DOSISH
+	if (strcasecmp(nam, "PATH") == 0 && !rb_env_path_tainted())
 #else
 	if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
 #endif
@@ -1096,8 +1096,8 @@ env_fetch(argc, argv)
 	}
 	return if_none;
     }
-#ifdef __BORLANDC__
-    if (strcmpi(nam, "PATH") == 0 && !rb_env_path_tainted())
+#ifdef DOSISH
+    if (strcasecmp(nam, "PATH") == 0 && !rb_env_path_tainted())
 #else
     if (strcmp(nam, "PATH") == 0 && !rb_env_path_tainted())
 #endif
