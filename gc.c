@@ -941,7 +941,6 @@ obj_free(obj)
 	break;
       case T_MODULE:
       case T_CLASS:
-	rb_clear_cache();
 	st_free_table(RANY(obj)->as.klass.m_tbl);
 	if (RANY(obj)->as.object.iv_tbl) {
 	    st_free_table(RANY(obj)->as.object.iv_tbl);

@@ -34,6 +34,7 @@ Language Spec.
 * "in" modifier, to annotate, or to encourage assertion.
 * selector namespace - something like generic-flet in CLOS, to help RubyBehevior
 * private instance variable (as in Python?) @_foo in class Foo => @_Foo_foo
+* warn/error "bare word" method, like "foo",  you should type "foo()"
 
 Hacking Interpreter
 

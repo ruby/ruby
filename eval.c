@@ -190,7 +190,7 @@ static struct cache_entry cache[CACHE_SIZE];
 void
 rb_clear_cache()
 {
-    struct cache_entry *ent, *end;
+   struct cache_entry *ent, *end;
 
     ent = cache; end = ent + CACHE_SIZE;
     while (ent < end) {
@@ -3239,7 +3239,6 @@ rb_eval(self, n)
 		if (rb_safe_level() >= 4) {
 		    rb_raise(rb_eSecurityError, "extending class prohibited");
 		}
-		rb_clear_cache();
 	    }
 	    else {
 	      override_class:
@@ -3306,9 +3305,6 @@ rb_eval(self, n)
 	    }
 	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass))
 		rb_raise(rb_eSecurityError, "Insecure: can't extend object");
-	    if (FL_TEST(CLASS_OF(klass), FL_SINGLETON)) {
-		rb_clear_cache();
-	    }
 	    klass = rb_singleton_class(klass);
 	    
 	    if (ruby_wrapper) {

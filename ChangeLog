@@ -1,3 +1,16 @@
+Sat Jan 19 02:31:45 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): need not to clar method cache for NODE_CLASS,
+	  NODE_SCLASS.
+
+	* gc.c (obj_free): need not to clear method cache on class/module
+	  finalization.
+
+Fri Jan 18 23:38:03 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_fetch): index out of range raises exception
+	  unless optional second argument is specified.
+
 Fri Jan 18 17:32:09 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_s_new): block check moved from initialize to this

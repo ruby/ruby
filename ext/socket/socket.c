@@ -1362,7 +1362,7 @@ static VALUE
 unix_svr_init(sock, path)
     VALUE sock, path;
 {
-    return open_unix(sock, path, 1);
+    return init_unixsock(sock, path, 1);
 }
 
 static VALUE
@@ -1557,7 +1557,8 @@ sock_s_socketpair(klass, domain, type, protocol)
 	rb_sys_fail("socketpair(2)");
     }
 
-    return rb_assoc_new(sock_new(klass, sp[0]), sock_new(klass, sp[1]));
+    return rb_assoc_new(init_sock(rb_obj_alloc(klass), sp[0]),
+			init_sock(rb_obj_alloc(klass), sp[1]));
 #else
     rb_notimplement();
 #endif
