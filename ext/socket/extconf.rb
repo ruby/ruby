@@ -1,6 +1,5 @@
 require 'mkmf'
 
-$LIBPATH << "/usr/local/lib" if File.directory?("/usr/local/lib")
 $CPPFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
 
 case RUBY_PLATFORM
