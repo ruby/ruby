@@ -1549,14 +1549,9 @@ class CGI
         body = ""
       end
       if @output_hidden
-        hidden = @output_hidden.collect{|k,v|
-          "<INPUT TYPE=HIDDEN NAME=\"#{k}\" VALUE=\"#{v}\">"
+        body += @output_hidden.collect{|k,v|
+          "<INPUT TYPE=\"HIDDEN\" NAME=\"#{k}\" VALUE=\"#{v}\">"
         }.to_s
-        if defined? fieldset
-          body += fieldset{ hidden }
-        else
-          body += hidden
-        end
       end
       super(attributes){body}
     end

@@ -98,7 +98,7 @@ class PStore
 
       content = nil
       file = File.open(@filename, File::RDWR | File::CREAT)
-      if !read_only
+      unless read_only
         file.flock(File::LOCK_EX)
         commit_new(file) if FileTest.exist?(new_file)
         content = file.read()
@@ -112,7 +112,7 @@ class PStore
       end
 
       if content != ""
-	@table = Marshal::load(content)
+	@table = load(content)
         if !read_only
           size = content.size
           md5 = Digest::MD5.digest(content)
@@ -132,7 +132,7 @@ class PStore
       ensure
 	if !read_only and !@abort
           tmp_file = @filename + ".tmp"
-	  content = Marshal::dump(@table)
+	  content = dump(@table)
 	  if !md5 || size != content.size || md5 != Digest::MD5.digest(content)
             File.open(tmp_file, "w") {|t|
               t.write(content)
@@ -149,6 +149,18 @@ class PStore
       file.close if file
     end
     value
+  end
+
+  def dump(table)
+    Marshal::dump(table)
+  end
+
+  def load(content)
+    Marshal::load(content)
+  end
+
+  def load_file(file)
+    Marshal::load(file)
   end
 
   private

@@ -73,6 +73,13 @@ Mon May 24 10:46:26 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 	* lib/rdoc/generators/template/html/html.rb: SYSTEM identifiers
 	  must be absolute URIs
 
+Sun May 23 04:53:50 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* lib/pstore.rb (transaction): allow overriding dump and load.
+	  [ruby-dev:23567]
+
+	* lib/yaml/store.rb: follow lib/pstore.rb's change.
+
 Sat May 22 11:54:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* MANIFEST: add test/openssl/test_x509store.rb.
