@@ -649,7 +649,7 @@
   Extended to take an address and a port number for the local side in
   optional 3rd and 4th arguments.
 
-= new bundled library
+= newly bundled library
 
 : ext/bigdecimal
 
@@ -658,6 +658,10 @@
 : ext/dl
 
   an interface to the dynamic linker.
+
+: ext/enumerator
+
+  a helper module for the Enumerable interface.
 
 : ext/io/wait
 

@@ -1,3 +1,8 @@
+Tue Oct 14 02:05:23 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/Setup*, ext/enumerator/*: Add ext/enumerator, a helper
+	  module for the Enumerable interface.
+
 Mon Oct 13 23:55:59 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* test/ruby/envutil.rb: use Config::CONFIG["ruby_install_name"],

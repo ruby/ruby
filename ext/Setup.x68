@@ -11,6 +11,7 @@ digest/sha1
 digest/sha2
 #dl
 #etc
+enumerator
 fcntl
 #gdbm
 #iconv
