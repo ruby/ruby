@@ -1,3 +1,8 @@
+Sat May 15 01:41:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (eval): forgot to restore $SAFE value before evaluating
+	  compiled node.  [ruby-core:02872]
+
 Sat May 15 01:33:12 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (range_each_func): terminates loop if generating value
