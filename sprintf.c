@@ -337,7 +337,7 @@ f_sprintf(argc, argv)
 		  case 'b':
 		  case 'u':
 		  default:
-		    if (flags & FPLUS) sign = 1;
+		    if (flags&(FPLUS|FSPACE)) sign = 1;
 		    break;
 		}
 		if (flags & FSHARP) {

@@ -1,3 +1,13 @@
+Fri Jul 24 02:10:22 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (r_bytes2): allocated buffer size was too short.
+
+	* marshal.c (w_object): saves all options, not only casefold flag.
+
+	* re.c (reg_clone): now copies options properly.
+
+	* re.c (reg_get_kcode): code number was wrong.
+
 Wed Jul 22 11:59:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* st.c (rehash): still had a GC problem.  fixed.

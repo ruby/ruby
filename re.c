@@ -664,11 +664,11 @@ reg_new_1(klass, s, len, options)
 }
 
 VALUE
-reg_new(s, len, flag)
+reg_new(s, len, options)
     char *s;
-    int len, flag;
+    int len, options;
 {
-    return reg_new_1(cRegexp, s, len, flag);
+    return reg_new_1(cRegexp, s, len, options);
 }
 
 static int ign_cache;
@@ -838,11 +838,11 @@ reg_get_kcode(re)
 
     switch (RBASIC(re)->flags & KCODE_MASK) {
       case KCODE_NONE:
-	kcode |= 2; break;
-      case KCODE_EUC:
 	kcode |= 4; break;
+      case KCODE_EUC:
+	kcode |= 8; break;
       case KCODE_SJIS:
-	kcode |= 6; break;
+	kcode |= 12; break;
       default:
 	break;
     }
@@ -850,16 +850,26 @@ reg_get_kcode(re)
     return kcode;
 }
 
+int
+reg_options(re)
+    VALUE re;
+{
+    int options = 0;
+
+    if (FL_TEST(re, REG_IGNORECASE)) 
+	options |= RE_OPTION_IGNORECASE;
+    if (FL_TEST(re, KCODE_FIXED)) {
+	options |= reg_get_kcode(re);
+    }
+    return options;
+}
+
 static VALUE
 reg_clone(re)
     VALUE re;
 {
-    int flag = FL_TEST(re, REG_IGNORECASE)?1:0;
-
-    if (FL_TEST(re, KCODE_FIXED)) {
-	flag |= reg_get_kcode(re);
-    }
-    return reg_new_1(CLASS_OF(re), RREGEXP(re)->str, RREGEXP(re)->len, flag);
+    return reg_new_1(CLASS_OF(re), RREGEXP(re)->str, RREGEXP(re)->len,
+		     reg_options(re));
 }
 
 VALUE

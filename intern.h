@@ -221,6 +221,7 @@ VALUE reg_match_last _((VALUE));
 VALUE reg_new _((char*, int, int));
 VALUE reg_match _((VALUE, VALUE));
 VALUE reg_match2 _((VALUE));
+int reg_options _((VALUE));
 char*rb_get_kcode _((void));
 void rb_set_kcode _((char*));
 /* ruby.c */

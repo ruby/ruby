@@ -299,7 +299,7 @@ w_object(obj, arg, limit)
 	    w_uclass(obj, cRegexp, arg);
 	    w_byte(TYPE_REGEXP, arg);
 	    w_bytes(RREGEXP(obj)->str, RREGEXP(obj)->len, arg);
-	    w_byte(FL_TEST(obj, FL_USER1), arg);
+	    w_byte(reg_options(obj), arg);
 	    return;
 
 	  case T_ARRAY:
@@ -511,13 +511,20 @@ r_long(arg)
     return x;
 }
 
-static long blen;		/* hidden length register */
-#define r_bytes(s, arg) \
-  (blen = r_long(arg), r_bytes0(&s,ALLOCA_N(char,blen),blen,arg))
+#define r_bytes2(s, len, arg) do {	\
+    (len) = r_long(arg);		\
+    (s) = ALLOCA_N(char,(len)+1);	\
+    r_bytes0((s),(len),(arg));		\
+} while (0)
 
-static int
-r_bytes0(sp, s, len, arg)
-    char **sp, *s;
+#define r_bytes(s, arg) do {		\
+    int r_bytes_len;			\
+    r_bytes2((s), r_bytes_len, (arg));	\
+} while (0)
+
+static void
+r_bytes0(s, len, arg)
+    char *s;
     int len;
     struct load_arg *arg;
 {
@@ -531,11 +538,7 @@ r_bytes0(sp, s, len, arg)
 	memcpy(s, arg->ptr, len);
 	arg->ptr += len;
     }
-
-    (s)[len] = '\0';
-    *sp = s;
-
-    return len;
+    s[len] = '\0';
 }
 
 static ID
@@ -572,8 +575,9 @@ r_string(arg)
     struct load_arg *arg;
 {
     char *buf;
-    int len = r_bytes(buf, arg);
+    int len;
 
+    r_bytes2(buf, len, arg);
     return str_taint(str_new(buf, len));
 }
 
@@ -672,9 +676,12 @@ r_object(arg)
       case TYPE_REGEXP:
 	{
 	    char *buf;
-	    int len = r_bytes(buf, arg);
-	    int ci = r_byte(arg);
-	    return r_regist(reg_new(buf, len, ci), arg);
+	    int len;
+	    int options;
+
+	    r_bytes2(buf, len, arg);
+	    options = r_byte(arg);
+	    return r_regist(reg_new(buf, len, options), arg);
 	}
 
       case TYPE_ARRAY:
