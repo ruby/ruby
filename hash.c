@@ -475,7 +475,7 @@ delete_if_i(key, value)
     return ST_CONTINUE;
 }
 
-static VALUE
+VALUE
 rb_hash_delete_if(hash)
     VALUE hash;
 {

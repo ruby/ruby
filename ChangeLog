@@ -1,3 +1,14 @@
+Tue Jul  4 13:51:29 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/dbm/dbm.c: add methods added to Hash in 1.5.x.
+
+	* ext/gdbm/gdbm.c: ditto.
+
+	* ext/sdbm/init.c: ditto.
+
+	* eval.c (proc_call): args may be Qundef (means no argument), do
+	  not call TYPE() for args.
+
 Tue Jul  4 13:20:56 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/extmk.rb.in: make command line must be single-quoted.

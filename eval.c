@@ -5919,7 +5919,7 @@ proc_call(proc, args)
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
 
-    if (TYPE(args) == T_ARRAY) {
+    if (args != Qundef && TYPE(args) == T_ARRAY) {
 	args = callargs(args);
     }
 
