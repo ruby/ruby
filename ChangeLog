@@ -1,3 +1,7 @@
+Mon Jan  5 20:32:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/logger.rb: enhanced documentation.
+
 Mon Jan  5 18:58:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c: merge tuning from H.Yamamoto <ocean@m2.ccsnet.ne.jp>.

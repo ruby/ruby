@@ -1,81 +1,187 @@
-# Logger -- Logging utility.
 #
-# $Id$
+# = logger.rb
 #
-# This module is copyrighted free software by NAKAMURA, Hiroshi.
-# You can redistribute it and/or modify it under the same term as Ruby.
+# Simple logging utility.
 #
-# See Logger at first.
+# Author:: NAKAMURA, Hiroshi
+# Documentation:: NAKAMURA, Hiroshi and Gavin Sinclair
+# License::
+#   This module is copyrighted free software by NAKAMURA, Hiroshi.
+#   You can redistribute it and/or modify it under the same terms as Ruby.
+# Revision:: $Id$
+#
+# See Logger for documentation.
+#
 
 
-# DESCRIPTION
-#   Logger -- Logging utility.
 #
-# How to create a logger.
-#   1. Create logger which logs messages to STDERR/STDOUT.
-#     logger = Logger.new(STDERR)
-#     logger = Logger.new(STDOUT)
+# == Description
 #
-#   2. Create logger for the file which has the specified name.
-#     logger = Logger.new('logfile.log')
+# The Logger class provides a simple but sophisticated logging utility that
+# anyone can use because it's included in the Ruby 1.8.x standard library.
+# For more advanced logging, see the "Log4r" package on the RAA.
 #
-#   3. Create logger for the specified file.
-#     file = open('foo.log', File::WRONLY | File::APPEND)
-#     # To create new (and to remove old) logfile, add File::CREAT like;
-#     #   file = open('foo.log', File::WRONLY | File::APPEND | File::CREAT)
-#     logger = Logger.new(file)
+# The HOWTOs below give a code-based overview of Logger's usage, but the basic
+# concept is as follows.  You create a Logger object (output to a file or
+# elsewhere), and use it to log messages.  The messages will have varying
+# levels (+info+, +error+, etc), reflecting their varying importance.  The
+# levels, and their meanings, are:
 #
-#   4. Create logger which ages logfile automatically.  Leave 10 ages and each
-#      file is about 102400 bytes.
-#     logger = Logger.new('foo.log', 10, 102400)
+# +FATAL+:: an unhandleable error that results in a program crash
+# +ERROR+:: a handleable error condition
+# +WARN+::  a warning
+# +INFO+::  generic (useful) information about system operation
+# +DEBUG+:: low-level information for developers
 #
-#   5. Create logger which ages logfile daily/weekly/monthly automatically.
-#     logger = Logger.new('foo.log', 'daily')
-#     logger = Logger.new('foo.log', 'weekly')
-#     logger = Logger.new('foo.log', 'monthly')
+# So each message has a level, and the Logger itself has a level, which acts
+# as a filter, so you can control the amount of information emitted from the
+# logger without having to remove actual messages.
 #
-# How to log a message.
+# For instance, in a production system, you may have your logger(s) set to
+# +INFO+ (or +WARN+ if you don't want the log files growing large with
+# repetitive information).  When you are developing it, though, you probably
+# want to know about the program's internal state, and would set them to
+# +DEBUG+.
 #
-#   1. Message in block.
-#     logger.fatal { "Argument 'foo' not given." }
+# === Example
 #
-#   2. Message as a string.
-#     logger.error "Argument #{ @foo } mismatch."
+# A simple example demonstrates the above explanation:
 #
-#   3. With progname.
-#     logger.info('initialize') { "Initializing..." }
+#   log = Logger.new(STDOUT)
+#   log.level = Logger::WARN
 #
-#   4. With severity.
-#     logger.add(Logger::FATAL) { 'Fatal error!' }
+#   log.debug("Created logger")
+#   log.info("Program started")
+#   log.warn("Nothing to do!")
 #
-# How to close a logger.
+#   begin
+#     File.each_line(path) do |line|
+#       unless line =~ /^(\w+) = (.*)$/
+#         log.error("Line in wrong format: #{line}")
+#       end
+#     end
+#   rescue => err
+#     log.fatal("Caught exception; exiting")
+#     log.fatal(err)
+#   end
 #
-#   logger.close
+# Because the Logger's level is set to +WARN+, only the warning, error, and
+# fatal messages are recorded.  The debug and info messages are silently
+# discarded.
 #
-# Setting severity threshold.
+# === Features
 #
-#   1. Original interface.
-#     logger.level = Logger::WARN
+# There are several interesting features that Logger provides, like
+# auto-rolling of log files, setting the format of log messages, and
+# specifying a program name in conjunction with the message.  The next section
+# shows you how to achieve these things.
 #
-#   2. Log4r (somewhat) compatible interface.
-#     logger.level = Logger::INFO
+# See http://raa.ruby-lang.org/list.rhtml?name=log4r for Log4r, which contains
+# many advanced features like file-based configuration, a wide range of
+# logging targets, simultaneous logging, and heirachical logging.
 #
-#   DEBUG < INFO < WARN < ERROR < FATAL < UNKNOWN
 #
-# Format.
+# == HOWTOs
 #
-#   Log format:
-#     SeverityID, [Date Time mSec #pid] SeverityLabel -- ProgName: message
+# === How to create a logger
 #
-#   Log sample:
-#     I, [Wed Mar 03 02:34:24 JST 1999 895701 #19074]  INFO -- Main: info.
+# The options below give you various choices, in more or less increasing
+# complexity.
+#
+# 1. Create a logger which logs messages to STDERR/STDOUT.
+#
+#      logger = Logger.new(STDERR)
+#      logger = Logger.new(STDOUT)
+#
+# 2. Create a logger for the file which has the specified name.
+#
+#      logger = Logger.new('logfile.log')
+#
+# 3. Create a logger for the specified file.
+#
+#      file = File.open('foo.log', File::WRONLY | File::APPEND)
+#      # To create new (and to remove old) logfile, add File::CREAT like;
+#      #   file = open('foo.log', File::WRONLY | File::APPEND | File::CREAT)
+#      logger = Logger.new(file)
+#
+# 4. Create a logger which ages logfile onmce it reaches a certain size.  Leave
+#    10 "old log files" and each file is about 1,024,000 bytes.
+#
+#      logger = Logger.new('foo.log', 10, 1024000)
+#
+# 5. Create a logger which ages logfile daily/weekly/monthly.
+#
+#      logger = Logger.new('foo.log', 'daily')
+#      logger = Logger.new('foo.log', 'weekly')
+#      logger = Logger.new('foo.log', 'monthly')
+#
+# === How to log a message
+#
+# Notice the different methods (+fatal+, +error+, +info+) being used to log
+# messages of various levels.  Other methods in this family are +warn+ and
+# +debug+.  +add+ is used below to log a message of an arbitrary (perhaps
+# dynamic) level.
+#
+# 1. Message in block.
+#
+#      logger.fatal { "Argument 'foo' not given." }
+#
+# 2. Message as a string.
+#
+#      logger.error "Argument #{ @foo } mismatch."
+#
+# 3. With progname.
+#
+#      logger.info('initialize') { "Initializing..." }
+#
+# 4. With severity.
+#
+#      logger.add(Logger::FATAL) { 'Fatal error!' }
+#
+# === How to close a logger
+#
+#      logger.close
+#
+# === Setting severity threshold
+#
+# 1. Original interface.
+#
+#      logger.level = Logger::WARN
+#
+# 2. Log4r (somewhat) compatible interface.
+#
+#      logger.level = Logger::INFO
+#
+#      DEBUG < INFO < WARN < ERROR < FATAL < UNKNOWN
+#
+#
+# == Format
+#
+# Log messages are rendered in the output stream in a certain format.  The
+# default format and a sample are shown below:
+#
+# Log format:
+#   SeverityID, [Date Time mSec #pid] SeverityLabel -- ProgName: message
+#
+# Log sample:
+#   I, [Wed Mar 03 02:34:24 JST 1999 895701 #19074]  INFO -- Main: info.
+#
+# You may change the date and time format in this manner:
+# 
+#   logger.datetime_format = "%Y-%m-%d %H:%M:%S"
+#         # e.g. "2004-01-03 00:54:26"
+#
+# There is currently no supported way to change the overall format, but you may
+# have some luck hacking the Format constant.
 #
 class Logger
+  # :stopdoc:
   /: (\S+),v (\S+)/ =~ %q$Id$
   ProgName = "#{$1}/#{$2}"
 
   class Error < RuntimeError; end
   class ShiftingError < Error; end
+  # :startdoc:
 
   # Logging severity.
   module Severity
@@ -88,40 +194,59 @@ class Logger
   end
   include Severity
 
-  # Logging severity threshold.
+  # Logging severity threshold (e.g. <tt>Logger::INFO</tt>).
   attr_accessor :level
 
   # Logging program name.
   attr_accessor :progname
 
-  # Logging date-time format (string passed to strftime)
+  # Logging date-time format (string passed to +strftime+).
   attr_accessor :datetime_format
 
   alias sev_threshold level
   alias sev_threshold= level=
 
+  # Returns +true+ iff the current severity level allows for the printing of
+  # +DEBUG+ messages.
   def debug?; @level <= DEBUG; end
+
+  # Returns +true+ iff the current severity level allows for the printing of
+  # +INFO+ messages.
   def info?; @level <= INFO; end
+
+  # Returns +true+ iff the current severity level allows for the printing of
+  # +WARN+ messages.
   def warn?; @level <= WARN; end
+
+  # Returns +true+ iff the current severity level allows for the printing of
+  # +ERROR+ messages.
   def error?; @level <= ERROR; end
+
+  # Returns +true+ iff the current severity level allows for the printing of
+  # +FATAL+ messages.
   def fatal?; @level <= FATAL; end
 
-  # SYNOPSIS
+  #
+  # === Synopsis
+  #
   #   Logger.new(name, shift_age = 7, shift_size = 1048576)
+  #   Logger.new(name, shift_age = 'weekly')
   #
-  # ARGS
-  #   log	String as filename of logging.
-  #		or
-  #		IO as logging device(i.e. STDERR).
-  #   shift_age	An Integer	Num of files you want to keep aged logs.
-  #		'daily'		Daily shifting.
-  #		'weekly'	Weekly shifting (Every monday.)
-  #		'monthly'	Monthly shifting (Every 1th day.)
-  #   shift_size	Shift size threshold when shift_age is an integer.
-  #		Otherwise (like 'daily'), shift_size will be ignored.
+  # === Args
   #
-  # DESCRIPTION
-  #   Create an instance.
+  # +logdev+::
+  #   The log device.  This is a filename (String) or IO object (typically
+  #   +STDOUT+, +STDERR+, or an open file).
+  # +shift_age+::
+  #   Number of old log files to keep, *or* frequency of rotation (+daily+,
+  #   +weekly+ or +monthly+).
+  # +shift_size+::
+  #   Maximum logfile size (only applies when +shift_age+ is a number).
+  #
+  # === Description
+  #
+  # Create an instance.  See Logger::LogDevice.new for more information if
+  # required.
   #
   def initialize(logdev, shift_age = 0, shift_size = 1048576)
     @logdev = nil
@@ -134,42 +259,61 @@ class Logger
     end
   end
 
-  # SYNOPSIS
-  #   Logger#add(severity, msg = nil, progname = nil) { ... } = nil
   #
-  # ARGS
-  #   severity	Severity.  Constants are defined in Logger namespace.
-  #		DEBUG, INFO, WARN, ERROR, FATAL, or UNKNOWN.
-  #   msg	Message.  A string, exception, or something. Can be omitted.
-  #   progname	Program name string.  Can be omitted.
-  #   		Logged as a msg if no msg and block are given.
-  #   block     Can be omitted.
-  #             Called to get a message string if msg is nil.
+  # === Synopsis
+  # 
+  #   Logger#add(severity, message = nil, progname = nil) { ... }
   #
-  # RETURN
-  #   true if succeed, false if failed.
-  #   When the given severity is not enough severe,
-  #   Log no message, and returns true.
+  # === Args
   #
-  # DESCRIPTION
-  #   Log a log if the given severity is enough severe.
+  # +severity+::
+  #   Severity.  Constants are defined in Logger namespace: +DEBUG+, +INFO+,
+  #   +WARN+, +ERROR+, +FATAL+, or +UNKNOWN+.
+  # +message+::
+  #   The log message.  A String or Exception.
+  # +progname+::
+  #   Program name string.  Can be omitted.  Treated as a message if no +message+ and
+  #   +block+ are given.
+  # +block+::
+  #   Can be omitted.  Called to get a message string if +message+ is nil.
   #
-  # BUGS
-  #   Logfile is not locked.
-  #   Append open does not need to lock file.
-  #   But on the OS which supports multi I/O, records possibly be mixed.
+  # === Return
   #
-  def add(severity, msg = nil, progname = nil, &block)
+  # +true+ if successful, +false+ otherwise.
+  #
+  # When the given severity is not high enough (for this particular logger), log
+  # no message, and return +true+.
+  #
+  # === Description
+  #
+  # Log a message if the given severity is high enough.  This is the generic
+  # logging method.  Users will be more inclined to use #debug, #info, #warn,
+  # #error, and #fatal.
+  #
+  # <b>Message format</b>: +message+ can be any object, but it has to be
+  # converted to a String in order to log it.  Generally, +to_str+ is used (so
+  # a String object goes through unchanged).  Failing that, +inspect+ is used.
+  # A special case is an +Exception+ object, which will be printed in detail,
+  # including message, class, and backtrace.  See #msg2str for the
+  # implementation if required.
+  #
+  # === Bugs
+  #
+  # * Logfile is not locked.
+  # * Append open does not need to lock file.
+  # * But on the OS which supports multi I/O, records possibly be mixed.
+  #
+  def add(severity, message = nil, progname = nil, &block)
     severity ||= UNKNOWN
     if @logdev.nil? or severity < @level
       return true
     end
     progname ||= @progname
-    if msg.nil?
+    if message.nil?
       if block_given?
-	msg = yield
+	message = yield
       else
-	msg = progname
+	message = progname
 	progname = @progname
       end
     end
@@ -177,7 +321,7 @@ class Logger
       format_message(
 	format_severity(severity),
 	format_datetime(Time.now),
-	msg2str(msg),
+	msg2str(message),
 	progname
       )
     )
@@ -185,17 +329,9 @@ class Logger
   end
   alias log add
 
-  # SYNOPSIS
-  #   Logger#<<(msg)
   #
-  # ARGS
-  #   msg	Message.
-  #
-  # RETURN
-  #   Same as IO#<<.  If logdev is not given, returns nil.
-  #
-  # DESCRIPTION
-  #   Dump given message to log device without any formatting.
+  # Dump given message to the log device without any formatting.  If no log
+  # device exists, return +nil+.
   #
   def <<(msg)
     unless @logdev.nil?
@@ -203,55 +339,80 @@ class Logger
     end
   end
 
-  # SYNOPSIS
-  #   Logger#debug(progname = nil) { ... } = nil
-  #   Logger#info(progname = nil) { ... } = nil
-  #   Logger#warn(progname = nil) { ... } = nil
-  #   Logger#error(progname = nil) { ... } = nil
-  #   Logger#fatal(progname = nil) { ... } = nil
-  #   Logger#unknown(progname = nil) { ... } = nil
   #
-  # ARGS
-  #   progname	Program name string.  Can be omitted.
-  #   		Logged as a msg if no block are given.
-  #   block     Can be omitted.
-  #             Called to get a message string if msg is nil.
+  # Log a +DEBUG+ message.
   #
-  # RETURN
-  #   See Logger#add .
-  #
-  # DESCRIPTION
-  #   Log a log.
+  # See #info for more information.
   #
   def debug(progname = nil, &block)
     add(DEBUG, nil, progname, &block)
   end
 
+  #
+  # Log an +INFO+ message.
+  #
+  # The message can come either from the +progname+ argument or the +block+.  If
+  # both are provided, then the +block+ is used as the message, and +progname+
+  # is used as the program name.
+  #
+  # === Examples
+  #
+  #   logger.info("MainApp") { "Received connection from #{ip}" } 
+  #   # ...
+  #   logger.info "Waiting for input from user"
+  #   # ...
+  #   logger.info { "User typed #{input}" }
+  #
+  # You'll probably stick to the second form above, unless you want to provide a
+  # program name (which you can do with <tt>Logger#progname=</tt> as well). 
+  #
+  # === Return
+  #
+  # See #add. 
+  #
   def info(progname = nil, &block)
     add(INFO, nil, progname, &block)
   end
 
+  #
+  # Log a +WARN+ message.
+  #
+  # See #info for more information.
+  #
   def warn(progname = nil, &block)
     add(WARN, nil, progname, &block)
   end
 
+  #
+  # Log an +ERROR+ message.
+  #
+  # See #info for more information.
+  #
   def error(progname = nil, &block)
     add(ERROR, nil, progname, &block)
   end
 
+  #
+  # Log a +FATAL+ message.
+  #
+  # See #info for more information.
+  #
   def fatal(progname = nil, &block)
     add(FATAL, nil, progname, &block)
   end
 
+  #
+  # Log an +UNKNOWN+ message.  This will be printed no matter what the logger
+  # level.
+  #
+  # See #info for more information.
+  #
   def unknown(progname = nil, &block)
     add(UNKNOWN, nil, progname, &block)
   end
 
-  # SYNOPSIS
-  #   Logger#close
   #
-  # DESCRIPTION
-  #   Close the logging device.
+  # Close the logging device.
   #
   def close
     @logdev.close if @logdev
@@ -260,7 +421,7 @@ class Logger
 private
 
   # Severity label for logging. (max 5 char)
-  SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY);
+  SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY)    # :nodoc:
 
   def format_severity(severity)
     SEV_LABEL[severity] || 'ANY'
@@ -274,12 +435,15 @@ private
     end
   end
 
-  Format = "%s, [%s#%d] %5s -- %s: %s\n"
+  Format = "%s, [%s#%d] %5s -- %s: %s\n"   # :nodoc:
   def format_message(severity, timestamp, msg, progname)
     Format % [severity[0..0], timestamp, $$, severity, progname, msg]
   end
 
-  def msg2str(msg)
+  #
+  # Converts +msg+ into a String for the sake of emitting a log message.
+  #
+  def msg2str(msg) # :doc:
     if msg.is_a?(::String)
       msg
     elsif msg.is_a?(::Exception)
@@ -292,33 +456,44 @@ private
   end
 
 
+  #
   # LogDevice -- Logging device.
+  #
   class LogDevice
     attr_reader :dev
     attr_reader :filename
 
-    # SYNOPSIS
-    #   Logger::LogDev.new(name, opt = {})
     #
-    # ARGS
-    #   log	String as filename of logging.
-    #		  or
-    #		IO as logging device(i.e. STDERR).
-    #	opt	Hash of options.
+    # == Synopsis
     #
-    # DESCRIPTION
-    #   Log device class.  Output and shifting of log.
-    #	When a String was given, LogDevice opens the file and set sync = true.
+    #   Logger::LogDev.new(name, :shift_age => 'daily|weekly|monthly')
+    #   Logger::LogDev.new(name, :shift_age => 10, :shift_size => 1024*1024)
     #
-    # OPTIONS
-    #   :shift_age
-    #     An Integer	Num of files you want to keep aged logs.
-    #	  'daily'	Daily shifting.
-    #	  'weekly'	Weekly shifting (Shift every monday.)
-    #	  'monthly'	Monthly shifting (Shift every 1th day.)
+    # == Args
     #
-    #   :shift_size	Shift size threshold when :shift_age is an integer.
-    #			Otherwise (like 'daily'), it is ignored.
+    # +name+::
+    #   A String (representing a filename) or an IO object (actually, anything
+    #   that responds to +write+ and +close+).  If a filename is given, then
+    #   that file is opened for writing (and appending if it already exists),
+    #   with +sync+ set to +true+.
+    # +opts+::
+    #   Contains optional arguments for rolling ("shifting") the log file.
+    #   <tt>:shift_age</tt> is either a description (e.g. 'daily'), or an
+    #   integer number of log files to keep.  <tt>shift_size</tt> is the maximum
+    #   size of the log file, and is only significant is a number is given for
+    #   <tt>shift_age</tt>.
+    #
+    #   These arguments are only relevant if a filename is provided for the
+    #   first argument.
+    #
+    # == Description
+    #
+    # Creates a LogDevice object, which is the target for log messages.  Rolling
+    # of log files is supported (only if a filename is given; you can't roll an
+    # IO object).  The beginning of each file created by this class is tagged
+    # with a header message.
+    #
+    # This class is unlikely to be used directly; it is a backend for Logger. 
     #
     def initialize(log = nil, opt = {})
       @dev = @filename = @shift_age = @shift_size = nil
@@ -335,17 +510,11 @@ private
       end
     end
 
-    # SYNOPSIS
-    #   Logger::LogDev#write(message)
     #
-    # ARGS
-    #   message		Message to be logged.
-    #
-    # DESCRIPTION
-    #   Log a message.  If needed, the log device is aged and the new device
-    #  	is prepared.  Log device is not locked.  Append open does not need to
-    #  	lock file but on the OS which supports multi I/O, records possibly be
-    #  	mixed.
+    # Log a message.  If needed, the log file is rolled and the new file is
+    # prepared.  Log device is not locked.  Append open does not need to lock
+    # file but on an OS which supports multi I/O, records could possibly be
+    # mixed.
     #
     def write(message)
       if shift_log?
@@ -359,11 +528,8 @@ private
       @dev.write(message) 
     end
 
-    # SYNOPSIS
-    #   Logger::LogDev#close
     #
-    # DESCRIPTION
-    #   Close the logging device.
+    # Close the logging device.
     #
     def close
       @dev.close
@@ -456,18 +622,22 @@ private
     def eod(t)
       Time.mktime(t.year, t.month, t.mday, 23, 59, 59)
     end
-  end
+  end  # class LogDevice
 
 
-  # DESCRIPTION
-  #   Application -- Add logging support to your application.
   #
-  # USAGE
-  #   1. Define your application class as a sub-class of this class.
-  #   2. Override 'run' method in your class to do many things.
-  #   3. Instanciate it and invoke 'start'.
+  # == Description
   #
-  # EXAMPLE
+  # Application -- Add logging support to your application.
+  #
+  # == Usage
+  #
+  # 1. Define your application class as a sub-class of this class.
+  # 2. Override 'run' method in your class to do many things.
+  # 3. Instanciate it and invoke 'start'.
+  #
+  # == Example
+  #
   #   class FooApp < Application
   #     def initialize(foo_app, application_specific, arguments)
   #       super('FooApp') # Name of the application.
@@ -490,14 +660,19 @@ private
     attr_reader :appname
     attr_reader :logdev
 
-    # SYNOPSIS
+    #
+    # == Synopsis
+    #
     #   Application.new(appname = '')
     #
-    # ARGS
-    #   appname	Name String of the application.
+    # == Args
     #
-    # DESCRIPTION
-    #   Create an instance.  Log device is STDERR by default.
+    # +appname+:: Name of the application.
+    #
+    # == Description
+    #
+    # Create an instance.  Log device is +STDERR+ by default.  This can be
+    # changed with #set_log.
     #
     def initialize(appname = nil)
       @appname = appname
@@ -506,14 +681,8 @@ private
       @level = @log.level
     end
 
-    # SYNOPSIS
-    #   Application#start
     #
-    # DESCRIPTION
-    #   Start the application.
-    #
-    # RETURN
-    #   Status code.
+    # Start the application.  Return the status code.
     #
     def start
       status = -1
@@ -528,16 +697,11 @@ private
       status
     end
 
-    # SYNOPSIS
-    #   Application#set_log(log, shift_age, shift_size)
     #
-    # ARGS
-    #   (Args are explained in the class Logger)
+    # Sets the log device for this application.  See the classes Logger and
+    # Logger::LogDevice for an explanation of the arguments.
     #
-    # DESCRIPTION
-    #   Set the log device for this application.
-    #
-    def set_log(logdev, shift_age = 0, shift_size = 102400)
+    def set_log(logdev, shift_age = 0, shift_size = 1024000)
       @log = Logger.new(logdev, shift_age, shift_size)
       @log.progname = @appname
       @log.level = @level
@@ -548,14 +712,8 @@ private
     end
 
 
-    # SYNOPSIS
-    #   Application#level=(severity)
     #
-    # ARGS
-    #   level	Severity threshold.
-    #
-    # DESCRIPTION
-    #   Set severity threshold.
+    # Set the logging threshold, just like <tt>Logger#level=</tt>.
     #
     def level=(level)
       @level = level
@@ -564,25 +722,10 @@ private
 
   protected
 
-    # SYNOPSIS
-    #   Application#log(severity, comment = nil) { ... }
     #
-    # ARGS
-    #   severity	Severity. See above to give this.
-    #   comment		Message String.
-    #   block     	Can be omitted.  Called to get a message String if
-    #			comment is nil or omitted.
+    # See Logger#add.  This application's +appname+ is used.
     #
-    # DESCRIPTION
-    #   Log a log if the given severity is enough severe.
-    #   For more detail, see Log.add.
-    #
-    # RETURN
-    #   true if succeed, false if failed.
-    #   When the given severity is not enough severe,
-    #   Log no message, and returns true.
-    #
-    def log(severity, message = nil, &block)
+    def log(severity, message = nil, &block) # :doc:
       @log.add(severity, message, @appname, &block) if @log
     end
 
@@ -591,5 +734,6 @@ private
     def run
       raise RuntimeError.new('Method run must be defined in the derived class.')
     end
-  end
-end
+
+  end  # class Application
+end  # class Logger
