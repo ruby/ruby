@@ -4085,6 +4085,7 @@ assign(self, lhs, val, pcall)
 	break;
 
       case NODE_CALL:
+      case NODE_ATTRASGN:
 	{
 	    VALUE recv;
 	    recv = rb_eval(self, lhs->nd_recv);
