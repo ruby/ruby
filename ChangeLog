@@ -5,6 +5,10 @@ Mon Mar  9 16:53:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* sprintf.c (remove_sign_bits): failed to remove some bits.
 
+Sat Mar  7 21:51:46 1998  MAEDA shugo  <shugo@po.aianet.ne.jp>
+
+	* class.c (ins_methods_i): body may be NULL for some case.
+
 Sat Mar  7 00:43:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (logop): short cut syntax tree.

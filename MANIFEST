@@ -88,6 +88,7 @@ lib/base64.rb
 lib/cgi-lib.rb
 lib/complex.rb
 lib/date.rb
+lib/date2.rb
 lib/debug.rb
 lib/delegate.rb
 lib/e2mmap.rb

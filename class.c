@@ -298,7 +298,7 @@ ins_methods_i(key, body, ary)
 	    ary_push(ary, name);
 	}
     }
-    else if (nd_type(body->nd_body) == NODE_ZSUPER) {
+    else if (body->nd_body && nd_type(body->nd_body) == NODE_ZSUPER) {
 	ary_push(ary, Qnil);
 	ary_push(ary, str_new2(rb_id2name(key)));
     }
