@@ -115,10 +115,10 @@ module RDoc
     end
 
     options = RI::Options.instance
-    if ENV["RI"]
-      options.parse
+    if args = ENV["RI"]
+      options.parse(args.split)
     end
-    formatter = options.formatter.new(options, "   ")
+    formatter = options.formatter.new(options, "")
     formatter.display_flow(flow)
   end
 
