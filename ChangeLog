@@ -4,6 +4,9 @@ Wed Aug  9 13:24:25 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 Mon Aug  7 13:59:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* ruby.h (CLONESETUP): should copy flags before any potential
+	  object allocation.
+
 	* regex.c (re_match): check for stack depth was needed.
 
 Sat Aug  5 16:43:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>

@@ -199,8 +199,8 @@ char *rb_str2cstr _((VALUE,int*));
 VALUE rb_newobj _((void));
 #define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
 #define OBJSETUP(obj,c,t) {\
-    RBASIC(obj)->klass = (c);\
     RBASIC(obj)->flags = (t);\
+    RBASIC(obj)->klass = (c);\
     if (rb_safe_level() >= 3) FL_SET(obj, FL_TAINT);\
 }
 #define CLONESETUP(clone,obj) do {\
