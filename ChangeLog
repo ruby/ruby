@@ -1,3 +1,11 @@
+Mon Sep  6 07:51:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (cvar_cbase): singletons should refer outer cvar scope.
+	  [ruby-dev:24223]
+
+	* eval.c (rb_load): should preserve previous ruby_wrapper value.
+	  [ruby-dev:24226]
+
 Sat Sep  4 01:14:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (cvar_cbase): class variables cause SEGV in

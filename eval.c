@@ -1773,7 +1773,7 @@ cvar_cbase()
 {
     NODE *cref = ruby_cref;
 
-    while (cref && cref->nd_next && FL_TEST(cref->nd_clss, FL_SINGLETON)) {
+    while (cref && cref->nd_next && (NIL_P(cref->nd_clss) || FL_TEST(cref->nd_clss, FL_SINGLETON))) {
 	cref = cref->nd_next;
 	if (!cref->nd_next) {
 	    rb_warn("class variable access from toplevel singleton method");
@@ -6411,7 +6411,7 @@ rb_load(fname, wrap)
     int state;
     volatile int prohibit_int = rb_prohibit_interrupt;
     volatile ID last_func;
-    volatile VALUE wrapper = 0;
+    volatile VALUE wrapper = ruby_wrapper;
     volatile VALUE self = ruby_top_self;
     NODE *volatile last_node;
     NODE *saved_cref = ruby_cref;
