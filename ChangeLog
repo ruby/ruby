@@ -1,5 +1,7 @@
 Fri Oct 15 01:32:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
+	* io.c (rb_io_ctl) :need to use NUM2ULONG, not NUM2INT.
+
 	* ext/Win32API/Win32API.c (Win32API_Call): need to use NUM2ULONG,
 	  not NUM2INT.
 
@@ -19,6 +21,12 @@ Fri Oct 15 00:22:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Thu Oct 14 02:00:10 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (string): compile time string concatenation.
+
+Wed Oct 13 02:17:05 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* array.c (rb_ary_plus): remove recursion.
+
+	* array.c (rb_ary_sort_bang): detect modify attempt.
 
 Wed Oct 13 02:17:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

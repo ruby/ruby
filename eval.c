@@ -793,6 +793,9 @@ error_pos()
 	    fprintf(stderr, "%s:%d:in `%s'", ruby_sourcefile, ruby_sourceline,
 		    rb_id2name(ruby_frame->last_func));
 	}
+	else if (ruby_sourceline == 0) {
+	    fprintf(stderr, "%s", ruby_sourcefile);
+	}
 	else {
 	    fprintf(stderr, "%s:%d", ruby_sourcefile, ruby_sourceline);
 	}
@@ -4148,6 +4151,9 @@ backtrace(lev)
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     ruby_sourcefile, ruby_sourceline,
 		     rb_id2name(frame->last_func));
+	}
+	else if (ruby_sourceline == 0) {
+	    snprintf(buf, BUFSIZ, "%s", ruby_sourcefile);
 	}
 	else {
 	    snprintf(buf, BUFSIZ, "%s:%d", ruby_sourcefile, ruby_sourceline);

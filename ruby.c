@@ -44,19 +44,16 @@ char *strstr _((const char*,const char*));
 char *getenv();
 #endif
 
-static int version, copyright;
-
 VALUE ruby_debug = Qfalse;
 VALUE ruby_verbose = Qfalse;
-static int sflag = Qfalse;
+static int sflag = 0;
+static int xflag = 0;
+extern int yydebug;
 
 char *ruby_inplace_mode = Qfalse;
 # ifndef strdup
 char *strdup();
 # endif
-
-extern int yydebug;
-static int xflag = Qfalse;
 
 static void load_stdin _((void));
 static void load_file _((char *, int));
@@ -242,6 +239,7 @@ void
 require_libraries()
 {
     extern NODE *ruby_eval_tree;
+    char *orig_sourcefile = ruby_sourcefile;
     NODE *save;
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
@@ -256,6 +254,7 @@ require_libraries()
 	list = tmp;
     }
     ruby_eval_tree = save;
+    ruby_sourcefile = orig_sourcefile;
 }
 
 extern void Init_ext _((void));
@@ -302,6 +301,10 @@ proc_options(argc, argv)
     int do_search;
     char *s;
 
+    int version = 0;
+    int copyright = 0;
+    int verbose = 0;
+
     if (argc == 0) return;
 
     version = Qfalse;
@@ -328,7 +331,7 @@ proc_options(argc, argv)
 
 	  case 'd':
 	    ruby_debug = Qtrue;
-	    ruby_verbose |= 1;
+	    ruby_verbose = Qtrue;
 	    s++;
 	    goto reswitch;
 
@@ -339,9 +342,9 @@ proc_options(argc, argv)
 
 	  case 'v':
 	    ruby_show_version();
-	    ruby_verbose = 2;
+	    verbose = 1;
 	  case 'w':
-	    ruby_verbose |= 1;
+	    ruby_verbose = Qtrue;
 	    s++;
 	    goto reswitch;
 
@@ -352,7 +355,7 @@ proc_options(argc, argv)
 
 	  case 's':
 	    forbid_setid("-s");
-	    sflag = Qtrue;
+	    sflag = 1;
 	    s++;
 	    goto reswitch;
 
@@ -490,8 +493,10 @@ proc_options(argc, argv)
 		ruby_debug = 1;
 	    else if (strcmp("version", s) == 0)
 		version = 1;
-	    else if (strcmp("verbose", s) == 0)
-		ruby_verbose = 2;
+	    else if (strcmp("verbose", s) == 0) {
+		verbose = 1;
+		ruby_verbose = Qtrue;
+	    }
 	    else if (strcmp("yydebug", s) == 0)
 		yydebug = 1;
 	    else if (strcmp("help", s) == 0) {
@@ -536,11 +541,8 @@ proc_options(argc, argv)
 	ruby_show_copyright();
     }
 
-    if (ruby_verbose) ruby_verbose = Qtrue;
-    if (ruby_debug) ruby_debug = Qtrue;
-
     if (!e_script && argc == 0) { /* no more args */
-	if (ruby_verbose == 3) exit(0);
+	if (verbose) exit(0);
 	script = "-";
     }
     else {
@@ -572,6 +574,7 @@ proc_options(argc, argv)
     Init_ext();		/* should be called here for some reason :-( */
     require_libraries();
 
+    ruby_sourcefile = argv0;
     if (e_script) {
 	rb_compile_string(script, e_script, 1);
     }
@@ -583,8 +586,8 @@ proc_options(argc, argv)
     }
 
     process_sflag();
-    sflag = Qfalse;
-    xflag = Qfalse;
+    sflag = 0;
+    xflag = 0;
 }
 
 extern int ruby__end__seen;

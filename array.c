@@ -914,9 +914,9 @@ VALUE
 rb_ary_sort_bang(ary)
     VALUE ary;
 {
+    rb_ary_modify(ary);
     if (RARRAY(ary)->len <= 1) return ary;
 
-    rb_ary_modify(ary);
     FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during sort */
     rb_ensure(sort_internal, ary, sort_unlock, ary);
     return ary;
@@ -926,8 +926,9 @@ VALUE
 rb_ary_sort(ary)
     VALUE ary;
 {
+    ary = rb_ary_dup(ary);
     if (RARRAY(ary)->len == 0) return ary;
-    return rb_ary_sort_bang(rb_ary_dup(ary));
+    return rb_ary_sort_bang(ary);
 }
 
 VALUE
@@ -966,11 +967,11 @@ rb_ary_delete_at(ary, at)
     long i, pos = NUM2LONG(at), len = RARRAY(ary)->len;
     VALUE del = Qnil;
 
+    rb_ary_modify(ary);
     if (pos >= len) return Qnil;
     if (pos < 0) pos += len;
     if (pos < 0) return Qnil;
 
-    rb_ary_modify(ary);
     del = RARRAY(ary)->ptr[pos];
     for (i = pos + 1; i < len; i++, pos++) {
 	RARRAY(ary)->ptr[pos] = RARRAY(ary)->ptr[i];
@@ -1090,7 +1091,7 @@ rb_ary_plus(x, y)
     VALUE z;
 
     if (TYPE(y) != T_ARRAY) {
-	return rb_ary_plus(x, rb_Array(y));
+	y = rb_Array(y);
     }
 
     z = rb_ary_new2(RARRAY(x)->len + RARRAY(y)->len);
@@ -1106,8 +1107,9 @@ rb_ary_concat(x, y)
 {
     VALUE *p, *pend;
 
+    rb_ary_modify(x);
     if (TYPE(y) != T_ARRAY) {
-	return rb_ary_concat(x, rb_Array(y));
+	y = rb_Array(y);
     }
 
     p = RARRAY(y)->ptr;
