@@ -9,6 +9,7 @@
 ************************************************/
 
 #include "ruby.h"
+#include "rubysig.h"
 #include "st.h"
 
 static VALUE cMethod;
@@ -1133,6 +1134,13 @@ cbsubst_scan_args(self, arg_key, val_ary)
     char *ptr;
     volatile VALUE dst = rb_ary_new2(len);
     volatile VALUE proc;
+    int thr_crit_bup;
+    VALUE old_gc;
+
+    thr_crit_bup = rb_thread_critical;
+    rb_thread_critical = Qtrue;
+
+    old_gc = rb_gc_disable();
 
     Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
 		    struct cbsubst_info, inf);
@@ -1160,6 +1168,9 @@ cbsubst_scan_args(self, arg_key, val_ary)
 		= rb_funcall(proc, ID_call, 1, RARRAY(val_ary)->ptr[idx]);
 	}
     }
+
+    if (old_gc == Qfalse) rb_gc_enable();
+    rb_thread_critical = thr_crit_bup;
 
     return dst;
 }

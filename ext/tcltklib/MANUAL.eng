@@ -268,6 +268,19 @@ class TclTkIp
        : Check whether the interpreter is the safe interpreter. 
        : If is the safe interpreter, returns true. 
 
+    allow_ruby_exit?
+       : Return the mode whether 'exit' function of ruby or 'exit' 
+       : command of Tcl/Tk can quit the ruby process or not on the 
+       : interpreter. If false, such a command quit the interpreter 
+       : only.
+       : The default value for a master interpreter is true, and 
+       : for a slave interpreter is false.
+
+    allow_ruby_exit=(mode)
+       : Change the mode of 'allow_ruby_exit?'.
+       : If $SAFE >= 4 or the interpreter is a "safe" interpreter, 
+       : this is not permitted (raise an exception). 
+
     delete
        : Delete the interpreter. 
        : The deleted interpreter doesn't accept command and then

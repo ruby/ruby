@@ -28,7 +28,6 @@ class TkTimer
   # class methods
   ###############################
   def self.callback(obj_id)
-    @after_id = nil
     ex_obj = Tk_CBTBL[obj_id]
     return "" if ex_obj == nil; # canceled
     ex_obj.cb_call
@@ -59,6 +58,7 @@ class TkTimer
   ###############################
   def do_callback
     @in_callback = true
+    @after_id = nil
     begin
       @return_value = @current_proc.call(self)
     rescue SystemExit
@@ -86,6 +86,10 @@ class TkTimer
   end
 
   def set_callback(sleep, args=nil)
+    if TkCore::INTERP.deleted?
+      self.cancel
+      return self
+    end
     @after_script = "rb_after #{@id}"
     @after_id = tk_call_without_enc('after', sleep, @after_script)
     @current_args = args
@@ -313,6 +317,7 @@ class TkTimer
     Tk_CBTBL[@id] = self
     @do_loop = @loop_exec
     @current_pos = 0
+    @after_id = nil
 
     @init_sleep = 0
     @init_proc  = nil

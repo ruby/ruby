@@ -165,6 +165,10 @@ class MultiTkIp
     unless ip.deleted?
       ip._split_tklist(ip._invoke('interp', 'slaves')).each{|name|
 	begin
+	  ip._eval_without_enc("#{name} eval {foreach i [after info] {after cancel $i}}")
+	rescue Exception
+	end
+	begin
 	  # ip._invoke('interp', 'eval', name, 'destroy', '.')
 	  ip._invoke(name, 'eval', 'destroy', '.')
 	rescue Exception
@@ -183,10 +187,12 @@ class MultiTkIp
 	  end
 	end
 =end
-	if ip._invoke('interp', 'exists', name) == '1'
-	  begin
-	    ip._invoke('interp', 'delete', name)
-	  rescue Exception
+	unless ip.deleted?
+	  if ip._invoke('interp', 'exists', name) == '1'
+	    begin
+	      ip._invoke('interp', 'delete', name)
+	    rescue Exception
+	    end
 	  end
 	end
       }
@@ -199,6 +205,7 @@ class MultiTkIp
     # command-procedures receiver
     receiver = Thread.new(lvl){|safe_level|
       loop do
+	break if @interp.deleted?
 	thread, cmd, *args = @cmd_queue.deq
 	if thread == @system
 	  # control command
@@ -222,38 +229,65 @@ class MultiTkIp
 	      @slave_ip_tbl.each{|name, subip| 
 		_destroy_slaves_of_slaveIP(subip)
 		begin
-		  subip._invoke('destroy', '.') 
+		  subip._eval_without_enc("foreach i [after info] {after cancel $i}")
 		rescue Exception
 		end
+=begin
+		begin
+		  subip._invoke('destroy', '.') unless subip.deleted?
+		rescue Exception
+		end
+=end
 		begin
 		  # safe_base?
 		  @interp._eval_without_enc("::safe::interpConfigure #{name}")
 		  @interp._eval_without_enc("::safe::interpDelete #{name}")
 		rescue Exception
+		  if subip.respond_to?(:safe_base?) && subip.safe_base? && 
+		      !subip.deleted?
+		    # do 'exit' to call the delete_hook procedure
+		    begin
+		      subip._eval_without_enc('exit') 
+		    rescue Exception
+		    end
+		  else
+		    begin
+		      subip.delete unless subip.deleted?
+		    rescue Exception
+		    end
+		  end
 		end
-		if subip.respond_to?(:safe_base?) && subip.safe_base? && !subip.deleted?
-		  # do 'exit' to call the delete_hook procedure
-		  subip._eval_without_enc('exit') 
-		end
-		subip.delete unless subip.deleted?
 	      }
 
 	      begin
-		@interp._invoke('destroy', '.')
+		@interp._eval_without_enc("foreach i [after info] {after cancel $i}")
 	      rescue Exception
 	      end
-
+	      begin
+		@interp._invoke('destroy', '.') unless @interp.deleted?
+	      rescue Exception
+	      end
 	      if @safe_base && !@interp.deleted?
 		# do 'exit' to call the delete_hook procedure
 		@interp._eval_without_enc('exit')
+	      else
+		@interp.delete unless @interp.deleted?
 	      end
-
-	      @interp.delete unless @interp.deleted?
 	    end
+
 	    if e.backtrace[0] =~ /^(.+?):(\d+):in `(exit|exit!|abort)'/
 	      _check_and_return(thread, MultiTkIp_OK.new($3 == 'exit'))
 	    else
 	      _check_and_return(thread, MultiTkIp_OK.new(nil))
+	    end
+
+	    if master? && !safe? && allow_ruby_exit?
+=begin
+	      ObjectSpace.each_object(TclTkIp){|obj|
+		obj.delete unless obj.deleted?
+	      }
+=end
+	      exit
 	    end
 	    break
 
@@ -265,32 +299,52 @@ class MultiTkIp
 		@slave_ip_tbl.each_value{|subip|
 		  _destroy_slaves_of_slaveIP(subip)
 		  begin
-		    subip._invoke('destroy', '.') 
+		    subip._eval_without_enc("foreach i [after info] {after cancel $i}")
 		  rescue Exception
 		  end
+=begin
+		  begin
+		    subip._invoke('destroy', '.') unless subip.deleted?
+		  rescue Exception
+		  end
+=end
 		  begin
 		    # safe_base?
 		    @interp._eval_without_enc("::safe::interpConfigure #{name}")
 		    @interp._eval_without_enc("::safe::interpDelete #{name}")
 		  rescue Exception
+		    if subip.respond_to?(:safe_base?) && subip.safe_base? && 
+			!subip.deleted?
+		      # do 'exit' to call the delete_hook procedure
+		      begin
+			subip._eval_without_enc('exit') 
+		      rescue Exception
+		      end
+		    else
+		      begin
+			subip.delete unless subip.deleted?
+		      rescue Exception
+		      end
+		    end
 		  end
-		  if subip.respond_to?(:safe_base?) && subip.safe_base? && !subip.deleted?
-		    subip._eval_without_enc('exit') 
-		  end
-		  subip.delete unless subip.deleted?
 		}
 
 		begin
-		  @interp._invoke('destroy', '.')
+		  @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
 		rescue Exception
 		end
-
+=begin
+		begin
+		  @interp._invoke('destroy', '.') unless @interp.deleted?
+		rescue Exception
+		end
+=end
 		if @safe_base && !@interp.deleted?
 		  # do 'exit' to call the delete_hook procedure
 		  @interp._eval_without_enc('exit')
+		else
+		  @interp.delete unless @interp.deleted?
 		end
-
-		@interp.delete unless @interp.deleted?
 	      end
 	      _check_and_return(thread, MultiTkIp_OK.new(ret))
 	      break
@@ -376,6 +430,8 @@ class MultiTkIp
     @system = Object.new
 
     @threadgroup  = Thread.current.group
+
+    @safe_base = false
 
     @safe_level = [$SAFE]
 
@@ -754,6 +810,7 @@ class MultiTkIp
     if safeip == nil
       # create master-ip
       @interp = TclTkIp.new(name, _keys2opts(tk_opts))
+
       @ip_name = nil
       if safe
 	safe = $SAFE if safe < $SAFE
@@ -1268,6 +1325,22 @@ class << MultiTkIp
     end
   end
 
+  def allow_ruby_exit?
+    __getip.allow_ruby_exit?
+  end
+
+  def allow_ruby_exit= (mode)
+    __getip.allow_ruby_exit = mode
+  end
+
+  def delete
+    __getip.delete
+  end
+
+  def deleteed?
+    __getip.deleted?
+  end
+
   def exit(st = 0)
     __getip.exit(st)
   end
@@ -1444,10 +1517,10 @@ class MultiTkIp
 	  end
 	  @interp.mainloop(check_root)
 	end
-      rescue StandardError
+      #rescue StandardError
+      rescue Exception
 	if TclTkLib.mainloop_abort_on_exception != nil
-	  STDERR.print("Warning: Tk mainloop on ", @interp.inspect, 
-		       " receives ", $!.class.inspect, 
+	  STDERR.print("Warning: Tk mainloop receives ", $!.class.inspect, 
 		       " exception (ignore) : ", $!.message, "\n");
 	end
 	retry
@@ -1468,22 +1541,65 @@ class MultiTkIp
     @safe_base
   end
 
+  def allow_ruby_exit?
+    @interp.allow_ruby_exit?
+  end
+
+  def allow_ruby_exit= (mode)
+    @interp.allow_ruby_exit = mode
+  end
+
   def delete
     @slave_ip_tbl.each_value{|subip|
-      unless subip.deleted?
-	begin
-	  subip._invoke('destroy', '.') 
-	rescue Exception
+      _destroy_slaves_of_slaveIP(subip)
+=begin
+      begin
+	subip._invoke('destroy', '.') unless subip.deleted?
+      rescue Exception
+      end
+=end
+      begin
+	subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+      rescue Exception
+      end
+      begin
+	# safe_base?
+	@interp._eval_without_enc("::safe::interpConfigure #{name}")
+	@interp._eval_without_enc("::safe::interpDelete #{name}")
+      rescue Exception
+	if subip.respond_to?(:safe_base?) && subip.safe_base? && 
+	    !subip.deleted?
+	  # do 'exit' to call the delete_hook procedure
+	  begin
+	    subip._eval_without_enc('exit') 
+	  rescue Exception
+	  end
+	else
+	  begin
+	    subip.delete unless subip.deleted?
+	  rescue Exception
+	  end
 	end
-	subip.delete 
-	#subip._invoke('exit') 
       end
     }
-    if safe?
+
+    begin
+      @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+    rescue Exception
+    end
+=begin
+    begin
+      @interp._invoke('destroy', '.') unless @interp.deleted?
+    rescue Exception
+    end
+=end
+    if @safe_base && !@interp.deleted?
       # do 'exit' to call the delete_hook procedure
       @interp._eval_without_enc('exit')
+    else
+      @interp.delete unless @interp.deleted?
     end
-    @interp.delete unless @interp.deleted?
+    self
   end
 
   def deleted?
