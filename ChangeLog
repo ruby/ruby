@@ -1,3 +1,8 @@
+Sun Oct  5 03:40:22 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.h: global symbols should be declared
+	  as external.
+
 Sun Oct  5 03:03:20 2003  akira yamada  <akira@ruby-lang.org>
 
 	* test/ruby/test_exception.rb (test_else): added.
@@ -16,6 +21,7 @@ Sun Oct  5 02:12:00 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: exit from a thread using 'break'.
 
+>>>>>>> 1.2257
 Sat Oct  4 21:49:14 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* gc.c (Init_stack): the type of space is changed to unsigned int
