@@ -1,1 +1,1 @@
-require 'rexml/encodings/Shift-JIS'
+require 'rexml/encodings/SHIFT-JIS'

@@ -1,3 +1,7 @@
+Tue Feb 17 07:48:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rexml/encodings/SHIFT_JIS: wrong library name.
+
 Tue Feb 17 01:35:28 2004  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (rb_eval): care that another thread replace NODE_DREGX_ONCE
