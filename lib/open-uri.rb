@@ -58,28 +58,42 @@ require 'uri'
 require 'stringio'
 require 'time'
 
-module OpenURI
-  def OpenURI.open_dispatch(name, *rest, &block) #:nodoc:
-    DispatchTable.each {|cond, meth|
-      return meth.call(name, *rest, &block) if cond === name
-    }
-    return open_uri_original_open(name, *rest, &block)
-  end
+module Kernel
+  private
+  alias open_uri_original_open open # :nodoc:
 
-  def OpenURI.open_uri(name, *rest) #:nodoc:
-    uri = URI::Generic === name ? name : URI.parse(name)
+  # makes possible to open URIs.
+  # If the first argument is URI::HTTP, URI::FTP or 
+  # String beginning with http:// or ftp://,
+  # the URI is opened.
+  # The opened file object is extended by OpenURI::Meta.
+  def open(name, *rest, &block)
+    if name.respond_to?("open")
+      name.open(*rest, &block)
+    elsif name.respond_to?("to_str") && %r{\A(http|ftp)://} =~ name
+      OpenURI.open_uri(name, *rest, &block)
+    else
+      open_uri_original_open(name, *rest, &block)
+    end
+  end
+end
+
+module OpenURI
+  def OpenURI.scan_open_optional_arguments(*rest) # :nodoc:
     if !rest.empty? && (String === rest.first || Integer === rest.first)
       mode = rest.shift
       if !rest.empty? && Integer === rest.first
         perm = rest.shift
       end
     end
-    if !rest.empty? && Hash === rest.first
-      options = rest.shift
-    end
-    if !rest.empty?
-      raise ArgumentError.new("extra arguments")
-    end
+    return mode, perm, rest
+  end
+
+  def OpenURI.open_uri(name, *rest) # :nodoc:
+    uri = URI::Generic === name ? name : URI.parse(name)
+    mode, perm, rest = OpenURI.scan_open_optional_arguments(*rest)
+    options = rest.shift if !rest.empty? && Hash === rest.first
+    raise ArgumentError.new("extra arguments") if !rest.empty?
 
     unless mode == nil ||
            mode == 'r' || mode == 'rb' ||
@@ -99,7 +113,7 @@ module OpenURI
     end
   end
 
-  def OpenURI.open_loop(uri, options) #:nodoc:
+  def OpenURI.open_loop(uri, options) # :nodoc:
     header = {}
     options.each {|k, v|
       if String === k
@@ -146,13 +160,7 @@ module OpenURI
     io
   end
 
-  DispatchTable = [
-    [URI::HTTP, method(:open_uri)],
-    [URI::FTP, method(:open_uri)],
-    [%r{\A(http|ftp)://}, method(:open_uri)],
-  ]
-
-  class Redirect < StandardError #:nodoc:
+  class Redirect < StandardError # :nodoc:
     def initialize(uri)
       @uri = uri
     end
@@ -167,7 +175,7 @@ module OpenURI
     attr_reader :io
   end
 
-  class Buffer #:nodoc:
+  class Buffer # :nodoc:
     def initialize
       @io = StringIO.new
     end
@@ -192,7 +200,7 @@ module OpenURI
 
   # Mixin for holding meta-information.
   module Meta
-    def Meta.init(obj, src=nil) #:nodoc:
+    def Meta.init(obj, src=nil) # :nodoc:
       obj.extend Meta
       obj.instance_eval {
         @base_uri = nil
@@ -218,7 +226,7 @@ module OpenURI
     # The Hash keys are downcased for canonicalization.
     attr_reader :meta
 
-    def meta_add_field(name, value) #:nodoc:
+    def meta_add_field(name, value) # :nodoc:
       @meta[name.downcase] = value
     end
 
@@ -236,7 +244,7 @@ module OpenURI
     RE_QUOTED_STRING = %r{"(?:[\r\n\t !#-\[\]-~\x80-\xff]|\\[\x00-\x7f])"}n
     RE_PARAMETERS = %r{(?:;#{RE_LWS}?#{RE_TOKEN}#{RE_LWS}?=#{RE_LWS}?(?:#{RE_TOKEN}|#{RE_QUOTED_STRING})#{RE_LWS}?)*}n
 
-    def content_type_parse #:nodoc:
+    def content_type_parse # :nodoc:
       v = @meta['content-type']
       if v && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})\z}o =~ v
         type = $1.downcase
@@ -290,8 +298,8 @@ module OpenURI
   # Mixin for URIs.
   module OpenRead
     # opens the URI.  
-    def open(options={}, &block)
-      OpenURI.open_uri(self, options, &block)
+    def open(*rest, &block)
+      OpenURI.open_uri(self, *rest, &block)
     end
 
     # reads a content of the URI.  
@@ -333,11 +341,11 @@ module URI
   end
 
   class HTTP
-    def direct_open(buf, header) #:nodoc:
+    def direct_open(buf, header) # :nodoc:
       proxy_open(buf, request_uri, header)
     end
 
-    def proxy_open(buf, uri, header) #:nodoc:
+    def proxy_open(buf, uri, header) # :nodoc:
       require 'net/http'
       resp = Net::HTTP.start(self.host, self.port) {|http|
                http.get(uri.to_s, header) {|str| buf << str}
@@ -362,7 +370,7 @@ module URI
   end
 
   class FTP
-    def direct_open(buf, header) #:nodoc:
+    def direct_open(buf, header) # :nodoc:
       require 'net/ftp'
       # xxx: header is discarded. 
       # todo: extract user/passwd from .netrc.
@@ -378,19 +386,5 @@ module URI
     end
 
     include OpenURI::OpenRead
-  end
-end
-
-module Kernel
-  private
-  alias open_uri_original_open open
-
-  # makes possible to open URIs.
-  # If the first argument is URI::HTTP, URI::FTP or 
-  # String beginning with http:// or ftp://,
-  # the URI is opened.
-  # The opened file object is extended by OpenURI::Meta.
-  def open(name, *rest, &block)
-    OpenURI.open_dispatch(name, *rest, &block)
   end
 end

@@ -1,4 +1,7 @@
-Wed Feb  5 18:54:54 2003  Tanaka Akira  <akr@m17n.org>
+Wed Feb  5 19:41:37 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb: dispatch code restructured to make it openable
+	that has `open' method.
 
 	* lib/open-uri.rb: Location: field may has a relative URI.
 	pointed out by erik eriksson <ee@opera.com>.
