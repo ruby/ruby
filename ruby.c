@@ -705,7 +705,9 @@ proc_options(argc, argv)
 		if (!script) script = argv[0];
 	    }
 	}
-	argc--; argv++;
+	if (!e_script) {
+	    argc--; argv++;
+	}
     }
 
     ruby_script(script);
