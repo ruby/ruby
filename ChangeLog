@@ -1,3 +1,7 @@
+Mon Apr  9 11:56:52 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: fix typo.
+
 Thu Apr  5 22:40:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_const_get): no recursion to show full class path

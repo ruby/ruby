@@ -16,7 +16,7 @@ Net::IMAP implements Internet Message Access Protocol (IMAP) clients.
 
 Object
 
-=== Methods
+=== Class Methods
 
 : new(host, port = 143)
       Creates a new Net::IMAP object and connects it to the specified
