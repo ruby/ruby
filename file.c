@@ -1224,7 +1224,7 @@ rb_file_s_expand_path(argc, argv)
     VALUE *argv;
 {
     VALUE fname, dname;
-    char *s, *p;
+    char *s, *p, *sbeg;
     char buf[MAXPATHLEN+2];
     char *bend = buf + sizeof(buf) - 2;
     int tainted;
@@ -1232,7 +1232,7 @@ rb_file_s_expand_path(argc, argv)
     rb_scan_args(argc, argv, "11", &fname, &dname);
 
     tainted = OBJ_TAINTED(fname);
-    s = STR2CSTR(fname);
+    sbeg = s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
 	if (isdirsep(s[1]) || s[1] == '\0') {
@@ -1310,7 +1310,7 @@ rb_file_s_expand_path(argc, argv)
     for ( ; *s; s++) {
 	switch (*s) {
 	  case '.':
-	    if (*(s+1)) {
+           if (*(s+1) && (s == sbeg || isdirsep(*(s - 1)))) {
 		switch (*++s) {
 		  case '.':
 		    if (*(s+1) == '\0' || isdirsep(*(s+1))) { 
@@ -1336,6 +1336,9 @@ rb_file_s_expand_path(argc, argv)
 		  default:
 		    *++p = '.'; *++p = *s; break;
 		}
+           }
+           else {
+               *++p = '.';
 	    }
 	    break;
 	  case '/':

@@ -2301,14 +2301,17 @@ rb_eval(self, n)
 	break;
 
       case NODE_NEXT:
+	CHECK_INTS;
 	JUMP_TAG(TAG_NEXT);
 	break;
 
       case NODE_REDO:
+	CHECK_INTS;
 	JUMP_TAG(TAG_REDO);
 	break;
 
       case NODE_RETRY:
+	CHECK_INTS;
 	JUMP_TAG(TAG_RETRY);
 	break;
 
