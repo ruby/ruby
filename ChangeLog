@@ -11,6 +11,8 @@ Sun Dec 29 23:45:53 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* range.c (range_each_func): ditto.
 
+	* file.c (rb_file_s_chmod): ditto.
+
 Sun Dec 29 15:30:37 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_parseargs): should not inherit ftools.rb's
