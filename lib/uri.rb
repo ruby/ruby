@@ -15,7 +15,7 @@
 =end
 
 module URI
-  VERSION_CODE = '000907'.freeze
+  VERSION_CODE = '000908'.freeze
   VERSION = VERSION_CODE.scan(/../).collect{|n| n.to_i}.join('.').freeze
 end
 

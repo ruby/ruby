@@ -183,6 +183,18 @@ Object
     attr_reader :opaque
     attr_reader :fragment
 
+    # replace self by other URI object
+    def replace!(oth)
+      if self.class != oth.class
+	raise ArgumentError, "expected #{self.class} object"
+      end
+
+      component.each do |c|
+	self.__send__("#{c}=", oth.__send__(c))
+      end
+    end
+    private :replace!
+
 =begin
 
 === Instance Methods
@@ -436,7 +448,13 @@ Object
     private :check_port
 
     def set_port(v)
-      v = v.to_i if v && !v.kind_of?(Fixnum)
+      unless !v || v.kind_of?(Fixnum)
+	if v.empty?
+	  v = nil
+	else
+	  v = v.to_i
+	end
+      end
       @port = v
     end
     protected :set_port
@@ -683,6 +701,7 @@ Object
 =begin
 
 --- URI::Generic#merge(rel)
+--- URI::Generic#merge!(rel)
 --- URI::Generic#+(rel)
 
 =end
@@ -749,6 +768,16 @@ Object
       end
     end
     private :merge_path
+
+    def merge!(oth)
+      t = merge(oth)
+      if self == t
+	nil
+      else
+	replace!(t)
+	self
+      end
+    end
 
     # abs(self) + rel(oth) => abs(new)
     def merge(oth)
@@ -1082,6 +1111,20 @@ Object
 
     def to_a
       to_ary
+    end
+
+=begin
+--- URI::Generic#select(*components)
+=end
+    def select(*components)
+      components.collect do |c|
+	if component.include?(c)
+	  self.send(c)
+	else
+	  raise ArgumentError, 
+	    "expected of components of #{self.class} (#{self.class.component.join(', ')})"
+	end
+      end
     end
 
 =begin

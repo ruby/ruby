@@ -46,22 +46,21 @@ module URI
     # hname      =  *urlc
     # hvalue     =  *urlc
     # header     =  hname "=" hvalue
-    header_pattern = "(?:[^?=&]*=[^?=&]*)"
-    HEADER_REGEXP = /#{header_pattern}/
+    HEADER_PATTERN = "(?:[^?=&]*=[^?=&]*)".freeze
+    HEADER_REGEXP  = Regexp.new(HEADER_PATTERN, 'N').freeze
     # headers    =  "?" header *( "&" header )
     # to         =  #mailbox
     # mailtoURL  =  "mailto:" [ to ] [ headers ]
-    mailbox_pattern = "(?:[^(),%?=&]|#{PATTERN::ESCAPED})"
-    MAILBOX_REGEXP = /#{mailbox_pattern}/
+    MAILBOX_PATTERN = "(?:[^(),%?=&]|#{PATTERN::ESCAPED})".freeze
     MAILTO_REGEXP = Regexp.new("
       \\A
-      (#{mailbox_pattern}*?)                         (?# 1: to)
+      (#{MAILBOX_PATTERN}*?)                          (?# 1: to)
       (?:
         \\?
-        (#{header_pattern}(?:\\&#{header_pattern})*) (?# 2: headers)
+        (#{HEADER_PATTERN}(?:\\&#{HEADER_PATTERN})*)  (?# 2: headers)
       )?
       \\z
-    ", Regexp::EXTENDED, 'N')
+    ", Regexp::EXTENDED, 'N').freeze
 
 =begin
 
@@ -155,7 +154,7 @@ module URI
       return true unless v
       return true if v.size == 0
 
-      if OPAQUE !~ v || /\A#{MAILBOX_REGEXP}*\z/o !~ v
+      if OPAQUE !~ v || /\A#{MAILBOX_PATTERN}*\z/o !~ v
 	raise InvalidComponentError,
 	  "bad component(expected opaque component): #{v}"
       end
@@ -191,7 +190,7 @@ module URI
       return true if v.size == 0
 
       if OPAQUE !~ v || 
-	  /\A(#{HEADER_REGEXP}(?:\&#{HEADER_REGEXP})*)\z/o !~ v
+	  /\A(#{HEADER_PATTERN}(?:\&#{HEADER_PATTERN})*)\z/o !~ v
 	raise InvalidComponentError,
 	  "bad component(expected opaque component): #{v}"
       end
