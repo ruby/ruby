@@ -1,3 +1,10 @@
+Sun Feb  6 13:56:19 2005  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (new_with_hash): changed messages of exception.
+
+	* lib/date/format.rb (str[fp]time): undocumented conversion
+	  specifications %[1-3] are now deprecated.
+
 Sun Feb  6 11:27:37 2005  Tanaka Akira  <akr@m17n.org>
 
 	* ext/dl/dl.c (Init_dl): function declaration should precede

@@ -1,12 +1,12 @@
 #
 # date.rb - date and time library
 #
-# Author: Tadayoshi Funaba 1998-2004
+# Author: Tadayoshi Funaba 1998-2005
 #
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.14 2004-09-25 09:51:25+09 tadf Exp $
+# $Id: date.rb,v 2.15 2005-02-06 11:09:53+09 tadf Exp $
 #++
 #
 # == Overview
@@ -647,7 +647,7 @@ class Date
     elem ||= {}
     y, m, d = elem.values_at(:year, :mon, :mday)
     if [y, m, d].include? nil
-      raise ArgumentError, 'invalid date'
+      raise ArgumentError, '3 elements of civil date are necessary'
     else
       civil(y, m, d, sg)
     end
@@ -1203,7 +1203,7 @@ class DateTime < Date
     fr  ||= 0
     of  ||= 0
     if [y, m, d].include? nil
-      raise ArgumentError, 'invalid date'
+      raise ArgumentError, '3 elements of civil date are necessary'
     else
       civil(y, m, d, h, min, s, of.to_r/86400, sg) + (fr/86400)
     end
