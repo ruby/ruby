@@ -840,6 +840,7 @@ rb_str_index(str, sub, offset)
 {
     char *s, *e, *p;
     long len;
+    int d, hx, hy, i;
 
     if (offset < 0) {
 	offset += RSTRING(str)->len;
@@ -851,10 +852,31 @@ rb_str_index(str, sub, offset)
     len = RSTRING(sub)->len;
     if (len == 0) return offset;
     e = RSTRING(str)->ptr + RSTRING(str)->len - len + 1;
+
+    /* seach using Karp-Rabin algolithm described in:
+
+       EXACT STRING MATCHING ALGORITHMS
+       http://www-igm.univ-mlv.fr/~lecroq/string/index.html
+    */
+
+#define KR_REHASH(a, b, h) ((((h) - (a)*d) << 1) + (b))
+
+    /* Preprocessing */
+    /* computes d = 2^(m-1) with
+       the left-shift operator */
+    for (d = i = 1; i < len; ++i)
+	d = (d<<1);
+
+    for (hy = hx = i = 0; i < len; ++i) {
+	hx = ((hx<<1) + p[i]);
+	hy = ((hy<<1) + s[i]);
+    }
+
+    /* Searching */
     while (s < e) {
-	if (rb_memcmp(s, p, len) == 0) {
+	if (hx == hy && rb_memcmp(p, s, len) == 0)
 	    return (s-(RSTRING(str)->ptr));
-	}
+	hy = KR_REHASH(*s, *(s+len), hy);
 	s++;
     }
     return -1;

@@ -1,3 +1,7 @@
+Fri Jan 31 14:16:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_index): search using Karp-Rabin algolithm.
+
 Fri Jan 31 12:45:11 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_obj_classname): new function.
