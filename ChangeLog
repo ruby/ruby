@@ -2,6 +2,7 @@ Wed Nov 27 06:43:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* error.c (exit_initialize): add SystemExit#initialize to set
 	  instance variable status.  (ruby-bugs-ja:PR#362)
+	  Now accepts status as optional first argument.
 
 	* eval.c (error_handle): now SystemExit have status always.
 
