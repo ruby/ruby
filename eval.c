@@ -733,9 +733,9 @@ struct RVarmap *ruby_dyna_vars;
     ruby_dyna_vars = 0
 
 #define POP_VARS() \
-   if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) {\
-       if (RBASIC(_old)->flags) /* unless it's already recycled */ \
-           FL_SET(_old, DVAR_DONT_RECYCLE); \
+    if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) {\
+	if (RBASIC(_old)->flags) /* unless it's already recycled */ \
+	    FL_SET(_old, DVAR_DONT_RECYCLE); \
     }\
     ruby_dyna_vars = _old; \
 } while (0)
@@ -981,15 +981,15 @@ static void scope_dup _((struct SCOPE *));
 
 #define POP_SCOPE() 			\
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE) {\
-       if (_old) scope_dup(_old);	\
+	if (_old) scope_dup(_old);	\
     }					\
     if (!(ruby_scope->flags & SCOPE_MALLOC)) {\
 	ruby_scope->local_vars = 0;	\
 	ruby_scope->local_tbl  = 0;	\
 	if (!(ruby_scope->flags & SCOPE_DONT_RECYCLE) && \
-            ruby_scope != top_scope) {	\
+	    ruby_scope != top_scope) {	\
 	    rb_gc_force_recycle((VALUE)ruby_scope);\
-        }				\
+	}				\
     }					\
     ruby_scope->flags |= SCOPE_NOSTACK;	\
     ruby_scope = _old;			\
@@ -1029,7 +1029,7 @@ void
 ruby_set_current_source()
 {
     if (ruby_current_node) {
-        ruby_sourcefile = ruby_current_node->nd_file;
+	ruby_sourcefile = ruby_current_node->nd_file;
 	ruby_sourceline = nd_line(ruby_current_node);
     }
 }
@@ -1705,7 +1705,7 @@ rb_eval_cmd(cmd, arg, level)
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
-       scope_dup(saved_scope);
+	scope_dup(saved_scope);
     ruby_scope = saved_scope;
     ruby_safe_level = safe;
     POP_TAG();
@@ -2086,25 +2086,25 @@ copy_node_scope(node, rval)
     }\
     else if (nd_type(n) == NODE_ARRAY) {\
 	argc=alen;\
-        if (argc > 0) {\
-            int i;\
+	if (argc > 0) {\
+	    int i;\
 	    n = anode;\
 	    argv = TMP_ALLOC(argc);\
 	    for (i=0;i<argc;i++) {\
 		argv[i] = rb_eval(self,n->nd_head);\
 		n=n->nd_next;\
 	    }\
-        }\
-        else {\
+	}\
+	else {\
 	    argc = 0;\
 	    argv = 0;\
-        }\
+	}\
     }\
     else {\
-        VALUE args = rb_eval(self,n);\
+	VALUE args = rb_eval(self,n);\
 	if (TYPE(args) != T_ARRAY)\
 	    args = rb_ary_to_ary(args);\
-        argc = RARRAY(args)->len;\
+	argc = RARRAY(args)->len;\
 	argv = ALLOCA_N(VALUE, argc);\
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
     }\
@@ -2117,7 +2117,7 @@ copy_node_scope(node, rval)
     int tmp_iter = ruby_iter->iter;\
     if (tmp_iter == ITER_PRE) {\
 	ruby_block = ruby_block->outer;\
-        tmp_iter = ITER_NOT;\
+	tmp_iter = ITER_NOT;\
     }\
     PUSH_ITER(tmp_iter)
 
@@ -2143,13 +2143,13 @@ arg_defined(self, node, buf, type)
     if (!node) return type;	/* no args */
     if (nd_type(node) == NODE_ARRAY) {
 	argc=node->nd_alen;
-        if (argc > 0) {
+	if (argc > 0) {
 	    for (i=0;i<argc;i++) {
 		if (!is_defined(self, node->nd_head, buf))
 		    return 0;
 		node = node->nd_next;
 	    }
-        }
+	}
     }
     else if (!is_defined(self, node, buf)) {
 	return 0;
@@ -2716,7 +2716,7 @@ rb_eval(self, n)
 
 	/* nodes for speed-up(literal match) */
       case NODE_MATCH3:
-        {
+	{
 	    VALUE r = rb_eval(self,node->nd_recv);
 	    VALUE l = rb_eval(self,node->nd_value);
 	    if (TYPE(l) == T_STRING) {
@@ -3026,7 +3026,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_RESCUE:
-        {
+	{
 	    volatile VALUE e_info = ruby_errinfo;
 	    volatile int rescuing = 0;
 
@@ -3077,7 +3077,7 @@ rb_eval(self, n)
 		goto again;
 	    }
 	}
-        break;
+	break;
 
       case NODE_ENSURE:
 	PUSH_TAG(PROT_NONE);
@@ -3619,8 +3619,8 @@ rb_eval(self, n)
 		nd_set_type(node, NODE_LIT);
 		node->nd_lit = result;
 		break;
-              case NODE_LIT:
-                /* other thread may replace NODE_DREGX_ONCE to NODE_LIT */
+	      case NODE_LIT:
+		/* other thread may replace NODE_DREGX_ONCE to NODE_LIT */
 		goto again;
 	      case NODE_DXSTR:
 		result = rb_funcall(self, '`', 1, str);
@@ -3764,8 +3764,8 @@ rb_eval(self, n)
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
 	    if (node->nd_super) {
-               super = rb_eval(self, node->nd_super);
-               rb_check_inheritable(super);
+	       super = rb_eval(self, node->nd_super);
+	       rb_check_inheritable(super);
 	    }
 	    else {
 		super = 0;
@@ -4764,7 +4764,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     ruby_cref = (NODE*)old_cref;
     ruby_wrapper = old_wrapper;
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
-       scope_dup(old_scope);
+	scope_dup(old_scope);
     ruby_scope = old_scope;
     scope_vmode = old_vmode;
     switch (state) {
@@ -6131,7 +6131,7 @@ eval(self, src, scope, file, line)
 
 		errat = get_backtrace(ruby_errinfo);
 		mesg  = rb_attr_get(ruby_errinfo, rb_intern("mesg"));
-               if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
+		if (!NIL_P(errat) && TYPE(errat) == T_ARRAY) {
 		    if (!NIL_P(mesg) && TYPE(mesg) == T_STRING) {
 			rb_str_update(mesg, 0, 0, rb_str_new2(": "));
 			rb_str_update(mesg, 0, 0, RARRAY(errat)->ptr[0]);
@@ -8891,7 +8891,7 @@ method_arity(method)
 	return INT2FIX(0);
       case NODE_BMETHOD:
       case NODE_DMETHOD:
-       return proc_arity(body->nd_cval);
+	return proc_arity(body->nd_cval);
       default:
 	body = body->nd_next;	/* skip NODE_SCOPE */
 	if (nd_type(body) == NODE_BLOCK)
@@ -10202,9 +10202,9 @@ rb_thread_schedule()
  		    th->wait_for = 0;
  		    th->select_value = 0;
  		    found = 1;
-                    intersect_fds(&readfds, &th->readfds, max);
-                    intersect_fds(&writefds, &th->writefds, max);
-                    intersect_fds(&exceptfds, &th->exceptfds, max);
+		    intersect_fds(&readfds, &th->readfds, max);
+		    intersect_fds(&writefds, &th->writefds, max);
+		    intersect_fds(&exceptfds, &th->exceptfds, max);
 		}
 	    }
 	    END_FOREACH_FROM(curr, th);
