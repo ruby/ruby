@@ -1,3 +1,10 @@
+Fri Dec 19 22:56:46 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/property.rb (SOAP::Property#load): new method for loading
+	  property value into existing property tree.
+
+	* test/soap/test_property.rb: add test.
+
 Fri Dec 19 19:21:49 2003  akira yamada  <akira@ruby-lang.org>
 
 	* lib/runit/cui/testrunner.rb (RUNIT::CUI::TestRunner::run):

@@ -32,6 +32,14 @@ client.protocol.http.protocol_version = 1.0
 foo\\:bar\\=baz = qux
 foo\\\\.bar.baz=\tq\\\\ux\ttab
   a\\ b                            =                          1   
+[ppp.qqq.rrr]
+sss = 3
+ttt.uuu = 4
+
+[ sss.ttt.uuu  ]
+vvv.www = 5
+[  ]
+xxx.yyy.zzz = 6
 __EOP__
     prop = Property.load(propstr)
     assert_equal(["1", "2", "3"], prop["a.b"].values.sort)
@@ -41,8 +49,38 @@ __EOP__
     assert_equal("1.0", prop["client.protocol.http.protocol_version"])
     assert_equal("q\\ux\ttab", prop['foo\.bar.baz'])
     assert_equal("1", prop['a b'])
+    assert_equal("3", prop['ppp.qqq.rrr.sss'])
+    assert_equal("4", prop['ppp.qqq.rrr.ttt.uuu'])
+    assert_equal("5", prop['sss.ttt.uuu.vvv.www'])
+    assert_equal("6", prop['xxx.yyy.zzz'])
   end
 
+  def test_load
+    prop = Property.new
+    hooked = false
+    prop.add_hook("foo.bar.baz") do |name, value|
+      assert_equal("foo.bar.baz", name)
+      assert_equal("123", value)
+      hooked = true
+    end
+    prop.lock
+    prop["foo.bar"].lock
+    prop.load("foo.bar.baz = 123")
+    assert(hooked)
+    assert_raises(TypeError) do
+      prop.load("foo.bar.qux = 123")
+    end
+    prop.load("foo.baz = 456")
+    assert_equal("456", prop["foo.baz"])
+  end
+
+  def test_initialize
+    prop = ::SOAP::Property.new
+    # store is empty
+    assert_nil(prop["a"])
+    # does hook work?
+    assert_equal(1, prop["a"] = 1)
+  end
   def test_initialize
     prop = ::SOAP::Property.new
     # store is empty

@@ -9,29 +9,34 @@
 module SOAP
 
 
+# Property stream format:
+#
+#   line separator is \r?\n.  1 line per a property.
+#   line which begins with '#' is a comment line.  empty line is ignored, too.
+#   key/value separator is ':' or '='.
+#   '\' as escape character.  but line separator cannot be escaped.
+#   \s at the head/tail of key/value are trimmed.
+#
+#   '[' + key + ']' indicates property section.  for example,
+#
+#     [aaa.bbb]
+#     ccc = ddd
+#     eee.fff = ggg
+#     []
+#     aaa.hhh = iii
+#
+#   is the same as;
+#
+#     aaa.bbb.ccc = ddd
+#     aaa.bbb.eee.fff = ggg
+#     aaa.hhh = iii
+#
 class Property
   include Enumerable
 
-  # Property file format:
-  #   line separator is \r?\n.  1 line per a property.
-  #   line which begins with '#' is comment line.  empty line is ignored.
-  #   key/value separator is ':', '=', or \s.
-  #   '\' as escape character.  but line separator cannot be escaped.
-  #   \s at the head/tail of key/value are trimmed.
   def self.load(stream)
     prop = new
-    stream.each_with_index do |line, lineno|
-      line.sub!(/\r?\n\z/, '')
-      next if /^(#.*|)$/ =~ line
-      if /^\s*([^=:\s\\]+(?:\\.[^=:\s\\]*)*)\s*[=:\s]\s*(.*)$/ =~ line
-	key, value = $1, $2
-	key = eval("\"#{key}\"")
-	value = eval("\"#{value.strip}\"")
-	prop[key] = value
-      else
-	raise TypeError.new("property format error at line #{lineno + 1}: `#{line}'")
-      end
-    end
+    prop.load(stream)
     prop
   end
 
@@ -41,6 +46,7 @@ class Property
     end
   end
 
+  # find property from $:.
   def self.loadproperty(propname)
     $:.each do |path|
       if File.file?(file = File.join(path, propname))
@@ -55,6 +61,34 @@ class Property
     @hook = Hash.new
     @self_hook = Array.new
     @locked = false
+  end
+
+  KEY_REGSRC = '([^=:\\\\]*(?:\\\\.[^=:\\\\]*)*)'
+  DEF_REGSRC = '\\s*' + KEY_REGSRC + '\\s*[=:]\\s*(.*)'
+  COMMENT_REGEXP = Regexp.new('^(?:#.*|)$')
+  CATDEF_REGEXP = Regexp.new("^\\[\\s*#{KEY_REGSRC}\\s*\\]$")
+  LINE_REGEXP = Regexp.new("^#{DEF_REGSRC}$")
+  def load(stream)
+    key_prefix = ""
+    stream.each_with_index do |line, lineno|
+      line.sub!(/\r?\n\z/, '')
+      case line
+      when COMMENT_REGEXP
+	next
+      when CATDEF_REGEXP
+	key_prefix = $1.strip
+      when LINE_REGEXP
+	key, value = $1.strip, $2.strip
+	key = "#{key_prefix}.#{key}" unless key_prefix.empty?
+	key = eval("\"#{key}\"")
+	value = eval("\"#{value}\"")
+	self[key] = value
+      else
+	raise TypeError.new(
+	  "property format error at line #{lineno + 1}: `#{line}'")
+      end
+    end
+    self
   end
 
   # name: a Symbol, String or an Array
@@ -133,50 +167,6 @@ class Property
 
 protected
 
-  def referent(ary)
-    key, rest = location_pair(ary)
-    if rest.empty?
-      local_referent(key)
-    else
-      deref_key(key).referent(rest)
-    end
-  end
-
-  # returns: Array of hook
-  def assign(ary, value)
-    key, rest = location_pair(ary)
-    if rest.empty?
-      local_assign(key, value)
-      local_hook(key)
-    else
-      local_hook(key) + deref_key(key).assign(rest, value)
-    end
-  end
-
-  def assign_hook(ary, hook)
-    key, rest = location_pair(ary)
-    if rest.empty?
-      local_assign_hook(key, hook)
-    else
-      deref_key(key).assign_hook(rest, hook)
-    end
-  end
-
-  def assign_self_hook(hook)
-    check_lock(nil)
-    @self_hook << hook
-  end
-
-private
-
-  def each_key
-    self.each do |key, value|
-      if propkey?(value)
-	yield(value)
-      end
-    end
-  end
-
   def deref_key(key)
     check_lock(key)
     ref = @store[key] ||= self.class.new
@@ -206,15 +196,56 @@ private
     @store[key] = value
   end
 
+  def local_hook(key)
+    @self_hook + (@hook[key] || NO_HOOK)
+  end
+
   def local_assign_hook(key, hook)
     check_lock(key)
     @store[key] ||= nil
     (@hook[key] ||= []) << hook
   end
 
+private
+
   NO_HOOK = [].freeze
-  def local_hook(key)
-    @self_hook + (@hook[key] || NO_HOOK)
+
+  def referent(ary)
+    ary[0..-2].inject(self) { |ref, name|
+      ref.deref_key(to_key(name))
+    }.local_referent(to_key(ary.last))
+  end
+
+  def assign(ary, value)
+    ref = self
+    hook = NO_HOOK
+    ary[0..-2].each do |name|
+      key = to_key(name)
+      hook += ref.local_hook(key)
+      ref = ref.deref_key(key)
+    end
+    last_key = to_key(ary.last)
+    ref.local_assign(last_key, value)
+    hook + ref.local_hook(last_key)
+  end
+
+  def assign_hook(ary, hook)
+    ary[0..-2].inject(self) { |ref, name|
+      ref.deref_key(to_key(name))
+    }.local_assign_hook(to_key(ary.last), hook)
+  end
+
+  def assign_self_hook(hook)
+    check_lock(nil)
+    @self_hook << hook
+  end
+
+  def each_key
+    self.each do |key, value|
+      if propkey?(value)
+	yield(value)
+      end
+    end
   end
 
   def check_lock(key)
@@ -240,12 +271,6 @@ private
     end
   end
 
-  def location_pair(ary)
-    name, *rest = *ary
-    key = to_key(name)
-    return key, rest
-  end
-
   def normalize_name(name)
     name_to_a(name).collect { |key| to_key(key) }.join('.')
   end
@@ -268,4 +293,18 @@ private
 end
 
 
+end
+
+
+# for ruby/1.6.
+unless Enumerable.instance_methods.include?('inject')
+  module Enumerable
+    def inject(init)
+      result = init
+      each do |item|
+	result = yield(result, item)
+      end
+      result
+    end
+  end
 end
