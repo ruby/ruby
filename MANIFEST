@@ -642,6 +642,11 @@ test/fileutils/fileasserts.rb
 test/fileutils/test_fileutils.rb
 test/fileutils/test_nowrite.rb
 test/logger/test_logger.rb
+test/optparse/test_noarg.rb
+test/optparse/test_optarg.rb
+test/optparse/test_optparse.rb
+test/optparse/test_placearg.rb
+test/optparse/test_reqarg.rb
 test/ostruct/test_ostruct.rb
 test/ruby/beginmainend.rb
 test/ruby/endblockwarn.rb
