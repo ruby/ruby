@@ -1397,7 +1397,10 @@ str_upcase_bang(str)
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
-	if (islower(*s)) {
+	if (ismbchar(*s)) {
+	    s++;
+	}
+	else if (islower(*s)) {
 	    *s = toupper(*s);
 	}
 	s++;
@@ -1422,7 +1425,10 @@ str_downcase_bang(str)
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
-	if (isupper(*s)) {
+	if (ismbchar(*s)) {
+	    s++;
+	}
+	else if (isupper(*s)) {
 	    *s = tolower(*s);
 	}
 	s++;
@@ -1449,7 +1455,10 @@ str_capitalize_bang(str)
     if (islower(*s))
 	*s = toupper(*s);
     while (++s < send) {
-	if (isupper(*s)) {
+	if (ismbchar(*s)) {
+	    s++;
+	}
+	else if (isupper(*s)) {
 	    *s = tolower(*s);
 	}
     }
@@ -1472,7 +1481,10 @@ str_swapcase_bang(str)
     str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
-	if (isupper(*s)) {
+	if (ismbchar(*s)) {
+	    s++;
+	}
+	else if (isupper(*s)) {
 	    *s = tolower(*s);
 	}
 	else if (islower(*s)) {

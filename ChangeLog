@@ -1,3 +1,7 @@
+Thu Feb  5 18:20:30 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* string.c (str_upcase_bang): multi byte character support.
+
 Wed Feb  4 13:55:26 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* array.c (ary_reverse): SEGV on empty array reverse.
