@@ -821,7 +821,7 @@ if test "$enable_shared" = 'yes'; then
 	SOLIBS='$(LIBS)'
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR).$(TEENY)'
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
-	LIBRUBYARG='-Wl,-R -Wl,${prefix}/lib -L${prefix}/lib -L. -l$(RUBY_INSTALL_NAME) -Wl,-R -Wl,${X11BASE}/lib -L${X11BASE}/lib'
+	LIBRUBYARG='-Wl,-R -Wl,${prefix}/lib -L${prefix}/lib -L. -l$(RUBY_INSTALL_NAME)'
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
 	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	else	# a.out platforms
