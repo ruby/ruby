@@ -1,3 +1,7 @@
+Thu Oct  9 10:51:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_yield_0): no error if block is empty.
+
 Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (localjump_error): id should be ID.

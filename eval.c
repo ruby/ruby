@@ -4162,7 +4162,10 @@ rb_yield_0(val, self, klass, flags, avalue)
 	POP_TAG();
 	if (state) goto pop_state;
     }
-    if (!node) goto pop_state;
+    if (!node) {
+	state = 0;
+	goto pop_state;
+    }
 
     PUSH_ITER(block->iter);
     PUSH_TAG(PROT_NONE);
