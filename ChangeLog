@@ -1,3 +1,17 @@
+Wed Dec 19 14:05:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_define_method): define_method should follow
+	  default method visibility.
+
+	* eval.c (rb_attr): should warn if the default method visibility
+	  is "module_function" (can be error). 
+
+	* eval.c (rb_mod_define_method): should define class/module method
+	  also if the visibility is "module_function".
+
+	* eval.c (rb_mod_define_method): should call hook method
+	  "method_added", and "singleton_method_added".
+
 Tue Dec 18 01:02:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_schedule): should not select a thread which is
@@ -100,6 +114,17 @@ Thu Dec  6 18:55:01 2001  Usaku Nakamura  <usa@ruby-lang.org>
 Wed Dec  5 23:36:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (WC2MBC1ST): should not pass through > 0x80 number in UTF-8.
+
+Wed Dec  5 20:05:18 2001  Florian Frank  <flori@ping.de>
+
+	* ext/socket/socket.c (bsock_send): should raise EWOULDBLOCK
+	  exception.
+
+	* ext/socket/socket.c (s_recvfrom): ditto.
+
+	* ext/socket/socket.c (s_accept): ditto.
+
+	* ext/socket/socket.c (udp_send): ditto.
 
 Tue Dec  4 03:49:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

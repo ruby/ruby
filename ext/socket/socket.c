@@ -399,12 +399,6 @@ bsock_send(argc, argv, sock)
 	  case EINTR:
 	    rb_thread_schedule();
 	    goto retry;
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
-	    rb_thread_fd_writable(fd);
-	    goto retry;
 	}
 	rb_sys_fail("send(2)");
     }
@@ -461,12 +455,6 @@ s_recvfrom(sock, argc, argv, from)
 	switch (errno) {
 	  case EINTR:
 	    rb_thread_schedule();
-	    goto retry;
-
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
 	    goto retry;
 	}
 	rb_sys_fail("recvfrom(2)");
@@ -1089,12 +1077,6 @@ s_accept(class, fd, sockaddr, len)
 	  case EINTR:
 	    rb_thread_schedule();
 	    goto retry;
-
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
-	    goto retry;
 	}
 	rb_sys_fail(0);
     }
@@ -1316,13 +1298,6 @@ udp_send(argc, argv, sock)
 	switch (errno) {
 	  case EINTR:
 	    rb_thread_schedule();
-	    goto retry;
-
-	  case EWOULDBLOCK:
-#if EAGAIN != EWOULDBLOCK
-	  case EAGAIN:
-#endif
-	    rb_thread_fd_writable(fileno(f));
 	    goto retry;
 	}
     }
