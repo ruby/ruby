@@ -1,15 +1,16 @@
 #!/usr/bin/env ruby
-#
-# generator.rb - converts an internal iterator to an external iterator
+#--
+# $Idaemons: /home/cvs/rb/generator.rb,v 1.8 2001/10/03 08:54:32 knu Exp $
+# $RoughId: generator.rb,v 1.10 2003/10/14 19:36:58 knu Exp $
+# $Id$
 #++
+#
+# = generator.rb: convert an internal iterator to an external one
+#
 # Copyright (c) 2001,2003 Akinori MUSHA <knu@iDaemons.org>
 #
 # All rights reserved.  You can redistribute and/or modify it under
 # the same terms as Ruby.
-#
-# $Idaemons: /home/cvs/rb/generator.rb,v 1.8 2001/10/03 08:54:32 knu Exp $
-# $RoughId: generator.rb,v 1.10 2003/10/14 19:36:58 knu Exp $
-# $Id$
 #
 # == Overview
 #
@@ -22,12 +23,13 @@
 #
 # See the respective classes for examples of usage.
 
+
 #
 # Generator converts an internal iterator (i.e. an Enumerable object)
 # to an external iterator.
 #
 # Note that it is not very fast since it is implemented using
-# continuation, which currently is slow.
+# continuations, which are currently slow.
 #
 # == Example
 #
