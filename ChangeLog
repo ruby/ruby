@@ -1,3 +1,19 @@
+Fri Apr  9 17:05:21  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (has_magic, find_dirsep): incomplete '[' matches no character
+	  in Dir.glob. (follows File.fnmatch's behavior)
+
+	* dir.c (fnmatch_helper): incomplete escape is ignored in File.fnmatch.
+	  (follows Dir.glob's behavior)
+
+	* dir.c (find_dirsep): '/' between '[' and ']' is ignored in Dir.glob.
+	  (follows File.fnmatch with File::FNM_PATHNAME 's behavior)
+
+	* dir.c (find_dirsep): escaped slash '\/' loses its meaning as
+	  directory separator in Dir.glob.
+
+	[ruby-dev:23291]
+
 Thu Apr  8 20:25:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): skip uncompiled extensions.

@@ -210,7 +210,7 @@ bracket(p, s, flags)
    End marker itself won't be compared.
    And if function succeeds, *pcur reaches end marker.
 */
-#define UNESCAPE(p) (escape && *(p) == '\\' && (p)[1] ? (p) + 1 : (p))
+#define UNESCAPE(p) (escape && *(p) == '\\' ? (p) + 1 : (p))
 #define ISEND(p) (!*(p) || (pathname && *(p) == '/'))
 #define RETURN(val) return *pcur = p, *scur = s, (val);
 
@@ -940,27 +940,20 @@ do_opendir(path)
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
 has_magic(s, flags)
-     const char *s;
-     int flags;
+    const char *s;
+    int flags;
 {
+    const int escape = !(flags & FNM_NOESCAPE);
+
     register const char *p = s;
     register char c;
-    int open = 0;
-    int escape = !(flags & FNM_NOESCAPE);
 
     while (c = *p++) {
 	switch (c) {
-	  case '?':
 	  case '*':
+	  case '?':
+	  case '[':
 	    return 1;
-
-	  case '[':	/* Only accept an open brace if there is a close */
-	    open++;	/* brace to match it.  Bracket expressions must be */
-	    continue;	/* complete, according to Posix.2 */
-	  case ']':
-	    if (open)
-		return 1;
-	    continue;
 
 	  case '\\':
 	    if (escape && !(c = *p++))
@@ -972,6 +965,44 @@ has_magic(s, flags)
     }
 
     return 0;
+}
+
+/* Find separator in globbing pattern. */
+static char *
+find_dirsep(s, flags)
+    const char *s;
+    int flags;
+{
+    const int escape = !(flags & FNM_NOESCAPE);
+
+    register const char *p = s;
+    register char c;
+    int open = 0;
+
+    while (c = *p++) {
+	switch (c) {
+	  case '[':
+	    open = 1;
+	    continue;
+	  case ']':
+	    open = 0;
+	    continue;
+
+	  case '/':
+	    if (!open)
+		return (char *)p-1;
+	    continue;
+
+	  case '\\':
+	    if (escape && !(c = *p++))
+		return (char *)p-1;
+	    continue;
+	}
+
+	p = Next(p-1);
+    }
+
+    return (char *)p-1;
 }
 
 /* Remove escaping baskclashes */
@@ -1013,23 +1044,21 @@ glob_make_pattern(p, flags)
     const char *p;
     int flags;
 {
-    char *buf;
-    int dirsep = 0; /* pattern terminates with '/' */
     struct glob_pattern *list, *tmp, **tail = &list;
+    int dirsep = 0; /* pattern is terminated with '/' */
 
     while (*p) {
 	tmp = ALLOC(struct glob_pattern);
 	if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
-	    /* fold continuous RECURSIVEs */
+	    /* fold continuous RECURSIVEs (needed in glob_helper) */
 	    do { p += 3; } while (p[0] == '*' && p[1] == '*' && p[2] == '/');
 	    tmp->type = RECURSIVE;
 	    tmp->str = 0;
 	    dirsep = 1;
 	}
 	else {
-	    const char *m;
-	    for (m = p; *m && *m != '/'; Inc(m));
-	    buf = ALLOC_N(char, m-p+1);
+	    const char *m = find_dirsep(p, flags);
+	    char *buf = ALLOC_N(char, m-p+1);
 	    memcpy(buf, p, m-p);
 	    buf[m-p] = '\0';
 	    tmp->type = has_magic(buf, flags) ? MAGICAL : PLAIN;
@@ -1267,7 +1296,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
 	for (cur = copy_beg; cur < copy_end; ++cur) {
 	    if (*cur) {
-		char *buf, *name;
+		char *name, *buf;
 		name = ALLOC_N(char, strlen((*cur)->str) + 1);
 		strcpy(name, (*cur)->str);
 		if (escape) remove_backslashes(name);
