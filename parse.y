@@ -5021,12 +5021,10 @@ local_id(id)
     return Qfalse;
 }
 
-static VALUE last_dyna_vars = 0;
-
 static void
 top_local_init()
 {
-    local_push(1);
+    local_push();
     lvtbl->cnt = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
     if (lvtbl->cnt > 0) {
 	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt+3);
@@ -5187,8 +5185,7 @@ Init_sym()
 {
     sym_tbl = st_init_strtable_with_size(200);
     sym_rev_tbl = st_init_numtable_with_size(200);
-    rb_global_variable(&lex_lastline);
-    rb_global_variable(&last_dyna_vars);
+    rb_global_variable((VALUE*)&lex_lastline);
 }
 
 static ID last_id = LAST_TOKEN;

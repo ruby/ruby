@@ -1803,6 +1803,7 @@ is_defined(self, node, buf)
     VALUE val;			/* OK */
     int state;
 
+  again:
     if (!node) return "expression";
     switch (nd_type(node)) {
       case NODE_SUPER:
@@ -1824,7 +1825,6 @@ is_defined(self, node, buf)
 	goto check_bound;
 
       case NODE_CALL:
-	if (!is_defined(self, node->nd_recv, buf)) return 0;
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_eval(self, node->nd_recv);
@@ -1959,6 +1959,10 @@ is_defined(self, node, buf)
 	    return buf;
 	}
 	break;
+
+      case NODE_NEWLINE:
+	node = node->nd_next;
+	goto again;
 
       default:
 	PUSH_TAG(PROT_NONE);

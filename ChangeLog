@@ -1,3 +1,13 @@
+Wed Mar 20 16:05:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): should check receiver only once.
+
+	* eval.c (is_defined): should handle NODE_NEWLINE.
+
+Wed Mar 20 11:29:25 2002  Aristarkh A Zagorodnikov  <xm@xml-objects.com>
+
+	* file.c (rb_file_s_expand_path): memory leak fixed.
+
 Wed Mar 20 00:36:43 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* util.c (ruby_getcwd): the content of buf is uncertain and must

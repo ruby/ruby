@@ -1469,6 +1469,7 @@ rb_file_s_expand_path(argc, argv)
 	    tainted = 1;
 	    BUFCHECK (strlen(dir) > buflen);
 	    strcpy(buf, dir);
+	    free(dir);
 	    p = &buf[strlen(buf)];
 	}
 	while (p > buf && *(p - 1) == '/') p--;
