@@ -1,11 +1,11 @@
 Thu May 22 18:07:46 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * lib/token.c: single- and double-quoted root-level fix.
-    
-    * lib/yaml.rb (YAML::object_maker): can create object attributes (such as
-      found in Exception class)
-    
-    * lib/yaml/rubytypes.rb: roundtripping of Exception and subclasses.
+	* lib/token.c: single- and double-quoted root-level fix.
+
+	* lib/yaml.rb (YAML::object_maker): can create object attributes (such as
+	  found in Exception class)
+
+	* lib/yaml/rubytypes.rb: roundtripping of Exception and subclasses.
 
 Fri May 23 01:26:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -27,22 +27,22 @@ Thu May 22 15:46:37 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu May 22 06:21:33 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/rubyext.c (rb_syck_err_handler): raise ArgumentError on
-      malformed YAML.
+	* ext/syck/rubyext.c (rb_syck_err_handler): raise ArgumentError on
+	  malformed YAML.
 
-    * lib/yaml/rubytypes.rb: String#to_yaml was missing space indicators at
-      the end of a line.
+	* lib/yaml/rubytypes.rb: String#to_yaml was missing space indicators at
+	  the end of a line.
 
 Thu May 22 05:43:24 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * ext/syck/rubyext.c (syck_parser_load): root-level false was returning 
-      nil.
+	* ext/syck/rubyext.c (syck_parser_load): root-level false was returning
+	  nil.
 
-    * ext/syck/token.c: root-level transfer method bug.
+	* ext/syck/token.c: root-level transfer method bug.
 
-    * ext/syck/gram.c: root-level empty gave a parse error.
+	* ext/syck/gram.c: root-level empty gave a parse error.
 
-    * lib/yaml/rubytypes.rb: Symbol#to_yaml generating method call error.
+	* lib/yaml/rubytypes.rb: Symbol#to_yaml generating method call error.
 
 Thu May 22 02:46:38 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -443,8 +443,8 @@ Sun May 11 06:32:13 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
 Sat May 10 19:55:18 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-	* ext/syck/gram.c ext/syck/handler.c ext/syck/implicit.c 
-	  ext/syck/node.c ext/syck/rubyext.c ext/syck/syck.c 
+	* ext/syck/gram.c ext/syck/handler.c ext/syck/implicit.c
+	  ext/syck/node.c ext/syck/rubyext.c ext/syck/syck.c
 	  ext/syck/syck.h ext/syck/token.c: updated to Syck 0.27
 
 	* lib/yaml/loader.rb: new YAML::Loader class
@@ -760,10 +760,10 @@ Fri Apr 25 02:03:25 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Apr 24 23:37:02 2003  Dave Thomas  <dave@thomases.com>
 
-	* lib/matrix.rb (Matrix#minor):  Used Range#size, which no longer 
-	  exists. 
+	* lib/matrix.rb (Matrix#minor):  Used Range#size, which no longer
+	  exists.
 
-	* lib/complex.rb (new!): Complex.new had been made private, but 
+	* lib/complex.rb (new!): Complex.new had been made private, but
 	  Kernel#Complex called it. Re-exposed as new!.
 
 	* lib/matrix.rb (Matrix.row_vector): Fix method name typo
@@ -1153,8 +1153,6 @@ Mon Mar 31 11:11:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_f_missing): use "inspect" for T_OBJECT as well.
 
 Mon Mar 31 10:50:48 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* eval.c (rb_f_missing): 
 
 	* hash.c (env_reject_bang): untaint key string.
 
@@ -2029,10 +2027,10 @@ Thu Feb  6 01:09:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Feb  5 19:41:37 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: dispatch code restructured to make it openable
-	that has `open' method.
+	  that has `open' method.
 
 	* lib/open-uri.rb: Location: field may has a relative URI.
-	pointed out by erik eriksson <ee@opera.com>.
+	  pointed out by erik eriksson <ee@opera.com>.
 
 Wed Feb  5 17:11:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -2254,7 +2252,7 @@ Wed Jan 22 14:22:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Jan 21 20:29:31 2003  Michal Rokos  <michal@rokos.homeip.net>
 
-	* mkmf.rb: make possible to add files to clean and distclean targets 
+	* mkmf.rb: make possible to add files to clean and distclean targets
 
 Tue Jan 21 18:05:25 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -2787,7 +2785,7 @@ Tue Dec 31 01:30:29 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Mon Dec 30 21:10:59 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* parse.y (yylex): use strncmp instead of strcmp. 
+	* parse.y (yylex): use strncmp instead of strcmp.
 	  accept "__END__\r\n".  ([ruby-dev:19241])
 
 Mon Dec 30 20:32:14 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -3176,10 +3174,10 @@ Sun Dec 15 21:16:44 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 Sat Dec 15 12:15:00 2002  Takaaki Uematsu <mail@uema2.cjb.net>
 
 	* configure.in, defines.h, dir.c, dir.h, dln.c, error.c,
-	  eval.c, file.c, hash.c, io.c, main.c, missing.c, 
+	  eval.c, file.c, hash.c, io.c, main.c, missing.c,
 	  process.c, ruby.c, rubysig.h, signal.c, st.c, util.c, util.h,
 	  bcc/Makefile.sub, win32/Makefile.sub, win32/win32.h,
-	  ext/Win32API/Win32API.c, ext/socket/getaddrinfo.c, 
+	  ext/Win32API/Win32API.c, ext/socket/getaddrinfo.c,
 	  ext/socket/getnameinfo.c, ext/socket/socket.c,
 	  ext/tcltklib/stubs.c
 	  : replace "NT" with "_WIN32", add DOSISH_DRIVE_LETTER
@@ -3448,7 +3446,7 @@ Thu Nov 21 20:04:06 2002  Minero Aoki  <aamine@loveruby.net>
 Thu Nov 21 20:01:33 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: support Proxy-Authorization.
-	(This patch is contributed by Alexander Bokovoy)
+	  (This patch is contributed by Alexander Bokovoy)
 
 Thu Nov 21 11:03:39 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -3750,7 +3748,7 @@ Mon Oct 28 01:27:17 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 Sun Oct 27 22:59:50 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* ext/extmk.rb(78) : The unnecessary error when installing by bccwin32
-	                     is controlled. 
+	                     is controlled.
 
 	* lib/mkmf.rb(773) : Also in the case of bccwin32, the path was added.
 
@@ -3844,8 +3842,8 @@ Tue Oct 22 23:56:41 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Tue Oct 22 19:44:03 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
-	* bcc32/configure.bat : The command line when calling setup.mak is 
-	                        corrected. 
+	* bcc32/configure.bat : The command line when calling setup.mak is
+	                        corrected.
 
 	* bcc32/readme.bcc32 : It follows up about the option of configure.bat.
 
@@ -4343,7 +4341,7 @@ Mon Sep 23 08:27:11 2002  Tanaka Akira  <akr@m17n.org>
 
 Mon Sep 23 02:46:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (ruby_run): should set toplevel visibility again here. 
+	* eval.c (ruby_run): should set toplevel visibility again here.
 
 	* eval.c (rb_eval): should not rely on ruby_class == rb_cObject
 	  check.   Besides allow implicit publicity for attribute set
@@ -4365,7 +4363,7 @@ Sun Sep 22 21:49:42 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  require.
 
 Sun Sep 22 17:08:11 2002  Tanaka Akira  <akr@m17n.org>
-	
+
 	* string.c (rb_str_each_line): p might be at the top of the
 	  string.
 
@@ -4502,7 +4500,7 @@ Wed Sep 11 12:58:57 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 Wed Sep 11 11:33:40 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
-	* bcc32/Makefile.sub: remove unnecessary `.dll' from filename of 
+	* bcc32/Makefile.sub: remove unnecessary `.dll' from filename of
 	  dll's resource file.
 
 	* cygwin/GNUmakefile.in: ditto. [ruby-dev:17103]
@@ -4755,7 +4753,7 @@ Thu Sep  5 18:32:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Sep  5 17:18:22 2002  Michal Rokos  <michal@ruby-lang.org>
 
-	* dln.c: fix memory leak in dln_load (ruby-core:405) and 
+	* dln.c: fix memory leak in dln_load (ruby-core:405) and
 	  in load_1 (ruby-core:407)
 
 Thu Sep  5 15:43:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -5528,7 +5526,7 @@ Thu Jul 11 17:59:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Jul 11 12:59:23 2002  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/resolv.rb: untaint strings read from /etc/hosts and
-	/etc/resolv.conf to prevent SecurityError when $SAFE==1.
+	  /etc/resolv.conf to prevent SecurityError when $SAFE==1.
 
 Thu Jul 11 09:00:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -5538,7 +5536,7 @@ Thu Jul 11 09:00:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Jul  9 20:03:55 2002 Keiju Ishitsuka <keiju@ishitsuka.com>
 
 	* irb 0.9
-	
+
 Sat Jul  6 07:35:02 2002  Jamie Herre  <jfh@gettysgroup.com>
 
 	* array.c (rb_ary_insert): type fixed.
@@ -5554,8 +5552,8 @@ Fri Jul  5 08:59:15 2002  Michal Rokos <michal@ruby-lang.org>
 Fri Jul  5 05:00:40 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.
-	thanks to Sean Chittenden <sean@ruby-lang.org>, Shugo Maeda
-	<shugo@modruby.net>
+	  thanks to Sean Chittenden <sean@ruby-lang.org>, Shugo Maeda
+	  <shugo@modruby.net>
 
 Fri Jul  5 00:10:09 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -5578,7 +5576,7 @@ Wed Jul  3 14:26:40 2002  Sean Chittenden  <sean@ruby-lang.org>
 Wed Jul  3 13:57:53 2002  Sean Chittenden  <sean@ruby-lang.org>
 
 	* lib/net/ftp.rb (getbinaryfile): the second argument (localfile)
-	is now optional.
+	  is now optional.
 
 	* lib/net/ftp.rb (gettextfile): ditto.
 
@@ -5640,7 +5638,7 @@ Thu Jun 27 20:57:45 2002  Tanaka Akira  <akr@m17n.org>
 Thu Jun 27 15:22:18 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/prettyprint.rb: re-implemented for incremental output to handle
-	huge data.  API is changed a bit.
+	  huge data.  API is changed a bit.
 
 	* lib/pp.rb: adapt new pretty printing API.
 
@@ -5793,7 +5791,7 @@ Sat Jun 15 22:56:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Jun 15 18:51:13 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c (glob_helper): Use lstat() instead of stat() so it catches
-	  a dead symlink.  Given a dead symlink named "a", Dir.glob("?") 
+	  a dead symlink.  Given a dead symlink named "a", Dir.glob("?")
 	  did catch it but Dir.glob("a") somehow didn't.
 
 Sat Jun 15 01:59:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -5909,7 +5907,7 @@ Tue Jun 11 10:18:23 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 	* new platform [bccwin32] merged.
 	  - create new folder bcc32
 	  - modify any files for bccwin32
-	      error.c, file.c, hash.c, io.c, instruby.rb, 
+	      error.c, file.c, hash.c, io.c, instruby.rb,
 	      ext/extmk.rb.in,
 	      lib/mkmf.rb, lib/ftools.rb,
 	      ext/digest/defs.h,
@@ -6047,7 +6045,7 @@ Thu May 30 09:16:36 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 Wed May 29 18:55:47 2002  KONISHI Hiromasa <H_Konishi@ruby-lang.org>
 
 	* function renames my* and win32_* to rb_w32_* in win32/win32.c
-	  fixed files win32/win32.c, win32/win32.h, win32/dir.h, 
+	  fixed files win32/win32.c, win32/win32.h, win32/dir.h,
 	              hash.c, rubysig.h, signal.c, ext/socket/socket.c
 
 Wed May 29 17:32:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
@@ -6065,7 +6063,7 @@ Tue May 28 17:56:02 2002  Sean Chittenden  <sean@ruby-lang.org>
 	* ruby.c (proc_options): access prefixed "ruby_yydebug".
 
 	* applied modifies to pacify some of gcc -Wall warnings.
-	
+
 Tue May 28 14:07:00 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (arg): no more ugly hack for "**", so that "-2**2" to be
@@ -6713,7 +6711,7 @@ Mon Apr  1 23:48:12 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 Mon Apr  1 17:25:50 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_fptr_cleanup): need flush even when io will not be
-	  closed. 
+	  closed.
 
 	* io.c (rb_io_initialize): was calling wrong function
 	  rb_io_mode_flags().
@@ -6830,7 +6828,7 @@ Tue Mar 26 18:45:15 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (FILE_READPTR): check bufread instead of bufend
 	  for uClibc.
-	
+
 	* ext/extmk.rb.in (arg_config): should use Shellwords::shellwords.
 
 Tue Mar 26 01:56:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -6934,7 +6932,7 @@ Mon Mar 25 13:24:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  into THREAD_RUNNABLE on wakeup.
 
 	* eval.c (rb_thread_list): THREAD_TO_KILL threads should be in the
-	  list. 
+	  list.
 
 	* eval.c (thgroup_list): ditto; by moving gid clearance from
 	  rb_thread_cleanup().
@@ -7123,9 +7121,9 @@ Mon Mar 18 10:31:20 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 Sun Mar 17 20:08:04 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* ext/iconv/depend: added. 
+	* ext/iconv/depend: added.
 
-	* ext/stringio/depend: added. 
+	* ext/stringio/depend: added.
 
 Sat Mar 16 22:43:53 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -7268,7 +7266,7 @@ Sun Mar 10 02:18:22 2002  Koji Arai  <jca02266@nifty.ne.jp>
 Sat Mar  9 08:45:58 2002  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/extconf.rb (have_struct_member): don't print checked
-	result.
+	  result.
 
 Fri Mar  8 12:19:15 2002  Tanaka Akira  <akr@m17n.org>
 
@@ -7376,7 +7374,7 @@ Fri Mar  1 06:25:49 2002  Tanaka Akira  <akr@m17n.org>
 	  (unix_send_io): ditto.
 	  (unix_recv_io): ditto.
 	  (unix_s_socketpair): ditto.
-	  (Init_socket): define UNIXSocket#send_io, UNIXSocket#recv_io, 
+	  (Init_socket): define UNIXSocket#send_io, UNIXSocket#recv_io,
 	  UNIXSocket.socketpair and UNIXSocket.pair.
 
 	* dln.c (dln_load): fix typo.
@@ -7441,10 +7439,10 @@ Tue Feb 26 15:41:30 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Feb 26 11:25:50 2002  akira yamada  <akira@arika.org>
 
 	* lib/uri/generic.rb: merge0 should return [oth, oth] if oth is
-	  absolute URI. 
+	  absolute URI.
 
 	* lib/uri/generic.rb: registry part must not be allowed for any
-	  schemes for the Internet. (RFC2396, section 3.2.2 and 3.2.1.) 
+	  schemes for the Internet. (RFC2396, section 3.2.2 and 3.2.1.)
 
 Mon Feb 25 21:22:41 2002  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -7632,7 +7630,7 @@ Tue Feb 19 14:45:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* process.c (security): need not to warn twice.
 
 	* marshal.c (r_object): complete restoration before calling
-	  r_regist(). 
+	  r_regist().
 
 Tue Feb 19 14:24:36 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -7822,7 +7820,7 @@ Thu Feb  7 13:44:08 2002  akira yamada  <akira@arika.org>
 	* uri/generic.rb (Generic#merge): URI.parse("http://a/")+"b" should
 	  return "http://a/b" but it returned "http://a//b".
 
-	* uri/generic.rb (Generic#check_path): corrected error message, 
+	* uri/generic.rb (Generic#check_path): corrected error message,
 	  @path -> v
 
 Thu Feb  7 00:18:43 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -7841,7 +7839,7 @@ Wed Feb  6 13:28:53 2002  Amos Gouaux  <amos+ruby@utdallas.edu>
 	* lib/net/imap.rb: OpenSSL support.
 
 	* lib/net/imap.rb (setquota): unset quota if the second argument
-	is nil.
+	  is nil.
 
 Wed Feb  6 13:05:11 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -7940,7 +7938,7 @@ Thu Jan 31 13:22:36 2002  Tanaka Akira  <akr@m17n.org>
 
 Wed Jan 30 15:58:04 2002  K.Kosako  <kosako@sofnec.co.jp>
 
-	* regex.c (re_adjust_startpos): fix for SJIS and UTF-8. 
+	* regex.c (re_adjust_startpos): fix for SJIS and UTF-8.
 
 	* regex.c (mbc_startpos): ditto.
 
@@ -8031,7 +8029,7 @@ Thu Jan 24 11:49:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Jan 24 05:42:01 2002  Koji Arai  <jca02266@nifty.ne.jp>
 
 	* string.c (rb_str_split_m): no need to consider KANJI
-	characters, if the length of separator is 1 (byte).
+	  characters, if the length of separator is 1 (byte).
 
 Wed Jan 23 16:07:31 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -8252,8 +8250,8 @@ Tue Jan  8 15:54:02 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time#xmlschema): new optional argument
-	fractional_seconds to specify a number of digits of
-	fractional part of the time.
+	  fractional_seconds to specify a number of digits of
+	  fractional part of the time.
 
 Sat Jan  5 13:18:11 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
@@ -8437,16 +8435,16 @@ Thu Dec 20 01:01:50 2001  takuma ozawa  <metal@mine.ne.jp>
 Wed Dec 19 16:58:29 2001  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/readline.c: new methods
-	Readline::basic_word_break_characters,
-	Readline::basic_word_break_characters=,
-	Readline::completer_word_break_characters,
-	Readline::completer_word_break_characters=,
-	Readline::basic_quote_characters,
-	Readline::basic_quote_characters=,
-	Readline::completer_quote_characters,
-	Readline::completer_quote_characters=,
-	Readline::filename_quote_characters,
-	Readline::filename_quote_characters=.
+	  Readline::basic_word_break_characters,
+	  Readline::basic_word_break_characters=,
+	  Readline::completer_word_break_characters,
+	  Readline::completer_word_break_characters=,
+	  Readline::basic_quote_characters,
+	  Readline::basic_quote_characters=,
+	  Readline::completer_quote_characters,
+	  Readline::completer_quote_characters=,
+	  Readline::filename_quote_characters,
+	  Readline::filename_quote_characters=.
 
 Wed Dec 19 14:05:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -8454,7 +8452,7 @@ Wed Dec 19 14:05:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  default method visibility.
 
 	* eval.c (rb_attr): should warn if the default method visibility
-	  is "module_function" (can be error). 
+	  is "module_function" (can be error).
 
 	* eval.c (rb_mod_define_method): should define class/module method
 	  also if the visibility is "module_function".
@@ -8523,27 +8521,27 @@ Mon Dec 17 15:41:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Dec 17 15:19:32 2001  Tanaka Akira  <akr@m17n.org>
 
 	* time.c: new method `gmtoff', `gmt_offset' and `utc_offset'.
-	(time_utc_offset): new function.
-	(Init_Time): bind above methods to `time_utc_offset'.
+	  (time_utc_offset): new function.
+	  (Init_Time): bind above methods to `time_utc_offset'.
 
 	* time.c: 64bit time_t support.
-	(time_s_at): use NUM2LONG instead of NUM2INT for tv_sec.
-	(time_arg): initialize tm_isdst correctly.
-	use long to initialize tm_year.
-	(search_time_t): renamed from `make_time_t'.
-	(make_time_t): call `timegm' and `mktime' instead of `search_time_t'
-	if available.
-	(time_to_i): use LONG2NUM instead of INT2NUM.
-	(time_localtime): check localtime failure.
-	(time_gmtime): check gmtime failure.
-	(time_year): use LONG2NUM instead of INT2FIX.
-	(time_to_a): use long for tm_year.
-	(time_dump): check tm_year which is not representable with 17bit.
-	(time_load): initialize tm_isdst.
+	  (time_s_at): use NUM2LONG instead of NUM2INT for tv_sec.
+	  (time_arg): initialize tm_isdst correctly.
+	  use long to initialize tm_year.
+	  (search_time_t): renamed from `make_time_t'.
+	  (make_time_t): call `timegm' and `mktime' instead of `search_time_t'
+	  if available.
+	  (time_to_i): use LONG2NUM instead of INT2NUM.
+	  (time_localtime): check localtime failure.
+	  (time_gmtime): check gmtime failure.
+	  (time_year): use LONG2NUM instead of INT2FIX.
+	  (time_to_a): use long for tm_year.
+	  (time_dump): check tm_year which is not representable with 17bit.
+	  (time_load): initialize tm_isdst.
 
 	* configure.in: check existence of `mktime' and `timegm'.
-	check existence of tm_gmtoff field of struct tm.
-	fix negative time_t for 64bit time_t.
+	  check existence of tm_gmtoff field of struct tm.
+	  fix negative time_t for 64bit time_t.
 
 	* missing/strftime.c: fix overflow by tm_year + 1900.
 
@@ -8662,7 +8660,7 @@ Sat Dec  8 22:40:38 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  the default value. [new]
 
 	* hash.c (rb_hash_aref): call "default" method to get the value
-	  corresponding to the non existing key.  
+	  corresponding to the non existing key.
 
 	* hash.c (rb_hash_default): get the default value based on the
 	  block given to 'new'.  Now it takes an optional "key" argument.
@@ -8776,8 +8774,8 @@ Tue Dec  4 03:49:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  comparison.
 Sun Dec  9 23:00:54 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 	* matrix.rb: Vector#* bug. reported from Massimiliano Mirra
-	<info@chromatic-harp.com>. 
-	
+	  <info@chromatic-harp.com>.
+
 Sun Dec  9 22:15:59 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* enum.c (enum_sort_by): should replace with last elements.
@@ -8806,7 +8804,7 @@ Mon Dec  3 09:59:08 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* time.c (time_minus): ditto.
 
 	* time.c (time_new_internal): round usec overflow and underflow
-	  here. 
+	  here.
 
 	* time.c (time_plus): move operand overflow/underflow check to
 	  time_new_internal().
@@ -8835,7 +8833,7 @@ Sat Dec  1 12:13:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Fri Nov 30 17:02:55 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set target_cpu to i386 on cygwin and mingw32.
-	
+
 	* configure.in: default --enable-shared to yes on cygwin and mingw32.
 
 Fri Nov 30 00:25:28 2001  Usaku Nakamura  <usa@ruby-lang.org>
@@ -8912,7 +8910,7 @@ Thu Nov 22 00:28:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Nov 21 12:22:52 2001  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/cgi.rb: CGI#header: do not set Apache.request.status for
-	Location: if Apache.request.status is already set.
+	  Location: if Apache.request.status is already set.
 
 Wed Nov 21 02:24:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -9129,7 +9127,7 @@ Mon Nov 12 01:30:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  level higher than 3.
 
 	* variable.c (rb_f_trace_var): should not allow tainted trace
-	  closure. 
+	  closure.
 
 Sun Nov 11 00:12:23 2001  TAMURA Takashi  <sheepman@tcn.zaq.ne.jp>
 
@@ -9208,7 +9206,7 @@ Tue Nov  6 14:38:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Nov  6 14:17:14 2001  Amos Gouaux <amos+ruby@utdallas.edu>
 
 	* lib/net/imap.rb (getquota_response): use astring for mailbox
-	names.
+	  names.
 
 	* lib/net/imap.rb (getacl_response): ditto.
 
@@ -9222,11 +9220,11 @@ Sat Nov  3 23:33:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat Nov  3 22:28:51 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 
-	* matrix.rb (Matrix#column_vectors, Matrix#row_vectors): ditto bug. 
+	* matrix.rb (Matrix#column_vectors, Matrix#row_vectors): ditto bug.
 	  this bug report and fix by tsutomu@nucba.ac.jp.
-	
+
 	* forwardable.rb: change raise to Kernel::raise
-	
+
 Sat Nov  3 10:11:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): better error message.
@@ -9515,7 +9513,7 @@ Wed Oct  3 13:32:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* variable.c (rb_class_path): Module may have subclass.
 
 	* string.c (rb_str_update): should maintain original negative
-	  offset. 
+	  offset.
 
 	* string.c (rb_str_subpat_set): ditto
 
@@ -9544,7 +9542,7 @@ Tue Oct  2 08:04:52 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 Mon Oct  1 19:18:54 2001  Tanaka Akira  <akr@m17n.org>
 
-	* ext/socket/socket.c (unix_addr): getsockname(2) may result len = 0. 
+	* ext/socket/socket.c (unix_addr): getsockname(2) may result len = 0.
 
 	* ext/socket/socket.c (unix_peeraddr): getpeername(2) may result
 	  len = 0.
@@ -9994,7 +9992,7 @@ Sun Aug 12 15:01:58 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 Sat Aug 11 14:43:47 2001  Tanaka Akira  <akr@m17n.org>
 
 	* array.c (rb_inspecting_p): initialize inspect_key if it is
-	not initialized yet.
+	  not initialized yet.
 
 Fri Aug 10 22:14:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -10354,7 +10352,7 @@ Fri Jul  6 02:15:06 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 Thu Jul  5 20:28:53 2001  Tietew <tietew@tietew.net>
 
-	* string.c (rb_str_each_line): should propagate taint mark. 
+	* string.c (rb_str_each_line): should propagate taint mark.
 
 	* ext/nkf/nkf.c (rb_nkf_kconv): ditto.
 
@@ -10481,12 +10479,12 @@ Thu Jun 28 00:21:28 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 	* lib/irb/multi-irb.rb: resolve 'ruby -w' warnings.
 
 	* lib/irb/ruby-lex.rb: fix problem for "\\M-\\..." and "\\C-\\..."
-	  and resolve 'ruby -w' warnings.  
+	  and resolve 'ruby -w' warnings.
 
 	* lib/irb/ruby-token.rb: fix typo
 
 	* lib/shell/command-processor.rb: resolve 'ruby -w' warnings.
-	
+
 Wed Jun 27 08:53:26 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: new methods POP3.auth_only, POP3#auth_only
@@ -10535,9 +10533,9 @@ Fri Jun 22 23:17:28 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 	  Cygwin socket.
 
 Fri Jun 22 23:11:17 2001 Keiju Ishitsuka <keiju@ishitsuka.com>
-	
+
 	* lib/irb/locale.rb: fix for require "kconv" problem
-	
+
 Fri Jun 22 18:08:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_yield_0): no mvalue_to_svalue conversion here.
@@ -10688,8 +10686,8 @@ Wed Jun  6 23:02:36 2001  Keiju Ishitsuka  <keiju@ishitsuka.com>
 	* lib/sync.rb: bug fix if obj.initialize has parameters when
 	  obj.extend(Sync_m)
 
-	* lib/mutex_m.rb: modified bit 
-	
+	* lib/mutex_m.rb: modified bit
+
 Wed Jun  6 16:11:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_load): should check if tainted even when wrap is
@@ -10778,7 +10776,7 @@ Sat Jun  2 23:05:20 2001  Shugo Maeda <shugo@ruby-lang.org>
 Sat Jun  2 00:02:22 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 
 	* irb messages: fix typos.
-	
+
 Fri Jun  1 17:26:24 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* hash.c (replace_i): ignore when key == Qundef.
@@ -11522,7 +11520,7 @@ Tue Apr  3 00:05:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Apr  2 16:52:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* process.c (proc_waitall): should push Process::Status instead of
-	  Fixnum status.  
+	  Fixnum status.
 
 	* process.c (waitall_each): should add all entries in pid_tbl.
 	  these changes are inspired by Koji Arai.  Thanks.
@@ -11950,7 +11948,7 @@ Sat Mar  3 16:15:16 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Feb 28 11:02:41 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_delete_bang): delete! should take at least 1
-	  argument. 
+	  argument.
 
 	* ruby.c (load_file): add rb_gc() after loading to avoid
 	  extraordinary memory growth.
@@ -12382,7 +12380,7 @@ Wed Jan 24 01:45:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  not been objectified.
 
 	* eval.c (rb_callcc): should nail down block->tag history to avoid
-	  rb_gc_force_recycle(). 
+	  rb_gc_force_recycle().
 
 Tue Jan 23 18:51:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -12580,7 +12578,7 @@ Sat Dec 30 03:14:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_iterate): NODE_CFUNC does not protect its data
 	  (nd_tval), so create new node NODE_IFUNC for iteration C
-	  function. 
+	  function.
 
 	* eval.c (rb_yield_0): use NODE_IFUNC.
 
@@ -12603,7 +12601,7 @@ Fri Dec 29 11:05:41 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_thread_select): ditto.
 
 	* eval.c (rb_thread_join): join during critical section causes
-	  deadlock. 
+	  deadlock.
 
 Fri Dec 29 00:38:46 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -13060,18 +13058,18 @@ Thu Nov 16 16:32:45 2000  Masahiro Tanaka  <masa@stars.gsfc.nasa.gov>
 
 Thu Nov 16 14:58:00 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
-	* ext/socket/socket.c (sock_new): duplicates file descriptor 
+	* ext/socket/socket.c (sock_new): duplicates file descriptor
 	  with myfddup() on mswin32/mingw32.
 
 	* win32/win32.h: uses system original fdopen().
 
 	* win32/win32.c (myfddup): newly added instead of myfdopen().
 
-	* win32/win32.c (mybind, myconnect, mygetsockname, mygetsockopt, 
-	  mylisten, mysetsockopt): now accept file descriptor only, not 
+	* win32/win32.c (mybind, myconnect, mygetsockname, mygetsockopt,
+	  mylisten, mysetsockopt): now accept file descriptor only, not
 	  SOCKET.
 
-	* win32/win32.c (myaccept, mysocket): return file descriptor, 
+	* win32/win32.c (myaccept, mysocket): return file descriptor,
 	  instead of SOCKET.
 
 Thu Nov 16 10:23:24 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -13161,7 +13159,7 @@ Thu Nov  9 14:22:13 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Wed Nov  8 03:08:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_fflush): ensure fflush(3) would not block by calling
-	  rb_thread_fd_writable(). 
+	  rb_thread_fd_writable().
 
 Tue Nov  7 20:29:56 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
@@ -13475,7 +13473,7 @@ Sat Sep 23 07:33:20 2000  Aleksi Niemela  <aleksi.niemela@cinnober.com>
 Sat Sep 23 03:06:25 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_autoload_load): should not require already
-	  provided features. 
+	  provided features.
 
 Fri Sep 22 15:46:21 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
@@ -13541,7 +13539,7 @@ Wed Sep 20 14:01:45 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_provided): too weak filename comparison.
 
 	* eval.c (rb_thread_alloc): avoid recycling still referenced
-	  dvar structures. 
+	  dvar structures.
 
 	* eval.c (rb_callcc): ditto.
 
@@ -13597,7 +13595,7 @@ Sat Sep 16 03:29:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Sep 14 02:46:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_yield): array strip should be done in this
-	  function. 
+	  function.
 
 Wed Sep 13 17:01:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -13647,7 +13645,7 @@ Mon Sep 11 14:24:47 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  origenvironment.
 
 	* parse.y (command_call): kYIELD moved to this rule to allow
-	  'a = yield b'. (ruby-bugs-ja:#PR15) 
+	  'a = yield b'. (ruby-bugs-ja:#PR15)
 
 Mon Sep 11 01:27:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -13840,7 +13838,7 @@ Sat Aug 19 01:34:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 Fri Aug 18 13:23:59 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): should preserve and clear $! value before
-	  compilation. 
+	  compilation.
 
 	* eval.c (eval): ditto.
 
@@ -14186,7 +14184,7 @@ Fri Jul  7 03:30:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (aref_args): should allow Hash[:a=>2] etc.
 
-	* numeric.c (fix_aref): convert index by NUM2INT, not FIX2INT. 
+	* numeric.c (fix_aref): convert index by NUM2INT, not FIX2INT.
 	  (ruby-bugs:#PR37)
 
 	* time.c (time_localtime): should prohibit for frozen time.
@@ -14201,7 +14199,7 @@ Thu Jul  6 19:12:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  twice.
 
 	* ruby.c (require_libraries): clear req_list_head.next after
-	  execution. 
+	  execution.
 
 Thu Jul  6 13:51:57 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
@@ -14284,7 +14282,7 @@ Tue Jul  4 09:30:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (here_document): supports EOF right after terminator.
 
-	* random.c (rb_f_rand): argument is now optional (rand(max=0)). 
+	* random.c (rb_f_rand): argument is now optional (rand(max=0)).
 
 Tue Jul  4 01:50:49 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -14368,7 +14366,7 @@ Sun Jul  2 03:37:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* numeric.c (fix_rshift): should handle shift value more than
-	  sizeof(long). 
+	  sizeof(long).
 
 Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -14487,7 +14485,7 @@ Fri Jun 23 22:34:51 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 Fri Jun 23 01:11:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* string.c (rb_str_substr): should return empty string (""), 
+	* string.c (rb_str_substr): should return empty string (""),
 	  if beg == str.size and len == zero, mostly for convenience and
 	  backward compatibility.
 
@@ -14528,7 +14526,7 @@ Wed Jun 21 01:18:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* string.c (rb_str_dup): ditto.
 
 	* error.c (Init_Exception): renamed NotImplementError to
-	  NotImplementedError. 
+	  NotImplementedError.
 
 Tue Jun 20 16:22:38 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -14608,7 +14606,7 @@ Fri Jun 16 21:23:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 Fri Jun 16 18:41:58 2000  Koji Arai  <JCA02266@nifty.ne.jp>
 
-	* process.c (proc_setsid): BSD-style setpgrp() don't return 
+	* process.c (proc_setsid): BSD-style setpgrp() don't return
 	  process group ID, but 0 or -1.
 
 Fri Jun 16 16:23:35 2000  Koji Arai  <JCA02266@nifty.ne.jp>
@@ -14707,7 +14705,7 @@ Tue Jun 13 11:46:17 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  ioctl(fd, TIOCNOTTY, NULL).
 
 	* re.c (rb_reg_prepare_re): magic variable $= should affect regex
-	  pattern match. 
+	  pattern match.
 
 	* time.c (make_time_t): use tm.tm_gmtoff if possible.
 
@@ -14790,7 +14788,7 @@ Sun Jun  4 02:01:10 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 Sat Jun  3 13:50:06 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (rb_id2name): should support constant attrset
-	  identifiers. 
+	  identifiers.
 
 	* bignum.c (rb_big_eq): Bignum#== should not raise exception.
 
@@ -14921,7 +14919,7 @@ Wed May 24 13:12:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* misc/ruby-mode.el (ruby-parse-region): support `while .. do'
 	  etc. But corresponding keywords must be at the beginning of
-	  line. 
+	  line.
 
 Tue May 23 23:50:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -15863,7 +15861,7 @@ Tue Feb  8 02:07:33 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  returns nil if string not changed.
 
 	* regex.c (re_compile_pattern): support independent subexpression
-	  `(?>pattern)'. 
+	  `(?>pattern)'.
 
 	* regex.c (re_match): ditto.
 
@@ -15904,7 +15902,7 @@ Wed Feb  2 22:14:40 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* re.c (rb_reg_regsub): should check regs->num_regs.
 
 	* re.c (rb_reg_search): remove matchcache, use static struct
-	  re_register instead. 
+	  re_register instead.
 
 	* re.c (match_getter): avoid cloning match data.
 
@@ -16013,7 +16011,7 @@ Sat Jan 15 15:03:46 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* enum.c (enum_index): remove this method.
 
 	* enum.c: remove use of pointers to local variables. find,
-	  find_all, min, max, index, member?, each_with_index, 
+	  find_all, min, max, index, member?, each_with_index,
 
 	* eval.c (massign): multiple assignment does not use to_a anymore.
 	  experimental.
@@ -16069,7 +16067,7 @@ Tue Jan  4 22:25:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Tue Jan  4 06:04:14 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: modify for cross-compiling.
-	  use target_* instead of host_*. 
+	  use target_* instead of host_*.
 	  use AC_CANONICAL_TARGET.
 
 	* Makefile.in: ditto.
@@ -16103,7 +16101,7 @@ Sat Jan  1 02:04:18 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (rb_thread_safe_level): new method.
 
 	* eval.c (rb_yield_0): recycle dyna_var_map to reduce object
-	  allocation. 
+	  allocation.
 
 Fri Dec 31 00:52:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -16203,7 +16201,7 @@ Sun Dec 19 22:56:31 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
 
 Sat Dec 18 03:00:01 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* file.c (path_check_1): check should be done by absolute path. 
+	* file.c (path_check_1): check should be done by absolute path.
 
 	* marshal.c (r_ivar): should restore generic_ivar too.
 
@@ -16272,7 +16270,7 @@ Wed Dec  8 11:48:23 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  variables of untainted objects.
 
 	* variable.c (rb_mod_remove_const): should prohibit constant
-	  removals too. 
+	  removals too.
 
 Wed Dec  8 09:23:01 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -16382,7 +16380,7 @@ Fri Nov 26 18:12:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (rb_load): save and restore ruby_wrapper around loading.
 
 	* eval.c (rb_mark_end_proc): mark end procs registered by END{} or
-	  at_exit{}. 
+	  at_exit{}.
 
 	* eval.c (rb_set_end_proc): should not call rb_global_variable()
 	  on heap address;  it crashed mod_ruby.
@@ -16466,7 +16464,7 @@ Wed Nov 10 21:54:11 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 Wed Nov 10 17:57:06 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* sprintf.c: incorporate <yasuf@big.or.jp>'s sprintf patch at
-	  [ruby-dev:7754]. 
+	  [ruby-dev:7754].
 
 Wed Nov 10 08:28:53 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -16508,7 +16506,7 @@ Thu Nov  4 17:41:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Wed Nov  3 08:52:57 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
 
-	* io.c (Init_IO): forgot to use INT2FIX() around SEEK_SET, etc. 
+	* io.c (Init_IO): forgot to use INT2FIX() around SEEK_SET, etc.
 
 Wed Nov  3 00:25:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -16737,7 +16735,7 @@ Wed Sep 22 00:06:07 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 Tue Sep 21 23:57:54 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (call_trace_func): should not propagate retval in
-	  trace_func. 
+	  trace_func.
 
 Mon Sep 20 21:35:39 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
@@ -17075,7 +17073,7 @@ Wed Jul 28 18:24:45 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Tue Jul 27 09:38:08 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
 	* eval.c (rb_eval): reduce recursive rb_eval() calls by
-	  NODE_BLOCKs. 
+	  NODE_BLOCKs.
 
 Tue Jul 27 01:20:40 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
@@ -18528,7 +18526,7 @@ Fri Feb 12 16:16:47 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
 
 Fri Feb 12 16:21:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (rb_thread_fd_close): 
+	* eval.c (rb_thread_fd_close):
 
 	* io.c (rb_io_fptr_close): tell scheduler that fd is closed.
 
@@ -19456,7 +19454,7 @@ Mon Aug 31 15:32:41 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Sat Aug 29 16:31:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (rb_check_safe_str): avoid calling rb_id2name() in normal 
+	* eval.c (rb_check_safe_str): avoid calling rb_id2name() in normal
 	  cases to speed-up.
 
 	* eval.c (thread_raise): do not save context of terminated thread.
@@ -19749,7 +19747,7 @@ Tue Jun 30 10:13:44 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (f_p): accepts arbitrary number of arguments.
 
-	* eval.c (rb_yield_0): there's some case that iterator_p() returns 
+	* eval.c (rb_yield_0): there's some case that iterator_p() returns
 	  true even if the_block was not set.  check added.
 
 Tue Jun 30 01:05:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -20155,7 +20153,7 @@ Thu Apr 30 01:08:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* lib/tk.rb: call 'unknown', if proc not defined.
 
-	* eval.c (handle_rescue): default rescue handles `Exceptional' not 
+	* eval.c (handle_rescue): default rescue handles `Exceptional' not
 	  only the instance of the `Exception's.
 
 	* eval.c (f_raise): exception can be any object.
@@ -20413,7 +20411,7 @@ Thu Apr  9 18:24:58 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* experimental release 1.1b9_09.
 
 	* string.c (str_cmp): do not depend on sentinel at the end of the
-	  strings. 
+	  strings.
 
 	* string.c (str_chomp_bang): forgot to set the sentinel.
 
@@ -20606,7 +20604,7 @@ Wed Mar 25 08:12:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (eval): file-name and line-number set properly.
 
-	* parse.y (assign_in_cond): literal assignment is now warning, not 
+	* parse.y (assign_in_cond): literal assignment is now warning, not
 	  compile error.
 
 	* error.c (Warn): Warn() always print message, OTOH Waring()
@@ -20643,7 +20641,7 @@ Wed Mar 18 17:46:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* ruby.c (load_file): new file object constant DATA.  Only
 	  available for the script from the file.
 
-	* regex.c (re_match): forwarding failure point popped too much. 
+	* regex.c (re_match): forwarding failure point popped too much.
 
 Tue Mar 17 18:23:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -20686,7 +20684,7 @@ Mon Mar 16 11:49:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* range.c (range_length): returns zero, if the first is greater
 	  than the last.
 
-	* signal.c (trap_restore_mask): restore signal mask before raising 
+	* signal.c (trap_restore_mask): restore signal mask before raising
 	  exceptions and throws.
 
 Fri Mar 13 13:49:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -20757,7 +20755,7 @@ Fri Mar  6 17:23:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* object.c (obj_alloc): check for allocating instance for the
 	  primitive classes (mostly perfect).
 
-	* ext/curses/curses.c (curses_finalize): restore original state at 
+	* ext/curses/curses.c (curses_finalize): restore original state at
 	  interpreter termination.
 
 	* ext/curses/curses.c (curses_addstr): forgot to check argument
@@ -20836,7 +20834,7 @@ Wed Feb 25 15:50:07 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (mod_module_eval): clear the_scope's PRIVATE flag before
 	  calling eval().
 
-	* gc.c (gc_call_finalizer_at_exit): run finalizers before any data 
+	* gc.c (gc_call_finalizer_at_exit): run finalizers before any data
 	  object being freed.
 
 	* eval.c (rb_eval): needed to keep prot_tag->retval before
@@ -20885,9 +20883,9 @@ Fri Feb 20 10:17:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* ext/kconv/kconv.c (kconv_kconv): default output code now be
 	  determined according to the value of $KCODE.
 
-	* re.c (rb_get_kcode): can retrieve $KCODE from C code. 
+	* re.c (rb_get_kcode): can retrieve $KCODE from C code.
 
-	* parse.y (stmt): if/unless modifiers returns nil, if condition is 
+	* parse.y (stmt): if/unless modifiers returns nil, if condition is
 	  not established.
 
 Thu Feb 19 11:06:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -20923,7 +20921,7 @@ Tue Feb 17 00:04:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (str_sub_s): replace happened twice for null pattern.
 
-	* regex.c (re_search): null pattern should not match after newline 
+	* regex.c (re_search): null pattern should not match after newline
 	  at the end of string.
 
 	* time.c (time_isdst): now returns boolean value.
@@ -21091,7 +21089,7 @@ Wed Jan 21 01:43:42 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* regex.c (re_compile_pattern): too many pops for non register
 	  subexpr.
 
-	* parse.y (yylex): open parentheses after identifiers are argument 
+	* parse.y (yylex): open parentheses after identifiers are argument
 	  list, even if whitespaces have seen.
 
 Tue Jan 20 15:19:59 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -21222,11 +21220,11 @@ Thu Dec 25 02:50:29 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Tue Dec 23 02:47:33 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (rb_eval): public/private information kept in the current 
+	* eval.c (rb_eval): public/private information kept in the current
 	  scope, to remove undesired state from the class/module.
 
 	* time.c (time_strftime): remove hidden limit of 100 bytes of
-	  result string, using malloc'ed buffer. 
+	  result string, using malloc'ed buffer.
 
 	* hash.c (hash_update): merges the contents of another hash,
 	  overriding existing keys.
@@ -21244,7 +21242,7 @@ Fri Dec 19 01:18:29 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1b2 released.
 
-	* eval.c (check_errat): check and convert (if necessary) traceback 
+	* eval.c (check_errat): check and convert (if necessary) traceback
 	  information before assigning to the variable $@.
 
 	* eval.c (f_raise): optional third argument to specify traceback
@@ -21282,7 +21280,7 @@ Thu Dec 18 00:25:03 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Tue Dec 16 14:57:43 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* string.c (scan_once): wrong exception for regexp that match with 
+	* string.c (scan_once): wrong exception for regexp that match with
 	  null string (use substr instead of subseq).
 
 Sat Dec 13 00:13:32 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -21297,7 +21295,7 @@ Fri Dec 12 00:50:25 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  bodies.
 
 	* string.c (str_match): calls y =~ x if y is neither String nor
-	  Regexp so that eregex.rb works.  
+	  Regexp so that eregex.rb works.
 
 	* eval.c (f_at_exit): to register end proc.
 
@@ -21311,7 +21309,7 @@ Fri Dec 12 00:50:25 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): new visibility status `function'.
 
-	* parse.y (yycompile): do not clear eval_tree. thus enable multiple 
+	* parse.y (yycompile): do not clear eval_tree. thus enable multiple
 	  command line script by option `-e'.
 
 	* eval.c (rb_eval): END execute just once.
@@ -21322,7 +21320,7 @@ Thu Dec 11 13:14:35 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* object.c (mod_le): Module (or Class) comparison.
 
-	* eval.c (rb_remove_method): raises NameError if named method does 
+	* eval.c (rb_remove_method): raises NameError if named method does
 	  not exist.
 
 	* ext/curses/curses.c: remove CHECK macro for BSD curses.
@@ -21374,7 +21372,7 @@ Mon Dec  6 07:11:16 1997  MAEDA shugo  <shugo@po.aianet.ne.jp>
 
 Fri Dec  5 18:17:17 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (mod_remove_method): remove (not undef) a method from the 
+	* eval.c (mod_remove_method): remove (not undef) a method from the
 	  class/module.
 
 	* variable.c (obj_remove_instance_variable): method to remove
@@ -21392,7 +21390,7 @@ Mon Dec  1 15:24:41 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Wed Nov 26 18:18:05 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* lib/mkmf.rb: generate Makefile for extension modules out of ruby 
+	* lib/mkmf.rb: generate Makefile for extension modules out of ruby
 	  source tree. use like `ruby -r mkmf extconf.rb'.
 
 	* numeric.c (fix2str): enlarge buffer to prevent overflow on some
@@ -21414,7 +21412,7 @@ Tue Nov 18 10:13:08 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* array.c (Init_Array): Array#=== works as Array#include?
 
-	* regex.c (re_compile_pattern): insert initialize code for jump_n, 
+	* regex.c (re_compile_pattern): insert initialize code for jump_n,
 	  before entering loops.
 
 	* re.c (reg_search): does not save registers unless $& etc appear
@@ -21440,7 +21438,7 @@ Fri Nov 14 18:28:40 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Thu Nov 13 14:39:06 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* string.c (str_sub): returns copy of the receiver string, even if 
+	* string.c (str_sub): returns copy of the receiver string, even if
 	  any substitution occurred.
 
 	* regex.c (re_compile_pattern): no-width match by (?=..), (?!..).
@@ -21549,7 +21547,7 @@ Mon Oct 13 16:54:18 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Thu Oct  9 11:17:50 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (error_print): the exception name follows after the error 
+	* eval.c (error_print): the exception name follows after the error
 	  message.
 
 	* eval.c (compile_error): error message slightly changed.
@@ -21621,7 +21619,7 @@ Wed Oct  1 10:30:22 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/marshal/marshal.c (marshal_dump): try to set binmode.
 
-	* ext/marshal/marshal.c (r_object): forgot to re-regist structs in 
+	* ext/marshal/marshal.c (r_object): forgot to re-regist structs in
 	  the object table.
 
 	* eval.c (ruby_options): call Init_ext() before any require()
@@ -21818,7 +21816,7 @@ Thu Aug 28 13:12:05 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* version 1.1 alpha4 released.
 
 	* variable.c (mod_constants): wrong condition for singleton
-	  class. 
+	  class.
 
 	* parse.y (yylex): revised `=begin' skip code.
 
@@ -21856,7 +21854,7 @@ Tue Aug 26 13:43:47 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* object.c (Init_Object): superclass()'s method argument setting
 	  was wrong again.
 
-	* class.c (mod_ancestors): list superclasses and included modules 
+	* class.c (mod_ancestors): list superclasses and included modules
 	  in priority order.
 
 Mon Aug 25 11:53:11 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -21920,14 +21918,14 @@ Mon Aug 18 09:25:56 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* parse.y: provides more accurate line number information.
 
 	* eval.c (thread_value): include value's backtrace information in
-	  the variable `$@'. 
+	  the variable `$@'.
 
 	* eval.c (f_abort): print backtrace and exit.
 
 Sat Aug 16 00:17:44 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (class_new_instance): do not make instance from virtual
-	  classes. 
+	  classes.
 
 	* object.c (class_s_new): do not make subclass of singleton class.
 
