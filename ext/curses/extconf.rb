@@ -20,7 +20,7 @@ else
 end
 
 if make
-  for f in %w(isendwin ungetch beep doupdate flash deleteln wdeleteln keypad init_color)
+  for f in %w(isendwin ungetch beep doupdate flash deleteln wdeleteln keypad keyname init_color)
     have_func(f)
   end
   create_makefile("curses")

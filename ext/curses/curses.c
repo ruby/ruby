@@ -426,17 +426,17 @@ curses_keyname(obj, c)
     VALUE obj;
     VALUE c;
 {
+#ifdef HAVE_KEYNAME
   const char *name;
 
-#ifdef HAVE_KEYPAD
-    name = keyname(NUM2INT(c));
-    if (name) {
-        return rb_str_new2(name);
-    } else {
-        return Qnil;
-    }
-#else
+  name = keyname(NUM2INT(c));
+  if (name) {
+    return rb_str_new2(name);
+  } else {
     return Qnil;
+  }
+#else
+  return Qnil;
 #endif
 }
 
@@ -471,7 +471,6 @@ curses_setscrreg(VALUE obj, VALUE top, VALUE bottom)
   return (setscrreg(NUM2INT(top), NUM2INT(bottom)) == OK) ? Qtrue : Qfalse;
 }
 
-#ifdef USE_COLOR
 static VALUE
 curses_attroff(VALUE obj, VALUE attrs)
 {
@@ -493,6 +492,20 @@ curses_attrset(VALUE obj, VALUE attrs)
   /* return INT2FIX(attroff(FIX2INT(attrs))); */
 }
 
+static VALUE
+curses_bkgdset(VALUE obj, VALUE ch)
+{
+  bkgdset(NUM2CHR(ch));
+  return Qnil;
+}
+
+static VALUE
+curses_bkgd(VALUE obj, VALUE ch)
+{
+  return CHR2FIX(bkgd(NUM2CHR(ch)));
+}
+
+#ifdef USE_COLOR
 static VALUE
 curses_start_color(VALUE obj)
 {
@@ -553,20 +566,7 @@ curses_pair_number(VALUE obj, VALUE attrs)
 {
   return INT2FIX(PAIR_NUMBER(FIX2INT(attrs)));
 }
-
-static VALUE
-curses_bkgdset(VALUE obj, VALUE ch)
-{
-  bkgdset(NUM2CHR(ch));
-  return Qnil;
-}
-
-static VALUE
-curses_bkgd(VALUE obj, VALUE ch)
-{
-  return CHR2FIX(bkgd(NUM2CHR(ch)));
-}
-#endif /* USE_COLOR */
+#endif
 
 #ifdef USE_MOUSE
 struct mousedata {
@@ -1101,7 +1101,6 @@ window_scrl(VALUE obj, VALUE n)
   return (wscrl(winp->window,NUM2INT(n)) == OK) ? Qtrue : Qfalse;
 }
 
-#ifdef USE_COLOR
 static VALUE
 window_attroff(VALUE obj, VALUE attrs)
 {
@@ -1165,7 +1164,7 @@ window_getbkgd(VALUE obj)
   GetWINDOW(obj,winp);
   return CHR2FIX(getbkgd(winp->window));
 }
-#endif /* USE_COLOR */
+
 #ifdef HAVE_KEYPAD
 static VALUE
 window_keypad(VALUE obj, VALUE val)
@@ -1173,8 +1172,14 @@ window_keypad(VALUE obj, VALUE val)
   struct windata *winp;
 
   GetWINDOW(obj,winp);
+  /* keypad() of NetBSD's libcurses returns no value */
+#if defined(__NetBSD__) && !defined(NCURSES_VERSION)
+  keypad(winp->window,(val == Qtrue ? TRUE : FALSE));
+  return Qnil;
+#else
   return (keypad(winp->window,(val == Qtrue) ? TRUE : FALSE)) == OK ?
     Qtrue : Qfalse;
+#endif
 };
 #endif /* HAVE_KEYPAD */
 
@@ -1232,10 +1237,12 @@ Init_curses()
     rb_define_module_function(mCurses, "curs_set", curses_curs_set, 1);
     rb_define_module_function(mCurses, "scrl", curses_scrl, 1);
     rb_define_module_function(mCurses, "setscrreg", curses_setscrreg, 2);
-#ifdef USE_COLOR
     rb_define_module_function(mCurses, "attroff", curses_attroff, 1);
     rb_define_module_function(mCurses, "attron", curses_attron, 1);
     rb_define_module_function(mCurses, "attrset", curses_attrset, 1);
+    rb_define_module_function(mCurses, "bkgdset", curses_bkgdset, 1);
+    rb_define_module_function(mCurses, "bkgd", curses_bkgd, 1);
+#ifdef USE_COLOR
     rb_define_module_function(mCurses, "start_color", curses_start_color, 0);
     rb_define_module_function(mCurses, "init_pair", curses_init_pair, 3);
     rb_define_module_function(mCurses, "init_color", curses_init_color, 4);
@@ -1246,8 +1253,6 @@ Init_curses()
     rb_define_module_function(mCurses, "pair_content", curses_pair_content, 1);
     rb_define_module_function(mCurses, "color_pair", curses_color_pair, 1);
     rb_define_module_function(mCurses, "pair_number", curses_pair_number, 1);
-    rb_define_module_function(mCurses, "bkgdset", curses_bkgdset, 1);
-    rb_define_module_function(mCurses, "bkgd", curses_bkgd, 1);
 #endif /* USE_COLOR */
 #ifdef USE_MOUSE
     rb_define_module_function(mCurses, "getmouse", curses_getmouse, 0);
@@ -1316,7 +1321,9 @@ Init_curses()
     rb_curses_define_const(A_DIM);
     rb_curses_define_const(A_BOLD);
     rb_curses_define_const(A_PROTECT);
+#ifdef A_INVIS /* for NetBSD */
     rb_curses_define_const(A_INVIS);
+#endif
     rb_curses_define_const(A_ALTCHARSET);
     rb_curses_define_const(A_CHARTEXT);
 #ifdef A_HORIZONTAL
@@ -1808,10 +1815,10 @@ Init_curses()
 #endif
     {
       int c;
-      char keyname[] = "KEY_CTRL_x";
+      char name[] = "KEY_CTRL_x";
       for( c = 'A'; c <= 'Z'; c++ ){
-	sprintf(keyname, "KEY_CTRL_%c", c);
-	rb_define_const(mCurses, keyname, INT2FIX(c - 'A' + 1));
+	sprintf(name, "KEY_CTRL_%c", c);
+	rb_define_const(mCurses, name, INT2FIX(c - 'A' + 1));
       };
     }
 #undef rb_curses_define_const
