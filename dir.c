@@ -753,7 +753,7 @@ rb_glob(path, func, arg)
     void (*func)();
     VALUE arg;
 {
-    glob_helper(path, FNM_PERIOD|FNM_PATHNAME, func, arg);
+    glob_helper(path, FNM_PERIOD, func, arg);
 }
 
 void
@@ -762,7 +762,7 @@ rb_globi(path, func, arg)
     void (*func)();
     VALUE arg;
 {
-    glob_helper(path, FNM_PERIOD|FNM_PATHNAME|FNM_NOCASE, func, arg);
+    glob_helper(path, FNM_PERIOD|FNM_NOCASE, func, arg);
 }
 
 static void
