@@ -28,7 +28,7 @@ module RSS
 
 		end
 
-		TAG_NAME.replace('RDF')
+		@tag_name = 'RDF'
 
 		PREFIX = 'rdf'
 		URI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -57,19 +57,21 @@ module RSS
 			super('1.0', version, encoding, standalone)
 		end
 
-		def to_s(convert=true)
+		def to_s(convert=true, indent=calc_indent)
+			next_indent = indent + INDENT
 			rv = <<-EORDF
 #{xmldecl}
-#{xml_stylesheet_pi}<#{PREFIX}:RDF#{ns_declaration}>
-#{channel_element(false)}
-#{image_element(false)}
-#{item_elements(false)}
-#{textinput_element(false)}
-#{other_element(false, "\t")}
-</#{PREFIX}:RDF>
+#{xml_stylesheet_pi}
+#{indent}<#{PREFIX}:RDF#{ns_declaration(next_indent)}>
+#{channel_element(false, next_indent)}
+#{image_element(false, next_indent)}
+#{item_elements(false, next_indent)}
+#{textinput_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</#{PREFIX}:RDF>
 EORDF
       rv = @converter.convert(rv) if convert and @converter
-      rv
+      remove_empty_newline(rv)
 		end
 
 		private
@@ -105,7 +107,7 @@ EORDF
 				
 			end
 
-			TAG_NAME.replace('Seq')
+			@tag_name = 'Seq'
 			
 			install_have_children_element("li")
 			
@@ -116,12 +118,13 @@ EORDF
 				@li = li
 			end
 			
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
+				next_indent = indent + INDENT
 				<<-EOT
-			<#{PREFIX}:Seq>
-#{li_elements(convert, "\t\t\t\t")}
-#{other_element(convert, "\t\t\t\t")}
-			</#{PREFIX}:Seq>
+#{indent}<#{PREFIX}:Seq>
+#{li_elements(convert, next_indent)}
+#{other_element(convert, next_indent)}
+#{indent}</#{PREFIX}:Seq>
 EOT
 			end
 
@@ -167,9 +170,9 @@ EOT
 				@resource = resource
 			end
 			
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
 				if @resource
-					rv = %Q!<#{PREFIX}:li resource="#{h @resource}" />\n!
+					rv = %Q!#{indent}<#{PREFIX}:li resource="#{h @resource}" />\n!
 					rv = @converter.convert(rv) if convert and @converter
 					rv
 				else
@@ -228,19 +231,20 @@ EOT
 				@about = about
 			end
 
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
+				next_indent = indent + INDENT
 				about = ''
 				about << %Q!#{PREFIX}:about="#{h @about}"! if @about
 				rv = <<-EOT
-	<channel #{about}>
-		#{title_element(false)}
-		#{link_element(false)}
-		#{description_element(false)}
-		#{image_element(false)}
-#{items_element(false)}
-		#{textinput_element(false)}
-#{other_element(false, "\t\t")}
-	</channel>
+#{indent}<channel #{about}>
+#{title_element(false, next_indent)}
+#{link_element(false, next_indent)}
+#{description_element(false, next_indent)}
+#{image_element(false, next_indent)}
+#{items_element(false, next_indent)}
+#{textinput_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</channel>
 EOT
 	      rv = @converter.convert(rv) if convert and @converter
   	    rv
@@ -293,9 +297,9 @@ EOT
 					@resource = resource
 				end
 
-				def to_s(convert=true)
+				def to_s(convert=true, indent=calc_indent)
 					if @resource
-						rv = %Q!<image #{PREFIX}:resource="#{h @resource}" />!
+						rv = %Q!#{indent}<image #{PREFIX}:resource="#{h @resource}" />!
 						rv = @converter.convert(rv) if convert and @converter
 						rv
 					else
@@ -335,9 +339,9 @@ EOT
 					@resource = resource
 				end
 
-				def to_s(convert=true)
+				def to_s(convert=true, indent=calc_indent)
 					if @resource
-						rv = %Q|<textinput #{PREFIX}:resource="#{h @resource}" />|
+						rv = %Q|#{indent}<textinput #{PREFIX}:resource="#{h @resource}" />|
 						rv = @converter.convert(rv) if convert and @converter
 						rv
 					else
@@ -382,12 +386,13 @@ EOT
 					@Seq = seq
 				end
 				
-				def to_s(convert=true)
+				def to_s(convert=true, indent=calc_indent)
+					next_indent = indent + INDENT
 					<<-EOT
-		<items>
-#{Seq_element(convert)}
-#{other_element(convert, "\t\t\t")}
-		</items>
+#{indent}<items>
+#{Seq_element(convert, next_indent)}
+#{other_element(convert, next_indent)}
+#{indent}</items>
 EOT
 				end
 
@@ -446,16 +451,17 @@ EOT
 				@about = about
 			end
 
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
+				next_indent = indent + INDENT
 				about = ''
 				about << %Q!#{PREFIX}:about="#{h @about}"! if @about
 				rv = <<-EOT
-	<image #{about}>
-		#{title_element(false)}
-		#{url_element(false)}
-		#{link_element(false)}
-#{other_element(false, "\t\t")}
-	</image>
+#{indent}<image #{about}>
+#{title_element(false, next_indent)}
+#{url_element(false, next_indent)}
+#{link_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</image>
 EOT
 	      rv = @converter.convert(rv) if convert and @converter
 	      rv
@@ -515,16 +521,17 @@ EOT
 				@about = about
 			end
 
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
+				next_indent = indent + INDENT
 				about = ''
 				about << %Q!#{PREFIX}:about="#{h @about}"! if @about
 				rv = <<-EOT
-	<item #{about}>
-		#{title_element(false)}
-		#{link_element(false)}
-		#{description_element(false)}
-#{other_element(false, "\t\t")}
-	</item>
+#{indent}<item #{about}>
+#{title_element(false, next_indent)}
+#{link_element(false, next_indent)}
+#{description_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</item>
 EOT
 	      rv = @converter.convert(rv) if convert and @converter
 	      rv
@@ -585,17 +592,18 @@ EOT
 				@about = about
 			end
 
-			def to_s(convert=true)
+			def to_s(convert=true, indent=calc_indent)
+				next_indent = indent + INDENT
 				about = ''
 				about << %Q!#{PREFIX}:about="#{h @about}"! if @about
 				rv = <<-EOT
-	<textinput #{about}>
-		#{title_element(false)}
-		#{description_element(false)}
-		#{name_element(false)}
-		#{link_element(false)}
-#{other_element(false, "\t\t")}
-	</textinput>
+#{indent}<textinput #{about}>
+#{title_element(false, next_indent)}
+#{description_element(false, next_indent)}
+#{name_element(false, next_indent)}
+#{link_element(false, next_indent)}
+#{other_element(false, next_indent)}
+#{indent}</textinput>
 EOT
 	      rv = @converter.convert(rv) if convert and @converter
 	      rv

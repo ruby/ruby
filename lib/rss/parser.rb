@@ -286,8 +286,8 @@ module RSS
 					@proc_stack.push(nil)
 				else
 					parent = "ROOT ELEMENT???"
-					if current_class.const_defined?("TAG_NAME")
-						parent = current_class.const_get("TAG_NAME")
+					if current_class.tag_name
+						parent = current_class.tag_name
 					end
 					raise NotExceptedTagError.new(local, parent)
 				end

@@ -154,7 +154,7 @@ module RSS
 			install_element(name) do |n, elem_name|
 				<<-EOC
 				if @#{n}
-					"\#{indent}\#{@#{n}.to_s(convert)}"
+					"\#{@#{n}.to_s(convert, indent)}"
 				else
 					''
 				end
@@ -171,7 +171,7 @@ EOC
 				<<-EOC
 				rv = ''
 				@#{n}.each do |x|
-					rv << "\#{indent}\#{x.to_s(convert)}"
+					rv << "\#{x.to_s(convert, indent)}"
 				end
 				rv
 EOC
@@ -320,14 +320,16 @@ EOC
 		extend BaseModel
 		include Utils
 
+		INDENT = "  "
+    
 		class << self
 
 			def inherited(klass)
 				klass.module_eval(<<-EOC)
 				public
 				
-				TAG_NAME = name.split('::').last.downcase
-
+				@tag_name = name.split(/::/).last.downcase
+				@indent_size = name.split(/::/).size - 2
 
 				@@must_call_validators = {}
 
@@ -415,6 +417,14 @@ EOC
 				self::NSPOOL[prefix] = uri
 			end
 
+			def tag_name
+				@tag_name
+			end
+      
+			def indent_size
+				@indent_size
+			end
+      
 		end
 
 		attr_accessor :do_validate
@@ -426,7 +436,7 @@ EOC
 		end
 
 		def tag_name
-			self.class::TAG_NAME
+			self.class.tag_name
 		end
 
 		def converter=(converter)
@@ -498,7 +508,7 @@ EOC
 		def validate_attribute
 			_attrs.each do |a_name, required|
 				if required and send(a_name).nil?
-					raise MissingAttributeError.new(self.class::TAG_NAME, a_name)
+					raise MissingAttributeError.new(self.class.tag_name, a_name)
 				end
 			end
 		end
@@ -615,6 +625,15 @@ EOC
 			rv
 		end
 
+		private
+		def calc_indent
+			INDENT * (self.class.indent_size)
+		end
+    
+		def remove_empty_newline(string)
+			string.gsub(/^\s*$(?:\r?\n?)/, '')
+		end
+    
 	end
 
 	module RootElementMixin
@@ -646,11 +665,11 @@ EOC
 			rv
 		end
 		
-		def ns_declaration
+		def ns_declaration(indent)
 			rv = ''
 			self.class::NSPOOL.each do |prefix, uri|
 				prefix = ":#{prefix}" unless prefix.empty?
-				rv << %Q|\n\txmlns#{prefix}="#{html_escape(uri)}"|
+				rv << %Q|\n#{indent}xmlns#{prefix}="#{html_escape(uri)}"|
 			end
 			rv
 		end

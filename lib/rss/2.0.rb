@@ -23,11 +23,11 @@ module RSS
 				install_model(x, occurs)
 			end
 
-			def other_element(convert, indent='')
+			def other_element(convert, indent)
 				rv = <<-EOT
-#{indent}#{category_element(convert)}
-#{indent}#{generator_element(convert)}
-#{indent}#{ttl_element(convert)}
+#{category_element(convert, indent)}
+#{generator_element(convert, indent)}
+#{ttl_element(convert, indent)}
 EOT
 				rv << super
 			end
@@ -73,12 +73,12 @@ EOT
 					install_model(x, occurs)
 				end
 			
-				def other_element(convert, indent='')
+				def other_element(convert, indent)
 					rv = <<-EOT
-#{indent}#{author_element(false)}
-#{indent}#{comments_element(false)}
-#{indent}#{pubDate_element(false)}
-#{indent}#{guid_element(false)}
+#{author_element(false, indent)}
+#{comments_element(false, indent)}
+#{pubDate_element(false, indent)}
+#{guid_element(false, indent)}
 EOT
 					rv << super
 				end
@@ -116,7 +116,7 @@ EOT
 						@content = content
 					end
 
-					def to_s(convert=true)
+					def to_s(convert=true, indent=calc_indent)
 						if @content
 							rv = %Q!<guid!
 							rv << %Q! isPermaLink="#{h @isPermaLink}"! if @isPermaLink
