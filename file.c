@@ -1363,7 +1363,7 @@ test_check(n, argc, argv)
     int i;
 
     n+=1;
-    if (n < argc) rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)", argc, n);
+    if (n < argc) rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, n);
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:
@@ -1387,7 +1387,7 @@ rb_f_test(argc, argv)
 {
     int cmd;
 
-    if (argc == 0) rb_raise(rb_eArgError, "Wrong # of arguments");
+    if (argc == 0) rb_raise(rb_eArgError, "wrong # of arguments");
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) return Qfalse;
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {

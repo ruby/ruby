@@ -297,7 +297,7 @@ exc_exception(argc, argv, self)
 	etype = RCLASS(etype)->super;
     }
     exc = rb_obj_alloc(etype);
-    rb_obj_call_init(exc);
+    rb_obj_call_init(exc, argc, argv);
 
     return exc;
 }
@@ -372,45 +372,6 @@ exc_set_backtrace(exc, bt)
     VALUE exc;
 {
     return rb_iv_set(exc, "bt", check_backtrace(bt));
-}
-
-static VALUE
-exception(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    VALUE v = Qnil;
-    VALUE etype = rb_eStandardError;
-    int i;
-    ID id;
-
-    if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong # of arguments");
-    }
-    rb_warn("Exception() is now obsolete");
-    if (TYPE(argv[argc-1]) == T_CLASS) {
-	etype = argv[argc-1];
-	argc--;
-	if (!rb_funcall(etype, '<', 1, rb_eException)) {
-	    rb_raise(rb_eTypeError, "exception should be subclass of Exception");
-	}
-    }
-    for (i=0; i<argc; i++) {	/* argument check */
-	id = rb_to_id(argv[i]);
-	if (!rb_id2name(id)) {
-	    rb_raise(rb_eArgError, "argument needs to be symbol or string");
-	}
-	if (!rb_is_const_id(id)) {
-	    rb_raise(rb_eArgError, "identifier `%s' needs to be constant",
-		     rb_id2name(id));
-	}
-    }
-    for (i=0; i<argc; i++) {
-	v = rb_define_class_under(ruby_class,
-				  rb_id2name(rb_to_id(argv[i])),
-				  rb_eStandardError);
-    }
-    return v;
 }
 
 #ifdef __BEOS__
@@ -564,8 +525,6 @@ Init_Exception()
     rb_eNotImpError = rb_define_class("NotImplementError", rb_eException);
 
     init_syserr();
-
-    rb_define_global_function("Exception", exception, -1);
 }
 
 void

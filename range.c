@@ -35,11 +35,10 @@ range_s_new(klass, beg, end)
     VALUE klass, beg, end;
 {
     VALUE obj;
+    VALUE args[2];
 
+    args[0] = beg; args[1] = end;
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
-	VALUE args[2];
-
-	args[0] = beg; args[1] = end;
 	rb_rescue(range_check, (VALUE)args, range_failed, 0);
     }
 
@@ -47,7 +46,7 @@ range_s_new(klass, beg, end)
 
     rb_ivar_set(obj, id_beg, beg);
     rb_ivar_set(obj, id_end, end);
-    rb_obj_call_init(obj);
+    rb_obj_call_init(obj, 2, args);
 
     return obj;
 }

@@ -368,13 +368,6 @@ true_to_s(obj)
 }
 
 static VALUE
-true_to_i(obj)
-    VALUE obj;
-{
-    return INT2FIX(1);
-}
-
-static VALUE
 true_type(obj)
     VALUE obj;
 {
@@ -407,13 +400,6 @@ false_to_s(obj)
     VALUE obj;
 {
     return rb_str_new2("false");
-}
-
-static VALUE
-false_to_i(obj)
-    VALUE obj;
-{
-    return INT2FIX(0);
 }
 
 static VALUE
@@ -579,7 +565,7 @@ rb_module_s_new(klass)
     VALUE mod = rb_module_new();
 
     RBASIC(mod)->klass = klass;
-    rb_obj_call_init(mod);
+    rb_obj_call_init(mod, 0, 0);
     return mod;
 }
 
@@ -601,7 +587,7 @@ rb_class_s_new(argc, argv)
     /* make metaclass */
     RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
     rb_singleton_class_attached(RBASIC(klass)->klass, klass);
-    rb_obj_call_init(klass);
+    rb_obj_call_init(klass, argc, argv);
 
     return klass;
 }
@@ -752,43 +738,6 @@ rb_obj_private_methods(obj)
     return rb_class_private_instance_methods(1, argv, CLASS_OF(obj));
 }
 
-VALUE
-rb_Integer(val)
-    VALUE val;
-{
-    long i;
-
-    switch (TYPE(val)) {
-      case T_FLOAT:
-	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
-	    && RFLOAT(val)->value >= (double)FIXNUM_MIN) {
-	    i = (long)RFLOAT(val)->value;
-	    break;
-	}
-	return rb_dbl2big(RFLOAT(val)->value);
-
-      case T_BIGNUM:
-	return val;
-
-      case T_STRING:
-	return rb_str2inum(RSTRING(val)->ptr, 0);
-
-      case T_NIL:
-	return INT2FIX(0);
-
-      default:
-	i = NUM2LONG(val);
-    }
-    return INT2NUM(i);
-}
-
-static VALUE
-rb_f_integer(obj, arg)
-    VALUE obj, arg;
-{
-    return rb_Integer(arg);
-}
-
 struct arg_to {
     VALUE val;
     char *s;
@@ -830,6 +779,50 @@ rb_convert_type(val, type, tname, method)
     return val;
 }
 
+VALUE
+rb_Integer(val)
+    VALUE val;
+{
+    struct arg_to arg1, arg2;
+
+    switch (TYPE(val)) {
+      case T_FLOAT:
+	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
+	    && RFLOAT(val)->value >= (double)FIXNUM_MIN) {
+	    break;
+	}
+	return rb_dbl2big(RFLOAT(val)->value);
+
+      case T_BIGNUM:
+	return val;
+
+      case T_STRING:
+	return rb_str2inum(RSTRING(val)->ptr, 0);
+
+      case T_NIL:
+	return INT2FIX(0);
+
+      default:
+	break;
+    }
+
+    arg1.val = arg2.val = val;
+    arg1.s = "to_i";
+    arg2.s = "Integer";
+    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
+    if (!rb_obj_is_kind_of(val, rb_cInteger)) {
+	rb_raise(rb_eTypeError, "to_i should return Integer");
+    }
+    return val;
+}
+
+static VALUE
+rb_f_integer(obj, arg)
+    VALUE obj, arg;
+{
+    return rb_Integer(arg);
+}
+
 double rb_big2dbl _((VALUE));
 
 VALUE
@@ -845,6 +838,9 @@ rb_Float(val)
 
       case T_BIGNUM:
 	return rb_float_new(rb_big2dbl(val));
+
+      case T_NIL:
+	return rb_float_new(0.0);
 
       default:
 	return rb_convert_type(val, T_FLOAT, "Float", "to_f");
@@ -862,8 +858,23 @@ double
 rb_num2dbl(val)
     VALUE val;
 {
-    VALUE v = rb_Float(val);
-    return RFLOAT(v)->value;
+    switch (TYPE(val)) {
+      case T_FLOAT:
+	return RFLOAT(val)->value;
+
+      case T_STRING:
+	rb_raise(rb_eTypeError, "no implicit conversion from String");
+	break;
+
+      case T_NIL:
+	rb_raise(rb_eTypeError, "no implicit conversion from nil");
+	break;
+
+      default:
+	break;
+    }
+
+    return RFLOAT(rb_Float(val))->value;
 }
 
 char*
@@ -1081,7 +1092,6 @@ Init_Object()
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
-    rb_define_method(rb_cTrueClass, "to_i", true_to_i, 0);
     rb_define_method(rb_cTrueClass, "type", true_type, 0);
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
@@ -1091,7 +1101,6 @@ Init_Object()
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
-    rb_define_method(rb_cFalseClass, "to_i", false_to_i, 0);
     rb_define_method(rb_cFalseClass, "type", false_type, 0);
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);

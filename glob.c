@@ -95,7 +95,11 @@
 #  endif /* !SHELL */
 #endif /* OPENDIR_NOT_ROBUST */
 
-#include "fnmatch.h"
+#ifdef HAVE_FNMATCH_H
+#include <fnmatch.h>
+#else
+#include "missing/fnmatch.h"
+#endif
 
 extern void *xmalloc (), *xrealloc ();
 #if !defined (HAVE_STDLIB_H)

@@ -214,7 +214,7 @@ rb_str_s_new(klass, orig)
     if (rb_safe_level() >= 3) {
 	FL_SET(str, FL_TAINT);
     }
-    rb_obj_call_init((VALUE)str);
+    rb_obj_call_init((VALUE)str, 1, &orig);
 
     return (VALUE)str;
 }
@@ -625,7 +625,7 @@ rb_str_index_method(argc, argv, str)
       }
 
       default:
-	rb_raise(rb_eTypeError, "Type mismatch: %s given",
+	rb_raise(rb_eTypeError, "type mismatch: %s given",
 		 rb_class2name(CLASS_OF(sub)));
     }
 
@@ -684,7 +684,7 @@ rb_str_rindex(argc, argv, str)
       }
 
       default:
-	rb_raise(rb_eTypeError, "Type mismatch: %s given",
+	rb_raise(rb_eTypeError, "type mismatch: %s given",
 		 rb_class2name(CLASS_OF(sub)));
     }
     return Qnil;
@@ -818,7 +818,7 @@ rb_str_aref(str, indx)
 		return rb_str_subseq(str, beg, end);
 	    }
 	}
-	rb_raise(rb_eIndexError, "Invalid index for string");
+	rb_raise(rb_eIndexError, "invalid index for string");
     }
     return Qnil;		/* not reached */
 }
@@ -947,7 +947,7 @@ rb_str_aset(str, indx, val)
 		return val;
 	    }
 	}
-	rb_raise(rb_eIndexError, "Invalid index for string");
+	rb_raise(rb_eIndexError, "invalid index for string");
     }
 }
 
@@ -1019,7 +1019,7 @@ rb_str_sub_bang(argc, argv, str)
 	repl = rb_obj_as_string(argv[1]);;
     }
     else {
-	rb_raise(rb_eArgError, "Wrong # of arguments(%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
     }
 
     pat = get_pat(argv[0]);
@@ -1088,7 +1088,7 @@ rb_str_gsub_bang(argc, argv, str)
 	repl = rb_obj_as_string(argv[1]);;
     }
     else {
-	rb_raise(rb_eArgError, "Wrong # of arguments(%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
     }
 
     pat = get_pat(argv[0]);

@@ -102,7 +102,7 @@ sock_new(class, fd)
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
     rb_io_unbuffered(fp);
-    rb_obj_call_init((VALUE)sock);
+    rb_obj_call_init((VALUE)sock, 0, 0);
 
     return (VALUE)sock;
 }

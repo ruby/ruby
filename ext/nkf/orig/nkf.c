@@ -257,9 +257,9 @@ int line_fold();
 #   define  DEFAULT_CONV e_oconv
 #endif
 
-static void            (*iconv)(int c2,int c1);   
+static void            (*iconv) _((int c2,int c1));
 					/* s_iconv or oconv */
-static void            (*oconv)(int c2,int c1) = DEFAULT_CONV; 
+static void            (*oconv) _((int c2,int c1)) = DEFAULT_CONV; 
 					  /* [ejs]_oconv */
 
 /* Global states */
@@ -464,7 +464,7 @@ main(argc, argv)
 }
 #endif
 
-void
+static void
 arguments(cp) 
     char *cp;
 {
@@ -1049,7 +1049,7 @@ h_conv(f, c2, c1)
 
 
 
-int
+static int
 push_hold_buf(c2, c1)
     int c2, c1;
 {
@@ -1323,7 +1323,7 @@ j_oconv(c2, c1)
   This is the main difference from fmt.
 */
 
-int
+static int
 line_fold(c2,c1) 
 int c2,c1;
 { 
@@ -1446,7 +1446,7 @@ int c2,c1;
     }
 }
 
-int
+static int
 pre_convert(c1,c2)
     int c1,c2;
 {
@@ -1513,7 +1513,7 @@ int iso8859_f_save;
 #define nkf_toupper(c)  (('a'<=c && c<='z')?(c-('a'-'A')):c)
 /* I don't trust portablity of toupper */
 
-int
+static int
 mime_begin(f)
     FILE *f;
 {
@@ -1620,7 +1620,7 @@ FILE *f;
 
 #endif
 
-int 
+static int 
 mime_getc(f)
     FILE *f;
 {
@@ -1778,7 +1778,7 @@ mime_integrity(f,p)
 }
 #endif
 
-int
+static int
 base64decode(c)
     int c;
 {
@@ -1797,7 +1797,7 @@ base64decode(c)
     return (i);
 }
 
-void 
+static void 
 reinit()
 {
     unbuf_f = FALSE;

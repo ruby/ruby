@@ -1231,7 +1231,7 @@ rb_big_coerce(x, y)
 	return rb_assoc_new(rb_int2big(FIX2LONG(y)), x);
     }
     else {
-	rb_raise(rb_eTypeError, "can't coerce %s to Bignum",
+	rb_raise(rb_eTypeError, "Can't coerce %s to Bignum",
 		 rb_class2name(CLASS_OF(y)));
     }
     /* not reached */

@@ -20,7 +20,7 @@ LDFLAGS =  $(CFLAGS) -Fm
 #CFLAGS = -nologo -DNT=1 -Zi -MD 
 #LDFLAGS =  $(CFLAGS) -Fm -MD
 LIBS =  $(EXTLIBS)  advapi32.lib wsock32.lib
-MISSING = crypt.obj alloca.obj win32.obj
+MISSING = crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj
 
 prefix = 
 binprefix = 
@@ -50,7 +50,6 @@ OBJS          = array.obj \
 		error.obj \
 		eval.obj \
 		file.obj \
-		fnmatch.obj \
 		gc.obj \
 		glob.obj \
 		hash.obj \
@@ -175,6 +174,15 @@ strtol.obj: missing/strtol.c
 strtoul.obj: missing/strtoul.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strtoul.c
 
+fnmatch.obj: missing/fnmatch.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/fnmatch.c
+
+isinf.obj: missing/isinf.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/isinf.c
+
+isnan.obj: missing/isnan.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/isnan.c
+
 # when I use -I., there is confliction at "OpenFile" 
 # so, set . into environment varible "include"
 win32.obj: win32/win32.c
@@ -202,9 +210,8 @@ enum.obj: enum.c ruby.h config.h defines.h
 error.obj: error.c ruby.h config.h defines.h env.h
 eval.obj: eval.c ruby.h config.h defines.h env.h node.h rubysig.h st.h dln.h
 file.obj: file.c ruby.h config.h defines.h rubyio.h rubysig.h
-fnmatch.obj: fnmatch.c config.h fnmatch.h
 gc.obj: gc.c ruby.h config.h defines.h env.h rubysig.h st.h node.h re.h regex.h
-glob.obj: glob.c config.h fnmatch.h
+glob.obj: glob.c config.h missing/fnmatch.h
 hash.obj: hash.c ruby.h config.h defines.h st.h
 inits.obj: inits.c ruby.h config.h defines.h
 io.obj: io.c ruby.h config.h defines.h rubyio.h rubysig.h

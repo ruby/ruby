@@ -192,7 +192,7 @@ rb_hash_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    VALUE sz, ifnone;
+    VALUE ifnone;
     int size;
 
     NEWOBJ(hash, struct RHash);
@@ -202,15 +202,11 @@ rb_hash_s_new(argc, argv, klass)
     hash->ifnone = Qnil;
     hash->tbl = 0;		/* avoid GC crashing  */
 
-    rb_scan_args(argc, argv, "02", &ifnone, &sz);
-    if (NIL_P(sz)) {
-	size = 0;
-    }
-    else size = NUM2INT(sz);
+    rb_scan_args(argc, argv, "01", &ifnone);
 
     hash->ifnone = ifnone;
-    hash->tbl = st_init_table_with_size(&objhash, size);
-    rb_obj_call_init((VALUE)hash);
+    hash->tbl = st_init_table(&objhash);
+    rb_obj_call_init((VALUE)hash, argc, argv);
 
     return (VALUE)hash;
 }
@@ -246,18 +242,16 @@ rb_hash_s_create(argc, argv, klass)
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
-	if (klass == CLASS_OF(argv[0])) return argv[0];
-	else {
-	    NEWOBJ(hash, struct RHash);
-	    OBJSETUP(hash, klass, T_HASH);
+	NEWOBJ(hash, struct RHash);
+	OBJSETUP(hash, klass, T_HASH);
 	    
-	    hash->iter_lev = 0;
-	    hash->ifnone = Qnil;
-	    hash->tbl = 0;	/* avoid GC crashing  */
-	    hash->tbl = (st_table*)st_copy(RHASH(argv[0])->tbl);
-	    rb_obj_call_init((VALUE)hash);
-	    return (VALUE)hash;
-	}
+	hash->iter_lev = 0;
+	hash->ifnone = Qnil;
+	hash->tbl = 0;	/* avoid GC crashing  */
+	hash->tbl = (st_table*)st_copy(RHASH(argv[0])->tbl);
+	rb_obj_call_init((VALUE)hash, argc, argv);
+
+	return (VALUE)hash;
     }
 
     if (argc % 2 != 0) {
@@ -268,7 +262,7 @@ rb_hash_s_create(argc, argv, klass)
     for (i=0; i<argc; i+=2) {
 	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
     }
-    rb_obj_call_init(hash);
+    rb_obj_call_init(hash, argc, argv);
 
     return hash;
 }
@@ -918,7 +912,7 @@ rb_f_getenv(obj, name)
 
     nam = str2cstr(name, &len);
     if (strlen(nam) != len) {
-	rb_raise(rb_eArgError, "Bad environment variable name");
+	rb_raise(rb_eArgError, "bad environment variable name");
     }
     env = getenv(nam);
     if (env) {
@@ -1119,17 +1113,6 @@ ruby_setenv(name, value)
 #endif /* WIN32 */
 }
 
-void
-ruby_setenv2(name, value)
-    char *name;
-    char *value;
-{
-    if (value == NULL) {
-	ruby_unsetenv(name);
-    }
-    ruby_setenv(name, value);
-}
-
 static VALUE
 rb_f_setenv(obj, nm, val)
     VALUE obj, nm, val;
@@ -1149,9 +1132,9 @@ rb_f_setenv(obj, nm, val)
     name = str2cstr(nm, &nlen);
     value = str2cstr(val, &vlen);
     if (strlen(name) != nlen)
-	rb_raise(rb_eArgError, "Bad environment name");
+	rb_raise(rb_eArgError, "bad environment variable name");
     if (strlen(value) != vlen)
-	rb_raise(rb_eArgError, "Bad environment value");
+	rb_raise(rb_eArgError, "bad environment variable value");
 
     ruby_setenv(name, value);
     if (strcmp(name, "PATH") == 0) {

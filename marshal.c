@@ -851,7 +851,7 @@ marshal_load(argc, argv)
 	v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
     }
     else {
-	rb_raise(rb_eTypeError, "Old marshal file format (can't read)");
+	rb_raise(rb_eTypeError, "old marshal file format (can't read)");
     }
 
     return v;

@@ -143,7 +143,7 @@ bd=Board.new(10,10,10)
 system("stty raw -echo")
 begin
   loop do
-    case getc
+    case STDIN.getc
     when ?n  # new game
       bd.reset
     when ?m  # mark
@@ -163,7 +163,7 @@ begin
       break
     end
     if bd.over?
-      if getc == ?q then break end
+      if STDIN.getc == ?q then break end
       bd.reset
     end
   end

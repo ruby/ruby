@@ -218,7 +218,7 @@ rb_struct_s_def(argc, argv, klass)
 	RARRAY(rest)->ptr[i] = INT2FIX(id);
     }
     st = make_struct(name, rest, klass);
-    rb_obj_call_init(st);
+    rb_obj_call_init(st, argc, argv);
 
     return st;
 }
@@ -259,7 +259,7 @@ struct_alloc(argc, argv, klass)
     st->ptr = ALLOC_N(VALUE, n);
     rb_mem_clear(st->ptr, n);
     st->len = n;
-    rb_obj_call_init2((VALUE)st, argc, argv);
+    rb_obj_call_init((VALUE)st, argc, argv);
 
     return (VALUE)st;
 }

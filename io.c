@@ -1208,7 +1208,7 @@ rb_file_open(fname, mode)
     fptr->mode = rb_io_mode_flags(mode);
     fptr->f = rb_fopen(fname, mode);
     fptr->path = strdup(fname);
-    rb_obj_call_init((VALUE)port);
+    rb_obj_call_init((VALUE)port, 0, 0);
 
     return (VALUE)port;
 }
@@ -1236,7 +1236,7 @@ rb_file_sysopen(fname, flags, mode)
     fptr->mode = rb_io_mode_flags2(flags);
     fptr->f = rb_fdopen(fd, m);
     fptr->path = strdup(fname);
-    rb_obj_call_init((VALUE)port);
+    rb_obj_call_init((VALUE)port, 0, 0);
 
     return (VALUE)port;
 #endif
@@ -1351,7 +1351,7 @@ pipe_open(pname, mode)
 	    fptr->f2 = f;
 	    rb_io_unbuffered(fptr);
 	}
-	rb_obj_call_init((VALUE)port);
+	rb_obj_call_init((VALUE)port, 0, 0);
 	return (VALUE)port;
     }
 #else
@@ -1439,7 +1439,7 @@ pipe_open(pname, mode)
 	    fptr->finalize = pipe_finalize;
 	    pipe_add_fptr(fptr);
 #endif
-	    rb_obj_call_init((VALUE)port);
+	    rb_obj_call_init((VALUE)port, 0, 0);
 	    return (VALUE)port;
 	}
     }
@@ -1504,7 +1504,7 @@ rb_file_s_open(argc, argv, klass)
     }
 
     RBASIC(file)->klass = klass;
-    rb_obj_call_init(file);
+    rb_obj_call_init(file, 0, 0);
     if (rb_iterator_p()) {
 	return rb_ensure(rb_yield, file, rb_io_close, file);
     }
@@ -2016,7 +2016,7 @@ prep_stdio(f, mode, klass)
     MakeOpenFile(io, fp);
     fp->f = f;
     fp->mode = mode;
-    rb_obj_call_init((VALUE)io);
+    rb_obj_call_init((VALUE)io, 0, 0);
 
     return (VALUE)io;
 }
@@ -2655,6 +2655,13 @@ rb_io_s_pipe()
 #endif
 }
 
+static VALUE
+rb_f_pipe()
+{
+    rb_warn("pipe is obsolete; use IO::pipe instead");
+    return rb_io_s_pipe();
+}
+
 struct foreach_arg {
     int argc;
     VALUE sep;
@@ -2954,7 +2961,7 @@ Init_IO()
     rb_define_global_function("readlines", rb_f_readlines, -1);
 
     rb_define_global_function("`", rb_f_backquote, 1);
-    rb_define_global_function("pipe", rb_io_s_pipe, 0);
+    rb_define_global_function("pipe", rb_f_pipe, 0);
 
     rb_define_global_function("p", rb_f_p, -1);
     rb_define_method(rb_mKernel, "display", rb_obj_display, -1);

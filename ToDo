@@ -20,7 +20,7 @@ Standard Libraries
 
 * String#scanf(?)
 * Object#fmt(?)
-* Integer[num], Float[num] (String[str]??)
+* Integer[num], Float[num] (String[str]?, Array[obj]??)
 * Stream or Port, abstract superclass of IO.
 
 Extension Libraries
@@ -39,6 +39,7 @@ Tools
 
 * extension library maker like XS or SWIG
 * freeze or undump to bundle everything
+* eruby - embedded ruby
 
 Misc
 

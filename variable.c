@@ -246,6 +246,9 @@ char *
 rb_class2name(klass)
     VALUE klass;
 {
+    if (klass == rb_cNilClass) return "nil";
+    if (klass == rb_cTrueClass) return "true";
+    if (klass == rb_cFalseClass) return "false";
     return RSTRING(rb_class_path(klass))->ptr;
 }
 
@@ -384,7 +387,7 @@ readonly_setter(val, id, var)
     ID id;
     void *var;
 {
-    rb_raise(rb_eNameError, "Can't set variable %s", rb_id2name(id));
+    rb_raise(rb_eNameError, "can't set variable %s", rb_id2name(id));
 }
 
 static int
@@ -977,7 +980,7 @@ rb_const_get_at(klass, id)
     if (klass == rb_cObject) {
 	return rb_const_get(klass, id);
     }
-    rb_raise(rb_eNameError, "Uninitialized constant %s::%s",
+    rb_raise(rb_eNameError, "uninitialized constant %s::%s",
 	     RSTRING(rb_class_path(klass))->ptr,
 	     rb_id2name(id));
     return Qnil;		/* not reached */
@@ -1020,11 +1023,11 @@ rb_const_get(klass, id)
 
     /* Uninitialized constant */
     if (klass && klass != rb_cObject)
-	rb_raise(rb_eNameError, "Uninitialized constant %s::%s",
+	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
 		 RSTRING(rb_class_path(klass))->ptr,
 		 rb_id2name(id));
     else {
-	rb_raise(rb_eNameError, "Uninitialized constant %s",rb_id2name(id));
+	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
     }
     return Qnil;		/* not reached */
 }

@@ -508,7 +508,7 @@ rb_singleton_class(obj)
     VALUE obj;
 {
     if (rb_special_const_p(obj)) {
-	rb_raise(rb_eTypeError, "cannot define singleton");
+	rb_raise(rb_eTypeError, "can't define singleton");
     }
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
 	return RBASIC(obj)->klass;
@@ -636,7 +636,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     }
     else if (*p == '\0') {
 	if (argc > i) {
-	    rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)", argc, i);
+	    rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, i);
 	}
     }
     else {

@@ -1530,7 +1530,7 @@ singleton	: var_ref
 			    $$ = $1;
 			}
 		    }
-		| tLPAREN expr opt_nl ')'
+		| '(' expr opt_nl ')'
 		    {
 			switch (nd_type($2)) {
 			  case NODE_STR:
@@ -1541,7 +1541,7 @@ singleton	: var_ref
 			  case NODE_LIT:
 			  case NODE_ARRAY:
 			  case NODE_ZARRAY:
-			    yyerror("Can't define single method for literals.");
+			    yyerror("can't define single method for literals.");
 			  default:
 			    break;
 			}
@@ -1783,7 +1783,9 @@ nextc()
 	    normalize_newline(v);
 	    while (RSTRING(v)->len >= 2 &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
-		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\') {
+		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\' &&
+		   (RSTRING(v)->len == 2 ||
+		    RSTRING(v)->ptr[RSTRING(v)->len-3] != '\\')) {
 		VALUE v2 = (*lex_gets)(lex_input);
 
 		if (!NIL_P(v2)) {
@@ -2386,8 +2388,7 @@ here_document(term, indent)
 	  case 0:
 	    goto error;
 	}
-	if (lex_lastline != line) {
-	    line = lex_lastline;
+	if (lex_p != lex_pend) {
 	    goto retry;
 	}
     }
@@ -2460,10 +2461,6 @@ retry:
 	while ((c = nextc()) != '\n') {
 	    if (c == -1)
 		return 0;
-	    if (c == '\\') {	/* skip a char */
-		c = nextc();
-		if (c == '\n') ruby_sourceline++;
-	    }
 	    if (ismbchar(c)) {
 		int i, len = mbclen(c)-1;
 
@@ -2475,8 +2472,12 @@ retry:
 		    }
 		}
 	    }
-	    else if (c >= 0x80) {
-		if ((c = nextc()) != '\\') {
+	    else if (c == ' ') {
+		if ((c = nextc()) == '\\') {
+		    c = nextc();
+		    if (c == '\n') ruby_sourceline++;
+		}
+		else {
 		    pushback(c);
 		}
 	    }

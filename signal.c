@@ -200,7 +200,7 @@ rb_f_kill(argc, argv)
 	sig = FIX2UINT(argv[0]);
 	if (sig >= NSIG) {
 	    s = rb_id2name(sig);
-	    if (!s) rb_raise(rb_eArgError, "Bad signal");
+	    if (!s) rb_raise(rb_eArgError, "bad signal");
 	    goto str_signal;
 	}
 	break;
@@ -216,7 +216,7 @@ rb_f_kill(argc, argv)
 	    if (strncmp("SIG", s, 3) == 0)
 		s += 3;
 	    if((sig = signm2signo(s)) == 0)
-		rb_raise(rb_eArgError, "Unrecognized signal name `%s'", s);
+		rb_raise(rb_eArgError, "unrecognized signal name `%s'", s);
 
 	    if (negative)
 		sig = -sig;
@@ -438,13 +438,13 @@ trap(arg)
 	    s += 3;
 	sig = signm2signo(s);
 	if (sig == 0 && strcmp(s, "EXIT") != 0)
-	    rb_raise(rb_eArgError, "Invalid signal SIG%s", s);
+	    rb_raise(rb_eArgError, "invalid signal SIG%s", s);
     }
     else {
 	sig = NUM2INT(arg->sig);
     }
     if (sig < 0 || sig > NSIG) {
-	rb_raise(rb_eArgError, "Invalid signal no %d", sig);
+	rb_raise(rb_eArgError, "invalid signal number (%d)", sig);
     }
 #if defined(USE_THREAD) && defined(HAVE_SETITIMER) && !defined(__BOW__)
     if (sig == SIGVTALRM) {

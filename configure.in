@@ -169,7 +169,7 @@ AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(stdlib.h unistd.h limits.h sys/file.h sys/ioctl.h pwd.h \
 		 sys/select.h sys/time.h sys/times.h sys/param.h sys/wait.h\
-		 syscall.h a.out.h string.h utime.h memory.h direct.h)
+		 syscall.h a.out.h string.h utime.h memory.h direct.h fnmatch.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T

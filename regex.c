@@ -17,6 +17,9 @@
    Boston, MA 02111-1307, USA.  */
 /* Multi-byte extension added May, 1993 by t^2 (Takahiro Tanimoto)
    Last change: May 21, 1993 by t^2  */
+/* removed gapped buffer support, multiple syntax support by matz <matz@nts.co.jp> */
+/* Perl5 extension added by matz <matz@caelum.co.jp> */
+/* UTF-8 extension added Jan 16 1999 by Yoshida Masato  <yoshidam@tau.bekkoame.ne.jp> */
 
 #include "config.h"
 #ifdef RUBY_PLATFORM

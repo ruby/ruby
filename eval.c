@@ -2527,7 +2527,7 @@ rb_eval(self, node)
 
       case NODE_ATTRSET:
 	if (ruby_frame->argc != 1)
-	    rb_raise(rb_eArgError, "Wrong # of arguments(%d for 1)",
+	    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",
 		     ruby_frame->argc);
 	result = rb_ivar_set(self, node->nd_vid, ruby_frame->argv[0]);
 	break;
@@ -2595,18 +2595,11 @@ rb_eval(self, node)
 	    VALUE klass;
 	    NODE *body = 0;
 
-	    if (FIXNUM_P(recv)) {
-		rb_raise(rb_eTypeError, "Can't define method \"%s\" for Fixnum",
-			 rb_id2name(node->nd_mid));
-	    }
-	    if (NIL_P(recv)) {
-		rb_raise(rb_eTypeError, "Can't define method \"%s\" for nil",
-			 rb_id2name(node->nd_mid));
-	    }
 	    if (rb_special_const_p(recv)) {
 		rb_raise(rb_eTypeError,
-			 "Can't define method \"%s\" for special constants",
-			 rb_id2name(node->nd_mid));
+			 "can't define method \"%s\" for %s",
+			 rb_id2name(node->nd_mid),
+			 rb_class2name(CLASS_OF(recv)));
 	    }
 
 	    if (rb_safe_level() >= 4 && !FL_TEST(recv, FL_TAINT)) {
@@ -2729,7 +2722,7 @@ rb_eval(self, node)
 		klass = rb_define_class_id(node->nd_cname, super);
 		rb_const_set(ruby_class, node->nd_cname, klass);
 		rb_set_class_path(klass,ruby_class,rb_id2name(node->nd_cname));
-		rb_obj_call_init(klass);
+		rb_obj_call_init(klass, 0, 0);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);
@@ -2769,7 +2762,7 @@ rb_eval(self, node)
 		module = rb_define_module_id(node->nd_cname);
 		rb_const_set(ruby_class, node->nd_cname, module);
 		rb_set_class_path(module,ruby_class,rb_id2name(node->nd_cname));
-		rb_obj_call_init(module);
+		rb_obj_call_init(module, 0, 0);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(module, ruby_wrapper);
@@ -2785,14 +2778,9 @@ rb_eval(self, node)
 	    VALUE klass;
 
 	    klass = rb_eval(self, node->nd_recv);
-	    if (FIXNUM_P(klass)) {
-		rb_raise(rb_eTypeError, "No virtual class for Fixnums");
-	    }
-	    if (NIL_P(klass)) {
-		rb_raise(rb_eTypeError, "No virtual class for nil");
-	    }
 	    if (rb_special_const_p(klass)) {
-		rb_raise(rb_eTypeError, "No virtual class for special constants");
+		rb_raise(rb_eTypeError, "no virtual class for %s",
+			 rb_class2name(CLASS_OF(klass)));
 	    }
 	    if (FL_TEST(CLASS_OF(klass), FL_SINGLETON)) {
 		rb_clear_cache();
@@ -3607,7 +3595,7 @@ call_cfunc(func, recv, len, argc, argv)
     VALUE *argv;
 {
     if (len >= 0 && argc != len) {
-	rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)",
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)",
 		 argc, len);
     }
 
@@ -3811,7 +3799,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
 		    i = node->nd_cnt;
 		    if (i > argc) {
-			rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)",
+			rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)",
 				 argc, i);
 		    }
 		    if (node->nd_rest == -1) {
@@ -3823,7 +3811,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 			    optnode = optnode->nd_next;
 			}
 			if (opt > 0) {
-			    rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)",
+			    rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)",
 				     argc, argc-opt);
 			}
 		    }
@@ -3937,8 +3925,13 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	return rb_undefined(recv, mid, argc, argv, CSTAT_PRIV);
 
     /* self must be kind of a specified form for private method */
-    if ((noex & NOEX_PROTECTED) && !rb_obj_is_kind_of(ruby_frame->self, klass))
-	return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
+    if ((noex & NOEX_PROTECTED)) {
+	VALUE defined_class = klass;
+	while (TYPE(defined_class) == T_ICLASS)
+	    defined_class = RBASIC(defined_class)->klass;
+	if (!rb_obj_is_kind_of(ruby_frame->self, defined_class))
+	    return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
+    }
 
     return rb_call0(klass, recv, id, argc, argv, body, noex & NOEX_UNDEF);
 }
@@ -4368,7 +4361,7 @@ rb_obj_instance_eval(argc, argv, self)
 	if (argc > 2) line = NUM2INT(argv[2]);
     }
     else {
-	rb_raise(rb_eArgError, "Wrong # of arguments: %s(src) or %s{..}",
+	rb_raise(rb_eArgError, "wrong # of arguments: %s(src) or %s{..}",
 		 rb_id2name(ruby_frame->last_func),
 		 rb_id2name(ruby_frame->last_func));
     }
@@ -4407,7 +4400,7 @@ rb_mod_module_eval(argc, argv, mod)
 	if (argc > 2) line = NUM2INT(argv[2]);
     }
     else {
-	rb_raise(rb_eArgError, "Wrong # of arguments: %s(src) or %s{..}",
+	rb_raise(rb_eArgError, "wrong # of arguments: %s(src) or %s{..}",
 		 rb_id2name(ruby_frame->last_func),
 		 rb_id2name(ruby_frame->last_func));
     }
@@ -4921,16 +4914,7 @@ rb_mod_include(argc, argv, module)
 }
 
 void
-rb_obj_call_init(obj)
-    VALUE obj;
-{
-    PUSH_ITER(rb_iterator_p()?ITER_PRE:ITER_NOT);
-    rb_funcall2(obj, init, ruby_frame->argc, ruby_frame->argv);
-    POP_ITER();
-}
-
-void
-rb_obj_call_init2(obj, argc, argv)
+rb_obj_call_init(obj, argc, argv)
     VALUE obj;
     int argc;
     VALUE *argv;
@@ -4952,7 +4936,7 @@ rb_class_new_instance(argc, argv, klass)
 	rb_raise(rb_eTypeError, "can't create instance of virtual class");
     }
     obj = rb_obj_alloc(klass);
-    rb_obj_call_init(obj);
+    rb_obj_call_init(obj, argc, argv);
 
     return obj;
 }
@@ -5420,7 +5404,7 @@ proc_s_new(klass)
 
     scope_dup(data->scope);
     proc_save_safe_level(proc);
-    rb_obj_call_init(proc);
+    rb_obj_call_init(proc, 0, 0);
 
     return proc;
 }

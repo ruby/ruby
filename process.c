@@ -117,7 +117,7 @@ rb_waitpid(pid, flags, st)
     }
 
     if (flags) {
-	rb_raise(rb_eArgError, "Can't do waitpid with flags");
+	rb_raise(rb_eArgError, "can't do waitpid with flags");
     }
 
     for (;;) {
