@@ -452,7 +452,7 @@ module DRb
     # when the unmarshalling failed.  It is used to determine the
     # name of the unmarshalled object.
     def initialize(err, buf)
-      case err
+      case err.to_s
       when /uninitialized constant (\S+)/
 	@name = $1
       when /undefined class\/module (\S+)/
@@ -593,7 +593,7 @@ module DRb
       msg = load(stream)
       argc = load(stream)
       raise ArgumentError, 'too many arguments' if @argc_limit < argc
-      argv = Array.new(argc, nil)
+      argv = Values.new(argc, nil)
       argc.times do |n|
 	argv[n] = load(stream)
       end
@@ -1392,7 +1392,7 @@ module DRb
           @result = perform_without_block
         end
 	@succ = true
-	if @msg_id == :to_ary && @result.class == Array
+	if @msg_id == :to_ary && @result.class == Values
 	  @result = DRbArray.new(@result) 
 	end
 	return @succ, @result

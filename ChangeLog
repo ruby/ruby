@@ -1,3 +1,14 @@
+Fri Apr 16 12:38:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/drb/drb.rb (DRb::DRbUnknown::initialize): Exception#to_str is
+	  deprecated.
+
+	* lib/drb/drb.rb (DRb::DRbServer::InvokeMethod::perform): multiple
+	  value class changed.
+
+	* lib/drb/invokemethod.rb (DRb::DRbServer::InvokeMethod18Mixin::block_yield):
+	  ditto.
+
 Fri Apr 16 08:27:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: skip linking when libraries to be preloaded not
