@@ -58,28 +58,30 @@ class TestDatetime < Test::Unit::TestCase
   end
 
   def test_datetime
-    d1 = DateTime.now
-    d2 = @client.now(d1)
-    assert_equal(d2.year, d1.year)
-    assert_equal(d2.month, d1.month)
-    assert_equal(d2.day, d1.day + 1)
-    assert_equal(d2.hour, d1.hour)
-    assert_equal(d2.min, d1.min)
-    assert_equal(d2.sec, d1.sec)
-    assert_equal(d2.sec, d1.sec)
+    d = DateTime.now
+    d1 = d + 1
+    d2 = @client.now(d)
+    assert_equal(d1.year, d2.year)
+    assert_equal(d1.month, d2.month)
+    assert_equal(d1.day, d2.day)
+    assert_equal(d1.hour, d2.hour)
+    assert_equal(d1.min, d2.min)
+    assert_equal(d1.sec, d2.sec)
+    assert_equal(d1.sec, d2.sec)
   end
 
   def test_time
     d = DateTime.now
     t = Time.gm(d.year, d.month, d.day, d.hour, d.min, d.sec)
-    d2 = d + 1
-    t2 = @client.now(t)
-    assert_equal(d2.year, t2.year)
-    assert_equal(d2.month, t2.month)
-    assert_equal(d2.day, t2.day)
-    assert_equal(d2.hour, t2.hour)
-    assert_equal(d2.min, t2.min)
-    assert_equal(d2.sec, t2.sec)
+    d1 = d + 1
+    d2 = @client.now(t)
+    assert_equal(d1.year, d2.year)
+    assert_equal(d1.month, d2.month)
+    assert_equal(d1.day, d2.day)
+    assert_equal(d1.hour, d2.hour)
+    assert_equal(d1.min, d2.min)
+    assert_equal(d1.sec, d2.sec)
+    assert_equal(d1.sec, d2.sec)
   end
 end
 
