@@ -543,7 +543,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (skip-chars-backward " \t")
 	    (let ((pos (point)))
 	      (while (and (re-search-backward "#" bol t)
-			  (= (char-before) ??))
+			  (eq (char-before) ??))
 		(forward-char -1))
 	      (skip-chars-backward " \t")
 	      (and
@@ -720,12 +720,20 @@ An end of a defun is found by moving forward from the beginning of one."
 	  ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
 	  ("^\\(=\\)end\\(\\s \\|$\\)" 1 (7 . nil))))
 
-  (put 'ruby-mode 'font-lock-defaults
-       '((ruby-font-lock-keywords)
-         nil nil nil
-         beginning-of-line
-         (font-lock-syntactic-keywords
-          . ruby-font-lock-syntactic-keywords)))
+  (cond ((featurep 'xemacs)
+	 (put 'ruby-mode 'font-lock-defaults
+	      '((ruby-font-lock-keywords)
+		nil nil nil
+		beginning-of-line
+		(font-lock-syntactic-keywords
+		 . ruby-font-lock-syntactic-keywords))))
+	(t
+	 (add-hook 'ruby-mode-hook
+	    '(lambda ()
+	       (make-local-variable 'font-lock-defaults)
+	       (setq font-lock-defaults '((ruby-font-lock-keywords) nil nil))
+	       (setq font-lock-keywords ruby-font-lock-keywords)
+	       (setq font-lock-syntactic-keywords ruby-font-lock-syntactic-keywords)))))
 
   (defun ruby-font-lock-docs (limit)
     (if (re-search-forward "^=begin\\(\\s \\|$\\)" limit t)
