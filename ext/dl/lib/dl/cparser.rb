@@ -39,7 +39,7 @@ module DL
       tymap ||= {}
       signature = signature.gsub(/\s+/, " ").strip
       case signature
-      when /^([\d\w\*_\s]+)\(([\d\w\*_\s\,\[\]]*)\)$/
+      when /^([\d\w@\*_\s]+)\(([\d\w\*_\s\,\[\]]*)\)$/
         ret = $1
         args = $2
         ret = ret.split(/\s+/)

@@ -125,64 +125,109 @@ rb_dlhandle_to_i(VALUE self)
 VALUE
 rb_dlhandle_sym(VALUE self, VALUE sym)
 {
-  void (*func)();
-  struct sym_data *data;
-  struct dl_handle *dlhandle;
-  void *handle;
-  const char *name;
-  const char *err;
+    void (*func)();
+    struct sym_data *data;
+    struct dl_handle *dlhandle;
+    void *handle;
+    const char *name;
+    const char *err;
 
-  rb_secure(2);
+    rb_secure(2);
 
-  if( sym == Qnil ){
+    if( sym == Qnil ){
 #if defined(RTLD_NEXT)
-    name = RTLD_NEXT;
+	name = RTLD_NEXT;
 #else
-    name = NULL;
+	name = NULL;
 #endif
-  }
-  else{
-    name = StringValuePtr(sym);
-  }
-
-
-  Data_Get_Struct(self, struct dl_handle, dlhandle);
-  if( ! dlhandle->open ){
-    rb_raise(rb_eDLError, "Closed handle.");
-  }
-  handle = dlhandle->ptr;
-
-  func = dlsym(handle, name);
-#if defined(HAVE_DLERROR)
-  if( !func && (err = dlerror()) )
-#else
-  if( !func )
-#endif
-  {
-#if defined(__CYGWIN__) || defined(WIN32) || defined(__MINGW32__)
-    {
-      int  len = strlen(name);
-      char *name_a = (char*)xmalloc(len+2);
-      strcpy(name_a, name);
-      name_a[len]   = 'A';
-      name_a[len+1] = '\0';
-      func = dlsym(handle, name_a);
-      xfree(name_a);
-#if defined(HAVE_DLERROR)
-      if( !func && (err = dlerror()) )
-#else
-      if( !func )
-#endif
-      {
-	rb_raise(rb_eDLError, "Unknown symbol \"%sA\".", name);
-      }
     }
-#else
-    rb_raise(rb_eDLError, "Unknown symbol \"%s\".", name);
-#endif
-  }
+    else{
+	name = StringValuePtr(sym);
+    }
 
-  return PTR2NUM(func);
+
+    Data_Get_Struct(self, struct dl_handle, dlhandle);
+    if( ! dlhandle->open ){
+	rb_raise(rb_eDLError, "Closed handle.");
+    }
+    handle = dlhandle->ptr;
+
+    func = dlsym(handle, name);
+#if defined(HAVE_DLERROR)
+    if( !func && (err = dlerror()) )
+#else
+    if( !func )
+#endif
+    {
+#if defined(__CYGWIN__) || defined(WIN32) || defined(__MINGW32__)
+	{
+	    int  len = strlen(name);
+	    int  i;
+	    char *name_a = (char*)xmalloc(len+2);
+	    strcpy(name_a, name);
+	    name_a[len]   = 'A';
+	    name_a[len+1] = '\0';
+	    func = dlsym(handle, name_a);
+	    xfree(name_a);
+#if defined(HAVE_DLERROR)
+	    if( !func && (err = dlerror()) )
+#else
+	    if( !func )
+#endif
+            {
+		for( i = 0; i < 256; i += 4 ){
+		    int  len = strlen(name);
+		    char *name_n = (char*)xmalloc(len+5);
+		    sprintf(name_n, "%s@%d%c", name, i, 0);
+		    func = dlsym(handle, name_n);
+		    xfree(name_n);
+#if defined(HAVE_DLERROR)
+		    if( func || !(err = dlerror()) )
+#else
+		    if( func )
+#endif
+                    {
+			break;
+		    }
+		}
+#if defined(HAVE_DLERROR)
+		if( !func && (err = dlerror()) )
+#else
+		if( !func )
+#endif
+		{
+		    rb_raise(rb_eDLError, "Unknown symbol \"%s\".", name);
+		}
+	    }
+	}
+#else
+	for( i = 0; i < 256; i += 4 ){
+	    int  len = strlen(name);
+	    char *name_n = (char*)xmalloc(len+4);
+	    sprintf(name_n, "%s@%d", name, i);
+	    func = dlsym(handle, name_n);
+	    xfree(name_n);
+#if defined(HAVE_DLERROR)
+	    if( func || !(err = dlerror()) )
+#else
+            if( func )
+#endif
+	    {
+		break;
+	    }
+	}
+#if defined(HAVE_DLERROR)
+	if( !func && (err = dlerror()) )
+#else
+        if( !func )
+#endif
+        {
+	    rb_raise(rb_eDLError, "Unknown symbol \"%s\".", name);
+	}
+#endif
+    }
+
+    return PTR2NUM(func);
 }
 
 void

@@ -27,7 +27,7 @@ module DL
 
     def call(*args, &block)
       funcs = []
-      args = wrap_args(args, nil, funcs, &block)
+      args = wrap_args(args, @stack.types, funcs, &block)
       r = @cfunc.call(@stack.pack(args))
       funcs.each{|f| f.unbind_at_call()}
       return wrap_result(r)
@@ -59,7 +59,7 @@ module DL
             end
           }
           r = block.call(*ary)
-          wrap_arg(r, nil, [])
+          wrap_arg(r, @cfunc.ctype, [])
         }
         case @cfunc.calltype
         when :cdecl

@@ -50,6 +50,13 @@ module DL
         case arg
         when CPtr
           return arg.to_i
+        when IO
+          case ty
+          when TYPE_VOIDP
+            return CPtr[arg].to_i
+          else
+            return arg.to_i
+          end
         when Function
           if( block )
             arg.bind_at_call(&block)

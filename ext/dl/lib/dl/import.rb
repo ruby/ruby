@@ -113,9 +113,10 @@ module DL
     private :parse_bind_options
 
     def extern(signature, *opts)
-      name, ctype, argtype = parse_signature(signature, @type_alias)
+      symname, ctype, argtype = parse_signature(signature, @type_alias)
       opt = parse_bind_options(opts)
-      f = import_function(name, ctype, argtype, opt[:call_type])
+      f = import_function(symname, ctype, argtype, opt[:call_type])
+      name = symname.gsub(/@.+/,'')
       @func_map[name] = f
       #define_method(name){|*args,&block| f.call(*args,&block)}
       module_eval(<<-EOS)
