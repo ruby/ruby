@@ -17,22 +17,22 @@ You can redistribute it and/or modify it under either the terms of the GPL
        b) use the modified software only within your corporation or
           organization.
 
-       c) rename any non-standard executables so the names do not conflict
-	  with standard executables, which must also be provided.
+       c) give non-standard binaries non-standard names, with
+          instructions on where to get the original software distribution.
 
        d) make other distribution arrangements with the author.
 
-  3. You may distribute the software in object code or executable
-     form, provided that you do at least ONE of the following:
+  3. You may distribute the software in object code or binary form,
+     provided that you do at least ONE of the following:
 
-       a) distribute the executables and library files of the software,
+       a) distribute the binaries and library files of the software,
 	  together with instructions (in the manual page or equivalent)
 	  on where to get the original distribution.
 
        b) accompany the distribution with the machine-readable source of
 	  the software.
 
-       c) give non-standard executables non-standard names, with
+       c) give non-standard binaries non-standard names, with
           instructions on where to get the original software distribution.
 
        d) make other distribution arrangements with the author.

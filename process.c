@@ -588,29 +588,36 @@ void
 rb_syswait(pid)
     int pid;
 {
+    static int overriding;
     RETSIGTYPE (*hfunc)_((int)), (*qfunc)_((int)), (*ifunc)_((int));
     int status;
-    int i;
+    int i, hooked = Qfalse;
 
+    if (!overriding) {
 #ifdef SIGHUP
-    hfunc = signal(SIGHUP, SIG_IGN);
+	hfunc = signal(SIGHUP, SIG_IGN);
 #endif
 #ifdef SIGQUIT
-    qfunc = signal(SIGQUIT, SIG_IGN);
+	qfunc = signal(SIGQUIT, SIG_IGN);
 #endif
-    ifunc = signal(SIGINT, SIG_IGN);
+	ifunc = signal(SIGINT, SIG_IGN);
+	overriding = Qtrue;
+	hooked = Qtrue;
+    }
 
     do {
-	i = rb_waitpid(pid, 0, &status);
+	i = rb_waitpid(pid, &status, 0);
     } while (i == -1 && errno == EINTR);
 
+    if (hooked) {
 #ifdef SIGHUP
-    signal(SIGHUP, hfunc);
+	signal(SIGHUP, hfunc);
 #endif
 #ifdef SIGQUIT
-    signal(SIGQUIT, qfunc);
+	signal(SIGQUIT, qfunc);
 #endif
-    signal(SIGINT, ifunc);
+	signal(SIGINT, ifunc);
+    }
 }
 
 static VALUE

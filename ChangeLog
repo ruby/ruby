@@ -2,14 +2,15 @@ Mon Feb 25 13:32:13 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/shell.rb (Shell::expand_path): relative to @cwd.
 
-Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
-
-        * lib/time.rb: fix unit tests before Unix Epoch.
-
 Sun Feb 24 17:20:50 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/*/*.h: Merge from rough.
 	  - Avoid namespace pollution. (MD5_* -> rb_Digest_MD5_*, etc.)
+
+Sat Feb 23 21:12:13 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (rb_syswait): thread kludge; should be fixed to
+	  support native thread.
 
 Fri Feb 22 22:00:08 2002  Minero Aoki  <aamine@loveruby.net>
 
@@ -352,6 +353,10 @@ Mon Jan  7 14:38:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (convert_type): backport from 1.7 to avoid NameError
 	  messages with -d option.
+
+Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
+
+        * lib/time.rb: fix unit tests before Unix Epoch.
 
 Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
 
