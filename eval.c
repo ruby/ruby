@@ -3982,7 +3982,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
 		massign(self, block->var, val, pcall);
 	    }
 	    else {
-		if (avalue) val = avalue_to_svalue(val);
+		if (avalue) val = avalue_to_mrhs(val);
 		if (val == Qundef) val = Qnil;
 		assign(self, block->var, val, pcall);
 	    }

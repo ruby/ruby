@@ -1055,7 +1055,10 @@ ruby_set_argv(argc, argv)
 #endif
     rb_ary_clear(rb_argv);
     for (i=0; i < argc; i++) {
-	rb_ary_push(rb_argv, rb_tainted_str_new2(argv[i]));
+	VALUE arg = rb_tainted_str_new2(argv[i]);
+
+	OBJ_FREEZE(arg);
+	rb_ary_push(rb_argv, arg);
     }
 }
 

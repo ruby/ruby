@@ -1,3 +1,10 @@
+Tue Mar 25 12:24:15 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): call avalue_to_mrhs() to assign block
+	  parameter |a|. [ruby-dev:19897]
+
+	* ruby.c (ruby_set_argv): freeze argument strings.
+
 Tue Mar 25 12:01:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_initialize): should check rb_secure(4).
