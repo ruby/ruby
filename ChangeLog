@@ -1,3 +1,7 @@
+Tue Jun  4 18:28:37 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/extconf.rb: The IPv6 stack of Cygwin is still incomplete.
+
 Tue Jun  4 00:45:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/socket/addrinfo.h: typo.

@@ -62,7 +62,8 @@ else
 end
 
 $ipv6 = false
-if enable_config("ipv6", true)
+default_ipv6 = /cygwin/ !~ RUBY_PLATFORM
+if enable_config("ipv6", default_ipv6)
   if try_link(<<EOF)
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -160,7 +161,7 @@ end
 #ifdef _WIN32
 # include <windows.h>
 # include <winsock.h>
-#endif
+#else
 # include <sys/types.h>
 # include <netdb.h>
 # include <string.h>
@@ -219,7 +220,7 @@ EOF
     $CFLAGS="-DHAVE_SA_LEN "+$CFLAGS
 end
 
-have_header("netinet/tcp.h") if not /cygwin/ === RUBY_PLATFORM # for cygwin 1.1.5
+have_header("netinet/tcp.h") if not /cygwin/ =~ RUBY_PLATFORM # for cygwin 1.1.5
 have_header("netinet/udp.h")
 
 have_struct_member('struct msghdr', 'msg_control', header=['sys/types.h', 'sys/socket.h'])
