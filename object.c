@@ -1171,7 +1171,7 @@ sym_to_sym(sym)
 
 /***********************************************************************
  *
- * Document-class:  Module
+ * Document-class: Module
  *
  *  A <code>Module</code> is a collection of methods and constants. The
  *  methods in a module may be instance methods or module methods.
@@ -1195,6 +1195,15 @@ sym_to_sym(sym)
  *     Mod.constants          #=> ["E", "PI", "CONST"]
  *     Mod.instance_methods   #=> ["meth"]
  *     
+ */
+
+/*
+ * call-seq:
+ *   mod.to_s   => string
+ *
+ * Return a string representing this module or class. For basic
+ * classes and modules, this is the name. For singletons, we
+ * show information on the thing we're attached to as well.
  */
 
 static VALUE
@@ -2395,30 +2404,28 @@ VALUE ruby_top_self;
  *     
  *     Creating a new Name
  *     
- * Classes, modules, and objects are interrelated. In the diagram
- * that follows, the arrows represent inheritance, and the
- * parentheses meta-classes. All metaclasses are instances 
- * of the class `Class'.
+ *  Classes, modules, and objects are interrelated. In the diagram
+ *  that follows, the arrows represent inheritance, and the
+ *  parentheses meta-classes. All metaclasses are instances 
+ *  of the class `Class'.
  *
- *                           +------------------+
- *                           |                  |
- *             Object---->(Object)              |
- *              ^  ^        ^  ^                |
- *              |  |        |  |                |
- *              |  |  +-----+  +---------+      |
- *              |  |  |                  |      |
- *              |  +-----------+         |      |
- *              |     |        |         |      |
- *       +------+     |     Module--->(Module)  |
- *       |            |        ^         ^      |
- *  OtherClass-->(OtherClass)  |         |      |
- *                             |         |      |
- *                           Class---->(Class)  |
- *                             ^                |
- *                             |                |
- *                             +----------------+
- *
- *
+ *                            +------------------+
+ *                            |                  |
+ *              Object---->(Object)              |
+ *               ^  ^        ^  ^                |
+ *               |  |        |  |                |
+ *               |  |  +-----+  +---------+      |
+ *               |  |  |                  |      |
+ *               |  +-----------+         |      |
+ *               |     |        |         |      |
+ *        +------+     |     Module--->(Module)  |
+ *        |            |        ^         ^      |
+ *   OtherClass-->(OtherClass)  |         |      |
+ *                              |         |      |
+ *                            Class---->(Class)  |
+ *                              ^                |
+ *                              |                |
+ *                              +----------------+
  */
 
 

@@ -12,7 +12,7 @@ module RDoc
   class SimpleParser
     
     # prepare to parse a plain file
-    def initialize(top_level, file_name, body, options)
+    def initialize(top_level, file_name, body, options, stats)
       
       preprocess = SM::PreProcess.new(file_name, options.rdoc_include)
       

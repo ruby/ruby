@@ -197,7 +197,6 @@ module RI
       end
     end
 
-    ######################################################################
 
     def display_flow(flow)
       flow.each do |f|
@@ -207,6 +206,7 @@ module RI
   end
   
   
+  ######################################################################
   # Handle text with attributes. We're a base class: there are
   # different presentation classes (one, for example, uses overstrikes
   # to handle bold and underlinig, while another using ANSI escape
@@ -278,27 +278,30 @@ module RI
       return unless txt && !txt.empty?
 
       txt = add_attributes_to(txt)
+      next_prefix = prefix.tr("^ ", " ")
+      linelen -= prefix.size
 
       line = []
 
       until txt.empty?
         word = txt.next_word
-        if word.size + line.size > linelen - @indent.size
-          write_attribute_text(line)
+        if word.size + line.size > linelen
+          write_attribute_text(prefix, line)
+          prefix = next_prefix
           line = []
         end
         line.concat(word)
       end
 
-      write_attribute_text(line) if line.length > 0
+      write_attribute_text(prefix, line) if line.length > 0
     end
 
     protected
 
     # overridden in specific formatters
 
-    def write_attribute_text(line)
-      print @indent
+    def write_attribute_text(prefix, line)
+      print prefix
       line.each do |achar|
         print achar.char
       end
@@ -340,8 +343,8 @@ module RI
 
     BS = "\C-h"
 
-    def write_attribute_text(line)
-      print @indent
+    def write_attribute_text(prefix, line)
+      print prefix
       line.each do |achar|
         attr = achar.attr
         if (attr & (ITALIC+CODE)) != 0
@@ -371,15 +374,13 @@ module RI
 
   class AnsiFormatter < AttributeFormatter
 
-    BS = "\C-h"
-
     def initialize(*args)
       print "\033[0m"
       super
     end
 
-    def write_attribute_text(line)
-      print @indent
+    def write_attribute_text(prefix, line)
+      print prefix
       curr_attr = 0
       line.each do |achar|
         attr = achar.attr

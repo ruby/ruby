@@ -100,6 +100,12 @@ module RI
       "Module"
     end
 
+    # the 'ClassDescription' subclass overrides this
+    # to format up the name of a parent
+    def superclass_string
+      nil
+    end
+
     private
 
     def merge(into, from)
@@ -115,6 +121,14 @@ module RI
 
     def display_name
       "Class"
+    end
+
+    def superclass_string
+      if @superclass && @superclass != "Object"
+        @superclass
+      else
+        nil
+      end
     end
   end
 

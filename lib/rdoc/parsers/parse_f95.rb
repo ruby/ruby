@@ -32,8 +32,9 @@ module RDoc
     parse_files_matching(/\.(f9(0|5)|F)$/)
     
     # prepare to parse a Fortran 95 file
-    def initialize(top_level, file_name, body, options)
+    def initialize(top_level, file_name, body, options, stats)
       @body = body
+      @stats = stats
       @options = options
       @top_level = top_level
       @progress = $stderr unless options.quiet

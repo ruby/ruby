@@ -31,6 +31,27 @@ require 'ftools'
 
 module RDoc
 
+  # Name of the dotfile that contains the description of files to be
+  # processed in the current directory
+  DOT_DOC_FILENAME = ".document"
+
+  # Simple stats collector
+  class Stats
+    attr_accessor :num_files, :num_classes, :num_modules, :num_methods
+    def initialize
+      @num_files = @num_classes = @num_modules = @num_methods = 0
+      @start = Time.now
+    end
+    def print
+      puts "Files:   #@num_files"
+      puts "Classes: #@num_classes"
+      puts "Modules: #@num_modules"
+      puts "Methods: #@num_methods"
+      puts "Elapsed: " + sprintf("%0.3fs", Time.now - @start)
+    end
+  end
+
+
   # Exception thrown by any rdoc error. Only the #message part is
   # of use externally.
 
@@ -110,25 +131,40 @@ module RDoc
     end
     
 
+    # The .document file contains a list of file and directory name
+    # patterns, representing candidates for documentation. It may
+    # also contain comments (starting with '#')
+    def parse_dot_doc_file(in_dir, filename, options)
+      # read and strip comments
+      patterns = File.read(filename).gsub(/#.*/, '')
+
+      result = []
+
+      patterns.split.each do |patt|
+        candidates = Dir.glob(File.join(in_dir, patt))
+        result.concat(normalized_file_list(options,  candidates))
+      end
+      result
+    end
+
+
     # Given a list of files and directories, create a list
     # of all the Ruby files they contain. 
     
-    def normalized_file_list(options, *relative_files)
+    def normalized_file_list(options, relative_files)
       file_list = []
 
       relative_files.each do |rel_file_name|
-
         case type = File.stat(rel_file_name).ftype
         when "file"
           file_list << rel_file_name
         when "directory"
           next if options.exclude && options.exclude =~ rel_file_name
-          Find.find(rel_file_name) do |fn|
-            next if options.exclude && options.exclude =~ fn
-            next unless ParserFactory.can_parse(fn)
-            next unless File.file?(fn)
-            
-            file_list << fn.sub(%r{\./}, '')
+          dot_doc = File.join(rel_file_name, DOT_DOC_FILENAME)
+          if File.file?(dot_doc)
+            file_list.concat(parse_dot_doc_file(rel_file_name, dot_doc, options))
+          else
+            file_list.concat(list_files_in_directory(rel_file_name, options))
           end
         else
           raise RDocError.new("I can't deal with a #{type} #{rel_file_name}")
@@ -136,6 +172,16 @@ module RDoc
       end
       file_list
     end
+
+    # Return a list of the files to be processed in
+    # a directory. We know that this directory doesn't have
+    # a .document file, so we're looking for real files. However
+    # we may well contain subdirectories which must
+    # be tested for .document files
+    def list_files_in_directory(dir, options)
+      normalized_file_list(options, Dir.glob(File.join(dir, "*")))
+    end
+
 
     # Parse each file on the command line, recursively entering
     # directories
@@ -147,7 +193,7 @@ module RDoc
       files = options.files
       files = ["."] if files.empty?
 
-      file_list = normalized_file_list(options, *files)
+      file_list = normalized_file_list(options, files)
 
       file_list.each do |fn|
         $stderr.printf("\n%35s: ", File.basename(fn)) unless options.quiet
@@ -155,8 +201,9 @@ module RDoc
         content = File.open(fn, "r") {|f| f.read}
 
         top_level = TopLevel.new(fn)
-        parser = ParserFactory.parser_for(top_level, fn, content, options)
+        parser = ParserFactory.parser_for(top_level, fn, content, options, @stats)
         file_info << parser.scan
+        @stats.num_files += 1
       end
 
       file_info
@@ -181,6 +228,8 @@ module RDoc
     def document(argv)
 
       TopLevel::reset
+
+      @stats = Stats.new
 
       options = Options.instance
       options.parse(argv, GENERATORS)
@@ -211,7 +260,11 @@ module RDoc
         ensure
           Dir.chdir(pwd)
         end
+      end
 
+      unless options.quiet
+        puts
+        @stats.print
       end
     end
   end

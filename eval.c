@@ -4181,9 +4181,12 @@ rb_exit(status)
     exit(status);
 }
 
+
 /*
  *  call-seq:
  *     exit(integer=0)
+ *     Kernel::exit(integer=0)
+ *     Process::exit(integer=0)
  *  
  *  Initiates the termination of the Ruby script by raising the
  *  <code>SystemExit</code> exception. This exception may be caught. The
@@ -4203,9 +4206,9 @@ rb_exit(status)
  *     rescued a SystemExit exception
  *     after begin block
  *     
- *  Just prior to termination, Ruby executes any <code>at_exit</code>
- *  functions and runs any object finalizers (see
- *  <code>ObjectSpace</code> beginning on page 434).
+ *  Just prior to termination, Ruby executes any <code>at_exit</code> functions
+ *  (see Kernel::at_exit) and runs any object finalizers (see
+ *  ObjectSpace::define_finalizer).
  *     
  *     at_exit { puts "at_exit function" }
  *     ObjectSpace.define_finalizer("string",  proc { puts "in finalizer" })
@@ -4246,10 +4249,12 @@ rb_f_exit(argc, argv)
     return Qnil;		/* not reached */
 }
 
+
 /*
  *  call-seq:
  *     abort
- *     abort(msg)
+ *     Kernel::abort
+ *     Process::abort
  *  
  *  Terminate execution immediately, effectively by calling
  *  <code>Kernel.exit(1)</code>. If _msg_ is given, it is written

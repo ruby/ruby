@@ -263,6 +263,11 @@ module RDoc
       return self if self.name == name
       res = @modules[name] || @classes[name]
       return res if res
+      find_enclosing_module_named(name)
+    end
+
+    # find a module at a higher scope
+    def find_enclosing_module_named(name)
       parent && parent.find_module_named(name)
     end
 
@@ -316,6 +321,7 @@ module RDoc
           if result
             modules.each do |module_name|
               result = result.find_module_named(module_name)
+              break unless result
             end
           end
         end

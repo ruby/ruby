@@ -73,14 +73,15 @@ module RDoc
     # Find the correct parser for a particular file name. Return a 
     # SimpleParser for ones that we don't know
 
-    def ParserFactory.parser_for(top_level, file_name, body, options)
+    def ParserFactory.parser_for(top_level, file_name, body, options, stats)
       parser_description = can_parse(file_name)
       if parser_description
         parser = parser_description.parser 
       else
         parser = SimpleParser
       end
-      parser.new(top_level, file_name, body, options)
+
+      parser.new(top_level, file_name, body, options, stats)
     end
   end
 end

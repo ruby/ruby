@@ -105,11 +105,39 @@ static VALUE S_Tms;
 #endif
 #endif
 
+
+/*
+ *  call-seq:
+ *     Process.pid   => fixnum
+ *  
+ *  Returns the process id of this process. Not available on all
+ *  platforms.
+ *     
+ *     Process.pid   #=> 27415
+ */
+
 static VALUE
 get_pid()
 {
     return INT2FIX(getpid());
 }
+
+
+/*
+ *  call-seq:
+ *     Process.ppid   => fixnum
+ *  
+ *  Returns the process id of the parent of this process. Always
+ *  returns 0 on NT. Not available on all platforms.
+ *     
+ *     puts "I am #{Process.pid}"
+ *     Process.fork { puts "Dad is #{Process.ppid}" }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     I am 27417
+ *     Dad is 27417
+ */
 
 static VALUE
 get_ppid()
@@ -120,6 +148,37 @@ get_ppid()
     return INT2FIX(getppid());
 #endif
 }
+
+
+/*********************************************************************
+ *
+ * Document-class: Process::Status
+ *
+ *  <code>Process::Status</code> encapsulates the information on the
+ *  status of a running or terminated system process. The built-in
+ *  variable <code>$?</code> is either +nil+ or a
+ *  <code>Process::Status</code> object.
+ *     
+ *     fork { exit 99 }   #=> 26557
+ *     Process.wait       #=> 26557
+ *     $?.class           #=> Process::Status
+ *     $?.to_i            #=> 25344
+ *     $? >> 8            #=> 99
+ *     $?.stopped?        #=> false
+ *     $?.exited?         #=> true
+ *     $?.exitstatus      #=> 99
+ *     
+ *  Posix systems record information on processes using a 16-bit
+ *  integer.  The lower bits record the process status (stopped,
+ *  exited, signaled) and the upper bits possibly contain additional
+ *  information (for example the program's return code in the case of
+ *  exited processes). Pre Ruby 1.8, these bits were exposed directly
+ *  to the Ruby program. Ruby now encapsulates these in a
+ *  <code>Process::Status</code> object. To maximize compatibility,
+ *  however, these objects retain a bit-oriented interface. In the
+ *  descriptions that follow, when we talk about the integer value of
+ *  _stat_, we're referring to this 16 bit value.
+ */
 
 static VALUE rb_cProcStatus;
 VALUE rb_last_status = Qnil;
@@ -133,12 +192,34 @@ last_status_set(status, pid)
     rb_iv_set(rb_last_status, "pid", INT2FIX(pid));
 }
 
+
+/*
+ *  call-seq:
+ *     stat.to_i     => fixnum
+ *     stat.to_int   => fixnum
+ *  
+ *  Returns the bits in _stat_ as a <code>Fixnum</code>. Poking
+ *  around in these bits is platform dependent.
+ *     
+ *     fork { exit 0xab }         #=> 26566
+ *     Process.wait               #=> 26566
+ *     sprintf('%04x', $?.to_i)   #=> "ab00"
+ */
+
 static VALUE
 pst_to_i(st)
     VALUE st;
 {
     return rb_iv_get(st, "status");
 }
+
+
+/*
+ *  call-seq:
+ *     stat.to_s   => string
+ *  
+ *  Equivalent to _stat_<code>.to_i.to_s</code>.
+ */
 
 static VALUE
 pst_to_s(st)
@@ -147,12 +228,32 @@ pst_to_s(st)
     return rb_fix2str(pst_to_i(st), 10);
 }
 
+
+/*
+ *  call-seq:
+ *     stat.pid   => fixnum
+ *  
+ *  Returns the process ID that this status object represents.
+ *     
+ *     fork { exit }   #=> 26569
+ *     Process.wait    #=> 26569
+ *     $?.pid          #=> 26569
+ */
+
 static VALUE
 pst_pid(st)
     VALUE st;
 {
     return rb_iv_get(st, "pid");
 }
+
+
+/*
+ *  call-seq:
+ *     stat.inspect   => string
+ *  
+ *  Override the inspection method.
+ */
 
 static VALUE
 pst_inspect(st)
@@ -203,6 +304,15 @@ pst_inspect(st)
     return str;
 }
 
+
+/*
+ *  call-seq:
+ *     stat == other   => true or false
+ *  
+ *  Returns +true+ if the integer value of _stat_
+ *  equals <em>other</em>.
+ */
+
 static VALUE
 pst_equal(st1, st2)
     VALUE st1, st2;
@@ -210,6 +320,19 @@ pst_equal(st1, st2)
     if (st1 == st2) return Qtrue;
     return rb_equal(pst_to_i(st1), st2);
 }
+
+
+/*
+ *  call-seq:
+ *     stat & num   => fixnum
+ *  
+ *  Logical AND of the bits in _stat_ with <em>num</em>.
+ *     
+ *     fork { exit 0x37 }
+ *     Process.wait
+ *     sprintf('%04x', $?.to_i)       #=> "3700"
+ *     sprintf('%04x', $? & 0x1e00)   #=> "1600"
+ */
 
 static VALUE
 pst_bitand(st1, st2)
@@ -220,6 +343,19 @@ pst_bitand(st1, st2)
     return INT2NUM(status);
 }
 
+
+/*
+ *  call-seq:
+ *     stat >> num   => fixnum
+ *  
+ *  Shift the bits in _stat_ right <em>num</em> places.
+ *     
+ *     fork { exit 99 }   #=> 26563
+ *     Process.wait       #=> 26563
+ *     $?.to_i            #=> 25344
+ *     $? >> 8            #=> 99
+ */
+
 static VALUE
 pst_rshift(st1, st2)
     VALUE st1, st2;
@@ -228,6 +364,16 @@ pst_rshift(st1, st2)
 
     return INT2NUM(status);
 }
+
+
+/*
+ *  call-seq:
+ *     stat.stopped?   => true or false
+ *  
+ *  Returns +true+ if this process is stopped. This is only
+ *  returned if the corresponding <code>wait</code> call had the
+ *  <code>WUNTRACED</code> flag set.
+ */
 
 static VALUE
 pst_wifstopped(st)
@@ -241,6 +387,15 @@ pst_wifstopped(st)
 	return Qfalse;
 }
 
+
+/*
+ *  call-seq:
+ *     stat.stopsig   => fixnum or nil
+ *  
+ *  Returns the number of the signal that caused _stat_ to stop
+ *  (or +nil+ if self is not stopped).
+ */
+
 static VALUE
 pst_wstopsig(st)
     VALUE st;
@@ -251,6 +406,15 @@ pst_wstopsig(st)
 	return INT2NUM(WSTOPSIG(status));
     return Qnil;
 }
+
+
+/*
+ *  call-seq:
+ *     stat.signaled?   => true or false
+ *  
+ *  Returns +true+ if _stat_ terminated because of
+ *  an uncaught signal.
+ */
 
 static VALUE
 pst_wifsignaled(st)
@@ -264,6 +428,16 @@ pst_wifsignaled(st)
 	return Qfalse;
 }
 
+
+/*
+ *  call-seq:
+ *     stat.termsig   => fixnum or nil
+ *  
+ *  Returns the number of the signal that caused _stat_ to
+ *  terminate (or +nil+ if self was not terminated by an
+ *  uncaught signal).
+ */
+
 static VALUE
 pst_wtermsig(st)
     VALUE st;
@@ -274,6 +448,16 @@ pst_wtermsig(st)
 	return INT2NUM(WTERMSIG(status));
     return Qnil;
 }
+
+
+/*
+ *  call-seq:
+ *     stat.exited?   => true or false
+ *  
+ *  Returns +true+ if _stat_ exited normally (for
+ *  example using an <code>exit()</code> call or finishing the
+ *  program).
+ */
 
 static VALUE
 pst_wifexited(st)
@@ -287,6 +471,26 @@ pst_wifexited(st)
 	return Qfalse;
 }
 
+
+/*
+ *  call-seq:
+ *     stat.exitstatus   => fixnum or nil
+ *  
+ *  Returns the least significant eight bits of the return code of
+ *  _stat_. Only available if <code>exited?</code> is
+ *  +true+.
+ *     
+ *     fork { }           #=> 26572
+ *     Process.wait       #=> 26572
+ *     $?.exited?         #=> true
+ *     $?.exitstatus      #=> 0
+ *     
+ *     fork { exit 99 }   #=> 26573
+ *     Process.wait       #=> 26573
+ *     $?.exited?         #=> true
+ *     $?.exitstatus      #=> 99
+ */
+
 static VALUE
 pst_wexitstatus(st)
     VALUE st;
@@ -297,6 +501,15 @@ pst_wexitstatus(st)
 	return INT2NUM(WEXITSTATUS(status));
     return Qnil;
 }
+
+
+/*
+ *  call-seq:
+ *     stat.coredump   => true or false
+ *  
+ *  Returns +true+ if _stat_ generated a coredump
+ *  when it terminated. Not available on all platforms.
+ */
 
 static VALUE
 pst_wcoredump(st)
@@ -419,6 +632,69 @@ waitall_each(pid, status, ary)
 }
 #endif
 
+
+/* [MG]:FIXME: I wasn't sure how this should be done, since ::wait()
+   has historically been documented as if it didn't take any arguments
+   despite the fact that it's just an alias for ::waitpid(). The way I
+   have it below is more truthful, but a little confusing.
+
+   I also took the liberty of putting in the pid values, as they're
+   pretty useful, and it looked as if the original 'ri' output was
+   supposed to contain them after "[...]depending on the value of
+   aPid:".
+
+   The 'ansi' and 'bs' formats of the ri output don't display the
+   definition list for some reason, but the plain text one does.
+ */
+
+/*
+ *  call-seq:
+ *     Process.wait()                     => fixnum
+ *     Process.wait(pid=-1, flags=0)      => fixnum
+ *     Process.waitpid(pid=-1, flags=0)   => fixnum
+ *  
+ *  Waits for a child process to exit, returns its process id, and
+ *  sets <code>$?</code> to a <code>Process::Status</code> object
+ *  containing information on that process. Which child it waits on
+ *  depends on the value of _pid_:
+ * 
+ *  > 0::   Waits for the child whose process ID equals _pid_.
+ *			 
+ *  0::     Waits for any child whose process group ID equals that of the
+ *          calling process.
+ *          adsasdasd sads adada dsa a sad ad asd sad sa dsa dasdsad asd asd
+ *          adsasdasd sads adada dsa a sad ad asd sad sa dsa dasdsad asd asd
+ *          adsasdasd sads adada dsa a sad ad asd sad sa dsa dasdsad asd asd
+ *          adsasdasd sads adada dsa a sad ad asd sad sa dsa dasdsad asd asd
+ *
+ *  -1::    Waits for any child process (the default if no _pid_ is
+ *          given).
+ *			 
+ *  < -1::  Waits for any child whose process group ID equals the absolute
+ *          value of _pid_.
+ *
+ *  The _flags_ argument may be a logical or of the flag values
+ *  <code>Process::WNOHANG</code> (do not block if no child available)
+ *  or <code>Process::WUNTRACED</code> (return stopped children that
+ *  haven't been reported). Not all flags are available on all
+ *  platforms, but a flag value of zero will work on all platforms.
+ *     
+ *  Calling this method raises a <code>SystemError</code> if there are
+ *  no child processes. Not available on all platforms.
+ *     
+ *     include Process
+ *     fork { exit 99 }                 #=> 27429
+ *     wait                             #=> 27429
+ *     $?.exitstatus                    #=> 99
+ *
+ *     pid = fork { sleep 3 }           #=> 27440
+ *     Time.now                         #=> Wed Apr 09 08:57:09 CDT 2003
+ *     waitpid(pid, Process::WNOHANG)   #=> nil
+ *     Time.now                         #=> Wed Apr 09 08:57:09 CDT 2003
+ *     waitpid(pid, 0)                  #=> 27440
+ *     Time.now                         #=> Wed Apr 09 08:57:12 CDT 2003
+ */
+
 static VALUE
 proc_wait(argc, argv)
     int argc;
@@ -446,6 +722,24 @@ proc_wait(argc, argv)
     return INT2FIX(pid);
 }
 
+
+/*
+ *  call-seq:
+ *     Process.wait2(pid=-1, flags=0)      => [pid, status]
+ *     Process.waitpid2(pid=-1, flags=0)   => [pid, status]
+ *  
+ *  Waits for a child process to exit (see Process::waitpid for exact
+ *  semantics) and returns an array containing the process id and the
+ *  exit status (a <code>Process::Status</code> object) of that
+ *  child. Raises a <code>SystemError</code> if there are no child
+ *  processes.
+ *     
+ *     Process.fork { exit 99 }   #=> 27437
+ *     pid, status = Process.wait2
+ *     pid                        #=> 27437
+ *     status.exitstatus          #=> 99
+ */
+
 static VALUE
 proc_wait2(argc, argv)
     int argc;
@@ -455,6 +749,27 @@ proc_wait2(argc, argv)
     if (NIL_P(pid)) return Qnil;
     return rb_assoc_new(pid, rb_last_status);
 }
+
+
+/*
+ *  call-seq:
+ *     Process.waitall   => [ [pid1,status1], ...]
+ *  
+ *  Waits for all children, returning an array of
+ *  _pid_/_status_ pairs (where _status_ is a
+ *  <code>Process::Status</code> object).
+ *     
+ *     fork { sleep 0.2; exit 2 }   #=> 27432
+ *     fork { sleep 0.1; exit 1 }   #=> 27433
+ *     fork {            exit 0 }   #=> 27434
+ *     p Process.waitall
+ *
+ *  <em>produces</em>:
+ *
+ *     [[27434, #<Process::Status: pid=27434,exited(0)>],
+ *      [27433, #<Process::Status: pid=27433,exited(1)>],
+ *      [27432, #<Process::Status: pid=27432,exited(2)>]]
+ */
 
 static VALUE
 proc_waitall()
@@ -516,6 +831,48 @@ rb_detach_process(pid)
 {
     return rb_thread_create(detach_process_watcer, (void*)&pid);
 }
+
+
+/*
+ *  call-seq:
+ *     Process.detach(pid)   => thread
+ *  
+ *  Some operating systems retain the status of terminated child
+ *  processes until the parent collects that status (normally using
+ *  some variant of <code>wait()</code>. If the parent never collects
+ *  this status, the child stays around as a <em>zombie</em> process.
+ *  <code>Process::detach</code> prevents this by setting up a
+ *  separate Ruby thread whose sole job is to reap the status of the
+ *  process _pid_ when it terminates. Use <code>detach</code>
+ *  only when you do not intent to explicitly wait for the child to
+ *  terminate.  <code>detach</code> only checks the status
+ *  periodically (currently once each second).
+ *     
+ *  In this first example, we don't reap the first child process, so
+ *  it appears as a zombie in the process status display.
+ *     
+ *     p1 = fork { sleep 0.1 }
+ *     p2 = fork { sleep 0.2 }
+ *     Process.waitpid(p2)
+ *     sleep 2
+ *     system("ps -ho pid,state -p #{p1}")
+ *     
+ *  <em>produces:</em>
+ *     
+ *     27389 Z
+ *     
+ *  In the next example, <code>Process::detach</code> is used to reap
+ *  the child automatically.
+ *     
+ *     p1 = fork { sleep 0.1 }
+ *     p2 = fork { sleep 0.2 }
+ *     Process.detach(p1)
+ *     Process.waitpid(p2)
+ *     sleep 2
+ *     system("ps -ho pid,state -p #{p1}")
+ *     
+ *  <em>(produces no output)</em>
+ */
 
 static VALUE
 proc_detach(obj, pid)
@@ -798,6 +1155,31 @@ proc_spawn(sv)
 #endif
 #endif
 
+/*
+ *  call-seq:
+ *     exec(command [, arg, ...])
+ *  
+ *  Replaces the current process by running the given external _command_.
+ *  If +exec+ is given a single argument, that argument is
+ *  taken as a line that is subject to shell expansion before being
+ *  executed. If multiple arguments are given, the second and subsequent
+ *  arguments are passed as parameters to _command_ with no shell
+ *  expansion. If the first argument is a two-element array, the first
+ *  element is the command to be executed, and the second argument is
+ *  used as the <code>argv[0]</code> value, which may show up in process
+ *  listings. In MSDOS environments, the command is executed in a
+ *  subshell; otherwise, one of the <code>exec(2)</code> system calls is
+ *  used, so the running command may inherit some of the environment of
+ *  the original program (including open file descriptors).
+ *     
+ *     exec "echo *"       # echoes list of files in current directory
+ *     # never get here
+ *     
+ *     
+ *     exec "echo", "*"    # echoes an asterisk
+ *     # never get here
+ */
+
 VALUE
 rb_f_exec(argc, argv)
     int argc;
@@ -832,6 +1214,14 @@ rb_f_exec(argc, argv)
     return Qnil;		/* dummy */
 }
 
+
+/*
+ *  call-seq:
+ *     Process.fork [{ block }]   => fixnum or nil
+ *  
+ *  See <code>Kernel::fork</code>.
+ */
+
 static VALUE
 rb_f_fork(obj)
     VALUE obj;
@@ -865,6 +1255,18 @@ rb_f_fork(obj)
     rb_notimplement();
 #endif
 }
+
+
+/*
+ *  call-seq:
+ *     Process.exit!(fixnum=-1)
+ *  
+ *  Exits the process immediately. No exit handlers are
+ *  run. <em>fixnum</em> is returned to the underlying system as the
+ *  exit status.
+ *     
+ *     Process.exit!(0)
+ */
 
 static VALUE
 rb_f_exit_bang(argc, argv, obj)
@@ -933,6 +1335,25 @@ rb_syswait(pid)
 	overriding = Qfalse;
     }
 }
+
+/*
+ *  call-seq:
+ *     system(cmd [, arg, ...])    => true or false
+ *  
+ *  Executes _cmd_ in a subshell, returning +true+ if
+ *  the command was found and ran successfully, +false+
+ *  otherwise. An error status is available in <code>$?</code>. The
+ *  arguments are processed in the same way as for
+ *  <code>Kernel::exec</code>.
+ *     
+ *     system("echo *")
+ *     system("echo", "*")
+ *     
+ *  <em>produces:</em>
+ *     
+ *     config.h main.rb
+ *     *
+ */
 
 static VALUE
 rb_f_system(argc, argv)
@@ -1071,6 +1492,24 @@ rb_f_system(argc, argv)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     sleep(duration=0)    => fixnum
+ *  
+ *  Suspends the current thread for _duraction_ seconds (which may be
+ *  any number, including a +Float+ with fractional seconds). Returns the actual
+ *  number of seconds slept (rounded), which may be less than that asked
+ *  for if the thread was interrupted by a +SIGALRM+, or if
+ *  another thread calls <code>Thread#run</code>. An argument of zero
+ *  causes +sleep+ to sleep forever.
+ *     
+ *     Time.new    #=> Wed Apr 09 08:56:32 CDT 2003
+ *     sleep 1.2   #=> 1
+ *     Time.new    #=> Wed Apr 09 08:56:33 CDT 2003
+ *     sleep 1.9   #=> 2
+ *     Time.new    #=> Wed Apr 09 08:56:35 CDT 2003
+ */
+
 static VALUE
 rb_f_sleep(argc, argv)
     int argc;
@@ -1094,6 +1533,18 @@ rb_f_sleep(argc, argv)
     return INT2FIX(end);
 }
 
+
+/*
+ *  call-seq:
+ *     Process.getpgrp   => integer
+ *  
+ *  Returns the process group ID for this process. Not available on
+ *  all platforms.
+ *     
+ *     Process.getpgid(0)   #=> 25527
+ *     Process.getpgrp      #=> 25527
+ */
+
 static VALUE
 proc_getpgrp()
 {
@@ -1114,6 +1565,15 @@ proc_getpgrp()
 #endif
 }
 
+
+/*
+ *  call-seq:
+ *     Process.setpgrp   => 0
+ *  
+ *  Equivalent to <code>setpgid(0,0)</code>. Not available on all
+ *  platforms.
+ */
+
 static VALUE
 proc_setpgrp()
 {
@@ -1131,6 +1591,17 @@ proc_setpgrp()
     return INT2FIX(0);
 }
 
+
+/*
+ *  call-seq:
+ *     Process.getpgid(pid)   => integer
+ *  
+ *  Returns the process group ID for the given process id. Not
+ *  available on all platforms.
+ *     
+ *     Process.getpgid(Process.ppid())   #=> 25527
+ */
+
 static VALUE
 proc_getpgid(obj, pid)
     VALUE obj, pid;
@@ -1144,6 +1615,15 @@ proc_getpgid(obj, pid)
     rb_notimplement();
 #endif
 }
+
+
+/*
+ *  call-seq:
+ *     Process.setpgid(pid, integer)   => 0
+ *  
+ *  Sets the process group ID of _pid_ (0 indicates this
+ *  process) to <em>integer</em>. Not available on all platforms.
+ */
 
 static VALUE
 proc_setpgid(obj, pid, pgrp)
@@ -1162,6 +1642,18 @@ proc_setpgid(obj, pid, pgrp)
     rb_notimplement();
 #endif
 }
+
+
+/*
+ *  call-seq:
+ *     Process.setsid   => fixnum
+ *  
+ *  Establishes this process as a new session and process group
+ *  leader, with no controlling tty. Returns the session id. Not
+ *  available on all platforms.
+ *     
+ *     Process.setsid   #=> 27422
+ */
 
 static VALUE
 proc_setsid()
@@ -1199,6 +1691,24 @@ proc_setsid()
 #endif
 }
 
+
+/*
+ *  call-seq:
+ *     Process.getpriority(kind, integer)   => fixnum
+ *  
+ *  Gets the scheduling priority for specified process, process group,
+ *  or user. <em>kind</em> indicates the kind of entity to find: one
+ *  of <code>Process::PRIO_PGRP</code>,
+ *  <code>Process::PRIO_USER</code>, or
+ *  <code>Process::PRIO_PROCESS</code>. _integer_ is an id
+ *  indicating the particular process, process group, or user (an id
+ *  of 0 means _current_). Lower priorities are more favorable
+ *  for scheduling. Not available on all platforms.
+ *     
+ *     Process.getpriority(Process::PRIO_USER, 0)      #=> 19
+ *     Process.getpriority(Process::PRIO_PROCESS, 0)   #=> 19
+ */
+
 static VALUE
 proc_getpriority(obj, which, who)
     VALUE obj, which, who;
@@ -1217,6 +1727,19 @@ proc_getpriority(obj, which, who)
     rb_notimplement();
 #endif
 }
+
+
+/*
+ *  call-seq:
+ *     Process.setpriority(kind, integer, priority)   => 0
+ *  
+ *  See <code>Process#getpriority</code>.
+ *     
+ *     Process.setpriority(Process::PRIO_USER, 0, 19)      #=> 0
+ *     Process.setpriority(Process::PRIO_PROCESS, 0, 19)   #=> 0
+ *     Process.getpriority(Process::PRIO_USER, 0)          #=> 19
+ *     Process.getpriority(Process::PRIO_PROCESS, 0)       #=> 19
+ */
 
 static VALUE
 proc_setpriority(obj, which, who, prio)
@@ -1258,6 +1781,27 @@ check_gid_switch()
     }
 }
 
+
+/*********************************************************************
+ * Document-class: Process::Sys
+ *
+ *  The <code>Process::Sys</code> module contains UID and GID
+ *  functions which provide direct bindings to the system calls of the
+ *  same names instead of the more-portable versions of the same
+ *  functionality found in the <code>Process</code>,
+ *  <code>Process::UID</code>, and <code>Process::GID</code> modules.
+ */
+
+
+/*
+ *  call-seq:
+ *     Process::Sys.setuid(integer)   => nil
+ *  
+ *  Set the user ID of the current process to _integer_. Not
+ *  available on all platforms.
+ *     
+ */
+
 static VALUE
 p_sys_setuid(obj, id)
     VALUE obj, id;
@@ -1270,6 +1814,17 @@ p_sys_setuid(obj, id)
 #endif
     return Qnil;
 }
+
+
+
+/*
+ *  call-seq:
+ *     Process::Sys.setruid(integer)   => nil
+ *  
+ *  Set the real user ID of the calling process to _integer_.
+ *  Not available on all platforms.
+ *     
+ */
 
 static VALUE
 p_sys_setruid(obj, id)
@@ -1284,6 +1839,16 @@ p_sys_setruid(obj, id)
     return Qnil;
 }
 
+
+/*
+ *  call-seq:
+ *     Process::Sys.seteuid(integer)   => nil
+ *  
+ *  Set the effective user ID of the calling process to
+ *  _integer_.  Not available on all platforms.
+ *     
+ */
+
 static VALUE
 p_sys_seteuid(obj, id)
     VALUE obj, id;
@@ -1296,6 +1861,18 @@ p_sys_seteuid(obj, id)
 #endif
     return Qnil;
 }
+
+
+/*
+ *  call-seq:
+ *     Process::Sys.setreuid(rid, eid)   => nil
+ *  
+ *  Sets the (integer) real and/or effective user IDs of the current
+ *  process to _rid_ and _eid_, respectively. A value of
+ *  <code>-1</code> for either means to leave that ID unchanged. Not
+ *  available on all platforms.
+ *
+ */
 
 static VALUE
 p_sys_setreuid(obj, rid, eid)
@@ -1310,6 +1887,18 @@ p_sys_setreuid(obj, rid, eid)
     return Qnil;
 }
 
+
+/*
+ *  call-seq:
+ *     Process::Sys.setresuid(rid, eid, sid)   => nil
+ *  
+ *  Sets the (integer) real, effective, and saved user IDs of the
+ *  current process to _rid_, _eid_, and _sid_ respectively. A 
+ *  value of <code>-1</code> for any value means to
+ *  leave that ID unchanged. Not available on all platforms.
+ *
+ */
+
 static VALUE
 p_sys_setresuid(obj, rid, eid, sid)
     VALUE obj, rid, eid, sid;
@@ -1323,6 +1912,18 @@ p_sys_setresuid(obj, rid, eid, sid)
     return Qnil;
 }
 
+
+/*
+ *  call-seq:
+ *     Process.uid           => fixnum
+ *     Process::UID.rid      => fixnum
+ *     Process::Sys.getuid   => fixnum
+ *  
+ *  Returns the (real) user ID of this process.
+ *     
+ *     Process.uid   #=> 501
+ */
+
 static VALUE
 proc_getuid(obj)
     VALUE obj;
@@ -1330,6 +1931,15 @@ proc_getuid(obj)
     int uid = getuid();
     return INT2FIX(uid);
 }
+
+
+/*
+ *  call-seq:
+ *     Process.uid= integer   => numeric
+ *  
+ *  Sets the (integer) user ID for this process. Not available on all
+ *  platforms.
+ */
 
 static VALUE
 proc_setuid(obj, id)
@@ -1359,7 +1969,32 @@ proc_setuid(obj, id)
     return INT2FIX(uid);
 }
 
+
+/********************************************************************
+ * 
+ * Document-class: Process::UID
+ *
+ *  The <code>Process::UID</code> module contains a collection of
+ *  module functions which can be used to portably get, set, and
+ *  switch the current process's real, effective, and saved user IDs.
+ *
+ */
+
 static int SAVED_USER_ID;
+
+
+/*
+ *  call-seq:
+ *     Process::UID.change_privilege(integer)   => fixnum
+ *  
+ *  Change the current process's real and effective user ID to that
+ *  specified by _integer_. Returns the new user ID. Not
+ *  available on all platforms.
+ *     
+ *     [Process.uid, Process.euid]          #=> [0, 0]
+ *     Process::UID.change_privilege(31)    #=> 31
+ *     [Process.uid, Process.euid]          #=> [31, 31]
+ */
 
 static VALUE
 p_uid_change_privilege(obj, id)
@@ -1501,6 +2136,17 @@ p_uid_change_privilege(obj, id)
     return INT2FIX(uid);
 }
 
+
+
+/*
+ *  call-seq:
+ *     Process::Sys.setgid(integer)   => nil
+ *  
+ *  Set the group ID of the current process to _integer_. Not
+ *  available on all platforms.
+ *     
+ */
+
 static VALUE
 p_sys_setgid(obj, id)
     VALUE obj, id;
@@ -1513,6 +2159,16 @@ p_sys_setgid(obj, id)
 #endif
     return Qnil;
 }
+
+
+/*
+ *  call-seq:
+ *     Process::Sys.setrgid(integer)   => nil
+ *  
+ *  Set the real group ID of the calling process to _integer_.
+ *  Not available on all platforms.
+ *     
+ */
 
 static VALUE
 p_sys_setrgid(obj, id)
@@ -1527,6 +2183,17 @@ p_sys_setrgid(obj, id)
     return Qnil;
 }
 
+
+
+/*
+ *  call-seq:
+ *     Process::Sys.setegid(integer)   => nil
+ *  
+ *  Set the effective group ID of the calling process to
+ *  _integer_.  Not available on all platforms.
+ *     
+ */
+
 static VALUE
 p_sys_setegid(obj, id)
     VALUE obj, id;
@@ -1539,6 +2206,18 @@ p_sys_setegid(obj, id)
 #endif
     return Qnil;
 }
+
+
+/*
+ *  call-seq:
+ *     Process::Sys.setregid(rid, eid)   => nil
+ *  
+ *  Sets the (integer) real and/or effective group IDs of the current
+ *  process to <em>rid</em> and <em>eid</em>, respectively. A value of
+ *  <code>-1</code> for either means to leave that ID unchanged. Not
+ *  available on all platforms.
+ *
+ */
 
 static VALUE
 p_sys_setregid(obj, rid, eid)
@@ -1553,6 +2232,17 @@ p_sys_setregid(obj, rid, eid)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     Process::Sys.setresgid(rid, eid, sid)   => nil
+ *  
+ *  Sets the (integer) real, effective, and saved user IDs of the
+ *  current process to <em>rid</em>, <em>eid</em>, and <em>sid</em>
+ *  respectively. A value of <code>-1</code> for any value means to
+ *  leave that ID unchanged. Not available on all platforms.
+ *
+ */
+
 static VALUE
 p_sys_setresgid(obj, rid, eid, sid)
     VALUE obj, rid, eid, sid;
@@ -1565,6 +2255,19 @@ p_sys_setresgid(obj, rid, eid, sid)
 #endif
     return Qnil;
 }
+
+
+/*
+ *  call-seq:
+ *     Process::Sys.issetugid   => true or false
+ *  
+ *  Returns +true+ if the process was created as a result
+ *  of an execve(2) system call which had either of the setuid or
+ *  setgid bits set (and extra privileges were given as a result) or
+ *  if it has changed any of its real, effective or saved user or
+ *  group IDs since it began execution.
+ *
+ */
 
 static VALUE
 p_sys_issetugid(obj)
@@ -1582,6 +2285,18 @@ p_sys_issetugid(obj)
 #endif
 }
 
+
+/*
+ *  call-seq:
+ *     Process.gid           => fixnum
+ *     Process::GID.rid      => fixnum
+ *     Process::Sys.getgid   => fixnum
+ *  
+ *  Returns the (real) group ID for this process.
+ *     
+ *     Process.gid   #=> 500
+ */
+
 static VALUE
 proc_getgid(obj)
     VALUE obj;
@@ -1589,6 +2304,14 @@ proc_getgid(obj)
     int gid = getgid();
     return INT2FIX(gid);
 }
+
+
+/*
+ *  call-seq:
+ *     Process.gid= fixnum   => fixnum
+ *  
+ *  Sets the group ID for this process.
+ */
 
 static VALUE
 proc_setgid(obj, id)
@@ -1621,6 +2344,18 @@ proc_setgid(obj, id)
 
 static size_t maxgroups = 32;
 
+
+/*
+ *  call-seq:
+ *     Process.groups   => array
+ *  
+ *  Get an <code>Array</code> of the gids of groups in the
+ *  supplemental group access list for this process.
+ *
+ *     Process.groups   #=> [27, 6, 10, 11]
+ *
+ */
+
 static VALUE
 proc_getgroups(VALUE obj)
 {
@@ -1646,6 +2381,20 @@ proc_getgroups(VALUE obj)
     return Qnil;
 #endif
 }
+
+
+/*
+ *  call-seq:
+ *     Process.groups= array   => array
+ *  
+ *  Set the supplemental group access list to the given
+ *  <code>Array</code> of group IDs.
+ *
+ *     Process.groups   #=> [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
+ *     Process.groups = [27, 6, 10, 11]   #=> [27, 6, 10, 11]
+ *     Process.groups   #=> [27, 6, 10, 11]
+ *
+ */
 
 static VALUE
 proc_setgroups(VALUE obj, VALUE ary)
@@ -1697,6 +2446,24 @@ proc_setgroups(VALUE obj, VALUE ary)
 #endif
 }
 
+
+/*
+ *  call-seq:
+ *     Process.initgroups(username, gid)   => array
+ *  
+ *  Initializes the supplemental group access list by reading the
+ *  system group database and using all groups of which the given user
+ *  is a member. The group with the specified <em>gid</em> is also
+ *  added to the list. Returns the resulting <code>Array</code> of the
+ *  gids of all the groups in the supplementary group access list. Not
+ *  available on all platforms.
+ *
+ *     Process.groups   #=> [0, 1, 2, 3, 4, 6, 10, 11, 20, 26, 27]
+ *     Process.initgroups( "mgranger", 30 )   #=> [30, 6, 10, 11]
+ *     Process.groups   #=> [30, 6, 10, 11]
+ *
+ */
+
 static VALUE
 proc_initgroups(obj, uname, base_grp)
     VALUE obj, uname, base_grp;
@@ -1712,12 +2479,32 @@ proc_initgroups(obj, uname, base_grp)
 #endif
 }
 
+
+/*
+ *  call-seq:
+ *     Process.maxgroups   => fixnum
+ *  
+ *  Returns the maximum number of gids allowed in the supplemental
+ *  group access list.
+ *     
+ *     Process.maxgroups   #=> 32
+ */
+
 static VALUE
 proc_getmaxgroups(obj)
     VALUE obj;
 {
     return INT2FIX(maxgroups);
 }
+
+
+/*
+ *  call-seq:
+ *     Process.maxgroups= fixnum   => fixnum
+ *  
+ *  Sets the maximum number of gids allowed in the supplemental group
+ *  access list.
+ */
 
 static VALUE
 proc_setmaxgroups(obj, val)
@@ -1733,7 +2520,32 @@ proc_setmaxgroups(obj, val)
     return INT2FIX(maxgroups);
 }
 
+
+/********************************************************************
+ * 
+ * Document-class: Process::GID
+ *
+ *  The <code>Process::GID</code> module contains a collection of
+ *  module functions which can be used to portably get, set, and
+ *  switch the current process's real, effective, and saved group IDs.
+ *
+ */
+
 static int SAVED_GROUP_ID;
+
+
+/*
+ *  call-seq:
+ *     Process::GID.change_privilege(integer)   => fixnum
+ *  
+ *  Change the current process's real and effective group ID to that
+ *  specified by _integer_. Returns the new group ID. Not
+ *  available on all platforms.
+ *
+ *     [Process.gid, Process.egid]          #=> [0, 0]
+ *     Process::GID.change_privilege(33)    #=> 33
+ *     [Process.gid, Process.egid]          #=> [33, 33]
+ */
 
 static VALUE
 p_gid_change_privilege(obj, id)
@@ -1876,6 +2688,18 @@ p_gid_change_privilege(obj, id)
     return INT2FIX(gid);
 }
 
+
+/*
+ *  call-seq:
+ *     Process.euid           => fixnum
+ *     Process::UID.eid       => fixnum
+ *     Process::Sys.geteuid   => fixnum
+ *  
+ *  Returns the effective user ID for this process.
+ *     
+ *     Process.euid   #=> 501
+ */
+
 static VALUE
 proc_geteuid(obj)
     VALUE obj;
@@ -1883,6 +2707,15 @@ proc_geteuid(obj)
     int euid = geteuid();
     return INT2FIX(euid);
 }
+
+
+/*
+ *  call-seq:
+ *     Process.euid= integer
+ *  
+ *  Sets the effective user ID for this process. Not available on all
+ *  platforms.
+ */
 
 static VALUE
 proc_seteuid(obj, euid)
@@ -1944,12 +2777,40 @@ rb_seteuid_core(euid)
     return INT2FIX(euid);
 }
 
+
+/*
+ *  call-seq:
+ *     Process::UID.grant_privilege(integer)   => fixnum
+ *     Process::UID.eid= integer               => fixnum
+ *  
+ *  Set the effective user ID, and if possible, the saved user ID of
+ *  the process to the given _integer_. Returns the new
+ *  effective user ID. Not available on all platforms.
+ *     
+ *     [Process.uid, Process.euid]          #=> [0, 0]
+ *     Process::UID.grant_privilege(31)     #=> 31
+ *     [Process.uid, Process.euid]          #=> [0, 31]
+ */
+
 static VALUE
 p_uid_grant_privilege(obj, id)
     VALUE obj, id;
 {
     return rb_seteuid_core(NUM2INT(id));
 }
+
+
+/*
+ *  call-seq:
+ *     Process.egid          => fixnum
+ *     Process::GID.eid      => fixnum
+ *     Process::Sys.geteid   => fixnum
+ *  
+ *  Returns the effective group ID for this process. Not available on
+ *  all platforms.
+ *     
+ *     Process.egid   #=> 500
+ */
 
 static VALUE
 proc_getegid(obj)
@@ -1959,6 +2820,15 @@ proc_getegid(obj)
 
     return INT2FIX(egid);
 }
+
+
+/*
+ *  call-seq:
+ *     Process.egid = fixnum   => fixnum
+ *  
+ *  Sets the effective group ID for this process. Not available on all
+ *  platforms.
+ */
 
 static VALUE
 proc_setegid(obj, egid)
@@ -2021,12 +2891,37 @@ rb_setegid_core(egid)
     return INT2FIX(egid);
 }
 
+
+/*
+ *  call-seq:
+ *     Process::GID.grant_privilege(integer)    => fixnum
+ *     Process::GID.eid = integer               => fixnum
+ *  
+ *  Set the effective group ID, and if possible, the saved group ID of
+ *  the process to the given _integer_. Returns the new
+ *  effective group ID. Not available on all platforms.
+ *     
+ *     [Process.gid, Process.egid]          #=> [0, 0]
+ *     Process::GID.grant_privilege(31)     #=> 33
+ *     [Process.gid, Process.egid]          #=> [0, 33]
+ */
+
 static VALUE
 p_gid_grant_privilege(obj, id)
     VALUE obj, id;
 {
     return rb_setegid_core(NUM2INT(id));
 }
+
+
+/*
+ *  call-seq:
+ *     Process::UID.re_exchangeable?   => true or false
+ *  
+ *  Returns +true+ if the real and effective user IDs of a
+ *  process may be exchanged on the current platform.
+ *     
+ */
 
 static VALUE
 p_uid_exchangeable()
@@ -2039,6 +2934,19 @@ p_uid_exchangeable()
     return Qfalse;
 #endif
 }
+
+
+/*
+ *  call-seq:
+ *     Process::UID.re_exchange   => fixnum
+ *  
+ *  Exchange real and effective user IDs and return the new effective
+ *  user ID. Not available on all platforms.
+ *     
+ *     [Process.uid, Process.euid]   #=> [0, 31]
+ *     Process::UID.re_exchange      #=> 0
+ *     [Process.uid, Process.euid]   #=> [31, 0]
+ */
 
 static VALUE
 p_uid_exchange(obj)
@@ -2063,6 +2971,16 @@ p_uid_exchange(obj)
     return INT2FIX(uid);
 }
 
+
+/*
+ *  call-seq:
+ *     Process::GID.re_exchangeable?   => true or false
+ *  
+ *  Returns +true+ if the real and effective group IDs of a
+ *  process may be exchanged on the current platform.
+ *     
+ */
+
 static VALUE
 p_gid_exchangeable()
 {
@@ -2074,6 +2992,19 @@ p_gid_exchangeable()
     return Qfalse;
 #endif
 }
+
+
+/*
+ *  call-seq:
+ *     Process::GID.re_exchange   => fixnum
+ *  
+ *  Exchange real and effective group IDs and return the new effective
+ *  group ID. Not available on all platforms.
+ *     
+ *     [Process.gid, Process.egid]   #=> [0, 33]
+ *     Process::GID.re_exchange      #=> 0
+ *     [Process.gid, Process.egid]   #=> [33, 0]
+ */
 
 static VALUE
 p_gid_exchange(obj)
@@ -2098,6 +3029,17 @@ p_gid_exchange(obj)
     return INT2FIX(gid);
 }
 
+/* [MG] :FIXME: Is this correct? I'm not sure how to phrase this. */
+
+/*
+ *  call-seq:
+ *     Process::UID.sid_available?   => true or false
+ *  
+ *  Returns +true+ if the current platform has saved user
+ *  ID functionality.
+ *     
+ */
+
 static VALUE
 p_uid_have_saved_id()
 {
@@ -2117,6 +3059,20 @@ p_uid_sw_ensure(id)
     under_uid_switch = 0;
     return rb_seteuid_core(id);
 }
+
+
+/*
+ *  call-seq:
+ *     Process::UID.switch              => fixnum
+ *     Process::UID.switch {|| block}   => object
+ *  
+ *  Switch the effective and real user IDs of the current process. If
+ *  a <em>block</em> is given, the user IDs will be switched back
+ *  after the block is executed. Returns the new effective user ID if
+ *  called without a block, and the return value of the block if one
+ *  is given.
+ *     
+ */
 
 static VALUE
 p_uid_switch(obj)
@@ -2186,6 +3142,18 @@ p_uid_switch(obj)
 #endif
 }
 
+
+/* [MG] :FIXME: Is this correct? I'm not sure how to phrase this. */
+
+/*
+ *  call-seq:
+ *     Process::GID.sid_available?   => true or false
+ *  
+ *  Returns +true+ if the current platform has saved group
+ *  ID functionality.
+ *     
+ */
+
 static VALUE
 p_gid_have_saved_id()
 {
@@ -2204,6 +3172,20 @@ p_gid_sw_ensure(id)
     under_gid_switch = 0;
     return rb_setegid_core(id);
 }
+
+
+/*
+ *  call-seq:
+ *     Process::GID.switch              => fixnum
+ *     Process::GID.switch {|| block}   => object
+ *  
+ *  Switch the effective and real group IDs of the current process. If
+ *  a <em>block</em> is given, the group IDs will be switched back
+ *  after the block is executed. Returns the new effective group ID if
+ *  called without a block, and the return value of the block if one
+ *  is given.
+ *     
+ */
 
 static VALUE
 p_gid_switch(obj)
@@ -2272,6 +3254,19 @@ p_gid_switch(obj)
 #endif
 }
 
+
+/*
+ *  call-seq:
+ *     Process.times   => aStructTms
+ *  
+ *  Returns a <code>Tms</code> structure (see <code>Struct::Tms</code>
+ *  on page 388) that contains user and system CPU times for this
+ *  process.
+ *     
+ *     t = Process.times
+ *     [ t.utime, t.stime ]   #=> [0.0, 0.02]
+ */
+
 VALUE
 rb_proc_times(obj)
     VALUE obj;
@@ -2303,6 +3298,12 @@ VALUE rb_mProcUID;
 VALUE rb_mProcGID;
 VALUE rb_mProcID_Syscall;
 
+
+/*
+ *  The <code>Process</code> module is a collection of methods used to
+ *  manipulate processes.
+ */
+
 void
 Init_process()
 {
@@ -2331,10 +3332,10 @@ Init_process()
 
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
-    rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);
-    rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1);
+    rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);   // in eval.c
+    rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1); // in eval.c
 
-    rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
+    rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1); // in signal.c
     rb_define_module_function(rb_mProcess, "wait", proc_wait, -1);
     rb_define_module_function(rb_mProcess, "wait2", proc_wait2, -1);
     rb_define_module_function(rb_mProcess, "waitpid", proc_wait, -1);
