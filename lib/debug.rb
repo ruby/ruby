@@ -176,7 +176,7 @@ class DEBUGGER__
 	  printf "no sourcefile available for %s\n", file
 	end
       when /^p\s+/
-	p debug_eval($', binding)
+	p debug_eval($', binding) #'
       else
 	v = debug_eval(input, binding)
 	p v unless v == nil
@@ -194,10 +194,13 @@ class DEBUGGER__
       return "\n" unless line
       return line
     end
+    save = $DEBUG
     begin
+      $DEBUG = FALSE
       f = open(file)
       lines = @scripts[file] = f.readlines
     rescue
+      $DEBUG = save
       @scripts[file] = TRUE
       return "\n"
     end

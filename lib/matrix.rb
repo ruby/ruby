@@ -17,17 +17,15 @@
 #	    :
 #          rown]
 #
-#   column: 列
-#   row:    行
 #
 # module ExceptionForMatrix::
 #   Exceptions:
 #	ErrDimensionMismatch
-#	    行または列数が一致していない.
+#	    number of column/row do not match
 #	ErrNotRegular
-#	    正則行列でない.
+#	    not a regular matrix
 #	ErrOperationNotDefined
-#	    その演算子はまだ定義されていない.
+#	    specified operator is not defined (yet)
 #
 # class Matrix
 #   include ExceptionForMatrix

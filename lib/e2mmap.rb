@@ -22,13 +22,13 @@ else
       cl.bind(self)
     end
     
-    # 以前との互換性のために残してある.
+    # backward compatibility
     def E2MM.extend_to(b)
       c = eval("self", b)
       c.extend(self)
     end
     
-#    public :fail
+    #    public :fail
     #    alias e2mm_fail fail
 
     def fail(err = nil, *rest)
@@ -39,8 +39,8 @@ else
       self.module_eval %q^
 	E2MM_ErrorMSG = {} unless self.const_defined?(:E2MM_ErrorMSG)
 	# fail(err, *rest)
-	#	err:	例外
-	#	rest:	メッセージに渡すパラメータ
+	#	err:	Exception
+	#	rest:	Parameter accompanied with the exception
 	#
 	def self.fail(err = nil, *rest)
 	  if form = E2MM_ErrorMSG[err]
@@ -63,7 +63,6 @@ else
 	# def_exception(c, m)
 	#	    c:  exception
 	#	    m:  message_form
-	#	例外cのメッセージをmとする.
 	#
 	def self.def_e2message(c, m)
 	  E2MM_ErrorMSG[c] = m
@@ -72,8 +71,8 @@ else
 	# def_exception(c, m)
 	#	    n:  exception_name
 	#	    m:  message_form
-	#	    s:	例外スーパークラス(デフォルト: Exception)
-	#	例外名``c''をもつ例外を定義し, そのメッセージをmとする.
+	#	    s:	superclass_of_exception (default: Exception)
+	#	defines excaption named ``c'', whose message is ``m''.
 	#
 	#def def_exception(n, m)
 	def self.def_exception(n, m, s = nil)
@@ -99,4 +98,3 @@ else
       def_exception(:ErrNotRegisteredException, "not registerd exception(%s)")
     end
 end
-

@@ -60,11 +60,14 @@
 #include <sys/types.h>
 
 
+# undef  __P
 #if defined(__STDC__)
+# define __P(x) x
 # include <stdarg.h>
 #else
 # undef  __P
 # define __P(x) ()
+# define const
 # include <varargs.h>
 #endif
 #ifndef _BSD_VA_LIST_ 
@@ -347,7 +350,9 @@ err:
 #define u_int unsigned int
 
 #include <limits.h>
+#if !defined(__CYGWIN32__)
 #include <stdlib.h>
+#endif
 #include <string.h>
 
 #if defined(__STDC__)

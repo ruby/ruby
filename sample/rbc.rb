@@ -11,22 +11,21 @@
 #
 #   rbc.rb [options] file_name opts
 #   options:
-#	-d		    デバッグモード(利用しない方が良いでしょう)
-#	-f		    ~/.irbrc を読み込まない.
-#	-m		    bcモード(分数, 行列の計算ができます)
-#	-r load-module	    ruby -r と同じ.
-#	--inspect	    結果出力にinspectを用いる(bcモード以外はデ
-#			    フォルト). 
-#	--noinspect	    結果出力にinspectを用いない.
-#	--noreadline	    readlineライブラリを利用しない(デフォルト
-#			    ではreadlineライブラリを利用しようとする).
+#	-d		    debug mode (not recommended)
+#	-f		    does not read ~/.irbrc
+#	-m		    bc mode (rational/matrix calc)
+#	-r load-module	    same as `ruby -r'
+#	--inspect	    use inspect for result output
+#			    (default for non-bc mode)
+#	--noinspect	    does not use inspect for result output
+#	--noreadline	    does not use readline library
+#			    (default: try to use readline)
 #
-# 追加 private method:
-#   exit, quit		    終了する.
-#   inspect_mode(sw = nil)  インスペクトモードのトグル
-#   trace_load(sw = nil)    load/require時にrbcのfile読み込み機能を用
-#			    いるモードのスイッチ(デフォルトはトレース
-#			    モード)
+# additional private method (as function):
+#   exit, quit		    terminate the interpreter
+#   inspect_mode(sw = nil)  toggle inspect mode
+#   trace_load(sw = nil)    change trace mode for file loading using
+#			    load/require.  (default: trace-mode on)
 #
 require "e2mmap.rb"
 

@@ -167,6 +167,7 @@ ary_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
+    int len = 0;
     VALUE size, val;
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, klass, T_ARRAY);
@@ -186,10 +187,11 @@ ary_s_new(argc, argv, klass)
 	    ArgError("array size too big");
 	}
 	ary->capa = capa;
-	ary->len = capa;
+	len = capa;
     }
     ary->ptr = ALLOC_N(VALUE, ary->capa);
-    memfill(ary->ptr, ary->len, val);
+    memfill(ary->ptr, len, val);
+    ary->len = len;
     obj_call_init((VALUE)ary);
 
     return (VALUE)ary;

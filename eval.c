@@ -1554,6 +1554,8 @@ call_trace_func(event, file, line, self, id)
     int state;
     volatile VALUE trace;
     struct FRAME *prev;
+    char *file_save = sourcefile;
+    int line_save = sourceline;
 
     if (!trace_func) return;
 
@@ -1585,6 +1587,8 @@ call_trace_func(event, file, line, self, id)
     thread_critical--;
 #endif
     if (!trace_func) trace_func = trace;
+    sourceline = line_save;
+    sourcefile = file_save;
     if (state) JUMP_TAG(state);
 }
 
@@ -2780,7 +2784,7 @@ rb_longjmp(tag, mesg)
 	errinfo = mesg;
     }
 
-    if (debug && !NIL_P(errinfo)) {
+    if (debug && !NIL_P(errinfo) && !obj_is_kind_of(errinfo, eSystemExit)) {
 	fprintf(stderr, "Exception `%s' at %s:%d\n",
 		rb_class2name(CLASS_OF(errinfo)),
 		sourcefile, sourceline);

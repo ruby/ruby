@@ -1,3 +1,13 @@
+Fri Aug 14 11:01:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (call_trace_func): save __FILE__, __LINE__ before
+ 	  executing trace_func, since trace function should not corrupt
+ 	  line number information.
+
+Thu Aug 13 15:09:02 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_s_new): was marking unallocated region on GC.
+
 Tue Aug 11 11:57:35 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c2 released.
