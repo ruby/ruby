@@ -419,7 +419,7 @@ class TestIterator < Test::Unit::TestCase
   def test_return_trace_func
     ok = "returned gracefully"
     result = "skipped"
-    result = _test_return_from_builtin(ok)
+    result = _test_return_trace_func(ok)
   ensure
     assert_equal(ok, result)
     return

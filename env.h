@@ -25,6 +25,7 @@ extern struct FRAME {
     struct RNode *node;
     int iter;
     int flags;
+    unsigned long uniq;
 } *ruby_frame;
 
 void rb_gc_mark_frame _((struct FRAME *));

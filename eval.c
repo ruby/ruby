@@ -604,6 +604,8 @@ struct SCOPE *ruby_scope;
 static struct FRAME *top_frame;
 static struct SCOPE *top_scope;
 
+static unsigned long frame_unique = 0;
+
 #define PUSH_FRAME() do {		\
     struct FRAME _frame;		\
     _frame.prev = ruby_frame;		\
@@ -613,6 +615,7 @@ static struct SCOPE *top_scope;
     _frame.argc = 0;			\
     _frame.argv = 0;			\
     _frame.flags = FRAME_ALLOCA;	\
+    _frame.uniq = frame_unique++;	\
     ruby_frame = &_frame
 
 #define POP_FRAME()  			\
@@ -875,7 +878,7 @@ static struct tag *prot_tag;
     prot_tag = _tag.prev;		\
 } while (0)
 
-#define TAG_DST() (_tag.dst == (VALUE)_tag.scope)
+#define TAG_DST() (_tag.dst == (VALUE)ruby_frame->uniq)
 
 #define TAG_RETURN	0x1
 #define TAG_BREAK	0x2
@@ -2448,7 +2451,7 @@ class_prefix(self, cpath)
   }\
 } while (0)
 
-NORETURN(static void localjump_destination _((int, struct SCOPE*, VALUE)));
+NORETURN(static void localjump_destination _((int, VALUE)));
 
 static VALUE
 rb_eval(self, n)
@@ -2771,7 +2774,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_BREAK:
-	localjump_destination(TAG_BREAK, ruby_scope, rb_eval(self, node->nd_stts));
+	localjump_destination(TAG_BREAK, rb_eval(self, node->nd_stts));
 	break;
 
       case NODE_NEXT:
@@ -2952,7 +2955,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_RETURN:
-	localjump_destination(TAG_RETURN, ruby_scope, rb_eval(self, node->nd_stts));
+	localjump_destination(TAG_RETURN, rb_eval(self, node->nd_stts));
 	break;
 
       case NODE_ARGSCAT:
@@ -3106,7 +3109,7 @@ rb_eval(self, n)
 		break;
 	      case TAG_RETURN:
 	      case TAG_BREAK:
-		localjump_destination(state, ruby_scope, result);
+		localjump_destination(state, result);
 	      default:
 		JUMP_TAG(state);
 	    }
@@ -3882,7 +3885,7 @@ rb_f_abort(argc, argv)
 void
 rb_iter_break()
 {
-    localjump_destination(TAG_BREAK, ruby_scope, Qnil);
+    localjump_destination(TAG_BREAK, Qnil);
 }
 
 NORETURN(static void rb_longjmp _((int, VALUE)));
@@ -4056,9 +4059,8 @@ rb_f_block_given_p()
 static VALUE rb_eThreadError;
 
 static void
-localjump_destination(state, scope, retval)
+localjump_destination(state, retval)
     int state;
-    struct SCOPE *scope;
     VALUE retval;
 {
     struct tag *tt = prot_tag;
@@ -4067,12 +4069,12 @@ localjump_destination(state, scope, retval)
     if (retval == Qundef) retval = Qnil;
     while (tt) {
 	if (tt->tag == PROT_PCALL || (tt->tag == PROT_THREAD && state == TAG_BREAK) ||
-	    (tt->tag == PROT_CALL || tt->tag == tag) && tt->scope == scope) {
-	    tt->dst = (VALUE)scope;
+	    (tt->tag == PROT_CALL || tt->tag == tag) && tt->frame->uniq == ruby_frame->uniq) {
+	    tt->dst = (VALUE)ruby_frame->uniq;
 	    tt->retval = retval;
 	    JUMP_TAG(state);
 	}
-	if (tt->tag == PROT_FUNC && tt->scope == scope) break;
+	if (tt->tag == PROT_FUNC && tt->frame->uniq == ruby_frame->uniq) break;
 	if (tt->tag == PROT_THREAD) {
 	    rb_raise(rb_eThreadError, "return jump can't across threads");
 	}
@@ -7087,7 +7089,7 @@ proc_invoke(proc, args, self, klass)
 	    localjump_error(mesg, result, state);
 	}
 	if (result != Qundef) {
-	    localjump_destination(state, ruby_scope, result);
+	    localjump_destination(state, result);
 	}
       default:
 	JUMP_TAG(state);

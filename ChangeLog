@@ -1,3 +1,11 @@
+Mon Oct 20 17:31:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (PUSH_FRAME): generate unique number to be TAG_JUMP()
+	  destination.
+
+	* eval.c (localjump_destination): use unique number in ruby_frame
+	  for localjump destination.
+
 Mon Oct 20 11:31:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_signal.rb (test_signal): restore old trap.
