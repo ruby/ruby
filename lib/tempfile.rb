@@ -1,48 +1,26 @@
 #
+# tempfile - manipulates temporary files
+#
 # $Id$
 #
-# This is a class for managing temporary files.
-#
-#  o Tempfile::new("basename") creates a temporary file whose name is
-#    "basename.pid.n" and opens with mode "w+".
-#  o A Tempfile object can be treated as an IO object.
-#  o The temporary directory is determined by ENV['TMPDIR'],
-#    ENV['TMP'], and ENV['TEMP'] in the order named, and if none of
-#    them is available, it is set to /tmp.
-#  o When $SAFE > 0, you should specify a directory via the second argument
-#    of Tempfile::new(), or it will end up finding an ENV value tainted and
-#    pick /tmp.  In case you don't have it, an exception will be raised.
-#  o Tempfile#close(true) gets the temporary file removed immediately.
-#  o Otherwise, the removal is delayed until the object is finalized.
-#  o With Tempfile#open, you can reopen the temporary file.
-#  o The file mode for the temporary files is 0600.
-#  o This library is (considered to be) thread safe.
 
 require 'delegate'
 
+# A class for managing temporary files.  This library is written to be
+# thread safe.
 class Tempfile < SimpleDelegator
-  Max_try = 10
+  MAX_TRY = 10
   @@cleanlist = []
 
-  def Tempfile.callback(data)
-    pid = $$
-    lambda{
-      if pid == $$ 
-	path, tmpfile, cleanlist = *data
-
-	print "removing ", path, "..." if $DEBUG
-
-	tmpfile.close if tmpfile
-
-	# keep this order for thread safeness
-	File.unlink(path) if File.exist?(path)
-	cleanlist.delete(path) if cleanlist
-
-	print "done\n" if $DEBUG
-      end
-    }
-  end
-
+  # Creates a temporary file of mode 0600 in the temporary directory
+  # whose name is basename.pid.n and opens with mode "w+".  A Tempfile
+  # object works just like a File object.
+  #
+  # If tmpdir is omitted, the temporary directory is determined by
+  # ENV['TMPDIR'], ENV['TMP'] and and ENV['TEMP'] in the order named.
+  # If none of them is available, or when $SAFE > 0 and the given
+  # tmpdir is tainted, it uses /tmp. (Note that ENV values are
+  # tainted by default)
   def initialize(basename, tmpdir=ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp')
     if $SAFE > 0 and tmpdir.tainted?
       tmpdir = '/tmp'
@@ -64,7 +42,7 @@ class Tempfile < SimpleDelegator
       Dir.mkdir(lock)
     rescue
       failure += 1
-      retry if failure < Max_try
+      retry if failure < MAX_TRY
       raise "cannot generate tempfile `%s'" % tmpname
     ensure
       Thread.critical = false
@@ -88,10 +66,7 @@ class Tempfile < SimpleDelegator
     Dir.rmdir(lock)
   end
 
-  def Tempfile.open(*args)
-    Tempfile.new(*args)
-  end
-
+  # Opens or reopens the file with mode "r+".
   def open
     @tmpfile.close if @tmpfile
     @tmpfile = File.open(@tmpname, 'r+')
@@ -99,25 +74,83 @@ class Tempfile < SimpleDelegator
     __setobj__(@tmpfile)
   end
 
-  def close(real=false)
+  def _close	# :nodoc:
     @tmpfile.close if @tmpfile
     @data[1] = @tmpfile = nil
-    if real
-      @clean_proc.call
-      ObjectSpace.undefine_finalizer(self)
+  end    
+  protected :_close
+
+  # Closes the file.  If the optional flag is true, unlinks the file
+  # after closing.
+  #
+  # If you don't explicitly unlink the temporary file, the removal
+  # will be delayed until the object is finalized.
+  def close(unlink_now=false)
+    if unlink_now
+      close!
+    else
+      _close
     end
   end
 
+  # Closes and unlinks the file.
+  def close!
+    _close
+    @clean_proc.call
+    ObjectSpace.undefine_finalizer(self)
+  end
+
+  # Unlinks the file.  On UNIX-like systems, it is often a good idea
+  # to unlink a temporary file immediately after creating and opening
+  # it, because it leaves other programs zero chance to access the
+  # file.
+  def unlink
+    # keep this order for thread safeness
+    File.unlink(@tmpname) if File.exist?(@tmpname)
+    @@cleanlist.delete(@tmpname) if @@cleanlist
+  end
+  alias delete unlink
+
+  # Returns the full path name of the temporary file.
   def path
     @tmpname
   end
 
+  # Returns the size of the temporary file.  As a side effect, the IO
+  # buffer is flushed before determining the size.
   def size
     if @tmpfile
       @tmpfile.flush
       @tmpfile.stat.size
     else
       0
+    end
+  end
+  alias length size
+
+  class << self
+    def callback(data)	# :nodoc:
+      pid = $$
+      lambda{
+	if pid == $$ 
+	  path, tmpfile, cleanlist = *data
+
+	  print "removing ", path, "..." if $DEBUG
+
+	  tmpfile.close if tmpfile
+
+	  # keep this order for thread safeness
+	  File.unlink(path) if File.exist?(path)
+	  cleanlist.delete(path) if cleanlist
+
+	  print "done\n" if $DEBUG
+	end
+      }
+    end
+
+    # Equivalent to new().
+    def open(*args)
+      new(*args)
     end
   end
 end
@@ -129,5 +162,5 @@ if __FILE__ == $0
   f.close
   f.open
   p f.gets # => "foo\n"
-  f.close(true)
+  f.close!
 end

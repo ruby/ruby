@@ -1,3 +1,14 @@
+Mon Dec 23 23:49:36 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/tempfile.rb: Embed Rdoc style comments.
+
+	* lib/tempfile.rb: Add length as an alias for size.
+
+	* lib/tempfile.rb: Add Tempfile#close!() as a shorthand for
+	  Tempfile#close(true).
+
+	* lib/tempfile.rb: Add Tempfile#{unlink,delete}().
+
 Sun Dec 22 00:36:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): accept pure ruby libraries.
