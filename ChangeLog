@@ -1,3 +1,7 @@
+Tue Dec 23 17:26:55 2003  KONISHI Hiromasa   <konishih@fd6.so-net.ne.jp>
+
+	* bcc32/Makefile.sub (config.h): bcc has finite(). [ruby-list:38940]
+
 Tue Dec 23 16:08:16 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/rexml/encodings/US-ASCII.rb: typo.  [ruby-talk:88650]
