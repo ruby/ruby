@@ -219,6 +219,17 @@ module TkComm
   end
   private :_get_eval_string
 
+  def ruby2tcl(v)
+    if v.kind_of?(Hash)
+      v = hash_kv(v)
+      v.flatten!
+      v.collect{|e|ruby2tcl(e)}
+    else
+      _get_eval_string(v)
+    end
+  end
+  private :ruby2tcl
+
   Tk_IDs = [0, 0]		# [0]-cmdid, [1]-winid
   def _curr_cmd_id
     id = format("c%.4d", Tk_IDs[0])
@@ -541,7 +552,7 @@ module TkCore
 
   def tk_call(*args)
     print args.join(" "), "\n" if $DEBUG
-    args.filter{|x|_get_eval_string(x)}
+    args.filter {|x|ruby2tcl(x)}
     args.compact!
     args.flatten!
     begin

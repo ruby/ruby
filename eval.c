@@ -2099,12 +2099,12 @@ rb_eval(self, node)
 			    result = rb_eval(self, resq->nd_body);
 			}
 			POP_TAG();
-			if (state == 0) {
-			    ruby_errinfo = e_info;
-			}
-			else if (state == TAG_RETRY) {
+			if (state == TAG_RETRY) {
 			    state = 0;
 			    goto retry_entry;
+			}
+			if (state != TAG_RAISE) {
+			    ruby_errinfo = e_info;
 			}
 			break;
 		    }

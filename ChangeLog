@@ -1,3 +1,8 @@
+Fri Jul 14 12:49:50 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): should preserve errinfo even if return, break,
+	  etc. is called in rescue clause.
+
 Fri Jul  7 03:30:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* numeric.c (fix_aref): convert index by NUM2INT, not FIX2INT. 
