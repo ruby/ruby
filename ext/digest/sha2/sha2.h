@@ -33,7 +33,7 @@
  *
  */
 
-/* $RoughId: sha2.h,v 1.2 2001/07/13 19:49:10 knu Exp $ */
+/* $RoughId: sha2.h,v 1.3 2002/02/24 08:14:32 knu Exp $ */
 /* $Id$ */
 
 #ifndef __SHA2_H__
@@ -73,6 +73,32 @@ typedef struct _SHA512_CTX {
 
 typedef SHA512_CTX SHA384_CTX;
 
+
+#ifdef RUBY
+#define SHA256_Init		rb_Digest_SHA256_Init
+#define SHA256_Update		rb_Digest_SHA256_Update
+#define SHA256_Final		rb_Digest_SHA256_Final
+#define SHA256_End		rb_Digest_SHA256_End
+#define SHA256_Data		rb_Digest_SHA256_Data
+#define SHA256_File		rb_Digest_SHA256_File
+#define SHA256_Equal		rb_Digest_SHA256_Equal
+
+#define SHA384_Init		rb_Digest_SHA384_Init
+#define SHA384_Update		rb_Digest_SHA384_Update
+#define SHA384_Final		rb_Digest_SHA384_Final
+#define SHA384_End		rb_Digest_SHA384_End
+#define SHA384_Data		rb_Digest_SHA384_Data
+#define SHA384_File		rb_Digest_SHA384_File
+#define SHA384_Equal		rb_Digest_SHA384_Equal
+
+#define SHA512_Init		rb_Digest_SHA512_Init
+#define SHA512_Update		rb_Digest_SHA512_Update
+#define SHA512_Final		rb_Digest_SHA512_Final
+#define SHA512_End		rb_Digest_SHA512_End
+#define SHA512_Data		rb_Digest_SHA512_Data
+#define SHA512_File		rb_Digest_SHA512_File
+#define SHA512_Equal		rb_Digest_SHA512_Equal
+#endif
 
 /*** SHA-256/384/512 Function Prototypes ******************************/
 void SHA256_Init _((SHA256_CTX *));

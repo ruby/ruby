@@ -1,5 +1,5 @@
 /*	$NetBSD: rmd160.h,v 1.2 2000/07/07 10:47:06 ad Exp $	*/
-/*	$RoughId: rmd160.h,v 1.2 2001/07/13 19:49:10 knu Exp $	*/
+/*	$RoughId: rmd160.h,v 1.3 2002/02/24 08:14:31 knu Exp $	*/
 /*	$Id$	*/
 
 /********************************************************************\
@@ -34,6 +34,19 @@ typedef struct {
 	uint8_t		bbuffer[64];    /* overflow buffer */
 	uint32_t	buflen;		/* number of chars in bbuffer */
 } RMD160_CTX;
+
+#ifdef RUBY
+#define RMD160_Init	rb_Digest_RMD160_Init
+#define RMD160_Transform	rb_Digest_RMD160_Transform
+#define RMD160_Update	rb_Digest_RMD160_Update
+#define RMD160_Final	rb_Digest_RMD160_Final
+#define RMD160_Equal	rb_Digest_RMD160_Equal
+#ifndef _KERNEL
+#define RMD160_End	rb_Digest_RMD160_End
+#define RMD160_File	rb_Digest_RMD160_File
+#define RMD160_Data	rb_Digest_RMD160_Data
+#endif /* _KERNEL */
+#endif
 
 __BEGIN_DECLS
 void	RMD160_Init _((RMD160_CTX *));
