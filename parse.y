@@ -1651,6 +1651,7 @@ primary		: literal
 		  bodystmt
 		  kEND
 		    {
+			if (!$5) $5 = NEW_NIL();
 			$$ = NEW_DEFN($2, $4, $5, NOEX_PRIVATE);
 		        fixpos($$, $4);
 		        local_pop();

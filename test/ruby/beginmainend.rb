@@ -28,11 +28,6 @@ END {
   puts local_for_end2	# e2
 }
 
-END {
-  raise
-  puts "should not be dumped"
-}
-
 eval <<EOE
   BEGIN {
     puts "b3"

@@ -1386,7 +1386,7 @@ rb_str_succ(orig)
     int c = -1;
     long n = 0;
 
-    str = rb_str_new5(orig,RSTRING(orig)->ptr, RSTRING(orig)->len);
+    str = rb_str_new5(orig, RSTRING(orig)->ptr, RSTRING(orig)->len);
     OBJ_INFECT(str, orig);
     if (RSTRING(str)->len == 0) return str;
 
@@ -1729,6 +1729,7 @@ rb_str_aset(str, indx, val)
 	    idx += RSTRING(str)->len;
 	}
 	if (FIXNUM_P(val)) {
+	    rb_str_modify(str);
 	    if (RSTRING(str)->len == idx) {
 		RSTRING(str)->len += 1;
 		RESIZE_CAPA(str, RSTRING(str)->len);

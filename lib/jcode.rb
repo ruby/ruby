@@ -90,7 +90,10 @@ class String
   end
 
   def succ
-    (str = self.dup).succ! or str
+    str = self.dup
+    p [self.object_id, str.object_id]
+    str.succ! or str
+#    (str = self.dup).succ! or str
   end
 
   private
