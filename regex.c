@@ -2638,15 +2638,12 @@ re_compile_fastmap(bufp)
 	bufp->can_be_null = 1;
 	fastmap['\n'] = 1;
       case anychar:
-	{
-	  char ex = (options & RE_OPTION_POSIX)?'\0':'\n';
-
-	  for (j = 0; j < (1 << BYTEWIDTH); j++) {
-	    if (j != ex) fastmap[j] = 1;
-	  }
-	  if (bufp->can_be_null) {
-	    FREE_AND_RETURN_VOID(stackb);
-	  }
+	for (j = 0; j < (1 << BYTEWIDTH); j++) {
+	  if (j != '\n' || (options & RE_OPTION_POSIX))
+	    fastmap[j] = 1;
+	}
+	if (bufp->can_be_null) {
+	  FREE_AND_RETURN_VOID(stackb);
 	}
 	/* Don't return; check the alternative paths
 	   so we can set can_be_null if appropriate.  */
@@ -3141,7 +3138,7 @@ typedef union
 
 #define IS_A_LETTER(d) (SYNTAX(*(d)) == Sword ||			\
 			(current_mbctype ?				\
-			 re_mbctab[*(d)] :				\
+			 (re_mbctab[*(d)] && ((d)+mbclen(*(d)))<=dend):	\
 			 SYNTAX(*(d)) == Sword2))
 
 #define PREV_IS_A_LETTER(d) ((current_mbctype == MBCTYPE_SJIS)?		\
@@ -3304,7 +3301,6 @@ re_match(bufp, string_arg, size, pos, regs)
      equal string2.  */
 
   d = string + pos, dend = string + size;
-
 
   /* This loops over pattern commands.  It exits by returning from the
      function if match is complete, or it drops through if match fails
@@ -3553,8 +3549,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  d += mbclen(*d);
 	  break;
 	}
-	if (((TRANSLATE_P()) ? translate[*d] : *d) ==
-	    ((options&RE_OPTION_POSIX) ? '\0' : '\n'))
+	if (!(options&RE_OPTION_POSIX) &&
+	    (TRANSLATE_P() ? translate[*d] : *d) == '\n')
 	  goto fail;
 	SET_REGS_MATCHED;
 	d++;

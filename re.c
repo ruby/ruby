@@ -87,30 +87,19 @@ rb_str_cicmp(str1, str2)
     return RSTRING(str1)->len - RSTRING(str2)->len;
 }
 
-#define REG_IGNORECASE FL_USER0
-#define REG_CASESTATE  FL_USER1
+#define REG_CASESTATE  FL_USER0
+#define REG_IGNORECASE FL_USER1
+#define REG_EXTENDED   FL_USER2
+#define REG_POSIX      FL_USER3
 
 #define KCODE_NONE  0
-#define KCODE_EUC   FL_USER2
-#define KCODE_SJIS  FL_USER3
-#define KCODE_UTF8  FL_USER4
-#define KCODE_FIXED FL_USER5
+#define KCODE_EUC   FL_USER4
+#define KCODE_SJIS  FL_USER5
+#define KCODE_UTF8  FL_USER6
+#define KCODE_FIXED FL_USER7
 #define KCODE_MASK (KCODE_EUC|KCODE_SJIS|KCODE_UTF8)
 
-static int reg_kcode = 
-#ifdef RUBY_USE_EUC
-    KCODE_EUC;
-#else
-# ifdef RUBY_USE_SJIS
-    KCODE_SJIS;
-# else
-#  ifdef RUBY_USE_UTF8
-    KCODE_UTF8
-#  else
-    KCODE_NONE;
-#  endif
-# endif
-#endif
+static int reg_kcode = DEFAULT_KCODE;
 
 static void
 kcode_euc(reg)
@@ -243,6 +232,10 @@ rb_reg_desc(s, len, re)
     if (re) {
 	if (FL_TEST(re, REG_IGNORECASE))
 	    rb_str_cat(str, "i", 1);
+	if (FL_TEST(re, REG_EXTENDED))
+	    rb_str_cat(str, "x", 1);
+	if (FL_TEST(re, REG_POSIX))
+	    rb_str_cat(str, "p", 1);
 	if (FL_TEST(re, KCODE_FIXED)) {
 	    switch ((RBASIC(re)->flags & KCODE_MASK)) {
 	      case KCODE_NONE:
@@ -729,10 +722,11 @@ rb_reg_new_1(klass, s, len, options)
     int len;
     int options;		/* CASEFOLD  = 1 */
 				/* EXTENDED  = 2 */
-				/* CODE_NONE = 4 */
-				/* CODE_EUC  = 8 */
-				/* CODE_SJIS = 12 */
-				/* CODE_UTF8 = 16 */
+				/* POSIX     = 4 */
+				/* CODE_NONE = 8 */
+				/* CODE_EUC  = 16 */
+				/* CODE_SJIS = 24 */
+				/* CODE_UTF8 = 32 */
 {
     NEWOBJ(re, struct RRegexp);
     OBJSETUP(re, klass, T_REGEXP);
@@ -742,38 +736,44 @@ rb_reg_new_1(klass, s, len, options)
     if (options & RE_OPTION_IGNORECASE) {
 	FL_SET(re, REG_IGNORECASE);
     }
-    switch (options & ~0x3) {
+    if (options & RE_OPTION_EXTENDED) {
+	FL_SET(re, REG_EXTENDED);
+    }
+    if (options & RE_OPTION_POSIX) {
+	FL_SET(re, REG_POSIX);
+    }
+    switch (options & ~0x7) {
       case 0:
       default:
 	FL_SET(re, reg_kcode);
 	break;
-      case 4:
+      case 8:
 	kcode_none(re);
 	break;
-      case 8:
+      case 16:
 	kcode_euc(re);
 	break;
-      case 12:
+      case 24:
 	kcode_sjis(re);
 	break;
-      case 16:
+      case 32:
 	kcode_utf8(re);
 	break;
     }
 
-    if (options & ~0x3) {
+    if (options & ~0x7) {
 	kcode_set_option((VALUE)re);
     }
     if (ruby_ignorecase) {
 	options |= RE_OPTION_IGNORECASE;
 	FL_SET(re, REG_CASESTATE);
     }
-    re->ptr = make_regexp(s, len, options & 0x3);
+    re->ptr = make_regexp(s, len, options & 0x7);
     re->str = ALLOC_N(char, len+1);
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
-    if (options & ~0x3) {
+    if (options & ~0x7) {
 	kcode_reset_option();
     }
     rb_obj_call_init((VALUE)re, 0, 0);
@@ -902,16 +902,16 @@ rb_reg_s_new(argc, argv, self)
 
 	switch (kcode[0]) {
 	  case 'n': case 'N':
-	    flag |= 4;
-	    break;
-	  case 'e': case 'E':
 	    flag |= 8;
 	    break;
+	  case 'e': case 'E':
+	    flag |= 16;
+	    break;
 	  case 's': case 'S':
-	    flag |= 12;
+	    flag |= 24;
 	    break;
 	  case 'u': case 'U':
-	    flag |= 16;
+	    flag |= 32;
 	    break;
 	  default:
 	    break;
@@ -1259,6 +1259,7 @@ Init_Regexp()
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));
+    rb_define_const(rb_cRegexp, "POSIX", INT2FIX(RE_OPTION_POSIX));
 
     rb_global_variable(&reg_cache);
     rb_global_variable(&matchcache);

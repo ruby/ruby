@@ -1607,10 +1607,6 @@ none		: /* none */
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
 
-#ifndef HAVE_STRDUP
-char *strdup();
-#endif
-
 static NODE *rb_str_extend();
 
 #define LEAVE_BS 1
@@ -2046,20 +2042,23 @@ parse_regx(term, paren)
 		  case 'x':
 		    options |= RE_OPTION_EXTENDED;
 		    break;
+		  case 'p':
+		    options |= RE_OPTION_POSIX;
+		    break;
 		  case 'o':
 		    once = 1;
 		    break;
 		  case 'n':
-		    kcode = 4;
-		    break;
-		  case 'e':
 		    kcode = 8;
 		    break;
+		  case 'e':
+		    kcode = 16;
+		    break;
 		  case 's':
-		    kcode = 12;
+		    kcode = 24;
 		    break;
 		  case 'u':
-		    kcode = 16;
+		    kcode = 32;
 		    break;
 		  default:
 		    pushback(c);

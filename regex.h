@@ -60,7 +60,7 @@
 #define RE_CHAR_CLASSES (1L << 9)
 
 /* match will be done case insensetively */
-#define RE_OPTION_IGNORECASE (1L<<1)
+#define RE_OPTION_IGNORECASE (1L)
 /* perl-style extended pattern available */
 #define RE_OPTION_EXTENDED   (RE_OPTION_IGNORECASE<<1)
 /* newline will be included for . and invert charclass matches */

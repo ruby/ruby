@@ -56,9 +56,6 @@ void *xrealloc();
 #endif
 
 #ifndef NT
-# ifndef strdup
-char *strdup();
-# endif
 char *getenv();
 #endif
 
@@ -1155,6 +1152,35 @@ dln_strerror()
 
 
 #if defined(_AIX)
+static void *
+aix_findmain()
+{
+    struct ld_info *lp;
+    char *buf;
+    int size = 4 * 1024;
+    int rc;
+    void *ret;
+
+    if ((buf = xmalloc(size)) == NULL) {
+	return NULL;
+    }
+    while ((rc = loadquery(L_GETINFO, buf, size)) == -1 && errno == ENOMEM) {
+	free(buf);
+	size += 4 * 1024;
+	if ((buf = xmalloc(size)) == NULL) {
+	    return NULL;
+	}
+    }
+    if (rc == -1) {
+	free(buf);
+	return NULL;
+    }
+    lp = (struct ld_info *)buf;
+    ret = lp->ldinfo_dataorg;
+    free(buf);
+    return ret;
+}
+
 static void
 aix_loaderror(const char *pathname)
 {
@@ -1310,10 +1336,19 @@ dln_load(file)
 #if defined(_AIX)
 #define DLN_DEFINED
     {
+	static void *main_module = NULL;
 	void (*init_fct)();
 
-	init_fct = (void(*)())load(file, 1, 0);
+	if (main_module == NULL) {
+	    if ((main_module = aix_findmain()) == NULL) {
+		aix_loaderror(file);
+	    }
+	}
+	init_fct = (void(*)())load((char*)file, 1, 0);
 	if (init_fct == NULL) {
+	    aix_loaderror(file);
+	}
+	if (loadbind(0, main_module, init_fct) == -1) {
 	    aix_loaderror(file);
 	}
 	(*init_fct)();

@@ -1,3 +1,39 @@
+Tue Apr 20 11:24:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_dump): `#' should be escaped.
+
+Tue Apr 20 02:32:42 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (parse_regx): option /p for posix match added.
+
+	* re.c (rb_reg_desc): did not print options properly.
+
+	* io.c (rb_file_s_open): intialize was called twice.
+
+Mon Apr 19 18:56:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* configure.in (DEFAULT_KCODE): can specify default code for
+	  $KCODE by --with-default-kcode=(euc|sjis|utf8|none).
+
+	* regex.c (IS_A_LETTER): a byte sequence shorter than mbc should
+	  not match with \w etc.
+
+Mon Apr 19 13:49:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (eval): should restore ruby_dyna_vars.
+
+Fri Apr 16 21:40:43 1999  Nobuetsu Nokada  <gea02117@nifty.ne.jp>
+
+	* io.c (f_backquote): pipe_open may return nil.
+
+	* io.c (f_open): rb_io_open may return nil.
+
+	* io.c (io_s_foreach): ditto.
+
+	* io.c (io_s_readlines): ditto.
+
+	* io.c (io_defset): wrong message.
+
 Fri Apr 16 15:09:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* bignum.c (rb_str2inum): strtoul() returns long, not int.
@@ -15,6 +51,12 @@ Thu Apr 15 23:46:20 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 Wed Apr 14 23:52:51 1999  SHIROYAMA Takayuki  <psi@tokyo.stellar.co.jp>
 
 	* node.h (NODE_LMASK): should be long to avoid overflow.
+
+Wed Apr 14 13:14:35 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* dln.c: AIX dynamic link.
+
+	* ext/aix_ld.rb: ditto.
 
 Wed Apr 14 12:19:09 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

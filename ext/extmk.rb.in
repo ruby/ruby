@@ -24,18 +24,12 @@ $hdr_cache = {}
 $top_srcdir = "@top_srcdir@"
 if $top_srcdir !~ "^/"
   # get absolute path
-  save = Dir.pwd
-  Dir.chdir $top_srcdir
-  $top_srcdir = Dir.pwd
-  Dir.chdir save
+  $top_srcdir = File.expand_path($top_srcdir)
 end
 $topdir = ".."
 if $topdir !~ "^/"  
   # get absolute path
-  save = Dir.pwd
-  Dir.chdir $topdir
-  $topdir = Dir.pwd
-  Dir.chdir save
+  $topdir = File.expand_path($topdir)
 end
 
 ## drive letter
@@ -78,7 +72,7 @@ CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
 else
 CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s @LDFLAGS@ %s conftest.c @LIBS@ %s"
+LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s %s conftest.c @LIBS@ %s"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s conftest.c"
 
 if /cygwin|mswin32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ PLATFORM

@@ -38,14 +38,15 @@ def extract(nm, out)
   data = nm.readlines.collect{|line|
     line = line.split
     case line[1]
-    when "B", "D", "T"
-      line[2]
+    when "B", "D"
+      line[0]
     else
       next
     end
   }.compact!.sort!
   uniq(data)
   exp = open(out, "w")
+  exp.printf "#!\n"
   for line in data
     exp.printf "%s\n", line
   end
@@ -53,21 +54,14 @@ def extract(nm, out)
   nm.close
 end
 if older("../ruby.imp", "../../miniruby")
-#  nm = open("|/usr/ccs/bin/nm -Bex ../../*.o")
-#  nm = open("|/usr/ccs/bin/nm -Bex ../../*.o")
-  nm = open("|nm ../../*.o")
+  nm = open("|/usr/ccs/bin/nm -p ../../*.o")
   extract(nm, "../ruby.imp")
 end
 
-objs = Dir["*.o"].join(" ")
-#nm = open("|/usr/ccs/bin/nm -Bex #{objs}")
-nm = open("|nm #{objs}")
-extract(nm, "#{base}.exp")
+#objs = Dir["*.o"].join(" ")
+#nm = open("|/usr/ccs/bin/nm -p #{objs}")
+#extract(nm, "#{base}.exp")
 
-#system format("/usr/ccs/bin/ld %s %s ",ldargs,ARGV.join(' '))
-#system "/bin/rm -f #{base}.exp"
-#system "chmod o-rwx ${base}.so"
-
-p format("/usr/ccs/bin/ld %s %s ",ldargs,ARGV.join(' '))
-p "/bin/rm -f #{base}.exp"
-p "chmod o-rwx ${base}.so"
+cmd = format("/usr/ccs/bin/ld %s %s ", ldargs, ARGV.join(' '))
+printf "\t%s\n", cmd
+system cmd

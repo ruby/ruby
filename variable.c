@@ -923,6 +923,7 @@ rb_obj_instance_variables(obj)
 	}
 	return ary;
       default:
+	if (!generic_iv_tbl) return Qnil;
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
 	    st_table *tbl;
 

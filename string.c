@@ -1404,7 +1404,7 @@ rb_str_dump(str)
 	switch (c) {
 	  case '"':  case '\\':
 	  case '\n': case '\r':
-	  case '\t': case '\f':
+	  case '\t': case '\f': case '#':
 	  case '\013': case '\007': case '\033': 
 	    len += 2;
 	    break;
@@ -1431,6 +1431,10 @@ rb_str_dump(str)
 	if (c == '"' || c == '\\') {
 	    *q++ = '\\';
 	    *q++ = c;
+	}
+	else if (c == '#') {
+	    *q++ = '\\';
+	    *q++ = '#';
 	}
 	else if (ISPRINT(c)) {
 	    *q++ = c;

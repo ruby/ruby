@@ -1212,13 +1212,14 @@ rb_fdopen(fd, mode)
     return file;
 }
 
-VALUE
-rb_file_open(fname, mode)
+static VALUE
+rb_file_open_internal(klass, fname, mode)
+    VALUE klass;
     const char *fname, *mode;
 {
     OpenFile *fptr;
     NEWOBJ(port, struct RFile);
-    OBJSETUP(port, rb_cFile, T_FILE);
+    OBJSETUP(port, klass, T_FILE);
     MakeOpenFile(port, fptr);
 
     fptr->mode = rb_io_mode_flags(mode);
@@ -1230,7 +1231,15 @@ rb_file_open(fname, mode)
 }
 
 VALUE
-rb_file_sysopen(fname, flags, mode)
+rb_file_open(fname, mode)
+    const char *fname, *mode;
+{
+    return rb_file_open_internal(rb_cFile, fname, mode);
+}
+
+VALUE
+rb_file_sysopen_internal(klass, fname, flags, mode)
+    VALUE klass;
     char *fname;
     int flags, mode;
 {
@@ -1238,13 +1247,13 @@ rb_file_sysopen(fname, flags, mode)
     if (mode != 0666) {
 	rb_warn("can't specify file mode on this platform");
     }
-    return rb_file_open(fname, rb_io_flags_mode(flags));
+    return rb_file_open_internal(klass, fname, rb_io_flags_mode(flags));
 #else
     OpenFile *fptr;
     int fd;
     char *m;
     NEWOBJ(port, struct RFile);
-    OBJSETUP(port, rb_cFile, T_FILE);
+    OBJSETUP(port, klass, T_FILE);
     MakeOpenFile(port, fptr);
 
     fd = rb_open(fname, flags, mode);
@@ -1256,6 +1265,14 @@ rb_file_sysopen(fname, flags, mode)
 
     return (VALUE)port;
 #endif
+}
+
+VALUE
+rb_file_sysopen(fname, flags, mode)
+    char *fname;
+    int flags, mode;
+{
+    return rb_file_sysopen_internal(rb_cFile, flags, mode);
 }
 
 #if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
@@ -1501,7 +1518,7 @@ rb_file_s_open(argc, argv, klass)
 	int flags = FIX2INT(vmode);
 	int fmode = NIL_P(perm) ? 0666 : FIX2INT(perm);
 
-	file = rb_file_sysopen(path, flags, fmode);
+	file = rb_file_sysopen_internal(klass, path, flags, fmode);
     }
     else {
 	if (!NIL_P(vmode)) {
@@ -1510,11 +1527,9 @@ rb_file_s_open(argc, argv, klass)
 	else {
 	    mode = "r";
 	}
-	file = rb_file_open(RSTRING(fname)->ptr, mode);
+	file = rb_file_open_internal(klass, RSTRING(fname)->ptr, mode);
     }
 
-    RBASIC(file)->klass = klass;
-    rb_obj_call_init(file, 0, 0);
     if (rb_iterator_p()) {
 	return rb_ensure(rb_yield, file, rb_io_close, file);
     }
@@ -1553,6 +1568,7 @@ rb_f_open(argc, argv)
     }
 
     port = pipe_open(RSTRING(pname)->ptr+1, mode);
+    if (NIL_P(port)) return Qnil;
     if (rb_iterator_p()) {
 	return rb_ensure(rb_yield, port, rb_io_close, port);
     }
@@ -1982,7 +1998,7 @@ rb_io_defset(val, id)
 	val = rb_io_open(RSTRING(val)->ptr, "w");
     }
     if (!rb_respond_to(val, id_write)) {
-	rb_raise(rb_eTypeError, "$< must have write method, %s given",
+	rb_raise(rb_eTypeError, "$> must have write method, %s given",
 		 rb_class2name(CLASS_OF(val)));
     }
     rb_defout = val;
@@ -2265,6 +2281,7 @@ rb_f_backquote(obj, str)
 
     Check_SafeStr(str);
     port = pipe_open(RSTRING(str)->ptr, "r");
+    if (NIL_P(port)) return rb_str_new(0,0);
     result = read_all(port);
 
     rb_io_close(port);
@@ -2687,6 +2704,7 @@ rb_io_s_foreach(argc, argv, io)
 
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
+    if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(rb_io_foreach_line, (VALUE)&arg, rb_io_close, arg.io);
 }
 
@@ -2718,6 +2736,7 @@ rb_io_s_readlines(argc, argv, io)
 
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
+    if (NIL_P(arg.io)) return Qnil;
     return rb_ensure(rb_io_readline_line, (VALUE)&arg, rb_io_close, arg.io);
 }
 

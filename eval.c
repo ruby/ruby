@@ -450,12 +450,12 @@ static struct BLOCK *ruby_block;
 
 struct RVarmap *ruby_dyna_vars;
 #define PUSH_VARS() {			\
-    struct RVarmap * volatile _oldvmap;	\
-    _oldvmap = ruby_dyna_vars;		\
+    struct RVarmap * volatile _old;	\
+    _old = ruby_dyna_vars;		\
     ruby_dyna_vars = 0;
 
 #define POP_VARS()			\
-    ruby_dyna_vars = _oldvmap;		\
+    ruby_dyna_vars = _old;		\
 }
 
 static struct RVarmap*
@@ -4198,6 +4198,7 @@ eval(self, src, scope, file, line)
 	    FL_SET(old_scope, SCOPE_DONT_RECYCLE);
 	ruby_scope = old_scope;
 	ruby_block = old_block;
+	ruby_dyna_vars = old_d_vars;
 	data->vmode = scope_vmode; /* write back visibility mode */
 	scope_vmode = old_vmode;
     }

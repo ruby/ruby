@@ -308,12 +308,27 @@ else
   AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)
 fi
 
+dnl default value for $KANJI
+AC_SUBST(DEFAULT_KCODE)
+AC_ARG_WITH(default-kcode, 
+	[--with-default-kcode=CODE speficy default value for \$KCODE (utf8|euc|sjis|none)], 
+	[case $withval in
+	utf8) AC_DEFINE(DEFAULT_KCODE, KCODE_UTF8);;
+	euc)  AC_DEFINE(DEFAULT_KCODE, KCODE_EUC);;
+	sjis) AC_DEFINE(DEFAULT_KCODE, KCODE_SJIS);;
+	none) AC_DEFINE(DEFAULT_KCODE, KCODE_NONE);;
+        *)    AC_MSG_WARN($withval is not valid kcode; ignored);;
+	esac])
+
 dnl wheather use dln_a_out ot not
-AC_ARG_WITH(dln-a-out, [--with-dln-a-out          use dln_a_out if possible], [
+AC_ARG_WITH(dln-a-out, 
+	[--with-dln-a-out          use dln_a_out if possible], [
 	case $withval in
 	yes) with_dln_a_out=yes;;
 	*)   with_dln_a_out=no;;
 	esac], [with_dln_a_out=no])
+
+AC_SUBST(XLDFLAGS)dnl
 
 case "$host_os" in
     linux*)
@@ -342,7 +357,7 @@ main() {
     with_dln_a_out=yes
     host_os=${host_os}-a_out
   else
-    LDFLAGS="-rdynamic"
+    XLDFLAGS="-rdynamic"
   fi;;
 esac
 
@@ -380,11 +395,11 @@ if test "$with_dln_a_out" != yes; then
   case "$host_os" in
 	hpux*)		DLDFLAGS="-E"
 			LDSHARED='ld -b'
-			LDFLAGS="-Wl,-E"
+			XLDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
 			   LDSHARED='gcc -Wl,-G'
-			   `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
+			   `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && XLDFLAGS="-Wl,-E"
 			else
 			   LDSHARED='ld -G'
 			fi
@@ -404,7 +419,7 @@ if test "$with_dln_a_out" != yes; then
 	freebsd*)       LDSHARED="gcc -shared"
 			if test -x /usr/bin/objformat && \
 			   test `/usr/bin/objformat` = "elf" ; then
-			    LDFLAGS="-rdynamic"
+			    XLDFLAGS="-rdynamic"
 			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
 			    rb_cv_freebsd_elf=yes
 			else
@@ -414,7 +429,7 @@ if test "$with_dln_a_out" != yes; then
 	netbsd*) 	LDSHARED="ld -Bshareable"
 			case "$host_cpu" in
 			alpha|mips)
-				LDFLAGS="-export-dynamic" ;;
+				XLDFLAGS="-export-dynamic" ;;
 			*)
 				;;
 			esac
@@ -434,6 +449,7 @@ if test "$with_dln_a_out" != yes; then
 			DLDFLAGS="$ARCH_FLAG"
 			rb_cv_dlopen=yes ;;
 	aix*)		LDSHARED='../../miniruby ../aix_ld.rb $(TARGET)'
+			XLDFLAGS="-Wl,-bE:ext/ruby.imp"
 			rb_cv_dlopen=yes ;;
 	human*)		DLDFLAGS=''
 			LDSHARED=''

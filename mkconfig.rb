@@ -55,14 +55,7 @@ File.foreach "config.status" do |$_|
       end
     end
   elsif /^ac_given_srcdir=(.*)/
-    path = $1
-    cwd = Dir.pwd
-    begin
-      Dir.chdir path
-      v_fast << "  CONFIG[\"srcdir\"] = \"" + Dir.pwd + "\"\n"
-    ensure
-      Dir.chdir cwd
-    end
+    v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path($1) + "\"\n"
   elsif /^ac_given_INSTALL=(.*)/
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
@@ -70,8 +63,7 @@ File.foreach "config.status" do |$_|
 end
 
 print v_fast, v_others
-Dir.chdir File.dirname($0)
-print "  CONFIG[\"compile_dir\"] = \"#{Dir.pwd}\"\n"
+print "  CONFIG[\"compile_dir\"] = \"#{File.expand_path($0)}\"\n"
 print "end\n"
 config.close
 # vi:set sw=2:
