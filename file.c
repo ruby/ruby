@@ -1729,8 +1729,7 @@ rb_file_s_lchmod(argc, argv)
 {
     VALUE vmode;
     VALUE rest;
-    int mode;
-    long n;
+    long mode, n;
 
     rb_secure(2);
     rb_scan_args(argc, argv, "1*", &vmode, &rest);
@@ -2654,11 +2653,11 @@ rb_file_s_basename(argc, argv)
     VALUE *argv;
 {
     VALUE fname, fext, basename;
-    char *name, *p, *ext = NULL;
+    char *name, *p;
     int f;
 
     if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
-	ext = StringValueCStr(fext);
+	StringValue(fext);
     }
     StringValue(fname);
     if (RSTRING(fname)->len == 0 || !*(name = RSTRING(fname)->ptr))
@@ -2674,7 +2673,7 @@ rb_file_s_basename(argc, argv)
 #endif
     }
     else if (!(p = strrdirsep(name))) {
-	if (NIL_P(fext) || !(f = rmext(name, ext))) {
+	if (NIL_P(fext) || !(f = rmext(name, StringValueCStr(fext)))) {
 	    f = chompdirsep(name) - name;
 	    if (f == RSTRING(fname)->len) return fname;
 	}
@@ -2682,7 +2681,7 @@ rb_file_s_basename(argc, argv)
     }
     else {
 	while (isdirsep(*p)) p++; /* skip last / */
-	if (NIL_P(fext) || !(f = rmext(p, ext))) {
+	if (NIL_P(fext) || !(f = rmext(p, StringValueCStr(fext)))) {
 	    f = chompdirsep(p) - p;
 	}
     }

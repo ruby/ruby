@@ -92,7 +92,7 @@ static unsigned long malloc_increase = 0;
 static unsigned long malloc_limit = GC_MALLOC_LIMIT;
 static void run_final();
 static VALUE nomem_error;
-static void gc_internal();
+static void garbage_collect();
 
 void
 rb_memerror()
@@ -120,11 +120,11 @@ ruby_xmalloc(size)
     malloc_increase += size;
 
     if (malloc_increase > malloc_limit) {
-	gc_internal();
+	garbage_collect();
     }
     RUBY_CRITICAL(mem = malloc(size));
     if (!mem) {
-	gc_internal();
+	garbage_collect();
 	RUBY_CRITICAL(mem = malloc(size));
 	if (!mem) {
 	    rb_memerror();
@@ -161,7 +161,7 @@ ruby_xrealloc(ptr, size)
     malloc_increase += size;
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
-	gc_internal();
+	garbage_collect();
 	RUBY_CRITICAL(mem = realloc(ptr, size));
 	if (!mem) {
 	    rb_memerror();
@@ -381,7 +381,7 @@ rb_newobj()
 {
     VALUE obj;
 
-    if (!freelist) gc_internal();
+    if (!freelist) garbage_collect();
 
     obj = (VALUE)freelist;
     freelist = freelist->as.free.next;
@@ -1288,7 +1288,7 @@ int rb_setjmp (rb_jmp_buf);
 #endif /* __GNUC__ */
 
 static void
-gc_internal()
+garbage_collect()
 {
     struct gc_list *list;
     struct FRAME * volatile frame; /* gcc 2.7.2.3 -O2 bug??  */
@@ -1403,7 +1403,7 @@ gc_internal()
 void
 rb_gc()
 {
-    gc_internal();
+    garbage_collect();
     rb_gc_finalize_deferred();
 }
 

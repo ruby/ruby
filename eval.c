@@ -6187,12 +6187,13 @@ rb_f_eval(argc, argv, self)
 	SafeStringValue(src);
     }
     if (argc >= 3) {
-	file = StringValuePtr(vfile);
+	StringValue(vfile);
     }
     if (argc >= 4) {
 	line = NUM2INT(vline);
     }
 
+    if (!NIL_P(vfile)) file = RSTRING(vfile)->ptr;
     if (NIL_P(scope) && ruby_frame->prev) {
 	struct FRAME *prev;
 	VALUE val;

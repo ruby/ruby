@@ -1,3 +1,27 @@
+Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_sum): string may be altered.  [ruby-dev:24381]
+
+Fri Oct  1 11:40:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_eval): defer pointer retrieval to prevent unsafe
+	  sourcefile string modification.  [ruby-dev:24373]
+
+	* io.c (io_read): block string buffer modification during
+	  rb_io_fread() by freezing it temporarily. [ruby-dev:24366]
+
+	* io.c (rb_io_s_popen): mode argument may be altered.
+	  [ruby-dev:24375]
+
+	* file.c (rb_file_s_basename): ext argument may be altered.
+	  [ruby-dev:24377]
+
+	* enum.c (enum_sort_by): use NODE instead of 2 element arrays.
+	  [ruby-dev:24378]
+
+	* string.c (rb_str_chomp_bang): StringValue() may change the
+	  receiver.  [ruby-dev:24371]
+
 Fri Oct  1 11:25:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/grid.rb: revive TkGrid.grid

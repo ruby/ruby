@@ -3139,7 +3139,7 @@ tr_setup_table(str, table, init)
 	buf[c & 0xff] = !cflag;
     }
     for (i=0; i<256; i++) {
-	table[i] = table[i]&&buf[i];
+	table[i] = table[i] && buf[i];
     }
 }
 
@@ -3598,6 +3598,17 @@ rb_f_split(argc, argv)
 }
 
 
+static inline void
+str_mod_check(s, p, len)
+    VALUE s;
+    char *p;
+    long len;
+{
+    if (RSTRING(s)->ptr != p || RSTRING(s)->len != len) {
+	rb_raise(rb_eRuntimeError, "string modified");
+    }
+}
+
 /*
  *  call-seq:
  *     str.each(separator=$/) {|substr| block }        => str
@@ -3672,8 +3683,7 @@ rb_str_each_line(argc, argv, str)
 	    line = rb_str_new5(str, s, p - s);
 	    OBJ_INFECT(line, str);
 	    rb_yield(line);
-	    if (RSTRING(str)->ptr != ptr || RSTRING(str)->len != len)
-		rb_raise(rb_eArgError, "string modified");
+	    str_mod_check(str, ptr, len);
 	    s = p;
 	}
     }
@@ -3843,11 +3853,13 @@ rb_str_chomp_bang(argc, argv, str)
 {
     VALUE rs;
     int newline;
-    char *p = RSTRING(str)->ptr;
-    long len = RSTRING(str)->len, rslen;
+    char *p;
+    long len, rslen;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
+	len = RSTRING(str)->len;
 	if (len == 0) return Qnil;
+	p = RSTRING(str)->ptr;
 	rs = rb_rs;
 	if (rs == rb_default_rs) {
 	  smart_chomp:
@@ -3871,9 +3883,10 @@ rb_str_chomp_bang(argc, argv, str)
 	}
     }
     if (NIL_P(rs)) return Qnil;
-    if (len == 0) return Qnil;
-
     StringValue(rs);
+    len = RSTRING(str)->len;
+    if (len == 0) return Qnil;
+    p = RSTRING(str)->ptr;
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
 	while (len>0 && p[len-1] == '\n') {
@@ -4393,13 +4406,16 @@ rb_str_sum(argc, argv, str)
     VALUE vbits;
     int bits;
     char *p, *pend;
+    long len;
 
     if (rb_scan_args(argc, argv, "01", &vbits) == 0) {
 	bits = 16;
     }
     else bits = NUM2INT(vbits);
 
-    p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
+    p = RSTRING(str)->ptr;
+    len = RSTRING(str)->len;
+    pend = p + len;
     if (bits > sizeof(long)*CHAR_BIT) {
 	VALUE res = INT2FIX(0);
 	VALUE mod;
@@ -4408,6 +4424,7 @@ rb_str_sum(argc, argv, str)
 	mod = rb_funcall(mod, '-', 1, INT2FIX(1));
 
 	while (p < pend) {
+	    str_mod_check(str, p, len);
 	    res = rb_funcall(res, '+', 1, INT2FIX((unsigned int)*p));
 	    p++;
 	}
@@ -4422,6 +4439,7 @@ rb_str_sum(argc, argv, str)
 	    mod = -1;
 	}
 	while (p < pend) {
+	    str_mod_check(str, p, len);
 	    res += (unsigned int)*p;
 	    p++;
 	}
