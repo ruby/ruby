@@ -24,6 +24,7 @@ extern "C" {
 
 #if defined(_WIN32)
 #  define OpenFile WINAPI_OpenFile
+#  define OSSL_NO_CONF_API 1
 #endif
 #include <errno.h>
 #include <openssl/err.h>

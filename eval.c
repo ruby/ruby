@@ -7741,6 +7741,10 @@ win32_get_exception_list()
 # if defined _MSC_VER
 #   ifdef _M_IX86
 #   define SAVE_WIN32_EXCEPTION_LIST
+#   if _MSC_VER >= 1310
+      /* warning: unsafe assignment to fs:0 ... this is ok */
+#     pragma warning(disable: 4733)
+#   endif
     __asm mov eax, fs:[0];
     __asm mov p, eax;
 #   endif

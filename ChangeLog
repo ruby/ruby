@@ -1,3 +1,8 @@
+Wed Sep 10 22:41:54 2003  Tietew <tietew@tietew.net>
+
+	* eval.c (win32_get_exception_list): avoid VC7 warning.
+	  [ruby-win32:577]
+
 Tue Sep  9 10:39:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (struct tag): dst should be VALUE.

@@ -148,7 +148,11 @@ ossl_config_initialize(int argc, VALUE *argv, VALUE self)
 		ossl_raise(eConfigError, "error in %s:%d", filename, eline);
         }
     }
+#ifdef OSSL_NO_CONF_API
+    else rb_raise(rb_eArgError, "wrong number of arguments(0 for 1)");
+#else
     else _CONF_new_data(conf);
+#endif
     
     return self;
 }
@@ -156,6 +160,9 @@ ossl_config_initialize(int argc, VALUE *argv, VALUE self)
 static VALUE
 ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
 {
+#ifdef OSSL_NO_CONF_API
+    rb_notimplement();
+#else
     CONF *conf;
     CONF_VALUE *sv, *cv;
 
@@ -181,6 +188,7 @@ ossl_config_add_value(VALUE self, VALUE section, VALUE name, VALUE value)
     }
     
     return value;
+#endif
 }
 
 static VALUE
