@@ -5420,6 +5420,8 @@ rb_f_require(obj, fname)
 	fname = rb_find_file(tmp);
 	goto load_dyna;
     }
+    if (rb_feature_p(RSTRING(fname)->ptr, Qfalse))
+	return Qfalse;
     rb_raise(rb_eLoadError, "No such file to load -- %s",
 	     RSTRING(fname)->ptr);
 
