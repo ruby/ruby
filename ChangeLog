@@ -1,3 +1,8 @@
+Thu Feb 12 20:45:01 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb (WriteAdapater#puts): must append "\n" to
+	  the string, don't prepend. (ruby-bugs:PR#1280)
+
 Thu Feb 12 20:31:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_tmpsrc): cpp32 of Borland C++ ignores #error

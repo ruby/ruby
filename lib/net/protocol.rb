@@ -404,7 +404,7 @@ module Net # :nodoc:
     end
 
     def puts( str = '' )
-      write str.sub(/\n?/, "\n")
+      write str.sub(/\n?\z/, "\n")
     end
 
     def printf( *args )
