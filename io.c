@@ -1681,11 +1681,7 @@ rb_file_s_open(argc, argv, klass)
     Check_SafeStr(fname);
     path = RSTRING(fname)->ptr;
 
-    if (RFILE(io)->fptr) {
-	rb_io_close_m(io);
-	free(RFILE(io)->fptr);
-	RFILE(io)->fptr = 0;
-    }
+    RFILE(io)->fptr = 0;
     if (FIXNUM_P(vmode)) {
 	int flags = NUM2INT(vmode);
 	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
