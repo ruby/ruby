@@ -65,14 +65,27 @@ class TkFont
     case (Tk::TK_VERSION)
     when /^4\.*/
       conf = tk_split_list(tk_call(*args))
-      ltn = conf.assoc('font')[4]
-      ltn = nil if ltn == []
-      knj = conf.assoc('kanjifont')[4]
-      knj = nil if knj == []
-      TkFont.new(ltn, knj).call_font_configure(path, *args)
+      if font_inf = conf.assoc('-font')
+	ltn = font_inf[4]
+	ltn = nil if ltn == []
+      else 
+	#ltn = nil
+	raise RuntimeError, "unknown option '-font'"
+      end
+      if font_inf = conf.assoc('-kanjifont')
+	knj = font_inf[4]
+	knj = nil if knj == []
+      else
+	knj = nil
+      end
+      TkFont.new(ltn, knj).call_font_configure(path, *(args + [{}]))
 
     when /^8\.*/
-      fnt = tk_split_list(tk_call(*(args + ['-font'])))[4]
+      conf = tk_split_list(tk_call(*args))
+      unless font_inf = conf.assoc('-font')
+	raise RuntimeError, "unknown option '-font'"
+      end
+      fnt = font_inf[4]
       if fnt == []
 	TkFont.new(nil, nil).call_font_configure(path, *(args + [{}]))
       else
@@ -443,6 +456,28 @@ class TkFont
     end
   end
 
+  def delete_core_tk4x
+    Tk_FontNameTBL[@id] = nil
+    Tk_FontUseTBL.delete_if{|key,value| value == self}
+  end
+
+  def delete_core_tk8x
+    begin
+      tk_call('font', 'delete', @latinfont)
+    rescue
+    end
+    begin
+      tk_call('font', 'delete', @kanjifont)
+    rescue
+    end
+    begin
+      tk_call('font', 'delete', @compoundfont)
+    rescue
+    end
+    Tk_FontNameTBL[@id] = nil
+    Tk_FontUseTBL.delete_if{|key,value| value == self}
+  end
+
   def latin_replace_core_tk4x(ltn)
     create_latinfont_tk4x(ltn)
     @compoundfont[0] = [@latinfont] if JAPANIZED_TK
@@ -453,9 +488,17 @@ class TkFont
 	  if w.include?(';')
 	    win, tag = w.split(';')
 	    winobj = tk_tcl2ruby(win)
-	    winobj.tagfont_configure(tag, {'font'=>@latinfont})
+#	    winobj.tagfont_configure(tag, {'font'=>@latinfont})
+	    if winobj.kind_of? TkText
+	      tk_call(win, 'tag', 'configure', tag, '-font', @latinfont)
+	    elsif winobj.kind_of? TkCanvas
+	      tk_call(win, 'itemconfigure', tag, '-font', @latinfont)
+	    else
+	      raise RuntimeError, "unknown widget type"
+	    end
 	  else
-	    tk_tcl2ruby(w).configure('font', @latinfont)
+#	    tk_tcl2ruby(w).font_configure('font'=>@latinfont)
+	    tk_call(w, 'configure', '-font', @latinfont)
 	  end
 	rescue
 	  Tk_FontUseTBL[w] = nil
@@ -477,9 +520,17 @@ class TkFont
 	  if w.include?(';')
 	    win, tag = w.split(';')
 	    winobj = tk_tcl2ruby(win)
-	    winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
+#	    winobj.tagfont_configure(tag, {'kanjifont'=>@kanjifont})
+	    if winobj.kind_of? TkText
+	      tk_call(win, 'tag', 'configure', tag, '-kanjifont', @kanjifont)
+	    elsif winobj.kind_of? TkCanvas
+	      tk_call(win, 'itemconfigure', tag, '-kanjifont', @kanjifont)
+	    else
+	      raise RuntimeError, "unknown widget type"
+	    end
 	  else
-	    tk_tcl2ruby(w).configure('kanjifont', @kanjifont)
+#	    tk_tcl2ruby(w).font_configure('kanjifont'=>@kanjifont)
+	    tk_call(w, 'configure', '-kanjifont', @kanjifont)
 	  end
 	rescue
 	  Tk_FontUseTBL[w] = nil
@@ -490,7 +541,10 @@ class TkFont
   end
 
   def latin_replace_core_tk8x(ltn)
-    tk_call('font', 'delete', @latinfont)
+    begin
+      tk_call('font', 'delete', @latinfont)
+    rescue
+    end
     create_latinfont(ltn)
     self
   end
@@ -498,7 +552,10 @@ class TkFont
   def kanji_replace_core_tk80(knj)
     return self unless JAPANIZED_TK
 
-    tk_call('font', 'delete', @kanjifont)
+    begin
+      tk_call('font', 'delete', @kanjifont)
+    rescue
+    end
     create_kanjifont(knj)
     self
   end
@@ -575,6 +632,7 @@ class TkFont
     alias actual_core         actual_core_tk4x
     alias configure_core      configure_core_tk4x
     alias configinfo_core     configinfo_core_tk4x
+    alias delete_core         delete_core_tk4x
     alias latin_replace_core  latin_replace_core_tk4x
     alias kanji_replace_core  kanji_replace_core_tk4x
     alias measure_core        measure_core_tk4x
@@ -587,6 +645,7 @@ class TkFont
     alias actual_core         actual_core_tk8x
     alias configure_core      configure_core_tk8x
     alias configinfo_core     configinfo_core_tk8x
+    alias delete_core         delete_core_tk8x
     alias latin_replace_core  latin_replace_core_tk8x
     alias kanji_replace_core  kanji_replace_core_tk80
     alias measure_core        measure_core_tk8x
@@ -599,6 +658,7 @@ class TkFont
     alias actual_core         actual_core_tk8x
     alias configure_core      configure_core_tk8x
     alias configinfo_core     configinfo_core_tk8x
+    alias delete_core         delete_core_tk8x
     alias latin_replace_core  latin_replace_core_tk8x
     alias kanji_replace_core  kanji_replace_core_tk81
     alias measure_core        measure_core_tk8x
@@ -713,6 +773,10 @@ class TkFont
 
   def configinfo(slot=nil)
     configinfo_core(@compoundfont, slot)
+  end
+
+  def delete
+    delete_core
   end
 
   def latin_configure(slot, value=None)

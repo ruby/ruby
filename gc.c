@@ -42,8 +42,10 @@ static void run_final();
 #define GC_MALLOC_LIMIT 200000
 #endif
 #endif
+#define GC_NEWOBJ_LIMIT 1000
 
 static unsigned long malloc_memories = 0;
+static unsigned long alloc_objects = 0;
 
 void *
 xmalloc(size)
@@ -56,7 +58,7 @@ xmalloc(size)
     }
     if (size == 0) size = 1;
     malloc_memories += size;
-    if (malloc_memories > GC_MALLOC_LIMIT) {
+    if (malloc_memories > GC_MALLOC_LIMIT && alloc_objects > GC_NEWOBJ_LIMIT) {
 	gc_gc();
     }
     mem = malloc(size);
@@ -94,9 +96,6 @@ xrealloc(ptr, size)
     }
     if (!ptr) return xmalloc(size);
     malloc_memories += size;
-    if (malloc_memories > GC_MALLOC_LIMIT) {
-	gc_gc();
-    }
     mem = realloc(ptr, size);
     if (!mem) {
 	gc_gc();
@@ -253,6 +252,7 @@ rb_newobj()
       retry:
 	obj = (VALUE)freelist;
 	freelist = freelist->as.free.next;
+	alloc_objects++;
 	return obj;
     }
     if (dont_gc) add_heap();
@@ -621,6 +621,7 @@ gc_sweep()
 	freed += n;
 	freelist = nfreelist;
     }
+    alloc_objects = 0;
     if (freed < FREE_MIN) {
 	add_heap();
     }

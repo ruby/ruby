@@ -60,8 +60,11 @@ module TkTreatCItemFont
     fobj = tagfontobj(tagOrId)
     if ltn.kind_of? TkFont
       conf = {}
-      ltn.latin_configinfo.each{|key,val| conf[key] = val}
-      if keys
+      ltn.latin_configinfo.each{|key,val| conf[key] = val if val != []}
+      if conf == {}
+	fobj.latin_replace(ltn)
+	fobj.latin_configure(keys) if keys
+      elsif keys
 	fobj.latin_configure(conf.update(keys))
       else
 	fobj.latin_configure(conf)
@@ -76,8 +79,11 @@ module TkTreatCItemFont
     fobj = tagfontobj(tagOrId)
     if knj.kind_of? TkFont
       conf = {}
-      knj.kanji_configinfo.each{|key,val| conf[key] = val}
-      if keys
+      knj.kanji_configinfo.each{|key,val| conf[key] = val if val != []}
+      if conf == {}
+	fobj.kanji_replace(knj)
+	fobj.kanji_configure(keys) if keys
+      elsif keys
 	fobj.kanji_configure(conf.update(keys))
       else
 	fobj.kanji_configure(conf)

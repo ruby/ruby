@@ -5434,12 +5434,6 @@ thread_mark(th)
     struct BLOCK *block;
 
     gc_mark(th->result);
-    if (th->stk_ptr) {
-	gc_mark_locations(th->stk_ptr, th->stk_ptr+th->stk_len);
-#if defined(THINK_C) || defined(__human68k__)
-	gc_mark_locations(th->stk_ptr+2, th->stk_ptr+th->stk_len+2);
-#endif
-    }
     gc_mark(th->thread);
     if (th->join) gc_mark(th->join->thread);
 
@@ -5450,6 +5444,13 @@ thread_mark(th)
     gc_mark(th->last_match);
 
     /* mark data in copied stack */
+    if (th->stk_len == 0) return;  /* stack not active, no need to mark. */
+    if (th->stk_ptr) {
+	gc_mark_locations(th->stk_ptr, th->stk_ptr+th->stk_len);
+#if defined(THINK_C) || defined(__human68k__)
+	gc_mark_locations(th->stk_ptr+2, th->stk_ptr+th->stk_len+2);
+#endif
+    }
     frame = th->frame;
     while (frame && frame != top_frame) {
 	frame = ADJ(frame);
@@ -5504,14 +5505,16 @@ thread_save_context(th)
 {
     VALUE v;
 
-    th->stk_len = stack_length();
+    int len = stack_length();
+    th->stk_len = 0;
     th->stk_pos = (gc_stack_start<(VALUE*)&v)?gc_stack_start
-				             :gc_stack_start - th->stk_len;
-    if (th->stk_len > th->stk_max)  {
-	th->stk_max = th->stk_len;
-	REALLOC_N(th->stk_ptr, VALUE, th->stk_max);
+				             :gc_stack_start - len;
+    if (len > th->stk_max)  {
+	REALLOC_N(th->stk_ptr, VALUE, len);
+	th->stk_max = len;
     }
-    FLUSH_REGISTER_WINDOWS;
+    th->stk_len = len;
+    FLUSH_REGISTER_WINDOWS; 
     MEMCPY(th->stk_ptr, th->stk_pos, VALUE, th->stk_len);
 
     th->frame = the_frame;

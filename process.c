@@ -324,12 +324,10 @@ proc_exec_n(argc, argv, progv)
     int i;
 
     if (progv) {
-	Check_SafeStr(progv);
 	prog = RSTRING(progv)->ptr;
     }
     args = ALLOCA_N(char*, argc+1);
     for (i=0; i<argc; i++) {
-	Check_SafeStr(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
     args[i] = 0;
@@ -466,13 +464,16 @@ proc_spawn_n(argc, argv, prog)
 }
 
 static int
-proc_spawn(str)
-    char *str;
+proc_spawn(sv)
+    VALUE sv;
 {
-    char *s = str, *t;
+    char *str;
+    char *s, *t;
     char **argv, **a;
     int state;
 
+    Check_SafeStr(sv);
+    str = s = RSTRING(sv)->ptr;
     for (s = str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    char *shell = dln_find_exe("sh", 0);
@@ -500,6 +501,7 @@ f_exec(argc, argv)
     VALUE *argv;
 {
     VALUE prog = 0;
+    int i;
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
@@ -515,9 +517,14 @@ f_exec(argc, argv)
 	}
 	prog = RARRAY(argv[0])->ptr[0];
 	argv[0] = RARRAY(argv[0])->ptr[1];
+    }
+    if (prog) {
+	Check_SafeStr(prog);
+    }
+    for (i = 0; i < argc; i++) {
+	Check_SafeStr(argv[i]);
     }
     if (argc == 1 && prog == 0) {
-	Check_SafeStr(argv[0]);
 	rb_proc_exec(RSTRING(argv[0])->ptr);
     }
     else {
@@ -671,17 +678,17 @@ f_system(argc, argv)
     }
 
     if (argc == 1 && prog == 0) {
-	state = proc_spawn(RSTRING(argv[0])->ptr);
+	state = proc_spawn(argv[0]);
     }
     else {
 	state = proc_spawn_n(argc, argv, prog);
     }
     last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
-
     return state == 0 ? TRUE : FALSE ;
 #else
     volatile VALUE prog = 0;
     int pid;
+    int i;
 
     fflush(stdin);		/* is it really needed? */
     fflush(stdout);
@@ -699,6 +706,12 @@ f_system(argc, argv)
 	argv[0] = RARRAY(argv[0])->ptr[1];
     }
 
+    if (prog) {
+	Check_SafeStr(prog);
+    }
+    for (i = 0; i < argc; i++) {
+	Check_SafeStr(argv[i]);
+    }
   retry:
     switch (pid = vfork()) {
       case 0:

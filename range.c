@@ -13,13 +13,14 @@
 #include "ruby.h"
 
 static VALUE cRange;
-static ID upto;
+static ID id_upto, id_cmp;
+static ID id_beg, id_end;
 
 static VALUE
 range_check(args)
     VALUE *args;
 {
-    rb_funcall(args[0], rb_intern("<=>"), 1, args[1]);
+    rb_funcall(args[0], id_cmp, 1, args[1]);
     return Qnil;
 }
 
@@ -41,8 +42,8 @@ range_s_new(klass, first, last)
 
     obj = obj_alloc(klass);
 
-    rb_iv_set(obj, "first", first);
-    rb_iv_set(obj, "last", last);
+    rb_ivar_set(obj, id_beg, first);
+    rb_ivar_set(obj, id_end, last);
     obj_call_init(obj);
 
     return obj;
@@ -61,8 +62,8 @@ range_eqq(rng, obj)
 {
     VALUE first, last;
 
-    first = rb_iv_get(rng, "first");
-    last = rb_iv_get(rng, "last");
+    first = rb_ivar_get(rng, id_beg);
+    last = rb_ivar_get(rng, id_end);
 
     if (FIXNUM_P(first) && FIXNUM_P(obj) && FIXNUM_P(last)) {
 	if (FIX2INT(first) <= FIX2INT(obj) && FIX2INT(obj) <= FIX2INT(last)) {
@@ -88,7 +89,7 @@ static VALUE
 range_upto(data)
     struct upto_data *data;
 {
-    return rb_funcall(data->first, upto, 1, data->last);
+    return rb_funcall(data->first, id_upto, 1, data->last);
 }
 
 static VALUE
@@ -97,8 +98,8 @@ range_each(obj)
 {
     VALUE b, e;
 
-    b = rb_iv_get(obj, "first");
-    e = rb_iv_get(obj, "last");
+    b = rb_ivar_get(obj, id_beg);
+    e = rb_ivar_get(obj, id_end);
 
     if (FIXNUM_P(b)) {		/* fixnum is a special case(for performance) */
 	num_upto(b, e);
@@ -121,7 +122,7 @@ range_first(obj)
 {
     VALUE b;
 
-    b = rb_iv_get(obj, "first");
+    b = rb_ivar_get(obj, id_beg);
     return b;
 }
 
@@ -131,7 +132,7 @@ range_last(obj)
 {
     VALUE e;
 
-    e = rb_iv_get(obj, "last");
+    e = rb_ivar_get(obj, id_end);
     return e;
 }
 
@@ -144,8 +145,8 @@ range_beg_end(range, begp, endp)
 
     if (!obj_is_kind_of(range, cRange)) return FALSE;
 
-    first = rb_iv_get(range, "first"); *begp = NUM2INT(first);
-    last = rb_iv_get(range, "last");   *endp = NUM2INT(last);
+    first = rb_ivar_get(range, id_beg); *begp = NUM2INT(first);
+    last = rb_ivar_get(range, id_end);   *endp = NUM2INT(last);
     return TRUE;
 }
 
@@ -155,8 +156,8 @@ range_to_s(range)
 {
     VALUE str, str2;
 
-    str = obj_as_string(rb_iv_get(range, "first"));
-    str2 = obj_as_string(rb_iv_get(range, "last"));
+    str = obj_as_string(rb_ivar_get(range, id_beg));
+    str2 = obj_as_string(rb_ivar_get(range, id_end));
     str_cat(str, "..", 2);
     str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
 
@@ -169,8 +170,8 @@ range_inspect(range)
 {
     VALUE str, str2;
 
-    str = rb_inspect(rb_iv_get(range, "first"));
-    str2 = rb_inspect(rb_iv_get(range, "last"));
+    str = rb_inspect(rb_ivar_get(range, id_beg));
+    str2 = rb_inspect(rb_ivar_get(range, id_end));
     str_cat(str, "..", 2);
     str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
 
@@ -186,8 +187,8 @@ range_length(rng)
     VALUE first, last;
     VALUE size;
 
-    first = rb_iv_get(rng, "first");
-    last = rb_iv_get(rng, "last");
+    first = rb_ivar_get(rng, id_beg);
+    last = rb_ivar_get(rng, id_end);
 
     if (RTEST(rb_funcall(first, '>', 1, last))) {
 	return INT2FIX(0);
@@ -217,5 +218,8 @@ Init_Range()
     rb_define_method(cRange, "length", range_length, 0);
     rb_define_method(cRange, "size", range_length, 0);
 
-    upto = rb_intern("upto");
+    id_upto = rb_intern("upto");
+    id_cmp = rb_intern("<=>");
+    id_beg = rb_intern("first");
+    id_end = rb_intern("last");
 }

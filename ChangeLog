@@ -1,9 +1,26 @@
+Fri Jul 17 14:10:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c0 released.
+
+Fri Jul 17 08:01:49 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* process.c (f_exec): Check_SafeStr() added.
+
+	* process.c (f_system): Check_SafeStr() moved before fork().
+
 Thu Jul 16 22:58:48 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (scan_once): substrings to the block should not be
  	  tainted.  use reg_nth_match(), not str_substr().
 
 	* string.c (str_substr): needed to transfer taint.
+
+Thu Jul 16 16:15:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (xmalloc): object allocation count added to GC trigger.
+
+	* eval.c (thread_save_context): avoid marking uninitialized stack
+	  in thread_mark.  GC may be triggered by REALLOC_N().
 
 Wed Jul 15 15:11:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

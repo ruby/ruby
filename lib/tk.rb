@@ -260,7 +260,18 @@ module TkComm
   end
 
   def tk_event_sequence(context)
-    context = context.join("><") if context.kind_of? Array
+    if context.kind_of? TkVirtualEvent
+      context = context.path
+    end
+    if context.kind_of? Array
+      context = context.collect{|ev|
+	if context.kind_of? TkVirtualEvent
+	  ev.path
+	else
+	  ev
+	end
+      }.join("><")
+    end
     if /,/ =~ context
       context = context.split(/\s*,\s*/).join("><")
     else
@@ -303,7 +314,7 @@ module TkComm
     _bind_append tagOrClass, context, cmd, args
   end
 
-  def bindinfo(tagOrClass, context=nil)
+  def _bindinfo(tagOrClass, context=nil)
     if context
       (tk_call('bind', tagOrClass, 
 	       "<#{tk_event_sequence(context)}>")).collect{|cmdline|
@@ -318,6 +329,10 @@ module TkComm
 	seq[1..-2].gsub(/></,',')
       }
     end
+  end
+
+  def bindinfo(tagOrClass, context=nil)
+    _bindinfo tagOrClass, context
   end
 
   def pack(*args)
@@ -414,8 +429,30 @@ module TkCore
     TclTkLib.mainloop
   end
 
+  def event_generate(window, context, keys=nil)
+    window = window.path if window.kind_of? TkObject
+    if keys
+      tk_call('event', 'generate', window, 
+	      "<#{tk_event_sequence(context)}>", *hash_kv(keys))
+    else
+      tk_call('event', 'generate', window, "<#{tk_event_sequence(context)}>")
+    end
+  end
+
   def messageBox(keys)
     tk_call 'tk_messageBox', *hash_kv(keys)
+  end
+
+  def getOpenFile(keys)
+    tk_call 'tk_getOpenFile', *hash_kv(keys)
+  end
+
+  def getSaveFile(keys)
+    tk_call 'tk_getSaveFile', *hash_kv(keys)
+  end
+
+  def chooseColor(keys)
+    tk_call 'tk_chooseColor', *hash_kv(keys)
   end
 
   def tk_call(*args)
@@ -629,8 +666,8 @@ class TkVariable
       if INTERP._eval(format('global %s; array exists %s', @id, @id)) != "1"
 	raise
       else
-	Hash(*tk_tcl2ruby(INTERP._eval(format('global %s; array get %s', 
-					      @id, @id))))
+	Hash[*tk_tcl2ruby(INTERP._eval(format('global %s; array get %s', 
+					      @id, @id)))]
       end
     end
   end
@@ -1528,6 +1565,19 @@ class TkObject<TkKernel
     _bind_append path, context, cmd, args
   end
 
+  def bindinfo(context=nil)
+    _bindinfo path, context
+  end
+
+  def event_generate(context, keys=nil)
+    if keys
+      tk_call('event', 'generate', path, 
+	      "<#{tk_event_sequence(context)}>", *hash_kv(keys))
+    else
+      tk_call('event', 'generate', path, "<#{tk_event_sequence(context)}>")
+    end
+  end
+
   def tk_trace_variable(v)
     unless v.kind_of?(TkVariable)
       fail ArgumentError, format("requires TkVariable given %s", v.type)
@@ -1557,7 +1607,7 @@ module TkClassBind
   end
 
   def bindinfo(context=nil)
-    Tk.bind to_eval, context
+    Tk.bindinfo to_eval, context
   end
 end
 
@@ -1651,7 +1701,7 @@ class TkWindow<TkObject
       when 'global'
 	tk_call 'grab', 'set', '-global', path
       else
-	val = tk_call('grab', arg[0], path)
+	val = tk_call('grab', args[0], path)
       end
       case args[0]
       when 'current'
@@ -2137,3 +2187,4 @@ autoload :TkMenubar, 'tkmenubar'
 autoload :TkAfter, 'tkafter'
 autoload :TkPalette, 'tkpalette'
 autoload :TkFont, 'tkfont'
+autoload :TkVirtualEvent, 'tkvirtevent'
