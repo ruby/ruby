@@ -578,6 +578,12 @@ module URI
     include OpenURI::OpenRead
   end
 
+  class HTTPS
+    def proxy_open(buf, uri, options) # :nodoc:
+      raise ArgumentError, "open-uri doesn't support https."
+    end
+  end
+
   class FTP
     def direct_open(buf, options) # :nodoc:
       require 'net/ftp'
