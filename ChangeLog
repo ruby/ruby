@@ -1,3 +1,7 @@
+Wed Nov  3 22:32:12 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* process.c: On NetBSD don't use setruid() and setrgid().
+
 Wed Nov  3 22:24:17 2004  GOTOU Yuuzou <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpauth/digestauth.rb: use Base64.encode64 to
