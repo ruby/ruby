@@ -1,3 +1,7 @@
+Wed Feb 18 17:18:01 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/win32ole/win32ole.c: need to include <olectl.h> on Cygwin.
+
 Tue Feb 17 23:28:45 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/marshaltestlib.rb: common marshal testcase added.
