@@ -962,10 +962,8 @@ wince/errno.h
 wince/fcntl.h
 wince/io.h
 wince/io_wce.c
-wince/mkexports.rb
 wince/process.h
 wince/process_wce.c
-wince/resource.rb
 wince/setup.mak
 wince/signal.h
 wince/signal_wce.c
