@@ -1,3 +1,7 @@
+Tue Jan 20 14:25:51 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/abbrev.rb: Add RDoc
+
 Tue Jan 20 13:22:39 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb: Document aliases at 
