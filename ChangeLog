@@ -1,3 +1,12 @@
+Sat Feb  8 03:34:28 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* intern.h (HAVE_RB_DEFINE_ALLOC_FUNC): New boolean macro to make
+	  it easier to write extensions that work with both ~1.6 and 1.8~.
+
+	* intern.h (RB_CVAR_SET_4ARGS): Ditto.
+
+	* ruby.h (NORETURN_STYLE_NEW): Ditto.
+
 Fri Feb 07 15:35:21 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* intern.h, re.c (rb_memsearch): returns long.
