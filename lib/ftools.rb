@@ -131,8 +131,8 @@ class << File
 #    mode = if dirs[-1].is_a? Fixnum then dirs.pop else 0755 end
     mode = 0755
     for dir in dirs
-      next if FileTest.directory? dir
       parent = dirname(dir)
+      next if parent == dir or FileTest.directory? dir
       makedirs parent unless FileTest.directory? parent
       $stderr.print "mkdir ", dir, "\n" if verbose
       if basename(dir) != ""
