@@ -46,6 +46,7 @@ class Delegator
       end
     end
   end
+  alias initialize_methods initialize
 
   def __getobj__
     raise NotImplementedError, "need to define `__getobj__'"
@@ -55,7 +56,7 @@ class Delegator
     __getobj__
   end
   def marshal_load(obj)
-    initialize(obj)
+    initialize_methods(obj)
   end
 end
 

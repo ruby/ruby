@@ -3,7 +3,7 @@ require 'test/unit'
 $KCODE = 'none'
 
 class TestEnv < Test::Unit::TestCase
-  IGNORE_CASE = /djgpp|bccwin|mswin|mingw|emx/ =~ RUBY_PLATFORM
+  IGNORE_CASE = /djgpp|bccwin|mswin|mingw/ =~ RUBY_PLATFORM
 
   def setup
     @backup = ENV['test']

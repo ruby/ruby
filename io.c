@@ -3828,16 +3828,24 @@ argf_read(argc, argv)
     else {
 	tmp = io_read(argc, argv, current_file);
     }
-    if (NIL_P(tmp) && next_p != -1) {
-	argf_close(current_file);
-	next_p = 1;
-	if (argc == 0) goto retry;
+    if (NIL_P(tmp)) {
+	if (next_p != -1) {
+	    argf_close(current_file);
+	    next_p = 1;
+	    goto retry;
+	}
+	return str;
     }
-    if (NIL_P(tmp) || RSTRING(tmp)->len == 0) return str;
     else if (NIL_P(str)) str = tmp;
     else rb_str_append(str, tmp);
     if (argc == 0) goto retry;
-
+    if (argc == 1) {
+	if (RSTRING(str)->len < len) {
+	    len -= RSTRING(str)->len;
+	    argv[0] = INT2NUM(len);
+	    goto retry;
+	}
+    }
     return str;
 }
 
