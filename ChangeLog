@@ -79,7 +79,6 @@ Mon Jul 28 18:53:03 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/openssl/extconf.rb: check again after pkg-config for MinGW on
 	  Cygwin.
 
->>>>>>> 1.1963
 Mon Jul 28 15:32:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_gets): only "gets" should set $_.
