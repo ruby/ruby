@@ -1,3 +1,8 @@
+Sat Nov 20 22:55:09 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* test/runner.rb (CROSS_COMPILING): need to require rbconfig.rb before
+	  using CROSS_COMPILNG.
+
 Sat Nov 20 20:42:42 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/depend: fix ripper.o dependency.
