@@ -1,3 +1,10 @@
+Tue Feb 17 00:14:30 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: avoid warning "Redefinition of macro
+          'HAVE_GETLOGIN'".
+
+	* vms/config.h_in: ditto.
+
 Mon Feb 16 23:28:14 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/csv.rb: document reduction.  [ruby-core:02429]

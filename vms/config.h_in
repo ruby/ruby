@@ -38,7 +38,7 @@
 /* #define HAVE_SETITIMER 1 */
 /* #define HAVE_GETGROUPS 1 */
 #define HAVE_SIGPROCMASK 1
-#define HAVE_GETLOGIN 1
+/* #define HAVE_GETLOGIN 1 */
 #define HAVE_TELLDIR 1
 #define HAVE_SEEKDIR 1
 
