@@ -731,7 +731,7 @@ glob_helper(path, sub, flags, func, arg)
 	    struct d_link {
 		char *path;
 		struct d_link *next;
-	    } *tmp, *link = 0;
+	    } *tmp, *link, **tail = &link;
 
 	    base = extract_path(path, p);
 	    if (path == p) dir = ".";
@@ -808,12 +808,13 @@ glob_helper(path, sub, flags, func, arg)
 		    }
 		    tmp = ALLOC(struct d_link);
 		    tmp->path = buf;
-		    tmp->next = link;
-		    link = tmp;
+		    *tail = tmp;
+		    tail = &tmp->next;
 		}
 	    }
 	    closedir(dirp);
 	  finalize:
+	    *tail = 0;
 	    free(base);
 	    free(magic);
 	    if (link) {
