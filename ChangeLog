@@ -1,3 +1,30 @@
+Fri Jan 11 05:06:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* class.c (rb_make_metaclass): [new]
+
+	* class.c (rb_define_class_id): use rb_make_metaclass(), don't
+	  call Class#inherited hook.
+
+	* class.c (rb_class_inherited): [new]
+
+	* class.c (rb_define_class): call Class#inherited hook here.
+
+	* class.c (rb_define_class_under): ditto after class path is set.
+
+	* class.c (rb_singleton_class): use rb_make_metaclass().
+
+	* eval.c (rb_eval): same as rb_define_class_under().
+
+	* intern.h: prototypes of rb_make_metaclass() and
+	  rb_class_inherited().
+
+	* object.c (rb_class_s_new): use rb_make_metaclass() and
+	  rb_class_inherited().
+
+	* object.c (Init_Object): use rb_make_metaclass().
+
+	* struct.c (make_struct): use rb_class_inherited().
+
 Thu Jan 10 19:15:15 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_add_method): should clear cache by id always.
