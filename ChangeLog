@@ -1,3 +1,9 @@
+Tue Dec 23 19:44:47 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/soap/test_streamhandler.rb (test_basic_auth): removed.
+	  soap4r + basic_auth is not officially supported in ruby/1.8.1 even
+	  though soap4r + basic_auth + http-access2 should run fine.
+
 Tue Dec 23 19:42:59 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_ungetc): raise an exception at unread stream to
