@@ -1,11 +1,13 @@
 require 'test/unit'
 require 'tempfile'
+require 'fileutils'
 
-require '../../lib/csv'
+require 'csv'
 
 class CSV
   class StreamBuf
     # Let buffer work hard.
+    remove_const("BufSize")
     BufSize = 2
   end
 end
@@ -70,25 +72,7 @@ class TestCSV < Test::Unit::TestCase
     [d('foo'), d('"'), d('baz')] => 'foo,"""",baz',
   }
 
-  @@tmpdir = 'tmp'	# File.join(Dir.tmpdir, "ruby_test_csv_tmp_#{$$}"); Dir.mkdir(@@tmpdir)
-  @@infile = File.join(@@tmpdir, 'in.csv')
-  @@infiletsv = File.join(@@tmpdir, 'in.tsv')
-  @@emptyfile = File.join(@@tmpdir, 'empty.csv')
-  @@outfile = File.join(@@tmpdir, 'out.csv')
-
   @@fullCSVDataArray = @@fullCSVData.collect { |key, value| key }
-
-  CSV.open(@@infile, "w") do |writer|
-    @@fullCSVDataArray.each do |row|
-      writer.add_row(row)
-    end
-  end
-
-  CSV.open(@@infiletsv, "w", ?\t) do |writer|
-    @@fullCSVDataArray.each do |row|
-      writer.add_row(row)
-    end
-  end
 
   def ssv2csv(ssvStr)
     sepConv(ssvStr, ?;, ?,)
@@ -117,11 +101,33 @@ class TestCSV < Test::Unit::TestCase
 public
 
   def setup
-    # Nothing to do.
+    @tmpdir = File.join(Dir.tmpdir, "ruby_test_csv_tmp_#{$$}")
+    Dir.mkdir(@tmpdir)
+    @infile = File.join(@tmpdir, 'in.csv')
+    @infiletsv = File.join(@tmpdir, 'in.tsv')
+    @emptyfile = File.join(@tmpdir, 'empty.csv')
+    @outfile = File.join(@tmpdir, 'out.csv')
+    @bomfile = File.join(File.dirname(__FILE__), "bom.csv")
+
+    CSV.open(@infile, "w") do |writer|
+      @@fullCSVDataArray.each do |row|
+	writer.add_row(row)
+      end
+    end
+
+    CSV.open(@infiletsv, "w", ?\t) do |writer|
+      @@fullCSVDataArray.each do |row|
+	writer.add_row(row)
+      end
+    end
+
+    CSV.generate(@emptyfile) do |writer|
+      # Create empty file.
+    end
   end
 
   def teardown
-    # Nothing to do.
+    FileUtils.rm_rf(@tmpdir)
   end
 
   def d(*arg)
@@ -266,7 +272,7 @@ public
   #### CSV::Reader unit test
   
   def test_Reader_each
-    file = File.open(@@infile, "rb")
+    file = File.open(@infile, "rb")
     begin
       reader = CSV::Reader.create(file)
       expectedArray = @@fullCSVDataArray.dup
@@ -300,7 +306,7 @@ public
   end
 
   def test_Reader_shift
-    file = File.open(@@infile, "rb")
+    file = File.open(@infile, "rb")
     begin
       reader = CSV::Reader.create(file)
       first = true
@@ -344,13 +350,13 @@ public
   end
 
   def test_IOReader_close_on_terminate
-    f = File.open(@@infile, "r")
+    f = File.open(@infile, "r")
     reader = CSV::IOReader.create(f)
     reader.close
     assert(!f.closed?)
     f.close
 
-    f = File.open(@@infile, "r")
+    f = File.open(@infile, "r")
     writer = CSV::IOReader.create(f)
     writer.close_on_terminate
     writer.close
@@ -358,7 +364,7 @@ public
   end
 
   def test_Reader_close
-    f = File.open(@@infile, "r")
+    f = File.open(@infile, "r")
     reader = CSV::IOReader.create(f)
     reader.close_on_terminate
     reader.close
@@ -375,7 +381,7 @@ public
     reader = CSV::Reader.create("abc")
     assert_instance_of(CSV::StringReader, reader, "With a String")
 
-    reader = CSV::Reader.create(File.open(@@infile, "rb"))
+    reader = CSV::Reader.create(File.open(@infile, "rb"))
     assert_instance_of(CSV::IOReader, reader, 'With an IO')
 
     obj = Object.new
@@ -503,7 +509,7 @@ public
   end
 
   def test_Writer_close
-    f = File.open(@@outfile, "w")
+    f = File.open(@outfile, "w")
     writer = CSV::BasicWriter.create(f)
     writer.close_on_terminate
     writer.close
@@ -511,12 +517,12 @@ public
   end
 
   def test_BasicWriter_close_on_terminate
-    f = File.open(@@outfile, "w")
+    f = File.open(@outfile, "w")
     writer = CSV::BasicWriter.create(f)
     writer.close
     assert(!f.closed?)
 
-    f = File.open(@@outfile, "w")
+    f = File.open(@outfile, "w")
     writer = CSV::BasicWriter.create(f)
     writer.close_on_terminate
     writer.close
@@ -535,24 +541,24 @@ public
       CSV.open("temp", "a", ?;)
     end
 
-    reader = CSV.open(@@infile, "r")
+    reader = CSV.open(@infile, "r")
     assert_instance_of(CSV::IOReader, reader)
     reader.close
 
-    reader = CSV.open(@@infile, "rb")
+    reader = CSV.open(@infile, "rb")
     assert_instance_of(CSV::IOReader, reader)
     reader.close
 
-    reader = CSV.open(@@infile, "r", ?;)
+    reader = CSV.open(@infile, "r", ?;)
     assert_instance_of(CSV::IOReader, reader)
     reader.close
 
-    CSV.open(@@infile, "r") do |row|
+    CSV.open(@infile, "r") do |row|
       assert_instance_of(CSV::Row, row)
       break
     end
 
-    CSV.open(@@infiletsv, "r", ?\t) do |row|
+    CSV.open(@infiletsv, "r", ?\t) do |row|
       assert_instance_of(CSV::Row, row)
       break
     end
@@ -566,46 +572,46 @@ public
     end
 
     # Illegal format.
-    File.open(@@outfile, "w") do |f|
+    File.open(@outfile, "w") do |f|
       f << "a,b\r\na,b,\"c\"\ra"
     end
     assert_raises(CSV::IllegalFormatError) do
-      CSV.open(@@outfile, "r") do |row|
+      CSV.open(@outfile, "r") do |row|
       end
     end
 
-    File.open(@@outfile, "w") do |f|
+    File.open(@outfile, "w") do |f|
       f << "a,b\r\na,b\""
     end
     assert_raises(CSV::IllegalFormatError) do
-      CSV.open(@@outfile, "r") do |row|
+      CSV.open(@outfile, "r") do |row|
       end
     end
 
-    CSV.open(@@emptyfile, "r") do |row|
+    CSV.open(@emptyfile, "r") do |row|
       assert_fail("Must not reach here")
     end
   end
 
   def test_s_parse
-    reader = CSV.parse(@@infile)
+    reader = CSV.parse(@infile)
     assert_instance_of(CSV::IOReader, reader)
     reader.close
 
-    reader = CSV.parse(@@infile)
+    reader = CSV.parse(@infile)
     assert_instance_of(CSV::IOReader, reader)
     reader.close
 
-    reader = CSV.parse(@@infile, ?;)
+    reader = CSV.parse(@infile, ?;)
     assert_instance_of(CSV::IOReader, reader)
     reader.close
 
-    CSV.parse(@@infile) do |row|
+    CSV.parse(@infile) do |row|
       assert_instance_of(CSV::Row, row)
       break
     end
 
-    CSV.parse(@@infiletsv, ?\t) do |row|
+    CSV.parse(@infiletsv, ?\t) do |row|
       assert_instance_of(CSV::Row, row)
       break
     end
@@ -618,72 +624,62 @@ public
       CSV.parse("NoSuchFileOrDirectory", ?;)
     end
 
-    CSV.parse(@@emptyfile) do |row|
+    CSV.parse(@emptyfile) do |row|
       assert_fail("Must not reach here")
     end
   end
 
   def test_s_open_writer
-    writer = CSV.open(@@outfile, "w")
+    writer = CSV.open(@outfile, "w")
     assert_instance_of(CSV::BasicWriter, writer)
     writer.close
 
-    writer = CSV.open(@@outfile, "wb")
+    writer = CSV.open(@outfile, "wb")
     assert_instance_of(CSV::BasicWriter, writer)
     writer.close
 
-    writer = CSV.open(@@outfile, "wb", ?;)
+    writer = CSV.open(@outfile, "wb", ?;)
     assert_instance_of(CSV::BasicWriter, writer)
     writer.close
 
-    CSV.open(@@outfile, "w") do |writer|
+    CSV.open(@outfile, "w") do |writer|
       assert_instance_of(CSV::BasicWriter, writer)
     end
 
-    CSV.open(@@outfile, "w", ?;) do |writer|
+    CSV.open(@outfile, "w", ?;) do |writer|
       assert_instance_of(CSV::BasicWriter, writer)
     end
 
     begin
-      CSV.open(@@tmpdir, "w")
+      CSV.open(@tmpdir, "w")
       assert(false)
     rescue Exception => ex
-      assert(ex.is_a?(Errno::EEXIST) || ex.is_a?(Errno::EISDIR))
-    end
-
-    # Empty file.
-    CSV.open(@@emptyfile, "w") do |writer|
-      # Create empty file.
+      assert(ex.is_a?(Errno::EEXIST) || ex.is_a?(Errno::EISDIR) || ex.is_a?(Errno::EACCES))
     end
   end
 
   def test_s_generate
-    writer = CSV.generate(@@outfile)
+    writer = CSV.generate(@outfile)
     assert_instance_of(CSV::BasicWriter, writer)
     writer.close
 
-    writer = CSV.generate(@@outfile, ?;)
+    writer = CSV.generate(@outfile, ?;)
     assert_instance_of(CSV::BasicWriter, writer)
     writer.close
 
-    CSV.generate(@@outfile) do |writer|
+    CSV.generate(@outfile) do |writer|
       assert_instance_of(CSV::BasicWriter, writer)
     end
 
-    CSV.generate(@@outfile, ?;) do |writer|
+    CSV.generate(@outfile, ?;) do |writer|
       assert_instance_of(CSV::BasicWriter, writer)
     end
 
     begin
-      CSV.generate(@@tmpdir)
+      CSV.generate(@tmpdir)
       assert(false)
     rescue Exception => ex
-      assert(ex.is_a?(Errno::EEXIST) || ex.is_a?(Errno::EISDIR))
-    end
-
-    # Empty file.
-    CSV.generate(@@emptyfile) do |writer|
-      # Create empty file.
+      assert(ex.is_a?(Errno::EEXIST) || ex.is_a?(Errno::EISDIR) || ex.is_a?(Errno::EACCES))
     end
   end
 
@@ -1091,13 +1087,13 @@ public
 
   def test_utf8
     rows = []
-    CSV.open("bom.csv", "r") do |row|
+    CSV.open(@bomfile, "r") do |row|
       rows << row.to_a
     end
     assert_equal([["foo"], ["bar"]], rows)
 
     rows = []
-    CSV::Reader.parse(File.open("bom.csv").read) do |row|
+    CSV::Reader.parse(File.open(@bomfile).read) do |row|
       rows << row.to_a
     end
     assert_equal([["foo"], ["bar"]], rows)
@@ -1123,14 +1119,14 @@ public
   def setupInputStream(size, bufSize = nil)
     setBufSize(bufSize) if bufSize
     m = ((size / InputStreamPatternSize) + 1).to_i
-    File.open(@@outfile, "wb") do |f|
+    File.open(@outfile, "wb") do |f|
       f << (InputStreamPattern * m)[0, size]
     end
-    CSV::IOBuf.new(File.open(@@outfile, "rb"))
+    CSV::IOBuf.new(File.open(@outfile, "rb"))
   end
 
   def setBufSize(size)
-    # Ruby kindly warns me but...
+    CSV::StreamBuf.module_eval('remove_const("BufSize")')
     CSV::StreamBuf.module_eval("BufSize = #{ size }")
   end
 
@@ -1427,11 +1423,11 @@ public
   end
 
   def test_IOBuf_close
-    f = File.open(@@outfile, "wb")
+    f = File.open(@outfile, "wb")
     f << "tst"
     f.close
 
-    f = File.open(@@outfile, "rb")
+    f = File.open(@outfile, "rb")
     iobuf = CSV::IOBuf.new(f)
     iobuf.close
     assert(true)	# iobuf.close does not raise any exception.
