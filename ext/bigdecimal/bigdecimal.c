@@ -2213,8 +2213,7 @@ VpAddAbs(Real *a, Real *b, Real *c)
     while(b_pos + word_shift > a_pos) {
         --c_pos;
         if(b_pos > 0) {
-            --b_pos;
-            c->frac[c_pos] = b->frac[b_pos];
+            c->frac[c_pos] = b->frac[--b_pos];
         } else {
             --word_shift;
             c->frac[c_pos] = 0;
@@ -2225,19 +2224,14 @@ VpAddAbs(Real *a, Real *b, Real *c)
     /* corresponding digits to be added. */
     bv = b_pos + word_shift;
     while(a_pos > bv) {
-        --c_pos;
-        --a_pos;
-        c->frac[c_pos] = a->frac[a_pos];
+        c->frac[--c_pos] = a->frac[--a_pos];
     }
     carry = 0;    /* set first carry be zero */
 
     /* Now perform addition until every digits of b will be */
     /* exhausted. */
     while(b_pos > 0) {
-        --a_pos;
-        --b_pos;
-        --c_pos;
-        c->frac[c_pos] = a->frac[a_pos] + b->frac[b_pos] + carry;
+        c->frac[--c_pos] = a->frac[--a_pos] + b->frac[--b_pos] + carry;
         if(c->frac[c_pos] >= BASE) {
             c->frac[c_pos] -= BASE;
             carry = 1;
@@ -2249,9 +2243,7 @@ VpAddAbs(Real *a, Real *b, Real *c)
     /* Just assign the first few digits of a with considering */
     /* the carry obtained so far because b has been exhausted. */
     while(a_pos > 0) {
-        --a_pos;
-        --c_pos;
-        c->frac[c_pos] = a->frac[a_pos] + carry;
+        c->frac[--c_pos] = a->frac[--a_pos] + carry;
         if(c->frac[c_pos] >= BASE) {
             c->frac[c_pos] -= BASE;
             carry = 1;
@@ -2320,14 +2312,10 @@ VpSubAbs(Real *a, Real *b, Real *c)
     /* corresponding digits to be subtracted. */
     if(b_pos + word_shift > a_pos) {
         borrow = 1;
-        --c_pos;
-        --b_pos;
-        c->frac[c_pos] = BASE - b->frac[b_pos];
         while(b_pos + word_shift > a_pos) {
             --c_pos;
             if(b_pos > 0) {
-                --b_pos;
-                c->frac[c_pos] = BASE - b->frac[b_pos] - borrow;
+                c->frac[c_pos] = BASE - b->frac[--b_pos] - borrow;
             } else {
                 --word_shift;
                 c->frac[c_pos] = BASE - borrow;
@@ -2339,18 +2327,14 @@ VpSubAbs(Real *a, Real *b, Real *c)
 
     bv = b_pos + word_shift;
     while(a_pos > bv) {
-        --c_pos;
-        --a_pos;
-        c->frac[c_pos] = a->frac[a_pos];
+        c->frac[--c_pos] = a->frac[--a_pos];
     }
 
     /* Now perform subtraction until every digits of b will be */
     /* exhausted. */
     while(b_pos > 0) {
-        --a_pos;
-        --b_pos;
         --c_pos;
-        if(a->frac[a_pos] < b->frac[b_pos] + borrow) {
+        if(a->frac[--a_pos] < b->frac[--b_pos] + borrow) {
             c->frac[c_pos] = BASE + a->frac[a_pos] - b->frac[b_pos] - borrow;
             borrow = 1;
         } else {
@@ -2363,8 +2347,7 @@ VpSubAbs(Real *a, Real *b, Real *c)
     /* the borrow obtained so far because b has been exhausted. */
     while(a_pos > 0) {
         --c_pos;
-        --a_pos;
-        if(a->frac[a_pos] < borrow) {
+        if(a->frac[--a_pos] < borrow) {
             c->frac[c_pos] = BASE + a->frac[a_pos] - borrow;
             borrow = 1;
         } else {
