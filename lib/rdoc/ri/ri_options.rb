@@ -3,6 +3,8 @@
 
 module RI
 
+  require 'rdoc/ri/ri_display'
+
   VERSION_STRING = "alpha 0.1"
 
   class Options
@@ -200,6 +202,14 @@ module RI
     # Return the doc_dir as an array, or nil if no overriding doc dir was given
     def paths
       @doc_dir ? [ @doc_dir ] : nil
+    end
+
+    # Return an instance of the displayer (the thing that actually writes
+    # the information). This allows us to load in new displayer classes
+    # at runtime (for example to help with IDE integration)
+    
+    def displayer
+      ::RiDisplay.new(self)
     end
   end
 
