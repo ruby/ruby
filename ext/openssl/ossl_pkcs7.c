@@ -226,7 +226,7 @@ ossl_pkcs7_s_encrypt(int argc, VALUE *argv, VALUE klass)
 	BIO_free(in);
 	rb_jump_tag(status);
     }
-    if(!(p7 = PKCS7_encrypt(x509s, in, ciph, flg))){
+    if(!(p7 = PKCS7_encrypt(x509s, in, (EVP_CIPHER*)ciph, flg))){
 	BIO_free(in);
 	sk_X509_pop_free(x509s, X509_free);
 	ossl_raise(ePKCS7Error, NULL);
@@ -665,7 +665,7 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
     md = GetDigestPtr(digest);
-    if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, md))) {
+    if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, (EVP_MD*)md))) {
 	ossl_raise(ePKCS7Error, NULL);
     }
 
