@@ -3538,12 +3538,13 @@ end
 class TkRoot<TkWindow
   include Wm
   ROOT = []
-  def TkRoot.new
+  def TkRoot.new(keys=nil)
     if ROOT[0]
       Tk_WINDOWS["."] = ROOT[0]
       return ROOT[0]
     end
     new = super(:without_creating=>true, :widgetname=>'.')
+    keys.each{|k,v| new.send(k,v)} if keys  # wm commands
     ROOT[0] = new
     Tk_WINDOWS["."] = new
   end
@@ -3597,11 +3598,38 @@ class TkToplevel<TkWindow
 #  end
 #################
 
+  def _wm_command_option_chk(keys)
+    new_keys = {}
+    wm_cmds = {}
+    keys.each{|k,v|
+      if Wm.method_defined?(k)
+	case k
+	when 'screen','class','colormap','container','screen','use','visual'
+	  new_keys[k] = v
+	else
+	  case self.method(k).arity
+	  when -1,1
+	    wm_cmds[k] = v
+	  else
+	    new_keys[k] = v
+	  end
+	end
+      else
+	new_keys[k] = v
+      end
+    }
+    [new_keys, wm_cmds]
+  end
+  private :_wm_command_option_chk
+
   def initialize(parent=nil, screen=nil, classname=nil, keys=nil)
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
-      @screen    = keys['screen']
+      if keys.key?('classname')
+	keys['class'] = keys.delete('classname')
+      end
       @classname = keys['class']
+      @screen    = keys['screen']
       @colormap  = keys['colormap']
       @container = keys['container']
       @screen    = keys['screen']
@@ -3613,7 +3641,9 @@ class TkToplevel<TkWindow
       else
 	@db_class = TkDatabaseClass.new(@classname)
       end
+      keys, cmds = _wm_command_option_chk(keys)
       super(keys)
+      cmds.each{|k,v| self.send(k,v)}
       return
     end
     if screen.kind_of? Hash
@@ -3640,7 +3670,9 @@ class TkToplevel<TkWindow
     else
       @db_class = TkDatabaseClass.new(@classname)
     end
+    keys, cmds = _wm_command_option_chk(keys)
     super(parent, keys)
+    cmds.each{|k,v| self.send(k,v)}
   end
 
   def create_self(keys)
