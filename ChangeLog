@@ -1,3 +1,9 @@
+Tue May  6 17:21:01 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/bigdecimal/.cvsignore: new file.
+
+	* ext/zlib/.cvsignore: new file.
+
 Tue May  6 14:39:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_obj_methods): list singleton methods if recur
