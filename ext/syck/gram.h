@@ -35,27 +35,29 @@
      YAML_ANCHOR = 258,
      YAML_ALIAS = 259,
      YAML_TRANSFER = 260,
-     YAML_ITRANSFER = 261,
-     YAML_WORD = 262,
-     YAML_PLAIN = 263,
-     YAML_BLOCK = 264,
-     YAML_DOCSEP = 265,
-     YAML_IOPEN = 266,
-     YAML_INDENT = 267,
-     YAML_IEND = 268
+     YAML_TAGURI = 261,
+     YAML_ITRANSFER = 262,
+     YAML_WORD = 263,
+     YAML_PLAIN = 264,
+     YAML_BLOCK = 265,
+     YAML_DOCSEP = 266,
+     YAML_IOPEN = 267,
+     YAML_INDENT = 268,
+     YAML_IEND = 269
    };
 #endif
 #define YAML_ANCHOR 258
 #define YAML_ALIAS 259
 #define YAML_TRANSFER 260
-#define YAML_ITRANSFER 261
-#define YAML_WORD 262
-#define YAML_PLAIN 263
-#define YAML_BLOCK 264
-#define YAML_DOCSEP 265
-#define YAML_IOPEN 266
-#define YAML_INDENT 267
-#define YAML_IEND 268
+#define YAML_TAGURI 261
+#define YAML_ITRANSFER 262
+#define YAML_WORD 263
+#define YAML_PLAIN 264
+#define YAML_BLOCK 265
+#define YAML_DOCSEP 266
+#define YAML_IOPEN 267
+#define YAML_INDENT 268
+#define YAML_IEND 269
 
 
 
@@ -68,7 +70,7 @@ typedef union {
     char *name;
 } yystype;
 /* Line 1281 of /usr/local/share/bison/yacc.c.  */
-#line 72 "y.tab.h"
+#line 74 "y.tab.h"
 # define YYSTYPE yystype
 #endif
 

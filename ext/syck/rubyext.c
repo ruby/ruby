@@ -41,7 +41,7 @@ typedef struct RVALUE {
  * symbols and constants
  */
 static ID s_new, s_utc, s_at, s_to_f, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors, s_default_set;
-static VALUE sym_model, sym_generic;
+static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cDate, cParser, cLoader, cNode, cPrivateType, cDomainType, cBadAlias, cDefaultKey, cMergeKey, cEmitter;
 VALUE oDefaultLoader;
@@ -473,18 +473,22 @@ yaml_org_handler( n, ref )
         break;
 
         case syck_seq_kind:
+            if ( type_id == NULL || strcmp( type_id, "seq" ) == 0 )
+            {
+                transferred = 1;
+            }
             obj = rb_ary_new2( n->data.list->idx );
             for ( i = 0; i < n->data.list->idx; i++ )
             {
                 rb_ary_store( obj, i, syck_seq_read( n, i ) );
             }
-            if ( type_id == NULL || strcmp( type_id, "seq" ) == 0 )
-            {
-                transferred = 1;
-            }
         break;
 
         case syck_map_kind:
+            if ( type_id == NULL || strcmp( type_id, "map" ) == 0 )
+            {
+                transferred = 1;
+            }
             obj = rb_hash_new();
             for ( i = 0; i < n->data.pairs->idx; i++ )
             {
@@ -528,10 +532,6 @@ yaml_org_handler( n, ref )
 				{
 					rb_hash_aset( obj, k, v );
 				}
-            }
-            if ( type_id == NULL || strcmp( type_id, "map" ) == 0 )
-            {
-                transferred = 1;
             }
         break;
     }
@@ -609,7 +609,7 @@ rb_syck_bad_anchor_handler(p, a)
     char *a;
 {
     SyckNode *badanc = syck_new_map( rb_str_new2( "name" ), rb_str_new2( a ) );
-    badanc->type_id = syck_strndup( "taguri:ruby.yaml.org,2002:object:YAML::Syck::BadAlias", 53 );
+    badanc->type_id = syck_strndup( "tag:ruby.yaml.org,2002:object:YAML::Syck::BadAlias", 53 );
     return badanc;
 }
 
@@ -617,9 +617,9 @@ rb_syck_bad_anchor_handler(p, a)
  * data loaded based on the model requested.
  */
 void
-syck_set_model( parser, model )
+syck_set_model( parser, input, model )
 	SyckParser *parser;
-	VALUE model;
+	VALUE input, model;
 {
 	if ( model == sym_generic )
 	{
@@ -633,6 +633,10 @@ syck_set_model( parser, model )
 		syck_parser_implicit_typing( parser, 1 );
 		syck_parser_taguri_expansion( parser, 0 );
 	}
+    if ( input == sym_bytecode )
+    {
+        syck_parser_set_input_type( parser, syck_bytecode_utf8 );
+    }
     syck_parser_error_handler( parser, rb_syck_err_handler );
     syck_parser_bad_anchor_handler( parser, rb_syck_bad_anchor_handler );
 }
@@ -694,7 +698,7 @@ syck_parser_load(argc, argv, self)
     VALUE *argv;
 	VALUE self;
 {
-    VALUE port, proc, model;
+    VALUE port, proc, model, input;
 	SyckParser *parser;
     struct parser_xtra bonus;
     volatile VALUE hash;	/* protect from GC */
@@ -702,8 +706,9 @@ syck_parser_load(argc, argv, self)
     rb_scan_args(argc, argv, "11", &port, &proc);
 	Data_Get_Struct(self, SyckParser, parser);
 
+	input = rb_hash_aref( rb_iv_get( self, "@options" ), sym_input );
 	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
-	syck_set_model( parser, model );
+	syck_set_model( parser, input, model );
 
 	bonus.taint = syck_parser_assign_io(parser, port);
     bonus.data = hash = rb_hash_new();
@@ -724,7 +729,7 @@ syck_parser_load_documents(argc, argv, self)
     VALUE *argv;
 	VALUE self;
 {
-    VALUE port, proc, v, model;
+    VALUE port, proc, v, input, model;
 	SyckParser *parser;
     struct parser_xtra bonus;
     volatile VALUE hash;
@@ -732,8 +737,9 @@ syck_parser_load_documents(argc, argv, self)
     rb_scan_args(argc, argv, "1&", &port, &proc);
 	Data_Get_Struct(self, SyckParser, parser);
 
+	input = rb_hash_aref( rb_iv_get( self, "@options" ), sym_input );
 	model = rb_hash_aref( rb_iv_get( self, "@options" ), sym_model );
-	syck_set_model( parser, model );
+	syck_set_model( parser, input, model );
     
 	bonus.taint = syck_parser_assign_io(parser, port);
     while ( 1 )
@@ -929,7 +935,7 @@ syck_loader_transfer( self, type, val )
         int transferred = 0;
         VALUE scheme, name, type_hash, domain = Qnil, type_proc = Qnil;
         VALUE type_uri = rb_str_new2( taguri );
-        VALUE str_taguri = rb_str_new2("taguri");
+        VALUE str_taguri = rb_str_new2("tag");
         VALUE str_xprivate = rb_str_new2("x-private");
         VALUE str_yaml_domain = rb_str_new2(YAML_DOMAIN);
         VALUE parts = rb_str_split( type_uri, ":" );
@@ -1296,6 +1302,8 @@ Init_syck()
 
 	sym_model = ID2SYM(rb_intern("Model"));
 	sym_generic = ID2SYM(rb_intern("Generic"));
+	sym_input = ID2SYM(rb_intern("Input"));
+	sym_bytecode = ID2SYM(rb_intern("Bytecode"));
     sym_map = ID2SYM(rb_intern("map"));
     sym_scalar = ID2SYM(rb_intern("scalar"));
     sym_seq = ID2SYM(rb_intern("seq"));

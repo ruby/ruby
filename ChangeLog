@@ -1,3 +1,19 @@
+Wed Oct 15 08:09:07 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+	* ext/syck/bytecode.c: Checkin of YAML bytecode support.
+
+	* ext/syck/gram.c: Ditto.
+
+	* ext/syck/syck.c: Ditto.
+
+	* ext/syck/token.c: Ditto.
+
+	* ext/syck/handler.c: Ditto.
+
+	* ext/syck/handler.c: Now using 'tag' rather than 'taguri' in type URIs.
+
+	* ext/syck/rubyext.c: Ditto (on both counts).
+	
 Wed Oct 15 05:05:53 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/generator.rb: A new library which converts an internal

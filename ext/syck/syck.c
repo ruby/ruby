@@ -9,8 +9,8 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "syck.h"
 #include "ruby.h"
+#include "syck.h"
 
 void syck_parser_pop_level( SyckParser * );
 
@@ -109,6 +109,7 @@ syck_parser_reset_levels( SyckParser *p )
     {
         p->lvl_idx = 1;
         p->levels[0].spaces = -1;
+        p->levels[0].ncount = 0;
         p->levels[0].domain = syck_strndup( "", 0 );
     }
     p->levels[0].status = syck_lvl_header;
@@ -159,6 +160,7 @@ syck_new_parser()
     p = S_ALLOC( SyckParser );
     p->lvl_capa = ALLOC_CT;
     p->levels = S_ALLOC_N( SyckLevel, p->lvl_capa ); 
+    p->input_type = syck_yaml_utf8;
     p->io_type = syck_io_str;
     p->io.str = NULL;
     p->syms = NULL;
@@ -283,6 +285,13 @@ syck_parser_bad_anchor_handler( SyckParser *p, SyckBadAnchorHandler hdlr )
 }
 
 void
+syck_parser_set_input_type( SyckParser *p, enum syck_parser_input input_type )
+{
+    ASSERT( p != NULL );
+    p->input_type = input_type;
+}
+
+void
 syck_parser_file( SyckParser *p, FILE *fp, SyckIoFileRead read )
 {
     ASSERT( p != NULL );
@@ -358,6 +367,7 @@ syck_parser_add_level( SyckParser *p, int len, enum syck_level_status status )
 
     ASSERT( len > p->levels[p->lvl_idx-1].spaces );
     p->levels[p->lvl_idx].spaces = len;
+    p->levels[p->lvl_idx].ncount = 0;
     p->levels[p->lvl_idx].domain = syck_strndup( p->levels[p->lvl_idx-1].domain, strlen( p->levels[p->lvl_idx-1].domain ) );
     p->levels[p->lvl_idx].status = status;
     p->lvl_idx += 1;

@@ -13,11 +13,9 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.39"
+#define SYCK_VERSION    "0.41"
 #define YAML_DOMAIN     "yaml.org,2002"
 
-#include <stdio.h>
-#include <ctype.h>
 #include "st.h"
 
 #if defined(__cplusplus)
@@ -139,9 +137,17 @@ enum syck_io_type {
     syck_io_file
 };
 
+enum syck_parser_input {
+    syck_yaml_utf8,
+    syck_yaml_utf16,
+    syck_yaml_utf32,
+    syck_bytecode_utf8
+};
+
 enum syck_level_status {
     syck_lvl_header,
     syck_lvl_doc,
+    syck_lvl_open,
     syck_lvl_seq,
     syck_lvl_map,
     syck_lvl_block,
@@ -170,6 +176,7 @@ struct _syck_str {
 
 struct _syck_level {
     int spaces;
+    int ncount;
     char *domain;
     enum syck_level_status status;
 };
@@ -185,6 +192,8 @@ struct _syck_parser {
     SyckErrorHandler error_handler;
     /* InvalidAnchor handler */
     SyckBadAnchorHandler bad_anchor_handler;
+    /* Parser input type */
+    enum syck_parser_input input_type;
     /* IO type */
     enum syck_io_type io_type;
     /* Custom buffer size */
@@ -374,8 +383,7 @@ void apply_seq_in_map( SyckParser *, SyckNode * );
 /*
  * Lexer prototypes
  */
-int syckparse( void * );
-void syckerror( char *msg );
+void syckerror( char * );
 
 #ifndef ST_DATA_T_DEFINED
 typedef long st_data_t;

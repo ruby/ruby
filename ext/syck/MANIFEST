@@ -1,5 +1,7 @@
 MANIFEST
 extconf.rb
+bytecode.c
+emitter.c
 gram.c
 gram.h
 handler.c
@@ -9,4 +11,3 @@ rubyext.c
 syck.c
 syck.h
 token.c
-emitter.c

@@ -99,7 +99,7 @@ syck_hdlr_get_anchor( SyckParser *p, char *a )
     if ( n->anchor )
     {
         S_FREE( a );
-    }
+    } 
     else
     {
         n->anchor = a;
@@ -141,7 +141,7 @@ syck_taguri( char *domain, char *type_id, int type_len )
 {
     char *uri = S_ALLOC_N( char, strlen( domain ) + type_len + 14 );
     uri[0] = '\0';
-    strcat( uri, "taguri:" );
+    strcat( uri, "tag:" );
     strcat( uri, domain );
     strcat( uri, ":" );
     strncat( uri, type_id, type_len );
