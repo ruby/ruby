@@ -1,3 +1,8 @@
+Sun Jun 23 00:19:10 2002  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb, sample/cal.rb, sample/goodfriday.rb:
+	  updated to the new version (based on date2 3.3).
+
 Thu Jun 20 21:09:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/readline/readline.c (readline_readline): get rid of

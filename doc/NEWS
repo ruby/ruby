@@ -18,6 +18,10 @@
 
   Some new methods have been added (Date::parse, Date#strftime, etc.).
 
+  Date#mjd now returns the chronological modified Julian day number.
+
+  All facilities about tjd have been removed.
+
 : Thread#join
 
   Optional argument limits maximum time to wait the thread in second.

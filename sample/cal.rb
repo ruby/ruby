@@ -1,7 +1,7 @@
 #! /usr/bin/env ruby
 
 # cal.rb: Written by Tadayoshi Funaba 1998-2002
-# $Id: cal.rb,v 2.3 2002-05-14 07:43:39+09 tadf Exp $
+# $Id: cal.rb,v 2.4 2002-06-08 00:40:29+09 tadf Exp $
 
 require 'date'
 require 'getopts'
@@ -37,7 +37,7 @@ def usage
 end
 
 def pict(y, m, sg)
-  d = (1..31).detect{|d| Date.exist?(y, m, d, sg)}
+  d = (1..31).detect{|d| Date.valid_date?(y, m, d, sg)}
   fi = Date.new(y, m, d, sg)
   fi -= (fi.jd - $k + 1) % 7
 
@@ -93,7 +93,7 @@ m ||= to.mon
 
 usage unless m >= 1 and m <= 12
 usage unless y >= -4712
-usage unless sg = $tab[$OPT_c]
+usage if (sg = $tab[$OPT_c]).nil?
 
 $dw = if $OPT_j then 3 else 2 end
 $mw = ($dw + 1) * 7 - 1
@@ -103,9 +103,9 @@ $tw = ($mw + 2) * $mn - 2
 $k  = if $OPT_m then 1 else 0 end
 $da = if $OPT_j then :yday else :mday end
 
-print (if not $OPT_y
-	 unlines(pict(y, m, sg))
-       else
-	 y.to_s.center($tw) + "\n\n" +
-	   unlines(block((1..12).collect{|m| pict(y, m, sg)}, $mn)) + "\n"
-       end)
+print(if not $OPT_y
+	unlines(pict(y, m, sg))
+      else
+	y.to_s.center($tw) + "\n\n" +
+	  unlines(block((1..12).collect{|m| pict(y, m, sg)}, $mn)) + "\n"
+      end)

@@ -1,5 +1,5 @@
 # date.rb: Written by Tadayoshi Funaba 1998-2002
-# $Id: date.rb,v 2.6 2002-05-14 07:43:18+09 tadf Exp $
+# $Id: date.rb,v 2.8 2002-06-08 00:39:51+09 tadf Exp $
 
 require 'rational'
 require 'date/format'
@@ -97,14 +97,21 @@ class Date
       (d - 1)
   end
 
-  def self.clfloor(x, y=1)
-    q, r = x.divmod(y)
-    q = q.to_i
-    return q, r
+  %w(self.clfloor clfloor).each do |name|
+    module_eval <<-"end;"
+      def #{name}(x, y=1)
+	q, r = x.divmod(y)
+	q = q.to_i
+	return q, r
+      end
+    end;
   end
 
-  def self.rjd_to_jd(rjd, of=0) clfloor(rjd + of + 1.to_r/2) end
-  def self.jd_to_rjd(jd, fr, of=0) jd + fr - of - 1.to_r/2 end
+  private_class_method :clfloor
+  private              :clfloor
+
+  def self.ajd_to_jd(ajd, of=0) clfloor(ajd + of + 1.to_r/2) end
+  def self.jd_to_ajd(jd, fr, of=0) jd + fr - of - 1.to_r/2 end
 
   def self.day_fraction_to_time(fr)
     h,   fr = clfloor(fr, 1.to_r/24)
@@ -117,12 +124,10 @@ class Date
     h.to_r/24 + min.to_r/1440 + s.to_r/86400
   end
 
-  def self.mjd_to_jd(mjd) mjd + 4800001.to_r/2 end
-  def self.jd_to_mjd(jd) jd - 4800001.to_r/2 end
-  def self.tjd_to_jd(tjd) tjd + 4880001.to_r/2 end
-  def self.jd_to_tjd(jd) jd - 4880001.to_r/2 end
-  def self.tjd2_to_jd(cycle, tjd) tjd_to_jd(cycle * 10000 + tjd) end
-  def self.jd_to_tjd2(jd) clfloor(jd_to_tjd(jd), 10000) end
+  def self.amjd_to_ajd(amjd) amjd + 4800001.to_r/2 end
+  def self.ajd_to_amjd(ajd) ajd - 4800001.to_r/2 end
+  def self.mjd_to_jd(mjd) mjd + 2400001 end
+  def self.jd_to_mjd(jd) jd - 2400001 end
   def self.ld_to_jd(ld) ld + 2299160 end
   def self.jd_to_ld(jd) jd - 2299160 end
 
@@ -134,18 +139,14 @@ class Date
   class << self; alias_method :leap?, :gregorian_leap? end
   class << self; alias_method :new0, :new end
 
-  def self.exist1? (jd, sg=ITALY) jd end
+  def self.valid_jd? (jd, sg=ITALY) jd end
 
-  class << self; alias_method :valid_jd?, :exist1? end
-
-  def self.new1(jd=0, sg=ITALY)
-    jd = exist1?(jd, sg)
-    new0(jd_to_rjd(jd, 0, 0), 0, sg)
+  def self.jd(jd=0, sg=ITALY)
+    jd = valid_jd?(jd, sg)
+    new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
-  class << self; alias_method :jd, :new1 end
-
-  def self.exist2? (y, d, sg=ITALY)
+  def self.valid_ordinal? (y, d, sg=ITALY)
     if d < 0
       ny, = clfloor(y + 1, 1)
       jd = ordinal_to_jd(ny, d + 1, sg)
@@ -159,18 +160,14 @@ class Date
     jd
   end
 
-  class << self; alias_method :valid_ordinal?, :exist2? end
-
-  def self.new2(y=-4712, d=1, sg=ITALY)
-    unless jd = exist2?(y, d, sg)
+  def self.ordinal(y=-4712, d=1, sg=ITALY)
+    unless jd = valid_ordinal?(y, d, sg)
       raise ArgumentError, 'invalid date'
     end
-    new0(jd_to_rjd(jd, 0, 0), 0, sg)
+    new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
-  class << self; alias_method :ordinal, :new2 end
-
-  def self.exist3? (y, m, d, sg=ITALY)
+  def self.valid_civil? (y, m, d, sg=ITALY)
     if m < 0
       m += 13
     end
@@ -188,20 +185,18 @@ class Date
     jd
   end
 
-  class << self; alias_method :exist?, :exist3? end
-  class << self; alias_method :valid_civil?, :exist3? end
+  class << self; alias_method :valid_date?, :valid_civil? end
 
-  def self.new3(y=-4712, m=1, d=1, sg=ITALY)
-    unless jd = exist3?(y, m, d, sg)
+  def self.civil(y=-4712, m=1, d=1, sg=ITALY)
+    unless jd = valid_civil?(y, m, d, sg)
       raise ArgumentError, 'invalid date'
     end
-    new0(jd_to_rjd(jd, 0, 0), 0, sg)
+    new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
-  class << self; alias_method :new, :new3 end
-  class << self; alias_method :civil, :new3 end
+  class << self; alias_method :new, :civil end
 
-  def self.existw? (y, w, d, sg=ITALY)
+  def self.valid_commercial? (y, w, d, sg=ITALY)
     if d < 0
       d += 8
     end
@@ -214,16 +209,12 @@ class Date
     jd
   end
 
-  class << self; alias_method :valid_commercial?, :existw? end
-
-  def self.neww(y=1582, w=41, d=5, sg=ITALY)
-    unless jd = existw?(y, w, d, sg)
+  def self.commercial(y=1582, w=41, d=5, sg=ITALY)
+    unless jd = valid_commercial?(y, w, d, sg)
       raise ArgumentError, 'invalid date'
     end
-    new0(jd_to_rjd(jd, 0, 0), 0, sg)
+    new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
-
-  class << self; alias_method :commercial, :neww end
 
   def self.new_with_hash(elem, sg)
     elem ||= {}
@@ -231,7 +222,7 @@ class Date
     if [y, m, d].include? nil
       raise ArgumentError, 'invalid date'
     else
-      new3(y, m, d, sg)
+      civil(y, m, d, sg)
     end
   end
 
@@ -249,7 +240,7 @@ class Date
 
   def self.today(sg=ITALY)
     jd = civil_to_jd(*(Time.now.to_a[3..5].reverse << sg))
-    new0(jd_to_rjd(jd, 0, 0), 0, sg)
+    new0(jd_to_ajd(jd, 0, 0), 0, sg)
   end
 
   class << self
@@ -257,9 +248,9 @@ class Date
     def once(*ids)
       for id in ids
 	module_eval <<-"end;"
-	  alias_method :__#{id.to_i}__, :#{id.id2name}
+	  alias_method :__#{id.to_i}__, :#{id.to_s}
 	  private :__#{id.to_i}__
-	  def #{id.id2name}(*args, &block)
+	  def #{id.to_s}(*args, &block)
 	    (@__#{id.to_i}__ ||= [__#{id.to_i}__(*args, &block)])[0]
 	  end
 	end;
@@ -270,23 +261,19 @@ class Date
 
   end
 
-  def initialize(rjd=0, of=0, sg=ITALY) @rjd, @of, @sg = rjd, of, sg end
+  def initialize(ajd=0, of=0, sg=ITALY) @ajd, @of, @sg = ajd, of, sg end
 
-  def rjd() @rjd end
-  def rmjd() type.jd_to_mjd(@rjd) end
-  def rtjd() type.jd_to_tjd(@rjd) end
-  def rtjd2() type.jd_to_tjd2(@rjd) end
+  def ajd() @ajd end
+  def amjd() type.ajd_to_amjd(@ajd) end
 
-  once :rmjd, :rtjd, :rtjd2
+  once :amjd
 
-  def jd() type.rjd_to_jd(@rjd, @of)[0] end
-  def day_fraction() type.rjd_to_jd(@rjd, @of)[1] end
+  def jd() type.ajd_to_jd(@ajd, @of)[0] end
+  def day_fraction() type.ajd_to_jd(@ajd, @of)[1] end
   def mjd() type.jd_to_mjd(jd) end
-  def tjd() type.jd_to_tjd(jd) end
-  def tjd2() type.jd_to_tjd2(jd) end
   def ld() type.jd_to_ld(jd) end
 
-  once :jd, :day_fraction, :mjd, :tjd, :tjd2, :ld
+  once :jd, :day_fraction, :mjd, :ld
 
   def civil() type.jd_to_civil(jd, @sg) end
   def ordinal() type.jd_to_ordinal(jd, @sg) end
@@ -318,9 +305,9 @@ class Date
   def zone
     ['Z',
       format('%+.2d%02d',
-	     (of     / (1.to_r/24)).to_i,
-	     (of.abs % (1.to_r/24) / (1.to_r/1440)).to_i)
-    ][of<=>0]
+	     (@of     / (1.to_r/24)).to_i,
+	     (@of.abs % (1.to_r/24) / (1.to_r/1440)).to_i)
+    ][@of<=>0]
   end
 
   private :zone
@@ -345,44 +332,38 @@ class Date
 
   once :leap?
 
-  def sg() @sg end
-  def newsg(sg=type::ITALY) type.new0(@rjd, @of, sg) end
+  def start() @sg end
+  def new_start(sg=type::ITALY) type.new0(@ajd, @of, sg) end
 
-  alias_method :start, :sg
-  alias_method :new_start, :newsg
+  def italy() new_start(type::ITALY) end
+  def england() new_start(type::ENGLAND) end
+  def julian() new_start(type::JULIAN) end
+  def gregorian() new_start(type::GREGORIAN) end
 
-  def italy() newsg(type::ITALY) end
-  def england() newsg(type::ENGLAND) end
-  def julian() newsg(type::JULIAN) end
-  def gregorian() newsg(type::GREGORIAN) end
+  def offset() @of end
+  def new_offset(of=0) type.new0(@ajd, of, @sg) end
 
-  def of() @of end
-  def newof(of=0) type.new0(@rjd, of, @sg) end
-
-  alias_method :offset, :of
-  alias_method :new_offset, :newof
-
-  private :of, :newof, :offset, :new_offset
+  private :offset, :new_offset
 
   def + (n)
     case n
-    when Numeric; return type.new0(@rjd + n, @of, @sg)
+    when Numeric; return type.new0(@ajd + n, @of, @sg)
     end
     raise TypeError, 'expected numeric'
   end
 
   def - (x)
     case x
-    when Numeric; return type.new0(@rjd - x, @of, @sg)
-    when Date;    return @rjd - x.rjd
+    when Numeric; return type.new0(@ajd - x, @of, @sg)
+    when Date;    return @ajd - x.ajd
     end
     raise TypeError, 'expected numeric or date'
   end
 
   def <=> (other)
     case other
-    when Numeric; return @rjd <=> other
-    when Date;    return @rjd <=> other.rjd
+    when Numeric; return @ajd <=> other
+    when Date;    return @ajd <=> other.ajd
     end
     raise TypeError, 'expected numeric or date'
   end
@@ -396,10 +377,10 @@ class Date
   end
 
   def >> (n)
-    y, m = type.clfloor(year * 12 + (mon - 1) + n, 12)
-    m,   = type.clfloor(m + 1, 1)
+    y, m = clfloor(year * 12 + (mon - 1) + n, 12)
+    m,   = clfloor(m + 1, 1)
     d = mday
-    d -= 1 until jd2 = type.exist3?(y, m, d, ns?)
+    d -= 1 until jd2 = type.valid_civil?(y, m, d, ns?)
     self + (jd2 - jd)
   end
 
@@ -423,19 +404,32 @@ class Date
   alias_method :next, :succ
 
   def eql? (other) Date === other and self == other end
-  def hash() @rjd.hash end
+  def hash() @ajd.hash end
 
-  def inspect() format('#<%s: %s,%s,%s>', type, @rjd, @of, @sg) end
+  def inspect() format('#<%s: %s,%s,%s>', type, @ajd, @of, @sg) end
   def to_s() strftime end
 
-  def _dump(limit) Marshal.dump([@rjd, @of, @sg], -1) end
-  def self._load(str) new0(*Marshal.load(str)) end
+  def _dump(limit) Marshal.dump([@ajd, @of, @sg], -1) end
+
+# def self._load(str) new0(*Marshal.load(str)) end
+
+  def self._load(str)
+    a = Marshal.load(str)
+    if a.size == 2
+      ajd,     sg = a
+           of = 0
+      ajd -= 1.to_r/2
+    else
+      ajd, of, sg = a
+    end
+    new0(ajd, of, sg)
+  end
 
 end
 
 class DateTime < Date
 
-  def self.existt? (h, min, s)
+  def self.valid_time? (h, min, s)
     h   += 24 if h   < 0
     min += 60 if min < 0
     s   += 60 if s   < 0
@@ -445,48 +439,39 @@ class DateTime < Date
     time_to_day_fraction(h, min, s)
   end
 
-  class << self; alias_method :valid_time?, :existt? end
-
-  def self.new1(jd=0, h=0, min=0, s=0, of=0, sg=ITALY)
-    unless (jd = exist1?(jd, sg)) and
-	   (fr = existt?(h, min, s))
+  def self.jd(jd=0, h=0, min=0, s=0, of=0, sg=ITALY)
+    unless (jd = valid_jd?(jd, sg)) and
+	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
-    new0(jd_to_rjd(jd, fr, of), of, sg)
+    new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
-  class << self; alias_method :jd, :new1 end
-
-  def self.new2(y=-4712, d=1, h=0, min=0, s=0, of=0, sg=ITALY)
-    unless (jd = exist2?(y, d, sg)) and
-	   (fr = existt?(h, min, s))
+  def self.ordinal(y=-4712, d=1, h=0, min=0, s=0, of=0, sg=ITALY)
+    unless (jd = valid_ordinal?(y, d, sg)) and
+	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
-    new0(jd_to_rjd(jd, fr, of), of, sg)
+    new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
-  class << self; alias_method :ordinal, :new2 end
-
-  def self.new3(y=-4712, m=1, d=1, h=0, min=0, s=0, of=0, sg=ITALY)
-    unless (jd = exist3?(y, m, d, sg)) and
-	   (fr = existt?(h, min, s))
+  def self.civil(y=-4712, m=1, d=1, h=0, min=0, s=0, of=0, sg=ITALY)
+    unless (jd = valid_civil?(y, m, d, sg)) and
+	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
-    new0(jd_to_rjd(jd, fr, of), of, sg)
+    new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
-  class << self; alias_method :new, :new3 end
-  class << self; alias_method :civil, :new3 end
+  class << self; alias_method :new, :civil end
 
-  def self.neww(y=1582, w=41, d=5, h=0, min=0, s=0, of=0, sg=ITALY)
-    unless (jd = existw?(y, w, d, sg)) and
-	   (fr = existt?(h, min, s))
+  def self.commercial(y=1582, w=41, d=5, h=0, min=0, s=0, of=0, sg=ITALY)
+    unless (jd = valid_commercial?(y, w, d, sg)) and
+	   (fr = valid_time?(h, min, s))
       raise ArgumentError, 'invalid date'
     end
-    new0(jd_to_rjd(jd, fr, of), of, sg)
+    new0(jd_to_ajd(jd, fr, of), of, sg)
   end
-
-  class << self; alias_method :commercial, :neww end
 
   def self.new_with_hash(elem, sg)
     elem ||= {}
@@ -499,7 +484,7 @@ class DateTime < Date
     if [y, m, d].include? nil
       raise ArgumentError, 'invalid date'
     else
-      new3(y, m, d, h, min, s, of.to_r/86400, sg)
+      civil(y, m, d, h, min, s, of.to_r/86400, sg)
     end
   end
 
@@ -525,10 +510,60 @@ class DateTime < Date
     d = Time.gm(*i.to_a).to_i - i.to_i
     d += d / d.abs if d.nonzero?
     of = (d / 60).to_r/1440
-    new0(jd_to_rjd(jd, fr, of), of, sg)
+    new0(jd_to_ajd(jd, fr, of), of, sg)
   end
 
-  public :hour, :min, :sec, :sec_fraction, :zone,
-    :of, :newof, :offset, :new_offset
+  public :hour, :min, :sec, :sec_fraction, :zone, :offset, :new_offset
+
+end
+
+class Date
+
+  [ %w(exist1?	valid_jd?),
+    %w(exist2?	valid_ordinal?),
+    %w(exist3?	valid_date?),
+    %w(exist?	valid_date?),
+    %w(existw?	valid_commercial?),
+    %w(new1	jd),
+    %w(new2	ordinal),
+    %w(new3	new),
+    %w(neww	commercial)
+  ].each do |old, new|
+    module_eval <<-"end;"
+      def self.#{old}(*args, &block)
+	if $VERBOSE
+	  $stderr.puts("\#{caller.shift.sub(/:in .*/, '')}: " \
+		       "warning: \#{self}::#{old} is deprecated; " \
+		       "use \#{self}::#{new}")
+	end
+	#{new}(*args, &block)
+      end
+    end;
+  end
+
+  [ %w(sg	start),
+    %w(newsg	new_start),
+    %w(of	offset),
+    %w(newof	new_offset)
+  ].each do |old, new|
+    module_eval <<-"end;"
+      def #{old}(*args, &block)
+	if $VERBOSE
+	  $stderr.puts("\#{caller.shift.sub(/:in .*/, '')}: " \
+		       "warning: \#{type}\##{old} is deprecated; " \
+		       "use \#{type}\##{new}")
+	end
+	#{new}(*args, &block)
+      end
+    end;
+  end
+
+  private :of, :newof
+
+end
+
+class DateTime < Date
+
+  public :of, :newof
 
 end
