@@ -4405,7 +4405,7 @@ rb_str_sum(argc, argv, str)
 {
     VALUE vbits;
     int bits;
-    char *p, *pend;
+    char *ptr, *p, *pend;
     long len;
 
     if (rb_scan_args(argc, argv, "01", &vbits) == 0) {
@@ -4413,7 +4413,7 @@ rb_str_sum(argc, argv, str)
     }
     else bits = NUM2INT(vbits);
 
-    p = RSTRING(str)->ptr;
+    ptr = p = RSTRING(str)->ptr;
     len = RSTRING(str)->len;
     pend = p + len;
     if (bits > sizeof(long)*CHAR_BIT) {
@@ -4424,7 +4424,7 @@ rb_str_sum(argc, argv, str)
 	mod = rb_funcall(mod, '-', 1, INT2FIX(1));
 
 	while (p < pend) {
-	    str_mod_check(str, p, len);
+	    str_mod_check(str, ptr, len);
 	    res = rb_funcall(res, '+', 1, INT2FIX((unsigned int)*p));
 	    p++;
 	}
@@ -4439,7 +4439,7 @@ rb_str_sum(argc, argv, str)
 	    mod = -1;
 	}
 	while (p < pend) {
-	    str_mod_check(str, p, len);
+	    str_mod_check(str, ptr, len);
 	    res += (unsigned int)*p;
 	    p++;
 	}

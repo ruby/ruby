@@ -1,5 +1,8 @@
 Sat Oct  2 00:42:20 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* string.c (rb_str_sum): check was done with false pointer.
+	  [ruby-dev:24383]
+
 	* string.c (rb_str_sum): string may be altered.  [ruby-dev:24381]
 
 Fri Oct  1 11:40:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
