@@ -488,10 +488,10 @@ install:	$(archdir)/$(DLLIB)
 site-install:	$(sitearchdir)/$(DLLIB)
 
 $(archdir)/$(DLLIB): $(DLLIB)
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(archdir)
+	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(rubylibdir) $(archdir)
 	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(archdir)/$(DLLIB)
 EOMF
-  install_rb(mfile, "$(libdir)", srcdir)
+  install_rb(mfile, "$(rubylibdir)", srcdir)
   mfile.printf "\n"
 
   mfile.printf <<EOMF
