@@ -9676,9 +9676,9 @@ rb_thread_cleanup()
     FOREACH_THREAD_FROM(curr, th) {
 	if (th->status != THREAD_KILLED) {
 	    rb_thread_ready(th);
-	    th->thgroup = 0;
-	    th->priority = 0;
 	    if (th != main_thread) {
+		th->thgroup = 0;
+		th->priority = 0;
 		th->status = THREAD_TO_KILL;
 		RDATA(th->thread)->dfree = NULL;
 	    }
