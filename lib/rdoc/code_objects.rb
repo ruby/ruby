@@ -23,6 +23,9 @@ module RDoc
 
     attr_accessor :done_documenting
 
+    # Which section are we in
+
+    attr_accessor :section
 
     # do we document ourselves?
 
@@ -111,7 +114,25 @@ module RDoc
   class Context < CodeObject
     attr_reader   :name, :method_list, :attributes, :aliases, :constants
     attr_reader   :requires, :includes, :in_files, :visibility
-    
+
+    attr_reader   :sections
+
+    class Section
+      attr_reader :title, :comment, :sequence
+
+      @@sequence = "SEC00000"
+
+      def initialize(title, comment)
+        @title = title
+        @@sequence.succ!
+        @sequence = @@sequence.dup
+        if comment
+          @comment = comment.sub(/.*$/, '')
+          @comment = nil if @comment.empty?
+        end
+      end
+    end
+
 
     def initialize
       super()
@@ -122,6 +143,9 @@ module RDoc
       @comment ||= ""
       @parent  = nil
       @visibility = :public
+
+      @current_section = Section.new(nil, nil)
+      @sections = [ @current_section ]
 
       initialize_methods_etc
       initialize_classes_and_modules
@@ -236,6 +260,7 @@ module RDoc
 #        collection[name] = cls if @document_self  && !@done_documenting
         collection[name] = cls if !@done_documenting
         cls.parent = self
+        cls.section = @current_section
       end
       cls
     end
@@ -243,6 +268,7 @@ module RDoc
     def add_to(array, thing)
       array <<  thing if @document_self  && !@done_documenting
       thing.parent = self
+      thing.section = @current_section
     end
 
     # If a class's documentation is turned off after we've started
@@ -372,6 +398,13 @@ module RDoc
             find_constant_named(symbol) ||
             find_attribute_named(symbol) ||
             find_module_named(symbol) 
+    end
+
+    # Handle sections
+
+    def set_current_section(title, comment)
+      @current_section = Section.new(title, comment)
+      @sections << @current_section
     end
 
     private

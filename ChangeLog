@@ -1,3 +1,16 @@
+Sat Nov 20 23:57:33 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/README (et al): Add a new directive, :section:, and
+	  change the output format to accomodate. :section: allows to to
+	  group together methods, attributes, constants, etc under
+	  headings in the output. If used, a table of contents is
+	  generated.
+
+Sat Nov 20 23:56:54 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/options.rb (Options::parse): Force --inline-source if
+	  --one-file option given
+
 Sat Nov 20 23:25:12 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* io.c (rb_io_getline): f.gets("") did not work. [ruby-core:03771]

@@ -422,6 +422,13 @@ this margin are formatted verbatim.
 
 12. Comment blocks can contain other directives:
 
+    [<tt>:section: title</tt>]
+        Starts a new section in the output. The title following
+	<tt>:section:</tt> is used as the section heading, and the
+	remainder of the comment containing the section is used as
+	introductory text. Subsequent methods, aliases, attributes,
+	and classes will be documented in this section.
+
     [<tt>call-seq:</tt>]
         lines up to the next blank line in the comment are treated as
         the method's calling sequence, overriding the

@@ -391,7 +391,7 @@ class Options
         when "--line-numbers"  then @include_line_numbers = true
         when "--main"          then @main_page     = arg
         when "--merge"         then @merge         = true
-        when "--one-file"      then @all_one_file  = true
+        when "--one-file"      then @all_one_file  = @inline_source = true
         when "--op"            then @op_dir        = arg
         when "--opname"        then @op_name       = arg
         when "--promiscuous"   then @promiscuous   = true
