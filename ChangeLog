@@ -1,3 +1,10 @@
+Tue Sep 17 01:13:31 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_nesting): load wrapping module should appear in
+	  Module#nesting list. (ruby-bugs-ja:PR#328)
+
+	* eval.c (rb_thread_remove): free stack buffer on remove.
+
 Tue Sep 17 00:58:35 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* io.c: add parameter prototype.

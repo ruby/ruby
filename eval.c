@@ -1570,6 +1570,9 @@ rb_mod_nesting()
 	if (!NIL_P(cbase->nd_clss)) rb_ary_push(ary, cbase->nd_clss);
 	cbase = cbase->nd_next;
     }
+    if (ruby_wrapper && RARRAY(ary)->len == 0) {
+	rb_ary_push(ary, ruby_wrapper);
+    }
     return ary;
 }
 
@@ -7766,6 +7769,8 @@ rb_thread_remove(th)
     th->gid = 0;
     th->prev->next = th->next;
     th->next->prev = th->prev;
+    if (th->stk_ptr) free(th->stk_ptr);
+    th->stk_ptr = 0;
 }
 
 static int

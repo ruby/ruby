@@ -1458,6 +1458,7 @@ original_module(c)
 
 static void
 cvar_override_check(id, a)
+    ID id;
     VALUE a;
 {
     VALUE base = original_module(a);

@@ -43,7 +43,7 @@ shortlen(len, ds)
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   7
+#define MARSHAL_MINOR   8
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -371,22 +371,22 @@ w_object(obj, arg, limit)
 
 	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
 
+	if (ivtbl = rb_generic_ivar_table(obj)) {
+	    w_byte(TYPE_IVAR, arg);
+	}
+
 	st_add_direct(arg->data, obj, arg->data->num_entries);
 	if (rb_respond_to(obj, s_dump)) {
 	    VALUE v;
 
-	    w_byte(TYPE_USERDEF, arg);
-	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
+	    w_class(TYPE_USERDEF, obj, arg);
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump() must return String");
 	    }
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
+	    if (ivtbl) w_ivar(ivtbl, &c_arg);
 	    return;
-	}
-
-	if (ivtbl = rb_generic_ivar_table(obj)) {
-	    w_byte(TYPE_IVAR, arg);
 	}
 
 	switch (BUILTIN_TYPE(obj)) {
