@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Aug 19 17:46:47 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,8 +18,8 @@ extern VALUE cNumeric;
 static ID upto;
 
 static VALUE
-range_s_new(class, first, last)
-    VALUE class, first, last;
+range_s_new(klass, first, last)
+    VALUE klass, first, last;
 {
     VALUE obj;
 
@@ -32,7 +32,7 @@ range_s_new(class, first, last)
 	ArgError("bad value for range");
     }
 
-    obj = obj_alloc(class);
+    obj = obj_alloc(klass);
 
     rb_iv_set(obj, "first", first);
     rb_iv_set(obj, "last", last);

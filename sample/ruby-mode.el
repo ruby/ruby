@@ -2,11 +2,16 @@
 ;;;  ruby-mode.el -
 ;;;
 ;;;  $Author$
-;;;  Time-stamp: <97/03/21 01:16:05 matz>
+;;;  $Date$
 ;;;  created at: Fri Feb  4 14:49:13 JST 1994
 ;;;
 
-(defconst ruby-mode-version "1.0.7")
+(defconst ruby-mode-revision "$Revision$")
+
+(defconst ruby-mode-version
+  (progn
+   (string-match "[0-9.]+" ruby-mode-revision)
+   (substring ruby-mode-revision (match-beginning 0) (match-end 0))))
 
 (defconst ruby-block-beg-re
   "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin\\|do"
@@ -79,7 +84,7 @@
   (modify-syntax-entry ?\` "\"" ruby-mode-syntax-table)
   (modify-syntax-entry ?# "<" ruby-mode-syntax-table)
   (modify-syntax-entry ?\n ">" ruby-mode-syntax-table)
-  (modify-syntax-entry ?\\ "'" ruby-mode-syntax-table)
+  (modify-syntax-entry ?\\ "\\" ruby-mode-syntax-table)
   (modify-syntax-entry ?$ "/" ruby-mode-syntax-table)
   (modify-syntax-entry ?? "_" ruby-mode-syntax-table)
   (modify-syntax-entry ?_ "_" ruby-mode-syntax-table)
@@ -632,10 +637,10 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+[a-zA-Z0-9_]*\\)"
        2 font-lock-type-face)
      ;; functions
-     '("^\\s *def[ \t]+.*$"
-       0 font-lock-function-name-face))
+     '("^\\s *def[ \t]+[^ \t(]*"
+       0 font-lock-function-name-face t))
     "*Additional expressions to highlight in ruby mode.")
-  (if (and (>= (string-to-int emacs-version) 20)
+  (if (and (>= (string-to-int emacs-version) 19)
           (not (featurep 'xemacs)))
       (add-hook
        'ruby-mode-hook
@@ -645,5 +650,4 @@ An end of a defun is found by moving forward from the beginning of one."
               '((ruby-font-lock-keywords) nil nil ((?\_ . "w"))))))
     (add-hook 'ruby-mode-hook
              (lambda ()
-               (setq font-lock-keywords ruby-font-lock-keywords)
-               (font-lock-mode 1))))))
+               (setq font-lock-keywords ruby-font-lock-keywords))))))

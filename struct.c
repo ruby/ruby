@@ -196,20 +196,20 @@ struct_s_def(argc, argv)
 }
 
 VALUE
-struct_alloc(class, values)
-    VALUE class, values;
+struct_alloc(klass, values)
+    VALUE klass, values;
 {
     VALUE size;
     int n;
 
-    size = rb_iv_get(class, "__size__");
+    size = rb_iv_get(klass, "__size__");
     n = FIX2INT(size);
     if (n < RARRAY(values)->len) {
 	ArgError("struct size differs");
     }
     else {
 	NEWOBJ(st, struct RStruct);
-	OBJSETUP(st, class, T_STRUCT);
+	OBJSETUP(st, klass, T_STRUCT);
 	st->len = n;
 	st->ptr = 0;		/* avoid GC crashing  */
 	st->ptr = ALLOC_N(VALUE, n);
@@ -222,15 +222,15 @@ struct_alloc(class, values)
 }
 
 VALUE
-struct_new(class, va_alist)
-    VALUE class;
+struct_new(klass, va_alist)
+    VALUE klass;
     va_dcl
 {
     VALUE val, mem;
     int size;
     va_list args;
 
-    val = rb_iv_get(class, "__size__");
+    val = rb_iv_get(klass, "__size__");
     size = FIX2INT(val); 
     mem = ary_new();
     va_start(args);
@@ -240,7 +240,7 @@ struct_new(class, va_alist)
     }
     va_end(args);
 
-    return struct_alloc(class, mem);
+    return struct_alloc(klass, mem);
 }
 
 static VALUE

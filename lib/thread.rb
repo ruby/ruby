@@ -13,6 +13,10 @@ unless defined? ThreadError
   end
 end
 
+if $DEBUG
+  Thread.abort_on_exception = true
+end
+
 class Mutex
   def initialize
     @waiting = []
@@ -65,6 +69,10 @@ class Mutex
       unlock
     end
   end
+
+  def num_waiting
+    @waiting.size
+  end
 end
 
 class Queue
@@ -106,5 +114,35 @@ class Queue
 
   def length
     @que.length
+  end
+  alias size length
+end
+
+class SizedQueue<Queue
+  def initialize(max)
+    @max = max
+    @queue_wait = []
+    super()
+  end
+
+  def push(obj)
+    while @que.length >= @max
+      @queue_wait.push Thread.current
+      Thread.stop
+    end
+    super
+  end
+
+  def pop(*args)
+    if @que.length < @max
+      t = @queue_wait.shift
+      t.run if t
+    end
+    pop = super
+    pop
+  end
+
+  def num_waiting
+    @waiting.size + @queue_wait.size
   end
 end

@@ -1,9 +1,14 @@
 # extconf.rb for tcltklib
 
+require 'mkmf'
+
 have_library("socket", "socket")
 have_library("nsl", "gethostbyname")
+have_library("dl", "dlopen")
+have_library("m", "log") 
 
-def search_file(var, include, *path)
+$includes = []
+def search_header(include, *path)
   pwd = Dir.getwd
   begin
     for i in path.reverse!
@@ -12,8 +17,10 @@ def search_file(var, include, *path)
 	Dir.chdir path
 	files = Dir[include]
 	if files.size > 0
-	  var << path
-	  return files.pop
+	  unless $includes.include? path
+	    $includes << path
+	  end
+	  return
 	end
       end
     end
@@ -22,58 +29,56 @@ def search_file(var, include, *path)
   end
 end
 
-$includes = []
-search_file($includes, 
-	    "tcl.h",
-	    "/usr/include/tcl*",
-	    "/usr/include",
-	    "/usr/local/include/tcl*",
-	    "/usr/local/include")
-search_file($includes, 
-	    "tk.h",
-	    "/usr/include/tk*",
-	    "/usr/include",
-	    "/usr/local/include/tk*",
-	    "/usr/local/include")
-search_file($includes, 
-	    "X11/Xlib.h",
-	    "/usr/include",
-	    "/usr/X11*/include",
-	    "/usr/include",
-	    "/usr/X11*/include")
+search_header("tcl.h",
+	      "/usr/include/tcl*",
+	      "/usr/include",
+	      "/usr/local/include/tcl*",
+	      "/usr/local/include")
+search_header("tk.h",
+	      "/usr/include/tk*",
+	      "/usr/include",
+	      "/usr/local/include/tk*",
+	      "/usr/local/include")
+search_header("X11/Xlib.h",
+	      "/usr/include",
+	      "/usr/X11*/include",
+	      "/usr/include",
+	      "/usr/X11*/include")
 
 $CFLAGS = "-Wall " + $includes.collect{|path| "-I" + path}.join(" ")
 
 $libraries = []
-tcllibfile = search_file($libraries,
-			 "libtcl{,7*,8*}.{a,so}",
-			 "/usr/lib",
-			 "/usr/local/lib")
-if tcllibfile
-  tcllibfile.sub!(/^lib/, '')
-  tcllibfile.sub!(/\.(a|so)$/, '')
+def search_lib(file, func, *path)
+  for i in path.reverse!
+    dir = Dir[i]
+    for path in dir
+      $LDFLAGS = $libraries.collect{|p| "-L" + p}.join(" ") + " -L" + path
+      files = Dir[path+"/"+file]
+      if files.size > 0
+	for lib in files
+	  lib = File::basename(lib)
+	  lib.sub!(/^lib/, '')
+	  lib.sub!(/\.(a|so)$/, '')
+	  if have_library(lib, func)
+	    unless $libraries.include? path
+	      $libraries << path
+	    end
+	    return TRUE
+	  end
+	end
+      end
+    end
+  end
+  return FALSE;
 end
-tklibfile =  search_file($libraries,
-			 "libtk{,4*,8*}.{a,so}",
-			 "/usr/lib",
-			 "/usr/local/lib")
-if tklibfile
-  tklibfile.sub!(/^lib/, '')
-  tklibfile.sub!(/\.(a|so)$/, '')
-end
-search_file($libraries,
-	    "libX11.{a,so}",
-	    "/usr/lib",
-	    "/usr/X11*/lib")
 
-$LDFLAGS = $libraries.collect{|path| "-L" + path}.join(" ")
-
-have_library("dl", "dlopen")
-if have_header("tcl.h") &&
-    have_header("tk.h") &&
-    have_library("X11", "XOpenDisplay") &&
-    have_library("m", "log") &&
-    have_library(tcllibfile, "Tcl_FindExecutable") &&
-    have_library(tklibfile, "Tk_Init")
+if have_header("tcl.h") && have_header("tk.h") &&
+    search_lib("libX11.{a,so}", "XOpenDisplay",
+	       "/usr/lib", "/usr/X11*/lib") &&
+    search_lib("libtcl{,7*,8*}.{a,so}", "Tcl_FindExecutable",
+	       "/usr/lib", "/usr/local/lib") &&
+    search_lib("libtk{,4*,8*}.{a,so}", "Tk_Init",
+	       "/usr/lib", "/usr/local/lib")
+  $LDFLAGS = $libraries.collect{|path| "-L" + path}.join(" ")
   create_makefile("tcltklib")
 end

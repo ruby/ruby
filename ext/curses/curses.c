@@ -55,6 +55,7 @@ free_window(winp)
 {
     if (winp->window && winp->window != stdscr) delwin(winp->window);
     winp->window = 0;
+    free(winp);
 }
 
 static VALUE

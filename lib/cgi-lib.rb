@@ -14,16 +14,14 @@ if ENV['SERVER_SOFTWARE'] =~ /^Microsoft-/ then
   Dir.chdir ENV['PATH_TRANSLATED'].sub(/[^\\]+$/, '')
 end
 
-require "shellwords.rb"
-
 class CGI
-  include Shellwords
 
   attr("inputs")
 
   # original is CGI.pm
   def read_from_cmdline
-    words = shellwords(if not ARGV.empty? then
+    require "shellwords.rb"
+    words = Shellwords.shellwords(if not ARGV.empty? then
                          ARGV.join(' ')
                        else
                          print "(offline mode: enter name=value pairs on standard input)\n"

@@ -1,8 +1,8 @@
 #
 #               Date.rb - 
 #                       $Release Version: $
-#                       $Revision: 1.2 $
-#                       $Date: 1997/02/14 11:05:29 $
+#                       $Revision: 1.1.1.1.4.3 $
+#                       $Date: 1998/02/03 10:02:57 $
 #                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
@@ -17,15 +17,34 @@
 class Date
   include Comparable
   
+  Weektag = [
+    "Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"
+  ]
+
+  Monthtag = [
+    "January","February","March","April", "May", "June","July",
+    "August", "September", "October", "November", "December"
+  ]
+
+  Monthtab = {
+    "jan"=>1, "feb"=>2, "mar"=>3, "apr"=>4, "may"=>5, "jun"=>6,
+    "jul"=>7, "aug"=>8, "sep"=>9, "oct"=>10, "nov"=>11, "dec"=>12
+  }
+
   def initialize(y = 1, m = 1, d = 1)
-    if y.kind_of?(String) && y.size == 8
-      @year = y[0,4].to_i
-      @month = y[4,2].to_i
-      @day = y[6,2].to_i
+    if y.kind_of?(String)
+      case y
+      when /(\d\d\d\d)-?(?:(\d\d)-?(\d\d)?)?/
+	@year = $1.to_i
+	@month = if $2 then $2.to_i else 1 end
+	@day = if $3 then $3.to_i else 1 end
+      else
+	require 'parsedate'
+	@year, @month, @day = ParseDate.parsedate(y)
+      end
     else
       if m.kind_of?(String)
-        ml = {"jan"=>1, "feb"=>2, "mar"=>3, "apr"=>4, "may"=>5, "jun"=>6, "jul"=>7, "aug"=>8, "sep"=>9, "oct"=>10, "nov"=>11, "dec"=>12}
-        m = ml[m.downcase]
+        m = Monthtab[m.downcase]
         if m.nil?
           raise ArgumentError, "Wrong argument. (month)"
         end
@@ -53,23 +72,33 @@ class Date
   def period
     return Date.period!(@year, @month, @day)
   end
-  
+
+  def jd
+    return period + 1721423
+  end
+
+  def mjd
+    return jd - 2400000.5
+  end
+
+  def to_s
+    format("%.3s, %.3s %2d %4d", name_of_week, name_of_month, @day, @year)
+  end
+
+  def inspect
+    to_s
+  end
+
   def day_of_week
-    dl = Date.daylist(@year)
-    d = Date.jan1!(@year)
-    for m in 1..(@month - 1)
-      d += dl[m]
-    end
-    d += @day - 1
-    if @year == 1752 && @month == 9 && @day >= 14
-      d -= (14 - 3)
-    end
-    return (d % 7)
+    return (period + 5) % 7
   end
   
-  Weektag = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
   def name_of_week
     return Weektag[self.day_of_week]
+  end
+  
+  def name_of_month
+    return Monthtag[@month-1]
   end
   
   def +(o)
@@ -125,6 +154,9 @@ class Date
   end
 
   def _check_date
+    if @year == nil or @month == nil or @day == nil
+      raise ArgumentError, "argument contains nil"
+    end
     m = Date.daylist(@year)
     if @month < 1 || @month > 12
       raise ArgumentError, "argument(month) out of range."
@@ -151,7 +183,7 @@ end
 
 def Date.at(d)
   if d.kind_of? Time
-    return Date.new(1900+d.year, d.mon+1, d.mday)
+    return Date.new(d.year, d.mon, d.mday)
   end
   if d.kind_of? Date
     return Date.at(d.period)

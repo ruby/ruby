@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Dec 28 14:31:59 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -50,13 +50,13 @@ struct time_object {
 }
 
 static VALUE
-time_s_now(class)
-    VALUE class;
+time_s_now(klass)
+    VALUE klass;
 {
     VALUE obj;
     struct time_object *tobj;
 
-    obj = Data_Make_Struct(class, struct time_object, 0, 0, tobj);
+    obj = Data_Make_Struct(klass, struct time_object, 0, 0, tobj);
     tobj->tm_got=0;
 
     if (gettimeofday(&(tobj->tv), 0) == -1) {
@@ -67,14 +67,14 @@ time_s_now(class)
 }
 
 static VALUE
-time_new_internal(class, sec, usec)
-    VALUE class;
+time_new_internal(klass, sec, usec)
+    VALUE klass;
     int sec, usec;
 {
     VALUE obj;
     struct time_object *tobj;
 
-    obj = Data_Make_Struct(class, struct time_object, 0, 0, tobj);
+    obj = Data_Make_Struct(klass, struct time_object, 0, 0, tobj);
     tobj->tm_got = 0;
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;
@@ -135,13 +135,13 @@ time_timeval(time)
 }
 
 static VALUE
-time_s_at(class, time)
-    VALUE class, time;
+time_s_at(klass, time)
+    VALUE klass, time;
 {
     struct timeval tv;
 
     tv = time_timeval(time);
-    return time_new_internal(class, tv.tv_sec, tv.tv_usec);
+    return time_new_internal(klass, tv.tv_sec, tv.tv_usec);
 }
 
 static char *months [12] = {
@@ -158,7 +158,17 @@ time_arg(argc, argv, args)
     VALUE v[6];
     int i;
 
-    rb_scan_args(argc, argv, "15", &v[0], &v[1], &v[2], &v[3], &v[4], &v[5]);
+    if (argc == 10) {
+	v[0] = argv[5];
+	v[1] = argv[4];
+	v[2] = argv[3];
+	v[3] = argv[2];
+	v[4] = argv[1];
+	v[5] = argv[0];
+    }
+    else {
+	rb_scan_args(argc, argv, "15", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5]);
+    }
 
     args[0] = NUM2INT(v[0]);
     if (args[0] < 70) args[0] += 100;
@@ -183,7 +193,7 @@ time_arg(argc, argv, args)
 	}
     }
     else {
-	args[1] = NUM2INT(v[1]);
+	args[1] = NUM2INT(v[1]) - 1;
     }
     if (v[2] == Qnil) {
 	args[2] = 1;
@@ -201,7 +211,7 @@ time_arg(argc, argv, args)
     }
 
     /* value validation */
-    if (   args[0] < 70|| args[1] > 137
+    if (   args[0] < 70|| args[0] > 137
 	|| args[1] < 0 || args[1] > 11
 	|| args[2] < 1 || args[2] > 31
 	|| args[3] < 0 || args[3] > 23
@@ -211,11 +221,11 @@ time_arg(argc, argv, args)
 }
 
 static VALUE
-time_gm_or_local(argc, argv, gm_or_local, class)
+time_gm_or_local(argc, argv, gm_or_local, klass)
     int argc;
     VALUE *argv;
     int gm_or_local;
-    VALUE class;
+    VALUE klass;
 {
     int args[6];
     struct timeval tv;
@@ -233,7 +243,7 @@ time_gm_or_local(argc, argv, gm_or_local, class)
     tm = (*fn)(&guess);
     if (!tm) goto error;
     t = args[0];
-    while (diff = t - tm->tm_year) {
+    while (diff = t - (tm->tm_year)) {
 	guess += diff * 364 * 24 * 3600;
 	if (guess < 0) ArgError("too far future");
 	tm = (*fn)(&guess);
@@ -250,28 +260,28 @@ time_gm_or_local(argc, argv, gm_or_local, class)
     guess += (args[4] - tm->tm_min) * 60;
     guess += args[5] - tm->tm_sec;
 
-    return time_new_internal(class, guess, 0);
+    return time_new_internal(klass, guess, 0);
 
   error:
-    ArgError("gmtime error");
+    ArgError("gmtime/localtime error");
 }
 
 static VALUE
-time_s_timegm(argc, argv, class)
+time_s_timegm(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
-    return time_gm_or_local(argc, argv, 1, class);
+    return time_gm_or_local(argc, argv, 1, klass);
 }
 
 static VALUE
-time_s_timelocal(argc, argv, class)
+time_s_timelocal(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
-    return time_gm_or_local(argc, argv, 0, class);
+    return time_gm_or_local(argc, argv, 0, klass);
 }
 
 static VALUE
@@ -411,6 +421,23 @@ time_gmtime(time)
 
 static VALUE
 time_asctime(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+    char *s;
+
+    GetTimeval(time, tobj);
+    if (tobj->tm_got == 0) {
+	time_localtime(time);
+    }
+    s = asctime(&(tobj->tm));
+    if (s[24] == '\n') s[24] = '\0';
+
+    return str_new2(s);
+}
+
+static VALUE
+time_to_s(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -559,7 +586,8 @@ time_mon(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    return INT2FIX(tobj->tm.tm_mon);
+    Warning("Time#month now start from 1 for January");
+    return INT2FIX(tobj->tm.tm_mon+1);
 }
 
 static VALUE
@@ -572,7 +600,8 @@ time_year(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    return INT2FIX(tobj->tm.tm_year);
+    Warning("Time#year now returns 19xx");
+    return INT2FIX(tobj->tm.tm_year+1900);
 }
 
 static VALUE
@@ -611,7 +640,8 @@ time_isdst(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    return INT2FIX(tobj->tm.tm_isdst);
+    Warning("Time#isdst now returns boolean value");
+    return tobj->tm.tm_isdst?TRUE:FALSE;
 }
 
 static VALUE
@@ -642,17 +672,18 @@ time_to_a(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    ary = ary_new3(9,
-		   INT2FIX(tobj->tm.tm_sec),
-		   INT2FIX(tobj->tm.tm_min),
-		   INT2FIX(tobj->tm.tm_hour),
-		   INT2FIX(tobj->tm.tm_mday),
-		   INT2FIX(tobj->tm.tm_mon),
-		   INT2FIX(tobj->tm.tm_year),
-		   INT2FIX(tobj->tm.tm_wday),
-		   INT2FIX(tobj->tm.tm_yday),
-		   INT2FIX(tobj->tm.tm_isdst));
-    return ary;
+    Warning("Time#to_a's return values are now changed");
+    return ary_new3(10,
+		    INT2FIX(tobj->tm.tm_sec),
+		    INT2FIX(tobj->tm.tm_min),
+		    INT2FIX(tobj->tm.tm_hour),
+		    INT2FIX(tobj->tm.tm_mday),
+		    INT2FIX(tobj->tm.tm_mon+1),
+		    INT2FIX(tobj->tm.tm_year+1900),
+		    INT2FIX(tobj->tm.tm_wday),
+		    INT2FIX(tobj->tm.tm_yday),
+		    tobj->tm.tm_isdst?TRUE:FALSE,
+		    time_zone(time));
 }
 
 #define SMALLBUF 100
@@ -711,7 +742,7 @@ time_strftime(time, format)
     }
     len = rb_strftime(&buf, RSTRING(format)->ptr, &(tobj->tm));
     str = str_new(buf, len);
-    if (len > SMALLBUF) free(buf);
+    if (buf != buffer) free(buf);
     return str;
 }
 
@@ -774,8 +805,8 @@ Init_Time()
     rb_define_method(cTime, "gmtime", time_gmtime, 0);
     rb_define_method(cTime, "ctime", time_asctime, 0);
     rb_define_method(cTime, "asctime", time_asctime, 0);
-    rb_define_method(cTime, "to_s", time_asctime, 0);
-    rb_define_method(cTime, "inspect", time_asctime, 0);
+    rb_define_method(cTime, "to_s", time_to_s, 0);
+    rb_define_method(cTime, "inspect", time_to_s, 0);
     rb_define_method(cTime, "to_a", time_to_a, 0);
 
     rb_define_method(cTime, "+", time_plus, 1);

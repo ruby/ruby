@@ -2,12 +2,12 @@
 /* Command-line: gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$ keywords  */
 struct kwtable {char *name; int id[2]; enum lex_state state;};
 
-#define TOTAL_KEYWORDS 38
+#define TOTAL_KEYWORDS 40
 #define MIN_WORD_LENGTH 2
 #define MAX_WORD_LENGTH 8
 #define MIN_HASH_VALUE 6
-#define MAX_HASH_VALUE 52
-/* maximum key range = 47, duplicates = 0 */
+#define MAX_HASH_VALUE 55
+/* maximum key range = 50, duplicates = 0 */
 
 #ifdef __GNUC__
 inline
@@ -19,19 +19,19 @@ hash (str, len)
 {
   static unsigned char asso_values[] =
     {
-     53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
-     53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
-     53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
-     53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
-     53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
-     53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
-     53, 53, 53, 11, 53, 53, 34, 53,  1, 35,
-     53,  1, 53, 53, 53, 53, 53, 53,  1, 53,
-     53, 53, 53, 53, 53, 53, 53, 53, 53, 53,
-     53, 53, 53, 53, 53, 53, 53, 29,  1,  2,
-      1,  1,  4, 24, 53, 17, 53, 20,  9,  2,
-      9, 26, 14, 53,  5,  1,  1, 16, 53, 21,
-     24,  9, 53, 53, 53, 53, 53, 53,
+     56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
+     56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
+     56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
+     56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
+     56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
+     56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
+     56, 56, 56, 11, 56, 56, 36, 56,  1, 37,
+     31,  1, 56, 56, 56, 56, 29, 56,  1, 56,
+     56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
+     56, 56, 56, 56, 56,  1, 56, 32,  1,  2,
+      1,  1,  4, 23, 56, 17, 56, 20,  9,  2,
+      9, 26, 14, 56,  5,  1,  1, 16, 56, 21,
+     20,  9, 56, 56, 56, 56, 56, 56,
     };
   register int hval = len;
 
@@ -87,17 +87,19 @@ rb_reserved_word (str, len)
       {"until",  kUNTIL, kUNTIL_MOD, EXPR_BEG},
       {"unless",  kUNLESS, kUNLESS_MOD, EXPR_BEG},
       {"or",  kOR, kOR, EXPR_BEG},
-      {"and",  kAND, kAND, EXPR_BEG},
+      {"next",  kNEXT, kNEXT, EXPR_END},
       {"when",  kWHEN, kWHEN, EXPR_BEG},
       {"redo",  kREDO, kREDO, EXPR_END},
-      {"class",  kCLASS, kCLASS, EXPR_CLASS},
-      {"next",  kNEXT, kNEXT, EXPR_END},
+      {"and",  kAND, kAND, EXPR_BEG},
       {"begin",  kBEGIN, kBEGIN, EXPR_BEG},
+      {"__LINE__",  k__LINE__, k__LINE__, EXPR_END},
+      {"class",  kCLASS, kCLASS, EXPR_CLASS},
+      {"__FILE__",  k__FILE__, k__FILE__, EXPR_END},
       {"END",  klEND, klEND, EXPR_END},
       {"BEGIN",  klBEGIN, klBEGIN, EXPR_END},
-      {"",}, {"",}, 
       {"while",  kWHILE, kWHILE_MOD, EXPR_BEG},
-      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
+      {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, {"",}, 
+      {"",}, 
       {"alias",  kALIAS, kALIAS, EXPR_FNAME},
     };
 

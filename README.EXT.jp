@@ -1,0 +1,1146 @@
+.\" README.EXT -  -*- Text -*- created at: Mon Aug  7 16:45:54 JST 1995
+
+rubyの拡張モジュールの作り方を説明します．
+
+1．基礎知識
+
+Cの変数には型があり，データには型がありません．ですから，た
+とえばポインタをintの変数に代入すると，その値は整数として取
+り扱われます．逆にrubyの変数には型がなく，データに型がありま
+す．この違いのため，Cとrubyは相互に変換しなければ，お互いの
+データをアクセスできません．
+
+rubyのデータはVALUEというCの型で表現されます．VALUE型のデー
+タはそのデータタイプを自分で知っています．このデータタイプと
+いうのはデータ(オブジェクト)の実際の構造を意味していて，ruby
+のクラスとはまた違ったものです．
+
+VALUEからCにとって意味のあるデータを取り出すためには
+
+ (1) VALUEのデータタイプを知る
+ (2) VALUEをCのデータに変換する
+
+の両方が必要です．(1)を忘れると間違ったデータの変換が行われ
+て，最悪プログラムがcore dumpします．
+
+1.1 データタイプ
+
+rubyにはユーザが使う可能性のある以下のタイプがあります．
+
+	T_NIL		nil
+	T_OBJECT	通常のオブジェクト
+	T_CLASS		クラス
+	T_MODULE	モジュール
+	T_FLOAT		浮動小数点数
+	T_STRING	文字列
+	T_REGEXP	正規表現
+	T_ARRAY		配列
+	T_FIXNUM	Fixnum(31bit長整数)
+	T_HASH		連想配列
+	T_STRUCT	(rubyの)構造体
+	T_BIGNUM	多倍長整数
+	T_FILE		入出力
+	T_TRUE		真
+	T_FALSE		偽
+	T_DATA		データ
+
+その他に内部で利用されている以下のタイプがあります．
+
+	T_ICLASS
+	T_MATCH
+	T_VARMAP
+	T_SCOPE
+	T_NODE
+
+ほとんどのタイプはCの構造体で実装されています．
+
+1.2 VALUEのデータタイプをチェックする
+
+ruby.hではTYPE()というマクロが定義されていて，VALUEのデータ
+タイプを知ることが出来ます．TYPE()マクロは上で紹介したT_XXXX
+の形式の定数を返します．VALUEのデータタイプに応じて処理する
+場合には，TYPE()の値で分岐することになります．
+
+  switch (TYPE(obj)) {
+    case T_FIXNUM:
+      /* FIXNUMの処理 */
+      break;
+    case T_STRING:
+      /* 文字列の処理 */
+      break;
+    case T_ARRAY:
+      /* 配列の処理 */
+      break;
+    default:
+      /* 例外を発生させる */
+      TypeError("not valid value");
+      break;
+  }
+
+それとデータタイプをチェックして，正しくなければ例外を発生す
+る関数が用意されています．
+
+  void Check_Type(VALUE value, int type)
+
+この関数はvalueがtypeで無ければ，例外を発生させます．引数と
+して与えられたVALUEのデータタイプが正しいかどうかチェックす
+るためには，この関数を使います．
+
+FIXNUMとNILに関してはより高速な判別マクロが用意されています．
+
+  FIXNUM_P(obj)
+  NIL_P(obj)
+
+1.3 VALUEをCのデータに変換する
+
+データタイプがT_NIL, T_FALSE, T_TRUEである時，データはそれぞ
+れnil, false, trueです．このデータタイプのオブジェクトはひと
+つずつしか存在しません．
+
+データタイプがT_FIXNUMの時，これは31bitのサイズを持つ整数で
+す．FIXNUMをCの整数に変換するためにはマクロ「FIX2INT()」を使
+います．それから，FIXNUMに限らずrubyのデータを整数に変換する
+「NUM2INT()」というマクロがあります．このマクロはデータタイ
+プのチェック無しで使えます(整数に変換できない場合には例外が
+発生する)．
+
+同様にチェック無しで使える変換マクロはdoubleを取り出す
+「NUM2DBL()」とchar*を取り出す「STR2CSTR()」があります．
+
+それ以外のデータタイプは対応するCの構造体があります．対応す
+る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
+ポインタに変換できます．
+
+構造体は「struct RXxxxx」という名前でruby.hで定義されていま
+す．例えば文字列は「struct RString」です．実際に使う可能性が
+あるのは文字列と配列くらいだと思います．
+
+ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
+字にしたもの)という名前で提供されています(例: RSTRING())．
+
+例えば，文字列strの長さを得るためには「RSTRING(str)->len」と
+し，文字列strをchar*として得るためには「RSTRING(str)->ptr」
+とします．配列の場合には，それぞれ「RARRAT(str)->len」，
+「RARRAT(str)->ptr」となります．
+
+rubyの構造体を直接アクセスする時に気をつけなければならないこ
+とは，配列や文字列の構造体の中身は参照するだけで，直接変更し
+ないことです．直接変更した場合，オブジェクトの内容の整合性が
+とれなくなって，思わぬバグの原因になります．
+
+1.4 CのデータをVALUEに変換する
+
+VALUEの実際の構造は
+
+  * FIXNUMの場合
+
+    1bit右シフトして，LSBを立てる．
+
+  * その他のポインタの場合
+
+    そのままVALUEにキャストする．
+
+となっています．よって，LSBをチェックすればVALUEがFIXNUMかど
+うかわかるわけです(ポインタのLSBが立っていないことを仮定して
+いる)．
+
+ですから，FIXNUM以外のrubyのオブジェクトの構造体は単にVALUE
+にキャストするだけでVALUEに変換出来ます．ただし，任意の構造
+体がVALUEにキャスト出来るわけではありません．キャストするの
+はrubyの知っている構造体(ruby.hで定義されているstruct RXxxx
+のもの)だけです．
+
+FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
+からVALUEに変換するマクロは以下のものがあります．必要に応じ
+て使い分けてください．
+
+  INT2FIX()	もとの整数が31bit以内に収まる自信がある時
+  INT2NUM()	任意の整数からVALUEへ
+
+INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
+してくれます(が，少し遅い)．
+
+1.5 rubyのデータを操作する
+
+先程も述べた通り，rubyの構造体をアクセスする時に内容の更新を
+行うことは勧められません．で，rubyのデータを操作する時には
+rubyが用意している関数を用いてください．
+
+ここではもっとも使われるであろう文字列と配列の生成/操作を行
+い関数をあげます(全部ではないです)．
+
+ 文字列に対する関数
+
+  str_new(char *ptr, int len)
+
+    新しいrubyの文字列を生成する．
+
+  str_new2(char *ptr)
+
+    Cの文字列からrubyの文字列を生成する．この関数の機能は
+    str_new(ptr, strlen(ptr))と同等である．
+
+  str_cat(VALUE str, char *ptr, int len)
+
+    rubyの文字列strにlenバイトの文字列ptrを追加する．
+
+ 配列に対する関数
+
+  ary_new()
+
+    要素が0の配列を生成する．
+
+  ary_new2(int len)
+
+    要素が0の配列を生成する．len要素分の領域をあらかじめ割り
+    当てておく．
+
+  ary_new3(int n, ...)
+
+    引数で指定したn要素を含む配列を生成する．
+
+  ary_new4(int n, VALUE *elts)
+
+    配列で与えたn要素の配列を生成する．
+
+  ary_push(VALUE ary)
+  ary_pop(VALUE ary, VALUE val)
+  ary_shift(VALUE ary)
+  ary_unshift(VALUE ary, VALUE val)
+  ary_entry(VALUE ary, int idx)
+
+    Arrayの同名のメソッドと同じ働きをする関数．第1引数は必ず
+    配列でなければならない．
+
+2．rubyの機能を使う
+
+原理的にrubyで書けることはCでも書けます．rubyそのものがCで記
+述されているんですから，当然といえば当然なんですけど．ここで
+はrubyの拡張に使うことが多いだろうと予測される機能を中心に紹
+介します．
+
+2.1 rubyに機能を追加する
+
+rubyで提供されている関数を使えばrubyインタプリタに新しい機能
+を追加することができます．rubyでは以下の機能を追加する関数が
+提供されています．
+
+ * クラス，モジュール
+ * メソッド，特異メソッドなど
+ * 定数
+
+では順に紹介します．
+
+2.1.1 クラス/モジュール定義
+
+クラスやモジュールを定義するためには，以下の関数を使います．
+
+  VALUE rb_define_class(char *name, VALUE super)
+  VALUE rb_define_module(char *name)
+
+これらの関数は新しく定義されたクラスやモジュールを返します．
+メソッドや定数の定義にこれらの値が必要なので，ほとんどの場合
+は戻り値を変数に格納しておく必要があるでしょう．
+
+クラスやモジュールを他のクラスの内部にネストして定義する時に
+は以下の関数を使います．
+
+  VALUE rb_define_class(VALUE outer, char *name, VALUE super)
+  VALUE rb_define_module(VALUE outer, char *name)
+
+2.1.2 メソッド/特異メソッド定義
+
+メソッドや特異メソッドを定義するには以下の関数を使います．
+
+  void rb_define_method(VALUE class, char *name, 
+		        VALUE (*func)(), int argc)
+
+  void rb_define_singleton_method(VALUE object, char *name, 
+			          VALUE (*func)(), int argc)
+
+
+念のため説明すると「特異メソッド」とは，その特定のオブジェク
+トに対してだけ有効なメソッドです．rubyではよくSmalltalkにお
+けるクラスメソッドとして，クラスに対する特異メソッドが使われ
+ます．
+
+これらの関数の argcという引数はCの関数へ渡される引数の数(と
+形式)を決めます．argcが正の時は関数に引き渡す引数の数を意味
+します．16個以上の引数は使えません(が，要りませんよね，そん
+なに)．実際の関数には先頭の引数としてselfが与えられますので，
+指定した数より1多い引数を持つことになります．
+
+argcが負の時は引数の数ではなく，形式を指定したことになります．
+argcが-1の時は引数を配列に入れて渡されます．argcが-2の時は引
+数はrubyの配列として渡されます．
+
+メソッドを定義する関数はもう二つあります．ひとつはprivateメ
+ソッドを定義する関数で，引数はrb_define_method()と同じです．
+
+  void rb_define_private_method(VALUE class, char *name, 
+			        VALUE (*func)(), int argc)
+
+privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
+ドです．
+
+もうひとつはモジュール関数を定義するものです．モジュール関数
+とはモジュールの特異メソッドであり，同時にprivateメソッドで
+もあるものです．例をあげるとMathモジュールのsqrt()などがあげ
+られます．このメソッドは
+
+  Math.sqrt(4)
+
+という形式でも
+
+  include Math
+  sqrt(4)
+
+という形式でも使えます．モジュール関数を定義する関数は以下の
+通りです．
+
+  void rb_define_module_function(VALUE module, char *name, 
+		                 VALUE (*func)(), int argc)
+
+関数的メソッド(Kernelモジュールのprivate method)を定義するた
+めの関数は以下の通りです．
+
+  void rb_define_global_function(char *name, VALUE (*func)(), int argc)
+
+
+2.1.3 定数定義
+
+拡張モジュールが必要な定数はあらかじめ定義しておいた方が良い
+でしょう．定数を定義する関数は二つあります．
+
+  void rb_define_const(VALUE class, char *name, VALUE val)
+  void rb_define_global_const(char *name, VALUE val)
+
+前者は特定のクラス/モジュールに属する定数を定義するもの，後
+者はグローバルな定数を定義するものです．
+
+2.2 rubyの機能をCから呼び出す
+
+既に『1.5 rubyのデータを操作する』で一部紹介したような関数を
+使えば，rubyの機能を実現している関数を直接呼び出すことが出来
+ます．
+
+# このような関数の一覧表はいまのところありません．ソースを見
+# るしかないですね．
+
+それ以外にもrubyの機能を呼び出す方法はいくつかあります．
+
+2.2.1 rubyのプログラムをevalする
+
+Cからrubyの機能を呼び出すもっとも簡単な方法として，文字列で
+与えられたrubyのプログラムを評価する関数があります．
+
+  VALUE rb_eval_string(char *str)
+
+この評価は現在の環境で行われます．つまり，現在のローカル変数
+などを受け継ぎます．
+
+2.2.2 IDまたはシンボル
+
+Cから文字列を経由せずにrubyのメソッドを呼び出すこともできま
+す．その前に，rubyインタプリタ内でメソッドや変数名を指定する
+時に使われているIDについて説明しておきましょう．
+
+IDとは変数名，メソッド名を表す整数です．rubyの中では
+
+ :識別子
+
+でアクセスできます．Cからこの整数を得るためには関数
+
+  rb_intern(char *name)
+
+を使います．また一文字の演算子はその文字コードがそのままシン
+ボルになっています．rubyから引数として与えられたシンボル(ま
+たは文字列)をIDに変換するには以下の関数を使います．
+
+  rb_to_id(VALUE symbol)
+
+2.2.3 Cからrubyのメソッドを呼び出す
+
+Cから文字列を経由せずにrubyのメソッドを呼び出すためには以下
+の関数を使います．
+
+  VALUE rb_funcall(VALUE recv, ID mid, int argc, ...)
+
+この関数はオブジェクトrecvのmidで指定されるメソッドを呼び出
+します．その他に引数の指定の仕方が違う以下の関数もあります．
+
+  VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+  VALUE rb_apply(VALUE recv, ID mid, VALUE args)
+
+applyには引数としてrubyの配列を与えます．
+
+2.2.4 変数/定数を参照/更新する
+
+Cから関数を使って参照・更新できるのは，クラス定数，インスタ
+ンス変数です．大域変数は一部のものはCの大域変数としてアクセ
+スできます．ローカル変数を参照する方法は公開していません．
+
+オブジェクトのインスタンス変数を参照・更新する関数は以下の通
+りです．
+
+  VALUE rb_ivar_get(VALUE obj, ID id)
+  VALUE rb_ivar_set(VALUE obj, ID id, VALUE val)
+
+idはrb_intern()で得られるものを使ってください．
+
+クラス定数を参照するには以下の関数を使ってください．
+
+  VALUE rb_const_get(VALUE obj, ID id)
+
+クラス定数を新しく定義するためには『2.1.3 定数定義』で紹介さ
+れている関数を使ってください．
+
+3．rubyとCとの情報共有
+
+C言語とrubyの間で情報を共有する方法について解説します．
+
+3.1 Cから参照できるrubyの定数
+
+以下のrubyの定数はCのレベルから参照できる．
+
+  TRUE
+  FALSE
+
+真偽値．FALSEはC言語でも偽とみなされる(つまり0)．
+
+  Qnil
+
+C言語から見た「nil」．
+
+3.2 Cとrubyで共有される大域変数
+
+Cとrubyで大域変数を使って情報を共有できます．共有できる大域
+変数にはいくつかの種類があります．そのなかでもっとも良く使わ
+れると思われるのはrb_define_variable()です．
+
+  void rb_define_variable(char *name, VALUE *var)
+
+この関数はrubyとCとで共有する大域変数を定義します．変数名が
+`$'で始まらない時には自動的に追加されます．この変数の値を変
+更すると自動的にrubyの対応する変数の値も変わります．
+
+またruby側からは更新できない変数もあります．このread onlyの
+変数は以下の関数で定義します．
+
+  void rb_define_readonly_variable(char *name, VALUE *var)
+
+これら変数の他にhookをつけた大域変数を定義できます．hook付き
+の大域変数は以下の関数を用いて定義します．hook付き大域変数の
+値の参照や設定はhookで行う必要があります．
+
+  void rb_define_hooked_variable(char *name, VALUE *var,
+				 VALUE (*getter)(), VALUE (*setter)())
+
+この関数はCの関数によってhookのつけられた大域変数を定義しま
+す．変数が参照された時には関数getterが，変数に値がセットされ
+た時には関数setterが呼ばれる．hookを指定しない場合はgetterや
+setterに0を指定します．
+
+# getterもsetterも0ならばrb_define_variable()と同じになる．
+
+それから，Cの関数によって実現されるrubyの大域変数を定義する
+関数があります．
+
+  void rb_define_virtual_variable(char *name,
+				  VALUE (*getter)(), VALUE (*setter)())
+
+この関数によって定義されたrubyの大域変数が参照された時には
+getterが，変数に値がセットされた時にはsetterが呼ばれます．
+
+getterとsetterの仕様は以下の通りです．
+
+  (*getter)(ID id, void *data, struct global_entry* entry);
+  (*setter)(VALUE val, ID id, void *data, struct global_entry* entry);
+
+3.3 Cのデータをrubyオブジェクトにする
+
+Cの世界で定義されたデータ(構造体)をrubyのオブジェクトとして
+取り扱いたい場合がありえます．このような場合には，Dataという
+rubyオブジェクトにCの構造体(へのポインタ)をくるむことでruby
+オブジェクトとして取り扱えるようになります．
+
+Dataオブジェクトを生成して構造体をrubyオブジェクトにカプセル
+化するためには，以下のマクロを使います．
+
+  Data_Wrap_Struct(class,mark,free,ptr)
+
+このマクロの戻り値は生成されたDataオブジェクトです．
+
+classはこのDataオブジェクトのクラスです．ptrはカプセル化する
+Cの構造体へのポインタです．markはこの構造体がrubyのオブジェ
+クトへの参照がある時に使う関数です．そのような参照を含まない
+時には0を指定します．
+
+# そのような参照は勧められません．
+
+freeはこの構造体がもう不要になった時に呼ばれる関数です．この
+関数がガーベージコレクタから呼ばれます．
+
+Cの構造体の割当とDataオブジェクトの生成を同時に行うマクロと
+して以下のものが提供されています．
+
+  Data_Make_Struct(class, type, mark, free, sval)
+
+このマクロの戻り値は生成されたDataオブジェクトです．
+
+class, mark, freeはData_Wrap_Structと同じ働きをします．type
+は割り当てるC構造体の型です．割り当てられた構造体は変数sval
+に代入されます．この変数の型は (type*) である必要があります．
+
+Dataオブジェクトからポインタを取り出すのは以下のマクロを用い
+ます．
+
+  Data_Get_Struct(obj, type, sval)
+
+Cの構造体へのポインタは変数svalに代入されます．
+
+これらのDataの使い方はちょっと分かりにくいので，後で説明する
+例題を参照してください．
+
+4．例題 - dbmパッケージを作る
+
+ここまでの説明でとりあえず拡張モジュールは作れるはずです．
+rubyのextディレクトリにすでに含まれているdbmモジュールを例に
+して段階的に説明します．
+
+(1) ディレクトリを作る
+
+  % mkdir ext/dbm
+
+ruby 1.1からは任意のディレクトリでダイナミックライブラリを作
+ることができるようになりました．rubyに静的にリンクする場合に
+はrubyを展開したディレクトリの下，extディレクトリの中に拡張
+モジュール用のディレクトリを作る必要があります．名前は適当に
+選んで構いません．
+
+(2) MANIFESTファイルを作る
+
+  % cd ext/dbm
+  % touch MANIFEST
+
+拡張モジュールのディレクトリの下にはMANIFESTというファイルが
+必要なので，とりあえず空のファイルを作っておきます．後でこの
+ファイルには必要なファイル一覧が入ることになります．
+
+MANIFESTというファイルは，静的リンクのmakeの時にディレクトリ
+が拡張モジュールを含んでいるかどうか判定するために使われれて
+います．ダイナミックライブラリを作る場合には必ずしも必要では
+ありません．
+
+(3) 設計する
+
+まあ，当然なんですけど，どういう機能を実現するかどうかまず設
+計する必要があります．どんなクラスをつくるか，そのクラスには
+どんなメソッドがあるか，クラスが提供する定数などについて設計
+します．dbmクラスについてはext/dbm.docを参照してください．
+
+(4) Cコードを書く
+
+拡張モジュール本体となるC言語のソースを書きます．C言語のソー
+スがひとつの時には「モジュール名.c」を選ぶと良いでしょう．C
+言語のソースが複数の場合には逆に「モジュール名.c」というファ
+イル名は避ける必要があります．オブジェクトファイルとモジュー
+ル生成時に中間的に生成される「モジュール名.o」というファイル
+とが衝突するからです．
+
+rubyは拡張モジュールをロードする時に「Init_モジュール名」と
+いう関数を自動的に実行します．dbmモジュールの場合「Init_dbm」
+です．この関数の中でクラス，モジュール，メソッド，定数などの
+定義を行います．dbm.cから一部引用します．
+
+--
+Init_dbm()
+{
+    /* DBMクラスを定義する */
+    cDBM = rb_define_class("DBM", cObject);
+    /* DBMはEnumerateモジュールをインクルードする */
+    rb_include_module(cDBM, mEnumerable);
+
+    /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
+    rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
+
+    /* DBMクラスのメソッドclose(): 引数はなし */
+    rb_define_method(cDBM, "close", fdbm_close, 0);
+    /* DBMクラスのメソッド[]: 引数は1個 */
+    rb_define_method(cDBM, "[]", fdbm_fetch, 1);
+		:
+
+    /* DBMデータを格納するインスタンス変数名のためのID */
+    id_dbm = rb_intern("dbm");
+}
+--
+
+DBMモジュールはdbmのデータと対応するオブジェクトになるはずで
+すから，Cの世界のdbmをrubyの世界に取り込む必要があります．
+
+
+dbm.cではData_Make_Structを以下のように使っています．
+
+--
+struct dbmdata {
+    int  di_size;
+    DBM *di_dbm;
+};
+
+
+obj = Data_Make_Struct(class,struct dbmdata,0,free_dbm,dbmp);
+--
+
+ここではdbmstruct構造体へのポインタをDataにカプセル化してい
+ます．DBM*を直接カプセル化しないのはclose()した時の処理を考
+えてのことです．
+
+Dataオブジェクトからdbmstruct構造体のポインタを取り出すため
+に以下のマクロを使っています．
+
+--
+#define GetDBM(obj, dbmp) {\
+    Data_Get_Struct(obj, struct dbmdata, dbmp);\
+    if (dbmp->di_dbm == 0) closed_dbm();\
+}
+--
+
+ちょっと複雑なマクロですが，要するにdbmdata構造体のポインタ
+の取り出しと，closeされているかどうかのチェックをまとめてい
+るだけです．
+
+DBMクラスにはたくさんメソッドがありますが，分類すると3種類の
+引数の受け方があります．ひとつは引数の数が固定のもので，例と
+してはdeleteメソッドがあります．deleteメソッドを実装している
+fdbm_delete()はこのようになっています．
+
+--
+static VALUE
+fdbm_delete(obj, keystr)
+    VALUE obj, keystr;
+{
+	:
+}
+--
+
+引数の数が固定のタイプは第1引数がself，第2引数以降がメソッド
+の引数となります．
+
+引数の数が不定のものはCの配列で受けるものとrubyの配列で受け
+るものとがあります．dbmモジュールの中で，Cの配列で受けるもの
+はDBMのクラスメソッドであるopen()です．これを実装している関
+数fdbm_s_open()はこうなっています．
+
+--
+static VALUE
+fdbm_s_open(argc, argv, class)
+    int argc;
+    VALUE *argv;
+    VALUE class;
+{
+	:
+    if (rb_scan_args(argc, argv, "11", &file, &vmode) == 1) {
+	mode = 0666;		/* default value */
+    }
+	:
+}
+--
+
+このタイプの関数は第1引数が与えられた引数の数，第2引数が与え
+られた引数の入っている配列になります．selfは第3引数として与
+えられます．
+
+この配列で与えられた引数を解析するための関数がopen()でも使わ
+れているrb_scan_args()です．第3引数に指定したフォーマットに
+従い，第4変数以降に指定した変数に値を代入してくれます．この
+フォーマットは，第1文字目が省略できない引数の数，第2文字目が
+省略できる引数の数，第3文字目が対応する相手が無いあまりの引
+数があるかどうかを示す"*"です．2文字目と3文字目は省略できま
+す．dbm.cの例では，フォーマットは"11"ですから，引数は最低1つ
+で，2つまで許されるという意味になります．省略されている時の
+変数の値はnil(C言語のレベルではQnil)になります．
+
+rubyの配列で引数を受け取るものはindexesがあります．実装はこ
+うです．
+
+--
+static VALUE
+fdbm_indexes(obj, args)
+    VALUE obj;
+    struct RArray *args;
+{
+	:
+}
+--
+
+第1引数はself，第2引数はrubyの配列です．ここではキャストを減
+らすため struct RArray* で受けていますが，VALUEでも同じこと
+です．
+
+** 注意事項
+
+rubyと共有はしないがrubyのオブジェクトを格納する可能性のある
+Cの大域変数は以下の関数を使ってrubyインタプリタに変数の存在
+を教えてあげてください．でないとGCでトラブルを起こします．
+
+  void rb_global_variable(VALUE *var)
+
+(5) extconf.rbを用意する
+
+Makefileを作る場合の雛型になるextconf.rbというファイルを作り
+ます．extconf.rbはモジュールのコンパイルに必要な条件のチェッ
+クなどを行うことが目的です．extconf.rbの中では以下のruby関数
+を使うことが出来ます．
+
+  have_library(lib, func): ライブラリの存在チェック
+  have_func(func): 関数の存在チェック
+  have_header(header): ヘッダファイルの存在チェック
+  create_makefile(target): Makefileの生成
+
+以下の変数を使うことができます．
+
+  $CFLAGS: コンパイル時に追加的に指定するフラグ(-Iなど)
+  $LDFLAGS: リンク時に追加的に指定するフラグ(-Lなど)
+
+モジュールをコンパイルする条件が揃わなず，そのモジュールはコ
+ンパイルしない時にはcreate_makefileを呼ばなければMakefileは
+生成されず，コンパイルも行われません．
+
+モジュールがruby 1.1専用である場合には 
+
+  require 'mkmf'
+
+をextconf.rbの先頭に置くと便利でしょう．
+
+(6) dependを用意する
+
+もし，ディレクトリにdependというファイルが存在すれば，
+Makefileが依存関係をチェックしてくれます．
+
+ % gcc -MM *.c > depend
+
+などで作ることが出来ます．あって損は無いでしょう．
+
+(7) MANIFESTファイルにファイル名を入れる
+
+  % ls > MANIFEST
+  % vi MANIFEST
+
+*.o, *~など不必要なファイル以外はMANIFESTに追加しておきます．
+make時にはMANIFESTの内容は参照しませんので，空のままでも問題
+は起きませんが，パッケージングの時に参照することがあるのと，
+必要なファイルを区別できるので，用意しておいた方が良いでしょ
+う．
+
+(8) Makefileを生成する
+
+Makefileを実際に生成するためには
+
+  ruby extconf.rb
+
+とします．extconf.rbに require 'mkmf' の行がない場合にはエラー
+になりますので，引数を追加して
+
+  ruby -r mkmf extconf.rb
+
+としてください．
+
+ディレクトリをext以下に用意した場合にはruby全体のmakeの時に
+自動的にMakefileが生成されますので，このステップは不要です．
+
+(9) makeする
+
+動的リンクライブラリを生成する場合にはその場でmakeしてくださ
+い．必要であれば make install でインストールされます．
+
+ext以下にディレクトリを用意した場合は，rubyのディレクトリで
+makeを実行するとMakefileを生成からmake，必要によってはそのモ
+ジュールのrubyへのリンクまで自動的に実行してくれます．
+extconf.rbを書き換えるなどしてMakefileの再生成が必要な時はま
+たrubyディレクトリでmakeしてください．
+
+動的リンクライブラリはmake installでrubyライブラリのディレク
+トリの下にコピーされます．もしモジュールと協調して使うrubyで
+記述されたプログラムがあり，rubyライブラリに置きたい場合には，
+拡張モジュール用のディレクトリの下に lib というディレクトリ
+を作り，そこに 拡張子 .rb のファイルを置いておけば同時にイン
+ストールされます．
+
+(10) デバッグ
+
+まあ，デバッグしないと動かないでしょうね．ext/Setupにディレ
+クトリ名を書くと静的にリンクするのでデバッガが使えるようにな
+ります．その分コンパイルが遅くなりますけど．
+
+(11) できあがり
+
+後はこっそり使うなり，広く公開するなり，売るなり，ご自由にお
+使いください．rubyの作者は拡張モジュールに関して一切の権利を
+主張しません．
+
+Appendix A. rubyのソースコードの分類
+
+rubyのソースはいくつかに分類することが出来ます．このうちクラ
+スライブラリの部分は基本的に拡張モジュールと同じ作り方になっ
+ています．これらのソースは今までの説明でほとんど理解できると
+思います．
+
+ruby言語のコア
+
+  class.c
+  error.c
+  eval.c
+  gc.c
+  object.c
+  parse.y
+  variable.c
+
+ユーティリティ関数
+
+  dln.c
+  fnmatch.c
+  glob.c
+  regex.c
+  st.c
+  util.c
+
+rubyコマンドの実装
+
+  dmyext.c
+  inits.c
+  main.c
+  ruby.c
+  version.c
+
+クラスライブラリ
+
+  array.c
+  bignum.c
+  compar.c
+  dir.c
+  enum.c
+  file.c
+  hash.c
+  io.c
+  marshal.c
+  math.c
+  numeric.c
+  pack.c
+  process.c
+  random.c
+  range.c
+  re.c
+  signal.c
+  sprintf.c
+  string.c
+  struct.c
+  time.c
+
+Appendix B. 拡張用関数リファレンス
+
+C言語からrubyの機能を利用するAPIは以下の通りである．
+
+** 型
+
+ VALUE
+
+rubyオブジェクトを表現する型．必要に応じてキャストして用いる．
+組み込み型を表現するCの型はruby.hに記述してあるRで始まる構造
+体である．VALUE型をこれらにキャストするためにRで始まる構造体
+名を全て大文字にした名前のマクロが用意されている．
+
+** 変数・定数
+
+ Qnil
+
+定数: nilオブジェクト
+
+ TRUE
+
+定数: trueオブジェクト(真のデフォルト値)
+
+ FALSE
+
+定数: falseオブジェクト
+
+** Cデータのカプセル化
+
+ Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
+
+Cの任意のポインタをカプセル化したrubyオブジェクトを返す．こ
+のポインタがrubyからアクセスされなくなった時，freeで指定した
+関数が呼ばれる．また，このポインタの指すデータが他のrubyオブ
+ジェクトを指している場合，markに指定する関数でマークする必要
+がある．
+
+ Data_Make_Struct(class, type, mark, free, sval)
+
+type型のメモリをmallocし，変数svalに代入した後，それをカプセ
+ル化したデータを返すマクロ．
+
+ Data_Get_Struct(data, type, sval)
+
+dataからtype型のポインタを取り出し変数svalに代入するマクロ．
+
+** 型チェック
+
+ TYPE(value)
+ FIXNUM_P(value)
+ NIL_P(value)
+ void Check_Type(VALUE value, int type)
+ void Check_SafeStr(VALUE value)
+
+** 型変換
+
+ FIX2INT(value)
+ INT2FIX(i)
+ NUM2INT(value)
+ INT2NUM(i)
+ NUM2DBL(value)
+ float_new(f)
+ STR2CSTR(value)
+ str_new2(s)
+
+** クラス/モジュール定義
+
+ VALUE rb_define_class(char *name, VALUE super)
+
+superのサブクラスとして新しいrubyクラスを定義する．
+
+ VALUE rb_define_class_under(VALUE module, char *name, VALUE super)
+
+superのサブクラスとして新しいrubyクラスを定義し，moduleの定
+数として定義する．
+
+ VALUE rb_define_module(char *name)
+
+新しいrubyモジュールを定義する．
+
+ VALUE rb_define_module_under(VALUE module, char *name, VALUE super)
+
+新しいrubyモジュールを定義し，moduleの定数として定義する．
+
+ void rb_include_module(VALUE class, VALUE module)
+
+モジュールをインクルードする．classがすでにmoduleをインクルー
+ドしている時には何もしない(多重インクルードの禁止)．
+
+ void rb_extend_object(VALUE object, VALUE module)
+
+オブジェクトをモジュール(で定義されているメソッド)で拡張する．
+
+** 大域変数定義
+
+ void rb_define_variable(char *name, VALUE *var)
+
+rubyとCとで共有するグローバル変数を定義する．変数名が`$'で始
+まらない時には自動的に追加される．nameとしてrubyの識別子とし
+て許されない文字(例えば` ')を含む場合にはrubyプログラムから
+は見えなくなる．
+
+ void rb_define_readonly_variable(char *name, VALUE *var)
+
+rubyとCとで共有するread onlyのグローバル変数を定義する．read
+onlyであること以外はrb_define_variable()と同じ．
+
+ void rb_define_virtual_variable(char *name,
+				VALUE (*getter)(), VALUE (*setter)())
+
+関数によって実現されるruby変数を定義する．変数が参照された時
+にはgetterが，変数に値がセットされた時にはsetterが呼ばれる．
+
+ void rb_define_hooked_variable(char *name, VALUE *var,
+				VALUE (*getter)(), VALUE (*setter)())
+
+関数によってhookのつけられたグローバル変数を定義する．変数が
+参照された時にはgetterが，関数に値がセットされた時にはsetter
+が呼ばれる．getterやsetterに0を指定した時にはhookを指定しな
+いのと同じ事になる．
+
+ void rb_global_variable(VALUE *var)
+
+GCのため，rubyプログラムからはアクセスされないが, rubyオブジェ
+クトを含む大域変数をマークする．
+
+** クラス定数
+
+ void rb_define_const(VALUE class, char *name, VALUE val)
+
+クラス定数を定義する．
+
+ void rb_define_global_const(char *name, VALUE val)
+
+大域定数を定義する．
+
+     rb_define_const(cKernal, name, val)
+
+と同じ意味．
+
+** メソッド定義
+
+ rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
+
+メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
+関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2引
+数とする形式で与えられる(第3引数はself)．argcが-2の時, 第1引
+数がself, 第2引数がargs(argsは引数を含むrubyの配列)という形
+式で与えられる．
+
+ rb_define_private_method(VALUE class, char *name, VALUE (*func)(), int argc)
+
+privateメソッドを定義する．引数はrb_define_method()と同じ．
+
+ rb_define_singleton_method(VALUE class, char *name, VALUE (*func)(), int argc)
+
+特異メソッドを定義する．引数はrb_define_method()と同じ．
+
+ rb_scan_args(int atgc, VALUE *argv, char *fmt, ...)
+
+argc,argv形式で与えられた引数を分解する．fmtは必須引数の数, 
+付加引数の数, 残りの引数があるかを指定する文字列で, "数字数
+字*"という形式である． 2 番目の数字と"*"はそれぞれ省略可能で
+ある．必須引数が一つもない場合は0を指定する．第3引数以降は変
+数へのポインタで, 該当する要素がその変数に格納される．付加引
+数に対応する引数が与えられていない場合は変数にQnilが代入され
+る．
+
+** rubyメソッド呼び出し
+
+ VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
+
+メソッド呼び出し．文字列からmidを得るためにはrb_intern()を使う．
+
+ VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+
+メソッド呼び出し．引数をargc,argv形式で渡す．
+
+ VALUE rb_eval_string(char *str)
+
+文字列をrubyとスクリプトしてコンパイル・実行する．
+
+ ID rb_intern(char *name)
+
+文字列に対応するIDを返す．
+
+ char *rb_id2name(ID id)
+
+IDに対応する文字列を返す(デバッグ用)．
+
+ char *rb_class2name(VALUE class)
+
+classの名前を返す(デバッグ用)．classが名前を持たない時には, 
+祖先を遡って名前を持つクラスの名前を返す．
+
+** インスタンス変数
+
+ VALUE rb_iv_get(VALUE obj, char *name)
+
+objのインスタンス変数の値を得る．`@'で始まらないインスタンス
+変数は rubyプログラムからアクセスできない「隠れた」インスタ
+ンス変数になる．
+
+ VALUE rb_iv_set(VALUE obj, char *name, VALUE val)
+
+objのインスタンス変数をvalにセットする．
+
+** 制御構造
+
+ VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+
+func2をブロックとして設定し, func1をイテレータとして呼ぶ． 
+func1には arg1が引数として渡され, func2には第1引数にイテレー
+タから与えられた値, 第2引数にarg2が渡される．
+ 
+ VALUE rb_yield(VALUE val)
+
+valを値としてイテレータブロックを呼び出す．
+
+ VALUE rb_rescue(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+
+関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生し
+た時には func2をarg2を引数として呼ぶ．戻り値は例外が発生しな
+かった時はfunc1の戻り値, 例外が発生した時にはfunc2の戻り値で
+ある．
+
+ VALUE rb_ensure(VALUE (*func1)(), void *arg1, void (*func2)(), void *arg2)
+
+関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が発
+生しても) func2をarg2を引数として実行する．戻り値はfunc1の戻
+り値である(例外が発生した時は戻らない)．
+
+** 例外・エラー
+
+ void Warning(char *fmt, ...)
+
+verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
+
+ void Fail(char *fmt, ...)
+
+RuntimeError例外を発生させる．引数はprintf()と同じ．
+
+ void Raise(VALUE exception, char *fmt, ...)
+
+exceptionで指定した例外を発生させる．引数はprintf()と同じ．
+
+ void Fatal(char *fmt, ...)
+
+致命的例外を発生させる．通常の例外処理は行なわれず, インター
+プリタが終了する(ただしensureで指定されたコードは終了前に実
+行される)．
+
+ void Bug(char *fmt, ...)
+
+インタープリタなどプログラムのバグでしか発生するはずのない状
+況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．例外
+処理は一切行なわれない．
+
+** rubyの初期化・実行
+
+rubyをアプリケーションに埋め込む場合には以下のインタフェース
+を使う．通常の拡張モジュールには必要ない．
+
+ void ruby_init(int argc, char **argv, char **envp)
+
+rubyインタプリタの初期化を行なう．
+
+ void ruby_run()
+
+rubyインタプリタを実行する．
+
+ void ruby_script(char *name)
+
+rubyのスクリプト名($0)を設定する．
+
+
+Appendix B. extconf.rbで使える関数たち
+
+extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
+下の通りである．
+
+ have_library(lib, func)
+
+関数funcを定義しているライブラリlibの存在をチェックする．ラ
+イブラリが存在する時，TRUEを返す．
+
+ have_func(func)
+
+関数funcの存在をチェックする．funcが標準ではリンクされないラ
+イブラリ内のものである時には先にhave_libraryでそのライブラリ
+をチェックしておく事．関数が存在する時TRUEを返す．
+
+ have_header(header)
+
+ヘッダファイルの存在をチェックする．ヘッダファイルが存在する
+時TRUEを返す．
+
+ create_makefile(target)
+
+拡張モジュール用のMakefileを生成する．この関数を呼ばなければ
+そのモジュールはコンパイルされない．targetはモジュール名を表
+す．
+
+/*
+ * Local variables:
+ * fill-column: 60
+ * end:
+ */

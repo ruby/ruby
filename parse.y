@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -158,6 +158,8 @@ static void top_local_setup();
 	kDEFINED
 	klBEGIN
 	klEND
+	k__LINE__
+	k__FILE__
 
 %token <id>   IDENTIFIER FID GVAR IVAR CONSTANT
 %token <val>  INTEGER FLOAT STRING XSTRING REGEXP
@@ -175,8 +177,8 @@ static void top_local_setup();
 %type <id>   variable symbol operation assoc_kw
 %type <id>   cname fname op rest_arg
 %type <num>  f_arg
-%token oUPLUS 		/* unary+ */
-%token MINUS 		/* unary- */
+%token UPLUS 		/* unary+ */
+%token UMINUS 		/* unary- */
 %token POW		/* ** */
 %token CMP  		/* <=> */
 %token EQ  		/* == */
@@ -190,6 +192,7 @@ static void top_local_setup();
 %token AREF ASET        /* [] and []= */
 %token LSHFT RSHFT      /* << and >> */
 %token COLON2           /* :: */
+%token COLON3           /* :: at EXPR_BEG */
 %token <id> OP_ASGN     /* +=, -=  etc. */
 %token ASSOC            /* => */
 %token KW_ASSOC         /* -> */
@@ -208,6 +211,7 @@ static void top_local_setup();
 %right kNOT
 %nonassoc kDEFINED
 %right '=' OP_ASGN
+%right '?' ':'
 %nonassoc DOT2 DOT3
 %left  OROP
 %left  ANDOP
@@ -299,12 +303,14 @@ stmt		: iterator iter_do_block
 		| stmt kIF_MOD expr
 		    {
 			value_expr($3);
-		        $$ = node_newnode(NODE_AND, cond($3), $1);
+			$$ = NEW_IF(cond($3), $1, 0);
+		        fixpos($$, $3);
 		    }
 		| stmt kUNLESS_MOD expr
 		    {
 			value_expr($3);
-		        $$ = node_newnode(NODE_OR, cond($3), $1);
+			$$ = NEW_UNLESS(cond($3), $1, 0);
+		        fixpos($$, $3);
 		    }
 		| stmt kWHILE_MOD expr
 		    {
@@ -455,10 +461,6 @@ lhs		: variable
 			$$ = aryset($1, $3, 0);
 		    }
 		| primary '.' IDENTIFIER
-		    {
-			$$ = attrset($1, $3, 0);
-		    }
-		| primary '.' CONSTANT
 		    {
 			$$ = attrset($1, $3, 0);
 		    }
@@ -696,6 +698,12 @@ arg		: variable '=' arg
 		        in_defined = 0;
 			$$ = NEW_DEFINED($4);
 		    }
+		| arg '?' arg ':' arg
+		    {
+			value_expr($1);
+			$$ = NEW_IF(cond($1), $3, $5);
+		        fixpos($$, $1);
+		    }
 		| primary
 		    {
 			$$ = $1;
@@ -803,7 +811,12 @@ primary		: literal
 		    }
 		| primary COLON2 cname
 		    {
+			value_expr($1);
 			$$ = NEW_COLON2($1, $3);
+		    }
+		| COLON3 cname
+		    {
+			$$ = NEW_COLON3($2);
 		    }
 		| STRING
 		    {
@@ -977,9 +990,6 @@ primary		: literal
 		    }
 		| kCLASS LSHFT expr term
 		    {
-			if (cur_mid || in_single)
-			    yyerror("class definition in method body");
-
 			class_nest++;
 			cref_push();
 			local_push();
@@ -1236,6 +1246,8 @@ variable	: IDENTIFIER
 		| kSELF {$$ = kSELF;}
 		| kTRUE {$$ = kTRUE;} 
 		| kFALSE {$$ = kFALSE;}
+		| k__FILE__ {$$ = k__FILE__;}
+		| k__LINE__ {$$ = k__LINE__;}
 
 var_ref		: variable
 		    {
@@ -1257,7 +1269,7 @@ superclass	: term
 		    {
 			$$ = $3;
 		    }
-		| error term {yyerrok;}
+		| error term {yyerrok; $$ = 0;}
 
 f_arglist	: '(' f_args ')'
 		    {
@@ -1680,6 +1692,9 @@ read_escape()
       case 'b':	/* backspace */
 	return '\b';
 
+      case 's':	/* space */
+	return ' ';
+
       case 'M':
 	if ((c = nextc()) != '-') {
 	    yyerror("Invalid escape character syntax");
@@ -1763,8 +1778,10 @@ parse_regx(term)
 		break;
 
 	      case '\\':
+	      case '^':		/* no \^ escape in regexp */
+	      case 's':
 		tokadd('\\');
-		tokadd('\\');
+		tokadd(c);
 		break;
 
 	      case '1': case '2': case '3':
@@ -1773,11 +1790,6 @@ parse_regx(term)
 	      case '0': case 'x':
 		tokadd('\\');
 		tokadd(c);
-		break;
-
-	      case '^':		/* no \^ escape in regexp */
-		tokadd('\\');
-		tokadd('^');
 		break;
 
 	      case 'b':
@@ -1988,6 +2000,15 @@ parse_qstring(term)
     return STRING;
 }
 
+static int
+parse_quotedword(term)
+    int term;
+{
+    if (parse_qstring(term) == 0) return 0;
+    yylval.node = NEW_CALL(NEW_STR(yylval.val), rb_intern("split"), 0);
+    return DSTRING;
+}
+
 char *strdup();
 
 static int
@@ -2041,6 +2062,7 @@ here_document(term)
 	    free(eos);
 	    return 0;
 	}
+	sourceline++;
 	if (strncmp(eos, RSTRING(line)->ptr, len) == 0 &&
 	    (RSTRING(line)->ptr[len] == '\n' ||
 	     RSTRING(line)->ptr[len] == '\r')) {
@@ -2049,7 +2071,6 @@ here_document(term)
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
-	sourceline++;
 	switch (parse_string(term, '\n')) {
 	  case STRING:
 	  case XSTRING:
@@ -2079,6 +2100,7 @@ here_document(term)
     lex_p = save_lexp;
     lex_pbeg = save_beg;
     lex_pend = save_end;
+    lex_state = EXPR_END;
 
     if (list) {
 	yylval.node = list;
@@ -2298,7 +2320,20 @@ retry:
 	return parse_qstring(c);
 
       case '?':
-	if ((c = nextc()) == '\\') {
+	if (lex_state == EXPR_END) {
+	    Warning("a?b:c is undocumented feature ^^;;;");
+	    lex_state = EXPR_BEG;
+	    return '?';
+	}
+	c = nextc();
+	if (lex_state == EXPR_ARG && isspace(c)){
+	    pushback(c);
+	    arg_ambiguous();
+	    lex_state = EXPR_BEG;
+	    Warning("a?b:c is undocumented feature ^^;;;");
+	    return '?';
+	}
+	if (c == '\\') {
 	    c = read_escape();
 	}
 	c &= 0xff;
@@ -2379,6 +2414,7 @@ retry:
 	    return OP_ASGN;
 	}
 	if (c == '>') {
+	    Warning("-> is undocumented feature ^^;;;");
 	    lex_state = EXPR_BEG;
 	    return KW_ASSOC;
 	}
@@ -2540,12 +2576,19 @@ retry:
       case ':':
 	c = nextc();
 	if (c == ':') {
+	    if (lex_state == EXPR_BEG ||
+		(lex_state == EXPR_ARG && space_seen)) {
+		lex_state = EXPR_BEG;
+		return COLON3;
+	    }
 	    lex_state = EXPR_BEG;
 	    return COLON2;
 	}
 	pushback(c);
-	if (isspace(c))
+	if (lex_state == EXPR_END || isspace(c)) {
+	    lex_state = EXPR_BEG;
 	    return ':';
+	}
 	lex_state = EXPR_FNAME;
 	return SYMBEG;
 
@@ -2579,9 +2622,6 @@ retry:
 	return c;
 
       case ',':
-	lex_state = EXPR_BEG;
-	return c;
-
       case ';':
 	lex_state = EXPR_BEG;
 	return c;
@@ -2597,11 +2637,6 @@ retry:
 
       case '(':
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    c = LPAREN;
-	    lex_state = EXPR_BEG;
-	}
-	else if (lex_state == EXPR_ARG && space_seen) {
-	    arg_ambiguous();
 	    c = LPAREN;
 	    lex_state = EXPR_BEG;
 	}
@@ -2686,6 +2721,9 @@ retry:
 	      case 'q':
 		return parse_qstring(term);
 
+	      case 'w':
+		return parse_quotedword(term);
+
 	      case 'x':
 		return parse_string('`', term);
 
@@ -2693,7 +2731,7 @@ retry:
 		return parse_regx(term);
 
 	      default:
-		yyerror("unknown type of string `%c'", c);
+		yyerror("unknown type of %string");
 		return 0;
 	    }
 	}
@@ -3219,6 +3257,12 @@ gettable(id)
     else if (id == kFALSE) {
 	return NEW_FALSE();
     }
+    else if (id == k__FILE__) {
+	return NEW_STR(str_new2(sourcefile));
+    }
+    else if (id == k__LINE__) {
+	return NEW_LIT(INT2FIX(sourceline));
+    }
     else if (is_local_id(id)) {
 	if (local_id(id)) return NEW_LVAR(id);
 	if (dyna_var_defined(id)) return NEW_DVAR(id);
@@ -3256,6 +3300,12 @@ assignable(id, val)
     }
     else if (id == kFALSE) {
 	yyerror("Can't assign to false");
+    }
+    else if (id == k__FILE__) {
+	yyerror("Can't assign to __FILE__");
+    }
+    else if (id == k__LINE__) {
+	yyerror("Can't assign to __LINE__");
     }
     else if (is_local_id(id)) {
 	if (local_id(id) || !dyna_in_block()) {
@@ -3386,12 +3436,55 @@ value_expr(node)
 
 static NODE *cond2();
 
+int
+assign_in_cond(node)
+    NODE *node;
+{
+    switch (nd_type(node)) {
+      case NODE_MASGN:
+	Error("multiple assignment in conditional");
+	return 0;
+
+      case NODE_LASGN:
+      case NODE_DASGN:
+      case NODE_GASGN:
+      case NODE_IASGN:
+      case NODE_CASGN:
+	break;
+      case NODE_NEWLINE:
+
+      default:
+	return 1;
+    }
+
+    switch (nd_type(node->nd_value)) {
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_DSTR:
+      case NODE_XSTR:
+      case NODE_DXSTR:
+      case NODE_EVSTR:
+      case NODE_DREGX:
+      case NODE_NIL:
+      case NODE_TRUE:
+      case NODE_FALSE:
+	Error("found = in conditional, should be ==");
+	return 0;
+	
+      default:
+	Warning("assignment in condition");
+	break;
+    }
+    if (assign_in_cond(node->nd_value)) return 1;
+}
+
 static NODE*
 cond0(node)
     NODE *node;
 {
     enum node_type type = nd_type(node);
 
+    if (assign_in_cond(node) == 0) return 0;
     switch (type) {
       case NODE_DREGX:
       case NODE_DREGX_ONCE:
@@ -3427,24 +3520,11 @@ static NODE*
 cond(node)
     NODE *node;
 {
-    enum node_type type = nd_type(node);
-
-    switch (type) {
-      case NODE_MASGN:
-      case NODE_LASGN:
-      case NODE_DASGN:
-      case NODE_GASGN:
-      case NODE_IASGN:
-      case NODE_CASGN:
-	Warning("assignment in condition");
-	break;
-      case NODE_NEWLINE:
+    if (node == 0) return 0;
+    if (nd_type(node) == NODE_NEWLINE){
 	node->nd_next = cond0(node->nd_next);
 	return node;
-      default:
-        break;
     }
-
     return cond0(node);
 }
 
