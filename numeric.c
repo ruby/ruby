@@ -817,7 +817,7 @@ static VALUE
 flo_eq(x, y)
     VALUE x, y;
 {
-    double a, b;
+    volatile double a, b;
 
     switch (TYPE(y)) {
       case T_FIXNUM:

@@ -1,3 +1,8 @@
+Wed Jun  2 12:41:53 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_gets_m): set lastline ($_) even when read line is
+	  nil.  [ruby-dev:23663]
+
 Thu May 27 23:15:18 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/logger.rb: leading 0 padding of timestamp usec part.
