@@ -967,11 +967,16 @@ rb_const_defined(klass, id)
     VALUE klass;
     ID id;
 {
-    while (klass) {
-	if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
+    VALUE tmp = klass;
+
+    while (tmp) {
+	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
 	    return TRUE;
 	}
-	klass = RCLASS(klass)->super;
+	tmp = RCLASS(tmp)->super;
+    }
+    if (BUILTIN_TYPE(klass) == T_MODULE) {
+	return rb_const_defined(cObject, id);
     }
     if (st_lookup(class_tbl, id, 0))
 	return TRUE;

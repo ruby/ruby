@@ -1,3 +1,11 @@
+Wed Apr  8 00:59:13 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_const_defined): returned false even if the
+	  constant is defined at the top level.
+
+	* eval.c (f_local_variables): dyna_var->id may be null.  should
+	  have checked before calling str_new2().
+
 Tue Apr  7 18:50:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_08.

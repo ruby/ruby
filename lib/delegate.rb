@@ -47,7 +47,7 @@ class SimpleDelegator<Delegator
   end
 end
 
-# backword compatibility ^_^;;;
+# backward compatibility ^_^;;;
 Delegater = Delegator
 SimpleDelegater = SimpleDelegator
 

@@ -4462,7 +4462,9 @@ f_local_variables()
 
     vars = the_dyna_vars;
     while (vars) {
-	ary_push(ary, str_new2(rb_id2name(vars->id)));
+	if (vars->id) {
+	    ary_push(ary, str_new2(rb_id2name(vars->id)));
+	}
 	vars = vars->next;
     }
 

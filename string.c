@@ -429,6 +429,7 @@ str_concat(str1, str2)
 #if 0
     str2 = obj_as_string(str2);
 #else
+    if (NIL_P(str2)) return str1;
     Check_Type(str2, T_STRING);
 #endif
     str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);

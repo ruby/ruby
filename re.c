@@ -883,7 +883,7 @@ reg_regsub(str, src, regs)
 	char *ss = s;
 
 	c = *s++;
-	if (c != '\\') continue;
+	if (c != '\\' || s == e) continue;
 
 	if (!val) val = str_new(p, ss-p);
 	else      str_cat(val, p, ss-p);
@@ -912,10 +912,6 @@ reg_regsub(str, src, regs)
 	    while (BEG(no) == -1 && no > 0) no--;
 	    if (no == 0) continue;
 	    break;
-
-	  case '\\':
-	    str_cat(val, s-1, 1);
-	    continue;
 
 	  default:
 	    str_cat(val, s-2, 2);

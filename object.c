@@ -289,6 +289,7 @@ nil_plus(x, y)
     VALUE x, y;
 {
     switch (TYPE(y)) {
+      case T_NIL:
       case T_FIXNUM:
       case T_FLOAT:
       case T_BIGNUM:
@@ -297,7 +298,8 @@ nil_plus(x, y)
 	return y;
       default:
 	TypeError("tried to add %s(%s) to nil",
-		  RSTRING(obj_as_string(y))->ptr, rb_class2name(CLASS_OF(y)));
+		  STR2CSTR(rb_inspect(y)),
+		  rb_class2name(CLASS_OF(y)));
     }
     /* not reached */
 }
@@ -721,6 +723,9 @@ f_integer(obj, arg)
 
       case T_STRING:
 	return str2inum(RSTRING(arg)->ptr, 0);
+
+      case T_NIL:
+	return INT2FIX(0);
 
       default:
 	i = NUM2INT(arg);

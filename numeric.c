@@ -52,6 +52,8 @@ coerce_rescue(x)
     VALUE *x;
 {
     TypeError("%s can't be coerced into %s",
+	      rb_special_const_p(x[1])?
+	      STR2CSTR(rb_inspect(x[1])):
 	      rb_class2name(CLASS_OF(x[1])),
 	      rb_class2name(CLASS_OF(x[0])));
 }
@@ -641,6 +643,10 @@ num2int(val)
 
       case T_STRING:
 	TypeError("no implicit conversion from string");
+	return Qnil;		/* not reached */
+
+      case T_NIL:
+	TypeError("no implicit conversion from nil");
 	return Qnil;		/* not reached */
 
       default:
