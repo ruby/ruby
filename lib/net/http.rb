@@ -10,7 +10,7 @@ You can freely distribute/modify this library.
 
 =end
 
-require 'net/session'
+require 'net/protocol'
 
 
 module Net
@@ -175,7 +175,15 @@ class HTTPBadResponse < HTTPError; end
     end
 
 
-    # def put
+    # not work
+    def post( path, u_header = nil )
+      get_response sprintf( 'POST %s HTTP/%s', path, HTTPVersion ), u_header
+    end
+
+    # not work
+    def put( path, u_header = nil )
+      get_response sprintf( 'PUT %s HTTP/%s', path, HTTPVersion ), u_header
+    end
 
     # def delete
 

@@ -10,7 +10,7 @@ You can freely distribute/modify this library.
 =end
 
 
-require 'net/session'
+require 'net/protocol'
 require 'md5'
 
 
@@ -101,10 +101,33 @@ Object
 
 === Method
 
-: all
+: all( dest = '' )
 : pop
 : mail
-  This method fetches a mail and return it.
+  This method fetches a mail and write to 'dest' using '<<' method.
+
+    # usage example
+
+    mailarr = []
+    POP3.start( 'localhost', 110 ) do |pop|
+      pop.each do |popm|
+        mailarr.push popm.pop   # all() returns 'dest' (this time, string)
+        # or, you can also
+        # popm.pop( $stdout )   # write mail to stdout
+      end
+    end
+
+: all {|str| .... }
+  You can use all/pop/mail as the iterator.
+  argument 'str' is a read string (a part of mail).
+
+    # usage example
+
+    POP3.start( 'localhost', 110 ) do |pop|
+      pop.mails[0].pop do |str|               # pop only first mail...
+        _do_anything_( str )
+      end
+    end
 
 : header
   This method fetches only mail header.
@@ -138,6 +161,9 @@ Object
     attr :size
 
     def all( dest = '' )
+      if iterator? then
+        dest = ReadAdapter.new( Proc.new )
+      end
       @command.retr( @num, dest )
     end
     alias pop all
@@ -172,7 +198,8 @@ Object
 
 == Net::APOP
 
-This class has no new methods. Only way of authetication is changed.
+This class defines no new methods.
+Only difference from POP3 is using APOP authentification.
 
 === Super Class
 
