@@ -144,9 +144,8 @@ static int group_match_null_string_p ();
 
 /* This must be nonzero for the wordchar and notwordchar pattern
    commands in re_match.  */
-#ifndef Sword 
-#define Sword 1
-#endif
+#define Sword  1
+#define Sword2 2
 
 #define SYNTAX(c) re_syntax_table[c]
 
@@ -171,23 +170,14 @@ init_syntax_once()
 
    memset(re_syntax_table, 0, sizeof re_syntax_table);
 
-   for (c = 'a'; c <= 'z'; c++)
-     re_syntax_table[c] = Sword;
-
-   for (c = 'A'; c <= 'Z'; c++)
-     re_syntax_table[c] = Sword;
-
-   for (c = '0'; c <= '9'; c++)
-     re_syntax_table[c] = Sword;
-
+   for (c=0; c<0x7f; c++)
+     if (isalnum(c)) 
+       re_syntax_table[c] = Sword;
    re_syntax_table['_'] = Sword;
 
-   /* Add specific syntax for ISO Latin-1.  */
-   for (c = 0300; c <= 0377; c++)
-     re_syntax_table[c] = Sword;
-   re_syntax_table[0327] = 0;
-   re_syntax_table[0367] = 0;
-
+   for (c=0x80; c<=0xff; c++)
+     if (isalnum(c)) 
+       re_syntax_table[c] = Sword2;
    done = 1;
 }
 
@@ -1274,16 +1264,20 @@ re_compile_pattern(pattern, size, bufp)
 	          PATFETCH(c);
 		  switch (c) {
 		    case 'w':
-		      for (c = 0; c < (1 << BYTEWIDTH); c++)
-		          if (SYNTAX(c) == Sword)
-			      SET_LIST_BIT(c);
+		      for (c = 0; c < (1 << BYTEWIDTH); c++) {
+			if (SYNTAX(c) == Sword ||
+			    (!current_mbctype && SYNTAX(c) == Sword2))
+			  SET_LIST_BIT(c);
+		      }
 		      last = -1;
 		      continue;
 
 		    case 'W':
-		      for (c = 0; c < (1 << BYTEWIDTH); c++)
-		          if (SYNTAX(c) != Sword)
-			      SET_LIST_BIT(c);
+		      for (c = 0; c < (1 << BYTEWIDTH); c++) {
+			if (SYNTAX(c) != Sword &&
+			    (current_mbctype || SYNTAX(c) != Sword2))
+			  SET_LIST_BIT(c);
+		      }
 		      if (current_mbctype) {
 			  set_list_bits(0x8000, 0xffff, (unsigned char*)b);
 		      }
@@ -2559,17 +2553,46 @@ re_compile_fastmap(bufp)
 	  break;
 
 	case wordchar:
-	  for (j = 0; j < (1 << BYTEWIDTH); j++)
+	  for (j = 0; j < 0x80; j++) {
 	    if (SYNTAX(j) == Sword)
 	      fastmap[j] = 1;
+	  }
+	  switch (current_mbctype) {
+	  case MBCTYPE_ASCII:
+	    for (j = 0x80; j < (1 << BYTEWIDTH); j++) {
+	      if (SYNTAX(j) == Sword2)
+		fastmap[j] = 1;
+	    }
+	    break;
+	  case MBCTYPE_EUC:
+	  case MBCTYPE_SJIS:
+	    for (j = 0x80; j < (1 << BYTEWIDTH); j++) {
+	      if (mbctab[j])
+		fastmap[j] = 1;
+	    }
+	    break;
+	  }
 	  break;
 
 	case notwordchar:
 	  for (j = 0; j < 0x80; j++)
 	    if (SYNTAX(j) != Sword)
 	      fastmap[j] = 1;
-	  for (j = 0x80; j < (1 << BYTEWIDTH); j++)
-	      fastmap[j] = 1;
+	  switch (current_mbctype) {
+	  case MBCTYPE_ASCII:
+	    for (j = 0x80; j < (1 << BYTEWIDTH); j++) {
+	      if (SYNTAX(j) != Sword2)
+		fastmap[j] = 1;
+	    }
+	    break;
+	  case MBCTYPE_EUC:
+	  case MBCTYPE_SJIS:
+	    for (j = 0x80; j < (1 << BYTEWIDTH); j++) {
+	      if (!mbctab[j])
+		fastmap[j] = 1;
+	    }
+	    break;
+	  }
 	  break;
 
 	case charset:
@@ -3050,7 +3073,10 @@ typedef union
      2) if we're before the beginning of string2, we have to look at the
         last character in string1; we assume there is a string1, so use
         this in conjunction with AT_STRINGS_BEG.  */
-#define IS_A_LETTER(d) (SYNTAX(*(d)) == Sword)
+#define IS_A_LETTER(d) (SYNTAX(*(d)) == Sword ||			\
+			(current_mbctype ?				\
+			 mbctab[*(d)] == 1 :				\
+			 SYNTAX(*(d)) == Sword2))
 
 static void
 init_regs(regs, num_regs)

@@ -1262,7 +1262,7 @@ mod_alias_method(mod, newname, oldname)
 # define TMP_PROTECT NODE * volatile __protect_tmp=0
 # define TMP_ALLOC(n)						\
     (__protect_tmp = node_newnode(NODE_ALLOCA,			\
-			     ALLOCA_N(VALUE,n),__protect_tmp,n),\
+			     ALLOC_N(VALUE,n),__protect_tmp,n),\
      (void*)__protect_tmp->nd_head)
 #else
 # define TMP_PROTECT typedef int foobazzz
@@ -2316,11 +2316,12 @@ rb_eval(self, node)
 
 	    str = str_new3(node->nd_lit);
 	    while (list) {
-		if (nd_type(list->nd_head) == NODE_STR) {
-		    str2 = list->nd_head->nd_lit;
-		}
-		else {
-		    if (nd_type(list->nd_head) == NODE_EVSTR) {
+		if (list->nd_head) {
+		    switch (nd_type(list->nd_head)) {
+		      case NODE_STR:
+			str2 = list->nd_head->nd_lit;
+			break;
+		      case NODE_EVSTR:
 			rb_in_eval++;
 			list->nd_head = compile(list->nd_head->nd_lit,0);
 			eval_tree = 0;
@@ -2328,11 +2329,12 @@ rb_eval(self, node)
 			if (nerrs > 0) {
 			    compile_error("string expansion");
 			}
+			/* fall through */
+		      default:
+			str2 = rb_eval(self, list->nd_head);
+			str2 = obj_as_string(str2);
+			break;
 		    }
-		    str2 = rb_eval(self, list->nd_head);
-		    str2 = obj_as_string(str2);
-		}
-		if (str2) {
 		    str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
 		    if (str_tainted(str2)) str_taint(str);
 		}

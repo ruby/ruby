@@ -1295,6 +1295,7 @@ Init_Bignum()
 
     rb_define_method(cBignum, "<=>", big_cmp, 1);
     rb_define_method(cBignum, "==", big_eq, 1);
+    rb_define_method(cBignum, "===", big_eq, 1);
     rb_define_method(cBignum, "eql?", big_eq, 1);
     rb_define_method(cBignum, "hash", big_hash, 0);
     rb_define_method(cBignum, "to_i", big_to_i, 0);

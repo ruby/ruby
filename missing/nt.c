@@ -279,13 +279,15 @@ static char *szInternalCmds[] = {
   "type",
   "ver",
   "vol",
+  NULL
 };
 
 int
 isInternalCmd(char *cmd)
 {
-	int i, fRet;
+	int i, fRet=0;
 	char **vec;
+	NtMakeCmdVector(cmd, &vec, FALSE);
         for( i = 0; szInternalCmds[i] ; i++){
 	    if(!strcmp(szInternalCmds[i], vec[0])){
 		fRet = 1;

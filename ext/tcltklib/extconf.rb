@@ -13,7 +13,7 @@ def search_header(include, *path)
   begin
     for i in path.sort!.reverse!
       dir = Dir[i]
-      for path in dir
+      for path in dir.sort!.reverse!
 	next unless File.directory? path
 	Dir.chdir path
 	files = Dir[include]
@@ -52,11 +52,11 @@ $libraries = []
 def search_lib(file, func, *path)
   for i in path.reverse!
     dir = Dir[i]
-    for path in dir
+    for path in dir.sort!.reverse!
       $LDFLAGS = $libraries.collect{|p| "-L" + p}.join(" ") + " -L" + path
       files = Dir[path+"/"+file]
       if files.size > 0
-	for lib in files
+	for lib in files.sort!.reverse!
 	  lib = File::basename(lib)
 	  lib.sub!(/^lib/, '')
 	  lib.sub!(/\.(a|so)$/, '')

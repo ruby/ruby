@@ -1,3 +1,22 @@
+Mon Jan 11 16:52:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.2.1 (stable) released.
+
+Wed Jan  6 02:42:08 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (Init_Bignum): forgot to define Bignum#===.
+
+	* gc.c (gc_sweep): if add_heap() is called during GC, objects on
+	  allocated heap page(s) are not marked, should not be recycled.
+
+	* gc.c (gc_sweep): should refer latest freelist.
+
+Mon Dec 28 18:54:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (obj_free): better C_ALLOCA support.
+
+	* eval.c (rb_eval): should not dump core with "#{}".
+
 Fri Dec 25 13:07:46 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.2 (stable) released.

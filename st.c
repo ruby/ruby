@@ -41,7 +41,10 @@ void *xcalloc();
 void *xrealloc();
 static void rehash();
 
+#ifndef max
 #define max(a,b) ((a) > (b) ? (a) : (b))
+#endif
+
 #define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
 #define Calloc(n,s) (char*)xcalloc((n),(s))
 

@@ -74,9 +74,9 @@ OBJS	      = array.o \
 all:		miniruby$(binsuffix) rbconfig.rb
 		@./miniruby$(binsuffix) -Xext extmk.rb @EXTSTATIC@
 
-miniruby$(binsuffix):	$(OBJS) $(MAINOBJ) dmyext.o
+miniruby$(binsuffix):	libruby.a $(MAINOBJ) dmyext.o
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) dmyext.o $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.o libruby.a $(LIBS) -o $@
 
 ruby$(binsuffix):     	$(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@

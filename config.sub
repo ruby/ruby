@@ -1,6 +1,6 @@
 #! /bin/sh
 # Configuration validation subroutine script, version 1.1.
-#   Copyright (C) 1991, 92, 93, 94, 95, 96, 1997 Free Software Foundation, Inc.
+#   Copyright (C) 1991, 92-97, 1998 Free Software Foundation, Inc.
 # This file is (in principle) common to ALL GNU software.
 # The presence of a machine in this file suggests that SOME GNU software
 # can handle that machine.  It does not imply ALL GNU software can.
@@ -150,8 +150,8 @@ case $basic_machine in
 	# Recognize the basic CPU types without company name.
 	# Some are omitted here because they have special meanings below.
 	tahoe | i860 | m32r | m68k | m68000 | m88k | ns32k | arc | arm \
-		| arme[lb] | pyramid | mn10200 | mn10300 \
-		| tron | a29k | 580 | i960 | h8300 | hppa | hppa1.0 | hppa1.1 \
+		| arme[lb] | pyramid | mn10200 | mn10300 | tron | a29k \
+		| 580 | i960 | h8300 | hppa | hppa1.0 | hppa1.1 | hppa2.0 \
 		| alpha | alphaev5 | alphaev56 | we32k | ns16k | clipper \
 		| i370 | sh | powerpc | powerpcle | 1750a | dsp16xx | pdp11 \
 		| mips64 | mipsel | mips64el | mips64orion | mips64orionel \
@@ -162,7 +162,7 @@ case $basic_machine in
 	# We use `pc' rather than `unknown'
 	# because (1) that's what they normally are, and
 	# (2) the word "unknown" tends to confuse beginning users.
-	i[3456]86)
+	i[34567]86)
 	  basic_machine=$basic_machine-pc
 	  ;;
 	i[3456]86-TOWNS*)
@@ -174,11 +174,11 @@ case $basic_machine in
 		exit 1
 		;;
 	# Recognize the basic CPU types with company name.
-	vax-* | tahoe-* | i[3456]86-* | i860-* | m32r-* | m68k-* | m68000-* \
+	vax-* | tahoe-* | i[34567]86-* | i860-* | m32r-* | m68k-* | m68000-* \
 	      | m88k-* | sparc-* | ns32k-* | fx80-* | arc-* | arm-* | c[123]* \
 	      | mips-* | pyramid-* | tron-* | a29k-* | romp-* | rs6000-* \
 	      | power-* | none-* | 580-* | cray2-* | h8300-* | i960-* \
-	      | xmp-* | ymp-* | hppa-* | hppa1.0-* | hppa1.1-* \
+	      | xmp-* | ymp-* | hppa-* | hppa1.0-* | hppa1.1-* | hppa2.0-* \
 	      | alpha-* | alphaev5-* | alphaev56-* | we32k-* | cydra-* \
 	      | ns16k-* | pn-* | np1-* | xps100-* | clipper-* | orion-* \
 	      | sparclite-* | pdp11-* | sh-* | powerpc-* | powerpcle-* \
@@ -353,19 +353,19 @@ case $basic_machine in
 		os=-mvs
 		;;
 # I'm not sure what "Sysv32" means.  Should this be sysv3.2?
-	i[3456]86v32)
+	i[34567]86v32)
 		basic_machine=`echo $1 | sed -e 's/86.*/86-pc/'`
 		os=-sysv32
 		;;
-	i[3456]86v4*)
+	i[34567]86v4*)
 		basic_machine=`echo $1 | sed -e 's/86.*/86-pc/'`
 		os=-sysv4
 		;;
-	i[3456]86v)
+	i[34567]86v)
 		basic_machine=`echo $1 | sed -e 's/86.*/86-pc/'`
 		os=-sysv
 		;;
-	i[3456]86sol2)
+	i[34567]86sol2)
 		basic_machine=`echo $1 | sed -e 's/86.*/86-pc/'`
 		os=-solaris2
 		;;
@@ -472,25 +472,23 @@ case $basic_machine in
         pc532 | pc532-*)
 		basic_machine=ns32k-pc532
 		;;
-	pentium | p5)
-		basic_machine=i586-intel
+	pentium | p5 | k5 | nexen)
+		basic_machine=i586-pc
 		;;
-	pentiumpro | p6)
-		basic_machine=i686-intel
+	pentiumpro | p6 | k6 | 6x86)
+		basic_machine=i686-pc
 		;;
-	pentium-* | p5-*)
+	pentiumii | pentium2)
+		basic_machine=i786-pc
+		;;
+	pentium-* | p5-* | k5-* | nexen-*)
 		basic_machine=i586-`echo $basic_machine | sed 's/^[^-]*-//'`
 		;;
-	pentiumpro-* | p6-*)
+	pentiumpro-* | p6-* | k6-* | 6x86-*)
 		basic_machine=i686-`echo $basic_machine | sed 's/^[^-]*-//'`
 		;;
-	k5)
-		# We don't have specific support for AMD's K5 yet, so just call it a Pentium
-		basic_machine=i586-amd
-		;;
-	nexen)
-		# We don't have specific support for Nexgen yet, so just call it a Pentium
-		basic_machine=i586-nexgen
+	pentiumii-* | pentium2-*)
+		basic_machine=i786-`echo $basic_machine | sed 's/^[^-]*-//'`
 		;;
 	pn)
 		basic_machine=pn-gould
@@ -722,8 +720,8 @@ case $os in
 	      | -lynxos* | -bosx* | -nextstep* | -cxux* | -aout* | -elf* \
 	      | -ptx* | -coff* | -ecoff* | -winnt* | -domain* | -vsta* \
 	      | -udi* | -eabi* | -lites* | -ieee* | -go32* | -aux* \
-	      | -cygwin32* | -pe* | -psos* | -moss* | -proelf* \
-	      | -linux* | -bow*  | -rhapsody* | -openstep* )
+	      | -cygwin* | -pe* | -psos* | -moss* | -proelf* | -rtems* \
+	      | -mingw32* | -linux* | -uxpv* | -beos*)
 	# Remember, each alternative MUST END IN *, to match a version number.
 		;;
 	-sunos5*)
@@ -840,6 +838,9 @@ case $basic_machine in
 		;;
 	sparc-* | *-sun)
 		os=-sunos4.1.1
+		;;
+	*-be)
+		os=-beos
 		;;
 	*-ibm)
 		os=-aix

@@ -1,6 +1,6 @@
 #! /bin/sh
 # Attempt to guess a canonical system name.
-#   Copyright (C) 1992, 93, 94, 95, 96, 1997 Free Software Foundation, Inc.
+#   Copyright (C) 1992, 93, 94, 95, 96, 97, 1998 Free Software Foundation, Inc.
 #
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -123,6 +123,9 @@ EOF
     amiga:OpenBSD:*:*)
 	echo m68k-unknown-openbsd${UNAME_RELEASE}
 	exit 0 ;;
+    *:[Aa]miga[Oo][Ss]:*:*)
+	echo ${UNAME_MACHINE}-unknown-amigaos
+	exit 0 ;;
     arc64:OpenBSD:*:*)
 	echo mips64el-unknown-openbsd${UNAME_RELEASE}
 	exit 0 ;;
@@ -150,7 +153,7 @@ EOF
     SR2?01:HI-UX/MPP:*:*)
 	echo hppa1.1-hitachi-hiuxmpp
 	exit 0;;
-    Pyramid*:OSx*:*:*|MIS*:OSx*:*:*)
+    Pyramid*:OSx*:*:*|MIS*:OSx*:*:*|MIS*:SMP_DC-OSx*:*:*)
 	# akee@wpdis03.wpafb.af.mil (Earle F. Ake) contributed MIS and NILE.
 	if test "`(/bin/universe) 2>/dev/null`" = att ; then
 		echo pyramid-pyramid-sysv3
@@ -160,6 +163,9 @@ EOF
 	exit 0 ;;
     NILE:*:*:dcosx)
 	echo pyramid-pyramid-svr4
+	exit 0 ;;
+    sun4H:SunOS:5.*:*)
+	echo sparc-hal-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
 	exit 0 ;;
     sun4*:SunOS:5.*:* | tadpole*:SunOS:5.*:*)
 	echo sparc-sun-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
@@ -227,6 +233,9 @@ EOF
     powerpc:machten:*:*)
 	echo powerpc-apple-machten${UNAME_RELEASE}
 	exit 0 ;;
+    macppc:NetBSD:*:*)
+        echo powerpc-apple-netbsd${UNAME_RELEASE}
+        exit 0 ;;
     RISC*:Mach:*:*)
 	echo mips-dec-mach_bsd4.3
 	exit 0 ;;
@@ -332,7 +341,8 @@ EOF
 	fi
 	exit 0 ;;
     *:AIX:*:4)
-	if /usr/sbin/lsattr -EHl proc0 | grep POWER >/dev/null 2>&1; then
+	IBM_CPU_ID=`/usr/sbin/lsdev -C -c processor -S available | head -1 | awk '{ print $1 }'`
+	if /usr/sbin/lsattr -EHl ${IBM_CPU_ID} | grep POWER >/dev/null 2>&1; then
 		IBM_ARCH=rs6000
 	else
 		IBM_ARCH=powerpc
@@ -365,12 +375,44 @@ EOF
     hp300:4.4BSD:*:* | 9000/[34]??:4.3bsd:2.*:*)
 	echo m68k-hp-bsd4.4
 	exit 0 ;;
-    9000/[3478]??:HP-UX:*:*)
+    9000/[34678]??:HP-UX:*:*)
 	case "${UNAME_MACHINE}" in
 	    9000/31? )            HP_ARCH=m68000 ;;
 	    9000/[34]?? )         HP_ARCH=m68k ;;
-	    9000/7?? | 9000/8?[1679] ) HP_ARCH=hppa1.1 ;;
-	    9000/8?? )            HP_ARCH=hppa1.0 ;;
+	    9000/6?? | 9000/7?? | 9000/80[24] | 9000/8?[13679] | 9000/892 )
+              sed 's/^              //' << EOF >dummy.c
+              #include <stdlib.h>
+              #include <unistd.h>
+              
+              int main ()
+              {
+              #if defined(_SC_KERNEL_BITS)
+                  long bits = sysconf(_SC_KERNEL_BITS);
+              #endif 
+                  long cpu  = sysconf (_SC_CPU_VERSION);
+              
+                  switch (cpu) 
+              	{
+              	case CPU_PA_RISC1_0: puts ("hppa1.0"); break;
+              	case CPU_PA_RISC1_1: puts ("hppa1.1"); break;
+              	case CPU_PA_RISC2_0: 
+              #if defined(_SC_KERNEL_BITS)
+              	    switch (bits) 
+              		{
+              		case 64: puts ("hppa2.0w"); break;
+              		case 32: puts ("hppa2.0n"); break;
+              		default: puts ("hppa2.0"); break;
+              		} break;
+              #else  /* !defined(_SC_KERNEL_BITS) */
+              	    puts ("hppa2.0"); break;
+              #endif 
+              	default: puts ("hppa1.0"); break;
+              	}
+                  exit (0);
+              }
+EOF
+	(${CC-cc} dummy.c -o dummy 2>/dev/null ) && HP_ARCH=`./dummy`
+	rm -f dummy.c dummy
 	esac
 	HPUX_REV=`echo ${UNAME_RELEASE}|sed -e 's/[^.]*.[0B]*//'`
 	echo ${HP_ARCH}-hp-hpux${HPUX_REV}
@@ -476,8 +518,14 @@ EOF
     hp300:OpenBSD:*:*)
 	echo m68k-unknown-openbsd${UNAME_RELEASE}
 	exit 0 ;;
-    i?86:BSD/386:*:* | *:BSD/OS:*:*)
+    sparc*:BSD/OS:*:*)
+	echo sparc-unknown-bsdi${UNAME_RELEASE}
+	exit 0 ;;
+    i?86:BSD/386:*:* | i?86:BSD/OS:*:*)
 	echo ${UNAME_MACHINE}-pc-bsdi${UNAME_RELEASE}
+	exit 0 ;;
+    *:BSD/OS:*:*)
+	echo ${UNAME_MACHINE}-unknown-bsdi${UNAME_RELEASE}
 	exit 0 ;;
     *:FreeBSD:*:*)
 	echo ${UNAME_MACHINE}-unknown-freebsd`echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`
@@ -492,13 +540,13 @@ EOF
 	echo i386-pc-bow
 	exit 0 ;;
     i*:CYGWIN*:*)
-	echo i386-pc-cygwin32
+	echo ${UNAME_MACHINE}-pc-cygwin
 	exit 0 ;;
     i*:MINGW*:*)
-	echo i386-pc-mingw32
+	echo ${UNAME_MACHINE}-pc-mingw32
 	exit 0 ;;
     p*:CYGWIN*:*)
-	echo powerpcle-unknown-cygwin32
+	echo powerpcle-unknown-cygwin
 	exit 0 ;;
     prep*:SunOS:5.*:*)
 	echo powerpcle-unknown-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
@@ -507,6 +555,12 @@ EOF
 	echo `echo ${UNAME_MACHINE}|sed -e 's,[-/].*$,,'`-unknown-gnu`echo ${UNAME_RELEASE}|sed -e 's,/.*$,,'`
 	exit 0 ;;
     *:Linux:*:*)
+	# uname on the ARM produces all sorts of strangeness, and we need to
+	# filter it out.
+	case "$UNAME_MACHINE" in
+	  arm* | sa110*)	      UNAME_MACHINE="arm" ;;
+	esac
+
 	# The BFD linker knows what the default object file format is, so
 	# first see if it will tell us.
 	ld_help_string=`ld --help 2>&1`
@@ -567,11 +621,11 @@ EOF
 			objdump --private-headers dummy | \
 			  grep ld.so.1 > /dev/null
 			if test "$?" = 0 ; then
-				LIBC="-libc1"
+				LIBC="libc1"
 			fi
 		fi	
 		rm -f dummy.s dummy
-		echo ${UNAME_MACHINE}-unknown-linux${LIBC} ; exit 0
+		echo ${UNAME_MACHINE}-unknown-linux-gnu${LIBC} ; exit 0
 	elif test "${UNAME_MACHINE}" = "mips" ; then
 	  cat >dummy.c <<EOF
 main(argc, argv)
@@ -634,6 +688,13 @@ EOF
 	else
 		echo ${UNAME_MACHINE}-pc-sysv32
 	fi
+	exit 0 ;;
+    i?86:UnixWare:*:*)
+	if /bin/uname -X 2>/dev/null >/dev/null ; then
+	  (/bin/uname -X|egrep '^Machine.*Pentium' >/dev/null) \
+	    && UNAME_MACHINE=i586
+	fi
+	echo ${UNAME_MACHINE}-unixware-${UNAME_RELEASE}-${UNAME_VERSION}
 	exit 0 ;;
     pc:*:*:*)
         # uname -m prints for DJGPP always 'pc', but it prints nothing about
@@ -715,15 +776,12 @@ EOF
     mc68*:A/UX:*:*)
 	echo m68k-apple-aux${UNAME_RELEASE}
 	exit 0 ;;
-    X680[02346]0:Human68k:*:*)
-	echo m68k-sharp-human
-	exit 0 ;;
     news*:NEWS-OS:*:6*)
 	echo mips-sony-newsos6
- 	exit 0 ;;
-    R3000:*System_V*:*:* | R4000:UNIX_SYSV:*:*)
+	exit 0 ;;
+    R3000:*System_V*:*:* | R4000:UNIX_SYSV:*:* | R4000:UNIX_SV:*:*)
 	if [ -d /usr/nec ]; then
-	        echo mips-nec-sysv${UNAME_RELEASE}
+		echo mips-nec-sysv`echo ${UNAME_RELEASE} | sed -n 's/\([.0-9]*\).*/\1/p'`
 	else
 	        echo mips-unknown-sysv${UNAME_RELEASE}
 	fi
@@ -731,13 +789,13 @@ EOF
     DS/90*:*:*:V20*)
   	echo sparc-fujitsu-uxpds
   	exit 0 ;;
-    BeBox:BeOS:*:*)
-        echo powerpc-be-beos
+    BeBox:BeOS:*:*)	# BeOS running on hardware made by Be, PPC only.
+	echo powerpc-be-beos
 	exit 0 ;;
-    BeMac:BeOS:*:*)
-        echo powerpc-apple-beos
+    BeMac:BeOS:*:*)	# BeOS running on Mac or Mac clone, PPC only.
+	echo powerpc-apple-beos
 	exit 0 ;;
-    BePC:BeOS:*:*)
+    BePC:BeOS:*:*)	# BeOS running on Intel PC compatible.
 	echo i586-pc-beos
 	exit 0 ;;
 

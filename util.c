@@ -648,7 +648,7 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
                        ((*cmp)(b,c)<0 ? b : ((*cmp)(a,c)<0 ? c : a)) : \
                        ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)) )
 
-void qsort (base, nel, size, cmp) void* base; size_t nel; size_t size; int (*cmp)();
+void rb_qsort (base, nel, size, cmp) void* base; size_t nel; size_t size; int (*cmp)();
 {
  register char *l, *r, *m;          	/* l,r:left,right group   m:median point */
  register int  t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */

@@ -592,10 +592,10 @@ gc_sweep()
 {
     RVALUE *p, *pend;
     int freed = 0;
-    int  i;
+    int i, used = heaps_used;
 
     if (rb_in_compile) {
-	for (i = 0; i < heaps_used; i++) {
+	for (i = 0; i < used; i++) {
 	    p = heaps[i]; pend = p + HEAP_SLOTS;
 	    while (p < pend) {
 		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
@@ -606,19 +606,17 @@ gc_sweep()
     }
 
     freelist = 0;
-    for (i = 0; i < heaps_used; i++) {
-	RVALUE *nfreelist;
+    for (i = 0; i < used; i++) {
 	int n = 0;
 
-	nfreelist = freelist;
 	p = heaps[i]; pend = p + HEAP_SLOTS;
 
 	while (p < pend) {
 	    if (!(p->as.basic.flags & FL_MARK)) {
 		if (p->as.basic.flags) obj_free((VALUE)p);
 		p->as.free.flag = 0;
-		p->as.free.next = nfreelist;
-		nfreelist = p;
+		p->as.free.next = freelist;
+		freelist = p;
 		n++;
 	    }
 	    else
@@ -626,7 +624,6 @@ gc_sweep()
 	    p++;
 	}
 	freed += n;
-	freelist = nfreelist;
     }
     alloc_objects = 0;
     if (freed < FREE_MIN) {
@@ -725,8 +722,17 @@ obj_free(obj)
 	if (RANY(obj)->as.bignum.digits) free(RANY(obj)->as.bignum.digits);
 	break;
       case T_NODE:
-	if (nd_type(obj) == NODE_SCOPE && RANY(obj)->as.node.u1.tbl) {
-	    free(RANY(obj)->as.node.u1.tbl);
+	switch (nd_type(obj)) {
+	  case NODE_SCOPE:
+	    if (RANY(obj)->as.node.u1.tbl) {
+		free(RANY(obj)->as.node.u1.tbl);
+	    }
+	    break;
+#ifdef C_ALLOCA
+	  case NODE_ALLOCA:
+	    free(RANY(obj)->as.node.u1.value);
+	    break;
+#endif
 	}
 	return;			/* no need to free iv_tbl */
 

@@ -795,7 +795,7 @@ ary_sort_bang(ary)
     if (RARRAY(ary)->len == 0) return ary;
 
     ary_modify(ary);
-    qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),
+    rb_qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),
 	  iterator_p()?sort_1:sort_2);
     return ary;
 }
