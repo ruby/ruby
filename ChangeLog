@@ -1,5 +1,8 @@
 Fri Mar 21 01:29:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* sprintf.c (rb_f_sprintf): copy sign bits only if value is
+	  negative.
+
 	* missing.h: include <stdarg.h> or <varargs.h> if HAVE_VSNPRINTF
 	  is not defined.
 

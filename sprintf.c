@@ -556,7 +556,12 @@ rb_f_sprintf(argc, argv)
 		    }
 		}
 		else {
-		    char c = sign_bits(base, p);
+		    char c;
+
+		    if (bignum && !RBIGNUM(val)->sign)
+			c = sign_bits(base, p);
+		    else
+			c = '0';
 		    while (len < prec--) {
 			buf[blen++] = c;
 		    }
