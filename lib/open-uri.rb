@@ -530,8 +530,8 @@ module URI
       options.each {|k, v| header[k] = v if String === k }
 
       if uri.respond_to? :host
-        # According to RFC2616 14.23, Host: request-header field should be set
-        # an origin server.
+        # According to RFC2616 14.23, Host: request-header field should be
+        # the origin server.
         # But net/http wrongly set a proxy server if an absolute URI is
         # specified as a request URI.
         # So open-uri override it here explicitly.
