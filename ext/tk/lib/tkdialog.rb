@@ -143,10 +143,10 @@ class TkDialog2 < TkWindow
       default_button = @default_button
     end
     default_button = '{}' if default_button == nil
-    INTERP._eval('eval {global '+@var.id+';'+@config+
-		 'set '+@var.id+' [tk_dialog '+ 
-		 @path+" "+@title+" {#{@message}} "+@bitmap+" "+
-		 String(default_button)+" "+@buttons.join(' ')+']}')
+    Tk.ip_eval('eval {global '+@var.id+';'+@config+
+	       'set '+@var.id+' [tk_dialog '+ 
+	       @path+" "+@title+" {#{@message}} "+@bitmap+" "+
+	       String(default_button)+" "+@buttons.join(' ')+']}')
   end
 
   def value

@@ -470,11 +470,25 @@ lib_restart(self)
     /* ignore ERROR */
     DUMP2("(TCL_Eval result) %d", ptr->return_value);
 
-    /* execute Tk_Init */
+    /* execute Tk_Init of Tk_SafeInit */
+#if TCL_MAJOR_VERSION >= 8
+    if (Tcl_IsSafe(ptr->ip)) {
+      DUMP1("Tk_SafeInit");
+      if (Tk_SafeInit(ptr->ip) == TCL_ERROR) {
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+      }
+    } else {
+      DUMP1("Tk_Init");
+      if (Tk_Init(ptr->ip) == TCL_ERROR) {
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+      }
+    }
+#else
     DUMP1("Tk_Init");
     if (Tk_Init(ptr->ip) == TCL_ERROR) {
 	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
+#endif
 
     return Qnil;
 }
@@ -596,8 +610,12 @@ ip_init(self)
 	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
     DUMP1("Tcl_StaticPackage(\"Tk\")");
+#if TCL_MAJOR_VERSION >= 8
+    Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init, Tk_SafeInit);
+#else
     Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init,
 		      (Tcl_PackageInitProc *) NULL);
+#endif
 
     /* add ruby command to the interpreter */
 #if TCL_MAJOR_VERSION >= 8

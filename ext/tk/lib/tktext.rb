@@ -728,7 +728,7 @@ class TkTextTag<TkObject
   TTagID_TBL = {}
   Tk_TextTag_ID = ['tag0000']
 
-  TkComm::INITIALIZE_TARGETS << self
+  TkComm.__add_target_for_init__(self)
 
   def self.__init_tables__
     TTagID_TBL.clear

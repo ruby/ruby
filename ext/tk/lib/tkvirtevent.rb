@@ -10,7 +10,7 @@ class TkVirtualEvent<TkObject
   TkVirtualEventID = [0]
   TkVirtualEventTBL = {}
 
-  TkComm::INITIALIZE_TARGETS << self
+  TkComm.__add_target_for_init__(self)
 
   def self.__init_tables__
     TkVirtualEventTBL.clear

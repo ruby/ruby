@@ -521,7 +521,7 @@ class TkcTag<TkObject
   CTagID_TBL = {}
   Tk_CanvasTag_ID = ['ctag0000']
 
-  TkComm::INITIALIZE_TARGETS << self
+  TkComm.__add_target_for_init__(self)
 
   def self.__init_tables__
     CTagID_TBL.clear
@@ -690,7 +690,7 @@ class TkcItem<TkObject
   CItemTypeToClass = {}
   CItemID_TBL = {}
 
-  TkComm::INITIALIZE_TARGETS << self
+  TkComm.__add_target_for_init__(self)
 
   def self.__init_tables__
     CItemID_TBL.clear
@@ -822,7 +822,7 @@ class TkImage<TkObject
   Tk_IMGTBL = {}
   Tk_Image_ID = ['i00000']
 
-  TkComm::INITIALIZE_TARGETS << self
+  TkComm.__add_target_for_init__(self)
 
   def self.__init_tables__
     Tk_IMGTBL.clear

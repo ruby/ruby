@@ -13,7 +13,7 @@ class TkFont
   Tk_FontNameTBL = {}
   Tk_FontUseTBL = {}
 
-  TkComm::INITIALIZE_TARGETS << self
+  TkComm.__add_target_for_init__(self)
 
   def self.__init_tables__
     Tk_FontNameTBL.clear

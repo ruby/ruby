@@ -25,6 +25,24 @@ module TkComm
     Tk_WINDOWS.clear
   end
 
+  def self.__add_target_for_init__(target)
+    INITIALIZE_TARGETS << target
+
+    if target.const_defined? :TkINTERP_SETUP_SCRIPTS
+      target::TkINTERP_SETUP_SCRIPTS.collect{|script|
+	if script.kind_of? Proc
+	  script.call
+	elsif script.kind_of? Array
+	  Tk.ip_invoke(*script)
+	else
+	  Tk.ip_eval(script)
+	end
+      }
+    else
+      nil
+    end
+  end
+
   def error_at
     frames = caller()
     frames.delete_if do |c|
@@ -39,7 +57,7 @@ module TkComm
 
     begin
       #tk_class = TkCore::INTERP._invoke('winfo', 'class', path)
-      tk_class = Tk.tk_call('winfo', 'class', path)
+      tk_class = Tk.ip_invoke('winfo', 'class', path)
     rescue
       return path
     end
@@ -840,6 +858,22 @@ module TkCore
     tk_call 'tk_chooseDirectory', *hash_kv(keys)
   end
 
+  def ip_eval(cmd_string)
+    res = INTERP._eval(cmd_string)
+    if  INTERP._return_value() != 0
+      fail RuntimeError, res, error_at
+    end
+    return res
+  end
+
+  def ip_invoke(*args)
+    res = INTERP._invoke(*args)
+    if  INTERP._return_value() != 0
+      fail RuntimeError, res, error_at
+    end
+    return res
+  end
+
   def tk_call(*args)
     puts args.inspect if $DEBUG
     args.collect! {|x|ruby2tcl(x)}
@@ -937,12 +971,13 @@ module Tk
   TK_LIBRARY  = INTERP._invoke("set", "tk_library").freeze
   LIBRARY     = INTERP._invoke("info", "library").freeze
 
-  PLATFORM = Hash[*tk_split_simplelist(INTERP._eval('array get tcl_platform'))]
+  PLATFORM = Hash[*tk_split_simplelist(INTERP._invoke('array', 'get', 
+						      'tcl_platform'))]
   PLATFORM.each{|k, v| k.freeze; v.freeze}
   PLATFORM.freeze
 
   TK_PREV = {}
-  Hash[*tk_split_simplelist(INTERP._eval('array get tkPriv'))].each{|k,v|
+  Hash[*tk_split_simplelist(INTERP._invoke('array','get','tkPriv'))].each{|k,v|
     k.freeze
     case v
     when /^-?\d+$/
@@ -1437,7 +1472,7 @@ class TkBindTag
   BTagID_TBL = {}
   Tk_BINDTAG_ID = ["btag00000"]
 
-  TkComm::INITIALIZE_TARGETS << self
+  TkComm.__add_target_for_init__(self)
 
   def self.__init_tables__
     BTagID_TBL.clear
@@ -1509,15 +1544,18 @@ class TkVariable
   TkVar_ID_TBL = {}
   Tk_VARIABLE_ID = ["v00000"]
 
-  TkComm::INITIALIZE_TARGETS << self
+  # this constant must be defined befor calling __add_target_for_init__
+  TkINTERP_SETUP_SCRIPTS = [
+    ["proc", "rb_var", "args", 
+      "ruby [format \"TkVariable.callback %%Q!%s!\" $args]"]
+  ]
+
+  TkComm.__add_target_for_init__(self)
 
   def self.__init_tables__
     # cannot clear
     # Tcl interpreter may keeps callbacks
   end
-
-  INTERP._invoke("proc", "rb_var", "args", 
-		 "ruby [format \"TkVariable.callback %%Q!%s!\" $args]")
 
   def TkVariable.callback(args)
     name1,name2,op = tk_split_list(args)
