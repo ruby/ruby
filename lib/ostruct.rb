@@ -45,7 +45,7 @@ class OpenStruct
     str = "<#{self.type}"
     for k,v in @table
       str += " "
-      str += k
+      str += k.to_s
       str += "="
       str += v.inspect
     end

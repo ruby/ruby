@@ -1,3 +1,11 @@
+Fri Nov 15 07:51:24 2002  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
+
+	* ostruct.rb: fix a bug in inspect which called String#+ with Symbol.
+	  [ruby-dev:18788]
+
+	* profile.rb: illegal use of Array#sort!.  replaced it with non-bang
+	  method.  [ruby-dev:18792]
+
 Sat Nov  9 16:06:57 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tcltklib/stubs.c: should include "util.h" for ruby_strdup.

@@ -40,7 +40,8 @@ module Profiler__
     MAP["#toplevel"][1] = total
 #    f = open("./rmon.out", "w")
     f = STDERR
-    data = MAP.values.sort!{|a,b| b[2] <=> a[2]}
+    data = MAP.values
+    data.sort!{|a,b| b[2] <=> a[2]}
     sum = 0
     f.printf "  %%   cumulative   self              self     total\n"           
     f.printf " time   seconds   seconds    calls  ms/call  ms/call  name\n"
