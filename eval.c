@@ -2158,7 +2158,7 @@ call_trace_func(event, node, self, id, klass)
 }
 
 static VALUE
-mrhs_to_svalue(v)
+avalue_to_svalue(v)
     VALUE v;
 {
     VALUE tmp;
@@ -2178,7 +2178,7 @@ mrhs_to_svalue(v)
 }
 
 static VALUE
-mrhs_to_avalue(v)
+svalue_to_avalue(v)
     VALUE v;
 {
     VALUE tmp;
@@ -2189,34 +2189,18 @@ mrhs_to_avalue(v)
     if (NIL_P(tmp)) {
 	return rb_ary_new3(1, v);
     }
+    if (RARRAY(tmp)->len <= 1) {
+	return rb_ary_new3(1, tmp);
+    }
     return v;
 }
 
-static VALUE
-args_to_svalue(v)
-    VALUE v;
-{
-    VALUE tmp;
-
-    if (v == Qundef) return v;
-    tmp = rb_check_array_type(v);
-    if (NIL_P(tmp)) {
-	return v;
-    }
-    if (RARRAY(tmp)->len == 0) {
-	return Qundef;
-    }
-    if (RARRAY(tmp)->len == 1) {
-	v = rb_check_array_type(tmp);
-	if (NIL_P(v)) {
-	    return RARRAY(tmp)->ptr[0];
-	}
-    }
-    return tmp;
-}
-
 static void return_check _((void));
-#define return_value(v) prot_tag->retval = (v)
+#define return_value(v) do {\
+  if ((prot_tag->retval = (v)) == Qundef) {\
+    prot_tag->retval = Qnil;\
+  }\
+} while (0)
 
 static VALUE
 rb_eval(self, n)
@@ -2563,7 +2547,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_REXPAND:
-	result = mrhs_to_svalue(rb_eval(self, node->nd_head));
+	result = avalue_to_svalue(rb_eval(self, node->nd_head));
 	break;
 
       case NODE_SVALUE:
@@ -2928,7 +2912,8 @@ rb_eval(self, n)
 	break;
 
       case NODE_MASGN:
-	result = massign(self, node, rb_eval(self, node->nd_value), 0);
+	result = svalue_to_avalue(rb_eval(self, node->nd_value));
+	result = massign(self, node, result, 0);
 	break;
 
       case NODE_LASGN:
@@ -3333,9 +3318,8 @@ rb_eval(self, n)
 		rb_extend_object(klass, ruby_wrapper);
 		rb_include_module(klass, ruby_wrapper);
 	    }
-
-	    result = module_setup(klass, node->nd_body);
 	    if (super) rb_class_inherited(super, klass);
+	    result = module_setup(klass, node->nd_body);
 	}
 	break;
 
@@ -3856,10 +3840,11 @@ rb_yield_0(val, self, klass, pcall, avalue)
 		}
 	    }
 	    else if (nd_type(block->var) == NODE_MASGN) {
+		if (!avalue) val = svalue_to_avalue(val);
 		massign(self, block->var, val, pcall);
 	    }
 	    else {
-		if (avalue) val = mrhs_to_svalue(val);
+		if (avalue) val = avalue_to_svalue(val);
 		if (val == Qundef) val = Qnil;
 		assign(self, block->var, val, pcall);
 	    }
@@ -3876,6 +3861,7 @@ rb_yield_0(val, self, klass, pcall, avalue)
 	    result = Qnil;
 	}
 	else if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
+	    if (avalue) val = avalue_to_svalue(val);
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
 	else {
@@ -3970,12 +3956,30 @@ massign(self, node, val, pcall)
     NODE *list;
     long i = 0, len;
 
-    val = mrhs_to_avalue(val);
     len = RARRAY(val)->len;
     list = node->nd_head;
-    for (i=0; list && i<len; i++) {
-	assign(self, list->nd_head, RARRAY(val)->ptr[i], pcall);
-	list = list->nd_next;
+    if (len == 1 && list) {
+	VALUE v = RARRAY(val)->ptr[0];
+	VALUE tmp = rb_check_array_type(v);
+
+	if (NIL_P(tmp)) {
+	    assign(self, list->nd_head, v, pcall);
+	    list = list->nd_next;
+	}
+	else {
+	    len = RARRAY(tmp)->len;
+	    for (i=0; list && i<len; i++) {
+		assign(self, list->nd_head, RARRAY(tmp)->ptr[i], pcall);
+		list = list->nd_next;
+	    }
+	}
+	i = 1;
+    }
+    else {
+	for (; list && i<len; i++) {
+	    assign(self, list->nd_head, RARRAY(val)->ptr[i], pcall);
+	    list = list->nd_next;
+	}
     }
     if (pcall && list) goto arg_error;
     if (node->nd_args) {
@@ -4059,7 +4063,7 @@ assign(self, lhs, val, pcall)
 	break;
 
       case NODE_MASGN:
-	massign(self, lhs, val, pcall);
+	massign(self, lhs, svalue_to_avalue(val), pcall);
 	break;
 
       case NODE_CALL:
@@ -7012,12 +7016,19 @@ umethod_bind(method, recv)
 	    st_lookup(RCLASS(CLASS_OF(recv))->m_tbl, data->oid, 0)) {
 	    rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
 	}
+#if 0
 	if (!((TYPE(data->rklass) == T_MODULE) ?
 	      rb_obj_is_kind_of(recv, data->rklass) :
 	      rb_obj_is_instance_of(recv, data->rklass))) {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
 		     rb_class2name(data->rklass));
 	}
+#else
+	if(!rb_obj_is_kind_of(recv, data->rklass)) {
+	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
+		     rb_class2name(data->rklass));
+	}
+#endif
     }
 
     method = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,bound);
@@ -7128,7 +7139,7 @@ static VALUE
 bmcall(args, method)
     VALUE args, method;
 {
-    args = mrhs_to_avalue(args);
+    args = svalue_to_avalue(args);
     return method_call(RARRAY(args)->len, RARRAY(args)->ptr, method);
 }
 

@@ -24,9 +24,6 @@ class PStore
     unless File::directory? dir
       raise PStore::Error, format("directory %s does not exist", dir)
     end
-    unless File::writable? dir
-      raise PStore::Error, format("directory %s not writable", dir)
-    end
     if File::exist? file and not File::readable? file
       raise PStore::Error, format("file %s not readable", file)
     end
@@ -93,7 +90,7 @@ class PStore
       value = nil
       backup = @filename+"~"
       begin
-	file = File::open(@filename, "rb+")
+	file = File::open(@filename, read_only ? "rb" : "rb+")
 	orig = true
       rescue Errno::ENOENT
 	raise if read_only

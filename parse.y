@@ -137,7 +137,6 @@ static NODE *new_evstr();
 static NODE *call_op();
 static int in_defined = 0;
 
-static NODE *yield_args();
 static NODE *ret_args();
 static NODE *arg_blk_pass();
 static NODE *new_call();
@@ -553,7 +552,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| mlhs '=' arg_value
 		    {
-			$1->nd_value = NEW_RESTARY($3);
+			$1->nd_value = $3;
 			$$ = $1;
 		    }
 		| mlhs '=' mrhs
@@ -695,7 +694,7 @@ command		: operation command_args       %prec tLOWEST
 		    }
 		| kYIELD command_args
 		    {
-			$$ = NEW_YIELD(yield_args($2));
+			$$ = NEW_YIELD(ret_args($2));
 		        fixpos($$, $2);
 		    }
 		;
@@ -1404,7 +1403,7 @@ primary		: literal
 		    }
 		| kYIELD '(' call_args ')'
 		    {
-			$$ = NEW_YIELD(yield_args($3));
+			$$ = NEW_YIELD(ret_args($3));
 		    }
 		| kYIELD '(' ')'
 		    {
@@ -5198,14 +5197,6 @@ ret_args(node)
 	    node = node->nd_head;
 	}
     }
-    return node;
-}
-
-static NODE *
-yield_args(node)
-    NODE *node;
-{
-    node = ret_args(node);
     if (node && nd_type(node) == NODE_RESTARY) {
 	nd_set_type(node, NODE_REXPAND);
     }

@@ -3,6 +3,18 @@ Tue Jan  7 07:48:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (rb_f_local_variables): skip $_, $~ and flip states in
 	  dynamic variables.  [ruby-core:00681]
 
+Tue Jan  7 02:46:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (env_clear): new Hash compatible method.
+
+	* hash.c (env_shift): ditto.
+
+	* hash.c (env_invert): ditto.
+
+	* hash.c (env_replace): ditto.
+
+	* hash.c (env_update): ditto.
+
 Mon Jan  6 23:36:29 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* st.h, st.c: Introduce new conventional typedef's, st_data_t,
@@ -32,6 +44,16 @@ Mon Jan  6 18:31:45 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* lib/fileutils.rb (ln): add ' -f' in the verbose message.
 
 	* lib/fileutils.rb (cp_r): add 'p' in the verbose message.
+
+Mon Jan  6 16:44:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_join): dispatch based on "to_str".
+
+	* array.c (rb_ary_times): ditto.
+
+	* array.c (rb_ary_equal): ditto.
+
+	* process.c (rb_f_exec): dispatch based on "to_ary".
 
 Mon Jan  6 13:26:35 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
@@ -137,6 +159,11 @@ Sat Jan  4 14:29:52 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 	* win32/Makefile.sub (config.h): define NEED_IO_FLUSH_BETWEE_SEEK.
 	  (pointed out by moriq [ruby-dev:19299])
 
+Sat Jan  4 03:12:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (umethod_bind): exact class match is not required.  relax
+	  the restriction to subclasses.
+
 Sat Jan  4 01:33:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (rb_file_s_lchmod): get rid of gcc-3 -O3 warning.
@@ -144,6 +171,33 @@ Sat Jan  4 01:33:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 Fri Jan  3 22:26:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* process.c (rb_proc_times): need to initialize first.
+
+Fri Jan  3 01:10:17 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): call "inherited" before executing class body.
+
+	* class.c (rb_define_class): call "inherited" after defining the
+	  constant.
+
+	* class.c (rb_define_class_under): ditto.
+
+Thu Jan  2 19:37:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (massign): expand first element if RHS is an array and
+	  its size is 1, and LHS has concrete assignment target (i.e. LHS
+	  has target(s) other than *var).
+
+	* eval.c (massign): avoid unnecessary avalue/svalue conversion.
+
+	* eval.c (rb_yield_0): ditto
+
+	* array.c (rb_ary_update): do not allocate unused array if rpl is
+	  nil (i.e. merely removing elements).
+
+Thu Jan  2 13:55:08 2003  Mathieu Bouchard  <matju@sympatico.ca>
+
+	* io.c (io_read): should resize supplied string if it's shorter
+	  than expected.
 
 Thu Jan 02 11:01:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

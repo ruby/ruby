@@ -648,9 +648,6 @@ rb_ary_update(ary, beg, len, rpl)
 {
     long rlen;
 
-    rpl = (NIL_P(rpl)) ? rb_ary_new2(0) : rb_ary_to_ary(rpl);
-    rlen = RARRAY(rpl)->len;
-
     if (len < 0) rb_raise(rb_eIndexError, "negative length (%ld)", len);
     if (beg < 0) {
 	beg += RARRAY(ary)->len;
@@ -664,6 +661,14 @@ rb_ary_update(ary, beg, len, rpl)
     }
 
     rb_ary_modify(ary);
+    if (NIL_P(rpl)) {
+	rlen = 0;
+    }
+    else {
+	rpl = rb_ary_to_ary(rpl);
+	rlen = RARRAY(rpl)->len;
+    }
+
     if (beg >= RARRAY(ary)->len) {
 	len = beg + rlen;
 	if (len >= RARRAY(ary)->aux.capa) {
@@ -671,7 +676,9 @@ rb_ary_update(ary, beg, len, rpl)
 	    RARRAY(ary)->aux.capa = len;
 	}
 	rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len, beg - RARRAY(ary)->len);
-	MEMCPY(RARRAY(ary)->ptr + beg, RARRAY(rpl)->ptr, VALUE, rlen);
+	if (rlen > 0) {
+	    MEMCPY(RARRAY(ary)->ptr + beg, RARRAY(rpl)->ptr, VALUE, rlen);
+	}
 	RARRAY(ary)->len = len;
     }
     else {
@@ -692,7 +699,9 @@ rb_ary_update(ary, beg, len, rpl)
 		    VALUE, RARRAY(ary)->len - (beg + len));
 	    RARRAY(ary)->len = alen;
 	}
-	MEMMOVE(RARRAY(ary)->ptr + beg, RARRAY(rpl)->ptr, VALUE, rlen);
+	if (rlen > 0) {
+	    MEMMOVE(RARRAY(ary)->ptr + beg, RARRAY(rpl)->ptr, VALUE, rlen);
+	}
     }
 }
 
@@ -836,12 +845,8 @@ rb_ary_join(ary, sep)
     if (OBJ_TAINTED(ary) || OBJ_TAINTED(sep)) taint = Qtrue;
 
     for (i=0; i<RARRAY(ary)->len; i++) {
-	if (TYPE(RARRAY(ary)->ptr[i]) == T_STRING) {
-	    len += RSTRING(RARRAY(ary)->ptr[i])->len;
-	}
-	else {
-	    len += 10;
-	}
+	tmp = rb_check_string_type(RARRAY(ary)->ptr[i]);
+	len += NIL_P(tmp) ? 10 : RSTRING(tmp)->len;
     }
     if (!NIL_P(sep)) {
 	StringValue(sep);
@@ -1488,11 +1493,12 @@ static VALUE
 rb_ary_times(ary, times)
     VALUE ary, times;
 {
-    VALUE ary2;
+    VALUE ary2, tmp;
     long i, len;
 
-    if (TYPE(times) == T_STRING) {
-	return rb_ary_join(ary, times);
+    tmp = rb_check_string_type(times);
+    if (!NIL_P(tmp)) {
+	return rb_ary_join(ary, tmp);
     }
 
     len = NUM2LONG(times);
@@ -1557,7 +1563,10 @@ rb_ary_equal(ary1, ary2)
     long i;
 
     if (ary1 == ary2) return Qtrue;
-    if (TYPE(ary2) != T_ARRAY) return Qfalse;
+    if (TYPE(ary2) != T_ARRAY) {
+	ary2 = rb_check_array_type(ary2);
+	if (NIL_P(ary2)) return Qfalse;
+    }
     if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (!rb_equal(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))
@@ -1572,7 +1581,11 @@ rb_ary_eql(ary1, ary2)
 {
     long i;
 
-    if (TYPE(ary2) != T_ARRAY) return Qfalse;
+    if (ary1 == ary2) return Qtrue;
+    if (TYPE(ary2) != T_ARRAY) {
+	ary2 = rb_check_array_type(ary2);
+	if (NIL_P(ary2)) return Qfalse;
+    }
     if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (!rb_eql(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))

@@ -214,8 +214,8 @@ rb_define_class(name, super)
 	rb_warn("no super class for `%s', Object assumed", name);
     }
     klass = rb_define_class_id(id, super);
-    rb_class_inherited(super, klass);
     st_add_direct(rb_class_tbl, id, klass);
+    rb_class_inherited(super, klass);
 
     return klass;
 }
@@ -246,8 +246,8 @@ rb_define_class_under(outer, name, super)
     }
     klass = rb_define_class_id(id, super);
     rb_set_class_path(klass, outer, name);
-    rb_class_inherited(super, klass);
     rb_const_set(outer, id, klass);
+    rb_class_inherited(super, klass);
 
     return klass;
 }

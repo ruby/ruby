@@ -695,20 +695,20 @@ rb_f_exec(argc, argv)
     VALUE *argv;
 {
     VALUE prog = 0;
+    VALUE tmp;
 
     if (argc == 0) {
 	rb_raise(rb_eArgError, "wrong number of arguments");
     }
 
-    if (TYPE(argv[0]) == T_ARRAY) {
-	if (RARRAY(argv[0])->len != 2) {
+    tmp = rb_check_array_type(argv[0]);
+    if (!NIL_P(tmp)) {
+	if (RARRAY(tmp)->len != 2) {
 	    rb_raise(rb_eArgError, "wrong first argument");
 	}
-	prog = RARRAY(argv[0])->ptr[0];
-	argv[0] = RARRAY(argv[0])->ptr[1];
-    }
-    if (prog) {
+	prog = RARRAY(tmp)->ptr[0];
 	SafeStringValue(prog);
+	argv[0] = RARRAY(tmp)->ptr[1];
     }
     if (argc == 1 && prog == 0) {
 	VALUE cmd = argv[0];

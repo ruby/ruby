@@ -1387,6 +1387,28 @@ env_select(argc, argv)
 }
 
 static VALUE
+env_clear()
+{
+    volatile VALUE keys;
+    VALUE *ptr;
+    long len;
+    
+    rb_secure(4);
+    keys = env_keys();
+    ptr = RARRAY(keys)->ptr;
+    len = RARRAY(keys)->len; 
+
+    while (len--) {
+	VALUE val = rb_f_getenv(Qnil, *ptr);
+	if (!NIL_P(val)) {
+	    env_delete(Qnil, *ptr);
+	}
+	ptr++;
+    }
+    return envtbl;
+}
+
+static VALUE
 env_to_s()
 {
     return rb_str_new2("ENV");
@@ -1585,6 +1607,88 @@ env_reject()
     return rb_hash_delete_if(env_to_hash());
 }
 
+static VALUE
+env_shift()
+{
+    char **env;
+
+    env = GET_ENVIRON(environ);
+    if (*env) {
+	char *s = strchr(*env, '=');
+	if (s) {
+	    VALUE key = rb_tainted_str_new(*env, s-*env);
+	    VALUE val = rb_tainted_str_new2(getenv(RSTRING(key)->ptr));
+	    env_delete(Qnil, key);
+	    return rb_assoc_new(key, val);
+	}
+    }
+    FREE_ENVIRON(environ);
+    return Qnil;
+}
+
+static VALUE
+env_invert()
+{
+    return rb_hash_invert(env_to_hash());
+}
+
+static int
+env_replace_i(key, val, keys)
+    VALUE key, val, keys;
+{
+    if (key != Qundef) {
+	env_aset(Qnil, key, val);
+	if (rb_ary_includes(keys, key)) {
+	    rb_ary_delete(keys, key);
+	}
+    }
+    return ST_CONTINUE;
+}
+
+static VALUE
+env_replace(env, hash)
+    VALUE env, hash;
+{
+    volatile VALUE keys = env_keys();
+    VALUE *ptr;
+    long len;
+
+    if (env == hash) return env;
+    hash = to_hash(hash);
+    st_foreach(RHASH(hash)->tbl, env_replace_i, keys);
+
+    ptr = RARRAY(keys)->ptr;
+    len = RARRAY(keys)->len; 
+
+    while (len--) {
+	env_delete(env, *ptr++);
+    }
+    return env;
+}
+
+static int
+env_update_i(key, val)
+    VALUE key, val;
+{
+    if (key != Qundef) {
+	if (rb_block_given_p()) {
+	    val = rb_yield(rb_ary_new3(3, key, rb_f_getenv(Qnil, key), val));
+	}
+	env_aset(Qnil, key, val);
+    }
+    return ST_CONTINUE;
+}
+
+static VALUE
+env_update(env, hash)
+    VALUE env, hash;
+{
+    if (env == hash) return env;
+    hash = to_hash(hash);
+    st_foreach(RHASH(hash)->tbl, env_update_i, 0);
+    return env;
+}
+
 void
 Init_Hash()
 {
@@ -1665,10 +1769,14 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
     rb_define_singleton_method(envtbl,"delete", env_delete_m, 1);
     rb_define_singleton_method(envtbl,"delete_if", env_delete_if, 0);
+    rb_define_singleton_method(envtbl,"clear", env_clear, 0);
     rb_define_singleton_method(envtbl,"reject", env_reject, 0);
     rb_define_singleton_method(envtbl,"reject!", env_reject_bang, 0);
     rb_define_singleton_method(envtbl,"select", env_select, -1);
-    rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
+    rb_define_singleton_method(envtbl,"shift", env_shift, 0);
+    rb_define_singleton_method(envtbl,"invert", env_invert, 0);
+    rb_define_singleton_method(envtbl,"replace", env_replace, 1);
+    rb_define_singleton_method(envtbl,"update", env_update, 1);
     rb_define_singleton_method(envtbl,"inspect", env_inspect, 0);
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);
