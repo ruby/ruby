@@ -1389,7 +1389,7 @@ rb_str_succ(orig)
     int c = -1;
     long n = 0;
 
-    str = rb_str_new5(orig,RSTRING(orig)->ptr, RSTRING(orig)->len);
+    str = rb_str_new5(orig, RSTRING(orig)->ptr, RSTRING(orig)->len);
     OBJ_INFECT(str, orig);
     if (RSTRING(str)->len == 0) return str;
 

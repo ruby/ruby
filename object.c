@@ -2056,10 +2056,9 @@ convert_type(val, tname, method, raise)
     const char *tname, *method;
     int raise;
 {
-    ID m;
+    VALUE result = rb_funcall_rescue(val, rb_intern(method), 0);
 
-    m = rb_intern(method);
-    if (!rb_respond_to(val, m)) {
+    if (result == Qundef) {
 	if (raise) {
 	    rb_raise(rb_eTypeError, "cannot convert %s into %s",
 		     NIL_P(val) ? "nil" :
@@ -2069,10 +2068,11 @@ convert_type(val, tname, method, raise)
 		     tname);
 	}
 	else {
+	    ruby_errinfo = Qnil;
 	    return Qnil;
 	}
     }
-    return rb_funcall(val, m, 0);
+    return result;
 }
 
 VALUE
@@ -2139,6 +2139,8 @@ VALUE
 rb_Integer(val)
     VALUE val;
 {
+    VALUE tmp;
+
     switch (TYPE(val)) {
       case T_FLOAT:
 	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
@@ -2157,10 +2159,11 @@ rb_Integer(val)
       default:
 	break;
     }
-    if (rb_respond_to(val, rb_intern("to_int"))) {
-	return rb_to_integer(val, "to_int");
+    tmp = convert_type(val, "Integer", "to_int", Qfalse);
+    if (NIL_P(tmp)) {
+	return rb_to_integer(val, "to_i");
     }
-    return rb_to_integer(val, "to_i");
+    return tmp;
 }
 
 /*
@@ -2401,18 +2404,10 @@ rb_Array(val)
     VALUE val;
 {
     VALUE tmp = rb_check_array_type(val);
-    ID to_a;
 
     if (NIL_P(tmp)) {
-	to_a = rb_intern("to_a");
-	if (rb_respond_to(val, to_a)) {
-	    val = rb_funcall(val, to_a, 0);
-	    if (TYPE(val) != T_ARRAY) {
-		rb_raise(rb_eTypeError, "`to_a' did not return Array");
-	    }
-	    return val;
-	}
-	else {
+	tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_a");
+	if (NIL_P(tmp)) {
 	    return rb_ary_new3(1, val);
 	}
     }

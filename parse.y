@@ -7178,6 +7178,10 @@ reduce_nodes(body)
 {
     NODE *node = *body;
 
+    if (!node) {
+	*body = NEW_NIL();
+	return;
+    }
 #define subnodes(n1, n2) \
     ((!node->n1) ? (node->n2 ? (body = &node->n2, 1) : 0) : \
      (!node->n2) ? (body = &node->n1, 1) : \

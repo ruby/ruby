@@ -334,6 +334,7 @@ io_fflush(f, fptr)
 	if (n != EOF) break;
 	if (!rb_io_wait_writable(fileno(f)))
 	    rb_sys_fail(fptr->path);
+        rb_io_check_closed(fptr);
     }
     fptr->mode &= ~FMODE_WBUF;
 }
@@ -1027,6 +1028,7 @@ rb_io_fread(ptr, len, f)
 
     of.f = f;
     of.f2 = NULL;
+    of.mode = FMODE_READABLE;
     return io_fread(ptr, len, &of);
 }
 
@@ -4030,6 +4032,9 @@ rb_io_initialize(argc, argv, io)
 	fp->mode = rb_io_modenum_flags(flags);
 	fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags));
     }
+    else if (RFILE(io)->fptr) {
+	rb_raise(rb_eRuntimeError, "reinitializing IO");
+    }
     else {
 	GetOpenFile(orig, ofp);
 	if (ofp->refcnt == LONG_MAX) {
@@ -4046,11 +4051,6 @@ rb_io_initialize(argc, argv, io)
 		    rb_raise(rb_eArgError, "incompatible mode \"%s\"", RSTRING(mode)->ptr);
 		}
 	    }
-	}
-	if (RFILE(io)->fptr) {
-	    rb_io_close(io);
-	    free(RFILE(io)->fptr);
-	    RFILE(io)->fptr = 0;
 	}
 	ofp->refcnt++;
 	RFILE(io)->fptr = ofp;

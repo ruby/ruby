@@ -8,6 +8,20 @@ Mon Nov 29 13:13:13 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c (CreateChild): push back the last space before next
 	  loop because CharNext() eats it.
 
+Mon Nov 29 03:08:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (convert_type): [ruby-core:03845]
+
+	* eval.c (rb_funcall_rescue): new function.
+
+	* object.c (rb_Array): avoid using rb_respond_to().
+
+	* object.c (rb_Integer): ditto.
+
+	* eval.c (get_backtrace): no conversion for nil.
+
+	* parse.y (reduce_nodes): empty body should return nil.
+
 Mon Nov 29 01:18:18 2004  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (rb_io_check_writable): call io_seek regardless of
@@ -52,6 +66,10 @@ Sun Nov 28 12:05:48 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 	* regcomp.c, regint.h: fixed PLATFORM_UNALIGNED_WORD_ACCESS
 	problem ([ruby-dev:24802] and [ruby-core:3733])
 
+Sat Nov 27 23:43:39 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_initialize): [ruby-dev:24972]
+
 Sat Nov 27 21:43:39 2004  Tanaka Akira  <akr@m17n.org>
 
 	* io.c: avoid data lost with nonblocking fd and
@@ -88,6 +106,10 @@ Sat Nov 27 17:21:30 2004  Kouhei Sutou  <kou@cozmixng.org>
 	* sample/rss/list_description.rb: untabified.
 
 	* sample/rss/rss_recent.rb: ditto.
+
+Sat Nov 27 14:44:15 2004  Kent Sibilev  <ksibilev@bellsouth.net>	
+
+	* lib/cgi/session.rb (CGI::Session::initialize): [ruby-core:03832]
 
 Sat Nov 27 09:41:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

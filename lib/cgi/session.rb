@@ -246,7 +246,7 @@ class CGI
       id = option['session_id']
       unless id
 	if option['new_session']
-	  id = Session::create_new_id
+	  id = create_new_id
 	end
       end
       unless id
@@ -261,7 +261,7 @@ class CGI
 	  if option.key?('new_session') and not option['new_session']
 	    raise ArgumentError, "session_key `%s' should be supplied"%session_key
 	  end
-	  id = Session::create_new_id
+	  id = create_new_id
 	end
       end
       @session_id = id
