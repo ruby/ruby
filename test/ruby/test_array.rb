@@ -98,4 +98,32 @@ class TestArray < Test::Unit::TestCase
     x.concat(x)
     assert_equal([1,2,3,1,2,3], x)
   end
+
+  def test_beg_end
+    x = [1, 2, 3, 4, 5]
+    
+    assert_equal(1, x.first)
+    assert_equal([1], x.first(1))
+    assert_equal([1, 2, 3], x.first(3))
+    
+    assert_equal(5, x.last)
+    assert_equal([5], x.last(1))
+    assert_equal([3, 4, 5], x.last(3))
+    
+    assert_equal(1, x.shift)
+    assert_equal([2, 3, 4], x.shift(3))
+    assert_equal([5], x)
+    
+    assert_equal([2, 3, 4, 5], x.unshift(2, 3, 4))
+    assert_equal([1, 2, 3, 4, 5], x.unshift(1))
+    assert_equal([1, 2, 3, 4, 5], x)
+    
+    assert_equal(5, x.pop)
+    assert_equal([3, 4], x.pop(2))
+    assert_equal([1, 2], x)
+    
+    assert_equal([1, 2, 3, 4], x.push(3, 4))
+    assert_equal([1, 2, 3, 4, 5], x.push(5))
+    assert_equal([1, 2, 3, 4, 5], x)
+  end
 end
