@@ -1,3 +1,8 @@
+Mon Dec 27 14:36:20 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* process.c (NUM2RLIM, RLIM2NUM): Without SIZEOF_RLIM_T is not error.
+	  fixed: [ruby-dev:25346]
+
 Sun Dec 26 16:21:39 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (Net::IMAP::PlainAuthenticator): added a new class

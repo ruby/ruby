@@ -1952,8 +1952,6 @@ proc_setpriority(obj, which, who, prio)
 #elif SIZEOF_RLIM_T == SIZEOF_LONG_LONG
 # define RLIM2NUM(v) ULL2NUM(v)
 # define NUM2RLIM(v) NUM2ULL(v)
-#else
-# error cannot find an integer type which size is same as rlim_t.
 #endif
 
 /*
@@ -1978,7 +1976,7 @@ proc_setpriority(obj, which, who, prio)
 static VALUE
 proc_getrlimit(VALUE obj, VALUE resource)
 {
-#ifdef HAVE_GETRLIMIT
+#if defined(HAVE_GETRLIMIT) && defined(RLIM2NUM)
     struct rlimit rlim;
 
     rb_secure(2);
@@ -2025,7 +2023,7 @@ proc_getrlimit(VALUE obj, VALUE resource)
 static VALUE
 proc_setrlimit(VALUE obj, VALUE resource, VALUE rlim_cur, VALUE rlim_max)
 {
-#ifdef HAVE_SETRLIMIT
+#if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
     struct rlimit rlim;
 
     rb_secure(2);
@@ -3728,7 +3726,7 @@ Init_process()
 #ifdef HAVE_SETRLIMIT
     rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, 3);
 #endif
-#ifdef HAVE_RLIM_T
+#ifdef RLIM2NUM
 #ifdef RLIM_INFINITY
     rb_define_const(rb_mProcess, "RLIM_INFINITY", RLIM2NUM(RLIM_INFINITY));
 #endif
