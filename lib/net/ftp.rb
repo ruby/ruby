@@ -689,7 +689,7 @@ module Net
       return resp[3..-1].strip.to_i
     end
     
-    MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)$/  # :nodoc:
+    MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)/  # :nodoc:
     
     #
     # Returns the last modification time of the (remote) file.  If +local+ is
