@@ -252,18 +252,20 @@ ossl_rsa_to_der(VALUE self)
 #define ossl_rsa_buf_size(pkey) (RSA_size((pkey)->pkey.rsa)+16)
 
 static VALUE
-ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
+ossl_rsa_public_encrypt(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    int buf_len;
-    VALUE str;
-	
+    int buf_len, pad;
+    VALUE str, buffer, padding;
+
     GetPKeyRSA(self, pkey);
+    rb_scan_args(argc, argv, "11", &buffer, &padding);
+    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
     buf_len = RSA_public_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
 				 RSTRING(str)->ptr, pkey->pkey.rsa,
-				 RSA_PKCS1_PADDING);
+				 pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
     RSTRING(str)->len = buf_len;
     RSTRING(str)->ptr[buf_len] = 0;
@@ -272,41 +274,20 @@ ossl_rsa_public_encrypt(VALUE self, VALUE buffer)
 }
 
 static VALUE
-ossl_rsa_public_decrypt(VALUE self, VALUE buffer)
+ossl_rsa_public_decrypt(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    int buf_len;
-    VALUE str;
+    int buf_len, pad;
+    VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
+    rb_scan_args(argc, argv, "11", &buffer, &padding);
+    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
     buf_len = RSA_public_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
 				 RSTRING(str)->ptr, pkey->pkey.rsa,
-				 RSA_PKCS1_PADDING);
-    if(buf_len < 0) ossl_raise(eRSAError, NULL);
-    RSTRING(str)->len = buf_len;
-    RSTRING(str)->ptr[buf_len] = 0;
-    
-    return str;
-}
-
-static VALUE
-ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
-{
-    EVP_PKEY *pkey;
-    int buf_len;
-    VALUE str;
-	
-    GetPKeyRSA(self, pkey);
-    if (!RSA_PRIVATE(pkey->pkey.rsa)) {
-	ossl_raise(eRSAError, "PRIVATE key needed for this operation!");
-    }	
-    StringValue(buffer);
-    str = rb_str_new(0, ossl_rsa_buf_size(pkey));
-    buf_len = RSA_private_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
-				  RSTRING(str)->ptr, pkey->pkey.rsa,
-				  RSA_PKCS1_PADDING);
+				 pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
     RSTRING(str)->len = buf_len;
     RSTRING(str)->ptr[buf_len] = 0;
@@ -315,21 +296,48 @@ ossl_rsa_private_encrypt(VALUE self, VALUE buffer)
 }
 
 static VALUE
-ossl_rsa_private_decrypt(VALUE self, VALUE buffer)
+ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
 {
     EVP_PKEY *pkey;
-    int buf_len;
-    VALUE str;
+    int buf_len, pad;
+    VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
     if (!RSA_PRIVATE(pkey->pkey.rsa)) {
-	ossl_raise(eRSAError, "Private RSA key needed!");
+	ossl_raise(eRSAError, "private key needed.");
+    }	
+    rb_scan_args(argc, argv, "11", &buffer, &padding);
+    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
+    StringValue(buffer);
+    str = rb_str_new(0, ossl_rsa_buf_size(pkey));
+    buf_len = RSA_private_encrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
+				  RSTRING(str)->ptr, pkey->pkey.rsa,
+				  pad);
+    if (buf_len < 0) ossl_raise(eRSAError, NULL);
+    RSTRING(str)->len = buf_len;
+    RSTRING(str)->ptr[buf_len] = 0;
+    
+    return str;
+}
+
+static VALUE
+ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
+{
+    EVP_PKEY *pkey;
+    int buf_len, pad;
+    VALUE str, buffer, padding;
+
+    GetPKeyRSA(self, pkey);
+    if (!RSA_PRIVATE(pkey->pkey.rsa)) {
+	ossl_raise(eRSAError, "private key needed.");
     }
+    rb_scan_args(argc, argv, "11", &buffer, &padding);
+    pad = (argc == 1) ? RSA_PKCS1_PADDING : NUM2INT(padding);
     StringValue(buffer);
     str = rb_str_new(0, ossl_rsa_buf_size(pkey));
     buf_len = RSA_private_decrypt(RSTRING(buffer)->len, RSTRING(buffer)->ptr,
 				  RSTRING(str)->ptr, pkey->pkey.rsa,
-				  RSA_PKCS1_PADDING);
+				  pad);
     if (buf_len < 0) ossl_raise(eRSAError, NULL);
     RSTRING(str)->len = buf_len;
     RSTRING(str)->ptr[buf_len] = 0;
@@ -451,6 +459,8 @@ OSSL_PKEY_BN(rsa, iqmp);
 /*
  * INIT
  */
+#define DefRSAConst(x) rb_define_const(cRSA, #x,INT2FIX(RSA_##x))
+
 void
 Init_ossl_rsa()
 {
@@ -469,10 +479,10 @@ Init_ossl_rsa()
     rb_define_alias(cRSA, "to_s", "export");
     rb_define_method(cRSA, "to_der", ossl_rsa_to_der, 0);
     rb_define_method(cRSA, "public_key", ossl_rsa_to_public_key, 0);
-    rb_define_method(cRSA, "public_encrypt", ossl_rsa_public_encrypt, 1);
-    rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, 1);
-    rb_define_method(cRSA, "private_encrypt", ossl_rsa_private_encrypt, 1);
-    rb_define_method(cRSA, "private_decrypt", ossl_rsa_private_decrypt, 1);
+    rb_define_method(cRSA, "public_encrypt", ossl_rsa_public_encrypt, -1);
+    rb_define_method(cRSA, "public_decrypt", ossl_rsa_public_decrypt, -1);
+    rb_define_method(cRSA, "private_encrypt", ossl_rsa_private_encrypt, -1);
+    rb_define_method(cRSA, "private_decrypt", ossl_rsa_private_decrypt, -1);
 
     DEF_OSSL_PKEY_BN(cRSA, rsa, n);
     DEF_OSSL_PKEY_BN(cRSA, rsa, e);
@@ -484,6 +494,11 @@ Init_ossl_rsa()
     DEF_OSSL_PKEY_BN(cRSA, rsa, iqmp);
 
     rb_define_method(cRSA, "params", ossl_rsa_get_params, 0);
+
+    DefRSAConst(PKCS1_PADDING);
+    DefRSAConst(SSLV23_PADDING);
+    DefRSAConst(NO_PADDING);
+    DefRSAConst(PKCS1_OAEP_PADDING);
 
 /*
  * TODO: Test it

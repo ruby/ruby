@@ -1,3 +1,16 @@
+Mon Dec  6 01:42:08 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_pkey_rsa.c (ossl_rsa_public_encrypt,
+	  ossl_rsa_public_decrypt, ossl_rsa_private_encrypt,
+	  ossl_rsa_private_decrypt): should take an optional argument
+	  to specify padding mode. [ruby-talk:122539]
+
+	* ext/openssl/ossl_pkey_rsa.c (Init_ossl_rsa): add new constants
+	  PKCS1_PADDING, SSLV23_PADDING, NO_PADDING and PKCS1_OAEP_PADDING
+	  under OpenSSL::PKey::RSA.
+
+	* test/openssl/test_pkey_rsa.rb: new file.
+
 Sun Dec  5 19:39:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Completion#complete): new parameter
@@ -638,7 +651,7 @@ Wed Nov  3 22:32:12 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* process.c: On NetBSD don't use setruid() and setrgid().
 
-Wed Nov  3 22:24:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Wed Nov  3 22:24:17 2004  Daigo Moriwaki  <techml@sgtpepper.net>
 
 	* lib/webrick/httpauth/digestauth.rb: use Base64.encode64 to
 	  avoid warnings.
