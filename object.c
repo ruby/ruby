@@ -1283,6 +1283,11 @@ rb_mod_le(mod, arg)
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
 
+    if (FL_TEST(mod, FL_SINGLETON)) {
+	if (RCLASS(mod)->m_tbl == RCLASS(arg)->m_tbl)
+	    return Qtrue;
+	mod = RBASIC(mod)->klass;
+    }
     while (mod) {
 	if (RCLASS(mod)->m_tbl == RCLASS(arg)->m_tbl)
 	    return Qtrue;
