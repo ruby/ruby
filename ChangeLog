@@ -1,3 +1,9 @@
+Wed Mar 16 18:08:32 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): reorganize "return" event post.
+
+	* eval.c (return_jump): no need to post "return" event here.
+
 Tue Mar 15 23:49:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/iconv.c (Init_iconv): InvalidEncoding also should include
@@ -23,6 +29,11 @@ Mon Mar 14 12:21:03 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb (TkRTTimer): forgot to reset the callback
 	  time. So, 'continue' do all callbacks between 'stop' and 'continue'.
+
+Mon Mar 14 08:14:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (str_to_id): raise ArgumentError for NUL containing
+	  strings.
 
 Mon Mar 14 00:13:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -64,6 +75,11 @@ Sun Mar 13 02:09:03 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/ossl_ssl.c (ossl_tmp_dh_callback): ditto.
 	  (ossl_call_tmp_dh_callback): ditto
 
+Fri Mar 11 03:24:59 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (primary): wrong var node was set for NODE_LAMBDA.
+	  [ruby-core:04555]
+
 Thu Mar 10 19:10:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (lib_eventloop_ensure): mis-delete a timer handler
@@ -82,6 +98,16 @@ Thu Mar 10 19:10:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tktextio.rb: add test part of "seek by text index
 	  modifiers"
+
+Thu Mar 10 08:10:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (make_regexp): need to free internal regexp structure when
+	  compilation fails.  [ruby-talk:133228]
+
+Thu Mar 10 01:08:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (bv_decl): remove initialize rule from block local
+	  variable declaration.
 
 Wed Mar  9 23:55:34 2005  Tanaka Akira  <akr@m17n.org>
 

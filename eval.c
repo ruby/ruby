@@ -4591,10 +4591,6 @@ return_jump(retval)
 	{ 
 	    tt->dst = (VALUE)tt->frame->uniq;
 	    tt->retval = retval;
-	    if (trace_func) {
-		struct FRAME *f = tt->frame;
-		call_trace_func("return", f->node, f->self, f->this_func, f->this_class);
-	    }
 	    JUMP_TAG(TAG_RETURN);
 	}
 	if (tt->tag == PROT_THREAD) {
@@ -5548,6 +5544,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     int itr;
     static int tick;
     volatile VALUE args;
+    volatile int trace_status = 0; /* 0:none 1:cfunc 2:rfunc */
     TMP_PROTECT;
 
     switch (ruby_iter->iter) {
@@ -5589,21 +5586,10 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		       len, rb_class2name(klass), rb_id2name(id));
 	    }
 	    if (trace_func) {
-		int state;
-
 		call_trace_func("c-call", ruby_current_node, recv, id, klass);
-		PUSH_TAG(PROT_FUNC);
-		if ((state = EXEC_TAG()) == 0) {
-		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
-		}
-		POP_TAG();
-		ruby_current_node = ruby_frame->node;
-		call_trace_func("c-return", ruby_current_node, recv, id, klass);
-		if (state) JUMP_TAG(state);
+		trace_status = 1; /* cfunc */
 	    }
-	    else {
-		result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
-	    }
+	    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 	}
 	break;
 
@@ -5730,11 +5716,9 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 		if (trace_func) {
 		    call_trace_func("call", b2, recv, id, klass);
+		    trace_status = 2; /* rfunc */
 		}
 		result = rb_eval(recv, body);
-		if (trace_func) {
-		    call_trace_func("return", body, recv, id, klass);
-		}
 	    }
 	    else if (state == TAG_RETURN && TAG_DST()) {
 		result = prot_tag->retval;
@@ -5745,6 +5729,15 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
+	    switch (trace_status) {
+	      case 0: break;	/* none  */
+	      case 1: 		/* cfunc */
+		call_trace_func("c-return", body, recv, id, klass);
+		break;
+	      case 2: 		/* rfunc */
+		call_trace_func("return", body, recv, id, klass);
+		break;
+	    }
 	    switch (state) {
 	      case 0:
 		break;

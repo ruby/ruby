@@ -2538,7 +2538,10 @@ primary		: literal
 		  '}'
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA($3, dyna_init($5, $<vars>4));
+			$3->nd_body = block_append($3->nd_body,
+						   dyna_init($5, $<vars>4));
+			$$ = $3;
+		        nd_set_type($3, NODE_LAMBDA);
 			nd_set_line($$, $<num>1);
 			dyna_pop($<vars>2);
 		    /*%
@@ -3172,14 +3175,6 @@ bv_decl		:  tIDENTIFIER
 		    {
 		    /*%%%*/
                         $$ = new_bv($1, NEW_NIL());
-		    /*%
-			$$ = FIXME;
-		    %*/
-		    }
-		| tIDENTIFIER '=' primary
-		    {
-		    /*%%%*/
-                        $$ = new_bv($1, $3);
 		    /*%
 			$$ = FIXME;
 		    %*/

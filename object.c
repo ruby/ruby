@@ -1567,6 +1567,9 @@ str_to_id(str)
     if (!RSTRING(str)->ptr || RSTRING(str)->len == 0) {
 	rb_raise(rb_eArgError, "empty symbol string");
     }
+    if (RSTRING(str)->len != strlen(RSTRING(str)->ptr)) {
+	rb_raise(rb_eArgError, "Symbols should not contain NUL (\\0)");
+    }
     return rb_intern(RSTRING(str)->ptr);
 }
 

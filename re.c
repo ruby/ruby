@@ -657,6 +657,7 @@ make_regexp(s, len, flags, ce)
     r = onig_compile(rp, (UChar* )s, (UChar* )(s + len), &einfo);
 
     if (r != 0) {
+	onig_free(rp);
 	(void )onig_error_code_to_str((UChar* )err, r, &einfo);
 	rb_reg_raise(s, len, err, 0, ce);
     }
@@ -1893,11 +1894,12 @@ rb_reg_quote(str)
 
 /*
  *  call-seq:
- *     Regexp.escape(str)   => new_str
- *     Regexp.quote(str)    => new_str
+ *     Regexp.escape(str)   => a_str
+ *     Regexp.quote(str)    => a_str
  *  
  *  Escapes any characters that would have special meaning in a regular
- *  expression. For any string,
+ *  expression. Returns a new escaped string, or self if no characters are
+ *  escaped.  For any string,
  *  <code>Regexp.escape(<i>str</i>)=~<i>str</i></code> will be true.
  *     
  *     Regexp.escape('\\*?{}.')   #=> \\\\\*\?\{\}\.
