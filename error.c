@@ -40,6 +40,7 @@ err_snprintf(buf, len, fmt, args)
 {
     int n;
 
+    ruby_set_current_source();
     if (!ruby_sourcefile) {
 	vsnprintf(buf, len, fmt, args);
 	return;

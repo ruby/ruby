@@ -132,6 +132,8 @@ void rb_compile_error_append __((const char*, ...));
 NORETURN(void rb_load_fail _((char*)));
 NORETURN(void rb_error_frozen _((char*)));
 /* eval.c */
+EXTERN struct RNode *ruby_current_node;
+void ruby_set_current_source _((void));
 NORETURN(void rb_exc_raise _((VALUE)));
 NORETURN(void rb_exc_fatal _((VALUE)));
 void rb_remove_method _((VALUE, const char*));

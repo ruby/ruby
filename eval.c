@@ -119,6 +119,8 @@ static int scope_vmode;
 #define SCOPE_SET(f)  (scope_vmode=(f))
 #define SCOPE_TEST(f) (scope_vmode&(f))
 
+static NODE* ruby_last_node;
+NODE* ruby_current_node;
 int ruby_safe_level = 0;
 /* safe-level:
    0 - strings from streams/environment/ARGV are tainted (default)
@@ -535,8 +537,7 @@ static struct SCOPE *top_scope;
     struct FRAME _frame;		\
     _frame.prev = ruby_frame;		\
     _frame.tmp  = 0;			\
-    _frame.file = ruby_sourcefile;	\
-    _frame.line = ruby_sourceline;	\
+    _frame.node = ruby_current_node;	\
     _frame.iter = ruby_iter->iter;	\
     _frame.cbase = ruby_frame->cbase;	\
     _frame.argc = 0;			\
@@ -545,8 +546,7 @@ static struct SCOPE *top_scope;
     ruby_frame = &_frame
 
 #define POP_FRAME()  			\
-    ruby_sourcefile = _frame.file;	\
-    ruby_sourceline = _frame.line;	\
+    ruby_current_node = _frame.node;	\
     ruby_frame = _frame.prev;		\
 } while (0)
 
@@ -597,8 +597,7 @@ new_blktag()
     _block.self = self;			\
     _block.frame = *ruby_frame;		\
     _block.klass = ruby_class;		\
-    _block.frame.file = ruby_sourcefile;\
-    _block.frame.line = ruby_sourceline;\
+    _block.frame.node = ruby_current_node;\
     _block.scope = ruby_scope;		\
     _block.prev = ruby_block;		\
     _block.iter = ruby_iter->iter;	\
@@ -897,11 +896,24 @@ static void assign _((VALUE,NODE*,VALUE,int));
 
 static VALUE trace_func = 0;
 static int tracing = 0;
-static void call_trace_func _((char*,char*,int,VALUE,ID,VALUE));
+static void call_trace_func _((char*,NODE*,VALUE,ID,VALUE));
+
+#define SET_CURRENT_SOURCE() (ruby_sourcefile = ruby_current_node->nd_file, \
+			      ruby_sourceline = nd_line(ruby_current_node))
+
+void
+ruby_set_current_source()
+{
+    if (ruby_current_node) {
+	ruby_sourcefile = ruby_current_node->nd_file;
+	ruby_sourceline = nd_line(ruby_current_node);
+    }
+}
 
 static void
 error_pos()
 {
+    ruby_set_current_source();
     if (ruby_sourcefile) {
 	if (ruby_frame->last_func) {
 	    fprintf(stderr, "%s:%d:in `%s'", ruby_sourcefile, ruby_sourceline,
@@ -950,6 +962,7 @@ error_print()
     }
     POP_TAG();
     if (NIL_P(errat)){
+	ruby_set_current_source();
 	if (ruby_sourcefile)
 	    fprintf(stderr, "%s:%d", ruby_sourcefile, ruby_sourceline);
 	else
@@ -1152,9 +1165,10 @@ error_handle(ex)
 	ex = 1;
 	break;
       case TAG_THROW:
-	if (prot_tag && prot_tag->frame && prot_tag->frame->file) {
+	if (prot_tag && prot_tag->frame && prot_tag->frame->node) {
+	    NODE *tag = prot_tag->frame->node;
 	    fprintf(stderr, "%s:%d: uncaught throw\n",
-		    prot_tag->frame->file, prot_tag->frame->line);
+		    tag->nd_file, nd_line(tag));
 	}
 	else {
 	    error_pos();
@@ -1268,6 +1282,7 @@ compile_error(at)
 {
     VALUE str;
 
+    ruby_sourcefile = 0;
     ruby_nerrs = 0;
     str = rb_str_buf_new2("compile error");
     if (at) {
@@ -1286,11 +1301,12 @@ rb_eval_string(str)
     const char *str;
 {
     VALUE v;
-    char *oldsrc = ruby_sourcefile;
+    NODE *oldsrc = ruby_current_node;
 
+    ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename("(eval)");
     v = eval(ruby_top_self, rb_str_new2(str), Qnil, 0, 0);
-    ruby_sourcefile = oldsrc;
+    ruby_current_node = oldsrc;
 
     return v;
 }
@@ -1765,8 +1781,6 @@ copy_node_scope(node, rval)
     else if (nd_type(n) == NODE_ARRAY) {\
 	argc=n->nd_alen;\
         if (argc > 0) {\
-	    char *file = ruby_sourcefile;\
-	    int line = ruby_sourceline;\
             int i;\
 	    n = anode;\
 	    argv = TMP_ALLOC(argc);\
@@ -1774,8 +1788,6 @@ copy_node_scope(node, rval)
 		argv[i] = rb_eval(self,n->nd_head);\
 		n=n->nd_next;\
 	    }\
-	    ruby_sourcefile = file;\
-	    ruby_sourceline = line;\
         }\
         else {\
 	    argc = 0;\
@@ -1784,15 +1796,11 @@ copy_node_scope(node, rval)
     }\
     else {\
         VALUE args = rb_eval(self,n);\
-	char *file = ruby_sourcefile;\
-	int line = ruby_sourceline;\
 	if (TYPE(args) != T_ARRAY)\
 	    args = rb_ary_to_ary(args);\
         argc = RARRAY(args)->len;\
 	argv = ALLOCA_N(VALUE, argc);\
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
-	ruby_sourcefile = file;\
-	ruby_sourceline = line;\
     }\
 } while (0)
 
@@ -2063,18 +2071,16 @@ set_trace_func(obj, trace)
 }
 
 static void
-call_trace_func(event, file, line, self, id, klass)
+call_trace_func(event, node, self, id, klass)
     char *event;
-    char *file;
-    int line;
+    NODE *node;
     VALUE self;
     ID id;
     VALUE klass;		/* OK */
 {
     int state;
     struct FRAME *prev;
-    char *file_save = ruby_sourcefile;
-    int line_save = ruby_sourceline;
+    NODE *node_save = ruby_last_node;
     VALUE srcfile;
 
     if (!trace_func) return;
@@ -2087,9 +2093,10 @@ call_trace_func(event, file, line, self, id, klass)
     ruby_frame->prev = prev;
     ruby_frame->iter = 0;	/* blocks not available anyway */
 
-    if (file) {
-	ruby_frame->line = ruby_sourceline = line;
-	ruby_frame->file = ruby_sourcefile = file;
+    if (node) {
+	ruby_current_node = node;
+	ruby_sourcefile = node->nd_file;
+	ruby_sourceline = nd_line(node);
     }
     if (klass) {
 	if (TYPE(klass) == T_ICLASS) {
@@ -2114,8 +2121,7 @@ call_trace_func(event, file, line, self, id, klass)
     POP_FRAME();
 
     tracing = 0;
-    ruby_sourceline = line_save;
-    ruby_sourcefile = file_save;
+    ruby_last_node = node_save;
     if (state) JUMP_TAG(state);
 }
 
@@ -2206,6 +2212,7 @@ rb_eval(self, n)
     VALUE self;
     NODE *n;
 {
+    NODE *nodesave = ruby_current_node;
     NODE * volatile node = n;
     int state;
     volatile VALUE result = Qnil;
@@ -2218,7 +2225,7 @@ rb_eval(self, n)
   again:
     if (!node) RETURN(Qnil);
 
-    ruby_sourceline = nd_line(node);
+    ruby_last_node = ruby_current_node = node;
     switch (nd_type(node)) {
       case NODE_BLOCK:
 	while (node->nd_next) {
@@ -2305,7 +2312,7 @@ rb_eval(self, n)
 
       case NODE_IF:
 	if (trace_func) {
-	    call_trace_func("line", node->nd_file, ruby_sourceline, self,
+	    call_trace_func("line", node, self,
 			    ruby_frame->last_func,
 			    ruby_frame->last_class);	
 	}
@@ -2325,12 +2332,10 @@ rb_eval(self, n)
 	    tag = node->nd_head;
 	    while (tag) {
 		if (trace_func) {
-		    call_trace_func("line", tag->nd_file, nd_line(tag), self,
+		    call_trace_func("line", tag, self,
 				    ruby_frame->last_func,
 				    ruby_frame->last_class);	
 		}
-		ruby_sourcefile = tag->nd_file;
-		ruby_sourceline = nd_line(tag);
 		if (nd_type(tag->nd_head) == NODE_WHEN) {
 		    VALUE v = rb_eval(self, tag->nd_head->nd_head);
 		    int i;
@@ -2370,12 +2375,10 @@ rb_eval(self, n)
 		tag = node->nd_head;
 		while (tag) {
 		    if (trace_func) {
-			call_trace_func("line", tag->nd_file, nd_line(tag), self,
+			call_trace_func("line", tag, self,
 					ruby_frame->last_func,
 					ruby_frame->last_class);	
 		    }
-		    ruby_sourcefile = tag->nd_file;
-		    ruby_sourceline = nd_line(tag);
 		    if (nd_type(tag->nd_head) == NODE_WHEN) {
 			VALUE v = rb_eval(self, tag->nd_head->nd_head);
 			int i;
@@ -2484,15 +2487,13 @@ rb_eval(self, n)
 		}
 		else {
 		    VALUE recv;
-		    char *file = ruby_sourcefile;
-		    int line = ruby_sourceline;
 
 		    _block.flags &= ~BLOCK_D_SCOPE;
 		    BEGIN_CALLARGS;
 		    recv = rb_eval(self, node->nd_iter);
 		    END_CALLARGS;
-		    ruby_sourcefile = file;
-		    ruby_sourceline = line;
+		    ruby_current_node = node;
+		    SET_CURRENT_SOURCE();
 		    result = rb_call(CLASS_OF(recv),recv,each,0,0,0);
 		}
 		POP_ITER();
@@ -2571,6 +2572,7 @@ rb_eval(self, n)
 	else {
 	    result = Qundef;	/* no arg */
 	}
+	SET_CURRENT_SOURCE();
 	result = rb_yield_0(result, 0, 0, 0);
 	break;
 
@@ -2587,8 +2589,8 @@ rb_eval(self, n)
 	    if (state == TAG_RAISE) {
 		NODE * volatile resq = node->nd_resq;
 
-		ruby_sourceline = nd_line(node);
 		while (resq) {
+		    ruby_current_node = resq;
 		    if (handle_rescue(self, resq)) {
 			state = 0;
 			PUSH_TAG(PROT_NONE);
@@ -2740,6 +2742,7 @@ rb_eval(self, n)
 	    SETUP_ARGS(node->nd_args);
 	    END_CALLARGS;
 
+	    SET_CURRENT_SOURCE();
 	    result = rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,0);
 	}
 	break;
@@ -2753,11 +2756,13 @@ rb_eval(self, n)
 	    SETUP_ARGS(node->nd_args);
 	    END_CALLARGS;
 
+	    SET_CURRENT_SOURCE();
 	    result = rb_call(CLASS_OF(self),self,node->nd_mid,argc,argv,1);
 	}
 	break;
 
       case NODE_VCALL:
+	SET_CURRENT_SOURCE();
 	result = rb_call(CLASS_OF(self),self,node->nd_mid,0,0,2);
 	break;
 
@@ -2788,6 +2793,7 @@ rb_eval(self, n)
 	    }
 
 	    PUSH_ITER(ruby_iter->iter?ITER_PRE:ITER_NOT);
+	    SET_CURRENT_SOURCE();
 	    result = rb_call(RCLASS(ruby_frame->last_class)->super,
 			     ruby_frame->self, ruby_frame->orig_func,
 			     argc, argv, 3);
@@ -3002,11 +3008,12 @@ rb_eval(self, n)
 	    switch (TYPE(klass)) {
 	      case T_CLASS:
 	      case T_MODULE:
+		result = rb_const_get(klass, node->nd_mid);
 		break;
 	      default:
-		return rb_funcall(klass, node->nd_mid, 0, 0);
+		result = rb_funcall(klass, node->nd_mid, 0, 0);
+		break;
 	    }
-	    result = rb_const_get(klass, node->nd_mid);
 	}
 	break;
 
@@ -3389,11 +3396,11 @@ rb_eval(self, n)
 	}
 	break;
 
-    case NODE_NEWLINE:
+      case NODE_NEWLINE:
 	ruby_sourcefile = node->nd_file;
 	ruby_sourceline = node->nd_nth;
 	if (trace_func) {
-	    call_trace_func("line", ruby_sourcefile, ruby_sourceline, self,
+	    call_trace_func("line", node, self,
 			    ruby_frame->last_func,
 			    ruby_frame->last_class);	
 	}
@@ -3405,6 +3412,7 @@ rb_eval(self, n)
     }
   finish:
     CHECK_INTS;
+    ruby_current_node = nodesave;
     return result;
 }
 
@@ -3417,8 +3425,7 @@ module_setup(module, n)
     int state;
     struct FRAME frame;
     VALUE result;		/* OK */
-    char *file = ruby_sourcefile;
-    int line = ruby_sourceline;
+    NODE * cnode = ruby_current_node;
     TMP_PROTECT;
 
     frame = *ruby_frame;
@@ -3447,7 +3454,7 @@ module_setup(module, n)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (trace_func) {
-	    call_trace_func("class", file, line, ruby_class,
+	    call_trace_func("class", ruby_current_node, ruby_class,
 			    ruby_frame->last_func,
 			    ruby_frame->last_class);
 	}
@@ -3461,7 +3468,7 @@ module_setup(module, n)
 
     ruby_frame = frame.tmp;
     if (trace_func) {
-	call_trace_func("end", file, line, 0,
+	call_trace_func("end", ruby_last_node, 0,
 			ruby_frame->last_func, ruby_frame->last_class);
     }
     if (state) JUMP_TAG(state);
@@ -3611,6 +3618,7 @@ rb_longjmp(tag, mesg)
 	VALUE e = ruby_errinfo;
 
 	StringValue(e);
+	ruby_set_current_source();
 	fprintf(stderr, "Exception `%s' at %s:%d - %s\n",
 		rb_class2name(CLASS_OF(ruby_errinfo)),
 		ruby_sourcefile, ruby_sourceline,
@@ -3619,7 +3627,7 @@ rb_longjmp(tag, mesg)
 
     rb_trap_restore_mask();
     if (trace_func && tag != TAG_FATAL) {
-	call_trace_func("raise", ruby_sourcefile, ruby_sourceline,
+	call_trace_func("raise", ruby_current_node,
 			ruby_frame->self,
 			ruby_frame->last_func,
 			ruby_frame->last_class);
@@ -3745,8 +3753,7 @@ rb_yield_0(val, self, klass, pcall)
     struct BLOCK * volatile block;
     struct SCOPE * volatile old_scope;
     struct FRAME frame;
-    char *const file = ruby_sourcefile;
-    int line = ruby_sourceline;
+    NODE *cnode = ruby_current_node;
     int state;
     static unsigned serial = 1;
 
@@ -3871,8 +3878,7 @@ rb_yield_0(val, self, klass, pcall)
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;
-    ruby_sourcefile = file;
-    ruby_sourceline = line;
+    ruby_current_node = cnode;
     if (state) {
 	if (!block->tag) {
 	    switch (state & TAG_MASK) {
@@ -3961,6 +3967,7 @@ assign(self, lhs, val, pcall)
     VALUE val;
     int pcall;
 {
+    ruby_current_node = lhs;
     if (val == Qundef) {
 	rb_warning("assigning void value");
 	val = Qnil;
@@ -4013,6 +4020,8 @@ assign(self, lhs, val, pcall)
 	    recv = rb_eval(self, lhs->nd_recv);
 	    if (!lhs->nd_args) {
 		/* attr set */
+		ruby_current_node = lhs;
+		SET_CURRENT_SOURCE();
 		rb_call(CLASS_OF(recv), recv, lhs->nd_mid, 1, &val, 0);
 	    }
 	    else {
@@ -4021,6 +4030,8 @@ assign(self, lhs, val, pcall)
 
 		args = rb_eval(self, lhs->nd_args);
 		rb_ary_push(args, val);
+		ruby_current_node = lhs;
+		SET_CURRENT_SOURCE();
 		rb_call(CLASS_OF(recv), recv, lhs->nd_mid,
 			RARRAY(args)->len, RARRAY(args)->ptr, 0);
 	    }
@@ -4279,8 +4290,7 @@ rb_f_missing(argc, argv, obj)
     volatile VALUE d = 0;
     char *format = 0;
     char *desc = "";
-    char *file = ruby_sourcefile;
-    int   line = ruby_sourceline;
+    NODE *cnode = ruby_current_node;
 
     if (argc == 0 || !SYMBOL_P(argv[0])) {
 	rb_raise(rb_eArgError, "no id given");
@@ -4332,8 +4342,7 @@ rb_f_missing(argc, argv, obj)
 	format = "undefined method `%s' for %s%s%s";
     }
 
-    ruby_sourcefile = file;
-    ruby_sourceline = line;
+    ruby_current_node = cnode;
     PUSH_FRAME();		/* fake frame */
     *ruby_frame = *_frame.prev->prev;
     {
@@ -4517,20 +4526,14 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    }
 	    if (trace_func) {
 		int state;
-		char *file = ruby_frame->prev->file;
-		int line = ruby_frame->prev->line;
-		if (!file) {
-		    file = ruby_sourcefile;
-		    line = ruby_sourceline;
-		}
 
-		call_trace_func("c-call", 0, 0, recv, id, klass);
+		call_trace_func("c-call", ruby_current_node, recv, id, klass);
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
 		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
 		}
 		POP_TAG();
-		call_trace_func("c-return", 0, 0, recv, id, klass);
+		call_trace_func("c-return", ruby_current_node, recv, id, klass);
 		if (state) JUMP_TAG(state);
 	    }
 	    else {
@@ -4640,8 +4643,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 				opt = opt->nd_next;
 			    }
 			    if (opt) {
-				ruby_sourcefile = opt->nd_file;
-				ruby_sourceline = nd_line(opt);
 				rb_eval(recv, opt);
 			    }
 			}
@@ -4659,9 +4660,9 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		}
 
 		if (trace_func) {
-		    call_trace_func("call", b2->nd_file, nd_line(b2),
-				    recv, id, klass);
+		    call_trace_func("call", b2, recv, id, klass);
 		}
+		ruby_last_node = b2;
 		result = rb_eval(recv, body);
 	    }
 	    else if (state == TAG_RETURN) {
@@ -4673,13 +4674,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
 	    if (trace_func) {
-		char *file = ruby_frame->prev->file;
-		int line = ruby_frame->prev->line;
-		if (!file) {
-		    file = ruby_sourcefile;
-		    line = ruby_sourceline;
-		}
-		call_trace_func("return", file, line, recv, id, klass);
+		call_trace_func("return", ruby_last_node, recv, id, klass);
 	    }
 	    switch (state) {
 	      case 0:
@@ -4883,9 +4878,11 @@ backtrace(lev)
     struct FRAME *frame = ruby_frame;
     char buf[BUFSIZ];
     VALUE ary;
+    NODE *n;
 
     ary = rb_ary_new();
     if (lev < 0) {
+	ruby_set_current_source();
 	if (frame->last_func) {
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     ruby_sourcefile, ruby_sourceline,
@@ -4908,14 +4905,14 @@ backtrace(lev)
 	    }
 	}
     }
-    while (frame && frame->file) {
+    while (frame && (n = frame->node)) {
 	if (frame->prev && frame->prev->last_func) {
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
-		     frame->file, frame->line,
+		     n->nd_file, nd_line(n),
 		     rb_id2name(frame->prev->last_func));
 	}
 	else {
-	    snprintf(buf, BUFSIZ, "%s:%d", frame->file, frame->line);
+	    snprintf(buf, BUFSIZ, "%s:%d", n->nd_file, nd_line(n));
 	}
 	rb_ary_push(ary, rb_str_new2(buf));
 	frame = frame->prev;
@@ -4996,8 +4993,7 @@ eval(self, src, scope, file, line)
     int volatile old_vmode;
     volatile VALUE old_wrapper;
     struct FRAME frame;
-    char *filesave = ruby_sourcefile;
-    int linesave = ruby_sourceline;
+    NODE *nodesave = ruby_current_node;
     volatile int iter = ruby_frame->iter;
     int state;
 
@@ -5039,6 +5035,8 @@ eval(self, src, scope, file, line)
 	}
     }
     if (file == 0) {
+	ruby_set_current_source();
+	ruby_current_node = 0;
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }
@@ -5099,8 +5097,8 @@ eval(self, src, scope, file, line)
     else {
 	ruby_frame->iter = iter;
     }
-    ruby_sourcefile = filesave;
-    ruby_sourceline = linesave;
+    ruby_current_node = nodesave;
+    ruby_set_current_source();
     if (state) {
 	if (state == TAG_RAISE) {
 	    VALUE err;
@@ -7274,8 +7272,7 @@ struct thread {
 
     int flags;		/* misc. states (vmode/rb_trap_immediate/raised) */
 
-    char *file;
-    int   line;
+    NODE *node;
 
     int tracing;
     VALUE errinfo;
@@ -7473,8 +7470,7 @@ static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
 
 static int   th_raise_argc;
 static VALUE th_raise_argv[2];
-static char *th_raise_file;
-static int   th_raise_line;
+static NODE *th_raise_node;
 static VALUE th_cmd;
 static int   th_sig;
 static char *th_signm;
@@ -7530,8 +7526,7 @@ rb_thread_save_context(th)
     th->last_match = tval;
     th->safe = ruby_safe_level;
 
-    th->file = ruby_sourcefile;
-    th->line = ruby_sourceline;
+    th->node = ruby_current_node;
 }
 
 static int
@@ -7553,8 +7548,7 @@ thread_switch(n)
 	break;
       case RESTORE_RAISE:
 	ruby_frame->last_func = 0;
-	ruby_sourcefile = th_raise_file;
-	ruby_sourceline = th_raise_line;
+	ruby_current_node = th_raise_node;
 	rb_f_raise(th_raise_argc, th_raise_argv);
 	break;
       case RESTORE_SIGNAL:
@@ -7620,8 +7614,7 @@ rb_thread_restore_context(th, exit)
     rb_last_status = th->last_status;
     ruby_safe_level = th->safe;
 
-    ruby_sourcefile = th->file;
-    ruby_sourceline = th->line;
+    ruby_current_node = th->node;
 
     tmp = th;
     ex = exit;
@@ -7692,8 +7685,7 @@ rb_thread_deadlock()
     curr_thread = main_thread;
     th_raise_argc = 1;
     th_raise_argv[0] = rb_exc_new2(rb_eFatal, "Thread: deadlock");
-    th_raise_file = ruby_sourcefile;
-    th_raise_line = ruby_sourceline;
+    th_raise_node = ruby_current_node;
     rb_thread_restore_context(main_thread, RESTORE_RAISE);
 }
 
@@ -7957,13 +7949,12 @@ rb_thread_schedule()
 
     if (!next) {
 	/* raise fatal error to main thread */
-	curr_thread->file = ruby_sourcefile;
-	curr_thread->line = ruby_sourceline;
+	curr_thread->node = ruby_current_node;
 	FOREACH_THREAD_FROM(curr, th) {
 	    fprintf(stderr, "deadlock 0x%lx: %d:%d %s - %s:%d\n", 
 		    th->thread, th->status,
 		    th->wait_for, th==main_thread ? "(main)" : "",
-		    th->file, th->line);
+		    th->node->nd_file, nd_line(th->node));
 	}
 	END_FOREACH_FROM(curr, th);
 	next = main_thread;
@@ -8939,8 +8930,7 @@ rb_thread_raise(argc, argv, th)
     curr_thread = th;
 
     th_raise_argc = argc;
-    th_raise_file = ruby_sourcefile;
-    th_raise_line = ruby_sourceline;
+    th_raise_node = ruby_current_node;
     rb_thread_restore_context(curr_thread, RESTORE_RAISE);
     return Qnil;		/* not reached */
 }

@@ -475,7 +475,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 				$$ = $1;
 				$$->nd_value = call_op(gettable(vid),$2,1,$3);
 			    }
-			    fixpos($$, $3);
 			}
 			else {
 			    $$ = 0;
@@ -842,7 +841,6 @@ arg		: lhs '=' arg
 				$$ = $1;
 				$$->nd_value = call_op(gettable(vid),$2,1,$3);
 			    }
-			    fixpos($$, $3);
 			}
 			else {
 			    $$ = 0;
@@ -2372,6 +2370,7 @@ yycompile(f, line)
     lex_strterm = 0;
     lex_strnest = 0;
     quoted_term = -1;
+    ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
     ruby_in_compile = 1;
     n = yyparse();
@@ -4738,7 +4737,6 @@ node_assign(lhs, rhs)
 	break;
     }
 
-    if (rhs) fixpos(lhs, rhs);
     return lhs;
 }
 

@@ -23,8 +23,7 @@ extern struct FRAME {
     VALUE cbase;
     struct FRAME *prev;
     struct FRAME *tmp;
-    char *file;
-    int line;
+    struct RNode *node;
     int iter;
     int flags;
 } *ruby_frame;
