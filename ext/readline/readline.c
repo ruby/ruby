@@ -653,7 +653,7 @@ username_completion_proc_call(self, str)
 void
 Init_readline()
 {
-    VALUE histary, fcomp, ucomp;
+    VALUE history, fcomp, ucomp;
 
     /* Allow conditional parsing of the ~/.inputrc file. */
     rl_readline_name = "Ruby";
@@ -700,22 +700,22 @@ Init_readline()
     rb_define_singleton_method(mReadline, "filename_quote_characters",
 			       readline_s_get_filename_quote_characters, 0);
 
-    histary = rb_obj_alloc(rb_cObject);
-    rb_extend_object(histary, rb_mEnumerable);
-    rb_define_singleton_method(histary,"to_s", hist_to_s, 0);
-    rb_define_singleton_method(histary,"[]", hist_get, 1);
-    rb_define_singleton_method(histary,"[]=", hist_set, 2);
-    rb_define_singleton_method(histary,"<<", hist_push, 1);
-    rb_define_singleton_method(histary,"push", hist_push_method, -1);
-    rb_define_singleton_method(histary,"pop", hist_pop, 0);
-    rb_define_singleton_method(histary,"shift", hist_shift, 0);
-    rb_define_singleton_method(histary,"each", hist_each, 0);
-    rb_define_singleton_method(histary,"length", hist_length, 0);
-    rb_define_singleton_method(histary,"size", hist_length, 0);
+    history = rb_obj_alloc(rb_cObject);
+    rb_extend_object(history, rb_mEnumerable);
+    rb_define_singleton_method(history,"to_s", hist_to_s, 0);
+    rb_define_singleton_method(history,"[]", hist_get, 1);
+    rb_define_singleton_method(history,"[]=", hist_set, 2);
+    rb_define_singleton_method(history,"<<", hist_push, 1);
+    rb_define_singleton_method(history,"push", hist_push_method, -1);
+    rb_define_singleton_method(history,"pop", hist_pop, 0);
+    rb_define_singleton_method(history,"shift", hist_shift, 0);
+    rb_define_singleton_method(history,"each", hist_each, 0);
+    rb_define_singleton_method(history,"length", hist_length, 0);
+    rb_define_singleton_method(history,"size", hist_length, 0);
 
-    rb_define_singleton_method(histary,"empty?", hist_empty_p, 0);
-    rb_define_singleton_method(histary,"delete_at", hist_delete_at, 1);
-    rb_define_const(mReadline, "HISTORY", histary);
+    rb_define_singleton_method(history,"empty?", hist_empty_p, 0);
+    rb_define_singleton_method(history,"delete_at", hist_delete_at, 1);
+    rb_define_const(mReadline, "HISTORY", history);
 
     fcomp = rb_obj_alloc(rb_cObject);
     rb_define_singleton_method(fcomp, "call",
