@@ -6235,8 +6235,7 @@ yylex()
 		result = tFID;
 	    } else {
 		result = tIDENTIFIER;
-		if (lex_state == EXPR_FNAME) {
-		    /* lex_state = EXPR_END; */
+		if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 		    if ((c = nextc()) == '=') {
 			tokadd(c);
 		    }
@@ -6246,7 +6245,7 @@ yylex()
 		}
 	    }
 	    if (lex_state == EXPR_BEG ||
-		lex_state == EXPR_FNAME ||
+		lex_state == EXPR_DOT ||
 		lex_state == EXPR_ARG){
 		lex_state = EXPR_ARG;
 	    }
