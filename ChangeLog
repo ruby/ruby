@@ -1,3 +1,8 @@
+Mon Apr 14 19:45:56 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* file.c (file_expand_path): root must follow buf when
+	  reallocated.  [ruby-talk:69339], [ruby-dev:20025]
+
 Mon Apr 14 03:22:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* rubyio.h (struct OpenFile): add error raise flag to finalizer.

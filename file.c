@@ -1677,7 +1677,9 @@ file_expand_path(fname, dname, result)
 	  case '\\':
 #endif
 	    if (s > b) {
+		long rootdiff = root - buf;
 		BUFCHECK(p + (s-b+1) >= pend);
+		root = buf + rootdiff;
 		memcpy(++p, b, s-b);
 		p += s-b;
 		*p = '/';
