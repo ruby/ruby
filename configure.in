@@ -504,12 +504,7 @@ if test "$with_dln_a_out" != yes; then
     beos*)	;;
     cygwin*)	;;
     mingw*)	;;
-    netbsd*) CCDLFLAGS=-fpic
-     case "$target_cpu" in
-     mips*) CCDLFLAGS=-fPIC ;;
-     sparc) CCDLFLAGS=-fPIC ;;
-     *) ;;
-     esac ;;
+    netbsd*) CCDLFLAGS=-fPIC;;
     *) CCDLFLAGS=-fPIC;;
     esac
   else
@@ -556,10 +551,8 @@ if test "$with_dln_a_out" != yes; then
 			  test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null || LDSHARED="ld -Bshareable"
 			fi
 			rb_cv_dlopen=yes ;;
-	netbsd*)	LDSHARED="ld -shared"
-			if test "$rb_cv_binary_elf" = yes; then
-                          LDFLAGS="-export-dynamic"
-			fi
+	netbsd*)	LDSHARED='${CC} -shared'
+			LDFLAGS=""
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
 			rb_cv_dlopen=yes ;;
@@ -826,11 +819,13 @@ if test "$enable_shared" = 'yes'; then
 	;;
     netbsd*)
 	SOLIBS='$(LIBS)'
-	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
+	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR).$(TEENY)'
+	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR)'
+	LIBRUBYARG='-Wl,-R -Wl,${prefix}/lib -L${prefix}/lib -L. -l$(RUBY_INSTALL_NAME) -Wl,-R -Wl,${X11BASE}/lib -L${X11BASE}/lib'
 	if test "$rb_cv_binary_elf" = yes; then # ELF platforms
-	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR) lib$(RUBY_INSTALL_NAME).so'
-	else
-	   LIBRUBY_ALIASES=  # a.out platforms
+	   LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR)$(MINOR) lib$(RUBY_INSTALL_NAME).so'
+	else	# a.out platforms
+	   LIBRUBY_ALIASES=""
 	fi
  	;;
     openbsd*)
@@ -874,6 +869,9 @@ if test "$enable_shared" = 'yes'; then
 fi
 
 case "$target_os" in
+    netbsd*)
+    	CFLAGS="$CFLAGS -pipe"
+	;;
     nextstep*)
     	CFLAGS="$CFLAGS -pipe"
 	;;
