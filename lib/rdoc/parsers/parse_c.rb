@@ -596,7 +596,7 @@ module RDoc
     def do_includes
       @body.scan(/rb_include_module\s*\(\s*(\w+?),\s*(\w+?)\s*\)/) do |c,m|
         if cls = @classes[c]
-          m = KNOWN_CLASSES[m] || m
+          m = @known_classes[m] || m
           cls.add_include(Include.new(m, ""))
         end
       end

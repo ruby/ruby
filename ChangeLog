@@ -1,7 +1,16 @@
+Fri Mar  4 19:39:28 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#do_includes): replace
+	  also locally defined modules.
+
+	* ext/iconv/iconv.c: backport Iconv::InvalidEncoding from CVS HEAD.
+
+	* ext/strscan/strscan.c: moved misplaced rdoc.
+
 Fri Mar  4 11:17:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_rbUpdateCommand): get rid of
-	  warnings with Tcl/Tk 8.3 or former (backport from CVS_HEAD). 
+	  warnings with Tcl/Tk 8.3 or former (backport from CVS_HEAD).
 
 	* ext/tcltklib/tcltklib.c (ip_rb_threadUpdateCommand): ditto.
 
@@ -12,11 +21,11 @@ Fri Mar  4 10:15:30 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Mar  4 07:07:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.63
+	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.63
 
 Thu Mar  3 23:49:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.62
+	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.62
 
 Thu Mar  3 11:49:51 2005  Kouhei Sutou  <kou@cozmixng.org>
 
