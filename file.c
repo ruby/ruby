@@ -1364,6 +1364,48 @@ rb_file_s_umask(argc, argv)
 # endif
 #endif
 
+#if defined(DOSISH_DRIVE_LETTER) || defined(__CYGWIN__)
+static inline int
+has_drive_letter(buf)
+    char *buf;
+{
+    if (ISALPHA(buf[0]) && buf[1] == ':') {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
+
+static void
+getcwdofdrv(drv, buf, len)
+    int drv;
+    char *buf;
+    int len;
+{
+    char drive[4];
+    char oldcwd[MAXPATHLEN+1];
+
+    drive[0] = drv;
+    drive[1] = ':';
+    drive[2] = '\0';
+
+    /* the only way that I know to get the current directory
+       of a particular drive is to change chdir() to that drive,
+       so save the old cwd before chdir()
+    */
+    getcwd(oldcwd, MAXPATHLEN);
+    if (chdir(drive) == 0) {
+	getcwd(buf, len);
+	chdir(oldcwd);
+    }
+    else {
+	/* perhaps the drive is not exist. we return only drive letter */
+	strncpy(buf, drive, len);
+    }
+}
+#endif
+
 static char *
 strrdirsep(path)
     char *path;
@@ -1388,6 +1430,12 @@ strrdirsep(path)
     p = buf + bdiff;\
     pend = buf + buflen;\
 }
+
+#if !defined(TOLOWER)
+#define TOLOWER(c) (ISUPPER(c) ? tolower(c) : (c))
+#endif
+
+static int is_absolute_path _((const char*));
 
 VALUE
 rb_file_s_expand_path(argc, argv)
@@ -1416,6 +1464,11 @@ rb_file_s_expand_path(argc, argv)
 	    }
 	    BUFCHECK(strlen(dir) > buflen);
 	    strcpy(buf, dir);
+	    for (p = buf; p < buf + strlen(dir); p = CharNext(p)) {
+		if (isdirsep(*p)) {
+		    *p = '/';
+		}
+	    }
 	    p = buf + strlen(dir);
 	    s++;
 	    tainted = 1;
@@ -1448,7 +1501,53 @@ rb_file_s_expand_path(argc, argv)
     }
 #if defined DOSISH_DRIVE_LETTER || defined __CYGWIN__
     /* skip drive letter */
-    else if (ISALPHA(s[0]) && s[1] == ':' && isdirsep(s[2])) {
+    else if (has_drive_letter(s)) {
+	if (isdirsep(s[2])) {
+	    /* specified drive letter, and full path */
+	    /* skip drive letter */
+	    b = s;
+	    while (*s && !isdirsep(*s)) {
+		s = CharNext(s);
+	    }
+	    BUFCHECK(p + (s-b) >= pend);
+	    memcpy(p, b, s-b);
+	    p += s-b;
+	}
+	else {
+	    /* specified drive, but not full path */
+	    int same = 0;
+	    if (!NIL_P(dname)) {
+		dname = rb_file_s_expand_path(1, &dname);
+		if (has_drive_letter(RSTRING(dname)->ptr) &&
+		    TOLOWER(*RSTRING(dname)->ptr) == TOLOWER(s[0])) {
+		    /* ok, same drive */
+		    same = 1;
+		}
+	    }
+	    if (same) {
+		if (OBJ_TAINTED(dname)) tainted = 1;
+		BUFCHECK (strlen(RSTRING(dname)->ptr) >= buflen);
+		strcpy(buf, RSTRING(dname)->ptr);
+		p = &buf[strlen(buf)];
+		s += 2;
+	    }
+	    else {
+		getcwdofdrv(*s, buf, MAXPATHLEN);
+		s += 2;
+		tainted = 1;
+		p = &buf[strlen(buf)];
+		if (strrdirsep(buf) == p - 1 && *s) p--;	/* drop `/' */
+	    }
+	}
+    }
+#endif
+#if defined DOSISH && ! defined(__CYGWIN__)
+    else if (isdirsep(*s) && !is_absolute_path(s)) {
+	/* specified full path, but not drive letter */
+	/* we need to get the drive letter */
+	tainted = 1;
+	getcwd(buf, MAXPATHLEN);
+	p = &buf[2];
 	b = s;
 	while (*s && !isdirsep(*s)) {
 	    s = CharNext(s);
@@ -1458,7 +1557,7 @@ rb_file_s_expand_path(argc, argv)
 	p += s-b;
     }
 #endif
-    else if (!isdirsep(*s)) {
+    else if (!is_absolute_path(s)) {
 	if (!NIL_P(dname)) {
 	    dname = rb_file_s_expand_path(1, &dname);
 	    if (OBJ_TAINTED(dname)) tainted = 1;
@@ -1475,7 +1574,7 @@ rb_file_s_expand_path(argc, argv)
 	    free(dir);
 	    p = &buf[strlen(buf)];
 	}
-	while (p > buf && *(p - 1) == '/') p--;
+	while (p > buf && strrdirsep(buf) == p - 1) p--;
     }
     else {
 	while (*s && isdirsep(*s)) {
@@ -1599,6 +1698,18 @@ rb_file_s_basename(argc, argv)
     name = StringValuePtr(fname);
     p = strrdirsep(name);
     if (!p) {
+#if defined(DOSISH_DRIVE_LETTER)
+	if (has_drive_letter(name)) {
+	    name += 2;
+	    if (NIL_P(fext)) {
+		f = strlen(name);
+	    }
+	    else {
+		f = rmext(name, ext);
+	   }
+	}
+	else
+#endif
 	if (NIL_P(fext) || !(f = rmext(name, ext)))
 	    return fname;
 	basename = rb_str_new(name, f);
@@ -1626,10 +1737,26 @@ rb_file_s_dirname(klass, fname)
     name = StringValuePtr(fname);
     p = strrdirsep(name);
     if (!p) {
+#if defined(DOSISH_DRIVE_LETTER)
+	if (has_drive_letter(name)) {
+	    dirname = rb_str_new(name, 2);
+	    dirname = rb_str_cat2(dirname, ".");
+	    OBJ_INFECT(dirname, fname);
+	    return dirname;
+	}
+#endif
 	return rb_str_new2(".");
     }
     if (p == name)
 	p++;
+#ifdef DOSISH_DRIVE_LETTER
+    if (has_drive_letter(name) && p == &name[2])
+	p++;
+#endif
+#ifdef DOSISH
+    if (isdirsep(name[0]) && isdirsep(name[1]) && p == &name[1])
+	p++;
+#endif
     dirname = rb_str_new(name, p - name);
     OBJ_INFECT(dirname, fname);
     return dirname;
@@ -1666,11 +1793,78 @@ rb_file_s_split(klass, path)
 
 static VALUE separator;
 
+static VALUE rb_file_join _((VALUE ary, VALUE sep));
+
+static VALUE
+file_inspect_join(ary, arg)
+    VALUE ary;
+    VALUE *arg;
+{
+    return rb_file_join(arg[0], arg[1]);
+}
+
+static VALUE
+rb_file_join(ary, sep)
+    VALUE ary, sep;
+{
+    long len, i;
+    int taint = 0;
+    VALUE result, tmp;
+    char *name;
+
+    if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
+    if (OBJ_TAINTED(ary)) taint = 1;
+    if (OBJ_TAINTED(sep)) taint = 1;
+
+    len = 1;
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	if (TYPE(RARRAY(ary)->ptr[i]) == T_STRING) {
+	    len += RSTRING(RARRAY(ary)->ptr[i])->len;
+	}
+	else {
+	    len += 10;
+	}
+    }
+    if (!NIL_P(sep) && TYPE(sep) == T_STRING) {
+	len += RSTRING(sep)->len * RARRAY(ary)->len - 1;
+    }
+    result = rb_str_buf_new(len);
+    for (i=0; i<RARRAY(ary)->len; i++) {
+	tmp = RARRAY(ary)->ptr[i];
+	switch (TYPE(tmp)) {
+	  case T_STRING:
+	    break;
+	  case T_ARRAY:
+	    if (rb_inspecting_p(tmp)) {
+		tmp = rb_str_new2("[...]");
+	    }
+	    else {
+		VALUE args[2];
+
+		args[0] = tmp;
+		args[1] = sep;
+		tmp = rb_protect_inspect(file_inspect_join, ary, (VALUE)args);
+	    }
+	    break;
+	  default:
+	    tmp = rb_obj_as_string(tmp);
+	}
+	name = StringValuePtr(result);
+	if (i > 0 && !NIL_P(sep) && strrdirsep(name) != &name[strlen(name) - 1])
+	    rb_str_buf_append(result, sep);
+	rb_str_buf_append(result, tmp);
+	if (OBJ_TAINTED(tmp)) taint = 1;
+    }
+
+    if (taint) OBJ_TAINT(result);
+    return result;
+}
+
 static VALUE
 rb_file_s_join(klass, args)
     VALUE klass, args;
 {
-    return rb_ary_join(args, separator);
+    return rb_file_join(args, separator);
 }
 
 static VALUE
