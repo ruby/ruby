@@ -56,9 +56,9 @@ EOT
         assert_block(full_message) { expected == actual }
       end
 
-      # Passes if block raises exception.
+      # Passes if block raises one of the given exceptions.
       public
-      def assert_raises(*args)
+      def assert_raise(*args)
         _wrap_assertion do
           if Class === args.last
             message = ""
@@ -83,6 +83,12 @@ EOT
           assert_block(full_message) { args.include?(actual_exception.class) }
           actual_exception
         end
+      end
+
+      # Alias of assert_raise. Will be deprecated in 1.9, and removed in 2.0.
+      public
+      def assert_raises(*args, &block)
+        assert_raise(*args, &block)
       end
 
       # Passes if object.class == klass.
