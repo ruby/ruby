@@ -184,11 +184,11 @@ static void top_local_setup();
 
 %type <node> singleton string
 %type <val>  literal numeric
-%type <node> compstmt stmts stmt expr arg primary command_call method_call
+%type <node> compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
 %type <node> opt_call_args call_args ret_args args when_args
-%type <node> aref_args opt_block_arg block_arg stmt_rhs
-%type <node> mrhs mrhs_basic superclass generic_call block_call var_ref
+%type <node> aref_args opt_block_arg block_arg var_ref
+%type <node> mrhs mrhs_basic superclass generic_call block_call blocklike_call
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
@@ -295,8 +295,7 @@ stmts		: none
 			$$ = $2;
 		    }
 
-stmt		: block_call
-		| kALIAS fitem {lex_state = EXPR_FNAME;} fitem
+stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			if (cur_mid || in_single)
 			    yyerror("alias within method");
@@ -396,12 +395,12 @@ stmt		: block_call
 
 			$$ = NEW_ITER(0, NEW_POSTEXE(), $3);
 		    }
-		| lhs '=' stmt_rhs
+		| lhs '=' command_call
 		    {
 			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
-		| mlhs '=' stmt_rhs
+		| mlhs '=' command_call
 		    {
 			value_expr($3);
 			$1->nd_value = $3;
@@ -445,7 +444,22 @@ expr		: mlhs '=' mrhs
 		    }
 		| arg
 
-command_call	: operation call_args
+command_call	: command
+		| blocklike_call
+
+blocklike_call	: block_call
+		| block_call '.' operation2 call_args
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, $4);
+		    }
+		| block_call tCOLON2 operation2 call_args
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, $4);
+		    }
+
+command		:  operation call_args
 		    {
 			$$ = new_fcall($1, $2);
 		        fixpos($$, $2);
@@ -897,14 +911,6 @@ aref_args	: none
 		    {
 			$$ = list_append($1, $3);
 		    }
-		| block_call opt_nl
-		    {
-			$$ = NEW_LIST($1);
-		    }
-		| args ',' block_call opt_nl
-		    {
-			$$ = list_append($1, $3);
-		    }
 		| args trailer
 		    {
 			$$ = $1;
@@ -926,24 +932,20 @@ aref_args	: none
 
 opt_call_args	: none
 		| call_args opt_nl
-		| block_call opt_nl
+		| blocklike_call opt_nl
 		    {
 			$$ = NEW_LIST($1);
 		    }
-		| args ',' block_call
+		| args ',' blocklike_call
 		    {
 			$$ = list_append($1, $3);
 		    }
 
-call_args	: command_call
+call_args	: command
 		    {
 			$$ = NEW_LIST($1);
-		    } /*
-		| args ','
-		    {
-			$$ = $1;
-		    } */
-		| args ',' command_call
+		    }
+		| args ',' command
 		    {
 			$$ = list_append($1, $3);
 		    }
@@ -956,11 +958,7 @@ call_args	: command_call
 			value_expr($4);
 			$$ = arg_concat($1, $4);
 			$$ = arg_blk_pass($$, $5);
-		    } /*
-		| assocs ','
-		    {
-			$$ = NEW_LIST(NEW_HASH($1));
-		    } */
+		    }
 		| assocs opt_block_arg
 		    {
 			$$ = NEW_LIST(NEW_HASH($1));
@@ -976,11 +974,7 @@ call_args	: command_call
 		    {
 			$$ = list_append($1, NEW_HASH($3));
 			$$ = arg_blk_pass($$, $4);
-		    } /*
-		| args ',' assocs ','
-		    {
-			$$ = list_append($1, NEW_HASH($3));
-		    } */
+		    }
 		| args ',' assocs ',' tSTAR arg opt_block_arg
 		    {
 			value_expr($6);
@@ -1345,7 +1339,7 @@ then		: term
 		| term kTHEN
 
 do		: term
-		| kDO
+		| kDO2
 
 if_tail		: opt_else
 		| kELSIF expr then
@@ -1405,19 +1399,6 @@ brace_block	: '{'
 		        fixpos($$, $4);
 			dyna_pop($<vars>2);
 		    }
-		| kDO2
-		    {
-		        $<vars>$ = dyna_push();
-		    }
-		  opt_block_var
-		  compstmt
-		  kEND
-		    {
-			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $4);
-			dyna_pop($<vars>2);
-		    }
-
 
 generic_call	: tIDENTIFIER
 		    {
@@ -1434,6 +1415,7 @@ generic_call	: tIDENTIFIER
 		| method_call
 		| command_call
 
+
 block_call	: generic_call do_block
 		    {
 			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
@@ -1442,6 +1424,26 @@ block_call	: generic_call do_block
 			$2->nd_iter = $1;
 			$$ = $2;
 		        fixpos($$, $2);
+		    }
+		| block_call '.' operation2 
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, 0);
+		    }
+		| block_call '.' operation2 '(' opt_call_args close_paren
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, $5);
+		    }
+		| block_call tCOLON2 operation2 
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, 0);
+		    }
+		| block_call tCOLON2 operation2 '(' opt_call_args close_paren
+		    {
+			value_expr($1);
+			$$ = new_call($1, $3, $5);
 		    }
 
 method_call	: operation '(' opt_call_args close_paren
@@ -1491,9 +1493,6 @@ close_paren	: ')'
 		    {
 			if (!COND_P()) lex_state = EXPR_PAREN;
 		    }
-
-stmt_rhs	: block_call
-		| command_call
 
 case_body	: kWHEN when_args then
 		  compstmt
@@ -3617,7 +3616,7 @@ yylex()
 		    if (state == EXPR_FNAME) {
 			yylval.id = rb_intern(kw->name);
 		    }
-		    if (kw->id[0] == kDO && !COND_P() && state == EXPR_PAREN) {
+		    if (kw->id[0] == kDO && COND_P()) {
 			return kDO2;
 		    }
 		    return kw->id[state != EXPR_BEG];
