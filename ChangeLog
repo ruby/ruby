@@ -1,3 +1,10 @@
+Thu Nov 27 22:05:48 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c, gc.c: FreeBSD/ia64 currently does not have a way for a
+	  process to get the base address for the RSE backing store, so
+	  hardcode it for the moment.
+	  [submitted by: Marcel Moolenaar <marcel@FreeBSD.org>]
+
 Thu Nov 27 17:36:42 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkafter.rb: bug fix on TkTimer#cancel_on_exception=(mode).

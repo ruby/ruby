@@ -32,8 +32,16 @@
 
 #ifdef __ia64__
 #include <ucontext.h>
+#if defined(__FreeBSD__)
+/*
+ * FreeBSD/ia64 currently does not have a way for a process to get the
+ * base address for the RSE backing store, so hardcode it.
+ */
+#define __libc_ia64_register_backing_store_base (4ULL<<61)
+#else
 #pragma weak __libc_ia64_register_backing_store_base
 extern unsigned long __libc_ia64_register_backing_store_base;
+#endif
 #endif
 
 void re_free_registers _((struct re_registers*));
