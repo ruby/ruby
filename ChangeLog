@@ -1,3 +1,8 @@
+Tue Jan 13 01:04:37 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_paths.rb (RI::Paths): First attempt at
+	  incorporating DESTDIR in the rdoc installation.
+
 Mon Jan 12 23:26:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (primary): fix position after FCALL.  [ruby-dev:22574]

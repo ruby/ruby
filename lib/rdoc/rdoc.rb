@@ -159,6 +159,7 @@ module RDoc
         when "file"
           file_list << rel_file_name
         when "directory"
+          next if rel_file_name == "CVS" || rel_file_name == ".svn"
           next if options.exclude && options.exclude =~ rel_file_name
           dot_doc = File.join(rel_file_name, DOT_DOC_FILENAME)
           if File.file?(dot_doc)
