@@ -1313,13 +1313,15 @@ fix_aref(fix, idx)
     long val = FIX2LONG(fix);
 
     if (TYPE(idx) == T_BIGNUM) {
-	if (val >= 0) return INT2FIX(0);
+	if (!RBIGNUM(idx)->sign || val >= 0)
+	    return INT2FIX(0);
 	return INT2FIX(1);
     }
     else {
 	int i = NUM2INT(idx);
 
-	if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i) {
+	if (i < 0) return INT2FIX(0);
+	if (sizeof(VALUE)*CHAR_BIT-1 < i) {
 	    if (val < 0) return INT2FIX(1);
 	    return INT2FIX(0);
 	}

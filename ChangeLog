@@ -1,3 +1,9 @@
+Thu Nov  1 14:08:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_aref): idx may be a Bignum.
+
+	* numeric.c (fix_aref): negative index must return zero.
+
 Thu Nov  1 13:23:50 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (gc_mark_children): should NOT treat last element of
