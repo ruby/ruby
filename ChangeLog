@@ -1,3 +1,8 @@
+Thu Apr 22 16:50:54 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_callcc): call scope_dup() for all scopes in
+	  the interpreter stack.
+
 Tue Apr 20 11:24:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_dump): `#' should be escaped.
