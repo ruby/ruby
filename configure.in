@@ -157,7 +157,7 @@ openstep*)	;;
 rhapsody*)	;;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
-cygwin*)	;;
+cygwin*)	rb_cv_have_daylight=no;;
 mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
@@ -211,7 +211,7 @@ AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 AC_STRUCT_TIMEZONE
 AC_CACHE_CHECK(for external int daylight, rb_cv_have_daylight,
   [AC_TRY_LINK([],
-  	[extern int daylight; int i = daylight;],
+  	[extern int daylight; daylight++;],
 	rb_cv_have_daylight=yes,
 	rb_cv_have_daylight=no)])
 if test "$rb_cv_have_daylight" = yes; then
