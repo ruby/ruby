@@ -178,7 +178,7 @@ case $basic_machine in
 	      | m88k-* | sparc-* | ns32k-* | fx80-* | arc-* | arm-* | c[123]* \
 	      | mips-* | pyramid-* | tron-* | a29k-* | romp-* | rs6000-* \
 	      | power-* | none-* | 580-* | cray2-* | h8300-* | i960-* \
-	      | xmp-* | ymp-* | hppa-* | hppa1.0-* | hppa1.1-* | hppa2.0-* | hppa2.0w-* \
+	      | xmp-* | ymp-* | hppa-* | hppa1.0-* | hppa1.1-* | hppa2.0* | hppa2.0w-* \
 	      | alpha-* | alphaev5-* | alphaev56-* | we32k-* | cydra-* \
 	      | ns16k-* | pn-* | np1-* | xps100-* | clipper-* | orion-* \
 	      | sparclite-* | pdp11-* | sh-* | powerpc-* | powerpcle-* \

@@ -130,6 +130,11 @@ static struct afd {
 #define PTON_MAX	4
 #endif
 
+#ifndef INET6
+#ifndef NT
+extern int h_errno;
+#endif
+#endif
 
 static int get_name __P((const char *, struct afd *,
 			  struct addrinfo **, char *, struct addrinfo *,
@@ -575,11 +580,6 @@ get_addr(hostname, af, res, pai, port0)
 	struct afd *afd;
 	int i, error = 0, h_error;
 	char *ap;
-#ifndef INET6
-#ifndef NT
-	extern int h_errno;
-#endif
-#endif
 
 	top = NULL;
 	sentinel.ai_next = NULL;

@@ -64,6 +64,12 @@
 #include "addrinfo.h"
 #include "sockport.h"
 
+#ifndef INET6
+#ifndef NT
+extern int h_errno;
+#endif
+#endif
+
 #define SUCCESS 0
 #define ANY 0
 #define YES 1
@@ -149,9 +155,6 @@ getnameinfo(sa, salen, host, hostlen, serv, servlen, flags)
 	int h_error;
 	char numserv[512];
 	char numaddr[512];
-#ifndef NT
-	extern int h_errno;
-#endif
 
 	if (sa == NULL)
 		return ENI_NOSOCKET;

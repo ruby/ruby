@@ -356,7 +356,7 @@ if test "$rb_cv_binary_elf" = yes; then
   AC_DEFINE(USE_ELF)
 fi
 
-case "$target_os" in
+case "$host_os" in
     linux*)
   if test "$rb_cv_binary_elf" = no; then
     with_dln_a_out=yes
