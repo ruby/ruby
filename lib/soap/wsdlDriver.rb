@@ -37,7 +37,7 @@ class WSDLDriverFactory
     "#<#{self.class}:#{@wsdl.name}>"
   end
 
-  def create_driver(servicename = nil, portname = nil, opt = {})
+  def create_driver(servicename = nil, portname = nil)
     service = if servicename
 	@wsdl.service(XSD::QName.new(@wsdl.targetnamespace, servicename))
       else
@@ -57,7 +57,7 @@ class WSDLDriverFactory
     if port.soap_address.nil?
       raise FactoryError.new("soap:address element not found in WSDL.")
     end
-    WSDLDriver.new(@wsdl, port, @logdev, opt)
+    WSDLDriver.new(@wsdl, port, @logdev)
   end
 
   # Backward compatibility.
@@ -90,22 +90,62 @@ class WSDLDriver
     end
   end
 
-  __attr_proxy :opt
-  __attr_proxy :logdev, true
+  __attr_proxy :options
+  __attr_proxy :endpoint_url, true
   __attr_proxy :mapping_registry, true		# for RPC unmarshal
   __attr_proxy :wsdl_mapping_registry, true	# for RPC marshal
-  __attr_proxy :endpoint_url, true
-  __attr_proxy :wiredump_dev, true
-  __attr_proxy :wiredump_file_base, true
-  __attr_proxy :httpproxy, true
-  __attr_proxy :mandatorycharset, true		# force using charset
-
   __attr_proxy :default_encodingstyle, true
   __attr_proxy :allow_unqualified_element, true
   __attr_proxy :generate_explicit_type, true
 
+  def httpproxy
+    @servant.options["protocol.http.proxy"]
+  end
+
+  def httpproxy=(httpproxy)
+    @servant.options["protocol.http.proxy"] = httpproxy
+  end
+
+  def wiredump_dev
+    @servant.options["protocol.http.wiredump_dev"]
+  end
+
+  def wiredump_dev=(wiredump_dev)
+    @servant.options["protocol.http.wiredump_dev"] = wiredump_dev
+  end
+
+  def mandatorycharset
+    @servant.options["protocol.mandatorycharset"]
+  end
+
+  def mandatorycharset=(mandatorycharset)
+    @servant.options["protocol.mandatorycharset"] = mandatorycharset
+  end
+
+  def wiredump_file_base
+    @servant.options["protocol.wiredump_file_base"]
+  end
+
+  def wiredump_file_base=(wiredump_file_base)
+    @servant.options["protocol.wiredump_file_base"] = wiredump_file_base
+  end
+
+  def initialize(wsdl, port, logdev)
+    @servant = Servant__.new(self, wsdl, port, logdev)
+    if env_httpproxy = ::SOAP::Env::HTTP_PROXY
+      @servant.options["protocol.http.proxy"] = env_httpproxy
+    end
+    if env_httpproxy = ::SOAP::Env::NO_PROXY
+      @servant.options["protocol.http.no_proxy"] = env_httpproxy
+    end
+  end
+
+  def inspect
+    "#<#{self.class}:#{@servant.port.name}>"
+  end
+
   def reset_stream
-    @servant.reset_stream
+    @servant.streamhandler.reset
   end
 
   # Backward compatibility.
@@ -115,124 +155,43 @@ class WSDLDriver
     include Logger::Severity
     include SOAP
 
-    attr_reader :wsdl
+    attr_reader :options
+    attr_reader :streamhandler
     attr_reader :port
-    attr_reader :opt
-    attr_accessor :logdev
+
     attr_accessor :mapping_registry
     attr_accessor :wsdl_mapping_registry
-    attr_reader :wiredump_dev
-    attr_reader :wiredump_file_base
-    attr_reader :httpproxy
-    attr_accessor :mandatorycharset
-
     attr_accessor :default_encodingstyle
     attr_accessor :allow_unqualified_element
     attr_accessor :generate_explicit_type
 
-    class Mapper
-      def initialize(elements, types)
-	@elements = elements
-	@types = types
-      end
-
-      def obj2ele(obj, name)
-	if ele = @elements[name]
-	  _obj2ele(obj, ele)
-	elsif type = @types[name]
-	  obj2type(obj, type)
-	else
-	  raise RuntimeError.new("Cannot find name #{name} in schema.")
-	end
-      end
-
-      def ele2obj(ele, *arg)
-	raise NotImplementedError.new
-      end
-
-    private
-
-      def _obj2ele(obj, ele)
-	o = nil
-	if ele.type
-	  if type = @types[ele.type]
-	    o = obj2type(obj, type)
-	  elsif type = TypeMap[ele.type]
-	    o = base2soap(obj, type)
-	  else
-	    raise RuntimeError.new("Cannot find type #{ele.type}.")
-	  end
-	  o.elename = ele.name
-	elsif ele.local_complextype
-	  o = SOAPElement.new(ele.name)
-	  ele.local_complextype.each_element do |child_name, child_ele|
-	    o.add(_obj2ele(find_attribute(obj, child_name.name), child_ele))
-	  end
-	else
-	  raise RuntimeError.new("Illegal schema?")
-	end
-	o
-      end
-
-      def obj2type(obj, type)
-	o = SOAPElement.new(type.name)
-	type.each_element do |child_name, child_ele|
-	  o.add(_obj2ele(find_attribute(obj, child_name.name), child_ele))
-	end
-	o
-      end
-
-      def _ele2obj(ele)
-	raise NotImplementedError.new
-      end
-
-      def base2soap(obj, type)
-	soap_obj = nil
-	if type <= XSD::XSDString
-	  soap_obj = type.new(XSD::Charset.is_ces(obj, $KCODE) ?
-	    XSD::Charset.encoding_conv(obj, $KCODE, XSD::Charset.encoding) : obj)
-	else
-	  soap_obj = type.new(obj)
-	end
-	soap_obj
-      end
-
-      def find_attribute(obj, attr_name)
-	if obj.respond_to?(attr_name)
-	  obj.__send__(attr_name)
-	elsif obj.is_a?(Hash)
-	  obj[attr_name] || obj[attr_name.intern]
-	else
-	  obj.instance_eval("@#{ attr_name }")
-	end
-      end
-    end
-
-    def initialize(host, wsdl, port, logdev, opt)
+    def initialize(host, wsdl, port, logdev)
       @host = host
       @wsdl = wsdl
       @port = port
       @logdev = logdev
-      @opt = opt.dup
+
+      @options = ::SOAP::Property.new
+      set_options
       @mapping_registry = nil		# for rpc unmarshal
       @wsdl_mapping_registry = nil	# for rpc marshal
-      @wiredump_dev = nil
+      @default_encodingstyle = EncodingNamespace
+      @allow_unqualified_element = true
+      @generate_explicit_type = false
       @wiredump_file_base = nil
       @mandatorycharset = nil
 
       @wsdl_elements = @wsdl.collect_elements
       @wsdl_types = @wsdl.collect_complextypes
-      @rpc_decode_typemap = @wsdl_types + @wsdl.soap_rpc_complextypes(port.find_binding)
+      @rpc_decode_typemap = @wsdl_types +
+	@wsdl.soap_rpc_complextypes(port.find_binding)
       @wsdl_mapping_registry = Mapping::WSDLRegistry.new(@rpc_decode_typemap)
       @doc_mapper = Mapper.new(@wsdl_elements, @wsdl_types)
-      @default_encodingstyle = EncodingNamespace
-      @allow_unqualified_element = true
-      @generate_explicit_type = false
-
-      create_streamhandler(@port.soap_address.location,
-	ENV['http_proxy'] || ENV['HTTP_PROXY'])
-      @operations = {}
+      endpoint_url = @port.soap_address.location
+      @streamhandler = HTTPPostStreamHandler.new(endpoint_url,
+	@options["protocol.http"] ||= ::SOAP::Property.new)
       # Convert a map which key is QName, to a Hash which key is String.
+      @operations = {}
       @port.inputoperation_map.each do |op_name, op_info|
 	@operations[op_name.name] = op_info
 	add_method_interface(op_info)
@@ -245,27 +204,6 @@ class WSDLDriver
 
     def endpoint_url=(endpoint_url)
       @streamhandler.endpoint_url = endpoint_url
-      @streamhandler.reset
-      log(DEBUG) { "endpoint_url=: set endpoint_url #{ endpoint_url }." }
-    end
-
-    def wiredump_dev=(dev)
-      @wiredump_dev = dev
-      @streamhandler.wiredump_dev = @wiredump_dev
-      @streamhandler.reset
-    end
-
-    def wiredump_file_base=(base)
-      @wiredump_file_base = base
-    end
-
-    def httpproxy=(httpproxy)
-      @streamhandler.proxy = httpproxy
-      @streamhandler.reset
-      log(DEBUG) { "httpproxy=: set httpproxy #{ httpproxy }." }
-    end
-
-    def reset_stream
       @streamhandler.reset
     end
 
@@ -329,12 +267,6 @@ class WSDLDriver
     end
 
   private
-
-    def create_streamhandler(endpoint_url, httpproxy)
-      @streamhandler = HTTPPostStreamHandler.new(endpoint_url, httpproxy,
-	XSD::Charset.encoding_label)
-      @streamhandler.wiredump_dev = @wiredump_dev
-    end
 
     def create_method_obj(names, params)
       o = Object.new
@@ -450,16 +382,16 @@ class WSDLDriver
     def add_rpc_method_interface(name, parts_names)
       i = 0
       param_names = parts_names.collect { |orgname| i += 1; "arg#{ i }" }
-      callparam_str = (param_names.collect { |pname| ", " + pname }).join
+      callparam = (param_names.collect { |pname| ", " + pname }).join
       @host.instance_eval <<-EOS
 	def #{ name }(#{ param_names.join(", ") })
-	  @servant.rpc_send(#{ name.dump }#{ callparam_str })
+	  @servant.rpc_send(#{ name.dump }#{ callparam })
 	end
       EOS
     end
 
     def create_options
-      opt = @opt.dup
+      opt = {}
       opt[:default_encodingstyle] = @default_encodingstyle
       opt[:allow_unqualified_element] = @allow_unqualified_element
       opt[:generate_explicit_type] = @generate_explicit_type
@@ -469,14 +401,94 @@ class WSDLDriver
     def log(sev)
       @logdev.add(sev, nil, self.class) { yield } if @logdev
     end
-  end
 
-  def initialize(wsdl, port, logdev, opt)
-    @servant = Servant__.new(self, wsdl, port, logdev, opt)
-  end
+    def set_options
+      @options.add_hook("protocol.mandatorycharset") do |key, value|
+	@mandatorycharset = value
+      end
+      @options.add_hook("protocol.wiredump_file_base") do |key, value|
+	@wiredump_file_base = value
+      end
+      @options["protocol.http.charset"] = XSD::Charset.encoding_label
+    end
 
-  def inspect
-    "#<#{self.class}:#{@servant.port.name}>"
+    class Mapper
+      def initialize(elements, types)
+	@elements = elements
+	@types = types
+      end
+
+      def obj2ele(obj, name)
+	if ele = @elements[name]
+	  _obj2ele(obj, ele)
+	elsif type = @types[name]
+	  obj2type(obj, type)
+	else
+	  raise RuntimeError.new("Cannot find name #{name} in schema.")
+	end
+      end
+
+      def ele2obj(ele, *arg)
+	raise NotImplementedError.new
+      end
+
+    private
+
+      def _obj2ele(obj, ele)
+	o = nil
+	if ele.type
+	  if type = @types[ele.type]
+	    o = obj2type(obj, type)
+	  elsif type = TypeMap[ele.type]
+	    o = base2soap(obj, type)
+	  else
+	    raise RuntimeError.new("Cannot find type #{ele.type}.")
+	  end
+	  o.elename = ele.name
+	elsif ele.local_complextype
+	  o = SOAPElement.new(ele.name)
+	  ele.local_complextype.each_element do |child_name, child_ele|
+	    o.add(_obj2ele(find_attribute(obj, child_name.name), child_ele))
+	  end
+	else
+	  raise RuntimeError.new("Illegal schema?")
+	end
+	o
+      end
+
+      def obj2type(obj, type)
+	o = SOAPElement.new(type.name)
+	type.each_element do |child_name, child_ele|
+	  o.add(_obj2ele(find_attribute(obj, child_name.name), child_ele))
+	end
+	o
+      end
+
+      def _ele2obj(ele)
+	raise NotImplementedError.new
+      end
+
+      def base2soap(obj, type)
+	soap_obj = nil
+	if type <= XSD::XSDString
+	  soap_obj = type.new(XSD::Charset.is_ces(obj, $KCODE) ?
+	    XSD::Charset.encoding_conv(obj, $KCODE, XSD::Charset.encoding) : obj)
+	else
+	  soap_obj = type.new(obj)
+	end
+	soap_obj
+      end
+
+      def find_attribute(obj, attr_name)
+	if obj.respond_to?(attr_name)
+	  obj.__send__(attr_name)
+	elsif obj.is_a?(Hash)
+	  obj[attr_name] || obj[attr_name.intern]
+	else
+	  obj.instance_eval("@#{ attr_name }")
+	end
+      end
+    end
   end
 end
 

@@ -27,18 +27,13 @@ public
     begin
       require 'xsd/iconvcharset'
       @encoding = 'UTF8'
+      sjtag = (/(mswin|bccwin|mingw|cygwin|emx)/ =~ RUBY_PLATFORM) ? 'cp932' : 'shift_jis'
       EncodingConvertMap[['UTF8', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "utf-8", str) }
       EncodingConvertMap[['EUC' , 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "euc-jp", str) }
-      EncodingConvertMap[['EUC' , 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("shift_jis", "euc-jp", str) }
-      if /(mswin|bccwin|mingw|cygwin|emx)/ =~ RUBY_PLATFORM
-	EncodingConvertMap[['UTF8', 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("cp932", "utf-8", str) }
-       	EncodingConvertMap[['SJIS', 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "cp932", str) }
-	EncodingConvertMap[['SJIS', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "cp932", str) }
-      else
-	EncodingConvertMap[['UTF8', 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("shift_jis", "utf-8", str) }
-	EncodingConvertMap[['SJIS', 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "shift_jis", str) }
-	EncodingConvertMap[['SJIS', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "shift_jis", str) }
-      end
+      EncodingConvertMap[['EUC' , 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv(sjtag, "euc-jp", str) }
+      EncodingConvertMap[['UTF8', 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv(sjtag, "utf-8", str) }
+      EncodingConvertMap[['SJIS', 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", sjtag, str) }
+      EncodingConvertMap[['SJIS', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", sjtag, str) }
     rescue LoadError
       begin
        	require 'nkf'
@@ -73,6 +68,11 @@ public
   #
   def Charset.encoding
     @encoding
+  end
+
+  def Charset.encoding=(encoding)
+    STDERR.puts("xsd charset is set to #{encoding}") if $DEBUG
+    @encoding = encoding
   end
 
   def Charset.encoding_label

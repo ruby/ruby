@@ -24,39 +24,31 @@ class NetHttpClient
   attr_accessor :proxy
   attr_accessor :no_proxy
   attr_accessor :debug_dev
-  attr_reader :session_manager
-
-  class SessionManager
-    attr_accessor :connect_timeout
-    attr_accessor :send_timeout
-    attr_accessor :receive_timeout
-  end
-
-  class Response
-    attr_reader :content
-    attr_reader :status
-    attr_reader :reason
-    attr_reader :contenttype
-
-    def initialize(res)
-      @status = res.code.to_i
-      @reason = res.message
-      @contenttype = res['content-type']
-      @content = res.body
-    end
-  end
+  attr_accessor :ssl_config		# ignored for now.
+  attr_accessor :protocol_version	# ignored for now.
 
   def initialize(proxy = nil, agent = nil)
     @proxy = proxy ? URI.parse(proxy) : nil
     @agent = agent
     @debug_dev = nil
     @session_manager = SessionManager.new
-    name = 'no_proxy'
-    @no_proxy = ENV[name] || ENV[name.upcase]
+    @no_proxy = nil
+  end
+
+  def set_basic_auth(uri, user_id, passwd)
+    # ignored for now.
+  end
+
+  def set_cookie_store(filename)
+    # ignored for now.
   end
 
   def reset(url)
-    # ignored.
+    # ignored for now.
+  end
+
+  def reset_all
+    # ignored for now.
   end
 
   def post(url, req_body, header = {})
@@ -132,6 +124,26 @@ private
       end
     else
       false
+    end
+  end
+
+  class SessionManager
+    attr_accessor :connect_timeout
+    attr_accessor :send_timeout
+    attr_accessor :receive_timeout
+  end
+
+  class Response
+    attr_reader :content
+    attr_reader :status
+    attr_reader :reason
+    attr_reader :contenttype
+
+    def initialize(res)
+      @status = res.code.to_i
+      @reason = res.message
+      @contenttype = res['content-type']
+      @content = res.body
     end
   end
 end

@@ -7,6 +7,7 @@
 
 
 require 'soap/soap'
+require 'soap/property'
 
 
 module SOAP
@@ -76,29 +77,23 @@ class HTTPPostStreamHandler < StreamHandler
 
 public
   
-  attr_accessor :wiredump_dev
-  attr_accessor :wiredump_file_base
-  attr_accessor :charset
   attr_reader :client
+  attr_accessor :wiredump_file_base
   
   NofRetry = 10       	# [times]
 
-  def initialize(endpoint_url, proxy = nil, charset = nil)
+  def initialize(endpoint_url, options)
     super(endpoint_url)
-    @proxy = proxy || ENV['http_proxy'] || ENV['HTTP_PROXY']
-    @charset = charset || XSD::Charset.charset_label($KCODE)
-    @wiredump_dev = nil	# Set an IO to get wiredump.
+    @client = Client.new(nil, "SOAP4R/#{ Version }")
     @wiredump_file_base = nil
-    @client = Client.new(@proxy, "SOAP4R/#{ Version }")
+    @charset = @wiredump_dev = nil
+    @options = options
+    set_options
+    @client.debug_dev = @wiredump_dev
   end
 
   def inspect
     "#<#{self.class}:#{endpoint_url}>"
-  end
-
-  def proxy=(proxy)
-    @proxy = proxy
-    @client.proxy = @proxy
   end
 
   def send(soap_string, soapaction = nil, charset = @charset)
@@ -111,17 +106,65 @@ public
 
 private
 
+  def set_options
+    @client.proxy = @options["proxy"]
+    @options.add_hook("proxy") do |key, value|
+      @client.proxy = value
+    end
+    @client.no_proxy = @options["no_proxy"]
+    @options.add_hook("no_proxy") do |key, value|
+      @client.no_proxy = value
+    end
+    @client.protocol_version = @options["protocol_version"]
+    @options.add_hook("protocol_version") do |key, value|
+      @client.protocol_version = value
+    end
+    set_cookie_store_file(@options["cookie_store_file"])
+    @options.add_hook("cookie_store_file") do |key, value|
+      set_cookie_store_file(value)
+    end
+    set_ssl_config(@options["ssl_config"])
+    @options.add_hook("ssl_config") do |key, value|
+      set_ssl_config(@options["ssl_config"])
+    end
+    @charset = @options["charset"] || XSD::Charset.charset_label($KCODE)
+    @options.add_hook("charset") do |key, value|
+      @charset = value
+    end
+    @wiredump_dev = @options["wiredump_dev"]
+    @options.add_hook("wiredump_dev") do |key, value|
+      @wiredump_dev = value
+      @client.debug_dev = @wiredump_dev
+    end
+    basic_auth = @options["basic_auth"] ||= ::SOAP::Property.new
+    set_basic_auth(basic_auth)
+    basic_auth.add_hook do |key, value|
+      set_basic_auth(basic_auth)
+    end
+    @options.lock(true)
+    basic_auth.unlock
+  end
+
+  def set_basic_auth(basic_auth)
+    basic_auth.values.each do |url, userid, passwd|
+      @client.set_basic_auth(url, userid, passwd)
+    end
+  end
+
+  def set_cookie_store_file(value)
+    return unless value
+    raise NotImplementedError.new
+  end
+
+  def set_ssl_config(value)
+    return unless value
+    raise NotImplementedError.new
+  end
+
   def send_post(soap_string, soapaction, charset)
     data = ConnectionData.new
     data.send_string = soap_string
     data.send_contenttype = StreamHandler.create_media_type(charset)
-
-    wiredump_dev = if @wiredump_dev && @wiredump_dev.respond_to?("<<")
-	@wiredump_dev
-      else
-	nil
-      end
-    @client.debug_dev = wiredump_dev
 
     if @wiredump_file_base
       filename = @wiredump_file_base + '_request.xml'
@@ -134,14 +177,14 @@ private
     extra['Content-Type'] = data.send_contenttype
     extra['SOAPAction'] = "\"#{ soapaction }\""
 
-    wiredump_dev << "Wire dump:\n\n" if wiredump_dev
+    @wiredump_dev << "Wire dump:\n\n" if @wiredump_dev
     begin
       res = @client.post(@endpoint_url, soap_string, extra)
     rescue
       @client.reset(@endpoint_url)
       raise
     end
-    wiredump_dev << "\n\n" if wiredump_dev
+    @wiredump_dev << "\n\n" if @wiredump_dev
 
     receive_string = res.content
 

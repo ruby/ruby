@@ -8,6 +8,7 @@
 
 require 'wsdl/info'
 require 'wsdl/parser'
+require 'soap/soap'
 
 
 module WSDL
@@ -27,8 +28,14 @@ class Importer
     if FileTest.exist?(location)
       content = File.open(location).read
     else
-      proxy = ENV['http_proxy'] || ENV['HTTP_PROXY']
-      content = web_client.new(proxy, "WSDL4R").get_content(location)
+      client = web_client.new(nil, "WSDL4R")
+      if env_httpproxy = ::SOAP::Env::HTTP_PROXY
+	client.proxy = env_httpproxy
+      end
+      if env_no_proxy = ::SOAP::Env::NO_PROXY
+	client.no_proxy = env_no_proxy
+      end
+      content = client.get_content(location)
     end
     opt = {}	# charset?
     begin

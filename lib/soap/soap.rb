@@ -13,7 +13,7 @@ require 'xsd/charset'
 module SOAP
 
 
-Version = '1.5.1'
+Version = '1.5.2'
 
 EnvelopeNamespace = 'http://schemas.xmlsoap.org/soap/envelope/'
 EncodingNamespace = 'http://schemas.xmlsoap.org/soap/encoding/'
@@ -90,11 +90,21 @@ class FaultError < Error
 
   def to_s
     str = nil
-    if @faultstring && @faultstring.respond_to?('data')
+    if @faultstring and @faultstring.respond_to?('data')
       str = @faultstring.data
     end
     str || '(No faultstring)'
   end
+end
+
+module Env
+  def self.getenv(name)
+    ENV[name.downcase] || ENV[name]
+  end
+
+  use_proxy = getenv('soap_use_proxy') == 'on'
+  HTTP_PROXY = use_proxy ? getenv('http_proxy') : nil
+  NO_PROXY = use_proxy ? getenv('no_proxy') : nil
 end
 
 

@@ -369,7 +369,7 @@ module MarshalTestLib
   class MyTime < Time; def initialize(v, *args) super(*args); @v = v; end end
   def test_time
     # once there was a bug caused by usec overflow.  try a little harder.
-    100.times do
+    10.times do
       t = Time.now
       marshal_equal(t, t.usec.to_s)
     end

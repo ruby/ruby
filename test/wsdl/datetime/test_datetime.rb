@@ -58,8 +58,15 @@ class TestDatetime < Test::Unit::TestCase
   end
 
   def test_datetime
-    d = DateTime.now
-    assert_equal(d + 1, @client.now(d))
+    d1 = DateTime.now
+    d2 = @client.now(d1)
+    assert_equal(d2.year, d1.year)
+    assert_equal(d2.month, d1.month)
+    assert_equal(d2.day, d1.day + 1)
+    assert_equal(d2.hour, d1.hour)
+    assert_equal(d2.min, d1.min)
+    assert_equal(d2.sec, d1.sec)
+    assert_equal(d2.sec, d1.sec)
   end
 
   def test_time

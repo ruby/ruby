@@ -349,6 +349,7 @@ lib/soap/marshal.rb
 lib/soap/netHttpClient.rb
 lib/soap/parser.rb
 lib/soap/processor.rb
+lib/soap/property.rb
 lib/soap/rpc/cgistub.rb
 lib/soap/rpc/driver.rb
 lib/soap/rpc/element.rb
