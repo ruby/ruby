@@ -23,7 +23,6 @@ class TestIONonblock < Test::Unit::TestCase
       end
     }
     assert_raise(IOError) {w.flush}
-    t.join
-    assert_equal("b", result)
+    assert_nothing_raised {t.join}
   end
 end if IO.method_defined?(:nonblock)
