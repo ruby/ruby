@@ -25,6 +25,17 @@ Methods:
 
 	returns have value of the added strings as a 16 bytes string.
 
+   hexdigest
+
+	returns have value of the added strings as an 32 bytes ASCII
+	string. This method is equal to:
+
+	def hexdigest
+	  ret = ''
+	  digest.each_byte {|i| ret << sprintf('%02x', i) }
+	  ret
+	end
+
    update(str)
 
 	Update the MD5 object with the string.  Repeated calls are

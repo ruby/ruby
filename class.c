@@ -540,6 +540,7 @@ rb_singleton_class(obj)
     else {
 	FL_UNSET(klass, FL_TAINT);
     }
+    if (OBJ_FROZEN(obj)) OBJ_FREEZE(klass);
 
     return klass;
 }

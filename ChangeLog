@@ -1,10 +1,40 @@
+Thu Jun 22 17:27:46 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_substr): str[n,m] now returns nil when n equals
+	  to str.size.
+
 Thu Jun 22 13:49:02 2000  Uechi Yasumasa <uechi@ryucom.ne.jp>
 
-	* lib/net/ftp.rb: support resume.
+	* lib/net/ftp.rb: support resuming.
 
 Thu Jun 22 13:37:19 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* eval.c (rb_thread_sleep_forever): merge pause() macro.
+
+Wed Jun 21 08:49:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): should not raise exception just by defining
+	  singleton class.
+
+Wed Jun 21 01:18:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.h: two macros RUBY_DATA_FUNC and RUBY_METHOD_FUNC are added
+	  to make writing C++ extensions easier.
+
+	* array.c (rb_ary_dup): internal classes should not be shared by dup.
+
+	* hash.c (rb_hash_dup): ditto.
+
+	* object.c (rb_obj_dup): ditto.
+
+	* string.c (rb_str_dup): ditto.
+
+	* error.c (Init_Exception): renamed NotImplementError to
+	  NotImplementedError. 
+
+Tue Jun 20 16:22:38 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (make_time_t): bug in DST boundary.
 
 Tue Jun 20 10:54:19 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -15,6 +45,13 @@ Tue Jun 20 06:14:43 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 	* lib/cgi.rb: change: version syntax. old: x.yz, now: x.y.z
 
 	* lib/net/telnet.rb: ditto.
+
+Tue Jun 20 00:37:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_kcode_m): Regexp#kcode returns nil for code unfixed
+	  regexp object.
+
+	* bignum.c (bigdivmod): bignum zero check was wrong.
 
 Mon Jun 19 10:48:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

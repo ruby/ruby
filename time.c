@@ -316,6 +316,11 @@ make_time_t(tptr, utc_or_local)
 	tm = localtime(&guess);
 	if (!tm) goto error;
 	guess -= tm->tm_gmtoff;
+	tm = localtime(&guess);
+	if (!tm) goto error;
+	if (tm->tm_hour != tptr->tm_hour) {
+	    guess += (tptr->tm_hour - tm->tm_hour)*3600;
+	}
 #else
 	struct tm gt, lt;
 	long tzsec;
@@ -338,18 +343,17 @@ make_time_t(tptr, utc_or_local)
 	else {
 	    tzsec += (gt.tm_yday - lt.tm_yday)*24*3600;
 	}
-
 	if (lt.tm_isdst) guess += 3600;
 	guess += tzsec;
 	if (guess < 0) {
 	    goto out_of_range;
 	}
-#endif
 	tm = localtime(&guess);
 	if (!tm) goto error;
-	if (tm->tm_hour != tptr->tm_hour) {
+	if (lt.tm_isdst != tm->tm_isdst) {
 	    guess -= 3600;
 	}
+#endif
 	if (guess < 0) {
 	    goto out_of_range;
 	}

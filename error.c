@@ -549,7 +549,9 @@ Init_Exception()
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
     rb_eNameError   = rb_define_class("NameError", rb_eScriptError);
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
-    rb_eNotImpError = rb_define_class("NotImplementError", rb_eScriptError);
+    rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
+    /* backward compatibility -- will be removed in the future */
+    rb_define_global_const("NotImplementError", rb_eNotImpError);
 
     rb_eRuntimeError = rb_define_class("RuntimeError", rb_eStandardError);
     rb_eSecurityError = rb_define_class("SecurityError", rb_eStandardError);

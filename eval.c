@@ -1420,6 +1420,28 @@ rb_mod_s_constants()
     return ary;
 }
 
+static void
+frozen_class_p(klass)
+    VALUE klass;
+{
+    char *desc = "something(?!)";
+
+    if (OBJ_FROZEN(klass)) {
+	if (FL_TEST(klass, FL_SINGLETON))
+	    desc = "object";
+	else {
+	    switch (TYPE(klass)) {
+	      case T_MODULE:
+	      case T_ICLASS:
+		desc = "module"; break;
+	      case T_CLASS:
+		desc = "class"; break;
+	    }
+	}
+	rb_error_frozen(desc);
+    }
+}
+
 void
 rb_undef(klass, id)
     VALUE klass;
@@ -1434,7 +1456,7 @@ rb_undef(klass, id)
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't undef");
     }
-    if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
+    frozen_class_p(klass);
     body = search_method(ruby_class, id, &origin);
     if (!body || !body->nd_body) {
 	char *s0 = " class";
@@ -1476,6 +1498,7 @@ rb_alias(klass, name, def)
     VALUE origin;
     NODE *orig, *body;
 
+    frozen_class_p(klass);
     if (name == def) return;
     if (klass == rb_cObject) {
 	rb_secure(4);
@@ -2757,6 +2780,7 @@ rb_eval(self, n)
 	    if (ruby_class == rb_cObject && node->nd_mid == init) {
 		rb_warn("re-defining Object#initialize may cause infinite loop");
 	    }
+	    frozen_class_p(ruby_class);
 	    body = search_method(ruby_class, node->nd_mid, &origin);
 	    if (body){
 		if (RTEST(ruby_verbose) && ruby_class == origin) {
@@ -2975,7 +2999,6 @@ rb_eval(self, n)
 	    }
 	    if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass))
 		rb_raise(rb_eSecurityError, "Insecure: can't extend object");
-	    if (OBJ_FROZEN(klass)) rb_error_frozen("object");
 	    if (FL_TEST(CLASS_OF(klass), FL_SINGLETON)) {
 		rb_clear_cache();
 	    }

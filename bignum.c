@@ -451,8 +451,8 @@ rb_big_to_i(x)
     return bignorm(x);
 }
 
-VALUE
-rb_dbl2big(d)
+static VALUE
+dbl2big(d)
     double d;
 {
     unsigned long i = 0;
@@ -481,7 +481,14 @@ rb_dbl2big(d)
 	digits[i] = (USHORT)c;
     }
 
-    return bignorm(z);
+    return z;
+}
+
+VALUE
+rb_dbl2big(d)
+    double d;
+{
+    return bignorm(dbl2big(d));
 }
 
 double
@@ -521,7 +528,7 @@ rb_big_cmp(x, y)
 	break;
 
       case T_FLOAT:
-	y = rb_dbl2big(RFLOAT(y)->value);
+	y = dbl2big(RFLOAT(y)->value);
 	break;
 
       default:
@@ -553,7 +560,7 @@ rb_big_eq(x, y)
       case T_BIGNUM:
 	break;
       case T_FLOAT:
-	y = rb_dbl2big(RFLOAT(y)->value);
+	y = dbl2big(RFLOAT(y)->value);
 	break;
       default:
 	return Qfalse;
@@ -894,7 +901,7 @@ bigdivmod(x, y, div, mod, modulo)
 	if (modulo && RBIGNUM(x)->sign != RBIGNUM(y)->sign) {
 	    long len = ny;
 	    zds = BDIGITS(*mod);
-	    while (len-- && !zds[len]);
+	    while (len && !zds[len]) len--;
 	    if (len > 0) {
 		*mod = bigadd(*mod, y, 1);
 		return;
@@ -946,7 +953,7 @@ rb_big_modulo(x, y, modulo)
 	break;
 
       case T_FLOAT:
-	y = rb_dbl2big(RFLOAT(y)->value);
+	y = dbl2big(RFLOAT(y)->value);
 	break;
 
       default:
@@ -983,7 +990,7 @@ rb_big_divmod(x, y)
 	break;
 
       case T_FLOAT:
-	y = rb_dbl2big(RFLOAT(y)->value);
+	y = dbl2big(RFLOAT(y)->value);
 	break;
 
       case T_BIGNUM:
@@ -994,7 +1001,7 @@ rb_big_divmod(x, y)
     }
     bigdivmod(x, y, &div, &mod, 1);
 
-    return rb_assoc_new(div, mod);;
+    return rb_assoc_new(div, mod);
 }
 
 VALUE

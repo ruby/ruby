@@ -26,6 +26,18 @@ Methods:
         今までに追加した文字列に対するハッシュ値を16バイト長の文字列で
         返す．
 
+   hexdigest
+
+        今までに追加した文字列に対するハッシュ値を、ASCIIコードを使って
+	16進数の列を示す'fe5c2235f48d2bcc911afabea23cd5aa'のような32文字
+	の文字列にエンコードして返す。Rubyで書くと以下と同じ。
+
+	def hexdigest
+  	  ret = ''
+	  digest.each_byte {|i| ret << sprintf('%02x', i) }
+	  ret
+	end
+
    update(str)
 
         MD5オブジェクトに文字列を追加する。複数回updateを呼ぶことは文

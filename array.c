@@ -680,9 +680,13 @@ static VALUE
 rb_ary_dup(ary)
     VALUE ary;
 {
+    VALUE klass = CLASS_OF(ary);
     VALUE dup;
 
-    dup = rb_ary_s_create(RARRAY(ary)->len, RARRAY(ary)->ptr, CLASS_OF(ary));
+    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	klass = (VALUE)RCLASS(klass)->super;
+    }
+    dup = rb_ary_s_create(RARRAY(ary)->len, RARRAY(ary)->ptr, klass);
     if (OBJ_TAINTED(ary)) OBJ_TAINT(dup);
     return dup;
 }

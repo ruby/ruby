@@ -210,31 +210,33 @@ SRC
   return true
 end
 
-def have_func(func)
+def have_func(func, header=nil)
   printf "checking for %s()... ", func
   STDOUT.flush
 
   libs = $libs
-
-  if /mswin32|mingw/ =~ RUBY_PLATFORM
-    r = try_link(<<"SRC", libs)
+  src = 
+    if /mswin32|mingw/ =~ RUBY_PLATFORM
+      r = <<"SRC"
 #include <windows.h>
 #include <winsock.h>
+SRC
+    else
+      ""
+    end
+  unless header.nil?
+  src << <<"SRC"
+#include <#{header}>
+SRC
+  end
+  r = try_link(src + <<"SRC", libs)
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
-    unless r
-      r = try_link(<<"SRC", libs)
-#include <windows.h>
-#include <winsock.h>
+  unless r
+    r = try_link(src + <<"SRC", libs)
 int main() { return 0; }
 int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
-SRC
-    end
-  else
-    r = try_link(<<"SRC", libs)
-int main() { return 0; }
-int t() { #{func}(); return 0; }
 SRC
   end
   unless r

@@ -397,7 +397,9 @@ w_object(obj, arg, limit)
 		char *path;
 
 		if (FL_TEST(klass, FL_SINGLETON)) {
-		    rb_raise(rb_eTypeError, "singleton can't be dumped");
+		    if (RCLASS(klass)->m_tbl->num_entries > 0) {
+			rb_raise(rb_eTypeError, "singleton can't be dumped");
+		    }
 		}
 		path = rb_class2name(klass);
 		w_unique(path, arg);

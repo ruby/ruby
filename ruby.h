@@ -290,6 +290,7 @@ struct RData {
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
+#define RUBY_DATA_FUNC(func) ((void (*)_((void*)))func)
 VALUE rb_data_object_alloc _((VALUE,void*,void (*) _((void*)),void (*) _((void*))));
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
     sval = ALLOC(type),\
@@ -406,6 +407,7 @@ void rb_define_readonly_variable _((const char*,VALUE*));
 void rb_define_const _((VALUE,const char*,VALUE));
 void rb_define_global_const _((const char*,VALUE));
 
+#define RUBY_METHOD_FUNC(func) ((VALUE (*)__((...)))func)
 void rb_define_method _((VALUE,const char*,VALUE(*)(),int));
 void rb_define_module_function _((VALUE,const char*,VALUE(*)(),int));
 void rb_define_global_function _((const char*,VALUE(*)(),int));

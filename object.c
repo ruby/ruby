@@ -113,10 +113,14 @@ static VALUE
 rb_obj_dup(obj)
     VALUE obj;
 {
-    VALUE dup;
-
     if (TYPE(obj) == T_OBJECT) {
-	dup = rb_obj_alloc(RBASIC(obj)->klass);
+	VALUE klass = CLASS_OF(obj);
+	VALUE dup;
+
+	while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	    klass = (VALUE)RCLASS(klass)->super;
+	}
+	dup = rb_obj_alloc(klass);
 	if (ROBJECT(obj)->iv_tbl) {
 	    ROBJECT(dup)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
 	}

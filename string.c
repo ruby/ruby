@@ -181,31 +181,34 @@ rb_str_dup(str)
     VALUE str;
 {
     VALUE str2;
+    VALUE klass;
 
     if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
-    if (OBJ_FROZEN(str)) return rb_str_new3(str);
-    if (FL_TEST(str, STR_NO_ORIG)) {
-	str2 = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
-	OBJ_INFECT(str2, str);
-	return str2;
-    }
-    if (RSTRING(str)->orig) {
-	str2 = rb_str_new3(RSTRING(str)->orig);
-	OBJ_INFECT(str2, str);
-	return str2;
+    klass = CLASS_OF(str);
+    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	klass = (VALUE)RCLASS(klass)->super;
     }
 
-    str2 = rb_str_new4(str);
-    {
+    if (OBJ_FROZEN(str)) str2 = rb_str_new3(str);
+    else if (FL_TEST(str, STR_NO_ORIG)) {
+	str2 = rb_str_new(RSTRING(str)->ptr, RSTRING(str)->len);
+    }
+    else if (RSTRING(str)->orig) {
+	str2 = rb_str_new3(RSTRING(str)->orig);
+    }
+    else {
 	NEWOBJ(dup, struct RString);
-	OBJSETUP(dup, rb_cString, T_STRING);
+	OBJSETUP(dup, klass, T_STRING);
+
+	str2 = rb_str_new4(str);
 	dup->len = RSTRING(str2)->len;
 	dup->ptr = RSTRING(str2)->ptr;
 	dup->orig = str2;
-	OBJ_INFECT(dup, str);
-
-	return (VALUE)dup;
+	str2 = (VALUE)dup;
     }
+    OBJ_INFECT(str2, str);
+    RBASIC(str2)->klass = klass;
+    return str2;
 }
 
 
@@ -326,7 +329,7 @@ rb_str_substr(str, beg, len)
     VALUE str2;
 
     if (len < 0) return Qnil;
-    if (beg > RSTRING(str)->len) return Qnil;
+    if (beg >= RSTRING(str)->len) return Qnil;
     if (beg < 0) {
 	beg += RSTRING(str)->len;
 	if (beg < 0) return Qnil;

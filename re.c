@@ -373,7 +373,7 @@ static VALUE
 rb_reg_kcode_m(re)
     VALUE re;
 {
-    char *kcode = "$KCODE";
+    char *kcode;
 
     if (FL_TEST(re, KCODE_FIXED)) {
 	switch (RBASIC(re)->flags & KCODE_MASK) {
@@ -386,11 +386,12 @@ rb_reg_kcode_m(re)
 	  case KCODE_UTF8:
 	    kcode = "utf8"; break;
 	  default:
+	    rb_bug("unknow kcode - should not happen");
 	    break;
 	}
+	return rb_str_new2(kcode);
     }
-
-    return rb_str_new2(kcode);
+    return Qnil;
 }
 
 static Regexp*

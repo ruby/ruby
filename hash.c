@@ -268,8 +268,13 @@ static VALUE
 rb_hash_dup(hash)
     VALUE hash;
 {
+    VALUE klass = CLASS_OF(hash);
+
     NEWOBJ(dup, struct RHash);
-    OBJSETUP(dup, CLASS_OF(hash), T_HASH);
+    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	klass = (VALUE)RCLASS(klass)->super;
+    }
+    OBJSETUP(dup, klass, T_HASH);
 
     dup->iter_lev = 0;
     dup->ifnone = RHASH(hash)->ifnone;
