@@ -1,5 +1,7 @@
 Tue Nov 30 16:18:50 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* io.c (io_fread): need not to null terminate.  [ruby-dev:24998]
+
 	* eval.c (rb_eval): should check previous frame for ZSUPER.
 
 	* io.c (read_all): remove unnecessary rb_str_resize().
