@@ -1,5 +1,9 @@
 This file is not actively maintained.  See ChangeLog for recent changes.
 
+: open-uri.rb
+
+  Imported.  This is an easy-to-use wrapper for net/http and net/ftp.
+
 : Class#inherited
 
   Method is called when Class is inherited by another class.
