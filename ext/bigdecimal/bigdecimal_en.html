@@ -1,3 +1,4 @@
+<!-- saved from url=(0022)http://internet.e-mail -->
 <HTML>
 <HEAD>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html">
@@ -105,7 +106,8 @@ For details,see the util.rb code.
 a=BigDecimal::new(s[,n]) or<BR>
 a=BigDecimal(s[,n]) or<BR>
 where:<BR>
-s: Initial value string.<BR>
+s: Initial value string. Spaces will be ignored. Any unrecognizable character for 
+representing initial value terminates the string.<BR>
 n: Maximum number of significant digits of a. n must be a Fixnum object.
 If n is omitted or is equal to 0,then the maximum number of significant digits of a is determined from the length of s.
 Actual number of digits handled in computations are usually gretaer than n.<BR>
@@ -373,6 +375,14 @@ n can be an string representing a positive integer number.
 <CODE><PRE>
 BigDecimal("0.1234567890123456789").to_s("10") #  ==> "0.1234567890 123456789E0"
 </PRE></CODE>
+If the first character is '+'(or ' '),then '+'(or ' ') will be set before value string
+when the value is positive.
+<CODE><PRE>
+BigDecimal("0.1234567890123456789").to_s(" 10") #  ==> " 0.1234567890 123456789E0"
+BigDecimal("0.1234567890123456789").to_s("+10") #  ==> "+0.1234567890 123456789E0"
+BigDecimal("-0.1234567890123456789").to_s("10") #  ==> "-0.1234567890 123456789E0"
+</PRE></CODE>
+
 At the end of the string,'E'(or 'e') or 'F'(or 'f') can be specified to change 
 number representation.
 <CODE><PRE>
@@ -501,42 +511,7 @@ same as ==,used in case statement.
 <LI>&gt;=</LI>
 </UL>
 
-<H4><U>Class methods(trial version)</U></H4>
-Following class methods are in trial stage, and not usable in default.
-Uncomment /* #define ENABLE_TRIAL_METHOD */ in bigdecimal.c, compile and install 
-again if you want to use.
-<UL>
-<LI><B>E</B></LI><BLOCKQUOTE>
-e = BigDecimal::E(n)<BR>
-where e(=2.718281828....) is the base value of natural logarithm.<BR>
-n specifies the length of significant digits of e.
-
-</BLOCKQUOTE>
-<LI><B>PI</B></LI><BLOCKQUOTE>
-e = BigDecimal::PI(n)<BR>
-returns at least n digits of the ratio of the circumference of a circle to its diameter
-(pi=3.14159265358979....) using J.Machin's formula.<BR>
-</BLOCKQUOTE>
-</UL>
-
-<H4><U>Instance methods(trial version)</U></H4>
-Following instance methods are in trial stage, and not usable in default.
-Uncomment /* #define ENABLE_TRIAL_METHOD */ in bigdecimal.c, compile and install 
-again if you want to use.
-<UL>
-<LI><B>sincos</B></LI><BLOCKQUOTE>
-computes and returns sine and cosine value of a with significant digit number n at least.<BR>
-sin,cos = a.sincos(n)<BR>
-Computation may return bad results unless |a|<2*3.1415..... 
-</BLOCKQUOTE>
-<LI><B>exp</B></LI><BLOCKQUOTE>
-c = a.exp(n)<BR>
-computes the base of natural logarithm value(e=2.718281828....) powered by a
-with significant digit number n at least.<BR>
-</BLOCKQUOTE>
-</UL>
 <HR>
-
 <H3>About 'coerce'</H3>
 <B>For the binary operation like A op B:</B>
 <DL>

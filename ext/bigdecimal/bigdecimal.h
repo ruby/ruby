@@ -26,7 +26,7 @@ extern "C" {
 #define SZ_NaN  "NaN"
 #define SZ_INF  "Infinity"
 #define SZ_PINF "+Infinity"
-#define SZ_NINF "+Infinity"
+#define SZ_NINF "-Infinity"
 
 /*
  *   #define VP_EXPORT other than static to let VP_ routines 
@@ -140,9 +140,9 @@ VP_EXPORT int VpDivd(Real *c,Real *r,Real *a,Real *b);
 VP_EXPORT int VpComp(Real *a,Real *b);
 VP_EXPORT S_LONG VpExponent10(Real *a);
 VP_EXPORT void VpSzMantissa(Real *a,char *psz);
-VP_EXPORT int VpToSpecialString(Real *a,char *psz);
-VP_EXPORT void VpToString(Real *a,char *psz,int fFmt);
-VP_EXPORT void VpToFString(Real *a,char *psz,int fFmt);
+VP_EXPORT int VpToSpecialString(Real *a,char *psz,int fPlus);
+VP_EXPORT void VpToString(Real *a,char *psz,int fFmt,int fPlus);
+VP_EXPORT void VpToFString(Real *a,char *psz,int fFmt,int fPlus);
 VP_EXPORT int VpCtoV(Real *a,char *int_chr,U_LONG ni,char *frac,U_LONG nf,char *exp_chr,U_LONG ne);
 VP_EXPORT int VpVtoD(double *d,S_LONG *e,Real *m);
 VP_EXPORT void VpDtoV(Real *m,double d);
@@ -157,12 +157,6 @@ VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
 /* VP constants */
 VP_EXPORT Real *VpOne();
 
-#ifdef ENABLE_TRIAL_METHOD
-VP_EXPORT void VpPi(Real *y);
-VP_EXPORT void VpExp1(Real *y);
-VP_EXPORT void VpExp(Real *y,Real *x);
-VP_EXPORT void VpSinCos(Real *psin,Real *pcos,Real *x);
-#endif /* ENABLE_TRIAL_METHOD */
 /*  
  *  ------------------
  *  MACRO definitions.

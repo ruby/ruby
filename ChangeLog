@@ -1,3 +1,9 @@
+Tue Aug 19 23:20:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c .h .html: to_s("+") implemented.
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb: E implemented.
+
 Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/ssl.rb: new file; SSL/TLS enhancement for GenericServer.
