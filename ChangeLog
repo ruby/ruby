@@ -1,3 +1,7 @@
+Sun Feb  1 23:00:00 2004  Shigeo Kobayashi <shigek@ruby-lang.org>
+	* ext/bigdecimal.c: Bug in BigDecimal("1e#{n}").add BigDecimal('.5'),n)
+	  reported and fixed by Javier Goizueta.
+
 Sun Feb  1 05:30:06 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): warn HTTP_PROXY.

@@ -3788,10 +3788,9 @@ VpMidRound(Real *y, int f, int nf)
     }
     for(i=0;i<=n;++i) div *= 10;
     if(div>=BASE) {
-        y->frac[ix] = 0;
         if(ix) {
-            VpNmlz(y);
-            VpRdup(y,0);
+            y->frac[ix] = 0;
+            VpRdup(y,ix);
         } else {
             S_INT s = VpGetSign(y);
             VpSetOne(y);
