@@ -15,6 +15,8 @@ module DL
       ["PDWORD", "unsigned long *", nil, nil, nil, nil],
       ["WORD",   "unsigned short", nil, nil, nil, nil],
       ["PWORD",  "unsigned int *", nil, nil, nil, nil],
+      ["BYTE",   "unsigned char",   nil, nil, nil, nil],
+      ["PBYTE",  "unsigned char *", nil, nil, nil, nil],
       ["BOOL",   "ibool", nil, nil, nil, nil],
       ["ATOM",   "int", nil, nil, nil, nil],
       ["BYTE",   "unsigned char", nil, nil, nil, nil],
@@ -95,9 +97,9 @@ module DL
       ["long",   "L", nil, nil, nil, nil],
       ["float",  "F", nil, nil, nil, nil],
       ["double", "D", nil, nil, nil, nil],
-      [/char\s*\*/,"S",nil, nil, nil, nil],
-      [/.+\*/,   "P", nil, nil, nil, nil],
-      [/.+\[\]/, "a", nil, nil, nil, nil],
+      [/^char\s*\*$/,"S",nil, nil, nil, nil],
+      [/^.+\*$/,   "P", nil, nil, nil, nil],
+      [/^.+\[\]$/, "a", nil, nil, nil, nil],
       ["void",   "0", nil, nil, nil, nil],
     ]
 
@@ -120,10 +122,10 @@ module DL
       senc = nil
       sdec = nil
       @TYDEFS.each{|t1,t2,c1,c2,c3,c4|
-	if( t1.is_a?(String) )
-	  t1 = Regexp.new("^" + t1 + "$")
-	end
-	if( t1 =~ ty )
+#	if( t1.is_a?(String) )
+#	  t1 = Regexp.new("^" + t1 + "$")
+#	end
+	if( (t1.is_a?(Regexp) && (t1 =~ ty)) || (t1 == ty) )
 	  ty = ty.gsub(t1,t2)
 	  if( enc )
 	    if( c1 )
