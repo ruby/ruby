@@ -1,6 +1,25 @@
 Summary of the changes since 1.6.4:
 
-: $SAFE
+: $SAFE / load
+
+  Fixed a bug that a file with a tainted filename can be loaded even
+  under $SAFE == 1 when the second argument is true.  [ruby-dev:13481]
+
+    $SAFE = 1
+    filename = "foo"
+    filename.taint
+    load(filename, true)
+    #=> true
+
+: Regexp
+
+  Fixed for the following case.  [ruby-talk:16233]
+
+    ruby -e 'puts "OK" if /(.|a)bd/ =~ "cxbd"'
+    ruby -e 'puts "OK" if /(a|.)bd/ =~ "cxbd"'
+    #=> OK
+
+: $SAFE / def
 
   Fixed so defining a new method is allowed under $SAFE == 4, which
   previously wasn't.
@@ -28,7 +47,7 @@ Summary of the changes since 1.6.3:
       end
     }
 
-: File::unlink
+: $SAFE / File::unlink
 
   Changed to be forbidden under $SAFE >= 2.
 
@@ -90,7 +109,7 @@ Summary of the changes since 1.6.3:
 
   Now it properly produces [1, 2, 3].
 
-: $SAFE
+: $SAFE / alias
 
   Fixed so aliasing global valiables is disallowed under $SAFE == 4.
   ((<ruby-dev:13287>))
