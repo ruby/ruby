@@ -1,3 +1,7 @@
+Fri Apr 19 17:06:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/extconf.rb: include <windows.h>, <winsock.h> on _WIN32.
+	
 Thu Apr 11 18:40:38 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (read_all): return "" if file.size == 0.
