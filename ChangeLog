@@ -1,3 +1,12 @@
+Wed Jul 12 15:04:11 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.26.
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb:
+	  add module Net::NetPrivate and its inner classes
+	  {Read,Write}Adapter, Command, Socket,
+	  SMTPCommand, POP3Command, APOPCommand, HTTPCommand
+
 Tue Jul 11 16:54:17 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (yylex): `@<digit>' is no longer a valid instance

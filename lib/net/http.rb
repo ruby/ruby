@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb
+= net/http.rb version 1.1.27
 
 maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This file is derived from "http-access.rb".
@@ -25,8 +25,6 @@ You can freely distribute/modify this library.
 : port
   HTTP default port, 80
 
-: command_type
-  Command class for Net::HTTP, HTTPCommand
 
 == Methods
 
@@ -116,9 +114,9 @@ You can freely distribute/modify this library.
 
     ex.
     
-    http.post2( '/index.html', 'data data data...' ) do |f|
-      f.header
-      f.body
+    http.post2( '/index.html', 'data data data...' ) do |adapter|
+      adapter.header
+      adapter.body
     end
 
 
@@ -214,13 +212,13 @@ module Net
   class HTTP < Protocol
 
     protocol_param :port,         '80'
-    protocol_param :command_type, '::Net::HTTPCommand'
+    protocol_param :command_type, '::Net::NetPrivate::HTTPCommand'
 
     class << self
 
       def procdest( dest, block )
         if block then
-          return ReadAdapter.new( block ), nil
+          return NetPrivate::ReadAdapter.new( block ), nil
         else
           dest ||= ''
           return dest, dest
@@ -420,43 +418,6 @@ module Net
   HTTPSession = HTTP
 
 
-  class HTTPReadAdapter
-
-    def initialize( command )
-      @command = command
-      @header = @body = nil
-    end
-
-    def inspect
-      "#<#{type}>"
-    end
-
-    def header
-      unless @header then
-        @header = @command.get_response
-      end
-      @header
-    end
-    alias response header
-
-    def body( dest = nil, &block )
-      dest, ret = HTTP.procdest( dest, block )
-      unless @body then
-        @body = @command.get_body( response, dest )
-      end
-      @body
-    end
-    alias entity body
-
-    def off
-      body
-      @command = nil
-      @header
-    end
-  
-  end
-
-
   class HTTPResponse < Response
 
     def initialize( code_type, bexist, code, msg )
@@ -470,7 +431,7 @@ module Net
     attr_accessor :body
 
     def inspect
-      "#<Net::HTTPResponse #{code}>"
+      "#<#{type.name} #{code}>"
     end
 
     def []( key )
@@ -557,6 +518,47 @@ module Net
   HTTPServiceUnavailable            = HTTPFatalErrorCode.mkchild
   HTTPGatewayTimeOut                = HTTPFatalErrorCode.mkchild
   HTTPVersionNotSupported           = HTTPFatalErrorCode.mkchild
+
+
+  class HTTPReadAdapter
+
+    def initialize( command )
+      @command = command
+      @header = @body = nil
+    end
+
+    def inspect
+      "#<#{type}>"
+    end
+
+    def header
+      unless @header then
+        @header = @command.get_response
+      end
+      @header
+    end
+    alias response header
+
+    def body( dest = nil, &block )
+      dest, ret = HTTP.procdest( dest, block )
+      unless @body then
+        @body = @command.get_body( response, dest )
+      end
+      @body
+    end
+    alias entity body
+
+    def off
+      body
+      @command = nil
+      @header
+    end
+  
+  end
+
+
+
+  module NetPrivate
 
 
   class HTTPCommand < Command
@@ -818,5 +820,7 @@ module Net
 
   end
 
+
+  end   # module Net::NetPrivate
 
 end   # module Net

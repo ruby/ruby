@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb
+= net/pop.rb version 1.1.27
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -117,7 +117,7 @@ module Net
   class POP3 < Protocol
 
     protocol_param :port,         '110'
-    protocol_param :command_type, '::Net::POP3Command'
+    protocol_param :command_type, '::Net::NetPrivate::POP3Command'
 
     protocol_param :mail_type,    '::Net::POPMail'
 
@@ -155,6 +155,12 @@ module Net
   POP3Session = POP3
 
 
+  class APOP < POP3
+    protocol_param :command_type, 'Net::NetPrivate::APOPCommand'
+  end
+
+  APOPSession = APOP
+
 
   class POPMail
 
@@ -174,7 +180,7 @@ module Net
 
     def all( dest = '' )
       if iterator? then
-        dest = ReadAdapter.new( Proc.new )
+        dest = NetPrivate::ReadAdapter.new( Proc.new )
       end
       @command.retr( @num, dest )
     end
@@ -207,12 +213,7 @@ module Net
 
 
 
-  class APOP < POP3
-    protocol_param :command_type, 'Net::APOPCommand'
-  end
-
-  APOPSession = APOP
-
+  module NetPrivate
 
 
   class POP3Command < Command
@@ -311,7 +312,6 @@ module Net
   end
 
 
-
   class APOPCommand < POP3Command
 
     def initialize( sock )
@@ -334,4 +334,7 @@ module Net
 
   end
 
-end
+
+  end   # module Net::NetPrivate
+
+end   # module Net

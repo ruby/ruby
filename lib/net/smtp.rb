@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb
+= net/smtp.rb version 1.1.27
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -84,7 +84,7 @@ module Net
   class SMTP < Protocol
 
     protocol_param :port,         '25'
-    protocol_param :command_type, '::Net::SMTPCommand'
+    protocol_param :command_type, '::Net::NetPrivate::SMTPCommand'
 
 
     def initialize( addr = nil, port = nil )
@@ -155,6 +155,9 @@ module Net
 
   SMTPSession = SMTP
 
+
+
+  module NetPrivate
 
 
   class SMTPCommand < Command
@@ -286,4 +289,7 @@ module Net
 
   end
 
-end
+
+  end   # module Net::NetPrivate
+
+end   # module Net

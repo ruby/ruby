@@ -1,6 +1,6 @@
 =begin
 
-= net/protocol.rb
+= net/protocol.rb version 1.1.27
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -64,7 +64,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.26'
+    Version = '1.1.27'
 
 
     class << self
@@ -137,7 +137,7 @@ module Net
 
     protocol_param :port,         'nil'
     protocol_param :command_type, 'nil'
-    protocol_param :socket_type,  '::Net::Socket'
+    protocol_param :socket_type,  '::Net::NetPrivate::Socket'
 
 
     def initialize( addr = nil, port = nil )
@@ -219,72 +219,6 @@ module Net
   Session = Protocol
 
 
-
-  class Command
-
-    def initialize( sock )
-      @socket = sock
-      @last_reply = nil
-      @critical = false
-    end
-
-    attr_accessor :socket
-    attr_reader :last_reply
-
-    def inspect
-      "#<#{type}>"
-    end
-
-    # abstract quit
-
-
-    private
-
-    # abstract get_reply()
-
-    def check_reply( *oks )
-      @last_reply = get_reply
-      reply_must( @last_reply, *oks )
-    end
-
-    def reply_must( rep, *oks )
-      oks.each do |i|
-        if i === rep then
-          return rep
-        end
-      end
-      rep.error!
-    end
-
-    def getok( line, ok = SuccessCode )
-      @socket.writeline line
-      check_reply ok
-    end
-
-
-    def critical
-      return if @critical
-      @critical = true
-      r = yield
-      @critical = false
-      r
-    end
-
-    def critical?
-      @critical
-    end
-
-    def begin_critical
-      ret = @critical
-      @critical = true
-      not ret
-    end
-
-    def end_critical
-      @critical = false
-    end
-
-  end
 
 
   class Response
@@ -379,6 +313,9 @@ module Net
 
 
 
+  module NetPrivate
+
+
   class WriteAdapter
 
     def initialize( sock, mid )
@@ -411,6 +348,73 @@ module Net
       @block.call str
     end
   
+  end
+
+
+  class Command
+
+    def initialize( sock )
+      @socket = sock
+      @last_reply = nil
+      @critical = false
+    end
+
+    attr_accessor :socket
+    attr_reader :last_reply
+
+    def inspect
+      "#<#{type}>"
+    end
+
+    # abstract quit
+
+
+    private
+
+    # abstract get_reply()
+
+    def check_reply( *oks )
+      @last_reply = get_reply
+      reply_must( @last_reply, *oks )
+    end
+
+    def reply_must( rep, *oks )
+      oks.each do |i|
+        if i === rep then
+          return rep
+        end
+      end
+      rep.error!
+    end
+
+    def getok( line, ok = SuccessCode )
+      @socket.writeline line
+      check_reply ok
+    end
+
+
+    def critical
+      return if @critical
+      @critical = true
+      r = yield
+      @critical = false
+      r
+    end
+
+    def critical?
+      @critical
+    end
+
+    def begin_critical
+      ret = @critical
+      @critical = true
+      not ret
+    end
+
+    def end_critical
+      @critical = false
+    end
+
   end
 
 
@@ -754,6 +758,9 @@ module Net
     end
 
   end
+
+
+  end   # module Net::NetPrivate
 
 
   def Net.quote( str )
