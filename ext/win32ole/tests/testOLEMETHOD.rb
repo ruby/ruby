@@ -22,6 +22,10 @@ class TestOLEMETHOD < RUNIT::TestCase
     m = WIN32OLE_METHOD.new(@excel_app, 'Quit')
     assert_equal('Quit', m.name)
   end
+  def test_to_s
+    m = WIN32OLE_METHOD.new(@excel_app, 'Quit')
+    assert_equal('Quit', "#{m}")
+  end
   def test_return_type
     m = WIN32OLE_METHOD.new(@excel_app, 'ActiveCell')
     assert_equal('Range', m.return_type)

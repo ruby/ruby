@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.3"
+#define WIN32OLE_VERSION "0.5.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -5348,6 +5348,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_TYPE, "guid", foletype_guid, 0);
     rb_define_method(cWIN32OLE_TYPE, "progid", foletype_progid, 0);
     rb_define_method(cWIN32OLE_TYPE, "visible?", foletype_visible, 0);
+    rb_define_alias(cWIN32OLE_TYPE, "to_s", "name");
 
     rb_define_method(cWIN32OLE_TYPE, "major_version", foletype_major_version, 0);
     rb_define_method(cWIN32OLE_TYPE, "minor_version", foletype_minor_version, 0);
@@ -5367,6 +5368,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_VARIABLE, "visible?", folevariable_visible, 0);
     rb_define_method(cWIN32OLE_VARIABLE, "variable_kind", folevariable_variable_kind, 0);
     rb_define_method(cWIN32OLE_VARIABLE, "varkind", folevariable_varkind, 0);
+    rb_define_alias(cWIN32OLE_VARIABLE, "to_s", "name");
 
     cWIN32OLE_METHOD = rb_define_class("WIN32OLE_METHOD", rb_cObject);
     rb_define_alloc_func(cWIN32OLE_METHOD, folemethod_s_allocate);
@@ -5390,6 +5392,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_METHOD, "size_params", folemethod_size_params, 0);
     rb_define_method(cWIN32OLE_METHOD, "size_opt_params", folemethod_size_opt_params, 0);
     rb_define_method(cWIN32OLE_METHOD, "params", folemethod_params, 0);
+    rb_define_alias(cWIN32OLE_METHOD, "to_s", "name");
 
     cWIN32OLE_PARAM = rb_define_class("WIN32OLE_PARAM", rb_cObject);
     rb_define_method(cWIN32OLE_PARAM, "name", foleparam_name, 0);
@@ -5400,6 +5403,7 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_PARAM, "optional?", foleparam_optional, 0);
     rb_define_method(cWIN32OLE_PARAM, "retval?", foleparam_retval, 0);
     rb_define_method(cWIN32OLE_PARAM, "default", foleparam_default, 0);
+    rb_define_alias(cWIN32OLE_PARAM, "to_s", "name");
  
     cWIN32OLE_EVENT = rb_define_class("WIN32OLE_EVENT", rb_cObject);
 

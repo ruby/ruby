@@ -31,6 +31,15 @@ class TestOLETYPE < RUNIT::TestCase
     }
     assert(class_names.include?('Application'))
   end
+
+  def test_class_to_s
+    classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
+    class_names = classes.collect{|c|
+      "#{c}"
+    }
+    assert(class_names.include?('Application'))
+  end
+
   def test_ole_type
     classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
     app = classes.find {|c| c.name == 'Application'}
@@ -79,5 +88,9 @@ class TestOLETYPE < RUNIT::TestCase
     classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
     worksheet = classes.find {|c| c.name == 'Worksheet'}
     assert_equal(131088, worksheet.helpcontext)
+  end
+  def test_to_s
+    type = WIN32OLE_TYPE.new(MS_EXCEL_TYPELIB, 'Application')
+    assert_equal("Application", "#{type}");
   end
 end

@@ -14,6 +14,13 @@ class TestOLEVARIABLE < RUNIT::TestCase
     assert(var_names.size > 0)
     assert(var_names.include?('xl3DColumn'))
   end
+  def test_to_s
+    classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
+    chart = classes.find {|c| c.name == 'XlChartType'}
+    var_names = chart.variables.collect {|m| "#{m}"}
+    assert(var_names.size > 0)
+    assert(var_names.include?('xl3DColumn'))
+  end
   def test_ole_type
     classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
     chart = classes.find {|c| c.name == 'XlChartType'}

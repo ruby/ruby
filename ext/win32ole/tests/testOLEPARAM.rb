@@ -15,6 +15,13 @@ class TestOLEPARAM < RUNIT::TestCase
     assert(param_names.size > 0)
     assert(param_names.include?('Filename'))
   end
+  def test_to_s
+    classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
+    sh = classes.find {|c| c.name == 'Worksheet'}
+    saveas = sh.ole_methods.find {|m| m.name == 'SaveAs'}
+    param_names = saveas.params.collect{|p| "#{p}"}
+    assert(param_names.include?('Filename'))
+  end
   def test_ole_type
     classes = WIN32OLE_TYPE.ole_classes(MS_EXCEL_TYPELIB)
     methods = classes.find {|c| c.name == 'Worksheet'}.ole_methods
