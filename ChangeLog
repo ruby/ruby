@@ -1,3 +1,11 @@
+Tue Dec  9 17:54:56 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.0-971209
+
+	* sample/ruby-mode.el (ruby-expr-beg): forgot to handle modifiers.
+
+	* parse.y (tokadd): token buffer overrun.
+
 Thu Dec  4 14:29:59 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.0-971204

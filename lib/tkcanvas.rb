@@ -92,7 +92,7 @@ class TkCanvas<TkWindow
   def itemtype(tag)
     tk_send 'type', tagid(tag)
   end
-  def postscript(keys=None)
+  def postscript(keys)
     tk_send "postscript", *hash_kv(keys)
   end
   def raise(tag, above=None)

@@ -18,6 +18,8 @@ $lib_cache = {}
 $func_cache = {}
 $hdr_cache = {}
 
+$dllopt = '-MD'
+
 if File.exist?("config.cache") then
   f = open("config.cache", "r")
   while f.gets
@@ -47,7 +49,7 @@ def older(file1, file2)
 end
 
 LINK = "cl -o conftest -I../.. -Zi -O -I. %s  %s conftest.c %s >  nul"
-CPP = "cl -E  -I../.. -Zi -O -I. %s conftest.c >  nul"
+CPP = "cl -E  -I../.. -I../../missing -I. -Zi -O %s conftest.c >  nul"
 
 def try_link(libs)
   system(format(LINK, $CFLAGS, $LDFLAGS, libs))
@@ -201,10 +203,18 @@ VPATH = .
 
 CC = cl
 
-CFLAGS   = %s -I../.. -Zi -O -I. -DNT -MD #$CFLAGS %s
+CFLAGS   = %s -I../.. -I../../missing -I. -O -DNT %s #$CFLAGS %s
+
+RUBYLIB  = ../../ruby.lib
 DLDFLAGS =  /DLL
 LDSHARED = 
-", if $static then "" else "-fpic" end, $defs.join(" ")
+", if $static then "" else "-fpic" end, $dllopt, $defs.join(" ")
+
+  if $force_static
+    print "static\n"
+  else
+    print "non static\n"
+  end
 
   mfile.printf "\
 
@@ -231,6 +241,8 @@ TARGET = %s.%s
 
 INSTALL = %sginstall -c
 
+DEFFILE = %s.def
+
 all:            $(TARGET)
 
 clean:;         @rm -f *.obj *.lib *.exp *.pdb *.bak
@@ -238,7 +250,7 @@ clean:;         @rm -f *.obj *.lib *.exp *.pdb *.bak
 
 realclean:      clean
 ", target,
-    if $static then "obj" else "obj" end, dots
+    if $force_static then "lib" else "dll" end, dots, target
 
   if !$static
     mfile.printf "\
@@ -256,17 +268,18 @@ install:;
 "
   end
 
-  if !$static && "obj" != "obj"
+  if $force_static
     mfile.printf "\
 $(TARGET): $(OBJS)
-	$(LDSHARED) $(DLDFLAGS) -o $(TARGET) $(OBJS) $(LOCAL_LIBS) $(LIBS)
-"
-  elsif not File.exist?(target + ".c")
-    mfile.printf "\
-$(TARGET): $(OBJS)
-#       ld $(DLDFLAGS) -r -o $(TARGET) $(OBJS)
-	cl -c $(OBJS)
 	lib /OUT:$(TARGET) $(OBJS)
+"
+  else
+      mfile.printf "\
+$(DEFFILE):
+	echo $(DEFFILE)
+
+$(TARGET): $(OBJS)  $(DEFFILE)
+	cl -DLL -o$(TARGET) $(OBJS) $(RUBYLIB) -link /DEF:$(DEFFILE)
 "
   end
 
@@ -318,6 +331,11 @@ def extmake(target)
     if File.exist?("./Makefile")
       if $install
 	system "nmake install"
+	if File.directory? "./lib"
+	  for i in Dir["./lib/*.rb"]
+	    system "ginstall -c #{i} /usr/local/lib/ruby/i386-mswin32"
+	  end
+	end
       elsif $clean
 	system "nmake clean"
       else
@@ -386,15 +404,17 @@ if $extlist.size > 0
   #for s,t in $extlist
   for s,t in $static_ext
     #f = format("%s/%s.obj", s, t)
-    f = format("%s/%s.obj", s, s)
+    #f = format("%s/%s.obj", s, s)
+    l = format("%s/%s.lib", s, s)
 	#print format("%s/%s.obj\n", s, s) ##debug print##
-    if File.exist?(f)
+    if File.exist?(l)
       $extinit += format("\
 \tInit_%s();\n\
 \trb_provide(\"%s.o\");\n\
 ", s, s)
       $extobjs += "ext/"
-      $extobjs += f
+      #$extobjs += f    # *.obj
+      $extobjs += l	# *.lib
       $extobjs += " "
     else
       FALSE
@@ -430,6 +450,30 @@ else
     `cp miniruby.exe ruby.exe`
   end
 end
+
+#template of .def file.
+#LIBRARY kconv.dll
+#CODE LOADONCALL
+#DATA LOADONCALL
+#DESCRIPTION 'win32 kconv.dll'
+#EXPORTS
+#
+#        Init_kconv
+def makedef(basename)
+  defname = sprintf("%s.def", basename)
+  f = open(defname, "w")
+  f.printf "\
+LIBRARY %s.dll
+CODE LOADONCALL
+DATA LOADONCALL
+DESCRIPTION 'win32 %s.dll'
+EXPORTS
+
+	Init_%s
+", basename, basename
+  f.close
+
+end                       
 
 #Local variables:
 # mode: ruby

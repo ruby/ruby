@@ -1609,7 +1609,7 @@ tr_squeeze(str1, str2)
     UCHAR *s, *send, *t;
     char c, save;
 
-    if (str2) {
+    if (!NIL_P(str2)) {
 	tr_setup_table(str2, squeez);
     }
     else {
@@ -1646,7 +1646,7 @@ str_squeeze_bang(argc, argv, str1)
     VALUE str2;
 
     rb_scan_args(argc, argv, "01", &str2);
-    if (str2) {
+    if (!NIL_P(str2)) {
 	Check_Type(str2, T_STRING);
     }
     return tr_squeeze(str1, str2);

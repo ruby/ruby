@@ -84,7 +84,6 @@
 #include <string.h>
 #include <direct.h>
 #include <process.h>
-#include <io.h>
 #include <time.h>
 #include <math.h>
 #include <sys/types.h>

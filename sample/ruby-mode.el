@@ -176,7 +176,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (indent-to x)
 	  (move-to-column (+ x shift))))))
 
-(defun ruby-expr-beg ()
+(defun ruby-expr-beg (&optional modifier)
   (save-excursion
     (if (looking-at "\\?")
 	(progn
@@ -185,14 +185,22 @@ The variable ruby-indent-level controls the amount of indentation.
       (skip-chars-backward " \t")
       (or (bolp) (forward-char -1))
       (or (looking-at ruby-operator-chars)
-	  (looking-at "[\\[({]")
+	  (looking-at "[\\[({!?]")
 	  (bolp)
 	  (and (looking-at ruby-symbol-chars)
 	       (forward-word -1)
 	       (or 
+		(and modifier (bolp))
 		(looking-at ruby-block-beg-re)
 		(looking-at ruby-block-op-re)
-		(looking-at ruby-block-mid-re))
+		(looking-at ruby-block-mid-re)
+		(and modifier
+		     (save-excursion
+		       (forward-char -1)
+		       (let ((c (char-after (point))))
+			 (or (eq c ?.)
+			     (eq c ? )
+			     (eq c ?\t))))))
 	       (goto-char (match-end 0))
 	       (looking-at "[^_]"))))))
 
@@ -590,7 +598,6 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "in"
 	       "module"
 	       "next"
-	       "nil"
 	       "not"
 	       "or"
 	       "raise"
@@ -611,19 +618,27 @@ An end of a defun is found by moving forward from the beginning of one."
 	    "\\)[ \n\t()]")
 	   2)
      ;; variables
-     '("nil\\|self\\|TRUE\\|FALSE"
-       0 font-lock-variable-name-face)
+     '("\\(^\\|[^_]\\)\\b\\(nil\\|self\\|true\\|false\\)\\b[^_]"
+       2 font-lock-variable-name-face)
      ;; variables
      '("\\[$@].\\([a-zA-Z0-9_]\\)"
        0 font-lock-variable-name-face)
      ;; constants
-     '("\\b[A-Z]+[a-zA-Z0-9_]*"
-       0 font-lock-type-face)
+     '("\\(^\\|[^_]\\)\\b\\([A-Z]+[a-zA-Z0-9_]*\\)"
+       2 font-lock-type-face)
      ;; functions
-     '("\\bdef[ \t]+[a-zA-Z_]+[a-zA-Z0-9_]*[?!]?"
+     '("\\bdef[ \t]+\\([a-zA-Z_]+[a-zA-Z0-9_]*[?!=]?\\|\\[\\]=?\\)"
        0 font-lock-function-name-face))
     "*Additional expressions to highlight in ruby mode.")
-  (add-hook 'ruby-mode-hook
-	    (lambda ()
-	      (setq font-lock-keywords ruby-font-lock-keywords)
-	      (font-lock-mode 1)))))
+  (if (and (>= (string-to-int emacs-version) 20)
+          (not (featurep 'xemacs)))
+      (add-hook
+       'ruby-mode-hook
+       (lambda ()
+        (make-local-variable 'font-lock-defaults)
+        (setq font-lock-defaults 
+              '((ruby-font-lock-keywords) nil nil ((?\_ . "w"))))))
+    (add-hook 'ruby-mode-hook
+             (lambda ()
+               (setq font-lock-keywords ruby-font-lock-keywords)
+               (font-lock-mode 1))))))

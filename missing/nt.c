@@ -167,11 +167,7 @@ sleep(unsigned int len)
 //
 // Initialization stuff
 //
-#if (_MSC_VER >= 1000)
-__declspec(dllexport) void __stdcall
-#else
 void
-#endif
 NtInitialize(int *argc, char ***argv) {
 
     WORD version;

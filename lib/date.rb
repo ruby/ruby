@@ -73,8 +73,8 @@ class Date
   end
   
   def +(o)
-    if o.kind_of?(Integer)
-      d = self.period + o
+    if o.kind_of?(Numeric)
+      d = Integer(self.period + o)
     elsif o.kind_of?(Date)
       d = self.period + o.period
     else
@@ -84,10 +84,10 @@ class Date
   end
   
   def -(o)
-    if o.kind_of?(Integer)
-      d = self.period - o
+    if o.kind_of?(Numeric)
+      d = Integer(self.period - o)
     elsif o.kind_of?(Date)
-      d = self.period - o.period
+      return Integer(self.period - o.period)
     else
       raise TypeError, "Illegal type. (Integer or Date)"
     end
@@ -150,6 +150,12 @@ class Date
 end
 
 def Date.at(d)
+  if d.kind_of? Time
+    return Date.new(1900+d.year, d.mon, d.mday)
+  end
+  if d.kind_of? Date
+    return Date.at(d.period)
+  end
   mm = 1
   yy = (d / 366.0).to_i
   if yy != 0

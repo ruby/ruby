@@ -1520,11 +1520,11 @@ static void
 tokadd(c)
     char c;
 {
+    tokenbuf[tokidx++] = c;
     if (tokidx >= toksiz) {
 	toksiz *= 2;
 	REALLOC_N(tokenbuf, char, toksiz);
     }
-    tokenbuf[tokidx++] = c;
 }
 
 static int
@@ -1985,7 +1985,11 @@ retry:
 		c = nextc();
 		if (c == '\n') sourceline++;
 	    }
-	    if (ismbchar(c)) c = nextc();
+	    if (ismbchar(c)) {
+		c = nextc();
+		if (c == '\n')
+		    break;
+	    }
 	}
 	/* fall through */
       case '\n':

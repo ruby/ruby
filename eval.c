@@ -624,11 +624,7 @@ extern char **environ;
 #endif
 char **origenviron;
 
-#if (_MSC_VER >= 1000)
-__declspec(dllexport) void __stdcall
-#else
 void
-#endif
 ruby_init()
 {
     static struct FRAME frame;
@@ -662,11 +658,7 @@ ruby_init()
 
 static int ext_init = 0;
 
-#if (_MSC_VER >= 1000)
-__declspec(dllexport) void __stdcall
-#else
 void
-#endif
 ruby_options(argc, argv)
     int argc;
     char **argv;
@@ -717,11 +709,7 @@ static VALUE thread_current();
 
 static int exit_status;
 
-#if (_MSC_VER >= 1000)
-__declspec(dllexport) void __stdcall
-#else
 void
-#endif
 ruby_run()
 {
     NODE *state;
