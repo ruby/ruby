@@ -1,44 +1,51 @@
+
+#
+# == Introduction
+# 
+# This library extends the Time class:
+# * conversion between date string and time object.
+#   * date-time defined by RFC 2822
+#   * HTTP-date defined by RFC 2616
+#   * dateTime defined by XML Schema Part 2: Datatypes (ISO 8601)
+#   * various formats handled by ParseDate (string to time only)
+# 
+# == Design Issues
+# 
+# === Specialized interface
+# 
+# This library provides methods dedicated to special puposes:
+# * RFC 2822, RFC 2616 and XML Schema.
+# * They makes usual life easier.
+# 
+# === Doesn't depend on strftime
+# 
+# This library doesn't use +strftime+.  Especially #rfc2822 doesn't depend
+# on +strftime+ because:
+# 
+# * %a and %b are locale sensitive
+# 
+#   Since they are locale sensitive, they may be replaced to
+#   invalid weekday/month name in some locales.
+#   Since ruby-1.6 doesn't invoke setlocale by default,
+#   the problem doesn't arise until some external library invokes setlocale.
+#   Ruby/GTK is the example of such library.
+# 
+# * %z is not portable
+# 
+#   %z is required to generate zone in date-time of RFC 2822
+#   but it is not portable.
+#
+# == Revision Information
+#
 # $Id$
+#
 
 require 'parsedate'
 
-=begin
-= time
-
-This library extends Time class:
-* conversion between date string and time object.
-  * date-time defined by RFC 2822
-  * HTTP-date defined by RFC 2616
-  * dateTime defined by XML Schema Part 2: Datatypes (ISO 8601)
-  * various format handled by ParseDate (string to time only)
-
-== Design Issue
-
-* specialized interface
-
-  This library provides methods dedicated to special puposes:
-  RFC 2822, RFC 2616 and XML Schema.
-  They makes usual life easier.
-
-* doesn't depend on strftime
-
-  This library doesn't use strftime.
-  Especially Time#rfc2822 doesn't depend on strftime because:
-
-  * %a and %b are locale sensitive
-
-    Since they are locale sensitive, they may be replaced to
-    invalid weekday/month name in some locales.
-    Since ruby-1.6 doesn't invoke setlocale by default,
-    the problem doesn't arise until some external library invokes setlocale.
-    Ruby/GTK is the example of such library.
-
-  * %z is not portable
-
-    %z is required to generate zone in date-time of RFC 2822
-    but it is not portable.
-=end
-
+#
+# Implements the extensions to the Time class that are described in the
+# documentation for the time.rb library.
+#
 class Time
   class << Time
 
@@ -76,63 +83,56 @@ class Time
       off
     end
 
-=begin
-== class methods
-
---- Time.parse(date, now=Time.now)
---- Time.parse(date, now=Time.now) {|year| year}
-    parses ((|date|)) using ParseDate.parsedate and converts it to a
-    Time object.
-
-    If a block is given, the year described in ((|date|)) is converted
-    by the block.  For example:
-
-        Time.parse(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
-
-    If the upper components of the given time are broken or missing,
-    they are supplied with those of ((|now|)).  For the lower
-    components, the minimum values (1 or 0) are assumed if broken or
-    missing.  For example:
-
-        # Suppose it is "Thu Nov 29 14:33:20 GMT 2001" now and
-        # your timezone is GMT:
-        Time.parse("16:30")     #=> Thu Nov 29 16:30:00 GMT 2001
-        Time.parse("7/23")      #=> Mon Jul 23 00:00:00 GMT 2001
-        Time.parse("2002/1")    #=> Tue Jan 01 00:00:00 GMT 2002
-
-    Since there are numerous conflicts among locally defined timezone
-    abbreviations all over the world, this method is not made to
-    understand all of them.  For example, the abbreviation "CST" is
-    used variously as:
-
-        -06:00 in America/Chicago,
-        -05:00 in America/Havana,
-        +08:00 in Asia/Harbin,
-        +09:30 in Australia/Darwin,
-        +10:30 in Australia/Adelaide,
-        etc.
-
-    Based on the fact, this method only understands the timezone
-    abbreviations described in RFC 822 and the system timezone, in the
-    order named. (i.e. a definition in RFC 822 overrides the system
-    timezone definition)  The system timezone is taken from
-    (({Time.local(year, 1, 1).zone})) and
-    (({Time.local(year, 7, 1).zone})).
-    If the extracted timezone abbreviation does not match any of them,
-    it is ignored and the given time is regarded as a local time.
-
-    ArgumentError is raised if ParseDate cannot extract
-    information from ((|date|))
-    or Time class cannot represent specified date.
-
-    This method can be used as fail-safe for other parsing methods as:
-
-      Time.rfc2822(date) rescue Time.parse(date)
-      Time.httpdate(date) rescue Time.parse(date)
-      Time.xmlschema(date) rescue Time.parse(date)
-
-    A failure for Time.parse should be checked, though.
-=end
+    #
+    # Parses +date+ using ParseDate.parsedate and converts it to a Time object.
+    #
+    # If a block is given, the year described in +date+ is converted by the
+    # block.  For example:
+    #
+    #     Time.parse(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
+    #
+    # If the upper components of the given time are broken or missing, they are
+    # supplied with those of +now+.  For the lower components, the minimum
+    # values (1 or 0) are assumed if broken or missing.  For example:
+    #
+    #     # Suppose it is "Thu Nov 29 14:33:20 GMT 2001" now and
+    #     # your timezone is GMT:
+    #     Time.parse("16:30")     #=> Thu Nov 29 16:30:00 GMT 2001
+    #     Time.parse("7/23")      #=> Mon Jul 23 00:00:00 GMT 2001
+    #     Time.parse("2002/1")    #=> Tue Jan 01 00:00:00 GMT 2002
+    #
+    # Since there are numerous conflicts among locally defined timezone
+    # abbreviations all over the world, this method is not made to
+    # understand all of them.  For example, the abbreviation "CST" is
+    # used variously as:
+    #
+    #     -06:00 in America/Chicago,
+    #     -05:00 in America/Havana,
+    #     +08:00 in Asia/Harbin,
+    #     +09:30 in Australia/Darwin,
+    #     +10:30 in Australia/Adelaide,
+    #     etc.
+    #
+    # Based on the fact, this method only understands the timezone
+    # abbreviations described in RFC 822 and the system timezone, in the
+    # order named. (i.e. a definition in RFC 822 overrides the system
+    # timezone definition.)  The system timezone is taken from
+    # <tt>Time.local(year, 1, 1).zone</tt> and
+    # <tt>Time.local(year, 7, 1).zone</tt>.
+    # If the extracted timezone abbreviation does not match any of them,
+    # it is ignored and the given time is regarded as a local time.
+    #
+    # ArgumentError is raised if ParseDate cannot extract information from
+    # +date+ or Time class cannot represent specified date.
+    #
+    # This method can be used as fail-safe for other parsing methods as:
+    #
+    #   Time.rfc2822(date) rescue Time.parse(date)
+    #   Time.httpdate(date) rescue Time.parse(date)
+    #   Time.xmlschema(date) rescue Time.parse(date)
+    #
+    # A failure for Time.parse should be checked, though.
+    #
     def parse(date, now=Time.now)
       year, mon, day, hour, min, sec, zone, _ = ParseDate.parsedate(date)
       year = yield year if year && block_given?
@@ -172,17 +172,16 @@ class Time
       'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' =>10, 'NOV' =>11, 'DEC' =>12
     }
 
-=begin
---- Time.rfc2822(date)
---- Time.rfc822(date)
-    parses ((|date|)) as date-time defined by RFC 2822 and converts it to a
-    Time object.
-    The format is identical to the date format defined by RFC 822 and
-    updated by RFC 1123.
-
-    ArgumentError is raised if ((|date|)) is not compliant with RFC 2822
-    or Time class cannot represent specified date.
-=end
+    #
+    # Parses +date+ as date-time defined by RFC 2822 and converts it to a Time
+    # object.  The format is identical to the date format defined by RFC 822 and
+    # updated by RFC 1123.
+    #
+    # ArgumentError is raised if +date+ is not compliant with RFC 2822
+    # or Time class cannot represent specified date.
+    #
+    # See #rfc2822 for more information on this format.
+    #
     def rfc2822(date)
       if /\A\s*
           (?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)\s*,\s*)?
@@ -222,14 +221,15 @@ class Time
     end
     alias rfc822 rfc2822
 
-=begin
---- Time.httpdate(date)
-    parses ((|date|)) as HTTP-date defined by RFC 2616 and converts it to a
-    Time object.
-
-    ArgumentError is raised if ((|date|)) is not compliant with RFC 2616
-    or Time class cannot represent specified date.
-=end
+    #
+    # Parses +date+ as HTTP-date defined by RFC 2616 and converts it to a Time
+    # object.
+    #
+    # ArgumentError is raised if +date+ is not compliant with RFC 2616 or Time
+    # class cannot represent specified date.
+    #
+    # See #httpdate for more information on this format.
+    #
     def httpdate(date)
       if /\A\s*
           (?:Mon|Tue|Wed|Thu|Fri|Sat|Sun),\x20
@@ -261,16 +261,16 @@ class Time
       end
     end
 
-=begin
---- Time.xmlschema(date)
---- Time.iso8601(date)
-    parses ((|date|)) as dateTime defined by XML Schema and
-    converts it to a Time object.
-    The format is restricted version of the format defined by ISO 8601.
-
-    ArgumentError is raised if ((|date|)) is not compliant with the format
-    or Time class cannot represent specified date.
-=end
+    #
+    # Parses +date+ as dateTime defined by XML Schema and converts it to a Time
+    # object.  The format is restricted version of the format defined by ISO
+    # 8601.
+    #
+    # ArgumentError is raised if +date+ is not compliant with the format or Time
+    # class cannot represent specified date.
+    #
+    # See #xmlschema for more information on this format.
+    #
     def xmlschema(date)
       if /\A\s*
           (-?\d+)-(\d\d)-(\d\d)
@@ -291,31 +291,17 @@ class Time
       end
     end
     alias iso8601 xmlschema
-  end
+  end # class << self
 
-=begin
-== methods
-=end
-
-=begin
---- Time#rfc2822
---- Time#rfc822
-    returns a string which represents the time as date-time defined by RFC 2822:
-
-      day-of-week, DD month-name CCYY hh:mm:ss zone
-
-    where zone is [+-]hhmm.
-
-    If self is a UTC time, -0000 is used as zone.
-=end
-
-  RFC2822_DAY_NAME = [
-    'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
-  ]
-  RFC2822_MONTH_NAME = [
-    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
-  ]
+  #
+  # Returns a string which represents the time as date-time defined by RFC 2822:
+  #
+  #   day-of-week, DD month-name CCYY hh:mm:ss zone
+  #
+  # where zone is [+-]hhmm.
+  #
+  # If +self+ is a UTC time, -0000 is used as zone.
+  #
   def rfc2822
     sprintf('%s, %02d %s %d %02d:%02d:%02d ',
       RFC2822_DAY_NAME[wday],
@@ -331,15 +317,22 @@ class Time
   end
   alias rfc822 rfc2822
 
-=begin
---- Time#httpdate
-    returns a string which represents the time as rfc1123-date of HTTP-date
-    defined by RFC 2616: 
+  RFC2822_DAY_NAME = [
+    'Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'
+  ]
+  RFC2822_MONTH_NAME = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+  ]
 
-      day-of-week, DD month-name CCYY hh:mm:ss GMT
-
-    Note that the result is always UTC (GMT).
-=end
+  #
+  # Returns a string which represents the time as rfc1123-date of HTTP-date
+  # defined by RFC 2616: 
+  # 
+  #   day-of-week, DD month-name CCYY hh:mm:ss GMT
+  #
+  # Note that the result is always UTC (GMT).
+  #
   def httpdate
     t = dup.utc
     sprintf('%s, %02d %s %d %02d:%02d:%02d GMT',
@@ -348,24 +341,20 @@ class Time
       t.hour, t.min, t.sec)
   end
 
-=begin
---- Time#xmlschema([fractional_seconds])
---- Time#iso8601([fractional_seconds])
-    returns a string which represents the time as dateTime
-    defined by XML Schema:
-
-      CCYY-MM-DDThh:mm:ssTZD
-      CCYY-MM-DDThh:mm:ss.sssTZD
-
-    where TZD is Z or [+-]hh:mm.
-
-    If self is a UTC time, Z is used as TZD.
-    [+-]hh:mm is used otherwise.
-
-    ((|fractional_seconds|)) specify a number of digits of
-    fractional seconds.
-    The default value of ((|fractional_seconds|)) is 0.
-=end
+  #
+  # Returns a string which represents the time as dateTime defined by XML
+  # Schema:
+  #
+  #   CCYY-MM-DDThh:mm:ssTZD
+  #   CCYY-MM-DDThh:mm:ss.sssTZD
+  #
+  # where TZD is Z or [+-]hh:mm.
+  #
+  # If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
+  #
+  # +fractional_seconds+ specifies a number of digits of fractional seconds.
+  # Its default value os 0.
+  #
   def xmlschema(fraction_digits=0)
     sprintf('%d-%02d-%02dT%02d:%02d:%02d',
       year, mon, day, hour, min, sec) +
@@ -390,7 +379,7 @@ end
 if __FILE__ == $0
   require 'test/unit'
 
-  class TimeExtentionTest < Test::Unit::TestCase
+  class TimeExtentionTest < Test::Unit::TestCase # :nodoc:
     def test_rfc822
       assert_equal(Time.utc(1976, 8, 26, 14, 30) + 4 * 3600,
                    Time.rfc2822("26 Aug 76 14:30 EDT"))
