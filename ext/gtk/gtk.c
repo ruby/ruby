@@ -511,6 +511,18 @@ get_gdkdraw(draw, klass, kname)
 #define get_gdkbitmap(w) get_gdkdraw((w),gdkBitmap,"GdkBitmap")
 
 static VALUE
+gdkdraw_get_geometry(self)
+    VALUE self;
+{
+    gint x, y, width, height, depth;
+
+    gdk_window_get_geometry(get_gdkdrawable(self),
+			    &x, &y, &width, &height, &depth);
+    return ary_new3(5, INT2NUM(x), INT2NUM(y),
+		    INT2NUM(width), INT2NUM(height), INT2NUM(depth));
+}
+
+static VALUE
 gdkpmap_s_new(self, win, w, h, depth)
     VALUE self, win, w, h, depth;
 {
@@ -2052,6 +2064,16 @@ widget_propagate_default_style(self)
 {
     gtk_widget_propagate_default_style();
     return Qnil;
+}
+
+static VALUE
+widget_shape_combine_mask(self, gdk_pixmap_mask, x, y)
+    VALUE self, gdk_pixmap_mask, x, y;
+{
+    gtk_widget_shape_combine_mask(get_widget(self),
+				  get_gdkpixmap(gdk_pixmap_mask),
+				  NUM2INT(x), NUM2INT(y));
+    return self;
 }
 
 static VALUE
@@ -6086,6 +6108,7 @@ Init_gtk()
     rb_define_method(gWidget, "ancestor?", widget_is_ancestor, 1);
     rb_define_method(gWidget, "child?", widget_is_child, 1);
     rb_define_method(gWidget, "window", widget_window, 0);
+    rb_define_method(gWidget, "shape_combine_mask", widget_shape_combine_mask, 3);
 
     rb_define_singleton_method(gWidget, "push_colomap", widget_push_cmap, 1);
     rb_define_singleton_method(gWidget, "push_visual", widget_push_visual, 1);
@@ -6706,6 +6729,7 @@ Init_gtk()
     rb_define_method(gdkDrawable, "draw_image", gdkdraw_draw_image, 8);
     rb_define_method(gdkDrawable, "draw_points", gdkdraw_draw_pnts, 2);
     rb_define_method(gdkDrawable, "draw_segments", gdkdraw_draw_segs, 2);
+    rb_define_method(gdkDrawable, "get_geometry", gdkdraw_get_geometry, 0);
 
     /* GdkPixmap */
     rb_define_singleton_method(gdkPixmap, "new", gdkpmap_s_new, 4);
