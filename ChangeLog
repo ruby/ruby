@@ -1,3 +1,9 @@
+Mon Jun 26 23:41:41 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ruby.h: add cast for ANSI style.
+
+	* gc.c (rb_data_object_alloc): use RUBY_DATA_FUNC.
+
 Sat Jun 24 14:36:29 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* config*.dj, configure.bat, top.sed: move to djgpp/.

@@ -299,8 +299,8 @@ VALUE
 rb_data_object_alloc(klass, datap, dmark, dfree)
     VALUE klass;
     void *datap;
-    void (*dfree)();
-    void (*dmark)();
+    RUBY_DATA_FUNC dmark;
+    RUBY_DATA_FUNC dfree;
 {
     NEWOBJ(data, struct RData);
     OBJSETUP(data, klass, T_DATA);

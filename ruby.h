@@ -290,16 +290,21 @@ struct RData {
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
+/*
 #define RUBY_DATA_FUNC(func) ((void (*)_((void*)))func)
-VALUE rb_data_object_alloc _((VALUE,void*,void (*) _((void*)),void (*) _((void*))));
+*/
+typedef void (*RUBY_DATA_FUNC) _((void*));
+
+VALUE rb_data_object_alloc _((VALUE,void*,RUBY_DATA_FUNC,RUBY_DATA_FUNC));
+
+#define Data_Wrap_Struct(klass,mark,free,sval) (\
+    rb_data_object_alloc(klass,sval,(RUBY_DATA_FUNC)mark,(RUBY_DATA_FUNC)free)\
+)
+
 #define Data_Make_Struct(klass,type,mark,free,sval) (\
     sval = ALLOC(type),\
     memset(sval, 0, sizeof(type)),\
-    rb_data_object_alloc(klass,sval,mark,free)\
-)
-
-#define Data_Wrap_Struct(klass,mark,free,sval) (\
-    rb_data_object_alloc(klass,sval,mark,free)\
+    Data_Wrap_Struct(klass,mark,free,sval)\
 )
 
 #define Data_Get_Struct(obj,type,sval) {\
