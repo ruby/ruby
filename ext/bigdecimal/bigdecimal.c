@@ -540,16 +540,32 @@ BigDecimal_sub(VALUE self, VALUE r)
     return ToValue(c);
 }
 
-static S_INT
-BigDecimalCmp(VALUE self, VALUE r)
+static VALUE
+BigDecimalCmp(VALUE self, VALUE r,char op)
+/*
+ *  op: '=' 
+ */
 {
     ENTER(5);
+    S_INT e;
     Real *a, *b;
     GUARD_OBJ(a,GetVpValue(self,1));
     b = GetVpValue(r,0);
-    if(!b) return DoSomeOne(self,r);
+    if(!b) return  DoSomeOne(self,r);
     SAVE(b);
-    return VpComp(a, b);
+    e = VpComp(a, b);
+    if(e==999) return rb_float_new(VpGetDoubleNaN());
+    switch(op)
+    {
+    case '*': return   INT2FIX(e); /* any op */
+    case '=': if(e==0) return Qtrue ; return Qfalse;
+    case '!': if(e!=0) return Qtrue ; return Qfalse;
+    case 'G': if(e>=0) return Qtrue ; return Qfalse;
+    case '>': if(e> 0) return Qtrue ; return Qfalse;
+    case 'L': if(e<=0) return Qtrue ; return Qfalse;
+    case '<': if(e< 0) return Qtrue ; return Qfalse;
+    }
+    rb_bug("Undefined operation in BigDecimalCmp()");
 }
 
 static VALUE
@@ -569,70 +585,43 @@ BigDecimal_nonzero(VALUE self)
 static VALUE
 BigDecimal_comp(VALUE self, VALUE r)
 {
-    S_INT e;
-    e = BigDecimalCmp(self, r);
-    if(e==999) return rb_float_new(VpGetDoubleNaN());
-    return INT2FIX(e);
+    return BigDecimalCmp(self, r, '*');
 }
 
 static VALUE
 BigDecimal_eq(VALUE self, VALUE r)
 {
-    ENTER(5);
-    Real *a, *b;
-    GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
-    if(!b) return Qfalse; /* Not comparable */
-    SAVE(b);
-    return VpComp(a, b)? Qfalse:Qtrue;
+    return BigDecimalCmp(self, r, '=');
 }
 
 static VALUE
 BigDecimal_ne(VALUE self, VALUE r)
 {
-    ENTER(5);
-    Real *a, *b;
-    GUARD_OBJ(a,GetVpValue(self,1));
-    b = GetVpValue(r,0);
-    if(!b) return Qtrue; /* Not comparable */
-    SAVE(b);
-    return VpComp(a, b) ? Qtrue : Qfalse;
+    return BigDecimalCmp(self, r, '!');
 }
 
 static VALUE
 BigDecimal_lt(VALUE self, VALUE r)
 {
-    S_INT e;
-    e = BigDecimalCmp(self, r);
-    if(e==999) return Qfalse;
-    return(e < 0) ? Qtrue : Qfalse;
+    return BigDecimalCmp(self, r, '<');
 }
 
 static VALUE
 BigDecimal_le(VALUE self, VALUE r)
 {
-    S_INT e;
-    e = BigDecimalCmp(self, r);
-    if(e==999) return Qfalse;
-    return(e <= 0) ? Qtrue : Qfalse;
+    return BigDecimalCmp(self, r, 'L');
 }
 
 static VALUE
 BigDecimal_gt(VALUE self, VALUE r)
 {
-    S_INT e;
-    e = BigDecimalCmp(self, r);
-    if(e==999) return Qfalse;
-    return(e > 0) ? Qtrue : Qfalse;
+    return BigDecimalCmp(self, r, '>');
 }
 
 static VALUE
 BigDecimal_ge(VALUE self, VALUE r)
 {
-    S_INT e;
-    e = BigDecimalCmp(self, r);
-    if(e==999) return Qfalse;
-    return(e >= 0) ? Qtrue : Qfalse;
+    return BigDecimalCmp(self, r, 'G');
 }
 
 static VALUE
