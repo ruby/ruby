@@ -252,7 +252,7 @@ end
 def libpathflag(libpath=$LIBPATH)
   libpath.map{|x|
     (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % x
-  }.quote.join
+  }.join
 end
 
 def try_link0(src, opt="", &b)
