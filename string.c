@@ -3402,6 +3402,6 @@ Init_String()
     id_to_s = rb_intern("to_s");
 
     rb_fs = Qnil;
-    rb_define_hooked_variable("$;", &rb_fs, 0, rb_str_setter);
-    rb_define_hooked_variable("$-F", &rb_fs, 0, rb_str_setter);
+    rb_define_variable("$;", &rb_fs);
+    rb_define_variable("$-F", &rb_fs);
 }

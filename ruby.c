@@ -589,7 +589,7 @@ proc_options(argc, argv)
 
 	  case 'F':
 	    if (*++s) {
-		rb_fs = rb_str_new2(s);
+		rb_fs = rb_reg_new(s, strlen(s), 0);
 	    }
 	    break;
 
