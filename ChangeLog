@@ -1,3 +1,25 @@
+Wed Oct 15 00:10:24 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/baseData.rb: Introduce SOAPType as the common ancestor of
+	  SOAPBasetype and SOAPCompoundtype.
+
+	* lib/soap/generator.rb, lib/soap/element.rb, lib/soap/encodingstyle/*:
+	  Encoding methods signature change.  Pass SOAPGenerator as a parameter.
+
+	* lib/soap/mapping/*, test/soap/marshal/test_marshal.rb: Refactoring
+	  for better marshalling/unmarshalling support.  Now I think SOAP
+	  marshaller supports all kind of object graph which is supported by
+	  Ruby's original marshaller.  Of course there could be bugs as always.
+	  Find it.  :-)
+
+	* lib/soap/rpc/standaloneServer.rb: Set severity threshould to INFO.
+	  DEBUG is too noisy.
+
+	* lib/xsd/datatypes.rb: DateTime#of is obsoleted.  Use DateTime#offset.
+
+	* test/wsdl/emptycomplextype.wsdl, test/xsd/xmlschema.xml: Avoid
+	  useless warning.
+
 Tue Oct 14 19:09:35 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ruby_finalize_0): return the given exit status unless
