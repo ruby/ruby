@@ -1,3 +1,10 @@
+Sat Jan  4 14:29:52 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* configure.in: set rb_cv_need_io_flush_between_seek=yes.
+
+	* win32/Makefile.sub (config.h): define NEED_IO_FLUSH_BETWEE_SEEK.
+	  (pointed out by moriq [ruby-dev:19299])
+
 Sat Jan  4 01:33:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (rb_file_s_lchmod): get rid of gcc-3 -O3 warning.

@@ -272,7 +272,7 @@ cygwin*)	rb_cv_have_daylight=no
 		ac_cv_func_setitimer=no
 		;;
 mingw*)		LIBS="-lwsock32 $LIBS"
-		rb_cv_need_io_flush_between_rw=no
+		rb_cv_need_io_flush_between_rw=yes
 		rb_cv_need_io_flush_before_seek=no
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
