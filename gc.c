@@ -648,6 +648,7 @@ rb_gc_mark_children(ptr)
 	  case NODE_MASGN:
 	  case NODE_RESCUE:
 	  case NODE_RESBODY:
+	  case NODE_CLASS:
 	    rb_gc_mark((VALUE)obj->as.node.u2.node);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
@@ -684,6 +685,7 @@ rb_gc_mark_children(ptr)
 	  case NODE_MATCH3:
 	  case NODE_OP_ASGN_OR:
 	  case NODE_OP_ASGN_AND:
+	  case NODE_MODULE:
 	    rb_gc_mark((VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
@@ -696,7 +698,6 @@ rb_gc_mark_children(ptr)
 	  case NODE_CDECL:
 	  case NODE_CVDECL:
 	  case NODE_CVASGN:
-	  case NODE_MODULE:
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
 	  case NODE_EVSTR:
@@ -719,7 +720,6 @@ rb_gc_mark_children(ptr)
 	    break;
 
 	  case NODE_SCOPE:	/* 2,3 */
-	  case NODE_CLASS:
 	  case NODE_BLOCK_PASS:
 	    rb_gc_mark((VALUE)obj->as.node.u3.node);
 	    rb_gc_mark((VALUE)obj->as.node.u2.node);

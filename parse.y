@@ -240,7 +240,7 @@ static void top_local_setup();
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents string_content
 %type <node> words qwords word_list qword_list word
-%type <node> literal numeric dsym
+%type <node> literal numeric dsym cbase cpath
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
@@ -835,6 +835,27 @@ cname		: tIDENTIFIER
 			yyerror("class/module name must be CONSTANT");
 		    }
 		| tCONSTANT
+		;
+
+cbase		: tCOLON3 cname
+		    {
+			$$ = NEW_COLON3($2);
+		    }
+		| cname
+		    {
+			$$ = NEW_CONST($1);
+		    }
+		| cbase tCOLON2 cname
+		    {
+			$$ = NEW_COLON2($1, $3);
+		    }
+		;
+
+cpath		: cbase
+		    {
+			if (nd_type($$ = $1) == NODE_CONST)
+			    $$ = NEW_COLON2(0, $$->nd_vid);
+		    }
 		;
 
 fname		: tIDENTIFIER
@@ -1525,7 +1546,7 @@ primary		: literal
 			$$ = NEW_FOR($2, $5, $8);
 		        fixpos($$, $2);
 		    }
-		| kCLASS cname superclass
+		| kCLASS cpath superclass
 		    {
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
@@ -1563,7 +1584,7 @@ primary		: literal
 		        in_def = $<num>4;
 		        in_single = $<num>6;
 		    }
-		| kMODULE cname
+		| kMODULE cpath
 		    {
 			if (in_def || in_single)
 			    yyerror("module definition in method body");

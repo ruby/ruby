@@ -218,7 +218,7 @@ typedef struct RNode {
 #define nd_cfnc  u1.cfunc
 #define nd_argc  u2.argc
 
-#define nd_cname u1.id
+#define nd_cpath u1.node
 #define nd_super u3.node
 
 #define nd_modl  u1.id

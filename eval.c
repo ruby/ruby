@@ -2219,6 +2219,37 @@ svalue_to_avalue(v)
     return tmp;
 }
 
+static VALUE
+class_prefix(self, cpath)
+    VALUE self;
+    NODE *cpath;
+{
+    if (!cpath) {
+	rb_bug("class path missing");
+    }
+    if (cpath->nd_head) {
+	VALUE c = rb_eval(self, cpath->nd_head);
+	switch (TYPE(c)) {
+	  case T_CLASS:
+	  case T_MODULE:
+	    break;
+	  default:
+	    rb_raise(rb_eTypeError, "%s is not a class/module",
+		     RSTRING(rb_obj_as_string(c))->ptr);
+	}
+	return c;
+    }
+    else if (nd_type(cpath) == NODE_COLON2) {
+	return ruby_cbase;
+    }
+    else if (ruby_wrapper) {
+	return ruby_wrapper;
+    }
+    else {
+	return rb_cObject;
+    }
+}
+
 static void return_check _((void));
 #define return_value(v) do {\
   if ((prot_tag->retval = (v)) == Qundef) {\
@@ -3300,7 +3331,8 @@ rb_eval(self, n)
 
       case NODE_CLASS:
 	{
-	    VALUE super, klass, tmp;
+	    VALUE super, klass, tmp, cbase;
+	    ID cname;
 
 	    if (NIL_P(ruby_cbase)) {
 		rb_raise(rb_eTypeError, "no outer class/module");
@@ -3312,14 +3344,16 @@ rb_eval(self, n)
 		super = 0;
 	    }
 
-	    if ((ruby_cbase == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
-		rb_autoload_load(node->nd_cname);
+	    cbase = class_prefix(self, node->nd_cpath);
+	    cname = node->nd_cpath->nd_mid;
+	    if ((cbase == rb_cObject) && rb_autoload_defined(cname)) {
+		rb_autoload_load(cname);
 	    }
-	    if (rb_const_defined_at(ruby_cbase, node->nd_cname)) {
-		klass = rb_const_get(ruby_cbase, node->nd_cname);
+	    if (rb_const_defined_at(cbase, cname)) {
+		klass = rb_const_get(cbase, cname);
 		if (TYPE(klass) != T_CLASS) {
 		    rb_raise(rb_eTypeError, "%s is not a class",
-			     rb_id2name(node->nd_cname));
+			     rb_id2name(cname));
 		}
 		if (super) {
 		    tmp = rb_class_real(RCLASS(klass)->super);
@@ -3335,9 +3369,9 @@ rb_eval(self, n)
 	    else {
 	      override_class:
 		if (!super) super = rb_cObject;
-		klass = rb_define_class_id(node->nd_cname, super);
-		rb_set_class_path(klass,ruby_cbase,rb_id2name(node->nd_cname));
-		rb_const_set(ruby_cbase, node->nd_cname, klass);
+		klass = rb_define_class_id(cname, super);
+		rb_set_class_path(klass, cbase, rb_id2name(cname));
+		rb_const_set(cbase, cname, klass);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);
@@ -3350,28 +3384,31 @@ rb_eval(self, n)
 
       case NODE_MODULE:
 	{
-	    VALUE module;
+	    VALUE module, cbase;
+	    ID cname;
 
 	    if (NIL_P(ruby_cbase)) {
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
-	    if ((ruby_cbase == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
-		rb_autoload_load(node->nd_cname);
+	    cbase = class_prefix(self, node->nd_cpath);
+	    cname = node->nd_cpath->nd_mid;
+	    if ((cbase == rb_cObject) && rb_autoload_defined(cname)) {
+		rb_autoload_load(cname);
 	    }
-	    if (rb_const_defined_at(ruby_cbase, node->nd_cname)) {
-		module = rb_const_get(ruby_cbase, node->nd_cname);
+	    if (rb_const_defined_at(cbase, cname)) {
+		module = rb_const_get(cbase, cname);
 		if (TYPE(module) != T_MODULE) {
 		    rb_raise(rb_eTypeError, "%s is not a module",
-			     rb_id2name(node->nd_cname));
+			     rb_id2name(cname));
 		}
 		if (ruby_safe_level >= 4) {
 		    rb_raise(rb_eSecurityError, "extending module prohibited");
 		}
 	    }
 	    else {
-		module = rb_define_module_id(node->nd_cname);
-		rb_set_class_path(module,ruby_cbase,rb_id2name(node->nd_cname));
-		rb_const_set(ruby_cbase, node->nd_cname, module);
+		module = rb_define_module_id(cname);
+		rb_set_class_path(module, cbase, rb_id2name(cname));
+		rb_const_set(cbase, cname, module);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(module, ruby_wrapper);
