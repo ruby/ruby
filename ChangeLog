@@ -1,3 +1,7 @@
+Sun Oct  5 17:56:30 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): fix evaluation order.  [ruby-list:38431]
+
 Sun Oct  5 15:05:06 2003  akira yamada  <akira@ruby-lang.org>
 
 	* test/uri/*: translated RUNIT to Test::Unit.
@@ -34,7 +38,7 @@ Sun Oct  5 11:23:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 Sun Oct  5 11:14:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/rubyunit.rb: aliasing TestCase into the top level is
-          problematic.
+	  problematic.
 
 	* lib/runit/assert.rb: fixed a couple of bugs caused by recent
 	  refactoring in Test::Unit.

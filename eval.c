@@ -2477,8 +2477,11 @@ rb_eval(self, n)
 
 	/* nodes for speed-up(literal match) */
       case NODE_MATCH2:
-	result = rb_reg_match(rb_eval(self,node->nd_recv),
-			      rb_eval(self,node->nd_value));
+	{
+	    VALUE l = rb_eval(self,node->nd_recv);
+	    VALUE r = rb_eval(self,node->nd_value);
+	    result = rb_reg_match(l, r);
+	}
 	break;
 
 	/* nodes for speed-up(literal match) */
@@ -2929,13 +2932,19 @@ rb_eval(self, n)
 	break;
 
       case NODE_ARGSCAT:
-	result = rb_ary_concat(rb_eval(self, node->nd_head),
-			       splat_value(rb_eval(self, node->nd_body)));
+	{
+	    VALUE args = rb_eval(self, node->nd_head);
+	    result = rb_ary_concat(args,
+				   splat_value(rb_eval(self, node->nd_body)));
+	}
 	break;
 
       case NODE_ARGSPUSH:
-	result = rb_ary_push(rb_ary_dup(rb_eval(self, node->nd_head)),
-			     rb_eval(self, node->nd_body));
+	{
+	    VALUE args = rb_ary_dup(rb_eval(self, node->nd_head));
+	    result = rb_ary_push(args,
+				 rb_eval(self, node->nd_body));
+	}
 	break;
 
       case NODE_ATTRASGN:
