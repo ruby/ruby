@@ -89,9 +89,9 @@ class TkPhotoImage<TkImage
   def cget(option)
     case option.to_s
     when 'data', 'file'
-      tk_send 'cget', option
+      tk_send 'cget', '-' << option.to_s
     else
-      tk_tcl2ruby(tk_send('cget', option))
+      tk_tcl2ruby(tk_send('cget', '-' << option.to_s))
     end
   end
 

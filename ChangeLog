@@ -1,3 +1,7 @@
+Fri Dec 24 23:27:18 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/image.rb: TkPhotoImage#cget bug fix
+
 Fri Dec 24 18:39:25 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.[ch]: failed to compile on bcc32 (and probably wince)
