@@ -247,7 +247,7 @@ MTIMES = [__FILE__, 'rbconfig.rb', srcdir+'/lib/mkmf.rb'].collect {|f| File.mtim
 # get static-link modules
 $static_ext = {}
 if $extstatic
-  $extstatic.split(/[\s,]+/).each do |target|
+  $extstatic.each do |target|
     target = target.downcase if /mswin32|bccwin32/ =~ RUBY_PLATFORM
     $static_ext[target] = $static_ext.size
   end

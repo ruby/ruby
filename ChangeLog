@@ -1,3 +1,7 @@
+Sun Feb 22 14:33:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: $extstatic is Array or nil now.  [ruby-talk:93383]
+
 Sun Feb 22 13:05:37 2004  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/mailto.rb (URI::MailTo::to_s): should include fragment.
