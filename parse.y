@@ -2899,10 +2899,10 @@ retry:
 		kw = rb_reserved_word(tok(), toklen());
 		if (kw) {
 		    enum lex_state state = lex_state;
-		    lex_state = kw->state;
 		    if (lex_state == EXPR_FNAME) {
 			yylval.id = rb_intern(kw->name);
 		    }
+		    lex_state = kw->state;
 		    return kw->id[state != EXPR_BEG];
 		}
 	    }
