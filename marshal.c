@@ -505,13 +505,12 @@ w_object(obj, arg, limit)
 	    break;
 
 	  case T_STRUCT:
-	    w_byte(TYPE_STRUCT, arg);
+	    w_class(TYPE_STRUCT, obj, arg);
 	    {
 		long len = RSTRUCT(obj)->len;
 		VALUE mem;
 		long i;
 
-		w_unique(rb_obj_classname(obj), arg);
 		w_long(len, arg);
 		mem = rb_struct_iv_get(rb_obj_class(obj), "__member__");
 		if (mem == Qnil) {
@@ -529,20 +528,20 @@ w_object(obj, arg, limit)
 	    w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
 	    break;
 
-         case T_DATA:
-           {
-               VALUE v;
+	  case T_DATA:
+	    {
+		VALUE v;
 
-	       w_class(TYPE_DATA, obj, arg);
-               if (!rb_respond_to(obj, s_dump_data)) {
-                   rb_raise(rb_eTypeError,
-                            "class %s needs to have instance method `_dump_data'",
-                            rb_obj_classname(obj));
-               }
-               v = rb_funcall(obj, s_dump_data, 0);
-               w_object(v, arg, limit);
-           }
-           break;
+		w_class(TYPE_DATA, obj, arg);
+		if (!rb_respond_to(obj, s_dump_data)) {
+		    rb_raise(rb_eTypeError,
+			     "class %s needs to have instance method `_dump_data'",
+			     rb_obj_classname(obj));
+		}
+		v = rb_funcall(obj, s_dump_data, 0);
+		w_object(v, arg, limit);
+	    }
+	    break;
 
 	  default:
 	    rb_raise(rb_eTypeError, "can't dump %s",
@@ -1185,7 +1184,6 @@ marshal_load(argc, argv)
     VALUE port, proc;
     int major, minor;
     VALUE v;
-    OpenFile *fptr;
     struct load_arg arg;
     volatile VALUE hash;	/* protect from GC */
 

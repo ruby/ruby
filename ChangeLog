@@ -1,3 +1,8 @@
+Wed Apr  9 14:05:00 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* marshal.c (w_object): preserve extended module on struct.
+	  (ruby-bugs-ja:PR#422)
+
 Tue Apr  8 17:13:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* random.c (rb_f_rand): normalize bignum argument.
@@ -52,7 +57,7 @@ Fri Apr  4 10:53:22 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (assign): should prepare mrhs by svalue_to_mrhs().
 
-Wed Apr 02 15:11:23 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Wed Apr  2 15:11:23 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* README.EXT, README.EXT.ja (3.3): clarified -1 as free for
 	  Data_Wrap_Struct().  [ruby-dev:19881]
@@ -375,7 +380,7 @@ Sun Mar  9 17:09:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in (fake.rb): set ALT_SEPARATOR to the default value.
 
-Sat Mar 08 11:30:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Sat Mar  8 11:30:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (massign): fix a bug not to expand in assignment to sole
 	  lhs.  [ruby-dev:19766]
@@ -434,7 +439,7 @@ Wed Mar  5 05:55:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (rb_str_cat): remove ptr NULL check and MEMZERO(). ptr
 	  must be non NULL.
 
-Tue Mar 04 23:12:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Tue Mar  4 23:12:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in, bcc32/Makefile.sub, win32/Makefile.sub: define
 	  RUBY_EXPORT to export symbols.
@@ -509,7 +514,7 @@ Mon Mar  3 02:53:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* io.c (rb_io_fread): should not clearerr() if there's no filled
 	  buffer (i.e. rb_io_fread() returning zero).
 
-Mon Mar 03 01:42:35 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Mon Mar  3 01:42:35 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-expr-beg): escaped char syntax.
 
@@ -829,14 +834,14 @@ Mon Feb 10 03:33:42 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* io.c (rb_file_sysopen): rb_file_sysopen_internal() needs four
 	  arguments.
 
-Sun Feb 09 15:16:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Sun Feb  9 15:16:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* intern.h (HAVE_RB_DEFINE_ALLOC_FUNC, RB_CVAR_SET_4ARGS):
 	  define to 1.
 
 	* ruby.h (NORETURN_STYLE_NEW): ditto.
 
-Sun Feb 09 12:28:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Sun Feb  9 12:28:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/mkmf.rb (init_mkmf): add libdir to LIBPATH unless cross
 	  compiling.
