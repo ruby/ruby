@@ -2,7 +2,7 @@ Tue Jul 13 00:50:48 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb: Support call-seq: for Ruby files.
 
-2004-07-12  Dave Thomas  <dave@pragprog.com>
+Mon Jul 12 21:20:51 2004  Dave Thomas  <dave@pragprog.com>
 
 	* html_generator.rb: Support hyperlinks of the form {any text}[xxx]
 	  as well as stuff[xxx]
