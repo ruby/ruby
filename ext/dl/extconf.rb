@@ -1,4 +1,7 @@
 require 'mkmf'
+
+begin # for the exception SystemExit
+
 $:.unshift File.dirname(__FILE__)
 require 'type'
 
@@ -194,3 +197,6 @@ $INSTALLFILES = [
 ]
 
 create_makefile('dl')
+rescue SystemExit
+  # do nothing
+end
