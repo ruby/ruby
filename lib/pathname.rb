@@ -1,14 +1,179 @@
+#
+# = pathname.rb
+#
 # Object-Oriented Pathname Class
 #
 # Author:: Tanaka Akira <akr@m17n.org>
+# Documentation:: Author and Gavin Sinclair
+#
+# For documentation, see class Pathname.
+#
+# <tt>pathname.rb</tt> is distributed with Ruby since 1.8.0.
+#
 
+#
+# == Pathname
+#
 # Pathname represents a pathname which locates a file in a filesystem.
-# It supports only Unix style pathnames.
+# It supports only Unix style pathnames.  It does not represent the file
+# itself.  A Pathname can be relative or absolute.  It's not until you try to
+# reference the file that it even matters whether the file exists or not.
 #
 # Pathname is immutable.  It has no method for destructive update.
 #
-# pathname.rb is distributed with Ruby since 1.8.0.
+# The value of this class is to manipulate file path information in a neater
+# way than standard Ruby provides.  The examples below demonstrate the
+# difference.  *All* functionality from File, FileTest, +ftools+ and FileUtils
+# is included, in an unsurprising way.  It is essentially a facade for all of
+# these, and more.
+#
+# == Examples
+#
+# === Example 1: Using Pathname
+#
+#   require 'pathname'
+#   p = Pathname.new("/usr/bin/ruby")
+#   size = p.size              # XXX
+#   isdir = p.directory?       # false
+#   dir  = p.dirname           # Pathname:/usr/bin
+#   base = p.basename          # Pathname:ruby
+#   dir, base = p.split        # [Pathname:/usr/bin, Pathname:ruby]
+#   data = p.read
+#   p.open { |f| _ } 
+#   p.each_line { |line| _ }
+#
+# === Example 2: Using standard Ruby
+#
+#   p = "/usr/bin/ruby"
+#   size = File.size(p)        # XXX
+#   isdir = File.directory?(p) # false
+#   dir  = File.dirname(p)     # "/usr/bin"
+#   base = File.basename(p)    # "ruby"
+#   dir, base = File.split(p)  # ["/usr/bin", "ruby"]
+#   data = File.read(p)
+#   File.open(p) { |f| _ } 
+#   File.foreach(p) { |line| _ }
+#
+# === Example 3: Special features
+#
+#   p1 = Pathname.new("/usr/lib")   # Pathname:/usr/lib
+#   p2 = p1 + "ruby/1.8"            # Pathname:/usr/lib/ruby/1.8
+#   p3 = p1.parent                  # Pathname:/usr
+#   p4 = p2.relative_path_from(p3)  # Pathname:lib/ruby/1.8
+#   pwd = Pathname.pwd              # Pathname:/home/gavin
+#   pwd.absolute?                   # true
+#   p5 = Pathname.new "."           # Pathname:.
+#   p5 = p5 + "music/../articles"   # Pathname:music/../articles
+#   p5.cleanpath                    # Pathname:articles
+#   p5.realpath                     # Pathname:/home/gavin/articles
+#   p5.children                     # [Pathname:/home/gavin/articles/linux, ...]
+# 
+# == Breakdown of functionality
+#
+# === Core methods
+#
+# These methods are effectively manipulating a String, because that's all a path
+# is.  They (mostly) don't access the filesystem.
+#
+# - #cleanpath
+# - #realpath (accesses filesystem)
+# - #parent
+# - #mountpoint?
+# - #root?
+# - #absolute?
+# - #relative?
+# - #each_filename
+# - #+
+# - #join
+# - #children
+# - #relative_path_from
+#
+# === File status predicate methods
+#
+# These methods are a facade for FileTest:
+# - #blockdev?
+# - #chardev?
+# - #executable?
+# - #executable_real?
+# - #exist?
+# - #grpowned?
+# - #directory?
+# - #file?
+# - #pipe?
+# - #socket?
+# - #owned?
+# - #readable?
+# - #readable_real?
+# - #setuid?
+# - #setgid?
+# - #size
+# - #size?
+# - #sticky?
+# - #symlink?
+# - #writable?
+# - #writable_real?
+# - #zero?
+#
+# === File property and manipulation methods
+#
+# These methods are a facade for File:
+# - #atime
+# - #ctime
+# - #mtime
+# - #chmod(mode)
+# - #lchmod(mode)
+# - #chown(owner, group)
+# - #lchown(owner, group)
+# - #fnmatch(pattern, *args)
+# - #fnmatch?(pattern, *args)
+# - #ftype
+# - #make_link(old)
+# - #open(*args, &block)
+# - #readlink
+# - #rename(to)
+# - #stat
+# - #lstat
+# - #make_symlink(old)
+# - #truncate(length)
+# - #utime(atime, mtime)
+# - #basename(*args)
+# - #dirname
+# - #extname
+# - #expand_path(*args)
+# - #split
+#
+# === Directory methods
+#
+# These methods are a facade for Dir:
+# - Pathname.glob(*args)
+# - Pathname.getwd / Pathname.pwd
+# - #rmdir
+# - #entries
+# - #each_entry(&block)
+# - #mkdir(*args)
+# - #opendir(*args)
+#
+# === IO
+#
+# These methods are a facade for IO:
+# - #each_line(*args, &block)
+# - #read(*args)
+# - #readlines(*args)
+# - #sysopen(*args)
+#
+# === Utilities
+#
+# These methods are a mixture of Find, FileUtils, and others:
+# - #find(&block)
+# - #mkpath
+# - #rmtree
+# - #unlink / #delete
+#
 class Pathname
+  #
+  # Create a Pathname object from the given String (or String-like object).
+  # If +path+ contains a NUL character ("\0"), an ArgumentError is raised.
+  #
   def initialize(path)
     @path = path.to_str.dup
     @path.freeze
@@ -18,6 +183,11 @@ class Pathname
     end
   end
 
+  #
+  # Compare this pathname with +other+.  The comparison is string-based.
+  # Be aware that two different paths ("foo.txt" and "./foo.txt") can refer to
+  # the same file.
+  #
   def ==(other)
     return false unless Pathname === other
     other.to_s == @path
@@ -346,8 +516,8 @@ class Pathname
 
 end
 
-# IO
-class Pathname
+
+class Pathname    # * IO *
   # Pathname#each_line iterates over lines of the file.
   # It's yields a String object for each line.
   #
@@ -366,8 +536,8 @@ class Pathname
   def sysopen(*args) IO.sysopen(@path, *args) end
 end
 
-# File
-class Pathname
+
+class Pathname    # * File *
   def atime() File.atime(@path) end
   def ctime() File.ctime(@path) end
   def mtime() File.mtime(@path) end
@@ -408,8 +578,8 @@ class Pathname
   end
 end
 
-# FileTest
-class Pathname
+
+class Pathname    # * FileTest *
   def blockdev?() FileTest.blockdev?(@path) end
   def chardev?() FileTest.chardev?(@path) end
   def executable?() FileTest.executable?(@path) end
@@ -434,8 +604,8 @@ class Pathname
   def zero?() FileTest.zero?(@path) end
 end
 
-# Dir
-class Pathname
+
+class Pathname    # * Dir *
   def Pathname.glob(*args)
     if block_given?
       Dir.glob(*args) {|f| yield Pathname.new(f) }
@@ -481,8 +651,8 @@ class Pathname
   def opendir(&block) Dir.open(@path, &block) end
 end
 
-# Find
-class Pathname
+
+class Pathname    # * Find *
   # Pathname#find is a iterator to traverse directory tree in depth first
   # manner.  It yields a pathname for each file under the directory which
   # is pointed by self.
@@ -502,8 +672,8 @@ class Pathname
   end
 end
 
-# FileUtils
-class Pathname
+
+class Pathname    # * FileUtils *
   def mkpath
     require 'fileutils'
     FileUtils.mkpath(@path)
@@ -519,8 +689,8 @@ class Pathname
   end
 end
 
-# mixed
-class Pathname
+
+class Pathname    # * mixed *
   def unlink()
     if FileTest.directory? @path
       Dir.unlink @path
@@ -776,11 +946,9 @@ if $0 == __FILE__
       assert_pathname_plus('/', '/', '..')
       assert_pathname_plus('.', 'a', '..')
       assert_pathname_plus('a', 'a/b', '..')
-      assert_pathname_plus('../..', '..', '..')
       assert_pathname_plus('/c', '/', '../c')
       assert_pathname_plus('c', 'a', '../c')
       assert_pathname_plus('a/c', 'a/b', '../c')
-      assert_pathname_plus('../../c', '..', '../c')
     end
   end
 end

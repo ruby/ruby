@@ -1,3 +1,7 @@
+Tue Dec 30 07:30:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/pathname.rb: Added documentation.
+
 Mon Dec 29 20:08:17 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (GenericRequest#initialize): check if path
