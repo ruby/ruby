@@ -1,9 +1,9 @@
 Fri May 25 00:57:25 2001  Akinori MUSHA  <knu@iDaemons.org>
 
-	* ext/sha1/sha1-ruby.c (md5i_new): separate initialize() from
+	* ext/sha1/sha1-ruby.c (sha1_new): separate initialize() from
 	  new().
 
-	* ext/md5/md5init.c (sha1_new): ditto.
+	* ext/md5/md5init.c (md5i_new): ditto.
 
 Fri May 25 00:53:41 2001  Akinori MUSHA  <knu@iDaemons.org>
 
