@@ -48,15 +48,36 @@ class OpenStruct
     if hash
       for k,v in hash
 	@table[k.to_sym] = v
+        new_ostruct_member(k)
       end
     end
   end
 
+  # Duplicate an OpenStruct object members. 
+  def initialize_copy(orig)
+    super
+    @table = @table.dup
+  end
+
+  module Marshaler
+    def marshal_dump
+      table = @table
+      OpenStruct.new.instance_eval{@table=table; self}
+    end
+    def marshal_load(x)
+      @table = x.instance_variable_get("@table")
+      @table.each_key{|key| new_ostruct_member(key)}
+    end
+  end
+
   def new_ostruct_member(name)
-    self.instance_eval %{
-      def #{name}; @table[:#{name}]; end
-      def #{name}=(x); @table[:#{name}] = x; end
-    }
+    unless self.respond_to?(name)
+      self.instance_eval %{
+        extend OpenStruct::Marshaler
+        def #{name}; @table[:#{name}]; end
+        def #{name}=(x); @table[:#{name}] = x; end
+      }
+    end
   end
 
   def method_missing(mid, *args) # :nodoc:

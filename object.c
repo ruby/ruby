@@ -2036,9 +2036,10 @@ convert_type(val, tname, method, raise)
     const char *tname, *method;
     int raise;
 {
-    VALUE result = rb_funcall_rescue(val, rb_intern(method), 0);
+    ID m;
 
-    if (result == Qundef) {
+    m = rb_intern(method);
+    if (!rb_respond_to(val, m)) {
 	if (raise) {
 	    rb_raise(rb_eTypeError, "cannot convert %s into %s",
 		     NIL_P(val) ? "nil" :
@@ -2048,11 +2049,10 @@ convert_type(val, tname, method, raise)
 		     tname);
 	}
 	else {
-	    ruby_errinfo = Qnil;
 	    return Qnil;
 	}
     }
-    return result;
+    return rb_funcall(val, m, 0);
 }
 
 VALUE

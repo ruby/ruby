@@ -312,7 +312,7 @@ rb_clear_cache_by_class(klass)
 
 static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
-static ID __id__, __send__;
+static ID __id__, __send__, respond_to;
 
 void
 rb_add_method(klass, mid, node, noex)
@@ -3943,16 +3943,24 @@ module_setup(module, n)
     return result;
 }
 
+static NODE *basic_respond_to = 0;
+
 int
 rb_respond_to(obj, id)
     VALUE obj;
     ID id;
 {
-    if (rb_method_boundp(CLASS_OF(obj), id, 0)) {
+    VALUE klass = CLASS_OF(obj);
+    if (rb_method_node(klass, respond_to) == basic_respond_to &&
+	rb_method_boundp(klass, id, 0)) {
 	return Qtrue;
+    }
+    else{
+	return rb_funcall(obj, respond_to, 1, ID2SYM(id));
     }
     return Qfalse;
 }
+
 
 /*
  *  call-seq:
@@ -7581,7 +7589,10 @@ Init_eval()
     rb_define_global_function("loop", rb_f_loop, 0);
 
     rb_define_method(rb_mKernel, "respond_to?", rb_obj_respond_to, -1);
-
+    respond_to   = rb_intern("respond_to?");
+    basic_respond_to = rb_method_node(rb_cObject, respond_to);
+    rb_global_variable((VALUE*)&basic_respond_to);
+    
     rb_define_global_function("raise", rb_f_raise, -1);
     rb_define_global_function("fail", rb_f_raise, -1);
 
@@ -8152,6 +8163,10 @@ proc_invoke(proc, args, self, klass)
     _block = *data;
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.last_class = klass;
+    _block.frame.argc = RARRAY(args)->len;
+    _block.frame.argv = ALLOCA_N(VALUE, RARRAY(args)->len);
+    MEMCPY(_block.frame.argv, RARRAY(args)->ptr, VALUE, RARRAY(args)->len);
+    _block.frame.flags = FRAME_ALLOCA;
     ruby_block = &_block;
 
     PUSH_ITER(ITER_CUR);

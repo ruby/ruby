@@ -2177,13 +2177,19 @@ rb_io_sysread(argc, argv, io)
     if (READ_DATA_BUFFERED(fptr->f)) {
 	rb_raise(rb_eIOError, "sysread for buffered IO");
     }
+    rb_str_locktmp(str);
+
     n = fileno(fptr->f);
     rb_thread_wait_fd(fileno(fptr->f));
     rb_io_check_closed(fptr);
+    if (RSTRING(str)->len != ilen) {
+	rb_raise(rb_eRuntimeError, "buffer string modified");
+    }
     TRAP_BEG;
-    n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
+    n = read(fileno(fptr->f), RSTRING(str)->ptr, ilen);
     TRAP_END;
 
+    rb_str_unlocktmp(str);
     if (n == -1) {
 	rb_sys_fail(fptr->path);
     }
@@ -3867,9 +3873,7 @@ rb_file_initialize(argc, argv, io)
     VALUE io;
 {
     if (RFILE(io)->fptr) {
-	rb_io_close_m(io);
-	free(RFILE(io)->fptr);
-	RFILE(io)->fptr = 0;
+	rb_raise(rb_eRuntimeError, "reinitializing File");
     }
     if (0 < argc && argc < 3) {
 	VALUE fd = rb_check_convert_type(argv[0], T_FIXNUM, "Fixnum", "to_int");
@@ -4477,7 +4481,6 @@ rb_io_ctl(io, req, arg, io_p)
     int retval;
 
     rb_secure(2);
-    GetOpenFile(io, fptr);
 
     if (NIL_P(arg) || arg == Qfalse) {
 	narg = 0;
@@ -4518,6 +4521,7 @@ rb_io_ctl(io, req, arg, io_p)
 	    narg = (long)RSTRING(arg)->ptr;
 	}
     }
+    GetOpenFile(io, fptr);
     retval = io_cntl(fileno(fptr->f), cmd, narg, io_p);
     if (retval < 0) rb_sys_fail(fptr->path);
     if (TYPE(arg) == T_STRING && RSTRING(arg)->ptr[len] != 17) {
