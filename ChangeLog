@@ -1,3 +1,9 @@
+Thu Oct 12 18:56:28 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/pop.rb: POP3#reset
+
+	* lib/net/http.rb: a code for "Switch Protocol" was wrongly 100
+
 Thu Oct 12 01:23:38 2000 Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: bug fix: CGI::html(): PRETTY option didn't work.

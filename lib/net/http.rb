@@ -787,7 +787,7 @@ SRC
 
     HTTPCODE_TO_OBJ = {
       '100' => ContinueCode,
-      '100' => HTTPSwitchProtocol,
+      '101' => HTTPSwitchProtocol,
 
       '200' => HTTPOK,
       '201' => HTTPCreated,

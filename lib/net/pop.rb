@@ -45,6 +45,9 @@ Net::Protocol
   an array of ((URL:#POPMail)).
   This array is renewed when session started.
 
+: reset
+  reset the session. All "deleted mark" are removed.
+
 
 == Net::APOP
 
@@ -128,13 +131,22 @@ module Net
 
     def initialize( addr = nil, port = nil )
       super
-      @mails = [].freeze
+      @mails = nil
     end
 
     attr :mails
 
-    def each
-      @mails.each {|m| yield m }
+    def each( &block )
+      io_check
+      @mails.each &block
+    end
+
+    def reset
+      io_check
+      @command.rset
+      @mails.each do |m|
+        m.instance_eval { @deleted = false }
+      end
     end
 
 
@@ -144,13 +156,19 @@ module Net
       @command.auth( acnt, pwd )
 
       @mails = []
-      t = type.mail_type
+      mtype = type.mail_type
       @command.list.each_with_index do |size,idx|
         if size then
-          @mails.push t.new( idx, size, @command )
+          @mails.push mtype.new( idx, size, @command )
         end
       end
       @mails.freeze
+    end
+
+    def io_check
+      if not @socket or @socket.closed? then
+        raise IOError, 'pop session is not opened yet'
+      end
     end
 
   end
@@ -197,13 +215,14 @@ module Net
     end
 
     def header( dest = '' )
-      top( 0, dest )
+      top 0, dest
     end
 
     def delete
       @command.dele( @num )
       @deleted = true
     end
+
     alias delete! delete
 
     def deleted?
