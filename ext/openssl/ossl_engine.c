@@ -225,7 +225,7 @@ ossl_engine_load_pubkey(int argc, VALUE *argv, VALUE self)
     sid = StringValuePtr(id);
     sdata = NIL_P(data) ? NULL : StringValuePtr(data);
     GetEngine(self, e);
-#if OPENSSL_VERSION_NUMBER < 0x0090702fL
+#if OPENSSL_VERSION_NUMBER < 0x00907000L
     pkey = ENGINE_load_public_key(e, sid, sdata);
 #else
     pkey = ENGINE_load_public_key(e, sid, NULL, sdata);
