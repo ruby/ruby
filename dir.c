@@ -255,6 +255,12 @@ dir_s_alloc(klass)
     return obj;
 }
 
+/*
+ *  call-seq:
+ *     Dir.new( string ) -> aDir
+ *
+ *  Returns a new directory object for the named directory.
+ */
 static VALUE
 dir_initialize(dir, dirname)
     VALUE dir, dirname;
@@ -282,6 +288,17 @@ dir_initialize(dir, dirname)
     return dir;
 }
 
+/*
+ *  call-seq:
+ *     Dir.open( string ) => aDir
+ *     Dir.open( string ) {| aDir | block } => anObject
+ *
+ *  With no block, <code>open</code> is a synonym for
+ *  <code>Dir::new</code>. If a block is present, it is passed
+ *  <i>aDir</i> as a parameter. The directory is closed at the end of
+ *  the block, and <code>Dir::open</code> returns the value of the
+ *  block.
+ */
 static VALUE
 dir_s_open(klass, dirname)
     VALUE klass, dirname;
@@ -308,6 +325,15 @@ dir_closed()
     if (dirp->dir == NULL) dir_closed();\
 } while (0)
 
+/*
+ *  call-seq:
+ *     dir.path => string or nil
+ *
+ *  Returns the path parameter passed to <em>dir</em>'s constructor.
+ *
+ *     d = Dir.new("..")
+ *     d.path   #=> ".."
+ */
 static VALUE
 dir_path(dir)
     VALUE dir;
@@ -319,6 +345,18 @@ dir_path(dir)
     return rb_str_new2(dirp->path);
 }
 
+/*
+ *  call-seq:
+ *     dir.read => string or nil
+ *
+ *  Reads the next entry from <em>dir</em> and returns it as a string.
+ *  Returns <code>nil</code> at the end of the stream.
+ *
+ *     d = Dir.new("testdir")
+ *     d.read   #=> "."
+ *     d.read   #=> ".."
+ *     d.read   #=> "config.h"
+ */
 static VALUE
 dir_read(dir)
     VALUE dir;
@@ -341,6 +379,23 @@ dir_read(dir)
     return Qnil;		/* not reached */
 }
 
+/*
+ *  call-seq:
+ *     dir.each { |filename| block }  => dir
+ *
+ *  Calls the block once for each entry in this directory, passing the
+ *  filename of each entry as a parameter to the block.
+ *
+ *     d = Dir.new("testdir")
+ *     d.each  {|x| puts "Got #{x}" }
+ *
+ *  <em>produces:</em>
+ *
+ *     Got .
+ *     Got ..
+ *     Got config.h
+ *     Got main.rb
+ */
 static VALUE
 dir_each(dir)
     VALUE dir;
@@ -356,6 +411,19 @@ dir_each(dir)
     return dir;
 }
 
+/*
+ *  call-seq:
+ *     dir.pos => integer
+ *     dir.tell => integer
+ *
+ *  Returns the current position in <em>dir</em>. See also
+ *  <code>Dir#seek</code>.
+ *
+ *     d = Dir.new("testdir")
+ *     d.tell   #=> 0
+ *     d.read   #=> "."
+ *     d.tell   #=> 12
+ */
 static VALUE
 dir_tell(dir)
     VALUE dir;
@@ -372,6 +440,20 @@ dir_tell(dir)
 #endif
 }
 
+/*
+ *  call-seq:
+ *     dir.seek( integer ) => dir
+ *
+ *  Seeks to a particular location in <em>dir</em>. <i>integer</i>
+ *  must be a value returned by <code>Dir#tell</code>.
+ *
+ *     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
+ *     d.read                   #=> "."
+ *     i = d.tell               #=> 12
+ *     d.read                   #=> ".."
+ *     d.seek(i)                #=> #<Dir:0x401b3c40>
+ *     d.read                   #=> ".."
+ */
 static VALUE
 dir_seek(dir, pos)
     VALUE dir, pos;
@@ -387,6 +469,20 @@ dir_seek(dir, pos)
 #endif
 }
 
+/*
+ *  call-seq:
+ *     dir.pos( integer ) => integer
+ *
+ *  Synonym for <code>Dir#seek</code>, but returns the position
+ *  parameter.
+ *
+ *     d = Dir.new("testdir")   #=> #<Dir:0x401b3c40>
+ *     d.read                   #=> "."
+ *     i = d.pos                #=> 12
+ *     d.read                   #=> ".."
+ *     d.pos = i                #=> 12
+ *     d.read                   #=> ".."
+ */
 static VALUE
 dir_set_pos(dir, pos)
     VALUE dir, pos;
@@ -395,6 +491,17 @@ dir_set_pos(dir, pos)
     return pos;
 }
 
+/*
+ *  call-seq:
+ *     dir.rewind => dir
+ *
+ *  Repositions <em>dir</em> to the first entry.
+ *
+ *     d = Dir.new("testdir")
+ *     d.read     #=> "."
+ *     d.rewind   #=> #<Dir:0x401b3fb0>
+ *     d.read     #=> "."
+ */
 static VALUE
 dir_rewind(dir)
     VALUE dir;
@@ -406,6 +513,16 @@ dir_rewind(dir)
     return dir;
 }
 
+/*
+ *  call-seq:
+ *     dir.close => nil
+ *
+ *  Closes the directory stream. Any further attempts to access
+ *  <em>dir</em> will raise an <code>IOError</code>.
+ *
+ *     d = Dir.new("testdir")
+ *     d.close   #=> nil
+ */
 static VALUE
 dir_close(dir)
     VALUE dir;
@@ -442,6 +559,45 @@ chdir_restore(path)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     Dir.chdir( [ string] ) => 0
+ *     Dir.chdir( [ string] ) {| path | block }  => anObject
+ *
+ *  Changes the current working directory of the process to the given
+ *  string. When called without an argument, changes the directory to
+ *  the value of the environment variable <code>HOME</code>, or
+ *  <code>LOGDIR</code>. <code>SystemCallError</code> (probably
+ *  <code>Errno::ENOENT</code>) if the target directory does not exist.
+ *
+ *  If a block is given, it is passed the name of the new current
+ *  directory, and the block is executed with that as the current
+ *  directory. The original working directory is restored when the block
+ *  exits. The return value of <code>chdir</code> is the value of the
+ *  block. <code>chdir</code> blocks can be nested, but in a
+ *  multi-threaded program an error will be raised if a thread attempts
+ *  to open a <code>chdir</code> block while another thread has one
+ *  open.
+ *
+ *     Dir.chdir("/var/spool/mail")
+ *     puts Dir.pwd
+ *     Dir.chdir("/tmp") do
+ *       puts Dir.pwd
+ *       Dir.chdir("/usr") do
+ *         puts Dir.pwd
+ *       end
+ *       puts Dir.pwd
+ *     end
+ *     puts Dir.pwd
+ *
+ *  <em>produces:</em>
+ *
+ *     /var/spool/mail
+ *     /tmp
+ *     /usr
+ *     /tmp
+ *     /var/spool/mail
+ */
 static VALUE
 dir_s_chdir(argc, argv, obj)
     int argc;
@@ -482,6 +638,17 @@ dir_s_chdir(argc, argv, obj)
     return INT2FIX(0);
 }
 
+/*
+ *  call-seq:
+ *     Dir.getwd => string
+ *     Dir.pwd => string
+ *
+ *  Returns the path to the current working directory of this process as
+ *  a string.
+ *
+ *     Dir.chdir("/tmp")   #=> 0
+ *     Dir.getwd           #=> "/tmp"
+ */
 static VALUE
 dir_s_getwd(dir)
     VALUE dir;
@@ -512,6 +679,15 @@ check_dirname(dir)
     }
 }
 
+/*
+ *  call-seq:
+ *     Dir.chroot( string ) => 0
+ *
+ *  Changes this process's idea of the file system root. Only a
+ *  privileged process may make this call. Not available on all
+ *  platforms. On Unix systems, see <code>chroot(2)</code> for more
+ *  information.
+ */
 static VALUE
 dir_s_chroot(dir, path)
     VALUE dir, path;
@@ -529,6 +705,19 @@ dir_s_chroot(dir, path)
 #endif
 }
 
+/*
+ *  call-seq:
+ *     Dir.mkdir( string [, integer] ) => 0
+ *
+ *  Makes a new directory named by <i>string</i>, with permissions
+ *  specified by the optional parameter <i>anInteger</i>. The
+ *  permissions may be modified by the value of
+ *  <code>File::umask</code>, and are ignored on NT. Raises a
+ *  <code>SystemCallError</code> if the directory cannot be created. See
+ *  also the discussion of permissions in the class documentation for
+ *  <code>File</code>.
+ *
+ */
 static VALUE
 dir_s_mkdir(argc, argv, obj)
     int argc;
@@ -557,6 +746,15 @@ dir_s_mkdir(argc, argv, obj)
     return INT2FIX(0);
 }
 
+/*
+ *  call-seq:
+ *     Dir.delete( string ) => 0
+ *     Dir.rmdir( string ) => 0
+ *     Dir.unlink( string ) => 0
+ *
+ *  Deletes the named directory. Raises a subclass of
+ *  <code>SystemCallError</code> if the directory isn't empty.
+ */
 static VALUE
 dir_s_rmdir(obj, dir)
     VALUE obj, dir;
@@ -1010,6 +1208,14 @@ rb_push_glob(str, flags)
     return ary;
 }
 
+/*
+ *  call-seq:
+ *     Dir[ string ] => array
+ *
+ *  Equivalent to calling
+ *  <em>dir</em>.<code>glob(</code><i>string,</i><code>0)</code>.
+ *
+ */
 static VALUE
 dir_s_aref(obj, str)
     VALUE obj, str;
@@ -1017,6 +1223,27 @@ dir_s_aref(obj, str)
     return rb_push_glob(str, 0);
 }
 
+/*
+ *  call-seq:
+ *     Dir.glob( string, [flags] ) => array
+ *     Dir.glob( string, [flags] ) {| filename | block }  => false
+ *
+ *  Returns the filenames found by expanding the pattern given in
+ *  <i>string</i>, either as an <i>array</i> or as parameters to the
+ *  block. Note that this pattern is not a regexp (it's closer to a
+ *  shell glob). See <code>File::fnmatch</code> for
+ *  details of file name matching and the meaning of the <i>flags</i>
+ *  parameter.
+ *
+ *     Dir["config.?"]                     #=> ["config.h"]
+ *     Dir.glob("config.?")                #=> ["config.h"]
+ *     Dir.glob("*.[a-z][a-z]")            #=> ["main.rb"]
+ *     Dir.glob("*.[^r]*")                 #=> ["config.h"]
+ *     Dir.glob("*.{rb,h}")                #=> ["main.rb", "config.h"]
+ *     Dir.glob("*")                       #=> ["config.h", "main.rb"]
+ *     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
+ *
+ */
 static VALUE
 dir_s_glob(argc, argv, obj)
     int argc;
@@ -1034,6 +1261,23 @@ dir_s_glob(argc, argv, obj)
     return rb_push_glob(str, flags);
 }
 
+/*
+ *  call-seq:
+ *     Dir.foreach( dirname ) {| filename | block }  => nil
+ *
+ *  Calls the block once for each entry in the named directory, passing
+ *  the filename of each entry as a parameter to the block.
+ *
+ *     Dir.foreach("testdir") {|x| puts "Got #{x}" }
+ *
+ *  <em>produces:</em>
+ *
+ *     Got .
+ *     Got ..
+ *     Got config.h
+ *     Got main.rb
+ *
+ */
 static VALUE
 dir_foreach(io, dirname)
     VALUE io, dirname;
@@ -1045,6 +1289,17 @@ dir_foreach(io, dirname)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     Dir.entries( dirname ) => array
+ *
+ *  Returns an array containing all of the filenames in the given
+ *  directory. Will raise a <code>SystemCallError</code> if the named
+ *  directory doesn't exist.
+ *
+ *     Dir.entries("testdir")   #=> [".", "..", "config.h", "main.rb"]
+ *
+ */
 static VALUE
 dir_entries(io, dirname)
     VALUE io, dirname;
@@ -1055,6 +1310,45 @@ dir_entries(io, dirname)
     return rb_ensure(rb_Array, dir, dir_close, dir);
 }
 
+/*
+ *  call-seq:
+ *     File.fnmatch( pattern, path, [flags] ) => (true or false)
+ *     File.fnmatch?( pattern, path, [flags] ) => (true or false)
+ *
+ *  Returns true if <i>path</i> matches against <i>pattern</i> The
+ *  pattern is not a regular expression; instead it follows rules
+ *  similar to shell filename globbing. It may contain the following
+ *  metacharacters:
+ *
+ *  <i>flags</i> is a bitwise OR of the <code>FNM_xxx</code> parameters.
+ *  The same glob pattern and flags are used by <code>Dir::glob</code>.
+ *
+ *     File.fnmatch('cat',       'cat')        #=> true
+ *     File.fnmatch('cat',       'category')   #=> false
+ *     File.fnmatch('c{at,ub}s', 'cats')       #=> false
+ *     File.fnmatch('c{at,ub}s', 'cubs')       #=> false
+ *     File.fnmatch('c{at,ub}s', 'cat')        #=> false
+ *
+ *     File.fnmatch('c?t',    'cat')                       #=> true
+ *     File.fnmatch('c\?t',   'cat')                       #=> false
+ *     File.fnmatch('c??t',   'cat')                       #=> false
+ *     File.fnmatch('c*',     'cats')                      #=> true
+ *     File.fnmatch('c/ * FIXME * /t', 'c/a/b/c/t')                 #=> true
+ *     File.fnmatch('c*t',    'cat')                       #=> true
+ *     File.fnmatch('c\at',   'cat')                       #=> true
+ *     File.fnmatch('c\at',   'cat', File::FNM_NOESCAPE)   #=> false
+ *     File.fnmatch('a?b',    'a/b')                       #=> true
+ *     File.fnmatch('a?b',    'a/b', File::FNM_PATHNAME)   #=> false
+ *
+ *     File.fnmatch('*',   '.profile')                            #=> false
+ *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)        #=> true
+ *     File.fnmatch('*',   'dave/.profile')                       #=> true
+ *     File.fnmatch('*',   'dave/.profile', File::FNM_DOTMATCH)   #=> true
+ *     File.fnmatch('*',   'dave/.profile', File::FNM_PATHNAME)   #=> false
+ *     File.fnmatch('* / FIXME *', 'dave/.profile', File::FNM_PATHNAME)   #=> false
+ *     STRICT = File::FNM_PATHNAME | File::FNM_DOTMATCH
+ *     File.fnmatch('* / FIXME *', 'dave/.profile', STRICT)               #=> true
+ */
 static VALUE
 file_s_fnmatch(argc, argv, obj)
     int argc;
@@ -1079,6 +1373,17 @@ file_s_fnmatch(argc, argv, obj)
     return Qfalse;
 }
 
+/*
+ *  Objects of class <code>Dir</code> are directory streams representing
+ *  directories in the underlying file system. They provide a variety of
+ *  ways to list directories and their contents. See also
+ *  <code>File</code>.
+ *
+ *  The directory used in these examples contains the two regular files
+ *  (<code>config.h</code> and <code>main.rb</code>), the parent
+ *  directory (<code>..</code>), and the directory itself
+ *  (<code>.</code>).
+ */
 void
 Init_Dir()
 {

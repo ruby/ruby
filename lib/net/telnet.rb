@@ -277,7 +277,7 @@ module Net # :nodoc:
         @options["Binmode"]    = false         
       else
         unless (true == @options["Binmode"] or false == @options["Binmode"])
-          raise ArgumentError, "Binmode option required true or false"
+          raise ArgumentError, "Binmode option must be true or false"
         end
       end
 
@@ -285,7 +285,7 @@ module Net # :nodoc:
         @options["Telnetmode"] = true          
       else
         unless (true == @options["Telnetmode"] or false == @options["Telnetmode"])
-          raise ArgumentError, "Telnetmode option required true or false"
+          raise ArgumentError, "Telnetmode option must be true or false"
         end
       end
 
@@ -330,7 +330,7 @@ module Net # :nodoc:
         elsif @options["Proxy"].kind_of?(IO)
           @sock = @options["Proxy"]
         else
-          raise "Error; Proxy is Net::Telnet or IO object."
+          raise "Error: Proxy must be an instance of Net::Telnet or IO."
         end
       else
         message = "Trying " + @options["Host"] + "...\n"
@@ -347,7 +347,7 @@ module Net # :nodoc:
             end
           end
         rescue TimeoutError
-          raise TimeoutError, "timed-out; opening of the host"
+          raise TimeoutError, "timed out while opening a connection to the host"
         rescue
           @log.write($ERROR_INFO.to_s + "\n") if @options.has_key?("Output_log")
           @dumplog.log_dump('#', $ERROR_INFO.to_s + "\n") if @options.has_key?("Dump_log")
@@ -382,7 +382,7 @@ module Net # :nodoc:
       when true, false
         @options["Telnetmode"] = mode
       else
-        raise ArgumentError, "required true or false"
+        raise ArgumentError, "argument must be true or false, or missing"
       end
     end
 
@@ -393,7 +393,7 @@ module Net # :nodoc:
       if (true == mode or false == mode)
         @options["Telnetmode"] = mode
       else
-        raise ArgumentError, "required true or false"
+        raise ArgumentError, "argument must be true or false"
       end
     end
 
@@ -406,7 +406,7 @@ module Net # :nodoc:
       when true, false
         @options["Binmode"] = mode
       else
-        raise ArgumentError, "required true or false"
+        raise ArgumentError, "argument must be true or false"
       end
     end
 
@@ -415,7 +415,7 @@ module Net # :nodoc:
       if (true == mode or false == mode)
         @options["Binmode"] = mode
       else
-        raise ArgumentError, "required true or false"
+        raise ArgumentError, "argument must be true or false"
       end
     end
 
@@ -542,7 +542,7 @@ module Net # :nodoc:
       rest = ''
       until(prompt === line and not IO::select([@sock], nil, nil, waittime))
         unless IO::select([@sock], nil, nil, time_out)
-          raise TimeoutError, "timed-out; wait for the next data"
+          raise TimeoutError, "timed out while waiting for more data"
         end
         begin
           c = @sock.sysread(1024 * 1024)

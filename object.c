@@ -704,6 +704,16 @@ rb_mod_initialize(module)
     return Qnil;
 }
 
+/*
+ *  call-seq:
+ *     Class.new(super_class=Object)   =>    a_class
+ *  
+ *  Creates a new anonymous (unnamed) class with the given superclass
+ *  (or <code>Object</code> if no parameter is given). You can give a
+ *  class a name by assigning the class object to a constant.
+ *     
+ */
+
 static VALUE
 rb_class_initialize(argc, argv, klass)
     int argc;
@@ -725,6 +735,15 @@ rb_class_initialize(argc, argv, klass)
 
     return klass;
 }
+
+/*
+ *  call-seq:
+ *     class.allocate()   =>   obj
+ *  
+ *  Allocates space for a new object of <i>class</i>'s class. The
+ *  returned object must be an instance of <i>class</i>.
+ *     
+ */
 
 VALUE
 rb_obj_alloc(klass)
@@ -755,6 +774,18 @@ rb_class_allocate_instance(klass)
     return (VALUE)obj;
 }
 
+/*
+ *  call-seq:
+ *     class.new(args, ...)    =>  obj
+ *  
+ *  Calls <code>allocate</code> to create a new object of
+ *  <i>class</i>'s class, then invokes that object's
+ *  <code>initialize</code> method, passing it <i>args</i>.
+ *  This is the method that ends up getting called whenever
+ *  an object is constructed using .new.
+ *     
+ */
+
 VALUE
 rb_class_new_instance(argc, argv, klass)
     int argc;
@@ -768,6 +799,18 @@ rb_class_new_instance(argc, argv, klass)
 
     return obj;
 }
+
+/*
+ *  call-seq:
+ *     class.superclass -> a_super_class or nil
+ *  
+ *  Returns the superclass of <i>class</i>, or <code>nil</code>.
+ *     
+ *     File.superclass     #=> IO
+ *     IO.superclass       #=> Object
+ *     Object.superclass   #=> nil
+ *     
+ */
 
 static VALUE
 rb_class_superclass(klass)
@@ -1363,6 +1406,65 @@ boot_defclass(name, super)
 
 VALUE ruby_top_self;
 
+/*
+ *  Document-class: Class
+ *
+ *  Classes in Ruby are first-class objects---each is an instance of
+ *  class <code>Class</code>.
+ *     
+ *  When a new class is created (typically using <code>class Name ...
+ *  end</code>), an object of type <code>Class</code> is created and
+ *  assigned to a global constant (<code>Name</code> in this case). When
+ *  <code>Name.new</code> is called to create a new object, the
+ *  <code>new</code> method in <code>Class</code> is run by default.
+ *  This can be demonstrated by overriding <code>new</code> in
+ *  <code>Class</code>:
+ *     
+ *     class Class
+ *        alias oldNew  new
+ *        def new(*args)
+ *          print "Creating a new ", self.name, "\n"
+ *          oldNew(*args)
+ *        end
+ *      end
+ *     
+ *     
+ *      class Name
+ *      end
+ *     
+ *     
+ *      n = Name.new
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Creating a new Name
+ *     
+ * Classes, modules, and objects are interrelated. In the diagram
+ * that follows, the arrows represent inheritance, and the
+ * parentheses meta-classes. All metaclasses are instances 
+ * of the class `Class'.
+ *
+ *                           +------------------+
+ *                           |                  |
+ *             Object---->(Object)              |
+ *              ^  ^        ^  ^                |
+ *              |  |        |  |                |
+ *              |  |  +-----+  +---------+      |
+ *              |  |  |                  |      |
+ *              |  +-----------+         |      |
+ *              |     |        |         |      |
+ *       +------+     |     Module--->(Module)  |
+ *       |            |        ^         ^      |
+ *  OtherClass-->(OtherClass)  |         |      |
+ *                             |         |      |
+ *                           Class---->(Class)  |
+ *                             ^                |
+ *                             |                |
+ *                             +----------------+
+ *
+ *
+ */
+
 void
 Init_Object()
 {
@@ -1387,29 +1489,6 @@ Init_Object()
     rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy, 1);
     rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy, 1);
 
-    /*
-     * Ruby's Class Hierarchy Chart
-     *
-     *                           +------------------+
-     *                           |                  |
-     *             Object---->(Object)              |
-     *              ^  ^        ^  ^                |
-     *              |  |        |  |                |
-     *              |  |  +-----+  +---------+      |
-     *              |  |  |                  |      |
-     *              |  +-----------+         |      |
-     *              |     |        |         |      |
-     *       +------+     |     Module--->(Module)  |
-     *       |            |        ^         ^      |
-     *  OtherClass-->(OtherClass)  |         |      |
-     *                             |         |      |
-     *                           Class---->(Class)  |
-     *                             ^                |
-     *                             |                |
-     *                             +----------------+
-     *
-     *   + All metaclasses are instances of the class `Class'.
-     */
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "==", rb_obj_equal, 1);

@@ -182,10 +182,14 @@ module RDoc
     
     
     def find_class_comment(class_name, class_meth)
+      comment = nil
       if @body =~ %r{((?>/\*.*?\*/\s+))
                      (static\s+)?void\s+Init_#{class_name}\s*\(\)}xm
-        class_meth.comment = mangle_comment($1)
+        comment = $1
+      elsif @body =~ %r{Document-class:\s#{class_name}.*?\n((?>.*?\*/))}m
+        comment = $1
       end
+      class_meth.comment = mangle_comment(comment) if comment
     end
     
     def do_classes
