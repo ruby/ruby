@@ -1,7 +1,7 @@
 # 
 # = fileutils.rb
 # 
-# Copyright (c) 2000-2003 Minero Aoki <aamine@loveruby.net>
+# Copyright (c) 2000-2004 Minero Aoki <aamine@loveruby.net>
 # 
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.
@@ -48,9 +48,9 @@
 # There are some `low level' methods, which does not accept any option:
 #
 #   uptodate?(file, cmp_list)
-#   copy_file(srcfilename, destfilename)
+#   copy_file(srcpath, destpath)
 #   copy_stream(srcstream, deststream)
-#   compare_file(file_a, file_b)
+#   compare_file(path_a, path_b)
 #   compare_stream(stream_a, stream_b)
 #
 # == module FileUtils::Verbose
@@ -64,6 +64,12 @@
 # This module has all methods of FileUtils module, but never changes
 # files/directories.  This equates to passing the <tt>:noop</tt> flag to methods
 # in FileUtils.
+# 
+# == module FileUtils::DryRun
+# 
+# This module has all methods of FileUtils module, but never changes
+# files/directories.  This equates to passing the <tt>:noop</tt> and
+# <tt>:verbose</tt> flags to methods in FileUtils.
 # 
 
 
@@ -374,9 +380,9 @@ module FileUtils
   end
   private :fu_copy_dir
 
-  def fu_p_copy(src, dest, really) #:nodoc:
+  def fu_p_copy(src, dest, really = true) #:nodoc:
     fu_preserve_attr(really, src, dest) {
-        copy_file src, dest
+      copy_file src, dest
     }
   end
   private :fu_p_copy
@@ -427,43 +433,42 @@ module FileUtils
   end
 
   #
-  # Options: noop verbose
+  # Options: force noop verbose
   # 
   # Moves file(s) +src+ to +dest+.  If +file+ and +dest+ exist on the different
   # disk partition, the file is copied instead.
   # 
   #   FileUtils.mv 'badname.rb', 'goodname.rb'
-  #   FileUtils.mv 'stuff.rb', 'lib/ruby', :force => true
+  #   FileUtils.mv 'stuff.rb', '/notexist/lib/ruby', :force => true  # no error
   # 
   #   FileUtils.mv %w(junk.txt dust.txt), '/home/aamine/.trash/'
-  #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop, :verbose => true
+  #   FileUtils.mv Dir.glob('test*.rb'), 'test', :noop => true, :verbose => true
   # 
   def mv(src, dest, options = {})
-    fu_check_options options, :noop, :verbose
-    fu_output_message "mv #{[src,dest].flatten.join ' '}" if options[:verbose]
+    fu_check_options options, :force, :noop, :verbose
+    fu_output_message "mv#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
 
     fu_each_src_dest(src, dest) do |s,d|
       if rename_cannot_overwrite_file? and File.file?(d)
-        File.unlink d
+        begin
+          File.unlink d
+        rescue SystemCallError
+          raise unless options[:force]
+        end
       end
-
       begin
         File.rename s, d
-      rescue
-        if File.symlink?(s)
-          File.symlink File.readlink(s), dest
-          File.unlink s
-        else
-          st = File.stat(s)
-          copy_file s, d
-          File.unlink s
-          File.utime st.atime, st.mtime, d
-          begin
-            File.chown st.uid, st.gid, d
-          rescue
-            # ignore
+      rescue SystemCallError
+        begin
+          if File.symlink?(s)
+            File.symlink File.readlink(s), d
+          else
+            fu_p_copy s, d
           end
+          File.unlink s
+        rescue SystemCallError
+          raise unless options[:force]
         end
       end
     end
@@ -791,114 +796,142 @@ module FileUtils
 
 
   OPT_TABLE = {
-    'pwd'          => %w(),
     'cd'           => %w( noop verbose ),
     'chdir'        => %w( noop verbose ),
     'chmod'        => %w( noop verbose ),
-    'copy'         => %w( preserve noop verbose ),
-    'cp'           => %w( preserve noop verbose ),
-    'cp_r'         => %w( preserve noop verbose ),
-    'install'      => %w( preserve mode noop verbose ),
-    'link'         => %w( force noop verbose ),
-    'ln'           => %w( force noop verbose ),
-    'ln_s'         => %w( force noop verbose ),
+    'copy'         => %w( noop verbose preserve ),
+    'cp'           => %w( noop verbose preserve ),
+    'cp_r'         => %w( noop verbose preserve ),
+    'install'      => %w( noop verbose preserve mode ),
+    'link'         => %w( noop verbose force ),
+    'ln'           => %w( noop verbose force ),
+    'ln_s'         => %w( noop verbose force ),
     'ln_sf'        => %w( noop verbose ),
     'makedirs'     => %w( noop verbose ),
-    'mkdir'        => %w( mode noop verbose ),
-    'mkdir_p'      => %w( mode noop verbose ),
+    'mkdir'        => %w( noop verbose mode ),
+    'mkdir_p'      => %w( noop verbose mode ),
     'mkpath'       => %w( noop verbose ),
-    'move'         => %w( noop verbose ),
-    'mv'           => %w( noop verbose ),
-    'remove'       => %w( force noop verbose ),
-    'rm'           => %w( force noop verbose ),
+    'move'         => %w( noop verbose force ),
+    'mv'           => %w( noop verbose force ),
+    'remove'       => %w( noop verbose force ),
+    'rm'           => %w( noop verbose force ),
     'rm_f'         => %w( noop verbose ),
-    'rm_r'         => %w( force noop verbose ),
+    'rm_r'         => %w( noop verbose force ),
     'rm_rf'        => %w( noop verbose ),
     'rmtree'       => %w( noop verbose ),
     'rmdir'        => %w( noop verbose ),
     'safe_unlink'  => %w( noop verbose ),
-    'symlink'      => %w( force noop verbose ),
+    'symlink'      => %w( noop verbose force ),
     'touch'        => %w( noop verbose )
   }
+
+  #
+  # Returns an Array of method names which have any options.
+  #
+  #   p FileUtils.commands  #=> ["chmod", "cp", "cp_r", "install", ...]
+  #
+  def FileUtils.commands
+    OPT_TABLE.keys
+  end
+
+  #
+  # Returns an Array of option names.
+  #
+  #   p FileUtils.options  #=> ["noop", "force", "verbose", "preserve", "mode"]
+  #
+  def FileUtils.options
+    OPT_TABLE.values.flatten.uniq
+  end
+
+  #
+  # Returns true if the method +mid+ have an option +opt+.
+  #
+  #   p FileUtils.have_option?(:cp, :noop)     #=> true
+  #   p FileUtils.have_option?(:rm, :force)    #=> true
+  #   p FileUtils.have_option?(:rm, :perserve) #=> false
+  #
+  def FileUtils.have_option?(mid, opt)
+    li = OPT_TABLE[mid] or raise ArgumentError, "no such method: #{mid}"
+    li.include?(opt.to_s)
+  end
+
+  #
+  # Returns an Array of option names of the method +mid+.
+  #
+  #   p FileUtils.options(:rm)  #=> ["noop", "verbose", "force"]
+  #
+  def FileUtils.options_of(mid)
+    OPT_TABLE[mid.to_s]
+  end
+
+  #
+  # Returns an Array of method names which have the option +opt+.
+  #
+  #   p FileUtils.collect_methods(:preserve) #=> ["cp", "cp_r", "copy", "install"]
+  #
+  def FileUtils.collect_methods(opt)
+    OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt) }
+  end
 
 
   # 
   # This module has all methods of FileUtils module, but it outputs messages
-  # before acting.  This equates to passing the <tt>:verbose</tt> flag to methods in
-  # FileUtils.
+  # before acting.  This equates to passing the <tt>:verbose</tt> flag to
+  # methods in FileUtils.
   # 
   module Verbose
     include FileUtils
-
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    @fileutils_verbose = true
-    @fileutils_nowrite = false
-
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include?('verbose')
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
-          @fileutils_verbose = true unless defined?(@fileutils_verbose)
-          super(*fu_update_option(args, :verbose => @fileutils_verbose))
+          super(*fu_update_option(args, :verbose => true))
         end
       EOS
     end
-
     extend self
   end
 
   # 
   # This module has all methods of FileUtils module, but never changes
-  # files/directories.  This equates to passing the <tt>:noop</tt> flag to methods in
-  # FileUtils.
+  # files/directories.  This equates to passing the <tt>:noop</tt> flag
+  # to methods in FileUtils.
   # 
   module NoWrite
     include FileUtils
-
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    @fileutils_verbose = false
-    @fileutils_nowrite = true
-
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include?('noop')
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
-          @fileutils_nowrite = true unless defined?(@fileutils_nowrite)
           super(*fu_update_option(args, :noop => true))
         end
       EOS
     end
-
     extend self
   end
 
   # 
   # This module has all methods of FileUtils module, but never changes
   # files/directories, with printing message before acting.
-  # This equates to passing the +:noop+ and +:verbose+ flag
+  # This equates to passing the <tt>:noop</tt> and <tt>:verbose</tt> flag
   # to methods in FileUtils.
   # 
   module DryRun
     include FileUtils
-
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    @fileutils_verbose = true
-    @fileutils_nowrite = true
-
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include?('noop')
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
-          @fileutils_verbose = true unless defined?(@fileutils_verbose)
-          @fileutils_nowrite = true unless defined?(@fileutils_nowrite)
           super(*fu_update_option(args, :noop => true, :verbose => true))
         end
       EOS
     end
-
     extend self
   end
 

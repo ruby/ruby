@@ -1,3 +1,15 @@
+Fri May  7 22:07:39 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mv): new option `force'. [ruby-talk:99457]
+
+	* lib/fileutils.rb: new method for command option reflection:
+	  FileUtils.commands, .options, .have_option?, .options_of,
+	  .collect_methods.
+
+	* lib/fileutils.rb: module Verbose, NoWrite, DryRun do not have
+	  option flags @fileutils_verbose and @fileutils_noop, they make no
+	  sense.
+
 Fri May  7 21:50:21 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::parse_include): Allow
