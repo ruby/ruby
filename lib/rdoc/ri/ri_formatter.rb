@@ -164,7 +164,7 @@ module RI
         display_verbatim_flow_item(item, @indent)
 
       when SM::Flow::H
-        display_heading(conv_html(item.text.join), item.level, @indent)
+        display_heading(conv_html(item.text), item.level, @indent)
 
       when SM::Flow::RULE
         draw_line
@@ -186,6 +186,7 @@ module RI
     ######################################################################
 
     def display_heading(text, level, indent)
+      text = strip_attributes(text)
       case level
       when 1
         ul = "=" * text.length
@@ -211,13 +212,30 @@ module RI
         display_flow_item(f)
       end
     end
+
+    def strip_attributes(txt)
+      tokens = txt.split(%r{(</?(?:b|code|em|i|tt)>)})
+      text = [] 
+      attributes = 0
+      tokens.each do |tok|
+        case tok
+        when %r{^</(\w+)>$}, %r{^<(\w+)>$}
+          ;
+        else
+          text << tok
+        end
+      end
+      text.join
+    end
+
+
   end
   
   
   ######################################################################
   # Handle text with attributes. We're a base class: there are
   # different presentation classes (one, for example, uses overstrikes
-  # to handle bold and underlinig, while another using ANSI escape
+  # to handle bold and underlining, while another using ANSI escape
   # sequences
   
   class AttributeFormatter < TextFormatter
@@ -247,6 +265,8 @@ module RI
 
     
     class AttributeString
+      attr_reader :txt
+
       def initialize
         @txt = []
         @optr = 0
@@ -345,7 +365,7 @@ module RI
   ##################################################
   
   # This formatter generates overstrike-style formatting, which
-  # works with pages such as man and less.
+  # works with pagers such as man and less.
 
   class OverstrikeFormatter < AttributeFormatter
 
@@ -408,16 +428,18 @@ module RI
     end
 
     HEADINGS = {
-      1 => "\033[1;32m%s\033[m",
-      2 => "\033[4;32m%s\033[m",
-      3 => "\033[32m%s\033[m"
+      1 => [ "\033[1;32m", "\033[m" ] ,
+      2 => ["\033[4;32m", "\033[m" ],
+      3 => ["\033[32m", "\033[m" ]
     }
 
     def display_heading(text, level, indent)
       level = 3 if level > 3
+      heading = HEADINGS[level]
       print indent
-      printf(HEADINGS[level], text)
-      puts
+      print heading[0]
+      print strip_attributes(text)
+      puts heading[1]
     end
     
     private
@@ -611,6 +633,7 @@ module RI
     # Place heading level indicators inline with heading.
 
     def display_heading(text, level, indent)
+      text = strip_attributes(text)
       case level
       when 1
         puts "= " + text.upcase
