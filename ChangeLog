@@ -1,3 +1,7 @@
+Tue Sep 14 00:15:15 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/zlib/zlib.c: backported from HEAD.
+
 Mon Sep 13 19:16:33 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (blk_copy_prev): need frame_dup().  [ruby-dev:24103]

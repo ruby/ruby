@@ -119,6 +119,7 @@ static void gzfile_read_header _((struct gzfile*));
 static void gzfile_check_footer _((struct gzfile*));
 static void gzfile_write _((struct gzfile*, Bytef*, uInt));
 static long gzfile_read_more _((struct gzfile*));
+static void gzfile_calc_crc _((struct gzfile*, VALUE));
 static VALUE gzfile_read _((struct gzfile*, int));
 static VALUE gzfile_read_all _((struct gzfile*));
 static void gzfile_ungetc _((struct gzfile*, int));
@@ -361,12 +362,14 @@ struct zstream {
 #define ZSTREAM_FLAG_IN_STREAM  0x2
 #define ZSTREAM_FLAG_FINISHED   0x4
 #define ZSTREAM_FLAG_FINALIZE   0x8
-#define ZSTREAM_FLAG_UNUSED     0x10
+#define ZSTREAM_FLAG_CLOSED     0x10
+#define ZSTREAM_FLAG_UNUSED     0x20
 
 #define ZSTREAM_READY(z)       ((z)->flags |= ZSTREAM_FLAG_READY)
 #define ZSTREAM_IS_READY(z)    ((z)->flags & ZSTREAM_FLAG_READY)
 #define ZSTREAM_IS_FINISHED(z) ((z)->flags & ZSTREAM_FLAG_FINISHED)
 #define ZSTREAM_IS_FINALIZE(z) ((z)->flags & ZSTREAM_FLAG_FINALIZE)
+#define ZSTREAM_IS_CLOSED(z)   ((z)->flags & ZSTREAM_FLAG_CLOSED)
 
 /* I think that more better value should be found,
    but I gave up finding it. B) */
@@ -1097,7 +1100,7 @@ static VALUE
 rb_deflate_s_allocate(klass)
     VALUE klass;
 {
-	return zstream_deflate_new(klass);
+    return zstream_deflate_new(klass);
 }
 
 /*
@@ -1757,6 +1760,7 @@ gzfile_close(gz, closeflag)
     int closeflag;
 {
     VALUE io = gz->io;
+
     gz->end(gz);
     gz->io = Qnil;
     gz->orig_name = Qnil;
@@ -2065,6 +2069,21 @@ gzfile_read_more(gz)
     return gz->z.buf_filled;
 }
 
+static void
+gzfile_calc_crc(gz, str)
+    struct gzfile *gz;
+    VALUE str;
+{
+    if (RSTRING(str)->len <= gz->ungetc) {
+	gz->ungetc -= RSTRING(str)->len;
+    }
+    else {
+	gz->crc = crc32(gz->crc, RSTRING(str)->ptr + gz->ungetc,
+			RSTRING(str)->len - gz->ungetc);
+	gz->ungetc = 0;
+    }
+}
+
 static VALUE
 gzfile_read(gz, len)
     struct gzfile *gz;
@@ -2087,13 +2106,7 @@ gzfile_read(gz, len)
     }
 
     dst = zstream_shift_buffer(&gz->z, len);
-    if (RSTRING(dst)->len <= gz->ungetc) {
-	gz->ungetc -= RSTRING(dst)->len;
-    }
-    else {
-	gz->crc = crc32(gz->crc, RSTRING(dst)->ptr + gz->ungetc,
-			RSTRING(dst)->len - gz->ungetc);
-    }
+    gzfile_calc_crc(gz, dst);
 
     OBJ_TAINT(dst);  /* for safe */
     return dst;
@@ -2116,13 +2129,7 @@ gzfile_read_all(gz)
     }
 
     dst = zstream_detach_buffer(&gz->z);
-    if (RSTRING(dst)->len <= gz->ungetc) {
-	gz->ungetc -= RSTRING(dst)->len;
-    }
-    else {
-	gz->crc = crc32(gz->crc, RSTRING(dst)->ptr + gz->ungetc,
-			RSTRING(dst)->len - gz->ungetc);
-    }
+    gzfile_calc_crc(gz, dst);
 
     OBJ_TAINT(dst);  /* for safe */
     return dst;
@@ -2152,6 +2159,9 @@ gzfile_writer_end(gz)
 {
     int aborted;
 
+    if (ZSTREAM_IS_CLOSED(&gz->z)) return;
+    gz->z.flags |= ZSTREAM_FLAG_CLOSED;
+
     if (!(gz->z.flags & GZFILE_FLAG_HEADER_FINISHED)) {
 	gzfile_make_header(gz);
     }
@@ -2160,8 +2170,9 @@ gzfile_writer_end(gz)
     gzfile_make_footer(gz);
 
     if (ZSTREAM_IS_FINALIZE(&gz->z)) {
+	if (NIL_P(gz->io)) return;
 	rb_warn("Zlib::GzipWriter object must be closed explicitly.");
-	if (OBJ_IS_FREED(gz->io)) {
+	if (!SPECIAL_CONST_P(gz->io) && OBJ_IS_FREED(gz->io)) {
 	    aborted = 1;
 	}
 	else {
@@ -2181,6 +2192,9 @@ static void
 gzfile_reader_end(gz)
     struct gzfile *gz;
 {
+    if (ZSTREAM_IS_CLOSED(&gz->z)) return;
+    gz->z.flags |= ZSTREAM_FLAG_CLOSED;
+
     if (GZFILE_IS_FINISHED(gz)
 	&& !ZSTREAM_IS_FINALIZE(&gz->z)
 	&& !(gz->z.flags & GZFILE_FLAG_FOOTER_FINISHED)) {
@@ -2998,8 +3012,7 @@ gzreader_skip_linebreaks(gz)
     while (n++, *(p++) == '\n') {
 	if (n >= gz->z.buf_filled) {
 	    str = zstream_detach_buffer(&gz->z);
-	    gz->crc = crc32(gz->crc, RSTRING(str)->ptr,
-			    RSTRING(str)->len);
+	    gzfile_calc_crc(gz, str);
 	    while (gz->z.buf_filled == 0) {
 		if (GZFILE_IS_FINISHED(gz)) return;
 		gzfile_read_more(gz);
@@ -3010,7 +3023,7 @@ gzreader_skip_linebreaks(gz)
     }
 
     str = zstream_shift_buffer(&gz->z, n - 1);
-    gz->crc = crc32(gz->crc, RSTRING(str)->ptr, RSTRING(str)->len);
+    gzfile_calc_crc(gz, str);
 }
 
 static VALUE
