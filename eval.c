@@ -1282,7 +1282,6 @@ compile_error(at)
 {
     VALUE str;
 
-    ruby_sourcefile = 0;
     ruby_nerrs = 0;
     str = rb_str_buf_new2("compile error");
     if (at) {
@@ -3602,6 +3601,7 @@ rb_longjmp(tag, mesg)
 	mesg = rb_exc_new(rb_eRuntimeError, 0, 0);
     }
 
+    ruby_set_current_source();
     if (ruby_sourcefile && !NIL_P(mesg)) {
 	at = get_backtrace(mesg);
 	if (NIL_P(at)) {
@@ -3618,7 +3618,6 @@ rb_longjmp(tag, mesg)
 	VALUE e = ruby_errinfo;
 
 	StringValue(e);
-	ruby_set_current_source();
 	fprintf(stderr, "Exception `%s' at %s:%d - %s\n",
 		rb_class2name(CLASS_OF(ruby_errinfo)),
 		ruby_sourcefile, ruby_sourceline,
@@ -5036,7 +5035,6 @@ eval(self, src, scope, file, line)
     }
     if (file == 0) {
 	ruby_set_current_source();
-	ruby_current_node = 0;
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }

@@ -1,3 +1,13 @@
+Fri Aug 16 07:57:26 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+Fri Aug 16 07:56:16 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (compile_error): must not clear ruby_sourcefile here.
+	  (ruby-bugs:PR#364).
+
+	* eval.c (rb_longjmp): set ruby_sourcefile before making
+	  backtrace.
+
 Thu Aug 15 20:38:58 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (ruby_current_node) : added to set sourceline on demand.
