@@ -1982,6 +1982,9 @@ rb_str_delete_bang(argc, argv, str)
     int init = 1;
     int i;
 
+    if (argc < 1) {
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
 

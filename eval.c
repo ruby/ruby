@@ -1431,8 +1431,8 @@ ev_const_defined(cref, id)
     while (cbase && cbase->nd_clss != rb_cObject) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (klass->iv_tbl &&
-	    st_lookup(klass->iv_tbl, id, 0)) {
+	if (NIL_P(klass)) return rb_const_defined(rb_cObject, id);
+	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
 	    return Qtrue;
 	}
 	cbase = cbase->nd_next;
@@ -1451,6 +1451,7 @@ ev_const_get(cref, id)
     while (cbase && cbase->nd_clss != rb_cObject) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
+	if (NIL_P(klass)) return rb_const_get(rb_cObject, id);
 	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, &result)) {
 	    return result;
 	}
@@ -2932,7 +2933,7 @@ rb_eval(self, n)
 	    int noex;
 
 	    if (NIL_P(ruby_class)) {
-		rb_raise(rb_eTypeError, "no class to add method");
+		rb_raise(rb_eTypeError, "no class/module to add method");
 	    }
 	    if (ruby_class == rb_cObject && node->nd_mid == init) {
 		rb_warn("redefining Object#initialize may cause infinite loop");
@@ -3516,7 +3517,7 @@ rb_yield_0(val, self, klass, acheck)
     int state;
     static unsigned serial = 1;
 
-    if (!ruby_frame->iter || !ruby_block) {
+    if (!(rb_block_given_p() || rb_f_block_given_p()) || !ruby_block) {
 	rb_raise(rb_eLocalJumpError, "yield called out of block");
     }
 
@@ -4132,7 +4133,7 @@ stack_length(p)
     alloca(0);
 # define STACK_END (&stack_end)
 #else
-# if defined(__GNUC__) && defined(__i386__)
+# if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS)
     VALUE *stack_end = __builtin_frame_address(0);
 # else
     VALUE *stack_end = alloca(1);

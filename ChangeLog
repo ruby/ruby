@@ -1,10 +1,45 @@
+Wed Feb 28 11:02:41 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_delete_bang): delete! should take at least 1
+	  argument. 
+
+	* ruby.c (load_file): add rb_gc() after loading to avoid
+	  extraordinary memory growth.
+
+Wed Feb 28 05:01:40 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* dir.c (rb_glob_helper): "./foo" should match "foo", not "./foo".
+
 Tue Feb 27 16:38:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ev_const_get): retrieve Object's constant if no current
+	  class is available (e.g. defining singleton class for Fixnums).
+
+	* eval.c (ev_const_defined): check Object's constant if no current
+	  class is available (e.g. defining singleton class for Fixnums).
 
 	* time.c (time_timeval): negative time interval shoule not be
 	  allowed.
 
 	* eval.c (proc_call): ignore block to `call' always, despite of
 	  being orphan or not.
+
+Wed Feb 27 10:16:32 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_yield_0): should check based on rb_block_given_p()
+	  and rb_f_block_given_p().
+
+Tue Feb 27 04:13:45 2001 Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* configure.in (frame-address): --enable-frame-address to allow
+	  __builtin_frame_address() to be used.
+
+	* eval.c (stack_length): use __builtin_frame_address() based on
+	  the macro USE_BUILTIN_FRAME_ADDRESS.
+
+	* gc.c (rb_gc): ditto.
+
+	* gc.c (Init_stack): ditto.
 
 Mon Feb 26 16:20:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

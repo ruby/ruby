@@ -833,6 +833,7 @@ load_file(fname, script)
     else if (f != rb_stdin) {
 	rb_io_close(f);
     }
+    rb_gc();
 }
 
 void

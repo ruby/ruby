@@ -630,7 +630,7 @@ rb_glob_helper(path, flag, func, arg)
 		if (m && strcmp(magic, "**") == 0) {
 		    recursive = 1;
 		    buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
-		    sprintf(buf, "%s%s%s", base, (*base)?"":".", m);
+		    sprintf(buf, "%s%s", base, *base ? m : m+1);
 		    rb_glob_helper(buf, flag, func, arg);
 		    free(buf);
 		}
