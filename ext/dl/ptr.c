@@ -208,44 +208,6 @@ rb_dlptr_init(int argc, VALUE argv[], VALUE self)
   return Qnil;
 }
 
-static VALUE
-rb_dlptr_cast(int argc, VALUE argv[], VALUE self)
-{
-  VALUE klass, rest, val, *pass_argv;
-  int pass_argc, i;
-  struct ptr_data *data;
-
-  Data_Get_Struct(self, struct ptr_data, data);
-  rb_scan_args(argc, argv, "1*", &klass, &rest);
-
-  /* prepare the arguments of `new' method */
-  pass_argc = argc + 1;
-  pass_argv = ALLOCA_N(VALUE, pass_argc);
-  pass_argv[0] = DLLONG2NUM(data->ptr);
-  pass_argv[1] = rb_dlsym_new(data->free, NULL, NULL);
-  for( i=2; i < pass_argc; i++ ){
-    pass_argv[i] = rb_ary_entry(rest,i-2);
-  };
-
-  /* remove the data */
-  ((struct ptr_data *)(RDATA(self)->data))->ptr = 0;
-  (RDATA(self)->dfree)(RDATA(self)->data);
-  
-  /* call the `new' method of klass with prepared arguments */
-  val = rb_funcall2(klass, rb_intern("new"), pass_argc, pass_argv);
-
-  RDATA(self)->basic.klass = RDATA(val)->basic.klass;
-  RDATA(self)->basic.flags = RDATA(val)->basic.flags;
-  RDATA(self)->dmark = RDATA(val)->dmark;
-  RDATA(self)->dfree = RDATA(val)->dfree;
-  RDATA(self)->data = RDATA(val)->data;
-
-  RDATA(val)->dmark = 0;
-  RDATA(val)->dfree = 0;
-
-  return Qnil;
-}
-
 VALUE
 rb_dlptr_to_i(VALUE self)
 {
@@ -1050,7 +1012,6 @@ Init_dlptr()
   rb_define_method(rb_cDLPtrData, "eql?", rb_dlptr_eql, 1);
   rb_define_method(rb_cDLPtrData, "+", rb_dlptr_plus, 1);
   rb_define_method(rb_cDLPtrData, "-", rb_dlptr_minus, 1);
-  rb_define_method(rb_cDLPtrData, "cast!", rb_dlptr_cast, -1);
   rb_define_method(rb_cDLPtrData, "define_data_type",
 		   rb_dlptr_define_data_type, -1);
   rb_define_method(rb_cDLPtrData, "struct!", rb_dlptr_define_struct, -1);
