@@ -22,14 +22,14 @@ endif
 
 RUBYDEF = $(RUBY_INSTALL_NAME).def
 
-miniruby$(EXEEXT): $(DLL)
+rbconfig.rb: $(DLL)
 
-$(DLL): $(OBJS) dmyext.o $(RUBYDEF)
+$(DLL): $(OBJS) dmyext.@OBJEXT@ $(RUBYDEF)
 	$(LDSHARED) $(DLDFLAGS) -o $(DLL) --output-lib=$(LIBRUBY_SO) \
 	  --dllname=$(DLLNAME) --add-stdcall-alias --def=$(RUBYDEF) \
-	  $(RUBYEXP) $(OBJS) dmyext.o $(LIBS)
+	  $(RUBYEXP) $(OBJS) dmyext.@OBJEXT@ $(LIBS)
 
-$(RUBYDEF): $(OBJS) dmyext.o
+$(RUBYDEF): $(OBJS) dmyext.@OBJEXT@
 	echo EXPORTS > $(RUBYDEF)
-	@NM@ --extern-only --defined-only $(OBJS) dmyext.o | \
-	  sed -n '/^........ [CDT] _\(.*\)$$/s//\1/p' >> $(RUBYDEF)
+	@NM@ --extern-only --defined-only $(OBJS) dmyext.@OBJEXT@ | \
+	  @MINIRUBY@ -ne 'print $$1, "\n" if / [CDT] _(.*)$$/' >> $(RUBYDEF)
