@@ -22,8 +22,11 @@ module REXML
 						@listener.text( normalized )
 					when :processing_instruction
 						@listener.instruction( *event[1,2] )
-					when :comment, :doctype, :attlistdecl, 
-						:elementdecl, :entitydecl, :cdata, :notationdecl, :xmldecl
+          when :start_doctype
+            @listener.doctype( *event[1..-1] )
+          when :notationdecl, :entitydecl, :elementdecl
+            @listener.notationdecl( event[1..-1] )
+					when :comment, :attlistdecl, :elementdecl, :cdata, :xmldecl
 						@listener.send( event[0].to_s, *event[1..-1] )
 					end
 				end
