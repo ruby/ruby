@@ -1,3 +1,8 @@
+Sat Jan 29 09:42:12 2005  Sam Roberts  <sroberts@uniserve.com>
+
+	* lib/resolv.rb (Resolv::DNS::Resource::IN::SRV): Added RFC2782 SRV
+	  resource record for specifying location of services.
+
 Fri Jan 28 17:16:55 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Config.parse_resolv_conf):
