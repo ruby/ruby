@@ -1445,7 +1445,7 @@ primary		: literal
 		    }
 		| primary_value '[' aref_args ']'
 		    {
-			if (nd_type($1) == NODE_SELF)
+			if ($1 && nd_type($1) == NODE_SELF)
 			    $$ = NEW_FCALL(tAREF, $3);
 			else
 			    $$ = NEW_CALL($1, tAREF, $3);

@@ -1,3 +1,8 @@
+Mon Nov 10 00:07:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): primary_value may be 0 when syntax error.
+	  [ruby-talk:84893]
+
 Sat Nov  9 02:05:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: un-deprecated #assert_not_nil to
@@ -35,9 +40,9 @@ Sat Nov  8 13:28:46 2003 Takaaki Tateishi <ttate@ttsky.net>
 
 Sat Nov  8 06:19:38 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c: To fix 'pthread-enabled Tcl/Tk' problem, 
-	  TclTkIp#_eval calls Tcl_Eval() on the mainloop thread only 
-	  (queueing a handler to the EventQueue). 
+	* ext/tcltklib/tcltklib.c: To fix 'pthread-enabled Tcl/Tk' problem,
+	  TclTkIp#_eval calls Tcl_Eval() on the mainloop thread only
+	  (queueing a handler to the EventQueue).
 
 	* ext/tcltklib/README.1st: edit the description of '--with-pthread-ext'
 
