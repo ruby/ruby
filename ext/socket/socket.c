@@ -104,7 +104,7 @@ struct sockaddr_storage {
 };
 #endif
 
-#if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET))
+#if defined(INET6) && (defined(LOOKUP_ORDER_HACK_INET) || defined(LOOKUP_ORDER_HACK_INET6))
 #define LOOKUP_ORDERS		3
 static int lookup_order_table[LOOKUP_ORDERS] = {
 #if defined(LOOKUP_ORDER_HACK_INET)
