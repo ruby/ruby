@@ -384,7 +384,7 @@ stmts		: none
 		    }
 		| stmts terms stmt
 		    {
-			$$ = block_append($1, newline_node($3));
+			$$ = block_append($1, $3);
 		    }
 		| error stmt
 		    {
@@ -4518,7 +4518,7 @@ block_append(head, tail)
 	parser_warning(h, "unused literal ignored");
 	return tail;
       default:
-	end = NEW_BLOCK(head);
+	h = end = NEW_BLOCK(head);
 	end->nd_end = end;
 	fixpos(end, head);
 	head = end;
@@ -4554,7 +4554,7 @@ block_append(head, tail)
 	tail->nd_end = tail;
     }
     end->nd_next = tail;
-    head->nd_end = tail->nd_end;
+    h->nd_end = tail->nd_end;
     return head;
 }
 

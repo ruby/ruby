@@ -43,6 +43,11 @@ Wed Jan 21 16:01:37 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/rmd160/extconf.rb: have_library appends found library.
 
+Wed Jan 21 11:36:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (block_append): update nd_end for "real" head node.
+	  [ruby-list:39058]
+
 Tue Jan 20 14:48:13 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: should check <openssl/conf_api.h> instead
@@ -93,6 +98,11 @@ Sun Jan 18 20:47:35 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 Sun Jan 18 02:33:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* defines.h (_WIN32): undef _WIN32 on Cygwin before defining DOSISH.
+
+Fri Jan 16 09:52:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_eq): Proc with empty body may not be equal.
+	  [ruby-dev:22590]
 
 Thu Jan 15 13:03:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -3173,6 +3183,92 @@ Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_thread_start_0, rb_thread_raise, rb_callcc): save
 	  variables across THREAD_SAVE_CONTEXT.
 
+Thu Oct  9 12:05:46 2003  Eric Sunshine <sunshine@sunshineco.com>
+
+	* configure.in: revived NextStep, OpenStep, and Rhapsody ports which
+	  had become unbuildable; enhanced --enable-fat-binary option so that
+	  it accepts a list of desired architectures (rather than assuming a
+	  fixed list), or defaults to a platform-appropriate list if user does
+	  not provide an explicit list; made the default list of architectures
+	  for MAB (fat binary) more comprehensive; now uses -fno-common even
+	  when building the interpreter (in addition to using it for
+	  extensions), thus allowing the interpreter to be embedded into a
+	  plugin module of an external project (in addition to allowing
+	  embedding directly into an application); added checks for
+	  <netinet/in_systm.h> (needed by `socket' extension) and getcwd(); now
+	  ensures that -I/usr/local/include is employed when extensions'
+	  extconf.rb scripts invoke have_header() since extension checks on
+	  NextStep and OpenStep will fail without it if the desired resource
+	  resides in the /usr/local tree; fixed formatting of --help message.
+
+	* Makefile.in: $(LIBRUBY_A) rule now deletes the archive before
+	  invoking $(AR) since `ar' on Apple/NeXT can not "update" MAB archives
+	  (see configure's --enable-fat-binary option); added rule for new
+	  missing/getcwd.c.
+
+	* defines.h: fixed endian handling during MAB build (see configure's
+	  --enable-fat-binary option) to ensure that all portions of the
+	  project see the correct WORDS_BIGENDIAN value (some extension modules
+	  were getting the wrong endian setting); added missing constants
+	  GETPGRP_VOID, WNOHANG, WUNTRACED, X_OK, and type pid_t for NextStep
+	  and OpenStep; removed unnecessary and problematic HAVE_SYS_WAIT_H
+	  define in NeXT section.
+
+	* dir.c: do not allow NAMLEN() macro to trust dirent::d_namlen on
+	  NextStep since, on some installations, this value always resolves
+	  uselessly to zero.
+
+	* dln.c: added error reporting to NextStep extension loader since the
+	  previous behavior of failing silently was not useful; now ensures
+	  that NSLINKMODULE_OPTION_BINDNOW compatibility constant is defined
+	  for OpenStep and Rhapsody; no longer includes <mach-o/dyld.h> twice
+	  on Rhapsody since this header lacks multiple-include protection,
+	  which resulted in "redefinition" compilation errors.
+
+	* main.c: also create hard reference to objc_msgSend() on NeXT
+	  platforms (in addition to Apple platforms).
+
+	* lib/mkmf.rb: now exports XCFLAGS from configure script to extension
+	  makefiles so that extensions can be built MAB (see configure's
+	  --enable-fat-binary option); also utilize XCFLAGS in cc_command()
+	  (but not cpp_command() because MAB flags are incompatible with
+	  direct invocation of `cpp').
+
+	* ext/curses/extconf.rb: now additionally checks for presence of these
+	  curses functions which are not present on NextStep or Openstep:
+	  bkgd(), bkgdset(), color(), curs(), getbkgd(), init(), scrl(), set(),
+	  setscrreg(), wattroff(), wattron(), wattrset(), wbkgd(), wbkgdset(),
+	  wscrl(), wsetscrreg()
+
+	* ext/curses/curses.c: added appropriate #ifdef's for additional set of
+	  curses functions now checked by extconf.rb; fixed curses_bkgd() and
+	  window_bkgd() to correctly return boolean result rather than numeric
+	  result; fixed window_getbkgd() to correctly signal an error by
+	  returning nil rather than -1.
+
+	* ext/etc/etc.c: setup_passwd() and setup_group() now check for null
+	  pointers before invoking rb_tainted_str_new2() upon fields extracted
+	  from `struct passwd' and `struct group' since null pointers in some
+	  fields are common on NextStep/OpenStep (especially so for the
+	  `pw_comment' field) and rb_tainted_str_new2() throws an exception
+	  when it receives a null pointer.
+
+	* ext/pty/pty.c: include "util.h" for strdup()/ruby_strdup() for
+	  platforms such as NextStep and OpenStep which lack strdup().
+
+	* ext/socket/getaddrinfo.c: cast first argument of getservbyname(),
+	  gethostbyaddr(), and gethostbyname() from (const char*) to non-const
+	  (char*) for older platforms such as NextStep and OpenStep.
+
+	* ext/socket/socket.c: include "util.h" for strdup()/ruby_strdup() for
+	  platforms such as NextStep and OpenStep which lack strdup(); include
+	  <netinet/in_systm.h> if present for NextStep and OpenStep; cast first
+	  argument of gethostbyaddr() and getservbyname() from (const char*) to
+	  non-const (char*) for older platforms.
+
+	* ext/syslog/syslog.c: include "util.h" for strdup()/ruby_strdup() for
+	  platforms such as NextStep and OpenStep which lack strdup().
+
 Wed Oct  8 22:19:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit.rb: removed installation instructions.
@@ -4166,92 +4262,6 @@ Wed Sep 10 22:41:54 2003  Tietew <tietew@tietew.net>
 
 	* eval.c (win32_get_exception_list): avoid VC7 warning.
 	  [ruby-win32:577]
-
-Thu Oct  9 12:05:46 2003  Eric Sunshine <sunshine@sunshineco.com>
-
-	* configure.in: revived NextStep, OpenStep, and Rhapsody ports which
-	  had become unbuildable; enhanced --enable-fat-binary option so that
-	  it accepts a list of desired architectures (rather than assuming a
-	  fixed list), or defaults to a platform-appropriate list if user does
-	  not provide an explicit list; made the default list of architectures
-	  for MAB (fat binary) more comprehensive; now uses -fno-common even
-	  when building the interpreter (in addition to using it for
-	  extensions), thus allowing the interpreter to be embedded into a
-	  plugin module of an external project (in addition to allowing
-	  embedding directly into an application); added checks for
-	  <netinet/in_systm.h> (needed by `socket' extension) and getcwd(); now
-	  ensures that -I/usr/local/include is employed when extensions'
-	  extconf.rb scripts invoke have_header() since extension checks on
-	  NextStep and OpenStep will fail without it if the desired resource
-	  resides in the /usr/local tree; fixed formatting of --help message.
-
-	* Makefile.in: $(LIBRUBY_A) rule now deletes the archive before
-	  invoking $(AR) since `ar' on Apple/NeXT can not "update" MAB archives
-	  (see configure's --enable-fat-binary option); added rule for new
-	  missing/getcwd.c.
-
-	* defines.h: fixed endian handling during MAB build (see configure's
-	  --enable-fat-binary option) to ensure that all portions of the
-	  project see the correct WORDS_BIGENDIAN value (some extension modules
-	  were getting the wrong endian setting); added missing constants
-	  GETPGRP_VOID, WNOHANG, WUNTRACED, X_OK, and type pid_t for NextStep
-	  and OpenStep; removed unnecessary and problematic HAVE_SYS_WAIT_H
-	  define in NeXT section.
-
-	* dir.c: do not allow NAMLEN() macro to trust dirent::d_namlen on
-	  NextStep since, on some installations, this value always resolves
-	  uselessly to zero.
-
-	* dln.c: added error reporting to NextStep extension loader since the
-	  previous behavior of failing silently was not useful; now ensures
-	  that NSLINKMODULE_OPTION_BINDNOW compatibility constant is defined
-	  for OpenStep and Rhapsody; no longer includes <mach-o/dyld.h> twice
-	  on Rhapsody since this header lacks multiple-include protection,
-	  which resulted in "redefinition" compilation errors.
-
-	* main.c: also create hard reference to objc_msgSend() on NeXT
-	  platforms (in addition to Apple platforms).
-
-	* lib/mkmf.rb: now exports XCFLAGS from configure script to extension
-	  makefiles so that extensions can be built MAB (see configure's
-	  --enable-fat-binary option); also utilize XCFLAGS in cc_command()
-	  (but not cpp_command() because MAB flags are incompatible with
-	  direct invocation of `cpp').
-
-	* ext/curses/extconf.rb: now additionally checks for presence of these
-	  curses functions which are not present on NextStep or Openstep:
-	  bkgd(), bkgdset(), color(), curs(), getbkgd(), init(), scrl(), set(),
-	  setscrreg(), wattroff(), wattron(), wattrset(), wbkgd(), wbkgdset(),
-	  wscrl(), wsetscrreg()
-
-	* ext/curses/curses.c: added appropriate #ifdef's for additional set of
-	  curses functions now checked by extconf.rb; fixed curses_bkgd() and
-	  window_bkgd() to correctly return boolean result rather than numeric
-	  result; fixed window_getbkgd() to correctly signal an error by
-	  returning nil rather than -1.
-
-	* ext/etc/etc.c: setup_passwd() and setup_group() now check for null
-	  pointers before invoking rb_tainted_str_new2() upon fields extracted
-	  from `struct passwd' and `struct group' since null pointers in some
-	  fields are common on NextStep/OpenStep (especially so for the
-	  `pw_comment' field) and rb_tainted_str_new2() throws an exception
-	  when it receives a null pointer.
-
-	* ext/pty/pty.c: include "util.h" for strdup()/ruby_strdup() for
-	  platforms such as NextStep and OpenStep which lack strdup().
-
-	* ext/socket/getaddrinfo.c: cast first argument of getservbyname(),
-	  gethostbyaddr(), and gethostbyname() from (const char*) to non-const
-	  (char*) for older platforms such as NextStep and OpenStep.
-
-	* ext/socket/socket.c: include "util.h" for strdup()/ruby_strdup() for
-	  platforms such as NextStep and OpenStep which lack strdup(); include
-	  <netinet/in_systm.h> if present for NextStep and OpenStep; cast first
-	  argument of gethostbyaddr() and getservbyname() from (const char*) to
-	  non-const (char*) for older platforms.
-
-	* ext/syslog/syslog.c: include "util.h" for strdup()/ruby_strdup() for
-	  platforms such as NextStep and OpenStep which lack strdup().
 
 Tue Sep  9 10:39:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

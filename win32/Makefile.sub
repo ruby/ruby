@@ -84,9 +84,6 @@ exec_prefix = $(prefix)
 !if !defined(libdir)
 libdir = $(exec_prefix)/lib
 !endif
-!if !defined(DESTDIR)
-DESTDIR = $(prefix)
-!endif
 !if !defined(CFLAGS)
 CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
@@ -305,7 +302,7 @@ s,@FFLAGS@,$(FFLAGS),;t t
 s,@LDFLAGS@,,;t t
 s,@LIBS@,$(LIBS),;t t
 s,@exec_prefix@,$${prefix},;t t
-s,@prefix@,,;t t
+s,@prefix@,$(prefix),;t t
 s,@program_transform_name@,s,,,,;t t
 s,@bindir@,$${exec_prefix}/bin,;t t
 s,@sbindir@,$${exec_prefix}/sbin,;t t

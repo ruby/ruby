@@ -2181,6 +2181,7 @@ re_compile_pattern(pattern, size, bufp)
 
     unfetch_interval:
       /* If an invalid interval, match the characters as literals.  */
+      re_warning("regexp has invalid interval");
       p = beg_interval;
       beg_interval = 0;
 
@@ -2363,6 +2364,8 @@ re_compile_pattern(pattern, size, bufp)
     default:
       if (c == ']')
         re_warning("regexp has `]' without escape");
+      else if (c == '}')
+        re_warning("regexp has `}' without escape");
     normal_char:		/* Expects the character in `c'.  */
       had_mbchar = 0;
       if (ismbchar(c)) {

@@ -923,7 +923,7 @@ class CGI
 
     %w[ CONTENT_LENGTH SERVER_PORT ].each do |env|
       define_method(env.sub(/^HTTP_/n, '').downcase) do
-        val = env_table[env] && Integer(val)
+        (val = env_table[env]) && Integer(val)
       end
     end
 
