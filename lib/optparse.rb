@@ -965,7 +965,7 @@ Default options, which never appear in option summary.
 	raise ArgumentError, "unsupported argument type: #{o}"
       when *ArgumentStyle.keys
 	style = notwice(ArgumentStyle[o], style, 'style')
-      when /^--no-([^\]\[=\s]*)(.+)?/
+      when /^--no-([^\[\]=\s]*)(.+)?/
 	q, a = $1, $2
 	o = notwice(a ? Object : TrueClass, klass, 'type')
 	not_pattern, not_conv = search(:atype, o) unless not_style
@@ -975,7 +975,7 @@ Default options, which never appear in option summary.
 	ldesc << "--no-#{q}"
 	long << 'no-' + (q = q.downcase)
 	nolong << q
-      when /^--\[no-\]([^\]\[=\s]*)(.+)?/
+      when /^--\[no-\]([^\[\]=\s]*)(.+)?/
 	q, a = $1, $2
 	o = notwice(a ? Object : TrueClass, klass, 'type')
 	if a
@@ -987,7 +987,7 @@ Default options, which never appear in option summary.
 	not_pattern, not_conv = search(:atype, FalseClass) unless not_style
 	not_style = Switch::NoArgument
 	nolong << 'no-' + o
-      when /^--([^\]\[=\s]*)(.+)?/
+      when /^--([^\[\]=\s]*)(.+)?/
 	q, a = $1, $2
 	if a
 	  o = notwice(NilClass, klass, 'type')
