@@ -415,7 +415,6 @@ end
 class Fixnum
   unless defined? 1.power!
     alias power! ** 
-    p [__FILE__, defined? 1.power!]
   end
 
   # Redefined to handle a Complex argument.
