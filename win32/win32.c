@@ -2559,18 +2559,36 @@ chown(const char *path, int owner, int group)
 int
 kill(int pid, int sig)
 {
-#if 1
-	if ((unsigned int)pid == GetCurrentProcessId())
-		return raise(sig);
+    if ((unsigned int)pid == GetCurrentProcessId())
+	return raise(sig);
 
-	if (sig == 2 && pid > 0)
-		if (GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid))
-			return 0;
+    if (sig == 2 && pid > 0) {
+	if (!GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid)) {
+	    errno = GetLastError();
+	    return -1;
+	}
+    }
+    else if (sig == 9 && pid > 0) {
+	HANDLE hProc;
 
+	hProc = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
+	if (hProc == NULL || hProc == INVALID_HANDLE_VALUE) {
+	    errno = GetLastError();
+	    return -1;
+	}
+	if (!TerminateProcess(hProc, 0)) {
+	    errno = GetLastError();
+	    CloseHandle(hProc);
+	    return -1;
+	}
+	CloseHandle(hProc);
+    }
+    else {
+	errno = EINVAL;
 	return -1;
-#else
-	return 0;
-#endif
+    }
+
+    return 0;
 }
 
 int
