@@ -1618,7 +1618,7 @@ module Net # :nodoc:
     #    response, body = Net::HTTP.get(....)
     # 
     def to_ary
-      warn "net/http: warning: old style assignment found at #{caller(1)[0]}" if $VERBOSE
+      warn "net/http.rb: warning: Net::HTTP v1.1 style assignment found at #{caller(1)[0]}; use `response = http.get(...)' instead." if $VERBOSE
       [self, body()]
     end
 

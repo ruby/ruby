@@ -1,3 +1,7 @@
+Wed Nov 19 14:45:18 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (to_ary): print more friendly warning message.
+
 Wed Nov 19 14:32:08 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_same?): add djgpp and wince.
