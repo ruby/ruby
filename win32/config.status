@@ -59,6 +59,7 @@ s%@LIBRUBY@%libruby.lib%g
 s%@LIBRUBYARG@%libruby.lib%g
 s%@SOLIBS@%%g
 s%@arch@%i386-mswin32%g
+s%@sitedir@%${prefix}/lib/ruby/site_ruby%g
 s%@configure_args@%--with-make-prog=nmake%g
 s%@configure_input@%$configure_input%g
 s%@srcdir@%$srcdir%g

@@ -185,7 +185,7 @@ bsock_close_read(sock)
     rb_thread_fd_close(fileno(fptr->f));
     fptr->mode &= ~FMODE_READABLE;
 #ifdef NT
-    free(fptr->f);
+    myfdclose(fptr->f);
 #else
     fclose(fptr->f);
 #endif
@@ -209,7 +209,7 @@ bsock_close_write(sock)
     shutdown(fileno(fptr->f2), 1);
     fptr->mode &= ~FMODE_WRITABLE;
 #ifdef NT
-    free(fptr->f2);
+    myfdclose(fptr->f2);
 #else
     fclose(fptr->f2);
 #endif
@@ -762,7 +762,11 @@ open_inet(class, h, serv, type)
 	}
 
 	if (status < 0) {
+#if defined(HAVE_CLOSESOCKET)
+	    closesocket(fd);
+#else
 	    close(fd);
+#endif
 	    fd = -1;
 	    continue;
 	} else
@@ -770,7 +774,11 @@ open_inet(class, h, serv, type)
     }
     if (status < 0) {
 	if (fd >= 0)
+#if defined(HAVE_CLOSESOCKET)
+	    closesocket(fd);
+#else
 	    close(fd);
+#endif
 	freeaddrinfo(res0);
 	rb_sys_fail(syscall);
     }
@@ -1033,7 +1041,11 @@ open_unix(class, path, server)
     }
 
     if (status < 0) {
+#if defined(HAVE_CLOSESOCKET)
+	closesocket(fd);
+#else
 	close(fd);
+#endif
 	rb_sys_fail(sockaddr.sun_path);
     }
 

@@ -53,4 +53,5 @@ s%@LIBRUBY_SO@%%g
 s%@SOLIBS@%%g
 s%@srcdir%.%g
 s%@arch@%i386-djgpp%g
+s%@sitedir@%${prefix}/lib/ruby/site_ruby%g
 ac_given_srcdir=.

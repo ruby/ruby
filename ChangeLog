@@ -1,3 +1,23 @@
+Fri Apr 14 23:29:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* stable version 1.4.4 released.
+
+Tue Apr 11 21:14:42 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* config_s.dj: add @sitedir@.
+	* configure.in: add --with-sitedir=DIR option.
+	* instruby.rb: use CONFIG["sitedir"].
+	* lib/mkmf.rb: support 'make site-install'.
+	* win32/config.status: add @sitedir@.
+
+Tue Apr 11 16:25:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (rb_big_2comp): unnecessary lvalue cast removed.
+
+Tue Apr 11 02:25:53 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (marshal_dump): accepts depth = nil for unlimited depth.
+
 Thu Apr  6 20:10:47 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* ext/extmk.rb.in (create_makefile): BeOS --program-suffix support.
@@ -68,10 +88,6 @@ Wed Mar 15 21:25:04 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 Wed Mar 15 13:12:39 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_chomp_bang): forgot to call rb_str_modify().
-
-Mon Mar 13 18:14:52 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
-
-	* stable version 1.4.4 released.
 
 Mon Mar 13 16:12:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

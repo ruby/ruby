@@ -442,7 +442,7 @@ marshal_dump(argc, argv)
     port = 0;
     rb_scan_args(argc, argv, "12", &obj, &a1, &a2);
     if (argc == 3) {
-	limit = NUM2INT(a2);
+	if (!NIL_P(a2)) limit = NUM2INT(a2);
 	port = a1;
     }
     else if (argc == 2) {
