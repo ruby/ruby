@@ -1,3 +1,7 @@
+Thu Oct 14 13:33:59 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: added link to Tutorial.
+
 Tue Oct 12 21:22:50 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/config.rb:

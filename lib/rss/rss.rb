@@ -2,6 +2,7 @@
 # modify it under the same terms as Ruby.
 #
 # Author:: Kouhei Sutou <kou@cozmixng.org>
+# Tutorial:: http://www.cozmixng.org/~rwiki/?cmd=view;name=RSS+Parser%3A%3ATutorial.en
 
 require "time"
 
