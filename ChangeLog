@@ -1,3 +1,8 @@
+Fri Jun 11 14:30:08 2004  Akinori MUSHA  <knu@iDaemons.org>
+
+	* config.guess: Attempt to avoid system name change on
+	  Darwin platfowms also.
+
 Fri Jun 11 14:22:45 2004  Akinori MUSHA  <knu@iDaemons.org>
 
 	* config.guess, config.sub: Attempt to avoid system name change on

@@ -1146,7 +1146,7 @@ EOF
 	    *86) UNAME_PROCESSOR=i686 ;;
 	    powerpc) UNAME_PROCESSOR=powerpc ;;
 	esac
-	echo ${UNAME_PROCESSOR}-apple-darwin${UNAME_RELEASE}
+	echo ${UNAME_PROCESSOR}-apple-darwin
 	exit 0 ;;
     *:procnto*:*:* | *:QNX:[0123456789]*:*)
 	UNAME_PROCESSOR=`uname -p`
