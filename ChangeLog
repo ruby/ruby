@@ -1,9 +1,41 @@
+Tue Apr 24 15:35:32 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (set_arg0): wrong predicate when new $0 value is bigger
+	  than original space.
+
+Mon Apr 23 14:43:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): should use NUM2ULONG()
+
+	* object.c (rb_mod_const_get): check whether name is a class
+	  variable name.
+
+	* object.c (rb_mod_const_set): ditto.
+
+	* object.c (rb_mod_const_defined): ditto.
+
 Sun Apr 22 17:44:37 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: add -mieee to CFLAGS on Linux/Alpha
 	  to disable "DIVISION BY ZERO" exception.
 
 	* configure.in: remove -ansi on OSF/1.
+
+Sat Apr 21 22:33:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_float): precision changed to "%.16g"
+
+Sat Apr 21 22:07:58 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* eval.c (rb_call0): wrong retry behavior.
+
+Fri Apr 20 19:12:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_aref): a bug on long>int architecture.
+
+Fri Apr 20 14:57:15 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_eval_string_wrap): should restore ruby_wrapper.
 
 Wed Apr 18 04:37:51 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 

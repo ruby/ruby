@@ -877,9 +877,9 @@ set_arg0(val, id)
 #endif
     s = rb_str2cstr(val, &i);
 #ifndef __hpux
-    if (i > len) {
-	memcpy(origargv[0], s, len);
-	origargv[0][len] = '\0';
+    if (i < len) {
+	memcpy(origargv[0], s, i);
+	origargv[0][i] = '\0';
     }
     else {
 	memcpy(origargv[0], s, i);

@@ -1289,7 +1289,7 @@ id2ref(obj, id)
     unsigned long ptr, p0;
 
     rb_secure(4);
-    p0 = ptr = NUM2UINT(id);
+    p0 = ptr = NUM2ULONG(id);
     if (ptr == Qtrue) return Qtrue;
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;

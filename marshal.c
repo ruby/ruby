@@ -187,7 +187,7 @@ w_float(d, arg)
 {
     char buf[100];
 
-    sprintf(buf, "%.12g", d);
+    sprintf(buf, "%.16g", d);
     w_bytes(buf, strlen(buf), arg);
 }
 

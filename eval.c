@@ -1257,6 +1257,7 @@ rb_eval_string_wrap(str, state)
 {
     int status;
     VALUE self = ruby_top_self;
+    VALUE wrapper = ruby_wrapper;
     VALUE val;
 
     PUSH_CLASS();
@@ -1268,6 +1269,7 @@ rb_eval_string_wrap(str, state)
     ruby_top_self = self;
 
     POP_CLASS();
+    ruby_wrapper = wrapper;
     if (state) {
 	*state = status;
     }
@@ -4442,7 +4444,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
 	      case TAG_RETRY:
 		if (rb_block_given_p()) {
-		    break;
+                   JUMP_TAG(state);
 		}
 		/* fall through */
 	      default:
