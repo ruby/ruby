@@ -1,3 +1,9 @@
+Mon Apr  2 01:16:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c: use ruby's opendir on mingw32.
+
+	* win32/dir.h, dir.c, Makefile: ditto.
+
 Sat Mar 31 04:47:55 2001  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: add document and example code.

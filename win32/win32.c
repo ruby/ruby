@@ -1321,7 +1321,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 }
 
 
-#if !defined __MINGW32__
 //
 // UNIX compatible directory access functions for NT
 //
@@ -1350,7 +1349,7 @@ opendir(const char *filename)
     // check to see if we\'ve got a directory
     //
 
-    if ((stat (filename, &sbuf) < 0 ||
+    if ((win32_stat (filename, &sbuf) < 0 ||
 	sbuf.st_mode & _S_IFDIR == 0) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
@@ -1507,7 +1506,6 @@ closedir(DIR *dirp)
 	free(dirp->start);
 	free(dirp);
 }
-#endif
 
 
 //
