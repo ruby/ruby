@@ -1,3 +1,7 @@
+Mon Aug  4 09:22:53 2003  William Webber <wew@williamwebber.com>
+
+	* lib/net/imap.rb: convert RD to RDoc.
+
 Mon Aug  4 02:34:05 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_utime): never use utime() of C runtime.
