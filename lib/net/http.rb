@@ -100,11 +100,13 @@ class HTTPBadResponse < HTTPError; end
         @socket.reopen
       end
 
-      yield
+      header = yield
 
       unless keep_alive? u_header then
         @socket.close
       end
+
+      header
     end
 
     def keep_alive?( header )
