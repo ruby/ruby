@@ -4,21 +4,24 @@ $KCODE = 'none'
 
 class TestProc < Test::Unit::TestCase
   def test_proc
-    $proc = proc{|i| i}
-    assert_equal(2, $proc.call(2))
-    assert_equal(3, $proc.call(3))
+    p1 = proc{|i| i}
+    assert_equal(2, p1.call(2))
+    assert_equal(3, p1.call(3))
 
-    $proc = proc{|i| i*2}
-    assert_equal(4, $proc.call(2))
-    assert_equal(6, $proc.call(3))
+    p1 = proc{|i| i*2}
+    assert_equal(4, p1.call(2))
+    assert_equal(6, p1.call(3))
+
+    p2 = nil
+    x=0
 
     proc{
       iii=5				# nested local variable
-      $proc = proc{|i|
+      p1 = proc{|i|
         iii = i
       }
-      $proc2 = proc {
-        $x = iii			# nested variables shared by procs
+      p2 = proc {
+        x = iii                 	# nested variables shared by procs
       }
       # scope of nested variables
       assert(defined?(iii))
@@ -37,9 +40,32 @@ class TestProc < Test::Unit::TestCase
       dyna_var_check
       break
     }
-    $x=0
-    $proc.call(5)
-    $proc2.call
-    assert_equal(5, $x)
+    p1.call(5)
+    p2.call
+    assert_equal(5, x)
+  end
+
+  def assert_arity(n)
+    meta = class << self; self; end
+    meta.class_eval {define_method(:foo, Proc.new)}
+    assert_equal(n, method(:foo).arity)
+  end
+
+  def test_arity
+    assert_equal(-1, proc{}.arity)
+    assert_equal(0, proc{||}.arity)
+    assert_equal(1, proc{|x|}.arity)
+    assert_equal(2, proc{|x, y|}.arity)
+    assert_equal(-2, proc{|x, *y|}.arity)
+    assert_equal(-1, proc{|*x|}.arity)
+    assert_equal(-1, proc{|*|}.arity)
+
+    assert_arity(-1) {}
+    assert_arity(0) {||}
+    assert_arity(1) {|x|}
+    assert_arity(2) {|x, y|}
+    assert_arity(-2) {|x, *y|}
+    assert_arity(-1) {|*x|}
+    assert_arity(-1) {|*|}
   end
 end
