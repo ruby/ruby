@@ -1,3 +1,8 @@
+Wed Oct 31 02:44:06 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: CGI::Cookie::parse(): Ignore duplicate keys caused by
+	  Netscape bug.
+
 Tue Oct 30 18:21:51 2001  Usaku Nakamura <usa@ruby-lang.org>
 
 	* win32/mkexports.rb: follow the change of rb_io_puts().
