@@ -1,3 +1,11 @@
+Thu Oct 30 23:41:04 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: add DRbArray
+
+	* lib/drb/invokemethod.rb: fix Hash#each problem. [ruby-dev:21773]
+
+	* lib/drb/unix.rb: add LoadError. [ruby-dev:21743]
+
 Thu Oct 30 23:19:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/generator.rb: better XML pretty printing.
