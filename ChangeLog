@@ -1,3 +1,11 @@
+Thu Mar 31 08:25:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk (RUBYOPT): clear for the environment RubyGems installed.
+
+	* common.mk (clean-local): keep $(PREP) files till distclean.
+
+	* common.mk (check): do all tests.
+
 Thu Mar 31 06:00:20 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should not raise
@@ -17,7 +25,7 @@ Wed Mar 30 23:44:50 2005  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Wed Mar 30 17:41:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c: add TclTkIp#_create_console() method to 
+	* ext/tcltklib/tcltklib.c: add TclTkIp#_create_console() method to
 	  create a Tcl/Tk's console window.
 
 	* ext/tk/lib/multi-tk.rb: support TclTkIp#_create_console() method.
