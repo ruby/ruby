@@ -150,7 +150,7 @@ rb_make_metaclass(obj, super)
     if (BUILTIN_TYPE(obj) == T_CLASS) {
 	RBASIC(klass)->klass = klass;
 	if (FL_TEST(obj, FL_SINGLETON)) {
-	    RCLASS(klass)->super = RBASIC(RCLASS(obj)->super)->klass;
+	    RCLASS(klass)->super = RBASIC(rb_class_real(RCLASS(obj)->super))->klass;
 	}
     }
 

@@ -1,7 +1,18 @@
+Thu Sep  5 18:32:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_path2class): should not use rb_eval_string().
+
 Thu Sep  5 17:18:22 2002  Michal Rokos  <michal@ruby-lang.org>
 
 	* dln.c: fix memory leak in dln_load (ruby-core:405) and 
 	  in load_1 (ruby-core:407)
+
+Thu Sep  5 15:43:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_extended): should allow marshaling of object which
+	  is extended by named module.
+
+	* class.c (rb_make_metaclass): super may be T_ICLASS, need to skip.
 
 Thu Sep  5 13:09:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

@@ -50,9 +50,10 @@ shortlen(len, ds)
 #define TYPE_FALSE	'F'
 #define TYPE_FIXNUM	'i'
 
+#define TYPE_EXTENDED	'e'
 #define TYPE_UCLASS	'C'
 #define TYPE_OBJECT	'o'
-#define TYPE_DATA      'd'
+#define TYPE_DATA       'd'
 #define TYPE_USERDEF	'u'
 #define TYPE_USRMARHAL	'U'
 #define TYPE_FLOAT	'f'
@@ -250,19 +251,38 @@ obj_each(id, value, arg)
 }
 
 static void
-w_class(obj, arg)
+w_extended(klass, arg)
+    VALUE klass;
+    struct dump_arg *arg;
+{
+    char *path;
+
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	if (RCLASS(klass)->m_tbl->num_entries ||
+	    (RCLASS(klass)->iv_tbl && RCLASS(klass)->iv_tbl->num_entries > 1)) {
+	    rb_raise(rb_eTypeError, "singleton can't be dumped");
+	}
+	klass = RCLASS(klass)->super;
+    }
+    while (BUILTIN_TYPE(klass) == T_ICLASS) {
+	path = rb_class2name(RBASIC(klass)->klass);
+	w_byte(TYPE_EXTENDED, arg);
+	w_unique(path, arg);
+	klass = RCLASS(klass)->super;
+    }
+}
+
+static void
+w_class(type, obj, arg)
+    int type;
     VALUE obj;
     struct dump_arg *arg;
 {
-    VALUE klass = CLASS_OF(obj);
     char *path;
 
-    while (FL_TEST(klass, FL_SINGLETON) || BUILTIN_TYPE(klass) == T_ICLASS) {
-	if (RCLASS(klass)->m_tbl->num_entries > 0 ||
-	    RCLASS(klass)->iv_tbl->num_entries > 1) {
-	    rb_raise(rb_eTypeError, "singleton can't be dumped");
-	}
-    }
+    VALUE klass = CLASS_OF(obj);
+    w_extended(klass, arg);
+    w_byte(type, arg);
     path = rb_class2name(klass);
     w_unique(path, arg);
 }
@@ -275,14 +295,7 @@ w_uclass(obj, base_klass, arg)
     VALUE klass = CLASS_OF(obj);
     char *path;
 
-    while (FL_TEST(klass, FL_SINGLETON) || BUILTIN_TYPE(klass) == T_ICLASS) {
-	if (RCLASS(klass)->m_tbl->num_entries > 0 ||
-	    RCLASS(klass)->iv_tbl->num_entries > 1) {
-	    rb_raise(rb_eTypeError, "singleton can't be dumped");
-	}
-	klass = RCLASS(klass)->super;
-    }
-
+    w_extended(klass, arg);
     if (klass != base_klass) {
 	w_byte(TYPE_UCLASS, arg);
 	w_unique(rb_class2name(CLASS_OF(obj)), arg);
@@ -504,17 +517,15 @@ w_object(obj, arg, limit)
 	    break;
 
 	  case T_OBJECT:
-	    w_byte(TYPE_OBJECT, arg);
-	    w_class(obj, arg);
+	    w_class(TYPE_OBJECT, obj, arg);
 	    w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
 	    break;
 
          case T_DATA:
-           w_byte(TYPE_DATA, arg);
            {
                VALUE v;
 
-	       w_class(obj, arg);
+	       w_class(TYPE_DATA, obj, arg);
                if (!rb_respond_to(obj, s_dump_data)) {
                    rb_raise(rb_eTypeError,
                             "class %s needs to have instance method `_dump_data'",
@@ -805,6 +816,30 @@ r_ivar(obj, arg)
 }
 
 static VALUE
+path2class(path)
+    char *path;
+{
+    VALUE v = rb_path2class(path);
+
+    if (TYPE(v) != T_CLASS) {
+	rb_raise(rb_eTypeError, "%s does not refer class", path);
+    }
+    return v;
+}
+
+static VALUE
+path2module(path)
+    char *path;
+{
+    VALUE v = rb_path2class(path);
+
+    if (TYPE(v) != T_MODULE) {
+	rb_raise(rb_eTypeError, "%s does not refer module", path);
+    }
+    return v;
+}
+
+static VALUE
 r_object0(arg, proc)
     struct load_arg *arg;
     VALUE proc;
@@ -827,9 +862,18 @@ r_object0(arg, proc)
 	r_ivar(v, arg);
 	break;
 
+      case TYPE_EXTENDED:
+	{
+	    VALUE m = path2module(r_unique(arg));
+
+	    v = r_object0(arg, 0);
+	    rb_extend_object(v, m);
+	}
+	break;
+
       case TYPE_UCLASS:
 	{
-	    VALUE c = rb_path2class(r_unique(arg));
+	    VALUE c = path2class(r_unique(arg));
 
 	    v = r_object0(arg, 0);
 	    if (rb_special_const_p(v) || TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS) {
@@ -973,7 +1017,7 @@ r_object0(arg, proc)
 	    long len;
 	    ID slot;
 
-	    klass = rb_path2class(r_unique(arg));
+	    klass = path2class(r_unique(arg));
 	    mem = rb_struct_iv_get(klass, "__member__");
 	    if (mem == Qnil) {
 		rb_raise(rb_eTypeError, "uninitialized struct");
@@ -1002,9 +1046,8 @@ r_object0(arg, proc)
 
       case TYPE_USERDEF:
         {
-	    VALUE klass;
+	    VALUE klass = path2class(r_unique(arg));
 
-	    klass = rb_path2class(r_unique(arg));
 	    if (!rb_respond_to(klass, s_load)) {
 		rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
 			 rb_class2name(klass));
@@ -1016,9 +1059,8 @@ r_object0(arg, proc)
 
       case TYPE_OBJECT:
 	{
-	    VALUE klass;
+	    VALUE klass = path2class(r_unique(arg));
 
-	    klass = rb_path2class(r_unique(arg));
 	    v = rb_obj_alloc(klass);
 	    if (TYPE(v) != T_OBJECT) {
 		rb_raise(rb_eArgError, "dump format error");
@@ -1030,9 +1072,7 @@ r_object0(arg, proc)
 
       case TYPE_DATA:
        {
-           VALUE klass;
-
-           klass = rb_path2class(r_unique(arg));
+           VALUE klass = path2class(r_unique(arg));
            if (rb_respond_to(klass, s_alloc)) {
 	       static int warn = Qtrue;
 	       if (warn) {
@@ -1059,29 +1099,27 @@ r_object0(arg, proc)
 
       case TYPE_MODULE_OLD:
         {
-	    volatile VALUE str = r_bytes(arg);
-	    v = r_regist(rb_path2class(RSTRING(str)->ptr), arg);
+	    VALUE str = r_bytes(arg);
+
+	    v = path2module(RSTRING(str)->ptr);
+	    r_regist(v, arg);
 	}
 	break;
 
       case TYPE_CLASS:
         {
-	    volatile VALUE str = r_bytes(arg);
-	    v = rb_path2class(RSTRING(str)->ptr);
-	    if (TYPE(v) != T_CLASS) {
-		rb_raise(rb_eTypeError, "%s is not a class", RSTRING(str)->ptr);
-	    }
+	    VALUE str = r_bytes(arg);
+
+	    v = path2class(RSTRING(str)->ptr);
 	    r_regist(v, arg);
 	}
 	break;
 
       case TYPE_MODULE:
         {
-	    volatile VALUE str = r_bytes(arg);
-	    v = rb_path2class(RSTRING(str)->ptr);
-	    if (TYPE(v) != T_MODULE) {
-		rb_raise(rb_eTypeError, "%s is not a module", RSTRING(str)->ptr);
-	    }
+	    VALUE str = r_bytes(arg);
+
+	    v = path2module(RSTRING(str)->ptr);
 	    r_regist(v, arg);
 	}
 	break;
