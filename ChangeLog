@@ -1,3 +1,11 @@
+Tue Dec 28 15:25:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/nkf/lib/kconv.rb (Kconv::RegexpEucjp): second byte is up to
+	  0xfe.
+
+	* ext/nkf/lib/kconv.rb (Kconv#kconv): should handle UTF8 and UTF16
+	  properly.
+
 Tue Dec 28 13:35:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/zlib/zlib.c (rb_deflate_s_deflate, rb_inflate_s_inflate): ensure
