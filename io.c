@@ -114,7 +114,7 @@ struct timeval rb_time_interval _((VALUE));
 static VALUE filename, current_file;
 static int gets_lineno;
 static int init_p = 0, next_p = 0;
-static VALUE lineno = FIX2INT(0);
+static VALUE lineno = INT2FIX(0);
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
 #  ifdef _IO_fpos_t
