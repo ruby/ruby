@@ -734,14 +734,14 @@ command		: operation command_args       %prec tLOWEST
 		;
 
 mlhs		: mlhs_basic
-		| tLPAREN mlhs_entry ')'
+		| tLPAREN mlhs_entry rparen
 		    {
 			$$ = $2;
 		    }
 		;
 
 mlhs_entry	: mlhs_basic
-		| tLPAREN mlhs_entry ')'
+		| tLPAREN mlhs_entry rparen
 		    {
 			$$ = NEW_MASGN(NEW_LIST($2), 0);
 		    }
@@ -774,7 +774,7 @@ mlhs_basic	: mlhs_head
 		;
 
 mlhs_item	: mlhs_node
-		| tLPAREN mlhs_entry ')'
+		| tLPAREN mlhs_entry rparen
 		    {
 			$$ = $2;
 		    }
@@ -1242,16 +1242,16 @@ paren_args	: '(' none ')'
 		    {
 			$$ = $2;
 		    }
-		| '(' call_args opt_nl ')'
+		| '(' call_args rparen
 		    {
 			$$ = $2;
 		    }
-		| '(' block_call opt_nl ')'
+		| '(' block_call rparen
 		    {
 		        rb_warn("parenthesize argument for future version");
 			$$ = NEW_LIST($2);
 		    }
-		| '(' args ',' block_call opt_nl ')'
+		| '(' args ',' block_call rparen
 		    {
 		        rb_warn("parenthesize argument for future version");
 			$$ = list_append($2, $4);
@@ -1372,12 +1372,12 @@ command_args	:  {
 		;
 
 open_args	: call_args
-		| tLPAREN_ARG  {lex_state = EXPR_ENDARG;} ')'
+		| tLPAREN_ARG  {lex_state = EXPR_ENDARG;} rparen
 		    {
 		        rb_warn("don't put space before argument parentheses");
 			$$ = 0;
 		    }
-		| tLPAREN_ARG call_args2 {lex_state = EXPR_ENDARG;} ')'
+		| tLPAREN_ARG call_args2 {lex_state = EXPR_ENDARG;} rparen
 		    {
 		        rb_warn("don't put space before argument parentheses");
 			$$ = $2;
@@ -1443,7 +1443,7 @@ primary		: literal
 			$$ = NEW_BEGIN($3);
 			nd_set_line($$, $<num>1);
 		    }
-		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} opt_nl ')'
+		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} rparen
 		    {
 		        rb_warning("(...) interpreted as grouped expression");
 			$$ = $2;
@@ -1485,11 +1485,11 @@ primary		: literal
 		    {
 			$$ = NEW_RETURN(0);
 		    }
-		| kYIELD '(' call_args ')'
+		| kYIELD '(' call_args rparen
 		    {
 			$$ = new_yield($3);
 		    }
-		| kYIELD '(' ')'
+		| kYIELD '(' rparen
 		    {
 			$$ = NEW_YIELD(0, Qfalse);
 		    }
@@ -1497,7 +1497,7 @@ primary		: literal
 		    {
 			$$ = NEW_YIELD(0, Qfalse);
 		    }
-		| kDEFINED opt_nl '(' {in_defined = 1;} expr ')'
+		| kDEFINED opt_nl '(' {in_defined = 1;} expr rparen
 		    {
 		        in_defined = 0;
 			$$ = NEW_DEFINED($5);
@@ -2190,7 +2190,7 @@ superclass	: term
 		| error term {yyerrok; $$ = 0;}
 		;
 
-f_arglist	: '(' f_args opt_nl ')'
+f_arglist	: '(' f_args rparen
 		    {
 			$$ = $2;
 			lex_state = EXPR_BEG;
@@ -2343,7 +2343,7 @@ singleton	: var_ref
 		            value_expr($$);
 			}
 		    }
-		| '(' {lex_state = EXPR_BEG;} expr opt_nl ')'
+		| '(' {lex_state = EXPR_BEG;} expr rparen
 		    {
 			if ($3 == 0) {
 			    yyerror("can't define singleton method for ().");
@@ -2421,6 +2421,9 @@ opt_terms	: /* none */
 
 opt_nl		: /* none */
 		| '\n'
+		;
+
+rparen		: opt_nl ')'
 		;
 
 trailer		: /* none */

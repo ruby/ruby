@@ -1,3 +1,8 @@
+Thu Feb 12 15:23:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rparen): ignore preceding newlines to right parentheses.
+	  (ruby-bugs:PR#1221) [ruby-dev:22858]
+
 Thu Feb 12 14:17:43 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: set ac_cv_func_link to yes to enable link() on MinGW.
