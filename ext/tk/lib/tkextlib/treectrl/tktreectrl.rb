@@ -12,6 +12,7 @@ require 'tkextlib/setup.rb'
 require 'tkextlib/treectrl/setup.rb'
 
 # TkPackage.require('treectrl', '1.0')
+# TkPackage.require('treectrl', '1.1')
 TkPackage.require('treectrl')
 
 module Tk
@@ -43,6 +44,14 @@ module Tk
       Tk.tk_call_without_enc('loupe', img, x, y, w, h, zoom)
     end
 
+    def self.text_layout(font, text, keys={})
+      TkComm.list(Tk.tk_call_without_enc('textlayout', font, text, keys))
+    end
+
+    def self.image_tint(img, color, alpha)
+      Tk.tk_call_without_enc('imagetint', img, color, alpha)
+    end
+
     class NotifyEvent < TkUtil::CallbackSubst
     end
 
@@ -62,11 +71,11 @@ class Tk::TreeCtrl::NotifyEvent
     [ ?D, ?l, :items ], 
     [ ?e, ?e, :event ], 
     [ ?I, ?n, :id ], 
-    [ ?l, ?b, :lower_bound ], 
+    [ ?l, ?n, :lower_bound ], 
     [ ?p, ?n, :active_id ], 
     [ ?S, ?l, :sel_items ], 
     [ ?T, ?w, :widget ], 
-    [ ?U, ?b, :upper_bound ], 
+    [ ?u, ?n, :upper_bound ], 
     [ ?W, ?o, :object ], 
     nil
   ]
@@ -77,8 +86,6 @@ class Tk::TreeCtrl::NotifyEvent
     [ ?s, TkComm.method(:string) ], 
     [ ?l, TkComm.method(:list) ], 
     [ ?w, TkComm.method(:window) ], 
-
-    [ ?b, proc{|val| list(val)} ], 
 
     [ ?e, proc{|val|
         case val
@@ -126,6 +133,9 @@ module Tk::TreeCtrl::ConfigMethod
 
     case key
     when 'column'
+      obj
+
+    when 'debug'
       obj
 
     when 'dragimage'
@@ -219,8 +229,55 @@ module Tk::TreeCtrl::ConfigMethod
   end
   private :__item_configinfo_struct
 
+  def __item_numstrval_optkeys(id)
+    if id.kind_of?(Array) && id[0] == 'debug'
+      ['displaydelay']
+    else
+      super(id)
+    end
+  end
+  private :__item_numstrval_optkeys
+
+  def __item_boolval_optkeys(id)
+    if id.kind_of?(Array)
+      case id[0]
+      when 'debug'
+        ['data', 'display', 'enable']
+      when 'column'
+        ['button', 'expand', 'squeeze', 'sunken', 'visible', 'widthhack']
+      when 'element'
+        ['filled', 'showfocus']
+      else
+        super(id)
+      end
+    else
+      super(id)
+    end
+  end
+  private :__item_listval_optkeys
+
+  def __item_strval_optkeys(id)
+    if id.kind_of?(Array) && id[0] == 'debug'
+      ['erasecolor']
+    else
+      super(id)
+    end
+  end
+  private :__item_strval_optkeys
+
   def __item_listval_optkeys(id)
-    []
+    if id.kind_of?(Array)
+      case id[0]
+      when 'column'
+        ['itembackground']
+      when 'element'
+        ['relief']
+      else
+        []
+      end
+    else
+      []
+    end
   end
   private :__item_listval_optkeys
 
@@ -248,6 +305,19 @@ module Tk::TreeCtrl::ConfigMethod
   end
   def current_column_configinfo(tagOrId, slot=nil)
     itemconfigure(['column', tagOrId], slot)
+  end
+
+  def debug_cget(tagOrId, option)
+    itemcget(['debug', tagOrId], option)
+  end
+  def debug_configure(tagOrId, slot, value=None)
+    itemconfigure(['debug', tagOrId], slot, value)
+  end
+  def debug_configinfo(tagOrId, slot=nil)
+    itemconfigure(['debug', tagOrId], slot)
+  end
+  def debug_element_configinfo(tagOrId, slot=nil)
+    itemconfigure(['debug', tagOrId], slot)
   end
 
   def dragimage_cget(tagOrId, option)
@@ -340,6 +410,23 @@ class Tk::TreeCtrl
   WidgetClassName = ''.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  #########################
+
+  def __boolval_optkeys
+    [
+      'showbuttons', 'showheader', 'showlines', 'showroot', 
+      'showrootbutton', 
+    ]
+  end
+  private :__boolval_optkeys
+
+  def __listval_optkeys
+    [ 'defaultstyle' ]
+  end
+  private :__listval_optkeys
+
+  #########################
+
   def install_bind(cmd, *args)
     install_bind_for_event_class(Tk::TreeCtrl::NotifyEvent, cmd, *args)
   end
@@ -382,6 +469,14 @@ class Tk::TreeCtrl
 
   def column_bbox(idx)
     list(tk_send('column', 'bbox', idx))
+  end
+
+  def column_create(keys=nil)
+    if keys && keys.kind_of?(Hash)
+      num_or_str(tk_send('column', 'create', *hash_kv(keys)))
+    else
+      num_or_str(tk_send('column', 'create'))
+    end
   end
 
   def column_delete(idx)
@@ -450,6 +545,15 @@ class Tk::TreeCtrl
     dragimage_visible()
   end
 
+  def debug_dinfo
+    tk_send('debug', 'dinfo')
+    self
+  end
+
+  def debug_scroll
+    tk_send('debug', 'scroll')
+  end
+
   def element_create(elem, type, keys=nil)
     if keys && keys.kind_of?(Hash)
       tk_send('element', 'create', elem, type, *hash_kv(keys))
@@ -501,13 +605,23 @@ class Tk::TreeCtrl
     list(tk_send('item', 'children', item))
   end
 
+  def item_collapse(item)
+    tk_send('item', 'collapse', item)
+    self
+  end
+
+  def item_collapse_recurse(item)
+    tk_send('item', 'collapse', item, '-recurse')
+    self
+  end
+
   def item_complex(item, *args)
     tk_send('item', 'complex', item, *args)
     self
   end
 
-  def item_create()
-    num_or_str(tk_send('item', 'create'))
+  def item_create(keys={})
+    num_or_str(tk_send('item', 'create', keys))
   end
 
   def item_delete(first, last=None)
@@ -521,6 +635,16 @@ class Tk::TreeCtrl
 
   def item_element_actual(item, column, elem, key)
     tk_send('item', 'element', 'actual', item, column, elem, "-#{key}")
+  end
+
+  def item_expand(item)
+    tk_send('item', 'expand', item)
+    self
+  end
+
+  def item_expand_recurse(item)
+    tk_send('item', 'expand', item, '-recurse')
+    self
   end
 
   def item_firstchild(parent, child=nil)
@@ -639,6 +763,12 @@ class Tk::TreeCtrl
     end
   end
 
+  def item_state_forcolumn(item, column, *args)
+    tk_send('item', 'state', 'forcolumn', item, column, *args)
+    self
+  end
+  alias item_state_for_column item_state_forcolumn
+
   def item_state_get(item, *args)
     if args.empty?
       list(tk_send('item', 'state', 'get', item *args))
@@ -648,11 +778,11 @@ class Tk::TreeCtrl
   end
 
   def item_state_set(item, *args)
-    tk_send('item', 'state', 'set', *args)
+    tk_send('item', 'state', 'set', item, *args)
     self
   end
 
-  def item_style_elements(item, colun)
+  def item_style_elements(item, column)
     list(tk_send('item', 'style', 'elements', item, column))
   end
 
@@ -686,6 +816,16 @@ class Tk::TreeCtrl
       tk_send('item', 'text', item, txt, *args)
       self
     end
+  end
+
+  def item_toggle(item)
+    tk_send('item', 'toggle', item)
+    self
+  end
+
+  def item_toggle_recurse(item)
+    tk_send('item', 'toggle', item, '-recurse')
+    self
   end
 
   def item_visible(item, st=None)
