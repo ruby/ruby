@@ -1,3 +1,11 @@
+Thu Dec  9 16:21:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI#setup_header): avoid
+	  SecurityError. [ruby-dev:24970]
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): should wait
+	  for reading request till data arrive. [ruby-talk:121068]
+
 Thu Dec  9 14:38:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_inspect): escape # which starts an expression

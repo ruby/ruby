@@ -158,20 +158,19 @@ module WEBrick
       end
   
       def setup_header
-        add_header("CONTENT_TYPE", "Content-Type")
-        add_header("CONTENT_LENGTH", "Content-length")
-        @env.each_key{|name|
-          if /^HTTP_(.*)/ =~ name
-            add_header(name, $1.gsub(/_/, "-"))
+        @env.each{|key, value|
+          case key
+          when "CONTENT_TYPE", "CONTENT_LENGTH"
+            add_header(key.gsub(/_/, "-"), value)
+          when /^HTTP_(.*)/
+            add_header($1.gsub(/_/, "-"), value)
           end
         }
       end
   
-      def add_header(envname, hdrname)
-        if value = @env[envname]
-          unless value.empty?
-            @header_part << hdrname << ": " << value << CRLF
-          end
+      def add_header(hdrname, value)
+        unless value.empty?
+          @header_part << hdrname << ": " << value << CRLF
         end
       end
 

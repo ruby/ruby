@@ -46,6 +46,13 @@ module WEBrick
         req = HTTPRequest.new(@config)
         server = self
         begin
+          timeout = @config[:RequestTimeout]
+          while timeout > 0
+            break if IO.select([sock], nil, nil, 0.5)
+            timeout = 0 if @status != :Running
+            timeout -= 0.5
+          end
+          raise HTTPStatus::EOFError if timeout <= 0
           req.parse(sock)
           res.request_method = req.request_method
           res.request_uri = req.request_uri
