@@ -6,7 +6,7 @@
 # Documentation: William Webber <william@williamwebber.com>
 #
 #--
-# $Id: date.rb,v 2.11 2004-01-19 04:56:12+09 tadf Exp $
+# $Id: date.rb,v 2.12 2004-03-20 08:05:13+09 tadf Exp $
 #++
 #
 # == Overview
@@ -1196,16 +1196,18 @@ class DateTime < Date
 
   def self.new_with_hash(elem, sg)
     elem ||= {}
-    y, m, d, h, min, s, of =
-      elem.values_at(:year, :mon, :mday, :hour, :min, :sec, :offset)
+    y, m, d, h, min, s, fr, of =
+      elem.values_at(:year, :mon, :mday,
+		     :hour, :min, :sec, :sec_fraction, :offset)
     h   ||= 0
     min ||= 0
     s   ||= 0
+    fr  ||= 0
     of  ||= 0
     if [y, m, d].include? nil
       raise ArgumentError, 'invalid date'
     else
-      civil(y, m, d, h, min, s, of.to_r/86400, sg)
+      civil(y, m, d, h, min, s, of.to_r/86400, sg) + (fr/86400)
     end
   end
 

@@ -1,3 +1,8 @@
+Sat Mar 20 09:52:33 2004  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: _parse() now accepts fractional
+	  part of second minute that follows a comma or a full stop.
+
 Fri Mar 19 01:55:57 2004  Mauricio Fernandez  <batsman.geo@yahoo.com>
 
 	* io.c (rb_io_sync): need not to check writable. [ruby-core:02674]
