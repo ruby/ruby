@@ -1,3 +1,10 @@
+Sun Feb 13 22:43:03 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (DRbServer): add default_safe_level, safe_level,
+	  config[:safe_level] ([druby-ja:120])
+
+	* test/drb/test_drb.rb, ut_eval.rb, ut_safe1.rb: ditto.
+
 Sun Feb 13 16:56:52 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI.start): should set reason-phrase

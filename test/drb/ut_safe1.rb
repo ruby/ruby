@@ -8,9 +8,8 @@ if __FILE__ == $0
     it
   end
 
-  $SAFE = 1
-
-  DRb.start_service('druby://localhost:0', [1, 2, 'III', 4, "five", 6])
+  DRb.start_service('druby://localhost:0', [1, 2, 'III', 4, "five", 6], 
+                    {:safe_level => 1})
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
 end
