@@ -1,3 +1,7 @@
+Tue Feb  1 00:20:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (aix): fix linker flags on AIX.  [ruby-talk:125460]
+
 Mon Jan 31 13:33:21 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: add invalid namespace check
@@ -64,7 +68,7 @@ Tue Jan 25 14:05:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/menu.rb: bug on treating arguments [ruby-dev:25479]
 
-	* ext/tk/lib/tk.rb: bug fix; cannot accept a callback ID string for 
+	* ext/tk/lib/tk.rb: bug fix; cannot accept a callback ID string for
 	  a command argument [ruby-dev:25479]
 
 	* ext/tk/lib/multi-tk.rb: ditto
@@ -92,7 +96,7 @@ Sun Jan 23 12:41:16 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 	  a method having uncapitalized name. (converted with
 	  GenSupport.safemethodname to handle operation name 'foo-bar').  it
 	  introduced serious incompatibility; in the past, it was defined as a
-	  capitalized.  
+	  capitalized.
 
 	  define capitalized method as well under that circumstance.
 
@@ -169,10 +173,10 @@ Wed Jan 19 01:16:30 2005  Tanaka Akira  <akr@m17n.org>
 
 Tue Jan 18 15:03:05 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/ssl.rb (WEBrick::Config::SSL): the default value 
+	* lib/webrick/ssl.rb (WEBrick::Config::SSL): the default value
 	  of :SSLEnable is false.
 
-	* lib/webrick/server.rb (WEBrick::Daemon.start): prepared stdio 
+	* lib/webrick/server.rb (WEBrick::Daemon.start): prepared stdio
 	  don't allow changing its mode.
 
 	* lib/webrick/httpproxy.rb (WEBrick::HTTPProxyServer#proxy_service):
