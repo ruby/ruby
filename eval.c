@@ -2079,12 +2079,16 @@ call_trace_func(event, node, self, id, klass)
 {
     int state;
     struct FRAME *prev;
-    NODE *node_save = ruby_last_node;
+    NODE *node_save[2];
     VALUE srcfile;
 
     if (!trace_func) return;
     if (tracing) return;
 
+    node_save[0] = ruby_last_node;
+    if (!(node_save[1] = ruby_current_node)) {
+	node_save[1] = NEW_NEWLINE(0);
+    }
     tracing = 1;
     prev = ruby_frame;
     PUSH_FRAME();
@@ -2120,7 +2124,9 @@ call_trace_func(event, node, self, id, klass)
     POP_FRAME();
 
     tracing = 0;
-    ruby_last_node = node_save;
+    ruby_last_node = node_save[0];
+    ruby_current_node = node_save[1];
+    SET_CURRENT_SOURCE();
     if (state) JUMP_TAG(state);
 }
 
@@ -3424,7 +3430,6 @@ module_setup(module, n)
     int state;
     struct FRAME frame;
     VALUE result;		/* OK */
-    NODE * cnode = ruby_current_node; /* NOT IN USE, is it OK? */
     TMP_PROTECT;
 
     frame = *ruby_frame;

@@ -1,3 +1,11 @@
+Sat Aug 24 15:32:16 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (call_trace_func): restore source file/line, as trace
+	  function installed in required library with -r option can be
+	  called while parsing.  (ruby-bugs:PR#372)
+
+	* eval.c (module_setup): unused variable.  [ruby-core:00358]
+
 Sat Aug 24 13:57:28 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.rfc2822, Time#rfc2822): preserve localtimeness.
