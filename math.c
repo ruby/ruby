@@ -139,6 +139,7 @@ Init_Math()
     rb_define_module_function(mMath, "exp", math_exp, 1);
     rb_define_module_function(mMath, "log", math_log, 1);
     rb_define_module_function(mMath, "log10", math_log10, 1);
+    rb_define_module_function(mMath, "sqrt", math_sqrt, 1);
 
     rb_define_module_function(mMath, "frexp", math_frexp, 1);
     rb_define_module_function(mMath, "ldexp", math_ldexp, 2);
