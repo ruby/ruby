@@ -769,7 +769,7 @@ rb_mod_const_get(mod, name)
     ID id = rb_to_id(name);
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "wrong constant name %s", name);
+	rb_raise(rb_eNameError, "wrong constant name %s", rb_id2name(id));
     }
     return rb_const_get(mod, id);
 }
@@ -781,7 +781,7 @@ rb_mod_const_set(mod, name, value)
     ID id = rb_to_id(name);
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "wrong constant name %s", name);
+	rb_raise(rb_eNameError, "wrong constant name %s", rb_id2name(id));
     }
     rb_const_set(mod, id, value);
     return value;
@@ -794,7 +794,7 @@ rb_mod_const_defined(mod, name)
     ID id = rb_to_id(name);
 
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "wrong constant name %s", name);
+	rb_raise(rb_eNameError, "wrong constant name %s", rb_id2name(id));
     }
     return rb_const_defined_at(mod, id);
 }

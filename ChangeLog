@@ -1,3 +1,13 @@
+Tue Jun  5 16:45:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (Init_Exception): NameError went under StandardError,
+	  and NoMethodError went under NameError.
+
+Tue Jun  5 16:40:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (rb_intern): non identifier symbols should be
+	  categorized as ID_JUNK. [new]
+
 Tue Jun  5 16:15:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_mod_const_at): use hash table as internal

@@ -29,6 +29,7 @@
 #define ID_ATTRSET  0x04
 #define ID_CONST    0x05
 #define ID_CLASS    0x06
+#define ID_JUNK     0x07
 
 #define is_notop_id(id) ((id)>LAST_TOKEN)
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
@@ -4988,7 +4989,6 @@ static struct {
     tLSHFT,	"<<",
     tRSHFT,	">>",
     tCOLON2,	"::",
-    tCOLON3,	"::",
     '`',	"`",
     0,		0,
 };
@@ -5009,6 +5009,7 @@ rb_intern(name)
     const char *name;
 {
     static ID last_id = LAST_TOKEN;
+    const char *m = name;
     ID id;
     int last;
 
@@ -5016,19 +5017,25 @@ rb_intern(name)
 	return id;
 
     id = 0;
-    switch (name[0]) {
+    switch (*name) {
       case '$':
 	id |= ID_GLOBAL;
+	m++;
+	if (!is_identchar(*m)) m++;
 	break;
       case '@':
-	if (name[1] == '@')
+	if (name[1] == '@') {
+	    m++;
 	    id |= ID_CLASS;
-	else
+	}
+	else {
 	    id |= ID_INSTANCE;
+	}
+	m++;
 	break;
       default:
 	if (name[0] != '_' && !ISALPHA(name[0]) && !ismbchar(name[0])) {
-	    /* operator */
+	    /* operators */
 	    int i;
 
 	    for (i=0; op_tbl[i].token; i++) {
@@ -5062,6 +5069,10 @@ rb_intern(name)
 	}
 	break;
     }
+    while (*m && is_identchar(*m)) {
+	m++;
+    }
+    if (*m) id = ID_JUNK;
     id |= ++last_id << ID_SCOPE_SHIFT;
   id_regist:
     name = strdup(name);

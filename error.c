@@ -259,13 +259,13 @@ VALUE rb_eTypeError;
 VALUE rb_eArgError;
 VALUE rb_eIndexError;
 VALUE rb_eRangeError;
+VALUE rb_eNameError;
+VALUE rb_eNoMethodError;
 VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
-VALUE rb_eNoMethodError;
 
 VALUE rb_eScriptError;
-VALUE rb_eNameError;
 VALUE rb_eSyntaxError;
 VALUE rb_eLoadError;
 
@@ -593,11 +593,11 @@ Init_Exception()
     rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
     rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
     rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
-    rb_eNoMethodError = rb_define_class("NoMethodError", rb_eStandardError);
+    rb_eNameError     = rb_define_class("NameError", rb_eStandardError);
+    rb_eNoMethodError = rb_define_class("NoMethodError", rb_eNameError);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
-    rb_eNameError   = rb_define_class("NameError", rb_eScriptError);
     rb_eLoadError   = rb_define_class("LoadError", rb_eScriptError);
     rb_eNotImpError = rb_define_class("NotImplementedError", rb_eScriptError);
 
