@@ -180,7 +180,7 @@ flush_register_windows(void)
 #define PATH_ENV "PATH"
 #endif
 
-#if defined(DOSISH) || !defined(__human68k__)
+#if defined(DOSISH) && !defined(__human68k__)
 #define ENV_IGNORECASE
 #endif
 

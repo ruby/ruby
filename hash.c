@@ -1598,11 +1598,7 @@ env_has_value(dmy, value)
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s++) {
-#ifdef ENV_IGNORECASE
-	    if (strncasecmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-#else
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-#endif
 		FREE_ENVIRON(environ);
 		return Qtrue;
 	    }
@@ -1625,11 +1621,7 @@ env_index(dmy, value)
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s++) {
-#ifdef ENV_IGNORECASE
-	    if (strncasecmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-#else
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-#endif
 		str = env_str_new(*env, s-*env-1);
 		FREE_ENVIRON(environ);
 		return str;
