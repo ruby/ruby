@@ -70,11 +70,11 @@ module DL
 	init_types()
 	init_sym()
 
-	rty,renc,rdec,_,_,_ = @types.encode_type(ret)
+	rty,renc,rdec = @types.encode_return_type(ret)
         if( !rty )
           raise(TypeError, "unsupported type: #{ret}")
         end
-	ty,enc,dec = encode_types(args)
+	ty,enc,dec = encode_argument_types(args)
 	symty = rty + ty
 
 	module_eval("module_function :#{func}")
@@ -134,11 +134,11 @@ module DL
 	init_types()
 	init_sym()
 
-	rty,_,rdec,_,_,_ = @types.encode_type(rettype)
+	rty,_,rdec = @types.encode_return_type(rettype)
         if( !rty )
           raise(TypeError, "unsupported type: #{rettype}")
         end
-	ty,enc,dec = encode_types(argtypes)
+	ty,enc,dec = encode_argument_types(argtypes)
 	symty = rty + ty
 
 	sym = symbol(name, symty)
@@ -184,13 +184,13 @@ module DL
 	return @retval
       end
 
-      def encode_types(tys)
+      def encode_argument_types(tys)
 	init_types()
 	encty = []
 	enc = nil
 	dec = nil
 	tys.each_with_index{|ty,idx|
-	  ty,c1,c2,_,_,_ = @types.encode_type(ty)
+	  ty,c1,c2 = @types.encode_argument_type(ty)
           if( !ty )
             raise(TypeError, "unsupported type: #{ty}")
           end

@@ -128,7 +128,7 @@ module DL
 	  else
 	    raise(RuntimeError, "invalid element: #{elem}")
 	  end
-	  _,_,_,ty,enc,dec = @types.encode_type(ty)
+	  ty,enc,dec = @types.encode_struct_type(ty)
           if( !ty )
             raise(TypeError, "unsupported type: #{ty}")
           end
