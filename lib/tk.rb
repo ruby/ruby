@@ -26,7 +26,7 @@ module TkComm
   private :error_at
 
   def tk_tcl2ruby(val)
-    if val.include? ? 
+    if val.include? ?\s
       return val.split.collect{|v| tk_tcl2ruby(v)}
     end
     case val

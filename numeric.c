@@ -49,7 +49,7 @@ coerce_body(x)
 coerce_rescue(x)
     VALUE *x;
 {
-    TypeError("%s can't convert into %s",
+    TypeError("%s can't be coerced into %s",
 	      rb_class2name(CLASS_OF(x[1])),
 	      rb_class2name(CLASS_OF(x[0])));
 }
@@ -59,14 +59,10 @@ do_coerce(x, y)
     VALUE *x, *y;
 {
     VALUE ary;
-#if 0
     VALUE a[2];
 
     a[0] = *x; a[1] = *y;
     ary = rb_rescue(coerce_body, a, coerce_rescue, a);
-#else
-    ary = rb_funcall(*y, coerce, 1, *x);
-#endif
     if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
 	TypeError("coerce must return [x, y]");
     }

@@ -1684,6 +1684,9 @@ read_escape()
       case 'b':	/* backspace */
 	return '\b';
 
+      case 's':	/* space */
+	return ' ';
+
       case 'M':
 	if ((c = nextc()) != '-') {
 	    yyerror("Invalid escape character syntax");
@@ -1767,8 +1770,10 @@ parse_regx(term)
 		break;
 
 	      case '\\':
+	      case '^':		/* no \^ escape in regexp */
+	      case 's':
 		tokadd('\\');
-		tokadd('\\');
+		tokadd(c);
 		break;
 
 	      case '1': case '2': case '3':
@@ -1777,11 +1782,6 @@ parse_regx(term)
 	      case '0': case 'x':
 		tokadd('\\');
 		tokadd(c);
-		break;
-
-	      case '^':		/* no \^ escape in regexp */
-		tokadd('\\');
-		tokadd('^');
 		break;
 
 	      case 'b':
@@ -2317,7 +2317,7 @@ retry:
 	    return '?';
 	}
 	c = nextc();
-	if (lex_state == EXPR_ARG && space_seen && isspace(c)){
+	if (lex_state == EXPR_ARG && isspace(c)){
 	    pushback(c);
 	    arg_ambiguous();
 	    lex_state = EXPR_BEG;
@@ -3459,28 +3459,57 @@ cond0(node)
     }
 }
 
+int
+assign_in_cond(node)
+    NODE *node;
+{
+    switch (nd_type(node)) {
+      case NODE_MASGN:
+	Error("multiple assignment in conditional");
+	return 0;
+
+      case NODE_LASGN:
+      case NODE_DASGN:
+      case NODE_GASGN:
+      case NODE_IASGN:
+      case NODE_CASGN:
+	break;
+      default:
+	return 1;
+    }
+
+    switch (nd_type(node->nd_value)) {
+      case NODE_LIT:
+      case NODE_STR:
+      case NODE_DSTR:
+      case NODE_XSTR:
+      case NODE_DXSTR:
+      case NODE_EVSTR:
+      case NODE_DREGX:
+      case NODE_NIL:
+      case NODE_TRUE:
+      case NODE_FALSE:
+	Error("found = in conditional, should be ==");
+	return 0;
+	
+      default:
+	Warning("assignment in condition");
+	break;
+    }
+    if (assign_in_cond(node->nd_value)) return 1;
+}
+
 static NODE*
 cond(node)
     NODE *node;
 {
     enum node_type type = nd_type(node);
 
-    switch (type) {
-      case NODE_MASGN:
-      case NODE_LASGN:
-      case NODE_DASGN:
-      case NODE_GASGN:
-      case NODE_IASGN:
-      case NODE_CASGN:
-	Warning("assignment in condition");
-	break;
-      case NODE_NEWLINE:
+    if (assign_in_cond(node) == 0) return 0;
+    if (nd_type(node) == NODE_NEWLINE){
 	node->nd_next = cond0(node->nd_next);
 	return node;
-      default:
-        break;
     }
-
     return cond0(node);
 }
 

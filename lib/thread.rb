@@ -69,6 +69,10 @@ class Mutex
       unlock
     end
   end
+
+  def num_waiting
+    @waiting.size
+  end
 end
 
 class Queue
@@ -136,5 +140,9 @@ class SizedQueue<Queue
     end
     pop = super
     pop
+  end
+
+  def num_waiting
+    @waiting.size + @queue_wait.size
   end
 end

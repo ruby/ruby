@@ -766,6 +766,14 @@ ok(done)
 File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
 File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
+$bad = false
+for script in Dir["{lib,sample}/*.rb"]
+  unless `./ruby -c #{script}` == "Syntax OK\n"
+    $bad = true
+  end
+end
+ok(!$bad)
+
 check "const"
 TEST1 = 1
 TEST2 = 2
