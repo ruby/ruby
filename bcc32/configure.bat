@@ -73,3 +73,4 @@ goto :exit
 :end
 echo.>> ~tmp~.mak
 make -s -f ~tmp~.mak
+:exit
