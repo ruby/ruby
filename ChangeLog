@@ -2,6 +2,30 @@ Thu Dec 21 13:01:46 2000  Tanaka Akira  <akr@m17n.org>
 
 	* lib/net/ftp.rb (makeport): don't use TCPsocket.getaddress.
 
+Wed Dec 20 12:00:15 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_lshift): should cast up to BDIGIT_DBL.
+
+	* parse.y (yylex): disallow trailin '_' for numeric litrals.
+
+	* bignum.c (rb_cstr2inum): allow `_' within converting string.
+
+	* eval.c (specific_eval): should take no argument if block is
+	  supplied.
+
+Tue Dec 19 13:44:50 2000  K.Kosako  <kosako@sofnec.co.jp>
+
+	* io.c (rb_f_p): should flush rb_defout, not stdout.
+
+Tue Dec 19 00:57:10 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_minus): usec might overflow (ruby-bugs-ja:#PR#35).
+
+	* eval.c (rb_obj_extend): Object#extend should take at least one
+	  argument.
+
+	* parse.y (mrhs_basic): should check value_expr($3), not $1.
+
 Mon Dec 18 23:18:39 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* util.c (mblen, __crt0_glob_function): add for multibyte

@@ -1,5 +1,5 @@
-# parsedate3.rb: Written by Tadayoshi Funaba 2000
-# $Id: parsedate3.rb,v 1.2 2000-04-01 12:16:56+09 tadf Exp $
+# parsedate.rb: Written by Tadayoshi Funaba 2000
+# $Id: parsedate.rb,v 1.2 2000-04-01 12:16:56+09 tadf Exp $
 
 module ParseDate
 

@@ -231,7 +231,9 @@ rb_cstr2inum(str, base)
 	}
     }
     if (base == 8) {
-	while (str[0] == '0') str++;
+	while (*str == '0') str++;
+	if (!*str) return INT2FIX(0);
+	while (*str == '_') str++;
 	len = 3*strlen(str)*sizeof(char);
     }
     else {			/* base == 10, 2 or 16 */
@@ -249,6 +251,7 @@ rb_cstr2inum(str, base)
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
 	unsigned long val = strtoul((char*)str, &end, base);
 
+	if (*end == '_') goto bigparse;
 	if (badcheck) {
 	    if (end == str) goto bad; /* no number */
 	    while (*end && ISSPACE(*end)) end++;
@@ -271,7 +274,9 @@ rb_cstr2inum(str, base)
 	    return big;
 	}
     }
+  bigparse:
     len = (len/BITSPERDIG)+1;
+    if (badcheck && *str == '_') goto bad;
 
     z = bignew(len, sign);
     zds = BDIGITS(z);
@@ -290,6 +295,8 @@ rb_cstr2inum(str, base)
 	  case 'D': case 'E': case 'F':
 	    c = c - 'A' + 10;
 	    break;
+	  case '_':
+	    continue;
 	  default:
 	    if (badcheck) {
 		if (ISSPACE(c)) {
@@ -317,6 +324,7 @@ rb_cstr2inum(str, base)
 	    break;
 	}
     }
+    if (badcheck && s+2 < str && str[-2] == '_') goto bad;
 
     return bignorm(z);
 }
@@ -1252,7 +1260,7 @@ rb_big_lshift(x, y)
     }
     xds = BDIGITS(x);
     for (i=0; i<len; i++) {
-	num = num | *xds++<<s2;
+	num = num | (BDIGIT_DBL)*xds++<<s2;
 	*zds++ = BIGLO(num);
 	num = BIGDN(num);
     }

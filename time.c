@@ -696,6 +696,10 @@ time_minus(time1, time2)
 	sec = tobj->tv.tv_sec - sec;
     }
 
+    if (usec >= 1000000) {	/* usec overflow */
+	sec++;
+	usec -= 1000000;
+    }
     if (usec < 0) {		/* usec underflow */
 	sec--;
 	usec += 1000000;

@@ -31,7 +31,10 @@ class Tracer
     "call" => ">",
     "return" => "<",
     "class" => "C",
-    "end" => "E"}
+    "end" => "E",
+    "c-call" => ">",
+    "c-return" => "<",
+  }
   
   def initialize
     @threads = Hash.new
@@ -59,8 +62,8 @@ class Tracer
 	off
       end
     else
-      set_trace_func proc{|event, file, line, id, binding, klass|
-	trace_func event, file, line, id, binding
+      set_trace_func proc{|event, file, line, id, binding, klass, *rest|
+	trace_func event, file, line, id, binding, klass
       }
       stdout.print "Trace on\n" if Tracer.verbose?
     end
@@ -85,7 +88,6 @@ class Tracer
     end
 
     unless list = LINES__[file]
-#      stdout.print file if $DEBUG
       begin
 	f = open(file)
 	begin 
@@ -112,21 +114,21 @@ class Tracer
     end
   end
   
-  def trace_func(event, file, line, id, binding)
+  def trace_func(event, file, line, id, binding, klass)
     return if file == MY_FILE_NAME
-    #stdout.printf "Th: %s\n", Thread.current.inspect
     
     for p in @filters
-      return unless p.call event, file, line, id, binding
+      return unless p.call event, file, line, id, binding, klass
     end
     
     Thread.critical = true
-    stdout.printf("#%d:%s:%d:%s: %s",
-	   get_thread_no,
-	   file,
-	   line,
-	   EVENT_SYMBOL[event],
-	   get_line(file, line))
+    stdout.printf("#%d:%s:%d:%s:%s: %s",
+      get_thread_no,
+      file,
+      line,
+      klass || '',
+      EVENT_SYMBOL[event],
+      get_line(file, line))
     Thread.critical = false
   end
 

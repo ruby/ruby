@@ -21,6 +21,7 @@ RUBY_SO_NAME = rubymw
 ###############
 
 VPATH = $(srcdir):$(srcdir)/missing
+.SUFFIXES: .y
 
 CC = cl
 YACC = byacc
@@ -186,22 +187,25 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(LIBRUBY_SO).rc: rbconfig.rb
 #config.status:	$(srcdir)/configure
 #		$(SHELL) ./config.status --recheck
 
+{$(srcdir)/missing}.c.obj:
+	$(CC) $(CFLAGS) -I. -I$(<D) $(CPPFLAGS) -c $(<:/=\)
+{$(srcdir)/win32}.c.obj:
+	$(CC) $(CFLAGS) -I. -I$(<D) $(CPPFLAGS) -c $(<:/=\)
+{$(srcdir)}.c.obj:
+	$(CC) $(CFLAGS) -I. -I$(<D) $(CPPFLAGS) -c $(<:/=\)
 .c.obj:
+	$(CC) $(CFLAGS) -I. $(CPPFLAGS) -c $(<:/=\)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
-{$(srcdir)}.c{}.obj:
-	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\)
-{$(srcdir)/missing}.c{}.obj:
-	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\)
-{$(srcdir)/win32}.c{}.obj:
-	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\)
 
 .rc.res:
 	$(RC) -I. -I$(<D) -I$(srcdir)/win32 $(RFLAGS) -fo$@ $<
 
-parse.c: $(srcdir)/parse.y
-	$(YACC) $(YFLAGS) $(srcdir)/parse.y
-	sed -e "s!^extern char \*getenv();!/* & */!" y.tab.c > parse.c
-	@rm y.tab.c
+{$(srcdir)}.y.c:
+	$(YACC) $(YFLAGS) $(<:\=/)
+	sed -e "s!^extern char \*getenv();!/* & */!;s/^\(#.*\)y\.tab/\1parse/" y.tab.c > $@
+	@del y.tab.c
+
+{$(srcdir)}parse.c: parse.y
 
 alloca.obj: $(srcdir)/missing/alloca.c
 crypt.obj: $(srcdir)/missing/crypt.c
@@ -236,7 +240,7 @@ win32.obj: $(srcdir)/win32/win32.c
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###
-parse.obj: $(srcdir)/parse.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/env.h $(srcdir)/node.h $(srcdir)/st.h $(srcdir)/regex.h $(srcdir)/util.h $(srcdir)/lex.c
+parse.obj: {$(srcdir)}parse.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h $(srcdir)/env.h $(srcdir)/node.h $(srcdir)/st.h $(srcdir)/regex.h $(srcdir)/util.h $(srcdir)/lex.c
 ###
 array.obj: $(srcdir)/array.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h
 bignum.obj: $(srcdir)/bignum.c $(srcdir)/ruby.h config.h $(srcdir)/defines.h $(srcdir)/intern.h

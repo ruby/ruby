@@ -4943,33 +4943,34 @@ specific_eval(argc, argv, klass, self)
     VALUE *argv;
     VALUE klass, self;
 {
-    char *file = "(eval)";
-    int   line = 1;
-    int   iter = rb_block_given_p();
-
-    if (argc > 0) {
-	if (ruby_safe_level >= 4) {
-	    Check_Type(argv[0], T_STRING);
+    if (rb_block_given_p()) {
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)", argc);
 	}
-	else {
-	    Check_SafeStr(argv[0]);
-	}
-	if (argc > 3) {
-	    rb_raise(rb_eArgError, "wrong # of arguments: %s(src) or %s{..}",
-		     rb_id2name(ruby_frame->last_func),
-		     rb_id2name(ruby_frame->last_func));
-	}
-	if (argc > 1) file = STR2CSTR(argv[1]);
-	if (argc > 2) line = NUM2INT(argv[2]);
-    }
-    else if (!iter) {
-	rb_raise(rb_eArgError, "block not supplied");
-    }
-
-    if (iter) {
 	return yield_under(klass, self);
     }
     else {
+	char *file = "(eval)";
+	int   line = 1;
+
+	if (argc == 0) {
+	    rb_raise(rb_eArgError, "block not supplied");
+	}
+	else {
+	    if (ruby_safe_level >= 4) {
+		Check_Type(argv[0], T_STRING);
+	    }
+	    else {
+		Check_SafeStr(argv[0]);
+	    }
+	    if (argc > 3) {
+		rb_raise(rb_eArgError, "wrong # of arguments: %s(src) or %s{..}",
+			 rb_id2name(ruby_frame->last_func),
+			 rb_id2name(ruby_frame->last_func));
+	    }
+	    if (argc > 1) file = STR2CSTR(argv[1]);
+	    if (argc > 2) line = NUM2INT(argv[2]);
+	}
 	return eval_under(klass, self, argv[0], file, line);
     }
 }
@@ -5551,6 +5552,9 @@ rb_obj_extend(argc, argv, obj)
 {
     int i;
 
+    if (argc == 0) {
+	rb_raise(rb_eArgError, "wrong # of arguments(0 for 1)");
+    }
     for (i=0; i<argc; i++) Check_Type(argv[i], T_MODULE);
     for (i=0; i<argc; i++) {
 	rb_funcall(argv[i], rb_intern("extend_object"), 1, obj);

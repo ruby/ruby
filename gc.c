@@ -411,7 +411,6 @@ rb_gc_mark(ptr)
     register RVALUE *obj = RANY(ptr);
 
   Top:
-    if (FIXNUM_P(obj)) return;	                /* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return;       /* free cell */
     if (obj->as.basic.flags & FL_MARK) return;  /* already marked */

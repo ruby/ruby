@@ -5,6 +5,7 @@ require 'rbconfig'
 require 'find'
 
 CONFIG = Config::MAKEFILE_CONFIG
+ORIG_LIBPATH = ENV['LIB']
 
 SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 
@@ -25,7 +26,7 @@ else
   exit 1
 end
 $topdir = $hdrdir
-$hdrdir.gsub!('/', '\\') if RUBY_PLATFORM =~ /mswin32/
+# $hdrdir.gsub!('/', '\\') if RUBY_PLATFORM =~ /mswin32/
 
 CFLAGS = CONFIG["CFLAGS"]
 if RUBY_PLATFORM == "m68k-human"
@@ -75,7 +76,19 @@ def try_link0(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
   cfile.close
-  xsystem(format(LINK, $CFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
+  ldflags = $LDFLAGS
+  if /mswin32/ =~ RUBY_PLATFORM and !$LIBPATH.empty?
+    ENV['LIB'] = ($LIBPATH + [ORIG_LIBPATH]).compact.join(';')
+  else
+    $LDFLAGS = ldflags.dup
+    $LIBPATH.each {|d| $LDFLAGS << " -L" + d}
+  end
+  begin
+    xsystem(format(LINK, $CFLAGS, $CPPFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
+  ensure
+    $LDFLAGS = ldflags
+    ENV['LIB'] = ORIG_LIBPATH if /mswin32/ =~ RUBY_PLATFORM
+  end
 end
 
 def try_link(src, opt="")
@@ -198,18 +211,18 @@ def find_library(lib, func, *paths)
   printf "checking for %s() in -l%s... ", func, lib
   STDOUT.flush
 
-  ldflags = $LDFLAGS
+  libpath = $LIBPATH
   libs = append_library($libs, lib)
   until try_link(<<"SRC", libs)
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
     if paths.size == 0
-      $LDFLAGS = ldflags
+      $LIBPATH = libpath
       print "no\n"
       return false
     end
-    $LDFLAGS = ldflags + " -L"+paths.shift
+    $LIBPATH = libpath | [paths.shift]
   end
   $libs = libs
   print "yes\n"
@@ -264,7 +277,7 @@ SRC
     print "no\n"
     return false
   end
-  header.tr!("a-z\055./", "A-Z___")
+  header.tr!("a-z./\055", "A-Z___")
   $defs.push(format("-DHAVE_%s", header))
   print "yes\n"
   return true
@@ -324,22 +337,21 @@ def dir_config(target, idefault=nil, ldefault=nil)
   dir = with_config("%s-dir"%target, default)
   if dir
     idir = " -I"+dir+"/include"
-    ldir = " -L"+dir+"/lib"
+    ldir = dir+"/lib"
   end
   unless idir
     dir = with_config("%s-include"%target, idefault)
     idir = " -I"+dir if dir
   end
   unless ldir
-    dir = with_config("%s-lib"%target, ldefault)
-    ldir = " -L"+dir if dir
+    ldir = with_config("%s-lib"%target, ldefault)
   end
 
-  $CFLAGS += idir if idir
-  $LDFLAGS += ldir if ldir
+  $CPPFLAGS += idir if idir
+  $LIBPATH |= [ldir] if ldir
 end
 
-def create_makefile(target)
+def create_makefile(target, srcdir = File.dirname($0))
   print "creating Makefile\n"
   rm_f "conftest*"
   STDOUT.flush
@@ -358,9 +370,9 @@ def create_makefile(target)
   end
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
-  if $configure_args['--enable-shared'] or /cygwin|mingw/ == RUBY_PLATFORM
+  if $configure_args['--enable-shared'] or CONFIG['LIBRUBY'] != CONFIG['LIBRUBY_A']
     $libs = CONFIG["LIBRUBYARG"] + " " + $libs
-    $DLDFLAGS += " -L" + CONFIG["libdir"]
+    $LIBPATH |= ["$(topdir)", CONFIG["libdir"]]
   end
 
   defflag = ''
@@ -371,9 +383,16 @@ def create_makefile(target)
     defflag = "--def=" + target + ".def"
   end
 
+  if RUBY_PLATFORM =~ /mswin32/
+    libpath = $LIBPATH.join(';')
+  else
+    $LIBPATH.each {|d| $DLDFLAGS << " -L" << d}
+  end
+  drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
+
   unless $objs then
     $objs = []
-    for f in Dir["*.{#{SRC_EXT.join(%q{,})}}"]
+    for f in Dir[File.join(srcdir || ".", "*.{#{SRC_EXT.join(%q{,})}}")]
       f = File.basename(f)
       f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
       $objs.push f
@@ -392,27 +411,35 @@ SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
-srcdir = #{$srcdir}
+srcdir = #{srcdir || $srcdir}
 topdir = #{$topdir}
 hdrdir = #{$hdrdir}
+VPATH = $(srcdir)
 
 CC = #{CONFIG["CC"]}
 
 CFLAGS   = #{CONFIG["CCDLFLAGS"]} #{CFLAGS} #{$CFLAGS}
-CPPFLAGS = -I$(hdrdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]}
+CPPFLAGS = -I$(hdrdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")} #{CONFIG["CPPFLAGS"]} #{$CPPFLAGS}
 CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}
+LIBPATH = #{libpath}
 
 RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
 RUBY_SO_NAME = #{CONFIG["RUBY_SO_NAME"]}
-
-prefix = $(DESTDIR)#{CONFIG["prefix"]}
-exec_prefix = $(DESTDIR)#{CONFIG["exec_prefix"]}
-libdir = $(DESTDIR)#{$libdir}#{target_prefix}
-archdir = $(DESTDIR)#{$archdir}#{target_prefix}
-sitelibdir = $(DESTDIR)#{$sitelibdir}#{target_prefix}
-sitearchdir = $(DESTDIR)#{$sitearchdir}#{target_prefix}
+#{
+if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
+  "\nDESTDIR = " + destdir
+else
+  ""
+end
+}
+prefix = $(DESTDIR)#{CONFIG["prefix"].sub(drive, '')}
+exec_prefix = $(DESTDIR)#{CONFIG["exec_prefix"].sub(drive, '')}
+libdir = $(DESTDIR)#{$libdir.sub(drive, '')}#{target_prefix}
+archdir = $(DESTDIR)#{$archdir.sub(drive, '')}#{target_prefix}
+sitelibdir = $(DESTDIR)#{$sitelibdir.sub(drive, '')}#{target_prefix}
+sitearchdir = $(DESTDIR)#{$sitearchdir.sub(drive, '')}#{target_prefix}
 
 #### End of system configuration section. ####
 
@@ -458,26 +485,36 @@ EOMF
   install_rb(mfile, "$(sitelibdir)")
   mfile.printf "\n"
 
-  if /mswin32/ =~ RUBY_PLATFORM
-    mfile.print "
-.c.obj:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
-
-{$(srcdir)}.c.obj:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
-
-"
-  else
+  if /mswin32/ !~ RUBY_PLATFORM
     mfile.print "
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+"
+  elsif /nmake/i =~ $make
+    mfile.print "
+{$(srcdir)}.c.#{$OBJEXT}:
+	$(CC) $(CFLAGS) -I$(<D) $(CPPFLAGS) -c $(<:/=\\)
+
+.c.#{$OBJEXT}:
+	$(CC) $(CFLAGS) -I$(<D) $(CPPFLAGS) -c $(<:/=\\)
+"
+  else
+    mfile.print "
+.SUFFIXES: .#{$OBJEXT}
+
+.c.#{$OBJEXT}:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 "
   end
 
   if CONFIG["DLEXT"] != $OBJEXT
     mfile.print "$(DLLIB): $(OBJS)\n"
     if /mswin32/ =~ RUBY_PLATFORM
-      mfile.print "\tset LIB=$(topdir:/=\\);$(LIB)\n"
+      if /nmake/i =~ $make
+	mfile.print "\tset LIB=$(LIBPATH:/=\\);$(LIB)\n"
+      else
+	mfile.print "\tenv LIB='$(subst /,\\\\,$(LIBPATH));$(LIB)' \\\n"
+      end
     end
     mfile.print "\t$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
   elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
@@ -507,26 +544,26 @@ $libs = CONFIG["DLDLIBS"]
 $local_flags = ""
 case RUBY_PLATFORM
 when /mswin32/
-  $local_flags = "$(RUBY_SO_NAME).lib -link /EXPORT:Init_$(TARGET)"
+  $local_flags = "-link /INCREMENTAL:no /EXPORT:Init_$(TARGET)"
 end
 $LOCAL_LIBS = ""
 $defs = []
 
+$make = with_config("make-prog", ENV["MAKE"] || "make")
 dir = with_config("opt-dir")
 if dir
   idir = "-I"+dir+"/include"
-  ldir = "-L"+dir+"/lib"
+  ldir = dir+"/lib"
 end
 unless idir
   dir = with_config("opt-include")
   idir = "-I"+dir if dir
 end
 unless ldir
-  dir = with_config("opt-lib")
-  ldir = "-L"+dir if dir
+  ldir = with_config("opt-lib")
 end
 
-$CFLAGS = idir || ""
-$LDFLAGS = ldir || ""
-
-$hdrdir.gsub!('/', '\\') if RUBY_PLATFORM =~ /mswin32/
+$CFLAGS = with_config("cflags", "")
+$CPPFLAGS = [with_config("cppflags", ""), idir].compact.join(" ")
+$LDFLAGS = with_config("ldflags", "")
+$LIBPATH = [ldir].compact
