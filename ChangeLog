@@ -1,3 +1,7 @@
+Tue Jul 20 09:15:17 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/fileutils/test_fileutils.rb: File.link raises EINVAL on BeOS.
+
 Mon Jul 19 01:15:07 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpservlet/cgihandler.rb

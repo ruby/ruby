@@ -30,7 +30,7 @@ end
 begin
   File.symlink 'not_exist', 'symlink_test'
   HAVE_SYMLINK = true
-rescue NotImplementedError, SystemCallError
+rescue NotImplementedError
   HAVE_SYMLINK = false
 ensure
   File.unlink 'symlink_test' if File.symlink?('symlink_test')
@@ -43,7 +43,7 @@ begin
   File.open('linktmp', 'w') {|f| f.puts 'dummy' }
   File.link 'linktmp', 'linktest'
   HAVE_HARDLINK = true
-rescue NotImplementedError
+rescue NotImplementedError, SystemCallError
   HAVE_HARDLINK = false
 ensure
   File.unlink 'linktest' if File.exist?('linktest')
