@@ -1297,7 +1297,7 @@ module Net
         HTTPUnknownResponse
       end
 
-      def each_response_header( sock, res )
+      def each_response_header( sock )
         while true do
           line = sock.readuntil( "\n", true )   # ignore EOF
           line.sub!( /\s+\z/, '' )              # don't use chop!
