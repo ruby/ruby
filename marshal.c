@@ -814,8 +814,9 @@ r_ivar(obj, arg)
 }
 
 static VALUE
-r_object(arg)
+r_object0(arg, proc)
     struct load_arg *arg;
+    VALUE proc;
 {
     VALUE v = Qnil;
     int type = r_byte(arg);
@@ -831,15 +832,15 @@ r_object(arg)
 	return v;
 
       case TYPE_IVAR:
-	v = r_object(arg);
+	v = r_object0(arg, 0);
 	r_ivar(v, arg);
-	return v;
+	break;
 
       case TYPE_UCLASS:
 	{
 	    VALUE c = rb_path2class(r_unique(arg));
 
-	    v = r_object(arg);
+	    v = r_object0(arg, 0);
 	    if (rb_special_const_p(v) || TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS) {
 	      format_error:
 		rb_raise(rb_eArgError, "dump format error (user class)");
@@ -850,8 +851,8 @@ r_object(arg)
 		if (TYPE(v) != TYPE(tmp)) goto format_error;
 	    }
 	    RBASIC(v)->klass = c;
-	    return v;
 	}
+	break;
 
       case TYPE_NIL:
 	v = Qnil;
@@ -1061,7 +1062,7 @@ r_object(arg)
                         "class %s needs to have instance method `_load_data'",
                         rb_class2name(klass));
            }
-           rb_funcall(v, s_load_data, 1, r_object(arg));
+           rb_funcall(v, s_load_data, 1, r_object0(arg, 0));
        }
        break;
 
@@ -1108,10 +1109,17 @@ r_object(arg)
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);
 	break;
     }
-    if (arg->proc) {
-	rb_funcall(arg->proc, rb_intern("yield"), 1, v);
+    if (proc) {
+	rb_funcall(proc, rb_intern("yield"), 1, v);
     }
     return v;
+}
+
+static VALUE
+r_object(arg)
+    struct load_arg *arg;
+{
+    return r_object0(arg, arg->proc);
 }
 
 static VALUE
