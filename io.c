@@ -648,7 +648,7 @@ read_all(fptr, siz)
     READ_CHECK(fptr->f);
     if (!siz) siz = BUFSIZ;
     str = rb_tainted_str_new(0, siz);
-    pos = ftell(fptr->f);
+    pos = ftello(fptr->f);
     for (;;) {
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
 	if (pos > 0 && n == 0 && bytes == 0) {
