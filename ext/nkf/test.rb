@@ -338,7 +338,7 @@ $example['test_data/no-cp932inv.ans'] = <<'eofeof'.unpack('u')[0]
 eofeof
 
 print "test_data/no-cp932inv    ";
-    test("-sE",$example['test_data/cp932.ans'],[$example['test_data/no-cp932inv.ans']])
+test("-sE --no-cp932",$example['test_data/cp932.ans'],[$example['test_data/no-cp932inv.ans']])
 
 # test_data/irv
 
@@ -709,7 +709,7 @@ M46E23D=Y:$,_/0H@/3])4T\M,C`R,BU*4#]"/TE"<VM1:5)/1WEH0S\]"@H*
 eofeof
 
 print "test_data/mime_out2    ";
-    test("-jM",$example['test_data/mime_out2'],["\x0a"+$example['test_data/mime_out2.ans']])
+    test("-jM",$example['test_data/mime_out2'],[$example['test_data/mime_out2.ans']])
 # test_data/multi-line
 
 $example['test_data/multi-line'] = <<'eofeof'.unpack('u')[0]
