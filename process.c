@@ -3501,6 +3501,7 @@ Init_process()
     rb_define_method(rb_cProcStatus, "termsig", pst_wtermsig, 0);
     rb_define_method(rb_cProcStatus, "exited?", pst_wifexited, 0);
     rb_define_method(rb_cProcStatus, "exitstatus", pst_wexitstatus, 0);
+    rb_define_method(rb_cProcStatus, "success?", pst_success_p, 0);
     rb_define_method(rb_cProcStatus, "coredump?", pst_wcoredump, 0);
 
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
