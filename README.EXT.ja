@@ -1133,7 +1133,7 @@ void ruby_script(char *name)
   Rubyのスクリプト名($0)を設定する．
 
 
-Appendix B. extconf.rbで使える関数たち
+Appendix C. extconf.rbで使える関数たち
 
 extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
 下の通りである．

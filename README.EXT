@@ -976,7 +976,7 @@ Starts execution of the interpreter.
 
 Specifies the name of the script ($0).
 
-Appendix B. Functions Available in extconf.rb
+Appendix C. Functions Available in extconf.rb
 
 These functions are available in extconf.rb:
 
