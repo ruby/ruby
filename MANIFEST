@@ -509,6 +509,7 @@ test/ruby/test_system.rb
 test/ruby/test_trace.rb
 test/ruby/test_variable.rb
 test/ruby/test_whileuntil.rb
+test/strscan/test_stringscanner.rb
 vms/config.h_in
 vms/vms.h
 win32/Makefile.sub

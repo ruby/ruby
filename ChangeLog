@@ -1,3 +1,7 @@
+Wed Sep 17 18:35:34 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* test/strscan/test_stringscanner.rb: new file.
+
 Wed Sep 17 18:03:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl: all files are reviewed to simplify and avoid memory leak.
