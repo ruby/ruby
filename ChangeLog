@@ -1,6 +1,7 @@
 Tue Dec 28 17:18:17 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/net/telnet.rb (preprocess): remove NULL unless binmode.
+	  fixed: [ruby-list:40320]
 
 Tue Dec 28 15:41:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
