@@ -1,3 +1,7 @@
+Mon Dec  9 15:13:14 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.8 release candidate.
+
 Fri Dec  6 14:13:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_cmp): define Numeric#<=>, remove Numeric#==.
@@ -105,10 +109,6 @@ Fri Nov 15 07:51:24 2002  NAKAMURA Hiroshi  <nakahiro@sarion.co.jp>
 Sat Nov  9 16:06:57 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/tcltklib/stubs.c: should include "util.h" for ruby_strdup.
-
-Fri Nov  8 22:11:56 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* stable version 1.6.8 release candidate.
 
 Fri Nov  8 22:10:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
