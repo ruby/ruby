@@ -1,3 +1,14 @@
+Tue Sep  7 12:48:22 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* {bcc32,win32,wince}/Makefile.sub (config.h): add fcntl.
+
+	* win32/win32.[ch] (fcntl): ditto.
+
+	* win32/win32.c (rb_w32_connect): support nonblocking mode.
+
+	* ext/socket/socket.c (wait_connectable, ruby_connect): support
+	  nonblocking connect on various platforms.
+
 Mon Sep  6 10:57:40 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/lib/tk/menu.rb(TkOptionMenubutton#insert): call correct method

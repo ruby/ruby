@@ -2047,8 +2047,16 @@ rb_w32_connect(int s, struct sockaddr *addr, int addrlen)
     }
     RUBY_CRITICAL({
 	r = connect(TO_SOCKET(s), addr, addrlen);
-	if (r == SOCKET_ERROR)
-	    errno = map_errno(WSAGetLastError());
+	if (r == SOCKET_ERROR) {
+	    r = WSAGetLastError();
+	    if (r != WSAEWOULDBLOCK) {
+		errno = map_errno(r);
+	    }
+	    else {
+		errno = EINPROGRESS;
+		r = -1;
+	    }
+	}
     });
     return r;
 }
@@ -2410,6 +2418,43 @@ void setnetent (int stayopen) {}
 void setprotoent (int stayopen) {}
 
 void setservent (int stayopen) {}
+
+int
+fcntl(int fd, int cmd, ...)
+{
+    SOCKET sock = TO_SOCKET(fd);
+    va_list va;
+    int arg;
+    int ret;
+    u_long ioctlArg;
+
+    if (!is_socket(sock)) {
+	errno = EBADF;
+	return -1;
+    }
+    if (cmd != F_SETFL) {
+	errno = EINVAL;
+	return -1;
+    }
+
+    va_start(va, cmd);
+    arg = va_arg(va, int);
+    va_end(va);
+    if (arg & O_NONBLOCK) {
+	ioctlArg = 1;
+    }
+    else {
+	ioctlArg = 0;
+    }
+    RUBY_CRITICAL({
+	ret = ioctlsocket(sock, FIONBIO, &ioctlArg);
+	if (ret == -1) {
+	    errno = map_errno(WSAGetLastError());
+	}
+    });
+
+    return ret;
+}
 
 #ifndef WNOHANG
 #define WNOHANG -1

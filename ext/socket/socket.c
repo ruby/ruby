@@ -52,9 +52,15 @@
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
+#ifdef HAVE_SYS_TIME_H
 #include <sys/time.h>
+#endif
+#ifdef HAVE_FCNTL_H
 #include <fcntl.h>
+#endif
 #endif
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK EAGAIN
@@ -794,15 +800,36 @@ ruby_socket(domain, type, proto)
     return fd;
 }
 
-static void
-thread_write_select(fd)
+static int
+wait_connectable(fd)
     int fd;
 {
-    fd_set fds;
+    int sockerr, sockerrlen;
+    fd_set fds_w;
+    fd_set fds_e;
 
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-    rb_thread_select(fd+1, 0, &fds, 0, 0);
+    for (;;) {
+	FD_ZERO(&fds_w);
+	FD_ZERO(&fds_e);
+
+	FD_SET(fd, &fds_w);
+	FD_SET(fd, &fds_e);
+
+	rb_thread_select(fd+1, 0, &fds_w, &fds_e, 0);
+
+	if (FD_ISSET(fd, &fds_w)) {
+	    return 0;
+	}
+	else if (FD_ISSET(fd, &fds_e)) {
+	    sockerrlen = sizeof(sockerr);
+	    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr,
+			   &sockerrlen))
+		errno = sockerr;
+	    return -1;
+	}
+    }
+
+    return 0;
 }
 
 #ifdef __CYGWIN__
@@ -835,7 +862,11 @@ ruby_connect(fd, sockaddr, len, socks)
 #endif
 
 #if defined(HAVE_FCNTL)
+# if defined(F_GETFL)
     mode = fcntl(fd, F_GETFL, 0);
+# else
+    mode = 0;
+# endif
 
 #ifdef O_NDELAY
 # define NONBLOCKING O_NDELAY
@@ -884,7 +915,11 @@ ruby_connect(fd, sockaddr, len, socks)
 #if WAIT_IN_PROGRESS > 0
 		wait_in_progress = WAIT_IN_PROGRESS;
 #endif
-		thread_write_select(fd);
+		status = wait_connectable(fd);
+		if (status) {
+		    break;
+		}
+		errno = 0;
 		continue;
 
 #if WAIT_IN_PROGRESS > 0

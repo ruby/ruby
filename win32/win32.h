@@ -183,6 +183,7 @@ extern char *rb_w32_join_argv(char *, char *const *);
 extern int rb_w32_spawn(int, const char *, const char*);
 extern int rb_w32_aspawn(int, const char *, char *const *);
 extern int kill(int, int);
+extern int fcntl(int, int, ...);
 extern pid_t rb_w32_getpid(void);
 
 #ifdef __BORLANDC__
@@ -323,6 +324,9 @@ extern char *rb_w32_strerror(int);
 #define EDQUOT		WSAEDQUOT
 #define ESTALE		WSAESTALE
 #define EREMOTE		WSAEREMOTE
+
+#define F_SETFL 1
+#define O_NONBLOCK 1
 
 #ifdef accept
 #undef accept

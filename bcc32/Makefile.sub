@@ -252,6 +252,7 @@ config.h:
 \#define HAVE_GETCWD 1
 \#define HAVE_CHSIZE 1
 \#define HAVE_TIMES 1
+\#define HAVE_FCNTL 1
 \#define HAVE_LINK 1
 \#define HAVE_TELLDIR 1
 \#define HAVE_SEEKDIR 1
