@@ -159,9 +159,12 @@ OBJS          = array.obj \
 		version.obj \
 		$(MISSING)
 
-all:		miniruby$(EXEEXT) rbconfig.rb \
+all:		ext miniruby$(EXEEXT) rbconfig.rb \
 		$(LIBRUBY) $(MISCLIBS)
 		@.\miniruby$(EXEEXT) $(srcdir)/ext/extmk.rb 
+
+ext:
+		@mkdir $@
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -342,7 +345,6 @@ s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t
 s,@configure_args@,--with-make-prog=nmake --enable-shared $(configure_args),;t t
 s,@configure_input@,$$configure_input,;t t
-		@if not exist $(@D)\nul mkdir $(@D)
 s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 <<
