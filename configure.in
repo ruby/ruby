@@ -452,26 +452,35 @@ if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS -pipe $ARCH_FLAG"
 fi
 
-AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/ruby")
-AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${prefix}/lib/site_ruby")
+ri_prefix=
+test "$program_prefix" != NONE &&
+  ri_prefix=$program_prefix
+
+ri_suffix=
+test "$program_suffix" != NONE &&
+  ri_suffix=$program_suffix
+
+RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
+AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}")
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby")
 AC_SUBST(arch)dnl
 
 if test "$fat_binary" = yes ; then
     arch="fat-${host_os}"
 
     AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,
-                 "${prefix}/lib/ruby/" __ARCHITECTURE__ "-${host_os}" )
+                 "${prefix}/lib/${RUBY_INSTALL_NAME}/" __ARCHITECTURE__ "-${host_os}" )
 
     AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
-                 "${prefix}/lib/ruby/" __ARCHITECTURE__ "-${host_os}" )
+                 "${prefix}/lib/${RUBY_INSTALL_NAME}/" __ARCHITECTURE__ "-${host_os}" )
 
-    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/ruby/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/site_ruby/${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby/${arch}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM,  __ARCHITECTURE__ "-${host_os}" )
 else
     arch="${host_cpu}-${host_os}"
-    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/ruby/${arch}")
-    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/site_ruby/${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/${RUBY_INSTALL_NAME}/site_ruby/${arch}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
 

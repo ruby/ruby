@@ -190,7 +190,7 @@ static void top_local_setup();
 %token tCMP  		/* <=> */
 %token tEQ  		/* == */
 %token tEQQ  		/* === */
-%token tNEQ  		/* != <> */
+%token tNEQ  		/* != */
 %token tGEQ  		/* >= */
 %token tLEQ  		/* <= */
 %token tANDOP tOROP	/* && and || */
@@ -342,7 +342,7 @@ stmt		: iterator iter_do_block
 			    $$ = NEW_UNTIL(cond($3), $1, 1);
 			}
 		    }
-		| klBEGIN 
+		| klBEGIN
 		    {
 			if (cur_mid || in_single) {
 			    yyerror("BEGIN in method");
@@ -398,7 +398,7 @@ expr		: mlhs '=' mrhs
 			value_expr($2);
 			$$ = NEW_NOT(cond($2));
 		    }
-		| '!' command_call	
+		| '!' command_call
 		    {
 			value_expr($2);
 			$$ = NEW_NOT(cond($2));
@@ -1024,7 +1024,7 @@ primary		: literal
 			if (!$3 && !$4)
 			    $$ = NEW_BEGIN($2);
 			else {
-			    if ($3) $2 = NEW_RESCUE($2, $3); 
+			    if ($3) $2 = NEW_RESCUE($2, $3);
 			    if ($4) $2 = NEW_ENSURE($2, $4);
 			    $$ = $2;
 			}
@@ -1168,7 +1168,7 @@ opt_iter_var	: /* node */
 		    {
 			$$ = 0;
 		    }
-		| '|' /* none */  '|'
+		| '|' /* none */ '|'
 		    {
 			$$ = 0;
 		    }
@@ -1194,7 +1194,7 @@ iter_do_block	: kDO
 			dyna_pop($<vars>2);
 		    }
 
-iter_block	: '{' 
+iter_block	: '{'
 		    {
 		        $<vars>$ = dyna_push();
 		    }
@@ -1269,7 +1269,7 @@ cases		: opt_else
 
 rescue		: kRESCUE opt_list do
 		  compstmt
-		  rescue	
+		  rescue
 		    {
 			$$ = NEW_RESBODY($2, $4, $5);
 		        fixpos($$, $2?$2:$4);
@@ -1308,7 +1308,7 @@ variable	: tIDENTIFIER
 		| tCONSTANT
 		| kNIL {$$ = kNIL;}
 		| kSELF {$$ = kSELF;}
-		| kTRUE {$$ = kTRUE;} 
+		| kTRUE {$$ = kTRUE;}
 		| kFALSE {$$ = kFALSE;}
 		| k__FILE__ {$$ = k__FILE__;}
 		| k__LINE__ {$$ = k__LINE__;}
@@ -1980,9 +1980,8 @@ parse_string(func, term, paren)
     }
     strstart = sourceline;
     newtok();
-
     while ((c = nextc()) != term || nest > 0) {
-	if (c  == -1) {
+	if (c == -1) {
 	  unterm_str:
 	    sourceline = strstart;
 	    Error("unterminated string meets end of file");
@@ -2044,7 +2043,7 @@ parse_string(func, term, paren)
 
 static int
 parse_qstring(term, paren)
-    int term;
+    int term, paren;
 {
     int strstart;
     int c;
@@ -2053,7 +2052,7 @@ parse_qstring(term, paren)
     strstart = sourceline;
     newtok();
     while ((c = nextc()) != term || nest > 0) {
-	if (c  == -1)  {
+	if (c == -1) {
 	    sourceline = strstart;
 	    Error("unterminated string meets end of file");
 	    return 0;
@@ -2131,7 +2130,7 @@ here_document(term)
 	break;
 
       default:
-	c =  term;
+	c = term;
 	term = '"';
 	if (!is_identchar(c)) {
 	    yyerror("illegal here document");
@@ -2169,7 +2168,7 @@ here_document(term)
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
-	switch (parse_string(term, '\n')) {
+	switch (parse_string(term, '\n', '\n')) {
 	  case tSTRING:
 	  case tXSTRING:
 	    str_cat(yylval.val, "\n", 1);
@@ -2209,7 +2208,7 @@ here_document(term)
       case '\'':
       case '"':
 	if (list) return tDSTRING;
-	yylval.val = str;	  
+	yylval.val = str;
 	return tSTRING;
       case '`':
 	if (list) return tDXSTRING;
@@ -3106,7 +3105,7 @@ str_extend(list, term)
 	}
 	/* through */
 
-      case '@':	
+      case '@':
 	tokadd(c);
 	c = nextc();
 	while (is_identchar(c)) {
@@ -3293,7 +3292,7 @@ list_append(head, tail)
     while (last->nd_next) {
 	last = last->nd_next;
     }
-    
+
     last->nd_next = NEW_LIST(tail);
     head->nd_alen += 1;
     return head;
@@ -3498,7 +3497,7 @@ attrset(recv, id, val)
 {
     value_expr(recv);
     value_expr(val);
- 
+
     id &= ~ID_SCOPE_MASK;
     id |= ID_ATTRSET;
 
@@ -3993,7 +3992,6 @@ rb_intern(name)
       case '@':
 	id |= ID_INSTANCE;
 	break;
-	/* fall through */
       default:
 	if (name[0] != '_' && !isalpha(name[0]) && !ismbchar(name[0])) {
 	    /* operator */
@@ -4010,7 +4008,7 @@ rb_intern(name)
 	    if (id == 0) NameError("Unknown operator `%s'", name);
 	    break;
 	}
-	
+
 	last = strlen(name)-1;
 	if (name[last] == '=') {
 	    /* attribute assignment */
@@ -4072,7 +4070,7 @@ rb_id2name(id)
     st_foreach(sym_tbl, id_find, &ok);
     if (!ok.name && is_attrset_id(id)) {
 	char *res;
-	ID id2; 
+	ID id2;
 
 	id2 = (id & ~ID_SCOPE_MASK) | ID_LOCAL;
 	res = rb_id2name(id2);

@@ -363,7 +363,7 @@ module Tk
       tk_call 'wm', 'bitmap', path, *args
     end
     def iconify
-      tk_call 'wm', 'iconify'
+      tk_call 'wm', 'iconify', path
     end
     def iconmask(*args)
       tk_call 'wm', 'iconmask', path, *args

@@ -352,7 +352,7 @@ def extmake(target)
   return if $nodynamic and not $static
 
   $objs = nil
-  $libs = "-lc"
+  $libs = PLATFORM =~ /cygwin32/ ? nil : "-lc"
   $local_libs = nil		# to be assigned in extconf.rb
   $CFLAGS = nil
   $LDFLAGS = nil

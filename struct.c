@@ -381,7 +381,7 @@ struct_aref(s, idx)
     return RSTRUCT(s)->ptr[i];
 }
 
-VALUE
+static VALUE
 struct_aset_id(s, id, val)
     VALUE s, val;
     ID id;
@@ -412,7 +412,7 @@ struct_aset(s, idx, val)
     int i;
 
     if (TYPE(idx) == T_STRING) {
-	return struct_aref_id(s, rb_to_id(idx));
+	return struct_aset_id(s, rb_to_id(idx), val);
     }
 
     i = NUM2INT(idx);

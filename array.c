@@ -412,6 +412,20 @@ ary_index(ary, val)
 }
 
 static VALUE
+ary_rindex(ary, val)
+    VALUE ary;
+    VALUE val;
+{
+    int i = i<RARRAY(ary)->len;
+
+    while (i--) {
+	if (rb_equal(RARRAY(ary)->ptr[i], val))
+	    return INT2FIX(i);
+    }
+    return Qnil;
+}
+
+static VALUE
 ary_indexes(argc, argv, ary)
     int argc;
     VALUE *argv;
@@ -1299,6 +1313,7 @@ Init_Array()
     rb_define_alias(cArray,  "size", "length");
     rb_define_method(cArray, "empty?", ary_empty_p, 0);
     rb_define_method(cArray, "index", ary_index, 1);
+    rb_define_method(cArray, "rindex", ary_rindex, 1);
     rb_define_method(cArray, "indexes", ary_indexes, -1);
     rb_define_method(cArray, "indices", ary_indexes, -1);
     rb_define_method(cArray, "clone", ary_clone, 0);

@@ -1,3 +1,20 @@
+Tue Apr 21 12:31:48 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_13.
+
+	* configure.in (RUBY_LIB): supports --program-{prefix,suffix}.
+
+	* array.c (ary_rindex): new method.
+
+	* io.c (io_binmode): should return self.
+
+Tue Apr 21 08:23:04 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* parse.y (here_document): calling parse_string with wrong
+	  arguments.
+
+	* struct.c (struct_aset): problem member assignment with name.
+
 Mon Apr 20 14:47:49 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_12.
