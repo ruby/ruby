@@ -1,3 +1,11 @@
+Mon Dec  1 09:28:14 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
+	  (XCFLAGS): re-export $(XCFLAGS).
+
+	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub
+	  (ARCH_FLAG): export $(ARCH_FLAG) (perhaps empty value).
+
 Mon Dec  1 01:03:27 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (TRY_LINK, link_command): added support for DLDFLAGS
