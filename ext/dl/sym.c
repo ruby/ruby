@@ -412,7 +412,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 	if( TYPE(argv[i]) != T_STRING ){
 	  raise(rb_eDLError, "#%d must be a string",i);
 	};
-	ANY2S(args[i]) = DLSTR(argv[i]);
+	ANY2S(args[i]) = DLSTR(RSTRING(argv[i])->ptr);
       };
       PUSH_P(ftype);
       break;
