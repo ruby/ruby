@@ -81,7 +81,7 @@ ary_new()
     return ary_new2(ARY_DEFAULT_SIZE);
 }
 
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start(a,b)
 #else
@@ -90,7 +90,7 @@ ary_new()
 #endif
 
 VALUE
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 ary_new3(int n, ...)
 #else
 ary_new3(n, va_alist)

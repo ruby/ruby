@@ -165,7 +165,7 @@ make_struct(name, member, klass)
     return nstr;
 }
 
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start(a,b)
 #else
@@ -174,7 +174,7 @@ make_struct(name, member, klass)
 #endif
 
 VALUE
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 struct_define(char *name, ...)
 #else
 struct_define(name, va_alist)
@@ -249,7 +249,7 @@ struct_alloc(klass, values)
 }
 
 VALUE
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 struct_new(VALUE klass, ...)
 #else
 struct_new(klass, va_alist)

@@ -126,6 +126,7 @@ EXPORTS
 	rb_define_method
 	rb_undef_method
 	rb_define_private_method
+	rb_define_protected_method
 	rb_singleton_class
 	rb_define_singleton_method
 	rb_define_module_function
@@ -143,6 +144,7 @@ EXPORTS
 ; error.c
 	Error
 	Error_Append
+	Warn
 	Warning
 	Bug
 	rb_check_type
@@ -161,8 +163,11 @@ EXPORTS
 	rb_sys_fail
 ;eval.c
 	rb_clear_cache
-	rb_add_method
 	rb_alias
+	rb_add_method
+	rb_remove_method
+	rb_disable_super
+	rb_enable_super
 	rb_method_boundp
 	dyna_var_defined
 	dyna_var_ref
@@ -261,7 +266,8 @@ EXPORTS
 	num_coerce_bin
 	float_new
 	flo_pow
-	num2int
+	num2long
+	num2ulong
 	num2fix
 	fix2str
 	fix_to_s

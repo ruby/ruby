@@ -565,7 +565,7 @@ rb_define_attr(klass, name, read, write)
     rb_attr(klass, rb_intern(name), read, write, FALSE);
 }
 
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start(a,b)
 #else
@@ -575,7 +575,7 @@ rb_define_attr(klass, name, read, write)
 #include <ctype.h>
 
 int
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
 #else
 rb_scan_args(argc, argv, fmt, va_alist)

@@ -13,7 +13,7 @@
 #include "ruby.h"
 #include "env.h"
 #include <stdio.h>
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
 #define va_init_list(a,b) va_start(a,b)
 #else
@@ -58,7 +58,7 @@ err_print(fmt, args)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 Error(char *fmt, ...)
 #else
 Error(fmt, va_alist)
@@ -75,7 +75,7 @@ Error(fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 Error_Append(char *fmt, ...)
 #else
 Error_Append(fmt, va_alist)
@@ -93,7 +93,7 @@ Error_Append(fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 Warn(char *fmt, ...)
 #else
 Warn(fmt, va_alist)
@@ -113,7 +113,7 @@ Warn(fmt, va_alist)
 
 /* Warning() reports only in verbose mode */
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 Warning(char *fmt, ...)
 #else
 Warning(fmt, va_alist)
@@ -134,7 +134,7 @@ Warning(fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 Bug(char *fmt, ...)
 #else
 Bug(fmt, va_alist)
@@ -181,10 +181,6 @@ static struct types {
     T_NODE,	"Node",		/* internal use: syntax tree node */
     -1,		0,
 };
-
-#ifndef __STDC__
-extern void TypeError();
-#endif
 
 void
 rb_check_type(x, t)
@@ -537,7 +533,7 @@ Init_Exception()
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 Raise(VALUE exc, char *fmt, ...)
 #else
 Raise(exc, fmt, va_alist)
@@ -550,7 +546,7 @@ Raise(exc, fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 TypeError(char *fmt, ...)
 #else
 TypeError(fmt, va_alist)
@@ -562,7 +558,7 @@ TypeError(fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 ArgError(char *fmt, ...)
 #else
 ArgError(fmt, va_alist)
@@ -574,7 +570,7 @@ ArgError(fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 NameError(char *fmt, ...)
 #else
 NameError(fmt, va_alist)
@@ -586,7 +582,7 @@ NameError(fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 IndexError(char *fmt, ...)
 #else
 IndexError(fmt, va_alist)
@@ -598,7 +594,7 @@ IndexError(fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 Fail(char *fmt, ...)
 #else
 Fail(fmt, va_alist)
@@ -618,7 +614,7 @@ rb_notimplement()
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 LoadError(char *fmt, ...)
 #else
 LoadError(fmt, va_alist)
@@ -630,7 +626,7 @@ LoadError(fmt, va_alist)
 }
 
 void
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 Fatal(char *fmt, ...)
 #else
 Fatal(fmt, va_alist)

@@ -2684,6 +2684,7 @@ rb_iter_break()
     JUMP_TAG(TAG_BREAK);
 }
 
+static void rb_longjmp _((int, VALUE)) NORETURN;
 static VALUE make_backtrace _((void));
 
 static void
@@ -3614,7 +3615,7 @@ f_send(argc, argv, recv)
 #endif
 
 VALUE
-#ifdef __STDC__
+#ifdef HAVE_STDARG_PROTOTYPES
 rb_funcall(VALUE recv, ID mid, int n, ...)
 #else
 rb_funcall(recv, mid, n, va_alist)

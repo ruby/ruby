@@ -3,7 +3,7 @@
 Ruby is the interpreted scripting language for quick and
 easy object-oriented programming.  It has many features to
 process text files and to do system management tasks (as in
-perl).  It is simple, straight-forward, and extensible.
+Perl).  It is simple, straight-forward, and extensible.
 
 * Features of Ruby
 
@@ -97,7 +97,7 @@ You can redistribute it and/or modify it under either the terms of the GPL
      are not written by the author, so that they are not under this terms.
      They are gc.c(partly), utils.c(partly), regex.[ch], fnmatch.[ch],
      glob.c, st.[ch] and some files under the ./missing directory.  See
-     each files for the copying condition.
+     each file for the copying condition.
 
   5. The scripts and library files supplied as input to or produced as 
      output from the software do not automatically fall under the

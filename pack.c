@@ -322,7 +322,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2UINT(from);
+		    l = NUM2ULONG(from);
 		}
 		str_cat(res, (char*)&l, sizeof(long));
 	    }
@@ -349,7 +349,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2UINT(from);
+		    l = NUM2ULONG(from);
 		}
 		l = htonl(l);
 		str_cat(res, (char*)&l, sizeof(long));
@@ -377,7 +377,7 @@ pack_pack(ary, fmt)
 		from = NEXTFROM;
 		if (NIL_P(from)) l = 0;
 		else {
-		    l = NUM2UINT(from);
+		    l = NUM2ULONG(from);
 		}
 		l = htovl(l);
 		str_cat(res, (char*)&l, sizeof(long));

@@ -31,10 +31,6 @@ extern "C" {
 # include <strings.h>
 #endif
 
-#if defined(__MWERKS__) && defined(__cplusplus)
-# define NEED_PROTO
-#endif
-
 #ifndef __STDC__
 # define volatile
 # ifdef __GNUC__
@@ -42,13 +38,24 @@ extern "C" {
 # else
 #  define const
 # endif
-#else
-# define NEED_PROTO
 #endif
-#ifdef NEED_PROTO
+
+#ifdef HAVE_PROTOTYPES
 # define _(args) args
 #else
 # define _(args) ()
+#endif
+
+#ifdef HAVE_STDARG_PROTOTYPES
+# define __(args) args
+#else
+# define __(args) ()
+#endif
+
+#ifdef HAVE_ATTR_NORETURN
+# define NORETURN __attribute__ ((noreturn))
+#else
+# define NORETURN
 #endif
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
@@ -435,8 +442,8 @@ char *rb_class2name _((VALUE));
 void rb_p _((VALUE));
 
 VALUE rb_eval_string _((char*));
-VALUE rb_funcall _((VALUE, ID, int, ...));
-int rb_scan_args _((int, VALUE*, char*, ...));
+VALUE rb_funcall __((VALUE, ID, int, ...));
+int rb_scan_args __((int, VALUE*, char*, ...));
 
 VALUE rb_iv_get _((VALUE, char *));
 VALUE rb_iv_set _((VALUE, char *, VALUE));
@@ -451,20 +458,20 @@ extern VALUE verbose, debug;
 int rb_safe_level _((void));
 void rb_set_safe_level _((int));
 
-void Raise _((VALUE, char*, ...));
-void Fail _((char*, ...));
-void Fatal _((char*, ...));
-void Bug _((char*, ...));
-void rb_sys_fail _((char *));
-void rb_iter_break _((void));
-void rb_exit _((int));
-void rb_raise _((VALUE));
-void rb_fatal _((VALUE));
-void rb_notimplement _((void));
+void Raise __((VALUE, char*, ...)) NORETURN;
+void Fail __((char*, ...)) NORETURN;
+void Fatal __((char*, ...)) NORETURN;
+void Bug __((char*, ...)) NORETURN;
+void rb_sys_fail _((char *)) NORETURN;
+void rb_iter_break _((void)) NORETURN;
+void rb_exit _((int)) NORETURN;
+void rb_raise _((VALUE)) NORETURN;
+void rb_fatal _((VALUE)) NORETURN;
+void rb_notimplement _((void)) NORETURN;
 
-void Error _((char*, ...));
-void Warn _((char*, ...));
-void Warning _((char*, ...));		/* reports if `-w' specified */
+void Error __((char*, ...));
+void Warn __((char*, ...));
+void Warning __((char*, ...));		/* reports if `-w' specified */
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));

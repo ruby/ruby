@@ -1172,7 +1172,7 @@ static GtkObject*
 try_get_gobject(self)
     VALUE self;
 {
-    return (GtkObject*)rb_rescue(get_gobject, self, nil, Qnil);
+    return (GtkObject*)rb_rescue((VALUE(*)())get_gobject, self, nil, 0);
 }
 
 static VALUE

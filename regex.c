@@ -3603,12 +3603,8 @@ int current_mbctype = MBCTYPE_ASCII;
 #endif
 
 void
-#ifdef __STDC__
-mbcinit(int mbctype)
-#else
 mbcinit(mbctype)
      int mbctype;
-#endif
 {
   switch (mbctype) {
   case MBCTYPE_ASCII:
