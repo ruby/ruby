@@ -3,10 +3,9 @@
   ruby.h -
 
   $Author$
-  $Date$
   created at: Thu Jun 10 14:26:32 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 *************************************************/
 
@@ -40,10 +39,11 @@ extern "C" {
 #include <stdio.h>
 
 /* need to include <ctype.h> to use these macros */
+#undef ISPRINT
+#define ISPRINT(c) isprint((unsigned char)(c))
 #define ISSPACE(c) isspace((unsigned char)(c))
 #define ISUPPER(c) isupper((unsigned char)(c))
 #define ISLOWER(c) islower((unsigned char)(c))
-#define ISPRINT(c) isprint((unsigned char)(c))
 #define ISALNUM(c) isalnum((unsigned char)(c))
 #define ISALPHA(c) isalpha((unsigned char)(c))
 #define ISDIGIT(c) isdigit((unsigned char)(c))
@@ -245,21 +245,21 @@ struct RFloat {
 
 struct RString {
     struct RBasic basic;
-    size_t len;
+    int len;
     char *ptr;
     VALUE orig;
 };
 
 struct RArray {
     struct RBasic basic;
-    size_t len, capa;
+    int len, capa;
     VALUE *ptr;
 };
 
 struct RRegexp {
     struct RBasic basic;
     struct re_pattern_buffer *ptr;
-    size_t len;
+    int len;
     char *str;
 };
 
@@ -304,14 +304,14 @@ VALUE rb_data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
 
 struct RStruct {
     struct RBasic basic;
-    size_t len;
+    int len;
     VALUE *ptr;
 };
 
 struct RBignum {
     struct RBasic basic;
     char sign;
-    size_t len;
+    int len;
     unsigned short *digits;
 };
 
@@ -415,7 +415,7 @@ void rb_const_set _((VALUE, ID, VALUE));
 
 VALUE rb_equal _((VALUE,VALUE));
 
-EXTERN VALUE rb_verbose, rb_debug;
+EXTERN VALUE ruby_verbose, ruby_debug;
 
 int rb_safe_level _((void));
 void rb_set_safe_level _((int));
@@ -447,6 +447,7 @@ void ruby_run _((void));
 EXTERN VALUE rb_mKernel;
 EXTERN VALUE rb_mComparable;
 EXTERN VALUE rb_mEnumerable;
+EXTERN VALUE rb_mPrecision;
 EXTERN VALUE rb_mErrno;
 EXTERN VALUE rb_mFileTest;
 EXTERN VALUE rb_mGC;
@@ -480,7 +481,9 @@ EXTERN VALUE rb_cStruct;
 
 EXTERN VALUE rb_eException;
 EXTERN VALUE rb_eStandardError;
-EXTERN VALUE rb_eSystemExit, rb_eInterrupt, rb_eFatal;
+EXTERN VALUE rb_eSystemExit;
+EXTERN VALUE rb_eInterrupt;
+EXTERN VALUE rb_eFatal;
 EXTERN VALUE rb_eArgError;
 EXTERN VALUE rb_eEOFError;
 EXTERN VALUE rb_eIndexError;
@@ -492,8 +495,9 @@ EXTERN VALUE rb_eSecurityError;
 EXTERN VALUE rb_eSyntaxError;
 EXTERN VALUE rb_eSystemCallError;
 EXTERN VALUE rb_eTypeError;
-EXTERN VALUE rb_eZeroDiv;
+EXTERN VALUE rb_eZeroDivError;
 EXTERN VALUE rb_eNotImpError;
+EXTERN VALUE rb_eFloatDomainError;
 
 #if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
 extern __inline__ VALUE rb_class_of _((VALUE));
@@ -525,7 +529,11 @@ rb_type(VALUE obj)
 extern __inline__ int
 rb_special_const_p(VALUE obj)
 {
-    return (FIXNUM_P(obj)||obj == Qnil||obj == Qfalse||obj == Qtrue)?Qtrue:Qfalse;
+    if (FIXNUM_P(obj)) return Qtrue;
+    if (obj == Qnil) return Qtrue;
+    if (obj == Qfalse) return Qtrue;
+    if (obj == Qtrue) return Qtrue;;
+    return Qfalse;
 }
 
 extern __inline__ int

@@ -6,26 +6,22 @@
   $Date$
   created at: Tue Dec 28 14:31:59 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
 #include <sys/types.h>
 
-#ifdef USE_CWGUSI
-int gettimeofday(struct timeval*, struct timezone*);
-int strcasecmp(char*, char*);
-#endif
-
 #include <time.h>
 #ifndef NT
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
+#define time_t long
 struct timeval {
-        long    tv_sec;         /* seconds */
-        long    tv_usec;        /* and microseconds */
+        time_t tv_sec;		/* seconds */
+        time_t tv_usec;		/* and microseconds */
 };
 #endif
 #endif /* NT */
@@ -33,7 +29,16 @@ struct timeval {
 #ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
 #endif
+
+#ifdef USE_CWGUSI
+#define time_t long
+int gettimeofday(struct timeval*, struct timezone*);
+int strcasecmp(char*, char*);
+#endif
+
+#if 0
 #include <math.h>
+#endif
 
 VALUE rb_cTime;
 #if defined(HAVE_TIMES) || defined(NT)
@@ -63,10 +68,10 @@ time_s_now(klass)
     obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got=0;
 
-    if (gettimeofday(&(tobj->tv), 0) == -1) {
+    if (gettimeofday(&(tobj->tv), 0) < 0) {
 	rb_sys_fail("gettimeofday");
     }
-    rb_obj_call_init(obj);
+    rb_obj_call_init(obj, 0, 0);
 
     return obj;
 }
@@ -74,13 +79,15 @@ time_s_now(klass)
 static VALUE
 time_new_internal(klass, sec, usec)
     VALUE klass;
-    int sec, usec;
+    time_t sec, usec;
 {
     VALUE obj;
     struct time_object *tobj;
 
+#ifndef USE_CWGUSI
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
+#endif
     obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got = 0;
     tobj->tv.tv_sec = sec;
@@ -91,7 +98,7 @@ time_new_internal(klass, sec, usec)
 
 VALUE
 rb_time_new(sec, usec)
-    int sec, usec;
+    time_t sec, usec;
 {
     return time_new_internal(rb_cTime, sec, usec);
 }
@@ -105,7 +112,7 @@ rb_time_timeval(time)
 
     switch (TYPE(time)) {
       case T_FIXNUM:
-	t.tv_sec = FIX2INT(time);
+	t.tv_sec = FIX2LONG(time);
 	if (t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "time must be positive");
 	t.tv_usec = 0;
@@ -114,12 +121,12 @@ rb_time_timeval(time)
       case T_FLOAT:
 	if (RFLOAT(time)->value < 0.0)
 	    rb_raise(rb_eArgError, "time must be positive");
-	t.tv_sec = (long)floor(RFLOAT(time)->value);
-	t.tv_usec = (long)((RFLOAT(time)->value - t.tv_sec) * 1000000.0);
+	t.tv_sec = (time_t)RFLOAT(time)->value;
+	t.tv_usec = (time_t)((RFLOAT(time)->value - (double)t.tv_sec)*1e6);
 	break;
 
       case T_BIGNUM:
-	t.tv_sec = NUM2INT(time);
+	t.tv_sec = NUM2LONG(time);
 	if (t.tv_sec < 0)
 	    rb_raise(rb_eArgError, "time must be positive");
 	t.tv_usec = 0;
@@ -127,7 +134,7 @@ rb_time_timeval(time)
 
       default:
 	if (!rb_obj_is_kind_of(time, rb_cTime)) {
-	    rb_raise(rb_eTypeError, "Can't convert %s into Time",
+	    rb_raise(rb_eTypeError, "can't convert %s into Time",
 		     rb_class2name(CLASS_OF(time)));
 	}
 	GetTimeval(time, tobj);
@@ -152,22 +159,22 @@ static char *months [12] = {
     "jul", "aug", "sep", "oct", "nov", "dec",
 };
 
-static int
-obj2int(obj)
+static long
+obj2long(obj)
     VALUE obj;
 {
     if (TYPE(obj) == T_STRING) {
 	obj = rb_str2inum(RSTRING(obj)->ptr, 10);
     }
 
-    return NUM2INT(obj);
+    return NUM2LONG(obj);
 }
 
 static void
-time_arg(argc, argv, args)
+time_arg(argc, argv, tm)
     int argc;
     VALUE *argv;
-    int *args;
+    struct tm *tm;
 {
     VALUE v[6];
     int i;
@@ -184,58 +191,102 @@ time_arg(argc, argv, args)
 	rb_scan_args(argc, argv, "15", &v[0],&v[1],&v[2],&v[3],&v[4],&v[5]);
     }
 
-    args[0] = obj2int(v[0]);
-    if (args[0] < 70) args[0] += 100;
-    if (args[0] > 1900) args[0] -= 1900;
+    tm->tm_year = obj2long(v[0]);
+    if (tm->tm_year < 69) tm->tm_year += 100;
+    if (tm->tm_year > 1900) tm->tm_year -= 1900;
     if (NIL_P(v[1])) {
-	args[1] = 0;
+	tm->tm_mon = 0;
     }
     else if (TYPE(v[1]) == T_STRING) {
-	args[1] = -1;
+	tm->tm_mon = -1;
 	for (i=0; i<12; i++) {
-	    if (strcasecmp(months[i], RSTRING(v[1])->ptr) == 0) {
-		args[1] = i;
+	    if (RSTRING(v[1])->len == 3 &&
+		strcasecmp(months[i], RSTRING(v[1])->ptr) == 0) {
+		tm->tm_mon = i;
 		break;
 	    }
 	}
-	if (args[1] == -1) {
+	if (tm->tm_mon == -1) {
 	    char c = RSTRING(v[1])->ptr[0];
 
 	    if ('0' <= c && c <= '9') {
-		args[1] = obj2int(v[1])-1;
+		tm->tm_mon = obj2long(v[1])-1;
 	    }
 	}
     }
     else {
-	args[1] = obj2int(v[1]) - 1;
+	tm->tm_mon = obj2long(v[1]) - 1;
     }
     if (NIL_P(v[2])) {
-	args[2] = 1;
+	tm->tm_mday = 1;
     }
     else {
-	args[2] = obj2int(v[2]);
+	tm->tm_mday = obj2long(v[2]);
     }
-    for (i=3;i<6;i++) {
-	if (NIL_P(v[i])) {
-	    args[i] = 0;
-	}
-	else {
-	    args[i] = obj2int(v[i]);
-	}
-    }
+    tm->tm_hour = NIL_P(v[3])?0:obj2long(v[3]);
+    tm->tm_min  = NIL_P(v[4])?0:obj2long(v[4]);
+    tm->tm_sec  = NIL_P(v[5])?0:obj2long(v[5]);
 
     /* value validation */
-    if (   args[0] < 70|| args[0] > 137
-	|| args[1] < 0 || args[1] > 11
-	|| args[2] < 1 || args[2] > 31
-	|| args[3] < 0 || args[3] > 23
-	|| args[4] < 0 || args[4] > 59
-	|| args[5] < 0 || args[5] > 60)
+    if (   tm->tm_year < 69
+	|| tm->tm_mon  < 0 || tm->tm_mon  > 11
+	|| tm->tm_mday < 1 || tm->tm_mday > 31
+	|| tm->tm_hour < 0 || tm->tm_hour > 23
+	|| tm->tm_min  < 0 || tm->tm_min  > 59
+	|| tm->tm_sec  < 0 || tm->tm_sec  > 60)
 	rb_raise(rb_eArgError, "argument out of range");
 }
 
 static VALUE time_gmtime _((VALUE));
 static VALUE time_localtime _((VALUE));
+
+static time_t
+make_time_t(tptr, fn)
+    struct tm *tptr;
+    struct tm *(*fn)();
+{
+    struct timeval tv;
+    time_t guess, t;
+    struct tm *tm;
+    long diff;
+
+    if (gettimeofday(&tv, 0) < 0) {
+	rb_sys_fail("gettimeofday");
+    }
+    guess = tv.tv_sec;
+
+    tm = (*fn)(&guess);
+    if (!tm) goto error;
+    t = tptr->tm_year;
+    while (diff = t - (tm->tm_year)) {
+	guess += diff * 364 * 24 * 3600;
+	if (guess < 0) goto too_future;
+	tm = (*fn)(&guess);
+	if (!tm) goto error;
+    }
+    t = tptr->tm_mon;
+    while (diff = t - tm->tm_mon) {
+	guess += diff * 27 * 24 * 3600;
+	if (guess < 0) goto too_future;
+	tm = (*fn)(&guess);
+	if (!tm) goto error;
+    }
+    guess += (tptr->tm_mday - tm->tm_mday) * 3600 * 24;
+    guess += (tptr->tm_hour - tm->tm_hour) * 3600;
+    guess += (tptr->tm_min - tm->tm_min) * 60;
+    guess += tptr->tm_sec - tm->tm_sec;
+    if (guess < 0) goto too_future;
+
+    return guess;
+
+  too_future:
+    rb_raise(rb_eArgError, "too far future");
+
+  error:
+    rb_raise(rb_eArgError, "gmtime/localtime error");
+    return Qnil;		/* not reached */
+}
+
 static VALUE
 time_gm_or_local(argc, argv, gm_or_local, klass)
     int argc;
@@ -243,47 +294,16 @@ time_gm_or_local(argc, argv, gm_or_local, klass)
     int gm_or_local;
     VALUE klass;
 {
-    int args[6];
-    struct timeval tv;
-    struct tm *tm;
-    time_t guess, t;
-    int diff;
+    struct tm tm;
     struct tm *(*fn)();
     VALUE time;
 
     fn = (gm_or_local) ? gmtime : localtime;
-    time_arg(argc, argv, args);
+    time_arg(argc, argv, &tm);
 
-    gettimeofday(&tv, 0);
-    guess = tv.tv_sec;
-
-    tm = (*fn)(&guess);
-    if (!tm) goto error;
-    t = args[0];
-    while (diff = t - (tm->tm_year)) {
-	guess += diff * 364 * 24 * 3600;
-	if (guess < 0) rb_raise(rb_eArgError, "too far future");
-	tm = (*fn)(&guess);
-	if (!tm) goto error;
-    }
-    t = args[1];
-    while (diff = t - tm->tm_mon) {
-	guess += diff * 27 * 24 * 3600;
-	tm = (*fn)(&guess);
-	if (!tm) goto error;
-    }
-    guess += (args[2] - tm->tm_mday) * 3600 * 24;
-    guess += (args[3] - tm->tm_hour) * 3600;
-    guess += (args[4] - tm->tm_min) * 60;
-    guess += args[5] - tm->tm_sec;
-
-    time = time_new_internal(klass, guess, 0);
+    time = time_new_internal(klass, make_time_t(&tm, fn), 0);
     if (gm_or_local) return time_gmtime(time);
     return time_localtime(time);
-
-  error:
-    rb_raise(rb_eArgError, "gmtime/localtime error");
-    return Qnil;		/* not reached */
 }
 
 static VALUE
@@ -311,7 +331,7 @@ time_to_i(time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return rb_int2inum(tobj->tv.tv_sec);
+    return INT2NUM(tobj->tv.tv_sec);
 }
 
 static VALUE
@@ -331,7 +351,7 @@ time_usec(time)
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
-    return INT2FIX(tobj->tv.tv_usec);
+    return INT2NUM(tobj->tv.tv_usec);
 }
 
 static VALUE
@@ -339,12 +359,12 @@ time_cmp(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj1, *tobj2;
-    int i;
+    long i;
 
     GetTimeval(time1, tobj1);
     switch (TYPE(time2)) {
       case T_FIXNUM:
-	i = FIX2INT(time2);
+	i = FIX2LONG(time2);
 	if (tobj1->tv.tv_sec == i) return INT2FIX(0);
 	if (tobj1->tv.tv_sec > i) return INT2FIX(1);
 	return FIX2INT(-1);
@@ -353,10 +373,13 @@ time_cmp(time1, time2)
 	{
 	    double t;
 
-	    if (tobj1->tv.tv_sec == (int)RFLOAT(time2)->value) return INT2FIX(0);
+	    if (tobj1->tv.tv_sec == (time_t)RFLOAT(time2)->value)
+		return INT2FIX(0);
 	    t = (double)tobj1->tv.tv_sec + (double)tobj1->tv.tv_usec*1e-6;
-	    if (tobj1->tv.tv_sec == RFLOAT(time2)->value) return INT2FIX(0);
-	    if (tobj1->tv.tv_sec > RFLOAT(time2)->value) return INT2FIX(1);
+	    if (tobj1->tv.tv_sec == (time_t)RFLOAT(time2)->value)
+		return INT2FIX(0);
+	    if (tobj1->tv.tv_sec > (time_t)RFLOAT(time2)->value)
+		return INT2FIX(1);
 	    return FIX2INT(-1);
 	}
     }
@@ -371,7 +394,7 @@ time_cmp(time1, time2)
 	if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
 	return FIX2INT(-1);
     }
-    i = NUM2INT(time2);
+    i = NUM2LONG(time2);
     if (tobj1->tv.tv_sec == i) return INT2FIX(0);
     if (tobj1->tv.tv_sec > i) return INT2FIX(1);
     return FIX2INT(-1);
@@ -398,7 +421,7 @@ time_hash(time)
     VALUE time;
 {
     struct time_object *tobj;
-    int hash;
+    long hash;
 
     GetTimeval(time, tobj);
     hash = tobj->tv.tv_sec ^ tobj->tv.tv_usec;
@@ -461,7 +484,7 @@ time_to_s(time)
     VALUE time;
 {
     struct time_object *tobj;
-    char buf[64];
+    char buf[128];
     int len;
 
     GetTimeval(time, tobj);
@@ -470,12 +493,12 @@ time_to_s(time)
     }
 #ifndef HAVE_TM_ZONE
     if (tobj->gmt == 1) {
-	len = strftime(buf, 64, "%a %b %d %H:%M:%S GMT %Y", &(tobj->tm));
+	len = strftime(buf, 128, "%a %b %d %H:%M:%S GMT %Y", &(tobj->tm));
     }
     else
 #endif
     {
-	len = strftime(buf, 64, "%a %b %d %H:%M:%S %Z %Y", &(tobj->tm));
+	len = strftime(buf, 128, "%a %b %d %H:%M:%S %Z %Y", &(tobj->tm));
     }
     return rb_str_new(buf, len);
 }
@@ -485,23 +508,20 @@ time_plus(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj1, *tobj2;
-    long sec, usec;
+    time_t sec, usec;
+    double f;
 
     GetTimeval(time1, tobj1);
-    if (TYPE(time2) == T_FLOAT) {
-	unsigned int nsec = (unsigned int)RFLOAT(time2)->value;
-	sec = tobj1->tv.tv_sec + nsec;
-	usec = tobj1->tv.tv_usec + (long)(RFLOAT(time2)->value-(double)nsec)*1e6;
+
+#if 0
+    if (rb_obj_is_kind_of(time2, rb_cTime)) {
+	rb_raise(rb_eTypeError, "time + time?");
     }
-    else if (rb_obj_is_instance_of(time2, rb_cTime)) {
-	GetTimeval(time2, tobj2);
-	sec = tobj1->tv.tv_sec + tobj2->tv.tv_sec;
-	usec = tobj1->tv.tv_usec + tobj2->tv.tv_usec;
-    }
-    else {
-	sec = tobj1->tv.tv_sec + NUM2INT(time2);
-	usec = tobj1->tv.tv_usec;
-    }
+#endif
+    f = NUM2DBL(time2);
+    sec = (time_t)f;
+    usec = tobj1->tv.tv_usec + (time_t)((f - (double)sec)*1e6);
+    sec = tobj1->tv.tv_sec + sec;
 
     if (usec >= 1000000) {	/* usec overflow */
 	sec++;
@@ -515,26 +535,23 @@ time_minus(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj1, *tobj2;
-    int sec, usec;
+    time_t sec, usec;
+    double f;
 
     GetTimeval(time1, tobj1);
     if (rb_obj_is_instance_of(time2, rb_cTime)) {
-	double f;
 
 	GetTimeval(time2, tobj2);
 	f = tobj1->tv.tv_sec - tobj2->tv.tv_sec;
-
 	f += (tobj1->tv.tv_usec - tobj2->tv.tv_usec)*1e-6;
 
 	return rb_float_new(f);
     }
-    else if (TYPE(time2) == T_FLOAT) {
-	sec = tobj1->tv.tv_sec - (int)RFLOAT(time2)->value;
-	usec = tobj1->tv.tv_usec - (RFLOAT(time2)->value - (double)sec)*1e6;
-    }
     else {
-	sec = tobj1->tv.tv_sec - NUM2INT(time2);
-	usec = tobj1->tv.tv_usec;
+	f = NUM2DBL(time2);
+	sec = (time_t)f;
+	usec = tobj1->tv.tv_usec - (time_t)((f - (double)sec)*1e6);
+	sec = tobj1->tv.tv_sec - sec;
     }
 
     if (usec < 0) {		/* usec underflow */
@@ -645,7 +662,7 @@ time_yday(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    return INT2FIX(tobj->tm.tm_yday);
+    return INT2FIX(tobj->tm.tm_yday+1);
 }
 
 static VALUE
@@ -666,7 +683,7 @@ time_zone(time)
     VALUE time;
 {
     struct time_object *tobj;
-    char buf[10];
+    char buf[64];
     int len;
 
     GetTimeval(time, tobj);
@@ -674,7 +691,7 @@ time_zone(time)
 	time_localtime(time);
     }
 
-    len = strftime(buf, 10, "%Z", &(tobj->tm));
+    len = strftime(buf, 64, "%Z", &(tobj->tm));
     return rb_str_new(buf, len);
 }
 
@@ -696,7 +713,7 @@ time_to_a(time)
 		    INT2FIX(tobj->tm.tm_mon+1),
 		    INT2FIX(tobj->tm.tm_year+1900),
 		    INT2FIX(tobj->tm.tm_wday),
-		    INT2FIX(tobj->tm.tm_yday),
+		    INT2FIX(tobj->tm.tm_yday+1),
 		    tobj->tm.tm_isdst?Qtrue:Qfalse,
 		    time_zone(time));
 }
@@ -708,23 +725,31 @@ rb_strftime(buf, format, time)
     char * volatile format;
     struct tm * volatile time;
 {
-    volatile int i;
-    int len;
+    volatile int size;
+    int len, flen;
 
+    (*buf)[0] = '\0';
+    flen = strlen(format);
+    if (flen == 0) {
+	return 0;
+    }
     len = strftime(*buf, SMALLBUF, format, time);
     if (len != 0) return len;
-    for (i=1024; i<8192; i+=1024) {
-	*buf = xmalloc(i);
-	len = strftime(*buf, i-1, format, time);
-	if (len == 0) {
-	    free(*buf);
-	    continue;
-	}
-	return len;
+    for (size=1024; ; size*=2) {
+	*buf = xmalloc(size);
+	(*buf)[0] = '\0';
+	len = strftime(*buf, size, format, time);
+	/*
+	 * buflen can be zero EITHER because there's not enough
+	 * room in the string, or because the control command
+	 * goes to the empty string. Make a reasonable guess that
+	 * if the buffer is 1024 times bigger than the length of the
+	 * format string, it's not failing for lack of room.
+	 */
+	if (len > 0 || len >= 1024 * flen) return len;
+	free(*buf);
     }
-
-    rb_raise(rb_eArgError, "bad strftime format or result too long");
-    return Qnil;		/* not reached */
+    /* not reached */
 }
 
 static VALUE
@@ -743,6 +768,9 @@ time_strftime(time, format)
 	time_localtime(time);
     }
     fmt = str2cstr(format, &len);
+    if (len == 0) {
+	rb_warning("strftime called with empty format string");
+    }
     if (strlen(fmt) < len) {
 	/* Ruby string may contain \0's. */
 	char *p = fmt, *pe = fmt + len;
@@ -752,6 +780,8 @@ time_strftime(time, format)
 	    len = rb_strftime(&buf, p, &(tobj->tm));
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p) + 1;
+	    if (p <= pe)
+		rb_str_cat(str, "\0", 1);
 	    if (len > SMALLBUF) free(buf);
 	}
 	return str;
@@ -797,26 +827,41 @@ time_s_times(obj)
 }
 
 static VALUE
-time_dump(time, limit)
-    VALUE time, limit;
+time_dump(argc, argv, time)
+    int argc;
+    VALUE *argv;
+    VALUE time;
 {
+    VALUE dummy;
     struct time_object *tobj;
-    int sec, usec;
+    struct tm *tm;
+    unsigned long p, s;
     unsigned char buf[8];
     int i;
 
+    rb_scan_args(argc, argv, "01", &dummy);
     GetTimeval(time, tobj);
-    sec = tobj->tv.tv_sec;
-    usec = tobj->tv.tv_usec;
+
+    tm = gmtime(&tobj->tv.tv_sec);
+
+    p = 0x1          << 31 | /*  1 */
+	tm->tm_year  << 14 | /* 17 */
+	tm->tm_mon   << 10 | /*  4 */
+	tm->tm_mday  <<  5 | /*  5 */
+	tm->tm_hour;         /*  5 */
+    s = tm->tm_min   << 26 | /*  6 */
+	tm->tm_sec   << 20 | /*  6 */
+	tobj->tv.tv_usec;    /* 20 */
 
     for (i=0; i<4; i++) {
-	buf[i] = sec & 0xff;
-	sec = RSHIFT(sec, 8);
+	buf[i] = p & 0xff;
+	p = RSHIFT(p, 8);
     }
     for (i=4; i<8; i++) {
-	buf[i] = usec & 0xff;
-	usec = RSHIFT(usec, 8);
+	buf[i] = s & 0xff;
+	s = RSHIFT(s, 8);
     }
+
     return rb_str_new(buf, 8);
 }
 
@@ -824,8 +869,10 @@ static VALUE
 time_load(klass, str)
     VALUE klass, str;
 {
-    int sec, usec;
+    unsigned long p, s;
+    time_t sec, usec;
     unsigned char *buf;
+    struct tm tm;
     int i;
 
     buf = str2cstr(str, &i);
@@ -833,13 +880,27 @@ time_load(klass, str)
 	rb_raise(rb_eTypeError, "marshaled time format differ");
     }
 
-    sec = usec = 0;
+    p = s = 0;
     for (i=0; i<4; i++) {
-	sec |= buf[i]<<(8*i);
+	p |= buf[i]<<(8*i);
     }
     for (i=4; i<8; i++) {
-	usec |= buf[i]<<(8*(i-4));
+	s |= buf[i]<<(8*(i-4));
     }
+
+    if ((p & (1<<31)) == 0) {
+	return time_new_internal(klass, sec, usec);
+    }
+    p &= ~(1<<31);
+    tm.tm_year = (p >> 14) & 0x3ffff;
+    tm.tm_mon  = (p >> 10) & 0xf;
+    tm.tm_mday = (p >>  5) & 0x1f;
+    tm.tm_hour =  p        & 0x1f;
+    tm.tm_min  = (s >> 26) & 0x3f;
+    tm.tm_sec  = (s >> 20) & 0x3f;
+
+    sec = make_time_t(&tm, gmtime);
+    usec = (time_t) s & 0xfffff;
 
     return time_new_internal(klass, sec, usec);
 }
@@ -900,6 +961,6 @@ Init_Time()
 #endif
 
     /* methods for marshaling */
+    rb_define_method(rb_cTime, "_dump", time_dump, -1);
     rb_define_singleton_method(rb_cTime, "_load", time_load, 1);
-    rb_define_method(rb_cTime, "_dump", time_dump, 1);
 }

@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 15:05:44 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -365,6 +365,8 @@ method_list(mod, option, func)
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    if (!FL_TEST(mod, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     for (klass = mod; klass; klass = RCLASS(klass)->super) {
 	st_foreach(RCLASS(klass)->m_tbl, func, ary);
@@ -426,6 +428,8 @@ rb_obj_singleton_methods(obj)
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     klass = CLASS_OF(obj);
     while (klass && FL_TEST(klass, FL_SINGLETON)) {
@@ -504,7 +508,7 @@ rb_singleton_class(obj)
     VALUE obj;
 {
     if (rb_special_const_p(obj)) {
-	rb_raise(rb_eTypeError, "cannot define singleton");
+	rb_raise(rb_eTypeError, "can't define singleton");
     }
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
 	return RBASIC(obj)->klass;
@@ -596,10 +600,10 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if (ISDIGIT(*p)) {
 	n = *p - '0';
 	if (n > argc)
-	    rb_raise(rb_eArgError, "Wrong # of arguments (%d for %d)", argc, n);
+	    rb_raise(rb_eArgError, "wrong # of arguments (%d for %d)", argc, n);
 	for (i=0; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
-	    *var = argv[i];
+	    if (var) *var = argv[i];
 	}
 	p++;
     }
@@ -612,10 +616,10 @@ rb_scan_args(argc, argv, fmt, va_alist)
 	for (; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
 	    if (argc > i) {
-		*var = argv[i];
+		if (var) *var = argv[i];
 	    }
 	    else {
-		*var = Qnil;
+		if (var) *var = Qnil;
 	    }
 	}
 	p++;
@@ -624,15 +628,15 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if(*p == '*') {
 	var = va_arg(vargs, VALUE*);
 	if (argc > i) {
-	    *var = rb_ary_new4(argc-i, argv+i);
+	    if (var) *var = rb_ary_new4(argc-i, argv+i);
 	}
 	else {
-	    *var = rb_ary_new();
+	    if (var) *var = rb_ary_new();
 	}
     }
     else if (*p == '\0') {
 	if (argc > i) {
-	    rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)", argc, i);
+	    rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, i);
 	}
     }
     else {

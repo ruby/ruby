@@ -31,7 +31,7 @@
 #endif /* NeXT */
 
 #ifdef NT
-#include "missing/nt.h"
+#include "win32/win32.h"
 #endif
 
 #ifndef EXTERN
@@ -44,7 +44,7 @@
 #define FLUSH_REGISTER_WINDOWS /* empty */
 #endif
 
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__)
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
 #define RUBY_PATH_SEP ";"
 #else
 #define RUBY_PATH_SEP ":"

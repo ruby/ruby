@@ -1,8 +1,8 @@
 # Linked list example
 class MyElem
-  # オブジェクト生成時に自動的に呼ばれるメソッド
+  # object initializer called from Class#new
   def initialize(item)
-    # @変数はインスタンス変数(宣言は要らない)
+    # @variables are instance variable, no declaration needed
     @data = item
     @succ = nil
   end
@@ -15,7 +15,7 @@ class MyElem
     @succ
   end
 
-  # 「obj.data = val」としたときに暗黙に呼ばれるメソッド
+  # the method invoked by ``obj.data = val''
   def succ=(new)
     @succ = new
   end
@@ -40,12 +40,12 @@ class MyList
     end
   end
 
-  # オブジェクトを文字列に変換するメソッド
-  # これを再定義するとprintでの表現が変わる
+  # the method to convert object into string.
+  # redefining this will affect print.
   def to_s
     str = "<MyList:\n";
     for elt in self
-      # 「str = str + elt.data.to_s + "\n"」の省略形
+      # short form of ``str = str + elt.data.to_s + "\n"''
       str += elt.data.to_s + "\n"
     end
     str += ">"
@@ -64,7 +64,7 @@ class Point
   end
 end
 
-# 大域変数は`$'で始まる．
+# global variables are start with `$'.
 $list1 = MyList.new
 $list1.add_to_list(10)
 $list1.add_to_list(20)
@@ -75,6 +75,6 @@ $list2.add_to_list(20)
 $list2.add_to_list(Point.new(4, 5))
 $list2.add_to_list($list1)
 
-# 曖昧でない限りメソッド呼び出しの括弧は省略できる
+# parenthesises around method arguments can be ommitted unless ambiguous.
 print "list1:\n", $list1, "\n"
 print "list2:\n", $list2, "\n"

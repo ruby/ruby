@@ -31,6 +31,9 @@ EXPORTS
 	rb_cFile
 ;hash.c:
 	rb_cHash
+	ruby_setenv
+	ruby_setenv2
+	ruby_unsetenv
 ;io.c:
 	rb_cIO
 ;numeric.c:
@@ -272,11 +275,9 @@ EXPORTS
 	rb_io_fptr_finalize
 	rb_io_close
 	rb_io_binmode
-	rb_io_mode_flags
 	rb_fopen
 	rb_fdopen
 	rb_io_unbuffered
-	rb_io_reopen
 	rb_str_setter
 ; numeric.c
 	rb_num_zerodiv
@@ -401,7 +402,6 @@ EXPORTS
 	rb_test_false_or_nil
 	ruby_scan_oct
 	ruby_scan_hex
-	rb_add_suffix
 ;variable.c
 	rb_class_path
 	rb_set_class_path

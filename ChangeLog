@@ -1,3 +1,416 @@
+Thu Feb 25 12:50:25 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (make_time_t): add `future check' in loops.
+
+	* object.c (rb_num2dbl): forbid implicit conversion from nil, or
+	  strings.  thus `Time.now + str' should raise error.
+
+	* object.c (rb_Float): convert nil into 0.0.
+
+	* object.c (rb_Integer): conversion method improved.
+
+Thu Feb 25 03:27:50 1999  Shugo Maeda  <shugo@netlab.co.jp>
+
+	* eval.c (rb_call): should handle T_ICLASS properly.
+
+Thu Feb 25 00:04:00 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* error.c (Init_Exception): global function Exception() removed.
+
+	* variable.c (rb_class2name): returns "nil"/"true"/"false" for them.
+
+	* time.c (time_dump): time marshaling format compressed size from
+	  11 bytes to 8 bytes.  thanx to tadf@kt.rim.or.jp.
+
+	* eval.c (rb_obj_call_init): should specify arguments explicitly.
+
+Wed Feb 24 15:43:28 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): comment concatenation requires preceding space
+	  before backslash at the end of line.
+
+	* io.c (rb_f_pipe): global pipe is obsolete now.
+
+	* object.c (Init_Object): remove true.to_i, false.to_i.
+
+Tue Feb 23 14:21:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): warn if identifier! immediately followed by `='.
+
+Tue Feb 23 12:32:41 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* eval.c (rb_load): tilde expandion moved to find_file.
+
+	* eval.c (find_file): tilde expandion added.
+
+Tue Feb 23 10:50:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (require_method): require can handle multiple fnames.
+
+	* hash.c (rb_hash_foreach_iter): hash key may be nil.
+
+Mon Feb 22 17:44:02 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): should not pop failure point on success for
+	  non-greedy matches.
+
+	* io.c (Init_IO): remove global_functions getc, readchar, ungetc,
+	  seek, tell, rewind.
+
+Sat Feb 20 22:54:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (rb_num2long): no implicit conversion from boolean.
+
+Sat Feb 20 09:58:42 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (flo_to_s): portable Infinity and NaN support.
+
+Sat Feb 20 07:13:31 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* io.c (rb_file_sysopen): forgot to initialize a local variable.
+
+Fri Feb 19 23:05:07 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_subseq): range check changed.
+
+	* marshal.c: increment MARSHAL_MINOR for Time format change.
+
+	* time.c (time_old_load): support old marshal format.
+
+	* time.c (time_load): changed for new format Y/M/D/h/m/s/usec.
+
+	* time.c (time_dump): marshal dump format has changed.
+
+Fri Feb 19 00:25:57 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_arg): should reject "sep\0" and such.
+
+	* time.c (time_plus): Time#+ should not receive Time object
+	  operand.
+
+	* string.c (rb_str_substr): nagative length raises exception now.
+
+	* array.c (beg_len): if end == -1, it points end of the array.
+
+	* array.c (rb_ary_subseq): nagative length raises exception now.
+
+Thu Feb 18 20:57:04 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* time.c (rb_strftime): strftime() may return 0 on success too.
+
+	* time.c (time_strftime): `\0' within format string shoule not be
+	  ommited in the result.
+
+	* time.c (rb_strftime): zero length format.
+
+	* time.c (time_to_a): yday start with 1 now.
+
+	* time.c (time_zone): support for long timezone name.
+
+	* time.c (time_yday): yday start with 1 now.
+
+	* time.c (time_minus): minus calculation was wrong.
+
+	* time.c (time_minus): sec, usec should be at least `long', maybe
+	  they should be `time_t'.
+
+	* time.c (time_plus): addition with float was wrong.
+
+	* time.c (time_to_s): support for long timezone name.
+
+	* time.c (time_gm_or_local): too far future check moved.
+
+	* time.c (time_arg): treat 2 digit year as 69-99 => 1969-1999,
+	  00-68 => 2000-2068
+
+Thu Feb 18 03:56:47 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* missing/fnmatch.c: moved to missing directory.
+
+Wed Feb 17 16:22:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* struct.c (rb_struct_alloc): actual initialization now be done in
+	  `initialize'.
+
+Wed Feb 17 09:47:15 1999  okabe katsuyuki  <hgc02147@nifty.ne.jp>
+
+	* regex.c (re_search): use mbclen() instead of ismbchar().
+
+	* re.c (rb_reg_s_quote): should handle mbchars properly.
+
+Wed Feb 17 01:25:26 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): stop comment concatenation by backslash follows
+	  after >= 0x80 char.  may cause problem with Latin chars.
+
+	* eval.c (error_print): exception in rb_obj_as_string() caused
+	  SEGV. protect it by PUSH_TAG/POP_TAG.
+
+	* error.c (exc_exception): `Exception#exception' should return self.
+
+Wed Feb 17 01:12:22 1999  Hirotaka Ichikawa  <hirotaka.ichikawa@tosmec.toshiba.co.jp>
+
+	* configure.in: BeOS patch.
+
+Tue Feb 16 14:25:00 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): should reallocate mbc space for
+	  character class unless current_mbctype is ASCII.
+
+Mon Feb 15 15:48:30 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* configure.in: specify `-Wl,-E' only for GNU ld.
+
+Mon Feb 15 11:43:22 1999  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* array.c (rb_inspecting_p): should return Qfalse.
+
+Sun Feb 14 22:36:40 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* sprintf.c (rb_f_sprintf): `%G' was ommited.
+
+Sun Feb 14 12:47:48 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (Init_Numeric): allow divide by zero on FreeBSD.
+
+	* numeric.c (Init_Numeric): FloatDomainError added.
+
+	* configure.in (AC_REPLACE_FUNCS): add checks for functions
+	  insinf, isnan, and finite.
+
+Sat Feb 13 01:24:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_create_0): should protect th->thread.
+
+Fri Feb 12 16:16:47 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* string.c (rb_str_inspect): wrong mbc position.
+
+Fri Feb 12 16:21:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_fd_close): 
+
+	* io.c (rb_io_fptr_close): tell scheduler that fd is closed.
+
+	* io.c (rb_io_reopen): ditto.
+
+	* io.c (READ_CHECK): check if closed after thread context switch.
+
+	* ext/socket/socket.c (bsock_close_read): do not check
+	  the return value from shutdown(2).
+
+	* ext/socket/socket.c (bsock_close_write): ditto.
+
+	* ext/socket/socket.c (sock_new): need to dup(fd) for close_read
+	  and close_write.
+
+	* parse.y (here_document): handle newlines within #{}.
+
+	* regex.h: should replace symbols for ruby.
+
+Fri Feb 12 00:46:28 1999  Shugo Maeda  <shugo@netlab.co.jp>
+
+	* marshal.c (r_object): should update the method name in message.
+
+	* marshal.c (w_object): limit should be converted into Fixnum.
+
+Wed Feb 10 15:20:03 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): empty pattern should not cause infinite
+	  pattern match loop.
+
+	* regex.c (re_compile_pattern): RE_OPTIMIZE_ANCHOR for /.*/, not
+	  for /(.|\n)/.
+
+	* numeric.c (fix_pow): `fixnum**nil' should raise TypeError.
+
+	* bignum.c (rb_big_pow): need to normalize results.
+
+Wed Feb 10 01:42:41 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (fix_pow): `(5**1).type' should be Integer.
+
+Tue Feb  9 01:22:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): do not ignore newlines in mbchars.
+
+	* io.c (rb_file_s_open): mode can be specified by flags like
+	  open(2), e.g. File::open(path, File::CREAT|File::WRONLY).
+
+	* io.c (rb_f_open): bit-wise mode flags for pipes
+
+	* io.c (Init_IO): bit flags for open.
+
+Sat Feb  6 22:56:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_sub_bang): should not overwrite match data by
+	  regexp match within the block.
+
+	* string.c (rb_str_gsub_bang): ditto.
+
+Sat Feb  6 03:06:17 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (match_getter): accessng $~ without matching caused SEGV.
+
+Fri Feb  5 22:11:08 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* parse.y (yylex): binary literal support, like 0b01001.
+
+	* parse.y (yylex): octal numbers can contain `_'s.
+
+	* parse.y (yylex): warns if non-octal number follows immediately
+	  after octal literal.
+
+	* parse.y (yylex): now need at least one digit after prefix such
+	  as 0x, or 0b.
+
+	* bignum.c (rb_str2inum): recognize binary numbers like 0b0101.
+
+Fri Feb  5 03:26:56 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* ruby.c (proc_options): -e without program prints error.
+
+Fri Feb  5 00:01:50 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (terms): needed to clear heredoc_end.
+
+	* numeric.c (flo_div): allow float division by zero.
+
+Thu Feb  4 11:56:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* missing/strtod.c: for compatibility.
+
+	* configure.in (strtod): add strtod compatible check.
+
+	* numeric.c (rb_num2long): missing/vsnprintf.c does not supprt
+	  floating points.
+
+	* numeric.c (flo_to_s): ditto.
+
+Wed Feb  3 23:02:12 1999  Yoshida Masato  <yoshidam@yoshidam.net>
+
+	* regex.c (re_compile_pattern): use ismbchar() to get next char.
+
+	* regex.c (re_search): wrong mbchar shift.
+
+	* re.c (rb_reg_search): needed to reset $KCODE after match.
+
+	* regex.c (re_compile_fastmap): mbchars should match with \w.
+
+Wed Feb  3 22:35:12 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* parse.y (yylex): too big float raise warning, not error.
+
+Tue Feb  2 23:41:42 1999  Yoshida Masato  <yoshidam@yoshidam.net>
+
+	* regex.c (re_match): wrong boundary.
+
+	* regex.c (IS_A_LETTER): re_mbctab[c] may not be 1 for mbc.
+
+	* regex.c (re_search): mbchar support for shifting ranges.
+
+	* regex.c (MBC2WC): wrong conversion.
+
+Wed Feb  3 15:03:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (parse_regx): need to escape parens if terminators are
+	  not any kind of parenthesis.
+
+	* parse.y (parse_qstring): ditto.
+
+	* parse.y (parse_string): ditto.
+
+Tue Feb  2 17:11:26 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* string.c (rb_str_gsub_bang): too small realoc condition.
+
+Mon Feb  1 10:01:17 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* parse.y (yylex): range check for the float literal.
+
+Sat Jan 30 18:34:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (usage): -h option to show brief command description.
+
+Sat Jan 30 08:45:16 1999  IKARASHI Akira  <ikarashi@itlb.te.noda.sut.ac.jp>
+
+	* lib/cgi-lib.rb: cookie support added.
+
+Sat Jan 30 13:38:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): mbchars should match with \w
+	  within character classs.  Was matching with \W.
+
+	* regex.c (re_match): \w should match with multi byte characters,
+	  not its first byte.
+
+Sat Jan 30 10:06:41 1999  Yoshida Masato  <yoshidam@yoshidam.net>
+
+	* re.c (rb_reg_s_new): UTF-8 flag handle (/u, /U).
+
+	* re.c (rb_kcode): $KCODE handle for UTF-8.
+
+Sat Jan 30 01:51:16 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_delete_if): RTEST() missing.
+
+	* hash.c (delete_if_i): ditto.
+
+	* enum.c (Init_Enumerable): select (=find_all), detect (=find)
+	  added as aliases.
+
+Fri Jan 29 21:32:19 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* hash.c (rb_f_setenv): SEGV caused by small typo.
+
+Fri Jan 29 00:15:58 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/parsedate.rb (parsedate): support date format like
+	  23-Feb-93, which is required by HTTP/1.1.
+
+	* variable.c (find_class_path): avoid calling rb_iv_set().
+
+	* eval.c (backtrace): do not need to modify $SAFE internally.
+
+	* variable.c (classname): inline __classid__ access.
+
+	* eval.c (THREAD_ALLOC): needed to initialize wrapper.
+
+	* lib/ftools.rb (makedirs): allows slash at the end of the path.
+
+	* numeric.c (rb_fix_induced_from): ensure result to be Fixnum.
+
+Thu Jan 28 17:31:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (flo_to_s): float format changed to "%16.10g".
+
+Thu Jan 28 02:13:11 1999  Yoshinori Toki  <toki@freedom.ne.jp>
+
+	* array.c (rb_ary_store): expand allocated buffer by 3/2.
+
+Wed Jan 27 17:50:02 1999  Kazuhiro HIWADA  <hiwada@kuee.kyoto-u.ac.jp>
+
+	* bignum.c (dbl2big): raised error if double is too big to cast
+	  into long.  check added.
+
+Wed Jan 27 03:16:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_mod_const_at): can't list constants of the
+	  untainted objects in safe mode.
+
+	* class.c (method_list): can't list methods of untainted objects
+	  in safe mode.
+
+Tue Jan 26 02:40:41 1999  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* prec.c: Precision support for numbers.
+
+Thu Jan 21 19:08:14 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_raise): calls `exception' method, not `new'.
+
+	* error.c (exc_exception): renamed from `new'.
+
 Wed Jan 20 03:39:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (yycompile): rb_in_compile renamed to ruby_in_compile.

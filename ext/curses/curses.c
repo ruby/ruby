@@ -11,6 +11,9 @@
 # ifdef HAVE_NCURSES_CURSES_H
 #  include <ncurses/curses.h>
 # else
+#ifdef __hpux
+#include <curses_colr/curses.h>
+#else
 #  include <curses.h>
 #  if (defined(__bsdi__) || defined(__NetBSD__)) && !defined(_maxx)
 #   define _maxx maxx
@@ -25,6 +28,7 @@
 #   define _begy begy
 #  endif
 # endif
+#endif
 #endif
 
 #include "ruby.h"
@@ -408,11 +412,13 @@ window_s_new(class, lines, cols, top, left)
 {
     VALUE w;
     WINDOW *window;
+    VALUE args[4];
     
     window = newwin(NUM2INT(lines), NUM2INT(cols), NUM2INT(top), NUM2INT(left));
     wclear(window);
     w = prep_window(class, window);
-    rb_obj_call_init(w);
+    args[0] = lines; args[1] = cols; args[2] = top; args[3] = left;
+    rb_obj_call_init(w, 4, args);
 
     return w;
 }
@@ -428,11 +434,17 @@ window_subwin(obj, lines, cols, top, left)
 {
     struct windata *winp;
     WINDOW *window;
+    VALUE w;
+    VALUE args[4];
 
     GetWINDOW(obj, winp);
     window = subwin(winp->window, NUM2INT(lines), NUM2INT(cols),
 		                  NUM2INT(top), NUM2INT(left));
-    return prep_window(cWindow, window);
+    w = prep_window(cWindow, window);
+    args[0] = lines; args[1] = cols; args[2] = top; args[3] = left;
+    rb_obj_call_init(w, 4, args);
+
+    return w;
 }
 
 /* def close */

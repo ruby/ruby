@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 16:11:34 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -124,7 +124,7 @@ rb_warning(fmt, va_alist)
     char buf[BUFSIZ];
     va_list args;
 
-    if (!RTEST(rb_verbose)) return;
+    if (!RTEST(ruby_verbose)) return;
 
     snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
@@ -146,7 +146,7 @@ rb_bug(fmt, va_alist)
     va_list args;
 
     snprintf(buf, BUFSIZ, "[BUG] %s", fmt);
-    rb_in_eval = 0;
+    ruby_in_eval = 0;
 
     va_init_list(args, fmt);
     err_print(buf, args);
@@ -283,20 +283,21 @@ exc_initialize(argc, argv, exc)
 }
 
 static VALUE
-exc_new(argc, argv, self)
+exc_exception(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
 {
     VALUE etype, exc;
 
+    if (argc == 0) return self;
     if (argc == 1 && self == argv[0]) return self;
     etype = CLASS_OF(self);
     while (FL_TEST(etype, FL_SINGLETON)) {
 	etype = RCLASS(etype)->super;
     }
     exc = rb_obj_alloc(etype);
-    rb_obj_call_init(exc);
+    rb_obj_call_init(exc, argc, argv);
 
     return exc;
 }
@@ -337,7 +338,10 @@ static VALUE
 exc_backtrace(exc)
     VALUE exc;
 {
-    return rb_iv_get(exc, "bt");
+    ID bt = rb_intern("bt");
+
+    if (!rb_ivar_defined(exc, bt)) return Qnil;
+    return rb_ivar_get(exc, bt);
 }
 
 static VALUE
@@ -370,54 +374,15 @@ exc_set_backtrace(exc, bt)
     return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
 
-static VALUE
-exception(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    VALUE v = Qnil;
-    VALUE etype = rb_eStandardError;
-    int i;
-    ID id;
-
-    if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong # of arguments");
-    }
-    rb_warn("Exception() is now obsolete");
-    if (TYPE(argv[argc-1]) == T_CLASS) {
-	etype = argv[argc-1];
-	argc--;
-	if (!rb_funcall(etype, '<', 1, rb_eException)) {
-	    rb_raise(rb_eTypeError, "exception should be subclass of Exception");
-	}
-    }
-    for (i=0; i<argc; i++) {	/* argument check */
-	id = rb_to_id(argv[i]);
-	if (!rb_id2name(id)) {
-	    rb_raise(rb_eArgError, "argument needs to be symbol or string");
-	}
-	if (!rb_is_const_id(id)) {
-	    rb_raise(rb_eArgError, "identifier `%s' needs to be constant",
-		     rb_id2name(id));
-	}
-    }
-    for (i=0; i<argc; i++) {
-	v = rb_define_class_under(ruby_class,
-				  rb_id2name(rb_to_id(argv[i])),
-				  rb_eStandardError);
-    }
-    return v;
-}
-
 #ifdef __BEOS__
 typedef struct {
    VALUE *list;
-   size_t n;
+   int n;
 } syserr_list_entry;
 
 typedef struct {
    int ix;
-   size_t n;
+   int n;
 } syserr_index_entry;
 
 static VALUE syserr_list_b_general[16+1];
@@ -533,7 +498,8 @@ void
 Init_Exception()
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
-    rb_define_method(rb_eException, "new", exc_new, -1);
+    rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
+    rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "to_str", exc_to_s, 0);
@@ -559,8 +525,6 @@ Init_Exception()
     rb_eNotImpError = rb_define_class("NotImplementError", rb_eException);
 
     init_syserr();
-
-    rb_define_global_function("Exception", exception, -1);
 }
 
 void
@@ -624,7 +588,7 @@ rb_fatal(fmt, va_alist)
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
 
-    rb_in_eval = 0;
+    ruby_in_eval = 0;
     rb_exc_fatal(rb_exc_new2(rb_eFatal, buf));
 }
 
@@ -1081,18 +1045,18 @@ static void
 err_append(s)
     char *s;
 {
-    extern VALUE rb_errinfo;
+    extern VALUE ruby_errinfo;
 
-    if (rb_in_eval) {
-	if (NIL_P(rb_errinfo)) {
-	    rb_errinfo = rb_exc_new2(rb_eSyntaxError, s);
+    if (ruby_in_eval) {
+	if (NIL_P(ruby_errinfo)) {
+	    ruby_errinfo = rb_exc_new2(rb_eSyntaxError, s);
 	}
 	else {
-	    VALUE str = rb_str_to_str(rb_errinfo);
+	    VALUE str = rb_str_to_str(ruby_errinfo);
 
 	    rb_str_cat(str, "\n", 1);
 	    rb_str_cat(str, s, strlen(s));
-	    rb_errinfo = rb_exc_new3(rb_eSyntaxError, str);
+	    ruby_errinfo = rb_exc_new3(rb_eSyntaxError, str);
 	}
     }
     else {

@@ -106,7 +106,7 @@ find_class_path(klass)
 	st_foreach(rb_class_tbl, fc_i, &arg);
     }
     if (arg.name) {
-	rb_iv_set(klass, "__classpath__", arg.path);
+	st_insert(ROBJECT(klass)->iv_tbl,rb_intern("__classpath__"),arg.path);
 	return arg.path;
     }
     return Qnil;
@@ -116,22 +116,20 @@ static VALUE
 classname(klass)
     VALUE klass;
 {
-    VALUE path;
+    VALUE path = Qnil;
     ID classpath = rb_intern("__classpath__");
 
     while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
 	klass = (VALUE)RCLASS(klass)->super;
     }
     if (!klass) klass = rb_cObject;
-    if (!ROBJECT(klass)->iv_tbl ||
-	!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
+    if (!ROBJECT(klass)->iv_tbl)
+	ROBJECT(klass)->iv_tbl = st_init_numtable();
+    else if (!st_lookup(ROBJECT(klass)->iv_tbl, classpath, &path)) {
 	ID classid = rb_intern("__classid__");
 
-	path = rb_ivar_get(klass, classid);
-	if (!NIL_P(path)) {
+	if (st_lookup(ROBJECT(klass)->iv_tbl, classid, &path)) {
 	    path = rb_str_new2(rb_id2name(FIX2INT(path)));
-	    if (!ROBJECT(klass)->iv_tbl)
-		ROBJECT(klass)->iv_tbl = st_init_numtable();
 	    st_insert(ROBJECT(klass)->iv_tbl, classpath, path);
 	    st_delete(RCLASS(klass)->iv_tbl, &classid, 0);
 	}
@@ -248,6 +246,9 @@ char *
 rb_class2name(klass)
     VALUE klass;
 {
+    if (klass == rb_cNilClass) return "nil";
+    if (klass == rb_cTrueClass) return "true";
+    if (klass == rb_cFalseClass) return "false";
     return RSTRING(rb_class_path(klass))->ptr;
 }
 
@@ -305,7 +306,7 @@ static VALUE
 undef_getter(id)
     ID id;
 {
-    if (rb_verbose) {
+    if (ruby_verbose) {
 	rb_warning("global variable `%s' not initialized", rb_id2name(id));
     }
     return Qnil;
@@ -386,7 +387,7 @@ readonly_setter(val, id, var)
     ID id;
     void *var;
 {
-    rb_raise(rb_eNameError, "Can't set variable %s", rb_id2name(id));
+    rb_raise(rb_eNameError, "can't set variable %s", rb_id2name(id));
 }
 
 static int
@@ -716,9 +717,11 @@ generic_ivar_set(obj, id, val)
     VALUE val;
 {
     st_table *tbl;
+    int special = Qfalse;
 
     if (rb_special_const_p(obj)) {
 	special_generic_ivar = 1;
+	special = Qtrue;
     }
     if (!generic_iv_tbl) {
 	generic_iv_tbl = st_init_numtable();
@@ -824,6 +827,8 @@ rb_ivar_get(obj, id)
 {
     VALUE val;
 
+    if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't access instance variable");
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -837,7 +842,7 @@ rb_ivar_get(obj, id)
 	    return generic_ivar_get(obj, id);
 	break;
     }
-    if (rb_verbose) {
+    if (ruby_verbose) {
 	rb_warning("instance var %s not initialized", rb_id2name(id));
     }
     return Qnil;
@@ -849,13 +854,13 @@ rb_ivar_set(obj, id, val)
     ID id;
     VALUE val;
 {
+    if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
       case T_FILE:
-	if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
-	    rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
 	if (!ROBJECT(obj)->iv_tbl) ROBJECT(obj)->iv_tbl = st_init_numtable();
 	st_insert(ROBJECT(obj)->iv_tbl, id, val);
 	break;
@@ -871,8 +876,6 @@ rb_ivar_defined(obj, id)
     VALUE obj;
     ID id;
 {
-    if (!rb_is_instance_id(id)) return Qfalse;
-
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -907,6 +910,8 @@ rb_obj_instance_variables(obj)
 {
     VALUE ary;
 
+    if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -938,6 +943,8 @@ rb_obj_remove_instance_variable(obj, name)
     VALUE val = Qnil;
     ID id = rb_to_id(name);
 
+    if (!FL_TEST(obj, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
     if (!rb_is_instance_id(id)) {
 	rb_raise(rb_eNameError, "`%s' is not an instance variable",
 		 rb_id2name(id));
@@ -973,7 +980,7 @@ rb_const_get_at(klass, id)
     if (klass == rb_cObject) {
 	return rb_const_get(klass, id);
     }
-    rb_raise(rb_eNameError, "Uninitialized constant %s::%s",
+    rb_raise(rb_eNameError, "uninitialized constant %s::%s",
 	     RSTRING(rb_class_path(klass))->ptr,
 	     rb_id2name(id));
     return Qnil;		/* not reached */
@@ -1016,11 +1023,11 @@ rb_const_get(klass, id)
 
     /* Uninitialized constant */
     if (klass && klass != rb_cObject)
-	rb_raise(rb_eNameError, "Uninitialized constant %s::%s",
+	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
 		 RSTRING(rb_class_path(klass))->ptr,
 		 rb_id2name(id));
     else {
-	rb_raise(rb_eNameError, "Uninitialized constant %s",rb_id2name(id));
+	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
     }
     return Qnil;		/* not reached */
 }
@@ -1080,6 +1087,8 @@ VALUE
 rb_mod_const_at(mod, ary)
     VALUE mod, ary;
 {
+    if (!FL_TEST(mod, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     if (RCLASS(mod)->iv_tbl) {
 	st_foreach(RCLASS(mod)->iv_tbl, const_i, ary);
     }
@@ -1163,7 +1172,7 @@ rb_const_set(klass, id, val)
     ID id;
     VALUE val;
 {
-    if (rb_safe_level() >= 4 && !FL_TEST(klass, FL_TAINT))
+    if (!FL_TEST(klass, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't set constant");
     if (!RCLASS(klass)->iv_tbl) {
 	RCLASS(klass)->iv_tbl = st_init_numtable();

@@ -1,8 +1,11 @@
 Language Spec.
 
 * package or access control for global variables
-* named arguments like foo(nation:="german").
+* named arguments like foo(nation:="german" or nation: "german").
+* method to retrieve argument information (need new C API)
 * multiple return values, yield values.  maybe imcompatible
+* cascading method invocation.
+* def Class#method .. end
 
 Hacking Interpreter
 
@@ -12,7 +15,13 @@ Hacking Interpreter
 * remove rb_eval() recursions
 * syntax tree -> bytecode ???
 * scrambled script, or script filter
-* regular expression bug /(?:\s+\d+){2}/  URGENT!!
+
+Standard Libraries
+
+* String#scanf(?)
+* Object#fmt(?)
+* Integer[num], Float[num] (String[str]?, Array[obj]??)
+* Stream or Port, abstract superclass of IO.
 
 Extension Libraries
 
@@ -30,6 +39,7 @@ Tools
 
 * extension library maker like XS or SWIG
 * freeze or undump to bundle everything
+* eruby - embedded ruby
 
 Misc
 

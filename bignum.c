@@ -26,7 +26,7 @@ typedef unsigned short USHORT;
 static VALUE
 bignew_1(klass, len, sign)
     VALUE klass;
-    size_t len;
+    int len;
     char sign;
 {
     NEWOBJ(big, struct RBignum);
@@ -79,7 +79,7 @@ static VALUE
 bignorm(x)
     VALUE x;
 {
-    size_t len = RBIGNUM(x)->len;
+    int len = RBIGNUM(x)->len;
     USHORT *ds = BDIGITS(x);
 
     while (len-- && !ds[len]) ;
@@ -170,7 +170,7 @@ rb_str2inum(str, base)
 {
     char sign = 1, c;
     unsigned long num;
-    size_t len, blen = 1;
+    int len, blen = 1;
     int i;
     VALUE z;
     USHORT *zds;
@@ -191,6 +191,10 @@ rb_str2inum(str, base)
 		str++;
 		base = 16;
 	    }
+	    else if (*str == 'b' || *str == 'B') {
+		str++;
+		base = 2;
+	    }
 	    else {
 		base = 8;
 	    }
@@ -204,8 +208,11 @@ rb_str2inum(str, base)
 	while (str[0] == '0') str++;
 	len = 3*strlen(str)*sizeof(char);
     }
-    else {			/* base == 10 or 16 */
+    else {			/* base == 10, 2 or 16 */
 	if (base == 16 && str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
+	    str += 2;
+	}
+	if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
 	    str += 2;
 	}
 	while (str[0] == '0') str++;
@@ -352,7 +359,7 @@ rb_big2ulong(x)
     VALUE x;
 {
     unsigned long num;
-    size_t len = RBIGNUM(x)->len;
+    int len = RBIGNUM(x)->len;
     USHORT *ds;
 
     if (len > sizeof(long)/sizeof(USHORT))
@@ -396,7 +403,14 @@ rb_dbl2big(d)
     VALUE z;
     double u = (d < 0)?-d:d;
 
-    while (0 != (long)u) {
+    if (isinf(d)) {
+	rb_raise(rb_eFloatDomainError, d < 0 ? "-Inifinity" : "Inifinity");
+    }
+    if (isnan(d)) {
+	rb_raise(rb_eFloatDomainError, "NaN");
+    }
+
+    while (!POSFIXABLE(u) || 0 != (long)u) {
 	u /= (double)(BIGRAD);
 	i++;
     }
@@ -417,7 +431,7 @@ rb_big2dbl(x)
     VALUE x;
 {
     double d = 0.0;
-    size_t i = RBIGNUM(x)->len;
+    int i = RBIGNUM(x)->len;
     USHORT *ds = BDIGITS(x);
 
     while (i--) {
@@ -438,7 +452,7 @@ static VALUE
 rb_big_cmp(x, y)
     VALUE x, y;
 {
-    size_t xlen = RBIGNUM(x)->len;
+    int xlen = RBIGNUM(x)->len;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -490,7 +504,7 @@ rb_big_neg(x)
     VALUE x;
 {
     VALUE z = rb_big_clone(x);
-    size_t i = RBIGNUM(x)->len;
+    int i = RBIGNUM(x)->len;
     USHORT *ds = BDIGITS(z);
 
     if (!RBIGNUM(x)->sign) rb_big_2comp(z);
@@ -508,7 +522,7 @@ bigsub(x, y)
     VALUE z = 0;
     USHORT *zds;
     long num;
-    size_t i;
+    int i;
 
     i = RBIGNUM(x)->len;
     /* if x is larger than y, swap */
@@ -556,7 +570,7 @@ bigadd(x, y, sign)
 {
     VALUE z;
     long num;
-    size_t i, len;
+    int i, len;
 
     sign = (sign == RBIGNUM(y)->sign);
     if (RBIGNUM(x)->sign != sign) {
@@ -636,7 +650,7 @@ VALUE
 rb_big_mul(x, y)
     VALUE x, y;
 {
-    size_t i, j;
+    int i, j;
     unsigned long n = 0;
     VALUE z;
     USHORT *zds;
@@ -685,11 +699,11 @@ bigdivmod(x, y, div, mod, modulo)
     VALUE *div, *mod;
     int modulo;
 {
-    size_t nx = RBIGNUM(x)->len, ny = RBIGNUM(y)->len;
+    int nx = RBIGNUM(x)->len, ny = RBIGNUM(y)->len;
     int i, j;
     VALUE yy, z;
     USHORT *xds, *yds, *zds, *tds;
-    size_t t2;
+    unsigned long t2;
     long num;
     USHORT dd, q;
 
@@ -714,7 +728,7 @@ bigdivmod(x, y, div, mod, modulo)
 	if (div) *div = bignorm(z);
 	if (mod) {
 	    if (!RBIGNUM(y)->sign) t2 = -(long)t2;
-	    *mod = INT2FIX(t2);
+	    *mod = INT2NUM(t2);
 	}
 	return;
     }
@@ -798,7 +812,7 @@ bigdivmod(x, y, div, mod, modulo)
 	RBIGNUM(*mod)->len = ny;
 	RBIGNUM(*mod)->sign = RBIGNUM(x)->sign;
 	if (modulo && RBIGNUM(x)->sign != RBIGNUM(y)->sign) {
-	    size_t len = ny;
+	    int len = ny;
 	    zds = BDIGITS(*mod);
 	    while (len-- && !zds[len]);
 	    if (len > 0) {
@@ -936,6 +950,7 @@ rb_big_pow(x, y)
 		}
 		z = rb_big_mul(z, x);
 	    }
+	    if (!FIXNUM_P(z)) z = bignorm(z);
 	    return z;
 	}
 	d = (double)yy;
@@ -953,7 +968,7 @@ rb_big_and(x, y)
 {
     VALUE z;
     USHORT *ds1, *ds2, *zds;
-    size_t i, l1, l2;
+    int i, l1, l2;
     char sign;
 
     if (FIXNUM_P(y)) {
@@ -1112,11 +1127,11 @@ rb_big_lshift(x, y)
 {
     USHORT *xds, *zds;
     int shift = NUM2INT(y);
-    size_t s1 = shift/BITSPERDIG;
-    size_t s2 = shift%BITSPERDIG;
+    int s1 = shift/BITSPERDIG;
+    int s2 = shift%BITSPERDIG;
     VALUE z;
     unsigned long num = 0;
-    size_t len, i;
+    int len, i;
 
     if (shift < 0) return rb_big_rshift(x, INT2FIX(-shift));
     xds = BDIGITS(x);
@@ -1141,12 +1156,12 @@ rb_big_rshift(x, y)
 {
     USHORT *xds, *zds;
     int shift = NUM2INT(y);
-    size_t s1 = shift/BITSPERDIG;
-    size_t s2 = shift%BITSPERDIG;
+    int s1 = shift/BITSPERDIG;
+    int s2 = shift%BITSPERDIG;
     VALUE z;
     unsigned long num = 0;
-    size_t i = RBIGNUM(x)->len;
-    size_t j;
+    int i = RBIGNUM(x)->len;
+    int j;
 
     if (shift < 0) return rb_big_lshift(x, INT2FIX(-shift));
     if (s1 > RBIGNUM(x)->len) {
@@ -1173,7 +1188,7 @@ rb_big_aref(x, y)
 {
     USHORT *xds;
     int shift = NUM2INT(y);
-    size_t s1, s2;
+    int s1, s2;
 
     if (shift < 0) return INT2FIX(0);
     s1 = shift/BITSPERDIG;
@@ -1197,7 +1212,7 @@ static VALUE
 rb_big_hash(x)
     VALUE x;
 {
-    size_t i, len;
+    int i, len;
     int key;
     USHORT *digits;
 
@@ -1216,7 +1231,7 @@ rb_big_coerce(x, y)
 	return rb_assoc_new(rb_int2big(FIX2LONG(y)), x);
     }
     else {
-	rb_raise(rb_eTypeError, "can't coerce %s to Bignum",
+	rb_raise(rb_eTypeError, "Can't coerce %s to Bignum",
 		 rb_class2name(CLASS_OF(y)));
     }
     /* not reached */
@@ -1243,7 +1258,7 @@ rb_big_rand(max)
     VALUE max;
 {
     struct RBignum *v;
-    size_t len;
+    int len;
 
     len = RBIGNUM(max)->len;
     v = RBIGNUM(bignew(len,1));

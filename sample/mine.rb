@@ -10,19 +10,19 @@ class Board
   end
   def put(x, y, col, str)
     pos(x,y); colorstr(43,str)
-    pos(0,@hi); print "$B;D$j(B:",@mc,"/",@total,"   "
+    pos(0,@hi); print "»Ä¤ê:",@mc,"/",@total,"   "
     pos(x,y)
   end
   private :clr, :pos, :colorstr, :put
-  CHR=["$B!&(B","$B#1(B","$B#2(B","$B#3(B","$B#4(B","$B#5(B","$B#6(B","$B#7(B","$B#8(B","$B!z(B","$B!|(B","@@"]
+  CHR=["¡¦","£±","£²","£³","£´","£µ","£¶","£·","£¸","¡ú","¡ü","@@"]
   COL=[46,43,45] # default,opened,over
   def initialize(h,w,m)
-    # $B%2!<%`HW$N@8@.(B(h:$B=D!$(Bw:$B2#!$(Bm:$BGzCF$N?t(B)
+    # ¥²¡¼¥àÈ×¤ÎÀ¸À®(h:½Ä¡¤w:²£¡¤m:ÇúÃÆ¤Î¿ô)
     @hi=h; @wi=w; @m=m
     reset
   end
   def reset
-    # $B%2!<%`HW$r(B($B:F(B)$B=i4|2=$9$k(B
+    # ¥²¡¼¥àÈ×¤ò(ºÆ)½é´ü²½¤¹¤ë
     srand()
     @cx=0; @cy=0; @mc=@m
     @over=false
@@ -44,7 +44,7 @@ class Board
     pos(@cx,@cy)
   end
   def mark
-    # $B8=:_$N%+!<%=%k0LCV$K%^!<%/$r$D$1$k(B
+    # ¸½ºß¤Î¥«¡¼¥½¥ë°ÌÃÖ¤Ë¥Þ¡¼¥¯¤ò¤Ä¤±¤ë
     if @state[@wi*@cy+@cx] != nil then return end
     @state[@wi*@cy+@cx] = "MARK"
     @mc=@mc-1;
@@ -52,8 +52,8 @@ class Board
     put(@cx, @cy, COL[1], CHR[9])
   end
   def open(x=@cx,y=@cy)
-    # $B8=:_$N%+!<%=%k0LCV$r%*!<%W%s$K$9$k(B
-    # $BGzCF$,$"$l$P%2!<%`%*!<%P!<(B
+    # ¸½ºß¤Î¥«¡¼¥½¥ë°ÌÃÖ¤ò¥ª¡¼¥×¥ó¤Ë¤¹¤ë
+    # ÇúÃÆ¤¬¤¢¤ì¤Ð¥²¡¼¥à¥ª¡¼¥Ð¡¼
     if @state[@wi*y+x] =="OPEN"  then return 0 end
     if @state[@wi*y+x] == nil then @total=@total-1 end
     if @state[@wi*y+x] =="MARK" then @mc=@mc+1 end
@@ -73,7 +73,7 @@ class Board
     pos(@cx,@cy)
   end
   def fetch(x,y)
-    # (x,y)$B$N0LCV$NGzCF$N?t(B(0 or 1)$B$rJV$9(B
+    # (x,y)¤Î°ÌÃÖ¤ÎÇúÃÆ¤Î¿ô(0 or 1)¤òÊÖ¤¹
     if x < 0 then 0
     elsif x >= @wi then 0
     elsif y < 0 then 0
@@ -83,13 +83,13 @@ class Board
     end
   end
   def count(x,y)
-    # (x,y)$B$KNY@\$9$kGzCF$N?t$rJV$9(B
+    # (x,y)¤ËÎÙÀÜ¤¹¤ëÇúÃÆ¤Î¿ô¤òÊÖ¤¹
     fetch(x-1,y-1)+fetch(x,y-1)+fetch(x+1,y-1)+
     fetch(x-1,y)  +             fetch(x+1,y)+
     fetch(x-1,y+1)+fetch(x,y+1)+fetch(x+1,y+1)
   end
   def over(win)
-    # $B%2!<%`$N=*N;(B
+    # ¥²¡¼¥à¤Î½ªÎ»
     quit
     unless win
       pos(@cx,@cy); print CHR[11]
@@ -100,8 +100,8 @@ class Board
     end
   end
   def over?
-    # $B%2!<%`$N=*N;%A%'%C%/(B
-    # $B=*N;=hM}$b8F$S=P$9(B
+    # ¥²¡¼¥à¤Î½ªÎ»¥Á¥§¥Ã¥¯
+    # ½ªÎ»½èÍý¤â¸Æ¤Ó½Ð¤¹
     remain = (@mc+@total == 0)
     if @over || remain
       over(remain)
@@ -111,8 +111,8 @@ class Board
     end
   end
   def quit
-    # $B%2!<%`$NCfCG(B($B$^$?$O=*N;(B)
-    # $BHWLL$rA4$F8+$;$k(B
+    # ¥²¡¼¥à¤ÎÃæÃÇ(¤Þ¤¿¤Ï½ªÎ»)
+    # È×ÌÌ¤òÁ´¤Æ¸«¤»¤ë
     @hi.times do|y|
       pos(0,y)
       @wi.times do|x|
@@ -122,19 +122,19 @@ class Board
     end
   end
   def down
-    # $B%+!<%=%k$r2<$K(B
+    # ¥«¡¼¥½¥ë¤ò²¼¤Ë
     if @cy < @hi-1 then @cy=@cy+1; pos(@cx, @cy) end
   end
   def up
-    # $B%+!<%=%k$r>e$K(B
+    # ¥«¡¼¥½¥ë¤ò¾å¤Ë
     if @cy > 0 then @cy=@cy-1; pos(@cx, @cy) end
   end
   def left
-    # $B%+!<%=%k$r:8$K(B
+    # ¥«¡¼¥½¥ë¤òº¸¤Ë
     if @cx > 0 then @cx=@cx-1; pos(@cx, @cy) end
   end
   def right
-    # $B%+!<%=%k$r1&$K(B
+    # ¥«¡¼¥½¥ë¤ò±¦¤Ë
     if @cx < @wi-1 then @cx=@cx+1; pos(@cx, @cy) end
   end
 end
@@ -143,7 +143,7 @@ bd=Board.new(10,10,10)
 system("stty raw -echo")
 begin
   loop do
-    case getc
+    case STDIN.getc
     when ?n  # new game
       bd.reset
     when ?m  # mark
@@ -163,7 +163,7 @@ begin
       break
     end
     if bd.over?
-      if getc == ?q then break end
+      if STDIN.getc == ?q then break end
       bd.reset
     end
   end

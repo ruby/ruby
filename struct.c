@@ -16,6 +16,8 @@
 
 VALUE rb_cStruct;
 
+static VALUE struct_alloc _((int, VALUE*, VALUE));
+
 static VALUE
 class_of(obj)
     VALUE obj;
@@ -94,7 +96,7 @@ static VALUE rb_struct_ref7(obj) VALUE obj; {return RSTRUCT(obj)->ptr[7];}
 static VALUE rb_struct_ref8(obj) VALUE obj; {return RSTRUCT(obj)->ptr[8];}
 static VALUE rb_struct_ref9(obj) VALUE obj; {return RSTRUCT(obj)->ptr[9];}
 
-VALUE (*ref_func[10])() = {
+static VALUE (*ref_func[10])() = {
     rb_struct_ref0,
     rb_struct_ref1,
     rb_struct_ref2,
@@ -150,8 +152,8 @@ make_struct(name, member, klass)
     rb_iv_set(nstr, "__size__", INT2FIX(RARRAY(member)->len));
     rb_iv_set(nstr, "__member__", member);
 
-    rb_define_singleton_method(nstr, "new", rb_struct_alloc, -2);
-    rb_define_singleton_method(nstr, "[]", rb_struct_alloc, -2);
+    rb_define_singleton_method(nstr, "new", struct_alloc, -1);
+    rb_define_singleton_method(nstr, "[]", struct_alloc, -1);
     rb_define_singleton_method(nstr, "members", rb_struct_s_members, 0);
     for (i=0; i< RARRAY(member)->len; i++) {
 	ID id = FIX2INT(RARRAY(member)->ptr[i]);
@@ -216,15 +218,16 @@ rb_struct_s_def(argc, argv, klass)
 	RARRAY(rest)->ptr[i] = INT2FIX(id);
     }
     st = make_struct(name, rest, klass);
-    rb_obj_call_init(st);
+    rb_obj_call_init(st, argc, argv);
 
     return st;
 }
 
-VALUE
-rb_struct_alloc(klass, values)
-    VALUE klass, values;
+static VALUE
+rb_struct_initialize(self, values)
+    VALUE self, values;
 {
+    VALUE klass = CLASS_OF(self);
     VALUE size;
     int n;
 
@@ -233,18 +236,39 @@ rb_struct_alloc(klass, values)
     if (n != RARRAY(values)->len) {
 	rb_raise(rb_eArgError, "struct size differs");
     }
-    else {
-	NEWOBJ(st, struct RStruct);
-	OBJSETUP(st, klass, T_STRUCT);
-	st->len = 0;		/* avoid GC crashing  */
-	st->ptr = ALLOC_N(VALUE, n);
-	st->len = n;
-	MEMCPY(st->ptr, RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
-	rb_obj_call_init((VALUE)st);
+    MEMCPY(RSTRUCT(self)->ptr, RARRAY(values)->ptr, VALUE, RARRAY(values)->len);
+    return Qnil;
+}
 
-	return (VALUE)st;
-    }
-    return Qnil;		/* not reached */
+static VALUE
+struct_alloc(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE size;
+    int n;
+
+    NEWOBJ(st, struct RStruct);
+    OBJSETUP(st, klass, T_STRUCT);
+
+    size = rb_iv_get(klass, "__size__");
+    n = FIX2INT(size);
+
+    st->len = 0;		/* avoid GC crashing  */
+    st->ptr = ALLOC_N(VALUE, n);
+    rb_mem_clear(st->ptr, n);
+    st->len = n;
+    rb_obj_call_init((VALUE)st, argc, argv);
+
+    return (VALUE)st;
+}
+
+VALUE
+rb_struct_alloc(klass, values)
+    VALUE klass, values;
+{
+    return struct_alloc(RARRAY(values)->len, RARRAY(values)->ptr, klass);
 }
 
 VALUE
@@ -256,21 +280,20 @@ rb_struct_new(klass, va_alist)
     va_dcl
 #endif
 {
-    VALUE val, mem;
+    VALUE sz, *mem;
     int size, i;
     va_list args;
 
-    val = rb_iv_get(klass, "__size__");
-    size = FIX2INT(val); 
-    mem = rb_ary_new2(size);
+    sz = rb_iv_get(klass, "__size__");
+    size = FIX2INT(sz); 
+    mem = ALLOCA_N(VALUE, size);
     va_init_list(args, klass);
     for (i=0; i<size; i++) {
-	val = va_arg(args, VALUE);
-	rb_ary_store(mem, i, val);
+	mem[i] = va_arg(args, VALUE);
     }
     va_end(args);
 
-    return rb_struct_alloc(klass, mem);
+    return struct_alloc(size, mem, klass);
 }
 
 static VALUE
@@ -511,6 +534,7 @@ Init_Struct()
 
     rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
 
+    rb_define_method(rb_cStruct, "initialize", rb_struct_initialize, -2);
     rb_define_method(rb_cStruct, "clone", rb_struct_clone, 0);
 
     rb_define_method(rb_cStruct, "==", rb_struct_equal, 1);

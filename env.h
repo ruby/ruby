@@ -37,7 +37,7 @@ extern struct SCOPE {
 #define SCOPE_MALLOC  1
 #define SCOPE_NOSTACK 2
 
-extern int rb_in_eval;
+extern int ruby_in_eval;
 
 extern VALUE ruby_class;
 

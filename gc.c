@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -42,10 +42,10 @@ static void run_final();
 #if defined(MSDOS) || defined(__human68k__)
 #define GC_MALLOC_LIMIT 100000
 #else
-#define GC_MALLOC_LIMIT 200000
+#define GC_MALLOC_LIMIT 400000
 #endif
 #endif
-#define GC_NEWOBJ_LIMIT 1000
+#define GC_NEWOBJ_LIMIT 10000
 
 static unsigned long malloc_memories = 0;
 static unsigned long alloc_objects = 0;
@@ -389,10 +389,10 @@ rb_gc_mark(ptr)
     register RVALUE *obj = RANY(ptr);
 
   Top:
-    if (FIXNUM_P(obj)) return;	/* fixnum not marked */
+    if (FIXNUM_P(obj)) return;	                /* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
-    if (obj->as.basic.flags == 0) return; /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return; /* already marked */
+    if (obj->as.basic.flags == 0) return;       /* free cell */
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */
 
     obj->as.basic.flags |= FL_MARK;
 
@@ -598,7 +598,8 @@ rb_gc_mark(ptr)
 	break;
 
       case T_SCOPE:
-	if (obj->as.scope.local_vars) {
+	if (obj->as.scope.local_vars &&
+            obj->as.scope.flag != SCOPE_ALLOCA) {
 	    int n = obj->as.scope.local_tbl[0]+1;
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
@@ -769,10 +770,10 @@ obj_free(obj)
 	}
 	break;
       case T_MATCH:
-	if (RANY(obj)->as.match.regs)
+	if (RANY(obj)->as.match.regs) {
 	    re_free_registers(RANY(obj)->as.match.regs);
-	if (RANY(obj)->as.match.regs)
 	    free(RANY(obj)->as.match.regs);
+	}
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
@@ -807,7 +808,8 @@ obj_free(obj)
 	return;			/* no need to free iv_tbl */
 
       case T_SCOPE:
-	if (RANY(obj)->as.scope.local_vars) {
+	if (RANY(obj)->as.scope.local_vars &&
+            RANY(obj)->as.scope.flag != SCOPE_ALLOCA) {
 	    VALUE *vars = RANY(obj)->as.scope.local_vars-1;
 	    if (vars[0] == 0)
 		free(RANY(obj)->as.scope.local_tbl);
