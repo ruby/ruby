@@ -177,6 +177,15 @@ static void top_local_setup();
 #define nd_paren(node) (char)((node)->u2.id >> CHAR_BIT*2)
 #define nd_nest u3.id
 
+/* Older versions of Yacc set YYMAXDEPTH to a very low value by default (150,
+   for instance).  This is too low for Ruby to parse some files, such as
+   date/format.rb, therefore bump the value up to at least Bison's default. */
+#ifdef OLD_YACC
+#ifndef YYMAXDEPTH
+#define YYMAXDEPTH 10000
+#endif
+#endif
+
 %}
 
 %union {

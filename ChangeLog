@@ -40,6 +40,17 @@ Tue Dec  2 21:31:42 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* test/runner.rb: exit with the test result.
 
+Tue Dec  2 20:18:48 2003  Eric Sunshine <sunshine@sunshineco.com>
+
+	* configure.in (AC_PROG_YACC): AC_DEFINE(OLD_YACC) if Yacc is found
+	  instead of Bison or byacc.
+
+	* parse.y: If OLD_YACC is defined, ensure that YYMAXDEPTH is at least
+	  10000 (Bison's default) since some old versions of Yacc define it as
+	  low as 150 by default, which is too low for Ruby to parse some files,
+	  such as date/format.rb.  Among other issues, the parse problem causes
+	  "make test" to fail.
+
 Tue Dec  2 20:03:20 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: check if Pathnames are usable
