@@ -1259,6 +1259,8 @@ time_to_s(time)
 
 #if SIZEOF_TIME_T == SIZEOF_LONG
 typedef unsigned long unsigned_time_t;
+#elif SIZEOF_TIME_T == SIZEOF_INT
+typedef unsigned int unsigned_time_t;
 #elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
 typedef unsigned long long unsigned_time_t;
 #else
