@@ -34,6 +34,7 @@ module WEBrick
       if config = args.shift
         @config.update(config)
       end
+      @config[:Logger] ||= WEBrick::BasicLog.new($stderr)
       @logger = @config[:Logger]
       @options = args
     end

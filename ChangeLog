@@ -1,3 +1,12 @@
+Thu Jan  8 04:36:21 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI#initialize): should create
+	  @config[:Logger] if it was not given.
+
+	* sample/webrick/*: new files.
+
+	* MANIFEST: add sample/webrick/*
+
 Wed Jan  7 13:00:18 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_driver.rb: Fix problem where ri was
