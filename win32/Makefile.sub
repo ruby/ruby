@@ -179,10 +179,15 @@ rubyw: $(WPROGRAM)
 
 !include $(srcdir)/common.mk
 
-config: config.h config.status
+CONFIG_H = ./.config.h.time
 
-config.h:
-	@echo Creating <<$@
+config: config.status
+
+config.status: $(CONFIG_H)
+
+$(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
+	@echo Creating config.h
+	@$(srcdir:/=\)\win32\ifchange.bat config.h <<
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
@@ -270,10 +275,27 @@ config.h:
 #define RUBY_PLATFORM "$(ARCH)-$(OS)"
 #define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(RT)"
-<<KEEP
+<<
+	@exit > $(@:/=\)
+
+#!if exist(config.h)
+#! if exist(config_h.bak)
+#	@del config_h.bak
+#! endif
+#	@ren config.h config_h.bak
+#!endif
+#	@ren config_h~ config.h
+#!if exist(config.h)
+#	@echo NMAKE will abort if config.h is changed, then restart NMAKE.
+#	@fc.exe config.h config_h.bak > nul
+#	@echo config.h unchanged.
+#	@del config.h
+#	@ren config_h.bak config.h
+#!endif
 
 config.status: $(MKFILES) $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
-	@echo Creating <<$@
+	@echo Creating $@
+	@exit <<$@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
 s,@PATH_SEPARATOR@,;,;t t
@@ -339,6 +361,11 @@ s,@STRIP@,$(STRIP),;t t
 s,@EXTSTATIC@,$(EXTSTATIC),;t t
 s,@setup@,Setup,;t t
 s,@MINIRUBY@,$(MINIRUBY),;t t
+s,@PREP@,miniruby$(EXEEXT),;t t
+s,@RUNRUBY@,$(RUNRUBY),;t t
+s,@EXTOUT@,$(EXTOUT),;t t
+s,@ARCHFILE@,,;t t
+s,@RDOCTARGET@,,;t t
 s,@LIBRUBY_LDSHARED@,$(LIBRUBY_LDSHARED),;t t
 s,@LIBRUBY_DLDFLAGS@,$(LIBRUBY_DLDFLAGS),;t t
 s,@RUBY_INSTALL_NAME@,$(RUBY_INSTALL_NAME),;t t

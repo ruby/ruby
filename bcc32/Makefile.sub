@@ -198,11 +198,14 @@ rubyw: $(WPROGRAM)
 
 PHONY: Makefile
 
-config: config.h config.status
+CONFIG_H = ./.config.h.time
 
-config.h:
-	@echo Creating $(@:.\=)
-	@type > $@ &&|
+config: config.status
+
+config.status: $(CONFIG_H)
+
+$(CONFIG_H): $(MKFILES) $(srcdir)bcc32/Makefile.sub
+	@$(srcdir:/=\)win32\ifchange.bat config.h &&|
 \#define HAVE_SYS_TYPES_H 1
 \#define HAVE_SYS_STAT_H 1
 \#define HAVE_STDLIB_H 1
@@ -275,6 +278,7 @@ config.h:
 \#define RUBY_ARCHLIB "/lib/ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 \#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)/$(ARCH)-$(OS)"
 |
+	@exit > $@
 
 config.status: $(MKFILES) $(srcdir)bcc32/Makefile.sub $(srcdir)common.mk
 	@echo Creating $@
@@ -344,6 +348,11 @@ s,@STRIP@,$(STRIP),;t t
 s,@EXTSTATIC@,$(EXTSTATIC),;t t
 s,@setup@,Setup,;t t
 s,@MINIRUBY@,$(MINIRUBY),;t t
+s,@PREP@,miniruby$(EXEEXT),;t t
+s,@RUNRUBY@,$(RUNRUBY),;t t
+s,@EXTOUT@,$(EXTOUT),;t t
+s,@ARCHFILE@,,;t t
+s,@RDOCTARGET@,,;t t
 s,@LIBRUBY_LDSHARED@,$$(LDSHARED),;t t
 s,@LIBRUBY_DLDFLAGS@,-Gi $$(DLDFLAGS),;t t
 s,@RUBY_INSTALL_NAME@,$(RUBY_INSTALL_NAME),;t t

@@ -182,7 +182,11 @@ WINMAINOBJ    = wincemain.$(OBJEXT)
 all: $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk
 ruby: $(PROGRAM)
 
-config: config.h config.status
+CONFIG_H = ./.config.h.time
+
+config: config.status
+
+config.status: $(CONFIG_H)
 
 BANG = !
 
@@ -190,8 +194,9 @@ BANG = !
 !include config.h
 !endif
 
-config.h:
-	@echo Creating <<$@
+$(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
+	@echo Creating config.h
+	@$(srcdir:/=\)\win32\ifchange.bat config.h <<
 #define STDC_HEADERS 1
 #define HAVE_SYS_TYPES_H 1
 #define HAVE_SYS_STAT_H 1
@@ -296,10 +301,12 @@ $(BANG)endif
   #define ispunct(c) ( !(isalnum(c)||isspace(c))?1:0 )
   #define isxdigit(c) ( ((c>=0&&c<=9)||(c>='A'&&c<='F')||(c>='a'&&c<='f'))?1:0 )
 #endif
-<<KEEP
+<<
+	@exit > $(@:/=\)
 
 config.status: $(MKFILES) $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk
-	@echo Creating <<$@
+	@echo Creating $@
+	@exit <<$@
 # Generated automatically by Makefile.sub.
 s,@SHELL@,$$(COMSPEC),;t t
 s,@PATH_SEPARATOR@,;,;t t
@@ -365,6 +372,11 @@ s,@STRIP@,$(STRIP),;t t
 s,@EXTSTATIC@,$(EXTSTATIC),;t t
 s,@setup@,Setup,;t t
 s,@MINIRUBY@,$(MINIRUBY),;t t
+s,@PREP@,miniruby$(EXEEXT),;t t
+s,@RUNRUBY@,$(RUNRUBY),;t t
+s,@EXTOUT@,$(EXTOUT),;t t
+s,@ARCHFILE@,,;t t
+s,@RDOCTARGET@,,;t t
 s,@LIBRUBY_LDSHARED@,$(LIBRUBY_LDSHARED),;t t
 s,@LIBRUBY_DLDFLAGS@,$(LIBRUBY_DLDFLAGS),;t t
 s,@RUBY_INSTALL_NAME@,$(RUBY_INSTALL_NAME),;t t
