@@ -127,7 +127,7 @@ num_divmod(x, y)
 {
     VALUE div, mod;
 
-    div = rb_funcall(x, div, 1, y);
+    div = rb_funcall(x, id_div, 1, y);
     if (TYPE(div) == T_FLOAT) {
 	double d = floor(RFLOAT(div)->value);
 
