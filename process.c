@@ -30,6 +30,9 @@
 #include <time.h>
 #include <ctype.h>
 
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
 #ifndef EXIT_FAILURE
 #define EXIT_FAILURE 1
 #endif
@@ -878,7 +881,17 @@ rb_f_exit_bang(argc, argv, obj)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &status) == 1) {
-	istatus = NUM2INT(status);
+	switch (status) {
+	  case T_TRUE:
+	    istatus = EXIT_SUCCESS;
+	    break;
+	  case T_FALSE:
+	    istatus = EXIT_FAILURE;
+	    break;
+	  default:
+	    istatus = NUM2INT(status);
+	    break;
+	}
     }
     else {
 	istatus = EXIT_FAILURE;
@@ -930,9 +943,9 @@ rb_f_system(argc, argv)
     int argc;
     VALUE *argv;
 {
+    int status;
 #if defined(__EMX__)
     VALUE cmd;
-    int status;
 
     fflush(stdout);
     fflush(stderr);
@@ -952,12 +965,8 @@ rb_f_system(argc, argv)
     SafeStringValue(cmd);
     status = do_spawn(RSTRING(cmd)->ptr);
     last_status_set(status, 0);
-
-    if (status == 0) return Qtrue;
-    return Qfalse;
 #elif defined(__human68k__) || defined(__DJGPP__) || defined(_WIN32)
     volatile VALUE prog = 0;
-    int status;
 
     fflush(stdout);
     fflush(stderr);
@@ -990,10 +999,8 @@ rb_f_system(argc, argv)
 #else
     last_status_set(status == -1 ? 127 : status, 0);
 #endif
-    return status == 0 ? Qtrue : Qfalse;
 #elif defined(__VMS)
     VALUE cmd;
-    int status;
 
     if (argc == 0) {
 	rb_last_status = Qnil;
@@ -1011,9 +1018,6 @@ rb_f_system(argc, argv)
     SafeStringValue(cmd);
     status = system(RSTRING(cmd)->ptr);
     last_status_set((status & 0xff) << 8, 0);
-
-    if (status == 0) return Qtrue;
-    return Qfalse;
 #else
     volatile VALUE prog = 0;
     int pid;
@@ -1064,10 +1068,11 @@ rb_f_system(argc, argv)
 	rb_syswait(pid);
     }
 
-    if (NUM2INT(rb_last_status) == 0)
-	return Qtrue;
-    return Qfalse;
+    status = NUM2INT(rb_last_status);
 #endif
+
+    if (status == EXIT_SUCCESS) return Qtrue;
+    return Qfalse;
 }
 
 static VALUE

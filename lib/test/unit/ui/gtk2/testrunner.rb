@@ -406,7 +406,7 @@ module Test
               retry
             rescue
             end
-            abort if @red
+            exit !@red
           end # def start_ui
           private :start_ui
 

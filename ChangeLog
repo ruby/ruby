@@ -1,3 +1,11 @@
+Fri Nov 28 00:34:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_f_exit), process.c (rb_f_exit_bang): treat true as
+	  success, false as failure.  [ruby-dev:22067]
+
+	* eval.c (rb_f_abort, rb_thread_switch), process.c (rb_f_system): use
+	  ANSI macro instead of hard coded value.
+
 Thu Nov 27 22:05:48 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c, gc.c: FreeBSD/ia64 currently does not have a way for a
@@ -8,8 +16,8 @@ Thu Nov 27 22:05:48 2003  Akinori MUSHA  <knu@iDaemons.org>
 Thu Nov 27 17:36:42 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkafter.rb: bug fix on TkTimer#cancel_on_exception=(mode).
-	  TkTimer#wait recieves the exception of the callback. 
-	  The exception is kept on @return_value. 
+	  TkTimer#wait recieves the exception of the callback.
+	  The exception is kept on @return_value.
 
 Thu Nov 27 16:58:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -77,7 +85,7 @@ Tue Nov 25 16:41:33 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 Tue Nov 25 16:24:42 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/**/*.rb, lib/wsdl/**/*.rb, lib/xsd/**/*.rb: changed license;
-	  GPL2 -> Ruby's.  
+	  GPL2 -> Ruby's.
 
 	* lib/soap/rpc/driver.rb, lib/soap/wsdlDriver.rb,
 	  lib/soap/streamHandler.rb: add interface to streamhandler.

@@ -94,7 +94,7 @@ module Test
               retry
             rescue
             end
-            abort if @red
+            exit !@red
           end
           
           def stop(*) # :nodoc:

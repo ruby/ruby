@@ -3895,7 +3895,17 @@ rb_f_exit(argc, argv)
 
     rb_secure(4);
     if (rb_scan_args(argc, argv, "01", &status) == 1) {
-	istatus = NUM2INT(status);
+	switch (status) {
+	  case T_TRUE:
+	    istatus = EXIT_SUCCESS;
+	    break;
+	  case T_FALSE:
+	    istatus = EXIT_FAILURE;
+	    break;
+	  default:
+	    istatus = NUM2INT(status);
+	    break;
+	}
     }
     else {
 	istatus = EXIT_SUCCESS;
@@ -3922,7 +3932,7 @@ rb_f_abort(argc, argv)
 	rb_scan_args(argc, argv, "1", &mesg);
 	StringValue(argv[0]);
 	rb_io_puts(argc, argv, rb_stderr);
-	terminate_process(1, RSTRING(argv[0])->ptr, RSTRING(argv[0])->len);
+	terminate_process(EXIT_FAILURE, RSTRING(argv[0])->ptr, RSTRING(argv[0])->len);
     }
     return Qnil;		/* not reached */
 }
@@ -8407,7 +8417,7 @@ rb_thread_switch(n)
 	ruby_errinfo = th_raise_argv[0];
 	ruby_current_node = th_raise_node;
 	error_print();
-	terminate_process(1, 0, 0);
+	terminate_process(EXIT_FAILURE, 0, 0);
 	break;
       case RESTORE_NORMAL:
       default:
