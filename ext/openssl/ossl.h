@@ -88,18 +88,6 @@ extern VALUE eOSSLError;
 } while (0)
 
 /*
- * ASN1_DATE conversions
- */
-VALUE asn1time_to_time(ASN1_TIME *);
-time_t time_to_time_t(VALUE);
-
-/*
- * ASN1_INTEGER conversions
- */
-VALUE asn1integer_to_num(ASN1_INTEGER *);
-ASN1_INTEGER *num_to_asn1integer(VALUE, ASN1_INTEGER *);
-
-/*
  * String to HEXString conversion
  */
 int string2hex(char *, int, char **, int *);
@@ -107,10 +95,6 @@ int string2hex(char *, int, char **, int *);
 /*
  * Data Conversion
  */
-BIO *ossl_obj2bio(VALUE);
-BIO *ossl_protect_obj2bio(VALUE,int*);
-VALUE ossl_membio2str(BIO*);
-VALUE ossl_protect_membio2str(BIO*,int*);
 STACK_OF(X509) *ossl_x509_ary2sk(VALUE);
 STACK_OF(X509) *ossl_protect_x509_ary2sk(VALUE,int*);
 
@@ -174,19 +158,21 @@ void ossl_debug(const char *, ...);
  */
 #include "openssl_missing.h"
 #include "ruby_missing.h"
+#include "ossl_asn1.h"
+#include "ossl_bio.h"
 #include "ossl_bn.h"
 #include "ossl_cipher.h"
 #include "ossl_config.h"
 #include "ossl_digest.h"
 #include "ossl_hmac.h"
 #include "ossl_ns_spki.h"
+#include "ossl_ocsp.h"
 #include "ossl_pkcs7.h"
 #include "ossl_pkey.h"
 #include "ossl_rand.h"
 #include "ossl_ssl.h"
 #include "ossl_version.h"
 #include "ossl_x509.h"
-#include "ossl_ocsp.h"
 
 void Init_openssl(void);
 

@@ -52,7 +52,6 @@ GetConfigPtr(VALUE obj)
 CONF *
 DupConfigPtr(VALUE obj)
 {
-    CONF *conf;
     VALUE str;
 
     OSSL_Check_Kind(obj, cConfig);
@@ -70,7 +69,6 @@ parse_config(VALUE str, CONF *dst)
     CONF *conf;
     BIO *bio;
     long eline = -1;
-    VALUE obj;
 
     bio = ossl_obj2bio(str);
     conf = dst ? dst : NCONF_new(NULL);
@@ -210,7 +208,17 @@ static VALUE
 ossl_config_get_value_old(int argc, VALUE *argv, VALUE self)
 {
     VALUE section, name;
+    
     rb_scan_args(argc, argv, "11", &section, &name);
+
+    /* support conf.value(nil, "HOME") -> conf.get_value("", "HOME") */
+    if (NIL_P(section)) section = rb_str_new2("");
+    /* support conf.value("HOME") -> conf.get_value("", "HOME") */
+    if (NIL_P(name)) {
+	name = section;
+	section = rb_str_new2("");
+    }
+    /* NOTE: Don't care about conf.get_value(nil, nil) */
     rb_warn("Config#value is deprecated; use Config#get_value");
     return ossl_config_get_value(self, section, name);
 }

@@ -74,21 +74,6 @@ ossl_dsa_new(EVP_PKEY *pkey)
 /*
  * Private
  */
-/*
- * CB for yielding when generating DSA params
- */
-static void
-ossl_dsa_generate_cb(int p, int n, void *arg)
-{
-    VALUE ary;
-
-    ary = rb_ary_new2(2);
-    rb_ary_store(ary, 0, INT2NUM(p));
-    rb_ary_store(ary, 1, INT2NUM(n));
-	
-    rb_yield(ary);
-}
-
 static DSA *
 dsa_generate(int size)
 {
@@ -96,18 +81,15 @@ dsa_generate(int size)
     unsigned char seed[20];
     int seed_len = 20, counter;
     unsigned long h;
-    void (*cb)(int, int, void *) = NULL;
 
     if (!RAND_bytes(seed, seed_len)) {
 	return 0;
     }
-    if (rb_block_given_p()) {
-	cb = ossl_dsa_generate_cb;
-    }
-    dsa = DSA_generate_parameters(size, seed, seed_len, &counter, &h, cb, NULL);
-    if(!dsa) { /* arg to cb = NULL */
-	return 0;
-    }
+    dsa = DSA_generate_parameters(size, seed, seed_len, &counter, &h,
+	    rb_block_given_p() ? ossl_generate_cb : NULL,
+	    NULL);
+    if(!dsa) return 0;
+
     if (!DSA_generate_key(dsa)) {
 	DSA_free(dsa);
 	return 0;

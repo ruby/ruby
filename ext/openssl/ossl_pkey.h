@@ -33,6 +33,8 @@ extern ID id_private_q;
     GetPKey(obj, pkey); \
 } while (0)
 
+void ossl_generate_cb(int, int, void *);
+
 VALUE ossl_pkey_new(EVP_PKEY *);
 VALUE ossl_pkey_new_from_file(VALUE);
 EVP_PKEY *GetPKeyPtr(VALUE);

@@ -74,34 +74,16 @@ ossl_dh_new(EVP_PKEY *pkey)
 /*
  * Private
  */
-/*
- * CB for yielding when generating DH params
- */
-static void
-ossl_dh_generate_cb(int p, int n, void *arg)
-{
-    VALUE ary;
-
-    ary = rb_ary_new2(2);
-    rb_ary_store(ary, 0, INT2NUM(p));
-    rb_ary_store(ary, 1, INT2NUM(n));
-
-    rb_yield(ary);
-}
-
 static DH *
 dh_generate(int size, int gen)
 {
     DH *dh;
-    void (*cb)(int, int, void *) = NULL;
+    
+    dh = DH_generate_parameters(size, gen,
+	    rb_block_given_p() ? ossl_generate_cb : NULL,
+	    NULL);
+    if (!dh) return 0;
 
-    if (rb_block_given_p()) {
-	cb = ossl_dh_generate_cb;
-    }
-    /* arg to cb = NULL */
-    if (!(dh = DH_generate_parameters(size, gen, cb, NULL))) {
-	return 0;
-    }
     if (!DH_generate_key(dh)) {
 	DH_free(dh);
 	return 0;

@@ -19,6 +19,21 @@ VALUE ePKeyError;
 ID id_private_q;
 
 /*
+ * callback for generating keys
+ */
+void
+ossl_generate_cb(int p, int n, void *arg)
+{
+    VALUE ary;
+
+    ary = rb_ary_new2(2);
+    rb_ary_store(ary, 0, INT2NUM(p));
+    rb_ary_store(ary, 1, INT2NUM(n));
+
+    rb_yield(ary);
+}
+
+/*
  * Public
  */
 VALUE

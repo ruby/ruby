@@ -75,30 +75,12 @@ ossl_rsa_new(EVP_PKEY *pkey)
 /*
  * Private
  */
-/*
- * CB for yielding when generating RSA data
- */
-static void
-ossl_rsa_generate_cb(int p, int n, void *arg)
-{
-    VALUE ary;
-
-    ary = rb_ary_new2(2);
-    rb_ary_store(ary, 0, INT2NUM(p));
-    rb_ary_store(ary, 1, INT2NUM(n));
-
-    rb_yield(ary);
-}
-
 static RSA *
 rsa_generate(int size, int exp)
 {
-    void (*cb)(int, int, void *) = NULL;
-	
-    if (rb_block_given_p()) {
-	cb = ossl_rsa_generate_cb;
-    }
-    return RSA_generate_key(size, exp, cb, NULL);
+    return RSA_generate_key(size, exp,
+	    rb_block_given_p() ? ossl_generate_cb : NULL,
+	    NULL);
 }
 
 static VALUE

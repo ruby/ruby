@@ -15,6 +15,10 @@ openssl_missing.c
 openssl_missing.h
 ossl.c
 ossl.h
+ossl_asn1.c
+ossl_asn1.h
+ossl_bio.c
+ossl_bio.h
 ossl_bn.c
 ossl_bn.h
 ossl_cipher.c

@@ -1,3 +1,13 @@
+Fri Sep 12 22:41:48 2003 Michal Rokos <m.rokos@sh.cvut.cz>
+
+	* ext/openssl/ossl.c: move ASN.1 stuff to ossl_asn1.[ch]
+
+	* ext/openssl/ossl.c: move BIO stuff to ossl_bio.[ch]
+
+	* ext/openssl/ossl_asn1.[ch]: new files
+
+	* ext/openssl/ossl_bio.[ch]: new files
+
 Fri Sep 12 12:30:41 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (rb_disable_super, rb_enable_super): replace with dummy
@@ -55,6 +65,10 @@ Tue Sep  9 10:39:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Sep  9 05:17:04 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_config.rb: avoid compile error in OpenSSL-0.9.6.
+
+Tue Sep 9 02:41:35 2003 Michal Rokos <m.rokos@sh.cvut.cz>
+
+	* ext/openssl/ossl_config.c: Refine compatibility.
 
 Tue Sep  9 01:50:45 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -763,6 +777,16 @@ Fri Aug 15 02:08:53 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (id2ref): recycle check should be done by klass == 0.
 	  [ruby-core:01408]
+
+Fri Aug 15 01:34:23 2003 Michal Rokos <m.rokos@sh.cvut.cz>
+
+	* ext/openssl/ossl_pkey.c: move generate_cb here
+
+	* ext/openssl/ossl_pkey_{dh|dsa|rsa}.c: adapt to this cb
+
+	* ext/openssl/openssl_missing.[ch]: add (0.9.6x, x<j) missing BN funcs
+	
+	* ext/openssl/ossl_bn.c: use supplied funcs from openssl_missing.c
 
 Fri Aug 15 00:38:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 

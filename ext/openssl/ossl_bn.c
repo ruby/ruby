@@ -471,25 +471,8 @@ BIGNUM_RAND(pseudo_rand);
 	WrapBN(klass, obj, result);				\
 	return obj;						\
     }
-
-#define BIGNUM_RAND_RANGE_NOT_IMPL(func)			\
-    static VALUE						\
-    ossl_bn_s_##func##_range(VALUE klass, VALUE range)		\
-    {								\
-	rb_notimplement();					\
-    }
-
-#if defined(HAVE_BN_RAND_RANGE)
 BIGNUM_RAND_RANGE(rand);
-#else
-BIGNUM_RAND_RANGE_NOT_IMPL(rand);
-#endif
-
-#if defined(HAVE_BN_PSEUDO_RAND_RANGE)
 BIGNUM_RAND_RANGE(pseudo_rand);
-#else
-BIGNUM_RAND_RANGE_NOT_IMPL(pseudo_rand);
-#endif
 
 static VALUE
 ossl_bn_s_generate_prime(int argc, VALUE *argv, VALUE klass)
