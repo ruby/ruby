@@ -1,3 +1,8 @@
+Wed Aug 18 11:22:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (init_env): initialize HOME and USER environment
+	  variables unless set.
+
 Tue Aug 17 01:36:32 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/usage.rb: Remove extra indent. Tidy 'ri' option
@@ -109,7 +114,7 @@ Mon Aug  2 11:48:29 2004  Dave Thomas  <dave@pragprog.com>
 Sat Jul 31 23:08:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (is_defined): stupid mistakes fixed. [ruby-dev:24006]
-	
+
 Sat Jul 31 17:39:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-expr-beg, ruby-parse-partial,

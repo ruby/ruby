@@ -25,6 +25,7 @@
 #include <windows.h>
 #include <winbase.h>
 #include <wincon.h>
+#include <shlobj.h>
 #ifdef __MINGW32__
 #include <mswsock.h>
 #endif
@@ -349,6 +350,64 @@ flock(int fd, int oper)
 			      (DWORD)-1);
 }
 
+static void init_env(void)
+{
+    char env[_MAX_PATH];
+    DWORD len;
+    BOOL f;
+    LPITEMIDLIST pidl;
+
+    if (!GetEnvironmentVariable("HOME", env, sizeof(env))) {
+	f = FALSE;
+	if (GetEnvironmentVariable("HOMEDRIVE", env, sizeof(env)))
+	    len = strlen(env);
+	else
+	    len = 0;
+	if (GetEnvironmentVariable("HOMEPATH", env + len, sizeof(env) - len) || len) {
+	    f = TRUE;
+	}
+	else if (GetEnvironmentVariable("USERPROFILE", env, sizeof(env))) {
+	    f = TRUE;
+	}
+	else if (SHGetSpecialFolderLocation(NULL, CSIDL_PERSONAL, &pidl) == 0) {
+	    LPMALLOC alloc;
+	    f = SHGetPathFromIDList(pidl, env);
+	    SHGetMalloc(&alloc);
+	    alloc->lpVtbl->Free(alloc, pidl);
+	    alloc->lpVtbl->Release(alloc);
+	}
+	if (f) {
+	    char *p = env;
+	    while (*p) {
+		if (*p == '\\') *p = '/';
+		p = CharNext(p);
+	    }
+	    if (p - env == 2 && env[1] == ':') {
+		*p++ = '/';
+		*p = 0;
+	    }
+	    SetEnvironmentVariable("HOME", env);
+	}
+    }
+    if (GetEnvironmentVariable("USER", env, sizeof env)) {
+	len = strlen(env);
+    }
+    if (GetEnvironmentVariable("USERNAME", env, sizeof env)) {
+	len = strlen(env);
+	SetEnvironmentVariable("USER", env);
+    }
+    else if (GetUserName(env, (len = sizeof env, &len))) {
+	SetEnvironmentVariable("USER", env);
+    }
+    else {
+	NTLoginName = "<Unknown>";
+	return;
+    }
+    NTLoginName = ALLOC_N(char, len+1);
+    strncpy(NTLoginName, env, len);
+    NTLoginName[len] = '\0';
+}
+
 //
 // Initialization stuff
 //
@@ -374,6 +433,8 @@ NtInitialize(int *argc, char ***argv)
 
     tzset();
 
+    init_env();
+
     // Initialize Winsock
     StartSockets();
 
@@ -386,20 +447,6 @@ NtInitialize(int *argc, char ***argv)
 char *
 getlogin()
 {
-    char buffer[200];
-    DWORD len = 200;
-    extern char *NTLoginName;
-
-    if (NTLoginName == NULL) {
-	if (GetUserName(buffer, &len)) {
-	    NTLoginName = ALLOC_N(char, len+1);
-	    strncpy(NTLoginName, buffer, len);
-	    NTLoginName[len] = '\0';
-	}
-	else {
-	    NTLoginName = "<Unknown>";
-	}
-    }
     return NTLoginName;
 }
 
