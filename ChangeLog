@@ -1,3 +1,8 @@
+Tue Nov 16 23:45:07 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_divmod): protect float values from GC by
+	  assignment to local variables.  [ruby-dev:24873]
+
 Tue Nov 16 14:31:54 2004  Michael Neumann  <mneumann@ruby-lang.org>
 
 	* test/xmlrpc/*: imported and refactored original test cases.

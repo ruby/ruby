@@ -731,7 +731,9 @@ flo_divmod(x, y)
 	return rb_num_coerce_bin(x, y);
     }
     flodivmod(RFLOAT(x)->value, fy, &div, &mod);
-    return rb_assoc_new(rb_float_new(div), rb_float_new(mod));
+    x = rb_float_new(div);
+    y = rb_float_new(mod);
+    return rb_assoc_new(x, y);
 }
 
 /*

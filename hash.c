@@ -1554,8 +1554,10 @@ rb_hash_update_block_i(key, value, hash)
 
 /*
  *  call-seq:
- *     hsh.merge!(other_hash)    => hsh
- *     hsh.update(other_hash)    => hsh
+ *     hsh.merge!(other_hash)                                 => hsh
+ *     hsh.update(other_hash)                                 => hsh
+ *     hsh.merge!(other_hash){|key, oldval, newval| block}    => hsh
+ *     hsh.update(other_hash){|key, oldval, newval| block}    => hsh
  *  
  *  Adds the contents of <i>other_hash</i> to <i>hsh</i>, overwriting
  *  entries with duplicate keys with those from <i>other_hash</i>.
@@ -1581,7 +1583,8 @@ rb_hash_update(hash1, hash2)
 
 /*
  *  call-seq:
- *     hsh.merge(other_hash) -> a_hash
+ *     hsh.merge(other_hash)                              -> a_hash
+ *     hsh.merge(other_hash){|key, oldval, newval| block} -> a_hash
  *  
  *  Returns a new hash containing the contents of <i>other_hash</i> and
  *  the contents of <i>hsh</i>, overwriting entries in <i>hsh</i> with
