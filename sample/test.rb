@@ -850,7 +850,6 @@ $x = ary.pack($format)
 ary2 = $x.unpack($format)
 
 ok(ary.length == ary2.length)
-p [ary.join(':'), ary2.join(':')]
 ok(ary.join(':') == ary2.join(':'))
 ok($x =~ /def/)
 

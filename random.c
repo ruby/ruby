@@ -28,6 +28,51 @@ struct timeval {
 # include <stdlib.h>
 #endif
 
+/*
+ * Prefer to use drand48, otherwise use random, or rand as a last resort.
+ */
+#ifdef HAVE_DRAND48
+
+#ifndef HAVE_DRAND48_DECL
+double drand48 _((void));
+void srand48 _((long));
+#endif
+
+#define SRANDOM(s)	srand48((long)(s))
+#define RANDOM_NUMBER	drand48()
+
+#else /* not HAVE_DRAND48 */
+
+/*
+ * The largest number returned by the random number generator is
+ * RANDOM_MAX.  If we're using `rand' it's RAND_MAX, but if we're
+ * using `random' it's 2^31-1.
+ */
+#ifndef RANDOM_MAX
+# ifndef HAVE_RANDOM
+#  define RANDOM_MAX	RAND_MAX
+# else
+#  define RANDOM_MAX	2147483647.0
+# endif
+#endif
+
+#ifdef HAVE_RANDOM
+
+#define RANDOM	random
+#define SRANDOM	srandom
+
+#else /* HAVE_RANDOM */
+
+#define RANDOM	rand
+#define SRANDOM	srand
+
+#endif /* HAVE_RANDOM */
+
+/* 0 <= RANDOM_NUMBER <= 1 */
+#define RANDOM_NUMBER (((double)RANDOM())/(double)RANDOM_MAX)
+
+#endif /* not HAVE_DRAND48 */
+
 #ifdef HAVE_RANDOM
 static int first = 1;
 static char state[256];
@@ -61,19 +106,13 @@ f_srand(argc, argv, obj)
     else {
 	setstate(state);
     }
-
-    srandom(seed);
-    old = saved_seed;
-    saved_seed = seed;
-
-    return int2inum(old);
-#else
-    srand(seed);
-    old = saved_seed;
-    saved_seed = seed;
-
-    return int2inum(old);
 #endif
+
+    SRANDOM(seed);
+    old = saved_seed;
+    saved_seed = seed;
+
+    return int2inum(old);
 }
 
 static VALUE
@@ -93,18 +132,10 @@ f_rand(obj, vmax)
     }
 
     max = NUM2INT(vmax);
-    if (max == 0) ArgError("rand(0)");
-
-#ifdef HAVE_RANDOM
-    val = random();
-#else
-    val = rand();
-#endif
-#ifdef RAND_MAX
-    val = val * (double)max / (double)RAND_MAX;
-#else
-    val = (val>>8) % max;
-#endif
+    if (max == 0) {
+	return float_new(RANDOM_NUMBER);
+    }
+    val = max*RANDOM_NUMBER;
 
     if (val < 0) val = -val;
     return int2inum(val);

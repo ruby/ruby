@@ -474,11 +474,29 @@ set_syserr(i, name)
     int i;
     char *name;
 {
+#ifdef __BEOS__
+   VALUE *list;
+   int ix, offset;
+#endif
     VALUE error = rb_define_class_under(mErrno, name, eSystemCallError);
     rb_define_const(error, "Errno", INT2FIX(i));
+#ifdef __BEOS__
+   i -= B_GENERAL_ERROR_BASE;
+   ix = (i >> 12) & 0xf;
+   offset = (i >> 8) & 0xf;
+   if (offset < syserr_index[ix].n) {
+      ix = syserr_index[ix].ix;
+      if ((i & 0xff) < syserr_list[ix + offset].n) {
+	 list = syserr_list[ix + offset].list;
+	 list[i & 0xff] = error;
+	 rb_global_variable(&list[i & 0xff]);
+      }
+   }
+#else
     if (i <= sys_nerr) {
 	syserr_list[i] = error;
     }
+#endif
     return error;
 }
 
@@ -707,12 +725,24 @@ rb_sys_fail(mesg)
 static void
 init_syserr()
 {
+#ifdef __BEOS__
+   int i, ix, offset;
+#endif
     eSystemCallError = rb_define_class("SystemCallError", eStandardError);
     rb_define_method(eSystemCallError, "errno", syserr_errno, 0);
 
     mErrno = rb_define_module("Errno");
+#ifdef __BEOS__
+   for (i = 0; syserr_index[i].n != 0; i++) {
+      ix = syserr_index[i].ix;
+      for (offset = 0; offset < syserr_index[i].n; offset++) {
+	 MEMZERO(syserr_list[ix + offset].list, VALUE, syserr_list[ix + offset].n);
+      }
+   }
+#else
     syserr_list = ALLOC_N(VALUE, sys_nerr+1);
     MEMZERO(syserr_list, VALUE, sys_nerr+1);
+#endif
 
 #ifdef EPERM
     set_syserr(EPERM, "EPERM");

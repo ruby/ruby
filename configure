@@ -2681,7 +2681,7 @@ fi
 done
 
 
-for ac_func in fmod killpg random wait4 waitpid syscall getcwd\
+for ac_func in fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      setpgrp2 getpgid getgroups getpriority\

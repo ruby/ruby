@@ -99,7 +99,7 @@ struct timeval time_timeval();
 #    define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #  else
 #    if defined(__BEOS__)
-#      define ReadDataPending(fp) (fp->state._eof == 0)
+#      define ReadDataPending(fp) (fp->_state._eof == 0)
 #    elif defined(USE_CWGUSI)
 #      define ReadDataPending(fp) (fp->state.eof == 0)
 #    else

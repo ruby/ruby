@@ -32,13 +32,6 @@
 #include <ctype.h>
 #include <sys/types.h>
 
-#ifdef __MWERKS__
-#include "ruby.h"
-#endif
-
-#include "config.h"
-#include "defines.h"
-
 #ifdef __STDC__
 #define P(s)    s
 #define MALLOC_ARG_T size_t
@@ -47,6 +40,20 @@
 #define MALLOC_ARG_T unsigned
 #define volatile
 #define const
+#endif
+
+#ifdef __MWERKS__
+#include "ruby.h"
+#else
+
+#include "config.h"
+#include "defines.h"
+
+void *xmalloc P((unsigned long));
+void *xcalloc P((unsigned long,unsigned long));
+void *xrealloc P((void*,unsigned long));
+void free P((void*));
+
 #endif
 
 /* #define	NO_ALLOCA	/* try it out for now */
@@ -80,7 +87,7 @@ char *alloca();
 #ifdef C_ALLOCA
 #define FREE_VARIABLES() alloca(0)
 #else
-#define FREE_VARIABLES() 0
+#define FREE_VARIABLES()
 #endif
 
 #define FREE_AND_RETURN_VOID(stackb)	return
@@ -91,7 +98,7 @@ char *alloca();
         (type*) memcpy(stackx, stackb, len * sizeof (type)))
 #else  /* NO_ALLOCA defined */
 
-#define RE_ALLOCATE malloc
+#define RE_ALLOCATE xmalloc
 
 #define FREE_VAR(var) if (var) free(var); var = NULL
 #define FREE_VARIABLES()						\
@@ -824,14 +831,14 @@ print_compiled_pattern(bufp)
 
 static char*
 calculate_must_string(start, end)
-    unsigned char *start;
-    unsigned char *end;
+    char *start;
+    char *end;
 {
   int mcnt, mcnt2;
   int max = 0;
-  unsigned char *p = start;
-  unsigned char *pend = end;
-  unsigned char *must = 0;
+  char *p = start;
+  char *pend = end;
+  char *must = 0;
 
   if (start == NULL) return 0;
     
@@ -1020,21 +1027,19 @@ re_compile_pattern(pattern, size, bufp)
     /* Initialize the syntax table.  */
     init_syntax_once();
 
-    if (bufp->allocated == 0)
-	{
-	    bufp->allocated = INIT_BUF_SIZE;
-	    if (bufp->buffer)
-		/* EXTEND_BUFFER loses when bufp->allocated is 0.  */
-		bufp->buffer = (char *) xrealloc (bufp->buffer, INIT_BUF_SIZE);
-	    else
-		/* Caller did not allocate a buffer.  Do it for them.  */
+    if (bufp->allocated == 0) {
+      bufp->allocated = INIT_BUF_SIZE;
+      if (bufp->buffer)
+	/* EXTEND_BUFFER loses when bufp->allocated is 0.  */
+	bufp->buffer = (char *) xrealloc (bufp->buffer, INIT_BUF_SIZE);
+      else
+	/* Caller did not allocate a buffer.  Do it for them.  */
 	bufp->buffer = (char *) xmalloc(INIT_BUF_SIZE);
       if (!bufp->buffer) goto memory_exhausted;
       begalt = b = bufp->buffer;
     }
 
-  while (p != pend)
-    {
+    while (p != pend) {
       PATFETCH(c);
 
       switch (c)

@@ -10,7 +10,7 @@ VALUE ary_new2 _((int));
 VALUE ary_new3 __((int,...));
 VALUE ary_new4 _((int, VALUE *));
 VALUE ary_freeze _((VALUE));
-VALUE ary_aref(int, VALUE*, VALUE);
+VALUE ary_aref _((int, VALUE*, VALUE));
 void ary_store _((VALUE, int, VALUE));
 VALUE ary_push _((VALUE, VALUE));
 VALUE ary_pop _((VALUE));

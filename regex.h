@@ -169,12 +169,13 @@ extern long re_syntax_options;
 #define MBCTYPE_EUC 1
 #define MBCTYPE_SJIS 2
 
-extern const unsigned char *mbctab;
 extern int current_mbctype;
 
 #ifdef __STDC__
+extern const unsigned char *mbctab;
 void mbcinit (int);
 #else
+extern unsigned char *mbctab;
 void mbcinit ();
 #endif
 

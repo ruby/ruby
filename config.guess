@@ -737,6 +737,9 @@ EOF
     BeMac:BeOS:*:*)
         echo powerpc-apple-beos
 	exit 0 ;;
+    BePC:BeOS:*:*)
+	echo i586-pc-beos
+	exit 0 ;;
 esac
 
 #echo '(No uname command or uname output not recognized.)' 1>&2

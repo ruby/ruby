@@ -10,6 +10,8 @@
 
 ************************************************/
 
+#include <stdio.h>
+
 #define RUBY_NO_INLINE
 #include "ruby.h"
 

@@ -1,3 +1,18 @@
+Thu May 14 14:44:21 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* sun4 cc patches for intern.h and regex.h.
+
+Thu May 14 14:03:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* random.c (RANDOM_MAX): guessing proper maximum value for random
+ 	  numbers.
+
+	* random.c (f_rand): use drand48 if possible.
+
+Wed May 13 19:05:20 1998 1998  MAEDA shugo  <shugo@aianet.ne.jp>
+
+	* BeOS patches for io.c, error.c and config.guess.
+
 Wed May 13 14:56:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_19.
