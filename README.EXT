@@ -422,8 +422,9 @@ DATA), use Data_Wrap_Struct().
 Data_Wrap_Struct() returns a created DATA object.  The klass argument
 is the class for the DATA object.  The mark argument is the function
 to mark Ruby objects pointed by this data.  The free argument is the
-function to free the pointer allocation.  The functions mark and
-free will be called from garbage collector.
+function to free the pointer allocation.  If this is -1, the pointer
+will be just freed.  The functions mark and free will be called from
+garbage collector.
 
 You can allocate and wrap the structure in one step.
 
