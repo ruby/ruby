@@ -1,3 +1,8 @@
+Mon Feb 16 02:14:29 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: should warn suspicious pointer conversion.
+	* bcc32/setup.mak: ditto.
+
 Sun Feb 15 20:56:22 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (push_braces): remove wrong const. [ruby-dev:22891]
