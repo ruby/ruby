@@ -271,11 +271,11 @@ module RDoc
         handle_class_module(var_name, "class", class_name, parent, nil)
       end
 
-      @body.scan(/(\w+)\s* = \s*rb_define_module_under
+      @body.scan(/(\w+)\s* = \s*rb_define_module_under\s*
                 \( 
                    \s*(\w+),
                    \s*"(\w+)"
-                \)/mx) do 
+                \s*\)/mx) do 
         
         |var_name, in_module, class_name|
         handle_class_module(var_name, "module", class_name, nil, in_module)
