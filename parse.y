@@ -4501,7 +4501,6 @@ block_append(head, tail)
 
     if (tail == 0) return head;
 
-  again:
     if (h == 0) return tail;
     switch (nd_type(h)) {
       case NODE_LIT:
@@ -4521,7 +4520,6 @@ block_append(head, tail)
 
     if (RTEST(ruby_verbose)) {
 	NODE *nd = end->nd_head;
-      newline:
 	switch (nd_type(nd)) {
 	  case NODE_RETURN:
 	  case NODE_BREAK:
@@ -4658,7 +4656,6 @@ new_evstr(node)
 {
     NODE *head = node;
 
-  again:
     if (node) {
 	switch (nd_type(node)) {
 	  case NODE_STR: case NODE_DSTR: case NODE_EVSTR:
@@ -4995,7 +4992,6 @@ void_expr0(node)
 
     if (!RTEST(ruby_verbose)) return;
 
-  again:
     if (!node) return;
     switch (nd_type(node)) {
       case NODE_CALL:

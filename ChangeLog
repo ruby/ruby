@@ -1,3 +1,8 @@
+Mon Feb  2 22:06:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (block_append, new_evstr, void_expr0): remove no longer used
+	  labels.
+
 Mon Feb  2 18:45:50 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dln.c (dln_load): don't specify RTLD_GLOBAL on Interix,
@@ -82,7 +87,7 @@ Thu Jan 29 19:28:16 2004  Minero Aoki  <aamine@loveruby.net>
 Thu Jan 29 18:54:08 2004  H.Yamamoto  <ocean@m2.ccsnet.ne.jp>.
 
 	* dir.c (glob_helper): infinite loop bug in win32 code.
-	  [ruby-dev:22770] 
+	  [ruby-dev:22770]
 
 Thu Jan 29 17:03:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
