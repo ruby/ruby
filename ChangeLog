@@ -1,3 +1,8 @@
+Sun Oct 24 00:40:50 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_load, search_required, rb_require_safe, rb_require): use
+	  frozen shared string to avoid outside modification.  [ruby-dev:24580]
+
 Sat Oct 23 00:20:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/zlib/zlib.c (zstream_append_input): clear klass for z->input

@@ -4104,6 +4104,7 @@ rb_find_file_ext(filep, ext)
 	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
+	OBJ_FREEZE(fname);
 	f = StringValueCStr(fname);
 	*filep = fname;
     }
@@ -4112,6 +4113,7 @@ rb_find_file_ext(filep, ext)
 	for (i=0; ext[i]; i++) {
 	    fname = rb_str_dup(*filep);
 	    rb_str_cat2(fname, ext[i]);
+	    OBJ_FREEZE(fname);
 	    if (file_load_ok(StringValueCStr(fname))) {
 		*filep = fname;
 		return i+1;
@@ -4132,6 +4134,7 @@ rb_find_file_ext(filep, ext)
 	for (j=0; ext[j]; j++) {
 	    fname = rb_str_dup(*filep);
 	    rb_str_cat2(fname, ext[j]);
+	    OBJ_FREEZE(fname);
 	    found = dln_find_file(StringValueCStr(fname), path);
 	    if (found && file_load_ok(found)) {
 		*filep = fname;
@@ -4155,6 +4158,7 @@ rb_find_file(path)
 	if (rb_safe_level() >= 1 && OBJ_TAINTED(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", f);
 	}
+	OBJ_FREEZE(path);
 	f = StringValueCStr(path);
     }
 
@@ -4213,7 +4217,9 @@ rb_find_file(path)
 	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
     }
     if (file_load_ok(f)) {
-	return rb_str_new2(f);
+	tmp = rb_str_new2(f);
+	OBJ_FREEZE(tmp);
+	return tmp;
     }
     return 0;
 }

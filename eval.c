@@ -6438,6 +6438,7 @@ rb_load(fname, wrap)
 
     if (!wrap) rb_secure(4);
     FilePathValue(fname);
+    fname = rb_str_new4(fname);
     tmp = rb_find_file(fname);
     if (!tmp) {
 	load_failed(fname);
@@ -6691,7 +6692,7 @@ search_required(fname, featurep, path)
     char *ext, *ftptr;
     int type;
 
-    *featurep = fname = rb_str_new4(fname);
+    *featurep = fname;
     *path = 0;
     ext = strrchr(ftptr = RSTRING(fname)->ptr, '.');
     if (ext && !strchr(ext, '/')) {
@@ -6705,6 +6706,7 @@ search_required(fname, featurep, path)
 	    tmp = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
 	    *featurep = tmp;
 #ifdef DLEXT2
+	    OBJ_FREEZE(tmp);
 	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
 		*featurep = tmp;
 		*path = rb_find_file(tmp);
@@ -6712,6 +6714,7 @@ search_required(fname, featurep, path)
 	    }
 #else
 	    rb_str_cat2(tmp, DLEXT);
+	    OBJ_FREEZE(tmp);
 	    if (*path = rb_find_file(tmp)) {
 		return 's';
 	    }
@@ -6763,6 +6766,7 @@ rb_require_safe(fname, safe)
     char *volatile ftptr = 0;
 
     FilePathValue(fname);
+    fname = rb_str_new4(fname);
     saved.vmode = scope_vmode;
     saved.node = ruby_current_node;
     saved.func = ruby_frame->last_func;
@@ -6832,7 +6836,9 @@ VALUE
 rb_require(fname)
     const char *fname;
 {
-    return rb_require_safe(rb_str_new2(fname), ruby_safe_level);
+    VALUE fn = rb_str_new2(fname);
+    OBJ_FREEZE(fn);
+    return rb_require_safe(fn, ruby_safe_level);
 }
 
 static void
