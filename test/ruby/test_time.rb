@@ -23,4 +23,14 @@ class TestTime < Test::Unit::TestCase
     assert_equal(Time.utc(2000, 3, 21, 0, 30)  \
                 -Time.utc(2000, 3, 21, 3, 30), -3*3600)
   end
+
+  def test_negative
+    begin
+      Time.at(-1)
+    rescue ArgumentError
+      return
+    end
+    assert_equal(-1, Time.utc(1969, 12, 31, 23, 59, 59).tv_sec)
+    assert_equal(-2, Time.utc(1969, 12, 31, 23, 59, 58).tv_sec)
+  end
 end

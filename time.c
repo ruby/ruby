@@ -444,6 +444,15 @@ search_time_t(tptr, utc_p)
                (1UL << (8 * sizeof(time_t) - 1)) - 1 :
 	       ~(time_t)0;
 
+#if defined(HAVE_MKTIME)
+    if ((guess = mktime(tptr)) != -1) {
+      if (guess_lo < guess - 24 * 60 * 60)
+        guess_lo = guess - 24 * 60 * 60;
+      if (guess + 24 * 60 * 60 < guess_hi)
+        guess_hi = guess + 24 * 60 * 60;
+    }
+#endif
+
     tm = (utc_p ? gmtime : localtime)(&guess_lo);
     if (!tm) goto error;
     d = tmcmp(tptr, tm);
