@@ -10,6 +10,8 @@ module RSS
 	class RDF < Element
 
 		include RSS10
+		include RootElementMixin
+		include XMLStyleSheetMixin
 
 		class << self
 
@@ -45,23 +47,13 @@ module RSS
 		attr_accessor :rss_version, :version, :encoding, :standalone
 		
 		def initialize(version=nil, encoding=nil, standalone=nil)
-			super()
-			@rss_version = '1.0'
-			@version = version || '1.0'
-			@encoding = encoding
-			@standalone = standalone
-			@output_encoding = nil
-		end
-
-		def output_encoding=(enc)
-			@output_encoding = enc
-			self.converter = Converter.new(@output_encoding, @encoding)
+			super('1.0', version, encoding, standalone)
 		end
 
 		def to_s(convert=true)
 			rv = <<-EORDF
 #{xmldecl}
-<#{PREFIX}:RDF#{ns_declaration}>
+#{xml_stylesheet_pi}<#{PREFIX}:RDF#{ns_declaration}>
 #{channel_element(false)}
 #{image_element(false)}
 #{item_elements(false)}
@@ -74,25 +66,6 @@ EORDF
 		end
 
 		private
-		def xmldecl
-			rv = %Q[<?xml version="#{@version}"]
-			if @output_encoding or @encoding
-				rv << %Q[ encoding="#{@output_encoding or @encoding}"]
-			end
-			rv << %Q[ standalone="#{@standalone}"] if @standalone
-			rv << '?>'
-			rv
-		end
-
-		def ns_declaration
-			rv = ''
-			self.class::NSPOOL.each do |prefix, uri|
-				prefix = ":#{prefix}" unless prefix.empty?
-				rv << %Q|\n\txmlns#{prefix}="#{html_escape(uri)}"|
-			end
-			rv
-		end
-		
 		def rdf_validate(tags)
 			_validate(tags, [])
 		end
@@ -645,6 +618,21 @@ EOT
 
 	RSS10::ELEMENTS.each do |x|
 		BaseListener.install_get_text_element(x, URI, "#{x}=")
+	end
+
+	module ListenerMixin
+		private
+		def start_RDF(tag_name, prefix, attrs, ns)
+			check_ns(tag_name, prefix, ns, RDF::URI)
+
+			@rss = RDF.new(@version, @encoding, @standalone)
+			@rss.do_validate = @do_validate
+			@rss.xml_stylesheets = @xml_stylesheets
+			@last_element = @rss
+			@proc_stack.push Proc.new { |text, tags|
+				@rss.validate_for_stream(tags) if @do_validate
+			}
+		end
 	end
 
 end

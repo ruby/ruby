@@ -48,6 +48,7 @@ module RSS
 			xmldecl(@version, @encoding, @standalone)
     end
 
+		alias_method(:on_pi, :instruction)
 		alias_method(:on_chardata, :text)
 		alias_method(:on_cdata, :text)
 

@@ -135,6 +135,7 @@ EOT
 # 			check_ns(tag_name, prefix, ns, Rss::URI)
 			
 			@rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
+			@rss.xml_stylesheets = @xml_stylesheets
 			@last_element = @rss
 			@proc_stack.push Proc.new { |text, tags|
 				@rss.validate_for_stream(tags) if @do_validate

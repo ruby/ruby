@@ -84,7 +84,46 @@ module Test
 					end
 				end
 			end
+
+			def assert_xml_stylesheet_attrs(xsl, attrs)
+				_wrap_assertion do
+					normalized_attrs = {}
+					attrs.each do |name, value|
+						normalized_attrs[name.to_s] = value
+					end
+					::RSS::XMLStyleSheet::ATTRIBUTES.each do |name|
+						assert_equal(normalized_attrs[name], xsl.send(name))
+					end
+				end
+			end
 			
+			def assert_xml_stylesheet(target, xsl, attrs)
+				_wrap_assertion do
+					if attrs.has_key?(:href)
+						if !attrs.has_key?(:type) and attrs.has_key?(:guess_type)
+							attrs[:type] = attrs[:guess_type]
+						end
+						assert_equal("xml-stylesheet", target)
+						assert_xml_stylesheet_attrs(xsl, attrs)
+					else
+						assert_nil(target)
+						assert_equal("", xsl.to_s)
+					end
+				end
+			end
+			
+			def assert_xml_stylesheet_pis(attrs_ary)
+				rdf = ::RSS::RDF.new()
+				xss_strs = []
+				attrs_ary.each do |attrs|
+					xss = ::RSS::XMLStyleSheet.new(*attrs)
+					xss_strs.push(xss.to_s)
+					rdf.xml_stylesheets.push(xss)
+				end
+				pi_str = rdf.to_s.gsub(/<\?xml .*\n/, "").gsub(/\s*<rdf:RDF.*\z/m, "")
+				assert_equal(xss_strs.join("\n"), pi_str)
+			end
+
 		end
 	end
 end

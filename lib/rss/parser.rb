@@ -191,10 +191,20 @@ module RSS
 			@proc_stack = []
 			@last_element = nil
 			@version = @encoding = @standalone = nil
+			@xml_stylesheets = []
 		end
 		
 		def xmldecl(version, encoding, standalone)
 			@version, @encoding, @standalone = version, encoding, standalone
+		end
+
+		def instruction(name, content)
+			if name == "xml-stylesheet"
+				params = parse_pi_content(content)
+				if params.has_key?("href")
+					@xml_stylesheets << XMLStyleSheet.new(*params)
+				end
+			end
 		end
 
 		def tag_start(name, attributes)
@@ -204,7 +214,7 @@ module RSS
 			attrs = {}
 			attributes.each do |n, v|
 				if n =~ /\Axmlns:?/
-					ns[$'] = v # $' is post match 
+					ns[$POSTMATCH] = v
 				else
 					attrs[n] = v
 				end
@@ -238,15 +248,13 @@ module RSS
 
 		private
 
-		def start_RDF(tag_name, prefix, attrs, ns)
-			check_ns(tag_name, prefix, ns, RDF::URI)
-
-			@rss = RDF.new(@version, @encoding, @standalone)
-			@rss.do_validate = @do_validate
-			@last_element = @rss
-			@proc_stack.push Proc.new { |text, tags|
-				@rss.validate_for_stream(tags) if @do_validate
-			}
+		CONTENT_PATTERN = /\s*([^=]+)=(["'])([^\2]+?)\2/
+		def parse_pi_content(content)
+			params = {}
+			content.scan(CONTENT_PATTERN) do |name, quote, value|
+				params[name] = value
+			end
+			params
 		end
 
 		def start_else_element(local, prefix, attrs, ns)

@@ -10,6 +10,8 @@ module RSS
 	class Rss < Element
 
 		include RSS09
+		include RootElementMixin
+		include XMLStyleSheetMixin
 
 		[
 			["channel", nil],
@@ -24,18 +26,9 @@ module RSS
 		attr_accessor :rss_version, :version, :encoding, :standalone
 		
 		def initialize(rss_version, version=nil, encoding=nil, standalone=nil)
-			super()
-			@rss_version = rss_version
-			@version = version || '1.0'
-			@encoding = encoding
-			@standalone = standalone
+			super
 		end
 
-		def output_encoding=(enc)
-			@output_encoding = enc
-			self.converter = Converter.new(@output_encoding, @encoding)
-		end
-		
 		def items
 			if @channel
 				@channel.items
@@ -55,7 +48,7 @@ module RSS
 		def to_s(convert=true)
 			rv = <<-EOR
 #{xmldecl}
-<rss version="#{@rss_version}"#{ns_declaration}>
+#{xml_stylesheet_pi}<rss version="#{@rss_version}"#{ns_declaration}>
 #{channel_element(false)}
 #{other_element(false, "\t")}
 </rss>
@@ -65,25 +58,6 @@ EOR
 		end
 
 		private
-		def xmldecl
-			rv = "<?xml version='#{@version}'"
-			if @output_encoding or @encoding
-				rv << " encoding='#{@output_encoding or @encoding}'" 
-			end
-			rv << " standalone='#{@standalone}'" if @standalone
-			rv << '?>'
-			rv
-		end
-
-		def ns_declaration
-			rv = ''
-			NSPOOL.each do |prefix, uri|
-				prefix = ":#{prefix}" unless prefix.empty?
-				rv << %Q|\n\txmlns#{prefix}="#{uri}"|
-			end
-			rv
-		end
-		
 		def children
 			[@channel]
 		end
@@ -423,6 +397,7 @@ EOT
 			check_ns(tag_name, prefix, ns, nil)
 			
 			@rss = Rss.new(attrs['version'], @version, @encoding, @standalone)
+			@rss.xml_stylesheets = @xml_stylesheets
 			@last_element = @rss
 			@proc_stack.push Proc.new { |text, tags|
 				@rss.validate_for_stream(tags) if @do_validate

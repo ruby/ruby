@@ -1,7 +1,9 @@
 require "time"
 
+require "English"
 require "rss/utils"
 require "rss/converter"
+require "rss/xml-stylesheet"
 
 module RSS
 
@@ -365,7 +367,6 @@ EOC
 
 		def initialize(do_validate=true)
 			@converter = nil
-			@output_encoding = nil
 			@do_validate = do_validate
 			initialize_variables
 		end
@@ -559,6 +560,46 @@ EOC
 			rv
 		end
 
+	end
+
+	module RootElementMixin
+
+		attr_reader :output_encoding
+
+		def initialize(rss_version, version=nil, encoding=nil, standalone=nil)
+			super()
+			@rss_version = rss_version
+			@version = version || '1.0'
+			@encoding = encoding
+			@standalone = standalone
+			@output_encoding = nil
+		end
+
+		def output_encoding=(enc)
+			@output_encoding = enc
+			self.converter = Converter.new(@output_encoding, @encoding)
+		end
+
+		private
+		def xmldecl
+			rv = %Q[<?xml version="#{@version}"]
+			if @output_encoding or @encoding
+				rv << %Q[ encoding="#{@output_encoding or @encoding}"]
+			end
+			rv << %Q[ standalone="#{@standalone}"] if @standalone
+			rv << '?>'
+			rv
+		end
+		
+		def ns_declaration
+			rv = ''
+			self.class::NSPOOL.each do |prefix, uri|
+				prefix = ":#{prefix}" unless prefix.empty?
+				rv << %Q|\n\txmlns#{prefix}="#{html_escape(uri)}"|
+			end
+			rv
+		end
+		
 	end
 
 end

@@ -1,3 +1,10 @@
+Sun Mar 21 18:15:29 2004  Kouhei Sutou  <kou@cozmixng.org>
+
+	* test/rss/test_xml-stylesheet.rb: added tests for xml-stylesheet.
+
+	* lib/rss/xml-stylesheet.rb: added xml-stylesheet parsing
+	  function.
+
 Sat Mar 20 23:51:03 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (rb_require_safe): preserve old ruby_errinfo.

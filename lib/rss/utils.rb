@@ -3,10 +3,8 @@ module RSS
 	module Utils
 
 		def get_file_and_line_from_caller(i=0)
-			tmp = caller[i].split(':')
-			line = tmp.pop.to_i
-			file = tmp.join(':')
-			[file, line]
+			file, line, = caller[i].split(':')
+			[file, line.to_i]
 		end
 
 		def html_escape(s)

@@ -100,6 +100,15 @@ EOI
 EOT
 	end
 
+	def make_sample_RDF
+		make_RDF(<<-EOR)
+#{make_channel}
+#{make_image}
+#{make_item}
+#{make_textinput}
+EOR
+	end
+
 	def make_Rss2(content=nil, xmlns=[])
 		<<-EORSS
 #{make_xmldecl}

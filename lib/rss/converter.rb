@@ -25,8 +25,8 @@ module RSS
 			value
 		end
 
-		def def_convert()
-			instance_eval(<<-EOC, *get_file_and_line_from_caller(0))
+		def def_convert(depth=0)
+			instance_eval(<<-EOC, *get_file_and_line_from_caller(depth))
 			def convert(value)
 				if value.kind_of?(String)
 					#{yield('value')}
@@ -37,10 +37,10 @@ module RSS
 			EOC
 		end
 
-		def def_iconv_convert(to_enc, from_enc)
+		def def_iconv_convert(to_enc, from_enc, depth=0)
 			begin
 				require "iconv"
-				def_convert do |value|
+				def_convert(depth+1) do |value|
 					<<-EOC
 					@iconv ||= Iconv.new("#{to_enc}", "#{from_enc}")
 					begin
@@ -68,7 +68,7 @@ module RSS
 		def def_uconv_convert_if_can(meth, to_enc, from_enc)
 			begin
 				require "uconv"
-				def_convert do |value|
+				def_convert(1) do |value|
 					<<-EOC
 					begin
 						Uconv.#{meth}(#{value})
@@ -78,7 +78,7 @@ module RSS
 					EOC
 				end
 			rescue LoadError
-				def_iconv_convert(to_enc, from_enc)
+				def_iconv_convert(to_enc, from_enc, 1)
 			end
 		end
 

@@ -1,4 +1,10 @@
 begin
+	require "xml/parser"
+rescue LoadError
+	require "xmlparser"
+end
+
+begin
 	require "xml/encoding-ja"
 rescue LoadError
 	require "xmlencoding-ja"
@@ -15,7 +21,7 @@ module RSS
 	
 	class REXMLLikeXMLParser < ::XML::Parser
 		
-		include XML::Encoding_ja
+		include ::XML::Encoding_ja
 
 		def listener=(listener)
 			@listener = listener
@@ -37,6 +43,10 @@ module RSS
 			@listener.xmldecl(version, encoding, standalone == 1)
 		end
 
+		def processingInstruction(target, content)
+			@listener.instruction(target, content)
+		end
+
 	end
 
 	class XMLParserParser < BaseParser
@@ -51,7 +61,7 @@ module RSS
 				parser = REXMLLikeXMLParser.new
 				parser.listener = @listener
 				parser.parse(@rss)
-			rescue XMLParserError => e
+			rescue ::XML::Parser::Error => e
 				raise NotWellFormedError.new(parser.line){e.message}
 			end
 		end

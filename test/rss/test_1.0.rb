@@ -38,8 +38,28 @@ class TestCore < Test::Unit::TestCase
 
 	end
 
-	def test_channel
+	def test_not_displayed_xml_stylesheets
+		rdf = RDF.new()
+		plain_rdf = rdf.to_s
+		3.times do
+			rdf.xml_stylesheets.push(XMLStyleSheet.new)
+			assert_equal(plain_rdf, rdf.to_s)
+		end
+	end
 
+	def test_xml_stylesheets
+		[
+			[{:href => "a.xsl", :type => "text/xsl"}],
+			[
+				{:href => "a.xsl", :type => "text/xsl"},
+				{:href => "a.css", :type => "text/css"},
+			],
+		].each do |attrs_ary|
+			assert_xml_stylesheet_pis(attrs_ary)
+		end
+	end
+
+	def test_channel
 		about = "http://hoge.com"
 		title = "fugafuga"
 		link = "http://hoge.com"
