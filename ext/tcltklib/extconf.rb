@@ -2,10 +2,12 @@
 
 require 'mkmf'
 
-have_library("nsl", "t_open")
-have_library("socket", "socket")
-have_library("dl", "dlopen")
-have_library("m", "log") 
+if RUBY_PLATFORM !~ /mswin32|mingw/
+  have_library("nsl", "t_open")
+  have_library("socket", "socket")
+  have_library("dl", "dlopen")
+  have_library("m", "log") 
+end
 
 dir_config("tk")
 dir_config("tcl")
@@ -41,7 +43,7 @@ def find_tk(tklib)
 end
 
 if have_header("tcl.h") && have_header("tk.h") &&
-    (/mswin32/ =~ RUBY_PLATFORM || find_library("X11", "XOpenDisplay",
+    (/mswin32|mingw|cygwin/ =~ RUBY_PLATFORM || find_library("X11", "XOpenDisplay",
 	"/usr/X11/lib", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
     find_tcl(tcllib) &&
     find_tk(tklib)

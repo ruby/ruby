@@ -143,7 +143,7 @@ def have_library(lib, func="main")
 
   if func && func != ""
     libs = append_library($libs, lib)
-    if /mswin32/ =~ RUBY_PLATFORM
+    if /mswin32|mingw/ =~ RUBY_PLATFORM
       r = try_link(<<"SRC", libs)
 #include <windows.h>
 #include <winsock.h>
@@ -205,7 +205,7 @@ def have_func(func)
 
   libs = $libs
 
-  if /mswin32/ =~ RUBY_PLATFORM
+  if /mswin32|mingw/ =~ RUBY_PLATFORM
     r = try_link(<<"SRC", libs)
 #include <windows.h>
 #include <winsock.h>
@@ -339,7 +339,7 @@ def create_makefile(target)
   end
 
   defflag = ''
-  if RUBY_PLATFORM =~ /cygwin/
+  if RUBY_PLATFORM =~ /cygwin|mingw/
     if File.exist? target + ".def"
       defflag = "--def=" + target + ".def"
     end

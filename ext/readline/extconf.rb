@@ -1,7 +1,7 @@
 require "mkmf"
 
 dir_config("readline")
-have_library("user32", nil) if /cygwin/ === PLATFORM
+have_library("user32", nil) if /cygwin/ === RUBY_PLATFORM
 have_library("termcap", "tgetnum") or
   have_library("curses", "tgetnum") or
   have_library("ncurses", "tgetnum")

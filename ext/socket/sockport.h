@@ -40,4 +40,9 @@
 # define SET_SIN_LEN(si,len)
 #endif
 
+#ifndef IN_MULTICAST
+# define IN_CLASSD(i)	(((long)(i) & 0xf0000000) == 0xe0000000)
+# define IN_MULTICAST(i)	IN_CLASSD(i)
+#endif
+
 #endif

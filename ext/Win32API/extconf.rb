@@ -1,4 +1,4 @@
-case PLATFORM
+case RUBY_PLATFORM
 when /cygwin/,/mingw/
   $CFLAGS = "-fno-defer-pop"
   create_makefile("Win32API")

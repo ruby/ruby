@@ -1169,7 +1169,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 }
 
 
-#if 1
+#if !defined __MINGW32__
 //
 // UNIX compatible directory access functions for NT
 //
@@ -1183,7 +1183,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 //
 
 DIR *
-opendir(char *filename)
+opendir(const char *filename)
 {
     DIR            *p;
     long            len;
@@ -1524,8 +1524,8 @@ valid_filename(char *s)
 // if we can prevent perl from trying to do stdio on sockets.
 //
 
-EXTERN_C int __cdecl _alloc_osfhnd(void);
-EXTERN_C int __cdecl _set_osfhnd(int fh, long value);
+//EXTERN_C int __cdecl _alloc_osfhnd(void);
+//EXTERN_C int __cdecl _set_osfhnd(int fh, long value);
 EXTERN_C void __cdecl _lock_fhandle(int);
 EXTERN_C void __cdecl _unlock_fhandle(int);
 EXTERN_C void __cdecl _unlock(int);
@@ -1534,24 +1534,43 @@ typedef struct	{
     long osfhnd;    /* underlying OS file HANDLE */
     char osfile;    /* attributes of file (e.g., open in text mode?) */
     char pipech;    /* one char buffer for handles opened on pipes */
-#if defined (_MT) && !defined (DLL_FOR_WIN32S)
     int lockinitflag;
     CRITICAL_SECTION lock;
-#endif  /* defined (_MT) && !defined (DLL_FOR_WIN32S) */
 }	ioinfo;
+
+#if !defined _CRTIMP
+#define _CRTIMP __declspec(dllimport)
+#endif
 
 EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 
 #define IOINFO_L2E			5
 #define IOINFO_ARRAY_ELTS	(1 << IOINFO_L2E)
 #define _pioinfo(i)	(__pioinfo[i >> IOINFO_L2E] + (i & (IOINFO_ARRAY_ELTS - 1)))
-#define _osfile(i)	(_pioinfo(i)->osfile)
+
+#define _osfhnd(i)  (_pioinfo(i)->osfhnd)
+#define _osfile(i)  (_pioinfo(i)->osfile)
+#define _pipech(i)  (_pioinfo(i)->pipech)
 
 #define FOPEN			0x01	/* file handle open */
 #define FNOINHERIT		0x10	/* file handle opened O_NOINHERIT */
 #define FAPPEND			0x20	/* file handle opened O_APPEND */
 #define FDEV			0x40	/* file handle refers to device */
 #define FTEXT			0x80	/* file handle is in text mode */
+
+#define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
+
+static int
+_alloc_osfhnd(void)
+{
+    HANDLE hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+    int fh = _open_osfhandle((long)hF, 0);
+    CloseHandle(hF);
+    if (fh == -1)
+        return fh;
+    EnterCriticalSection(&(_pioinfo(fh)->lock));
+    return fh;
+}
 
 static int
 my_open_osfhandle(long osfhandle, int flags)
@@ -1622,7 +1641,9 @@ myfdopen (int fd, const char *mode)
 void
 myfdclose(FILE *fp)
 {
+#if !defined __MINGW32__
     _free_osfhnd(fileno(fp));
+#endif
     fclose(fp);
 }
 
@@ -1639,7 +1660,9 @@ char *
 mystrerror(int e) 
 {
     static char buffer[512];
+#if !defined __MINGW32__
     extern int sys_nerr;
+#endif
     DWORD source = 0;
 
     if (e < 0 || e > sys_nerr) {

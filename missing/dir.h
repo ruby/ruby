@@ -28,6 +28,7 @@
 #ifndef __DIR_INCLUDED
 #define __DIR_INCLUDED
 
+#if !defined __MINGW32__
 /*Directory entry size */
 #ifdef DIRSIZ
 #undef DIRSIZ
@@ -60,4 +61,5 @@ void seekdir(DIR *dirp,long loc);
 void rewinddir(DIR *dirp);
 void closedir(DIR *dirp);
 
+#endif
 #endif /* __DIR_INCLUDED */

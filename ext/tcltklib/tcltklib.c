@@ -34,6 +34,7 @@ static VALUE ip_invoke_real _((int, VALUE*, VALUE));
 
 /* from tkAppInit.c */
 
+#if !defined __MINGW32__
 /*
  * The following variable is a special hack that is needed in order for
  * Sun shared libraries to be used for Tcl.
@@ -41,6 +42,7 @@ static VALUE ip_invoke_real _((int, VALUE*, VALUE));
 
 extern int matherr();
 int *tclDummyMathPtr = (int *) matherr;
+#endif
 
 /*---- module TclTkLib ----*/
 
@@ -487,8 +489,6 @@ _macinit()
 void
 Init_tcltklib()
 {
-    extern VALUE rb_argv0;	/* the argv[0] */
-
     VALUE lib = rb_define_module("TclTkLib");
     VALUE ip = rb_define_class("TclTkIp", rb_cObject);
 

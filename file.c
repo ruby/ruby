@@ -371,7 +371,7 @@ eaccess(path, mode)
      const char *path;
      int mode;
 {
-#ifndef NT
+#ifdef S_IXGRP
   struct stat st;
   static int euid = -1;
 
@@ -699,7 +699,7 @@ static VALUE
 test_sgid(obj, fname)
     VALUE obj, fname;
 {
-#ifndef NT
+#ifdef S_ISGID
     Check_SafeStr(fname);
     return check3rdbyte(RSTRING(fname)->ptr, S_ISGID);
 #else
@@ -1013,7 +1013,7 @@ rb_file_s_utime(argc, argv)
 #   else
 #  include <sys/utime.h>
 #   endif
-#   if defined(_MSC_VER)
+#   if defined(_MSC_VER) || defined __MINGW32__
 #  define utimbuf _utimbuf
 #   endif
 # else
@@ -1917,7 +1917,7 @@ static VALUE
 rb_stat_sgid(obj)
     VALUE obj;
 {
-#ifndef NT
+#ifdef S_ISGID
     if (get_stat(obj)->st_mode & S_ISGID) return Qtrue;
 #endif
     return Qfalse;

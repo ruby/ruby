@@ -126,7 +126,7 @@ flock(fd, operation)
  
     return fcntl(fd, (operation & LOCK_NB) ? F_SETLK : F_SETLKW, &lock);
 }
-#else
+#elif !defined NT
 int
 flock(fd, operation)
     int fd;

@@ -101,7 +101,7 @@
 #define __const
 #endif /* People who don't like const sys_error */
 
-#ifdef NT
+#if defined NT && !defined __MINGW32__
 typedef long size_t;
 #endif
 

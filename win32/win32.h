@@ -9,6 +9,7 @@
  *
  */
 
+#undef EXTERN
 #if defined(IMPORT)
 #define EXTERN extern __declspec(dllimport)
 #elif defined(EXPORT)
@@ -163,6 +164,12 @@ extern "C++" {
 #define strncasecmp _strnicmp
 /* these are defined in nt.c */
 
+#ifdef __MINGW32__
+struct timezone {
+  int tz_minuteswest;
+  int tz_dsttime;
+};
+#endif
 extern int NtMakeCmdVector(char *, char ***, int);
 extern void NtInitialize(int *, char ***);
 extern char *NtGetLib(void);

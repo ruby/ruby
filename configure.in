@@ -87,7 +87,7 @@ AC_CHECK_TOOL(AR, ar)
 AC_CHECK_PROGS(AR, ar aal, ar)
 
 case "$target_os" in
-    cygwin*)
+    cygwin*|mingw*)
 	AC_CHECK_TOOL(NM, nm)
 	AC_CHECK_TOOL(DLLWRAP, dllwrap)
 	AC_CHECK_TOOL(AS, as)
@@ -165,6 +165,15 @@ macos*)	;;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	;;
+mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
+		ac_cv_header_a_out_h=no
+		ac_cv_header_pwd_h=no
+		ac_cv_header_utime_h=no
+		ac_cv_header_sys_ioctl_h=no
+		ac_cv_header_sys_param_h=no
+		ac_cv_header_sys_resource_h=no
+		ac_cv_header_sys_select_h=no
+		ac_cv_header_sys_times_h=no;;
 os2_emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_xpg4_setlocale=no
 		ac_cv_lib_dir_opendir=no;;
@@ -419,6 +428,7 @@ if test "$with_dln_a_out" != yes; then
     human*)	;;
     bsdi*)	;;
     cygwin*)	;;
+    mingw*)	;;
     netbsd*) CCDLFLAGS=-fpic
      case "$target_cpu" in
      mips*) CCDLFLAGS=-fPIC ;;
@@ -521,7 +531,7 @@ if test "$with_dln_a_out" != yes; then
 			    DLDFLAGS="ruby.def -lbe -lroot glue-noinit.a init_term_dyn.o start_dyn.o"
 			esac
 			rb_cv_dlopen=yes ;;
-	cygwin*)	: ${LDSHARED="${DLLWRAP} --as=${AS} --dlltool-name=${DLLTOOL} --driver-name=${CC} --export-all -s"}
+	cygwin*|mingw*)	: ${LDSHARED="${DLLWRAP} --target=${target_os} --as=${AS} --dlltool-name=${DLLTOOL} --driver-name=${CC} --export-all -s"}
 			rb_cv_dlopen=yes ;;
 	*) 		LDSHARED='ld' ;;
   esac
@@ -570,7 +580,7 @@ else
 	 	AC_DEFINE(DLEXT, ".bundle");;
     os2_emx*)	DLEXT=dll
 	 	AC_DEFINE(DLEXT, ".dll");;
-    cygwin*)	DLEXT=so
+    cygwin*|mingw*)	DLEXT=so
 	 	AC_DEFINE(DLEXT, ".so")
 		DLEXT2=dll
 	 	AC_DEFINE(DLEXT2, ".dll");;
@@ -662,9 +672,6 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
     LIBOBJS="$LIBOBJS os2.$OBJEXT"
     setup=Setup.emx
     ;;
-  cygwin*)
-    setup=Setup
-    ;;
   *)
     setup=Setup
     ;;
@@ -716,7 +723,7 @@ if test "$target_os" = "beos"; then
 fi
 
 case "$target_os" in
-  cygwin*|beos*|openstep*|nextstep*|rhapsody*|macos*|os2_emx*)
+  cygwin*|mingw*|beos*|openstep*|nextstep*|rhapsody*|macos*|os2_emx*)
     DLDLIBS=""
     ;;
   *)
@@ -777,15 +784,24 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBYARG='-L${prefix}/lib -Wl,lib$(RUBY_INSTALL_NAME).so'
 	SOLIBS='-lm -lc'
 	;;
-    cygwin*)
+    cygwin*|mingw*)
 	LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).a'
 	LIBRUBY_ALIASES=''
 	LIBRUBY_A='lib$(RUBY_INSTALL_NAME)s.a'
 	LIBRUBYARG='-L. -l$(RUBY_INSTALL_NAME)'
 	FIRSTMAKEFILE=GNUmakefile:cygwin/GNUmakefile.in
-	LIBOBJS="$LIBOBJS strftime.o"
-	CCDLFLAGS=-DUSEIMPORTLIB
+	case "$target_os" in
+	cygwin*)
+	    LIBOBJS="$LIBOBJS strftime.o"
+	    CCDLFLAGS=-DUSEIMPORTLIB
 	    ;;
+	mingw*)
+	    LIBOBJS="$LIBOBJS win32.o"
+	    CFLAGS="-DNT -D__MSVCRT__ $CFLAGS"
+	    CCDLFLAGS=-DIMPORT
+	    ;;
+	esac
+	;;
     *)
 	;;
   esac

@@ -1,3 +1,19 @@
+Sun May 14 00:54:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in, ...: suport mingw32.
+
+	* defines.h: ditto. undef EXTERN for tcl/tk on cygwin.
+
+	* ext/*/extconf.rb: replace PLATFORM with RUBY_PLATFORM.
+
+	* ext/socket/sockport.h: define IN_MULTICAST for missing IN_MULTICAST.
+
+	* ext/tcltklib/tcltklib.c: remove declaration of rb_argv0.
+
+	* file.c: should check S_IXGRP, S_ISGID, not NT.
+
+	* io.c: should check _IOBIN, O_BINARY, not PLATFORMs.
+
 Fri May 12 17:33:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): charset_not should not exclude

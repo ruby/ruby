@@ -2,8 +2,8 @@ require 'mkmf'
 $LDFLAGS += " -L/usr/local/lib" if File.directory?("/usr/local/lib")
 $CFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
 
-case PLATFORM
-when /mswin32/
+case RUBY_PLATFORM
+when /mswin32|mingw/
   test_func = "WSACleanup"
   have_library("wsock32", "WSACleanup")
   have_func("closesocket")

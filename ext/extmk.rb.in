@@ -53,7 +53,7 @@ end
 LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s conftest.c"
 
-if /cygwin|mswin32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ RUBY_PLATFORM
+if /cygwin|mswin32|djgpp|mingw|m68k-human|i386-os2_emx/i =~ RUBY_PLATFORM
   $null = open("nul", "w")
 else
   $null = open("/dev/null", "w")
@@ -158,7 +158,7 @@ end
 def have_library(lib, func="main")
   if func && func != ""
     libs = append_library($libs, lib)
-    if /mswin32/ =~ RUBY_PLATFORM
+    if /mswin32|mingw/ =~ RUBY_PLATFORM
       r = try_link(<<"SRC", libs)
 #include <windows.h>
 #include <winsock.h>
@@ -210,7 +210,7 @@ end
 def have_func(func)
   libs = $libs
 
-  if /mswin32/ =~ RUBY_PLATFORM
+  if /mswin32|mingw/ =~ RUBY_PLATFORM
     r = try_link(<<"SRC", libs)
 #include <windows.h>
 #include <winsock.h>
@@ -253,7 +253,7 @@ def arg_config(config, default=nil)
   unless defined? $configure_args
     $configure_args = {}
     args = "@configure_args@"
-    if /mswin32/ =~ RUBY_PLATFORM and ENV["CONFIGURE_ARGS"]
+    if /mswin32|mingw/ =~ RUBY_PLATFORM and ENV["CONFIGURE_ARGS"]
       args = args + " " + ENV["CONFIGURE_ARGS"]
     end
     for arg in args.split
@@ -340,7 +340,7 @@ def create_makefile(target)
   end
 
   defflag = ''
-  if RUBY_PLATFORM =~ /cygwin/ and not $static
+  if RUBY_PLATFORM =~ /cygwin|mingw/ and not $static
     if File.exist? target + ".def"
       defflag = "--def=" + target + ".def"
     end

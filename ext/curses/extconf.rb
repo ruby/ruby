@@ -1,7 +1,7 @@
 require 'mkmf'
 
 make=false
-have_library("mytinfo", "tgetent") if /bow/ =~ PLATFORM
+have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
 if have_header("ncurses.h") and have_library("ncurses", "initscr")
   make=true
 elsif have_header("ncurses/curses.h") and have_library("ncurses", "initscr")

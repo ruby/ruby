@@ -1,8 +1,17 @@
 include Makefile
 
-RUBYCWDLL=rubycw.dll
+ARCH=@arch@
 
-miniruby$(EXEEXT): $(RUBYCWDLL)
+ifneq (,$(findstring mingw, $(ARCH)))
+VPATH = @srcdir@/missing:@srcdir@/win32
+DLL = rubymg.dll
+DLLWRAP_FLAGS =
+else
+DLL = rubycw.dll
+DLLWRAP_FLAGS = -Wl,-e,__cygwin_noncygwin_dll_entry@12
+endif
 
-$(RUBYCWDLL): $(OBJS) dmyext.o
-	$(LDSHARED) $(DLDFLAGS) -o $(RUBYCWDLL) --output-lib=$(LIBRUBY_SO) --dllname=$(RUBYCWDLL) -Wl,-e,__cygwin_noncygwin_dll_entry@12 --add-stdcall-alias $(OBJS) dmyext.o
+miniruby$(EXEEXT): $(DLL)
+
+$(DLL): $(OBJS) dmyext.o
+	$(LDSHARED) $(DLDFLAGS) -o $(DLL) --output-lib=$(LIBRUBY_SO) --dllname=$(DLL) --add-stdcall-alias $(OBJS) dmyext.o $(LIBS)
