@@ -884,6 +884,7 @@ do_stat(path, pst)
     int ret = stat(path, pst);
     if (ret < 0 && errno != ENOENT)
 	rb_sys_warning(path);
+
     return ret;
 }
 
@@ -895,6 +896,7 @@ do_lstat(path, pst)
     int ret = lstat(path, pst);
     if (ret < 0 && errno != ENOENT)
 	rb_sys_warning(path);
+
     return ret;
 }
 
@@ -905,6 +907,7 @@ do_opendir(path)
     DIR *dirp = opendir(path);
     if (dirp == NULL && errno != ENOENT && errno != ENOTDIR)
 	rb_sys_warning(path);
+
     return dirp;
 }
 
@@ -1046,7 +1049,6 @@ join_path(path, dirsep, name)
     const char *name;
 {
     const int len = strlen(path);
-
     char *buf = ALLOC_N(char, len+1+strlen(name)+1);
     strcpy(buf, path);
     if (dirsep) {
@@ -1056,7 +1058,6 @@ join_path(path, dirsep, name)
     else {
 	strcpy(buf+len, name);
     }
-
     return buf;
 }
 
@@ -1112,8 +1113,8 @@ static int
 glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
     const char *path;
     int dirsep; /* '/' should be placed before appending child entry's name to 'path'. */
-    enum answer exist; /* exist? */
-    enum answer isdir; /* a directory or a symlink to a directory? */
+    enum answer exist; /* Does 'path' indicate an existing entry? */
+    enum answer isdir; /* Does 'path' indicate a directory or a symlink to a directory? */
     struct glob_pattern **beg;
     struct glob_pattern **end;
     int flags;
@@ -1123,22 +1124,21 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
     struct stat st;
     int status = 0;
     struct glob_pattern **cur, **new_beg, **new_end;
-    int recursive = 0, need_readdir = 0, need_plain = 0, match_all = 0, match_dir = 0;
-    const int escape = !(flags & FNM_NOESCAPE);
+    int plain = 0, magical = 0, recursive = 0, match_all = 0, match_dir = 0;
+    int escape = !(flags & FNM_NOESCAPE);
 
     for (cur = beg; cur < end; ++cur) {
 	struct glob_pattern *p = *cur;
 	if (p->type == RECURSIVE) {
 	    recursive = 1;
-	    need_readdir = 1;
 	    p = p->next;
 	}
 	switch (p->type) {
 	case PLAIN:
-	    need_plain = 1; /* ignored if need_readdir is set */
+	    plain = 1;
 	    break;
 	case MAGICAL:
-	    need_readdir = 1;
+	    magical = 1;
 	    break;
 	case MATCH_ALL:
 	    match_all = 1;
@@ -1173,31 +1173,27 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
     if (match_all && exist == YES) {
 	status = glob_call_func(func, path, arg);
+	if (status) return status;
     }
 
     if (match_dir && isdir == YES) {
 	char *buf = join_path(path, dirsep, "");
 	status = glob_call_func(func, buf, arg);
 	free(buf);
+	if (status) return status;
     }
-
-    if (status) return status;
 
     if (exist == NO || isdir == NO) return 0;
 
-    if (need_readdir) {
-
+    if (magical || recursive) {
 	struct dirent *dp;
-
 	DIR *dirp = do_opendir(*path ? path : ".");
 	if (dirp == NULL) return 0;
 
 	for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-
 	    char *buf = join_path(path, dirsep, dp->d_name);
 
 	    enum answer new_isdir = UNKNOWN;
-
 	    if (recursive && strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0) {
 #ifndef _WIN32
 		if (do_lstat(buf, &st) == 0)
@@ -1213,13 +1209,11 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
 	    for (cur = beg; cur < end; ++cur) {
 		struct glob_pattern *p = *cur;
-
 		if (p->type == RECURSIVE) {
 		    if (new_isdir == YES) /* not symlink but real directory */
 			*new_end++ = p; /* append recursive pattern */
 		    p = p->next; /* 0 times recursion */
 		}
-
 		if (p->type == PLAIN || p->type == MAGICAL) {
 		    if (fnmatch(p->str, dp->d_name, flags) == 0)
 			*new_end++ = p->next;
@@ -1227,38 +1221,29 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	    }
 
 	    status = glob_helper(buf, 1, YES, new_isdir, new_beg, new_end, flags, func, arg);
-
 	    free(new_beg);
 	    free(buf);
-
 	    if (status) break;
 	}
 
 	closedir(dirp);
     }
-    else if (need_plain) {
-
+    else if (plain) {
 	struct glob_pattern **copy_beg, **copy_end, **cur2;
 
 	copy_beg = copy_end = ALLOC_N(struct glob_pattern *, end - beg);
-
 	for (cur = beg; cur < end; ++cur)
 	    *copy_end++ = (*cur)->type == PLAIN ? *cur : 0;
 
 	for (cur = copy_beg; cur < copy_end; ++cur) {
-
 	    if (*cur) {
-
 		char *buf, *name;
-
 		name = ALLOC_N(char, strlen((*cur)->str) + 1);
 		strcpy(name, (*cur)->str);
 		if (escape) remove_backslashes(name);
 
 		new_beg = new_end = ALLOC_N(struct glob_pattern *, end - beg);
-
 		*new_end++ = (*cur)->next;
-
 		for (cur2 = cur + 1; cur2 < copy_end; ++cur2) {
 		    if (*cur2 && fnmatch((*cur2)->str, name, flags) == 0) {
 			*new_end++ = (*cur2)->next;
@@ -1267,16 +1252,12 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 		}
 
 		buf = join_path(path, dirsep, name);
-
 		status = glob_helper(buf, 1, UNKNOWN, UNKNOWN, new_beg, new_end, flags, func, arg);
-
 		free(buf);
 		free(new_beg);
 		free(name);
-
 		if (status) break;
 	    }
-
 	}
 
 	free(copy_beg);
@@ -1420,7 +1401,7 @@ rb_push_glob(str, flags)
     char *buf;
     char *t;
     int nest, maxnest;
-    int noescape = flags & FNM_NOESCAPE;
+    int escape = !(flags & FNM_NOESCAPE);
     VALUE ary;
 
     if (rb_block_given_p())
@@ -1441,7 +1422,7 @@ rb_push_glob(str, flags)
 	while (p < pend && !isdelim(*p)) {
 	    if (*p == '{') nest++, maxnest++;
 	    if (*p == '}') nest--;
-	    if (!noescape && *p == '\\') {
+	    if (escape && *p == '\\') {
 		p++;
 		if (p == pend || isdelim(*p)) break;
 	    }
