@@ -1,5 +1,10 @@
 2003-04-24  Dave Thomas  <dave@thomases.com>
 
+	* lib/matrix.rb (Matrix#minor):  Used Range#size, which no longer 
+	  exists. 
+
+2003-04-24  Dave Thomas  <dave@thomases.com>
+
 	* lib/complex.rb (new!): Complex.new had been made private, but 
 	  Kernel#Complex called it. Re-exposed as new!.
 

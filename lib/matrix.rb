@@ -435,9 +435,11 @@ class Matrix
     case param.size
     when 2
       from_row = param[0].first
-      size_row = param[0].size
+      size_row = param[0].end - from_row
+      size_row += 1 unless param[0].exclude_end?
       from_col = param[1].first
-      size_col = param[1].size
+      size_col = param[1].end - from_col
+      size_col += 1 unless param[1].exclude_end?
     when 4
       from_row = param[0]
       size_row = param[1]
