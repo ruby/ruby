@@ -1,3 +1,8 @@
+Fri Apr 23 14:52:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt, arg, aref_args): should not make sole splat into
+	  array, in aref_args other than aref with op_asgn.
+
 Fri Apr 23 14:14:38 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb: don't use Regexp#source to embed regexps.
