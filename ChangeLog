@@ -1,3 +1,9 @@
+Sat May 17 00:18:11 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/socket/socket.c (ruby_connect): connect() after EINPROGRESS
+	  returns EINVAL on some platforms, need to check true error
+	  status.  [ruby-core:01037]
+
 Fri May 16 12:40:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (block_pass): chain previous block to the pushing block.
@@ -7,10 +13,10 @@ Fri May 16 12:40:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu May 15 21:55:54 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
-    * lib/gram.c: fixes to one-line documents and end of stream documents.
+	* lib/gram.c: fixes to one-line documents and end of stream documents.
 
-    * lib/syck.c, lib/syck.h: add root_on_error to parser struct, specifying
-      the symbol to be returned on a parse error.
+	* lib/syck.c, lib/syck.h: add root_on_error to parser struct, specifying
+	  the symbol to be returned on a parse error.
 
 Thu May 15 18:44:31 2003  Tanaka Akira  <akr@m17n.org>
 

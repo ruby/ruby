@@ -324,7 +324,7 @@ bsock_getsockopt(sock, lev, optname)
 
 static VALUE
 bsock_getsockname(sock)
-   VALUE sock;
+    VALUE sock;
 {
     char buf[1024];
     socklen_t len = sizeof buf;
@@ -338,7 +338,7 @@ bsock_getsockname(sock)
 
 static VALUE
 bsock_getpeername(sock)
-   VALUE sock;
+    VALUE sock;
 {
     char buf[1024];
     socklen_t len = sizeof buf;
@@ -724,6 +724,13 @@ thread_write_select(fd)
     rb_thread_select(fd+1, 0, &fds, 0, 0);
 }
 
+#ifdef __CYGWIN__
+#define WAIT_IN_PROGRESS 10
+#endif
+#ifdef __APPLE__
+#define WAIT_IN_PROGRESS 10
+#endif
+
 static int
 ruby_connect(fd, sockaddr, len, socks)
     int fd;
@@ -733,7 +740,7 @@ ruby_connect(fd, sockaddr, len, socks)
 {
     int status;
     int mode;
-#if defined __CYGWIN__
+#ifdef WAIT_IN_PROGRESS
     int wait_in_progress = -1;
 #endif
 
@@ -770,20 +777,34 @@ ruby_connect(fd, sockaddr, len, socks)
 	      case EAGAIN:
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
-#ifdef __CYGWIN__
-	      case EALREADY:
-		wait_in_progress = 10;
 #endif
+#ifdef EALREADY
+	      case EALREADY:
+#endif
+#ifdef WAIT_IN_PROGRESS
+		wait_in_progress = WAIT_IN_PROGRESS;
 #endif
 		thread_write_select(fd);
 		continue;
 
-#if defined __CYGWIN__
+#ifdef WAIT_IN_PROGRESS
 	      case EINVAL:
 		if (wait_in_progress-- > 0) {
-		    struct timeval tv = {0, 100000};
-		    rb_thread_wait_for(tv);
-		    continue;
+		    int sockerr, sockerrlen = sizeof(sockerr);
+
+		    /*
+		     * connect() after EINPROGRESS returns EINVAL on
+		     * some platforms, need to check true error
+		     * status.
+		     */
+		    status = getsockopt(fd, SOL_SOCKET, SO_ERROR, &sockerr, &sockerrlen);
+		    if (!status && !sockerr) {
+			struct timeval tv = {0, 100000};
+			rb_thread_wait_for(tv);
+			continue;
+		    }
+		    status = -1;
+		    errno = sockerr;
 		}
 		break;
 #endif
@@ -1891,7 +1912,7 @@ sock_bind(sock, addr)
 
 static VALUE
 sock_listen(sock, log)
-   VALUE sock, log;
+    VALUE sock, log;
 {
     OpenFile *fptr;
 
@@ -1914,7 +1935,7 @@ sock_recvfrom(argc, argv, sock)
 
 static VALUE
 sock_accept(sock)
-   VALUE sock;
+    VALUE sock;
 {
     OpenFile *fptr;
     VALUE sock2;
@@ -1929,7 +1950,7 @@ sock_accept(sock)
 
 static VALUE
 sock_sysaccept(sock)
-   VALUE sock;
+    VALUE sock;
 {
     OpenFile *fptr;
     VALUE sock2;
