@@ -68,3 +68,5 @@
 #define SIZEOF_VOIDP 4
 #define SIZEOF_FLOAT 4
 #define SIZEOF_DOUBLE 8
+
+#define HAVE_DECL_SYS_NERR 1
