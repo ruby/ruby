@@ -1183,6 +1183,7 @@ time_plus(time1, time2)
     struct time_object *tobj;
     time_t sec, usec;
     double f, d, v;
+    int sign;
 
     GetTimeval(time1, tobj);
 
@@ -1191,21 +1192,23 @@ time_plus(time1, time2)
     }
     v = NUM2DBL(time2);
     d = modf(v, &f);
+    sign = ( f < 0 ? -1 : 1 );
+    f *= sign;
     sec = (time_t)f;
     if (f != (double)sec) {
 	rb_raise(rb_eRangeError, "time + %f out of Time range", v);
     }
 #ifndef NEGATIVE_TIME_T
-    if (f < 0 && -f >= tobj->tv.tv_sec) {
+    if (sign < 0 && f >= tobj->tv.tv_sec) {
 	rb_raise(rb_eArgError, "time must be positive");
     }
 #endif
     usec = tobj->tv.tv_usec + (time_t)(d*1e6);
-    sec = tobj->tv.tv_sec + (time_t)f;
+    sec = ( sign > 0 ? tobj->tv.tv_sec + sec :  tobj->tv.tv_sec - sec );
 
 #ifdef NEGATIVE_TIME_T
-    if ((tobj->tv.tv_sec >= 0 && f >= 0 && sec < 0) ||
-	(tobj->tv.tv_sec <= 0 && f <= 0 && sec > 0)) {
+    if ((tobj->tv.tv_sec >= 0 && sign >= 0 && sec < 0) ||
+	(tobj->tv.tv_sec <= 0 && sign <= 0 && sec > 0)) {
 	rb_raise(rb_eRangeError, "time + %f out of Time range", v);
     }
 #endif
@@ -1239,6 +1242,7 @@ time_minus(time1, time2)
     struct time_object *tobj;
     time_t sec, usec;
     double f, d, v;
+    int sign;
 
     GetTimeval(time1, tobj);
     if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
@@ -1253,20 +1257,22 @@ time_minus(time1, time2)
     }
     v = NUM2DBL(time2);
     d = modf(v, &f);
+    sign = ( f < 0 ? -1 : 1 );
+    f *= sign;
     sec = (time_t)f;
     if (f != (double)sec) {
 	rb_raise(rb_eRangeError, "time - %f out of Time range", v);
     }
 #ifndef NEGATIVE_TIME_T
-    if (f > 0 && f >= tobj->tv.tv_sec) {
+    if (sign > 0 && f >= tobj->tv.tv_sec) {
 	rb_raise(rb_eArgError, "time must be positive");
     }
 #endif
     usec = tobj->tv.tv_usec - (time_t)(d*1e6);
-    sec = tobj->tv.tv_sec - (time_t)f;
+    sec = ( sign > 0 ? tobj->tv.tv_sec - sec :  tobj->tv.tv_sec + sec );
 #ifdef NEGATIVE_TIME_T
-    if ((tobj->tv.tv_sec <= 0 && f >= 0 && sec > 0) ||
-	(tobj->tv.tv_sec >= 0 && f <= 0 && sec < 0)) {
+    if ((tobj->tv.tv_sec <= 0 && sign >= 0 && sec > 0) ||
+	(tobj->tv.tv_sec >= 0 && sign <= 0 && sec < 0)) {
 	rb_raise(rb_eRangeError, "time - %f out of Time range", v);
     }
 #endif

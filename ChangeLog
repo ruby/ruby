@@ -1,3 +1,10 @@
+Sun Jan 18 12:07:24 2004  Siena.  <siena@faculty.chiba-u.jp>
+
+	* test/ruby/test_time.rb: new test case to test Time#[+-]. 
+
+	* time.c (time_plus, time_minus): fix RangeError for a negative 
+	  argument in environments whose time_t is unsigned. [ruby-dev:22608] 
+
 Sun Jan 18 02:33:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* defines.h (_WIN32): undef _WIN32 on Cygwin before defining DOSISH.
