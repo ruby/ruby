@@ -1,3 +1,8 @@
+Wed Dec 10 17:54:51 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): do not set EOF flag when
+	  requested length is zero.  [ruby-dev:22214]
+
 Wed Dec 10 17:17:18 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (read_all): should return given string even if data read is
@@ -11,8 +16,8 @@ Wed Dec 10 17:16:06 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* test/ruby/ut_eof.rb (TestEOF::Seek): test behaviors at reading
 	  beyond EOF.
 
-	* test/ruby/test_file.rb, * test/stringio/test_stringio.rb:
-	  include TestEOF::Seek test case.
+	* test/ruby/test_file.rb, test/stringio/test_stringio.rb: include
+	  TestEOF::Seek test case.
 
 Wed Dec 10 15:01:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
 

@@ -836,12 +836,12 @@ strio_read(argc, argv, self)
 {
     struct StringIO *ptr = readable(StringIO(self));
     VALUE str;
-    long len;
+    long len, olen;
 
     switch (argc) {
       case 1:
 	if (!NIL_P(argv[0])) {
-	    len = NUM2LONG(argv[0]);
+	    len = olen = NUM2LONG(argv[0]);
 	    if (len < 0) {
 		rb_raise(rb_eArgError, "negative length %ld given", len);
 	    }
@@ -856,6 +856,7 @@ strio_read(argc, argv, self)
 	}
 	/* fall through */
       case 0:
+	olen = -1;
 	len = RSTRING(ptr->string)->len - ptr->pos;
 	if (len == 0 && ptr->pos == RSTRING(ptr->string)->len) {
 	    if (ptr->flags & STRIO_EOF) return Qnil;
@@ -868,7 +869,7 @@ strio_read(argc, argv, self)
     str = rb_str_substr(ptr->string, ptr->pos, len);
     if (NIL_P(str)) {
 	if (!(ptr->flags & STRIO_EOF)) str = rb_str_new(0, 0);
-	ptr->flags |= STRIO_EOF;
+	if (olen) ptr->flags |= STRIO_EOF;
     }
     else {
 	ptr->pos += RSTRING(str)->len;

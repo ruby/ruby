@@ -64,7 +64,10 @@ module TestEOF
 
     def test_eof_0_seek
       open_file_seek("", 10) {|f|
+        assert_equal(10, f.pos)
+        assert_equal("", f.read(0))
         assert_equal("", f.read)
+        assert_equal(nil, f.read(0))
         assert_equal(nil, f.read)
       }
     end
