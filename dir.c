@@ -235,7 +235,7 @@ fnmatch(pat, string, flags)
 		INC_S();
 	    }
 	    return FNM_NOMATCH;
-      
+
 	case '[':
 	    if (!*s || ISDIRSEP(*s) || PERIOD_S())
 		return FNM_NOMATCH;
@@ -1041,7 +1041,7 @@ glob_helper(path, sub, separator, flags, func, arg) /* if separator p[-1] is rem
     }
 
     if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
-	char *t = p+3;
+	char *t = p + 3;
 	while (t[0] == '*' && t[1] == '*' && t[2] == '/') t += 3;
 	memmove(p, t, strlen(t)+1); /* move '\0' too */
 	magical = has_magic(p, &m, flags); /* next element */
@@ -1053,7 +1053,7 @@ glob_helper(path, sub, separator, flags, func, arg) /* if separator p[-1] is rem
 	if (dirp == NULL) return 0;
     }
     else {
-	char *t = separator ? p-1 : p;
+	char *t = separator ? p - 1 : p;
 	char c = *t;
 	*t = '\0';
 	dirp = do_opendir(path);
@@ -1065,23 +1065,29 @@ glob_helper(path, sub, separator, flags, func, arg) /* if separator p[-1] is rem
 	const int n1 = p - path;
 	const int n2 = n1 + NAMLEN(dp);
 	const int ok = 0;
-	const int no = 1;
+	const int ln = 1;
+	const int no = 2;
 	int is_dir = -1; /* not checked yet */
+#ifdef _WIN32
+	is_dir = dp->d_isdir ? (dp->d_isrep ? ln : ok) : no;
+#endif
 	if (recursive && strcmp(".", dp->d_name) != 0 && strcmp("..", dp->d_name) != 0) {
 	    buf = ALLOC_N(char, n2+4+strlen(p)+1);
 	    memcpy(buf, path, n1);
 	    strcpy(buf+n1, dp->d_name);
+#ifndef _WIN32
 	    is_dir = no;
 	    if (do_lstat(buf, &st) == 0) {
-		if (S_ISDIR(st.st_mode)) {
-		   strcpy(buf+n2, "/**/");
-		   strcpy(buf+n2+4, p);
-		   status = glob_helper(buf, buf+n2+1, 1, flags, func, arg);
-		   is_dir = ok;
-		}
-		else if (S_ISLNK(st.st_mode) && do_stat(buf, &st) == 0 && S_ISDIR(st.st_mode)) {
-		   is_dir = ok;
-		}
+		if (S_ISDIR(st.st_mode))
+		    is_dir = ok;
+		else if (S_ISLNK(st.st_mode) && do_stat(buf, &st) == 0 && S_ISDIR(st.st_mode))
+		    is_dir = ln;
+	    }
+#endif
+	    if (is_dir == ok) {
+		strcpy(buf+n2, "/**/");
+		strcpy(buf+n2+4, p);
+		status = glob_helper(buf, buf+n2+1, 1, flags, func, arg);
 	    }
 	    free(buf);
 	    if (status) break;
@@ -1096,7 +1102,7 @@ glob_helper(path, sub, separator, flags, func, arg) /* if separator p[-1] is rem
 	    if (*m == '\0') {
 		status = glob_call_func(func, buf, arg);
 	    }
-	    else if (m[1] == '\0' && is_dir == ok) { /* *m == '/' */
+	    else if (m[1] == '\0' && (is_dir == ok || is_dir == ln)) { /* *m == '/' */
 		strcpy(buf+n2, "/");
 		status = glob_call_func(func, buf, arg);
 	    }

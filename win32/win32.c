@@ -1323,6 +1323,9 @@ make_cmdvector(const char *cmd, char ***vec)
 // return the pointer to the current file name. 
 //
 
+#define GetBit(bits, i) ((bits)[(i) / 8] &  (1 << (i) % 8))
+#define SetBit(bits, i) ((bits)[(i) / 8] |= (1 << (i) % 8))
+
 DIR *
 rb_w32_opendir(const char *filename)
 {
@@ -1332,8 +1335,8 @@ rb_w32_opendir(const char *filename)
     char               scannamespc[PATHLEN];
     char	      *scanname = scannamespc;
     struct stat	       sbuf;
-    struct _finddata_t fd;
-    long               fh;
+    WIN32_FIND_DATA fd;
+    HANDLE          fh;
 
     //
     // check to see if we've got a directory
@@ -1371,8 +1374,8 @@ rb_w32_opendir(const char *filename)
     // do the FindFirstFile call
     //
 
-    fh = _findfirst(scanname, &fd);
-    if (fh == -1) {
+    fh = FindFirstFile(scanname, &fd);
+    if (fh == INVALID_HANDLE_VALUE) {
 	return NULL;
     }
 
@@ -1381,9 +1384,15 @@ rb_w32_opendir(const char *filename)
     // filenames that we find.
     //
 
-    idx = strlen(fd.name)+1;
+    idx = strlen(fd.cFileName)+1;
     p->start = ALLOC_N(char, idx);
-    strcpy(p->start, fd.name);
+    strcpy(p->start, fd.cFileName);
+    p->bits = ALLOC_N(char, 1);
+    p->bits[0] = 0;
+    if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+	SetBit(p->bits, 0);
+    if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+	SetBit(p->bits, 1);
     p->bits = ALLOC_N(char, 1);
     p->bits[0] = fd.attrib & _A_SUBDIR ? 1 : 0;
     p->nfiles++;
@@ -1394,8 +1403,8 @@ rb_w32_opendir(const char *filename)
     // the variable idx should point one past the null terminator
     // of the previous string found.
     //
-    while (_findnext(fh, &fd) == 0) {
-	len = strlen(fd.name);
+    while (FindNextFile(fh, &fd)) {
+	len = strlen(fd.cFileName);
 
 	//
 	// bump the string table size by enough for the
@@ -1408,7 +1417,20 @@ rb_w32_opendir(const char *filename)
 	if (p->start == NULL) {
             rb_fatal ("opendir: malloc failed!\n");
 	}
-	strcpy(&p->start[idx], fd.name);
+	strcpy(&p->start[idx], fd.cFileName);
+
+	if (p->nfiles % 4 == 0) {
+	    Renew (p->bits, p->nfiles / 4 + 1, char);
+	    if (p->bits == NULL) {
+		rb_fatal ("opendir: malloc failed!\n");
+	    }
+	    p->bits[p->nfiles / 4] = 0;
+	}
+	if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
+	    SetBit(p->bits, p->nfiles * 2);
+	if (fd.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT)
+	    SetBit(p->bits, p->nfiles * 2 + 1);
+
 
 	if (p->nfiles % 8 == 0) {
 	    Renew (p->bits, p->nfiles / 8 + 1, char);
@@ -1424,7 +1446,7 @@ rb_w32_opendir(const char *filename)
 	p->nfiles++;
 	idx += len+1;
     }
-    _findclose(fh);
+    FindClose(fh);
     p->size = idx;
     p->curr = p->start;
     return p;
@@ -1461,6 +1483,14 @@ rb_w32_readdir(DIR *dirp)
 	// Directory flag
 	//
 	dirp->dirstr.d_isdir = dirp->bits[dirp->bitpos / 8] & (1 << dirp->bitpos % 8);
+	dirp->bitpos++;
+
+	//
+	// Attributes
+	//
+	dirp->dirstr.d_isdir = GetBit(dirp->bits, dirp->bitpos);
+	dirp->bitpos++;
+	dirp->dirstr.d_isrep = GetBit(dirp->bits, dirp->bitpos);
 	dirp->bitpos++;
 
 	//
@@ -1507,6 +1537,7 @@ rb_w32_rewinddir(DIR *dirp)
 {
 	dirp->curr = dirp->start;
 	dirp->bitpos = 0;
+	dirp->bitpos = 0;
 }
 
 //
@@ -1516,6 +1547,7 @@ rb_w32_rewinddir(DIR *dirp)
 void
 rb_w32_closedir(DIR *dirp)
 {
+	free(dirp->bits);
 	free(dirp->start);
 	free(dirp->bits);
 	free(dirp);

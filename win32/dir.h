@@ -10,6 +10,8 @@ struct direct
     long d_namlen;
     ino_t d_ino;
     char d_name[256];
+    char d_isdir; /* directory */
+    char d_isrep; /* reparse point */
     char d_isdir;
 };
 typedef struct {
@@ -17,6 +19,8 @@ typedef struct {
     char *curr;
     long size;
     long nfiles;
+    char *bits;  /* used for d_isdir and d_isrep */
+    long bitpos; /* used for d_isdir and d_isrep */
     struct direct dirstr;
     char *bits;
     long bitpos;

@@ -1,3 +1,13 @@
+Mon Jan  5 18:58:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c: merge tuning from H.Yamamoto <ocean@m2.ccsnet.ne.jp>.
+	  [ruby-dev:22486]
+
+	* pack.c (pack_unpack): unpack requires big endian offet (OFF16B
+	  and OFF32B).  The patch is from Minero Aoki in [ruby-dev:22489]
+
+	* pack.c (OFF16B): add big-endian offset again. 
+
 Mon Jan  5 03:00:53 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_pack.rb: new test test_unpack_N.
