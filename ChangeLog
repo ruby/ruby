@@ -1,3 +1,8 @@
+Wed Sep 29 10:58:07 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (sort_by_i): internally used object must not be changed
+	  outside.  [ruby-dev:24368]
+
 Mon Sep 27 21:25:12 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_call0): invoke finalizers periodically.
