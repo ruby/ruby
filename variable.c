@@ -388,7 +388,7 @@ static void
 val_marker(data)
     void *data;
 {
-    if (data) rb_gc_mark_maybe(data);
+    if (data) rb_gc_mark_maybe((VALUE)data);
 }
 
 static VALUE
@@ -411,7 +411,7 @@ var_setter(val, id, var)
 
 static void
 var_marker(var)
-    VALUE **var;
+    VALUE *var;
 {
     if (var) rb_gc_mark_maybe(*var);
 }
@@ -435,7 +435,7 @@ mark_global_entry(key, entry)
     (*entry->marker)(entry->data);
     trace = entry->trace;
     while (trace) {
-	if (trace->data) rb_gc_mark_maybe(trace->data);
+	if (trace->data) rb_gc_mark_maybe((VALUE)trace->data);
 	trace = trace->next;
     }
     return ST_CONTINUE;

@@ -5849,12 +5849,12 @@ rb_mark_end_proc()
 
     link = end_procs;
     while (link) {
-	rb_gc_mark(link->data);
+	rb_gc_mark((VALUE)link->data);
 	link = link->next;
     }
     link = ephemeral_end_procs;
     while (link) {
-	rb_gc_mark(link->data);
+	rb_gc_mark((VALUE)link->data);
 	link = link->next;
     }
     /* static global mark */
@@ -6081,14 +6081,14 @@ blk_mark(data)
 {
     while (data) {
 	rb_gc_mark_frame(&data->frame);
-	rb_gc_mark(data->scope);
-	rb_gc_mark(data->var);
-	rb_gc_mark(data->body);
-	rb_gc_mark(data->self);
-	rb_gc_mark(data->dyna_vars);
-	rb_gc_mark(data->klass);
-	rb_gc_mark(data->tag);
-	rb_gc_mark(data->wrapper);
+	rb_gc_mark((VALUE)data->scope);
+	rb_gc_mark((VALUE)data->var);
+	rb_gc_mark((VALUE)data->body);
+	rb_gc_mark((VALUE)data->self);
+	rb_gc_mark((VALUE)data->dyna_vars);
+	rb_gc_mark((VALUE)data->klass);
+	rb_gc_mark((VALUE)data->tag);
+	rb_gc_mark((VALUE)data->wrapper);
 	data = data->prev;
     }
 }
@@ -6611,7 +6611,7 @@ bm_mark(data)
     rb_gc_mark(data->oklass);
     rb_gc_mark(data->klass);
     rb_gc_mark(data->recv);
-    rb_gc_mark(data->body);
+    rb_gc_mark((VALUE)data->body);
 }
 
 static VALUE
@@ -7147,10 +7147,10 @@ thread_mark(th)
 
     rb_gc_mark(th->klass);
     rb_gc_mark(th->wrapper);
-    rb_gc_mark(th->cref);
+    rb_gc_mark((VALUE)th->cref);
 
-    rb_gc_mark(th->scope);
-    rb_gc_mark(th->dyna_vars);
+    rb_gc_mark((VALUE)th->scope);
+    rb_gc_mark((VALUE)th->dyna_vars);
     rb_gc_mark(th->errinfo);
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);

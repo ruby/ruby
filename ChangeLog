@@ -1,3 +1,9 @@
+Sat May  4 20:55:10 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c, gc.c, intern.h, variable.c: declare rb_gc_mark{,maybe}()
+	  canonically in order not to confuse C++ compilers. (backported
+	  from 1.7, problem noted by ttate)
+
 Thu May  2 18:27:13 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: use 'do...end' instead of '{}' for

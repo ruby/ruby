@@ -476,7 +476,7 @@ rb_mark_hash(tbl)
 
 void
 rb_gc_mark_maybe(obj)
-    void *obj;
+    VALUE obj;
 {
     if (is_pointer_to_heap(obj)) {
 	rb_gc_mark(obj);
@@ -485,7 +485,7 @@ rb_gc_mark_maybe(obj)
 
 void
 rb_gc_mark(ptr)
-    void *ptr;
+    VALUE ptr;
 {
     register RVALUE *obj = RANY(ptr);
 
@@ -517,7 +517,7 @@ rb_gc_mark(ptr)
 	  case NODE_MASGN:
 	  case NODE_RESCUE:
 	  case NODE_RESBODY:
-	    rb_gc_mark(obj->as.node.u2.node);
+	    rb_gc_mark((VALUE)obj->as.node.u2.node);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
 	  case NODE_ARRAY:
@@ -531,7 +531,7 @@ rb_gc_mark(ptr)
 	  case NODE_CALL:
 	  case NODE_DEFS:
 	  case NODE_OP_ASGN1:
-	    rb_gc_mark(obj->as.node.u1.node);
+	    rb_gc_mark((VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
@@ -554,7 +554,7 @@ rb_gc_mark(ptr)
 	  case NODE_MATCH3:
 	  case NODE_OP_ASGN_OR:
 	  case NODE_OP_ASGN_AND:
-	    rb_gc_mark(obj->as.node.u1.node);
+	    rb_gc_mark((VALUE)obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
@@ -590,7 +590,7 @@ rb_gc_mark(ptr)
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_CLASS:
 	  case NODE_BLOCK_PASS:
-	    rb_gc_mark(obj->as.node.u3.node);
+	    rb_gc_mark((VALUE)obj->as.node.u3.node);
 	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
@@ -628,10 +628,10 @@ rb_gc_mark(ptr)
 
 	  default:
 	    if (is_pointer_to_heap(obj->as.node.u1.node)) {
-		rb_gc_mark(obj->as.node.u1.node);
+		rb_gc_mark((VALUE)obj->as.node.u1.node);
 	    }
 	    if (is_pointer_to_heap(obj->as.node.u2.node)) {
-		rb_gc_mark(obj->as.node.u2.node);
+		rb_gc_mark((VALUE)obj->as.node.u2.node);
 	    }
 	    if (is_pointer_to_heap(obj->as.node.u3.node)) {
 		obj = RANY(obj->as.node.u3.node);
@@ -745,7 +745,7 @@ gc_sweep()
 	    p = heaps[i]; pend = p + heaps_limits[i];
 	    while (p < pend) {
 		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
-		    rb_gc_mark(p);
+		    rb_gc_mark((VALUE)p);
 		p++;
 	    }
 	}
@@ -1041,8 +1041,8 @@ rb_gc()
 	}
     }
     rb_gc_mark(ruby_class);
-    rb_gc_mark(ruby_scope);
-    rb_gc_mark(ruby_dyna_vars);
+    rb_gc_mark((VALUE)ruby_scope);
+    rb_gc_mark((VALUE)ruby_dyna_vars);
     if (finalizer_table) {
 	rb_mark_tbl(finalizer_table);
     }
