@@ -1,3 +1,8 @@
+Wed Jun 19 14:46:18 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb, lib/mkmf.rb (xsystem): open the log file if xsystem
+	  is called.
+
 Mon Jun 17 10:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* dln.c (dln_load): need to preserve dln_strerror() result,

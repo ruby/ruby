@@ -78,18 +78,21 @@ end
 LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
 CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} %s %s %s conftest.c"
 
-$log = open('extmk.log', 'w')
-
+$log = nil
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
+
 def xsystem command
   if $DEBUG
     puts command
+    $stdout.flush
     return system(command)
   end
+  $log ||= open(File.join($topdir, 'ext', 'extmk.log'), 'w')
   $stderr.reopen($log) 
   $stdout.reopen($log) 
   puts command
+  $stdout.flush
   r = system(command)
   $stderr.reopen($orgerr)
   $stdout.reopen($orgout)
@@ -712,6 +715,7 @@ for d in Dir["#{ext_prefix}/**/*"]
       load "#{$top_srcdir}/ext/aix_mksym.rb"
     end
   end
+  $stdout.flush
   extmake(d)
 end
 
