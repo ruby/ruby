@@ -1,3 +1,7 @@
+Sun Oct  5 15:05:06 2003  akira yamada  <akira@ruby-lang.org>
+
+	* test/uri/*: translated RUNIT to Test::Unit.
+
 Sun Oct  5 14:37:39 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/xsd/datatypes.rb: Rational -> Decimal string bug fix.

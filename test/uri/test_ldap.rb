@@ -1,27 +1,18 @@
-#
-# $Id$
-#
-# Copyright (c) 2001 Takaaki Tateishi <ttate@jaist.ac.jp> and 
-# akira yamada <akira@ruby-lang.org>.
-# You can redistribute it and/or modify it under the same term as Ruby.
-#
-
-require 'runit/testcase'
-require 'runit/cui/testrunner'
+require 'test/unit'
 require 'uri/ldap'
-module URI
-  class Generic
-    def to_ary
-      component_ary
-    end
-  end
-end
 
-class TestLDAP < RUNIT::TestCase
+module URI
+
+
+class TestLDAP < Test::Unit::TestCase
   def setup
   end
 
   def teardown
+  end
+
+  def uri_to_ary(uri)
+    uri.class.component.collect {|c| uri.send(c)}
   end
 
   def test_parse
@@ -92,27 +83,18 @@ class TestLDAP < RUNIT::TestCase
 	nil, 'sub', nil, '!bindname=cn=Manager%2co=Foo'],
     }.each do |url, ary|
       u = URI.parse(url)
-      assert_equal(ary, u.to_ary)
+      assert_equal(ary, uri_to_ary(u))
     end
   end
 
   def test_select
     u = URI.parse('ldap:///??sub??!bindname=cn=Manager%2co=Foo')
-    assert_equal(u.to_ary, u.select(*u.component))
-    assert_exception(ArgumentError) do
+    assert_equal(uri_to_ary(u), u.select(*u.component))
+    assert_raises(ArgumentError) do
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
 end
 
-if $0 == __FILE__
-  if ARGV.size == 0
-    suite = TestLDAP.suite
-  else
-    suite = RUNIT::TestSuite.new
-    ARGV.each do |testmethod|
-      suite.add_test(TestLDAP.new(testmethod))
-    end
-  end
-  RUNIT::CUI::TestRunner.run(suite)
+
 end

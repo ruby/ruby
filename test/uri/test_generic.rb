@@ -1,28 +1,20 @@
-#
-# $Id$
-#
-# Copyright (c) 2002 akira yamada <akira@ruby-lang.org>
-# You can redistribute it and/or modify it under the same term as Ruby.
-#
-
-require 'runit/testcase'
-require 'runit/cui/testrunner'
+require 'test/unit'
 require 'uri'
-module URI
-  class Generic
-    def to_ary
-      component_ary
-    end
-  end
-end
 
-class TestGeneric < RUNIT::TestCase
+module URI
+
+
+class TestGeneric < Test::Unit::TestCase
   def setup
     @url = 'http://a/b/c/d;p?q'
     @base_url = URI.parse(@url)
   end
 
   def teardown
+  end
+
+  def uri_to_ary(uri)
+    uri.class.component.collect {|c| uri.send(c)}
   end
 
   def test_parse
@@ -36,7 +28,7 @@ class TestGeneric < RUNIT::TestCase
       'q',
       nil
     ]
-    ary = @base_url.to_ary
+    ary = uri_to_ary(@base_url)
     assert_equal(exp, ary)
 
     # 1
@@ -48,7 +40,7 @@ class TestGeneric < RUNIT::TestCase
       nil, 'ftp.is.co.za', URI::FTP.default_port, 
       '/rfc/rfc1808.txt', nil,
     ]
-    ary = url.to_ary
+    ary = uri_to_ary(url)
     assert_equal(exp, ary)
 
     # 2
@@ -62,7 +54,7 @@ class TestGeneric < RUNIT::TestCase
       nil,
       nil
     ]
-    ary = url.to_ary
+    ary = uri_to_ary(url)
     assert_equal(exp, ary)
 
     # 3
@@ -76,7 +68,7 @@ class TestGeneric < RUNIT::TestCase
       nil,
       nil
     ]
-    ary = url.to_ary
+    ary = uri_to_ary(url)
     assert_equal(exp, ary)
 
     # 4
@@ -88,7 +80,7 @@ class TestGeneric < RUNIT::TestCase
       'mduerst@ifi.unizh.ch',
       []
     ]
-    ary = url.to_ary
+    ary = uri_to_ary(url)
     assert_equal(exp, ary)
 
     # 5
@@ -102,7 +94,7 @@ class TestGeneric < RUNIT::TestCase
       nil,
       nil
     ]
-    ary = url.to_ary
+    ary = uri_to_ary(url)
     assert_equal(exp, ary)
 
     # 6
@@ -116,13 +108,13 @@ class TestGeneric < RUNIT::TestCase
       nil,
       nil
     ]
-    ary = url.to_ary
+    ary = uri_to_ary(url)
     assert_equal(exp, ary)
 
     # 7
     # reported by Mr. Kubota <em6t-kbt@asahi-net.or.jp>
-    assert_exception(URI::InvalidURIError) { URI.parse('http://a_b:80/') }
-    assert_exception(URI::InvalidURIError) { URI.parse('http://a_b/') }
+    assert_raises(URI::InvalidURIError) { URI.parse('http://a_b:80/') }
+    assert_raises(URI::InvalidURIError) { URI.parse('http://a_b/') }
 
     # 8
     # reporte by m_seki
@@ -621,14 +613,5 @@ class TestGeneric < RUNIT::TestCase
   end
 end
 
-if $0 == __FILE__
-  if ARGV.size == 0
-    suite = TestGeneric.suite
-  else
-    suite = RUNIT::TestSuite.new
-    ARGV.each do |testmethod|
-      suite.add_test(TestGeneric.new(testmethod))
-    end
-  end
-  RUNIT::CUI::TestRunner.run(suite)
+
 end

@@ -1,15 +1,10 @@
-#
-# $Id$
-#
-# Copyright (c) 2002 akira yamada <akira@ruby-lang.org>
-# You can redistribute it and/or modify it under the same term as Ruby.
-#
-
-require 'runit/testcase'
-require 'runit/cui/testrunner'
+require 'test/unit'
 require 'uri'
 
-class TestCommon < RUNIT::TestCase
+module URI
+
+
+class TestCommon < Test::Unit::TestCase
   def setup
   end
 
@@ -36,14 +31,5 @@ class TestCommon < RUNIT::TestCase
   end
 end
 
-if $0 == __FILE__
-  if ARGV.size == 0
-    suite = TestCommon.suite
-  else
-    suite = RUNIT::TestSuite.new
-    ARGV.each do |testmethod|
-      suite.add_test(TestGeneric.new(testmethod))
-    end
-  end
-  RUNIT::CUI::TestRunner.run(suite)
+
 end

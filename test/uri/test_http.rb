@@ -1,19 +1,18 @@
-require 'runit/testcase'
-require 'runit/cui/testrunner'
+require 'test/unit'
 require 'uri/http'
-module URI
-  class Generic
-    def to_ary
-      component_ary
-    end
-  end
-end
 
-class TestHTTP < RUNIT::TestCase
+module URI
+
+
+class TestHTTP < Test::Unit::TestCase
   def setup
   end
 
   def teardown
+  end
+
+  def uri_to_ary(uri)
+    uri.class.component.collect {|c| uri.send(c)}
   end
 
   def test_parse
@@ -21,7 +20,7 @@ class TestHTTP < RUNIT::TestCase
     assert_kind_of(URI::HTTP, u)
     assert_equal(['http', 
 		   nil, 'a', URI::HTTP.default_port,
-		   '', nil, nil], u.to_ary)
+		   '', nil, nil], uri_to_ary(u))
   end
 
   def test_normalize
@@ -53,21 +52,12 @@ class TestHTTP < RUNIT::TestCase
   def test_select
     assert_equal(['http', 'a.b.c', 80], URI.parse('http://a.b.c/').select(:scheme, :host, :port))
     u = URI.parse('http://a.b.c/')
-    assert_equal(u.to_ary, u.select(*u.component))
-    assert_exception(ArgumentError) do
+    assert_equal(uri_to_ary(u), u.select(*u.component))
+    assert_raises(ArgumentError) do
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
 end
 
-if $0 == __FILE__
-  if ARGV.size == 0
-    suite = TestHTTP.suite
-  else
-    suite = RUNIT::TestSuite.new
-    ARGV.each do |testmethod|
-      suite.add_test(TestHTTP.new(testmethod))
-    end
-  end
-  RUNIT::CUI::TestRunner.run(suite)
+
 end

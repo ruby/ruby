@@ -1,27 +1,19 @@
-#
-# $Id$
-#
-# Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
-# You can redistribute it and/or modify it under the same term as Ruby.
-#
-
-require 'runit/testcase'
-require 'runit/cui/testrunner'
+require 'test/unit'
 require 'uri/mailto'
-module URI
-  class Generic
-    def to_ary
-      component_ary
-    end
-  end
-end
 
-class TestMailTo < RUNIT::TestCase
+module URI
+
+
+class TestMailTo < Test::Unit::TestCase
   def setup
     @u = URI::MailTo
   end
 
   def teardown
+  end
+
+  def uri_to_ary(uri)
+    uri.class.component.collect {|c| uri.send(c)}
   end
 
   def test_build
@@ -109,7 +101,7 @@ class TestMailTo < RUNIT::TestCase
     end
 
     bad.each do |x|
-      assert_exception(URI::InvalidComponentError) {
+      assert_raises(URI::InvalidComponentError) {
 	@u.build(x)
       }
     end
@@ -119,21 +111,12 @@ class TestMailTo < RUNIT::TestCase
 
   def test_select
     u = URI.parse('mailto:joe@example.com?cc=bob@example.com&body=hello')
-    assert_equal(u.to_ary, u.select(*u.component))
-    assert_exception(ArgumentError) do
+    assert_equal(uri_to_ary(u), u.select(*u.component))
+    assert_raises(ArgumentError) do
       u.select(:scheme, :host, :not_exist, :port)
     end
   end
 end
 
-if $0 == __FILE__
-  if ARGV.size == 0
-    suite = TestMailTo.suite
-  else
-    suite = RUNIT::TestSuite.new
-    ARGV.each do |testmethod|
-      suite.add_test(TestMailTo.new(testmethod))
-    end
-  end
-  RUNIT::CUI::TestRunner.run(suite)
+
 end
