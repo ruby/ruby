@@ -1,3 +1,12 @@
+Sat Jul 26 21:25:21 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* io.c (rb_fdopen): set errno if it's zero on win32 platforms.
+
+	* ext/openssl/ossl_ssl.c (TO_SOCKET): define special version when
+	  _WIN32 is defined. this is ruby's problem, not OpenSSL.
+
+	* win32/win32.c: remove some old comments.
+
 Sat Jul 26 14:14:12 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/stringio/stringio.c: includes Enumerable as well as IO.

@@ -1859,6 +1859,9 @@ rb_fdopen(fd, mode)
 	    file = fdopen(fd, mode);
 	}
 	if (!file) {
+#ifdef _WIN32
+	    if (errno == 0) errno = EINVAL;
+#endif
 	    rb_sys_fail(0);
 	}
     }

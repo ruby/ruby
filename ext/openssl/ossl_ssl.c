@@ -19,7 +19,7 @@
 
 #define numberof(ary) (sizeof(ary)/sizeof(ary[0]))
 
-#ifdef OPENSSL_SYS_WINDOWS
+#ifdef _WIN32
 #  define TO_SOCKET(s) _get_osfhandle(s)
 #else
 #  define TO_SOCKET(s) s

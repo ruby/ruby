@@ -351,9 +351,6 @@ flock(int fd, int oper)
 			      (DWORD)-1);
 }
 
-//#undef const
-//FILE *fdopen(int, const char *);
-
 //
 // Initialization stuff
 //
@@ -1486,19 +1483,6 @@ valid_filename(char *s)
     return 0;
 }
 
-//
-// This is a clone of fdopen so that we can handle the 
-// brain damaged version of sockets that NT gets to use.
-//
-// The problem is that sockets are not real file handles and 
-// cannot be fdopen'ed. This causes problems in the do_socket
-// routine in doio.c, since it tries to create two file pointers
-// for the socket just created. We'll fake out an fdopen and see
-// if we can prevent perl from trying to do stdio on sockets.
-//
-
-//EXTERN_C int __cdecl _alloc_osfhnd(void);
-//EXTERN_C int __cdecl _set_osfhnd(int fh, long value);
 EXTERN_C void __cdecl _lock_fhandle(int);
 EXTERN_C void __cdecl _unlock_fhandle(int);
 EXTERN_C void __cdecl _unlock(int);
