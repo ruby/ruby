@@ -2192,7 +2192,7 @@ svalue_to_avalue(v)
     if (RARRAY(tmp)->len <= 1) {
 	return rb_ary_new3(1, tmp);
     }
-    return v;
+    return tmp;
 }
 
 static void return_check _((void));

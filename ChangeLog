@@ -1,3 +1,7 @@
+Tue Jan  7 17:56:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (svalue_to_avalue): should return converted array.
+
 Tue Jan  7 07:48:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_f_local_variables): skip $_, $~ and flip states in
