@@ -167,6 +167,7 @@ static void parser_core _((struct cparse_params*, VALUE, VALUE, int));
 static void extract_utok _((struct cparse_params*, VALUE, VALUE*, VALUE*));
 static VALUE catch_iter _((VALUE));
 static VALUE do_reduce _((VALUE, VALUE, VALUE));
+static VALUE call_scaniter _((VALUE));
 
 
 #define REDUCE(v, act) \
@@ -281,8 +282,6 @@ catch_scaniter(arr, data, self)
 
     return Qnil;
 }
-
-static VALUE call_scaniter _((VALUE));
 
 static void
 wrap_yyparse(v)

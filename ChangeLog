@@ -1,3 +1,10 @@
+Mon Apr  1 16:52:00 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/sdbm/init.c (each_pair): moved prototype before the
+	  definition.
+
+	* ext/racc/cparse/cparse.c (call_scaniter): ditto.
+
 Mon Apr  1 15:11:40 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/racc/cparse/cparse.c: prototype; call_scaniter().
@@ -35,7 +42,6 @@ Fri Mar 29 16:36:52 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	  environment.
 
 	* lib/mkmf.rb: add directory options.
-
 
 Fri Mar 29 15:49:29 2002  Usaku Nakamura <usa@ruby-lang.org>
 
