@@ -722,6 +722,9 @@ ruby_connect(fd, sockaddr, len, socks)
 {
     int status;
     int mode;
+#if defined __CYGWIN__
+    int wait_in_progress = -1;
+#endif
 
 #if defined(HAVE_FCNTL)
     mode = fcntl(fd, F_GETFL, 0);
@@ -757,16 +760,22 @@ ruby_connect(fd, sockaddr, len, socks)
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
 #if defined __CYGWIN__
-		{
-		    struct timeval tv;
-		    tv.tv_sec = 0;
-		    tv.tv_usec = 100000;
-		    rb_thread_wait_for(tv);
-		}
+		wait_in_progress = 10;
 #endif
 #endif
 		thread_write_select(fd);
 		continue;
+
+#if defined __CYGWIN__
+	      case EALREADY:
+	      case EINVAL:
+		if (--wait_in_progress > 0) {
+		    struct timeval tv = {0, 100000};
+		    rb_thread_wait_for(tv);
+		    continue;
+		}
+		break;
+#endif
 
 #ifdef EISCONN
 	      case EISCONN:
