@@ -9,9 +9,7 @@ class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
   def _regex_quote(str)
-    str.gsub(/[][.\\|*?+{}()]/){|s|
-      if s == "\\" then "\\\\" else "\\\\#{s}" end
-    }
+    str.gsub(/[][\\]/, '\\\\\&)
   end
   private :_regex_quote
 
