@@ -47,7 +47,7 @@
 	    ruby-block-end-re "\\)\\>\\|\\}\\|\\]\\)")
   )
 
-(defconst ruby-operator-chars ",.+*/%-&|^~=<>:")
+(defconst ruby-operator-chars "-,.+*/%&|^~=<>:")
 (defconst ruby-operator-re (concat "[" ruby-operator-chars "]"))
 
 (defconst ruby-symbol-chars "a-zA-Z0-9_")

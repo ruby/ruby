@@ -115,7 +115,7 @@ sock_new(class, fd)
 #endif
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
-    rb_io_unbuffered(fp);
+    rb_io_synchronized(fp);
 
     return (VALUE)sock;
 }

@@ -442,6 +442,29 @@ read_all(port)
     return str;
 }
 
+static size_t
+io_fread(ptr, len, f)
+    char *ptr;
+    size_t len;
+    FILE *f;
+{
+    size_t n = len;
+
+    while (n--) {
+	*ptr = getc(f);
+	if (*ptr == EOF) {
+	    *ptr = '\0';
+	    break;
+	}
+	ptr++;
+	if (!READ_DATA_PENDING(f)) {
+	    rb_thread_wait_fd(fileno(f));
+	}
+    }
+
+    return len - n - 1;
+}
+
 static VALUE
 io_read(argc, argv, io)
     int argc;
@@ -465,9 +488,7 @@ io_read(argc, argv, io)
     str = rb_str_new(0, len);
 
     READ_CHECK(fptr->f);
-    TRAP_BEG;
-    n = fread(RSTRING(str)->ptr, 1, len, fptr->f);
-    TRAP_END;
+    n = io_fread(RSTRING(str)->ptr, len, fptr->f);
     if (n == 0) {
 	if (feof(fptr->f)) return Qnil;
 	rb_sys_fail(fptr->path);
@@ -564,9 +585,7 @@ rb_io_gets_internal(argc, argv, io)
 	}
 	else {
 	    READ_CHECK(f);
-	    TRAP_BEG;
-	    cnt = fread(buf, 1, sizeof(buf), f);
-	    TRAP_END;
+	    cnt = io_fread(buf, sizeof(buf), f);
 	    if (cnt == 0) {
 		if (ferror(f)) rb_sys_fail(fptr->path);
 		c = EOF;
@@ -1389,13 +1408,17 @@ pipe_finalize(fptr)
 #endif
 
 void
+rb_io_synchronized(fptr)
+    OpenFile *fptr;
+{
+    fptr->mode |= FMODE_SYNC;
+}
+
+void
 rb_io_unbuffered(fptr)
     OpenFile *fptr;
 {
-    if (fptr->f2 == 0) rb_raise(rb_eTypeError, "non-writable fptr");
-    if (fptr->f != 0) setbuf(fptr->f, NULL);
-    setbuf(fptr->f2, NULL);
-    fptr->mode |= FMODE_SYNC;
+    rb_io_synchronized(fptr);
 }
 
 static VALUE
@@ -1421,7 +1444,7 @@ pipe_open(pname, mode)
 	if (modef & FMODE_READABLE) fptr->f  = f;
 	if (modef & FMODE_WRITABLE) {
 	    fptr->f2 = f;
-	    rb_io_unbuffered(fptr);
+	    rb_io_synchronized(fptr);
 	}
 	return (VALUE)port;
     }

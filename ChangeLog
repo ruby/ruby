@@ -1,3 +1,10 @@
+Mon Sep 20 01:08:02 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_fread): should not block other threads.
+
+	* io.c (rb_io_synchronized): renamed from rb_io_unbuffered(); do
+	  not call setbuf(NULL) any more.
+
 Sat Sep 18 13:45:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* stable version 1.4.2 released.

@@ -34,6 +34,7 @@ Standard Libraries
 * Stream or Port, abstract superclass of IO ?
 * String#{pred,prev}, String#downto
 * optional stepsize argument for succ()
+* Dir.glob(pat){|f|...}
 
 Extension Libraries
 
