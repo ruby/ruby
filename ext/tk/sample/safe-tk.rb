@@ -44,10 +44,10 @@ cmd = Proc.new{|txt|
 }
 
 # call on the default master interpreter
-trusted_slave.eval_proc(cmd, 'trusted')
-safe_slave1.eval_proc(cmd, 'safe1')
-safe_slave2.eval_proc(cmd, 'safe2')
-cmd.call('master')
+trusted_slave.eval_proc(cmd, 'trusted')  # label -> .w00012
+safe_slave1.eval_proc(cmd, 'safe1')      # label -> .w00015
+safe_slave2.eval_proc(cmd, 'safe2')      # label -> .w00018
+cmd.call('master')                       # label -> .w00021
 
 TkTimer.new(2000, -1, proc{p ['safe1', safe_slave1.deleted?]}).start
 TkTimer.new(2000, -1, proc{p ['safe2', safe_slave2.deleted?]}).start
@@ -57,6 +57,7 @@ TkTimer.new(10000, 1,
 	    proc{
 	      trusted_slave.eval_proc{Tk.root.destroy}
 	      trusted_slave.delete
+	      print "*** The trusted_slave is deleted by the timer.\n"
 	    }).start
 
 Tk.mainloop

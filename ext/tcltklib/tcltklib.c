@@ -1020,7 +1020,7 @@ ip_invoke_real(argc, argv, obj)
 
     /* exception on mainloop */
     if (ptr->return_value == TCL_ERROR) {
-	if (event_loop_abort_on_exc > 0) {
+	if (event_loop_abort_on_exc > 0 && !Tcl_InterpDeleted(ptr->ip)) {
 	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
 	} else {
 	    if (event_loop_abort_on_exc < 0) {

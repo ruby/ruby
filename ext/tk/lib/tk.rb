@@ -3359,7 +3359,7 @@ class TkObject<TkKernel
   private :tk_trace_variable
 
   def destroy
-    tk_call 'trace', 'vdelete', @tk_vn, 'w', @var_id if defined? @var_id
+    # tk_call 'trace', 'vdelete', @tk_vn, 'w', @var_id if @var_id
   end
 end
 
@@ -3721,10 +3721,21 @@ class TkWindow<TkObject
     self
   end
 
+  def _destroy_children
+    children = []
+    rexp = /^#{self.path}\.[^.]+$/
+    TkCore::INTERP.tk_windows.each{|path, obj|
+      children << obj if path =~ rexp
+    }
+    children.each{|obj| obj.destroy}
+  end
+  private :_destroy_children
+
   def destroy
     super
+    _destroy_children
     tk_call 'destroy', epath
-    if @cmdtbl
+    if defined?(@cmdtbl)
       for id in @cmdtbl
 	uninstall_cmd id
       end
@@ -4959,6 +4970,10 @@ module TkComposite
       @path = @epath = @frame.path
       initialize_composite(*args)
     end
+    unless defined? @delegates
+      @delegates = {} 
+      @delegates['DEFAULT'] = @frame
+    end
   end
 
   def epath
@@ -4969,10 +4984,6 @@ module TkComposite
   private :initialize_composite
 
   def delegate(option, *wins)
-    unless @delegates
-      @delegates = {} 
-      @delegates['DEFAULT'] = @frame
-    end
     if @delegates[option].kind_of?(Array)
       for i in wins
 	@delegates[option].push(i)
@@ -5077,7 +5088,13 @@ end
 # widget_destroy_hook
 require 'tkvirtevent'
 TkBindTag::ALL.bind(TkVirtualEvent.new('Destroy'), proc{|widget| 
-		      if widget.respond_to? :__destroy_hook__
+		      if widget.respond_to?(:path)
+			w = widget.path
+		      else
+			w = widget.to_s
+		      end
+		      if widget.respond_to?(:__destroy_hook__) &&
+			  TkCore::INTERP._invoke('winfo','exist',w) == '1'
 			begin
 			  widget.__destroy_hook__
 			rescue Exception

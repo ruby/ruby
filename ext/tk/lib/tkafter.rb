@@ -34,7 +34,7 @@ class TkTimer
     begin
       ex_obj.cb_call
     rescue Exception
-      Tk_CBTBL[obj_id] = nil
+      ex_obj.cancel
       ""
     end
   end
@@ -143,6 +143,7 @@ class TkTimer
     set_procs(*args) if args != []
 
     @running = false
+    @in_callback = false
   end
 
   attr :after_id
