@@ -621,7 +621,7 @@ rb_gc_mark(ptr)
 
       case T_SCOPE:
 	if (obj->as.scope.local_vars &&
-            obj->as.scope.flag != SCOPE_ALLOCA) {
+            (obj->as.scope.flag & SCOPE_MALLOC) != 0) {
 	    int n = obj->as.scope.local_tbl[0]+1;
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 

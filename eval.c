@@ -805,10 +805,8 @@ static rb_thread_t curr_thread = 0;
 	    if (ruby_scope != top_scope)\
 		rb_gc_force_recycle((VALUE)ruby_scope);\
 	}				\
-	else {				\
-	    ruby_scope->flag |= SCOPE_NOSTACK;\
-	}				\
     }					\
+    ruby_scope->flag |= SCOPE_NOSTACK;	\
     ruby_scope = _old;			\
     scope_vmode = _vmode;		\
 }
@@ -5687,17 +5685,17 @@ scope_dup(scope)
     ID *tbl;
     VALUE *vars;
 
-    scope->flag |= SCOPE_DONT_RECYCLE;
-    if (scope->flag & SCOPE_MALLOC) return;
-
-    if (scope->local_tbl) {
-	tbl = scope->local_tbl;
-	vars = ALLOC_N(VALUE, tbl[0]+1);
-	*vars++ = scope->local_vars[-1];
-	MEMCPY(vars, scope->local_vars, VALUE, tbl[0]);
-	scope->local_vars = vars;
-	scope->flag = SCOPE_MALLOC;
+    if (!(scope->flag & SCOPE_MALLOC)) {
+	if (scope->local_tbl) {
+	    tbl = scope->local_tbl;
+	    vars = ALLOC_N(VALUE, tbl[0]+1);
+	    *vars++ = scope->local_vars[-1];
+	    MEMCPY(vars, scope->local_vars, VALUE, tbl[0]);
+	    scope->local_vars = vars;
+	    scope->flag = SCOPE_MALLOC;
+	}
     }
+    scope->flag |= SCOPE_DONT_RECYCLE;
 }
 
 static void
