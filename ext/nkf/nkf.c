@@ -31,7 +31,7 @@ rb_nkf_putchar(c)
 {
   if (output_ctr >= o_len) {
     o_len += incsize;
-    rb_str_cat(dst, 0, incsize);
+    rb_str_resize(dst, o_len);
     output = RSTRING(dst)->ptr;
     incsize *= 2;
   }
