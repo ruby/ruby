@@ -445,6 +445,7 @@ expr		: mlhs '=' mrhs
 		    }
 		| '!' command_call
 		    {
+			value_expr($2);
 			$$ = NEW_NOT(cond($2));
 		    }
 		| arg
@@ -898,6 +899,7 @@ arg		: lhs '=' arg
 		    }
 		| '!' arg
 		    {
+			value_expr($2);
 			$$ = NEW_NOT(cond($2));
 		    }
 		| '~' arg
@@ -2848,7 +2850,7 @@ here_document(term, indent)
 	}
 #endif
       retry:
-	switch (parse_string(term, '\n', '\n')) {
+	switch (parse_string(term, '\n', 0)) {
 	  case tSTRING:
 	  case tXSTRING:
 	    rb_str_cat2(yylval.val, "\n");
@@ -3118,11 +3120,11 @@ yylex()
 	return '>';
 
       case '"':
-	return parse_string(c,c,c);
+	return parse_string(c,c,0);
       case '`':
 	if (lex_state == EXPR_FNAME) return c;
 	if (lex_state == EXPR_DOT) return c;
-	return parse_string(c,c,c);
+	return parse_string(c,c,0);
 
       case '\'':
 	return parse_qstring(c,0);
@@ -3762,7 +3764,12 @@ yylex()
 	    c = nextc();
 	}
 	if (ISDIGIT(c)) {
-	    rb_compile_error("`@%c' is not a valid instance variable name", c);
+	    if (tokidx == 1) {
+		rb_compile_error("`@%c' is not a valid instance variable name", c);
+	    }
+	    else {
+		rb_compile_error("`@@%c' is not a valid class variable name", c);
+	    }
 	}
 	if (!is_identchar(c)) {
 	    pushback(c);
@@ -4055,7 +4062,7 @@ str_extend(list, term, paren)
 		if (c == paren) paren_nest++;
 		else if (c == term && (!paren || paren_nest-- == 0)) {
 		    pushback(c);
-		    list_append(list, NEW_STR(rb_str_new2("#")));
+		    list_append(list, NEW_STR(rb_str_new2("#{")));
 		    rb_warning("bad substitution in string");
 		    tokfix();
 		    list_append(list, NEW_STR(rb_str_new(tok(), toklen())));
@@ -4693,7 +4700,6 @@ cond0(node)
     enum node_type type = nd_type(node);
 
     assign_in_cond(node);
-    value_expr(node);
     switch (type) {
       case NODE_DREGX:
       case NODE_DREGX_ONCE:

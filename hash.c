@@ -240,7 +240,7 @@ rb_hash_s_create(argc, argv, klass)
     hash = rb_hash_new2(klass);
 
     for (i=0; i<argc; i+=2) {
-	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
+        rb_hash_aset(hash, argv[i], argv[i + 1]);
     }
 
     return hash;
@@ -315,7 +315,7 @@ rb_hash_fetch(argc, argv, hash)
     if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
 	if (rb_block_given_p()) {
 	    if (argc > 1) {
-		rb_raise(rb_eArgError, "wrong # of arguments", argc);
+		rb_raise(rb_eArgError, "wrong # of arguments");
 	    }
 	    return rb_yield(key);
 	}

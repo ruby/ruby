@@ -1,3 +1,17 @@
+Thu Jun 13 00:33:49 2002  takuma ozawa  <metal@mine.ne.jp>
+
+	* hash.c (rb_hash_s_create): use rb_hash_aset() instead of calling
+	  st_insert() directly, to dup&freeze string keys.
+
+Thu Jun 13 00:12:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): proper error message for "@@0".
+
+	* parse.y (yylex): paren to parse_string() must be zero for
+	  unparenthesized strings.
+
+	* parse.y (str_extend): broken string when unterminated "#{".
+
 Wed Jun 12 18:04:44 2002  akira yamada  <akira@arika.org>
 
 	* uri/common.rb (REGEXP::PATTERN::X_ABS_URI): 'file:/foo' is valid.
