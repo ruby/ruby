@@ -3,3 +3,4 @@
 iconv/iconv.c
 strscan/strscan.c
 zlib/zlib.c
+win32ole
