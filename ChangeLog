@@ -1,3 +1,10 @@
+Thu Jan 31 20:45:33 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/mkmf.rb (dir_config): prior --with flag.
+
+	* lib/mkmf.rb (arg_config): avoid special variables for
+	  font-lock-mode.
+
 Thu Jan 31 13:22:36 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pp.rb (File::Stat#pretty_print): print rdev_major and rdev_minor.
