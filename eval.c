@@ -452,6 +452,12 @@ rb_method_node(klass, id)
     ID id;
 {
     int noex;
+    struct cache_entry *ent;
+  
+    ent = cache + EXPR1(klass, id);
+    if (ent->mid == id && ent->klass == klass && ent->method){
+	return ent->method;
+    }
 
     return rb_get_method_body(&klass, &id, &noex);
 }
