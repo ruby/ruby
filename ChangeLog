@@ -1,3 +1,8 @@
+Tue Mar 29 22:20:49 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/rinda/test_rinda.rb: use DRbObject.new_with instead of reinit.
+	  [ruby-dev:25961]
+
 Tue Mar 29 00:04:57 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: move method DRbObject#reinit to DRbObject.new_with.
