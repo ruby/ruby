@@ -4633,7 +4633,6 @@ break_jump(retval)
 static VALUE bmcall _((VALUE, VALUE));
 static int method_arity _((VALUE));
 
-/*:nodoc:*/
 static VALUE
 rb_yield_0(val, self, klass, flags, avalue)
     VALUE val, self, klass;	/* OK */
@@ -13039,11 +13038,17 @@ recursive_pop()
 
     sym = ID2SYM(ruby_frame->this_func);
     if (NIL_P(hash) || TYPE(hash) != T_HASH) {
-	rb_bug("invalid inspect_tbl hash");
+	VALUE symname = rb_inspect(sym);
+	VALUE thrname = rb_inspect(rb_thread_current());
+	rb_raise(rb_eTypeError, "invalid inspect_tbl hash for %s in %s",
+		 StringValuePtr(symname), StringValuePtr(thrname));
     }
     list = rb_hash_aref(hash, sym);
     if (NIL_P(list) || TYPE(list) != T_ARRAY) {
-	rb_bug("invalid inspect_tbl list");
+	VALUE symname = rb_inspect(sym);
+	VALUE thrname = rb_inspect(rb_thread_current());
+	rb_raise(rb_eTypeError, "invalid inspect_tbl list for %s in %s",
+		 StringValuePtr(symname), StringValuePtr(thrname));
     }
     rb_ary_pop(list);
 }

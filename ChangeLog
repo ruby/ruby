@@ -1,3 +1,8 @@
+Sun Mar 13 22:19:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (recursive_pop): raise TypeError instead of fatal error.
+	  fixed: [ruby-dev:25843]
+
 Sun Mar 13 10:09:17 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: remove test_gc. [ruby-dev:25871]
@@ -25,10 +30,10 @@ Thu Mar 10 19:10:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tkrttimer.rb: sample of TkRTTimer class
 
-	* ext/tk/lib/tk/textmark.rb: move  TkTextMark#+ and TkTextMark#- to 
+	* ext/tk/lib/tk/textmark.rb: move  TkTextMark#+ and TkTextMark#- to
 	  TkText::IndexModMethods
 
-	* ext/tk/lib/tk/text.rb: improve TkTextMark#+ and TkTextMark#-, and 
+	* ext/tk/lib/tk/text.rb: improve TkTextMark#+ and TkTextMark#-, and
 	  add them to TkText::IndexModMethods module
 
 	* ext/tk/sample/tktextio.rb: add test part of "seek by text index
@@ -49,7 +54,7 @@ Wed Mar  9 19:42:21 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  - SSLContext#tmp_dh_callback is called in key exchange with DH
 	    algorithm. it must return an OpenSSL::PKey::DH object.
 
-	* ext/openssl/ossl_ssl.c: 
+	* ext/openssl/ossl_ssl.c:
 	  (ossl_sslctx_set_ciphers): ignore the argument if it's nil.
 	  (ossl_start_ssl, ossl_ssl_write): call rb_sys_fail if errno isn't 0.
 	  [ruby-dev:25831]
@@ -97,7 +102,7 @@ Tue Mar  8 12:36:17 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Mar  8 10:48:53 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_exec_recursive): declaration should precede statements
-	  before C99. 
+	  before C99.
 
 Tue Mar  8 10:05:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -114,7 +119,7 @@ Tue Mar  8 01:19:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
 Mon Mar  7 21:29:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/server.rb (WEBrick::GenericServer#start): should 
+	* lib/webrick/server.rb (WEBrick::GenericServer#start): should
 	  restore @token if accept failure. suggested by Dominique Brezinski.
 	  [ruby-core:04518]
 
