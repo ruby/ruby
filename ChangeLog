@@ -1,3 +1,14 @@
+Sat Sep  7 23:32:56 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/inf-ruby.el (inferior-ruby-error-regexp-alist): regexp
+	  alist for error message from ruby.
+
+	* misc/inf-ruby.el (inferior-ruby-mode): fixed for Emacs.
+
+	* misc/inf-ruby.el (ruby-send-region): compilation-parse-errors
+	  doesn't parse first line, so insert separators before each
+	  evaluations.
+
 Sat Sep  7 08:44:27 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (rb_gc_mark_parser): ruby_eval_tree is marked in eval.c.

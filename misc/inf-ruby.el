@@ -35,18 +35,28 @@
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
 ;;;	 $Log$
+;;;	 Revision 1.3.2.3  2002/09/07 14:37:26  nobu
+;;;	 * misc/inf-ruby.el (inferior-ruby-error-regexp-alist): regexp
+;;;	   alist for error message from ruby.
+;;;
+;;;	 * misc/inf-ruby.el (inferior-ruby-mode): fixed for Emacs.
+;;;
+;;;	 * misc/inf-ruby.el (ruby-send-region): compilation-parse-errors
+;;;	   doesn't parse first line, so insert separators before each
+;;;	   evaluations.
+;;;
 ;;;	 Revision 1.3.2.2  2002/08/19 10:06:20  nobu
 ;;;	 * misc/inf-ruby.el (inf-ruby-keys): ruby-send-definition
 ;;;	   conflicted with ruby-insert-end.
-;;;
+;;;	
 ;;;	 * misc/inf-ruby.el (inferior-ruby-mode): compilation-minor-mode.
-;;;
+;;;	
 ;;;	 * misc/inf-ruby.el (ruby-send-region): send as here document to
 ;;;	   adjust source file/line.  [ruby-talk:47113], [ruby-dev:17965]
-;;;
+;;;	
 ;;;	 * misc/inf-ruby.el (ruby-send-terminator): added to make unique
 ;;;	   terminator.
-;;;
+;;;	
 ;;;	 Revision 1.3.2.1  2002/02/01 06:01:51  matz
 ;;;	 * re.c (rb_reg_search): should set regs.allocated.
 ;;;	
@@ -118,10 +128,9 @@
 (defvar inferior-ruby-mode-map nil
   "*Mode map for inferior-ruby-mode")
 
-(pushnew '(ruby ("^\tfrom \\([^\(].*\\):\\([1-9][0-9]*\\):in \`.*\'$" 1 2))
-	 compilation-error-regexp-alist-alist)
-(pushnew '(ruby ("SyntaxError: compile error\n^\\([^\(].*\\):\\([1-9][0-9]*\\):" 1 2))
-	 compilation-error-regexp-alist-alist)
+(defconst inferior-ruby-error-regexp-alist
+       '(("SyntaxError: compile error\n^\\([^\(].*\\):\\([1-9][0-9]*\\):" 1 2)
+	 ("^\tfrom \\([^\(].*\\):\\([1-9][0-9]*\\)\\(:in `.*'\\)?$" 1 2)))
 
 (cond ((not inferior-ruby-mode-map)
        (setq inferior-ruby-mode-map
@@ -196,8 +205,9 @@ to continue it."
   (use-local-map inferior-ruby-mode-map)
   (setq comint-input-filter (function ruby-input-filter))
   (setq comint-get-old-input (function ruby-get-old-input))
-  (compilation-minor-mode)
-  (compilation-build-compilation-error-regexp-alist)
+  (compilation-shell-minor-mode t)
+  (make-local-variable 'compilation-error-regexp-alist)
+  (setq compilation-error-regexp-alist inferior-ruby-error-regexp-alist)
   (run-hooks 'inferior-ruby-mode-hook))
 
 (defvar inferior-ruby-filter-regexp "\\`\\s *\\S ?\\S ?\\s *\\'"
@@ -264,16 +274,28 @@ of `ruby-program-name').  Runs the hooks `inferior-ruby-mode-hook'
   "Template for irb here document terminator.
 Must not contain ruby meta characters.")
 
+(defconst ruby-eval-separator "")
+
 (defun ruby-send-region (start end)
   "Send the current region to the inferior Ruby process."
   (interactive "r")
   (let (term (file (buffer-file-name)) line)
     (save-excursion
-      (goto-char start)
-      (setq line (line-number))
-      (while (progn
-	       (setq term (apply 'format ruby-send-terminator (random) (current-time)))
-	       (re-search-forward (concat "^" (regexp-quote term) "$") end t))))
+      (save-restriction
+	(widen)
+	(goto-char start)
+	(setq line (+ start (forward-line (- start)) 1))
+	(goto-char start)
+	(while (progn
+		 (setq term (apply 'format ruby-send-terminator (random) (current-time)))
+		 (re-search-forward (concat "^" (regexp-quote term) "$") end t)))))
+    ;; compilation-parse-errors parses from second line.
+    (save-excursion
+      (let ((m (process-mark (ruby-proc))))
+	(set-buffer (marker-buffer m))
+	(goto-char m)
+	(insert ruby-eval-separator "\n")
+	(set-marker m (point))))
     (comint-send-string (ruby-proc) (format "eval <<'%s', nil, %S, %d\n" term file line))
     (comint-send-region (ruby-proc) start end)
     (comint-send-string (ruby-proc) (concat "\n" term "\n"))))
