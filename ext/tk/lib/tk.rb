@@ -1155,7 +1155,6 @@ module Tk
     end
   end
 
-
   def root
     TkRoot.new
   end
@@ -2245,8 +2244,14 @@ module Tk
       auto_path = Tk::LIBRARY
     end
   end
+
   AUTO_PATH = TkVarAccess.new('auto_path', auto_path)
-  AUTO_OLDPATH = TkVarAccess.new('auto_oldpath', auto_path)
+
+=begin
+  AUTO_OLDPATH = tk_split_simplelist(INTERP._invoke('set', 'auto_oldpath'))
+  AUTO_OLDPATH.each{|s| s.freeze}
+  AUTO_OLDPATH.freeze
+=end
 
   TCL_PACKAGE_PATH = TkVarAccess.new('tcl_pkgPath')
   PACKAGE_PATH = TCL_PACKAGE_PATH
