@@ -184,6 +184,7 @@ ip_new(VALUE self)
 static VALUE
 ip_eval(VALUE self, VALUE str)
 {
+    char *s;
     char *buf;			/* Tcl_Eval requires re-writable string region */
     struct tcltkip *ptr;	/* tcltkip data struct */
 
@@ -191,9 +192,9 @@ ip_eval(VALUE self, VALUE str)
     Data_Get_Struct(self, struct tcltkip, ptr);
 
     /* call Tcl_Eval() */
-    Check_Type(str, T_STRING);
-    buf = ALLOCA_N(char,RSTRING(str)->len+1);
-    strcpy(buf, RSTRING(str)->ptr);
+    s = STR2CSTR(str);
+    buf = ALLOCA_N(char, strlen(s)+1);
+    strcpy(buf, s);
     DUMP2("Tcl_Eval(%s)", buf);
     ptr->return_value = Tcl_Eval(ptr->ip, buf);
     if (ptr->return_value == TCL_ERROR) {
@@ -218,9 +219,10 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
 
     av = (char **)ALLOCA_N(char **, argc+1);
     for (i = 0; i < argc; ++i) {
-	Check_Type(argv[i], T_STRING);
-        av[i] = ALLOCA_N(char, RSTRING(argv[i])->len+1);
-	strcpy(av[i], RSTRING(argv[i])->ptr);
+	char *s = CTR2CSTR(argv[i]);
+
+        av[i] = ALLOCA_N(char, strlen(s)+1);
+	strcpy(av[i], s);
     }
     av[argc] = NULL;
 
