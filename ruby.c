@@ -166,8 +166,8 @@ rubylib_mangle(s, l)
 #define rubylib_mangled_path2(s) rb_str_new2(s)
 #endif
 
-static void
-incpush(path)
+void
+ruby_incpush(path)
     const char *path;
 {
     const char sep = PATH_SEP_CHAR;
@@ -203,36 +203,36 @@ incpush(path)
     }
 }
 
-static void
-ruby_path_init()
+void
+ruby_init_loadpath()
 {
     if (rb_safe_level() == 0) {
-	incpush(getenv("RUBYLIB"));
+	ruby_incpush(getenv("RUBYLIB"));
     }
 
 #ifdef RUBY_SEARCH_PATH
-    incpush(RUBY_SEARCH_PATH);
+    ruby_incpush(RUBY_SEARCH_PATH);
 #endif
 
 #ifdef RUBY_SITE_THIN_ARCHLIB
-    incpush(RUBY_SITE_THIN_ARCHLIB);
+    ruby_incpush(RUBY_SITE_THIN_ARCHLIB);
 #endif
-    incpush(RUBY_SITE_ARCHLIB);
-    incpush(RUBY_SITE_LIB2);
-    incpush(RUBY_SITE_LIB);
+    ruby_incpush(RUBY_SITE_ARCHLIB);
+    ruby_incpush(RUBY_SITE_LIB2);
+    ruby_incpush(RUBY_SITE_LIB);
 
 #ifdef RUBY_THIN_ARCHLIB
-    incpush(RUBY_THIN_ARCHLIB);
+    ruby_incpush(RUBY_THIN_ARCHLIB);
 #endif
-    incpush(RUBY_ARCHLIB);
+    ruby_incpush(RUBY_ARCHLIB);
 
-    incpush(RUBY_LIB);
+    ruby_incpush(RUBY_LIB);
 #if defined(_WIN32) || defined(DJGPP)
-    incpush(ruby_libpath());
+    ruby_incpush(ruby_libpath());
 #endif
 
     if (rb_safe_level() == 0) {
-	incpush(".");
+	ruby_incpush(".");
     }
 }
 
@@ -360,7 +360,6 @@ proc_options(argc, argv)
 
     if (argc == 0) return;
 
-    version = Qfalse;
     do_search = Qfalse;
 
     for (argc--,argv++; argc > 0; argc--,argv++) {
@@ -515,9 +514,9 @@ proc_options(argc, argv)
 	  case 'I':
 	    forbid_setid("-I");
 	    if (*++s)
-		incpush(s);
+		ruby_incpush(s);
 	    else if (argv[1]) {
-		incpush(argv[1]);
+		ruby_incpush(argv[1]);
 		argc--,argv++;
 	    }
 	    break;
@@ -659,7 +658,7 @@ proc_options(argc, argv)
     ruby_set_argv(argc, argv);
     process_sflag();
 
-    ruby_path_init();
+    ruby_init_loadpath();
     ruby_sourcefile = argv0;
     if (e_script) {
 	require_libraries();

@@ -503,6 +503,9 @@ EXPORTS
 	ruby_prog_init
 	ruby_set_argv
 	ruby_process_options
+	ruby_load_script
+	ruby_init_loadpath
+	ruby_incpush
 ;signal.c
 	rb_f_kill
 	rb_gc_mark_trap_list

@@ -8110,6 +8110,9 @@ rb_cont_call(argc, argv, cont)
 {
     rb_thread_t th = rb_thread_check(cont);
 
+    if (th->next != curr_thread) {
+	rb_raise(rb_eRuntimeError, "continuation called across threads");
+    }
     switch (argc) {
     case 0:
 	th->result = Qnil;

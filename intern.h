@@ -281,6 +281,8 @@ void ruby_prog_init _((void));
 void ruby_set_argv _((int, char**));
 void ruby_process_options _((int, char**));
 void ruby_load_script _((void));
+void ruby_init_loadpath _((void));
+void ruby_incpush _((const char*));
 /* signal.c */
 VALUE rb_f_kill _((int, VALUE*));
 void rb_gc_mark_trap_list _((void));
