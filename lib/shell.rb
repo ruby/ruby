@@ -123,7 +123,6 @@ class Shell
     end
   end
 
-  # Dir関連メソッド
   def [](pattern)
     Thread.critical=TRUE
     back = Dir.pwd
@@ -196,7 +195,7 @@ class Shell
   end
   
   #
-  # modeはpathがファイルの時だけ有効
+  # `mode' is effective iff `path' is specifying a file.
   #
   def open(path, mode)
     path = expand_path(path)
@@ -224,7 +223,7 @@ class Shell
   end
 
   #
-  # コマンド拡張
+  # command extension
   #   command_specs = [[command_name, [arguments,...]]]
   # FILENAME* -> expand_path(filename*)
   # \*FILENAME* -> filename*.collect{|fn| expand_path(fn)}.join(", ")
@@ -259,8 +258,8 @@ class Shell
   end
 
   #
-  # File関連メソッド
-  #	open/foreach/unlinkは別定義
+  # File methods
+  #	open/foreach/unlink are defined elsewhere.
   #
   normal_delegation_file_methods = [
     ["atime", ["FILENAME"]],
@@ -287,11 +286,11 @@ class Shell
 	       normal_delegation_file_methods)
   alias rm delete
 
-  # FileTest関連メソッド
+  # FileTest method
   def_commands(FileTest, 
 	       FileTest.singleton_methods.collect{|m| [m, ["FILENAME"]]})
 
-  # ftools関連メソッド
+  # ftools methods
   normal_delegation_ftools_methods = [
     ["syscopy", ["FILENAME_FROM", "FILENAME_TO"]],
     ["copy", ["FILENAME_FROM", "FILENAME_TO"]],
@@ -310,7 +309,7 @@ class Shell
   alias rm_f safe_unlink
   alias mkpath makedirs
 
-  # testコマンド
+  # test function
   alias top_level_test test
   def test(command, file1, file2 = nil)
     if file2
@@ -320,7 +319,7 @@ class Shell
     end
   end
 
-  # shell拡張
+  # shell functions
   def echo(*strings)
     Echo.new(self, *strings)
   end
@@ -342,7 +341,7 @@ class Shell
   end
 
   #
-  # コマンドを検索する. もし存在しなけば例外を返す.
+  # search for command, raise exception if not found.
   #
   def find_system_command(command)
     return command if /^\// =~ command
@@ -369,8 +368,7 @@ class Shell
   end
 
   #
-  # コマンドを特異メソッドとして定義する.
-  #	定義できない時は例外が発生する.
+  # define command as singleton method.
   #
   def def_system_command(command, path = command)
     d = "
@@ -392,8 +390,7 @@ class Shell
   end
 
   #
-  # コマンドをShellのメソッドとして定義する.
-  #	定義できない時は例外が発生する.
+  # define command as Shell method.
   #
   def Shell.def_system_command(command, path = command)
     d = "
@@ -415,12 +412,9 @@ class Shell
   end
 
   #
-  # default_path上にのるコマンドを定義する. すでに同名のメソッドが存在
-  #     する時は, 定義を行なわない.
-  #	デフォルトでは, 全てのメソッドには接頭子"sys_"をつける. 
-  #	メソッド名として許されないキャラクタ(英数時以外とメソッド名の
-  #	先頭が数値になる場合)は, 強制的に``_''に変換する. 
-  #     定義エラーは無視する.
+  # defines commands on default_path.  if the method is already defined,
+  # do nothing.  as default, methods are prefixed by "sys_".
+  # invalid characters as method name are converted into "_".
   #
   def Shell.install_system_command(pre = "sys_")
     defined_meth = {}
@@ -449,8 +443,8 @@ class Shell
   end
 
   #
-  # Filterクラス
-  # 必要なメソッド:
+  # Filter
+  # required method:
   #    each()
   class Filter
     include Enumerable

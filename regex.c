@@ -3688,6 +3688,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  SET_REGS_MATCHED;
           break;
 	}
+      while (stackp != stackb && (int)stackp[-1] == 1)
+	POP_FAILURE_POINT();
       continue;  /* Successfully executed one pattern command; keep going.  */
 
     /* Jump here if any matching operation fails. */

@@ -1453,7 +1453,7 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
-	if (ev_const_defined(the_frame->cbase, node->nd_vid)) {
+	if (ev_const_defined((NODE*)the_frame->cbase, node->nd_vid)) {
 	    return "constant";
 	}
 	break;
@@ -2175,7 +2175,7 @@ rb_eval(self, node)
 	    val = rb_eval(self, node->nd_value);
 	    /* check for static scope constants */
 	    if (RTEST(verbose) &&
-		ev_const_defined(the_frame->cbase, node->nd_vid)) {
+		ev_const_defined((NODE*)the_frame->cbase, node->nd_vid)) {
 		Warning("already initialized constant %s",
 			rb_id2name(node->nd_vid));
 	    }
@@ -2204,7 +2204,7 @@ rb_eval(self, node)
 	break;
 
       case NODE_CVAR:
-	result = ev_const_get(the_frame->cbase, node->nd_vid);
+	result = ev_const_get((NODE*)the_frame->cbase, node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:

@@ -535,7 +535,7 @@ static VALUE
 hash_each_value(hash)
     VALUE hash;
 {
-    hash_foreach(hash, each_value_i);
+    hash_foreach(hash, each_value_i, 0);
     return hash;
 }
 
@@ -552,7 +552,7 @@ static VALUE
 hash_each_key(hash)
     VALUE hash;
 {
-    hash_foreach(hash, each_key_i);
+    hash_foreach(hash, each_key_i, 0);
     return hash;
 }
 

@@ -33,101 +33,108 @@
 #   Methods:
 #   class methods:
 #	Matrix.[](*rows)
-#	    rowsで渡された行列を生成する. rowsは配列の配列
-#	    Matrix[[11, 12], [21, 22]]
+#	    creates a matrix where `rows' indicates rows. 
+#	    `rows' is an array of arrays, 
+#	    e.g, Matrix[[11, 12], [21, 22]]
 #	Matrix.rows(rows, copy = TRUE)
-#	    rowsを行ベクトルの集合として行列を生成する. copy=FALSE の
-#	    時はその配列をそのまま用いる.
+#	    creates a matrix where `rows' indicates rows. 
+#           if optional argument `copy' is false, use the array as
+#	    internal structure of the metrix without copying.
 #	Matrix.columns(columns)
-#	    rowsを列ベクトルの集合として行列を生成する. 
+#           creates a new matrix using `columns` as set of colums vectors.
 #	Matrix.diagonal(*values)
-#	    valuesを対角成分とした対角行列を生成する.
+#	    creates a matrix where `columns' indicates columns. 
 #	Matrix.scalar(n, value)
-#	    valueを対角成分とするn次ののスカラー行列を生成する.
+#	    creates a diagonal matrix such that the diagal compornents is
+#	    given by `values'.
+#	Matrix.scalar(n, value)
+#	    creates an n-by-n scalar matrix such that the diagal compornent is 
+#	    given by `value'.
 #	Matrix.identity(n)
 #	Matrix.unit(n)
 #	Matrix.I(n)
-#	    n次の単位行列を生成する.
+#	    creates an n-by-n unit matrix.
 #	Matrix.zero(n)
-#	    n次の0-行列を生成する.
+#	    creates an n-by-n zero matrix.
 #	Matrix.row_vector(row)
-#	    rowを行ベクトルとする1-n行列を生成する. rowはVectorかArray
-#	    が可能.
+#	    creates a 1-by-n matrix such the row vector is `row'. 
+#	    `row' is specifed as a Vector or an Array.
 #	Matrix.column_vector(column)
-#	    columnを列ベクトルとするn-1行列を生成する. rowはVectorかArray
-#	    が可能.
+#	    creates a 1-by-n matrix such that column vector is `column'. 
+#	    `column' is specifed as a Vector or an Array.
 #   accessing:
 #	[](i, j)
-#	    行列の(i, j)成分を返す.
+#	    returns (i,j) compornent
 #	row_size
-#	    行数を返す.
+#	    returns the number of rows
 #	column_size
-#	    列数を返す.
+#	    returns the number of columns
 #	row(i)
-#	    i番目の行ベクトルを返す. イテレータとして使われた時は, 行
-#	    ベクトルを順番にイテーレータブロックに渡す.
+#	    returns the i-th row vector. 
+#	    when the block is supplied for the method, the block is iterated
+#	    over all row vectors. 
 #	column(j)
-#	    j番目の列ベクトルを返す. 列ベクトルを順番にイテーレータブ
-#	    ロックに渡す. 
+#	    returns the jth column vector. 
+#	    when the block is supplied for the method, the block is iterated
+#	    over all column vectors. 
 #	collect
 #	map
-#	    全ての要素をイテレートしその戻り値を値とする行列を新たに生
-#	    成する.
+#	    creates a matrix which is the result of iteration of given
+#	    block over all compornents. 
 #	minor(*param)
-#	    マイナー行列を返す. パラメータとしては, 以下のパターンがあ
-#	    る:
+#	    returns sub matrix. parameter is specified as the following:
 #	    1. from_row, row_size, from_col, size_col
 #	    2. from_row..to_row, from_col..to_col
 #   TESTING:
 #	regular?
-#	    正則かどうか?
+#	    Is regular?
 #	singular?
-#	    正則ではないかどうか?
+#	    Is singular? i.e. Is non-regular?
 #	square?
-#	    正方行列かどうか?
+#	    Is square?
 #   ARITHMETIC:
 #	*(m)
-#	    乗法
+#	    times
 #	+(m)
-#	    加法
+#	    plus
 #	-(m)
-#	    減法
+#	    minus
 #	/(m)
 #	    self * m.inv
 #	inverse
 #	inv
-#	    逆行列
+#	    inverse
 #	**
-#	    冪乗
+#	    power
 #   Matrix functions:
 #	determinant
 #	det
-#	    行列式
+#	    returns the determinant
 #	rank
-#	    ランク
+#	    returns the rank
 #	trace
 #	tr
-#	    トレース
+#	    returns the trace
 #	transpose
 #	t
-#	    転置行列
+#	    returns the transposed
 #   CONVERTING:
 #	coerce(other)
 #	row_vectors
-#	    rowベクトルの配列
+#	    array of row vectors
 #	column_vectors
-#	    columベクトルの配列
+#	    array of column vectors
 #	to_a
-#	    (2重)配列に変換
+#	    converts each element to Array
 #	to_f
-#	    各要素をFloatに変換
+#	    converts each element to Float
 #	to_i
-#	    各要素をIntegerに変換
+#	    converts each element to Integer
 #	to_r
-#	    各要素をRationalに変換
+#	    converts each element to Rational
 #   PRINTING:
 #	to_s
-#	    文字列としての表現
+#	    returns string representation
 #	inspect
 #
 # class Vector

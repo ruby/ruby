@@ -862,7 +862,7 @@ str_replace(str, beg, len, val)
 /* str_replace2() understands negatice offset */
 static void
 str_replace2(str, beg, end, val)
-    VALUE str, *val;
+    VALUE str, val;
     int beg, end;
 {
     int len;

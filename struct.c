@@ -206,15 +206,14 @@ struct_s_def(argc, argv, klass)
     int argc;
     VALUE *argv;
 {
-    struct RString *name;
-    struct RArray *rest;
+    VALUE name, rest;
     int i;
     VALUE st;
 
     rb_scan_args(argc, argv, "1*", &name, &rest);
-    for (i=0; i<rest->len; i++) {
-	ID id = rb_to_id(rest->ptr[i]);
-	rest->ptr[i] = INT2FIX(id);
+    for (i=0; i<RARRAY(rest)->len; i++) {
+	ID id = rb_to_id(RARRAY(rest)->ptr[i]);
+	RARRAY(rest)->ptr[i] = INT2FIX(id);
     }
     st = make_struct(name, rest, klass);
     obj_call_init(st);

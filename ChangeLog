@@ -1,3 +1,27 @@
+Thu Aug 27 12:54:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c3 released.
+
+Wed Aug 26 11:47:00 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_match): pop non-greedy stack elements on success.
+
+Wed Aug 26 09:25:35 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* ruby.h: add #define environ for cygwin32.
+
+Mon Aug 24 18:46:44 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* dln.c (dln_find_1): path check was too strict.
+
+Mon Aug 24 15:28:11 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* parse.y (f_arglist): opt_nl added after f_args.
+
+Wed Aug 19 00:31:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (io_ctl): forgot to place TRAP_END at right position.
+
 Fri Aug 14 11:01:47 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (call_trace_func): save __FILE__, __LINE__ before

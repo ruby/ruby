@@ -1,7 +1,10 @@
 #
 # telnet.rb
-# ver0.122 1998/08/05
+# ver0.13 1998/08/25
 # Wakou Aoyama <wakou@fsinet.or.jp>
+#
+# ver0.13 1998/08/25
+# add print method.
 #
 # ver0.122 1998/08/05
 # support for HP-UX 10.20    thanks to WATANABE Tetsuya <tetsu@jpn.hp.com>
@@ -59,6 +62,9 @@
 #           "Prompt" => /[$%#>] $//,
 #           "Timeout" => 10}){|c| print c }
 #
+# == send string
+# host.print("string")
+#
 # == login
 # host.login("username", "password")
 # host.login({"Name" => "username",
@@ -82,6 +88,17 @@
 # localhost.login("username", "password"){|c| print c }
 # localhost.cmd("command"){|c| print c }
 # localhost.close
+#
+# == sample 2
+# checks a POP server to see if you have mail.
+#
+# pop = Telnet.new({"Host" => "your_destination_host_here",
+#                   "Port" => 110,
+#                   "Telnetmode" => FALSE,
+#                   "Prompt" => /^\+OK/})
+# pop.cmd("user " + "your_username_here"){|c| print c}
+# pop.cmd("pass " + "your_password_here"){|c| print c}
+# pop.cmd("list"){|c| print c}
 
 require "socket"
 require "delegate"
@@ -191,7 +208,7 @@ class Telnet < SimpleDelegator
 
     # respond to "IAC AYT" (are you there)
     str.gsub!(/([^#{IAC}])?#{IAC}#{AYT}/no){
-        @sock.write("nobody here but us pigeons" + CR)
+        @sock.write("nobody here but us pigeons" + EOL)
         $1
     }
 
@@ -234,6 +251,10 @@ class Telnet < SimpleDelegator
     line
   end
 
+  def print(string)
+    @sock.write(string.gsub(/\n/, EOL) + EOL)
+  end
+
   def cmd(options)
     match   = @options["Prompt"]
     timeout = @options["Timeout"]
@@ -247,7 +268,7 @@ class Telnet < SimpleDelegator
     end
 
     select(nil, [@sock])
-    @sock.write(string.gsub(/\n/, CR) + CR)
+    @sock.write(string.gsub(/\n/, EOL) + EOL)
     if iterator?
       waitfor({"Prompt" => match, "Timeout" => timeout}){|c| yield c }
     else

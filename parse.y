@@ -1385,7 +1385,7 @@ superclass	: term
 		    }
 		| error term {yyerrok; $$ = 0;}
 
-f_arglist	: '(' f_args ')'
+f_arglist	: '(' f_args opt_nl ')'
 		    {
 			$$ = $2;
 			lex_state = EXPR_BEG;
@@ -3056,7 +3056,9 @@ retry:
 		    pushback(c);
 		}
 	    }
-	    else if (lex_state == EXPR_BEG || lex_state == EXPR_DOT){
+	    else if (lex_state == EXPR_BEG ||
+		     lex_state == EXPR_DOT ||
+		     lex_state == EXPR_ARG){
 		lex_state = EXPR_ARG;
 	    }
 	    else {

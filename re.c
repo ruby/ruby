@@ -110,7 +110,7 @@ static int reg_kcode =
 
 static void
 kcode_euc(reg)
-    VALUE reg;
+    struct RRegexp *reg;
 {
     FL_UNSET(reg, KCODE_MASK);
     FL_SET(reg, KCODE_EUC);
@@ -119,7 +119,7 @@ kcode_euc(reg)
 
 static void
 kcode_sjis(reg)
-    VALUE reg;
+    struct RRegexp *reg;
 {
     FL_UNSET(reg, KCODE_MASK);
     FL_SET(reg, KCODE_SJIS);
@@ -128,7 +128,7 @@ kcode_sjis(reg)
 
 static void
 kcode_none(reg)
-    VALUE reg;
+    struct RRegexp *reg;
 {
     FL_UNSET(reg, KCODE_MASK);
     FL_SET(reg, KCODE_FIXED);
@@ -241,7 +241,7 @@ reg_source(re)
     VALUE re;
 {
     VALUE str = str_new(0,0);
-    reg_expr_str(str, RREGEXP(re)->str,RREGEXP(re)->len,re);
+    reg_expr_str(str, RREGEXP(re)->str, RREGEXP(re)->len);
 
     return str;
 }

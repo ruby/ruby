@@ -608,7 +608,7 @@ gc_sweep()
 
 	while (p < pend) {
 	    if (!(p->as.basic.flags & FL_MARK)) {
-		if (p->as.basic.flags) obj_free(p);
+		if (p->as.basic.flags) obj_free((VALUE)p);
 		p->as.free.flag = 0;
 		p->as.free.next = nfreelist;
 		nfreelist = p;
@@ -1017,7 +1017,7 @@ gc_call_finalizer_at_exit()
     for (i = 0; i < heaps_used; i++) {
 	p = heaps[i]; pend = p + HEAP_SLOTS;
 	while (p < pend) {
-	    run_final(p);
+	    run_final((VALUE)p);
 	    p++;
 	}
     }

@@ -64,6 +64,9 @@
 #if defined(__STDC__)
 # define __P(x) x
 # include <stdarg.h>
+# if !defined(__P)
+#  define __P(x) x
+# endif
 #else
 # undef  __P
 # define __P(x) ()
@@ -72,6 +75,10 @@
 #endif
 #ifndef _BSD_VA_LIST_ 
 #define	_BSD_VA_LIST_ va_list
+#endif
+
+#if defined(__hpux) && !defined(__GNUC__)
+#define const
 #endif
 
 #if defined(sgi)
@@ -96,7 +103,9 @@
  * boundaries.  THIS IS A CROCK, but for now there is no way around it.
  */
 #if !defined(_ANSI_SOURCE) && !defined(__STRICT_ANSI__)
+#if !defined(__hpux)
 typedef off_t fpos_t;
+#endif
 #else
 typedef struct __sfpos {
 	char	_pos[8];
@@ -241,9 +250,9 @@ static __inline int __sputc(int _c, FILE *_p) {
 #endif /* lint */
 
 
-
-
+#if defined(__hpux) && !defined(__GNUC__)
 #include <string.h>
+#endif
 
 /*
  * I/O descriptors for __sfvwrite().
@@ -277,8 +286,9 @@ static BSD__sfvwrite(fp, uio)
 
 	if ((len = uio->uio_resid) == 0)
 		return (0);
-
+#ifndef __hpux
 #define	MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
 #define	COPY(n)	  (void)memcpy((void *)fp->_p, (void *)p, (size_t)(n))
 
 	iov = uio->uio_iov;
@@ -349,11 +359,12 @@ err:
 #define u_short unsigned short
 #define u_int unsigned int
 
-#include <limits.h>
-#if !defined(__CYGWIN32__)
+#if !defined(__CYGWIN32__) && (defined(__hpux) && !defined(__GNUC__))
 #include <stdlib.h>
 #endif
+#if defined(__hpux) && !defined(__GNUC__)
 #include <string.h>
+#endif
 
 #if defined(__STDC__)
 # include <stdarg.h>

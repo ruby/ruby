@@ -1841,7 +1841,7 @@ f_gets()
 static VALUE
 f_readline(argc, argv)
     int argc;
-    VALUE argv;
+    VALUE *argv;
 {
     VALUE line = f_gets_method(argc, argv);
 
@@ -1929,7 +1929,7 @@ f_readchar()
 static VALUE
 f_readlines(argc, argv)
     int argc;
-    VALUE argv;
+    VALUE *argv;
 {
     VALUE line, ary;
 
@@ -1988,7 +1988,7 @@ f_select(argc, argv, obj)
     struct timeval *tp, timerec;
     OpenFile *fptr;
     int i, max = 0, n;
-    int interrupt = 0;
+    int interrupt_flag = 0;
     int pending = 0;
 
     rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout);
@@ -2079,7 +2079,7 @@ f_select(argc, argv, obj)
 	    rb_sys_fail(0);
 	}
 	if (tp == NULL) goto retry;
-	interrupt = 1;
+	interrupt_flag = 1;
     }
 #endif
     if (!pending && n == 0) return Qnil; /* returns nil on timeout */
@@ -2089,7 +2089,7 @@ f_select(argc, argv, obj)
     ary_push(res, wp?ary_new():ary_new2(0));
     ary_push(res, ep?ary_new():ary_new2(0));
 
-    if (interrupt == 0) {
+    if (interrupt_flag == 0) {
 	if (rp) {
 	    list = RARRAY(res)->ptr[0];
 	    for (i=0; i< RARRAY(read)->len; i++) {
@@ -2181,19 +2181,21 @@ io_ctl(io, req, arg, io_p)
 	narg = (long)RSTRING(arg)->ptr;
     }
     fd = fileno(fptr->f);
-    TRAP_BEG;
 #ifdef HAVE_FCNTL
+    TRAP_BEG;
 # ifdef USE_CWGUSI
     retval = io_p?ioctl(fd, cmd, (void*) narg):fcntl(fd, cmd, narg);
 # else
     retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
 # endif
-#else
     TRAP_END;
+#else
     if (!io_p) {
 	rb_notimplement();
     }
+    TRAP_BEG;
     retval = ioctl(fd, cmd, narg);
+    TRAP_END;
 #endif
     if (retval < 0) rb_sys_fail(fptr->path);
     if (TYPE(arg) == T_STRING && RSTRING(arg)->ptr[len] != 17) {
@@ -2500,7 +2502,7 @@ arg_readchar()
 static VALUE
 arg_each_line(argc, argv)
     int argc;
-    VALUE argv;
+    VALUE *argv;
 {
     VALUE str;
 

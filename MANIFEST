@@ -116,6 +116,7 @@ lib/ping.rb
 lib/pstore.rb
 lib/rational.rb
 lib/readbytes.rb
+lib/shell.rb
 lib/shellwords.rb
 lib/singleton.rb
 lib/sync.rb
@@ -186,9 +187,10 @@ sample/less.rb
 sample/list.rb
 sample/list2.rb
 sample/list3.rb
-sample/mrshtest.rb
+sample/mine.rb
 sample/mkproto.rb
 sample/mpart.rb
+sample/mrshtest.rb
 sample/observ.rb
 sample/occur.pl
 sample/occur.rb

@@ -11,36 +11,34 @@
 #
 #   add(obj, dependant, method = :finalize, *opt)
 #   add_dependency(obj, dependant, method = :finalize, *opt)
-#	依存関係 R_method(obj, dependant) の追加
+#	add dependency R_method(obj, dependant)
 #
 #   delete(obj_or_id, dependant, method = :finalize)
 #   delete_dependency(obj_or_id, dependant, method = :finalize)
-#	依存関係 R_method(obj, dependant) の削除
+#	delete dependency R_method(obj, dependant)
 #   delete_all_dependency(obj_or_id, dependant)
-#	依存関係 R_*(obj, dependant) の削除
+#	delete dependency R_*(obj, dependant)
 #   delete_by_dependant(dependant, method = :finalize)
-#	依存関係 R_method(*, dependant) の削除
+#	delete dependency R_method(*, dependant)
 #   delete_all_by_dependant(dependant)
-#	依存関係 R_*(*, dependant) の削除
+#	delete dependency R_*(*, dependant)
 #   delete_all
-#	全ての依存関係の削除.
+#	delete all dependency R_*(*, *)
 #
 #   finalize(obj_or_id, dependant, method = :finalize)
 #   finalize_dependency(obj_or_id, dependant, method = :finalize)
-#	依存関連 R_method(obj, dependtant) で結ばれるdependantを
-#	finalizeする.
+#	finalize the dependant connected by dependency R_method(obj, dependtant).
 #   finalize_all_dependency(obj_or_id, dependant)
-#	依存関連 R_*(obj, dependtant) で結ばれるdependantをfinalizeする.
+#	finalize all dependants connected by dependency R_*(obj, dependtant).
 #   finalize_by_dependant(dependant, method = :finalize)
-#	依存関連 R_method(*, dependtant) で結ばれるdependantをfinalizeする.
+#	finalize the dependant connected by dependency R_method(*, dependtant).
 #   fainalize_all_by_dependant(dependant)
-#	依存関連 R_*(*, dependtant) で結ばれるdependantをfinalizeする.
+#	finalize all dependants connected by dependency R_*(*, dependant).
 #   finalize_all
-#	Finalizerに登録される全てのdependantをfinalizeする
+#	finalize all dependency registered to the Finalizer.
 #
 #   safe{..}
-#	gc時にFinalizerが起動するのを止める.
-#
+#	stop invoking Finalizer on GC.
 #
 
 module Finalizer
@@ -48,7 +46,7 @@ module Finalizer
   
   # @dependency: {id => [[dependant, method, *opt], ...], ...}
   
-  # 依存関係 R_method(obj, dependant) の追加
+  # add dependency R_method(obj, dependant)
   def add_dependency(obj, dependant, method = :finalize, *opt)
     ObjectSpace.call_finalizer(obj)
     method = method.intern unless method.kind_of?(Integer)
@@ -61,7 +59,7 @@ module Finalizer
   end
   alias add add_dependency
   
-  # 依存関係 R_method(obj, dependant) の削除
+  # delete dependency R_method(obj, dependant)
   def delete_dependency(id, dependant, method = :finalize)
     id = id.id unless id.kind_of?(Integer)
     method = method.intern unless method.kind_of?(Integer)
@@ -75,7 +73,7 @@ module Finalizer
   end
   alias delete delete_dependency
   
-  # 依存関係 R_*(obj, dependant) の削除
+  # delete dependency R_*(obj, dependant)
   def delete_all_dependency(id, dependant)
     id = id.id unless id.kind_of?(Integer)
     method = method.intern unless method.kind_of?(Integer)
@@ -88,7 +86,7 @@ module Finalizer
     end
   end
   
-  # 依存関係 R_method(*, dependant) の削除
+  # delete dependency R_method(*, dependant)
   def delete_by_dependant(dependant, method = :finalize)
     method = method.intern unless method.kind_of?(Integer)
     for id in @dependency.keys
@@ -96,15 +94,14 @@ module Finalizer
     end
   end
   
-  # 依存関係 R_*(*, dependant) の削除
+  # delete dependency R_*(*, dependant)
   def delete_all_by_dependant(dependant)
     for id in @dependency.keys
       delete_all_dependency(id, dependant)
     end
   end
   
-  # 依存関連 R_method(obj, dependtant) で結ばれるdependantをfinalizeす
-  # る.
+  # finalize the depandant connected by dependency R_method(obj, dependtant)
   def finalize_dependency(id, dependant, method = :finalize)
     id = id.id unless id.kind_of?(Integer)
     method = method.intern unless method.kind_of?(Integer)
@@ -119,7 +116,7 @@ module Finalizer
   end
   alias finalize finalize_dependency
   
-  # 依存関連 R_*(obj, dependtant) で結ばれるdependantをfinalizeする.
+  # finalize all dependants connected by dependency R_*(obj, dependtant)
   def finalize_all_dependency(id, dependant)
     id = id.id unless id.kind_of?(Integer)
     method = method.intern unless method.kind_of?(Integer)
@@ -132,7 +129,7 @@ module Finalizer
     end
   end
   
-  # 依存関連 R_method(*, dependtant) で結ばれるdependantをfinalizeする.
+  # finalize the dependant connected by dependency R_method(*, dependtant)
   def finalize_by_dependant(dependant, method = :finalize)
     method = method.intern unless method.kind_of?(Integer)
     for id in @dependency.keys
@@ -140,14 +137,14 @@ module Finalizer
     end
   end
   
-  # 依存関連 R_*(*, dependtant) で結ばれるdependantをfinalizeする.
+  # finalize all dependants connected by dependency R_*(*, dependtant)
   def fainalize_all_by_dependant(dependant)
     for id in @dependency.keys
       finalize_all_dependency(id, dependant)
     end
   end
   
-  # Finalizerに登録されている全てのdependantをfinalizeする
+  # finalize all dependants registered to the Finalizer.
   def finalize_all
     for id, assocs in @dependency
       for dependant, method, *opt in assocs
@@ -157,7 +154,7 @@ module Finalizer
     end
   end
   
-  # finalize_* を安全に呼び出すためのイテレータ
+  # method to call finalize_* safely.
   def safe
     old_status = Thread.critical
     Thread.critical = TRUE
@@ -167,7 +164,7 @@ module Finalizer
     Thread.critical = old_status
   end
   
-  # ObjectSpace#add_finalizerへの登録関数
+  # registering function to ObjectSpace#add_finalizer
   def final_of(id)
     if assocs = @dependency.delete(id)
       for dependant, method, *opt in assocs
@@ -202,4 +199,3 @@ module Finalizer
   private_class_method :final_of
   
 end
-

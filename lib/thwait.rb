@@ -1,38 +1,39 @@
 #
-#   thwait.rb - スレッド同期クラス
+#   thwait.rb - thread synchronization class
 #   	$Release Version: 0.9 $
 #   	$Revision: 1.3 $
 #   	$Date: 1998/06/26 03:19:34 $
 #   	by Keiju ISHITSUKA(Nihpon Rational Software Co.,Ltd.)
 #
 # --
-#  機能:
-#  複数のスレッドを関しそれらのスレッドが終了するまでwaitする機能を提
-#  供する. 
+#  feature:
+#  provides synchronization for multiple threads.
 #
-#  クラスメソッド:
+#  class methods:
 #  * ThreadsWait.all_waits(thread1,...)
-#    全てのスレッドが終了するまで待つ. イテレータとして呼ばれた時には, 
-#    スレッドが終了する度にイテレータを実行する.
+#    waits until all of specified threads are terminated.
+#    if a block is supplied for the method, evaluates it for
+#    each thread termination.
 #  * th = ThreadsWait.new(thread1,...)
-#    同期するスレッドを指定し同期オブジェクトを生成.
+#    creates synchronization object, specifying thread(s) to wait.
 #  
-#  メソッド:
+#  methods:
 #  * th.threads
-#    同期すべきスレッドの一覧
+#    list threads to be synchronized
 #  * th.empty?
-#    同期すべきスレッドがあるかどうか
+#    is there any thread to be synchronized.
 #  * th.finished?
-#    すでに終了したスレッドがあるかどうか
+#    is there already terminated thread.
 #  * th.join(thread1,...) 
-#    同期するスレッドを指定し, いずれかのスレッドが終了するまで待ちにはいる.
+#    wait for specified thread(s).
 #  * th.join_nowait(threa1,...)
-#    同期するスレッドを指定する. 待ちには入らない.
+#    specifies thread(s) to wait.  non-blocking.
 #  * th.next_wait
-#    いずれかのスレッドが終了するまで待ちにはいる.
+#    waits until any of specified threads is terminated.
 #  * th.all_waits
-#    全てのスレッドが終了するまで待つ. イテレータとして呼ばれた時には, 
-#    スレッドが終了する度にイテレータを実行する.
+#    waits until all of specified threads are terminated.
+#    if a block is supplied for the method, evaluates it for
+#    each thread termination.
 #
 
 require "thread.rb"
@@ -45,14 +46,6 @@ class ThreadsWait
   def_exception("ErrNoWaitingThread", "No threads for waiting.")
   def_exception("ErrNoFinshedThread", "No finished threads.")
   
-  # class mthods
-  #	all_waits
-  
-  #
-  # 指定したスレッドが全て終了するまで待つ. イテレータとして呼ばれると
-  # 指定したスレッドが終了するとその終了したスレッドを引数としてイテレー
-  # タを呼び出す. 
-  #
   def ThreadsWait.all_waits(*threads)
     tw = ThreadsWait.new(*threads)
     if iterator?
@@ -65,12 +58,6 @@ class ThreadsWait
     end
   end
   
-  # initialize and terminating:
-  #	initialize
-  
-  #
-  # 初期化. 待つスレッドの指定ができる.
-  #
   def initialize(*threads)
     @threads = []
     @wait_queue = Queue.new
@@ -78,24 +65,19 @@ class ThreadsWait
   end
   
   # accessing
-  #	threads
-  
-  # 待ちスレッドの一覧を返す.
+  #	threads - list threads to be synchronized
   attr :threads
   
   # testing
   #	empty?
   #	finished?
-  #
-  
-  #
-  # 待ちスレッドが存在するかどうかを返す.
+
+  # is there any thread to be synchronized.
   def empty?
     @threads.empty?
   end
   
-  #
-  # すでに終了したスレッドがあるかどうか返す
+  # is there already terminated thread.
   def finished?
     !@wait_queue.empty?
   end
@@ -106,18 +88,13 @@ class ThreadsWait
   #	next_wait
   #	all_wait
   
-  #
-  # 待っているスレッドを追加し. いずれかのスレッドが1つ終了するまで待
-  # ちにはいる.
-  #
+  # adds thread(s) to join,  waits for any of waiting threads to terminate.
   def join(*threads)
     join_nowait(*threads)
     next_wait
   end
   
-  #
-  # 待っているスレッドを追加する. 待ちには入らない.
-  #
+  # adds thread(s) to join, no wait.
   def join_nowait(*threads)
     @threads.concat threads
     for th in threads
@@ -128,12 +105,10 @@ class ThreadsWait
     end
   end
   
-  #
-  # いずれかのスレッドが終了するまで待ちにはいる.
-  # 待つべきスレッドがなければ, 例外ErrNoWaitingThreadを返す.
-  # nonnlockが真の時には, nonblockingで調べる. 存在しなければ, 例外
-  # ErrNoFinishedThreadを返す.
-  #
+  # waits for any of waiting threads to terminate
+  # if there is no thread to wait, raises ErrNoWaitingThread.
+  # if `nonblock' is true, and there is no terminated thread,
+  # raises ErrNoFinishedThread.
   def next_wait(nonblock = nil)
     ThreadsWait.fail ErrNoWaitingThread if @threads.empty?
     begin
@@ -144,10 +119,9 @@ class ThreadsWait
     end
   end
   
-  #
-  # 全てのスレッドが終了するまで待つ. イテレータとして呼ばれた時は, ス
-  # レッドが終了する度に, イテレータを呼び出す.
-  #
+  # waits until all of specified threads are terminated.
+  # if a block is supplied for the method, evaluates it for
+  # each thread termination.
   def all_waits
     until @threads.empty?
       th = next_wait

@@ -1,11 +1,22 @@
 #
 #   e2mmap.rb - for ruby 1.1
-#   	$Release Version: 1.1$
-#   	$Revision: 1.7 $
-#   	$Date: 1998/05/19 04:38:33 $
+#   	$Release Version: 1.2$
+#   	$Revision: 1.8 $
+#   	$Date: 1998/08/19 15:22:22 $
 #   	by Keiju ISHITSUKA
 #
 # --
+#   Usage:
+#
+#   class Foo
+#     extend Exception2MassageMapper
+#     def_exception :NewExceptionClass, "message..."[, superclass]
+#     def_e2meggage ExistingExceptionClass, "message..."
+#     ...
+#   end
+#
+#   Foo.Fail NewExceptionClass, arg...
+#   Foo.Fail ExistingExceptionClass, arg...
 #
 #
 if VERSION < "1.1"
@@ -13,7 +24,7 @@ if VERSION < "1.1"
 else  
   
   module Exception2MessageMapper
-    RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/e2mmap.rb,v 1.7 1998/05/19 04:38:33 keiju Exp keiju $-'
+    @RCS_ID='-$Id: e2mmap.rb,v 1.8 1998/08/19 15:22:22 keiju Exp keiju $-'
     
     E2MM = Exception2MessageMapper
 
@@ -29,10 +40,14 @@ else
     end
     
     #    public :fail
-    #    alias e2mm_fail fail
+    alias fail! fail
 
-    def fail(err = nil, *rest)
-      Exception2MessageMapper.fail Exception2MessageMapper::ErrNotRegisteredException, err.to_s
+    #def fail(err = nil, *rest)
+    #  super
+    #end
+
+    def Fail(err = nil, *rest)
+      Exception2MessageMapper.Fail Exception2MessageMapper::ErrNotRegisteredException, err.inspect
     end
     
     def bind(cl)
@@ -42,6 +57,22 @@ else
 	#	err:	Exception
 	#	rest:	Parameter accompanied with the exception
 	#
+	def self.Fail(err = nil, *rest)
+	  if form = E2MM_ErrorMSG[err]
+	    $! = err.new(sprintf(form, *rest))
+	    $@ = caller(0) if $@.nil?
+	    $@.shift
+	    # e2mm_fail()
+	    raise()
+#	  elsif self == Exception2MessageMapper
+#	    fail Exception2MessageMapper::ErrNotRegisteredException, err.to_s
+	  else
+#	    print "super\n"
+	    super
+	  end
+	end
+
+	# 過去の互換性のため
 	def self.fail(err = nil, *rest)
 	  if form = E2MM_ErrorMSG[err]
 	    $! = err.new(sprintf(form, *rest))

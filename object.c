@@ -69,10 +69,17 @@ any_to_a(obj)
 }
 
 static VALUE
+obj_hash(obj)
+    VALUE obj;
+{
+    return (long)obj|FIXNUM_FLAG;
+}
+
+static VALUE
 obj_id(obj)
     VALUE obj;
 {
-    return INT2NUM((int)obj);
+    return INT2NUM((long)obj);
 }
 
 static VALUE
@@ -963,7 +970,7 @@ Init_Object()
 
     rb_define_method(mKernel, "eql?", obj_equal, 1);
 
-    rb_define_method(mKernel, "hash", obj_id, 0);
+    rb_define_method(mKernel, "hash", obj_hash, 0);
     rb_define_method(mKernel, "id", obj_id, 0);
     rb_define_method(mKernel, "__id__", obj_id, 0);
     rb_define_method(mKernel, "type", obj_type, 0);

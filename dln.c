@@ -78,7 +78,7 @@ int eaccess();
 #endif
 
 #ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || defined(__FreeBSD__) || defined(NeXT)
+# if defined(__hp9000s300) || defined(__NetBSD__) || defined(__BORLANDC__) || defined(__FreeBSD__) || defined(NeXT) || defined(__WATCOMC__)
 #  define FUNCNAME_PATTERN "_Init_%.200s"
 # else
 #  define FUNCNAME_PATTERN "Init_%.200s"
@@ -1565,11 +1565,13 @@ dln_find_1(fname, path, exe_flag)
     if (fname[0] == '/') return fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;
+    if (exe_flag && strchr(fname, '/')) return fname;
 #if defined(MSDOS) || defined(NT) || defined(__human68k__)
     if (fname[0] == '\\') return fname;
     if (strlen(fname) > 2 && fname[1] == ':') return fname;
     if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
       return fname;
+    if (exe_flag && strchr(fname, '\\')) return fname;
 #endif
 #endif /* __MACOS__ */
 
