@@ -10,6 +10,7 @@ abbrev.rb
 base64.rb
 benchmark.rb
 cgi.rb
+cgi
 complex.rb
 date.rb
 English.rb
