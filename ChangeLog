@@ -1,3 +1,8 @@
+Mon Jul  7 10:22:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/dbm/extconf.rb (gdbm_compat, qdbm): add check for gdbm_compat
+	  and qdbm.
+
 Sat Jul  5 00:22:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* node.h (NEW_NODE): cast arguments to rb_node_newnode().

@@ -48,7 +48,7 @@ end
 if dblib
   db_check(dblib)
 else
-  for dblib in %w(db db2 db1 dbm gdbm)
+  for dblib in %w(db db2 db1 dbm gdbm gdbm_compat qdbm)
     db_check(dblib) and break
   end
 end
