@@ -4729,6 +4729,9 @@ rb_yield_0(val, self, klass, flags, avalue)
 	    if (TAG_DST()) {
 		result = prot_tag->retval;
 	    }
+	    else {
+		lambda = Qtrue;	/* just pass TAG_BREAK */
+	    }
 	    break;
 	  default:
 	    break;

@@ -2869,7 +2869,7 @@ rb_open_file(argc, argv, io)
 
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
 	if (FIXNUM_P(vmode)) {
-	    flags = NUM2INT(vmode);
+	    flags = FIX2INT(vmode);
 	}
 	else {
 	    SafeStringValue(vmode);
@@ -2937,7 +2937,7 @@ rb_io_s_sysopen(argc, argv)
     SafeStringValue(fname);
 
     if (NIL_P(vmode)) flags = O_RDONLY;
-    else if (FIXNUM_P(vmode)) flags = NUM2INT(vmode);
+    else if (FIXNUM_P(vmode)) flags = FIX2INT(vmode);
     else {
 	SafeStringValue(vmode);
 	flags = rb_io_mode_modenum(RSTRING(vmode)->ptr);

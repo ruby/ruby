@@ -1670,7 +1670,7 @@ rb_str_aset(str, indx, val)
     switch (TYPE(indx)) {
       case T_FIXNUM:
       num_index:
-	idx = NUM2LONG(indx);
+	idx = FIX2LONG(indx);
 	if (RSTRING(str)->len <= idx) {
 	  out_of_range:
 	    rb_raise(rb_eIndexError, "index %ld out of string", idx);
@@ -1685,7 +1685,7 @@ rb_str_aset(str, indx, val)
 		RSTRING(str)->len += 1;
 		RESIZE_CAPA(str, RSTRING(str)->len);
 	    }
-	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
+	    RSTRING(str)->ptr[idx] = FIX2INT(val) & 0xff;
 	}
 	else {
 	    rb_str_splice(str, idx, 1, val);

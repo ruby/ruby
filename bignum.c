@@ -1599,7 +1599,7 @@ rb_big_pow(x, y)
 	break;
 
       case T_FIXNUM:
-	yy = NUM2LONG(y);
+	yy = FIX2LONG(y);
 	if (yy > 0) {
 	    VALUE z = x;
 

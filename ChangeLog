@@ -3,6 +3,11 @@ Mon Mar 15 10:14:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SocketForwarder):
 	  add do_not_reverse_lookup.
 
+Mon Mar 15 07:39:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): should not re-submit TAG_BREAK if this
+	  yield is not break destination. [ruby-dev:23197]
+
 Sun Mar 14 22:07:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_raise): err at unstarted thread.  (PR#1302)

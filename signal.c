@@ -555,7 +555,7 @@ trap(arg)
 
     switch (TYPE(arg->sig)) {
       case T_FIXNUM:
-	sig = NUM2INT(arg->sig);
+	sig = FIX2INT(arg->sig);
 	break;
 
       case T_SYMBOL:

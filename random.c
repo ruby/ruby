@@ -266,7 +266,7 @@ rb_f_rand(argc, argv, obj)
 	vmax = rb_Integer(vmax);
 	if (TYPE(vmax) == T_BIGNUM) goto bignum;
       case T_FIXNUM:
-	max = NUM2LONG(vmax);
+	max = FIX2LONG(vmax);
 	break;
     }
 

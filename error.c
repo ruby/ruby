@@ -259,6 +259,9 @@ rb_check_type(x, t)
 		else if (FIXNUM_P(x)) {
 		    etype = "Fixnum";
 		}
+		else if (SYMBOL_P(x)) {
+		    etype = "Symbol";
+		}
 		else if (rb_special_const_p(x)) {
 		    etype = RSTRING(rb_obj_as_string(x))->ptr;
 		}
