@@ -1448,10 +1448,14 @@ rb_io_getline(rs, fptr)
 	}
 	newline = rsptr[rslen - 1];
 
-	while ((c = appendline(fptr, newline, &str)) != EOF &&
-	       (c != newline || RSTRING(str)->len < rslen ||
-		(rspara || rscheck(rsptr,rslen,rs)) ||
-		memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen,rsptr,rslen)));
+	while ((c = appendline(fptr, newline, &str)) != EOF) {
+	    if (c == newline) {
+		if (RSTRING(str)->len < rslen) continue;
+		if (!rspara) rscheck(rsptr, rslen, rs);
+		if (memcmp(RSTRING(str)->ptr + RSTRING(str)->len - rslen,
+			   rsptr, rslen) == 0) break;
+	    }
+	}
 
 	if (rspara) {
 	    if (c != EOF) {
