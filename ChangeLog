@@ -1,3 +1,8 @@
+Thu Nov 13 17:56:41 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (OpenURI.open_uri): use File::RDONLY.
+	  reported by Take_tk <ggb03124@nifty.ne.jp>.
+
 Thu Nov 13 16:45:53 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509req.c (ossl_x509req_to_der): add function for

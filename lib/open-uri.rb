@@ -98,7 +98,7 @@ module OpenURI
 
     unless mode == nil ||
            mode == 'r' || mode == 'rb' ||
-           mode == O_RDONLY
+           mode == File::RDONLY
       raise ArgumentError.new("invalid access mode #{mode} (#{uri.class} resource is read only.)")
     end
 
