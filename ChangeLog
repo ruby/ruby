@@ -1,3 +1,9 @@
+Fri Feb 21 08:03:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (rb_gc_mark): inline rb_gc_mark_children().
+
+	* gc.c (gc_sweep): new tactics to increase malloc_limit mildly.
+
 Fri Feb 21 05:16:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_cmp_m): return nil if str2 does not respond to

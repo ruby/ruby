@@ -418,8 +418,6 @@ init_mark_stack()
 
 #define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
             
-static void rb_gc_mark_children(VALUE ptr);
-
 static st_table *source_filenames;
 
 char *
@@ -474,7 +472,7 @@ gc_mark_all()
 	while (p < pend) {
 	    if ((p->as.basic.flags & FL_MARK) &&
 		(p->as.basic.flags != FL_MARK)) {
-		rb_gc_mark_children((VALUE)p);
+		rb_gc_mark((VALUE)p);
 	    }
 	    p++;
 	}
@@ -491,10 +489,9 @@ gc_mark_rest()
     MEMCPY(tmp_arry, mark_stack, VALUE, MARK_STACK_MAX);
 
     init_mark_stack();
-    
     while(p != tmp_arry){
 	p--;
-	rb_gc_mark_children(*p);
+	rb_gc_mark(*p);
     }
 }
 
@@ -596,13 +593,7 @@ rb_gc_mark(ptr)
     VALUE ptr;
 {
     int ret;
-    register RVALUE *obj = RANY(ptr);
-
-    if (rb_special_const_p(ptr)) return; /* special const not marked */
-    if (obj->as.basic.flags == 0) return;       /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
-
-    obj->as.basic.flags |= FL_MARK;
+    register RVALUE *obj;
 
     CHECK_STACK(ret);
     if (ret) {
@@ -615,20 +606,19 @@ rb_gc_mark(ptr)
 		mark_stack_overflow = 1;
 	    }
 	}
+	return;
     }
-    else {
-	rb_gc_mark_children(ptr);
-    }
-}
 
-void
-rb_gc_mark_children(ptr)
-    VALUE ptr;
-{
-    register RVALUE *obj = RANY(ptr);	
-    
+  again:
+    obj = RANY(ptr);
+    if (rb_special_const_p(ptr)) return; /* special const not marked */
+    if (obj->as.basic.flags == 0) return;       /* free cell */
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
+
+    obj->as.basic.flags |= FL_MARK;
+
     if (FL_TEST(obj, FL_EXIVAR)) {
-	rb_mark_generic_ivar((VALUE)obj);
+	rb_mark_generic_ivar(ptr);
     }
 
     switch (obj->as.basic.flags & T_MASK) {
@@ -668,8 +658,8 @@ rb_gc_mark_children(ptr)
 	  case NODE_FCALL:
 	  case NODE_DEFN:
 	  case NODE_NEWLINE:
-	    rb_gc_mark((VALUE)obj->as.node.u3.node);	    
-	    break;
+	    ptr = (VALUE)obj->as.node.u3.node;
+	    goto again;
 
 	  case NODE_WHILE:	/* 1,2 */
 	  case NODE_UNTIL:
@@ -700,8 +690,8 @@ rb_gc_mark_children(ptr)
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
 	  case NODE_EVSTR:
-	    rb_gc_mark((VALUE)obj->as.node.u2.node);
-	    break;
+	    ptr = (VALUE)obj->as.node.u2.node;
+	    goto again;
 
 	  case NODE_HASH:	/* 1 */
 	  case NODE_LIT:
@@ -715,15 +705,15 @@ rb_gc_mark_children(ptr)
 	  case NODE_YIELD:
 	  case NODE_COLON2:
 	  case NODE_ARGS:
-	    rb_gc_mark((VALUE)obj->as.node.u1.node);
-	    break;
+	    ptr = (VALUE)obj->as.node.u1.node;
+	    goto again;
 
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_BLOCK_PASS:
 	  case NODE_CDECL:
 	    rb_gc_mark((VALUE)obj->as.node.u3.node);
-	    rb_gc_mark((VALUE)obj->as.node.u2.node);
-	    break;
+	    ptr = (VALUE)obj->as.node.u2.node;
+	    goto again;
 
 	  case NODE_ZARRAY:	/* - */
 	  case NODE_ZSUPER:
@@ -753,11 +743,11 @@ rb_gc_mark_children(ptr)
 	  case NODE_ALLOCA:
 	    mark_locations_array((VALUE*)obj->as.node.u1.value,
 				 obj->as.node.u3.cnt);
-	    rb_gc_mark((VALUE)obj->as.node.u2.node);	    
-	    break;
+	    ptr = (VALUE)obj->as.node.u2.node;
+	    goto again;
 #endif
 
-	  default:
+	  default:		/* unlisted NODE */
 	    if (is_pointer_to_heap(obj->as.node.u1.node)) {
 		rb_gc_mark((VALUE)obj->as.node.u1.node);
 	    }
@@ -776,14 +766,15 @@ rb_gc_mark_children(ptr)
       case T_ICLASS:
       case T_CLASS:
       case T_MODULE:
-	rb_gc_mark(obj->as.klass.super);
 	rb_mark_tbl(obj->as.klass.m_tbl);
 	rb_mark_tbl(obj->as.klass.iv_tbl);
-	break;
+	ptr = obj->as.klass.super;
+	goto again;
 
       case T_ARRAY:
 	if (FL_TEST(obj, ELTS_SHARED)) {
-	    rb_gc_mark(obj->as.array.aux.shared);
+	    ptr = obj->as.array.aux.shared;
+	    goto again;
 	}
 	else {
 	    long i, len = obj->as.array.len;
@@ -797,13 +788,14 @@ rb_gc_mark_children(ptr)
 
       case T_HASH:
 	rb_mark_hash(obj->as.hash.tbl);
-	rb_gc_mark(obj->as.hash.ifnone);
-	break;
+	ptr = obj->as.hash.ifnone;
+	goto again;
 
       case T_STRING:
 #define STR_ASSOC FL_USER3   /* copied from string.c */
 	if (FL_TEST(obj, ELTS_SHARED|STR_ASSOC)) {
-	    rb_gc_mark(obj->as.string.aux.shared);
+	    ptr = obj->as.string.aux.shared;
+	    goto again;
 	}
 	break;
 
@@ -824,14 +816,15 @@ rb_gc_mark_children(ptr)
 
       case T_MATCH:
 	if (obj->as.match.str) {
-	    rb_gc_mark((VALUE)obj->as.match.str);
+	    ptr = obj->as.match.str;
+	    goto again;
 	}
 	break;
 
       case T_VARMAP:
 	rb_gc_mark(obj->as.varmap.val);
-	rb_gc_mark((VALUE)obj->as.varmap.next);
-	break;
+	ptr = (VALUE)obj->as.varmap.next;
+	goto again;
 
       case T_SCOPE:
 	if (obj->as.scope.local_vars && (obj->as.scope.flags & SCOPE_MALLOC)) {
@@ -839,19 +832,19 @@ rb_gc_mark_children(ptr)
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
 	    while (n--) {
-		rb_gc_mark(*vars);
-		vars++;
+		rb_gc_mark(*vars++);
 	    }
 	}
 	break;
 
       case T_STRUCT:
 	{
-	    long i, len = obj->as.rstruct.len;
+	    long len = obj->as.rstruct.len;
 	    VALUE *ptr = obj->as.rstruct.ptr;
 
-	    for (i=0; i < len; i++)
+	    while (len--) {
 		rb_gc_mark(*ptr++);
+	    }
 	}
 	break;
 
@@ -946,8 +939,7 @@ gc_sweep()
 	    freed += n;
 	}
     }
-    malloc_limit += malloc_increase;
-    malloc_limit *= (double)live / (live + freed);
+    malloc_limit += (malloc_increase - malloc_limit) * (double)live / (live + freed);
     if (malloc_limit < GC_MALLOC_LIMIT) malloc_limit = GC_MALLOC_LIMIT;
     malloc_increase = 0;
     if (freed < FREE_MIN) {
@@ -1186,7 +1178,6 @@ rb_gc()
 	}
 	return;
     }
-
     if (during_gc) return;
     during_gc++;
 
