@@ -15,7 +15,8 @@ class Mail
 	break if /^$/		# end of header
 
 	if /^(\S+):\s*(.*)/
-	  @header[attr = $1.capitalize!] = $2
+	  (attr = $1).capitalize!
+	  @header[attr] = $2
 	elsif attr
 	  sub!(/^\s*/, '')
 	  @header[attr] += "\n" + $_

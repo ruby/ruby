@@ -1,4 +1,5 @@
-#!./miniruby
+#!./miniruby -I.
+
 require "rbconfig.rb"
 include Config
 

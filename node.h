@@ -305,10 +305,11 @@ typedef struct RNode {
 NODE *node_newnode();
 VALUE rb_method_booundp();
 
-#define NOEX_PUBLIC  0
-#define NOEX_PRIVATE 1
-#define NOEX_UNDEF   2
-#define NOEX_CFUNC   2
+#define NOEX_PUBLIC    0
+#define NOEX_UNDEF     1
+#define NOEX_CFUNC     1
+#define NOEX_PRIVATE   2
+#define NOEX_PROTECTED 4 
 
 NODE *compile_string _((char *, char *, int));
 NODE *compile_file _((char *, VALUE, int));

@@ -45,8 +45,12 @@ static VALUE block_pass _((VALUE,NODE*));
 static VALUE cMethod;
 static VALUE method_proc _((VALUE));
 
-#define SCOPE_PRIVATE  FL_USER4
-#define SCOPE_MODFUNC  FL_USER5
+#define SCOPE_PUBLIC    0
+#define SCOPE_PRIVATE   FL_USER4
+#define SCOPE_PROTECTED FL_USER5
+#define SCOPE_MODFUNC   (FL_USER4|FL_USER4)
+#define SCOPE_MASK      (FL_USER4|FL_USER4)
+#define SCOPE_SET(x,f)  do {FL_UNSET(x,SCOPE_MASK);FL_SET(x,(f))} while(0)
 
 #define CACHE_SIZE 0x200
 #define CACHE_MASK 0x1ff
@@ -755,13 +759,13 @@ ruby_init()
     the_scope->local_tbl  = 0;
     top_scope = the_scope;
     /* default visibility is private at toplevel */
-    FL_SET(top_scope, SCOPE_PRIVATE);
-    FL_UNSET(top_scope, SCOPE_MODFUNC);
+    SCOPE_SET(top_scope, SCOPE_PRIVATE);
 
     PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
 	the_class = cObject;
+	the_frame->self = TopSelf;
 	the_frame->cbase = (VALUE)node_newnode(NODE_CREF,cObject,0,0);
 	rb_define_global_const("TOPLEVEL_BINDING", f_binding(TopSelf));
 	ruby_prog_init();
@@ -2199,8 +2203,11 @@ rb_eval(self, node)
 		rb_clear_cache_by_id(node->nd_mid);
 	    }
 
-	    if (FL_TEST(the_scope,SCOPE_PRIVATE) || node->nd_mid == init) {
+	    if (FL_TEST(the_scope, SCOPE_PRIVATE) || node->nd_mid == init) {
 		noex = NOEX_PRIVATE;
+	    }
+	    else if (FL_TEST(the_scope, SCOPE_PROTECTED)) {
+		noex = NOEX_PROTECTED;
 	    }
 	    else {
 		noex = NOEX_PUBLIC;
@@ -2209,7 +2216,7 @@ rb_eval(self, node)
 		noex |= NOEX_UNDEF;
 	    }
 	    rb_add_method(the_class, node->nd_mid, node->nd_defn, noex);
-	    if (FL_TEST(the_scope,SCOPE_MODFUNC)) {
+	    if (FL_TEST(the_scope,SCOPE_MODFUNC) == SCOPE_MODFUNC) {
 		rb_add_method(rb_singleton_class(the_class),
 			      node->nd_mid, node->nd_defn, NOEX_PUBLIC);
 		rb_funcall(the_class, rb_intern("singleton_method_added"),
@@ -3023,8 +3030,10 @@ rb_ensure(b_proc, data1, e_proc, data2)
 }
 
 static int last_call_status;
-#define CSTAT_NOEX  1
-#define CSTAT_VCALL 2
+
+#define CSTAT_PRIV  1
+#define CSTAT_PROT  2
+#define CSTAT_VCALL 4
 
 static VALUE
 f_missing(argc, argv, obj)
@@ -3059,8 +3068,11 @@ f_missing(argc, argv, obj)
 	break;
     }
     if (desc) {
-	if (last_call_status & CSTAT_NOEX) {
+	if (last_call_status & CSTAT_PRIV) {
 	    format = "private method `%s' called for %s";
+	}
+	if (last_call_status & CSTAT_PROT) {
+	    format = "protected method `%s' called for %s";
 	}
 	else if (iterator_p()) {
 	    format = "undefined iterator `%s' for %s";
@@ -3455,8 +3467,12 @@ rb_call(klass, recv, mid, argc, argv, scope)
     }
 
     /* receiver specified form for private method */
-    if (noex & NOEX_PRIVATE && scope == 0)
-	return rb_undefined(recv, mid, argc, argv, CSTAT_NOEX);
+    if ((noex & NOEX_PRIVATE) && scope == 0)
+	return rb_undefined(recv, mid, argc, argv, CSTAT_PRIV);
+
+    /* self must be kind of a specified form for private method */
+    if ((noex & NOEX_PROTECTED) && !obj_is_kind_of(the_frame->self, klass))
+	return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);
 
     return rb_call0(klass, recv, id, argc, argv, body, noex & NOEX_UNDEF);
 }
@@ -3802,24 +3818,16 @@ mod_module_eval(mod, src)
     VALUE mod, src;
 {
     int state;
-    int private, modfunc;
+    int mode;
     VALUE result = Qnil;
 
-    private = FL_TEST(the_scope, SCOPE_PRIVATE);
-    modfunc = FL_TEST(the_scope, SCOPE_MODFUNC);
-    FL_UNSET(the_scope, SCOPE_PRIVATE);
-    FL_UNSET(the_scope, SCOPE_MODFUNC);
+    mode = FL_TEST(the_scope, SCOPE_MASK);
     PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
 	result = eval_under(mod, mod, src);
     }
     POP_TAG();
-    if (private) {
-	FL_TEST(the_scope, SCOPE_PRIVATE);
-    }
-    if (modfunc) {
-	FL_TEST(the_scope, SCOPE_MODFUNC);
-    }
+    SCOPE_SET(the_scope, mode);
     if (state) JUMP_TAG(state);
 
     return result;
@@ -3896,8 +3904,7 @@ f_load(obj, fname)
 	the_scope->local_vars = vars;
     }
     /* default visibility is private at loading toplevel */
-    FL_SET(the_scope, SCOPE_PRIVATE);
-    FL_UNSET(top_scope, SCOPE_MODFUNC);
+    SCOPE_SET(the_scope, SCOPE_PRIVATE);
 
     state = EXEC_TAG();
     last_func = the_frame->last_func;
@@ -4089,11 +4096,25 @@ mod_public(argc, argv, module)
     VALUE module;
 {
     if (argc == 0) {
-	FL_UNSET(the_scope, SCOPE_PRIVATE);
-	FL_UNSET(top_scope, SCOPE_MODFUNC);
+	SCOPE_SET(the_scope, SCOPE_PUBLIC);
     }
     else {
 	set_method_visibility(module, argc, argv, NOEX_PUBLIC);
+    }
+    return module;
+}
+
+static VALUE
+mod_protected(argc, argv, module)
+    int argc;
+    VALUE *argv;
+    VALUE module;
+{
+    if (argc == 0) {
+	SCOPE_SET(the_scope, SCOPE_PROTECTED);
+    }
+    else {
+	set_method_visibility(module, argc, argv, NOEX_PROTECTED);
     }
     return module;
 }
@@ -4105,8 +4126,7 @@ mod_private(argc, argv, module)
     VALUE module;
 {
     if (argc == 0) {
-	FL_SET(the_scope, SCOPE_PRIVATE);
-	FL_UNSET(top_scope, SCOPE_MODFUNC);
+	SCOPE_SET(the_scope, SCOPE_PRIVATE);
     }
     else {
 	set_method_visibility(module, argc, argv, NOEX_PRIVATE);
@@ -4143,6 +4163,14 @@ top_public(argc, argv)
 }
 
 static VALUE
+top_protected(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    return mod_protected(argc, argv, cObject);
+}
+
+static VALUE
 top_private(argc, argv)
     int argc;
     VALUE *argv;
@@ -4161,8 +4189,7 @@ mod_modfunc(argc, argv, module)
     NODE *body;
 
     if (argc == 0) {
-	FL_SET(the_scope, SCOPE_PRIVATE);
-	FL_SET(the_scope, SCOPE_MODFUNC);
+	SCOPE_SET(the_scope, SCOPE_MODFUNC);
 	return module;
     }
 
@@ -4392,6 +4419,7 @@ Init_eval()
     rb_define_private_method(cModule, "extend_object", mod_extend_object, 1);
     rb_define_private_method(cModule, "include", mod_include, -1);
     rb_define_private_method(cModule, "public", mod_public, -1);
+    rb_define_private_method(cModule, "protected", mod_protected, -1);
     rb_define_private_method(cModule, "private", mod_private, -1);
     rb_define_private_method(cModule, "module_function", mod_modfunc, -1);
     rb_define_method(cModule, "method_defined?", mod_method_defined, 1);
@@ -4408,6 +4436,7 @@ Init_eval()
 
     rb_define_singleton_method(TopSelf, "include", top_include, -1);
     rb_define_singleton_method(TopSelf, "public", top_public, -1);
+    rb_define_singleton_method(TopSelf, "protected", top_protected, -1);
     rb_define_singleton_method(TopSelf, "private", top_private, -1);
 
     rb_define_method(mKernel, "extend", obj_extend, -1);
