@@ -1,3 +1,8 @@
+Tue Sep 14 23:54:11 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: MultiTkIp#eval_string was en-bugged by
+	  the previous changes.
+
 Tue Sep 14 23:45:44 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/ri/ri_formatter.rb (RI::TextFormatter::TextFormatter.for):
