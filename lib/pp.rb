@@ -83,9 +83,9 @@ PP#pp to print the object.
 == methods
 --- pp(obj)
     adds ((|obj|)) to the pretty printing buffer
-    using Object#pretty_print or Object#pretty_print_cycled.
+    using Object#pretty_print or Object#pretty_print_cycle.
 
-    Object#pretty_print_cycled is used when ((|obj|)) is already
+    Object#pretty_print_cycle is used when ((|obj|)) is already
     printed, a.k.a the object reference chain has a cycle.
 
 --- object_group(obj) { ... }
@@ -111,7 +111,7 @@ PP#pp to print the object.
     This module provides predefined pretty_print() methods for some of
     the most commonly used built-in classes for convenience.
 
---- pretty_print_cycled(pp)
+--- pretty_print_cycle(pp)
     is a default pretty printing method for general objects that are
     detected as part of a cycle.
 
@@ -179,7 +179,7 @@ class PP < PrettyPrint
     id = obj.__id__
 
     if Thread.current[InspectKey].include? id
-      group {obj.pretty_print_cycled self}
+      group {obj.pretty_print_cycle self}
       return
     end
 
@@ -273,7 +273,7 @@ class PP < PrettyPrint
       end
     end
 
-    def pretty_print_cycled(pp)
+    def pretty_print_cycle(pp)
       pp.object_address_group(self) {
         pp.breakable
         pp.text '...'
@@ -304,7 +304,7 @@ class Array
     }
   end
 
-  def pretty_print_cycled(pp)
+  def pretty_print_cycle(pp)
     pp.text(empty? ? '[]' : '[...]')
   end
 end
@@ -314,7 +314,7 @@ class Hash
     pp.pp_hash self
   end
 
-  def pretty_print_cycled(pp)
+  def pretty_print_cycle(pp)
     pp.text(empty? ? '{}' : '{...}')
   end
 end
@@ -341,7 +341,7 @@ class Struct
     }
   end
 
-  def pretty_print_cycled(pp)
+  def pretty_print_cycle(pp)
     pp.text sprintf("#<%s:...>", self.class.name)
   end
 end
@@ -440,7 +440,7 @@ end
 
 [Numeric, Symbol, FalseClass, TrueClass, NilClass, Module].each {|c|
   c.class_eval {
-    alias :pretty_print_cycled :pretty_print
+    alias :pretty_print_cycle :pretty_print
   }
 }
 

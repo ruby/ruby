@@ -1,3 +1,9 @@
+Sat Aug 24 13:57:28 2002  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time.rfc2822, Time#rfc2822): preserve localtimeness.
+
+	* lib/pp.rb: pretty_print_cycled is renamed to pretty_print_cycle.
+
 Fri Aug 23 23:59:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (method_call): check receiver is defined.
