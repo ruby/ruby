@@ -64,8 +64,7 @@ $stdout.puts Process.pid
 $stdout.puts port
 
 loop do
-  ssl = ssls.accept
-  Thread.start{
+  Thread.start(ssls.accept) {|ssl|
     q = Queue.new
     th = Thread.start{ ssl.write(q.shift) while true }
     while line = ssl.gets
