@@ -1800,7 +1800,7 @@ var_ref		: variable
 
 var_lhs		: variable
 		    {
-			$$ = assignable($1);
+			$$ = assignable($1, 0);
 		    }
 
 backref		: tNTH_REF
