@@ -208,7 +208,8 @@ darwin*)	LIBS="-lobjc $LIBS";;
 human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	rb_cv_have_daylight=no
-		ac_cv_var_tzname=no;;
+		ac_cv_var_tzname=no
+		ac_cv_func__setjmp=no;;
 mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_header_a_out_h=no
 		ac_cv_header_pwd_h=no
@@ -223,6 +224,7 @@ mingw*)		LIBS="-lwsock32 -lmsvcrt $LIBS"
 		ac_cv_func_vsnprintf=yes
 		ac_cv_func_seekdir=yes
 		ac_cv_func_telldir=yes
+		ac_cv_func_crypt=no
 		;;
 os2_emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;

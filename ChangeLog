@@ -1,3 +1,9 @@
+Wed Aug 21 16:14:26 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: set ac_cv_func__setjump to "no" on Cygwin.
+
+	* configure.in: set ac_cv_func_crypt to "no" on MinGW.
+
 Tue Aug 20 21:47 2002  KONISHI Hiromasa  <konishih@fd6.so-net.ne.jp>
 
 	* io.c          (rb_io_fread): remove case EPIPE on bcc32 .
