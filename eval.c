@@ -2348,7 +2348,7 @@ svalue_to_mrhs(v, lhs)
 	return rb_ary_new3(1, v);
     }
     /* no lhs means splat lhs only */
-    if (!lhs && RARRAY(tmp)->len <= 1) {
+    if (!lhs) {
 	return rb_ary_new3(1, v);
     }
     return tmp;
@@ -2399,8 +2399,8 @@ static VALUE
 splat_value(v)
     VALUE v;
 {
-	if (NIL_P(v)) return rb_ary_new3(1, Qnil);
-	return rb_Array(v);
+    if (NIL_P(v)) return rb_ary_new3(1, Qnil);
+    return rb_Array(v);
 }
 
 static VALUE
@@ -2784,17 +2784,12 @@ rb_eval(self, n)
 	JUMP_TAG(TAG_RETRY);
 	break;
 
-      case NODE_RESTARY:
-      case NODE_RESTARY2:
+      case NODE_SPLAT:
 	result = splat_value(rb_eval(self, node->nd_head));
 	break;
 
-      case NODE_SPLAT:
-	result = avalue_splat(splat_value(rb_eval(self, node->nd_head)));
-	break;
-
       case NODE_SVALUE:
-	result = rb_eval(self, node->nd_head);
+	result = avalue_splat(rb_eval(self, node->nd_head));
 	if (result == Qundef) result = Qnil;
 	break;
 
@@ -3157,8 +3152,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_MASGN:
-	result = svalue_to_mrhs(rb_eval(self, node->nd_value), node->nd_head);
-	result = massign(self, node, result, 0);
+	result = massign(self, node, rb_eval(self, node->nd_value), 0);
 	break;
 
       case NODE_LASGN:

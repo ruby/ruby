@@ -1,3 +1,14 @@
+Thu Aug 28 02:37:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): *a = [1,2] now assigns [[1,2]] to a.
+	  consistent with *a = [1], which set [[1]] to a.
+
+	* node.h: merge NODE_RESTARY to NODE_SPLAT.
+
+	* parse.y: rules simplified a bit by removing NODE_RESTARY.
+
+	* sample/test.rb: updated for new assignment behavior.
+
 Wed Aug 27 22:33:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (rb_bug): should not use other methods; this function is

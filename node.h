@@ -87,8 +87,6 @@ enum node_type {
     NODE_ARGS,
     NODE_ARGSCAT,
     NODE_ARGSPUSH,
-    NODE_RESTARY,
-    NODE_RESTARY2,
     NODE_SPLAT,
     NODE_SVALUE,
     NODE_BLOCK_ARG,
@@ -309,8 +307,6 @@ typedef struct RNode {
 #define NEW_ARGS(f,o,r) NEW_NODE(NODE_ARGS,o,r,f)
 #define NEW_ARGSCAT(a,b) NEW_NODE(NODE_ARGSCAT,a,b,0)
 #define NEW_ARGSPUSH(a,b) NEW_NODE(NODE_ARGSPUSH,a,b,0)
-#define NEW_RESTARY(a) NEW_NODE(NODE_RESTARY,a,0,0)
-#define NEW_RESTARY2(a) NEW_NODE(NODE_RESTARY2,a,0,0)
 #define NEW_SPLAT(a) NEW_NODE(NODE_SPLAT,a,0,0)
 #define NEW_SVALUE(a) NEW_NODE(NODE_SVALUE,a,0,0)
 #define NEW_BLOCK_ARG(v) NEW_NODE(NODE_BLOCK_ARG,v,0,local_cnt(v))

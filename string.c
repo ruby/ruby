@@ -3066,7 +3066,7 @@ rb_str_scan(str, pat)
     while (!NIL_P(result = scan_once(str, pat, &start))) {
 	match = rb_backref_get();
 	rb_match_busy(match);
-	rb_yield_splat(result);
+	rb_yield(result);
 	rb_backref_set(match);	/* restore $~ value */
     }
     rb_backref_set(match);

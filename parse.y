@@ -491,7 +491,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| mlhs '=' command_call
 		    {
 			value_expr($3);
-			$1->nd_value = NEW_RESTARY($3);
+			$1->nd_value = ($1->nd_head) ? NEW_SPLAT($3) : NEW_ARRAY($3);
 			$$ = $1;
 		    }
 		| var_lhs tOP_ASGN command_call
@@ -583,7 +583,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| mlhs '=' arg_value
 		    {
-			$1->nd_value = $3;
+			$1->nd_value = ($1->nd_head) ? NEW_SPLAT($3) : NEW_ARRAY($3);
 			$$ = $1;
 		    }
 		| mlhs '=' mrhs
@@ -1225,7 +1225,7 @@ aref_args	: none
 		| tSTAR arg opt_nl
 		    {
 			value_expr($2);
-			$$ = NEW_RESTARY2($2);
+			$$ = NEW_BEGIN($2);
 		    }
 		;
 
@@ -1290,7 +1290,7 @@ call_args	: command
 		    }
 		| tSTAR arg_value opt_block_arg
 		    {
-			$$ = arg_blk_pass(NEW_RESTARY($2), $3);
+			$$ = arg_blk_pass(NEW_SPLAT($2), $3);
 		    }
 		| block_arg
 		;
@@ -1345,7 +1345,7 @@ call_args2	: arg_value ',' args opt_block_arg
 		    }
 		| tSTAR arg_value opt_block_arg
 		    {
-			$$ = arg_blk_pass(NEW_RESTARY($2), $3);
+			$$ = arg_blk_pass(NEW_SPLAT($2), $3);
 		    }
 		| block_arg
 		;
@@ -5395,8 +5395,8 @@ ret_args(node)
 	if (nd_type(node) == NODE_ARRAY && node->nd_next == 0) {
 	    node = node->nd_head;
 	}
-	if (nd_type(node) == NODE_RESTARY) {
-	    nd_set_type(node, NODE_SPLAT);
+	if (nd_type(node) == NODE_SPLAT) {
+	    node = NEW_SVALUE(node);
 	}
     }
     return node;
@@ -5414,9 +5414,8 @@ new_yield(node)
 	    node = node->nd_head;
 	    state = Qfalse;
 	}
-	if (nd_type(node) == NODE_RESTARY) {
-	    nd_set_type(node, NODE_SPLAT);
-	    state = Qfalse;
+	if (nd_type(node) == NODE_SPLAT) {
+	    state = Qtrue;
 	}
     }
     else {
@@ -5465,8 +5464,7 @@ arg_prepend(node1, node2)
       case NODE_ARRAY:
 	return list_concat(NEW_LIST(node1), node2);
 
-      case NODE_RESTARY:
-      case NODE_RESTARY2:
+      case NODE_SPLAT:
 	return arg_concat(node1, node2->nd_head);
 
       case NODE_BLOCK_PASS:
