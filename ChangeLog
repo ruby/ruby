@@ -1,3 +1,8 @@
+Fri Feb  9 22:54:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ruby.c (ruby_init_loadpath): convert '\\' to '/'
+	  before finding executable file path.
+
 Fri Feb  8 23:53:08 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/config.h.in (inline): add inline definition.
