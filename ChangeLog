@@ -1,3 +1,10 @@
+Sat Aug 19 01:34:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/sdbm/_sdbm.c (sdbm_prep): flags should be or-ed by O_BINARY on
+	  Win32 too.
+
+	* ext/sdbm/_sdbm.c (makroom): fill hole with 0 on Win32 too.
+
 Wed Aug 16 15:30:58 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.4.6 released.
