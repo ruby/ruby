@@ -1,8 +1,8 @@
 #
 #   thwait.rb - 
 #   	$Release Version: $
-#   	$Revision: 1.1 $
-#   	$Date: 1997/08/18 03:13:14 $
+#   	$Revision: 1.1.1.1 $
+#   	$Date: 1998/01/16 04:05:50 $
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --
@@ -14,7 +14,7 @@ require "thread.rb"
 require "e2mmap.rb"
 
 class ThreadsWait
-  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/thwait.rb,v 1.1 1997/08/18 03:13:14 keiju Exp keiju $-'
+  RCS_ID='-$Header: /home/cvsroot/ruby/lib/thwait.rb,v 1.1.1.1 1998/01/16 04:05:50 matz Exp $-'
   
   Exception2MessageMapper.extend_to(binding)
   def_exception("ErrWaitThreadsNothing", "Wait threads nothing.")

@@ -1,8 +1,8 @@
 #
 #   mutex_m.rb - 
 #   	$Release Version: 2.0$
-#   	$Revision: 1.2 $
-#   	$Date: 1997/07/25 02:43:21 $
+#   	$Revision: 1.1.1.1 $
+#   	$Date: 1998/01/16 04:05:49 $
 #       Original from mutex.rb
 #   	by Keiju ISHITSUKA(SHL Japan Inc.)
 #

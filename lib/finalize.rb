@@ -1,8 +1,8 @@
 #
 #   finalizer.rb - 
 #   	$Release Version: 0.2$
-#   	$Revision: 1.3 $
-#   	$Date: 1998/01/09 08:09:49 $
+#   	$Revision: 1.1.1.2 $
+#   	$Date: 1998/01/16 04:14:51 $
 #   	by Keiju ISHITSUKA
 #
 # --
@@ -44,7 +44,7 @@
 #
 
 module Finalizer
-  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/finalize.rb,v 1.3 1998/01/09 08:09:49 keiju Exp keiju $-'
+  RCS_ID='-$Header: /home/cvsroot/ruby/lib/finalize.rb,v 1.1.1.2 1998/01/16 04:14:51 matz Exp $-'
   
   # @dependency: {id => [[dependant, method, *opt], ...], ...}
   

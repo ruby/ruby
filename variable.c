@@ -702,6 +702,7 @@ rb_ivar_get(obj, id)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl && st_lookup(ROBJECT(obj)->iv_tbl, id, &val))
 	    return val;
 	return Qnil;
@@ -728,6 +729,7 @@ rb_ivar_set(obj, id, val)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (!ROBJECT(obj)->iv_tbl) ROBJECT(obj)->iv_tbl = new_idhash();
 	st_insert(ROBJECT(obj)->iv_tbl, id, val);
 	break;
@@ -750,6 +752,7 @@ rb_ivar_defined(obj, id)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl && st_lookup(ROBJECT(obj)->iv_tbl, id, 0))
 	    return TRUE;
 	break;
@@ -779,6 +782,7 @@ obj_instance_variables(obj)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl) {
 	    st_foreach(ROBJECT(obj)->iv_tbl, ivar_i, hash);
 	}
@@ -804,6 +808,7 @@ obj_remove_instance_variable(obj, name)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl) {
 	    st_delete(ROBJECT(obj)->iv_tbl, &id, &val);
 	}

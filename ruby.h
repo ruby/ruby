@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jun 10 14:26:32 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 *************************************************/
 
@@ -227,6 +227,7 @@ struct RHash {
 
 struct RFile {
     struct RBasic basic;
+    struct st_table *iv_tbl;
     struct OpenFile *fptr;
 };
 
