@@ -8,7 +8,7 @@
 # For details of Ruby License, see ruby/COPYING.
 #
 
-require 'ripper/core'
+require 'ripper/tokenizer'
 
 class Ripper
 
@@ -43,7 +43,7 @@ class Ripper
 
     # Starts parsing.  _init_ is a data accumulator.
     # It is passed to the next event handler (as of Enumerable#inject).
-    def parse(init)
+    def parse(init = nil)
       data = init
       @__parser.parse.each do |pos, event, tok|
         @__line, @__col = *pos

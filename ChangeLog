@@ -1,3 +1,9 @@
+Sun Oct 10 02:49:14 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/lib/ripper/filter.rb: require ripper/tokenizer.
+
+	* ext/ripper/lib/ripper/filter.rb (parse): argument is optional.
+
 Sun Oct 10 02:43:13 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: \n between two comments disappeared.
