@@ -1,3 +1,7 @@
+Sun Jul  8 16:05:36 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb (ProtoSocket#read): modify typo.
+
 Fri Jul  6 15:11:38 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb: merge from 1.7: do not delete a used tempfile

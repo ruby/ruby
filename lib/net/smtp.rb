@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.1.35
+= net/smtp.rb version 1.1.36
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -108,8 +108,8 @@ send or reject SMTP session by this data.
 : start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil )
 : start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil ) {|smtp| .... }
     opens TCP connection and starts SMTP session.
-    If protocol had been started, do nothing and return false.
     HELO_DOMAIN is a domain that you'll dispatch mails from.
+    If protocol had been started, raises IOError.
 
     When this methods is called with block, give a SMTP object to block and
     close session after block call finished.
@@ -141,7 +141,7 @@ send or reject SMTP session by this data.
 
 : finish
     finishes SMTP session.
-    If SMTP session had not started, do nothing and return false.
+    If SMTP session had not started, raises an IOError.
 
 : send_mail( mailsrc, from_addr, *to_addrs )
     This method sends MAILSRC as mail. A SMTP object read strings

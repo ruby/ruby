@@ -1,6 +1,6 @@
 =begin
 
-= net/protocol.rb version 1.1.35
+= net/protocol.rb version 1.1.36
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -32,7 +32,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.35'
+    Version = '1.1.36'
 
     class << self
 
@@ -122,7 +122,7 @@ module Net
     #
 
     def start( *args )
-      return false if active?
+      active? and raise IOError, 'protocol has been opened already'
 
       if block_given? then
         begin
@@ -134,6 +134,7 @@ module Net
       else
         _start args
       end
+      nil
     end
 
     private
@@ -177,12 +178,12 @@ module Net
     public
 
     def finish
-      return false unless active?
+      active? or raise IOError, 'already closed protocol'
 
       do_finish if @command and not @command.critical?
       disconnect
       @active = false
-      true
+      nil
     end
 
     private
@@ -531,7 +532,7 @@ module Net
 
     CRLF = "\r\n"
 
-    def read( len, dest = '', ignerr = false )
+    def read( len, dest = '', igneof = false )
       D_off "reading #{len} bytes..."
 
       rsize = 0
