@@ -1,5 +1,5 @@
-# format.rb: Written by Tadayoshi Funaba 1999-2002
-# $Id: format.rb,v 2.8 2002-06-08 00:39:51+09 tadf Exp $
+# format.rb: Written by Tadayoshi Funaba 1999-2003
+# $Id: format.rb,v 2.9 2003-04-19 19:19:35+09 tadf Exp $
 
 class Date
 
@@ -173,7 +173,7 @@ class Date
 	elem[:year] = val
 	elem[:cent] ||= if val >= 69 then 19 else 20 end
       when '%Z', '%z'
-	return unless str.sub!(/\A([a-z0-9:+-]+(?:\s+dst\b)?)/io, '')
+	return unless str.sub!(/\A([-+:a-z0-9]+(?:\s+dst\b)?)/io, '')
 	val = $1
 	elem[:zone] = val
 	offset = zone_to_diff(val)
@@ -227,7 +227,7 @@ class Date
   def self._parse(str, comp=false)
     str = str.dup
 
-    str.gsub!(/[^.\/:0-9a-z+-]+/ino, ' ')
+    str.gsub!(/[^-+.\/:0-9a-z]+/ino, ' ')
 
     # day
     if str.sub!(/(#{PARSE_DAYPAT})\S*/ino, ' ')
@@ -321,12 +321,12 @@ class Date
       end
 
     # jis
-    elsif str.sub!(/([MTSH])(\d+)\.(\d+)\.(\d+)/no, ' ')
-      e = { 'M'=>1867,
-	    'T'=>1911,
-	    'S'=>1925,
-	    'H'=>1988
-	  }[$1]
+    elsif str.sub!(/([MTSH])(\d+)\.(\d+)\.(\d+)/ino, ' ')
+      e = { 'm'=>1867,
+	    't'=>1911,
+	    's'=>1925,
+	    'h'=>1988
+	  }[$1.downcase]
       year = $2.to_i + e
       mon = $3.to_i
       mday = $4.to_i
@@ -379,7 +379,7 @@ class Date
 		      )
 		      \b
 		    )?
-		   /nox,
+		   /inox,
 		   ' ')
       case $2.size
       when 4
@@ -444,7 +444,7 @@ class Date
     if ZONES.include?(abb)
       offset  = ZONES[abb]
       offset += 3600 if dst
-    elsif /\A([+-])(\d{2}):?(\d{2})?\Z/no =~ str
+    elsif /\A([-+])(\d{2}):?(\d{2})?\Z/no =~ str
       offset = $2.to_i * 3600 + $3.to_i * 60
       offset *= -1 if $1 == '-'
     end
@@ -483,7 +483,7 @@ class Date
       when '%r'; o << strftime('%I:%M:%S %p')			# P2,ID
       when '%S'; o << '%02d' % sec
       when '%s'							# TZ,GL
-	d = ajd - self.class.jd_to_ajd(type.civil_to_jd(1970,1,1), 0)
+	d = ajd - self.class.jd_to_ajd(self.class.civil_to_jd(1970,1,1), 0)
 	s = (d * 86400).to_i
 	o << '%d' % s
       when '%T'; o << strftime('%H:%M:%S')			# P2,ID
@@ -506,8 +506,8 @@ class Date
       when '%%'; o << '%'
       when '%+'; o << strftime('%a %b %e %H:%M:%S %Z %Y')	# TZ
       when '%1'; o <<   '%d' % jd
-      when '%2'; o <<   strftime('%Y-%j')
-      when '%3'; o <<   strftime('%Y-%m-%d')
+      when '%2'; o << strftime('%Y-%j')
+      when '%3'; o << strftime('%Y-%m-%d')
       else;      o << c
       end
     end
