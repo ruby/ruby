@@ -1,3 +1,7 @@
+Thu Feb 19 03:10:52 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: synchronized with main trunk (rev 1.11).
+
 Thu Feb 19 02:30:34 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: documentation checked.

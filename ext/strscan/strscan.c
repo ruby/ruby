@@ -2,7 +2,7 @@
 
     strscan.c
 
-    Copyright (c) 1999-2003 Minero Aoki <aamine@loveruby.net>
+    Copyright (c) 1999-2004 Minero Aoki
 
     This program is free software.
     You can distribute/modify this program under the terms of
@@ -80,6 +80,7 @@ static VALUE strscan_initialize _((int argc, VALUE *argv, VALUE self));
 
 static VALUE strscan_s_mustc _((VALUE self));
 static VALUE strscan_terminate _((VALUE self));
+static VALUE strscan_clear _((VALUE self));
 static VALUE strscan_get_string _((VALUE self));
 static VALUE strscan_set_string _((VALUE self, VALUE str));
 static VALUE strscan_concat _((VALUE self, VALUE str));
@@ -101,10 +102,13 @@ static VALUE strscan_search_full _((VALUE self, VALUE re,
 static void adjust_registers_to_matched _((struct strscanner *p));
 static VALUE strscan_getch _((VALUE self));
 static VALUE strscan_get_byte _((VALUE self));
+static VALUE strscan_getbyte _((VALUE self));
 static VALUE strscan_peek _((VALUE self, VALUE len));
+static VALUE strscan_peep _((VALUE self, VALUE len));
 static VALUE strscan_unscan _((VALUE self));
 static VALUE strscan_bol_p _((VALUE self));
 static VALUE strscan_eos_p _((VALUE self));
+static VALUE strscan_empty_p _((VALUE self));
 static VALUE strscan_rest_p _((VALUE self));
 static VALUE strscan_matched_p _((VALUE self));
 static VALUE strscan_matched _((VALUE self));
@@ -267,6 +271,14 @@ strscan_terminate(self)
 /*
  * Returns the string being scanned.
  */
+static VALUE
+strscan_clear(self)
+    VALUE self;
+{
+    rb_warning("StringScanner#clear is obsolete; use #terminate instead");
+    return strscan_terminate(self);
+}
+
 static VALUE
 strscan_get_string(self)
     VALUE self;
@@ -707,6 +719,14 @@ strscan_get_byte(self)
                             p->prev + p->regs.end[0]);
 }
 
+static VALUE
+strscan_getbyte(self)
+    VALUE self;
+{
+    rb_warning("StringScanner#getbyte is obsolete; use #get_byte instead");
+    return strscan_get_byte(self);
+}
+
 /*
  * call-seq: peek(len)
  *
@@ -748,6 +768,14 @@ strscan_peek(self, vlen)
  *   s.unscan             # ScanError: cannot unscan: prev match had failed
  */
 static VALUE
+strscan_peep(self, vlen)
+    VALUE self, vlen;
+{
+    rb_warning("StringScanner#peep is obsolete; use #peek instead");
+    return strscan_peek(self, vlen);
+}
+
+static VALUE
 strscan_unscan(self)
     VALUE self;
 {
@@ -788,6 +816,13 @@ strscan_bol_p(self)
 
 /*
  * Returns +true+ if the scan pointer is at the end of the string.
+ *
+ *   s = StringScanner.new('test string')
+ *   p s.eos?          # => false
+ *   s.scan(/test/)
+ *   p s.eos?          # => false
+ *   s.terminate
+ *   p s.eos?          # => true
  */
 static VALUE
 strscan_eos_p(self)
@@ -800,6 +835,18 @@ strscan_eos_p(self)
         return Qtrue;
     else
         return Qfalse;
+}
+
+/*
+ * Equivalent to #eos?.
+ * This method is obsolete, use #eos? instead.
+ */
+static VALUE
+strscan_empty_p(self)
+    VALUE self;
+{
+    rb_warning("StringScanner#empty? is obsolete; use #eos? instead");
+    return strscan_eos_p(self);
 }
 
 /*
@@ -888,6 +935,18 @@ strscan_matched_size(self)
 }
 
 /*
+ * Equivalent to #matched_size.
+ * This method is obsolete; use #matched_size instead.
+ */
+static VALUE
+strscan_matchedsize(self)
+    VALUE self;
+{
+    rb_warning("StringScanner#matchedsize is obsolete; use #matched_size instead");
+    return strscan_matched_size(self);
+}
+
+/*
  * call-seq: [](n)
  *
  * Return the n-th subgroup in the most recent match.
@@ -966,7 +1025,7 @@ strscan_post_match(self)
 
 /*
  * Returns the "rest" of the string (i.e. everything after the scan pointer).
- * If there is no more data, it returns <tt>""</tt>.
+ * If there is no more data (eos? = true), it returns <tt>""</tt>.
  */
 static VALUE
 strscan_rest(self)
@@ -1000,6 +1059,18 @@ strscan_rest_size(self)
     return INT2FIX(i);
 }
 
+/*
+ * <tt>s.restsize</tt> is equivalent to <tt>s.rest_size</tt>.
+ * This method is obsolete; use #rest_size instead.
+ */
+static VALUE
+strscan_restsize(self)
+    VALUE self;
+{
+    rb_warning("StringScanner#restsize is obsolete; use #rest_size instead");
+    return strscan_rest_size(self);
+}
+
 #define INSPECT_LENGTH 5
 #define BUFSIZE 256
 
@@ -1021,7 +1092,6 @@ strscan_inspect(self)
     struct strscanner *p;
     char buf[BUFSIZE];
     long len;
-    VALUE result;
     VALUE a, b;
 
     Data_Get_Struct(self, struct strscanner, p);
@@ -1200,16 +1270,13 @@ void
 Init_strscan()
 {
     ID id_scanerr = rb_intern("ScanError");
-    volatile VALUE tmp;
-
-    if (rb_const_defined(rb_cObject, id_scanerr)) {
-        ScanError = rb_const_get(rb_cObject, id_scanerr);
-    }
-    else {
-        ScanError = rb_define_class_id(id_scanerr, rb_eStandardError);
-    }
+    VALUE tmp;
 
     StringScanner = rb_define_class("StringScanner", rb_cObject);
+    ScanError = rb_define_class_under(StringScanner, "Error", rb_eStandardError);
+    if (!rb_const_defined(rb_cObject, id_scanerr)) {
+	rb_const_set(rb_cObject, id_scanerr, ScanError);
+    }
     tmp = rb_str_new2(STRSCAN_VERSION);
     rb_obj_freeze(tmp);
     rb_const_set(StringScanner, rb_intern("Version"), tmp);
@@ -1222,7 +1289,7 @@ Init_strscan()
     rb_define_singleton_method(StringScanner, "must_C_version", strscan_s_mustc, 0);
     rb_define_method(StringScanner, "reset",       strscan_reset,       0);
     rb_define_method(StringScanner, "terminate",   strscan_terminate,   0);
-    rb_define_method(StringScanner, "clear",       strscan_terminate,   0);
+    rb_define_method(StringScanner, "clear",       strscan_clear,       0);
     rb_define_method(StringScanner, "string",      strscan_get_string,  0);
     rb_define_method(StringScanner, "string=",     strscan_set_string,  1);
     rb_define_method(StringScanner, "concat",      strscan_concat,      1);
@@ -1246,29 +1313,29 @@ Init_strscan()
 
     rb_define_method(StringScanner, "getch",       strscan_getch,       0);
     rb_define_method(StringScanner, "get_byte",    strscan_get_byte,    0);
-    rb_define_method(StringScanner, "getbyte",     strscan_get_byte,    0);
+    rb_define_method(StringScanner, "getbyte",     strscan_getbyte,     0);
     rb_define_method(StringScanner, "peek",        strscan_peek,        1);
-    rb_define_method(StringScanner, "peep",        strscan_peek,        1);
+    rb_define_method(StringScanner, "peep",        strscan_peep,        1);
 
     rb_define_method(StringScanner, "unscan",      strscan_unscan,      0);
 
     rb_define_method(StringScanner, "beginning_of_line?", strscan_bol_p, 0);
     rb_define_method(StringScanner, "bol?",        strscan_bol_p,       0);
     rb_define_method(StringScanner, "eos?",        strscan_eos_p,       0);
-    rb_define_method(StringScanner, "empty?",      strscan_eos_p,       0);
+    rb_define_method(StringScanner, "empty?",      strscan_empty_p,     0);
     rb_define_method(StringScanner, "rest?",       strscan_rest_p,      0);
 
     rb_define_method(StringScanner, "matched?",    strscan_matched_p,   0);
     rb_define_method(StringScanner, "matched",     strscan_matched,     0);
     rb_define_method(StringScanner, "matched_size", strscan_matched_size, 0);
-    rb_define_method(StringScanner, "matchedsize", strscan_matched_size, 0);
+    rb_define_method(StringScanner, "matchedsize", strscan_matchedsize, 0);
     rb_define_method(StringScanner, "[]",          strscan_aref,        1);
     rb_define_method(StringScanner, "pre_match",   strscan_pre_match,   0);
     rb_define_method(StringScanner, "post_match",  strscan_post_match,  0);
 
     rb_define_method(StringScanner, "rest",        strscan_rest,        0);
     rb_define_method(StringScanner, "rest_size",   strscan_rest_size,   0);
-    rb_define_method(StringScanner, "restsize",    strscan_rest_size,   0);
+    rb_define_method(StringScanner, "restsize",    strscan_restsize,    0);
 
     rb_define_method(StringScanner, "inspect",     strscan_inspect,     0);
 }
