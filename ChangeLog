@@ -1,3 +1,7 @@
+Sat Dec 27 14:39:53 2003  Dave Thomas  <dave@pragprog.com>
+
+	* numeric.c (Init_Numeric): Add RDoc comments.
+
 Sat Dec 27 00:44:00 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (next_argv): warn always for stdin on inplace edit mode.

@@ -78,6 +78,23 @@ rb_num_zerodiv()
     rb_raise(rb_eZeroDivError, "divided by 0");
 }
 
+
+/*
+ *  call-seq:
+ *     num.coerce(numeric)   => array
+ *  
+ *  If <i>aNumeric</i> is the same type as <i>num</i>, returns an array
+ *  containing <i>aNumeric</i> and <i>num</i>. Otherwise, returns an
+ *  array with both <i>aNumeric</i> and <i>num</i> represented as
+ *  <code>Float</code> objects. This coercion mechanism is used by
+ *  Ruby to handle mixed-type numeric operations: it is intended to
+ *  find a compatible common type between the two operands of the operator.
+ *     
+ *     1.coerce(2.5)   #=> [2.5, 1.0]
+ *     1.2.coerce(3)   #=> [3.0, 1.2]
+ *     1.coerce(2)     #=> [2, 1]
+ */
+
 static VALUE
 num_coerce(x, y)
     VALUE x, y;
@@ -162,6 +179,11 @@ rb_num_coerce_relop(x, y)
     return c;
 }
 
+/*
+ * Trap attempts to add methods to <code>Numeric</code> objects. Always
+ * raises a <code>TypeError</code>
+ */
+
 static VALUE
 num_sadded(x, name)
     VALUE x, name;
@@ -184,12 +206,26 @@ num_init_copy(x, y)
     return Qnil;		/* not reached */
 }
 
+/*
+ *  call-seq:
+ *     +num    => num
+ *  
+ *  Unary Plus---Returns the receiver's value.
+ */
+
 static VALUE
 num_uplus(num)
     VALUE num;
 {
     return num;
 }
+
+/*
+ *  call-seq:
+ *     --num    => numeric
+ *  
+ *  Unary Minus---Returns the receiver's value, negated.
+ */
 
 static VALUE
 num_uminus(num)
@@ -203,12 +239,29 @@ num_uminus(num)
     return rb_funcall(zero, '-', 1, num);
 }
 
+/*
+ *  call-seq:
+ *     num.quo(numeric)    =>   result
+ *  
+ *  Equivalent to <code>Numeric#/</code>, but overridden in subclasses.
+ */
+
 static VALUE
 num_quo(x, y)
     VALUE x, y;
 {
     return rb_funcall(x, '/', 1, y);
 }
+
+
+/*
+ *  call-seq:
+ *     num.div(numeric)    => integer
+ *  
+ *  Uses <code>/</code> to perform division, then converts the result to
+ *  an integer. <code>Numeric</code> does not define the <code>/</code>
+ *  operator; this is left to subclasses.
+ */
 
 static VALUE
 num_div(x, y)
@@ -217,6 +270,48 @@ num_div(x, y)
     return rb_Integer(rb_funcall(x, '/', 1, y));
 }
 
+
+
+/*
+ *  call-seq:
+ *     num.divmod( aNumeric ) -> anArray
+ *  
+ *  Returns an array containing the quotient and modulus obtained by
+ *  dividing <i>num</i> by <i>aNumeric</i>. If <code>q, r =
+ *  x.divmod(y)</code>, then
+ *
+ *      q = floor(float(x)/float(y))
+ *      x = q*y + r
+ *     
+ *  The quotient is rounded toward -infinity, as shown in the following table:
+ *     
+ *     a    |  b  |  a.divmod(b)  |   a/b   | a.modulo(b) | a.remainder(b)
+ *    ------+-----+---------------+---------+-------------+---------------
+ *     13   |  4  |   3,    1     |   3     |    1        |     1
+ *    ------+-----+---------------+---------+-------------+---------------
+ *     13   | -4  |  -4,   -3     |  -3     |   -3        |     1
+ *    ------+-----+---------------+---------+-------------+---------------
+ *    -13   |  4  |  -4,    3     |  -4     |    3        |    -1
+ *    ------+-----+---------------+---------+-------------+---------------
+ *    -13   | -4  |   3,   -1     |   3     |   -1        |    -1
+ *    ------+-----+---------------+---------+-------------+---------------
+ *     11.5 |  4  |   2.0,  3.5   |   2.875 |    3.5      |     3.5
+ *    ------+-----+---------------+---------+-------------+---------------
+ *     11.5 | -4  |  -3.0, -0.5   |  -2.875 |   -0.5      |     3.5
+ *    ------+-----+---------------+---------+-------------+---------------
+ *    -11.5 |  4  |  -3.0   0.5   |  -2.875 |    0.5      |    -3.5
+ *    ------+-----+---------------+---------+-------------+---------------
+ *    -11.5 | -4  |   2.0  -3.5   |   2.875 |   -3.5      |    -3.5
+ *
+ *
+ *  Examples
+ *     11.divmod(3)         #=> [3, 2]
+ *     11.divmod(-3)        #=> [-4, -1]
+ *     11.divmod(3.5)       #=> [3.0, 0.5]
+ *     (-11).divmod(3.5)    #=> [-4.0, 3.0]
+ *     (11.5).divmod(3.5)   #=> [3.0, 1.0]
+ */
+
 static VALUE
 num_divmod(x, y)
     VALUE x, y;
@@ -224,12 +319,32 @@ num_divmod(x, y)
     return rb_assoc_new(num_div(x, y), rb_funcall(x, '%', 1, y));
 }
 
+/*
+ *  call-seq:
+ *     num.modulo(numeric)    => result
+ *  
+ *  Equivalent to
+ *  <i>num</i>.<code>divmod(</code><i>aNumeric</i><code>)[1]</code>.
+ */
+
 static VALUE
 num_modulo(x, y)
     VALUE x, y;
 {
     return rb_funcall(x, '%', 1, y);
 }
+
+/*
+ *  call-seq:
+ *     num.remainder(numeric)    => result
+ *  
+ *  If <i>num</i> and <i>numeric</i> have different signs, returns
+ *  <em>mod</em>-<i>numeric</i>; otherwise, returns <em>mod</em>. In
+ *  both cases <em>mod</em> is the value
+ *  <i>num</i>.<code>modulo(</code><i>numeric</i><code>)</code>. The
+ *  differences between <code>remainder</code> and modulo
+ *  (<code>%</code>) are shown in the table under <code>Numeric#divmod</code>.
+ */
 
 static VALUE
 num_remainder(x, y)
@@ -247,12 +362,31 @@ num_remainder(x, y)
     return z;
 }
 
+/*
+ *  call-seq:
+ *     num.integer? -> true or false
+ *  
+ *  Returns <code>true</code> if <i>num</i> is an <code>Integer</code>
+ *  (including <code>Fixnum</code> and <code>Bignum</code>).
+ */
+
 static VALUE
 num_int_p(num)
     VALUE num;
 {
     return Qfalse;
 }
+
+/*
+ *  call-seq:
+ *     num.abs   => num or numeric
+ *  
+ *  Returns the absolute value of <i>num</i>.
+ *     
+ *     12.abs         #=> 12
+ *     (-34.56).abs   #=> 34.56
+ *     -34.56.abs     #=> 34.56
+ */
 
 static VALUE
 num_abs(num)
@@ -264,6 +398,14 @@ num_abs(num)
     return num;
 }
 
+
+/*
+ *  call-seq:
+ *     num.zero?    => true or false
+ *  
+ *  Returns <code>true</code> if <i>num</i> has a zero value.
+ */
+
 static VALUE
 num_zero_p(num)
     VALUE num;
@@ -274,6 +416,19 @@ num_zero_p(num)
     return Qfalse;
 }
 
+
+/*
+ *  call-seq:
+ *     num.nonzero?    => num or nil
+ *  
+ *  Returns <i>num</i> if <i>num</i> is not zero, <code>nil</code>
+ *  otherwise. This behavior is useful when chaining comparisons:
+ *     
+ *     a = %w( z Bb bB bb BB a aA Aa AA A )
+ *     b = a.sort {|a,b| (a.downcase <=> b.downcase).nonzero? || a <=> b }
+ *     b   #=> ["A", "a", "AA", "Aa", "aA", "BB", "Bb", "bB", "bb", "z"]
+ */
+
 static VALUE
 num_nonzero_p(num)
     VALUE num;
@@ -283,6 +438,14 @@ num_nonzero_p(num)
     }
     return num;
 }
+
+/*
+ *  call-seq:
+ *     num.to_int    => integer
+ *  
+ *  Invokes the child class's <code>to_i</code> method to convert
+ *  <i>num</i> to an integer.
+ */
 
 static VALUE
 num_to_int(num)
@@ -602,6 +765,18 @@ flo_pow(x, y)
     }
 }
 
+/*
+ *  call-seq:
+ *     num.eql?(numeric)    => true or false
+ *  
+ *  Returns <code>true</code> if <i>num</i> and <i>numeric</i> are the
+ *  same type and have equal values.
+ *     
+ *     1 == 1.0          #=> true
+ *     1.eql?(1.0)       #=> false
+ *     (1.0).eql?(1.0)   #=> true
+ */
+
 static VALUE
 num_eql(x, y)
     VALUE x, y;
@@ -610,6 +785,14 @@ num_eql(x, y)
 
     return rb_equal(x, y);
 }
+
+/*
+ *  call-seq:
+ *     num <=> other -> 0 or nil
+ *  
+ *  Returns zero if <i>num</i> equals <i>other</i>, <code>nil</code>
+ *  otherwise.
+ */
 
 static VALUE
 num_cmp(x, y)
@@ -1135,12 +1318,41 @@ flo_truncate(num)
     return LONG2FIX(val);
 }
 
+
+/*
+ *  call-seq:
+ *     num.floor    => integer
+ *  
+ *  Returns the largest integer less than or equal to <i>num</i>.
+ *  <code>Numeric</code> implements this by converting <i>anInteger</i>
+ *  to a <code>Float</code> and invoking <code>Float#floor</code>.
+ *     
+ *     1.floor      #=> 1
+ *     (-1).floor   #=> -1
+ */
+
 static VALUE
 num_floor(num)
     VALUE num;
 {
     return flo_floor(rb_Float(num));
 }
+
+
+/*
+ *  call-seq:
+ *     num.ceil    => integer
+ *  
+ *  Returns the smallest <code>Integer</code> greater than or equal to
+ *  <i>num</i>. Class <code>Numeric</code> achieves this by converting
+ *  itself to a <code>Float</code> then invoking
+ *  <code>Float#ceil</code>.
+ *     
+ *     1.ceil        #=> 1
+ *     1.2.ceil      #=> 2
+ *     (-1.2).ceil   #=> -1
+ *     (-1.0).ceil   #=> -1
+ */
 
 static VALUE
 num_ceil(num)
@@ -1149,6 +1361,15 @@ num_ceil(num)
     return flo_ceil(rb_Float(num));
 }
 
+/*
+ *  call-seq:
+ *     num.round    => integer
+ *  
+ *  Rounds <i>num</i> to the nearest integer. <code>Numeric</code>
+ *  implements this by converting itself to a
+ *  <code>Float</code> and invoking <code>Float#round</code>.
+ */
+
 static VALUE
 num_round(num)
     VALUE num;
@@ -1156,12 +1377,49 @@ num_round(num)
     return flo_round(rb_Float(num));
 }
 
+/*
+ *  call-seq:
+ *     num.truncate    => integer
+ *  
+ *  Returns <i>num</i> truncated to an integer. <code>Numeric</code>
+ *  implements this by converting its value to a float and invoking
+ *  <code>Float#truncate</code>.
+ */
+
 static VALUE
 num_truncate(num)
     VALUE num;
 {
     return flo_truncate(rb_Float(num));
 }
+
+
+/*
+ *  call-seq:
+ *     num.step(limit, step ) {|i| block }     => num
+ *  
+ *  Invokes <em>block</em> with the sequence of numbers starting at
+ *  <i>num</i>, incremented by <i>step</i> on each call. The loop
+ *  finishes when the value to be passed to the block is greater than
+ *  <i>limit</i> (if <i>step</i> is positive) or less than
+ *  <i>limit</i> (if <i>step</i> is negative). If all the arguments are
+ *  integers, the loop operates using an integer counter. If any of the
+ *  arguments are floating point numbers, all are converted to floats,
+ *  and the loop is executed <i>floor(n + n*epsilon)+ 1</i> times,
+ *  where <i>n = (limit - num)/step</i>. Otherwise, the loop
+ *  starts at <i>num</i>, uses either the <code><</code> or
+ *  <code>></code> operator to compare the counter against
+ *  <i>limit</i>, and increments itself using the <code>+</code>
+ *  operator.
+ *     
+ *     1.step(10, 2) { |i| print i, " " }
+ *     Math::E.step(Math::PI, 0.2) { |f| print f, " " }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     1 3 5 7 9
+ *     2.71828182845905 2.91828182845905 3.11828182845905
+ */
 
 static VALUE
 num_step(argc, argv, from)
@@ -1451,6 +1709,29 @@ rb_num2ull(val)
 
 #endif  /* HAVE_LONG_LONG */
 
+
+/*
+ * Document-class: Integer
+ *
+ *  <code>Integer</code> is the basis for the two concrete classes that
+ *  hold whole numbers, <code>Bignum</code> and <code>Fixnum</code>.
+ *     
+ */
+
+
+/*
+ *  call-seq:
+ *     int.to_i      => int
+ *     int.to_int    => int
+ *     int.floor     => int
+ *     int.ceil      => int
+ *     int.round     => int
+ *     int.truncate  => int
+ *
+ *  As <i>int</i> is already an <code>Integer</code>, all these
+ *  methods simply return the receiver.
+ */
+
 static VALUE
 int_to_i(num)
     VALUE num;
@@ -1458,12 +1739,30 @@ int_to_i(num)
     return num;
 }
 
+/*
+ *  call-seq:
+ *     int.integer? -> true
+ *  
+ *  Always returns <code>true</code>.
+ */
+
 static VALUE
 int_int_p(num)
     VALUE num;
 {
     return Qtrue;
 }
+
+/*
+ *  call-seq:
+ *     int.next    => integer
+ *     int.succ    => integer
+ *  
+ *  Returns the <code>Integer</code> equal to <i>int</i> + 1.
+ *     
+ *     1.next      #=> 2
+ *     (-1).next   #=> 0
+ */
 
 static VALUE
 int_succ(num)
@@ -1475,6 +1774,18 @@ int_succ(num)
     }
     return rb_funcall(num, '+', 1, INT2FIX(1));
 }
+
+/*
+ *  call-seq:
+ *     int.chr    => string
+ *  
+ *  Returns a string containing the ASCII character represented by the
+ *  receiver's value.
+ *     
+ *     65.chr    #=> "A"
+ *     ?a.chr    #=> "a"
+ *     230.chr   #=> "\346"
+ */
 
 static VALUE
 int_chr(num)
@@ -2320,6 +2631,20 @@ fix_size(fix)
     return INT2FIX(sizeof(long));
 }
 
+/*
+ *  call-seq:
+ *     int.upto(limit) {|i| block }     => int
+ *  
+ *  Iterates <em>block</em>, passing in integer values from <i>int</i>
+ *  up to and including <i>limit</i>.
+ *     
+ *     5.upto(10) { |i| print i, " " }
+ *     
+ *  <em>produces:</em>
+ *     
+ *     5 6 7 8 9 10
+ */
+
 static VALUE
 int_upto(from, to)
     VALUE from, to;
@@ -2344,6 +2669,21 @@ int_upto(from, to)
     return from;
 }
 
+/*
+ *  call-seq:
+ *     int.downto(limit) {|i| block }     => int
+ *  
+ *  Iterates <em>block</em>, passing decreasing values from <i>int</i>
+ *  down to and including <i>limit</i>.
+ *     
+ *     5.downto(1) { |n| print n, ".. " }
+ *     print "  Liftoff!\n"
+ *     
+ *  <em>produces:</em>
+ *     
+ *     5.. 4.. 3.. 2.. 1..   Liftoff!
+ */
+
 static VALUE
 int_downto(from, to)
     VALUE from, to;
@@ -2367,6 +2707,22 @@ int_downto(from, to)
     }
     return from;
 }
+
+/*
+ *  call-seq:
+ *     int.times {|i| block }     => int
+ *  
+ *  Iterates block <i>int</i> times, passing in values from zero to
+ *  <i>int</i> - 1.
+ *     
+ *     5.times do |i|
+ *       print i, " "
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     0 1 2 3 4
+ */
 
 static VALUE
 int_dotimes(num)
