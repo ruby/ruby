@@ -230,5 +230,6 @@ CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -I$$(srcdir)/wince \
 
 $(INCLUDE) $$(srcdir)/wince/Makefile.sub
 <<
-	@$(srcdir)\win32\rm.bat config.h config.status
+	@if exist config.h del config.h
+	@if exist config.status del config.status
 	@echo type `$(MAKE)' to make ruby for $(OS).
