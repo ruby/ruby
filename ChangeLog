@@ -1,3 +1,7 @@
+Fri Mar 22 16:46:54 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/extmk.rb.in: replace mkdir with mkpath to compile racc/cparse.
+
 Fri Mar 22 16:22:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* the VMS support patch submitted by Akiyoshi, Masamichi

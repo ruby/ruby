@@ -40,6 +40,7 @@ $:.replace [$topdir, $top_srcdir, $top_srcdir+"/lib", "."]
 
 require 'rbconfig.rb'
 require 'find'
+require 'ftools'
 
 def rm_f(*files)
   targets = []
@@ -623,7 +624,7 @@ def extmake(target)
 
   begin
     dir = Dir.pwd
-    Dir.mkdir target unless File.directory?(target)
+    File.mkpath target unless File.directory?(target)
     Dir.chdir target
     $target = target
     $mdir = target
