@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.1.31
+= net/http.rb version 1.1.32
 
 maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This file is derived from "http-access.rb".
@@ -55,8 +55,8 @@ You can get it from RAA
 : start {|http| .... }
   creates a new Net::HTTP object and starts HTTP session.
 
-  When this method is called with block, gives HTTP object to block
-  and close HTTP session after block call finished.
+  When this method is called with block, gives a HTTP object to block
+  and close HTTP session after returning from the block.
 
 : proxy?
   true if self is a HTTP proxy class
@@ -233,16 +233,16 @@ All "key" is case-insensitive.
 
 = http.rb version 1.2 features
 
-You can use 1.2 features by calling HTTP.new_implementation. And
-calling Net::HTTP.old_implementation allows to use 1.1 features.
+You can use 1.2 features by calling HTTP.version_1_2. And
+calling Net::HTTP.version_1_1 allows to use 1.1 features.
 
   # example
   HTTP.start {|http1| ...(http1 has 1.1 features)... }
 
-  HTTP.new_implementation
+  HTTP.version_1_2
   HTTP.start {|http2| ...(http2 has 1.2 features)... }
 
-  HTTP.old_implementation
+  HTTP.version_1_1
   HTTP.start {|http3| ...(http3 has 1.1 features)... }
 
 == Method (only diff to 1.1)
@@ -293,7 +293,7 @@ module Net
       def new( address = nil, port = nil, p_addr = nil, p_port = nil )
         c = p_addr ? self::Proxy(p_addr, p_port) : self
         i = c.orig_new( address, port )
-        setvar i
+        setimplv i
         i
       end
 
@@ -340,17 +340,17 @@ module Net
 
     #class << self
 
-      def self.new_implementation
+      def self.version_1_2
         @@newimpl = true
       end
 
-      def self.old_implementation
+      def self.version_1_1
         @@newimpl = false
       end
 
       #private
 
-      def self.setvar( obj )
+      def self.setimplv( obj )
         f = @@newimpl
         obj.instance_eval { @newimpl = f }
       end
@@ -575,7 +575,7 @@ module Net
     end
 
     def edit_path( path )
-      'http://' + address + (port == HTTP.port ? '' : ":#{port}") + path
+      'http://' + address + (port == type.port ? '' : ":#{port}") + path
     end
   
   end

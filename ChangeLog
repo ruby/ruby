@@ -1,3 +1,15 @@
+Sat Dec 23 03:44:16 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb: set @closed false in Socket#reopen.
+
+	* lib/net/pop.rb: add POP3.foreach, delete_all.
+
+	* lib/net/pop.rb: add POP3#delete_all.
+
+	* lib/net/http.rb: add HTTP.version_1_1, version_1_2
+
+	* lib/net/http.rb: refactoring.
+
 Fri Dec 22 17:59:30 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.2 released.

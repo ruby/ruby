@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb version 1.1.31
+= net/pop.rb version 1.1.32
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -25,25 +25,81 @@ Net::Protocol
   creates a new Net::POP3 object.
   This method does not open TCP connection yet.
 
-: start( address = 'localhost', port = 110, *protoargs )
-: start( address = 'localhost', port = 110, *protoargs ) {|pop| .... }
-  equals to Net::POP3.new( address, port ).start( *protoargs )
+: start( address = 'localhost', port = 110, account, password )
+: start( address = 'localhost', port = 110, account, password ) {|pop| .... }
+  equals to Net::POP3.new( address, port ).start( account, password )
 
+    # typical usage
+    Net::POP3.start( addr, port, acnt, pass ) do |pop|
+      pop.each_mail do |m|
+        any_file.write m.pop
+        m.delete
+      end
+    end
+
+: foreach( address = 'localhost', port = 110, account, password ) {|mail| .... }
+  starts protocol and iterate for each POPMail object.
+  This method equals to
+
+    Net::POP3.start( address, port, account, password ) do |pop|
+      pop.each do |m|
+        yield m
+      end
+    end
+
+  .
+
+    # typical usage
+    Net::POP3.foreach( addr, nil, acnt, pass ) do |m|
+      m.pop file
+      m.delete
+    end
+
+: delete_all( address = 'localhost', port = 110, account, password )
+: delete_all( address = 'localhost', port = 110, account, password ) {|mail| .... }
+  starts POP3 session and delete all mails.
+  If block is given, iterates for each POPMail object before delete.
+
+    # typical usage
+    Net::POP3.delete_all( addr, nil, acnt, pass ) do |m|
+      m.pop file
+    end
+  
 === Methods
 
 : start( account, password )
 : start( account, password ) {|pop| .... }
   starts POP3 session.
 
-  When called with block, give a POP3 object to block and
-  close session after block call is finished.
-
-: each {|popmail| .... }
-  This method is equals to "pop3.mails.each"
+  When called with block, gives a POP3 object to block and
+  closes the session after block call finish.
 
 : mails
   an array of ((URL:#POPMail)).
   This array is renewed when session started.
+
+: each_mail {|popmail| .... }
+: each {|popmail| .... }
+  is equals to "pop3.mails.each"
+
+: delete_all
+: delete_all {|popmail| .... }
+  deletes all mails.
+  If called with block, gives mails to the block before deleting.
+
+    # example 1
+    # pop and delete all mails
+    n = 1
+    pop.delete_all do |m|
+      File.open("inbox/#{n}") {|f| f.write m.pop }
+      n += 1
+    end
+
+    # example 2
+    # clear all mails on server
+    Net::POP3.start( addr, port, acc, pass ) do |pop|
+      pop.delete_all
+    end
 
 : reset
   reset the session. All "deleted mark" are removed.
@@ -70,31 +126,33 @@ Object
 
 === Methods
 
-: all( dest = '' )
-: pop
-: mail
+: pop( dest = '' )
   This method fetches a mail and write to 'dest' using '<<' method.
 
     # usage example
 
     mailarr = []
     POP3.start( 'localhost', 110 ) do |pop|
-      pop.each do |popm|
+      pop.each_mail do |popm|
         mailarr.push popm.pop   # all() returns 'dest' (this time, string)
         # or, you can also
         # popm.pop( $stdout )   # write mail to stdout
+
+        # maybe you also want to delete mail after popping
+        popm.delete
       end
     end
 
-: all {|str| .... }
-  You can call all/pop/mail with block.
-  argument 'str' is a read string (a part of mail).
+: pop {|str| .... }
+  If pop() is called with block, it gives the block part strings of a mail.
 
     # usage example
 
-    POP3.start( 'localhost', 110 ) do |pop|
-      pop.mails[0].pop do |str|               # pop only first mail...
-        _do_anything_( str )
+    POP3.start( 'localhost', 110 ) do |pop3|
+      pop3.each_mail do |m|
+        m.pop do |str|
+          # do anything
+        end
       end
     end
 
@@ -129,6 +187,25 @@ module Net
 
     protocol_param :mail_type,    '::Net::POPMail'
 
+    class << self
+
+      def foreach( address = nil, port = nil,
+                   account = nil, password = nil, &block )
+        start( address, port, account, password ) do |pop|
+          pop.each_mail( &block )
+        end
+      end
+
+      def delete_all( address = nil, port = nil,
+                      account = nil, password = nil, &block )
+        start( address, port, account, password ) do |pop|
+          pop.delete_all( &block )
+        end
+      end
+    
+    end
+
+
     def initialize( addr = nil, port = nil )
       super
       @mails = nil
@@ -136,9 +213,18 @@ module Net
 
     attr :mails
 
-    def each( &block )
+    def each_mail( &block )
       io_check
-      @mails.each &block
+      @mails.each( &block )
+    end
+
+    alias each each_mail
+
+    def delete_all
+      @mails.each do |m|
+        yield m if block_given?
+        m.delete unless m.deleted?
+      end
     end
 
     def reset

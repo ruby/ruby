@@ -1,6 +1,6 @@
 =begin
 
-= net/protocol.rb version 1.1.31
+= net/protocol.rb version 1.1.32
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -65,7 +65,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.31'
+    Version = '1.1.32'
 
 
     class << self
@@ -113,15 +113,18 @@ module Net
       @address = addr || 'localhost'
       @port    = port || type.port
 
-      @active  = false
-      @pipe    = nil
-
       @command = nil
       @socket  = nil
+
+      @active  = false
+      @pipe    = nil
     end
 
-    attr_reader :address, :port,
-                :command, :socket
+    attr_reader :address
+    attr_reader :port
+
+    attr_reader :command
+    attr_reader :socket
 
     def inspect
       "#<#{type} #{address}:#{port} open=#{active?}>"
@@ -131,20 +134,29 @@ module Net
     def start( *args )
       return false if active?
 
-      begin
-        connect
-        do_start( *args )
-        @active = true
-        yield self if block_given?
-      ensure
-        finish if block_given?
+      if block_given? then
+        begin
+          _start args
+          yield self
+        ensure
+          finish
+        end
+      else
+        _start args
       end
     end
+
+    def _start( args )
+      connect
+      do_start( *args )
+      @active = true
+    end
+    private :_start
 
     def finish
       return false unless active?
 
-      do_finish
+      do_finish unless @command.critical?
       disconnect
       @active = false
       true
@@ -375,22 +387,33 @@ module Net
       rep.error!
     end
 
-    def getok( line, ok = SuccessCode )
+    def getok( line, expect = SuccessCode )
       @socket.writeline line
-      check_reply ok
+      check_reply expect
     end
 
 
+    #
+    # error handle
+    #
+
+    public
+
+    def critical?
+      @critical
+    end
+
+    def error_ok
+      @critical = false
+    end
+
+    private
+
     def critical
-      return if @critical
       @critical = true
       ret = yield
       @critical = false
       ret
-    end
-
-    def critical?
-      @critical
     end
 
     def begin_critical
@@ -402,11 +425,6 @@ module Net
     def end_critical
       @critical = false
     end
-
-    def error_ok
-      @critical = false
-    end
-    public :error_ok
 
   end
 
@@ -441,10 +459,11 @@ module Net
 
     def reopen
       unless closed? then
-        @socket.close
+        close
         @buffer = ''
       end
       @socket = TCPsocket.new( @addr, @port )
+      @closed = false
     end
 
     attr :socket, true
