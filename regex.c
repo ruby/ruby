@@ -2360,21 +2360,7 @@ re_compile_pattern(pattern, size, bufp)
 
       laststart++;
       EXTRACT_NUMBER_AND_INCR(mcnt, laststart);
-      if (mcnt == 4 && *laststart == anychar) {
-	switch ((enum regexpcode)laststart[1]) {
-	case jump_n:
-	case finalize_jump:
-	case maybe_finalize_jump:
-	case jump:
-	case jump_past_alt:
-	case dummy_failure_jump:
-	  bufp->options |= RE_OPTIMIZE_ANCHOR;
-	  break;
-	default:
-	  break;
-	}
-      }
-      else if (*laststart == charset || *laststart == charset_not) {
+      if (*laststart == charset || *laststart == charset_not) {
 	p0 = laststart;
 	mcnt = *++p0;
 	p0 += mcnt+1;

@@ -5128,12 +5128,7 @@ rb_load(fname, wrap)
     NODE *saved_cref = ruby_cref;
     TMP_PROTECT;
 
-    if (wrap) {
-	Check_Type(fname, T_STRING);
-    }
-    else {
-	Check_SafeStr(fname);
-    }
+    Check_SafeStr(fname);
     file = rb_find_file(RSTRING(fname)->ptr);
     if (!file) {
 	rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
