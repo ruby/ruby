@@ -363,7 +363,7 @@ rb_big2str(x, base)
     VALUE x;
     int base;
 {
-    VALUE t;
+    volatile VALUE t;
     BDIGIT *ds;
     long i, j, hbase;
     VALUE ss;
