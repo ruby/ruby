@@ -60,7 +60,7 @@ if __FILE__ == $0
   when 'itest1', 'itest2'
     front = Foo.new(cmd)
     manager = DRb::DRbServer.new(nil, front)
-    es = DRb::ExtService.new(ARGV.shift, ARGV.shift, manager)
+    es = DRb::ExtServ.new(ARGV.shift, ARGV.shift, manager)
     es.server.thread.join
   end
 end
