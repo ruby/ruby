@@ -493,15 +493,10 @@ syck_parser_load(argc, argv, self)
         parser->bonus = (void *)proc;
     }
 
-    v = syck_parse( parser );
-    if ( v == 0 )
-    {
-        return Qnil;
-    }
 
     //v = rb_ensure(rb_run_syck_parse, (VALUE)&parser, rb_syck_ensure, (VALUE)&parser);
 
-    return v;
+    return syck_parse( parser );
 }
 
 /*

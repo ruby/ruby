@@ -3,6 +3,12 @@ require 'date'
 # Type conversions
 #
 
+class Class
+	def to_yaml( opts = {} )
+		raise ArgumentError, "can't dump anonymous class %s" % self.class
+	end
+end
+
 class Object
     def is_complex_yaml?
         true
@@ -300,7 +306,7 @@ class Symbol
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
 			out << "!ruby/sym "
-			self.object_id2name.to_yaml( :Emitter => out )
+			self.id2name.to_yaml( :Emitter => out )
 		}
 	end
 end
