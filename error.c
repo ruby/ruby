@@ -22,6 +22,12 @@
 #include <varargs.h>
 #define va_init_list(a,b) va_start(a)
 #endif
+#ifdef HAVE_STDLIB_H
+#include <stdlib.h>
+#endif
+#ifndef EXIT_SUCCESS
+#define EXIT_SUCCESS 0
+#endif
 
 extern const char ruby_version[], ruby_release_date[], ruby_platform[];
 
@@ -512,7 +518,7 @@ check_backtrace(bt)
 
 /*
  *  call-seq:
- *     exc.set_backtrace(array_   =>  array
+ *     exc.set_backtrace(array)   =>  array
  *  
  *  Sets the backtrace information associated with <i>exc</i>. The
  *  argument must be an array of <code>String</code> objects in the
@@ -541,7 +547,7 @@ exit_initialize(argc, argv, exc)
     VALUE *argv;
     VALUE exc;
 {
-    VALUE status = INT2NUM(0);
+    VALUE status = INT2FIX(EXIT_SUCCESS);
     if (argc > 0 && FIXNUM_P(argv[0])) {
 	status = *argv++;
 	--argc;
@@ -559,12 +565,29 @@ exit_initialize(argc, argv, exc)
  * Return the status value associated with this system exit.
  */
 
-
 static VALUE
 exit_status(exc)
     VALUE exc;
 {
     return rb_attr_get(exc, rb_intern("status"));
+}
+
+
+/*
+ * call-seq:
+ *   system_exit.success?  => true or false
+ *
+ * Returns +true+ if exiting successful, +false+ if not.
+ */
+
+static VALUE
+exit_success_p(exc)
+    VALUE exc;
+{
+    VALUE status = rb_attr_get(exc, rb_intern("status"));
+    if (NIL_P(status)) return Qtrue;
+    if (status == INT2FIX(EXIT_SUCCESS)) return Qtrue;
+    return Qfalse;
 }
 
 void
@@ -859,7 +882,6 @@ syserr_initialize(argc, argv, self)
     char *strerror();
 #endif
     char *err;
-    char *buf;
     VALUE mesg, error;
     VALUE klass = rb_obj_class(self);
 
@@ -878,15 +900,17 @@ syserr_initialize(argc, argv, self)
     }
     else {
 	rb_scan_args(argc, argv, "01", &mesg);
-	error = rb_const_get_at(klass, rb_intern("Errno"));
+	error = rb_const_get(klass, rb_intern("Errno"));
     }
     if (!NIL_P(error)) err = strerror(NUM2LONG(error));
     else err = "unknown error";
     if (!NIL_P(mesg)) {
-	StringValue(mesg);
-	buf = ALLOCA_N(char, strlen(err)+RSTRING(mesg)->len+4);
-	sprintf(buf, "%s - %.*s", err, (int)RSTRING(mesg)->len, RSTRING(mesg)->ptr);
-	mesg = rb_str_new2(buf);
+	VALUE str = mesg;
+	StringValue(str);
+	mesg = rb_str_new(0, strlen(err)+RSTRING(mesg)->len+3);
+	sprintf(RSTRING(mesg)->ptr, "%s - %.*s", err,
+		(int)RSTRING(str)->len, RSTRING(str)->ptr);
+	rb_str_resize(mesg, strlen(RSTRING(mesg)->ptr));
     }
     else {
 	mesg = rb_str_new2(err);
@@ -969,6 +993,7 @@ Init_Exception()
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
     rb_define_method(rb_eSystemExit, "initialize", exit_initialize, -1);
     rb_define_method(rb_eSystemExit, "status", exit_status, 0);
+    rb_define_method(rb_eSystemExit, "success?", exit_success_p, 0);
 
     rb_eFatal  	    = rb_define_class("fatal", rb_eException);
     rb_eSignal      = rb_define_class("SignalException", rb_eException);
