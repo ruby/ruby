@@ -1,3 +1,9 @@
+Mon Dec 27 20:02:14 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: fix SEGV bug when deleting Tk interp
+
+	* ext/tk/lib/multi-tk.rb: ditto
+
 Mon Dec 27 16:54:05 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509name.c (Init_ossl_x509name): should use

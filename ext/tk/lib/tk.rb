@@ -3940,7 +3940,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2004-12-24'.freeze
+  RELEASE_DATE = '2004-12-27'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
