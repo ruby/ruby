@@ -1,3 +1,10 @@
+Mon Mar 19 10:55:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (glob_helper): replace lstat() by stat() to follow symlink
+	  in the case like 'symlink/*'.
+
+	* dir.c (glob_helper): gave warning too much.
+
 Sun Mar 18 08:58:18 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/cgi.rb: // === '' --> //.match('')
@@ -12,6 +19,11 @@ Sun Mar 18 08:58:18 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/cgi.rb: cgi#header(): bug fix.
 	  thanks to IWATSUKI Hiroyuki <don@na.rim.or.jp>.
+
+Sat Mar 17 11:11:24 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (glob_helper): * should follow symlink, whereas ** should
+	  not follow.
 
 Thu Mar 15 01:28:02 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

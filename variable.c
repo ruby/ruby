@@ -266,7 +266,7 @@ rb_class2name(klass)
 struct trace_var {
     int removed;
     void (*func)();
-    void *data;
+    VALUE data;
     struct trace_var *next;
 };
 
@@ -362,7 +362,7 @@ val_setter(val, id, data, entry)
 
 static void
 val_marker(data)
-    void *data;
+    VALUE data;
 {
     if (data) rb_gc_mark_maybe(data);
 }
@@ -387,7 +387,7 @@ var_setter(val, id, var)
 
 static void
 var_marker(var)
-    VALUE **var;
+    VALUE *var;
 {
     if (var) rb_gc_mark_maybe(*var);
 }
@@ -514,7 +514,7 @@ rb_f_trace_var(argc, argv)
     trace = ALLOC(struct trace_var);
     trace->next = entry->trace;
     trace->func = rb_trace_eval;
-    trace->data = (void*)cmd;
+    trace->data = cmd;
     trace->removed = 0;
     entry->trace = trace;
 
@@ -576,7 +576,7 @@ rb_f_untrace_var(argc, argv)
     }
     else {
 	while (trace) {
-	    if (trace->data == (void*)cmd) {
+	    if (trace->data == cmd) {
 		trace->removed = 1;
 		if (!entry->block_trace) remove_trace(entry);
 		return rb_ary_new3(1, cmd);

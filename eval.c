@@ -5956,13 +5956,13 @@ blk_mark(data)
 {
     while (data) {
 	rb_gc_mark_frame(&data->frame);
-	rb_gc_mark(data->scope);
-	rb_gc_mark(data->var);
-	rb_gc_mark(data->body);
-	rb_gc_mark(data->self);
-	rb_gc_mark(data->dyna_vars);
-	rb_gc_mark(data->klass);
-	rb_gc_mark(data->tag);
+	rb_gc_mark((VALUE)data->scope);
+	rb_gc_mark((VALUE)data->var);
+	rb_gc_mark((VALUE)data->body);
+	rb_gc_mark((VALUE)data->self);
+	rb_gc_mark((VALUE)data->dyna_vars);
+	rb_gc_mark((VALUE)data->klass);
+	rb_gc_mark((VALUE)data->tag);
 	data = data->prev;
     }
 }
@@ -6456,7 +6456,7 @@ bm_mark(data)
     rb_gc_mark(data->oklass);
     rb_gc_mark(data->klass);
     rb_gc_mark(data->recv);
-    rb_gc_mark(data->body);
+    rb_gc_mark((VALUE)data->body);
 }
 
 static VALUE
@@ -6916,8 +6916,8 @@ thread_mark(th)
     rb_gc_mark(th->klass);
     rb_gc_mark(th->wrapper);
 
-    rb_gc_mark(th->scope);
-    rb_gc_mark(th->dyna_vars);
+    rb_gc_mark((VALUE)th->scope);
+    rb_gc_mark((VALUE)th->dyna_vars);
     rb_gc_mark(th->errinfo);
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);
@@ -7910,6 +7910,7 @@ rb_thread_abort_exc_set(thread, val)
 \
     th->status = THREAD_RUNNABLE;\
     th->result = 0;\
+    th->flags = 0;\
 \
     th->stk_ptr = 0;\
     th->stk_len = 0;\

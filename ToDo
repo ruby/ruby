@@ -25,6 +25,7 @@ Language Spec.
 * unify == and eql? again
 * to_i returns nil if str contains no digit.
 * raise exception by `` error
+* jar like combined library package.
 
 Hacking Interpreter
 

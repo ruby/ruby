@@ -45,7 +45,7 @@
 #  include <ndir.h>
 # endif
 # if defined(NT) && defined(_MSC_VER)
-#  include "missing/dir.h"
+#  include "win32/dir.h"
 # endif
 #endif
 
@@ -62,7 +62,7 @@ char *strchr _((char*,char));
 #include <ctype.h>
 
 #ifndef HAVE_LSTAT
-#define lstat rb_sys_stat
+#define lstat stat
 #endif
 
 #define FNM_NOESCAPE	0x01
@@ -610,9 +610,10 @@ remove_backslashes(p)
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
 
+#define GLOB_RECURSIVE 0x10
 
-void
-rb_glob_helper(path, flag, func, arg)
+static void
+glob_helper(path, flag, func, arg)
     char *path;
     int flag;
     void (*func)();
@@ -623,10 +624,10 @@ rb_glob_helper(path, flag, func, arg)
 
     if (!has_magic(path, 0)) {
 	remove_backslashes(path);
-	if (rb_sys_stat(path, &st) == 0) {
+	if (stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
-	else {
+	else if (!(flag & GLOB_RECURSIVE)) {
 	    /* In case stat error is other than ENOENT and
 	       we may want to know what is wrong. */
 	    rb_sys_warning(path);
@@ -654,7 +655,7 @@ rb_glob_helper(path, flag, func, arg)
 	    else dir = base;
 
 	    magic = extract_elem(p);
-	    if (lstat(dir, &st) < 0) {
+	    if (stat(dir, &st) < 0) {
 	        rb_sys_warning(dir);
 	        free(base);
 	        break;
@@ -664,15 +665,15 @@ rb_glob_helper(path, flag, func, arg)
 		    recursive = 1;
 		    buf = ALLOC_N(char, strlen(base)+strlen(m)+3);
 		    sprintf(buf, "%s%s", base, *base ? m : m+1);
-		    rb_glob_helper(buf, flag, func, arg);
+		    glob_helper(buf, flag|GLOB_RECURSIVE, func, arg);
 		    free(buf);
 		}
-	       dirp = opendir(dir);
-	       if (dirp == NULL) {
-		   rb_sys_warning(dir);
-		   free(base);
-		   break;
-	       }
+		dirp = opendir(dir);
+		if (dirp == NULL) {
+		    rb_sys_warning(dir);
+		    free(base);
+		    break;
+		}
 	    }
 	    else {
 		free(base);
@@ -690,15 +691,15 @@ rb_glob_helper(path, flag, func, arg)
 		    if (strcmp(".", dp->d_name) == 0 || strcmp("..", dp->d_name) == 0)
 			continue;
 		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
-		    sprintf(buf, "%s%s%s/", base, (BASE)?"/":"", dp->d_name);
+		    sprintf(buf, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (lstat(buf, &st) < 0) {
 		        rb_sys_warning(buf);
 			continue;
 		    }
 		    if (S_ISDIR(st.st_mode)) {
-		        strcat(buf, "**");
+		        strcat(buf, "/**");
 			strcat(buf, m);
-			rb_glob_helper(buf, flag, func, arg);
+			glob_helper(buf, flag|GLOB_RECURSIVE, func, arg);
 		    }
 		    free(buf);
 		    continue;
@@ -721,14 +722,14 @@ rb_glob_helper(path, flag, func, arg)
 	    free(base);
 	    free(magic);
 	    while (link) {
-		if (lstat(link->path, &st) == 0) {
+		if (stat(link->path, &st) == 0) {
 		    if (S_ISDIR(st.st_mode)) {
 			int len = strlen(link->path);
 			int mlen = strlen(m);
 			char *t = ALLOC_N(char, len+mlen+1);
 
 			sprintf(t, "%s%s", link->path, m);
-			rb_glob_helper(t, flag, func, arg);
+			glob_helper(t, flag|GLOB_RECURSIVE, func, arg);
 			free(t);
 		    }
 		    tmp = link;
@@ -751,7 +752,7 @@ rb_glob(path, func, arg)
     void (*func)();
     VALUE arg;
 {
-    rb_glob_helper(path, FNM_PERIOD|FNM_PATHNAME, func, arg);
+    glob_helper(path, FNM_PERIOD|FNM_PATHNAME, func, arg);
 }
 
 void
@@ -760,7 +761,7 @@ rb_iglob(path, func, arg)
     void (*func)();
     VALUE arg;
 {
-    rb_glob_helper(path, FNM_PERIOD|FNM_PATHNAME|FNM_NOCASE, func, arg);
+    glob_helper(path, FNM_PERIOD|FNM_PATHNAME|FNM_NOCASE, func, arg);
 }
 
 static void

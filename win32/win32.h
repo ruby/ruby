@@ -179,8 +179,8 @@ extern "C++" {
 #define pclose     _pclose
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
-#undef rb_sys_stat
-#define rb_sys_stat win32_stat
+#undef stat
+#define stat win32_stat
 /* these are defined in nt.c */
 
 #ifdef __MINGW32__
