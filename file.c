@@ -1589,7 +1589,7 @@ file_expand_path(fname, dname, result)
 	    s++;
 #endif
 	    s = nextdirsep(b = s);
-	    BUFCHECK(p + (s-b) >= pend);
+	    BUFCHECK(bdiff + (s-b) >= buflen);
 	    memcpy(p, b, s-b);
 	    p += s-b;
 	    *p = '\0';
@@ -1613,7 +1613,7 @@ file_expand_path(fname, dname, result)
 	if (isdirsep(s[2])) {
 	    /* specified drive letter, and full path */
 	    /* skip drive letter */
-	    BUFCHECK(p + 2 >= pend);
+	    BUFCHECK(bdiff + 2 >= buflen);
 	    memcpy(p, s, 2);
 	    p += 2;
 	    s += 2;
@@ -1667,7 +1667,7 @@ file_expand_path(fname, dname, result)
 	b = s;
 	do s++; while (isdirsep(*s));
 	p = buf + (s - b);
-	BUFCHECK(p >= pend);
+	BUFCHECK(bdiff >= buflen);
 	memset(buf, '/', p - buf);
     }
     if (p > buf && p[-1] == '/')
@@ -1718,7 +1718,7 @@ file_expand_path(fname, dname, result)
 #endif
 	    if (s > b) {
 		long rootdiff = root - buf;
-		BUFCHECK(p + (s-b+1) >= pend);
+		BUFCHECK(bdiff + (s-b+1) >= buflen);
 		root = buf + rootdiff;
 		memcpy(++p, b, s-b);
 		p += s-b;
@@ -1733,7 +1733,7 @@ file_expand_path(fname, dname, result)
     }
 
     if (s > b) {
-	BUFCHECK(p + (s-b) >= pend);
+	BUFCHECK(bdiff + (s-b) >= buflen);
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
