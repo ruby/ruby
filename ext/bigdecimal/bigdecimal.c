@@ -3208,6 +3208,7 @@ VpToString(Real *a,char *psz,int fFmt)
             --ex;
             n /= 10;
         }
+        while(psz[-1]=='0') *(--psz) = 0;
         sprintf(psz, "E%ld", ex);
     } else {
         if(VpIsPosZero(a)) sprintf(psz, "0.0");
@@ -3845,6 +3846,7 @@ VpFrac(Real *y, Real *x)
         VpAsgn(y, x, 1);
         goto Exit;
     }
+
     y->Prec = x->Prec -(U_LONG) x->exponent;
     y->Prec = Min(y->Prec, y->MaxPrec);
     y->exponent = 0;
@@ -3852,11 +3854,12 @@ VpFrac(Real *y, Real *x)
     ind_y = 0;
     my = y->Prec;
     ind_x = x->exponent;
-    while(ind_y <= my) {
+    while(ind_y < my) {
         y->frac[ind_y] = x->frac[ind_x];
         ++ind_y;
         ++ind_x;
     }
+    VpNmlz(y);
 
 Exit:
 #ifdef _DEBUG
