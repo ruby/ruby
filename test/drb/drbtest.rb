@@ -231,6 +231,19 @@ module DRbCore
       assert_kind_of(DRbObject, v)
     end
   end
+
+  def test_11_remote_no_method_error
+    assert_raises(DRb::DRbRemoteError) do
+      @there.remote_no_method_error
+    end
+    begin
+      @there.remote_no_method_error
+    rescue
+      error = $!
+      assert_match(/^undefined method .*\(NoMethodError\)/, error.message)
+      assert_equal('NoMethodError', error.reason)
+    end
+  end
 end
 
 module DRbAry

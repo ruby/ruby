@@ -1,3 +1,12 @@
+Sat Dec 11 21:10:16 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: add DRbRemoteError. [ruby-list:40348],
+	  [ruby-list:40390]
+
+	* test/drb/drbtest.rb: ditto.
+
+	* test/drb/ut_drb.rb: ditto.
+
 Sat Dec 11 13:08:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sample/optparse/subcommand.rb: a sample for sub commands like

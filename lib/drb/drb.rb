@@ -430,6 +430,15 @@ module DRb
     end
   end
 
+  class DRbRemoteError < DRbError
+    def initialize(error)
+      @reason = error.class.to_s
+      super("#{error.message} (#{error.class})")
+      set_backtrace(error.backtrace)
+    end
+    attr_reader :reason
+  end
+
   # Class wrapping a marshalled object whose type is unknown locally.
   #
   # If an object is returned by a method invoked over drb, but the
@@ -539,12 +548,12 @@ module DRb
       @argc_limit = config[:argc_limit]
     end
 
-    def dump(obj)  # :nodoc:
-      obj = DRbObject.new(obj) if obj.kind_of? DRbUndumped
+    def dump(obj, error=false)  # :nodoc:
+      obj = make_proxy(obj, error) if obj.kind_of? DRbUndumped
       begin
 	str = Marshal::dump(obj)
       rescue
-	str = Marshal::dump(DRbObject.new(obj))
+	str = Marshal::dump(make_proxy(obj, error))
       end
       [str.size].pack('N') + str
     end
@@ -602,7 +611,7 @@ module DRb
     end
 
     def send_reply(stream, succ, result)  # :nodoc:
-      stream.write(dump(succ) + dump(result))
+      stream.write(dump(succ) + dump(result, !succ))
     rescue
       raise(DRbConnError, $!.message, $!.backtrace)
     end
@@ -611,6 +620,15 @@ module DRb
       succ = load(stream)
       result = load(stream)
       [succ, result]
+    end
+
+    private
+    def make_proxy(obj, error=false)
+      if error
+        DRbRemoteError.new(obj)
+      else
+        DRbObject.new(obj)
+      end
     end
   end
 
