@@ -158,7 +158,7 @@ num_coerce_relop(x, y)
 }
 
 static VALUE
-num_copy_object(x, y)
+num_init_copy(x, y)
     VALUE x, y;
 {
     /* Numerics are immutable values, which should not be copied */
@@ -1767,7 +1767,7 @@ Init_Numeric()
     rb_cNumeric = rb_define_class("Numeric", rb_cObject);
 
     rb_include_module(rb_cNumeric, rb_mComparable);
-    rb_define_method(rb_cNumeric, "copy_object", num_copy_object, 1);
+    rb_define_method(rb_cNumeric, "initialize_copy", num_init_copy, 1);
     rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);
 
     rb_define_method(rb_cNumeric, "+@", num_uplus, 0);

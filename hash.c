@@ -1742,7 +1742,7 @@ Init_Hash()
     rb_define_alloc_func(rb_cHash, hash_alloc);
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
-    rb_define_method(rb_cHash,"copy_object", rb_hash_replace, 1);
+    rb_define_method(rb_cHash,"initialize_copy", rb_hash_replace, 1);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);

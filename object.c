@@ -31,9 +31,7 @@ VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
 VALUE rb_cSymbol;
 
-static ID eq, eql;
-static ID inspect;
-static ID copy_obj;
+static ID id_eq, id_eql, id_inspect, id_init_copy;
 
 VALUE
 rb_equal(obj1, obj2)
@@ -42,7 +40,7 @@ rb_equal(obj1, obj2)
     VALUE result;
 
     if (obj1 == obj2) return Qtrue;
-    result = rb_funcall(obj1, eq, 1, obj2);
+    result = rb_funcall(obj1, id_eq, 1, obj2);
     if (RTEST(result)) return Qtrue;
     return Qfalse;
 }
@@ -51,7 +49,7 @@ int
 rb_eql(obj1, obj2)
     VALUE obj1, obj2;
 {
-    return RTEST(rb_funcall(obj1, eql, 1, obj2));
+    return RTEST(rb_funcall(obj1, id_eql, 1, obj2));
 }
 
 static VALUE
@@ -106,7 +104,7 @@ rb_obj_class(obj)
 }
 
 static void
-copy_object(dest, obj)
+init_copy(dest, obj)
     VALUE dest, obj;
 {
     if (OBJ_FROZEN(dest)) {
@@ -114,7 +112,7 @@ copy_object(dest, obj)
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
-    rb_funcall(dest, copy_obj, 1, obj);
+    rb_funcall(dest, id_init_copy, 1, obj);
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_copy_generic_ivar(dest, obj);
     }
@@ -143,7 +141,7 @@ rb_obj_clone(obj)
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
-    copy_object(clone, obj);
+    init_copy(clone, obj);
     RBASIC(clone)->klass = rb_singleton_class_clone(obj);
     RBASIC(clone)->flags = RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT);
 
@@ -160,19 +158,19 @@ rb_obj_dup(obj)
         rb_raise(rb_eTypeError, "can't dup %s", rb_obj_classname(obj));
     }
     dup = rb_obj_alloc(rb_obj_class(obj));
-    copy_object(dup, obj);
+    init_copy(dup, obj);
 
     return dup;
 }
 
 VALUE
-rb_obj_copy_object(obj, orig)
+rb_obj_init_copy(obj, orig)
     VALUE obj, orig;
 {
     if (obj == orig) return obj;
     rb_check_frozen(obj);
     if (TYPE(obj) != TYPE(orig) || rb_obj_class(obj) != rb_obj_class(orig)) {
-	rb_raise(rb_eTypeError, "copy_object should take same class object");
+	rb_raise(rb_eTypeError, "initialize_copy should take same class object");
     }
     return obj;
 }
@@ -204,7 +202,7 @@ VALUE
 rb_inspect(obj)
     VALUE obj;
 {
-    return rb_obj_as_string(rb_funcall(obj, inspect, 0, 0));
+    return rb_obj_as_string(rb_funcall(obj, id_inspect, 0, 0));
 }
 
 static int
@@ -1406,7 +1404,7 @@ Init_Object()
 
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
-    rb_define_method(rb_mKernel, "copy_object", rb_obj_copy_object, 1);
+    rb_define_method(rb_mKernel, "initialize_copy", rb_obj_init_copy, 1);
 
     rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
     rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
@@ -1541,8 +1539,8 @@ Init_Object()
     rb_undef_method(CLASS_OF(rb_cFalseClass), "new");
     rb_define_global_const("FALSE", Qfalse);
 
-    eq = rb_intern("==");
-    eql = rb_intern("eql?");
-    inspect = rb_intern("inspect");
-    copy_obj = rb_intern("copy_object");
+    id_eq = rb_intern("==");
+    id_eql = rb_intern("eql?");
+    id_inspect = rb_intern("inspect");
+    id_init_copy = rb_intern("initialize_copy");
 }

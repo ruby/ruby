@@ -2260,7 +2260,7 @@ rb_stat_init(obj, fname)
 }
 
 static VALUE
-rb_stat_copy_object(copy, orig)
+rb_stat_init_copy(copy, orig)
     VALUE copy, orig;
 {
     struct stat *nst;
@@ -2915,7 +2915,7 @@ Init_File()
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
     rb_define_alloc_func(rb_cStat,  rb_stat_s_alloc);
     rb_define_method(rb_cStat, "initialize", rb_stat_init, 1);
-    rb_define_method(rb_cStat, "copy_object", rb_stat_copy_object, 1);
+    rb_define_method(rb_cStat, "initialize_copy", rb_stat_init_copy, 1);
 
     rb_include_module(rb_cStat, rb_mComparable);
 

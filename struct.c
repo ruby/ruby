@@ -422,7 +422,7 @@ rb_struct_to_a(s)
 }
 
 static VALUE
-rb_struct_copy_object(copy, s)
+rb_struct_init_copy(copy, s)
     VALUE copy, s;
 {
     if (copy == s) return copy;
@@ -642,7 +642,7 @@ Init_Struct()
     rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
 
     rb_define_method(rb_cStruct, "initialize", rb_struct_initialize, -2);
-    rb_define_method(rb_cStruct, "copy_object", rb_struct_copy_object, 1);
+    rb_define_method(rb_cStruct, "initialize_copy", rb_struct_init_copy, 1);
 
     rb_define_method(rb_cStruct, "==", rb_struct_equal, 1);
     rb_define_method(rb_cStruct, "eql?", rb_struct_eql, 1);

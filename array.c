@@ -1941,7 +1941,7 @@ Init_Array()
     rb_define_alloc_func(rb_cArray, ary_alloc);
     rb_define_singleton_method(rb_cArray, "[]", rb_ary_s_create, -1);
     rb_define_method(rb_cArray, "initialize", rb_ary_initialize, -1);
-    rb_define_method(rb_cArray, "copy_object", rb_ary_replace, 1);
+    rb_define_method(rb_cArray, "initialize_copy", rb_ary_replace, 1);
 
     rb_define_method(rb_cArray, "to_s", rb_ary_to_s, 0);
     rb_define_method(rb_cArray, "inspect", rb_ary_inspect, 0);

@@ -3236,7 +3236,7 @@ Init_String()
     rb_include_module(rb_cString, rb_mEnumerable);
     rb_define_alloc_func(rb_cString, str_alloc);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
-    rb_define_method(rb_cString, "copy_object", rb_str_replace, 1); 
+    rb_define_method(rb_cString, "initialize_copy", rb_str_replace, 1); 
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
     rb_define_method(rb_cString, "eql?", rb_str_eql, 1);

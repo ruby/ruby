@@ -266,26 +266,26 @@ rb_add_method(klass, mid, node, noex)
     }
     if (!FL_TEST(klass, FL_SINGLETON) &&
 	node && nd_type(node) != NODE_ZSUPER &&
-	mid == rb_intern("initialize")) {
-	noex = NOEX_PRIVATE | (noex & NOEX_NOSUPER);
-    }
-    else if (FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) == NODE_CFUNC &&
-	     mid == rb_intern("allocate")) {
-	rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
-		rb_class2name(rb_iv_get(klass, "__attached__")));
-	mid = ID_ALLOCATOR;
-    }
-    if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
-    rb_clear_cache_by_id(mid);
-    body = NEW_METHOD(node, noex);
-    st_insert(RCLASS(klass)->m_tbl, mid, (st_data_t)body);
-    if (node && mid != ID_ALLOCATOR && ruby_running) {
-	if (FL_TEST(klass, FL_SINGLETON)) {
-	    rb_funcall(rb_iv_get(klass, "__attached__"), singleton_added, 1, ID2SYM(mid));
-	}
-	else {
-	    rb_funcall(klass, added, 1, ID2SYM(mid));
-	}
+	(mid == rb_intern("initialize" )|| mid == rb_intern("initialize_copy"))) {
+	 noex = NOEX_PRIVATE | (noex & NOEX_NOSUPER);
+     }
+     else if (FL_TEST(klass, FL_SINGLETON) && node && nd_type(node) == NODE_CFUNC &&
+	      mid == rb_intern("allocate")) {
+	 rb_warn("defining %s.allocate is deprecated; use rb_define_alloc_func()",
+		 rb_class2name(rb_iv_get(klass, "__attached__")));
+	 mid = ID_ALLOCATOR;
+     }
+     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
+     rb_clear_cache_by_id(mid);
+     body = NEW_METHOD(node, noex);
+     st_insert(RCLASS(klass)->m_tbl, mid, (st_data_t)body);
+     if (node && mid != ID_ALLOCATOR && ruby_running) {
+	 if (FL_TEST(klass, FL_SINGLETON)) {
+	     rb_funcall(rb_iv_get(klass, "__attached__"), singleton_added, 1, ID2SYM(mid));
+	 }
+	 else {
+	     rb_funcall(klass, added, 1, ID2SYM(mid));
+	 }
     }
 }
 

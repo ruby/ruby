@@ -2467,7 +2467,7 @@ rb_io_reopen(argc, argv, file)
 }
 
 static VALUE
-rb_io_copy_object(dest, io)
+rb_io_init_copy(dest, io)
     VALUE dest, io;
 {
     OpenFile *fptr, *orig;
@@ -3925,7 +3925,7 @@ Init_IO()
     rb_define_hooked_variable("$.", &lineno, 0, lineno_setter);
     rb_define_virtual_variable("$_", rb_lastline_get, rb_lastline_set);
 
-    rb_define_method(rb_cIO, "copy_object", rb_io_copy_object, 1);
+    rb_define_method(rb_cIO, "initialize_copy", rb_io_init_copy, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);
 
     rb_define_method(rb_cIO, "print", rb_io_print, -1);
