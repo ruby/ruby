@@ -1,3 +1,10 @@
+Sat Mar 13 14:28:16 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/test_drbssl.rb: rescue LoadError. (Barkport from main 
+	  trunk)
+
+	* test/drb/test_drbunix.rb: ditto.
+
 Wed Mar 10 22:28:09 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (remove_dir): should handle symlink correctly.
