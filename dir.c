@@ -76,14 +76,64 @@ char *strchr _((char*,char));
 #define FNM_ERROR	2
 
 #define downcase(c) (nocase && ISUPPER(c) ? tolower(c) : (c))
+#define compare(c1, c2) (((unsigned char)(c1)) - ((unsigned char)(c2)))
 
-#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
-# if defined(DJGPP)
-#   define CharNext(p) ((p) + mblen(p, MB_CUR_MAX))
-# else
-#   define CharNext(p) ((p) + 1)
-# endif
+/* caution: in case *p == '\0'
+   Next(p) == p + 1 in single byte environment
+   Next(p) == p     in multi byte environment
+*/
+#if defined(CharNext)
+# define Next(p) CharNext(p)
+#elif defined(DJGPP)
+# define Next(p) ((p) + mblen(p, MB_CUR_MAX))
+#elif defined(__EMX__)
+# define Next(p) ((p) + emx_mblen(p))
+static inline int
+emx_mblen(p)
+    const char *p;
+{
+    int n = mblen(p, INT_MAX);
+    return (n < 0) ? 1 : n;
+}
 #endif
+
+#ifndef Next /* single byte environment */
+# define Next(p) ((p) + 1)
+# define Inc(p) (++(p))
+# define Compare(p1, p2) (compare(downcase(*(p1)), downcase(*(p2))))
+#else /* multi byte environment */
+# define Inc(p) ((p) = Next(p))
+# define Compare(p1, p2) (CompareImpl(p1, p2, nocase))
+static int
+CompareImpl(p1, p2, nocase)
+    const char *p1;
+    const char *p2;
+    int nocase;
+{
+    const int len1 = Next(p1) - p1;
+    const int len2 = Next(p2) - p2;
+
+    if (len1 == 0) return  len2;
+    if (len2 == 0) return -len1;
+
+    if (len1 == 1)
+	if (len2 == 1)
+	    return compare(downcase(*p1), downcase(*p2));
+	else {
+	    const int ret = compare(downcase(*p1), *p2);
+	    return ret ? ret : -1;
+	}
+    else
+	if (len2 == 1) {
+	    const int ret = compare(*p1, downcase(*p2));
+	    return ret ? ret : 1;
+	}
+	else {
+	    const int ret = memcmp(p1, p2, len1 < len2 ? len1 : len2);
+	    return ret ? ret : len1 - len2;
+	}
+}
+#endif /* environment */
 
 #if defined DOSISH
 #define isdirsep(c) ((c) == '/' || (c) == '\\')
@@ -94,7 +144,7 @@ char *strchr _((char*,char));
 static char *
 range(pat, test, flags)
     char *pat;
-    char test;
+    char *test;
     int flags;
 {
     int not, ok = 0;
@@ -105,32 +155,32 @@ range(pat, test, flags)
     if (not)
 	pat++;
 
-    test = downcase(test);
-
     while (*pat) {
-	int cstart, cend;
-	cstart = cend = *pat++;
-	if (cstart == ']')
-	    return ok == not ? 0 : pat;
-        else if (escape && cstart == '\\')
-	    cstart = cend = *pat++;
+	char *pstart, *pend;
+	pstart = pend = pat;
+	if (*pstart == ']')
+	    return ok == not ? 0 : ++pat;
+	else if (escape && *pstart == '\\')
+	    pstart = pend = ++pat;
+		Inc(pat);
 	if (*pat == '-' && pat[1] != ']') {
 	    if (escape && pat[1] == '\\')
 		pat++;
-	    cend = pat[1];
-	    if (!cend)
+	    pend = pat+1;
+	    if (!*pend)
 		return 0;
-	    pat += 2;
+	    pat = Next(pend);
 	}
-	if (downcase(cstart) <= test && test <= downcase(cend))
+	if (Compare(pstart, test) <= 0 && Compare(test, pend) <= 0)
 	    ok = 1;
     }
     return 0;
 }
 
 #define ISDIRSEP(c) (pathname && isdirsep(c))
-#define PERIOD(s) (period && *(s) == '.' && \
-		  ((s) == string || ISDIRSEP((s)[-1])))
+#define PERIOD_S() (period && *s == '.' && \
+    (!s_prev || ISDIRSEP(*s_prev)))
+#define INC_S() (s = Next(s_prev = s))
 static int
 fnmatch(pat, string, flags)
     const char *pat;
@@ -138,25 +188,26 @@ fnmatch(pat, string, flags)
     int flags;
 {
     int c;
-    int test;
-    const char *s = string;
+    const char *test;
+    const char *s = string, *s_prev = 0;
     int escape = !(flags & FNM_NOESCAPE);
     int pathname = flags & FNM_PATHNAME;
     int period = !(flags & FNM_DOTMATCH);
     int nocase = flags & FNM_CASEFOLD;
 
-    while (c = *pat++) {
+    while (c = *pat) {
 	switch (c) {
 	case '?':
-	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
+	    if (!*s || ISDIRSEP(*s) || PERIOD_S())
 		return FNM_NOMATCH;
-	    s++;
+	    INC_S();
+	    ++pat;
 	    break;
 	case '*':
-	    while ((c = *pat++) == '*')
+	    while ((c = *++pat) == '*')
 		;
 
-	    if (PERIOD(s))
+	    if (PERIOD_S())
 		return FNM_NOMATCH;
 
 	    if (!c) {
@@ -168,45 +219,39 @@ fnmatch(pat, string, flags)
 	    else if (ISDIRSEP(c)) {
 		s = rb_path_next(s);
 		if (*s) {
-                    s++;
+		    INC_S();
 		    break;
                 }
 		return FNM_NOMATCH;
 	    }
 
-	    test = escape && c == '\\' ? *pat : c;
-	    test = downcase(test);
-	    pat--;
+	    test = escape && c == '\\' ? pat+1 : pat;
 	    while (*s) {
-		if ((c == '[' || downcase(*s) == test) &&
+		if ((c == '[' || Compare(s, test) == 0) &&
 		    !fnmatch(pat, s, flags | FNM_DOTMATCH))
 		    return 0;
 		else if (ISDIRSEP(*s))
 		    break;
-		s++;
+		INC_S();
 	    }
 	    return FNM_NOMATCH;
       
 	case '[':
-	    if (!*s || ISDIRSEP(*s) || PERIOD(s))
+	    if (!*s || ISDIRSEP(*s) || PERIOD_S())
 		return FNM_NOMATCH;
-	    pat = range(pat, *s, flags);
+	    pat = range(pat+1, s, flags);
 	    if (!pat)
 		return FNM_NOMATCH;
-	    s++;
+	    INC_S();
 	    break;
 
 	case '\\':
-	    if (escape
+	    if (escape && pat[1]
 #if defined DOSISH
-		&& *pat && strchr("*?[\\", *pat)
+		&& strchr("*?[\\", pat[1])
 #endif
 		) {
-		c = *pat;
-		if (!c)
-		    c = '\\';
-		else
-		    pat++;
+		c = *++pat;
 	    }
 	    /* FALLTHROUGH */
 
@@ -216,9 +261,10 @@ fnmatch(pat, string, flags)
 		;
 	    else
 #endif
-	    if(downcase(c) != downcase(*s))
+	    if(Compare(pat, s) != 0)
 		return FNM_NOMATCH;
-	    s++;
+	    INC_S();
+	    Inc(pat);
 	    break;
 	}
     }
@@ -768,93 +814,140 @@ dir_s_rmdir(obj, dir)
 
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
-has_magic(s, send, flags)
-     char *s, *send;
+has_magic(p, m, flags)
+     register char *p;
+     char **m;
      int flags;
 {
-    register char *p = s;
     register char c;
     int open = 0;
     int escape = !(flags & FNM_NOESCAPE);
 
-    while ((c = *p++) != '\0') {
+    while (c = *p++, c != '\0' && c != '/') {
 	switch (c) {
 	  case '?':
 	  case '*':
-	    return Qtrue;
+	    goto found;
 
 	  case '[':	/* Only accept an open brace if there is a close */
 	    open++;	/* brace to match it.  Bracket expressions must be */
 	    continue;	/* complete, according to Posix.2 */
 	  case ']':
 	    if (open)
-		return Qtrue;
+		goto found;
 	    continue;
 
 	  case '\\':
-	    if (escape && *p++ == '\0')
-		return Qfalse;
+	    if (escape && (c = *p++, c == '\0' || c == '/'))
+		goto miss;
+	    continue;
 	}
 
-	if (send && p >= send) break;
-    }
-    return Qfalse;
-}
-
-static char*
-extract_path(p, pend)
-    char *p, *pend;
-{
-    char *alloc;
-    int len;
-
-    len = pend - p;
-    alloc = ALLOC_N(char, len+1);
-    memcpy(alloc, p, len);
-    if (len > 1 && pend[-1] == '/'
-#if defined DOSISH_DRIVE_LETTER
-    && pend[-2] != ':'
-#endif
-    ) {
-	alloc[len-1] = 0;
-    }
-    else {
-	alloc[len] = 0;
+	p = Next(p-1);
     }
 
-    return alloc;
+  miss:
+    *m = p-1;
+    return 0;
+
+  found:
+    while (*p != '\0' && *p != '/')
+	Inc(p);
+    *m = p;
+    return 1;
 }
 
-static char*
-extract_elem(path)
-    char *path;
-{
-    char *pend;
-
-    pend = strchr(path, '/');
-    if (!pend) pend = path + strlen(path);
-
-    return extract_path(path, pend);
-}
-
-static void
-remove_backslashes(p)
+static int
+remove_backslashes(p, pend)
     char *p;
+    char *pend;
 {
-    char *pend = p + strlen(p);
     char *t = p;
+    char *s = p;
+    int n = 0;
 
-    while (p < pend) {
+    while (*p && p < pend) {
 	if (*p == '\\') {
-	    if (++p == pend) break;
+	    if (t != s) {
+		memmove(t, s, p - s);
+		n++;
+	    }
+	    t += p - s;
+	    s = ++p;
+	    if (!(*p && p < pend)) break;
 	}
-	*t++ = *p++;
+	Inc(p);
     }
-    *t = '\0';
+
+    while (*p++);
+
+    if (t != s) {
+	memmove(t, s, p - s); /* move '\0' too */
+	n++;
+    }
+
+    return n;
+}
+
+static int
+do_fnmatch(p, pend, string, flags)
+    char *p;
+    char *pend;
+    const char *string;
+    int flags;
+{
+    int ret;
+    char c;
+
+    c = *pend;
+    *pend = '\0'; /* should I allocate new string? */
+    ret = fnmatch(p, string, flags);
+    *pend = c;
+    return ret;
+}
+
+static int
+do_stat(path, pst)
+    const char *path;
+    struct stat *pst;
+{
+    int ret = stat(path, pst);
+    if (ret < 0 && errno != ENOENT)
+	rb_sys_warning(path);
+    return ret;
+}
+
+static int
+do_lstat(path, pst)
+    const char *path;
+    struct stat *pst;
+{
+    int ret = lstat(path, pst);
+    if (ret < 0 && errno != ENOENT)
+	rb_sys_warning(path);
+    return ret;
+}
+
+static DIR *
+do_opendir(path)
+    const char *path;
+{
+    DIR *dirp = opendir(path);
+    if (dirp == NULL && errno != ENOENT && errno != ENOTDIR)
+	rb_sys_warning(path);
+    return dirp;
 }
 
 #ifndef S_ISDIR
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#endif
+
+#ifndef S_ISLNK
+#  ifndef S_IFLNK
+#    define S_ISLNK(m) (0)
+#  else
+#    define S_ISLNK(m) ((m & S_IFMT) == S_IFLNK)
+#  endif
 #endif
 
 struct glob_args {
@@ -892,162 +985,155 @@ glob_call_func(func, path, arg)
 }
 
 static int
-glob_helper(path, sub, flags, func, arg)
+glob_helper(path, sub, separator, flags, func, arg) /* if separator p[-1] is removable '/' */
     char *path;
     char *sub;
+    int separator;
     int flags;
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
     struct stat st;
-    char *p, *m;
     int status = 0;
+    char *p = sub, *m, *buf;
+    DIR *dirp;
+    struct dirent *dp;
+    int recursive = 0;
+    int magical = 1;
 
-    p = sub ? sub : path;
-    if (!has_magic(p, 0, flags)) {
-#if defined DOSISH
-	remove_backslashes(path);
-#else
-	if (!(flags & FNM_NOESCAPE)) remove_backslashes(p);
-#endif
-	if (lstat(path, &st) == 0) {
-	    status = glob_call_func(func, path, arg);
-	    if (status) return status;
+    struct d_link {
+	char *name;
+	struct d_link *next;
+    } *tmp, *link, **tail = &link;
+
+    while (*p && !has_magic(p, &m, flags)) {
+	if (*m == '/') {
+	    separator = 1;
+	    p = m + 1;
 	}
-	else if (errno != ENOENT) {
-	    /* In case stat error is other than ENOENT and
-	       we may want to know what is wrong. */
-	    rb_sys_warning(path);
+	else {
+	    separator = 0;
+	    p = m;
+	}
+    }
+
+    if (!(flags & FNM_NOESCAPE)) {
+	int n = remove_backslashes(sub, p);
+	p -= n;
+	m -= n;
+    }
+
+    if (*p == '\0') { /* magic not found */
+        if (separator) {
+	    p[-1] = '\0';
+	    if (do_stat(path, &st) == 0 && S_ISDIR(st.st_mode)) {
+		p[-1] = '/';
+		return glob_call_func(func, path, arg);
+	    }
+	    else
+		p[-1] = '/';
+	}
+	else {
+	    if (do_lstat(path, &st) == 0)
+		return glob_call_func(func, path, arg);
 	}
 	return 0;
     }
 
-    while (p && !status) {
-	if (*p == '/') p++;
-	m = strchr(p, '/');
-	if (has_magic(p, m, flags)) {
-	    char *dir, *base, *magic, *buf;
-	    DIR *dirp;
-	    struct dirent *dp;
-	    int recursive = 0;
+    if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
+	char *t = p+3;
+	while (t[0] == '*' && t[1] == '*' && t[2] == '/') t += 3;
+	memmove(p, t, strlen(t)+1); /* move '\0' too */
+	magical = has_magic(p, &m, flags); /* next element */
+	recursive = 1;
+    }
 
-	    struct d_link {
-		char *path;
-		struct d_link *next;
-	    } *tmp, *link, **tail = &link;
+    if (path == p) {
+	dirp = do_opendir(".");
+	if (dirp == NULL) return 0;
+    }
+    else {
+	char *t = separator ? p-1 : p;
+	char c = *t;
+	*t = '\0';
+	dirp = do_opendir(path);
+	*t = c;
+	if (dirp == NULL) return 0;
+    }
 
-	    base = extract_path(path, p);
-	    if (path == p) dir = ".";
-	    else dir = base;
-
-	    magic = extract_elem(p);
-	    if (stat(dir, &st) < 0) {
-	        if (errno != ENOENT) rb_sys_warning(dir);
-	        free(base);
-	        free(magic);
-	        break;
+    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
+	const int n1 = p - path;
+	const int n2 = n1 + NAMLEN(dp);
+	const int ok = 0;
+	const int no = 1;
+	int is_dir = -1; /* not checked yet */
+	if (recursive && strcmp(".", dp->d_name) != 0 && strcmp("..", dp->d_name) != 0) {
+	    buf = ALLOC_N(char, n2+4+strlen(p)+1);
+	    memcpy(buf, path, n1);
+	    strcpy(buf+n1, dp->d_name);
+	    is_dir = no;
+	    if (do_lstat(buf, &st) == 0) {
+		if (S_ISDIR(st.st_mode)) {
+		   strcpy(buf+n2, "/**/");
+		   strcpy(buf+n2+4, p);
+		   status = glob_helper(buf, buf+n2+1, 1, flags, func, arg);
+		   is_dir = ok;
+		}
+		else if (S_ISLNK(st.st_mode) && do_stat(buf, &st) == 0 && S_ISDIR(st.st_mode)) {
+		   is_dir = ok;
+		}
 	    }
-	    if (S_ISDIR(st.st_mode)) {
-		if (m && strcmp(magic, "**") == 0) {
-		    int n = strlen(base);
-		    recursive = 1;
-		    buf = ALLOC_N(char, n+strlen(m)+3);
-		    sprintf(buf, "%s%s", base, *base ? m : m+1);
-		    status = glob_helper(buf, buf+n, flags, func, arg);
-		    free(buf);
-		    if (status) goto finalize;
-		}
-		dirp = opendir(dir);
-		if (dirp == NULL) {
-		    rb_sys_warning(dir);
-		    free(base);
-		    free(magic);
-		    break;
-		}
+	    free(buf);
+	    if (status) break;
+	}
+	if (is_dir == no && *m == '/') {
+	    continue;
+	}
+	if (magical && do_fnmatch(p, m, dp->d_name, flags) == 0) {
+	    buf = ALLOC_N(char, n2+1+1);
+	    memcpy(buf, path, n1);
+	    strcpy(buf+n1, dp->d_name);
+	    if (*m == '\0') {
+		status = glob_call_func(func, buf, arg);
+	    }
+	    else if (m[1] == '\0' && is_dir == ok) { /* *m == '/' */
+		strcpy(buf+n2, "/");
+		status = glob_call_func(func, buf, arg);
 	    }
 	    else {
-		free(base);
-		free(magic);
-		break;
+		tmp = ALLOC(struct d_link);
+		tmp->name = ALLOC_N(char, NAMLEN(dp)+1);
+		strcpy(tmp->name, dp->d_name);
+		*tail = tmp;
+		tail = &tmp->next;
 	    }
-
-#if defined DOSISH_DRIVE_LETTER
-#define BASE (*base && !((isdirsep(*base) && !base[1]) || (base[1] == ':' && isdirsep(base[2]) && !base[3])))
-#else
-#define BASE (*base && !(isdirsep(*base) && !base[1]))
-#endif
-
-	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-		if (recursive) {
-		    if (strcmp(".", dp->d_name) == 0 || strcmp("..", dp->d_name) == 0)
-			continue;
-		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
-		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
-		    if (lstat(buf, &st) < 0) {
-			if (errno != ENOENT) rb_sys_warning(buf);
-			free(buf);
-			continue;
-		    }
-		    if (S_ISDIR(st.st_mode)) {
-			char *t = buf+strlen(buf);
-		        strcpy(t, "/**");
-			strcpy(t+3, m);
-			status = glob_helper(buf, t, flags, func, arg);
-			free(buf);
-			if (status) break;
-			continue;
-		    }
-		    free(buf);
-		    continue;
-		}
-		if (fnmatch(magic, dp->d_name, flags) == 0) {
-		    buf = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
-		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
-		    if (!m) {
-			status = glob_call_func(func, buf, arg);
-			free(buf);
-			if (status) break;
-			continue;
-		    }
-		    tmp = ALLOC(struct d_link);
-		    tmp->path = buf;
-		    *tail = tmp;
-		    tail = &tmp->next;
-		}
-	    }
-	    closedir(dirp);
-	  finalize:
-	    *tail = 0;
-	    free(base);
-	    free(magic);
-	    if (link) {
-		while (link) {
-		    if (status == 0) {
-			if (stat(link->path, &st) == 0) {
-			    if (S_ISDIR(st.st_mode)) {
-				int len = strlen(link->path);
-				int mlen = strlen(m);
-				char *t = ALLOC_N(char, len+mlen+1);
-
-				sprintf(t, "%s%s", link->path, m);
-				status = glob_helper(t, t+len, flags, func, arg);
-				free(t);
-			    }
-			}
-			else {
-			    rb_sys_warning(link->path);
-			}
-		    }
-		    tmp = link;
-		    link = link->next;
-		    free(tmp->path);
-		    free(tmp);
-		}
-		break;
-	    }
+	    free(buf);
+	    if (status) break;
 	}
-	p = m;
     }
+
+    closedir(dirp);
+    *tail = 0;
+    while (link) {
+	if (status == 0) {
+	    const int n1 = p - path;
+	    const int n2 = n1 + strlen(link->name);
+	    buf = ALLOC_N(char, n2+strlen(m)+1);
+	    memcpy(buf, path, n1);
+	    strcpy(buf+n1, link->name);
+	    strcpy(buf+n2, m);
+	    status = glob_helper(buf, buf+n2+1, 1, flags, func, arg);
+	}
+	tmp = link;
+	link = link->next;
+	free(tmp->name);
+	free(tmp);
+    }
+
+    if (!magical) {
+	status = glob_helper(path, p, separator, flags, func, arg);
+    }
+
     return status;
 }
 
@@ -1058,7 +1144,17 @@ rb_glob2(path, flags, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    int status = glob_helper(path, 0, flags, func, arg);
+    char *root = path;
+    int status;
+
+#if defined DOSISH
+    flags |= FNM_CASEFOLD;
+    root = rb_path_skip_prefix(root);
+#endif
+
+    if (*root == '/') root++;
+
+    status = glob_helper(path, root, 0, flags, func, arg);
     if (status) rb_jump_tag(status);
 }
 
@@ -1122,7 +1218,7 @@ push_braces(ary, s, flags)
 	    lbrace = p;
 	    break;
 	}
-	p++;
+	Inc(p);
     }
     while (*p) {
 	if (*p == '{') nest++;
@@ -1130,7 +1226,7 @@ push_braces(ary, s, flags)
 	    rbrace = p;
 	    break;
 	}
-	p++;
+	Inc(p);
     }
 
     if (lbrace && rbrace) {
@@ -1140,13 +1236,13 @@ push_braces(ary, s, flags)
 	b = buf + (lbrace-s);
 	p = lbrace;
 	while (*p != '}') {
-	    t = p + 1;
-	    for (p = t; *p!='}' && *p!=','; p++) {
+	    t = Next(p);
+	    for (p = t; *p!='}' && *p!=','; Inc(p)) {
 		/* skip inner braces */
-		if (*p == '{') while (*p!='}') p++;
+		if (*p == '{') while (*p!='}') Inc(p);
 	    }
 	    memcpy(b, t, p-t);
-	    strcpy(b+(p-t), rbrace+1);
+	    strcpy(b+(p-t), Next(rbrace));
 	    push_braces(ary, buf, flags);
 	}
 	free(buf);
@@ -1157,7 +1253,6 @@ push_braces(ary, s, flags)
 }
 
 #define isdelim(c) ((c)=='\0')
-
 static VALUE
 rb_push_glob(str, flags)
     VALUE str;
@@ -1182,19 +1277,20 @@ rb_push_glob(str, flags)
     pend = p + RSTRING(str)->len;
 
     while (p < pend) {
-	t = buf;
 	nest = maxnest = 0;
 	while (p < pend && isdelim(*p)) p++;
+	t = p;
 	while (p < pend && !isdelim(*p)) {
 	    if (*p == '{') nest++, maxnest++;
 	    if (*p == '}') nest--;
 	    if (!noescape && *p == '\\') {
-		*t++ = *p++;
-		if (p == pend) break;
+		p++;
+		if (p == pend || isdelim(*p)) break;
 	    }
-	    *t++ = *p++;
+	    p = Next(p);
 	}
-	*t = '\0';
+	memcpy(buf, t, p - t);
+	buf[p - t] = '\0';
 	if (maxnest == 0) {
 	    push_globs(ary, buf, flags);
 	}

@@ -10318,13 +10318,16 @@ rb_thread_wait_for(time)
 	curr_thread == curr_thread->next ||
 	curr_thread->status == THREAD_TO_KILL) {
 	int n;
+	int thr_critical = rb_thread_critical;
 #ifndef linux
 	double d, limit;
 	limit = timeofday()+(double)time.tv_sec+(double)time.tv_usec*1e-6;
 #endif
 	for (;;) {
+	    rb_thread_critical = Qtrue;
 	    TRAP_BEG;
 	    n = select(0, 0, 0, 0, &time);
+	    rb_thread_critical = thr_critical;
 	    TRAP_END;
 	    if (n == 0) return;
 	    if (n < 0) {

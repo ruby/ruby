@@ -209,8 +209,8 @@ class CGI
     # session id is stored in a cookie.
     #
     # session_expires:: the time the current session expires, as a 
-    #                   +Time+ object.  If not set, the session will continue
-    #                   indefinitely.
+    #                   +Time+ object.  If not set, the session will terminate
+    #                   when the user's browser is closed.
     # session_domain:: the hostname domain for which this session is valid.
     #                  If not set, defaults to the hostname of the server.
     # session_secure:: if +true+, this session will only work over HTTPS.

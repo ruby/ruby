@@ -59,7 +59,7 @@
 #include <sys/stat.h>
 
 /* EMX has sys/param.h, but.. */
-#if defined(HAVE_SYS_PAAM_H) && !(defined(__EMX__) || defined(__HIUX_MPP__))
+#if defined(HAVE_SYS_PARAM_H) && !(defined(__EMX__) || defined(__HIUX_MPP__))
 # include <sys/param.h>
 #endif
 
@@ -1543,7 +1543,7 @@ rb_io_each_line(argc, argv, io)
 
 /*
  *  call-seq:
- *     ios.each_byte {|byte| block }  => nil
+ *     ios.each_byte {|byte| block }  => ios
  *  
  *  Calls the given block once for each byte (0..255) in <em>ios</em>,
  *  passing the byte as an argument. The stream must be opened for
@@ -4902,7 +4902,6 @@ argf_eof()
 	if (init_p == 0) return Qtrue;
 	ARGF_FORWARD();
 	if (rb_io_eof(current_file)) {
-	    next_p = 1;
 	    return Qtrue;
 	}
     }
@@ -4940,7 +4939,7 @@ argf_read(argc, argv)
     }
     if (NIL_P(str)) str = tmp;
     else rb_str_append(str, tmp);
-    if (NIL_P(tmp) || NIL_P(argv[0])) {
+    if (NIL_P(tmp) || NIL_P(length)) {
 	if (next_p != -1) {
 	    argf_close(current_file);
 	    next_p = 1;
@@ -5021,7 +5020,7 @@ argf_each_byte()
     while (!NIL_P(byte = argf_getc())) {
 	rb_yield(byte);
     }
-    return Qnil;
+    return argf;
 }
 
 static VALUE

@@ -35,7 +35,7 @@ main()
   socket(AF_INET6, SOCK_STREAM, 0);
 }
 EOF
-    $CFLAGS+=" -DENABLE_IPV6"
+    $CPPFLAGS+=" -DENABLE_IPV6"
     $ipv6 = true
   end
 end
@@ -49,7 +49,7 @@ if $ipv6
 #include <netinet/in.h>
 EOF
     $ipv6type = "inria"
-    $CFLAGS="-DINET6 "+$CFLAGS
+    $CPPFLAGS="-DINET6 "+$CPPFLAGS
   elsif macro_defined?("__KAME__", <<EOF)
 #include <netinet/in.h>
 EOF
@@ -57,37 +57,38 @@ EOF
     $ipv6lib="inet6"
     $ipv6libdir="/usr/local/v6/lib"
     $ipv6trylibc=true
-    $CFLAGS="-DINET6 "+$CFLAGS
+    $CPPFLAGS="-DINET6 "+$CPPFLAGS
   elsif File.directory? "/usr/inet6"
     $ipv6type = "linux"
     $ipv6lib="inet6"
     $ipv6libdir="/usr/inet6/lib"
-    $CFLAGS="-DINET6 -I/usr/inet6/include "+$CFLAGS
+    $CPPFLAGS="-DINET6 -I/usr/inet6/include "+$CPPFLAGS
   elsif macro_defined?("_TOSHIBA_INET6", <<EOF)
 #include <sys/param.h>
 EOF
     $ipv6type = "toshiba"
     $ipv6lib="inet6"
     $ipv6libdir="/usr/local/v6/lib"
-    $CFLAGS="-DINET6 "+$CFLAGS
+    $CPPFLAGS="-DINET6 "+$CPPFLAGS
   elsif macro_defined?("__V6D__", <<EOF)
 #include </usr/local/v6/include/sys/v6config.h>
 EOF
     $ipv6type = "v6d"
     $ipv6lib="v6"
     $ipv6libdir="/usr/local/v6/lib"
-    $CFLAGS="-DINET6 -I/usr/local/v6/include "+$CFLAGS
+    $CFLAGS="-I/usr/local/v6/include "+$CFLAGS
+    $CPPFLAGS="-DINET6 "+$CPPFLAGS
   elsif macro_defined?("_ZETA_MINAMI_INET6", <<EOF)
 #include <sys/param.h>
 EOF
     $ipv6type = "zeta"
     $ipv6lib="inet6"
     $ipv6libdir="/usr/local/v6/lib"
-    $CFLAGS="-DINET6 "+$CFLAGS
+    $CPPFLAGS="-DINET6 "+$CPPFLAGS
   else
     $ipv6lib=with_config("ipv6-lib", nil)
     $ipv6libdir=with_config("ipv6-libdir", nil)
-    $CFLAGS="-DINET6 "+$CFLAGS
+    $CPPFLAGS="-DINET6 "+$CPPFLAGS
   end
   
   if $ipv6lib
@@ -147,7 +148,7 @@ main()
    return 0;
 }
 EOF
-    $CFLAGS="-DHAVE_SOCKADDR_STORAGE "+$CFLAGS
+    $CPPFLAGS="-DHAVE_SOCKADDR_STORAGE "+$CPPFLAGS
 else      #   doug's fix, NOW add -Dss_family... only if required!
 $CPPFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
   if try_link(<<EOF)
@@ -304,9 +305,9 @@ end
       
 case with_config("lookup-order-hack", "UNSPEC")
 when "INET"
-  $CFLAGS="-DLOOKUP_ORDER_HACK_INET "+$CFLAGS
+  $CPPFLAGS="-DLOOKUP_ORDER_HACK_INET "+$CPPFLAGS
 when "INET6"
-  $CFLAGS="-DLOOKUP_ORDER_HACK_INET6 "+$CFLAGS
+  $CPPFLAGS="-DLOOKUP_ORDER_HACK_INET6 "+$CPPFLAGS
 when "UNSPEC"
   # nothing special
 else
@@ -351,7 +352,7 @@ EOF
 end
 
 if have_getaddrinfo
-  $CFLAGS="-DHAVE_GETADDRINFO "+$CFLAGS
+  $CPPFLAGS="-DHAVE_GETADDRINFO "+$CPPFLAGS
 else
   $CFLAGS="-I. "+$CFLAGS
   $objs += ["getaddrinfo.#{$OBJEXT}"]

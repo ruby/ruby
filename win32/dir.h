@@ -10,6 +10,7 @@ struct direct
     long d_namlen;
     ino_t d_ino;
     char d_name[256];
+    char d_isdir;
 };
 typedef struct {
     char *start;
@@ -17,6 +18,8 @@ typedef struct {
     long size;
     long nfiles;
     struct direct dirstr;
+    char *bits;
+    long bitpos;
 } DIR;
 
 

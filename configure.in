@@ -707,7 +707,7 @@ if test x"$enable_pthread" = xyes; then
     else
 	AC_MSG_WARN("Don't know how to find pthread library on your system -- thread support disabled")
     fi
-    AC_CHECK_FUNC(nanosleep)
+    AC_CHECK_FUNCS(nanosleep)
     if test x"$ac_cv_func_nanosleep" = xno; then
        AC_CHECK_LIB(rt, nanosleep)
        if test x"$ac_cv_lib_rt_nanosleep" = xyes; then
