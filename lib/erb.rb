@@ -414,7 +414,7 @@ class ERB
     if @safe_level
       th = Thread.start { 
 	$SAFE = @safe_level
-	eval(@src, b)
+	eval(@src, b, (@filename || '(erb)'), 1)
       }
       return th.value
     else
