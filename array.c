@@ -1529,8 +1529,12 @@ rb_ary_times(ary, times)
     }
 
     len = NUM2LONG(times);
+    if (len == 0) return rb_ary_new2(0);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
+    }
+    if (LONG_MAX/len < RARRAY(ary)->len) {
+	rb_raise(rb_eArgError, "argument too big");
     }
     len *= RARRAY(ary)->len;
 
