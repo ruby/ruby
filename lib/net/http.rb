@@ -889,7 +889,7 @@ module Net
       if not req.response_body_permitted? and @close_on_empty_response then
         req['connection'] = 'close'
       end
-      req['host'] = addr_port()
+      req['host'] ||= addr_port()
     end
 
     def end_transport( req, res )
