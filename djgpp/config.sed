@@ -1,4 +1,4 @@
-/^SHELL/s,/bin/sh,$(COMPSEC),
+/^SHELL/s,/bin/sh,$(COMSPEC),
 s%@srcdir@%.%g
 s%@top_srcdir@%..%
 s%@CFLAGS@%-O2%g

@@ -1,4 +1,4 @@
-SHELL = $(COMPSEC)
+SHELL = $(COMSPEC)
 
 #### Start of system configuration section. ####
 

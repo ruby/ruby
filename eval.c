@@ -6585,10 +6585,10 @@ rb_mod_define_method(argc, argv, mod)
     if (TYPE(body) != T_DATA) {
 	/* type error */
     }
-    if (RDATA(body)->dmark == bm_mark) {
+    if (RDATA(body)->dmark == (RUBY_DATA_FUNC)bm_mark) {
 	rb_add_method(mod, id, NEW_DMETHOD(method_unbind(body)), NOEX_PUBLIC);
     }
-    else if (RDATA(body)->dmark != blk_mark) {
+    else if (RDATA(body)->dmark != (RUBY_DATA_FUNC)blk_mark) {
 	rb_add_method(mod, id, NEW_BMETHOD(body), NOEX_PUBLIC);
     }
     else {

@@ -1,3 +1,9 @@
+Wed Dec  6 18:07:13 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* djgpp/config.sed, win32/Makefile.sub: typo.
+
+	* eval.c (rb_mod_define_method): avoid VC4.0 warnings.
+
 Mon Dec  4 13:44:01 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/jcode.rb: consider multibyte. not /n.
