@@ -1,3 +1,9 @@
+Fri Oct 19 23:40:37 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* variable.c (remove_trace): should not access already freed area.
+
+	* variable.c (rb_f_untrace_var): fix memory leak.
+
 Fri Oct 19 17:55:14 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* marshal.c (w_uclass): cloned class is not user
