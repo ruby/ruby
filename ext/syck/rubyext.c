@@ -828,10 +828,10 @@ syck_parser_bufsize_set( self, size )
     SyckParser *parser;
 
     if ( rb_respond_to( size, s_to_i ) ) {
-        int size = NUM2INT(rb_funcall(size, s_to_i, 0));
+        int n = NUM2INT(rb_funcall(size, s_to_i, 0));
 
         Data_Get_Struct(self, SyckParser, parser);
-        parser->bufsize = size;
+        parser->bufsize = n;
     }
     return self;
 }

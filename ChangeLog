@@ -1,3 +1,8 @@
+Fri Jan 21 00:37:09 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/syck/rubyext.c (syck_parser_bufsize_set): avoid VC++ warning
+	  "local variable 'size' used without having been initialized".
+
 Wed Jan 19 18:02:19 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/ipaddr.rb (to_s, test_to_s): too many colons with some cases.
