@@ -3,10 +3,14 @@ option nodynamic
 #Win32API
 curses
 #dbm
+digest
+digest/md5
+digest/rmd160
+digest/sha1
+digest/sha2
 etc
 fcntl
 #gdbm
-md5
 nkf
 #pty
 #readline

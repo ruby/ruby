@@ -118,6 +118,7 @@ missing/strftime.c:
 missing/strncasecmp.c:
 missing/strstr.c:
 missing/strtol.c:
+ext/digest/sha1/sha1.[ch]:
 
   These files are all under public domain.
 
@@ -198,8 +199,7 @@ missing/vsnprintf.c:
     From ftp://ftp.cs.berkeley.edu/pub/4bsd/README.Impt.License.Change
     paragraph 3 above is now null and void.
 
-ext/md5/md5c.c:
-ext/md5/md5.h:
+ext/digest/md5/md5.[ch]:
 
   These files are under the following license.  Ruby uses modified
   versions of them.
@@ -225,6 +225,59 @@ ext/md5/md5.h:
     L. Peter Deutsch
     ghost@aladdin.com
 
+ext/digest/rmd160/rmd160.[ch]:
+
+  These files have the following copyright information, and by the
+  author we are allowed to use it under the new-style BSD license.
+
+    AUTHOR:   Antoon Bosselaers, ESAT-COSIC
+              (Arranged for libc by Todd C. Miller)
+    DATE:     1 March 1996
+
+    Copyright (c) Katholieke Universiteit Leuven
+    1996, All Rights Reserved
+
+ext/digest/rmd160/rmd160hl.c:
+ext/digest/sha1/sha1hl.c:
+
+  These files are under the beer-ware license.
+
+    "THE BEER-WARE LICENSE" (Revision 42):
+    <phk@login.dkuug.dk> wrote this file.  As long as you retain this notice you
+    can do whatever you want with this stuff. If we meet some day, and you think
+    this stuff is worth it, you can buy me a beer in return.   Poul-Henning Kamp
+
+ext/digest/sha2/sha2.[ch]:
+ext/digest/sha2/sha2hl.c:
+
+  These files are under the new-style BSD license.
+
+    Copyright 2000 Aaron D. Gifford.  All rights reserved.
+
+    Redistribution and use in source and binary forms, with or without
+    modification, are permitted provided that the following conditions
+    are met:
+    1. Redistributions of source code must retain the above copyright
+       notice, this list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright
+       notice, this list of conditions and the following disclaimer in the
+       documentation and/or other materials provided with the distribution.
+    3. Neither the name of the copyright holder nor the names of contributors
+       may be used to endorse or promote products derived from this software
+       without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE AUTHOR(S) AND CONTRIBUTOR(S) ``AS IS'' AND
+    ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+    ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR(S) OR CONTRIBUTOR(S) BE LIABLE
+    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
+    OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+    HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+    LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
+    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+    SUCH DAMAGE.
+
 ext/nkf/nkf1.7/nkf.c:
 
   This file is under the following license.  So to speak, it is
@@ -242,7 +295,7 @@ ext/socket/addrinfo.h:
 ext/socket/getaddrinfo.c:
 ext/socket/getnameinfo.c:
 
-  These files are under the BSD license.
+  These files are under the new-style BSD license.
 
     Copyright (C) 1995, 1996, 1997, 1998, and 1999 WIDE Project.
     All rights reserved.
