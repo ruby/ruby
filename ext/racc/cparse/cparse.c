@@ -1,4 +1,4 @@
-/* vi:set sw=4:
+/*
 
     cparse.c
   
@@ -519,7 +519,8 @@ parse_main(v, tok, val, resume)
         }
         else if (act == -(v->reduce_n)) {
             goto error;
-          error_return: ;
+          error_return:
+            ;   /* goto label requires stmt */
         }
         else if (act == v->shift_n) {
             D(puts("accept"));
@@ -566,55 +567,54 @@ parse_main(v, tok, val, resume)
     /* check if we can shift/reduce error token */
     D(printf("(err) k1=%ld\n", v->curstate));
     D(printf("(err) k2=%d (error)\n", ERROR_TOKEN));
-  e_lookup:
-    tmp = AREF(v->action_pointer, v->curstate);
-    if (NIL_P(tmp)) goto e_notfound;
-    D(puts("(err) pointer[k1] true"));
+    while (1) {
+        tmp = AREF(v->action_pointer, v->curstate);
+        if (NIL_P(tmp)) goto e_notfound;
+        D(puts("(err) pointer[k1] true"));
 
-    i = NUM2LONG(tmp) + ERROR_TOKEN;
-    D(printf("(err) i=%ld\n", i));
-    if (i < 0) goto e_notfound;
+        i = NUM2LONG(tmp) + ERROR_TOKEN;
+        D(printf("(err) i=%ld\n", i));
+        if (i < 0) goto e_notfound;
 
-    vact = AREF(v->action_table, i);
-    if (NIL_P(vact)) {
-        D(puts("(err) table[i] == nil"));
-        goto e_notfound;
+        vact = AREF(v->action_table, i);
+        if (NIL_P(vact)) {
+            D(puts("(err) table[i] == nil"));
+            goto e_notfound;
+        }
+        D(printf("(err) table[i]=%ld\n", NUM2LONG(vact)));
+
+        tmp = AREF(v->action_check, i);
+        if (NIL_P(tmp)) {
+            D(puts("(err) check[i] == nil"));
+            goto e_notfound;
+        }
+        if (NUM2LONG(tmp) != v->curstate) {
+            D(puts("(err) check[i]!=k1 or nil"));
+            goto e_notfound;
+        }
+
+        D(puts("(err) found: can handle error token"));
+        act = NUM2LONG(vact);
+        break;
+          
+      e_notfound:
+        D(puts("(err) not found: can't handle error token; pop"));
+
+        if (RARRAY(v->state)->len == 0) {
+            v->retval = Qnil;
+            v->fin = CP_FIN_CANTPOP;
+            return;
+        }
+        POP(v->state);
+        POP(v->vstack);
+        v->curstate = num_to_long(LAST_I(v->state));
+        if (v->debug) {
+            POP(v->tstack);
+            rb_funcall(v->parser, id_d_e_pop,
+                       3, v->state, v->tstack, v->vstack);
+        }
     }
-    D(printf("(err) table[i]=%ld\n", NUM2LONG(vact)));
 
-    tmp = AREF(v->action_check, i);
-    if (NIL_P(tmp)) {
-        D(puts("(err) check[i] == nil"));
-        goto e_notfound;
-    }
-    if (NUM2LONG(tmp) != v->curstate) {
-        D(puts("(err) check[i]!=k1 or nil"));
-        goto e_notfound;
-    }
-
-    D(puts("(err) found: can handle error token"));
-    act = NUM2LONG(vact);
-    goto e_handle_act;
-      
-  e_notfound:
-    D(puts("(err) not found: can't handle error token; pop"));
-
-    if (RARRAY(v->state)->len == 0) {
-        v->retval = Qnil;
-        v->fin = CP_FIN_CANTPOP;
-        return;
-    }
-    POP(v->state);
-    POP(v->vstack);
-    v->curstate = num_to_long(LAST_I(v->state));
-    if (v->debug) {
-        POP(v->tstack);
-        rb_funcall(v->parser, id_d_e_pop,
-                   3, v->state, v->tstack, v->vstack);
-    }
-    goto e_lookup;
-
-  e_handle_act:
     /* shift/reduce error token */
     if (act > 0 && act < v->shift_n) {
         D(puts("e shift"));
