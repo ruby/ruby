@@ -1,3 +1,8 @@
+Sun Nov 25 21:02:18 2001  Usaku Nakamura  <usa@ruby-lang.org>
+
+	* parse.y (str_extend): change types of second and third arguments
+	  from char to int.
+
 Thu Nov 22 00:28:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (str_extend): should check nesting parentheses in #{}.

@@ -2048,7 +2048,7 @@ none		: /* none */
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
 
-static NODE *str_extend _((NODE*,char,char));
+static NODE *str_extend _((NODE*,int,int));
 
 #define LEAVE_BS 1
 
@@ -3879,7 +3879,7 @@ yylex()
 static NODE*
 str_extend(list, term, paren)
     NODE *list;
-    char term, paren;
+    int term, paren;
 {
     int c;
     int brace = -1;
