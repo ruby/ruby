@@ -1,8 +1,8 @@
 #
 #   finalizer.rb - 
 #   	$Release Version: 0.2$
-#   	$Revision: 1.1.1.2.2.1 $
-#   	$Date: 1998/01/16 12:36:04 $
+#   	$Revision: 1.1.1.2.2.2 $
+#   	$Date: 1998/01/19 05:08:24 $
 #   	by Keiju ISHITSUKA
 #
 # --
@@ -44,11 +44,11 @@
 #
 
 module Finalizer
-  RCS_ID='-$Header: /home/cvsroot/ruby/lib/finalize.rb,v 1.1.1.2.2.1 1998/01/16 12:36:04 matz Exp $-'
+  RCS_ID='-$Header: /home/cvsroot/ruby/lib/finalize.rb,v 1.1.1.2.2.2 1998/01/19 05:08:24 matz Exp $-'
 
   # Dependency: {id => [[dependant, method, opt], ...], ...}
   Dependency = {}
-  
+
   # 依存関係 R_method(obj, dependant) の追加
   def add_dependency(obj, dependant, method = :finalize, *opt)
     ObjectSpace.call_finalizer(obj)
@@ -60,7 +60,7 @@ module Finalizer
     end
   end
   alias add add_dependency
-  
+
   # 依存関係 R_method(obj, dependant) の削除
   def delete_dependency(obj, dependant, method = :finalize)
     id = obj.id
@@ -72,7 +72,7 @@ module Finalizer
     end
   end
   alias delete delete_dependency
-  
+
   # 依存関係 R_*(obj, dependant) の削除
   def delete_all_dependency(obj, dependant)
     id = obj.id
@@ -115,7 +115,7 @@ module Finalizer
     end
   end
   alias finalize finalize_dependency
-  
+
   # 依存関連 R_*(id, dependtant) で結ばれるdependantをfinalizeする.
   def finalize_all_dependency(id, dependant)
     for assoc in Dependency[id]
@@ -130,21 +130,21 @@ module Finalizer
       Dependency.delete(id) if assoc.empty?
     end
   end
-  
+
   # 依存関連 R_method(*, dependtant) で結ばれるdependantをfinalizeする.
   def finalize_by_dependant(dependant, method = :finalize)
     for id in Dependency.keys
       finalize(id, dependant, method)
     end
   end
-  
+
   # 依存関連 R_*(*, dependtant) で結ばれるdependantをfinalizeする.
   def fainalize_all_by_dependant(dependant)
     for id in Dependency.keys
       finalize_all_dependency(id, dependant)
     end
   end
-  
+
   # Finalizerに登録されている全てのdependantをfinalizeする
   def finalize_all
     for id, assocs in Dependency
@@ -154,16 +154,19 @@ module Finalizer
       assocs.clear
     end
   end
-  
+
   # finalize_* を安全に呼び出すためのイテレータ
   def safe
     old_status, Thread.critical = Thread.critical, true
     ObjectSpace.remove_finalizer(Proc)
-    yield
-    ObjectSpace.add_finalizer(Proc)
-    Thread.critical = old_status
+    begin
+      yield
+    ensure
+      ObjectSpace.add_finalizer(Proc)
+      Thread.critical = old_status
+    end
   end
-  
+
   # ObjectSpace#add_finalizerへの登録関数
   def final_of(id)
     if assocs = Dependency.delete(id)
@@ -172,19 +175,19 @@ module Finalizer
       end
     end
   end
-  
+
   Proc = proc{|id| final_of(id)}
   ObjectSpace.add_finalizer(Proc)
 
   module_function :add
   module_function :add_dependency
-  
+
   module_function :delete
   module_function :delete_dependency
   module_function :delete_all_dependency
   module_function :delete_by_dependant
   module_function :delete_all_by_dependant
-  
+
   module_function :finalize
   module_function :finalize_dependency
   module_function :finalize_all_dependency
@@ -193,8 +196,8 @@ module Finalizer
   module_function :finalize_all
 
   module_function :safe
-  
+
   module_function :final_of
   private_class_method :final_of
-  
+
 end
