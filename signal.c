@@ -191,7 +191,7 @@ signo2signm(no)
     return 0;
 }
 
-char *
+const char *
 ruby_signal_name(no)
     int no;
 {

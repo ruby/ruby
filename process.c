@@ -160,7 +160,7 @@ pst_inspect(st)
     str = rb_str_new2(buf);
     if (WIFSTOPPED(status)) {
 	int stopsig = WSTOPSIG(status);
-	char *signame = ruby_signal_name(stopsig);
+	const char *signame = ruby_signal_name(stopsig);
 	if (signame) {
 	    snprintf(buf, sizeof(buf), ",stopped(SIG%s=%d)", signame, stopsig);
 	}
@@ -171,7 +171,7 @@ pst_inspect(st)
     }
     if (WIFSIGNALED(status)) {
 	int termsig = WTERMSIG(status);
-	char *signame = ruby_signal_name(termsig);
+	const char *signame = ruby_signal_name(termsig);
 	if (signame) {
 	    snprintf(buf, sizeof(buf), ",signaled(SIG%s=%d)", signame, termsig);
 	}

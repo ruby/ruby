@@ -366,7 +366,7 @@ Init_etc()
     rb_define_module_function(mEtc, "group", etc_group, 0);
     rb_define_module_function(mEtc, "setgrent", etc_setgrent, 0);
     rb_define_module_function(mEtc, "endgrent", etc_endgrent, 0);
-    rb_define_module_function(mEtc, "getgrent", etc_g,etgrent, 0);
+    rb_define_module_function(mEtc, "getgrent", etc_getgrent, 0);
 
     sPasswd =  rb_struct_define("Passwd",
 				"name", "passwd", "uid", "gid",

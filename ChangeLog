@@ -1,3 +1,11 @@
+Thu Oct  2 00:14:16 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* signal.c (ruby_signal_name): adjust to the prototype.
+
+	* process.c (pst_inspect): ditto.
+
+	* ext/etc/etc.c (Init_etc): typo.
+
 Wed Oct  1 20:49:41 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (heaps): manage slots and limits together.  [ruby-dev:21453]
