@@ -1,3 +1,7 @@
+Sun Jul 23 12:55:04 2000  Dave Thomas  <Dave@Thomases.com>
+
+       * string.c (rb_str_rindex): Support negative end position.
+
 Fri Jul 21 17:35:01 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (aref_args): command_call now be permitted as
