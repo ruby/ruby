@@ -1752,9 +1752,10 @@ module RDoc
 	else
           other = TopLevel.find_class_named(name)
           unless other
-            other = @top_level.add_class(NormalClass, name, nil)
-            other.record_location(@top_level)
-            other.comment = comment
+#            other = @top_level.add_class(NormalClass, name, nil)
+#            other.record_location(@top_level)
+#            other.comment = comment
+            other = NormalClass.new("Dummy", nil)
           end
           read_documentation_modifiers(other, CLASS_MODIFIERS)
           parse_statements(other, SINGLE, &block)

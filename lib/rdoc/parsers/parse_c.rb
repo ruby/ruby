@@ -340,8 +340,10 @@ module RDoc
                       meth_body, param_count, source_file = nil)
       
       @stats.num_methods += 1
+      class_name = @known_classes[var_name]
 
-      class_name = @known_classes[var_name] || var_name
+      return unless class_name
+
       class_obj  = find_class(var_name, class_name)
       
       if class_obj
