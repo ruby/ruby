@@ -198,7 +198,7 @@ Tue Nov 19 02:34:18 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 Mon Nov 18 02:59:31 2002  Akinori MUSHA  <knu@iDaemons.org>
 
-	* lib/tempfile.rb: Make this libary thread safe.
+	* lib/tempfile.rb: Make this library thread safe.
 
 	* lib/tempfile.rb: Do not pick a name which was once used and is
 	  still scheduled for removal.
@@ -3669,7 +3669,7 @@ Tue Apr  3 15:29:10 2001  Akinori MUSHA  <knu@iDaemons.org>
 	* configure.in: Link libc_r against the ruby executable on
 	  FreeBSD, which is the first attempt to work around a certain
 	  problem regarding pthread on FreeBSD.  It should make ruby/libruby
-	  happy when it loads an extention to a library compiled and linked
+	  happy when it loads an extension to a library compiled and linked
 	  with -pthread.  Note, however, that libruby is _not_ linked with
 	  libc_r so as not to mess up pthread unfriendly stuff including
 	  apache+mod_ruby and vim6+ruby_interp.
