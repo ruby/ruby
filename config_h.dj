@@ -65,7 +65,8 @@
 #define FILE_COUNT _cnt
 #define DLEXT ".o"
 #define RUBY_LIB "/usr/local/lib/ruby/1.4"
-#define RUBY_SITE_LIB "/usr/local/lib/ruby/1.4/site_ruby"
+#define RUBY_SITE_LIB "/usr/local/lib/ruby/site_ruby"
+#define RUBY_SITE_LIB2 "/usr/local/lib/ruby/site_ruby/1.4"
 #define RUBY_PLATFORM "i386-djgpp"
 #define RUBY_ARCHLIB "/usr/local/lib/ruby/1.4/i386-djgpp"
-#define RUBY_SITE_ARCHLIB "/usr/local/lib/ruby/1.4/site_ruby/i386-djgpp"
+#define RUBY_SITE_ARCHLIB "/usr/local/lib/ruby/site_ruby/1.4/i386-djgpp"

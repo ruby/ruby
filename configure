@@ -4678,15 +4678,23 @@ test "$program_suffix" != NONE &&
   ri_suffix=$program_suffix
 
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
-RUBY_LIB_PATH="${prefix}/lib/ruby/${MAJOR}.${MINOR}"
+RUBY_LIB_PREFIX="${prefix}/lib/ruby"
+RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
+RUBY_SITE_LIB_PATH="${RUBY_LIB_PREFIX}/site_ruby"
+RUBY_SITE_LIB_PATH2="${RUBY_SITE_LIB_PATH}/${MAJOR}.${MINOR}"
+
 cat >> confdefs.h <<EOF
 #define RUBY_LIB "${RUBY_LIB_PATH}"
 EOF
 
-RUBY_SITE_LIB_PATH="${RUBY_LIB_PATH}/site_ruby"
 cat >> confdefs.h <<EOF
 #define RUBY_SITE_LIB "${RUBY_SITE_LIB_PATH}"
 EOF
+
+cat >> confdefs.h <<EOF
+#define RUBY_SITE_LIB2 "${RUBY_SITE_LIB_PATH2}"
+EOF
+
 
 
 configure_args=$ac_configure_args
