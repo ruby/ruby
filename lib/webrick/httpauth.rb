@@ -8,7 +8,6 @@
 #
 # $IPR: httpauth.rb,v 1.14 2003/07/22 19:20:42 gotoyuzo Exp $
 
-require 'base64'
 require 'webrick/httpauth/basicauth'
 require 'webrick/httpauth/digestauth'
 require 'webrick/httpauth/htpasswd'
