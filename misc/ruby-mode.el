@@ -222,7 +222,7 @@ Also ignores spaces after parenthesis when 'space."
   (make-variable-buffer-local 'comment-column)
   (setq comment-column ruby-comment-column)
   (make-variable-buffer-local 'comment-start-skip)
-  (setq comment-start-skip "\\(^\\|\\s-\\);?#+ *")
+  (setq comment-start-skip "#+ *")
   (setq indent-tabs-mode ruby-indent-tabs-mode)
   (make-local-variable 'parse-sexp-ignore-comments)
   (setq parse-sexp-ignore-comments t)
@@ -731,8 +731,10 @@ The variable ruby-indent-level controls the amount of indentation.
 		      (not (looking-at ruby-block-hanging-re))
 		      (eq (ruby-deep-indent-paren-p t) 'space)
 		      (not (bobp)))
-		     (ruby-beginning-of-arg (or begin parse-start) (point))
-		     (current-column))
+		     (save-excursion
+		       (widen)
+		       (ruby-beginning-of-arg (or begin parse-start) (point))
+		       (current-column)))
 		    (t
 		     (+ indent ruby-indent-level))))))))
 	indent)))
@@ -802,7 +804,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	 ((> start pos)
 	  (setq done t)))))
       (if done
-	  (progn
+	  (save-excursion
 	    (back-to-indentation)
 	    (if (looking-at ruby-block-mid-re)
 		(setq done nil))))))

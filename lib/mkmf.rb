@@ -538,6 +538,26 @@ def have_header(header, &b)
   end
 end
 
+def find_header(header, *paths)
+  checking_for header do
+    if try_cpp(cpp_include(header))
+      true
+    else
+      found = false
+      paths.each do |dir|
+        opt = "-I#{dir}"
+        if try_cpp(cpp_include(header), opt)
+          $INCFLAGS += " "
+          $INCFLAGS += opt
+          found = true
+          break
+        end
+      end
+      found
+    end
+  end
+end
+
 def have_struct_member(type, member, header = nil, &b)
   checking_for "#{type}.#{member}" do
     if try_compile(<<"SRC", &b)

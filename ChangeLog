@@ -333,6 +333,10 @@ Sat Jan 31 01:09:41 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/logger.rb: leading 0 padding of timestamp usec part.
 
+Fri Jan 30 18:53:23 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (KR_REHASH): wrong hash value on sizeof(long) > sizeof(int).
+
 Thu Jan 29 23:11:57 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (DLEXT2): removed.  Ruby does not treat
