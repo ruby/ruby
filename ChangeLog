@@ -1,3 +1,13 @@
+Wed Dec  1 06:13:00 2004  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/nkf.c: add constant NKF::VERSION
+
+	* ext/nkf/nkf.c(guess): this becomes an alias of guess2
+
+	* ext/nkf/test.rb: add --no-cp932
+
+	* ext/nkf/nkf-utf8/nkf.c: original nkf2 revision 1.47
+
 Wed Dec  1 02:21:02 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (sighandler): call handler immediately only for default
