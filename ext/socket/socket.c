@@ -65,7 +65,6 @@
 #include "sockport.h"
 
 static int do_not_reverse_lookup = 0;
-#define FMODE_NOREVLOOKUP 0x100
 
 VALUE rb_cBasicSocket;
 VALUE rb_cIPSocket;
@@ -179,9 +178,6 @@ init_sock(sock, fd)
     fp->f = rb_fdopen(fd, "r");
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
-    if (do_not_reverse_lookup) {
-	fp->mode |= FMODE_NOREVLOOKUP;
-    }
     rb_io_synchronized(fp);
 
     return sock;
@@ -396,35 +392,7 @@ bsock_send(argc, argv, sock)
     return INT2FIX(n);
 }
 
-static VALUE
-bsock_do_not_reverse_lookup(sock)
-    VALUE sock;
-{
-    OpenFile *fptr;
-
-    GetOpenFile(sock, fptr);
-    return (fptr->mode & FMODE_NOREVLOOKUP) ? Qtrue : Qfalse;
-}
-
-static VALUE
-bsock_do_not_reverse_lookup_set(sock, state)
-    VALUE sock;
-    VALUE state;
-{
-    OpenFile *fptr;
-
-    rb_secure(4);
-    GetOpenFile(sock, fptr);
-    if (RTEST(state)) {
-	fptr->mode |= FMODE_NOREVLOOKUP;
-    }
-    else {
-	fptr->mode &= ~FMODE_NOREVLOOKUP;
-    }
-    return sock;
-}
-
-static VALUE ipaddr _((struct sockaddr*, int));
+static VALUE ipaddr _((struct sockaddr*));
 #ifdef HAVE_SYS_UN_H
 static VALUE unixaddr _((struct sockaddr_un*));
 #endif
@@ -492,7 +460,7 @@ s_recvfrom(sock, argc, argv, from)
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 #endif
-	return rb_assoc_new(str, ipaddr((struct sockaddr*)buf, fptr->mode & FMODE_NOREVLOOKUP));
+	return rb_assoc_new(str, ipaddr((struct sockaddr*)buf));
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
 	return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf));
@@ -529,15 +497,6 @@ bsock_do_not_rev_lookup_set(self, val)
 }
 
 static void
-raise_socket_error(reason, error)
-    char *reason;
-    int error;
-{
-    if (error == EAI_SYSTEM) rb_sys_fail(reason);
-    rb_raise(rb_eSocket, "%s: %s", reason, gai_strerror(error));
-}
-
-static void
 make_ipaddr0(addr, buf, len)
     struct sockaddr *addr;
     char *buf;
@@ -547,7 +506,7 @@ make_ipaddr0(addr, buf, len)
 
     error = getnameinfo(addr, SA_LEN(addr), buf, len, NULL, 0, NI_NUMERICHOST);
     if (error) {
-	raise_socket_error("getnameinfo", error);
+	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
     }
 }
 
@@ -666,7 +625,8 @@ sock_addrinfo(host, port, socktype, flags)
     VALUE host, port;
     int socktype, flags;
 {
-    struct addrinfo hints, *hintsp, *res;
+    struct addrinfo hints;
+    struct addrinfo* res = NULL;
     char *hostp, *portp;
     int error;
     char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
@@ -678,18 +638,16 @@ sock_addrinfo(host, port, socktype, flags)
        socktype = SOCK_DGRAM;
     }
 
-    hintsp = &hints;
     MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = PF_UNSPEC;
-    hints.ai_protocol = 0;
+    hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = socktype;
     hints.ai_flags = flags;
-    error = getaddrinfo(hostp, portp, hintsp, &res);
+    error = getaddrinfo(hostp, portp, &hints, &res);
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
 	}
-	raise_socket_error("getaddrinfo", error);
+	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 
 #if defined(__APPLE__) && defined(__MACH__)
@@ -713,9 +671,8 @@ sock_addrinfo(host, port, socktype, flags)
 }
 
 static VALUE
-ipaddr(sockaddr, norevlookup)
+ipaddr(sockaddr)
     struct sockaddr *sockaddr;
-    int norevlookup;
 {
     VALUE family, port, addr1, addr2;
     VALUE ary;
@@ -748,22 +705,21 @@ ipaddr(sockaddr, norevlookup)
 	family = rb_str_new2(pbuf);
 	break;
     }
-    
-    if (!norevlookup) {
+    if (!do_not_reverse_lookup) {
 	error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			    NULL, 0, 0);
 	if (error) {
-	    raise_socket_error("getnameinfo", error);
+	    rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
 	}
 	addr1 = rb_str_new2(hbuf);
     }
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
-	raise_socket_error("getnameinfo", error);
+	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
     }
     addr2 = rb_str_new2(hbuf);
-    if (norevlookup) {
+    if (do_not_reverse_lookup) {
 	addr1 = addr2;
     }
     port = INT2FIX(atoi(pbuf));
@@ -1086,48 +1042,43 @@ socks_s_close(sock)
 #endif
 #endif
 
-static VALUE
-sock_gethostbyname(host, ipaddr)
+struct hostent_arg {
     VALUE host;
-    VALUE (*ipaddr) _((struct sockaddr*, size_t));
+    struct addrinfo* addr;
+    VALUE (*ipaddr)_((struct sockaddr*, size_t));
+};
+
+static VALUE
+make_hostent_internal(arg)
+    struct hostent_arg *arg;
 {
-    struct addrinfo *addr;
+    VALUE host = arg->host;
+    struct addrinfo* addr = arg->addr;
+    VALUE (*ipaddr)_((struct sockaddr*, size_t)) = arg->ipaddr;
+
     struct addrinfo *ai;
     struct hostent *h;
     VALUE ary, names;
-    char *hostname;
     char **pch;
+    const char* hostp;
+    char hbuf[NI_MAXHOST];
 
-    addr = sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME);
     ary = rb_ary_new();
     if (addr->ai_canonname) {
-	hostname = addr->ai_canonname;
+	hostp = addr->ai_canonname;
     }
     else {
-	hostname = StringValuePtr(host);
+	hostp = host_str(host, hbuf, sizeof(hbuf));
     }
-    rb_ary_push(ary, rb_str_new2(hostname));
-#if defined(HAVE_GETIPNODEBYNAME)
-    {
-	int error;
+    rb_ary_push(ary, rb_str_new2(hostp));
 
-	h = getipnodebyname(hostname, addr->ai_family, AI_ALL, &error);
-    }
-#elif defined(HAVE_GETHOSTBYNAME2)
-    h = gethostbyname2(hostname, addr->ai_family);
-#else
-    h = gethostbyname(hostname);
-#endif
-    if (h) {
+    if (addr->ai_canonname && (h = gethostbyname(addr->ai_canonname))) {
 	names = rb_ary_new();
 	if (h->h_aliases != NULL) {
 	    for (pch = h->h_aliases; *pch; pch++) {
 		rb_ary_push(names, rb_str_new2(*pch));
 	    }
 	}
-#if defined(HAVE_GETIPNODEBYNAME)
-	freehostent(h);
-#endif
     }
     else {
 	names = rb_ary_new2(0);
@@ -1139,6 +1090,22 @@ sock_gethostbyname(host, ipaddr)
     }
 
     return ary;
+}
+
+static VALUE
+make_hostent(host, addr, ipaddr)
+    VALUE host;
+    struct addrinfo* addr;
+    VALUE (*ipaddr)_((struct sockaddr*, size_t));
+{
+    VALUE ary;
+    struct hostent_arg arg;
+
+    arg.host = host;
+    arg.addr = addr;
+    arg.ipaddr = ipaddr;
+    ary = rb_ensure(make_hostent_internal, (VALUE)&arg,
+		    RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)addr);
 }
 
 VALUE
@@ -1154,7 +1121,7 @@ tcp_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
     rb_secure(3);
-    return sock_gethostbyname(host, tcp_sockaddr);
+    return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), tcp_sockaddr);
 }
 
 static VALUE
@@ -1314,7 +1281,7 @@ ip_addr(sock)
 
     if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
+    return ipaddr((struct sockaddr*)&addr);
 }
 
 static VALUE
@@ -1329,7 +1296,7 @@ ip_peeraddr(sock)
 
     if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
+    return ipaddr((struct sockaddr*)&addr);
 }
 
 static VALUE
@@ -1715,7 +1682,6 @@ unix_sysaccept(sock)
     return s_accept(0, fileno(fptr->f), (struct sockaddr*)&from, &fromlen);
 }
 
-#ifdef HAVE_SYS_UN_H
 static VALUE
 unixaddr(sockaddr)
     struct sockaddr_un *sockaddr;
@@ -1723,7 +1689,6 @@ unixaddr(sockaddr)
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
 			rb_str_new2(sockaddr->sun_path));
 }
-#endif
 
 static VALUE
 unix_addr(sock)
@@ -2045,10 +2010,7 @@ make_addrinfo(res0)
     }
     base = rb_ary_new();
     for (res = res0; res; res = res->ai_next) {
-	ary = ipaddr(res->ai_addr, do_not_reverse_lookup);
-	if (res->ai_canonname) {
-	    RARRAY(ary)->ptr[2] = rb_str_new2(res->ai_canonname);
-	}
+	ary = ipaddr(res->ai_addr);
 	rb_ary_push(ary, INT2FIX(res->ai_family));
 	rb_ary_push(ary, INT2FIX(res->ai_socktype));
 	rb_ary_push(ary, INT2FIX(res->ai_protocol));
@@ -2070,7 +2032,7 @@ sock_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
     rb_secure(3);
-    return sock_gethostbyname(host, sock_sockaddr);
+    return make_hostent(host, sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
 }
 
 static VALUE
@@ -2219,7 +2181,7 @@ sock_s_getaddrinfo(argc, argv)
     }
     error = getaddrinfo(hptr, pptr, &hints, &res);
     if (error) {
-	raise_socket_error("getaddrinfo", error);
+	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 
     ret = make_addrinfo(res);
@@ -2356,11 +2318,11 @@ sock_s_getnameinfo(argc, argv)
 
   error_exit_addr:
     if (res) freeaddrinfo(res);
-    raise_socket_error("getaddrinfo", error);
+    rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
 
   error_exit_name:
     if (res) freeaddrinfo(res);
-    raise_socket_error("getnameinfo", error);
+    rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
 }
 
 static VALUE
@@ -2460,8 +2422,6 @@ Init_socket()
     rb_define_method(rb_cBasicSocket, "getpeername", bsock_getpeername, 0);
     rb_define_method(rb_cBasicSocket, "send", bsock_send, -1);
     rb_define_method(rb_cBasicSocket, "recv", bsock_recv, -1);
-    rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup", bsock_do_not_reverse_lookup, 0);
-    rb_define_method(rb_cBasicSocket, "do_not_reverse_lookup=", bsock_do_not_reverse_lookup_set, 1);
 
     rb_cIPSocket = rb_define_class("IPSocket", rb_cBasicSocket);
     rb_define_global_const("IPsocket", rb_cIPSocket);
