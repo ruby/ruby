@@ -1,3 +1,10 @@
+Fri Oct 29 21:27:51 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_check_initialized): new function to check uninitialized
+	  object.  [ruby-talk:118234]
+
+	* file.c (rb_file_path), io.c (rb_io_closed): check if initialized.
+
 Fri Oct 29 19:05:33 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf: follow nkf2.0.

@@ -182,12 +182,19 @@ rb_io_taint_check(io)
 }
 
 void
-rb_io_check_closed(fptr)
+rb_io_check_initialized(fptr)
     OpenFile *fptr;
 {
     if (!fptr) {
 	rb_raise(rb_eIOError, "uninitialized stream");
     }
+}
+
+void
+rb_io_check_closed(fptr)
+    OpenFile *fptr;
+{
+    rb_io_check_initialized(fptr);
     if (!fptr->f && !fptr->f2) {
 	rb_raise(rb_eIOError, "closed stream");
     }
@@ -941,7 +948,7 @@ rb_io_fread(ptr, len, f)
 	    ptr += c;
 	    if ((n -= c) <= 0) break;
 	}
-        rb_thread_wait_fd(fileno(f));
+	rb_thread_wait_fd(fileno(f));
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
@@ -2028,6 +2035,7 @@ rb_io_closed(io)
     OpenFile *fptr;
 
     fptr = RFILE(io)->fptr;
+    rb_io_check_initialized(fptr);
     return (fptr->f || fptr->f2)?Qfalse:Qtrue;
 }
 

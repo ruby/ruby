@@ -138,6 +138,7 @@ rb_file_path(obj)
     OpenFile *fptr;
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
+    rb_io_check_initialized(fptr);
     if (!fptr->path) return Qnil;
     return rb_tainted_str_new2(fptr->path);
 }
