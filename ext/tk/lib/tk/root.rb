@@ -37,9 +37,9 @@ class TkRoot<TkWindow
     if keys  # wm commands
       keys.each{|k,v|
 	if v.kind_of? Array
-	  root.send(k,*v)
+	  root.__send__(k,*v)
 	else
-	  root.send(k,v)
+	  root.__send__(k,v)
 	end
       }
     end

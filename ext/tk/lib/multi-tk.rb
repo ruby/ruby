@@ -6,6 +6,10 @@ require 'tcltklib'
 require 'tkutil'
 require 'thread'
 
+if defined? Tk
+  fail RuntimeError, "'multi-tk' library must be required before requiring 'tk'"
+end
+
 ################################################
 # ignore exception on the mainloop?
 
@@ -37,14 +41,14 @@ MultiTkIp_OK.freeze
 class MultiTkIp
   SLAVE_IP_ID = ['slave'.freeze, '0'.taint].freeze
 
-  @@IP_TABLE = {}.taint
+  @@IP_TABLE = {}.taint unless defined?(@@IP_TABLE)
 
-  @@INIT_IP_ENV  = [].taint # table of Procs
-  @@ADD_TK_PROCS = [].taint # table of [name, args, body]
+  @@INIT_IP_ENV  = [].taint unless defined?(@@INIT_IP_ENV)  # table of Procs
+  @@ADD_TK_PROCS = [].taint unless defined?(@@ADD_TK_PROCS) # table of [name, args, body]
 
-  @@TK_TABLE_LIST = [].taint
+  @@TK_TABLE_LIST = [].taint unless defined?(@@TK_TABLE_LIST)
 
-  @@TK_CMD_TBL = {}.taint
+  @@TK_CMD_TBL = {}.taint unless defined?(@@TK_CMD_TBL)
 
   ######################################
 
@@ -603,6 +607,13 @@ end
 
 # get target IP
 class MultiTkIp
+  def self._ip_id_
+    __getip._ip_id_
+  end
+  def _ip_id_
+    ''
+  end
+
   def self.__getip
     if Thread.current.group == ThreadGroup::Default
       @@DEFAULT_MASTER
@@ -636,7 +647,7 @@ class << MultiTkIp
     ip.eval_proc(&b) if b
     ip
   end
-  alias new_trusted_slave new_master
+  alias new_trusted_slave new_slave
 
   def new_safe_slave(keys={},&b)
     ip = __new(__getip, true, keys)
@@ -798,7 +809,7 @@ class MultiTkIp
     @@TK_TABLE_LIST << obj
     obj.instance_eval <<-EOD
       def self.method_missing(m, *args)
-	 MultiTkIp.tk_object_table(#{id}).send(m, *args)
+	 MultiTkIp.tk_object_table(#{id}).__send__(m, *args)
       end
     EOD
     obj.freeze
@@ -972,7 +983,7 @@ end
 # class methods to delegate to TclTkIp
 class << MultiTkIp
   def method_missing(id, *args)
-    __getip.send(id, *args)
+    __getip.__send__(id, *args)
   end
 
   def make_safe
@@ -1182,6 +1193,14 @@ class MultiTkIp
 
   def restart
     @interp.restart
+  end
+
+  def __eval(str)
+    @interp.__eval(str)
+  end
+
+  def __invoke(*args)
+    @interp.__invoke(*args)
   end
 
   def _eval(str)
@@ -1555,7 +1574,7 @@ class MultiTkIp
       conf = _lst2ary(ip._eval("::safe::interpConfigure " + 
 			       @ip_name + " -#{slot}"))
       if conf[0] == '-deleteHook'
-	if conf[1] =~ /^rb_out (c\d+)/
+	if conf[1] =~ /^rb_out\S* (c(_\d+_)?\d+)/
 	  ret[conf[0][1..-1]] = MultiTkIp._tk_cmd_tbl[$1]
 	else
 	  ret[conf[0][1..-1]] = conf[1]
@@ -1567,7 +1586,7 @@ class MultiTkIp
       Hash[*_lst2ary(ip._eval("::safe::interpConfigure " + 
 			      @ip_name))].each{|k, v|
 	if k == '-deleteHook'
-	  if v =~ /^rb_out (c\d+)/
+	  if v =~ /^rb_out\S* (c(_\d+_)?\d+)/
 	    ret[k[1..-1]] = MultiTkIp._tk_cmd_tbl[$1]
 	  else
 	    ret[k[1..-1]] = v

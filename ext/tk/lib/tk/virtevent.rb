@@ -9,7 +9,7 @@ class TkVirtualEvent<TkObject
 
   TkCommandNames = ['event'.freeze].freeze
 
-  TkVirtualEventID = ["<VirtEvent".freeze, "00000".taint, ">".freeze].freeze
+  TkVirtualEventID = ["VirtEvent".freeze, "00000".taint].freeze
   TkVirtualEventTBL = TkCore::INTERP.create_table
 
   TkCore::INTERP.init_ip_env{ TkVirtualEventTBL.clear }
@@ -41,7 +41,8 @@ class TkVirtualEvent<TkObject
   end
 
   def initialize(*sequences)
-    @path = @id = TkVirtualEventID.join('')
+    # @path = @id = '<' + TkVirtualEventID.join('') + '>'
+    @path = @id = '<' + TkVirtualEventID.join(TkCore::INTERP._ip_id_) + '>'
     TkVirtualEventID[1].succ!
     add(*sequences)
   end

@@ -88,7 +88,8 @@ class TkNamespace < TkObject
 
   def initialize(name = nil, parent = nil)
     unless name
-      name = Tk_Namespace_ID.join('')
+      # name = Tk_Namespace_ID.join('')
+      name = Tk_Namespace_ID.join(TkCore::INTERP._ip_id_)
       Tk_Namespace_ID[1].succ!
     end
     name = __tk_call('namespace', 'current') if name == ''

@@ -14,6 +14,10 @@ class TclTkIp
   # backup original (without encoding) _eval and _invoke
   alias _eval_without_enc _eval
   alias _invoke_without_enc _invoke
+
+  def _ip_id_
+    ''
+  end
 end
 
 # define TkComm module (step 1: basic functions)
@@ -36,12 +40,12 @@ module TkComm
   # for backward compatibility
   Tk_CMDTBL = Object.new
   def Tk_CMDTBL.method_missing(id, *args)
-    TkCore::INTERP.tk_cmd_tbl.send(id, *args)
+    TkCore::INTERP.tk_cmd_tbl.__send__(id, *args)
   end
   Tk_CMDTBL.freeze
   Tk_WINDOWS = Object.new
   def Tk_WINDOWS.method_missing(id, *args)
-    TkCore::INTERP.tk_windows.send(id, *args)
+    TkCore::INTERP.tk_windows.__send__(id, *args)
   end
   Tk_WINDOWS.freeze
 
@@ -111,7 +115,7 @@ module TkComm
   module_function :_genobj_for_tkwidget
 
   def tk_tcl2ruby(val, enc_mode = nil)
-    if val =~ /^rb_out (c\d+)/
+    if val =~ /^rb_out\S* (c(_\d+_)?\d+)/
       #return Tk_CMDTBL[$1]
       return TkCore::INTERP.tk_cmd_tbl[$1]
       #cmd_obj = TkCore::INTERP.tk_cmd_tbl[$1]
@@ -133,7 +137,7 @@ module TkComm
       #Tk_WINDOWS[val] ? Tk_WINDOWS[val] : _genobj_for_tkwidget(val)
       TkCore::INTERP.tk_windows[val]? 
            TkCore::INTERP.tk_windows[val] : _genobj_for_tkwidget(val)
-    when /^i\d+$/
+    when /^i(_\d+_)?\d+$/
       TkImage::Tk_IMGTBL[val]? TkImage::Tk_IMGTBL[val] : val
     when /^-?\d+\.?\d*(e[-+]?\d+)?$/
       val.to_f
@@ -437,14 +441,14 @@ end
     end
   end
   def image_obj(val)
-    if val =~ /^i\d+$/
+    if val =~ /^i(_\d+_)?\d+$/
       TkImage::Tk_IMGTBL[val]? TkImage::Tk_IMGTBL[val] : val
     else
       val
     end
   end
   def procedure(val)
-    if val =~ /^rb_out (c\d+)/
+    if val =~ /^rb_out\S* (c(_\d+_)?\d+)/
       #Tk_CMDTBL[$1]
       #TkCore::INTERP.tk_cmd_tbl[$1]
       TkCore::INTERP.tk_cmd_tbl[$1].cmd
@@ -591,7 +595,7 @@ end
 
   def _curr_cmd_id
     #id = format("c%.4d", Tk_IDs[0])
-    id = "c" + TkComm::Tk_IDs[0]
+    id = "c" + TkCore::INTERP._ip_id_ + TkComm::Tk_IDs[0]
   end
   def _next_cmd_id
     id = _curr_cmd_id
@@ -615,10 +619,10 @@ end
     @cmdtbl.taint unless @cmdtbl.tainted?
     @cmdtbl.push id
     #return Kernel.format("rb_out %s", id);
-    return 'rb_out ' + id
+    return 'rb_out' + TkCore::INTERP._ip_id_ + ' ' + id
   end
   def uninstall_cmd(id)
-    id = $1 if /rb_out (c\d+)/ =~ id
+    id = $1 if /rb_out\S* (c(_\d+_)?\d+)/ =~ id
     #Tk_CMDTBL.delete(id)
     TkCore::INTERP.tk_cmd_tbl.delete(id)
   end
@@ -655,7 +659,7 @@ end
 	return TkCore::INTERP.tk_windows[@path] = self
       end
     else
-      name = "w" + Tk_IDs[1]
+      name = "w" + TkCore::INTERP._ip_id_ + Tk_IDs[1]
       Tk_IDs[1].succ!
     end
     if !ppath or ppath == '.'
@@ -736,7 +740,7 @@ module TkComm
   def _bindinfo(what, context=nil)
     if context
       tk_call_without_enc(*what+["<#{tk_event_sequence(context)}>"]) .collect {|cmdline|
-	if cmdline =~ /^rb_out (c\d+)\s+(.*)$/
+	if cmdline =~ /^rb_out\S* (c(_\d+_)?\d+)\s+(.*)$/
 	  #[Tk_CMDTBL[$1], $2]
 	  [TkCore::INTERP.tk_cmd_tbl[$1], $2]
 	else
@@ -876,7 +880,7 @@ module TkCore
 	@id = id
       end
       def method_missing(m, *args, &b)
-	TkCore::INTERP.tk_object_table(@id).send(m, *args, &b)
+	TkCore::INTERP.tk_object_table(@id).__send__(m, *args, &b)
       end
     end
 
@@ -1098,7 +1102,20 @@ module TkCore
     tk_call('tk', 'appname', name)
   end
 
+  def appsend_deny
+    tk_call('rename', 'send', '')
+  end
+
   def appsend(interp, async, *args)
+    if $SAFE >= 4
+      fail SecurityError, "cannot send Tk commands at level 4"
+    elsif $SAFE >= 1 && args.find{|obj| obj.tainted?}
+      fail SecurityError, "cannot send tainted Tk commands at level #{$SAFE}"
+    end
+    if async != true && async != false && async != nil
+      args.unshift(async)
+      async = false
+    end
     if async
       tk_call('send', '-async', '--', interp, *args)
     else
@@ -1107,14 +1124,34 @@ module TkCore
   end
 
   def rb_appsend(interp, async, *args)
+    if $SAFE >= 4
+      fail SecurityError, "cannot send Ruby commands at level 4"
+    elsif $SAFE >= 1 && args.find{|obj| obj.tainted?}
+      fail SecurityError, "cannot send tainted Ruby commands at level #{$SAFE}"
+    end
+    if async != true && async != false && async != nil
+      args.unshift(async)
+      async = false
+    end
     #args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"]/, '\\\\\&')}
     args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"\\]/, '\\\\\&')}
-    args.push(').to_s"')
-    appsend(interp, async, 'ruby "(', *args)
+    # args.push(').to_s"')
+    # appsend(interp, async, 'ruby "(', *args)
+    args.push('}.call)"')
+    appsend(interp, async, 'ruby "TkComm._get_eval_string(proc{', *args)
   end
 
   def appsend_displayof(interp, win, async, *args)
+    if $SAFE >= 4
+      fail SecurityError, "cannot send Tk commands at level 4"
+    elsif $SAFE >= 1 && args.find{|obj| obj.tainted?}
+      fail SecurityError, "cannot send tainted Tk commands at level #{$SAFE}"
+    end
     win = '.' if win == nil
+    if async != true && async != false && async != nil
+      args.unshift(async)
+      async = false
+    end
     if async
       tk_call('send', '-async', '-displayof', win, '--', interp, *args)
     else
@@ -1123,10 +1160,22 @@ module TkCore
   end
 
   def rb_appsend_displayof(interp, win, async, *args)
+    if $SAFE >= 4
+      fail SecurityError, "cannot send Ruby commands at level 4"
+    elsif $SAFE >= 1 && args.find{|obj| obj.tainted?}
+      fail SecurityError, "cannot send tainted Ruby commands at level #{$SAFE}"
+    end
+    win = '.' if win == nil
+    if async != true && async != false && async != nil
+      args.unshift(async)
+      async = false
+    end
     #args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"]/, '\\\\\&')}
     args = args.collect!{|c| _get_eval_string(c).gsub(/[\[\]$"\\]/, '\\\\\&')}
-    args.push(').to_s"')
-    appsend_displayof(interp, win, async, 'ruby "(', *args)
+    # args.push(').to_s"')
+    # appsend_displayof(interp, win, async, 'ruby "(', *args)
+    args.push('}.call)"')
+    appsend(interp, win, async, 'ruby "TkComm._get_eval_string(proc{', *args)
   end
 
   def info(*args)
