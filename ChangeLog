@@ -1,3 +1,7 @@
+Mon Jan 20 02:15:53 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/aix_mksym.rb: no longer used.
+
 Mon Jan 20 00:17:16 2003  Matt Armstrong  <matt@lickey.com>
 
 	* file.c (eaccess): under windows, make eaccess() just call
