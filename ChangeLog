@@ -108,8 +108,8 @@ Tue Feb 26 16:52:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Feb 26 11:25:50 2002  akira yamada  <akira@arika.org>
 
-	* lib/uri/generic.rb: merge0 shuld return [oth, oth] if oth is
-	  absolute URI. 
+	* lib/uri/generic.rb: merge0 should return [oth, oth] if oth is
+	  absolute URI.
 
 	* lib/uri/generic.rb: registry part must not be allowed for any
 	  schemes for the Internet. (RFC2396, section 3.2.2 and 3.2.1.) 
@@ -173,7 +173,7 @@ Wed Feb 20 12:41:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_any_cmp): should handle Qundef in keys.
 
-	* eval.c (remove_method): should not remove a empty method to
+	* eval.c (remove_method): should not remove an empty method to
 	  implement "undef".
 
 	* eval.c (rb_eval): should allow singleton class def for
@@ -251,7 +251,7 @@ Sun Feb 10 16:52:53 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 Fri Feb  8 23:07:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_eval): singleton chech should be moved from yycompile
+	* eval.c (rb_eval): singleton check should be moved from yycompile
 	  to here.
 
 	* eval.c (is_defined): check should be added here too.
@@ -270,7 +270,7 @@ Fri Feb  8 01:27:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): class variables from singleton methods defined
 	  within singleton class statement should work like ones defined
-	  by sington def statements.
+	  by singleton def statements.
 
 Thu Feb 07 13:44:08 2002  akira yamada  <akira@arika.org>
 
@@ -366,7 +366,6 @@ Fri Jan 18 02:27:48 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* dir.c (dir_seek): should return pos.
 
 Fri Jan 18 01:21:53 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
 
 	* parse.y (fixpos): orig may be (NODE*)1, which should not be
 	  dereferenced.
@@ -3092,7 +3091,7 @@ Mon Dec 25 17:49:08 2000  K.Kosako  <kosako@sofnec.co.jp>
 Tue Dec 26 15:01:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_f_p): should not call rb_io_flush() if rb_defout is not
-	  a IO (T_FILE).
+	  an IO (T_FILE).
 
 Mon Dec 25 15:52:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
