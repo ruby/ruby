@@ -4941,10 +4941,9 @@ case "$target_os" in
 	  # the main point is the '-v' flag of 'cc'.
 	  case "`cc -v -I. -c main.c -o /tmp/main.o 2>&1`" in
 	  */gemc_cc*)   # we have the new DEC GEM CC
-                        CFLAGS="$CFLAGS -frpm d -ieee"
+                        CFLAGS="$CFLAGS -oldc"
                         ;;
           *)            # we have the old MIPS CC
-                        CFLAGS="$CFLAGS -oldc"
                         ;;
           esac
 	  # cleanup

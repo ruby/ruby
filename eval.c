@@ -6940,15 +6940,6 @@ rb_thread_join(thread)
     return thread;
 }
 
-static VALUE
-rb_thread_s_join(dmy, thread)	/* will be removed in 1.4 */
-    VALUE dmy;
-    VALUE thread;
-{
-    rb_warn("Thread::join is obsolete; use Thread#join instead");
-    return rb_thread_join(thread);
-}
-
 VALUE
 rb_thread_current()
 {
@@ -7810,7 +7801,6 @@ Init_Thread()
     rb_define_singleton_method(rb_cThread, "kill", rb_thread_s_kill, 1);
     rb_define_singleton_method(rb_cThread, "exit", rb_thread_exit, 0);
     rb_define_singleton_method(rb_cThread, "pass", rb_thread_pass, 0);
-    rb_define_singleton_method(rb_cThread, "join", rb_thread_s_join, 1);
     rb_define_singleton_method(rb_cThread, "current", rb_thread_current, 0);
     rb_define_singleton_method(rb_cThread, "main", rb_thread_main, 0);
     rb_define_singleton_method(rb_cThread, "list", rb_thread_list, 0);

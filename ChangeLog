@@ -1,4 +1,11 @@
+Wed Mar 15 17:26:05 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (rb_hash_s_create): unexpected recursive call removed.
+	  this bug was found by Satoshi Nojo <nojo@t-samukawa.or.jp>.
+
 Wed Mar 15 13:12:39 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (Init_Thread): Thread.join removed finally.
 
 	* string.c (rb_str_chomp_bang): forgot to call rb_str_modify().
 
