@@ -174,8 +174,7 @@ class Context
 
   def debug_silent_eval(str, binding)
     begin
-      val = eval(str, binding)
-      val
+      eval(str, binding)
     rescue StandardError, ScriptError
       nil
     end
@@ -301,9 +300,12 @@ class Context
           end
 
 	when /^\s*b(?:reak)?\s+(?:(.+):)?([^.:]+)$/
+          p $~.to_a
 	  pos = $2
-	  file = $1 || file
-	  klass = debug_silent_eval($1, binding)
+          if $1
+            klass = debug_silent_eval($1, binding)
+            file = $1
+          end
 	  if pos =~ /^\d+$/
 	    pname = pos
 	    pos = pos.to_i
