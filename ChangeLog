@@ -1,6 +1,12 @@
+Wed May 19 18:00:44 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/inlinetest.rb (InlineTest::loadtest): requiring library with
+	  replaced $0 can make $0 == __FILE__ block be evaluated twice.
+	  [ruby-dev:23538]
+
 Wed May 19 11:08:10 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: change permition of TkObject#tk_send from 
+	* ext/tk/lib/tk.rb: change permition of TkObject#tk_send from
 	  private to public
 
 Wed May 19 02:29:36 2004  Minero Aoki  <aamine@loveruby.net>
@@ -25,26 +31,26 @@ Tue May 18 21:21:43 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 	  * CSV::Cell removed.  a cell is represented as just a String or
 	    nil(NULL).  this change will cause widespread destruction.
 
-      	      CSV.open("foo.csv", "r") do |row|
-		row.each do |cell|
+	  	      CSV.open("foo.csv", "r") do |row|
+		  row.each do |cell|
 		  if cell.is_null       # Cell#is_null
 		    p "(NULL)"
 		  else
 		    p cell.data         # Cell#data
 		  end
-		end
+		  end
 	      end
 
 	    must be just;
 
 	      CSV.open("foo.csv", "r") do |row|
-		row.each do |cell|
+		  row.each do |cell|
 		  if cell.nil?
 		    p "(NULL)"
 		  else
 		    p cell
 		  end
-		end
+		  end
 	      end
 
 	* lib/csv.rb: [CAUTION] record separator(CR, LF, CR+LF) behavior
@@ -55,7 +61,7 @@ Tue May 18 21:21:43 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 	  parameter "r", "w", "rb", and "wb".  CSV.parse and CSV.generate open
 	  file with "r" and "w".
 
-       	  setting mode properly is user's responsibility now.
+	   	  setting mode properly is user's responsibility now.
 
 	* lib/csv.rb: accepts String as a fs (field separator/column separator)
 	  and rs (record separator/row separator)

@@ -6,12 +6,12 @@ module InlineTest
     if endpart.nil?
       raise RuntimeError.new("No #{part} part in the library '#{filename}'")
     end
-    require(libname)
     eval(endpart, TOPLEVEL_BINDING, path, mainpart.count("\n")+1)
   end
   module_function :eval_part
 
   def loadtest(libname)
+    require(libname)
     in_critical do
       in_progname(libpath(libname)) do
         eval_part(libname, /^(?=if\s+(?:\$0\s*==\s*__FILE__|__FILE__\s*==\s*\$0)(?:[\#\s]|$))/, '$0 == __FILE__')
@@ -21,6 +21,7 @@ module InlineTest
   module_function :loadtest
 
   def loadtest__END__part(libname)
+    require(libname)
     eval_part(libname, /^__END__$/, '__END__')
   end
   module_function :loadtest__END__part
