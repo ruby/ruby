@@ -43,6 +43,13 @@ struct time_object {
 #define GetTimeval(obj, tobj) \
     Data_Get_Struct(obj, struct time_object, tobj)
 
+static void
+time_free(tobj)
+    struct time_object *tobj;
+{
+    if (tobj) free(tobj);
+}
+
 static VALUE
 time_s_alloc(klass)
     VALUE klass;
@@ -50,7 +57,7 @@ time_s_alloc(klass)
     VALUE obj;
     struct time_object *tobj;
 
-    obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
+    obj = Data_Make_Struct(klass, struct time_object, 0, time_free, tobj);
     tobj->tm_got=0;
     if (gettimeofday(&tobj->tv, 0) < 0) {
 	rb_sys_fail("gettimeofday");
@@ -100,7 +107,7 @@ time_new_internal(klass, sec, usec)
 	rb_raise(rb_eArgError, "time must be positive");
 #endif
 
-    obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
+    obj = Data_Make_Struct(klass, struct time_object, 0, time_free, tobj);
     tobj->tm_got = 0;
     tobj->tv.tv_sec = sec;
     tobj->tv.tv_usec = usec;
@@ -179,7 +186,7 @@ rb_time_timeval(time)
     struct time_object *tobj;
     struct timeval t;
 
-    if (rb_obj_is_kind_of(time, rb_cTime)) {
+    if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
 	GetTimeval(time, tobj);
 	t = tobj->tv;
 	return t;
@@ -204,7 +211,7 @@ time_s_at(argc, argv, klass)
 	tv = rb_time_timeval(time);
     }
     t = time_new_internal(klass, tv.tv_sec, tv.tv_usec);
-    if (TYPE(time) == T_DATA) {
+    if (TYPE(time) == T_DATA && RDATA(time)->dfree == time_free) {
 	struct time_object *tobj, *tobj2;
 
 	GetTimeval(time, tobj);
@@ -717,7 +724,7 @@ time_cmp(time1, time2)
 			  RFLOAT(time2)->value);
     }
 
-    if (rb_obj_is_kind_of(time2, rb_cTime)) {
+    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
 	GetTimeval(time2, tobj2);
 	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
 	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
@@ -754,7 +761,7 @@ time_eql(time1, time2)
     struct time_object *tobj1, *tobj2;
 
     GetTimeval(time1, tobj1);
-    if (rb_obj_is_kind_of(time2, rb_cTime)) {
+    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
 	GetTimeval(time2, tobj2);
 	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
 	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return Qtrue;
@@ -787,18 +794,28 @@ time_hash(time)
 }
 
 static VALUE
-time_clone(time)
+time_become(copy, time)
+    VALUE copy, time;
+{
+    struct time_object *tobj, *tcopy;
+
+    if (TYPE(time) != T_DATA || RDATA(time)->dfree != time_free) {
+	rb_raise(rb_eTypeError, "wrong argument type");
+    }
+    GetTimeval(time, tobj);
+    GetTimeval(copy, tcopy);
+    MEMCPY(tcopy, tobj, struct time_object, 1);
+
+    return copy;
+}
+
+static VALUE
+time_dup(time)
     VALUE time;
 {
-    VALUE clone;
-    struct time_object *tobj, *tclone;
-
-    GetTimeval(time, tobj);
-    clone = Data_Make_Struct(0, struct time_object, 0, free, tclone);
-    CLONESETUP(clone, time);
-    MEMCPY(tclone, tobj, struct time_object, 1);
-
-    return clone;
+    VALUE dup = time_s_alloc(rb_cTime);
+    time_become(dup, time);
+    return dup;
 }
 
 static void
@@ -860,21 +877,6 @@ time_gmtime(time)
     tobj->tm_got = 1;
     tobj->gmt = 1;
     return time;
-}
-
-static VALUE
-time_dup(time)
-    VALUE time;
-{
-    VALUE clone;
-    struct time_object *tobj, *tclone;
-
-    GetTimeval(time, tobj);
-    clone = Data_Make_Struct(0, struct time_object, 0, free, tclone);
-    DUPSETUP(clone, time);
-    MEMCPY(tclone, tobj, struct time_object, 1);
-
-    return clone;
 }
 
 static VALUE
@@ -948,7 +950,7 @@ time_plus(time1, time2)
 
     GetTimeval(time1, tobj);
 
-    if (rb_obj_is_kind_of(time2, rb_cTime)) {
+    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
 	rb_raise(rb_eTypeError, "time + time?");
     }
     v = NUM2DBL(time2);
@@ -988,7 +990,7 @@ time_minus(time1, time2)
     double f, d, v;
 
     GetTimeval(time1, tobj);
-    if (rb_obj_is_kind_of(time2, rb_cTime)) {
+    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
 	struct time_object *tobj2;
 
 	GetTimeval(time2, tobj2);
@@ -1429,8 +1431,7 @@ Init_Time()
     rb_define_method(rb_cTime, "<=>", time_cmp, 1);
     rb_define_method(rb_cTime, "eql?", time_eql, 1);
     rb_define_method(rb_cTime, "hash", time_hash, 0);
-    rb_define_method(rb_cTime, "clone", time_clone, 0);
-    rb_define_method(rb_cTime, "dup", time_dup, 0);
+    rb_define_method(rb_cTime, "become", time_become, 1);
 
     rb_define_method(rb_cTime, "localtime", time_localtime, 0);
     rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);

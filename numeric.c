@@ -88,11 +88,11 @@ rb_num_coerce_bin(x, y)
 }
 
 static VALUE
-num_clone(x)
-    VALUE x;
+num_become(x, y)
+    VALUE x, y;
 {
     /* Numerics are immutable values, which should not be copied */
-    rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(x)));
+    rb_raise(rb_eTypeError, "can't copy %s", rb_class2name(CLASS_OF(x)));
     return Qnil;		/* not reached */
 }
 
@@ -1630,7 +1630,7 @@ Init_Numeric()
 
     rb_include_module(rb_cNumeric, rb_mComparable);
     rb_define_method(rb_cNumeric, "coerce", num_coerce, 1);
-    rb_define_method(rb_cNumeric, "clone", num_clone, 0);
+    rb_define_method(rb_cNumeric, "become", num_become, 1);
 
     rb_define_method(rb_cNumeric, "+@", num_uplus, 0);
     rb_define_method(rb_cNumeric, "-@", num_uminus, 0);

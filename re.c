@@ -545,6 +545,23 @@ match_clone(match)
 }
 
 static VALUE
+match_dup(match)
+    VALUE match;
+{
+    NEWOBJ(dup, struct RMatch);
+    DUPSETUP(dup, match);
+
+    dup->str = RMATCH(match)->str;
+    dup->regs = 0;
+
+    dup->regs = ALLOC(struct re_registers);
+    dup->regs->allocated = 0;
+    re_copy_registers(dup->regs, RMATCH(match)->regs);
+
+    return (VALUE)dup;
+}
+
+static VALUE
 match_size(match)
     VALUE match;
 {
@@ -1195,7 +1212,6 @@ rb_reg_quote(str)
 	    continue;
 	}
 	switch (c) {
-	  case '\t': case '\f': case '\r': case '\n':
 	  case '[': case ']': case '{': case '}':
 	  case '(': case ')': case '|': case '-':
 	  case '*': case '.': case '\\':
@@ -1224,22 +1240,6 @@ rb_reg_quote(str)
 	    continue;
 	}
 	switch (c) {
-	  case '\t':
-	    c = 't';
-	    *t++ = '\\';
-	    break;
-	  case '\f':
-	    c = 'f';
-	    *t++ = '\\';
-	    break;
-	  case '\r':
-	    c = 'r';
-	    *t++ = '\\';
-	    break;
-	  case '\n':
-	    c = 'n';
-	    *t++ = '\\';
-	    break;
 	  case '[': case ']': case '{': case '}':
 	  case '(': case ')': case '|': case '-':
 	  case '*': case '.': case '\\':
@@ -1329,11 +1329,13 @@ rb_reg_options(re)
 }
 
 static VALUE
-rb_reg_clone(re)
+rb_reg_become(clone, re)
     VALUE re;
 {
-    VALUE clone = rb_obj_clone(re);
-
+    /* need better argument type check */
+    if (!rb_obj_is_kind_of(re, rb_obj_class(clone))) {
+	rb_raise(rb_eTypeError, "wrong argument type");
+    }
     RREGEXP(clone)->ptr = 0;
     RREGEXP(clone)->len = 0;
     RREGEXP(clone)->str = 0;
@@ -1578,7 +1580,7 @@ Init_Regexp()
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
-    rb_define_method(rb_cRegexp, "clone", rb_reg_clone, 0);
+    rb_define_method(rb_cRegexp, "become", rb_reg_become, 1);
     rb_define_method(rb_cRegexp, "==", rb_reg_equal, 1);
     rb_define_method(rb_cRegexp, "=~", rb_reg_match, 1);
     rb_define_method(rb_cRegexp, "===", rb_reg_match, 1);
@@ -1602,7 +1604,10 @@ Init_Regexp()
     rb_undef_method(CLASS_OF(rb_cMatch), "allocate");
     rb_undef_method(CLASS_OF(rb_cMatch), "new");
 
+    /* to be replaced by allocation framework */
     rb_define_method(rb_cMatch, "clone", match_clone, 0);
+    rb_define_method(rb_cMatch, "dup", match_dup, 0);
+
     rb_define_method(rb_cMatch, "size", match_size, 0);
     rb_define_method(rb_cMatch, "length", match_size, 0);
     rb_define_method(rb_cMatch, "offset", match_offset, 1);

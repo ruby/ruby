@@ -89,10 +89,7 @@ rb_mod_dup(mod)
 {
     VALUE dup = rb_mod_clone(mod);
 
-    DUPSETUP(dup, mod);
-    if (FL_TEST(mod, FL_SINGLETON)) {
-	FL_SET(dup, FL_SINGLETON);
-    }
+    RBASIC(dup)->flags = RBASIC(mod)->flags & (T_MASK|FL_TAINT|FL_SINGLETON);
     return dup;
 }
 

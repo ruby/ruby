@@ -250,11 +250,40 @@ obj_each(id, value, arg)
 }
 
 static void
-w_uclass(obj, klass, arg)
-    VALUE obj, klass;
+w_class(obj, arg)
+    VALUE obj;
     struct dump_arg *arg;
 {
-    if (rb_obj_class(obj) != klass) {
+    VALUE klass = CLASS_OF(obj);
+    char *path;
+
+    while (FL_TEST(klass, FL_SINGLETON) || BUILTIN_TYPE(klass) == T_ICLASS) {
+	if (RCLASS(klass)->m_tbl->num_entries > 0 ||
+	    RCLASS(klass)->iv_tbl->num_entries > 1) {
+	    rb_raise(rb_eTypeError, "singleton can't be dumped");
+	}
+    }
+    path = rb_class2name(klass);
+    w_unique(path, arg);
+}
+
+static void
+w_uclass(obj, base_klass, arg)
+    VALUE obj, base_klass;
+    struct dump_arg *arg;
+{
+    VALUE klass = CLASS_OF(obj);
+    char *path;
+
+    while (FL_TEST(klass, FL_SINGLETON) || BUILTIN_TYPE(klass) == T_ICLASS) {
+	if (RCLASS(klass)->m_tbl->num_entries > 0 ||
+	    RCLASS(klass)->iv_tbl->num_entries > 1) {
+	    rb_raise(rb_eTypeError, "singleton can't be dumped");
+	}
+	klass = RCLASS(klass)->super;
+    }
+
+    if (klass != base_klass) {
 	w_byte(TYPE_UCLASS, arg);
 	w_unique(rb_class2name(CLASS_OF(obj)), arg);
     }
@@ -472,41 +501,16 @@ w_object(obj, arg, limit)
 
 	  case T_OBJECT:
 	    w_byte(TYPE_OBJECT, arg);
-	    {
-		VALUE klass = CLASS_OF(obj);
-		char *path;
-
-		while (FL_TEST(klass, FL_SINGLETON) || BUILTIN_TYPE(klass) == T_ICLASS) {
-		    if (RCLASS(klass)->m_tbl->num_entries > 0 ||
-			RCLASS(klass)->iv_tbl->num_entries > 1) {
-			rb_raise(rb_eTypeError, "singleton can't be dumped");
-		    }
-		    klass = RCLASS(klass)->super;
-		}
-		path = rb_class2name(klass);
-		w_unique(path, arg);
-		w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
-	    }
+	    w_class(obj, arg);
+	    w_ivar(ROBJECT(obj)->iv_tbl, &c_arg);
 	    break;
 
          case T_DATA:
            w_byte(TYPE_DATA, arg);
            {
-               VALUE klass = CLASS_OF(obj);
-               char *path;
-
-               if (FL_TEST(klass, FL_SINGLETON)) {
-                   if (RCLASS(klass)->m_tbl->num_entries > 0 ||
-                       RCLASS(klass)->iv_tbl->num_entries > 1) {
-                       rb_raise(rb_eTypeError, "singleton can't be dumped");
-                   }
-               }
-               path = rb_class2name(klass);
-               w_unique(path, arg);
-           }
-           {
                VALUE v;
 
+	       w_class(obj, arg);
                if (!rb_respond_to(obj, s_dump_data)) {
                    rb_raise(rb_eTypeError,
                             "class %s needs to have instance method `_dump_data'",

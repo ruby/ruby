@@ -33,7 +33,7 @@ VALUE rb_cSymbol;
 
 static ID eq, eql;
 static ID inspect;
-static ID clone;
+static ID become;
 static ID alloc;
 
 VALUE
@@ -95,15 +95,18 @@ rb_obj_clone(obj)
     VALUE obj;
 {
     VALUE clone;
+    int frozen;
 
     if (rb_special_const_p(obj)) {
         rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
     clone = rb_obj_alloc(rb_class_real(RBASIC(obj)->klass));
-    CLONESETUP(clone,obj);
-    if (TYPE(clone) == T_OBJECT && ROBJECT(obj)->iv_tbl) {
-	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
-    }
+    CLONESETUP(clone, obj);
+    frozen = OBJ_FROZEN(obj);
+    FL_UNSET(clone, FL_FREEZE);	   /* temporarily remove frozen flag */
+    rb_funcall(clone, become, 1, obj);
+    if (frozen) OBJ_FREEZE(clone); /* restore frozen status */
+    OBJ_INFECT(clone, obj);
 
     return clone;
 }
@@ -117,18 +120,31 @@ rb_obj_dup(obj)
     if (rb_special_const_p(obj)) {
         rb_raise(rb_eTypeError, "can't dup %s", rb_class2name(CLASS_OF(obj)));
     }
-    dup = rb_funcall(obj, clone, 0, 0);
-    if (TYPE(dup) != TYPE(obj)) {
-	rb_raise(rb_eTypeError, "dupulicated object must be same type");
+    dup = rb_obj_alloc(rb_class_real(RBASIC(obj)->klass));
+    DUPSETUP(dup, obj);
+    rb_funcall(dup, become, 1, obj);
+    OBJ_INFECT(dup, obj);
+
+    return dup;
+}
+
+VALUE
+rb_obj_become(obj, orig)
+    VALUE obj, orig;
+{
+    long type;
+
+    if ((type = TYPE(obj)) != TYPE(orig) ||
+	rb_obj_class(obj) != rb_obj_class(orig)) {
+	rb_raise(rb_eTypeError, "become should take same class object");
     }
-    if (!SPECIAL_CONST_P(dup)) {
-	OBJSETUP(dup, rb_obj_class(obj), BUILTIN_TYPE(obj));
-	OBJ_INFECT(dup, obj);
-	if (FL_TEST(obj, FL_EXIVAR)) {
-	    FL_SET(dup, FL_EXIVAR);
+    if (type == T_OBJECT) {
+	if (ROBJECT(obj)->iv_tbl) st_free_table(ROBJECT(obj)->iv_tbl);
+	if (ROBJECT(orig)->iv_tbl) {
+	    ROBJECT(obj)->iv_tbl = st_copy(ROBJECT(orig)->iv_tbl);
 	}
     }
-    return dup;
+    return obj;
 }
 
 static VALUE
@@ -1009,7 +1025,7 @@ rb_cstr_to_dbl(p, badcheck)
 	return d;
     }
     if (*end) {
-	char *buf = ALLOCA_N(char, strlen(p));
+	char *buf = ALLOCA_N(char, strlen(p)+1);
 	char *n = buf;
 
 	while (p < end) *n++ = *p++;
@@ -1267,6 +1283,7 @@ Init_Object()
 
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);
+    rb_define_method(rb_mKernel, "become", rb_obj_become, 1);
 
     rb_define_method(rb_mKernel, "taint", rb_obj_taint, 0);
     rb_define_method(rb_mKernel, "tainted?", rb_obj_tainted, 0);
@@ -1402,5 +1419,5 @@ Init_Object()
     eq = rb_intern("==");
     eql = rb_intern("eql?");
     inspect = rb_intern("inspect");
-    clone = rb_intern("clone");
+    become = rb_intern("become");
 }

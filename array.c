@@ -796,40 +796,22 @@ rb_ary_empty_p(ary)
 }
 
 static VALUE
-ary_copy(ary, clone)
-    VALUE ary;
-    int clone;
+rb_ary_become(copy, orig)
+    VALUE copy, orig;
 {
-    VALUE copy;
-
-    ary_make_shared(ary);
-    copy = rb_obj_alloc(rb_cArray);
-    if (clone) CLONESETUP(copy, ary);
-    else DUPSETUP(copy, ary);
-    RARRAY(copy)->ptr = RARRAY(ary)->ptr;
-    RARRAY(copy)->len = RARRAY(ary)->len;
-    RARRAY(copy)->aux.shared = RARRAY(ary)->aux.shared;
+    orig = to_ary(orig);
+    ary_make_shared(orig);
+    if (RARRAY(copy)->ptr) free(RARRAY(copy)->ptr);
+    RARRAY(copy)->ptr = RARRAY(orig)->ptr;
+    RARRAY(copy)->len = RARRAY(orig)->len;
+    RARRAY(copy)->aux.shared = RARRAY(orig)->aux.shared;
     FL_SET(copy, ELTS_SHARED);
 
     return copy;
 }
 
-static VALUE
-rb_ary_clone(ary)
-    VALUE ary;
-{
-    return ary_copy(ary, Qtrue);
-}
-
 VALUE
 rb_ary_dup(ary)
-    VALUE ary;
-{
-    return ary_copy(ary, Qfalse);
-}
-
-static VALUE
-ary_dup(ary)
     VALUE ary;
 {
     VALUE dup = rb_ary_new2(RARRAY(ary)->len);
@@ -1059,7 +1041,7 @@ static VALUE
 rb_ary_reverse_m(ary)
     VALUE ary;
 {
-    return rb_ary_reverse(ary_dup(ary));
+    return rb_ary_reverse(rb_ary_dup(ary));
 }
 
 int
@@ -1137,7 +1119,7 @@ VALUE
 rb_ary_sort(ary)
     VALUE ary;
 {
-    ary = ary_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_sort_bang(ary);
     return ary;
 }
@@ -1319,7 +1301,7 @@ static VALUE
 rb_ary_reject(ary)
     VALUE ary;
 {
-    ary = ary_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_reject_bang(ary);
     return ary;
 }
@@ -1715,7 +1697,7 @@ static VALUE
 rb_ary_uniq(ary)
     VALUE ary;
 {
-    ary = ary_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_uniq_bang(ary);
     return ary;
 }
@@ -1747,7 +1729,7 @@ static VALUE
 rb_ary_compact(ary)
     VALUE ary;
 {
-    ary = ary_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_compact_bang(ary);
     return ary;
 }
@@ -1826,7 +1808,7 @@ static VALUE
 rb_ary_flatten(ary)
     VALUE ary;
 {
-    ary = ary_dup(ary);
+    ary = rb_ary_dup(ary);
     rb_ary_flatten_bang(ary);
     return ary;
 }
@@ -1874,8 +1856,7 @@ Init_Array()
     rb_define_method(rb_cArray, "rindex", rb_ary_rindex, 1);
     rb_define_method(rb_cArray, "indexes", rb_ary_indexes, -1);
     rb_define_method(rb_cArray, "indices", rb_ary_indexes, -1);
-    rb_define_method(rb_cArray, "clone", rb_ary_clone, 0);
-    rb_define_method(rb_cArray, "dup", rb_ary_dup, 0);
+    rb_define_method(rb_cArray, "become", rb_ary_become, 1);
     rb_define_method(rb_cArray, "join", rb_ary_join_m, -1);
     rb_define_method(rb_cArray, "reverse", rb_ary_reverse_m, 0);
     rb_define_method(rb_cArray, "reverse!", rb_ary_reverse_bang, 0);

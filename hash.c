@@ -248,37 +248,28 @@ rb_hash_s_create(argc, argv, klass)
 }
 
 static VALUE
-rb_hash_clone(hash)
-    VALUE hash;
-{
-    VALUE clone = rb_obj_clone(hash);
-
-    RHASH(clone)->ifnone = RHASH(hash)->ifnone;
-    RHASH(clone)->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
-
-    return clone;
-}
-
-static VALUE
-rb_hash_dup(hash)
-    VALUE hash;
-{
-    VALUE dup = rb_obj_dup(hash);
-
-    if (FL_TEST(hash, HASH_PROC_DEFAULT)) {
-	FL_SET(dup, HASH_PROC_DEFAULT);
-    }
-    if (FL_TEST(hash, HASH_DELETED)) {
-	FL_SET(dup, HASH_DELETED);
-    }
-    return dup;
-}
-
-static VALUE
 to_hash(hash)
     VALUE hash;
 {
     return rb_convert_type(hash, T_HASH, "Hash", "to_hash");
+}
+
+static VALUE
+rb_hash_become(copy, orig)
+    VALUE copy, orig;
+{
+    orig = to_hash(orig);
+    if (RHASH(copy)->tbl) st_free_table(RHASH(copy)->tbl);
+    RHASH(copy)->tbl = (st_table*)st_copy(RHASH(orig)->tbl);
+    RHASH(copy)->ifnone = RHASH(orig)->ifnone;
+    if (FL_TEST(orig, HASH_PROC_DEFAULT)) {
+	FL_SET(copy, HASH_PROC_DEFAULT);
+    }
+    if (FL_TEST(orig, HASH_DELETED)) {
+	FL_SET(copy, HASH_DELETED);
+    }
+
+    return copy;
 }
 
 static int
@@ -983,7 +974,7 @@ env_delete(obj, name)
     char *nam, *val;
 
     rb_secure(4);
-    StringValue(name);
+    SafeStringValue(name);
     nam = RSTRING(name)->ptr;
     if (strlen(nam) != RSTRING(name)->len) {
 	rb_raise(rb_eArgError, "bad environment variable name");
@@ -994,9 +985,9 @@ env_delete(obj, name)
 
 	ruby_setenv(nam, 0);
 #ifdef __BORLANDC__
-	if (strcmpi(nam, "PATH") == 0 && !OBJ_TAINTED(name)) {
+	if (strcmpi(nam, "PATH") == 0) {
 #else
-	if (strcmp(nam, "PATH") == 0 && !OBJ_TAINTED(name)) {
+	if (strcmp(nam, "PATH") == 0) {
 #endif
 	    path_tainted = 0;
 	}
@@ -1616,8 +1607,7 @@ Init_Hash()
     rb_define_singleton_method(rb_cHash, "[]", rb_hash_s_create, -1);
     rb_define_method(rb_cHash,"initialize", rb_hash_initialize, -1);
 
-    rb_define_method(rb_cHash,"clone", rb_hash_clone, 0);
-    rb_define_method(rb_cHash,"dup", rb_hash_dup, 0);
+    rb_define_method(rb_cHash,"become", rb_hash_become, 1);
     rb_define_method(rb_cHash,"rehash", rb_hash_rehash, 0);
 
     rb_define_method(rb_cHash,"to_hash", rb_hash_to_hash, 0);

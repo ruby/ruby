@@ -8865,7 +8865,7 @@ rb_thread_cleanup()
 
     curr = curr_thread;
     while (curr->status == THREAD_KILLED) {
-	curr = curr_thread->prev;
+	curr = curr->prev;
     }
 
     FOREACH_THREAD_FROM(curr, th) {

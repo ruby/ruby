@@ -292,55 +292,16 @@ rb_obj_as_string(obj)
     return str;
 }
 
-static VALUE
-str_copy(str, clone)
-    VALUE str;
-    int clone;
-{
-    VALUE str2;
-    int flags;
-
-    StringValue(str);
-
-    if (FL_TEST(str, ELTS_SHARED)) {
-	str2 = rb_str_new3(RSTRING(str)->aux.shared);
-    }
-    else if (FL_TEST(str, STR_ASSOC)) {
-	str2 = str_new(RSTRING(str)->ptr, RSTRING(str)->len);
-	RSTRING(str2)->aux.shared = RSTRING(str)->aux.shared;
-    }
-    else if (OBJ_FROZEN(str)) {
-	str2 = rb_str_new3(str);
-    }
-    else {
-	str2 = rb_str_new3(rb_str_new4(str));
-    }
-    flags = FL_TEST(str2, ELTS_SHARED|STR_ASSOC);
-    if (clone) {
-	CLONESETUP(str2, str);
-    }
-    else {
-	DUPSETUP(str2, str);
-    } 
-    if (flags) FL_SET(str2, flags);
-    return str2;
-}
+static VALUE rb_str_replace _((VALUE, VALUE));
 
 VALUE
 rb_str_dup(str)
     VALUE str;
 {
-    return str_copy(str, Qfalse);
+    VALUE dup = rb_str_s_alloc(rb_cString);
+    rb_str_replace(dup, str);
+    return dup;
 }
-
-static VALUE
-rb_str_clone(str)
-    VALUE str;
-{
-    return str_copy(str, Qtrue);
-}
-
-static VALUE rb_str_replace _((VALUE, VALUE));
 
 static VALUE
 rb_str_init(argc, argv, str)
@@ -1425,7 +1386,7 @@ get_pat(pat)
     }
     val = rb_reg_quote(pat);
 #if RUBY_VERSION_CODE < 180
-    if (val != pat) {
+    if (val != pat && rb_str_cmp(val, pat) != 0) {
 	rb_warn("string pattern instead of regexp; metacharacters no longer effective");
     }
 #endif
@@ -3154,8 +3115,7 @@ Init_String()
     rb_include_module(rb_cString, rb_mEnumerable);
     rb_define_singleton_method(rb_cString, "allocate", rb_str_s_alloc, 0);
     rb_define_method(rb_cString, "initialize", rb_str_init, -1);
-    rb_define_method(rb_cString, "clone", rb_str_clone, 0);
-    rb_define_method(rb_cString, "dup", rb_str_dup, 0);
+    rb_define_method(rb_cString, "become", rb_str_replace, 1); 
     rb_define_method(rb_cString, "<=>", rb_str_cmp_m, 1);
     rb_define_method(rb_cString, "==", rb_str_equal, 1);
     rb_define_method(rb_cString, "===", rb_str_equal, 1);

@@ -643,14 +643,16 @@ read_all(fptr, siz)
     VALUE str;
     long bytes = 0;
     long n;
+    long pos = 0;
 
     if (feof(fptr->f)) return Qnil;
     READ_CHECK(fptr->f);
     if (!siz) siz = BUFSIZ;
     str = rb_tainted_str_new(0, siz);
+    pos = ftell(fptr->f);
     for (;;) {
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
-	if (n == 0 && bytes == 0) {
+	if (pos > 0 && n == 0 && bytes == 0) {
 	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(fptr->path);
 	}
@@ -2249,14 +2251,14 @@ rb_io_reopen(argc, argv, file)
 }
 
 static VALUE
-rb_io_clone(io)
+rb_io_become(clone, io)
     VALUE io;
 {
     OpenFile *fptr, *orig;
     int fd;
     char *mode;
-    VALUE clone = rb_obj_clone(io);
 
+    io = rb_io_get_io(io);
     GetOpenFile(io, orig);
     MakeOpenFile(clone, fptr);
 
@@ -3777,7 +3779,7 @@ Init_IO()
     rb_define_hooked_variable("$.", &lineno, 0, lineno_setter);
     rb_define_virtual_variable("$_", rb_lastline_get, rb_lastline_set);
 
-    rb_define_method(rb_cIO, "clone", rb_io_clone, 0);
+    rb_define_method(rb_cIO, "become", rb_io_become, 1);
     rb_define_method(rb_cIO, "reopen", rb_io_reopen, -1);
 
     rb_define_method(rb_cIO, "print", rb_io_print, -1);

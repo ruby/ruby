@@ -421,11 +421,12 @@ rb_struct_to_a(s)
 }
 
 static VALUE
-rb_struct_clone(s)
-    VALUE s;
+rb_struct_become(clone, s)
+    VALUE clone, s;
 {
-    VALUE clone = rb_obj_clone(s);
-
+    if (!rb_obj_is_kind_of(s, rb_obj_class(clone))) {
+	rb_raise(rb_eTypeError, "wrong argument type");
+    }
     RSTRUCT(clone)->ptr = ALLOC_N(VALUE, RSTRUCT(s)->len);
     RSTRUCT(clone)->len = RSTRUCT(s)->len;
     MEMCPY(RSTRUCT(clone)->ptr, RSTRUCT(s)->ptr, VALUE, RSTRUCT(clone)->len);
@@ -589,7 +590,7 @@ Init_Struct()
     rb_define_singleton_method(rb_cStruct, "new", rb_struct_s_def, -1);
 
     rb_define_method(rb_cStruct, "initialize", rb_struct_initialize, -2);
-    rb_define_method(rb_cStruct, "clone", rb_struct_clone, 0);
+    rb_define_method(rb_cStruct, "become", rb_struct_become, 1);
 
     rb_define_method(rb_cStruct, "==", rb_struct_equal, 1);
 

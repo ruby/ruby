@@ -1,3 +1,24 @@
+Tue Aug 27 15:03:35 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_find_file): $LOAD_PATH must not be empty.
+
+	* file.c (rb_find_file_ext): ditto.
+
+Tue Aug 27 02:35:21 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_eq): class check should be based on range.class,
+	  instead of Range to work with Range.dup.
+
+	* range.c (range_eql): ditto.
+
+Mon Aug 26 18:17:56 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_mod_dup): need to preserve metaclass and flags.
+
+Mon Aug 26 10:44:18 2002  Tanaka Akira  <akr@m17n.org>
+
+	* object.c (rb_cstr_to_dbl): had a buffer overrun.
+
 Sun Aug 25 20:10:32 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#form): fix ruby-bugs-ja:PR#280, add default action.
@@ -10,6 +31,19 @@ Sat Aug 24 15:32:16 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (module_setup): unused variable.  [ruby-core:00358]
 
+Sat Aug 24 14:59:02 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_class): integrate singleton check into a funciton
+	  to follow DRY principle.
+
+	* marshal.c (w_uclass): should check singleton method.
+
+	* object.c (rb_obj_dup): dmark and dfree functions must be match
+	  for T_DATA type.
+
+	* object.c (rb_obj_dup): class of the duped object must be match
+	  to the class of the original.
+
 Sat Aug 24 13:57:28 2002  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.rfc2822, Time#rfc2822): preserve localtimeness.
@@ -21,6 +55,16 @@ Fri Aug 23 23:59:57 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (method_call): check receiver is defined.
 
 	* eval.c (umethod_call): removed.
+
+Fri Aug 23 23:39:17 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_quote): do not escape \t, \f, \r, \n, for they are
+	  not regular expression metacharacters.
+
+	* time.c (time_s_alloc): use time_free instead of free (null check,
+	  also serves for type mark).
+
+	* time.c (time_s_at): check dfree function too.
 
 Fri Aug 23 17:06:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 

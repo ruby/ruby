@@ -97,8 +97,7 @@ AC_PROG_GCC_TRADITIONAL
 
 AC_PROG_YACC
 AC_CHECK_TOOL(RANLIB, ranlib, :)
-AC_CHECK_TOOL(AR, ar)
-AC_CHECK_PROGS(AR, ar aal, ar)
+AC_CHECK_TOOL(AR, ar aal, ar)
 
 case "$target_os" in
 cygwin*|mingw*)

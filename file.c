@@ -2015,22 +2015,22 @@ rb_stat_init(obj, fname)
 }
 
 static VALUE
-rb_stat_clone(obj)
-    VALUE obj;
+rb_stat_become(obj, orig)
+    VALUE obj, orig;
 {
     struct stat *nst;
 
-    VALUE clone;
-
-    clone = rb_obj_alloc(RBASIC(obj)->klass);
-    CLONESETUP(clone,obj);
-    if (DATA_PTR(obj)) {
+    /* need better argument type check */
+    if (!rb_obj_is_kind_of(orig, rb_obj_class(obj))) {
+	rb_raise(rb_eTypeError, "wrong argument type");
+    }
+    if (DATA_PTR(orig)) {
 	nst = ALLOC(struct stat);
-	*nst = *(struct stat*)DATA_PTR(obj);
-	DATA_PTR(clone) = nst;
+	*nst = *(struct stat*)DATA_PTR(orig);
+	DATA_PTR(obj) = nst;
     }
 
-    return clone;
+    return obj;
 }
 
 static VALUE
@@ -2457,6 +2457,7 @@ rb_find_file_ext(filep, ext)
 	VALUE str = RARRAY(rb_load_path)->ptr[i];
 
 	SafeStringValue(str);
+	if (RSTRING(str)->len == 0) return 0;
 	path = RSTRING(str)->ptr;
 	for (j=0; ext[j]; j++) {
 	    fname = rb_str_dup(*filep);
@@ -2520,15 +2521,23 @@ rb_find_file(path)
 	    }
 	}
 	tmp = rb_ary_join(tmp, rb_str_new2(PATH_SEP));
-	lpath = StringValuePtr(tmp);
-	if (rb_safe_level() >= 2 && !rb_path_check(lpath)) {
-	    rb_raise(rb_eSecurityError, "loading from unsafe path %s", lpath);
+	if (RSTRING(tmp)->len == 0) {
+	    lpath = 0;
+	}
+	else {
+	    lpath = RSTRING(tmp)->ptr;
+	    if (rb_safe_level() >= 2 && !rb_path_check(lpath)) {
+		rb_raise(rb_eSecurityError, "loading from unsafe path %s", lpath);
+	    }
 	}
     }
     else {
 	lpath = 0;
     }
 
+    if (!lpath) {
+	return 0;		/* no path, no load */
+    }
     f = dln_find_file(f, lpath);
     if (file_load_ok(f)) {
 	return rb_str_new2(f);
@@ -2646,7 +2655,7 @@ Init_File()
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
     rb_define_singleton_method(rb_cStat, "allocate",  rb_stat_s_alloc, 0);
     rb_define_method(rb_cStat, "initialize", rb_stat_init, 1);
-    rb_define_method(rb_cStat, "clone", rb_stat_clone, 0);
+    rb_define_method(rb_cStat, "become", rb_stat_become, 1);
 
     rb_include_module(rb_cStat, rb_mComparable);
 

@@ -249,6 +249,7 @@ class SizedQueue<Queue
     super
   end
   alias << push
+  alias enq push
 
   def pop(*args)
     retval = super
@@ -269,6 +270,8 @@ class SizedQueue<Queue
     end
     retval
   end
+  alias shift pop
+  alias deq pop
 
   def num_waiting
     @waiting.size + @queue_wait.size
