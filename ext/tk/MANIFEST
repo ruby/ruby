@@ -11,12 +11,14 @@ lib/tkclass.rb
 lib/tkdialog.rb
 lib/tkentry.rb
 lib/tkfont.rb
+lib/tkmacpkg.rb
 lib/tkmenubar.rb
 lib/tkmngfocus.rb
 lib/tkpalette.rb
 lib/tkscrollbox.rb
 lib/tktext.rb
 lib/tkvirtevent.rb
+lib/tkwinpkg.rb
 sample/tkbiff.rb
 sample/tkbrowse.rb
 sample/tkdialog.rb

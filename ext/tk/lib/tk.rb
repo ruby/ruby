@@ -282,7 +282,9 @@ module TkComm
       name = format("w%.4d", Tk_IDs[1])
       Tk_IDs[1] += 1
     end
-    if !ppath or ppath == "."
+    if name[0] == ?.
+      @path = name.dup
+    elsif !ppath or ppath == "."
       @path = format(".%s", name);
     else
       @path = format("%s.%s", ppath, name)
@@ -2596,29 +2598,43 @@ class TkWindow<TkObject
       parent = keys.delete('parent')
       widgetname = keys.delete('widgetname')
       install_win(if parent then parent.path end, widgetname)
+      no_create = keys.delete('no_create')
+      if no_create && !widgetname 
+        fail ArgumentError, 
+             "if 'no_create' option set true, need to define 'widgetname'"
+      end
     elsif keys
       keys = _symbolkey2str(keys)
       widgetname = keys.delete('widgetname')
       install_win(if parent then parent.path end, widgetname)
+      no_create = keys.delete('no_create')
+      if no_create && !widgetname 
+        fail ArgumentError, 
+             "if 'no_create' option set true, need to define 'widgetname'"
+      end
     else
       install_win(if parent then parent.path end)
     end
     if self.method(:create_self).arity == 0
       p 'create_self has no arg' if $DEBUG
-      create_self
+      create_self unless no_create
       if keys
-	# tk_call @path, 'configure', *hash_kv(keys)
-	configure(keys)
+        # tk_call @path, 'configure', *hash_kv(keys)
+        configure(keys)
       end
     else
       p 'create_self has args' if $DEBUG
       fontkeys = {}
       if keys
-	['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
-	  fontkeys[key] = keys.delete(key) if keys.key?(key)
-	}
+        ['font', 'kanjifont', 'latinfont', 'asciifont'].each{|key|
+          fontkeys[key] = keys.delete(key) if keys.key?(key)
+        }
       end
-      create_self(keys)
+      if no_create && keys
+        configure(keys)
+      else
+        create_self(keys)
+      end
       font_configure(fontkeys) unless fontkeys.empty?
     end
   end

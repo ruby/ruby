@@ -7,9 +7,11 @@ tkclass.rb	provides generic names for Tk classes
 tkdialog.rb	Tk dialog class
 tkentry.rb	Tk entry class
 tkfont.rb	Tk font support
+tkmacpkg.rb	Mac resource support
 tkmenubar.rb	TK menubar utility
 tkmngfocus.rb	focus manager
 tkpalette.rb	pallete support
 tkscrollbox.rb	scroll box, also example of compound widget
 tktext.rb	text classes
 tkvirtevent.rb	virtual event support
+tkwinpkg.rb	Win DDE and registry support
