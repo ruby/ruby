@@ -1,3 +1,7 @@
+Mon Sep  6 10:57:40 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/lib/tk/menu.rb(TkOptionMenubutton#insert): call correct method
+
 Mon Sep  6 07:51:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (cvar_cbase): singletons should refer outer cvar scope.
