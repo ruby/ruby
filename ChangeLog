@@ -1,3 +1,8 @@
+Sat Mar 20 09:33:36 2004  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb, lib/date/format.rb: _parse() now accepts fractional
+	  part of second minute that follows a comma or a full stop.
+
 Fri Mar 19 15:15:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_cvar_set): class variables become private to the

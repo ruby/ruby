@@ -1,5 +1,7 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2004
-# $Id: format.rb,v 2.12 2004-01-19 05:43:28+09 tadf Exp $
+# $Id: format.rb,v 2.13 2004-03-20 08:05:13+09 tadf Exp $
+
+require 'rational'
 
 class Date
 
@@ -182,6 +184,12 @@ class Date
 	return unless str.sub!(/\A%/o, '')
       when '%+'
 	return unless __strptime(str, '%a %b %e %H:%M:%S %Z %Y', elem)
+=begin
+      when '%.'
+	return unless str.sub!(/\A(\d+)/o, '')
+	val = $1.to_i.to_r / (10**$1.size)
+	elem[:sec_fraction] = val
+=end
       when '%1'
 	return unless str.sub!(/\A(\d+)/o, '')
 	val = $1.to_i
@@ -227,7 +235,7 @@ class Date
   def self._parse(str, comp=false)
     str = str.dup
 
-    str.gsub!(/[^-+.\/:0-9a-z]+/ino, ' ')
+    str.gsub!(/[^-+,.\/:0-9a-z]+/ino, ' ')
 
     # day
     if str.sub!(/(#{PARSE_DAYPAT})\S*/ino, ' ')
@@ -236,7 +244,10 @@ class Date
 
     # time
     if str.sub!(
-		/(\d+):(\d+)(?::(\d+))?
+		/(\d+):(\d+)
+		 (?:
+		   :(\d+)(?:[,.](\d*))?
+		 )?
 		 (?:
 		   \s*
 		   ([ap])(?:m\b|\.m\.)
@@ -254,15 +265,18 @@ class Date
       hour = $1.to_i
       min = $2.to_i
       sec = $3.to_i if $3
-
       if $4
+	sec_fraction = $4.to_i.to_r / (10**$4.size)
+      end
+
+      if $5
 	hour %= 12
-	if $4.downcase == 'p'
+	if $5.downcase == 'p'
 	  hour += 12
 	end
       end
 
-      zone = $5
+      zone = $6
     end
 
     # eu
@@ -368,7 +382,7 @@ class Date
 		      \s*
 		      T?
 		      \s*
-		      (\d{2,6})
+		      (\d{2,6})(?:[,.](\d*))?
 		    )?
 		    (?:
 		      \s*
@@ -406,7 +420,10 @@ class Date
 	  sec  = $3[ 4, 2].to_i if $3.size >= 6
 	end
       end
-      zone = $4
+      if $4
+	sec_fraction = $4.to_i.to_r / (10**$4.size)
+      end
+      zone = $5
     end
 
     if str.sub!(/\b(bc\b|bce\b|b\.c\.|b\.c\.e\.)/ino, ' ')
@@ -432,6 +449,7 @@ class Date
     elem[:hour] = hour if hour
     elem[:min] = min if min
     elem[:sec] = sec if sec
+    elem[:sec_fraction] = sec_fraction if sec_fraction
     elem[:zone] = zone if zone
     offset = zone_to_diff(zone) if zone
     elem[:offset] = offset if offset
@@ -511,6 +529,10 @@ class Date
 	o << '%02d' % mm
       when '%%'; o << '%'
       when '%+'; o << strftime('%a %b %e %H:%M:%S %Z %Y')	# TZ
+=begin
+      when '%.'
+	o << '%06d' % (sec_fraction / (1.to_r/86400/(10**6)))
+=end
       when '%1'; o <<   '%d' % jd
       when '%2'; o << strftime('%Y-%j')
       when '%3'; o << strftime('%Y-%m-%d')
