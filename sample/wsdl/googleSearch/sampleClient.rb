@@ -37,7 +37,7 @@ obj = GoogleSearchPort.new(endpoint_url)
 #    N/A
 #
 key = q = start = maxResults = filter = restrict = safeSearch = lr = ie = oe = nil
-key = File.open(File.expand_path("~/.google_key")).read.chomp
+key = File.open(File.expand_path("~/.google_key")) { |f| f.read }.chomp
 q = "Ruby"
 start = 0
 maxResults = 10

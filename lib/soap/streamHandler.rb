@@ -1,20 +1,9 @@
-=begin
-SOAP4R - Stream handler.
-Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi.
+# SOAP4R - Stream handler.
+# Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 require 'soap/soap'
@@ -73,7 +62,7 @@ class StreamHandler
     end
     charset = $1
     charset.gsub!(/"/, '') if charset
-    charset
+    charset || 'us-ascii'
   end
 
   def self.create_media_type(charset)
@@ -90,6 +79,7 @@ public
   attr_accessor :wiredump_dev
   attr_accessor :wiredump_file_base
   attr_accessor :charset
+  attr_reader :client
   
   NofRetry = 10       	# [times]
   ConnectTimeout = 20   # [sec]
@@ -106,6 +96,10 @@ public
     @client.session_manager.connect_timeout = ConnectTimeout
     @client.session_manager.send_timeout = SendTimeout
     @client.session_manager.receive_timeout = ReceiveTimeout
+  end
+
+  def inspect
+    "#<#{self.class}:#{endpoint_url}>"
   end
 
   def proxy=(proxy)

@@ -1,20 +1,9 @@
-=begin
-SOAP4R - Mapping factory.
-Copyright (C) 2000, 2001, 2002, 2003  NAKAMURA, Hiroshi.
+# SOAP4R - Mapping factory.
+# Copyright (C) 2000, 2001, 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 module SOAP
@@ -73,11 +62,11 @@ class Factory
 
   def setiv2obj(obj, node, map)
     return if node.nil?
-    vars = {}
-    node.each do |name, value|
-      vars[Mapping.elename2name(name)] = Mapping._soap2obj(value, map)
+    if obj.is_a?(Array)
+      setiv2ary(obj, node, map)
+    else
+      setiv2struct(obj, node, map)
     end
-    Mapping.set_instance_vars(obj, vars)
   end
 
   def setiv2soap(node, obj, map)
@@ -104,6 +93,22 @@ class Factory
 
   def capitalize(target)
     target.gsub(/^([a-z])/) { $1.tr!('[a-z]', '[A-Z]') }
+  end
+
+private
+
+  def setiv2ary(obj, node, map)
+    node.each do |name, value|
+      Array.instance_method(:<<).bind(obj).call(Mapping._soap2obj(value, map))
+    end
+  end
+
+  def setiv2struct(obj, node, map)
+    vars = {}
+    node.each do |name, value|
+      vars[Mapping.elename2name(name)] = Mapping._soap2obj(value, map)
+    end
+    Mapping.set_instance_vars(obj, vars)
   end
 end
 

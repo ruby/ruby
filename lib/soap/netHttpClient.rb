@@ -1,20 +1,9 @@
-=begin
-SOAP4R - net/http wrapper
-Copyright (C) 2003  NAKAMURA, Hiroshi.
+# SOAP4R - net/http wrapper
+# Copyright (C) 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 require 'net/http'
@@ -24,6 +13,13 @@ module SOAP
 
 
 class NetHttpClient
+
+  SSLEnabled = begin
+      require 'net/https'
+      true
+    rescue LoadError
+      false
+    end
 
   attr_accessor :proxy
   attr_accessor :no_proxy
@@ -86,20 +82,39 @@ class NetHttpClient
 private
 
   def start(url)
+    http = create_connection(url)
+    response = nil
+    http.start { |worker|
+      response, = yield(worker)
+      worker.finish
+    }
+    @debug_dev << response.body if @debug_dev
+    response
+  end
+
+  def create_connection(url)
     proxy_host = proxy_port = nil
     unless no_proxy?(url)
       proxy_host = @proxy.host
       proxy_port = @proxy.port
     end
-    response = nil
-    Net::HTTP::Proxy(proxy_host, proxy_port).start(url.host, url.port) { |http|
-      if http.respond_to?(:set_debug_output)
-	http.set_debug_output(@debug_dev)
+    http = Net::HTTP::Proxy(proxy_host, proxy_port).new(url.host, url.port)
+    if http.respond_to?(:set_debug_output)
+      http.set_debug_output(@debug_dev)
+    end
+    case url
+    when URI::HTTPS
+      if SSLEnabled
+	http.use_ssl = true
+      else
+	raise RuntimeError.new("Cannot connect to #{url} (OpenSSL is not installed.)")
       end
-      response, = yield(http)
-      http.finish
-    }
-    response
+    when URI::HTTP
+      # OK
+    else
+      raise RuntimeError.new("Cannot connect to #{url} (Not HTTP.)")
+    end
+    http
   end
 
   NO_PROXY_HOSTS = ['localhost']

@@ -1,11 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <xs:schema
-    xmlns:mstns="http://www.winfessor.com/SoapBoxWebService/MessageDataSet.xsd"
-    xmlns="http://www.winfessor.com/SoapBoxWebService/MessageDataSet.xsd"
     attributeFormDefault="qualified"
     elementFormDefault="qualified"
-    targetNamespace="http://www.winfessor.com/SoapBoxWebService/MessageDataSet.xsd"
-    id="MessageDataSet"
+    targetNamespace="urn:jp.gr.jin.rrr.example.fakeschema"
     xmlns:xs="http://www.w3.org/2001/XMLSchema">
   <xs:element name="MessageDataSet">
     <xs:complexType>

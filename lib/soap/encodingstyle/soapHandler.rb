@@ -1,20 +1,9 @@
-=begin
-SOAP4R - SOAP EncodingStyle handler library
-Copyright (C) 2001, 2003  NAKAMURA, Hiroshi.
+# SOAP4R - SOAP EncodingStyle handler library
+# Copyright (C) 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 require 'soap/encodingstyle/handler'
@@ -172,10 +161,9 @@ class SOAPHandler < Handler
     elsif href
       o = SOAPReference.decode(elename, href)
       @refpool << o
-    elsif @decode_typemap &&
-	(parent.node.class != SOAPBody || @is_first_top_ele)
-      # multi-ref element should be parsed by decode_tag_by_type.
-      @is_first_top_ele = false
+    elsif @decode_typemap
+	# to parse multi-ref element with decode_tag_by_type.
+	# && (parent.node.class != SOAPBody || @is_first_top_ele)
       o = decode_tag_by_wsdl(ns, elename, type, parent.node, arytype, extraattr)
     else
       o = decode_tag_by_type(ns, elename, type, parent.node, arytype, extraattr)
@@ -344,15 +332,30 @@ private
   end
 
   def decode_tag_by_wsdl(ns, elename, typestr, parent, arytypestr, extraattr)
+    o = nil
     if parent.class == SOAPBody
-      # Unqualified name is allowed here.
-      type = @decode_typemap[elename] || @decode_typemap.find_name(elename.name)
-      unless type
-	raise EncodingStyleError.new("Unknown operation '#{ elename }'.")
+      if @is_first_top_ele
+	# Unqualified name is allowed here.
+	@is_first_top_ele = false
+	type = @decode_typemap[elename] ||
+	  @decode_typemap.find_name(elename.name)
+	unless type
+	  raise EncodingStyleError.new("Unknown operation '#{ elename }'.")
+	end
+	o = SOAPStruct.new(elename)
+	o.definedtype = type
+	return o
+      elsif !typestr
+	# typeless multi-ref element.
+	return decode_tag_by_type(ns, elename, typestr, parent, arytypestr,
+	  extraattr)
+      else
+	# typed multi-ref element.
+	typename = ns.parse(typestr)
+	typedef = @decode_typemap[typename]
+	return decode_defined_compoundtype(elename, typename, typedef,
+	  arytypestr)
       end
-      o = SOAPStruct.new(elename)
-      o.definedtype = type
-      return o
     end
 
     if parent.type == XSD::AnyTypeName
@@ -366,41 +369,41 @@ private
     unless parenttype
       raise EncodingStyleError.new("Unknown type '#{ parent.type }'.")
     end
-    typename = parenttype.child_type(elename)
-    if typename
-      if (klass = TypeMap[typename])
-	return klass.decode(elename)
-      elsif typename == XSD::AnyTypeName
-	return decode_tag_by_type(ns, elename, typestr, parent, arytypestr,
-	  extraattr)
-      end
+
+    definedtype_name = parenttype.child_type(elename)
+    if definedtype_name and (klass = TypeMap[definedtype_name])
+      return klass.decode(elename)
+    elsif definedtype_name == XSD::AnyTypeName
+      return decode_tag_by_type(ns, elename, typestr, parent, arytypestr,
+	extraattr)
     end
 
-    type = if typename
-	@decode_typemap[typename]
-      else
-	parenttype.child_defined_complextype(elename)
-      end
-    unless type
+    typedef = definedtype_name ? @decode_typemap[definedtype_name] :
+      parenttype.child_defined_complextype(elename)
+    decode_defined_compoundtype(elename, definedtype_name, typedef, arytypestr)
+  end
+
+  def decode_defined_compoundtype(elename, typename, typedef, arytypestr)
+    unless typedef
       raise EncodingStyleError.new("Unknown type '#{ typename }'.")
     end
-
-    case type.compoundtype
+    case typedef.compoundtype
     when :TYPE_STRUCT
       o = SOAPStruct.decode(elename, typename)
-      o.definedtype = type
+      o.definedtype = typedef
       return o
     when :TYPE_ARRAY
-      expected_arytype = type.find_arytype
-      actual_arytype = if arytypestr
-	  XSD::QName.new(expected_arytype.namespace,
-	    content_typename(expected_arytype.name) <<
-	    content_ranksize(arytypestr))
-	else
-       	  expected_arytype
-	end
-      o = SOAPArray.decode(elename, typename, actual_arytype)
-      o.definedtype = type
+      expected_arytype = typedef.find_arytype
+      if arytypestr
+	actual_arytype = XSD::QName.new(expected_arytype.namespace,
+	  content_typename(expected_arytype.name) <<
+	  content_ranksize(arytypestr))
+	o = SOAPArray.decode(elename, typename, actual_arytype)
+      else
+	o = SOAPArray.new(typename, 1, expected_arytype)
+	o.elename = elename
+      end
+      o.definedtype = typedef
       return o
     end
     return nil

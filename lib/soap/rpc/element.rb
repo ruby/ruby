@@ -1,20 +1,9 @@
-=begin
-SOAP4R - RPC element definition.
-Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi.
+# SOAP4R - RPC element definition.
+# Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 require 'soap/baseData'
@@ -180,10 +169,10 @@ class SOAPMethodRequest < SOAPMethod
     params.each do |param|
       param_name = "p#{ i }"
       i += 1
-      param_def << [IN, nil, param_name]
+      param_def << [IN, param_name, nil]
       param_value << [param_name, param]
     end
-    param_def << [RETVAL, nil, 'return']
+    param_def << [RETVAL, 'return', nil]
     o = new(qname, param_def)
     o.set_param(param_value)
     o
@@ -236,7 +225,7 @@ class SOAPMethodResponse < SOAPMethod
 
   def retval=(retval)
     @retval = retval
-    @retval.elename = @retval.elename.dup_name('return')
+    @retval.elename = @retval.elename.dup_name(@retval_name || 'return')
   end
 
   def each

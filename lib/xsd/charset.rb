@@ -1,20 +1,9 @@
-=begin
-XSD4R - Charset handling library.
-Copyright (C) 2001, 2003  NAKAMURA, Hiroshi.
+# XSD4R - Charset handling library.
+# Copyright (C) 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 module XSD
@@ -40,15 +29,15 @@ public
       @encoding = 'UTF8'
       EncodingConvertMap[['UTF8', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "utf-8", str) }
       EncodingConvertMap[['EUC' , 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "euc-jp", str) }
-      EncodingConvertMap[['EUC' , 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("shift-jis", "euc-jp", str) }
+      EncodingConvertMap[['EUC' , 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("shift_jis", "euc-jp", str) }
       if /(mswin|bccwin|mingw|cygwin|emx)/ =~ RUBY_PLATFORM
 	EncodingConvertMap[['UTF8', 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("cp932", "utf-8", str) }
        	EncodingConvertMap[['SJIS', 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "cp932", str) }
 	EncodingConvertMap[['SJIS', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "cp932", str) }
       else
-	EncodingConvertMap[['UTF8', 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("shift-jis", "utf-8", str) }
-	EncodingConvertMap[['SJIS', 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "shift-jis", str) }
-	EncodingConvertMap[['SJIS', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "shift-jis", str) }
+	EncodingConvertMap[['UTF8', 'SJIS']] = Proc.new { |str| IconvCharset.safe_iconv("shift_jis", "utf-8", str) }
+	EncodingConvertMap[['SJIS', 'UTF8']] = Proc.new { |str| IconvCharset.safe_iconv("utf-8", "shift_jis", str) }
+	EncodingConvertMap[['SJIS', 'EUC' ]] = Proc.new { |str| IconvCharset.safe_iconv("euc-jp", "shift_jis", str) }
       end
     rescue LoadError
       begin

@@ -1,20 +1,9 @@
-=begin
-SOAP4R - RPC Proxy library.
-Copyright (C) 2000, 2003  NAKAMURA, Hiroshi.
+# SOAP4R - RPC Proxy library.
+# Copyright (C) 2000, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 require 'soap/soap'
@@ -35,13 +24,16 @@ class Proxy
 public
 
   attr_accessor :soapaction
-  attr_accessor :allow_unqualified_element, :default_encodingstyle
+  attr_accessor :mandatorycharset
+  attr_accessor :allow_unqualified_element
+  attr_accessor :default_encodingstyle
   attr_reader :method
 
-  def initialize(stream_handler, soapaction = nil)
-    @handler = stream_handler
+  def initialize(streamhandler, soapaction = nil)
+    @streamhandler = streamhandler
     @soapaction = soapaction
     @method = {}
+    @mandatorycharset = nil
     @allow_unqualified_element = false
     @default_encodingstyle = nil
   end
@@ -100,13 +92,13 @@ public
     end
     opt = create_options
     send_string = Processor.marshal(req_header, req_body, opt)
-    data = @handler.send(send_string, soapaction)
+    data = @streamhandler.send(send_string, soapaction)
     if data.receive_string.empty?
       return nil, nil
     end
-    res_charset = StreamHandler.parse_media_type(data.receive_contenttype)
     opt = create_options
-    opt[:charset] = res_charset
+    opt[:charset] = @mandatorycharset ||
+      StreamHandler.parse_media_type(data.receive_contenttype)
     res_header, res_body = Processor.unmarshal(data.receive_string, opt)
     return res_header, res_body
   end

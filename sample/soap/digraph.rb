@@ -27,7 +27,7 @@ File.open("digraph_marshalled_string.soap", "wb") do |f|
   SOAP::Marshal.dump(n1, f)
 end
 
-marshalledString = File.open("digraph_marshalled_string.soap").read
+marshalledString = File.open("digraph_marshalled_string.soap") { |f| f.read }
 
 puts marshalledString
 

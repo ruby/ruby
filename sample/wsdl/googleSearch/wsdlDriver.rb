@@ -3,7 +3,7 @@ require 'soap/wsdlDriver'
 
 word = ARGV.shift
 # You must get key from http://www.google.com/apis/ to use Google Web APIs.
-key = File.open(File.expand_path("~/.google_key")).read.chomp
+key = File.open(File.expand_path("~/.google_key")) { |f| f.read }.chomp
 
 GOOGLE_WSDL = 'http://api.google.com/GoogleSearch.wsdl'
 # GOOGLE_WSDL = 'GoogleSearch.wsdl'

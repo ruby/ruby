@@ -1,20 +1,9 @@
-=begin
-SOAP4R - SOAP RPC driver
-Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi.
+# SOAP4R - SOAP RPC driver
+# Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 require 'soap/soap'
@@ -35,51 +24,63 @@ public
 
   attr_accessor :mapping_registry
   attr_accessor :soapaction
-  attr_reader :endpoint_url
   attr_reader :wiredump_dev
   attr_reader :wiredump_file_base
-  attr_reader :httpproxy
+  attr_reader :streamhandler
 
   def initialize(endpoint_url, namespace, soapaction = nil)
-    @endpoint_url = endpoint_url
     @namespace = namespace
     @mapping_registry = nil      # for unmarshal
     @soapaction = soapaction
     @wiredump_dev = nil
     @wiredump_file_base = nil
-    @httpproxy = ENV['httpproxy'] || ENV['HTTP_PROXY']
-    @handler = HTTPPostStreamHandler.new(@endpoint_url, @httpproxy,
+    name = 'http_proxy'
+    @httpproxy = ENV[name] || ENV[name.upcase]
+    @streamhandler = HTTPPostStreamHandler.new(endpoint_url, @httpproxy,
       XSD::Charset.encoding_label)
-    @proxy = Proxy.new(@handler, @soapaction)
+    @proxy = Proxy.new(@streamhandler, @soapaction)
     @proxy.allow_unqualified_element = true
   end
 
+  def inspect
+    "#<#{self.class}:#{@streamhandler.inspect}>"
+  end
+
+  def endpoint_url
+    @streamhandler.endpoint_url
+  end
+
   def endpoint_url=(endpoint_url)
-    @endpoint_url = endpoint_url
-    if @handler
-      @handler.endpoint_url = @endpoint_url
-      @handler.reset
-    end
+    @streamhandler.endpoint_url = endpoint_url
+    @streamhandler.reset
   end
 
   def wiredump_dev=(dev)
     @wiredump_dev = dev
-    if @handler
-      @handler.wiredump_dev = @wiredump_dev
-      @handler.reset
-    end
+    @streamhandler.wiredump_dev = @wiredump_dev
+    @streamhandler.reset
   end
 
   def wiredump_file_base=(base)
     @wiredump_file_base = base
   end
 
+  def httpproxy
+    @httpproxy
+  end
+
   def httpproxy=(httpproxy)
     @httpproxy = httpproxy
-    if @handler
-      @handler.proxy = @httpproxy
-      @handler.reset
-    end
+    @streamhandler.proxy = @httpproxy
+    @streamhandler.reset
+  end
+
+  def mandatorycharset
+    @proxy.mandatorycharset
+  end
+
+  def mandatorycharset=(mandatorycharset)
+    @proxy.mandatorycharset = mandatorycharset
   end
 
   def default_encodingstyle
@@ -126,7 +127,7 @@ public
   #
   def invoke(headers, body)
     if @wiredump_file_base
-      @handler.wiredump_file_base =
+      @streamhandler.wiredump_file_base =
 	@wiredump_file_base + '_' << body.elename.name
     end
     @proxy.invoke(headers, body)
@@ -136,7 +137,7 @@ public
     # Convert parameters: params array => SOAPArray => members array
     params = Mapping.obj2soap(params, @mapping_registry).to_a
     if @wiredump_file_base
-      @handler.wiredump_file_base = @wiredump_file_base + '_' << name
+      @streamhandler.wiredump_file_base = @wiredump_file_base + '_' << name
     end
 
     # Then, call @proxy.call like the following.
@@ -161,7 +162,7 @@ public
   end
 
   def reset_stream
-    @handler.reset
+    @streamhandler.reset
   end
 
 private

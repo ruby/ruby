@@ -30,7 +30,7 @@ end
 =end
 
 # You must get 'developer's token" from http://associates.amazon.com/exec/panama/associates/ntg/browse/-/1067662 to use Amazon Web Services 2.0.
-#devtag = File.open(File.expand_path("~/.amazon_key")).read.chomp
+#devtag = File.open(File.expand_path("~/.amazon_key")) { |f| f.read }.chomp
 devtag = nil
 
 # v2: AMAZON_WSDL = 'http://soap.amazon.com/schemas2/AmazonWebServices.wsdl'

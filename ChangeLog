@@ -1,3 +1,64 @@
+Tue Nov 25 16:24:42 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/**/*.rb, lib/wsdl/**/*.rb, lib/xsd/**/*.rb: changed license;
+	  GPL2 -> Ruby's.  
+
+	* lib/soap/rpc/driver.rb, lib/soap/wsdlDriver.rb,
+	  lib/soap/streamHandler.rb: add interface to streamhandler.
+
+	* lib/soap/marshal.rb: raise error if parse fails.
+
+	* lib/soap/netHttpClient.rb: add https support.  Patched by
+	  Oliver M. Bolzer.
+
+	* lib/soap/netHttpClient.rb: dump HTTP response message body by itself.
+
+	* lib/soap/rpc/driver.rb, lib/soap/rpc/proxy.rb,
+	  lib/soap/wsdlDriver.rb: add driver#mandatorycharset interface to foce
+	  using charset for parsing response from buggy server.
+
+	* lib/soap/encodingstyle/soapHandler.rb: support Apache Axis's half
+	  typed multi-ref array.
+
+	* lib/soap/mapping/factory.rb, lib/soap/mapping/registry.rb: map
+	  SOAPStruct which has multi-accessors which name are the same, to an
+	  array.
+
+	* lib/soap/rpc/element.rb: fixed illegal parameter order.
+
+	* lib/soap/rpc/element.rb: element name of response message could have
+	  the name other than 'return'.
+
+	* lib/wsdl/operation.rb, lib/wsdl/operationBinding.rb,
+	  lib/wsdl/soap/classDefCreator.rb, lib/wsdl/soap/methodDefCreator.rb,
+	  lib/wsdl/soap/methodDefCreatorSupport.rb: WSDL/1.1 allows plural
+	  fault definition in a operation. [ruby-talk:84948]
+
+	* test/wsdl/multiplefault.wsdl, test/wsdl/test_multiplefault.rb: add
+	  test for above fix.
+
+	* lib/wsdl/soap/complexType.rb: support WSDL array definition with
+	  maxOccures="unbound".
+
+	* lib/xsd/charset.rb: use cp932 under emx.  Patched by
+	  Siena. / SHINAGAWA, Norihide in [ruby-dev:21972]
+
+	* lib/xsd/xmlparser/parser.rb: set @charset nil by default.  Nil means
+	  'follow encoding declaration in XML'.
+
+	* sample/soap/digraph.rb, sample/wsdl/amazon/wsdlDriver.rb,
+	  sample/wsdl/googleSearch/sampleClient.rb,
+	  sample/wsdl/googleSearch/wsdlDriver.rb,
+	  test/wsdl/test_emptycomplextype.rb,
+	  test/wsdl/marshal/test_wsdlmarshal.rb,
+	  test/xsd/test_xmlschemaparser.rb: use File.open(...) { |f| f.read }
+	  instead of File.open(...).read. [ruby-dev:21964]
+
+	* test/wsdl/emptycomplextype.wsdl, test/wsdl/test_emptycomplextype.rb:
+	  simplify the test case.
+
+	* test/wsdl/axisArray/*: add tests for axis's array encoding.
+
 Tue Nov 25 16:15:29 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ruby.h: don't treat Cygwin as Windows.

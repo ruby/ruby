@@ -1,20 +1,9 @@
-=begin
-SOAP4R - SOAP WSDL driver
-Copyright (C) 2002, 2003  NAKAMURA, Hiroshi.
+# SOAP4R - SOAP WSDL driver
+# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 require 'wsdl/parser'
@@ -42,6 +31,10 @@ class WSDLDriverFactory
   def initialize(wsdl, logdev = nil)
     @logdev = logdev
     @wsdl = import(wsdl)
+  end
+  
+  def inspect
+    "#<#{self.class}:#{@wsdl.name}>"
   end
 
   def create_driver(servicename = nil, portname = nil, opt = {})
@@ -105,6 +98,7 @@ class WSDLDriver
   __attr_proxy :wiredump_dev, true
   __attr_proxy :wiredump_file_base, true
   __attr_proxy :httpproxy, true
+  __attr_proxy :mandatorycharset, true		# force using charset
 
   __attr_proxy :default_encodingstyle, true
   __attr_proxy :allow_unqualified_element, true
@@ -121,14 +115,16 @@ class WSDLDriver
     include Logger::Severity
     include SOAP
 
+    attr_reader :wsdl
+    attr_reader :port
     attr_reader :opt
     attr_accessor :logdev
     attr_accessor :mapping_registry
     attr_accessor :wsdl_mapping_registry
-    attr_reader :endpoint_url
     attr_reader :wiredump_dev
     attr_reader :wiredump_file_base
     attr_reader :httpproxy
+    attr_accessor :mandatorycharset
 
     attr_accessor :default_encodingstyle
     attr_accessor :allow_unqualified_element
@@ -220,11 +216,9 @@ class WSDLDriver
       @opt = opt.dup
       @mapping_registry = nil		# for rpc unmarshal
       @wsdl_mapping_registry = nil	# for rpc marshal
-      @endpoint_url = nil
       @wiredump_dev = nil
       @wiredump_file_base = nil
-      name = 'http_proxy'
-      @httpproxy = ENV[name] || ENV[name.upcase]
+      @mandatorycharset = nil
 
       @wsdl_elements = @wsdl.collect_elements
       @wsdl_types = @wsdl.collect_complextypes
@@ -235,7 +229,8 @@ class WSDLDriver
       @allow_unqualified_element = true
       @generate_explicit_type = false
 
-      create_handler
+      create_streamhandler(@port.soap_address.location,
+	ENV['http_proxy'] || ENV['HTTP_PROXY'])
       @operations = {}
       # Convert a map which key is QName, to a Hash which key is String.
       @port.inputoperation_map.each do |op_name, op_info|
@@ -244,21 +239,20 @@ class WSDLDriver
       end
     end
 
+    def endpoint_url
+      @streamhandler.endpoint_url
+    end
+
     def endpoint_url=(endpoint_url)
-      @endpoint_url = endpoint_url
-      if @handler
-	@handler.endpoint_url = @endpoint_url
-	@handler.reset
-      end
-      log(DEBUG) { "endpoint_url=: set endpoint_url #{ @endpoint_url }." }
+      @streamhandler.endpoint_url = endpoint_url
+      @streamhandler.reset
+      log(DEBUG) { "endpoint_url=: set endpoint_url #{ endpoint_url }." }
     end
 
     def wiredump_dev=(dev)
       @wiredump_dev = dev
-      if @handler
-	@handler.wiredump_dev = @wiredump_dev
-	@handler.reset
-      end
+      @streamhandler.wiredump_dev = @wiredump_dev
+      @streamhandler.reset
     end
 
     def wiredump_file_base=(base)
@@ -266,16 +260,13 @@ class WSDLDriver
     end
 
     def httpproxy=(httpproxy)
-      @httpproxy = httpproxy
-      if @handler
-	@handler.proxy = @httpproxy
-	@handler.reset
-      end
-      log(DEBUG) { "httpproxy=: set httpproxy #{ @httpproxy }." }
+      @streamhandler.proxy = httpproxy
+      @streamhandler.reset
+      log(DEBUG) { "httpproxy=: set httpproxy #{ httpproxy }." }
     end
 
     def reset_stream
-      @handler.reset
+      @streamhandler.reset
     end
 
     def rpc_send(method_name, *params)
@@ -292,7 +283,8 @@ class WSDLDriver
       req_body = SOAPBody.new(method)
 
       if @wiredump_file_base
-	@handler.wiredump_file_base = @wiredump_file_base + '_' << method_name
+	@streamhandler.wiredump_file_base =
+	  @wiredump_file_base + '_' << method_name
       end
 
       begin
@@ -338,11 +330,10 @@ class WSDLDriver
 
   private
 
-    def create_handler
-      endpoint_url = @endpoint_url || @port.soap_address.location
-      @handler = HTTPPostStreamHandler.new(endpoint_url, @httpproxy,
+    def create_streamhandler(endpoint_url, httpproxy)
+      @streamhandler = HTTPPostStreamHandler.new(endpoint_url, httpproxy,
 	XSD::Charset.encoding_label)
-      @handler.wiredump_dev = @wiredump_dev
+      @streamhandler.wiredump_dev = @wiredump_dev
     end
 
     def create_method_obj(names, params)
@@ -356,13 +347,13 @@ class WSDLDriver
     def invoke(req_header, req_body, op_info, opt)
       send_string = Processor.marshal(req_header, req_body, opt)
       log(DEBUG) { "invoke: sending string #{ send_string }" }
-      data = @handler.send(send_string, op_info.soapaction)
+      data = @streamhandler.send(send_string, op_info.soapaction)
       log(DEBUG) { "invoke: received string #{ data.receive_string }" }
       if data.receive_string.empty?
 	return nil, nil
       end
-      res_charset = StreamHandler.parse_media_type(data.receive_contenttype)
-      opt[:charset] = res_charset
+      opt[:charset] = @mandatorycharset ||
+	StreamHandler.parse_media_type(data.receive_contenttype)
       res_header, res_body = Processor.unmarshal(data.receive_string, opt)
       return res_header, res_body
     end
@@ -482,6 +473,10 @@ class WSDLDriver
 
   def initialize(wsdl, port, logdev, opt)
     @servant = Servant__.new(self, wsdl, port, logdev, opt)
+  end
+
+  def inspect
+    "#<#{self.class}:#{@servant.port.name}>"
   end
 end
 

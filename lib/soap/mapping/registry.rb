@@ -1,20 +1,9 @@
-=begin
-SOAP4R - Mapping registry.
-Copyright (C) 2000, 2001, 2002, 2003  NAKAMURA, Hiroshi.
+# SOAP4R - Mapping registry.
+# Copyright (C) 2000, 2001, 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
-This program is free software; you can redistribute it and/or modify it under
-the terms of the GNU General Public License as published by the Free Software
-Foundation; either version 2 of the License, or (at your option) any later
-version.
-
-This program is distributed in the hope that it will be useful, but WITHOUT ANY
-WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
-PRATICULAR PURPOSE. See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-this program; if not, write to the Free Software Foundation, Inc., 675 Mass
-Ave, Cambridge, MA 02139, USA.
-=end
+# This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
+# redistribute it and/or modify it under the same terms of Ruby's license;
+# either the dual license version in 2003, or any later version.
 
 
 require 'soap/baseData'
@@ -145,7 +134,7 @@ class Registry
       @registry = registry
     end
 
-    def obj2soap(klass, obj)
+    def obj2soap(klass, obj, type_qname = nil)
       @map.each do |obj_class, soap_class, factory, info|
         if klass == obj_class or
             (info[:derived_class] and klass <= obj_class)
@@ -330,8 +319,8 @@ class Registry
   alias :set :add
 
   # This mapping registry ignores type hint.
-  def obj2soap(klass, obj, type = nil)
-    soap = _obj2soap(klass, obj, type)
+  def obj2soap(klass, obj, type_qname = nil)
+    soap = _obj2soap(klass, obj, type_qname)
     if @allow_original_mapping
       addextend2soap(soap, obj)
     end
@@ -369,7 +358,7 @@ class Registry
 
 private
 
-  def _obj2soap(klass, obj, type)
+  def _obj2soap(klass, obj, type_qname)
     ret = nil
     if obj.is_a?(SOAPStruct) or obj.is_a?(SOAPArray)
       obj.replace do |ele|
@@ -380,7 +369,7 @@ private
       return obj
     end
     begin 
-      ret = @map.obj2soap(klass, obj) ||
+      ret = @map.obj2soap(klass, obj, type_qname) ||
         @default_factory.obj2soap(klass, obj, nil, self)
     rescue MappingError
     end
