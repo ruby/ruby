@@ -590,7 +590,15 @@ EOF
 	  ${CC-cc} dummy.c -o dummy 2>/dev/null && ./dummy "${UNAME_MACHINE}" && rm dummy.c dummy && exit 0
 	  rm -f dummy.c dummy
 	else
-	  echo ${UNAME_MACHINE}-pc-linux
+	  case "${UNAME_MACHINE}" in
+	  i?86)
+	    VENDOR=pc;
+	    ;;
+	  *)
+	    VENDOR=unknown;
+	    ;;
+	  esac
+	  echo ${UNAME_MACHINE}-${VENDOR}-linux
 	  exit 0
 	fi ;;
 # ptx 4.0 does uname -s correctly, with DYNIX/ptx in there.  earlier versions
