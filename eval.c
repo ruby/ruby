@@ -7284,7 +7284,7 @@ static VALUE
 bmcall(args, method)
     VALUE args, method;
 {
-    volatile args2 = svalue_to_avalue(args);
+    volatile VALUE args2 = svalue_to_avalue(args);
     return method_call(RARRAY(args2)->len, RARRAY(args2)->ptr, method);
 }
 
