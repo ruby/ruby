@@ -30,13 +30,7 @@ class TkTimer
     @after_id = nil
     ex_obj = Tk_CBTBL[obj_id]
     return "" if ex_obj == nil; # canceled
-    #_get_eval_string(ex_obj.do_callback)
-    begin
-      ex_obj.cb_call
-    rescue Exception
-      ex_obj.cancel
-      ""
-    end
+    ex_obj.cb_call
   end
 
   def self.info
@@ -53,12 +47,13 @@ class TkTimer
     @in_callback = true
     begin
       @return_value = @current_proc.call(self)
-    rescue Exception
+    rescue Exception => e
       if @cancel_on_exception
 	cancel
-	return nil
+	@return_value = e
+	return e
       else
-	fail $!
+	fail e
       end
     end
     if @set_next
@@ -118,14 +113,7 @@ class TkTimer
 
     @wait_var = TkVariable.new(0)
 
-    # @cb_cmd = TkCore::INTERP.get_cb_entry(self.method(:do_callback))
-    @cb_cmd = TkCore::INTERP.get_cb_entry(proc{
-					    begin
-					      self.do_callback
-					    rescue
-					      self.cancel
-					    end
-					  })
+    @cb_cmd = TkCore::INTERP.get_cb_entry(self.method(:do_callback))
 
     @set_next = true
 
@@ -186,6 +174,7 @@ class TkTimer
 
   def cancel_on_exception=(mode)
     @cancel_on_exception = mode
+    self
   end
 
   def running?
@@ -198,6 +187,7 @@ class TkTimer
 
   def loop_rest=(rest)
     @do_loop = rest
+    self
   end
 
   def set_procs(interval, loop_exec, *procs)
@@ -388,9 +378,21 @@ class TkTimer
     if $SAFE >= 4
       fail SecurityError, "can't wait timer at $SAFE >= 4"
     end
-    return self unless @running
+
+    unless @running
+      if @return_value.kind_of?(Exception)
+	fail @return_value 
+      else
+	return @return_value 
+      end
+    end
+
     @wait_var.wait(on_thread, check_root)
-    self
+    if @return_value.kind_of?(Exception)
+      fail @return_value 
+    else
+      @return_value 
+    end
   end
   def eventloop_wait(check_root = false)
     wait(false, check_root)

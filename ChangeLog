@@ -1,3 +1,9 @@
+Thu Nov 27 17:36:42 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkafter.rb: bug fix on TkTimer#cancel_on_exception=(mode).
+	  TkTimer#wait recieves the exception of the callback. 
+	  The exception is kept on @return_value. 
+
 Thu Nov 27 16:58:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_stat): remove _fullpath() for NUL: device.
