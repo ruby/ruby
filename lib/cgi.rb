@@ -4,7 +4,7 @@
 
 cgi.rb - cgi support library
 
-Version 2.1.3
+Version 2.1.4
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
@@ -186,12 +186,12 @@ class CGI
   LF  = "\012"
   EOL = CR + LF
   VERSION = '2.1.3'
-  RELEASE_DATE = '2001-02-26'
-  VERSION_CODE = 213
-  RELEASE_CODE = 20010226
+  RELEASE_DATE = '2001-03-18'
+  VERSION_CODE = 214
+  RELEASE_CODE = 20010318
   REVISION = '$Id$'
 
-  NEEDS_BINMODE = true if /WIN/ni === RUBY_PLATFORM
+  NEEDS_BINMODE = true if /WIN/ni.match(RUBY_PLATFORM)
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
 
   HTTP_STATUS = {
@@ -351,11 +351,11 @@ class CGI
 =begin
 === MAKE RFC1123 DATE STRING
   CGI::rfc1123_date(Time.now)
-    # Sat, 1 Jan 2000 00:00:00 GMT
+    # Sat, 01 Jan 2000 00:00:00 GMT
 =end
   def CGI::rfc1123_date(time)
     t = time.clone.gmtime
-    return format("%s, %.2d %s %d %.2d:%.2d:%.2d GMT",
+    return format("%s, %.2d %s %.4d %.2d:%.2d:%.2d GMT",
                 RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
                 t.hour, t.min, t.sec)
   end
@@ -424,7 +424,8 @@ status:
       options["type"].concat( options.delete("charset") )
     end
 
-    if options.delete("nph") or (/IIS/n === env_table['SERVER_SOFTWARE'])
+    options.delete("nph") if MOD_RUBY
+    if options.delete("nph") or /IIS/n.match(env_table['SERVER_SOFTWARE'])
       buf.concat( (env_table["SERVER_PROTOCOL"] or "HTTP/1.0")  + " " )
       buf.concat( (HTTP_STATUS[options["status"]] or
                       options["status"] or
@@ -447,7 +448,7 @@ status:
     end
 
     if options.has_key?("status")
-      status = HTTP_STATUS[options["status"]] or options["status"]
+      status = (HTTP_STATUS[options["status"]] or options["status"])
       buf.concat("Status: " + status + EOL)
       options.delete("status")
     end
@@ -809,9 +810,9 @@ convert string charset, and set language to "ja".
         body = Tempfile.new("CGI")
         body.binmode
 
-        until head and (/#{boundary}(?:#{EOL}|--)/n === buf)
+        until head and /#{boundary}(?:#{EOL}|--)/n.match(buf)
 
-          if (not head) and (/#{EOL}#{EOL}/n === buf)
+          if (not head) and /#{EOL}#{EOL}/n.match(buf)
             buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/n) do
               head = $1.dup
               ""
@@ -850,14 +851,14 @@ convert string charset, and set language to "ja".
           end
         END
 
-        /Content-Disposition:.* filename="?([^\";]*)"?/ni === head
+        /Content-Disposition:.* filename="?([^\";]*)"?/ni.match(head)
         eval <<-END
           def body.original_filename
             #{
               filename = ($1 or "").dup
-              if (/Mac/ni === env_table['HTTP_USER_AGENT']) and
-                 (/Mozilla/ni === env_table['HTTP_USER_AGENT']) and
-                 (not /MSIE/ni === env_table['HTTP_USER_AGENT'])
+              if /Mac/ni.match(env_table['HTTP_USER_AGENT']) and
+                 /Mozilla/ni.match(env_table['HTTP_USER_AGENT']) and
+                 (not /MSIE/ni.match(env_table['HTTP_USER_AGENT']))
                 CGI::unescape(filename)
               else
                 filename
@@ -866,14 +867,14 @@ convert string charset, and set language to "ja".
           end
         END
 
-        /Content-Type: (.*)/ni === head
+        /Content-Type: (.*)/ni.match(head)
         eval <<-END
           def body.content_type
             #{($1 or "").dump.untaint}.taint
           end
         END
 
-        /Content-Disposition:.* name="?([^\";]*)"?/ni === head
+        /Content-Disposition:.* name="?([^\";]*)"?/ni.match(head)
         name = $1.dup
 
         if params.has_key?(name)
@@ -905,7 +906,7 @@ convert string charset, and set language to "ja".
 
       words = Shellwords.shellwords(string)
 
-      if words.find{|x| /=/n === x }
+      if words.find{|x| /=/n.match(x) }
         words.join('&')
       else
         words.join('+')
@@ -915,8 +916,7 @@ convert string charset, and set language to "ja".
 
     def initialize_query()
       if ("POST" == env_table['REQUEST_METHOD']) and
-         (%r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|n ===
-           env_table['CONTENT_TYPE'])
+         (%r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|n.match(env_table['CONTENT_TYPE'])
         boundary = $1.dup
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
