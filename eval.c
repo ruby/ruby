@@ -6275,6 +6275,15 @@ proc_call(proc, args)
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = blk_orphan(data);
 
+    if (orphan) {/* orphan procedure */
+	if (rb_block_given_p()) {
+	    ruby_block->frame.iter = ITER_CUR;
+	}
+	else {
+	    ruby_block->frame.iter = ITER_NOT;
+	}
+    }
+
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
@@ -6284,15 +6293,6 @@ proc_call(proc, args)
 
     if (args != Qundef && TYPE(args) == T_ARRAY) {
 	args = callargs(args);
-    }
-
-    if (orphan) {/* orphan procedure */
-	if (rb_block_given_p()) {
-	    ruby_block->frame.iter = ITER_CUR;
-	}
-	else {
-	    ruby_block->frame.iter = ITER_NOT;
-	}
     }
 
     PUSH_TAG(PROT_NONE);
@@ -6988,6 +6988,8 @@ rb_thread_check(data)
     return (rb_thread_t)RDATA(data)->data;
 }
 
+static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
+
 static int   th_raise_argc;
 static VALUE th_raise_argv[2];
 static char *th_raise_file;
@@ -7175,13 +7177,8 @@ rb_thread_fd_close(fd)
 
     FOREACH_THREAD(th) {
 	if ((th->wait_for & WAIT_FD) && fd == th->fd) {
-	    th_raise_argc = 1;
-	    th_raise_argv[0] = rb_exc_new2(rb_eIOError, "stream closed");
-	    th_raise_file = ruby_sourcefile;
-	    th_raise_line = ruby_sourceline;
-	    curr_thread = th;
-	    rb_thread_ready(th);
-	    rb_thread_restore_context(curr_thread, RESTORE_RAISE);
+	    VALUE exc = rb_exc_new2(rb_eIOError, "stream closed");
+	    rb_thread_raise(1, &exc, th);
 	}
     }
     END_FOREACH(th);
@@ -7970,8 +7967,6 @@ catch_timer(sig)
 #else
 int rb_thread_tick = THREAD_TICK;
 #endif
-
-static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
 
 #define SCOPE_SHARED  FL_USER1
 

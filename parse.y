@@ -1271,17 +1271,18 @@ primary		: literal
 			cref_pop();
 			class_nest--;
 		    }
-		| kCLASS tLSHFT expr term
+		| kCLASS tLSHFT expr
+		    {
+			$<num>$ = in_def;
+		        in_def = 0;
+		    }
+		  term
 		    {
 		        $<num>$ = in_single;
 		        in_single = 0;
 			class_nest++;
 			cref_push();
 			local_push();
-		    }
-		    {
-			$<num>$ = in_def;
-		        in_def = 0;
 		    }
 		  compstmt
 		  kEND
@@ -1291,8 +1292,8 @@ primary		: literal
 		        local_pop();
 			cref_pop();
 			class_nest--;
-		        in_single = $<num>5;
-		        in_def = $<num>6;
+		        in_def = $<num>4;
+		        in_single = $<num>6;
 		    }
 		| kMODULE cname
 		    {

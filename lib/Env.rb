@@ -12,7 +12,7 @@ for k,v in ENV
   $#{k} = %q!#{v}!
   trace_var "$#{k}", proc{|v|
     ENV[%q!#{k}!] = v; 
-    $#{k} = %q!#{v}!
+    $#{k} = v
     if v == nil
       untrace_var "$#{k}"
     end
