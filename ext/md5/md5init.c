@@ -9,9 +9,7 @@
 
 ************************************************/
 /* This module provides an interface to the RSA Data Security,
-   Inc. MD5 Message-Digest Algorithm, described in RFC 1321.
-   It requires the files md5c.c and md5.h (which are slightly changed
-   from the versions in the RFC to avoid the "global.h" file.) */
+   Inc. MD5 Message-Digest Algorithm, described in RFC 1321. */
 
 #include "ruby.h"
 #include "md5.h"
@@ -19,45 +17,46 @@
 static VALUE cMD5;
 
 static VALUE
-md5_update(obj, str)
-    VALUE obj;
-    struct RString *str;
+md5i_update(obj, str)
+    VALUE obj, str;
 {
-    MD5_CTX *md5;
+    md5_state_t *md5;
+    char *p;
+    int len;
 
-    Check_Type(str, T_STRING);
-    Data_Get_Struct(obj, MD5_CTX, md5);
-    MD5Update(md5, str->ptr, str->len);
+    p = rb_str2cstr(str, &len);
+    Data_Get_Struct(obj, md5_state_t, md5);
+    md5_append(md5, p, len);
 
     return obj;
 }
 
 static VALUE
-md5_digest(obj)
+md5i_digest(obj)
     VALUE obj;
 {
-    MD5_CTX *md5, ctx;
-    unsigned char digest[16];
+    md5_state_t *md5, ctx;
+    md5_byte_t digest[16];
 
-    Data_Get_Struct(obj, MD5_CTX, md5);
+    Data_Get_Struct(obj, md5_state_t, md5);
     ctx = *md5;
-    MD5Final(digest, &ctx);
+    md5_finish(&ctx, digest);
 
     return rb_str_new(digest, 16);
 }
 
 static VALUE
-md5_hexdigest(obj)
+md5i_hexdigest(obj)
     VALUE obj;
 {
-    MD5_CTX *md5, ctx;
-    unsigned char digest[16];
+    md5_state_t *md5, ctx;
+    md5_byte_t digest[16];
     char buf[33];
     int i;
 
-    Data_Get_Struct(obj, MD5_CTX, md5);
+    Data_Get_Struct(obj, md5_state_t, md5);
     ctx = *md5;
-    MD5Final(digest, &ctx);
+    md5_finish(&ctx, digest);
 
     for (i=0; i<16; i++) {
 	sprintf(buf+i*2, "%02x", digest[i]);
@@ -66,34 +65,32 @@ md5_hexdigest(obj)
 }
 
 static VALUE
-md5_clone(obj)
+md5i_clone(obj)
     VALUE obj;
 {
-    MD5_CTX *md5, *md5_new;
+    md5_state_t *md5, *md5_new;
 
-    Data_Get_Struct(obj, MD5_CTX, md5);
-    obj = Data_Make_Struct(CLASS_OF(obj), MD5_CTX, 0, free, md5_new);
+    Data_Get_Struct(obj, md5_state_t, md5);
+    obj = Data_Make_Struct(CLASS_OF(obj), md5_state_t, 0, free, md5_new);
     *md5_new = *md5;
 
     return obj;
 }
 
 static VALUE
-md5_new(argc, argv, class)
+md5i_new(argc, argv, class)
     int argc;
     VALUE* argv;
     VALUE class;
 {
-    VALUE arg, obj;
-    MD5_CTX *md5;
+    VALUE obj;
+    md5_state_t *md5;
 
     rb_scan_args(argc, argv, "01", &arg);
-    if (!NIL_P(arg)) Check_Type(arg, T_STRING);
-
-    obj = Data_Make_Struct(class, MD5_CTX, 0, free, md5);
-    MD5Init(md5);
-    if (!NIL_P(arg)) {
-	md5_update(obj, arg);
+    obj = Data_Make_Struct(class, md5_state_t, 0, free, md5);
+    md5_init(md5);
+    if (argc == 1) {
+	md5i_update(obj, argv[0]);
     }
 
     return obj;
@@ -104,11 +101,11 @@ Init_md5()
 {
     cMD5 = rb_define_class("MD5", rb_cObject);
 
-    rb_define_singleton_method(cMD5, "new", md5_new, -1);
-    rb_define_singleton_method(cMD5, "md5", md5_new, -1);
+    rb_define_singleton_method(cMD5, "new", md5i_new, -1);
+    rb_define_singleton_method(cMD5, "md5", md5i_new, -1);
 
-    rb_define_method(cMD5, "update", md5_update, 1);
-    rb_define_method(cMD5, "digest", md5_digest, 0);
-    rb_define_method(cMD5, "hexdigest", md5_hexdigest, 0);
-    rb_define_method(cMD5, "clone",  md5_clone, 0);
+    rb_define_method(cMD5, "update", md5i_update, 1);
+    rb_define_method(cMD5, "digest", md5i_digest, 0);
+    rb_define_method(cMD5, "hexdigest", md5i_hexdigest, 0);
+    rb_define_method(cMD5, "clone",  md5i_clone, 0);
 }

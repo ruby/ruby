@@ -1584,7 +1584,7 @@ rb_file_truncate(obj, len)
 #  define LOCK_UN 8
 # endif
 
-#if defined(EWOULDBLOCK) && 0
+#if 0
 static int
 rb_thread_flock(fd, op, fptr)
     int fd, op;
@@ -1596,11 +1596,14 @@ rb_thread_flock(fd, op, fptr)
     op |= LOCK_NB;
     while (flock(fd, op) < 0) {
 	switch (errno) {
-	  case EINTR:			/* can be happen? */
+          case EAGAIN:
+          case EACCES:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
+#endif
 	    rb_thread_polling();	/* busy wait */
 	    rb_io_check_closed(fptr);
-	    break;
+            continue;
 	  default:
 	    return -1;
 	}
@@ -1629,11 +1632,14 @@ rb_file_flock(obj, operation)
     ret = flock(fileno(fptr->f), NUM2INT(operation));
     TRAP_END;
     if (ret < 0) {
-#ifdef EWOULDBLOCK
-	if (errno == EWOULDBLOCK) {
-	    return Qfalse;
-	}
+        switch (errno) {
+          case EAGAIN:
+          case EACCES:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+          case EWOULDBLOCK:
 #endif
+              return Qfalse;
+        }
 	rb_sys_fail(fptr->path);
     }
 #endif

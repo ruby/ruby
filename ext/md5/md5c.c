@@ -1,337 +1,410 @@
-/* MD5C.C - RSA Data Security, Inc., MD5 message-digest algorithm
+/*
+  Copyright (C) 1999, 2000 Aladdin Enterprises.  All rights reserved.
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+
+  L. Peter Deutsch
+  ghost@aladdin.com
+
+ */
+/*$Id$ */
+/*
+  Independent implementation of MD5 (RFC 1321).
+
+  This code implements the MD5 Algorithm defined in RFC 1321.
+  It is derived directly from the text of the RFC and not from the
+  reference implementation.
+
+  The original and principal author of md5.c is L. Peter Deutsch
+  <ghost@aladdin.com>.  Other authors are noted in the change history
+  that follows (in reverse chronological order):
+
+  2000-07-03 lpd Patched to eliminate warnings about "constant is
+		unsigned in ANSI C, signed in traditional";
+		made test program self-checking.
+  1999-11-04 lpd Edited comments slightly for automatic TOC extraction.
+  1999-10-18 lpd Fixed typo in header comment (ansi2knr rather than md5).
+  1999-05-03 lpd Original version.
  */
 
-/* Copyright (C) 1991-2, RSA Data Security, Inc. Created 1991. All
-rights reserved.
-
-License to copy and use this software is granted provided that it
-is identified as the "RSA Data Security, Inc. MD5 Message-Digest
-Algorithm" in all material mentioning or referencing this software
-or this function.
-
-License is also granted to make and use derivative works provided
-that such works are identified as "derived from the RSA Data
-Security, Inc. MD5 Message-Digest Algorithm" in all material
-mentioning or referencing the derived work.
-
-RSA Data Security, Inc. makes no representations concerning either
-the merchantability of this software or the suitability of this
-software for any particular purpose. It is provided "as is"
-without express or implied warranty of any kind.
-
-These notices must be retained in any copies of any part of this
-documentation and/or software.
- */
-
-#ifdef HAVE_CONFIG_H
-#include "config.h"
-#endif
 #include "md5.h"
 
-/* Constants for MD5Transform routine.
+#ifdef TEST
+/*
+ * Compile with -DTEST to create a self-contained executable test program.
+ * The test program should print out the same values as given in section
+ * A.5 of RFC 1321, reproduced below.
  */
+#include <string.h>
+main()
+{
+    static const char *const test[7*2] = {
+	"", "d41d8cd98f00b204e9800998ecf8427e",
+	"a", "0cc175b9c0f1b6a831c399e269772661",
+	"abc", "900150983cd24fb0d6963f7d28e17f72",
+	"message digest", "f96b697d7cb7938d525a2f31aaf161d0",
+	"abcdefghijklmnopqrstuvwxyz", "c3fcd3d76192e4007dfb496cca67e13b",
+	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789",
+				"d174ab98d277d9f5a5611c2c9f419d9f",
+	"12345678901234567890123456789012345678901234567890123456789012345678901234567890", "57edf4a22be3c955ac49da2e2107b67a"
+    };
+    int i;
 
-#define S11 7
-#define S12 12
-#define S13 17
-#define S14 22
-#define S21 5
-#define S22 9
-#define S23 14
-#define S24 20
-#define S31 4
-#define S32 11
-#define S33 16
-#define S34 23
-#define S41 6
-#define S42 10
-#define S43 15
-#define S44 21
+    for (i = 0; i < 7*2; i += 2) {
+	md5_state_t state;
+	md5_byte_t digest[16];
+	char hex_output[16*2 + 1];
+	int di;
 
-static void MD5Transform PROTO_LIST ((UINT4 [4], unsigned char [64]));
-static void Encode PROTO_LIST
-  ((unsigned char *, UINT4 *, unsigned int));
-static void Decode PROTO_LIST
-  ((UINT4 *, unsigned char *, unsigned int));
-static void MD5_memcpy PROTO_LIST ((POINTER, POINTER, unsigned int));
-static void MD5_memset PROTO_LIST ((POINTER, int, unsigned int));
+	md5_init(&state);
+	md5_append(&state, (const md5_byte_t *)test[i], strlen(test[i]));
+	md5_finish(&state, digest);
+	printf("MD5 (\"%s\") = ", test[i]);
+	for (di = 0; di < 16; ++di)
+	    sprintf(hex_output + di * 2, "%02x", digest[di]);
+	puts(hex_output);
+	if (strcmp(hex_output, test[i + 1]))
+	    printf("**** ERROR, should be: %s\n", test[i + 1]);
+    }
+    return 0;
+}
+#endif /* TEST */
 
-static unsigned char PADDING[64] = {
-  0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-};
 
-/* F, G, H and I are basic MD5 functions.
+/*
+ * For reference, here is the program that computed the T values.
  */
-#define F(x, y, z) (((x) & (y)) | ((~x) & (z)))
-#define G(x, y, z) (((x) & (z)) | ((y) & (~z)))
+#ifdef COMPUTE_T_VALUES
+#include <math.h>
+main()
+{
+    int i;
+    for (i = 1; i <= 64; ++i) {
+	unsigned long v = (unsigned long)(4294967296.0 * fabs(sin((double)i)));
+
+	/*
+	 * The following nonsense is only to avoid compiler warnings about
+	 * "integer constant is unsigned in ANSI C, signed with -traditional".
+	 */
+	if (v >> 31) {
+	    printf("#define T%d /* 0x%08lx */ (T_MASK ^ 0x%08lx)\n", i,
+		   v, (unsigned long)(unsigned int)(~v));
+	} else {
+	    printf("#define T%d    0x%08lx\n", i, v);
+	}
+    }
+    return 0;
+}
+#endif /* COMPUTE_T_VALUES */
+/*
+ * End of T computation program.
+ */
+#define T_MASK ((md5_word_t)~0)
+#define T1 /* 0xd76aa478 */ (T_MASK ^ 0x28955b87)
+#define T2 /* 0xe8c7b756 */ (T_MASK ^ 0x173848a9)
+#define T3    0x242070db
+#define T4 /* 0xc1bdceee */ (T_MASK ^ 0x3e423111)
+#define T5 /* 0xf57c0faf */ (T_MASK ^ 0x0a83f050)
+#define T6    0x4787c62a
+#define T7 /* 0xa8304613 */ (T_MASK ^ 0x57cfb9ec)
+#define T8 /* 0xfd469501 */ (T_MASK ^ 0x02b96afe)
+#define T9    0x698098d8
+#define T10 /* 0x8b44f7af */ (T_MASK ^ 0x74bb0850)
+#define T11 /* 0xffff5bb1 */ (T_MASK ^ 0x0000a44e)
+#define T12 /* 0x895cd7be */ (T_MASK ^ 0x76a32841)
+#define T13    0x6b901122
+#define T14 /* 0xfd987193 */ (T_MASK ^ 0x02678e6c)
+#define T15 /* 0xa679438e */ (T_MASK ^ 0x5986bc71)
+#define T16    0x49b40821
+#define T17 /* 0xf61e2562 */ (T_MASK ^ 0x09e1da9d)
+#define T18 /* 0xc040b340 */ (T_MASK ^ 0x3fbf4cbf)
+#define T19    0x265e5a51
+#define T20 /* 0xe9b6c7aa */ (T_MASK ^ 0x16493855)
+#define T21 /* 0xd62f105d */ (T_MASK ^ 0x29d0efa2)
+#define T22    0x02441453
+#define T23 /* 0xd8a1e681 */ (T_MASK ^ 0x275e197e)
+#define T24 /* 0xe7d3fbc8 */ (T_MASK ^ 0x182c0437)
+#define T25    0x21e1cde6
+#define T26 /* 0xc33707d6 */ (T_MASK ^ 0x3cc8f829)
+#define T27 /* 0xf4d50d87 */ (T_MASK ^ 0x0b2af278)
+#define T28    0x455a14ed
+#define T29 /* 0xa9e3e905 */ (T_MASK ^ 0x561c16fa)
+#define T30 /* 0xfcefa3f8 */ (T_MASK ^ 0x03105c07)
+#define T31    0x676f02d9
+#define T32 /* 0x8d2a4c8a */ (T_MASK ^ 0x72d5b375)
+#define T33 /* 0xfffa3942 */ (T_MASK ^ 0x0005c6bd)
+#define T34 /* 0x8771f681 */ (T_MASK ^ 0x788e097e)
+#define T35    0x6d9d6122
+#define T36 /* 0xfde5380c */ (T_MASK ^ 0x021ac7f3)
+#define T37 /* 0xa4beea44 */ (T_MASK ^ 0x5b4115bb)
+#define T38    0x4bdecfa9
+#define T39 /* 0xf6bb4b60 */ (T_MASK ^ 0x0944b49f)
+#define T40 /* 0xbebfbc70 */ (T_MASK ^ 0x4140438f)
+#define T41    0x289b7ec6
+#define T42 /* 0xeaa127fa */ (T_MASK ^ 0x155ed805)
+#define T43 /* 0xd4ef3085 */ (T_MASK ^ 0x2b10cf7a)
+#define T44    0x04881d05
+#define T45 /* 0xd9d4d039 */ (T_MASK ^ 0x262b2fc6)
+#define T46 /* 0xe6db99e5 */ (T_MASK ^ 0x1924661a)
+#define T47    0x1fa27cf8
+#define T48 /* 0xc4ac5665 */ (T_MASK ^ 0x3b53a99a)
+#define T49 /* 0xf4292244 */ (T_MASK ^ 0x0bd6ddbb)
+#define T50    0x432aff97
+#define T51 /* 0xab9423a7 */ (T_MASK ^ 0x546bdc58)
+#define T52 /* 0xfc93a039 */ (T_MASK ^ 0x036c5fc6)
+#define T53    0x655b59c3
+#define T54 /* 0x8f0ccc92 */ (T_MASK ^ 0x70f3336d)
+#define T55 /* 0xffeff47d */ (T_MASK ^ 0x00100b82)
+#define T56 /* 0x85845dd1 */ (T_MASK ^ 0x7a7ba22e)
+#define T57    0x6fa87e4f
+#define T58 /* 0xfe2ce6e0 */ (T_MASK ^ 0x01d3191f)
+#define T59 /* 0xa3014314 */ (T_MASK ^ 0x5cfebceb)
+#define T60    0x4e0811a1
+#define T61 /* 0xf7537e82 */ (T_MASK ^ 0x08ac817d)
+#define T62 /* 0xbd3af235 */ (T_MASK ^ 0x42c50dca)
+#define T63    0x2ad7d2bb
+#define T64 /* 0xeb86d391 */ (T_MASK ^ 0x14792c6e)
+
+
+static void
+md5_process(md5_state_t *pms, const md5_byte_t *data /*[64]*/)
+{
+    md5_word_t
+	a = pms->abcd[0], b = pms->abcd[1],
+	c = pms->abcd[2], d = pms->abcd[3];
+    md5_word_t t;
+
+#ifndef ARCH_IS_BIG_ENDIAN
+# define ARCH_IS_BIG_ENDIAN 1	/* slower, default implementation */
+#endif
+#if ARCH_IS_BIG_ENDIAN
+
+    /*
+     * On big-endian machines, we must arrange the bytes in the right
+     * order.  (This also works on machines of unknown byte order.)
+     */
+    md5_word_t X[16];
+    const md5_byte_t *xp = data;
+    int i;
+
+    for (i = 0; i < 16; ++i, xp += 4)
+	X[i] = xp[0] + (xp[1] << 8) + (xp[2] << 16) + (xp[3] << 24);
+
+#else  /* !ARCH_IS_BIG_ENDIAN */
+
+    /*
+     * On little-endian machines, we can process properly aligned data
+     * without copying it.
+     */
+    md5_word_t xbuf[16];
+    const md5_word_t *X;
+
+    if (!((data - (const md5_byte_t *)0) & 3)) {
+	/* data are properly aligned */
+	X = (const md5_word_t *)data;
+    } else {
+	/* not aligned */
+	memcpy(xbuf, data, 64);
+	X = xbuf;
+    }
+#endif
+
+#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32 - (n))))
+
+    /* Round 1. */
+    /* Let [abcd k s i] denote the operation
+       a = b + ((a + F(b,c,d) + X[k] + T[i]) <<< s). */
+#define F(x, y, z) (((x) & (y)) | (~(x) & (z)))
+#define SET(a, b, c, d, k, s, Ti)\
+  t = a + F(b,c,d) + X[k] + Ti;\
+  a = ROTATE_LEFT(t, s) + b
+    /* Do the following 16 operations. */
+    SET(a, b, c, d,  0,  7,  T1);
+    SET(d, a, b, c,  1, 12,  T2);
+    SET(c, d, a, b,  2, 17,  T3);
+    SET(b, c, d, a,  3, 22,  T4);
+    SET(a, b, c, d,  4,  7,  T5);
+    SET(d, a, b, c,  5, 12,  T6);
+    SET(c, d, a, b,  6, 17,  T7);
+    SET(b, c, d, a,  7, 22,  T8);
+    SET(a, b, c, d,  8,  7,  T9);
+    SET(d, a, b, c,  9, 12, T10);
+    SET(c, d, a, b, 10, 17, T11);
+    SET(b, c, d, a, 11, 22, T12);
+    SET(a, b, c, d, 12,  7, T13);
+    SET(d, a, b, c, 13, 12, T14);
+    SET(c, d, a, b, 14, 17, T15);
+    SET(b, c, d, a, 15, 22, T16);
+#undef SET
+
+     /* Round 2. */
+     /* Let [abcd k s i] denote the operation
+          a = b + ((a + G(b,c,d) + X[k] + T[i]) <<< s). */
+#define G(x, y, z) (((x) & (z)) | ((y) & ~(z)))
+#define SET(a, b, c, d, k, s, Ti)\
+  t = a + G(b,c,d) + X[k] + Ti;\
+  a = ROTATE_LEFT(t, s) + b
+     /* Do the following 16 operations. */
+    SET(a, b, c, d,  1,  5, T17);
+    SET(d, a, b, c,  6,  9, T18);
+    SET(c, d, a, b, 11, 14, T19);
+    SET(b, c, d, a,  0, 20, T20);
+    SET(a, b, c, d,  5,  5, T21);
+    SET(d, a, b, c, 10,  9, T22);
+    SET(c, d, a, b, 15, 14, T23);
+    SET(b, c, d, a,  4, 20, T24);
+    SET(a, b, c, d,  9,  5, T25);
+    SET(d, a, b, c, 14,  9, T26);
+    SET(c, d, a, b,  3, 14, T27);
+    SET(b, c, d, a,  8, 20, T28);
+    SET(a, b, c, d, 13,  5, T29);
+    SET(d, a, b, c,  2,  9, T30);
+    SET(c, d, a, b,  7, 14, T31);
+    SET(b, c, d, a, 12, 20, T32);
+#undef SET
+
+     /* Round 3. */
+     /* Let [abcd k s t] denote the operation
+          a = b + ((a + H(b,c,d) + X[k] + T[i]) <<< s). */
 #define H(x, y, z) ((x) ^ (y) ^ (z))
-#define I(x, y, z) ((y) ^ ((x) | (~z)))
+#define SET(a, b, c, d, k, s, Ti)\
+  t = a + H(b,c,d) + X[k] + Ti;\
+  a = ROTATE_LEFT(t, s) + b
+     /* Do the following 16 operations. */
+    SET(a, b, c, d,  5,  4, T33);
+    SET(d, a, b, c,  8, 11, T34);
+    SET(c, d, a, b, 11, 16, T35);
+    SET(b, c, d, a, 14, 23, T36);
+    SET(a, b, c, d,  1,  4, T37);
+    SET(d, a, b, c,  4, 11, T38);
+    SET(c, d, a, b,  7, 16, T39);
+    SET(b, c, d, a, 10, 23, T40);
+    SET(a, b, c, d, 13,  4, T41);
+    SET(d, a, b, c,  0, 11, T42);
+    SET(c, d, a, b,  3, 16, T43);
+    SET(b, c, d, a,  6, 23, T44);
+    SET(a, b, c, d,  9,  4, T45);
+    SET(d, a, b, c, 12, 11, T46);
+    SET(c, d, a, b, 15, 16, T47);
+    SET(b, c, d, a,  2, 23, T48);
+#undef SET
 
-/* ROTATE_LEFT rotates x left n bits.
- */
-#define ROTATE_LEFT(x, n) (((x) << (n)) | ((x) >> (32-(n))))
+     /* Round 4. */
+     /* Let [abcd k s t] denote the operation
+          a = b + ((a + I(b,c,d) + X[k] + T[i]) <<< s). */
+#define I(x, y, z) ((y) ^ ((x) | ~(z)))
+#define SET(a, b, c, d, k, s, Ti)\
+  t = a + I(b,c,d) + X[k] + Ti;\
+  a = ROTATE_LEFT(t, s) + b
+     /* Do the following 16 operations. */
+    SET(a, b, c, d,  0,  6, T49);
+    SET(d, a, b, c,  7, 10, T50);
+    SET(c, d, a, b, 14, 15, T51);
+    SET(b, c, d, a,  5, 21, T52);
+    SET(a, b, c, d, 12,  6, T53);
+    SET(d, a, b, c,  3, 10, T54);
+    SET(c, d, a, b, 10, 15, T55);
+    SET(b, c, d, a,  1, 21, T56);
+    SET(a, b, c, d,  8,  6, T57);
+    SET(d, a, b, c, 15, 10, T58);
+    SET(c, d, a, b,  6, 15, T59);
+    SET(b, c, d, a, 13, 21, T60);
+    SET(a, b, c, d,  4,  6, T61);
+    SET(d, a, b, c, 11, 10, T62);
+    SET(c, d, a, b,  2, 15, T63);
+    SET(b, c, d, a,  9, 21, T64);
+#undef SET
 
-/* FF, GG, HH, and II transformations for rounds 1, 2, 3, and 4.
-Rotation is separate from addition to prevent recomputation.
- */
-#define FF(a, b, c, d, x, s, ac) { \
- (a) += F ((b), (c), (d)) + (x) + (UINT4)(ac); \
- (a) = ROTATE_LEFT ((a), (s)); \
- (a) += (b); \
-  }
-#define GG(a, b, c, d, x, s, ac) { \
- (a) += G ((b), (c), (d)) + (x) + (UINT4)(ac); \
- (a) = ROTATE_LEFT ((a), (s)); \
- (a) += (b); \
-  }
-#define HH(a, b, c, d, x, s, ac) { \
- (a) += H ((b), (c), (d)) + (x) + (UINT4)(ac); \
- (a) = ROTATE_LEFT ((a), (s)); \
- (a) += (b); \
-  }
-#define II(a, b, c, d, x, s, ac) { \
- (a) += I ((b), (c), (d)) + (x) + (UINT4)(ac); \
- (a) = ROTATE_LEFT ((a), (s)); \
- (a) += (b); \
-  }
-
-/* MD5 initialization. Begins an MD5 operation, writing a new context.
- */
-void MD5Init (context)
-MD5_CTX *context;                                        /* context */
-{
-  context->count[0] = context->count[1] = 0;
-  /* Load magic initialization constants.
-*/
-  context->state[0] = 0x67452301;
-  context->state[1] = 0xefcdab89;
-  context->state[2] = 0x98badcfe;
-  context->state[3] = 0x10325476;
+     /* Then perform the following additions. (That is increment each
+        of the four registers by the value it had before this block
+        was started.) */
+    pms->abcd[0] += a;
+    pms->abcd[1] += b;
+    pms->abcd[2] += c;
+    pms->abcd[3] += d;
 }
 
-/* MD5 block update operation. Continues an MD5 message-digest
-  operation, processing another message block, and updating the
-  context.
- */
-void MD5Update (context, input, inputLen)
-MD5_CTX *context;                                        /* context */
-unsigned char *input;                                /* input block */
-unsigned int inputLen;                     /* length of input block */
+void
+md5_init(md5_state_t *pms)
 {
-  unsigned int i, index, partLen;
-
-  /* Compute number of bytes mod 64 */
-  index = (unsigned int)((context->count[0] >> 3) & 0x3F);
-
-  /* Update number of bits */
-  if ((context->count[0] += ((UINT4)inputLen << 3))
-   < ((UINT4)inputLen << 3))
- context->count[1]++;
-  context->count[1] += ((UINT4)inputLen >> 29);
-
-  partLen = 64 - index;
-
-  /* Transform as many times as possible.
-*/
-  if (inputLen >= partLen) {
- MD5_memcpy
-   ((POINTER)&context->buffer[index], (POINTER)input, partLen);
- MD5Transform (context->state, context->buffer);
-
- for (i = partLen; i + 63 < inputLen; i += 64)
-   MD5Transform (context->state, &input[i]);
-
- index = 0;
-  }
-  else
- i = 0;
-
-  /* Buffer remaining input */
-  MD5_memcpy
- ((POINTER)&context->buffer[index], (POINTER)&input[i],
-  inputLen-i);
+    pms->count[0] = pms->count[1] = 0;
+    pms->abcd[0] = 0x67452301;
+    pms->abcd[1] = /*0xefcdab89*/ T_MASK ^ 0x10325476;
+    pms->abcd[2] = /*0x98badcfe*/ T_MASK ^ 0x67452301;
+    pms->abcd[3] = 0x10325476;
 }
 
-/* MD5 finalization. Ends an MD5 message-digest operation, writing the
-  the message digest and zeroizing the context.
- */
-void MD5Final (digest, context)
-unsigned char digest[16];                         /* message digest */
-MD5_CTX *context;                                       /* context */
+void
+md5_append(md5_state_t *pms, const md5_byte_t *data, int nbytes)
 {
-  unsigned char bits[8];
-  unsigned int index, padLen;
+    const md5_byte_t *p = data;
+    int left = nbytes;
+    int offset = (pms->count[0] >> 3) & 63;
+    md5_word_t nbits = (md5_word_t)(nbytes << 3);
 
-  /* Save number of bits */
-  Encode (bits, context->count, 8);
+    if (nbytes <= 0)
+	return;
 
-  /* Pad out to 56 mod 64.
-*/
-  index = (unsigned int)((context->count[0] >> 3) & 0x3f);
-  padLen = (index < 56) ? (56 - index) : (120 - index);
-  MD5Update (context, PADDING, padLen);
+    /* Update the message length. */
+    pms->count[1] += nbytes >> 29;
+    pms->count[0] += nbits;
+    if (pms->count[0] < nbits)
+	pms->count[1]++;
 
-  /* Append length (before padding) */
-  MD5Update (context, bits, 8);
+    /* Process an initial partial block. */
+    if (offset) {
+	int copy = (offset + nbytes > 64 ? 64 - offset : nbytes);
 
-  /* Store state in digest */
-  Encode (digest, context->state, 16);
+	memcpy(pms->buf + offset, p, copy);
+	if (offset + copy < 64)
+	    return;
+	p += copy;
+	left -= copy;
+	md5_process(pms, pms->buf);
+    }
 
-  /* Zeroize sensitive information.
-*/
-  MD5_memset ((POINTER)context, 0, sizeof (*context));
+    /* Process full blocks. */
+    for (; left >= 64; p += 64, left -= 64)
+	md5_process(pms, p);
+
+    /* Process a final partial block. */
+    if (left)
+	memcpy(pms->buf, p, left);
 }
 
-/* MD5 basic transformation. Transforms state based on block.
- */
-static void MD5Transform (state, block)
-UINT4 state[4];
-unsigned char block[64];
+void
+md5_finish(md5_state_t *pms, md5_byte_t digest[16])
 {
-  UINT4 a = state[0], b = state[1], c = state[2], d = state[3], x[16];
+    static const md5_byte_t pad[64] = {
+	0x80, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
+    md5_byte_t data[8];
+    int i;
 
-  Decode (x, block, 64);
-
-  /* Round 1 */
-  FF (a, b, c, d, x[ 0], S11, 0xd76aa478); /* 1 */
-  FF (d, a, b, c, x[ 1], S12, 0xe8c7b756); /* 2 */
-  FF (c, d, a, b, x[ 2], S13, 0x242070db); /* 3 */
-  FF (b, c, d, a, x[ 3], S14, 0xc1bdceee); /* 4 */
-  FF (a, b, c, d, x[ 4], S11, 0xf57c0faf); /* 5 */
-  FF (d, a, b, c, x[ 5], S12, 0x4787c62a); /* 6 */
-  FF (c, d, a, b, x[ 6], S13, 0xa8304613); /* 7 */
-  FF (b, c, d, a, x[ 7], S14, 0xfd469501); /* 8 */
-  FF (a, b, c, d, x[ 8], S11, 0x698098d8); /* 9 */
-  FF (d, a, b, c, x[ 9], S12, 0x8b44f7af); /* 10 */
-  FF (c, d, a, b, x[10], S13, 0xffff5bb1); /* 11 */
-  FF (b, c, d, a, x[11], S14, 0x895cd7be); /* 12 */
-  FF (a, b, c, d, x[12], S11, 0x6b901122); /* 13 */
-  FF (d, a, b, c, x[13], S12, 0xfd987193); /* 14 */
-  FF (c, d, a, b, x[14], S13, 0xa679438e); /* 15 */
-  FF (b, c, d, a, x[15], S14, 0x49b40821); /* 16 */
-
- /* Round 2 */
-  GG (a, b, c, d, x[ 1], S21, 0xf61e2562); /* 17 */
-  GG (d, a, b, c, x[ 6], S22, 0xc040b340); /* 18 */
-  GG (c, d, a, b, x[11], S23, 0x265e5a51); /* 19 */
-  GG (b, c, d, a, x[ 0], S24, 0xe9b6c7aa); /* 20 */
-  GG (a, b, c, d, x[ 5], S21, 0xd62f105d); /* 21 */
-  GG (d, a, b, c, x[10], S22,  0x2441453); /* 22 */
-  GG (c, d, a, b, x[15], S23, 0xd8a1e681); /* 23 */
-  GG (b, c, d, a, x[ 4], S24, 0xe7d3fbc8); /* 24 */
-  GG (a, b, c, d, x[ 9], S21, 0x21e1cde6); /* 25 */
-  GG (d, a, b, c, x[14], S22, 0xc33707d6); /* 26 */
-  GG (c, d, a, b, x[ 3], S23, 0xf4d50d87); /* 27 */
-  GG (b, c, d, a, x[ 8], S24, 0x455a14ed); /* 28 */
-  GG (a, b, c, d, x[13], S21, 0xa9e3e905); /* 29 */
-  GG (d, a, b, c, x[ 2], S22, 0xfcefa3f8); /* 30 */
-  GG (c, d, a, b, x[ 7], S23, 0x676f02d9); /* 31 */
-  GG (b, c, d, a, x[12], S24, 0x8d2a4c8a); /* 32 */
-
-  /* Round 3 */
-  HH (a, b, c, d, x[ 5], S31, 0xfffa3942); /* 33 */
-  HH (d, a, b, c, x[ 8], S32, 0x8771f681); /* 34 */
-  HH (c, d, a, b, x[11], S33, 0x6d9d6122); /* 35 */
-  HH (b, c, d, a, x[14], S34, 0xfde5380c); /* 36 */
-  HH (a, b, c, d, x[ 1], S31, 0xa4beea44); /* 37 */
-  HH (d, a, b, c, x[ 4], S32, 0x4bdecfa9); /* 38 */
-  HH (c, d, a, b, x[ 7], S33, 0xf6bb4b60); /* 39 */
-  HH (b, c, d, a, x[10], S34, 0xbebfbc70); /* 40 */
-  HH (a, b, c, d, x[13], S31, 0x289b7ec6); /* 41 */
-  HH (d, a, b, c, x[ 0], S32, 0xeaa127fa); /* 42 */
-  HH (c, d, a, b, x[ 3], S33, 0xd4ef3085); /* 43 */
-  HH (b, c, d, a, x[ 6], S34,  0x4881d05); /* 44 */
-  HH (a, b, c, d, x[ 9], S31, 0xd9d4d039); /* 45 */
-  HH (d, a, b, c, x[12], S32, 0xe6db99e5); /* 46 */
-  HH (c, d, a, b, x[15], S33, 0x1fa27cf8); /* 47 */
-  HH (b, c, d, a, x[ 2], S34, 0xc4ac5665); /* 48 */
-
-  /* Round 4 */
-  II (a, b, c, d, x[ 0], S41, 0xf4292244); /* 49 */
-  II (d, a, b, c, x[ 7], S42, 0x432aff97); /* 50 */
-  II (c, d, a, b, x[14], S43, 0xab9423a7); /* 51 */
-  II (b, c, d, a, x[ 5], S44, 0xfc93a039); /* 52 */
-  II (a, b, c, d, x[12], S41, 0x655b59c3); /* 53 */
-  II (d, a, b, c, x[ 3], S42, 0x8f0ccc92); /* 54 */
-  II (c, d, a, b, x[10], S43, 0xffeff47d); /* 55 */
-  II (b, c, d, a, x[ 1], S44, 0x85845dd1); /* 56 */
-  II (a, b, c, d, x[ 8], S41, 0x6fa87e4f); /* 57 */
-  II (d, a, b, c, x[15], S42, 0xfe2ce6e0); /* 58 */
-  II (c, d, a, b, x[ 6], S43, 0xa3014314); /* 59 */
-  II (b, c, d, a, x[13], S44, 0x4e0811a1); /* 60 */
-  II (a, b, c, d, x[ 4], S41, 0xf7537e82); /* 61 */
-  II (d, a, b, c, x[11], S42, 0xbd3af235); /* 62 */
-  II (c, d, a, b, x[ 2], S43, 0x2ad7d2bb); /* 63 */
-  II (b, c, d, a, x[ 9], S44, 0xeb86d391); /* 64 */
-
-  state[0] += a;
-  state[1] += b;
-  state[2] += c;
-  state[3] += d;
-
-  /* Zeroize sensitive information.
-*/
-  MD5_memset ((POINTER)x, 0, sizeof (x));
-}
-
-/* Encodes input (UINT4) into output (unsigned char). Assumes len is
-  a multiple of 4.
- */
-static void Encode (output, input, len)
-unsigned char *output;
-UINT4 *input;
-unsigned int len;
-{
-  unsigned int i, j;
-
-  for (i = 0, j = 0; j < len; i++, j += 4) {
- output[j] = (unsigned char)(input[i] & 0xff);
- output[j+1] = (unsigned char)((input[i] >> 8) & 0xff);
- output[j+2] = (unsigned char)((input[i] >> 16) & 0xff);
- output[j+3] = (unsigned char)((input[i] >> 24) & 0xff);
-  }
-}
-
-/* Decodes input (unsigned char) into output (UINT4). Assumes len is
-  a multiple of 4.
- */
-static void Decode (output, input, len)
-UINT4 *output;
-unsigned char *input;
-unsigned int len;
-{
-  unsigned int i, j;
-
-  for (i = 0, j = 0; j < len; i++, j += 4)
- output[i] = ((UINT4)input[j]) | (((UINT4)input[j+1]) << 8) |
-   (((UINT4)input[j+2]) << 16) | (((UINT4)input[j+3]) << 24);
-}
-
-/* Note: Replace "for loop" with standard memcpy if possible.
- */
-
-static void MD5_memcpy (output, input, len)
-POINTER output;
-POINTER input;
-unsigned int len;
-{
-  unsigned int i;
-
-  for (i = 0; i < len; i++)
- output[i] = input[i];
-}
-
-/* Note: Replace "for loop" with standard memset if possible.
- */
-static void MD5_memset (output, value, len)
-POINTER output;
-int value;
-unsigned int len;
-{
-  unsigned int i;
-
-  for (i = 0; i < len; i++)
- ((char *)output)[i] = (char)value;
+    /* Save the length before padding. */
+    for (i = 0; i < 8; ++i)
+	data[i] = (md5_byte_t)(pms->count[i >> 2] >> ((i & 3) << 3));
+    /* Pad to 56 bytes mod 64. */
+    md5_append(pms, pad, ((55 - (pms->count[0] >> 3)) & 63) + 1);
+    /* Append the length. */
+    md5_append(pms, data, 8);
+    for (i = 0; i < 16; ++i)
+	digest[i] = (md5_byte_t)(pms->abcd[i >> 2] >> ((i & 3) << 3));
 }

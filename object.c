@@ -526,6 +526,13 @@ sym_to_s(sym)
 }
 
 static VALUE
+sym_intern(sym)
+    VALUE sym;
+{
+    return sym;
+}
+
+static VALUE
 rb_mod_clone(module)
     VALUE module;
 {
@@ -1228,6 +1235,7 @@ Init_Object()
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
+    rb_define_method(rb_cSymbol, "intern", sym_intern, 0);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);

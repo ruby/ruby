@@ -1636,7 +1636,7 @@ pack_unpack(str, fmt)
 		    if (p == pend) {
 			rb_raise(rb_eArgError, "non associated pointer");
 		    }
-		    tmp = rb_str_new(t, len);
+		    tmp = rb_tainted_str_new(t, len);
 		}
 		else {
 		    tmp = rb_str_new(0, 0);

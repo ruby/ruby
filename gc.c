@@ -32,22 +32,18 @@ void rb_io_fptr_finalize _((struct OpenFile*));
 #endif
 
 /* Make alloca work the best possible way.  */
-#ifdef __GNUC__
-# ifndef atarist
-#  ifndef alloca
-#   define alloca __builtin_alloca
-#  endif
-# endif /* atarist */
-#else
-# if defined(HAVE_ALLOCA_H)
+#ifndef __GNUC__
+# if HAVE_ALLOCA_H
 #  include <alloca.h>
-# elif !defined(alloca)
-void *alloca();
+# else
+#  ifdef _AIX
+#   pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+void *alloca ();
+#   endif
+#  endif
 # endif
-#endif /* __GNUC__ */
-
-#ifdef _AIX
-#pragma alloca
 #endif
 
 static void run_final();
@@ -857,7 +853,7 @@ obj_free(obj)
 	    break;
 #ifdef C_ALLOCA
 	  case NODE_ALLOCA:
-	    RUBY_CRITICAL(free(RANY(obj)->as.node.u1.value));
+	    RUBY_CRITICAL(free(RANY(obj)->as.node.u1.node));
 	    break;
 #endif
 	}

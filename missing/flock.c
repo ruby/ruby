@@ -94,7 +94,6 @@ flock(fd, operation)
     int fd;
     int operation;
 {
-    int i;
     switch (operation) {
 
 	/* LOCK_SH - get a shared lock */
@@ -103,8 +102,7 @@ flock(fd, operation)
         return -1;
 	/* LOCK_EX - get an exclusive lock */
       case LOCK_EX:
-	i = lockf (fd, F_LOCK, 0);
-	break;
+	return lockf (fd, F_LOCK, 0);
 
 	/* LOCK_SH|LOCK_NB - get a non-blocking shared lock */
       case LOCK_SH|LOCK_NB:
@@ -112,24 +110,17 @@ flock(fd, operation)
         return -1;
 	/* LOCK_EX|LOCK_NB - get a non-blocking exclusive lock */
       case LOCK_EX|LOCK_NB:
-	i = lockf (fd, F_TLOCK, 0);
-	if (i == -1)
-	    if ((errno == EAGAIN) || (errno == EACCES))
-		errno = EWOULDBLOCK;
-	break;
+	return lockf (fd, F_TLOCK, 0);
 
 	/* LOCK_UN - unlock */
       case LOCK_UN:
-	i = lockf (fd, F_ULOCK, 0);
-	break;
+	return lockf (fd, F_ULOCK, 0);
 
 	/* Default - can't decipher operation */
       default:
-	i = -1;
 	errno = EINVAL;
-	break;
+        return -1;
     }
-    return i;
 }
 #elif !defined NT
 int

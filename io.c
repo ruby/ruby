@@ -2883,7 +2883,7 @@ rb_io_ctl(io, req, arg, io_p)
 	narg = 1;
     }
     else {
-	Check_Type(arg, T_STRING);
+	arg = rb_str_to_str(arg);
 
 #ifdef IOCPARM_MASK
 #ifndef IOCPARM_LEN

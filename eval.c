@@ -1428,7 +1428,7 @@ ev_const_defined(cref, id, self)
 {
     NODE *cbase = cref;
 
-    while (cbase) {
+    while (cbase && cbase->nd_next) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
 	if (NIL_P(klass)) return rb_const_defined(CLASS_OF(self), id);
@@ -1449,7 +1449,7 @@ ev_const_get(cref, id, self)
     NODE *cbase = cref;
     VALUE result;
 
-    while (cbase) {
+    while (cbase && cbase->nd_next) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
 	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
@@ -1612,16 +1612,9 @@ rb_mod_alias_method(mod, newname, oldname)
     (tmp__protect_tmp = rb_node_newnode(NODE_ALLOCA,			\
 			     ALLOC_N(VALUE,n),tmp__protect_tmp,n),	\
      (void*)tmp__protect_tmp->nd_head)
-# define TMP_PROTECT_END do {\
-    if (tmp__protect_tmp) {\
-	rb_gc_force_recycle((VALUE)tmp__protect_tmp);\
-	alloca(0);\
-    }\
-} while (0)
 #else
 # define TMP_PROTECT typedef int foobazzz
 # define TMP_ALLOC(n) ALLOCA_N(VALUE,n)
-# define TMP_PROTECT_END
 #endif
 
 #define SETUP_ARGS(anode) {\
@@ -2490,7 +2483,6 @@ rb_eval(self, n)
 	    END_CALLARGS;
 
 	    result = rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,0);
-	    TMP_PROTECT_END;
 	}
 	break;
 
@@ -2504,7 +2496,6 @@ rb_eval(self, n)
 	    END_CALLARGS;
 
 	    result = rb_call(CLASS_OF(self),self,node->nd_mid,argc,argv,1);
-	    TMP_PROTECT_END;
 	}
 	break;
 
@@ -2537,7 +2528,6 @@ rb_eval(self, n)
 			     ruby_frame->self, ruby_frame->last_func,
 			     argc, argv, 3);
 	    POP_ITER();
-	    TMP_PROTECT_END;
 	}
 	break;
 
@@ -2599,7 +2589,6 @@ rb_eval(self, n)
 	    argv[argc-1] = val;
 	    val = rb_funcall2(recv, aset, argc, argv);
 	    result = val;
-	    TMP_PROTECT_END;
 	}
 	break;
 
@@ -3243,7 +3232,6 @@ module_setup(module, n)
 	call_trace_func("end", file, line, 0,
 			ruby_frame->last_func, ruby_frame->last_class);
     }
-    TMP_PROTECT_END;
     if (state) JUMP_TAG(state);
 
     return result;
@@ -3860,7 +3848,6 @@ handle_rescue(self, node)
 	if (rb_obj_is_kind_of(ruby_errinfo, argv[0])) return 1;
 	argv++;
     }
-    TMP_PROTECT_END;
     return 0;
 }
 
@@ -4443,7 +4430,6 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
     }
     POP_FRAME();
     POP_ITER();
-    TMP_PROTECT_END;
     return result;
 }
 
@@ -4864,8 +4850,7 @@ rb_f_eval(argc, argv, self)
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
     if (argc >= 3) {
-	Check_Type(vfile, T_STRING);
-	file = RSTRING(vfile)->ptr;
+	file = STR2CSTR(vfile);
     }
     if (argc >= 4) {
 	line = NUM2INT(vline);
@@ -5157,7 +5142,6 @@ rb_load(fname, wrap)
 	ruby_nerrs = 0;
 	rb_exc_raise(ruby_errinfo);
     }
-    TMP_PROTECT_END;
     if (state) jump_tag_but_local_jump(state);
     if (!NIL_P(ruby_errinfo))	/* exception during load */
 	rb_exc_raise(ruby_errinfo);
