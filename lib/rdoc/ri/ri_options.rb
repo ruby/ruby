@@ -21,6 +21,9 @@ module RI
     # should we just display a class list and exit
     attr_reader :list_classes
 
+    # should we display a list of all names
+    attr_reader :list_names
+
     # The width of the output line
     attr_reader :width
 
@@ -51,6 +54,10 @@ module RI
          "To use ANSI, either also use the -T option, or\n" +
          "tell your pager to allow control characters\n" +
          "(for example using the -R option to less)"],
+
+        [ "--list-names",    "-l",   nil,
+          "List all the names known to RDoc, one per line"
+        ],
 
         [ "--no-pager",      "-T",   nil,
           "Send output directly to stdout." 
@@ -163,7 +170,8 @@ module RI
       @use_stdout   = !STDOUT.tty?
       @width        = 72
       @formatter    = RI::TextFormatter.for("plain") 
-        @list_classes = false
+      @list_classes = false
+      @list_names   = false
 
       old_argv = ARGV.dup
       if ENV["RI"]
@@ -177,10 +185,11 @@ module RI
 
         go.each do |opt, arg|
           case opt
-          when "--help"      then OptionList.usage
-          when "--no-pager"  then @use_stdout = true
-          when "--classes"   then @list_classes = true
-          when "--doc-dir"   then @doc_dir = arg
+          when "--help"       then OptionList.usage
+          when "--list-names" then @list_names = true
+          when "--no-pager"   then @use_stdout = true
+          when "--classes"    then @list_classes = true
+          when "--doc-dir"    then @doc_dir = arg
 
           when "--format"
             @formatter = RI::TextFormatter.for(arg)

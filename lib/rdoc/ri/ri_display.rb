@@ -165,13 +165,24 @@ class  DefaultDisplay
 
   def list_known_classes(classes)
     if classes.empty?
-      puts "Before using ri, you need to generate documentation"
-      puts "using 'rdoc' with the --ri option"
+      warn_no_database
     else
       page do 
         @formatter.draw_line("Known classes and modules")
         @formatter.blankline
         @formatter.wrap(classes.sort.join(", "))
+      end
+    end
+  end
+
+  ######################################################################
+
+  def list_known_names(names)
+    if names.empty?
+      warn_no_database
+    else
+      page do 
+        names.each {|n| @formatter.raw_print_line(n)}
       end
     end
   end
@@ -242,7 +253,12 @@ class  DefaultDisplay
       @formatter.break_to_newline
     end
   end
-
+  ######################################################################
+  
+  def warn_no_database
+    puts "Before using ri, you need to generate documentation"
+    puts "using 'rdoc' with the --ri option"
+  end
   ######################################################################
   
   def display_flow(flow)

@@ -58,6 +58,16 @@ module RI
       find_classes_in(res, @cache.toplevel)
     end
 
+    # return a list of all classes, modules, and methods
+    def all_names
+      res = []
+      find_names_in(res, @cache.toplevel)
+    end
+
+    # ----
+    private
+    # ----
+
     def find_classes_in(res, klass)
       classes = klass.classes_and_modules
       for c in classes
@@ -66,5 +76,16 @@ module RI
       end
       res
     end
+
+    def find_names_in(res, klass)
+      classes = klass.classes_and_modules
+      for c in classes
+        res << c.full_name
+        res.concat c.all_method_names
+        find_names_in(res, c)
+      end
+      res
+    end
+
   end
 end
