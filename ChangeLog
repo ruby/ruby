@@ -4,11 +4,7 @@ Mon Jan  6 23:36:29 2003  Akinori MUSHA  <knu@iDaemons.org>
 	  st_compare_func_t, st_hash_func_t and st_each_func_t.
 
 	* st.h, st.c: Do explicit function declarations and do not rely on
-	  implicit declarations.  On such platforms as IA64, int argument
-	  values are NOT automatically promoted to long (64bit) values, so
-	  explicit declarations are mandatory for those functions that
-	  take long values or pointers.  This fixes miniruby's coredump on
-	  FreeBSD/IA64.
+	  implicit declarations.
 
 	* class.c, eval.c, gc.c, hash.c, marshal.c, parse.y, variable.c:
 	  Add proper casts to avoid warnings.
