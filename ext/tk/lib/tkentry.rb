@@ -27,9 +27,10 @@ class TkEntry<TkLabel
 
     class ValidateArgs
       VARG_KEY  = 'disvPSVW'
-      VARG_TYPE = 'nxsssssw'
+      VARG_TYPE = 'nxeseesw'
 
       def self.scan_args(arg_str, arg_val)
+	enc = Tk.encoding
 	arg_cnv = []
 	arg_str.strip.split(/\s+/).each_with_index{|kwd,idx|
 	  if kwd =~ /^%(.)$/
@@ -39,6 +40,12 @@ class TkEntry<TkLabel
 		arg_cnv << TkComm::number(arg_val[idx])
 	      when ?s
 		arg_cnv << TkComm::string(arg_val[idx])
+	      when ?e
+		if enc
+		  arg_cnv << Tk.fromUTF8(TkComm::string(arg_val[idx]), enc)
+		else
+		  arg_cnv << TkComm::string(arg_val[idx])
+		end
 	      when ?w
 		arg_cnv << TkComm::window(arg_val[idx])
 	      when ?x

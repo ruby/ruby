@@ -4053,8 +4053,8 @@ class TkWindow<TkObject
     return info
   end
 
-  def pack_propagate(mode = nil)
-    if mode
+  def pack_propagate(mode=None)
+    if mode == None
       tk_call('pack', 'propagate', epath, mode)
     else
       bool(tk_call('pack', 'propagate', epath))
@@ -4141,8 +4141,8 @@ class TkWindow<TkObject
     list(tk_call('grid', 'location', epath, x, y))
   end
 
-  def grid_propagate(mode=nil)
-    if mode
+  def grid_propagate(mode=None)
+    if mode == None
       tk_call('grid', 'propagate', epath, mode)
     else
       bool(tk_call('grid', 'propagate', epath))
