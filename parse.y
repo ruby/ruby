@@ -261,7 +261,7 @@ static void top_local_setup();
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
-%type <node> assoc_list assocs assoc undef_list backref string_dvar
+%type <node> assoc_list assocs assoc kwargs undef_list backref string_dvar
 %type <node> block_var opt_block_var brace_block cmd_brace_block do_block lhs none
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fitem variable sym symbol operation operation2 operation3
@@ -2381,9 +2381,9 @@ assoc_list	: none
 			}
 			$$ = $1;
 		    }
-		| tLABEL arg_value
+		| kwargs trailer
 		    {
-			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
+			$$ = $1;
 		    }
 		;
 
@@ -2397,6 +2397,17 @@ assocs		: assoc
 assoc		: arg_value tASSOC arg_value
 		    {
 			$$ = list_append(NEW_LIST($1), $3);
+		    }
+		;
+
+kwargs		: tLABEL arg_value
+		    {
+			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($1))), $2);
+		    }
+		| kwargs ',' tLABEL arg_value
+		    {
+			$$ = list_append(NEW_LIST(NEW_LIT(ID2SYM($3))), $4);
+			$$ = list_concat($1, $$);
 		    }
 		;
 
