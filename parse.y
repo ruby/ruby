@@ -1196,7 +1196,7 @@ mlhs_basic	: mlhs_head
 		    /*%%%*/
 			$$ = NEW_MASGN($1, 0);
 		    /*%
-			$$ = $1
+			$$ = $1;
 		    %*/
 		    }
 		| mlhs_head mlhs_item
