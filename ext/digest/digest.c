@@ -73,6 +73,7 @@ rb_digest_base_alloc(klass)
 
     algo = get_digest_base_metadata(klass);
 
+    /* XXX: An uninitialized buffer leads ALGO_Equal() to fail */
     pctx = xcalloc(algo->ctx_size, 1);
     algo->init_func(pctx);
 
