@@ -1,11 +1,17 @@
-Fri Aug 30 19:35:46 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Fri Aug 30 19:40:28 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* ext/Win32API/Win32API.c (Win32API_Call): use StringValuePtr() to
-	  confirm ptr is not NULL.
+	* ext/Win32API/Win32API.c (Win32API_Call): RSTRING()->ptr may be
+	  NULL.
 
-	* ext/socket/socket.c (sock_s_getaddrinfo): ditto.
+	* ext/nkf/nkf.c (rb_nkf_guess): ditto.
 
-	* ext/socket/socket.c (sock_s_getnameinfo): ditto.
+	* ext/readline/readline.c (readline_s_set_completion_append_character):
+	  ditto.
+
+	* ext/socket/socket.c (sock_s_getaddrinfo, sock_s_getnameinfo):
+	  ditto.
+
+	* ext/tcltklib/tcltklib.c (ip_toUTF8, ip_fromUTF8): ditto.
 
 Thu Aug 29 23:34:42 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
