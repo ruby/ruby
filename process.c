@@ -1971,6 +1971,8 @@ proc_getrlimit(VALUE obj, VALUE resource)
 #ifdef HAVE_GETRLIMIT
     struct rlimit rlim;
 
+    rb_secure(2);
+
     if (getrlimit(NUM2INT(resource), &rlim) < 0) {
        rb_sys_fail("getrlimit");
     }
@@ -2015,6 +2017,8 @@ proc_setrlimit(VALUE obj, VALUE resource, VALUE rlim_cur, VALUE rlim_max)
 {
 #ifdef HAVE_SETRLIMIT
     struct rlimit rlim;
+
+    rb_secure(2);
 
     rlim.rlim_cur = NUM2RLIM(rlim_cur);
     rlim.rlim_max = NUM2RLIM(rlim_max);

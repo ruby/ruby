@@ -1,3 +1,8 @@
+Wed Nov 17 18:59:16 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* process.c (proc_getrlimit, proc_setrlimit): add rb_secure(2) to
+	  methods of Process.{getrlimit,setrlimit}
+
 Wed Nov 17 13:05:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (rb_push_glob): fix overrun.  [ruby-dev:24886]
