@@ -1,3 +1,8 @@
+Wed Nov 21 12:22:52 2001  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/cgi.rb: CGI#header: do not set Apache.request.status for
+	Location: if Apache.request.status is already set.
+
 Tue Nov 20 01:07:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (str_extend): should not terminate string interpolation

@@ -505,7 +505,9 @@ status:
         when /^content-encoding$/ni
           Apache::request.content_encoding = value
         when /^location$/ni
-          Apache::request.status = 302
+	  if Apache::request.status == 200
+	    Apache::request.status = 302
+	  end
           Apache::request.headers_out[name] = value
         else
           Apache::request.headers_out[name] = value
