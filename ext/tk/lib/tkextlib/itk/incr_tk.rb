@@ -55,6 +55,7 @@ module Tk
       def component_path(name)
 	window(tk_send('component', name))
       end
+      alias component_widget component_path
 
       def component_invoke(name, cmd, *args)
 	window(tk_send('component', name, cmd, *args))

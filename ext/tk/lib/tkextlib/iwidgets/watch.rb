@@ -1,5 +1,5 @@
 #
-#  tkextlib/iwidgets/datefield.rb
+#  tkextlib/iwidgets/watch.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 
@@ -8,14 +8,14 @@ require 'tkextlib/iwidgets.rb'
 
 module Tk
   module Iwidgets
-    class  Datefield < Tk::Iwidgets::Labeledwidget
+    class Watch < Tk::Itk::Widget
     end
   end
 end
 
-class Tk::Iwidgets::Datefield
-  TkCommandNames = ['::iwidgets::datefield'.freeze].freeze
-  WidgetClassName = 'Datefield'.freeze
+class Tk::Iwidgets::Watch
+  TkCommandNames = ['::iwidgets::watch'.freeze].freeze
+  WidgetClassName = 'Watch'.freeze
   WidgetClassNames[WidgetClassName] = self
 
   def get_string
@@ -27,17 +27,19 @@ class Tk::Iwidgets::Datefield
     number(tk_call(@path, 'get', '-clicks'))
   end
 
-  def valid?
-    bool(tk_call(@path, 'isvalid'))
-  end
-  alias isvalid? valid?
-
-  def show(date=None)
-    tk_call(@path, 'show', date)
+  def show(time=None)
+    tk_call(@path, 'show', time)
     self
   end
   def show_now
     tk_call(@path, 'show', 'now')
     self
+  end
+
+  def watch(*args)
+    unless args.empty?
+      tk_call(@path, 'watch', *args)
+    end
+    component_path('canvas')
   end
 end

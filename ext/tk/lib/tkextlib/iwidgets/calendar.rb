@@ -48,6 +48,8 @@ class Tk::Iwidgets::Calendar
     super << CalendarCommand
   end
 
+  Tk::ValidateConfigure.__def_validcmd(binding, CalendarCommand)
+=begin
   def command(cmd = Proc.new, args = nil)
     if cmd.kind_of?(CalendarCommand)
       configure('command', cmd)
@@ -57,6 +59,7 @@ class Tk::Iwidgets::Calendar
       configure('command', cmd)
     end
   end
+=end
 
   ####################################
 

@@ -1,5 +1,5 @@
 #
-#  tkextlib/iwidgets/dialogshell.rb
+#  tkextlib/iwidgets/toolbar.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 
@@ -8,29 +8,19 @@ require 'tkextlib/iwidgets.rb'
 
 module Tk
   module Iwidgets
-    class Dialogshell < Tk::Iwidgets::Shell
+    class Toolbar < Tk::Itk::Widget
     end
   end
 end
 
-class Tk::Iwidgets::Dialogshell
-  TkCommandNames = ['::iwidgets::dialogshell'.freeze].freeze
-  WidgetClassName = 'Dialogshell'.freeze
+class Tk::Iwidgets::Toolbar
+  TkCommandNames = ['::iwidgets::toolbar'.freeze].freeze
+  WidgetClassName = 'Toolbar'.freeze
   WidgetClassNames[WidgetClassName] = self
 
   ####################################
 
   include TkItemConfigMethod
-
-  def __item_cget_cmd(id)
-    [self.path, 'buttoncget', id]
-  end
-  private :__item_cget_cmd
-
-  def __item_config_cmd(id)
-    [self.path, 'buttonconfigure', id]
-  end
-  private :__item_config_cmd
 
   def tagid(tagOrId)
     if tagOrId.kind_of?(Tk::Itk::Component)
@@ -41,17 +31,9 @@ class Tk::Iwidgets::Dialogshell
     end
   end
 
-  alias buttoncget itemcget
-  alias buttonconfigure itemconfigure
-  alias buttonconfiginfo itemconfiginfo
-  alias current_buttonconfiginfo current_itemconfiginfo
-
-  private :itemcget, :itemconfigure
-  private :itemconfiginfo, :current_itemconfiginfo
-
   ####################################
 
-  def add(tag=nil, keys={})
+  def add(type, tag=nil, keys={})
     if tag.kind_of?(Hash)
       keys = tag
       tag = nil
@@ -59,22 +41,16 @@ class Tk::Iwidgets::Dialogshell
     unless tag
       tag = Tk::Itk::Component.new(self)
     end
-    tk_call(@path, 'add', tagid(tag), *hash_kv(keys))
+    tk_call(@path, 'add', type, tagid(tag), *hash_kv(keys))
     tag
   end
 
-  def default(idx)
-    tk_call(@path, 'default', index(idx))
-    self
-  end
-
-  def delete(idx)
-    tk_call(@path, 'delete', index(idx))
-    self
-  end
-
-  def hide(idx)
-    tk_call(@path, 'hide', index(idx))
+  def delete(idx1, idx2=nil)
+    if idx2
+      tk_call(@path, 'delete', index(idx1), index(idx2))
+    else
+      tk_call(@path, 'delete', index(idx1))
+    end
     self
   end
 
@@ -82,7 +58,7 @@ class Tk::Iwidgets::Dialogshell
     number(tk_call(@path, 'index', tagid(idx)))
   end
 
-  def insert(idx, tag=nil, keys={})
+  def insert(idx, type, tag=nil, keys={})
     if tag.kind_of?(Hash)
       keys = tag
       tag = nil
@@ -90,7 +66,7 @@ class Tk::Iwidgets::Dialogshell
     unless tag
       tag = Tk::Itk::Component.new(self)
     end
-    tk_call(@path, 'insert', index(idx), tagid(tag), *hash_kv(keys))
+    tk_call(@path, 'insert', index(idx), type, tagid(tag), *hash_kv(keys))
     tag
   end
 

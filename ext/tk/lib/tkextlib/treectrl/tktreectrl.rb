@@ -539,9 +539,11 @@ class Tk::TreeCtrl_Widget
   def item_isopen(item)
     bool(tk_send('item', 'isopen', item))
   end
-  alias item_is_open  item_isopen
-  alias item_isopen?  item_isopen
-  alias item_is_open? item_isopen
+  alias item_is_open    item_isopen
+  alias item_isopen?    item_isopen
+  alias item_is_open?   item_isopen
+  alias item_isopened?  item_isopen
+  alias item_is_opened? item_isopen
 
   def item_lastchild(parent, child=nil)
     if child

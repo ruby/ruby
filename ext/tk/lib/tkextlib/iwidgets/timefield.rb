@@ -1,5 +1,5 @@
 #
-#  tkextlib/iwidgets/datefield.rb
+#  tkextlib/iwidgets/timefield.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 
@@ -8,14 +8,14 @@ require 'tkextlib/iwidgets.rb'
 
 module Tk
   module Iwidgets
-    class  Datefield < Tk::Iwidgets::Labeledwidget
+    class  Timefield < Tk::Iwidgets::Labeledwidget
     end
   end
 end
 
-class Tk::Iwidgets::Datefield
-  TkCommandNames = ['::iwidgets::datefield'.freeze].freeze
-  WidgetClassName = 'Datefield'.freeze
+class Tk::Iwidgets::Timefield
+  TkCommandNames = ['::iwidgets::timefield'.freeze].freeze
+  WidgetClassName = 'Timefield'.freeze
   WidgetClassNames[WidgetClassName] = self
 
   def get_string
@@ -32,8 +32,8 @@ class Tk::Iwidgets::Datefield
   end
   alias isvalid? valid?
 
-  def show(date=None)
-    tk_call(@path, 'show', date)
+  def show(time=None)
+    tk_call(@path, 'show', time)
     self
   end
   def show_now

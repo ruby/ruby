@@ -61,11 +61,16 @@ class TkTimer
     @in_callback = true
     begin
       @return_value = @current_proc.call(self)
+    rescue SystemExit
+      exit(0)
+    rescue Interrupt
+      exit!(1)
     rescue Exception => e
       if @cancel_on_exception && 
 	  @cancel_on_exception.find{|exc| e.kind_of?(exc)}
 	cancel
 	@return_value = e
+	@in_callback = false
 	return e
       else
 	fail e

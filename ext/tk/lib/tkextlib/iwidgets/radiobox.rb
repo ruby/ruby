@@ -1,5 +1,5 @@
 #
-#  tkextlib/iwidgets/dialogshell.rb
+#  tkextlib/iwidgets/radiobox.rb
 #                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
 #
 
@@ -8,14 +8,14 @@ require 'tkextlib/iwidgets.rb'
 
 module Tk
   module Iwidgets
-    class Dialogshell < Tk::Iwidgets::Shell
+    class Radiobox < Tk::Iwidgets::Labeledframe
     end
   end
 end
 
-class Tk::Iwidgets::Dialogshell
-  TkCommandNames = ['::iwidgets::dialogshell'.freeze].freeze
-  WidgetClassName = 'Dialogshell'.freeze
+class Tk::Iwidgets::Radiobox
+  TkCommandNames = ['::iwidgets::radiobox'.freeze].freeze
+  WidgetClassName = 'Radiobox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
   ####################################
@@ -63,19 +63,25 @@ class Tk::Iwidgets::Dialogshell
     tag
   end
 
-  def default(idx)
-    tk_call(@path, 'default', index(idx))
-    self
-  end
-
   def delete(idx)
     tk_call(@path, 'delete', index(idx))
     self
   end
 
-  def hide(idx)
-    tk_call(@path, 'hide', index(idx))
+  def deselect(idx)
+    tk_call(@path, 'deselect', index(idx))
     self
+  end
+
+  def flash(idx)
+    tk_call(@path, 'flash', index(idx))
+    self
+  end
+
+  def get(idx)
+    simplelist(tk_call(@path, 'get', index(idx))).collect{|id|
+      Tk::Itk::Component.id2obj(id)
+    }
   end
 
   def index(idx)
@@ -94,17 +100,8 @@ class Tk::Iwidgets::Dialogshell
     tag
   end
 
-  def invoke(idx=nil)
-    if idx
-      tk_call(@path, 'invoke', index(idx))
-    else
-      tk_call(@path, 'invoke')
-    end
-    self
-  end
-
-  def show(idx)
-    tk_call(@path, 'show', index(idx))
+  def select(idx)
+    tk_call(@path, 'select', index(idx))
     self
   end
 end

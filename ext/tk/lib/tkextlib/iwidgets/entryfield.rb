@@ -49,6 +49,8 @@ class Tk::Iwidgets::Entryfield
     super << EntryfieldValidate
   end
 
+  Tk::ValidateConfigure.__def_validcmd(binding, EntryfieldValidate)
+=begin
   def validate(cmd = Proc.new, args = nil)
     if cmd.kind_of?(ValidateCmd)
       configure('validate', cmd)
@@ -68,6 +70,7 @@ class Tk::Iwidgets::Entryfield
       configure('invalid', cmd)
     end
   end
+=end
 
   ####################################
 
