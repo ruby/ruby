@@ -26,7 +26,6 @@ Language Spec.
 * to_i returns nil if str contains no digit.
 * raise exception by `` error
 * jar like combined library package.
-* "@foo ||= 44" should not warn you.
 
 Hacking Interpreter
 
@@ -83,6 +82,7 @@ Standard Libraries
 * warn, warning for Ruby level
 * hash etc. should handle self referenceing array/hash
 * move NameError under StandardError.
+* library to load per-user profile seeking .ruby_profile or ruby.ini file.
 
 Extension Libraries
 

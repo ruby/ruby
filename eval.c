@@ -173,6 +173,8 @@ print_undef(klass, id)
 	     rb_class2name(klass));
 }
 
+static ID removed, singleton_removed, undefined, singleton_undefined;
+
 #define CACHE_SIZE 0x800
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
@@ -319,6 +321,13 @@ remove_method(klass, mid)
 		 rb_id2name(mid), rb_class2name(klass));
     }
     rb_clear_cache_by_id(mid);
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	rb_funcall(rb_iv_get(klass, "__attached__"),
+		   singleton_removed, 1, ID2SYM(mid));
+    }
+    else {
+	rb_funcall(klass, removed, 1, ID2SYM(mid));
+    }
 }
 
 void
@@ -435,8 +444,8 @@ rb_method_boundp(klass, id, ex)
     return Qfalse;
 }
 
-static ID init, eqq, each, aref, aset, match, to_ary;
-static ID missing, added, singleton_added;
+static ID init, eqq, each, aref, aset, match, to_ary, missing;
+static ID added, singleton_added;
 static ID __id__, __send__;
 
 void
@@ -1539,6 +1548,13 @@ rb_undef(klass, id)
     }
     rb_add_method(klass, id, 0, NOEX_PUBLIC);
     rb_clear_cache_by_id(id);
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	rb_funcall(rb_iv_get(klass, "__attached__"),
+		   singleton_undefined, 1, ID2SYM(id));
+    }
+    else {
+	rb_funcall(klass, undefined, 1, ID2SYM(id));
+    }
 }
 
 static VALUE
@@ -1582,6 +1598,13 @@ rb_alias(klass, name, def)
     st_insert(RCLASS(klass)->m_tbl, name,
 	      NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
     rb_clear_cache_by_id(name);
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	rb_funcall(rb_iv_get(klass, "__attached__"),
+		   singleton_added, 1, ID2SYM(name));
+    }
+    else {
+	rb_funcall(klass, added, 1, ID2SYM(name));
+    }
 }
 
 static VALUE
@@ -1808,6 +1831,12 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
+	if (NIL_P(ruby_cbase)) {
+	    if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
+		return "class variable";
+	    }
+	    break;
+	}
 	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
 		return "class variable";
@@ -2725,6 +2754,10 @@ rb_eval(self, n)
 	break;
 
       case NODE_CVAR:		/* normal method */
+	if (NIL_P(ruby_cbase)) {
+	    result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
+	    break;
+	}
 	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    result = rb_cvar_get(ruby_cbase, node->nd_vid);
 	    break;
@@ -3022,7 +3055,6 @@ rb_eval(self, n)
 	    rb_raise(rb_eTypeError, "no class to make alias");
 	}
 	rb_alias(ruby_class, node->nd_new, node->nd_old);
-	rb_funcall(ruby_class, added, 1, ID2SYM(node->nd_mid));
 	result = Qnil;
 	break;
 
@@ -3498,6 +3530,7 @@ rb_yield_0(val, self, klass, acheck)
 {
     NODE *node;
     volatile VALUE result = Qnil;
+    volatile VALUE old_cref;
     struct BLOCK *block;
     struct SCOPE *old_scope;
     struct FRAME frame;
@@ -3514,6 +3547,8 @@ rb_yield_0(val, self, klass, acheck)
     frame = block->frame;
     frame.prev = ruby_frame;
     ruby_frame = &(frame);
+    old_cref = (VALUE)ruby_cref;
+    ruby_cref = (NODE*)ruby_frame->cbase;
     old_scope = ruby_scope;
     ruby_scope = block->scope;
     ruby_block = block->prev;
@@ -3612,6 +3647,7 @@ rb_yield_0(val, self, klass, acheck)
     POP_VARS();
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
+    ruby_cref = (NODE*)old_cref;
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;
@@ -4876,6 +4912,12 @@ rb_f_eval(argc, argv, self)
     int line = 1;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
+    if (ruby_safe_level >= 4) {
+	StringValue(src);
+    }
+    else {
+	SafeStringValue(src);
+    }
     if (argc >= 3) {
 	file = StringValuePtr(vfile);
     }
@@ -4883,12 +4925,6 @@ rb_f_eval(argc, argv, self)
 	line = NUM2INT(vline);
     }
 
-    if (ruby_safe_level >= 4) {
-	StringValue(src);
-    }
-    else {
-	SafeStringValue(src);
-    }
     if (NIL_P(scope) && ruby_frame->prev) {
 	struct FRAME *prev;
 	VALUE val;
@@ -5206,19 +5242,16 @@ rb_feature_p(feature, wait)
     const char *feature;
     int wait;
 {
-    VALUE *p, *pend;
+    VALUE v;
     char *f;
-    int len;
+    int i, len = strlen(feature);
 
-    p = RARRAY(rb_features)->ptr;
-    pend = p + RARRAY(rb_features)->len;
-    while (p < pend) {
-	VALUE v = *p;
+    for (i = 0; i < RARRAY(rb_features)->len; ++i) {
+	v = RARRAY(rb_features)->ptr[i];
 	f = StringValuePtr(v);
 	if (strcmp(f, feature) == 0) {
 	    goto load_wait;
 	}
-	len = strlen(feature);
 	if (strncmp(f, feature, len) == 0) {
 	    if (strcmp(f+len, ".so") == 0) {
 		return Qtrue;
@@ -5228,7 +5261,6 @@ rb_feature_p(feature, wait)
 		return Qtrue;
 	    }
 	}
-	p++;
     }
     return Qfalse;
 
@@ -5551,13 +5583,6 @@ rb_mod_modfunc(argc, argv, module)
 }
 
 static VALUE
-rb_mod_included(module, include)
-    VALUE module, include;
-{
-    return Qnil;
-}
-
-static VALUE
 rb_mod_append_features(module, include)
     VALUE module, include;
 {
@@ -5841,6 +5866,10 @@ Init_eval()
     missing = rb_intern("method_missing");
     added = rb_intern("method_added");
     singleton_added = rb_intern("singleton_method_added");
+    removed = rb_intern("method_removed");
+    singleton_removed = rb_intern("singleton_method_removed");
+    undefined = rb_intern("method_undefined");
+    singleton_undefined = rb_intern("singleton_method_undefined");
 
     __id__ = rb_intern("__id__");
     __send__ = rb_intern("__send__");
@@ -5884,7 +5913,6 @@ Init_eval()
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
     rb_define_private_method(rb_cModule, "include", rb_mod_include, -1);
-    rb_define_private_method(rb_cModule, "included", rb_mod_included, 1);
     rb_define_private_method(rb_cModule, "public", rb_mod_public, -1);
     rb_define_private_method(rb_cModule, "protected", rb_mod_protected, -1);
     rb_define_private_method(rb_cModule, "private", rb_mod_private, -1);
@@ -6381,7 +6409,7 @@ proc_to_s(self, other)
     VALUE str;
 
     Data_Get_Struct(self, struct BLOCK, data);
-    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
+    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:nul */
     sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, data->tag);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);

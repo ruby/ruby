@@ -257,9 +257,6 @@ char *
 rb_class2name(klass)
     VALUE klass;
 {
-    if (klass == rb_cNilClass) return "nil";
-    if (klass == rb_cTrueClass) return "true";
-    if (klass == rb_cFalseClass) return "false";
     return RSTRING(rb_class_path(klass))->ptr;
 }
 

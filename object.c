@@ -130,7 +130,7 @@ rb_any_to_s(obj)
     char *cname = rb_class2name(CLASS_OF(obj));
     VALUE str;
 
-    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
+    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:nul */
     sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, obj);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
@@ -198,12 +198,12 @@ rb_obj_inspect(obj)
 
 	c = rb_class2name(CLASS_OF(obj));
 	if (rb_inspecting_p(obj)) {
-	    str = rb_str_new(0, strlen(c)+10+16+1); /* 10:tags 16:addr 1:eos */
+	    str = rb_str_new(0, strlen(c)+10+16+1); /* 10:tags 16:addr 1:nul */
 	    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx ...>", c, obj);
 	    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	    return str;
 	}
-	str = rb_str_new(0, strlen(c)+6+16+1); /* 6:tags 16:addr 1:eos */
+	str = rb_str_new(0, strlen(c)+6+16+1); /* 6:tags 16:addr 1:nul */
 	sprintf(RSTRING(str)->ptr, "-<%s:0x%lx", c, obj);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return rb_protect_inspect(inspect_obj, obj, str);
@@ -522,7 +522,17 @@ sym_intern(sym)
 static VALUE
 rb_mod_to_s(klass)
     VALUE klass;
+
 {
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	VALUE s = rb_str_new2("#<");
+
+	rb_str_cat2(s, "Class:");
+	rb_str_cat2(s, rb_class2name(klass));
+	rb_str_cat2(s, ">");
+
+	return s;
+    }
     return rb_str_dup(rb_class_path(klass));
 }
 
@@ -1111,6 +1121,10 @@ Init_Object()
     rb_include_module(rb_cObject, rb_mKernel);
     rb_define_private_method(rb_cObject, "initialize", rb_obj_dummy, 0);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cModule, "included", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cModule, "method_removed", rb_obj_dummy, 1);
+    rb_define_private_method(rb_cModule, "method_undefined", rb_obj_dummy, 1);
 
     /*
      * Ruby's Class Hierarchy Chart
@@ -1138,8 +1152,8 @@ Init_Object()
 
     rb_define_method(rb_mKernel, "nil?", rb_false, 0);
     rb_define_method(rb_mKernel, "==", rb_obj_equal, 1);
-    rb_define_alias(rb_mKernel, "equal?", "==");
-    rb_define_alias(rb_mKernel, "===", "==");
+    rb_define_method(rb_mKernel, "equal?", rb_obj_equal, 1);
+    rb_define_method(rb_mKernel, "===", rb_obj_equal, 1); 
     rb_define_method(rb_mKernel, "=~", rb_false, 1);
 
     rb_define_method(rb_mKernel, "eql?", rb_obj_equal, 1);
@@ -1176,6 +1190,8 @@ Init_Object()
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
 
     rb_define_global_function("singleton_method_added", rb_obj_dummy, 1);
+    rb_define_global_function("singleton_method_removed", rb_obj_dummy, 1);
+    rb_define_global_function("singleton_method_undefined", rb_obj_dummy, 1);
 
     rb_define_global_function("sprintf", rb_f_sprintf, -1);
     rb_define_global_function("format", rb_f_sprintf, -1);
@@ -1242,7 +1258,6 @@ Init_Object()
     rb_define_method(rb_cModule, "const_set", rb_mod_const_set, 2);
     rb_define_method(rb_cModule, "const_defined?", rb_mod_const_defined, 1);
     rb_define_private_method(rb_cModule, "remove_const", rb_mod_remove_const, 1);
-    rb_define_private_method(rb_cModule, "method_added", rb_obj_dummy, 1);
     rb_define_method(rb_cModule, "class_variables", rb_mod_class_variables, 0);
     rb_define_private_method(rb_cModule, "remove_class_variable", rb_mod_remove_cvar, 1);
 

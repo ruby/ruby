@@ -15,6 +15,7 @@ $srcdir = CONFIG["srcdir"]
 $libdir = CONFIG["libdir"]
 $rubylibdir = CONFIG["rubylibdir"]
 $archdir = CONFIG["archdir"]
+$sitedir = CONFIG["sitedir"]
 $sitelibdir = CONFIG["sitelibdir"]
 $sitearchdir = CONFIG["sitearchdir"]
 
@@ -453,6 +454,7 @@ exec_prefix = #{CONFIG["exec_prefix"].sub(drive, '')}
 libdir = #{$libdir.sub(drive, '')}#{target_prefix}
 rubylibdir = #{$rubylibdir.sub(drive, '')}#{target_prefix}
 archdir = #{$archdir.sub(drive, '')}#{target_prefix}
+sitedir = #{$sitedir.sub(drive, '')}#{target_prefix}
 sitelibdir = #{$sitelibdir.sub(drive, '')}#{target_prefix}
 sitearchdir = #{$sitearchdir.sub(drive, '')}#{target_prefix}
 

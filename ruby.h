@@ -186,22 +186,19 @@ void rb_check_type _((VALUE,int));
 #define Check_Type(v,t) rb_check_type((VALUE)(v),t)
 
 VALUE rb_str_to_str _((VALUE));
-#define StringValue(v) do {\
-    if (TYPE(v) != T_STRING) v = rb_str_to_str(v);\
-} while (0)
+VALUE rb_string_value _((VALUE*));
+
+#define StringValue(v) if (TYPE(v) != T_STRING) rb_string_value(&(v))
 void rb_check_safe_str _((VALUE));
-/* obsolete macro - use SafeStringValue(v) */
-#define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 #define SafeStringValue(v) do {\
-    if (TYPE(v) != T_STRING) v = rb_str_to_str(v);\
+    StringValue(v);\
     rb_check_safe_str(v);\
 } while (0)
-
-#define StringValuePtr(v) \
-    (((TYPE(v) != T_STRING) ? v = rb_str_to_str(v) : (v)), RSTRING(v)->ptr)
+#define StringValuePtr(v) RSTRING((TYPE(v) == T_STRING) ? (v) : rb_string_value(&(v)))->ptr
+/* obsolete macro - use SafeStringValue(v) */
+#define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 
 void rb_secure _((int));
-
 EXTERN int ruby_safe_level;
 #define rb_safe_level() (ruby_safe_level)
 void rb_set_safe_level _((int));

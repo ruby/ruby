@@ -372,9 +372,9 @@ ip_invoke_real(argc, argv, obj)
 	/* object interface */
 	ov = (Tcl_Obj **)ALLOCA_N(Tcl_Obj *, argc+1);
 	for (i = 0; i < argc; ++i) {
-	    VALUE v = argv[i];
+	    v = argv[i];
 	    s = StringValuePtr(v);
-	    ov[i] = Tcl_NewStringObj(s, RSTRING(s)->len);
+	    ov[i] = Tcl_NewStringObj(s, RSTRING(v)->len);
 	    Tcl_IncrRefCount(ov[i]);
 	}
 	ov[argc] = (Tcl_Obj *)NULL;

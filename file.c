@@ -2206,8 +2206,7 @@ rb_find_file(file)
     char *file;
 {
     extern VALUE rb_load_path;
-    volatile VALUE vpath;
-    VALUE fname;
+    VALUE vpath, fname;
     char *path;
     struct stat st;
 
@@ -2215,7 +2214,7 @@ rb_find_file(file)
     if (is_macos_native_path(file)) {
 	FILE *f;
 
-	if (safe_level >= 2 && !rb_path_check(file)) {
+	if (rb_safe_level() >= 2 && !rb_path_check(file)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", file);
 	}
 	f= fopen(file, "r");

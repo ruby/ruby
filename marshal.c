@@ -342,6 +342,9 @@ w_object(obj, arg, limit)
 
 	switch (BUILTIN_TYPE(obj)) {
 	  case T_CLASS:
+	    if (FL_TEST(obj, FL_SINGLETON)) {
+		rb_raise(rb_eTypeError, "singleton class can't be dumped");
+	    }
 	    w_byte(TYPE_CLASS, arg);
 	    {
 		VALUE path = rb_class_path(obj);
@@ -460,7 +463,8 @@ w_object(obj, arg, limit)
 		char *path;
 
 		if (FL_TEST(klass, FL_SINGLETON)) {
-		    if (RCLASS(klass)->m_tbl->num_entries > 0) {
+		    if (RCLASS(klass)->m_tbl->num_entries > 0 ||
+			RCLASS(klass)->iv_tbl->num_entries > 1) {
 			rb_raise(rb_eTypeError, "singleton can't be dumped");
 		    }
 		}

@@ -134,13 +134,13 @@ range(pat, test, flags)
 		  ((s) == string || pathname && isdirsep(*(s))))
 static int
 fnmatch(pat, string, flags)
-    char *pat;
-    char *string;
+    const char *pat;
+    const char *string;
     int flags;
 {
     int c;
     int test;
-    char *s = string;
+    const char *s = string;
     int escape = !(flags & FNM_NOESCAPE);
     int pathname = flags & FNM_PATHNAME;
     int period = flags & FNM_PERIOD;

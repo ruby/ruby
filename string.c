@@ -139,6 +139,13 @@ rb_str_to_str(str)
     return rb_convert_type(str, T_STRING, "String", "to_str");
 }
 
+VALUE
+rb_string_value(ptr)
+    VALUE *ptr;
+{
+    return *ptr = rb_str_to_str(*ptr);
+}
+
 static void
 rb_str_become(str, str2)
     VALUE str, str2;
