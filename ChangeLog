@@ -1,3 +1,9 @@
+Sat Feb 19 01:32:03 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bigdecimal/newton.rb: resolve LoadError.
+
+	* bigdecimal/nlsolve.rb: ditto.
+
 Thu Feb 17 20:11:18 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/drb/drb.rb (DRbServer.default_safe_level): fix typo.
