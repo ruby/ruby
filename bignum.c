@@ -24,13 +24,13 @@ VALUE cBignum;
 #define BIGLO(x) ((x) & (BIGRAD-1))
 
 static VALUE
-bignew_1(class, len, sign)
-    VALUE class;
+bignew_1(klass, len, sign)
+    VALUE klass;
     UINT len;
     char sign;
 {
     NEWOBJ(big, struct RBignum);
-    OBJSETUP(big, cBignum, T_BIGNUM);
+    OBJSETUP(big, klass, T_BIGNUM);
     big->sign = sign;
     big->len = len;
     BDIGITS(big) = ALLOC_N(USHORT, len);

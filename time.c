@@ -201,7 +201,7 @@ time_arg(argc, argv, args)
     }
 
     /* value validation */
-    if (   args[0] < 70|| args[1] > 137
+    if (   args[0] < 70|| args[0] > 137
 	|| args[1] < 0 || args[1] > 11
 	|| args[2] < 1 || args[2] > 31
 	|| args[3] < 0 || args[3] > 23
