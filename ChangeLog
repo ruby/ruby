@@ -1,3 +1,11 @@
+Sun Jan  2 01:17:17 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/drbtest.rb: add method DRbService.ext_service.
+
+	* test/drb/test_drb.rb: ditto.
+
+	* test/drb/test_drbssl.rb: ditto.
+
 Sat Jan  1 20:23:02 2005  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (argf_readpartial): new method ARGF.readpartial.

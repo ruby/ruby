@@ -36,7 +36,7 @@ end
 class TestDRbSSLCore < Test::Unit::TestCase
   include DRbCore
   def setup
-    @ext = DRbSSLService.manager.service('ut_drb_drbssl.rb')
+    @ext = DRbSSLService.ext_service('ut_drb_drbssl.rb')
     @there = @ext.front
   end
 
@@ -65,7 +65,7 @@ end
 class TestDRbSSLAry < Test::Unit::TestCase
   include DRbAry
   def setup
-    @ext = DRbSSLService.manager.service('ut_array_drbssl.rb')
+    @ext = DRbSSLService.ext_service('ut_array_drbssl.rb')
     @there = @ext.front
   end
 end

@@ -6,12 +6,12 @@ end
 
 class TestDRbYield < Test::Unit::TestCase
   def setup
-    @ext = DRbService.manager.service('ut_drb.rb')
+    @ext = DRbService.ext_service('ut_drb.rb')
     @there = @ext.front
   end
 
   def teardown
-    @ext.stop_service
+    @ext.stop_service if @ext
   end
 
   def test_01_one
@@ -172,7 +172,7 @@ end
 
 class TestDRbMServer < Test::Unit::TestCase
   def setup
-    @ext = DRbService.manager.service('ut_drb.rb')
+    @ext = DRbService.ext_service('ut_drb.rb')
     @there = @ext.front
     @server = (1..3).collect do |n|
       DRb::DRbServer.new(nil, Onecky.new(n.to_s))
@@ -183,7 +183,7 @@ class TestDRbMServer < Test::Unit::TestCase
     @server.each do |s|
       s.stop_service
     end
-    @ext.stop_service
+    @ext.stop_service if @ext
   end
 
   def test_01
@@ -194,14 +194,14 @@ end
 class TestDRbReusePort < TestDRbAry
   def setup
     sleep 1.2
-    @ext = DRbService.manager.service('ut_port.rb')
+    @ext = DRbService.ext_service('ut_port.rb')
     @there = @ext.front
   end
 end
 
 class TestDRbSafe1 < TestDRbAry
   def setup
-    @ext = DRbService.manager.service('ut_safe1.rb')
+    @ext = DRbService.ext_service('ut_safe1.rb')
     @there = @ext.front
   end
 end
@@ -209,12 +209,12 @@ end
 class TestDRbEval < Test::Unit::TestCase
   def setup
     super
-    @ext = DRbService.manager.service('ut_eval.rb')
+    @ext = DRbService.ext_service('ut_eval.rb')
     @there = @ext.front
   end
 
   def teardown
-    @ext.stop_service
+    @ext.stop_service if @ext
   end
   
   def test_01_safe1_eval
@@ -240,12 +240,12 @@ end
 
 class TestDRbLarge < Test::Unit::TestCase
   def setup
-    @ext = DRbService.manager.service('ut_large.rb')
+    @ext = DRbService.ext_service('ut_large.rb')
     @there = @ext.front
   end
 
   def teardown
-    @ext.stop_service
+    @ext.stop_service if @ext
   end
 
   def test_01_large_ary
