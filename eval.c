@@ -6857,8 +6857,6 @@ rb_require_safe(fname, safe)
     } volatile saved;
     char *volatile ftptr = 0;
 
-    FilePathValue(fname);
-    fname = rb_str_new4(fname);
     saved.vmode = scope_vmode;
     saved.node = ruby_current_node;
     saved.callee = ruby_frame->callee;
@@ -6871,6 +6869,8 @@ rb_require_safe(fname, safe)
 	int found;
 
 	ruby_safe_level = safe;
+	FilePathValue(fname);
+	*(volatile VALUE *)&fname = rb_str_new4(fname);
 	found = search_required(fname, &feature, &path);
 	if (found) {
 	    if (!path || load_wait(RSTRING(feature)->ptr)) {

@@ -1,3 +1,8 @@
+Mon Mar  7 21:01:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_require_safe): get actual path string under safe level
+	  when requested.  fixed: [ruby-dev:25815]
+
 Mon Mar  7 16:46:02 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_start_ssl, ossl_ssl_read,
@@ -21,7 +26,7 @@ Mon Mar  7 10:28:00 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Mon Mar  7 01:21:01 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/tkutil/tkutil.c: follow the change of st.c (committed 
+	* ext/tk/tkutil/tkutil.c: follow the change of st.c (committed
 	  at Fri, 4 Mar 2005 15:47:47 +0900 by matz)
 
 Mon Mar  7 00:01:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
@@ -79,7 +84,7 @@ Sat Mar  5 17:48:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Sat Mar  5 16:50:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.65
+	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.65
 
 Sat Mar  5 16:29:26 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
