@@ -57,8 +57,8 @@ if /win32|djgpp|mingw32|m68k-human/i =~ PLATFORM
 else
   $null = open("/dev/null", "w")
 end
-LINK = "#{CONFIG['CC']} -o conftest -I#{CONFIG['includedir']} -I#{$srcdir} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c #{CONFIG['LIBS']} %s"
-CPP = "#{CONFIG['CPP']} -E -I#{CONFIG['includedir']} -I#{$srcdir} #{CFLAGS} %s conftest.c"
+LINK = "#{CONFIG['CC']} -o conftest -I#{$srcdir} -I#{CONFIG['includedir']} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c #{CONFIG['LIBS']} %s"
+CPP = "#{CONFIG['CPP']} -E -I#{$srcdir} -I#{CONFIG['includedir']} #{CFLAGS} %s conftest.c"
 
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
@@ -257,7 +257,7 @@ hdrdir = #{$hdrdir}
 CC = gcc
 
 prefix = #{CONFIG["prefix"]}
-CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I#{CONFIG["includedir"]} -I#{$hdrdir} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
+CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I#{$hdrdir} -I#{CONFIG["includedir"]} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
 DLDFLAGS = #{CONFIG["DLDFLAGS"]} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]}
 

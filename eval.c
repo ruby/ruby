@@ -286,8 +286,8 @@ rb_export_method(klass, name, noex)
     }
 }
 
-static VALUE
-method_boundp(klass, id, ex)
+int
+rb_method_boundp(klass, id, ex)
     VALUE klass;
     ID id;
     int ex;
@@ -299,17 +299,6 @@ method_boundp(klass, id, ex)
 	    return FALSE;
 	return TRUE;
     }
-    return FALSE;
-}
-
-int
-rb_method_boundp(klass, id, ex)
-    VALUE klass;
-    ID id;
-    int ex;
-{
-    if (method_boundp(klass, id, ex))
-	return TRUE;
     return FALSE;
 }
 
@@ -1333,8 +1322,8 @@ is_defined(self, node, buf)
       case NODE_SUPER:
       case NODE_ZSUPER:
 	if (the_frame->last_func == 0) return 0;
-	else if (method_boundp(RCLASS(the_frame->last_class)->super,
-			       the_frame->last_func, 1)) {
+	else if (rb_method_boundp(RCLASS(the_frame->last_class)->super,
+				  the_frame->last_func, 1)) {
 	    if (nd_type(node) == NODE_SUPER) {
 		return arg_defined(self, node->nd_args, buf, "super");
 	    }
@@ -1359,7 +1348,7 @@ is_defined(self, node, buf)
 	    return 0;
 	}
       check_bound:
-	if (method_boundp(val, node->nd_mid, nd_type(node)== NODE_CALL)) {
+	if (rb_method_boundp(val, node->nd_mid, nd_type(node)== NODE_CALL)) {
 	    return arg_defined(self, node->nd_args, buf, "method");
 	}
 	break;

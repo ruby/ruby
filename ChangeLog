@@ -1,3 +1,24 @@
+Tue May 12 17:38:00 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_18.
+
+Tue May 12 11:38:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* error.c (syserr_errno): returns errno of the SystemCallError.
+
+	* error.c (rb_sys_fail): saves errno in the Exception.
+
+	* error.c (set_syserr): no need to protect syserr_list.
+
+	* error.c (rb_sys_fail): no more bufsize limit.
+
+	* error.c (set_syserr): integer value of errno can be accessed by
+	  Errno::EXXX::Errno.
+
+Sun May 10 03:10:33 1998  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* io.c (io_tell etc.): moved from File class to IO class.
+
 Fri May  8 12:26:37 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* pack.c (pack_unpack): should be unsigned int (was signed int).

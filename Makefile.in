@@ -11,7 +11,7 @@ PURIFY =
 @SET_MAKE@
 
 prefix = @prefix@
-CFLAGS = @CFLAGS@ -I@includedir@ -I@srcdir@
+CFLAGS = @CFLAGS@ -I@srcdir@ -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 LIBS = @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@

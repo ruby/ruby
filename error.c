@@ -409,15 +409,24 @@ static VALUE *syserr_list;
 extern int sys_nerr;
 #endif
 
-static void
+static VALUE
 set_syserr(i, name)
     int i;
     char *name;
 {
+    VALUE error = rb_define_class_under(mErrno, name, eSystemCallError);
+    rb_define_const(error, "Errno", INT2FIX(i));
     if (i <= sys_nerr) {
-	syserr_list[i] = rb_define_class_under(mErrno, name, eSystemCallError);
-	rb_global_variable(&syserr_list[i]);
+	syserr_list[i] = error;
     }
+    return error;
+}
+
+static VALUE
+syserr_errno(self)
+    VALUE self;
+{
+    return rb_iv_get(self, "errno");
 }
 
 static void init_syserr();
@@ -555,29 +564,43 @@ rb_sys_fail(mesg)
 #ifndef NT
     char *strerror();
 #endif
-    char buf[BUFSIZ];
+    char *err;
+    char *buf;
     extern int errno;
     int n = errno;
+    VALUE ee;
 
-    if (RTEST(mesg))
-	sprintf(buf, "%s - %s", strerror(errno), mesg);
-    else
-	sprintf(buf, "%s", strerror(errno));
+    err = strerror(errno);
+    if (mesg) {
+	buf = ALLOCA_N(char, strlen(err)+strlen(mesg)+1);
+	sprintf(buf, "%s - %s", err, mesg);
+    }
+    else {
+	buf = ALLOCA_N(char, strlen(err)+1);
+	sprintf(buf, "%s", err);
+    }
 
     errno = 0;
     if (n > sys_nerr || !syserr_list[n]) {
 	char name[6];
 
 	sprintf(name, "E%03d", n);
-	set_syserr(n, name);
+	ee = set_syserr(n, name);
     }
-    rb_raise(exc_new2(syserr_list[n], buf));
+    else {
+	ee = syserr_list[n];
+    }
+    ee = exc_new2(ee, buf);
+    rb_iv_set(ee, "errno", INT2FIX(n));
+    rb_raise(ee);
 }
 
 static void
 init_syserr()
 {
     eSystemCallError = rb_define_class("SystemCallError", eStandardError);
+    rb_define_method(eSystemCallError, "errno", syserr_errno, 0);
+
     mErrno = rb_define_module("Errno");
     syserr_list = ALLOC_N(VALUE, sys_nerr+1);
     MEMZERO(syserr_list, VALUE, sys_nerr+1);

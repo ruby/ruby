@@ -179,74 +179,6 @@ apply2files(func, vargs, arg)
 }
 
 static VALUE
-file_tell(obj)
-    VALUE obj;
-{
-    OpenFile *fptr;
-    long pos;
-
-    GetOpenFile(obj, fptr);
-    pos = ftell(fptr->f);
-    if (ferror(fptr->f) != 0) rb_sys_fail(fptr->path);
-
-    return int2inum(pos);
-}
-
-static VALUE
-file_seek(obj, offset, ptrname)
-    VALUE obj, offset, ptrname;
-{
-    OpenFile *fptr;
-    long pos;
-
-    GetOpenFile(obj, fptr);
-    pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
-    if (pos != 0) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
-
-    return INT2FIX(0);
-}
-
-static VALUE
-file_set_pos(obj, offset)
-    VALUE obj, offset;
-{
-    OpenFile *fptr;
-    long pos;
-
-    GetOpenFile(obj, fptr);
-    pos = fseek(fptr->f, NUM2INT(offset), 0);
-    if (pos != 0) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
-
-    return INT2NUM(pos);
-}
-
-static VALUE
-file_rewind(obj)
-    VALUE obj;
-{
-    OpenFile *fptr;
-
-    GetOpenFile(obj, fptr);
-    if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
-
-    return INT2FIX(0);
-}
-
-static VALUE
-file_eof(obj)
-    VALUE obj;
-{
-    OpenFile *fptr;
-
-    GetOpenFile(obj, fptr);
-    if (feof(fptr->f) == 0) return FALSE;
-    return TRUE;
-}
-
-static VALUE
 file_path(obj)
     VALUE obj;
 {
@@ -325,7 +257,7 @@ file_s_stat(obj, fname)
 }
 
 static VALUE
-file_stat(obj)
+io_stat(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -1694,7 +1626,7 @@ Init_File()
 
     rb_define_method(cFile, "reopen",  file_reopen, -1);
 
-    rb_define_method(cFile, "stat",  file_stat, 0);
+    rb_define_method(cIO, "stat",  io_stat, 0); /* this is IO's method */
     rb_define_method(cFile, "lstat",  file_lstat, 0);
 
     rb_define_method(cFile, "atime", file_atime, 0);
@@ -1704,17 +1636,6 @@ Init_File()
     rb_define_method(cFile, "chmod", file_chmod, 1);
     rb_define_method(cFile, "chown", file_chown, 2);
     rb_define_method(cFile, "truncate", file_truncate, 1);
-
-    rb_define_method(cFile, "tell",  file_tell, 0);
-    rb_define_method(cFile, "seek",  file_seek, 2);
-
-    rb_define_method(cFile, "rewind", file_rewind, 0);
-
-    rb_define_method(cFile, "pos",  file_tell, 0);
-    rb_define_method(cFile, "pos=", file_set_pos, 1);
-
-    rb_define_method(cFile, "eof", file_eof, 0);
-    rb_define_method(cFile, "eof?", file_eof, 0);
 
     rb_define_method(cFile, "flock", file_flock, 1);
 

@@ -206,6 +206,63 @@ io_flush(io)
 }
 
 static VALUE
+io_tell(io)
+     VALUE io;
+{
+    OpenFile *fptr;
+    long pos;
+
+    GetOpenFile(io, fptr);
+    pos = ftell(fptr->f);
+    if (ferror(fptr->f) != 0) rb_sys_fail(fptr->path);
+
+    return int2inum(pos);
+}
+
+static VALUE
+io_seek(io, offset, ptrname)
+     VALUE io, offset, ptrname;
+{
+    OpenFile *fptr;
+    long pos;
+
+    GetOpenFile(io, fptr);
+    pos = fseek(fptr->f, NUM2INT(offset), NUM2INT(ptrname));
+    if (pos != 0) rb_sys_fail(fptr->path);
+    clearerr(fptr->f);
+
+    return INT2FIX(0);
+}
+
+static VALUE
+io_set_pos(io, offset)
+     VALUE io, offset;
+{
+    OpenFile *fptr;
+    long pos;
+
+    GetOpenFile(io, fptr);
+    pos = fseek(fptr->f, NUM2INT(offset), 0);
+    if (pos != 0) rb_sys_fail(fptr->path);
+    clearerr(fptr->f);
+
+    return INT2NUM(pos);
+}
+
+static VALUE
+io_rewind(io)
+     VALUE io;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(io, fptr);
+    if (fseek(fptr->f, 0L, 0) != 0) rb_sys_fail(fptr->path);
+    clearerr(fptr->f);
+
+    return INT2FIX(0);
+}
+
+static VALUE
 io_eof(io)
     VALUE io;
 {
@@ -1722,6 +1779,40 @@ f_readline(argc, argv)
 }
 
 static VALUE
+f_tell()
+{
+  return io_tell(file);
+}
+
+static VALUE
+f_seek(self, offset, ptrname)
+     VALUE self, offset, ptrname;
+{
+  if (!next_argv()) {
+    ArgError("no stream to seek");
+  }
+
+  return io_seek(file, offset, ptrname);
+}
+
+static VALUE
+f_set_pos(self, offset)
+     VALUE self, offset;
+{
+  if (!next_argv()) {
+    ArgError("no stream to pos");
+  }
+
+  return io_set_pos(file, offset);
+}
+
+static VALUE
+f_rewind()
+{
+  return io_rewind(file);
+}
+
+static VALUE
 f_eof()
 {
     if (init_p == 0 && !next_argv())
@@ -2426,6 +2517,11 @@ Init_IO()
     rb_define_global_function("puts", f_puts, -1);
     rb_define_global_function("gets", f_gets_method, -1);
     rb_define_global_function("readline", f_readline, -1);
+    rb_define_global_function("tell", f_tell, 0);
+    rb_define_global_function("seek", f_seek, 2);
+    rb_define_global_function("rewind", f_rewind, 0);
+    rb_define_global_function("pos", f_tell, 0);
+    rb_define_global_function("pos=", f_set_pos, 1);
     rb_define_global_function("eof", f_eof, 0);
     rb_define_global_function("eof?", f_eof, 0);
     rb_define_global_function("getc", f_getc, 0);
@@ -2498,6 +2594,11 @@ Init_IO()
     rb_define_method(cIO, "ungetc",io_ungetc, 1);
     rb_define_method(cIO, "<<",    io_addstr, 1);
     rb_define_method(cIO, "flush", io_flush, 0);
+    rb_define_method(cIO, "tell", io_tell, 0);
+    rb_define_method(cIO, "seek", io_seek, 2);
+    rb_define_method(cIO, "rewind", io_rewind, 0);
+    rb_define_method(cIO, "pos", io_tell, 0);
+    rb_define_method(cIO, "pos=", io_set_pos, 1);
     rb_define_method(cIO, "eof", io_eof, 0);
     rb_define_method(cIO, "eof?", io_eof, 0);
 
@@ -2544,6 +2645,11 @@ Init_IO()
     rb_define_singleton_method(argf, "readline", f_readline, -1);
     rb_define_singleton_method(argf, "getc", arg_getc, 0);
     rb_define_singleton_method(argf, "readchar", arg_readchar, 0);
+    rb_define_singleton_method(argf, "tell", f_tell, 0);
+    rb_define_singleton_method(argf, "seek", f_seek, 2);
+    rb_define_singleton_method(argf, "rewind", f_rewind, 0);
+    rb_define_singleton_method(argf, "pos", f_tell, 0);
+    rb_define_singleton_method(argf, "pos=", f_set_pos, 1);
     rb_define_singleton_method(argf, "eof", f_eof, 0);
     rb_define_singleton_method(argf, "eof?", f_eof, 0);
     rb_define_singleton_method(argf, "ungetc", f_ungetc, 1);

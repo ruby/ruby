@@ -62,8 +62,8 @@ CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
 else
 CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#{$topdir} " + CFLAGS + " %s @LDFLAGS@ %s conftest.c @LIBS@ %s"
-CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} " + CFLAGS + " %s conftest.c"
+LINK = "@CC@ -o conftest -I#{$topdir} -I@includedir@ " + CFLAGS + " %s @LDFLAGS@ %s conftest.c @LIBS@ %s"
+CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} -I@includedir@ " + CFLAGS + " %s conftest.c"
 
 if /win32|djgpp|mingw32|m68k-human/i =~ PLATFORM
   $null = open("nul", "w")
@@ -240,7 +240,7 @@ hdrdir = #{$topdir}
 CC = @CC@
 
 prefix = @prefix@
-CFLAGS   = %s -I@includedir@ -I#{$topdir} %s #$CFLAGS %s
+CFLAGS   = %s -I#{$topdir} -I@includedir@ %s #$CFLAGS %s
 DLDFLAGS = @DLDFLAGS@ #$LDFLAGS
 LDSHARED = @LDSHARED@
 ", if $static then "" else "@CCDLFLAGS@" end, CFLAGS, $defs.join(" ")
