@@ -1,9 +1,16 @@
+Mon Sep 27 18:25:13 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/xsd/charset.rb: XSD::Charset.is_ces did return always true under
+	  $KCODE = "NONE" environment.  check added.
+
+	* test/xsd/test_xsd.rb: add tests for above fix.
+
 Mon Sep 27 15:58:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/rpc/cgistub.rb: make logging severity threshold higher.
 
 	* lib/soap/rpc/standaloneServer.rb: defer WEBrick server start to give
-	  a change to reset logging severity threshold.
+	  a chance to reset logging severity threshold.
 
 	* test/soap/calc/test_*, test/soap/helloworld/test_helloworld.rb: run
 	  silent.

@@ -7,11 +7,9 @@ module XSD
 
 class TestXSD < Test::Unit::TestCase
   def setup
-    # Nothing to do.
   end
 
   def teardown
-    # Nothing to do.
   end
 
   def assert_parsed_result(klass, str)
@@ -48,7 +46,7 @@ class TestXSD < Test::Unit::TestCase
     assert_equal('var', o.to_s)
   end
 
-  def test_XSDString
+  def test_XSDString_UTF8
     o = XSD::XSDString.new
     assert_equal(XSD::Namespace, o.type.namespace)
     assert_equal(XSD::StringLiteral, o.type.name)
@@ -63,6 +61,29 @@ class TestXSD < Test::Unit::TestCase
     end
     assert_raises(XSD::ValueSpaceError) do
       p XSD::XSDString.new("\xC0\xC0").to_s
+    end
+  end
+
+  def test_XSDString_NONE
+    XSD::Charset.module_eval { @encoding_backup = @encoding; @encoding = "NONE" }
+    begin
+      o = XSD::XSDString.new
+      assert_equal(XSD::Namespace, o.type.namespace)
+      assert_equal(XSD::StringLiteral, o.type.name)
+      assert_equal(nil, o.data)
+      assert_equal(true, o.is_nil)
+
+      str = "abc"
+      assert_equal(str, XSD::XSDString.new(str).data)
+      assert_equal(str, XSD::XSDString.new(str).to_s)
+      assert_raises(XSD::ValueSpaceError) do
+	XSD::XSDString.new("\0")
+      end
+      assert_raises(XSD::ValueSpaceError) do
+	p XSD::XSDString.new("\xC0\xC0").to_s
+      end
+    ensure
+      XSD::Charset.module_eval { @encoding = @encoding_backup }
     end
   end
 
