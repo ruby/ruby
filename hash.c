@@ -41,14 +41,6 @@ rb_hash_freeze(hash)
     return rb_obj_freeze(hash);
 }
 
-static VALUE
-rb_hash_frozen_p(hash)
-    VALUE hash;
-{
-    if (OBJ_FROZEN(hash)) return Qtrue;
-    return Qfalse;
-}
-
 VALUE rb_cHash;
 
 static VALUE envtbl;
@@ -1797,7 +1789,6 @@ Init_Hash()
     rb_define_method(rb_cHash,"to_a", rb_hash_to_a, 0);
     rb_define_method(rb_cHash,"to_s", rb_hash_to_s, 0);
     rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
-    rb_define_method(rb_cHash,"frozen?", rb_hash_frozen_p, 0);
 
     rb_define_method(rb_cHash,"==", rb_hash_equal, 1);
     rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
