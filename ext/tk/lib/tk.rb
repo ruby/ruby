@@ -960,6 +960,10 @@ module TkCore
     tk_call 'tk_chooseColor', *hash_kv(keys)
   end
 
+  def chooseDirectory(keys = nil)
+    tk_call 'tk_chooseDirectory', *hash_kv(keys)
+  end
+
   def ip_eval(cmd_string)
     res = INTERP._eval(cmd_string)
     if  INTERP._return_value() != 0
