@@ -11,6 +11,6 @@ class HelloWorldServer < SOAP::RPC::StandaloneServer
 end
 
 if $0 == __FILE__
-  server = HelloWorldServer.new('hws', 'urn:hws', '0.0.0.0', 2000)
+  server = HelloWorldServer.new('hws', 'urn:hws', '0.0.0.0', 17171)
   server.start
 end

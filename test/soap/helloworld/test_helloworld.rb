@@ -12,8 +12,10 @@ module HelloWorld
 
 
 class TestHelloWorld < Test::Unit::TestCase
+  Port = 17171
+
   def setup
-    @server = HelloWorldServer.new('hws', 'urn:hws', '0.0.0.0', 2000)
+    @server = HelloWorldServer.new('hws', 'urn:hws', '0.0.0.0', Port)
     @server.level = Logger::Severity::UNKNOWN
     @t = Thread.new {
       @server.start
@@ -21,7 +23,7 @@ class TestHelloWorld < Test::Unit::TestCase
     while @server.server.nil? or @server.server.status != :Running
       sleep 0.1
     end
-    @client = SOAP::RPC::Driver.new('http://localhost:2000/', 'urn:hws')
+    @client = SOAP::RPC::Driver.new("http://localhost:#{Port}/", 'urn:hws')
     @client.add_method("hello_world", "from")
   end
 

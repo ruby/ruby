@@ -16,13 +16,15 @@ class TestCalcCGI < Test::Unit::TestCase
     Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
   )
 
+  Port = 17171
+
   def setup
     logger = Logger.new(STDERR)
     logger.level = Logger::Severity::FATAL
     @server = WEBrick::HTTPServer.new(
       :BindAddress => "0.0.0.0",
       :Logger => logger,
-      :Port => 8808,
+      :Port => Port,
       :AccessLog => [],
       :DocumentRoot => File.dirname(File.expand_path(__FILE__)),
       :CGIPathEnv => ENV['PATH'],
@@ -34,7 +36,7 @@ class TestCalcCGI < Test::Unit::TestCase
     while @server.status != :Running
       sleep 0.1
     end
-    @calc = SOAP::RPC::Driver.new('http://localhost:8808/server.cgi', 'http://tempuri.org/calcService')
+    @calc = SOAP::RPC::Driver.new("http://localhost:#{Port}/server.cgi", 'http://tempuri.org/calcService')
     @calc.add_method('add', 'lhs', 'rhs')
     @calc.add_method('sub', 'lhs', 'rhs')
     @calc.add_method('multi', 'lhs', 'rhs')

@@ -16,5 +16,5 @@ class CalcServer2 < SOAP::RPC::StandaloneServer
 end
 
 if $0 == __FILE__
-  status = CalcServer2.new('CalcServer', 'http://tempuri.org/calcService', '0.0.0.0', 7000).start
+  status = CalcServer2.new('CalcServer', 'http://tempuri.org/calcService', '0.0.0.0', 17171).start
 end

@@ -1,3 +1,8 @@
+Sun Oct 19 00:14:22 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/soap/calc/*, test/soap/helloworkd/*: changed port# of test
+	  server. (17171)
+
 Sat Oct 18 23:01:32 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing/acosh.c (DBL_MANT_DIG): typo fix(ifdef -> ifndef).

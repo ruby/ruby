@@ -12,8 +12,10 @@ module Calc
 
 
 class TestCalc2 < Test::Unit::TestCase
+  Port = 17171
+
   def setup
-    @server = CalcServer2.new('CalcServer', 'http://tempuri.org/calcService', '0.0.0.0', 7000)
+    @server = CalcServer2.new('CalcServer', 'http://tempuri.org/calcService', '0.0.0.0', Port)
     @server.level = Logger::Severity::FATAL
     @t = Thread.new {
       @server.start
@@ -21,7 +23,7 @@ class TestCalc2 < Test::Unit::TestCase
     while @server.server.nil? or @server.server.status != :Running
       sleep 0.1
     end
-    @var = SOAP::RPC::Driver.new('http://localhost:7000/', 'http://tempuri.org/calcService')
+    @var = SOAP::RPC::Driver.new("http://localhost:#{Port}/", 'http://tempuri.org/calcService')
     @var.add_method('set', 'newValue')
     @var.add_method('get')
     @var.add_method_as('+', 'add', 'rhs')
