@@ -1,3 +1,8 @@
+Wed Mar 19 23:05:30 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
+
+	* lib/tracer.rb (trace_func): save and recover Thread.critical state.
+	  Fixed by Fukumoto Atsushi <fukumoto@imasy.or.jp> [ruby-dev:19830]
+
 Tue Mar 11 21:06:31 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb (auth_cram_md5): Digest string had wrongly
