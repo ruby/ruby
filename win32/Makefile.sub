@@ -610,7 +610,7 @@ win32.obj: {$(srcdir)}win32/win32.c
 .NOEXPORT:
 ###
 ascii.obj: {$(srcdir)}ascii.c {$(srcdir)}regenc.h {$(srcdir)}oniguruma.h \
-  {$(srcdir)}config.h
+  config.h
 array.obj: {$(srcdir)}array.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}util.h {$(srcdir)}st.h {$(srcdir)}/win32/win32.h
@@ -639,7 +639,7 @@ error.obj: {$(srcdir)}error.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}env.h {$(srcdir)}version.h {$(srcdir)}st.h \
   {$(srcdir)}/win32/win32.h
 euc_jp.obj: {$(srcdir)}euc_jp.c {$(srcdir)}regenc.h {$(srcdir)}oniguruma.h \
-  {$(srcdir)}config.h
+  config.h
 eval.obj: {$(srcdir)}eval.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}node.h {$(srcdir)}env.h {$(srcdir)}util.h \
@@ -704,17 +704,20 @@ re.obj: {$(srcdir)}re.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}/win32/win32.h
 regcomp.obj: {$(srcdir)}regcomp.c {$(srcdir)}oniguruma.h {$(srcdir)}regint.h \
-  {$(srcdir)}regparse.h {$(srcdir)}regenc.h {$(srcdir)}config.h
+  {$(srcdir)}regparse.h {$(srcdir)}regenc.h {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}/win32/win32.h
 regenc.obj: {$(srcdir)}regenc.c {$(srcdir)}regint.h {$(srcdir)}regenc.h \
-  {$(srcdir)}oniguruma.h {$(srcdir)}config.h
+  {$(srcdir)}oniguruma.h  {$(srcdir)}ruby.h config.h {$(srcdir)}/win32/win32.h
 regerror.obj: {$(srcdir)}regerror.c {$(srcdir)}regint.h {$(srcdir)}regenc.h \
-  {$(srcdir)}oniguruma.h {$(srcdir)}config.h
+  {$(srcdir)}oniguruma.h  {$(srcdir)}ruby.h config.h {$(srcdir)}/win32/win32.h
 regexec.obj: {$(srcdir)}regexec.c {$(srcdir)}regint.h {$(srcdir)}regenc.h \
-  {$(srcdir)}oniguruma.h {$(srcdir)}config.h
+  {$(srcdir)}oniguruma.h  {$(srcdir)}ruby.h config.h {$(srcdir)}/win32/win32.h
 reggnu.obj: {$(srcdir)}reggnu.c {$(srcdir)}regint.h {$(srcdir)}regenc.h \
-  {$(srcdir)}oniguruma.h {$(srcdir)}config.h {$(srcdir)}oniggnu.h
+  {$(srcdir)}oniguruma.h  {$(srcdir)}ruby.h config.h {$(srcdir)}oniggnu.h \
+  {$(srcdir)}/win32/win32.h
 regparse.obj: {$(srcdir)}regparse.c {$(srcdir)}oniguruma.h {$(srcdir)}regint.h \
-  {$(srcdir)}regparse.h {$(srcdir)}regenc.h {$(srcdir)}config.h
+  {$(srcdir)}regparse.h {$(srcdir)}regenc.h {$(srcdir)}ruby.h config.h \
+  {$(srcdir)}/win32/win32.h
 ruby.obj: {$(srcdir)}ruby.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}dln.h {$(srcdir)}node.h {$(srcdir)}util.h \
@@ -723,7 +726,7 @@ signal.obj: {$(srcdir)}signal.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}rubysig.h {$(srcdir)}/win32/win32.h
 sjis.obj: {$(srcdir)}sjis.c {$(srcdir)}regenc.h {$(srcdir)}oniguruma.h \
-  {$(srcdir)}config.h
+  config.h
 sprintf.obj: {$(srcdir)}sprintf.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
@@ -738,7 +741,7 @@ time.obj: {$(srcdir)}time.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
 utf8.obj: {$(srcdir)}utf8.c {$(srcdir)}regenc.h {$(srcdir)}oniguruma.h \
-  {$(srcdir)}config.h
+  config.h
 util.obj: {$(srcdir)}util.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}util.h {$(srcdir)}/win32/win32.h

@@ -1,3 +1,10 @@
+Wed Mar 10 10:15:16 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (opt_W_getter): get rid of warning.
+
+	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub:
+	  fixed dependency.
+
 Tue Mar 09 10:03:40 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* bcc32/Makefile.sub, win32/Makefile.sub, wince/Makefile.sub:

@@ -621,12 +621,12 @@ process.obj: process.c ruby.h config.h defines.h intern.h missing.h rubysig.h st
 random.obj: random.c ruby.h config.h defines.h intern.h missing.h win32.h
 range.obj: range.c ruby.h config.h defines.h intern.h missing.h win32.h
 re.obj: re.c ruby.h config.h defines.h intern.h missing.h re.h regex.h win32.h
-regcomp.obj: regcomp.c oniguruma.h regint.h regparse.h regenc.h config.h
-regenc.obj: regenc.c regint.h regenc.h oniguruma.h config.h
-regerror.obj: regerror.c regint.h regenc.h oniguruma.h config.h
-regexec.obj: regexec.c regint.h regenc.h oniguruma.h config.h
-reggnu.obj: reggnu.c regint.h regenc.h oniguruma.h config.h oniggnu.h
-regparse.obj: regparse.c oniguruma.h regint.h regparse.h regenc.h config.h
+regcomp.obj: regcomp.c oniguruma.h regint.h regparse.h regenc.h config.h win32.h
+regenc.obj: regenc.c regint.h regenc.h oniguruma.h config.h win32.h
+regerror.obj: regerror.c regint.h regenc.h oniguruma.h config.h win32.h
+regexec.obj: regexec.c regint.h regenc.h oniguruma.h config.h win32.h
+reggnu.obj: reggnu.c regint.h regenc.h oniguruma.h config.h oniggnu.h win32.h
+regparse.obj: regparse.c oniguruma.h regint.h regparse.h regenc.h config.h win32.h
 ruby.obj: ruby.c ruby.h config.h defines.h intern.h missing.h dln.h node.h util.h win32.h
 signal.obj: signal.c ruby.h config.h defines.h intern.h missing.h rubysig.h win32.h
 sjis.obj: sjis.c regenc.h oniguruma.h config.h

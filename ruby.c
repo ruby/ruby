@@ -1056,6 +1056,7 @@ opt_W_getter(val, id)
     if (ruby_verbose == Qnil) return INT2FIX(0);
     if (ruby_verbose == Qfalse) return INT2FIX(1);
     if (ruby_verbose == Qtrue) return INT2FIX(2);
+    return Qnil;		/* not reached */
 }
 
 void
