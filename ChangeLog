@@ -1,3 +1,8 @@
+Fri May 21 09:22:05 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_parameters):
+	  Add ()'s around parameters that don't have them
+
 Fri May 21 02:21:11 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/csv.rb: fixed a few bugs around multi char record/field separator.
