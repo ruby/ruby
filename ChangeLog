@@ -1,3 +1,8 @@
+Tue Jan 13 04:29:52 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_driver.rb (RiDriver::report_method_stuff): 
+	  Show fully-qualified class names in class list.
+
 Tue Jan 13 01:24:17 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (test_wr): Rdoc fix.  [ruby-core:02225]
