@@ -46,12 +46,9 @@ static void run_final();
 #define GC_MALLOC_LIMIT 400000
 #endif
 #endif
-#define GC_NEWOBJ_LIMIT 10000
 
 static unsigned long malloc_memories = 0;
 static unsigned long alloc_objects = 0;
-
-static int malloc_called = 0;
 
 static void
 mem_error(mesg)
@@ -74,17 +71,16 @@ ruby_xmalloc(size)
     }
     if (size == 0) size = 1;
     malloc_memories += size;
-    if (malloc_memories > GC_MALLOC_LIMIT && alloc_objects > GC_NEWOBJ_LIMIT) {
+    if (malloc_memories > GC_MALLOC_LIMIT) {
 	rb_gc();
     }
-    malloc_called++;
     mem = malloc(size);
     if (!mem) {
 	rb_gc();
 	mem = malloc(size);
 	if (!mem) {
 	    if (size >= 10 * 1024 * 1024) {
-		rb_raise(rb_eNoMemError, "try to allocate too big memory");
+		rb_raise(rb_eNoMemError, "tryed to allocate too big memory");
 	    }
 	    mem_error("failed to allocate memory");
 	}
@@ -124,7 +120,7 @@ ruby_xrealloc(ptr, size)
 	mem = realloc(ptr, size);
 	if (!mem)
 	    if (size >= 10 * 1024 * 1024) {
-		rb_raise(rb_eNoMemError, "try to re-allocate too big memory");
+		rb_raise(rb_eNoMemError, "tryed to re-allocate too big memory");
 	    }
 	    mem_error("failed to allocate memory(realloc)");
     }
@@ -244,7 +240,7 @@ static int heaps_length = 0;
 static int heaps_used   = 0;
 
 #define HEAP_SLOTS 10000
-#define FREE_MIN  512
+#define FREE_MIN  4096
 
 static RVALUE *himem, *lomem;
 

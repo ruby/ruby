@@ -290,7 +290,7 @@ class Matrix
   end
 
   def row(i)
-    if iterator?
+    if block_given?
       for e in @rows[i]
 	yield e
 
@@ -301,7 +301,7 @@ class Matrix
   end
 
   def column(j)
-    if iterator?
+    if block_given?
       0.upto(row_size - 1) do
 	|i|
 	yield @rows[i][j]

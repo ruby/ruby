@@ -413,14 +413,13 @@ static VALUE unixaddr _((struct sockaddr_un *));
 
 enum sock_recv_type {
     RECV_RECV,			/* BasicSocket#recv(no from) */
-    RECV_TCP,			/* TCPSocket#recvfrom */
-    RECV_UDP,			/* UDPSocket#recvfrom */
+    RECV_IP,			/* IPSocket#recvfrom */
     RECV_UNIX,			/* UNIXSocket#recvfrom */
     RECV_SOCKET,		/* Socket#recvfrom */
 };
 
 static VALUE
-s_recv(sock, argc, argv, from)
+s_recvfrom(sock, argc, argv, from)
     VALUE sock;
     int argc;
     VALUE *argv;
@@ -472,8 +471,7 @@ s_recv(sock, argc, argv, from)
     switch (from) {
       case RECV_RECV:
 	return (VALUE)str;
-      case RECV_TCP:
-      case RECV_UDP:
+      case RECV_IP:
 #if 0
 	if (alen != sizeof(struct sockaddr_in)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
@@ -495,7 +493,7 @@ bsock_recv(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-    return s_recv(sock, argc, argv, RECV_RECV);
+    return s_recvfrom(sock, argc, argv, RECV_RECV);
 }
 
 static VALUE
@@ -613,6 +611,15 @@ ip_addrsetup(host, port)
     return res;
 }
 
+static VALUE
+ip_recvfrom(argc, argv, sock)
+    int argc;
+    VALUE *argv;
+    VALUE sock;
+{
+    return s_recvfrom(sock, argc, argv, RECV_IP);
+}
+
 static void
 setipaddr(name, addr)
     VALUE name;
@@ -635,6 +642,9 @@ ipaddr(sockaddr)
     char hbuf[1024], pbuf[1024];
 
     switch (sockaddr->sa_family) {
+    case AF_UNSPEC:
+	family = rb_str_new2("AF_UNSPEC");
+	break;
     case AF_INET:
 	family = rb_str_new2("AF_INET");
 	break;
@@ -643,8 +653,18 @@ ipaddr(sockaddr)
 	family = rb_str_new2("AF_INET6");
 	break;
 #endif
+#ifdef AF_LOCAL
+    case AF_LOCAL:
+	family = rb_str_new2("AF_LOCAL");
+	break;
+#elif  AF_UNIX
+    case AF_UNIX:
+	family = rb_str_new2("AF_UNIX");
+	break;
+#endif
     default:
-	family = 0;
+        sprintf(pbuf, "unknown:%d", sockaddr->sa_family);
+	family = rb_str_new2(pbuf);
 	break;
     }
     if (!do_not_reverse_lookup) {
@@ -1068,15 +1088,6 @@ tcp_accept(sock)
 		    (struct sockaddr*)&from, &fromlen);
 }
 
-static VALUE
-tcp_recvfrom(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
-{
-    return s_recv(sock, argc, argv, RECV_TCP);
-}
-
 #ifdef HAVE_SYS_UN_H
 static VALUE
 open_unix(class, path, server)
@@ -1284,15 +1295,6 @@ udp_send(argc, argv, sock)
     return INT2FIX(n);
 }
 
-static VALUE
-udp_recvfrom(argc, argv, sock)
-    int argc;
-    VALUE *argv;
-    VALUE sock;
-{
-    return s_recv(sock, argc, argv, RECV_UDP);
-}
-
 #ifdef HAVE_SYS_UN_H
 static VALUE
 unix_s_sock_open(sock, path)
@@ -1331,7 +1333,7 @@ unix_recvfrom(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-    return s_recv(sock, argc, argv, RECV_UNIX);
+    return s_recvfrom(sock, argc, argv, RECV_UNIX);
 }
 
 static VALUE
@@ -1574,7 +1576,7 @@ sock_recvfrom(argc, argv, sock)
     VALUE *argv;
     VALUE sock;
 {
-    return s_recv(sock, argc, argv, RECV_SOCKET);
+    return s_recvfrom(sock, argc, argv, RECV_SOCKET);
 }
 
 static VALUE
@@ -1828,12 +1830,21 @@ sock_s_getaddrinfo(argc, argv)
     }
 
     MEMZERO(&hints, struct addrinfo, 1);
-    if (!NIL_P(family)) {
-	hints.ai_family = NUM2INT(family);
-    }
-    else {
+    if (NIL_P(family)) {
 	hints.ai_family = PF_UNSPEC;
     }
+    else if (FIXNUM_P(family)) {
+	hints.ai_family = FIX2INT(family);
+    }
+    else if (strcmp(STR2CSTR(family), "AF_INET") == 0) {
+	hints.ai_family = PF_INET;
+    }
+#ifdef INET6
+    else if (strcmp(STR2CSTR(family), "AF_INET6") == 0) {
+	hints.ai_family = PF_INET6;
+    }
+#endif
+
     if (!NIL_P(socktype)) {
 	hints.ai_socktype = NUM2INT(socktype);
     }
@@ -1961,19 +1972,21 @@ sock_s_getnameinfo(argc, argv)
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), fl);
     if (error) goto error_exit;
-    for (r = res->ai_next; r; r = r->ai_next) {
-	char hbuf2[1024], pbuf2[1024];
+    if (res) {
+	for (r = res->ai_next; r; r = r->ai_next) {
+	    char hbuf2[1024], pbuf2[1024];
 
-	sap = r->ai_addr;
-	error = getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
-			    pbuf2, sizeof(pbuf2), fl);
-	if (error) goto error_exit;
-	if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
-	    freeaddrinfo(res);
-	    rb_raise(rb_eSocket, "sockaddr resolved to multiple nodename");
+	    sap = r->ai_addr;
+	    error = getnameinfo(sap, SA_LEN(sap), hbuf2, sizeof(hbuf2),
+				pbuf2, sizeof(pbuf2), fl);
+	    if (error) goto error_exit;
+	    if (strcmp(hbuf, hbuf2) != 0|| strcmp(pbuf, pbuf2) != 0) {
+		freeaddrinfo(res);
+		rb_raise(rb_eSocket, "sockaddr resolved to multiple nodename");
+	    }
 	}
+	freeaddrinfo(res);
     }
-    freeaddrinfo(res);
     return rb_assoc_new(rb_tainted_str_new2(hbuf), rb_tainted_str_new2(pbuf));
 
   error_exit:
@@ -2020,6 +2033,7 @@ Init_socket()
     rb_define_global_const("IPsocket", rb_cIPSocket);
     rb_define_method(rb_cIPSocket, "addr", ip_addr, 0);
     rb_define_method(rb_cIPSocket, "peeraddr", ip_peeraddr, 0);
+    rb_define_method(rb_cIPSocket, "recvfrom", ip_recvfrom, -1);
     rb_define_singleton_method(rb_cIPSocket, "getaddress", ip_s_getaddress, 1);
 
     rb_cTCPSocket = rb_define_class("TCPSocket", rb_cIPSocket);
@@ -2027,7 +2041,6 @@ Init_socket()
     rb_define_singleton_method(rb_cTCPSocket, "open", tcp_s_open, 2);
     rb_define_singleton_method(rb_cTCPSocket, "new", tcp_s_open, 2);
     rb_define_singleton_method(rb_cTCPSocket, "gethostbyname", tcp_s_gethostbyname, 1);
-    rb_define_method(rb_cTCPSocket, "recvfrom", tcp_recvfrom, -1);
 
 #ifdef SOCKS
     rb_cSOCKSSocket = rb_define_class("SOCKSSocket", rb_cTCPSocket);
@@ -2052,7 +2065,6 @@ Init_socket()
     rb_define_method(rb_cUDPSocket, "connect", udp_connect, 2);
     rb_define_method(rb_cUDPSocket, "bind", udp_bind, 2);
     rb_define_method(rb_cUDPSocket, "send", udp_send, -1);
-    rb_define_method(rb_cUDPSocket, "recvfrom", udp_recvfrom, -1);
 
 #ifdef HAVE_SYS_UN_H
     rb_cUNIXSocket = rb_define_class("UNIXSocket", rb_cBasicSocket);

@@ -45,7 +45,7 @@ class Tracer
   end
   
   def on
-    if iterator?
+    if block_given?
       on
       begin
 	yield
@@ -126,7 +126,7 @@ class Tracer
 
   Single = new
   def Tracer.on
-    if iterator?
+    if block_given?
       Single.on{yield}
     else
       Single.on

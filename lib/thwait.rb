@@ -48,7 +48,7 @@ class ThreadsWait
   
   def ThreadsWait.all_waits(*threads)
     tw = ThreadsWait.new(*threads)
-    if iterator?
+    if block_given?
       tw.all_waits do
 	|th|
 	yield th
@@ -125,7 +125,7 @@ class ThreadsWait
   def all_waits
     until @threads.empty?
       th = next_wait
-      yield th if iterator?
+      yield th if block_given?
     end
   end
 end

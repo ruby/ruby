@@ -1,3 +1,21 @@
+Wed Jun 28 17:26:06 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/socket/socket.c (ip_recvfrom): udp_recvfrom and tcp_recvfrom
+	  is merged and moved to IPSocket#recvfrom.
+
+	* ext/socket/socket.c (sock_s_getaddrinfo): family can be a
+	  strings such as "AF_INET" etc.
+
+	* ruby.c (require_libraries): . and RUBYLIB added to $load_path
+	  just before -r procedure.
+
+	* ruby.c (proc_options): -e, - did not exec -r.
+
+Wed Jun 28 10:11:06 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c: gc trigger threshold changed; GC_NEWOBJ_LIMIT removed,
+	  FREE_MIN is increased to 4096.
+
 Tue Jun 27 22:39:28 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.24.
@@ -14,15 +32,53 @@ Tue Jun 27 22:39:28 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	  can use 1.2 implementation of head, get, post, put.
 	  (see document)
 
+Tue Jun 27 12:05:10 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32.c (myfdclr): new function.
+
+	* win32.h: add FD_CLR.
+
 Mon Jun 26 23:41:41 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ruby.h: add cast for ANSI style.
 
 	* gc.c (rb_data_object_alloc): use RUBY_DATA_FUNC.
 
+Mon Jun 26 22:20:03 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (is_socket, extract_file_fd): New function.
+
+	* win32/win32.c (myfdopen): use is_socket().
+
+	* win32/win32.c (myselect): return non socket files immediately
+	  if file and socket handles are mixed.
+
+Mon Jun 26 16:21:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_schedule): wait_for cleared too early.
+
+Mon Jun 26 09:15:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c: remove obsolete 'F', 'D' specifiers.
+
+Sun Jun 25 00:55:03 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/socket.c (sock_s_getnameinfo): `res' would not
+	  be assigned if TYPE(sa) == T_STRING.
+
 Sat Jun 24 14:36:29 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* config*.dj, configure.bat, top.sed: move to djgpp/.
+
+Sat Jun 24 02:34:17 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (load_file): call require_libraries() here to let
+	  debug.rb work properly.
+
+Fri Jun 23 22:34:51 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* bignum.c (rb_big_lshift): reorder xds assignment to avoid
+	  reusing `x' as `len' by VC++ 6.0 SP3 compiler with -Ox switch.
 
 Fri Jun 23 01:11:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

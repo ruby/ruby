@@ -225,6 +225,8 @@ add_modules(mod)
     req_list_last = list;
 }
 
+extern void Init_ext _((void));
+
 void
 require_libraries()
 {
@@ -235,6 +237,12 @@ require_libraries()
     struct req_list *list = req_list_head.next;
     struct req_list *tmp;
 
+    if (rb_safe_level() == 0) {
+	rb_ary_push(rb_load_path, rb_str_new2("."));
+	addpath(getenv("RUBYLIB"));
+    }
+
+    Init_ext();		/* should be called here for some reason :-( */
     ruby_sourcefile = 0;
     save[0] = ruby_eval_tree;
     save[1] = ruby_eval_tree_begin;
@@ -251,8 +259,6 @@ require_libraries()
     ruby_eval_tree_begin = save[1];
     ruby_sourcefile = orig_sourcefile;
 }
-
-extern void Init_ext _((void));
 
 static void
 process_sflag()
@@ -626,34 +632,21 @@ proc_options(argc, argv)
     ruby_set_argv(argc, argv);
     process_sflag();
 
-#if 0
-    Init_ext();		/* should be called here for some reason :-( */
-    require_libraries();
-#endif
-
     ruby_sourcefile = argv0;
     if (e_script) {
+	require_libraries();
 	rb_compile_string(script, e_script, 1);
     }
     else if (strlen(script) == 1 && script[0] == '-') {
+	require_libraries();
 	load_stdin();
     }
     else {
 	load_file(script, 1);
     }
 
-    if (rb_safe_level() == 0) {
-	rb_ary_push(rb_load_path, rb_str_new2("."));
-	addpath(getenv("RUBYLIB"));
-    }
-
     process_sflag();
     xflag = 0;
-
-#if 1
-    Init_ext();		/* should be called here for some reason :-( */
-    require_libraries();
-#endif
 }
 
 extern int ruby__end__seen;
@@ -760,13 +753,10 @@ load_file(fname, script)
 		}
 	    }
 	}
-	else if (NIL_P(c)) {
-	    rb_io_close(f);
-	    return;
-	}
-	else {
+	else if (!NIL_P(c)) {
 	    rb_io_ungetc(f, c);
 	}
+	require_libraries();	/* Why here? unnatural */
     }
     rb_compile_file(fname, f, line_start);
     if (script && ruby__end__seen) {

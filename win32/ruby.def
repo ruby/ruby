@@ -125,6 +125,7 @@ EXPORTS
 	myfdclose
 	myaccept
 	mybind
+	myfdclr
 	myconnect
 	myfdset
 	myfdisset

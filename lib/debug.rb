@@ -7,6 +7,14 @@ if $SAFE > 0
 end
 SCRIPT_LINES__ = {} unless defined? SCRIPT_LINES__
 
+require 'tracer'
+class Tracer
+  def Tracer.trace_func(*vars)
+    Single.trace_func *vars
+  end
+end
+
+
 class DEBUGGER__
   class Mutex
     def initialize
@@ -80,6 +88,7 @@ class DEBUGGER__
       @no_step = nil
       @frames = []
       @finish_pos = 0
+      @trace = false
     end
 
     def stop_next(n=1)
@@ -216,6 +225,20 @@ class DEBUGGER__
 	  end
 
 	  case input
+	  when /^\s*tr(?:ace)?(?:\s+(on|off))?$/
+	    if !defined?( $1 )
+	      @trace = !@trace
+	    elsif $1 == 'on'
+	      @trace = true
+	    else
+	      @trace = false
+	    end
+	    if @trace
+	      stdout.print "Trace on\n"
+	    else
+	      stdout.print "Trace off\n"
+	    end
+
 	  when /^\s*b(?:reak)?\s+((?:.*?+:)?.+)$/
 	    pos = $1
 	    if pos.index(":")
@@ -445,6 +468,7 @@ Commands
   up[ nn]                    move to higher frame
   down[ nn]                  move to lower frame
   fin[ish]                   return to outer frame
+  tr[ace][ (on|off)]         set trace mode
   q[uit]                     exit from debugger
   v[ar] g[lobal]             show global variables
   v[ar] l[ocal]              show local variables
@@ -572,6 +596,7 @@ EOHELP
     end
 
     def trace_func(event, file, line, id, binding, klass)
+      Tracer.trace_func(event, file, line, id, binding) if @trace
       @file = file
       @line = line
       case event

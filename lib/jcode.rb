@@ -189,7 +189,7 @@ class String
   end
 
   def each_char
-    if iterator?
+    if block_given?
       scan(/./m) do |x|
         yield x
       end
