@@ -24,8 +24,8 @@ rb_dl_scan_callback_args(long stack[], const char *proto,
   VALUE val;
 
   sp = stack;
-  for( i=1; proto[i]; i++ ){
-    switch( proto[i] ){
+  for (i=1; proto[i]; i++) {
+    switch (proto[i]) {
     case 'C':
       {
 	char v;
@@ -162,11 +162,11 @@ dlsizeof(const char *cstr)
 
   len  = strlen(cstr);
   size = 0;
-  for( i=0; i<len; i++ ){
+  for (i=0; i<len; i++) {
     n = 1;
-    if( isdigit(cstr[i+1]) ){
+    if (isdigit(cstr[i+1])) {
       dlen = 1;
-      while( isdigit(cstr[i+dlen]) ){ dlen ++; };
+      while (isdigit(cstr[i+dlen])) { dlen ++; };
       dlen --;
       d = ALLOCA_N(char, dlen + 1);
       strncpy(d, cstr + i + 1, dlen);
@@ -177,7 +177,7 @@ dlsizeof(const char *cstr)
       dlen = 0;
     }
 
-    switch( cstr[i] ){
+    switch (cstr[i]) {
     case 'I':
       DLALIGN(0,size,INT_ALIGN);
     case 'i':
@@ -234,9 +234,9 @@ c_farray(VALUE v, long *size)
   len = RARRAY(v)->len;
   *size = sizeof(float) * len;
   ary = dlmalloc(*size);
-  for( i=0; i < len; i++ ){
+  for (i=0; i < len; i++) {
     e = rb_ary_entry(v, i);
-    switch( TYPE(e) ){
+    switch (TYPE(e)) {
     case T_FLOAT:
       ary[i] = (float)(RFLOAT(e)->value);
       break;
@@ -262,9 +262,9 @@ c_darray(VALUE v, long *size)
   len = RARRAY(v)->len;
   *size = sizeof(double) * len;
   ary = dlmalloc(*size);
-  for( i=0; i < len; i++ ){
+  for (i=0; i < len; i++) {
     e = rb_ary_entry(v, i);
-    switch( TYPE(e) ){
+    switch (TYPE(e)) {
     case T_FLOAT:
       ary[i] = (double)(RFLOAT(e)->value);
       break;
@@ -290,9 +290,9 @@ c_larray(VALUE v, long *size)
   len = RARRAY(v)->len;
   *size = sizeof(long) * len;
   ary = dlmalloc(*size);
-  for( i=0; i < len; i++ ){
+  for (i=0; i < len; i++) {
     e = rb_ary_entry(v, i);
-    switch( TYPE(e) ){
+    switch (TYPE(e)) {
     case T_FIXNUM:
     case T_BIGNUM:
       ary[i] = (long)(NUM2INT(e));
@@ -319,9 +319,9 @@ c_iarray(VALUE v, long *size)
   len = RARRAY(v)->len;
   *size = sizeof(int) * len;
   ary = dlmalloc(*size);
-  for( i=0; i < len; i++ ){
+  for (i=0; i < len; i++) {
     e = rb_ary_entry(v, i);
-    switch( TYPE(e) ){
+    switch (TYPE(e)) {
     case T_FIXNUM:
     case T_BIGNUM:
       ary[i] = (int)(NUM2INT(e));
@@ -348,9 +348,9 @@ c_harray(VALUE v, long *size)
   len = RARRAY(v)->len;
   *size = sizeof(short) * len;
   ary = dlmalloc(*size);
-  for( i=0; i < len; i++ ){
+  for (i=0; i < len; i++) {
     e = rb_ary_entry(v, i);
-    switch( TYPE(e) ){
+    switch (TYPE(e)) {
     case T_FIXNUM:
     case T_BIGNUM:
       ary[i] = (short)(NUM2INT(e));
@@ -377,9 +377,9 @@ c_carray(VALUE v, long *size)
   len = RARRAY(v)->len;
   *size = sizeof(char) * len;
   ary = dlmalloc(*size);
-  for( i=0; i < len; i++ ){
+  for (i=0; i < len; i++) {
     e = rb_ary_entry(v, i);
-    switch( TYPE(e) ){
+    switch (TYPE(e)) {
     case T_FIXNUM:
     case T_BIGNUM:
       ary[i] = (char)(NUM2INT(e));
@@ -401,15 +401,23 @@ c_parray(VALUE v, long *size)
 {
   int i, len;
   void **ary;
-  VALUE e;
+  VALUE e, tmp;
 
   len = RARRAY(v)->len;
   *size = sizeof(void*) * len;
   ary = dlmalloc(*size);
-  for( i=0; i < len; i++ ){
+  for (i=0; i < len; i++) {
     e = rb_ary_entry(v, i);
-    switch( TYPE(e) ){
+    switch (TYPE(e)) {
+    default:
+      tmp = rb_check_string_type(e);
+      if (NIL_P(tmp)) {
+	  rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
+      }
+      e = tmp;
+      /* fall through */
     case T_STRING:
+      rb_check_safe_str(e);
       {
 	char *str, *src;
 	src = RSTRING(e)->ptr;
@@ -421,7 +429,7 @@ c_parray(VALUE v, long *size)
       ary[i] = NULL;
       break;
     case T_DATA:
-      if( rb_obj_is_kind_of(e, rb_cDLPtrData) ){
+      if (rb_obj_is_kind_of(e, rb_cDLPtrData)) {
 	struct ptr_data *pdata;
 	Data_Get_Struct(e, struct ptr_data, pdata);
 	ary[i] = (void*)(pdata->ptr);
@@ -429,9 +437,6 @@ c_parray(VALUE v, long *size)
       else{
 	rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       }
-      break;
-    default:
-      rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
       break;
     }
   }
@@ -445,24 +450,26 @@ rb_ary2cary(char t, VALUE v, long *size)
   int len;
   VALUE val0;
 
-  if( TYPE(v) != T_ARRAY ){
+  val0 = rb_check_array_type(v);
+  if(NIL_P(TYPE(val0))) {
     rb_raise(rb_eDLTypeError, "an array is expected.");
   }
+  v = val0;
 
   len = RARRAY(v)->len;
-  if( len == 0 ){
+  if (len == 0) {
     return NULL;
   }
 
-  if( !size ){
+  if (!size) {
     size = ALLOCA_N(long,1);
   }
 
   val0 = rb_ary_entry(v,0);
-  switch( TYPE(val0) ){
+  switch (TYPE(val0)) {
   case T_FIXNUM:
   case T_BIGNUM:
-    switch( t ){
+    switch (t) {
     case 'C': case 'c':
       return (void*)c_carray(v,size);
     case 'H': case 'h':
@@ -477,7 +484,7 @@ rb_ary2cary(char t, VALUE v, long *size)
   case T_STRING:
     return (void*)c_parray(v,size);
   case T_FLOAT:
-    switch( t ){
+    switch (t) {
     case 'F': case 'f':
       return (void*)c_farray(v,size);
     case 'D': case 'd': case 0:
@@ -485,7 +492,7 @@ rb_ary2cary(char t, VALUE v, long *size)
     }
     rb_raise(rb_eDLTypeError, "type mismatch");
   case T_DATA:
-    if( rb_obj_is_kind_of(val0, rb_cDLPtrData) ){
+    if (rb_obj_is_kind_of(val0, rb_cDLPtrData)) {
       return (void*)c_parray(v,size);
     }
     rb_raise(rb_eDLTypeError, "type mismatch");
@@ -516,7 +523,7 @@ rb_ary_to_ptr(int argc, VALUE argv[], VALUE self)
   VALUE t;
   long size;
 
-  switch( rb_scan_args(argc, argv, "01", &t) ){
+  switch (rb_scan_args(argc, argv, "01", &t)) {
   case 1:
     ptr = rb_ary2cary(StringValuePtr(t)[0], self, &size);
     break;
@@ -556,15 +563,13 @@ rb_dl_malloc(VALUE self, VALUE size)
 VALUE
 rb_dl_strdup(VALUE self, VALUE str)
 {
-  rb_secure(4);
-  str = rb_String(str);
+  SafeStringValue(str);
   return rb_dlptr_new(strdup(RSTRING(str)->ptr), RSTRING(str)->len, dlfree);
 }
 
 static VALUE
 rb_dl_sizeof(VALUE self, VALUE str)
 {
-  rb_secure(4);
   return INT2NUM(dlsizeof(StringValuePtr(str)));
 }
 
@@ -577,9 +582,9 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
 
   rb_secure(4);
   proc = Qnil;
-  switch( rb_scan_args(argc, argv, "11", &type, &proc) ){
+  switch (rb_scan_args(argc, argv, "11", &type, &proc)) {
   case 1:
-    if( rb_block_given_p() ){
+    if (rb_block_given_p()) {
       proc = rb_f_lambda();
     }
     else{
@@ -589,8 +594,8 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
     break;
   }
 
-  Check_Type(type, T_STRING);
-  switch( RSTRING(type)->ptr[0] ){
+  StringValue(type);
+  switch (RSTRING(type)->ptr[0]) {
   case '0':
     rettype = 0x00;
     break;
@@ -620,13 +625,13 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
   }
 
   entry = -1;
-  for( i=0; i < MAX_CALLBACK; i++ ){
-    if( rb_hash_aref(DLFuncTable, rb_assoc_new(INT2NUM(rettype), INT2NUM(i))) == Qnil ){
+  for (i=0; i < MAX_CALLBACK; i++) {
+    if (rb_hash_aref(DLFuncTable, rb_assoc_new(INT2NUM(rettype), INT2NUM(i))) == Qnil) {
       entry = i;
       break;
     }
   }
-  if( entry < 0 ){
+  if (entry < 0) {
     rb_raise(rb_eDLError, "too many callbacks are defined.");
   }
 
@@ -646,9 +651,9 @@ rb_dl_remove_callback(VALUE mod, VALUE sym)
 
   rb_secure(4);
   f = rb_dlsym2csym(sym);
-  for( i=0; i < CALLBACK_TYPES; i++ ){
-    for( j=0; j < MAX_CALLBACK; j++ ){
-      if( rb_dl_callback_table[i][j] == f ){
+  for (i=0; i < CALLBACK_TYPES; i++) {
+    for (j=0; j < MAX_CALLBACK; j++) {
+      if (rb_dl_callback_table[i][j] == f) {
 	rb_hash_aset(DLFuncTable, rb_assoc_new(INT2NUM(i),INT2NUM(j)),Qnil);
 	break;
       }

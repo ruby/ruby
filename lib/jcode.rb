@@ -19,9 +19,9 @@ class String
   PATTERN_EUC = '[\xa1-\xfe][\xa1-\xfe]'
   PATTERN_UTF8 = '[\xc0-\xdf][\x80-\xbf]|[\xe0-\xef][\x80-\xbf][\x80-\xbf]'
 
-  RE_SJIS = Regexp.new(PATTERN_SJIS, 'n')
-  RE_EUC = Regexp.new(PATTERN_EUC, 'n')
-  RE_UTF8 = Regexp.new(PATTERN_UTF8, 'n')
+  RE_SJIS = Regexp.new(PATTERN_SJIS, 0, 'n')
+  RE_EUC = Regexp.new(PATTERN_EUC, 0, 'n')
+  RE_UTF8 = Regexp.new(PATTERN_UTF8, 0, 'n')
 
   SUCC = {}
   SUCC['s'] = Hash.new(1)

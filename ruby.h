@@ -215,12 +215,14 @@ VALUE rb_string_value _((volatile VALUE*));
 char *rb_string_value_ptr _((volatile VALUE*));
 
 #define StringValue(v) if (TYPE(v) != T_STRING) rb_string_value(&(v))
+#define StringValuePtr(v) rb_string_value_ptr(&(v))
+
+void rb_check_safe_obj _((VALUE));
 void rb_check_safe_str _((VALUE));
 #define SafeStringValue(v) do {\
     StringValue(v);\
-    rb_check_safe_str(v);\
+    rb_check_safe_obj(v);\
 } while (0)
-#define StringValuePtr(v) rb_string_value_ptr(&(v))
 /* obsolete macro - use SafeStringValue(v) */
 #define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
 

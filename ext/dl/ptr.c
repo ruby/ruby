@@ -33,7 +33,7 @@ rb_dlmem_delete(void *ptr)
 static void
 rb_dlmem_aset(void *ptr, VALUE obj)
 {
-  if( obj == Qnil ){
+  if (obj == Qnil) {
     rb_dlmem_delete(ptr);
   }
   else{
@@ -53,22 +53,22 @@ rb_dlmem_aref(void *ptr)
 void
 dlptr_free(struct ptr_data *data)
 {
-  if( data->ptr ){
+  if (data->ptr) {
     DEBUG_CODE({
       printf("dlptr_free(): removing the pointer `0x%x' from the MemorySpace\n",
 	     data->ptr);
     });
     rb_dlmem_delete(data->ptr);
-    if( data->free ){
+    if (data->free) {
       DEBUG_CODE({
 	printf("dlptr_free(): 0x%x(data->ptr:0x%x)\n",data->free,data->ptr);
       });
       (*(data->free))(data->ptr);
     }
   }
-  if( data->stype ) dlfree(data->stype);
-  if( data->ssize ) dlfree(data->ssize);
-  if( data->ids  ) dlfree(data->ids);
+  if (data->stype) dlfree(data->stype);
+  if (data->ssize) dlfree(data->ssize);
+  if (data->ids) dlfree(data->ids);
 }
 
 void
@@ -82,6 +82,7 @@ dlptr_init(VALUE val)
 	   data->ptr);
   });
   rb_dlmem_aset(data->ptr, val);
+  OBJ_TAINT(val);
 }
 
 VALUE
@@ -91,9 +92,9 @@ rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
   VALUE val;
 
   rb_secure(4);
-  if( ptr ){
+  if (ptr) {
     val = rb_dlmem_aref(ptr);
-    if( val == Qnil ){
+    if (val == Qnil) {
       val = Data_Make_Struct(klass, struct ptr_data,
 			     0, dlptr_free, data);
       data->ptr = ptr;
@@ -108,7 +109,7 @@ rb_dlptr_new2(VALUE klass, void *ptr, long size, freefunc_t func)
       dlptr_init(val);
     }
     else{
-      if( func ){
+      if (func) {
 	Data_Get_Struct(val, struct ptr_data, data);
 	data->free = func;
       }
@@ -144,11 +145,11 @@ rb_dlptr2cptr(VALUE val)
   struct ptr_data *data;
   void *ptr;
 
-  if( rb_obj_is_kind_of(val, rb_cDLPtrData) ){
+  if (rb_obj_is_kind_of(val, rb_cDLPtrData)) {
     Data_Get_Struct(val, struct ptr_data, data);
     ptr = data->ptr;
   }
-  else if( val == Qnil ){
+  else if (val == Qnil) {
     ptr = NULL;
   }
   else{
@@ -188,7 +189,7 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
   freefunc_t f = NULL;
   long s = 0;
 
-  switch( rb_scan_args(argc, argv, "12", &ptr, &size, &sym) ){
+  switch (rb_scan_args(argc, argv, "12", &ptr, &size, &sym)) {
   case 1:
     p = (void*)(DLNUM2LONG(rb_Integer(ptr)));
     break;
@@ -205,9 +206,9 @@ rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
     rb_bug("rb_dlptr_initialize");
   }
 
-  if( p ){
+  if (p) {
     Data_Get_Struct(self, struct ptr_data, data);
-    if( data->ptr && data->free ){
+    if (data->ptr && data->free) {
       /* Free previous memory. Use of inappropriate initialize may cause SEGV. */
       (*(data->free))(data->ptr);
     }
@@ -226,7 +227,7 @@ rb_dlptr_s_malloc(int argc, VALUE argv[], VALUE klass)
   int   s;
   freefunc_t f = NULL;
 
-  switch( rb_scan_args(argc, argv, "11", &size, &sym) ){
+  switch (rb_scan_args(argc, argv, "11", &size, &sym)) {
   case 1:
     s = NUM2INT(size);
     break;
@@ -313,14 +314,14 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
 
   Data_Get_Struct(self, struct ptr_data, data);
 
-  switch( rb_scan_args(argc, argv, "11", &type, &size) ){
+  switch (rb_scan_args(argc, argv, "11", &type, &size)) {
   case 2:
     t = StringValuePtr(type)[0];
     n = NUM2INT(size);
     break;
   case 1:
     t = StringValuePtr(type)[0];
-    switch( t ){
+    switch (t) {
     case 'C':
       n = data->size;
       break;
@@ -343,9 +344,9 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
       n = data->size / sizeof(void*);
       break;
     default:
-      if( t == 'p' || t == 's' ){
+      if (t == 'p' || t == 's') {
 	int i;
-	for( i=0; ((void**)(data->ptr))[i]; i++ ){};
+	for (i=0; ((void**)(data->ptr))[i]; i++) {};
 	n = i;
       }
       else{
@@ -359,8 +360,8 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
 
   ary = rb_ary_new();
 
-  for( i=0; i < n; i++ ){
-    switch( t ){
+  for (i=0; i < n; i++) {
+    switch (t) {
     case 'C':
       rb_ary_push(ary, INT2NUM(((char*)(data->ptr))[i]));
       break;
@@ -381,7 +382,7 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
     case 'S':
       {
 	char *str = ((char**)(data->ptr))[i];
-	if( str ){
+	if (str) {
 	  rb_ary_push(ary, rb_tainted_str_new2(str));
 	}
 	else{
@@ -392,7 +393,7 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
     case 's':
       {
 	char *str = ((char**)(data->ptr))[i];
-	if( str ){
+	if (str) {
 	  rb_ary_push(ary, rb_tainted_str_new2(str));
 	  xfree(str);
 	}
@@ -423,7 +424,7 @@ rb_dlptr_to_s(int argc, VALUE argv[], VALUE self)
   int len;
 
   Data_Get_Struct(self, struct ptr_data, data);
-  switch( rb_scan_args(argc, argv, "01", &arg1) ){
+  switch (rb_scan_args(argc, argv, "01", &arg1)) {
   case 0:
     val = rb_tainted_str_new2((char*)(data->ptr));
     break;
@@ -446,7 +447,7 @@ rb_dlptr_to_str(int argc, VALUE argv[], VALUE self)
   int len;
 
   Data_Get_Struct(self, struct ptr_data, data);
-  switch( rb_scan_args(argc, argv, "01", &arg1) ){
+  switch (rb_scan_args(argc, argv, "01", &arg1)) {
   case 0:
     val = rb_tainted_str_new((char*)(data->ptr),data->size);
     break;
@@ -527,16 +528,16 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
   rb_scan_args(argc, argv, "11*", &data_type, &type, &rest);
   Data_Get_Struct(self, struct ptr_data, data);
 
-  if( argc == 1 || (argc == 2 && type == Qnil) ){
-    if( NUM2INT(data_type) == DLPTR_CTYPE_UNKNOWN ){
+  if (argc == 1 || (argc == 2 && type == Qnil)) {
+    if (NUM2INT(data_type) == DLPTR_CTYPE_UNKNOWN) {
       data->ctype = DLPTR_CTYPE_UNKNOWN;
       data->slen = 0;
       data->ids_num  = 0;
-      if( data->stype ){
+      if (data->stype) {
 	dlfree(data->stype);
 	data->stype = NULL;
       }
-      if( data->ids ){
+      if (data->ids) {
 	dlfree(data->ids);
 	data->ids = NULL;
       }
@@ -551,32 +552,29 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
   StringValue(type);
   Check_Type(rest, T_ARRAY);
   num = RARRAY(rest)->len;
-  for( i=0; i<num; i++ ){
-    vid = rb_ary_entry(rest,i);
-    if( !(TYPE(vid)==T_STRING || TYPE(vid)==T_SYMBOL) ){
-      rb_raise(rb_eTypeError, "#%d must be a string or symbol", i + 2);
-    }
+  for (i=0; i<num; i++) {
+    rb_to_id(rb_ary_entry(rest,i));
   }
 
   data->ctype = t;
   data->slen = num;
   data->ids_num  = num;
-  if( data->stype ) dlfree(data->stype);
+  if (data->stype) dlfree(data->stype);
   data->stype = (char*)dlmalloc(sizeof(char) * num);
-  if( data->ssize ) dlfree(data->ssize);
+  if (data->ssize) dlfree(data->ssize);
   data->ssize = (int*)dlmalloc(sizeof(int) * num);
-  if( data->ids ) dlfree(data->ids);
+  if (data->ids) dlfree(data->ids);
   data->ids  = (ID*)dlmalloc(sizeof(ID) * data->ids_num);
 
   ctype = StringValuePtr(type);
-  for( i=0; i<num; i++ ){
+  for (i=0; i<num; i++) {
     vid = rb_ary_entry(rest,i);
     data->ids[i] = rb_to_id(vid);
     data->stype[i] = *ctype;
     ctype ++;
-    if( isdigit(*ctype) ){
+    if (isdigit(*ctype)) {
       char *p, *d;
-      for( p=ctype; isdigit(*p); p++ ) ;
+      for (p=ctype; isdigit(*p); p++) ;
       d = ALLOCA_N(char, p - ctype + 1);
       strncpy(d, ctype, p - ctype);
       d[p - ctype] = '\0';
@@ -588,11 +586,11 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
     }
   }
 
-  if( *ctype ){
+  if (*ctype) {
     rb_raise(rb_eArgError, "too few/many arguments");
   }
 
-  if( !data->size )
+  if (!data->size)
     data->size = dlsizeof(RSTRING(type)->ptr);
 
   return Qnil;
@@ -607,7 +605,7 @@ rb_dlptr_define_struct(int argc, VALUE argv[], VALUE self)
   pass_argc = argc + 1;
   pass_argv = ALLOCA_N(VALUE, pass_argc);
   pass_argv[0] = INT2FIX(DLPTR_CTYPE_STRUCT);
-  for( i=1; i<pass_argc; i++ ){
+  for (i=1; i<pass_argc; i++) {
     pass_argv[i] = argv[i-1];
   }
   return rb_dlptr_define_data_type(pass_argc, pass_argv, self);
@@ -622,7 +620,7 @@ rb_dlptr_define_union(int argc, VALUE argv[], VALUE self)
   pass_argc = argc + 1;
   pass_argv = ALLOCA_N(VALUE, pass_argc);
   pass_argv[0] = INT2FIX(DLPTR_CTYPE_UNION);
-  for( i=1; i<pass_argc; i++ ){
+  for (i=1; i<pass_argc; i++) {
     pass_argv[i] = argv[i-1];
   }
   return rb_dlptr_define_data_type(pass_argc, pass_argv, self);
@@ -634,7 +632,7 @@ rb_dlptr_get_data_type(VALUE self)
   struct ptr_data *data;
 
   Data_Get_Struct(self, struct ptr_data, data);
-  if( data->stype )
+  if (data->stype)
     return rb_assoc_new(INT2FIX(data->ctype),
 			rb_tainted_str_new(data->stype, data->slen));
   else
@@ -648,11 +646,11 @@ cary2ary(void *ptr, char t, int len)
   VALUE elem;
   int i;
 
-  if( len < 1 )
+  if (len < 1)
     return Qnil;
 
-  if( len == 1 ){
-    switch( t ){
+  if (len == 1) {
+    switch (t) {
     case 'I':
       elem = INT2NUM(*((int*)ptr));
       ptr = (char *)ptr + sizeof(int);
@@ -689,8 +687,8 @@ cary2ary(void *ptr, char t, int len)
   }
 
   ary = rb_ary_new();
-  for( i=0; i < len; i++ ){
-    switch( t ){
+  for (i=0; i < len; i++) {
+    switch (t) {
     case 'I':
       elem = INT2NUM(*((int*)ptr));
       ptr = (char *)ptr + sizeof(int);
@@ -738,28 +736,28 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
   int i;
   int offset;
 
-  if( rb_scan_args(argc, argv, "11", &key, &num) == 1 ){
+  if (rb_scan_args(argc, argv, "11", &key, &num) == 1) {
     num = INT2NUM(0);
   }
 
-  if( TYPE(key) == T_FIXNUM || TYPE(key) == T_BIGNUM ){
+  if (TYPE(key) == T_FIXNUM || TYPE(key) == T_BIGNUM) {
     VALUE pass[1];
     pass[0] = num;
     return rb_dlptr_to_str(1, pass, rb_dlptr_plus(self, key));
   }
-
-  if( ! (TYPE(key) == T_STRING || TYPE(key) == T_SYMBOL ) ){
+  rb_to_id(key);
+  if (! (TYPE(key) == T_STRING || TYPE(key) == T_SYMBOL)) {
     rb_raise(rb_eTypeError, "the key must be a string or symbol");
   }
 
   id = rb_to_id(key);
   Data_Get_Struct(self, struct ptr_data, data);
   offset = 0;
-  switch( data->ctype ){
+  switch (data->ctype) {
   case DLPTR_CTYPE_STRUCT:
-    for( i=0; i < data->ids_num; i++ ){
-      if( data->ids[i] == id ){
-	switch( data->stype[i] ){
+    for (i=0; i < data->ids_num; i++) {
+      if (data->ids[i] == id) {
+	switch (data->stype[i]) {
 	case 'I':
 	  DLALIGN(data->ptr,offset,INT_ALIGN);
 	  break;
@@ -786,7 +784,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	}
 	return cary2ary((char *)data->ptr + offset, data->stype[i], data->ssize[i]);
       }
-      switch( data->stype[i] ){
+      switch (data->stype[i]) {
       case 'I':
 	offset += sizeof(int) * data->ssize[i];
 	break;
@@ -815,8 +813,8 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
     }
     break;
   case DLPTR_CTYPE_UNION:
-    for( i=0; i < data->ids_num; i++ ){
-      if( data->ids[i] == id ){
+    for (i=0; i < data->ids_num; i++) {
+      if (data->ids[i] == id) {
 	return cary2ary((char *)data->ptr + offset, data->stype[i], data->ssize[i]);
       }
     }
@@ -834,7 +832,7 @@ ary2cary(char t, VALUE val, long *size)
 {
   void *ptr;
 
-  if( TYPE(val) == T_ARRAY ){
+  if (TYPE(val) == T_ARRAY) {
     ptr = rb_ary2cary(t, val, size);
   }
   else{
@@ -855,14 +853,14 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
   void *memimg;
 
   rb_secure(4);
-  switch( rb_scan_args(argc, argv, "21", &key, &num, &val) ){
+  switch (rb_scan_args(argc, argv, "21", &key, &num, &val)) {
   case 2:
     val = num;
     num = Qnil;
     break;
   }
 
-  if( TYPE(key) == T_FIXNUM || TYPE(key) == T_BIGNUM ){
+  if (TYPE(key) == T_FIXNUM || TYPE(key) == T_BIGNUM) {
     void *dst, *src;
     long len;
 
@@ -871,29 +869,25 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     dst = (void*)((long)(data->ptr) + DLNUM2LONG(key));
     src = RSTRING(val)->ptr;
     len = RSTRING(val)->len;
-    if( num == Qnil ){
+    if (num == Qnil) {
       memcpy(dst, src, len);
     }
     else{
       long n = NUM2INT(num);
       memcpy(dst, src, n < len ? n : len);
-      if( n > len ) MEMZERO((char*)dst + len, char, n - len);
+      if (n > len) MEMZERO((char*)dst + len, char, n - len);
     }
     return val;
   }
 
-  if( ! (TYPE(key) == T_STRING || TYPE(key) == T_SYMBOL ) ){
-    rb_raise(rb_eTypeError, "the key must be a string or symbol");
-  }
-
   id = rb_to_id(key);
   Data_Get_Struct(self, struct ptr_data, data);
-  switch( data->ctype ){
+  switch (data->ctype) {
   case DLPTR_CTYPE_STRUCT:
     offset = 0;
-    for( i=0; i < data->ids_num; i++ ){
-      if( data->ids[i] == id ){
-	switch( data->stype[i] ){
+    for (i=0; i < data->ids_num; i++) {
+      if (data->ids[i] == id) {
+	switch (data->stype[i]) {
 	case 'I':
 	  DLALIGN(data->ptr,offset,INT_ALIGN);
 	  break;
@@ -922,7 +916,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	memcpy((char *)data->ptr + offset, memimg, memsize);
 	return val;
       }
-      switch( data->stype[i] ){
+      switch (data->stype[i]) {
       case 'I':
       case 'i':
 	offset += sizeof(int) * data->ssize[i];
@@ -960,9 +954,9 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
     return val;
     /* break; */
   case DLPTR_CTYPE_UNION:
-    for( i=0; i < data->ids_num; i++ ){
-      if( data->ids[i] == id ){
-	switch( data->stype[i] ){
+    for (i=0; i < data->ids_num; i++) {
+      if (data->ids[i] == id) {
+	switch (data->stype[i]) {
 	case 'I': case 'i':
 	  memsize = sizeof(int) * data->ssize[i];
 	  break;
@@ -1007,7 +1001,7 @@ rb_dlptr_size(int argc, VALUE argv[], VALUE self)
 {
   VALUE size;
 
-  if( rb_scan_args(argc, argv, "01", &size) == 0){
+  if (rb_scan_args(argc, argv, "01", &size) == 0){
     return DLLONG2NUM(RDLPTR(self)->size);
   }
   else{

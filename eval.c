@@ -139,7 +139,7 @@ rb_secure(level)
 }
 
 void
-rb_check_safe_str(x)
+rb_check_safe_obj(x)
     VALUE x;
 {
     if (ruby_safe_level > 0 && OBJ_TAINTED(x)){
@@ -152,6 +152,13 @@ rb_check_safe_str(x)
 	}
     }
     rb_secure(4);
+}
+
+void
+rb_check_safe_str(x)
+    VALUE x;
+{
+    rb_check_safe_obj(x);
     if (TYPE(x)!= T_STRING) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected String)",
 		 rb_obj_classname(x));

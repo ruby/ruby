@@ -773,12 +773,14 @@ ID
 rb_to_id(name)
     VALUE name;
 {
+    VALUE tmp;
     ID id;
 
     switch (TYPE(name)) {
       case T_STRING:
 	return rb_intern(RSTRING(name)->ptr);
       case T_FIXNUM:
+	rb_warn("do not use Fixnums as Symbols");
 	id = FIX2LONG(name);
 	if (!rb_id2name(id)) {
 	    rb_raise(rb_eArgError, "%ld is not a symbol", id);
@@ -788,6 +790,10 @@ rb_to_id(name)
 	id = SYM2ID(name);
 	break;
       default:
+	tmp = rb_check_string_type(name);
+	if (!NIL_P(tmp)) {
+	    return rb_intern(RSTRING(tmp)->ptr);
+	}
 	rb_raise(rb_eTypeError, "%s is not a symbol", RSTRING(rb_inspect(name))->ptr);
     }
     return id;

@@ -330,7 +330,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
   long ftype;
   void *func;
 
-  rb_secure(4);
+  rb_secure(2);
   Data_Get_Struct(self, struct sym_data, sym);
   DEBUG_CODE({
     printf("rb_dlsym_call(): type = '%s', func = 0x%x\n", sym->type, sym->func);
@@ -457,20 +457,20 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 	ANY2S(args[i]) = DLSTR(0);
       }
       else{
-	if( TYPE(argv[i]) != T_STRING ){
-	  rb_raise(rb_eDLError, "#%d must be a string",i);
-	}
-	ANY2S(args[i]) = DLSTR(RSTRING(argv[i])->ptr);
+	VALUE str = argv[i];
+	SafeStringValue(str);
+	ANY2S(args[i]) = DLSTR(RSTRING(str)->ptr);
       }
       PUSH_P(ftype);
       break;
     case 's':
-      if( TYPE(argv[i]) != T_STRING ){
-	rb_raise(rb_eDLError, "#%d must be a string",i);
+      {
+	VALUE str = argv[i];
+	SafeStringValue(str);
+	ANY2S(args[i]) = DLSTR(dlmalloc(RSTRING(str)->len + 1));
+	memcpy((char*)(ANY2S(args[i])), RSTRING(str)->ptr, RSTRING(str)->len + 1);
+	dtypes[i] = 's';
       }
-      ANY2S(args[i]) = DLSTR(dlmalloc(RSTRING(argv[i])->len + 1));
-      memcpy((char*)(ANY2S(args[i])), RSTRING(argv[i])->ptr, RSTRING(argv[i])->len + 1);
-      dtypes[i] = 's';
       PUSH_P(ftype);
       break;
     default:

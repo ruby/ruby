@@ -10,7 +10,7 @@ VALUE rb_cDLHandle;
 void
 dlhandle_free(struct dl_handle *dlhandle)
 {
-  if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
+  if (dlhandle->ptr && dlhandle->open && dlhandle->enable_close) {
     dlclose(dlhandle->ptr);
   }
 }
@@ -50,7 +50,7 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
   int   cflag;
   const char *err;
 
-  switch( rb_scan_args(argc, argv, "11", &lib, &flag) ){
+  switch (rb_scan_args(argc, argv, "11", &lib, &flag)) {
   case 1:
     clib = StringValuePtr(lib);
     cflag = RTLD_LAZY | RTLD_GLOBAL;
@@ -65,24 +65,24 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 
   ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
-  if( !ptr && (err = dlerror()) ){
+  if (!ptr && (err = dlerror())) {
     rb_raise(rb_eRuntimeError, err);
   }
 #else
-  if( !ptr ){
+  if (!ptr) {
     err = dlerror();
     rb_raise(rb_eRuntimeError, err);
   }
 #endif
   Data_Get_Struct(self, struct dl_handle, dlhandle);
-  if( dlhandle->ptr && dlhandle->open && dlhandle->enable_close ){
+  if (dlhandle->ptr && dlhandle->open && dlhandle->enable_close) {
     dlclose(dlhandle->ptr);
   }
   dlhandle->ptr = ptr;
   dlhandle->open = 1;
   dlhandle->enable_close = 0;
 
-  if( rb_block_given_p() ){
+  if (rb_block_given_p()) {
     rb_ensure(rb_yield, self, rb_dlhandle_close, self);
   }
 
@@ -138,14 +138,16 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
   const char *name, *stype;
   const char *err;
 
-  if( rb_scan_args(argc, argv, "11", &sym, &type) == 2 ){
+  rb_secure(4);
+  if (rb_scan_args(argc, argv, "11", &sym, &type) == 2) {
+    SafeStringValue(type);
     stype = StringValuePtr(type);
   }
   else{
     stype = NULL;
   }
 
-  if( sym == Qnil ){
+  if (sym == Qnil) {
 #if defined(RTLD_NEXT)
     name = RTLD_NEXT;
 #else
@@ -153,21 +155,22 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
 #endif
   }
   else{
+    SafeStringValue(sym);
     name = StringValuePtr(sym);
   }
 
 
   Data_Get_Struct(self, struct dl_handle, dlhandle);
-  if( ! dlhandle->open ){
+  if (! dlhandle->open) {
     rb_raise(rb_eRuntimeError, "Closed handle.");
   }
   handle = dlhandle->ptr;
 
   func = dlsym(handle, name);
 #if defined(HAVE_DLERROR)
-  if( !func && (err = dlerror()) )
+  if (!func && (err = dlerror()))
 #else
-  if( !func )
+  if (!func)
 #endif
   {
 #if defined(__CYGWIN__) || defined(WIN32) || defined(__MINGW32__)
@@ -180,9 +183,9 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
       func = dlsym(handle, name_a);
       dlfree(name_a);
 #if defined(HAVE_DLERROR)
-      if( !func && (err = dlerror()) )
+      if (!func && (err = dlerror()))
 #else
-      if( !func )
+      if (!func)
 #endif
       {
 	rb_raise(rb_eRuntimeError, "Unknown symbol \"%sA\".", name);
