@@ -187,6 +187,7 @@ f_kill(argc, argv)
 #ifdef USE_CWGUSI
     rb_notimplement();
 #else
+    int negative = 0;
     int sig;
     int i;
     char *s;
@@ -205,9 +206,7 @@ f_kill(argc, argv)
 	break;
 
       case T_STRING:
-	{
-	    int negative = 0;
-
+        {
 	    s = RSTRING(argv[0])->ptr;
 	    if (s[0] == '-') {
 		negative++;
@@ -499,6 +498,7 @@ trap_ensure(arg)
     sigsetmask(arg->mask);
 #endif
     trap_last_mask = arg->mask;
+    return 0;
 }
 #endif
 
@@ -553,8 +553,6 @@ void
 Init_signal()
 {
 #ifndef MACOS_UNUSE_SIGNAL
-    extern VALUE mKernel;
-
     rb_define_global_function("trap", f_trap, -1);
 #ifdef POSIX_SIGNAL
     posix_signal(SIGINT, sighandle);

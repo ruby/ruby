@@ -338,6 +338,7 @@ match_alloc()
     OBJSETUP(match, cMatch, T_MATCH);
 
     match->str = 0;
+    match->regs = 0;
     match->regs = ALLOC(struct re_registers);
     MEMZERO(match->regs, struct re_registers, 1);
 
@@ -348,12 +349,11 @@ static VALUE
 match_clone(orig)
     VALUE orig;
 {
-    struct re_registers *rr;
-
     NEWOBJ(match, struct RMatch);
     OBJSETUP(match, cMatch, T_MATCH);
 
     match->str = RMATCH(orig)->str;
+    match->regs = 0;
 
     match->regs = ALLOC(struct re_registers);
     match->regs->allocated = 0;
@@ -369,7 +369,6 @@ void
 reg_prepare_re(reg)
     VALUE reg;
 {
-    int result;
     int casefold = RTEST(ignorecase);
     int need_recompile = 0;
 
@@ -416,11 +415,9 @@ reg_search(reg, str, start, reverse)
     int start, reverse;
 {
     int result;
-    int casefold = RTEST(ignorecase);
     VALUE match = 0;
     struct re_registers *regs = 0;
     int range;
-    int need_recompile = 0;
 
     if (start > RSTRING(str)->len) return -1;
 
@@ -633,6 +630,9 @@ reg_new_1(klass, s, len, flag)
 {
     NEWOBJ(re, struct RRegexp);
     OBJSETUP(re, klass, T_REGEXP);
+
+    re->ptr = 0;
+    re->str = 0;
 
     if (flag & 0x1) {
 	FL_SET(re, REG_IGNORECASE);
@@ -873,7 +873,6 @@ reg_regsub(str, src, regs)
     struct re_registers *regs;
 {
     VALUE val = 0;
-    VALUE tmp;
     char *p, *s, *e, c;
     int no;
 
@@ -940,41 +939,6 @@ reg_regsub(str, src, regs)
     if (!val) return str;
 
     return val;
-}
-
-#define IS_KCODE_FIXED(re) (FL_TEST((re), KCODE_FIXED)?1:0)
-
-static int
-reg_prepare_operation(re1, re2)
-    VALUE re1, re2;
-{
-    int flag = 0;
-
-    Check_Type(re2, T_REGEXP);
-    flag = IS_KCODE_FIXED(re1)+IS_KCODE_FIXED(re2)*2;
-    switch (IS_KCODE_FIXED(re1)+IS_KCODE_FIXED(re2)*2) {
-      case 3:			/* both have fixed kcode (must match) */
-	if (((RBASIC(re1)->flags^RBASIC(re2)->flags)&KCODE_MASK) != 0) {
-	    Raise(eRegxpError, "kanji code mismatch");
-	}
-	/* fall through */
-      case 2:			/* re2 has fixed kcode */
-	flag = reg_get_kcode(re2);
-	break;
-      case 1:			/* re1 has fixed kcode */
-	flag = reg_get_kcode(re1);
-	break;
-      case 0:			/* neither has fixed kcode */
-	flag = 0;
-	break;
-    }
-
-    if (FL_TEST(re1, REG_IGNORECASE) ^ FL_TEST(re2, REG_IGNORECASE)) {
-	Raise(eRegxpError, "casefold mismatch");
-    }
-    if (FL_TEST(re1, REG_IGNORECASE)) flag |= 0x1;
-
-    return flag;
 }
 
 char*
@@ -1090,6 +1054,7 @@ Init_Regexp()
     rb_global_variable(&matchcache);
 
     cMatch  = rb_define_class("MatchingData", cData);
+    rb_define_method(cMatch, "clone", match_clone, 0);
     rb_define_method(cMatch, "to_a", match_to_a, 0);
     rb_define_method(cMatch, "[]", match_aref, -1);
     rb_define_method(cMatch, "to_s", match_to_s, 0);

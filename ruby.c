@@ -26,9 +26,10 @@
 
 #ifdef __MWERKS__
 #include "node.h"
+#endif
+
 void show_version();
 void show_copyright();
-#endif
 
 #ifdef USE_CWGUSI
 #include "macruby_missing.h"

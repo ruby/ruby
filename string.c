@@ -287,8 +287,6 @@ str_substr(str, start, len)
     VALUE str;
     int start, len;
 {
-    struct RString *str2;
-
     if (start < 0) {
 	start = RSTRING(str)->len + start;
     }
@@ -976,7 +974,7 @@ str_sub_iter_s(str, pat, once)
     int once;
 {
     VALUE val, result;
-    int beg, offset, n, null;
+    int beg, offset, n;
     struct re_registers *regs;
 
     if (!iterator_p()) {
@@ -1698,10 +1696,10 @@ str_swapcase(str)
 
 typedef unsigned char *USTR;
 
-static struct tr {
+struct tr {
     int gen, now, max;
     char *p, *pend;
-} trsrc, trrepl;
+};
 
 static int
 trnext(t)
@@ -1813,7 +1811,7 @@ tr_trans(str, src, repl, sflag)
 		*t++ = c;
 	    }
 	}
-	if (RSTRING(str)->len = (t - RSTRING(str)->ptr)) {
+	if (RSTRING(str)->len > (t - RSTRING(str)->ptr)) {
 	    RSTRING(str)->len = (t - RSTRING(str)->ptr);
 	    modify = 1;
 	    *t = '\0';

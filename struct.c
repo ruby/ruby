@@ -358,7 +358,6 @@ struct_aref_id(s, id)
 {
     VALUE member;
     int i, len;
-    VALUE *p;
 
     member = rb_iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {
@@ -400,7 +399,6 @@ struct_aset_id(s, id, val)
 {
     VALUE member;
     int i, len;
-    VALUE *p;
 
     member = rb_iv_get(CLASS_OF(s), "__member__");
     if (NIL_P(member)) {

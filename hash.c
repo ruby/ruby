@@ -164,6 +164,7 @@ hash_foreach_ensure(hash)
 	    FL_UNSET(hash, HASH_DELETED);
 	}
     }
+    return 0;
 }
 
 static int
@@ -193,13 +194,14 @@ hash_s_new(argc, argv, klass)
     NEWOBJ(hash, struct RHash);
     OBJSETUP(hash, klass, T_HASH);
 
+    hash->iter_lev = 0;
+    hash->status = 0;
+    hash->tbl = 0;		/* avoid GC crashing  */
+
     rb_scan_args(argc, argv, "01", &sz);
     if (NIL_P(sz)) size = 0;
     else size = NUM2INT(sz);
 
-    hash->iter_lev = 0;
-    hash->status = 0;
-    hash->tbl = 0;		/* avoid GC crashing  */
     hash->tbl = st_init_table_with_size(&objhash, size);
     obj_call_init((VALUE)hash);
 
@@ -916,8 +918,6 @@ f_setenv(obj, name, value)
 
     setenv(RSTRING(name)->ptr, RSTRING(value)->ptr, 1);
     if (strcmp(RSTRING(name)->ptr, "PATH") == 0) {
-	char *p, pend;
-
 	if (str_tainted(value)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;

@@ -2280,6 +2280,8 @@ retry:
 	  case EXPR_DOT:
 	    sourceline++;
 	    goto retry;
+	  default:
+	    break;
 	}
 	newline_seen++;
 	lex_state = EXPR_BEG;

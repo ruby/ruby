@@ -1182,7 +1182,6 @@ ary_uniq_bang(ary)
 {
     VALUE *p, *q, *t, *end;
     VALUE v;
-    int i;
 
     ary_modify(ary);
     p = RARRAY(ary)->ptr;

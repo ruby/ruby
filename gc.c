@@ -668,11 +668,12 @@ obj_free(obj)
 	if (RANY(obj)->as.array.ptr) free(RANY(obj)->as.array.ptr);
 	break;
       case T_HASH:
-	st_free_table(RANY(obj)->as.hash.tbl);
+	if (RANY(obj)->as.hash.tbl)
+	    st_free_table(RANY(obj)->as.hash.tbl);
 	break;
       case T_REGEXP:
-	reg_free(RANY(obj)->as.regexp.ptr);
-	free(RANY(obj)->as.regexp.str);
+	if (RANY(obj)->as.regexp.ptr) reg_free(RANY(obj)->as.regexp.ptr);
+	if (RANY(obj)->as.regexp.str) free(RANY(obj)->as.regexp.str);
 	break;
       case T_DATA:
 	if (DATA_PTR(obj)) {
@@ -688,12 +689,16 @@ obj_free(obj)
 	}
 	break;
       case T_MATCH:
-	re_free_registers(RANY(obj)->as.match.regs);
-	free(RANY(obj)->as.match.regs);
+	if (RANY(obj)->as.match.regs)
+	    re_free_registers(RANY(obj)->as.match.regs);
+	if (RANY(obj)->as.match.regs)
+	    free(RANY(obj)->as.match.regs);
 	break;
       case T_FILE:
-	io_fptr_finalize(RANY(obj)->as.file.fptr);
-	free(RANY(obj)->as.file.fptr);
+	if (RANY(obj)->as.file.fptr) {
+	    io_fptr_finalize(RANY(obj)->as.file.fptr);
+	    free(RANY(obj)->as.file.fptr);
+	}
 	break;
       case T_ICLASS:
 	/* iClass shares table with the module */
@@ -723,7 +728,8 @@ obj_free(obj)
 	break;
 
       case T_STRUCT:
-	free(RANY(obj)->as.rstruct.ptr);
+	if (RANY(obj)->as.rstruct.ptr)
+	    free(RANY(obj)->as.rstruct.ptr);
 	break;
 
       default:

@@ -619,6 +619,7 @@ VALUE the_class;
         the_scope->flag |= SCOPE_NOSTACK;\
     }\
     the_scope = _old;\
+    scope_vmode = _vmode;\
 }
 
 static VALUE rb_eval _((VALUE,NODE*));
@@ -5110,10 +5111,9 @@ obj_method(obj, vid)
 {
     VALUE method;
     VALUE klass = CLASS_OF(obj);
-    ID mid, id;
+    ID id;
     NODE *body;
     int noex;
-    enum node_type type;
     struct METHOD *data;
 
     id = rb_to_id(vid);

@@ -82,8 +82,6 @@ VALUE
 num_coerce_bin(x, y)
     VALUE x, y;
 {
-    VALUE ary;
-
     do_coerce(&x, &y);
     return rb_funcall(x, rb_frame_last_func(), 1, y);
 }

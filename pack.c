@@ -896,7 +896,6 @@ pack_unpack(str, fmt)
 	    {
 		VALUE str = str_new(0, (send - s)*3/4);
 		char *ptr = RSTRING(str)->ptr;
-		int total = 0;
 		int a,b,c,d;
 		static int first = 1;
 		static int b64_xtable[256];

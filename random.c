@@ -144,8 +144,6 @@ f_rand(obj, vmax)
 void
 Init_Random()
 {
-    extern VALUE mKernel;
-
     rb_define_global_function("srand", f_srand, -1);
     rb_define_global_function("rand", f_rand, 1);
 }

@@ -1289,6 +1289,7 @@ Init_Bignum()
     rb_define_method(cBignum, "/", big_div, 1);
     rb_define_method(cBignum, "%", big_mod, 1);
     rb_define_method(cBignum, "divmod", big_divmod, 1);
+    rb_define_method(cBignum, "remainder", big_remainder, 1);
     rb_define_method(cBignum, "**", big_pow, 1);
     rb_define_method(cBignum, "&", big_and, 1);
     rb_define_method(cBignum, "|", big_or, 1);

@@ -108,7 +108,6 @@ math_ldexp(obj, x, n)
     VALUE obj, x, n;
 {
     double d;
-    int exp;
 
     Need_Float(x);
     return float_new(d = ldexp(RFLOAT(x)->value, NUM2INT(n)));

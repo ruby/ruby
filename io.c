@@ -357,7 +357,6 @@ read_all(port)
 {
     OpenFile *fptr;
     VALUE str = Qnil;
-    char *buf;
     struct stat st;
     int siz = BUFSIZ;
     int bytes = 0;
@@ -1578,7 +1577,6 @@ obj_display(argc, argv, self)
     VALUE self;
 {
     VALUE out;
-    VALUE str;
 
     rb_scan_args(argc, argv, "01", &out);
     if (NIL_P(out)) {
@@ -1611,7 +1609,7 @@ io_stdio_set(val, id, var)
     ID id;
     VALUE *var;
 {
-    OpenFile *fptr, *fptr2;
+    OpenFile *fptr;
     int fd;
 
     if (TYPE(val) != T_FILE) {
@@ -2094,7 +2092,8 @@ io_ctl(io, req, arg, io_p)
 #if !defined(MSDOS) && !defined(__human68k__)
     int cmd = NUM2INT(req);
     OpenFile *fptr;
-    int len, fd;
+    int len = 0;
+    int fd;
     long narg = 0;
     int retval;
 

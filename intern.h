@@ -132,6 +132,8 @@ void thread_sleep_forever _((void));
 VALUE thread_create _((VALUE (*)(), void*));
 void thread_interrupt _((void));
 void thread_trap_eval _((VALUE, int));
+int thread_select();
+void thread_wait_for();
 /* file.c */
 VALUE file_open _((char*, char*));
 int eaccess _((char*, int));
@@ -255,6 +257,7 @@ VALUE str_taint _((VALUE));
 VALUE str_tainted _((VALUE));
 VALUE str_resize _((VALUE, int));
 VALUE str_cat _((VALUE, char*, unsigned int));
+VALUE str_concat _((VALUE, VALUE));
 int str_hash _((VALUE));
 int str_cmp _((VALUE, VALUE));
 VALUE str_upto _((VALUE, VALUE));

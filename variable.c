@@ -553,10 +553,11 @@ f_untrace_var(argc, argv)
     if (!st_lookup(global_tbl, id, &entry)) {
 	NameError("undefined global variable %s", rb_id2name(id));
     }
+
+    trace = entry->trace;
     if (NIL_P(cmd)) {
 	VALUE ary = ary_new();
 
-	trace = entry->trace;
 	while (trace) {
 	    struct trace_var *next = trace->next;
 	    ary_push(ary, (VALUE)trace->data);

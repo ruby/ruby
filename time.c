@@ -688,7 +688,6 @@ time_to_a(time)
     VALUE time;
 {
     struct time_object *tobj;
-    VALUE ary;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
@@ -750,7 +749,6 @@ time_strftime(time, format)
     }
     if (strlen(RSTRING(format)->ptr) < RSTRING(format)->len) {
 	/* Ruby string may contain \0's. */
-	int l;
 	char *p = RSTRING(format)->ptr, *pe = p + RSTRING(format)->len;
 
 	str = str_new(0, 0);

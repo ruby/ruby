@@ -13,6 +13,7 @@
 #include "ruby.h"
 #include "node.h"
 #include "st.h"
+#include <ctype.h>
 
 #ifdef USE_CWGUSI
 #include <stdio.h>

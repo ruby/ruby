@@ -694,8 +694,7 @@ f_system(argc, argv)
 
     return state == 0 ? TRUE : FALSE ;
 #else
-    VALUE prog = 0;
-    int i;
+    volatile VALUE prog = 0;
     int pid;
 
     fflush(stdin);		/* is it really needed? */

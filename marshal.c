@@ -208,7 +208,6 @@ w_object(obj, arg, limit)
     struct dump_arg *arg;
     int limit;
 {
-    int n;
     struct dump_call_arg c_arg;
 
     if (limit == 0) {
@@ -281,7 +280,6 @@ w_object(obj, arg, limit)
 	    return;
 
 	  case T_BIGNUM:
-	  write_bignum:
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
 		char sign = RBIGNUM(obj)->sign?'+':'-';
@@ -386,6 +384,7 @@ dump(arg)
     struct dump_call_arg *arg;
 {
     w_object(arg->obj, arg->arg, arg->limit);
+    return 0;
 }
 
 static VALUE
@@ -394,6 +393,7 @@ dump_ensure(arg)
 {
     st_free_table(arg->symbol);
     st_free_table(arg->data);
+    return 0;
 }
 
 static VALUE
@@ -506,7 +506,7 @@ r_long(arg)
 	    x |= (long)r_byte(arg) << (8*i);
 	}
     }
-    else if (c < 0) {
+    else {
 	c = -c;
 	if (c > sizeof(long)) long_toobig((int)c);
 	x = -1;
@@ -550,7 +550,6 @@ r_symbol(arg)
 {
     char *buf;
     ID id;
-    char type;
 
     if (r_byte(arg) == TYPE_SYMLINK) {
 	int num = r_long(arg);
@@ -747,7 +746,6 @@ r_object(arg)
       case TYPE_USERDEF:
         {
 	    VALUE klass;
-	    int len;
 
 	    klass = rb_path2class(r_unique(arg));
 	    if (rb_respond_to(klass, s_load)) {
@@ -805,6 +803,7 @@ load_ensure(arg)
 {
     st_free_table(arg->symbol);
     st_free_table(arg->data);
+    return 0;
 }
 
 static VALUE
@@ -813,7 +812,6 @@ marshal_load(argc, argv)
     VALUE *argv;
 {
     VALUE port, proc;
-    FILE *fp;
     int major;
     VALUE v;
     OpenFile *fptr;
@@ -855,6 +853,7 @@ marshal_load(argc, argv)
     return v;
 }
 
+void
 Init_marshal()
 {
     VALUE mMarshal = rb_define_module("Marshal");

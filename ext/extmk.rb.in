@@ -404,7 +404,7 @@ for setup in ["@setup@", "#{$topdir}/ext/@setup@"]
   if File.file? setup
     f = open(setup) 
     while f.gets()
-      $_.chop!
+      $_.chomp!
       sub!(/#.*$/, '')
       next if /^\s*$/
       if /^option +nodynamic/
