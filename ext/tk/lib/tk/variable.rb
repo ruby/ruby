@@ -85,7 +85,8 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
   end
 
   def initialize(val="")
-    @id = Tk_VARIABLE_ID.join('')
+    # @id = Tk_VARIABLE_ID.join('')
+    @id = Tk_VARIABLE_ID.join(TkCore::INTERP._ip_id_)
     Tk_VARIABLE_ID[1].succ!
     TkVar_ID_TBL[@id] = self
 

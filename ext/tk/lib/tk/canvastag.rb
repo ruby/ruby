@@ -191,7 +191,8 @@ class TkcTag<TkObject
     end
     @c = parent
     @cpath = parent.path
-    @path = @id = Tk_CanvasTag_ID.join('')
+    # @path = @id = Tk_CanvasTag_ID.join('')
+    @path = @id = Tk_CanvasTag_ID.join(TkCore::INTERP._ip_id_)
     CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
     CTagID_TBL[@cpath][@id] = self
     Tk_CanvasTag_ID[1].succ!
@@ -313,7 +314,8 @@ class TkcGroup<TkcTag
     end
     @c = parent
     @cpath = parent.path
-    @path = @id = Tk_cGroup_ID.join('')
+    # @path = @id = Tk_cGroup_ID.join('')
+    @path = @id = Tk_cGroup_ID.join(TkCore::INTERP._ip_id_)
     CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
     CTagID_TBL[@cpath][@id] = self
     Tk_cGroup_ID[1].succ!

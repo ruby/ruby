@@ -1,3 +1,8 @@
+Sat May 22 05:37:11 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/remote-tk.rb: (NEW library) controll Tk interpreters
+	  on the other processes by Tcl/Tk's 'send' command
+
 Fri May 21 09:22:05 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method_parameters):

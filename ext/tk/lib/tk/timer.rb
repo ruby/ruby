@@ -123,7 +123,8 @@ class TkTimer
   end
 
   def initialize(*args)
-    @id = Tk_CBID.join('')
+    # @id = Tk_CBID.join('')
+    @id = Tk_CBID.join(TkCore::INTERP._ip_id_)
     Tk_CBID[1].succ!
 
     @wait_var = TkVariable.new(0)

@@ -22,7 +22,8 @@ class TkTextMark<TkObject
     end
     @parent = @t = parent
     @tpath = parent.path
-    @path = @id = Tk_TextMark_ID.join('')
+    # @path = @id = Tk_TextMark_ID.join('')
+    @path = @id = Tk_TextMark_ID.join(TkCore::INTERP._ip_id_)
     TMarkID_TBL[@id] = self
     TMarkID_TBL[@tpath] = {} unless TMarkID_TBL[@tpath]
     TMarkID_TBL[@tpath][@id] = self

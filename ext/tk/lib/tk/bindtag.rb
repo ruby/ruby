@@ -26,7 +26,8 @@ class TkBindTag
   end
 
   def initialize(*args, &b)
-    @id = Tk_BINDTAG_ID.join('')
+    # @id = Tk_BINDTAG_ID.join('')
+    @id = Tk_BINDTAG_ID.join(TkCore::INTERP._ip_id_)
     Tk_BINDTAG_ID[1].succ!
     BTagID_TBL[@id] = self
     bind(*args, &b) if args != []

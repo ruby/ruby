@@ -101,9 +101,9 @@ class TkToplevel<TkWindow
       super(keys)
       cmds.each{|k,v| 
 	if v.kind_of? Array
-	  self.send(k,*v)
+	  self.__send__(k,*v)
 	else
-	  self.send(k,v)
+	  self.__send__(k,v)
 	end
       }
       return

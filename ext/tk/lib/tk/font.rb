@@ -278,7 +278,8 @@ class TkFont
   private
   ###################################
   def initialize(ltn=nil, knj=nil, keys=nil)
-    @id = Tk_FontID.join('')
+    # @id = Tk_FontID.join('')
+    @id = Tk_FontID.join(TkCore::INTERP._ip_id_)
     Tk_FontID[1].succ!
     Tk_FontNameTBL[@id] = self
 

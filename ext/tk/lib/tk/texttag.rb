@@ -25,7 +25,8 @@ class TkTextTag<TkObject
     end
     @parent = @t = parent
     @tpath = parent.path
-    @path = @id = Tk_TextTag_ID.join('')
+    # @path = @id = Tk_TextTag_ID.join('')
+    @path = @id = Tk_TextTag_ID.join(TkCore::INTERP._ip_id_)
     TTagID_TBL[@id] = self
     TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
     TTagID_TBL[@tpath][@id] = self
