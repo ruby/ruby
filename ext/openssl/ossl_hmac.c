@@ -124,7 +124,7 @@ ossl_hmac_digest(VALUE self)
 	
     GetHMAC(self, ctx);
     hmac_final(ctx, &buf, &buf_len);
-    ossl_buf2str(buf, buf_len);
+    digest = ossl_buf2str(buf, buf_len);
     
     return digest;
 }

@@ -1,3 +1,11 @@
+Thu Sep 25 17:48:10 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/openssl/ossl.c (ossl_buf2str): fix type of 1st argument for
+	  rb_protect.
+
+	* ext/openssl/ossl_hmac.c (ossl_hmac_digest): should return meaningful
+	  value.
+
 Thu Sep 25 09:00:00 2003  Nathaniel Talbott <ntalbott@ruby-lang.org>
 
 	* lib/ostruct.rb: Added OpenStruct#==.
