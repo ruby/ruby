@@ -824,8 +824,8 @@ rb_str_succ(orig)
 	sbeg = RSTRING(str)->ptr; s = sbeg + RSTRING(str)->len - 1;
 	c = '\001';
 	while (sbeg <= s) {
-	    *s += 1;
-	    if (*s-- != 0) break;
+           if ((*s += 1) != 0) break;
+           s--;
 	}
     }
     if (s < sbeg) {

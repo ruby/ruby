@@ -137,7 +137,7 @@
 	(ruby-mark-defun)
 	(save-restriction
 	  (narrow-to-region (region-beginning) (region-end))
-	  (while (re-search-forward "^\\s *def\\s *\\([^(\n ]+\\)" nil t)
+         (while (re-search-forward "^\\s *def\\s *\\([^(\n ]+\\)" nil 'move)
 	    (setq method-begin (match-beginning 1))
 	    (setq method-name (buffer-substring method-begin (match-end 1)))
 	    (push (cons (concat class-name "#" method-name) (match-beginning 0)) index-alist))))
