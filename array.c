@@ -228,12 +228,18 @@ rb_ary_initialize(argc, argv, ary)
     rb_ary_modify(ary);
     if (rb_scan_args(argc, argv, "02", &size, &val) == 0) {
 	RARRAY(ary)->len = 0;
+	if (rb_block_given_p()) {
+	    rb_warning("given block not used");
+	}
 	return ary;
     }
 
-    if (argc == 1 && !FIXNUM_P(size) && rb_respond_to(size, rb_intern("to_ary"))) {
-	rb_ary_replace(ary, rb_convert_type(size, T_ARRAY, "Array", "to_ary"));
-	return ary;
+    if (argc == 1 && !FIXNUM_P(size)) {
+	val = rb_check_convert_type(size, T_ARRAY, "Array", "to_ary");
+	if (!NIL_P(val)) {
+	    rb_ary_replace(ary, val);
+	    return ary;
+	}
     }
 
     len = NUM2LONG(size);
@@ -247,8 +253,21 @@ rb_ary_initialize(argc, argv, ary)
 	RARRAY(ary)->aux.capa = len;
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
-    memfill(RARRAY(ary)->ptr, len, val);
-    RARRAY(ary)->len = len;
+    if (rb_block_given_p()) {
+	long i;
+
+	if (argc > 1) {
+	    rb_raise(rb_eArgError, "wrong number of arguments");
+	}
+	for (i=0; i<len; i++) {
+	    RARRAY(ary)->ptr[i] = rb_yield(INT2NUM(i));
+	    RARRAY(ary)->len = i+1;
+	}
+    }
+    else {
+	memfill(RARRAY(ary)->ptr, len, val);
+	RARRAY(ary)->len = len;
+    }
 
     return ary;
 }
@@ -1343,6 +1362,7 @@ static VALUE
 rb_ary_replace(ary, ary2)
     VALUE ary, ary2;
 {
+    if (ary == ary2) return ary;
     ary2 = to_ary(ary2);
     rb_ary_update(ary, 0, RARRAY(ary)->len, ary2);
     return ary;
@@ -1370,12 +1390,20 @@ rb_ary_fill(argc, argv, ary)
     VALUE item, arg1, arg2;
     long beg, end, len;
     VALUE *p, *pend;
+    int block_p;
 
-    rb_scan_args(argc, argv, "12", &item, &arg1, &arg2);
+    if (rb_block_given_p()) {
+	block_p = Qtrue;
+	rb_scan_args(argc, argv, "02", &arg1, &arg2);
+	argc += 1;		/* hackish */
+    }
+    else {
+	rb_scan_args(argc, argv, "12", &item, &arg1, &arg2);
+    }
     switch (argc) {
       case 1:
 	beg = 0;
-	len = RARRAY(ary)->len - beg;
+	len = RARRAY(ary)->len;
 	break;
       case 2:
 	if (rb_range_beg_len(arg1, &beg, &len, RARRAY(ary)->len, 1)) {
@@ -1405,8 +1433,16 @@ rb_ary_fill(argc, argv, ary)
     }
     p = RARRAY(ary)->ptr + beg; pend = p + len;
 
-    while (p < pend) {
-	*p++ = item;
+    if (block_p) {
+	while (p < pend) {
+	    *p++ = rb_yield(INT2NUM(beg));
+	    beg++;
+	}
+    }
+    else {
+	while (p < pend) {
+	    *p++ = item;
+	}
     }
     return ary;
 }

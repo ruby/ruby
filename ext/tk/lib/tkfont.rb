@@ -173,8 +173,8 @@ class TkFont
 	TkFont.new(nil, nil).call_font_configure(path, *(args + [{}]))
       else
 	begin
-	  compound = Hash[*list(tk_call('font', 'configure', 
-					fnt))].collect{|key,value|
+	  compound = Hash[*tk_split_simplelist(tk_call('font', 'configure', 
+					       fnt))].collect{|key,value|
 	    [key[1..-1], value]
 	  }.assoc('compound')[1]
 	rescue

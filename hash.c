@@ -201,8 +201,8 @@ rb_hash_initialize(argc, argv, hash)
 
     rb_hash_modify(hash);
     if (rb_block_given_p()) {
-	if (argc > 1) {
-	    rb_raise(rb_eArgError, "wrong number of arguments", argc);
+	if (argc > 0) {
+	    rb_raise(rb_eArgError, "wrong number of arguments");
 	}
 	RHASH(hash)->ifnone = rb_f_lambda();
 	FL_SET(hash, HASH_PROC_DEFAULT);

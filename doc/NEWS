@@ -1,3 +1,11 @@
+: Array#fill
+
+  takes block to get the values to fill.
+
+: Array#new
+
+  takes block to get the values to fill.
+
 : Array#fetch
 
   takes block to get the default value.

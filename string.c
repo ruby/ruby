@@ -1761,7 +1761,7 @@ rb_str_to_i(argc, argv, str)
     else base = NUM2INT(b);
 
     switch (base) {
-      case 2: case 8: case 10: case 16:
+      case 0: case 2: case 8: case 10: case 16:
 	break;
       default:
 	rb_raise(rb_eArgError, "illegal radix %d", base);

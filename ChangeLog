@@ -1,3 +1,26 @@
+Mon Jan 28 13:29:41 2002  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (is_defined): defined?(Foo::Baz) should check constants
+	  only, no methods.
+
+	* eval.c (is_defined): should not dump core on defined?(a::b)
+	  where a is not a class nor a module.
+
+Mon Jan 28 02:50:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (Init_Object): remove dup and clone from TrueClass,
+	  FalseClass, and NilClass.
+
+	* array.c (rb_ary_fill): Array#fill takes block to get the value to
+	  fill.
+
+Sat Jan 26 20:05:18 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_to_i): to_i(0) auto-detects base radix.
+
+	* array.c (rb_ary_initialize): fill by the block evaluation value
+	  if block is given.
+
 Fri Jan 25 17:48:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (solaris): add '-shared' only for GNU ld.

@@ -1142,7 +1142,7 @@ call_args2	: arg ',' args opt_block_arg
 		    {
 			value_expr($1);
 			value_expr($6);
-			$$ = list_append(list_concat($1,$3), NEW_HASH($5));
+			$$ = list_append(list_concat(NEW_LIST($1),$3), NEW_HASH($5));
 			$$ = arg_blk_pass($$, $6);
 		    }
 		| arg ',' assocs ',' tSTAR arg opt_block_arg

@@ -30,7 +30,7 @@
 #     that the Singleton pattern is properly inherited.
 #
 # In addition Klass is provided with the class methods
-# * Klass.instance()  - returning ``the instance''
+# *  Klass.instance()  - returning ``the instance''
 # *  Klass._load(str)  - returning ``the instance''
 # *  Klass._wait()     -  a hook method putting a second (or n-th)
 #    thread calling Klass.instance on a waiting loop if the first call
@@ -43,6 +43,7 @@
 #    _dump(depth) and _load(str) method allows the (partial) resurrection
 #    of a previous state of ``the instance'' - see third example.
 #
+
 module Singleton
   def Singleton.included (klass)
     # should this be checked?

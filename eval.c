@@ -1934,8 +1934,9 @@ is_defined(self, node, buf)
 	      case T_MODULE:
 		if (rb_const_defined_at(val, node->nd_mid))
 		    return "constant";
+		break;
 	      default:
-		if (rb_method_boundp(val, node->nd_mid, 1)) {
+		if (rb_method_boundp(CLASS_OF(val), node->nd_mid, 1)) {
 		    return "method";
 		}
 	    }
@@ -2937,7 +2938,7 @@ rb_eval(self, n)
 	      default:
 		return rb_funcall(klass, node->nd_mid, 0, 0);
 	    }
-	    result = rb_const_get_at(klass, node->nd_mid);
+	    result = rb_const_get(klass, node->nd_mid);
 	}
 	break;
 
