@@ -13,11 +13,6 @@
 */
 
 
-#include <stdio.h>
-#ifdef __STDC__
-#  include <stdlib.h>
-#endif
-
 #include "ruby.h"
 #include "re.h"
 #include "version.h"
