@@ -1,3 +1,8 @@
+Mon Dec 20 22:56:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c (set_stack_end): gcc noinline attribute is available since
+	  gcc-3.1.
+
 Mon Dec 20 22:40:31 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* added files:
