@@ -1,3 +1,13 @@
+Mon Jun 10 19:02:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* numeric.c (fix_lshift): negative shift count means right shift.
+	  (ruby-bugs-ja:PR#248)
+
+	* numeric.c (fix_rshift): return -1 when left side operand is
+	  negative. (ruby-bugs-ja:PR#247)
+
+	* parse.y (yylex): `0_' should be an error. (ruby-bugs-ja:PR#239)
+
 Wed Jun  5 18:53:06 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (Init_Math): backport asin, acos, atan.

@@ -1264,6 +1264,8 @@ fix_xor(x, y)
     return rb_int2inum(val);
 }
 
+static VALUE fix_rshift _((VALUE, VALUE));
+
 static VALUE
 fix_lshift(x, y)
     VALUE x, y;
@@ -1272,6 +1274,8 @@ fix_lshift(x, y)
 
     val = NUM2LONG(x);
     width = NUM2LONG(y);
+    if (width < 0)
+	return fix_rshift(x, INT2FIX(-width));
     if (width > (sizeof(VALUE)*CHAR_BIT-1)
 	|| ((unsigned long)val)>>(sizeof(VALUE)*CHAR_BIT-1-width) > 0) {
 	return rb_big_lshift(rb_int2big(val), y);
@@ -1290,11 +1294,12 @@ fix_rshift(x, y)
     if (i < 0)
 	return fix_lshift(x, INT2FIX(-i));
     if (i == 0) return x;
+    val = FIX2LONG(x);
     if (i >= sizeof(long)*CHAR_BIT-1) {
-	if (i < 0) return INT2FIX(-1);
+	if (val < 0) return INT2FIX(-1);
 	return INT2FIX(0);
     }
-    val = RSHIFT(FIX2LONG(x), i);
+    val = RSHIFT(val, i);
     return INT2FIX(val);
 }
 
