@@ -8,6 +8,8 @@
 
 ************************************************/
 
+#define TKUTIL_RELEASE_DATE "2004-12-23"
+
 #include "ruby.h"
 #include "rubysig.h"
 #include "st.h"
@@ -1239,6 +1241,8 @@ tkobj_path(self)
 }
 
 /*************************************/
+/* release date */
+const char tkutil_release_date[] = TKUTIL_RELEASE_DATE;
 
 void
 Init_tkutil()
@@ -1247,6 +1251,11 @@ Init_tkutil()
 
     VALUE cTK = rb_define_class("TkKernel", rb_cObject);
     VALUE mTK = rb_define_module("TkUtil");
+
+    /* --------------------- */
+
+    rb_define_const(mTK, "RELEASE_DATE", 
+                    rb_obj_freeze(rb_str_new2(tkutil_release_date)));
 
     /* --------------------- */
     rb_global_variable(&cMethod);

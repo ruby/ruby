@@ -202,6 +202,12 @@ EOF
     end
 
     # ruby -> enable && tcl -> enable/disable
+    if tcl_enable_thread
+      $CPPFLAGS += ' -DWITH_TCL_ENABLE_THREAD=1'
+    else
+      $CPPFLAGS += ' -DWITH_TCL_ENABLE_THREAD=0'
+    end
+
     return true
 
   else
@@ -224,9 +230,11 @@ EOF
 **
 *****************************************************************************
 ')
+      $CPPFLAGS += ' -DWITH_TCL_ENABLE_THREAD=0'
       return false
     else
       # ruby -> disable && tcl -> disable
+      $CPPFLAGS += ' -DWITH_TCL_ENABLE_THREAD=1'
       return true
     end
   end
