@@ -117,11 +117,8 @@ enum_find(argc, argv, obj)
     rb_scan_args(argc, argv, "01", &if_none);
     rb_iterate(rb_each, obj, find_i, (VALUE)memo);
     if (memo->u2.value) {
-	VALUE result = memo->u1.value;
-	rb_gc_force_recycle((VALUE)memo);
-	return result;
+	return memo->u1.value;
     }
-    rb_gc_force_recycle((VALUE)memo);
     if (!NIL_P(if_none)) {
 	return rb_funcall(if_none, rb_intern("call"), 0, 0);
     }
@@ -319,7 +316,6 @@ enum_inject(argc, argv, obj)
     }
     rb_iterate(rb_each, obj, inject_i, (VALUE)memo);
     n = memo->u1.value;
-    rb_gc_force_recycle((VALUE)memo);
     return n;
 }
 
@@ -401,17 +397,14 @@ sort_by_i(i, ary)
     return Qnil;
 }
 
-static VALUE
-sort_by_cmp(values, ary)
-    VALUE values, ary;
+static int
+sort_by_cmp(aa, bb)
+    NODE **aa, **bb;
 {
-    NODE *a = (NODE*)RARRAY(values)->ptr[0];
-    NODE *b = (NODE*)RARRAY(values)->ptr[1];
+    VALUE a = aa[0]->u1.value;
+    VALUE b = bb[0]->u1.value;
 
-    /* pedantic check; they must be memo nodes */
-    Check_Type(a, T_NODE);
-    Check_Type(b, T_NODE);
-    return rb_funcall(a->u1.value, id_cmp, 1, b->u1.value);
+    return rb_cmpint(rb_funcall(a, id_cmp, 1, b), a, b);
 }
 
 /*
@@ -499,7 +492,7 @@ enum_sort_by(obj)
     RBASIC(ary)->klass = 0;
     rb_iterate(rb_each, obj, sort_by_i, ary);
     if (RARRAY(ary)->len > 1) {
-	rb_iterate(rb_ary_sort_bang, ary, sort_by_cmp, ary);
+	qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp, 0);
     }
     for (i=0; i<RARRAY(ary)->len; i++) {
 	RARRAY(ary)->ptr[i] = RNODE(RARRAY(ary)->ptr[i])->u2.value;
@@ -559,7 +552,6 @@ enum_all(obj)
     memo->u1.value = Qtrue;
     rb_iterate(rb_each, obj, rb_block_given_p() ? all_iter_i : all_i, (VALUE)memo);
     result = memo->u1.value;
-    rb_gc_force_recycle((VALUE)memo);
     return result;
 }
 
@@ -615,7 +607,6 @@ enum_any(obj)
     memo->u1.value = Qfalse;
     rb_iterate(rb_each, obj, rb_block_given_p() ? any_iter_i : any_i, (VALUE)memo);
     result = memo->u1.value;
-    rb_gc_force_recycle((VALUE)memo);
     return result;
 }
 
@@ -681,7 +672,6 @@ enum_min(obj)
 
     rb_iterate(rb_each, obj, rb_block_given_p() ? min_ii : min_i, (VALUE)memo);
     result = memo->u1.value;
-    rb_gc_force_recycle((VALUE)memo);
     return result;
 }
 
@@ -746,7 +736,6 @@ enum_max(obj)
 
     rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)memo);
     result = memo->u1.value;
-    rb_gc_force_recycle((VALUE)memo);
     return result;
 }
 
@@ -789,7 +778,6 @@ enum_min_by(obj)
 
     rb_iterate(rb_each, obj, min_by_i, (VALUE)memo);
     result = memo->u2.value;
-    rb_gc_force_recycle((VALUE)memo);
     return result;
 }
 
@@ -832,7 +820,6 @@ enum_max_by(obj)
 
     rb_iterate(rb_each, obj, max_by_i, (VALUE)memo);
     result = memo->u2.value;
-    rb_gc_force_recycle((VALUE)memo);
     return result;
 }
 
@@ -870,7 +857,6 @@ enum_member(obj, val)
 
     rb_iterate(rb_each, obj, member_i, (VALUE)memo);
     result = memo->u2.value;
-    rb_gc_force_recycle((VALUE)memo);
     return result;
 }
 
@@ -906,7 +892,6 @@ enum_each_with_index(obj)
     NODE *memo = rb_node_newnode(NODE_MEMO, 0, 0, 0);
 
     rb_iterate(rb_each, obj, each_with_index_i, (VALUE)memo);
-    rb_gc_force_recycle((VALUE)memo);
     return obj;
 }
 

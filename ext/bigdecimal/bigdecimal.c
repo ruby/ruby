@@ -579,7 +579,7 @@ BigDecimal_ge(VALUE self, VALUE r)
 }
 
 static VALUE
-BigDecimal_neg(VALUE self, VALUE r)
+BigDecimal_neg(VALUE self)
 {
     ENTER(5);
     Real *c, *a;

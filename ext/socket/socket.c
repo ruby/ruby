@@ -2217,27 +2217,25 @@ sock_s_getservbyaname(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE service, protocol;
-    char *proto;
+    VALUE service, proto;
     struct servent *sp;
     int port;
 
-    rb_scan_args(argc, argv, "11", &service, &protocol);
-    if (NIL_P(protocol)) proto = "tcp";
-    else proto = StringValuePtr(protocol);
+    rb_scan_args(argc, argv, "11", &service, &proto);
+    if (NIL_P(proto)) proto = rb_str_new2("tcp");
+    else StringValue(proto);
 
-    StringValue(service);
-    sp = getservbyname((char*)RSTRING(service)->ptr, proto);
+    sp = getservbyname((char*)RSTRING(service)->ptr, RSTRING(proto)->ptr);
     if (sp) {
 	port = ntohs(sp->s_port);
     }
     else {
-	char *s = RSTRING(service)->ptr;
+	char *s = StringValuePtr(service);
 	char *end;
 
 	port = strtoul(s, &end, 0);
 	if (*end != '\0') {
-	    rb_raise(rb_eSocket, "no such service %s/%s", s, proto);
+	    rb_raise(rb_eSocket, "no such service %s/%s", s, RSTRING(proto)->ptr);
 	}
     }
     return INT2FIX(port);

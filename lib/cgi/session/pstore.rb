@@ -76,11 +76,7 @@ class CGI
       def restore
 	unless @hash
 	  @p.transaction do
-	    begin
-	      @hash = @p['hash']
-	    rescue
-	      @hash = {}
-	    end
+            @hash = @p['hash'] || {}
 	  end
 	end
 	@hash

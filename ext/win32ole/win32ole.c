@@ -2758,7 +2758,7 @@ static VALUE
 fole_get_methods( self )
     VALUE self;
 {
-    return ole_methods( self, INVOKE_PROPERTYGET);
+    return ole_methods(self, INVOKE_PROPERTYGET);
 }
 
 /*
@@ -2770,7 +2770,7 @@ static VALUE
 fole_put_methods( self )
     VALUE self;
 {
-    return ole_methods( self, INVOKE_PROPERTYPUT);
+    return ole_methods(self, INVOKE_PROPERTYPUT);
 }
 
 /*
@@ -2782,7 +2782,7 @@ static VALUE
 fole_func_methods( self )
     VALUE self;
 {
-    return ole_methods( self, INVOKE_FUNC);
+    return ole_methods(self, INVOKE_FUNC);
 }
 
 /*

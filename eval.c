@@ -8264,7 +8264,7 @@ proc_eq(self, other)
  */
 
 static VALUE
-proc_hash(self, other)
+proc_hash(self)
     VALUE self;
 {
     struct BLOCK *data;
@@ -8288,8 +8288,8 @@ proc_hash(self, other)
  */
 
 static VALUE
-proc_to_s(self, other)
-    VALUE self, other;
+proc_to_s(self)
+    VALUE self;
 {
     struct BLOCK *data;
     NODE *node;

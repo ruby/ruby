@@ -1050,8 +1050,8 @@ rb_false(obj)
  */
 
 static VALUE
-rb_obj_pattern_match(obj)
-    VALUE obj;
+rb_obj_pattern_match(obj1, obj2)
+    VALUE obj1, obj2;
 {
     return Qfalse;
 }

@@ -70,7 +70,6 @@ enum_each_slice(obj, n)
     ary = memo->u1.value;
     if (RARRAY(ary)->len > 0) rb_yield(ary);
 
-    rb_gc_force_recycle((VALUE)memo);
     return Qnil;
 }
 
@@ -114,7 +113,6 @@ enum_each_cons(obj, n)
 
     rb_iterate(rb_each, obj, each_cons_i, (VALUE)memo);
 
-    rb_gc_force_recycle((VALUE)memo);
     return Qnil;
 }
 
@@ -163,7 +161,6 @@ enumerator_each(obj)
 				 rb_to_id(rb_ivar_get(obj, id_enum_method)),
 				 rb_ivar_get(obj, id_enum_args));
     val = rb_iterate((VALUE (*)_((VALUE)))enumerator_iter, obj, rb_yield, 0);
-    rb_gc_force_recycle(obj);
     return val;
 }
 

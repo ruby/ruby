@@ -1,3 +1,18 @@
+Tue Oct 19 17:24:11 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (read_all): block string buffer modification during
+	  rb_io_fread() by freezing it temporarily. [ruby-dev:24479]
+
+	* dir.c (rb_push_glob): block call at once the end of method.
+	  [ruby-dev:24487]
+
+	* ext/enumerator/enumerator.c (enum_each_slice): remove
+	  rb_gc_force_recycle() to prevent potential SEGV.
+	  [ruby-dev:24499]
+
+	* ext/zlib/zlib.c (zstream_expand_buffer): hide internal string
+	  buffer by clearing klass.  [ruby-dev:24510]
+
 Tue Oct 19 08:47:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_upto): method result must be checked.  [ruby-dev:24504]
@@ -23,6 +38,14 @@ Mon Oct 18 01:56:03 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#initialize):
 	  initial value of accpet-* should be array.
+
+Mon Oct 18 00:42:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_getservbyaname): protocol string
+	  might be altered.  [ruby-dev:24503]
+
+	* string.c (rb_str_upto): check if return value from succ is a
+	  string.  [ruby-dev:24504]
 
 Sun Oct 17 23:03:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -113,6 +136,24 @@ Tue Oct 12 15:05:32 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (MODE_BINMODE, MODE_BINARY): fixed reversed condition.
 
+Mon Oct 11 17:51:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_popen): get mode string via rb_io_flags_mode() to
+	  avoid mode string modification.  [ruby-dev:24454]
+
+	* io.c (rb_io_getline_fast): should take delim as unsigned char to
+	  distinguish EOF and '\377'.  [ruby-dev:24460]
+
+	* io.c (rb_io_getline): add check for RS modification.
+	  [ruby-dev:24461]
+
+	* enum.c (enum_sort_by): use qsort() directly instead using
+	  rb_iterate().  [ruby-dev:24462]
+
+	* enum.c (enum_each_with_index): remove rb_gc_force_recycle() to
+	  prevent access to recycled object (via continuation for
+	  example).  [ruby-dev:24463]
+
 Mon Oct 11 13:48:20 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/*: untabify
@@ -143,6 +184,11 @@ Sat Oct  9 19:50:36 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_getline): should not treat char as negative value.
 	  [ruby-dev:24460]
+
+Sat Oct  9 00:25:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_io_fread): rb_thread_wait_fd() was lost.
+	  [ruby-dev:24457]
 
 Fri Oct  8 21:36:56 2004  Minero Aoki  <aamine@loveruby.net>
 

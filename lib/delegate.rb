@@ -75,6 +75,11 @@ class SimpleDelegator<Delegator
   def __setobj__(obj)
     @_sd_obj = obj
   end
+
+  def initialize_copy(obj)
+    super
+    __setobj__(obj.__getobj__.clone)
+  end
 end
 
 # backward compatibility ^_^;;;
@@ -102,6 +107,10 @@ def DelegateClass(superclass)
     end
     def __setobj__(obj)
       @_dc_obj = obj
+    end
+    def initialize_copy(obj)
+      super
+    __setobj__(obj.__getobj__.clone)
     end
   }
   for method in methods

@@ -941,6 +941,7 @@ rb_io_fread(ptr, len, f)
 	    ptr += c;
 	    if ((n -= c) <= 0) break;
 	}
+        rb_thread_wait_fd(fileno(f));
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
@@ -1014,7 +1015,6 @@ read_all(fptr, siz, str)
     long bytes = 0;
     long n;
 
-    READ_CHECK(fptr->f);
     if (siz == 0) siz = BUFSIZ;
     if (NIL_P(str)) {
 	str = rb_tainted_str_new(0, siz);
@@ -1024,7 +1024,10 @@ read_all(fptr, siz, str)
 	rb_str_resize(str, siz);
     }
     for (;;) {
+	FL_SET(str, FL_FREEZE);
+	READ_CHECK(fptr->f);
 	n = rb_io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr->f);
+	FL_UNSET(str, FL_FREEZE);
 	if (n == 0 && bytes == 0) {
 	    rb_str_resize(str,0);
 	    if (!fptr->f) break;
@@ -1359,7 +1362,7 @@ swallow(fptr, term)
 static VALUE
 rb_io_getline_fast(fptr, delim)
     OpenFile *fptr;
-    int delim;
+    unsigned char delim;
 {
     VALUE str = Qnil;
     int c;
@@ -1373,6 +1376,17 @@ rb_io_getline_fast(fptr, delim)
     }
 
     return str;
+}
+
+static int
+rscheck(rsptr, rslen, rs)
+    char *rsptr;
+    long rslen;
+    VALUE rs;
+{
+    if (RSTRING(rs)->ptr != rsptr && RSTRING(rs)->len != rslen)
+	rb_raise(rb_eRuntimeError, "rs modified");
+    return 1;
 }
 
 static VALUE
@@ -1414,6 +1428,7 @@ rb_io_getline(rs, fptr)
 
 	while ((c = appendline(fptr, newline, &str)) != EOF &&
 	       (c != newline || RSTRING(str)->len < rslen ||
+		(rspara || rscheck(rsptr,rslen,rs)) ||
 		memcmp(RSTRING(str)->ptr+RSTRING(str)->len-rslen,rsptr,rslen)));
 
 	if (rspara) {
@@ -2372,6 +2387,9 @@ rb_io_modenum_flags(mode)
     if (mode & O_APPEND) {
 	flags |= FMODE_APPEND;
     }
+    if (mode & O_CREAT) {
+	flags |= FMODE_CREATE;
+    }
 #ifdef O_BINARY
     if (mode & O_BINARY) {
 	flags |= FMODE_BINMODE;
@@ -2883,7 +2901,7 @@ rb_io_popen(str, argc, argv, klass)
 	mode = rb_io_modenum_mode(FIX2INT(pmode));
     }
     else {
-	mode = StringValuePtr(pmode);
+	mode = rb_io_flags_mode(rb_io_mode_flags(StringValuePtr(pmode)));
     }
     SafeStringValue(pname);
     port = pipe_open(0, 0, str, mode);
@@ -4232,7 +4250,7 @@ next_argv()
 	    if (binmode) rb_io_binmode(current_file);
 	}
 	else {
-	    init_p = 0;
+	    next_p = 1;
 	    return Qfalse;
 	}
     }
@@ -5192,7 +5210,6 @@ argf_read(argc, argv)
 
   retry:
     if (!next_argv()) {
-	if (NIL_P(str)) return rb_str_new(0,0);
 	return str;
     }
     if (TYPE(current_file) != T_FILE) {

@@ -230,13 +230,10 @@ str_step(args)
     return rb_str_upto(args[0], args[1], EXCL(args[2]));
 }
 
-#define RANGE_EACH_BREAK    Qfalse
-#define RANGE_EACH_CONTINUE Qtrue
-
 static void
 range_each_func(range, func, v, e, arg)
     VALUE range;
-    VALUE (*func) _((VALUE, void*));
+    void (*func) _((VALUE, void*));
     VALUE v, e;
     void *arg;
 {
@@ -244,13 +241,13 @@ range_each_func(range, func, v, e, arg)
 
     if (EXCL(range)) {
 	while (r_lt(v, e)) {
-	    if ((*func)(v, arg) == RANGE_EACH_BREAK) break;
+	    (*func)(v, arg);
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
     }
     else {
 	while (RTEST(c = r_le(v, e))) {
-	    if ((*func)(v, arg) == RANGE_EACH_BREAK) break;
+	    (*func)(v, arg);
 	    if (c == INT2FIX(0)) break;
 	    v = rb_funcall(v, id_succ, 0, 0);
 	}
@@ -267,7 +264,7 @@ step_i(i, iter)
 	rb_yield(i);
 	iter[0] = iter[1];
     }
-    return RANGE_EACH_CONTINUE;
+    return Qnil;
 }
 
 /*
@@ -366,13 +363,12 @@ range_step(argc, argv, range)
     return range;
 }
 
-static VALUE
+static void
 each_i(v, arg)
     VALUE v;
     void *arg;
 {
     rb_yield(v);
-    return RANGE_EACH_CONTINUE; 
 }
 
 /*
@@ -552,49 +548,11 @@ range_inspect(range)
     return str;
 }
 
-static VALUE
-member_i(v, args)
-    VALUE v;
-    VALUE *args;
-{
-    if (rb_equal(v, args[0])) {
-	args[1] = Qtrue;
-	return RANGE_EACH_BREAK;
-    }
-    return RANGE_EACH_CONTINUE;
-}
-
-/*
- * call-seq:
- *   rng.member?(val)   =>  true or false
- *
- * Return +true+ if _val_ is one of the values in _rng_ (that is if
- * <code>Range#each</code> would return _val_ at some point).
- */
-
-static VALUE
-range_member(range, val)
-    VALUE range, val;
-{
-    VALUE beg, end;
-    VALUE args[2];
-
-    beg = rb_ivar_get(range, id_beg);
-    end = rb_ivar_get(range, id_end);
-
-    if (!rb_respond_to(beg, id_succ)) {
-	rb_raise(rb_eTypeError, "cannot iterate from %s",
-		 rb_obj_classname(beg));
-    }
-    args[0] = val;
-    args[1] = Qfalse;
-    range_each_func(range, member_i, beg, end, args);
-    return args[1];
-}
-
 /*
  *  call-seq:
- *     rng === obj    => true or false
+ *     rng === obj       =>  true or false
+ *     rng.member?(val)  =>  true or false
+ *     rng.include?(val) =>  true or false
  *  
  *  Returns <code>true</code> if <i>obj</i> is an element of
  *  <i>rng</i>, <code>false</code> otherwise. Conveniently,
@@ -705,7 +663,7 @@ Init_Range()
 
     rb_define_method(rb_cRange, "exclude_end?", range_exclude_end_p, 0);
 
-    rb_define_method(rb_cRange, "member?", range_member, 1);
+    rb_define_method(rb_cRange, "member?", range_include, 1);
     rb_define_method(rb_cRange, "include?", range_include, 1);
 
     id_cmp = rb_intern("<=>");

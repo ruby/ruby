@@ -439,6 +439,7 @@ zstream_expand_buffer(z)
 	z->buf_filled = 0;
 	z->stream.next_out = RSTRING(z->buf)->ptr;
 	z->stream.avail_out = ZSTREAM_INITIAL_BUFSIZE;
+	RBASIC(z->buf)->klass = 0;
 	return;
     }
 
@@ -3380,7 +3381,7 @@ void Init_zlib()
     cZStream = rb_define_class_under(mZlib, "ZStream", rb_cObject);
     rb_undef_alloc_func(cZStream);
     rb_define_method(cZStream, "avail_out", rb_zstream_avail_out, 0);
-    rb_define_method(cZStream, "avail_out=", rb_zstream_set_avail_out, 0);
+    rb_define_method(cZStream, "avail_out=", rb_zstream_set_avail_out, 1);
     rb_define_method(cZStream, "avail_in", rb_zstream_avail_in, 0);
     rb_define_method(cZStream, "total_in", rb_zstream_total_in, 0);
     rb_define_method(cZStream, "total_out", rb_zstream_total_out, 0);

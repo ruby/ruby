@@ -734,7 +734,7 @@ Init_dbm()
     rb_define_method(rb_cDBM, "[]=", fdbm_store, 2);
     rb_define_method(rb_cDBM, "store", fdbm_store, 2);
     rb_define_method(rb_cDBM, "index",  fdbm_index, 1);
-    rb_define_method(rb_cDBM, "select",  fdbm_select, -1);
+    rb_define_method(rb_cDBM, "select",  fdbm_select, 0);
     rb_define_method(rb_cDBM, "values_at", fdbm_values_at, -1);
     rb_define_method(rb_cDBM, "length", fdbm_length, 0);
     rb_define_method(rb_cDBM, "size", fdbm_length, 0);

@@ -1403,14 +1403,7 @@ push_pattern(path, ary)
     const char *path;
     VALUE ary;
 {
-    VALUE str = rb_tainted_str_new2(path);
-
-    if (!NIL_P(ary)) {
-	rb_ary_push(ary, str);
-    }
-    else {
-	rb_yield(str);
-    }
+    rb_ary_push(ary, rb_tainted_str_new2(path));
 }
 
 static int
@@ -1478,13 +1471,9 @@ rb_push_glob(str, flags) /* '\0' is delimiter */
     const char *p, *pend;
     VALUE ary;
 
-    if (rb_block_given_p())
-	ary = Qnil;
-    else
-	ary = rb_ary_new();
-
     FilePathValue(str);
 
+    ary = rb_ary_new();
     p = RSTRING(str)->ptr;
     pend = p + RSTRING(str)->len;
 
@@ -1497,6 +1486,10 @@ rb_push_glob(str, flags) /* '\0' is delimiter */
 	else p++;
     }
 
+    if (rb_block_given_p()) {
+	rb_ary_each(ary);
+	return Qnil;
+    }
     return ary;
 }
 
