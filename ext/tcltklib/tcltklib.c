@@ -205,6 +205,39 @@ ip_eval(VALUE self, VALUE str)
     return(str_new2(ptr->ip->result));
 }
 
+static VALUE
+ip_invoke(int argc, VALUE *argv, VALUE obj)
+{
+    struct tcltkip *ptr;	/* tcltkip data struct */
+    int i;
+    Tcl_CmdInfo info;
+    char **av;
+
+    /* get the data struct */
+    Data_Get_Struct(obj, struct tcltkip, ptr);
+
+    av = (char **)ALLOCA_N(char **, argc+1);
+    for (i = 0; i < argc; ++i) {
+	Check_Type(argv[i], T_STRING);
+        av[i] = ALLOCA_N(char, RSTRING(argv[i])->len+1);
+	strcpy(av[i], RSTRING(argv[i])->ptr);
+    }
+    av[argc] = NULL;
+
+    if (!Tcl_GetCommandInfo(ptr->ip, av[0], &info)) {
+	NameError("invalid command name `%s'", av[0]);
+    }
+
+    ptr->return_value = (*info.proc)(info.clientData,
+				     ptr->ip, argc, av);
+    if (ptr->return_value == TCL_ERROR) {
+	Fail(ptr->ip->result);
+    }
+
+    /* pass back the result (as string) */
+    return(str_new2(ptr->ip->result));
+}
+
 /* get return code from Tcl_Eval() */
 static VALUE
 ip_retval(VALUE self)
@@ -229,6 +262,7 @@ void Init_tcltklib()
 
     rb_define_singleton_method(ip, "new", ip_new, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
+    rb_define_method(ip, "_invoke", ip_invoke, -1);
     rb_define_method(ip, "_return_value", ip_retval, 0);
     rb_define_method(ip, "mainloop", lib_mainloop, 0);
 
