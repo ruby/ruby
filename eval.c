@@ -420,6 +420,8 @@ rb_method_boundp(klass, id, ex)
     return Qfalse;
 }
 
+static ID init, eqq, each, aref, aset, match, missing, added, singleton_added;
+
 void
 rb_attr(klass, id, read, write, ex)
     VALUE klass;
@@ -454,15 +456,16 @@ rb_attr(klass, id, read, write, ex)
     attriv = rb_intern(buf);
     if (read) {
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
+	rb_funcall(klass, added, 1, ID2SYM(id));
     }
     sprintf(buf, "%s=", name);
     id = rb_intern(buf);
     if (write) {
 	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
+	rb_funcall(klass, added, 1, ID2SYM(id));
     }
 }
 
-static ID init, eqq, each, aref, aset, match, missing;
 VALUE ruby_errinfo = Qnil;
 extern NODE *ruby_eval_tree_begin;
 extern NODE *ruby_eval_tree;
@@ -1294,7 +1297,7 @@ superclass(self, node)
 	  case NODE_COLON2:
 	    rb_raise(rb_eTypeError, "undefined superclass `%s'",
 		     rb_id2name(node->nd_mid));
-	  case NODE_CVAR:
+	  case NODE_CONST:
 	    rb_raise(rb_eTypeError, "undefined superclass `%s'",
 		     rb_id2name(node->nd_vid));
 	  default:
@@ -1310,7 +1313,7 @@ superclass(self, node)
     return val;
 }
 
-#define ruby_cbase (((NODE*)ruby_frame->cbase)->nd_clss)
+#define ruby_cbase (RNODE(ruby_frame->cbase)->nd_clss)
 
 static VALUE
 ev_const_defined(cref, id)
@@ -1375,7 +1378,7 @@ ev_const_set(cref, id, val)
 static VALUE
 rb_mod_nesting()
 {
-    NODE *cbase = (NODE*)ruby_frame->cbase;
+    NODE *cbase = RNODE(ruby_frame->cbase);
     VALUE ary = rb_ary_new();
 
     while (cbase && cbase->nd_clss != rb_cObject) {
@@ -1388,7 +1391,7 @@ rb_mod_nesting()
 static VALUE
 rb_mod_s_constants()
 {
-    NODE *cbase = (NODE*)ruby_frame->cbase;
+    NODE *cbase = RNODE(ruby_frame->cbase);
     VALUE ary = rb_ary_new();
 
     while (cbase && cbase->nd_clss != rb_cObject) {
@@ -1682,8 +1685,8 @@ is_defined(self, node, buf)
 	}
 	break;
 
-      case NODE_CVAR:
-	if (ev_const_defined((NODE*)ruby_frame->cbase, node->nd_vid)) {
+      case NODE_CONST:
+	if (ev_const_defined(RNODE(ruby_frame->cbase), node->nd_vid)) {
 	    return "constant";
 	}
 	break;
@@ -2494,11 +2497,11 @@ rb_eval(self, node)
 	break;
 
       case NODE_CASGN:
-	if (NIL_P(ruby_class)) {
+	if (NIL_P(ruby_cbase)) {
 	    rb_raise(rb_eTypeError, "no class/module to define constant");
 	}
 	result = rb_eval(self, node->nd_value);
-	ev_const_set((NODE*)ruby_frame->cbase, node->nd_vid, result);
+	ev_const_set(RNODE(ruby_frame->cbase), node->nd_vid, result);
 	break;
 
       case NODE_CDECL:
@@ -2509,20 +2512,20 @@ rb_eval(self, node)
 	rb_const_set(ruby_class, node->nd_vid, result);
 	break;
 
-      case NODE_SHASGN:
-	if (NIL_P(ruby_class)) {
-	    rb_raise(rb_eTypeError, "no class/module to define shared variable");
+      case NODE_CVASGN:
+	if (NIL_P(ruby_cbase)) {
+	    rb_raise(rb_eTypeError, "no class/module to define class variable");
 	}
 	result = rb_eval(self, node->nd_value);
-	rb_shared_variable_set(ruby_cbase, node->nd_vid, result);
+	rb_cvar_set(ruby_cbase, node->nd_vid, result);
 	break;
 
-      case NODE_SHDECL:
-	if (NIL_P(ruby_class)) {
-	    rb_raise(rb_eTypeError, "no class/module to define shared variable");
+      case NODE_CVDECL:
+	if (NIL_P(ruby_cbase)) {
+	    rb_raise(rb_eTypeError, "no class/module to define class variable");
 	}
 	result = rb_eval(self, node->nd_value);
-	rb_shared_variable_declare(ruby_class, node->nd_vid, result);
+	rb_cvar_declare(ruby_cbase, node->nd_vid, result);
 	break;
 
       case NODE_LVAR:
@@ -2544,12 +2547,12 @@ rb_eval(self, node)
 	result = rb_ivar_get(self, node->nd_vid);
 	break;
 
-      case NODE_CVAR:
-	result = ev_const_get((NODE*)ruby_frame->cbase, node->nd_vid);
+      case NODE_CONST:
+	result = ev_const_get(RNODE(ruby_frame->cbase), node->nd_vid);
 	break;
 
-      case NODE_SHVAR:
-	result = rb_shared_variable_get(ruby_cbase, node->nd_vid);
+      case NODE_CVAR:
+	result = rb_cvar_get(ruby_cbase, node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:
@@ -2760,17 +2763,14 @@ rb_eval(self, node)
 	    if (scope_vmode == SCOPE_MODFUNC) {
 		rb_add_method(rb_singleton_class(ruby_class),
 			      node->nd_mid, node->nd_defn, NOEX_PUBLIC);
-		rb_funcall(ruby_class, rb_intern("singleton_method_added"),
-			   1, INT2FIX(node->nd_mid));
+		rb_funcall(ruby_class, singleton_added, 1, ID2SYM(node->nd_mid));
 	    }
 	    if (FL_TEST(ruby_class, FL_SINGLETON)) {
 		rb_funcall(rb_iv_get(ruby_class, "__attached__"),
-			   rb_intern("singleton_method_added"),
-			   1, INT2FIX(node->nd_mid));
+			   singleton_added, 1, ID2SYM(node->nd_mid));
 	    }
 	    else {
-		rb_funcall(ruby_class, rb_intern("method_added"),
-			   1, INT2FIX(node->nd_mid));
+		rb_funcall(ruby_class, added, 1, ID2SYM(node->nd_mid));
 	    }
 	    result = Qnil;
 	}
@@ -2805,8 +2805,7 @@ rb_eval(self, node)
 	    rb_clear_cache_by_id(node->nd_mid);
 	    rb_add_method(klass, node->nd_mid, node->nd_defn, 
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
-	    rb_funcall(recv, rb_intern("singleton_method_added"),
-		       1, INT2FIX(node->nd_mid));
+	    rb_funcall(recv, singleton_added, 1, ID2SYM(node->nd_mid));
 	    result = Qnil;
 	}
 	break;
@@ -2824,8 +2823,7 @@ rb_eval(self, node)
 	    rb_raise(rb_eTypeError, "no class to make alias");
 	}
 	rb_alias(ruby_class, node->nd_new, node->nd_old);
-	rb_funcall(ruby_class, rb_intern("method_added"),
-		   1, INT2FIX(node->nd_mid));
+	rb_funcall(ruby_class, added, 1, ID2SYM(node->nd_mid));
 	result = Qnil;
 	break;
 
@@ -3507,16 +3505,16 @@ assign(self, lhs, val, check)
 	break;
 
       case NODE_CASGN:
-	ev_const_set((NODE*)ruby_frame->cbase, lhs->nd_vid, val);
+	ev_const_set(RNODE(ruby_frame->cbase), lhs->nd_vid, val);
 	break;
 
       case NODE_CDECL:
 	rb_const_set(ruby_class, lhs->nd_vid, val);
 	break;
 
-      case NODE_SHDECL:
-      case NODE_SHASGN:
-	rb_shared_variable_set(ruby_cbase, lhs->nd_vid, val);
+      case NODE_CVDECL:
+      case NODE_CVASGN:
+	rb_cvar_set(ruby_cbase, lhs->nd_vid, val);
 	break;
 
       case NODE_MASGN:
@@ -4397,10 +4395,9 @@ rb_f_caller(argc, argv)
 void
 rb_backtrace()
 {
-    int i, lev;
+    int i;
     VALUE ary;
 
-    lev = INT2FIX(0);
     ary = backtrace(-1);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	printf("\tfrom %s\n", RSTRING(RARRAY(ary)->ptr[i])->ptr);
@@ -4410,9 +4407,6 @@ rb_backtrace()
 static VALUE
 make_backtrace()
 {
-    VALUE lev;
-
-    lev = INT2FIX(0);
     return backtrace(-1);
 }
 
@@ -4598,7 +4592,6 @@ exec_under(func, under, args)
     VALUE val;			/* OK */
     int state;
     int mode;
-    VALUE cbase = ruby_frame->cbase;
 
     PUSH_CLASS();
     ruby_class = under;
@@ -4607,7 +4600,10 @@ exec_under(func, under, args)
     ruby_frame->last_class = _frame.prev->last_class;
     ruby_frame->argc = _frame.prev->argc;
     ruby_frame->argv = _frame.prev->argv;
-    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,under,0,cbase);
+    if (ruby_cbase != under) {
+	ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,under,0,ruby_frame->cbase);
+    }
+
     mode = scope_vmode;
     SCOPE_SET(SCOPE_PUBLIC);
     PUSH_TAG(PROT_NONE);
@@ -5129,6 +5125,7 @@ rb_mod_modfunc(argc, argv, module)
 	}
 	rb_clear_cache_by_id(id);
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
+	rb_funcall(module, singleton_added, 1, ID2SYM(id));
     }
     return module;
 }
@@ -5398,6 +5395,8 @@ Init_eval()
     aset = rb_intern("[]=");
     match = rb_intern("=~");
     missing = rb_intern("method_missing");
+    added = rb_intern("method_added");
+    singleton_added = rb_intern("singleton_method_added");
 
     rb_global_variable((VALUE*)&top_scope);
     rb_global_variable((VALUE*)&ruby_eval_tree_begin);

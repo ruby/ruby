@@ -1,5 +1,5 @@
-# date2.rb: Written by Tadayoshi Funaba 1998, 1999
-# $Id: date2.rb,v 1.17 1999/09/15 05:34:07 tadf Exp $
+# date2.rb: Written by Tadayoshi Funaba 1998-2000
+# $Id: date2.rb,v 1.18 2000/03/20 16:23:32 tadf Exp $
 
 class Date
 
@@ -110,6 +110,10 @@ class Date
     def jd_to_mjd(jd) jd - 2400000.5 end
     def tjd_to_jd(tjd) tjd + 2440000.5 end
     def jd_to_tjd(jd) jd - 2440000.5 end
+    def tjd2_to_jd(cycle, tjd) tjd_to_jd(cycle * 10000 + tjd) end
+    def jd_to_tjd2(jd) clfloor(jd_to_tjd(jd), 10000) end
+    def ld_to_jd(ld) ld + 2299160 end
+    def jd_to_ld(jd) jd - 2299160 end
 
     def julian_leap? (y) y % 4 == 0 end
     def gregorian_leap? (y) y % 4 == 0 and y % 100 != 0 or y % 400 == 0 end
@@ -213,15 +217,18 @@ class Date
   def rjd() @rjd end
   def rmjd() Date.jd_to_mjd(@rjd) end
   def rtjd() Date.jd_to_tjd(@rjd) end
+  def rtjd2() Date.jd_to_tjd2(@rjd) end
 
-  once :rmjd, :rtjd
+  once :rmjd, :rtjd, :rtjd2
 
   def jd() Date.rjd_to_jd(@rjd)[0] end
   def fr1() Date.rjd_to_jd(@rjd)[1] end
   def mjd() Date.jd_to_mjd(jd) end
   def tjd() Date.jd_to_tjd(jd) end
+  def tjd2() Date.jd_to_tjd2(jd) end
+  def ld() Date.jd_to_ld(jd) end
 
-  once :jd, :fr1, :mjd, :tjd
+  once :jd, :fr1, :mjd, :tjd, :tjd2, :ld
 
   def civil() Date.jd_to_civil(jd, @sg) end
   def ordinal() Date.jd_to_ordinal(jd, @sg) end

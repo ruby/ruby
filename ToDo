@@ -5,7 +5,8 @@ Language Spec.
 - rescue modifier; a rescue b => begin a rescue; b end
 - %w(a\ b\ c abc) => ["a b c", "abc"]
 - objectify symbols
-- class variable (prefix @@) - still need work for singletons
+- class variable (prefix @@)
+- rescue RuntimeError in err ??
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -21,6 +22,8 @@ Language Spec.
 * I18N (or M17N) script/string/regexp
 * Fixnum 0 as false ????
 * discourage use of symbol variable (e.g. $/, etc.) in manual
+* discourage use of Perlish features by giving warnings.
+* `exception' method to be alternative for `$!'. ??
 
 Hacking Interpreter
 
@@ -31,7 +34,7 @@ Hacking Interpreter
 - remove end_proc registered out of require only
 - all object made freezable
 * non-blocking open (e.g. for named pipe) for thread
-* avoid blocking with gethostbyname/gethostbyaddr
+* avoid blocking with gethostbyname/gethostbyaddr (use fork ???)
 * objectify interpreters
 * remove rb_eval() recursions
 * syntax tree -> bytecode ???
@@ -40,7 +43,7 @@ Hacking Interpreter
 
 Standard Libraries
 
-- hash[key] = nil may not remove entry; hashes may have nil as the value.
+- hash[key] = nil does not remove entry; hashes may have nil as the value.
 - hash.fetch(key) raises exception if key is not found.
 - Array#{first,last,at}
 - Dir.glob(pat){|f|...}
@@ -53,13 +56,13 @@ Standard Libraries
 - debugger for thread programming
 - SyntaxError, NameError, LoadError and NotImplementError are subclasses of
   ScriptError<Exception, not StandardError.
-- String's bang methods return string always
 - Thread::start gives arguments, not a thread object to the block
 - regexp: (?>..), \G
 - Struct::new([name,]member,...)
 - IO#reopen accepts path as well
 - Kernel#scan
-- call initialize for builtin class too (not yet: Regexp, IO, etc)
+- call initialize for builtin class too (not yet: Regexp, etc)
+- performance tune for String's non-bang methods.
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}
@@ -69,7 +72,6 @@ Standard Libraries
 * Stream or Port, abstract superclass of IO ?
 * String#{pred,prev}, String#downto
 * optional stepsize argument for succ()
-* performance tune for String's non-bang methods.
 * Ruby module -- Ruby::Version, Ruby::Interpreter
 
 Extension Libraries

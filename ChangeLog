@@ -1,3 +1,53 @@
+Thu Mar 23 02:26:14 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_fptr_finalize): fptr may be null.
+
+	* io.c (rb_io_s_new): now calls `initialize'.
+
+	* io.c (rb_io_initialize): actual open done in this method.
+
+	* io.c (rb_file_initialize): ditto.
+
+	* eval.c (rb_eval): class variables in singleton class definition
+	  is now handled properly (I hope).
+
+Wed Mar 22 21:49:36 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* st.c (st_delete_safe): skip already deleted entry.
+
+	* hash.c (rb_hash_delete): modify brace miss.
+
+Wed Mar 22 08:53:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (exec_under): do not push cbase if ruby_cbase == under.
+
+	* node.h (NEW_CREF0): preserve cbase nesting.
+
+Tue Mar 21 12:57:50 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (rb_class_s_new): Class::new should call `inherited'.
+
+Sat Mar 18 12:36:09 2000  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (rb_backtrace, make_backtrace): removed unsed variable
+	  `lev'.
+
+	* eval.c (rb_attr): calls `method_added' at attribute definition.
+
+	* eval.c (rb_mod_modfunc): calls `singleton_method_added' while
+	  `module_function'.
+
+	* eval.c (rb_eval): parameter to `method_added' and
+	  `singleton_method_added' is Symbol.
+
+	* eval.c (Init_eval): caches IDs for `method_added' and
+	  `singleton_method_added'.
+
+Sat Mar 18 11:25:10 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (rescue): allows `rescue Error in foo'.  experimental.
+	  which is better this or preparing alias `exception' for `$!'.
+
 Fri Mar 17 15:02:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* variable.c (rb_autoload_id): defining new autoload should be
@@ -110,7 +160,7 @@ Tue Mar  7 01:44:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (set_outfile): ditto.
 
-	* re.c (Init_Regexp): new method Regexp#last_match added; it's a
+	* re.c (Init_Regexp): new method Regexp#last_match added; it's an
 	  alternative for $~.
 
 	* configure.in (DEFAULT_KCODE): KCODE_NONE should be the default.

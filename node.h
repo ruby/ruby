@@ -50,8 +50,8 @@ enum node_type {
     NODE_IASGN,
     NODE_CASGN,
     NODE_CDECL,
-    NODE_SHASGN,
-    NODE_SHDECL,
+    NODE_CVASGN,
+    NODE_CVDECL,
     NODE_OP_ASGN1,
     NODE_OP_ASGN2,
     NODE_OP_ASGN_AND,
@@ -70,8 +70,8 @@ enum node_type {
     NODE_DVAR,
     NODE_GVAR,
     NODE_IVAR,
+    NODE_CONST,
     NODE_CVAR,
-    NODE_SHVAR,
     NODE_NTH_REF,
     NODE_BACK_REF,
     NODE_MATCH,
@@ -267,8 +267,8 @@ typedef struct RNode {
 #define NEW_IASGN(v,val) rb_node_newnode(NODE_IASGN,v,val,0)
 #define NEW_CASGN(v,val) rb_node_newnode(NODE_CASGN,v,val,0)
 #define NEW_CDECL(v,val) rb_node_newnode(NODE_CDECL,v,val,0)
-#define NEW_SHASGN(v,val) rb_node_newnode(NODE_SHASGN,v,val,0)
-#define NEW_SHDECL(v,val) rb_node_newnode(NODE_SHDECL,v,val,0)
+#define NEW_CVASGN(v,val) rb_node_newnode(NODE_CVASGN,v,val,0)
+#define NEW_CVDECL(v,val) rb_node_newnode(NODE_CVDECL,v,val,0)
 #define NEW_OP_ASGN1(p,id,a) rb_node_newnode(NODE_OP_ASGN1,p,id,a)
 #define NEW_OP_ASGN2(r,i,o,val) rb_node_newnode(NODE_OP_ASGN2,r,val,NEW_OP_ASGN22(i,o))
 #define NEW_OP_ASGN22(i,o) rb_node_newnode(NODE_OP_ASGN2,i,o,rb_id_attrset(i))
@@ -278,8 +278,8 @@ typedef struct RNode {
 #define NEW_LVAR(v) rb_node_newnode(NODE_LVAR,v,0,local_cnt(v))
 #define NEW_DVAR(v) rb_node_newnode(NODE_DVAR,v,0,0);
 #define NEW_IVAR(v) rb_node_newnode(NODE_IVAR,v,0,0)
+#define NEW_CONST(v) rb_node_newnode(NODE_CONST,v,0,0)
 #define NEW_CVAR(v) rb_node_newnode(NODE_CVAR,v,0,0)
-#define NEW_SHVAR(v) rb_node_newnode(NODE_SHVAR,v,0,0)
 #define NEW_NTH_REF(n)  rb_node_newnode(NODE_NTH_REF,0,n,local_cnt('~'))
 #define NEW_BACK_REF(n) rb_node_newnode(NODE_BACK_REF,0,n,local_cnt('~'))
 #define NEW_MATCH(c) rb_node_newnode(NODE_MATCH,c,0,0)
@@ -310,7 +310,7 @@ typedef struct RNode {
 #define NEW_MODULE(n,b) rb_node_newnode(NODE_MODULE,n,NEW_CBODY(b),0)
 #define NEW_COLON2(c,i) rb_node_newnode(NODE_COLON2,c,i,0)
 #define NEW_COLON3(i) rb_node_newnode(NODE_COLON3,0,i,0)
-#define NEW_CREF0() (cur_cref=rb_node_newnode(NODE_CREF,RNODE(ruby_frame->cbase)->nd_clss,0,0))
+#define NEW_CREF0() (cur_cref=RNODE(ruby_frame->cbase))
 #define NEW_CREF() (cur_cref=rb_node_newnode(NODE_CREF,0,0,cur_cref))
 #define NEW_CBODY(b) (cur_cref->nd_body=NEW_SCOPE(b),cur_cref)
 #define NEW_DOT2(b,e) rb_node_newnode(NODE_DOT2,b,e,0)

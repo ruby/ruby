@@ -1,141 +1,127 @@
 #
-#		getopts.rb - 
-#			$Release Version: $
-#			$Revision$
-#			$Date$
-#			by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
+#               getopts.rb - 
+#                       $Release Version: $
+#                       $Revision$
+#                       $Date$
+#                       by Yasuo OHBA(SHL Japan Inc. Technology Dept.)
 #
 # --
 # this is obsolete; use getoptlong
 #
+# 2000-03-21
+# modified by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 #
 
 $RCS_ID=%q$Header$
 
-def isSingle(lopt)
-  if lopt.index(":")
-    if lopt.split(":")[0].length == 1
-      return true
-    end
-  end
-  return nil
-end
 
-def getOptionName(lopt)
-  return lopt.split(":")[0]
-end
+def getopts( single_opts, *options )
+  single_opts_exp = (single_opts && !single_opts.empty?) ?
+                        /[#{single_opts}]/ : nil
+  single_colon_exp = nil
+  single_colon = nil
+  opt = arg = val = nil
+  boolopts = {}
+  valopts = {}
+  argv = ARGV
+  newargv = []
 
-def getDefaultOption(lopt)
-  od = lopt.split(":")[1]
-  if od
-    return od
-  end
-  return nil
-end
-
-def setOption(name, value)
-  eval("$OPT_" + name + " = " + 'value')
-end
-
-def setDefaultOption(lopt)
-  d = getDefaultOption(lopt)
-  if d
-    setOption(getOptionName(lopt), d)
+  #
+  # set default
+  #
+  if single_opts then
+    single_opts.each_byte do |byte|
+      boolopts[ byte.chr ] = false
   end
 end
+  unless options.empty? then
+    single_colon = ''
 
-def setNewArgv(newargv)
-  ARGV.clear
-  for na in newargv
-    ARGV << na
-  end
-end
-
-
-def getopts(single_opts, *options)
-  if options
-    single_colon = ""
-    long_opts = []
-    sc = 0
-    for o in options
-      setDefaultOption(o)
-      if isSingle(o)
-	single_colon[sc, 0] = getOptionName(o)
-	sc += 1
+    options.each do |opt|
+      m = /\A([^:]+):(.*)\z/.match( opt )
+      if m then
+        valopts[ m[1] ] = m[2].empty? ? 0 : m[2]
       else
-	long_opts.push(o)
-      end
+        boolopts[ opt ] = false
+end
+  end
+    valopts.each do |opt, dflt|
+      if opt.size == 1 then
+        single_colon << opt
+end
+  end
+
+    if single_colon.empty? then
+      single_colon = single_colon_exp = nil
+      else
+      single_colon_exp = /[#{single_colon}]/
     end
   end
   
-  opts = {}
-  count = 0
-  newargv = []
-  while ARGV.length != 0
-    compare = nil
-    case ARGV[0]
-    when /^--?$/
-      ARGV.shift
-      newargv += ARGV
+  #
+  # scan
+  #
+  c = 0
+  arg = argv.shift
+  while arg do
+    case arg
+    when /\A--?\z/                      # xinit -- -bpp 24
+      newargv.concat argv
       break
-    when /^--.*/
-      compare = ARGV[0][2, (ARGV[0].length - 2)]
-      if long_opts != ""
-	for lo in long_opts
-	  if lo.index(":") && getOptionName(lo) == compare
-	    if ARGV.length <= 1
-	      return nil
-	    end
-	    setOption(compare, ARGV[1])
-	    opts[compare] = true
-	    ARGV.shift
-	    count += 1
-	    break
-	  elsif lo == compare
-	    setOption(compare, true)
-	    opts[compare] = true
-	    count += 1
-	    break
-	  end
-	end
+
+    when /\A--(.*)/
+      opt = $1
+      if valopts.key? opt  then         # imclean --src +trash
+        return nil if argv.empty?
+        valopts[ opt ] = argv.shift
+      elsif boolopts.key? opt then      # ruby --verbose
+        boolopts[ opt ] = true
+      else
+              return nil
+            end
+      c += 1
+
+    when /\A-(.+)/
+      arg = $1
+      0.upto( arg.size - 1 ) do |idx|
+        opt = arg[idx, 1]
+        if single_opts and single_opts_exp === opt then
+          boolopts[ opt ] = true        # ruby -h
+          c += 1
+
+        elsif single_colon and single_colon_exp === opt then
+          val = arg[ (idx+1)..-1 ]
+          if val.empty? then            # ruby -e 'p $:'
+            return nil if argv.empty?
+            valopts[ opt ] = argv.shift
+          else                          # cc -ohello ...
+            valopts[ opt ] = val
       end
-      if compare.length <= 1
-	return nil
+          c += 1
+
+          break
+          else
+          return nil
+          end
+        end
+
+    else                                # ruby test.rb
+      newargv.push arg
       end
-    when /^-.*/
-      for idx in 1..(ARGV[0].length - 1)
-	compare = ARGV[0][idx, 1]
-	if single_opts && compare =~ "[" + single_opts + "]"
-	  setOption(compare, true)
-	  opts[compare] = true
-	  count += 1
-	elsif single_colon != "" && compare =~ "[" + single_colon + "]"
-	  if ARGV[0][idx..-1].length > 1
-	    setOption(compare, ARGV[0][(idx + 1)..-1])
-	    opts[compare] = true
-	    count += 1
-	  elsif ARGV.length <= 1
-	    return nil
-	  else
-	    setOption(compare, ARGV[1])
-	    opts[compare] = true
-	    ARGV.shift
-	    count += 1
-	  end
-	  break
-	end
-      end
-    else
-      compare = ARGV[0]
-      opts[compare] = true
-      newargv << ARGV[0]
+
+    arg = argv.shift
     end
     
-    ARGV.shift
-    if !opts.has_key?(compare)
-      return nil
+  #
+  # set
+  #
+  boolopts.each do |opt, val|
+    eval "$OPT_#{opt} = val"
     end
+  valopts.each do |opt, val|
+    eval "$OPT_#{opt} = #{val == 0 ? 'nil' : 'val'}"
   end
-  setNewArgv(newargv)
-  return count
+  argv.replace newargv
+
+  c
 end

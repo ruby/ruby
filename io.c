@@ -942,6 +942,7 @@ void
 rb_io_fptr_finalize(fptr)
     OpenFile *fptr;
 {
+    if (!fptr) return;
     rb_io_fptr_close(fptr);
     if (fptr->path) {
 	free(fptr->path);
@@ -1282,41 +1283,41 @@ rb_fdopen(fd, mode)
 }
 
 static VALUE
-rb_file_open_internal(klass, fname, mode)
-    VALUE klass;
+rb_file_open_internal(io, fname, mode)
+    VALUE io;
     const char *fname, *mode;
 {
     OpenFile *fptr;
-    NEWOBJ(port, struct RFile);
-    OBJSETUP(port, klass, T_FILE);
-    MakeOpenFile(port, fptr);
+
+    MakeOpenFile(io, fptr);
 
     fptr->mode = rb_io_mode_flags(mode);
     fptr->f = rb_fopen(fname, mode);
     fptr->path = strdup(fname);
 
-    return (VALUE)port;
+    return io;
 }
 
 VALUE
 rb_file_open(fname, mode)
     const char *fname, *mode;
 {
-    return rb_file_open_internal(rb_cFile, fname, mode);
+    NEWOBJ(io, struct RFile);
+    OBJSETUP(io, rb_cFile, T_FILE);
+    return rb_file_open_internal((VALUE)io, fname, mode);
 }
 
-VALUE
-rb_file_sysopen_internal(klass, fname, flags, mode)
-    VALUE klass;
+static VALUE
+rb_file_sysopen_internal(io, fname, flags, mode)
+    VALUE io;
     char *fname;
     int flags, mode;
 {
     OpenFile *fptr;
     int fd;
     char *m;
-    NEWOBJ(port, struct RFile);
-    OBJSETUP(port, klass, T_FILE);
-    MakeOpenFile(port, fptr);
+
+    MakeOpenFile(io, fptr);
 
     fd = rb_open(fname, flags, mode);
     m = rb_io_flags_mode(flags);
@@ -1324,7 +1325,7 @@ rb_file_sysopen_internal(klass, fname, flags, mode)
     fptr->f = rb_fdopen(fd, m);
     fptr->path = strdup(fname);
 
-    return (VALUE)port;
+    return io;
 }
 
 VALUE
@@ -1332,7 +1333,9 @@ rb_file_sysopen(fname, flags, mode)
     const char *fname;
     int flags, mode;
 {
-    return rb_file_sysopen_internal(rb_cFile, fname, flags, mode);
+    NEWOBJ(io, struct RFile);
+    OBJSETUP(io, rb_cFile, T_FILE);
+    return rb_file_sysopen_internal((VALUE)io, fname, mode);
 }
 
 #if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__)
@@ -1567,10 +1570,10 @@ rb_io_s_popen(argc, argv, self)
 }
 
 static VALUE
-rb_file_s_open(argc, argv, klass)
+rb_file_initialize(argc, argv, io)
     int argc;
     VALUE *argv;
-    VALUE klass;
+    VALUE io;
 {
     VALUE fname, vmode, file, perm;
     char *path, *mode;
@@ -1583,7 +1586,7 @@ rb_file_s_open(argc, argv, klass)
 	int flags = NUM2INT(vmode);
 	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
 
-	file = rb_file_sysopen_internal(klass, path, flags, fmode);
+	file = rb_file_sysopen_internal(io, path, flags, fmode);
     }
     else {
 	if (!NIL_P(vmode)) {
@@ -1592,7 +1595,45 @@ rb_file_s_open(argc, argv, klass)
 	else {
 	    mode = "r";
 	}
-	file = rb_file_open_internal(klass, RSTRING(fname)->ptr, mode);
+	file = rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
+    }
+
+    if (rb_iterator_p()) {
+	return rb_ensure(rb_yield, file, rb_io_close, file);
+    }
+
+    return file;
+}
+
+static VALUE
+rb_file_s_open(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE fname, vmode, file, perm;
+    char *path, *mode;
+
+    NEWOBJ(io, struct RFile);
+    OBJSETUP(io, klass, T_FILE);
+    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
+    Check_SafeStr(fname);
+    path = RSTRING(fname)->ptr;
+
+    if (FIXNUM_P(vmode)) {
+	int flags = NUM2INT(vmode);
+	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
+
+	file = rb_file_sysopen_internal((VALUE)io, path, flags, fmode);
+    }
+    else {
+	if (!NIL_P(vmode)) {
+	    mode = STR2CSTR(vmode);
+	}
+	else {
+	    mode = "r";
+	}
+	file = rb_file_open_internal((VALUE)io, RSTRING(fname)->ptr, mode);
     }
 
     if (rb_iterator_p()) {
@@ -2188,14 +2229,40 @@ rb_io_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
+    OpenFile *fp;
+    NEWOBJ(io, struct RFile);
+    OBJSETUP(io, klass, T_FILE);
+    
+    io->fptr = 0;
+    rb_obj_call_init((VALUE)io, argc, argv);
+
+    return (VALUE)io;
+}
+
+static VALUE
+rb_io_initialize(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
     VALUE fnum, mode;
+    OpenFile *fp;
     char *m = "r";
 
+    if (RFILE(io)->fptr) {
+	rb_io_fptr_finalize(RFILE(io)->fptr);
+	free(RFILE(io)->fptr);
+	RFILE(io)->fptr = 0;
+    }
     if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
 	Check_SafeStr(mode);
 	m = RSTRING(mode)->ptr;
     }
-    return prep_stdio(rb_fdopen(NUM2INT(fnum), m), rb_io_mode_flags(m), klass);
+    MakeOpenFile(io, fp);
+    fp->f = rb_fdopen(NUM2INT(fnum), m);
+    fp->mode = rb_io_mode_flags(m);
+
+    return io;
 }
 
 static int binmode = 0;
@@ -3174,6 +3241,7 @@ Init_IO()
     rb_include_module(rb_cIO, rb_mEnumerable);
 
     rb_define_singleton_method(rb_cIO, "new", rb_io_s_new, -1);
+    rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
     rb_define_singleton_method(rb_cIO, "popen", rb_io_s_popen, -1);
     rb_define_singleton_method(rb_cIO, "foreach", rb_io_s_foreach, -1);
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);
@@ -3318,8 +3386,8 @@ Init_IO()
 
     Init_File();
 
-    rb_define_singleton_method(rb_cFile, "new",  rb_file_s_open, -1);
     rb_define_singleton_method(rb_cFile, "open",  rb_file_s_open, -1);
+    rb_define_method(rb_cFile, "initialize",  rb_file_initialize, -1);
 
     rb_file_const("RDONLY", INT2FIX(O_RDONLY));
     rb_file_const("WRONLY", INT2FIX(O_WRONLY));

@@ -649,6 +649,7 @@ rb_class_s_new(argc, argv)
     /* make metaclass */
     RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
     rb_singleton_class_attached(RBASIC(klass)->klass, klass);
+    rb_funcall(super, rb_intern("inherited"), 1, klass);
 
     return klass;
 }

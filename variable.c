@@ -1315,16 +1315,19 @@ rb_define_global_const(name, val)
 }
 
 void
-rb_shared_variable_declare(klass, id, val)
+rb_cvar_declare(klass, id, val)
     VALUE klass;
     ID id;
     VALUE val;
 {
-    rb_mod_av_set(klass, id, val, "shared variable");
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	klass = rb_iv_get(klass, "__attached__");
+    }
+    rb_mod_av_set(klass, id, val, "class variable");
 }
 
 void
-rb_shared_variable_set(klass, id, val)
+rb_cvar_set(klass, id, val)
     VALUE klass;
     ID id;
     VALUE val;
@@ -1332,6 +1335,9 @@ rb_shared_variable_set(klass, id, val)
     VALUE value;
     VALUE tmp;
 
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	klass = rb_iv_get(klass, "__attached__");
+    }
     tmp = klass;
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
@@ -1341,17 +1347,20 @@ rb_shared_variable_set(klass, id, val)
 	tmp = RCLASS(tmp)->super;
     }
 
-    rb_raise(rb_eNameError,"uninitialized shared variable %s",rb_id2name(id));
+    rb_raise(rb_eNameError,"uninitialized class variable %s",rb_id2name(id));
 }
 
 VALUE
-rb_shared_variable_get(klass, id)
+rb_cvar_get(klass, id)
     VALUE klass;
     ID id;
 {
     VALUE value;
     VALUE tmp;
 
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	klass = rb_iv_get(klass, "__attached__");
+    }
     tmp = klass;
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
@@ -1360,18 +1369,21 @@ rb_shared_variable_get(klass, id)
 	tmp = RCLASS(tmp)->super;
     }
 
-    rb_raise(rb_eNameError,"uninitialized shared variable %s",rb_id2name(id));
+    rb_raise(rb_eNameError,"uninitialized class variable %s",rb_id2name(id));
     return Qnil;		/* not reached */
 }
 
 int
-rb_shared_variable_defined(klass, id)
+rb_cvar_defined(klass, id)
     VALUE klass;
     ID id;
 {
     VALUE value;
     VALUE tmp;
 
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	klass = rb_iv_get(klass, "__attached__");
+    }
     tmp = klass;
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
@@ -1384,17 +1396,34 @@ rb_shared_variable_defined(klass, id)
 }
 
 void
-rb_define_shared_variable(klass, name, val)
+rb_cv_set(klass, name, val)
+    VALUE klass;
+    const char *name;
+    VALUE val;
+{
+    rb_cvar_set(klass, rb_intern(name), val);
+}
+
+VALUE
+rb_cv_get(klass, name)
+    VALUE klass;
+    const char *name;
+{
+    return rb_cvar_get(klass, rb_intern(name));
+}
+
+void
+rb_define_class_variable(klass, name, val)
     VALUE klass;
     const char *name;
     VALUE val;
 {
     ID id = rb_intern(name);
 
-    if (!rb_is_shared_id(id)) {
-	rb_raise(rb_eNameError, "wrong shared variable name %s", name);
+    if (!rb_is_class_id(id)) {
+	rb_raise(rb_eNameError, "wrong class variable name %s", name);
     }
-    rb_shared_variable_declare(klass, id, val);
+    rb_cvar_declare(klass, id, val);
 }
 
 VALUE

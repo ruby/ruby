@@ -27,7 +27,7 @@
 #define ID_GLOBAL   0x03
 #define ID_ATTRSET  0x04
 #define ID_CONST    0x05
-#define ID_SHARED   0x06
+#define ID_CLASS    0x06
 
 #define is_notop_id(id) ((id)>LAST_TOKEN)
 #define is_local_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_LOCAL)
@@ -35,7 +35,7 @@
 #define is_instance_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_INSTANCE)
 #define is_attrset_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_ATTRSET)
 #define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
-#define is_shared_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_SHARED)
+#define is_class_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CLASS)
 
 NODE *ruby_eval_tree_begin = 0;
 NODE *ruby_eval_tree = 0;
@@ -166,17 +166,17 @@ static void top_local_setup();
 	k__LINE__
 	k__FILE__
 
-%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tSHVAR
+%token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR
 %token <val>  tINTEGER tFLOAT tSTRING tXSTRING tREGEXP
 %token <node> tDSTRING tDXSTRING tDREGEXP tNTH_REF tBACK_REF
 
 %type <node> singleton string
 %type <val>  literal numeric
 %type <node> compstmt stmts stmt expr arg primary command_call method_call
-%type <node> if_tail opt_else case_body cases rescue ensure
+%type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
 %type <node> opt_call_args call_args ret_args args when_args
 %type <node> aref_args opt_block_arg block_arg stmt_rhs
-%type <node> mrhs opt_list superclass generic_call block_call var_ref
+%type <node> mrhs superclass generic_call block_call var_ref
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> array assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
@@ -918,9 +918,6 @@ opt_block_arg	: ',' block_arg
 		    }
 		| none
 
-opt_list	: args
-		| none
-
 args 		: arg
 		    {
 			value_expr($1);
@@ -1428,12 +1425,25 @@ when_args	: args
 cases		: opt_else
 		| case_body
 
-rescue		: kRESCUE opt_list do
+exc_list	: args
+		| none
+
+exc_var		: kIN lhs
+		    {
+			$$ = $2;
+		    }
+		| none
+
+rescue		: kRESCUE exc_list exc_var do
 		  compstmt
 		  rescue
 		    {
-			$$ = NEW_RESBODY($2, $4, $5);
-		        fixpos($$, $2?$2:$4);
+		        if ($3 && $5) {
+		            $3 = node_assign($3, NEW_GVAR(rb_intern("$!")));
+			    $5 = block_append($3, $5);
+			}
+			$$ = NEW_RESBODY($2, $5, $6);
+		        fixpos($$, $2?$2:$5);
 		    }
 		| none
 
@@ -1496,7 +1506,7 @@ variable	: tIDENTIFIER
 		| tIVAR
 		| tGVAR
 		| tCONSTANT
-		| tSHVAR
+		| tCVAR
 		| kNIL {$$ = kNIL;}
 		| kSELF {$$ = kSELF;}
 		| kTRUE {$$ = kTRUE;}
@@ -3386,7 +3396,7 @@ yylex()
 	  case '@':
 	    lex_state = EXPR_END;
 	    if (tok()[1] == '@')
-		result = tSHVAR;
+		result = tCVAR;
 	    else
 		result = tIVAR;
 	    break;
@@ -3838,10 +3848,10 @@ gettable(id)
 	return NEW_IVAR(id);
     }
     else if (is_const_id(id)) {
-	return NEW_CVAR(id);
+	return NEW_CONST(id);
     }
-    else if (is_shared_id(id)) {
-	return NEW_SHVAR(id);
+    else if (is_class_id(id)) {
+	return NEW_CVAR(id);
     }
     rb_bug("invalid id for gettable");
     return 0;
@@ -3899,12 +3909,12 @@ assignable(id, val)
 	    yyerror("dynamic constant assignment");
 	lhs = NEW_CDECL(id, val);
     }
-    else if (is_shared_id(id)) {
+    else if (is_class_id(id)) {
 	if (cur_mid || in_single) {
-	    lhs = NEW_SHASGN(id, val);
+	    lhs = NEW_CVASGN(id, val);
 	}
 	else {
-	    lhs = NEW_SHDECL(id, val);
+	    lhs = NEW_CVDECL(id, val);
 	}
     }
     else {
@@ -3994,8 +4004,8 @@ node_assign(lhs, rhs)
       case NODE_MASGN:
       case NODE_CASGN:
       case NODE_CDECL:
-      case NODE_SHASGN:
-      case NODE_SHDECL:
+      case NODE_CVASGN:
+      case NODE_CVDECL:
 	lhs->nd_value = rhs;
 	break;
 
@@ -4099,11 +4109,12 @@ void_expr(node)
       case NODE_DVAR:
       case NODE_GVAR:
       case NODE_IVAR:
+      case NODE_CVAR:
       case NODE_NTH_REF:
       case NODE_BACK_REF:
 	useless = "a variable";
 	break;
-      case NODE_CVAR:
+      case NODE_CONST:
       case NODE_CREF:
 	useless = "a constant";
 	break;
@@ -4607,7 +4618,7 @@ rb_intern(name)
 	break;
       case '@':
 	if (name[1] == '@')
-	    id |= ID_SHARED;
+	    id |= ID_CLASS;
 	else
 	    id |= ID_INSTANCE;
 	break;
@@ -4701,10 +4712,10 @@ rb_is_const_id(id)
 }
 
 int
-rb_is_shared_id(id)
+rb_is_class_id(id)
     ID id;
 {
-    if (is_shared_id(id)) return Qtrue;
+    if (is_class_id(id)) return Qtrue;
     return Qfalse;
 }
 

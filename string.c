@@ -886,12 +886,16 @@ rb_str_replace(str, beg, len, val)
     long beg;
     long len;
 {
+    if (RSTRING(str)->len < beg + len) {
+	len = RSTRING(str)->len - beg;
+    }
+
     if (len < RSTRING(val)->len) {
 	/* expand string */
 	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+RSTRING(val)->len-len+1);
     }
 
-    if (len != RSTRING(val)->len) {
+    if (RSTRING(val)->len != len) {
 	memmove(RSTRING(str)->ptr + beg + RSTRING(val)->len,
 		RSTRING(str)->ptr + beg + len,
 		RSTRING(str)->len - (beg + len));
@@ -899,7 +903,9 @@ rb_str_replace(str, beg, len, val)
     if (RSTRING(str)->len < beg && len < 0) {
 	MEMZERO(RSTRING(str)->ptr + RSTRING(str)->len, char, -len);
     }
-    memmove(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
+    if (RSTRING(val)->len > 0) {
+	memmove(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
+    }
     RSTRING(str)->len += RSTRING(val)->len - len;
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 }
@@ -1016,6 +1022,9 @@ rb_str_slice_bang(argc, argv, str)
       delete_pos_len:
 	if (pos < 0) {
 	    pos = RSTRING(str)->len + pos;
+	}
+	if (pos < 0 || RSTRING(str)->len <= pos) {
+	    rb_raise(rb_eIndexError, "index %d out of string", pos);
 	}
 	arg2 = rb_str_substr(str, pos, len);
 	rb_str_replace(str, pos, len, rb_str_new(0,0));
