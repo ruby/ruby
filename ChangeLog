@@ -1,3 +1,18 @@
+Tue Jun 10 14:26:30 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/token.c: preserve newlines prepended to a block.
+
+    * ext/syck/implicit.c (syck_match_implicit): added !merge and !default.
+
+    * lib/yaml/constants.rb: remove '\z' escape.
+
+    * lib/yaml/emitter.rb: ensure reset of @seq_map shortcut flag.
+
+    * lib/yaml/encoding.rb: remove Unicode translation methods.
+
+    * lib/yaml/rubytypes.rb: improved round-tripping of Strings.
+      [ruby-core:1134]
+
 Tue Jun 10 01:07:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb.rb (IRB::Irb::eval_input): warn and exit if $SAFE >=3

@@ -295,19 +295,20 @@ class String
             if complex
                 if self.is_binary_data?
                     out.binary_base64( self )
+                elsif self =~ /^ |#{YAML::ESCAPE_CHAR}| $/
+                    complex = false
                 else
                     out.node_text( self )
                 end
-            else
+            end
+            if not complex
                 ostr = 	if out.options[:KeepValue]
                             self
                         elsif empty?
                             "''"
+                        elsif self =~ /^[^#{YAML::WORD_CHAR}]|#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |$)| $|\n|\'/
+                            "\"#{YAML.escape( self )}\"" 
                         elsif YAML.detect_implicit( self ) != 'str'
-                            "\"#{YAML.escape( self )}\"" 
-                        elsif self =~ /#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}] |\n|\'/
-                            "\"#{YAML.escape( self )}\"" 
-                        elsif self =~ /^[^#{YAML::WORD_CHAR}]/
                             "\"#{YAML.escape( self )}\"" 
                         else
                             self

@@ -60,6 +60,7 @@ module YAML
 		# Emit plain, normal flowing text
 		#
 		def node_text( value, block = '>' )
+            @seq_map = false
 			valx = value.dup
 			if @options[:UseBlock]
 				block = '|'
@@ -89,6 +90,7 @@ module YAML
 		# Emit a simple, unqouted string
 		#
 		def simple( value )
+            @seq_map = false
             self << value.to_s
 		end
 
@@ -168,6 +170,7 @@ module YAML
 			#
 			if val.length.zero?
 				self << "{}"
+                @seq_map = false
 			else
                 if @buffer.length == 1 and @options[:UseHeader] == false and type.length.zero? 
 			        @headless = 1 
@@ -213,6 +216,7 @@ module YAML
         # Quick sequence
         #
         def seq( type, &e )
+            @seq_map = false
             val = Sequence.new
             e.call( val )
 			self << "#{type} " if type.length.nonzero?
@@ -282,7 +286,7 @@ module YAML
             @buffer.push( "" )
             #p [ self.id, @level, :END ]
 			if @level < 0
-				YAML.internal_to_utf( header + @buffer.to_s[@headless..-1], @options[:Encoding] )
+				header + @buffer.to_s[@headless..-1]
 			end
 		end
 	end
