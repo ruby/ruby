@@ -176,6 +176,7 @@ lib/pp.rb
 lib/prettyprint.rb
 lib/profile.rb
 lib/pstore.rb
+lib/racc/parser.rb
 lib/rational.rb
 lib/readbytes.rb
 lib/shell.rb

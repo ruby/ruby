@@ -1,3 +1,11 @@
+Mon Aug  5 22:41:18 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* MANIFEST: add lib/racc/parser.rb.
+
+	* ext/racc/cparse/cparse.c: code refine.
+
+	* ext/racc/cparse/MANIFEST: add depend.
+
 Sun Aug  4 22:30:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/curses/curses.c: follow allocation framework.
