@@ -1,3 +1,7 @@
+Fri Mar 29 20:21:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/mkmf.rb (create_makefile): default FLAGS to empty strings.
+
 Fri Mar 29 16:36:52 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/mkmf.rb (arg_config): should use Shellwords::shellwords like

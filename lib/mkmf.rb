@@ -618,9 +618,9 @@ $defs = []
 
 $make = with_config("make-prog", ENV["MAKE"] || "make")
 
-$CFLAGS = with_config("cflags", arg_config("CFLAGS"))
-$CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS"))
-$LDFLAGS = with_config("ldflags", arg_config("LDFLAGS"))
+$CFLAGS = with_config("cflags", arg_config("CFLAGS", ""))
+$CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", ""))
+$LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", ""))
 $LIBPATH = []
 
 dir_config("opt")
