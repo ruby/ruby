@@ -909,7 +909,7 @@ module Net
 	      @pos += len
 	      @token.symbol = T_LITERAL
 	    elsif $6
-	      @token.value = $+[1..-1].capitalize.intern
+	      @token.value = $+[1..-1].intern
 	      @token.symbol = T_FLAG
 	    elsif $7
 	      @token.value = nil
