@@ -1,3 +1,8 @@
+Wed Nov  3 22:24:17 2004  GOTOU Yuuzou <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpauth/digestauth.rb: use Base64.encode64 to
+	  avoid warnings.
+
 Wed Nov  3 17:13:02 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* io.c (pipe_open): fix compile error
