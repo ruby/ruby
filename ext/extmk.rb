@@ -245,6 +245,7 @@ def parse_args()
   end
   def $mflags.defined?(var)
     grep(/\A#{var}=(.*)/) {return $1}
+    false
   end
 
   if $mflags.set?(?n)

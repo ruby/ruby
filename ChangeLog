@@ -1,10 +1,14 @@
+Wed Mar  2 19:53:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (parse_args): return false if nothing matched.
+
 Wed Mar  2 17:15:08 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (lib_eventloop_core): fix typo
 
 Wed Mar  2 16:59:50 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* eval.c (ruby_native_thread_kill): call pthread_kill() to send a 
+	* eval.c (ruby_native_thread_kill): call pthread_kill() to send a
 	  signal to ruby's native thread
 
 	* ruby.h: add definition of ruby_native_thread_kill()
@@ -19,7 +23,7 @@ Wed Mar  2 16:03:08 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  avoid SEGV trouble.
 
 	* ext/tk/tkutil/tkutil.c; fix a bug on converting a SJIS string array
-	  to a Tcl's list string. 
+	  to a Tcl's list string.
 
 	* ext/tk/tcltklib.c: wrap Tcl's original "namespace" command to
 	  protect from namespace crash.
@@ -41,7 +45,7 @@ Wed Mar  2 16:03:08 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/clock.rb (self.clicks): accept a Symbol argument.
 
 	* ext/tk/lib/variable.rb: be able to set default_value_type; :numeric,
-	  :bool, :string, :symbol, :list, :numlist or nil (default; same to 
+	  :bool, :string, :symbol, :list, :numlist or nil (default; same to
 	  :string). If set a type, TkVariable#value returns a value of the
 	  type.
 
