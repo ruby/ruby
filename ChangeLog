@@ -1,3 +1,7 @@
+Mon Jan 19 16:30:05 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (rb_syswait): no exception raised.
+
 Fri Jan 16 00:43:43 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.h (CLONESETUP): copies its singleton classes too.
