@@ -1,3 +1,10 @@
+Sat Jan  1 17:44:54 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (each_capitalized): should join header field
+	  value.  This patch is contributed sheepman [ruby-list:40478]
+
+	* test/net/http/test_httpheader.rb: test it.
+
 Sat Jan  1 16:21:29 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (copy_stream): use read/write instead of

@@ -1138,7 +1138,7 @@ module Net # :nodoc:
     # As for #each_header, except the keys are provided in capitalized form.
     def each_capitalized
       @header.each do |k,v|
-        yield capitalize(k), v
+        yield capitalize(k), v.join(', ')
       end
     end
 
