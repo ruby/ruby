@@ -1,3 +1,9 @@
+Sun Feb 18 15:42:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/curses/extconf.rb: add dir_config.
+
+	* missing/flock.c: use fcntl(2) instead of lockf(2).
+
 Fri Feb 16 01:44:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (set_outfile): f should be the FILE* from the assigning value.

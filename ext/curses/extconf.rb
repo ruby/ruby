@@ -1,5 +1,9 @@
 require 'mkmf'
 
+dir_config('curses')
+dir_config('ncurses')
+dir_config('termcap')
+
 make=false
 have_library("mytinfo", "tgetent") if /bow/ =~ RUBY_PLATFORM
 if have_header("ncurses.h") and have_library("ncurses", "initscr")
