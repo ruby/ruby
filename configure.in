@@ -482,6 +482,7 @@ AC_CACHE_VAL(rb_cv_frptr,
      _ptr	dnl
      __ptr	dnl
      bufpos	dnl
+     _p	dnl
 ; do
     AC_TRY_COMPILE([#include <stdio.h>
 ],

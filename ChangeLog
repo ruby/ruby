@@ -1,3 +1,7 @@
+Tue Mar 26 00:38:11 2002  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in (FILE_READPTR): check _p for 4.4BSD.
+
 Mon Mar 25 23:39:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* configure.in (FILE_READPTR): new.  for IO#gets improvement.
