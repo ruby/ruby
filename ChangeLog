@@ -1,3 +1,28 @@
+Mon Feb 16 15:45:22 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check functions, fork spawnv.
+
+	* io.c (rb_io_s_popen): accept argv not only single command line.
+
+	* process.c (rb_proc_exec_n): export.
+
+	* process.c (rb_check_argv): check if arguments are safe to invoke.
+
+	* process.c (rb_fork): retry to fork.
+
+	* process.c (rb_spawn): spawn child process asynchronously.
+
+	* process.c (rb_f_system): raise an exception if the command could not
+	  execute.
+
+	* win32/win32.c (rb_w32_argv_size): count necessary size for joined
+	  arguments.
+
+	* win32/win32.c (rb_w32_join_argv): join arguments with quoting.
+
+	* win32/win32.c (rb_w32_pipe_exec, rb_w32_spawn, rb_w32_aspawn):
+	  accept program name adding to command line.
+
 Mon Feb 16 15:18:33 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/racc/parser.rb: add note for Racc full package.

@@ -2448,7 +2448,7 @@ rb_file_sysopen(fname, flags, mode)
     return rb_file_sysopen_internal(io_alloc(rb_cFile), fname, flags, mode);
 }
 
-#if defined (_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__VMS)
+#if defined(__CYGWIN__) || !defined(HAVE_FORK)
 static struct pipe_list {
     OpenFile *fptr;
     struct pipe_list *next;
@@ -2510,7 +2510,7 @@ pipe_finalize(fptr, noraise)
     OpenFile *fptr;
     int noraise;
 {
-#if !defined (__CYGWIN__) && !defined(_WIN32)
+#if !defined(HAVE_FORK) && !defined(_WIN32)
     extern VALUE rb_last_status;
     int status;
     if (fptr->f) {
@@ -2545,152 +2545,178 @@ rb_io_unbuffered(fptr)
     rb_io_synchronized(fptr);
 }
 
+struct popen_arg {
+    struct rb_exec_arg exec;
+    int pr[2], pw[2];
+};
+
+static void
+popen_redirect(p)
+    struct popen_arg *p;
+{
+    if (p->pr[1] != -1) {
+	close(p->pr[0]);
+	if (p->pr[1] != 1) {
+	    dup2(p->pr[1], 1);
+	    close(p->pr[1]);
+	}
+    }
+    if (p->pw[0] != -1) {
+	close(p->pw[1]);
+	if (p->pw[0] != 0) {
+	    dup2(p->pw[0], 0);
+	    close(p->pw[0]);
+	}
+    }
+}
+
+#ifdef HAVE_FORK
+static int
+popen_exec(p)
+    struct popen_arg *p;
+{
+    int fd;
+
+    popen_redirect(p);
+    for (fd = 3; fd < NOFILE; fd++) {
+#ifdef FD_CLOEXEC
+	fcntl(fd, F_SETFL, FD_CLOEXEC);
+#else
+	close(fd);
+#endif
+    }
+    return rb_exec(&p->exec);
+}
+#endif
+
 static VALUE
-pipe_open(pname, mode)
+pipe_open(argc, argv, pname, mode)
+    int argc;
+    VALUE *argv;
     char *pname, *mode;
 {
     int modef = rb_io_mode_flags(mode);
+    int pid = 0;
     OpenFile *fptr;
-
-#if defined(DJGPP) || defined(__human68k__) || defined(__VMS)
-    FILE *f = popen(pname, mode);
-
-    if (!f) rb_sys_fail(pname);
-    else {
-	VALUE port = io_alloc(rb_cIO);
-
-	MakeOpenFile(port, fptr);
-	fptr->finalize = pipe_finalize;
-	fptr->mode = modef;
-
-	pipe_add_fptr(fptr);
-	if (modef & FMODE_READABLE) fptr->f  = f;
-	if (modef & FMODE_WRITABLE) {
-	    if (fptr->f) fptr->f2 = f;
-	    else fptr->f = f;
-	    rb_io_synchronized(fptr);
-	}
-	return (VALUE)port;
-    }
-#else
-#ifdef _WIN32
-    int pid;
     FILE *fpr, *fpw;
-
-retry:
-    pid = pipe_exec(pname, rb_io_mode_modenum(mode), &fpr, &fpw);
-    if (pid == -1) {		/* exec failed */
-	if (errno == EAGAIN) {
-	    rb_thread_sleep(1);
-	    goto retry;
-	}
-	rb_sys_fail(pname);
-    }
-    else {
-        VALUE port = io_alloc(rb_cIO);
-
-	MakeOpenFile(port, fptr);
-	fptr->mode = modef;
-	fptr->mode |= FMODE_SYNC;
-	fptr->pid = pid;
-
-	if (modef & FMODE_READABLE) {
-	    fptr->f = fpr;
-	}
-	if (modef & FMODE_WRITABLE) {
-	    if (fptr->f) fptr->f2 = fpw;
-	    else fptr->f = fpw;
-	}
-	fptr->finalize = pipe_finalize;
-	pipe_add_fptr(fptr);
-	return (VALUE)port;
-    }
-#else
-    int pid, pr[2], pw[2];
+    VALUE port, arg0;
+#if defined(HAVE_FORK)
+    int status;
+    struct popen_arg arg;
     volatile int doexec;
+#elif defined(_WIN32)
+    int openmode = rb_io_mode_modenum(mode);
+    char *cmd = pname, *prog = NULL;
+#endif
 
-    if (((modef & FMODE_READABLE) && pipe(pr) == -1) ||
-	((modef & FMODE_WRITABLE) && pipe(pw) == -1))
-	rb_sys_fail(pname);
+    if (!pname) {
+	arg0 = rb_check_argv(argc, argv);
+	if (arg0) pname = StringValuePtr(arg0);
+    }
 
-    doexec = (strcmp("-", pname) != 0);
+#if defined(HAVE_FORK)
+    doexec = (argc > 0) || (strcmp("-", pname) != 0);
     if (!doexec) {
 	fflush(stdin);		/* is it really needed? */
 	fflush(stdout);
 	fflush(stderr);
     }
-
-  retry:
-    switch ((pid = fork())) {
-      case 0:			/* child */
-	if (modef & FMODE_READABLE) {
-	    close(pr[0]);
-	    if (pr[1] != 1) {
-		dup2(pr[1], 1);
-		close(pr[1]);
-	    }
-	}
-	if (modef & FMODE_WRITABLE) {
-	    close(pw[1]);
-	    if (pw[0] != 0) {
-		dup2(pw[0], 0);
-		close(pw[0]);
-	    }
-	}
-
-	if (doexec) {
-	    int fd;
-
-	    for (fd = 3; fd < NOFILE; fd++)
-		close(fd);
-	    rb_proc_exec(pname);
-	    fprintf(stderr, "%s:%d: command not found: %s\n",
-		    ruby_sourcefile, ruby_sourceline, pname);
-	    _exit(127);
-	}
-	rb_io_synchronized(RFILE(orig_stdout)->fptr);
-	rb_io_synchronized(RFILE(orig_stderr)->fptr);
-	return Qnil;
-
-      case -1:			/* fork failed */
-	if (errno == EAGAIN) {
-	    rb_thread_sleep(1);
-	    goto retry;
-	}
-	close(pr[0]); close(pw[1]);
+    arg.pr[0] = arg.pr[1] = arg.pw[0] = arg.pw[1] = -1;
+    if ((modef & FMODE_READABLE) && pipe(arg.pr) == -1) {
 	rb_sys_fail(pname);
-	break;
+    }
+    if ((modef & FMODE_WRITABLE) && pipe(arg.pw) == -1) {
+	if (modef & FMODE_READABLE) {
+	    int e = errno;
+	    close(arg.pr[0]); close(arg.pr[1]);
+	    errno = e;
+	}
+	rb_sys_fail(pname);
+    }
 
-      default:			/* parent */
-	if (pid < 0) rb_sys_fail(pname);
-	else {
-	    VALUE port = io_alloc(rb_cIO);
-
-	    MakeOpenFile(port, fptr);
-	    fptr->mode = modef;
-	    fptr->mode |= FMODE_SYNC;
-	    fptr->pid = pid;
-
-	    if (modef & FMODE_READABLE) {
-		close(pr[1]);
-		fptr->f  = rb_fdopen(pr[0], "r");
-	    }
-	    if (modef & FMODE_WRITABLE) {
-		FILE *f = rb_fdopen(pw[1], "w");
-
-		close(pw[0]);
-		if (fptr->f) fptr->f2 = f;
-		else fptr->f = f;
-	    }
-#if defined (__CYGWIN__)
-	    fptr->finalize = pipe_finalize;
-	    pipe_add_fptr(fptr);
-#endif
-	    return port;
+    if (doexec) {
+	arg.exec.argc = argc;
+	arg.exec.argv = argv;
+	arg.exec.prog = pname;
+	pid = rb_fork(&status, popen_exec, &arg);
+    }
+    else {
+	pid = rb_fork(&status, 0, 0);
+	if (pid == 0) {		/* child */
+	    popen_redirect(&arg);
+	    rb_io_synchronized(RFILE(orig_stdout)->fptr);
+	    rb_io_synchronized(RFILE(orig_stderr)->fptr);
+	    return Qnil;
 	}
     }
+
+    /* parent */
+    if (modef & FMODE_READABLE) close(arg.pr[1]);
+    if (modef & FMODE_WRITABLE) close(arg.pw[0]);
+    if (pid == -1) {
+	if (modef & FMODE_READABLE) close(arg.pr[0]);
+	if (modef & FMODE_WRITABLE) close(arg.pw[1]);
+	rb_sys_fail(pname);
+    }
+#define PIPE_FDOPEN(i) (rb_fdopen((i?arg.pw:arg.pr)[i], i?"w":"r"))
+#elif defined(_WIN32)
+    if (argc) {
+	char **args = ALLOC_N(char *, argc+1);
+	int i;
+
+	for (i = 0; i < argc; ++i) {
+	    args[i] = RSTRING(argv[i])->ptr;
+	}
+	args[i] = NULL;
+	cmd = ALLOCA_N(char, rb_w32_argv_size(args));
+	rb_w32_join_argv(cmd, args);
+	free(args);
+	prog = pname;
+    }
+    while ((pid = rb_w32_pipe_exec(cmd, prog, openmode, &fpr, &fpw)) == -1) {
+	/* exec failed */
+	switch (errno) {
+	  case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	  case EWOULDBLOCK:
 #endif
+	    rb_thread_sleep(1);
+	    break;
+	  defined:
+	    rb_sys_fail(pname);
+	    break;
+	}
+    }
+#define PIPE_FDOPEN(i) (i?fpw:fpr)
+#else
+    if (argc > 0) {
+	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+	pname = StringValuePtr(prog);
+    }
+    fpr = popen(pname, mode);
+
+    if (!fpr) rb_sys_fail(pname);
+#define PIPE_FDOPEN(i) (fpr)
 #endif
+
+    port = io_alloc(rb_cIO);
+    MakeOpenFile(port, fptr);
+    fptr->mode = modef | FMODE_SYNC;
+    fptr->pid = pid;
+
+    if (modef & FMODE_READABLE) {
+	fptr->f = PIPE_FDOPEN(0);
+    }
+    if (modef & FMODE_WRITABLE) {
+	fpw = PIPE_FDOPEN(1);
+	if (fptr->f) fptr->f2 = fpw;
+	else fptr->f = fpw;
+    }
+#if defined (__CYGWIN__) || !defined(HAVE_FORK)
+    fptr->finalize = pipe_finalize;
+    pipe_add_fptr(fptr);
+#endif
+    return port;
 }
 
 static VALUE
@@ -2714,7 +2740,7 @@ rb_io_popen(str, argc, argv, klass)
 	mode = StringValuePtr(pmode);
     }
     SafeStringValue(pname);
-    port = pipe_open(str, mode);
+    port = pipe_open(0, 0, str, mode);
     if (NIL_P(port)) {
 	/* child */
 	if (rb_block_given_p()) {
@@ -2779,12 +2805,46 @@ rb_io_s_popen(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    char *str = 0;
+    char *mode;
+    VALUE pname, pmode, port, tmp;
+    char mbuf[4];
 
-    if (argc >= 1) {
-	str = StringValuePtr(argv[0]);
+    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
+	mode = "r";
     }
-    return rb_io_popen(str, argc, argv, klass);
+    else if (FIXNUM_P(pmode)) {
+	mode = rb_io_modenum_mode(FIX2INT(pmode), mbuf);
+    }
+    else {
+	mode = StringValuePtr(pmode);
+    }
+    tmp = rb_check_array_type(pname);
+    if (!NIL_P(tmp)) {
+	long argc = RARRAY(tmp)->len;
+	VALUE *argv = ALLOCA_N(VALUE, argc);
+
+	MEMCPY(argv, RARRAY(tmp)->ptr, VALUE, argc);
+	port = pipe_open(argc, argv, 0, mode);
+    }
+    else {
+	SafeStringValue(pname);
+	port = pipe_open(0, 0, RSTRING(pname)->ptr, mode);
+	if (NIL_P(port)) {
+	    /* child */
+	    if (rb_block_given_p()) {
+		rb_yield(Qnil);
+		fflush(stdout);
+		fflush(stderr);
+		_exit(0);
+	    }
+	    return Qnil;
+	}
+    }
+    RBASIC(port)->klass = klass;
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, port, io_close, port);
+    }
+    return port;
 }
 
 static VALUE
@@ -2985,7 +3045,7 @@ rb_io_open(fname, mode)
     char *fname, *mode;
 {
     if (fname[0] == '|') {
-	return pipe_open(fname+1, mode);
+	return pipe_open(0, 0, fname+1, mode);
     }
     else {
 	return rb_file_open(fname, mode);
@@ -4179,7 +4239,7 @@ rb_f_backquote(obj, str)
     OpenFile *fptr;
 
     SafeStringValue(str);
-    port = pipe_open(RSTRING(str)->ptr, "r");
+    port = pipe_open(0, 0, RSTRING(str)->ptr, "r");
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);

@@ -589,8 +589,79 @@ rb_w32_get_osfhandle(int fh)
     return _get_osfhandle(fh);
 }
 
+int
+rb_w32_argv_size(argv)
+    char **argv;
+{
+    char *p, **t;
+    int len, n, bs, quote;
+
+    for (t = argv, len = 0; *t; t++) {
+	for (p = *t, n = quote = bs = 0; *p; ++p) {
+	    switch (*p) {
+	      case '\\':
+		++bs;
+		break;
+	      case '"':
+		n += bs + 1; bs = 0;
+		quote = 1;
+		break;
+	      case ' ': case '\t':
+		quote = 1;
+	      default:
+		bs = 0;
+		p = CharNext(p) - 1;
+		break;
+	    }
+	}
+	len += p - *t + n + 1;
+	if (quote) len += 2;
+    }
+    return len;
+}
+
+char *
+rb_w32_join_argv(cmd, argv)
+    char *cmd;
+    char **argv;
+{
+    char *p, *q, *s, **t;
+    int n, bs, quote;
+
+    for (t = argv, q = cmd; p = *t; t++) {
+	quote = 0;
+	s = p;
+	if (!*p || strpbrk(p, " \t\"")) {
+	    quote = 1;
+	    *q++ = '"';
+	}
+	for (bs = 0; *p; ++p) {
+	    switch (*p) {
+	      case '\\':
+		++bs;
+		break;
+	      case '"':
+		memcpy(q, s, n = p - s); q += n; s = p;
+		memset(q, '\\', ++bs); q += bs; bs = 0;
+		break;
+	      default:
+		bs = 0;
+		p = CharNext(p) - 1;
+		break;
+	    }
+	}
+	memcpy(q, s, n = p - s);
+	q += n;
+	if (quote) *q++ = '"';
+	*q++ = ' ';
+    }
+    if (q > cmd) --q;
+    *q = '\0';
+    return cmd;
+}
+
 pid_t
-pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
+rb_w32_pipe_exec(char *cmd, char *prog, int mode, FILE **fpr, FILE **fpw)
 {
     struct ChildRecord* child;
     HANDLE hReadIn, hReadOut;
@@ -667,7 +738,7 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 	CloseHandle(hCurProc);
 
 	/* create child process */
-	child = CreateChild(cmd, NULL, &sa, hWriteIn, hReadOut, NULL);
+	child = CreateChild(cmd, prog, &sa, hWriteIn, hReadOut, NULL);
 	if (!child) {
 	    if (reading) {
 		CloseHandle(hReadOut);
@@ -729,9 +800,10 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 extern VALUE rb_last_status;
 
 int
-do_spawn(mode, cmd)
+rb_w32_spawn(mode, cmd, prog)
 int mode;
 char *cmd;
+char *prog;
 {
     struct ChildRecord *child;
     DWORD exitcode;
@@ -746,7 +818,7 @@ char *cmd;
 	return -1;
     }
 
-    child = CreateChild(cmd, NULL, NULL, NULL, NULL, NULL);
+    child = CreateChild(cmd, prog, NULL, NULL, NULL, NULL);
     if (!child) {
 	return -1;
     }
@@ -768,97 +840,15 @@ char *cmd;
 }
 
 int
-do_aspawn(mode, prog, argv)
+rb_w32_aspawn(mode, prog, argv)
 int mode;
 char *prog;
 char **argv;
 {
-    char *cmd, *p, *q, *s, **t;
-    int len, n, bs, quote;
-    struct ChildRecord *child;
-    DWORD exitcode;
+    int len = rb_w32_argv_size(argv);
+    char *cmd = ALLOCA_N(char, len);
 
-    switch (mode) {
-      case P_WAIT:
-      case P_NOWAIT:
-      case P_OVERLAY:
-	break;
-      default:
-	errno = EINVAL;
-	return -1;
-    }
-
-    for (t = argv, len = 0; *t; t++) {
-	for (p = *t, n = quote = bs = 0; *p; ++p) {
-	    switch (*p) {
-	      case '\\':
-		++bs;
-		break;
-	      case '"':
-		n += bs + 1; bs = 0;
-		quote = 1;
-		break;
-	      case ' ': case '\t':
-		quote = 1;
-	      default:
-		bs = 0;
-		p = CharNext(p) - 1;
-		break;
-	    }
-	}
-	len += p - *t + n + 1;
-	if (quote) len += 2;
-    }
-    cmd = ALLOCA_N(char, len);
-    for (t = argv, q = cmd; p = *t; t++) {
-	quote = 0;
-	s = p;
-	if (!*p || strpbrk(p, " \t\"")) {
-	    quote = 1;
-	    *q++ = '"';
-	}
-	for (bs = 0; *p; ++p) {
-	    switch (*p) {
-	      case '\\':
-		++bs;
-		break;
-	      case '"':
-		memcpy(q, s, n = p - s); q += n; s = p;
-		memset(q, '\\', ++bs); q += bs; bs = 0;
-		break;
-	      default:
-		bs = 0;
-		p = CharNext(p) - 1;
-		break;
-	    }
-	}
-	memcpy(q, s, n = p - s);
-	q += n;
-	if (quote) *q++ = '"';
-	*q++ = ' ';
-    }
-    if (q > cmd) --q;
-    *q = '\0';
-
-    child = CreateChild(cmd, prog, NULL, NULL, NULL, NULL);
-    if (!child) {
-	return -1;
-    }
-
-    switch (mode) {
-      case P_WAIT:
-	rb_syswait(child->pid);
-	return NUM2INT(rb_last_status);
-      case P_NOWAIT:
-	return child->pid;
-      case P_OVERLAY:
-	WaitForSingleObject(child->hProcess, INFINITE);
-	GetExitCodeProcess(child->hProcess, &exitcode);
-	CloseChildHandle(child);
-	_exit(exitcode);
-      default:
-	return -1;	/* not reached */
-    }
+    return rb_w32_spawn(mode, rb_w32_join_argv(cmd, argv), prog);
 }
 
 static struct ChildRecord *

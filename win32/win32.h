@@ -120,7 +120,7 @@ extern "C++" {
 #undef stat
 #define stat(path,st)		rb_w32_stat(path,st)
 #undef execv
-#define execv(path,argv)	do_aspawn(P_OVERLAY,path,argv)
+#define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
 
 #ifdef __MINGW32__
 struct timezone {
@@ -175,8 +175,10 @@ extern int chown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern pid_t waitpid (pid_t, int *, int);
-extern int do_spawn(int, char *);
-extern int do_aspawn(int, char *, char **);
+extern int rb_w32_argv_size(char **);
+extern char *rb_w32_join_argv(char *, char **);
+extern int rb_w32_spawn(int, char *, char*);
+extern int rb_w32_aspawn(int, char *, char **);
 extern int kill(int, int);
 extern pid_t rb_w32_getpid(void);
 

@@ -23,6 +23,9 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
+#ifdef HAVE_FCNTL_H
+#include <fcntl.h>
+#endif
 #ifdef __DJGPP__
 #include <process.h>
 #endif
@@ -912,12 +915,16 @@ proc_exec_v(argv, prog)
     char **argv;
     char *prog;
 {
+    int err;
+
     if (!prog)
 	prog = argv[0];
     security(prog);
     prog = dln_find_exe(prog, 0);
-    if (!prog)
+    if (!prog) {
+	errno = ENOENT;
 	return -1;
+    }
 
 #if (defined(MSDOS) && !defined(DJGPP)) || defined(__human68k__) || defined(__EMX__) || defined(OS2)
     {
@@ -958,26 +965,23 @@ proc_exec_v(argv, prog)
 #endif /* MSDOS or __human68k__ or __EMX__ */
     before_exec();
     execv(prog, argv);
+    err = errno;
     after_exec();
+    errno = err;
     return -1;
 }
 
-static int
-proc_exec_n(argc, argv, progv)
+int
+rb_proc_exec_n(argc, argv, prog)
     int argc;
     VALUE *argv;
-    VALUE progv;
+    const char *prog;
 {
-    char *prog = 0;
     char **args;
     int i;
 
-    if (progv) {
-	prog = RSTRING(progv)->ptr;
-    }
     args = ALLOCA_N(char*, argc+1);
     for (i=0; i<argc; i++) {
-	SafeStringValue(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
     args[i] = 0;
@@ -1000,22 +1004,21 @@ rb_proc_exec(str)
 
 #ifdef _WIN32
     before_exec();
-    do_spawn(P_OVERLAY, (char *)str);
+    rb_w32_spawn(P_OVERLAY, (char *)str, 0);
     after_exec();
 #else
     for (s=str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
-#if defined(MSDOS)
 	    int status;
+#if defined(MSDOS)
 	    before_exec();
 	    status = system(str);
 	    after_exec();
 	    if (status != -1)
 		exit(status);
-#else
-#if defined(__human68k__) || defined(__CYGWIN32__) || defined(__EMX__)
+#elif defined(__human68k__) || defined(__CYGWIN32__) || defined(__EMX__)
 	    char *shell = dln_find_exe("sh", 0);
-	    int status = -1;
+	    status = -1;
 	    before_exec();
 	    if (shell)
 		execl(shell, "sh", "-c", str, (char *) NULL);
@@ -1027,8 +1030,9 @@ rb_proc_exec(str)
 #else
 	    before_exec();
 	    execl("/bin/sh", "sh", "-c", str, (char *)NULL);
+	    status = errno;
 	    after_exec();
-#endif
+	    errno = status;
 #endif
 	    return -1;
 	}
@@ -1050,12 +1054,20 @@ rb_proc_exec(str)
     return -1;
 }
 
-#if defined(__human68k__) || defined(__DJGPP__) || defined(_WIN32)
+#if defined(_WIN32)
+#define HAVE_SPAWNV 1
+#endif
+
+#if !defined(HAVE_FORK) && defined(HAVE_SPAWNV)
 static int
 proc_spawn_v(argv, prog)
     char **argv;
     char *prog;
 {
+#if defined(_WIN32)
+    char *cmd = ALLOCA_N(char, rb_w32_argv_size(argv));
+    return rb_w32_spawn(P_NOWAIT, rb_w32_join_argv(cmd, argv), prog);
+#else
     char *extension;
     int status;
 
@@ -1091,13 +1103,10 @@ proc_spawn_v(argv, prog)
     }
 #endif
     before_exec();
-#if defined(_WIN32)
-    status = do_aspawn(P_WAIT, prog, argv);
-#else
     status = spawnv(P_WAIT, prog, argv);
-#endif
     after_exec();
     return status;
+#endif
 }
 
 static int
@@ -1111,29 +1120,25 @@ proc_spawn_n(argc, argv, prog)
 
     args = ALLOCA_N(char*, argc + 1);
     for (i = 0; i < argc; i++) {
-	SafeStringValue(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
-    if (prog)
-	SafeStringValue(prog);
     args[i] = (char*) 0;
     if (args[0])
 	return proc_spawn_v(args, prog ? RSTRING(prog)->ptr : 0);
     return -1;
 }
 
-#if !defined(_WIN32)
+#if defined(_WIN32)
+#define proc_spawn(str) rb_w32_spawn(P_NOWAIT, str, 0)
+#else
 static int
-proc_spawn(sv)
-    VALUE sv;
-{
+proc_spawn(str)
     char *str;
+{
     char *s, *t;
     char **argv, **a;
     int status;
 
-    SafeStringValue(sv);
-    str = s = RSTRING(sv)->ptr;
     for (s = str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    char *shell = dln_find_exe("sh", 0);
@@ -1155,6 +1160,35 @@ proc_spawn(sv)
 }
 #endif
 #endif
+
+VALUE
+rb_check_argv(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE tmp, prog;
+    int i;
+
+    if (argc == 0) {
+	rb_raise(rb_eArgError, "wrong number of arguments");
+    }
+
+    prog = 0;
+    tmp = rb_check_array_type(argv[0]);
+    if (!NIL_P(tmp)) {
+	if (RARRAY(tmp)->len != 2) {
+	    rb_raise(rb_eArgError, "wrong first argument");
+	}
+	prog = RARRAY(tmp)->ptr[0];
+	SafeStringValue(prog);
+	argv[0] = RARRAY(tmp)->ptr[1];
+    }
+    for (i = 0; i < argc; i++) {
+	SafeStringValue(argv[i]);
+    }
+    security(RSTRING(prog ? prog : argv[0])->ptr);
+    return prog;
+}
 
 /*
  *  call-seq:
@@ -1186,35 +1220,116 @@ rb_f_exec(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE prog = 0;
-    VALUE tmp;
+    struct rb_exec_arg e;
+    VALUE prog;
 
-    if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments");
+    prog = rb_check_argv(argc, argv);
+    if (!prog && argc == 1) {
+	--argc;
+	prog = *argv++;
     }
-
-    tmp = rb_check_array_type(argv[0]);
-    if (!NIL_P(tmp)) {
-	if (RARRAY(tmp)->len != 2) {
-	    rb_raise(rb_eArgError, "wrong first argument");
-	}
-	prog = RARRAY(tmp)->ptr[0];
-	SafeStringValue(prog);
-	argv[0] = RARRAY(tmp)->ptr[1];
-    }
-    if (argc == 1 && prog == 0) {
-	VALUE cmd = argv[0];
-
-	SafeStringValue(cmd);
-	rb_proc_exec(RSTRING(cmd)->ptr);
-    }
-    else {
-	proc_exec_n(argc, argv, prog);
-    }
+    e.argc = argc;
+    e.argv = argv;
+    e.prog = prog ? RSTRING(prog)->ptr : 0;
+    rb_exec(&e);
     rb_sys_fail(RSTRING(argv[0])->ptr);
     return Qnil;		/* dummy */
 }
 
+int
+rb_exec(e)
+    const struct rb_exec_arg *e;
+{
+    int argc = e->argc;
+    VALUE *argv = e->argv;
+    const char *prog = e->prog;
+
+    if (argc == 0) {
+	rb_proc_exec(prog);
+    }
+    else {
+	rb_proc_exec_n(argc, argv, prog);
+    }
+    return errno;
+}
+
+#ifdef HAVE_FORK
+int
+rb_fork(status, chfunc, charg)
+    int *status;
+    int (*chfunc) _((void *));
+    void *charg;
+{
+    int pid, err, state = 0, ep[2];
+
+#ifndef __VMS
+    fflush(stdout);
+    fflush(stderr);
+#endif
+
+#ifdef FD_CLOEXEC
+    if (chfunc) {
+	if (pipe(ep)) return -1;
+	if (fcntl(ep[0], F_SETFD, FD_CLOEXEC) ||
+	    fcntl(ep[1], F_SETFD, FD_CLOEXEC)) {
+	    err = errno;
+	    close(ep[0]);
+	    close(ep[1]);
+	    errno = err;
+	    return -1;
+	}
+    }
+#endif
+    while ((pid = fork()) < 0) {
+	switch (errno) {
+	  case EAGAIN:
+#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
+	  case EWOULDBLOCK:
+#endif
+	    if (!status && !chfunc) {
+		rb_thread_sleep(1);
+		continue;
+	    }
+	    else {
+		rb_protect((VALUE (*)())rb_thread_sleep, 1, &state);
+		if (status) *status = state;
+		if (!state) continue;
+	    }
+	  default:
+#ifdef FD_CLOEXEC
+	    if (chfunc) {
+		err = errno;
+		close(ep[0]);
+		close(ep[1]);
+		errno = err;
+	    }
+#endif
+	    if (state && !status) rb_jump_tag(state);
+	    return -1;
+	}
+    }
+    if (!pid) {
+	if (chfunc) {
+	    err = (*chfunc)(charg);
+	    write(ep[1], &err, sizeof(err));
+	    _exit(127);
+	}
+    }
+    else if (chfunc) {
+	close(ep[1]);
+	if ((state = read(ep[0], &err, sizeof(err))) < 0) {
+	    err = errno;
+	}
+	close(ep[0]);
+	if (state) {
+	    rb_syswait(pid);
+	    errno = err;
+	    return -1;
+	}
+    }
+    return pid;
+}
+#endif
 
 /*
  *  call-seq:
@@ -1227,11 +1342,12 @@ static VALUE
 rb_f_fork(obj)
     VALUE obj;
 {
-#if !defined(__human68k__) && !defined(_WIN32) && !defined(__MACOS__) && !defined(__EMX__) && !defined(__VMS)
+#ifdef HAVE_FORK
     int pid;
 
     rb_secure(2);
-    switch (pid = fork()) {
+
+    switch (pid = rb_fork(0, 0, 0)) {
       case 0:
 #ifdef linux
 	after_exec();
@@ -1337,6 +1453,48 @@ rb_syswait(pid)
     }
 }
 
+int
+rb_spawn(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    int status;
+    VALUE prog;
+#if defined HAVE_FORK
+    int pid;
+    struct rb_exec_arg earg;
+#endif
+
+    prog = rb_check_argv(argc, argv);
+
+    if (!prog && argc == 1) {
+	--argc;
+	prog = *argv++;
+    }
+#if defined HAVE_FORK
+    earg.argc = argc;
+    earg.argv = argv;
+    earg.prog = prog ? RSTRING(prog)->ptr : 0;
+    status = rb_fork(&status, (int (*)_((void*)))rb_exec, &earg);
+#elif defined HAVE_SPAWNV
+    if (!argc) {
+	status = proc_spawn(RSTRING(prog)->ptr);
+    }
+    else {
+	status = proc_spawn_n(argc, argv, prog);
+    }
+#else
+    prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+    status = system(StringValuePtr(prog));
+# if defined(__human68k__) || defined(__DJGPP__)
+    last_status_set(status == -1 ? 127 : status, 0);
+# else
+    last_status_set((status & 0xff) << 8, 0);
+# endif
+#endif
+    return status;
+}
+
 /*
  *  call-seq:
  *     system(cmd [, arg, ...])    => true or false
@@ -1362,135 +1520,39 @@ rb_f_system(argc, argv)
     VALUE *argv;
 {
     int status;
-#if defined(__EMX__)
-    VALUE cmd;
 
-    fflush(stdout);
-    fflush(stderr);
-    if (argc == 0) {
-	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong number of arguments");
-    }
-
-    if (TYPE(argv[0]) == T_ARRAY) {
-	if (RARRAY(argv[0])->len != 2) {
-	    rb_raise(rb_eArgError, "wrong first argument");
-	}
-	argv[0] = RARRAY(argv[0])->ptr[0];
-    }
-    cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-
-    SafeStringValue(cmd);
-    status = do_spawn(RSTRING(cmd)->ptr);
-    last_status_set(status, 0);
-#elif defined(__human68k__) || defined(__DJGPP__) || defined(_WIN32)
-    volatile VALUE prog = 0;
-
-    fflush(stdout);
-    fflush(stderr);
-    if (argc == 0) {
-	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong number of arguments");
-    }
-
-    if (TYPE(argv[0]) == T_ARRAY) {
-	if (RARRAY(argv[0])->len != 2) {
-	    rb_raise(rb_eArgError, "wrong first argument");
-	}
-	prog = RARRAY(argv[0])->ptr[0];
-	argv[0] = RARRAY(argv[0])->ptr[1];
-    }
-
-    if (argc == 1 && prog == 0) {
-#if defined(_WIN32)
-	SafeStringValue(argv[0]);
-	status = do_spawn(P_WAIT, RSTRING(argv[0])->ptr);
-#else
-	status = proc_spawn(argv[0]);
-#endif
-    }
-    else {
-	status = proc_spawn_n(argc, argv, prog);
-    }
-#if defined(_WIN32)
-    last_status_set(status, 0);
-#else
-    last_status_set(status == -1 ? 127 : status, 0);
-#endif
-#elif defined(__VMS)
-    VALUE cmd;
-
-    if (argc == 0) {
-	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong number of arguments");
-    }
-
-    if (TYPE(argv[0]) == T_ARRAY) {
-	if (RARRAY(argv[0])->len != 2) {
-	    rb_raise(rb_eArgError, "wrong first argument");
-	}
-	argv[0] = RARRAY(argv[0])->ptr[0];
-    }
-    cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-
-    SafeStringValue(cmd);
-    status = system(RSTRING(cmd)->ptr);
-    last_status_set((status & 0xff) << 8, 0);
-#else
-    volatile VALUE prog = 0;
-    int pid;
-    int i;
-
-    fflush(stdout);
-    fflush(stderr);
-    if (argc == 0) {
-	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong number of arguments");
-    }
-
-    if (TYPE(argv[0]) == T_ARRAY) {
-	if (RARRAY(argv[0])->len != 2) {
-	    rb_raise(rb_eArgError, "wrong first argument");
-	}
-	prog = RARRAY(argv[0])->ptr[0];
-	argv[0] = RARRAY(argv[0])->ptr[1];
-    }
-
-    if (prog) {
-	SafeStringValue(prog);
-    }
-    for (i = 0; i < argc; i++) {
-	SafeStringValue(argv[i]);
-    }
-  retry:
-    switch (pid = fork()) {
-      case 0:
-	if (argc == 1 && prog == 0) {
-	    rb_proc_exec(RSTRING(argv[0])->ptr);
-	}
-	else {
-	    proc_exec_n(argc, argv, prog);
-	}
-	_exit(127);
-	break;			/* not reached */
-
-      case -1:
-	if (errno == EAGAIN) {
-	    rb_thread_sleep(1);
-	    goto retry;
-	}
-	rb_sys_fail(0);
-	break;
-
-      default:
-	rb_syswait(pid);
-    }
-
+    status = rb_spawn(argc, argv);
+    if (status == -1) rb_sys_fail(RSTRING(argv[0])->ptr);
+#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+    rb_syswait(status);
     status = NUM2INT(rb_last_status);
 #endif
-
     if (status == EXIT_SUCCESS) return Qtrue;
     return Qfalse;
+}
+
+/*
+ *  call-seq:
+ *     spawn(cmd [, arg, ...])     => pid
+ *
+ *  Similar to <code>Kernel::system</code> except for not waiting for
+ *  end of _cmd_, but returns its <i>pid</i>.
+ */
+
+static VALUE
+rb_f_spawn(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    int pid;
+
+    pid = rb_spawn(argc, argv);
+    if (pid == -1) rb_sys_fail(RSTRING(argv[0])->ptr);
+#if defined(HAVE_FORK) || defined(HAVE_SPAWNV)
+    return INT2NUM(pid);
+#else
+    return Qnil;
+#endif
 }
 
 /*
@@ -3314,6 +3376,7 @@ Init_process()
     rb_define_global_function("fork", rb_f_fork, 0);
     rb_define_global_function("exit!", rb_f_exit_bang, -1);
     rb_define_global_function("system", rb_f_system, -1);
+    rb_define_global_function("spawn", rb_f_spawn, -1);
     rb_define_global_function("sleep", rb_f_sleep, -1);
 
     rb_mProcess = rb_define_module("Process");
@@ -3332,6 +3395,7 @@ Init_process()
 #endif
 
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
+    rb_define_singleton_method(rb_mProcess, "spawn", rb_f_spawn, -1);
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
     rb_define_singleton_method(rb_mProcess, "exit", rb_f_exit, -1);   /* in eval.c */
     rb_define_singleton_method(rb_mProcess, "abort", rb_f_abort, -1); /* in eval.c */

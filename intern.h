@@ -12,6 +12,9 @@
 
 **********************************************************************/
 
+#ifndef RUBY_INTERN_H
+#define RUBY_INTERN_H 1
+
 /* 
  * Functions and variables that are used by more than one source file of
  * the kernel.
@@ -335,10 +338,20 @@ VALUE rb_lastline_get _((void));
 void rb_lastline_set _((VALUE));
 VALUE rb_sym_all_symbols _((void));
 /* process.c */
+struct rb_exec_arg {
+    int argc;
+    VALUE *argv;
+    const char *prog;
+};
+int rb_proc_exec_n _((int, VALUE*, const char*));
 int rb_proc_exec _((const char*));
+VALUE rb_check_argv _((int, VALUE*));
+int rb_exec _((const struct rb_exec_arg*));
+int rb_fork _((int*, int (*)_((void*)), void*));
 VALUE rb_f_exec _((int,VALUE*));
 int rb_waitpid _((int,int*,int));
 void rb_syswait _((int));
+int rb_spawn _((int, VALUE*));
 VALUE rb_proc_times _((VALUE));
 VALUE rb_detach_process _((int));
 /* range.c */
@@ -486,3 +499,5 @@ VALUE rb_mod_remove_cvar _((VALUE, VALUE));
 /* version.c */
 void ruby_show_version _((void));
 void ruby_show_copyright _((void));
+
+#endif /* RUBY_INTERN_H */
