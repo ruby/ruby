@@ -27,6 +27,7 @@ class DEBUGGER__
     @last_file = nil
     @last = [nil, nil]
     @no_step = nil
+    @finish_pos = 0
   end
 
   DEBUG_LAST_CMD = []
@@ -256,9 +257,13 @@ class DEBUGGER__
         STDOUT.printf "#%d %s\n", frame_pos, info
 
       when /^fi(?:nish)?$/
-	@finish_pos = @frames.size - frame_pos
-	frame_pos = 0
-	return
+	if  frame_pos == 0
+	  STDOUT.print "\"finish\" not meaningful in the outermost frame.\n"
+	else
+	  @finish_pos = @frames.size - frame_pos
+	  frame_pos = 0
+	  return
+	end
 
       when /^q(?:uit)?$/
 	input = readline("really quit? (y/n) ", false)
@@ -373,10 +378,10 @@ class DEBUGGER__
       @frames.unshift binding
     
     when 'return', 'end'
+      @frames.shift
       if @frames.size == @finish_pos
 	@stop_next = 1
       end
-      @frames.shift
     
     when 'raise' 
       excn_handle(file, line, id, binding)

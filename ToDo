@@ -2,6 +2,7 @@ Language Spec.
 
 - def foo; .. rescue .. end
 - compile time string concatenation, "hello" "world" => "helloworld"
+- rescue modifier; a rescue b => begin a rescue; b end
 * objectify symbols
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -34,6 +35,7 @@ Standard Libraries
 - hash.fetch(key) raises exception if key is not found.
 - Array#{first,last,at}
 - Dir.glob(pat){|f|...}
+* Dir.glob("**/*.c") ala zsh
 * Struct::new([name,]member,...) ??
 * String#scanf(?)
 * Object#fmt(?)

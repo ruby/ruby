@@ -156,6 +156,7 @@ static void top_local_setup();
 	kUNLESS_MOD
 	kWHILE_MOD
 	kUNTIL_MOD
+	kRESCUE_MOD
 	kALIAS
 	kDEFINED
 	klBEGIN
@@ -212,7 +213,7 @@ static void top_local_setup();
 
 %nonassoc kDO
 %nonassoc kDO2
-%left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD
+%left  kIF_MOD kUNLESS_MOD kWHILE_MOD kUNTIL_MOD kRESCUE_MOD
 %left  kOR kAND
 %right kNOT
 %nonassoc kDEFINED
@@ -346,6 +347,10 @@ stmt		: block_call
 			else {
 			    $$ = NEW_UNTIL(cond($3), $1, 1);
 			}
+		    }
+		| stmt kRESCUE_MOD expr
+		    {
+			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
 		    }
 		| klBEGIN
 		    {
@@ -607,7 +612,7 @@ reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
 		| kFOR | kIF_MOD | kIN | kMODULE | kNEXT | kNIL | kNOT
 		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
 		| kTHEN | kTRUE | kUNDEF | kUNLESS_MOD | kUNTIL_MOD | kWHEN
-		| kWHILE_MOD | kYIELD
+		| kWHILE_MOD | kYIELD | kRESCUE_MOD
 
 arg		: lhs '=' arg
 		    {

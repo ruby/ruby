@@ -292,10 +292,15 @@ rb_enable_super(klass, name)
     ID mid = rb_intern(name);
 
     body = search_method(klass, mid, &origin);
-    if (!body || !body->nd_body || origin != klass) {
+    if (!body) {
 	print_undef(klass, mid);
     }
-    body->nd_noex &= ~NOEX_UNDEF;
+    if (!body->nd_body) {
+	remove_method(klass, mid);
+    }
+    else {
+	body->nd_noex &= ~NOEX_UNDEF;
+    }
 }
 
 static void
@@ -1696,7 +1701,7 @@ call_trace_func(event, file, line, self, id, klass)
 
     prev = ruby_frame;
     PUSH_FRAME();
-    *ruby_frame = *_frame.prev;
+    *ruby_frame = *prev;
     ruby_frame->prev = prev;
 
     if (file) {
@@ -1858,8 +1863,9 @@ rb_eval(self, node)
 		tag = node->nd_head;
 		while (tag) {
 		    if (trace_func) {
-			call_trace_func("line", tag->nd_file, nd_line(tag),
-					self, ruby_frame->last_func, 0);	
+			call_trace_func("line", tag->nd_file, nd_line(tag), self,
+					ruby_frame->last_func,
+					ruby_frame->last_class);	
 		    }
 		    ruby_sourcefile = tag->nd_file;
 		    ruby_sourceline = nd_line(tag);
@@ -2868,8 +2874,9 @@ rb_eval(self, node)
 	ruby_sourcefile = node->nd_file;
 	ruby_sourceline = node->nd_nth;
 	if (trace_func) {
-	    call_trace_func("line", ruby_sourcefile, ruby_sourceline,
-			    self, ruby_frame->last_func, 0);	
+	    call_trace_func("line", ruby_sourcefile, ruby_sourceline, self,
+			    ruby_frame->last_func,
+			    ruby_frame->last_class);	
 	}
 	node = node->nd_next;
 	goto again;
@@ -2923,8 +2930,9 @@ module_setup(module, node)
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (trace_func) {
-	    call_trace_func("class", file, line,
-			    ruby_class, ruby_frame->last_func, 0);
+	    call_trace_func("class", file, line, ruby_class,
+			    ruby_frame->last_func,
+			    ruby_frame->last_class);
 	}
 	result = rb_eval(ruby_class, node->nd_next);
     }
@@ -2935,7 +2943,8 @@ module_setup(module, node)
 
     ruby_frame = frame.tmp;
     if (trace_func) {
-	call_trace_func("end", file, line, 0, ruby_frame->last_func, 0);
+	call_trace_func("end", file, line, 0,
+			ruby_frame->last_func, ruby_frame->last_class);
     }
     if (state) JUMP_TAG(state);
 
@@ -3072,7 +3081,9 @@ rb_longjmp(tag, mesg)
     rb_trap_restore_mask();
     if (trace_func && tag != TAG_FATAL) {
 	call_trace_func("raise", ruby_sourcefile, ruby_sourceline,
-			ruby_frame->self, ruby_frame->last_func, 0);
+			ruby_frame->self,
+			ruby_frame->last_func,
+			ruby_frame->last_class);
     }
     if (!prot_tag) {
 	error_print();
@@ -3838,7 +3849,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 		    line = ruby_sourceline;
 		}
 
-		call_trace_func("c-call", 0, 0, 0, id, 0);
+		call_trace_func("c-call", 0, 0, 0, id, klass);
 		PUSH_TAG(PROT_FUNC);
 		if ((state = EXEC_TAG()) == 0) {
 		    result = call_cfunc(body->nd_cfnc, recv, len, argc, argv);
@@ -3950,7 +3961,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
 		if (trace_func) {
 		    call_trace_func("call", b2->nd_file, nd_line(b2),
-				    recv, ruby_frame->last_func, 0);
+				    recv, id, klass);
 		}
 		result = rb_eval(recv, body);
 	    }
@@ -3968,8 +3979,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 		    file = ruby_sourcefile;
 		    line = ruby_sourceline;
 		}
-		call_trace_func("return", file, line, recv,
-				ruby_frame->last_func, klass);
+		call_trace_func("return", file, line, recv, id, klass);
 	    }
 	    switch (state) {
 	      case 0:
@@ -4365,7 +4375,7 @@ rb_f_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE src, scope, vfile, vline;
+    VALUE src, scope, vfile, vline, val;
     char *file = "(eval)";
     int line = 1;
 
@@ -4379,6 +4389,19 @@ rb_f_eval(argc, argv, self)
     }
 
     Check_SafeStr(src);
+    if (NIL_P(scope) && ruby_frame->prev) {
+	struct FRAME *prev;
+	VALUE val;
+
+	prev = ruby_frame;
+	PUSH_FRAME();
+	*ruby_frame = *prev->prev;
+	ruby_frame->prev = prev;
+	val = eval(self, src, scope, file, line);
+	POP_FRAME();
+
+	return val;
+    }
     return eval(self, src, scope, file, line);
 }
 
@@ -5472,6 +5495,7 @@ rb_f_binding(self)
     frame_dup(&data->frame);
     if (ruby_frame->prev) {
 	data->frame.last_func = ruby_frame->prev->last_func;
+	data->frame.last_class = ruby_frame->prev->last_class;
     }
 
     if (data->iter) {

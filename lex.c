@@ -79,7 +79,7 @@ rb_reserved_word (str, len)
       {"module", kMODULE, kMODULE, EXPR_BEG},
       {"elsif", kELSIF, kELSIF, EXPR_BEG},
       {"def", kDEF, kDEF, EXPR_FNAME},
-      {"rescue", kRESCUE, kRESCUE, EXPR_MID},
+      {"rescue", kRESCUE, kRESCUE_MOD, EXPR_MID},
       {"not", kNOT, kNOT, EXPR_BEG},
       {"then", kTHEN, kTHEN, EXPR_BEG},
       {"yield", kYIELD, kYIELD, EXPR_END},

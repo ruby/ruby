@@ -1,8 +1,33 @@
+Wed Nov 10 08:28:53 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_call0): supply class parameter for each invocation.
+
+Tue Nov  9 13:21:04 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: AC_MINIX move to before AC_EXEEXT and AC_OBJEXT.
+
+Mon Nov  8 19:52:29 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: Renamed AC_CHAR_UNSIGNED to AC_C_CHAR_UNSIGNED.
+
+	* configure.in: Added default to AC_CHECK_SIZEOF().
+
+Mon Nov  8 14:28:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (stmt): rescue modifier added to the syntax.
+
+	* keywords: kRESCUE_MOD added.
+
+	* eval.c (rb_f_eval): fake outer scope when eval() called without
+	  bindings.
+
+	* eval.c (rb_f_binding): should copy last_class in the outer frame too.
+
 Sun Nov  7 18:31:04 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
 
 	* eval.c (is_defined): last_class may be 0.
 
-Sat Nov  6 19:26:55 1999  EGUCHI Osamu  <eguchi@triton2.>
+Sat Nov  6 19:26:55 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
 	* Makefile.in: Added depend entry make parse.@OBJEXT@ from parse.c
 	  for UCB make
