@@ -225,7 +225,6 @@ fsdbm_select(argc, argv, obj)
         datum key, val;
         DBM *dbm;
         struct dbmdata *dbmp;
-        VALUE keystr, valstr;
 
 	if (argc > 0) {
 	    rb_raise(rb_eArgError, "wrong number arguments(%d for 0)", argc);

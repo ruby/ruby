@@ -285,12 +285,12 @@ range_step(argc, argv, range)
     return range;
 }
 
-static void
+static VALUE
 each_i(v, arg)
     VALUE v;
     void *arg;
 {
-    rb_yield(v);
+    return rb_yield(v);
 }
 
 static VALUE
@@ -324,7 +324,7 @@ range_each(range)
 	rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i, (VALUE)iter);
     }
     else {
-	range_each_func(range, each_i, beg, end, 0);
+	range_each_func(range, each_i, beg, end, NULL);
     }
     return range;
 }

@@ -54,7 +54,6 @@ static VALUE mSyslog_close(VALUE self)
 static VALUE mSyslog_open(int argc, VALUE *argv, VALUE self)
 {
     VALUE ident, opt, fac;
-    int mask;
 
     if (syslog_opened) {
         rb_raise(rb_eRuntimeError, "syslog already open");

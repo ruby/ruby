@@ -1076,7 +1076,7 @@ rb_env_path_tainted()
 
 static int
 envix(nam)
-const char *nam;
+    const char *nam;
 {
     register int i, len = strlen(nam);
     char **env;

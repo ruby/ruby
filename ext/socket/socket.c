@@ -879,7 +879,7 @@ init_inetsock_internal(arg)
     struct inetsock_arg *arg;
 {
     int type = arg->type;
-    struct addrinfo hints, *res;
+    struct addrinfo *res;
     int fd, status;
     char *syscall;
 
@@ -972,12 +972,11 @@ tcp_init(argc, argv, sock)
     VALUE remote_host, remote_serv;
     VALUE local_host, local_serv;
 
-    int pcount = rb_scan_args(argc, argv, "22",
-			      &remote_host, &remote_serv,
-			      &local_host, &local_serv);
+    rb_scan_args(argc, argv, "22", &remote_host, &remote_serv,
+			&local_host, &local_serv);
 
     return init_inetsock(sock, remote_host, remote_serv,
-			 local_host, local_serv, INET_CLIENT);
+			local_host, local_serv, INET_CLIENT);
 }
 
 #ifdef SOCKS
@@ -1362,7 +1361,6 @@ udp_connect(sock, host, port)
     VALUE sock, host, port;
 {
     OpenFile *fptr;
-    int fd;
     struct udp_arg arg;
     VALUE ret;
 
@@ -2185,7 +2183,7 @@ sock_s_getnameinfo(argc, argv)
     int error;
     struct sockaddr_storage ss;
     struct sockaddr *sap;
-    char *ep, *ap;
+    char *ap;
 
     sa = flags = Qnil;
     rb_scan_args(argc, argv, "11", &sa, &flags);

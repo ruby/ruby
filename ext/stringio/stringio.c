@@ -148,7 +148,7 @@ static VALUE strio_closed _((VALUE));
 static VALUE strio_closed_read _((VALUE));
 static VALUE strio_closed_write _((VALUE));
 static VALUE strio_eof _((VALUE));
-static VALUE strio_become _((VALUE, VALUE));
+/* static VALUE strio_become _((VALUE, VALUE)); NOT USED */
 static VALUE strio_get_lineno _((VALUE));
 static VALUE strio_set_lineno _((VALUE, VALUE));
 static VALUE strio_get_pos _((VALUE));
@@ -156,7 +156,7 @@ static VALUE strio_set_pos _((VALUE, VALUE));
 static VALUE strio_rewind _((VALUE));
 static VALUE strio_seek _((int, VALUE *, VALUE));
 static VALUE strio_get_sync _((VALUE));
-static VALUE strio_set_sync _((VALUE, VALUE));
+/* static VALUE strio_set_sync _((VALUE, VALUE)); NOT USED */
 static VALUE strio_each_byte _((VALUE));
 static VALUE strio_getc _((VALUE));
 static VALUE strio_ungetc _((VALUE, VALUE));
@@ -167,8 +167,8 @@ static VALUE strio_readline _((int, VALUE *, VALUE));
 static VALUE strio_each _((int, VALUE *, VALUE));
 static VALUE strio_readlines _((int, VALUE *, VALUE));
 static VALUE strio_write _((VALUE, VALUE));
-static VALUE strio_print _((int, VALUE *, VALUE));
-static VALUE strio_printf _((int, VALUE *, VALUE));
+/* static VALUE strio_print _((int, VALUE *, VALUE)); NOT USED */
+/* static VALUE strio_printf _((int, VALUE *, VALUE)); NOT USED */
 static VALUE strio_putc _((VALUE, VALUE));
 static VALUE strio_read _((int, VALUE *, VALUE));
 static VALUE strio_size _((VALUE));

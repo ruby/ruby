@@ -938,7 +938,7 @@ static void call_trace_func _((char*,NODE*,VALUE,ID,VALUE));
 #define SET_CURRENT_SOURCE() (ruby_sourcefile = ruby_current_node->nd_file, \
 			      ruby_sourceline = nd_line(ruby_current_node))
 #else
-#define SET_CURRENT_SOURCE() 0
+#define SET_CURRENT_SOURCE() do { } while (0)
 #endif
 
 void
@@ -2050,14 +2050,14 @@ is_defined(self, node, buf)
 
       case NODE_NTH_REF:
 	if (RTEST(rb_reg_nth_defined(node->nd_nth, MATCH_DATA))) {
-	    sprintf(buf, "$%d", node->nd_nth);
+	    sprintf(buf, "$%d", (int)node->nd_nth);
 	    return buf;
 	}
 	break;
 
       case NODE_BACK_REF:
 	if (RTEST(rb_reg_nth_defined(0, MATCH_DATA))) {
-	    sprintf(buf, "$%c", node->nd_nth);
+	    sprintf(buf, "$%c", (char)node->nd_nth);
 	    return buf;
 	}
 	break;
@@ -3533,7 +3533,6 @@ static VALUE
 rb_mod_public_method_defined(mod, mid)
     VALUE mod, mid;
 {
-    VALUE klass;
     ID id = rb_to_id(mid);
     int noex;
 
@@ -3548,7 +3547,6 @@ static VALUE
 rb_mod_private_method_defined(mod, mid)
     VALUE mod, mid;
 {
-    VALUE klass;
     ID id = rb_to_id(mid);
     int noex;
 
@@ -3563,7 +3561,6 @@ static VALUE
 rb_mod_protected_method_defined(mod, mid)
     VALUE mod, mid;
 {
-    VALUE klass;
     ID id = rb_to_id(mid);
     int noex;
 
@@ -4444,7 +4441,7 @@ rb_undefined(obj, id, argc, argv, call_status)
     VALUE obj;
     ID    id;
     int   argc;
-    VALUE*argv;
+    const VALUE *argv;
     int   call_status;
 {
     VALUE *nargv;
@@ -7005,7 +7002,7 @@ method_call(argc, argv, method)
     VALUE *argv;
     VALUE method;
 {
-    VALUE result;
+    VALUE result;	/* OK */
     struct METHOD *data;
     int state;
     volatile int safe = ruby_safe_level;

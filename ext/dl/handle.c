@@ -133,9 +133,6 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
   VALUE sym, type;
   void (*func)();
   VALUE val;
-  struct sym_data *data;
-  int *ctypes;
-  int i, ctypes_len;
   struct dl_handle *dlhandle;
   void *handle;
   const char *name, *stype;

@@ -554,8 +554,6 @@ rb_dl_malloc(VALUE self, VALUE size)
 VALUE
 rb_dl_strdup(VALUE self, VALUE str)
 {
-  void *p;
-
   str = rb_String(str);
   return rb_dlptr_new(strdup(RSTRING(str)->ptr), RSTRING(str)->len, dlfree);
 }

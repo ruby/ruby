@@ -93,7 +93,7 @@ etc_getpwuid(argc, argv, obj)
     VALUE obj;
 {
 #if defined(HAVE_GETPWENT)
-    VALUE id, ary;
+    VALUE id;
     int uid;
     struct passwd *pwd;
 

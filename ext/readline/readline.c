@@ -3,6 +3,7 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <unistd.h>
 #include <readline/readline.h>
 #include <readline/history.h>
 
@@ -228,7 +229,6 @@ readline_s_set_basic_word_break_characters(self, str)
 {
 #ifdef READLINE_21_OR_LATER
     static char *basic_word_break_characters = NULL;
-    char *s;
 
     StringValue(str);
     if (basic_word_break_characters == NULL) {
@@ -268,7 +268,6 @@ readline_s_set_completer_word_break_characters(self, str)
 {
 #ifdef READLINE_21_OR_LATER
     static char *completer_word_break_characters = NULL;
-    char *s;
 
     StringValue(str);
     if (completer_word_break_characters == NULL) {
@@ -308,7 +307,6 @@ readline_s_set_basic_quote_characters(self, str)
 {
 #ifdef READLINE_21_OR_LATER
     static char *basic_quote_characters = NULL;
-    char *s;
 
     StringValue(str);
     if (basic_quote_characters == NULL) {
@@ -348,7 +346,6 @@ readline_s_set_completer_quote_characters(self, str)
 {
 #ifdef READLINE_21_OR_LATER
     static char *completer_quote_characters = NULL;
-    char *s;
 
     StringValue(str);
     if (completer_quote_characters == NULL) {
@@ -388,7 +385,6 @@ readline_s_set_filename_quote_characters(self, str)
 {
 #ifdef READLINE_21_OR_LATER
     static char *filename_quote_characters = NULL;
-    char *s;
 
     StringValue(str);
     if (filename_quote_characters == NULL) {

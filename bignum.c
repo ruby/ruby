@@ -392,10 +392,8 @@ rb_cstr_to_inum(str, base, badcheck)
 	}
 	break;
     }
-    if (*str == '0') {		/* squeeze preceeding 0s */
-	while (*++str == '0');
-	--str;
-    }
+    while (*str == '0') str++;	/* squeeze preceeding 0s */
+    
     len *= strlen(str)*sizeof(char);
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
@@ -1125,7 +1123,7 @@ bigdivrem(x, y, divp, modp)
 
     yds = BDIGITS(y);
     if (ny == 0 && yds[0] == 0) rb_num_zerodiv();
-    if (nx < ny	|| nx == ny && BDIGITS(x)[nx - 1] < BDIGITS(y)[ny - 1]) {
+    if (nx < ny || (nx == ny && BDIGITS(x)[nx - 1] < BDIGITS(y)[ny - 1])) {
 	if (divp) *divp = rb_int2big(0);
 	if (modp) *modp = x;
 	return;

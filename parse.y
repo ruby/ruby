@@ -391,7 +391,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			char buf[3];
 
-			sprintf(buf, "$%c", $3->nd_nth);
+			sprintf(buf, "$%c", (char)$3->nd_nth);
 		        $$ = NEW_VALIAS($2, rb_intern(buf));
 		    }
 		| kALIAS tGVAR tNTH_REF
@@ -3134,7 +3134,7 @@ whole_match_p(eos, len, indent)
 	while (*p && ISSPACE(*p)) p++;
     }
     n= lex_pend - (p + len);
-    if (n < 0 || n > 0 && p[len] != '\n' && p[len] != '\r') return Qfalse;
+    if (n < 0 || (n > 0 && p[len] != '\n' && p[len] != '\r')) return Qfalse;
     if (strncmp(eos, p, len) == 0) return Qtrue;
     return Qfalse;
 }

@@ -178,7 +178,7 @@ rb_dlptr_s_allocate(VALUE klass)
 static VALUE
 rb_dlptr_initialize(int argc, VALUE argv[], VALUE self)
 {
-  VALUE ptr, sym, obj, size;
+  VALUE ptr, sym, size;
   struct ptr_data *data;
   void *p = NULL;
   freefunc_t f = NULL;
@@ -279,7 +279,6 @@ VALUE
 rb_dlptr_free_set(VALUE self, VALUE val)
 {
   struct ptr_data *data;
-  int i;
 
   Data_Get_Struct(self, struct ptr_data, data);
 
@@ -463,10 +462,9 @@ rb_dlptr_inspect(VALUE self)
 {
   struct ptr_data *data;
   char str[1024];
-  VALUE name;
 
   Data_Get_Struct(self, struct ptr_data, data);
-  snprintf(str, 1023, "#<%s:0x%x ptr=0x%x size=%ld free=0x%x>",
+  snprintf(str, 1023, "#<%s:0x%p ptr=0x%p size=%ld free=0x%p>",
 	   rb_class2name(CLASS_OF(self)), data, data->ptr, data->size, data->free);
   return rb_str_new2(str);
 }
@@ -519,9 +517,8 @@ rb_dlptr_define_data_type(int argc, VALUE argv[], VALUE self)
 {
   VALUE data_type, type, rest, vid;
   struct ptr_data *data;
-  int i, t, len, num;
+  int i, t, num;
   char *ctype;
-  long size;
 
   rb_scan_args(argc, argv, "11*", &data_type, &type, &rest);
   Data_Get_Struct(self, struct ptr_data, data);
@@ -731,9 +728,8 @@ cary2ary(void *ptr, char t, int len)
 VALUE
 rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 {
-  VALUE val, key = Qnil, num = Qnil;
+  VALUE key = Qnil, num = Qnil;
   ID id;
-  int idx;
   struct ptr_data *data;
   int i;
   int offset;

@@ -541,11 +541,10 @@ enum_zip(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    int i, j, len;
+    int i;
     VALUE result;
     NODE *memo;
 
-    len = 0;
     for (i=0; i<argc; i++) {
 	argv[i] = rb_convert_type(argv[i], T_ARRAY, "Array", "to_ary");
     }

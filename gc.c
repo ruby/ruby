@@ -879,7 +879,7 @@ gc_sweep()
     RVALUE *p, *pend, *final_list;
     int freed = 0;
     int i, j;
-    unsigned long live = 0, garbage = 0;
+    unsigned long live = 0;
 
     if (ruby_in_compile && ruby_parser_stack_on_heap()) {
 	/* should not reclaim nodes during compilation
