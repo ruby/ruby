@@ -2965,18 +2965,21 @@ rb_file_truncate(obj, len)
     VALUE obj, len;
 {
     OpenFile *fptr;
+    FILE *f;
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
+    f = GetWriteFile(fptr);
+    fflush(f);
 #ifdef HAVE_TRUNCATE
-    if (ftruncate(fileno(fptr->f), NUM2OFFT(len)) < 0)
+    if (ftruncate(fileno(f), NUM2OFFT(len)) < 0)
 	rb_sys_fail(fptr->path);
 #else
 # ifdef HAVE_CHSIZE
-    if (chsize(fileno(fptr->f), NUM2OFFT(len)) < 0)
+    if (chsize(fileno(f), NUM2OFFT(len)) < 0)
 	rb_sys_fail(fptr->path);
 # else
     rb_notimplement();

@@ -1923,7 +1923,8 @@ rb_ary_delete(ary, item)
 	return Qnil;
     }
 
-    RARRAY(ary)->len = i2;
+    if (RARRAY(ary)->len > i2)
+	RARRAY(ary)->len = i2;
     if (i2 * 2 < RARRAY(ary)->aux.capa &&
 	    RARRAY(ary)->aux.capa > ARY_DEFAULT_SIZE) {
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, i2 * 2);
@@ -2467,17 +2468,15 @@ VALUE
 rb_ary_assoc(ary, key)
     VALUE ary, key;
 {
-    VALUE *p, *pend;
+    long i;
+    VALUE v;
 
-    p = RARRAY(ary)->ptr;
-    pend = p + RARRAY(ary)->len;
-    
-    while (p < pend) {
-	if (TYPE(*p) == T_ARRAY &&
-		RARRAY(*p)->len > 0 &&
-		rb_equal(RARRAY(*p)->ptr[0], key))
-	    return *p;
-	p++;
+    for (i = 0; i < RARRAY(ary)->len; ++i) {
+	v = RARRAY(ary)->ptr[i];
+	if (TYPE(v) == T_ARRAY &&
+	    RARRAY(v)->len > 0 &&
+	    rb_equal(RARRAY(v)->ptr[0], key))
+	    return v;
     }
     return Qnil;
 }
@@ -2500,17 +2499,15 @@ VALUE
 rb_ary_rassoc(ary, value)
     VALUE ary, value;
 {
-    VALUE *p, *pend;
+    long i;
+    VALUE v;
 
-    p = RARRAY(ary)->ptr;
-    pend = p + RARRAY(ary)->len;
-
-    while (p < pend) {
-	if (TYPE(*p) == T_ARRAY
-	    && RARRAY(*p)->len > 1
-	    && rb_equal(RARRAY(*p)->ptr[1], value))
-	    return *p;
-	p++;
+    for (i = 0; i < RARRAY(ary)->len; ++i) {
+	v = RARRAY(ary)->ptr[i];
+	if (TYPE(v) == T_ARRAY &&
+	    RARRAY(v)->len > 1 &&
+	    rb_equal(RARRAY(v)->ptr[1], value))
+	    return v;
     }
     return Qnil;
 }

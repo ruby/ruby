@@ -475,7 +475,7 @@ def checking_for(m)
   r
 end
 
-def have_library(lib, func = nil, &b)
+def have_library(lib, func = nil, header=nil, &b)
   func = "main" if !func or func.empty?
   lib = with_config(lib+'lib', lib)
   checking_for "#{func}() in #{LIBARG%lib}" do
@@ -483,7 +483,7 @@ def have_library(lib, func = nil, &b)
       true
     else
       libs = append_library($libs, lib)
-      if try_func(func, libs, &b)
+      if try_func(func, libs, header, &b)
         $libs = libs
         true
       else

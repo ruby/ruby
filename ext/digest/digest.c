@@ -149,8 +149,8 @@ rb_digest_base_copy(copy, obj)
 
     if (copy == obj) return copy;
     rb_check_frozen(copy);
-    algo = get_digest_base_metadata(CLASS_OF(copy));
-    if (algo != get_digest_base_metadata(CLASS_OF(obj))) {
+    algo = get_digest_base_metadata(rb_obj_class(copy));
+    if (algo != get_digest_base_metadata(rb_obj_class(obj))) {
 	rb_raise(rb_eTypeError, "wrong argument class");
     }
     Data_Get_Struct(obj, void, pctx1);
@@ -168,7 +168,7 @@ rb_digest_base_update(self, str)
     void *pctx;
 
     StringValue(str);
-    algo = get_digest_base_metadata(CLASS_OF(self));
+    algo = get_digest_base_metadata(rb_obj_class(self));
     Data_Get_Struct(self, void, pctx);
 
     algo->update_func(pctx, RSTRING(str)->ptr, RSTRING(str)->len);
@@ -201,7 +201,7 @@ rb_digest_base_digest(self)
     size_t len;
     VALUE str;
 
-    algo = get_digest_base_metadata(CLASS_OF(self));
+    algo = get_digest_base_metadata(rb_obj_class(self));
     Data_Get_Struct(self, void, pctx1);
 
     len = algo->ctx_size;
@@ -232,7 +232,7 @@ rb_digest_base_hexdigest(self)
     size_t len;
     VALUE str;
 
-    algo = get_digest_base_metadata(CLASS_OF(self));
+    algo = get_digest_base_metadata(rb_obj_class(self));
     Data_Get_Struct(self, void, pctx1);
 
     len = algo->ctx_size;
@@ -261,10 +261,10 @@ rb_digest_base_equal(self, other)
     VALUE klass;
     VALUE str1, str2;
 
-    klass = CLASS_OF(self);
+    klass = rb_obj_class(self);
     algo = get_digest_base_metadata(klass);
 
-    if (CLASS_OF(other) == klass) {
+    if (rb_obj_class(other) == klass) {
 	void *pctx1, *pctx2;
 
 	Data_Get_Struct(self, void, pctx1);

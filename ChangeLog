@@ -1,3 +1,17 @@
+Fri Sep 17 17:11:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_delete): element comparison might change array
+	  size. [ruby-dev:24273]
+
+	* parse.y: make ruby parser reentrant. merge ripper parser to the
+	  real one.  this change makes ruby require bison.
+
+	* file.c (rb_file_truncate): clear stdio buffer before truncating
+	  the file.  [ruby-dev:24191]
+
+	* ext/digest/digest.c: use rb_obj_class() instead of CLASS_OF
+	  which might return singleton class.  [ruby-dev:24202]
+
 Fri Sep 17 16:07:09 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: improve exit operation
@@ -27,6 +41,11 @@ Thu Sep 16 18:12:13 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* lib/webrick/httpservlet/filehandler.rb
 	  (WEBrick::HTTPServlet::FileHandler#initialize): should expand
 	  the pathname of document root directory.
+
+Thu Sep 16 15:49:28 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_intern): protect string argument from GC.
+	  [ruby-core:03411]
 
 Wed Sep 15 20:22:23 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -320,6 +339,12 @@ Tue Sep  7 12:48:22 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (wait_connectable, ruby_connect): support
 	  nonblocking connect on various platforms.
+
+Mon Sep  6 11:00:47 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_chdir): the patch to shut up false warning when
+	  exception occurred within a block.  a patch was given from Johan
+	  Holmberg <holmberg@iar.se>.  [ruby-core:03292]
 
 Mon Sep  6 10:57:40 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

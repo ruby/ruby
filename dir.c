@@ -1,4 +1,3 @@
-
 /**********************************************************************
 
   dir.c -
@@ -687,6 +686,19 @@ dir_chdir(path)
 static int chdir_blocking = 0;
 static VALUE chdir_thread = Qnil;
 
+struct chdir_data {
+    char *dist;
+    VALUE path;
+};
+
+static VALUE
+chdir_yield(args)
+    struct chdir_data *args;
+{
+    dir_chdir(args->dist);
+    return rb_yield(args->path);
+}
+
 static VALUE
 chdir_restore(path)
     char *path;
@@ -695,7 +707,6 @@ chdir_restore(path)
     if (chdir_blocking == 0)
 	chdir_thread = Qnil;
     dir_chdir(path);
-    free(path);
     return Qnil;
 }
 
@@ -767,11 +778,14 @@ dir_s_chdir(argc, argv, obj)
 
     if (rb_block_given_p()) {
 	char *cwd = my_getcwd();
+	struct chdir_data args;
+
 	chdir_blocking++;
 	if (chdir_thread == Qnil)
 	    chdir_thread = rb_thread_current();
-	dir_chdir(dist);
-	return rb_ensure(rb_yield, path, chdir_restore, (VALUE)cwd);
+	args.dist = dist;
+	args.path = path;
+	return rb_ensure(chdir_yield, (VALUE)&args, chdir_restore, (VALUE)cwd);
     }
     dir_chdir(dist);
 

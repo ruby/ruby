@@ -4352,9 +4352,10 @@ rb_str_crypt(str, salt)
  */
 
 VALUE
-rb_str_intern(str)
-    VALUE str;
+rb_str_intern(s)
+    VALUE s;
 {
+    volatile VALUE str = s;
     ID id;
 
     if (!RSTRING(str)->ptr || RSTRING(str)->len == 0) {

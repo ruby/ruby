@@ -89,7 +89,7 @@ class TestDigest < Test::Unit::TestCase
     end
   end
 
-  def test_instance_eval # [ruby-dev:24202]
+  def test_instance_eval
     assert_nothing_raised {
       Digest::SHA1.new.instance_eval { update "a" }
     }

@@ -458,5 +458,42 @@ class CGI
 	GLOBAL_HASH_TABLE.delete(@session_id)
       end
     end
+
+    # Dummy session storage class.
+    #
+    # Implements session storage place holder.  No actual storage
+    # will be done.
+    class NullStore
+      # Create a new NullStore instance.
+      #
+      # +session+ is the session this instance is associated with.
+      # +option+ is a list of initialisation options.  None are
+      # currently recognised.
+      def initialize(session, option=nil)
+      end
+
+      # Restore (empty) session state.
+      def restore
+        {}
+      end
+
+      # Update session state.
+      #
+      # A no-op.
+      def update
+      end
+
+      # Close session storage.
+      #
+      # A no-op.
+      def close
+      end
+
+      # Delete the session state.
+      #
+      # A no-op.
+      def delete
+      end
+    end
   end
 end
