@@ -4,7 +4,7 @@ Tue Mar  5 05:56:29 2002  Akinori MUSHA  <knu@iDaemons.org>
 	  - Accept options with the colon in the first argument;
 	    getopts("a:bcd:") is equivalent to getopts("bc", "a:", "d:").
 	  - Do not discard the argument that caused an error.
-	  - Do not discard '-', which commonly stands for stdin.
+	  - Do not discard '-', which commonly stands for stdin or stdout.
 	  - Allow specifying a long option with a value using '='.
 	    (command --long-option=value)
 	  - Stop reading options when it meets a non-option argument.
@@ -27,22 +27,23 @@ Fri Mar  1 11:22:51 2002  Amos Gouaux  <amos+ruby@utdallas.edu>
 	* lib/net/imap.rb (getquotaroot): new method.
 
 	* lib/net/imap.rb (setacl): remove the rights if the rights
-	parameter is nil.
+	  parameter is nil.
 
 	* lib/net/imap.rb (getacl): return an array of MailboxACLItem.
 
 Fri Mar  1 06:25:49 2002  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/extconf.rb (have_struct_member): new method.
-	check msg_control and msg_accrights in struct msghdr.  check sys/uio.h.
+	  check msg_control and msg_accrights in struct msghdr.  check
+	  sys/uio.h.
 
 	* socket/socket.c: include sys/uio.h if available.
-	(thread_read_select): new function.
-	(unix_send_io): ditto.
-	(unix_recv_io): ditto.
-	(unix_s_socketpair): ditto.
-	(Init_socket): define UNIXSocket#send_io, UNIXSocket#recv_io, 
-	UNIXSocket.socketpair and UNIXSocket.pair.
+	  (thread_read_select): new function.
+	  (unix_send_io): ditto.
+	  (unix_recv_io): ditto.
+	  (unix_s_socketpair): ditto.
+	  (Init_socket): define UNIXSocket#send_io, UNIXSocket#recv_io, 
+	  UNIXSocket.socketpair and UNIXSocket.pair.
 
 	* dln.c (dln_load): fix typo.
 
