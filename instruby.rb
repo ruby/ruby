@@ -70,7 +70,7 @@ Dir.chdir CONFIG["srcdir"]
 
 Find.find("lib") do |f|
   next unless /\.rb$/ =~ f
-  dir = pkglibdir+"/"+File.dirname(f[4..-1])
+  dir = rubylibdir+"/"+File.dirname(f[4..-1])
   File.makedirs dir, true unless File.directory? dir
   File.install f, dir, 0644, true
 end
