@@ -95,8 +95,8 @@ module OpenURI
     :proxy => true,
     :progress_proc => true,
     :content_length_proc => true,
+    :http_basic_authentication => true,
   }
-
 
   def OpenURI.check_options(options) # :nodoc:
     options.each {|k, v|
@@ -381,6 +381,15 @@ module OpenURI
     #  When false or nil is given, the environment variables are ignored and
     #  connection will be made to a server directly.
     #
+    # [:http_basic_authentication]
+    #  Synopsis:
+    #    :http_basic_authentication=>[user, password]
+    #
+    #  If :http_basic_authentication is specified,
+    #  the value should be an array which contains 2 strings:
+    #  username and password.
+    #  It is used for HTTP Basic authentication defined by RFC 2617.
+    #
     # [:content_length_proc]
     #  Synopsis:
     #    :content_length_proc => lambda {|content_length| ... }
@@ -547,8 +556,13 @@ module URI
 
       require 'net/http'
       resp = nil
+      req = Net::HTTP::Get.new(uri.to_s, header)
+      if options.include? :http_basic_authentication
+        user, pass = options[:http_basic_authentication]
+        req.basic_auth user, pass
+      end
       Net::HTTP.start(self.host, self.port) {|http|
-        http.request_get(uri.to_s, header) {|response|
+        http.request(req) {|response|
           resp = response
           if options[:content_length_proc] && Net::HTTPSuccess === resp
             if resp.key?('Content-Length')
