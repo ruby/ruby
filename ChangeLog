@@ -1,3 +1,8 @@
+Sat Nov  6 00:46:27 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_locktmp): check STR_TMPLOCK flag before
+	  locking.  [ruby-dev:24727]
+
 Fri Nov  5 18:12:42 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/scrollable.rb: divide Scrollable module into 
@@ -19,6 +24,20 @@ Fri Nov  5 13:22:58 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Fri Nov  5 13:17:54 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/text.rb: bug fix
+
+Fri Nov  5 08:52:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark): stricter GC stack check.
+
+Fri Nov  5 08:34:43 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): should have removed rb_str_unlocktmp(str).
+	  [ruby-dev:24708]
+
+Thu Nov  4 21:25:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): string modify check no longer based on
+	  tmplock.  [ruby-dev:24706]
 
 Thu Nov  4 19:27:46 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 

@@ -463,9 +463,7 @@ io_write(io, str)
     f = GetWriteFile(fptr);
 
     rb_str_locktmp(str);
-    rb_str_locktmp(str);
     n = rb_io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, f);
-    rb_str_unlocktmp(str);
     rb_str_unlocktmp(str);
     if (n == -1L) rb_sys_fail(fptr->path);
     if (fptr->mode & FMODE_SYNC) {
