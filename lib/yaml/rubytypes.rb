@@ -271,7 +271,7 @@ end
 
 YAML.add_ruby_type( /^exception/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Exception )
-    o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) }, true )
+    o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) } )
     val.each_pair { |k,v|
 		o.instance_variable_set("@#{k}", v)
 	}
@@ -290,7 +290,7 @@ class String
         ( self.count( "^ -~", "^\r\n" ) / self.size > 0.3 || self.count( "\x00" ) > 0 )
     end
     def to_yaml_type
-        "!ruby/string#{ if self.class != ::String; ":#{ self.class }"; end }"
+        "!ruby/string#{ ":#{ self.class }" if self.class != ::String }"
     end
     def to_yaml_fold
         nil
@@ -315,8 +315,8 @@ class String
                     }
                 elsif self.is_binary_data?
                     out.binary_base64( self )
-                elsif self =~ /^ |#{YAML::ESCAPE_CHAR}| $/
-                    complex = false
+                # elsif self =~ /^ |#{YAML::ESCAPE_CHAR}| $/
+                #     complex = false
                 else
                     out.node_text( self, to_yaml_fold )
                 end
@@ -326,7 +326,7 @@ class String
                             self
                         elsif empty?
                             "''"
-                        elsif self =~ /^[^#{YAML::WORD_CHAR}]| \#|#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |$)| $|\n|\'/
+                        elsif self =~ /^[^#{YAML::WORD_CHAR}\/]| \#|#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |$)| $|\n|\'/
                             "\"#{YAML.escape( self )}\"" 
                         elsif YAML.detect_implicit( self ) != 'str'
                             "\"#{YAML.escape( self )}\"" 
@@ -371,7 +371,7 @@ end
 
 symbol_proc = Proc.new { |type, val|
 	if String === val
-        val = YAML::load( "--- #{val}") if val =~ /^["'].*["']$/
+        val = YAML::load( "--- #{val}") if val =~ /^["'].*['"]$/
 		val.intern
 	else
 		raise YAML::Error, "Invalid Symbol: " + val.inspect
@@ -392,7 +392,9 @@ class Range
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( self.object_id, opts ) { |out|
-            if self.begin.is_complex_yaml? or self.end.is_complex_yaml? or not to_yaml_properties.empty?
+            if self.begin.is_complex_yaml? or self.begin.respond_to? :to_str or
+              self.end.is_complex_yaml? or self.end.respond_to? :to_str or
+              not to_yaml_properties.empty?
                 out.map( to_yaml_type ) { |map|
                     map.add( 'begin', self.begin )
                     map.add( 'end', self.end )
@@ -414,9 +416,9 @@ end
 
 YAML.add_ruby_type( /^range/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, ::Range )
-    inr = '(\w+|[+-]*\d+(?:\.\d+)?|"(?:[^\\"]|\\.)*")'
+    inr = %r'(\w+|[+-]?\d+(?:\.\d+)?(?:e[+-]\d+)?|"(?:[^\\"]|\\.)*")'
     opts = {}
-	if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/
+	if String === val and val =~ /^#{inr}(\.{2,3})#{inr}$/o
         r1, rdots, r2 = $1, $2, $3
         opts = {
             'begin' => YAML.load( "--- #{r1}" ),
