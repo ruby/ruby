@@ -1,15 +1,15 @@
 module DOT
-    
+
     # these glogal vars are used to make nice graph source
     $tab = '    '
     $tab2 = $tab * 2
-    
+
     # if we don't like 4 spaces, we can change it any time
     def change_tab( t )
         $tab = t
         $tab2 = t * 2
     end
-    
+
     # options for node declaration
     NODE_OPTS = [
         'bgcolor',
@@ -27,7 +27,7 @@ module DOT
         'style',
         'URL',
     ]
-    
+
     # options for edge declaration
     EDGE_OPTS = [
         'color',
@@ -45,7 +45,7 @@ module DOT
         'style',
         'weight'
     ]
-    
+
     # options for graph declaration
     GRAPH_OPTS = [
         'bgcolor',
@@ -75,7 +75,7 @@ module DOT
         'style',
         'URL'
     ]
-    
+
     # a root class for any element in dot notation
     class DOTSimpleElement
         attr_accessor :name
@@ -88,7 +88,7 @@ module DOT
             @name
         end
     end
-    
+
     # an element that has options ( node, edge or graph )
     class DOTElement < DOTSimpleElement
         #attr_reader :parent
@@ -96,7 +96,7 @@ module DOT
 
         def initialize( params = {}, option_list = [] )
             super( params )
-            @name = params['name'] ? params['name'] : nil 
+            @name = params['name'] ? params['name'] : nil
             @parent = params['parent'] ? params['parent'] : nil
             @options = {}
             option_list.each{ |i|
@@ -104,7 +104,7 @@ module DOT
             }
             @options['label'] ||= @name if @name != 'node'
         end
-        
+
         def each_option
             @options.each{ |i| yield i }
         end
@@ -118,13 +118,13 @@ module DOT
         #    @parent = thing
         #end
     end
-    
-    
+
+
     # this is used when we build nodes that have shape=record
     # ports don't have options :)
     class DOTPort < DOTSimpleElement
         attr_accessor :label
-        
+
         def initialize( params = {} )
             super( params )
             @name = params['label'] ? params['label'] : ''
@@ -133,7 +133,7 @@ module DOT
             ( @name && @name != "" ? "<#{@name}>" : "" ) + "#{@label}"
         end
     end
-    
+
     # node element
     class DOTNode < DOTElement
 
@@ -161,7 +161,7 @@ module DOT
         def to_s( t = '' )
 
             label = @options['shape'] != 'record' && @ports.length == 0 ?
-                @options['label'] ? 
+                @options['label'] ?
                     t + $tab + "label = \"#{@options['label']}\"\n" :
                     '' :
                 t + $tab + 'label = "' + " \\\n" +
@@ -170,14 +170,14 @@ module DOT
                     t + $tab2 + i.to_s
                 }.join( "| \\\n" ) + " \\\n" +
                 t + $tab + '"' + "\n"
-            
+
             t + "#{@name} [\n" +
             @options.to_a.collect{ |i|
-                i[1] && i[0] != 'label' ? 
+                i[1] && i[0] != 'label' ?
                     t + $tab + "#{i[0]} = #{i[1]}" : nil
-            }.compact.join( ",\n" ) + ( label != '' ? ",\n" : "\n" ) + 
+            }.compact.join( ",\n" ) + ( label != '' ? ",\n" : "\n" ) +
             label +
-            t + "]\n" 
+            t + "]\n"
         end
     end
 
@@ -198,7 +198,7 @@ module DOT
         def << ( thing )
             @nodes << thing
         end
-       
+
         def push( thing )
             @nodes.push( thing )
         end
@@ -211,14 +211,14 @@ module DOT
           hdr = t + "#{@dot_string} #{@name} {\n"
 
           options = @options.to_a.collect{ |name, val|
-            val && name != 'label' ? 
-            t + $tab + "#{name} = #{val}" : 
+            val && name != 'label' ?
+            t + $tab + "#{name} = #{val}" :
               name ? t + $tab + "#{name} = \"#{val}\"" : nil
           }.compact.join( "\n" ) + "\n"
 
           nodes = @nodes.collect{ |i|
             i.to_s( t + $tab )
-          }.join( "\n" ) + "\n" 
+          }.join( "\n" ) + "\n"
           hdr + options + nodes + t + "}\n"
         end
     end
@@ -239,12 +239,12 @@ module DOT
             @from = params['from'] ? params['from'] : nil
             @to = params['to'] ? params['to'] : nil
         end
-        
+
         def to_s( t = '' )
             t + "#{@from} -> #{to} [\n" +
             @options.to_a.collect{ |i|
-                i[1] && i[0] != 'label' ? 
-                    t + $tab + "#{i[0]} = #{i[1]}" : 
+                i[1] && i[0] != 'label' ?
+                    t + $tab + "#{i[0]} = #{i[1]}" :
                     i[1] ? t + $tab + "#{i[0]} = \"#{i[1]}\"" : nil
             }.compact.join( "\n" ) + "\n" + t + "]\n"
         end
