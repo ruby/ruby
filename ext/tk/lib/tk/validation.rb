@@ -51,7 +51,8 @@ module Tk
         if keys[key].kind_of?(Array)
           cmd, *args = keys[key]
           keys[key] = klass.new(cmd, args.join(' '))
-        elsif keys[key].kind_of?(Proc) ||  keys[key].kind_of?(Method)
+        # elsif keys[key].kind_of?(Proc) ||  keys[key].kind_of?(Method)
+        elsif TkComm._callback_entry?(keys[key])
           keys[key] = klass.new(keys[key])
         end
       }
@@ -151,7 +152,8 @@ module Tk
         if keys[key].kind_of?(Array)
           cmd, *args = keys[key]
           keys[key] = klass.new(cmd, args.join(' '))
-        elsif keys[key].kind_of?(Proc) || keys[key].kind_of?(Method)
+        # elsif keys[key].kind_of?(Proc) || keys[key].kind_of?(Method)
+        elsif TkComm._callback_entry?(keys[key])
           keys[key] = klass.new(keys[key])
         end
       }

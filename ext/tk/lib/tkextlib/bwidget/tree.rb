@@ -46,7 +46,8 @@ class Tk::BWidget::Tree
   #  self
   #end
   def imagebind(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    #if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -61,7 +62,8 @@ class Tk::BWidget::Tree
   #  self
   #end
   def imagebind_append(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    #if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -85,7 +87,8 @@ class Tk::BWidget::Tree
   #  self
   #end
   def textbind(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    #if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -100,7 +103,8 @@ class Tk::BWidget::Tree
   #  self
   #end
   def textbind_append(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    #if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new

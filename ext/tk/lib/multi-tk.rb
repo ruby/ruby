@@ -1256,6 +1256,9 @@ end
 
 # for callback operation
 class MultiTkIp
+  def self.cb_entry_class
+    @@CB_ENTRY_CLASS
+  end
   def self.get_cb_entry(cmd)
     @@CB_ENTRY_CLASS.new(__getip, cmd).freeze
   end

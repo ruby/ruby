@@ -149,7 +149,8 @@ class Tk::Winico
       if keys[k].kind_of?(Array)
         cmd, *args = keys[k]
         keys[k] = Winico_callback.new(cmd, args.join(' '))
-      elsif keys[k].kind_of?(Proc)
+       # elsif keys[k].kind_of?(Proc)
+      elsif TkComm._callback_entry?(keys[k])
         keys[k] = Winico_callback.new(keys[k])
       end
     }
@@ -164,7 +165,8 @@ class Tk::Winico
       if keys[k].kind_of?(Array)
         cmd, *args = keys[k]
         keys[k] = Winico_callback.new(cmd, args.join(' '))
-      elsif keys[k].kind_of?(Proc)
+      # elsif keys[k].kind_of?(Proc)
+      elsif TkComm._callback_entry?(keys[k])
         keys[k] = Winico_callback.new(keys[k])
       end
     }

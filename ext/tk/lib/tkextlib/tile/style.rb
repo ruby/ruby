@@ -67,6 +67,6 @@ class << Tk::Tile::Style
   end
 
   def theme_use(name)
-    tk_call('style', 'use', name)
+    tk_call('style', 'theme', 'use', name)
   end
 end

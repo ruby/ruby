@@ -215,7 +215,7 @@ class TkText<TkTextWin
   end
 
   def image_configure(index, slot, value=None)
-    if slot.kind_of? Hash
+    if slot.kind_of?(Hash)
       _fromUTF8(tk_send_without_enc('image', 'configure', 
                                     _get_eval_enc_str(index), 
                                     *hash_kv(slot, true)))
@@ -347,7 +347,7 @@ class TkText<TkTextWin
   end
 
   def insert(index, chars, *tags)
-    if tags[0].kind_of? Array
+    if tags[0].kind_of?(Array)
       # multiple chars-taglist argument :: str, [tag,...], str, [tag,...], ...
       args = [chars]
       while tags.size > 0
@@ -507,7 +507,7 @@ class TkText<TkTextWin
                         *(tags.collect{|tag| _get_eval_enc_str(tag)}))
     if TkTextTag::TTagID_TBL[@path]
       tags.each{|tag|
-        if tag.kind_of? TkTextTag
+        if tag.kind_of?(TkTextTag)
           TkTextTag::TTagID_TBL[@path].delete(tag.id) 
         else
           TkTextTag::TTagID_TBL[@path].delete(tag) 
@@ -524,7 +524,8 @@ class TkText<TkTextWin
   #  self
   #end
   def tag_bind(tag, seq, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -538,7 +539,8 @@ class TkText<TkTextWin
   #  self
   #end
   def tag_bind_append(tag, seq, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -580,7 +582,7 @@ class TkText<TkTextWin
   end
 
   def tag_configure(tag, key, val=None)
-    if key.kind_of? Hash
+    if key.kind_of?(Hash)
       key = _symbolkey2str(key)
       if ( key['font'] || key['kanjifont'] \
           || key['latinfont'] || key['asciifont'] )
@@ -798,17 +800,17 @@ class TkText<TkTextWin
   end
 
   def window_configure(index, slot, value=None)
-    if index.kind_of? TkTextWindow
+    if index.kind_of?(TkTextWindow)
       index.configure(slot, value)
     else
-      if slot.kind_of? Hash
+      if slot.kind_of?(Hash)
         slot = _symbolkey2str(slot)
         win = slot['window']
         # slot['window'] = win.epath if win.kind_of?(TkWindow)
         slot['window'] = _epath(win) if win
         if slot['create']
           p_create = slot['create']
-          if p_create.kind_of? Proc
+          if p_create.kind_of?(Proc)
 #=begin
             slot['create'] = install_cmd(proc{
                                            id = p_create.call
@@ -833,7 +835,7 @@ class TkText<TkTextWin
         end
         if slot == 'create' || slot == :create
           p_create = value
-          if p_create.kind_of? Proc
+          if p_create.kind_of?(Proc)
 #=begin
             value = install_cmd(proc{
                                   id = p_create.call
@@ -1054,7 +1056,7 @@ class TkText<TkTextWin
   end
 
   def search_with_length(pat,start,stop=None)
-    pat = pat.chr if pat.kind_of? Integer
+    pat = pat.chr if pat.kind_of?(Integer)
     if stop != None
       return ["", 0] if compare(start,'>=',stop)
       txt = get(start,stop)
@@ -1062,7 +1064,7 @@ class TkText<TkTextWin
         match = $&
         #pos = txt[0..(pos-1)].split('').length if pos > 0
         pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-        if pat.kind_of? String
+        if pat.kind_of?(String)
           #return [index(start + " + #{pos} chars"), pat.split('').length]
           return [index(start + " + #{pos} chars"), 
                   _ktext_length(pat), pat.dup]
@@ -1080,7 +1082,7 @@ class TkText<TkTextWin
         match = $&
         #pos = txt[0..(pos-1)].split('').length if pos > 0
         pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-        if pat.kind_of? String
+        if pat.kind_of?(String)
           #return [index(start + " + #{pos} chars"), pat.split('').length]
           return [index(start + " + #{pos} chars"), 
                   _ktext_length(pat), pat.dup]
@@ -1095,7 +1097,7 @@ class TkText<TkTextWin
           match = $&
           #pos = txt[0..(pos-1)].split('').length if pos > 0
           pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-          if pat.kind_of? String
+          if pat.kind_of?(String)
             #return [index("1.0 + #{pos} chars"), pat.split('').length]
             return [index("1.0 + #{pos} chars"), 
                     _ktext_length(pat), pat.dup]
@@ -1115,7 +1117,7 @@ class TkText<TkTextWin
   end
 
   def rsearch_with_length(pat,start,stop=None)
-    pat = pat.chr if pat.kind_of? Integer
+    pat = pat.chr if pat.kind_of?(Integer)
     if stop != None
       return ["", 0] if compare(start,'<=',stop)
       txt = get(stop,start)
@@ -1123,7 +1125,7 @@ class TkText<TkTextWin
         match = $&
         #pos = txt[0..(pos-1)].split('').length if pos > 0
         pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-        if pat.kind_of? String
+        if pat.kind_of?(String)
           #return [index(stop + " + #{pos} chars"), pat.split('').length]
           return [index(stop + " + #{pos} chars"), _ktext_length(pat), pat.dup]
         else
@@ -1139,7 +1141,7 @@ class TkText<TkTextWin
         match = $&
         #pos = txt[0..(pos-1)].split('').length if pos > 0
         pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-        if pat.kind_of? String
+        if pat.kind_of?(String)
           #return [index("1.0 + #{pos} chars"), pat.split('').length]
           return [index("1.0 + #{pos} chars"), _ktext_length(pat), pat.dup]
         else
@@ -1152,7 +1154,7 @@ class TkText<TkTextWin
           match = $&
           #pos = txt[0..(pos-1)].split('').length if pos > 0
           pos = _ktext_length(txt[0..(pos-1)]) if pos > 0
-          if pat.kind_of? String
+          if pat.kind_of?(String)
             #return [index("1.0 + #{pos} chars"), pat.split('').length]
             return [index("1.0 + #{pos} chars"), _ktext_length(pat), pat.dup]
           else

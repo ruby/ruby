@@ -28,7 +28,8 @@ class Tk::BWidget::LabelEntry
   #  self
   #end
   def entrybind(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new
@@ -42,7 +43,8 @@ class Tk::BWidget::LabelEntry
   #  self
   #end
   def entrybind_append(context, *args)
-    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    #if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+    if TkComm._callback_entry?(args[0])
       cmd = args.shift
     else
       cmd = Proc.new

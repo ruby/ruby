@@ -178,7 +178,8 @@ module TkOptionDB
       proc_source = TkOptionDB.get(self::CARRIER, id.id2name, '').strip
       res_proc = nil if proc_str != proc_source # resource is changed
 
-      unless res_proc.kind_of? Proc
+      # unless res_proc.kind_of?(Proc)
+      unless TkComm._callback_entry?(res_proc)
         #if id == :new || !(self::METHOD_TBL.has_key?(id) || self::ADD_METHOD)
         if id == :new || !(@method_tbl.has_key?(id) || @add_method)
           raise NoMethodError, 
@@ -253,7 +254,7 @@ module TkOptionDB
       CmdClassID[1].succ!
       parent = nil # ignore parent
     else
-      klass = klass.to_s if klass.kind_of? Symbol
+      klass = klass.to_s if klass.kind_of?(Symbol)
       unless (?A..?Z) === klass[0]
         fail ArgumentError, "bad string '#{klass}' for class name"
       end
@@ -269,7 +270,7 @@ module TkOptionDB
       carrier = Tk.tk_call_without_enc('frame', @path, '-class', klass)
     end
 
-    unless func.kind_of? Array
+    unless func.kind_of?(Array)
       fail ArgumentError, "method-list must be Array"
     end
     func_str = func.join(' ')

@@ -1,3 +1,27 @@
+2004-12-16  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* bwidget/labelentry.rb: use TkCore.callback_obj?()
+
+	* bwidget/listbox.rb: ditto
+
+	* bwidget/notebook.rb: ditto
+
+	* bwidget/spinbox.rb: ditto
+
+	* itk/incr_tk.rb: ditto
+
+	* iwidgets/scrolledcanvas.rb: ditto
+
+	* tkDND/tkdnd.rb: ditto
+
+	* treectrl/tktreectrl.rb: ditto
+
+	* winico/winico.rb: ditto
+
+2004-12-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* tile/style.rb: 'theme_use' method bug fix
+
 2004-12-08  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* bwidget/notebook.rb: raise method cannot return the raised page.
