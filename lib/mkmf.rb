@@ -406,11 +406,7 @@ TARGET = #{target}
 DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
 
 RUBY = #{CONFIG["ruby_install_name"]}
-<<<<<<< mkmf.rb
-RM = $(RUBY) -r ftools -e 'File::rm_f *Dir[ARGV.join(" ")]'
-=======
 RM = $(RUBY) -r ftools -e 'File::rm_f(*Dir[ARGV.join(" ")])'
->>>>>>> 1.22
 
 EXEEXT = #{CONFIG["EXEEXT"]}
 
