@@ -1,3 +1,8 @@
+Wed Jun 21 22:20:34 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: support for gcc version 2.95.2 19991024 (release-2)
+	  on cygwin 1.1.2 or later.
+
 Tue Jun 20 15:07:39 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* lib/parsedate.rb: don't seek year too greedy.
