@@ -1194,6 +1194,7 @@ rb_io_fptr_cleanup(fptr, fin)
     OpenFile *fptr;
     int fin;
 {
+    if (fptr->mode & FMODE_FDOPEN) return;
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
     }
@@ -1469,7 +1470,7 @@ rb_io_mode_flags(mode)
 }
 
 static int
-rb_io_binmode_flags(mode)
+rb_io_modenum_flags(mode)
     int mode;
 {
     int flags;
@@ -1496,7 +1497,7 @@ rb_io_binmode_flags(mode)
 }
 
 static int
-rb_io_mode_binmode(mode)
+rb_io_mode_modenum(mode)
     const char *mode;
 {
     int flags = 0;
@@ -1534,7 +1535,7 @@ rb_io_mode_binmode(mode)
 }
 
 static char*
-rb_io_binmode_mode(flags, mode)
+rb_io_modenum_mode(flags, mode)
     int flags;
     char *mode;
 {
@@ -1548,7 +1549,7 @@ rb_io_binmode_mode(flags, mode)
 	*p++ = 'w';
 	break;
       case O_RDWR:
-	*p++ = 'w';
+	*p++ = 'r';
 	*p++ = '+';
 	break;
     }
@@ -1678,8 +1679,8 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     MakeOpenFile(io, fptr);
 
     fd = rb_sysopen(fname, flags, mode);
-    m = rb_io_binmode_mode(flags, mbuf);
-    fptr->mode = rb_io_binmode_flags(flags);
+    m = rb_io_modenum_mode(flags, mbuf);
+    fptr->mode = rb_io_modenum_flags(flags);
     fptr->f = rb_fdopen(fd, m);
     fptr->path = strdup(fname);
 
@@ -1923,7 +1924,7 @@ rb_io_popen(str, argc, argv, klass)
 	mode = "r";
     }
     else if (FIXNUM_P(pmode)) {
-	mode = rb_io_binmode_mode(FIX2INT(pmode), mbuf);
+	mode = rb_io_modenum_mode(FIX2INT(pmode), mbuf);
     }
     else {
 	mode = StringValuePtr(pmode);
@@ -1976,7 +1977,7 @@ rb_open_file(argc, argv, io)
     path = RSTRING(fname)->ptr;
 
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
-	flags = FIXNUM_P(vmode) ? NUM2INT(vmode) : rb_io_mode_binmode(StringValuePtr(vmode));
+	flags = FIXNUM_P(vmode) ? NUM2INT(vmode) : rb_io_mode_modenum(StringValuePtr(vmode));
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
 
 	file = rb_file_sysopen_internal(io, path, flags, fmode);
@@ -2601,15 +2602,25 @@ rb_io_initialize(argc, argv, io)
 {
     VALUE fnum, mode;
     OpenFile *fp;
-    char *m = "r";
+    int fd, flags;
+    char mbuf[4];
 
-    if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
+    rb_scan_args(argc, argv, "11", &fnum, &mode);
+    fd = NUM2INT(fnum);
+    if (argc == 2) {
 	SafeStringValue(mode);
-	m = RSTRING(mode)->ptr;
+	flags = rb_io_mode_flags(RSTRING(mode)->ptr);
+    }
+    else {
+#if defined(HAVE_FCNTL) && defined(F_GETFL)
+	flags = fcntl(fd, F_GETFL);
+#else
+	flags = O_RDONLY;
+#endif
     }
     MakeOpenFile(io, fp);
-    fp->f = rb_fdopen(NUM2INT(fnum), m);
-    fp->mode = rb_io_mode_flags(m);
+    fp->mode = rb_io_modenum_flags(flags) | FMODE_FDOPEN;
+    fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags, mbuf));
 
     return io;
 }
@@ -2647,7 +2658,7 @@ rb_io_s_new(argc, argv, klass)
     if (rb_block_given_p()) {
 	char *cname = rb_class2name(klass);
 
-	rb_warn("%s::new() does not take block; use %::open() instead",
+	rb_warn("%s::new() does not take block; use %s::open() instead",
 		cname, cname);
     }
     return rb_class_new_instance(argc, argv, klass);

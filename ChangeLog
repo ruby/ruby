@@ -7,6 +7,18 @@ Mon Apr  1 15:11:40 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 	* ext/tcltklib/tcltklib.c: prototypes; _timer_for_tcl() and ip_ruby(),
 	  Nobu's patch at [ruby-dev:14483].
 
+Mon Apr  1 10:56:40 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (match_setter): it's OK to assign nil to $~.
+
+Mon Apr  1 03:55:46 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_fptr_cleanup): do not close IO created by for_fd().
+
+	* io.c (rb_io_initialize): mark IO created by for_fd
+
+	* ext/socket/socket.c (bsock_s_for_fd): ditto.
+
 Fri Mar 29 20:21:58 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/mkmf.rb (create_makefile): default FLAGS to empty strings.
