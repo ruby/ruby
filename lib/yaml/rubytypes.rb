@@ -327,7 +327,7 @@ class Symbol
     end
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
-			out << "!ruby/sym "
+			out << ":"
 			self.id2name.to_yaml( :Emitter => out )
 		}
 	end
@@ -353,7 +353,7 @@ class Range
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
 			out << "!ruby/range " 
-			self.inspect.to_yaml( :Emitter => out )
+            self.to_s.to_yaml(:Emitter => out)
 		}
 	end
 end

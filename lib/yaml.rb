@@ -88,6 +88,17 @@ module YAML
 	end
 
 	#
+    # Dump documents to a stream
+    #
+	def YAML.dump_stream( *objs )
+		d = YAML::Stream.new
+        objs.each do |doc|
+			d.add( doc ) 
+        end
+        d.emit
+	end
+
+	#
 	# Add a transfer method to a domain
 	#
 	def YAML.add_domain_type( domain, type_re, &transfer_proc )
@@ -215,9 +226,14 @@ module Kernel
     # ryan:: Either way, I certainly will have a pony parade.
     #
 
-    def y( x )
-        puts x.to_yaml
+    def y( *x )
+        puts( if x.length == 1
+                  YAML::dump( *x )
+              else
+                  YAML::dump_stream( *x )
+              end )
     end
+    private :y
 end
 
 

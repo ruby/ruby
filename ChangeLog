@@ -1,3 +1,20 @@
+Sat Apr  3 17:11:05 2004  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/syck.h: version 0.43. 
+
+	* ext/syck/lib/gram.c: allow root-level inline collections.
+	 [ruby-talk:94922]
+
+	* lib/yaml/rubytypes.rb (Symbol#to_yaml): emit symbols as implicits.
+	 [ruby-talk:94930]
+
+	* ext/syck/bytecode.c: turn off default implicit typing.
+
+	* ext/syck/implicit.c: detect base60 integers.
+
+	* ext/syck/rubyext.c: handle base60, as well as hex and octal
+	  with commas.  implicit typing of ruby symbols.
+
 Thu Apr  1 19:58:37 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/mapping/{factory.rb,registry.rb}: fixed illegal mapped URI
