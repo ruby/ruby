@@ -5230,7 +5230,8 @@ rb_method_missing(argc, argv, obj)
 	int n = 0;
 	VALUE args[3];
 
-	args[n++] = rb_funcall(exc, rb_intern("message"), 3, rb_str_new2(format), obj, argv[0]);
+	args[n++] = rb_funcall(rb_const_get(exc, rb_intern("message")), '!',
+			       3, rb_str_new2(format), obj, argv[0]);
 	args[n++] = argv[0];
 	if (exc == rb_eNoMethodError) {
 	    args[n++] = rb_ary_new4(argc-1, argv+1);

@@ -1,3 +1,9 @@
+Mon Jan 19 17:39:38 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (NameError::message): internal use only.
+
+	* eval.c (rb_method_missing): use hidden constant.
+
 Mon Jan 19 16:30:53 2004  akira yamada  <akira@ruby-lang.org>
 
 	* test/ruby/test_time.rb: added tests for [ruby-dev:22614] and

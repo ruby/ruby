@@ -682,7 +682,7 @@ name_err_mesg_mark(ptr)
 
 /* :nodoc: */
 static VALUE
-name_err_mesg_init(obj, mesg, recv, method)
+name_err_mesg_new(obj, mesg, recv, method)
     VALUE obj, mesg, recv, method;
 {
     VALUE *ptr = ALLOC_N(VALUE, 3);
@@ -984,8 +984,8 @@ Init_Exception()
     rb_define_method(rb_eNameError, "initialize", name_err_initialize, -1);
     rb_define_method(rb_eNameError, "name", name_err_name, 0);
     rb_define_method(rb_eNameError, "to_s", name_err_to_s, 0);
-    rb_define_singleton_method(rb_eNameError, "message", name_err_mesg_init, 3);
-    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "Message", rb_cData);
+    rb_cNameErrorMesg = rb_define_class_under(rb_eNameError, "message", rb_cData);
+    rb_define_singleton_method(rb_cNameErrorMesg, "!", name_err_mesg_new, 3);
     rb_define_method(rb_cNameErrorMesg, "to_str", name_err_mesg_to_str, 0);
     rb_define_method(rb_cNameErrorMesg, "_dump", name_err_mesg_to_str, 1);
     rb_define_singleton_method(rb_cNameErrorMesg, "_load", name_err_mesg_load, 1);
