@@ -9,7 +9,7 @@ alias $OUTPUT_FIELD_SEPARATOR  $,
 alias $RS                      $/
 alias $INPUT_RECORD_SEPARATOR  $/
 alias $ORS                     $\
-alias $OUPUT_RECORD_SEPARATOR  $\
+alias $OUTPUT_RECORD_SEPARATOR $\
 alias $INPUT_LINE_NUMBER       $.
 alias $NR                      $.
 alias $LAST_READ_LINE          $_

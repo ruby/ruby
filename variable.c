@@ -1528,7 +1528,7 @@ rb_mod_remove_cvar(mod, name)
     VALUE val;
 
     if (!rb_is_class_id(id)) {
-	rb_raise(rb_eNameError, "wrong class variable name %s", name);
+	rb_raise(rb_eNameError, "wrong class variable name %s", rb_id2name(name));
     }
     if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");

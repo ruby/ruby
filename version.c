@@ -40,6 +40,6 @@ ruby_show_version()
 void
 ruby_show_copyright()
 {
-    printf("ruby - Copyright (C) 1993-2000 Yukihiro Matsumoto\n");
+    printf("ruby - Copyright (C) 1993-2002 Yukihiro Matsumoto\n");
     exit(0);
 }

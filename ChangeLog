@@ -26,6 +26,14 @@ Tue Jan 15 12:43:34 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: should not resolve HELO domain automatically.
 
+Mon Jan 14 13:06:02 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): should not pass tainted block, if $SAFE > 0.
+
+Sun Jan 13 09:31:41 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* variable.c (rb_mod_remove_cvar): should pass the char*.
+
 Fri Jan 11 05:06:25 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* class.c (rb_make_metaclass): [new]

@@ -1753,7 +1753,23 @@ is_defined(self, node, buf)
 	    return 0;
 	}
       check_bound:
-	if (rb_method_boundp(val, node->nd_mid, nd_type(node)== NODE_CALL)) {
+	{
+	    int call = nd_type(node)== NODE_CALL;
+	    if (call) {
+		int noex;
+		ID id = node->nd_mid;
+
+		if (!rb_get_method_body(&val, &id, &noex))
+		    break;
+		if ((noex & NOEX_PRIVATE))
+		    break;
+		if ((noex & NOEX_PROTECTED)) {
+		    if (!rb_obj_is_kind_of(self, rb_class_real(val)))
+			break;
+		}
+	    }
+	    else if (!rb_method_boundp(val, node->nd_mid, call))
+		break;
 	    return arg_defined(self, node->nd_args, buf, "method");
 	}
 	break;
@@ -6509,6 +6525,10 @@ block_pass(self, node)
     else if (!rb_obj_is_proc(block)) {
 	rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc)",
 		 rb_class2name(CLASS_OF(block)));
+    }
+
+    if (rb_safe_level() >= 1 && OBJ_TAINTED(block)) {
+	rb_raise(rb_eSecurityError, "Insecure: tainted block value");
     }
 
     Data_Get_Struct(block, struct BLOCK, data);

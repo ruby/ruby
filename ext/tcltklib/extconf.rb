@@ -18,7 +18,7 @@ tcllib = with_config("tcllib")
 stubs = enable_config("tcltk_stubs") || with_config("tcltk_stubs")
 
 def find_tcl(tcllib, stubs)
-  paths = ["/usr/local/lib", "/usr/pkg", "/usr/lib"]
+  paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
   func = stubs ? "Tcl_InitStubs" : "Tcl_FindExecutable"
   if tcllib
     find_library(tcllib, func, *paths)
@@ -40,7 +40,7 @@ def find_tcl(tcllib, stubs)
 end
 
 def find_tk(tklib, stubs)
-  paths = ["/usr/local/lib", "/usr/pkg", "/usr/lib"]
+  paths = ["/usr/local/lib", "/usr/pkg/lib", "/usr/lib"]
   func = stubs ? "Tk_InitStubs" : "Tk_Init"
   if tklib
     find_library(tklib, func, *paths)

@@ -925,15 +925,11 @@ static VALUE
 rb_reg_equal(re1, re2)
     VALUE re1, re2;
 {
-    int min;
-
     if (re1 == re2) return Qtrue;
     if (TYPE(re2) != T_REGEXP) return Qfalse;
     rb_reg_check(re1); rb_reg_check(re2);
     if (RREGEXP(re1)->len != RREGEXP(re2)->len) return Qfalse;
-    min = RREGEXP(re1)->len;
-    if (min > RREGEXP(re2)->len) min = RREGEXP(re2)->len;
-    if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, min) == 0 &&
+    if (memcmp(RREGEXP(re1)->str, RREGEXP(re2)->str, RREGEXP(re1)->len) == 0 &&
 	rb_reg_cur_kcode(re1) == rb_reg_cur_kcode(re2) &&
 	RREGEXP(re1)->ptr->options == RREGEXP(re2)->ptr->options) {
 	return Qtrue;
