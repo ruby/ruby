@@ -1,3 +1,7 @@
+Fri Mar 22 14:32:14 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb: Protocol#start should return self.
+
 Wed Mar 20 22:08:51 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (is_defined): label forgotten.
