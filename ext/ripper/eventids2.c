@@ -5,10 +5,9 @@
 #define tEMBDOC_END      (tLAST_TOKEN + 5)
 #define tSP              (tLAST_TOKEN + 6)
 #define tHEREDOC_BEG     (tLAST_TOKEN + 7)
-#define tHEREDOC_CONTENT (tLAST_TOKEN + 8)
-#define tHEREDOC_END     (tLAST_TOKEN + 9)
-#define k__END__         (tLAST_TOKEN + 10)
-#define tCHAR            (tLAST_TOKEN + 11)
+#define tHEREDOC_END     (tLAST_TOKEN + 8)
+#define k__END__         (tLAST_TOKEN + 9)
+#define tCHAR            (tLAST_TOKEN + 10)
 
 static ID ripper_id_scan;
 
@@ -53,7 +52,6 @@ static ID ripper_id_embdoc;
 static ID ripper_id_embdoc_end;
 static ID ripper_id_sp;
 static ID ripper_id_heredoc_beg;
-static ID ripper_id_heredoc_content;
 static ID ripper_id_heredoc_end;
 static ID ripper_id___end__;
 static ID ripper_id_CHAR;
@@ -104,7 +102,6 @@ ripper_init_eventids2()
     ripper_id_embdoc_end = rb_intern("on__embdoc_end");
     ripper_id_sp = rb_intern("on__sp");
     ripper_id_heredoc_beg = rb_intern("on__heredoc_beg");
-    ripper_id_heredoc_content = rb_intern("on__heredoc_content");
     ripper_id_heredoc_end = rb_intern("on__heredoc_end");
     ripper_id___end__ = rb_intern("on____end__");
     ripper_id_CHAR = rb_intern("on__CHAR");
@@ -250,7 +247,6 @@ static struct token_assoc {
     {tEMBDOC_END,       &ripper_id_embdoc_end},
     {tSP,               &ripper_id_sp},
     {tHEREDOC_BEG,      &ripper_id_heredoc_beg},
-    {tHEREDOC_CONTENT,  &ripper_id_heredoc_content},
     {tHEREDOC_END,      &ripper_id_heredoc_end},
     {k__END__,          &ripper_id___end__},
     {0, NULL}

@@ -573,19 +573,21 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  R.scan('heredoc_beg', "<<'EOS'\nheredoc\nEOS")
     assert_equal [%q(<<`EOS`)],
                  R.scan('heredoc_beg', "<<`EOS`\nheredoc\nEOS")
+    assert_equal [%q(<<" ")],
+                 R.scan('heredoc_beg', %Q[<<" "\nheredoc\nEOS])
   end
 
-  def test_heredoc_content
+  def test_tstring_content_HEREDOC
     assert_equal [],
-                 R.scan('heredoc_content', '')
+                 R.scan('tstring_content', '')
     assert_equal ["heredoc\n"],
-                 R.scan('heredoc_content', "<<EOS\nheredoc\nEOS")
+                 R.scan('tstring_content', "<<EOS\nheredoc\nEOS")
     assert_equal ["heredoc\n"],
-                 R.scan('heredoc_content', "<<EOS\nheredoc\nEOS\n")
+                 R.scan('tstring_content', "<<EOS\nheredoc\nEOS\n")
     assert_equal ["heredoc \n"],
-                 R.scan('heredoc_content', "<<EOS\nheredoc \nEOS \n")
+                 R.scan('tstring_content', "<<EOS\nheredoc \nEOS \n")
     assert_equal ["heredoc\n"],
-                 R.scan('heredoc_content', "<<-EOS\nheredoc\n\tEOS \n")
+                 R.scan('tstring_content', "<<-EOS\nheredoc\n\tEOS \n")
   end
 
   def test_heredoc_end

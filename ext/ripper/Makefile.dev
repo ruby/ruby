@@ -15,4 +15,4 @@ test:
 
 preproc: ripper.E
 ripper.E: ripper.c
-	$(CC) -E $(CPPFLAGS) ripper.c | ruby tools/strip.rb > $@
+	$(CC) -E $(CPPFLAGS) ripper.c | ruby $(srcdir)/tools/strip.rb > $@

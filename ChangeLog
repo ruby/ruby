@@ -1,3 +1,24 @@
+Mon Sep 20 14:39:42 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper]: adjust lineno and columns for multi-line
+	  strings.
+
+	* parse.y [ripper]: delay heredocument events until seeing
+	  end-of-line.
+
+	* parse.y [ripper]: event on__heredoc_contentn ->
+	  on__tstring_content.
+
+	* ext/ripper/eventids2.c: ditto.
+
+	* ext/ripper/lib/ripper.rb: sync with eventids2.c.
+
+	* test/ripper/test_scanner_events.rb: test it.
+
+	* ext/ripper/tools/generate-ripper_rb.rb: show basename of input.
+
+	* ext/ripper/Makefile.dev: support objdir build.
+
 Mon Sep 20 13:22:55 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: remove Ripper#pos.
