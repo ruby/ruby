@@ -1796,11 +1796,12 @@ dln_find_1(fname, path, exe_flag)
 		if (mac_fullpath = _macruby_exist_file_in_libdir_as_posix_name(fbuf))
 		    return mac_fullpath;
 
-      next:
 #endif
 	    }
 	}
 #endif /* MSDOS or _WIN32 or __human68k__ or __EMX__ */
+
+      next:
 	/* if not, and no other alternatives, life is bleak */
 	if (*ep == '\0') {
 	    return NULL;
