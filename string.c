@@ -143,9 +143,9 @@ str_new4(klass, str)
 
     RSTRING(str2)->len = RSTRING(str)->len;
     RSTRING(str2)->ptr = RSTRING(str)->ptr;
-    if (FL_TEST(str, ELTS_SHARED) && !RSTRING(str)->aux.shared) {
-	/* ptr should be null_str */
+    if (FL_TEST(str, ELTS_SHARED)) {
 	FL_SET(str2, ELTS_SHARED);
+	RSTRING(str2)->aux.shared = RSTRING(str)->aux.shared;
     }
     else {
 	FL_SET(str, ELTS_SHARED);
@@ -165,7 +165,6 @@ rb_str_new4(orig)
     klass = rb_obj_class(orig);
     if (FL_TEST(orig, ELTS_SHARED) && (str = RSTRING(orig)->aux.shared) && klass == RBASIC(str)->klass) {
 	long ofs;
-	str = RSTRING(orig)->aux.shared;
 	ofs = RSTRING(str)->len - RSTRING(orig)->len;
 	if (ofs > 0) {
 	    str = str_new3(klass, str);
