@@ -130,7 +130,7 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 	VALUE str = ossl_to_der_if_possible(arg);
 	StringValue(str);
 	p = RSTRING(str)->ptr;
-	if(!d2i_X509_NAME(&name, &p, RSTRING(str)->len)){
+	if(!d2i_X509_NAME((X509_NAME**)&DATA_PTR(self), &p, RSTRING(str)->len)){
 	    ossl_raise(eX509NameError, NULL);
 	}
     }

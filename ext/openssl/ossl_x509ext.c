@@ -260,13 +260,13 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
     unsigned char *p;
     X509_EXTENSION *ext;
 
+    GetX509Ext(self, ext);
     if(rb_scan_args(argc, argv, "12", &oid, &value, &critical) == 1){
-	/* evaluate oid as a DER string */
 	oid = ossl_to_der_if_possible(oid);
 	StringValue(oid);
-	GetX509Ext(self, ext);
 	p  = RSTRING(oid)->ptr;
-	if(!d2i_X509_EXTENSION(&ext, &p, RSTRING(oid)->len))
+	if(!d2i_X509_EXTENSION((X509_EXTENSION**)&DATA_PTR(self),
+			       &p, RSTRING(oid)->len))
 	    ossl_raise(eX509ExtError, NULL);
 	return self;
     }

@@ -1,3 +1,12 @@
+Tue Aug 24 09:09:01 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_x509attr.c (ossl_x509attr_initialize): d2i
+	  functions may replace the pointer indicated by the first argument.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_initialize): ditto.
+
+	* ext/openssl/ossl_x509name.c (ossl_x509name_initialize): ditto.
+
 Mon Aug 23 14:04:51 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read):
