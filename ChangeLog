@@ -1,3 +1,8 @@
+Wed Mar 24 11:11:26 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb (Generators::HTMLGenerator::load_html_template): 
+	  Allow non-RDoc templates by putting a slash in the template name
+
 Mon Mar 22 16:19:57 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	
 	* ruby.1: add -width option to .Bl for old groff.

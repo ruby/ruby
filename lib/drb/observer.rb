@@ -9,8 +9,10 @@ module DRb
 	if defined? @observer_peers
 	  for i in @observer_peers.dup
 	    begin
+              puts "sending update"
 	      i.update(*arg)
 	    rescue
+              p $!
 	      delete_observer(i)
 	    end
 	  end

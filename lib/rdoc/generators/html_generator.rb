@@ -1110,11 +1110,15 @@ module Generators
     private
 
     ##
-    # Load up the HTML template specified in the options
+    # Load up the HTML template specified in the options.
+    # If the template name contains a slash, use it literally
     #
     def load_html_template
-      template = File.join("rdoc/generators/template",
-                           @options.generator.key, @options.template)
+      template = @options.template
+      unless template =~ %r{/|\\}
+        template = File.join("rdoc/generators/template",
+                             @options.generator.key, template)
+      end
       require template
       extend RDoc::Page
     rescue LoadError
