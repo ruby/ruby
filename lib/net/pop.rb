@@ -1,6 +1,6 @@
 =begin
 
-= net/pop.rb version 1.2.3
+= net/pop.rb
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -12,6 +12,8 @@ Ruby Distribute License or GNU General Public License.
 
 NOTE: You can find Japanese version of this document in
 the doc/net directory of the standard ruby interpreter package.
+
+$Id$
 
 == What is This Module?
 
@@ -123,25 +125,18 @@ This example does not create such one.
 
 === Using APOP
 
-net/pop also supports APOP authentication. There's two way to use APOP:
-(1) using APOP class instead of POP3
-(2) passing true for fifth argument of POP3.start
+The net/pop library supports APOP authentication.
+To use APOP, use Net::APOP class instead of Net::POP3 class.
+You can use utility method, Net::POP3.APOP(). Example:
 
-    # (1)
     require 'net/pop'
-    Net::APOP.start( 'apop.server.address', 110,
-                     'YourAccount', 'YourPassword' ) {|pop|
+
+    # use APOP authentication if $isapop == true
+    pop = Net::POP3.APOP($isapop).new( 'apop.server.address', 110 )
+    pop.start( YourAccount', 'YourPassword' ) {|pop|
         # Rest code is same.
     }
 
-    # (2)
-    require 'net/pop'
-    Net::POP3.start( 'apop.server.address', 110,
-                     'YourAccount', 'YourPassword',
-                     true   ####
-    ) {|pop|
-        # Rest code is same.
-    }
 
 == Net::POP3 class
 
@@ -160,6 +155,19 @@ net/pop also supports APOP authentication. There's two way to use APOP:
 	      file.write m.pop
 	      m.delete
 	    end
+        }
+
+: APOP( is_apop )
+    returns Net::APOP class object if IS_APOP is true.
+    returns Net::POP3 class object if false.
+    Use this method like:
+
+        # example 1
+        pop = Net::POP3::APOP($isapop).new( addr, port )
+
+        # example 2
+        Net::POP3::APOP($isapop).start( addr, port ) {|pop|
+            ....
         }
 
 : foreach( address, port = 110, account, password ) {|mail| .... }
@@ -326,13 +334,16 @@ module Net
 
   class POP3 < Protocol
 
-    protocol_param :port,         '110'
-    protocol_param :command_type, '::Net::NetPrivate::POP3Command'
-    protocol_param :apop_command_type, '::Net::NetPrivate::APOPCommand'
-
-    protocol_param :mail_type,    '::Net::POPMail'
+    protocol_param :port,              '110'
+    protocol_param :command_type,      '::Net::POP3Command'
+    protocol_param :apop_command_type, '::Net::APOPCommand'
+    protocol_param :mail_type,         '::Net::POPMail'
 
     class << self
+
+      def APOP( bool )
+        bool ? APOP : POP3
+      end
 
       def foreach( address, port = nil,
                    account = nil, password = nil, &block )
@@ -366,7 +377,7 @@ module Net
       begin
         connect
         @active = true
-        @command.auth address, port
+        @command.auth address(), port()
         @command.quit
       ensure
         @active = false
@@ -431,7 +442,7 @@ module Net
 
 
   class APOP < POP3
-    protocol_param :command_type, 'Net::NetPrivate::APOPCommand'
+    protocol_param :command_type, '::Net::APOPCommand'
   end
 
   APOPSession = APOP
@@ -455,7 +466,7 @@ module Net
 
     def pop( dest = '', &block )
       if block then
-        dest = NetPrivate::ReadAdapter.new( block )
+        dest = ReadAdapter.new( block )
       end
       @command.retr( @num, dest )
     end
@@ -488,9 +499,6 @@ module Net
 
   end
 
-
-
-  module NetPrivate
 
 
   class POP3Command < Command
@@ -608,8 +616,5 @@ module Net
     end
 
   end
-
-
-  end   # module Net::NetPrivate
 
 end   # module Net

@@ -1,6 +1,6 @@
 =begin
 
-= net/smtp.rb version 1.2.3
+= net/smtp.rb
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -12,6 +12,8 @@ Ruby Distribute License or GNU General Public License.
 
 NOTE: You can find Japanese version of this document in
 the doc/net directory of the standard ruby interpreter package.
+
+$Id$
 
 == What is This Module?
 
@@ -217,7 +219,7 @@ module Net
   class SMTP < Protocol
 
     protocol_param :port,         '25'
-    protocol_param :command_type, '::Net::NetPrivate::SMTPCommand'
+    protocol_param :command_type, '::Net::SMTPCommand'
 
 
     def initialize( addr, port = nil )
@@ -292,9 +294,6 @@ module Net
 
   SMTPSession = SMTP
 
-
-
-  module NetPrivate
 
 
   class SMTPCommand < Command
@@ -424,6 +423,9 @@ module Net
   end
 
 
-  end   # module Net::NetPrivate
+  # for backward compatibility
+  module NetPrivate
+    SMTPCommand = ::Net::SMTPCommand
+  end
 
 end   # module Net

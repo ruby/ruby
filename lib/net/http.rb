@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.2.3
+= net/http.rb
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -13,6 +13,8 @@ Ruby Distribute License or GNU General Public License.
 
 NOTE: You can find Japanese version of this document in
 the doc/net directory of the standard ruby interpreter package.
+
+$Id$
 
 == What is this module?
 
@@ -655,9 +657,8 @@ module Net
     end
 
     def send_request( name, path, body = nil, header = nil )
-      r = ::Net::NetPrivate::HTTPGenericRequest.new(
-              name, (body ? true : false), true,
-              path, header )
+      r = HTTPGenericRequest.new( name, (body ? true : false), true,
+                                  path, header )
       request r, body
     end
 
@@ -818,8 +819,6 @@ module Net
   ### header
   ###
 
-  net_private {
-
   module HTTPHeader
 
     def size
@@ -836,9 +835,11 @@ module Net
       @header[ key.downcase ] = val
     end
 
-    def each( &block )
+    def each_header( &block )
       @header.each( &block )
     end
+
+    alias each each_header
 
     def each_key( &block )
       @header.each_key( &block )
@@ -967,7 +968,7 @@ module Net
 
   class HTTPGenericRequest
 
-    include ::Net::NetPrivate::HTTPHeader
+    include HTTPHeader
 
     def initialize( m, reqbody, resbody, path, uhead = nil )
       @method = m
@@ -1060,6 +1061,11 @@ module Net
       @header['content-length'] = data.size.to_s
       @header.delete 'transfer-encoding'
 
+      unless @header['content-type'] then
+        $stderr.puts 'Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
+        @header['content-type'] = 'application/x-www-form-urlencoded'
+      end
+
       request sock, ver, path
       sock.write data
     end
@@ -1078,8 +1084,7 @@ module Net
 
     def get_response( sock )
       begin
-        resp = ::Net::NetPrivate::HTTPResponse.new_from_socket(sock,
-                                                response_body_permitted?)
+        resp = HTTPResponse.new_from_socket(sock, response_body_permitted?)
       end while ContinueCode === resp
       resp
     end
@@ -1122,30 +1127,28 @@ module Net
   
   end
 
-  }
-
 
   class HTTP
 
-    class Get < ::Net::NetPrivate::HTTPRequest
+    class Get < HTTPRequest
       METHOD = 'GET'
       REQUEST_HAS_BODY  = false
       RESPONSE_HAS_BODY = true
     end
 
-    class Head < ::Net::NetPrivate::HTTPRequest
+    class Head < HTTPRequest
       METHOD = 'HEAD'
       REQUEST_HAS_BODY = false
       RESPONSE_HAS_BODY = false
     end
 
-    class Post < ::Net::NetPrivate::HTTPRequest
+    class Post < HTTPRequest
       METHOD = 'POST'
       REQUEST_HAS_BODY = true
       RESPONSE_HAS_BODY = true
     end
 
-    class Put < ::Net::NetPrivate::HTTPRequest
+    class Put < HTTPRequest
       METHOD = 'PUT'
       REQUEST_HAS_BODY = true
       RESPONSE_HAS_BODY = true
@@ -1159,11 +1162,9 @@ module Net
   ### response
   ###
 
-  net_private {
-
   class HTTPResponse < Response
 
-    include ::Net::NetPrivate::HTTPHeader
+    include HTTPHeader
 
     CODE_CLASS_TO_OBJ = {
       '1' => HTTPInformationCode,
@@ -1373,7 +1374,7 @@ module Net
         raise ArgumentError, 'both of arg and block are given for HTTP method'
       end
       if block then
-        ::Net::NetPrivate::ReadAdapter.new block
+        ReadAdapter.new block
       else
         dest || ''
       end
@@ -1381,10 +1382,15 @@ module Net
 
   end
 
-  }
 
-
-  HTTPResponse         = NetPrivate::HTTPResponse
-  HTTPResponseReceiver = NetPrivate::HTTPResponse
+  # for backward compatibility
+  module NetPrivate
+    HTTPResponse         = ::Net::HTTPResponse
+    HTTPGenericRequest   = ::Net::HTTPGenericRequest
+    HTTPRequest          = ::Net::HTTPRequest
+    Accumulator          = ::Net::Accumulator
+    HTTPHeader           = ::Net::HTTPHeader
+  end
+  HTTPResponceReceiver = HTTPResponse
 
 end   # module Net

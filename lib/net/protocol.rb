@@ -1,6 +1,6 @@
 =begin
 
-= net/protocol.rb version 1.2.3
+= net/protocol.rb
 
 Copyright (c) 1999-2001 Yukihiro Matsumoto
 
@@ -13,6 +13,8 @@ Ruby Distribute License or GNU General Public License.
 NOTE: You can find Japanese version of this document in
 the doc/net directory of the standard ruby interpreter package.
 
+$Id$
+
 =end
 
 require 'socket'
@@ -21,17 +23,10 @@ require 'timeout'
 
 module Net
 
-  module NetPrivate
-  end
-
-  def self.net_private( &block )
-    ::Net::NetPrivate.module_eval( &block )
-  end
-
-
   class Protocol
 
     Version = '1.2.3'
+    Revision = %q$Revision$.split(/\s+/)[1]
 
     class << self
 
@@ -75,7 +70,7 @@ module Net
 
     protocol_param :port,         'nil'
     protocol_param :command_type, 'nil'
-    protocol_param :socket_type,  '::Net::NetPrivate::Socket'
+    protocol_param :socket_type,  '::Net::Socket'
 
 
     def initialize( addr, port = nil )
@@ -208,8 +203,6 @@ module Net
   Session = Protocol
 
 
-  net_private {
-
   class Response
 
     def initialize( ctype, code, msg )
@@ -227,12 +220,10 @@ module Net
     end
 
     def error!
-      raise code_type.error_type.new( code + ' ' + Net.quote(msg), self )
+      raise @code_type.error_type.new( code + ' ' + Net.quote(msg), self )
     end
 
   end
-
-  }
 
 
   class ProtocolError          < StandardError; end
@@ -265,16 +256,16 @@ module Net
   class Code
 
     def initialize( paren, err )
-      @parents = paren
+      @parents = [self] + paren
       @err = err
-
-      @parents.push self
     end
 
-    attr_reader :parents
+    def parents
+      @parents.dup
+    end
 
     def inspect
-      "#<#{type}>"
+      "#<#{type} #{sprintf '0x%x', __id__}>"
     end
 
     def error_type
@@ -282,12 +273,12 @@ module Net
     end
 
     def ===( response )
-      response.code_type.parents.reverse_each {|i| return true if i == self }
+      response.code_type.parents.each {|c| return true if c == self }
       false
     end
 
     def mkchild( err = nil )
-      type.new( @parents + [self], err || @err )
+      type.new( @parents, err || @err )
     end
   
   end
@@ -306,12 +297,10 @@ module Net
 
 
 
-  net_private {
-
   class WriteAdapter
 
     def initialize( sock, mid )
-      @sock = sock
+      @socket = sock
       @mid = mid
     end
 
@@ -320,11 +309,11 @@ module Net
     end
 
     def write( str )
-      @sock.__send__ @mid, str
+      @socket.__send__ @mid, str
     end
 
     def <<( str )
-      @sock.__send__ @mid, str
+      @socket.__send__ @mid, str
       self
     end
   
@@ -357,7 +346,7 @@ module Net
       ensure
         if user_break then
           @block = nil
-          return   # stop break
+          return   # stop breaking
         end
       end
     end
@@ -457,7 +446,7 @@ module Net
 
       @socket = nil
       @sending = ''
-      @buffer  = ''
+      @rbuf  = ''
 
       connect otime
       D 'opened'
@@ -498,7 +487,7 @@ module Net
         D 'close call for already closed socket'
       end
       @socket = nil
-      @buffer = ''
+      @rbuf = ''
     end
 
     def closed?
@@ -524,7 +513,7 @@ module Net
 
 
     #
-    # read
+    # input
     #
 
     public
@@ -536,8 +525,8 @@ module Net
 
       rsize = 0
       begin
-        while rsize + @buffer.size < len do
-          rsize += rbuf_moveto( dest, @buffer.size )
+        while rsize + @rbuf.size < len do
+          rsize += rbuf_moveto( dest, @rbuf.size )
           rbuf_fill
         end
         rbuf_moveto dest, len - rsize
@@ -555,7 +544,7 @@ module Net
       rsize = 0
       begin
         while true do
-          rsize += rbuf_moveto( dest, @buffer.size )
+          rsize += rbuf_moveto( dest, @rbuf.size )
           rbuf_fill
         end
       rescue EOFError
@@ -570,14 +559,14 @@ module Net
       dest = ''
       begin
         while true do
-          idx = @buffer.index( target )
+          idx = @rbuf.index( target )
           break if idx
           rbuf_fill
         end
         rbuf_moveto dest, idx + target.size
       rescue EOFError
         raise unless igneof
-        rbuf_moveto dest, @buffer.size
+        rbuf_moveto dest, @rbuf.size
       end
       dest
     end
@@ -617,17 +606,15 @@ module Net
     #  D_on "read #{i} items"
     end
 
-
     private
 
-
-    READ_SIZE = 1024 * 4
+    BLOCK_SIZE = 1024 * 2
 
     def rbuf_fill
       unless IO.select [@socket], nil, nil, @read_timeout then
         on_read_timeout
       end
-      @buffer << @socket.sysread( READ_SIZE )
+      @rbuf << @socket.sysread(BLOCK_SIZE)
     end
 
     def on_read_timeout
@@ -635,18 +622,14 @@ module Net
     end
 
     def rbuf_moveto( dest, len )
-      bsi = @buffer.size
-      s = @buffer[ 0, len ]
-      dest << s
-      @buffer = @buffer[ len, bsi - len ]
-
-      @debugout << %<read  "#{Net.quote s}"\n> if @debugout
+      dest << (s = @rbuf.slice!(0, len))
+      @debugout << %Q<read  "#{Net.quote s}"\n> if @debugout
       len
     end
 
 
     #
-    # write interfece
+    # output
     #
 
     public
@@ -666,7 +649,7 @@ module Net
     def write_bin( src, block )
       writing {
         if block then
-          block.call ::Net::NetPrivate::WriteAdapter.new( self, :do_write )
+          block.call WriteAdapter.new(self, :do_write)
         else
           src.each do |bin|
             do_write bin
@@ -678,9 +661,9 @@ module Net
     def write_pendstr( src, block )
       D_off "writing text from #{src.type}"
 
-      wsize = use_each_crlf_line {
+      wsize = using_each_crlf_line {
         if block then
-          block.call ::Net::NetPrivate::WriteAdapter.new( self, :wpend_in )
+          block.call WriteAdapter.new(self, :wpend_in)
         else
           wpend_in src
         end
@@ -690,9 +673,7 @@ module Net
       wsize
     end
 
-
     private
-
 
     def wpend_in( src )
       line = nil
@@ -705,13 +686,13 @@ module Net
       @writtensize - pre
     end
 
-    def use_each_crlf_line
+    def using_each_crlf_line
       writing {
         @wbuf = ''
 
         yield
 
-        if not @wbuf.empty? then       # un-terminated last line
+        if not @wbuf.empty? then       # unterminated last line
           if @wbuf[-1] == ?\r then
             @wbuf.chop!
           end
@@ -824,14 +805,22 @@ module Net
 
   end
 
-  }
-
 
   def Net.quote( str )
     str = str.gsub( "\n", '\\n' )
     str.gsub!( "\r", '\\r' )
     str.gsub!( "\t", '\\t' )
     str
+  end
+
+
+  # for backward compatibility
+  module NetPrivate
+    Response       = ::Net::Response
+    WriteAdapter   = ::Net::WriteAdapter
+    ReadAdapter    = ::Net::ReadAdapter
+    Command        = ::Net::Command
+    Socket         = ::Net::Socket
   end
 
 end   # module Net
