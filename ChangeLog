@@ -1,3 +1,13 @@
+Sun Jan 11 02:07:47 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList): 
+	  Also accept command line options via the 'RI' environment variable.
+
+Sun Jan 11 02:07:47 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_options.rb (RI::Options::OptionList::OptionList): 
+	  Also accept command line options via the 'RI' environment variable.
+
 Fri Jan  9 10:05:14 2004  Siena.  <siena@faculty.chiba-u.jp>
 
 	* lib/mkmf.rb (libpathflag): use single quotes.  [ruby-dev:22440]

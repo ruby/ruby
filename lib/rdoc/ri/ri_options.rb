@@ -150,6 +150,7 @@ module RI
             end
             puts
           end
+          puts "Options may also be passed in the 'RI' environment varaible"
           exit 0
         end
       end
@@ -163,6 +164,11 @@ module RI
       @width        = 72
       @formatter    = RI::TextFormatter.for("plain") 
         @list_classes = false
+
+      old_argv = ARGV.dup
+      if ENV["RI"]
+        ARGV.replace(ENV["RI"].split.concat(ARGV))
+      end
 
       begin
 
