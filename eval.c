@@ -8693,7 +8693,7 @@ rb_thread_cleanup()
     }
 
     FOREACH_THREAD(th) {
-	if (th != curr_thread && th->status != THREAD_KILLED) {
+	if (th->status != THREAD_KILLED) {
 	    rb_thread_ready(th);
 	    th->gid = 0;
 	    th->priority = 0;

@@ -73,8 +73,6 @@
 #define RE_OPTION_MULTILINE  (RE_OPTION_EXTENDED<<1)
 /* ^ and $ ignore newline */
 #define RE_OPTION_SINGLELINE (RE_OPTION_MULTILINE<<1)
-/* works line Perl's /s; it's called POSIX for wrong reason */
-#define RE_OPTION_POSIXLINE  (RE_OPTION_MULTILINE|RE_OPTION_SINGLELINE)
 /* search for longest match, in accord with POSIX regexp */
 #define RE_OPTION_LONGEST    (RE_OPTION_SINGLELINE<<1)
 

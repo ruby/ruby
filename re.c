@@ -304,10 +304,7 @@ rb_reg_desc(s, len, re)
     rb_str_buf_cat2(str, "/");
     if (re) {
 	rb_reg_check(re);
-	/* /p is obsolete; to be removed */
-	if ((RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE)
-	    rb_str_buf_cat2(str, "p");
-	else if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
+	if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
 	    rb_str_buf_cat2(str, "m");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
 	    rb_str_buf_cat2(str, "i");
@@ -359,37 +356,94 @@ static VALUE
 rb_reg_to_s(re)
     VALUE re;
 {
-    int all;
+    int options;
+    const int embeddable = RE_OPTION_MULTILINE|RE_OPTION_IGNORECASE|RE_OPTION_EXTENDED;
+    long len;
+    const char* ptr;
     VALUE str = rb_str_buf_new2("(?");
 
     rb_reg_check(re);
 
-    all = 1;
-    if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
-	rb_str_buf_cat2(str, "m");
-    else
-	all = 0;
-    if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
-	rb_str_buf_cat2(str, "i");
-    else
-	all = 0;
-    if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
-	rb_str_buf_cat2(str, "x");
-    else
-	all = 0;
+    options = RREGEXP(re)->ptr->options;
+    ptr = RREGEXP(re)->str;
+    len = RREGEXP(re)->len;
+    if (len >= 4 && ptr[0] == '(' && ptr[1] == '?' && ptr[len-1] == ')') {
+	int nest = 0;
+	ptr += 2;
+	if ((len -= 3) > 0) {
+	    do {
+		if (*ptr == 'm') {
+		    options |= RE_OPTION_MULTILINE;
+		}
+		else if (*ptr == 'i') {
+		    options |= RE_OPTION_IGNORECASE;
+		}
+		else if (*ptr == 'x') {
+		    options |= RE_OPTION_EXTENDED;
+		}
+		else break;
+		++ptr;
+	    } while (--len > 0);
+	}
+	if (len > 1 && *ptr == '-') {
+	    ++ptr;
+	    --len;
+	    do {
+		if (*ptr == 'm') {
+		    options &= ~RE_OPTION_MULTILINE;
+		}
+		else if (*ptr == 'i') {
+		    options &= ~RE_OPTION_IGNORECASE;
+		}
+		else if (*ptr == 'x') {
+		    options &= ~RE_OPTION_EXTENDED;
+		}
+		else break;
+		++ptr;
+	    } while (--len > 0);
+	}
+	if (*ptr == ':') {
+	    const char* p = ++ptr;
+	    long l = --len;
+	    kcode_set_option(re);
+	    while (len > 0) {
+		int n;
+		if (*p == '(') {
+		    ++nest;
+		}
+		else if (*p == ')') {
+		    if (--nest < 0) break;
+		}
+		else if (*p == '\\') {
+		    --l;
+		    ++p;
+		}
+		n = mbclen(*p);
+		l -= n;
+		p += n;
+	    }
+	    kcode_reset_option();
+	}
+	if (nest) {
+	    options = RREGEXP(re)->ptr->options;
+	    ptr = RREGEXP(re)->str;
+	    len = RREGEXP(re)->len;
+	}
+    }
 
-    if (!all) {
+    if (options & RE_OPTION_MULTILINE) rb_str_buf_cat2(str, "m");
+    if (options & RE_OPTION_IGNORECASE) rb_str_buf_cat2(str, "i");
+    if (options & RE_OPTION_EXTENDED) rb_str_buf_cat2(str, "x");
+
+    if ((options & embeddable) != embeddable) {
 	rb_str_buf_cat2(str, "-");
-	if (!(RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE))
-	    rb_str_buf_cat2(str, "m");
-	if (!(RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE))
-	    rb_str_buf_cat2(str, "i");
-	if (!(RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED))
-	    rb_str_buf_cat2(str, "x");
+	if (!(options & RE_OPTION_MULTILINE)) rb_str_buf_cat2(str, "m");
+	if (!(options & RE_OPTION_IGNORECASE)) rb_str_buf_cat2(str, "i");
+	if (!(options & RE_OPTION_EXTENDED)) rb_str_buf_cat2(str, "x");
     }
 
     rb_str_buf_cat2(str, ":");
-    rb_reg_expr_str(str, RREGEXP(re)->str, RREGEXP(re)->len);
+    rb_reg_expr_str(str, ptr, len);
     rb_str_buf_cat2(str, ")");
 
     OBJ_INFECT(str, re);
@@ -1234,9 +1288,7 @@ rb_reg_options(re)
     rb_reg_check(re);
     if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
 	options |= RE_OPTION_IGNORECASE;
-    if ((RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE)
-	options |= RE_OPTION_POSIXLINE;
-    else if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
+    if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
 	options |= RE_OPTION_MULTILINE;
     if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
 	options |= RE_OPTION_EXTENDED;

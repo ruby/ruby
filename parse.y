@@ -2596,10 +2596,6 @@ parse_regx(term, paren)
 		  case 'x':
 		    options |= RE_OPTION_EXTENDED;
 		    break;
-		  case 'p':	/* /p is obsolete */
-		    rb_warn("/p option is obsolete; use /m\n\tnote: /m does not change ^, $ behavior");
-		    options |= RE_OPTION_POSIXLINE;
-		    break;
 		  case 'm':
 		    options |= RE_OPTION_MULTILINE;
 		    break;

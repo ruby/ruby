@@ -1698,7 +1698,7 @@ re_compile_pattern(pattern, size, bufp)
 
 	  PATFETCH_RAW(c);
 	  switch (c) {
-	  case 'x': case 'p': case 'm': case 'i': case '-':
+	  case 'x': case 'm': case 'i': case '-':
 	    for (;;) {
 	      switch (c) {
 	      case '-':
@@ -1714,18 +1714,6 @@ re_compile_pattern(pattern, size, bufp)
 		  options &= ~RE_OPTION_EXTENDED;
 		else
 		  options |= RE_OPTION_EXTENDED;
-		break;
-
-	      case 'p':
-		if (negative) {
-		  if ((options&RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE) {
-		    options &= ~RE_OPTION_POSIXLINE;
-		  }
-		}
-		else if ((options&RE_OPTION_POSIXLINE) != RE_OPTION_POSIXLINE) {
-		  options |= RE_OPTION_POSIXLINE;
-		}
-		push_option = 1;
 		break;
 
 	      case 'm':
