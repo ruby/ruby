@@ -1,3 +1,7 @@
+Tue Sep 26 18:09:51 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* string.c: include <math.h>
+
 Tue Sep 26 15:59:50 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_mod_dup): metaclasses of class/module should not be

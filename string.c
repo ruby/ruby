@@ -18,6 +18,7 @@
 #define BEG(no) regs->beg[no]
 #define END(no) regs->end[no]
 
+#include <math.h>
 #include <ctype.h>
 
 #ifdef HAVE_UNISTD_H
