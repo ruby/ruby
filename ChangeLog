@@ -15,8 +15,8 @@ Wed Feb 16 15:11:43 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Wed Feb 16 02:47:45 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_read, ossl_ssl_write): should
-	  call rb_sys_fail instead of rasing SSLError if SSL_ERROR_SYSCALL
-	  occured.
+	  call rb_sys_fail instead of raising SSLError if SSL_ERROR_SYSCALL
+	  occurred.
 
 	* ext/openssl/lib/openssl/buffering.rb (Buffering#fill_rbuff):
 	  should rescue Errno::EAGAIN.
@@ -112,7 +112,7 @@ Sat Feb 12 13:54:03 2005  Tanaka Akira  <akr@m17n.org>
 
 Fri Feb 11 17:37:50 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openss/ossl_x509store.c (ossl_x509store_set_default_paths):
+	* ext/openssl/ossl_x509store.c (ossl_x509store_set_default_paths):
 	  new method OpenSSL::X509::Store#set_default_paths.
 
 Fri Feb 11 11:33:53 2005  Tanaka Akira  <akr@m17n.org>
@@ -150,7 +150,7 @@ Thu Feb 10 12:07:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  rule lines, add search path to implicit rules, and set Borland make
 	  special macros for search path.
 
-	* win32/win32.c, win32/win32.h (read): aboid a BCC runtime bug.
+	* win32/win32.c, win32/win32.h (read): avoid a BCC runtime bug.
 
 Wed Feb  9 16:33:05 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -421,7 +421,7 @@ Tue Jan 25 17:05:15 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 Tue Jan 25 14:05:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix SEGV bug; trouble on canceling remained
-	  after scripts [ruby-dev:25479]: NULL current namespce when deleting
+	  after scripts [ruby-dev:25479]: NULL current namespace when deleting
 	    Tk interpreter [ruby-talk:126225]
 
 	* ext/tcltklib/extconf.rb: bug fix; TCL_ENABLE_THREAD flag is inverted
