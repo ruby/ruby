@@ -1033,6 +1033,34 @@ test_ok(get_block(&lambda).class == Proc)
 test_ok(Proc.new{|a,| a}.call(1,2,3) == 1)
 argument_test(true, Proc.new{|a,|}, 1,2)
 
+def test_return1
+  Proc.new {
+    return 55
+  }.call + 5
+end
+test_ok(test_return1() == 55)
+def test_return2
+  lambda {
+    return 55
+  }.call + 5
+end
+test_ok(test_return2() == 60)
+
+def proc_call(&b)
+  b.call
+end
+def proc_yield()
+  yield
+end
+def proc_return1
+  proc_call{return 42}+1
+end
+test_ok(proc_return1() == 42)
+def proc_return2
+  proc_yield{return 42}+1
+end
+test_ok(proc_return2() == 42)
+
 def ljump_test(state, proc, *args)
   x = state
   begin

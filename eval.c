@@ -632,6 +632,7 @@ struct BLOCK {
 #define BLOCK_DYNAMIC 2
 #define BLOCK_ORPHAN  4
 #define BLOCK_LAMBDA  8
+#define BLOCK_LEFT   16
 
 static struct BLOCK *ruby_block;
 
@@ -666,12 +667,13 @@ new_blktag()
     _block.block_obj = 0;		\
     ruby_block = &_block
 
-#define POP_BLOCK() 			\
+#define POP_BLOCK() \
    if (_block.tag->flags & (BLOCK_DYNAMIC)) \
        _block.tag->flags |= BLOCK_ORPHAN; \
    else	if (!(_block.scope->flags & SCOPE_DONT_RECYCLE)) \
        rb_gc_force_recycle((VALUE)_block.tag); \
-   ruby_block = _block.prev; 		\
+   ruby_block = _block.prev; \
+   _block.tag->flags |= BLOCK_LEFT; \
 } while (0)
 
 struct RVarmap *ruby_dyna_vars;
@@ -7023,6 +7025,7 @@ proc_invoke(proc, args, self, klass)
     if (klass) _block.frame.last_class = klass;
     ruby_block = &_block;
 
+  again:
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
     PUSH_TAG(PROT_NONE);
@@ -7035,7 +7038,9 @@ proc_invoke(proc, args, self, klass)
 
     POP_ITER();
     incoming_state = state;
-    if (orphan || ruby_block->tag->dst == state) {
+    if (orphan || pcall ||
+	((ruby_block->tag->flags & BLOCK_LEFT) &&
+	 ruby_block->tag->dst == state)) {
 	state &= TAG_MASK;
     }
     ruby_block = old_block;
@@ -8499,7 +8504,7 @@ intersect_fds(src, dst, max)
 	    if (FD_ISSET(i, src)) {
 		/* Wake up only one thread per fd. */
 		FD_CLR(i, src);
-		++n;
+		n++;
 	    }
 	    else {
 		FD_CLR(i, dst);
