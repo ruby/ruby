@@ -946,6 +946,8 @@ rb_str_equal(str1, str2)
     return Qfalse;
 }
 
+#define IS_EVSTR(p,e) ((p) < (e) && (*(p) == '$' || *(p) == '@' || *(p) == '{'))
+
 /*
  * call-seq:
  *   str.eql?(other)   => true or false
@@ -2568,7 +2570,7 @@ rb_str_inspect(str)
 	    rb_str_buf_cat(result, p - 1, len);
 	    p += len - 1;
 	}
-	else if (c == '"'|| c == '\\') {
+	else if (c == '"'|| c == '\\' || (c == '#' && IS_EVSTR(p, pend))) {
 	    s[0] = '\\'; s[1] = c;
 	    rb_str_buf_cat(result, s, 2);
 	}
@@ -2640,9 +2642,13 @@ rb_str_dump(str)
 	switch (c) {
 	  case '"':  case '\\':
 	  case '\n': case '\r':
-	  case '\t': case '\f': case '#':
+	  case '\t': case '\f':
 	  case '\013': case '\007': case '\033':
 	    len += 2;
+	    break;
+
+	  case '#':
+	    len += IS_EVSTR(p, pend) ? 2 : 1;
 	    break;
 
 	  default:
@@ -2669,7 +2675,7 @@ rb_str_dump(str)
 	    *q++ = c;
 	}
 	else if (c == '#') {
-	    *q++ = '\\';
+	    if (IS_EVSTR(p, pend)) *q++ = '\\';
 	    *q++ = '#';
 	}
 	else if (ISPRINT(c)) {

@@ -1,3 +1,10 @@
+Thu Dec  9 14:38:35 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_inspect): escape # which starts an expression
+	  substitution.  fixed: [ruby-core:03922]
+
+	* string.c (rb_str_dump): not escape # which isn't a substitution.
+
 Thu Dec  9 10:54:36 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dbm/dbm.c (fdbm_select): [ruby-dev:25132]
@@ -9,29 +16,29 @@ Thu Dec  9 10:54:36 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Thu Dec  9 03:08:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_init): set root-win title to "ruby" when
-	  the running script is '-e one-liner' or '-' (stdin). 
+	  the running script is '-e one-liner' or '-' (stdin).
 
 	* ext/tcltklib/extconf.rb: add find_library("#{lib}#{ver}",..) for
-	  stub libs 
+	  stub libs
 
 	* ext/tk/lib/tk/textmark.rb: TkTextMarkCurrent and TkTextMarkAnchor
-	  have a wrong parent class. 
+	  have a wrong parent class.
 
-	* ext/tk/lib/tk/dialog.rb: rename TkDialog2 --> TkDialogObj and 
+	* ext/tk/lib/tk/dialog.rb: rename TkDialog2 --> TkDialogObj and
 	  TkWarning2 --> TkWarningObj (old names are changed to alias names)
 
 	* ext/tk/lib/tk/dialog.rb: bug fix of treatment of 'prev_command'
 	  option and hashes for configuration
 
 	* ext/tk/lib/tk/dialog.rb: add TkDialogObj#name to return the
-	  button name 
+	  button name
 
 	* ext/tk/lib/tk/radiobutton.rb: rename enbugged method value() ==>
 	  get_value() and value=(val) ==> set_value(val).
 
 	* ext/tk/lib/tk/menu.rb: add TkMenu.new_menuspec
 
-	* ext/tk/lib/tk/menu.rb: add alias (TkMenuButton = TkMenubutton, 
+	* ext/tk/lib/tk/menu.rb: add alias (TkMenuButton = TkMenubutton,
 	  TkOptionMenuButton = TkOptionMenubutton)
 
 	* ext/tk/lib/tk/event.rb: new method aliases (same as option keys of
