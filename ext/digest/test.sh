@@ -14,14 +14,20 @@ ${MAKE}
 mkdir -p lib/digest
 
 for algo in md5 rmd160 sha1 sha2; do
+    args=--with-cflags="${CFLAGS}"
+
+    if [ $WITH_BUNDLED_ENGINES ]; then
+	args="$args --with-bundled-$algo"
+    fi
+
     (cd $algo &&
-	${RUBY} extconf.rb --with-cflags="${CFLAGS}";
+	${RUBY} extconf.rb $args;
 	${MAKE} clean;
 	${MAKE})
     ln -sf ../../$algo/$algo.so lib/digest/
 done
 
-${RUBY} -I. -I./lib test.rb 
+${RUBY} -I. -I./lib test.rb
 
 rm lib/digest/*.so
 rmdir lib/digest
