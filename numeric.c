@@ -19,6 +19,10 @@
 #include <floatingpoint.h>
 #endif
 
+#ifdef _UNICOSMP
+#include <intrinsics.h>
+#endif
+
 #ifdef HAVE_FLOAT_H
 #include <float.h>
 #endif
@@ -1828,6 +1832,9 @@ Init_Numeric()
 #if defined(__FreeBSD__) && __FreeBSD__ < 4
     /* allow divide by zero -- Inf */
     fpsetmask(fpgetmask() & ~(FP_X_DZ|FP_X_INV|FP_X_OFL));
+#elif defined(_UNICOSMP)
+    /* Turn off floating point exceptions for divide by zero, etc. */
+    _set_Creg(0, 0);
 #endif
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");

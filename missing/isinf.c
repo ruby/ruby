@@ -9,16 +9,33 @@ int
 isinf(n)
     double n;
 {
-        if (IsNANorINF(n) && IsINF(n)) {
-                return 1;
-        } else {
-                return 0;
-        }
+    if (IsNANorINF(n) && IsINF(n)) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
 }
 
 #else
 
 #include "config.h"
+
+#if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
+
+#ifdef HAVE_IEEEFP_H
+#include <ieeefp.h>
+#endif
+
+int
+isinf(n)
+    double n;
+{
+    return (!finite(x) && !isnan(x))
+}
+
+#else
+
 #ifdef HAVE_STRING_H
 # include <string.h>
 #else
@@ -43,4 +60,5 @@ isinf(n)
     return memcmp(&n, &pinf, sizeof n) == 0
 	|| memcmp(&n, &ninf, sizeof n) == 0;
 }
+#endif
 #endif

@@ -800,7 +800,7 @@ ip_ruby(clientData, interp, argc, argv)
 {
     VALUE res;
     int old_trapflag;
-     struct eval_body_arg arg;
+    struct eval_body_arg arg;
     int  dummy;
 
     /* ruby command has 1 arg. */
@@ -817,7 +817,7 @@ ip_ruby(clientData, interp, argc, argv)
     arg.failed = 0;
 
     /* evaluate the argument string by ruby */
-    DUMP2("rb_eval_string(%s)", arg);
+    DUMP2("rb_eval_string(%s)", arg.string);
     old_trapflag = rb_trap_immediate;
     res = rb_ensure(ip_ruby_eval_body, (VALUE)&arg, 
 		    ip_ruby_eval_ensure, INT2FIX(old_trapflag));
@@ -1775,7 +1775,7 @@ eval_queue_handler(evPtr, flags)
 {
     struct eval_queue *q = (struct eval_queue *)evPtr;
 
-    DUMP2("do_eval_queue_handler : evPtr = %lx", evPtr);
+    DUMP2("do_eval_queue_handler : evPtr = %p", evPtr);
     DUMP2("eval queue_thread : %lx", rb_thread_current());
     DUMP2("added by thread : %lx", q->thread);
 
@@ -2176,7 +2176,7 @@ invoke_queue_handler(evPtr, flags)
 {
     struct invoke_queue *q = (struct invoke_queue *)evPtr;
 
-    DUMP2("do_invoke_queue_handler : evPtr = %lx", evPtr);
+    DUMP2("do_invoke_queue_handler : evPtr = %p", evPtr);
     DUMP2("invoke queue_thread : %lx", rb_thread_current());
     DUMP2("added by thread : %lx", q->thread);
 

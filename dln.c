@@ -91,7 +91,7 @@ char *getenv();
 
 int eaccess();
 
-#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX) && !defined(__APPLE__)
++#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX) && !defined(__APPLE__) && !defined(_UNICOSMP)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif

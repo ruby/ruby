@@ -25,6 +25,11 @@ Sat Dec 20 11:40:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/yaml.rb (YAML::YAML): adjust Marshal version.
 
+Sat Dec 20 03:56:02 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_with_disable_interrupt): prohibit thread context
+	  switch during proc execution.  [ruby-dev:21899]
+
 Sat Dec 20 02:41:02 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb: add file. (yet another CGI library)

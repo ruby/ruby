@@ -4739,11 +4739,13 @@ rb_with_disable_interrupt(proc, data)
     int status;
 
     DEFER_INTS;
-    PUSH_TAG(PROT_NONE);
-    if ((status = EXEC_TAG()) == 0) {
-	result = (*proc)(data);
-    }
-    POP_TAG();
+    RUBY_CRITICAL(
+	PUSH_TAG(PROT_NONE);
+	if ((status = EXEC_TAG()) == 0) {
+	    result = (*proc)(data);
+	}
+	POP_TAG();
+    );
     ALLOW_INTS;
     if (status) JUMP_TAG(status);
 
