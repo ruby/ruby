@@ -1,3 +1,7 @@
+Fri Jun 23 17:36:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* stable version 1.4.5 released.
+
 Fri Jun 23 01:11:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (new_super): should tweak block_pass node for super too.

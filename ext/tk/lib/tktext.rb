@@ -245,16 +245,10 @@ class TkText<TkTextWin
     (inf == "")?  [0,0,0,0,0]: inf
   end
 
-  def yview(*what)
-    tk_send 'yview', *what
-  end
   def yview_pickplace(*what)
     tk_send 'yview', '-pickplace', *what
   end
 
-  def xview(*what)
-    tk_send 'xview', *what
-  end
   def xview_pickplace(*what)
     tk_send 'xview', '-pickplace', *what
   end
