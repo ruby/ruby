@@ -15,7 +15,7 @@ class Dir
     begin
       getdir = Win32API.new('kernel32', 'GetSystemWindowsDirectory', 'PL', 'L')
     rescue RuntimeError
-      getdir = Win32API.new('kernel32', 'GetSystemDirectory', 'PL', 'L')
+      getdir = Win32API.new('kernel32', 'GetWindowsDirectory', 'PL', 'L')
     end
     getdir.call(windir, windir.size)
     windir = File.expand_path(windir.rstrip.untaint)

@@ -1,3 +1,8 @@
+Sun Jul 27 00:37:16 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/tmpdir.rb: use GetWindowsDirectory, not GetSystemDirectory.
+	  [ruby-talk:77073]
+
 Sat Jul 26 21:25:21 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* io.c (rb_fdopen): set errno if it's zero on win32 platforms.
