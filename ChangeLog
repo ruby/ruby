@@ -1,3 +1,7 @@
+Thu May  6 22:09:29 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil.c (get_eval_string_core): bug fix. [ruby-dev:23466]
+
 Thu May  6 14:22:29 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb (to_yaml): added instance variable handling
