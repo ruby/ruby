@@ -5,6 +5,14 @@ Tue Apr  3 09:56:20 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb: ditto.
 
+Tue Apr  3 00:05:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (make_time_t): remove HAVE_TM_ZONE code since it
+	  sometimes reports wrong time.
+
+	* time.c (make_time_t): remove unnecessary range check for
+	  platforms where negative time_t is available.
+
 Mon Apr  2 14:25:49 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/monitor.rb (wait): ensure reentrance.
@@ -20,6 +28,29 @@ Mon Apr  2 01:16:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* win32/win32.c: use ruby's opendir on mingw32.
 
 	* missing/dir.h, dir.c, Makefile: ditto.
+
+Sun Apr  1 23:26:14 2001  TOYOFUKU Chikanobu  <toyofuku@juice.or.jp>
+
+	* numeric.c (flodivmod): a bug in no fmod case.
+
+Sun Apr  1 18:36:14 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* process.c (pst_wifsignaled): should apply WIFSIGNALED for status
+	  (int), not st (VALUE).
+
+Sat Mar 31 03:24:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): module inclusion should be check
+	  taints.
+
+Fri Mar 30 12:51:19 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): freeze check at first.
+
+Thu Mar 29 17:05:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_attr): sprintf() and rb_intern() moved into
+	  conditional body.
 
 Wed Mar 28 23:43:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

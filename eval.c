@@ -502,9 +502,9 @@ rb_attr(klass, id, read, write, ex)
 	rb_clear_cache_by_id(id);
 	rb_funcall(klass, added, 1, ID2SYM(id));
     }
-    sprintf(buf, "%s=", name);
-    id = rb_intern(buf);
     if (write) {
+	sprintf(buf, "%s=", name);
+	id = rb_intern(buf);
 	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
 	rb_clear_cache_by_id(id);
 	rb_funcall(klass, added, 1, ID2SYM(id));

@@ -222,6 +222,10 @@ rb_include_module(klass, module)
     VALUE p;
     int changed = 0;
 
+    rb_frozen_class_p(klass);
+    if (!OBJ_TAINTED(klass)) {
+	rb_secure(4);
+    }
     if (NIL_P(module)) return;
     if (klass == module) return;
 
@@ -246,7 +250,6 @@ rb_include_module(klass, module)
 		return;
 	    }
 	}
-	rb_frozen_class_p(klass);
 	RCLASS(klass)->super = include_class_new(module, RCLASS(klass)->super);
 	klass = RCLASS(klass)->super;
 	module = RCLASS(module)->super;

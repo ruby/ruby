@@ -332,7 +332,7 @@ flodivmod(x, y, divp, modp)
 	double z;
 
 	modf(x/y, &z);
-	mod = x - z * x;
+	mod = x - z * y;
     }
 #endif
     div = (x - mod) / y;
