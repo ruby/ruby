@@ -1334,6 +1334,7 @@ rb_ary_zip(argc, argv, ary)
 
 static VALUE
 rb_ary_transpose(ary)
+    VALUE ary;
 {
     long elen = -1, alen, i, j;
     VALUE tmp, result;

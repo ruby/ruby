@@ -1,3 +1,14 @@
+Tue Dec 31 19:21:02 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* array.c (rb_ary_transpose): Properly declare ary as a VALUE.
+
+	* file.c (rb_file_s_chmod): Do not directly cast an int to void *
+	  to avoid a warning.
+
+	* defines.h (FLUSH_REGISTER_WINDOWS): Add support for
+	  FreeBSD/sparc64.  miniruby still coredumps in a different place,
+	  though.
+
 Tue Dec 31 07:47:15 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (parse_string): readjusted.
