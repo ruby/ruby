@@ -242,7 +242,6 @@ class PP < PrettyPrint
     # 3. generic pretty_print
 
     def pretty_print(pp)
-      # specific pretty_print is not defined, try specific inspect.
       if /\(Kernel\)#/ !~ method(:inspect).inspect ||
          /\(Kernel\)#/ !~ method(:to_s).inspect
         pp.text inspect
@@ -270,14 +269,6 @@ class PP < PrettyPrint
     end
   end
 end
-
-[Numeric, FalseClass, TrueClass, Module].each {|c|
-  c.class_eval {
-    def pretty_print(pp)
-      pp.text self.to_s
-    end
-  }
-}
 
 class Array
   def pretty_print(pp)
@@ -419,21 +410,9 @@ class File
   end
 end
 
-class << ARGF
-  def pretty_print(pp)
-    pp.text self.to_s
-  end
-end
-
 class Object
   include PP::ObjectMixin
 end
-
-[Numeric, Symbol, FalseClass, TrueClass, NilClass, Module].each {|c|
-  c.class_eval {
-    alias :pretty_print_cycle :pretty_print
-  }
-}
 
 if __FILE__ == $0
   require 'runit/testcase'

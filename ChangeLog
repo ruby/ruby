@@ -1,7 +1,8 @@
-Tue Jan 21 02:55:10 2003  Tanaka Akira  <akr@m17n.org>
+Tue Jan 21 04:15:50 2003  Tanaka Akira  <akr@m17n.org>
 
-        * lib/pp.rb: Don't redefine `inspect'.
-          (pretty_print_inspect): new method.
+        * lib/pp.rb: Use redefined `to_s' as well as `inspect'.
+          Useless `pretty_print' methods removed.
+          (PP::ObjectMixin#pretty_print_inspect): new method.
 
 Mon Jan 20 21:48:43 2003  Akinori MUSHA  <knu@iDaemons.org>
 
