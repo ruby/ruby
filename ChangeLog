@@ -1,3 +1,8 @@
+Wed Oct 20 15:14:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (marshal_load): should protect the generated object
+	  table (arg->data) from GC.
+
 Fri Oct 15 01:32:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/Win32API/Win32API.c (Win32API_Call): need to use NUM2ULONG,
