@@ -987,11 +987,14 @@ rb_str_aset(str, indx, val)
       case T_FIXNUM:
       num_index:
 	idx = NUM2INT(indx);
-	if (idx < 0) {
-	    idx += RSTRING(str)->len;
-	}
-	if (idx < 0 || RSTRING(str)->len <= idx) {
+	if (RSTRING(str)->len <= idx) {
+	  out_of_range:
 	    rb_raise(rb_eIndexError, "index %d out of string", idx);
+	}
+	if (idx < 0) {
+	    if (-idx > RSTRING(str)->len)
+		goto out_of_range;
+	    idx += RSTRING(str)->len;
 	}
 	if (FIXNUM_P(val)) {
 	    if (RSTRING(str)->len == idx) {
@@ -1052,14 +1055,15 @@ rb_str_aset_m(argc, argv, str)
 	beg = NUM2INT(argv[0]);
 	len = NUM2INT(argv[1]);
 	if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
-	if (beg < 0) {
-	    beg += RSTRING(str)->len;
-	}
-	if (beg < 0 || RSTRING(str)->len < beg) {
-	    if (beg < 0) {
-		beg -= RSTRING(str)->len;
-	    }
+	if (RSTRING(str)->len < beg) {
+	  out_of_range:
 	    rb_raise(rb_eIndexError, "index %d out of string", beg);
+	}
+	if (beg < 0) {
+	    if (-beg > RSTRING(str)->len) {
+		goto out_of_range;
+	    }
+	    beg += RSTRING(str)->len;
 	}
 	if (beg + len > RSTRING(str)->len) {
 	    len = RSTRING(str)->len - beg;

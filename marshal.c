@@ -26,7 +26,7 @@ typedef unsigned short BDIGIT;
 #define SIZEOF_BDIGITS SIZEOF_SHORT
 #endif
 
-#define BITSPERSHORT (sizeof(short)*CHAR_BIT)
+#define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
 #define SHORTDN(x) RSHIFT(x,BITSPERSHORT)
 
@@ -46,7 +46,7 @@ shortlen(len, ds)
 	num = SHORTDN(num);
 	offset++;
     }
-    return (len - 1)*sizeof(BDIGIT)/sizeof(short) + offset;
+    return (len - 1)*sizeof(BDIGIT)/2 + offset;
 }
 #define SHORTLEN(x) shortlen((x),d)
 #endif
@@ -128,11 +128,8 @@ w_short(x, arg)
     int x;
     struct dump_arg *arg;
 {
-    int i;
-
-    for (i=0; i<sizeof(short); i++) {
-	w_byte((x >> (i*8)) & 0xff, arg);
-    }
+    w_byte((x >> 0) & 0xff, arg);
+    w_byte((x >> 8) & 0xff, arg);
 }
 
 static void
@@ -215,6 +212,9 @@ w_unique(s, arg)
     char *s;
     struct dump_arg *arg;
 {
+    if (s[0] == '#') {
+	rb_raise(rb_eArgError, "can't dump anonymous class %s", s);
+    }
     w_symbol(rb_intern(s), arg);
 }
 
@@ -292,7 +292,7 @@ w_object(obj, arg, limit)
 	w_byte(TYPE_FIXNUM, arg);
 	w_long(FIX2INT(obj), arg);
 #else
-	if (RSHIFT((long)obj, 32) == 0 || RSHIFT((long)obj, 32) == -1) {
+	if (RSHIFT((long)obj, 31) == 0 || RSHIFT((long)obj, 31) == -1) {
 	    w_byte(TYPE_FIXNUM, arg);
 	    w_long(FIX2LONG(obj), arg);
 	}
@@ -341,6 +341,9 @@ w_object(obj, arg, limit)
 
 	switch (BUILTIN_TYPE(obj)) {
 	  case T_CLASS:
+	    if (FL_TEST(obj, FL_SINGLETON)) {
+		rb_raise(rb_eTypeError, "singleton class can't be dumped");
+	    }
 	    w_byte(TYPE_CLASS, arg);
 	    {
 		VALUE path = rb_class_path(obj);
@@ -383,7 +386,7 @@ w_object(obj, arg, limit)
 		    BDIGIT num = *d;
 		    int i;
 
-		    for (i=0; i<SIZEOF_BDIGITS; i+=sizeof(short)) {
+		    for (i=0; i<SIZEOF_BDIGITS; i+=SIZEOF_SHORT) {
 			w_short(num & SHORTMASK, arg);
 			num = SHORTDN(num);
 			if (len == 0 && num == 0) break;
@@ -469,7 +472,8 @@ w_object(obj, arg, limit)
 		char *path;
 
 		if (FL_TEST(klass, FL_SINGLETON)) {
-		    if (RCLASS(klass)->m_tbl->num_entries > 0) {
+		    if (RCLASS(klass)->m_tbl->num_entries > 0 ||
+			RCLASS(klass)->iv_tbl->num_entries > 1) {
 			rb_raise(rb_eTypeError, "singleton can't be dumped");
 		    }
 		}
@@ -599,12 +603,9 @@ r_short(arg)
     struct load_arg *arg;
 {
     unsigned short x;
-    int i;
 
-    x = 0;
-    for (i=0; i<sizeof(short); i++) {
-	x |= r_byte(arg)<<(i*8);
-    }
+    x =  r_byte(arg);
+    x |= r_byte(arg)<<8;
 
     return x;
 }
@@ -617,13 +618,21 @@ long_toobig(size)
 	     sizeof(long), size);
 }
 
+#undef SIGN_EXTEND_CHAR
+#if __STDC__
+# define SIGN_EXTEND_CHAR(c) ((signed char)(c))
+#else  /* not __STDC__ */
+/* As in Harbison and Steele.  */
+# define SIGN_EXTEND_CHAR(c) ((((unsigned char)(c)) ^ 128) - 128)
+#endif
+
 static long
 r_long(arg)
     struct load_arg *arg;
 {
     register long x;
-    int c = (char)r_byte(arg);
-    int i;
+    int c = SIGN_EXTEND_CHAR(r_byte(arg));
+    long i;
 
     if (c == 0) return 0;
     if (c > 0) {
@@ -644,7 +653,7 @@ r_long(arg)
 	if (c > sizeof(long)) long_toobig(c);
 	x = -1;
 	for (i=0;i<c;i++) {
-	    x &= ~(0xff << (8*i));
+	    x &= ~((long)0xff << (8*i));
 	    x |= (long)r_byte(arg) << (8*i);
 	}
     }
@@ -792,10 +801,20 @@ r_object(arg)
       case TYPE_UCLASS:
 	{
 	    VALUE c = rb_path2class(r_unique(arg));
+	    VALUE tmp;
+
 	    v = r_object(arg);
-	    if (rb_special_const_p(v)) {
+	    if (rb_special_const_p(v) ||
+		TYPE(v) == T_OBJECT || TYPE(v) == T_CLASS || TYPE(v) == T_MODULE || 
+		!RTEST(rb_funcall(c, '<', 1, RBASIC(v)->klass))) {
 		rb_raise(rb_eArgError, "dump format error (user class)");
 	    }
+#if 0
+	    tmp = rb_obj_alloc(c);
+	    if (TYPE(v) != TYPE(tmp)) {
+		rb_raise(rb_eArgError, "dump format error (user class)");
+	    }
+#endif
 	    RBASIC(v)->klass = c;
 	    return v;
 	}
@@ -836,7 +855,7 @@ r_object(arg)
 #if SIZEOF_BDIGITS == SIZEOF_SHORT
 	    big->len = len;
 #else
-	    big->len = (len + 1) * sizeof(short) / sizeof(BDIGIT);
+	    big->len = (len + 1) * 2 / sizeof(BDIGIT);
 #endif
 	    big->digits = digits = ALLOC_N(BDIGIT, big->len);
 	    while (len > 0) {
@@ -845,7 +864,7 @@ r_object(arg)
 		int shift = 0;
 		int i;
 
-		for (i=0; i<SIZEOF_BDIGITS; i+=sizeof(short)) {
+		for (i=0; i<SIZEOF_BDIGITS; i+=2) {
 		    int j = r_short(arg);
 		    num |= j << shift;
 		    shift += BITSPERSHORT;
@@ -963,6 +982,9 @@ r_object(arg)
 
 	    klass = rb_path2class(r_unique(arg));
 	    v = rb_obj_alloc(klass);
+	    if (TYPE(v) != T_OBJECT) {
+		rb_raise(rb_eArgError, "dump format error");
+	    }
 	    r_regist(v, arg);
 	    r_ivar(v, arg);
 	    return v;

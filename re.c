@@ -652,7 +652,11 @@ rb_reg_nth_defined(nth, match)
 {
     if (NIL_P(match)) return Qnil;
     if (nth >= RMATCH(match)->regs->num_regs) {
-	return Qfalse;
+	return Qnil;
+    }
+    if (nth < 0) {
+	nth += RMATCH(match)->regs->num_regs;
+	if (nth <= 0) return Qnil;
     }
     if (RMATCH(match)->BEG(nth) == -1) return Qfalse;
     return Qtrue;
@@ -669,6 +673,10 @@ rb_reg_nth_match(nth, match)
     if (NIL_P(match)) return Qnil;
     if (nth >= RMATCH(match)->regs->num_regs) {
 	return Qnil;
+    }
+    if (nth < 0) {
+	nth += RMATCH(match)->regs->num_regs;
+	if (nth <= 0) return Qnil;
     }
     start = RMATCH(match)->BEG(nth);
     if (start == -1) return Qnil;
@@ -1145,7 +1153,7 @@ rb_reg_clone(re)
     clone->ptr = 0; clone->len = 0; clone->str = 0;
     rb_reg_initialize(clone, RREGEXP(re)->str, RREGEXP(re)->len,
 		      rb_reg_options(re));
-    return (VALUE)re;
+    return (VALUE)clone;
 }
 
 VALUE
