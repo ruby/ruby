@@ -36,7 +36,7 @@ module ExceptionForMatrix
 end
 
 class Matrix
-  RCS_ID='-$Header: ruby-mode,v 1.2 91/04/20 17:24:57 keiju Locked $-'
+  RCS_ID='-$Header: matrix.rb,v 1.2 91/04/20 17:24:57 keiju Locked $-'
   
   include ExceptionForMatrix
   

@@ -7,7 +7,7 @@
   $Date$
   created at: Fri Nov 12 16:47:09 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -54,5 +54,6 @@ void io_writable _((OpenFile *));
 void io_readable _((OpenFile *));
 void io_fptr_finalize _((OpenFile *));
 void io_unbuffered _((OpenFile *));
+void io_check_closed _((OpenFile *));
 
 #endif

@@ -124,7 +124,7 @@ add_modules(mod)
 }
 
 void
-rb_require_modules()
+ruby_require_modules()
 {
     struct req_list *list = req_list;
     struct req_list *tmp;
@@ -361,6 +361,7 @@ proc_options(argcp, argvp)
 	show_copyright();
     }
 
+    Init_ext();		/* should be called here for some reason :-( */
     if (script_given == FALSE) {
 	if (argc == 0) {	/* no more args */
 	    if (verbose == 3) exit(0);

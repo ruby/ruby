@@ -97,14 +97,14 @@ fc_i(key, value, res)
 }
 
 static VALUE
-find_class_path(cls)
-    VALUE cls;
+find_class_path(klass)
+    VALUE klass;
 {
     struct fc_result arg;
 
     arg.name = 0;
     arg.path = 0;
-    arg.klass = cls;
+    arg.klass = klass;
     arg.track = cObject;
     arg.prev = 0;
     if (RCLASS(cObject)->iv_tbl) {
@@ -114,30 +114,24 @@ find_class_path(cls)
 	st_foreach(class_tbl, fc_i, &arg);
     }
     if (arg.name) {
-	rb_iv_set(cls, "__classpath__", arg.path);
+	rb_iv_set(klass, "__classpath__", arg.path);
 	return arg.path;
     }
     return Qnil;
 }
 
 static VALUE
-classname(cls)
-    VALUE cls;
+classname(klass)
+    VALUE klass;
 {
     VALUE path;
 
-    while (TYPE(cls) == T_ICLASS || FL_TEST(cls, FL_SINGLETON)) {
-	cls = (VALUE)RCLASS(cls)->super;
+    while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	klass = (VALUE)RCLASS(klass)->super;
     }
-    path = rb_iv_get(cls, "__classpath__");
+    path = rb_iv_get(klass, "__classpath__");
     if (NIL_P(path)) {
-	path = rb_iv_get(cls, "__classid__");
-	if (!NIL_P(path)) {
-	    path = str_new2(rb_id2name(FIX2INT(path)));
-	}
-    }
-    if (NIL_P(path)) {
-	path = find_class_path(cls);
+	path = find_class_path(klass);
 	if (NIL_P(path)) {
 	    return 0;
 	}
@@ -153,30 +147,30 @@ mod_name(mod)
 {
     VALUE path = classname(mod);
 
-    if (path) return path;
+    if (path) return str_dup(path);
     return str_new(0,0);
 }
 
 VALUE
-rb_class_path(cls)
-    VALUE cls;
+rb_class_path(klass)
+    VALUE klass;
 {
-    VALUE path = classname(cls);
+    VALUE path = classname(klass);
 
     if (path) return path;
     else {
 	char buf[256];
 	char *s = "Class";
 
-	if (TYPE(cls) == T_MODULE) s = "Module";
-	sprintf(buf, "#<%s 0x%x>", s, cls);
+	if (TYPE(klass) == T_MODULE) s = "Module";
+	sprintf(buf, "#<%s 0x%x>", s, klass);
 	return str_new2(buf);
     }
 }
 
 void
-rb_set_class_path(cls, under, name)
-    VALUE cls, under;
+rb_set_class_path(klass, under, name)
+    VALUE klass, under;
     char *name;
 {
     VALUE str;
@@ -189,7 +183,7 @@ rb_set_class_path(cls, under, name)
 	str_cat(str, "::", 2);
 	str_cat(str, name, strlen(name));
     }
-    rb_iv_set(cls, "__classpath__", str);
+    rb_iv_set(klass, "__classpath__", str);
 }
 
 VALUE
@@ -203,18 +197,13 @@ rb_path2class(path)
 }
 
 void
-rb_name_class(cls, id)
-    VALUE cls;
+rb_name_class(klass, id)
+    VALUE klass;
     ID id;
 {
     extern VALUE cString;
 
-    if (cString) {
-	rb_iv_set(cls, "__classpath__", str_new2(rb_id2name(id)));
-    }
-    else {
-	rb_iv_set(cls, "__classid__", INT2FIX(id));
-    }
+    rb_iv_set(klass, "__classpath__", str_new2(rb_id2name(id)));
 }
 
 static st_table *autoload_tbl = 0;
@@ -235,17 +224,17 @@ rb_autoload_id(id, filename)
 }
 
 void
-rb_autoload(cls, filename)
-    char *cls, *filename;
+rb_autoload(klass, filename)
+    char *klass, *filename;
 {
-    rb_autoload_id(rb_intern(cls), filename);
+    rb_autoload_id(rb_intern(klass), filename);
 }
 
 VALUE
-f_autoload(obj, cls, file)
-    VALUE obj, cls, file;
+f_autoload(obj, klass, file)
+    VALUE obj, klass, file;
 {
-    ID id = rb_to_id(cls);
+    ID id = rb_to_id(klass);
 
     Check_Type(file, T_STRING);
     rb_autoload_id(id, RSTRING(file)->ptr);
@@ -253,10 +242,10 @@ f_autoload(obj, cls, file)
 }
 
 char *
-rb_class2name(cls)
-    VALUE cls;
+rb_class2name(klass)
+    VALUE klass;
 {
-    return RSTRING(rb_class_path(cls))->ptr;
+    return RSTRING(rb_class_path(klass))->ptr;
 }
 
 struct trace_var {
@@ -817,41 +806,41 @@ obj_remove_instance_variable(obj, name)
 }
 
 VALUE
-rb_const_get_at(cls, id)
-    VALUE cls;
+rb_const_get_at(klass, id)
+    VALUE klass;
     ID id;
 {
     VALUE value;
 
-    if (RCLASS(cls)->iv_tbl && st_lookup(RCLASS(cls)->iv_tbl, id, &value)) {
+    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &value)) {
 	return value;
     }
-    if (cls == cObject) {
-	return rb_const_get(cls, id);
+    if (klass == cObject) {
+	return rb_const_get(klass, id);
     }
     NameError("Uninitialized constant %s::%s",
-	      RSTRING(rb_class_path(cls))->ptr,
+	      RSTRING(rb_class_path(klass))->ptr,
 	      rb_id2name(id));
     /* not reached */
 }
 
 
 VALUE
-rb_const_get(cls, id)
-    VALUE cls;
+rb_const_get(klass, id)
+    VALUE klass;
     ID id;
 {
     VALUE value;
     VALUE tmp;
 
-    tmp = cls;
+    tmp = klass;
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    return value;
 	}
 	tmp = RCLASS(tmp)->super;
     }
-    if (BUILTIN_TYPE(cls) == T_MODULE) {
+    if (BUILTIN_TYPE(klass) == T_MODULE) {
 	return rb_const_get(cObject, id);
     }
 
@@ -867,13 +856,13 @@ rb_const_get(cls, id)
 	module = str_new2(modname);
 	free(modname);
 	f_require(0, module);
-	return rb_const_get(cls, id);
+	return rb_const_get(klass, id);
     }
 
     /* Uninitialized constant */
-    if (cls && cls != cObject)
+    if (klass && klass != cObject)
 	NameError("Uninitialized constant %s::%s",
-		  RSTRING(rb_class_path(cls))->ptr,
+		  RSTRING(rb_class_path(klass))->ptr,
 		  rb_id2name(id));
     else {
 	NameError("Uninitialized constant %s",rb_id2name(id));
@@ -947,15 +936,15 @@ mod_const_of(mod, ary)
 }
 
 int
-rb_const_defined_at(cls, id)
-    VALUE cls;
+rb_const_defined_at(klass, id)
+    VALUE klass;
     ID id;
 {
-    if (RCLASS(cls)->iv_tbl && st_lookup(RCLASS(cls)->iv_tbl, id, 0)) {
+    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
 	return TRUE;
     }
-    if (cls == cObject) {
-	return rb_const_defined(cls, id);
+    if (klass == cObject) {
+	return rb_const_defined(klass, id);
     }
     return FALSE;
 }
@@ -970,15 +959,15 @@ rb_autoload_defined(id)
 }
 
 int
-rb_const_defined(cls, id)
-    VALUE cls;
+rb_const_defined(klass, id)
+    VALUE klass;
     ID id;
 {
-    while (cls) {
-	if (RCLASS(cls)->iv_tbl && st_lookup(RCLASS(cls)->iv_tbl, id, 0)) {
+    while (klass) {
+	if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
 	    return TRUE;
 	}
-	cls = RCLASS(cls)->super;
+	klass = RCLASS(klass)->super;
     }
     if (st_lookup(class_tbl, id, 0))
 	return TRUE;
@@ -986,24 +975,24 @@ rb_const_defined(cls, id)
 }
 
 void
-rb_const_set(cls, id, val)
-    VALUE cls;
+rb_const_set(klass, id, val)
+    VALUE klass;
     ID id;
     VALUE val;
 {
-    if (!RCLASS(cls)->iv_tbl) {
-	RCLASS(cls)->iv_tbl = new_idhash();
+    if (!RCLASS(klass)->iv_tbl) {
+	RCLASS(klass)->iv_tbl = new_idhash();
     }
-    else if (st_lookup(RCLASS(cls)->iv_tbl, id, 0)) {
+    else if (st_lookup(RCLASS(klass)->iv_tbl, id, 0)) {
 	NameError("already initialized constant %s", rb_id2name(id));
     }
 
-    st_insert(RCLASS(cls)->iv_tbl, id, val);
+    st_insert(RCLASS(klass)->iv_tbl, id, val);
 }
 
 void
-rb_define_const(cls, name, val)
-    VALUE cls;
+rb_define_const(klass, name, val)
+    VALUE klass;
     char *name;
     VALUE val;
 {
@@ -1011,7 +1000,7 @@ rb_define_const(cls, name, val)
     if (!rb_is_const_id(id)) {
 	NameError("wrong constant name %s", name);
     }
-    rb_const_set(cls, id, val);
+    rb_const_set(klass, id, val);
 }
 
 void

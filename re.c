@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -69,7 +69,7 @@ static char casetable[] = {
 >>> "You lose. You will need a translation table for your character set." <<<
 #endif
 
-#define min(a,b) (((a)>(b))?(b):(a))
+#define MIN(a,b) (((a)>(b))?(b):(a))
 
 int
 str_cicmp(str1, str2)
@@ -78,7 +78,7 @@ str_cicmp(str1, str2)
     int len, i;
     char *p1, *p2;
 
-    len = min(RSTRING(str1)->len, RSTRING(str2)->len);
+    len = MIN(RSTRING(str1)->len, RSTRING(str2)->len);
     p1 = RSTRING(str1)->ptr; p2 = RSTRING(str2)->ptr;
 
     for (i = 0; i < len; i++, p1++, p2++) {
@@ -570,7 +570,7 @@ match_to_a(match)
     int i;
 
     for (i=0; i<regs->num_regs; i++) {
-	if (regs->beg[0] == -1) ary_push(ary, Qnil);
+	if (regs->beg[i] == -1) ary_push(ary, Qnil);
 	else ary_push(ary, str_new(ptr+regs->beg[i],
 				   regs->end[i]-regs->beg[i]));
     }
@@ -929,7 +929,7 @@ reg_regsub(str, src, regs)
 	if (!val) val = str_new(p, e-p);
 	else      str_cat(val, p, e-p);
     }
-    if (!val) return (VALUE)str;
+    if (!val) return str;
 
     return val;
 }

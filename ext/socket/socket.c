@@ -821,7 +821,7 @@ udp_addrsetup(host, port, addr)
 	setipaddr(RSTRING(host)->ptr, addr);
     }
     if (FIXNUM_P(port)) {
-	addr->sin_port = FIX2INT(port);
+	addr->sin_port = htons(FIX2INT(port));
     }
     else {
 	struct servent *servent;

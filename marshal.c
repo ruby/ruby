@@ -621,7 +621,7 @@ r_object(arg)
 	    if (rb_special_const_p(v)) {
 		ArgError("dump format error (user class)");
 	    }
-	    RBASIC(v)->class = c;
+	    RBASIC(v)->klass = c;
 	    return v;
 	}
 

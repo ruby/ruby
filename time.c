@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Dec 28 14:31:59 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -201,7 +201,7 @@ time_arg(argc, argv, args)
     }
 
     /* value validation */
-    if (   args[0] < 70|| args[1] > 137
+    if (   args[0] < 70|| args[0] > 137
 	|| args[1] < 0 || args[1] > 11
 	|| args[2] < 1 || args[2] > 31
 	|| args[3] < 0 || args[3] > 23
@@ -411,6 +411,23 @@ time_gmtime(time)
 
 static VALUE
 time_asctime(time)
+    VALUE time;
+{
+    struct time_object *tobj;
+    char *s;
+
+    GetTimeval(time, tobj);
+    if (tobj->tm_got == 0) {
+	time_localtime(time);
+    }
+    s = asctime(&(tobj->tm));
+    if (s[24] == '\n') s[24] = '\0';
+
+    return str_new2(s);
+}
+
+static VALUE
+time_to_s(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -774,8 +791,8 @@ Init_Time()
     rb_define_method(cTime, "gmtime", time_gmtime, 0);
     rb_define_method(cTime, "ctime", time_asctime, 0);
     rb_define_method(cTime, "asctime", time_asctime, 0);
-    rb_define_method(cTime, "to_s", time_asctime, 0);
-    rb_define_method(cTime, "inspect", time_asctime, 0);
+    rb_define_method(cTime, "to_s", time_to_s, 0);
+    rb_define_method(cTime, "inspect", time_to_s, 0);
     rb_define_method(cTime, "to_a", time_to_a, 0);
 
     rb_define_method(cTime, "+", time_plus, 1);

@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jun 10 14:26:32 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 *************************************************/
 
@@ -165,20 +165,23 @@ int   num2int _((VALUE));
 double num2dbl _((VALUE));
 #define NUM2DBL(x) num2dbl((VALUE)(x))
 
+char *str2cstr _((VALUE));
+#define STR2CSTR(x) str2cstr((VALUE)(x))
+
 VALUE rb_newobj _((void));
 #define NEWOBJ(obj,type) type *obj = (type*)rb_newobj()
 #define OBJSETUP(obj,c,t) {\
-    RBASIC(obj)->class = (c);\
+    RBASIC(obj)->klass = (c);\
     RBASIC(obj)->flags = (t);\
 }
 #define CLONESETUP(clone,obj) {\
-    OBJSETUP(clone,singleton_class_clone(RBASIC(obj)->class),RBASIC(obj)->flags);\
-    singleton_class_attached(RBASIC(clone)->class, (VALUE)clone);\
+    OBJSETUP(clone,singleton_class_clone(RBASIC(obj)->klass),RBASIC(obj)->flags);\
+    singleton_class_attached(RBASIC(clone)->klass, (VALUE)clone);\
 }
 
 struct RBasic {
     UINT flags;
-    VALUE class;
+    VALUE klass;
 };
 
 struct RObject {
@@ -240,14 +243,14 @@ struct RData {
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
 VALUE data_object_alloc _((VALUE,void*,void (*)(),void (*)()));
-#define Data_Make_Struct(class,type,mark,free,sval) (\
+#define Data_Make_Struct(klass,type,mark,free,sval) (\
     sval = ALLOC(type),\
     memset(sval, 0, sizeof(type)),\
-    data_object_alloc(class,sval,mark,free)\
+    data_object_alloc(klass,sval,mark,free)\
 )
 
-#define Data_Wrap_Struct(class,mark,free,sval) (\
-    data_object_alloc(class,sval,mark,free)\
+#define Data_Wrap_Struct(klass,mark,free,sval) (\
+    data_object_alloc(klass,sval,mark,free)\
 )
 
 #define Data_Get_Struct(obj,type,sval) {\

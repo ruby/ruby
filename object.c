@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -81,7 +81,7 @@ obj_type(obj)
 {
     VALUE cl = CLASS_OF(obj);
 
-    if (FL_TEST(cl, FL_SINGLETON)) {
+    while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
 	cl = RCLASS(cl)->super;
     }
     return cl;
@@ -96,12 +96,12 @@ obj_clone(obj)
     if (TYPE(obj) != T_OBJECT) {
 	TypeError("can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
-    clone = obj_alloc(RBASIC(obj)->class);
+    clone = obj_alloc(RBASIC(obj)->klass);
     CLONESETUP(clone,obj);
     if (ROBJECT(obj)->iv_tbl) {
 	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
-    RBASIC(clone)->class = singleton_class_clone(RBASIC(obj)->class);
-    RBASIC(clone)->flags = RBASIC(obj)->flags;
+	RBASIC(clone)->klass = singleton_class_clone(RBASIC(obj)->klass);
+	RBASIC(clone)->flags = RBASIC(obj)->flags;
     }
 
     return clone;
@@ -386,7 +386,7 @@ static VALUE
 mod_to_s(class)
     VALUE class;
 {
-    return rb_class_path(class);
+    return str_dup(rb_class_path(class));
 }
 
 static VALUE
@@ -488,8 +488,8 @@ class_s_new(argc, argv)
     }
     klass = class_new(super);
     /* make metaclass */
-    RBASIC(klass)->class = singleton_class_new(RBASIC(super)->class);
-    singleton_class_attached(RBASIC(klass)->class, klass);
+    RBASIC(klass)->klass = singleton_class_new(RBASIC(super)->klass);
+    singleton_class_attached(RBASIC(klass)->klass, klass);
 
     return klass;
 }
@@ -680,7 +680,7 @@ fail_to_flo(val)
 
 double big2dbl();
 
-static VALUE
+VALUE
 f_float(obj, arg)
     VALUE obj, arg;
 {
@@ -719,6 +719,15 @@ f_string(obj, arg)
     VALUE obj, arg;
 {
     return rb_funcall(arg, rb_intern("to_s"), 0);
+}
+
+char*
+str2cstr(str)
+    VALUE str;
+{
+    if (NIL_P(str)) return NULL;
+    Check_Type(str, T_STRING);
+    return RSTRING(str)->ptr;
 }
 
 VALUE
@@ -765,7 +774,7 @@ boot_defclass(name, super)
 
     rb_name_class(obj, id);
     st_add_direct(rb_class_tbl, id, obj);
-    return (VALUE)obj;
+    return obj;
 }
 
 VALUE
@@ -777,7 +786,7 @@ rb_class_of(obj)
     if (obj == FALSE) return cFalseClass;
     if (obj == TRUE) return cTrueClass;
 
-    return RBASIC(obj)->class;
+    return RBASIC(obj)->klass;
 }
 
 VALUE TopSelf;
@@ -791,11 +800,11 @@ Init_Object()
     cModule = boot_defclass("Module", cObject);
     cClass =  boot_defclass("Class",  cModule);
 
-    metaclass = RBASIC(cObject)->class = singleton_class_new(cClass);
+    metaclass = RBASIC(cObject)->klass = singleton_class_new(cClass);
     singleton_class_attached(metaclass, cObject);
-    metaclass = RBASIC(cModule)->class = singleton_class_new(metaclass);
+    metaclass = RBASIC(cModule)->klass = singleton_class_new(metaclass);
     singleton_class_attached(metaclass, cModule);
-    metaclass = RBASIC(cClass)->class = singleton_class_new(metaclass);
+    metaclass = RBASIC(cClass)->klass = singleton_class_new(metaclass);
     singleton_class_attached(metaclass, cClass);
 
     mKernel = rb_define_module("Kernel");

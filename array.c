@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Aug  6 09:46:12 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -403,24 +403,19 @@ ary_index(ary, val)
 }
 
 static VALUE
-ary_indexes(ary, args)
-    VALUE ary, args;
+ary_indexes(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
 {
-    VALUE *p, *pend;
     VALUE new_ary;
-    int i = 0;
+    int i;
 
-    if (!args || NIL_P(args)) {
-	return ary_new2(0);
+    new_ary = ary_new2(argc);
+    for (i=0; i<argc; i++) {
+	ary_store(new_ary, i, ary_entry(ary, NUM2INT(argv[i])));
     }
 
-    new_ary = ary_new2(RARRAY(args)->len);
-
-    p = RARRAY(args)->ptr; pend = p + RARRAY(args)->len;
-    while (p < pend) {
-	ary_store(new_ary, i++, ary_entry(ary, NUM2INT(*p)));
-	p++;
-    }
     return new_ary;
 }
 
@@ -683,6 +678,8 @@ ary_reverse(ary)
     VALUE *p1, *p2;
     VALUE tmp;
 
+    if (RARRAY(ary)->len == 0) return ary;
+
     p1 = RARRAY(ary)->ptr;
     p2 = p1 + RARRAY(ary)->len - 1;	/* points last item */
 
@@ -734,6 +731,8 @@ VALUE
 ary_sort_bang(ary)
     VALUE ary;
 {
+    if (RARRAY(ary)->len == 0) return ary;
+
     ary_modify(ary);
     qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), iterator_p()?sort_1:sort_2);
     return ary;
@@ -743,6 +742,7 @@ VALUE
 ary_sort(ary)
     VALUE ary;
 {
+    if (RARRAY(ary)->len == 0) return ary;
     return ary_sort_bang(ary_clone(ary));
 }
 
@@ -816,20 +816,27 @@ ary_delete_if(ary)
     return ary;
 }
 
-#if 0
 static VALUE
-ary_replace(ary)
+ary_filter(ary)
     VALUE ary;
 {
     int i;
 
+    ary_modify(ary);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	RARRAY(ary)->ptr[i] = rb_yield(RARRAY(ary)->ptr[i]);
     }
-
     return ary;
 }
-#endif
+
+static VALUE
+ary_replace_method(ary, ary2)
+    VALUE ary, ary2;
+{
+    Check_Type(ary2, T_ARRAY);
+    ary_replace(ary, 0, RARRAY(ary2)->len, ary2);
+    return ary;
+}
 
 static VALUE
 ary_clear(ary)
@@ -1183,7 +1190,8 @@ Init_Array()
     rb_define_alias(cArray,  "size", "length");
     rb_define_method(cArray, "empty?", ary_empty_p, 0);
     rb_define_method(cArray, "index", ary_index, 1);
-    rb_define_method(cArray, "indexes", ary_indexes, -2);
+    rb_define_method(cArray, "indexes", ary_indexes, -1);
+    rb_define_method(cArray, "indices", ary_indexes, -1);
     rb_define_method(cArray, "clone", ary_clone, 0);
     rb_define_method(cArray, "dup", ary_dup, 0);
     rb_define_method(cArray, "join", ary_join_method, -1);
@@ -1194,9 +1202,8 @@ Init_Array()
     rb_define_method(cArray, "delete", ary_delete, 1);
     rb_define_method(cArray, "delete_at", ary_delete_at, 1);
     rb_define_method(cArray, "delete_if", ary_delete_if, 0);
-#if 0
-    rb_define_method(cArray, "replace", ary_replace, 0);
-#endif
+    rb_define_method(cArray, "filter", ary_filter, 0);
+    rb_define_method(cArray, "replace", ary_replace_method, 1);
     rb_define_method(cArray, "clear", ary_clear, 0);
     rb_define_method(cArray, "fill", ary_fill, -1);
     rb_define_method(cArray, "include?", ary_includes, 1);

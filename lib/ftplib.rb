@@ -17,7 +17,7 @@ class FTPProtoError < FTPError; end
 
 class FTP
    
-  RCS_ID = '$Id: ftplib.rb,v 1.5 1997/09/16 08:03:31 shugo Exp $'
+  RCS_ID = %q$Id: ftplib.rb,v 1.5 1997/09/16 08:03:31 shugo Exp $
    
    FTP_PORT = 21
    CRLF = "\r\n"

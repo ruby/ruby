@@ -120,7 +120,7 @@ $bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
   if gsub!('vt100', 'VT100')
-    gsub!('VT100', 'Vt100')
+    p gsub!('VT100', 'Vt100')
     redo;
   end
   $bad = 1 if /vt100/;

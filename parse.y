@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -158,6 +158,8 @@ static void top_local_setup();
 	kDEFINED
 	klBEGIN
 	klEND
+	k__LINE__
+	k__FILE__
 
 %token <id>   IDENTIFIER FID GVAR IVAR CONSTANT
 %token <val>  INTEGER FLOAT STRING XSTRING REGEXP
@@ -175,8 +177,8 @@ static void top_local_setup();
 %type <id>   variable symbol operation assoc_kw
 %type <id>   cname fname op rest_arg
 %type <num>  f_arg
-%token oUPLUS 		/* unary+ */
-%token MINUS 		/* unary- */
+%token UPLUS 		/* unary+ */
+%token UMINUS 		/* unary- */
 %token POW		/* ** */
 %token CMP  		/* <=> */
 %token EQ  		/* == */
@@ -208,6 +210,7 @@ static void top_local_setup();
 %right kNOT
 %nonassoc kDEFINED
 %right '=' OP_ASGN
+%right '?' ':'
 %nonassoc DOT2 DOT3
 %left  OROP
 %left  ANDOP
@@ -458,10 +461,6 @@ lhs		: variable
 		    {
 			$$ = attrset($1, $3, 0);
 		    }
-		| primary '.' CONSTANT
-		    {
-			$$ = attrset($1, $3, 0);
-		    }
 		| backref
 		    {
 		        backref_error($1);
@@ -695,6 +694,12 @@ arg		: variable '=' arg
 		    {
 		        in_defined = 0;
 			$$ = NEW_DEFINED($4);
+		    }
+		| arg '?' arg ':' arg
+		    {
+			value_expr($1);
+			$$ = NEW_IF(cond($1), $3, $5);
+		        fixpos($$, $1);
 		    }
 		| primary
 		    {
@@ -977,9 +982,6 @@ primary		: literal
 		    }
 		| kCLASS LSHFT expr term
 		    {
-			if (cur_mid || in_single)
-			    yyerror("class definition in method body");
-
 			class_nest++;
 			cref_push();
 			local_push();
@@ -1236,6 +1238,8 @@ variable	: IDENTIFIER
 		| kSELF {$$ = kSELF;}
 		| kTRUE {$$ = kTRUE;} 
 		| kFALSE {$$ = kFALSE;}
+		| k__FILE__ {$$ = k__FILE__;}
+		| k__LINE__ {$$ = k__LINE__;}
 
 var_ref		: variable
 		    {
@@ -1257,7 +1261,7 @@ superclass	: term
 		    {
 			$$ = $3;
 		    }
-		| error term {yyerrok;}
+		| error term {yyerrok; $$ = 0}
 
 f_arglist	: '(' f_args ')'
 		    {
@@ -1988,6 +1992,15 @@ parse_qstring(term)
     return STRING;
 }
 
+static int
+parse_quotedword(term)
+    int term;
+{
+    if (parse_qstring(term) == 0) return 0;
+    yylval.node = NEW_CALL(NEW_STR(yylval.val), rb_intern("split"), 0);
+    return DSTRING;
+}
+
 char *strdup();
 
 static int
@@ -2041,6 +2054,7 @@ here_document(term)
 	    free(eos);
 	    return 0;
 	}
+	sourceline++;
 	if (strncmp(eos, RSTRING(line)->ptr, len) == 0 &&
 	    (RSTRING(line)->ptr[len] == '\n' ||
 	     RSTRING(line)->ptr[len] == '\r')) {
@@ -2049,7 +2063,6 @@ here_document(term)
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;
 	lex_pend = lex_p + RSTRING(line)->len;
-	sourceline++;
 	switch (parse_string(term, '\n')) {
 	  case STRING:
 	  case XSTRING:
@@ -2298,7 +2311,20 @@ retry:
 	return parse_qstring(c);
 
       case '?':
-	if ((c = nextc()) == '\\') {
+	if (lex_state == EXPR_END) {
+	    Warning("a?b:c is undocumented feature ^^;;;");
+	    lex_state = EXPR_BEG;
+	    return '?';
+	}
+	c = nextc();
+	if (lex_state == EXPR_ARG && space_seen && isspace(c)){
+	    pushback(c);
+	    arg_ambiguous();
+	    lex_state = EXPR_BEG;
+	    Warning("a?b:c is undocumented feature ^^;;;");
+	    return '?';
+	}
+	if (c == '\\') {
 	    c = read_escape();
 	}
 	c &= 0xff;
@@ -2379,6 +2405,7 @@ retry:
 	    return OP_ASGN;
 	}
 	if (c == '>') {
+	    Warning("-> is undocumented feature ^^;;;");
 	    lex_state = EXPR_BEG;
 	    return KW_ASSOC;
 	}
@@ -2544,8 +2571,10 @@ retry:
 	    return COLON2;
 	}
 	pushback(c);
-	if (isspace(c))
+	if (lex_state == EXPR_END || isspace(c)) {
+	    lex_state = EXPR_BEG;
 	    return ':';
+	}
 	lex_state = EXPR_FNAME;
 	return SYMBEG;
 
@@ -2579,9 +2608,6 @@ retry:
 	return c;
 
       case ',':
-	lex_state = EXPR_BEG;
-	return c;
-
       case ';':
 	lex_state = EXPR_BEG;
 	return c;
@@ -2597,11 +2623,6 @@ retry:
 
       case '(':
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    c = LPAREN;
-	    lex_state = EXPR_BEG;
-	}
-	else if (lex_state == EXPR_ARG && space_seen) {
-	    arg_ambiguous();
 	    c = LPAREN;
 	    lex_state = EXPR_BEG;
 	}
@@ -2686,6 +2707,9 @@ retry:
 	      case 'q':
 		return parse_qstring(term);
 
+	      case 'w':
+		return parse_quotedword(term);
+
 	      case 'x':
 		return parse_string('`', term);
 
@@ -2693,7 +2717,7 @@ retry:
 		return parse_regx(term);
 
 	      default:
-		yyerror("unknown type of string `%c'", c);
+		yyerror("unknown type of %string");
 		return 0;
 	    }
 	}
@@ -3219,6 +3243,12 @@ gettable(id)
     else if (id == kFALSE) {
 	return NEW_FALSE();
     }
+    else if (id == k__FILE__) {
+	return NEW_STR(str_new2(sourcefile));
+    }
+    else if (id == k__LINE__) {
+	return NEW_LIT(INT2FIX(sourceline));
+    }
     else if (is_local_id(id)) {
 	if (local_id(id)) return NEW_LVAR(id);
 	if (dyna_var_defined(id)) return NEW_DVAR(id);
@@ -3256,6 +3286,12 @@ assignable(id, val)
     }
     else if (id == kFALSE) {
 	yyerror("Can't assign to false");
+    }
+    else if (id == k__FILE__) {
+	yyerror("Can't assign to __FILE__");
+    }
+    else if (id == k__LINE__) {
+	yyerror("Can't assign to __LINE__");
     }
     else if (is_local_id(id)) {
 	if (local_id(id) || !dyna_in_block()) {

@@ -1,8 +1,8 @@
 #
 #   rational.rb - 
 #   	$Release Version: 0.5 $
-#   	$Revision: 1.1 $
-#   	$Date: 1996/11/11 04:25:14 $
+#   	$Revision: 1.1.1.1 $
+#   	$Date: 1998/01/16 04:05:49 $
 #   	by Keiju ISHITSUKA(SHL Japan Inc.)
 #
 # --

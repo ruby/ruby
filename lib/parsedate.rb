@@ -4,39 +4,66 @@ module ParseDate
     'may' => 5, 'jun' => 6, 'jul' => 7, 'aug' => 8,
     'sep' => 9, 'oct' =>10, 'nov' =>11, 'dec' =>12 }
   MONTHPAT = MONTHS.keys.join('|')
-  DAYPAT = 'mon|tue|wed|thu|fri|sat|sun'
+  DAYS = {
+    'sun' => 0, 'mon' => 1, 'tue' => 2, 'wed' => 3,
+    'thu' => 4, 'fri' => 5, 'sat' => 6 }
+  DAYPAT = DAYS.keys.join('|')
   
   def parsedate(date) 
-    if date.sub!(/(#{DAYPAT})/i, ' ')
-      dayofweek = $1
+    # ISO 8601?
+    if date =~ /(\d\d\d\d)-?(?:(\d\d)-?(\d\d)?)? *(?:(\d\d):(\d\d)(?::(\d\d))?)?/
+      return $1.to_i,
+	if $2 then $2.to_i else 1 end,
+	if $3 then $3.to_i else 1 end,
+	nil,
+	if $4 then $4.to_i end,
+	if $5 then $5.to_i end,
+	if $6 then $6.to_i end,
+	nil
     end
-    if date.sub!(/\s+(\d+:\d+(:\d+)?)/, ' ')
-      time = $1
+    date = date.dup
+    if date.sub!(/(#{DAYPAT})[a-z]*,?/i, ' ')
+      wday = DAYS[$1.downcase]
     end
-    if date =~ /19(\d\d)/
-      year = Integer($1)
+    if date.sub!(/(\d+):(\d+)(?::(\d+))?\s*(am|pm)?\s*(?:\s+([a-z]{1,4}(?:\s+[a-z]{1,4})|[-+]\d{4}))?/i, ' ')
+      hour = $1.to_i
+      min = $2.to_i
+      if $3
+	sec = $3.to_i
+      end
+      if $4 == 'pm'
+	hour += 12
+      end
+      if $5
+	zone = $5
+      end
     end
-    if date.sub!(/\s*(\d+)\s+(#{MONTHPAT})\S*\s+/i, ' ')
-      dayofmonth = $1.to_i
-      monthname  = $2
-    elsif date.sub!(/\s*(#{MONTHPAT})\S*\s+(\d+)\s+/i, ' ')
-      monthname  = $1
-      dayofmonth = $2.to_i
-    elsif date.sub!(/\s*(#{MONTHPAT})\S*\s+(\d+)\D+/i, ' ')
-      monthname  = $1
-      dayofmonth = $2.to_i
-    elsif date.sub!(/\s*(\d\d?)\/(\d\d?)/, ' ')
-      month  = $1
-      dayofmonth = $2.to_i
+    if date.sub!(/(\d+)\S*\s+(#{MONTHPAT})\S*(?:\s+(\d+))?/i, ' ')
+      mday = $1.to_i
+      mon = MONTHS[$2.downcase]
+      if $3
+	year = $3.to_i
+      end
+    elsif date.sub!(/(#{MONTHPAT})\S*\s+(\d+)\S*\s*,?(?:\s+(\d+))?/i, ' ')
+      mon = MONTHS[$1.downcase]
+      mday = $2.to_i
+      if $3
+	year = $3.to_i
+      end
+    elsif date.sub!(/(\d+)\/(\d+)(?:\/(\d+))/, ' ')
+      mon = $1.to_i
+      mday = $2.to_i
+      if $3
+	year = $3.to_i
+      end
     end
-    if monthname
-      month = MONTHS[monthname.downcase]
-    end
-    if ! year && date =~ /\d\d/
-      year = Integer($&)
-    end
-    return year, month, dayofmonth
+    return year, mon, mday, wday, hour, min, sec, zone
   end
 
   module_function :parsedate
+end
+
+if __FILE__ == $0
+  p Time.now.asctime
+  p ParseDate.parsedate(Time.now.asctime)
 end

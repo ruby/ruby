@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 15:14:02 JST 1993
 
-  Copyright (C) 1993-1996 Yukihiro Matsumoto
+  Copyright (C) 1993-1998 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -101,6 +101,9 @@ enum node_type {
     NODE_TAG,
     NODE_NEWLINE,
     NODE_POSTEXE,
+#ifdef C_ALLOCA
+    NODE_ALLOCA,
+#endif
 };
 
 typedef struct RNode {
@@ -116,15 +119,15 @@ typedef struct RNode {
     union {
 	struct RNode *node;
 	ID id;
-	int argc;
+	INT argc;
 	VALUE value;
     } u2;
     union {
 	struct RNode *node;
 	ID id;
-	int state;
+	INT state;
 	struct global_entry *entry;
-	int cnt;
+	INT cnt;
 	VALUE value;
     } u3;
 } NODE;

@@ -1,8 +1,8 @@
 #
 #   mathn.rb - 
 #   	$Release Version: 0.5 $
-#   	$Revision: 1.1 $
-#   	$Date: 1997/07/03 04:43:47 $
+#   	$Revision: 1.1.1.1 $
+#   	$Date: 1998/01/16 04:05:49 $
 #   	by Keiju ISHITSUKA(SHL Japan Inc.)
 #
 # --
