@@ -15,6 +15,7 @@ fcntl
 #iconv
 nkf
 #pty
+racc/cparse
 #readline
 #sdbm
 #socket

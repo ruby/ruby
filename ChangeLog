@@ -1,3 +1,13 @@
+Fri Mar 22 16:27:24 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/racc/parser.rb: new file.
+
+	* ext/racc/MANIFEST, cparse.c, depend, extconf.rb: new files.
+
+	* lib/README: add racc/parser.rb.
+
+	* ext/Setup*: add racc/cparse.
+
 Fri Mar 22 15:44:38 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/MANIFEST, strscan.c, depend, extconf.rb: new files.

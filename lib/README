@@ -47,6 +47,7 @@ pp.rb		pretty print objects
 prettyprint.rb	pretty printing algorithm
 profile.rb	ruby profiler
 pstore.rb	persistent object strage using marshal
+racc/parser.rb	racc (Ruby yACC) runtime
 rational.rb	rational number support
 readbytes.rb	define IO#readbytes
 resolv.rb	DNS resolver in Ruby
