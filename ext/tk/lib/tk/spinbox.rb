@@ -34,6 +34,6 @@ class TkSpinbox<TkEntry
   end
 
   def set(str)
-    _freomUTF8(tk_send_without_enc('set', _get_eval_enc_str(str)))
+    _fromUTF8(tk_send_without_enc('set', _get_eval_enc_str(str)))
   end
 end
