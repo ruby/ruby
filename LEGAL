@@ -225,6 +225,19 @@ ext/md5/md5.h:
     L. Peter Deutsch
     ghost@aladdin.com
 
+ext/nkf/nkf1.7/nkf.c:
+
+  This file is under the following license.  So to speak, it is
+  copyrighted semi-public-domain software.
+
+    Copyright (C) 1987, Fujitsu LTD. (Itaru ICHIKAWA)
+       Everyone is permitted to do anything on this program 
+       including copying, modifying, improving.
+       as long as you don't try to pretend that you wrote it.
+       i.e., the above copyright notice has to appear in all copies.
+       You don't have to ask before copying or publishing.
+       THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE.
+
 ext/socket/addrinfo.h:
 ext/socket/getaddrinfo.c:
 ext/socket/getnameinfo.c:
