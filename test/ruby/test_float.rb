@@ -61,12 +61,29 @@ class TestFloat < Test::Unit::TestCase
     assert(a.abs < Float::EPSILON)
     a = Float("-0.0")
     assert(a.abs < Float::EPSILON)
-    a = Float("0." + "00" * Float::DIG + "1")
+    a = Float("0.0000000000000000001")
     assert(a != 0.0)
-    a = Float("+0." + "00" * Float::DIG + "1")
+    a = Float("+0.0000000000000000001")
     assert(a != 0.0)
-    a = Float("-0." + "00" * Float::DIG + "1")
+    a = Float("-0.0000000000000000001")
     assert(a != 0.0)
+    a = Float(".0")
+    assert(a.abs < Float::EPSILON)
+    a = Float("+.0")
+    assert(a.abs < Float::EPSILON)
+    a = Float("-.0")
+    assert(a.abs < Float::EPSILON)
+    a = Float("0.")
+    assert(a.abs < Float::EPSILON)
+    a = Float("+0.")
+    assert(a.abs < Float::EPSILON)
+    a = Float("-0.")
+    assert(a.abs < Float::EPSILON)
+    assert_raise(ArgumentError){Float(".")}
+    assert_raise(ArgumentError){Float("+")}
+    assert_raise(ArgumentError){Float("+.")}
+    assert_raise(ArgumentError){Float("-")}
+    assert_raise(ArgumentError){Float("-.")}
     # add expected behaviour here.
   end
 end

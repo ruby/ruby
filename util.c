@@ -722,7 +722,8 @@ ruby_strtod(string, endPtr)
 				 * fractional part of the mantissa, and X
 				 * is the exponent.  Either of the signs
 				 * may be "+", "-", or omitted.  Either I
-				 * or F may be omitted, or both.  The decimal
+				 * or F may be omitted, but both cannot be
+				 * ommitted at once. The decimal
 				 * point isn't necessary unless F is present.
 				 * The "E" may actually be an "e".  E and X
 				 * may both be omitted (but not just one).
@@ -745,7 +746,8 @@ ruby_strtod(string, endPtr)
 				 * case, fracExp is incremented one for each
 				 * dropped digit. */
     int mantSize = 0;		/* Number of digits in mantissa. */
-    int decPt = FALSE;		/* mantissa has decimal point. */
+    int hasPoint = FALSE;	/* Decimal point exists. */
+    int hasDigit = FALSE;	/* I or F exists. */
     const char *pMant;		/* Temporarily holds location of mantissa
 				 * in string. */
     const char *pExp;		/* Temporarily holds location of exponent
@@ -778,13 +780,13 @@ ruby_strtod(string, endPtr)
 
     for ( ; c = *p; p += 1) {
 	if (!ISDIGIT(c)) {
-	    if (c != '.' || decPt) {
+	    if (c != '.' || hasPoint) {
 		break;
 	    }
-	    decPt = TRUE;
+	    hasPoint = TRUE;
 	}
 	else {
-	    if (decPt) { /* already in fractional part */
+	    if (hasPoint) { /* already in fractional part */
 		fracExp -= 1;
 	    }
 	    if (mantSize) { /* already in mantissa */
@@ -794,6 +796,7 @@ ruby_strtod(string, endPtr)
 		mantSize += 1;
 		pMant = p;
 	    }
+	    hasDigit = TRUE;
 	}
     }
 
@@ -812,7 +815,11 @@ ruby_strtod(string, endPtr)
 	fracExp += (mantSize - 18);
 	mantSize = 18;
     }
-    {
+    if (!hasDigit) {
+	fraction = 0.0;
+	p = string;
+    }
+    else {
 	int frac1, frac2;
 	frac1 = 0;
 	for ( ; mantSize > 9; mantSize -= 1) {
