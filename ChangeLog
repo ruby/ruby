@@ -1,3 +1,38 @@
+Wed Feb 16 02:55:21 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_start_ssl, ossl_ssl_read,
+	  ossl_ssl_write):
+	  - need to set errno on Win32 platform.
+	  - should call rb_sys_fail instead of rasing SSLError if
+	    SSL_ERROR_SYSCALL occured.
+	  - should wait for that the underlying IO become readable or
+	    writable if the error was SSL_ERROR_WANT_READ or
+	    SSL_ERROR_WANT_WRITE. [ruby-dev:25795]
+
+	* ext/openssl/lib/openssl/buffering.rb
+	  (Buffering#initialize): should set @eof and @rbuffer.
+	  (Buffering#fill_rbuff): should rescue Errno::EAGAIN.
+	  (Buffering#consume_rbuf): pointless eof flag resetting is deleted.
+	  (Buffering#read): should return an empty string if the specified
+	  size is zero.
+	  (Buffering#readpartial): new method.
+	  (Buffering#readline): fix typo.
+	  (Buffering#getc): return the first character of string correctly.
+	  (Buffering#each): fix typo.  suggested by Brian Ollenberger.
+	  (Buffering#readchar): fix typo.
+	  (Buffering#eof?): should read again it the input buffer is empty.
+	  (Buffering#do_write): should rescue Errno::EAGAIN.
+	  (Buffering#puts): use "\n" as the output field separator.
+
+	* ext/openssl/lib/openssl/ssl.rb: set non-blocking flag to the
+	  underlying IO.
+
+        * ext/openssl/extconf.rb: get rid of GNUmakefile generation.
+
+	* text/openssl/test_pair.rb: test for IO like methods.
+
+	* test/ruby/ut_eof.rb: test about empty file.
+
 Mon Mar  7 10:22:06 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/un.rb: should use OptionParser. (backported form HEAD)
@@ -361,9 +396,9 @@ Fri Feb 11 17:40:42 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Fri Feb 11 11:33:53 2005  Tanaka Akira  <akr@m17n.org>
 
-       * lib/open-uri.rb (URI::HTTP#proxy_open): new option supported:
-	 :http_basic_authentication.
-	 suggested by Kent Sibilev.  [ruby-core:4392]
+	* lib/open-uri.rb (URI::HTTP#proxy_open): new option supported:
+	  :http_basic_authentication.
+	  suggested by Kent Sibilev.  [ruby-core:4392]
 
 Fri Feb 11 06:30:07 2005  George Ogata  <g_ogata@optushome.com.au>
 

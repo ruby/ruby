@@ -113,33 +113,5 @@ have_struct_member("EVP_CIPHER_CTX", "engine", "openssl/evp.h")
 have_struct_member("X509_ATTRIBUTE", "single", "openssl/x509.h")
 
 message "=== Checking done. ===\n"
-$distcleanfiles << "GNUmakefile" << "dep"
 create_makefile("openssl")
-if /gcc/ =~ CONFIG["CC"]
-  File.open("GNUmakefile", "w") {|f|
-    f.print <<EOD
-include Makefile
-
-SRCS = $(OBJS:.o=.c)
-
-test-link: $(OBJS)
-	$(CC) $(DLDFLAGS) #{OUTFLAG}.testlink $(OBJS) $(LIBPATH) $(LIBS) $(LOCAL_LIBS)
-	@$(RM) .testlink
-	@echo "Done."
-
-dep:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(SRCS) -MM | \\
-	$(RUBY) -p -e 'BEGIN{S = []' \\
-		-e 'while !ARGV.empty? and /^(\\w+)=(.*)/ =~ ARGV[0]' \\
-		  -e 'S << [/\#{Regexp.quote($$2)}\\//, "$$(\#{$$1})/"]' \\
-		  -e 'ARGV.shift' \\
-		-e 'end' \\
-		-e '}' -e 'S.each(&method(:gsub!))' -- \\
-            'topdir=$(topdir)' 'srcdir=$(srcdir)' 'hdrdir=$(hdrdir)' \\
-	> dep
-
-include dep
-EOD
-  }
-end
 message "Done.\n"

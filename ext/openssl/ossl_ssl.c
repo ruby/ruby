@@ -433,52 +433,56 @@ ossl_ssl_setup(VALUE self)
     return Qtrue;
 }
 
-static void
-ossl_start_ssl(SSL *ssl, int (*func)())
+#ifdef _WIN32
+#define ssl_get_error(ssl, ret) \
+  (errno = WSAGetLastError(), SSL_get_error(ssl, ret))
+#else
+#define ssl_get_error(ssl, ret) SSL_get_error(ssl, ret)
+#endif
+
+static VALUE
+ossl_start_ssl(VALUE self, int (*func)())
 {
+    SSL *ssl;
+    OpenFile *fptr;
+    VALUE cb;
     int ret;
 
+    Data_Get_Struct(self, SSL, ssl);
+    GetOpenFile(ossl_ssl_get_io(self), fptr);
+    cb = ossl_sslctx_get_verify_cb(ossl_ssl_get_ctx(self));
+    SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)cb);
     for(;;){
 	if((ret = func(ssl)) > 0) break;
-	switch(SSL_get_error(ssl, ret)){
+	switch(ssl_get_error(ssl, ret)){
 	case SSL_ERROR_WANT_WRITE:
+            rb_io_wait_writable(fileno(fptr->f));
+            continue;
 	case SSL_ERROR_WANT_READ:
-	    rb_thread_schedule();
-	    continue;
+            rb_io_wait_readable(fileno(fptr->f));
+            continue;
+	case SSL_ERROR_SYSCALL:
+	    rb_sys_fail(0);
 	default:
 	    ossl_raise(eSSLError, NULL);
 	}
     }
+
+    return self;
 }
 
 static VALUE
 ossl_ssl_connect(VALUE self)
 {
-    SSL *ssl;
-    VALUE cb;
-
     ossl_ssl_setup(self);
-    Data_Get_Struct(self, SSL, ssl);
-    cb = ossl_sslctx_get_verify_cb(ossl_ssl_get_ctx(self));
-    SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)cb);
-    ossl_start_ssl(ssl, SSL_connect);
-
-    return self;
+    return ossl_start_ssl(self, SSL_connect);
 }
 
 static VALUE
 ossl_ssl_accept(VALUE self)
 {
-    SSL *ssl;
-    VALUE cb;
-
     ossl_ssl_setup(self);
-    Data_Get_Struct(self, SSL, ssl);
-    cb = ossl_sslctx_get_verify_cb(ossl_ssl_get_ctx(self));
-    SSL_set_ex_data(ssl, ossl_ssl_ex_vcb_idx, (void *)cb);
-    ossl_start_ssl(ssl, SSL_accept);
-
-    return self;
+    return ossl_start_ssl(self, SSL_accept);
 }
 
 static VALUE
@@ -506,18 +510,20 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 	    rb_thread_wait_fd(fileno(fptr->f));
 	for (;;){
 	    nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
-	    switch(SSL_get_error(ssl, nread)){
+	    switch(ssl_get_error(ssl, nread)){
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_ZERO_RETURN:
 		rb_eof_error();
 	    case SSL_ERROR_WANT_WRITE:
+                rb_io_wait_writable(fileno(fptr->f));
+                continue;
 	    case SSL_ERROR_WANT_READ:
-		rb_thread_schedule();
+                rb_io_wait_readable(fileno(fptr->f));
 		continue;
 	    case SSL_ERROR_SYSCALL:
 		if(ERR_peek_error() == 0 && nread == 0) rb_eof_error();
-		ossl_raise(eSSLError, "SSL_read: %s", strerror(errno));
+		rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_read:");
 	    }
@@ -542,21 +548,26 @@ ossl_ssl_write(VALUE self, VALUE str)
 {
     SSL *ssl;
     int nwrite = 0;
-    FILE *fp;
+    OpenFile *fptr;
 
     StringValue(str);
     Data_Get_Struct(self, SSL, ssl);
+    GetOpenFile(ossl_ssl_get_io(self), fptr);
 
     if (ssl) {
 	for (;;){
 	    nwrite = SSL_write(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
-	    switch(SSL_get_error(ssl, nwrite)){
+	    switch(ssl_get_error(ssl, nwrite)){
 	    case SSL_ERROR_NONE:
 		goto end;
 	    case SSL_ERROR_WANT_WRITE:
+                rb_io_wait_writable(fileno(fptr->f));
+                continue;
 	    case SSL_ERROR_WANT_READ:
-		rb_thread_schedule();
-		continue;
+                rb_io_wait_readable(fileno(fptr->f));
+                continue;
+	    case SSL_ERROR_SYSCALL:
+		rb_sys_fail(0);
 	    default:
 		ossl_raise(eSSLError, "SSL_write:");
 	    }

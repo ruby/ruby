@@ -83,6 +83,19 @@ module TestEOF
     }
   end
 
+  def test_eof_2
+    open_file("") {|f|
+      assert_equal("", f.read)
+      assert(f.eof?)
+    }
+  end
+
+  def test_eof_3
+    open_file("") {|f|
+      assert(f.eof?)
+    }
+  end
+
   module Seek
     def open_file_seek(content, pos)
       open_file(content) do |f|

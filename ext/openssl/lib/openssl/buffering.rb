@@ -20,6 +20,8 @@ module Buffering
   BLOCK_SIZE = 1024*16
 
   def initialize(*args)
+    @eof = false
+    @rbuffer = ""
     @sync = @io.sync
   end
 
@@ -29,17 +31,17 @@ module Buffering
   private
 
   def fill_rbuff
-    @rbuffer = "" unless defined? @rbuffer
     begin
       @rbuffer << self.sysread(BLOCK_SIZE)
+    rescue Errno::EAGAIN
+      retry
     rescue EOFError
       @eof = true
     end
   end
 
   def consume_rbuff(size=nil)
-    if @rbuffer.size == 0
-      @eof = nil
+    if @rbuffer.empty?
       nil
     else
       size = @rbuffer.size unless size
@@ -52,8 +54,14 @@ module Buffering
   public
 
   def read(size=nil, buf=nil)
-    fill_rbuff unless defined? @rbuffer
-    @eof ||= nil
+    if size == 0
+      if buf
+        buf.clear
+      else
+        buf = ""
+      end
+      return @eof ? nil : buf
+    end
     until @eof
       break if size && size <= @rbuffer.size
       fill_rbuff
@@ -66,10 +74,33 @@ module Buffering
     (size && ret.empty?) ? nil : ret
   end
 
+  def readpartial(maxlen, buf=nil)
+    if maxlen == 0
+      if buf
+        buf.clear
+      else
+        buf = ""
+      end
+      return @eof ? nil : buf
+    end
+    if @rbuffer.empty?
+      begin
+        return sysread(maxlen, buf)
+      rescue Errno::EAGAIN
+        retry
+      end
+    end
+    ret = consume_rbuff(maxlen)
+    if buf
+      buf.replace(ret)
+      ret = buf
+    end
+    raise EOFError if ret.empty?
+    ret
+  end
+
   def gets(eol=$/)
-    fill_rbuff unless defined? @rbuffer
     idx = @rbuffer.index(eol)
-    @eof ||= nil
     until @eof
       break if idx
       fill_rbuff
@@ -84,7 +115,7 @@ module Buffering
   end
 
   def each(eol=$/)
-    while line = self.gets(eol?)
+    while line = self.gets(eol)
       yield line
     end
   end
@@ -99,13 +130,13 @@ module Buffering
   end
 
   def readline(eol=$/)
-    raise EOFErorr if eof?
+    raise EOFError if eof?
     gets(eol)
   end
 
   def getc
     c = read(1)
-    c ? c.to_i : nil
+    c ? c[0] : nil
   end
 
   def each_byte
@@ -115,7 +146,7 @@ module Buffering
   end
 
   def readchar
-    raise EOFErorr if eof?
+    raise EOFError if eof?
     getc
   end
 
@@ -124,8 +155,8 @@ module Buffering
   end
 
   def eof?
-    @eof ||= nil
-    @eof && @rbuffer.size == 0
+    fill_rbuff if !@eof && @rbuffer.empty?
+    @eof && @rbuffer.empty?
   end
   alias eof eof?
 
@@ -142,7 +173,12 @@ module Buffering
       remain = idx ? idx + $/.size : @wbuffer.length
       nwritten = 0
       while remain > 0
-        nwrote = syswrite(@wbuffer[nwritten,remain])
+        str = @wbuffer[nwritten,remain]
+        begin
+          nwrote = syswrite(str)
+        rescue Errno::EAGAIN
+          retry
+        end
         remain -= nwrote
         nwritten += nwrote
       end
@@ -164,10 +200,13 @@ module Buffering
 
   def puts(*args)
     s = ""
+    if args.empty?
+      s << "\n"
+    end
     args.each{|arg|
       s << arg.to_s
-      unless /#{$/}\z/o =~ s
-        s << $/
+      if $/ && /\n\z/ !~ s
+        s << "\n"
       end
     }
     do_write(s)
