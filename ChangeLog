@@ -1,3 +1,10 @@
+Mon Oct 20 23:55:47 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): set current node after arguments evaluation.
+	  [ruby-dev:21632]
+
+	* eval.c (rb_yield_0): set current node and keep it at local jump.
+
 Mon Oct 20 22:01:18 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_cleanup): keep thread group for main thread.

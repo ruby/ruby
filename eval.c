@@ -2809,6 +2809,7 @@ rb_eval(self, n)
       case NODE_YIELD:
 	if (node->nd_head) {
 	    result = rb_eval(self, node->nd_head);
+	    ruby_current_node = node;
 	}
 	else {
 	    result = Qundef;	/* no arg */
@@ -2993,6 +2994,7 @@ rb_eval(self, n)
 	    SETUP_ARGS(node->nd_args);
 	    END_CALLARGS;
 
+	    ruby_current_node = node;
 	    SET_CURRENT_SOURCE();
 	    rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,scope);
 	    result = argv[argc-1];
@@ -3010,6 +3012,7 @@ rb_eval(self, n)
 	    SETUP_ARGS(node->nd_args);
 	    END_CALLARGS;
 
+	    ruby_current_node = node;
 	    SET_CURRENT_SOURCE();
 	    result = rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,0);
 	}
@@ -3024,6 +3027,7 @@ rb_eval(self, n)
 	    SETUP_ARGS(node->nd_args);
 	    END_CALLARGS;
 
+	    ruby_current_node = node;
 	    SET_CURRENT_SOURCE();
 	    result = rb_call(CLASS_OF(self),self,node->nd_mid,argc,argv,1);
 	}
@@ -3058,6 +3062,7 @@ rb_eval(self, n)
 		BEGIN_CALLARGS;
 		SETUP_ARGS(node->nd_args);
 		END_CALLARGS;
+		ruby_current_node = node;
 	    }
 
 	    SET_CURRENT_SOURCE();
@@ -4171,11 +4176,10 @@ rb_yield_0(val, self, klass, flags, avalue)
 		    val = Qnil;
 		  multi_values:
 		    {
-			NODE *curr = ruby_current_node;
 			ruby_current_node = block->var;
 			rb_warn("multiple values for a block parameter (%d for 1)\n\tfrom %s:%d",
-				len, curr->nd_file, nd_line(curr));
-			ruby_current_node = curr;
+				len, cnode->nd_file, nd_line(cnode));
+			ruby_current_node = cnode;
 		    }
 		}
 		assign(self, block->var, val, flags&YIELD_PROC_CALL);
@@ -4188,6 +4192,7 @@ rb_yield_0(val, self, klass, flags, avalue)
 	state = 0;
 	goto pop_state;
     }
+    ruby_current_node = node;
 
     PUSH_ITER(block->iter);
     PUSH_TAG(PROT_NONE);
@@ -4253,8 +4258,8 @@ rb_yield_0(val, self, klass, flags, avalue)
        scope_dup(old_scope);
     ruby_scope = old_scope;
     scope_vmode = old_vmode;
-    ruby_current_node = cnode;
     if (state) JUMP_TAG(state);
+    ruby_current_node = cnode;
     return result;
 }
 
@@ -7054,7 +7059,6 @@ proc_invoke(proc, args, self, klass)
 
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
-    ruby_current_node = data->body;
     PUSH_TAG((pcall || orphan) ? PROT_PCALL : PROT_CALL);
     state = EXEC_TAG();
     if (state == 0) {
