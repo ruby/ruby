@@ -1,3 +1,12 @@
+Thu Oct  2 01:02:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_const_defined_at): should exclude constants from
+	  Object when TYPE(klass) == T_MODULE *and* exclude is on.
+	  [ruby-dev:21458]
+
+	* variable.c (rb_const_get_0): do not lookup constants from Object
+	  when TYPE(klass) == T_MODULE *and* exclude is on.
+
 Thu Oct  2 00:21:11 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/logger/test_logger.rb: unlinking file before close causes

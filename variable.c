@@ -1286,7 +1286,7 @@ rb_const_get_0(klass, id, exclude, recurse)
 	if (!recurse && klass != rb_cObject) break;
 	tmp = RCLASS(tmp)->super;
     }
-    if (!mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
+    if (!exclude && !mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
 	mod_retry = 1;
 	tmp = rb_cObject;
 	goto retry;
@@ -1316,7 +1316,7 @@ rb_const_get_at(klass, id)
     VALUE klass;
     ID id;
 {
-    return rb_const_get_0(klass, id, Qfalse, Qfalse);
+    return rb_const_get_0(klass, id, Qtrue, Qfalse);
 }
 
 VALUE
@@ -1451,19 +1451,11 @@ rb_const_defined_0(klass, id, exclude, recurse)
 }
 
 int
-rb_const_defined_at(klass, id)
-    VALUE klass;
-    ID id;
-{
-    return rb_const_defined_0(klass, id, Qtrue, Qfalse);
-}
-
-int
 rb_const_defined_from(klass, id)
     VALUE klass;
     ID id;
 {
-    return rb_const_defined_0(klass, id, Qfalse, Qtrue);
+    return rb_const_defined_0(klass, id, Qtrue, Qtrue);
 }
 
 int
@@ -1471,7 +1463,15 @@ rb_const_defined(klass, id)
     VALUE klass;
     ID id;
 {
-    return rb_const_defined_0(klass, id, Qtrue, Qtrue);
+    return rb_const_defined_0(klass, id, Qfalse, Qtrue);
+}
+
+int
+rb_const_defined_at(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_const_defined_0(klass, id, Qtrue, Qfalse);
 }
 
 static void
