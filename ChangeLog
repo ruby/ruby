@@ -1,3 +1,7 @@
+Wed May 12 11:51:08 2004  Dave Thomas  <dave@pragprog.com>
+
+	* class.c (rb_obj_singleton_methods): fix rdoc
+
 Mon May 10 22:28:14 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (each_crlf_line): remove junk line.
