@@ -1,3 +1,7 @@
+Fri Apr  5 05:07:28 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* ext/dl: Add dl/struct.rb.
+
 Thu Apr  4 14:08:52 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* ext/dl/lib/dl/import.rb: Get rid of ineffective

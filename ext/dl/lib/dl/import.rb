@@ -8,6 +8,18 @@ module DL
     LIB_MAP = {}
 
     module Internal
+      def init_types()
+	if( !@types )
+	  @types = ::DL::Types.new
+	end
+      end
+
+      def init_sym()
+	if( !@SYM )
+	  @SYM = {}
+	end
+      end
+
       def dlload(*libnames)
 	if( !defined?(@LIBS) )
 	  @LIBS = []
@@ -41,14 +53,21 @@ module DL
       end
 
       # example:
+      #  typealias("uint", "unsigned int")
+      #
+      def typealias(*args)
+	init_types()
+	@types.typealias(*args)
+      end
+
+      # example:
       #   import("get_length", "int", ["void*", "int"])
       #
       def import(name, rettype, argtypes = nil)
-	if( !defined?(@SYM) )
-	  @SYM   = {}
-	end
+	init_types()
+	init_sym()
 	@LIBS.each{|lib|
-	  rty,_,rdec = encode_type(rettype)
+	  rty,_,rdec = @types.encode_type(rettype)
 	  ty,enc,dec = encode_types(argtypes)
 	  symty = rty + ty
 
@@ -100,58 +119,14 @@ module DL
       def _retval_
 	return @retval
       end
-      
-      def typealias(ty1, ty2, enc=nil, dec=nil)
-	check_type
-	@TYDEFS.unshift([ty1,ty2, enc,dec])
-      end
-
-      def encode_type(ty)
-	check_type
-	orig_ty = ty
-	enc = nil
-	dec = nil
-	@TYDEFS.each{|t1,t2,c1,c2|
-	  if( t1.is_a?(String) )
-	    t1 = Regexp.new("^" + t1 + "$")
-	  end
-	  if( ty =~ t1 )
-	    ty = ty.gsub(t1,t2)
-	    if( enc )
-	      if( c1 )
-		conv1 = enc
-		enc = proc{|v| c1.call(conv1.call(v))}
-	      end
-	    else
-	      if( c1 )
-		enc = c1
-	      end
-	    end
-	    if( dec )
-	      if( c2 )
-		conv2 = dec
-		dec = proc{|v| c2.call(conv2.call(v))}
-	      end
-	    else
-	      if( c2 )
-		dec = c2
-	      end
-	    end
-	  end
-	}
-	ty = ty.strip
-	if( ty.length != 1 )
-	  raise(TypeError, "unknown type: #{orig_ty}.")
-	end
-	return [ty,enc,dec]
-      end
 
       def encode_types(tys)
+	init_types()
 	encty = []
 	enc = nil
 	dec = nil
 	tys.each_with_index{|ty,idx|
-	  ty,c1,c2 = encode_type(ty)
+	  ty,c1,c2,_,_ = @types.encode_type(ty)
 	  encty.push(ty)
 	  if( enc )
 	    if( c1 )
@@ -175,16 +150,6 @@ module DL
 	  end
 	}
 	return [encty.join, enc, dec]
-      end
-
-      def check_type
-	if( !defined?(@TYDEFS) )
-	  init_type
-	end
-      end
-      
-      def init_type
-	@TYDEFS = TYPES.collect{|ty| ty[0..3]}
       end
     end # end of Internal
     include Internal
