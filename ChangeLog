@@ -1,3 +1,8 @@
+Fri May  7 11:25:53  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* util.c (ruby_strtod): 0.0000000000000000001 == 0.0 should be false.
+	  [ruby-talk:99318] [ruby-dev:23465]
+
 Fri May  7 10:00:05 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c (get_eval_string_core): bug fix. [ruby-dev:23466]
