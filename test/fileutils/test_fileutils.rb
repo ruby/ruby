@@ -41,7 +41,7 @@ begin
   File.open('linktmp', 'w') {|f| f.puts 'dummy' }
   File.link 'linktmp', 'linktest'
   HAVE_HARDLINK = true
-rescue NotImplementedError
+rescue NotImplementedError, Errno::EINVAL
   HAVE_HARDLINK = false
 ensure
   File.unlink 'linktest' if File.exist?('linktest')
@@ -68,7 +68,7 @@ class TestFileUtils
 
   def setup
     @prevdir = Dir.pwd
-    tmproot = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
+    tmproot = TMPROOT
     Dir.mkdir tmproot unless File.directory?(tmproot)
     Dir.chdir tmproot
     my_rm_rf 'data'; Dir.mkdir 'data'
