@@ -1,3 +1,18 @@
+Mon Nov 18 02:13:36 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/tempfile.rb: Make this libary thread safe.
+
+	* lib/tempfile.rb: Do not pick a name which was once used and is
+	  still scheduled for removal.
+
+	* lib/tempfile.rb: A lock file need not and must not be scheduled
+	  for removal.
+
+	* lib/tempfile.rb: Compare Max_try with the number of mkdir
+	  failures instead of the suffix counter.
+
+	* lib/tempfile.rb: Overall cleanup and add some important notices.
+
 Sun Nov 17 22:57:31 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (dsym): garbage returned.  (ruby-bugs-ja:PR#358)
