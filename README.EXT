@@ -807,7 +807,7 @@ namespace.
 
 Defines a new Ruby module.
 
- VALUE rb_define_module_under(VALUE module, const char *name, VALUE super)
+ VALUE rb_define_module_under(VALUE module, const char *name)
 
 Defines a new Ruby module under the module's namespace.
 

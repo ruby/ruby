@@ -1,3 +1,8 @@
+Mon Apr 26 23:56:54 2004  Daniel Kelley  <news-1082945587@dkelley.gmp.san-jose.ca.us>
+
+	* README.EXT, README.EXT.ja: fixed wrong function signature.
+	  [ruby-talk:98349]
+
 Mon Apr 26 21:40:09 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/code_objects.rb (RDoc::Context::add_alias): Only alias
