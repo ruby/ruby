@@ -104,7 +104,10 @@ private
       op_name.namespace = soapbody.namespace
     end
     if soapbody.parts
-      raise NotImplementedError.new("soap:body parts")
+      target = soapbody.parts.split(/\s+/)
+      bodyparts = name_info.parts.find_all { |part|
+	target.include?(part.name)
+      }
     else
       bodyparts = name_info.parts
     end

@@ -87,14 +87,6 @@ class Factory
     Thread.current[:SOAPMarshalDataKey][node.id] = obj
   end
 
-  def name2typename(name)
-    capitalize(name)
-  end
-
-  def capitalize(target)
-    target.gsub(/^([a-z])/) { $1.tr!('[a-z]', '[A-Z]') }
-  end
-
 private
 
   def setiv2ary(obj, node, map)

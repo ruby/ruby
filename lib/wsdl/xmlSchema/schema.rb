@@ -43,6 +43,9 @@ class Schema < Info
       o = ComplexType.new
       @complextypes << o
       o
+    when SimpleTypeName
+      STDERR.puts("Restriction of basetype with simpleType definition is ignored for now.")
+      nil
     when ElementName
       o = Element.new
       @elements << o

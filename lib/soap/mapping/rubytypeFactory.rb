@@ -344,9 +344,6 @@ private
       typestr = Mapping.elename2name(node['type'].data)
       klass = Mapping.class_from_name(typestr)
       if klass.nil?
-        klass = Mapping.class_from_name(name2typename(typestr))
-      end
-      if klass.nil?
         return false
       end
       unless klass <= ::Struct
@@ -400,9 +397,6 @@ private
     end
     typestr = Mapping.elename2name(node.type.name)
     klass = Mapping.class_from_name(typestr)
-    if klass.nil?
-      klass = Mapping.class_from_name(name2typename(typestr))
-    end
     if klass.nil?
       return nil
     end
