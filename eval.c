@@ -3761,10 +3761,9 @@ rb_mod_protected_method_defined(mod, mid)
     return Qfalse;
 }
 
-#define terminate_process(status, mesg, mlen) rb_exc_raise(system_exit(status, mesg, mlen))
-
+NORETURN(static VALUE terminate_process _((int, const char *, long)));
 static VALUE
-system_exit(status, mesg, mlen)
+terminate_process(status, mesg, mlen)
     int status;
     const char *mesg;
     long mlen;
@@ -3773,7 +3772,7 @@ system_exit(status, mesg, mlen)
     args[0] = INT2NUM(status);
     args[1] = rb_str_new(mesg, mlen);
 
-    return rb_class_new_instance(2, args, rb_eSystemExit);
+    rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
 }
 
 void
@@ -8159,6 +8158,7 @@ static char *th_signm;
 #define RESTORE_TRAP		4
 #define RESTORE_RAISE		5
 #define RESTORE_SIGNAL		6
+#define RESTORE_EXIT		7
 
 extern VALUE *rb_gc_stack_start;
 
@@ -8251,6 +8251,12 @@ rb_thread_switch(n)
       case RESTORE_SIGNAL:
 	rb_raise(rb_eSignal, "SIG%s", th_signm);
 	break;
+      case RESTORE_EXIT:
+	ruby_errinfo = th_raise_argv[0];
+	ruby_current_node = th_raise_node;
+	error_print();
+	terminate_process(1, 0, 0);
+	break;
       case RESTORE_NORMAL:
       default:
 	break;
@@ -8269,7 +8275,7 @@ rb_thread_switch(n)
      rb_thread_switch((FLUSH_REGISTER_WINDOWS, setjmp((th)->context))))
 #endif
 
-static void rb_thread_restore_context _((rb_thread_t,int));
+NORETURN(static void rb_thread_restore_context _((rb_thread_t,int)));
 
 static void
 stack_extend(th, exit)
@@ -8411,6 +8417,20 @@ rb_thread_fd_close(fd)
     END_FOREACH(th);
 }
 
+NORETURN(static void rb_thread_main_jump _((VALUE, int)));
+static void
+rb_thread_main_jump(err, tag)
+    VALUE err;
+    int tag;
+{
+    curr_thread = main_thread;
+    th_raise_argc = 1;
+    th_raise_argv[0] = err;
+    th_raise_node = ruby_current_node;
+    rb_thread_restore_context(main_thread, tag);
+}
+
+NORETURN(static void rb_thread_deadlock _((void)));
 static void
 rb_thread_deadlock()
 {
@@ -8422,11 +8442,7 @@ rb_thread_deadlock()
     if (curr_thread == main_thread) {
 	rb_exc_raise(e);
     }
-    curr_thread = main_thread;
-    th_raise_argc = 1;
-    th_raise_argv[0] = e;
-    th_raise_node = ruby_current_node;
-    rb_thread_restore_context(main_thread, RESTORE_RAISE);
+    rb_thread_main_jump(e, RESTORE_RAISE);
 }
 
 static void
@@ -9419,14 +9435,12 @@ rb_thread_start_0(fn, arg, th_arg)
 	    }
 	    else {
 		/* delegate exception to main_thread */
-		rb_thread_raise(1, &ruby_errinfo, main_thread);
+		rb_thread_main_jump(ruby_errinfo, RESTORE_RAISE);
 	    }
 	}
 	else if (th->safe < 4 && (ruby_thread_abort || th->abort || RTEST(ruby_debug))) {
-	    VALUE err = system_exit(1, 0, 0);
-	    error_print();
 	    /* exit on main_thread */
-	    rb_thread_raise(1, &err, main_thread);
+	    rb_thread_main_jump(ruby_errinfo, RESTORE_EXIT);
 	}
 	else {
 	    th->errinfo = ruby_errinfo;

@@ -1,3 +1,12 @@
+Mon Sep  1 16:59:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_switch): add RESTORE_EXIT; exit by another
+	  thread termination.
+
+	* eval.c (rb_thread_start_0): should not error_print() within
+	  terminated thread, because $stderr used by it might be
+	  overriden now.  [ruby-dev:21280]
+
 Sun Aug 31 22:46:55 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (TAG_DST()): take no argument.
@@ -46,7 +55,7 @@ Fri Aug 29 17:30:15 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* process.c: add rb_secure(2) to methods of Process::{UID,GID,Sys}
 
-	* process.c: deny handling IDs during evaluating the block given to 
+	* process.c: deny handling IDs during evaluating the block given to
 	  the Process::{UID,GID}.switch method
 
 	* ext/tcltklib/tcltklib.c : some methods have no effect if on slave-IP
@@ -61,16 +70,16 @@ Fri Aug 29 17:30:15 2003  Hidetoshi NAGAI <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb : more secure
 
-	* ext/tk/lib/tk.rb: TkVariable.new(array) --> treat the array as the 
+	* ext/tk/lib/tk.rb: TkVariable.new(array) --> treat the array as the
 	  Tk's list
 
 	* ext/tk/lib/tk.rb: improve accessibility of TkVariable object
 
-	* ext/tk/lib/tk.rb, ext/tk/lib/tkfont.rb, ext/tk/lib/tkcanvas.rb, 
+	* ext/tk/lib/tk.rb, ext/tk/lib/tkfont.rb, ext/tk/lib/tkcanvas.rb,
 	  ext/tk/lib/tktext.rb : fix bug of font handling
 
 	* ext/tk/lib/tkfont.rb TkFont.new() accepts compound fonts
-	
+
 Thu Aug 28 22:07:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_autoload_load): call const_missing if autoloading
