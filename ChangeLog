@@ -1,3 +1,8 @@
+Sat Oct 11 10:19:39 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/monitor.rb: handle exceptions correctly. Thanks, Gennady
+	Bystritsky.
+
 Fri Oct 10 07:50:54 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (is_defined): inheritance line adjustment as like as
