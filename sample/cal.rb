@@ -84,7 +84,7 @@ end
 
 usage unless getopts('jmty', "c:#{$cc}")
 
-y, m = ARGV.select(1, 0).compact.collect{|x| x.to_i}
+y, m = ARGV.values_at(1, 0).compact.collect{|x| x.to_i}
 $OPT_y ||= (y and not m)
 
 to = Date.today

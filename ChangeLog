@@ -1,3 +1,9 @@
+Mon May  5 22:57:07 2003  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* sample/cal.rb: use values_at instead of select.
+
+	* sample/biorhythm.rb: ditto.
+
 Mon May  5 18:59:45 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* sample/test.rb: substitute 'select' with 'values_at'.

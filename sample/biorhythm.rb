@@ -59,7 +59,7 @@ def getPosition(z)
 end
 
 def parsedate(s)
-  ParseDate::parsedate(s).select(0, 1, 2)
+  ParseDate::parsedate(s).values_at(0, 1, 2)
 end
 
 def name_of_week(date)
