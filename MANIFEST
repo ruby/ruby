@@ -774,6 +774,7 @@ sample/wsdl/googleSearch/wsdlDriver.rb
 sample/wsdl/raa/raa.wsdl
 sample/wsdl/raa/soap4r.rb
 test/csv/test_csv.rb
+test/dbm/test_dbm.rb
 test/digest/test_digest.rb
 test/drb/drbtest.rb
 test/drb/test_acl.rb

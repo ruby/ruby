@@ -2,15 +2,15 @@ require 'test/unit/testsuite'
 require 'test/unit/testcase'
 
 begin
-  require 'gdbm'
+  require 'dbm'
 rescue LoadError
 end
 
-if defined? GDBM
+if defined? DBM
   require 'tmpdir'
   require 'fileutils'
 
-  class TestGDBM < Test::Unit::TestCase
+  class TestDBM < Test::Unit::TestCase
     TMPROOT = "#{Dir.tmpdir}/ruby-gdbm.#{$$}"
 
     def setup
@@ -21,17 +21,8 @@ if defined? GDBM
       FileUtils.rm_rf TMPROOT if File.directory?(TMPROOT)
     end
 
-    def test_open
-      GDBM.open("#{TMPROOT}/a.dbm") {}
-      v = GDBM.open("#{TMPROOT}/a.dbm", nil, GDBM::READER) {|d|
-        assert_raises(GDBMError) { d["k"] = "v" }
-        true
-      }
-      assert(v)
-    end
-
     def test_freeze
-      GDBM.open("#{TMPROOT}/a.dbm") {|d|
+      DBM.open("#{TMPROOT}/a.dbm") {|d|
         d.freeze
         assert_raises(TypeError) { d["k"] = "v" }
       }
