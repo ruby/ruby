@@ -2,7 +2,7 @@ require 'test/unit'
 require 'tempfile'
 require 'fileutils'
 
-require 'csv'
+require '../lib/csv'
 
 class CSV
   class StreamBuf
@@ -381,7 +381,8 @@ public
     reader = CSV::Reader.create("abc")
     assert_instance_of(CSV::StringReader, reader, "With a String")
 
-    reader = CSV::Reader.create(File.open(@infile, "rb"))
+    file = File.open(@infile, "rb")
+    reader = CSV::Reader.create(file)
     assert_instance_of(CSV::IOReader, reader, 'With an IO')
 
     obj = Object.new
@@ -398,6 +399,7 @@ public
     # fors other tests.
     reader = CSV::Reader.create(Tempfile.new("in.csv"))
     assert_instance_of(CSV::IOReader, reader, "With an pseudo IO.")
+    file.close
   end
 
   def test_Reader_s_parse
@@ -521,6 +523,7 @@ public
     writer = CSV::BasicWriter.create(f)
     writer.close
     assert(!f.closed?)
+    f.close
 
     f = File.open(@outfile, "w")
     writer = CSV::BasicWriter.create(f)
@@ -1093,10 +1096,12 @@ public
     assert_equal([["foo"], ["bar"]], rows)
 
     rows = []
-    CSV::Reader.parse(File.open(@bomfile).read) do |row|
+    file = File.open(@bomfile)
+    CSV::Reader.parse(file.read) do |row|
       rows << row.to_a
     end
     assert_equal([["foo"], ["bar"]], rows)
+    file.close
   end
 
 
@@ -1122,7 +1127,15 @@ public
     File.open(@outfile, "wb") do |f|
       f << (InputStreamPattern * m)[0, size]
     end
-    CSV::IOBuf.new(File.open(@outfile, "rb"))
+    file = File.open(@outfile, "rb")
+    buf = CSV::IOBuf.new(file)
+    if block_given?
+      yield(buf)
+      file.close
+      nil
+    else
+      buf
+    end
   end
 
   def setBufSize(size)
@@ -1227,37 +1240,41 @@ public
   end
 
   def test_StreamBuf_AREF # '[idx]'
-    s = setupInputStream(22, 1024)
-    [0, 1, 9, 10, 19, 20, 21].each do |idx|
-      assert_equal(expChar(idx), s[idx], idx.to_s)
-    end
-    [22, 23].each do |idx|
-      assert_equal(nil, s[idx], idx.to_s)
-    end
-    assert_equal(nil, s[-1])
-
-    s = setupInputStream(22, 1)
-    [0, 1, 9, 10, 19, 20, 21].each do |idx|
-      assert_equal(expChar(idx), s[idx], idx.to_s)
-    end
-    [22, 23].each do |idx|
-      assert_equal(nil, s[idx], idx.to_s)
+    setupInputStream(22, 1024) do |s|
+      [0, 1, 9, 10, 19, 20, 21].each do |idx|
+	assert_equal(expChar(idx), s[idx], idx.to_s)
+      end
+      [22, 23].each do |idx|
+	assert_equal(nil, s[idx], idx.to_s)
+      end
+      assert_equal(nil, s[-1])
     end
 
-    s = setupInputStream(1024, 1)
-    [1023, 0].each do |idx|
-      assert_equal(expChar(idx), s[idx], idx.to_s)
-    end
-    [1024, 1025].each do |idx|
-      assert_equal(nil, s[idx], idx.to_s)
+    setupInputStream(22, 1) do |s|
+      [0, 1, 9, 10, 19, 20, 21].each do |idx|
+	assert_equal(expChar(idx), s[idx], idx.to_s)
+      end
+      [22, 23].each do |idx|
+	assert_equal(nil, s[idx], idx.to_s)
+      end
     end
 
-    s = setupInputStream(1, 1)
-    [0].each do |idx|
-      assert_equal(expChar(idx), s[idx], idx.to_s)
+    setupInputStream(1024, 1) do |s|
+      [1023, 0].each do |idx|
+	assert_equal(expChar(idx), s[idx], idx.to_s)
+      end
+      [1024, 1025].each do |idx|
+	assert_equal(nil, s[idx], idx.to_s)
+      end
     end
-    [1, 2].each do |idx|
-      assert_equal(nil, s[idx], idx.to_s)
+
+    setupInputStream(1, 1) do |s|
+      [0].each do |idx|
+	assert_equal(expChar(idx), s[idx], idx.to_s)
+      end
+      [1, 2].each do |idx|
+	assert_equal(nil, s[idx], idx.to_s)
+      end
     end
   end
 
@@ -1266,153 +1283,165 @@ public
     assert_equal("", "abc"[3, 1])
     assert_equal(nil, "abc"[4, 1])
     
-    s = setupInputStream(22, 1024)
-    [0, 1, 9, 10, 19, 20, 21].each do |idx|
-      assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
+    setupInputStream(22, 1024) do |s|
+      [0, 1, 9, 10, 19, 20, 21].each do |idx|
+	assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
+      end
+      assert_equal("", s[22, 1])
+      assert_equal(nil, s[23, 1])
     end
-    assert_equal("", s[22, 1])
-    assert_equal(nil, s[23, 1])
 
-    s = setupInputStream(22, 1)
-    [0, 1, 9, 10, 19, 20, 21].each do |idx|
-      assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
+    setupInputStream(22, 1) do |s|
+      [0, 1, 9, 10, 19, 20, 21].each do |idx|
+	assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
+      end
+      assert_equal("", s[22, 1])
+      assert_equal(nil, s[23, 1])
     end
-    assert_equal("", s[22, 1])
-    assert_equal(nil, s[23, 1])
 
-    s = setupInputStream(1024, 1)
-    [1023, 0].each do |idx|
-      assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
+    setupInputStream(1024, 1) do |s|
+      [1023, 0].each do |idx|
+	assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
+      end
+      assert_equal("", s[1024, 1])
+      assert_equal(nil, s[1025, 1])
     end
-    assert_equal("", s[1024, 1])
-    assert_equal(nil, s[1025, 1])
 
-    s = setupInputStream(1, 1)
-    [0].each do |idx|
-      assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
+    setupInputStream(1, 1) do |s|
+      [0].each do |idx|
+	assert_equal(expStr(idx, 1), s[idx, 1], idx.to_s)
+      end
+      assert_equal("", s[1, 1])
+      assert_equal(nil, s[2, 1])
     end
-    assert_equal("", s[1, 1])
-    assert_equal(nil, s[2, 1])
 
-    s = setupInputStream(22, 11)
-    [0, 1, 10, 11, 20].each do  |idx|
-      assert_equal(expStr(idx, 2), s[idx, 2], idx.to_s)
+    setupInputStream(22, 11) do |s|
+      [0, 1, 10, 11, 20].each do  |idx|
+	assert_equal(expStr(idx, 2), s[idx, 2], idx.to_s)
+      end
+      assert_equal(expStr(21, 1), s[21, 2])
+
+      assert_equal(expStr(0, 12), s[0, 12])
+      assert_equal(expStr(10, 12), s[10, 12])
+      assert_equal(expStr(10, 12), s[10, 13])
+      assert_equal(expStr(10, 12), s[10, 14])
+      assert_equal(expStr(10, 12), s[10, 1024])
+
+      assert_equal(nil, s[0, -1])
+      assert_equal(nil, s[21, -1])
+
+      assert_equal(nil, s[-1, 10])
+      assert_equal(nil, s[-1, -1])
     end
-    assert_equal(expStr(21, 1), s[21, 2])
-
-    assert_equal(expStr(0, 12), s[0, 12])
-    assert_equal(expStr(10, 12), s[10, 12])
-    assert_equal(expStr(10, 12), s[10, 13])
-    assert_equal(expStr(10, 12), s[10, 14])
-    assert_equal(expStr(10, 12), s[10, 1024])
-
-    assert_equal(nil, s[0, -1])
-    assert_equal(nil, s[21, -1])
-
-    assert_equal(nil, s[-1, 10])
-    assert_equal(nil, s[-1, -1])
   end
 
   def test_StreamBuf_get
-    s = setupInputStream(22, 1024)
-    [0, 1, 9, 10, 19, 20, 21].each do |idx|
-      assert_equal(expChar(idx), s.get(idx), idx.to_s)
+    setupInputStream(22, 1024) do |s|
+      [0, 1, 9, 10, 19, 20, 21].each do |idx|
+	assert_equal(expChar(idx), s.get(idx), idx.to_s)
+      end
+      [22, 23].each do |idx|
+	assert_equal(nil, s.get(idx), idx.to_s)
+      end
+      assert_equal(nil, s.get(-1))
     end
-    [22, 23].each do |idx|
-      assert_equal(nil, s.get(idx), idx.to_s)
-    end
-    assert_equal(nil, s.get(-1))
   end
   
   def test_StreamBuf_get_n
-    s = setupInputStream(22, 1024)
-    [0, 1, 9, 10, 19, 20, 21].each do |idx|
-      assert_equal(expStr(idx, 1), s.get(idx, 1), idx.to_s)
-    end
-    assert_equal("", s.get(22, 1))
-    assert_equal(nil, s.get(23, 1))
+    setupInputStream(22, 1024) do |s|
+      [0, 1, 9, 10, 19, 20, 21].each do |idx|
+	assert_equal(expStr(idx, 1), s.get(idx, 1), idx.to_s)
+      end
+      assert_equal("", s.get(22, 1))
+      assert_equal(nil, s.get(23, 1))
 
-    assert_equal(nil, s.get(-1, 1))
-    assert_equal(nil, s.get(-1, -1))
+      assert_equal(nil, s.get(-1, 1))
+      assert_equal(nil, s.get(-1, -1))
+    end
   end
 
   def test_StreamBuf_drop
-    s = setupInputStream(22, 1024)
-    assert_equal(expChar(0), s[0])
-    assert_equal(expChar(21), s[21])
-    assert_equal(nil, s[22])
+    setupInputStream(22, 1024) do |s|
+      assert_equal(expChar(0), s[0])
+      assert_equal(expChar(21), s[21])
+      assert_equal(nil, s[22])
 
-    dropped = s.drop(-1)
-    assert_equal(0, dropped)
-    assert_equal(expChar(0), s[0])
+      dropped = s.drop(-1)
+      assert_equal(0, dropped)
+      assert_equal(expChar(0), s[0])
 
-    dropped = s.drop(0)
-    assert_equal(0, dropped)
-    assert_equal(expChar(0), s[0])
+      dropped = s.drop(0)
+      assert_equal(0, dropped)
+      assert_equal(expChar(0), s[0])
 
-    dropped = s.drop(1)
-    assert_equal(1, dropped)
-    assert_equal(expChar(1), s[0])
-    assert_equal(expChar(2), s[1])
+      dropped = s.drop(1)
+      assert_equal(1, dropped)
+      assert_equal(expChar(1), s[0])
+      assert_equal(expChar(2), s[1])
 
-    dropped = s.drop(1)
-    assert_equal(1, dropped)
-    assert_equal(expChar(2), s[0])
-    assert_equal(expChar(3), s[1])
+      dropped = s.drop(1)
+      assert_equal(1, dropped)
+      assert_equal(expChar(2), s[0])
+      assert_equal(expChar(3), s[1])
+    end
 
-    s = setupInputStream(4, 2)
-    dropped = s.drop(2)
-    assert_equal(2, dropped)
-    assert_equal(expChar(2), s[0])
-    assert_equal(expChar(3), s[1])
-    dropped = s.drop(1)
-    assert_equal(1, dropped)
-    assert_equal(expChar(3), s[0])
-    assert_equal(nil, s[1])
-    dropped = s.drop(1)
-    assert_equal(1, dropped)
-    assert_equal(nil, s[0])
-    assert_equal(nil, s[1])
-    dropped = s.drop(0)
-    assert_equal(0, dropped)
-    assert_equal(nil, s[0])
-    assert_equal(nil, s[1])
+    setupInputStream(4, 2) do |s|
+      dropped = s.drop(2)
+      assert_equal(2, dropped)
+      assert_equal(expChar(2), s[0])
+      assert_equal(expChar(3), s[1])
+      dropped = s.drop(1)
+      assert_equal(1, dropped)
+      assert_equal(expChar(3), s[0])
+      assert_equal(nil, s[1])
+      dropped = s.drop(1)
+      assert_equal(1, dropped)
+      assert_equal(nil, s[0])
+      assert_equal(nil, s[1])
+      dropped = s.drop(0)
+      assert_equal(0, dropped)
+      assert_equal(nil, s[0])
+      assert_equal(nil, s[1])
+    end
 
-    s = setupInputStream(6, 3)
-    dropped = s.drop(2)
-    assert_equal(2, dropped)
-    dropped = s.drop(2)
-    assert_equal(2, dropped)
-    assert_equal(expChar(4), s[0])
-    assert_equal(expChar(5), s[1])
-    dropped = s.drop(3)
-    assert_equal(2, dropped)
-    assert_equal(nil, s[0])
-    assert_equal(nil, s[1])
+    setupInputStream(6, 3) do |s|
+      dropped = s.drop(2)
+      assert_equal(2, dropped)
+      dropped = s.drop(2)
+      assert_equal(2, dropped)
+      assert_equal(expChar(4), s[0])
+      assert_equal(expChar(5), s[1])
+      dropped = s.drop(3)
+      assert_equal(2, dropped)
+      assert_equal(nil, s[0])
+      assert_equal(nil, s[1])
+    end
   end
 
   def test_StreamBuf_is_eos?
-    s = setupInputStream(3, 1024)
-    assert(!s.is_eos?)
-    s.drop(1)
-    assert(!s.is_eos?)
-    s.drop(1)
-    assert(!s.is_eos?)
-    s.drop(1)
-    assert(s.is_eos?)
-    s.drop(1)
-    assert(s.is_eos?)
+    setupInputStream(3, 1024) do |s|
+      assert(!s.is_eos?)
+      s.drop(1)
+      assert(!s.is_eos?)
+      s.drop(1)
+      assert(!s.is_eos?)
+      s.drop(1)
+      assert(s.is_eos?)
+      s.drop(1)
+      assert(s.is_eos?)
+    end
 
-    s = setupInputStream(3, 2)
-    assert(!s.is_eos?)
-    s.drop(1)
-    assert(!s.is_eos?)
-    s.drop(1)
-    assert(!s.is_eos?)
-    s.drop(1)
-    assert(s.is_eos?)
-    s.drop(1)
-    assert(s.is_eos?)
+    setupInputStream(3, 2) do |s|
+      assert(!s.is_eos?)
+      s.drop(1)
+      assert(!s.is_eos?)
+      s.drop(1)
+      assert(!s.is_eos?)
+      s.drop(1)
+      assert(s.is_eos?)
+      s.drop(1)
+      assert(s.is_eos?)
+    end
   end
 
   def test_StreamBuf_s_new
@@ -1431,6 +1460,7 @@ public
     iobuf = CSV::IOBuf.new(f)
     iobuf.close
     assert(true)	# iobuf.close does not raise any exception.
+    f.close
   end
 
   def test_IOBuf_s_new

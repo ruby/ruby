@@ -1,3 +1,8 @@
+Wed Sep  5 01:03:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/csv/test_csv.rb: close opened files for CSV::IOBuf explicitly.
+	  opened file cannot be removed under win32 box.
+
 Thu Sep  4 23:59:40 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (tokadd_string): newlines have no special meanings in
