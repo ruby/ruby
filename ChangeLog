@@ -1,3 +1,7 @@
+Sun Jan 18 02:33:26 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* defines.h (_WIN32): undef _WIN32 on Cygwin before defining DOSISH.
+
 Thu Jan 15 13:03:10 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (argf_read): do not append EOF.  (ruby-bugs-ja:PR#585)
