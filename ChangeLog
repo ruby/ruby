@@ -1,3 +1,9 @@
+Sun Jan 19 23:08:18 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/shellwords.rb (shellwords): A backslash ('\') in single
+	  quotes should not be regarded as meta character.  This bug or
+	  maybe feature was inherited from Perl's shellwords.pl.
+
 Sat Jan 18 14:53:49 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bignum.c (rb_cstr_to_inum): should not erase all 0s, but
