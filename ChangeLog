@@ -1,3 +1,8 @@
+Mon Jan 20 00:17:16 2003  Matt Armstrong  <matt@lickey.com>
+
+	* file.c (eaccess): under windows, make eaccess() just call
+	  access(). [ruby-core:716], [ruby-bugs:PR#556]
+
 Sun Jan 19 23:08:18 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/shellwords.rb (shellwords): A backslash ('\') in single
@@ -601,7 +606,7 @@ Tue Dec 24 23:37:40 2002  TADA Tadashi <sho@spc.gr.jp>
 
 Tue Dec 24 19:19:24 2002  Tietew <tietew@tietew.net>
 
-	* numeric.c (DBL_MAX_10_EXP): fix typo. [ruby-dev:36826]
+	* numeric.c (DBL_MAX_10_EXP): fix typo. [ruby-dev:19175]
 
 Tue Dec 24 17:02:46 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
