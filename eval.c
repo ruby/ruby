@@ -7023,7 +7023,7 @@ proc_invoke(proc, args, self, klass)
 	proc_set_safe_level(proc);
 	result = rb_yield_0(args, self, self!=Qundef?CLASS_OF(self):0, pcall, Qtrue);
     }
-    else if (TAG_DST()) {
+    else if (pcall || TAG_DST()) {
 	result = prot_tag->retval;
     }
     POP_TAG();
@@ -8043,6 +8043,25 @@ timeofday()
 
 #define STACK(addr) (th->stk_pos<(VALUE*)(addr) && (VALUE*)(addr)<th->stk_pos+th->stk_len)
 #define ADJ(addr) (void*)(STACK(addr)?(((VALUE*)(addr)-th->stk_pos)+th->stk_ptr):(VALUE*)(addr))
+#ifdef C_ALLOCA
+# define MARK_FRAME_ADJ(f) rb_gc_mark_frame(f)
+#else
+# define MARK_FRAME_ADJ(f) mark_frame_adj(f, th)
+static void
+mark_frame_adj(frame, th)
+    struct FRAME *frame;
+    rb_thread_t th;
+{
+    if (frame->flags & FRAME_MALLOC) {
+	rb_gc_mark_locations(frame->argv, frame->argv+frame->argc);
+    }
+    else {
+	VALUE *start = ADJ(frame->argv);
+	rb_gc_mark_locations(start, start+frame->argc);
+    }
+    rb_gc_mark((VALUE)frame->node);
+}
+#endif
 
 static void
 thread_mark(th)
@@ -8084,13 +8103,13 @@ thread_mark(th)
     frame = th->frame;
     while (frame && frame != top_frame) {
 	frame = ADJ(frame);
-	rb_gc_mark_frame(frame);
+	MARK_FRAME_ADJ(frame);
 	if (frame->tmp) {
 	    struct FRAME *tmp = frame->tmp;
 
 	    while (tmp && tmp != top_frame) {
 		tmp = ADJ(tmp);
-		rb_gc_mark_frame(tmp);
+		MARK_FRAME_ADJ(tmp);
 		tmp = tmp->prev;
 	    }
 	}
@@ -8099,7 +8118,7 @@ thread_mark(th)
     block = th->block;
     while (block) {
 	block = ADJ(block);
-	rb_gc_mark_frame(&block->frame);
+	MARK_FRAME_ADJ(&block->frame);
 	block = block->prev;
     }
 }

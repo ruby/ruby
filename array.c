@@ -1095,17 +1095,16 @@ rb_ary_reverse(ary)
     VALUE tmp;
 
     rb_ary_modify(ary);
-    if (RARRAY(ary)->len <= 1) return ary;
+    if (RARRAY(ary)->len > 1) {
+	p1 = RARRAY(ary)->ptr;
+	p2 = p1 + RARRAY(ary)->len - 1;	/* points last item */
 
-    p1 = RARRAY(ary)->ptr;
-    p2 = p1 + RARRAY(ary)->len - 1;	/* points last item */
-
-    while (p1 < p2) {
-	tmp = *p1;
-	*p1++ = *p2;
-	*p2-- = tmp;
+	while (p1 < p2) {
+	    tmp = *p1;
+	    *p1++ = *p2;
+	    *p2-- = tmp;
+	}
     }
-
     return ary;
 }
 
@@ -1173,10 +1172,10 @@ rb_ary_sort_bang(ary)
     VALUE ary;
 {
     rb_ary_modify(ary);
-    if (RARRAY(ary)->len <= 1) return ary;
-
-    FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during sort */
-    rb_ensure(sort_internal, ary, sort_unlock, ary);
+    if (RARRAY(ary)->len > 1) {
+	FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during sort */
+	rb_ensure(sort_internal, ary, sort_unlock, ary);
+    }
     return ary;
 }
 

@@ -101,6 +101,11 @@ Thu Sep  4 12:54:50 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 	* ext/syck/token.c: headerless documents with root-level spacing now
 	  honored.
 
+Thu Sep  4 00:06:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (mark_frame_adj): need to adjust argv pointer if using
+	  system's alloca. [ruby-core:01503]
+
 Wed Sep  3 21:33:20 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test: add test directory.  Test::Unit aware testcases and needed
@@ -112,10 +117,19 @@ Wed Sep  3 21:33:20 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/*: add testcase for lib/csv.rb.
 
+Wed Sep  3 01:37:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_gets): should call next_argv() before type check
+	  current_file. [ruby-list:38336]
+
 Tue Sep  2 20:37:15 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/net/protocols.rb (SSLIO#ssl_connect): warning
 	  for skipping server verification.
+
+Tue Sep  2 23:36:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): should retrieve retval when pcall is true.
 
 Tue Sep  2 14:09:20 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -3115,8 +3115,8 @@ rb_f_gets(argc, argv)
 {
     VALUE line;
 
+    if (!next_argv()) return Qnil;
     if (TYPE(current_file) != T_FILE) {
-	if (!next_argv()) return Qnil;
 	line = rb_funcall3(current_file, rb_intern("gets"), argc, argv);
     }
     else {

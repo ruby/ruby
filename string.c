@@ -1807,16 +1807,16 @@ rb_str_reverse_bang(str)
     char *s, *e;
     char c;
 
-    if (RSTRING(str)->len <= 1) return Qnil;
-    rb_str_modify(str);
-    s = RSTRING(str)->ptr;
-    e = s + RSTRING(str)->len - 1;
-    while (s < e) {
-	c = *s;
-	*s++ = *e;
-	*e-- = c;
+    if (RSTRING(str)->len > 1) {
+	rb_str_modify(str);
+	s = RSTRING(str)->ptr;
+	e = s + RSTRING(str)->len - 1;
+	while (s < e) {
+	    c = *s;
+	    *s++ = *e;
+	    *e-- = c;
+	}
     }
-
     return str;
 }
 
