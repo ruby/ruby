@@ -573,6 +573,9 @@ expr		: command_call
 			$$ = NEW_NOT(cond($2));
 		    }
 		| arg kRESCUE_MOD command_call
+		    {
+			$$ = NEW_RESCUE($1, NEW_RESBODY(0,$3,0), 0);
+		    }
 		| arg
 		;
 

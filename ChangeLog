@@ -1,3 +1,7 @@
+Fri Dec 13 12:33:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (expr): rescue clause was ignored.
+
 Thu Dec 12 18:19:14 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RUBY_PROG_GNU_LD): add $CFLAGS, $CPPFLAGS, $LDFLAGS
