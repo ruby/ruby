@@ -33,6 +33,7 @@ EXPORTS
 	rb_mErrno
 ;eval.c
 	rb_cProc
+	ruby_frame
 	rb_cThread
 	rb_thread_tick
 	rb_thread_critical
@@ -72,6 +73,8 @@ EXPORTS
 	rb_cRange
 ;re.c
 	rb_cRegexp
+;regex.c
+	re_mbctab
 ;ruby.c
 	ruby_debug
 	ruby_verbose
@@ -370,7 +373,7 @@ EXPORTS
 	rb_fdopen
 	rb_file_open
 	rb_file_sysopen
-	rb_io_unbuffered
+	rb_io_synchronized	
 	rb_p
 	rb_gets
 	rb_str_setter

@@ -1,11 +1,11 @@
 =begin
-$Date: 1999/09/17 17:41:41 $
+$Date: 1999/09/21 21:24:07 $
 
 == SIMPLE TELNET CLIANT LIBRARY
 
 telnet.rb
 
-Version 0.40
+Version 0.50
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -86,6 +86,7 @@ of cource, set sync=true or flush is necessary.
 === SEND STRING
 
 	host.print("string")
+	  # == host.write("string\n")
 
 
 === TURN TELNET COMMAND INTERPRETATION
@@ -153,6 +154,12 @@ of cource, set sync=true or flush is necessary.
 
 
 == HISTORY
+
+=== Version 0.50
+
+1999/09/21 21:24:07
+
+- add write method
 
 === Version 0.40
 
@@ -398,8 +405,8 @@ class Telnet < SimpleDelegator
   EOL  = CR + LF
 v = $-v
 $-v = false
-  VERSION = "0.40"
-  RELEASE_DATE = "$Date: 1999/09/17 17:41:41 $"
+  VERSION = "0.50"
+  RELEASE_DATE = "$Date: 1999/09/21 21:24:07 $"
 $-v = v
 
   def initialize(options)
@@ -503,33 +510,33 @@ $-v = v
       if    IAC == $1         # handle escaped IAC characters
         IAC
       elsif AYT == $1         # respond to "IAC AYT" (are you there)
-        @sock.write("nobody here but us pigeons" + EOL)
+        self.write("nobody here but us pigeons" + EOL)
         ''
       elsif DO[0] == $1[0]    # respond to "IAC DO x"
         if OPT_BINARY[0] == $1[1]
           @telnet_option["BINARY"] = true
-          @sock.write(IAC + WILL + OPT_BINARY)
+          self.write(IAC + WILL + OPT_BINARY)
         else
-          @sock.write(IAC + WONT + $1[1..1])
+          self.write(IAC + WONT + $1[1..1])
         end
         ''
       elsif DONT[0] == $1[0]  # respond to "IAC DON'T x" with "IAC WON'T x"
-        @sock.write(IAC + WONT + $1[1..1])
+        self.write(IAC + WONT + $1[1..1])
         ''
       elsif WILL[0] == $1[0]  # respond to "IAC WILL x"
         if    OPT_ECHO[0] == $1[1]
-          @sock.write(IAC + DO + OPT_ECHO)
+          self.write(IAC + DO + OPT_ECHO)
         elsif OPT_SGA[0]  == $1[1]
           @telnet_option["SGA"] = true
-          @sock.write(IAC + DO + OPT_SGA)
+          self.write(IAC + DO + OPT_SGA)
         end
         ''
       elsif WONT[0] == $1[0]  # respond to "IAC WON'T x"
         if    OPT_ECHO[0] == $1[1]
-          @sock.write(IAC + DONT + OPT_ECHO)
+          self.write(IAC + DONT + OPT_ECHO)
         elsif OPT_SGA[0]  == $1[1]
           @telnet_option["SGA"] = false
-          @sock.write(IAC + DONT + OPT_SGA)
+          self.write(IAC + DONT + OPT_SGA)
         end
         ''
       end
@@ -591,6 +598,14 @@ $-v = v
     line
   end
 
+  def write(string)
+    length = string.length
+    while 0 < length
+      IO::select(nil, [@sock])
+      length -= @sock.syswrite(string)
+    end
+  end
+
   def print(string)
     str = string.dup + "\n"
 
@@ -609,7 +624,7 @@ $-v = v
       end
     end
 
-    @sock.write(str)
+    self.write(str)
   end
 
   def cmd(options)
@@ -624,7 +639,6 @@ $-v = v
       string = options
     end
 
-    IO::select(nil, [@sock])
     self.print(string)
     if iterator?
       waitfor({"Prompt" => match, "Timeout" => time_out}){|c| yield c }

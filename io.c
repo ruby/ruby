@@ -449,14 +449,15 @@ io_fread(ptr, len, f)
     FILE *f;
 {
     size_t n = len;
+    int c;
 
     while (n--) {
-	*ptr = getc(f);
-	if (*ptr == EOF) {
+	c = getc(f);
+	if (c == EOF) {
 	    *ptr = '\0';
 	    break;
 	}
-	ptr++;
+	*ptr++ = c;
 	if (!READ_DATA_PENDING(f)) {
 	    rb_thread_wait_fd(fileno(f));
 	}

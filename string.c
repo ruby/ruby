@@ -1275,7 +1275,7 @@ rb_str_include(str, arg)
 
 	for (i=0; i<len; i++) {
 	    if (p[i] == c) {
-		return INT2NUM(i);
+		return Qtrue;
 	    }
 	}
 	return Qfalse;
@@ -1285,7 +1285,7 @@ rb_str_include(str, arg)
     i = rb_str_index(str, arg, 0);
 
     if (i == -1) return Qfalse;
-    return INT2NUM(i);
+    return Qtrue;
 }
 
 static VALUE

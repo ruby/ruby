@@ -98,13 +98,13 @@ $(PROGRAM):	$(LIBRUBY) $(MAINOBJ) $(LIBRUBY_SO)
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) -o $@ $(LIBRUBYARG) -link /STACK:$(STACK)
 
-$(LIBRUBY_A):	$(OBJS)
-		lib -nologo /OUT:$@ $(OBJS)
+$(LIBRUBY_A):	$(OBJS) dmyext.obj
+		lib -nologo /OUT:$@ $(OBJS) dmyext.obj
 
 rubymw.lib:	ruby.def
 		lib -nologo /OUT:$@ /DEF:ruby.def
 
-$(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) 
+$(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) ruby.def
 		set LIB=.\win32;$(ORGLIBPATH)
 		@rm -f $@
 		$(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS) -o $@ -link /DLL /DEF:ruby.def

@@ -648,6 +648,10 @@ static struct tag *prot_tag;
     prot_tag = _tag.prev;		\
 }
 
+#define POP_TMPTAG()			\
+    prot_tag = _tag.prev;		\
+}
+
 #define TAG_RETURN	0x1
 #define TAG_BREAK	0x2
 #define TAG_NEXT	0x3
@@ -1724,7 +1728,7 @@ call_trace_func(event, file, line, self, id, klass)
 				     self?rb_f_binding(self):Qnil,
 				     klass));
     }
-    POP_TAG();
+    POP_TMPTAG();		/* do not propagate retval */
     POP_FRAME();
 
     rb_thread_critical--;
@@ -4488,7 +4492,7 @@ specific_eval(argc, argv, klass, self)
     VALUE *argv;
     VALUE klass, self;
 {
-    char *file = 0;
+    char *file = "(eval)";
     int   line = 1;
     int   iter = rb_iterator_p();
 

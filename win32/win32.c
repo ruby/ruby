@@ -677,7 +677,8 @@ mypclose(FILE *fp)
     //
     // close the pipe
     //
-    CloseHandle(MyPopenRecord[i].oshandle);
+    // Closehandle() is done by fclose().
+    //CloseHandle(MyPopenRecord[i].oshandle);
     fflush(fp);
     fclose(fp);
 
@@ -1835,7 +1836,20 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    errno = EINTR;
 	    break;
 	case WSAENOTSOCK:
-	    errno = EBADF;
+	    // assume normal files are always readable/writable
+	    // fake read/write fd_set and return value
+	    r = 0;
+	    if (rd) r += rd->fd_count;
+	    if (wr) r += wr->fd_count;
+	    if (ex && ex->fd_count > 0) {
+		// exceptional condition never happen for normal files
+		if (r > 0)
+		    ex->fd_count = 0;
+		else {
+		    errno = EBADF;
+		    r = SOCKET_ERROR;
+		}
+	    }
 	    break;
 	}
     }

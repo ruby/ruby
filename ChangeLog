@@ -1,9 +1,38 @@
+Wed Sep 22 09:20:11 1999  Masahiro Tomita  <tommy@tmtm.org>
+
+	* ext/socket/socket.c: SOCKS5 support.
+
+Wed Sep 22 00:35:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_include): should return boolean value.
+
+	* regex.c (re_compile_fastmap): wrong comparison with mbc.
+
+	* eval.c (specific_eval): default sourcefile name should be
+	  "(eval)" for module_eval etc.
+
+Wed Sep 22 00:06:07 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/Makefile: update rules.
+
+	* io.c (io_fread): should not assign in char, it maybe -1.
+
+Tue Sep 21 23:57:54 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (call_trace_func): should not propagate retval in
+	  trace_func. 
+
+Mon Sep 20 21:35:39 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (myselect): assume non socket files are always
+	  readable/writable.
+
 Mon Sep 20 01:08:02 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (io_fread): should not block other threads.
 
 	* io.c (rb_io_synchronized): renamed from rb_io_unbuffered(); do
-	  not call setbuf(NULL) any more.
+	  not call setbuf(NULL) anymore.
 
 Sat Sep 18 13:45:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -3772,7 +3801,7 @@ Sat Mar 28 20:40:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Sat Mar 28 16:07:11 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
-	* io.c (io_closed): should not cause exception fot closed IO.
+	* io.c (io_closed): should not cause exception for closed IO.
 
 	* string.c (str_tr): returned nil for success.
 
@@ -4526,7 +4555,7 @@ Fri Dec 12 00:50:25 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (rb_eval): new visibility status `function'.
 
 	* parse.y (yycompile): do not clear eval_tree. thus enable multipe 
-	  command line script by optn `-e'.
+	  command line script by option `-e'.
 
 	* eval.c (rb_eval): END execute just once.
 
@@ -5011,7 +5040,7 @@ Mon Sep  1 11:43:57 1997  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 Fri Aug 29 11:10:21 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* class.c (class_instance_methods): same method names should not
- 	  appear more than twice.
+ 	  appear more than once.
 
 	* parse.y (yylex): spaces can follow =begin/=end.
 

@@ -63,8 +63,12 @@ static VALUE rb_eSocket;
 
 #ifdef SOCKS
 VALUE rb_cSOCKSSocket;
+#ifdef SOCKS5
+#include <socks.h>
+#else
 void SOCKSinit();
 int Rconnect();
+#endif
 #endif
 
 #define INET_CLIENT 0
@@ -631,11 +635,14 @@ ruby_connect(fd, sockaddr, len, socks)
 # define NONBLOCKING O_NONBLOCK
 #endif
 #endif
+#ifdef SOCKS5
+    if (!socks)
+#endif
     fcntl(fd, F_SETFL, mode|NONBLOCKING);
 #endif /* HAVE_FCNTL */
 
     for (;;) {
-#ifdef SOCKS
+#if defined(SOCKS) && !defined(SOCKS5)
 	if (socks) {
 	    status = Rconnect(fd, sockaddr, len);
 	}

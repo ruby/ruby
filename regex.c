@@ -1112,7 +1112,7 @@ re_compile_pattern(pattern, size, bufp)
   register const char *p = pattern;
   const char *nextp;
   const char *pend = pattern + size;
-  register unsigned c, c1;
+  register unsigned int c, c1;
   const char *p0;
   int numlen;
 
@@ -2832,7 +2832,7 @@ re_compile_fastmap(bufp)
 	    while (beg <= end) {
 	      /* NOTE: Charset for multi-byte chars might contain
 		 single-byte chars.  We must reject them. */
-	      if (beg < 0x100)
+	      if (c < 0x100)
 		fastmap[beg] = 2;
 	      else if (ismbchar(beg))
 		fastmap[beg] = 1;
