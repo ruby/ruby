@@ -6768,12 +6768,14 @@ rb_thread_ready(th)
 }
 
 static void
-rb_thread_remove()
+rb_thread_remove(th)
+    rb_thread_t th;
 {
-    rb_thread_ready(curr_thread);
-    curr_thread->status = THREAD_KILLED;
-    curr_thread->prev->next = curr_thread->next;
-    curr_thread->next->prev = curr_thread->prev;
+    if (th->status == THREAD_KILLED) return;
+    rb_thread_ready(th);
+    th->status = THREAD_KILLED;
+    th->prev->next = th->next;
+    th->next->prev = th->prev;
 }
 
 static int
@@ -7661,7 +7663,7 @@ rb_thread_start_0(fn, arg, th)
     }
     POP_TAG();
     status = th->status;
-    rb_thread_remove();
+    rb_thread_remove(th);
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
 	th->flags |= THREAD_RAISED;
 	if (state == TAG_FATAL) { 
@@ -8090,7 +8092,8 @@ rb_callcc(self)
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
-    th->prev = th->next = 0;
+    th->prev = 0;
+    th->next = curr_thread;
     if (THREAD_SAVE_CONTEXT(th)) {
 	return th->result;
     }

@@ -901,7 +901,10 @@ rb_gc()
 #endif
 
     if (dont_gc || during_gc || rb_prohibit_interrupt || ruby_in_compile) {
-	add_heap();
+	if (!freelist || malloc_memories > GC_MALLOC_LIMIT) {
+	    malloc_memories = 0;
+	    add_heap();
+	}
 	return;
     }
 

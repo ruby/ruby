@@ -1,3 +1,11 @@
+Wed Aug  2 08:22:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (rb_gc): clear malloc_memories to zero, to avoid potential
+	  super frequent GC invocation. (ruby-bugs:#PR48)
+
+	* gc.c (rb_gc): only add_heap() if GC trigger condition is
+	  satisfied.
+
 Tue Aug  1 16:41:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ruby.c (proc_options): global load path setting moved from

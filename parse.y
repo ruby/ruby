@@ -1891,6 +1891,7 @@ yycompile(f, line)
     n = yyparse();
     ruby_debug_lines = 0;
     compile_for_eval = 0;
+    rb_gc();
     ruby_in_compile = 0;
     cond_nest = 0;
     class_nest = 0;
