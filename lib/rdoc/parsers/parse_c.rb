@@ -181,7 +181,9 @@ module RDoc
       @known_classes[var_name] = cm.full_name
     end
     
-    
+
+    ############################################################
+
     def find_class_comment(class_name, class_meth)
       comment = nil
       if @body =~ %r{((?>/\*.*?\*/\s+))
@@ -193,6 +195,8 @@ module RDoc
       class_meth.comment = mangle_comment(comment) if comment
     end
     
+    ############################################################
+
     def do_classes
       @body.scan(/(\w+)\s* = \s*rb_define_module\(\s*"(\w+)"\s*\)/mx) do 
         |var_name, class_name|
@@ -238,6 +242,7 @@ module RDoc
       
     end
     
+    ############################################################
     
     def do_methods
       @body.scan(/rb_define_(singleton_method|method|module_function)\(\s*(\w+),
@@ -271,6 +276,7 @@ module RDoc
       end
    end
 
+    ############################################################
 
     def handle_method(type, var_name, meth_name, meth_body, param_count)
       class_name = @known_classes[var_name] || var_name
@@ -301,6 +307,8 @@ module RDoc
       end
     end
     
+    ############################################################
+
     # Find the C code corresponding to a c method
     def find_body(meth_name, meth_obj)
       if @body =~ %r{((?>/\*.*?\*/\s+))(static\s+)?VALUE\s+#{meth_name}
@@ -315,6 +323,17 @@ module RDoc
           body_text = $&
         end
 
+        # The comment block may have been overridden with a
+        # 'Document-method' block. This happens in the interpreter
+        # when multiple methods are vectored through to the same
+        # C method but those methods are logically distinct (for
+        # example Kernel.hash and Kernel.object_id share the same
+        # implementation
+
+        override_comment = find_override_comment(meth_obj.name)
+        comment = override_comment if override_comment
+
+        # 
         # If the comment block contains a section that looks like
         #    call-seq:
         #        Array.new
@@ -337,6 +356,19 @@ module RDoc
       end
     end
 
+    ############################################################
+
+    def find_override_comment(meth_name)
+      comment = nil
+      puts "Override #{meth_name}"
+      if @body =~ %r{Document-method:\s#{meth_name}.*?\n((?>.*?\*/))}m
+        comment = $1
+      end
+      comment
+    end
+
+    ############################################################
+
     # Look for includes of the form
     #     rb_include_module(rb_cArray, rb_mEnumerable);
     def do_includes
@@ -347,6 +379,8 @@ module RDoc
         end
       end
     end
+
+    ############################################################
 
     # Remove the /*'s and leading asterisks from C comments
     

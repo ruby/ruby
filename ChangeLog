@@ -1,3 +1,16 @@
+Sun Dec 28 01:35:35 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_body):
+	  Sometimes the Ruby source aliases two otherwise
+	  unrelated methods (for example Kernel#object_id and
+	  Kernel#hash are both the same C function). Provide a
+	  facility to allow the methods to be documented
+	  separately.
+
+Sun Dec 28 01:05:31 2003  Dave Thomas  <dave@pragprog.com>
+
+	* marshal.c, signal.c: RDoc collemts added by Elliott Hughes
+
 Sun Dec 28 00:46:25 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_class_comment):
