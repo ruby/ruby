@@ -842,6 +842,7 @@ rb_w32_aspawn(int mode, const char *prog, char *const *argv)
     int len = rb_w32_argv_size(argv);
     char *cmd = ALLOCA_N(char, len);
 
+    if (!prog) prog = argv[0];
     return rb_w32_spawn(mode, rb_w32_join_argv(cmd, argv), prog);
 }
 
@@ -855,6 +856,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa, HANDLE 
     SECURITY_ATTRIBUTES sa;
     const char *shell;
     struct ChildRecord *child;
+    char *p = NULL;
 
     if (!cmd && !prog) {
 	errno = EFAULT;
@@ -902,17 +904,8 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa, HANDLE 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
     if (prog) {
-	char *p = dln_find_exe(prog, NULL);
-	if (!p) {
+	if (!(p = dln_find_exe(prog, NULL))) {
 	    shell = prog;
-	}
-	else {
-	    shell = p;
-	    while (*p) {
-		if ((unsigned char)*p == '/')
-		    *p = '\\';
-		p = CharNext(p);
-	    }
 	}
     }
     else {
@@ -933,6 +926,31 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa, HANDLE 
 	}
 	else {
 	    shell = NULL;
+	    prog = cmd;
+	    for (;;) {
+		if (!*prog) {
+		    p = dln_find_exe(cmd, NULL);
+		    break;
+		}
+		if (strchr(".:*?\"/\\", *prog)) break;
+		if (ISSPACE(*prog) || strchr("<>|", *prog)) {
+		    int len = prog - cmd;
+		    p = ALLOCA_N(char, len + 1);
+		    memcpy(p, cmd, len);
+		    p[len] = 0;
+		    p = dln_find_exe(p, NULL);
+		    break;
+		}
+		prog++;
+	    }
+	}
+    }
+    if (p) {
+	shell = p;
+	while (*p) {
+	    if ((unsigned char)*p == '/')
+		*p = '\\';
+	    p = CharNext(p);
 	}
     }
 

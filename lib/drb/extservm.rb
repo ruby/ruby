@@ -84,11 +84,7 @@ module DRb
 	return if @servers.include?(name)
 	@servers[name] = false
       end
-      if RUBY_PLATFORM =~ /mswin32/
-	system("cmd /c start /b #{command} #{DRb.uri} #{name}")
-      else
-	system("#{command} #{DRb.uri} #{name} &")
-      end
+      Process.spawn("#{command} #{DRb.uri} #{name}")
     end
   end
 end

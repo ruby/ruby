@@ -1066,6 +1066,7 @@ proc_spawn_v(argv, prog)
 {
 #if defined(_WIN32)
     char *cmd = ALLOCA_N(char, rb_w32_argv_size(argv));
+    if (!prog) prog = argv[0];
     return rb_w32_spawn(P_NOWAIT, rb_w32_join_argv(cmd, argv), prog);
 #else
     char *extension;
@@ -1476,6 +1477,7 @@ rb_spawn(argc, argv)
     earg.argv = argv;
     earg.prog = prog ? RSTRING(prog)->ptr : 0;
     status = rb_fork(&status, (int (*)_((void*)))rb_exec, &earg);
+    if (prog) argv[0] = prog;
 #elif defined HAVE_SPAWNV
     if (!argc) {
 	status = proc_spawn(RSTRING(prog)->ptr);
@@ -1483,7 +1485,9 @@ rb_spawn(argc, argv)
     else {
 	status = proc_spawn_n(argc, argv, prog);
     }
+    if (prog) argv[0] = prog;
 #else
+    if (prog) argv[0] = prog;
     prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
     status = system(StringValuePtr(prog));
 # if defined(__human68k__) || defined(__DJGPP__)

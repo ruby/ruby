@@ -2608,12 +2608,15 @@ pipe_open(argc, argv, pname, mode)
     volatile int doexec;
 #elif defined(_WIN32)
     int openmode = rb_io_mode_modenum(mode);
-    char *cmd = pname, *prog = NULL;
+    char *prog = NULL;
 #endif
+    char *cmd = pname;
 
     if (!pname) {
 	arg0 = rb_check_argv(argc, argv);
 	if (arg0) pname = StringValuePtr(arg0);
+	cmd = pname;
+	if (!pname) pname = RSTRING(argv[0])->ptr;
     }
 
 #if defined(HAVE_FORK)
@@ -2639,7 +2642,7 @@ pipe_open(argc, argv, pname, mode)
     if (doexec) {
 	arg.exec.argc = argc;
 	arg.exec.argv = argv;
-	arg.exec.prog = pname;
+	arg.exec.prog = cmd;
 	pid = rb_fork(&status, popen_exec, &arg);
     }
     else {
@@ -2692,10 +2695,10 @@ pipe_open(argc, argv, pname, mode)
 #define PIPE_FDOPEN(i) (i?fpw:fpr)
 #else
     if (argc > 0) {
-	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-	pname = StringValuePtr(prog);
+	arg0 = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+	cmd = StringValuePtr(arg0);
     }
-    fpr = popen(pname, mode);
+    fpr = popen(cmd, mode);
 
     if (!fpr) rb_sys_fail(pname);
 #define PIPE_FDOPEN(i) (fpr)

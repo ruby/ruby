@@ -4,7 +4,7 @@ module Generators
 
   class CHMGenerator < HTMLGenerator
 
-    HHC_PATH = "c:\\Program Files\\HTML Help Workshop\\hhc.exe"
+    HHC_PATH = "c:/Program Files/HTML Help Workshop/hhc.exe"
 
     # Standard generator factory
     def CHMGenerator.for(options)
@@ -103,7 +103,7 @@ module Generators
 
     # Invoke the windows help compiler to compiler the project
     def compile_project
-      system("\"#{HHC_PATH}\" #@project_name")
+      system(HHC_PATH, @project_name)
     end
 
   end

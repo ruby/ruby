@@ -196,10 +196,17 @@ class  DefaultDisplay
 
   def setup_pager
     unless @options.use_stdout
-      require 'tempfile'
-
-      @save_stdout = STDOUT.clone
-      STDOUT.reopen(Tempfile.new("ri_"))
+      for pager in [ ENV['PAGER'], "less", "more", 'pager' ].compact.uniq
+        begin
+          pager = IO.popen(pager, "w")
+        rescue
+        else
+          @save_stdout = STDOUT.clone
+          STDOUT.reopen(pager)
+          return
+        end
+      end
+      @options.use_stdout = true
     end
   end
 
@@ -207,20 +214,8 @@ class  DefaultDisplay
 
   def page_output
     unless @options.use_stdout
-      path = STDOUT.path
       STDOUT.reopen(@save_stdout)
       @save_stdout = nil
-      paged = false
-      for pager in [ ENV['PAGER'], "less", "more <", 'pager' ].compact.uniq
-        if system("#{pager} #{path}")
-          paged = true
-          break
-        end
-      end
-      if !paged
-        @options.use_stdout = true
-        puts File.read(path)
-      end
     end
   end
 

@@ -1,3 +1,27 @@
+Tue Mar  2 16:30:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (pipe_open): erred program name should be reported by
+	  exceptions, instead of the first argument.
+
+	* process.c (rb_spawn): ditto.
+
+	* process.c (proc_spawn_v): use first argument as program name.
+
+	* win32/win32.c (rb_w32_aspawn): ditto.
+
+	* win32/win32.c (CreateChild): search executable file if no program
+	  name given.
+
+	* lib/drb/extservm.rb (invoke_service_command): use Process.spawn.
+	  [ruby-dev:23103]
+
+	* lib/rdoc/ri/ri_display.rb (setup_pager): use IO.popen.
+	  [ruby-dev:23086], [ruby-dev:23103]
+
+	* lib/rdoc/diagram.rb (convert_to_png): ditto.
+
+	* lib/rdoc/generators/chm_generator.rb (compile_project): ditto.
+
 Tue Mar  2 12:24:03 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub, wince/Makefile.sub (config.h): shouldn't check
