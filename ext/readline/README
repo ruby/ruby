@@ -36,6 +36,17 @@ completion_case_fold
 
   補完時に大文字小文字を区別しない場合、TRUEを返します。
 
+completion_append_character = char
+
+  補完時に付加される文字を文字列で指定します。先頭の一文字が
+  設定され、空文字列 ("") または nil を指定すると何も付加
+  されなくなります。
+
+completion_append_character
+
+  補完時に付加される文字を文字列で返します。デフォルトは
+  空白 (" ") です。
+
 vi_editing_mode
 
   VIモードになります。
@@ -50,6 +61,3 @@ HISTORY
 
 ヒストリに対する操作はこの定数を通して行ってください。
 配列と同じように扱えるようになっています。
-
-
-	

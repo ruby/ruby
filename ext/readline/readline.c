@@ -167,6 +167,36 @@ readline_s_emacs_editing_mode(self)
 }
 
 static VALUE
+readline_s_set_completion_append_character(self, str)
+    VALUE self, str;
+{
+    if (NIL_P(str)) {
+	rl_completion_append_character = '\0';
+    } else {
+	StringValue(str);
+
+	rl_completion_append_character = RSTRING(str)->ptr[0];
+    }
+
+    return self;
+}
+
+static VALUE
+readline_s_get_completion_append_character(self)
+    VALUE self;
+{
+    VALUE str;
+
+    if (rl_completion_append_character == '\0')
+	return Qnil;
+
+    str = rb_str_new("", 1);
+    RSTRING(str)->ptr[0] = rl_completion_append_character;
+
+    return str;
+}
+
+static VALUE
 hist_to_s(self)
     VALUE self;
 {
@@ -395,6 +425,10 @@ Init_readline()
 			       readline_s_vi_editing_mode, 0);
     rb_define_singleton_method(mReadline, "emacs_editing_mode",
 			       readline_s_emacs_editing_mode, 0);
+    rb_define_singleton_method(mReadline, "completion_append_character=",
+			       readline_s_set_completion_append_character, 1);
+    rb_define_singleton_method(mReadline, "completion_append_character",
+			       readline_s_get_completion_append_character, 0);
 
     histary = rb_obj_alloc(rb_cObject);
     rb_extend_object(histary, rb_mEnumerable);
