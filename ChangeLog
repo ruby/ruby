@@ -1,3 +1,7 @@
+Tue Jun 23 11:46:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): `&&=' and `||=' added.
+
 Sat Jun 20 02:53:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (assignable): nesting local variables should have higher

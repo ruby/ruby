@@ -2824,7 +2824,7 @@ typedef union
   } while(0)
 
 #define AT_STRINGS_BEG(d)  (d == string)
-#define AT_STRINGS_END(d)  (d == dend)	
+#define AT_STRINGS_END(d)  (d == dend)
 
 #define AT_WORD_BOUNDARY(d)						\
   (AT_STRINGS_BEG(d) || AT_STRINGS_END(d) || IS_A_LETTER(d - 1) != IS_A_LETTER(d))
@@ -3300,14 +3300,14 @@ re_match(bufp, string_arg, size, pos, regs)
 
 	case begline:
           if (size == 0
-	      || d == string
+	      || AT_STRINGS_BEG(d)
               || (d && d[-1] == '\n'))
             break;
           else
             goto fail;
 
 	case endline:
-	  if (d == dend || *d == '\n')
+	  if (AT_STRINGS_END(d) || *d == '\n')
 	    break;
 	  goto fail;
 
@@ -3604,7 +3604,7 @@ re_match(bufp, string_arg, size, pos, regs)
 		  if (*p == 0xff) {
 		    p++;  
 		    if (!--mcnt
-			|| d == dend
+			|| AT_STRINGS_END(d)
 			|| (unsigned char)*d++ != (unsigned char)*p++)
 		      goto fail;
 		    continue;
@@ -3613,7 +3613,7 @@ re_match(bufp, string_arg, size, pos, regs)
 		    if (c != (unsigned char)*p++
 			|| !--mcnt	/* redundant check if pattern was
 					   compiled properly. */
-			|| d == dend
+			|| AT_STRINGS_END(d)
 			|| (unsigned char)*d++ != (unsigned char)*p++)
 		      goto fail;
 		    continue;

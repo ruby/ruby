@@ -441,7 +441,6 @@ mlhs		: mlhs_head
 		    {
 			$$ = $2;
 		    }
-
 		| mlhs_head tSTAR lhs
 		    {
 			$$ = NEW_MASGN(NEW_LIST($1), $3);
@@ -2470,6 +2469,11 @@ retry:
       case '&':
 	if ((c = nextc()) == '&') {
 	    lex_state = EXPR_BEG;
+	    if ((c = nextc()) == '=') {
+		yylval.id = tANDOP;
+		return tOP_ASGN;
+	    }
+	    pushback(c);
 	    return tANDOP;
 	}
 	else if (c == '=') {
@@ -2493,6 +2497,11 @@ retry:
       case '|':
 	lex_state = EXPR_BEG;
 	if ((c = nextc()) == '|') {
+	    if ((c = nextc()) == '=') {
+		yylval.id = tOROP;
+		return tOP_ASGN;
+	    }
+	    pushback(c);
 	    return tOROP;
 	}
 	else if (c == '=') {
