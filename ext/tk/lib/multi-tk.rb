@@ -352,7 +352,6 @@ class MultiTkIp
       unless slave_ip.deleted?
 	if slave_ip._invoke('info', 'command', '.') != ""
 	  slave_ip._invoke('destroy', '.')
-	  slave_ip.tk_windows.delete('.')
 	end
 	slave_ip.delete
       end

@@ -49,4 +49,14 @@ safe_slave1.eval_proc(cmd, 'safe1')
 safe_slave2.eval_proc(cmd, 'safe2')
 cmd.call('master')
 
+TkTimer.new(2000, -1, proc{p ['safe1', safe_slave1.deleted?]}).start
+TkTimer.new(2000, -1, proc{p ['safe2', safe_slave2.deleted?]}).start
+TkTimer.new(2000, -1, proc{p ['trusted', trusted_slave.deleted?]}).start
+
+TkTimer.new(10000, 1, 
+	    proc{
+	      trusted_slave.eval_proc{Tk.root.destroy}
+	      trusted_slave.delete
+	    }).start
+
 Tk.mainloop
