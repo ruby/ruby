@@ -4510,9 +4510,11 @@ parse_exp(Node** np, OnigToken* tok, int term,
 
   case TK_QUOTE_OPEN:
     {
-      OnigCodePoint end_op[] = { (OnigCodePoint )MC_ESC, (OnigCodePoint )'E' };
+      OnigCodePoint end_op[2];
       UChar *qstart, *qend, *nextp;
 
+      end_op[0] = (OnigCodePoint )MC_ESC;
+      end_op[1] = (OnigCodePoint )'E';
       qstart = *src;
       qend = find_str_position(end_op, 2, qstart, end, &nextp, env->enc);
       if (IS_NULL(qend)) {

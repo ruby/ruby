@@ -1,3 +1,8 @@
+Mon Mar  8 13:35:32 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* regparse.c (parse_exp): need to separate initialization for bcc32.
+	  [ruby-dev:23169]
+
 Mon Mar  8 01:05:55 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/config.rb (WEBrick::Config::HTTP): rename :RequestHander
