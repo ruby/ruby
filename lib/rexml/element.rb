@@ -429,7 +429,7 @@ module REXML
 				element = @elements[ path ]
 				rv = element.get_text unless element.nil?
 			else
-				rv = find { |node| node.kind_of? Text }
+				rv = @children.find { |node| node.kind_of? Text }
 			end
 			return rv
 		end
@@ -457,8 +457,8 @@ module REXML
 		def text=( text )
       if text.kind_of? String
         text = Text.new( text, whitespace(), nil, raw() )
-      else
-        text = Text.new( text.to_s, whitespace(), nil, raw() ) unless text.kind_of? Text
+      elsif text and !text.kind_of? Text
+        text = Text.new( text.to_s, whitespace(), nil, raw() )
       end
         
 			old_text = get_text
