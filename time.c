@@ -233,7 +233,7 @@ time_gm_or_local(argc, argv, gm_or_local, class)
     tm = (*fn)(&guess);
     if (!tm) goto error;
     t = args[0];
-    while (diff = t - tm->tm_year) {
+    while (diff = t - (tm->tm_year)) {
 	guess += diff * 364 * 24 * 3600;
 	if (guess < 0) ArgError("too far future");
 	tm = (*fn)(&guess);
@@ -253,7 +253,7 @@ time_gm_or_local(argc, argv, gm_or_local, class)
     return time_new_internal(class, guess, 0);
 
   error:
-    ArgError("gmtime error");
+    ArgError("gmtime/localtime error");
 }
 
 static VALUE
@@ -576,7 +576,7 @@ time_mon(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    return INT2FIX(tobj->tm.tm_mon);
+    return INT2FIX(tobj->tm.tm_mon+1);
 }
 
 static VALUE
@@ -589,7 +589,7 @@ time_year(time)
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    return INT2FIX(tobj->tm.tm_year);
+    return INT2FIX(tobj->tm.tm_year+1900);
 }
 
 static VALUE
@@ -664,8 +664,8 @@ time_to_a(time)
 		   INT2FIX(tobj->tm.tm_min),
 		   INT2FIX(tobj->tm.tm_hour),
 		   INT2FIX(tobj->tm.tm_mday),
-		   INT2FIX(tobj->tm.tm_mon),
-		   INT2FIX(tobj->tm.tm_year),
+		   INT2FIX(tobj->tm.tm_mon+1),
+		   INT2FIX(tobj->tm.tm_year+1900),
 		   INT2FIX(tobj->tm.tm_wday),
 		   INT2FIX(tobj->tm.tm_yday),
 		   INT2FIX(tobj->tm.tm_isdst));
