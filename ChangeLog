@@ -1,3 +1,7 @@
+Fri Jan  9 11:52:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rubysig.h: <errno.h> is needed to use errno which may be a macro.
+
 Fri Jan  9 11:20:24 2004  Siena.  <siena@faculty.chiba-u.jp>
 
 	* ext/extmk.rb (extmake): should not reduce necessary libraries.

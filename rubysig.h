@@ -10,8 +10,9 @@
 
 **********************************************************************/
 
-#ifndef SIG_H
-#define SIG_H
+#ifndef RUBYSIG_H
+#define RUBYSIG_H
+#include <errno.h>
 
 #ifdef _WIN32
 typedef LONG rb_atomic_t;
@@ -24,7 +25,6 @@ typedef LONG rb_atomic_t;
 /* Windows doesn't allow interrupt while system calls */
 # define TRAP_BEG do {\
     int saved_errno = 0;\
-    extern int errno;\
     rb_atomic_t trap_immediate = ATOMIC_SET(rb_trap_immediate, 1)
 # define TRAP_END\
     ATOMIC_SET(rb_trap_immediate, trap_immediate);\
@@ -46,7 +46,6 @@ typedef int rb_atomic_t;
 # define ATOMIC_DEC(var) (--(var))
 
 # define TRAP_BEG do {\
-    extern int errno;\
     int saved_errno = 0;\
     int trap_immediate = rb_trap_immediate;\
     rb_trap_immediate = 1
@@ -106,4 +105,4 @@ RUBY_EXTERN int rb_thread_tick;
 } while (0)
 #endif
 
-#endif
+#endif /* ifndef RUBYSIG_H */
