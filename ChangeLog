@@ -1,3 +1,7 @@
+Wed Jul  4 00:09:16 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mathn.rb: merge from 1.7: add Rational#inspect().
+
 Wed Jul  4 00:01:36 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb: distclean should remove mkmf.log as well.
