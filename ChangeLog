@@ -1,3 +1,11 @@
+Thu Dec  9 10:54:36 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/dbm.c (fdbm_select): [ruby-dev:25132]
+
+	* ext/sdbm/init.c: ditto.
+
+	* ext/gdbm/gdbm.c: ditto.
+
 Thu Dec  9 10:19:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/socket/test_socket.rb (test_setsockopt): use SO_LINGER instead
@@ -70,6 +78,11 @@ Wed Dec  8 20:13:06 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* process.c (rb_spawn): support for DJGPP.
 
 	* lib/mkmf.rb (VPATH): specify the implicit path separator for DJGPP.
+
+Wed Dec  8 17:48:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): merge Guy Decoux's argument preserve
+	  patch in [ruby-core:03874].
 
 Wed Dec  8 17:37:33 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 

@@ -3237,11 +3237,19 @@ rb_eval(self, n)
 		}
 	    }
 	    if (nd_type(node) == NODE_ZSUPER) {
-		if (ruby_frame->prev && (ruby_frame->prev->flags & FRAME_DMETH)) {
-		    rb_raise(rb_eRuntimeError, "super: specify arguments explicitly");
-		}
 		argc = ruby_frame->argc;
-		argv = ruby_scope->local_vars + 2;
+		if (argc && ruby_frame->prev &&
+                    (ruby_frame->prev->flags & FRAME_DMETH)) {
+                    if (TYPE(RBASIC(ruby_scope)->klass) != T_ARRAY ||
+                        RARRAY(RBASIC(ruby_scope)->klass)->len != argc) {
+                        rb_raise(rb_eRuntimeError, 
+                                 "super: specify arguments explicitly");
+                    }
+                    argv = RARRAY(RBASIC(ruby_scope)->klass)->ptr;
+                }
+                else {
+                    argv = ruby_scope->local_vars + 2;
+                }
 	    }
 	    else {
 		BEGIN_CALLARGS;
@@ -8194,7 +8202,7 @@ proc_invoke(proc, args, self, klass)
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
     volatile int pcall, avalue = Qtrue;
-    VALUE bvar = Qnil;
+    VALUE bvar = Qnil, tmp = args;
 
     Data_Get_Struct(proc, struct BLOCK, data);
     pcall = (data->flags & BLOCK_LAMBDA) ? YIELD_LAMBDA_CALL : 0;
@@ -8217,6 +8225,14 @@ proc_invoke(proc, args, self, klass)
     _block.block_obj = bvar;
     if (self != Qundef) _block.frame.self = self;
     if (klass) _block.frame.last_class = klass;
+    _block.frame.argc = RARRAY(tmp)->len;
+    if (_block.frame.argc && (ruby_frame->flags & FRAME_DMETH)) {
+        NEWOBJ(scope, struct SCOPE);
+        OBJSETUP(scope, tmp, T_SCOPE);
+        scope->local_tbl = _block.scope->local_tbl;
+        scope->local_vars = _block.scope->local_vars;
+        _block.scope = scope;
+    }
     ruby_block = &_block;
 
     PUSH_ITER(ITER_CUR);
