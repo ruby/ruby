@@ -1,3 +1,11 @@
+Tue Feb 24 03:45:06 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_config.c (ossl_config_each): add new method
+	  OpenSSL::Config#each. it iterates with section name, field name
+	  and value.
+
+	* ext/openssl/ossl_config.c (Init_ossl_config): include Enumerable.
+
 Mon Feb 23 09:09:44 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (parse_args): use optparse instead of getopts.

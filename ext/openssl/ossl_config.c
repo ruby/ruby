@@ -307,16 +307,7 @@ ossl_config_get_sections(VALUE self)
 
     return ary;
 }
-#else
-static VALUE
-ossl_config_get_sections(VALUE self)
-{
-    rb_warn("Config::sections don't work with %s", OPENSSL_VERSION_TEXT);
-    return rb_ary_new();
-}
-#endif
 
-#ifdef IMPLEMENT_LHASH_DOALL_ARG_FN
 static void
 dump_conf_value(CONF_VALUE *cv, VALUE str)
 {
@@ -362,12 +353,60 @@ ossl_config_to_s(VALUE self)
 
     return dump_conf(conf);
 }
+
+static void
+each_conf_value(CONF_VALUE *cv, void* dummy)
+{
+    STACK_OF(CONF_VALUE) *sk;
+    CONF_VALUE *v;
+    VALUE section, name, value, args;
+    int i, num;
+
+    if (cv->name) return;
+    sk = (STACK_OF(CONF_VALUE)*)cv->value;
+    num = sk_CONF_VALUE_num(sk);
+    section = rb_str_new2(cv->section);
+    for(i = 0; i < num; i++){
+	v = sk_CONF_VALUE_value(sk, i);
+	name = v->name ? rb_str_new2(v->name) : Qnil;
+	value = v->value ? rb_str_new2(v->value) : Qnil;
+        args = rb_ary_new3(3, section, name, value);
+	rb_yield(args);
+    }
+}
+
+static IMPLEMENT_LHASH_DOALL_ARG_FN(each_conf_value, CONF_VALUE*, void*);
+
+static VALUE
+ossl_config_each(VALUE self)
+{
+    CONF *conf;
+
+    GetConfig(self, conf);
+    lh_doall_arg(conf->data, LHASH_DOALL_ARG_FN(each_conf_value), (void*)NULL);
+
+    return self;
+}
 #else
+static VALUE
+ossl_config_get_sections(VALUE self)
+{
+    rb_warn("#sections don't work with %s", OPENSSL_VERSION_TEXT);
+    return rb_ary_new();
+}
+
 static VALUE
 ossl_config_to_s(VALUE self)
 {
-    rb_warn("Config::to_s don't work with %s", OPENSSL_VERSION_TEXT);
+    rb_warn("#to_s don't work with %s", OPENSSL_VERSION_TEXT);
     return rb_str_new(0, 0);
+}
+
+static VALUE
+ossl_config_each(VALUE self)
+{
+    rb_warn("#each don't work with %s", OPENSSL_VERSION_TEXT);
+    return self;
 }
 #endif
 
@@ -397,6 +436,7 @@ Init_ossl_config()
 
     rb_define_const(cConfig, "DEFAULT_CONFIG_FILE",
 		    rb_str_new2(CONF_get1_default_config_file()));
+    rb_include_module(cConfig, rb_mEnumerable);
     rb_define_singleton_method(cConfig, "parse", ossl_config_s_parse, 1);
     rb_define_alias(CLASS_OF(cConfig), "load", "new");
     rb_define_alloc_func(cConfig, ossl_config_s_alloc);
@@ -410,5 +450,6 @@ Init_ossl_config()
     rb_define_method(cConfig, "[]=", ossl_config_set_section, 2);
     rb_define_method(cConfig, "sections", ossl_config_get_sections, 0);
     rb_define_method(cConfig, "to_s", ossl_config_to_s, 0);
+    rb_define_method(cConfig, "each", ossl_config_each, 0);
     rb_define_method(cConfig, "inspect", ossl_config_inspect, 0);
 }
