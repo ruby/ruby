@@ -1308,7 +1308,7 @@ re_compile_pattern(pattern, size, bufp)
 		      SET_LIST_BIT(c);
 		  }
 		  if (current_mbctype) {
-		    set_list_bits(0x0, 0xffffffff, b);
+		    set_list_bits(0x80, 0xffffffff, b);
 		  }
 		  last = -1;
 		  continue;
@@ -1334,7 +1334,7 @@ re_compile_pattern(pattern, size, bufp)
 		    if (!ISSPACE(c))
 		      SET_LIST_BIT(c);
 		  if (current_mbctype) {
-		    set_list_bits(0, 0xffffffff, b);
+		    set_list_bits(0x80, 0xffffffff, b);
 		  }
 		  last = -1;
 		  continue;
@@ -1350,7 +1350,7 @@ re_compile_pattern(pattern, size, bufp)
 		    if (!ISDIGIT(c))
 		      SET_LIST_BIT(c);
 		  if (current_mbctype) {
-		    set_list_bits(0, 0xffffffff, b);
+		    set_list_bits(0x80, 0xffffffff, b);
 		  }
 		  last = -1;
 		  continue;
