@@ -1,3 +1,7 @@
+Wed Jun 14 00:50:14 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cig.rb: read_multipart(): if no content body then raise EOFError.
+
 Fri Jun  9 15:11:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* time.c (make_time_t): supports daylight saving time.

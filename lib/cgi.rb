@@ -5,7 +5,7 @@ $Date$
 
 cgi.rb
 
-Version 1.60
+Version 1.61
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 Copyright (C) 2000  Information-technology Promotion Agency, Japan
@@ -185,7 +185,7 @@ class CGI
   EOL = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.60"
+  VERSION = "1.61"
   RELEASE_DATE = "$Date$"
 $-v = v
 
@@ -752,7 +752,12 @@ convert string charset, and set language to "ja".
 
       # start multipart/form-data
       stdinput.binmode
-      content_length -= stdinput.read((boundary + EOL).size).size
+      boundary_size = boundary.size + EOL.size
+      content_length -= boundary_size
+      status = stdinput.read(boundary_size)
+      if nil == status
+        raise EOFError, "no content body"
+      end
 
       require "tempfile"
 
@@ -1902,6 +1907,12 @@ end
 =begin
 
 == HISTORY
+
+=== Version 1.61 - wakou
+
+2000/06/13 15:49:27
+
+- read_multipart(): if no content body then raise EOFError.
 
 === Version 1.60 - wakou
 
