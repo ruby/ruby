@@ -289,6 +289,7 @@ flock_winnt(VALUE self, int argc, VALUE* argv)
 			  0, LK_LEN, LK_LEN, &o), i);
 	break;
       case LOCK_UN:		/* unlock lock */
+      case LOCK_UN|LOCK_NB:	/* unlock is always non-blocking, I hope */
 	LK_ERR(UnlockFileEx(fh, 0, LK_LEN, LK_LEN, &o), i);
 	break;
       default:            /* unknown */
@@ -316,6 +317,7 @@ flock_win95(VALUE self, int argc, VALUE* argv)
 	LK_ERR(LockFile(fh, 0, 0, LK_LEN, LK_LEN), i);
 	break;
       case LOCK_UN:
+      case LOCK_UN|LOCK_NB:
 	LK_ERR(UnlockFile(fh, 0, 0, LK_LEN, LK_LEN), i);
 	break;
       default:
