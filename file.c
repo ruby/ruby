@@ -2343,6 +2343,7 @@ is_absolute_path(path)
     return 0;
 }
 
+#ifndef DOSISH
 static int
 path_check_1(path)
      VALUE path;
@@ -2371,7 +2372,7 @@ path_check_1(path)
 	    && (!p || !(st.st_mode & S_ISVTX))
 #endif
 	    ) {
-	    rb_warn("Unsecure world writeable dir %s , mode 0%o", p0, st.st_mode);
+	    rb_warn("Insecure world writable dir %s , mode 0%o", p0, st.st_mode);
 	    if (p) *p = '/';
 	    return 0;
 	}
@@ -2382,11 +2383,13 @@ path_check_1(path)
 	*p = '\0';
     }
 }
+#endif
 
 int
 rb_path_check(path)
     char *path;
 {
+#ifndef DOSISH
     char *p0, *p, *pend;
     const char sep = PATH_SEP_CHAR;
 
@@ -2406,6 +2409,7 @@ rb_path_check(path)
 	p = strchr(p0, sep);
 	if (!p) p = pend;
     }
+#endif
     return 1;
 }
 
