@@ -1,3 +1,38 @@
+Thu Sep 20 15:20:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c, intern.h (rb_svar): return reference to special variable
+	  from local variable index. [new]
+
+	* eval.c (rb_eval): use rb_svar() for NODE_FLIP{2,3}.
+
+	* parse.y (rb_(backref|lastline)_(get|set)): access via rb_svar().
+
+	* eval.c (proc_invoke): push dynamic variables.
+
+	* eval.c (rb_thread_yield): push special variables as dynamic
+	  variables($_, $~ and FLIP states).
+
+Thu Sep 20 15:20:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* intern.h, parse.y (rb_is_local_id): return true if the ID is
+	  local symbol. [new]
+
+	* parse.y (internal_id): make new ID for internal use. [new]
+
+	* parse.y (cond0): allocate internal ID for NODE_FLIP{2,3}.
+
+	* eval.c (rb_f_local_variables): use rb_is_local_id() to select
+	  visible local variables.
+
+Thu Sep 20 15:20:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_thread_start_0): SCOPE_SHARED is removed.
+
+	* eval.c, intern.h (rb_thread_scope_shared_p): removed. special
+	  variables are no longer shared by threads.
+
+	* re.c (rb_reg_search): MATCHDATA is no longer shared by threads.
+
 Tue Sep 18 11:44:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_init): String.new() => ""
