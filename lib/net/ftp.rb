@@ -1,13 +1,15 @@
-=begin
-
-= net/ftp.rb
-
-written by Shugo Maeda <shugo@ruby-lang.org>
-
-This library is distributed under the terms of the Ruby license.
-You can freely distribute/modify this library.
-
-=end
+# 
+# = net/ftp.rb
+# 
+# Written by Shugo Maeda <shugo@ruby-lang.org>.
+# 
+# This library is distributed under the terms of the Ruby license.
+# You can freely distribute/modify this library.
+#
+# It is included in the Ruby standard library.
+#
+# See the Net::FTP class for an overview.
+#
 
 require "socket"
 require "monitor"
@@ -20,6 +22,37 @@ module Net
   class FTPPermError < FTPError; end
   class FTPProtoError < FTPError; end
 
+  #
+  # This class implements the File Transfer Protocol.  If you have used a
+  # command-line FTP program, and are familiar with the commands, you will be
+  # able to use this class easily.  Some extra features are included to take
+  # advantage of Ruby's style and strengths.
+  #
+  # == Example
+  # 
+  #   require 'net/ftp'
+  #  
+  #   ftp = Net::FTP.new('ftp.netlab.co.jp')
+  #   ftp.login
+  #   files = ftp.chdir('pub/lang/ruby/contrib')
+  #   files = ftp.list('n*')
+  #   ftp.getbinaryfile('nif.rb-0.91.gz', 'nif.gz', 1024)
+  #   ftp.close
+  #
+  # == Major Methods
+  #
+  # The following are the methods most likely to be useful to users:
+  # - #connect
+  # - #login (note: <tt>FTP.new</tt> can do both connect and login instead)
+  # - #getbinaryfile
+  # - #gettextfile
+  # - #putbinaryfile
+  # - #puttextfile
+  # - #chdir
+  # - #size
+  # - #rename
+  # - #delete
+  #
   class FTP
     include MonitorMixin
     
@@ -28,13 +61,41 @@ module Net
 
     DEFAULT_BLOCKSIZE = 4096
     
-    attr_accessor :binary, :passive, :return_code, :debug_mode, :resume
-    attr_reader :welcome, :lastresp
+    # When +true+, transfers are performed in binary mode.  Default: +true+.
+    attr_accessor :binary
+
+    # When +true+, the connection is in passive mode.  Default: false.
+    attr_accessor :passive
+
+    # The return code from the last operation.
+    attr_accessor :return_code
+
+    # When +true+, all traffic to and from the server is written
+    # to +$stdout+.  Default: +false+.
+    attr_accessor :debug_mode
+
+    # Sets or retrieves the +resume+ status, which decides whether incomplete
+    # transfers are resumed or restarted.  Default: +false+.
+    attr_accessor :resume
+
+    # The server's welcome message.
+    attr_reader :welcome
+
+    # The server's last response.
+    attr_reader :lastresp
     
+    #
+    # A synonym for +FTP.new+, but with a mandatory host parameter.
+    #
     def FTP.open(host, user = nil, passwd = nil, acct = nil)
       new(host, user, passwd, acct)
     end
     
+    #
+    # Creates and returns a new +FTP+ object. If a +host+ is given, a connection
+    # is made. Additionally, if the +user+ is given, the given user name,
+    # password, and (optionally) account are used to log in.  See #login.
+    #
     def initialize(host = nil, user = nil, passwd = nil, acct = nil)
       super()
       @binary = true
@@ -60,6 +121,12 @@ module Net
     end
     private :open_socket
     
+    #
+    # Establishes an FTP connection to host, optionally overriding the default
+    # port. If the environment variable +SOCKS_SERVER+ is set, sets up the
+    # connection through a SOCKS proxy. Raises an exception (typically
+    # +Errno::ECONNREFUSED+) if the connection cannot be established.
+    #
     def connect(host, port = FTP_PORT)
       if @debug_mode
 	print "connect: ", host, ", ", port, "\n"
@@ -70,6 +137,9 @@ module Net
       end
     end
 
+    #
+    # WRITEME or make private
+    #
     def set_socket(sock, get_greeting = true)
       synchronize do
 	@sock = sock
@@ -151,6 +221,9 @@ module Net
     end
     private :voidresp
     
+    #
+    # WRITEME or make private
+    #
     def sendcmd(cmd)
       synchronize do
 	putline(cmd)
@@ -158,6 +231,9 @@ module Net
       end
     end
     
+    #
+    # WRITEME or make private
+    #
     def voidcmd(cmd)
       synchronize do
 	putline(cmd)
@@ -250,6 +326,14 @@ module Net
     end
     private :getaddress
     
+    #
+    # Logs in to the remote host. The session must have been previously
+    # connected.  If +user+ is the string "anonymous" and the +password+ is
+    # +nil+, a password of <tt>user@host</tt> is synthesized. If the +acct+
+    # parameter is not +nil+, an FTP ACCT command is sent following the
+    # successful login.  Raises an exception on error (typically
+    # <tt>Net::FTPPermError</tt>).
+    #
     def login(user = "anonymous", passwd = nil, acct = nil)
       if user == "anonymous" and passwd == nil
 	passwd = getaddress
@@ -271,7 +355,13 @@ module Net
       @welcome = resp
     end
     
-    def retrbinary(cmd, blocksize, rest_offset = nil)
+    #
+    # Puts the connection into binary (image) mode, issues the given command,
+    # and fetches the data returned, passing it to the associated block in
+    # chunks of +blocksize+ characters. Note that +cmd+ is a server command
+    # (such as "RETR myfile").
+    #
+    def retrbinary(cmd, blocksize, rest_offset = nil) # :yield: data
       synchronize do
 	voidcmd("TYPE I")
 	conn = transfercmd(cmd, rest_offset)
@@ -285,7 +375,13 @@ module Net
       end
     end
     
-    def retrlines(cmd)
+    #
+    # Puts the connection into ASCII (text) mode, issues the given command, and
+    # passes the resulting data, one line at a time, to the associated block. If
+    # no block is given, prints the lines. Note that +cmd+ is a server command
+    # (such as "RETR myfile").
+    #
+    def retrlines(cmd) # :yield: line
       synchronize do
 	voidcmd("TYPE A")
 	conn = transfercmd(cmd)
@@ -304,7 +400,13 @@ module Net
       end
     end
     
-    def storbinary(cmd, file, blocksize, rest_offset = nil, &block)
+    #
+    # Puts the connection into binary (image) mode, issues the given server-side
+    # command (such as "STOR myfile"), and sends the contents of the file named
+    # +file+ to the server. If the optional block is given, it also passes it
+    # the data, in chunks of +blocksize+ characters.
+    #
+    def storbinary(cmd, file, blocksize, rest_offset = nil, &block) # :yield: data
       synchronize do
 	voidcmd("TYPE I")
 	conn = transfercmd(cmd, rest_offset)
@@ -319,7 +421,13 @@ module Net
       end
     end
     
-    def storlines(cmd, file, &block)
+    #
+    # Puts the connection into ASCII (text) mode, issues the given server-side
+    # command (such as "STOR myfile"), and sends the contents of the file
+    # named +file+ to the server, one line at a time. If the optional block is
+    # given, it also passes it the lines.
+    #
+    def storlines(cmd, file, &block) # :yield: line
       synchronize do
 	voidcmd("TYPE A")
 	conn = transfercmd(cmd)
@@ -337,8 +445,13 @@ module Net
       end
     end
 
+    #
+    # Retrieves +remotefile+ in binary mode, storing the result in +localfile+.
+    # If a block is supplied, it is passed the retrieved data in +blocksize+
+    # chunks.
+    #
     def getbinaryfile(remotefile, localfile = File.basename(remotefile),
-		      blocksize = DEFAULT_BLOCKSIZE, &block)
+		      blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       if @resume
 	rest_offset = File.size?(localfile)
 	f = open(localfile, "a")
@@ -357,7 +470,12 @@ module Net
       end
     end
     
-    def gettextfile(remotefile, localfile = File.basename(remotefile), &block)
+    #
+    # Retrieves +remotefile+ in ASCII (text) mode, storing the result in
+    # +localfile+. If a block is supplied, it is passed the retrieved data one
+    # line at a time.
+    #
+    def gettextfile(remotefile, localfile = File.basename(remotefile), &block) # :yield: line
       f = open(localfile, "w")
       begin
 	retrlines("RETR " + remotefile) do |line|
@@ -370,8 +488,12 @@ module Net
       end
     end
 
+    #
+    # Retrieves +remotefile+ in whatever mode the session is set (text or
+    # binary).  See #gettextfile and #getbinaryfile.
+    #
     def get(localfile, remotefile = File.basename(localfile),
-	    blocksize = DEFAULT_BLOCKSIZE, &block)
+	    blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
       unless @binary
 	gettextfile(localfile, remotefile, &block)
       else
@@ -379,8 +501,13 @@ module Net
       end
     end
     
+    #
+    # Transfers +localfile+ to the server in binary mode, storing the result in
+    # +remotefile+. If a block is supplied, calls it, passing in the transmitted
+    # data in +blocksize+ chunks.
+    #
     def putbinaryfile(localfile, remotefile = File.basename(localfile),
-		      blocksize = DEFAULT_BLOCKSIZE, &block)
+		      blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: line/data
       if @resume
 	rest_offset = size(remotefile)
       else
@@ -395,7 +522,12 @@ module Net
       end
     end
     
-    def puttextfile(localfile, remotefile = File.basename(localfile), &block)
+    #
+    # Transfers +localfile+ to the server in ASCII (text) mode, storing the result
+    # in +remotefile+. If callback or an associated block is supplied, calls it,
+    # passing in the transmitted data one line at a time.
+    #
+    def puttextfile(localfile, remotefile = File.basename(localfile), &block) # :yield: line
       f = open(localfile)
       begin
 	storlines("STOR " + remotefile, f, &block)
@@ -404,6 +536,10 @@ module Net
       end
     end
 
+    #
+    # Tranfers +localfile+ to the server in whatever mode the session is set
+    # (text or binary).  See #puttextfile and #putbinaryfile.
+    #
     def put(localfile, remotefile = File.basename(localfile),
 	    blocksize = DEFAULT_BLOCKSIZE, &block)
       unless @binary
@@ -413,11 +549,17 @@ module Net
       end
     end
 
+    #
+    # Sends the ACCT command.  TODO: more info.
+    #
     def acct(account)
       cmd = "ACCT " + account
       voidcmd(cmd)
     end
     
+    #
+    # Returns an array of filenames in the remote directory.
+    #
     def nlst(dir = nil)
       cmd = "NLST"
       if dir
@@ -430,7 +572,11 @@ module Net
       return files
     end
     
-    def list(*args, &block)
+    #
+    # Returns an array of file information in the directory (the output is like
+    # `ls -l`).  If a block is given, it iterates through the listing.
+    #
+    def list(*args, &block) # :yield: line
       cmd = "LIST"
       args.each do |arg|
 	cmd = cmd + " " + arg
@@ -448,6 +594,9 @@ module Net
     alias ls list
     alias dir list
     
+    #
+    # Renames a file on the server.
+    #
     def rename(fromname, toname)
       resp = sendcmd("RNFR " + fromname)
       if resp[0] != ?3
@@ -456,6 +605,9 @@ module Net
       voidcmd("RNTO " + toname)
     end
     
+    #
+    # Deletes a file on the server.
+    #
     def delete(filename)
       resp = sendcmd("DELE " + filename)
       if resp[0, 3] == "250"
@@ -467,6 +619,9 @@ module Net
       end
     end
     
+    #
+    # Changes the (remote) directory.
+    #
     def chdir(dirname)
       if dirname == ".."
 	begin
@@ -482,6 +637,9 @@ module Net
       voidcmd(cmd)
     end
     
+    #
+    # Returns the size of the given (remote) filename.
+    #
     def size(filename)
       voidcmd("TYPE I")
       resp = sendcmd("SIZE " + filename)
@@ -493,27 +651,43 @@ module Net
     
     MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)$/
     
+    #
+    # Returns the last modification time of the (remote) file.  If +local+ is
+    # +true+, it is returned as a local time, otherwise it's a UTC time.
+    #
     def mtime(filename, local = false)
       str = mdtm(filename)
       ary = str.scan(MDTM_REGEXP)[0].collect {|i| i.to_i}
       return local ? Time.local(*ary) : Time.gm(*ary)
     end
     
+    #
+    # Creates a remote directory.
+    #
     def mkdir(dirname)
       resp = sendcmd("MKD " + dirname)
       return parse257(resp)
     end
     
+    #
+    # Removes a remote directory.
+    #
     def rmdir(dirname)
       voidcmd("RMD " + dirname)
     end
     
+    #
+    # Returns the current remote directory.
+    #
     def pwd
       resp = sendcmd("PWD")
       return parse257(resp)
     end
     alias getdir pwd
     
+    #
+    # Returns system information.
+    #
     def system
       resp = sendcmd("SYST")
       if resp[0, 3] != "215"
@@ -522,6 +696,9 @@ module Net
       return resp[4 .. -1]
     end
     
+    #
+    # Aborts the previous command (ABOR command).
+    #
     def abort
       line = "ABOR" + CRLF
       print "put: ABOR\n" if @debug_mode
@@ -533,6 +710,9 @@ module Net
       return resp
     end
     
+    #
+    # Returns the status (STAT command).
+    #
     def status
       line = "STAT" + CRLF
       print "put: STAT\n" if @debug_mode
@@ -540,6 +720,9 @@ module Net
       return getresp
     end
     
+    #
+    # Issues the MDTM command.  TODO: more info.
+    #
     def mdtm(filename)
       resp = sendcmd("MDTM " + filename)
       if resp[0, 3] == "213"
@@ -547,6 +730,9 @@ module Net
       end
     end
     
+    #
+    # Issues the HELP command.
+    #
     def help(arg = nil)
       cmd = "HELP"
       if arg
@@ -555,23 +741,39 @@ module Net
       sendcmd(cmd)
     end
     
+    #
+    # Exits the FTP session.
+    #
     def quit
       voidcmd("QUIT")
     end
 
+    #
+    # Issues a NOOP command.
+    #
     def noop
       voidcmd("NOOP")
     end
 
+    #
+    # Issues a SITE command.
+    #
     def site(arg)
       cmd = "SITE " + arg
       voidcmd(cmd)
     end
     
+    #
+    # Closes the connection.  Further operations are impossible until you open
+    # a new connection with #connect.
+    #
     def close
       @sock.close if @sock and not @sock.closed?
     end
     
+    #
+    # Returns +true+ iff the connection is closed.
+    #
     def closed?
       @sock == nil or @sock.closed?
     end
@@ -673,3 +875,9 @@ module Net
   end
 
 end
+
+
+# Documentation comments:
+#  - sourced from pickaxe and nutshell, with improvements (hopefully)
+#  - three methods should be private (search WRITEME)
+#  - two methods need more information (search TODO)
