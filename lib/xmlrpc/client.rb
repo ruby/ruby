@@ -208,6 +208,18 @@ call on the remote-side and of course the parameters for the remote procedure.
     Should be an instance of a class from module (({XMLRPC::XMLParser})).
     If this method is not called, then (({XMLRPC::Config::DEFAULT_PARSER})) is used.
 
+--- XMLRPC::Client#cookie
+--- XMLRPC::Client#cookie= (cookieString)
+    Get and set the HTTP Cookie header.
+
+--- XMLRPC::Client#http_header_extra= (additionalHeaders)
+    Set extra HTTP headers that are included in the request.
+
+--- XMLRPC::Client#http_header_extra
+    Access the via ((<XMLRPC::Client#http_header_extra=>)) assigned header. 
+
+--- XMLRPC::Client#http_last_response
+    Returns the (({Net::HTTPResponse})) object of the last RPC.
 
 = XMLRPC::Client::Proxy
 == Synopsis
@@ -279,6 +291,10 @@ module XMLRPC
     def initialize(host=nil, path=nil, port=nil, proxy_host=nil, proxy_port=nil, 
                    user=nil, password=nil, use_ssl=nil, timeout=nil)
 
+      @http_header_extra = nil
+      @http_last_response = nil 
+      @cookie = nil
+
       @host       = host || "localhost"
       @path       = path || "/RPC2"
       @proxy_host = proxy_host
@@ -348,6 +364,16 @@ module XMLRPC
 
 
     # Attribute Accessors -------------------------------------------------------------------
+
+    # add additional HTTP headers to the request
+    attr_accessor :http_header_extra
+
+    # makes last HTTP response accessible
+    attr_reader :http_last_response
+
+    # Cookie support
+    attr_accessor :cookie
+    
 
     attr_reader :timeout, :user, :password
 
@@ -468,12 +494,16 @@ module XMLRPC
        "Connection"     => (async ? "close" : "keep-alive")
       }
 
+      header["Cookie"] = @cookie        if @cookie
+      header.update(@http_header_extra) if @http_header_extra
+
       if @auth != nil
         # add authorization header
         header["Authorization"] = @auth
       end
  
       resp = nil
+      @http_last_response = nil
 
       if async
         # use a new HTTP object for each call 
@@ -494,6 +524,8 @@ module XMLRPC
         resp = @http.post2(@path, request, header) 
       end
   
+      @http_last_response = resp
+
       data = resp.body
 
       if resp.code == "401"
@@ -518,6 +550,9 @@ module XMLRPC
       elsif expected.to_i != data.size and resp["Transfer-Encoding"].nil?
         raise "Wrong size. Was #{data.size}, should be #{expected}"
       end
+
+      c = resp["Set-Cookie"]
+      @cookie = c if c
 
       return data
     end
