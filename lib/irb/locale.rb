@@ -10,7 +10,6 @@
 #   
 #
 
-autoload :Tempfile, "tempfile"
 autoload :Kconv, "kconv"
 
 module IRB
@@ -126,15 +125,12 @@ module IRB
     end 
 
     def real_load(path, priv)
-      tmp_base = path.tr("./:", "___")
-      lc_file = Tempfile.new(tmp_base)
-      File.foreach(path) do |line|
-	line = self.String(line)
-	lc_file.print(line)
+      src = self.String(File.read(path))
+      if priv
+	eval("self", TOPLEVEL_BINDING).extend(Module.new {eval(src, nil, path)})
+      else
+	eval(src, TOPLEVEL_BINDING, path)
       end
-      lc_file.close
-      toplevel_load lc_file.path, priv
-      lc_file.close(true)
     end
     private :real_load
 

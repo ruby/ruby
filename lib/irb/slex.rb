@@ -116,7 +116,6 @@ class SLex
     def create_subnode(chrs, preproc = nil, postproc = nil)
       if chrs.empty?
 	if @postproc
-	  p node
 	  SLex.fail ErrNodeAlreadyExists
 	else
 	  print "Warn: change abstract node to real node\n" if SLex.debug?

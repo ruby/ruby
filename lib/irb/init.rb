@@ -97,7 +97,7 @@ module IRB
       }
     }
 
-    @CONF[:PROMPT_MODE] = :DEFAULT
+    @CONF[:PROMPT_MODE] = (STDIN.tty? ? :DEFAULT : :NULL)
     @CONF[:AUTO_INDENT] = false
 
     @CONF[:CONTEXT_MODE] = 3 # use binding in function on TOPLEVEL_BINDING
@@ -123,11 +123,11 @@ module IRB
 	@CONF[:MATH_MODE] = true
       when "-d"
 	$DEBUG = true
-      when "-r"
-	opt = ARGV.shift
+      when /^-r(.+)?/
+	opt = $1 || ARGV.shift
 	@CONF[:LOAD_MODULES].push opt if opt
-      when "-I"
-        opt = ARGV.shift
+      when /^-I(.+)?/
+        opt = $1 || ARGV.shift
         $LOAD_PATH.push opt if opt
       when /^-K(.)/
 	$KCODE = $1
