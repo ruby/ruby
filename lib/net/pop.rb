@@ -216,66 +216,6 @@ Net::POP3
   APOPSession = APOP
 
 
-=begin
-
-== Net::POP3Command
-
-POP3 command class.
-
-=== Super Class
-
-Net::Command
-
-=== Class Methods
-
-: new( socket )
-  This method creates new POP3Command object. 'socket' must be ProtocolSocket.
-
-
-=== Methods
-
-: auth( account, password )
-  This method do POP authorization (no RPOP)
-  In case of failed authorization, raises Protocol::ProtocolError exception.
-
-: list
-  a list of mails which existing on server.
-  The list is an array like "array[ number ] = size".
-
-  ex:
-
-    The list from server is
-
-    1 2452
-    2 3355
-    4 9842
-       :
-
-    then, an array is
-
-    [ nil, 2452, 3355, nil, 9842, ... ]
-
-: quit
-  This method ends POP using 'QUIT' commmand.
-
-: rset
-  This method reset all changes done in current session,
-  by sending 'RSET' command.
-
-: top( num, lines = 0 )
-  This method gets all mail header and 'lines' lines body
-  by sending 'TOP' command.  'num' is mail number.
-
-  WARNING: the TOP command is 'Optional' in RFC1939 (POP3)
-
-: retr( num : Integer )
-  This method gets a mail by 'RETR' command. 'num' is mail number.
-
-: dele( num : Integer )
-  This method deletes a mail on server by 'DELE'.
-
-=end
-
 
   class POP3Command < Command
 
@@ -371,22 +311,6 @@ Net::Command
   end
 
 
-=begin
-
-== APOPCommand
-
-=== Super Class
-
-POP3Command
-
-=== Methods
-
-: auth( account, password )
-  This method do authorization by sending 'APOP' command.
-  If server is not APOP server, this raises Net::ProtoAuthError exception.
-  On other errors, raises Net::ProtocolError.
-
-=end
 
   class APOPCommand < POP3Command
 
