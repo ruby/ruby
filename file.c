@@ -2120,7 +2120,7 @@ rb_file_s_umask(argc, argv)
 #endif
 #ifndef CharNext		/* defined as CharNext[AW] on Windows. */
 # if defined(DJGPP)
-#   define CharNext(p) ((p) + mblen(p, MB_CUR_MAX))
+#   define CharNext(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
 # else
 #   define CharNext(p) ((p) + 1)
 # endif

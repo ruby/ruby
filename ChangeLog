@@ -1,3 +1,11 @@
+Thu Jan 22 00:12:51 2004  Siena.  <siena@faculty.chiba-u.jp>
+
+	* defines.h: define RUBY_MBCHAR_MAX instead of MB_CUR_MAX.
+	* dir.c (Next, emx_mblen): use RUBY_MBCHAR_MAX for mblen().
+	* file.c (CharNext): ditto.
+	* ruby.c (translate_char): ditto.
+	* util.c (__crt0_glob_function): ditto.
+
 Thu Jan 22 00:10:01 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/base64.rb: :nodoc: the Deprecated module

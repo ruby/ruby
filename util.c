@@ -347,7 +347,7 @@ __crt0_glob_function(char *path)
     strncpy(buf, path, len);
     buf[len] = '\0';
 
-    for (p = buf; *p; p += mblen(p, MB_CUR_MAX))
+    for (p = buf; *p; p += mblen(p, RUBY_MBCHAR_MAXSIZE))
 	if (*p == '\\')
 	    *p = '/';
 

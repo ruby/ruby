@@ -85,14 +85,14 @@ char *strchr _((char*,char));
 #if defined(CharNext)
 # define Next(p) CharNext(p)
 #elif defined(DJGPP)
-# define Next(p) ((p) + mblen(p, MB_CUR_MAX))
+# define Next(p) ((p) + mblen(p, RUBY_MBCHAR_MAXSIZE))
 #elif defined(__EMX__)
 # define Next(p) ((p) + emx_mblen(p))
 static inline int
 emx_mblen(p)
     const char *p;
 {
-    int n = mblen(p, INT_MAX);
+    int n = mblen(p, RUBY_MBCHAR_MAXSIZE);
     return (n < 0) ? 1 : n;
 }
 #endif

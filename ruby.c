@@ -226,7 +226,7 @@ translate_char(p, from, to)
 #ifdef CharNext		/* defined as CharNext[AW] on Windows. */
 	p = CharNext(p);
 #else
-	p += mblen(p, MB_CUR_MAX);
+	p += mblen(p, RUBY_MBCHAR_MAXSIZE);
 #endif
     }
 }
