@@ -797,12 +797,12 @@ def init_mkmf(config = CONFIG)
   $LIBRUBYARG = ""
   $LIBRUBYARG_STATIC = config['LIBRUBYARG_STATIC']
   $LIBRUBYARG_SHARED = config['LIBRUBYARG_SHARED']
-  $LIBPATH = $extmk ? ["$(topdir)"] : []
+  $LIBPATH = CROSS_COMPILING ? [] : ["$(libdir)"]
+  $LIBPATH.unshift("$(topdir)") if $extmk
 
   $objs = nil
   $libs = ""
   if $enable_shared or Config.expand(config["LIBRUBY"].dup) != Config.expand(config["LIBRUBY_A"].dup)
-    $LIBPATH.unshift("$(libdir)") unless $extmk or CROSS_COMPILING
     $LIBRUBYARG = config['LIBRUBYARG']
   end
 

@@ -1,3 +1,8 @@
+Sun Feb 09 12:28:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb (init_mkmf): add libdir to LIBPATH unless cross
+	  compiling.
+
 Sun Feb  9 08:34:45 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: 4xx raises Net::ProtoServerError, 5xx raises
