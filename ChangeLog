@@ -1,3 +1,10 @@
+Tue Sep 10 18:26:52 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb, lib/mkmf.rb ($INCFLAGS): new var for -I$(topdir).
+
+	* lib/mkmf.rb: add #define WIN32_LEAN_AND_MEAN to improve compile
+	  times.
+
 Tue Sep 10 17:16:14 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (miniruby): shouldn't link $(EXTOBJS).

@@ -41,7 +41,7 @@ require 'find'
 require 'ftools'
 require 'shellwords'
 
-$topdir = $hdrdir = File.expand_path(".")
+$topdir = File.expand_path(".")
 $top_srcdir = srcdir
 
 Object.class_eval do remove_method :create_makefile end
@@ -374,6 +374,7 @@ def extmake(target)
   $CPPFLAGS = CONFIG['CPPFLAGS']
   $LDFLAGS = ""
   $LIBPATH = [$libdir]
+  $INCFLAGS = "-I#{$topdir}"
 
   dir_config("opt")
 

@@ -68,7 +68,7 @@ else
   STDERR.print "can't find header files for ruby.\n"
   exit 1
 end
-$topdir = $top_srcdir = $hdrdir
+$topdir = $hdrdir
 # $hdrdir.gsub!('/', '\\') if RUBY_PLATFORM =~ /mswin32|bccwin32/
 
 CFLAGS = CONFIG["CFLAGS"]
@@ -89,9 +89,9 @@ else
   CPPOUTFILE = '-o conftest.i'
 end
 
-$LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} -I#{$top_srcdir} #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
-$CC = "#{CONFIG['CC']} -c #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} -I#{$top_srcdir} #{CFLAGS} %s %s conftest.c"
-$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} -I#{$top_srcdir} #{CFLAGS} %s %s %s conftest.c"
+$LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest %s -I#{$hdrdir} %s #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
+$CC = "#{CONFIG['CC']} -c #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} %s #{CFLAGS} %s %s conftest.c"
+$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} %s #{CFLAGS} %s %s %s conftest.c"
 
 def rm_f(*files)
   targets = []
@@ -175,7 +175,7 @@ def try_link0(src, opt="")
     $LIBPATH.each {|d| $LDFLAGS << " -L" + d}
   end
   begin
-    xsystem(format($LINK, $CFLAGS, $CPPFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
+    xsystem(format($LINK, $INCFLAGS, $CPPFLAGS, $CFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
   ensure
     $LDFLAGS = ldflags
     ENV['LIB'] = ORIG_LIBPATH if /mswin32|bccwin32/ =~ RUBY_PLATFORM
@@ -198,7 +198,7 @@ def try_compile(src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format($CC, $CPPFLAGS, $CFLAGS, opt))
+    xsystem(format($CC, $INCFLAGS, $CPPFLAGS, $CFLAGS, opt))
   ensure
     rm_f "conftest*"
   end
@@ -209,7 +209,7 @@ def try_cpp(src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format($CPP, $CPPFLAGS, $CFLAGS, CPPOUTFILE, opt))
+    xsystem(format($CPP, $INCFLAGS, $CPPFLAGS, $CFLAGS, CPPOUTFILE, opt))
   ensure
     rm_f "conftest*"
   end
@@ -220,7 +220,7 @@ def egrep_cpp(pat, src, opt="")
   cfile.print src
   cfile.close
   begin
-    xpopen(format($CPP, $CFLAGS, $CPPFLAGS, '', opt)) do |f|
+    xpopen(format($CPP, $INCFLAGS, $CPPFLAGS, $CFLAGS, '', opt)) do |f|
       if Regexp === pat
 	puts("    ruby -ne 'print if /#{pat.source}/'")
 	f.grep(pat) {|l|
@@ -335,6 +335,7 @@ def have_library(lib, func="main")
 	return true
       end
       r = try_link(<<"SRC", libs)
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock.h>
 int main() { return 0; }
@@ -342,6 +343,7 @@ int t() { #{func}(); return 0; }
 SRC
       unless r
         r = try_link(<<"SRC", libs)
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock.h>
 int main() { return 0; }
@@ -395,6 +397,7 @@ def have_func(func, header=nil)
   src = 
     if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
       r = <<"SRC"
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock.h>
 SRC
@@ -445,6 +448,7 @@ def have_struct_member(type, member, header=nil)
   src = 
     if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
       r = <<"SRC"
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <winsock.h>
 SRC
@@ -856,6 +860,7 @@ $CFLAGS = with_config("cflags", arg_config("CFLAGS", ""))
 $CPPFLAGS = with_config("cppflags", arg_config("CPPFLAGS", ""))
 $LDFLAGS = with_config("ldflags", arg_config("LDFLAGS", ""))
 $LIBPATH = []
+$INCFLAGS = ""
 
 dir_config("opt")
 
