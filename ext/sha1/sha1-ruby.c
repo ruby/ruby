@@ -76,7 +76,6 @@ sha1_new(argc, argv, class)
     if (!NIL_P(arg)) Check_Type(arg, T_STRING);
 
     obj = Data_Make_Struct(class, SHA1_CTX, 0, free, sha1);
-    rb_obj_call_init(obj, argc, argv);
     SHA1Init(sha1);
     if (!NIL_P(arg)) {
 	sha1_update(obj, arg);
