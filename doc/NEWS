@@ -1,0 +1,261 @@
+: Syntax
+
+  Experimentally altered to get the following code (note the space
+  after p):
+
+    p ("xx"*2).to_i
+
+  Interpreted as:
+
+    p (("xx"*2).to_i)
+
+  Instead of:
+
+    (p("xx"*2)).to_i
+
+: Range#to_ary
+
+  Added.  You can now do something like this:
+
+    a, b, c = 1..3
+
+: break and next
+
+  Extended to take an optional expression, which is used as a value
+  for termination. [experimental]
+
+: SHA1 module
+
+  ruby-sha1 1.2 is newly imported as a standard library, which shares
+  a common interface with the existing md5 module.
+
+: MD5#<<
+
+  Added as an alias for MD5#update.
+
+: to_str
+
+  Added to get objects which define to_str() treated as String's.
+
+  Now almost all the built-in methods try each argument with to_str()
+  when they expect it to be a String.
+
+    foo = Object.new
+    class <<foo
+      def to_str
+        "foo"
+      end
+    end
+    p File.open(foo)
+    => -:7:in `open': wrong argument type Object (expected String) (TypeError)
+       ruby 1.6.4 (2001-04-19) [i586-linux]
+    => -:7:in `open': No such file or directory - "foo" (Errno::ENOENT)
+       ruby 1.7.0 (2001-05-02) [i586-linux]
+
+: Line-range operation
+
+  Obsoleted except the case when used in a one-liner (ruby -e "..."),
+  which means "if 101..200" in a script is no longer interpreted as
+  comparison between (({$.})) and 101 or 200.
+
+: Comparison of exception classes in a rescue clause
+
+  Changed to use ((<Module>))#=== for comparing $! with the exception
+  class specified in each rescue clause.
+
+  As the previous behavior was to use kind_of?, the effect is limited
+  to the SystemCallError case.  SystemCallError.=== has been newly
+  defined to return true when the two have the same errno.  With this
+  change, SystemCallError's with the same errno, such as Errno::EAGAIN
+  and Errno::EWOULDBLOCK, can both be rescued by listing just one of
+  them.
+
+: ((<Array>))#fetch
+
+  Added.
+
+: ((<Array>))#insert(n, other, ...)
+
+  Added. ((<ruby-talk:14289>))
+
+  This is much the same as (({ary[n,0] = [other,...]})) except
+  returing self.
+
+        ary = [0,1,2,3]
+        ary[2, 0] = [4, 5, 6]
+        p ary
+
+        ary = [0,1,2,3]
+        ary.insert(2, 4, 5, 6)
+        p ary
+
+: ((<Array>))#sort!
+
+  Changed to always return self without checking whether the sequence
+  of the elements was modified or not.
+
+  Beware that this behavior is not guaranteed to continue in the
+  future.  Do not rely on its return value. ((<ruby-dev:12506>))．
+
+: ((<Dir>)).open
+
+  Changed to return what the block returns when a block is given, just
+  as ((<File>)).open does. (It always returned (({nil})) in 1.6 and
+  prior)
+
+: ((<Dir>)).chdir
+
+  Extended to take a block.
+
+: ((<Dir>)).glob
+
+  Made to support meta-character escaping by a backslash.  Wildcards
+  and spaces may now be escaped using a backslash.
+
+: ((<Enumerable>))#all?
+: ((<Enumerable>))#any?
+: ((<Enumerable>))#inject
+
+  Added.
+
+: ((<File>)).lchmod
+: ((<File>)).lchown
+
+  Added.
+
+: ((<IO>)).for_fd
+
+  Added.
+
+: ((<IO>)).read
+
+  Added. ((<ruby-talk:9460>))
+
+: ((<Interrupt>))
+
+  Made a subclass of ((<SignalException>)). (It was a subclass of
+  Exception in 1.6 and prior)
+
+: ((<MatchData>))#to_ary
+
+  Added for convenience of Regexp#match. ((<ruby-dev:12766>))
+
+  Previously we had to do:
+
+    foo, bar, baz = /(\w+?)\s+(\w+?)\s+(\w+)/.match("foo bar baz").to_a[1..-1]
+    p [foo, bar, baz]
+
+  But now can do:
+
+    _, foo, bar, baz = /(\w+?)\s+(\w+?)\s+(\w+)/.match("foo bar baz")
+    p [foo, bar, baz]
+
+: ((<Math>)).acos(x)
+: ((<Math>)).asin(x)
+: ((<Math>)).atan(x)
+: ((<Math>)).cosh(x)
+: ((<Math>)).sinh(x)
+: ((<Math>)).tanh(x)
+: ((<Math>)).hypot(x,y)
+
+  Added.
+
+: ((<Module>))#included
+
+  Added.  This is a hook called after Module#append_feature.
+
+: ((<Module>))#method_removed
+: ((<Module>))#method_undefined
+
+  Added.
+
+: ((<NoMethodError>))
+
+  Added. ((<ruby-dev:12763>))
+
+: NotImplementError
+
+  Finally obsoleted.  Use ((<NotImplementedError>)).
+
+: ((<Object>))#singleton_method_removed
+: ((<Object>))#singleton_method_undefined
+
+  Added.
+
+: ((<Proc>))#==
+
+  Added.
+
+: ((<Process>)).times
+
+  Moved from ((<Time>)).times. (Time.times still remains but emits a
+  warning)
+
+: ((<Process::Status>))
+
+  Added.  (({$?})) is now an instance of this class.
+
+: ((<Process>)).waitall
+
+  Added.
+
+: ((<Regexp>)).last_match(n)
+
+  Extended to take an optional argument.
+
+: ((<Regexp>))#options
+
+  Added.
+
+: ((<String>))#insert(n, other)
+
+  Added.
+
+  This is much the same as (({str[n, 0] = other})) except returing
+  self.
+
+: ((<Symbol>)).all_symbols
+
+  Added. ((<ruby-dev:12921>))
+
+: ((<Symbol>))#intern
+
+  Added.
+
+: ((<SystemCallError>)).===
+
+  Added. (See the "Comparison of exception classes in a rescue clause"
+  paragraph above) ((<ruby-dev:12670>))
+
+: ((<SystemExit>))#status
+
+  Added.
+
+: ((<TCPSocket>)).new
+: ((<TCPSocket>)).open
+
+  Extended to take an address and a port number for the local side in
+  optional 3rd and 4th arguments.
+
+: ((<Time>))
+
+  Extended to accept a negative time_t. (Only when the platform
+  supports it)
+
+    p Time.at(-1)
+    => Thu Jan 01 08:59:59 JST 1970
+
+: ((<Time>))#to_a
+: ((<Time>))#zone
+
+  Made to return "UTC" under gmtime.  It used to return a platform
+  dependent value, typically "GMT", in 1.6 and prior.
+
+To be investigated:
+
+ Sat Feb 24 03:15:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+        * io.c (set_stdin): preserve original stdin.
+
+        * io.c (set_outfile): preserve original stdout/stderr.
+
