@@ -169,7 +169,6 @@ static void top_local_setup();
 
 %union {
     NODE *node;
-    VALUE val;
     ID id;
     int num;
     struct RVarmap *vars;
@@ -224,14 +223,14 @@ static void top_local_setup();
 	k__FILE__
 
 %token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR
-%token <val>  tINTEGER tFLOAT tSTRING_CONTENT
+%token <node> tINTEGER tFLOAT tSTRING_CONTENT
 %token <node> tNTH_REF tBACK_REF
 %token <num>  tREGEXP_END
 
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents string_content
 %type <node> words qwords word_list qword_list word
-%type <val>  literal numeric
+%type <node> literal numeric
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
@@ -1282,9 +1281,6 @@ mrhs_basic	: args ',' arg_value
 		;
 
 primary		: literal
-		    {
-			$$ = NEW_LIT($1);
-		    }
 		| strings
 		| xstring
 		| regexp
@@ -1738,7 +1734,7 @@ opt_ensure	: kENSURE compstmt
 literal		: numeric
 		| symbol
 		    {
-			$$ = ID2SYM($1);
+			$$ = NEW_LIT(ID2SYM($1));
 		    }
 		;
 
@@ -1878,7 +1874,7 @@ qword_list	: /* none */
 		    }
 		| qword_list tSTRING_CONTENT ' '
 		    {
-			$$ = list_append($1, NEW_STR($2));
+			$$ = list_append($1, $2);
 		    }
 		;
 
@@ -1904,7 +1900,7 @@ xstring_contents: /* none */
 		    }
 		;
 
-string_content	: tSTRING_CONTENT {$$ = NEW_STR($1);}
+string_content	: tSTRING_CONTENT
 		| tSTRING_DVAR
 		    {
 			$<num>1 = lex_strnest;
@@ -2917,7 +2913,7 @@ parse_string(quote)
     }
 
     tokfix();
-    yylval.val = rb_str_new(tok(), toklen());
+    yylval.node = NEW_STR(rb_str_new(tok(), toklen()));
     return tSTRING_CONTENT;
 }
 
@@ -3070,7 +3066,7 @@ here_document(here)
 	    pushback(c);
 	    if ((c = tokadd_string(func, '\n', 0)) == -1) goto error;
 	    if (c != '\n') {
-		yylval.val = rb_str_new(tok(), toklen());
+		yylval.node = NEW_STR(rb_str_new(tok(), toklen()));
 		return tSTRING_CONTENT;
 	    }
 	    tokadd(nextc());
@@ -3080,7 +3076,7 @@ here_document(here)
     }
     heredoc_restore(lex_strterm);
     lex_strterm = NEW_STRTERM(-1, 0, 0);
-    yylval.val = str;
+    yylval.node = NEW_STR(str);
     return tSTRING_CONTENT;
 }
 
@@ -3386,8 +3382,8 @@ yylex()
 	    c = read_escape();
 	}
 	c &= 0xff;
-	yylval.val = INT2FIX(c);
 	lex_state = EXPR_END;
+	yylval.node = NEW_LIT(INT2FIX(c));
 	return tINTEGER;
 
       case '&':
@@ -3564,7 +3560,7 @@ yylex()
 			yyerror("numeric literal without digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
-		    yylval.val = rb_cstr_to_inum(tok(), 16, Qfalse);
+		    yylval.node = NEW_LIT(rb_cstr_to_inum(tok(), 16, Qfalse));
 		    return tINTEGER;
 		}
 		if (c == 'b' || c == 'B') {
@@ -3588,7 +3584,7 @@ yylex()
 			yyerror("numeric literal without digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
-		    yylval.val = rb_cstr_to_inum(tok(), 2, Qfalse);
+		    yylval.node = NEW_LIT(rb_cstr_to_inum(tok(), 2, Qfalse));
 		    return tINTEGER;
 		}
 		if (c == 'd' || c == 'D') {
@@ -3612,7 +3608,7 @@ yylex()
 			yyerror("numeric literal without digits");
 		    }
 		    else if (nondigit) goto trailing_uc;
-		    yylval.val = rb_cstr_to_inum(tok(), 10, Qfalse);
+		    yylval.node = NEW_LIT(rb_cstr_to_inum(tok(), 10, Qfalse));
 		    return tINTEGER;
 		}
 		if (c == '_') {
@@ -3643,7 +3639,7 @@ yylex()
 			pushback(c);
 			tokfix();
 			if (nondigit) goto trailing_uc;
-			yylval.val = rb_cstr_to_inum(tok(), 8, Qfalse);
+			yylval.node = NEW_LIT(rb_cstr_to_inum(tok(), 8, Qfalse));
 			return tINTEGER;
 		    }
 		    if (nondigit) {
@@ -3659,7 +3655,7 @@ yylex()
 		}
 		else {
 		    pushback(c);
-		    yylval.val = INT2FIX(0);
+		    yylval.node = NEW_LIT(INT2FIX(0));
 		    return tINTEGER;
 		}
 	    }
@@ -3738,10 +3734,10 @@ yylex()
 		    rb_warn("Float %s out of range", tok());
 		    errno = 0;
 		}
-		yylval.val = rb_float_new(d);
+		yylval.node = NEW_LIT(rb_float_new(d));
 		return tFLOAT;
 	    }
-	    yylval.val = rb_cstr_to_inum(tok(), 10, Qfalse);
+	    yylval.node = NEW_LIT(rb_cstr_to_inum(tok(), 10, Qfalse));
 	    return tINTEGER;
 	}
 
@@ -5361,7 +5357,7 @@ void
 rb_gc_mark_parser()
 {
     if (ruby_in_compile) {
-        rb_gc_mark_maybe(yylval.val);
+        rb_gc_mark_maybe((VALUE)yylval.node);
     }
 }
 
