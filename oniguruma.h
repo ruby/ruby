@@ -11,7 +11,7 @@
 #define ONIGURUMA
 #define ONIGURUMA_VERSION_MAJOR   2
 #define ONIGURUMA_VERSION_MINOR   2
-#define ONIGURUMA_VERSION_TEENY   7
+#define ONIGURUMA_VERSION_TEENY   8
 
 #ifndef P_
 #if defined(__STDC__) || defined(_WIN32)
@@ -715,6 +715,10 @@ ONIG_EXTERN
 void onig_set_syntax_options P_((OnigSyntaxType* syntax, OnigOptionType options));
 ONIG_EXTERN
 int onig_set_meta_char P_((unsigned int what, OnigCodePoint code));
+ONIG_EXTERN
+unsigned int onig_get_match_stack_limit_size P_((void));
+ONIG_EXTERN
+int onig_set_match_stack_limit_size P_((unsigned int size));
 ONIG_EXTERN
 int onig_end P_((void));
 ONIG_EXTERN

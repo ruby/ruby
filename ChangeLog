@@ -1,3 +1,7 @@
+Wed Apr 28 01:26:11 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* oniguruma.h, regparse.c: imported Oni Guruma 2.2.8.
+
 Wed Apr 28 01:16:23 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* oniguruma.h, regparse.c: imported Oni Guruma 2.2.7.
