@@ -5652,8 +5652,8 @@ Init_eval()
 	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
 	    double space = (double)rlim.rlim_cur*0.2;
 
-	    if (space > 256*1024) space = 256*1024;
-	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / 4;
+	    if (space > 1024*1024) space = 1024*1024;
+	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
 	}
     }
 #endif
@@ -6025,20 +6025,20 @@ proc_call(proc, args)
     ruby_safe_level = safe;
 
     if (state) {
-	if (orphan) {/* orphan procedure */
-	    switch (state) {
-	      case TAG_BREAK:
-		rb_raise(rb_eLocalJumpError, "break from proc-closure");
-		break;
-	      case TAG_RETRY:
-		rb_raise(rb_eLocalJumpError, "retry from proc-closure");
-		break;
-	      case TAG_RETURN:
+	switch (state) {
+	  case TAG_BREAK:
+	    break;
+	  case TAG_RETRY:
+	    rb_raise(rb_eLocalJumpError, "retry from proc-closure");
+	    break;
+	  case TAG_RETURN:
+	    if (orphan) {	/* orphan procedure */
 		rb_raise(rb_eLocalJumpError, "return from proc-closure");
-		break;
 	    }
+	    /* fall through */
+	  default:
+	    JUMP_TAG(state);
 	}
-	JUMP_TAG(state);
     }
     return result;
 }
