@@ -233,6 +233,7 @@ module TkComm
     return format("rb_out %s", id);
   end
   def uninstall_cmd(id)
+    id = $1 if /rb_out (c\d+)/
     Tk_CMDTBL[id] = nil
   end
   private :install_cmd, :uninstall_cmd
@@ -2115,7 +2116,7 @@ class TkScrollbar<TkWindow
   end
 
   def get
-    ary1 = tk_send('get', path).split
+    ary1 = tk_send('get').split
     ary2 = []
     for i in ary1
       ary2.push number(i)

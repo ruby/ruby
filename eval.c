@@ -1392,7 +1392,7 @@ is_defined(self, node, buf)
       case NODE_ZSUPER:
 	if (the_frame->last_func == 0) return 0;
 	else if (rb_method_boundp(RCLASS(the_frame->last_class)->super,
-				  the_frame->last_func, 1)) {
+				  the_frame->last_func, 0)) {
 	    if (nd_type(node) == NODE_SUPER) {
 		return arg_defined(self, node->nd_args, buf, "super");
 	    }
@@ -2671,6 +2671,7 @@ module_setup(module, node)
     PUSH_CLASS();
     the_class = module;
     PUSH_SCOPE();
+    PUSH_VARS();
 
     if (node->nd_rval) the_frame->cbase = node->nd_rval;
     if (node->nd_tbl) {
@@ -2694,6 +2695,7 @@ module_setup(module, node)
 	result = rb_eval(the_class, node->nd_body);
     }
     POP_TAG();
+    POP_VARS();
     POP_SCOPE();
     POP_CLASS();
 
@@ -4919,7 +4921,8 @@ bind_clone(self)
     VALUE bind;
 
     Data_Get_Struct(self, struct BLOCK, orig);
-    bind = Data_Make_Struct(self,struct BLOCK,blk_mark,blk_free,data);
+    bind = Data_Make_Struct(cBinding,struct BLOCK,blk_mark,blk_free,data);
+    CLONESETUP(bind, self);
     MEMCPY(data, orig, struct BLOCK, 1);
     data->frame.argv = ALLOC_N(VALUE, orig->frame.argc);
     MEMCPY(data->frame.argv, orig->frame.argv, VALUE, orig->frame.argc);

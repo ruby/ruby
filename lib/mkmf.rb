@@ -36,8 +36,8 @@ $archdir = $libdir+"/"+CONFIG["arch"]
 $install = CONFIG["INSTALL_PROGRAM"]
 $install_data = CONFIG["INSTALL_DATA"]
 if $install !~ /^\// then
-  $install = CONFIG["srcdir"]+"/"+$install
-  $install_data = CONFIG["srcdir"]+"/"+$install_data
+  $install = CONFIG["compile_dir"]+"/"+$install
+  $install_data = CONFIG["compile_dir"]+"/"+$install_data
 end
 
 if File.exist? $archdir + "/ruby.h"

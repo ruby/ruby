@@ -19,11 +19,6 @@
 #include "st.h"
 #include <stdio.h>
 
-/* hack for bison */
-#ifdef const
-# undef const
-#endif
-
 #define ID_SCOPE_SHIFT 3
 #define ID_SCOPE_MASK 0x07
 #define ID_LOCAL    0x01
@@ -1835,8 +1830,9 @@ read_escape()
 	    int i;
 
 	    for (i=0; i<2; i++) {
-		buf[i] = nextc();
-		if (buf[i] == -1) goto eof;
+		int cc = nextc();
+		if (cc == -1) goto eof;
+		buf[i] = cc;
 		if (!ISXDIGIT(buf[i])) {
 		    pushback(buf[i]);
 		    break;
@@ -3249,6 +3245,8 @@ str_extend(list, term)
 		    newtok();
 		    return list;
 		}
+		tokadd(c);
+		break;
 	      case '\n':
 		sourceline++;
 	      default:

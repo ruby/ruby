@@ -49,7 +49,7 @@ void *xcalloc P((unsigned long,unsigned long));
 void *xrealloc P((void*,unsigned long));
 void free P((void*));
 
-/* #define	NO_ALLOCA	/* try it out for now */
+/* #define	NO_ALLOCA */	/* try it out for now */
 #ifndef NO_ALLOCA
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
@@ -1245,7 +1245,7 @@ re_compile_pattern(pattern, size, bufp)
 
 	      /* \ escapes characters when inside [...].  */
 	      if (c == '\\') {
-	          PATFETCH(c);
+	          PATFETCH_RAW(c);
 		  switch (c) {
 		    case 'w':
 		      for (c = 0; c < (1 << BYTEWIDTH); c++) {

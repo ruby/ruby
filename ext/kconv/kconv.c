@@ -165,8 +165,8 @@ static char *Patchlevel =
 
 /* MIME preprocessor */
 
-#define _GETC()		(*inptr ? (int)(*inptr++) : EOF)
-#define _UNGETC(c)	(*--inptr = (c))
+#define _GETC()		(inlen-- ? (int)(*inptr++) : EOF)
+#define _UNGETC(c)	(inlen++, *--inptr = (c))
 #define PUTCHAR(c)	(outlen + 1 < outsiz ? \
 	 ((outptr[outlen++] = (c)), (outptr[outlen] = '\0')) : EOF)
 #define GETC()		((!mime_mode)?_GETC():mime_getc())
@@ -181,6 +181,7 @@ extern POINT _BufferSize;
 static unsigned char   hold_buf[HOLD_SIZE*2];
 static int             hold_count;
 static unsigned char  *inptr;
+static int	       inlen;
 static char           *outptr;
 static int             outsiz;
 static int             outlen;
@@ -341,7 +342,7 @@ static int      del_cr = FALSE;
 
 static void    (*iconv) _((register int c2,register int c1));   /* s_iconv or oconv */
 static void    (*oconv) _((register int c2,register int c1));   /* [ejs]_oconv */
-static int     do_kconv _((char *i, char *o, int siz, int out_code, int in_code));
+static int     do_kconv _((VALUE, VALUE, int out_code, int in_code));
 static void    h_conv _((register int c2,register int c1));
 static int     push_hold_buf _((int c2,int c1));
 static void    s_iconv _((register int c2,register int c1));
@@ -580,25 +581,25 @@ main (argc, argv)
 #endif /* notdef */
 
 static int
-do_kconv(i, o, siz, out_code, in_code)
-    char *i;
-    char *o;
-    int siz, out_code, in_code;
+do_kconv(in, out, out_code, in_code)
+    VALUE in, out;
+    int out_code, in_code;
 {
-    register int    c1,
-                    c2;
+    register int c1, c2;
 
     c2 = 0;
 
-    if (siz <= 0) {
+    inptr = (unsigned char *)RSTRING(in)->ptr;	/* input buffer */
+    inlen = RSTRING(in)->len;			/* input buffer size*/
+    outptr = RSTRING(out)->ptr;			/* output buffer */
+    outsiz = RSTRING(in)->len;			/* output buffer size */
+    outlen = 0;		/* current length of output string */
+
+    if (inlen <= 0) {
 	return 0;
     }
-    *o = '\0';
+    *outptr = '\0';
 
-    inptr = (unsigned char *)i;		/* input buffer */
-    outptr = o;		/* output buffer */
-    outsiz = siz;	/* output buffer size */
-    outlen = 0;		/* current length of output string */
     x0201_f = TRUE;     /* don't assume JISX0201 kana */
     rot_f = FALSE;      /* rot14/43 mode */
     input_f = FALSE;    /* non fixed input code  */
@@ -1834,7 +1835,7 @@ kconv_kconv(argc, argv)
     }
 
     dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
-    RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, out_code, in_code);
+    RSTRING(dst)->len = do_kconv(src, dst, out_code, in_code);
 
     return dst;
 }
@@ -1848,7 +1849,7 @@ kconv_tojis(obj, src)
     Check_Type(src, T_STRING);
 
     dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
-    RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _JIS, _AUTO);
+    RSTRING(dst)->len = do_kconv(src, dst, _JIS, _AUTO);
 
     return dst;
 }
@@ -1862,7 +1863,7 @@ kconv_toeuc(obj, src)
     Check_Type(src, T_STRING);
 
     dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
-    RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _EUC, _AUTO);
+    RSTRING(dst)->len = do_kconv(src, dst, _EUC, _AUTO);
 
     return (VALUE)dst;
 }
@@ -1876,7 +1877,7 @@ kconv_tosjis(obj, src)
     Check_Type(src, T_STRING);
 
     dst = str_new(0, RSTRING(src)->len*3+10); /* large enough? */
-    RSTRING(dst)->len = do_kconv(RSTRING(src)->ptr, RSTRING(dst)->ptr, RSTRING(dst)->len, _SJIS, _AUTO);
+    RSTRING(dst)->len = do_kconv(src, dst, _SJIS, _AUTO);
 
     return dst;
 }

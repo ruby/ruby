@@ -1,3 +1,60 @@
+Mon Jun 21 15:29:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.2.6 (1.2 final) released.
+
+Fri Jun 11 15:21:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/etc/etc.c (etc_group): dumps core if there's no more group.
+
+Thu Jun 10 16:41:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (is_defined): `defined? super' should be true even for
+	  private superclass methods.
+
+Mon Jun  7 23:23:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (mod_clone): should call CLOSESETUP().
+
+	* eval.c (bind_clone): should call CLONESETUP() for new clone.
+
+Wed Jun  2 00:41:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* pack.c (pack_unpack): new undocumented template Z which strips
+	  stuff after first null.
+
+	* pack.c (pack_pack): should preserve specified length of the
+	  resulting string.
+
+Tue Jun  1 15:29:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (module_setup): need to add PUSH_VAR/POP_VAR to clear
+	  dyna vars link list.
+
+Tue May 25 16:45:11 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_f_syscall): syscall may return values other than zero
+	  on success.
+
+Tue May 18 11:35:59 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* dln.c (conv_to_posix_path): path_len argument added.
+
+Mon May 17 12:26:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (read_escape): char may be unsigned.
+
+	* string.c (rb_str_succ): ditto.
+
+	* string.c (tr_trans): ditto.
+
+	* regex.c (re_compile_pattern): escaped characters should be read
+	  by PATFETCH_RAW(c).
+
+Sat May 15 11:23:51 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* class.c (include_class_new): should initialize iv_tbl to share
+	  between module and iclass.
+
 Wed May 12 14:19:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* struct.c (iv_get): in case of inheritance of generated struct

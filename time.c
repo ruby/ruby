@@ -873,6 +873,7 @@ Init_Time()
     rb_define_method(cTime, "<=>", time_cmp, 1);
     rb_define_method(cTime, "eql?", time_eql, 1);
     rb_define_method(cTime, "hash", time_hash, 0);
+    rb_define_method(cTime, "clone", time_clone, 0);
 
     rb_define_method(cTime, "localtime", time_localtime, 0);
     rb_define_method(cTime, "gmtime", time_gmtime, 0);

@@ -138,9 +138,7 @@ pack_pack(ary, fmt)
 		plen = 0;
 	    }
 	    else {
-		from = obj_as_string(from);
-		ptr = RSTRING(from)->ptr;
-		plen = RSTRING(from)->len;
+		ptr = str2cstr(from, &plen);
 	    }
 
 	    if (p[-1] == '*')
@@ -149,6 +147,7 @@ pack_pack(ary, fmt)
 	    switch (type) {
 	      case 'a':
 	      case 'A':
+	      case 'Z':
 		if (plen >= len)
 		    str_cat(res, ptr, len);
 		else {
@@ -165,8 +164,12 @@ pack_pack(ary, fmt)
 	      case 'b':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
 			if (*ptr & 1)
 			    byte |= 128;
@@ -184,14 +187,21 @@ pack_pack(ary, fmt)
 			c = byte & 0xff;
 			str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'B':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
 			byte |= *ptr & 1;
 			if (i & 7)
@@ -208,60 +218,73 @@ pack_pack(ary, fmt)
 			c = byte & 0xff;
 			str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'h':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
-			if (ISXDIGIT(*ptr)) {
-			    if (ISALPHA(*ptr))
-				byte |= (((*ptr & 15) + 9) & 15) << 4;
-			    else
-				byte |= (*ptr & 15) << 4;
-			    if (i & 1)
-				byte >>= 4;
-			    else {
-				char c = byte & 0xff;
-				str_cat(res, &c, 1);
-				byte = 0;
-			    }
+			if (ISALPHA(*ptr))
+			    byte |= (((*ptr & 15) + 9) & 15) << 4;
+			else
+			    byte |= (*ptr & 15) << 4;
+			if (i & 1)
+			    byte >>= 4;
+			else {
+			    char c = byte & 0xff;
+			    str_cat(res, &c, 1);
+			    byte = 0;
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
 			str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'H':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
-			if (ISXDIGIT(*ptr)) {
-			    if (ISALPHA(*ptr))
-				byte |= ((*ptr & 15) + 9) & 15;
-			    else
-				byte |= *ptr & 15;
-			    if (i & 1)
-				byte <<= 4;
-			    else {
-				char c = byte & 0xff;
-				str_cat(res, &c, 1);
-				byte = 0;
-			    }
+			if (ISALPHA(*ptr))
+			    byte |= ((*ptr & 15) + 9) & 15;
+			else
+			    byte |= *ptr & 15;
+			if (i & 1)
+			    byte <<= 4;
+			else {
+			    char c = byte & 0xff;
+			    str_cat(res, &c, 1);
+			    byte = 0;
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
 			str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 	    }
@@ -449,9 +472,7 @@ pack_pack(ary, fmt)
 
 	  case 'u':
 	  case 'm':
-	    from = obj_as_string(NEXTFROM);
-	    ptr = RSTRING(from)->ptr;
-	    plen = RSTRING(from)->len;
+	    ptr = str2cstr(NEXTFROM, &plen);
 
 	    if (len <= 1)
 		len = 45;
@@ -673,8 +694,22 @@ pack_unpack(str, fmt)
 
 		while (t >= s) {
 		    if (*t != ' ' && *t != '\0') break;
-		    t--;
-		    len--;
+		    t--; len--;
+		}
+		ary_push(ary, str_new(s, len));
+		s += end;
+	    }
+	    break;
+
+	  case 'Z':
+	    if (len > send - s) len = send - s;
+	    {
+		int end = len;
+		char *t = s + len - 1;
+
+		while (t >= s) {
+		    if (*t) break;
+		    t--; len--;
 		}
 		ary_push(ary, str_new(s, len));
 		s += end;

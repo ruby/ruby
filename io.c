@@ -2326,8 +2326,8 @@ f_syscall(argc, argv)
 #endif /* atarist */
     }
     TRAP_END;
-    if (retval == -1) rb_sys_fail(0);
-    return INT2FIX(0);
+    if (retval < 0) rb_sys_fail(0);
+    return INT2NUM(retval);
 #else
     rb_notimplement();
 #endif

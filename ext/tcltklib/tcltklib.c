@@ -27,8 +27,8 @@ fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); }
 */
 
 /* for callback break & continue */
-VALUE eTkCallbackBreak;
-VALUE eTkCallbackContinue;
+static VALUE eTkCallbackBreak;
+static VALUE eTkCallbackContinue;
 
 /* from tkAppInit.c */
 
@@ -49,15 +49,14 @@ typedef struct {
 } Tk_TimerData;
 
 /* timer callback */
-void _timer_for_tcl (ClientData clientData)
+static void
+_timer_for_tcl(clientData)
+    ClientData clientData;
 {
     Tk_TimerData *timer = (Tk_TimerData*)clientData;
 
     timer->flag = 0;
     CHECK_INTS;
-#ifdef THREAD 
-    if (!thread_critical) thread_schedule();
-#endif
 
     timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
 					 (ClientData)timer);
@@ -66,11 +65,12 @@ void _timer_for_tcl (ClientData clientData)
 
 /* execute Tk_MainLoop */
 static VALUE
-lib_mainloop(VALUE self)
+lib_mainloop(self)
+    VALUE self;
 {
     Tk_TimerData *timer;
 
-    timer = (Tk_TimerData *) ckalloc(sizeof(Tk_TimerData));
+    timer = (Tk_TimerData *)ALLOC(Tk_TimerData);
     timer->flag = 0;
     timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
 					 (ClientData)timer);
@@ -79,6 +79,7 @@ lib_mainloop(VALUE self)
     DUMP1("start Tk_Mainloop");
     while (Tk_GetNumMainWindows() > 0) {
         Tcl_DoOneEvent(0);
+	CHECK_INTS;
     }
     DUMP1("stop Tk_Mainloop");
 
@@ -87,6 +88,7 @@ lib_mainloop(VALUE self)
       Tk_DeleteTimerHandler(timer->token);
     }
 #endif
+    free(timer);
 
     return Qnil;
 }
@@ -99,7 +101,9 @@ struct tcltkip {
 
 /* Tcl command `ruby' */
 static VALUE
-ip_eval_rescue(VALUE *failed, VALUE einfo)
+ip_eval_rescue(failed, einfo)
+    VALUE *failed;
+    VALUE einfo;
 {
     *failed = einfo;
     return Qnil;
@@ -107,10 +111,17 @@ ip_eval_rescue(VALUE *failed, VALUE einfo)
 
 static int
 #if TCL_MAJOR_VERSION >= 8
-ip_ruby(ClientData clientData, Tcl_Interp *interp, 
-	int argc, Tcl_Obj *CONST argv[])
+ip_ruby(clientData, interp, argc, argv)
+    ClientData clientData;
+    Tcl_Interp *interp; 
+    int argc;
+    Tcl_Obj *CONST argv[];
 #else
-ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+ip_ruby(clientData, interp, argc, argv)
+    ClientData clientData;
+    Tcl_Interp *interp;
+    int argc;
+    char *argv[];
 #endif
 {
     VALUE res;
@@ -167,7 +178,8 @@ ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
 
 /* destroy interpreter */
 static void
-ip_free(struct tcltkip *ptr)
+ip_free(ptr)
+    struct tcltkip *ptr;
 {
     DUMP1("Tcl_DeleteInterp");
     Tcl_DeleteInterp(ptr->ip);
@@ -176,7 +188,8 @@ ip_free(struct tcltkip *ptr)
 
 /* create and initialize interpreter */
 static VALUE
-ip_new(VALUE self)
+ip_new(self)
+    VALUE self;
 {
     struct tcltkip *ptr;	/* tcltkip data struct */
     VALUE obj;			/* newly created object */
@@ -218,7 +231,9 @@ ip_new(VALUE self)
 
 /* eval string in tcl by Tcl_Eval() */
 static VALUE
-ip_eval(VALUE self, VALUE str)
+ip_eval(self, str)
+    VALUE self;
+    VALUE str;
 {
     char *s;
     char *buf;			/* Tcl_Eval requires re-writable string region */
@@ -244,72 +259,74 @@ ip_eval(VALUE self, VALUE str)
 
 
 static VALUE
-ip_toUTF8(VALUE self, VALUE str, VALUE encodename)
+ip_toUTF8(self, str, encodename)
+    VALUE self;
+    VALUE str;
+    VALUE encodename;
 {
-#ifndef TCL_UTF_MAX
-  return str;
-#else
+#ifdef TCL_UTF_MAX
   Tcl_Interp *interp;
   Tcl_Encoding encoding;
   Tcl_DString dstr;
   struct tcltkip *ptr;
-  char *buff1,*buff2;
+  char *buf;
 
   Data_Get_Struct(self,struct tcltkip, ptr);
   interp = ptr->ip;
 
   encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
-  buff1 = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
-  strcpy(buff1,STR2CSTR(str));
+  buf = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
+  strcpy(buf,STR2CSTR(str));
 
   Tcl_DStringInit(&dstr);
   Tcl_DStringFree(&dstr);
-  Tcl_ExternalToUtfDString(encoding,buff1,strlen(buff1),&dstr);
-  buff2 = ALLOCA_N(char,Tcl_DStringLength(&dstr)+1);
-  strcpy(buff2,Tcl_DStringValue(&dstr));
+  Tcl_ExternalToUtfDString(encoding,buf,strlen(buf),&dstr);
+  str = str_new2(Tcl_DStringValue(&dstr));
 
   Tcl_FreeEncoding(encoding);
   Tcl_DStringFree(&dstr);
-
-  return str_new2(buff2);
 #endif
+  return str;
 }
 
 static VALUE
-ip_fromUTF8(VALUE self, VALUE str, VALUE encodename)
+ip_fromUTF8(self, str, encodename)
+    VALUE self;
+    VALUE str;
+    VALUE encodename;
 {
-#ifndef TCL_UTF_MAX
-  return str;
-#else
+#ifdef TCL_UTF_MAX
   Tcl_Interp *interp;
   Tcl_Encoding encoding;
   Tcl_DString dstr;
   struct tcltkip *ptr;
-  char *buff1,*buff2;
+  char *buf;
 
   Data_Get_Struct(self,struct tcltkip, ptr);
   interp = ptr->ip;
 
   encoding = Tcl_GetEncoding(interp,STR2CSTR(encodename));
-  buff1 = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
-  strcpy(buff1,STR2CSTR(str));
+  buf = ALLOCA_N(char,strlen(STR2CSTR(str))+1);
+  strcpy(buf,STR2CSTR(str));
 
   Tcl_DStringInit(&dstr);
   Tcl_DStringFree(&dstr);
-  Tcl_UtfToExternalDString(encoding,buff1,strlen(buff1),&dstr);
-  buff2 = ALLOCA_N(char,Tcl_DStringLength(&dstr)+1);
-  strcpy(buff2,Tcl_DStringValue(&dstr));
+  Tcl_UtfToExternalDString(encoding,buf,strlen(buf),&dstr);
+  str = str_new2(Tcl_DStringValue(&dstr));
 
   Tcl_FreeEncoding(encoding);
   Tcl_DStringFree(&dstr);
 
-  return str_new2(buff2);
 #endif
+  return str;
 }
 
 
 static VALUE
-ip_invoke(int argc, VALUE *argv, VALUE obj)
+ip_invoke(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     struct tcltkip *ptr;	/* tcltkip data struct */
     int i;
@@ -344,6 +361,7 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
       for (i = 0; i < argc; ++i) {
 	char *s = STR2CSTR(argv[i]);
         ov[i] = Tcl_NewStringObj(s, strlen(s));
+	Tcl_IncrRefCount(ov[i]);
       }
       ov[argc] = (Tcl_Obj *)NULL;
 #endif
@@ -372,6 +390,10 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
       resultPtr = Tcl_GetObjResult(ptr->ip);
       Tcl_SetResult(ptr->ip, Tcl_GetStringFromObj(resultPtr, &dummy),
 		    TCL_VOLATILE);
+
+      for (i=0; i<argc; i++) {
+	  Tcl_DecrRefCount(ov[i]);
+      }
 #endif
     } else {
       ptr->return_value = (*info.proc)(info.clientData,
@@ -383,12 +405,13 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
     }
 
     /* pass back the result (as string) */
-    return(str_new2(ptr->ip->result));
+    return str_new2(ptr->ip->result);
 }
 
 /* get return code from Tcl_Eval() */
 static VALUE
-ip_retval(VALUE self)
+ip_retval(self)
+    VALUE self;
 {
     struct tcltkip *ptr;	/* tcltkip data struct */
 
@@ -408,7 +431,8 @@ _macinit()
 #endif
 
 /*---- initialization ----*/
-void Init_tcltklib()
+void
+Init_tcltklib()
 {
     extern VALUE rb_argv0;	/* the argv[0] */
 

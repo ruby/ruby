@@ -1527,9 +1527,10 @@ dln_find_file(fname, path)
 
 #if defined(__CYGWIN32__)
 char *
-conv_to_posix_path(win32, posix)
+conv_to_posix_path(win32, posix, len)
     char *win32;
     char *posix;
+    int len;
 {
     char *first = win32;
     char *p = win32;
@@ -1544,7 +1545,10 @@ conv_to_posix_path(win32, posix)
 	    first = p + 1;
 	    *p = ';';
 	}
-    cygwin32_conv_to_posix_path(first, posix);
+    if (len < strlen(first))
+	fprintf(stderr, "PATH length too long: %s\n", first);
+    else
+	strcpy(posix, first);
     return dst;
 }
 #endif
@@ -1563,8 +1567,10 @@ dln_find_1(fname, path, exe_flag)
     struct stat st;
 
 #if defined(__CYGWIN32__)
-    char rubypath[MAXPATHLEN];
-    conv_to_posix_path(path, rubypath);
+    int pathlen = 2 * strlen(path);
+    int rubypathlen = pathlen > MAXPATHLEN ? pathlen : MAXPATHLEN;
+    char *rubypath = alloca(rubypathlen);
+    conv_to_posix_path(path, rubypath, rubypathlen);
     path = rubypath;
 #endif
 #ifndef __MACOS__
