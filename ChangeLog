@@ -1,3 +1,7 @@
+Wed Feb 20 13:41:35 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* io.c (rb_io_close): return Qnil.
+
 Wed Feb 20 12:41:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_any_cmp): should handle Qundef in keys.
