@@ -1,3 +1,9 @@
+Sun Feb 20 00:48:48 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (URI::FTP#buffer_open): access mechanism
+	  re-implemented according to RFC 1738.
+	  reported by Guillaume Marcais.  [ruby-talk:131650]
+
 Sat Feb 19 18:46:56 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (DRbObject#respond_to?): take two arguments.
