@@ -2566,29 +2566,6 @@ Init_socket()
     sock_define_const("SOPRI_BACKGROUND", SOPRI_BACKGROUND);
 #endif
 
-#ifdef IP_MULTICAST_IF
-    sock_define_const("IP_MULTICAST_IF", IP_MULTICAST_IF);
-#endif
-#ifdef IP_MULTICAST_TTL
-    sock_define_const("IP_MULTICAST_TTL", IP_MULTICAST_TTL);
-#endif
-#ifdef IP_MULTICAST_LOOP
-    sock_define_const("IP_MULTICAST_LOOP", IP_MULTICAST_LOOP);
-#endif
-#ifdef IP_ADD_MEMBERSHIP
-    sock_define_const("IP_ADD_MEMBERSHIP", IP_ADD_MEMBERSHIP);
-#endif
-
-#ifdef IP_DEFAULT_MULTICAST_TTL
-    sock_define_const("IP_DEFAULT_MULTICAST_TTL", IP_DEFAULT_MULTICAST_TTL);
-#endif
-#ifdef IP_DEFAULT_MULTICAST_LOOP
-    sock_define_const("IP_DEFAULT_MULTICAST_LOOP", IP_DEFAULT_MULTICAST_LOOP);
-#endif
-#ifdef IP_MAX_MEMBERSHIPS
-    sock_define_const("IP_MAX_MEMBERSHIPS", IP_MAX_MEMBERSHIPS);
-#endif
-
 #ifdef IPX_TYPE
     sock_define_const("IPX_TYPE", IPX_TYPE);
 #endif
