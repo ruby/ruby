@@ -1,7 +1,9 @@
-Sat Feb 08 18:35:30 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Sat Feb  8 18:35:30 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-forward-string): fixed void variable
 	  error.
+
+Sat Feb  8 16:23:11 2003  NABEYA Kenichi  <kenichi@nabeya.com>
 
 	* misc/ruby-mode.el (ruby-font-lock-keywords): method name can
 	  be delimited by tab.
