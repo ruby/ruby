@@ -273,7 +273,7 @@ typedef struct RNode {
 #define NEW_DASGN(v,val) rb_node_newnode(NODE_DASGN,v,val,0)
 #define NEW_DASGN_CURR(v,val) rb_node_newnode(NODE_DASGN_CURR,v,val,0)
 #define NEW_IASGN(v,val) rb_node_newnode(NODE_IASGN,v,val,0)
-#define NEW_CDECL(v,val) rb_node_newnode(NODE_CDECL,v,val,0)
+#define NEW_CDECL(v,val,path) rb_node_newnode(NODE_CDECL,v,val,path)
 #define NEW_CVASGN(v,val) rb_node_newnode(NODE_CVASGN,v,val,0)
 #define NEW_CVDECL(v,val) rb_node_newnode(NODE_CVDECL,v,val,0)
 #define NEW_OP_ASGN1(p,id,a) rb_node_newnode(NODE_OP_ASGN1,p,id,a)

@@ -240,7 +240,7 @@ static void top_local_setup();
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents string_content
 %type <node> words qwords word_list qword_list word
-%type <node> literal numeric dsym cbase cpath
+%type <node> literal numeric dsym cpath clhs
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value
 %type <node> if_tail opt_else case_body cases opt_rescue exc_list exc_var opt_ensure
@@ -483,6 +483,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$1->nd_value = NEW_RESTARY($3);
 			$$ = $1;
 		    }
+		| clhs '=' command_call
+		    {
+			$$ = node_assign($1, $3);
+		    }
 		| var_lhs tOP_ASGN command_call
 		    {
 			value_expr($3);
@@ -570,6 +574,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			$$ = node_assign($1, NEW_SVALUE($3));
 		    }
+		| clhs '=' mrhs
+		    {
+			$$ = node_assign($1, NEW_SVALUE($3));
+		    }
 		| mlhs '=' arg_value
 		    {
 			$1->nd_value = $3;
@@ -579,6 +587,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
 			$1->nd_value = $3;
 			$$ = $1;
+		    }
+		| clhs '=' arg
+		    {
+			$$ = node_assign($1, $3);
 		    }
 		| expr
 		;
@@ -830,6 +842,14 @@ lhs		: variable
 		    }
 		;
 
+clhs		: primary_value tCOLON2 tCONSTANT
+		    {
+			if (in_def || in_single)
+			    yyerror("dynamic constant assignment");
+			$$ = NEW_CDECL(0, 0, NEW_COLON2($1, $3));
+		    }
+		;
+
 cname		: tIDENTIFIER
 		    {
 			yyerror("class/module name must be CONSTANT");
@@ -837,24 +857,17 @@ cname		: tIDENTIFIER
 		| tCONSTANT
 		;
 
-cbase		: tCOLON3 cname
+cpath		: tCOLON3 cname
 		    {
 			$$ = NEW_COLON3($2);
 		    }
 		| cname
 		    {
-			$$ = NEW_CONST($1);
+			$$ = NEW_COLON2(0, $$);
 		    }
-		| cbase tCOLON2 cname
+		| primary_value tCOLON2 cname
 		    {
 			$$ = NEW_COLON2($1, $3);
-		    }
-		;
-
-cpath		: cbase
-		    {
-			if (nd_type($$ = $1) == NODE_CONST)
-			    $$ = NEW_COLON2(0, $$->nd_vid);
 		    }
 		;
 
@@ -1423,7 +1436,10 @@ primary		: literal
 		    }
 		| primary_value '[' aref_args ']'
 		    {
-			$$ = NEW_CALL($1, tAREF, $3);
+			if (nd_type($1) == NODE_SELF)
+			    $$ = NEW_FCALL(tAREF, $3);
+			else
+			    $$ = NEW_CALL($1, tAREF, $3);
 		    }
 		| tLBRACK aref_args ']'
 		    {
@@ -1612,7 +1628,6 @@ primary		: literal
 		  kEND
 		    {
 			$$ = NEW_DEFN($2, $4, $5, NOEX_PRIVATE);
-			if (is_attrset_id($2)) $$->nd_noex = NOEX_PUBLIC;
 		        fixpos($$, $4);
 		        local_pop();
 			in_def--;
@@ -4648,9 +4663,12 @@ call_op(recv, id, narg, arg1)
     value_expr(recv);
     if (narg == 1) {
 	value_expr(arg1);
+	arg1 = NEW_LIST(arg1);
     }
-
-    return NEW_CALL(recv, id, narg==1?NEW_LIST(arg1):0);
+    else {
+	arg1 = 0;
+    }
+    return NEW_CALL(recv, id, arg1);
 }
 
 static NODE*
@@ -4788,7 +4806,7 @@ assignable(id, val)
     else if (is_const_id(id)) {
 	if (in_def || in_single)
 	    yyerror("dynamic constant assignment");
-	return NEW_CDECL(id, val);
+	return NEW_CDECL(id, val, 0);
     }
     else if (is_class_id(id)) {
 	if (in_def || in_single) return NEW_CVASGN(id, val);
@@ -4804,7 +4822,10 @@ static NODE *
 aryset(recv, idx)
     NODE *recv, *idx;
 {
-    value_expr(recv);
+    if (recv && nd_type(recv) == NODE_SELF)
+	recv = (NODE *)1;
+    else
+	value_expr(recv);
     return NEW_ATTRASGN(recv, tASET, idx);
 }
 
@@ -4822,7 +4843,10 @@ attrset(recv, id)
     NODE *recv;
     ID id;
 {
-    value_expr(recv);
+    if (recv && nd_type(recv) == NODE_SELF)
+	recv = (NODE *)1;
+    else
+	value_expr(recv);
     return NEW_ATTRASGN(recv, rb_id_attrset(id), 0);
 }
 

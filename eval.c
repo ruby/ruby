@@ -1923,8 +1923,9 @@ is_defined(self, node, buf)
 	val = self;
 	goto check_bound;
 
-      case NODE_CALL:
       case NODE_ATTRASGN:
+	if (node->nd_recv == (NODE *)1) goto check_bound;
+      case NODE_CALL:
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_eval(self, node->nd_recv);
@@ -2776,15 +2777,23 @@ rb_eval(self, n)
 	{
 	    VALUE recv;
 	    int argc; VALUE *argv; /* used in SETUP_ARGS */
+	    int scope;
 	    TMP_PROTECT;
 
 	    BEGIN_CALLARGS;
-	    recv = rb_eval(self, node->nd_recv);
+	    if (node->nd_recv == (NODE *)1) {
+		recv = self;
+		scope = 1;
+	    }
+	    else {
+		recv = rb_eval(self, node->nd_recv);
+		scope = 0;
+	    }
 	    SETUP_ARGS(node->nd_args);
 	    END_CALLARGS;
 
 	    SET_CURRENT_SOURCE();
-	    rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,0);
+	    rb_call(CLASS_OF(recv),recv,node->nd_mid,argc,argv,scope);
 	    result = argv[argc-1];
 	}
 	break;
@@ -3000,11 +3009,16 @@ rb_eval(self, n)
 	break;
 
       case NODE_CDECL:
-	if (NIL_P(ruby_cbase)) {
-	    rb_raise(rb_eTypeError, "no class/module to define constant");
-	}
 	result = rb_eval(self, node->nd_value);
-	rb_const_set(ruby_cbase, node->nd_vid, result);
+	if (node->nd_vid == 0) {
+	    rb_const_set(class_prefix(self, node->nd_else), node->nd_else->nd_mid, result);
+	}
+	else {
+	    if (NIL_P(ruby_cbase)) {
+		rb_raise(rb_eTypeError, "no class/module to define constant");
+	    }
+	    rb_const_set(ruby_cbase, node->nd_vid, result);
+	}
 	break;
 
       case NODE_CVDECL:
@@ -3239,10 +3253,7 @@ rb_eval(self, n)
 		}
 	    }
 
-	    if (node->nd_noex == NOEX_PUBLIC) {
-		noex = NOEX_PUBLIC; 	/* means is is an attrset */
-	    }
-	    else if (SCOPE_TEST(SCOPE_PRIVATE) || node->nd_mid == init) {
+	    if (SCOPE_TEST(SCOPE_PRIVATE) || node->nd_mid == init) {
 		noex = NOEX_PRIVATE;
 	    }
 	    else if (SCOPE_TEST(SCOPE_PROTECTED)) {
@@ -4106,7 +4117,12 @@ assign(self, lhs, val, pcall)
 	break;
 
       case NODE_CDECL:
-	rb_const_set(ruby_cbase, lhs->nd_vid, val);
+	if (lhs->nd_vid == 0) {
+	    rb_const_set(class_prefix(self, lhs->nd_else), lhs->nd_else->nd_mid, val);
+	}
+	else {
+	    rb_const_set(ruby_cbase, lhs->nd_vid, val);
+	}
 	break;
 
       case NODE_CVDECL:
@@ -4128,12 +4144,20 @@ assign(self, lhs, val, pcall)
       case NODE_ATTRASGN:
 	{
 	    VALUE recv;
-	    recv = rb_eval(self, lhs->nd_recv);
+	    int scope;
+	    if (lhs->nd_recv == (NODE *)1) {
+		recv = self;
+		scope = 1;
+	    }
+	    else {
+		recv = rb_eval(self, lhs->nd_recv);
+		scope = 0;
+	    }
 	    if (!lhs->nd_args) {
 		/* attr set */
 		ruby_current_node = lhs;
 		SET_CURRENT_SOURCE();
-		rb_call(CLASS_OF(recv), recv, lhs->nd_mid, 1, &val, 0);
+		rb_call(CLASS_OF(recv), recv, lhs->nd_mid, 1, &val, scope);
 	    }
 	    else {
 		/* array set */
@@ -4144,7 +4168,7 @@ assign(self, lhs, val, pcall)
 		ruby_current_node = lhs;
 		SET_CURRENT_SOURCE();
 		rb_call(CLASS_OF(recv), recv, lhs->nd_mid,
-			RARRAY(args)->len, RARRAY(args)->ptr, 0);
+			RARRAY(args)->len, RARRAY(args)->ptr, scope);
 	    }
 	}
 	break;

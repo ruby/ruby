@@ -1,3 +1,27 @@
+Thu Feb 20 10:11:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (clhs): allow "Foo::Bar = x".
+
+Thu Feb 20 04:07:06 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (primary): "self[n]=x" can be legal even when "[]=" is
+	  private.  changes submitted in [ruby-talk:63982]
+
+	* parse.y (aryset): ditto.
+
+	* parse.y (attrset): "self.foo=x" can be legal even when "foo="
+	  is private.
+
+	* eval.c (is_defined): private "[]=" and "foo=" support.
+
+	* eval.c (rb_eval): ditto.
+
+	* eval.c (assign): ditto.
+
+Thu Feb 20 03:58:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): "foo=" should not always be public.
+
 Thu Feb 20 01:23:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_thread_restore_context): inhibit interrupts in

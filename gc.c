@@ -695,7 +695,6 @@ rb_gc_mark_children(ptr)
 	  case NODE_DASGN:
 	  case NODE_DASGN_CURR:
 	  case NODE_IASGN:
-	  case NODE_CDECL:
 	  case NODE_CVDECL:
 	  case NODE_CVASGN:
 	  case NODE_COLON3:
@@ -721,6 +720,7 @@ rb_gc_mark_children(ptr)
 
 	  case NODE_SCOPE:	/* 2,3 */
 	  case NODE_BLOCK_PASS:
+	  case NODE_CDECL:
 	    rb_gc_mark((VALUE)obj->as.node.u3.node);
 	    rb_gc_mark((VALUE)obj->as.node.u2.node);
 	    break;
