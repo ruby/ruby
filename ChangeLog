@@ -718,7 +718,7 @@ Wed Jun 23 01:45:27 2004  Dave Thomas  <dave@pragprog.com>
 Wed Jun 23 00:10:17 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_hresult2msg): remove trailing
-	  CR and LF. (doesn't depend on CR+LF) [ruby-dev:23694]
+	  CRs and LFs. (doesn't depend on CR+LF) [ruby-dev:23749]
 
 Wed Jun 23 00:00:25 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -1160,11 +1160,11 @@ Tue May 18 09:30:25 2004  SASADA Koichi  <ko1@atdot.net>
 
 Mon May 17 16:04:06 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* numeric.c (flo_to_s): as a result of "p 0.0", "0.0" is prefered
-	  to "0.0e+00". [ruby-dev:23480]
+	* numeric.c (flo_to_s): it's preferable that "p 0.0" outputs "0.0"
+	  instead of "0.0e+00". [ruby-dev:23480]
 
-	* numeric.c (flo_to_s): as a result of "p 0.00000000000000000001",
-	  "1.0e-20" is prefered to "9.999999999999999e-21". (the precision
+	* numeric.c (flo_to_s): it's preferable that "p 0.00000000000000000001"
+	  outputs "1.0e-20" instead of "9.999999999999999e-21". (the precision
 	  is considered, but there is assumption DBL_DIG == 15 in current
 	  implementation)
 
@@ -1761,7 +1761,7 @@ Mon Apr 12 18:45:58 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Apr 12 10:39:50 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (rb_glob2, rb_glob, push_globs, push_braces, rb_push_glob):
-	  fix memory leak to occur when block is interrupted in Dir.glob.
+	  fix memory leak. (leaked when block was interrupted)
 
 Sun Apr 11 19:10:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -3458,12 +3458,13 @@ Sat Feb  8 10:11:21 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Sat Feb  8 00:29:26 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* dir.c (fnmatch):
-	  File.fnmatch('*?', 'a') should return true. [ruby-dev:22815]
-	  File.fnmatch('\[1\]' , '[1]') should return true. [ruby-dev:22819]
+	* dir.c (fnmatch): File.fnmatch('*?', 'a') should return true.
+	  [ruby-dev:22815]
 
-	* dir.c
-	  Did some styles (no change to behavior)
+	* dir.c (fnmatch): File.fnmatch('\[1\]' , '[1]') should return true.
+	  [ruby-dev:22819]
+
+	* dir.c: Did some styles (no change to behavior)
 
 Sat Feb  7 19:56:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
