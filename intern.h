@@ -124,12 +124,13 @@ VALUE rb_exc_new _((VALUE, const char*, long));
 VALUE rb_exc_new2 _((VALUE, const char*));
 VALUE rb_exc_new3 _((VALUE, VALUE));
 NORETURN(void rb_loaderror __((const char*, ...)));
-NORETURN(void rb_name_error __((VALUE id, const char*, ...)));
+NORETURN(void rb_name_error __((ID, const char*, ...)));
 NORETURN(void rb_invalid_str _((const char*, const char*)));
 void rb_compile_error __((const char*, ...));
 void rb_compile_error_append __((const char*, ...));
 NORETURN(void rb_load_fail _((char*)));
 NORETURN(void rb_error_frozen _((char*)));
+void rb_check_frozen _((VALUE));
 /* eval.c */
 EXTERN struct RNode *ruby_current_node;
 void ruby_set_current_source _((void));
