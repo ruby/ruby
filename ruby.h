@@ -488,7 +488,7 @@ void rb_warn __((const char*, ...));		/* reports always */
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));
 int rb_block_given_p _((void));
-VALUE rb_iterate _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
+VALUE rb_iterate _((VALUE(*)(VALUE),VALUE,VALUE(*)(ANYARGS),VALUE));
 VALUE rb_rescue _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
 VALUE rb_rescue2 __((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...));
 VALUE rb_ensure _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));

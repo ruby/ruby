@@ -890,7 +890,7 @@ inspect_ensure(obj)
 
 VALUE
 rb_protect_inspect(func, obj, arg)
-    VALUE (*func)();
+    VALUE (*func)(ANYARGS);
     VALUE obj, arg;
 {
     struct inspect_arg iarg;

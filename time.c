@@ -706,10 +706,10 @@ time_localtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got && !tobj->gmt) {
-	return time;
+    if (tobj->tm_got) {
+	if (!tobj->gmt) return time;
+	time_modify(time);
     }
-    time_modify(time);
     t = tobj->tv.tv_sec;
     tm_tmp = localtime(&t);
     tobj->tm = *tm_tmp;
@@ -727,10 +727,10 @@ time_gmtime(time)
     time_t t;
 
     GetTimeval(time, tobj);
-    if (tobj->tm_got && tobj->gmt) {
-	return time;
+    if (tobj->tm_got) {
+	if (tobj->gmt) return time;
+	time_modify(time);
     }
-    time_modify(time);
     t = tobj->tv.tv_sec;
     tm_tmp = gmtime(&t);
     tobj->tm = *tm_tmp;

@@ -1425,11 +1425,12 @@ cvar_override_check(id, a, b)
 {
     a = RCLASS(a)->super;
     while (a) {
-	if (!RCLASS(a)->iv_tbl) continue;
-	if (st_lookup(RCLASS(a)->iv_tbl,id,0)) {
-	    rb_warning("class variable %s of %s is overridden by %s",
-		       rb_id2name(id), rb_class2name(a),
-		       rb_class2name(b));
+	if (RCLASS(a)->iv_tbl) {
+	    if (st_lookup(RCLASS(a)->iv_tbl,id,0)) {
+		rb_warning("class variable %s of %s is overridden by %s",
+			   rb_id2name(id), rb_class2name(a),
+			   rb_class2name(b));
+	    }
 	}
 	a = RCLASS(a)->super;
     }
@@ -1445,15 +1446,16 @@ rb_cvar_set(klass, id, val)
 
     tmp = klass;
     while (tmp) {
-	if (!RCLASS(tmp)->iv_tbl) continue;
-	if (st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
-	    if (!OBJ_TAINTED(tmp) && rb_safe_level() >= 4)
-		rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
-	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
-	    if (ruby_verbose) {
-		cvar_override_check(id, tmp, klass);
+	if (RCLASS(tmp)->iv_tbl) {
+	    if (st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
+		if (!OBJ_TAINTED(tmp) && rb_safe_level() >= 4)
+		    rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
+		st_insert(RCLASS(tmp)->iv_tbl,id,val);
+		if (ruby_verbose) {
+		    cvar_override_check(id, tmp, klass);
+		}
+		return;
 	    }
-	    return;
 	}
 	tmp = RCLASS(tmp)->super;
     }
@@ -1500,12 +1502,13 @@ rb_cvar_get(klass, id)
 
     tmp = klass;
     while (tmp) {
-	if (!RCLASS(tmp)->iv_tbl) continue;
-	if (st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
-	    if (ruby_verbose) {
-		cvar_override_check(id, tmp, klass);
+	if (RCLASS(tmp)->iv_tbl) {
+	    if (st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
+		if (ruby_verbose) {
+		    cvar_override_check(id, tmp, klass);
+		}
+		return value;
 	    }
-	    return value;
 	}
 	tmp = RCLASS(tmp)->super;
     }

@@ -3531,7 +3531,8 @@ Init_IO()
     rb_output_fs = Qnil;
     rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_str_setter);
 
-    rb_rs = rb_default_rs = rb_str_new2("\n"); rb_output_rs = Qnil;
+    rb_rs = rb_default_rs = rb_str_new2("\n");
+    rb_output_rs = Qnil;
     rb_global_variable(&rb_default_rs);
     OBJ_FREEZE(rb_default_rs);	/* avoid modifying RS_default */
     rb_define_variable("$/", &rb_rs);

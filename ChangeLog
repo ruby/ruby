@@ -1,3 +1,43 @@
+Mon Oct 29 07:57:31 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): shuould allow interpolation of $-x.
+
+	* variable.c (rb_cvar_set): empty iv_tbl may cause infinite loop.
+
+	* variable.c (rb_cvar_get): ditto.
+
+	* variable.c (cvar_override_check): ditto.
+
+Sat Oct 27 23:01:19 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_eq): convert Bignum to Float, instead of
+	  reverse.
+
+Fri Oct 26 06:19:29 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_localtime): getting tm should not be prohibited for
+	  frozen time objects.
+
+	* time.c (time_gmtime): ditto.
+
+	* version.c (Init_version): freeze RUBY_VERSION,
+	  RUBY_RELEASE_DATE, and RUBY_PLATFORM.
+
+	* file.c (Init_File): freeze File::SEPARATOR, ALT_SEPARATOR and
+	  PATH_SEPARATOR.
+
+	* file.c (rb_stat_cmp): should check operand type before calling
+	  get_stat().
+
+Thu Oct 25 10:28:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval_cmd): should not invoke "call" with a block on
+	  any occasion.
+
+Wed Oct 24 03:25:31 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_aref): idx may be a Bignum.
+
 Tue Oct 23 01:21:19 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (proc_invoke): fix self switching in Proc#call
@@ -43,7 +83,14 @@ Tue Oct 23 01:15:43 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* variable.c (rb_alias_variable): ditto.
 
+Mon Oct 22 18:53:55 2001  Masahiro Tanaka  <masa@stars.gsfc.nasa.gov>
+
+	* numeric.c (num_remainder): a bug in Numeric#remainder.
+
 Mon Oct 22 15:21:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_exec_end_proc): END might be called within END
+	  block.
 
 	* class.c (rb_mod_clone): should not copy class name, since clone
 	  should remain anonymous.

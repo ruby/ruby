@@ -157,7 +157,9 @@ ip_ruby(clientData, interp, argc, argv)
     DUMP2("rb_eval_string(%s)", arg);
     old_trapflg = rb_trap_immediate;
     rb_trap_immediate = 0;
-    res = rb_rescue(rb_eval_string, (VALUE)arg, ip_eval_rescue, (VALUE)&failed);
+    res = rb_rescue2(rb_eval_string, (VALUE)arg,
+                     ip_eval_rescue, (VALUE)&failed,
+                     rb_eStandardError, rb_eScriptError, 0);
     rb_trap_immediate = old_trapflg;
 
     Tcl_ResetResult(interp);

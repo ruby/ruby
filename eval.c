@@ -1349,8 +1349,10 @@ rb_eval_cmd(cmd, arg)
     volatile int safe = ruby_safe_level;
 
     if (TYPE(cmd) != T_STRING) {
-	return rb_funcall2(cmd, rb_intern("call"),
-			   RARRAY(arg)->len, RARRAY(arg)->ptr);
+	PUSH_ITER(ITER_NOT);
+	val = rb_funcall2(cmd, rb_intern("call"), RARRAY(arg)->len, RARRAY(arg)->ptr);
+	POP_ITER();
+	return val;
     }
 
     saved_scope = ruby_scope;
@@ -2736,7 +2738,7 @@ rb_eval(self, n)
 		val = rb_funcall(val, node->nd_mid, 1, rb_eval(self, rval));
 	    }
 	    argv[argc-1] = val;
-	    val = rb_funcall2(recv, aset, argc, argv);
+	    rb_funcall2(recv, aset, argc, argv);
 	    result = val;
 	}
 	break;
@@ -3921,7 +3923,7 @@ assign(self, lhs, val, pcall)
 
 VALUE
 rb_iterate(it_proc, data1, bl_proc, data2)
-    VALUE (*it_proc)(), (*bl_proc)();
+    VALUE (*it_proc) _((VALUE)), (*bl_proc)(ANYARGS);
     VALUE data1, data2;
 {
     int state;
@@ -3995,10 +3997,10 @@ handle_rescue(self, node)
 
 VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_rescue2(VALUE (*b_proc)(), VALUE data1, VALUE (*r_proc)(), VALUE data2, ...)
+rb_rescue2(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*r_proc)(ANYARGS), VALUE data2, ...)
 #else
 rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
-    VALUE (*b_proc)(), (*r_proc)();
+    VALUE (*b_proc)(ANYARGS), (*r_proc)(ANYARGS);
     VALUE data1, data2;
     va_dcl
 #endif
@@ -4089,8 +4091,9 @@ rb_protect(proc, data, state)
 VALUE
 rb_ensure(b_proc, data1, e_proc, data2)
     VALUE (*b_proc)();
+    VALUE data1;
     VALUE (*e_proc)();
-    VALUE data1, data2;
+    VALUE data2;
 {
     int state;
     volatile VALUE result = Qnil;
@@ -5959,12 +5962,20 @@ rb_f_at_exit()
 void
 rb_exec_end_proc()
 {
-    struct end_proc_data *link;
+    struct end_proc_data *link, *save;
     int status;
 
-    link = end_procs;
+    save = link = end_procs;
     while (link) {
-	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
+	rb_protect((VALUE(*)())link->func, link->data, &status);
+	if (status) {
+	    error_handle(status);
+	}
+	link = link->next;
+    }
+    link = end_procs;
+    while (link != save) {
+	rb_protect((VALUE(*)())link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);
 	}

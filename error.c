@@ -734,14 +734,14 @@ rb_sys_fail(mesg)
 #ifdef __BEOS__
     ee = get_syserr(n);
     if (!ee) {
-	char name[6];
+	char name[12];
       
 	sprintf(name, "E%03d", n);
 	ee = set_syserr(n, name);
    }
 #else
     if (n > sys_nerr || !syserr_list[n]) {
-	char name[6];
+	char name[12];
 
 	sprintf(name, "E%03d", n);
 	ee = set_syserr(n, name);

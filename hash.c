@@ -1098,7 +1098,7 @@ ruby_unsetenv(name)
 }
 
 static VALUE
-rb_f_setenv(obj, nm, val)
+env_aset(obj, nm, val)
     VALUE obj, nm, val;
 {
     char *name, *value;
@@ -1126,13 +1126,13 @@ rb_f_setenv(obj, nm, val)
 	if (OBJ_TAINTED(val)) {
 	    /* already tainted, no check */
 	    path_tainted = 1;
-	    return Qtrue;
+	    return val;
 	}
 	else {
 	    path_tainted_p(value);
 	}
     }
-    return Qtrue;
+    return val;
 }
 
 static VALUE
@@ -1499,8 +1499,8 @@ Init_Hash()
 
     rb_define_singleton_method(envtbl,"[]", rb_f_getenv, 1);
     rb_define_singleton_method(envtbl,"fetch", env_fetch, -1);
-    rb_define_singleton_method(envtbl,"[]=", rb_f_setenv, 2);
-    rb_define_singleton_method(envtbl,"store", rb_f_setenv, 2);
+    rb_define_singleton_method(envtbl,"[]=", env_aset, 2);
+    rb_define_singleton_method(envtbl,"store", env_aset, 2);
     rb_define_singleton_method(envtbl,"each", env_each, 0);
     rb_define_singleton_method(envtbl,"each_pair", env_each, 0);
     rb_define_singleton_method(envtbl,"each_key", env_each_key, 0);
