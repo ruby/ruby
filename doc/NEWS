@@ -1,261 +1,285 @@
-: Syntax
+Summary of the changes since 1.6.3:
 
-  Experimentally altered to get the following code (note the space
-  after p):
+: Hash#replace
 
-    p ("xx"*2).to_i
+  Fixed so the following code does not fail in core dump.
 
-  Interpreted as:
+    h  = { 10 => 100, 20 => 200 }
+    h2 = { }
 
-    p (("xx"*2).to_i)
+    h.each { |k, v|
+      if (k == 10)
+        h.delete(10)
+        h2.replace(h)  # => Abort core dumped
+      end
+    }
 
-  Instead of:
+: File::unlink
 
-    (p("xx"*2)).to_i
+  Changed to be forbidden under $SAFE >= 2.
 
-: Range#to_ary
+: ruby -T4
 
-  Added.  You can now do something like this:
+  Fixed.  ARGV is now properly marked as tainted so ruby -T4 no longer
+  fails in SecurityError.
 
-    a, b, c = 1..3
+: Regexp
 
-: break and next
+  Fixed.  Now \1 .. \9 always mean backreferences, and referring to
+  unclosed/unmatched parentheses always fails.
 
-  Extended to take an optional expression, which is used as a value
-  for termination. [experimental]
+: String taint infection
 
-: SHA1 module
+  Fixed for the following cases.  [ruby-dev:13340]
 
-  ruby-sha1 1.2 is newly imported as a standard library, which shares
-  a common interface with the existing md5 module.
+  # []=
+  s1 = "abc"
+  s2 = "cde".taint
+  s1[0]= s2
+  p s1.tainted?             # => false
 
-: MD5#<<
+  # crypt
+  s = "abc".taint
+  p s.crypt("cd").tainted?  # => false
 
-  Added as an alias for MD5#update.
+  # ljust
+  s = "abc".taint
+  p s.ljust(10).tainted?    # => false
 
-: to_str
+  # rjust
+  s = "abc".taint
+  p s.rjust(10).tainted?    # => false
 
-  Added to get objects which define to_str() treated as String's.
+  # center
+  s = "abc".taint
+  p s.center(10).tainted?   # => false
 
-  Now almost all the built-in methods try each argument with to_str()
-  when they expect it to be a String.
+  Now they will all be marked as tainted.
 
-    foo = Object.new
-    class <<foo
-      def to_str
-        "foo"
+: rb_yield_0()
+
+  Fixed so it adjusts a 1-element array when yielded from C API, as
+  well.  Previously, the following code produced a wrong result:
+
+    class X
+      include Enumerable
+
+      def each(&block)
+        block.call(1)
+        block.call(2)
+        block.call(3)
       end
     end
-    p File.open(foo)
-    => -:7:in `open': wrong argument type Object (expected String) (TypeError)
-       ruby 1.6.4 (2001-04-19) [i586-linux]
-    => -:7:in `open': No such file or directory - "foo" (Errno::ENOENT)
-       ruby 1.7.0 (2001-05-02) [i586-linux]
 
-: Line-range operation
+    x = X.new
+    p x.to_a #=> [[1], [2], [3]]
 
-  Obsoleted except the case when used in a one-liner (ruby -e "..."),
-  which means "if 101..200" in a script is no longer interpreted as
-  comparison between (({$.})) and 101 or 200.
+  Now it properly produces [1, 2, 3].
 
-: Comparison of exception classes in a rescue clause
+: $SAFE
 
-  Changed to use ((<Module>))#=== for comparing $! with the exception
-  class specified in each rescue clause.
+  Fixed so aliasing global valiables is disallowed under $SAFE = 4.
+ ((<ruby-dev:13287>))
 
-  As the previous behavior was to use kind_of?, the effect is limited
-  to the SystemCallError case.  SystemCallError.=== has been newly
-  defined to return true when the two have the same errno.  With this
-  change, SystemCallError's with the same errno, such as Errno::EAGAIN
-  and Errno::EWOULDBLOCK, can both be rescued by listing just one of
-  them.
+: Open3::popen3
 
-: ((<Array>))#fetch
+  Fixed to do exit! instead of exit so the dying process does not
+  invoke at_exit. ((<ruby-dev:13170>))
 
-  Added.
+: SizedQueue#pop
 
-: ((<Array>))#insert(n, other, ...)
+  Fixed so the following code does not cause a dead lock.
+  ((<ruby-dev:13169>))
 
-  Added. ((<ruby-talk:14289>))
+    ruby -r thread -e 'q = SizedQueue.new(1); q.push(1);'
+                   -e 'Thread.new{sleep 1; q.pop}; q.push(1);'
 
-  This is much the same as (({ary[n,0] = [other,...]})) except
-  returing self.
+: SizedQueue#max=
 
-        ary = [0,1,2,3]
-        ary[2, 0] = [4, 5, 6]
-        p ary
+  Fixed so it really works. ((<ruby-dev:13170>))
 
-        ary = [0,1,2,3]
-        ary.insert(2, 4, 5, 6)
-        p ary
+: Queue
+: SizedQueue
 
-: ((<Array>))#sort!
+  Fixed to rescue ThreadError in case the thread is dead just before
+  calling Thread#run. ((<ruby-dev:13194>))
 
-  Changed to always return self without checking whether the sequence
-  of the elements was modified or not.
+: Array#&
+: Array#|
+: Array#uniq
 
-  Beware that this behavior is not guaranteed to continue in the
-  future.  Do not rely on its return value. ((<ruby-dev:12506>))．
+  Fixed so they do not freeze the elements. ((<ruby-list:29665>))
 
-: ((<Dir>)).open
+    (%w(foo bar) & %w(foo baz))[0].upcase!
+    => -:1:in `upcase!': can't modify frozen string (TypeError)
 
-  Changed to return what the block returns when a block is given, just
-  as ((<File>)).open does. (It always returned (({nil})) in 1.6 and
-  prior)
+    %w(foo bar bar baz).uniq[0].upcase!
+    => -:1:in `upcase!': can't modify frozen string (TypeError)
 
-: ((<Dir>)).chdir
+: shell.rb
 
-  Extended to take a block.
+    shell.rb 0.6 is newly imported as a standard library, along with
+    documents.
 
-: ((<Dir>)).glob
+: forwardable.rb
 
-  Made to support meta-character escaping by a backslash.  Wildcards
-  and spaces may now be escaped using a backslash.
+    forwardable.rb 1.1 is newly imported as a standard library, along with
+    documents.
 
-: ((<Enumerable>))#all?
-: ((<Enumerable>))#any?
-: ((<Enumerable>))#inject
+: irb & irb-tools
 
-  Added.
+    irb and irb-tolls are updated to 0.7.4 and 0.7.1, respectively.
 
-: ((<File>)).lchmod
-: ((<File>)).lchown
+: Daylight saving time
 
-  Added.
+  Fixed so it is handled correctly. [ruby-bugs-ja (PR#46)]
 
-: ((<IO>)).for_fd
+    env TZ=America/Managua ruby -e 'p Time.local(1998,12,1,0,59,59)'
+    => Mon Nov 30 01:59:59 EST 1998
+    env TZ=America/Managua ruby -e 'p Time.local(1998,12,1,0,59,59).tv_sec'   
+    => 912409199
 
-  Added.
+: SIGINFO
 
-: ((<IO>)).read
+  Support SIGINFO of 4.4BSD.  [ruby-bugs-ja (PR#45)]
 
-  Added. ((<ruby-talk:9460>))
+: Modifier rescue
 
-: ((<Interrupt>))
+  Fixed so the following code does not emit a parse error any more.
+  ((<ruby-dev:13073>)), ((<ruby-dev:13292>))
 
-  Made a subclass of ((<SignalException>)). (It was a subclass of
-  Exception in 1.6 and prior)
+    raise "" rescue []
+    raise "" rescue (p "foo"; true)
+    raise "" rescue -1
+    raise "" rescue (-1)
 
-: ((<MatchData>))#to_ary
+: Thread
 
-  Added for convenience of Regexp#match. ((<ruby-dev:12766>))
+  Fixed so the following code does not cause a dead lock any more.
 
-  Previously we had to do:
+    Thread.start { Thread.stop }
+    sleep
 
-    foo, bar, baz = /(\w+?)\s+(\w+?)\s+(\w+)/.match("foo bar baz").to_a[1..-1]
-    p [foo, bar, baz]
+    => deadlock 0x40199b58: 2:0  - -:1
+       deadlock 0x401a2528: 2:4 (main) - -:2
+       -:2:in `sleep': Thread: deadlock (fatal)
+               from -:2
+       ruby 1.6.3 (2001-03-19) [i586-linux]
 
-  But now can do:
+: Module#const_defined?
+: Module#const_get
+: Module#const_set
 
-    _, foo, bar, baz = /(\w+?)\s+(\w+?)\s+(\w+)/.match("foo bar baz")
-    p [foo, bar, baz]
+  Fixed so they do not access to anything other than constants.
+  ((<ruby-dev:13019>))
 
-: ((<Math>)).acos(x)
-: ((<Math>)).asin(x)
-: ((<Math>)).atan(x)
-: ((<Math>)).cosh(x)
-: ((<Math>)).sinh(x)
-: ((<Math>)).tanh(x)
-: ((<Math>)).hypot(x,y)
+: Marshal.dump
 
-  Added.
+  Improved so it dumps Float with better precision: "%.12g" -> "%.16g"
+  ((<ruby-list:29349>))
 
-: ((<Module>))#included
+: Fixnum#[]
 
-  Added.  This is a hook called after Module#append_feature.
+  Fixed a bug on the platforms which sizeof(long) > sizeof(int).
 
-: ((<Module>))#method_removed
-: ((<Module>))#method_undefined
+: Regular Expression
 
-  Added.
+  Fixed a couple of minor bugs. ((<ruby-talk:13658>)), ((<ruby-talk:13744>))
 
-: ((<NoMethodError>))
+: retry
 
-  Added. ((<ruby-dev:12763>))
+  Fixed so the following code works correctly again. ((<ruby-talk:13957>))
 
-: NotImplementError
+        def WHILE(cond)
+          return if not cond
+          yield
+          retry
+        end
 
-  Finally obsoleted.  Use ((<NotImplementedError>)).
+        i=0
+        WHILE(i<3) {
+          print i
+          i+=1
+        }
 
-: ((<Object>))#singleton_method_removed
-: ((<Object>))#singleton_method_undefined
+        ruby 1.6.2 (2000-12-25) [i586-linux]
+        => 012
 
-  Added.
+        ruby 1.6.3 (2001-03-19) [i586-linux]
+        => 0
 
-: ((<Proc>))#==
+        ruby 1.6.4 (2001-05-02) [i586-linux]
+        => 012
 
-  Added.
+: ((<File::Stat>))#size
 
-: ((<Process>)).times
+  Fixed to return a correct value for files larger than 1G bytes.
 
-  Moved from ((<Time>)).times. (Time.times still remains but emits a
-  warning)
+        File.open("/tmp/1GB", "w") {|f|
+          f.seek(2**30-1, 0)
+          f.puts
+          f.flush
+          p f.stat.size
+        }
 
-: ((<Process::Status>))
+        # => ruby 1.6.3 (2001-04-03) [i586-linux]
+             -1073741824
+        # => ruby 1.6.4 (2001-04-19) [i586-linux]
+             1073741824
 
-  Added.  (({$?})) is now an instance of this class.
+: ((<Float>))#modulo, ((<Float>))#divmod
 
-: ((<Process>)).waitall
+  Fixed. ((<ruby-dev:12718>))
 
-  Added.
+: ((<ObjectSpace>))#_id2ref
 
-: ((<Regexp>)).last_match(n)
+  Fixed so it does not raise a  exception.
 
-  Extended to take an optional argument.
+: recursive malloc problem
 
-: ((<Regexp>))#options
+  Fixed by preallocating a buffer for stdio using setvbuf().
+  ((<ruby-dev:12795>))
 
-  Added.
+: ((<File>))#flock
 
-: ((<String>))#insert(n, other)
+  Fixed so it does not raise Errno::EACCES when the file to flock is
+  already locked. (only applicable to the platforms which lack
+  flock())
 
-  Added.
+: ((<File::Stat>)).new(filename)
 
-  This is much the same as (({str[n, 0] = other})) except returing
-  self.
+  Added. ((<ruby-dev:12803>))
 
-: ((<Symbol>)).all_symbols
+: ((<Bignum>))#% miscalculation
 
-  Added. ((<ruby-dev:12921>))
+  (Re-)Fixed.
 
-: ((<Symbol>))#intern
+        a = 677330545177305025495135714080
+        b = 14269972710765292560
+        p a % b  #=> 0
+        p -a % b #=> 
 
-  Added.
+        => ruby 1.6.3 (2001-04-02) [i386-cygwin]
+           0
+           14269972710765292560
 
-: ((<SystemCallError>)).===
+        => ruby 1.6.4 (2001-04-19) [i586-linux]
+           0
+           0
 
-  Added. (See the "Comparison of exception classes in a rescue clause"
-  paragraph above) ((<ruby-dev:12670>))
+: ((<Marshal>))
 
-: ((<SystemExit>))#status
+  Fixed so a Bignum is properly restored through dump & load.
 
-  Added.
+: Universal Naming Convention(UNC) support (win32)
 
-: ((<TCPSocket>)).new
-: ((<TCPSocket>)).open
+  Added.  Now the UNC form (//host/share) is supported.  Use slash
+  (`(({/}))') instead of backslash (`(({\}))') for separating
+  components.
 
-  Extended to take an address and a port number for the local side in
-  optional 3rd and 4th arguments.
+: ((<Dir>)).glob (win32)
 
-: ((<Time>))
+  Fixed so it works for the current directory as well.
 
-  Extended to accept a negative time_t. (Only when the platform
-  supports it)
-
-    p Time.at(-1)
-    => Thu Jan 01 08:59:59 JST 1970
-
-: ((<Time>))#to_a
-: ((<Time>))#zone
-
-  Made to return "UTC" under gmtime.  It used to return a platform
-  dependent value, typically "GMT", in 1.6 and prior.
-
-To be investigated:
-
- Sat Feb 24 03:15:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-        * io.c (set_stdin): preserve original stdin.
-
-        * io.c (set_outfile): preserve original stdout/stderr.
-
+        p Dir["./*.c"]
+        => []
