@@ -336,7 +336,7 @@ bsock_getsockopt(sock, lev, optname)
     if (getsockopt(fileno(fptr->f), level, option, buf, &len) < 0)
 	rb_sys_fail(fptr->path);
 
-    return rb_tainted_str_new(buf, len);
+    return rb_str_new(buf, len);
 #else
     rb_notimplement();
 #endif
@@ -353,7 +353,7 @@ bsock_getsockname(sock)
     GetOpenFile(sock, fptr);
     if (getsockname(fileno(fptr->f), (struct sockaddr*)buf, &len) < 0)
 	rb_sys_fail("getsockname(2)");
-    return rb_tainted_str_new(buf, len);
+    return rb_str_new(buf, len);
 }
 
 static VALUE
@@ -367,7 +367,7 @@ bsock_getpeername(sock)
     GetOpenFile(sock, fptr);
     if (getpeername(fileno(fptr->f), (struct sockaddr*)buf, &len) < 0)
 	rb_sys_fail("getpeername(2)");
-    return rb_tainted_str_new(buf, len);
+    return rb_str_new(buf, len);
 }
 
 static VALUE
@@ -480,7 +480,7 @@ s_recvfrom(sock, argc, argv, from)
 	return rb_assoc_new(str, unixaddr((struct sockaddr_un*)buf));
 #endif
       case RECV_SOCKET:
-	return rb_assoc_new(str, rb_tainted_str_new(buf, alen));
+	return rb_assoc_new(str, rb_str_new(buf, alen));
       default:
 	rb_bug("s_recvfrom called with bad value");
     }
@@ -530,7 +530,7 @@ mkipaddr(addr)
     char buf[1024];
 
     mkipaddr0(addr, buf, sizeof(buf));
-    return rb_tainted_str_new2(buf);
+    return rb_str_new2(buf);
 }
 
 static void
@@ -673,14 +673,14 @@ ipaddr(sockaddr)
 	if (error) {
 	    rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
 	}
-	addr1 = rb_tainted_str_new2(hbuf);
+	addr1 = rb_str_new2(hbuf);
     }
     error = getnameinfo(sockaddr, SA_LEN(sockaddr), hbuf, sizeof(hbuf),
 			pbuf, sizeof(pbuf), NI_NUMERICHOST | NI_NUMERICSERV);
     if (error) {
 	rb_raise(rb_eSocket, "getnameinfo: %s", gai_strerror(error));
     }
-    addr2 = rb_tainted_str_new2(hbuf);
+    addr2 = rb_str_new2(hbuf);
     if (do_not_reverse_lookup) {
 	addr1 = addr2;
     }
@@ -1078,11 +1078,11 @@ tcp_s_gethostbyname(obj, host)
     size_t size;
 
     ary = rb_ary_new();
-    rb_ary_push(ary, rb_tainted_str_new2(h->h_name));
+    rb_ary_push(ary, rb_str_new2(h->h_name));
     names = rb_ary_new();
     rb_ary_push(ary, names);
     for (pch = h->h_aliases; *pch; pch++) {
-	rb_ary_push(names, rb_tainted_str_new2(*pch));
+	rb_ary_push(names, rb_str_new2(*pch));
     }
     rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
@@ -1464,7 +1464,7 @@ unix_path(sock)
 	    rb_sys_fail(0);
 	fptr->path = strdup(addr.sun_path);
     }
-    return rb_tainted_str_new2(fptr->path);
+    return rb_str_new2(fptr->path);
 }
 
 static VALUE
@@ -1677,7 +1677,7 @@ unixaddr(sockaddr)
     struct sockaddr_un *sockaddr;
 {
     return rb_assoc_new(rb_str_new2("AF_UNIX"),
-			rb_tainted_str_new2(sockaddr->sun_path));
+			rb_str_new2(sockaddr->sun_path));
 }
 
 static VALUE
@@ -1931,7 +1931,7 @@ sock_accept(sock)
     GetOpenFile(sock, fptr);
     sock2 = s_accept(rb_cSocket,fileno(fptr->f),(struct sockaddr*)buf,&len);
 
-    return rb_assoc_new(sock2, rb_tainted_str_new(buf, len));
+    return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
 
 static VALUE
@@ -1946,7 +1946,7 @@ sock_sysaccept(sock)
     GetOpenFile(sock, fptr);
     sock2 = s_accept(0,fileno(fptr->f),(struct sockaddr*)buf,&len);
 
-    return rb_assoc_new(sock2, rb_tainted_str_new(buf, len));
+    return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
 
 #ifdef HAVE_GETHOSTNAME
@@ -1961,7 +1961,7 @@ sock_gethostname(obj)
 	rb_sys_fail("gethostname");
 
     buf[sizeof buf - 1] = '\0';
-    return rb_tainted_str_new2(buf);
+    return rb_str_new2(buf);
 }
 #else
 #ifdef HAVE_UNAME
@@ -1976,7 +1976,7 @@ sock_gethostname(obj)
 
     rb_secure(3);
     uname(&un);
-    return rb_tainted_str_new2(un.nodename);
+    return rb_str_new2(un.nodename);
 }
 #else
 static VALUE
@@ -2004,19 +2004,19 @@ sock_mkhostent(h)
 #endif
     }
     ary = rb_ary_new();
-    rb_ary_push(ary, rb_tainted_str_new2(h->h_name));
+    rb_ary_push(ary, rb_str_new2(h->h_name));
     names = rb_ary_new();
     rb_ary_push(ary, names);
     for (pch = h->h_aliases; *pch; pch++) {
-	rb_ary_push(names, rb_tainted_str_new2(*pch));
+	rb_ary_push(names, rb_str_new2(*pch));
     }
     rb_ary_push(ary, INT2NUM(h->h_addrtype));
 #ifdef h_addr
     for (pch = h->h_addr_list; *pch; pch++) {
-	rb_ary_push(ary, rb_tainted_str_new(*pch, h->h_length));
+	rb_ary_push(ary, rb_str_new(*pch, h->h_length));
     }
 #else
-    rb_ary_push(ary, rb_tainted_str_new(h->h_addr, h->h_length));
+    rb_ary_push(ary, rb_str_new(h->h_addr, h->h_length));
 #endif
 
     return ary;
@@ -2304,7 +2304,7 @@ sock_s_getnameinfo(argc, argv)
 	}
 	freeaddrinfo(res);
     }
-    return rb_assoc_new(rb_tainted_str_new2(hbuf), rb_tainted_str_new2(pbuf));
+    return rb_assoc_new(rb_str_new2(hbuf), rb_str_new2(pbuf));
 
   error_exit_addr:
     if (res) freeaddrinfo(res);
@@ -2334,13 +2334,16 @@ sock_s_unpack_sockaddr_in(self, addr)
     VALUE self, addr;
 {
     struct sockaddr_in * sockaddr;
+    VALUE host;
 
     sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
     if (RSTRING(addr)->len != sizeof(struct sockaddr_in)) {
 	rb_raise(rb_eTypeError, "sockaddr_in size differs - %d required; %d given",
 		 RSTRING(addr)->len, sizeof(struct sockaddr_in));
     }
-    return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), mkipaddr(sockaddr));
+    host = mkipaddr(sockaddr);
+    OBJ_INFECT(host, addr);
+    return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }
 
 #ifdef HAVE_SYS_UN_H
@@ -2365,6 +2368,7 @@ sock_s_unpack_sockaddr_un(self, addr)
     VALUE self, addr;
 {
     struct sockaddr_un * sockaddr;
+    VALUE path;
 
     sockaddr = (struct sockaddr_un*)StringValuePtr(addr);
     if (RSTRING(addr)->len != sizeof(struct sockaddr_un)) {
@@ -2372,7 +2376,9 @@ sock_s_unpack_sockaddr_un(self, addr)
 		 RSTRING(addr)->len, sizeof(struct sockaddr_un));
     }
     /* xxx: should I check against sun_path size? */
-    return rb_tainted_str_new2(sockaddr->sun_path);
+    path = rb_str_new2(sockaddr->sun_path);
+    OBJ_INFECT(path, addr);
+    return path;
 }
 #endif
 

@@ -435,7 +435,6 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| lhs '=' command_call
 		    {
-			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
 		| mlhs '=' command_call
@@ -446,6 +445,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| var_lhs tOP_ASGN command_call
 		    {
+			value_expr($3);
 			if ($1) {
 			    ID vid = $1->nd_vid;
 			    if ($2 == tOROP) {
@@ -471,8 +471,10 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| primary_value '[' aref_args ']' tOP_ASGN command_call
 		    {
-                        NODE *args = NEW_LIST($6);
+                        NODE *args;
 
+			value_expr($5);
+		        args = NEW_LIST($6);
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
 			if ($5 == tOROP) {
@@ -486,6 +488,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| primary_value '.' tIDENTIFIER tOP_ASGN command_call
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -497,6 +500,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| primary_value '.' tCONSTANT tOP_ASGN command_call
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -508,6 +512,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN command_call
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -805,11 +810,11 @@ reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
 
 arg		: lhs '=' arg
 		    {
-			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
 		| var_lhs tOP_ASGN arg
 		    {
+			value_expr($3);
 			if ($1) {
 			    ID vid = $1->nd_vid;
 			    if ($2 == tOROP) {
@@ -835,8 +840,10 @@ arg		: lhs '=' arg
 		    }
 		| primary_value '[' aref_args ']' tOP_ASGN arg
 		    {
-                        NODE *args = NEW_LIST($6);
+                        NODE *args;
 
+			value_expr($6);
+			args = NEW_LIST($6);
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
 			if ($5 == tOROP) {
@@ -850,6 +857,7 @@ arg		: lhs '=' arg
 		    }
 		| primary_value '.' tIDENTIFIER tOP_ASGN arg
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -861,6 +869,7 @@ arg		: lhs '=' arg
 		    }
 		| primary_value '.' tCONSTANT tOP_ASGN arg
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -872,6 +881,7 @@ arg		: lhs '=' arg
 		    }
 		| primary_value tCOLON2 tIDENTIFIER tOP_ASGN arg
 		    {
+			value_expr($5);
 			if ($4 == tOROP) {
 			    $4 = 0;
 			}
@@ -916,25 +926,7 @@ arg		: lhs '=' arg
 		    }
 		| arg tPOW arg
 		    {
-			int need_negate = Qfalse;
-
-			if (nd_type($1) == NODE_LIT) {
-			    switch (TYPE($1->nd_lit)) {
-			      case T_FIXNUM:
-			      case T_FLOAT:
-			      case T_BIGNUM:
-				if (RTEST(rb_funcall($1->nd_lit,'<',1,INT2FIX(0)))) {
-				    $1->nd_lit = rb_funcall($1->nd_lit,rb_intern("-@"),0,0);
-				    need_negate = Qtrue;
-				}
-			      default:
-				break;
-			    }
-			}
 			$$ = call_op($1, tPOW, 1, $3);
-			if (need_negate) {
-			    $$ = call_op($$, tUMINUS, 0, 0);
-			}
 		    }
 		| tUPLUS arg
 		    {
@@ -950,7 +942,7 @@ arg		: lhs '=' arg
 			if ($2 && nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
 			    long i = FIX2LONG($2->nd_lit);
 
-			    $2->nd_lit = INT2FIX(-i);
+			    $2->nd_lit = INT2NUM(-i);
 			    $$ = $2;
 			}
 			else {
@@ -2540,7 +2532,7 @@ tokadd_escape(term)
 	return -1;
 
       default:
-	if (c != '/' || c != term)
+	if (c != '\\' || c != term)
 	    tokadd('\\');
 	tokadd(c);
     }
@@ -5517,3 +5509,4 @@ rb_lastline_set(val)
 	special_local_set('_', val);
     }
 }
+%%

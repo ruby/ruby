@@ -1352,20 +1352,18 @@ rb_big_pow(x, y)
       case T_FIXNUM:
 	yy = NUM2LONG(y);
 	if (yy > 0) {
-	    VALUE z;
+	    VALUE z = x;
 
-	    z = x;
 	    for (;;) {
-		yy = yy - 1;
+		yy -= 1;
 		if (yy == 0) break;
 		while (yy % 2 == 0) {
-		    yy = yy / 2;
+		    yy /= 2;
 		    x = rb_big_mul(x, x);
 		}
 		z = rb_big_mul(z, x);
 	    }
-	    if (!FIXNUM_P(z)) z = bignorm(z);
-	    return z;
+	    return bignorm(z);
 	}
 	d = (double)yy;
 	break;

@@ -37,8 +37,8 @@ range_failed()
 }
 
 static void
-range_init(obj, beg, end, exclude_end)
-    VALUE obj, beg, end;
+range_init(range, beg, end, exclude_end)
+    VALUE range, beg, end;
     int exclude_end;
 {
     VALUE args[2];
@@ -48,9 +48,9 @@ range_init(obj, beg, end, exclude_end)
 	rb_rescue(range_check, (VALUE)args, range_failed, 0);
     }
 
-    SET_EXCL(obj, exclude_end);
-    rb_ivar_set(obj, id_beg, beg);
-    rb_ivar_set(obj, id_end, end);
+    SET_EXCL(range, exclude_end);
+    rb_ivar_set(range, id_beg, beg);
+    rb_ivar_set(range, id_end, end);
 }
 
 VALUE
@@ -58,26 +58,26 @@ rb_range_new(beg, end, exclude_end)
     VALUE beg, end;
     int exclude_end;
 {
-    VALUE obj = rb_obj_alloc(rb_cRange);
+    VALUE range = rb_obj_alloc(rb_cRange);
 
-    range_init(obj, beg, end, exclude_end);
-    return obj;
+    range_init(range, beg, end, exclude_end);
+    return range;
 }
 
 static VALUE
-range_initialize(argc, argv, obj)
+range_initialize(argc, argv, range)
     int argc;
     VALUE *argv;
-    VALUE obj;
+    VALUE range;
 {
     VALUE beg, end, flags;
     
     rb_scan_args(argc, argv, "21", &beg, &end, &flags);
     /* Ranges are immutable, so that they should be initialized only once. */
-    if (rb_ivar_defined(obj, id_beg)) {
+    if (rb_ivar_defined(range, id_beg)) {
 	rb_name_error(rb_intern("initialize"), "`initialize' called twice");
     }
-    range_init(obj, beg, end, RTEST(flags));
+    range_init(range, beg, end, RTEST(flags));
     return Qnil;
 }
 
@@ -315,17 +315,17 @@ range_each(range)
 }
 
 static VALUE
-range_first(obj)
-    VALUE obj;
+range_first(range)
+    VALUE range;
 {
-    return rb_ivar_get(obj, id_beg);
+    return rb_ivar_get(range, id_beg);
 }
 
 static VALUE
-range_last(obj)
-    VALUE obj;
+range_last(range)
+    VALUE range;
 {
-    return rb_ivar_get(obj, id_end);
+    return rb_ivar_get(range, id_end);
 }
 
 VALUE
@@ -380,6 +380,35 @@ rb_range_beg_len(range, begp, lenp, len, err)
 }
 
 static VALUE
+range_min(range)
+    VALUE range;
+
+{
+    VALUE b, e, step;
+    long unit;
+
+    b = rb_ivar_get(range, id_beg);
+    e = rb_ivar_get(range, id_end);
+
+    if (r_le(b, e)) return b;
+    return e;
+}
+
+static VALUE
+range_max(range)
+    VALUE range;
+{
+    VALUE b, e, step;
+    long unit;
+
+    b = rb_ivar_get(range, id_beg);
+    e = rb_ivar_get(range, id_end);
+
+    if (r_gt(b, e)) return b;
+    return e;
+}
+
+static VALUE
 range_to_s(range)
     VALUE range;
 {
@@ -431,20 +460,32 @@ range_member(range, val)
     beg = rb_ivar_get(range, id_beg);
     end = rb_ivar_get(range, id_end);
 
-    if (rb_obj_is_kind_of(beg, rb_cNumeric) || !rb_respond_to(beg, id_succ)) {
-	if (r_gt(beg, val)) return Qfalse;
-	if (EXCL(range)) {
-	    if (r_lt(val, end)) return Qtrue;
-	}
-	else {
-	    if (r_le(val, end)) return Qtrue;
-	}
-	return Qfalse;
+    if (!rb_respond_to(beg, id_succ)) {
+	rb_raise(rb_eTypeError, "cannot iterate from %s",
+		 rb_class2name(CLASS_OF(beg)));
     }
     args[0] = val;
     args[1] = Qfalse;
     range_each_func(range, member_i, beg, end, args);
     return args[1];
+}
+
+static VALUE
+range_include(range, val)
+    VALUE range, val;
+{
+    VALUE beg, end;
+
+    beg = rb_ivar_get(range, id_beg);
+    end = rb_ivar_get(range, id_end);
+    if (r_gt(beg, val)) return Qfalse;
+    if (EXCL(range)) {
+	if (r_lt(val, end)) return Qtrue;
+    }
+    else {
+	if (r_le(val, end)) return Qtrue;
+    }
+    return Qfalse;
 }
 
 void
@@ -463,6 +504,8 @@ Init_Range()
     rb_define_method(rb_cRange, "last", range_last, 0);
     rb_define_method(rb_cRange, "begin", range_first, 0);
     rb_define_method(rb_cRange, "end", range_last, 0);
+    rb_define_method(rb_cRange, "min", range_min, 0);
+    rb_define_method(rb_cRange, "max", range_max, 0);
     rb_define_method(rb_cRange, "to_s", range_to_s, 0);
     rb_define_method(rb_cRange, "inspect", range_inspect, 0);
     rb_define_alias(rb_cRange,  "to_ary", "to_a");
@@ -470,7 +513,7 @@ Init_Range()
     rb_define_method(rb_cRange, "exclude_end?", range_exclude_end_p, 0);
 
     rb_define_method(rb_cRange, "member?", range_member, 1);
-    rb_define_method(rb_cRange, "include?", range_member, 1);
+    rb_define_method(rb_cRange, "include?", range_include, 1);
 
     id_cmp = rb_intern("<=>");
     id_succ = rb_intern("succ");

@@ -51,7 +51,7 @@ end
 
 def getPosition(z)
   pi = Math::PI
-  z  = Integer(z)
+  z = Integer(z)
   phys = (50.0 * (1.0 + sin((z / 23.0 - (z / 23)) * 360.0 * pi / 180.0))).to_i
   emot = (50.0 * (1.0 + sin((z / 28.0 - (z / 28)) * 360.0 * pi / 180.0))).to_i
   geist =(50.0 * (1.0 + sin((z / 33.0 - (z / 33)) * 360.0 * pi / 180.0))).to_i
@@ -59,7 +59,7 @@ def getPosition(z)
 end
 
 def parsedate(s)
-  ParseDate::parsedate(s).indexes(0, 1, 2)
+  ParseDate::parsedate(s).select(0, 1, 2)
 end
 
 def name_of_week(date)
