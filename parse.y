@@ -161,6 +161,9 @@ static void top_local_setup();
 
 #define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
 #define NODE_HEREDOC NODE_ARRAY 	/* 1, 3 to gc */
+#define nd_func u1.id
+#define nd_term u2.id
+#define nd_paren u3.id
 
 %}
 
@@ -222,11 +225,12 @@ static void top_local_setup();
 
 %token <id>   tIDENTIFIER tFID tGVAR tIVAR tCONSTANT tCVAR
 %token <val>  tINTEGER tFLOAT tSTRING_CONTENT
-%token <node> tNTH_REF tBACK_REF tQWORDS
+%token <node> tNTH_REF tBACK_REF
 %token <num>  tREGEXP_END
 
 %type <node> singleton strings string string1 xstring regexp
 %type <node> string_contents xstring_contents string_content
+%type <node> words qwords word_list qword_list word
 %type <val>  literal numeric
 %type <node> bodystmt compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> expr_value arg_value primary_value block_call_value
@@ -267,7 +271,7 @@ static void top_local_setup();
 %token tLBRACE_ARG	/* { */
 %token tSTAR		/* * */
 %token tAMPER		/* & */
-%token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG
+%token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG
 %token tSTRING_DBEG tSTRING_DVAR tSTRING_END
 
 /*
@@ -1292,7 +1296,8 @@ primary		: literal
 		| strings
 		| xstring
 		| regexp
-		| tQWORDS
+		| words
+		| qwords
 		| var_ref
 		| backref
 		| tFID
@@ -1851,6 +1856,54 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 		    }
 		;
 
+words		: tWORDS_BEG ' ' tSTRING_END
+		    {
+			$$ = NEW_ZARRAY();
+		    }
+		| tWORDS_BEG word_list tSTRING_END
+		    {
+			$$ = $2;
+		    }
+		;
+
+word_list	: /* none */
+		    {
+			lex_strnest = 0;
+			$$ = 0;
+		    }
+		| word_list word ' '
+		    {
+			$$ = list_append($1, $2);
+		    }
+		;
+
+word		: string_content
+		| word string_content
+		    {
+			$$ = literal_concat($1, $2);
+		    }
+
+qwords		: tQWORDS_BEG ' ' tSTRING_END
+		    {
+			$$ = NEW_ZARRAY();
+		    }
+		| tQWORDS_BEG qword_list tSTRING_END
+		    {
+			$$ = $2;
+		    }
+		;
+
+qword_list	: /* none */
+		    {
+			lex_strnest = 0;
+			$$ = 0;
+		    }
+		| qword_list tSTRING_CONTENT ' '
+		    {
+			$$ = list_append($1, NEW_STR($2));
+		    }
+		;
+
 string_contents : /* none */
 		    {
 			lex_strnest = 0;
@@ -1916,8 +1969,8 @@ term_push	: /* none */
 		    {
 			if (($$ = quoted_term) == -1 &&
 			    nd_type(lex_strterm) == NODE_STRTERM &&
-			    !lex_strterm->u3.id) {
-			    quoted_term = lex_strterm->u2.id;
+			    !lex_strterm->nd_paren) {
+			    quoted_term = lex_strterm->nd_term;
 			}
 		    }
 		;
@@ -2739,6 +2792,21 @@ regx_options()
     return options | kcode;
 }
 
+#define STR_FUNC_ESCAPE 0x01
+#define STR_FUNC_EXPAND 0x02
+#define STR_FUNC_REGEXP 0x04
+#define STR_FUNC_QWORDS 0x08
+#define STR_FUNC_INDENT 0x20
+
+enum string_type {
+    str_squote = (0),
+    str_dquote = (STR_FUNC_EXPAND),
+    str_xquote = (STR_FUNC_ESCAPE|STR_FUNC_EXPAND),
+    str_regexp = (STR_FUNC_REGEXP|STR_FUNC_ESCAPE|STR_FUNC_EXPAND),
+    str_sword  = (STR_FUNC_QWORDS),
+    str_dword  = (STR_FUNC_QWORDS|STR_FUNC_EXPAND),
+};
+
 static int
 tokadd_string(func, term, paren)
     int func, term, paren;
@@ -2756,7 +2824,7 @@ tokadd_string(func, term, paren)
 	    }
 	    --lex_strnest;
 	}
-	else if (func != '\'' && c == '#' && lex_p < lex_pend) {
+	else if ((func & STR_FUNC_EXPAND) && c == '#' && lex_p < lex_pend) {
 	    int c2 = *lex_p;
 	    if (c2 == '$' || c2 == '@' || c2 == '{') {
 		pushback(c);
@@ -2774,19 +2842,19 @@ tokadd_string(func, term, paren)
 		continue;
 
 	      case '\\':
-		if (func == '/') tokadd(c);
+		if (func & STR_FUNC_ESCAPE) tokadd(c);
 		break;
 
 	      default:
-		if (func == '/') {
+		if (func & STR_FUNC_REGEXP) {
 		    pushback(c);
 		    if (tokadd_escape(term) < 0)
 			return -1;
 		    continue;
 		}
-		else if (func != '\'') {
+		else if (func & STR_FUNC_EXPAND) {
 		    pushback(c);
-		    if (func != '"') tokadd('\\');
+		    if (func & STR_FUNC_ESCAPE) tokadd('\\');
 		    c = read_escape();
 		}
 		else if (c != term && !(paren && c == paren)) {
@@ -2802,91 +2870,13 @@ tokadd_string(func, term, paren)
 		c = nextc();
 	    }
 	}
+	else if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
+	    pushback(c);
+	    break;
+	}
 	tokadd(c);
     }
     return c;
-}
-
-static int
-parse_quotedwords(term, paren)
-    int term, paren;
-{
-    NODE *qwords = 0;
-    int strstart;
-    int c;
-    int nest = 0;
-
-    strstart = ruby_sourceline;
-    newtok();
-
-    while (c = nextc(),ISSPACE(c))
-	;		/* skip preceding spaces */
-    pushback(c);
-    while ((c = nextc()) != term || nest > 0) {
-	if (c == -1) {
-	    ruby_sourceline = strstart;
-	    rb_compile_error("unterminated string meets end of file");
-	    return 0;
-	}
-	if (paren) {
-	    if (c == paren) nest++;
-	    if (c == term && nest-- == 0) break;
-	}
-	if (ismbchar(c)) {
-	    int i, len = mbclen(c)-1;
-
-	    for (i = 0; i < len; i++) {
-		tokadd(c);
-		c = nextc();
-	    }
-	}
-	else if (c == '\\') {
-	    c = nextc();
-	    if (QUOTED_TERM_P(c)) break;
-	    switch (c) {
-	      case '\n':
-		continue;
-	      case '\\':
-		c = '\\';
-		break;
-	      default:
-		if (c == term || (paren && c == paren)) {
-		    tokadd(c);
-		    continue;
-		}
-		if (!ISSPACE(c))
-		    tokadd('\\');
-		break;
-	    }
-	}
-	else if (ISSPACE(c)) {
-	    NODE *str;
-
-	    tokfix();
-	    str = NEW_STR(rb_str_new(tok(), toklen()));
-	    newtok();
-	    if (!qwords) qwords = NEW_LIST(str);
-	    else list_append(qwords, str);
-	    while (c = nextc(),ISSPACE(c))
-		;		/* skip continuous spaces */
-	    pushback(c);
-	    continue;
-	}
-	tokadd(c);
-    }
-
-    tokfix();
-    if (toklen() > 0) {
-	NODE *str;
-
-	str = NEW_STR(rb_str_new(tok(), toklen()));
-	if (!qwords) qwords = NEW_LIST(str);
-	else list_append(qwords, str);
-    }
-    if (!qwords) qwords = NEW_ZARRAY();
-    yylval.node = qwords;
-    lex_state = EXPR_END;
-    return tQWORDS;
 }
 
 #define NEW_STRTERM(func, term, paren) \
@@ -2896,17 +2886,25 @@ static int
 parse_string(quote)
     NODE *quote;
 {
-    int func = quote->u1.id;
-    int term = quote->u2.id;
-    int paren = quote->u3.id;
-    int c;
+    int func = quote->nd_func;
+    int term = quote->nd_term;
+    int paren = quote->nd_paren;
+    int c, space = 0;
 
     if (func == -1) return tSTRING_END;
     c = nextc();
+    if ((func & STR_FUNC_QWORDS) && ISSPACE(c)) {
+	do {c = nextc();} while (ISSPACE(c));
+	space = 1;
+    }
     if (c == term) {
 	if (!lex_strnest) {
 	  eos:
-	    if (func != '/') return tSTRING_END;
+	    if (func & STR_FUNC_QWORDS) {
+		quote->nd_func = -1;
+		return ' ';
+	    }
+	    if (!(func & STR_FUNC_REGEXP)) return tSTRING_END;
 	    yylval.num = regx_options();
 	    return tREGEXP_END;
 	}
@@ -2914,8 +2912,12 @@ parse_string(quote)
     if (c == '\\' && WHEN_QUOTED_TERM(peek(quoted_term_char))) {
 	if ((c = nextc()) == term) goto eos;
     }
+    if (space) {
+	pushback(c);
+	return ' ';
+    }
     newtok();
-    if (func != '\'' && c == '#') {
+    if ((func & STR_FUNC_EXPAND) && c == '#') {
 	switch (c = nextc()) {
 	  case '$':
 	  case '@':
@@ -2938,12 +2940,10 @@ parse_string(quote)
     return tSTRING_CONTENT;
 }
 
-#define INDENTED_HEREDOC 0x20
-
 static int
 heredoc_identifier()
 {
-    int c = nextc(), term, indent = 0, len;
+    int c = nextc(), term, func = 0, len;
 
     if (c == '-') {
 	c = nextc();
@@ -2952,7 +2952,7 @@ heredoc_identifier()
 	    pushback('-');
 	    return 0;
 	}
-	indent = INDENTED_HEREDOC;
+	func = STR_FUNC_INDENT;
     }
     else if (ISSPACE(c)) {
       not_heredoc:
@@ -2961,10 +2961,14 @@ heredoc_identifier()
     }
     switch (c) {
       case '\'':
+	func |= str_squote; goto qutoed;
       case '"':
+	func |= str_dquote; goto qutoed;
       case '`':
+	func |= str_xquote;
+      qutoed:
 	newtok();
-	tokadd(c ^ indent);
+	tokadd(func);
 	term = c;
 	while ((c = nextc()) != -1 && c != term) {
 	    len = mbclen(c);
@@ -2980,7 +2984,7 @@ heredoc_identifier()
 	if (!is_identchar(c)) goto not_heredoc;
 	newtok();
 	term = '"';
-	tokadd(term ^ indent);
+	tokadd(func |= str_dquote);
 	do {
 	    len = mbclen(c);
 	    do {tokadd(c);} while (--len > 0 && (c = nextc()) != -1);
@@ -3040,15 +3044,7 @@ here_document(here)
 
     eos = RSTRING(here->nd_lit)->ptr;
     len = RSTRING(here->nd_lit)->len - 1;
-    switch (func = *eos++) {
-      case '\'': case '"': case '`':
-	indent = 0;
-	break;
-      default:
-	func ^= INDENTED_HEREDOC;
-	indent = 1;
-	break;
-    }
+    indent = (func = *eos++) & STR_FUNC_INDENT;
 
     if ((c = nextc()) == -1) {
       error:
@@ -3062,7 +3058,7 @@ here_document(here)
 	return tSTRING_END;
     }
 
-    if (func == '\'') {
+    if (!(func & STR_FUNC_EXPAND)) {
 	do {
 	    line = lex_lastline;
 	    if (str)
@@ -3334,7 +3330,7 @@ yylex()
 	return '>';
 
       case '"':
-	lex_strterm = NEW_STRTERM('"', '"', 0);
+	lex_strterm = NEW_STRTERM(str_dquote, '"', 0);
 	return tSTRING_BEG;
 
       case '`':
@@ -3349,11 +3345,11 @@ yylex()
 		lex_state = EXPR_ARG;
 	    return c;
 	}
-	lex_strterm = NEW_STRTERM('`', '`', 0);
+	lex_strterm = NEW_STRTERM(str_xquote, '`', 0);
 	return tXSTRING_BEG;
 
       case '\'':
-	lex_strterm = NEW_STRTERM('\'', '\'', 0);
+	lex_strterm = NEW_STRTERM(str_squote, '\'', 0);
 	return tSTRING_BEG;
 
       case '?':
@@ -3755,7 +3751,7 @@ yylex()
 
       case '/':
 	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    lex_strterm = NEW_STRTERM('/', '/', 0);
+	    lex_strterm = NEW_STRTERM(str_regexp, '/', 0);
 	    return tREGEXP_BEG;
 	}
 	if ((c = nextc()) == '=') {
@@ -3767,7 +3763,7 @@ yylex()
 	if (IS_ARG() && space_seen) {
 	    if (!ISSPACE(c)) {
 		arg_ambiguous();
-		lex_strterm = NEW_STRTERM('/', '/', 0);
+		lex_strterm = NEW_STRTERM(str_regexp, '/', 0);
 		return tREGEXP_BEG;
 	    }
 	}
@@ -3924,22 +3920,31 @@ yylex()
 
 	    switch (c) {
 	      case 'Q':
-		lex_strterm = NEW_STRTERM('"', term, paren);
+		lex_strterm = NEW_STRTERM(str_dquote, term, paren);
 		return tSTRING_BEG;
 
 	      case 'q':
-		lex_strterm = NEW_STRTERM('\'', term, paren);
+		lex_strterm = NEW_STRTERM(str_squote, term, paren);
 		return tSTRING_BEG;
 
+	      case 'W':
+		lex_strterm = NEW_STRTERM(str_dquote | STR_FUNC_QWORDS, term, paren);
+		do {c = nextc();} while (ISSPACE(c));
+		pushback(c);
+		return tWORDS_BEG;
+
 	      case 'w':
-		return parse_quotedwords(term, paren);
+		lex_strterm = NEW_STRTERM(str_squote | STR_FUNC_QWORDS, term, paren);
+		do {c = nextc();} while (ISSPACE(c));
+		pushback(c);
+		return tQWORDS_BEG;
 
 	      case 'x':
-		lex_strterm = NEW_STRTERM('`', term, paren);
+		lex_strterm = NEW_STRTERM(str_xquote, term, paren);
 		return tXSTRING_BEG;
 
 	      case 'r':
-		lex_strterm = NEW_STRTERM('/', term, paren);
+		lex_strterm = NEW_STRTERM(str_regexp, term, paren);
 		return tREGEXP_BEG;
 
 	      default:

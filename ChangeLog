@@ -1,3 +1,11 @@
+Wed Jun 26 15:40:00 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (words, qwords): word list literal rules.
+
+	* parse.y (parse_string): ditto.
+
+	* parse.y (yylex): %W: word list literal with interpolation. [new]
+
 Tue Jun 25 18:53:34 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (string1, xstring, regexp): moved lex_strnest

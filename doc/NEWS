@@ -1,5 +1,16 @@
 : parser
 
+  %W(...) notation, word list literal like %w(...) with the
+  exception that #{} interpolation is allowed.
+
+: parser
+
+  Now arbitrary statements are allowed inside #{} interpolation
+  without escapes.  In other hand, they can no longer access to
+  variables defined in eval.
+
+: parser
+
   Digits preceded minus sign is a literal integer.
 
 : IO::sysopen
