@@ -66,6 +66,10 @@ class DRbEx
     raise UError
   end
 
+  def remote_no_method_error
+    invoke_no_method(self)
+  end
+
   def test_yield
     yield
     yield([])

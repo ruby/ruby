@@ -1,3 +1,12 @@
+Sat Dec 11 20:12:21 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: add DRbRemoteError. [ruby-list:40348], 
+	  [ruby-list:40390]
+
+	* test/drb/drbtest.rb: ditto.
+
+	* test/drb/ut_drb.rb: ditto.
+
 Sat Dec 11 12:41:55 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (run_trap_eval): prototype; avoid VC++ warnings.
