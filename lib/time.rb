@@ -12,7 +12,6 @@ This library extends Time class:
   * HTTP-date defined by RFC 2616
   * dateTime defined by XML Schema Part 2: Datatypes (ISO 8601)
   * various format handled by ParseDate. (string to time only)
-* leap seconds and local time offset information.
 
 == Design Issue
 
@@ -39,27 +38,6 @@ This library extends Time class:
 
     %z is required to generate zone in date-time of RFC 2822
     but it is not portable.
-
-* time zone offset
-
-  Although the time zone offset calculation is required to generate
-  time strings in local time, it is very difficult in some case.
-  For example, (({t = Time.now; off = Time.utc(*t.to_a).to_i - t.to_i}))
-  works well in many case but it is not perfect.
-  It fails if t is nearly maximum value of time_t because
-  it may overflow in UTC.
-  Also, tzcode based implementation such as BSDs may use different leap seconds
-  information for UTC and a local time typically when /usr/share/zoneinfo/GMT
-  has no leap seconds and a local time specified by TZ has leap seconds.
-
-  To avoid above problem, this library assumes that:
-  * A difference between UTC and a local time is a multiple of 60 seconds.
-  * The number of leap seconds is less than 60.
-  While they are both true now at 2001, they will turn false some day in
-  the future.  (in 20 years? 100 years?)
-  I hope that POSIX will have a better API for handling time which
-  allows us not to rely on these assumptions.
-
 =end
 
 class Time
@@ -82,7 +60,7 @@ class Time
       'N' => -1, 'O' => -2, 'P' => -3, 'Q' => -4,  'R' => -5,  'S' => -6, 
       'T' => -7, 'U' => -8, 'V' => -9, 'W' => -10, 'X' => -11, 'Y' => -12,
     }
-    def zone_offset(zone)
+    def zone_offset(zone, year=Time.now.year)
       off = nil
       zone = zone.upcase
       if /\A([-+])(\d\d):?(\d\d)\z/ =~ zone
@@ -92,9 +70,9 @@ class Time
       elsif ZoneOffset.include?(zone)
         off = ZoneOffset[zone] * 3600
       elsif ((t = Time.local(year, 1, 1)).zone.upcase == zone rescue false)
-        off = t.utcoff
+        off = t.utc_offset
       elsif ((t = Time.local(year, 7, 1)).zone.upcase == zone rescue false)
-        off = t.utcoff
+        off = t.utc_offset
       end
       off
     end
@@ -179,7 +157,7 @@ class Time
       sec ||= 0
 
       off = nil
-      off = zone_offset(zone) if zone
+      off = zone_offset(zone, year) if zone
 
       if off
         t = Time.utc(year, mon, day, hour, min, sec) - off
@@ -344,8 +322,9 @@ class Time
     if utc?
       '+0000'
     else
-      off = utcoff / 60
-      sprintf('%s%02d%02d', (off < 0 ? '-' : '+'), *off.abs.divmod(60))
+      off = utc_offset
+      sign = off < 0 ? '-' : '+'
+      sprintf('%s%02d%02d', sign, *(off.abs / 60).divmod(60))
     end
   end
   alias rfc822 rfc2822
@@ -391,52 +370,12 @@ class Time
     if utc?
       'Z'
     else
-      off = utcoff / 60
-      sprintf('%s%02d:%02d', (off < 0 ? '-' : '+'), *off.abs.divmod(60))
+      off = utc_offset
+      sign = off < 0 ? '-' : '+'
+      sprintf('%s%02d:%02d', sign, *(off.abs / 60).divmod(60))
     end
   end
   alias iso8601 xmlschema
-
-  EpochJD = Date.new3(1970, 1, 1).jd
-  def utcoff_leapsecs
-    days = Date.new3(year, month, day).jd - EpochJD
-    diff = tv_sec - (sec + 60 * (min + 60 * (hour + 24 * days)))
-    utcoff, leapsecs = diff.divmod(60)
-    utcoff *= -60
-    return utcoff, leapsecs
-  end
-
-=begin
---- Time#utcoff
---- Time#gmtoff
-    returns the time difference from UTC in seconds.
-
-    Note that it returns 0 if self is a UTC time.
-=end
-  def utcoff
-    utcoff_leapsecs[0]
-  end
-  alias gmtoff utcoff
-
-=begin
---- Time#leapsecs
-    returns the number of leap seconds from the Unix epoch.
-
-    Note that this method returns non-zero only if
-    your system handles leap seconds information.
-    Since POSIX defines that leap seconds are not handled,
-    most Unix systems do not handle leap seconds by default.
-    But many of them can handle leap seconds fairly easily in theory
-    (not tested enough, though).
-    For example, GNU/Linux systems (and many other Unix systems) use
-    zoneinfo database which can contain leap seconds information,
-    typically under /usr/share/zoneinfo/right.
-    On such systems you can use leap seconds by properly setting the TZ
-    environment variable.
-=end
-  def leapsecs
-    utcoff_leapsecs[1]
-  end
 end
 
 if __FILE__ == $0

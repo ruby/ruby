@@ -25,6 +25,8 @@ Mon Dec 17 15:19:32 2001  Tanaka Akira  <akr@m17n.org>
 
 	* missing/strftime.c: fix overflow by tm_year + 1900.
 
+	* lib/time.rb: use Time#utc_offset.
+
 Fri Dec 14 04:23:36 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: new method Net::POP3.APOP
