@@ -394,7 +394,11 @@ rb_io_fwrite(ptr, len, f)
     } while (--n > 0);
 #else
     while (errno = 0, ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
-	if (ferror(f)) {
+	if (ferror(f)
+#if defined __BORLANDC__
+	    || errno == EBADF || errno == ENOENT
+#endif
+	) {
 #ifdef __hpux
 	    if (!errno) errno = EAGAIN;
 #endif

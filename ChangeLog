@@ -1,3 +1,8 @@
+Thu May 27 14:53:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (rb_io_fwrite): workaround for bcc32's fwrite bug.
+	  add errno checking.  [ruby-dev:23627]
+
 Wed May 26 14:19:42 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval, eval): make line number consistent on eval with
