@@ -1,6 +1,6 @@
 Sun Mar  6 11:47:10 2005  Sam Roberts  <sroberts@uniserve.com>
 
-	* lib/pp.rb: rdoced.
+	* lib/pp.rb: rdoced.  [ruby-core:4490]
 
 Sun Mar  6 11:36:37 2005  Tanaka Akira  <akr@m17n.org>
 
