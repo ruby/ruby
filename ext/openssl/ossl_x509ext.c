@@ -116,7 +116,6 @@ ossl_x509extfactory_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_x509extfactory_alloc)
 
 static VALUE 
 ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
@@ -244,6 +243,87 @@ ossl_x509extfactory_create_ext_from_array(VALUE self, VALUE ary)
 /*
  * Ext
  */
+static VALUE
+ossl_x509ext_alloc(VALUE klass)
+{
+    X509_EXTENSION *ext;
+    VALUE obj;
+
+    if(!(ext = X509_EXTENSION_new())){
+	ossl_raise(eX509ExtError, NULL);
+    }
+    WrapX509Ext(klass, obj, ext);
+
+    return obj;
+}
+
+static VALUE
+ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
+{
+    VALUE oid, value, critical;
+
+    rb_scan_args(argc, argv, "21", &oid, &value, &critical);
+    rb_funcall(self, rb_intern("oid="), 1, oid);
+    rb_funcall(self, rb_intern("value="), 1, value);
+    if(argc > 2) rb_funcall(self, rb_intern("critical="), 1, critical);
+
+    return self;
+}
+
+static VALUE
+ossl_x509ext_set_oid(VALUE self, VALUE oid)
+{
+    X509_EXTENSION *ext;
+    ASN1_OBJECT *obj;
+    char *s;
+
+    GetX509Ext(self, ext);
+    s = StringValuePtr(oid);
+    obj = OBJ_txt2obj(s, 0);
+    if(!obj) obj = OBJ_txt2obj(s, 1);
+    if(!obj) ossl_raise(eX509ExtError, NULL);
+    X509_EXTENSION_set_object(ext, obj);
+
+    return oid;
+}
+
+static VALUE
+ossl_x509ext_set_value(VALUE self, VALUE data)
+{
+    X509_EXTENSION *ext;
+    ASN1_OCTET_STRING *asn1s;
+    char *s;
+
+    GetX509Ext(self, ext);
+    StringValue(data);
+    if(!(s = OPENSSL_malloc(RSTRING(data)->len)))
+	ossl_raise(eX509ExtError, "malloc error");
+    memcpy(s, RSTRING(data)->ptr, RSTRING(data)->len);
+    if(!(asn1s = ASN1_OCTET_STRING_new())){
+        free(s);
+	ossl_raise(eX509ExtError, NULL);
+    }
+    if(!M_ASN1_OCTET_STRING_set(asn1s, s, RSTRING(data)->len)){
+        free(s);
+        ASN1_OCTET_STRING_free(asn1s);
+	ossl_raise(eX509ExtError, NULL);
+    }
+    X509_EXTENSION_set_data(ext, asn1s);
+
+    return data;
+}
+
+static VALUE
+ossl_x509ext_set_critical(VALUE self, VALUE flag)
+{
+    X509_EXTENSION *ext;
+
+    GetX509Ext(self, ext);
+    X509_EXTENSION_set_critical(ext, RTEST(flag) ? 1 : 0);
+
+    return flag;
+}
+
 static VALUE 
 ossl_x509ext_get_oid(VALUE obj)
 {
@@ -335,9 +415,11 @@ Init_ossl_x509ext()
     rb_define_method(cX509ExtFactory, "create_ext_from_array", ossl_x509extfactory_create_ext_from_array, 1);
 	
     cX509Ext = rb_define_class_under(mX509, "Extension", rb_cObject);
-    rb_undef_method(CLASS_OF(cX509Ext), "new");
-/*  rb_define_alloc_func(cX509Ext, ossl_x509ext_alloc); */
-/*  rb_define_method(cX509Ext, "initialize", ossl_x509ext_initialize, -1); */
+    rb_define_alloc_func(cX509Ext, ossl_x509ext_alloc);
+    rb_define_method(cX509Ext, "initialize", ossl_x509ext_initialize, -1);
+    rb_define_method(cX509Ext, "oid=", ossl_x509ext_set_oid, 1);
+    rb_define_method(cX509Ext, "value=", ossl_x509ext_set_value, 1);
+    rb_define_method(cX509Ext, "critical=", ossl_x509ext_set_critical, 1);
     rb_define_method(cX509Ext, "oid", ossl_x509ext_get_oid, 0);
     rb_define_method(cX509Ext, "value", ossl_x509ext_get_value, 0);
     rb_define_method(cX509Ext, "critical?", ossl_x509ext_get_critical, 0);

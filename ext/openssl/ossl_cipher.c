@@ -82,7 +82,6 @@ ossl_cipher_alloc(VALUE klass)
 	
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_cipher_alloc)
 
 static VALUE
 ossl_cipher_initialize(VALUE self, VALUE str)

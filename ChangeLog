@@ -1,3 +1,17 @@
+Sat Sep  6 17:40:41 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ruby_missing.c: rid of unnecessary backward 
+	  compatibility stuff. and remove DEFINE_ALLOC_WRAPPER from
+	  all sources.
+
+	* ext/openssl/ossl_x509ext.c (X509::Extension.new): new method.
+
+	* ext/openssl/ossl_x509ext.c (X509::Extension#oid=): new method.
+
+	* ext/openssl/ossl_x509ext.c (X509::Extension#value=): new method.
+
+	* ext/openssl/ossl_x509ext.c (X509::Extension#critical=): new method.
+
 Sat Sep  6 01:23:22 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): need to quote cmd if RUBYSHELL is set.

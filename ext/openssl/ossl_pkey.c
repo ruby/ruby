@@ -119,7 +119,6 @@ ossl_pkey_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_pkey_alloc)
 
 static VALUE
 ossl_pkey_initialize(VALUE self)

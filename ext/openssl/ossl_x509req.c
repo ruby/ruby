@@ -84,7 +84,6 @@ ossl_x509req_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_x509req_alloc)
 
 static VALUE 
 ossl_x509req_initialize(int argc, VALUE *argv, VALUE self)

@@ -98,7 +98,6 @@ ossl_ocspreq_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_ocspreq_alloc)
 
 static VALUE
 ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
@@ -304,7 +303,6 @@ ossl_ocspres_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_ocspreq_alloc)
 
 static VALUE
 ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
@@ -395,7 +393,6 @@ ossl_ocspbres_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_ocspbres_alloc)
 
 static VALUE
 ossl_ocspbres_initialize(int argc, VALUE *argv, VALUE self)
@@ -617,7 +614,6 @@ ossl_ocspcid_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_ocspcid_alloc)
 
 static VALUE
 ossl_ocspcid_initialize(VALUE self, VALUE subject, VALUE issuer)

@@ -107,7 +107,6 @@ ossl_sslctx_s_alloc(VALUE klass)
     SSL_CTX_set_options(ctx, SSL_OP_ALL);
     return Data_Wrap_Struct(klass, 0, ossl_sslctx_free, ctx);
 }
-DEFINE_ALLOC_WRAPPER(ossl_sslctx_s_alloc)
 
 static VALUE
 ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
@@ -365,7 +364,6 @@ ossl_ssl_s_alloc(VALUE klass)
 {
     return Data_Wrap_Struct(klass, 0, ossl_ssl_free, NULL);
 }
-DEFINE_ALLOC_WRAPPER(ossl_ssl_s_alloc)
 
 static VALUE
 ossl_ssl_initialize(int argc, VALUE *argv, VALUE self)

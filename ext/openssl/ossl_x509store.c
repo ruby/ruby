@@ -102,7 +102,6 @@ ossl_x509store_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_x509store_alloc)
 
 /*
  * General callback for OpenSSL verify
@@ -329,7 +328,6 @@ ossl_x509stctx_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_x509stctx_alloc)
 
 static VALUE
 ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)

@@ -55,7 +55,6 @@ ossl_hmac_alloc(VALUE klass)
 	
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_hmac_alloc)
 
 static VALUE
 ossl_hmac_initialize(VALUE self, VALUE key, VALUE digest)

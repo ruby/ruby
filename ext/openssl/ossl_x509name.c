@@ -82,7 +82,6 @@ ossl_x509name_alloc(VALUE klass)
 
     return obj;
 }
-DEFINE_ALLOC_WRAPPER(ossl_x509name_alloc)
 
 static VALUE
 ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
