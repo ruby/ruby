@@ -170,6 +170,7 @@
 # endif
 #elif defined(USE_DLSTACK)
 # define DLSTACK
+# define DLSTACK_GUARD
 # define DLSTACK_METHOD "dl"
 # define DLSTACK_PROTO long,long,long,long,long,\
                        long,long,long,long,long,\

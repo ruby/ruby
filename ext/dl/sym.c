@@ -352,6 +352,90 @@ rb_dl_win32_set_last_error(VALUE self, VALUE val)
 }
 #endif
 
+#ifdef DLSTACK_GUARD
+# ifdef __MSVC_RUNTIME_CHECKS
+# pragma runtime_checks("s", off)
+# endif
+#ifdef _MSC_VER
+__declspec(noinline)
+#endif
+static int
+rb_dlsym_guardcall(char type, ANY_TYPE *ret, long *stack, void *func)
+{
+  volatile char *guard = ALLOCA_N(char, 1); /* guard stack pointer */
+  switch(type){
+  case '0':
+    {
+      void (*f)(DLSTACK_PROTO) = func;
+      f(DLSTACK_ARGS);
+    }
+    break;
+  case 'P':
+  case 'p':
+    {
+      void * (*f)(DLSTACK_PROTO) = func;
+      ret->p = f(DLSTACK_ARGS);
+    }
+    break;
+  case 'C':
+  case 'c':
+    {
+      char (*f)(DLSTACK_PROTO) = func;
+      ret->c = f(DLSTACK_ARGS);
+    }
+    break;
+  case 'H':
+  case 'h':
+    {
+      short (*f)(DLSTACK_PROTO) = func;
+      ret->h = f(DLSTACK_ARGS);
+    }
+    break;
+  case 'I':
+  case 'i':
+    {
+      int (*f)(DLSTACK_PROTO) = func;
+      ret->i = f(DLSTACK_ARGS);
+    }
+    break;
+  case 'L':
+  case 'l':
+    {
+      long (*f)(DLSTACK_PROTO) = func;
+      ret->l = f(DLSTACK_ARGS);
+    }
+    break;
+  case 'F':
+  case 'f':
+    {
+      float (*f)(DLSTACK_PROTO) = func;
+      ret->f = f(DLSTACK_ARGS);
+    }
+    break;
+  case 'D':
+  case 'd':
+    {
+      double (*f)(DLSTACK_PROTO) = func;
+      ret->d = f(DLSTACK_ARGS);
+    }
+    break;
+  case 'S':
+  case 's':
+    {
+      char * (*f)(DLSTACK_PROTO) = func;
+      ret->s = f(DLSTACK_ARGS);
+    }
+    break;
+  default:
+    return 0;
+  }
+  return 1;
+}
+# ifdef __MSVC_RUNTIME_CHECKS
+# pragma runtime_checks("s", restore)
+# endif
+#endif /* defined(DLSTACK_GUARD) */
+
 VALUE
 rb_dlsym_call(int argc, VALUE argv[], VALUE self)
 {
@@ -642,6 +726,12 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
   }
   DLSTACK_END(sym->type);
 
+#ifdef DLSTACK_GUARD
+  if(!rb_dlsym_guardcall(sym->type[0], &ret, stack, func)) {
+    FREE_ARGS;
+    rb_raise(rb_eDLTypeError, "unknown type `%c'", sym->type[0]);
+  }
+#else /* defined(DLSTACK_GUARD) */
   {
     switch( sym->type[0] ){
     case '0':
@@ -711,6 +801,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       rb_raise(rb_eDLTypeError, "unknown type `%c'", sym->type[0]);
     }
   }
+#endif /* defubed(DLSTACK_GUARD) */
 
   {
     /*
