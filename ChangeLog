@@ -1,3 +1,8 @@
+Sun Apr 13 03:20:31 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (try_func): remove COMMON_HEADERS at first for
+	  performance.
+
 Sat Apr 12 20:59:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-beginning-of-arg): substitute

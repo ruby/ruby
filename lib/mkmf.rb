@@ -262,7 +262,6 @@ end
 def try_func(func, libs, headers = nil)
   headers = cpp_include(headers)
   try_link(<<"SRC", libs) or try_link(<<"SRC", libs)
-#{COMMON_HEADERS}
 #{headers}
 int main() { return 0; }
 int t() { #{func}(); return 0; }
