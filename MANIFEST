@@ -188,6 +188,14 @@ lib/thwait.rb
 lib/time.rb
 lib/timeout.rb
 lib/tracer.rb
+lib/uri.rb
+lib/uri/common.rb
+lib/uri/ftp.rb
+lib/uri/generic.rb
+lib/uri/http.rb
+lib/uri/https.rb
+lib/uri/ldap.rb
+lib/uri/mailto.rb
 lib/weakref.rb
 misc/README
 misc/inf-ruby.el
