@@ -1814,10 +1814,7 @@ is_defined(self, node, buf)
 		if ((noex & NOEX_PROTECTED) &&
 		    !rb_obj_is_kind_of(self, rb_class_real(val)))
 		    break;
-		}
 	    }
-	    else if (!rb_method_boundp(val, node->nd_mid, call))
-		break;
 	    return arg_defined(self, node->nd_args, buf, "method");
 	}
 	break;
