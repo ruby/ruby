@@ -198,7 +198,7 @@ make_struct(name, members, klass)
 	    rb_warn("redefining constant Struct::%s", cname);
 	    rb_mod_remove_const(klass, ID2SYM(id));
 	}
-	nstr = rb_define_class_under(klass, cname, klass);
+	nstr = rb_define_class_under(klass, rb_id2name(id), klass);
     }
     rb_iv_set(nstr, "__size__", LONG2NUM(RARRAY(members)->len));
     rb_iv_set(nstr, "__members__", members);
