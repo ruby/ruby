@@ -6,11 +6,12 @@
  *
  * Copyright (C) 2003 why the lucky stiff
  */
+#include "ruby.h"
+
 #include <stdio.h>
 #include <string.h>
 
 #include "syck.h"
-#include "ruby.h"
 
 void syck_parser_pop_level( SyckParser * );
 

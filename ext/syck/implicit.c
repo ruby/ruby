@@ -9,8 +9,8 @@
  * Copyright (C) 2003 why the lucky stiff
  */
 
-#include "syck.h"
 #include "ruby.h"
+#include "syck.h"
 
 #define YYCTYPE     char
 #define YYCURSOR    cursor

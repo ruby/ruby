@@ -7,8 +7,8 @@
  * Copyright (C) 2003 why the lucky stiff
  */
 
-#include "syck.h"
 #include "ruby.h"
+#include "syck.h"
 
 /*
  * Node allocation functions

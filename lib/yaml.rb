@@ -162,13 +162,13 @@ module YAML
     #
     def YAML.object_maker( obj_class, val, is_attr = false )
         if Hash === val
-            name = obj_class.name
-            ostr = sprintf( "%c%co:%c%s\000", Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION,
-                            name.length + 5, name )
-            if is_attr
-                ostr[ -1, 1 ] = Marshal.dump( val ).sub( /^[^{]+\{/, '' )
-            end
-            o = ::Marshal.load( ostr )
+            # name = obj_class.name
+            # ostr = sprintf( "%c%co:%c%s\000", ::Marshal::MAJOR_VERSION, ::Marshal::MINOR_VERSION,
+            #                 name.length + 5, name )
+            # if is_attr
+            #     ostr[ -1, 1 ] = ::Marshal.dump( val ).sub( /^[^{]+\{/, '' )
+            # end
+            o = obj_class.allocate
             unless is_attr
                 val.each_pair { |k,v|
                     o.instance_variable_set("@#{k}", v)
