@@ -626,7 +626,9 @@ rb_singleton_class(obj)
     }
 
     DEFER_INTS;
-    if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
+    if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON) &&
+       ((BUILTIN_TYPE(obj) != T_CLASS && BUILTIN_TYPE(obj) != T_MODULE) ||
+       rb_iv_get(RBASIC(obj)->klass, "__attached__") == obj)) {
 	klass = RBASIC(obj)->klass;
     }
     else {

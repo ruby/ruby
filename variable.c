@@ -254,8 +254,7 @@ rb_autoload_id(id, filename)
 {
     rb_secure(4);
     if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "autoload must be constant name",
-		 rb_id2name(id));
+	rb_raise(rb_eNameError, "autoload must be constant name");
     }
 
     if (!autoload_tbl) {
@@ -812,22 +811,23 @@ generic_ivar_defined(obj, id)
     return Qfalse;
 }
 
-static VALUE
-generic_ivar_remove(obj, id)
+static int
+generic_ivar_remove(obj, id, valp)
     VALUE obj;
     ID id;
+    VALUE *valp;
 {
     st_table *tbl;
-    VALUE val;
+    int status;
 
-    if (!generic_iv_tbl) return Qnil;
-    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return Qnil;
-    st_delete(tbl, &id, &val);
+    if (!generic_iv_tbl) return 0;
+    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return 0;
+    status = st_delete(tbl, &id, valp);
     if (tbl->num_entries == 0) {
 	st_delete(generic_iv_tbl, &obj, &tbl);
 	st_free_table(tbl);
     }
-    return val;
+    return status;
 }
 
 void
@@ -1020,16 +1020,20 @@ rb_obj_remove_instance_variable(obj, name)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-	if (ROBJECT(obj)->iv_tbl) {
-	    st_delete(ROBJECT(obj)->iv_tbl, &id, &val);
+	if (ROBJECT(obj)->iv_tbl && st_delete(ROBJECT(obj)->iv_tbl, &id, &val)) {
+	    return val;
 	}
 	break;
       default:
-	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
-	    return generic_ivar_remove(obj, id);
+	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
+	    if (generic_ivar_remove(obj, id, &val)) {
+		return val;
+	    }
+	}
 	break;
     }
-    return val;
+    rb_raise(rb_eNameError, "instance variable %s not defined", rb_id2name(id));
+    return Qnil;		/* not reached */
 }
 
 static int

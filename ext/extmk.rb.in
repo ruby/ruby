@@ -75,8 +75,8 @@ if /mswin32/ =~ RUBY_PLATFORM
 else
   OUTFLAG = '-o '
 end
-LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
-CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I#$includedir %s %s %s conftest.c"
+LINK = "@CC@ #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} @LDFLAGS@ %s %s %s conftest.c %s %s @LIBS@"
+CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} %s %s %s conftest.c"
 
 $log = open('extmk.log', 'w')
 
@@ -416,7 +416,7 @@ hdrdir = #{$top_srcdir}
 CC = @CC@
 
 CFLAGS   = %s #{CFLAGS} #$CFLAGS
-CPPFLAGS = -I$(topdir) -I$(hdrdir) -I@includedir@ %s #$CPPFLAGS
+CPPFLAGS = -I$(topdir) -I$(hdrdir) %s #$CPPFLAGS
 DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@ #{defflag}
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")

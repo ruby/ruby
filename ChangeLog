@@ -1,11 +1,29 @@
+<<<<<<< ChangeLog
+Wed Apr 10 17:30:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_obj_remove_instance_variable): raise NameError if
+	  specified instance variable is not defined.
+
+	* variable.c (generic_ivar_remove): modified to check ivar
+	  existence.
+
 Wed Apr 10 14:16:45 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* misc/ruby-mode.el (ruby-font-lock-keywords): fontify symbols for
 	  unary operators and aset.
 
+Sat Apr  6 02:04:49 2002  Guy Decoux  <ts@moulon.inra.fr>
+
+	* class.c (rb_singleton_class): wrong condition; was creating
+	  unnecessary singleton class.
+
 Thu Apr  4 15:45:12 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* parse.y: avoid bison 1.34 warnings. add `;' at the end of a rule.
+
+Thu Apr  4 01:08:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (int_step): step may be a float less than 1.
 
 Wed Apr  3 01:54:10 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

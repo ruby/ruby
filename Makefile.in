@@ -13,7 +13,7 @@ AUTOCONF = autoconf
 
 prefix = @prefix@
 CFLAGS = @CFLAGS@
-CPPFLAGS = -I. -I$(srcdir) -I@includedir@
+CPPFLAGS = -I. -I$(srcdir)
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 XLDFLAGS = @XLDFLAGS@
 EXTLIBS = 

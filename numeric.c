@@ -1411,7 +1411,7 @@ int_step(from, to, step)
     VALUE i = from;
     ID cmp;
 
-    if (NUM2INT(step) == 0) {
+    if (rb_equal(step, INT2FIX(0))) {
 	rb_raise(rb_eArgError, "step cannot be 0");
     }
 
