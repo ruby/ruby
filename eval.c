@@ -167,7 +167,7 @@ rb_check_safe_str(x)
     }
 }
 
-static void print_undef _((VALUE, ID)) NORETURN;
+NORETURN(static void print_undef _((VALUE, ID)));
 static void
 print_undef(klass, id)
     VALUE klass;
@@ -3312,7 +3312,7 @@ rb_iter_break()
     JUMP_TAG(TAG_BREAK);
 }
 
-static void rb_longjmp _((int, VALUE)) NORETURN;
+NORETURN(static void rb_longjmp _((int, VALUE)));
 static VALUE make_backtrace _((void));
 
 static void
@@ -5635,7 +5635,7 @@ rb_f_local_variables()
 }
 
 static VALUE rb_f_catch _((VALUE,VALUE));
-static VALUE rb_f_throw _((int,VALUE*)) NORETURN;
+NORETURN(static VALUE rb_f_throw _((int,VALUE*)));
 
 struct end_proc_data {
     void (*func)();

@@ -1,3 +1,17 @@
+Wed Jan 10 16:15:08 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ruby.h: NORETURN macro is changed for VC++ 6.0.
+
+	* eval.c, intern.h: ditto.
+
+Wed Jan 10 13:54:53 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* process.c (proc_setuid): use setresuid() if available.
+
+	* process.c (proc_setgid): use setresgid() if available.
+
+	* configure.in: ditto.
+
 Wed Jan 10 01:50:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_reverse_bang): forgot to call rb_str_modify().

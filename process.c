@@ -952,10 +952,11 @@ proc_setuid(obj, id)
     int uid;
 
     uid = NUM2INT(id);
-#ifdef HAVE_SETREUID
+#if defined HAVE_SETRESUID
+    setresuid(uid, -1, -1);
+#elif defined HAVE_SETREUID
     setreuid(uid, -1);
-#else
-#ifdef HAVE_SETRUID
+#elif defined HAVE_SETRUID
     setruid(uid);
 #else
     {
@@ -964,7 +965,6 @@ proc_setuid(obj, id)
 	else
 	    rb_notimplement();
     }
-#endif
 #endif
     return INT2FIX(uid);
 }
@@ -984,11 +984,12 @@ proc_setgid(obj, id)
     int gid;
 
     gid = NUM2INT(id);
-#ifdef HAS_SETRGID
-	setrgid((GIDTYPE)gid);
-#else
-#ifdef HAVE_SETREGID
+#if defined HAVE_SETRESGID
+    setresgid(gid, -1, -1);
+#elif defined HAVE_SETREGID
     setregid(gid, -1);
+#elif defined HAS_SETRGID
+    setrgid((GIDTYPE)gid);
 #else
     {
 	if (getegid() == gid)
@@ -996,7 +997,6 @@ proc_setgid(obj, id)
 	else
 	    rb_notimplement();
     }
-#endif
 #endif
     return INT2FIX(gid);
 }
@@ -1013,18 +1013,18 @@ static VALUE
 proc_seteuid(obj, euid)
     VALUE obj, euid;
 {
-#ifdef HAVE_SETEUID
-    if (seteuid(NUM2INT(euid)) < 0) rb_sys_fail(0);
-#else
-#ifdef HAVE_SETREUID
+#if defined HAVE_SETRESUID
+    if (setresuid(-1, NUM2INT(euid), -1) < 0) rb_sys_fail(0);
+#elif defined HAVE_SETREUID
     if (setreuid(-1, NUM2INT(euid)) < 0) rb_sys_fail(0);
+#elif defined HAVE_SETEUID
+    if (seteuid(NUM2INT(euid)) < 0) rb_sys_fail(0);
 #else
     euid = NUM2INT(euid);
     if (euid == getuid())
 	setuid(euid);
     else
 	rb_notimplement();
-#endif
 #endif
     return euid;
 }
@@ -1042,18 +1042,18 @@ proc_setegid(obj, egid)
     VALUE obj, egid;
 {
     rb_secure(2);
-#ifdef HAVE_SETEGID
-    if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
-#else
-#ifdef HAVE_SETREGID
+#if defined HAVE_SETRESGID
+    if (setresgid(-1, NUM2INT(egid), -1) < 0) rb_sys_fail(0);
+#elif defined HAVE_SETREGID
     if (setregid(-1, NUM2INT(egid)) < 0) rb_sys_fail(0);
+#elif defined HAVE_SETEGID
+    if (setegid(NUM2INT(egid)) < 0) rb_sys_fail(0);
 #else
     egid = NUM2INT(egid);
     if (egid == getgid())
 	setgid(egid);
     else
 	rb_notimplement();
-#endif
 #endif
     return egid;
 }
