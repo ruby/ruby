@@ -779,14 +779,14 @@ glob_helper(path, sub, flags, func, arg)
 			    glob_helper(t, t+len, flags, func, arg);
 			    free(t);
 			}
-			tmp = link;
-			link = link->next;
-			free(tmp->path);
-			free(tmp);
 		    }
 		    else {
 			rb_sys_warning(link->path);
 		    }
+		    tmp = link;
+		    link = link->next;
+		    free(tmp->path);
+		    free(tmp);
 		}
 		break;
 	    }

@@ -1,4 +1,8 @@
-<<<<<<< ChangeLog
+Wed Apr 10 18:42:23 2002  Tachino Nobuhiro <tachino@jp.fujitsu.com>
+
+	* dir.c (glob_helper): should have proceed link when link->path
+	  was non existing symbolic link.
+
 Wed Apr 10 17:30:19 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_obj_remove_instance_variable): raise NameError if
