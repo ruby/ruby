@@ -7,12 +7,12 @@ I.e. it can resolv many hostnames concurrently.
 It is possible to lookup various resources of DNS using DNS module directly.
 
 == example
-  Resolv.getaddress("www.ruby-lang.org")
-  Resolv.getname("210.251.121.214")
+  p Resolv.getaddress("www.ruby-lang.org")
+  p Resolv.getname("210.251.121.214")
 
   Resolv::DNS.open {|dns|
-    dns.getresources("www.ruby-lang.org", Resolv::DNS::Resource::IN::A).collect {|r| r.address}
-    dns.getresources("ruby-lang.org", Resolv::DNS::Resource::IN::MX).collect {|r| [r.exchange.to_s, r.preference]}
+    p dns.getresources("www.ruby-lang.org", Resolv::DNS::Resource::IN::A).collect {|r| r.address}
+    p dns.getresources("ruby-lang.org", Resolv::DNS::Resource::IN::MX).collect {|r| [r.exchange.to_s, r.preference]}
   }
 
 == Resolv class
