@@ -1393,28 +1393,6 @@ rb_eval_cmd(cmd, arg)
 }
 
 static VALUE
-rb_trap_eval(cmd, sig)
-    VALUE cmd;
-    int sig;
-{
-    int state;
-    VALUE val;			/* OK */
-
-    PUSH_TAG(PROT_NONE);
-    PUSH_ITER(ITER_NOT);
-    if ((state = EXEC_TAG()) == 0) {
-	val = rb_eval_cmd(cmd, rb_ary_new3(1, INT2FIX(sig)));
-    }
-    POP_ITER();
-    POP_TAG();
-    if (state) {
-	rb_trap_immediate = 0;
-	JUMP_TAG(state);
-    }
-    return val;
-}
-
-static VALUE
 superclass(self, node)
     VALUE self;
     NODE *node;
@@ -7176,6 +7154,86 @@ struct thread {
 #define FOREACH_THREAD(x) FOREACH_THREAD_FROM(curr_thread,x)
 #define END_FOREACH(x)    END_FOREACH_FROM(curr_thread,x)
 
+struct thread_status_t {
+    char *file;
+    int   line;
+
+    int tracing;
+    VALUE errinfo;
+    VALUE last_status;
+    VALUE last_line;
+    VALUE last_match;
+
+    int safe;
+
+    enum thread_status status;
+    int wait_for;
+    int fd;
+    fd_set readfds;
+    fd_set writefds;
+    fd_set exceptfds;
+    int select_value;
+    double delay;
+    rb_thread_t join;
+};
+
+#define THREAD_COPY_STATUS(src, dst) (void)(	\
+    (dst)->file = (src)->file,			\
+    (dst)->line = (src)->line,			\
+						\
+    (dst)->tracing = (src)->tracing,		\
+    (dst)->errinfo = (src)->errinfo,		\
+    (dst)->last_status = (src)->last_status,	\
+    (dst)->last_line = (src)->last_line,	\
+    (dst)->last_match = (src)->last_match,	\
+						\
+    (dst)->safe = (src)->safe,			\
+						\
+    (dst)->status = (src)->status,		\
+    (dst)->wait_for = (src)->wait_for,		\
+    (dst)->fd = (src)->fd,			\
+    (dst)->readfds = (src)->readfds,		\
+    (dst)->writefds = (src)->writefds,		\
+    (dst)->exceptfds = (src)->exceptfds,	\
+    (dst)->select_value = (src)->select_value,	\
+    (dst)->delay = (src)->delay,		\
+    (dst)->join = (src)->join			\
+)
+
+static void rb_thread_ready _((rb_thread_t));
+
+static VALUE
+rb_trap_eval(cmd, sig)
+    VALUE cmd;
+    int sig;
+{
+    int state;
+    VALUE val;			/* OK */
+    struct thread_status_t save;
+
+    THREAD_COPY_STATUS(curr_thread, &save);
+    rb_thread_ready(curr_thread);
+    PUSH_TAG(PROT_NONE);
+    PUSH_ITER(ITER_NOT);
+    if ((state = EXEC_TAG()) == 0) {
+	val = rb_eval_cmd(cmd, rb_ary_new3(1, INT2FIX(sig)));
+    }
+    POP_ITER();
+    POP_TAG();
+    THREAD_COPY_STATUS(&save, curr_thread);
+
+    if (state) {
+	rb_trap_immediate = 0;
+	JUMP_TAG(state);
+    }
+
+    if (curr_thread->status == THREAD_STOPPED) {
+	rb_thread_schedule();
+    }
+
+    return val;
+}
+
 static const char *
 thread_status_name(status)
     enum thread_status status;
@@ -7409,7 +7467,6 @@ thread_switch(n)
 	break;
       case RESTORE_TRAP:
 	rb_trap_eval(th_cmd, th_sig);
-	errno = EINTR;
 	break;
       case RESTORE_RAISE:
 	ruby_frame->last_func = 0;
@@ -8721,7 +8778,6 @@ rb_thread_trap_eval(cmd, sig)
 	    return;
 	}
     }
-    rb_thread_ready(main_thread);
     th_cmd = cmd;
     th_sig = sig;
     curr_thread = main_thread;
