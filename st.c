@@ -300,8 +300,8 @@ st_lookup(table, key, value)
 int
 st_lookup_strend(table, str_key, end_key, value)
     st_table *table;
-    unsigned char* str_key;
-    unsigned char* end_key;
+    const unsigned char* str_key;
+    const unsigned char* end_key;
     st_data_t *value;
 {
   st_strend_key key;
@@ -355,8 +355,8 @@ st_insert(table, key, value)
 int
 st_insert_strend(table, str_key, end_key, value)
      st_table *table;
-     unsigned char* str_key;
-     unsigned char* end_key;
+     const unsigned char* str_key;
+     const unsigned char* end_key;
      st_data_t value;
 {
   st_strend_key* key;
@@ -384,8 +384,8 @@ st_add_direct(table, key, value)
 void
 st_add_direct_strend(table, str_key, end_key, value)
     st_table *table;
-    unsigned char* str_key;
-    unsigned char* end_key;
+    const unsigned char* str_key;
+    const unsigned char* end_key;
     st_data_t value;
 {
   st_strend_key* key;

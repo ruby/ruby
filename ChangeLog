@@ -1,3 +1,8 @@
+Wed Feb 23 22:08:16 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* st.c, st.h: imported additional file changes on
+	Oniguruma 3.7.0.
+
 Wed Feb 23 21:45:29 2005  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* ascii.c, euc_jp.c, oniggnu.h, oniguruma.h, regcomp.c,
