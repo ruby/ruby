@@ -1,4 +1,4 @@
-Sat Apr  2 22:34:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Apr  2 23:38:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (CP, INSTALL): get rid of less portable options.
 
@@ -7,6 +7,9 @@ Sat Apr  2 22:34:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* wince/configure.bat, wince/setup.mak: add prefix, extstatic and
 	  rdoc options.
+
+	* lib/mkmf.rb (create_makefile): ensure library directories get made
+	  before copying libraries there.
 
 Sat Apr  2 16:59:46 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
