@@ -50,15 +50,20 @@
 #endif
 
 #if defined(sparc) || defined(__sparc__)
-# if defined(linux) || defined(__linux__)
-#define FLUSH_REGISTER_WINDOWS  asm("ta  0x83")
-# elif defined(__FreeBSD__) && defined(__sparc64__)
-#define FLUSH_REGISTER_WINDOWS  asm volatile("flushw" : :)
+static inline void
+flush_register_windows(void)
+{
+# if defined(__sparc_v9__) || defined(__arch64__)
+    asm volatile ("flushw" : :);
+# elif defined(linux) || defined(__linux__)
+    asm volatile ("ta  0x83");
 # else /* Solaris, OpenBSD, NetBSD, etc. */
-#define FLUSH_REGISTER_WINDOWS  asm("ta  0x03")
+    asm volatile ("ta  0x03");
 # endif /* trap always to flush register windows if we are on a Sparc system */
+}
+#define FLUSH_REGISTER_WINDOWS	flush_register_windows()
 #else /* Not a sparc, so */
-#define FLUSH_REGISTER_WINDOWS  /* empty -- nothing to do here */
+#define FLUSH_REGISTER_WINDOWS	/* empty -- nothing to do here */
 #endif 
 
 #if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__)

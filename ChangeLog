@@ -1,3 +1,13 @@
+Sun Jan  5 03:51:57 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* defines.h (FLUSH_REGISTER_WINDOWS): Make the flushw call an
+	  inline function so it can be used as an expression.
+
+	* eval.c (EXEC_TAG, THREAD_SAVE_CONTEXT): Consistently call
+	  FLUSH_REGISTER_WINDOWS before calling setjmp(). (I suspect that
+	  every setjmp() implementation should take care of register
+	  windows, though)
+
 Wed Jan  1 15:44:55 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dbm/extconf.rb (-DDBM_HDR): substitute ' with " to avoid
