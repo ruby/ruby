@@ -1,3 +1,8 @@
+Wed Oct 29 17:16:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_longjmp): must not disturb original jump.
+	  [ruby-dev:21733]
+
 Wed Oct 29 15:28:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (Init_Proc): taint preallocated exception object

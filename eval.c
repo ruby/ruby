@@ -3950,7 +3950,7 @@ rb_longjmp(tag, mesg)
 	}
 	POP_TAG();
 	if (status == TAG_FATAL && ruby_errinfo == exception_error) {
-	    ruby_errinfo = Qnil;
+	    ruby_errinfo = mesg;
 	}
 	else if (status) {
 	    thread_reset_raised();
