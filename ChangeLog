@@ -1,3 +1,15 @@
+Fri Dec  5 23:22:30 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (Test::Unit::Assertions::assert_raises,
+	  Test::Unit::Assertions::assert_nothing_raised): use the last
+	  argument as message unless non-class object.
+
+	* test/testunit/test_assertions.rb (test_assert_raises): test for
+	  multiple exception list.  [ruby-core:01891]
+
+	* test/testunit/test_assertions.rb (test_assert_nothing_raised): test
+	  for non-exception classes.
+
 Fri Dec  5 22:23:04 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/netHttpClient.rb: proxy support did not work.  fixed.

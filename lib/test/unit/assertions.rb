@@ -60,13 +60,13 @@ EOT
       public
       def assert_raises(*args)
         _wrap_assertion do
-          if Class === args.last and Exception >= args.last
+          if Class === args.last
             message = ""
           else
             message = args.pop
           end
           args.each do |klass|
-            assert(Exception >= klass, "Should expect a class of exception")
+            assert(Exception >= klass, "Should expect a class of exception, #{klass}")
           end
           expected = args.size == 1 ? args.first : args
           actual_exception = nil
@@ -182,13 +182,13 @@ EOT
       public
       def assert_nothing_raised(*args)
         _wrap_assertion do
-          if Class === args.last and Exception >= args.last
+          if Class === args.last
             message = ""
           else
             message = args.pop
           end
           args.each do |klass|
-            assert(Exception >= klass, "Should expect a class of exception")
+            assert(Exception >= klass, "Should expect a class of exception, #{klass}")
           end
           begin
             yield

@@ -138,6 +138,38 @@ module Test
             raise "Error"
           }
         }
+        check_fails("Should expect a class of exception, Object.\n<false> is not true.") {
+          assert_nothing_raised(Object) {
+            1 + 1
+          }
+        }
+
+        exceptions = [ArgumentError, TypeError]
+        exceptions.each do |exc|
+          check_nothing_fails(true) {
+            return_value = assert_raises(*exceptions) {
+              raise exc, "Error"
+            }
+          }
+          check(return_value.instance_of?(exc), "Should have returned #{exc} but was #{return_value.class}")
+          check(return_value.message == "Error", "Should have returned the correct exception from a successful assert_raises")
+        end
+        check_fails("<[ArgumentError, TypeError]> exception expected but none was thrown.") {
+          assert_raises(*exceptions) {
+            1 + 1
+          }
+        }
+        check_fails(%r{\Afailed assert_raises.
+<\[ArgumentError, TypeError\]> exception expected but was
+Class: <RuntimeError>
+Message: <"Error">
+---Backtrace---
+.+
+---------------\Z}m) {
+          assert_raises(ArgumentError, TypeError, "failed assert_raises") {
+            raise "Error"
+          }
+        }
       end
       
       def test_assert_instance_of
@@ -271,6 +303,11 @@ module Test
             }
           rescue ZeroDivisionError
           end
+        }
+        check_fails("Should expect a class of exception, Object.\n<false> is not true.") {
+          assert_nothing_raised(Object) {
+            1 + 1
+          }
         }
         check_fails(%r{\AException raised:\nClass: <RuntimeError>\nMessage: <"Error">\n---Backtrace---\n.+\n---------------\Z}m) {
           assert_nothing_raised {
