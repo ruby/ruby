@@ -2288,7 +2288,7 @@ rb_eval(self, n)
 	    }
 	    else if (_block.tag->dst == state) {
 		state &= TAG_MASK;
-		if (state == TAG_RETURN) {
+		if (state == TAG_RETURN || state == TAG_BREAK) {
 		    result = prot_tag->retval;
 		}
 	    }
@@ -2302,8 +2302,8 @@ rb_eval(self, n)
 		goto iter_retry;
 
 	      case TAG_BREAK:
-		result = Qnil;
 		break;
+
 	      case TAG_RETURN:
 		return_value(result);
 		/* fall through */
@@ -2314,10 +2314,22 @@ rb_eval(self, n)
 	break;
 
       case NODE_BREAK:
+	if (node->nd_stts) {
+ 	    return_value(rb_eval(self, node->nd_stts));
+ 	}
+	else {
+	    return_value(Qnil);
+	}
 	JUMP_TAG(TAG_BREAK);
 	break;
 
       case NODE_NEXT:
+	if (node->nd_stts) {
+ 	    return_value(rb_eval(self, node->nd_stts));
+ 	}
+	else {
+	    return_value(Qnil);
+	}
 	JUMP_TAG(TAG_NEXT);
 	break;
 
@@ -3574,6 +3586,12 @@ rb_yield_0(val, self, klass, acheck)
 			     RARRAY(val)->len);
 		}
 	    }
+	    else if (block->var == (NODE*)2) {
+		if (val != Qundef && TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
+		    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)",
+			     RARRAY(val)->len);
+		}
+	    }
 	    else {
 		if (nd_type(block->var) == NODE_MASGN)
 		    massign(self, block->var, val, acheck);
@@ -3614,7 +3632,7 @@ rb_yield_0(val, self, klass, acheck)
 	    goto redo;
 	  case TAG_NEXT:
 	    state = 0;
-	    result = Qnil;
+	    result = prot_tag->retval;
 	    break;
 	  case TAG_BREAK:
 	  case TAG_RETURN:
@@ -3842,7 +3860,7 @@ rb_iterate(it_proc, data1, bl_proc, data2)
     }
     if (ruby_block->tag->dst == state) {
 	state &= TAG_MASK;
-	if (state == TAG_RETURN) {
+	if (state == TAG_RETURN || state == TAG_BREAK) {
 	    retval = prot_tag->retval;
 	}
     }
@@ -3858,7 +3876,6 @@ rb_iterate(it_proc, data1, bl_proc, data2)
 	goto iter_retry;
 
       case TAG_BREAK:
-	retval = Qnil;
 	break;
 
       case TAG_RETURN:
@@ -6343,21 +6360,22 @@ proc_call(proc, args)
     ruby_block = old_block;
     ruby_safe_level = safe;
 
-    if (state) {
-	switch (state) {
-	  case TAG_BREAK:
-	    break;
-	  case TAG_RETRY:
-	    rb_raise(rb_eLocalJumpError, "retry from proc-closure");
-	    break;
-	  case TAG_RETURN:
-	    if (orphan) {	/* orphan procedure */
-		rb_raise(rb_eLocalJumpError, "return from proc-closure");
-	    }
-	    /* fall through */
-	  default:
-	    JUMP_TAG(state);
+    switch (state) {
+      case 0:
+	break;
+      case TAG_BREAK:
+	result = prot_tag->retval;
+	break;
+      case TAG_RETRY:
+	rb_raise(rb_eLocalJumpError, "retry from proc-closure");
+	break;
+      case TAG_RETURN:
+	if (orphan) {	/* orphan procedure */
+	    rb_raise(rb_eLocalJumpError, "return from proc-closure");
 	}
+	/* fall through */
+      default:
+	JUMP_TAG(state);
     }
     return result;
 }
@@ -6373,6 +6391,7 @@ proc_arity(proc)
     Data_Get_Struct(proc, struct BLOCK, data);
     if (data->var == 0) return INT2FIX(-1);
     if (data->var == (NODE*)1) return INT2FIX(0);
+    if (data->var == (NODE*)2) return INT2FIX(0);
     switch (nd_type(data->var)) {
       default:
 	return INT2FIX(-1);

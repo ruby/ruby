@@ -1,3 +1,23 @@
+Tue May 22 17:10:35 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* variable.c (rb_alias_variable): should not allow variable
+	  aliasing if $SAFE >= 4.
+
+Tue May 22 02:37:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (expr): "break" and "next" to take optional expression,
+	  which is used as a value for termination. [new, experimental]
+
+	* eval.c (rb_eval): "break" can give value to terminating method.
+
+	* eval.c (rb_eval): "break" and "next" to take optional expression.
+
+	* eval.c (rb_yield_0): "next" can give value to terminating "yield".
+
+	* eval.c (rb_iterate): "break" can give value to terminating method.
+
+	* eval.c (proc_call): ditto.
+
 Mon May 21 13:15:25 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big2str): t should be protected from GC.

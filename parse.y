@@ -426,21 +426,13 @@ expr		: kRETURN ret_args
 			    yyerror("return appeared outside of method");
 			$$ = NEW_RETURN($2);
 		    }
-		| kBREAK
+		| kBREAK ret_args
 		    {
-			$$ = NEW_BREAK();
+			$$ = NEW_BREAK($2);
 		    }
-		| kNEXT
+		| kNEXT ret_args
 		    {
-			$$ = NEW_NEXT();
-		    }
-		| kREDO
-		    {
-			$$ = NEW_REDO();
-		    }
-		| kRETRY
-		    {
-			$$ = NEW_RETRY();
+			$$ = NEW_NEXT($2);
 		    }
 		| command_call
 		| expr kAND expr
@@ -1142,19 +1134,6 @@ primary		: literal
 		    {
 			$$ = NEW_HASH($2);
 		    }
-		| kRETURN '(' ret_args ')'
-		    {
-			if (!compile_for_eval && !in_def && !in_single)
-			    yyerror("return appeared outside of method");
-			value_expr($3);
-			$$ = NEW_RETURN($3);
-		    }
-		| kRETURN '(' ')'
-		    {
-			if (!compile_for_eval && !in_def && !in_single)
-			    yyerror("return appeared outside of method");
-			$$ = NEW_RETURN(0);
-		    }
 		| kRETURN
 		    {
 			if (!compile_for_eval && !in_def && !in_single)
@@ -1359,6 +1338,22 @@ primary		: literal
 		        local_pop();
 			in_single--;
 		    }
+		| kBREAK
+		    {
+			$$ = NEW_BREAK(0);
+		    }
+		| kNEXT
+		    {
+			$$ = NEW_NEXT(0);
+		    }
+		| kREDO
+		    {
+			$$ = NEW_REDO();
+		    }
+		| kRETRY
+		    {
+			$$ = NEW_RETRY();
+		    }
 
 then		: term
 		| kTHEN
@@ -1398,6 +1393,10 @@ opt_block_var	: none
 		| '|' block_var '|'
 		    {
 			$$ = $2;
+		    }
+		| '<' f_args '>'
+		    {
+			$$ = (NODE*)2;
 		    }
 
 
