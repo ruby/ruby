@@ -698,7 +698,7 @@ rb_f_sprintf(argc, argv)
 			expr = "Inf";
 		    }
 		    need = strlen(expr);
-		    if (fval < 0.0 || (flags & FPLUS))
+		    if ((!isnan(fval) && fval < 0.0) || (flags & FPLUS))
 			need++;
 		    if ((flags & FWIDTH) && need < width)
 			need = width;
@@ -706,14 +706,34 @@ rb_f_sprintf(argc, argv)
 		    CHECK(need);
 		    sprintf(&buf[blen], "%*s", need, "");
 		    if (flags & FMINUS) {
-			if (fval < 0.0)
+			if (!isnan(fval) && fval < 0.0)
 			    buf[blen++] = '-';
 			else if (flags & FPLUS)
 			    buf[blen++] = '+';
+			else if (flags & FSPACE)
+			    blen++;
+			strncpy(&buf[blen], expr, strlen(expr));
+		    }
+		    else if (flags & FZERO) {
+			if (!isnan(fval) && fval < 0.0) {
+			    buf[blen++] = '-';
+			    need--;
+			}
+			else if (flags & FPLUS) {
+			    buf[blen++] = '+';
+			    need--;
+			}
+			else if (flags & FSPACE) {
+			    blen++;
+			    need--;
+			}
+			while (need-- - strlen(expr) > 0) {
+			    buf[blen++] = '0';
+			}
 			strncpy(&buf[blen], expr, strlen(expr));
 		    }
 		    else {
-			if (fval < 0.0)
+			if (!isnan(fval) && fval < 0.0)
 			    buf[blen + need - strlen(expr) - 1] = '-';
 			else if (flags & FPLUS)
 			    buf[blen + need - strlen(expr) - 1] = '+';

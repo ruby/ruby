@@ -1,3 +1,9 @@
+Tue Jun 22 23:35:43 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): support FZERO and FSPACE with NaN/Inf.
+
+	* test/ruby/test_sprintf.rb (test_nan, test_inf): add tests.
+
 Tue Jun 22 21:11:36 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (OLE_FREE): should not call CoFreeUnuse-
