@@ -145,6 +145,9 @@ classname(klass)
     VALUE path = Qnil;
     ID classpath = rb_intern("__classpath__");
 
+    if (TYPE(klass) == T_ICLASS) {
+	klass = RBASIC(klass)->klass;
+    }
     klass = rb_class_real(klass);
     if (!klass) klass = rb_cObject;
     if (ROBJECT(klass)->iv_tbl &&

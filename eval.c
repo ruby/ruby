@@ -1847,7 +1847,6 @@ is_defined(self, node, buf)
 	    }
 	    break;
 	}
-	self = rb_iv_get(ruby_cbase, "__attached__");
 	/* fall through */
       case NODE_CVAR2:
 	if (rb_cvar_defined(rb_cvar_singleton(self), node->nd_vid)) {
@@ -4598,7 +4597,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	/* self must be kind of a specified form for private method */
 	if ((noex & NOEX_PROTECTED)) {
 	    VALUE defined_class = klass;
-	    while (TYPE(defined_class) == T_ICLASS)
+	    if (TYPE(defined_class) == T_ICLASS)
 		defined_class = RBASIC(defined_class)->klass;
 	    if (!rb_obj_is_kind_of(ruby_frame->self, defined_class))
 		return rb_undefined(recv, mid, argc, argv, CSTAT_PROT);

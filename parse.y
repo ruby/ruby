@@ -1974,6 +1974,10 @@ yycompile(f, line)
     heredoc_end = 0;
     ruby_sourcefile = strdup(f);
     ruby_in_compile = 1;
+    if (ruby_frame && ruby_frame->last_class &&
+	FL_TEST(ruby_frame->last_class, FL_SINGLETON)) {
+	in_single = 1;
+    }
     n = yyparse();
     ruby_debug_lines = 0;
     compile_for_eval = 0;
