@@ -1805,6 +1805,12 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
+	if (NIL_P(ruby_cbase)) {
+	    if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
+		return "class variable";
+	    }
+	    break;
+	}
 	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
 		return "class variable";
@@ -2722,6 +2728,10 @@ rb_eval(self, n)
 	break;
 
       case NODE_CVAR:		/* normal method */
+	if (NIL_P(ruby_cbase)) {
+	    result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
+	    break;
+	}
 	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
 	    result = rb_cvar_get(ruby_cbase, node->nd_vid);
 	    break;

@@ -124,7 +124,7 @@ realclean:	distclean
 test:		miniruby$(EXEEXT)
 		@./miniruby$(EXEEXT) $(srcdir)/rubytest.rb
 
-rbconfig.rb:	miniruby$(EXEEXT)
+rbconfig.rb:	miniruby$(EXEEXT) $(srcdir)/mkconfig.rb config.status
 		@@MINIRUBY@ $(srcdir)/mkconfig.rb rbconfig.rb
 
 fake.rb:	miniruby$(EXEEXT)

@@ -12,12 +12,14 @@ SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
 $config_cache = CONFIG["compile_dir"]+"/ext/config.cache"
 
 $srcdir = CONFIG["srcdir"]
-$libdir = CONFIG["libdir"]+"/ruby/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
-$archdir = $libdir+"/"+CONFIG["arch"]
-$sitelibdir = CONFIG["sitedir"]+"/"+CONFIG["MAJOR"]+"."+CONFIG["MINOR"]
-$sitearchdir = $sitelibdir+"/"+CONFIG["arch"]
+$libdir = CONFIG["libdir"]
+$rubylibdir = CONFIG["rubylibdir"]
+$archdir = CONFIG["archdir"]
+$sitedir = CONFIG["sitedir"]
+$sitelibdir = CONFIG["sitelibdir"]
+$sitearchdir = CONFIG["sitearchdir"]
 
-if File.exist? $archdir + "/ruby.h"
+if File.exist? Config::CONFIG["archdir"] + "/ruby.h"
   $hdrdir = $archdir
 elsif File.exist? $srcdir + "/ruby.h"
   $hdrdir = $srcdir
@@ -438,6 +440,8 @@ LIBPATH = #{libpath}
 
 RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
 RUBY_SO_NAME = #{CONFIG["RUBY_SO_NAME"]}
+arch = #{CONFIG["arch"]}
+ruby_version = #{Config::CONFIG["ruby_version"]}
 #{
 if destdir = CONFIG["prefix"].scan(drive)[0] and !destdir.empty?
   "\nDESTDIR = " + destdir
@@ -446,11 +450,13 @@ else
 end
 }
 prefix = $(DESTDIR)#{CONFIG["prefix"].sub(drive, '')}
-exec_prefix = $(DESTDIR)#{CONFIG["exec_prefix"].sub(drive, '')}
-libdir = $(DESTDIR)#{$libdir.sub(drive, '')}#{target_prefix}
-archdir = $(DESTDIR)#{$archdir.sub(drive, '')}#{target_prefix}
-sitelibdir = $(DESTDIR)#{$sitelibdir.sub(drive, '')}#{target_prefix}
-sitearchdir = $(DESTDIR)#{$sitearchdir.sub(drive, '')}#{target_prefix}
+exec_prefix = #{CONFIG["exec_prefix"].sub(drive, '')}
+libdir = #{$libdir.sub(drive, '')}#{target_prefix}
+rubylibdir = #{$rubylibdir.sub(drive, '')}#{target_prefix}
+archdir = #{$archdir.sub(drive, '')}#{target_prefix}
+sitedir = #{$sitedir.sub(drive, '')}#{target_prefix}
+sitelibdir = #{$sitelibdir.sub(drive, '')}#{target_prefix}
+sitearchdir = #{$sitearchdir.sub(drive, '')}#{target_prefix}
 
 #### End of system configuration section. ####
 

@@ -40,7 +40,7 @@ File.foreach "config.status" do |$_|
     next if $so_name and name =~ /^RUBY_SO_NAME$/
     v = "  CONFIG[\"" + name + "\"] = " +
       val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$\{?(\w+)\}?/) {
-      "\#{CONFIG[\\\"#{$1}\\\"]}"
+      "$(#{$1})"
     } + "\n"
     if fast[name]
       v_fast << v
@@ -89,6 +89,11 @@ end
 
 print v_fast, v_others
 print <<EOS
+  CONFIG["ruby_version"] = "$(MAJOR).$(MINOR)"
+  CONFIG["rubylibdir"] = "$(libdir)/ruby/$(ruby_version)"
+  CONFIG["archdir"] = "$(rubylibdir)/$(arch)"
+  CONFIG["sitelibdir"] = "$(sitedir)/$(ruby_version)"
+  CONFIG["sitearchdir"] = "$(sitelibdir)/$(arch)"
   CONFIG["compile_dir"] = "#{Dir.pwd}"
   MAKEFILE_CONFIG = {}
   CONFIG.each{|k,v| MAKEFILE_CONFIG[k] = v.dup}
@@ -96,7 +101,7 @@ print <<EOS
     val.gsub!(/\\$\\(([^()]+)\\)/) do |var|
       key = $1
       if CONFIG.key? key
-        "\#{Config::expand(CONFIG[\\\"\#{key}\\\"])}"
+        Config::expand(CONFIG[key])
       else
 	var
       end

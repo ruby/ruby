@@ -1,3 +1,10 @@
+Tue May  8 17:12:43 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (is_defined): core dumped during instance_eval for
+	  special constants.
+
+	* eval.c (rb_eval): ditto.
+
 Mon May  7 15:58:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (arg): "||=" should not warn for uninitialized instance
