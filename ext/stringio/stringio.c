@@ -835,10 +835,14 @@ strio_read(argc, argv, self)
     VALUE self;
 {
     struct StringIO *ptr = readable(StringIO(self));
-    VALUE str;
+    VALUE str = Qnil;
     long len, olen;
 
     switch (argc) {
+      case 2:
+	str = argv[1];
+	StringValue(str);
+	rb_str_modify(str);
       case 1:
 	if (!NIL_P(argv[0])) {
 	    len = olen = NUM2LONG(argv[0]);
@@ -859,8 +863,14 @@ strio_read(argc, argv, self)
 	olen = -1;
 	len = RSTRING(ptr->string)->len;
 	if (len <= ptr->pos) {
-	    if (ptr->flags & STRIO_EOF) return Qnil;
-	    len = 0;
+	    ptr->flags |= STRIO_EOF;
+	    if (NIL_P(str)) {
+		str = rb_str_new(0, 0);
+	    }
+	    else {
+		rb_str_resize(str, 0);
+	    }
+	    return str;
 	}
 	else {
 	    len -= ptr->pos;
@@ -869,7 +879,15 @@ strio_read(argc, argv, self)
       default:
 	rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
     }
-    str = rb_str_substr(ptr->string, ptr->pos, len);
+    if (NIL_P(str)) {
+	str = rb_str_substr(ptr->string, ptr->pos, len);
+    }
+    else {
+	long rest = RSTRING(ptr->string)->len - ptr->pos;
+	if (len > rest) len = rest;
+	rb_str_resize(str, len);
+	MEMCPY(RSTRING(str)->ptr, RSTRING(ptr->string)->ptr, char, len);
+    }
     if (NIL_P(str)) {
 	if (!(ptr->flags & STRIO_EOF)) str = rb_str_new(0, 0);
 	len = 0;

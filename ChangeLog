@@ -1,3 +1,11 @@
+Wed Dec 24 10:29:53 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): never return nil at
+	  unlimited read.  [ruby-dev:22334]
+
+	* ext/stringio/stringio.c (strio_read): support second
+	  argument.  [ruby-dev:22350]
+
 Wed Dec 24 09:38:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (arg): should return 0 after error.  [ruby-dev:22360]
