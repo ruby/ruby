@@ -1,3 +1,8 @@
+Sun Aug  3 23:56:50 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_call_super): should propagate previous block for
+	  super call.  [ruby-talk:77884]
+
 Sun Aug  3 19:25:28 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (call_trace_func): clear exception flag temporarily.
