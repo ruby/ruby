@@ -50,7 +50,7 @@ s%@setup@%Setup%g
 s%@LIBRUBY_LDSHARED@%%g
 s%@LIBRUBY_DLDFLAGS@%%g
 s%@RUBY_INSTALL_NAME@%ruby%g
-s%@RUBY_SO_NAME@%ruby.mswin32%g
+s%@RUBY_SO_NAME@%mswin32-ruby16%g
 s%@LIBRUBY_A@%lib$(RUBY_INSTALL_NAME).lib%g
 s%@LIBRUBY_SO@%$(RUBY_SO_NAME).dll%g
 s%@LIBRUBY_ALIASES@%%g
