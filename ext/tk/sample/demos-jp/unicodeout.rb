@@ -17,16 +17,21 @@ $unicodeout_demo = TkToplevel.new {|w|
 }
 
 TkLabel.new($unicodeout_demo, 
-	    :font=>$font, :wraplength=>'4i', :justify=>:left, 
+	    :font=>$font, :wraplength=>'5.4i', :justify=>:left, 
 	    :text=><<EOL).pack(:side=>:top)
 これは，Tkにおける非欧米文字集合を用いる言語に対するサポートについての\
 サンプルです．ただし，下の表示においてあなたが実際にどのような表示を\
 目にするかは，あなたの環境にどのような文字集合がインストールされているかに\
 大きく依存します．また，対象となる文字集合がインストールされていない場合に\
 どのような表示がなされるかもあなたの環境次第です．\
+「コード参照」ボタンを押してソースを表示し，\
+Unicodeout_SampleFrameクラスの@@fontの定義を書き換えて\
+(ファイルの内容は変更されません)\
+「再実行」ボタンのクリックを試してみてください．
 スクリプトが可搬性を持つように，文字列は\\uXXXXという\
-Tclのエスケープ表現を用いたUNICODE文字列で書かれています．
-文字列はTk::UTF8_StringメソッドによってUTF8形式の文字列であるという\
+Tclのエスケープ表現を用いたUNICODE文字列で書かれています．\
+文字列は，Tk::UTF8_Stringメソッドによって，\
+「UTF8形式の文字列である」という\
 エンコード情報付きの文字列オブジェクト\
 (Tclのエスケープ表現の変換済み)に変換して\
 ラベルウィジェットに渡している点に注意してください．
@@ -53,6 +58,13 @@ wait_msg = TkLabel.new($unicodeout_demo,
 
 class Unicodeout_SampleFrame < TkFrame
   @@font = $font
+  # @@font = 'Helvetica 14'
+  # @@font = 'Courier 12'
+  # @@font = 'clearlyu 16'
+  # @@font = 'fixed 12'
+  # @@font = 'Times 12'
+  # @@font = 'Newspaper 12'
+  # @@font = '{New century schoolbook} 12'
 
   def initialize()
     super($unicodeout_demo)
@@ -63,6 +75,7 @@ class Unicodeout_SampleFrame < TkFrame
     sample_txt = Tk::UTF8_String(args.join(''))
     l = TkLabel.new(self, :font=>@@font, :text=>lang+':', 
 		    :anchor=>:nw, :pady=>0)
+    #s = TkLabel.new(self, :font=>@@font, :text=>sample_txt, 
     s = TkLabel.new(self, :font=>TkFont.new(@@font), :text=>sample_txt, 
 		    :anchor=>:nw, :width=>30, :pady=>0)
     Tk.grid(l, s, :sticky=>:ew, :pady=>0)

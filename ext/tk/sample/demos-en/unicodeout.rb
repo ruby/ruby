@@ -17,13 +17,17 @@ $unicodeout_demo = TkToplevel.new {|w|
 }
 
 TkLabel.new($unicodeout_demo, 
-	    :font=>$font, :wraplength=>'4i', :justify=>:left, 
+	    :font=>$font, :wraplength=>'5.4i', :justify=>:left, 
 	    :text=><<EOL).pack(:side=>:top)
 This is a sample of Tk's support for languages that use non-Western \
 character sets.  However, what you will actually see below depends \
 largely on what character sets you have installed, and what you see \
-for characters that are not present varies greatly between platforms \
-as well.  The strings are written in Tcl using UNICODE characters \
+for characters that are not present varies greatly between platforms as well. \
+Please try to click the 'See Code' button, \
+and click the 'Rerun Demo' button after editing \
+(the source file is not changed) \
+the definition of @@font on the Unicodeout_SampleFrame class.
+The strings are written in Tcl using UNICODE characters \
 using the \\uXXXX escape so as to do so in a portable fashion.
 
 ATTENTION: 
@@ -51,6 +55,13 @@ wait_msg = TkLabel.new($unicodeout_demo,
 
 class Unicodeout_SampleFrame < TkFrame
   @@font = $font
+  # @@font = 'Helvetica 14'
+  # @@font = 'Courier 12'
+  # @@font = 'clearlyu 16'
+  # @@font = 'fixed 12'
+  # @@font = 'Times 12'
+  # @@font = 'Newspaper 12'
+  # @@font = '{New century schoolbook} 12'
 
   def initialize()
     super($unicodeout_demo)
@@ -61,6 +72,7 @@ class Unicodeout_SampleFrame < TkFrame
     sample_txt = Tk::UTF8_String(args.join(''))
     l = TkLabel.new(self, :font=>@@font, :text=>lang+':', 
 		    :anchor=>:nw, :pady=>0)
+    #s = TkLabel.new(self, :font=>@@font, :text=>sample_txt, 
     s = TkLabel.new(self, :font=>TkFont.new(@@font), :text=>sample_txt, 
 		    :anchor=>:nw, :width=>30, :pady=>0)
     Tk.grid(l, s, :sticky=>:ew, :pady=>0)
