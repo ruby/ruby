@@ -3250,6 +3250,9 @@ rb_eval(self, n)
 		}
 	    }
 	    if (nd_type(node) == NODE_ZSUPER) {
+		if (ruby_frame->flags & FRAME_DMETH) {
+		    rb_raise(rb_eRuntimeError, "super: specify arguments explicitly");
+		}
 		argc = ruby_frame->argc;
 		argv = ruby_scope->local_vars + 2;
 	    }
@@ -5550,6 +5553,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	break;
 
       case NODE_BMETHOD:
+	ruby_frame->flags |= FRAME_DMETH;
 	result = proc_invoke(body->nd_cval, rb_ary_new4(argc, argv), recv, klass);
 	break;
 

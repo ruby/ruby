@@ -1,5 +1,7 @@
 Tue Nov 30 00:49:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* eval.c (rb_eval): [ruby-core:03856]
+
 	* io.c (rb_io_sysread): use temporary lock.  [ruby-dev:24992]
 
 Tue Nov 30 00:12:57 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
