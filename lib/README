@@ -4,8 +4,8 @@ README		this file
 base64.rb	encode/decode base64 (obsolete)
 cgi-lib.rb	decode CGI data
 complex.rb	complex number suppor
-date.rb		date object (compatible)
-date2.rb	yet another (better) date object
+date.rb		date object
+date2.rb	date object (compatible)
 debug.rb	ruby debugger
 delegate.rb	delegate messages to other object
 e2mmap.rb	exception utilities

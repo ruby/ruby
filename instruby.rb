@@ -3,6 +3,7 @@
 load "./rbconfig.rb"
 include Config
 
+File.umask(0)
 destdir = ARGV[0] || ''
 
 $:.unshift CONFIG["srcdir"]+"/lib"

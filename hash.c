@@ -333,6 +333,7 @@ static VALUE
 rb_hash_set_default(hash, ifnone)
     VALUE hash, ifnone;
 {
+    rb_hash_modify(hash);
     RHASH(hash)->ifnone = ifnone;
     return hash;
 }

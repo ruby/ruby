@@ -1,3 +1,28 @@
+Mon Dec 18 18:10:30 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_plus): usec might underflow (ruby-bugs-ja:#PR33).
+
+Mon Dec 18 08:11:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_set_default): should call rb_hash_modify().
+
+Sat Dec 16 02:58:26 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* eval.c (rb_eval): should clear ruby_errinfo on retry.
+
+	* eval.c (rb_rescue2): ditto.
+
+Thu Dec 14 13:06:18 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* class.c (rb_include_module): prohibit fronzen class/module.
+
+	* eval.c (rb_frozen_class_p): make external.
+
+	* intern.h (rb_frozen_class_p): prototyped.
+
+	* intern.h (rb_undef): prototyped not but rb_undef_method()
+	  which is also in ruby.h.
+
 Thu Dec 14 09:20:26 2000 Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: support -T1 on ruby 1.6.2
@@ -5,6 +30,17 @@ Thu Dec 14 09:20:26 2000 Wakou Aoyama <wakou@fsinet.or.jp>
 	* lib/cgi.rb: $1 --> Regexp::last_match[1]
 
 	* lib/net/telnet.rb: ditto.
+
+Wed Dec 13 23:27:06 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): handles case statement without expr, which
+	  looks for any TRUE (non nil, non false) when expression.
+
+	* parse.y (primary): case expression should not be compstmt, but
+	  mere expr.
+
+	* parse.y (primary): case without following expression is now
+	  separated rule.
 
 Wed Dec 13 12:41:27 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 

@@ -1459,8 +1459,8 @@ rb_mod_s_constants()
     return ary;
 }
 
-static void
-frozen_class_p(klass)
+void
+rb_frozen_class_p(klass)
     VALUE klass;
 {
     char *desc = "something(?!)";
@@ -1495,7 +1495,7 @@ rb_undef(klass, id)
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(klass)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't undef");
     }
-    frozen_class_p(klass);
+    rb_frozen_class_p(klass);
     if (id == __id__ || id == __send__) {
 	rb_warn("undefining `%s' may cause serious problem",
 		rb_id2name(id));
@@ -1541,7 +1541,7 @@ rb_alias(klass, name, def)
     VALUE origin;
     NODE *orig, *body;
 
-    frozen_class_p(klass);
+    rb_frozen_class_p(klass);
     if (name == def) return;
     if (klass == rb_cObject) {
 	rb_secure(4);
@@ -2054,16 +2054,49 @@ rb_eval(self, n)
 	}
 	goto again;
 
+      case NODE_WHEN:
+	while (node) {
+	    NODE *tag;
+
+	    if (nd_type(node) != NODE_WHEN) goto again;
+	    tag = node->nd_head;
+	    while (tag) {
+		if (trace_func) {
+		    call_trace_func("line", tag->nd_file, nd_line(tag), self,
+				    ruby_frame->last_func,
+				    ruby_frame->last_class);	
+		}
+		ruby_sourcefile = tag->nd_file;
+		ruby_sourceline = nd_line(tag);
+		if (nd_type(tag->nd_head) == NODE_WHEN) {
+		    VALUE v = rb_eval(self, tag->nd_head->nd_head);
+		    int i;
+
+		    if (TYPE(v) != T_ARRAY) v = rb_Array(v);
+		    for (i=0; i<RARRAY(v)->len; i++) {
+			if (RTEST(RARRAY(v)->ptr[i])) {
+			    node = node->nd_body;
+			    goto again;
+			}
+		    }
+		    tag = tag->nd_next;
+		    continue;
+		}
+		if (RTEST(rb_eval(self, tag->nd_head))) {
+		    node = node->nd_body;
+		    goto again;
+		}
+		tag = tag->nd_next;
+	    }
+	    node = node->nd_next;
+	}
+	RETURN(Qnil);
+
       case NODE_CASE:
 	{
 	    VALUE val;
 
-	    if (node->nd_head) {
-		val = rb_eval(self, node->nd_head);
-	    }
-	    else {
-		val = Qtrue;
-	    }
+	    val = rb_eval(self, node->nd_head);
 	    node = node->nd_body;
 	    while (node) {
 		NODE *tag;
@@ -2287,6 +2320,7 @@ rb_eval(self, n)
 			POP_TAG();
 			if (state == TAG_RETRY) {
 			    state = 0;
+			    ruby_errinfo = Qnil;
 			    goto retry_entry;
 			}
 			if (state != TAG_RAISE) {
@@ -2858,7 +2892,7 @@ rb_eval(self, n)
 		rb_warn("redefining `%s' may cause serious problem",
 			rb_id2name(node->nd_mid));
 	    }
-	    frozen_class_p(ruby_class);
+	    rb_frozen_class_p(ruby_class);
 	    body = search_method(ruby_class, node->nd_mid, &origin);
 	    if (body){
 		if (RTEST(ruby_verbose) && ruby_class == origin && body->nd_cnt == 0) {
@@ -3821,6 +3855,7 @@ rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
 		POP_TAG();
 		if (state == TAG_RETRY) {
 		    state = 0;
+		    ruby_errinfo = Qnil;
 		    goto retry_entry;
 		}
 	    }

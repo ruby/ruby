@@ -1203,13 +1203,17 @@ primary		: literal
 			$$ = NEW_UNTIL(cond($3), $6, 1);
 		        fixpos($$, $3);
 		    }
-		| kCASE compstmt
+		| kCASE expr opt_terms
 		  case_body
 		  kEND
 		    {
 			value_expr($2);
-			$$ = NEW_CASE($2, $3);
+			$$ = NEW_CASE($2, $4);
 		        fixpos($$, $2);
+		    }
+		| kCASE opt_terms case_body kEND
+		    {
+			$$ = $3;
 		    }
 		| kFOR block_var kIN {COND_PUSH;} expr do {COND_POP;}
 		  compstmt

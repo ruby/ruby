@@ -241,6 +241,7 @@ rb_include_module(klass, module)
 		return;
 	    }
 	}
+	rb_frozen_class_p(klass);
 	RCLASS(klass)->super =
 	    include_class_new(module, RCLASS(klass)->super);
 	klass = RCLASS(klass)->super;

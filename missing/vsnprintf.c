@@ -34,6 +34,13 @@
  * SUCH DAMAGE.
  */
 
+/*
+ * IMPORTANT NOTE:
+ * --------------
+ * From ftp://ftp.cs.berkeley.edu/pub/4bsd/README.Impt.License.Change
+ * paragraph 3 above is now null and void.
+ */
+
 /* SNPRINTF.C  
  * fjc 7-31-97 Modified by Mib Software to be a standalone snprintf.c module.
  *      http://www.mibsoftware.com

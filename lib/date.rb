@@ -1,5 +1,5 @@
-# date2.rb: Written by Tadayoshi Funaba 1998-2000
-# $Id: date2.rb,v 1.22 2000-07-16 10:23:40+09 tadf Exp $
+# date.rb: Written by Tadayoshi Funaba 1998-2000
+# $Id: date.rb,v 1.22 2000-07-16 10:23:40+09 tadf Exp $
 
 class Date
 

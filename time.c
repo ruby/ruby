@@ -659,6 +659,10 @@ time_plus(time1, time2)
 	sec++;
 	usec -= 1000000;
     }
+    if (usec < 0) {		/* usec underflow */
+	sec--;
+	usec += 1000000;
+    }
     time2 = rb_time_new(sec, usec);
     if (tobj->gmt) {
 	GetTimeval(time2, tobj);
