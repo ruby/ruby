@@ -1,3 +1,10 @@
+Thu Dec 16 00:43:29 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: changed default binded address family to use an
+	  available address family of host name. [druby-ja:101]
+
+	* lib/drb/ssl.rb: ditto
+
 Wed Dec 15 17:47:17 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/server.rb (WEBrick::GenericServer#start_thread):
