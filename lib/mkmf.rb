@@ -186,7 +186,7 @@ def install_files(mfile, ifiles, map = INSTALL_DIRS, srcprefix = nil)
   ifiles.each do |files, dir, prefix|
     dir = map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)} if map
     prefix = %r"\A#{Regexp.quote(prefix)}/" if prefix
-    if( files[0,1] == "." )
+    if( files[0,2] == "./" )
       # install files which are in current working directory.
       Dir.glob(files) do |f|
 	d = File.dirname(f)
