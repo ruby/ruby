@@ -1,3 +1,8 @@
+Mon Feb 26 05:27:52 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/net/telnet.rb: #telnetmode(), #binmode(): bug fix.
+	  thanks to nobu.nakada@nifty.ne.jp.
+
 Mon Feb 26 04:55:50 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: CGI#form(): bug fix.

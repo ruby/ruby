@@ -4,7 +4,7 @@
 
 net/telnet.rb - simple telnet client library
 
-Version 1.6.2
+Version 1.6.3
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -239,10 +239,11 @@ module Net
     CR   = "\015"
     LF   = "\012"
     EOL  = CR + LF
-    VERSION = "1.6.2"
-    RELEASE_DATE = "2000-12-25"
-    VERSION_CODE = 162
-    RELEASE_CODE = 20001225
+    VERSION = '1.6.3'
+    RELEASE_DATE = '2001-02-26'
+    VERSION_CODE = 163
+    RELEASE_CODE = 20010226
+    REVISION = '$Id$'
 
     def initialize(options)
       @options = options
@@ -346,14 +347,13 @@ module Net
     attr :sock
 
     def telnetmode(mode = nil)
-      if mode
-        if (true == mode or false == mode)
-          @options["Telnetmode"] = mode
-        else
-          raise ArgumentError, "required true or false"
-        end
-      else
+      case mode
+      when nil
         @options["Telnetmode"]
+      when true, false
+        @options["Telnetmode"] = mode
+      else
+        raise ArgumentError, "required true or false"
       end
     end
 
@@ -366,14 +366,13 @@ module Net
     end
 
     def binmode(mode = nil)
-      if mode
-        if (true == mode or false == mode)
-          @options["Binmode"] = mode
-        else
-          raise ArgumentError, "required true or false"
-        end
-      else
+      case mode
+      when nil
         @options["Binmode"] 
+      when true, false
+        @options["Binmode"] = mode
+      else
+        raise ArgumentError, "required true or false"
       end
     end
 
@@ -599,181 +598,7 @@ end
 
 == HISTORY
 
-* Mon Dec 25 01:37:43 JST 2000 - wakou
-  * version 1.6.2
-  * Regexp::last_match[1] --> $1
+delete. see cvs log.
 
-* Mon Dec 11 00:16:51 JST 2000 - wakou
-  * version 1.6.1
-  * $1 --> Regexp::last_match[1]
 
-* 2000/09/12 05:37:35 - matz
-  * change: iterator? --> block_given?
-
-* Tue Sep 12 06:52:48 JST 2000 - wakou
-  * version 1.6.0
-  * correct: document.
-    thanks to Kazuhiro NISHIYAMA <zn@mbf.nifty.com>
-  * add: Telnet#puts().
-
-* Sun Jun 18 23:31:44 JST 2000 - wakou
-  * version 1.5.0
-  * change: version syntax. old: x.yz, now: x.y.z
-
-* 2000/05/24 06:57:38 - wakou
-  * version 1.40
-  * improve: binmode(), telnetmode() interface.
-    thanks to Dave Thomas <Dave@thomases.com>
-
-* 2000/05/09 22:02:56 - wakou
-  * version 1.32
-  * require English.rb
-
-* 2000/05/02 21:48:39 - wakou
-  * version 1.31
-  * Proxy option: can receive IO object.
-
-* 2000/04/03 18:27:02 - wakou
-  * version 1.30
-  * telnet.rb --> net/telnet.rb
-
-* 2000/01/24 17:02:57 - wakou
-  * version 1.20
-  * respond to "IAC WILL x" with "IAC DONT x"
-  * respond to "IAC WONT x" with "IAC DONT x"
-  * better dumplog format.
-    thanks to WATANABE Hirofumi <Hirofumi.Watanabe@jp.sony.com>
-
-* 2000/01/18 17:47:31 - wakou
-  * version 1.10
-  * bug fix: write method
-  * respond to "IAC WILL BINARY" with "IAC DO BINARY"
-
-* 1999/10/04 22:51:26 - wakou
-  * version 1.00
-  * bug fix: waitfor(preprocess) method.
-    thanks to Shin-ichiro Hara <sinara@blade.nagaokaut.ac.jp>
-  * add simple support for AO, DM, IP, NOP, SB, SE
-  * COUTION! TimeOut --> TimeoutError
-
-* 1999/09/21 21:24:07 - wakou
-  * version 0.50
-  * add write method
-
-* 1999/09/17 17:41:41 - wakou
-  * version 0.40
-  * bug fix: preprocess method
-
-* 1999/09/14 23:09:05 - wakou
-  * version 0.30
-  * change prompt check order.
-      not IO::select([@sock], nil, nil, waittime) and prompt === line
-      --> prompt === line and not IO::select([@sock], nil, nil, waittime)
-
-* 1999/09/13 22:28:33 - wakou
-  * version 0.24
-  * Telnet#login: if ommit password, then not require password prompt.
-
-* 1999/08/10 05:20:21 - wakou
-  * version 0.232
-  * STATUS OUTPUT sample code typo.
-    thanks to Tadayoshi Funaba <tadf@kt.rim.or.jp>
-      host = Telnet.new({"Hosh" => "localhost"){|c| print c }
-      --> host = Telnet.new({"Host" => "localhost"){|c| print c }
-
-* 1999/07/16 13:39:42 - wakou
-  * version 0.231
-  * TRUE --> true, FALSE --> false
-
-* 1999/07/15 22:32:09 - wakou
-  * version 0.23
-  * waitfor: if end of file reached, then return nil.
-
-* 1999/06/29 09:08:51 - wakou
-  * version 0.22
-  * new, waitfor, cmd: {"Timeout" => false}  # ignore timeout
-
-* 1999/06/28 18:18:55 - wakou
-  * version 0.21
-  * waitfor: not rescue (EOFError)
-
-* 1999/06/04 06:24:58 - wakou
-  * version 0.20
-  * waitfor: support for divided telnet command
-
-* 1999/05/22 - wakou
-  * version 0.181
-  * bug fix: print method
-
-* 1999/05/14 - wakou
-  * version 0.18
-  * respond to "IAC WON'T SGA" with "IAC DON'T SGA"
-  * DON'T SGA : end of line --> CR + LF
-  * bug fix: preprocess method
-
-* 1999/04/30 - wakou
-  * version 0.17
-  * bug fix: $! + "\n"  -->  $!.to_s + "\n"
-
-* 1999/04/11 - wakou
-  * version 0.163
-  * STDOUT.write(message) --> yield(message) if iterator?
-
-* 1999/03/17 - wakou
-  * version 0.162
-  * add "Proxy" option
-  * required timeout.rb
-
-* 1999/02/03 - wakou
-  * version 0.161
-  * select --> IO::select
-
-* 1998/10/09 - wakou
-  * version 0.16
-  * preprocess method change for the better
-  * add binmode method.
-  * change default Binmode. TRUE --> FALSE
-
-* 1998/10/04 - wakou
-  * version 0.15
-  * add telnetmode method.
-
-* 1998/09/22 - wakou
-  * version 0.141
-  * change default prompt. /[$%#>] $/ --> /[$%#>] \Z/
-
-* 1998/09/01 - wakou
-  * version 0.14
-  * IAC WILL SGA             send EOL --> CR+NULL
-  * IAC WILL SGA IAC DO BIN  send EOL --> CR
-  * NONE                     send EOL --> LF
-  * add Dump_log option.
-
-* 1998/08/25 - wakou
-  * version 0.13
-  * add print method.
-
-* 1998/08/05 - wakou
-  * version 0.122
-  * support for HP-UX 10.20.
-    thanks to WATANABE Tetsuya <tetsu@jpn.hp.com>
-  * socket.<< --> socket.write
-
-* 1998/07/15 - wakou
-  * version 0.121
-  * string.+= --> string.concat
-
-* 1998/06/01 - wakou
-  * version 0.12
-  * add timeout, waittime.
-
-* 1998/04/21 - wakou
-  * version 0.11
-  * add realtime output.
-
-* 1998/04/13 - wakou
-  * version 0.10
-  * first release.
-
-$Date$
 =end
