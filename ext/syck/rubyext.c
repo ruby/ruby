@@ -446,6 +446,8 @@ syck_parser_new(argc, argv, class)
     rb_scan_args(argc, argv, "01", &options);
 	pobj = Data_Wrap_Struct( class, 0, syck_free_parser, parser );
 
+    syck_parser_set_root_on_error( parser, Qnil );
+
     if ( ! rb_obj_is_instance_of( options, rb_cHash ) )
     {
         options = rb_hash_new();

@@ -10,7 +10,7 @@
 #ifndef SYCK_H
 #define SYCK_H
 
-#define SYCK_VERSION    "0.28"
+#define SYCK_VERSION    "0.29"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -112,6 +112,7 @@ struct _syck_node {
             long len;
         } *str;
     } data;
+    // Shortcut node
     void *shortcut;
 };
 
@@ -142,7 +143,7 @@ enum syck_level_status {
 
 struct _syck_parser {
     // Root node
-    SYMID root;
+    SYMID root, root_on_error;
     // Implicit typing flag
     int implicit_typing, taguri_expansion;
     // Scripting language function to handle nodes
@@ -213,6 +214,7 @@ long syck_io_file_read( char *, SyckIoFile *, long, long );
 long syck_io_str_read( char *, SyckIoStr *, long, long );
 SyckParser *syck_new_parser();
 void syck_free_parser( SyckParser * );
+void syck_parser_set_root_on_error( SyckParser *, SYMID );
 void syck_parser_implicit_typing( SyckParser *, int );
 void syck_parser_taguri_expansion( SyckParser *, int );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
@@ -222,6 +224,7 @@ void syck_parser_str( SyckParser *, char *, long, SyckIoStrRead );
 void syck_parser_str_auto( SyckParser *, char *, SyckIoStrRead );
 SyckLevel *syck_parser_current_level( SyckParser * );
 void syck_parser_add_level( SyckParser *, int, enum syck_level_status );
+void syck_parser_pop_level( SyckParser * );
 void free_any_io( SyckParser * );
 long syck_parser_read( SyckParser * );
 long syck_parser_readlen( SyckParser *, long );
@@ -244,13 +247,14 @@ char *syck_str_read( SyckNode * );
 SyckNode *syck_new_map( SYMID, SYMID );
 void syck_map_add( SyckNode *, SYMID, SYMID );
 SYMID syck_map_read( SyckNode *, enum map_part, long );
-long syck_map_count( SyckNode * );
 void syck_map_assign( SyckNode *, enum map_part, long, SYMID );
+long syck_map_count( SyckNode * );
 void syck_map_update( SyckNode *, SyckNode * );
 SyckNode *syck_new_seq( SYMID );
 void syck_seq_add( SyckNode *, SYMID );
 SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
+
 void apply_seq_in_map( SyckParser *, SyckNode * );
 
 #if defined(__cplusplus)

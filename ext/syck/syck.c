@@ -120,8 +120,8 @@ syck_parser_reset_levels( SyckParser *p )
         p->lvl_idx = 1;
         p->levels[0].spaces = -1;
         p->levels[0].domain = syck_strndup( "", 0 );
-        p->levels[0].status = syck_lvl_header;
     }
+    p->levels[0].status = syck_lvl_header;
 }
 
 void
@@ -130,6 +130,7 @@ syck_parser_reset_cursor( SyckParser *p )
     if ( p->buffer == NULL )
     {
         p->buffer = S_ALLOC_N( char, p->bufsize );
+        S_MEMZERO( p->buffer, char, p->bufsize );
     }
     p->buffer[0] = '\0';
 
@@ -140,10 +141,18 @@ syck_parser_reset_cursor( SyckParser *p )
     p->marker = NULL;
     p->limit = NULL;
 
+    p->root = 0;
+    p->root_on_error = 0;
     p->linect = 0;
     p->eof = 0;
     p->last_token = 0;
     p->force_token = 0;
+}
+
+void
+syck_parser_set_root_on_error( SyckParser *p, SYMID roer )
+{
+    p->root_on_error = roer;
 }
 
 /*
@@ -455,7 +464,6 @@ syck_parse( SyckParser *p )
 
     ASSERT( p != NULL );
 
-    p->root = 0;
     syck_parser_reset_levels( p );
     yyparse( p );
     return p->root;
