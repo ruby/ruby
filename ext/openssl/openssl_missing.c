@@ -105,6 +105,29 @@ HMAC_CTX_cleanup(HMAC_CTX *ctx)
 }
 #endif
 
+#if !defined(HAVE_EVP_CIPHER_CTX_COPY)
+/* 
+ * this function does not exist in OpenSSL yet... or ever?.
+ * a future version may break this function.
+ * tested on 0.9.7d.
+ */
+int
+EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in)
+{
+    memcpy(out, in, sizeof(EVP_CIPHER_CTX));
+
+#if defined(HAVE_ENGINE_ADD) && defined(HAVE_ST_ENGINE)
+    if (in->engine) ENGINE_add(out->engine);
+    if (in->cipher_data) {
+	out->cipher_data = OPENSSL_malloc(in->cipher->ctx_size);
+	memcpy(out->cipher_data, in->cipher_data, in->cipher->ctx_size);
+    }
+#endif
+
+    return 1;
+}
+#endif
+
 #if !defined(HAVE_X509_CRL_SET_VERSION)
 int
 X509_CRL_set_version(X509_CRL *x, long version)

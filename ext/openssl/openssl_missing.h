@@ -56,12 +56,32 @@ extern "C" {
 	(char *(*)())d2i_PKCS7_RECIP_INFO, (char *)ri)
 #endif
 
+void HMAC_CTX_init(HMAC_CTX *ctx);
 int HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in);
-void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
-int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
+void HMAC_CTX_cleanup(HMAC_CTX *ctx);
+
 EVP_MD_CTX *EVP_MD_CTX_create(void);
+void EVP_MD_CTX_init(EVP_MD_CTX *ctx);
 int EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx);
 void EVP_MD_CTX_destroy(EVP_MD_CTX *ctx);
+
+#if !defined(HAVE_EVP_CIPHER_CTX_COPY)
+int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
+#endif
+
+#if !defined(HAVE_EVP_DIGESTINIT_EX)
+#  define EVP_DigestInit_ex(ctx, md, engine) EVP_DigestInit(ctx, md)
+#endif
+#if !defined(HAVE_EVP_DIGESTFINAL_EX)
+#  define EVP_DigestFinal_ex(ctx, buf, len) EVP_DigestFinal(ctx, buf, len)
+#endif
+
+#if !defined(HAVE_EVP_CIPHERINIT_EX)
+#  define EVP_CipherInit_ex(ctx, type, impl, key, iv, enc) EVP_CipherInit(ctx, type, key, iv, enc)
+#endif
+#if !defined(HAVE_EVP_CIPHERFINAL_EX)
+#  define EVP_CipherFinal_ex(ctx, outm, outl) EVP_CipherFinal(ctx, outm, outl)
+#endif
 
 #if !defined(EVP_CIPHER_name)
 #  define EVP_CIPHER_name(e) OBJ_nid2sn(EVP_CIPHER_nid(e))
@@ -71,9 +91,9 @@ void EVP_MD_CTX_destroy(EVP_MD_CTX *ctx);
 #  define EVP_MD_name(e) OBJ_nid2sn(EVP_MD_type(e))
 #endif
 
-void EVP_MD_CTX_init(EVP_MD_CTX *ctx);
-void HMAC_CTX_init(HMAC_CTX *ctx);
-void HMAC_CTX_cleanup(HMAC_CTX *ctx);
+#if !defined(HAVE_EVP_HMAC_INIT_EX)
+#  define HMAC_Init_ex(ctx, key, len, digest, engine) HMAC_Init(ctx, key, len, digest)
+#endif
 
 #if !defined(PKCS7_is_detached)
 #  define PKCS7_is_detached(p7) (PKCS7_type_is_signed(p7) && PKCS7_get_detached(p7))
@@ -83,6 +103,8 @@ void HMAC_CTX_cleanup(HMAC_CTX *ctx);
 #  define PKCS7_type_is_encrypted(a) (OBJ_obj2nid((a)->type) == NID_pkcs7_encrypted)
 #endif
 
+void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
+int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
 int X509_CRL_set_version(X509_CRL *x, long version);
 int X509_CRL_set_issuer_name(X509_CRL *x, X509_NAME *name);
 int X509_CRL_sort(X509_CRL *c);

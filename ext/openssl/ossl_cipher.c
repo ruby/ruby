@@ -54,7 +54,7 @@ ossl_cipher_new(const EVP_CIPHER *cipher)
     ret = ossl_cipher_alloc(cCipher);
     GetCipher(ret, ctx);
     EVP_CIPHER_CTX_init(ctx);
-    if (EVP_CipherInit(ctx, cipher, NULL, NULL, -1) != 1)
+    if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
 
     return ret;
@@ -79,6 +79,7 @@ ossl_cipher_alloc(VALUE klass)
     VALUE obj;
 
     MakeCipher(obj, klass, ctx);
+    EVP_CIPHER_CTX_init(ctx);
 	
     return obj;
 }
@@ -97,9 +98,8 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     if (!(cipher = EVP_get_cipherbyname(name))) {
 	ossl_raise(rb_eRuntimeError, "Unsupported cipher algorithm (%s).", name);
     }
-    EVP_CIPHER_CTX_init(ctx);
-    if (EVP_CipherInit(ctx, cipher, NULL, NULL, -1) != 1)
-		ossl_raise(eCipherError, NULL);
+    if (EVP_CipherInit_ex(ctx, cipher, NULL, NULL, NULL, -1) != 1)
+	ossl_raise(eCipherError, NULL);
 
     return self;
 }
@@ -113,8 +113,8 @@ ossl_cipher_copy(VALUE self, VALUE other)
 
     GetCipher(self, ctx1);
     SafeGetCipher(other, ctx2);
-
-    memcpy(ctx1, ctx2, sizeof(EVP_CIPHER_CTX));
+    if (EVP_CIPHER_CTX_copy(ctx1, ctx2) != 1)
+	ossl_raise(eCipherError, NULL);
 
     return self;
 }
@@ -125,107 +125,92 @@ ossl_cipher_reset(VALUE self)
     EVP_CIPHER_CTX *ctx;
 
     GetCipher(self, ctx);
-    if (EVP_CipherInit(ctx, NULL, NULL, NULL, -1) != 1)
+    if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, NULL, -1) != 1)
 	ossl_raise(eCipherError, NULL);
 		
     return self;
 }
 
 static VALUE
-ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
+ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 {
     EVP_CIPHER_CTX *ctx;
-    unsigned char iv[EVP_MAX_IV_LENGTH], key[EVP_MAX_KEY_LENGTH];
+    unsigned char key[EVP_MAX_KEY_LENGTH], *p_key = NULL;
+    unsigned char iv[EVP_MAX_IV_LENGTH], *p_iv = NULL;
     VALUE pass, init_v;
 
     GetCipher(self, ctx);
-	
-    rb_scan_args(argc, argv, "02", &pass, &init_v);
-	
-    if (NIL_P(init_v)) {
+    if(rb_scan_args(argc, argv, "02", &pass, &init_v) > 0){
 	/*
-	 * TODO:
-	 * random IV generation!
-	 */ 
-	memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
-	/*
-	  RAND_add(data,i,0); where from take data?
-	  if (RAND_pseudo_bytes(iv, 8) < 0) {
-	  ossl_raise(eCipherError, NULL);
-	  }
-	*/
-    }
-    else {
-	init_v = rb_obj_as_string(init_v);
-	if (EVP_MAX_IV_LENGTH > RSTRING(init_v)->len) {
-	    memset(iv, 0, EVP_MAX_IV_LENGTH);
-	    memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
+	 * oops. this code mistakes salt for IV.
+	 * We deprecated the arguments for this method, but we decided
+	 * keeping this behaviour for backward compatibility.
+	 */
+	StringValue(pass);
+	if (NIL_P(init_v)) memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
+	else{
+	    char *cname  = rb_class2name(rb_obj_class(self));
+	    rb_warning("key derivation by %s#encrypt is deprecated; "
+		       "use %s::pkcs5_keyivgen instead", cname, cname);
+	    StringValue(init_v);
+	    if (EVP_MAX_IV_LENGTH > RSTRING(init_v)->len) {
+		memset(iv, 0, EVP_MAX_IV_LENGTH);
+		memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
+	    }
+	    else memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
 	}
-	else {
-	    memcpy(iv, RSTRING(init_v)->ptr, sizeof(iv));
-	}
+	EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), EVP_md5(), iv,
+		       RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
+	p_key = key;
+	p_iv = iv;
     }
-
-    if (EVP_CipherInit(ctx, NULL, NULL, NULL, 1) != 1) {
-        ossl_raise(eCipherError, NULL);
-    }
-
-    if (!NIL_P(pass)) {
-        StringValue(pass);
-
-        EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), EVP_md5(), iv,
-		   RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
-        if (EVP_CipherInit(ctx, NULL, key, iv, -1) != 1) {
-            ossl_raise(eCipherError, NULL);
-        }
+    if (EVP_CipherInit_ex(ctx, NULL, NULL, p_key, p_iv, mode) != 1) {
+	ossl_raise(eCipherError, NULL);
     }
 
     return self;
 }
 
 static VALUE
+ossl_cipher_encrypt(int argc, VALUE *argv, VALUE self)
+{
+    return ossl_cipher_init(argc, argv, self, 1);
+}
+
+static VALUE
 ossl_cipher_decrypt(int argc, VALUE *argv, VALUE self)
 {
+    return ossl_cipher_init(argc, argv, self, 0);
+}
+
+static VALUE
+ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
+{
     EVP_CIPHER_CTX *ctx;
-    unsigned char iv[EVP_MAX_IV_LENGTH], key[EVP_MAX_KEY_LENGTH];
-    VALUE pass, init_v;
-	
+    const EVP_MD *digest;
+    VALUE vpass, vsalt, viter, vdigest;
+    unsigned char key[EVP_MAX_KEY_LENGTH], iv[EVP_MAX_IV_LENGTH], *salt = NULL;
+    int iter;
+
     GetCipher(self, ctx);
-    rb_scan_args(argc, argv, "02", &pass, &init_v);
-
-    if (NIL_P(init_v)) {
-	/*
-	 * TODO:
-	 * random IV generation!
-	 */
-	memcpy(iv, "OpenSSL for Ruby rulez!", EVP_MAX_IV_LENGTH);
+    rb_scan_args(argc, argv, "13", &vpass, &vsalt, &viter, &vdigest);
+    StringValue(vpass);
+    if(!NIL_P(vsalt)){
+	StringValue(vsalt);
+	if(RSTRING(vsalt)->len != PKCS5_SALT_LEN)
+	    rb_raise(eCipherError, "salt must be an 8-octet string.");
+	salt = RSTRING(vsalt)->ptr;
     }
-    else {
-	init_v = rb_obj_as_string(init_v);
-	if (EVP_MAX_IV_LENGTH > RSTRING(init_v)->len) {
-	    memset(iv, 0, EVP_MAX_IV_LENGTH);
-	    memcpy(iv, RSTRING(init_v)->ptr, RSTRING(init_v)->len);
-	}
-	else {
-	    memcpy(iv, RSTRING(init_v)->ptr, EVP_MAX_IV_LENGTH);
-	}
-    }
+    iter = NIL_P(viter) ? 2048 : NUM2INT(viter);
+    digest = NIL_P(vdigest) ? EVP_md5() : GetDigestPtr(vdigest);
+    EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
+		   RSTRING(vpass)->ptr, RSTRING(vpass)->len, iter, key, iv); 
+    if (EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, -1) != 1)
+	ossl_raise(eCipherError, NULL);
+    OPENSSL_cleanse(key, sizeof key);
+    OPENSSL_cleanse(iv, sizeof iv);
 
-    if (EVP_CipherInit(ctx, NULL, NULL, NULL, 0) != 1) {
-        ossl_raise(eCipherError, NULL);
-    }
-
-    if (!NIL_P(pass)) {
-        StringValue(pass);
-
-        EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), EVP_md5(), iv,
-		   RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
-        if (EVP_CipherInit(ctx, NULL, key, iv, -1) != 1) {
-            ossl_raise(eCipherError, NULL);
-        }
-    }
-
-    return self;
+    return Qnil;
 }
 
 static VALUE 
@@ -250,6 +235,16 @@ ossl_cipher_update(VALUE self, VALUE data)
     return str;
 }
 
+static VALUE
+ossl_cipher_update_deprecated(VALUE self, VALUE data)
+{
+    char *cname;
+
+    cname = rb_class2name(rb_obj_class(self));
+    rb_warning("%s#<< is deprecated; use %s#update instead", cname, cname);
+    return ossl_cipher_update(self, data);
+}
+
 static VALUE 
 ossl_cipher_final(VALUE self)
 {
@@ -259,7 +254,7 @@ ossl_cipher_final(VALUE self)
 
     GetCipher(self, ctx);
     str = rb_str_new(0, EVP_CIPHER_CTX_block_size(ctx));
-    if (!EVP_CipherFinal(ctx, RSTRING(str)->ptr, &out_len))
+    if (!EVP_CipherFinal_ex(ctx, RSTRING(str)->ptr, &out_len))
 	ossl_raise(eCipherError, NULL);
     assert(out_len <= RSTRING(str)->len);
     RSTRING(str)->len = out_len;
@@ -289,7 +284,7 @@ ossl_cipher_set_key(VALUE self, VALUE key)
     if (RSTRING(key)->len < EVP_CIPHER_CTX_key_length(ctx))
         ossl_raise(eCipherError, "key length too short");
 
-    if (EVP_CipherInit(ctx, NULL, RSTRING(key)->ptr, NULL, -1) != 1)
+    if (EVP_CipherInit_ex(ctx, NULL, NULL, RSTRING(key)->ptr, NULL, -1) != 1)
         ossl_raise(eCipherError, NULL);
 
     return key;
@@ -306,22 +301,35 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
     if (RSTRING(iv)->len < EVP_CIPHER_CTX_iv_length(ctx))
         ossl_raise(eCipherError, "iv length too short");
 
-    if (EVP_CipherInit(ctx, NULL, NULL, RSTRING(iv)->ptr, -1) != 1)
-		ossl_raise(eCipherError, NULL);
+    if (EVP_CipherInit_ex(ctx, NULL, NULL, NULL, RSTRING(iv)->ptr, -1) != 1)
+	ossl_raise(eCipherError, NULL);
 
     return iv;
 }
 
 static VALUE
+ossl_cipher_set_key_length(VALUE self, VALUE key_length)
+{
+    EVP_CIPHER_CTX *ctx;
+ 
+    GetCipher(self, ctx);
+    if (EVP_CIPHER_CTX_set_key_length(ctx, NUM2INT(key_length)) != 1)
+        ossl_raise(eCipherError, NULL);
+
+    return key_length;
+}
+
+static VALUE
 ossl_cipher_set_padding(VALUE self, VALUE padding)
 {
-#if defined(HAVE_ST_FLAGS)
+#if defined(HAVE_EVP_CIPHER_CTX_SET_PADDING)
     EVP_CIPHER_CTX *ctx;
 
     GetCipher(self, ctx);
-
-    if (EVP_CIPHER_CTX_set_padding(ctx, NUM2INT(padding)) != 1)
-		ossl_raise(eCipherError, NULL);
+    if(rb_obj_is_kind_of(padding, rb_cInteger))
+	padding = NUM2INT(padding) ? Qtrue : Qfalse;
+    if (EVP_CIPHER_CTX_set_padding(ctx, RTEST(padding)) != 1)
+	ossl_raise(eCipherError, NULL);
 #else
     rb_notimplement();
 #endif
@@ -351,32 +359,21 @@ Init_ossl_cipher(void)
     cCipher = rb_define_class_under(mCipher, "Cipher", rb_cObject);
 
     rb_define_alloc_func(cCipher, ossl_cipher_alloc);
-    rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
-
     rb_define_copy_func(cCipher, ossl_cipher_copy);
-
+    rb_define_method(cCipher, "initialize", ossl_cipher_initialize, 1);
     rb_define_method(cCipher, "reset", ossl_cipher_reset, 0);
-
     rb_define_method(cCipher, "encrypt", ossl_cipher_encrypt, -1);
     rb_define_method(cCipher, "decrypt", ossl_cipher_decrypt, -1);
+    rb_define_method(cCipher, "pkcs5_keyivgen", ossl_cipher_pkcs5_keyivgen, -1);
     rb_define_method(cCipher, "update", ossl_cipher_update, 1);
-    rb_define_alias(cCipher, "<<", "update");
+    rb_define_method(cCipher, "<<", ossl_cipher_update_deprecated, 1);
     rb_define_method(cCipher, "final", ossl_cipher_final, 0);
-
     rb_define_method(cCipher, "name", ossl_cipher_name, 0);
-
     rb_define_method(cCipher, "key=", ossl_cipher_set_key, 1);
+    rb_define_method(cCipher, "key_len=", ossl_cipher_set_key_length, 1);
     rb_define_method(cCipher, "key_len", ossl_cipher_key_length, 0);
-/*
- * TODO
- * int EVP_CIPHER_CTX_set_key_length(EVP_CIPHER_CTX *x, int keylen);
- */
     rb_define_method(cCipher, "iv=", ossl_cipher_set_iv, 1);
     rb_define_method(cCipher, "iv_len", ossl_cipher_iv_length, 0);
-
     rb_define_method(cCipher, "block_size", ossl_cipher_block_size, 0);
-
     rb_define_method(cCipher, "padding=", ossl_cipher_set_padding, 1);
-
-} /* Init_ossl_cipher */
-
+}
