@@ -139,6 +139,18 @@ END:methods
 </div>
 ENDIF:methods
 
+
+START:sections
+    <div id="section">
+IF:sectitle
+      <h2 class="section-title"><a name="%secsequence%">%sectitle%</a></h2>
+IF:seccomment
+      <div class="section-comment">
+        %seccomment%
+      </div>      
+ENDIF:seccomment
+ENDIF:sectitle
+
 IF:attributes
 <table cellpadding=5 width="100%">
 <tr><td class="tablesubtitle">Attributes</td></tr>
@@ -167,6 +179,8 @@ IF:classlist
 ENDIF:classlist
 
   !INCLUDE!  <!-- method descriptions -->
+
+END:sections
 
 </body>
 </html>

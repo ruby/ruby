@@ -1,3 +1,8 @@
+Wed Dec 29 11:07:07 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/template/html/kilmer.rb: Update to use new
+	  sections.
+
 Tue Dec 28 22:31:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_justify): create buffer string after argument type
@@ -57,6 +62,7 @@ Mon Dec 27 14:36:20 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* process.c (NUM2RLIM, RLIM2NUM): Without SIZEOF_RLIM_T is not error.
 	  fixed: [ruby-dev:25346]
 
+>>>>>>> 1.3892
 Sun Dec 26 16:21:39 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (Net::IMAP::PlainAuthenticator): added a new class
