@@ -918,7 +918,7 @@ bigdivrem(x, y, divp, modp)
     if (modp) {			/* just normalize remainder */
 	*modp = rb_big_clone(z);
 	zds = BDIGITS(*modp);
-	while (!zds[ny-1]) ny--;
+	while (ny-- && !zds[ny-1]) ;
 	if (dd) {
 	    t2 = 0; i = ny;
 	    while(i--) {
