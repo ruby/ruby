@@ -107,13 +107,11 @@ void rb_define_singleton_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
 void rb_define_private_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
 VALUE rb_singleton_class _((VALUE));
 /* enum.c */
-VALUE rb_enum_length _((VALUE));
 /* error.c */
 EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));
 VALUE rb_exc_new2 _((VALUE, const char*));
 VALUE rb_exc_new3 _((VALUE, VALUE));
-void rb_stack_check _((void));
 NORETURN(void rb_loaderror __((const char*, ...)));
 NORETURN(void rb_name_error __((VALUE id, const char*, ...)));
 void rb_compile_error __((const char*, ...));
@@ -191,6 +189,8 @@ void rb_file_const _((const char*, VALUE));
 int rb_find_file_ext _((VALUE*, const char* const*));
 VALUE rb_find_file _((VALUE));
 /* gc.c */
+void ruby_stack_check _((void));
+int ruby_stack_length _((VALUE**));
 void rb_gc_mark_locations _((VALUE*, VALUE*));
 void rb_mark_tbl _((struct st_table*));
 void rb_mark_hash _((struct st_table*));
@@ -259,12 +259,12 @@ VALUE rb_Array _((VALUE));
 /* parse.y */
 EXTERN int   ruby_sourceline;
 EXTERN char *ruby_sourcefile;
-#define yyparse rb_yyparse
-#define yylex rb_yylex
-#define yyerror rb_yyerror
-#define yylval rb_yylval
-#define yychar rb_yychar
-#define yydebug rb_yydebug
+#define yyparse ruby_yyparse
+#define yylex ruby_yylex
+#define yyerror ruby_yyerror
+#define yylval ruby_yylval
+#define yychar ruby_yychar
+#define yydebug ruby_yydebug
 int yyparse _((void));
 ID rb_id_attrset _((ID));
 void rb_parser_append_print _((void));
@@ -280,6 +280,7 @@ void rb_lastline_set _((VALUE));
 VALUE rb_sym_all_symbols _((void));
 /* process.c */
 int rb_proc_exec _((const char*));
+VALUE rb_f_exec _((int,VALUE*));
 int rb_waitpid _((int,int*,int));
 void rb_syswait _((int));
 VALUE rb_proc_times _((VALUE));

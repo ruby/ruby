@@ -1,6 +1,7 @@
 #include	"config.h"
 #include	<stdio.h>
 #include	<sys/types.h>
+#include	<sys/stat.h>
 #include	<sys/file.h>
 #include	<fcntl.h>
 #include	<errno.h>
@@ -31,6 +32,7 @@
 
 #if !defined(HAVE_OPENPTY)
 #ifdef __hpux
+static
 char	*MasterDevice = "/dev/ptym/pty%s",
 	*SlaveDevice =  "/dev/pty/tty%s",
 	*deviceNo[] = {
@@ -54,6 +56,7 @@ char	*MasterDevice = "/dev/ptym/pty%s",
 	};
 #else  /* NOT HPUX */
 #ifdef _IBMESA  /* AIX/ESA */
+static 
 char	*MasterDevice = "/dev/ptyp%s",
   	*SlaveDevice = "/dev/ttyp%s",
 	*deviceNo[] = {
@@ -75,6 +78,7 @@ char	*MasterDevice = "/dev/ptyp%s",
 "f0","f1","f2","f3","f4","f5","f6","f7","f8","f9","fa","fb","fc","fd","fe","ff",
 		};
 #else
+static 
 char	*MasterDevice = "/dev/pty%s",
 	*SlaveDevice = "/dev/tty%s",
 	*deviceNo[] = {
@@ -90,7 +94,7 @@ char	*MasterDevice = "/dev/pty%s",
 #endif /* HPUX */
 #endif /* !defined(HAVE_OPENPTY) */
 
-char	SlaveName[DEVICELEN];
+static char SlaveName[DEVICELEN];
 
 extern int errno;
 
@@ -107,64 +111,69 @@ extern int errno;
 #endif /* NO_SETEUID */
 
 struct pty_info {
-  int fd;
-  pid_t child_pid;
+    int fd;
+    pid_t child_pid;
+    VALUE thread;
 };
 
 static void
-pty_raise(cpid)
+pty_raise(thread, cpid, stop)
+    VALUE thread;
     int cpid;
+    int stop;
 {
     char buf[1024];
 
-    snprintf(buf, sizeof(buf),
-	     "eval %%Q{Thread.main.raise 'pty - stopped: %d'}, nil, \"%s\", %d",
-	     cpid, ruby_sourcefile, ruby_sourceline);
-    rb_eval_string(buf);
+    snprintf(buf, sizeof(buf), "pty - %s: %d", stop ? "stopped" : "changed", cpid);
+    rb_funcall(thread, rb_intern("raise"), 1, rb_str_new2(buf));
 }
 
 static VALUE
-pty_syswait(pid)
-    int pid;
+pty_syswait(info)
+    struct pty_info *info;
 {
     int cpid, status;
 
-    cpid = rb_waitpid(pid, &status, WUNTRACED);
-
-    printf("PTY command (%d) finished (%d:%d)\n", pid, cpid, status);
+    cpid = rb_waitpid(info->child_pid, &status, WUNTRACED);
+    printf("cpid: %d (%d)\n", cpid, status);
+    
     if (cpid == 0 || cpid == -1)
 	return Qnil;
 
 #ifdef IF_STOPPED
     if (IF_STOPPED(status)) { /* suspend */
-	pty_raise(cpid);
+	pty_raise(info->thread, cpid, Qtrue);
     }
 #else
 #ifdef WIFSTOPPED
     if (WIFSTOPPED(status)) { /* suspend */
-	pty_raise(cpid);
+	pty_raise(info->thread, cpid, Qtrue);
     }
 #else
 ---->> Either IF_STOPPED or WIFSTOPPED is needed <<----
 #endif /* WIFSTOPPED */
 #endif /* IF_STOPPED */
     
+    pty_raise(info->thread, cpid, Qfalse);
     return Qnil;
 }
 
 static void getDevice _((int*, int*));
 
 static void
-establishShell(shellname, info)
-    char *shellname;
+establishShell(argc, argv, info)
+    int argc;
+    VALUE *argv;
     struct pty_info *info;
 {	
-    static int		i,j,master,slave,currentPid;
+    static int		i,master,slave,currentPid;
     char		*p,*getenv();
     struct passwd	*pwent;
-    RETSIGTYPE		chld_changed();
-    
-    if (shellname[0] == '\0') {
+    VALUE v;
+
+    if (argc == 0) {
+	char *shellname;
+
 	if ((p = getenv("SHELL")) != NULL) {
 	    shellname = p;
 	}
@@ -175,17 +184,20 @@ establishShell(shellname, info)
 	    else
 		shellname = "/bin/sh";
 	}
+	v = rb_str_new2(shellname);
+	argc = 1;
+	argv = &v;
     }
     getDevice(&master,&slave);
 
     currentPid = getpid();
-    if((i = vfork()) < 0) {
+    if((i = fork()) < 0) {
 	rb_sys_fail("fork failed");
     }
 
     if(i == 0) {	/* child */
-	int argc;
-	char *argv[1024];
+	/* int argc;
+	   char *argv[1024]; */
 	currentPid = getpid();	
 
 	/*
@@ -232,23 +244,11 @@ establishShell(shellname, info)
 	dup2(slave,1);
 	dup2(slave,2);
 	close(slave);
-
 #if defined(HAVE_SETEUID) || defined(HAVE_SETREUID) || defined(HAVE_SETRESUID)
 	seteuid(getuid());
 #endif
 
-	argc = 0;
-	for (i = 0; shellname[i];) {
-	    while (isspace(shellname[i])) i++;
-	    for (j = i; shellname[j] && !isspace(shellname[j]); j++);
-	    argv[argc] = (char*)xmalloc(j-i+1);
-	    strncpy(argv[argc],&shellname[i],j-i);
-	    argv[argc][j-i] = 0;
-	    i = j;
-	    argc++;
-	}
-	argv[argc] = NULL;
-	execvp(argv[0],argv);
+	rb_f_exec(argc, argv);
 	sleep(1);
 	_exit(1);
     }
@@ -361,8 +361,10 @@ freeDevice()
 
 /* ruby function: getpty */
 static VALUE
-pty_getpty(self, command)
-    VALUE self, command;
+pty_getpty(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
 {
     VALUE res, th;
     struct pty_info info;
@@ -373,35 +375,28 @@ pty_getpty(self, command)
     MakeOpenFile(rport, rfptr);
     MakeOpenFile(wport, wfptr);
 
-    if (TYPE(command) == T_ARRAY)
-	command = rb_ary_join(command,rb_str_new2(" "));
-    Check_SafeStr(command);
-
-    establishShell(RSTRING(command)->ptr,&info);
+    establishShell(argc, argv, &info);
 
     rfptr->mode = rb_io_mode_flags("r");
     rfptr->f = fdopen(info.fd, "r");
-    rfptr->path = strdup(RSTRING(command)->ptr);
+    rfptr->path = 0; /*strdup(RSTRING(command)->ptr); */
 
     wfptr->mode = rb_io_mode_flags("w");
     wfptr->f = fdopen(dup(info.fd), "w");
-    wfptr->path = strdup(RSTRING(command)->ptr);
+    wfptr->path = 0; /* strdup(RSTRING(command)->ptr); */
 
     res = rb_ary_new2(3);
     rb_ary_store(res,0,(VALUE)rport);
     rb_ary_store(res,1,(VALUE)wport);
     rb_ary_store(res,2,INT2FIX(info.child_pid));
 
-    printf("start watching PTY command (%d)\n", info.child_pid);
-    th = rb_thread_create(pty_syswait, (void*)info.child_pid);
+    info.thread = rb_thread_current();
+    th = rb_thread_create(pty_syswait, (void*)&info);
     if (rb_block_given_p()) {
 	res = rb_yield((VALUE)res);
 	rb_funcall(th, rb_intern("kill"), 0, 0);
-	return res;
     }
-    else {
-	return res;
-    }
+    return res;
 }
 
 /* ruby function: protect_signal - obsolete */
@@ -429,8 +424,8 @@ void
 Init_pty()
 {
     cPTY = rb_define_module("PTY");
-    rb_define_module_function(cPTY,"getpty",pty_getpty,1);
-    rb_define_module_function(cPTY,"spawn",pty_getpty,1);
+    rb_define_module_function(cPTY,"getpty",pty_getpty,-1);
+    rb_define_module_function(cPTY,"spawn",pty_getpty,-1);
     rb_define_module_function(cPTY,"protect_signal",pty_protect,0);
     rb_define_module_function(cPTY,"reset_signal",pty_reset_signal,0);
 }

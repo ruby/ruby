@@ -132,7 +132,7 @@ class PStore
     ensure
       @table = nil
       @transaction = false
-      file.close
+      file.close if file
     end
     value
   end

@@ -303,7 +303,7 @@ rb_hash_fetch(argc, argv, hash)
     if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
 	if (rb_block_given_p()) {
 	    if (argc > 1) {
-		rb_raise(rb_eArgError, "wrong # of arguments", argc);
+		rb_raise(rb_eArgError, "wrong number of arguments", argc);
 	    }
 	    return rb_yield(key);
 	}
@@ -928,7 +928,7 @@ env_fetch(argc, argv)
     if (!env) {
 	if (rb_block_given_p()) {
 	    if (argc > 1) {
-		rb_raise(rb_eArgError, "wrong # of arguments", argc);
+		rb_raise(rb_eArgError, "wrong number of arguments", argc);
 	    }
 	    return rb_yield(key);
 	}

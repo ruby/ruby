@@ -10,6 +10,8 @@
 
 **********************************************************************/
 
+#include <math.h>
+
 #include "ruby.h"
 #include "rubyio.h"
 #include "st.h"
@@ -52,7 +54,7 @@ shortlen(len, ds)
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   6
+#define MARSHAL_MINOR   7
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -185,7 +187,17 @@ w_float(d, arg)
 {
     char buf[100];
 
-    sprintf(buf, "%.16g", d);
+    if (isinf(d)) {
+	if (d < 0) strcpy(buf, "-inf");
+	else       strcpy(buf, "inf");
+    }
+    else if (isnan(d)) {
+	strcpy(buf, "nan");
+    }
+    else {
+	/* xxx: should not use system's sprintf(3) */
+	sprintf(buf, "%.16g", d);
+    }
     w_bytes(buf, strlen(buf), arg);
 }
 
@@ -832,9 +844,23 @@ r_object(arg)
       case TYPE_FLOAT:
 	{
 	    char *buf;
+	    double d, t = 0.0;
 
 	    r_bytes(buf, arg);
-	    v = rb_float_new(strtod(buf, 0));
+	    if (strcmp(buf, "nan") == 0) {
+		d = t / t;
+	    }
+	    else if (strcmp(buf, "inf") == 0) {
+		d = 1.0 / t;
+	    }
+	    else if (strcmp(buf, "-inf") == 0) {
+		d = -1.0 / t;
+	    }
+	    else {
+		/* xxx: should not use system's strtod(3) */
+		d = strtod(buf, 0);
+	    }
+	    v = rb_float_new(d);
 	    return r_regist(v, arg);
 	}
 

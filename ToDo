@@ -31,7 +31,7 @@ Language Spec.
 * method combination, e.g. before, after, around, etc.
 * .. or something like defadvice in Emacs.
 * property - for methods, or for objects in general.
-* in modifier, to annotate, or to encourage assertion.
+* "in" modifier, to annotate, or to encourage assertion.
 * selector namespace - something like generic-flet in CLOS, to help RubyBehevior
 
 Hacking Interpreter
@@ -70,6 +70,7 @@ Standard Libraries
 - Enumerable#sort_by for Schwartzian transformation
 - fork_and_kill_other_threads.
 - signal list (Signal::trap, Signal::list).
+- move NameError under StandardError.
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}
@@ -88,12 +89,13 @@ Standard Libraries
 * Hash::new{default} or recommend Hash#fetch?
 * new user-defined marshal scheme. _dump(dumper), _load(restorer)
 * hash etc. should handle self referenceing array/hash
-* move NameError under StandardError.
 * library to load per-user profile seeking .ruby_profile or ruby.ini file.
 * warning framework (warn, warning for Ruby level)
 * marshal should not depend on sprintf/strtod (works bad for locale).
 * ternary arg pow: a.pow(b,c) == a**b%c
 * new caller(), e.g. call_stack; needs better name.
+* remove dependency on MAXPATHLEN.
+* pointer share mechanism similar to one in String for Array.
 
 Extension Libraries
 

@@ -734,7 +734,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if (ISDIGIT(*p)) {
 	n = *p - '0';
 	if (n > argc)
-	    rb_raise(rb_eArgError, "wrong # of arguments (%d for %d)", argc, n);
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, n);
 	for (i=0; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
 	    if (var) *var = argv[i];
@@ -789,7 +789,7 @@ rb_scan_args(argc, argv, fmt, va_alist)
     }
 
     if (argc > i) {
-	rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, i);
+	rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)", argc, i);
     }
 
     return argc;

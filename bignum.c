@@ -10,9 +10,9 @@
 
 **********************************************************************/
 
-#include "ruby.h"
 #include <math.h>
 #include <ctype.h>
+#include "ruby.h"
 
 VALUE rb_cBignum;
 
@@ -397,9 +397,7 @@ rb_big2str(x, base)
 	hbase = 020;
     }
     else {
-	j = 0;
-	hbase = 0;
-	rb_raise(rb_eArgError, "Bignum cannot treat base %d", base);
+	rb_raise(rb_eArgError, "illegal radix %d", base);
     }
 
     t = rb_big_clone(x);
@@ -435,10 +433,18 @@ rb_big2str(x, base)
 }
 
 static VALUE
-rb_big_to_s(x)
+rb_big_to_s(argc, argv, x)
+    int argc;
+    VALUE *argv;
     VALUE x;
 {
-    return rb_big2str(x, 10);
+    VALUE b;
+    int base;
+
+    rb_scan_args(argc, argv, "01", &b);
+    if (argc == 0) base = 10;
+    else base = NUM2INT(b);
+    return rb_big2str(x, base);
 }
 
 static unsigned long
@@ -1442,7 +1448,7 @@ Init_Bignum()
 {
     rb_cBignum = rb_define_class("Bignum", rb_cInteger);
 
-    rb_define_method(rb_cBignum, "to_s", rb_big_to_s, 0);
+    rb_define_method(rb_cBignum, "to_s", rb_big_to_s, -1);
     rb_define_method(rb_cBignum, "coerce", rb_big_coerce, 1);
     rb_define_method(rb_cBignum, "-@", rb_big_uminus, 0);
     rb_define_method(rb_cBignum, "+", rb_big_plus, 1);

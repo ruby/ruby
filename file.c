@@ -1301,7 +1301,7 @@ rb_file_s_umask(argc, argv)
 	omask = umask(NUM2INT(argv[0]));
     }
     else {
-	rb_raise(rb_eArgError, "wrong # of argument");
+	rb_raise(rb_eArgError, "wrong number of argument");
     }
     return INT2FIX(omask);
 }
@@ -1742,7 +1742,7 @@ test_check(n, argc, argv)
     int i;
 
     n+=1;
-    if (n != argc) rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, n);
+    if (n != argc) rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)", argc, n);
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:
@@ -1766,7 +1766,7 @@ rb_f_test(argc, argv)
 {
     int cmd;
 
-    if (argc == 0) rb_raise(rb_eArgError, "wrong # of arguments");
+    if (argc == 0) rb_raise(rb_eArgError, "wrong number of arguments");
 #if 0 /* 1.7 behavior? */
     if (argc == 1) {
 	return RTEST(argv[0]) ? Qtrue : Qfalse;

@@ -18,9 +18,7 @@ $r_pty = nil
 $w_pty = nil
 
 def writer
-  PTY.protect_signal do
-    system "stty -echo raw"
-  end
+  system "stty -echo raw"
   begin
     while true
       c = STDIN.getc
@@ -35,9 +33,7 @@ def writer
     $reader.raise(nil)
     return 'Exit'
   ensure
-    PTY.protect_signal do
-      system "stty echo -raw"
-    end
+    system "stty echo -raw"
   end
 end
 

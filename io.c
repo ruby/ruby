@@ -2206,6 +2206,11 @@ rb_io_puts(argc, argv, out)
 	    line = rb_str_new2("nil");
 	}
 	else {
+#if 0
+	    if (TYPE(argv[i]) == T_ARRAY) {
+		rb_warn("puts behavior changed for Array");
+	    }
+#endif
 	    line = rb_obj_as_string(argv[i]);
 	}
 	rb_io_write(out, line);

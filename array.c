@@ -305,7 +305,7 @@ rb_ary_push_m(argc, argv, ary)
     VALUE ary;
 {
     if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong # of arguments(at least 1)");
+	rb_raise(rb_eArgError, "wrong number arguments(at least 1)");
     }
     if (argc > 0) {
 	while (argc--) {
@@ -380,7 +380,7 @@ rb_ary_unshift_m(argc, argv, ary)
     VALUE ary;
 {
     if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong # of arguments(at least 1)");
+	rb_raise(rb_eArgError, "wrong number of arguments(at least 1)");
     }
     if (argc > 0) {
 	long len = RARRAY(ary)->len;
@@ -652,7 +652,7 @@ rb_ary_aset(argc, argv, ary)
 	return argv[2];
     }
     if (argc != 2) {
-	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments(%d for 2)", argc);
     }
     if (FIXNUM_P(argv[0])) {
 	offset = FIX2LONG(argv[0]);
@@ -682,7 +682,7 @@ rb_ary_insert(argc, argv, ary)
     long pos;
 
     if (argc < 2) {
-	rb_raise(rb_eArgError, "wrong # of arguments(at least 2)");
+	rb_raise(rb_eArgError, "wrong number of arguments(at least 2)");
     }
     pos = NUM2LONG(argv[0]);
     if (pos == -1) {
@@ -774,6 +774,7 @@ rb_ary_dup(ary)
 }
 
 extern VALUE rb_output_fs;
+extern VALUE rb_default_rs;
 
 static VALUE
 inspect_join(ary, arg)
@@ -856,11 +857,12 @@ VALUE
 rb_ary_to_s(ary)
     VALUE ary;
 {
-    VALUE str;
+    VALUE str, sep;
 
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
-    str = rb_ary_join(ary, rb_output_fs);
-    if (NIL_P(str)) return rb_str_new(0, 0);
+    if (!NIL_P(rb_output_fs)) sep = rb_output_fs;
+    else sep = rb_default_rs;
+    str = rb_ary_join(ary, sep);
     return str;
 }
 

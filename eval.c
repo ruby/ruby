@@ -91,10 +91,6 @@ struct timeval {
 #include <sys/select.h>
 #endif
 
-#ifdef HAVE_SYS_RESOURCE_H
-#include <sys/resource.h>
-#endif
-
 #include <sys/stat.h>
 
 VALUE rb_cProc;
@@ -500,7 +496,6 @@ extern NODE *ruby_eval_tree;
 extern int ruby_nerrs;
 
 static VALUE rb_eLocalJumpError;
-static VALUE rb_eSysStackError;
 
 extern VALUE ruby_top_self;
 
@@ -3055,7 +3050,7 @@ rb_eval(self, n)
 
       case NODE_ATTRSET:
 	if (ruby_frame->argc != 1)
-	    rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)",
+	    rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)",
 		     ruby_frame->argc);
 	result = rb_ivar_set(self, node->nd_vid, ruby_frame->argv[0]);
 	break;
@@ -3587,7 +3582,7 @@ rb_f_raise(argc, argv)
 	mesg = rb_funcall(argv[0], exception, n, argv[1]);
 	break;
       default:
-	rb_raise(rb_eArgError, "wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments");
 	break;
     }
     if (argc > 0) {
@@ -3685,13 +3680,13 @@ rb_yield_0(val, self, klass, pcall)
 	if ((state = EXEC_TAG()) == 0) {
 	    if (block->var == (NODE*)1) {
 		if (pcall && RARRAY(val)->len != 0) {
-		    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)",
+		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
 	    else if (block->var == (NODE*)2) {
 		if (TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
-		    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)",
+		    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)",
 			     RARRAY(val)->len);
 		}
 	    }
@@ -3850,7 +3845,7 @@ massign(self, node, val, pcall)
 	i++;
 	list = list->nd_next;
     }
-    rb_raise(rb_eArgError, "wrong # of arguments (%d for %d)", len, i);
+    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", len, i);
 }
 
 static void
@@ -4164,7 +4159,7 @@ rb_f_missing(argc, argv, obj)
 	rb_raise(rb_eArgError, "no id given");
     }
 
-    rb_stack_check();
+    ruby_stack_check();
 
     id = SYM2ID(argv[0]);
 
@@ -4255,57 +4250,6 @@ rb_undefined(obj, id, argc, argv, call_status)
     return rb_funcall2(obj, missing, argc+1, nargv);
 }
 
-#ifdef DJGPP
-static unsigned int STACK_LEVEL_MAX = 65535;
-#else
-#ifdef __human68k__
-extern unsigned int _stacksize;
-# define STACK_LEVEL_MAX (_stacksize - 4096)
-# undef HAVE_GETRLIMIT
-#else
-#ifdef HAVE_GETRLIMIT
-static unsigned int STACK_LEVEL_MAX = 655300;
-#else
-# define STACK_LEVEL_MAX 655300
-#endif
-#endif
-#endif
-
-extern VALUE *rb_gc_stack_start;
-static int
-stack_length(p)
-    VALUE **p;
-{
-#ifdef C_ALLOCA
-    VALUE stack_end;
-    alloca(0);
-# define STACK_END (&stack_end)
-#else
-# if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS)
-    VALUE *stack_end = __builtin_frame_address(0);
-# else
-    VALUE *stack_end = alloca(1);
-# endif
-# define STACK_END (stack_end)
-#endif
-    if (p) *p = STACK_END;
-
-#ifdef __sparc__
-    return rb_gc_stack_start - STACK_END + 0x80;
-#else
-    return (STACK_END < rb_gc_stack_start) ? rb_gc_stack_start - STACK_END
-	                                   : STACK_END - rb_gc_stack_start;
-#endif
-}
-
-void
-rb_stack_check()
-{
-    if (stack_length(0) > STACK_LEVEL_MAX) {
-	rb_raise(rb_eSysStackError, "stack level too deep");
-    }
-}
-
 static VALUE
 call_cfunc(func, recv, len, argc, argv)
     VALUE (*func)();
@@ -4314,7 +4258,7 @@ call_cfunc(func, recv, len, argc, argv)
     VALUE *argv;
 {
     if (len >= 0 && argc != len) {
-	rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)",
+	rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
 		 argc, len);
     }
 
@@ -4421,7 +4365,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
     if ((++tick & 0xff) == 0) {
 	CHECK_INTS;		/* better than nothing */
-	rb_stack_check();
+	ruby_stack_check();
     }
     PUSH_ITER(itr);
     PUSH_FRAME();
@@ -4468,7 +4412,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	/* for attr get/set */
       case NODE_IVAR:
 	if (argc != 0) {
-	    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)", argc);
+	    rb_raise(rb_eArgError, "wrong number of arguments(%d for 0)", argc);
 	}
       case NODE_ATTRSET:
 	/* for re-scoped/renamed method */
@@ -4532,7 +4476,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
 		    i = node->nd_cnt;
 		    if (i > argc) {
-			rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)",
+			rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
 				 argc, i);
 		    }
 		    if (node->nd_rest == -1) {
@@ -4544,7 +4488,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 			    optnode = optnode->nd_next;
 			}
 			if (opt < argc) {
-			    rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)",
+			    rb_raise(rb_eArgError, "wrong number of arguments(%d for %d)",
 				     argc, opt);
 			}
 			ruby_frame->argc = opt;
@@ -5212,7 +5156,7 @@ specific_eval(argc, argv, klass, self)
 {
     if (rb_block_given_p()) {
 	if (argc > 0) {
-	    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)", argc);
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
 	return yield_under(klass, self);
     }
@@ -5231,7 +5175,7 @@ specific_eval(argc, argv, klass, self)
 		SafeStringValue(argv[0]);
 	    }
 	    if (argc > 3) {
-		rb_raise(rb_eArgError, "wrong # of arguments: %s(src) or %s{..}",
+		rb_raise(rb_eArgError, "wrong number of arguments: %s(src) or %s{..}",
 			 rb_id2name(ruby_frame->last_func),
 			 rb_id2name(ruby_frame->last_func));
 	    }
@@ -5824,7 +5768,7 @@ rb_obj_extend(argc, argv, obj)
     int i;
 
     if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong # of arguments(0 for 1)");
+	rb_raise(rb_eArgError, "wrong number of arguments(0 for 1)");
     }
     for (i=0; i<argc; i++) Check_Type(argv[i], T_MODULE);
     for (i=0; i<argc; i++) {
@@ -6102,19 +6046,6 @@ Init_eval()
     rb_global_variable(&trace_func);
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
-
-#ifdef HAVE_GETRLIMIT
-    {
-	struct rlimit rlim;
-
-	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
-	    double space = (double)rlim.rlim_cur*0.2;
-
-	    if (space > 1024*1024) space = 1024*1024;
-	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
-	}
-    }
-#endif
 }
 
 VALUE rb_f_autoload();
@@ -6992,7 +6923,7 @@ rb_mod_define_method(argc, argv, mod)
 	body = argv[1];
     }
     else {
-	rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)", argc);
+	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
     }
     if (TYPE(body) != T_DATA) {
 	/* type error */
@@ -7017,7 +6948,6 @@ void
 Init_Proc()
 {
     rb_eLocalJumpError = rb_define_class("LocalJumpError", rb_eStandardError);
-    rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 
     rb_cProc = rb_define_class("Proc", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cProc), "allocate");
@@ -7321,6 +7251,8 @@ static char *th_signm;
 #define RESTORE_RAISE		5
 #define RESTORE_SIGNAL		6
 
+extern VALUE *rb_gc_stack_start;
+
 static void
 rb_thread_save_context(th)
     rb_thread_t th;
@@ -7329,7 +7261,7 @@ rb_thread_save_context(th)
     int len;
     static VALUE tval;
 
-    len = stack_length(&pos);
+    len = ruby_stack_length(&pos);
     th->stk_len = 0;
     th->stk_pos = (rb_gc_stack_start<pos)?rb_gc_stack_start
 				         :rb_gc_stack_start - len;
@@ -7856,6 +7788,9 @@ rb_thread_wait_for(time)
 	    if (n < 0) {
 		switch (errno) {
 		  case EINTR:
+#ifdef ERESTART
+		  case ERESTART:
+#endif
 		    return;
 		  default:
 		    rb_sys_fail("sleep");
@@ -7927,14 +7862,22 @@ rb_thread_select(max, read, write, except, timeout)
 	    TRAP_BEG;
 	    n = select(max, read, write, except, tvp);
 	    TRAP_END;
-	    if (n < 0 && errno == EINTR) {
-		if (timeout) {
-		    double d = timeofday() - limit;
+	    if (n < 0) {
+		switch (errno) {
+		  case EINTR:
+#ifdef ERESTART
+		  case ERESTART:
+#endif
+		    if (timeout) {
+			double d = timeofday() - limit;
 
-		    tv.tv_sec = (unsigned int)d;
-		    tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);
+			tv.tv_sec = (unsigned int)d;
+			tv.tv_usec = (long)((d-(double)tv.tv_sec)*1e6);
+		    }
+		    continue;
+		  default:
+		    break;
 		}
-		continue;
 	    }
 	    return n;
 	}
@@ -7943,8 +7886,14 @@ rb_thread_select(max, read, write, except, timeout)
 	    TRAP_BEG;
 	    n = select(max, read, write, except, timeout);
 	    TRAP_END;
-	    if (n < 0 && errno == EINTR) {
-		continue;
+	    if (n < 0) {
+		switch (errno) {
+		  case EINTR:
+#ifdef ERESTART
+		  case ERESTART:
+#endif
+		    continue;
+		}
 	    }
 	    return n;
 	}

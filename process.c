@@ -673,7 +673,7 @@ proc_spawn(sv)
 }
 #endif /* __human68k__ */
 
-static VALUE
+VALUE
 rb_f_exec(argc, argv)
     int argc;
     VALUE *argv;
@@ -681,7 +681,7 @@ rb_f_exec(argc, argv)
     VALUE prog = 0;
 
     if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -804,7 +804,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -828,7 +828,7 @@ rb_f_system(argc, argv)
 
     if (argc == 0) {
 	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -856,7 +856,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -884,7 +884,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = Qnil;
-	rb_raise(rb_eArgError, "wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -948,7 +948,7 @@ rb_f_sleep(argc, argv)
 	rb_thread_wait_for(rb_time_interval(argv[0]));
     }
     else {
-	rb_raise(rb_eArgError, "wrong # of arguments");
+	rb_raise(rb_eArgError, "wrong number of arguments");
     }
 
     end = time(0) - beg;

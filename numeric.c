@@ -960,17 +960,30 @@ rb_fix2str(x, base)
     if (base == 10) fmt[2] = 'd';
     else if (base == 16) fmt[2] = 'x';
     else if (base == 8) fmt[2] = 'o';
-    else rb_fatal("fixnum cannot treat base %d", base);
+    else rb_raise(rb_eArgError, "illegal radix %d", base);
 
     sprintf(buf, fmt, FIX2LONG(x));
     return rb_str_new2(buf);
 }
 
 static VALUE
-fix_to_s(in)
-    VALUE in;
+fix_to_s(argc, argv, x)
+    int argc;
+    VALUE *argv;
+    VALUE x;
 {
-    return rb_fix2str(in, 10);
+    VALUE b;
+    int base;
+
+    rb_scan_args(argc, argv, "01", &b);
+    if (argc == 0) base = 10;
+    else base = NUM2INT(b);
+
+    if (base == 2) {
+	/* rb_fix2str() does not handle binary */
+	return rb_big2str(rb_int2big(FIX2INT(x)), 2);
+    }
+    return rb_fix2str(x, base);
 }
 
 static VALUE
@@ -1343,13 +1356,6 @@ fix_to_f(num)
 }
 
 static VALUE
-fix_type(fix)
-    VALUE fix;
-{
-    return rb_cFixnum;
-}
-
-static VALUE
 fix_abs(fix)
     VALUE fix;
 {
@@ -1606,8 +1612,7 @@ Init_Numeric()
     rb_define_singleton_method(rb_cFixnum, "induced_from", rb_fix_induced_from, 1);
     rb_define_singleton_method(rb_cInteger, "induced_from", rb_int_induced_from, 1);
 
-    rb_define_method(rb_cFixnum, "to_s", fix_to_s, 0);
-    rb_define_method(rb_cFixnum, "type", fix_type, 0);
+    rb_define_method(rb_cFixnum, "to_s", fix_to_s, -1);
 
     rb_define_method(rb_cFixnum, "id2name", fix_id2name, 0);
 

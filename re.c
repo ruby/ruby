@@ -1013,7 +1013,7 @@ rb_reg_initialize_m(argc, argv, self)
     int flags = 0;
 
     if (argc == 0 || argc > 3) {
-	rb_raise(rb_eArgError, "wrong # of argument");
+	rb_raise(rb_eArgError, "wrong number of argument");
     }
     if (argc >= 2) {
 	if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);

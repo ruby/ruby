@@ -21,6 +21,10 @@
 #include <stdio.h>
 #include <setjmp.h>
 
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
 void re_free_registers _((struct re_registers*));
 void rb_io_fptr_finalize _((struct OpenFile*));
 
@@ -345,70 +349,20 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 extern st_table *rb_class_tbl;
 VALUE *rb_gc_stack_start = 0;
 
-
-#define MARK_STACK_MAX 1024
-static VALUE mark_stack[MARK_STACK_MAX];
-static VALUE *mark_stack_ptr;
-static int mark_stack_overflow;
-
-static void
-init_mark_stack()
-{
-    mark_stack_overflow = 0;
-    mark_stack_ptr = mark_stack;
-    memset(mark_stack, 0, MARK_STACK_MAX);
-}
-
-#define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
-            
-static int mark_all;
-
-static void rb_gc_mark_children(VALUE ptr);
-static void
-gc_mark_all()
-{
-    RVALUE *p, *pend;
-    int i;
-    mark_all = 0;
-    while(!mark_all){
-	mark_all = 1;
-	for (i = 0; i < heaps_used; i++) {
-	    p = heaps[i]; pend = p + heaps_limits[i];
-	    while (p < pend) {
-		if (!(rb_special_const_p((VALUE)p))
-		    && p->as.basic.flags&FL_MARK) {
-		    rb_gc_mark_children((VALUE)p);
-		}
-		p++;
-	    }
-	}
-    }
-}
-
-static void
-gc_mark_rest()
-{
-    VALUE tmp_arry[MARK_STACK_MAX];
-    VALUE *p;
-
-    p = (mark_stack_ptr - mark_stack) + tmp_arry;
-    memcpy(tmp_arry, mark_stack, MARK_STACK_MAX);
-	
-    init_mark_stack();
-    
-    while(p != tmp_arry){
-	p--;
-	rb_gc_mark(*p);
-    }
-}
-
-#if defined(DJGPP)
-# define STACK_LEVEL_MAX 65535;
-#elif defined(__human68k__)
+#ifdef DJGPP
+static unsigned int STACK_LEVEL_MAX = 65535;
+#else
+#ifdef __human68k__
 extern unsigned int _stacksize;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
+# undef HAVE_GETRLIMIT
+#else
+#ifdef HAVE_GETRLIMIT
+static unsigned int STACK_LEVEL_MAX = 655300;
 #else
 # define STACK_LEVEL_MAX 655300
+#endif
+#endif
 #endif
 
 #ifdef C_ALLOCA
@@ -431,9 +385,87 @@ extern unsigned int _stacksize;
 
 #define CHECK_STACK(ret) do {\
     SET_STACK_END;\
-    ret = (STACK_LENGTH > STACK_LEVEL_MAX);\
+    (ret) = (STACK_LENGTH > STACK_LEVEL_MAX);\
 } while (0)\
 
+int
+ruby_stack_length(p)
+    VALUE **p;
+{
+    int ret;
+
+    SET_STACK_END;
+    if (p) *p = STACK_END;
+    return STACK_LENGTH;
+}
+
+static VALUE rb_eSysStackError;
+
+void
+ruby_stack_check()
+{
+    int ret;
+
+    CHECK_STACK(ret);
+    if (ret) {
+	rb_raise(rb_eSysStackError, "stack level too deep");
+    }
+}
+
+#define MARK_STACK_MAX 1024
+static VALUE mark_stack[MARK_STACK_MAX];
+static VALUE *mark_stack_ptr;
+static int mark_stack_overflow;
+
+static void
+init_mark_stack()
+{
+    mark_stack_overflow = 0;
+    mark_stack_ptr = mark_stack;
+}
+
+#define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
+            
+static int mark_all;
+
+static void rb_gc_mark_children(VALUE ptr);
+static void
+gc_mark_all()
+{
+    RVALUE *p, *pend;
+    int i;
+    mark_all = 0;
+    while(!mark_all){
+	mark_all = 1;
+	for (i = 0; i < heaps_used; i++) {
+	    p = heaps[i]; pend = p + heaps_limits[i];
+	    while (p < pend) {
+		if ((p->as.basic.flags & FL_MARK) &&
+		    (p->as.basic.flags != FL_MARK)) {
+		    rb_gc_mark_children((VALUE)p);
+		}
+		p++;
+	    }
+	}
+    }
+}
+
+static void
+gc_mark_rest()
+{
+    VALUE tmp_arry[MARK_STACK_MAX];
+    VALUE *p;
+
+    p = (mark_stack_ptr - mark_stack) + tmp_arry;
+    MEMCPY(tmp_arry, mark_stack, VALUE, MARK_STACK_MAX);
+
+    init_mark_stack();
+    
+    while(p != tmp_arry){
+	p--;
+	rb_gc_mark(*p);
+    }
+}
 
 static inline int
 is_pointer_to_heap(ptr)
@@ -534,6 +566,10 @@ rb_gc_mark(ptr)
 {
     register RVALUE *obj = RANY(ptr);
 
+    if (rb_special_const_p(ptr)) return; /* special const not marked */
+    if (obj->as.basic.flags == 0) return;       /* free cell */
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
+
     if (!mark_stack_overflow){
 	int ret;
 	CHECK_STACK(ret);
@@ -544,15 +580,10 @@ rb_gc_mark(ptr)
 		return;
 	    }else{
 		mark_stack_overflow = 1;
-		printf("mark_stack_overflow\n");
 	    }
 	}
     }
 
-    if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
-    if (obj->as.basic.flags == 0) return;       /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
-    
     obj->as.basic.flags |= FL_MARK;
 
     if (mark_stack_overflow){
@@ -1171,6 +1202,18 @@ Init_stack(addr)
     if (!addr) addr = &start;
     rb_gc_stack_start = addr;
 #endif
+#ifdef HAVE_GETRLIMIT
+    {
+	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
+	    double space = (double)rlim.rlim_cur*0.2;
+
+	    if (space > 1024*1024) space = 1024*1024;
+	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
+	}
+    }
+#endif
 }
 
 void
@@ -1474,4 +1517,6 @@ Init_GC()
     rb_global_variable(&finalizers);
     rb_gc_unregister_address(&rb_mObSpace);
     finalizers = rb_ary_new();
+
+    rb_eSysStackError = rb_define_class("SystemStackError", rb_eStandardError);
 }
