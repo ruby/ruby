@@ -741,7 +741,7 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
 			   LDSHARED='$(CC) -Wl,-G'
-			   if test $rb_cv_prog_gnu_ld = yes; then
+			   if test "$rb_cv_prog_gnu_ld" = yes; then
 	 		       LDFLAGS="-Wl,-E"
 			       LDSHARED="$LDSHARED -shared"
 			   fi
@@ -771,7 +771,7 @@ if test "$with_dln_a_out" != yes; then
 			    LDFLAGS="-rdynamic"
 			    DLDFLAGS='-Wl,-soname,$(.TARGET)'
 			else
-			  test "$GCC" = yes && `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null || LDSHARED="ld -Bshareable"
+			  test "$GCC" = yes && test "$rb_cv_prog_gnu_ld" = yes || LDSHARED="ld -Bshareable"
 			fi
 			rb_cv_dlopen=yes ;;
 	netbsd*)	LDSHARED='${CC} -shared'
