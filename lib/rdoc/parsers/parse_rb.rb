@@ -2311,6 +2311,10 @@ module RDoc
     
     def parse_alias(context, single, tk, comment)
       skip_tkspace
+      if (peek_tk.kind_of? TkLPAREN)
+        get_tk
+        skip_tkspace
+      end
       new_name = get_symbol_or_name
       @scanner.instance_eval{@lex_state = EXPR_FNAME}
       skip_tkspace
