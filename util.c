@@ -772,8 +772,8 @@ ruby_strtod(string, endPtr)
     }
 
     /*
-     * Count the number of digits in the mantissa (including the decimal
-     * point), and also locate the decimal point.
+     * Count the number of digits in the mantissa
+     * and also locate the decimal point.
      */
 
     for ( ; c = *p; p += 1) {
@@ -805,16 +805,14 @@ ruby_strtod(string, endPtr)
      */
     
     pExp  = p;
-    p = pMant; /* valid if mantSize > 0 */
+    if (mantSize) {
+	p = pMant;
+    }
     if (mantSize > 18) {
 	fracExp += (mantSize - 18);
 	mantSize = 18;
     }
-    if (mantSize == 0) {
-	fraction = 0.0;
-	p = string;
-    }
-    else {
+    {
 	int frac1, frac2;
 	frac1 = 0;
 	for ( ; mantSize > 9; mantSize -= 1) {
