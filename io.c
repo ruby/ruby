@@ -1815,6 +1815,10 @@ rb_io_isatty(io)
     return Qtrue;
 }
 
+#define FMODE_PREP (1<<16)
+#define IS_PREP_STDIO(f) ((f)->mode & FMODE_PREP)
+#define PREP_STDIO_NAME(f) ((f)->path)
+
 static void
 fptr_finalize(fptr, noraise)
     OpenFile *fptr;
@@ -3151,6 +3155,16 @@ io_reopen(io, nfile)
     GetOpenFile(nfile, orig);
 
     if (fptr == orig) return io;
+#if !defined __CYGWIN__
+    if (IS_PREP_STDIO(fptr)) {
+	if ((fptr->mode & FMODE_READWRITE) != (orig->mode & FMODE_READWRITE)) {
+	    rb_raise(rb_eArgError,
+		     "%s cannot change access mode from \"%s\" to \"%s\"",
+		     PREP_STDIO_NAME(fptr), rb_io_flags_mode(fptr->mode),
+		     rb_io_flags_mode(orig->mode));
+	}
+    }
+#endif
     if (orig->mode & FMODE_READABLE) {
 	pos = io_tell(orig);
     }
@@ -3177,7 +3191,7 @@ io_reopen(io, nfile)
     fd = fileno(fptr->f);
     fd2 = fileno(orig->f);
     if (fd != fd2) {
-	if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr) {
+	if (IS_PREP_STDIO(fptr)) {
 	    clearerr(fptr->f);
 	    /* need to keep stdio objects */
 	    if (dup2(fd2, fd) < 0)
@@ -3275,7 +3289,15 @@ rb_io_reopen(argc, argv, file)
     }
 
     if (!NIL_P(nmode)) {
-	fptr->mode = rb_io_mode_flags(StringValuePtr(nmode));
+	int flags = rb_io_mode_flags(StringValuePtr(nmode));
+	if (IS_PREP_STDIO(fptr) &&
+	    (fptr->mode & FMODE_READWRITE) != (flags & FMODE_READWRITE)) {
+	    rb_raise(rb_eArgError,
+		     "%s cannot change access mode from \"%s\" to \"%s\"",
+		     PREP_STDIO_NAME(fptr), rb_io_flags_mode(fptr->mode),
+		     rb_io_flags_mode(flags));
+	}
+	fptr->mode = flags;
     }
 
     if (fptr->path) {
@@ -3782,10 +3804,11 @@ deferr_setter(val, id, variable)
 }
 
 static VALUE
-prep_stdio(f, mode, klass)
+prep_stdio(f, mode, klass, path)
     FILE *f;
     int mode;
     VALUE klass;
+    const char *path;
 {
     OpenFile *fp;
     VALUE io = io_alloc(klass);
@@ -3798,21 +3821,10 @@ prep_stdio(f, mode, klass)
     }
 #endif
     fp->f = f;
-    fp->mode = mode;
+    fp->mode = mode | FMODE_PREP;
+    fp->path = strdup(path);
 
     return io;
-}
-
-static void
-prep_path(io, path)
-    VALUE io;
-    char *path;
-{
-    OpenFile *fptr;
-
-    GetOpenFile(io, fptr);
-    if (fptr->path) rb_bug("illegal prep_path() call");
-    fptr->path = strdup(path);
 }
 
 /*
@@ -4085,12 +4097,10 @@ next_argv()
 			fchown(fileno(fw), st.st_uid, st.st_gid);
 		    }
 #endif
-		    rb_stdout = prep_stdio(fw, FMODE_WRITABLE, rb_cFile);
-		    prep_path(rb_stdout, fn);
+		    rb_stdout = prep_stdio(fw, FMODE_WRITABLE, rb_cFile, fn);
 		    if (stdout_binmode) rb_io_binmode(rb_stdout);
 		}
-		current_file = prep_stdio(fr, FMODE_READABLE, rb_cFile);
-		prep_path(current_file, fn);
+		current_file = prep_stdio(fr, FMODE_READABLE, rb_cFile, fn);
 	    }
 	    if (binmode) rb_io_binmode(current_file);
 	}
@@ -5444,11 +5454,11 @@ Init_IO()
     rb_define_method(rb_cIO, "pid", rb_io_pid, 0);
     rb_define_method(rb_cIO, "inspect",  rb_io_inspect, 0);
 
-    rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
+    rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO, "<STDIN>");
     rb_define_variable("$stdin", &rb_stdin);
-    rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO);
+    rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO, "<STDOUT>");
     rb_define_hooked_variable("$stdout", &rb_stdout, 0, stdout_setter);
-    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
+    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO, "<STDERR>");
     rb_define_hooked_variable("$stderr", &rb_stderr, 0, stdout_setter);
     rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
     orig_stdout = rb_stdout;
