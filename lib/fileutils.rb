@@ -581,7 +581,9 @@ module FileUtils
     Dir.foreach(dir) do |file|
       next if /\A\.\.?\z/ === file
       path = "#{dir}/#{file}"
-      if File.directory?(path)
+      if File.symlink?(path)
+        remove_file path, force
+      elsif File.directory?(path)
         remove_dir path, force
       else
         remove_file path, force

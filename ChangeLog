@@ -1,3 +1,8 @@
+Wed Mar 10 22:26:25 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (remove_dir): should handle symlink correctly.
+	  This patch is contributed by Christian Loew.  [ruby-talk:94635]
+
 Wed Mar 10 16:28:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (return_jump): set return value to the return
