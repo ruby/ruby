@@ -44,13 +44,12 @@ class ThreadsWait
   
   Exception2MessageMapper.extend_to(binding)
   def_exception("ErrNoWaitingThread", "No threads for waiting.")
-  def_exception("ErrNoFinshedThread", "No finished threads.")
+  def_exception("ErrNoFinishedThread", "No finished threads.")
   
   def ThreadsWait.all_waits(*threads)
     tw = ThreadsWait.new(*threads)
     if block_given?
-      tw.all_waits do
-	|th|
+      tw.all_waits do |th|
 	yield th
       end
     else
@@ -96,11 +95,12 @@ class ThreadsWait
   
   # adds thread(s) to join, no wait.
   def join_nowait(*threads)
-    @threads.concat threads.flatten
+    threads.flatten!
+    @threads.concat threads
     for th in threads
-      Thread.start do
-	th = th.join
-	@wait_queue.push th
+      Thread.start(th) do |t|
+	t.join
+	@wait_queue.push t
       end
     end
   end

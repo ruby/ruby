@@ -1190,6 +1190,8 @@ re_compile_pattern(pattern, size, bufp)
   register unsigned int c, c1;
   const char *p0;
   int numlen;
+#define ERROR_MSG_MAX_SIZE 200
+  static char error_msg[ERROR_MSG_MAX_SIZE+1];
 
   /* Address of the count-byte of the most recently inserted `exactn'
      command.  This makes it possible to tell whether a new exact-match
@@ -1318,7 +1320,10 @@ re_compile_pattern(pattern, size, bufp)
     case '*':
       /* If there is no previous pattern, char not special. */
       if (!laststart) {
-	goto invalid_pattern;
+	snprintf(error_msg, ERROR_MSG_MAX_SIZE, 
+		 "invalid regular expression; there's no previous pattern, to which '%c' would define cardinality at %d", 
+		 c, p-pattern);
+	FREE_AND_RETURN(stackb, error_msg);
       }
       /* If there is a sequence of repetition chars,
 	 collapse it down to just one.  */
@@ -1400,7 +1405,7 @@ re_compile_pattern(pattern, size, bufp)
 
     case '[':
       if (p == pend)
-	goto invalid_pattern;
+	FREE_AND_RETURN(stackb, "invalid regular expression; '[' can't be the last character ie. can't start range at the end of pattern");
       while ((b - bufp->buffer + 9 + (1 << BYTEWIDTH) / BYTEWIDTH)
 	     > bufp->allocated)
 	EXTEND_BUFFER;
@@ -1441,7 +1446,7 @@ re_compile_pattern(pattern, size, bufp)
 	if (c == ']') {
 	  if (p == p0 + 1) {
 	    if (p == pend)
-	      goto invalid_pattern;
+	      FREE_AND_RETURN(stackb, "invalid regular expression; empty character class");
 	  }
 	  else 
 	    /* Stop if this isn't merely a ] inside a bracket
@@ -1452,7 +1457,7 @@ re_compile_pattern(pattern, size, bufp)
 	/* Look ahead to see if it's a range when the last thing
 	   was a character class.  */
 	if (had_char_class && c == '-' && *p != ']')
-	  goto invalid_pattern;
+	  FREE_AND_RETURN(stackb, "invalid regular expression; can't use character class as a start value of range");
 	if (ismbchar(c)) {
 	  PATFETCH_MBC(c);
 	  had_mbchar++;
@@ -1582,7 +1587,7 @@ re_compile_pattern(pattern, size, bufp)
 
 	  /* If pattern is `[[:'.  */
 	  if (p == pend) 
-	    goto invalid_pattern;
+	    FREE_AND_RETURN(stackb, "invalid regular expression; re can't end '[[:'");
 
 	  for (;;) {
 	    PATFETCH (c);
@@ -1611,14 +1616,17 @@ re_compile_pattern(pattern, size, bufp)
 	    char is_upper = STREQ(str, "upper");
 	    char is_xdigit = STREQ(str, "xdigit");
 
-	    if (!IS_CHAR_CLASS(str))
-	      goto invalid_pattern;
+	    if (!IS_CHAR_CLASS(str)){
+	      snprintf(error_msg, ERROR_MSG_MAX_SIZE, 
+		       "invalid regular expression; [:%s:] is not a character class", str);
+	      FREE_AND_RETURN(stackb, error_msg);
+	    }
 
 	    /* Throw away the ] at the end of the character class.  */
 	    PATFETCH(c);
 
 	    if (p == pend) 
-	      goto invalid_pattern;
+	      FREE_AND_RETURN(stackb, "invalid regular expression; range doesn't have ending ']' after a character class");
 
 	    for (ch = 0; ch < 1 << BYTEWIDTH; ch++) {
 	      if (   (is_alnum  && ISALNUM(ch))
@@ -1938,9 +1946,14 @@ re_compile_pattern(pattern, size, bufp)
 
     case '{':
       /* If there is no previous pattern, this is an invalid pattern.  */
-      if (!laststart || p == pend) {
-	goto invalid_pattern;
+      if (!laststart) {
+	snprintf(error_msg, ERROR_MSG_MAX_SIZE, 
+		 "invalid regular expression; there's no previous pattern, to which '{' would define cardinality at %d", 
+		 p-pattern);
+	FREE_AND_RETURN(stackb, error_msg);
       }
+      if( p == pend)
+	FREE_AND_RETURN(stackb, "invalid regular expression; '{' can't be last character" );
 
       beg_interval = p - 1;
 
@@ -2119,7 +2132,8 @@ re_compile_pattern(pattern, size, bufp)
       goto normal_char;
 
     case '\\':
-      if (p == pend) goto invalid_pattern;
+      if (p == pend)
+	FREE_AND_RETURN(stackb, "invalid regular expression; '\\' can't be last character");
       /* Do not translate the character after the \, so that we can
 	 distinguish, e.g., \B from \b, even if we normally would
 	 translate, e.g., B to b.  */

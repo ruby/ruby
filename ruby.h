@@ -136,7 +136,7 @@ VALUE rb_uint2inum _((unsigned long));
 #define Qnil   4
 #define Qundef 6		/* undefined value for placeholder */
 
-#define RTEST(v) ((VALUE)(v) & ~Qnil)
+#define RTEST(v) (((VALUE)(v) & ~Qnil) != 0)
 #define NIL_P(v) ((VALUE)(v) == Qnil)
 
 #define CLASS_OF(v) rb_class_of((VALUE)(v))

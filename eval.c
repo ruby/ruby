@@ -238,6 +238,7 @@ rb_add_method(klass, mid, node, noex)
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     body = NEW_METHOD(node, noex);
     st_insert(RCLASS(klass)->m_tbl, mid, body);
+    rb_clear_cache_by_id(mid);
 }
 
 static NODE*
@@ -358,7 +359,6 @@ rb_disable_super(klass, name)
 	body->nd_noex |= NOEX_UNDEF;
     }
     else {
-	rb_clear_cache_by_id(mid);
 	rb_add_method(klass, mid, 0, NOEX_UNDEF);
     }
 }
@@ -408,7 +408,6 @@ rb_export_method(klass, name, noex)
 	    body->nd_noex = noex;
 	}
 	else {
-	    rb_clear_cache_by_id(name);
 	    rb_add_method(klass, name, NEW_ZSUPER(), noex);
 	}
     }
@@ -1495,7 +1494,6 @@ rb_undef(klass, id)
 		 rb_id2name(id),s0,rb_class2name(c));
     }
     rb_add_method(klass, id, 0, NOEX_PUBLIC);
-    rb_clear_cache_by_id(id);
 }
 
 static VALUE
@@ -2825,7 +2823,6 @@ rb_eval(self, n)
 		if (RTEST(ruby_verbose) && ruby_class == origin && body->nd_cnt == 0) {
 		    rb_warning("discarding old %s", rb_id2name(node->nd_mid));
 		}
-		rb_clear_cache_by_id(node->nd_mid);
 		if (node->nd_noex) { /* toplevel */
 		    /* should upgrade to rb_warn() if no super was called inside? */
 		    rb_warning("overriding global function `%s'",
@@ -2891,7 +2888,6 @@ rb_eval(self, n)
 		    rb_warning("redefine %s", rb_id2name(node->nd_mid));
 		}
 	    }
-	    rb_clear_cache_by_id(node->nd_mid);
 	    rb_add_method(klass, node->nd_mid, node->nd_defn, 
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
 	    rb_funcall(recv, singleton_added, 1, ID2SYM(node->nd_mid));
@@ -5040,8 +5036,8 @@ rb_feature_p(feature, wait)
 	if (strcmp(f, feature) == 0) {
 	    goto load_wait;
 	}
-	len = strlen(feature);
-	if (strncmp(f, feature, len) == 0) {
+	len = strlen(f);
+	if (strncmp(f, feature, strlen(feature)) == 0) {
 	    if (strcmp(f+len, ".so") == 0) {
 		return Qtrue;
 	    }
@@ -5348,7 +5344,6 @@ rb_mod_modfunc(argc, argv, module)
 	if (body == 0 || body->nd_body == 0) {
 	    rb_bug("undefined method `%s'; can't happen", rb_id2name(id));
 	}
-	rb_clear_cache_by_id(id);
 	rb_add_method(rb_singleton_class(module), id, body->nd_body, NOEX_PUBLIC);
 	rb_funcall(module, singleton_added, 1, ID2SYM(id));
     }

@@ -1298,4 +1298,3 @@ xfree(ptr)
 {
     ruby_xfree(ptr);
 }
-
