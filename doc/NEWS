@@ -1,3 +1,7 @@
+: Syslog module
+
+  Imported.
+
 : String#chomp
 
   if $/ == '\n', chops off last newlines (any of \n, \r, \r\n).

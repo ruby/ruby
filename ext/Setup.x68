@@ -13,4 +13,5 @@ fcntl
 kconv
 marshal
 #socket
+#syslog
 #tkutil
