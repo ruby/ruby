@@ -461,9 +461,7 @@ lib_eventloop_core(check_root, check_var)
 		    }
 		}
 
-		found_event = Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT);
-
-		if (found_event) {
+		if (Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT)) {
 		    tick_counter++;
 		} else {
 		    tick_counter += no_event_tick;

@@ -48,9 +48,7 @@ class TkDialog2 < TkWindow
   private :_set_button_config
 
   # initialize tk_dialog
-  def initialize(keys = nil)
-    super()
-
+  def create_self(keys)
     @var = TkVariable.new
 
     @title   = title
@@ -74,7 +72,6 @@ class TkDialog2 < TkWindow
     @command = nil
 
     if keys.kind_of? Hash
-      keys = _symbolkey2str(keys)
       @title   = keys['title'] if keys.key? 'title'
       @message = keys['message'] if keys.key? 'message'
       @bitmap  = keys['bitmap'] if keys.key? 'bitmap'
@@ -230,8 +227,16 @@ end
 # dialog for warning
 #
 class TkWarning2 < TkDialog2
-  def initialize(mes)
-    super(:message=>mes)
+  def initialize(parent = nil, mes = nil)
+    if !mes
+      if parent.kind_of? TkWindow
+	mes = ""
+      else
+	mes = parent.to_s
+	parent = nil
+      end
+    end
+    super(parent, :message=>mes)
   end
 
   def show(mes = nil)
@@ -263,8 +268,8 @@ class TkWarning < TkWarning2
   def self.show(*args)
     self.new(*args)
   end
-  def initialize(mes)
-    super(mes)
+  def initialize(*args)
+    super(*args)
     show
   end
 end

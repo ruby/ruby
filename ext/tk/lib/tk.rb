@@ -3943,7 +3943,6 @@ class TkWindow<TkObject
   def initialize(parent=nil, keys=nil)
     if parent.kind_of? Hash
       keys = _symbolkey2str(parent)
-      keydup = true
       parent = keys.delete('parent')
       widgetname = keys.delete('widgetname')
       install_win(if parent then parent.path end, widgetname)

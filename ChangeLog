@@ -1,3 +1,10 @@
+Fri Nov 14 13:21:30 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: fix (en-bugged at 2003/11/07)
+
+	* ext/tk/lib/tkdialog.rb: TkDialog.new accepts a parent widget 
+	  argument [ruby-talk:85066]
+
 Thu Nov 13 20:53:35 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (Kernel[#.]open): hard coded URI schemes removed.
