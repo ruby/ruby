@@ -66,6 +66,23 @@ time_modify(time)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify Time");
 }
 
+/*
+ *  call-seq:
+ *     Time.new -> time
+ *  
+ *  Returns a <code>Time</code> object initialized to the current system
+ *  time. <b>Note:</b> The object created will be created using the
+ *  resolution available on your system clock, and so may include
+ *  fractional seconds.
+ *     
+ *     a = Time.new      #=> Wed Apr 09 08:56:03 CDT 2003
+ *     b = Time.new      #=> Wed Apr 09 08:56:03 CDT 2003
+ *     a == b            #=> false
+ *     "%.6f" % a.to_f   #=> "1049896563.230740"
+ *     "%.6f" % b.to_f   #=> "1049896563.231466"
+ *     
+ */
+
 static VALUE
 time_init(time)
     VALUE time;
@@ -209,6 +226,21 @@ rb_time_timeval(time)
     }
     return time_timeval(time, Qfalse);
 }
+
+/*
+ *  call-seq:
+ *     Time.at( aTime ) => time
+ *     Time.at( seconds [, microseconds] ) => time
+ *  
+ *  Creates a new time object with the value given by <i>aTime</i>, or
+ *  the given number of <i>seconds</i> (and optional
+ *  <i>microseconds</i>) from epoch. A non-portable feature allows the
+ *  offset to be negative on some systems.
+ *     
+ *     Time.at(0)            #=> Wed Dec 31 18:00:00 CST 1969
+ *     Time.at(946702800)    #=> Fri Dec 31 23:00:00 CST 1999
+ *     Time.at(-284061600)   #=> Sat Dec 31 00:00:00 CST 1960
+ */
 
 static VALUE
 time_s_at(argc, argv, klass)
@@ -673,6 +705,27 @@ time_utc_or_local(argc, argv, utc_p, klass)
     return time_localtime(time);
 }
 
+/*
+ *  call-seq:
+ *     Time.utc( year [, month, day, hour, min, sec, usec] ) => time
+ *     Time.utc( sec, min, hour, day, month, year, wday, yday, isdst, tz
+ *     ) => time
+ *     Time.gm( year [, month, day, hour, min, sec, usec] ) => time
+ *     Time.gm( sec, min, hour, day, month, year, wday, yday, isdst, tz
+ *     ) => time
+ *     
+ *  Creates a time based on given values, interpreted as UTC (GMT). The
+ *  year must be specified. Other values default to the minimum value
+ *  for that field (and may be <code>nil</code> or omitted). Months may
+ *  be specified by numbers from 1 to 12, or by the three-letter English
+ *  month names. Hours are specified on a 24-hour clock (0..23). Raises
+ *  an <code>ArgumentError</code> if any values are out of range. Will
+ *  also accept ten arguments in the order output by
+ *  <code>Time#to_a</code>.
+ *
+ *     Time.utc(2000,"jan",1,20,15,1)  #=> Sat Jan 01 20:15:01 UTC 2000
+ *     Time.gm(2000,"jan",1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+ */
 static VALUE
 time_s_mkutc(argc, argv, klass)
     int argc;
@@ -682,6 +735,19 @@ time_s_mkutc(argc, argv, klass)
     return time_utc_or_local(argc, argv, Qtrue, klass);
 }
 
+/*
+ *  call-seq:
+ *     Time.local( year [, month, day, hour, min, sec, usec] ) => time
+ *     Time.local( sec, min, hour, day, month, year, wday, yday, isdst,
+ *     tz ) => time
+ *     Time.mktime( year, month, day, hour, min, sec, usec )   => time
+ *  
+ *  Same as <code>Time::gm</code>, but interprets the values in the
+ *  local time zone.
+ *     
+ *     Time.local(2000,"jan",1,20,15,1)   #=> Sat Jan 01 20:15:01 CST 2000
+ */
+
 static VALUE
 time_s_mktime(argc, argv, klass)
     int argc;
@@ -690,6 +756,19 @@ time_s_mktime(argc, argv, klass)
 {
     return time_utc_or_local(argc, argv, Qfalse, klass);
 }
+
+/*
+ *  call-seq:
+ *     time.to_i   => int
+ *     time.tv_sec => int
+ *  
+ *  Returns the value of <i>time</i> as an integer number of seconds
+ *  since epoch.
+ *     
+ *     t = Time.now
+ *     "%10.5f" % t.to_f   #=> "1049896564.17839"
+ *     t.to_i              #=> 1049896564
+ */
 
 static VALUE
 time_to_i(time)
@@ -701,6 +780,18 @@ time_to_i(time)
     return LONG2NUM(tobj->tv.tv_sec);
 }
 
+/*
+ *  call-seq:
+ *     time.to_f => float
+ *  
+ *  Returns the value of <i>time</i> as a floating point number of
+ *  seconds since epoch.
+ *     
+ *     t = Time.now
+ *     "%10.5f" % t.to_f   #=> "1049896564.13654"
+ *     t.to_i              #=> 1049896564
+ */
+
 static VALUE
 time_to_f(time)
     VALUE time;
@@ -711,6 +802,18 @@ time_to_f(time)
     return rb_float_new((double)tobj->tv.tv_sec+(double)tobj->tv.tv_usec/1e6);
 }
 
+/*
+ *  call-seq:
+ *     time.usec    => int
+ *     time.tv_usec => int
+ *  
+ *  Returns just the number of microseconds for <i>time</i>.
+ *     
+ *     t = Time.now        #=> Wed Apr 09 08:56:04 CDT 2003
+ *     "%10.6f" % t.to_f   #=> "1049896564.259970"
+ *     t.usec              #=> 259970
+ */
+
 static VALUE
 time_usec(time)
     VALUE time;
@@ -720,6 +823,22 @@ time_usec(time)
     GetTimeval(time, tobj);
     return LONG2NUM(tobj->tv.tv_usec);
 }
+
+/*
+ *  call-seq:
+ *     time <=> other_time => -1, 0, +1 
+ *     time <=> numeric    => -1, 0, +1
+ *  
+ *  Comparison---Compares <i>time</i> with <i>other_time</i> or with
+ *  <i>numeric</i>, which is the number of seconds (possibly
+ *  fractional) since epoch.
+ *     
+ *     t = Time.now       #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t2 = t + 2592000   #=> Fri May 09 08:56:03 CDT 2003
+ *     t <=> t2           #=> -1
+ *     t2 <=> t           #=> 1
+ *     t <=> t            #=> 0
+ */
 
 static VALUE
 time_cmp(time1, time2)
@@ -742,6 +861,15 @@ time_cmp(time1, time2)
     return Qnil;
 }
 
+/*
+ * call-seq:
+ *  time.eql?(other_time)
+ *
+ * Return <code>true</code> if <i>time</i> and <i>other_time</i> are
+ * both <code>Time</code> objects with the same seconds and fractional
+ * seconds.
+ */
+
 static VALUE
 time_eql(time1, time2)
     VALUE time1, time2;
@@ -758,6 +886,25 @@ time_eql(time1, time2)
     return Qfalse;
 }
 
+/*
+ *  call-seq:
+ *     time.utc? => true or false
+ *     time.gmt? => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> represents a time in UTC
+ *  (GMT).
+ *     
+ *     t = Time.now                        #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t.utc?                              #=> false
+ *     t = Time.gm(2000,"jan",1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+ *     t.utc?                              #=> true
+ *
+ *     t = Time.now                        #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t.gmt?                              #=> false
+ *     t = Time.gm(2000,1,1,20,15,1)       #=> Sat Jan 01 20:15:01 UTC 2000
+ *     t.gmt?                              #=> true
+ */
+
 static VALUE
 time_utc_p(time)
     VALUE time;
@@ -768,6 +915,13 @@ time_utc_p(time)
     if (tobj->gmt) return Qtrue;
     return Qfalse;
 }
+
+/*
+ * call-seq:
+ *   time.hash   => fixnum
+ *
+ * Return a hash code for this time object.
+ */
 
 static VALUE
 time_hash(time)
@@ -808,6 +962,19 @@ time_dup(time)
     return dup;
 }
 
+/*
+ *  call-seq:
+ *     time.localtime => time
+ *  
+ *  Converts <i>time</i> to local time (using the local time zone in
+ *  effect for this process) modifying the receiver.
+ *     
+ *     t = Time.gm(2000, "jan", 1, 20, 15, 1)
+ *     t.gmt?        #=> true
+ *     t.localtime   #=> Sat Jan 01 14:15:01 CST 2000
+ *     t.gmt?        #=> false
+ */
+
 static VALUE
 time_localtime(time)
     VALUE time;
@@ -833,6 +1000,24 @@ time_localtime(time)
     tobj->gmt = 0;
     return time;
 }
+
+/*
+ *  call-seq:
+ *     time.gmtime    => time
+ *     time.utc       => time
+ *  
+ *  Converts <i>time</i> to UTC (GMT), modifying the receiver.
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t.gmt?         #=> false
+ *     t.gmtime       #=> Wed Apr 09 13:56:03 UTC 2003
+ *     t.gmt?         #=> true
+ *
+ *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t.utc?         #=> false
+ *     t.utc          #=> Wed Apr 09 13:56:04 UTC 2003
+ *     t.utc?         #=> true
+ */
 
 static VALUE
 time_gmtime(time)
@@ -860,12 +1045,41 @@ time_gmtime(time)
     return time;
 }
 
+/*
+ *  call-seq:
+ *     time.getlocal => new_time
+ *  
+ *  Returns a new <code>new_time</code> object representing <i>time</i> in
+ *  local time (using the local time zone in effect for this process).
+ *     
+ *     t = Time.gm(2000,1,1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+ *     t.gmt?                          #=> true
+ *     l = t.getlocal                  #=> Sat Jan 01 14:15:01 CST 2000
+ *     l.gmt?                          #=> false
+ *     t == l                          #=> true
+ */
+
 static VALUE
 time_getlocaltime(time)
     VALUE time;
 {
     return time_localtime(time_dup(time));
 }
+
+/*
+ *  call-seq:
+ *     time.getgm  => new_time
+ *     time.getutc => new_time
+ *  
+ *  Returns a new <code>new_time</code> object representing <i>time</i> in
+ *  UTC.
+ *     
+ *     t = Time.local(2000,1,1,20,15,1)   #=> Sat Jan 01 20:15:01 CST 2000
+ *     t.gmt?                             #=> false
+ *     y = t.getgm                        #=> Sun Jan 02 02:15:01 UTC 2000
+ *     y.gmt?                             #=> true
+ *     t == y                             #=> true
+ */
 
 static VALUE
 time_getgmtime(time)
@@ -883,6 +1097,16 @@ time_get_tm(time, gmt)
     return time_localtime(time);
 }
 
+/*
+ *  call-seq:
+ *     time.asctime => string
+ *     time.ctime   => string
+ *  
+ *  Returns a canonical string representation of <i>time</i>.
+ *     
+ *     Time.now.asctime   #=> "Wed Apr  9 08:56:03 2003"
+ */
+
 static VALUE
 time_asctime(time)
     VALUE time;
@@ -899,6 +1123,19 @@ time_asctime(time)
 
     return rb_str_new2(s);
 }
+
+/*
+ *  call-seq:
+ *     time.inspect => string
+ *     time.to_s    => string
+ *  
+ *  Returns a string representing <i>time</i>. Equivalent to calling
+ *  <code>Time#strftime</code> with a format string of ``<code>%a</code>
+ *  <code>%b</code> <code>%d</code> <code>%H:%M:%S</code>
+ *  <code>%Z</code> <code>%Y</code>''.
+ *     
+ *     Time.now.to_s   #=> "Wed Apr 09 08:56:04 CDT 2003"
+ */
 
 static VALUE
 time_to_s(time)
@@ -920,6 +1157,17 @@ time_to_s(time)
     }
     return rb_str_new(buf, len);
 }
+
+/*
+ *  call-seq:
+ *     time + numeric => time
+ *  
+ *  Addition---Adds some number of seconds (possibly fractional) to
+ *  <i>time</i> and returns that value as a new time.
+ *     
+ *     t = Time.now         #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t + (60 * 60 * 24)   #=> Thu Apr 10 08:56:03 CDT 2003
+ */
 
 static VALUE
 time_plus(time1, time2)
@@ -961,6 +1209,21 @@ time_plus(time1, time2)
     }
     return time2;
 }
+
+/*
+ *  call-seq:
+ *     time - other_time => float
+ *     time - numeric    => time
+ *  
+ *  Difference---Returns a new time that represents the difference
+ *  between two times, or subtracts the given number of seconds in
+ *  <i>numeric</i> from <i>time</i>.
+ *     
+ *     t = Time.now       #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t2 = t + 2592000   #=> Fri May 09 08:56:03 CDT 2003
+ *     t2 - t             #=> 2592000.0
+ *     t2 - 2592000       #=> Wed Apr 09 08:56:03 CDT 2003
+ */
 
 static VALUE
 time_minus(time1, time2)
@@ -1009,6 +1272,13 @@ time_minus(time1, time2)
     return time2;
 }
 
+/*
+ * call-seq:
+ *   time.succ   => new_time
+ *
+ * Return a new time object, one second later than <code>time</code>.
+ */
+
 static VALUE
 time_succ(time)
     VALUE time;
@@ -1018,6 +1288,19 @@ time_succ(time)
     GetTimeval(time, tobj);
     return rb_time_new(tobj->tv.tv_sec + 1, tobj->tv.tv_usec);
 }
+
+/*
+ *  call-seq:
+ *     time.sec => fixnum
+ *  
+ *  Returns the second of the minute (0..60)<em>[Yes, seconds really can
+ *  range from zero to 60. This allows the system to inject leap seconds
+ *  every now and then to correct for the fact that years are not really
+ *  a convenient number of hours long.]</em> for <i>time</i>.
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t.sec          #=> 4
+ */
 
 static VALUE
 time_sec(time)
@@ -1032,6 +1315,16 @@ time_sec(time)
     return INT2FIX(tobj->tm.tm_sec);
 }
 
+/*
+ *  call-seq:
+ *     time.min => fixnum
+ *  
+ *  Returns the minute of the hour (0..59) for <i>time</i>.
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t.min          #=> 56
+ */
+
 static VALUE
 time_min(time)
     VALUE time;
@@ -1044,6 +1337,16 @@ time_min(time)
     }
     return INT2FIX(tobj->tm.tm_min);
 }
+
+/*
+ *  call-seq:
+ *     time.hour => fixnum
+ *  
+ *  Returns the hour of the day (0..23) for <i>time</i>.
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t.hour         #=> 8
+ */
 
 static VALUE
 time_hour(time)
@@ -1058,6 +1361,18 @@ time_hour(time)
     return INT2FIX(tobj->tm.tm_hour);
 }
 
+/*
+ *  call-seq:
+ *     time.day  => fixnum
+ *     time.mday => fixnum
+ *  
+ *  Returns the day of the month (1..n) for <i>time</i>.
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t.day          #=> 9
+ *     t.mday         #=> 9
+ */
+
 static VALUE
 time_mday(time)
     VALUE time;
@@ -1070,6 +1385,18 @@ time_mday(time)
     }
     return INT2FIX(tobj->tm.tm_mday);
 }
+
+/*
+ *  call-seq:
+ *     time.mon   => fixnum
+ *     time.month => fixnum
+ *  
+ *  Returns the month of the year (1..12) for <i>time</i>.
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:03 CDT 2003
+ *     t.mon          #=> 4
+ *     t.month        #=> 4
+ */
 
 static VALUE
 time_mon(time)
@@ -1084,6 +1411,16 @@ time_mon(time)
     return INT2FIX(tobj->tm.tm_mon+1);
 }
 
+/*
+ *  call-seq:
+ *     time.year => fixnum
+ *  
+ *  Returns the year for <i>time</i> (including the century).
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t.year         #=> 2003
+ */
+
 static VALUE
 time_year(time)
     VALUE time;
@@ -1096,6 +1433,17 @@ time_year(time)
     }
     return LONG2NUM((long)tobj->tm.tm_year+1900);
 }
+
+/*
+ *  call-seq:
+ *     time.wday => fixnum
+ *  
+ *  Returns an integer representing the day of the week, 0..6, with
+ *  Sunday == 0.
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t.wday         #=> 3
+ */
 
 static VALUE
 time_wday(time)
@@ -1110,6 +1458,16 @@ time_wday(time)
     return INT2FIX(tobj->tm.tm_wday);
 }
 
+/*
+ *  call-seq:
+ *     time.yday => fixnum
+ *  
+ *  Returns an integer representing the day of the year, 1..366.
+ *     
+ *     t = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t.yday         #=> 99
+ */
+
 static VALUE
 time_yday(time)
     VALUE time;
@@ -1123,6 +1481,20 @@ time_yday(time)
     return INT2FIX(tobj->tm.tm_yday+1);
 }
 
+/*
+ *  call-seq:
+ *     time.isdst => true or false
+ *     time.dst?  => true or false
+ *  
+ *  Returns <code>true</code> if <i>time</i> occurs during Daylight
+ *  Saving Time in its time zone.
+ *     
+ *     Time.local(2000, 7, 1).isdst   #=> true
+ *     Time.local(2000, 1, 1).isdst   #=> false
+ *     Time.local(2000, 7, 1).dst?    #=> true
+ *     Time.local(2000, 1, 1).dst?    #=> false
+ */
+
 static VALUE
 time_isdst(time)
     VALUE time;
@@ -1135,6 +1507,19 @@ time_isdst(time)
     }
     return tobj->tm.tm_isdst?Qtrue:Qfalse;
 }
+
+/*
+ *  call-seq:
+ *     time.zone => string
+ *  
+ *  Returns the name of the time zone used for <i>time</i>. As of Ruby
+ *  1.8, returns ``UTC'' rather than ``GMT'' for UTC times.
+ *     
+ *     t = Time.gm(2000, "jan", 1, 20, 15, 1)
+ *     t.zone   #=> "UTC"
+ *     t = Time.local(2000, "jan", 1, 20, 15, 1)
+ *     t.zone   #=> "CST"
+ */
 
 static VALUE
 time_zone(time)
@@ -1163,6 +1548,21 @@ time_zone(time)
     return rb_str_new(buf, len);
 #endif
 }
+
+/*
+ *  call-seq:
+ *     time.gmt_offset => fixnum
+ *     time.gmtoff     => fixnum
+ *     time.utc_offset => fixnum
+ *  
+ *  Returns the offset in seconds between the timezone of <i>time</i>
+ *  and UTC.
+ *     
+ *     t = Time.gm(2000,1,1,20,15,1)   #=> Sat Jan 01 20:15:01 UTC 2000
+ *     t.gmt_offset                    #=> 0
+ *     l = t.getlocal                  #=> Sat Jan 01 14:15:01 CST 2000
+ *     l.gmt_offset                    #=> -21600
+ */
 
 static VALUE
 time_utc_offset(time)
@@ -1205,6 +1605,21 @@ time_utc_offset(time)
 #endif
     }
 }
+
+/*
+ *  call-seq:
+ *     time.to_a => array
+ *  
+ *  Returns a ten-element <i>array</i> of values for <i>time</i>:
+ *  {<code>[ sec, min, hour, day, month, year, wday, yday, isdst, zone
+ *  ]</code>}. See the individual methods for an explanation of the
+ *  valid ranges of each value. The ten elements can be passed directly
+ *  to <code>Time::utc</code> or <code>Time::local</code> to create a
+ *  new <code>Time</code>.
+ *     
+ *     now = Time.now   #=> Wed Apr 09 08:56:04 CDT 2003
+ *     t = now.to_a     #=> [4, 56, 8, 9, 4, 2003, 3, 99, true, "CDT"]
+ */
 
 static VALUE
 time_to_a(time)
@@ -1263,6 +1678,47 @@ rb_strftime(buf, format, time)
     /* not reached */
 }
 
+/*
+ *  call-seq:
+ *     time.strftime( string ) => string
+ *  
+ *  Formats <i>time</i> according to the directives in the given format
+ *  string. Any text not listed as a directive will be passed through
+ *  to the output string.
+ *
+ *  Format meaning:
+ *    %a - The abbreviated weekday name (``Sun'')
+ *    %A - The  full  weekday  name (``Sunday'')
+ *    %b - The abbreviated month name (``Jan'')
+ *    %B - The  full  month  name (``January'')
+ *    %c - The preferred local date and time representation
+ *    %d - Day of the month (01..31)
+ *    %H - Hour of the day, 24-hour clock (00..23)
+ *    %I - Hour of the day, 12-hour clock (01..12)
+ *    %j - Day of the year (001..366)
+ *    %m - Month of the year (01..12)
+ *    %M - Minute of the hour (00..59)
+ *    %p - Meridian indicator (``AM''  or  ``PM'')
+ *    %S - Second of the minute (00..60)
+ *    %U - Week  number  of the current year,
+ *            starting with the first Sunday as the first
+ *            day of the first week (00..53)
+ *    %W - Week  number  of the current year,
+ *            starting with the first Monday as the first
+ *            day of the first week (00..53)
+ *    %w - Day of the week (Sunday is 0, 0..6)
+ *    %x - Preferred representation for the date alone, no time
+ *    %X - Preferred representation for the time alone, no date
+ *    %y - Year without a century (00..99)
+ *    %Y - Year with century
+ *    %Z - Time zone name
+ *    %% - Literal ``%'' character
+ *     
+ *     t = Time.now
+ *     t.strftime("Printed on %m/%d/%Y")   #=> "Printed on 04/09/2003"
+ *     t.strftime("at %I:%M%p")            #=> "at 08:56AM"
+ */
+
 static VALUE
 time_strftime(time, format)
     VALUE time, format;
@@ -1308,6 +1764,13 @@ time_strftime(time, format)
     if (buf != buffer) free(buf);
     return str;
 }
+
+/*
+ *  call-seq:
+ *     Time.times => struct_tms
+ *  
+ *  Deprecated in favor of <code>Process::times</code>
+ */
 
 static VALUE
 time_s_times(obj)
@@ -1440,6 +1903,24 @@ time_load(klass, str)
     time_mload(time, str);
     return time;
 }
+
+/*
+ *  <code>Time</code> is an abstraction of dates and times. Time is
+ *  stored internally as the number of seconds and microseconds since
+ *  the <em>epoch</em>, January 1, 1970 00:00 UTC. On some operating
+ *  systems, this offset is allowed to be negative. Also see the
+ *  library modules <code>Date</code> and <code>ParseDate</code>. The
+ *  <code>Time</code> class treats GMT (Greenwich Mean Time) and UTC
+ *  (Coordinated Universal Time)<em>[Yes, UTC really does stand for
+ *  Coordinated Universal Time. There was a committee involved.]</em>
+ *  as equivalent.  GMT is the older way of referring to these
+ *  baseline times but persists in the names of calls on Posix
+ *  systems.
+ *     
+ *  All times are stored with some number of microseconds. Be aware of
+ *  this fact when comparing times with each other---times that are
+ *  apparently equal when displayed may be different when compared.
+ */
 
 void
 Init_Time()
