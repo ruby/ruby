@@ -208,7 +208,7 @@ module OpenURI
 
     if target.userinfo && "1.9.0" <= RUBY_VERSION
       # don't raise for 1.8 because compatibility.
-      raise "userinfo not supported.  [RFC3986]"
+      raise ArgumentError, "userinfo not supported.  [RFC3986]"
     end
 
     require 'net/http'
@@ -243,6 +243,11 @@ module OpenURI
 
     resp = nil
     http.start {
+      if http.respond_to?(:verify_mode) &&
+         (http.verify_mode & OpenSSL::SSL::VERIFY_PEER) != 0
+        # xxx: information hiding violation
+        http.instance_variable_get(:@socket).io.post_connection_check(target_host)
+      end
       req = Net::HTTP::Get.new(request_uri, header)
       if options.include? :http_basic_authentication
         user, pass = options[:http_basic_authentication]
