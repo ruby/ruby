@@ -34,10 +34,22 @@ rb_struct_iv_get(c, name)
 }
 
 static VALUE
+struct_s_members(klass)
+    VALUE klass;
+{
+    VALUE members = rb_struct_iv_get(klass, "__members__");
+
+    if (NIL_P(members)) {
+	rb_bug("non-initialized struct");
+    }
+    return members;
+}
+
+static VALUE
 struct_members(s)
     VALUE s;
 {
-    VALUE members = rb_struct_iv_get(rb_obj_class(s), "__members__");
+    VALUE members = struct_s_members(rb_obj_class(s));
 
     if (NIL_P(members)) {
 	rb_bug("non-initialized struct");
@@ -50,13 +62,13 @@ struct_members(s)
 }
 
 static VALUE
-rb_struct_s_members(obj)
-    VALUE obj;
+rb_struct_s_members(klass)
+    VALUE klass;
 {
     VALUE members, ary;
     VALUE *p, *pend;
 
-    members = struct_members(obj);
+    members = struct_s_members(klass);
     ary = rb_ary_new2(RARRAY(members)->len);
     p = RARRAY(members)->ptr; pend = p + RARRAY(members)->len;
     while (p < pend) {

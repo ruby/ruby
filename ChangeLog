@@ -1,3 +1,13 @@
+Sat Sep 25 01:52:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (rb_struct_s_members): wrong call of struct_members.
+	  [ruby-dev:24333]
+
+Fri Sep 24 16:09:42 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): propagate DVAR_DONT_RECYCLE on termination
+	  to avoid double call to rb_gc_force_recycle(). [ruby-dev:24311]
+
 Fri Sep 24 08:29:45 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (rb_parser_append_print): should handle prelude.
