@@ -64,7 +64,7 @@ goto :loop
   echo Installation directories:
   echo   --prefix=PREFIX         install files in PREFIX [/usr]
   echo System types:
-  echo   --target=TARGET         configure for TARGET [i386-mswin32]
+  echo   --target=TARGET         configure for TARGET [i386-bccwin32]
   echo Optional Package:
   echo   --with-static-linked-ext link external modules statically
   echo   --disable-install-doc   do not install rdoc indexes during install

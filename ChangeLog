@@ -2,6 +2,8 @@ Sat Feb 28 15:09:49  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/configure.bat: append missing label ":exit".
 
+	* bcc32/configure.bat: fix typo.
+
 Sat Feb 28 10:31:03 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* MANIFEST: add test_erb.rb
