@@ -20,8 +20,6 @@ Thu May 29 09:11:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* intern.h: prototypes; rb_autoload, rb_autoload_load,
 	  rb_autoload_p.
 
-Thu May 29 09:11:01 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
-
 	* lib/optparse.rb (OptionParser::Switch::PlacedArgument::parse):
 	  do not treat unmatched argument as an option.
 
