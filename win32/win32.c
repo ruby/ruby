@@ -444,7 +444,8 @@ mypopen (char *cmd, char *mode)
     int pipemode;
     struct ChildRecord* child;
     BOOL fRet;
-    HANDLE hInFile, hOutFile;
+    HANDLE hInFile, hOutFile, hSavedStdIo, hDupFile;
+    HANDLE hCurProc;
     SECURITY_ATTRIBUTES sa;
     int fd;
 
@@ -468,30 +469,75 @@ mypopen (char *cmd, char *mode)
 	return NULL;
     }
 
+    /* save parent's STDIO and redirect for child */
+    hCurProc = GetCurrentProcess();
     if (reading) {
-	child = CreateChild(cmd, &sa, NULL, hOutFile, NULL);
+	hSavedStdIo = GetStdHandle(STD_OUTPUT_HANDLE);
+	if (!SetStdHandle(STD_OUTPUT_HANDLE, hOutFile) ||
+	    !DuplicateHandle(hCurProc, hInFile, hCurProc, &hDupFile, 0, FALSE,
+			     DUPLICATE_SAME_ACCESS)) {
+	    errno = GetLastError();
+	    CloseHandle(hInFile);
+	    CloseHandle(hOutFile);
+	    CloseHandle(hCurProc);
+	    return NULL;
+	}
+	CloseHandle(hInFile);
     }
     else {
-	child = CreateChild(cmd, &sa, hInFile, NULL, NULL);
-    }
-
-    if (!child) {
-	CloseHandle(hInFile);
+	hSavedStdIo = GetStdHandle(STD_INPUT_HANDLE);
+	if (!SetStdHandle(STD_INPUT_HANDLE, hInFile) ||
+	    !DuplicateHandle(hCurProc, hOutFile, hCurProc, &hDupFile, 0, FALSE,
+			     DUPLICATE_SAME_ACCESS)) {
+	    errno = GetLastError();
+	    CloseHandle(hInFile);
+	    CloseHandle(hOutFile);
+	    CloseHandle(hCurProc);
+	    return NULL;
+	}
 	CloseHandle(hOutFile);
+    }
+    CloseHandle(hCurProc);
+
+    /* create child process */
+    child = CreateChild(cmd, &sa, NULL, NULL, NULL);
+    if (!child) {
+	CloseHandle(reading ? hOutFile : hInFile);
+	CloseHandle(hDupFile);
 	return NULL;
     }
 
+    /* restore STDIO */
     if (reading) {
-	fd = _open_osfhandle((long)hInFile,  (_O_RDONLY | pipemode));
+	if (!SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdIo)) {
+	    errno = GetLastError();
+	    CloseChildHandle(child);
+	    CloseHandle(hDupFile);
+	    CloseHandle(hOutFile);
+	    return NULL;
+	}
+    }
+    else {
+	if (!SetStdHandle(STD_INPUT_HANDLE, hSavedStdIo)) {
+	    errno = GetLastError();
+	    CloseChildHandle(child);
+	    CloseHandle(hInFile);
+	    CloseHandle(hDupFile);
+	    return NULL;
+	}
+    }
+
+    if (reading) {
+	fd = _open_osfhandle((long)hDupFile, (_O_RDONLY | pipemode));
 	CloseHandle(hOutFile);
     }
     else {
-	fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
+	fd = _open_osfhandle((long)hDupFile, (_O_WRONLY | pipemode));
 	CloseHandle(hInFile);
     }
 
     if (fd == -1) {
-	CloseHandle(reading ? hInFile : hOutFile);
+	CloseHandle(hDupFile);
 	CloseChildHandle(child);
 	return NULL;
     }
@@ -571,24 +617,26 @@ CreateChild(char *cmd, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, 
     memset(&aStartupInfo, 0, sizeof (STARTUPINFO));
     memset(&aProcessInformation, 0, sizeof (PROCESS_INFORMATION));
     aStartupInfo.cb = sizeof (STARTUPINFO);
-    aStartupInfo.dwFlags = STARTF_USESTDHANDLES;
-    if (hInput) {
-	aStartupInfo.hStdInput  = hInput;
-    }
-    else {
-	aStartupInfo.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
-    }
-    if (hOutput) {
-	aStartupInfo.hStdOutput = hOutput;
-    }
-    else {
-	aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-    }
-    if (hError) {
-	aStartupInfo.hStdError = hError;
-    }
-    else {
-	aStartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    if (hInput || hOutput || hError) {
+	aStartupInfo.dwFlags = STARTF_USESTDHANDLES;
+	if (hInput) {
+	    aStartupInfo.hStdInput  = hInput;
+	}
+	else {
+	    aStartupInfo.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
+	}
+	if (hOutput) {
+	    aStartupInfo.hStdOutput = hOutput;
+	}
+	else {
+	    aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+	}
+	if (hError) {
+	    aStartupInfo.hStdError = hError;
+	}
+	else {
+	    aStartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+	}
     }
 
     dwCreationFlags = (NORMAL_PRIORITY_CLASS);
