@@ -1,3 +1,9 @@
+Sat Jan 20 03:54:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): fixed serious syntax misbehavior.  do's
+	  preceding was too high.  a block in `foo bar do .. end' should
+	  be passed to `foo', not `bar'.
+
 Thu Jan 18 04:28:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_s_read): new method to call IO#read from

@@ -67,7 +67,7 @@ static unsigned long cond_stack = 0;
     cond_nest--;\
     cond_stack >>= 1;\
 } while (0)
-#define IN_COND (cond_nest > 0 && (cond_stack&1))
+#define COND_P() (cond_nest > 0 && (cond_stack&1))
 
 static int class_nest = 0;
 static int in_single = 0;
@@ -1489,7 +1489,7 @@ method_call	: operation '(' opt_call_args close_paren
 
 close_paren	: ')'
 		    {
-			if (!IN_COND) lex_state = EXPR_PAREN;
+			if (!COND_P()) lex_state = EXPR_PAREN;
 		    }
 
 stmt_rhs	: block_call
@@ -3617,9 +3617,7 @@ yylex()
 		    if (state == EXPR_FNAME) {
 			yylval.id = rb_intern(kw->name);
 		    }
-		    if (kw->id[0] == kDO &&
-			(state == EXPR_PAREN ||
-			 (!IN_COND && state == EXPR_ARG))) {
+		    if (kw->id[0] == kDO && !COND_P() && state == EXPR_PAREN) {
 			return kDO2;
 		    }
 		    return kw->id[state != EXPR_BEG];
