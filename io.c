@@ -820,7 +820,7 @@ io_binmode(io)
 
     fptr->mode |= FMODE_BINMODE;
 #endif
-    return INT2FIX(0);
+    return io;
 }
 
 int
