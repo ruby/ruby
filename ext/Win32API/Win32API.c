@@ -8,6 +8,17 @@
 #include <stdio.h>
 #endif
 
+#if defined(_MSC_VER)
+#if defined(_M_ALPHA)
+#ifdef __cplusplus
+extern "C" { long __asm(char *,...); };
+#else
+long __asm(char *,...);
+#endif
+#pragma intrinsic(__asm)
+#endif
+#endif
+
 #define _T_VOID     0
 #define _T_NUMBER   1
 #define _T_POINTER  2
@@ -190,10 +201,20 @@ Win32API_Call(argc, argv, obj)
 	    case _T_INTEGER:
 		lParam = NUM2ULONG(rb_ary_entry(args, i));
 #if defined(_MSC_VER) || defined(__LCC__)
+#if defined(_M_IX86)
 		_asm {
 		    mov     eax, lParam
 		    push    eax
 		}
+#elif defined(_M_ALPHA)
+		__asm(
+			"ldl r0, 0(%0);"
+			"stq r0, -(sp);"
+			, lParam
+		);
+#else
+#error
+#endif
 #elif defined __GNUC__
 		asm volatile ("pushl %0" :: "g" (lParam));
 #else
@@ -212,10 +233,20 @@ Win32API_Call(argc, argv, obj)
 		    pParam = RSTRING(str)->ptr;
 		}
 #if defined(_MSC_VER) || defined(__LCC__)
+#if defined(_M_IX86)
 		_asm {
 		    mov     eax, pParam
 		    push    eax
 		}
+#elif defined(_M_ALPHA)
+		__asm(
+			"ldl r0, 0(%0);"
+			"stq r0, -(sp);"
+			, pParam
+		);
+#else
+#error
+#endif
 #elif defined __GNUC__
 		asm volatile ("pushl %0" :: "g" (pParam));
 #else

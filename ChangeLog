@@ -1,3 +1,7 @@
+Wed Aug 30 17:09:14 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): AlphaNT support.
+
 Wed Aug 30 14:19:07 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (node_assign): should support NODE_CVASGN2 too.
