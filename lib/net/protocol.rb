@@ -15,7 +15,7 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.10'
+  Version = '1.1.11'
 
 =begin
 
@@ -144,7 +144,7 @@ Object
 
     def initialize( addr = nil, port = nil )
       @address = addr || 'localhost'
-      @port    = port || self.type.port
+      @port    = port || type.port
 
       @active  = false
       @pipe    = nil
@@ -160,11 +160,11 @@ Object
 
     def start( *args )
       return false if active?
-      @active = true
 
       begin
-        connect @address, @port
+        connect
         do_start *args
+        @active = true
         yield if iterator?
       ensure
         finish if iterator?
@@ -174,7 +174,7 @@ Object
     def finish
       ret = active?
 
-      do_finish if @command
+      do_finish
       disconnect
       @active = false
 
@@ -201,9 +201,9 @@ Object
     end
 
 
-    def connect( addr, port )
-      @socket  = self.type.socket_type.open( addr, port, @pipe )
-      @command = self.type.command_type.new( @socket )
+    def connect( addr = @address, port = @port )
+      @socket  = type.socket_type.open( addr, port, @pipe )
+      @command = type.command_type.new( @socket )
     end
 
     def disconnect
@@ -213,7 +213,7 @@ Object
       end
       @socket  = nil
     end
-
+    
   end
 
   Session = Protocol
@@ -226,23 +226,16 @@ Object
       @socket = sock
       @error_occured = false
       @last_reply = nil
+      @critical = false
     end
 
     attr_reader :socket, :error_occured, :last_reply
     attr_writer :socket
 
-    def quit
-      if @socket and not @socket.closed? then
-        do_quit
-        @error_occured = false
-      end
-    end
+    # abstract quit
 
 
     private
-
-    def do_quit
-    end
 
     # abstract get_reply()
 
@@ -266,7 +259,30 @@ Object
       @socket.writeline line
       check_reply ok
     end
-    
+
+
+    def critical
+      return if @critical
+      @critical = true
+      r = yield
+      @critical = false
+      r
+    end
+
+    def critical?
+      @critical
+    end
+
+    def begin_critical
+      ret = @critical
+      @critical = true
+      not ret
+    end
+
+    def end_critical
+      @critical = false
+    end
+
   end
 
 
@@ -284,11 +300,11 @@ Object
     class << self
 
       def error_type( err )
-        @err = err
+        module_eval "def self.get_error_type() #{err.name} end"
       end
 
       def error!( mes )
-        raise @err, mes
+        raise get_error_type, mes
       end
 
     end

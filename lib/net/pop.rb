@@ -71,8 +71,9 @@ Net::Protocol
 
     def do_start( acnt, pwd )
       @command.auth( acnt, pwd )
-      t = self.type.mail_type
+
       @mails = []
+      t = type.mail_type
       @command.list.each_with_index do |size,idx|
         if size then
           @mails.push t.new( idx, size, @command )
@@ -221,70 +222,81 @@ Net::POP3
 
     def initialize( sock )
       super
-      check_reply SuccessCode
+      critical {
+        check_reply SuccessCode
+      }
     end
 
 
     def auth( acnt, pass )
-      @socket.writeline 'USER ' + acnt
-      check_reply_auth
+      critical {
+        @socket.writeline 'USER ' + acnt
+        check_reply_auth
 
-      @socket.writeline( 'PASS ' + pass )
-      ret = check_reply_auth
-
-      return ret
+        @socket.writeline 'PASS ' + pass
+        check_reply_auth
+      }
     end
 
 
     def list
-      getok 'LIST'
-      
       arr = []
-      @socket.read_pendlist do |line|
-        num, siz = line.split( / +/o )
-        arr[ num.to_i ] = siz.to_i
-      end
-
-      return arr
+      critical {
+        getok 'LIST'
+        @socket.read_pendlist do |line|
+          num, siz = line.split( / +/o )
+          arr[ num.to_i ] = siz.to_i
+        end
+      }
+      arr
     end
 
 
     def rset
-      getok 'RSET'
+      critical {
+        getok 'RSET'
+      }
     end
 
 
     def top( num, lines = 0, dest = '' )
-      getok sprintf( 'TOP %d %d', num, lines )
-      @socket.read_pendstr( dest )
+      critical {
+        getok sprintf( 'TOP %d %d', num, lines )
+        @socket.read_pendstr( dest )
+      }
     end
 
 
     def retr( num, dest = '', &block )
-      getok sprintf( 'RETR %d', num )
-      @socket.read_pendstr( dest, &block )
+      critical {
+        getok sprintf( 'RETR %d', num )
+        @socket.read_pendstr( dest, &block )
+      }
     end
 
     
     def dele( num )
-      getok sprintf( 'DELE %d', num )
+      critical {
+        getok sprintf( 'DELE %d', num )
+      }
     end
 
 
     def uidl( num )
-      rep = getok( sprintf 'UIDL %d', num )
-      uid = rep.msg.split(' ')[1]
+      critical {
+        getok( sprintf 'UIDL %d', num ).msg.split(' ')[1]
+      }
+    end
 
-      uid
+
+    def quit
+      critical {
+        getok 'QUIT'
+      }
     end
 
 
     private
-
-
-    def do_quit
-      getok 'QUIT'
-    end
 
 
     def check_reply_auth
@@ -326,19 +338,17 @@ Net::POP3
 
 
     def auth( acnt, pass )
-      @socket.writeline( "APOP #{acnt} #{digest(@stamp + pass)}" )
-      return check_reply_auth
+      critical {
+        @socket.writeline( "APOP #{acnt} #{digest(@stamp + pass)}" )
+        check_reply_auth
+      }
     end
 
 
     def digest( str )
-      temp = MD5.new( str ).digest
-
       ret = ''
-      temp.each_byte do |i|
-        ret << sprintf( '%02x', i )
-      end
-      return ret
+      MD5.new( str ).digest.each_byte {|i| ret << sprintf('%02x', i) }
+      ret
     end
       
   end
