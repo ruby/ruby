@@ -1,6 +1,10 @@
+Mon Dec  3 16:04:16 2001  Usaku Nakamura <usa@ruby-lang.org>
+
+	* configure.in: not use X11BASE, since it's not always set.
+
 Mon Dec  3 03:32:22 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
-        * configure.in: apply patch from NetBSD's pkgsrc (patch-aa).
+	* configure.in: apply patch from NetBSD's pkgsrc (patch-aa).
 
 Sun Dec  2 22:01:52 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
