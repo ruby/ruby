@@ -28,11 +28,11 @@ has_srcdir = false
 has_version = false
 File.foreach "config.status" do |$_|
   next if /^#/
-  if /^s%@program_transform_name@%s,(.*)%g$/
+  if /^s[%,]@program_transform_name@[%,]s,(.*)[%,]/
     next if $install_name
     ptn = $1.sub(/\$\$/, '$').split(/,/)	#'
     v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + "ruby".sub(ptn[0],ptn[1]) + "\"\n"
-  elsif /^s%@(\w+)@%(.*)%g/
+  elsif /^s[%,]@(\w+)@[%,](.*)[%,]/
     name = $1
     val = $2 || ""
     next if name =~ /^(INSTALL|DEFS|configure_input|srcdir|top_srcdir)$/
