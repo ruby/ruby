@@ -1,3 +1,8 @@
+Tue May 20 17:39:15 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (init_copy): call initialize_copy at the end of copy
+	  process.
+
 Tue May 20 17:15:55 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* error.c (syserr_initialize): use Errno constants as default

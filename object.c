@@ -112,7 +112,6 @@ init_copy(dest, obj)
     }
     RBASIC(dest)->flags &= ~(T_MASK|FL_EXIVAR);
     RBASIC(dest)->flags |= RBASIC(obj)->flags & (T_MASK|FL_EXIVAR|FL_TAINT);
-    rb_funcall(dest, id_init_copy, 1, obj);
     if (FL_TEST(obj, FL_EXIVAR)) {
 	rb_copy_generic_ivar(dest, obj);
     }
@@ -129,6 +128,7 @@ init_copy(dest, obj)
 	    ROBJECT(dest)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
 	}
     }
+    rb_funcall(dest, id_init_copy, 1, obj);
 }
 
 VALUE
@@ -141,9 +141,9 @@ rb_obj_clone(obj)
         rb_raise(rb_eTypeError, "can't clone %s", rb_obj_classname(obj));
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
-    init_copy(clone, obj);
     RBASIC(clone)->klass = rb_singleton_class_clone(obj);
     RBASIC(clone)->flags = RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT);
+    init_copy(clone, obj);
 
     return clone;
 }
