@@ -1,3 +1,7 @@
+Sat Dec 11 00:10:18 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_reopen): [ruby-dev:25150]
+
 Fri Dec 10 08:39:27 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_listen): get OpenFile just before calling

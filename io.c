@@ -3172,6 +3172,7 @@ io_reopen(io, nfile)
 	}
 	else {
 	    fclose(fptr->f);
+	    fptr->f = NULL;
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
 	    fptr->f = rb_fdopen(fd, mode);
