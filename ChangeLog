@@ -1,3 +1,10 @@
+Fri Dec 24 23:51:48 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: bcc32 should use RTL dll (backport from HEAD)
+	  [ruby-dev:25306]
+
+	* win32/win32.[ch]: ditto.
+
 Fri Dec 24 23:27:18 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/image.rb: TkPhotoImage#cget bug fix
@@ -5,6 +12,7 @@ Fri Dec 24 23:27:18 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Fri Dec 24 18:39:25 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.[ch]: failed to compile on bcc32 (and probably wince)
+	  [ruby-dev:25306]
 
 Fri Dec 24 02:52:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -3189,11 +3189,13 @@ void rb_w32_free_environ(char **env)
     free(env);
 }
 
+#undef getpid
 pid_t rb_w32_getpid(void)
 {
     pid_t pid;
 
-    pid = _getpid();
+    pid = getpid();
+
     if (IsWin95()) pid = -pid;
 
     return pid;
