@@ -35,15 +35,11 @@ class Property
   include Enumerable
 
   def self.load(stream)
-    prop = new
-    prop.load(stream)
-    prop
+    new.load(stream)
   end
 
   def self.open(filename)
-    File.open(filename) do |f|
-      load(f)
-    end
+    File.open(filename) { |f| load(f) }
   end
 
   # find property from $:.
@@ -117,9 +113,9 @@ class Property
   # hook: block which will be called with 2 args, name and value
   def add_hook(name = nil, &hook)
     if name.nil?
-      assign_self_hook(hook)
+      assign_self_hook(&hook)
     else
-      assign_hook(name_to_a(name), hook)
+      assign_hook(name_to_a(name), &hook)
     end
   end
 
@@ -200,7 +196,7 @@ protected
     @self_hook + (@hook[key] || NO_HOOK)
   end
 
-  def local_assign_hook(key, hook)
+  def local_assign_hook(key, &hook)
     check_lock(key)
     @store[key] ||= nil
     (@hook[key] ||= []) << hook
@@ -229,13 +225,13 @@ private
     hook + ref.local_hook(last_key)
   end
 
-  def assign_hook(ary, hook)
+  def assign_hook(ary, &hook)
     ary[0..-2].inject(self) { |ref, name|
       ref.deref_key(to_key(name))
-    }.local_assign_hook(to_key(ary.last), hook)
+    }.local_assign_hook(to_key(ary.last), &hook)
   end
 
-  def assign_self_hook(hook)
+  def assign_self_hook(&hook)
     check_lock(nil)
     @self_hook << hook
   end

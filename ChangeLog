@@ -1,3 +1,7 @@
+Mon Dec 22 13:40:19 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/property.rb: passing block by reference.
+
 Mon Dec 22 00:32:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/emitter.c (syck_emitter_write): str bigger than
