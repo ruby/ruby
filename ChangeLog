@@ -1,3 +1,17 @@
+Thu Jul  1 03:16:09 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read): take optional second argument
+	  to specify a string to be written.
+    
+	* ext/openssl/lib/openssl/buffering.rb (OpenSSL::Buffering#read):
+	  take optional second argument to specify a string to be written.
+    
+	* ext/openssl/lib/openssl/buffering.rb (OpenSSL::Buffering#gets):
+	  refine regexp for end-of-line.
+    
+	* ext/opnessl/lib/openssl/ssl.rb
+	  (OpenSSL::SSL::SocketForwarder#listen): fix typo.
+
 Wed Jun 30 11:38:51 2004  Elven  <elven@elven.de>
 
 	* parse.y (primary): should not be NULL.  [ruby-core:03098]

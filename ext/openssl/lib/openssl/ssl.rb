@@ -14,7 +14,8 @@
   $Id$
 =end
 
-require 'openssl/buffering'
+require "openssl"
+require "openssl/buffering"
 
 module OpenSSL
   module SSL
@@ -42,6 +43,10 @@ module OpenSSL
       def closed?
         to_io.closed?
       end
+
+      def do_not_reverse_lookup=(flag)
+        to_io.do_not_reverse_lookup = flag
+      end
     end
 
     class SSLSocket
@@ -63,7 +68,7 @@ module OpenSSL
         @svr
       end
 
-      def listen(basklog=5)
+      def listen(backlog=5)
         @svr.listen(backlog)
       end
 

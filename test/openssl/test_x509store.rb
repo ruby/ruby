@@ -109,8 +109,7 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
 
     store = OpenSSL::X509::Store.new
     store.purpose = OpenSSL::X509::PURPOSE_ANY
-    store.flags =
-      OpenSSL::X509::V_FLAG_CRL_CHECK #|OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
+    store.flags = OpenSSL::X509::V_FLAG_CRL_CHECK
     store.add_cert(ca1_cert)
     store.add_crl(crl1)   # revoke no cert
     store.add_crl(crl2)   # revoke ee2_cert

@@ -54,14 +54,19 @@ module Buffering
 
   public
 
-  def read(size=nil)
+  def read(size=nil, buf=nil)
     fill_rbuff unless defined? @rbuffer
     @eof ||= nil
     until @eof
       break if size && size <= @rbuffer.size
       fill_rbuff
     end
-    consume_rbuff(size)
+    ret = consume_rbuff(size) || ""
+    if buf
+      buf.replace(ret)
+      ret = buf
+    end
+    (size && ret.empty?) ? nil : ret
   end
 
   def gets(eol=$/)
@@ -164,7 +169,7 @@ module Buffering
     s = ""
     args.each{|arg|
       s << arg.to_s
-      unless /#{$/}\Z/o =~ s
+      unless /#{$/}\z/o =~ s
         s << $/
       end
     }

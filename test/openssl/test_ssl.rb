@@ -61,7 +61,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       cmd << "-d" if $DEBUG
       cmd << SSL_SERVER << port.to_s << verify_mode.to_s
       cmd << (start_immediately ? "yes" : "no")
-      server = IO.popen(cmd, "w+")
+      server = IO.popen(cmd.join(" "), "w+")
       server.write(@ca_cert.to_pem)
       server.write(@svr_cert.to_pem)
       server.write(@svr_key.to_pem)

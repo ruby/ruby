@@ -76,12 +76,21 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     ]
     name = OpenSSL::X509::Name.new(dn)
     ary = name.to_a
-    assert_equal("/DC=org/DC=ruby-lang/CN=GOTOU Yuuzou/emailAddress=gotoyuzo@ruby-lang.org/serialNumber=123", name.to_s)
+    if OpenSSL::OPENSSL_VERSION_NUMBER < 0x00907000
+      assert_equal("/DC=org/DC=ruby-lang/CN=GOTOU Yuuzou/Email=gotoyuzo@ruby-lang.org/SN=123", name.to_s)
+    else
+      assert_equal("/DC=org/DC=ruby-lang/CN=GOTOU Yuuzou/emailAddress=gotoyuzo@ruby-lang.org/serialNumber=123", name.to_s)
+    end
     assert_equal("DC", ary[0][0])
     assert_equal("DC", ary[1][0])
     assert_equal("CN", ary[2][0])
-    assert_equal("emailAddress", ary[3][0])
-    assert_equal("serialNumber", ary[4][0])
+    if OpenSSL::OPENSSL_VERSION_NUMBER < 0x00907000
+      assert_equal("Email", ary[3][0])
+      assert_equal("SN", ary[4][0])
+    else
+      assert_equal("emailAddress", ary[3][0])
+      assert_equal("serialNumber", ary[4][0])
+    end
     assert_equal("org", ary[0][1])
     assert_equal("ruby-lang", ary[1][1])
     assert_equal("GOTOU Yuuzou", ary[2][1])
@@ -140,12 +149,21 @@ class OpenSSL::TestX509Name < Test::Unit::TestCase
     name = OpenSSL::X509::Name.new
     dn.each{|attr| name.add_entry(*attr) }
     ary = name.to_a
-    assert_equal("/DC=org/DC=ruby-lang/CN=GOTOU Yuuzou/emailAddress=gotoyuzo@ruby-lang.org/serialNumber=123", name.to_s)
+    if OpenSSL::OPENSSL_VERSION_NUMBER < 0x00907000
+      assert_equal("/DC=org/DC=ruby-lang/CN=GOTOU Yuuzou/Email=gotoyuzo@ruby-lang.org/SN=123", name.to_s)
+    else
+      assert_equal("/DC=org/DC=ruby-lang/CN=GOTOU Yuuzou/emailAddress=gotoyuzo@ruby-lang.org/serialNumber=123", name.to_s)
+    end
     assert_equal("DC", ary[0][0])
     assert_equal("DC", ary[1][0])
     assert_equal("CN", ary[2][0])
-    assert_equal("emailAddress", ary[3][0])
-    assert_equal("serialNumber", ary[4][0])
+    if OpenSSL::OPENSSL_VERSION_NUMBER < 0x00907000
+      assert_equal("Email", ary[3][0])
+      assert_equal("SN", ary[4][0])
+    else
+      assert_equal("emailAddress", ary[3][0])
+      assert_equal("serialNumber", ary[4][0])
+    end
     assert_equal("org", ary[0][1])
     assert_equal("ruby-lang", ary[1][1])
     assert_equal("GOTOU Yuuzou", ary[2][1])

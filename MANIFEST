@@ -776,6 +776,8 @@ test/fileutils/test_nowrite.rb
 test/gdbm/test_gdbm.rb
 test/logger/test_logger.rb
 test/monitor/test_monitor.rb
+test/openssl/ssl_server.rb
+test/openssl/test_ssl.rb
 test/openssl/test_x509cert.rb
 test/openssl/test_x509crl.rb
 test/openssl/test_x509name.rb
