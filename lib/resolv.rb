@@ -1615,10 +1615,10 @@ class Resolv
       \z/x
 
     Regex = /
-      (?:#{Regex_8Hex.source}) |
-      (?:#{Regex_CompressedHex.source}) |
-      (?:#{Regex_6Hex4Dec.source}) |
-      (?:#{Regex_CompressedHex4Dec.source})/x
+      (?:#{Regex_8Hex}) |
+      (?:#{Regex_CompressedHex}) |
+      (?:#{Regex_6Hex4Dec}) |
+      (?:#{Regex_CompressedHex4Dec})/x
 
     def self.create(arg)
       case arg
@@ -1706,5 +1706,5 @@ class Resolv
   end
 
   DefaultResolver = self.new
-  AddressRegex = /(?:#{IPv4::Regex.source})|(?:#{IPv6::Regex.source})/
+  AddressRegex = /(?:#{IPv4::Regex})|(?:#{IPv6::Regex})/
 end
