@@ -1,3 +1,8 @@
+Thu Jan 27 00:12:19 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb (setup): support BSD style
+	  directory group inheritance (again).
+
 Thu Jan 27 00:02:40 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb (setup): support BSD style
