@@ -38,7 +38,7 @@ Fri Feb  7 15:30:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Thu Feb  6 19:04:32 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* re.c (rb_reg_initialize_m): shoule not preset "kcode" unless
+	* re.c (rb_reg_initialize_m): should not preset "kcode" unless
 	  encoding is explicitly specified.
 
 Thu Feb  6 19:01:32 2003  Minero Aoki  <aamine@loveruby.net>
@@ -10013,7 +10013,7 @@ Tue Feb 27 16:38:15 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (ev_const_defined): check Object's constant if no current
 	  class is available (e.g. defining singleton class for Fixnums).
 
-	* time.c (time_timeval): negative time interval shoule not be
+	* time.c (time_timeval): negative time interval should not be
 	  allowed.
 
 	* eval.c (proc_call): ignore block to `call' always, despite of
