@@ -1,6 +1,6 @@
 Tue Feb 22 07:24:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* parse.y (parser_yylex): identfier after dot must not be a variable.
+	* parse.y (parser_yylex): identifier after dot must not be a variable.
 
 Mon Feb 21 18:31:12 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
