@@ -1,3 +1,7 @@
+Wed Aug 28 18:19:55 2002  Michal Rokos  <michal@ruby-lang.org>
+
+	* file.c: fix memory leak in rb_stat_init.
+
 Wed Aug 28 17:45:03 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.c (kill): negate pid under Win9x.
@@ -20,7 +24,6 @@ Wed Aug 28 15:00:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_intern): ditto.
 
->>>>>>> 1.1095
 Wed Aug 28 11:37:35 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.h: define SIGINT and SIGKILL if not defined.

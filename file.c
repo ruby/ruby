@@ -2009,6 +2009,10 @@ rb_stat_init(obj, fname)
     if (stat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
+    if (DATA_PTR(obj)) {
+	free(DATA_PTR(obj));
+	DATA_PTR(obj) = NULL;
+    }
     nst = ALLOC(struct stat);
     *nst = st;
     DATA_PTR(obj) = nst;
