@@ -698,17 +698,17 @@ An end of a defun is found by moving forward from the beginning of one."
 	  ("\\(#\\)[{$@]" 1 (1 . nil))
 	  ;; the last $' in the string ,'...$' is not variable
 	  ;; the last ?' in the string ,'...?' is not ascii code
-	  ("\\(^\\|[[\\s <+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[?$]\\('\\)"
+	  ("\\(^\\|[[ \t\n<+(,=]\\)\\('\\)[^'\n\\\\]*\\(\\\\.[^'\n\\\\]*\\)*[?$]\\('\\)"
 	   (2 (7 . nil))
 	   (4 (7 . nil)))
 	  ;; the last $` in the string ,`...$` is not variable
 	  ;; the last ?` in the string ,`...?` is not ascii code
-	  ("\\(^\\|[[\\s <+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[?$]\\(`\\)"
+	  ("\\(^\\|[[ \t\n<+(,=]\\)\\(`\\)[^`\n\\\\]*\\(\\\\.[^`\n\\\\]*\\)*[?$]\\(`\\)"
 	   (2 (7 . nil))
 	   (4 (7 . nil)))
 	  ;; the last $" in the string ,"...$" is not variable
 	  ;; the last ?" in the string ,"...?" is not ascii code
-	  ("\\(^\\|[[\\s <+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[?$]\\(\"\\)"
+	  ("\\(^\\|[[ \t\n<+(,=]\\)\\(\"\\)[^\"\n\\\\]*\\(\\\\.[^\"\n\\\\]*\\)*[?$]\\(\"\\)"
 	   (2 (7 . nil))
 	   (4 (7 . nil)))
 	  ;; $' $" $` .... are variables
@@ -719,7 +719,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	   (4 (7 . ?/))
 	   (6 (7 . ?/)))
 	  ;; %Q!...!
-	  ("\\(^\\|[[\\s <+(,=]\\)%[xrqQ]?\\([^a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\2\\)"
+	  ("\\(^\\|[[ \t\n<+(,=]\\)%[xrqQwW]?\\([^<[{(a-zA-Z0-9 \n]\\)[^\n\\\\]*\\(\\\\.[^\n\\\\]*\\)*\\(\\2\\)"
 	   (2 (7 . nil))
 	   (4 (7 . nil)))
 	  ("^\\(=\\)begin\\(\\s \\|$\\)" 1 (7 . nil))
