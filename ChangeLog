@@ -1,3 +1,11 @@
+Thu Dec 26 22:33:18 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb (create_makefile): check only `-' option.
+
+	* configure.in: cleanups for MinGW. remove -D__NO_ISOCEXT in $CFLAGS.
+
+	* win32/win32.h: prototypes for isinf, isnan are not needed on MinGW.
+
 Thu Dec 26 19:22:00 2002  YOSHIDA Kazuhiro <moriq@moriq.com>
 
 	* win32/setup.mak (-prologue-): moved srcdir macro definition.
