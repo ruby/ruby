@@ -30,7 +30,7 @@ end
 begin
   File.symlink 'not_exist', 'symlink_test'
   HAVE_SYMLINK = true
-rescue NotImplementedError
+rescue NotImplementedError, SystemCallError
   HAVE_SYMLINK = false
 ensure
   File.unlink 'symlink_test' if File.symlink?('symlink_test')
