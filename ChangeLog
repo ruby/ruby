@@ -1,3 +1,8 @@
+Wed Apr 10 14:16:45 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* misc/ruby-mode.el (ruby-font-lock-keywords): fontify symbols for
+	  unary operators and aset.
+
 Tue Apr  9 13:40:31 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/mkmf.rb (try_link0): need expand macro in command, sync with
