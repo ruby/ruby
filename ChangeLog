@@ -1,3 +1,8 @@
+Mon Jan  7 14:38:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (convert_type): backport from 1.7 to avoid NameError
+	  messages with -d option.
+
 Mon Jan  7 12:38:47 2002  Tanaka Akira  <akr@m17n.org>
 
         * lib/time.rb (Time#xmlschema): new optional argument 
