@@ -1,15 +1,18 @@
-Wed Mar 20 20:16:44 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Wed Mar 20 21:54:17 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* win32/Makefile.sub: made variables configurable.
 
 	* win32/Makefile.sub (config.h): updates RUBY_PLATFORM from
 	  Makefile.
 
-	* win32/Makefile.sub (config.status): ditto.
+	* win32/Makefile.sub (config.status): ditto. and use recent
+	  autoconf format.
 
 	* win32/Makefile.sub (clean): separate ext and local clean up.
 
 	* win32/Makefile.sub (distclean): ditto.
+
+	* win32/config.status.in: no longer used.
 
 Wed Mar 20 20:12:35 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
