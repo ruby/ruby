@@ -936,18 +936,29 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     }
     else {
 	int redir = -1;
+	int len = 0;
+	while (ISSPACE(*cmd)) cmd++;
+	for (prog = cmd; *prog; prog = CharNext(prog)) {
+	    if (ISSPACE(*prog)) {
+		len = prog - cmd;
+		do ++prog; while (ISSPACE(*prog));
+		if (!*prog) break;
+	    }
+	    else {
+		len = 0;
+	    }
+	}
+	if (!len) len = strlen(cmd);
 	if ((shell = getenv("RUBYSHELL")) && (redir = has_redirection(cmd))) {
-	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
-				 sizeof (" -c ") + 2);
-	    sprintf(tmp, "%s -c \"%s\"", shell, cmd);
+	    char *tmp = ALLOCA_N(char, strlen(shell) + len + sizeof(" -c ") + 2);
+	    sprintf(tmp, "%s -c \"%.*s\"", shell, len, cmd);
 	    cmd = tmp;
 	}
 	else if ((shell = getenv("COMSPEC")) &&
 		 ((redir < 0 ? has_redirection(cmd) : redir) ||
 		  isInternalCmd(cmd, shell))) {
-	    char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) +
-				 sizeof (" /c "));
-	    sprintf(tmp, "%s /c %s", shell, cmd);
+	    char *tmp = ALLOCA_N(char, strlen(shell) + len + sizeof(" /c "));
+	    sprintf(tmp, "%s /c %.*s", shell, len, cmd);
 	    cmd = tmp;
 	}
 	else {
@@ -958,9 +969,17 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
 		    p = dln_find_exe(cmd, NULL);
 		    break;
 		}
-		if (strchr(".:*?\"/\\", *prog)) break;
+		if (strchr(".:*?\"/\\", *prog)) {
+		    if (cmd[len]) {
+			char *tmp = ALLOCA_N(char, len + 1);
+			memcpy(tmp, cmd, len);
+			tmp[len] = 0;
+			cmd = tmp;
+		    }
+		    break;
+		}
 		if (ISSPACE(*prog) || strchr("<>|", *prog)) {
-		    int len = prog - cmd;
+		    len = prog - cmd;
 		    p = ALLOCA_N(char, len + 1);
 		    memcpy(p, cmd, len);
 		    p[len] = 0;

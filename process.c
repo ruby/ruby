@@ -1027,8 +1027,17 @@ rb_proc_exec(str)
     after_exec();
 #else
     for (s=str; *s; s++) {
+	if (ISSPACE(*s)) {
+	    const char *p, *nl = NULL;
+	    for (p = s; ISSPACE(*p); p++) {
+		if (*p == '\n') nl = p;
+	    }
+	    if (!*p) break;
+	    if (nl) goto via_shell;
+	}
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
 	    int status;
+	  via_shell:
 #if defined(MSDOS)
 	    before_exec();
 	    status = system(str);
@@ -1056,7 +1065,8 @@ rb_proc_exec(str)
     }
     a = argv = ALLOCA_N(char*, (s-str)/2+2);
     ss = ALLOCA_N(char, s-str+1);
-    strcpy(ss, str);
+    memcpy(ss, str, s-str);
+    ss[s-str] = '\0';
     if (*a++ = strtok(ss, " \t")) {
 	while (t = strtok(NULL, " \t")) {
 	    *a++ = t;
