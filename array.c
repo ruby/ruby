@@ -240,8 +240,8 @@ rb_ary_initialize(argc, argv, ary)
 	rb_raise(rb_eArgError, "array size too big");
     }
     if (len > RARRAY(ary)->aux.capa) {
-	RARRAY(ary)->aux.capa = len;
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, len);
+	RARRAY(ary)->aux.capa = len;
     }
     if (rb_block_given_p()) {
 	long i;
@@ -307,11 +307,11 @@ rb_ary_store(ary, idx, val)
 	if (new_capa * (long)sizeof(VALUE) <= new_capa) {
 	    rb_raise(rb_eArgError, "index too big");
 	}
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, new_capa);
 	RARRAY(ary)->aux.capa = new_capa;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
     if (idx > RARRAY(ary)->len) {
-	rb_mem_clear(RARRAY(ary)->ptr+RARRAY(ary)->len,
+	rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len,
 		     idx-RARRAY(ary)->len + 1);
     }
 
@@ -660,8 +660,8 @@ rb_ary_update(ary, beg, len, rpl)
     if (beg >= RARRAY(ary)->len) {
 	len = beg + rlen;
 	if (len >= RARRAY(ary)->aux.capa) {
-	    RARRAY(ary)->aux.capa = len;
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, len);
+	    RARRAY(ary)->aux.capa = len;
 	}
 	rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len, beg - RARRAY(ary)->len);
 	MEMCPY(RARRAY(ary)->ptr + beg, RARRAY(rpl)->ptr, VALUE, rlen);
@@ -676,8 +676,8 @@ rb_ary_update(ary, beg, len, rpl)
 
 	alen = RARRAY(ary)->len + rlen - len;
 	if (alen >= RARRAY(ary)->aux.capa) {
-	    RARRAY(ary)->aux.capa = alen;
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, alen);
+	    RARRAY(ary)->aux.capa = alen;
 	}
 
 	if (len != rlen) {
@@ -1228,8 +1228,8 @@ rb_ary_delete(ary, item)
     RARRAY(ary)->len = i2;
     if (i2 * 2 < RARRAY(ary)->aux.capa &&
 	    RARRAY(ary)->aux.capa > ARY_DEFAULT_SIZE) {
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, i2 * 2);
 	RARRAY(ary)->aux.capa = i2 * 2;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
 
     return item;
@@ -1349,8 +1349,8 @@ rb_ary_clear(ary)
     rb_ary_modify(ary);
     RARRAY(ary)->len = 0;
     if (ARY_DEFAULT_SIZE * 2 < RARRAY(ary)->aux.capa) {
+	REALLOC_N(RARRAY(ary)->ptr, VALUE, ARY_DEFAULT_SIZE * 2);
 	RARRAY(ary)->aux.capa = ARY_DEFAULT_SIZE * 2;
-	REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->aux.capa);
     }
     return ary;
 }
@@ -1397,8 +1397,8 @@ rb_ary_fill(argc, argv, ary)
     end = beg + len;
     if (end > RARRAY(ary)->len) {
 	if (end >= RARRAY(ary)->aux.capa) {
-	    RARRAY(ary)->aux.capa = end;
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, end);
+	    RARRAY(ary)->aux.capa = end;
 	}
 	if (beg > RARRAY(ary)->len) {
 	    rb_mem_clear(RARRAY(ary)->ptr + RARRAY(ary)->len, end - RARRAY(ary)->len);
