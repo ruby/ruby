@@ -1,4 +1,4 @@
-Tue Nov 25 18:56:06 2003  Tanaka Akira  <akr@m17n.org>
+Tue Nov 25 19:04:23 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (URI::Generic#find_proxy): ENV case sensitivity test
 	  refined.

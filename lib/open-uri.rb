@@ -463,7 +463,7 @@ module URI
         when 0 # no proxy setting anyway.
           proxy_uri = nil
         when 1
-          k, v = pairs[0]
+          k, v = pairs.shift
           if k == 'http_proxy' && ENV[k.upcase] == nil
             # http_proxy is safe to use becase ENV is case sensitive.
             proxy_uri = ENV[name]
