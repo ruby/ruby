@@ -720,11 +720,11 @@ print_partial_compiled_pattern(start, end)
 		    printf("%c", c * BYTEWIDTH + bit);
               }
 	    p += mcnt + 1;
-	    mcnt = EXTRACT_UNSIGNED(p);
-	    p += 2;
+	    mcnt = EXTRACT_UNSIGNED_AND_INCR(p);
 	    while (mcnt--) {
-		int beg = *p++;
-		int end = *p++;
+		int beg, end;
+		beg = EXTRACT_MBC_AND_INCR(p);
+		end = EXTRACT_MBC_AND_INCR(p);
 		printf("/%c%c-%c%c", beg>>BYTEWIDTH, beg&0xff, end>>BYTEWIDTH, end&0xff);
 	    }
 	    break;
@@ -915,11 +915,11 @@ calculate_must_string(start, end)
 	case charset:
         case charset_not:
 	  mcnt = *p++;
-	  p += mcnt;
-	  EXTRACT_NUMBER_AND_INCR (mcnt, p);
+	  p += mcnt+1;
+	  mcnt = EXTRACT_UNSIGNED_AND_INCR(p);
 	  while (mcnt--) {
-	    EXTRACT_NUMBER_AND_INCR (mcnt2, p);
-	    EXTRACT_NUMBER_AND_INCR (mcnt2, p);
+	    EXTRACT_MBC_AND_INCR(p);
+	    EXTRACT_MBC_AND_INCR(p);
 	  }
 	  break;
 
@@ -1999,6 +1999,30 @@ re_compile_pattern(pattern, size, bufp)
   if (stackp != stackb)
     FREE_AND_RETURN(stackb, "unmatched (");
 
+  /* set optimize flags */
+  laststart = bufp->buffer;
+  if (*laststart == start_memory) laststart += 3;
+  if (*laststart == dummy_failure_jump) laststart += 3;
+  else if (*laststart == try_next) laststart += 3;
+  if (*laststart == on_failure_jump) {
+    int mcnt;
+
+    laststart++;
+    EXTRACT_NUMBER_AND_INCR(mcnt, laststart);
+    if (mcnt == 4 && *laststart == anychar) {
+      bufp->options |= RE_OPTIMIZE_ANCHOR;
+    }
+    else if (*laststart == charset || *laststart == charset_not) {
+      mcnt = *++laststart;
+      laststart += mcnt+1;
+      mcnt = EXTRACT_UNSIGNED_AND_INCR(laststart);
+      laststart += 4*mcnt;
+      if (*laststart == maybe_finalize_jump) {
+	bufp->options |= RE_OPTIMIZE_CCLASS;
+      }
+    }
+  }
+
   bufp->used = b - bufp->buffer;
   bufp->re_nsub = regnum;
   bufp->must = calculate_must_string(bufp->buffer, b);
@@ -2547,6 +2571,11 @@ re_search(bufp, string, size, startpos, range, regs)
   if (startpos < 0  ||  startpos > size)
     return -1;
 
+  /* Update the fastmap now if not correct already.  */
+  if (fastmap && !bufp->fastmap_accurate) {
+      re_compile_fastmap(bufp);
+  }
+
   /* If the search isn't to be a backwards one, don't waste time in a
      search for a pattern that must be anchored.  */
   if (bufp->used>0) {
@@ -2561,10 +2590,6 @@ re_search(bufp, string, size, startpos, range, regs)
       break;
 
     case begline:
-      if (startpos == 0) {
-        val = re_match(bufp, string, size, 0, regs);
-        if (val >= 0) return 0;
-      }
       anchor = 1;
       break;
 
@@ -2572,18 +2597,23 @@ re_search(bufp, string, size, startpos, range, regs)
       break;
     }
   }
-
-  /* Update the fastmap now if not correct already.  */
-  if (fastmap && !bufp->fastmap_accurate) {
-      re_compile_fastmap(bufp);
+  if (bufp->options & RE_OPTIMIZE_ANCHOR) {
+    anchor = 1;
   }
 
-  if (range > 0
-      && bufp->must
-      && !must_instr(bufp->must+1, bufp->must[0],
-		     string+startpos, size-startpos,
-		     TRY_TRANSLATE()?translate:0)) {
-    return -1;
+  if (bufp->must) {
+    if (range > 0) {
+      if (!must_instr(bufp->must+1, bufp->must[0],
+		      string+startpos, size-startpos,
+		      TRY_TRANSLATE()?translate:0))
+	return -1;
+    }
+    else {
+      if (!must_instr(bufp->must+1, bufp->must[0],
+		      string+startpos+range, size-startpos-range,
+		      TRY_TRANSLATE()?translate:0))
+	return -1;
+    }
   }
 
   for (;;)
@@ -2632,14 +2662,6 @@ re_search(bufp, string, size, startpos, range, regs)
 	    }
 	}
 
-      if (anchor && startpos < size && string[startpos-1] != '\n') {
-	while (range > 0 && string[startpos] != '\n') {
-	  range--;
-	  startpos++;
-	}
-	goto advance;
-      }
-
       if (fastmap && startpos == size && range >= 0
 	  && (bufp->can_be_null == 0 ||
 	      (bufp->can_be_null && size > 0
@@ -2657,6 +2679,35 @@ re_search(bufp, string, size, startpos, range, regs)
       alloca(0);
 #endif /* cALLOCA */
 #endif /* NO_ALLOCA */
+
+      if (range > 0) {
+	if (anchor && startpos < size && string[startpos-1] != '\n') {
+	  while (range > 0 && string[startpos] != '\n') {
+	    range--;
+	    startpos++;
+	  }
+	}
+	else if (fastmap && (bufp->options & RE_OPTIMIZE_CCLASS)) {
+	  register unsigned char *p, c;
+	  int irange = range;
+
+	  p = (unsigned char *)string+startpos;
+	  while (range > 0) {
+	    c = *p++;
+	    if (ismbchar(c)) {
+	      if (!fastmap[c]) break;
+	      c = *p++;
+	      range--;
+	      if (fastmap[c] != 2) break;
+	    }
+	    else 
+	      if (!fastmap[TRY_TRANSLATE() ? translate[c] : c])
+		break;
+	    range--;
+	  }
+	  startpos += irange - range;
+	}
+      }
 
     advance:
       if (!range) 

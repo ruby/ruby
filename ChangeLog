@@ -1,3 +1,18 @@
+Thu Jun 25 02:05:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_search): optimize for `.*' at beginning of the
+	  pattern.
+
+	* regex.c (re_search): optimize for character class repeat at
+	  beginning of the pattern.
+
+	* regex.c (re_compile_pattern): detect optimization potential for
+	  the compiled patterns.
+
+Wed Jun 24 23:45:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_search): wrong anchor handling for reverse search.
+
 Wed Jun 24 02:18:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c: rename function prefix `thread_' to `thred_' to avoid
