@@ -1,3 +1,9 @@
+Thu Feb 19 22:24:04 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/soap/mapping/rubytypeFactory.rb: should not dump singleton class.
+	  [ruby-dev:22588]
+	  c = class << Object.new; class C; self; end; end; SOAPMarshal.dump(c)
+
 Thu Feb 19 18:08:18 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* ext/strscan/strscan.c: improved documentation

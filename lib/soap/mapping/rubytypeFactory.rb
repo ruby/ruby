@@ -167,7 +167,7 @@ class RubytypeFactory < Factory
       unless @allow_original_mapping
         return nil
       end
-      if obj.name.empty?
+      if obj.to_s[0] == ?#
         raise TypeError.new("Can't dump anonymous class #{ obj }.")
       end
       param = SOAPStruct.new(TYPE_CLASS)
@@ -178,7 +178,7 @@ class RubytypeFactory < Factory
       unless @allow_original_mapping
         return nil
       end
-      if obj.name.empty?
+      if obj.to_s[0] == ?#
         raise TypeError.new("Can't dump anonymous module #{ obj }.")
       end
       param = SOAPStruct.new(TYPE_MODULE)
