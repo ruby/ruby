@@ -1,7 +1,9 @@
-Fri Dec 24 02:52:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Dec 24 03:06:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (io_reopen, rb_io_reopen): prohibit to change access mode for
 	  special IO ports.  [ruby-dev:25225]
+
+	* io.c (next_argv): reduce use of stdio.
 
 Fri Dec 24 02:22:53 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

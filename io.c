@@ -3884,8 +3884,8 @@ deferr_setter(val, id, variable)
 }
 
 static VALUE
-prep_stdio(f, mode, klass, path)
-    FILE *f;
+prep_io(fd, mode, klass, path)
+    int fd;
     int mode;
     VALUE klass;
     const char *path;
@@ -3894,22 +3894,34 @@ prep_stdio(f, mode, klass, path)
     VALUE io = io_alloc(klass);
 
     MakeOpenFile(io, fp);
-    fp->fd = fileno(f);
+    fp->fd = fd;
 #ifdef __CYGWIN__
-    if (!isatty(fp->fd)) {
+    if (!isatty(fd)) {
 	mode |= O_BINARY;
-	setmode(fp->fd, O_BINARY);
+	setmode(fd, O_BINARY);
     }
 #endif
-    fp->stdio_file = f;
-    fp->mode = mode | FMODE_PREP;
+    fp->mode = mode;
     if (fp->mode & FMODE_WRITABLE) {
-        if (fp->fd == 2) { /* stderr must be unbuffered */
-            fp->mode |= FMODE_SYNC;
-        }
         io_check_tty(fp);
     }
-    fp->path = strdup(path);
+    if (path) fp->path = strdup(path);
+
+    return io;
+}
+
+static VALUE
+prep_stdio(f, mode, klass, path)
+    FILE *f;
+    int mode;
+    VALUE klass;
+    const char *path;
+{
+    OpenFile *fptr;
+    VALUE io = prep_io(fileno(f), mode|FMODE_PREP, klass, path);
+
+    GetOpenFile(io, fptr);
+    fptr->stdio_file = f;
 
     return io;
 }
@@ -4171,17 +4183,17 @@ next_argv()
 		}
 	    }
 	    else {
-		FILE *fr = rb_fopen(fn, "r");
+		int fr = rb_sysopen(fn, O_RDONLY, 0);
 
 		if (ruby_inplace_mode) {
 		    struct stat st, st2;
 		    VALUE str;
-		    FILE *fw;
+		    int fw;
 
 		    if (TYPE(rb_stdout) == T_FILE && rb_stdout != orig_stdout) {
 			rb_io_close(rb_stdout);
 		    }
-		    fstat(fileno(fr), &st);
+		    fstat(fr, &st);
 		    if (*ruby_inplace_mode) {
 			str = rb_str_new2(fn);
 #ifdef NO_LONG_FNAME
@@ -4190,15 +4202,15 @@ next_argv()
 			rb_str_cat2(str, ruby_inplace_mode);
 #endif
 #ifdef NO_SAFE_RENAME
-			(void)fclose(fr);
+			(void)close(fr);
 			(void)unlink(RSTRING(str)->ptr);
 			(void)rename(fn, RSTRING(str)->ptr);
-			fr = rb_fopen(RSTRING(str)->ptr, "r");
+			fr = rb_sysopen(RSTRING(str)->ptr, O_RDONLY, 0);
 #else
 			if (rename(fn, RSTRING(str)->ptr) < 0) {
 			    rb_warn("Can't rename %s to %s: %s, skipping file",
 				    fn, RSTRING(str)->ptr, strerror(errno));
-			    fclose(fr);
+			    close(fr);
 			    goto retry;
 			}
 #endif
@@ -4210,27 +4222,27 @@ next_argv()
 			if (unlink(fn) < 0) {
 			    rb_warn("Can't remove %s: %s, skipping file",
 				    fn, strerror(errno));
-			    fclose(fr);
+			    close(fr);
 			    goto retry;
 			}
 #endif
 		    }
-		    fw = rb_fopen(fn, "w");
+		    fw = rb_sysopen(fn, O_WRONLY|O_CREAT|O_TRUNC, 0666);
 #ifndef NO_SAFE_RENAME
-		    fstat(fileno(fw), &st2);
+		    fstat(fw, &st2);
 #ifdef HAVE_FCHMOD
-		    fchmod(fileno(fw), st.st_mode);
+		    fchmod(fw, st.st_mode);
 #else
 		    chmod(fn, st.st_mode);
 #endif
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
-			fchown(fileno(fw), st.st_uid, st.st_gid);
+			fchown(fw, st.st_uid, st.st_gid);
 		    }
 #endif
-		    rb_stdout = prep_stdio(fw, FMODE_WRITABLE, rb_cFile, fn);
+		    rb_stdout = prep_io(fw, FMODE_WRITABLE, rb_cFile, fn);
 		    if (stdout_binmode) rb_io_binmode(rb_stdout);
 		}
-		current_file = prep_stdio(fr, FMODE_READABLE, rb_cFile, fn);
+		current_file = prep_io(fr, FMODE_READABLE, rb_cFile, fn);
 	    }
 	    if (binmode) rb_io_binmode(current_file);
 	}
@@ -5568,7 +5580,7 @@ Init_IO()
     rb_define_variable("$stdin", &rb_stdin);
     rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO, "<STDOUT>");
     rb_define_hooked_variable("$stdout", &rb_stdout, 0, stdout_setter);
-    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO, "<STDERR>");
+    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE|FMODE_SYNC, rb_cIO, "<STDERR>");
     rb_define_hooked_variable("$stderr", &rb_stderr, 0, stdout_setter);
     rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
     orig_stdout = rb_stdout;
