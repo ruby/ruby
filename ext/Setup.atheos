@@ -1,0 +1,27 @@
+option nodynamic
+
+curses
+dbm
+digest
+digest/md5
+digest/rmd160
+digest/sha1
+digest/sha2
+dl
+etc
+fcntl
+gdbm
+iconv
+marshal
+nkf
+pty
+racc/parse
+readline
+sdbm
+socket
+stringio
+strscan
+syslog
+#tk
+#tcltklib
+#gtk

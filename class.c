@@ -156,7 +156,7 @@ rb_make_metaclass(obj, super)
 
 	/* metaclass of a superclass may be NULL at boot time */
 	if (metasuper) {
-	    RBASIC(klass)->klass;
+	    RBASIC(klass)->klass = metasuper;
 	}
     }
 
