@@ -1601,6 +1601,7 @@ dir_entries(io, dirname)
  *     File.fnmatch('c?t',     'cat')          #=> true  : '?' match only 1 character
  *     File.fnmatch('c??t',    'cat')          #=> false : ditto
  *     File.fnmatch('c*',      'cats')         #=> true  : '*' match 0 or more characters
+ *     File.fnmatch('c*t',     'c/a/b/t')      #=> true  : ditto
  *     File.fnmatch('ca[a-z]', 'cat')          #=> true  : inclusive bracket expression
  *     File.fnmatch('ca[^t]',  'cat')          #=> false : exclusive bracket expression ('^' or '!')
  *
@@ -1615,7 +1616,7 @@ dir_entries(io, dirname)
  *
  *     File.fnmatch('*',   '.profile')                      #=> false : wildcard doesn't match leading
  *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true    period by default.
- *     File.fnmatch('.*'   '.profile')                      #=> true
+ *     File.fnmatch('.*',  '.profile')                      #=> true
  *
  *     File.fnmatch('*',           'dave/.profile')                      #=> true
  *     File.fnmatch('* IGNORE /*', 'dave/.profile', File::FNM_PATHNAME)  #=> false
