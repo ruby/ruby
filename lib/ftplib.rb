@@ -453,7 +453,7 @@ class FTP
     if resp[0, 3] != "213" 
       raise FTPReplyError, resp
     end
-    return resp[3..-1].strip 
+    return resp[3..-1].strip.to_i
   end
 
   MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)$/
