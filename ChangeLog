@@ -1,13 +1,17 @@
+Mon Jan 12 23:26:21 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (primary): fix position after FCALL.  [ruby-dev:22574]
+
 Mon Jan 12 18:00:11 2004  Ian Macdonald  <ian@caliban.org>
-	
+
 	* file.c (test_wr, test_ww): New functions implementing new
 	  methods (File::world_readable?, File::world_writable?).
-	
+
 	* file.c (S_IRUGO, S_IGUGO): New macros.
 
 Mon Jan 12 12:07:22 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_methods): 
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_methods):
 	  Someone changed the "// in eval.c" comments to "/*...*/" style,
 	  so the parsing of the source file name broke.
 
@@ -19,7 +23,7 @@ Mon Jan 12 12:07:22 2004  Dave Thomas  <dave@pragprog.com>
 	  and all intervening code was included in the following
 	  method's documentation.
 
-	* lib/rdoc/ri/ri_formatter.rb (RI::HtmlFormatter::break_to_newline): 
+	* lib/rdoc/ri/ri_formatter.rb (RI::HtmlFormatter::break_to_newline):
 	  HTML formats need explicit line breaks.
 
 Mon Jan 12 02:24:07 2004  Dave Thomas  <dave@pragprog.com>
