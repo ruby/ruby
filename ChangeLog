@@ -1,3 +1,8 @@
+Sat Dec 11 13:08:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sample/optparse/subcommand.rb: a sample for sub commands like
+	  cvs.  contributed by Minero Aoki.
+
 Fri Dec 10 08:39:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/socket/socket.c (sock_listen): get OpenFile just before calling
