@@ -1,3 +1,13 @@
+Thu Nov 21 20:04:06 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: should not overwrite Host: header.
+	  (This patch is contributed by sean@ruby-lang.org)
+
+Thu Nov 21 20:01:33 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: support Proxy-Authorization.
+	(This patch is contributed by Alexander Bokovoy)
+
 Tue Nov 19 14:35:09 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_zip): iterates over items in the receiver.
@@ -87,6 +97,7 @@ Thu Nov 14 22:40:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  block to beginning line, instead of the first statement inside
 	  the block.
 
+>>>>>>> 1.1270
 Thu Nov 14 08:23:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* math.c (math_acos): check errno after operation.  ditto for
