@@ -322,7 +322,7 @@ private
     #
     def initialize(log = nil, opt = {})
       @dev = @filename = @shift_age = @shift_size = nil
-      if log.is_a?(IO)
+      if log.respond_to?(:write) and log.respond_to?(:close)
 	@dev = log
       elsif log.is_a?(String)
 	@dev = open_logfile(log)

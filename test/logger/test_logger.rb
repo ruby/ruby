@@ -1,5 +1,7 @@
 require 'test/unit'
 require 'logger'
+require 'tempfile'
+
 
 class TestLoggerSeverity < Test::Unit::TestCase
   def test_enum
@@ -34,19 +36,13 @@ class TestLogger < Test::Unit::TestCase
   end
 
   def log(logger, msg_id, *arg, &block)
-    r, w = IO.pipe
-    logger.instance_eval { @logdev = Logger::LogDevice.new(w) }
+    logdev = Tempfile.new(File.basename(__FILE__) + '.log')
+    logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
     logger.__send__(msg_id, *arg, &block)
-    read_ready, = IO.select([r], nil, nil, 0.1)
-    w.close
-    if read_ready
-      line = r.read
-      r.close
-      Log.new(line)
-    else
-      r.close
-      nil
-    end
+    logdev.open
+    msg = logdev.read
+    logdev.close
+    Log.new(msg)
   end
 
   def test_level
@@ -118,7 +114,7 @@ class TestLogger < Test::Unit::TestCase
     assert_equal("my_progname", log.progname)
     logger.level = WARN
     assert(logger.log(INFO))
-    assert_nil(log_add(logger, INFO, "msg"))
+    assert_nil(log_add(logger, INFO, "msg").msg)
     log = log_add(logger, WARN, nil) { "msg" }
     assert_equal("msg\n", log.msg)
     log = log_add(logger, WARN, "") { "msg" }
@@ -228,5 +224,52 @@ class TestLogger < Test::Unit::TestCase
     msg = r.read
     r.close
     assert_equal("msg2\n\n", msg)
+  end
+end
+
+class TestLogDevice < Test::Unit::TestCase
+  def d(log)
+    Logger::LogDevice.new(log)
+  end
+
+  def test_initialize
+    logdev = d(STDERR)
+    assert_equal(STDERR, logdev.dev)
+    assert_nil(logdev.filename)
+    assert_raises(ArgumentError) do
+      d(nil)
+    end
+    #
+    filename = __FILE__ + ".#{$$}"
+    begin
+      logdev = d(filename)
+      assert(File.exist?(filename))
+      assert(logdev.dev.sync)
+      assert_equal(filename, logdev.filename)
+    ensure
+      File.unlink(filename)
+    end
+  end
+
+  def test_write
+    r, w = IO.pipe
+    logdev = d(w)
+    logdev.write("msg2\n\n")
+    read_ready, = IO.select([r], nil, nil, 0.1)
+    w.close
+    msg = r.read
+    r.close
+    assert_equal("msg2\n\n", msg)
+  end
+
+  def test_close
+    r, w = IO.pipe
+    logdev = d(w)
+    logdev.write("msg2\n\n")
+    read_ready, = IO.select([r], nil, nil, 0.1)
+    assert(!w.closed?)
+    logdev.close
+    assert(w.closed?)
+    r.close
   end
 end

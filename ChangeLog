@@ -1,3 +1,13 @@
+Mon Sep 29 16:18:30 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/logger.rb: check if the given logdevice object respond_to :write
+	  and :close, not is_a? IO.  duck duck.
+
+	* test/logger/test_logger.rb: self IO.pipe reading/writing may be
+	  locked by the flood.  use tempfile.
+
+	* lib/wsdl/xmlSchema/data.rb: wrong constant reference.
+
 Mon Sep 29 16:11:23 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: clean up temporary symlink.

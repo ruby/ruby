@@ -36,7 +36,7 @@ module XMLSchema
 
 AllName = XSD::QName.new(XSD::Namespace, 'all')
 AnyName = XSD::QName.new(XSD::Namespace, 'any')
-ArrayTypeAttrName = XSD::QName.new(Namespace, 'arrayType')
+ArrayTypeAttrName = XSD::QName.new(XSD::Namespace, 'arrayType')
 AttributeName = XSD::QName.new(XSD::Namespace, 'attribute')
 ChoiceName = XSD::QName.new(XSD::Namespace, 'choice')
 ComplexContentName = XSD::QName.new(XSD::Namespace, 'complexContent')
