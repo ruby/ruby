@@ -889,8 +889,7 @@ pack_pack(ary, fmt)
 		    t = 0;
 		}
 		else {
-		    StringValue(from);
-		    t = RSTRING(from)->ptr;
+		    t = StringValuePtr(from);
 		}
 		if (!associates) {
 		    associates = rb_ary_new();
@@ -1610,7 +1609,7 @@ pack_unpack(str, fmt)
 	    {
 		VALUE buf = infected_str_new(0, (send - s)*3/4, str);
 		char *ptr = RSTRING(buf)->ptr;
-		int a,b,c = 0,d;
+		int a = -1,b = -1,c = 0,d;
 		static int first = 1;
 		static int b64_xtable[256];
 
@@ -1625,7 +1624,7 @@ pack_unpack(str, fmt)
 			b64_xtable[(int)b64_table[i]] = i;
 		    }
 		}
-		for (;;) {
+		while (s < send) {
 		    while (s[0] == '\r' || s[0] == '\n') { s++; }
 		    if ((a = b64_xtable[(int)s[0]]) == -1) break;
 		    if ((b = b64_xtable[(int)s[1]]) == -1) break;
@@ -1636,12 +1635,13 @@ pack_unpack(str, fmt)
 		    *ptr++ = c << 6 | d;
 		    s += 4;
 		}
-		if (a != -1 && b != -1 && s[2] == '=') {
-		    *ptr++ = a << 2 | b >> 4;
-		}
-		if (a != -1 && b != -1 && c != -1 && s[3] == '=') {
-		    *ptr++ = a << 2 | b >> 4;
-		    *ptr++ = b << 4 | c >> 2;
+		if (a != -1 && b != -1) {
+		    if (s + 2 < send && s[2] == '=')
+			*ptr++ = a << 2 | b >> 4;
+		    if (c != -1 && s + 3 < send && s[3] == '=') {
+			*ptr++ = a << 2 | b >> 4;
+			*ptr++ = b << 4 | c >> 2;
+		    }
 		}
 		*ptr = '\0';
 		RSTRING(buf)->len = ptr - RSTRING(buf)->ptr;
@@ -1677,6 +1677,8 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case '@':
+	    if (len > RSTRING(str)->len)
+		rb_raise(rb_eArgError, "@ outside of string");
 	    s = RSTRING(str)->ptr + len;
 	    break;
 

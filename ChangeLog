@@ -3,6 +3,40 @@ Mon Jun 23 13:45:30 2003  Tanaka Akira  <akr@m17n.org>
 	* time.c (time_arg): initialize v[6] even when argc is 10 to
 	  avoid valgrind error.
 
+Mon Jun 23 08:24:01 2003  Florian Frank  <flori@nixe.ping.de>
+
+	* string.c (rb_str_upto): generate sequence according to "succ"
+	  order.  formerly check was done by dictionary order.
+	  [ruby-talk:74138]
+
+Mon Jun 23 00:27:32 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_string_value): fill constant empty string along
+	  with setting ELTS_SHARED if str->ptr is NULL. [ruby-core:01179]
+
+	* string.c (rb_string_value_ptr): ditto.
+
+	* string.c (rb_check_string_type): ditto.
+
+Sun Jun 22 23:42:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* string.c (str_gsub): move END(0) check before mbclen2().
+
+	* string.c (scan_once): reduce END(0) check.
+
+	* io.c (rb_io_initialize): accept fixnum mode.
+
+	* eval.c (error_print): replace strchr() by memchr(), einfo may
+	  contain "\0".
+
+	* pack.c (pack_unpack): range check for "@" move; initialize check
+	  for "m".
+
+	* error.c (syserr_initialize): avoid buffer overflow.
+
+	* file.c (rb_file_s_readlink): expand buffer until readlink
+	  succeed.
+
 Sat Jun 21 23:15:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_invoke): should not propagate distination tag if

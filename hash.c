@@ -997,6 +997,7 @@ static VALUE
 env_str_new2(ptr)
     const char *ptr;
 {
+    if (!ptr) return Qnil;
     return env_str_new(ptr, strlen(ptr));
 }
 
@@ -1606,7 +1607,7 @@ env_index(dmy, value)
     char **env;
     VALUE str;
 
-    if (TYPE(value) != T_STRING) return Qnil;
+    StringValue(value);
     env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=')+1;
@@ -1638,15 +1639,12 @@ env_indexes(argc, argv)
     rb_warn("ENV.%s is deprecated; use ENV.values_at",
 	    rb_id2name(rb_frame_last_func()));
     for (i=0;i<argc;i++) {
-	char *v = 0;
-	if (TYPE(argv[i]) == T_STRING) {
-	    v = getenv(RSTRING(argv[i])->ptr);
-	}
-	if (v) {
-	    RARRAY(indexes)->ptr[i] = env_str_new2(v);
+	VALUE tmp = rb_check_string_type(argv[i]);
+	if (NIL_P(tmp)) {
+	    RARRAY(indexes)->ptr[i] = Qnil;
 	}
 	else {
-	    RARRAY(indexes)->ptr[i] = Qnil;
+	    RARRAY(indexes)->ptr[i] = env_str_new2(getenv(RSTRING(tmp)->ptr));
 	}
 	RARRAY(indexes)->len = i+1;
     }

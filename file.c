@@ -1275,7 +1275,7 @@ rb_file_s_readlink(klass, path)
 
     SafeStringValue(path);
     buf = xmalloc(size);
-    if ((rv = readlink(RSTRING(path)->ptr, buf, size)) == size) {
+    while ((rv = readlink(RSTRING(path)->ptr, buf, size)) == size) {
 	size *= 2;
 	buf = xrealloc(buf, size);
     }

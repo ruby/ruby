@@ -158,7 +158,7 @@ rb_str_new4(orig)
     VALUE klass, str;
 
     klass = rb_obj_class(orig);
-    if (FL_TEST(orig, ELTS_SHARED)) {
+    if (FL_TEST(orig, ELTS_SHARED) && RSTRING(orig)->aux.shared) {
 	long ofs;
 	str = RSTRING(orig)->aux.shared;
 	ofs = RSTRING(str)->len - RSTRING(orig)->len;
@@ -445,11 +445,18 @@ rb_str_associated(str)
     return Qfalse;
 }
 
+static char *null_str = "";
+
 VALUE
 rb_string_value(ptr)
     volatile VALUE *ptr;
 {
-    return *ptr = rb_str_to_str(*ptr);
+    *ptr = rb_str_to_str(*ptr);
+    if (!RSTRING(*ptr)->ptr) {
+	FL_SET(*ptr, ELTS_SHARED);
+	RSTRING(*ptr)->ptr = null_str;
+    }
+    return *ptr;
 }
 
 char *
@@ -462,7 +469,8 @@ rb_string_value_ptr(ptr)
 	*ptr = s;
     }
     if (!RSTRING(s)->ptr) {
-	str_make_independent(s);
+	FL_SET(s, ELTS_SHARED);
+	RSTRING(s)->ptr = null_str;
     }
     return RSTRING(s)->ptr;
 }
@@ -471,7 +479,12 @@ VALUE
 rb_check_string_type(str)
     VALUE str;
 {
-    return rb_check_convert_type(str, T_STRING, "String", "to_str");
+    str = rb_check_convert_type(str, T_STRING, "String", "to_str");
+    if (!NIL_P(str) && !RSTRING(str)->ptr) {
+	FL_SET(str, ELTS_SHARED);
+	RSTRING(str)->ptr = null_str;
+    }
+    return str;
 }
 
 VALUE
@@ -498,7 +511,7 @@ rb_str_substr(str, beg, len)
     if (len > sizeof(struct RString)/2 &&
 	beg + len == RSTRING(str)->len &&
 	!FL_TEST(str, STR_ASSOC)) {
-	if (FL_TEST(str, ELTS_SHARED))
+	if (FL_TEST(str, ELTS_SHARED) && RSTRING(str)->aux.shared)
 	    str = RSTRING(str)->aux.shared;
 	else
 	    str = str_new4(rb_obj_class(str), str);
@@ -525,7 +538,7 @@ VALUE
 rb_str_dup_frozen(str)
     VALUE str;
 {
-    if (FL_TEST(str, ELTS_SHARED)) {
+    if (FL_TEST(str, ELTS_SHARED) && RSTRING(str)->aux.shared) {
 	VALUE shared = RSTRING(str)->aux.shared;
 	if (RSTRING(shared)->len == RSTRING(str)->len) {
 	    OBJ_FREEZE(shared);
@@ -1142,12 +1155,14 @@ rb_str_upto(beg, end, excl)
     VALUE beg, end;
     int excl;
 {
-    VALUE current;
+    VALUE current, after_end;
     ID succ = rb_intern("succ");
 
     StringValue(end);
+    if (rb_str_cmp(beg, end) > 0) return beg;
+    after_end = rb_funcall(end, succ, 0, 0);
     current = beg;
-    while (rb_str_cmp(current, end) <= 0) {
+    while (!rb_str_equal(current, after_end)) {
 	rb_yield(current);
 	if (!excl && rb_str_equal(current, end)) break;
 	current = rb_funcall(current, succ, 0, 0);
@@ -1163,7 +1178,7 @@ static VALUE
 rb_str_upto_m(beg, end)
     VALUE beg, end;
 {
-    return rb_str_upto(beg, end, 0);
+    return rb_str_upto(beg, end, Qfalse);
 }
 
 static VALUE
@@ -1615,11 +1630,10 @@ str_gsub(argc, argv, str, bang)
 	     * Always consume at least one character of the input string
 	     * in order to prevent infinite loops.
 	     */
+	    if (RSTRING(str)->len <= END(0)) break;
 	    len = mbclen2(RSTRING(str)->ptr[END(0)], pat);
-	    if (RSTRING(str)->len > END(0)) {
-		memcpy(bp, RSTRING(str)->ptr+END(0), len);
-		bp += len;
-	    }
+	    memcpy(bp, RSTRING(str)->ptr+END(0), len);
+	    bp += len;
 	    offset = END(0) + len;
 	}
 	else {
@@ -1770,6 +1784,7 @@ rb_str_reverse_bang(str)
     char *s, *e;
     char c;
 
+    if (RSTRING(str)->len <= 1) return Qnil;
     rb_str_modify(str);
     s = RSTRING(str)->ptr;
     e = s + RSTRING(str)->len - 1;
@@ -2976,7 +2991,10 @@ scan_once(str, pat, start)
 	    /*
 	     * Always consume at least one character of the input string
 	     */
-	    *start = END(0)+mbclen2(RSTRING(str)->ptr[END(0)],pat);
+	    if (RSTRING(str)->len < END(0))
+		*start = END(0)+mbclen2(RSTRING(str)->ptr[END(0)],pat);
+	    else
+		*start = END(0)+1;
 	}
 	else {
 	    *start = END(0);

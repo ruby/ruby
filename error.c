@@ -582,7 +582,7 @@ syserr_initialize(argc, argv, self)
     if (!NIL_P(mesg)) {
 	StringValue(mesg);
 	buf = ALLOCA_N(char, strlen(err)+RSTRING(mesg)->len+4);
-	sprintf(buf, "%s - %s", err, RSTRING(mesg)->ptr);
+	sprintf(buf, "%s - %.*s", err, RSTRING(mesg)->len, RSTRING(mesg)->ptr);
 	mesg = rb_str_new2(buf);
     }
     else {

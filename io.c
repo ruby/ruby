@@ -2231,7 +2231,13 @@ rb_open_file(argc, argv, io)
     path = RSTRING(fname)->ptr;
 
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
-	flags = FIXNUM_P(vmode) ? NUM2INT(vmode) : rb_io_mode_modenum(StringValuePtr(vmode));
+	if (FIXNUM_P(vmode)) {
+	    flags = NUM2INT(vmode);
+	}
+	else {
+	    SafeStringValue(vmode);
+	    rb_io_mode_modenum(RSTRING(vmode)->ptr);
+	}
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
 
 	rb_file_sysopen_internal(io, path, flags, fmode);
@@ -2272,7 +2278,8 @@ rb_io_s_sysopen(argc, argv)
     if (NIL_P(vmode)) flags = O_RDONLY;
     else if (FIXNUM_P(vmode)) flags = NUM2INT(vmode);
     else {
-	flags = rb_io_mode_modenum(StringValuePtr(vmode));
+	SafeStringValue(vmode);
+	flags = rb_io_mode_modenum(RSTRING(vmode)->ptr);
     }
     if (NIL_P(perm)) fmode = 0666;
     else             fmode = NUM2INT(perm);
@@ -2833,8 +2840,13 @@ rb_io_initialize(argc, argv, io)
     rb_scan_args(argc, argv, "11", &fnum, &mode);
     fd = NUM2INT(fnum);
     if (argc == 2) {
-	SafeStringValue(mode);
-	flags = rb_io_mode_modenum(RSTRING(mode)->ptr);
+	if (FIXNUM_P(mode)) {
+	    flags = FIX2LONG(mode);
+	}
+	else {
+	    SafeStringValue(mode);
+	    flags = rb_io_mode_modenum(RSTRING(mode)->ptr);
+	}
     }
     else {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)

@@ -1094,7 +1094,7 @@ error_print()
 	    long len = elen;
 
 	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
-	    if (tail = strchr(einfo, '\n')) {
+	    if (tail = memchr(einfo, '\n', elen)) {
 		len = tail - einfo;
 		tail++;		/* skip newline */
 	    }
@@ -3357,11 +3357,11 @@ rb_eval(self, n)
 	    switch (nd_type(node)) {
 	      case NODE_DREGX:
 		result = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
-				 node->nd_cflag);
+				    node->nd_cflag);
 		break;
 	      case NODE_DREGX_ONCE:	/* regexp expand once */
 		result = rb_reg_new(RSTRING(str)->ptr, RSTRING(str)->len,
-				 node->nd_cflag);
+				    node->nd_cflag);
 		nd_set_type(node, NODE_LIT);
 		node->nd_lit = result;
 		break;
@@ -4673,7 +4673,7 @@ rb_f_missing(argc, argv, obj)
     *ruby_frame = *_frame.prev->prev;
     {
 	char buf[BUFSIZ];
-	int noclass = (!d || desc[0]=='#');
+	int noclass = (!desc || desc[0]=='#');
 	int n = 0;
 	VALUE args[3];
 

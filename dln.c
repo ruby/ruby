@@ -1662,6 +1662,7 @@ dln_find_1(fname, path, exe_flag)
     const char* mac_fullpath;
 #endif
 
+    if (!fname) return fname;
     if (fname[0] == '/') return fname;
     if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
       return fname;

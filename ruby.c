@@ -704,8 +704,8 @@ proc_options(argc, argv)
     }
 
     if (rb_safe_level() >= 4) {
-      OBJ_TAINT(rb_argv);
-      OBJ_TAINT(rb_load_path);
+	OBJ_TAINT(rb_argv);
+	OBJ_TAINT(rb_load_path);
     }
 
     if (!e_script) {
@@ -758,8 +758,8 @@ proc_options(argc, argv)
     xflag = 0;
 
     if (rb_safe_level() >= 4) {
-      FL_UNSET(rb_argv, FL_TAINT);
-      FL_UNSET(rb_load_path, FL_TAINT);
+	FL_UNSET(rb_argv, FL_TAINT);
+	FL_UNSET(rb_load_path, FL_TAINT);
     }
 }
 
@@ -774,6 +774,7 @@ load_file(fname, script)
     VALUE f;
     int line_start = 1;
 
+    if (!fname) rb_load_fail(fname);
     if (strcmp(fname, "-") == 0) {
 	f = rb_stdin;
     }
