@@ -2728,7 +2728,7 @@ rb_str_ljust(str, w)
     VALUE res;
     char *p, *pend;
 
-    if (width < 0 || RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new(0, width);
     RBASIC(res)->klass = rb_obj_class(str);
     memcpy(RSTRING(res)->ptr, RSTRING(str)->ptr, RSTRING(str)->len);
@@ -2749,7 +2749,7 @@ rb_str_rjust(str, w)
     VALUE res;
     char *p, *pend;
 
-    if (width < 0 || RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new(0, width);
     RBASIC(res)->klass = rb_obj_class(str);
     p = RSTRING(res)->ptr; pend = p + width - RSTRING(str)->len;
@@ -2771,7 +2771,7 @@ rb_str_center(str, w)
     char *p, *pend;
     long n;
 
-    if (width < 0 || RSTRING(str)->len >= width) return str;
+    if (width < 0 || RSTRING(str)->len >= width) return rb_str_dup(str);
     res = rb_str_new(0, width);
     RBASIC(res)->klass = rb_obj_class(str);
     n = (width - RSTRING(str)->len)/2;

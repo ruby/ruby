@@ -319,7 +319,7 @@ enum_each_with_index(obj)
 
     rb_iterate(rb_each, obj, each_with_index_i, (VALUE)memo);
     rb_gc_force_recycle((VALUE)memo);
-    return Qnil;
+    return obj;
 }
 
 void

@@ -2267,7 +2267,7 @@ re_compile_pattern(pattern, size, bufp)
 	/* octal */
       case '0':
 	had_mbchar = 0;
-	c = scan_oct(p, 3, &numlen);
+	c = scan_oct(p, 2, &numlen);
 	p += numlen;
 	had_num_literal = 1;
 	goto numeric_char;

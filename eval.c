@@ -1338,7 +1338,8 @@ rb_eval_cmd(cmd, arg)
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = ruby_top_self;
-    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_wrapper,0,0);
+    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,0,0,0);
+    RNODE(ruby_frame->cbase)->nd_clss = ruby_wrapper ? ruby_wrapper : rb_cObject;
 
     if (OBJ_TAINTED(cmd)) {
 	ruby_safe_level = 4;

@@ -1,3 +1,27 @@
+Mon Mar 11 18:03:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): '\0111' should be '\011' plus '1',
+	  since octal literals are formed by three digits at most.
+
+Mon Mar 11 14:44:38 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval_cmd): cbase should not be NULL; it should be
+	  either ruby_wrapper or Object.
+
+Sun Mar 10 02:18:22 2002  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* enum.c (enum_each_with_index): should return self.
+
+	* process.c (proc_setpgrp): should return value for non-void function.
+
+	* process.c (proc_getpgid): should raise exception if getpgid() return -1.
+
+	* string.c (rb_str_ljust): should return a duplicated string.
+
+	* string.c (rb_str_rjust): ditto.
+
+	* string.c (rb_str_center): ditto.
+
 Fri Mar  8 02:21:32 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (cvar_cbase): utility function to find innermost non
