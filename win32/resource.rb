@@ -8,7 +8,7 @@ fversion = "#{CONFIG['MAJOR']},#{CONFIG['MINOR']},#{CONFIG['TEENY']},0"
 
 $ruby_name ||= CONFIG["RUBY_INSTALL_NAME"]
 $rubyw_name ||= CONFIG["RUBYW_INSTALL_NAME"] || $ruby_name.sub(/ruby/, '\&w')
-$so_name ||= CONFIG["RUBY_SO_NAME"] + '.dll'
+$so_name ||= CONFIG["RUBY_SO_NAME"]
 
 icons = {}
 def icons.find(path)
@@ -49,7 +49,7 @@ end
 [ # base name    extension         file type  icons
   [$ruby_name,   CONFIG["EXEEXT"], 'VFT_APP', ruby_icon],
   [$rubyw_name,  CONFIG["EXEEXT"], 'VFT_APP', rubyw_icon],
-  [$so_name,     '',               'VFT_DLL', dll_icons],
+  [$so_name,     '.dll',           'VFT_DLL', dll_icons],
 ].each do |base, ext, type, icons|
   open(base + '.rc', "w") { |f|
     f.binmode if /mingw/ =~ RUBY_PLATFORM
