@@ -139,7 +139,7 @@ module TkComm
     list << token.gsub(/^\{(.*)\}$/, '\1') if token
 
     if list.size == 1
-      tk_tcl2ruby(list[0].gsub(/\\(\{|})/, '\1'))
+      tk_tcl2ruby(list[0].gsub(/\\(\{|\})/, '\1'))
     else
       list.collect{|token| tk_split_list(token)}
     end

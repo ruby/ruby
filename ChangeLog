@@ -1,3 +1,7 @@
+Thu Feb 12 09:56:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/tk/lib/tk.rb (TkComm::tk_split_list): suppress a warning.
+
 Thu Feb 12 02:23:56 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: use assert_raise instead of assert_raises.
