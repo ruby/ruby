@@ -409,6 +409,8 @@ static void init_env(void)
     NTLoginName[len] = '\0';
 }
 
+static void init_stdhandle();
+
 //
 // Initialization stuff
 //
@@ -430,6 +432,8 @@ NtInitialize(int *argc, char ***argv)
     tzset();
 
     init_env();
+
+    init_stdhandle();
 
     // Initialize Winsock
     StartSockets();
@@ -1647,11 +1651,29 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
     }
     return fh;			/* return handle */
 }
+
+static void
+init_stdhandle()
+{
+    if (fileno(stdin) < 0) {
+	stdin->_file = 0;
+    }
+    if (fileno(stdout) < 0) {
+	stdout->_file = 1;
+    }
+    if (fileno(stderr) < 0) {
+	stderr->_file = 2;
+    }
+}
 #else
 
 #define _set_osfhnd(fh, osfh) (void)((fh), (osfh))
 #define _set_osflags(fh, flags) (void)((fh), (flags))
 
+static void
+init_stdhandle()
+{
+}
 #endif
 
 #ifdef __BORLANDC__
