@@ -5,7 +5,7 @@ module RI
 
   require 'rdoc/ri/ri_display'
 
-  VERSION_STRING = "beta1"
+  VERSION_STRING = "ri: beta1"
   CVS_ID         = "$Id$";
 
   class Options
@@ -171,7 +171,7 @@ module RI
     # Show the version and exit
     def show_version
       cvs_info = CVS_ID.split
-      puts "ri #{VERSION_STRING} (#{cvs_info[2]} #{cvs_info[3]})"
+      puts "#{VERSION_STRING} (#{cvs_info[2]} #{cvs_info[3]})"
       exit(0)
     end
 
@@ -230,7 +230,7 @@ module RI
 
     # Return the doc_dir as an array, or nil if no overriding doc dir was given
     def paths
-      @doc_dir ? [ @doc_dir ] : nil
+      defined?(@doc_dir) ? [ @doc_dir ] : nil
     end
 
     # Return an instance of the displayer (the thing that actually writes

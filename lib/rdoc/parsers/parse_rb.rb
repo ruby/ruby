@@ -624,7 +624,14 @@ class RubyLex
       ungetc
 
       @ltype = nil
-      Token(TkRD_COMMENT).set_text(str)
+
+      if str =~ /\A=begin\s+rdoc/i
+        str.sub!(/\A=begin.*\n/, '')
+        str.sub!(/^=end.*/m, '')
+        Token(TkCOMMENT).set_text(str)
+      else
+        Token(TkRD_COMMENT)#.set_text(str)
+      end
     end
 
     @OP.def_rule("\n") do
@@ -1394,7 +1401,7 @@ module RDoc
       @read = []
       catch(:eof) do
         begin
-          parse_statements(@top_level)
+          parse_toplevel_statements(@top_level)
         rescue Exception => e
           $stderr.puts "\n\n"
           $stderr.puts "RDoc failure in #@input_file_name at or around " +
@@ -1546,26 +1553,30 @@ module RDoc
       res
     end
 
-    def parse_statements(container, single=NORMAL, current_method = nil)
+    def parse_toplevel_statements(container)
+      comment = collect_first_comment
+      look_for_directives_in(container, comment)
+      container.comment = comment unless comment.empty?
+      parse_statements(container, NORMAL, nil, comment)
+    end
+    
+    def parse_statements(container, single=NORMAL, current_method=nil, comment='')
       nest = 1
       save_visibility = container.visibility
-
-      if container.kind_of?(TopLevel)
-        comment = collect_first_comment
-        look_for_directives_in(container, comment)
-        container.comment = comment unless comment.empty?
-      else
-        comment = ''
-      end
+      
+#      if container.kind_of?(TopLevel)
+#      else
+#        comment = ''
+#      end
 
       non_comment_seen = true
-
+      
       while tk = get_tk
-
+        
         keep_comment = false
-
+        
         non_comment_seen = true unless tk.kind_of?(TkCOMMENT)
-
+        
 #         $stderr.puts "===== #{tk.inspect}"
 #         blank_line_seen = true
 #         while tk.kind_of?(TkNL)
@@ -1713,7 +1724,7 @@ module RDoc
 
       end
     end
-
+    
     def parse_class(container, single, tk, comment, &block)
       progress("c")
 
@@ -1867,7 +1878,7 @@ module RDoc
       @stats.num_methods += 1
       line_no = tk.line_no
       column  = tk.char_no
-
+      
       start_collecting_tokens
       add_token(tk)
       add_token_listener(self)
@@ -1949,20 +1960,20 @@ module RDoc
           meth.visibility = :public
         end
       end
-
+      
       parse_statements(container, single, meth)
-
+      
       remove_token_listener(meth)
-
+      
       meth.comment = comment
     end
-
+    
     def skip_method(container)
       meth =  AnyMethod.new("", "anon")
       parse_method_parameters(meth)
       parse_statements(container, false, meth)
     end
-
+    
     # Capture the method's parameters. Along the way,
     # look for a comment containing 
     #

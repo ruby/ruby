@@ -404,6 +404,15 @@ module RDoc
     @@all_classes = {}
     @@all_modules = {}
 
+    def comment=(t)
+      if @c
+        fail t
+      else
+        @c = true
+      end
+      super
+    end
+
     def TopLevel::reset
       @@all_classes = {}
       @@all_modules = {}

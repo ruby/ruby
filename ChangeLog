@@ -3,6 +3,18 @@ Fri Apr  2 07:31:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* ext/socket/socket.c (make_hostent): fix memory leak, based on
 	  the patch from HORIKAWA Hisashi <vzw00011@nifty.ne.jp>.
 
+Thu Apr  1 22:55:33 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb: Allow rdoc comments in
+	  =begin rdoc/=end
+
+	* lib/rdoc/parsers/parse_rb.rb: Fix problem with comment in
+	  top-level method being taken as file comment.
+
+Thu Apr  1 22:55:04 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/ri/ri_options.rb: Fix undefined variable warning.
+
 Thu Apr  1 19:58:37 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/mapping/{factory.rb,registry.rb}: fixed illegal mapped URI
