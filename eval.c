@@ -7915,6 +7915,7 @@ rb_thread_abort_exc_set(thread, val)
 \
     th->status = THREAD_RUNNABLE;\
     th->result = 0;\
+    th->flags = 0;\
 \
     th->stk_ptr = 0;\
     th->stk_len = 0;\
