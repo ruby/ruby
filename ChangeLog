@@ -1,3 +1,19 @@
+Thu Sep 23 19:48:14 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/Makefile.dev: removed.
+
+	* ext/ripper/ripper.rb.in: moved to lib/ripper/core.rb.in.
+
+	* ext/ripper/lib/ripper/core.rb: new file.
+
+	* ext/ripper/lib/ripper/core.rb.in: new file.
+
+	* ext/ripper/tools/generate-ripper_rb.rb: change comment.
+
+	* test/ripper/*.rb: on__scan event removed.
+
+	* test/ripper/*.rb: event name is changed: on__XXX -> on_XXX.
+
 Thu Sep 23 09:29:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (rb_hash_rehash): replace st_foreach() by its deep

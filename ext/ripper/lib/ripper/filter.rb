@@ -8,10 +8,12 @@
 # For details of Ruby License, see ruby/COPYING.
 #
 
-require 'ripper'
+require 'ripper/core'
 
 class Ripper
 
+  # This class handles only scanner events,
+  # and they are dispatched in the `right' order (same with input).
   class Filter
 
     def initialize(src, filename = '-', lineno = 1)
@@ -20,18 +22,27 @@ class Ripper
       @__col = nil
     end
 
+    # The file name of the input.
     def filename
       @__parser.filename
     end
 
+    # The line number of the current token.
+    # This value starts from 1.
+    # This method is valid only in event handlers.
     def lineno
       @__line
     end
 
+    # The column number of the current token.
+    # This value starts from 0.
+    # This method is valid only in event handlers.
     def column
       @__col
     end
 
+    # Starts parsing.  _init_ is a data accumulator.
+    # It is passed to the next event handler (as of Enumerable#inject).
     def parse(init)
       data = init
       @__parser.parse.each do |pos, event, tok|
@@ -46,7 +57,11 @@ class Ripper
 
     private
 
-    def on_default(event, tok, data)
+    # This method is called when some event handler have not defined.
+    # _event_ is :on_XXX, _token_ is scanned token, _data_ is a data
+    # accumulator.  The return value of this method is passed to the
+    # next event handler (as of Enumerable#inject).
+    def on_default(event, token, data)
       data
     end
 

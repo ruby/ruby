@@ -14,3 +14,22 @@ ids1: $(srcdir)/tools/list-parse-event-ids.rb $(hdrdir)/parse.y
 
 ids2: $(srcdir)/tools/list-scan-event-ids.rb $(srcdir)/eventids2.c
 	$(RUBY) $(srcdir)/tools/list-scan-event-ids.rb -a $(srcdir)/eventids2.c > $@
+
+rb: $(srcdir)/lib/ripper/core.rb
+$(srcdir)/lib/ripper/core.rb: $(srcdir)/lib/ripper/core.rb.in ids1 ids2 $(srcdir)/tools/generate-ripper_rb.rb
+	$(RUBY) $(srcdir)/tools/generate-ripper_rb.rb $(srcdir)/lib/ripper/core.rb.in ids1 ids2 > $@
+
+#
+# Entries for only ripper developpers: DO NOT USE
+#
+
+test:
+	$(RUBY) test/check-event-arity.rb $(hdrdir)/parse.y
+	sh test/check-event-coverage.sh
+	$(RUBY) test/check-scanner-event-coverage.rb
+	$(RUBY) test/validate.rb > /dev/null
+	@echo OK
+
+preproc: ripper.E
+ripper.E: ripper.c
+	$(CC) -E $(CPPFLAGS) ripper.c | $(RUBY) $(srcdir)/tools/strip.rb > $@

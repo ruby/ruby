@@ -1,11 +1,11 @@
 MANIFEST
-Makefile.dev
 README
 depend
 eventids2.c
 extconf.rb
-ripper.rb.in
 lib/ripper.rb
+lib/ripper/core.rb
+lib/ripper/core.rb.in
 lib/ripper/filter.rb
 lib/ripper/tokenizer.rb
 test/check-event-arity.rb

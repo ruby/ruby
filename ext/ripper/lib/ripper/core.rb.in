@@ -1,7 +1,11 @@
 #
-# ripper.rb
+# ripper/core.rb
 #
 # Copyright (C) 2003,2004 Minero Aoki
+#
+# This program is free software.
+# You can distribute and/or modify this program under the Ruby License.
+# For details of Ruby License, see ruby/COPYING.
 #
 
 require 'ripper.so'
@@ -39,12 +43,17 @@ class Ripper
 
   private
 
+  # This method is called when weak warning is produced by the parser.
+  # _fmt_ and _args_ is printf style.
   def warn(fmt, *args)
   end
 
+  # This method is called when strong warning is produced by the parser.
+  # _fmt_ and _args_ is printf style.
   def warning(fmt, *args)
   end
 
+  # This method is called when the parser found syntax error.
   def compile_error(msg)
   end
 
@@ -58,5 +67,3 @@ class Ripper
   #
 #include handlers2
 end
-
-require 'ripper/tokenizer'

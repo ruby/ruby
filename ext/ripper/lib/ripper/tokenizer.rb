@@ -8,6 +8,8 @@
 # For details of Ruby License, see ruby/COPYING.
 #
 
+require 'ripper/core'
+
 class Ripper
 
   # Tokenizes Ruby program and returns an Array of String.
