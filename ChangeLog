@@ -1,3 +1,7 @@
+Wed Apr  3 01:54:10 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/extmk.rb.in (enable_config): follow lib/mkmf.rb.
+
 Mon Apr  1 10:56:40 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (match_setter): it's OK to assign nil to $~.

@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 # -*- ruby -*-
 
-$".push 'mkmf.rb'
+$".push 'mkmf.rb' # "
 ORIG_LIBPATH = ENV['LIB']
 
 if ARGV[0] == 'static'
@@ -300,11 +300,8 @@ def arg_config(config, default=nil)
     end
     for arg in Shellwords::shellwords(args)
       next unless /^--/ =~ arg
-      if /=/ =~ arg
-	$configure_args[$`] = $'
-      else
-	$configure_args[arg] = true
-      end
+      arg, val = arg.split('=', 2)
+      $configure_args[arg] = val || true
     end
   end
   $configure_args.fetch(config, default)
@@ -318,9 +315,9 @@ def with_config(config, default=nil)
 end
 
 def enable_config(config, default=nil)
-  if arg_config("--enable-"+config, default)
+  if arg_config("--enable-"+config)
     true
-  elsif arg_config("--disable-"+config, false)
+  elsif arg_config("--disable-"+config)
     false
   else
     default
