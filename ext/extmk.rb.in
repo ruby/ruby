@@ -44,23 +44,6 @@ $log = nil
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
 
-def xsystem command
-  if $DEBUG
-    puts command
-    $stdout.flush
-    return system(command)
-  end
-  $log ||= open(File.join($topdir, 'ext', 'extmk.log'), 'w')
-  $stderr.reopen($log) 
-  $stdout.reopen($log) 
-  puts command
-  $stdout.flush
-  system(command)
-ensure
-  $stderr.reopen($orgerr)
-  $stdout.reopen($orgout)
-end
-
 $LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#$topdir -I#$top_srcdir #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
 $CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#$topdir -I#$top_srcdir #{CFLAGS} %s %s conftest.c"
 
@@ -150,10 +133,12 @@ EOL
 
 RUBY_INSTALL_NAME = #{CONFIG['RUBY_INSTALL_NAME']}
 RUBY_SO_NAME = #{CONFIG['RUBY_SO_NAME']}
+ruby_version = #{Config::CONFIG["ruby_version"]}
 
 prefix = #{CONFIG['prefix']}
 exec_prefix = #{CONFIG['exec_prefix']}
 libdir = #{CONFIG['libdir']}
+rubylibdir = $(libdir)/ruby/$(ruby_version)
 #pkglibdir = $(libdir)/$(RUBY_INSTALL_NAME)/#{CONFIG['MAJOR']}.#{CONFIG['MINOR']}
 pkglibdir = $(libdir)/ruby/#{CONFIG['MAJOR']}.#{CONFIG['MINOR']}
 archdir = $(pkglibdir)/#{CONFIG['arch']}
@@ -203,6 +188,9 @@ DLLIB = $(TARGET).#{$static ? $LIBEXT : CONFIG['DLEXT']}
 
 RUBY = #{ruby_interpreter} -I$(topdir) -I$(hdrdir)/lib
 RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map do|x|Dir[x]end.flatten.uniq)"
+MAKEDIRS = $(RUBY) -r ftools -e 'File::makedirs(*ARGV)'
+INSTALL_PROG = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)'
+INSTALL_DATA = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)'
 
 EXEEXT = CONFIG['EXEEXT']
 
@@ -229,15 +217,17 @@ EOS
   mfile.printf <<EOS
 
 install:
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(DESTDIR)$(libdir) $(DESTDIR)$(pkglibdir) $(DESTDIR)$(archdir)$(target_prefix)
-
+	@$(MAKEDIRS) $(DESTDIR)$(libdir) $(DESTDIR)$(pkglibdir) $(DESTDIR)$(archdir)$(target_prefix)
 EOS
   unless $static
     mfile.printf "\
-	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(DESTDIR)$(archdir)$(target_prefix)/$(DLLIB)
+	@$(INSTALL_PROG) $(DLLIB) $(DESTDIR)$(archdir)$(target_prefix)/$(DLLIB)
 "
   end
-  install_rb(mfile, $srcdir)
+  save_srcdir = Config::CONFIG['srcdir']
+  Config::CONFIG['srcdir'] = $srcdir
+  install_rb(mfile, '$(DESTDIR)$(rubylibdir)$(target_prefix)', '$(srcdir)')
+  Config::CONFIG['srcdir'] = save_srcdir
   mfile.printf "\n"
 
   unless /mswin32/ =~ RUBY_PLATFORM

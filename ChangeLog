@@ -1,3 +1,16 @@
+Thu Sep  5 01:24:26 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* extmk.rb (create_makefile): add macro MAKEDIRS, INSTALL_PROG,
+	  INSTALL_DATA.
+
+	* extmk.rb (create_makefile): support for building to any directory.
+
+	* extmk.rb (xsystem): move to mkmf.rb.
+
+	* mkmf.rb (xsystem): support for extmk.rb
+
+	* mkmf.rb ($CPP): remove '-E' option.  add CPPFLAGS.
+
 Wed Sep  4 15:23:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_make_metaclass): obj.meta.super.meta should be equal
@@ -17,7 +30,7 @@ Tue Sep  3 17:12:59 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* extmk.rb: require mkmf.rb.  remove duplicate methods.
 	  use Config::CONFIG["FOO"] instead of @FOO@.
 
-	* mkmf.rb: extmk.rb support.
+	* mkmf.rb: support for extmk.rb.
 
 Mon Sep  2 23:01:50 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
@@ -6205,7 +6218,7 @@ Mon May 21 13:15:25 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Sat May 19 09:29:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* process.c (rb_proc_times): need not to check retrun value from
+	* process.c (rb_proc_times): need not to check return value from
 	  times(2).
 
 Fri May 18 05:36:08 2001  Akinori MUSHA  <knu@iDaemons.org>
@@ -7093,7 +7106,7 @@ Sat Mar 10 22:56:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  block returns true for all elements.
 
 	* enum.c (enum_any): new method 'any?', which returns true if
-	  block retruns true for any of elements.
+	  block returns true for any of elements.
 
 Sat Mar 10 02:34:18 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 

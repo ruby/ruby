@@ -86,7 +86,7 @@ else
   OUTFLAG = '-o '
 end
 $LINK = "#{CONFIG['CC']} #{OUTFLAG}conftest -I#{$hdrdir} #{CFLAGS} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
-$CPP = "#{CONFIG['CPP']} -E %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
+$CPP = "#{CONFIG['CPP']} #{CONFIG['CPPFLAGS']} %s -I#{$hdrdir} #{CFLAGS} %s %s conftest.c"
 
 def rm_f(*files)
   targets = []
@@ -115,6 +115,7 @@ end
 $log = nil
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
+$extmk = /extmk\.rb/ =~ $0
 
 def xsystem command
   Config.expand(command)
@@ -122,14 +123,15 @@ def xsystem command
     puts command
     return system(command)
   end
-  $log ||= open('mkmf.log', 'w')
+  logfile = $extmk ? File.join($topdir, 'ext', 'extmk.log') : 'mkmf.rb'
+  $log ||= open(logfile, 'w')
   $stderr.reopen($log) 
   $stdout.reopen($log) 
   puts command
-  r = system(command)
+  system(command)
+ensure
   $stderr.reopen($orgerr)
   $stdout.reopen($orgout)
-  return r
 end
 
 def try_link0(src, opt="")
@@ -250,8 +252,10 @@ def append_library(libs, lib)
 end
 
 def message(*s)
-  print(*s) unless /extmk\.rb/ =~ $0
-  STDOUT.flush
+  unless $extmk
+    print(*s)
+    STDOUT.flush
+  end
 end
 
 def have_library(lib, func="main")
