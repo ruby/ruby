@@ -189,7 +189,9 @@ class MultiTkIp
     unless ip.deleted?
       ip._split_tklist(ip._invoke('interp', 'slaves')).each{|name|
         begin
-          ip._eval_without_enc("#{name} eval {foreach i [after info] {after cancel $i}}")
+          # ip._eval_without_enc("#{name} eval {foreach i [after info] {after cancel $i}}")
+          after_ids = ip._eval_without_enc("#{name} eval {after info}")
+          ip._eval_without_enc("#{name} eval {foreach i {#{after_ids}} {after cancel $i}}")
         rescue Exception
         end
         begin
@@ -236,7 +238,9 @@ class MultiTkIp
         @slave_ip_tbl.each{|name, subip| 
           _destroy_slaves_of_slaveIP(subip)
           begin
-            subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+            # subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+            after_ids = subip._eval_without_enc("after info")
+            subip._eval_without_enc("foreach i {#{after_ids}} {after cancel $i}")
           rescue Exception
           end
 =begin
@@ -270,7 +274,9 @@ class MultiTkIp
         }
 
         begin
-          @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+          # @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+          after_ids = @interp._eval_without_enc("after info")
+          @interp._eval_without_enc("foreach i {#{after_ids}} {after cancel $i}")
         rescue Exception
         end
         begin
@@ -310,7 +316,9 @@ class MultiTkIp
           @slave_ip_tbl.each{|name, subip|
             _destroy_slaves_of_slaveIP(subip)
             begin
-              subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+              # subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+              after_ids = subip._eval_without_enc("after info")
+              subip._eval_without_enc("foreach i {#{after_ids}} {after cancel $i}")
             rescue Exception
             end
 =begin
@@ -344,7 +352,9 @@ class MultiTkIp
           }
 
           begin
-            @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+            # @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+            after_ids = @interp._eval_without_enc("after info")
+            @interp._eval_without_enc("foreach i {#{after_ids}} {after cancel $i}")
           rescue Exception
           end
 =begin
@@ -1315,7 +1325,7 @@ class MultiTkIp
         @cmd_queue.enq([nil, cmd, *args])
       rescue Exception => e
         # ignore
-        if $DEBUG || true
+        if $DEBUG
           warn("Warning: " + e.class.inspect + 
                ((e.message.length > 0)? ' "' + e.message + '"': '') +  
                " on " + self.inspect) 
@@ -1821,7 +1831,9 @@ class MultiTkIp
       end
 =end
       begin
-        subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+        # subip._eval_without_enc("foreach i [after info] {after cancel $i}")
+        after_ids = subip._eval_without_enc("after info")
+        subip._eval_without_enc("foreach i {#{after_ids}} {after cancel $i}")
       rescue Exception
       end
 
@@ -1850,7 +1862,9 @@ class MultiTkIp
     }
 
     begin
-      @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+      # @interp._eval_without_enc("foreach i [after info] {after cancel $i}")
+      after_ids = @interp._eval_without_enc("after info")
+      @interp._eval_without_enc("foreach i {#{after_ids}} {after cancel $i}")
     rescue Exception
     end
 =begin

@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2004-12-23"
+#define TCLTKLIB_RELEASE_DATE "2004-12-27"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -70,8 +70,12 @@ fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); fflush(stderr); }
 /* release date */
 const char tcltklib_release_date[] = TCLTKLIB_RELEASE_DATE;
 
-/*finalize_proc_name */
+/* finalize_proc_name */
 static char *finalize_hook_name = "INTERP_FINALIZE_HOOK";
+
+/* to cancel remained after-scripts when deleting IP */
+#define REMAINED_AFTER_IDS_VAR "__ruby_tcltklib_remained_after_script_list__"
+#define CANCEL_REMAINED_AFTER_IDS "foreach id $__ruby_tcltklib_remained_after_script_list__ {after cancel $id}"
 
 /* for callback break & continue */
 static VALUE eTkCallbackReturn;
@@ -3312,12 +3316,16 @@ delete_slaves(ip)
 
         Tcl_Preserve(slave);
 
-#if TCL_MAJOR_VERSION < 8 || ( TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
-#else
         if (!Tcl_InterpDeleted(slave)) {
-            Tcl_Eval(slave, "foreach i [after info] { after cancel $i }");
+            if (Tcl_Eval(slave, "after info") == TCL_OK
+                && Tcl_SetVar(slave, 
+                              REMAINED_AFTER_IDS_VAR, 
+                              Tcl_GetStringResult(slave), 
+                              TCL_GLOBAL_ONLY) != (char *)NULL) {
+                DUMP1("cancel after scripts");
+                Tcl_Eval(slave, CANCEL_REMAINED_AFTER_IDS);
+            }
         }
-#endif
 
         /* delete slaves of slave */
         delete_slaves(slave);
@@ -3360,17 +3368,19 @@ ip_free(ptr)
 
             Tcl_ResetResult(ptr->ip);
 
+            if (Tcl_Eval(ptr->ip, "after info") == TCL_OK
+                && Tcl_SetVar(ptr->ip, 
+                              REMAINED_AFTER_IDS_VAR, 
+                              Tcl_GetStringResult(ptr->ip), 
+                              TCL_GLOBAL_ONLY) != (char *)NULL) {
+                DUMP1("cancel after scripts");
+                Tcl_Eval(ptr->ip, CANCEL_REMAINED_AFTER_IDS);
+            }
+
             if (Tcl_GetCommandInfo(ptr->ip, finalize_hook_name, &info)) {
                 DUMP2("call finalize hook proc '%s'", finalize_hook_name);
                 Tcl_Eval(ptr->ip, finalize_hook_name);
             }
-
-#if TCL_MAJOR_VERSION < 8 || ( TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
-#else
-            if (!Tcl_InterpDeleted(ptr->ip)) {
-                Tcl_Eval(ptr->ip, "foreach i [after info] {after cancel $i}");
-            }
-#endif
 
             del_root(ptr->ip);
 
@@ -3838,12 +3848,14 @@ ip_delete(self)
     /* Tcl_Preserve(ptr->ip); */
     rbtk_preserve_ip(ptr);
 
-#if TCL_MAJOR_VERSION < 8 || ( TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
-#else
-    if (!Tcl_InterpDeleted(ptr->ip)) {
-        Tcl_Eval(ptr->ip, "foreach i [after info] { after cancel $i }");
+    if (Tcl_Eval(ptr->ip, "after info") == TCL_OK
+        && Tcl_SetVar(ptr->ip, 
+                      REMAINED_AFTER_IDS_VAR, 
+                      Tcl_GetStringResult(ptr->ip), 
+                      TCL_GLOBAL_ONLY) != (char *)NULL) {
+        DUMP1("cancel after scripts");
+        Tcl_Eval(ptr->ip, CANCEL_REMAINED_AFTER_IDS);
     }
-#endif
 
     del_root(ptr->ip);
 
