@@ -963,5 +963,6 @@ fi
 
 echo "creating config.h"
 tr -d '\015' < confdefs.h > config.h
+: > confdefs.h
 
 AC_OUTPUT($FIRSTMAKEFILE Makefile ext/extmk.rb)
