@@ -1,6 +1,6 @@
 =begin
 
-= net/http.rb version 1.1.30
+= net/http.rb version 1.1.31
 
 maintained by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This file is derived from "http-access.rb".
@@ -27,8 +27,25 @@ You can get it from RAA
 : start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
   is equals to Net::HTTP.new( address, port, proxy_addr, proxy_port ).start(&block)
 
+: Proxy( address, port )
+  creates a HTTP proxy class.
+  Arguments are address/port of proxy host.
+  You can replace HTTP class by this proxy class.
+
+    # example
+    proxy_http = HTTP::Proxy( 'proxy.foo.org', 8080 )
+      :
+    proxy_http.start( 'www.ruby-lang.org' ) do |http|
+      # connecting proxy.foo.org:8080
+      :
+    end
+
+: proxy_class?
+  If self is HTTP, false.
+  If self is a class which was created by HTTP::Proxy(), true.
+
 : port
-  HTTP default port, 80
+  HTTP default port (80).
 
 
 == Methods
@@ -39,6 +56,15 @@ You can get it from RAA
 
   When this method is called with block, gives HTTP object to block
   and close HTTP session after block call finished.
+
+: proxy?
+  true if self is a HTTP proxy class
+
+: proxy_address
+  address of proxy host. If self is not a proxy, nil.
+
+: proxy_port
+  port number of proxy host. If self is not a proxy, nil.
 
 : get( path, header = nil, dest = '' )
 : get( path, header = nil ) {|str| .... }
@@ -249,7 +275,17 @@ module Net
     protocol_param :port,         '80'
     protocol_param :command_type, '::Net::NetPrivate::HTTPCommand'
 
+
+    ###
+    ### proxy
+    ###
+
     class << self
+
+      def Proxy( p_addr, p_port = nil )
+        ::Net::NetPrivate::HTTPProxy.create_proxy_class(
+            p_addr, p_port || self.port )
+      end
 
       alias orig_new new
 
@@ -261,50 +297,92 @@ module Net
         new( address, port, p_addr, p_port ).start( &block )
       end
 
+      def proxy_class?
+        false
+      end
+
+      def proxy_address
+        nil
+      end
+
+      def proxy_port
+        nil
+      end
+
     end
+
+    def proxy?
+      false
+    end
+
+    def proxy_address
+      nil
+    end
+
+    def proxy_port
+      nil
+    end
+
+    def edit_path( path )
+      path
+    end
+
+
+    ###
+    ### 1.2 implementation
+    ###
 
     @new_impl = false
 
-    def HTTP.new_implementation
-      return if @new_impl
-      @new_impl = true
-      module_eval %^
+    class << self
 
-      undef head
-      alias head head2
+      def new_implementation
+        return if @new_impl
+        @new_impl = true
+        module_eval %^
 
-      undef get
+        undef head
+        alias head head2
 
-      def get( path, u_header = nil, dest = nil, &block )
-        get2( path, u_header ) {|f| f.body( dest, &block ) }
+        undef get
+
+        def get( path, u_header = nil, dest = nil, &block )
+          get2( path, u_header ) {|f| f.body( dest, &block ) }
+        end
+
+        undef post
+
+        def post( path, data, u_header = nil, dest = nil, &block )
+          post2( path, data, u_header ) {|f| f.body( dest, &block ) }
+        end
+
+        undef put
+
+        def put( path, src, u_header = nil )
+          put2( path, src, u_header ) {|f| f.body }
+        end
+
+        ^
       end
 
-      undef post
-
-      def post( path, data, u_header = nil, dest = nil, &block )
-        post2( path, data, u_header ) {|f| f.body( dest, &block ) }
+      def old_implementation
+        if @new_impl then
+          raise RuntimeError,
+                'http.rb is already switched to new implementation'
+        end
       end
 
-      undef put
-
-      def put( path, src, u_header = nil )
-        put2( path, src, u_header ) {|f| f.body }
-      end
-
-      ^
-    end
-
-    def HTTP.old_implementation
-      if @new_impl then
-        raise RuntimeError, "http.rb is already switched to new implementation"
-      end
     end
       
 
+    ###
+    ### http operations
+    ###
+
     def get( path, u_header = nil, dest = nil, &block )
-      resp = get2( path, u_header ) {|f| dest = f.body( dest, &block ) }
+      resp = get2( path, u_header ) {|f| f.body( dest, &block ) }
       resp.value
-      return resp, dest
+      return resp, resp.body
     end
 
     def get2( path, u_header = nil, &block )
@@ -330,10 +408,9 @@ module Net
 
 
     def post( path, data, u_header = nil, dest = nil, &block )
-      resp = post2( path, data, u_header ) {|f|
-                    dest = f.body( dest, &block ) }
+      resp = post2( path, data, u_header ) {|f| f.body( dest, &block ) }
       resp.value
-      return resp, dest
+      return resp, resp.body
     end
 
     def post2( path, data, u_header = nil, &block )
@@ -403,13 +480,20 @@ module Net
     end
 
     def procheader( h )
-      return( {} ) unless h
-      new = {}
+      ret = {}
+      ret[ 'Host' ]       = address +
+                            ((port == HTTP.port) ? '' : ":#{port}")
+      ret[ 'Connection' ] = 'Keep-Alive'
+      ret[ 'Accept' ]     = '*/*'
+
+      return ret unless h
       h.each do |k,v|
         arr = k.split('-')
-        arr.each{|i| i.capitalize! }
-        new[ arr.join('-') ] = v
+        arr.each {|i| i.capitalize! }
+        ret[ arr.join('-') ] = v
       end
+
+      ret
     end
 
 
@@ -428,26 +512,69 @@ module Net
       end
     end
 
-    
-    def edit_path( path )
-      path
-    end
-
-    def HTTP.Proxy( p_addr, p_port = nil )
-      klass = super
-      klass.module_eval( <<'SRC', 'http.rb', __LINE__ + 1 )
-        def edit_path( path )
-          'http://' + address +
-              (@port == HTTP.port ? '' : ":#{@port}") +
-              path
-        end
-SRC
-      klass
-    end
-
   end
 
   HTTPSession = HTTP
+
+
+  module NetPrivate
+
+  module HTTPProxy
+
+    class << self
+
+      def create_proxy_class( p_addr, p_port )
+        klass = Class.new( HTTP )
+        klass.module_eval {
+          include HTTPProxy
+          @proxy_address = p_addr
+          @proxy_port    = p_port
+        }
+        def klass.proxy_class?
+          true
+        end
+
+        def klass.proxy_address
+          @proxy_address
+        end
+
+        def klass.proxy_port
+          @proxy_port
+        end
+
+        klass
+      end
+
+    end
+
+
+    def initialize( addr, port )
+      super
+      @proxy_address = type.proxy_address
+      @proxy_port    = type.proxy_port
+    end
+
+    attr_reader :proxy_address, :proxy_port
+
+    alias proxyaddr proxy_address
+    alias proxyport proxy_port
+
+    def proxy?
+      true
+    end
+  
+    def connect( addr = nil, port = nil )
+      super @proxy_address, @proxy_port
+    end
+
+    def edit_path( path )
+      'http://' + address + (port == HTTP.port ? '' : ":#{port}") + path
+    end
+  
+  end
+
+  end   # net private
+
 
 
   class HTTPResponseReceiver
@@ -653,13 +780,6 @@ SRC
 
     def initialize( sock )
       @http_version = HTTPVersion
-
-      @in_header = {}
-      @in_header[ 'Host' ] = sock.addr +
-                             ((sock.port == HTTP.port) ? '' : ":#{sock.port}")
-      @in_header[ 'Connection' ] = 'Keep-Alive'
-      @in_header[ 'Accept' ]     = '*/*'
-
       super sock
     end
 
@@ -713,12 +833,7 @@ SRC
 
     def request( req, u_header )
       @socket.writeline req
-      if u_header then
-        header = @in_header.dup.update( u_header )
-      else
-        header = @in_header
-      end
-      header.each do |n,v|
+      u_header.each do |n,v|
         @socket.writeline n + ': ' + v
       end
       @socket.writeline ''

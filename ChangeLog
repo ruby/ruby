@@ -1,3 +1,11 @@
+Sat Nov 11 08:34:18 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.31
+
+	* lib/net/http.rb: initializes header in HTTP, not HTTPCommand
+
+	* lib/net/protocol.rb, http.rb: rewrites proxy code
+
 Fri Nov 10 16:15:53 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c: T_SYMBOL was misplaced my T_UNDEF.

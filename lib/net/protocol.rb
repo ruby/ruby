@@ -1,6 +1,6 @@
 =begin
 
-= net/protocol.rb version 1.1.30
+= net/protocol.rb version 1.1.31
 
 written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -30,10 +30,6 @@ Object
 : start( address = 'localhost', port = nil, *protoargs ) {|proto| .... }
   This method creates a new Protocol object and opens a session.
   equals to Net::Protocol.new( address, port ).start( *protoargs )
-
-: Proxy( address, port )
-  This method creates a proxy class of its protocol.
-  Arguments are address/port of proxy host.
 
 === Methods
 
@@ -69,7 +65,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.30'
+    Version = '1.1.31'
 
 
     class << self
@@ -84,38 +80,6 @@ module Net
           instance
         end
       end
-
-      def Proxy( p_addr, p_port = nil )
-        p_port ||= self.port
-        klass = Class.new( self )
-        klass.module_eval %-
-
-          def initialize( addr, port )
-            @proxyaddr = '#{p_addr}'
-            @proxyport = '#{p_port}'
-            super @proxyaddr, @proxyport
-            @address = addr
-            @port    = port
-          end
-
-          def connect( addr = nil, port = nil )
-            super @proxyaddr, @proxyport
-          end
-          private :connect
-            
-          attr_reader :proxyaddr, :proxyport
-        -
-        def klass.proxy?
-          true
-        end
-
-        klass
-      end
-
-      def proxy?
-        false
-      end
-
 
       private
 
@@ -222,7 +186,6 @@ module Net
   end
 
   Session = Protocol
-
 
 
 
