@@ -792,7 +792,7 @@ if test "$rb_cv_binary_elf" = yes; then
 fi
 
 case "$target_os" in
-linux*)
+linux* | gnu* | k*bsd*-gnu)
     if test "$rb_cv_binary_elf" = no; then
 	with_dln_a_out=yes
     else
@@ -873,15 +873,13 @@ if test "$with_dln_a_out" != yes; then
 			rb_cv_dlopen=yes ;;
 	osf*) 		: ${LDSHARED="ld -shared -expect_unresolved \"*\""}
 			rb_cv_dlopen=yes ;;
-	linux*) 	: ${LDSHARED="$CC -shared"}
+	linux* | gnu* | k*bsd*-gnu)
+		 	: ${LDSHARED="$CC -shared"}
 			rb_cv_dlopen=yes ;;
 	interix*) 	: ${LDSHARED="$CC -shared"}
 			XLDFLAGS="$XLDFLAGS -Wl,-E"
 			LIBPATHFLAG=" -L'%1\$-s'"
 			rb_cv_dlopen=yes ;;
-	gnu*)   	: ${LDSHARED="$CC -shared"}
-			rb_cv_dlopen=yes
-			LDFLAGS="$LDFLAGS -rdynamic" ;;
 	freebsd*|dragonfly*)       : ${LDSHARED="$CC -shared"}
 			if test "$rb_cv_binary_elf" = yes; then
 			    LDFLAGS="$LDFLAGS -rdynamic"
@@ -1031,9 +1029,7 @@ else
 fi
 
 case "$target_os" in
-  linux*)
-	STRIP='strip -S -x';;
-  gnu*)
+  linux* | gnu* | k*bsd*-gnu)
 	STRIP='strip -S -x';;
   nextstep*)
 	STRIP='strip -A -n';;
@@ -1179,11 +1175,7 @@ if test "$enable_shared" = 'yes'; then
     sunos4*)
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	;;
-    linux*)
-	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'
-	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
-	;;
-    gnu*)
+    linux* | gnu* | k*bsd*-gnu)
 	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_SO_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_SO_NAME).so'
 	;;
