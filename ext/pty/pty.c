@@ -456,10 +456,11 @@ pty_getpty(self, command)
     wfptr->f = fdopen(dup(info.fd), "w");
     wfptr->path = strdup(RSTRING(command)->ptr);
 
-    res = rb_ary_new2(2);
+    res = rb_ary_new2(4);
     rb_ary_store(res,0,(VALUE)rport);
     rb_ary_store(res,1,(VALUE)wport);
     rb_ary_store(res,2,INT2FIX(info.child_pid));
+    rb_ary_store(res,3,rb_str_new2(SlaveName));
 
     if (rb_block_given_p()) {
 	rb_ensure(rb_yield, (VALUE)res, (VALUE (*)())reset_signal_action, Qnil);

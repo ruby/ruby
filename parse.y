@@ -1878,7 +1878,7 @@ none		: /* none */
 static char *tokenbuf = NULL;
 static int   tokidx, toksiz = 0;
 
-static NODE *str_extend();
+static NODE *str_extend _((NODE*,char,char));
 
 #define LEAVE_BS 1
 
@@ -2346,7 +2346,7 @@ parse_regx(term, paren)
 
 	switch (c) {
 	  case '#':
-	    list = str_extend(list, term);
+	    list = str_extend(list, term, paren);
 	    if (list == (NODE*)-1) goto unterminated;
 	    continue;
 
@@ -2475,7 +2475,7 @@ parse_string(func, term, paren)
 	    }
 	}
 	else if (c == '#') {
-	    list = str_extend(list, term);
+	    list = str_extend(list, term, paren);
 	    if (list == (NODE*)-1) goto unterm_str;
 	    continue;
 	}
@@ -3689,15 +3689,16 @@ yylex()
 }
 
 static NODE*
-str_extend(list, term)
+str_extend(list, term, paren)
     NODE *list;
-    char term;
+    char term, paren;
 {
     int c;
     int brace = -1;
     VALUE ss;
     NODE *node;
-    int nest;
+    int brace_nest = 0;
+    int paren_nest = 0;
 
     c = nextc();
     switch (c) {
@@ -3812,13 +3813,13 @@ str_extend(list, term)
 
       case '{':
 	if (c == '{') brace = '}';
-	nest = 0;
+	brace_nest = 0;
 	do {
 	  loop_again:
 	    c = nextc();
 	    switch (c) {
 	      case -1:
-		if (nest > 0) {
+		if (brace_nest > 0) {
 		    yyerror("bad substitution in string");
 		    newtok();
 		    return list;
@@ -3826,8 +3827,8 @@ str_extend(list, term)
 		return (NODE*)-1;
 	      case '}':
 		if (c == brace) {
-		    if (nest == 0) break;
-		    nest--;
+		    if (brace_nest == 0) break;
+		    brace_nest--;
 		}
 		tokadd(c);
 		goto loop_again;
@@ -3843,9 +3844,10 @@ str_extend(list, term)
 		}
 		break;
 	      case '{':
-		if (brace != -1) nest++;
+		if (brace != -1) brace_nest++;
 	      default:
-		if (c == term) {
+		if (c == paren) paren_nest++;
+		else if (c == term && (!paren || paren_nest-- == 0)) {
 		    pushback(c);
 		    list_append(list, NEW_STR(rb_str_new2("#")));
 		    rb_warning("bad substitution in string");

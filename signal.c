@@ -293,7 +293,12 @@ posix_signal(signum, handler)
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
 #ifdef SA_RESTART
-    sigact.sa_flags |= SA_RESTART; /* SVR4, 4.3+BSD */
+    /* All other signals but VTALRM shall restart restartable syscall
+       VTALRM will cause EINTR to syscall if interrupted.
+    */
+    if (signum != SIGVTALRM) {
+        sigact.sa_flags |= SA_RESTART; /* SVR4, 4.3+BSD */
+    }
 #endif
 #ifdef SA_NOCLDWAIT
     if (signum == SIGCHLD && handler == SIG_IGN)

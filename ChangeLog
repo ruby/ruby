@@ -1,3 +1,14 @@
+Thu Nov 22 00:28:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (str_extend): should check nesting parentheses in #{}.
+
+Wed Nov 21 00:17:54 2001  Ville Mattila  <mulperi@iki.fi>
+
+	* eval.c (rb_thread_select): tv_sec and tv_usec should not be
+	  negative.
+
+	* signal.c (posix_signal): do not set SA_RESTART for SIGVTALRM.
+
 Tue Nov 20 01:07:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (str_extend): should not terminate string interpolation
