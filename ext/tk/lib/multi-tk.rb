@@ -17,7 +17,7 @@ TclTkLib.mainloop_abort_on_exception = true
 ################################################
 # exceptiopn to treat the return value from IP
 class MultiTkIp_OK < Exception
-  def self.send(thred, ret=nil)
+  def self.send(thread, ret=nil)
     thread.raise self.new(ret)
   end
 

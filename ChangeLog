@@ -1,6 +1,11 @@
+Tue Jan  6 22:13:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_modfunc): should break if m has no super class.
+	  [ruby-dev:22498]
+
 Tue Jan  6 21:55:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* io.c (fptr_finalize): should save errno just after failure.
+	* io.c (fptr_finalize): should save errno just after failure.w
 	  [ruby-dev:22492]
 
 Tue Jan  6 14:53:14 2004  Dave Thomas  <dave@pragprog.com>
@@ -71,7 +76,16 @@ Fri Jan  2 14:54:11 2004  Dave Thomas  <dave@pragprog.com>
 	  Fix problem with labels not displaying in RI labeled
 	  lists using BS and ANSI modes.
 
-Wed Dec 31 11:20:34 2003    <dave@pragprog.com>
+Fri Jan  2 01:50:13 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_eof): ARGF.eof? should not have any side effect.
+	  [ruby-dev:22469]
+
+Wed Dec 31 17:25:17 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_each_byte): should return self.  [ruby-dev:22465]
+
+Wed Dec 31 11:20:34 2003  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::do_methods): Make
 	  file referenced in "// in sss.c" relative to current file.
@@ -86,6 +100,19 @@ Wed Dec 31 01:33:05 2003  Dave Thomas  <dave@pragprog.com>
 
 	* array.c, error.c, eval.c, io.c, prec.c, range.c, re.c,
 	  string.c, time.c: Add RDoc for Kernel functions, and tidy.
+
+Tue Dec 30 19:39:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_readline): should raise EOFError at the end of
+	  files.  [ruby-dev:22458]
+
+	* io.c (argf_read): should concatenate input files when length
+	  argument is nil. [ruby-dev:22450]
+
+	* io.c (argf_read): should update supplied string buffer (2nd
+	  argument) even when IO#read is called multiple times.
+
+	* io.c: should initialize lineno by zero. [ruby-dev:22460]
 
 Tue Dec 30 12:30:30 2003  Dave Thomas  <dave@pragprog.com>
 

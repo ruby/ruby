@@ -114,7 +114,7 @@ struct timeval rb_time_interval _((VALUE));
 static VALUE filename, current_file;
 static int gets_lineno;
 static int init_p = 0, next_p = 0;
-static VALUE lineno;
+static VALUE lineno = FIX2INT(0);
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
 #  ifdef _IO_fpos_t
@@ -4105,7 +4105,8 @@ rb_f_readline(argc, argv)
 {
     VALUE line;
 
-    NEXT_ARGF_FORWARD();
+    if (!next_argv()) rb_eof_error();
+    ARGF_FORWARD();
     line = rb_f_gets(argc, argv);
     if (NIL_P(line)) {
 	rb_eof_error();
@@ -4901,7 +4902,6 @@ argf_eof()
 	if (init_p == 0) return Qtrue;
 	ARGF_FORWARD();
 	if (rb_io_eof(current_file)) {
-	    next_p = 1;
 	    return Qtrue;
 	}
     }
@@ -4913,23 +4913,22 @@ argf_read(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE tmp, str;
+    VALUE tmp, str, length;
     long len = 0;
 
-    if (argc == 1 && !NIL_P(argv[0]))
+    rb_scan_args(argc, argv, "02", &length, &str);
+    if (!NIL_P(length)) {
 	len = NUM2LONG(argv[0]);
-    str = Qnil;
+    }
+    if (!NIL_P(str)) {
+	StringValue(str);
+	rb_str_resize(str,0);
+	argv[1] = Qnil;
+    }
 
   retry:
     if (!next_argv()) {
-	if (NIL_P(str)) {
-	    VALUE length;
-
-	    rb_scan_args(argc, argv, "02", &length, &str);
-	    if (NIL_P(str)) return rb_str_new(0,0);
-	    StringValue(str);
-	    rb_str_resize(str,0);
-	}
+	if (NIL_P(str)) return rb_str_new(0,0);
 	return str;
     }
     if (TYPE(current_file) != T_FILE) {
@@ -4940,14 +4939,14 @@ argf_read(argc, argv)
     }
     if (NIL_P(str)) str = tmp;
     else rb_str_append(str, tmp);
-    if (NIL_P(tmp) || argc == 0) {
+    if (NIL_P(tmp) || NIL_P(length)) {
 	if (next_p != -1) {
 	    argf_close(current_file);
 	    next_p = 1;
 	    goto retry;
 	}
     }
-    else if (argc == 1) {
+    else if (argc >= 1) {
 	if (RSTRING(str)->len < len) {
 	    len -= RSTRING(str)->len;
 	    argv[0] = INT2NUM(len);
@@ -5021,7 +5020,7 @@ argf_each_byte()
     while (!NIL_P(byte = argf_getc())) {
 	rb_yield(byte);
     }
-    return Qnil;
+    return argf;
 }
 
 static VALUE

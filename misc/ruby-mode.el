@@ -964,7 +964,10 @@ balanced expression is found."
 	  ;; get current method (or class/module)
 	  (if (re-search-backward
 	       (concat "^[ \t]*\\(def\\|class\\|module\\)[ \t]+"
-		       "\\(" ruby-symbol-re "+\\)")
+		       "\\(" 
+		       ;; \\. for class method
+			"\\(" ruby-symbol-re "\\|\\." "\\)" 
+			"+\\)")
 	       nil t)
 	      (progn
 		(setq mlist (list (match-string 2)))
