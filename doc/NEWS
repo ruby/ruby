@@ -1,5 +1,9 @@
 Summary of the changes since 1.6.4:
 
+: Syslog module
+
+  Imported.
+
 : Digest module
 
   Added as a replacement for md5 and sha1 modules.

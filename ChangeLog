@@ -2,7 +2,7 @@ Mon Dec  3 16:06:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/extconf.rb: remove -L/usr/local/lib.
 
-Mon Dec 03 16:06:04 2001  Usaku Nakamura <usa@ruby-lang.org>
+Mon Dec  3 16:06:04 2001  Usaku Nakamura <usa@ruby-lang.org>
 
 	* configure.in: not use X11BASE, since it's not always set.
 
@@ -15,6 +15,11 @@ Sun Dec  2 22:01:52 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* configure.in: use GCC, not without_gcc. remove without_gcc.
 
 	* ext/curses/extconf.rb: check for curses.h.
+
+Sat Dec  1 23:23:57 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/Setup*, ext/syslog/*: import the "syslog" module from the
+	  rough ruby project.
 
 Fri Nov 30 00:30:00 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
