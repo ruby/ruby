@@ -1244,7 +1244,7 @@ bigdivmod(x, y, divp, modp)
 
     bigdivrem(x, y, divp, &mod);
     if (RBIGNUM(x)->sign != RBIGNUM(y)->sign &&
-	RBIGNUM(mod)->len > 0 && BDIGITS(mod)[0] != 0) {
+	!(RBIGNUM(mod)->len == 1 && BDIGITS(mod)[0] == 0)) {
 	if (divp) *divp = bigadd(*divp, rb_int2big(1), 0);
 	if (modp) *modp = bigadd(mod, y, 1);
     }
@@ -1730,6 +1730,7 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "*", rb_big_mul, 1);
     rb_define_method(rb_cBignum, "/", rb_big_div, 1);
     rb_define_method(rb_cBignum, "%", rb_big_modulo, 1);
+    rb_define_method(rb_cBignum, "div", rb_big_div, 1);
     rb_define_method(rb_cBignum, "divmod", rb_big_divmod, 1);
     rb_define_method(rb_cBignum, "modulo", rb_big_modulo, 1);
     rb_define_method(rb_cBignum, "remainder", rb_big_remainder, 1);
