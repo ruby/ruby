@@ -11,7 +11,7 @@
 #	
 #
 
-$RCS_ID="$Header$"
+$RCS_ID=%q$Header$
 
 load("getopts.rb")
 

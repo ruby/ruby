@@ -2,8 +2,8 @@
 #
 #   rbc.rb - 
 #   	$Release Version: 0.6 $
-#   	$Revision: 1.1.1.1.2.1 $
-#   	$Date: 1998/01/16 12:36:10 $
+#   	$Revision: 1.2 $
+#   	$Date: 1997/11/27 13:46:06 $
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --
@@ -32,7 +32,7 @@ require "e2mmap.rb"
 $stdout.sync = TRUE
 
 module BC_APPLICATION__
-  RCS_ID='-$Header: /home/cvsroot/ruby/sample/rbc.rb,v 1.1.1.1.2.1 1998/01/16 12:36:10 matz Exp $-'
+  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/ruby/RCS/rbc.rb,v 1.2 1997/11/27 13:46:06 keiju Exp keiju $-'
   
   extend Exception2MessageMapper
   def_exception :UnrecognizedSwitch, "Unrecognized switch: %s"

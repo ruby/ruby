@@ -4,6 +4,7 @@
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA
+#   	modified by matz
 #
 # --
 #  Sync_m, Synchronizer_m
