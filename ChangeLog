@@ -9,17 +9,6 @@ Tue Mar 04 23:12:07 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* win32/win32.h: remove EXTERN definition.
 
-Mon Mar 03 20:42:51 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
-
-	* configure.in, bcc32/Makefile.sub, win32/Makefile.sub: define
-	  RUBY_EXPORT to export symbols.
-
-	* defines.h: use RUBY_EXTERN instead of EXTERN.
-
-	* intern.h, re.h, ruby.h, rubysig.h: ditto.
-
-	* win32/win32.h: remove EXTERN definition.
-
 Tue Mar  4 17:54:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_aref): give warning if index is a symbol.
