@@ -412,7 +412,6 @@ rb_get_method_body(klassp, idp, noexp)
 
     if (ruby_running) {
 	/* store in cache */
-	if (BUILTIN_TYPE(origin) == T_ICLASS) origin = RBASIC(origin)->klass;
 	ent = cache + EXPR1(klass, id);
 	ent->klass  = klass;
 	ent->noex   = body->nd_noex;
@@ -2177,18 +2176,6 @@ arg_defined(self, node, buf, type)
     return type;
 }
 
-static VALUE
-search_iclass(self, klass)
-    VALUE self, klass;
-{
-    VALUE k = CLASS_OF(self);
-
-    while (k && !(BUILTIN_TYPE(k) == T_ICLASS && RBASIC(k)->klass == klass)) {
-	k = RCLASS(k)->super;
-    }
-    return k;
-}
-
 static const char*
 is_defined(self, node, buf, noeval)
     VALUE self;
@@ -2207,10 +2194,6 @@ is_defined(self, node, buf, noeval)
 	if (ruby_frame->orig_func == 0) return 0;
 	else if (ruby_frame->last_class == 0) return 0;
 	val = ruby_frame->last_class;
-	if (BUILTIN_TYPE(val) == T_MODULE) {
-	    val = search_iclass(self, val);
-	    if (!val) return 0;
-	}
 	if (rb_method_boundp(RCLASS(val)->super, ruby_frame->orig_func, 0)) {
 	    if (nd_type(node) == NODE_SUPER) {
 		return arg_defined(self, node->nd_args, buf, "super");
@@ -5861,20 +5844,6 @@ rb_call_super(argc, argv)
 
     self = ruby_frame->self;
     klass = ruby_frame->last_class;
-    if (BUILTIN_TYPE(klass) == T_MODULE) {
-	k = search_iclass(self, klass);
-	if (!k) {
-	    rb_raise(rb_eTypeError, "%s is not included in %s",
-		     rb_class2name(klass),
-		     rb_class2name(CLASS_OF(self)));
-	}
-	if (RCLASS(k)->super == 0) {
-	    rb_name_error(ruby_frame->last_func,
-			  "super: no superclass method `%s'",
-			  rb_id2name(ruby_frame->last_func));
-	}
-	klass = k;
-    }
 
     PUSH_ITER(ruby_iter->iter ? ITER_PRE : ITER_NOT);
     result = rb_call(RCLASS(klass)->super, self, ruby_frame->orig_func, argc, argv, 3);
@@ -6623,7 +6592,21 @@ int
 rb_provided(feature)
     const char *feature;
 {
-    return rb_feature_p(feature, 0, Qfalse) ? Qtrue : Qfalse;
+    int i;
+    char *buf;
+
+    if (rb_feature_p(feature, 0, Qfalse))
+	return Qtrue;
+    if (!loading_tbl) return Qfalse;
+    if (st_lookup(loading_tbl, (st_data_t)feature, 0)) return Qtrue;
+    buf = ALLOCA_N(char, strlen(feature)+8);
+    strcpy(buf, feature);
+    for (i=0; ; i++) {
+	if (!loadable_ext[i]) break;
+	strcpy(buf+strlen(feature), loadable_ext[i]);
+	if (st_lookup(loading_tbl, (st_data_t)buf, 0)) return Qtrue;
+    }
+    return Qfalse;
 }
 
 static void
@@ -8112,7 +8095,6 @@ proc_invoke(proc, args, self, klass)
     int state;
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
-    struct RVarmap * volatile old_dvars = ruby_dyna_vars;
     volatile int pcall, avalue = Qtrue;
     VALUE bvar = Qnil;
 
@@ -8129,6 +8111,7 @@ proc_invoke(proc, args, self, klass)
 	args = RARRAY(args)->ptr[0];
     }
 
+    PUSH_VARS();
     ruby_wrapper = data->wrapper;
     ruby_dyna_vars = data->dyna_vars;
     /* PUSH BLOCK from data */
@@ -8155,15 +8138,7 @@ proc_invoke(proc, args, self, klass)
     POP_ITER();
     ruby_block = old_block;
     ruby_wrapper = old_wrapper;
-    if (FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
-	struct RVarmap *vars;
-
-	for (vars = old_dvars; vars; vars = vars->next) {
-	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
-	    FL_SET(vars, DVAR_DONT_RECYCLE);
-	}
-    }
-    ruby_dyna_vars = old_dvars;
+    POP_VARS();
     if (proc_safe_level_p(proc)) ruby_safe_level = safe;
 
     switch (state) {

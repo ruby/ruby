@@ -4922,7 +4922,6 @@ onig_end()
   return 0;
 }
 
-
 #ifdef ONIG_DEBUG
 
 OnigOpInfoType OnigOpInfo[] = {

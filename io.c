@@ -2793,7 +2793,7 @@ pipe_open(argc, argv, pname, mode)
 	    argc = 0;
 	    prog = argv[0];
 	}
-	pname = StringValuePtr(prog);
+	pname = StringValueCStr(prog);
     }
     cmd = pname;
 
@@ -2971,25 +2971,21 @@ rb_io_s_popen(argc, argv, klass)
     }
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
-	long argc = RARRAY(tmp)->len;
-	VALUE *argv = ALLOCA_N(VALUE, argc);
-
-	MEMCPY(argv, RARRAY(tmp)->ptr, VALUE, argc);
-	port = pipe_open(argc, argv, 0, mode);
+	pname = tmp;
     }
     else {
 	SafeStringValue(pname);
-	port = pipe_open(1, &pname, 0, mode);
-	if (NIL_P(port)) {
-	    /* child */
-	    if (rb_block_given_p()) {
-		rb_yield(Qnil);
-		fflush(stdout);
-		fflush(stderr);
-		_exit(0);
-	    }
-	    return Qnil;
+    }
+    port = pipe_open(1, &pname, 0, mode);
+    if (NIL_P(port)) {
+	/* child */
+	if (rb_block_given_p()) {
+	    rb_yield(Qnil);
+	    fflush(stdout);
+	    fflush(stderr);
+	    _exit(0);
 	}
+	return Qnil;
     }
     RBASIC(port)->klass = klass;
     if (rb_block_given_p()) {

@@ -1,3 +1,10 @@
+Tue Nov  2 01:20:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): nail down dyna_var node when Proc object
+	  or continuation is created.  [ruby-dev:24671]
+
+	* io.c (rb_io_s_popen): do not expand argv array.  [ruby-dev:24670]
+
 Mon Nov  1 22:25:56 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb: changed xml-stylesheet's API of RSS Maker
@@ -31,6 +38,14 @@ Mon Nov  1 11:46:19 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 Mon Nov  1 09:37:19 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker.rb: added entry point of RSS Maker.
+
+Mon Nov  1 03:14:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_get_method_body): store ICLASS in the cache.
+	  [ruby-core:03672]
+
+	* eval.c (rb_provided): should return true for loading library
+	  too for autoloading.  [ruby-core:03655]
 
 Mon Nov  1 01:14:52 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

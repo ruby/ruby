@@ -2206,7 +2206,8 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
 
     repeat_inc_ng:
       stkp->u.repeat.count++;
-      if (stkp->u.repeat.count < reg->repeat_range[mem].upper) {
+      if (stkp->u.repeat.count < reg->repeat_range[mem].upper
+	  || reg->repeat_range[mem].upper < 0 /* IS_REPEAT_INFINITE(upper) */) {
         if (stkp->u.repeat.count >= reg->repeat_range[mem].lower) {
           UChar* pcode = stkp->u.repeat.pcode;
           
