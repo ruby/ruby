@@ -233,10 +233,13 @@ if $extlist.size > 0
   $extinit ||= ""
   $extobjs ||= ""
   list = $extlist.dup
-  until list.empty?
-    s,t,i,r = list.shift
-    if r and list.any? {|l| r.include?(l[1])}
-      list << [s,t,i]
+  while e = list.shift
+    s,t,i,r = e
+    if r and !r.empty?
+      l = list.size
+      if (while l > 0; break true if r.include?(list[l-=1][1]) end)
+        list.insert(l + 1, e)
+      end
       next
     end
     f = format("%s/%s.%s", s, i, $LIBEXT)
