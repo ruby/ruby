@@ -2499,7 +2499,35 @@ kill(int pid, int sig)
 int
 link(char *from, char *to)
 {
+    static BOOL (WINAPI *pCreateHardLink)(LPCTSTR, LPCTSTR, LPSECURITY_ATTRIBUTES) = NULL;
+    static int myerrno = 0;
+
+    if (!pCreateHardLink && !myerrno) {
+	HANDLE hKernel;
+
+	hKernel = GetModuleHandle("kernel32.dll");
+	if (hKernel) {
+	    pCreateHardLink = (BOOL (WINAPI *)(LPCTSTR, LPCTSTR, LPSECURITY_ATTRIBUTES))GetProcAddress(hKernel, "CreateHardLinkA");
+	    if (!pCreateHardLink) {
+		myerrno = GetLastError();
+	    }
+	    CloseHandle(hKernel);
+	}
+	else {
+	    myerrno = GetLastError();
+	}
+    }
+    if (!pCreateHardLink) {
+	errno = myerrno;
 	return -1;
+    }
+
+    if (!pCreateHardLink(to, from, NULL)) {
+	errno = GetLastError();
+	return -1;
+    }
+
+    return 0;
 }
 
 int
@@ -3082,4 +3110,69 @@ rb_w32_close(int fd)
 	return -1;
     }
     return 0;
+}
+
+static int
+unixtime_to_filetime(time_t time, FILETIME *ft)
+{
+    struct tm *tm;
+    SYSTEMTIME st;
+
+    tm = gmtime(&time);
+    st.wYear = tm->tm_year + 1900;
+    st.wMonth = tm->tm_mon + 1;
+    st.wDayOfWeek = tm->tm_wday;
+    st.wDay = tm->tm_mday;
+    st.wHour = tm->tm_hour;
+    st.wMinute = tm->tm_min;
+    st.wSecond = tm->tm_sec;
+    st.wMilliseconds = 0;
+    if (!SystemTimeToFileTime(&st, ft)) {
+	errno = GetLastError();
+	return -1;
+    }
+    return 0;
+}
+
+#undef utime
+#ifdef __BORLANDC__
+#define utime _utime
+#endif
+int
+rb_w32_utime(const char *path, struct utimbuf *times)
+{
+    HANDLE hDir;
+    SYSTEMTIME st;
+    FILETIME atime, mtime;
+    struct tm *tm;
+    struct stat stat;
+    int ret = 0;
+
+    if (rb_w32_stat(path, &stat)) {
+	return -1;
+    }
+    if (stat.st_mode & S_IFDIR == 0 || IsWin95()) {
+	return utime(path, times);
+    }
+
+    if (unixtime_to_filetime(times->actime, &atime)) {
+	return -1;
+    }
+    if (unixtime_to_filetime(times->modtime, &mtime)) {
+	return -1;
+    }
+
+    hDir = CreateFile(path, GENERIC_WRITE, 0, 0, OPEN_EXISTING,
+		      FILE_FLAG_BACKUP_SEMANTICS, 0);
+    if (hDir == INVALID_HANDLE_VALUE) {
+	errno = GetLastError();
+	return -1;
+    }
+    if (!SetFileTime(hDir, NULL, &atime, &mtime)) {
+	errno = GetLastError();
+	ret = -1;
+    }
+    CloseHandle(hDir);
+
+    return ret;
 }

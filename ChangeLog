@@ -1,3 +1,10 @@
+Mon Feb 17 14:13:25 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* win32/win32.c (link): implement with CreateHardLink().
+
+	* win32/win32.c, win32/win32.h (rb_w32_utime): enable utime() to
+	  directory if on NT. [new] (ruby-bugs-ja:PR#393)
+
 Mon Feb 17 13:28:51 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* file.c (file_expand_path): strip last slash when path is

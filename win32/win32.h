@@ -89,6 +89,7 @@ extern "C++" {
 #undef putchar
 #undef fgetchar
 #undef fputchar
+#undef utime
 #define getc(_stream)		rb_w32_getc(_stream)
 #define putc(_c, _stream)	rb_w32_putc(_c, _stream)
 #define fgetc(_stream)		getc(_stream)
@@ -97,6 +98,7 @@ extern "C++" {
 #define putchar(_c)		rb_w32_putc(_c, stdout)
 #define fgetchar()		getchar()
 #define fputchar(_c)		putchar(_c)
+#define utime(_p, _t)		rb_w32_utime(_p, _t)
 
 #define strcasecmp  stricmp
 #define strncasecmp strnicmp
@@ -121,7 +123,6 @@ extern "C++" {
 #define umask	   _umask
 #define unlink	   _unlink
 #define write	   _write
-#define utime      _utime
 #endif
 #define vsnprintf  _vsnprintf
 #define snprintf   _snprintf
@@ -459,6 +460,7 @@ int  rb_w32_putc(int, FILE*);
 int  rb_w32_getc(FILE*);
 int  rb_w32_close(int);
 int  rb_w32_fclose(FILE*);
+int  rb_w32_utime(const char *, struct utimbuf *);
 #define Sleep(msec) (void)rb_w32_sleep(msec)
 
 /*
