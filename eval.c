@@ -4553,7 +4553,7 @@ return_jump(retval)
 	    JUMP_TAG(TAG_RETURN);
 	}
 	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "return jump can't across threads");
+	    rb_raise(rb_eThreadError, "return can jump't across threads");
 	}
 	tt = tt->prev;
     }

@@ -1,3 +1,8 @@
+Thu Aug 26 04:38:29 2004  Dave Thomas  <dave@pragprog.com>
+
+	* eval.c (return_jump): Minor typo in error message. Now reads
+	  "return can't jump across threads".
+
 Wed Aug 25 15:18:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_longjmp): Exception#to_str is no longer defined.
