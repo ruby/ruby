@@ -2,7 +2,7 @@ Thu Dec 11 21:24:43 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkcs12.[ch]: new files. add OpenSSL::PKCS12.
 
-	* ext/openssl/ossl_ossl.[ch]: ditto.
+	* ext/openssl/ossl.[ch]: ditto.
 
 	* ext/openssl/MANIFEST: add ossl_pkcs12.[ch].
 
