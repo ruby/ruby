@@ -66,7 +66,7 @@ module Kernel
   # If the first argument respond to `open' method,
   # the method is called with the rest arguments.
   #
-  # If the first argument is a string and begins with xxx://, 
+  # If the first argument is a string which begins with xxx://, 
   # it is parsed by URI.parse.  If the parsed object respond to `open' method,
   # the method is called with the rest arguments.
   #
@@ -79,7 +79,7 @@ module Kernel
   def open(name, *rest, &block)
     if name.respond_to?(:open)
       name.open(*rest, &block)
-    elsif name.respond_to?("to_str") &&
+    elsif name.respond_to?(:to_str) &&
           %r{\A[A-Za-z][A-Za-z0-9+\-\.]*://} =~ name &&
           (uri = URI.parse(name)).respond_to?(:open)
       uri.open(*rest, &block)
@@ -250,7 +250,7 @@ module OpenURI
       end
     end
 
-    # returns an Array which consits status code and message.
+    # returns an Array which consists status code and message.
     attr_accessor :status
 
     # returns a URI which is base of relative URIs in the data.
@@ -449,14 +449,14 @@ module URI
     # But http_proxy and HTTP_PROXY is treated specially under CGI environment.
     # It's because HTTP_PROXY may be set by Proxy: header.
     # So HTTP_PROXY is not used.
-    # http_proxy is not used too if the variable is case insentitive.
+    # http_proxy is not used too if the variable is case insensitive.
     # CGI_HTTP_PROXY can be used instead.
     def find_proxy
       name = self.scheme.downcase + '_proxy'
       proxy_uri = nil
       if name == 'http_proxy' && ENV.include?('REQUEST_METHOD') # CGI?
         # HTTP_PROXY conflicts with *_proxy for proxy settings and
-        # HTTP_* for header informatin in CGI.
+        # HTTP_* for header information in CGI.
         # So it should be careful to use it.
         pairs = ENV.reject {|k, v| /\Ahttp_proxy\z/i !~ k }
         case pairs.length
@@ -465,12 +465,12 @@ module URI
         when 1
           k, v = pairs.shift
           if k == 'http_proxy' && ENV[k.upcase] == nil
-            # http_proxy is safe to use becase ENV is case sensitive.
+            # http_proxy is safe to use because ENV is case sensitive.
             proxy_uri = ENV[name]
           else
             proxy_uri = nil
           end
-        else # http_proxy is safe to use becase ENV is case sensitive.
+        else # http_proxy is safe to use because ENV is case sensitive.
           proxy_uri = ENV[name]
         end
         if !proxy_uri

@@ -51,8 +51,8 @@ PP#pp to print the object.
     outputs ((|obj|)) to ((|out|)) in pretty printed format of
     ((|width|)) columns in width.
 
-    If ((|out|)) is ommitted, (({$>})) is assumed.
-    If ((|width|)) is ommitted, 79 is assumed.
+    If ((|out|)) is omitted, (({$>})) is assumed.
+    If ((|width|)) is omitted, 79 is assumed.
 
     PP.pp returns ((|out|)).
 
@@ -269,7 +269,7 @@ class PP < PrettyPrint
 
     def pretty_print_inspect
       if /\(PP::ObjectMixin\)#/ =~ method(:pretty_print).inspect
-        raise "pretty_print is not overriden."
+        raise "pretty_print is not overridden."
       end
       PP.singleline_pp(self, '')
     end

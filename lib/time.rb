@@ -13,7 +13,7 @@
 # 
 # === Specialized interface
 # 
-# This library provides methods dedicated to special puposes:
+# This library provides methods dedicated to special purposes:
 # * RFC 2822, RFC 2616 and XML Schema.
 # * They makes usual life easier.
 # 
@@ -353,7 +353,7 @@ class Time
   # If self is a UTC time, Z is used as TZD.  [+-]hh:mm is used otherwise.
   #
   # +fractional_seconds+ specifies a number of digits of fractional seconds.
-  # Its default value os 0.
+  # Its default value is 0.
   #
   def xmlschema(fraction_digits=0)
     sprintf('%d-%02d-%02dT%02d:%02d:%02d',
