@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.8"
+#define WIN32OLE_VERSION "0.5.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -1994,9 +1994,10 @@ ole_invoke(argc, argv, self, wFlags)
                 ole_val2variant(param, &op.dp.rgvarg[n]);
             }
             memset(&excepinfo, 0, sizeof(EXCEPINFO));
+            VariantInit(&result);
             hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
                                                  &IID_NULL, lcid, wFlags,
-                                                 &op.dp, NULL,
+                                                 &op.dp, &result,
                                                  &excepinfo, &argErr);
             for(i = cNamedArgs; i < op.dp.cArgs; i++) {
                 n = op.dp.cArgs - i + cNamedArgs - 1;
@@ -2008,10 +2009,11 @@ ole_invoke(argc, argv, self, wFlags)
          * hResult == DISP_E_EXCEPTION. this only happens on
          * functions whose DISPID > 0x8000 */
         if (hr == DISP_E_EXCEPTION && DispID > 0x8000) {
+            VariantInit(&result);
             memset(&excepinfo, 0, sizeof(EXCEPINFO));
             hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
                                                  &IID_NULL, lcid, wFlags,
-                                                 &op.dp, NULL,
+                                                 &op.dp, &result,
                                                  &excepinfo, &argErr);
 
         }
@@ -2758,7 +2760,7 @@ static VALUE
 fole_get_methods( self )
     VALUE self;
 {
-    return ole_methods(self, INVOKE_PROPERTYGET);
+    return ole_methods( self, INVOKE_PROPERTYGET);
 }
 
 /*
@@ -2770,7 +2772,7 @@ static VALUE
 fole_put_methods( self )
     VALUE self;
 {
-    return ole_methods(self, INVOKE_PROPERTYPUT);
+    return ole_methods( self, INVOKE_PROPERTYPUT);
 }
 
 /*
@@ -2782,7 +2784,7 @@ static VALUE
 fole_func_methods( self )
     VALUE self;
 {
-    return ole_methods(self, INVOKE_FUNC);
+    return ole_methods( self, INVOKE_FUNC);
 }
 
 /*

@@ -1,3 +1,8 @@
+Tue Oct 19 20:32:50 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole.c(ole_invoke): retrieve the result value when 
+	  retrying the IDispatch::invoke.
+
 Tue Oct 19 17:24:11 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (read_all): block string buffer modification during
