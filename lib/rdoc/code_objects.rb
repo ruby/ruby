@@ -597,6 +597,12 @@ module RDoc
       p = "(" + p + ")" unless p[0] == ?(
 
       if (block = block_params)
+        # If this method has explicit block parameters, remove any
+        # explicit &block
+$stderr.puts p
+        p.sub!(/,?\s*&\w+/)
+$stderr.puts p
+
         block.gsub!(/\s*\#.*/, '')
         block = block.tr("\n", " ").squeeze(" ")
         if block[0] == ?(

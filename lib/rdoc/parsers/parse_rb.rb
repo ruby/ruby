@@ -1968,6 +1968,7 @@ module RDoc
       remove_token_listener(meth)
       
       meth.comment = comment
+
     end
     
     def skip_method(container)

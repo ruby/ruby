@@ -1,3 +1,9 @@
+Thu May  6 01:59:04 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb (Generators::HtmlMethod::params): 
+	  Don't include the &block parameter if we have explicit
+	  yield parameters.
+
 Wed May  5 03:52:31 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/ring.rb: use recv instead of recvfrom.
