@@ -217,7 +217,6 @@ def link_command(ldflags, opt="", libpath=$LIBPATH)
 		 'CFLAGS' => "#$CFLAGS",
 		 'ARCH_FLAG' => "#$ARCH_FLAG",
 		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
-		 'DLDFLAGS' => "#$DLDFLAGS",
 		 'LIBPATH' => libpathflag(libpath),
 		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
 		 'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
@@ -1013,7 +1012,7 @@ COMPILE_C = config_string('COMPILE_C') || '$(CC) $(CFLAGS) $(CPPFLAGS) -c $<'
 COMPILE_CXX = config_string('COMPILE_CXX') || '$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<'
 TRY_LINK = config_string('TRY_LINK') ||
   "$(CC) #{OUTFLAG}conftest $(INCFLAGS) -I$(hdrdir) $(CPPFLAGS) " \
-  "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(DLDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
+  "$(CFLAGS) $(src) $(LIBPATH) $(LDFLAGS) $(ARCH_FLAG) $(LOCAL_LIBS) $(LIBS)"
 LINK_SO = config_string('LINK_SO') ||
   if CONFIG["DLEXT"] == $OBJEXT
     "ld $(DLDFLAGS) -r -o $(DLLIB) $(OBJS)\n"

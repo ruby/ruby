@@ -709,7 +709,10 @@ if test "$enable_pthread" = "yes"; then
     fi
     AC_CHECK_FUNC(nanosleep)
     if test "$ac_cv_func_nanosleep" = "no"; then
-	AC_CHECK_LIB(rt, nanosleep, AC_DEFINE(HAVE_NANOSLEEP))
+       AC_CHECK_LIB(rt, nanosleep)
+       if test "$ac_cv_lib_rt_nanosleep" = "yes"; then
+           AC_DEFINE(HAVE_NANOSLEEP)
+       fi
     fi
 fi
 if test $ac_cv_header_ucontext_h = yes; then
