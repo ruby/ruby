@@ -1218,12 +1218,6 @@ env_delete_if()
 }
 
 static VALUE
-env_reject()
-{
-    return rb_hash_delete_if(env_to_hash());
-}
-
-static VALUE
 env_to_s()
 {
     return rb_str_new2("ENV");
@@ -1359,6 +1353,12 @@ env_to_hash()
 	env++;
     }
     return hash;
+}
+
+static VALUE
+env_reject()
+{
+    return rb_hash_delete_if(env_to_hash());
 }
 
 void
