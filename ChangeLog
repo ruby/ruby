@@ -1,3 +1,7 @@
+Wed Feb  6 17:18:54 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* configure.in: keep old config.h unless changed.
+
 Wed Feb  6 13:28:53 2002  Amos Gouaux  <amos+ruby@utdallas.edu>
 
 	* lib/net/imap.rb: OpenSSL support.
