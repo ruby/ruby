@@ -128,7 +128,7 @@ module DemoTree
     if Tk::PLATFORM['platform'] == 'unix'
       rootdir = File.expand_path('~')
     else
-      rootdir = 'c:\\'
+      rootdir = 'c:'
     end
 
     tree.insert('end', 'root', 'home', 

@@ -1,3 +1,19 @@
+Wed Nov  3 17:02:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: support to use different Tcl commands between 
+	  configure and configinfo
+
+	* ext/tk/lib/font.rb: ditto.
+
+	* ext/tk/lib/itemconfig.rb: support to use different Tcl commands 
+	  between item_configure and item_configinfo
+
+	* ext/tk/lib/itemfont.rb: ditto.
+
+	* ext/tk/extconf.rb: install SUPPORT_STATUS
+
+	* ext/tk/lib/tkextlib: some bug fixes (see ext/tk/ChangeLog.tkextlib)
+
 Wed Nov  3 15:38:28 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/*.rb: removed tab width configuration headers.

@@ -78,6 +78,7 @@ module Tk
 end
 
 module Tk::Tcllib::Plotchart
+  extend TkCore
   ############################
   def self.view_port(w, *args) # args := pxmin, pymin, pxmax, pymax
     tk_call_without_enc('::Plotchart::viewPort', w.path, *(args.flatten))

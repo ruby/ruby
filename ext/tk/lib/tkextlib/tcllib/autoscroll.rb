@@ -129,6 +129,7 @@ module Tk
     end
 
     module Autoscroll
+      extend TkCore
       def self.autoscroll(win)
         tk_call_without_enc('::autoscroll::autoscroll', win.path)
       end

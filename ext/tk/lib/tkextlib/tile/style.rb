@@ -13,6 +13,7 @@ module Tk
 end
 
 module Tk::Tile::Style
+  extend TkCore
 end
 
 class << Tk::Tile::Style

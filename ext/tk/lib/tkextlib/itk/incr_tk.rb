@@ -127,10 +127,12 @@ module Tk
       def __cget_cmd
         [self.master, 'component', self.name, 'cget']
       end
+      private :__cget_cmd
 
       def __config_cmd
         [self.master, 'component', self.name, 'configure']
       end
+      private :__config_cmd
 
       ComponentID_TBL = TkCore::INTERP.create_table
       Itk_Component_ID = ['itk:component'.freeze, '00000'.taint].freeze

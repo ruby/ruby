@@ -42,6 +42,8 @@ module Tk::Tcllib
   end
 
   module Style
+    extend TkCore
+
     def self.names
       tk_split_simplelist(tk_call('style::names'))
     end
