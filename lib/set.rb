@@ -212,7 +212,8 @@ class Set
     end
   end
 
-  # Deletes the given object from the set and returns self.
+  # Deletes the given object from the set and returns self.  Use +subtract+ to
+  # delete several items at once.
   def delete(o)
     @hash.delete(o)
     self
@@ -282,7 +283,7 @@ class Set
   alias union |		##
 
   # Returns a new set built by duplicating the set, removing every
-  # element that appear in the given enumerable object.
+  # element that appears in the given enumerable object.
   def -(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     dup.subtract(enum)
