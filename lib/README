@@ -1,11 +1,11 @@
 English.rb	access global variables by english names
 Env.rb		access environment variables as globals
 README		this file
-base64.rb	encode/decode base64 (bit obsolete)
+base64.rb	encode/decode base64 (obsolete)
 cgi-lib.rb	decode CGI data
 complex.rb	complex number suppor
 date.rb		date object (compatible)
-date2.rb	date object based on Julian date
+date2.rb	yet another (better) date object
 debug.rb	ruby debugger
 delegate.rb	delegate messages to other object
 e2mmap.rb	exception utilities
@@ -15,6 +15,7 @@ finalize.rb	add finalizer to the object
 find.rb		traverse directory tree
 ftools.rb	file tools
 ftplib.rb	ftp access library
+getoptlong.rb	GNU getoptlong compatible
 getopts.rb	parse command line options
 importenv.rb	access environment variables as globals
 jcode.rb	japanese text handling (replace String methods)
@@ -29,12 +30,12 @@ open3.rb	open subprocess connection stdin/stdout/stderr
 ostruct.rb	python style object
 parsearg.rb	argument parser using getopts
 parsedate.rb	parse date string
-ping.rb		
+ping.rb		check whether host is up, using TCP echo.
 profile.rb	ruby profiler
 pstore.rb	persistent object strage using marshal
 rational.rb	rational number support
 readbytes.rb	define IO#readbytes
-shell.rb	shell like operation under Ruby (imcomlete)
+shell.rb	shell like operation under Ruby (imcomplete)
 shellwords.rb	split into words like shell
 singleton.rb	singleton design pattern library
 sync.rb		2 phase lock
@@ -43,19 +44,5 @@ tempfile.rb	temporary file that automatically removed
 thread.rb	thread support
 thwait.rb	thread syncronization class
 timeout.rb	provids timeout
-tk.rb		Tk interface
-tkafter.rb	
-tkbgerror.rb	Tk error module
-tkcanvas.rb	Tk canvas interface
-tkclass.rb	provides generic names for Tk classes
-tkdialog.rb	Tk dialog class
-tkentry.rb	Tk entry class
-tkfont.rb	Tk font support
-tkmenubar.rb	TK menubar utility
-tkmngfocus.rb	focus manager
-tkpalette.rb	pallete support
-tkscrollbox.rb	scroll box, also example of compound widget
-tktext.rb	text classes
-tkvirtevent.rb	virtual event support
 tracer.rb	execution tracer
 weakref.rb	weak reference class

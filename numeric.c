@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Aug 13 18:33:09 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -183,10 +183,15 @@ static VALUE
 flo_to_s(flt)
     VALUE flt;
 {
-    char buf[32];
+    char buf[24];
+    char *s;
 
-    sprintf(buf, "%g", RFLOAT(flt)->value);
-    if (strchr(buf, '.') == 0) {
+    sprintf(buf, "%-.10g", RFLOAT(flt)->value);
+    if (s = strchr(buf, ' ')) *s = '\0';
+    s = buf; if (s[0] == '-') s++;
+    if (strchr(s, '.') == 0 &&
+	strcmp(s, "Inf") != 0 &&
+	strcmp(s, "NaN") != 0) {
 	int len = strlen(buf);
 	char *ind = strchr(buf, 'e');
 
@@ -274,14 +279,11 @@ flo_div(x, y)
     switch (TYPE(y)) {
       case T_FIXNUM:
 	f_y = FIX2LONG(y);
-	if (f_y == 0) rb_num_zerodiv();
 	return rb_float_new(RFLOAT(x)->value / (double)f_y);
       case T_BIGNUM:
 	d = rb_big2dbl(y);
-	if (d == 0.0) rb_num_zerodiv();
 	return rb_float_new(RFLOAT(x)->value / d);
       case T_FLOAT:
-	if (RFLOAT(y)->value == 0.0) rb_num_zerodiv();
 	return rb_float_new(RFLOAT(x)->value / RFLOAT(y)->value);
       default:
 	return rb_num_coerce_bin(x, y);
@@ -666,8 +668,12 @@ rb_num2long(val)
 	    return (long)(RFLOAT(val)->value);
 	}
 	else {
-	    rb_raise(rb_eTypeError, "float %g out of rang of integer",
-		     RFLOAT(val)->value);
+	    char buf[24];
+	    char *s;
+
+	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
+	    if (s = strchr(buf, ' ')) *s = '\0';
+	    rb_raise(rb_eTypeError, "float %s out of rang of integer", buf);
 	}
 
       case T_BIGNUM:
@@ -704,7 +710,7 @@ rb_num2int(val)
     long num = rb_num2long(val);
 
     if (num < INT_MIN || INT_MAX < num) {
-	rb_raise(rb_eArgError, "integer %d too big to convert to `int'.", num);
+	rb_raise(rb_eArgError, "integer %d too big to convert to `int'", num);
     }
     return (int)num;
 }
@@ -716,7 +722,7 @@ rb_fix2int(val)
     long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2long(val);
 
     if (num < INT_MIN || INT_MAX < num) {
-	rb_raise(rb_eArgError, "integer %d too big to convert to `int'.", num);
+	rb_raise(rb_eArgError, "integer %d too big to convert to `int'", num);
     }
     return (int)num;
 }
@@ -778,6 +784,45 @@ int_chr(num)
 }
 
 static VALUE
+rb_fix_induced_from(klass, x)
+    VALUE klass, x;
+{
+    return rb_num2fix(x);
+}
+
+static VALUE
+rb_int_induced_from(klass, x)
+    VALUE klass, x;
+{
+    switch (TYPE(x)) {
+    case T_FIXNUM:
+    case T_BIGNUM:
+       return x;
+    case T_FLOAT:
+       return rb_funcall(x, rb_intern("to_i"), 0);
+    default:
+       rb_raise(rb_eTypeError, "failed to convert %s into Integer",
+                rb_class2name(CLASS_OF(x)));
+    }
+}
+
+static VALUE
+rb_flo_induced_from(klass, x)
+    VALUE klass, x;
+{
+    switch (TYPE(x)) {
+    case T_FIXNUM:
+    case T_BIGNUM:
+       return rb_funcall(x, rb_intern("to_f"), 0);
+    case T_FLOAT:
+       return x;
+    default:
+       rb_raise(rb_eTypeError, "failed to convert %s into Float",
+                rb_class2name(CLASS_OF(x)));
+    }
+}
+
+static VALUE
 fix_uminus(num)
     VALUE num;
 {
@@ -797,7 +842,7 @@ rb_fix2str(x, base)
     else if (base == 8) fmt[2] = 'o';
     else rb_fatal("fixnum cannot treat base %d", base);
 
-    sprintf(buf, fmt, FIX2LONG(x));
+    snprintf(buf, 22, fmt, FIX2LONG(x));
     return rb_str_new2(buf);
 }
 
@@ -1309,20 +1354,23 @@ fix_step(from, to, step)
     if (!FIXNUM_P(to) || !FIXNUM_P(step))
 	return int_step(from, to, step);
 
+    i = FIX2LONG(from);
     end = FIX2LONG(to);
     diff = FIX2LONG(step);
 
     if (diff == 0) {
 	rb_raise(rb_eArgError, "step cannot be 0");
     }
-    else if (diff > 0) {
-	for (i=FIX2LONG(from); i <= end; i+=diff) {
+    if (diff > 0) {
+	while (i <= end) {
 	    rb_yield(INT2FIX(i));
+	    i += diff;
 	}
     }
     else {
-	for (i=FIX2LONG(from); i >= end; i+=diff) {
+	while (i >= end) {
 	    rb_yield(INT2FIX(i));
+	    i += diff;
 	}
     }
     return from;
@@ -1380,11 +1428,15 @@ Init_Numeric()
     rb_define_method(rb_cInteger, "downto", int_downto, 1);
     rb_define_method(rb_cInteger, "step", int_step, 2);
     rb_define_method(rb_cInteger, "times", int_dotimes, 0);
+    rb_include_module(rb_cInteger, rb_mPrecision);
     rb_define_method(rb_cInteger, "succ", int_succ, 0);
     rb_define_method(rb_cInteger, "next", int_succ, 0);
     rb_define_method(rb_cInteger, "chr", int_chr, 0);
 
     rb_cFixnum = rb_define_class("Fixnum", rb_cInteger);
+    rb_include_module(rb_cFixnum, rb_mPrecision);
+    rb_define_singleton_method(rb_cFixnum, "induced_from", rb_fix_induced_from, 1);
+    rb_define_singleton_method(rb_cInteger, "induced_from", rb_int_induced_from, 1);
 
     rb_undef_method(CLASS_OF(rb_cFixnum), "new");
 
@@ -1436,6 +1488,9 @@ Init_Numeric()
     rb_cFloat  = rb_define_class("Float", rb_cNumeric);
 
     rb_undef_method(CLASS_OF(rb_cFloat), "new");
+
+    rb_define_singleton_method(rb_cFloat, "induced_from", rb_flo_induced_from, 1);
+    rb_include_module(rb_cFloat, rb_mPrecision);
 
     rb_define_method(rb_cFloat, "to_s", flo_to_s, 0);
     rb_define_method(rb_cFloat, "coerce", flo_coerce, 1);

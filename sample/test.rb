@@ -183,7 +183,7 @@ ok(i>4)
 check "exception";
 
 begin
-  fail "this must be handled"
+  raise "this must be handled"
   ok(false)
 rescue
   ok(true)
@@ -191,7 +191,7 @@ end
 
 $bad = true
 begin
-  fail "this must be handled no.2"
+  raise "this must be handled no.2"
 rescue
   if $bad
     $bad = false
@@ -205,9 +205,9 @@ ok(true)
 $string = "this must be handled no.3"
 begin
   begin
-    fail "exception in rescue clause"
+    raise "exception in rescue clause"
   rescue 
-    fail $string
+    raise $string
   end
   ok(false)
 rescue
@@ -217,9 +217,9 @@ end
 # exception in ensure clause
 begin
   begin
-    fail "this must be handled no.4"
+    raise "this must be handled no.4"
   ensure 
-    fail "exception in ensure clause"
+    raise "exception in ensure clause"
   end
   ok(false)
 rescue
@@ -229,7 +229,7 @@ end
 $bad = true
 begin
   begin
-    fail "this must be handled no.5"
+    raise "this must be handled no.5"
   ensure
     $bad = false
   end
@@ -240,7 +240,7 @@ ok(!$bad)
 $bad = true
 begin
   begin
-    fail "this must be handled no.6"
+    raise "this must be handled no.6"
   ensure
     $bad = false
   end
@@ -355,7 +355,7 @@ ok($x[1] == 2)
 
 ok(begin   
      for k,v in $y
-       fail if k*2 != v
+       raise if k*2 != v
      end
      true
    rescue
@@ -746,7 +746,7 @@ if defined? Process.kill
   sleep 0.1
   ok($x == 2)
 
-  trap "SIGINT", proc{fail "Interrupt"}
+  trap "SIGINT", proc{raise "Interrupt"}
 
   x = false
   begin

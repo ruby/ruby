@@ -7,6 +7,38 @@
 # foo['field']   <== value of 'field'
 # foo.keys       <== array of fields
 # and foo has Hash class methods
+#
+# foo.cookie['name']  <== cookie value of 'name'
+# foo.cookie.keys     <== all cookie names
+# and foo.cookie has Hash class methods
+#
+# make raw cookie string
+# cookie1 = CGI.cookie({'name'    => 'name',
+#                       'value'   => 'value',
+#                       'path'    => 'path',   # optional
+#                       'domain'  => 'domain', # optional
+#                       'expires' => Time.now, # optional
+#                       'secure'  => true      # optional
+#                      })
+#
+# print CGI.header("Content-Type: text/html", cookie1, cookie2)
+#
+# print CGI.header("HTTP/1.0 200 OK", "Content-Type: text/html")
+# print CGI.header # == print CGI.header("Content-Type: text/html")
+#
+# make HTML tag string
+# CGI.tag("element", {"attribute_name"=>"attribute_value"}){"content"}
+#
+# print CGI.tag("HTML"){
+#         CGI.tag("HEAD"){ CGI.tag("TITLE"){"TITLE"} } +
+#         CGI.tag("BODY"){
+#           CGI.tag("FORM", {"ACTION"=>"test.rb", "METHOD"=>"POST"}){
+#             CGI.tag("INPUT", {"TYPE"=>"submit", "VALUE"=>"submit"})
+#           } +
+#           CGI.tag("HR")
+#         }
+#       }
+
 
 # if running on Windows(IIS or PWS) then change cwd.
 if ENV['SERVER_SOFTWARE'] =~ /^Microsoft-/ then
@@ -17,7 +49,12 @@ require "delegate"
 
 class CGI < SimpleDelegator
 
+  CR  = "\015"
+  LF  = "\012"
+  EOL = CR + LF
+
   attr("inputs")
+  attr("cookie")
 
   # original is CGI.pm
   def read_from_cmdline
@@ -40,11 +77,17 @@ class CGI < SimpleDelegator
 
   # unescape url encoded
   def unescape(str)
-    str.gsub! /\+/, ' '
+    str.gsub!(/\+/, ' ')
     str.gsub!(/%([0-9a-fA-F]{2})/){ [$1.hex].pack("c") }
     str
   end
-  module_function :escape, :unescape
+
+  # escape HTML
+  def escapeHTML(str)
+    str.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
+  end
+
+  module_function :escape, :unescape, :escapeHTML
 
   def initialize(input = $stdin)
 
@@ -70,10 +113,45 @@ class CGI < SimpleDelegator
     end
 
     super(@inputs)
+
+    if ENV.has_key?('HTTP_COOKIE')
+      @cookie = {}
+      ENV['HTTP_COOKIE'].split("; ").each do |x|
+        key, val = x.split(/=/,2).collect{|x|unescape(x)}
+        if @cookie.include?(key)
+          @cookie[key] += "\0" + (val or "")
+        else
+          @cookie[key] = (val or "")
+        end
+      end
+    end
   end
 
-  def CGI.message(msg, title = "")
-    print "Content-type: text/html\n\n"
+  def CGI.header(*options)
+    options.push("Content-Type: text/html") if options.empty?
+    if options.find{|item| /^Expires: |^Set-Cookie: /i === item}
+      options.push("Date: " + Time.now.gmtime.strftime("%a, %d %b %Y %X %Z"))
+    end
+    options.join(EOL) + EOL + EOL
+  end
+
+  def CGI.cookie(options)
+    "Set-Cookie: " + options['name'] + '=' + escape(options['value']) +
+    (options['domain']  ? '; domain='  + options['domain'] : '') +
+    (options['path']    ? '; path='    + options['path']   : '') +
+    (options['expires'] ? '; expires=' + options['expires'].strftime("%a, %d %b %Y %X %Z") : '') +
+    (options['secure']  ? '; secure' : '')
+  end
+
+  def CGI.tag(element, attributes = {})
+    "<" + escapeHTML(element) + attributes.collect{|name, value|
+      " " + escapeHTML(name) + '="' + escapeHTML(value) + '"'
+    }.to_s + ">" +
+    (iterator? ? yield.to_s + "</" + escapeHTML(element) + ">" : "")
+  end
+
+  def CGI.message(msg, title = "", header = ["Content-Type: text/html"])
+    print CGI.header(*header)
     print "<html><head><title>"
     print title
     print "</title></head><body>\n"

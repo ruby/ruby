@@ -401,7 +401,6 @@ EXPORTS
 	rb_test_false_or_nil
 	ruby_scan_oct
 	ruby_scan_hex
-	rb_add_suffix
 ;variable.c
 	rb_class_path
 	rb_set_class_path

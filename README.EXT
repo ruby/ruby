@@ -109,35 +109,29 @@ bugs.
 
 1.4 Convert C data into VALUE
 
-VALUEの実際の構造は
+To convert C data to the values of Ruby:
 
-  * FIXNUMの場合
+  * FIXNUM
 
-    1bit右シフトして，LSBを立てる．
+    right shift 1 bit, and turn on LSB.
 
-  * その他のポインタの場合
+  * Other pointer values
 
-    そのままVALUEにキャストする．
+    cast to VALUE.
 
-となっています．よって，LSBをチェックすればVALUEがFIXNUMかど
-うかわかるわけです(ポインタのLSBが立っていないことを仮定して
-いる)．
+You can determine whether VALUE is pointer or not, by checking LSB.  
 
-ですから，FIXNUM以外のRubyのオブジェクトの構造体は単にVALUE
-にキャストするだけでVALUEに変換出来ます．ただし，任意の構造
-体がVALUEにキャスト出来るわけではありません．キャストするの
-はRubyの知っている構造体(ruby.hで定義されているstruct RXxxx
-のもの)だけにしておいてください．
+Notice Ruby does not allow arbitrary pointer value to be VALUE.  They
+should be pointers to the structures which Ruby knows.  The known
+structures are defined in <ruby.h>.
 
-FIXNUMに関しては変換マクロを経由する必要があります．Cの整数
-からVALUEに変換するマクロは以下のものがあります．必要に応じ
-て使い分けてください．
+To convert C numbers to Ruby value, use these macros.
 
-  INT2FIX()	もとの整数が31bit以内に収まる時
-  INT2NUM()	任意の整数からVALUEへ
+  INT2FIX()	for intergers within 31bits.
+  INT2NUM()	for arbitrary sized integer.
 
-INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
-してくれます(が，少し遅い)．
+INT2NUM() converts integers into Bignums, if it is out of FIXNUM
+range, but bit slower.
 
 1.5 Manipulate Ruby data
 
@@ -197,15 +191,12 @@ interpreter.  Useful functions are listed below (not all):
 
 2.1 Add new features to Ruby
 
-Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
-を追加することができます．Rubyでは以下の機能を追加する関数が
-提供されています．
+You can add new features (classes, methods, etc.) to the Ruby
+interpreter.  Ruby provides the API to define things below:
 
  * Classes, Modules
  * Methods, Singleton Methods
  * Constants
-
-では順に紹介します．
 
 2.1.1 Class/module definition
 
@@ -327,9 +318,9 @@ by the symbol mid.
 
 2.2.4 Accessing the variables and constants
 
-Cから関数を使って参照・更新できるのは，クラス定数，インスタ
-ンス変数です．大域変数は一部のものはCの大域変数としてアクセ
-スできます．ローカル変数を参照する方法は公開していません．
+You can access class variables, and instance variables using access
+functions.  Also, global variables can be shared between both worlds.
+There's no way to access Ruby's local variables.
 
 The functions to access/modify instance variables are below:
 
@@ -346,9 +337,7 @@ See 2.1.3 for defining new constant.
 
 3. Informatin sharing between Ruby and C
 
-C言語とRubyの間で情報を共有する方法について解説します．
-
-3.1 Ruby constant that Cから参照できるRubyの定数
+3.1 Ruby constant that C can be accessed from C
 
 Following Ruby constants can be referred from C.
 
@@ -363,43 +352,35 @@ Ruby nil in C scope.
 
 3.2 Global variables shared between C and Ruby
 
-CとRubyで大域変数を使って情報を共有できます．共有できる大域
-変数にはいくつかの種類があります．そのなかでもっとも良く使わ
-れると思われるのはrb_define_variable()です．
+Information can be shared between two worlds, using shared global
+variables.  To define them, you can use functions listed below:
 
   void rb_define_variable(char *name, VALUE *var)
 
-この関数はRubyとCとで共有する大域変数を定義します．変数名が
-`$'で始まらない時には自動的に追加されます．この変数の値を変
-更すると自動的にRubyの対応する変数の値も変わります．
+This function defines the variable which is shared by the both world.
+The value of the global variable pointerd by `var', can be accessed
+through Ruby's global variable named `name'.
 
-またRuby側からは更新できない変数もあります．このread onlyの
-変数は以下の関数で定義します．
+You can define read-only (from Ruby, of course) variable by the
+function below.
 
   void rb_define_readonly_variable(char *name, VALUE *var)
 
-これら変数の他にhookをつけた大域変数を定義できます．hook付き
-の大域変数は以下の関数を用いて定義します．hook付き大域変数の
-値の参照や設定はhookで行う必要があります．
+You can defined hooked variables.  The accessor functions (getter and
+setter) are called on access to the hooked variables.
 
   void rb_define_hooked_variable(char *name, VALUE *var,
 				 VALUE (*getter)(), VALUE (*setter)())
 
-この関数はCの関数によってhookのつけられた大域変数を定義しま
-す．変数が参照された時には関数getterが，変数に値がセットされ
-た時には関数setterが呼ばれる．hookを指定しない場合はgetterや
-setterに0を指定します．
-
-# getterもsetterも0ならばrb_define_variable()と同じになる．
-
-それから，Cの関数によって実現されるRubyの大域変数を定義する
-関数があります．
+If you need to supply either setter or getter, just supply 0 for the
+hook you don't need.  If both hooks are 0, rb_define_hooked_variable()
+works just like rb_define_variable().
 
   void rb_define_virtual_variable(char *name,
 				  VALUE (*getter)(), VALUE (*setter)())
 
-この関数によって定義されたRubyの大域変数が参照された時には
-getterが，変数に値がセットされた時にはsetterが呼ばれます．
+This function defines the Ruby global variable without corresponding C
+variable.  The value of the variable will be set/get only by hooks.
 
 The prototypes of the getter and setter functions are as following:
 
@@ -408,54 +389,44 @@ The prototypes of the getter and setter functions are as following:
 
 3.3 Encapsulate C data into Ruby object
 
-Cの世界で定義されたデータ(構造体)をRubyのオブジェクトとして
-取り扱いたい場合がありえます．このような場合には，Dataという
-RubyオブジェクトにCの構造体(へのポインタ)をくるむことでRuby
-オブジェクトとして取り扱えるようになります．
-
-Dataオブジェクトを生成して構造体をRubyオブジェクトにカプセル
-化するためには，以下のマクロを使います．
+To wrapping and objectify the C pointer as Ruby object (so called
+DATA), use Data_Wrap_Struct().
 
   Data_Wrap_Struct(class,mark,free,ptr)
 
-このマクロの戻り値は生成されたDataオブジェクトです．
+Data_Wrap_Struct() returns a created DATA object.  The class argument
+is the class for the DATA object.  The mark argument is the function
+to mark Ruby objects pointed by this data.  The free argument is the
+function to free the pointer allocation.  The functions, mark and
+free, will be called from garbage collector.
 
-classはこのDataオブジェクトのクラスです．ptrはカプセル化する
-Cの構造体へのポインタです．markはこの構造体がRubyのオブジェ
-クトへの参照がある時に使う関数です．そのような参照を含まない
-時には0を指定します．
-
-# そのような参照は勧められません．
-
-freeはこの構造体がもう不要になった時に呼ばれる関数です．この
-関数がガーベージコレクタから呼ばれます．
-
-Cの構造体の割当とDataオブジェクトの生成を同時に行うマクロと
-して以下のものが提供されています．
+You can allocate and wrap the structure in one step.
 
   Data_Make_Struct(class, type, mark, free, sval)
 
-このマクロの戻り値は生成されたDataオブジェクトです．
+This macro returns an allocated Data object, wrapping the pointer to
+the structure, which is also allocated.  This macro works like:
 
-class, mark, freeはData_Wrap_Structと同じ働きをします．type
-は割り当てるC構造体の型です．割り当てられた構造体は変数sval
-に代入されます．この変数の型は (type*) である必要があります．
+  (sval = ALLOC(type), Data_Wrap_Struct(class, mark, free, sval))
 
-Dataオブジェクトからポインタを取り出すのは以下のマクロを用い
-ます．
+Arguments, class, mark, free, works like thier counterpart of
+Data_Wrap_Struct().  The pointer to allocated structure will be
+assigned to sval, which should be the pointer to the type specified.
+
+To retrieve the C pointer from the Data object, use the macro
+Data_Get_Struct().
 
   Data_Get_Struct(obj, type, sval)
 
-Cの構造体へのポインタは変数svalに代入されます．
+The pointer to the structure will be assigned to the variable sval.
 
-これらのDataの使い方はちょっと分かりにくいので，後で説明する
-例題を参照してください．
+See example below for detail. 
 
 4．Example - Create dbm module
 
-ここまでの説明でとりあえず拡張ライブラリは作れるはずです．
-Rubyのextディレクトリにすでに含まれているdbmモジュールを例に
-して段階的に説明します．
+OK, here's the example to make extension library.  This is the
+extension to access dbm.  The full source is included in ext/
+directory in the Ruby's source tree.
 
 (1) make the directory
 
@@ -600,16 +571,14 @@ Rubyの配列で引数を受け取るものはindexesがあります．実装はこ
 --
 static VALUE
 fdbm_indexes(obj, args)
-    VALUE obj;
-    struct RArray *args;
+    VALUE obj, args;
 {
 	:
 }
 --
 
-第1引数はself，第2引数はRubyの配列です．ここではキャストを減
-らすため struct RArray* で受けていますが，VALUEでも同じこと
-です．
+The first argument is the receiver, the second one is the Ruby array
+which contains the arguments to the method.
 
 ** Notice
 
@@ -620,8 +589,9 @@ not exported to the Ruby world.  You need to protect them by
 
 (5) prepare extconf.rb
 
-もしディレクトリに「extconf.rb」というファイルが存在すれば，
-make時に実行されます．なければ適当にMakefileが生成されます．
+If there exists the file named extconf.rb, it will be executed to
+generate Makefile.  If not, compilation scheme try to generate
+Makefile anyway.
 
 extconf.rbはモジュールのコンパイルに必要な条件のチェックなど
 を行うことが目的です．extconf.rbの中では以下のRuby関数を使う
@@ -643,23 +613,21 @@ extconf.rbはモジュールのコンパイルに必要な条件のチェックなど
 
 (6) prepare depend (optional)
 
-もし，ディレクトリにdependというファイルが存在すれば，
-Makefileが依存関係をチェックしてくれます．
+If the file named depend exists, Makefile will include that file to
+check dependency.  You can make this file by invoking
 
  % gcc -MM *.c > depend
 
-などで作ることが出来ます．あって損は無いでしょう．
+It's no harm.  Prepare it.
 
 (7) MANIFESTファイルにファイル名を入れる
 
-  % ls > MANIFEST
+  % find * -type f -print > MANIFEST
   % vi MANIFEST
 
-*.o, *~など不必要なファイル以外はMANIFESTに追加しておきます．
-make時にはMANIFESTの内容は参照しませんので，空のままでも問題
-は起きませんが，パッケージングの時に参照することがあるのと，
-必要なファイルを区別できるので，用意しておいた方が良いでしょ
-う．
+Append file names into MANIFEST.  The compilation scheme requires
+MANIFEST only to be exist.  But, you'd better take this step to
+distinguish required files.
 
 (8) make
 
@@ -676,9 +644,9 @@ so that you can inspect the module by the debugger.
 
 (10) done, now you have the extension library
 
-後はこっそり使うなり，広く公開するなり，売るなり，ご自由にお
-使いください．Rubyの作者は拡張ライブラリに関して一切の権利を
-主張しません．
+You can do anything you want with your library.  The author of Ruby
+will not claim any restriction about your code depending Ruby API.
+Feel free to use, modify, distribute or sell your program.
 
 Appendix A. Rubyのソースコードの分類
 
@@ -737,7 +705,7 @@ class library
   struct.c
   time.c
 
-Appendix B. 拡張用関数リファレンス
+Appendix B. Ruby extension API reference
 
 C言語からRubyの機能を利用するAPIは以下の通りである．
 
@@ -764,7 +732,7 @@ const: Qtrue object(default true value)
 
 const: Qfalse object
 
-** Cデータのカプセル化
+** C pointer wrapping
 
  Data_Wrap_Struct(VALUE class, void (*mark)(), void (*free)(), void *sval)
 
@@ -783,33 +751,33 @@ type型のメモリをmallocし，変数svalに代入した後，それをカプセ
 
 dataからtype型のポインタを取り出し変数svalに代入するマクロ．
 
-** クラス/モジュール定義
+** defining class/module
 
  VALUE rb_define_class(char *name, VALUE super)
 
-superのサブクラスとして新しいRubyクラスを定義する．
+Defines new Ruby class as subclass of super.
 
  VALUE rb_define_class_under(VALUE module, char *name, VALUE super)
 
-superのサブクラスとして新しいRubyクラスを定義し，moduleの定
-数として定義する．
+Creates new Ruby class as subclass of super, under the module's
+namespace.
 
  VALUE rb_define_module(char *name)
 
-新しいRubyモジュールを定義する．
+Defines new Ruby module.
 
  VALUE rb_define_module_under(VALUE module, char *name, VALUE super)
 
-新しいRubyモジュールを定義し，moduleの定数として定義する．
+Defines new Ruby module, under the modules's namespace.
 
  void rb_include_module(VALUE class, VALUE module)
 
-モジュールをインクルードする．classがすでにmoduleをインクルー
-ドしている時には何もしない(多重インクルードの禁止)．
+Includes module into class.  If class already includes it, just
+ignore.
 
  void rb_extend_object(VALUE object, VALUE module)
 
-オブジェクトをモジュール(で定義されているメソッド)で拡張する．
+Extend the object with module's attribute.
 
 ** Defining Global Variables
 
@@ -871,19 +839,20 @@ Defines global contant.  This is just work as
 
  rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
-メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 
-関数には引数の数(selfを含まない)を第1引数, 引数の配列を第2引
-数とする形式で与えられる(第3引数はself)．argcが-2の時, 第1引
-数がself, 第2引数がargs(argsは引数を含むRubyの配列)という形
-式で与えられる．
+Defines a method for the class.  func is the function pointer.  argc
+is the number of arguments.  if argc is -1, the function will receive
+3 arguments argc, argv, and self.  if argc is -2, the function will
+receive 2 arguments, self and args, where args is the Ruby array of
+the method arguments.
 
  rb_define_private_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
-privateメソッドを定義する．引数はrb_define_method()と同じ．
+Defines a private method for the class.  Arguments are same as
+rb_define_method().
 
  rb_define_singleton_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
-特異メソッドを定義する．引数はrb_define_method()と同じ．
+Defines a singleton method.  Arguments are same as rb_define_method().
 
  rb_scan_args(int atgc, VALUE *argv, char *fmt, ...)
 
@@ -899,42 +868,40 @@ argc,argv形式で与えられた引数を分解する．fmtは必須引数の数,
 
  VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
 
-メソッド呼び出し．文字列からmidを得るためにはrb_intern()を使う．
+Invokes the method.  To retrieve mid from method name, use rb_intern().
 
  VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
 
-メソッド呼び出し．引数をargc,argv形式で渡す．
+Invokes method, passing arguments by array of values.
 
  VALUE rb_eval_string(char *str)
 
-文字列をRubyとスクリプトしてコンパイル・実行する．
+Compiles and executes the string as Ruby program.
 
  ID rb_intern(char *name)
 
-文字列に対応するIDを返す．
+Returns ID corresponding the name.
 
  char *rb_id2name(ID id)
 
-IDに対応する文字列を返す(デバッグ用)．
+Returns the name corresponding ID.
 
  char *rb_class2name(VALUE class)
 
-classの名前を返す(デバッグ用)．classが名前を持たない時には, 
-祖先を遡って名前を持つクラスの名前を返す．
+Returns the name of the class.
 
-** インスタンス変数
+** Instance Variables
 
  VALUE rb_iv_get(VALUE obj, char *name)
 
-objのインスタンス変数の値を得る．`@'で始まらないインスタンス
-変数は Rubyプログラムからアクセスできない「隠れた」インスタ
-ンス変数になる．
+Retrieve the value of the instance variable.  If the name is not
+prefixed by `@', that variable shall be inaccessible from Ruby.
 
  VALUE rb_iv_set(VALUE obj, char *name, VALUE val)
 
-objのインスタンス変数をvalにセットする．
+Sets the value of the instance variable.
 
-** 制御構造
+** Control Structure
 
  VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
 
@@ -1024,6 +991,6 @@ this method, the compilation will not be done.
 
 /*
  * Local variables:
- * fill-column: 60
+ * fill-column: 70
  * end:
  */

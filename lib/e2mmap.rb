@@ -72,7 +72,7 @@ else
 	  end
 	end
 
-	# 過去の互換性のため
+	# backward compatibility
 	def self.fail(err = nil, *rest)
 	  if form = E2MM_ErrorMSG[err]
 	    $! = err.new(sprintf(form, *rest))

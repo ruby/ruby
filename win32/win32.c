@@ -23,7 +23,7 @@
 #include <windows.h>
 #include <winbase.h>
 #include <wincon.h>
-#include "nt.h"
+#include "win32.h"
 #include "dir.h"
 #ifndef index
 #define index(x, y) strchr((x), (y))

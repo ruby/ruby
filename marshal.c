@@ -12,6 +12,10 @@
 #include "rubyio.h"
 #include "st.h"
 
+#ifndef atof
+double strtod();
+#endif
+
 #define MARSHAL_MAJOR   4
 #define MARSHAL_MINOR   0
 
@@ -641,13 +645,10 @@ r_object(arg)
 
       case TYPE_FLOAT:
 	{
-#ifndef atof
-	    double atof();
-#endif
 	    char *buf;
 
 	    r_bytes(buf, arg);
-	    v = rb_float_new(atof(buf));
+	    v = rb_float_new(strtod(buf, 0));
 	    return r_regist(v, arg);
 	}
 
