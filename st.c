@@ -146,10 +146,12 @@ st_init_table_with_size(type, size)
 {
     st_table *tbl;
 
+#if 0
     if (init_st == 0) {
 	init_st = 1;
 	atexit(stat_col);
     }
+#endif
 
     size = new_size(size);	/* round up to prime number */
 
