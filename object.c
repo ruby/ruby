@@ -134,6 +134,7 @@ rb_any_to_s(obj)
 
     str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
     sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, obj);
+    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
 
     return str;
@@ -199,10 +200,12 @@ rb_obj_inspect(obj)
 	if (rb_inspecting_p(obj)) {
 	    str = rb_str_new(0, strlen(c)+8+16+1); /* 8:tags 16:addr 1:eos */
 	    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx ...>", c, obj);
+	    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	    return str;
 	}
 	str = rb_str_new(0, strlen(c)+4+16+1); /* 4:tags 16:addr 1:eos */
 	sprintf(RSTRING(str)->ptr, "-<%s:0x%lx ", c, obj);
+	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return rb_protect_inspect(inspect_obj, obj, str);
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
@@ -498,6 +501,7 @@ sym_inspect(sym)
     str = rb_str_new(0, strlen(name)+2);
     name = rb_id2name(SYM2ID(sym));
     sprintf(RSTRING(str)->ptr, ":%s", name);
+    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     return str;
 }
 

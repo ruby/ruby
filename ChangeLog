@@ -12,6 +12,26 @@ Thu Oct 12 01:23:38 2000 Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: bug fix: CGI::html(): PRETTY option didn't work.
 
+Thu Oct 12 00:03:02 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (sym_inspect): should adjust string length.
+
+	* struct.c (rb_struct_to_s): ditto.
+
+	* struct.c (rb_struct_inspect): ditto.
+
+Wed Oct 11 22:15:47 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* eval.c (rb_thread_inspect): should adjust string length.
+
+	* object.c (rb_any_to_s): ditto.
+
+	* object.c (rb_obj_inspect): ditto.
+
+Wed Oct 11 18:13:50 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): should check insecure exit.
+
 Wed Oct 11 14:29:51 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb: 2nd arg for ProtocolError#initialize is optional.

@@ -139,7 +139,7 @@ rb_secure(level)
     int level;
 {
     if (level <= ruby_safe_level) {
-	rb_raise(rb_eSecurityError, "Insecure operation `%s' for level %d",
+	rb_raise(rb_eSecurityError, "Insecure operation `%s' at level %d",
 		 rb_id2name(ruby_frame->last_func), ruby_safe_level);
     }
 }
@@ -535,7 +535,7 @@ struct BLOCK {
     int iter;
     int vmode;
     int flags;
-    struct RVarmap *d_vars;
+    struct RVarmap *dyna_vars;
     VALUE orig_thread;
     struct BLOCK *prev;
 };
@@ -560,7 +560,7 @@ static struct BLOCK *ruby_block;
     _block.iter = ruby_iter->iter;	\
     _block.vmode = scope_vmode;		\
     _block.flags = BLOCK_D_SCOPE;	\
-    _block.d_vars = ruby_dyna_vars;	\
+    _block.dyna_vars = ruby_dyna_vars;	\
     ruby_block = &_block;
 
 #define POP_BLOCK() 			\
@@ -637,6 +637,7 @@ rb_dvar_ref(id)
     struct RVarmap *vars = ruby_dyna_vars;
 
     while (vars) {
+	if (TYPE(vars) != T_VARMAP) abort();
 	if (vars->id == id) {
 	    return vars->val;
 	}
@@ -663,6 +664,7 @@ dvar_asgn_internal(id, value, curr)
     struct RVarmap *vars = ruby_dyna_vars;
 
     while (vars) {
+	if (TYPE(vars) != T_VARMAP) abort();
 	if (curr && vars->id == 0) {
 	    n++;
 	    if (n == 2) break;
@@ -3419,11 +3421,11 @@ rb_yield_0(val, self, klass, acheck)
     ruby_block = block->prev;
     if (block->flags & BLOCK_D_SCOPE) {
 	/* put place holder for dynamic (in-block) local variables */
-	ruby_dyna_vars = new_dvar(0, 0, block->d_vars);
+	ruby_dyna_vars = new_dvar(0, 0, block->dyna_vars);
     }
     else {
 	/* FOR does not introduce new scope */
-	ruby_dyna_vars = block->d_vars;
+	ruby_dyna_vars = block->dyna_vars;
     }
     ruby_class = klass?klass:block->klass;
     if (!self) self = block->self;
@@ -4598,7 +4600,7 @@ eval(self, src, scope, file, line)
     volatile VALUE result = Qnil;
     struct SCOPE * volatile old_scope;
     struct BLOCK * volatile old_block;
-    struct RVarmap * volatile old_d_vars;
+    struct RVarmap * volatile old_dyna_vars;
     int volatile old_vmode;
     struct FRAME frame;
     char *filesave = ruby_sourcefile;
@@ -4626,8 +4628,8 @@ eval(self, src, scope, file, line)
 	ruby_scope = data->scope;
 	old_block = ruby_block;
 	ruby_block = data->prev;
-	old_d_vars = ruby_dyna_vars;
-	ruby_dyna_vars = data->d_vars;
+	old_dyna_vars = ruby_dyna_vars;
+	ruby_dyna_vars = data->dyna_vars;
 	old_vmode = scope_vmode;
 	scope_vmode = data->vmode;
 
@@ -4668,7 +4670,7 @@ eval(self, src, scope, file, line)
            scope_dup(old_scope);
 	ruby_scope = old_scope;
 	ruby_block = old_block;
-	ruby_dyna_vars = old_d_vars;
+	ruby_dyna_vars = old_dyna_vars;
 	data->vmode = scope_vmode; /* write back visibility mode */
 	scope_vmode = old_vmode;
     }
@@ -5779,7 +5781,7 @@ blk_mark(data)
 	rb_gc_mark(data->var);
 	rb_gc_mark(data->body);
 	rb_gc_mark(data->self);
-	rb_gc_mark(data->d_vars);
+	rb_gc_mark(data->dyna_vars);
 	rb_gc_mark(data->klass);
 	data = data->prev;
     }
@@ -5901,7 +5903,7 @@ rb_f_binding(self)
 	data->prev = 0;
     }
 
-    for (vars = data->d_vars; vars; vars = vars->next) {
+    for (vars = data->dyna_vars; vars; vars = vars->next) {
 	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
 	FL_SET(vars, DVAR_DONT_RECYCLE);
     }
@@ -5983,7 +5985,7 @@ proc_new(klass)
     }
     data->flags |= BLOCK_DYNAMIC;
 
-    for (vars = data->d_vars; vars; vars = vars->next) {
+    for (vars = data->dyna_vars; vars; vars = vars->next) {
 	if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
 	FL_SET(vars, DVAR_DONT_RECYCLE);
     }
@@ -7805,6 +7807,10 @@ rb_thread_start_0(fn, arg, th)
 	    rb_thread_cleanup();
 	}
 	else if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
+	    if (ruby_safe_level >= 4) {
+		rb_raise(rb_eSecurityError, "Insecure exit at level %d",
+			 ruby_safe_level);
+	    }
 	    /* delegate exception to main_thread */
 	    rb_thread_raise(1, &ruby_errinfo, main_thread);
 	}
@@ -8181,6 +8187,7 @@ rb_thread_inspect(thread)
     }
     str = rb_str_new(0, strlen(cname)+6+16+9+1); /* 6:tags 16:addr 9:status 1:nul */ 
     sprintf(RSTRING(str)->ptr, "#<%s:0x%lx %s>", cname, thread, status);
+    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     OBJ_INFECT(str, thread);
 
     return str;

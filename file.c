@@ -1260,7 +1260,7 @@ rb_file_s_expand_path(argc, argv)
     }
 #endif
     else if (!isdirsep(*s)) {
-	if (argc == 2) {
+	if (!NIL_P(dname)) {
 	    dname = rb_file_s_expand_path(1, &dname);
 	    if (OBJ_TAINTED(dname)) tainted = 1;
 	    strcpy(buf, RSTRING(dname)->ptr);

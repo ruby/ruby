@@ -341,6 +341,7 @@ rb_struct_to_s(s)
     VALUE str = rb_str_new(0, strlen(cname) + 4);
 
     sprintf(RSTRING(str)->ptr, "#<%s>", cname);
+    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     return str;
 }
 
@@ -389,6 +390,7 @@ rb_struct_inspect(s)
 	VALUE str = rb_str_new(0, strlen(cname) + 8);
 
 	sprintf(RSTRING(str)->ptr, "#<%s:...>", cname);
+	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return str;
     }
     return rb_protect_inspect(inspect_struct, s, 0);
