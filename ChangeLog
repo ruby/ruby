@@ -1,3 +1,7 @@
+Fri Jan  9 10:05:23 2004  Siena.  <siena@faculty.chiba-u.jp>
+
+	* lib/mkmf.rb (libpathflag): use single quotes.  [ruby-dev:22440]
+
 Thu Jan  8 23:49:21 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RDOCTARGET): new macro.  if you want to install
@@ -6,7 +10,7 @@ Thu Jan  8 23:49:21 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Thu Jan  8 21:17:43 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openssl/ossl_pkey.c (ossl_pkey_to_der): removed; it returns 
+	* ext/openssl/ossl_pkey.c (ossl_pkey_to_der): removed; it returns
 	  public key only.
 
 	* ext/openssl/ossl_pkey_dh.c (ossl_dh_to_der): new function for
