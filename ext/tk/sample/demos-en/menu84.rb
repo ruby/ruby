@@ -157,7 +157,8 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
 TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   $menu84_frame.add('cascade', 'label'=>'Icons', 'menu'=>m, 'underline'=>0)
   add('command', 'hidemargin'=>1, 
-      'bitmap'=>'@'+[$demo_dir,'images','pattern.xbm'].join(File::Separator),
+      'bitmap'=>'@'+[$demo_dir,'..',
+	              'images','pattern.xbm'].join(File::Separator),
       'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry', 
 				   'text'=>'The menu entry you invoked displays a bitmap rather than a text string.  Other than this, it is just like any other menu entry.',
 				   'bitmap'=>'', 'default'=>0, 

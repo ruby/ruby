@@ -67,7 +67,7 @@ TkText.new($bind_demo){|t|
     tagstyle_normal = {'foreground'=>'', 'background'=>''}
   end
 
-  # テキスト挿入
+  # insert text
   insert 'insert', "The same tag mechanism that controls display styles in text widgets can also be used to associate Tcl commands with regions of text, so that mouse or keyboard actions on the text cause particular Tcl commands to be invoked.  For example, in the text below the descriptions of the canvas demonstrations have been tagged.  When you move the mouse over a demo description the description lights up, and when you press button 1 over a description then that particular demonstration is invoked.
 
 "

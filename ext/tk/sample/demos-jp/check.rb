@@ -20,7 +20,7 @@ msg = TkLabel.new($check_demo) {
   font $font
   wraplength '4i'
   justify 'left'
-  text "下には 3 つのチェックボタンが表示されています。クリックするとボタンの選択状態が変わり、Tcl 変数にそのボタンの状態を示す値を設定します。現在の変数の値を見るには「変数参照」ボタンをクリックしてください。"
+  text "下には 3 つのチェックボタンが表示されています。クリックするとボタンの選択状態が変わり、Tcl 変数 ( TkVariable オブジェクトでアクセスできます ) にそのボタンの状態を示す値を設定します。現在の変数の値を見るには「変数参照」ボタンをクリックしてください。"
 }
 msg.pack('side'=>'top')
 
@@ -32,7 +32,8 @@ sober  = TkVariable.new(0)
 # frame 生成
 TkFrame.new($check_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $check_demo
       $check_demo = nil
@@ -61,6 +62,6 @@ TkFrame.new($check_demo) {|frame|
 # checkbutton 生成
 [ TkCheckButton.new($check_demo, 'text'=>'ワイパー OK', 'variable'=>wipers),
   TkCheckButton.new($check_demo, 'text'=>'ブレーキ OK', 'variable'=>brakes),
-  TkCheckButton.new($check_demo, 'text'=>'ドライバー素面', 'variable'=>sober)
+  TkCheckButton.new($check_demo, 'text'=>'運転手 素面', 'variable'=>sober)
 ].each{|w| w.relief('flat'); w.pack('side'=>'top', 'pady'=>2, 'anchor'=>'w')}
 

@@ -94,7 +94,7 @@ TkText.new($style_demo){|t|
 				     'relief'=>'sunken', 'borderwidth'=>1)
   end
 
-  # テキストタグ設定 (その他)
+  # 
   if $tk_version =~ /^4\.[01]/
     style_tag_bgstipple = TkTextTag.new(t, 'background'=>'black', 
 					'borderwidth'=>0, 

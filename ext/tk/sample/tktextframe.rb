@@ -65,9 +65,9 @@ class TkTextFrame < TkText
   # vertical scrollbar : ON/OFF
   def vscroll(mode)
     st = TkGrid.info(@v_scroll)
-    if mode && st == [] then
+    if mode && st.size == 0 then
       @v_scroll.grid('row'=>0, 'column'=>1, 'sticky'=>'ns')
-    elsif !mode && st != [] then
+    elsif !mode && st.size != 0 then
       @v_scroll.ungrid
     end
     self
@@ -76,10 +76,10 @@ class TkTextFrame < TkText
   # horizontal scrollbar : ON/OFF
   def hscroll(mode, wrap_mode="char")
     st = TkGrid.info(@h_scroll)
-    if mode && st == [] then
+    if mode && st.size == 0 then
       @h_scroll.grid('row'=>1, 'column'=>0, 'sticky'=>'ew')
       wrap 'none'  # => self.wrap('none')
-    elsif !mode && st != [] then
+    elsif !mode && st.size != 0 then
       @h_scroll.ungrid
       wrap wrap_mode  # => self.wrap(wrap_mode)
     end

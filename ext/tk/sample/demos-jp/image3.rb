@@ -20,29 +20,29 @@ $image3_demo = TkToplevel.new {|w|
 }
 
 # 
-def loadDir(w)
+def loadDir3(w)
   w.delete(0,'end')
   Dir.glob([$dirName,'*'].join(File::Separator)).sort.each{|f|
     w.insert('end',File.basename(f))
   }
 end
 
-# selectAndLoadDir --
+# selectAndLoadDir3 --
 # This procedure pops up a dialog to ask for a directory to load into
 # the listobx and (if the user presses OK) reloads the directory
 # listbox from the directory named in the demo's entry.
 #
 # Arguments:
 # w -			Name of the toplevel window of the demo.
-def selectAndLoadDir(w, lbox)
+def selectAndLoadDir3(w, lbox)
   dir = Tk.chooseDirectory(:initialdir=>$dirName, :parent=>w, :mustexist=>true)
   if dir.length > 0
     $dirName.value = dir 
-    loadDir(lbox)
+    loadDir3(lbox)
   end
 end
 
-def loadImage(w,x,y)
+def loadImage3(w,x,y)
   $image3a.file([$dirName, w.get("@#{x},#{y}")].join(File::Separator))
 end
 
@@ -59,7 +59,8 @@ msg.pack('side'=>'top')
 # frame
 TkFrame.new($image3_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $image3_demo
       $image3_demo = nil
@@ -75,7 +76,7 @@ TkFrame.new($image3_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # variable
-$dirName = TkVariable.new([$demo_dir,'images'].join(File::Separator))
+$dirName = TkVariable.new([$demo_dir,'..','images'].join(File::Separator))
 
 # image
 begin
@@ -96,16 +97,16 @@ image3_lbx = TkListbox.new(image3_ff, :width=>20, :height=>10) {
   yscrollbar(TkScrollbar.new(image3_ff).pack(:side=>:left, :fill=>:y, 
 					     :expand=>true))
   insert(0, *(%w(earth.gif earthris.gif teapot.ppm)))
-  bind('Double-1', proc{|x,y| loadImage(self, x, y)}, '%x %y')
+  bind('Double-1', proc{|x,y| loadImage3(self, x, y)}, '%x %y')
 }
 
 image3_ent = TkEntry.new(image3_df, :width=>30, :textvariable=>$dirName){
   pack(:side=>:left, :fill=>:both, :padx=>'2m', :pady=>'2m', :expand=>true)
-  bind('Return', proc{loadDir(image3_lbx)})
+  bind('Return', proc{loadDir3(image3_lbx)})
 }
 
 TkButton.new(image3_df, :pady=>0, :padx=>'2m', :text=>"ディレクトリ選択", 
-	     :command=>proc{selectAndLoadDir(image3_ent, image3_lbx)}) {
+	     :command=>proc{selectAndLoadDir3(image3_ent, image3_lbx)}) {
   pack(:side=>:left, :fill=>:y, :padx=>[0, '2m'], :pady=>'2m')
 }
 

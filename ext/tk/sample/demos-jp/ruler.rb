@@ -37,7 +37,8 @@ TkLabel.new($ruler_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',
 # frame À¸À®
 $ruler_buttons = TkFrame.new($ruler_demo) {|frame|
   TkButton.new(frame) {
-    text 'Î»²ò'
+    #text 'Î»²ò'
+    text 'ÊÄ¤¸¤ë'
     command proc{
       tmppath = $ruler_demo
       $ruler_demo = nil
@@ -72,11 +73,13 @@ $demo_rulerInfo.normalStyle = {'fill'=>'black'}
 if TkWinfo.depth($ruler_canvas) > 1
   $demo_rulerInfo.activeStyle = {'fill'=>'red', 'stipple'=>''}
   $demo_rulerInfo.deleteStyle = {'fill'=>'red', 
-    'stipple'=>'@'+[$demo_dir, 'images', 'gray25.bmp'].join(File::Separator)}
+    'stipple'=>'@'+[$demo_dir, '..', 
+                     'images', 'gray25.xbm'].join(File::Separator)}
 else
   $demo_rulerInfo.activeStyle = {'fill'=>'black', 'stipple'=>''}
   $demo_rulerInfo.deleteStyle = {'fill'=>'black', 
-    'stipple'=>'@'+[$demo_dir, 'images', 'gray25.bmp'].join(File::Separator)}
+    'stipple'=>'@'+[$demo_dir, '..', 
+                     'images', 'gray25.xbm'].join(File::Separator)}
 end
 
 TkcLine.new($ruler_canvas, 

@@ -150,7 +150,7 @@ if TkWinfo.depth($arrow_canvas) > 1
   $demo_arrowInfo.activeStyle = {'fill'=>'red', 'outline'=>'black', 'width'=>1}
 else
   $demo_arrowInfo.bigLineStyle = {'fill'=>'black', 
-    'stipple'=>'@'+[$demo_dir, 'images', 'grey.25'].join(File::Separator)}
+    'stipple'=>'@'+[$demo_dir,'..','images','grey.25'].join(File::Separator)}
   $demo_arrowInfo.boxStyle = {'fill'=>'', 'outline'=>'black', 'width'=>1}
   $demo_arrowInfo.activeStyle = {'fill'=>'black','outline'=>'black','width'=>1}
 end

@@ -15,6 +15,8 @@ def start_random
   end
 end
 
+Label.new('text'=>'Please press or drag button-1').pack
+
 $c = Canvas.new
 $c.pack
 $start_x = start_y = 0

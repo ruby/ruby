@@ -75,7 +75,7 @@ TkFrame.new($image3_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # variable
-$dirName = TkVariable.new([$demo_dir,'images'].join(File::Separator))
+$dirName = TkVariable.new([$demo_dir,'..','images'].join(File::Separator))
 
 # image
 begin

@@ -45,7 +45,8 @@ TkFrame.new($menu84_demo) {|frame|
 # frame
 TkFrame.new($menu84_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $menu84_demo
       $menu84_demo = nil
@@ -68,8 +69,8 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   $menu84_frame.add('cascade', 'label'=>'File', 'menu'=>m, 'underline'=>0)
   add('command', 'label'=>'Open...', 'command'=>proc{fail 'これは単なるデモですから、"Open..." 項目の機能は特に定義されてはいません。'})
   add('command', 'label'=>'New', 'command'=>proc{fail 'これは単なるデモですから、"New" 項目の機能は特に定義されてはいません。'})
-  add('command', 'label'=>'Save', 'command'=>proc{fail 'これは単なるでもですから、"Save" 項目の機能は特に定義されてはいません。'})
-  add('command', 'label'=>'Save As...', 'command'=>proc{fail 'これは単なるでもですから、"Save As..." 項目の機能は特に定義されてはいません。'})
+  add('command', 'label'=>'Save', 'command'=>proc{fail 'これは単なるデモですから、"Save" 項目の機能は特に定義されてはいません。'})
+  add('command', 'label'=>'Save As...', 'command'=>proc{fail 'これは単なるデモですから、"Save As..." 項目の機能は特に定義されてはいません。'})
   add('separator')
   add('command', 'label'=>'Print Setup...', 'command'=>proc{fail 'これは単なるデモですから、"Print Setup..." 項目の機能は特に定義されてはいません。'})
   add('command', 'label'=>'Print...', 'command'=>proc{fail 'これは単なるデモですから、"Print..." 項目の機能は特に定義されてはいません。'})
@@ -157,7 +158,8 @@ TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
 TkMenu.new($menu84_frame, 'tearoff'=>false) {|m|
   $menu84_frame.add('cascade', 'label'=>'Icons', 'menu'=>m, 'underline'=>0)
   add('command', 'hidemargin'=>1, 
-      'bitmap'=>'@'+[$demo_dir,'images','pattern.bmp'].join(File::Separator),
+      'bitmap'=>'@'+[$demo_dir,'..',
+	              'images','pattern.xbm'].join(File::Separator),
       'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry', 
 				   'text'=>'あなたが選択したメニュー項目は、文字列の代わりにビットマップイメージで項目を表示したものです。それ以外の点では、ほかのメニュー項目との間で特に違いがあるわけではありません。',
 				   'bitmap'=>'', 'default'=>0, 

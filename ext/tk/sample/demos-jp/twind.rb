@@ -18,7 +18,8 @@ $twind_demo = TkToplevel.new {|w|
 # frame 生成
 $twind_buttons = TkFrame.new($twind_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $twind_demo
       $twind_demo = nil
@@ -75,7 +76,7 @@ TkTextWindow.new($twind_text, 'end',
 		   command proc{textWindOn $twind_text,$twind_buttons}
 		   cursor 'top_left_arrow'
 		 })
-$twind_text.insert('end', 'にします。また2つめのボタンをクリックすると')
+$twind_text.insert('end', "にします。また2つめのボタンをクリックすると\n")
 $twind_text.insert('end', '水平方向のスクロールを')
 TkTextWindow.new($twind_text, 'end', 
 		 'window'=>TkButton.new($twind_text) {

@@ -104,7 +104,8 @@ TkLabel.new($arrow_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',
 # frame À¸À®
 $arrow_buttons = TkFrame.new($arrow_demo) {|frame|
   TkButton.new(frame) {
-    text 'Î»²ò'
+    #text 'Î»²ò'
+    text 'ÊÄ¤¸¤ë'
     command proc{
       tmppath = $arrow_demo
       $arrow_demo = nil
@@ -146,7 +147,7 @@ if TkWinfo.depth($arrow_canvas) > 1
   $demo_arrowInfo.activeStyle = {'fill'=>'red', 'outline'=>'black', 'width'=>1}
 else
   $demo_arrowInfo.bigLineStyle = {'fill'=>'black', 
-    'stipple'=>'@'+[$demo_dir, 'images', 'grey.25'].join(File::Separator)}
+    'stipple'=>'@'+[$demo_dir,'..','images','grey.25'].join(File::Separator)}
   $demo_arrowInfo.boxStyle = {'fill'=>'', 'outline'=>'black', 'width'=>1}
   $demo_arrowInfo.activeStyle = {'fill'=>'black','outline'=>'black','width'=>1}
 end

@@ -27,7 +27,8 @@ msg.pack('side'=>'top')
 # frame 生成
 TkFrame.new($puzzle_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $puzzle_demo
       $puzzle_demo = nil

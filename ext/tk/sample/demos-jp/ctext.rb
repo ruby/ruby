@@ -30,7 +30,8 @@ TkLabel.new($ctext_demo, 'font'=>$font, 'wraplength'=>'5i', 'justify'=>'left',
 # frame 生成
 $ctext_buttons = TkFrame.new($ctext_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $ctext_demo
       $ctext_demo = nil

@@ -60,7 +60,7 @@ f_right = TkFrame.new($label_demo)
 ].each{|w| w.pack('side'=>'top', 'expand'=>'yes', 'pady'=>2, 'anchor'=>'w')}
 
 TkLabel.new(f_right) {
-  bitmap('@' + [$demo_dir,'images','face.xbm'].join(File::Separator))
+  bitmap('@' + [$demo_dir,'..','images','face.xbm'].join(File::Separator))
   borderwidth 2
   relief 'sunken'
 }.pack('side'=>'top')

@@ -25,7 +25,8 @@ end
 # frame 生成
 TkFrame.new($text_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $text_demo
       $text_demo = nil

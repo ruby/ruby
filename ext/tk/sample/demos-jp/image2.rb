@@ -27,7 +27,8 @@ msg.pack('side'=>'top')
 # frame 生成
 TkFrame.new($image2_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $image2_demo
       $image2_demo = nil
@@ -43,7 +44,7 @@ TkFrame.new($image2_demo) {|frame|
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 
 # 変数生成
-$dirName = TkVariable.new([$demo_dir,'images'].join(File::Separator))
+$dirName = TkVariable.new([$demo_dir,'..','images'].join(File::Separator))
 
 # image 生成
 $image2a = TkPhotoImage.new

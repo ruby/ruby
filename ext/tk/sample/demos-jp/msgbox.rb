@@ -22,7 +22,8 @@ TkLabel.new($msgbox_demo, 'font'=>$font, 'wraplength'=>'4i', 'justify'=>'left',
 # frame 生成
 TkFrame.new($msgbox_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $msgbox_demo
       $msgbox_demo = nil

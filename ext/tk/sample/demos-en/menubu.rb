@@ -58,7 +58,7 @@ TkFrame.new($menubu_demo) {|frame|
 
   TkButton.new(frame) {
     text 'Show Code'
-    command proc{showCode 'menu'}
+    command proc{showCode 'menubu'}
   }.pack('side'=>'left', 'expand'=>'yes')
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
 

@@ -27,7 +27,8 @@ msg.pack('side'=>'top')
 # frame 生成
 TkFrame.new($image1_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $image1_demo
       $image1_demo = nil
@@ -44,10 +45,10 @@ TkFrame.new($image1_demo) {|frame|
 
 # image 生成
 image1a = \
-TkPhotoImage.new('file'=>[$demo_dir,
+TkPhotoImage.new('file'=>[$demo_dir,'..',
                           'images','earth.gif'].join(File::Separator))
 image1b = \
-TkPhotoImage.new('file'=>[$demo_dir,
+TkPhotoImage.new('file'=>[$demo_dir,'..',
                           'images','earthris.gif'].join(File::Separator))
 
 # label 生成

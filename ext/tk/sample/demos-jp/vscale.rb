@@ -24,7 +24,8 @@ msg.pack('side'=>'top', 'padx'=>'.5c')
 
 TkFrame.new($vscale_demo) {|frame|
   TkButton.new(frame) {
-    text 'Î»²ò'
+    #text 'Î»²ò'
+    text 'ÊÄ¤¸¤ë'
     command proc {
       tmppath = $vscale_demo
       $vscale_demo = nil

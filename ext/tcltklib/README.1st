@@ -8,7 +8,7 @@ some or all of the following options.
  --with-tcllib=<libname>    (e.g. libtcl8.3.so ==> --with-tcllib=tcl8.3)
  --with-tklib=<libname>     (e.g. libtk8.3.so  ==> --with-tklib=tk8.3)
 
- --enable_tcltk_stubs       (if you force to enable stubs)
+ --enable-tcltk_stubs       (if you force to enable stubs)
 
  --with-tcl-dir=<path> 
       equal to "--with-tcl-include=<path>/include --with-tcl-lib=<path>/lib"

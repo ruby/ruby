@@ -52,7 +52,7 @@ unless $tk_version =~ /^4\.[01]/
   TkGrid.columnconfigure($cscroll_grid, 0, 'weight'=>1, 'minsize'=>0)
 end
 
-# canvas ÀßÄê
+# canvas
 $cscroll_canvas = TkCanvas.new($cscroll_demo, 
 			       'relief'=>'sunken', 'borderwidth'=>2,
 			       'scrollregion'=>['-11c', '-11c', '50c', '20c']

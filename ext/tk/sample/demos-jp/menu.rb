@@ -31,7 +31,8 @@ TkLabel.new($menu_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left') {
 # frame 生成
 TkFrame.new($menu_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $menu_demo
       $menu_demo = nil
@@ -150,7 +151,8 @@ TkMenubutton.new($menu_frame, 'text'=>'Icons', 'underline'=>0) {|m|
   TkMenu.new(m, 'tearoff'=>false) {|icon_menu|
     m.configure('menu'=>icon_menu)
     add('command', 
-	'bitmap'=>'@'+[$demo_dir,'images','pattern.bmp'].join(File::Separator),
+	'bitmap'=>'@'+[$demo_dir,'..',
+	                'images','pattern.xbm'].join(File::Separator),
 	'command'=>proc{TkDialog.new('title'=>'Bitmap Menu Entry', 
 				     'text'=>'今あなたが選択したメニューの項目はテキストではなくビットマップを表示していました。それ以外の点では他のメニュー項目と変わりません。',
 				     'bitmap'=>'', 'default'=>0, 

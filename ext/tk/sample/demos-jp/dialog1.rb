@@ -34,5 +34,5 @@ when 0
 when 1
   print "あなたは「キャンセル」を押しましたね。\n"
 when 2
-  showCode dialog1
+  showCode 'dialog1'
 end

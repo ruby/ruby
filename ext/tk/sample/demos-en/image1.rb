@@ -47,10 +47,10 @@ TkFrame.new($image1_demo) {|frame|
 
 # image
 image1a = \
-TkPhotoImage.new('file'=>[$demo_dir,
+TkPhotoImage.new('file'=>[$demo_dir,'..',
                           'images','earth.gif'].join(File::Separator))
 image1b = \
-TkPhotoImage.new('file'=>[$demo_dir,
+TkPhotoImage.new('file'=>[$demo_dir,'..',
                           'images','earthris.gif'].join(File::Separator))
 
 # label

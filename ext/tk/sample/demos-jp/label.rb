@@ -27,7 +27,8 @@ msg.pack('side'=>'top')
 # frame À¸À®
 TkFrame.new($label_demo) {|frame|
   TkButton.new(frame) {
-    text 'Î»²ò'
+    #text 'Î»²ò'
+    text 'ÊÄ¤¸¤ë'
     command proc{
       tmppath = $label_demo
       $label_demo = nil
@@ -56,7 +57,7 @@ f_right = TkFrame.new($label_demo)
 ].each{|w| w.pack('side'=>'top', 'expand'=>'yes', 'pady'=>2, 'anchor'=>'w')}
 
 TkLabel.new(f_right) {
-  bitmap('@' + [$demo_dir,'images','face.bmp'].join(File::Separator))
+  bitmap('@' + [$demo_dir,'..','images','face.xbm'].join(File::Separator))
   borderwidth 2
   relief 'sunken'
 }.pack('side'=>'top')

@@ -39,11 +39,11 @@ class Browse
     }
 
     # Set up bindings for the browser.
-    base.bind('Control-c', 
-	      proc{
-		base.destroy
+    base.bind('Destroy', proc{
 		Browse::BROWSE_WIN_COUNTER.value = \
-		                Browse::BROWSE_WIN_COUNTER.to_i - 1})
+		                Browse::BROWSE_WIN_COUNTER.to_i - 1
+	      })
+    base.bind('Control-c', proc{base.destroy})
     list.bind('Double-Button-1', 
 	 proc{TkSelection.get.each{|f| self.browse dir, f}})
   end

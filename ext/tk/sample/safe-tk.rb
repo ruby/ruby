@@ -10,7 +10,6 @@ safe_slave2   = MultiTkIp.new_safeTk('fill'=>:none, 'expand'=>false)
 #safe_slave2   = MultiTkIp.new_safeTk('fill'=>:none)
 #safe_slave2   = MultiTkIp.new_safeTk('expand'=>false)
 
-
 cmd = Proc.new{|txt|
   #####################
   ## from TkTimer2.rb

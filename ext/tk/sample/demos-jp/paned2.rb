@@ -30,7 +30,7 @@ EOL
 TkFrame.new($paned2_demo){|f|
   pack(:side=>:bottom, :fill=>:x, :pady=>'2m')
 
-  TkButton.new(f, :text=>'Î»²ò', :width=>15, :command=>proc{
+  TkButton.new(f, :text=>'ÊÄ¤¸¤ë', :width=>15, :command=>proc{
 		 $paned2_demo.destroy
 		 $paned2_demo = nil
 	       }).pack(:side=>:left, :expand=>true)

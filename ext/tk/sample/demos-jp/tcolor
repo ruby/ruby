@@ -16,15 +16,16 @@ require "tk"
 # Tkによって変更される変数はTkVariableのインスタンスを使う。
 
 $colorSpace = TkVariable.new(:rgb)
+$master = nil
 $red = 65535
 $green = 0
 $blue = 0
 $color = "#ffff00000000"
 $updating = TkVariable.new(0)
 $autoUpdate = TkVariable.new(1)
-$name = TkVariable.new("")
-# $command = TkVariable.new("print(%%,\"\n\")")
-$command = TkVariable.new("")
+$name = TkVariable.new($color)
+$command = TkVariable.new("print(%%,\"\n\")")
+# $command = TkVariable.new("")
 $label1 = TkVariable.new("label1")
 $label2 = TkVariable.new("label2")
 $label3 = TkVariable.new("label3")
@@ -134,6 +135,8 @@ def tc_scaleChanged
     return 
   end
 
+  $master = :scale if $master == nil
+
   scale1 = $root.middle.middle.scale1
   scale2 = $root.middle.middle.scale2
   scale3 = $root.middle.middle.scale3
@@ -158,11 +161,13 @@ def tc_scaleChanged
     raise(Exception,"unknown colorSpace")
   end
   $color = format("#%04x%04x%04x",$red.to_i,$green.to_i,$blue.to_i)
+  $name.value = $color if $master == :scale
   $root.middle.right.set_color($color)
   if( $autoUpdate.to_i == 1 )
     doUpdate
   end
-  Tk.update(TRUE)
+  Tk.update(true)
+  $master = nil if $master == :scale
 end
 
 
@@ -196,6 +201,8 @@ end
 
 
 def tc_loadNamedColor(name)
+  $name.value = name
+  $master = :name if $master == nil
   if name[0,1] != "#" 
     list = TkWinfo.rgb($root.middle.right.swatch,name)
     $red = list[0]
@@ -222,9 +229,9 @@ def tc_loadNamedColor(name)
       if strlist.length != 3
 	raise(eException,"syntax error in color name \"#{name}\"")
       end
-      $red = strlist[0].to_i
-      $green = strlist[1].to_i
-      $blue = strlist[2].to_i
+      $red = strlist[0].hex
+      $green = strlist[1].hex
+      $blue = strlist[2].hex
     }
     $red = $red << shift
     $green = $green << shift
@@ -237,6 +244,8 @@ def tc_loadNamedColor(name)
   if $autoUpdate.to_i == 1
     doUpdate
   end
+  Tk.update(true)
+  $master = nil if $master == :name
 end
 
 

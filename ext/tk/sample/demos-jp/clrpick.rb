@@ -22,7 +22,8 @@ TkLabel.new($clrpick_demo,'font'=>$font,'wraplength'=>'4i','justify'=>'left',
 # frame 生成
 TkFrame.new($clrpick_demo) {|frame|
   TkButton.new(frame) {
-    text '了解'
+    #text '了解'
+    text '閉じる'
     command proc{
       tmppath = $clrpick_demo
       $clrpick_demo = nil
