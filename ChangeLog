@@ -1,3 +1,9 @@
+Fri Jun 13 09:24:39 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb (storebinary): seek correctly. Thanks, William Webber.
+
+	* lib/net/ftp.rb (putbinaryfile): rescue FTPPermError.
+	
 Tue Jun 10 14:26:30 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
 
     * ext/syck/token.c: preserve newlines prepended to a block.
