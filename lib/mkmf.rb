@@ -730,8 +730,8 @@ DISTCLEANFILES = #{distcleanfiles.join(' ')}
   else
     dirs.each {|dir| mfile.print "#{dir}:\n\t@$(MAKEDIRS) #{dir}\n"}
   end
-  
-  mfile.print "\n"
+
+  mfile.print "\nsite-install: install\n\n"
 
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   mfile.print "\n"
