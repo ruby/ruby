@@ -330,6 +330,7 @@ def create_makefile(target)
 
   if $configure_args['--enable-shared']
     $libs = CONFIG["LIBRUBYARG"] + " " + $libs
+    $DLDFLAGS += " -L" + CONFIG["libdir"]
   end
 
   if RUBY_PLATFORM =~ /beos/
