@@ -94,7 +94,7 @@ VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;
 
-VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
+VALUE rb_stdin, rb_stdout, rb_stderr;
 static VALUE orig_stdout, orig_stderr;
 
 VALUE rb_output_fs;
@@ -2779,17 +2779,7 @@ must_respond_to(mid, val, id)
 }
 
 static void
-set_input_var(val, id, variable)
-    VALUE val;
-    ID id;
-    VALUE *variable;
-{
-    must_respond_to(id_read, val, id);
-    *variable = val;
-}
-
-static void
-set_output_var(val, id, variable)
+stdout_setter(val, id, variable)
     VALUE val;
     ID id;
     VALUE *variable;
@@ -2799,22 +2789,22 @@ set_output_var(val, id, variable)
 }
 
 static void
-set_defout_var(val, id, variable)
+defout_setter(val, id, variable)
     VALUE val;
     ID id;
     VALUE *variable;
 {
-    set_output_var(val, id, variable);
+    stdout_setter(val, id, variable);
     rb_warn("$defout is obslete; use $stdout instead");
 }
 
 static void
-set_deferr_var(val, id, variable)
+deferr_setter(val, id, variable)
     VALUE val;
     ID id;
     VALUE *variable;
 {
-    set_output_var(val, id, variable);
+    stdout_setter(val, id, variable);
     rb_warn("$deferr is obslete; use $stderr instead");
 }
 
@@ -4131,18 +4121,18 @@ Init_IO()
     rb_define_method(rb_cIO, "inspect",  rb_io_inspect, 0);
 
     rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
-    rb_define_hooked_variable("$stdin", &rb_stdin, 0, set_input_var);
+    rb_define_variable("$stdin", &rb_stdin);
     rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO);
-    rb_define_hooked_variable("$stdout", &rb_stdout, 0, set_output_var);
+    rb_define_hooked_variable("$stdout", &rb_stdout, 0, stdout_setter);
     rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
-    rb_define_hooked_variable("$stderr", &rb_stderr, 0, set_output_var);
-    rb_define_hooked_variable("$>", &rb_stdout, 0, set_output_var);
-    rb_defout = orig_stdout = rb_stdout;
+    rb_define_hooked_variable("$stderr", &rb_stderr, 0, stdout_setter);
+    rb_define_hooked_variable("$>", &rb_stdout, 0, stdout_setter);
+    orig_stdout = rb_stdout;
     orig_stderr = rb_stderr;
 
     /* variables to be removed in 1.8.1 */
-    rb_define_hooked_variable("$defout", &rb_stdout, 0, set_defout_var);
-    rb_define_hooked_variable("$deferr", &rb_stderr, 0, set_deferr_var);
+    rb_define_hooked_variable("$defout", &rb_stdout, 0, defout_setter);
+    rb_define_hooked_variable("$deferr", &rb_stderr, 0, deferr_setter);
 
     /* constants to hold original stdin/stdout/stderr */
     rb_define_global_const("STDIN", rb_stdin);

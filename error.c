@@ -129,6 +129,8 @@ rb_warn(fmt, va_alist)
     char buf[BUFSIZ];
     va_list args;
 
+    if (NIL_P(ruby_verbose)) return;
+
     snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
     va_init_list(args, fmt);

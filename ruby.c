@@ -94,6 +94,7 @@ usage(name)
 "-T[level]       turn on tainting checks",
 "-v              print version number, then turn on verbose mode",
 "-w              turn warnings on for your script",
+"-W[level]       set warning level; 0=silence, 1=medium, 3=verbose (default)",
 "-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
 "--copyright     print the copyright",
 "--version       print the version",
@@ -478,6 +479,27 @@ proc_options(argc, argv)
 	  case 'w':
 	    ruby_verbose = Qtrue;
 	    s++;
+	    goto reswitch;
+
+	  case 'W':
+	    {
+		int numlen;
+		int v = 2;	/* -W as -W2 */
+
+		if (*++s) {
+		    v = scan_oct(s, 1, &numlen);
+		    if (numlen == 0) v = 1;
+		    s += numlen;
+		}
+		switch (v) {
+		  case 0:
+		    ruby_verbose = Qnil; break;
+		  case 1:
+		    ruby_verbose = Qfalse; break;
+		  default:
+		    ruby_verbose = Qtrue; break;
+		}
+	    }
 	    goto reswitch;
 
 	  case 'c':
@@ -1014,15 +1036,24 @@ forbid_setid(s)
         rb_raise(rb_eSecurityError, "No %s allowed in tainted mode", s);
 }
 
+static void
+verbose_setter(val, id, variable)
+    VALUE val;
+    ID id;
+    VALUE *variable;
+{
+    ruby_verbose = RTEST(val) ? Qtrue : val;
+}
+
 void
 ruby_prog_init()
 {
     init_ids();
 
     ruby_sourcefile = rb_source_filename("ruby");
-    rb_define_variable("$VERBOSE", &ruby_verbose);
-    rb_define_variable("$-v", &ruby_verbose);
-    rb_define_variable("$-w", &ruby_verbose);
+    rb_define_hooked_variable("$VERBOSE", &ruby_verbose, 0, verbose_setter);
+    rb_define_hooked_variable("$-v", &ruby_verbose, 0, verbose_setter);
+    rb_define_hooked_variable("$-w", &ruby_verbose, 0, verbose_setter);
     rb_define_variable("$DEBUG", &ruby_debug);
     rb_define_variable("$-d", &ruby_debug);
     rb_define_readonly_variable("$-p", &do_print);

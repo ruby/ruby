@@ -359,7 +359,7 @@ if have_func(test_func)
   unless have_func("gethostname")
     have_func("uname")
   end
-  if ENV["SOCKS_SERVER"] or enable_config("socks", false)
+  if enable_config("socks", ENV["SOCKS_SERVER"])
     if have_library("socks5", "SOCKSinit")
       $CFLAGS+=" -DSOCKS5 -DSOCKS"
     elsif have_library("socks", "Rconnect")

@@ -77,7 +77,7 @@ shortlen(len, ds)
 #define TYPE_IVAR	'I'
 #define TYPE_LINK	'@'
 
-static ID s_dump, s_load;
+static ID s_dump, s_load, s_mdump, s_mload;
 static ID s_dump_data, s_load_data, s_alloc;
 static ID s_getc, s_read, s_write, s_binmode;
 
@@ -480,14 +480,20 @@ w_object(obj, arg, limit)
 	}
 
 	st_add_direct(arg->data, obj, arg->data->num_entries);
+	if (rb_respond_to(obj, s_mdump)) {
+	    VALUE v;
+
+	    v = rb_funcall(obj, s_mdump, 1, INT2NUM(limit));
+	    w_class(TYPE_USRMARSHAL, obj, arg);
+	    w_object(v, arg, limit);
+	    if (ivtbl) w_ivar(ivtbl, &c_arg);
+	    return;
+	}
 	if (rb_respond_to(obj, s_dump)) {
 	    VALUE v;
 
-	    w_class(TYPE_USERDEF, obj, arg);
 	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
-	    if (TYPE(v) != T_STRING) {
-		rb_raise(rb_eTypeError, "_dump() must return String");
-	    }
+	    w_class(TYPE_USERDEF, obj, arg);
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
 	    if (ivtbl) w_ivar(ivtbl, &c_arg);
 	    return;
@@ -1169,6 +1175,20 @@ r_object0(arg, proc)
 	}
         break;
 
+      case TYPE_USRMARSHAL:
+        {
+	    VALUE klass = path2class(r_unique(arg));
+
+	    v = rb_obj_alloc(klass);
+	    if (!rb_respond_to(v, s_mload)) {
+		rb_raise(rb_eTypeError, "instance of %s needs to have method `marshal_load'",
+			 rb_class2name(klass));
+	    }
+	    r_regist(v, arg);
+	    rb_funcall(v, s_mload, 1, r_object(arg));
+	}
+        break;
+
       case TYPE_OBJECT:
 	{
 	    VALUE klass = path2class(r_unique(arg));
@@ -1296,7 +1316,7 @@ marshal_load(argc, argv)
 	if (rb_respond_to(port, s_binmode)) {
 	    rb_funcall2(port, s_binmode, 0, 0);
 	}
-	arg.taint = Qfalse;
+	arg.taint = Qtrue;
 	arg.ptr = (char *)port;
 	arg.end = 0;
     }
@@ -1333,6 +1353,8 @@ Init_marshal()
 
     s_dump = rb_intern("_dump");
     s_load = rb_intern("_load");
+    s_mdump = rb_intern("marshal_dump");
+    s_mload = rb_intern("marshal_load");
     s_dump_data = rb_intern("_dump_data");
     s_load_data = rb_intern("_load_data");
     s_alloc = rb_intern("_alloc");

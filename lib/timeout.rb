@@ -34,7 +34,7 @@ module Timeout
   end
 
   def timeout(sec, exception=Error)
-    return yield if sec == nil
+    return yield if sec == nil or sec.zero?
     begin
       x = Thread.current
       y = Thread.start {
@@ -62,6 +62,12 @@ if __FILE__ == $0
   }
   p timeout(5, TimeoutError) {
     45
+  }
+  p timeout(nil) {
+    54
+  }
+  p timeout(0) {
+    54
   }
   p timeout(5) {
     loop {

@@ -1,3 +1,46 @@
+Wed Jul 30 02:37:12 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): if object responds to 'marshal_dump',
+	  Marshal.dump uses it to dump object.  unlike '_dump',
+	  marshal_dump returns any kind of object.
+
+	* marshal.c (r_object0): restore instance by calling
+	  'marshal_load' method.  unlike '_load', it's an instance
+	  method, to handle cyclic reference.
+
+	* marshal.c (marshal_load): all objects read from file should be
+	  tainted. [ruby-core:01325]
+
+Wed Jul 30 01:47:51 2003  Hugh Sasse  <hgs@dmu.ac.uk>
+
+	* lib/timeout.rb (Timeout::timeout): execute immediately if sec is
+	  zero.
+
+Wed Jul 30 01:36:18 2003  Aron Griffis  <ruby-talk@griffis1.net>
+
+	* ext/socket/socket.c (socks_init): typo fixed. [ruby-talk:77232]
+
+Wed Jul 30 00:48:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/extconf.rb: the default value for --enable-socks is
+	  taken from ENV["SOCKS_SERVER"]. [ruby-talk:77232]
+
+	* ruby.c (proc_options): add -W option. -W0 to shut up all warning
+	  messages. [ruby-talk:77227]
+
+	* error.c (rb_warn): no message will be printed if the value of
+	  $VERBOSE is "nil", i.e. perfect silence.
+
+	* ruby.c (verbose_setter): $VERBOSE value is either true, false,
+	  or nil.
+
+	* io.c (Init_IO): no "read" check for $stdin.  in addition some
+	  function names has been changed.
+
+Tue Jul 29 23:10:19 2003  Yoshida Masato  <yoshidam@yoshidam.net>
+
+	* regex.c (re_match_exec): incorrect multibyte match.
+
 Tue Jul 29 22:36:50 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb (send0): do taint check only when $SAFE > 0

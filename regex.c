@@ -3854,7 +3854,7 @@ re_match_exec(bufp, string_arg, size, pos, beg, regs)
 	      MBC2WC(c, d);
 	      not = is_in_list_mbc(c, p);
 	      if (!not) {
-		part = not = is_in_list(cc, p);
+		part = not = is_in_list_sbc(cc, p);
 	      }
 	    } else {
 	      not = is_in_list(c, p);

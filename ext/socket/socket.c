@@ -1013,7 +1013,7 @@ socks_init(sock, host, serv)
 	init = 1;
     }
 
-    return init_inetsock(class, host, serv, Qnil, Qnil, INET_SOCKS);
+    return init_inetsock(sock, host, serv, Qnil, Qnil, INET_SOCKS);
 }
 
 #ifdef SOCKS5
