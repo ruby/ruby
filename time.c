@@ -1317,6 +1317,7 @@ time_mdump(time)
     char buf[8];
     time_t t;
     int i;
+    VALUE str;
 
     GetTimeval(time, tobj);
 
@@ -1344,7 +1345,13 @@ time_mdump(time)
 	s = RSHIFT(s, 8);
     }
 
-    return rb_str_new(buf, 8);
+    str = rb_str_new(buf, 8);
+    if (FL_TEST(time, FL_EXIVAR)) {
+	rb_copy_generic_ivar(str, time);
+	FL_SET(str, FL_EXIVAR);
+    }
+
+    return str;
 }
 
 static VALUE

@@ -1,3 +1,11 @@
+Thu Oct  9 15:45:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (uv_to_utf8): change message to "out of range", since
+	  negative values are not "too big". [ruby-dev21567]
+
+	* marshal.c (w_object): should pass the value of "weak" to
+	  w_object().  [ruby-dev:21555] and [ruby-dev:21561]
+
 Thu Oct  9 14:05:38 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_set_end_proc, rb_exec_end_proc): restore safe level.

@@ -1857,7 +1857,7 @@ uv_to_utf8(buf, uv)
 	buf[5] = (uv&0x3f)|0x80;
 	return 6;
     }
-    rb_raise(rb_eArgError, "uv_to_utf8(); too big value");
+    rb_raise(rb_eArgError, "uv_to_utf8(); value out of range");
 }
 
 static const long utf8_limits[] = {

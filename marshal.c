@@ -492,8 +492,9 @@ w_object(obj, arg, limit, weak)
 	    v = rb_funcall(obj, s_mdump, 0, 0);
 	    w_byte(TYPE_USRMARSHAL, arg);
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
-	    w_object(v, arg, limit, Qtrue);
+	    w_object(v, arg, limit, weak);
 	    c_arg.weak = Qtrue;
+	    ivtbl = rb_generic_ivar_table(v);
 	    if (ivtbl) w_ivar(ivtbl, &c_arg);
 	    return;
 	}
@@ -507,6 +508,7 @@ w_object(obj, arg, limit, weak)
 	    w_class(TYPE_USERDEF, obj, arg);
 	    w_bytes(RSTRING(v)->ptr, RSTRING(v)->len, arg);
 	    c_arg.weak = Qtrue;
+	    ivtbl = rb_generic_ivar_table(v);
 	    if (ivtbl) w_ivar(ivtbl, &c_arg);
 	    return;
 	}
