@@ -1,3 +1,7 @@
+Thu Aug 28 05:02:52 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (singleton): typo fixed (ruby-bugs-ja PR#562)
+
 Thu Aug 28 02:37:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): *a = [1,2] now assigns [[1,2]] to a.

@@ -2327,7 +2327,7 @@ singleton	: var_ref
 		| '(' {lex_state = EXPR_BEG;} expr opt_nl ')'
 		    {
 			if ($3 == 0) {
-			    yyerror("can't define single method for ().");
+			    yyerror("can't define singleton method for ().");
 			}
 			else {
 			    switch (nd_type($3)) {
@@ -2339,7 +2339,7 @@ singleton	: var_ref
 			      case NODE_LIT:
 			      case NODE_ARRAY:
 			      case NODE_ZARRAY:
-				yyerror("can't define single method for literals");
+				yyerror("can't define singleton method for literals");
 			      default:
 				value_expr($3);
 				break;
