@@ -1,3 +1,14 @@
+Wed Mar  2 12:21:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval): [EXPERIMENTAL] NODE_LAMBDA implemented.
+	  [ruby-dev:25780]
+
+	* node.h (NODE_LAMBDA): for literal Proc object.
+
+	* parse.y (expr): interpret mere do...end block as proc object.
+
+	* parse.y (primary): ditto, for brace block.
+
 Tue Mar  1 21:16:54 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
 
 	* regcomp.c (optimize_node_left): uninitialized member

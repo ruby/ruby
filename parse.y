@@ -489,7 +489,7 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 %type <node> mrhs superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
-%type <node> for_var block_var opt_block_var block_par
+%type <node> for_var block_var opt_block_var block_var_def block_par
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fsym variable sym symbol operation operation2 operation3
@@ -1013,6 +1013,11 @@ expr		: command_call
 		    /*%
 		    	$$ = dispatch2(unary, ID2SYM('!'), $2);
 		    %*/
+		    }
+		| do_block
+		    {
+			$$ = $1;
+			nd_set_type($$, NODE_LAMBDA);
 		    }
 		| arg
 		;
@@ -2504,6 +2509,26 @@ primary		: literal
 			$$ = dispatch1(hash, escape_Qundef($2));
 		    %*/
 		    }
+		| tLBRACE
+		    {
+		    /*%%%*/
+			$<vars>$ = dyna_push();
+			$<num>1 = ruby_sourceline;
+		    /*%
+		    %*/
+		    }
+		  block_var_def {$<vars>$ = ruby_dyna_vars;}
+		  compstmt
+		  '}'
+		    {
+		    /*%%%*/
+			$$ = NEW_LAMBDA($3, dyna_init($5, $<vars>4));
+			nd_set_line($$, $<num>1);
+			dyna_pop($<vars>2);
+		    /*%
+			$$ = dispatch2(brace_block, escape_Qundef($3), $5);
+		    %*/
+		    }
 		| kRETURN
 		    {
 		    /*%%%*/
@@ -3062,7 +3087,13 @@ block_var	: block_par
 		;
 
 opt_block_var	: none
-		| '|' /* none */ '|'
+		| block_var_def
+		    {
+			$$ = $1;
+		    }
+		;
+
+block_var_def	: '|' /* none */ '|'
 		    {
 		    /*%%%*/
 			$$ = (NODE*)1;
@@ -6380,7 +6411,7 @@ parser_yylex(parser)
 			if (COND_P()) return kDO_COND;
 			if (CMDARG_P() && state != EXPR_CMDARG)
 			    return kDO_BLOCK;
-			if (state == EXPR_ENDARG)
+			if (state == EXPR_ENDARG || state == EXPR_BEG)
 			    return kDO_BLOCK;
 			return kDO;
 		    }

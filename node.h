@@ -125,6 +125,7 @@ enum node_type {
     NODE_DSYM,
     NODE_ATTRASGN,
     NODE_PRELUDE,
+    NODE_LAMBDA,
     NODE_LAST
 };
 
@@ -340,6 +341,7 @@ typedef struct RNode {
 #define NEW_BMETHOD(b) NEW_NODE(NODE_BMETHOD,0,0,b)
 #define NEW_ATTRASGN(r,m,a) NEW_NODE(NODE_ATTRASGN,r,m,a)
 #define NEW_PRELUDE(p,b) NEW_NODE(NODE_PRELUDE,p,b,0)
+#define NEW_LAMBDA(v,b) NEW_NODE(NODE_LAMBDA,v,b,0)
 
 #define NOEX_PUBLIC    0
 #define NOEX_NOSUPER   1

@@ -2941,6 +2941,7 @@ rb_eval(self, n)
 
       case NODE_ITER:
       case NODE_FOR:
+      case NODE_LAMBDA:
 	{
 	    PUSH_TAG(PROT_LOOP);
 	    PUSH_BLOCK(node->nd_var, node->nd_body);
@@ -2951,6 +2952,10 @@ rb_eval(self, n)
 		PUSH_ITER(ITER_PRE);
 		if (nd_type(node) == NODE_ITER) {
 		    result = rb_eval(self, node->nd_iter);
+		}
+		else if (nd_type(node) == NODE_LAMBDA) {
+		    ruby_iter->iter = ruby_frame->iter = ITER_CUR;
+		    result = rb_block_proc();
 		}
 		else {
 		    VALUE recv;
