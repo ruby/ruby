@@ -891,7 +891,7 @@ rb_strftime(buf, format, time)
 	return 0;
     }
     len = strftime(*buf, SMALLBUF, format, time);
-    if (len != 0) return len;
+    if (len != 0 || **buf == '\0') return len;
     for (size=1024; ; size*=2) {
 	*buf = xmalloc(size);
 	(*buf)[0] = '\0';
