@@ -4,9 +4,10 @@ $KCODE = 'none'
 
 class TestSignal < Test::Unit::TestCase
   def test_signal
-    if defined? Process.kill
+    defined?(Process.kill) or return
+    begin
       $x = 0
-      trap "SIGINT", proc{|sig| $x = 2}
+      oldtrap = trap "SIGINT", proc{|sig| $x = 2}
       Process.kill "SIGINT", $$
       sleep 0.1
       assert_equal(2, $x)
@@ -19,6 +20,8 @@ class TestSignal < Test::Unit::TestCase
       end
       assert(x)
       assert_match(/Interrupt/, x.message)
+    ensure
+      trap "SIGINT", oldtrap
     end
   end
 end
