@@ -1,3 +1,7 @@
+Tue Oct  7 10:02:30 2003  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/extconf.rb: useless assignment removed.
+
 Tue Oct  7 09:13:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_beginendblock.rb (test_endinmethod): END{} is now
