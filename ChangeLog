@@ -1,3 +1,8 @@
+Sat Oct 26 04:36:01 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* eval.c, gc.c: use a common set of alloca() #ifdef's.  This fixes
+	  the build with Intel C Compiler for Linux.
+
 Tue Oct 22 18:15:49 2002  Guy Decoux  <ts@moulon.inra.fr>
 
 	* eval.c (rb_eval): local_vars[-1] should protect body, not a

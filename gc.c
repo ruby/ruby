@@ -36,16 +36,18 @@ void rb_io_fptr_finalize _((struct OpenFile*));
 #  endif
 # endif /* atarist */
 #else
-# if defined(HAVE_ALLOCA_H)
+# ifdef HAVE_ALLOCA_H
 #  include <alloca.h>
-# elif !defined(alloca)
-void *alloca();
-# endif
+# else
+#  ifdef _AIX
+ #pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+void *alloca ();
+#   endif
+#  endif /* AIX */
+# endif /* HAVE_ALLOCA_H */
 #endif /* __GNUC__ */
-
-#ifdef _AIX
-#pragma alloca
-#endif
 
 static void run_final();
 
