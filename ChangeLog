@@ -1,3 +1,8 @@
+Mon Jul 26 11:22:55 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.escape): should
+	  escape space.
+
 Sun Jul 25 10:56:28 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.{h,c} (rb_w32_{f,fd,fs}open): workaround for bcc32's
