@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.4"
-#define NKF_RELEASE_DATE "2005-02-20"
+#define NKF_RELEASE_DATE "2005-03-04"
 #include "config.h"
 
 static char *CopyRight =
@@ -2197,6 +2197,13 @@ kanji_convert(f)
 
     /* epilogue */
     (*iconv)(EOF, 0, 0);
+    if (!is_inputcode_set)
+	set_input_codename(
+	    iconv == e_iconv ? "EUC-JP" :
+	    iconv == s_iconv ? "Shift_JIS" :
+	    iconv == w_iconv ? "UTF-8" :
+	    iconv == w_iconv16 ? "UTF-16" :
+	    "ASCII");
     return 1;
 }
 
