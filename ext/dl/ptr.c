@@ -340,18 +340,14 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
     case 'D':
       n = data->size / sizeof(double);
       break;
-    case  'S': case 'P':
+    case  'P': case 'p':
       n = data->size / sizeof(void*);
       break;
+    case 'S': case 's':
+      for (n=0; ((void**)(data->ptr))[n]; n++) {};
+      break;
     default:
-      if (t == 'p' || t == 's') {
-	int i;
-	for (i=0; ((void**)(data->ptr))[i]; i++) {};
-	n = i;
-      }
-      else{
 	n = 0;
-      }
     }
     break;
   default:
@@ -376,6 +372,7 @@ rb_dlptr_to_array(int argc, VALUE argv[], VALUE self)
       break;
     case 'D':
       rb_ary_push(ary, rb_float_new(((double*)(data->ptr))[i]));
+      break;
     case 'F':
       rb_ary_push(ary, rb_float_new(((float*)(data->ptr))[i]));
       break;
