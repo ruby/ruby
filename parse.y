@@ -5341,6 +5341,16 @@ dyna_in_block()
     return (lvtbl->dlev > 0);
 }
 
+int
+ruby_parser_stack_on_heap()
+{
+#if defined(YYBISON) && !defined(C_ALLOCA)
+    return Qfalse;
+#else
+    return Qtrue;
+#endif
+}
+
 void
 rb_parser_append_print()
 {
