@@ -1,3 +1,11 @@
+Thu Jun  1 00:59:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_yield_0): convert Qundef to [].
+
+Wed May 31 12:37:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_exec_end_proc): print error message from END procs.
+
 Wed May 31 04:06:41 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: change: CGI#out() if "HEAD" == REQUEST_METHOD then
@@ -53,15 +61,11 @@ Thu May 25 22:01:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* regex.h: mswin32: export re_mbctab properly.
 
-	* win32/win32.def: add ruby_ignorecase and regex.c's exports.
+	* win32/ruby.def: add ruby_ignorecase and regex.c's exports.
 
 Thu May 25 21:28:44 JST 2000  Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
 	* re.c (rb_reg_expr_str): escape un-printable character.
-
-Wed May 24 23:17:50 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
-
-	* win32/Makefile: remove unnecessary mv and rm command call.
 
 Thu May 25 01:35:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -200,7 +204,7 @@ Thu May 18 13:34:57 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* ext/socket/socket.c (ruby_connect): should not have replaced
 	  thread_write_select() by rb_thread_fd_writable().
 
-Wed May 18 09:01:25 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+Thu May 18 09:01:25 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* configure.in, ext/extmk.rb.in, lib/mkmf.rb: remove BeOS R3 support.
 	  Make a shared library (libruby.so) only if the --enable-shared
@@ -252,7 +256,7 @@ Tue May 16 17:00:05 2000  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
 
 Tue May 16 11:51:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* io.c (pipe_open): syncronize subprocess stdout/stderr.
+	* io.c (pipe_open): synchronize subprocess stdout/stderr.
 
 Mon May 15 15:38:09 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -288,7 +292,7 @@ Sun May 14 18:05:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 Sun May 14 02:02:48 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
-	* lib/irb/ruby-lex.rb: '/' should be escaped in charcter class.
+	* lib/irb/ruby-lex.rb: '/' should be escaped in character class.
 
 Sun May 14 00:54:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -2811,7 +2815,7 @@ Fri May  7 08:17:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Fri May  7 01:42:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* ext/socket/socket.c (tcp_s_gethostbyname): aboid using struct
+	* ext/socket/socket.c (tcp_s_gethostbyname): avoid using struct
 	  sockaddr_storage.
 
 Thu May  6 13:21:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
@@ -2940,7 +2944,7 @@ Tue Apr 20 02:32:42 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* re.c (rb_reg_desc): did not print options properly.
 
-	* io.c (rb_file_s_open): intialize was called twice.
+	* io.c (rb_file_s_open): initialize was called twice.
 
 Mon Apr 19 18:56:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -3067,7 +3071,7 @@ Wed Mar 24 13:06:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (next_argv): need to check type for ARGV.shift.
 
-	* eval.c (blk_copy_prev): need to preverse outer scope as well as
+	* eval.c (blk_copy_prev): need to preserve outer scope as well as
 	  outer frames.
 
 	* parse.y (rb_compile_string): return can appear within eval().
@@ -5932,7 +5936,7 @@ Tue Feb 10 17:29:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (str_oct): does recognize `0x'.
 
- 	* sprintf.c (f_sprintf): use baes 10 for conversion from string to
+ 	* sprintf.c (f_sprintf): use base 10 for conversion from string to
  	  integer.
 
 Mon Feb  9 14:51:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>

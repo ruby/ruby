@@ -1043,38 +1043,10 @@ static void rb_thread_wait_other_threads _((void));
 
 static int exit_status;
 
-void
-ruby_run()
+static int
+error_handle(ex)
+    int ex;
 {
-    int state;
-    static int ex;
-    volatile NODE *tmp;
-
-    if (ruby_nerrs > 0) exit(ruby_nerrs);
-
-    Init_stack(&tmp);
-    PUSH_TAG(PROT_NONE);
-    PUSH_ITER(ITER_NOT);
-    if ((state = EXEC_TAG()) == 0) {
-	eval_node(ruby_top_self);
-    }
-    POP_ITER();
-    POP_TAG();
-
-    if (state && !ex) ex = state;
-    PUSH_TAG(PROT_NONE);
-    PUSH_ITER(ITER_NOT);
-    if ((state = EXEC_TAG()) == 0) {
-	rb_trap_exit();
-	rb_thread_cleanup();
-	rb_thread_wait_other_threads();
-    }
-    else {
-	ex = state;
-    }
-    POP_ITER();
-    POP_TAG();
-
     switch (ex & 0xf) {
       case 0:
 	ex = 0;
@@ -1119,6 +1091,42 @@ ruby_run()
 	rb_bug("Unknown longjmp status %d", ex);
 	break;
     }
+    return ex;
+}
+
+void
+ruby_run()
+{
+    int state;
+    static int ex;
+    volatile NODE *tmp;
+
+    if (ruby_nerrs > 0) exit(ruby_nerrs);
+
+    Init_stack(&tmp);
+    PUSH_TAG(PROT_NONE);
+    PUSH_ITER(ITER_NOT);
+    if ((state = EXEC_TAG()) == 0) {
+	eval_node(ruby_top_self);
+    }
+    POP_ITER();
+    POP_TAG();
+
+    if (state && !ex) ex = state;
+    PUSH_TAG(PROT_NONE);
+    PUSH_ITER(ITER_NOT);
+    if ((state = EXEC_TAG()) == 0) {
+	rb_trap_exit();
+	rb_thread_cleanup();
+	rb_thread_wait_other_threads();
+    }
+    else {
+	ex = state;
+    }
+    POP_ITER();
+    POP_TAG();
+
+    ex = error_handle(ex);
     rb_exec_end_proc();
     rb_gc_call_finalizer_at_exit();
     exit(ex);
@@ -3353,6 +3361,7 @@ rb_yield_0(val, self, klass, acheck)
     ruby_class = klass?klass:block->klass;
     if (!self) self = block->self;
     node = block->body;
+
     if (block->var) {
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
@@ -3364,6 +3373,7 @@ rb_yield_0(val, self, klass, acheck)
 	POP_TAG();
 	if (state) goto pop_state;
     }
+
     PUSH_ITER(block->iter);
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
@@ -3372,6 +3382,7 @@ rb_yield_0(val, self, klass, acheck)
 	    result = Qnil;
 	}
 	else if (nd_type(node) == NODE_CFUNC) {
+	    if (val == Qundef) val = rb_ary_new2(0);
 	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
 	else {
@@ -3450,19 +3461,14 @@ massign(self, node, val, check)
     NODE *list;
     int i = 0, len;
 
-    list = node->nd_head;
-
-    if (TYPE(val) != T_ARRAY) {
-#if 0
-	if (!check && NIL_P(val))
-	    val = rb_ary_new2(0);
-	else
-	    val = rb_ary_new3(1, val);
-#else
+    if (val == Qundef) {
+	val = rb_ary_new2(0);
+    }
+    else if (TYPE(val) != T_ARRAY) {
 	val = rb_ary_new3(1, val);
-#endif
     }
     len = RARRAY(val)->len;
+    list = node->nd_head;
     for (i=0; list && i<len; i++) {
 	assign(self, list->nd_head, RARRAY(val)->ptr[i], check);
 	list = list->nd_next;
@@ -3470,7 +3476,9 @@ massign(self, node, val, check)
     if (check && list) goto arg_error;
     if (node->nd_args) {
 	if (node->nd_args == (NODE*)-1) {
-	    /* ignore rest args */
+	    if (check) {
+		goto arg_error;
+	    }
 	}
 	else if (!list && i<len) {
 	    assign(self, node->nd_args, rb_ary_new4(len-i, RARRAY(val)->ptr+i), check);
@@ -3502,6 +3510,7 @@ assign(self, lhs, val, check)
     VALUE val;
     int check;
 {
+    if (val == Qundef) val = Qnil;
     switch (nd_type(lhs)) {
       case NODE_GASGN:
 	rb_gvar_set(lhs->nd_entry, val);
@@ -5403,7 +5412,7 @@ static void
 call_end_proc(data)
     VALUE data;
 {
-    proc_call(data, Qnil);
+    proc_call(data, Qundef);
 }
 
 static void
@@ -5435,6 +5444,9 @@ rb_exec_end_proc()
     link = end_procs;
     while (link) {
 	rb_protect((VALUE(*)())link->func, link->data, &status);
+	if (status) {
+	    error_handle(status);
+	}
 	link = link->next;
     }
     while (ephemeral_end_procs) {
@@ -5843,7 +5855,7 @@ callargs(args)
 {
     switch (RARRAY(args)->len) {
       case 0:
-	return Qnil;
+	return Qundef;
 	break;
       case 1:
 	return RARRAY(args)->ptr[0];
