@@ -1,3 +1,11 @@
+Sun Jul  2 03:37:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.25.
+
+	* lib/net/protocol.rb (each_crlf_line): beg = 0 is needed in adding{}
+
+	* lib/net/smtp.rb: allow String for to_addr of SMTP#sendmail
+
 Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): the value from RTEST() is not valid Ruby
