@@ -13,7 +13,7 @@ module DL
       # for Windows
       ["DWORD",  "unsigned long", nil, nil, nil, nil],
       ["PDWORD", "unsigned long *", nil, nil, nil, nil],
-      ["WORD",   "unsigned int", nil, nil, nil, nil],
+      ["WORD",   "unsigned short", nil, nil, nil, nil],
       ["PWORD",  "unsigned int *", nil, nil, nil, nil],
       ["BOOL",   "ibool", nil, nil, nil, nil],
       ["ATOM",   "int", nil, nil, nil, nil],
@@ -26,6 +26,8 @@ module DL
       ["PHANDLE","void*", nil, nil, nil, nil],
       ["PVOID",  "void*", nil, nil, nil, nil],
       ["LPCSTR", "char*", nil, nil, nil, nil],
+      ["HDC",    "unsigned int", nil, nil, nil, nil],
+      ["HWND",   "unsigned int", nil, nil, nil, nil],
       
       # Others
       ["uint",   "unsigned int", nil, nil, nil, nil],
