@@ -1,3 +1,11 @@
+Fri Nov  5 08:34:43 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): should have removed rb_str_unlocktmp(str).
+	  [ruby-dev:24708]
+
+	* ext/socket/socket.c (s_recvfrom): buffer modification check.
+	  [ruby-dev:24708]
+
 Thu Nov  4 23:54:21 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* regexec.c, regparse.c, regint.h: fixed conflicts between

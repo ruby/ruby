@@ -2134,7 +2134,6 @@ str_gsub(argc, argv, str, bang)
     }
     rb_backref_set(match);
     *bp = '\0';
-    rb_str_unlocktmp(str);
     rb_str_unlocktmp(dest);
     if (bang) {
 	if (str_independent(str)) {
