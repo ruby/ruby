@@ -36,6 +36,7 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 ### Makefile for ruby $(OS) ###
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
+EXTSTATIC = $(EXTSTATIC)
 <<
 	@cl -nologo -EP -I$(srcdir) <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"

@@ -134,7 +134,13 @@ LIBRUBY_SO    = $(RUBY_SO_NAME).dll
 LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
 
+!if !defined(EXTSTATIC)
+EXTSTATIC     = 
+!endif
+
 EXTOBJS       = 
+DLDOBJS       = 
+DMYEXT        = dmyext.obj
 
 MAINOBJ       = main.obj
 WINMAINOBJ    = winmain.obj
@@ -397,9 +403,9 @@ s,@srcdir@,$(srcdir),;t t
 s,@top_srcdir@,$(srcdir),;t t
 <<KEEP
 
-miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) dmyext.obj
+miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) $(DMYEXT)
 		@echo. $(LIBS)
-		$(PURIFY) $(CC) $(MAINOBJ) dmyext.obj $(OBJS) $(LIBS) -Fe$@ $(LDFLAGS)
+		$(PURIFY) $(CC) $(MAINOBJ) $(DMYEXT) $(OBJS) $(LIBS) -Fe$@ $(LDFLAGS)
 
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $*.res
 		$(PURIFY) $(CC) $(MAINOBJ) $*.res \
@@ -409,15 +415,15 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $*.res
 		$(PURIFY) $(CC) $(MAINOBJ) $(WINMAINOBJ) $*.res \
 			-Fe$@ $(LIBRUBYARG) $(LDFLAGS) $(XLDFLAGS) -subsystem:Windows
 
-$(LIBRUBY_A):	$(OBJS) dmyext.obj
-		$(AR) $(ARFLAGS)$@ $(OBJS) dmyext.obj
+$(LIBRUBY_A):	$(OBJS) $(DMYEXT)
+		$(AR) $(ARFLAGS)$@ $(OBJS) $(DMYEXT)
 
 $(LIBRUBY):	$(RUBYDEF)
 		$(AR) $(ARFLAGS)$@ -def:$(RUBYDEF)
 
-$(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $*.res
-		@echo. $(EXTOBJS)
-		$(LIBRUBY_LDSHARED) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
+$(LIBRUBY_SO):	$(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $*.res
+		@echo. $(DLDOBJS)
+		$(LIBRUBY_LDSHARED) $(MAINOBJ) $(DLDOBJS) $(LIBRUBY_A) $*.res $(LIBS) \
 			-Fe$@ $(LDFLAGS) $(LIBRUBY_DLDFLAGS)
 
 $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
