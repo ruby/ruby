@@ -300,7 +300,7 @@ mingw*)		LIBS="-lwsock32 $LIBS"
 		ac_cv_func_seekdir=yes
 		ac_cv_func_telldir=yes
 		ac_cv_lib_crypt_crypt=no
-		ac_cv_lib_pthread_pthread_mutex_init=no
+		enable_pthread=no
 		;;
 os2-emx*)	LIBS="-lm $LIBS"
 		ac_cv_lib_dir_opendir=no;;
