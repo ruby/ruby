@@ -1,3 +1,8 @@
+Sun Feb 29 23:14:53 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_class): 
+	  Handle :nodoc: on singleton classes.
+
 Sat Feb 28 21:50:20  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub, bcc32/README.bcc32, bcc32/configure.bat,

@@ -1747,21 +1747,17 @@ module RDoc
 
       when TkLSHFT
 	case name = get_class_specification
-	when "self"
+	when "self", container.name
 	  parse_statements(container, SINGLE, &block)
 	else
-
-          # Special case: class << X inside class 'X' adds singleton methods
-          if name == container.name
-            parse_statements(container, SINGLE, &block)
-          else
-            other = TopLevel.find_class_named(name)
-            unless other
-              other = @top_level.add_class(NormalClass, name, nil)
-              other.record_location(@top_level)
-            end
-            parse_statements(other, SINGLE, &block)
+          other = TopLevel.find_class_named(name)
+          unless other
+            other = @top_level.add_class(NormalClass, name, nil)
+            other.record_location(@top_level)
+            other.comment = comment
           end
+          read_documentation_modifiers(other, CLASS_MODIFIERS)
+          parse_statements(other, SINGLE, &block)
 	end
 
       else
