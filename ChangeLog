@@ -1,4 +1,4 @@
-Sat Mar 22 01:59:04 2003  Tanaka Akira  <akr@m17n.org>
+Sat Mar 22 12:44:15 2003  Tanaka Akira  <akr@m17n.org>
 
         * lib/date/format.rb, lib/uri/common.rb: `[', `]', `-' in chracter
           class in regexp to avoid warning.

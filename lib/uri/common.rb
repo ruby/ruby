@@ -31,7 +31,7 @@ module URI
       # mark          = "-" | "_" | "." | "!" | "~" | "*" | "'" |
       #                 "(" | ")"
       # unreserved    = alphanum | mark
-      UNRESERVED = "-_.!~*'()#{ALNUM}"
+      UNRESERVED = "\\-_.!~*'()#{ALNUM}"
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" |
       #                 "$" | ","
       # reserved      = ";" | "/" | "?" | ":" | "@" | "&" | "=" | "+" | 
