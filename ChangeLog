@@ -1,3 +1,11 @@
+Thu Dec  9 10:54:36 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/dbm.c (fdbm_select): [ruby-dev:25132]
+
+	* ext/sdbm/init.c: ditto.
+
+	* ext/gdbm/gdbm.c: ditto.
+
 Thu Dec  9 03:08:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_init): set root-win title to "ruby" when
