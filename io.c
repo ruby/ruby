@@ -1241,7 +1241,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io)
  *  readpartial is designed for streams such as pipe, socket, tty, etc.
  *  It blocks only when no data immediately available.
  *  This means that it blocks only when following all conditions hold.
- *  * the stdio buffer in the IO object is empty.
+ *  * the buffer in the IO object is empty.
  *  * the content of the stream is empty.
  *  * the stream is not reached to EOF.
  *
@@ -1250,23 +1250,23 @@ io_getpartial(int argc, VALUE *argv, VALUE io)
  *  If EOF is reached, readpartial raises EOFError.
  *
  *  When readpartial doesn't blocks, it returns or raises immediately.
- *  If the stdio buffer is not empty, it returns the data in the buffer.
+ *  If the buffer is not empty, it returns the data in the buffer.
  *  Otherwise if the stream has some content,
  *  it returns the data in the stream. 
  *  Otherwise if the stream is reached to EOF, it raises EOFError.
  *
- *     r, w = IO.pipe           #               stdio buffer    pipe content
+ *     r, w = IO.pipe           #               buffer          pipe content
  *     w << "abc"               #               ""              "abc".
  *     r.readpartial(4096)      #=> "abc"       ""              ""
  *     r.readpartial(4096)      # blocks because buffer and pipe is empty.
  *
- *     r, w = IO.pipe           #               stdio buffer    pipe content
+ *     r, w = IO.pipe           #               buffer          pipe content
  *     w << "abc"               #               ""              "abc"
  *     w.close                  #               ""              "abc" EOF
  *     r.readpartial(4096)      #=> "abc"       ""              EOF
  *     r.readpartial(4096)      # raises EOFError
  *
- *     r, w = IO.pipe           #               stdio buffer    pipe content
+ *     r, w = IO.pipe           #               buffer          pipe content
  *     w << "abc\ndef\n"        #               ""              "abc\ndef\n"
  *     r.gets                   #=> "abc\n"     "def\n"         ""
  *     w << "ghi\n"             #               "def\n"         "ghi\n"
@@ -1277,7 +1277,7 @@ io_getpartial(int argc, VALUE *argv, VALUE io)
  *  It blocks even if the nonblocking-flag is set.
  *
  *  Also note that readpartial behaves similar to sysread in blocking mode.
- *  The behavior is identical when the stdio buffer is empty.
+ *  The behavior is identical when the buffer is empty.
  *
  */
 
