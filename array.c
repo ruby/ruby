@@ -97,7 +97,7 @@ rb_ary_frozen_p(ary)
     return Qfalse;
 }
 
-static VALUE ary_alloc _((VALUE));
+static VALUE ary_alloc(VALUE);
 static VALUE
 ary_alloc(klass)
     VALUE klass;
@@ -1673,9 +1673,12 @@ sort_1(a, b, data)
     struct ary_sort_data *data;
 {
     VALUE retval = rb_yield_values(2, *a, *b);
+    int n;
 
     ary_sort_check(data);
-    return rb_cmpint(retval, *a, *b);
+    n = rb_cmpint(retval, *a, *b);
+    ary_sort_check(data);
+    return n;
 }
 
 static int
@@ -1684,11 +1687,12 @@ sort_2(ap, bp, data)
     struct ary_sort_data *data;
 {
     VALUE retval;
-    long a = (long)*ap, b = (long)*bp;
+    VALUE a = *ap, b = *bp;
+    int n;
 
     if (FIXNUM_P(a) && FIXNUM_P(b)) {
-	if (a > b) return 1;
-	if (a < b) return -1;
+	if ((long)a > (long)b) return 1;
+	if ((long)a < (long)b) return -1;
 	return 0;
     }
     if (TYPE(a) == T_STRING && TYPE(b) == T_STRING) {
@@ -1697,7 +1701,10 @@ sort_2(ap, bp, data)
 
     retval = rb_funcall(a, id_cmp, 1, b);
     ary_sort_check(data);
-    return rb_cmpint(retval, a, b);
+    n = rb_cmpint(retval, a, b);
+    ary_sort_check(data);
+
+    return n;
 }
 
 static VALUE

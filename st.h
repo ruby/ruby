@@ -27,6 +27,10 @@ struct st_table {
 
 enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
 
+#ifndef _
+# define _(args) args
+#endif
+
 st_table *st_init_table _((struct st_hash_type *));
 st_table *st_init_table_with_size _((struct st_hash_type *, int));
 st_table *st_init_numtable _((void));

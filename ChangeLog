@@ -1,3 +1,8 @@
+Thu Sep 23 09:29:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_rehash): replace st_foreach() by its deep
+	  checking counterpart.  [ruby-dev:24310]
+
 Wed Sep 22 14:21:54 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: on__scan event removed.

@@ -924,6 +924,7 @@ static struct tag *prot_tag;
 #define PROT_LOOP   INT2FIX(1)	/* 3 */
 #define PROT_LAMBDA INT2FIX(2)	/* 5 */
 #define PROT_YIELD  INT2FIX(3)	/* 7 */
+#define PROT_TOP    INT2FIX(4)	/* 9 */
 
 #define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, setjmp(prot_tag->buf))
 
@@ -947,7 +948,7 @@ static struct tag *prot_tag;
 #define TAG_RAISE	0x6
 #define TAG_THROW	0x7
 #define TAG_FATAL	0x8
-#define TAG_CONT	0x9
+#define TAG_CONTCALL	0x9
 #define TAG_MASK	0xf
 
 VALUE ruby_class;
@@ -1442,6 +1443,8 @@ ruby_cleanup(ex)
 
 extern NODE *ruby_eval_tree;
 
+static void cont_call _((VALUE));
+
 int
 ruby_exec()
 {
@@ -1449,13 +1452,18 @@ ruby_exec()
     volatile NODE *tmp;
 
     Init_stack((void*)&tmp);
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG(PROT_THREAD);
     PUSH_ITER(ITER_NOT);
     /* default visibility is private at toplevel */
     SCOPE_SET(SCOPE_PRIVATE);
     if ((state = EXEC_TAG()) == 0) {
 	eval_node(ruby_top_self, ruby_eval_tree);
     }
+#if 0
+    else if (state == TAG_CONTCALL) {
+	cont_call(prot_tag->retval);
+    }
+#endif
     POP_ITER();
     POP_TAG();
     return state;
@@ -5869,10 +5877,11 @@ backtrace(lev)
 {
     struct FRAME *frame = ruby_frame;
     char buf[BUFSIZ];
-    VALUE ary;
+    volatile VALUE ary;
     NODE *n;
 
     ary = rb_ary_new();
+    fprintf(stderr, "<ary=%p(0x%x)\n", ary, BUILTIN_TYPE(ary));
     if (frame->last_func == ID_ALLOCATOR) {
 	frame = frame->prev;
     }
@@ -5889,7 +5898,9 @@ backtrace(lev)
 	else {
 	    snprintf(buf, BUFSIZ, "%s:%d", ruby_sourcefile, ruby_sourceline);
 	}
+	fprintf(stderr, "=ary=%p(0x%x)\n", ary, BUILTIN_TYPE(ary));
 	rb_ary_push(ary, rb_str_new2(buf));
+	fprintf(stderr, "#ary=%p(0x%x)\n", ary, BUILTIN_TYPE(ary));
 	if (lev < -1) return ary;
     }
     else {
@@ -5901,6 +5912,7 @@ backtrace(lev)
 	    }
 	}
     }
+    fprintf(stderr, ">ary=%p(0x%x)\n", ary, BUILTIN_TYPE(ary));
     while (frame && (n = frame->node)) {
 	if (frame->prev && frame->prev->last_func) {
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",

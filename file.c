@@ -3001,7 +3001,7 @@ rb_file_truncate(obj, len)
 #  define LOCK_UN 8
 # endif
 
-#if 0
+#if 1
 static int
 rb_thread_flock(fd, op, fptr)
     int fd, op;
