@@ -1,3 +1,9 @@
+Fri Feb 23 08:24:53 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb: clear read buffer after reopen.
+
+	* lib/net/http.rb: update RD document.
+
 Tue Feb 20 16:37:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big2long): should not raise RangeError for Bignum

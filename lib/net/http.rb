@@ -14,9 +14,34 @@ You can get it from RAA
 (Ruby Application Archive: http://www.ruby-lang.org/en/raa.html).
 
 
-= class HTTP
+== http.rb version 1.2 features
 
-== Class Methods
+You can use 1.2 features by calling HTTP.version_1_2. And
+calling Net::HTTP.version_1_1 allows to use 1.1 features.
+
+  # example
+  HTTP.start {|http1| ...(http1 has 1.1 features)... }
+
+  HTTP.version_1_2
+  HTTP.start {|http2| ...(http2 has 1.2 features)... }
+
+  HTTP.version_1_1
+  HTTP.start {|http3| ...(http3 has 1.1 features)... }
+
+Changes are:
+
+  * HTTP#get, head, post does not raise ProtocolError
+  * HTTP#get, head, post returns only one object, a HTTPResponse object
+  * HTTPResponseReceiver is joined into HTTPResponse
+  * request object: HTTP::Get, Head, Post; and HTTP#request(req)
+
+WARNING: These features are not definite yet.
+They will change without notice!
+
+
+== class HTTP
+
+=== Class Methods
 
 : new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
   creates a new Net::HTTP object.
@@ -49,7 +74,7 @@ You can get it from RAA
   HTTP default port (80).
 
 
-== Methods
+=== Methods
 
 : start
 : start {|http| .... }
@@ -181,21 +206,21 @@ You can get it from RAA
     response.body
 
 
-= class HTTPResponse
+== class HTTPResponse
 
 HTTP response object.
 All "key" is case-insensitive.
 
-== Methods
+=== Methods
 
 : body
-  the entity body. ("dest" argument for HTTP#get, post, put)
+  the entity body (String).
 
 : self[ key ]
   returns header field for "key".
   for HTTP, value is a string like 'text/plain'(for Content-Type),
-  '2045'(for Content-Length), 'bytes 0-1024/10024'(for Content-Range).
-  Multiple header had be joined by HTTP1.1 scheme.
+  '2045'(for Content-Length), 'bytes 0-1023/10024'(for Content-Range).
+  If there's some fields which has same name, they are joined with ','.
 
 : self[ key ] = val
   set field value for "key".
@@ -204,62 +229,38 @@ All "key" is case-insensitive.
   true if key exists
 
 : each {|name,value| .... }
-  iterates for each field name and value pair
+  iterates for each field name and value pair.
 
 : code
-  HTTP result code string. For example, '302'
+  HTTP result code string. For example, '302'.
 
 : message
-  HTTP result message. For example, 'Not Found'
+  HTTP result message. For example, 'Not Found'.
 
 
-= class HTTPResponseReceiver
+== class HTTPResponseReceiver
 
-== Methods
+=== Methods
 
 : header
 : response
   Net::HTTPResponse object
 
-: body( dest = '' )
-: entity( dest = '' )
-  entity body. A body is written to "dest" using "<<" method.
+: read_body( dest = '' )
+  reads entity body into DEST by calling "<<" method and
+  returns DEST.
 
-: body {|str| ... }
-  gets entity body with block.
-  If this method is called twice, block is not executed and
-  returns first "dest".
+: read_body {|string| ... }
+  reads entity body little by little and gives it to block
+  until entity ends.
 
+: body
+: entity
+  entity body. If #read_body is called already, returns its
+  argument DEST. Else returns entity body as String.
 
-= http.rb version 1.2 features
-
-You can use 1.2 features by calling HTTP.version_1_2. And
-calling Net::HTTP.version_1_1 allows to use 1.1 features.
-
-  # example
-  HTTP.start {|http1| ...(http1 has 1.1 features)... }
-
-  HTTP.version_1_2
-  HTTP.start {|http2| ...(http2 has 1.2 features)... }
-
-  HTTP.version_1_1
-  HTTP.start {|http3| ...(http3 has 1.1 features)... }
-
-== Method (only diff to 1.1)
-
-: get( path, u_header = nil )
-: get( path, u_header = nil ) {|str| .... }
-  gets document from "path".
-  returns HTTPResponse object.
-
-: head( path, u_header = nil )
-  gets only document header from "path".
-  returns HTTPResponse object.
-
-: post( path, data, u_header = nil )
-: post( path, data, u_header = nil ) {|str| .... }
-  posts "data" to "path" entity and gets document.
-  returns HTTPResponse object.
+  Calling this method any times causes returning same
+  object (does not read entity again).
 
 =end
 

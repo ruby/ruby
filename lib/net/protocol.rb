@@ -460,8 +460,8 @@ module Net
     def reopen
       unless closed? then
         close
-        @buffer = ''
       end
+      @buffer = ''
       @socket = TCPsocket.new( @addr, @port )
       @closed = false
     end
