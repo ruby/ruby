@@ -18,6 +18,8 @@ TkPackage.require('tile')
 # autoload
 module Tk
   module Tile
+    TkComm::TkExtlibAutoloadModule.unshift(self)
+
     def self.package_version
       begin
 	TkPackage.require('tile')

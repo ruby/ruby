@@ -118,6 +118,10 @@ module TkEvent
     #
     _setup_subst_table(KEY_TBL, PROC_TBL);
 
+    #
+    # NOTE: The order of parameters which passed to callback procedure is 
+    #        <extra_arg>, <extra_arg>, ... , <subst_arg>, <subst_arg>, ...
+    #
 
     # If you need support extra arguments given by Tcl/Tk, 
     # please override _get_extra_args_tbl

@@ -26,6 +26,7 @@ module TkComm
   extend TkUtil
 
   WidgetClassNames = {}.taint
+  TkExtlibAutoloadModule = [].taint
 
   # None = Object.new  ### --> definition is moved to TkUtil module
   # def None.to_s
@@ -92,17 +93,64 @@ module TkComm
       # gen_class_name = ruby_class_name + 'GeneratedOnTk'
       gen_class_name = ruby_class_name
       classname_def = ''
-    elsif Object.const_defined?('Tk' + tk_class)
-      ruby_class_name = 'Tk' + tk_class
+    else # ruby_class == nil
+      mods = TkExtlibAutoloadModule.find_all{|m| m.const_defined?(tk_class)}
+      mods.each{|mod|
+	begin
+	  mod.const_get(tk_class)  # auto_load
+	  break if (ruby_class = WidgetClassNames[tk_class])
+	rescue LoadError
+	  # ignore load error
+	end
+      }
+
+      unless ruby_class
+	std_class = 'Tk' << tk_class
+	if Object.const_defined?(std_class)
+	  Object.const_get(std_class)  # auto_load
+	  ruby_class = WidgetClassNames[tk_class]
+	end
+      end
+
+      if ruby_class
+	# found
+	ruby_class_name = ruby_class.name
+	gen_class_name = ruby_class_name
+	classname_def = ''
+      else
+	# unknown
+	ruby_class_name = 'TkWindow'
+	gen_class_name = 'TkWidget_' + tk_class
+	classname_def = "WidgetClassName = '#{tk_class}'.freeze"
+      end
+    end
+
+###################################
+=begin
+    if ruby_class = WidgetClassNames[tk_class]
+      ruby_class_name = ruby_class.name
       # gen_class_name = ruby_class_name + 'GeneratedOnTk'
       gen_class_name = ruby_class_name
       classname_def = ''
     else
-      ruby_class_name = 'TkWindow'
-      # gen_class_name = ruby_class_name + tk_class + 'GeneratedOnTk'
-      gen_class_name = 'TkWidget_' + tk_class
-      classname_def = "WidgetClassName = '#{tk_class}'.freeze"
+      mod = TkExtlibAutoloadModule.find{|m| m.const_defined?(tk_class)}
+      if mod
+	ruby_class_name = mod.name + '::' + tk_class
+	gen_class_name = ruby_class_name
+	classname_def = ''
+      elsif Object.const_defined?('Tk' + tk_class)
+	ruby_class_name = 'Tk' + tk_class
+	# gen_class_name = ruby_class_name + 'GeneratedOnTk'
+	gen_class_name = ruby_class_name
+	classname_def = ''
+      else
+	ruby_class_name = 'TkWindow'
+	# gen_class_name = ruby_class_name + tk_class + 'GeneratedOnTk'
+	gen_class_name = 'TkWidget_' + tk_class
+	classname_def = "WidgetClassName = '#{tk_class}'.freeze"
+      end
     end
+=end
 
 =begin
     unless Object.const_defined? gen_class_name
@@ -131,7 +179,12 @@ module TkComm
   private :_genobj_for_tkwidget
   module_function :_genobj_for_tkwidget
 
-  def tk_tcl2ruby(val, enc_mode = nil, listobj = true)
+  def _at(x,y)
+    "@#{Integer(x)},#{Integer(y)}"
+  end
+  module_function :_at
+
+  def tk_tcl2ruby(val, enc_mode = false, listobj = true)
     if val =~ /^rb_out\S* (c(_\d+_)?\d+)/
       #return Tk_CMDTBL[$1]
       return TkCore::INTERP.tk_cmd_tbl[$1]
@@ -181,7 +234,7 @@ module TkComm
 
   private :tk_tcl2ruby
   module_function :tk_tcl2ruby
-  private_class_method :tk_tcl2ruby
+  #private_class_method :tk_tcl2ruby
 
 unless const_defined?(:USE_TCLs_LIST_FUNCTIONS)
   USE_TCLs_LIST_FUNCTIONS = true
@@ -238,7 +291,8 @@ if USE_TCLs_LIST_FUNCTIONS
 	array2tk_list(e)
       elsif e.kind_of? Hash
 	tmp_ary = []
-	e.each{|k,v| tmp_ary << k << v }
+	#e.each{|k,v| tmp_ary << k << v }
+	e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
 	array2tk_list(tmp_ary)
       else
 	_get_eval_string(e)
@@ -369,7 +423,9 @@ else
       if e.kind_of? Array
 	"{#{array2tk_list(e)}}"
       elsif e.kind_of? Hash
-	"{#{e.to_a.collect{|ee| array2tk_list(ee)}.join(' ')}}"
+	# "{#{e.to_a.collect{|ee| array2tk_list(ee)}.join(' ')}}"
+	e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
+	array2tk_list(tmp_ary)
       else
 	s = _get_eval_string(e)
 	(s.index(/\s/) || s.size == 0)? "{#{s}}": s
@@ -3108,7 +3164,6 @@ class TkObject<TkKernel
     end
   end
 
-=begin
   def tk_trace_variable(v)
     unless v.kind_of?(TkVariable)
       fail(ArgumentError, "type error (#{v.class}); must be TkVariable object")
@@ -3116,7 +3171,6 @@ class TkObject<TkKernel
     v
   end
   private :tk_trace_variable
-=end
 
   def destroy
     #tk_call 'trace', 'vdelete', @tk_vn, 'w', @var_id if @var_id

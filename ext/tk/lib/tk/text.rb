@@ -502,9 +502,9 @@ class TkText<TkTextWin
     if TkTextTag::TTagID_TBL[@path]
       tags.each{|tag|
 	if tag.kind_of? TkTextTag
-	  TTagID_TBL[@path].delete(tag.id) 
+	  TkTextTag::TTagID_TBL[@path].delete(tag.id) 
 	else
-	  TTagID_TBL[@path].delete(tag) 
+	  TkTextTag::TTagID_TBL[@path].delete(tag) 
 	end
       }
     end

@@ -228,7 +228,7 @@ class ViewIcons
     name = @icon_name[item]
     data_width = 60
 
-    cmd = "#{name} = TkPhotoImage.new(:date=><<'EOD')\n"
+    cmd = "#{name} = TkPhotoImage.new(:data=><<'EOD')\n"
 
     icon_data = Tk::ICONS.query(name, :file=>@library.value, :items=>'d')[0][0]
 

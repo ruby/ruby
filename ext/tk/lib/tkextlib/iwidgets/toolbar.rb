@@ -22,6 +22,16 @@ class Tk::Iwidgets::Toolbar
 
   include TkItemConfigMethod
 
+  def __item_cget_cmd(id)
+    [self.path, 'itemcget', self.index(id)]
+  end
+  private :__item_cget_cmd
+
+  def __item_config_cmd(id)
+    [self.path, 'itemconfigure', self.index(id)]
+  end
+  private :__item_config_cmd
+
   def tagid(tagOrId)
     if tagOrId.kind_of?(Tk::Itk::Component)
       tagOrId.name
@@ -38,10 +48,12 @@ class Tk::Iwidgets::Toolbar
       keys = tag
       tag = nil
     end
-    unless tag
+    if tag
+      tag = Tk::Itk::Component.new(self, tagid(tag))
+    else
       tag = Tk::Itk::Component.new(self)
     end
-    tk_call(@path, 'add', type, tagid(tag), *hash_kv(keys))
+    window(tk_call(@path, 'add', type, tagid(tag), *hash_kv(keys)))
     tag
   end
 
@@ -63,24 +75,13 @@ class Tk::Iwidgets::Toolbar
       keys = tag
       tag = nil
     end
-    unless tag
+    if tag
+      tag = Tk::Itk::Component.new(self, tagid(tag))
+    else
       tag = Tk::Itk::Component.new(self)
     end
-    tk_call(@path, 'insert', index(idx), type, tagid(tag), *hash_kv(keys))
+    window(tk_call(@path, 'insert', index(idx), type, 
+		   tagid(tag), *hash_kv(keys)))
     tag
-  end
-
-  def invoke(idx=nil)
-    if idx
-      tk_call(@path, 'invoke', index(idx))
-    else
-      tk_call(@path, 'invoke')
-    end
-    self
-  end
-
-  def show(idx)
-    tk_call(@path, 'show', index(idx))
-    self
   end
 end

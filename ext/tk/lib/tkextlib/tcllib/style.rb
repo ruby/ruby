@@ -9,10 +9,7 @@
 require 'tk'
 require 'tkextlib/tcllib.rb'
 
-# TkPackage.require('style', '0.1')
-TkPackage.require('style')
-
-module Tk
+module Tk::Tcllib
   module Style
     def self.package_version
       begin
@@ -22,6 +19,29 @@ module Tk
       end
     end
 
+    def self.not_available
+      fail RuntimeError, "'tkextlib/tcllib/style' extension is not available on your current environment."
+    end
+
+    def self.names
+      Tk::Tcllib::Style.not_available
+    end
+
+    def self.use(style)
+      Tk::Tcllib::Style.not_available
+    end
+  end
+end
+
+# TkPackage.require('style', '0.1')
+TkPackage.require('style')
+
+module Tk::Tcllib
+  class << Style
+    undef not_available
+  end
+
+  module Style
     def self.names
       tk_split_simplelist(tk_call('style::names'))
     end

@@ -39,6 +39,10 @@ class Tk::Vu::Pie < TkWindow
   WidgetClassName = 'Pie'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __destroy_hook__
+    Tk::Vu::PieSlice::SliceID_TBL.delete(@path)
+  end
+
   ###############################
 
   include Tk::Vu::PieSliceConfigMethod
@@ -112,7 +116,7 @@ end
 
 class Tk::Vu::PieSlice
   SliceID_TBL = TkCore::INTERP.create_table
-  Pie_Slice_ID = ['vu_pie'.freeze, '00000'.taint].freeze
+  Pie_Slice_ID = ['vu:pie'.freeze, '00000'.taint].freeze
   TkCore::INTERP.init_ip_env{ SliceID_TBL.clear }
 
   def self.id2obj(pie, id)

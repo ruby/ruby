@@ -162,7 +162,7 @@ class Tk::BWidget::ListBox::Item
   include TkTreatTagFont
 
   ListItem_TBL = TkCore::INTERP.create_table
-  ListItem_ID = ['item:'.freeze, '00000'.taint].freeze
+  ListItem_ID = ['bw:item'.freeze, '00000'.taint].freeze
 
   TkCore::INTERP.init_ip_env{ ListItem_TBL.clear }
 

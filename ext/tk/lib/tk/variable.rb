@@ -96,11 +96,44 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     end
   end
 
+  #
+  # default_value is available only when the variable is an assoc array. 
+  #
+  def default_value(val=nil, &b)
+    if b
+      @def_default = :proc
+      @default_val = proc(&b)
+    else
+      @def_default = :val
+      @default_val = val
+    end
+    self
+  end
+  def default_value=(val)
+    @def_default = :val
+    @default_val = val
+    self
+  end
+  def default_proc(cmd = Proc.new)
+    @def_default = :proc
+    @default_val = cmd
+    self
+  end
+
+  def undef_default
+    @default_val = nil
+    @def_default = false
+    self
+  end
+
   def initialize(val="")
     # @id = Tk_VARIABLE_ID.join('')
     @id = Tk_VARIABLE_ID.join(TkCore::INTERP._ip_id_)
     Tk_VARIABLE_ID[1].succ!
     TkVar_ID_TBL[@id] = self
+
+    @def_default = false
+    @default_val = nil
 
     @trace_var  = nil
     @trace_elem = nil
@@ -290,7 +323,19 @@ if USE_TCLs_SET_VARIABLE_FUNCTIONS
 
   def [](*idxs)
     index = idxs.collect{|idx| _get_eval_string(idx, true)}.join(',')
-    _fromUTF8(INTERP._get_global_var2(@id, index))
+    begin
+      _fromUTF8(INTERP._get_global_var2(@id, index))
+    rescue => e
+      case @def_default
+      when :proc
+	@default_val.call(self, *idxs)
+      when :val
+	@default_val
+      else
+	fail e
+      end
+    end
+    #_fromUTF8(INTERP._get_global_var2(@id, index))
     #_fromUTF8(INTERP._get_global_var2(@id, _toUTF8(_get_eval_string(index))))
     #_fromUTF8(INTERP._get_global_var2(@id, _get_eval_string(index, true)))
   end
@@ -389,7 +434,19 @@ else
 
   def [](*idxs)
     index = idxs.collect{|idx| _get_eval_string(idx)}.join(',')
-    INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index))
+    begin
+      INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index))
+    rescue => e
+      case @def_default
+      when :proc
+	@default_val.call(self, *idxs)
+      when :val
+	@default_val
+      else
+	fail e
+      end
+    end
+    #INTERP._eval(Kernel.format('global %s; set %s(%s)', @id, @id, index))
     #INTERP._eval(Kernel.format('global %s; set %s(%s)', 
     #                           @id, @id, _get_eval_string(index)))
     #INTERP._eval(Kernel.format('set %s(%s)', @id, _get_eval_string(index)))

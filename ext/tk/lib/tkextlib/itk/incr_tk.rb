@@ -47,6 +47,10 @@ module Tk
 	'::itk::' << self::WidgetClassName
       end
 
+      def __destroy_hook__
+	Tk::Itk::Component::ComponentID_TBL.delete(self.path)
+      end
+
       #### [incr Tk] public methods
       def component
 	simplelist(tk_send('component'))
@@ -129,7 +133,7 @@ module Tk
       end
 
       ComponentID_TBL = TkCore::INTERP.create_table
-      Itk_Component_ID = ['itk_component'.freeze, '00000'.taint].freeze
+      Itk_Component_ID = ['itk:component'.freeze, '00000'.taint].freeze
 
       TkCore::INTERP.init_ip_env{ ComponentID_TBL.clear }
 

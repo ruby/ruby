@@ -144,6 +144,30 @@ module TkMenuSpec
   end
   private :_create_menu
 
+  def _use_menubar?(parent)
+    use_menubar = false
+    if parent.kind_of?(TkRoot) || parent.kind_of?(TkToplevel)
+      return true 
+    else
+      begin
+	parent.cget('menu')
+	return true 
+      rescue
+      end
+    end
+    false
+  end
+  private :_use_menubar?
+
+  def _create_menu_for_menubar(parent)
+    unless (mbar = parent.menu).kind_of?(TkMenu)
+      mbar = TkMenu.new(parent, :tearoff=>false)
+      parent.menu(mbar)
+    end
+    mbar
+  end
+  private :_create_menu_for_menubar
+
   def _create_menubutton(parent, menu_info, tearoff=false, default_opts = nil)
     btn_info = menu_info[0]
 
@@ -160,12 +184,10 @@ module TkMenuSpec
 
     tearoff = keys.delete('tearoff') if keys.key?('tearoff')
 
-    if parent.kind_of?(TkRoot) || parent.kind_of?(TkToplevel)
+    if _use_menubar?(parent)
       # menubar by menu entries
-      unless (mbar = parent.menu).kind_of?(TkMenu)
-	mbar = TkMenu.new(parent, :tearoff=>false)
-	parent.menu(mbar)
-      end
+
+      mbar = _create_menu_for_menubar(parent)
 
       menu_name = nil
 

@@ -29,7 +29,7 @@ rescue => e
   err << "\n  ['" << target << "'] "  << e.class.name << ' : ' << e.message
 end
 
-# package:: style
+# package:: cursor
 target = 'tkextlib/tcllib/style'
 begin
   require target
@@ -40,6 +40,8 @@ end
 # autoload
 module Tk
   module Tcllib
+    TkComm::TkExtlibAutoloadModule.unshift(self)
+
     # package:: ctext
     autoload :CText,      'tkextlib/tcllib/ctext'
 
@@ -49,6 +51,7 @@ module Tk
 
     # package:: ipentry
     autoload :IP_Entry,   'tkextlib/tcllib/ip_entry'
+    autoload :IPEntry,    'tkextlib/tcllib/ip_entry'
 
     # package:: Plotchart
     autoload :Plotchart,  'tkextlib/tcllib/plotchart'
@@ -58,7 +61,6 @@ module Tk
   end
 end
 
-unless err.empty?
+if $VERBOSE && !err.empty?
   warn("Warning: some sub-packages are failed to require : " + err)
 end
-

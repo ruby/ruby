@@ -18,6 +18,8 @@ TkPackage.require('vu')
 # autoload
 module Tk
   module Vu
+    TkComm::TkExtlibAutoloadModule.unshift(self)
+
     def self.package_version
       begin
 	TkPackage.require('vu')

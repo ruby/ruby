@@ -87,7 +87,13 @@ class Tk::Iwidgets::Entryfield
   def value
     _fromUTF8(tk_send_without_enc('get'))
   end
+  def value= (val)
+    tk_send_without_enc('delete', 0, 'end')
+    tk_send_without_enc('insert', 0, _get_eval_enc_str(val))
+    val
+  end
   alias get value
+  alias set value=
 
   def cursor=(index)
     tk_send_without_enc('icursor', index)

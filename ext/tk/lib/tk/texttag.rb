@@ -20,14 +20,14 @@ class TkTextTag<TkObject
   end
 
   def initialize(parent, *args)
-    unless parent.kind_of?(TkText)
-      fail ArguemntError, "expect TkText for 1st argument"
-    end
+    #unless parent.kind_of?(TkText)
+    #  fail ArguemntError, "expect TkText for 1st argument"
+    #end
     @parent = @t = parent
     @tpath = parent.path
     # @path = @id = Tk_TextTag_ID.join('')
     @path = @id = Tk_TextTag_ID.join(TkCore::INTERP._ip_id_)
-    TTagID_TBL[@id] = self
+    # TTagID_TBL[@id] = self
     TTagID_TBL[@tpath] = {} unless TTagID_TBL[@tpath]
     TTagID_TBL[@tpath][@id] = self
     Tk_TextTag_ID[1].succ!
@@ -221,9 +221,9 @@ class TkTextNamedTag<TkTextTag
   end
 
   def initialize(parent, name, *args)
-    unless parent.kind_of?(TkText)
-      fail ArguemntError, "expect TkText for 1st argument"
-    end
+    #unless parent.kind_of?(TkText)
+    #  fail ArguemntError, "expect TkText for 1st argument"
+    #end
     @parent = @t = parent
     @tpath = parent.path
     @path = @id = name

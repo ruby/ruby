@@ -6,9 +6,9 @@ require 'tk/text'
 
 class TkTextImage<TkObject
   def initialize(parent, index, keys)
-    unless parent.kind_of?(TkText)
-      fail ArguemntError, "expect TkText for 1st argument"
-    end
+    #unless parent.kind_of?(TkText)
+    #  fail ArguemntError, "expect TkText for 1st argument"
+    #end
     @t = parent
     if index == 'end'
       @path = TkTextMark.new(@t, tk_call(@t.path, 'index', 'end - 1 chars'))

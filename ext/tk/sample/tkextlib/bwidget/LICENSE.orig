@@ -5,7 +5,7 @@
   ###  Original Tcl source files are not include in this directry,   ###
   ###  because of all of them are rewrited to Ruby files.            ###
   ###  However, the bitmap data files ('bwidgtet.xbm' and 'x1.xbm')  ###
-  ###  included in this directory are referd from BWidget source     ###
+  ###  included in this directory are quoted from BWidget source     ###
   ###  archive. So, those bitmaps are under the following license.   ###
   ######################################################################
 

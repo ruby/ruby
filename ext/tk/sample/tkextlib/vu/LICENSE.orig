@@ -4,7 +4,7 @@
   >>>  Original Tcl source files are not include in this directry,        <<<
   >>>  because of all of them are rewrited to Ruby files.                 <<<
   >>>  However, the bitmap data file included in this directory is the    <<<
-  >>>  same file of vu extension. , the bitmap data file is under the     <<<
+  >>>  same file of vu extension. So, the bitmap data file is under the   <<<
   >>>  following license.                                                 <<<
   >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>><<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 

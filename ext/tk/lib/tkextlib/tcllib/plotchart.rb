@@ -221,7 +221,10 @@ module Tk::Tcllib::Plotchart
   class XYPlot < TkCanvas
     include ChartMethod
 
-    TkCommandNames = ['::Plotchart::createXYPlot'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze, 
+      '::Plotchart::createXYPlot'.freeze
+    ].freeze
 
     def initialize(*args) # args := ([parent,] xaxis, yaxis [, keys])
                           # xaxis := Array of [minimum, maximum, stepsize]
@@ -248,11 +251,15 @@ module Tk::Tcllib::Plotchart
     end
 
     def _create_chart
-      p self.class::TkCommandNames[0] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
 			  array2tk_list(@xaxis), array2tk_list(@yaxis))
     end
     private :_create_chart
+
+    def __destroy_hook__
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+    end
 
     def plot(series, x, y)
       tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(series), x, y)
@@ -271,14 +278,20 @@ module Tk::Tcllib::Plotchart
 
   ############################
   class Stripchart < XYPlot
-    TkCommandNames = ['::Plotchart::createStripchart'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze, 
+      '::Plotchart::createStripchart'.freeze
+    ].freeze
   end
 
   ############################
   class PolarPlot < TkCanvas
     include ChartMethod
 
-    TkCommandNames = ['::Plotchart::createPolarplot'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze, 
+      '::Plotchart::createPolarplot'.freeze
+    ].freeze
 
     def initialize(*args) # args := ([parent,] radius_data [, keys])
                           # radius_data := Array of [maximum_radius, stepsize]
@@ -302,11 +315,15 @@ module Tk::Tcllib::Plotchart
     end
 
     def _create_chart
-      p self.class::TkCommandNames[0] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
 			  array2tk_list(@radius_data))
     end
     private :_create_chart
+
+    def __destroy_hook__
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+    end
 
     def plot(series, radius, angle)
       tk_call_without_enc(@chart, 'plot', _get_eval_enc_str(series), 
@@ -329,7 +346,10 @@ module Tk::Tcllib::Plotchart
   class IsometricPlot < TkCanvas
     include ChartMethod
 
-    TkCommandNames = ['::Plotchart::createIsometricPlot'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze, 
+      '::Plotchart::createIsometricPlot'.freeze
+    ].freeze
 
     def initialize(*args) # args := ([parent,] xaxis, yaxis, [, step] [, keys])
                           # xaxis := Array of [minimum, maximum]
@@ -369,8 +389,8 @@ module Tk::Tcllib::Plotchart
     end
 
     def _create_chart
-      p self.class::TkCommandNames[0] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
 			  array2tk_list(@xaxis), array2tk_list(@yaxis), 
 			  @stepsize)
     end
@@ -406,7 +426,10 @@ module Tk::Tcllib::Plotchart
   class Plot3D < TkCanvas
     include ChartMethod
 
-    TkCommandNames = ['::Plotchart::create3DPlot'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze, 
+      '::Plotchart::create3DPlot'.freeze
+    ].freeze
 
     def initialize(*args) # args := ([parent,] xaxis, yaxis, zaxis [, keys])
                           # xaxis := Array of [minimum, maximum, stepsize]
@@ -436,8 +459,8 @@ module Tk::Tcllib::Plotchart
     end
 
     def _create_chart
-      p self.class::TkCommandNames[0] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
 			  array2tk_list(@xaxis), 
 			  array2tk_list(@yaxis), 
 			  array2tk_list(@zaxis))
@@ -478,7 +501,10 @@ module Tk::Tcllib::Plotchart
   class Piechart < TkCanvas
     include ChartMethod
 
-    TkCommandNames = ['::Plotchart::createPiechart'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze, 
+      '::Plotchart::createPiechart'.freeze
+    ].freeze
 
     def initialize(*args) # args := ([parent] [, keys])
       if args[0].kind_of?(TkCanvas)
@@ -491,8 +517,8 @@ module Tk::Tcllib::Plotchart
     end
 
     def _create_chart
-      p self.class::TkCommandNames[0] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[0], @path)
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path)
     end
     private :_create_chart
 
@@ -506,7 +532,10 @@ module Tk::Tcllib::Plotchart
   class Barchart < TkCanvas
     include ChartMethod
 
-    TkCommandNames = ['::Plotchart::createBarchart'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze, 
+      '::Plotchart::createBarchart'.freeze
+    ].freeze
 
     def initialize(*args) 
       # args := ([parent,] xlabels, ylabels [, series] [, keys])
@@ -549,12 +578,16 @@ module Tk::Tcllib::Plotchart
     end
 
     def _create_chart
-      p self.class::TkCommandNames[0] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
 			  array2tk_list(@xlabels), array2tk_list(@ylabels), 
 			  @series_size)
     end
     private :_create_chart
+
+    def __destroy_hook__
+      Tk::Tcllib::Plotchart::PlotSeries::SeriesID_TBL.delete(@path)
+    end
 
     def plot(series, dat, col=None)
       tk_call_without_enc(@chart, 'plot', series, dat, col)
@@ -573,14 +606,20 @@ module Tk::Tcllib::Plotchart
 
   ############################
   class HorizontalBarchart < Barchart
-    TkCommandNames = ['::Plotchart::createHorizontalBarchart'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze, 
+      '::Plotchart::createHorizontalBarchart'.freeze
+    ].freeze
   end
 
   ############################
   class Timechart < TkCanvas
     include ChartMethod
 
-    TkCommandNames = ['::Plotchart::createTimechart'.freeze].freeze
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::createTimechart'.freeze
+    ].freeze
 
     def initialize(*args)
       # args := ([parent,] time_begin, time_end, items [, keys])
@@ -612,8 +651,8 @@ module Tk::Tcllib::Plotchart
     end
 
     def _create_chart
-      p self.class::TkCommandNames[0] if $DEBUG
-      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
 			  @time_begin, @time_end, @items)
     end
     private :_create_chart
@@ -650,7 +689,7 @@ module Tk::Tcllib::Plotchart
       @parent = @chart_obj = chart
       @ppath = @chart_obj.path
       @path = @series = @id = Series_ID.join(TkCore::INTERP._ip_id_)
-      SeriesID_TBL[@id] = self
+      # SeriesID_TBL[@id] = self
       SeriesID_TBL[@ppath] = {} unless SeriesID_TBL[@ppath]
       SeriesID_TBL[@ppath][@id] = self
       Series_ID[1].succ!
