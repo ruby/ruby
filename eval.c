@@ -602,19 +602,12 @@ static struct SCOPE *top_scope;
     ruby_frame = _frame.prev;		\
 } while (0)
 
-struct BLOCKTAG {
-    struct RBasic super;
-    long dst;
-    long flags;
-};
-
 struct BLOCK {
     NODE *var;
     NODE *body;
     VALUE self;
     struct FRAME frame;
     struct SCOPE *scope;
-    struct BLOCKTAG *tag;
     VALUE klass;
     NODE *cref;
     int iter;
@@ -629,26 +622,12 @@ struct BLOCK {
 };
 
 #define BLOCK_D_SCOPE 1
-#define BLOCK_DYNAMIC 2
-#define BLOCK_ORPHAN  4
-#define BLOCK_LAMBDA  8
-#define BLOCK_LEFT   16
+#define BLOCK_LAMBDA  2
 
 static struct BLOCK *ruby_block;
 
-static struct BLOCKTAG*
-new_blktag()
-{
-    NEWOBJ(blktag, struct BLOCKTAG);
-    OBJSETUP(blktag, 0, T_BLKTAG);
-    blktag->dst = 0;
-    blktag->flags = 0;
-    return blktag;
-}
-
 #define PUSH_BLOCK(v,b) do {		\
     struct BLOCK _block;		\
-    _block.tag = new_blktag();		\
     _block.var = v;			\
     _block.body = b;			\
     _block.self = self;			\
@@ -668,12 +647,7 @@ new_blktag()
     ruby_block = &_block
 
 #define POP_BLOCK() \
-   if (_block.tag->flags & (BLOCK_DYNAMIC)) \
-       _block.tag->flags |= BLOCK_ORPHAN; \
-   else	if (!(_block.scope->flags & SCOPE_DONT_RECYCLE)) \
-       rb_gc_force_recycle((VALUE)_block.tag); \
    ruby_block = _block.prev; \
-   _block.tag->flags |= BLOCK_LEFT; \
 } while (0)
 
 struct RVarmap *ruby_dyna_vars;
@@ -845,7 +819,7 @@ struct tag {
     jmp_buf buf;
     struct FRAME *frame;
     struct iter *iter;
-    ID tag;
+    VALUE tag;
     VALUE retval;
     struct SCOPE *scope;
     int dst;
@@ -864,9 +838,12 @@ static struct tag *prot_tag;
     _tag.dst = 0;			\
     prot_tag = &_tag
 
-#define PROT_NONE   0
-#define PROT_FUNC   -1
-#define PROT_THREAD -2
+#define PROT_NONE   Qfalse	/* 0 */
+#define PROT_THREAD Qtrue	/* 2 */
+#define PROT_FUNC   INT2FIX(0)	/* 1 */
+#define PROT_ITER   INT2FIX(1)	/* 3 */
+#define PROT_CALL   INT2FIX(2)	/* 5 */
+#define PROT_PCALL  INT2FIX(3)	/* 7 */
 
 #define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, setjmp(prot_tag->buf))
 
@@ -877,14 +854,10 @@ static struct tag *prot_tag;
 } while (0)
 
 #define POP_TAG()			\
-    if (_tag.prev)			\
-        _tag.prev->retval = _tag.retval;\
     prot_tag = _tag.prev;		\
 } while (0)
 
-#define POP_TMPTAG()			\
-    prot_tag = _tag.prev;		\
-} while (0)
+#define TAG_DST(t) (_tag.dst == (VALUE)_tag.scope)
 
 #define TAG_RETURN	0x1
 #define TAG_BREAK	0x2
@@ -1561,11 +1534,11 @@ jump_tag_but_local_jump(state)
       case TAG_RETURN:
 	localjump_error("unexpected return", val, state);
 	break;
-      case TAG_NEXT:
-	localjump_error("unexpected next", val, state);
-	break;
       case TAG_BREAK:
 	localjump_error("unexpected break", val, state);
+	break;
+      case TAG_NEXT:
+	localjump_error("unexpected next", val, state);
 	break;
       case TAG_REDO:
 	localjump_error("unexpected redo", Qnil, state);
@@ -1574,9 +1547,9 @@ jump_tag_but_local_jump(state)
 	localjump_error("retry outside of rescue clause", Qnil, state);
 	break;
       default:
-	JUMP_TAG(state);
 	break;
     }
+    JUMP_TAG(state);
 }
 
 VALUE
@@ -2163,6 +2136,12 @@ is_defined(self, node, buf)
 	}
 	break;
 
+      case NODE_COLON3:
+	if (rb_const_defined_from(rb_cObject, node->nd_mid)) {
+	    return "constant";
+	}
+	break;
+
       case NODE_NTH_REF:
 	if (RTEST(rb_reg_nth_defined(node->nd_nth, MATCH_DATA))) {
 	    sprintf(buf, "$%d", (int)node->nd_nth);
@@ -2279,7 +2258,7 @@ call_trace_func(event, node, self, id, klass)
 		    Qundef, 0);
     }
     if (raised) thread_set_raised();
-    POP_TMPTAG();		/* do not propagate retval */
+    POP_TAG();
     POP_FRAME();
 
     tracing = 0;
@@ -2434,12 +2413,12 @@ class_prefix(self, cpath)
     }
 }
 
-static void return_check _((void));
 #define return_value(v) do {\
   if ((prot_tag->retval = (v)) == Qundef) {\
     prot_tag->retval = Qnil;\
   }\
 } while (0)
+static void localjump_destination _((int, struct SCOPE*, VALUE));
 
 static VALUE
 rb_eval(self, n)
@@ -2508,7 +2487,7 @@ rb_eval(self, n)
 
 	/* node for speed-up(top-level loop for -n/-p) */
       case NODE_OPT_N:
-	PUSH_TAG(PROT_NONE);
+	PUSH_TAG(PROT_ITER);
 	switch (state = EXEC_TAG()) {
 	  case 0:
 	  opt_n_next:
@@ -2640,7 +2619,7 @@ rb_eval(self, n)
 	RETURN(Qnil);
 
       case NODE_WHILE:
-	PUSH_TAG(PROT_NONE);
+	PUSH_TAG(PROT_ITER);
 	result = Qnil;
 	switch (state = EXEC_TAG()) {
 	  case 0:
@@ -2672,7 +2651,7 @@ rb_eval(self, n)
 	RETURN(result);
 
       case NODE_UNTIL:
-	PUSH_TAG(PROT_NONE);
+	PUSH_TAG(PROT_ITER);
 	result = Qnil;
 	switch (state = EXEC_TAG()) {
 	  case 0:
@@ -2710,7 +2689,7 @@ rb_eval(self, n)
       case NODE_ITER:
       case NODE_FOR:
 	{
-	    PUSH_TAG(PROT_FUNC);
+	    PUSH_TAG(PROT_ITER);
 	    PUSH_BLOCK(node->nd_var, node->nd_body);
 
 	    state = EXEC_TAG();
@@ -2733,30 +2712,19 @@ rb_eval(self, n)
 		}
 		POP_ITER();
 	    }
-	    else {
-		if (_block.tag->dst == state) {
-		    state &= TAG_MASK;
-		    if (state == TAG_RETURN || state == TAG_BREAK) {
-			result = prot_tag->retval;
-		    }
-		}
-		if (state == TAG_RETRY) {
-		    state = 0;
-		    goto iter_retry;
-		}
+	    else if (state == TAG_BREAK && TAG_DST()) {
+		result = prot_tag->retval;
+		state = 0;
+	    }
+	    else if (state == TAG_RETRY) {
+		state = 0;
+		goto iter_retry;
 	    }
 	    POP_BLOCK();
 	    POP_TAG();
 	    switch (state) {
 	      case 0:
 		break;
-
-	      case TAG_BREAK:
-		break;
-
-	      case TAG_RETURN:
-		return_value(result);
-		/* fall through */
 	      default:
 		JUMP_TAG(state);
 	    }
@@ -2764,8 +2732,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_BREAK:
-	return_value(rb_eval(self, node->nd_stts));
-	JUMP_TAG(TAG_BREAK);
+	localjump_destination(TAG_BREAK, ruby_scope, rb_eval(self, node->nd_stts));
 	break;
 
       case NODE_NEXT:
@@ -2938,9 +2905,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_RETURN:
-	return_value(rb_eval(self, node->nd_stts));
-	return_check();
-	JUMP_TAG(TAG_RETURN);
+	localjump_destination(TAG_RETURN, ruby_scope, rb_eval(self, node->nd_stts));
 	break;
 
       case NODE_ARGSCAT:
@@ -3048,13 +3013,14 @@ rb_eval(self, n)
 	{
 	    struct FRAME frame;
 	    NODE *saved_cref = 0;
+	    int jump_chain = Qfalse;
 
 	    frame = *ruby_frame;
 	    frame.tmp = ruby_frame;
 	    ruby_frame = &frame;
 
 	    PUSH_SCOPE();
-	    PUSH_TAG(PROT_NONE);
+	    PUSH_TAG(PROT_PCALL);
 	    if (node->nd_rval) {
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)node->nd_rval;
@@ -3073,12 +3039,24 @@ rb_eval(self, n)
 	    if ((state = EXEC_TAG()) == 0) {
 		result = rb_eval(self, node->nd_next);
 	    }
+	    else if (TAG_DST()) {
+		result = prot_tag->retval;
+		jump_chain = Qtrue;
+	    }
 	    POP_TAG();
 	    POP_SCOPE();
 	    ruby_frame = frame.tmp;
 	    if (saved_cref)
 		ruby_cref = saved_cref;
-	    if (state) JUMP_TAG(state);
+	    switch (state) {
+	      case 0:
+		break;
+	      case TAG_RETURN:
+	      case TAG_BREAK:
+		localjump_destination(state, ruby_scope, result);
+	      default:
+		JUMP_TAG(state);
+	    }
 	}
 	break;
 
@@ -3271,7 +3249,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_COLON3:
-	result = rb_const_get_at(rb_cObject, node->nd_mid);
+	result = rb_const_get_from(rb_cObject, node->nd_mid);
 	break;
 
       case NODE_NTH_REF:
@@ -4024,6 +4002,37 @@ rb_f_block_given_p()
     return Qfalse;
 }
 
+static VALUE rb_eThreadError;
+
+static void
+localjump_destination(state, scope, retval)
+    int state;
+    struct SCOPE *scope;
+    VALUE retval;
+{
+    struct tag *tt = prot_tag;
+    VALUE tag = (state == TAG_BREAK) ? PROT_ITER : PROT_FUNC;
+
+    if (retval == Qundef) retval = Qnil;
+    while (tt) {
+	if (tt->tag == PROT_PCALL ||
+	    (tt->tag == PROT_CALL || tt->tag == tag) && tt->scope == scope) {
+	    tt->dst = (VALUE)scope;
+	    tt->retval = retval;
+	    break;
+	}
+	if (tt->tag == PROT_THREAD) {
+	    rb_raise(rb_eThreadError, "%s jump can't across threads",
+		     (state == TAG_BREAK) ? "break" : "return");
+	}
+	tt = tt->prev;
+    }
+    if (!tt) {
+	jump_tag_but_local_jump(state);
+    }
+    JUMP_TAG(state);
+}
+
 static VALUE
 rb_yield_0(val, self, klass, flags, avalue)
     VALUE val, self, klass;	/* OK */
@@ -4163,12 +4172,6 @@ rb_yield_0(val, self, klass, flags, avalue)
 	    state = 0;
 	    result = prot_tag->retval;
 	    break;
-	  case TAG_BREAK:
-	  case TAG_RETURN:
-	    state |= (serial++ << 8);
-	    state |= 0x10;
-	    block->tag->dst = state;
-	    break;
 	  default:
 	    break;
 	}
@@ -4201,17 +4204,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     ruby_scope = old_scope;
     scope_vmode = old_vmode;
     ruby_current_node = cnode;
-    if (state) {
-	if (!block->tag) {
-	    switch (state & TAG_MASK) {
-	      case TAG_BREAK:
-	      case TAG_RETURN:
-		jump_tag_but_local_jump(state & TAG_MASK);
-		break;
-	    }
-	}
-	JUMP_TAG(state);
-    }
+    if (state) JUMP_TAG(state);
     return result;
 }
 
@@ -4430,24 +4423,20 @@ rb_iterate(it_proc, data1, bl_proc, data2)
 
     PUSH_ITER(ITER_PRE);
     PUSH_BLOCK(0, node);
-    PUSH_TAG(PROT_NONE);
 
+    PUSH_TAG(PROT_ITER);
     state = EXEC_TAG();
     if (state == 0) {
   iter_retry:
 	retval = (*it_proc)(data1);
     }
-    else {
-	if (ruby_block->tag->dst == state) {
-	    state &= TAG_MASK;
-	    if (state == TAG_RETURN || state == TAG_BREAK) {
-		retval = prot_tag->retval;
-	    }
-	}
-	if (state == TAG_RETRY) {
-	    state = 0;
-	    goto iter_retry;
-	}
+    else if (state == TAG_BREAK && TAG_DST()) {
+	retval = prot_tag->retval;
+	state = 0;
+    }
+    else if (state == TAG_RETRY) {
+	state = 0;
+	goto iter_retry;
     }
     POP_TAG();
     POP_BLOCK();
@@ -4456,13 +4445,6 @@ rb_iterate(it_proc, data1, bl_proc, data2)
     switch (state) {
       case 0:
 	break;
-
-      case TAG_BREAK:
-	break;
-
-      case TAG_RETURN:
-	return_value(retval);
-	/* fall through */
       default:
 	JUMP_TAG(state);
     }
@@ -4607,7 +4589,6 @@ rb_ensure(b_proc, data1, e_proc, data2)
     retval = prot_tag ? prot_tag->retval : Qnil;	/* save retval */
     (*e_proc)(data2);
     if (prot_tag) return_value(retval);
-
     if (state) JUMP_TAG(state);
     return result;
 }
@@ -5051,7 +5032,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		}
 		result = rb_eval(recv, body);
 	    }
-	    else if (state == TAG_RETURN) {
+	    else if (state == TAG_RETURN && TAG_DST()) {
 		result = prot_tag->retval;
 		state = 0;
 	    }
@@ -5067,10 +5048,13 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	      case 0:
 		break;
 
+	      case TAG_BREAK:
+	      case TAG_RETURN:
+		JUMP_TAG(state);
+		break;
+
 	      case TAG_RETRY:
-		if (rb_block_given_p()) {
-                   JUMP_TAG(state);
-		}
+		if (rb_block_given_p()) JUMP_TAG(state);
 		/* fall through */
 	      default:
 		jump_tag_but_local_jump(state);
@@ -5481,13 +5465,6 @@ eval(self, src, scope, file, line)
            scope_dup(ruby_scope);
 	   for (tag=prot_tag; tag; tag=tag->prev) {
 	       scope_dup(tag->scope);
-	   }
-	   if (ruby_block) {
-	       struct BLOCK *block = ruby_block;
-	       while (block) {
-		   block->tag->flags |= BLOCK_DYNAMIC;
-		   block = block->prev;
-	       }
 	   }
 	   for (vars = ruby_dyna_vars; vars; vars = vars->next) {
 	       FL_SET(vars, DVAR_DONT_RECYCLE);
@@ -6708,7 +6685,6 @@ blk_mark(data)
 	rb_gc_mark((VALUE)data->self);
 	rb_gc_mark((VALUE)data->dyna_vars);
 	rb_gc_mark((VALUE)data->cref);
-	rb_gc_mark((VALUE)data->tag);
 	rb_gc_mark(data->wrapper);
 	rb_gc_mark(data->block_obj);
 	data = data->prev;
@@ -6755,7 +6731,6 @@ blk_copy_prev(block)
 	    tmp->frame.flags |= FRAME_MALLOC;
 	}
 	scope_dup(tmp->scope);
-	tmp->tag->flags |= BLOCK_DYNAMIC;
 
 	for (vars = tmp->dyna_vars; vars; vars = vars->next) {
 	    if (FL_TEST(vars, DVAR_DONT_RECYCLE)) break;
@@ -6840,8 +6815,6 @@ rb_f_binding(self)
     else {
 	data->prev = 0;
     }
-    data->flags |= BLOCK_DYNAMIC;
-    data->tag->flags |= BLOCK_DYNAMIC;
 
     for (p = data; p; p = p->prev) {
 	for (vars = p->dyna_vars; vars; vars = vars->next) {
@@ -6940,8 +6913,6 @@ proc_alloc(klass, proc)
     else {
 	data->prev = 0;
     }
-    data->flags |= BLOCK_DYNAMIC;
-    data->tag->flags |= BLOCK_DYNAMIC;
 
     for (p = data; p; p = p->prev) {
 	for (vars = p->dyna_vars; vars; vars = vars->next) {
@@ -6996,8 +6967,7 @@ static int
 block_orphan(data)
     struct BLOCK *data;
 {
-    if ((data->tag->flags & BLOCK_ORPHAN) &&
-	(data->scope->flags & SCOPE_NOSTACK)) {
+    if (data->scope->flags & SCOPE_NOSTACK) {
 	return 1;
     }
     if (data->orig_thread != rb_thread_current()) {
@@ -7014,8 +6984,8 @@ proc_invoke(proc, args, self, klass)
     struct BLOCK * volatile old_block;
     struct BLOCK _block;
     struct BLOCK *data;
-    volatile VALUE result = Qnil;
-    int state, incoming_state;
+    volatile VALUE result = Qundef;
+    int state;
     volatile int orphan;
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
@@ -7043,21 +7013,17 @@ proc_invoke(proc, args, self, klass)
 
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG(pcall ? PROT_PCALL : PROT_CALL);
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
 	result = rb_yield_0(args, self, self!=Qundef?CLASS_OF(self):0, pcall, Qtrue);
     }
-    POP_TAG();
-
-    POP_ITER();
-    incoming_state = state;
-    if (orphan || pcall ||
-	((ruby_block->tag->flags & BLOCK_LEFT) &&
-	 ruby_block->tag->dst == state)) {
-	state &= TAG_MASK;
+    else if (TAG_DST()) {
+	result = prot_tag->retval;
     }
+    POP_TAG();
+    POP_ITER();
     ruby_block = old_block;
     ruby_wrapper = old_wrapper;
     ruby_dyna_vars = old_dvars;
@@ -7073,18 +7039,15 @@ proc_invoke(proc, args, self, klass)
 	/* fall through */
       case TAG_BREAK:
       case TAG_RETURN:
-	if (pcall) {
-	    result = prot_tag->retval;
-	    break;
-	}
-	else if (orphan) {	/* orphan block */
+	if (pcall) break;
+	if (orphan) {		/* orphan block */
 	    char mesg[32];
 	    snprintf(mesg, sizeof mesg, "%s from proc-closure",
 		     state == TAG_BREAK ? "break" : "return");
 	    localjump_error(mesg, prot_tag->retval, state);
 	}
-	else if (state == incoming_state) {
-	    ruby_block->tag->dst = incoming_state;
+	if (result != Qundef) {
+	    localjump_destination(state, ruby_scope, result);
 	}
       default:
 	JUMP_TAG(state);
@@ -7147,7 +7110,7 @@ proc_eq(self, other)
     if (CLASS_OF(self) != CLASS_OF(other)) return Qfalse;
     Data_Get_Struct(self, struct BLOCK, data);
     Data_Get_Struct(other, struct BLOCK, data2);
-    if (data->tag == data2->tag) return Qtrue;
+    if (data->body == data2->body) return Qtrue;
     return Qfalse;
 }
 
@@ -7166,12 +7129,12 @@ proc_to_s(self, other)
     if ((node = data->frame.node) || (node = data->body)) {
 	len += strlen(node->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
 	str = rb_str_new(0, len);
-	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->tag,
+	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
 		node->nd_file, nd_line(node));
     }
     else {
 	str = rb_str_new(0, len);
-	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx>", cname, w, (VALUE)data->tag);
+	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
     }
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
@@ -7262,7 +7225,7 @@ block_pass(self, node)
     PUSH_ITER(ITER_PRE);
     ruby_frame->iter = ITER_PRE;
 
-    PUSH_TAG(PROT_NONE);
+    PUSH_TAG(PROT_ITER);
     state = EXEC_TAG();
     if (state == 0) {
       retry:
@@ -7271,26 +7234,11 @@ block_pass(self, node)
 	    ruby_safe_level = safe;
 	result = rb_eval(self, node->nd_iter);
     }
-    if (_block.tag->dst == state) {
-	if (orphan) {
-	    state &= TAG_MASK;
-	}
-	else {
-	    struct BLOCK *ptr = old_block;
-
-	    while (ptr) {
-		if (ptr->scope == _block.scope) {
-		    ptr->tag->dst = state;
-		    break;
-		}
-		ptr = ptr->prev;
-	    }
-	    if (!ptr) {
-		state &= TAG_MASK;
-	    }
-	}
+    else if (state == TAG_BREAK && TAG_DST()) {
+	result = prot_tag->retval;
+	state = 0;
     }
-    if (state == TAG_RETRY) {
+    else if (state == TAG_RETRY) {
 	state = 0;
 	goto retry;
     }
@@ -7301,9 +7249,6 @@ block_pass(self, node)
 
     switch (state) {/* escape from orphan block */
       case 0:
-	break;
-      case TAG_BREAK:
-	result = prot_tag->retval;
 	break;
       case TAG_RETURN:
 	if (orphan) {
@@ -7832,8 +7777,6 @@ win32_set_exception_list(p)
 # error unsupported platform
 #endif
 #endif
-
-static VALUE rb_eThreadError;
 
 int rb_thread_pending = 0;
 
@@ -9932,14 +9875,6 @@ rb_callcc(self)
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
-    if (ruby_block) {
-	struct BLOCK *block = ruby_block;
-
-	while (block) {
-	    block->tag->flags |= BLOCK_DYNAMIC;
-	    block = block->prev;
-	}
-    }
     th->thread = curr_thread->thread;
 
     for (vars = th->dyna_vars; vars; vars = vars->next) {
@@ -10160,15 +10095,14 @@ rb_f_catch(dmy, tag)
     VALUE dmy, tag;
 {
     int state;
-    ID t;
     VALUE val = Qnil;		/* OK */
 
-    t = rb_to_id(tag);
-    PUSH_TAG(t);
+    tag = ID2SYM(rb_to_id(tag));
+    PUSH_TAG(tag);
     if ((state = EXEC_TAG()) == 0) {
 	val = rb_yield_0(tag, 0, 0, Qfalse, Qfalse);
     }
-    else if (state == TAG_THROW && t == prot_tag->dst) {
+    else if (state == TAG_THROW && tag == prot_tag->dst) {
 	val = prot_tag->retval;
 	state = 0;
     }
@@ -10180,9 +10114,9 @@ rb_f_catch(dmy, tag)
 
 static VALUE
 catch_i(tag)
-    ID tag;
+    VALUE tag;
 {
-    return rb_funcall(Qnil, rb_intern("catch"), 1, ID2SYM(tag));
+    return rb_funcall(Qnil, rb_intern("catch"), 1, tag);
 }
 
 VALUE
@@ -10191,7 +10125,7 @@ rb_catch(tag, func, data)
     VALUE (*func)();
     VALUE data;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))catch_i, rb_intern(tag), func, data);
+    return rb_iterate((VALUE(*)_((VALUE)))catch_i, ID2SYM(rb_intern(tag)), func, data);
 }
 
 static VALUE
@@ -10200,28 +10134,27 @@ rb_f_throw(argc, argv)
     VALUE *argv;
 {
     VALUE tag, value;
-    ID t;
     struct tag *tt = prot_tag;
 
     rb_scan_args(argc, argv, "11", &tag, &value);
-    t = rb_to_id(tag);
+    tag = ID2SYM(rb_to_id(tag));
 
     while (tt) {
-	if (tt->tag == t) {
-	    tt->dst = t;
+	if (tt->tag == tag) {
+	    tt->dst = tag;
+	    tt->retval = value;
 	    break;
 	}
 	if (tt->tag == PROT_THREAD) {
 	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread 0x%lx",
-		     rb_id2name(t),
+		     rb_id2name(SYM2ID(tag)),
 		     curr_thread);
 	}
 	tt = tt->prev;
     }
     if (!tt) {
-	rb_name_error(t, "uncaught throw `%s'", rb_id2name(t));
+	rb_name_error(SYM2ID(tag), "uncaught throw `%s'", rb_id2name(SYM2ID(tag)));
     }
-    return_value(value);
     rb_trap_restore_mask();
     JUMP_TAG(TAG_THROW);
 #ifndef __GNUC__
@@ -10235,26 +10168,8 @@ rb_throw(tag, val)
     VALUE val;
 {
     VALUE argv[2];
-    ID t = rb_intern(tag);
 
-    argv[0] = ID2SYM(t);
+    argv[0] = ID2SYM(rb_intern(tag));
     argv[1] = val;
     rb_f_throw(2, argv);
-}
-
-static void
-return_check()
-{
-    struct tag *tt = prot_tag;
-
-    while (tt) {
-	if (tt->tag == PROT_FUNC) {
-	    break;
-	}
-	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "return from within thread 0x%lx",
-		     curr_thread);
-	}
-	tt = tt->prev;
-    }
 }

@@ -374,7 +374,7 @@ a,b,*c = loop do break *[*[]]; end; test_ok([a,b,c] == [nil,nil,[]])
 a,b,*c = loop do break *[*[1]]; end; test_ok([a,b,c] == [1,nil,[]])
 a,b,*c = loop do break *[*[1,2]]; end; test_ok([a,b,c] == [1,2,[]])
 
-def r(val); a = yield(); test_ok(a == val); end
+def r(val); a = yield(); test_ok(a == val, 2); end
 r(nil){next}
 r(nil){next nil}
 r(1){next 1}
@@ -396,7 +396,7 @@ r(nil){next *[*[]]}
 r(1){next *[*[1]]}
 r([1,2]){next *[*[1,2]]}
 
-def r(val); *a = yield(); test_ok(a == val); end
+def r(val); *a = yield(); test_ok(a == val, 2); end
 r([nil]){next}
 r([nil]){next nil}
 r([1]){next 1}
@@ -409,7 +409,7 @@ r([[]]){next [*[]]}
 r([[1]]){next [*[1]]}
 r([[1,2]]){next [*[1,2]]}
 
-def r(val); *a = *yield(); test_ok(a == val); end
+def r(val); *a = *yield(); test_ok(a == val, 2); end
 r([nil]){next *nil}
 r([1]){next *1}
 r([nil]){next *[]}
@@ -421,7 +421,7 @@ r([nil]){next *[*[]]}
 r([1]){next *[*[1]]}
 r([1,2]){next *[*[1,2]]}
 
-def r(val); a,b,*c = yield(); test_ok([a,b,c] == val); end
+def r(val); a,b,*c = yield(); test_ok([a,b,c] == val, 2); end
 r([nil,nil,[]]){next}
 r([nil,nil,[]]){next nil}
 r([1,nil,[]]){next 1}
@@ -434,7 +434,7 @@ r([nil,nil,[]]){next [*[]]}
 r([1,nil,[]]){next [*[1]]}
 r([1,2,[]]){next [*[1,2]]}
 
-def r(val); a,b,*c = *yield(); test_ok([a,b,c] == val); end
+def r(val); a,b,*c = *yield(); test_ok([a,b,c] == val, 2); end
 r([nil,nil,[]]){next *nil}
 r([1,nil,[]]){next *1}
 r([nil,nil,[]]){next *[]}

@@ -1207,11 +1207,8 @@ rb_autoload_load(klass, id)
     VALUE file;
 
     file = autoload_delete(klass, id);
-    if (NIL_P(file)) {
-	uninitialized_constant(klass, id);
-    }
-    if (rb_provided(RSTRING(file)->ptr)) {
-	uninitialized_constant(klass, id);
+    if (NIL_P(file) || rb_provided(RSTRING(file)->ptr)) {
+	const_missing(klass, id);
     }
     FL_UNSET(file, FL_TAINT);
     rb_f_require(Qnil, file);
@@ -1268,8 +1265,7 @@ static VALUE
 rb_const_get_0(klass, id, exclude, recurse)
     VALUE klass;
     ID id;
-    int exclude;
-    int recurse;
+    int exclude, recurse;
 {
     VALUE value, tmp;
     int mod_retry = 0;
@@ -1429,28 +1425,11 @@ rb_mod_constants(mod)
     return rb_const_list(rb_mod_const_of(mod, 0));
 }
 
-int
-rb_const_defined_at(klass, id)
+static int
+rb_const_defined_0(klass, id, exclude, recurse)
     VALUE klass;
     ID id;
-{
-    VALUE value;
-
-    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &value)) {
-	if (value == Qundef && NIL_P(autoload_file(klass, id)))
-	    return Qfalse;
-	return Qtrue;
-    }
-    if (klass == rb_cObject) {
-	return rb_const_defined(klass, id);
-    }
-    return Qfalse;
-}
-
-int
-rb_const_defined_from(klass, id)
-    VALUE klass;
-    ID id;
+    int exclude, recurse;
 {
     VALUE tmp = klass, value;
 
@@ -1463,9 +1442,29 @@ rb_const_defined_from(klass, id)
 		return Qfalse;
 	    return Qtrue;
 	}
+	if (!recurse && klass != rb_cObject) break;
 	tmp = RCLASS(tmp)->super;
     }
+    if (!exclude && BUILTIN_TYPE(klass) == T_MODULE) {
+	return rb_const_defined(rb_cObject, id);
+    }
     return Qfalse;
+}
+
+int
+rb_const_defined_at(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_const_defined_0(klass, id, Qtrue, Qfalse);
+}
+
+int
+rb_const_defined_from(klass, id)
+    VALUE klass;
+    ID id;
+{
+    return rb_const_defined_0(klass, id, Qfalse, Qtrue);
 }
 
 int
@@ -1473,20 +1472,7 @@ rb_const_defined(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE tmp = klass, value;
-
-    while (tmp) {
-	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl, id, &value)) {
-	    if (value == Qundef && NIL_P(autoload_file(klass, id)))
-		return Qfalse;
-	    return Qtrue;
-	}
-	tmp = RCLASS(tmp)->super;
-    }
-    if (BUILTIN_TYPE(klass) == T_MODULE) {
-	return rb_const_defined(rb_cObject, id);
-    }
-    return Qfalse;
+    return rb_const_defined_0(klass, id, Qtrue, Qtrue);
 }
 
 static void
