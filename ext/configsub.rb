@@ -3,7 +3,7 @@
 BEGIN {
   CONFIG = {}
 
-  VERSION.scan(/(\d+)\.(\d+)\.(\d+)/) do
+  RUBY_VERSION.scan(/(\d+)\.(\d+)\.(\d+)/) do
     # overridden if config.status has version
     CONFIG['MAJOR'] = $1
     CONFIG['MINOR'] = $2

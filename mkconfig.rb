@@ -6,7 +6,7 @@ rbconfig_rb = ARGV[0] || 'rbconfig.rb'
 srcdir = $srcdir if $srcdir
 File.makedirs(File.dirname(rbconfig_rb), true)
 
-version = VERSION
+version = RUBY_VERSION
 config = open(rbconfig_rb, "w")
 $stdout.reopen(config)
 
@@ -14,8 +14,8 @@ fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TR
 print %[
 module Config
 
-  VERSION == "#{version}" or
-    raise "ruby lib version (#{version}) doesn't match executable version (\#{VERSION})"
+  RUBY_VERSION == "#{version}" or
+    raise "ruby lib version (#{version}) doesn't match executable version (\#{RUBY_VERSION})"
 
 # This file was created by configrb when ruby was built. Any changes
 # made to this file will be lost the next time ruby is built.
@@ -62,7 +62,7 @@ if not has_srcdir
 end
 
 if not has_version
-  VERSION.scan(/(\d+)\.(\d+)\.(\d+)/) {
+  RUBY_VERSION.scan(/(\d+)\.(\d+)\.(\d+)/) {
     print "  CONFIG[\"MAJOR\"] = \"" + $1 + "\"\n"
     print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
     print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"

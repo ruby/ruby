@@ -1,3 +1,7 @@
+Thu May 31 13:30:25 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* mkconfig.rb, ext/configsub.rb: VERSION -> RUBY_VERSION.
+
 Thu May 31 08:00:58 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/dir.h: re-add.
