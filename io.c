@@ -1944,22 +1944,29 @@ fptr_finalize(fptr, noraise)
 
     if (fptr->f2) {
 	f2 = fileno(fptr->f2);
-	while (n2 = 0, fclose(fptr->f2) < 0) {
+	while (n2 = 0, fflush(fptr->f2) < 0) {
 	    n2 = errno;
 	    if (!rb_io_wait_writable(f2)) {
 		break;
 	    }
 	    if (!fptr->f2) break;
 	}
+	if (fclose(fptr->f2) < 0 && n2 == 0) {
+	    n2 = errno;
+	}
 	fptr->f2 = 0;
     }
     if (fptr->f) {
 	f1 = fileno(fptr->f);
-	while (n1 = 0, fclose(fptr->f) < 0) {
+	if ((f2 == -1) && (fptr->mode & FMODE_WBUF)) {
+	    while (n1 = 0, fflush(fptr->f) < 0) {
+		n1 = errno;
+		if (!rb_io_wait_writable(f1)) break;
+		if (!fptr->f) break;
+	    }
+	}
+	if (fclose(fptr->f) < 0 && n1 == 0) {
 	    n1 = errno;
-	    if (f2 != -1 || !(fptr->mode & FMODE_WBUF)) break;
-	    if (!rb_io_wait_writable(f1)) break;
-	    if (!fptr->f) break;
 	}
 	fptr->f = 0;
 	if (n1 == EBADF && f1 == f2) {

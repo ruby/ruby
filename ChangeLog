@@ -1,3 +1,8 @@
+Mon Nov 29 13:37:54 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (fptr_finalize): must not use FILE after fclose().
+	  [ruby-dev:24985]
+
 Mon Nov 29 13:13:13 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (CreateChild): push back the last space before next
@@ -19,7 +24,7 @@ Sun Nov 28 15:57:58 2004  Kouhei Sutou  <kou@cozmixng.org>
 Sun Nov 28 15:51:40 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::NotSetError): added.
-	
+
 	* lib/rss/maker/{1.0,0.9,2.0}.rb: changed RSS Maker to raise
 	  RSS::NotSetError if required values of maker.channel are not
 	  set. [ruby-talk:120061]
@@ -61,12 +66,12 @@ Sat Nov 27 17:43:21 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/{0.9,1.0,2.0,trackback,xml-stylesheet}.rb: added
 	  #setup_maker.
-	
+
 	* test/rss/test_setup_maker_*.rb: added tests for #setup_maker.
 
 	* lib/rss/maker/base.rb(RSS::Maker::Items#max_size=): supported
 	  output item size limitation.
-	
+
 	* sample/rss/blend.rb: added sample for RSS Maker.
 
 Sat Nov 27 17:41:35 2004  Kouhei Sutou  <kou@cozmixng.org>
@@ -81,7 +86,7 @@ Sat Nov 27 17:41:35 2004  Kouhei Sutou  <kou@cozmixng.org>
 Sat Nov 27 17:21:30 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/list_description.rb: untabified.
-	
+
 	* sample/rss/rss_recent.rb: ditto.
 
 Sat Nov 27 09:41:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
