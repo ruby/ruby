@@ -1,3 +1,7 @@
+Tue May  1 17:55:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): lex_state after RESCUE_MOD should be EXPR_BEG.
+
 Tue May  1 03:36:50 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* sample/irb.rb, lib/irb.rb, lib/irb/*, doc/irb/*: Merge from irb

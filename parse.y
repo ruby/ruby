@@ -3624,7 +3624,13 @@ yylex()
 			if (CMDARG_P()) return kDO_BLOCK;
 			return kDO;
 		    }
-		    return kw->id[state != EXPR_BEG];
+		    if (state == EXPR_BEG)
+			return kw->id[0];
+		    else {
+			if (kw->id[0] != kw->id[1])
+			    lex_state = EXPR_BEG;
+			return kw->id[1];
+		    }
 		}
 	    }
 
