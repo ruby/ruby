@@ -3949,7 +3949,10 @@ rb_longjmp(tag, mesg)
 			RSTRING(e)->ptr);
 	}
 	POP_TAG();
-	if (status) {
+	if (status == TAG_FATAL && ruby_errinfo == exception_error) {
+	    ruby_errinfo = Qnil;
+	}
+	else if (status) {
 	    thread_reset_raised();
 	    JUMP_TAG(status);
 	}

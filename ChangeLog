@@ -1,3 +1,8 @@
+Mon Oct 27 19:19:55 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_longjmp): ignore reentering error while warning.
+	  [ruby-dev:21730]
+
 Mon Oct 27 00:23:50 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_ruby): bug fix on Win : hang-up when
