@@ -1,3 +1,10 @@
+Thu Jun 19 22:51:41 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb.rb, lib/drb/drb.rb, lib/drb/eq.rb, 
+	  lib/drb/extserv.rb, lib/drb/extservm.rb, lib/drb/gw.rb, 
+	  lib/drb/invokemethod.rb, lib/drb/observer.rb, 
+	  lib/drb/timeridconv.rb, lib/drb/unix.rb: import drb-2.0.4b3
+
 Thu Jun 19 16:13:54 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* rubytest.rb: add library path to include standard libraries.
