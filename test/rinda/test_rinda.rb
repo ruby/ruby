@@ -20,13 +20,13 @@ module TupleSpaceTestModule
     assert_equal(3, tmpl[2])
     assert(tmpl.match([1,2,3]))
     assert(!tmpl.match([1,nil,3]))
-    
+
     tmpl = Rinda::Template.new([/^rinda/i, nil, :hello])
     assert_equal(3, tmpl.size)
     assert(tmpl.match(['Rinda', 2, :hello]))
     assert(!tmpl.match(['Rinda', 2, Symbol]))
     assert(!tmpl.match([1, 2, :hello]))
-    assert(tmpl.match([/^rinda/i, nil, :hello]))
+    assert(tmpl.match([/^rinda/i, 2, :hello]))
 
     tmpl = Rinda::Template.new([Symbol])
     assert_equal(1, tmpl.size)
@@ -37,8 +37,8 @@ module TupleSpaceTestModule
     tmpl = Rinda::Template.new({"message"=>String, "name"=>String})
     assert_equal(2, tmpl.size)
     assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
-    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
-    assert(tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
+    assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
+    assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     assert_raises(Rinda::InvalidHashTupleKey) do
@@ -46,42 +46,49 @@ module TupleSpaceTestModule
     end
     tmpl = Rinda::Template.new({"name"=>String})
     assert_equal(1, tmpl.size)
-    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
-    assert(tmpl.match({"message"=>:symbol, "name"=>"Foo", "1"=>2}))
-    assert(tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
+    assert(tmpl.match({"name"=>"Foo"}))
+    assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
+    assert(!tmpl.match({"message"=>:symbol, "name"=>"Foo", "1"=>2}))
+    assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
-    tmpl = Rinda::Template.new({"message"=>String, "name"=>String, :size=>2})
+    tmpl = Rinda::Template.new({"message"=>String, "name"=>String})
     assert_equal(2, tmpl.size)
     assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
     assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
     assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
     assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
-    tmpl = Rinda::Template.new({"message"=>String, :size=>2})
+    tmpl = Rinda::Template.new({"message"=>String})
     assert_equal(1, tmpl.size)
-    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
+    assert(tmpl.match({"message"=>"Hello"}))
+    assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
     assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
     assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
-    assert(tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
+    assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     tmpl = Rinda::Template.new({"message"=>String, "name"=>nil})
     assert_equal(2, tmpl.size)
     assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
-    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
-    assert(tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
-    assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
-
-    tmpl = Rinda::Template.new({:size=>2})
-    assert_equal(0, tmpl.size)
-    assert(tmpl.match({"message"=>"Hello", "name"=>"Foo"}))
     assert(!tmpl.match({"message"=>"Hello", "name"=>"Foo", "1"=>2}))
     assert(!tmpl.match({"message"=>"Hi", "name"=>"Foo", "age"=>1}))
-    assert(tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
+    assert(!tmpl.match({"message"=>"Hello", "no_name"=>"Foo"}))
 
     assert_raises(Rinda::InvalidHashTupleKey) do
       @ts.write({:message=>String, "name"=>String})
     end
+
+    @ts.write([1, 2, 3])
+    assert_equal([1, 2, 3], @ts.take([1, 2, 3]))
+
+    @ts.write({'1'=>1, '2'=>2, '3'=>3})
+    assert_equal({'1'=>1, '2'=>2, '3'=>3}, @ts.take({'1'=>1, '2'=>2, '3'=>3}))
+
+    entry = @ts.write(['1'=>1, '2'=>2, '3'=>3])
+    assert_raises(Rinda::RequestExpiredError) do
+      assert_equal({'1'=>1, '2'=>2, '3'=>3}, @ts.read({'1'=>1}, 0))
+    end
+    entry.cancel
   end
 
   def test_00_DRbObject

@@ -69,18 +69,15 @@ module Rinda
 
     private
     def init_with_ary(ary)
-      @tuple_size = ary.size
-      @tuple = Array.new(@tuple_size)
+      @tuple = Array.new(ary.size)
       @tuple.size.times do |i|
 	@tuple[i] = ary[i]
       end
     end
 
     def init_with_hash(hash)
-      @tuple_size = hash[:size]
       @tuple = Hash.new
       hash.each do |k, v|
-        next if k == :size
         raise InvalidHashTupleKey unless String === k
 	@tuple[k] = v
       end
@@ -97,7 +94,7 @@ module Rinda
     def match(tuple)
       return false unless tuple.respond_to?(:size)
       return false unless tuple.respond_to?(:fetch)
-      return false if @tuple_size && (@tuple_size != tuple.size)
+      return false unless self.size == tuple.size
       each do |k, v|
         begin
           it = tuple.fetch(k)
