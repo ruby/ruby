@@ -113,7 +113,8 @@ rb_file_path(obj)
 #endif
 
 static VALUE
-stat_new(st)
+stat_new_0(klass, st)
+    VALUE klass;
     struct stat *st;
 {
     struct stat *nst;
@@ -121,7 +122,14 @@ stat_new(st)
 
     nst = ALLOC(struct stat);
     *nst = *st;
-    return Data_Wrap_Struct(rb_cStat, NULL, free, nst);
+    return Data_Wrap_Struct(klass, NULL, free, nst);
+}
+
+static VALUE
+stat_new(st)
+    struct stat *st;
+{
+    return stat_new_0(rb_cStat, st);
 }
 
 static struct stat*
@@ -318,8 +326,8 @@ rb_stat(file, st)
 }
 
 static VALUE
-rb_file_s_stat(obj, fname)
-    VALUE obj, fname;
+rb_file_s_stat(klass, fname)
+    VALUE klass, fname;
 {
     struct stat st;
 
@@ -327,7 +335,7 @@ rb_file_s_stat(obj, fname)
     if (rb_sys_stat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
-    return stat_new(&st);
+    return stat_new_0(klass, &st);
 }
 
 static VALUE
@@ -345,8 +353,8 @@ rb_io_stat(obj)
 }
 
 static VALUE
-rb_file_s_lstat(obj, fname)
-    VALUE obj, fname;
+rb_file_s_lstat(klass, fname)
+    VALUE klass, fname;
 {
 #ifdef HAVE_LSTAT
     struct stat st;
@@ -355,9 +363,9 @@ rb_file_s_lstat(obj, fname)
     if (lstat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
-    return stat_new(&st);
+    return stat_new_0(klass, &st);
 #else
-    return rb_file_s_stat(obj, fname);
+    return rb_file_s_stat(klass, fname);
 #endif
 }
 
@@ -765,8 +773,8 @@ test_sticky(obj, fname)
 }
 
 static VALUE
-rb_file_s_size(obj, fname)
-    VALUE obj, fname;
+rb_file_s_size(klass, fname)
+    VALUE klass, fname;
 {
     struct stat st;
 
@@ -816,8 +824,8 @@ rb_file_ftype(st)
 }
 
 static VALUE
-rb_file_s_ftype(obj, fname)
-    VALUE obj, fname;
+rb_file_s_ftype(klass, fname)
+    VALUE klass, fname;
 {
     struct stat st;
 
@@ -830,8 +838,8 @@ rb_file_s_ftype(obj, fname)
 }
 
 static VALUE
-rb_file_s_atime(obj, fname)
-    VALUE obj, fname;
+rb_file_s_atime(klass, fname)
+    VALUE klass, fname;
 {
     struct stat st;
 
@@ -855,8 +863,8 @@ rb_file_atime(obj)
 }
 
 static VALUE
-rb_file_s_mtime(obj, fname)
-    VALUE obj, fname;
+rb_file_s_mtime(klass, fname)
+    VALUE klass, fname;
 {
     struct stat st;
 
@@ -880,8 +888,8 @@ rb_file_mtime(obj)
 }
 
 static VALUE
-rb_file_s_ctime(obj, fname)
-    VALUE obj, fname;
+rb_file_s_ctime(klass, fname)
+    VALUE klass, fname;
 {
     struct stat st;
 
@@ -1098,8 +1106,8 @@ rb_file_s_utime(argc, argv)
 #endif
 
 static VALUE
-rb_file_s_link(obj, from, to)
-    VALUE obj, from, to;
+rb_file_s_link(klass, from, to)
+    VALUE klass, from, to;
 {
     Check_SafeStr(from);
     Check_SafeStr(to);
@@ -1110,8 +1118,8 @@ rb_file_s_link(obj, from, to)
 }
 
 static VALUE
-rb_file_s_symlink(obj, from, to)
-    VALUE obj, from, to;
+rb_file_s_symlink(klass, from, to)
+    VALUE klass, from, to;
 {
 #ifdef HAVE_SYMLINK
     Check_SafeStr(from);
@@ -1127,8 +1135,8 @@ rb_file_s_symlink(obj, from, to)
 }
 
 static VALUE
-rb_file_s_readlink(obj, path)
-    VALUE obj, path;
+rb_file_s_readlink(klass, path)
+    VALUE klass, path;
 {
 #ifdef HAVE_READLINK
     char buf[MAXPATHLEN];
@@ -1155,8 +1163,8 @@ unlink_internal(path)
 }
 
 static VALUE
-rb_file_s_unlink(obj, args)
-    VALUE obj, args;
+rb_file_s_unlink(klass, args)
+    VALUE klass, args;
 {
     int n;
 
@@ -1165,8 +1173,8 @@ rb_file_s_unlink(obj, args)
 }
 
 static VALUE
-rb_file_s_rename(obj, from, to)
-    VALUE obj, from, to;
+rb_file_s_rename(klass, from, to)
+    VALUE klass, from, to;
 {
     Check_SafeStr(from);
     Check_SafeStr(to);
@@ -1394,8 +1402,8 @@ rb_file_s_basename(argc, argv)
 }
 
 static VALUE
-rb_file_s_dirname(obj, fname)
-    VALUE obj, fname;
+rb_file_s_dirname(klass, fname)
+    VALUE klass, fname;
 {
     char *name, *p;
     VALUE dirname;
@@ -1413,8 +1421,8 @@ rb_file_s_dirname(obj, fname)
 }
 
 static VALUE
-rb_file_s_split(obj, path)
-    VALUE obj, path;
+rb_file_s_split(klass, path)
+    VALUE klass, path;
 {
     return rb_assoc_new(rb_file_s_dirname(Qnil, path), rb_file_s_basename(1,&path));
 }
@@ -1422,15 +1430,15 @@ rb_file_s_split(obj, path)
 static VALUE separator;
 
 static VALUE
-rb_file_s_join(obj, args)
-    VALUE obj, args;
+rb_file_s_join(klass, args)
+    VALUE klass, args;
 {
     return rb_ary_join(args, separator);
 }
 
 static VALUE
-rb_file_s_truncate(obj, path, len)
-    VALUE obj, path, len;
+rb_file_s_truncate(klass, path, len)
+    VALUE klass, path, len;
 {
     rb_secure(2);
     Check_SafeStr(path);
@@ -1719,6 +1727,16 @@ rb_f_test(argc, argv)
     /* unknown command */
     rb_raise(rb_eArgError, "unknown command ?%c", cmd);
     return Qnil;		/* not reached */
+}
+
+static VALUE
+rb_stat_s_new(klass, fname)
+    VALUE klass, fname;
+{
+    VALUE stat = rb_file_s_stat(klass, fname);
+
+    rb_obj_call_init(stat, 1, &fname);
+    return stat;
 }
 
 static VALUE
@@ -2264,6 +2282,7 @@ Init_File()
     rb_define_global_function("test", rb_f_test, -1);
 
     rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
+    rb_define_singleton_method(rb_cStat, "new",  rb_stat_s_new, 1);
 
     rb_include_module(rb_cStat, rb_mComparable);
 

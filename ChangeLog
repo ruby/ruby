@@ -1,3 +1,7 @@
+Mon Apr  9 12:05:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (Init_File): should redifine "new" class method.
+
 Mon Apr  9 11:56:52 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: fix typo.

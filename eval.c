@@ -6966,6 +6966,7 @@ thread_mark(th)
 
     rb_gc_mark(th->klass);
     rb_gc_mark(th->wrapper);
+    rb_gc_mark(th->cref);
 
     rb_gc_mark(th->scope);
     rb_gc_mark(th->dyna_vars);
