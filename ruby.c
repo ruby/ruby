@@ -768,7 +768,7 @@ load_file(fname, script)
     }
 
     if (script) {
-	VALUE c;
+	VALUE c = 1;		/* something not nil */
 	VALUE line;
 	char *p;
 

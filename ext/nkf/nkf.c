@@ -80,6 +80,8 @@ rb_nkf_kconv(obj, opt, src)
   kanji_convert(NULL);
   RSTRING(dst)->ptr[output_ctr] = '\0';
   RSTRING(dst)->len = output_ctr;
+  if(OBJ_TAINTED(src))
+    OBJ_TAINT(dst);
 
   return dst;
 }

@@ -2155,12 +2155,6 @@ rb_find_file_noext(file)
 	0
     };
 
-    if (file[0] == '~') {
-	fname = rb_str_new2(file);
-	fname = rb_file_s_expand_path(1, &fname);
-	file = STR2CSTR(fname);
-    }
-
     if (is_absolute_path(file)) {
 	for (i=0; ext[i]; i++) {
 	    strcpy(fend, ext[i]);

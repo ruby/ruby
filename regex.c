@@ -4237,7 +4237,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	    unsigned char c;
 
 	    PREFETCH;
-	    c = *d++;
 	    if (*p == 0xff) {
 	      p++;  
 	      if (!--mcnt
@@ -4246,6 +4245,7 @@ re_match(bufp, string_arg, size, pos, regs)
 		goto fail;
 	      continue;
 	    }
+	    c = *d++;
 	    if (ismbchar(c)) {
 	      int n;
 

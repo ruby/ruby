@@ -2331,6 +2331,7 @@ rb_str_each_line(argc, argv, str)
 	    (rslen <= 1 ||
 	     rb_memcmp(RSTRING(rs)->ptr, p-rslen, rslen) == 0)) {
 	    line = rb_str_new(s, p - s);
+	    OBJ_INFECT(line, str);
 	    rb_yield(line);
 	    if (RSTRING(str)->ptr != ptr || RSTRING(str)->len != len)
 		rb_raise(rb_eArgError, "string modified");

@@ -19,6 +19,33 @@ Fri Jul  6 00:49:05 2001  Akinori MUSHA  <knu@iDaemons.org>
 	* ext/readline/README, ext/readline/README.jp: merge from 1.7: add
 	  an English version of the document.
 
+Thu Jul  5 22:53:27 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_f_require): move rb_file_s_expand_path from
+	  rb_find_file_noext().
+
+	* file.c (rb_find_file_noext): move rb_file_s_expand_path to
+	  rb_f_require(). 
+
+Thu Jul  5 20:28:53 2001  Tietew <tietew@tietew.net>
+
+	* string.c (rb_str_each_line): should propagate taint mark. 
+
+	* ext/nkf/nkf.c (rb_nkf_kconv): ditto.
+
+Thu Jul  5 13:44:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (load_file): local variables 'c' remain uninitialized on
+	  xflag.
+
+Thu Jul  5 10:00:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_match): prefetched escaped character too early.
+
+Wed Jul  4 08:58:30 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): add argument check for attr_readers.
+
 Wed Jul  4 00:12:37 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/find.rb: merge from 1.7: rescue Errno::EACCES as well.

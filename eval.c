@@ -1262,11 +1262,17 @@ rb_eval_string_wrap(str, state)
     PUSH_CLASS();
     ruby_class = ruby_wrapper = rb_module_new();
     ruby_top_self = rb_obj_clone(ruby_top_self);
-    rb_extend_object(ruby_top_self, ruby_class);
+    rb_extend_object(ruby_top_self, ruby_wrapper);
+    PUSH_FRAME();
+    ruby_frame->last_func = 0;
+    ruby_frame->last_class = 0;
+    ruby_frame->self = self;
+    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_wrapper,0,0);
 
     val = rb_eval_string_protect(str, &status);
     ruby_top_self = self;
 
+    POP_FRAME();
     POP_CLASS();
     ruby_wrapper = wrapper;
     if (state) {
@@ -1320,16 +1326,19 @@ rb_eval_cmd(cmd, arg)
 			   RARRAY(arg)->len, RARRAY(arg)->ptr);
     }
 
-    PUSH_CLASS();
-    PUSH_TAG(PROT_NONE);
     saved_scope = ruby_scope;
     ruby_scope = top_scope;
+    PUSH_FRAME();
+    ruby_frame->last_func = 0;
+    ruby_frame->last_class = 0;
+    ruby_frame->self = ruby_top_self;
+    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_wrapper,0,0);
 
-    ruby_class = ruby_wrapper ? ruby_wrapper : rb_cObject;
     if (OBJ_TAINTED(cmd)) {
 	ruby_safe_level = 4;
     }
 
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
@@ -1339,7 +1348,7 @@ rb_eval_cmd(cmd, arg)
     ruby_scope = saved_scope;
     ruby_safe_level = safe;
     POP_TAG();
-    POP_CLASS();
+    POP_FRAME();
 
     jump_tag_but_local_jump(state);
     return val;
@@ -4331,11 +4340,14 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	}
 	break;
 
+	/* for attr get/set */
+      case NODE_IVAR:
+	if (argc != 0) {
+	    rb_raise(rb_eArgError, "wrong # of arguments(%d for 0)", argc);
+	}
+      case NODE_ATTRSET:
 	/* for re-scoped/renamed method */
       case NODE_ZSUPER:
-	/* for attr get/set */
-      case NODE_ATTRSET:
-      case NODE_IVAR:
 	result = rb_eval(recv, body);
 	break;
 
@@ -4786,7 +4798,6 @@ eval(self, src, scope, file, line)
 	file = ruby_sourcefile;
 	line = ruby_sourceline;
     }
-    PUSH_CLASS();
     if (!NIL_P(scope)) {
 	if (!rb_obj_is_block(scope)) {
 	    rb_raise(rb_eTypeError, "wrong argument type %s (expected Proc/Binding)",
@@ -4813,13 +4824,14 @@ eval(self, src, scope, file, line)
 
 	self = data->self;
 	ruby_frame->iter = data->iter;
-	ruby_class = ruby_cbase;
     }
     else {
 	if (ruby_frame->prev) {
 	    ruby_frame->iter = ruby_frame->prev->iter;
 	}
     }
+    PUSH_CLASS();
+    ruby_class = ruby_cbase;
 
     ruby_in_eval++;
     if (TYPE(ruby_class) == T_ICLASS) {
@@ -5381,7 +5393,12 @@ rb_f_require(obj, fname)
 	}
 #endif
     }
-    buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
+    obj = fname;
+    if (RSTRING(fname)->ptr[0] == '~') {
+	obj = rb_file_s_expand_path(1, &fname);
+	StringValue(obj);
+    }
+    buf = ALLOCA_N(char, strlen(RSTRING(obj)->ptr) + 5);
     strcpy(buf, RSTRING(fname)->ptr);
     switch (rb_find_file_noext(buf)) {
       case 0:
