@@ -1,3 +1,11 @@
+Mon Sep 13 01:03:02 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: improve control of preserv/release tcltkip
+
+	* ext/tcltklib/tcltklib.c: store original 'exit' command
+
+	* ext/tk/tkutil.c: fix(?) SEGV
+
 Mon Sep 13 00:22:53 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y: fix file header.

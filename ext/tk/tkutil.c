@@ -737,6 +737,13 @@ tk_conv_args(argc, argv, self)
 {
     int idx, size;
     volatile VALUE dst;
+    int thr_crit_bup;
+    VALUE old_gc;
+
+    thr_crit_bup = rb_thread_critical;
+    rb_thread_critical = Qtrue;
+
+    old_gc = rb_gc_disable();
 
     if (argc < 2) {
       rb_raise(rb_eArgError, "too few arguments");
@@ -763,6 +770,9 @@ tk_conv_args(argc, argv, self)
 		= get_eval_string_core(argv[idx], argv[1], self);
 	}
     }
+
+    if (old_gc == Qfalse) rb_gc_enable();
+    rb_thread_critical = thr_crit_bup;
 
     return rb_ary_plus(argv[0], dst);
 }
