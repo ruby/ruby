@@ -1,3 +1,10 @@
+Thu Feb 10 11:14:17 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub (COMMON_HEADERS): shouldn't include winsock2.h.
+
+	* ext/socket/extconf.rb (sockaddr_storage): remove workaround for
+	  mswin32.
+
 Thu Feb 10 10:29:16 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/curses/curses.c: don't need to check HAVE_WCOLOR_SET excluding

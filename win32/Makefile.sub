@@ -392,7 +392,7 @@ s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: .%s.%s:,;t t
 s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
 s,@COMMON_LIBS@,m,;t t
 s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN;t t
-s,@COMMON_HEADERS@,winsock2.h windows.h,;t t
+s,@COMMON_HEADERS@,windows.h winsock.h,;t t
 s,@EXPORT_PREFIX@, ,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
