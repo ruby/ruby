@@ -47,12 +47,17 @@ struct and union which are defined in dl/struct.rb as follows:
   require "dl/struct"
   module LIBC
     extend DL::Importable
-    Timeval = struct [     # define the timeval structure.
+    Timeval = struct [       # define the timeval structure.
       "long tv_sec",
       "long tv_uses",
     ]
   end
-  val = LIBC::Timeval.new  # allocate the memory.
+  val = LIBC::Timeval.alloc  # allocate the memory.
+
+The above example uses LIBC::Timeval.alloc, since we use LIBC::Timeval.new(ptr)
+to wrap the given PtrData object which is, for example, created by DL::malloc().
+DL::malloc() is a function to allocate a memory by using the C library function
+malloc().
 
 DL::Importable module is very useful. However, we sometimes encounter a case
 that we must directly use low-level functions such as dlsym(). In such case,
