@@ -402,31 +402,54 @@ class TkOptionMenubutton<TkMenubutton
     end
   end
 
-  def initialize(parent=nil, var=nil, firstval=nil, *vals)
-    if parent.kind_of? Hash
-       keys = _symbolkey2str(parent)
-       parent = keys['parent']
-       var = keys['variable'] if keys['variable']
-       firstval, *vals = keys['values']
+  def initialize(*args)
+    # args :: [parent,] [var,] [value[, ...],] [keys]
+    #    parent --> TkWindow or nil
+    #    var    --> TkVariable or nil
+    #    keys   --> Hash
+    #       keys[:parent] or keys['parent']     --> parent
+    #       keys[:variable] or keys['variable'] --> var
+    #       keys[:values] or keys['values']     --> value, ...
+    #       other Hash keys are menubutton options
+    keys = {}
+    keys = args.pop if args[-1].kind_of?(Hash)
+    keys = _symbolkey2str(keys)
+
+    parent = nil
+    if args[0].kind_of?(TkWindow) || args[0] == nil
+      parent = args.shift 
+    else
+      parent = keys.delete('parent')
     end
-    if parent.kind_of? TkVariable
-      vals.unshift(firstval) if firstval
-      firstval = var 
-      var = parent
-      parent = nil
+
+    @variable = nil
+    if args[0].kind_of?(TkVariable) || args[0] == nil
+      @variable = args.shift 
+    else
+      @variable = keys.delete('variable')
     end
-    var = TkVariable.new unless var
-    fail 'variable option must be TkVariable' unless var.kind_of? TkVariable
-    @variable = var
-    firstval = @variable.value unless firstval
-    @variable.value = firstval
+    @variable = TkVariable.new unless @variable
+
+    (args = keys.delete('values') || []) if args.empty?
+    if args.empty?
+      args << @variable.value
+    else
+      @variable.value = args[0]
+    end
+
     install_win(if parent then parent.path end)
-    @menu = OptionMenu.new(tk_call('tk_optionMenu', @path, @variable.id, 
-                                   firstval, *vals))
+    @menu = OptionMenu.new(tk_call('tk_optionMenu', 
+				   @path, @variable.id, *args))
+
+    configure(keys) if keys
   end
 
   def value
     @variable.value
+  end
+
+  def value=(val)
+    @variable.value = val
   end
 
   def activate(index)

@@ -1,3 +1,7 @@
+Tue Nov 23 08:09:50 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/menu.rb: improve usability of TkOptionMenubutton
+
 Tue Nov 23 02:00:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (rb_file_chown): [ruby-dev:24949]
