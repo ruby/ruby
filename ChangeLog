@@ -1,3 +1,10 @@
+Wed Mar 31 19:06:23 2004  Tanaka Akira  <akr@m17n.org>
+
+	* time.c (year_leap_p): new function.
+	  (timegm_noleapsecond): ditto.
+	  (search_time_t): use timegm_noleapsecond instead of
+	  mktime for first guess.
+
 Wed Mar 31 12:05:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (DelegateClass): define internal methods of the
@@ -18,7 +25,7 @@ Wed Mar 31 11:17:16 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Mar 30 20:25:34 2004  Tanaka Akira  <akr@m17n.org>
 
 	* time.c (search_time_t): limit guess range by mktime if it is
-	  available.
+	  available.  [ruby-dev:23274]
 
 Tue Mar 30 18:19:00 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

@@ -403,6 +403,71 @@ static VALUE time_localtime _((VALUE));
 static VALUE time_get_tm _((VALUE, int));
 
 static int
+leap_year_p(y)
+    long y;
+{
+  return ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0);
+}
+
+#define DIV(n,d) ((n)<0 ? NDIV((n),(d)) : (n)/(d))
+
+static time_t
+timegm_noleapsecond(tm)
+    struct tm *tm;
+{
+    static int common_year_yday_offset[] = {
+        -1,
+        -1 + 31,
+        -1 + 31 + 28,
+        -1 + 31 + 28 + 31,
+        -1 + 31 + 28 + 31 + 30,
+        -1 + 31 + 28 + 31 + 30 + 31,
+        -1 + 31 + 28 + 31 + 30 + 31 + 30,
+        -1 + 31 + 28 + 31 + 30 + 31 + 30 + 31,
+        -1 + 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31,
+        -1 + 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
+        -1 + 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
+        -1 + 31 + 28 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30
+          /* 1    2    3    4    5    6    7    8    9    10   11 */
+    };
+    static int leap_year_yday_offset[] = {
+        -1,
+        -1 + 31,
+        -1 + 31 + 29,
+        -1 + 31 + 29 + 31,
+        -1 + 31 + 29 + 31 + 30,
+        -1 + 31 + 29 + 31 + 30 + 31,
+        -1 + 31 + 29 + 31 + 30 + 31 + 30,
+        -1 + 31 + 29 + 31 + 30 + 31 + 30 + 31,
+        -1 + 31 + 29 + 31 + 30 + 31 + 30 + 31 + 31,
+        -1 + 31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30,
+        -1 + 31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31,
+        -1 + 31 + 29 + 31 + 30 + 31 + 30 + 31 + 31 + 30 + 31 + 30
+          /* 1    2    3    4    5    6    7    8    9    10   11 */
+    };
+
+    long tm_year = tm->tm_year;
+    int tm_yday = tm->tm_mday;
+    if (leap_year_p(tm_year + 1900))
+        tm_yday += leap_year_yday_offset[tm->tm_mon];
+    else
+        tm_yday += common_year_yday_offset[tm->tm_mon];
+
+    /*
+     *  `Seconds Since the Epoch' in SUSv3:
+     *  tm_sec + tm_min*60 + tm_hour*3600 + tm_yday*86400 +
+     *  (tm_year-70)*31536000 + ((tm_year-69)/4)*86400 -
+     *  ((tm_year-1)/100)*86400 + ((tm_year+299)/400)*86400
+     */
+    return tm->tm_sec + tm->tm_min*60 + tm->tm_hour*3600 +
+           (time_t)(tm_yday +
+                    (tm_year-70)*365 +
+                    DIV(tm_year-69,4) -
+                    DIV(tm_year-1,100) +
+                    DIV(tm_year+299,400))*86400;
+}
+
+static int
 tmcmp(a, b)
     struct tm *a;
     struct tm *b;
@@ -444,14 +509,29 @@ search_time_t(tptr, utc_p)
                (1UL << (8 * sizeof(time_t) - 1)) - 1 :
 	       ~(time_t)0;
 
-#if defined(HAVE_MKTIME)
-    if ((guess = mktime(tptr)) != -1) {
-      if (guess_lo < guess - 24 * 60 * 60)
-        guess_lo = guess - 24 * 60 * 60;
-      if (guess + 24 * 60 * 60 < guess_hi)
-        guess_hi = guess + 24 * 60 * 60;
+    guess = timegm_noleapsecond(tptr);
+    tm = (utc_p ? gmtime : localtime)(&guess);
+    if (tm) {
+        d = tmcmp(tptr, tm);
+        if (d == 0) return guess;
+        if (d < 0) {
+            guess_hi = guess;
+            guess -= 24 * 60 * 60;
+        }
+        else {
+            guess_lo = guess;
+            guess += 24 * 60 * 60;
+        }
+        if (guess_lo < guess && guess < guess_hi &&
+            (tm = (utc_p ? gmtime : localtime)(&guess)) != NULL) {
+            d = tmcmp(tptr, tm);
+            if (d == 0) return guess;
+            if (d < 0)
+                guess_hi = guess;
+            else
+                guess_lo = guess;
+        }
     }
-#endif
 
     tm = (utc_p ? gmtime : localtime)(&guess_lo);
     if (!tm) goto error;
