@@ -20,14 +20,14 @@ $extlist = []
 $:.replace ["."]
 require 'rbconfig'
 
-srcdir = Config::CONFIG["srcdir"]
+srcdir = File.dirname(File.dirname(__FILE__))
 
 $:.replace [srcdir, srcdir+"/lib", "."]
 
 require 'mkmf'
 require 'getopts'
 
-$topdir = File.expand_path(".")
+$topdir = "."
 $top_srcdir = srcdir
 $hdrdir = $top_srcdir
 
@@ -55,6 +55,13 @@ def extmake(target)
     dir = Dir.pwd
     FileUtils.mkpath target unless File.directory?(target)
     Dir.chdir target
+    top_srcdir = $top_srcdir
+    topdir = $topdir
+    prefix = "../" * (target.count("/")+1)
+    if File.expand_path(top_srcdir) != File.expand_path(top_srcdir, dir)
+      $hdrdir = $top_srcdir = prefix + top_srcdir
+    end
+    $topdir = prefix + $topdir
     $target = target
     $mdir = target
     $srcdir = File.join($top_srcdir, "ext", $mdir)
@@ -113,6 +120,8 @@ def extmake(target)
       $extpath |= $LIBPATH
     end
   ensure
+    $hdrdir = $top_srcdir = top_srcdir
+    $topdir = topdir
     Dir.chdir dir
   end
   true
@@ -214,15 +223,22 @@ for dir in ["ext", File::join($top_srcdir, "ext")]
   end
 end
 
+dir = Dir.pwd
 FileUtils::makedirs('ext')
 Dir::chdir('ext')
 
+if File.expand_path(srcdir) != File.expand_path(srcdir, dir)
+  $hdrdir = $top_srcdir = "../" + srcdir
+end
+$topdir = ".."
 ext_prefix = "#{$top_srcdir}/ext"
 Dir.glob("#{ext_prefix}/*/**/MANIFEST") do |d|
   d = File.dirname(d)
   d.slice!(0, ext_prefix.length + 1)
   extmake(d) or exit(1)
 end
+$hdrdir = $top_srcdir = srcdir
+$topdir = "."
 
 if $ignore
   Dir.chdir ".."

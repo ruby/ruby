@@ -1,3 +1,7 @@
+Thu Oct 28 23:19:31 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: prefer relative path.  [ruby-talk:93037]
+
 Wed Oct 27 18:49:11 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* gc.c: prototype; rb_io_fptr_finalize() doesn't return any value
