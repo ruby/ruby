@@ -2,6 +2,9 @@
 # = net/ftp.rb
 # 
 # Written by Shugo Maeda <shugo@ruby-lang.org>.
+#
+# Documentation by Gavin Sinclair, sourced from "Programming Ruby" (Hunt/Thomas)
+# and "Ruby In a Nutshell" (Matsumoto), used with permission.
 # 
 # This library is distributed under the terms of the Ruby license.
 # You can freely distribute/modify this library.
@@ -55,13 +58,13 @@ module Net # :nodoc:
   # == Major Methods
   #
   # The following are the methods most likely to be useful to users:
-  # - #connect
-  # - #login (note: <tt>FTP.new</tt> can do both connect and login instead)
+  # - FTP::open
   # - #getbinaryfile
   # - #gettextfile
   # - #putbinaryfile
   # - #puttextfile
   # - #chdir
+  # - #nlst
   # - #size
   # - #rename
   # - #delete
