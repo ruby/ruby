@@ -4,6 +4,22 @@ Fri May 11 23:51:54 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* sprintf.c: ditto.
 
+Fri May 11 03:38:11 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* README.EXT: Document find_library(), with_config() and
+	dir_config().
+
+Fri May 11 03:37:53 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* README.EXT.jp: Remove the description of find_header() because
+	such a function does not actually exist.
+    
+	* README.EXT.jp: Update the description of dir_config().
+
+Fri May 11 02:42:40 2001  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* README, README.jp: Fix CVS access and mailing lists info.
+
 Fri May 11 02:00:44 2001  Ryo HAYASAKA  <ryoh@jaist.ac.jp>
 
 	* bignum.c (bigdivrem): access boundary bug.
@@ -14,6 +30,28 @@ Tue May  8 17:12:43 2001  K.Kosako  <kosako@sofnec.co.jp>
 	  special constants.
 
 	* eval.c (rb_eval): ditto.
+
+Tue May  8 08:59:01 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/forwardable.rd, doc/forwardable.rd.jp: Hit `=begin' and
+	`=end' in proper places so rd2 can format them without a problem.
+
+	* doc/irb/irb-tools.rd.jp, doc/irb/irb.rd, doc/irb/irb.rd.jp:
+	ditto.
+
+Tue May  8 08:56:05 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/forwardable.rd, doc/forwardable.rd.jp, lib/forwardable.rb:
+	Bring forwardable 1.1 onto the ruby_1_6 branch.
+
+Tue May  8 08:35:09 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* doc/irb/irb-tools.rd.jp, doc/irb/irb.rd.jp: Convert from JIS to
+	EUC.
+	
+Tue May  8 03:46:24 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* sample/rbc.rb: Obsoleted by IRB.
 
 Mon May  7 15:58:45 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
