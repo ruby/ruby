@@ -5731,7 +5731,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		    }
 		}
 
-		if (trace_func) {
+		if (event_hooks) {
 		    EXEC_EVENT_HOOK(RUBY_EVENT_CALL, b2, recv, id, klass);
 		    hook_return = 1;
 		}
