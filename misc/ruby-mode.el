@@ -293,10 +293,11 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (move-to-column (+ x shift))))))
 
 (defun ruby-special-char-p (&optional pnt)
-  (let ((c (char-before (or pnt (point)))))
+  (setq pnt (or pnt (point)))
+  (let ((c (char-before pnt)) (b (and (< (point-min) pnt) (char-before (1- pnt)))))
     (cond ((or (eq c ??) (eq c ?$)))
-	  ((eq c ?\\)
-	   (eq (char-before (1- (or pnt (point)))) ??)))))
+	  ((and (eq c ?:) (or (not b) (eq (char-syntax b) ? ))))
+	  ((eq c ?\\) (eq b ??)))))
 
 (defun ruby-expr-beg (&optional option)
   (save-excursion
@@ -503,7 +504,11 @@ The variable ruby-indent-level controls the amount of indentation.
 	 (setq nest (cons (cons nil pnt) nest))
 	 (setq depth (1+ depth)))
 	(goto-char pnt))
-       ((looking-at ":\\([a-zA-Z_][a-zA-Z_0-9]*\\)?")
+       ((looking-at ":\\(['\"]\\)\\(\\\\.\\|[^\\\\]\\)*\\1")
+	(goto-char (match-end 0)))
+       ((looking-at ":\\([-,.+*/%&|^~<>]=?\\|===?\\|<=>\\)")
+	(goto-char (match-end 0)))
+       ((looking-at ":\\([a-zA-Z_][a-zA-Z_0-9]*[!?=]?\\)?")
 	(goto-char (match-end 0)))
        ((or (looking-at "\\.\\.\\.?")
 	    (looking-at "\\.[0-9]+")

@@ -1,3 +1,8 @@
+Mon Nov 15 11:50:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-special-char-p, ruby-parse-partial): handle
+	  operator symbols.  [ruby-talk:120177]
+
 Mon Nov 15 08:58:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (Init_Proc): make proc as an alias to Proc.new.
@@ -16,7 +21,7 @@ Mon Nov 15 00:33:40 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* string.c (str_gsub): add paranoid check. [ruby-dev:24827]
 
 	* string.c (str_mod_check): check frozen status as well.
-	  [ruby-dev:24801] 
+	  [ruby-dev:24801]
 
 Sun Nov 14 18:59:03 2004  Tanaka Akira  <akr@m17n.org>
 
