@@ -88,7 +88,7 @@ module OpenSSL
     end # Extension
     
     class Attribute
-      def Attribute::new(arg)
+      def self.new(arg)
         type = arg.class
         while type
           method = "new_from_#{type.name.downcase}".intern
@@ -127,6 +127,13 @@ module OpenSSL
         Attribute::new_from_array(ary)
       end
     end # Attribute
+
+    class Name
+      def self.parse(str)
+        ary = str.scan(/\s*([^\/,]+)\s*/).collect{|i| i[0].split("=") }
+        self.new(ary)
+      end
+    end # Name
 
   end # X509
 end # OpenSSL

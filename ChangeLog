@@ -1,3 +1,15 @@
+Fri Sep  5 18:00:51 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/x509.rb: new method X509::Name::parse.
+
+	* ext/openssl/ossl_digest.c: add ossl_digest_new().
+
+	* ext/openssl/ossl_digest.h: ditto.
+
+	* ext/openssl/ossl_cipher.c: add ossl_cipher_new().
+
+	* ext/openssl/ossl_cipher.h: ditto.
+
 Fri Sep  5 15:32:04 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-font-lock-maybe-here-docs): should not

@@ -30,6 +30,8 @@ VALUE mCipher;
 VALUE cCipher;
 VALUE eCipherError;
 
+static VALUE ossl_cipher_alloc(VALUE klass);
+
 /*
  * PUBLIC
  */
@@ -41,6 +43,21 @@ GetCipherPtr(VALUE obj)
     SafeGetCipher(obj, ctx);
 
     return EVP_CIPHER_CTX_cipher(ctx);
+}
+
+VALUE
+ossl_cipher_new(const EVP_CIPHER *cipher)
+{
+    VALUE ret;
+    EVP_CIPHER_CTX *ctx;
+
+    ret = ossl_cipher_alloc(cCipher);
+    GetCipher(ret, ctx);
+    EVP_CIPHER_CTX_init(ctx);
+    if (EVP_CipherInit(ctx, cipher, NULL, NULL, -1) != 1)
+	ossl_raise(eCipherError, NULL);
+
+    return ret;
 }
 
 /*

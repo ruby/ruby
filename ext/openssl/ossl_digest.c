@@ -28,6 +28,8 @@ VALUE mDigest;
 VALUE cDigest;
 VALUE eDigestError;
 
+static VALUE ossl_digest_alloc(VALUE klass);
+
 /*
  * Public
  */
@@ -39,6 +41,20 @@ GetDigestPtr(VALUE obj)
     SafeGetDigest(obj, ctx);
 
     return EVP_MD_CTX_md(ctx); /*== ctx->digest*/
+}
+
+VALUE
+ossl_digest_new(const EVP_MD *md)
+{  
+    VALUE ret;
+    EVP_MD_CTX *ctx;
+
+    ret = ossl_digest_alloc(cDigest);
+    GetDigest(ret, ctx);
+    EVP_MD_CTX_init(ctx);
+    EVP_DigestInit(ctx, md);
+   
+    return ret;
 }
 
 /*
@@ -79,6 +95,7 @@ ossl_digest_initialize(int argc, VALUE *argv, VALUE self)
     if (!md) {
 	ossl_raise(rb_eRuntimeError, "Unsupported digest algorithm (%s).", name);
     }
+    EVP_MD_CTX_init(ctx);
     EVP_DigestInit(ctx, md);
     
     if (!NIL_P(data)) return ossl_digest_update(self, data);
