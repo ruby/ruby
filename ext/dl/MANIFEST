@@ -17,6 +17,8 @@ mkcall.rb
 mkcallback.rb
 mkcbtable.rb
 ptr.c
+sample/c++sample.C
+sample/c++sample.rb
 sample/drives.rb
 sample/getch.rb
 sample/libc.rb
