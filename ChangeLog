@@ -1,3 +1,7 @@
+Fri May 25 01:47:39 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* MANIFEST: update the entries I forgot to add or remove.
+
 Fri May 25 00:57:25 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/sha1/sha1-ruby.c (sha1_new): separate initialize() from
