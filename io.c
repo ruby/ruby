@@ -1245,9 +1245,7 @@ io_s_popen(argc, argv, self)
     char *mode;
     VALUE pname, pmode;
 
-    rb_scan_args(argc, argv, "11", &pname, &pmode);
-    Check_SafeStr(pname);
-    if (NIL_P(pmode)) {
+    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
     }
     else {
@@ -1257,7 +1255,8 @@ io_s_popen(argc, argv, self)
 	len = strlen(mode);
 	if (len == 0 || len > 3)
 	    ArgError("illegal access mode");
-   }
+    }
+    Check_SafeStr(pname);
     return pipe_open(RSTRING(pname)->ptr, mode);
 }
 
@@ -1634,8 +1633,7 @@ obj_display(argc, argv, self)
 {
     VALUE out;
 
-    rb_scan_args(argc, argv, "01", &out);
-    if (NIL_P(out)) {
+    if (rb_scan_args(argc, argv, "01", &out) == 0) {
 	out = rb_defout;
     }
 
@@ -1710,9 +1708,7 @@ io_s_new(argc, argv, klass)
     VALUE fnum, mode;
     char *m = "r";
 
-    rb_scan_args(argc, argv, "11", &fnum, &mode);
-
-    if (!NIL_P(mode)) {
+    if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
 	Check_SafeStr(mode);
 	m = RSTRING(mode)->ptr;
     }
@@ -1996,8 +1992,7 @@ f_select(argc, argv, obj)
     int interrupt = 0;
     int pending = 0;
 
-    rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout);
-    if (NIL_P(timeout)) {
+    if (rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout)<4) {
 	tp = NULL;
     }
     else {
@@ -2576,7 +2571,7 @@ static void
 opt_i_set(val)
     VALUE val;
 {
-    if (NIL_P(val)) {
+    if (!RTEST(val)) {
 	inplace = 0;
 	return;
     }

@@ -207,8 +207,7 @@ dir_s_chdir(argc, argv, obj)
     char *dist = "";
 
     rb_secure(2);
-    rb_scan_args(argc, argv, "01", &path);
-    if (!NIL_P(path)) {
+    if (rb_scan_args(argc, argv, "01", &path) == 1) {
 	Check_SafeStr(path);
 	dist = RSTRING(path)->ptr;
     }

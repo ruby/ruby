@@ -198,8 +198,9 @@ hash_s_new(argc, argv, klass)
     hash->status = 0;
     hash->tbl = 0;		/* avoid GC crashing  */
 
-    rb_scan_args(argc, argv, "01", &sz);
-    if (NIL_P(sz)) size = 0;
+    if (rb_scan_args(argc, argv, "01", &sz) == 0) {
+	size = 0;
+    }
     else size = NUM2INT(sz);
 
     hash->tbl = st_init_table_with_size(&objhash, size);
@@ -848,9 +849,9 @@ f_getenv(obj, name)
     int len;
 
     nam = str2cstr(name, &len);
-    if (strlen(nam) != len)
-	ArgError("Bad environment name");
-
+    if (strlen(nam) != len) {
+	ArgError("Bad environment variable name");
+    }
     env = getenv(nam);
     if (env) {
 	if (strcmp(nam, "PATH") == 0 && !env_path_tainted())

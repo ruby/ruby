@@ -812,21 +812,21 @@ marshal_load(argc, argv)
     struct load_arg arg;
 
     rb_scan_args(argc, argv, "11", &port, &proc);
-    if (TYPE(port) == T_STRING) {
+    if (obj_is_kind_of(port, cIO)) {
+	io_binmode(port);
+	GetOpenFile(port, fptr);
+	io_readable(fptr);
+	arg.fp = fptr->f;
+    }
+    else if (rb_respond_to(port, rb_intern("to_str"))) {
+	int len;
+
 	arg.fp = 0;
-	arg.ptr = RSTRING(port)->ptr;
+	arg.ptr = str2cstr(port, &len);
 	arg.end = arg.ptr + RSTRING(port)->len;
     }
     else {
-	if (obj_is_kind_of(port, cIO)) {
-	    io_binmode(port);
-	    GetOpenFile(port, fptr);
-	    io_readable(fptr);
-	    arg.fp = fptr->f;
-	}
-	else {
-	    TypeError("instance of IO needed");
-	}
+	TypeError("instance of IO needed");
     }
 
     major = r_byte(&arg);

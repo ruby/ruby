@@ -1,3 +1,7 @@
+Mon Jul 13 12:39:38 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (str2cstr): should not return NULL.
+
 Thu Jul  9 17:38:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_30.

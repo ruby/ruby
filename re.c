@@ -768,7 +768,6 @@ reg_s_new(argc, argv, self)
     if (argc == 3) {
 	char *kcode = STR2CSTR(argv[2]);
 
-	if (!kcode) TypeError("wrong char-code");
 	switch (kcode[0]) {
 	  case 'n': case 'N':
 	    flag |= 4;

@@ -787,7 +787,7 @@ proc_getpgrp(argc, argv)
     int pid;
 
     rb_scan_args(argc, argv, "01", &vpid);
-    pid = NUM2INT(vpid);
+    pid = NIL_P(vpid)?0:NUM2INT(vpid);
     pgrp = BSD_GETPGRP(pid);
 #else
     rb_scan_args(argc, argv, "0");
@@ -809,8 +809,8 @@ proc_setpgrp(argc, argv)
 
     rb_scan_args(argc, argv, "02", &pid, &pgrp);
 
-    ipid = NUM2INT(pid);
-    ipgrp = NUM2INT(pgrp);
+    ipid = NIL_P(pid)?0:NUM2INT(pid);
+    ipgrp = NIL_P(pgrp)?0:NUM2INT(pgrp);
     if (BSD_SETPGRP(ipid, ipgrp) < 0) rb_sys_fail(0);
 #else
     rb_scan_args(argc, argv, "0");

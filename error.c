@@ -274,8 +274,7 @@ exc_initialize(argc, argv, exc)
 {
     VALUE mesg;
 
-    rb_scan_args(argc, argv, "01", &mesg);
-    if (NIL_P(mesg)) {
+    if (rb_scan_args(argc, argv, "01", &mesg) == 0) {
 	mesg = str_new(0, 0);
     }
     else {

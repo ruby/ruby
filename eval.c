@@ -3958,11 +3958,11 @@ f_eval(argc, argv, self)
     int line = 0;
 
     rb_scan_args(argc, argv, "13", &src, &scope, &vfile, &vline);
-    if (!NIL_P(vfile)) {
+    if (argc >= 3) {
 	Check_Type(vfile, T_STRING);
 	file = RSTRING(vfile)->ptr;
     }
-    if (!NIL_P(vline)) {
+    if (argc >= 4) {
 	line = NUM2INT(vline);
     }
 

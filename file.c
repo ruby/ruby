@@ -1250,9 +1250,10 @@ file_s_basename(argc, argv)
     char *name, *p, *ext;
     int f;
 
-    rb_scan_args(argc, argv, "11", &fname, &fext);
+    if (rb_scan_args(argc, argv, "11", &fname, &fext) == 2) {
+	ext = STR2CSTR(fext);
+    }
     name = STR2CSTR(fname);
-    if (!NIL_P(fext)) ext = STR2CSTR(fext);
     p = strrchr(name, '/');
     if (!p) {
 	if (!NIL_P(fext)) {

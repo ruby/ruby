@@ -547,8 +547,9 @@ class_s_new(argc, argv)
 {
     VALUE super, klass;
 
-    rb_scan_args(argc, argv, "01", &super);
-    if (NIL_P(super)) super = cObject;
+    if (rb_scan_args(argc, argv, "01", &super) == 0) {
+	super = cObject;
+    }
     Check_Type(super, T_CLASS);
     if (FL_TEST(super, FL_SINGLETON)) {
 	TypeError("can't make subclass of virtual class");
@@ -770,7 +771,11 @@ fail_to_type(arg)
     struct arg_to *arg;
 {
     TypeError("failed to convert %s into %s",
-	      rb_class2name(CLASS_OF(arg->val)), arg->s);
+	      NIL_P(arg->val) ? "nil" :
+	      arg->val == TRUE ? "true" :
+	      arg->val == FALSE ? "false" :
+	      rb_class2name(CLASS_OF(arg->val)), 
+	      arg->s);
 }
 
 VALUE
@@ -838,7 +843,6 @@ str2cstr(str, len)
     VALUE str;
     int *len;
 {
-    if (NIL_P(str)) return NULL;
     if (TYPE(str) != T_STRING) {
 	str = str_to_str(str);
     }

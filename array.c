@@ -163,20 +163,21 @@ ary_s_new(argc, argv, klass)
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, klass, T_ARRAY);
 
-    rb_scan_args(argc, argv, "01", &size);
     ary->len = 0;
     ary->ptr = 0;
-    if (NIL_P(size)) {
+    if (rb_scan_args(argc, argv, "01", &size) == 0) {
 	ary->capa = ARY_DEFAULT_SIZE;
     }
     else {
-	ary->capa = NUM2INT(size);
-	if (ary->capa < 0) {
+	int capa = NUM2INT(size);
+
+	if (capa < 0) {
 	    ArgError("negative array size");
 	}
-	if (ary->capa*sizeof(VALUE) < 0) {
+	if (capa*sizeof(VALUE) < 0) {
 	    ArgError("array size too big");
 	}
+	ary->capa = capa;
     }
     ary->ptr = ALLOC_N(VALUE, ary->capa);
     memclear(ary->ptr, ary->capa);
@@ -410,14 +411,12 @@ ary_aref(argc, argv, ary)
     if (FIXNUM_P(arg1)) {
 	return ary_entry(ary, FIX2INT(arg1));
     }
-    else {
-	/* check if idx is Range */
-	if (beg_len(arg1, &beg, &len, RARRAY(ary)->len)) {
-	    return ary_subseq(ary, beg, len);
-	}
-    }
-    if (TYPE(arg1) == T_BIGNUM) {
+    else if (TYPE(arg1) == T_BIGNUM) {
 	IndexError("index too big");
+    }
+    else if (beg_len(arg1, &beg, &len, RARRAY(ary)->len)) {
+	/* check if idx is Range */
+	return ary_subseq(ary, beg, len);
     }
     return ary_entry(ary, NUM2INT(arg1));
 }
@@ -917,8 +916,8 @@ ary_fill(argc, argv, ary)
     int beg, len, end;
     VALUE *p, *pend;
 
-    rb_scan_args(argc, argv, "12", &item, &arg1, &arg2);
-    if (NIL_P(arg2) && beg_len(arg1, &beg, &len, RARRAY(ary)->len)) {
+    if (rb_scan_args(argc, argv, "12", &item, &arg1, &arg2) == 2 &&
+	beg_len(arg1, &beg, &len, RARRAY(ary)->len)) {
 	/* beg and len set already */
     }
     else {
@@ -927,12 +926,7 @@ ary_fill(argc, argv, ary)
 	    beg = RARRAY(ary)->len + beg;
 	    if (beg < 0) beg = 0;
 	}
-	if (!NIL_P(arg2)) {
-	    len = NUM2INT(arg2);
-	}
-	else {
-	    len = RARRAY(ary)->len - beg;
-	}
+	len = NIL_P(arg2)?RARRAY(ary)->len - beg:NUM2INT(arg2);
     }
     end = beg + len;
     if (end > RARRAY(ary)->len) {
@@ -941,7 +935,7 @@ ary_fill(argc, argv, ary)
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
 	}
 	if (beg > RARRAY(ary)->len) {
-	    memclear(RARRAY(ary)->ptr+RARRAY(ary)->len, end-RARRAY(ary)->len);
+	    memclear(RARRAY(ary)->ptr+RARRAY(ary)->len,end-RARRAY(ary)->len);
 	}
 	RARRAY(ary)->len = end;
     }

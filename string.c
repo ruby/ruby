@@ -2005,15 +2005,14 @@ str_split_method(argc, argv, str)
     int beg, end, lim, i;
     VALUE result, tmp;
 
-    rb_scan_args(argc, argv, "02", &spat, &limit);
-    if (!NIL_P(limit)) {
+    if (rb_scan_args(argc, argv, "02", &spat, &limit) == 2) {
 	lim = NUM2INT(limit);
 	if (lim == 0) limit = Qnil;
 	else if (lim == 1) return ary_new3(1, str);
 	i = 1;
     }
 
-    if (NIL_P(spat)) {
+    if (argc == 0) {
 	if (!NIL_P(FS)) {
 	    spat = FS;
 	    goto fs_set;
@@ -2508,8 +2507,9 @@ str_sum(argc, argv, str)
     int   bits;
     char *p, *pend;
 
-    rb_scan_args(argc, argv, "01", &vbits);
-    if (NIL_P(vbits)) bits = 16;
+    if (rb_scan_args(argc, argv, "01", &vbits) == 0) {
+	bits = 16;
+    }
     else bits = NUM2INT(vbits);
 
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
