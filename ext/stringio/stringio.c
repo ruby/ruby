@@ -217,7 +217,7 @@ strio_initialize(argc, argv, self)
 	StringValue(string);
 	if (!(m = RSTRING(mode)->ptr)) m = "";
 	ptr->flags = rb_io_mode_flags(m);
-	if (ptr->flags & FMODE_WRITABLE && OBJ_FROZEN(string)) {
+	if ((ptr->flags & FMODE_WRITABLE) && OBJ_FROZEN(string)) {
 	    errno = EACCES;
 	    rb_sys_fail(0);
 	}
@@ -317,13 +317,13 @@ strio_set_string(self, string)
 {
     struct StringIO *ptr = StringIO(self);
 
-    if (NIL_P(string)) {
-	ptr->flags &= ~FMODE_READWRITE;
-    }
-    else {
+    ptr->flags &= ~FMODE_READWRITE;
+    if (!NIL_P(string)) {
 	StringValue(string);
-	ptr->flags |= FMODE_READWRITE;
+	ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
     }
+    ptr->pos = 0;
+    ptr->lineno = 0;
     return ptr->string = string;
 }
 
@@ -408,10 +408,13 @@ static VALUE
 strio_become(copy, orig)
     VALUE copy, orig;
 {
-    struct StringIO *ptr = StringIO(orig);
+    struct StringIO *ptr;
 
-    if (DATA_PTR(copy)) {
-	strio_free(DATA_PTR(ptr));
+    orig = rb_convert_type(orig, T_DATA, "StringIO", "to_strio");
+    if (copy == orig) return copy;
+    ptr = StringIO(orig);
+    if (check_strio(copy)) {
+	strio_free(DATA_PTR(copy));
     }
     DATA_PTR(copy) = ptr;
     ++ptr->count;
@@ -435,13 +438,24 @@ strio_set_lineno(self, lineno)
 
 #define strio_binmode strio_self
 
-#define strio_reopen strio_unimpl
-
 #define strio_fcntl strio_unimpl
 
 #define strio_flush strio_self
 
 #define strio_fsync strio_0
+
+static VALUE
+strio_reopen(argc, argv, self)
+    int argc;
+    VALUE *argv;
+    VALUE self;
+{
+    rb_secure(4);
+    if (argc == 1 && TYPE(*argv) != T_STRING) {
+	return strio_become(self, *argv);
+    }
+    return strio_initialize(argc, argv, self);
+}
 
 static VALUE
 strio_get_pos(self)
