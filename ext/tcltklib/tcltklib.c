@@ -97,7 +97,8 @@ static VALUE ip_invoke _((int, VALUE*, VALUE));
 
 /* from tkAppInit.c */
 
-#if !defined __MINGW32__
+#if TCL_MAJOR_VERSION < 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
+#  if !defined __MINGW32__ && !defined __BORLANDC__
 /*
  * The following variable is a special hack that is needed in order for
  * Sun shared libraries to be used for Tcl.
@@ -105,6 +106,7 @@ static VALUE ip_invoke _((int, VALUE*, VALUE));
 
 extern int matherr();
 int *tclDummyMathPtr = (int *) matherr;
+#  endif
 #endif
 
 /*---- module TclTkLib ----*/

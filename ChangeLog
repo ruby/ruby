@@ -1,3 +1,9 @@
+Sun Aug 29 14:08:56 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: compile error on bcc32 [ruby-dev:24081]
+
+	* ext/tk/lib/multi-tk.rb: MultiTkIp#eval_string does not work
+
 Sat Aug 28 23:04:41 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_and): protect parameters from GC.

@@ -857,7 +857,7 @@ class MultiTkIp
     if cmd.kind_of?(String)
       xcmd  = cmd
       xargs = args
-      cmd = proc{ TkComm._get_eval_string(TkUtil.eval_cmd(xcmd, *xargs)) }
+      cmd = proc{ TkComm._get_eval_string(eval(xcmd, *xargs)) }
       args = []
     end
 
