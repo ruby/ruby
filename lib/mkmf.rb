@@ -206,7 +206,7 @@ def link_command(ldflags, opt="", libpath=$LIBPATH)
 		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
 		 'LIBPATH' => libpathflag(libpath),
 		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-		 'LIBS' => "#$LIBRUBYARG ${opt} #$LIBS")
+		 'LIBS' => "#$LIBRUBYARG #{opt} #$LIBS")
 end
 
 def cc_command(opt="")
@@ -750,6 +750,7 @@ DISTCLEANFILES =
   end
 
   mfile.print "$(DLLIB): $(OBJS)\n\t"
+  mfile.print "@-$(RM) $@\n\t"
   if $static
     mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$(DLLIB) $(OBJS)"
     if ranlib = config_string('RANLIB')

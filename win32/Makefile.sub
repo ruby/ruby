@@ -317,9 +317,9 @@ s,@target_os@,$(OS),;t t
 s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
 s,@YACC@,$(YACC),;t t
-s,@RANLIB@,rem,;t t
+s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t
-s,@ARFLAGS@,$(ARFLAGS):,;t t
+s,@ARFLAGS@,$(ARFLAGS),;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
 s,@LIBOBJS@, acosh.obj crypt.obj win32.obj isinf.obj isnan.obj,;t t
@@ -361,7 +361,7 @@ s,@LINK_SO@,$$(LDSHARED) -Fe$$(@) $$(OBJS) $$(LIBS) $$(LOCAL_LIBS) $$(DLDFLAGS),
 s,@COMPILE_C@,$$(CC) $$(CFLAGS) $$(CPPFLAGS) -c -Tc$$(<:\=/),;t t
 s,@COMPILE_CXX@,$$(CXX) $$(CXXFLAGS) $$(CPPFLAGS) -c -Tp$$(<:\=/),;t t
 s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: .%s.%s:,;t t
-s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) $$(LDFLAGS) $$(XLDFLAGS),;t t
+s,@TRY_LINK@,$$(CC) -Feconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS) -link $$(LDFLAGS) $$(LIBPATH) $$(XLDFLAGS),;t t
 s,@COMMON_LIBS@,m,;t t
 s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN;t t
 s,@COMMON_HEADERS@,winsock2.h windows.h,;t t
@@ -405,7 +405,7 @@ $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 		$(AR) $(ARFLAGS)$@ -def:$<
 
 install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb $(DESTDIR)
+		$(MINIRUBY) $(srcdir)/instruby.rb -$(MFLAGS)$(MAKEFLAGS) $(DESTDIR)
 		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) -$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR) install
 
 clean:		clean-ext clean-local

@@ -110,7 +110,7 @@ STACK = 0x2000000
 
 XCFLAGS = 
 
-ARFLAGS = /a 
+ARFLAGS = /a
 LD = ilink32 -q -Gn
 LDSHARED  = $(LD)
 XLDFLAGS  = -Tpe c0x32.obj
@@ -137,7 +137,9 @@ LIBRUBY_SO    = $(RUBY_SO_NAME).dll
 LIBRUBY       = $(RUBY_SO_NAME).lib
 LIBRUBYARG    = $(LIBRUBY)
 
+!ifndef EXTOBJS
 EXTOBJS       = dmyext.obj
+!endif
 
 MAINOBJ       = main.obj
 WINMAINOBJ    = winmain.obj
@@ -285,7 +287,7 @@ s,@CFLAGS@,$(CFLAGS),;t t
 s,@CPPFLAGS@,$(CPPFLAGS),;t t
 s,@CXXFLAGS@,$(CXXFLAGS),;t t
 s,@FFLAGS@,$(FFLAGS),;t t
-s,@LDFLAGS@,$(LDFLAGS),;t t
+s,@LDFLAGS@,,;t t
 s,@LIBS@,$(LIBS),;t t
 s,@exec_prefix@,$${prefix},;t t
 s,@prefix@,,;t t
@@ -320,9 +322,9 @@ s,@target_os@,$(OS),;t t
 s,@CC@,$(CC),;t t
 s,@CPP@,cpp32,;t t
 s,@YACC@,$(YACC),;t t
-s,@RANLIB@,rem,;t t
+s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t
-s,@ARFLAGS@,$(ARFLAGS),;t t
+s,@ARFLAGS@,$(ARFLAGS) ,;t t
 s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
 s,@LIBOBJS@, acosh.obj crypt.obj win32.obj,;t t
@@ -367,6 +369,7 @@ s,@COMPILE_RULES@,{$$(srcdir)}.%s{}.%s: .%s.%s:,;t t
 s,@COMMON_LIBS@,m,;t t
 s,@COMMON_MACROS@,WIN32_LEAN_AND_MEAN;t t
 s,@COMMON_HEADERS@,winsock2.h windows.h,;t t
+s,@TRY_LINK@,$$(CC) -oconftest $$(INCFLAGS) -I$$(hdrdir) $$(CPPFLAGS) $$(CFLAGS) $$(LIBPATH) $$(LDFLAGS) $$(src) $$(LOCAL_LIBS) $$(LIBS),;t t
 s,@EXPORT_PREFIX@,_,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
 s,@sitearch@,$(ARCH)-$(OS),;t t
@@ -389,20 +392,20 @@ $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 
 $(LIBRUBY_A):	$(OBJS)
 		@-if exist $@ del $@
-		$(AR) $(ARFLAGS)$@ $(OBJS)
+		$(AR) $(ARFLAGS) $@ $(OBJS)
 
 # $(LIBRUBY):	$(LIBRUBY_SO)
 #		implib $@ $(LIBRUBY_SO)
 
-$(LIBRUBY_SO) $(LIBRUBY): $(LIBRUBY_A) dmyext.obj $(EXTOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
+$(LIBRUBY_SO) $(LIBRUBY): $(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
 		@echo $(EXTOBJS)
-		$(LIBRUBY_LDSHARED) $(LIBRUBY_DLDFLAGS) dmyext.obj,$(LIBRUBY_SO),nul,$(LIBRUBY_A) $(LIBS),$(RUBYDEF),$(RUBY_SO_NAME).res
+		$(LIBRUBY_LDSHARED) $(LIBRUBY_DLDFLAGS) $(EXTOBJS:/=\),$(LIBRUBY_SO),nul,$(LIBRUBY_A) $(LIBS),$(RUBYDEF),$(RUBY_SO_NAME).res
 
 $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 		$(MINIRUBY) $(srcdir)bcc32/mkexports.rb -output=$@ $(LIBRUBY_A)
 
 install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)instruby.rb $(DESTDIR)
+		$(MINIRUBY) $(srcdir)instruby.rb -$(MFLAGS)$(MAKEFLAGS) $(DESTDIR)
 		$(MINIRUBY) $(srcdir)ext/extmk.rb $(MAKE) -$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR) install
 
 clean:		clean-ext clean-local
@@ -494,6 +497,9 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 	@del y.tab.c
 
 parse.c: parse.y
+
+ext/extinit.obj: ext/extinit.c $(SETUP)
+	$(CC) $(CFLAGS) $(XCFLAGS) $(CPPFLAGS) -o$@ -c ext/extinit.c
 
 acosh.obj: acosh.c win32.h
 alloca.obj: alloca.c win32.h

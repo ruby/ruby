@@ -1,3 +1,24 @@
+Tue Oct 22 10:13:05 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* instruby.rb: add dryrun mode.
+
+	* ext/extmk.rb (extmake): avoid Borland make's quirk behavior.
+
+	* lib/mkmf.rb (link_command): opt is not a makefile macro.
+
+	* bcc32/Makefile.sub ($(LIBRUBY_SO) $(LIBRUBY)): EXTOBJS were not
+	  linked.
+
+	* bcc32/Makefile.sub (ext/extinit.obj): missing.
+
+	* bcc32/Makefile.sub (TRY_LINK): options have to place before any
+	  non-option arguments.
+
+	* win32/Makefile.sub (TRY_LINK): need -link and -libpath options.
+
+	* bcc32/Makefile.sub, win32/Makefile.sub (RANLIB): logical
+	  operator never work with command.com.
+
 Tue Oct 22 00:59:59 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (RUBY_CPPOUTFILE): fix cache file bug.

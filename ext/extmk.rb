@@ -200,9 +200,12 @@ if $extlist.size > 0
   if RUBY_PLATFORM =~ /m68k-human|beos/
     $extlibs.gsub!("-L/usr/local/lib", "") if $extlibs
   end
-  conf = ['SETUP='+$setup, 'EXTOBJS='+$extobjs.strip]
-  conf << 'EXTLIBS='+$extlibs.strip if $extlibs
-  conf << 'EXTLDFLAGS='+$extflags.strip if $extflags
+  conf = [
+    ['SETUP', $setup], ['EXTOBJS', $extobjs],
+    ['EXTLIBS', $extlibs], ['EXTLDFLAGS', $extflags]
+  ].map {|n, v|
+    "#{n}=#{v}" if v and !(v = v.strip).empty?
+  }.compact
   puts conf
   ARGV.concat(conf)
 end
