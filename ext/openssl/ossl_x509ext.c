@@ -256,6 +256,7 @@ ossl_x509ext_initialize(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc, argv, "12", &oid, &value, &critical) == 1){
 	/* evaluate oid as a DER string */
 	oid = ossl_to_der_if_possible(oid);
+	StringValue(oid);
 	GetX509Ext(self, ext);
 	p  = RSTRING(oid)->ptr;
 	if(!d2i_X509_EXTENSION(&ext, &p, RSTRING(oid)->len))
@@ -295,6 +296,7 @@ ossl_x509ext_set_value(VALUE self, VALUE data)
 
     GetX509Ext(self, ext);
     data = ossl_to_der_if_possible(data);
+    StringValue(data);
     if(!(s = OPENSSL_malloc(RSTRING(data)->len)))
 	ossl_raise(eX509ExtError, "malloc error");
     memcpy(s, RSTRING(data)->ptr, RSTRING(data)->len);

@@ -94,6 +94,7 @@ ossl_x509attr_initialize(int argc, VALUE *argv, VALUE self)
     if(rb_scan_args(argc, argv, "11", &oid, &value) == 1){
 	GetX509Attr(self, attr);
 	oid = ossl_to_der_if_possible(oid);
+	StringValue(oid);
 	p = RSTRING(oid)->ptr;
 	if(!d2i_X509_ATTRIBUTE(&attr, &p, RSTRING(oid)->len)){
 	    ossl_raise(eX509AttrError, NULL);

@@ -108,6 +108,7 @@ ossl_ocspreq_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
 	arg = ossl_to_der_if_possible(arg);
+	StringValue(arg);
 	p = (unsigned char*)RSTRING(arg)->ptr;
 	if(!d2i_OCSP_REQUEST((OCSP_REQUEST**)&DATA_PTR(self), &p,
 			     RSTRING(arg)->len)){
@@ -312,6 +313,7 @@ ossl_ocspres_initialize(int argc, VALUE *argv, VALUE self)
     rb_scan_args(argc, argv, "01", &arg);
     if(!NIL_P(arg)){
 	arg = ossl_to_der_if_possible(arg);
+	StringValue(arg);
 	p = RSTRING(arg)->ptr;
 	if(!d2i_OCSP_RESPONSE((OCSP_RESPONSE**)&DATA_PTR(self), &p,
 			      RSTRING(arg)->len)){

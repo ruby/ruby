@@ -1,3 +1,16 @@
+Sun Sep 21 04:12:36 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspreq_initialize): the argument
+	  should be a String. 
+
+	* ext/openssl/ossl_ocsp.c (ossl_ocspres_initialize): ditt.
+
+	* ext/openssl/ossl_x509attr.c (ossl_x509attr_initialize): ditto.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_initialize): ditto.
+
+	* ext/openssl/ossl_x509ext.c (ossl_x509ext_set_value): ditto.
+
 Mon Sep 20 11:49:05 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/logger.rb: typo fixed.
