@@ -1,3 +1,9 @@
-socket.o : socket.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/rubyio.h $(hdrdir)/rubysig.h sockport.h
+DISTCLEANFILES = $(srcdir)/constants.h
+
+socket.o: socket.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h $(hdrdir)/rubyio.h $(hdrdir)/rubysig.h sockport.h constants.h
 getnameinfo.o: getnameinfo.c $(topdir)/config.h addrinfo.h sockport.h
 getaddrinfo.o: getaddrinfo.c $(topdir)/config.h addrinfo.h sockport.h
+
+constants.h: $(srcdir)/mkconstants.rb
+	@echo "generating constants.h"
+	@$(RUBY) $(srcdir)/mkconstants.rb > $@

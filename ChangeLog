@@ -1,3 +1,13 @@
+Mon Feb 28 15:12:06 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/socket/socket.c (Init_socket): ported more Socket::Constants
+	  from ruby_1_8, and made it easy to add new constants.
+	  [ruby-dev:25771]
+
+	* ext/socket/depend: ditto.
+
+	* ext/socket/mkconstants.rb: ditto. (added)
+
 Sun Feb 27 05:55:38 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: fix typo. [ruby-core:04494]
@@ -4749,10 +4759,6 @@ Wed Jul 14 12:20:05 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_float.rb (test_strtod): add test for bug fix.
 
-Wed Jul 14 01:20:21 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
-
-	* array.c: rdoc patch - unified margin.
-
 Wed Jul 14 00:33:48 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* array.c: rdoc patch. merged patch from Johan Holmberg
@@ -6056,10 +6062,6 @@ Wed Apr 21 15:56:43 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/ui/console/testrunner.rb (test_started): restore $0
 	  after changing process title.  [ruby-talk:97426]
-
-Wed Apr 21 11:45:22 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
-
-	* process.c: Recover wrongly removed spaces at end of the lines.
 
 Wed Apr 21 10:18:06 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
