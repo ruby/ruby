@@ -1,3 +1,13 @@
+Thu Dec 30 22:45:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* rubyio.h: don't deprecate rb_read_check.
+
+	* io.c (STDIO_READ_DATA_PENDING): reverted from old READ_DATA_PENDING
+	  to check stdio read buffer.
+	  (rb_read_check): use STDIO_READ_DATA_PENDING.
+	  (rb_read_pending): ditto.
+	  (rb_getc): ditto.
+
 Thu Dec 30 05:39:35 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y: eliminate unused members in struct parser_params.

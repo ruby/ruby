@@ -118,6 +118,24 @@ static int gets_lineno;
 static int init_p = 0, next_p = 0;
 static VALUE lineno = INT2FIX(0);
 
+#ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
+#  ifdef _IO_fpos_t
+#    define STDIO_READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr != (fp)->_IO_read_end)
+#  else
+#    define STDIO_READ_DATA_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
+#  endif
+#elif defined(FILE_COUNT)
+#  define STDIO_READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
+#elif defined(FILE_READEND)
+#  define STDIO_READ_DATA_PENDING(fp) ((fp)->FILE_READPTR < (fp)->FILE_READEND)
+#elif defined(__BEOS__)
+#  define STDIO_READ_DATA_PENDING(fp) (fp->_state._eof == 0)
+#elif defined(__VMS)
+#  define STDIO_READ_DATA_PENDING(fp)       (((unsigned int)(*(fp))->_cnt) > 0)
+#else
+#  define STDIO_READ_DATA_PENDING(fp) (!feof(fp))
+#endif
+
 #if defined(__VMS)
 #define fopen(file_spec, mode)  fopen(file_spec, mode, "rfm=stmlf")
 #define open(file_spec, flags, mode)  open(file_spec, flags, mode, "rfm=stmlf")
@@ -296,8 +314,7 @@ int
 rb_read_pending(fp)
     FILE *fp;
 {
-    /* xxx: return READ_DATA_PENDING(fp); */
-    return 1;
+    return STDIO_READ_DATA_PENDING(fp);
 }
 
 int
@@ -310,12 +327,9 @@ void
 rb_read_check(fp)
     FILE *fp;
 {
-    /* xxx:
-    if (!READ_DATA_PENDING(fp)) {
+    if (!STDIO_READ_DATA_PENDING(fp)) {
 	rb_thread_wait_fd(fileno(fp));
     }
-    */
-    return;
 }
 
 void
@@ -1829,10 +1843,9 @@ int
 rb_getc(f)
     FILE *f;
 {
-    /*xxx
     int c;
 
-    if (!READ_DATA_PENDING(f)) {
+    if (!STDIO_READ_DATA_PENDING(f)) {
 	rb_thread_wait_fd(fileno(f));
     }
     TRAP_BEG;
@@ -1840,8 +1853,6 @@ rb_getc(f)
     TRAP_END;
 
     return c;
-    */
-    return -1;
 }
 
 /*
@@ -1937,14 +1948,16 @@ fptr_finalize(fptr, noraise)
 	return;
     }
     if (fptr->stdio_file) {
-        if (fclose(fptr->stdio_file) < 0 && !noraise) { /* fptr->stdio_file is freed anyway */
+        if (fclose(fptr->stdio_file) < 0 && !noraise) {
+            /* fptr->stdio_file is deallocated anyway */
             fptr->stdio_file = 0;
             fptr->fd = -1;
             rb_sys_fail(fptr->path);
         }
     }
     else if (0 <= fptr->fd) {
-        if (close(fptr->fd) < 0 && !noraise) { /* fptr->fd is still not closed */
+        if (close(fptr->fd) < 0 && !noraise) {
+            /* fptr->fd is still not closed */
             rb_sys_fail(fptr->path);
         }
     }
