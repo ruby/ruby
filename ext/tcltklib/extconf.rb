@@ -50,6 +50,6 @@ if have_header("tcl.h") && have_header("tk.h") &&
 	"/usr/X11/lib", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
     find_tcl(tcllib, stubs) &&
     find_tk(tklib, stubs)
-  $CFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
+  $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
   create_makefile("tcltklib")
 end

@@ -1,3 +1,11 @@
+Thu Aug 10 05:40:28 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/extmk.rb.in: $CPPFLAGS should be initialized.
+
+	* ext/tcltklib/depend: add stubs.o.
+
+	* ext/tcltklib/extconf.rb: use $CPPFLAGS instead of $CFLAGS.
+
 Wed Aug  9 16:31:48 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_callcc): thread status for continuations must be

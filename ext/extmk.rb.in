@@ -550,7 +550,8 @@ def extmake(target)
     ldir = "-L"+dir if dir
   end
 
-  $CFLAGS = idir || ""
+  $CFLAGS = ""
+  $CPPFLAGS = idir || ""
   $LDFLAGS = ldir || ""
 
   begin
