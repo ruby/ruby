@@ -929,7 +929,7 @@ push_braces(ary, s, flags)
 	p++;
     }
 
-    if (lbrace) {
+    if (lbrace && rbrace) {
 	int len = strlen(s);
 	buf = xmalloc(len + 1);
 	memcpy(buf, s, lbrace-s);
