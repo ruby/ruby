@@ -16,10 +16,6 @@
 #define EXTERN extern __declspec(dllexport)
 #endif
 
-#if defined _MSC_VER && !defined NORETURN
-#define NORETURN(x) __declspec(noreturn) x
-#endif
-
 //
 // Definitions for NT port of Perl
 //

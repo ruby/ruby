@@ -1,8 +1,10 @@
 #define HAVE_PROTOTYPES 1
 #define HAVE_STDARG_PROTOTYPES 1
 /* #define HAVE_ATTR_NORETURN 1 */
-#define HAVE_INLINE 1
-#define INLINE __inline
+#if _MSC_VER > 1100 && !defined NORETURN
+#define NORETURN(x) __declspec(noreturn) x
+#endif
+#define inline __inline
 /* #define HAVE_DIRENT_H 1 */
 /* #define HAVE_UNISTD_H 1 */
 #define HAVE_STDLIB_H 1

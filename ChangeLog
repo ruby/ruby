@@ -1,3 +1,12 @@
+Thu Jan 11 10:45:04 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.h, win32/config.h.in: move NORETURN from win32.h
+	  to config.h.in.
+
+	* win32/config.h.in (inline): renamed from INLINE.
+
+	* djgpp/config.hin (INLINE): removed.
+
 Wed Jan 10 16:15:08 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ruby.h: NORETURN macro is changed for VC++ 6.0.
