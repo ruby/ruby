@@ -7229,6 +7229,13 @@ block_pass(self, node)
 	}
     }
 
+    if (ruby_block && ruby_block->block_obj == proc) {
+	PUSH_ITER(ITER_PRE);
+	result = rb_eval(self, node->nd_iter);
+	POP_ITER();
+	return result;
+    }
+
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = block_orphan(data);
 

@@ -1,3 +1,7 @@
+Fri Aug 22 01:00:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (block_pass): improve passing current block.
+
 Tue Aug 21 00:13:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
 
 	* ext/bigdecimal/bigdecimal.c: Int. overflow bug in multiplication fixed,
