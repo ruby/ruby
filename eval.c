@@ -2031,11 +2031,11 @@ rb_eval(self, n)
         {
 	    VALUE r = rb_eval(self,node->nd_recv);
 	    VALUE l = rb_eval(self,node->nd_value);
-	    if (TYPE(r) == T_STRING) {
-		result = rb_reg_match(l, r);
+	    if (TYPE(l) == T_STRING) {
+		result = rb_reg_match(r, l);
 	    }
 	    else {
-		result = rb_funcall(r, match, 1, l);
+		result = rb_funcall(l, match, 1, r);
 	    }
 	}
 	break;
