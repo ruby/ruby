@@ -1,3 +1,12 @@
+Fri Mar 19 11:31:32 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb ($beos, $solaris): add OS flags.
+
+	* lib/mkmf.rb (RUBY): / is not recognized as path separator on
+	   nmake/bmake. [ruby-list:39388]
+
+	* lib/mkmf.rb (CLEANLIBS, CLEANOBJS): should remove *.exp with *.so.
+
 Thu Mar 18 19:47:44 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* instruby.rb, rubytest.rb: do not depend on srcdir.

@@ -53,6 +53,8 @@ $cygwin = /cygwin/ =~ RUBY_PLATFORM
 $human = /human/ =~ RUBY_PLATFORM
 $netbsd = /netbsd/ =~ RUBY_PLATFORM
 $os2 = /os2/ =~ RUBY_PLATFORM
+$beos = /beos/ =~ RUBY_PLATFORM
+$solaris = /solaris/ =~ RUBY_PLATFORM
 
 def config_string(key, config = CONFIG)
   s = config[key] and !s.empty? and block_given? ? yield(s) : s
@@ -774,7 +776,8 @@ RUBY_SO_NAME = #{CONFIG['RUBY_SO_NAME']}
 arch = #{CONFIG['arch']}
 sitearch = #{CONFIG['sitearch']}
 ruby_version = #{Config::CONFIG['ruby_version']}
-RUBY = #{$ruby}
+ruby = #{$ruby}
+RUBY = #{($nmake && !$extmk && !$configure_args.has_key?('--ruby')) ? '$(ruby:/=\)' : '$(ruby)'}
 RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
 MAKEDIRS = $(RUBY) -run -e mkdir -- -p
 INSTALL_PROG = $(RUBY) -run -e install -- -vpm 0755
@@ -895,8 +898,8 @@ RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
 }
   end
   mfile.print %{
-CLEANLIBS     = #{$extout ? '$(RUBYARCHDIR)/' : ''}$(TARGET).{#{CONFIG['DLEXT']},exp,il?,tds,map}
-CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.bak
+CLEANLIBS     = #{$extout ? '$(RUBYARCHDIR)/' : ''}$(TARGET).{#{CONFIG['DLEXT']},il?,tds,map}
+CLEANOBJS     = *.#{$OBJEXT} *.#{$LIBEXT} *.s[ol] *.pdb *.exp *.bak
 
 all:		#{target ? $extout ? "install" : "$(DLLIB)" : "Makefile"}
 static:		$(STATIC_LIB)
