@@ -1,3 +1,10 @@
+Wed Dec 24 16:13:05 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_read): should check for error
+	  status by SSL_get_error().
+
+	* ext/openssl/ossl_ssl.c (ossl_ssl_write): ditto.
+
 Wed Dec 24 14:23:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_read): clear the buffer argument

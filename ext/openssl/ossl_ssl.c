@@ -496,11 +496,20 @@ ossl_ssl_read(VALUE self, VALUE len)
     str = rb_str_new(0, ilen);
 
     if (ssl) {
-	TRAP_BEG;
-        nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
-	TRAP_END;
-        if (nread < 0) {
-            ossl_raise(eSSLError, "SSL_read:");
+	for (;;){
+	    nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
+	    switch(SSL_get_error(ssl, nread)){
+	    case SSL_ERROR_NONE:
+		goto end;
+	    case SSL_ERROR_ZERO_RETURN:
+		ossl_raise(rb_eEOFError, "End of file reached");
+	    case SSL_ERROR_WANT_WRITE:
+	    case SSL_ERROR_WANT_READ:
+		rb_thread_schedule();
+		continue;
+	    default:
+		ossl_raise(eSSLError, "SSL_read:");
+	    }
         }
     }
     else {
@@ -510,15 +519,15 @@ ossl_ssl_read(VALUE self, VALUE len)
         TRAP_BEG;
         nread = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
         TRAP_END;
+	if (nread == 0) {
+	    ossl_raise(rb_eEOFError, "End of file reached");
+	}
         if(nread < 0) {
             ossl_raise(eSSLError, "read:%s", strerror(errno));
         }
     }
 
-    if (nread == 0) {
-        ossl_raise(rb_eEOFError, "End of file reached");
-    }
-
+  end:
     RSTRING(str)->len = nread;
     RSTRING(str)->ptr[nread] = 0;
     OBJ_TAINT(str);
@@ -538,9 +547,18 @@ ossl_ssl_write(VALUE self, VALUE str)
     StringValue(str);
 
     if (ssl) {
-        nwrite = SSL_write(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
-        if (nwrite <= 0) {
-            ossl_raise(eSSLError, "SSL_write:");
+	for (;;){
+	    nwrite = SSL_write(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
+	    switch(SSL_get_error(ssl, nwrite)){
+	    case SSL_ERROR_NONE:
+		goto end;
+	    case SSL_ERROR_WANT_WRITE:
+	    case SSL_ERROR_WANT_READ:
+		rb_thread_schedule();
+		continue;
+	    default:
+		ossl_raise(eSSLError, "SSL_write:");
+	    }
         }
     }
     else {
@@ -554,6 +572,7 @@ ossl_ssl_write(VALUE self, VALUE str)
         }
     }
 
+  end:
     return INT2NUM(nwrite);
 }
 
