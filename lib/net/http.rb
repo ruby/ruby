@@ -1738,8 +1738,14 @@ module Net
   end
 
 
-
   # for backward compatibility
+
+  class HTTP
+    ProxyMod = ProxyDelta
+  end
+  module NetPrivate
+    HTTPRequest = ::Net::HTTPRequest
+  end
 
   HTTPInformationCode = HTTPInformation
   HTTPSuccessCode     = HTTPSuccess

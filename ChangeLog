@@ -1,3 +1,10 @@
+Wed Jul  2 11:10:47 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: set old class aliases for backward
+	  compatibility. [ruby-talk:74863]
+
+	* lib/net/protocol.rb: ditto.
+
 Wed Jul  2 01:32:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/net/pop.rb (Net::POP3#start): typofix.

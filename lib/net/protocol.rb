@@ -449,4 +449,10 @@ module Net
   
   end
 
+
+  # For backward compatibility
+  module NetPrivate
+    Socket = ::Net::InternetMessageIO
+  end
+
 end   # module Net
