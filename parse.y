@@ -3269,7 +3269,7 @@ here_document(here)
 static void
 arg_ambiguous()
 {
-    rb_warning("ambiguous first argument; make sure");
+    rb_warning("ambiguous first argument; put parentheses or even spaces");
 }
 
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)

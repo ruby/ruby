@@ -67,7 +67,9 @@ class Rational < Numeric
   def Rational.new!(num, den = 1)
     new(num, den)
   end
-  
+
+  private_class_method :new
+
   def initialize(num, den)
     if den < 0
       num = -num

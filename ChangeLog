@@ -1,3 +1,9 @@
+Tue Apr 22 09:20:40 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg_ambiguous): hopefully better message.
+
+	* lib/cgi.rb (CGI::QueryExtension::initialize_query): to_ary
+
 Tue Apr 22 06:06:22 2003  Tanaka Akira  <akr@m17n.org>
 
         * lib/resolv.rb (Resolv::DNS::Resource#hash): use XOR to accumulate
