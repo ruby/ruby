@@ -1,3 +1,7 @@
+Fri May 15 14:43:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental release 1.1b9_20.
+
 Thu May 14 14:44:21 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* sun4 cc patches for intern.h and regex.h.
