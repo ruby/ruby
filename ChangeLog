@@ -1,3 +1,8 @@
+Wed Aug  7 09:45:24 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse/uri.rb: require standard uri module.  thanks to
+	  Minero Aoki.
+
 Wed Aug  7 08:44:32 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/racc/cparse/cparse.c: reduce goto.
