@@ -1,3 +1,13 @@
+Mon Sep 27 15:58:50 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/rpc/cgistub.rb: make logging severity threshold higher.
+
+	* lib/soap/rpc/standaloneServer.rb: defer WEBrick server start to give
+	  a change to reset logging severity threshold.
+
+	* test/soap/calc/test_*, test/soap/helloworld/test_helloworld.rb: run
+	  silent.
+
 Sat Sep 27 09:44:18 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: clear all errors on Windows.

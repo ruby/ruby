@@ -14,10 +14,11 @@ module Calc
 class TestCalc2 < Test::Unit::TestCase
   def setup
     @server = CalcServer2.new('CalcServer', 'http://tempuri.org/calcService', '0.0.0.0', 7000)
+    @server.level = Logger::Severity::FATAL
     @t = Thread.new {
       @server.start
     }
-    while @server.server.status != :Running
+    while @server.server.nil? or @server.server.status != :Running
       sleep 0.1
     end
     @var = SOAP::RPC::Driver.new('http://localhost:7000/', 'http://tempuri.org/calcService')

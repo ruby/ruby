@@ -50,18 +50,12 @@ class StandaloneServer < Logger::Application
 
   def initialize(app_name, namespace, host = "0.0.0.0", port = 8080)
     super(app_name)
-    @logdev = Logger.new(STDERR)
-    @logdev.level = INFO
     @namespace = namespace
-    @server = WEBrick::HTTPServer.new(
-      :BindAddress => host,
-      :Logger => logdev,
-      :AccessLog => [[logdev, WEBrick::AccessLog::COMBINED_LOG_FORMAT]],
-      :Port => port
-    )
+    @host = host
+    @port = port
+    @server = nil
     @soaplet = ::SOAP::RPC::SOAPlet.new
     on_init
-    @server.mount('/', @soaplet)
   end
 
   def on_init
@@ -107,6 +101,13 @@ class StandaloneServer < Logger::Application
 private
 
   def run
+    @server = WEBrick::HTTPServer.new(
+      :BindAddress => @host,
+      :Logger => @log,
+      :AccessLog => [],
+      :Port => @port
+    )
+    @server.mount('/', @soaplet)
     @server.start
   end
 end

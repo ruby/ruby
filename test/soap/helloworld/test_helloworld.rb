@@ -14,10 +14,11 @@ module HelloWorld
 class TestHelloWorld < Test::Unit::TestCase
   def setup
     @server = HelloWorldServer.new('hws', 'urn:hws', '0.0.0.0', 2000)
+    @server.level = Logger::Severity::UNKNOWN
     @t = Thread.new {
       @server.start
     }
-    while @server.server.status != :Running
+    while @server.server.nil? or @server.server.status != :Running
       sleep 0.1
     end
     @client = SOAP::RPC::Driver.new('http://localhost:2000/', 'urn:hws')

@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'soap/rpc/driver'
+require 'logger'
 require 'webrick'
 
 
@@ -9,9 +10,13 @@ module Calc
 
 class TestCalcCGI < Test::Unit::TestCase
   def setup
+    logger = Logger.new(STDERR)
+    logger.level = Logger::Severity::FATAL
     @server = WEBrick::HTTPServer.new(
       :BindAddress => "0.0.0.0",
+      :Logger => logger,
       :Port => 8808,
+      :AccessLog => [],
       :DocumentRoot => File.dirname(File.expand_path(__FILE__)),
       :CGIPathEnv => ENV['PATH']
     )

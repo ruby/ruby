@@ -626,6 +626,7 @@ test/ruby/test_defined.rb
 test/ruby/test_eval.rb
 test/ruby/test_exception.rb
 test/ruby/test_float.rb
+test/ruby/test_file.rb
 test/ruby/test_gc.rb
 test/ruby/test_hash.rb
 test/ruby/test_ifunless.rb

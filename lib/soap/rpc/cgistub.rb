@@ -96,7 +96,7 @@ class CGIStub < Logger::Application
   def initialize(appname, default_namespace)
     super(appname)
     set_log(STDERR)
-    self.level = INFO
+    self.level = ERROR
     @default_namespace = default_namespace
     @router = SOAP::RPC::Router.new(appname)
     @remote_user = ENV['REMOTE_USER'] || 'anonymous'
