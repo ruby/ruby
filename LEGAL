@@ -63,7 +63,6 @@ missing/strftime.c:
 missing/strncasecmp.c:
 missing/strstr.c:
 missing/strtol.c:
-ext/sha1/sha1.[ch]:
 
   These files are all under public domain.
 
