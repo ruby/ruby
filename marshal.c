@@ -10,12 +10,12 @@
 
 **********************************************************************/
 
-#include <math.h>
-
 #include "ruby.h"
 #include "rubyio.h"
 #include "st.h"
 #include "util.h"
+
+#include <math.h>
 
 #define BITSPERSHORT (2*CHAR_BIT)
 #define SHORTMASK ((1<<BITSPERSHORT)-1)
