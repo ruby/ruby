@@ -40,6 +40,7 @@ rb_type(obj)
     if (obj == Qnil) return T_NIL;
     if (obj == Qfalse) return T_FALSE;
     if (obj == Qtrue) return T_TRUE;
+    if (obj == Qundef) return T_UNDEF;
     if (SYMBOL_P(obj)) return T_SYMBOL;
 
     return BUILTIN_TYPE(obj);

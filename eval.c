@@ -3679,9 +3679,9 @@ handle_rescue(self, node)
 }
 
 VALUE
-rb_rescue(b_proc, data1, r_proc, data2)
+rb_rescue2(b_proc, data1, eclass, r_proc, data2)
     VALUE (*b_proc)(), (*r_proc)();
-    VALUE data1, data2;
+    VALUE data1, eclass, data2;
 {
     int state;
     volatile VALUE result;
@@ -3692,7 +3692,7 @@ rb_rescue(b_proc, data1, r_proc, data2)
       retry_entry:
 	result = (*b_proc)(data1);
     }
-    else if (state == TAG_RAISE && rb_obj_is_kind_of(ruby_errinfo, rb_eStandardError)) {
+    else if (state == TAG_RAISE && rb_obj_is_kind_of(ruby_errinfo, eclass)) {
 	if (r_proc) {
 	    PUSH_TAG(PROT_NONE);
 	    if ((state = EXEC_TAG()) == 0) {
@@ -3716,6 +3716,14 @@ rb_rescue(b_proc, data1, r_proc, data2)
     if (state) JUMP_TAG(state);
 
     return result;
+}
+
+VALUE
+rb_rescue(b_proc, data1, r_proc, data2)
+    VALUE (*b_proc)(), (*r_proc)();
+    VALUE data1, data2;
+{
+    return rb_rescue2(b_proc, data1, rb_eStandardError, r_proc, data2);
 }
 
 VALUE

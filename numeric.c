@@ -70,7 +70,7 @@ do_coerce(x, y)
     VALUE a[2];
 
     a[0] = *x; a[1] = *y;
-    ary = rb_rescue(coerce_body, (VALUE)a, coerce_rescue, (VALUE)a);
+    ary = rb_rescue2(coerce_body, (VALUE)a, rb_eNameError, coerce_rescue, (VALUE)a);
     if (TYPE(ary) != T_ARRAY || RARRAY(ary)->len != 2) {
 	rb_raise(rb_eTypeError, "coerce must return [x, y]");
     }
@@ -136,7 +136,7 @@ static VALUE
 num_remainder(x, y)
     VALUE x, y;
 {
-    rb_warn("remainder is deprecated; use % opearator");
+    rb_warn("remainder is deprecated; use %% opearator");
     return rb_funcall(x, '%', 1, y);
 }
 
@@ -353,8 +353,7 @@ static VALUE
 flo_divmod(x, y)
     VALUE x, y;
 {
-    double fy;
-    VALUE div, mod;
+    double fy, div, mod;
 
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -1508,6 +1507,7 @@ Init_Numeric()
     rb_define_method(rb_cNumeric, "===", num_equal, 1);
     rb_define_method(rb_cNumeric, "eql?", num_eql, 1);
     rb_define_method(rb_cNumeric, "divmod", num_divmod, 1);
+    rb_define_method(rb_cNumeric, "remainder", num_remainder, 1);
     rb_define_method(rb_cNumeric, "abs", num_abs, 0);
 
     rb_define_method(rb_cNumeric, "integer?", num_int_p, 0);

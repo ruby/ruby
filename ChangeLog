@@ -1,6 +1,26 @@
+Tue Jul  4 13:16:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* util.c (rb_type): should add T_UNDEF.
+
+Tue Jul  4 09:30:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (here_document): supports EOF right after terminator.
+
+	* random.c (rb_f_rand): argument is now optional (rand(max=0)). 
+
 Tue Jul  4 01:50:49 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* win32/ruby.def: remove ruby_mktemp.
+
+Tue Jul  4 01:27:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_rescue2): new function to rescue arbitrary exception.
+
+	* numeric.c (do_coerce): should catch NameError explicitly.
+
+Tue Jul  4 00:15:23 2000  Dave Thomas  <Dave@thomases.com>
+
+	* numeric.c (Init_Numeric): forgot to register Numeric#remainder.
 
 Mon Jul  3 18:35:41 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -18,7 +38,7 @@ Mon Jul  3 16:47:22 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* cygwin/GNUmakefile: librubys.a -> lib$(RUBY_INSTALL_NAME)s.a
 
-	* configure.in: use AC_CANONICAL_{TARGET,HOST,BUILD}.
+	* configure.in: use AC_CANONICAL_{HOST,TARGET,BUILD}.
 
 Mon Jul  3 13:15:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

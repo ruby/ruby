@@ -6,7 +6,7 @@ Language Spec.
 - %w(a\ b\ c abc) => ["a b c", "abc"]
 - objectify symbols
 - class variable (prefix @@)
-- rescue RuntimeError in err ??
+- rescue RuntimeError =>n err
 * operator !! for rescue. ???
 * objectify characters
 * ../... outside condition invokes operator method too.
@@ -73,6 +73,8 @@ Standard Libraries
 - 'w' template for pack/unpack
 - alternative for interator? => block_given?
 - regex - /p (make obsolete), /m (new)
+- consistent /, %, divmod
+* Enumerable#sort_by for Schwartzian transformation
 * String#scanf(?)
 * Object#fmt(?)
 * Integer#{bin,oct,hex,heX}
@@ -113,5 +115,4 @@ Things To Do Before 1.6
 
 * fix spec. for the following:
 
-  * alternative for $! (exception? in? =>? :?)
   * mkmf.rb - create_makefile("net/socket")

@@ -2627,8 +2627,11 @@ here_document(term, indent)
 		p++;
 	    }
 	}
-	if (strncmp(eos, p, len) == 0 && (p[len] == '\n' || p[len] == '\r')) {
-	    break;
+	if (strncmp(eos, p, len) == 0) {
+	    if (p[len] == '\n' || p[len] == '\r')
+		break;
+	    if (len == RSTRING(line)->len)
+		break;
 	}
 
 	lex_pbeg = lex_p = RSTRING(line)->ptr;

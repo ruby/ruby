@@ -43,12 +43,11 @@ static void run_final();
 #if defined(MSDOS) || defined(__human68k__)
 #define GC_MALLOC_LIMIT 100000
 #else
-#define GC_MALLOC_LIMIT 400000
+#define GC_MALLOC_LIMIT 4000000
 #endif
 #endif
 
 static unsigned long malloc_memories = 0;
-static unsigned long alloc_objects = 0;
 
 static void
 mem_error(mesg)
@@ -282,7 +281,6 @@ rb_newobj()
       retry:
 	obj = (VALUE)freelist;
 	freelist = freelist->as.free.next;
-	alloc_objects++;
 	return obj;
     }
     if (dont_gc || during_gc || rb_prohibit_interrupt) add_heap();
@@ -914,7 +912,6 @@ rb_gc()
 # define STACK_END (stack_end)
 #endif
 
-    alloc_objects = 0;
     malloc_memories = 0;
 
     if (during_gc) return;

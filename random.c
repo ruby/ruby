@@ -130,11 +130,15 @@ rb_f_srand(argc, argv, obj)
 }
 
 static VALUE
-rb_f_rand(obj, vmax)
-    VALUE obj, vmax;
+rb_f_rand(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
+    VALUE vmax;
     long val, max;
 
+    rb_scan_args(argc, argv, "01", &vmax);
     if (first) {
 	struct timeval tv;
 
@@ -148,9 +152,14 @@ rb_f_rand(obj, vmax)
 	/* fall through */
       case T_BIGNUM:
 	return rb_big_rand(vmax, RANDOM_NUMBER);
+      case T_NIL:
+	max = 0;
+	break;
+      default:
+	max = NUM2LONG(vmax);
+	break;
     }
 
-    max = NUM2LONG(vmax);
     if (max == 0) {
 	return rb_float_new(RANDOM_NUMBER);
     }
@@ -164,5 +173,5 @@ void
 Init_Random()
 {
     rb_define_global_function("srand", rb_f_srand, -1);
-    rb_define_global_function("rand", rb_f_rand, 1);
+    rb_define_global_function("rand", rb_f_rand, -1);
 }

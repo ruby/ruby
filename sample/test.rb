@@ -609,14 +609,10 @@ ok($good)
 
 b = 10**80
 a = b * 9 + 7
-ok(7 == a % b)
-ok(7-b == a % (-b))
-ok(b-7 == (-a) % b)
-ok(-7 ==(-a) % (-b))
-ok(7 ==a.remainder(b))
-ok(7 ==a.remainder(-b))
-ok(-7 == (-a).remainder(b))
-ok(-7 == (-a).remainder(-b))
+ok(7 ==a % b)
+ok(7 ==a % -b)
+ok(-7 == (-a) % b)
+ok(-7 == (-a) % (-b))
 
 check "string & char"
 

@@ -296,6 +296,7 @@ EXPORTS
 	rb_yield
 	rb_iterate
 	rb_rescue
+	rb_rescue2
 	rb_protect
 	rb_ensure
 	rb_with_disable_interrupt

@@ -2938,11 +2938,7 @@ rb_io_s_pipe()
     r = prep_stdio(rb_fdopen(pipes[0], "r"), FMODE_READABLE, rb_cIO);
     w = prep_stdio(rb_fdopen(pipes[1], "w"), FMODE_WRITABLE|FMODE_SYNC, rb_cIO);
 
-    ary = rb_ary_new2(2);
-    rb_ary_push(ary, r);
-    rb_ary_push(ary, w);
-
-    return ary;
+    return rb_assoc_new(r, w);
 #else
     rb_notimplement();
     return Qnil;		/* not reached */
