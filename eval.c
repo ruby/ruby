@@ -583,19 +583,16 @@ new_blktag()
     _block.dyna_vars = ruby_dyna_vars;	\
     ruby_block = &_block;
 
+#define POP_BLOCK_TAG(tag) do {		\
+   if ((tag)->flags & BLOCK_DYNAMIC)	\
+       (tag)->flags |= BLOCK_ORPHAN;	\
+   else					\
+       rb_gc_force_recycle((VALUE)tag); \
+} while (0)
+
 #define POP_BLOCK() 			\
-   _block.tag->flags |= BLOCK_ORPHAN;	\
+   POP_BLOCK_TAG(_block.tag);		\
    ruby_block = _block.prev; 		\
-}
-
-#define PUSH_BLOCK2(b) {		\
-    struct BLOCK * volatile _old;	\
-    _old = ruby_block;			\
-    ruby_block = b;
-
-#define POP_BLOCK2() 			\
-   _block.tag->flags |= BLOCK_ORPHAN;	\
-   ruby_block = _old;	 		\
 }
 
 struct RVarmap *ruby_dyna_vars;
@@ -5924,6 +5921,7 @@ blk_mark(data)
 	rb_gc_mark(data->self);
 	rb_gc_mark(data->dyna_vars);
 	rb_gc_mark(data->klass);
+	rb_gc_mark(data->tag);
 	data = data->prev;
     }
 }
@@ -5966,6 +5964,7 @@ blk_copy_prev(block)
 	    MEMCPY(tmp->frame.argv, block->prev->frame.argv, VALUE, tmp->frame.argc);
 	}
 	scope_dup(tmp->scope);
+	tmp->tag->flags |= BLOCK_DYNAMIC;
 	block->prev = tmp;
 	block = tmp;
     }
@@ -6043,6 +6042,8 @@ rb_f_binding(self)
     else {
 	data->prev = 0;
     }
+    data->flags |= BLOCK_DYNAMIC;
+    data->tag->flags |= BLOCK_DYNAMIC;
 
     for (p = data; p; p = p->prev) {
 	for (vars = p->dyna_vars; vars; vars = vars->next) {
@@ -6126,6 +6127,7 @@ proc_new(klass)
 	data->prev = 0;
     }
     data->flags |= BLOCK_DYNAMIC;
+    data->tag->flags |= BLOCK_DYNAMIC;
 
     for (p = data; p; p = p->prev) {
 	for (vars = p->dyna_vars; vars; vars = vars->next) {
@@ -8404,6 +8406,14 @@ rb_callcc(self)
     scope_dup(ruby_scope);
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
+    }
+    if (ruby_block) {
+	struct BLOCK *block = ruby_block;
+
+	while (block) {
+	    block->tag->flags |= BLOCK_DYNAMIC;
+	    block = block->prev;
+	}
     }
     th->thread = curr_thread->thread;
 
