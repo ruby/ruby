@@ -8,13 +8,14 @@ echo>> ~tmp~.mak conf = %0
 echo>> ~tmp~.mak $(conf:\=/): nul
 echo>> ~tmp~.mak 	@del ~tmp~.mak
 echo>> ~tmp~.mak 	@-$(MAKE) -l$(MAKEFLAGS) -f $(@D)setup.mak \
-echo>> ~tmp~.mak 	bcc32dir="$(@D)" \
 :loop
 if "%1" == "" goto :end
+if "%1" == "--prefix" goto :prefix
 if "%1" == "--srcdir" goto :srcdir
 if "%1" == "srcdir" goto :srcdir
 if "%1" == "--target" goto :target
 if "%1" == "target" goto :target
+if "%1" == "--with-static-linked-ext" goto :extstatic
 if "%1" == "--program-suffix" goto :suffix
 if "%1" == "--program-name" goto :progname
 if "%1" == "--enable-install-doc" goto :enable-rdoc
@@ -26,6 +27,11 @@ if "%1" == "--help" goto :help
 goto :loop
 :srcdir
   echo>> ~tmp~.mak 	-D"srcdir=%2" \
+  shift
+  shift
+goto :loop
+:prefix
+  echo>> ~tmp~.mak 	-D"prefix=%2" \
   shift
   shift
 goto :loop
@@ -45,8 +51,12 @@ goto :loop
   shift
 goto :loop
 :target
-  echo>> ~tmp~.mak 	%2 \
+  echo>> ~tmp~.mak 	"%2" \
   shift
+  shift
+goto :loop
+:extstatic
+  echo>> ~tmp~.mak 	-D"EXTSTATIC=static" \
   shift
 goto :loop
 :enable-rdoc
@@ -71,6 +81,6 @@ goto :loop
   del ~tmp~.mak
 goto :exit
 :end
-echo.>> ~tmp~.mak
+echo>> ~tmp~.mak 	bcc32dir="$(@D)"
 make -s -f ~tmp~.mak
 :exit

@@ -6,11 +6,7 @@
 
 (1) Borland C++ 5.0 or later.
 
-(2) If you want to run `((%make clean%))' or `((%make distclean%))'
-    properly, you must install UNIX compatible `((%rm%))' command on
-    your ((|PATH|)).
-
-(3) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
+(2) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
     to run required commands properly from the command line.
 
     Note: building ruby requires following commands.
@@ -19,10 +15,19 @@
      * tlib
      * ilink
 
+(3) If you want to build from CVS source, following commands are required.
+     * byacc
+     * sed
+
 == How to compile and install
 
 (1) Execute bcc32\configure.bat on your build directory.
-     ex. c:\ruby-1.6.7>bcc32\configure.bat
+     ex. c:\src\ruby> bcc32\configure.bat
+    You can specify the target platform as an argument.
+    For example, run `((%configure i686-bccwin32%))'
+    You can also specify the install directory.
+    For example, run `((%configure --prefix=<install_directory>%))'
+    Default of the install directory is /usr .
      
 (2) Change ((|RUBY_INSTALL_NAME|)) and ((|RUBY_SO_NAME|)) in (({Makefile}))
     if you want to change the name of the executable files. 
@@ -33,7 +38,7 @@
 
 (4) Run `((%make test%))'
 
-(5) Run `((%make DESTDIR=<install_directory> install%))'
+(5) Run `((%make install%))'
 
     This command will create following directories and install files onto them.
       * <install_directory>\bin
@@ -46,7 +51,7 @@
       * <install_directory>\lib\ruby\site_ruby\<MAJOR>.<MINOR>\<PLATFORM>
       * <install_directory>\man\man1
     If Ruby's version is `x.y.z', the ((|<MAJOR>|)) is `x' and the ((|<MINOR>|)) is `y'.
-    The ((|<PLATFORM>|)) is usually `(({i586-bccwin32}))'.
+    The default ((|<PLATFORM>|)) is `(({i386-bccwin32}))'.
 
 == Icons
 
@@ -78,10 +83,10 @@ in Japanese, but you can download at least.
 
     C:
     cd \ruby
-    bcc32\configure
+    bcc32\configure --prefix=/usr/local
     make
     make test
-    make DESTDIR=/usr/local install
+    make install
 
 * Build on the relative directory from the ruby source directory and CPU type 
   i386.
@@ -96,10 +101,10 @@ in Japanese, but you can download at least.
     cd \ruby
     mkdir bccwin32
     cd bccwin32
-    ..\bcc32\configure target i386-bccwin32
+    ..\bcc32\configure --prefix=/usr/local
     make
     make test
-    make DESTDIR=/usr/local install
+    make install
 
 * Build on the different drive.
 
@@ -110,10 +115,10 @@ in Japanese, but you can download at least.
 
     D:
     cd D:\build\ruby
-    C:\src\ruby\bcc32\configure
+    C:\src\ruby\bcc32\configure --prefix=C:/usr/local
     make
     make test
-    make DESTDIR=C:/usr/local install
+    make install
 
 == Bugs
 

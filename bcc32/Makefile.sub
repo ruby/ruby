@@ -94,9 +94,6 @@ libdir = $(exec_prefix)/lib
 !if !defined(datadir)
 datadir = $(prefix)/share
 !endif
-!ifndef DESTDIR
-DESTDIR = $(prefix)
-!endif
 !ifndef EXTOUT
 EXTOUT = .ext
 !endif
@@ -313,7 +310,7 @@ s,@FFLAGS@,$(FFLAGS),;t t
 s,@LDFLAGS@,,;t t
 s,@LIBS@,$(LIBS),;t t
 s,@exec_prefix@,$${prefix},;t t
-s,@prefix@,,;t t
+s,@prefix@,$(prefix),;t t
 s,@program_transform_name@,s,,,,;t t
 s,@bindir@,$${exec_prefix}/bin,;t t
 s,@sbindir@,$${exec_prefix}/sbin,;t t

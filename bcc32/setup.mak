@@ -9,7 +9,9 @@ srcdir = $(bcc32dir:/bcc32/=/)
 !else
 srcdir = $(bcc32dir)../
 !endif
-
+!if "$(prefix)" == ""
+prefix = /usr
+!endif
 OS = bccwin32
 RT = $(OS)
 INCLUDE = !include
@@ -33,6 +35,9 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 	@type > $(MAKEFILE) &&|
 \#\#\# Makefile for ruby $(OS) \#\#\#
 srcdir = $(srcdir:\=/)
+prefix = $(prefix:\=/)
+EXTSTATIC = $(EXTSTATIC)
+RDOCTARGET = $(RDOCTARGET)
 |
 	@cpp32 -I$(srcdir) -P- -o$(MAKEFILE) > nul &&|
 \#include "version.h"
@@ -77,7 +82,6 @@ PROCESSOR_LEVEL = $(PROCESSOR_LEVEL)
 \# RT = $(RT)
 \# RUBY_INSTALL_NAME = ruby
 \# RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-\# prefix = /usr
 \# CFLAGS = -q $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 \# CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
 \# STACK = 0x2000000

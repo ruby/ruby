@@ -1,3 +1,15 @@
+Sat Feb 28 21:50:20  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub, bcc32/README.bcc32, bcc32/configure.bat,
+	  bcc32/setup.mak: new configure scheme. use ``configure --prefix=dir''
+	  instead of ``make DESTDIR=dir install''.
+	  --with-static-linked-ext support on mswin32. [ruby-dev:23034]
+	  (by Nakada. Thanks.)
+
+	* bcc32/setup.mak: "configure --disable-install-doc" is now working.
+
+	* win32/setup.mak: ditto.
+
 Sat Feb 28 15:09:49  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/configure.bat: append missing label ":exit".

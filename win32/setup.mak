@@ -37,6 +37,7 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 srcdir = $(srcdir:\=/)
 prefix = $(prefix:\=/)
 EXTSTATIC = $(EXTSTATIC)
+RDOCTARGET = $(RDOCTARGET)
 <<
 	@cl -nologo -EP -I$(srcdir) <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"
