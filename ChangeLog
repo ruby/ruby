@@ -1,7 +1,7 @@
 Fri Nov 28 21:44:40 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* test/fileutils/test_fileutils.rb (test_ln_s): should be a file, not
-	  a directory.
+	  a directory for FreeBSD.
 
 Fri Nov 28 19:37:56 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
