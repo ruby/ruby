@@ -570,7 +570,6 @@ reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
 
 arg		: variable '=' arg
 		    {
-			value_expr($3);
 			$$ = assignable($1, $3);
 		        fixpos($$, $3);
 		    }
@@ -592,7 +591,6 @@ arg		: variable '=' arg
 		    }
 		| variable tOP_ASGN arg
 		    {
-			value_expr($3);
 			if (is_local_id($1)) {
 			    if (local_id($1)||!dyna_in_block()) {
 				local_cnt($1);
@@ -601,26 +599,58 @@ arg		: variable '=' arg
 				dyna_var_asgn($1, TRUE);
 			    }
 			}
-			$$ = assignable($1,call_op(gettable($1),$2,1,$3));
+			if ($2 == tOROP) {
+			    $$ = NEW_UNLESS(gettable($1), assignable($1, $3), 0);
+			}
+			else if ($2 == tANDOP) {
+			    $$ = NEW_IF(gettable($1), assignable($1, $3), 0);
+			}
+			else {
+			    $$ = assignable($1,call_op(gettable($1),$2,1,$3));
+			}
 			fixpos($$, $3);
 		    }
 		| primary '[' aref_args ']' tOP_ASGN arg
 		    {
-			NODE *args = NEW_LIST($6);
+			if ($5 == tOROP) {
+			    $$ = NEW_UNLESS(NEW_CALL($1, tAREF, $3), aryset($1, $3, $6), 0);
+			}
+			else if ($5 == tANDOP) {
+			    $$ = NEW_IF(NEW_CALL($1, tAREF, $3), aryset($1, $3, $6), 0);
+			}
+			else {
+			    NODE *args = NEW_LIST($6);
 
-		        list_append($3, NEW_NIL());
-			list_concat(args, $3);
-			$$ = NEW_OP_ASGN1($1, $5, args);
+			    list_append($3, NEW_NIL());
+			    list_concat(args, $3);
+			    $$ = NEW_OP_ASGN1($1, $5, args);
+			}
 		        fixpos($$, $1);
 		    }
 		| primary '.' tIDENTIFIER tOP_ASGN arg
 		    {
-			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
+			if ($4 == tOROP) {
+			    $$ = NEW_UNLESS(new_call($1, $3, 0), attrset($1, $3, $5), 0);
+			}
+			else if ($4 == tANDOP) {
+			    $$ = NEW_IF(new_call($1, $3, 0), attrset($1, $3, $5), 0);
+			}
+			else {
+			    $$ = NEW_OP_ASGN2($1, $3, $4, $5);
+			}
 		        fixpos($$, $1);
 		    }
 		| primary '.' tCONSTANT tOP_ASGN arg
 		    {
-			$$ = NEW_OP_ASGN2($1, $3, $4, $5);
+			if ($4 == tOROP) {
+			    $$ = NEW_UNLESS(new_call($1, $3, 0), attrset($1, $3, $5), 0);
+			}
+			else if ($4 == tANDOP) {
+			    $$ = NEW_IF(new_call($1, $3, 0), attrset($1, $3, $5), 0);
+			}
+			else {
+			    $$ = NEW_OP_ASGN2($1, $3, $4, $5);
+			}
 		        fixpos($$, $1);
 		    }
 		| backref tOP_ASGN arg
@@ -3435,6 +3465,7 @@ assignable(id, val)
 {
     NODE *lhs = 0;
 
+    value_expr(val);
     if (id == kSELF) {
 	yyerror("Can't change the value of self");
     }

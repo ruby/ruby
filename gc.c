@@ -959,8 +959,6 @@ static VALUE
 add_final(os, proc)
     VALUE os, proc;
 {
-    extern VALUE cProc;
-
     if (!obj_is_kind_of(proc, cProc)) {
 	ArgError("wrong type argument %s (Proc required)",
 		  rb_class2name(CLASS_OF(proc)));

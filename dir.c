@@ -427,8 +427,6 @@ dir_foreach(io, dirname)
 void
 Init_Dir()
 {
-    extern VALUE mEnumerable;
-
     cDir = rb_define_class("Dir", cObject);
 
     rb_include_module(cDir, mEnumerable);

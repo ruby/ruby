@@ -141,14 +141,13 @@ f_sprintf(argc, argv)
     ((argc == 0)?(ArgError("too few argument."),0):(argc--,((argv++)[0])))
 
     fmt = GETARG();
-    Check_Type(fmt, T_STRING);
-
+    p = str2cstr(fmt, &blen);
+    end = p + blen;
     blen = 0;
     bsiz = 120;
     buf = ALLOC_N(char, bsiz);
-    end = RSTRING(fmt)->ptr + RSTRING(fmt)->len;
 
-    for (p = RSTRING(fmt)->ptr; p < end; p++) {
+    for (; p < end; p++) {
 	char *t;
 
 	for (t = p; t < end && *t != '%'; t++) ;

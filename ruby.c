@@ -613,7 +613,6 @@ set_arg0(val, id)
     static int len;
 
     if (origargv == 0) Fail("$0 not initialized");
-    Check_Type(val, T_STRING);
     if (len == 0) {
 	s = origargv[0];
 	s += strlen(s);
@@ -624,8 +623,7 @@ set_arg0(val, id)
 	}
 	len = s - origargv[0];
     }
-    s = RSTRING(val)->ptr;
-    i = RSTRING(val)->len;
+    s = str2cstr(val, &i);
     if (i > len) {
 	memcpy(origargv[0], s, len);
 	origargv[0][len] = '\0';

@@ -463,7 +463,7 @@ void Raise __((VALUE, char*, ...)) NORETURN;
 void Fail __((char*, ...)) NORETURN;
 void Fatal __((char*, ...)) NORETURN;
 void Bug __((char*, ...)) NORETURN;
-void rb_sys_fail _((char *)) NORETURN;
+void rb_sys_fail _((char*)) NORETURN;
 void rb_iter_break _((void)) NORETURN;
 void rb_exit _((int)) NORETURN;
 void rb_raise _((VALUE)) NORETURN;

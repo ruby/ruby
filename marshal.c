@@ -397,7 +397,6 @@ marshal_dump(argc, argv)
 {
     VALUE obj, port, a1, a2;
     int limit = -1;
-    extern VALUE cIO;
     struct dump_arg arg;
     struct dump_call_arg c_arg;
 

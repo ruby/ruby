@@ -737,18 +737,19 @@ time_strftime(time, format)
 {
     struct time_object *tobj;
     char buffer[SMALLBUF];
+    char *fmt;
     char *buf = buffer;
     int len;
     VALUE str;
 
-    Check_Type(format, T_STRING);
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
 	time_localtime(time);
     }
-    if (strlen(RSTRING(format)->ptr) < RSTRING(format)->len) {
+    fmt = str2cstr(format, &len);
+    if (strlen(fmt) < len) {
 	/* Ruby string may contain \0's. */
-	char *p = RSTRING(format)->ptr, *pe = p + RSTRING(format)->len;
+	char *p = fmt, *pe = fmt + len;
 
 	str = str_new(0, 0);
 	while (p < pe) {

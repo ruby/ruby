@@ -165,7 +165,7 @@ module TkComm
   end
   private :_get_eval_string
 
-  Tk_IDs = [0]		# [0]-cmdid, [1]-winid
+  Tk_IDs = [0, 0]		# [0]-cmdid, [1]-winid
   def _curr_cmd_id
     id = format("c%.4d", Tk_IDs[0])
   end
@@ -188,8 +188,8 @@ module TkComm
   private :install_cmd, :uninstall_cmd
 
   def install_win(ppath)
-    id = format("w%.4d", Tk_IDs[0])
-    Tk_IDs[0] += 1
+    id = format("w%.4d", Tk_IDs[1])
+    Tk_IDs[1] += 1
     if !ppath or ppath == "."
       @path = format(".%s", id);
     else
@@ -413,10 +413,10 @@ module Tk
       list(w) if args.size == 0
     end
     def group(*args)
-      tk_call 'wm', 'path', path, *args
+      tk_call 'wm', 'group', path, *args
     end
     def iconbitmap(*args)
-      tk_call 'wm', 'bitmap', path, *args
+      tk_call 'wm', 'iconbitmap', path, *args
     end
     def iconify
       tk_call 'wm', 'iconify', path
@@ -502,6 +502,10 @@ class TkVariable
       s = '"' + _get_eval_string(val).gsub(/[][$"]/, '\\\\\&') + '"' #'
       INTERP._eval(format('global %s; set %s %s', @id, @id, s))
     end
+  end
+
+  def wait
+    INTERP._eval("tkwait variable #{@id}")
   end
 
   def id
@@ -867,6 +871,12 @@ module TkWinfo
   def winfo_y
     TkWinfo.y self
   end
+  def TkWinfo.viewable(window)
+    bool(tk_call 'winfo', 'viewable', window.path)
+  end
+  def winfo_viewable
+    TkWinfo.viewable self
+  end
 end
 
 module TkPack
@@ -912,11 +922,11 @@ module TkGrid
     tk_call "grid", 'configure', *(wins+hash_kv(keys))
   end
 
-  def columnconfigure(master, index, *args)
+  def columnconfigure(master, index, args)
     tk_call "grid", 'columnconfigure', master, index, *hash_kv(args)
   end
 
-  def rowconfigure(master, index, *args)
+  def rowconfigure(master, index, args)
     tk_call "grid", 'rowconfigure', master, index, *hash_kv(args)
   end
 
@@ -948,7 +958,7 @@ module TkGrid
     tk_call 'grid', 'size', master
   end
 
-  def slaves(*args)
+  def slaves(args)
     list(tk_call('grid', 'slaves', *hash_kv(args)))
   end
 
@@ -1189,6 +1199,15 @@ class TkWindow<TkObject
       end
     end
     uninstall_win
+  end
+
+  def wait_visibility
+    tk_call 'tkwait', 'visibility', path
+  end
+  alias wait wait_visibility
+
+  def wait_destroy
+    tk_call 'tkwait', 'window', path
   end
 end
 
@@ -1442,6 +1461,9 @@ class TkMenu<TkWindow
   def yposition(index)
     number(tk_send('yposition', index))
   end
+  def entryconfigure(index, keys=nil)
+    tk_send 'entryconfigure', index, *hash_kv(keys)
+  end
 end
 
 class TkMenubutton<TkLabel
@@ -1493,6 +1515,31 @@ module TkComposite
       super
     end
   end
+end
+
+module TkClipboard
+  include Tk
+  extend Tk
+
+  def clear
+    tk_call 'clipboard', 'clear'
+  end
+  def get
+    begin
+      tk_call 'selection', 'get', '-selection', 'CLIPBOARD'
+    rescue
+      ''
+    end
+  end
+  def set(data)
+    clear
+    append(data)
+  end
+  def append(data)
+    tk_call 'clipboard', 'append', data
+  end
+
+  module_function :clear, :set, :get, :append
 end
 
 autoload :TkCanvas, 'tkcanvas'

@@ -629,7 +629,7 @@ reg_new_1(klass, s, len, options)
     re->ptr = 0;
     re->str = 0;
 
-    if (options & 0x1) {
+    if (options & RE_OPTION_IGNORECASE) {
 	FL_SET(re, REG_IGNORECASE);
     }
     switch (options & ~0x3) {
@@ -763,19 +763,21 @@ reg_s_new(argc, argv, self)
 	ArgError("wrong # of argument");
     }
     if (argc >= 2 && RTEST(argv[1])) {
-	flag = 1;
+	flag = RE_OPTION_IGNORECASE;
     }
     if (argc == 3) {
-	Check_Type(argv[2], T_STRING);
-	switch (RSTRING(argv[2])->ptr[0]) {
+	char *kcode = STR2CSTR(argv[2]);
+
+	if (!kcode) TypeError("wrong char-code");
+	switch (kcode[0]) {
 	  case 'n': case 'N':
-	    flag |= 2;
-	    break;
-	  case 'e': case 'E':
 	    flag |= 4;
 	    break;
+	  case 'e': case 'E':
+	    flag |= 8;
+	    break;
 	  case 's': case 'S':
-	    flag |= 6;
+	    flag |= 12;
 	    break;
 	  default:
 	    break;
@@ -801,12 +803,11 @@ reg_s_quote(re, str)
 {
   char *s, *send, *t;
   char *tmp;
+  int len;
 
-  Check_Type(str, T_STRING);
-
-  tmp = ALLOCA_N(char, RSTRING(str)->len*2);
-
-  s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
+  s = str2cstr(str, &len);
+  send = s + len;
+  tmp = ALLOCA_N(char, len*2);
   t = tmp;
 
   for (; s != send; s++) {

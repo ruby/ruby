@@ -1,34 +1,60 @@
 #
-#   thwait.rb - 
-#   	$Release Version: $
-#   	$Revision: 1.1 $
-#   	$Date: 1997/08/18 03:13:14 $
-#   	by Keiju ISHITSUKA(Nippon Rational Inc.)
+#   thwait.rb - スレッド同期クラス
+#   	$Release Version: 0.9 $
+#   	$Revision: 1.3 $
+#   	$Date: 1998/06/26 03:19:34 $
+#   	by Keiju ISHITSUKA(Nihpon Rational Software Co.,Ltd.)
 #
 # --
+#  機能:
+#  複数のスレッドを関しそれらのスレッドが終了するまでwaitする機能を提
+#  供する. 
 #
-#   
+#  クラスメソッド:
+#  * ThreadsWait.all_waits(thread1,...)
+#    全てのスレッドが終了するまで待つ. イテレータとして呼ばれた時には, 
+#    スレッドが終了する度にイテレータを実行する.
+#  * th = ThreadsWait.new(thread1,...)
+#    同期するスレッドを指定し同期オブジェクトを生成.
+#  
+#  メソッド:
+#  * th.threads
+#    同期すべきスレッドの一覧
+#  * th.empty?
+#    同期すべきスレッドがあるかどうか
+#  * th.finished?
+#    すでに終了したスレッドがあるかどうか
+#  * th.join(thread1,...) 
+#    同期するスレッドを指定し, いずれかのスレッドが終了するまで待ちにはいる.
+#  * th.join_nowait(threa1,...)
+#    同期するスレッドを指定する. 待ちには入らない.
+#  * th.next_wait
+#    いずれかのスレッドが終了するまで待ちにはいる.
+#  * th.all_waits
+#    全てのスレッドが終了するまで待つ. イテレータとして呼ばれた時には, 
+#    スレッドが終了する度にイテレータを実行する.
 #
 
 require "thread.rb"
 require "e2mmap.rb"
 
 class ThreadsWait
-  RCS_ID='-$Header: /home/keiju/var/src/var.lib/ruby/RCS/thwait.rb,v 1.1 1997/08/18 03:13:14 keiju Exp keiju $-'
+  RCS_ID='-$Id: thwait.rb,v 1.3 1998/06/26 03:19:34 keiju Exp keiju $-'
   
   Exception2MessageMapper.extend_to(binding)
-  def_exception("ErrWaitThreadsNothing", "Wait threads nothing.")
-  def_exception("FinshedThreadsNothing", "finished thread nothing.")
+  def_exception("ErrNoWaitingThread", "No threads for waiting.")
+  def_exception("ErrNoFinshedThread", "No finished threads.")
   
   # class mthods
   #	all_waits
   
   #
   # 指定したスレッドが全て終了するまで待つ. イテレータとして呼ばれると
-  # 指定したスレッドが終了するとイテレータを呼び出す.
+  # 指定したスレッドが終了するとその終了したスレッドを引数としてイテレー
+  # タを呼び出す. 
   #
   def ThreadsWait.all_waits(*threads)
-    tw = ThreadsWait.new(th1, th2, th3, th4, th5)
+    tw = ThreadsWait.new(*threads)
     if iterator?
       tw.all_waits do
 	|th|
@@ -81,7 +107,8 @@ class ThreadsWait
   #	all_wait
   
   #
-  # 待っているスレッドを追加し待ちにはいる.
+  # 待っているスレッドを追加し. いずれかのスレッドが1つ終了するまで待
+  # ちにはいる.
   #
   def join(*threads)
     join_nowait(*threads)
@@ -102,17 +129,19 @@ class ThreadsWait
   end
   
   #
-  # 次の待ちにはいる.
-  # 待つべきスレッドがなければ, 例外ErrWaitThreadsNothing を返す.
+  # いずれかのスレッドが終了するまで待ちにはいる.
+  # 待つべきスレッドがなければ, 例外ErrNoWaitingThreadを返す.
   # nonnlockが真の時には, nonblockingで調べる. 存在しなければ, 例外
-  # FinishedThreadNothingを返す.
+  # ErrNoFinishedThreadを返す.
   #
   def next_wait(nonblock = nil)
-    Threads.Wait.fail ErrWaitThreadsNothing if @threads.empty?
-    
-    th = @wait_queue.pop(nonblock)
-    @threads.delete th
-    th
+    ThreadsWait.fail ErrNoWaitingThread if @threads.empty?
+    begin
+      @threads.delete(th = @wait_queue.pop(nonblock))
+      th
+    rescue ThreadError
+      ThreadsWait.fail ErrNoFinshedThread
+    end
   end
   
   #
@@ -126,3 +155,5 @@ class ThreadsWait
     end
   end
 end
+
+ThWait = ThreadsWait

@@ -25,7 +25,7 @@ class CGI < SimpleDelegator
     words = Shellwords.shellwords(if not ARGV.empty? then
                          ARGV.join(' ')
                        else
-                         print "(offline mode: enter name=value pairs on standard input)\n" if STDOUT.tty?
+                         STDERR.print "(offline mode: enter name=value pairs on standard input)\n" if STDOUT.tty?
                          readlines.join(' ').gsub(/\n/, '')
                        end.gsub(/\\=/, '%3D').gsub(/\\&/, '%26'))
 
@@ -47,14 +47,18 @@ class CGI < SimpleDelegator
   module_function :escape, :unescape
 
   def initialize(input = $stdin)
-    # exception messages should be printed to stdout.
-    STDERR.reopen(STDOUT)
 
     @inputs = {}
     case ENV['REQUEST_METHOD']
     when "GET"
+      # exception messages should be printed to stdout.
+      STDERR.reopen(STDOUT)
+
       ENV['QUERY_STRING'] or ""
     when "POST"
+      # exception messages should be printed to stdout.
+      STDERR.reopen(STDOUT)
+
       input.read ENV['CONTENT_LENGTH'].to_i
     else
       read_from_cmdline

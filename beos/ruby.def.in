@@ -304,6 +304,7 @@ st_init_table_with_size
 st_insert
 st_lookup
 str2inum
+str2cstr
 str_cat
 str_cicmp
 str_cmp

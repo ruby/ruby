@@ -14,7 +14,6 @@
 #ifndef IO_H
 #define IO_H
 
-#include "rubysig.h"
 #include <stdio.h>
 #include <errno.h>
 

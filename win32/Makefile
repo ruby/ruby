@@ -210,26 +210,26 @@ dln.obj: dln.c config.h defines.h dln.h st.h
 dmyext.obj: dmyext.c
 enum.obj: enum.c ruby.h config.h defines.h
 error.obj: error.c ruby.h config.h defines.h env.h
-eval.obj: eval.c ruby.h config.h defines.h env.h node.h sig.h st.h dln.h
-file.obj: file.c ruby.h config.h defines.h io.h sig.h
+eval.obj: eval.c ruby.h config.h defines.h env.h node.h rubysig.h st.h dln.h
+file.obj: file.c ruby.h config.h defines.h rubyio.h rubysig.h
 fnmatch.obj: fnmatch.c config.h fnmatch.h
-gc.obj: gc.c ruby.h config.h defines.h env.h sig.h st.h node.h re.h regex.h
+gc.obj: gc.c ruby.h config.h defines.h env.h rubysig.h st.h node.h re.h regex.h
 glob.obj: glob.c config.h fnmatch.h
 hash.obj: hash.c ruby.h config.h defines.h st.h
 inits.obj: inits.c ruby.h config.h defines.h
-io.obj: io.c ruby.h config.h defines.h io.h sig.h
+io.obj: io.c ruby.h config.h defines.h rubyio.h rubysig.h
 main.obj: main.c
 math.obj: math.c ruby.h config.h defines.h
 numeric.obj: numeric.c ruby.h config.h defines.h
 object.obj: object.c ruby.h config.h defines.h st.h
 pack.obj: pack.c ruby.h config.h defines.h
-process.obj: process.c ruby.h config.h defines.h sig.h st.h
+process.obj: process.c ruby.h config.h defines.h rubysig.h st.h
 random.obj: random.c ruby.h config.h defines.h
 range.obj: range.c ruby.h config.h defines.h
 re.obj: re.c ruby.h config.h defines.h re.h regex.h
 regex.obj: regex.c config.h defines.h regex.h util.h
 ruby.obj: ruby.c ruby.h config.h defines.h re.h regex.h dln.h
-signal.obj: signal.c ruby.h config.h defines.h sig.h
+signal.obj: signal.c ruby.h config.h defines.h rubysig.h
 sprintf.obj: sprintf.c ruby.h config.h defines.h
 st.obj: st.c config.h st.h
 string.obj: string.c ruby.h config.h defines.h re.h regex.h

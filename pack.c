@@ -103,10 +103,9 @@ pack_pack(ary, fmt)
     char *ptr;
     int plen;
 
-    Check_Type(fmt, T_STRING);
-
-    p = RSTRING(fmt)->ptr;
-    pend = RSTRING(fmt)->ptr + RSTRING(fmt)->len;
+    
+    p = str2cstr(fmt, &plen);
+    pend = p + plen;
     res = str_new(0, 0);
 
     items = RARRAY(ary)->len;
@@ -551,12 +550,10 @@ pack_unpack(str, fmt)
     char type;
     int len;
 
-    Check_Type(fmt, T_STRING);
-
-    s = RSTRING(str)->ptr;
-    send = s + RSTRING(str)->len;
-    p = RSTRING(fmt)->ptr;
-    pend = p + RSTRING(fmt)->len;
+    s = str2cstr(str, &len);
+    send = s + len;
+    p = str2cstr(fmt, &len);
+    pend = p + len;
 
     ary = ary_new();
     while (p < pend) {

@@ -146,21 +146,12 @@ class TkTextTag<TkObject
   end
 
   def nextrange(first, last=nil)
-    l = tk_split_list(tk_call(@t.path, 'tag', 'nextrange', @id, first, last))
-    r = []
-    while key=l.shift
-      r.push [key, l.shift]
-    end
-    r
+    tk_split_list(tk_call(@t.path, 'tag', 'nextrange', @id, first, last))
   end
 
   def prevrange(first, last=nil)
+    tk_split_list(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
     l = tk_split_list(tk_call(@t.path, 'tag', 'prevrange', @id, first, last))
-    r = []
-    while key=l.shift
-      r.push [key, l.shift]
-    end
-    r
   end
 
   def [](key)
@@ -175,17 +166,17 @@ class TkTextTag<TkObject
     tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
   end
 
-  def configure(keys)
-    tk_call @t.path, 'tag', 'configure', @id, *hash_kv(keys)
+  def configure(key, val=nil)
+    if key.kind_of? Hash
+      tk_call @t.path, 'tag', 'configure', @id, *hash_kv(key)
+    else
+      tk_call @t.path, 'tag', 'configure', @id, "-#{key}", val
+    end
   end
-#  def configure(key, value)
-#    if value == FALSE
-#      value = "0"
-#    elsif value.kind_of? Proc
-#      value = install_cmd(value)
-#    end
-#    tk_call @t.path, 'tag', 'configure', @id, "-#{key}", value
-#  end
+
+  def configinfo
+    tk_split_list(tk_call(@t.path, 'tag', 'configure', @id))
+  end
 
   def bind(seq, cmd=Proc.new, args=nil)
     id = install_bind(cmd, args)

@@ -929,9 +929,9 @@ eval_node(self)
 int rb_in_eval;
 
 #ifdef THREAD
-static void thred_cleanup _((void));
-static void thred_wait_other_threads _((void));
-static VALUE thred_current _((void));
+static void thread_cleanup _((void));
+static void thread_wait_other_threads _((void));
+static VALUE thread_current _((void));
 #endif
 
 static int exit_status;
@@ -963,8 +963,8 @@ ruby_run()
     if ((state = EXEC_TAG()) == 0) {
 	rb_trap_exit();
 #ifdef THREAD
-	thred_cleanup();
-	thred_wait_other_threads();
+	thread_cleanup();
+	thread_wait_other_threads();
 #endif
 	exec_end_proc();
 	gc_call_finalizer_at_exit();
@@ -1546,7 +1546,7 @@ call_trace_func(event, file, line, self, id)
     trace = trace_func;
     trace_func = 0;
 #ifdef THREAD
-    thred_critical++;
+    thread_critical++;
 #endif
 
     prev = the_frame;
@@ -1568,7 +1568,7 @@ call_trace_func(event, file, line, self, id)
     POP_FRAME();
 
 #ifdef THREAD
-    thred_critical--;
+    thread_critical--;
 #endif
     if (!trace_func) trace_func = trace;
     if (state) JUMP_TAG(state);
@@ -4172,16 +4172,14 @@ static int
 rb_provided(feature)
     char *feature;
 {
-    struct RArray *features = RARRAY(rb_features);
     VALUE *p, *pend;
     char *f;
     int len;
 
-    p = features->ptr;
-    pend = p + features->len;
+    p = RARRAY(rb_features)->ptr;
+    pend = p + RARRAY(rb_features)->len;
     while (p < pend) {
-	Check_Type(*p, T_STRING);
-	f = RSTRING(*p)->ptr;
+	f = STR2CSTR(*p);
 	if (strcmp(f, feature) == 0) return TRUE;
 	len = strlen(feature);
 	if (strncmp(f, feature, len) == 0
@@ -4194,8 +4192,8 @@ rb_provided(feature)
 }
 
 #ifdef THREAD
-static int thred_loading _((char*));
-static void thred_loading_done _((void));
+static int thread_loading _((char*));
+static void thread_loading_done _((void));
 #endif
 
 void
@@ -4270,7 +4268,7 @@ f_require(obj, fname)
 
   dyna_load:
 #ifdef THREAD
-    if (thred_loading(feature)) return FALSE;
+    if (thread_loading(feature)) return FALSE;
     else {
 	int state;
 	PUSH_TAG(PROT_NONE);
@@ -4283,7 +4281,7 @@ f_require(obj, fname)
 #ifdef THREAD
 	}
 	POP_TAG();
-	thred_loading_done();
+	thread_loading_done();
 	if (state) JUMP_TAG(state);
     }
 #endif
@@ -4291,7 +4289,7 @@ f_require(obj, fname)
 
   rb_load:
 #ifdef THREAD
-    if (thred_loading(feature)) return FALSE;
+    if (thread_loading(feature)) return FALSE;
     else {
 	int state;
 	PUSH_TAG(PROT_NONE);
@@ -4302,7 +4300,7 @@ f_require(obj, fname)
 #ifdef THREAD
 	}
 	POP_TAG();
-	thred_loading_done();
+	thread_loading_done();
 	if (state) JUMP_TAG(state);
     }
 #endif
@@ -4855,7 +4853,7 @@ f_binding(self)
     MEMCPY(data, the_block, struct BLOCK, 1);
 
 #ifdef THREAD
-    data->orig_thread = thred_current();
+    data->orig_thread = thread_current();
 #endif
     data->iter = f_iterator_p();
     if (the_frame->prev) {
@@ -4898,7 +4896,7 @@ proc_s_new(klass)
     *data = *the_block;
 
 #ifdef THREAD
-    data->orig_thread = thred_current();
+    data->orig_thread = thread_current();
 #endif
     data->iter = data->prev?TRUE:FALSE;
     data->frame.argv = ALLOC_N(VALUE, data->frame.argc);
@@ -4945,7 +4943,7 @@ blk_orphan(data)
 	return 1;
     }
 #ifdef THREAD
-    if (data->orig_thread != thred_current()) {
+    if (data->orig_thread != thread_current()) {
 	return 1;
     }
 #endif
@@ -5269,7 +5267,7 @@ Init_Proc()
 
 static VALUE eThreadError;
 
-int thred_pending = 0;
+int thread_pending = 0;
 
 VALUE cThread;
 
@@ -5378,7 +5376,7 @@ static thread_t main_thread;
 #define STACK(addr) (th->stk_pos<(addr) && (addr)<th->stk_pos+th->stk_len)
 
 static void
-thred_mark(th)
+thread_mark(th)
     thread_t th;
 {
     struct FRAME *frame;
@@ -5425,12 +5423,12 @@ gc_mark_threads()
     thread_t th;
 
     FOREACH_THREAD(th) {
-	thred_mark(th);
+	thread_mark(th);
     } END_FOREACH(th);
 }
 
 static void
-thred_free(th)
+thread_free(th)
     thread_t th;
 {
     if (th->stk_ptr) free(th->stk_ptr);
@@ -5439,10 +5437,10 @@ thred_free(th)
 }
 
 static thread_t
-thred_check(data)
+thread_check(data)
     VALUE data;
 {
-    if (TYPE(data) != T_DATA || RDATA(data)->dfree != thred_free) {
+    if (TYPE(data) != T_DATA || RDATA(data)->dfree != thread_free) {
 	TypeError("wrong argument type %s (expected Thread)",
 		  rb_class2name(CLASS_OF(data)));
     }
@@ -5450,7 +5448,7 @@ thred_check(data)
 }
 
 static void
-thred_save_context(th)
+thread_save_context(th)
     thread_t th;
 {
     VALUE v;
@@ -5484,7 +5482,7 @@ thred_save_context(th)
     th->line = sourceline;
 }
 
-static void thred_restore_context _((thread_t,int));
+static void thread_restore_context _((thread_t,int));
 
 static void
 stack_extend(th, exit)
@@ -5494,7 +5492,7 @@ stack_extend(th, exit)
     VALUE space[1024];
 
     memset(space, 0, 1);	/* prevent array from optimization */
-    thred_restore_context(th, exit);
+    thread_restore_context(th, exit);
 }
 
 static int   th_raise_argc;
@@ -5505,7 +5503,7 @@ static VALUE th_cmd;
 static int   th_sig;
 
 static void
-thred_restore_context(th, exit)
+thread_restore_context(th, exit)
     thread_t th;
     int exit;
 {
@@ -5576,7 +5574,7 @@ thred_restore_context(th, exit)
 }
 
 static void
-thred_ready(th)
+thread_ready(th)
     thread_t th;
 {
     /* The thread is no longer waiting on anything */
@@ -5594,24 +5592,24 @@ thred_ready(th)
 }
 
 static void
-thred_remove()
+thread_remove()
 {
-    thred_ready(curr_thread);
+    thread_ready(curr_thread);
     curr_thread->status = THREAD_KILLED;
     curr_thread->prev->next = curr_thread->next;
     curr_thread->next->prev = curr_thread->prev;
-    thred_schedule();
+    thread_schedule();
 }
 
 static int
-thred_dead(th)
+thread_dead(th)
     thread_t th;
 {
     return th->status == THREAD_KILLED;
 }
 
 static void
-thred_deadlock()
+thread_deadlock()
 {
     curr_thread = main_thread;
     th_raise_argc = 1;
@@ -5622,14 +5620,14 @@ thred_deadlock()
 }
 
 void
-thred_schedule()
+thread_schedule()
 {
     thread_t next;		/* OK */
     thread_t th;
     thread_t curr;
 
   select_err:
-    thred_pending = 0;
+    thread_pending = 0;
     if (curr_thread == curr_thread->next) return;
 
     next = 0;
@@ -5649,7 +5647,7 @@ thred_schedule()
 
     if (num_waiting_on_join) {
 	FOREACH_THREAD_FROM(curr, th) {
-	    if ((th->wait_for&WAIT_JOIN) && thred_dead(th->join)) {
+	    if ((th->wait_for&WAIT_JOIN) && thread_dead(th->join)) {
 		th->join = 0;
 		th->wait_for &= ~WAIT_JOIN;
 		th->status = THREAD_RUNNABLE;
@@ -5755,7 +5753,7 @@ thred_schedule()
 	}
 	END_FOREACH_FROM(curr, th);
 	/* raise fatal error to main thread */
-	thred_deadlock();
+	thread_deadlock();
     }
     if (next->status == THREAD_RUNNABLE && next == curr_thread) {
 	return;
@@ -5763,7 +5761,7 @@ thred_schedule()
 
     /* context switch */
     if (curr == curr_thread) {
-	thred_save_context(curr);
+	thread_save_context(curr);
 	if (setjmp(curr->context)) {
 	    return;
 	}
@@ -5772,13 +5770,13 @@ thred_schedule()
     curr_thread = next;
     if (next->status == THREAD_TO_KILL) {
 	/* execute ensure-clause if any */
-	thred_restore_context(next, 1);
+	thread_restore_context(next, 1);
     }
-    thred_restore_context(next, 0);
+    thread_restore_context(next, 0);
 }
 
 void
-thred_wait_fd(fd)
+thread_wait_fd(fd)
     int fd;
 {
     if (curr_thread == curr_thread->next) return;
@@ -5787,11 +5785,11 @@ thred_wait_fd(fd)
     curr_thread->fd = fd;
     num_waiting_on_fd++;
     curr_thread->wait_for |= WAIT_FD;
-    thred_schedule();
+    thread_schedule();
 }
 
 void
-thred_fd_writable(fd)
+thread_fd_writable(fd)
     int fd;
 {
     struct timeval zero;
@@ -5804,12 +5802,12 @@ thred_fd_writable(fd)
 	FD_ZERO(&fds);
 	FD_SET(fd, &fds);
 	if (select(fd+1, 0, &fds, 0, &zero) == 1) break;
-	thred_schedule();
+	thread_schedule();
     }
 }
 
 void
-thred_wait_for(time)
+thread_wait_for(time)
     struct timeval time;
 {
     double date;
@@ -5845,19 +5843,19 @@ thred_wait_for(time)
     curr_thread->delay = date;
     num_waiting_on_timer++;
     curr_thread->wait_for |= WAIT_TIME;
-    thred_schedule();
+    thread_schedule();
 }
 
-void thred_sleep_forever _((void));
+void thread_sleep_forever _((void));
 
 int
-thred_alone()
+thread_alone()
 {
     return curr_thread == curr_thread->next;
 }
 
 int
-thred_select(max, read, write, except, timeout)
+thread_select(max, read, write, except, timeout)
     int max;
     fd_set *read, *write, *except;
     struct timeval *timeout;
@@ -5869,10 +5867,10 @@ thred_select(max, read, write, except, timeout)
 
     if (!read && !write && !except) {
 	if (!timeout) {
-	    thred_sleep_forever();
+	    thread_sleep_forever();
 	    return 0;
 	}
-	thred_wait_for(*timeout);
+	thread_wait_for(*timeout);
 	return 0;
     }
 
@@ -5939,109 +5937,109 @@ thred_select(max, read, write, except, timeout)
 	    if (limit <= timeofday()) return 0;
 	}
 
-        thred_schedule();
+        thread_schedule();
 	CHECK_INTS;
     }
 }
 
 static VALUE
-thred_join(dmy, thread)
+thread_join(dmy, thread)
     VALUE dmy;
     VALUE thread;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
-    if (thred_dead(th)) return thread;
+    if (thread_dead(th)) return thread;
     if ((th->wait_for & WAIT_JOIN) && th->join == curr_thread)
 	Raise(eThreadError, "Thread.join: deadlock");
     curr_thread->status = THREAD_STOPPED;
     curr_thread->join = th;
     num_waiting_on_join++;
     curr_thread->wait_for |= WAIT_JOIN;
-    thred_schedule();
+    thread_schedule();
 
     return thread;
 }
 
 static VALUE
-thred_current()
+thread_current()
 {
     return curr_thread->thread;
 }
 
 static VALUE
-thred_main()
+thread_main()
 {
     return main_thread->thread;
 }
 
 static VALUE
-thred_wakeup(thread)
+thread_wakeup(thread)
     VALUE thread;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
     if (th->status == THREAD_KILLED) Raise(eThreadError, "killed thread");
-    thred_ready(th);
+    thread_ready(th);
 
     return thread;
 }
 
 static VALUE
-thred_run(thread)
+thread_run(thread)
     VALUE thread;
 {
-    thred_wakeup(thread);
-    if (!thred_critical) thred_schedule();
+    thread_wakeup(thread);
+    if (!thread_critical) thread_schedule();
 
     return thread;
 }
 
 static VALUE
-thred_kill(thread)
+thread_kill(thread)
     VALUE thread;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
     if (th->status == THREAD_TO_KILL || th->status == THREAD_KILLED)
 	return thread; 
     if (th == th->next || th == main_thread) rb_exit(0);
 
-    thred_ready(th);
+    thread_ready(th);
     th->status = THREAD_TO_KILL;
-    thred_schedule();
+    thread_schedule();
     return Qnil;		/* not reached */
 }
 
 static VALUE
-thred_s_kill(obj, th)
+thread_s_kill(obj, th)
     VALUE obj, th;
 {
-    return thred_kill(th);
+    return thread_kill(th);
 }
 
 static VALUE
-thred_exit()
+thread_exit()
 {
-    return thred_kill(curr_thread->thread);
+    return thread_kill(curr_thread->thread);
 }
 
 static VALUE
-thred_pass()
+thread_pass()
 {
-    thred_schedule();
+    thread_schedule();
     return Qnil;
 }
 
 static VALUE
-thred_stop()
+thread_stop()
 {
-    thred_critical = 0;
+    thread_critical = 0;
     curr_thread->status = THREAD_STOPPED;
     if (curr_thread == curr_thread->next) {
 	Raise(eThreadError, "stopping only thread");
     }
-    thred_schedule();
+    thread_schedule();
 
     return Qnil;
 }
@@ -6049,7 +6047,7 @@ thred_stop()
 struct timeval time_timeval();
 
 void
-thred_sleep(sec)
+thread_sleep(sec)
     int sec;
 {
     if (curr_thread == curr_thread->next) {
@@ -6058,11 +6056,11 @@ thred_sleep(sec)
 	TRAP_END;
 	return;
     }
-    thred_wait_for(time_timeval(INT2FIX(sec)));
+    thread_wait_for(time_timeval(INT2FIX(sec)));
 }
 
 void
-thred_sleep_forever()
+thread_sleep_forever()
 {
     if (curr_thread == curr_thread->next) {
 	TRAP_BEG;
@@ -6075,46 +6073,46 @@ thred_sleep_forever()
     curr_thread->delay = DELAY_INFTY;
     curr_thread->wait_for |= WAIT_TIME;
     curr_thread->status = THREAD_STOPPED;
-    thred_schedule();
+    thread_schedule();
 }
 
-static int thred_abort;
+static int thread_abort;
 
 static VALUE
-thred_s_abort_exc()
+thread_s_abort_exc()
 {
-    return thred_abort?TRUE:FALSE;
+    return thread_abort?TRUE:FALSE;
 }
 
 static VALUE
-thred_s_abort_exc_set(self, val)
+thread_s_abort_exc_set(self, val)
     VALUE self, val;
 {
-    thred_abort = RTEST(val);
+    thread_abort = RTEST(val);
     return val;
 }
 
 static VALUE
-thred_abort_exc(thread)
+thread_abort_exc(thread)
     VALUE thread;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
     return th->abort?TRUE:FALSE;
 }
 
 static VALUE
-thred_abort_exc_set(thread, val)
+thread_abort_exc_set(thread, val)
     VALUE thread, val;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
     th->abort = RTEST(val);
     return val;
 }
 
 static thread_t
-thred_alloc()
+thread_alloc()
 {
     thread_t th;
 
@@ -6146,7 +6144,7 @@ thred_alloc()
     th->last_match = 0;
     th->abort = 0;
 
-    th->thread = data_object_alloc(cThread, th, 0, thred_free);
+    th->thread = data_object_alloc(cThread, th, 0, thread_free);
 
     if (curr_thread) {
 	th->prev = curr_thread;
@@ -6170,23 +6168,23 @@ catch_timer(sig)
 #if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
     signal(sig, catch_timer);
 #endif
-    if (!thred_critical) {
+    if (!thread_critical) {
 	if (trap_immediate) {
-	    thred_schedule();
+	    thread_schedule();
 	}
-	else thred_pending = 1;
+	else thread_pending = 1;
     }
 }
 #else
-int thred_tick = THREAD_TICK;
+int thread_tick = THREAD_TICK;
 #endif
 
 VALUE
-thred_create(fn, arg)
+thread_create(fn, arg)
     VALUE (*fn)();
     void *arg;
 {
-    thread_t th = thred_alloc();
+    thread_t th = thread_alloc();
     int state;
 
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
@@ -6217,14 +6215,14 @@ thred_create(fn, arg)
     }
 #endif
 
-    thred_save_context(curr_thread);
+    thread_save_context(curr_thread);
     if (setjmp(curr_thread->context)) {
 	return th->thread;
     }
 
     PUSH_TAG(PROT_THREAD);
     if ((state = EXEC_TAG()) == 0) {
-	thred_save_context(th);
+	thread_save_context(th);
 	if (setjmp(th->context) == 0) {
 	    curr_thread = th;
 	    th->result = (*fn)(arg, th);
@@ -6236,21 +6234,21 @@ thred_create(fn, arg)
 	    /* fatal error or global exit within this thread */
 	    /* need to stop whole script */
 	    main_thread->errinfo = errinfo;
-	    thred_cleanup();
+	    thread_cleanup();
 	}
-	else if (thred_abort || curr_thread->abort || RTEST(debug)) {
+	else if (thread_abort || curr_thread->abort || RTEST(debug)) {
 	    f_abort();
 	}
 	else {
 	    curr_thread->errinfo = errinfo;
 	}
     }
-    thred_remove();
+    thread_remove();
     return 0;
 }
 
 static VALUE
-thred_yield(arg, th) 
+thread_yield(arg, th) 
     int arg;
     thread_t th;
 {
@@ -6259,21 +6257,21 @@ thred_yield(arg, th)
 }
 
 static VALUE
-thred_start()
+thread_start()
 {
     if (!iterator_p()) {
 	Raise(eThreadError, "must be called as iterator");
     }
-    return thred_create(thred_yield, 0);
+    return thread_create(thread_yield, 0);
 }
 
 static VALUE
-thred_value(thread)
+thread_value(thread)
     VALUE thread;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
-    thred_join(0, thread);
+    thread_join(0, thread);
     if (!NIL_P(th->errinfo)) {
 	VALUE oldbt = get_backtrace(th->errinfo);
 	VALUE errat = make_backtrace();
@@ -6287,12 +6285,12 @@ thred_value(thread)
 }
 
 static VALUE
-thred_status(thread)
+thread_status(thread)
     VALUE thread;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
-    if (thred_dead(th)) {
+    if (thread_dead(th)) {
 	if (NIL_P(th->errinfo)) return FALSE;
 	return Qnil;
     }
@@ -6301,27 +6299,27 @@ thred_status(thread)
 }
 
 static VALUE
-thred_stop_p(thread)
+thread_stop_p(thread)
     VALUE thread;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
-    if (thred_dead(th)) return TRUE;
+    if (thread_dead(th)) return TRUE;
     if (th->status == THREAD_STOPPED) return TRUE;
     return FALSE;
 }
 
 static void
-thred_wait_other_threads()
+thread_wait_other_threads()
 {
     /* wait other threads to terminate */
     while (curr_thread != curr_thread->next) {
-	thred_schedule();
+	thread_schedule();
     }
 }
 
 static void
-thred_cleanup()
+thread_cleanup()
 {
     thread_t th;
 
@@ -6338,86 +6336,86 @@ thred_cleanup()
     END_FOREACH(th);
 }
 
-int thred_critical;
+int thread_critical;
 
 static VALUE
-thred_get_critical()
+thread_get_critical()
 {
-    return thred_critical?TRUE:FALSE;
+    return thread_critical?TRUE:FALSE;
 }
 
 static VALUE
-thred_set_critical(obj, val)
+thread_set_critical(obj, val)
     VALUE obj, val;
 {
-    thred_critical = RTEST(val);
+    thread_critical = RTEST(val);
     return val;
 }
 
 void
-thred_interrupt()
+thread_interrupt()
 {
-    thred_critical = 0;
-    thred_ready(main_thread);
+    thread_critical = 0;
+    thread_ready(main_thread);
     if (curr_thread == main_thread) {
 	rb_interrupt();
     }
-    thred_save_context(curr_thread);
+    thread_save_context(curr_thread);
     if (setjmp(curr_thread->context)) {
 	return;
     }
     curr_thread = main_thread;
-    thred_restore_context(curr_thread, 2);
+    thread_restore_context(curr_thread, 2);
 }
 
 void
-thred_trap_eval(cmd, sig)
+thread_trap_eval(cmd, sig)
     VALUE cmd;
     int sig;
 {
-    thred_critical = 0;
-    if (!thred_dead(curr_thread)) {
-	thred_ready(curr_thread);
+    thread_critical = 0;
+    if (!thread_dead(curr_thread)) {
+	thread_ready(curr_thread);
 	rb_trap_eval(cmd, sig);
 	return;
     }
-    thred_ready(main_thread);
-    thred_save_context(curr_thread);
+    thread_ready(main_thread);
+    thread_save_context(curr_thread);
     if (setjmp(curr_thread->context)) {
 	return;
     }
     th_cmd = cmd;
     th_sig = sig;
     curr_thread = main_thread;
-    thred_restore_context(curr_thread, 3);
+    thread_restore_context(curr_thread, 3);
 }
 
 static VALUE
-thred_raise(argc, argv, thread)
+thread_raise(argc, argv, thread)
     int argc;
     VALUE *argv;
     VALUE thread;
 {
-    thread_t th = thred_check(thread);
+    thread_t th = thread_check(thread);
 
-    if (thred_dead(th)) return thread;
+    if (thread_dead(th)) return thread;
     if (curr_thread == th) {
 	f_raise(argc, argv);
     }
 
-    thred_save_context(curr_thread);
+    thread_save_context(curr_thread);
     if (setjmp(curr_thread->context)) {
 	return thread;
     }
 
     rb_scan_args(argc, argv, "11", &th_raise_argv[0], &th_raise_argv[1]);
-    thred_ready(th);
+    thread_ready(th);
     curr_thread = th;
 
     th_raise_argc = argc;
     th_raise_file = sourcefile;
     th_raise_line = sourceline;
-    thred_restore_context(curr_thread, 4);
+    thread_restore_context(curr_thread, 4);
     return Qnil;		/* not reached */
 }
 
@@ -6425,12 +6423,12 @@ static thread_t loading_thread;
 static int loading_nest;
 
 static int
-thred_loading(feature)
+thread_loading(feature)
     char *feature;
 {
     if (curr_thread != curr_thread->next && loading_thread) {
 	while (loading_thread != curr_thread) {
-	    thred_schedule();
+	    thread_schedule();
 	    CHECK_INTS;
 	}
 	if (rb_provided(feature)) return TRUE; /* no need to load */
@@ -6443,7 +6441,7 @@ thred_loading(feature)
 }
 
 static void
-thred_loading_done()
+thread_loading_done()
 {
     if (--loading_nest == 0) {
 	loading_thread = 0;
@@ -6456,38 +6454,38 @@ Init_Thread()
     eThreadError = rb_define_class("ThreadError", eStandardError);
     cThread = rb_define_class("Thread", cObject);
 
-    rb_define_singleton_method(cThread, "new", thred_start, 0);
-    rb_define_singleton_method(cThread, "start", thred_start, 0);
-    rb_define_singleton_method(cThread, "fork", thred_start, 0);
+    rb_define_singleton_method(cThread, "new", thread_start, 0);
+    rb_define_singleton_method(cThread, "start", thread_start, 0);
+    rb_define_singleton_method(cThread, "fork", thread_start, 0);
 
-    rb_define_singleton_method(cThread, "stop", thred_stop, 0);
-    rb_define_singleton_method(cThread, "kill", thred_s_kill, 1);
-    rb_define_singleton_method(cThread, "exit", thred_exit, 0);
-    rb_define_singleton_method(cThread, "pass", thred_pass, 0);
-    rb_define_singleton_method(cThread, "join", thred_join, 1);
-    rb_define_singleton_method(cThread, "current", thred_current, 0);
-    rb_define_singleton_method(cThread, "main", thred_main, 0);
+    rb_define_singleton_method(cThread, "stop", thread_stop, 0);
+    rb_define_singleton_method(cThread, "kill", thread_s_kill, 1);
+    rb_define_singleton_method(cThread, "exit", thread_exit, 0);
+    rb_define_singleton_method(cThread, "pass", thread_pass, 0);
+    rb_define_singleton_method(cThread, "join", thread_join, 1);
+    rb_define_singleton_method(cThread, "current", thread_current, 0);
+    rb_define_singleton_method(cThread, "main", thread_main, 0);
 
-    rb_define_singleton_method(cThread, "critical", thred_get_critical, 0);
-    rb_define_singleton_method(cThread, "critical=", thred_set_critical, 1);
+    rb_define_singleton_method(cThread, "critical", thread_get_critical, 0);
+    rb_define_singleton_method(cThread, "critical=", thread_set_critical, 1);
 
-    rb_define_singleton_method(cThread, "abort_on_exception", thred_s_abort_exc, 0);
-    rb_define_singleton_method(cThread, "abort_on_exception=", thred_s_abort_exc_set, 1);
+    rb_define_singleton_method(cThread, "abort_on_exception", thread_s_abort_exc, 0);
+    rb_define_singleton_method(cThread, "abort_on_exception=", thread_s_abort_exc_set, 1);
 
-    rb_define_method(cThread, "run", thred_run, 0);
-    rb_define_method(cThread, "wakeup", thred_wakeup, 0);
-    rb_define_method(cThread, "exit", thred_kill, 0);
-    rb_define_method(cThread, "value", thred_value, 0);
-    rb_define_method(cThread, "status", thred_status, 0);
-    rb_define_method(cThread, "alive?", thred_status, 0);
-    rb_define_method(cThread, "stop?", thred_stop_p, 0);
-    rb_define_method(cThread, "raise", thred_raise, -1);
+    rb_define_method(cThread, "run", thread_run, 0);
+    rb_define_method(cThread, "wakeup", thread_wakeup, 0);
+    rb_define_method(cThread, "exit", thread_kill, 0);
+    rb_define_method(cThread, "value", thread_value, 0);
+    rb_define_method(cThread, "status", thread_status, 0);
+    rb_define_method(cThread, "alive?", thread_status, 0);
+    rb_define_method(cThread, "stop?", thread_stop_p, 0);
+    rb_define_method(cThread, "raise", thread_raise, -1);
 
-    rb_define_method(cThread, "abort_on_exception", thred_abort_exc, 0);
-    rb_define_method(cThread, "abort_on_exception=", thred_abort_exc_set, 1);
+    rb_define_method(cThread, "abort_on_exception", thread_abort_exc, 0);
+    rb_define_method(cThread, "abort_on_exception=", thread_abort_exc_set, 1);
 
     /* allocate main thread */
-    main_thread = thred_alloc();
+    main_thread = thread_alloc();
 }
 #endif
 

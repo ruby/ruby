@@ -9,7 +9,7 @@ class TkDialog < TkWindow
     INTERP._eval('eval {global '+id+';'+
 		 'set '+id+' [tk_dialog '+ 
 		 @path+" "+title+" \"#{message}\" "+bitmap+" "+
-		 default_button+" "+buttons+']}')
+		 String(default_button)+" "+buttons+']}')
   end
   def value
     return @var.value.to_i

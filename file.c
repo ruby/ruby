@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 #include "rubyio.h"
+#include "rubysig.h"
 
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
@@ -1376,10 +1377,10 @@ file_truncate(obj, len)
 
 #if defined(THREAD) && defined(EWOULDBLOCK)
 static int
-thred_flock(fd, op)
+thread_flock(fd, op)
     int fd, op;
 {
-    if (thred_alone() || (op & LOCK_NB)) {
+    if (thread_alone() || (op & LOCK_NB)) {
 	return flock(fd, op);
     }
     op |= LOCK_NB;
@@ -1387,7 +1388,7 @@ thred_flock(fd, op)
 	switch (errno) {
 	  case EINTR:		/* can be happen? */
 	  case EWOULDBLOCK:
-	    thred_schedule();	/* busy wait */
+	    thread_schedule();	/* busy wait */
 	    break;
 	  default:
 	    return -1;
@@ -1395,7 +1396,7 @@ thred_flock(fd, op)
     }
     return 0;
 }
-#define flock thred_flock
+#define flock thread_flock
 #endif
 
 static VALUE

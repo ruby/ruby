@@ -217,7 +217,7 @@ rb_check_type(x, t)
 }
 
 /* exception classes */
-#include "errno.h"
+#include <errno.h>
 
 VALUE eException;
 VALUE eSystemExit, eInterrupt, eFatal;

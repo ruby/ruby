@@ -344,7 +344,6 @@ str_modify(str)
     char *ptr;
 
     if (rb_safe_level() >= 5) {
-	extern VALUE eSecurityError;
 	Raise(eSecurityError, "cannot change string status");
     }
     if (FL_TEST(str, STR_FREEZE))
@@ -1091,7 +1090,7 @@ str_aset(str, indx, val)
 	{
 	    int beg, end;
 	    if (range_beg_end(indx, &beg, &end)) {
-		str_replace2(str, beg, end, val);
+		str_replace2(str, beg, end, str_to_str(val));
 		return val;
 	    }
 	}

@@ -192,12 +192,14 @@ enum.o: enum.c ruby.h config.h defines.h intern.h
 error.o: error.c ruby.h config.h defines.h intern.h env.h
 eval.o: eval.c ruby.h config.h defines.h intern.h node.h env.h rubysig.h st.h dln.h
 file.o: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
+fnmatch.o: fnmatch.c config.h fnmatch.h
 gc.o: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h
+glob.o: config.h glob.c fnmatch.h
 hash.o: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h
 inits.o: inits.c ruby.h config.h defines.h intern.h
 io.o: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 main.o: main.c ruby.h config.h defines.h intern.h
-marshal.o: marshal.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h st.h
+marshal.o: marshal.c ruby.h config.h defines.h intern.h rubyio.h st.h
 math.o: math.c ruby.h config.h defines.h intern.h
 numeric.o: numeric.c ruby.h config.h defines.h intern.h
 object.o: object.c ruby.h config.h defines.h intern.h st.h

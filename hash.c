@@ -925,7 +925,6 @@ f_setenv(obj, name, value)
     VALUE obj, name, value;
 {
     if (rb_safe_level() >= 4) {
-	extern VALUE eSecurityError;
 	Raise(eSecurityError, "cannot change environment variable");
     }
 
@@ -1157,8 +1156,6 @@ env_to_hash(obj)
 void
 Init_Hash()
 {
-    extern VALUE mEnumerable;
-
     hash = rb_intern("hash");
 
     cHash = rb_define_class("Hash", cObject);

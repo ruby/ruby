@@ -260,7 +260,7 @@ SHELL = /bin/sh
 srcdir = #{$srcdir}
 hdrdir = #{$hdrdir}
 
-CC = gcc
+CC = #{CONFIG["CC"]}
 
 prefix = #{CONFIG["prefix"]}
 CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I#{$hdrdir} -I#{CONFIG["includedir"]} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}

@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 #include "rubyio.h"
+#include "rubysig.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -109,7 +110,7 @@ extern int ReadDataPending();
 # define READ_CHECK(fp) 0
 #else
 # define READ_CHECK(fp) do {\
-    if (!READ_DATA_PENDING(fp)) thred_wait_fd(fileno(fp));\
+    if (!READ_DATA_PENDING(fp)) thread_wait_fd(fileno(fp));\
 } while(0)
 #endif
 
@@ -881,7 +882,7 @@ io_syswrite(io, str)
     f = GetWriteFile(fptr);
 
 #ifdef THREAD
-    thred_fd_writable(fileno(f));
+    thread_fd_writable(fileno(f));
 #endif
     n = write(fileno(f), RSTRING(str)->ptr, RSTRING(str)->len);
 
@@ -905,7 +906,7 @@ io_sysread(io, len)
     str = str_new(0, ilen);
 
 #ifdef THREAD
-    thred_wait_fd(fileno(fptr->f));
+    thread_wait_fd(fileno(fptr->f));
 #endif
     TRAP_BEG;
     n = read(fileno(fptr->f), RSTRING(str)->ptr, RSTRING(str)->len);
@@ -1184,7 +1185,7 @@ pipe_open(pname, mode)
       case -1:			/* fork failed */
 	if (errno == EAGAIN) {
 #ifdef THREAD
-	    thred_sleep(1);
+	    thread_sleep(1);
 #else
 	    sleep(1);
 #endif
@@ -1244,10 +1245,12 @@ io_s_popen(argc, argv, self)
 	mode = "r";
     }
     else {
-	Check_Type(pmode, T_STRING);
-	if (RSTRING(pmode)->len == 0 || RSTRING(pmode)->len > 3)
+	int len;
+
+	mode = STR2CSTR(pmode);
+	len = strlen(mode);
+	if (len == 0 || len > 3)
 	    ArgError("illegal access mode");
-	mode = RSTRING(pmode)->ptr;
    }
     return pipe_open(RSTRING(pname)->ptr, mode);
 }
@@ -1279,10 +1282,12 @@ f_open(argc, argv)
 	mode = "r";
     }
     else {
-	Check_Type(pmode, T_STRING);
-	if (RSTRING(pmode)->len == 0 || RSTRING(pmode)->len > 3)
+	int len;
+
+	mode = STR2CSTR(pmode);
+	len = strlen(mode);
+	if (len == 0 || len > 3)
 	    ArgError("illegal access mode");
-	mode = RSTRING(pmode)->ptr;
     }
 
     port = io_open(RSTRING(pname)->ptr, mode);
@@ -2055,7 +2060,7 @@ f_select(argc, argv, obj)
     max++;
 
 #ifdef THREAD
-    n = thred_select(max, rp, wp, ep, tp);
+    n = thread_select(max, rp, wp, ep, tp);
     if (n < 0) {
 	rb_sys_fail(0);
     }
@@ -2565,8 +2570,7 @@ opt_i_set(val)
 	inplace = 0;
 	return;
     }
-    Check_Type(val, T_STRING);
-    inplace = RSTRING(val)->ptr;
+    inplace = STR2CSTR(val);
 }
 
 void

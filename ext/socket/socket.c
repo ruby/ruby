@@ -10,6 +10,7 @@
 
 #include "ruby.h"
 #include "rubyio.h"
+#include "rubysig.h"
 #include <stdio.h>
 #include <sys/types.h>
 #ifndef NT
@@ -24,7 +25,7 @@
 
 #ifdef USE_CWGUSI
 extern int fileno(FILE *stream); /* <unix.mac.h> */
-extern int thred_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /* thread.c */
+extern int thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /* thread.c */
 # include <sys/errno.h>
 # include <GUSI.h>
 #endif
@@ -41,9 +42,6 @@ extern int thred_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /* thr
 #define EWOULDBLOCK EAGAIN
 #endif
 
-extern VALUE cIO;
-extern VALUE cInteger;
-
 VALUE cBasicSocket;
 VALUE cIPsocket;
 VALUE cTCPsocket;
@@ -55,7 +53,6 @@ VALUE cUNIXserver;
 #endif
 VALUE cSocket;
 
-extern VALUE eStandardError;
 static VALUE eSocket;
 
 #ifdef SOCKS
@@ -243,7 +240,7 @@ bsock_send(argc, argv, sock)
     fd = fileno(f);
   retry:
 #ifdef THREAD
-    thred_fd_writable(fd);
+    thread_fd_writable(fd);
 #endif
     m = str2cstr(msg, &mlen);
     if (RTEST(to)) {
@@ -262,7 +259,7 @@ bsock_send(argc, argv, sock)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thred_schedule();
+	    thread_schedule();
 #endif
 	    goto retry;
 	}
@@ -309,7 +306,7 @@ s_recv(sock, argc, argv, from)
     GetOpenFile(sock, fptr);
     fd = fileno(fptr->f);
 #ifdef THREAD
-    thred_wait_fd(fd);
+    thread_wait_fd(fd);
 #endif
     TRAP_BEG;
   retry:
@@ -325,7 +322,7 @@ s_recv(sock, argc, argv, from)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thred_schedule();
+	    thread_schedule();
 #endif
 	    goto retry;
 	}
@@ -370,7 +367,7 @@ bsock_recv(argc, argv, sock)
 
 #if defined(THREAD) && defined(HAVE_FCNTL)
 static int
-thred_connect(fd, sockaddr, len, type)
+thread_connect(fd, sockaddr, len, type)
     int fd;
     struct sockaddr *sockaddr;
     int len;
@@ -412,9 +409,9 @@ thred_connect(fd, sockaddr, len, type)
 		FD_ZERO(&fds);
 		FD_SET(fd, &fds);
 #ifndef USE_CWGUSI
-		thred_select(fd+1, 0, &fds, 0, 0, 0);
+		thread_select(fd+1, 0, &fds, 0, 0, 0);
 #else
-		thred_select(fd+1, 0, &fds, 0, 0);
+		thread_select(fd+1, 0, &fds, 0, 0);
 #endif
 		continue;
 #endif
@@ -535,7 +532,7 @@ open_inet(class, h, serv, type)
     }
     else {
 #if defined(THREAD) && defined(HAVE_FCNTL)
-        status = thred_connect(fd, (struct sockaddr*)&sockaddr,
+        status = thread_connect(fd, (struct sockaddr*)&sockaddr,
 			       sizeof(sockaddr), type);
 #else
 #ifdef SOCKS
@@ -611,7 +608,7 @@ s_accept(class, fd, sockaddr, len)
 
   retry:
 #ifdef THREAD
-    thred_wait_fd(fd);
+    thread_wait_fd(fd);
 #endif
     TRAP_BEG;
     fd2 = accept(fd, sockaddr, len);
@@ -624,7 +621,7 @@ s_accept(class, fd, sockaddr, len)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thred_schedule();
+	    thread_schedule();
 #endif
 	    goto retry;
 	}
@@ -889,7 +886,7 @@ udp_connect(sock, host, port)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thred_schedule();
+	    thread_schedule();
 #endif
 	    goto retry;
 	}
@@ -948,7 +945,7 @@ udp_send(argc, argv, sock)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thred_schedule();
+	    thread_schedule();
 #endif
 	    goto retry;
 	}
@@ -1203,7 +1200,7 @@ sock_connect(sock, addr)
 	  case EAGAIN:
 #endif
 #ifdef THREAD
-	    thred_schedule();
+	    thread_schedule();
 #endif
 	    goto retry;
 	}

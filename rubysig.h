@@ -23,24 +23,24 @@ extern int trap_pending;
 void trap_restore_mask _((void));
 
 #ifdef THREAD
-extern int thred_critical;
-void thred_schedule _((void));
+extern int thread_critical;
+void thread_schedule _((void));
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
-extern int thred_pending;
+extern int thread_pending;
 # define CHECK_INTS if (!prohibit_interrupt) {\
     if (trap_pending) rb_trap_exec();\
-    if (thred_pending && !thred_critical) thred_schedule();\
+    if (thread_pending && !thread_critical) thread_schedule();\
 }
 # else
 /* pseudo preemptive thread switching */
-extern int thred_tick;
+extern int thread_tick;
 #define THREAD_TICK 500
 # define CHECK_INTS if (!prohibit_interrupt) {\
     if (trap_pending) rb_trap_exec();\
-    if (!thred_critical) {\
-	if (thred_tick-- <= 0) {\
-	    thred_tick = THREAD_TICK;\
-	    thred_schedule();\
+    if (!thread_critical) {\
+	if (thread_tick-- <= 0) {\
+	    thread_tick = THREAD_TICK;\
+	    thread_schedule();\
 	}\
     }\
 }

@@ -52,7 +52,7 @@ void _timer_for_tcl (ClientData clientData)
     timer->flag = 0;
     CHECK_INTS;
 #ifdef THREAD 
-    if (!thred_critical) thred_schedule();
+    if (!thread_critical) thread_schedule();
 #endif
 
     timer->token = Tk_CreateTimerHandler(200, _timer_for_tcl, 
@@ -102,22 +102,36 @@ ip_eval_rescue(VALUE *failed, VALUE einfo)
 }
 
 static int
+#if TCL_MAJOR_VERSION >= 8
+ip_ruby(ClientData clientData, Tcl_Interp *interp, 
+	int argc, Tcl_Obj *CONST argv[])
+#else
 ip_ruby(ClientData clientData, Tcl_Interp *interp, int argc, char *argv[])
+#endif
 {
     VALUE res;
     int old_trapflg;
     VALUE failed = 0;
+    char *arg;
+    int  dummy;
 
     /* ruby command has 1 arg. */
     if (argc != 2) {
 	ArgError("wrong # of arguments (%d for 1)", argc);
     }
 
+    /* get C string from Tcl object */
+#if TCL_MAJOR_VERSION >= 8
+    arg = Tcl_GetStringFromObj(argv[1], &dummy);
+#else
+    arg = argv[1];
+#endif
+
     /* evaluate the argument string by ruby */
-    DUMP2("rb_eval_string(%s)", argv[1]);
+    DUMP2("rb_eval_string(%s)", arg);
     old_trapflg = trap_immediate;
     trap_immediate = 0;
-    res = rb_rescue(rb_eval_string, (VALUE)argv[1], ip_eval_rescue, (VALUE)&failed);
+    res = rb_rescue(rb_eval_string, (VALUE)arg, ip_eval_rescue, (VALUE)&failed);
     trap_immediate = old_trapflg;
 
     Tcl_ResetResult(interp);
@@ -178,9 +192,15 @@ ip_new(VALUE self)
 		      (Tcl_PackageInitProc *) NULL);
 
     /* add ruby command to the interpreter */
+#if TCL_MAJOR_VERSION >= 8
+    DUMP1("Tcl_CreateObjCommand(\"ruby\")");
+    Tcl_CreateObjCommand(ptr->ip, "ruby", ip_ruby, (ClientData *)NULL,
+			 (Tcl_CmdDeleteProc *)NULL);
+#else
     DUMP1("Tcl_CreateCommand(\"ruby\")");
     Tcl_CreateCommand(ptr->ip, "ruby", ip_ruby, (ClientData *)NULL,
 		      (Tcl_CmdDeleteProc *)NULL);
+#endif
 
     return obj;
 }
@@ -216,28 +236,71 @@ ip_invoke(int argc, VALUE *argv, VALUE obj)
 {
     struct tcltkip *ptr;	/* tcltkip data struct */
     int i;
+    int object = 0;
     Tcl_CmdInfo info;
-    char **av;
+    char *cmd;
+    char **av = (char **)NULL;
+#if TCL_MAJOR_VERSION >= 8
+    Tcl_Obj **ov = (Tcl_Obj **)NULL;
+    Tcl_Obj *resultPtr;
+#endif
 
     /* get the data struct */
     Data_Get_Struct(obj, struct tcltkip, ptr);
 
-    av = (char **)ALLOCA_N(char **, argc+1);
-    for (i = 0; i < argc; ++i) {
+    /* get the command name string */
+    cmd = STR2CSTR(argv[0]);
+
+    /* map from the command name to a C procedure */
+    if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
+	NameError("invalid command name `%s'", cmd);
+    }
+#if TCL_MAJOR_VERSION >= 8
+    object = info.isNativeObjectProc;
+#endif
+
+    /* memory allocation for arguments of this command */
+    if (object) {
+#if TCL_MAJOR_VERSION >= 8
+      /* object interface */
+      ov = (Tcl_Obj **)ALLOCA_N(Tcl_Obj *, argc+1);
+      for (i = 0; i < argc; ++i) {
+	char *s = STR2CSTR(argv[i]);
+        ov[i] = Tcl_NewStringObj(s, strlen(s));
+      }
+      ov[argc] = (Tcl_Obj *)NULL;
+#endif
+    } else {
+      /* string interface */
+      av = (char **)ALLOCA_N(char *, argc+1);
+      for (i = 0; i < argc; ++i) {
 	char *s = STR2CSTR(argv[i]);
 
         av[i] = ALLOCA_N(char, strlen(s)+1);
 	strcpy(av[i], s);
-    }
-    av[argc] = NULL;
-
-    if (!Tcl_GetCommandInfo(ptr->ip, av[0], &info)) {
-	NameError("invalid command name `%s'", av[0]);
+      }
+      av[argc] = (char *)NULL;
     }
 
     Tcl_ResetResult(ptr->ip);
-    ptr->return_value = (*info.proc)(info.clientData,
-				     ptr->ip, argc, av);
+
+    /* Invoke the C procedure */
+    if (object) {
+#if TCL_MAJOR_VERSION >= 8
+      int dummy;
+      ptr->return_value = (*info.objProc)(info.objClientData,
+					  ptr->ip, argc, ov);
+
+      /* get the string value from the result object */
+      resultPtr = Tcl_GetObjResult(ptr->ip);
+      Tcl_SetResult(ptr->ip, Tcl_GetStringFromObj(resultPtr, &dummy),
+		    TCL_VOLATILE);
+#endif
+    } else {
+      ptr->return_value = (*info.proc)(info.clientData,
+				       ptr->ip, argc, av);
+    }
+
     if (ptr->return_value == TCL_ERROR) {
 	Fail(ptr->ip->result);
     }
