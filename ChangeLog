@@ -1,3 +1,8 @@
+Sun Oct  5 10:55:29 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/open-uri.rb (URI::Generic#find_proxy): no_proxy support did not
+	  work.  [ruby-dev:21484]
+
 Sun Oct  5 09:52:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/assertions.rb: will use pp for output if available.
@@ -51,10 +56,10 @@ Sat Oct  4 21:49:14 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 Sat Oct  4 17:52:59 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/netHttpClient.rb: follow http-access2.  hosts which matches
-	  ENV['no_proxy'] or ENV['NO_PROXY'] is not proxyed.
+	  ENV['no_proxy'] or ENV['NO_PROXY'] are not proxyed.
 	  - [,:] separated. ("ruby-lang.org:rubyist.net")
 	  - no regexp. (give "ruby-lang.org", not "*.ruby-lang.org")
-	  - if you want specify hot by IP address, give full address.
+	  - if you want specify host by IP address, give full address.
 	    ("192.168.1.1, 192.168.1.2")
 
 	* lib/soap/rpc/cgistub.rb: return "Status: XXX MMM" line.

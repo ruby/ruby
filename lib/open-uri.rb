@@ -338,7 +338,7 @@ module URI
         name = 'no_proxy'
         if no_proxy = ENV[name] || ENV[name.upcase]
           no_proxy.scan(/([^:,]*)(?::(\d+))?/) {|host, port|
-            if /(\A|\.)#{Regexp.quote host}\z/i =~ proxy_uri.host &&
+            if /(\A|\.)#{Regexp.quote host}\z/i =~ self.host &&
                (!port || self.port == port.to_i)
               proxy_uri = nil
               break
