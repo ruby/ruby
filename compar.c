@@ -30,12 +30,24 @@ rb_cmpint(val)
     return 0;
 }
 
-static VALUE
-cmperr()
+void
+rb_cmperr(x, y)
+    VALUE x, y;
 {
-    rb_raise(rb_eArgError, "comparison failed");
-    return Qnil;		/* not reached */
+    const char *classname;
+
+    if (SPECIAL_CONST_P(y)) {
+	y = rb_inspect(y);
+	classname = StringValuePtr(y);
+    }
+    else {
+	classname = rb_obj_classname(y);
+    }
+    rb_raise(rb_eArgError, "comparison of %s to %s failed",
+	     rb_obj_classname(x), classname);
 }
+
+#define cmperr() (rb_cmperr(x, y), Qnil)
 
 static VALUE
 cmp_equal(x, y)

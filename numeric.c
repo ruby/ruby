@@ -144,6 +144,20 @@ rb_num_coerce_cmp(x, y)
 }
 
 static VALUE
+num_coerce_relop(x, y)
+    VALUE x, y;
+{
+    VALUE c, x0 = x, y0 = y;
+
+    if (!do_coerce(&x, &y, Qfalse) ||
+	NIL_P(c = rb_funcall(x, rb_frame_last_func(), 1, y))) {
+	rb_cmperr(x0, y0);
+	return Qnil;		/* not reached */
+    }
+    return c;
+}
+
+static VALUE
 num_copy_object(x, y)
     VALUE x, y;
 {
@@ -604,7 +618,7 @@ flo_gt(x, y)
 	break;
 
       default:
-	return rb_num_coerce_cmp(x, y);
+	return num_coerce_relop(x, y);
     }
     if (isnan(a) || isnan(b)) return Qfalse;
     return (a > b)?Qtrue:Qfalse;
@@ -631,7 +645,7 @@ flo_ge(x, y)
 	break;
 
       default:
-	return rb_num_coerce_cmp(x, y);
+	return num_coerce_relop(x, y);
     }
     if (isnan(a) || isnan(b)) return Qfalse;
     return (a >= b)?Qtrue:Qfalse;
@@ -658,7 +672,7 @@ flo_lt(x, y)
 	break;
 
       default:
-	return rb_num_coerce_cmp(x, y);
+	return num_coerce_relop(x, y);
     }
     if (isnan(a) || isnan(b)) return Qfalse;
     return (a < b)?Qtrue:Qfalse;
@@ -685,7 +699,7 @@ flo_le(x, y)
 	break;
 
       default:
-	return rb_num_coerce_cmp(x, y);
+	return num_coerce_relop(x, y);
     }
     if (isnan(a) || isnan(b)) return Qfalse;
     return (a <= b)?Qtrue:Qfalse;
@@ -1439,7 +1453,7 @@ fix_gt(x, y)
 	return Qfalse;
     }
     else {
-	return rb_num_coerce_cmp(x, y);
+	return num_coerce_relop(x, y);
     }
 }
 
@@ -1454,7 +1468,7 @@ fix_ge(x, y)
 	return Qfalse;
     }
     else {
-	return rb_num_coerce_cmp(x, y);
+	return num_coerce_relop(x, y);
     }
 }
 
@@ -1469,7 +1483,7 @@ fix_lt(x, y)
 	return Qfalse;
     }
     else {
-	return rb_num_coerce_cmp(x, y);
+	return num_coerce_relop(x, y);
     }
 }
 
@@ -1484,7 +1498,7 @@ fix_le(x, y)
 	return Qfalse;
     }
     else {
-	return rb_num_coerce_cmp(x, y);
+	return num_coerce_relop(x, y);
     }
 }
 
@@ -1654,28 +1668,6 @@ fix_size(fix)
 }
 
 static VALUE
-int_compare(i, to, id)
-    VALUE i, to;
-    ID id;
-{
-    VALUE cmp = rb_funcall(i, id, 1, to);
-    if (NIL_P(cmp)) {
-	char *toclass;
-
-	if (SPECIAL_CONST_P(to)) {
-	    to = rb_inspect(to);
-	    toclass = StringValuePtr(to);
-	}
-	else {
-	    toclass = rb_obj_classname(to);
-	}
-	rb_raise(rb_eArgError, "cannot compare %s with %s",
-		 rb_obj_classname(i), toclass);
-    }
-    return cmp;
-}
-
-static VALUE
 int_upto(from, to)
     VALUE from, to;
 {
@@ -1688,12 +1680,13 @@ int_upto(from, to)
 	}
     }
     else {
-	VALUE i = from;
+	VALUE i = from, c;
 
-	while (!int_compare(i, to, '>')) {
+	while (!(c = rb_funcall(i, '>', 1, to))) {
 	    rb_yield(i);
 	    i = rb_funcall(i, '+', 1, INT2FIX(1));
 	}
+	if (NIL_P(c)) rb_cmperr(i, to);
     }
     return from;
 }
@@ -1711,12 +1704,13 @@ int_downto(from, to)
 	}
     }
     else {
-	VALUE i = from;
+	VALUE i = from, c;
 
-	while (!int_compare(i, to, '<')) {
+	while (!(c = rb_funcall(i, '<', 1, to))) {
 	    rb_yield(i);
 	    i = rb_funcall(i, '-', 1, INT2FIX(1));
 	}
+	if (NIL_P(c)) rb_cmperr(i, to);
     }
     return from;
 }

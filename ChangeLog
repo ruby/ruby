@@ -1,4 +1,12 @@
-Thu May  8 08:56:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu May  8 12:56:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* compar.c (rb_cmperr): raise comparison failure.
+
+	* intern.h: prototype; rb_cmperr
+
+	* numeric.c (flo_gt, flo_ge, flo_lt, flo_le, fix_gt, fix_ge,
+	  fix_lt, fix_le): should fail unless the argument is comparable.
+	  (ruby-bugs-ja:PR#456)
 
 	* numeric.c (int_upto, int_downto): should fail unless the
 	  argument is comparable.  (ruby-bugs-ja:PR#454)
@@ -43,7 +51,7 @@ Mon May  5 21:19:25 2003  Koji Arai  <jca02266@nifty.ne.jp>
  	* ext/dbm/testdbm.rb: ditto.
 
 	* ext/dbm/testdbm.rb (setup): DBM.open(path, 0400) cause EACCESS
-	on Berkeley DB[234].
+	  on Berkeley DB[234].
 
 Mon May  5 22:57:07 2003  Tadayoshi Funaba  <tadf@dotrb.org>
 

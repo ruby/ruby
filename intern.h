@@ -122,6 +122,7 @@ void rb_define_singleton_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
 VALUE rb_singleton_class _((VALUE));
 /* compar.c */
 int rb_cmpint _((VALUE));
+NORETURN(void rb_cmperr _((VALUE, VALUE)));
 /* enum.c */
 /* error.c */
 RUBY_EXTERN int ruby_nerrs;
