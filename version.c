@@ -3,7 +3,6 @@
   version.c -
 
   $Author$
-  $Revision$
   $Date$
   created at: Thu Sep 30 20:08:01 JST 1993
 

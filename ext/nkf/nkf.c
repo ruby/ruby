@@ -133,9 +133,7 @@ rb_nkf_guess(obj, src)
     if (*p == '\033') {
       return INT2FIX(_JIS);
     }
-    if ('\000' <= *p && *p < '\006'
-	|| *p == 0x7f
-	|| *p == 0xff) {
+    if (*p < '\006' || *p == 0x7f || *p == 0xff) {
       return INT2FIX(_BINARY);
     }
     if (0x81 <= *p && *p <= 0x8d) {

@@ -13,6 +13,7 @@
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
+#include "env.h"
 #include <ctype.h>
 #include <errno.h>
 
@@ -79,6 +80,7 @@ VALUE rb_eEOFError;
 VALUE rb_eIOError;
 
 VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
+static VALUE orig_stdin, orig_stdout, orig_stderr;
 
 VALUE rb_fs;
 VALUE rb_output_fs;
@@ -94,7 +96,7 @@ extern char *ruby_inplace_mode;
 
 struct timeval rb_time_interval _((VALUE));
 
-static VALUE filename, file;
+static VALUE filename, current_file;
 static int gets_lineno;
 static int init_p = 0, next_p = 0;
 static VALUE lineno;
@@ -2031,9 +2033,6 @@ rb_io_defset(val, id)
     VALUE val;
     ID id;
 {
-    if (TYPE(val) == T_STRING) {
-	val = rb_io_open(RSTRING(val)->ptr, "w");
-    }
     if (!rb_respond_to(val, id_write)) {
 	rb_raise(rb_eTypeError, "$> must have write method, %s given",
 		 rb_class2name(CLASS_OF(val)));
@@ -2072,7 +2071,11 @@ set_stdin(val, id, var)
 
     if (val == *var) return;
     if (TYPE(val) != T_FILE) {
-	rb_raise(rb_eTypeError, "%s must be IO object", rb_id2name(id));
+	*var = val;
+	return;
+    }
+    if (TYPE(*var) != T_FILE) {
+	*var = orig_stdin;
     }
 
     GetOpenFile(val, fptr);
@@ -2095,10 +2098,10 @@ set_stdin(val, id, var)
 }
 
 static void
-set_outfile(val, id, var, stdf)
+set_outfile(val, var, orig, stdf)
     VALUE val;
-    ID id;
     VALUE *var;
+    VALUE orig;
     FILE *stdf;
 {
     OpenFile *fptr;
@@ -2107,10 +2110,16 @@ set_outfile(val, id, var, stdf)
     char *mode;
 
     if (val == *var) return;
-    rb_io_flush(*var);
 
+    if (TYPE(*var) == T_FILE) {
+	rb_io_flush(*var);
+    }
     if (TYPE(val) != T_FILE) {
-	rb_raise(rb_eTypeError, "%s must be IO object", rb_id2name(id));
+	*var = val;
+	return;
+    }
+    if (TYPE(*var) != T_FILE) {
+	*var = orig;
     }
 
     GetOpenFile(val, fptr);
@@ -2143,7 +2152,7 @@ set_stdout(val, id, var)
     ID id;
     VALUE *var;
 {
-    set_outfile(val, id, var, stdout);
+    set_outfile(val, var, orig_stdout, stdout);
 }
 
 static void
@@ -2152,7 +2161,7 @@ set_stderr(val, id, var)
     ID id;
     VALUE *var;
 {
-    set_outfile(val, id, var, stderr);
+    set_outfile(val, var, orig_stderr, stderr);
 }
 
 static VALUE
@@ -2191,9 +2200,21 @@ rb_io_s_new(argc, argv, klass)
 static int binmode = 0;
 
 static VALUE
+argf_forward()
+{
+    return rb_funcall3(current_file, ruby_frame->last_func,
+		       ruby_frame->argc, ruby_frame->argv);
+}
+
+static VALUE
 argf_binmode()
 {
-    rb_io_binmode(file);
+    if (TYPE(current_file) != T_FILE) {
+	argf_forward();
+    }
+    else {
+	rb_io_binmode(current_file);
+    }
     binmode = 1;
     return argf;
 }
@@ -2210,7 +2231,7 @@ next_argv()
 	}
 	else {
 	    next_p = -1;
-	    file = rb_stdin;
+	    current_file = rb_stdin;
 	}
 	init_p = 1;
 	gets_lineno = 0;
@@ -2223,7 +2244,7 @@ next_argv()
 	    filename = rb_ary_shift(rb_argv);
 	    fn = STR2CSTR(filename);
 	    if (strlen(fn) == 1 && fn[0] == '-') {
-		file = rb_stdin;
+		current_file = rb_stdin;
 		if (ruby_inplace_mode) {
 		    rb_defout = rb_stdout;
 		}
@@ -2284,9 +2305,9 @@ next_argv()
 #endif
 		    rb_defout = prep_stdio(fw, FMODE_WRITABLE, rb_cFile);
 		}
-		file = prep_stdio(fr, FMODE_READABLE, rb_cFile);
+		current_file = prep_stdio(fr, FMODE_READABLE, rb_cFile);
 	    }
-	    if (binmode) rb_io_binmode(file);
+	    if (binmode) rb_io_binmode(current_file);
 	}
 	else {
 	    init_p = 0;
@@ -2294,6 +2315,16 @@ next_argv()
 	}
     }
     return Qtrue;
+}
+
+static void
+any_close(file)
+    VALUE file;
+{
+    if (TYPE(file) == T_FILE)
+	rb_io_close(file);
+    else
+	rb_funcall3(file, rb_intern("close"), 0, 0);
 }
 
 static VALUE
@@ -2305,14 +2336,17 @@ rb_f_gets_internal(argc, argv)
 
   retry:
     if (!next_argv()) return Qnil;
+    if (TYPE(current_file) != T_FILE) {
+	line = rb_funcall3(current_file, rb_intern("gets"), argc, argv);
+    }
     if (argc == 0 && rb_rs == rb_default_rs) {
-	line = rb_io_gets(file);
+	line = rb_io_gets(current_file);
     }
     else {
-	line = rb_io_gets_internal(argc, argv, file);
+	line = rb_io_gets_internal(argc, argv, current_file);
     }
     if (NIL_P(line) && next_p != -1) {
-	rb_io_close(file);
+	any_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -2344,9 +2378,9 @@ rb_gets()
 
   retry:
     if (!next_argv()) return Qnil;
-    line = rb_io_gets(file);
+    line = rb_io_gets(current_file);
     if (NIL_P(line) && next_p != -1) {
-	rb_io_close(file);
+	any_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -2795,13 +2829,6 @@ rb_io_s_pipe()
 #endif
 }
 
-static VALUE
-rb_f_pipe()
-{
-    rb_warn("pipe is obsolete; use IO::pipe instead");
-    return rb_io_s_pipe();
-}
-
 struct foreach_arg {
     int argc;
     VALUE sep;
@@ -2873,7 +2900,14 @@ rb_io_s_readlines(argc, argv, io)
 static VALUE
 argf_tell()
 {
-    return rb_io_tell(file);
+    if (!next_argv()) {
+	rb_raise(rb_eArgError, "no stream to tell");
+    }
+
+    if (TYPE(current_file) != T_FILE) {
+	return argf_forward();
+    }
+    return rb_io_tell(current_file);
 }
 
 static VALUE
@@ -2884,7 +2918,10 @@ argf_seek(self, offset, ptrname)
 	rb_raise(rb_eArgError, "no stream to seek");
     }
 
-    return rb_io_seek(file, offset, ptrname);
+    if (TYPE(current_file) != T_FILE) {
+	return argf_forward();
+    }
+    return rb_io_seek(current_file, offset, ptrname);
 }
 
 static VALUE
@@ -2895,25 +2932,40 @@ argf_set_pos(self, offset)
 	rb_raise(rb_eArgError, "no stream to pos");
     }
 
-    return rb_io_set_pos(file, offset);
+    if (TYPE(current_file) != T_FILE) {
+	return argf_forward();
+    }
+    return rb_io_set_pos(current_file, offset);
 }
 
 static VALUE
 argf_rewind()
 {
-    return rb_io_rewind(file);
+    if (!next_argv()) {
+	rb_raise(rb_eArgError, "no stream to rewind");
+    }
+    if (TYPE(current_file) != T_FILE) {
+	return argf_forward();
+    }
+    return rb_io_rewind(current_file);
 }
 
 static VALUE
 argf_fileno()
 {
-    return rb_io_fileno(file);
+    if (!next_argv()) {
+	rb_raise(rb_eArgError, "no stream");
+    }
+    if (TYPE(current_file) != T_FILE) {
+	return argf_forward();
+    }
+    return rb_io_fileno(current_file);
 }
 
 static VALUE
 argf_to_io()
 {
-    return file;
+    return current_file;
 }
 
 static VALUE
@@ -2929,9 +2981,15 @@ argf_read(argc, argv)
 
   retry:
     if (!next_argv()) return str;
-    tmp = io_read(argc, argv, file);
+    if (TYPE(current_file) != T_FILE) {
+	tmp = argf_forward();
+	STR2CSTR(tmp);
+    }
+    else {
+	tmp = io_read(argc, argv, current_file);
+    }
     if (NIL_P(tmp) && next_p != -1) {
-	rb_io_close(file);
+	any_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -2957,9 +3015,14 @@ argf_getc()
 
   retry:
     if (!next_argv()) return Qnil;
-    byte = rb_io_getc(file);
+    if (TYPE(current_file) != T_FILE) {
+	byte = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
+    }
+    else {
+	byte = rb_io_getc(current_file);
+    }
     if (NIL_P(byte) && next_p != -1) {
-	rb_io_close(file);
+	any_close(current_file);
 	next_p = 1;
 	goto retry;
     }
@@ -2970,7 +3033,7 @@ argf_getc()
 static VALUE
 argf_readchar()
 {
-    VALUE c = rb_io_getc(file);
+    VALUE c = argf_getc();
 
     if (NIL_P(c)) {
 	rb_eof_error();
@@ -2983,18 +3046,14 @@ argf_eof()
 {
     if (init_p == 0 && !next_argv())
 	return Qtrue;
-    if (rb_io_eof(file)) {
+    if (TYPE(current_file) != T_FILE) {
+	return argf_forward();
+    }
+    if (rb_io_eof(current_file)) {
 	next_p = 1;
 	return Qtrue;
     }
     return Qfalse;
-}
-
-static VALUE
-rb_f_eof()
-{
-    rb_warn("eof? is obsolete; use ARGF.eof? instead");
-    return argf_eof();
 }
 
 static VALUE
@@ -3030,14 +3089,14 @@ argf_filename()
 static VALUE
 argf_file()
 {
-    return file;
+    return current_file;
 }
 
 static VALUE
 argf_skip()
 {
     if (next_p != -1) {
-	rb_io_close(file);
+	any_close(current_file);
 	next_p = 1;
     }
     return argf;
@@ -3046,7 +3105,7 @@ argf_skip()
 static VALUE
 argf_close()
 {
-    rb_io_close(file);
+    any_close(current_file);
     if (next_p != -1) {
 	next_p = 1;
     }
@@ -3057,7 +3116,10 @@ argf_close()
 static VALUE
 argf_closed()
 {
-    return rb_io_closed(file);
+    if (TYPE(current_file) != T_FILE) {
+	return argf_forward();
+    }
+    return rb_io_closed(current_file);
 }
 
 static VALUE
@@ -3095,15 +3157,12 @@ Init_IO()
     rb_define_global_function("puts", rb_f_puts, -1);
     rb_define_global_function("gets", rb_f_gets, -1);
     rb_define_global_function("readline", rb_f_readline, -1);
-    rb_define_global_function("eof", rb_f_eof, 0);
-    rb_define_global_function("eof?", rb_f_eof, 0);
     rb_define_global_function("getc", rb_f_getc, 0);
     rb_define_global_function("select", rb_f_select, -1);
 
     rb_define_global_function("readlines", rb_f_readlines, -1);
 
     rb_define_global_function("`", rb_f_backquote, 1);
-    rb_define_global_function("pipe", rb_f_pipe, 0);
 
     rb_define_global_function("p", rb_f_p, -1);
     rb_define_method(rb_mKernel, "display", rb_obj_display, -1);
@@ -3192,11 +3251,11 @@ Init_IO()
     rb_define_method(rb_cIO, "ioctl", rb_io_ioctl, -1);
     rb_define_method(rb_cIO, "fcntl", rb_io_fcntl, -1);
 
-    rb_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
+    rb_stdin = orig_stdin = prep_stdio(stdin, FMODE_READABLE, rb_cIO);
     rb_define_hooked_variable("$stdin", &rb_stdin, 0, set_stdin);
-    rb_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO);
+    rb_stdout = orig_stdout = prep_stdio(stdout, FMODE_WRITABLE, rb_cIO);
     rb_define_hooked_variable("$stdout", &rb_stdout, 0, set_stdout);
-    rb_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
+    rb_stderr = orig_stderr = prep_stdio(stderr, FMODE_WRITABLE, rb_cIO);
     rb_define_hooked_variable("$stderr", &rb_stderr, 0, set_stderr);
     rb_defout = rb_stdout;
     rb_define_hooked_variable("$>", &rb_defout, 0, rb_io_defset);
@@ -3244,8 +3303,8 @@ Init_IO()
     rb_define_singleton_method(argf, "lineno",   argf_lineno, 0);
     rb_define_singleton_method(argf, "lineno=",  argf_set_lineno, 1);
 
-    file = rb_stdin;
-    rb_global_variable(&file);
+    current_file = rb_stdin;
+    rb_global_variable(&current_file);
     filename = rb_str_new2("-");
     rb_define_readonly_variable("$FILENAME", &filename);
 

@@ -20,9 +20,27 @@ Perl).  It is simple, straight-forward, and extensible.
 
 * How to get Ruby
 
-The Ruby distribution can be found on
+The Ruby distribution can be found on:
 
   ftp://ftp.netlab.co.jp/pub/lang/ruby/
+
+You can get it by anonymous CVS.  How to check out is:
+
+  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs login
+  (Logging in to anonymous@cvs.netlab.co.jp)
+  CVS password: guest
+  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs checkout ruby
+
+* Mailing list
+
+There is a mailing list to talk about Ruby.
+To subscribe this list, please send the following phrase
+
+        subscribe Your-Last-Name Your-First-Name 
+e.g.
+        subscribe Joseph Smith
+
+in the mail body (not subject) to the address <ruby-talk-ctl@netlab.co.jp>.
 
 * How to compile and install
 

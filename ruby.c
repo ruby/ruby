@@ -244,7 +244,7 @@ ruby_require_libraries()
 
     req_list_last = 0;
     while (list) {
-	rb_f_require(Qnil, rb_str_new2(list->name));
+	rb_require(list->name);
 	tmp = list->next;
 	free(list);
 	list = tmp;

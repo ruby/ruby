@@ -101,8 +101,6 @@ EXPORTS
 	isinf
 ;missing/isnan.c
 	isnan
-;missing/isnan.c
-	isnan
 ;win32/win32.c
 	NtInitialize
 	myfdopen
@@ -133,6 +131,7 @@ EXPORTS
 	mygetservbyname
 	mygetservbyport
 	myget_osfhandle
+	win32_getenv
 ;array.c
 	rb_mem_clear
 	rb_ary_freeze
@@ -276,6 +275,7 @@ EXPORTS
 	rb_rescue
 	rb_protect
 	rb_ensure
+	rb_with_disable_interrupt
 	rb_apply
 	rb_funcall
 	rb_funcall2
@@ -286,6 +286,7 @@ EXPORTS
 	rb_load_protect
 	rb_provide
 	rb_f_require
+	rb_require
 	rb_obj_call_init
 	rb_class_new_instance
 	rb_extend_object
@@ -546,6 +547,7 @@ EXPORTS
 	rb_mark_generic_ivar
 	rb_mark_generic_ivar_tbl
 	rb_free_generic_ivar
+	rb_clone_generic_ivar
 	rb_ivar_get
 	rb_ivar_set
 	rb_ivar_defined

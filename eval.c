@@ -4091,6 +4091,16 @@ rb_funcall2(recv, mid, argc, argv)
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
 }
 
+VALUE
+rb_funcall3(recv, mid, argc, argv)
+    VALUE recv;
+    ID mid;
+    int argc;
+    VALUE *argv;
+{
+    return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 0);
+}
+
 static VALUE
 backtrace(lev)
     int lev;

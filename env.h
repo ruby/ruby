@@ -3,7 +3,6 @@
   env.h -
 
   $Author$
-  $Revision$
   $Date$
   created at: Mon Jul 11 11:53:03 JST 1994
 

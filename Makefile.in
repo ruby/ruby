@@ -237,7 +237,7 @@ file.@OBJEXT@: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
 gc.@OBJEXT@: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h
 hash.@OBJEXT@: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h util.h
 inits.@OBJEXT@: inits.c ruby.h config.h defines.h intern.h
-io.@OBJEXT@: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
+io.@OBJEXT@: io.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h env.h
 main.@OBJEXT@: main.c ruby.h config.h defines.h intern.h
 marshal.@OBJEXT@: marshal.c ruby.h config.h defines.h intern.h rubyio.h st.h
 prec.@OBJEXT@: prec.c ruby.h config.h defines.h intern.h

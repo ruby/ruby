@@ -108,6 +108,6 @@ and source-file directory for your debugger."
   (gud-def gud-print  "p %e"         "\C-p" "Evaluate ruby expression at point.")
 
   (setq comint-prompt-regexp "^(rdb:-) ")
-  (setq paragraph-start comint-prompt-regexp)
+  (set (make-local-variable 'paragraph-start) comint-prompt-regexp)
   (run-hooks 'rubydb-mode-hook)
   )

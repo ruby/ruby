@@ -1,3 +1,17 @@
+Fri Aug 13 03:16:07 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (argf_forward): since $stdout may be non-IO, ARGF.file is
+	  not granteed to be IO.  check and forwarding added to every ARGF
+	  method.
+
+	* io.c (set_outfile): $stdout/$stderr may not be IO now.
+
+	* io.c (set_stdin): $stdin may not be IO now.
+
+	* range.c (rb_range_beg_len): round `end' to length as documented.
+
+	* io.c (Init_IO): preserve original stdin/stdout/stderr.
+
 Thu Aug 12 13:44:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (Init_load): require receives 1 argument.

@@ -76,37 +76,34 @@ class String
     a
   end
 
-  HashCache = {}
-
-  def expand_ch_hash from, to = ""
-    key = from.intern.to_s + ":" + to.intern.to_s
-    return HashCache[key] if HashCache.key? key
-    afrom = _expand_ch(from)
+  def expand_ch_hash from, to
     h = {}
-    if to.length != 0
-      ato = _expand_ch(to)
-      afrom.each_with_index do |x,i| h[x] = ato[i] || ato[-1] end
-    else
-      afrom.each do |x| h[x] = true end
-    end
-    HashCache[key] = h
+    afrom = _expand_ch(from)
+    ato = _expand_ch(to)
+    afrom.each_with_index do |x,i| h[x] = ato[i] || ato[-1] end
+    h
   end
 
   def bsquote(str)
     str.gsub(/\\/, '\\\\\\\\')
   end
 
+  HashCache = {}
+  TrPatternCache = {}
+  DeletePatternCache = {}
+  SqueezePatternCache = {}
+
   public
 
   def tr!(from, to)
     return self.delete!(from) if to.length == 0
 
-    pattern = /[#{bsquote(from)}]/
+    pattern = TrPatternCache[from] ||= /[#{bsquote(from)}]/
     if from[0] == ?^
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)
     else
-      h = expand_ch_hash(from, to)
+      h = HashCache[from + "::" + to] ||= expand_ch_hash(from, to)
       self.gsub!(pattern) do |c| h[c] end
     end
   end
@@ -116,8 +113,7 @@ class String
   end
 
   def delete!(del)
-    pattern = /[#{bsquote(del)}]+/
-    self.gsub!(pattern, '')
+    self.gsub!(DeletePatternCache[del] ||= /[#{bsquote(del)}]+/, '')
   end
 
   def delete(del)
@@ -127,7 +123,7 @@ class String
   def squeeze!(del=nil)
     pattern =
       if del
-        /([#{bsquote(del)}])\1+/
+	SqueezePatternCache[del] ||= /([#{bsquote(del)}])\1+/
       else
 	/(.|\n)\1+/
       end
@@ -141,12 +137,12 @@ class String
   def tr_s!(from, to)
     return self.delete!(from) if to.length == 0
 
-    pattern = /([#{bsquote(from)}])\1+/
+    pattern = SqueezePatternCache[from] ||= /([#{bsquote(from)}])\1+"/
     if from[0] == ?^
       last = /.$/.match(to)[0]
       self.gsub!(pattern, last)
     else
-      h = expand_ch_hash(from, to)
+      h = HashCache[from + "::" + to] ||= expand_ch_hash(from, to)
       self.gsub!(pattern) do h[$1] end
     end
   end
@@ -156,7 +152,7 @@ class String
   end
 
   def chop!
-    self.gsub!(/(?:.|\n)\z/, '')
+    self.gsub!(/(?:.|\r?\n)\z/, '')
   end
 
   def chop

@@ -107,7 +107,6 @@ VALUE rb_eval_cmd _((VALUE, VALUE));
 int rb_respond_to _((VALUE, ID));
 void rb_interrupt _((void));
 VALUE rb_apply _((VALUE, ID, VALUE));
-VALUE rb_funcall2 _((VALUE, ID, int, VALUE*));
 void rb_backtrace _((void));
 ID rb_frame_last_func _((void));
 VALUE rb_obj_instance_eval _((int, VALUE*, VALUE));
