@@ -104,7 +104,7 @@ class Logger
   def info?; @level <= INFO; end
   def warn?; @level <= WARN; end
   def error?; @level <= ERROR; end
-  def fatail?; @level <= FATAL; end
+  def fatal?; @level <= FATAL; end
 
   # SYNOPSIS
   #   Logger.new(name, shift_age = 7, shift_size = 1048576)
@@ -128,7 +128,10 @@ class Logger
     @progname = nil
     @level = DEBUG
     @datetime_format = nil
-    @logdev = LogDevice.new(logdev, :shift_age => shift_age, :shift_size => shift_size) if logdev
+    @logdev = nil
+    if logdev
+      @logdev = LogDevice.new(logdev, :shift_age => shift_age, :shift_size => shift_size)
+    end
   end
 
   # SYNOPSIS
@@ -242,7 +245,7 @@ private
   SEV_LABEL = %w(DEBUG INFO WARN ERROR FATAL ANY);
 
   def format_severity(severity)
-    SEV_LABEL[severity] || 'UNKNOWN'
+    SEV_LABEL[severity] || 'ANY'
   end
 
   def format_datetime(datetime)
@@ -253,9 +256,9 @@ private
     end
   end
 
+  Format = "%s, [%s#%d] %5s -- %s: %s\n"
   def format_message(severity, timestamp, msg, progname)
-    line = '%s, [%s#%d] %5s -- %s: %s' << "\n"
-    line % [severity[0..0], timestamp, $$, severity, progname, msg]
+    Format % [severity[0..0], timestamp, $$, severity, progname, msg]
   end
 
   def msg2str(msg)

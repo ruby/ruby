@@ -487,6 +487,7 @@ test/csv/test_csv.rb
 test/fileutils/fileassertions.rb
 test/fileutils/test_fileutils.rb
 test/fileutils/test_nowrite.rb
+test/logger/test_logger.rb
 test/ruby/test_alias.rb
 test/ruby/test_array.rb
 test/ruby/test_assignment.rb
