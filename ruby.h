@@ -613,7 +613,6 @@ RUBY_EXTERN VALUE rb_eNameError;
 RUBY_EXTERN VALUE rb_eSyntaxError;
 RUBY_EXTERN VALUE rb_eLoadError;
 
-RUBY_EXTERN VALUE rb_defout, rb_deferr;
 RUBY_EXTERN VALUE rb_stdin, rb_stdout, rb_stderr;
 RUBY_EXTERN VALUE ruby_errinfo;
 

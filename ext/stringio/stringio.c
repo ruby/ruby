@@ -161,7 +161,7 @@ static VALUE strio_each_byte _((VALUE));
 static VALUE strio_getc _((VALUE));
 static VALUE strio_ungetc _((VALUE, VALUE));
 static VALUE strio_readchar _((VALUE));
-static VALUE strio_gets_internal _((int, VALUE *, struct StringIO *));
+static VALUE strio_getline _((int, VALUE *, struct StringIO *));
 static VALUE strio_gets _((int, VALUE *, VALUE));
 static VALUE strio_readline _((int, VALUE *, VALUE));
 static VALUE strio_each _((int, VALUE *, VALUE));
@@ -633,7 +633,7 @@ bm_search(little, llen, big, blen, skip)
 }
 
 static VALUE
-strio_gets_internal(argc, argv, ptr)
+strio_getline(argc, argv, ptr)
     int argc;
     VALUE *argv;
     struct StringIO *ptr;
@@ -701,7 +701,6 @@ strio_gets_internal(argc, argv, ptr)
     }
     ptr->pos = e - RSTRING(ptr->string)->ptr;
     ptr->lineno++;
-    rb_lastline_set(str);
     return str;
 }
 
@@ -711,7 +710,10 @@ strio_gets(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    return strio_gets_internal(argc, argv, readable(StringIO(self)));
+    VALUE str = strio_getline(argc, argv, readable(StringIO(self)));
+
+    rb_lastline_set(str);
+    return str;
 }
 
 static VALUE
@@ -720,7 +722,7 @@ strio_readline(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE line = strio_gets_internal(argc, argv, readable(StringIO(self)));
+    VALUE line = strio_getline(argc, argv, readable(StringIO(self)));
     if (NIL_P(line)) rb_eof_error();
     return line;
 }
@@ -734,7 +736,7 @@ strio_each(argc, argv, self)
     struct StringIO *ptr = StringIO(self);
     VALUE line;
 
-    while (!NIL_P(line = strio_gets_internal(argc, argv, readable(ptr)))) {
+    while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
 	rb_yield(line);
     }
     return self;
@@ -748,7 +750,7 @@ strio_readlines(argc, argv, self)
 {
     struct StringIO *ptr = StringIO(self);
     VALUE ary = rb_ary_new(), line;
-    while (!NIL_P(line = strio_gets_internal(argc, argv, readable(ptr)))) {
+    while (!NIL_P(line = strio_getline(argc, argv, readable(ptr)))) {
 	rb_ary_push(ary, line);
     }
     return ary;

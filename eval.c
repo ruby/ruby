@@ -992,11 +992,11 @@ warn_printf(fmt, va_alist)
     va_init_list(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
-    rb_write_deferr(buf);
+    rb_write_error(buf);
 }
 
-#define warn_print(x) rb_write_deferr(x)
-#define warn_print2(x,l) rb_write_deferr2(x,l)
+#define warn_print(x) rb_write_error(x)
+#define warn_print2(x,l) rb_write_error2(x,l)
 
 static void
 error_pos()
@@ -3846,7 +3846,7 @@ rb_f_abort(argc, argv)
 
 	rb_scan_args(argc, argv, "1", &mesg);
 	StringValue(argv[0]);
-	rb_io_puts(argc, argv, rb_deferr);
+	rb_io_puts(argc, argv, rb_stderr);
 	terminate_process(1, RSTRING(argv[0])->ptr, RSTRING(argv[0])->len);
     }
     return Qnil;		/* not reached */

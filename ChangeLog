@@ -1,3 +1,25 @@
+Mon Jul 28 15:32:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_gets): only "gets" should set $_.
+
+	* ext/stringio/stringio.c (strio_getline): should not set $_ here.
+
+	* io.c (argf_to_s): argf.to_s returns "ARGF".
+
+	* io.c (set_defout_var, set_deferr_var): make $defout and $deferr
+	  obsolete.
+
+	* io.c (set_input_var, set_output_var): allow $stdin, $stdout,
+	  $stderr not to be instance of IO.
+
+	* io.c (rb_f_readline): forward method to current_file. gets,
+	  readline, readlines, getc, readchar, tell, seek, pos=, rewind,
+	  fileno, to_io, eof, each_line, each_byte, binmode, and closed?
+	  as well.
+
+	* io.c (argf_forward): utility function to forward method to
+	  current_file.
+
 Mon Jul 28 03:08:47 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: each() should return self.

@@ -113,8 +113,8 @@ warn_print(fmt, args)
     char buf[BUFSIZ];
 
     err_snprintf(buf, BUFSIZ, fmt, args);
-    rb_write_deferr(buf);
-    rb_write_deferr("\n");
+    rb_write_error(buf);
+    rb_write_error("\n");
 }
 
 void
@@ -162,8 +162,8 @@ static VALUE
 rb_warn_m(self, mesg)
     VALUE self, mesg;
 {
-    rb_io_write(rb_deferr, mesg);
-    rb_io_write(rb_deferr, rb_default_rs);
+    rb_io_write(rb_stderr, mesg);
+    rb_io_write(rb_stderr, rb_default_rs);
     return mesg;
 }
 
@@ -186,8 +186,8 @@ rb_bug(fmt, va_alist)
     warn_print(buf, args);
     va_end(args);
     snprintf(buf, BUFSIZ, "ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
-    rb_write_deferr(buf);
-    rb_write_deferr("\n");
+    rb_write_error(buf);
+    rb_write_error("\n");
     abort();
 }
 
@@ -1200,7 +1200,7 @@ err_append(s)
 	}
     }
     else {
-	rb_write_deferr(s);
-	rb_write_deferr("\n");
+	rb_write_error(s);
+	rb_write_error("\n");
     }
 }
