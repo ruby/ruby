@@ -1,3 +1,7 @@
+Fri Jan 18 10:12:00 2002  Usaku Nakamura <usa@ruby-lang.org>
+
+	* ext/socket/socket.c (tcp_svr_s_open): fix typo.
+
 Thu Jan 17 16:21:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (block_pass): allow "retry" from within argument passed

@@ -1091,7 +1091,7 @@ tcp_svr_s_open(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    return tcp_svr_s_init(argc, argv, rb_obj_alloc(klass));
+    return tcp_svr_init(argc, argv, rb_obj_alloc(klass));
 }
 
 static VALUE
