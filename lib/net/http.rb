@@ -67,6 +67,26 @@ proxy, instead of given host.
 Since Net::HTTP.Proxy() returns Net::HTTP itself when $proxy_addr is nil,
 there's no need to change code if there's proxy or not.
 
+There are two additional parameters in Net::HTTP.Proxy() which allow to specify
+proxy user name and password:
+
+    Net::HTTP::Proxy(proxy_addr, proxy_port, proxy_name = nil, proxy_pass = nil)
+
+You may use them to work with authorization-enabled proxies:
+
+    require 'net/http'
+    require 'uri'
+    
+    proxy_info = URI.parse(ENV['http_proxy'])
+    
+    proxy_name, proxy_pass = proxy_info.userinfo.split(":") if proxy_info.userinfo
+    
+    Net::HTTP::Proxy($proxy_addr, $proxy_port, proxy_name, proxy_pass).start('some.www.server') {|http|
+        # always connect to your.proxy.addr:8080 using specified username and password
+            :
+    }
+    
+
 === Following Redirection
 
     require 'net/http'
@@ -214,9 +234,10 @@ This function is not thread-safe.
         res = Net::HTTP.get_response(URI.parse('http://www.example.com'))
         print res.body
 
-: Proxy( address, port = 80 )
+: Proxy( address, port = 80, username = nil, password = nil )
     creates a HTTP proxy class.
-    Arguments are address/port of proxy host.
+    Arguments are address/port of proxy host and username/password if authorization
+    on proxy server is required.
     You can replace HTTP class with created proxy class.
 
     If ADDRESS is nil, this method returns self (Net::HTTP).
@@ -278,6 +299,12 @@ This function is not thread-safe.
 
 : proxy_port
     port number of proxy host. If self does not use a proxy, nil.
+
+: proxy_name
+    user name for accessing proxy. If self does not use a proxy, nil
+
+: proxy_pass
+    user password for accessing proxy. If self does not use a proxy, nil
 
 : get( path, header = nil )
 : get( path, header = nil ) {|str| .... }
@@ -607,14 +634,14 @@ module Net
     protocol_param :socket_type,  '::Net::InternetMessageIO'
 
     class << HTTP
-      def start( address, port = nil, p_addr = nil, p_port = nil, &block )
-        new( address, port, p_addr, p_port ).start( &block )
+      def start( address, port = nil, p_addr = nil, p_port = nil, p_name = nil, p_pass = nil, &block )
+        new( address, port, p_addr, p_port, p_name, p_pass ).start( &block )
       end
 
       alias newobj new
 
-      def new( address, port = nil, p_addr = nil, p_port = nil )
-        obj = Proxy(p_addr, p_port).newobj(address, port)
+      def new( address, port = nil, p_addr = nil, p_port = nil, p_name = nil, p_pass = nil )
+        obj = Proxy(p_addr, p_port, p_name, p_pass ).newobj(address, port)
         setimplversion obj
         obj
       end
@@ -650,8 +677,10 @@ module Net
     @is_proxy_class = false
     @proxy_addr = nil
     @proxy_port = nil
+    @proxy_name = nil
+    @proxy_pass = nil
 
-    def HTTP.Proxy( p_addr, p_port = nil )
+    def HTTP.Proxy( p_addr, p_port = nil, p_name = nil, p_pass = nil )
       p_addr or return self
 
       p_port ||= port()
@@ -663,6 +692,8 @@ module Net
           @is_proxy_class = true
           @proxy_address = p_addr
           @proxy_port    = p_port
+	  @proxy_name	 = p_name
+	  @proxy_pass	 = p_pass
       }
       proxyclass
     end
@@ -674,6 +705,8 @@ module Net
 
       attr_reader :proxy_address
       attr_reader :proxy_port
+      attr_reader :proxy_name
+      attr_reader :proxy_pass
     end
 
     def proxy?
@@ -702,10 +735,16 @@ module Net
     def conn_port
       port
     end
+    
+    # Empty, void
+    def authorization(header)
+      return header
+    end
 
     def edit_path( path )
       path
     end
+    
 
     module ProxyDelta
       private
@@ -723,6 +762,14 @@ module Net
       def edit_path( path )
         'http://' + addr_port() + path
       end
+      
+      def authorization(header)
+        if self.class.proxy_name then
+           header = Hash.new unless header
+           header['Proxy-Authorization'] = "Basic " + ["#{self.class.proxy_name}:#{self.class.proxy_pass}"].pack('m').strip
+	end
+	return header
+      end
     end
 
 
@@ -734,6 +781,7 @@ module Net
 
     def get( path, initheader = nil, dest = nil, &block )
       res = nil
+      initheader = authorization(initheader)
       request( Get.new(path,initheader) ) {|res|
           res.read_body dest, &block
       }
@@ -746,6 +794,7 @@ module Net
     end
 
     def head( path, initheader = nil )
+      initheader = authorization(initheader)
       res = request( Head.new(path,initheader) )
       @newimpl or res.value
       res
@@ -753,6 +802,7 @@ module Net
 
     def post( path, data, initheader = nil, dest = nil, &block )
       res = nil
+      initheader = authorization(initheader)
       request( Post.new(path,initheader), data ) {|res|
           res.read_body dest, &block
       }
@@ -765,6 +815,7 @@ module Net
     end
 
     def put( path, data, initheader = nil )
+      initheader = authorization(initheader)
       res = request( Put.new(path,initheader), data )
       @newimpl or res.value
       res
@@ -772,18 +823,22 @@ module Net
 
 
     def request_get( path, initheader = nil, &block )
+      initheader = authorization(initheader)
       request Get.new(path,initheader), &block
     end
 
     def request_head( path, initheader = nil, &block )
+      initheader = authorization(initheader)
       request Head.new(path,initheader), &block
     end
 
     def request_post( path, data, initheader = nil, &block )
+      initheader = authorization(initheader)
       request Post.new(path,initheader), data, &block
     end
 
     def request_put( path, data, initheader = nil, &block )
+      initheader = authorization(initheader)
       request Put.new(path,initheader), data, &block
     end
 
@@ -794,6 +849,7 @@ module Net
 
 
     def send_request( name, path, body = nil, header = nil )
+      header = authorization(header)
       r = HTTPGenericRequest.new( name, (body ? true : false), true,
                                   path, header )
       request r, body
