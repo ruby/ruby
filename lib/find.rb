@@ -12,7 +12,7 @@ module Find
     while file = path.shift
       catch(:prune) {
 	yield file
-	if File.directory? file and not File.symlink? file then
+	if File.directory? file then
 	  d = Dir.open(file)
 	  begin
 	    for f in d

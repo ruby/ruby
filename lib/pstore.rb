@@ -108,13 +108,15 @@ class PStore
   end
 end
 
-db = PStore.new("/tmp/foo")
-db.transaction do
-  p db.roots
-  ary = db["root"] = [1,2,3,4]
-  ary[0] = [1,1.5]
-end
+if __FILE__ == $0
+  db = PStore.new("/tmp/foo")
+  db.transaction do
+    p db.roots
+    ary = db["root"] = [1,2,3,4]
+    ary[0] = [1,1.5]
+  end
 
-db.transaction do
-  p db["root"]
+  db.transaction do
+    p db["root"]
+  end
 end
