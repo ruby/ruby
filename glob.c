@@ -14,42 +14,48 @@
    You should have received a copy of the GNU General Public License
    along with this program; if not, write to the Free Software
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
-
+
 /* To whomever it may concern: I have never seen the code which most
    Unix programs use to perform this function.  I wrote this from scratch
    based on specifications for the pattern matching.  --RMS.  */
 
-#include "config.h"
+#include <config.h>
+
+#if !defined (__GNUC__) && !defined (HAVE_ALLOCA_H) && defined (_AIX)
+  #pragma alloca
+#endif /* _AIX && RISC6000 && !__GNUC__ */
+
+#if defined (HAVE_UNISTD_H)
+#  include <unistd.h>
+#endif
+
+#if defined (HAVE_STDLIB_H)
+#  include <stdlib.h>
+#else
+#  if defined (SHELL)
+#    include "ansi_stdlib.h"
+#  endif /* SHELL */
+#endif
 
 #include <sys/types.h>
 
-#if !defined (SHELL) && (defined (_POSIX_VERSION) || defined (USGr3))
-#  if !defined (HAVE_DIRENT_H)
-#    define HAVE_DIRENT_H
-#  endif /* !HAVE_DIRENT_H */
-#endif /* !SHELL && (_POSIX_VERSION || USGr3) */
-
 #if defined (HAVE_DIRENT_H)
 #  include <dirent.h>
-#  if !defined (direct)
-#    define direct dirent
-#  endif /* !direct */
 #  define D_NAMLEN(d) strlen ((d)->d_name)
 #else /* !HAVE_DIRENT_H */
 #  define D_NAMLEN(d) ((d)->d_namlen)
-#  if defined (USG)
-#    if defined (Xenix)
-#      include <sys/ndir.h>
-#    else /* !Xenix (but USG...) */
-#      include "ndir.h"
-#    endif /* !Xenix */
-#  else /* !USG */
-#    if defined(NT)
-#      include "missing/dir.h"
-#    else 
+#  if defined (HAVE_SYS_NDIR_H)
+#    include <sys/ndir.h>
+#  endif
+#  if defined (HAVE_SYS_DIR_H)
 #    include <sys/dir.h>
-#    endif /* !NT */
-#  endif /* !USG */
+#  endif /* HAVE_SYS_DIR_H */
+#  if defined (HAVE_NDIR_H)
+#    include <ndir.h>
+#  endif
+#  if !defined (dirent)
+#    define dirent direct
+#  endif
 #endif /* !HAVE_DIRENT_H */
 
 #if defined (_POSIX_SOURCE) || defined(DJGPP) || defined(USE_CWGUSI)
@@ -60,37 +66,18 @@
 #  define REAL_DIR_ENTRY(dp) (dp->d_ino != 0)
 #endif /* _POSIX_SOURCE */
 
-#if defined (USG) || defined (NeXT)
-#  if !defined (HAVE_STRING_H)
-#    define HAVE_STRING_H
-#  endif /* !HAVE_STRING_H */
-#endif /* USG || NeXT */
-
 #if defined (HAVE_STRING_H)
 #  include <string.h>
 #else /* !HAVE_STRING_H */
 #  include <strings.h>
 #endif /* !HAVE_STRING_H */
 
-#ifndef bcopy
-# define bcopy(s, d, n) (memcpy ((d), (s), (n)))
-#endif
-
-#ifdef _AIX
-#pragma alloca
-#else
-#if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
-#include <alloca.h>
-#else
-char *alloca ();
-#endif
-#endif
-
-#include "fnmatch.h"
+#if !defined (HAVE_BCOPY)
+#  define bcopy(s, d, n) ((void) memcpy ((d), (s), (n)))
+#endif /* !HAVE_BCOPY */
 
 /* If the opendir () on your system lets you open non-directory files,
-   then we consider that not robust.  Define OPENDIR_NOT_ROBUST in the
-   SYSDEP_CFLAGS for your machines entry in machines.h. */
+   then we consider that not robust. */
 #if defined (OPENDIR_NOT_ROBUST)
 #  if defined (SHELL)
 #    include "posixstat.h"
@@ -98,6 +85,8 @@ char *alloca ();
 #    include <sys/stat.h>
 #  endif /* !SHELL */
 #endif /* OPENDIR_NOT_ROBUST */
+
+#include "fnmatch.h"
 
 extern void *xmalloc (), *xrealloc ();
 #if !defined (HAVE_STDLIB_H)
@@ -113,6 +102,8 @@ extern void free ();
 #endif /* !NULL */
 
 #if defined (SHELL)
+extern void throw_to_top_level ();
+
 extern int interrupt_state;
 #endif /* SHELL */
 
@@ -123,7 +114,6 @@ int noglob_dot_filenames = 1;
 /* Global variable to return to signify an error in globbing. */
 char *glob_error_return;
 
-
 /* Return nonzero if PATTERN has any special globbing chars in it.  */
 int
 glob_pattern_p (pattern)
@@ -205,7 +195,7 @@ glob_vector (pat, dir)
     };
 
   DIR *d;
-  register struct direct *dp;
+  register struct dirent *dp;
   struct globval *lastlink;
   register struct globval *nextlink;
   register char *nextname;
@@ -276,7 +266,8 @@ glob_vector (pat, dir)
 	continue;
 
       /* If a dot must be explicity matched, check to see if they do. */
-      if (noglob_dot_filenames && dp->d_name[0] == '.' && pat[0] != '.')
+      if (noglob_dot_filenames && dp->d_name[0] == '.' && pat[0] != '.' &&
+	    (pat[0] != '\\' || pat[1] != '.'))
 	continue;
 
       flags = (noglob_dot_filenames ? FNM_PERIOD : 0) | FNM_PATHNAME;
@@ -306,7 +297,9 @@ glob_vector (pat, dir)
     }
 
   /* Have we run out of memory?	 */
+#if defined (SHELL)
  lost:
+#endif
   if (lose)
     {
       /* Here free the strings we have got.  */
@@ -365,7 +358,14 @@ glob_dir_to_array (dir, array)
 				   + strlen (array[i]) + 1);
       if (result[i] == NULL)
 	return (NULL);
-      sprintf (result[i], "%s%s%s", dir, add_slash ? "/" : "", array[i]);
+#if 1
+      strcpy (result[i], dir);
+      if (add_slash)
+        result[i][l] = '/';
+      strcpy (result[i] + l + add_slash, array[i]);
+#else
+      (void)sprintf (result[i], "%s%s%s", dir, add_slash ? "/" : "", array[i]);
+#endif
     }
   result[i] = NULL;
 
@@ -435,10 +435,14 @@ glob_filename (pathname)
       if (directories == NULL)
 	goto memory_error;
       else if (directories == (char **)&glob_error_return)
-	return ((char **) &glob_error_return);
+	{
+	  free ((char *) result);
+	  return ((char **) &glob_error_return);
+	}
       else if (*directories == NULL)
 	{
 	  free ((char *) directories);
+	  free ((char *) result);
 	  return ((char **) &glob_error_return);
 	}
 
