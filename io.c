@@ -988,7 +988,6 @@ io_fread(ptr, len, fptr)
 		}
 		if (len == n) return 0;
 	    }
-	    *ptr = '\0';
 	    break;
 	}
 	*ptr++ = c;
@@ -1064,7 +1063,6 @@ read_all(fptr, siz, str)
 	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr);
 	rb_str_unlocktmp(str);
 	if (n == 0 && bytes == 0) {
-	    rb_str_resize(str,0);
 	    if (!fptr->f) break;
 	    if (feof(fptr->f)) break;
 	    if (!ferror(fptr->f)) break;
@@ -1140,11 +1138,14 @@ io_read(argc, argv, io)
     n = io_fread(RSTRING(str)->ptr, len, fptr);
     rb_str_unlocktmp(str);
     if (n == 0) {
-	rb_str_resize(str,0);
 	if (!fptr->f) return Qnil;
-	if (feof(fptr->f)) return Qnil;
+	if (feof(fptr->f)) {
+	    rb_str_resize(str, 0);
+	    return Qnil;
+	}
 	if (len > 0) rb_sys_fail(fptr->path);
     }
+    rb_str_resize(str, n);
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';
     OBJ_TAINT(str);
@@ -2184,14 +2185,12 @@ rb_io_sysread(argc, argv, io)
     TRAP_END;
 
     if (n == -1) {
-	rb_str_resize(str, 0);
 	rb_sys_fail(fptr->path);
     }
+    rb_str_resize(str, n);
     if (n == 0 && ilen > 0) {
-	rb_str_resize(str, 0);
 	rb_eof_error();
     }
-
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';
     OBJ_TAINT(str);
