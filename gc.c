@@ -1357,7 +1357,12 @@ rb_gc_call_finalizer_at_exit()
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree) {
 		p->as.free.flag = 0;
-		(*RANY(p)->as.data.dfree)(DATA_PTR(p));
+		if ((long)RANY(p)->as.data.dfree == -1) {
+		    RUBY_CRITICAL(free(DATA_PTR(p)));
+		}
+		else if (RANY(p)->as.data.dfree) {
+		    (*RANY(p)->as.data.dfree)(DATA_PTR(p));
+		}
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
 		p->as.free.flag = 0;

@@ -1,3 +1,7 @@
+Sun Mar 23 19:55:32 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* gc.c (rb_gc_call_finalizer_at_exit): use free() if dfree is -1.
+
 Wed Mar 19 23:05:30 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>
 
 	* lib/tracer.rb (trace_func): save and recover Thread.critical state.
