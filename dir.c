@@ -248,6 +248,7 @@ free_dir(dir)
 
 static VALUE dir_close _((VALUE));
 
+static VALUE dir_s_alloc _((VALUE));
 static VALUE
 dir_s_alloc(klass)
     VALUE klass;

@@ -469,6 +469,7 @@ ip_free(ptr)
 }
 
 /* create and initialize interpreter */
+static VALUE ip_alloc _((VALUE));
 static VALUE
 ip_alloc(self)
     VALUE self;

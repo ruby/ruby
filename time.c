@@ -41,6 +41,7 @@ time_free(tobj)
     if (tobj) free(tobj);
 }
 
+static VALUE time_s_alloc _((VALUE));
 static VALUE
 time_s_alloc(klass)
     VALUE klass;

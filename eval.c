@@ -9408,6 +9408,7 @@ struct thgroup {
     int gid;
 };
 
+static VALUE thgroup_s_alloc _((VALUE));
 static VALUE
 thgroup_s_alloc(klass)
     VALUE klass;

@@ -178,6 +178,7 @@ rb_hash_foreach(hash, func, farg)
     return rb_ensure(rb_hash_foreach_call, (VALUE)&arg, rb_hash_foreach_ensure, hash);
 }
 
+static VALUE hash_alloc _((VALUE));
 static VALUE
 hash_alloc(klass)
     VALUE klass;

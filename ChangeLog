@@ -1,3 +1,16 @@
+Sun Dec 22 02:49:25 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* array.c (ary_alloc), dir.c (dir_s_alloc), eval.c (thgroup_s_alloc),
+	  file.c (rb_stat_s_alloc), hash.c (hash_alloc), io.c (io_alloc),
+	  object.c (rb_module_s_alloc, rb_class_allocate_instance),
+	  re.c (match_alloc, rb_reg_s_alloc), string.c (str_alloc),
+	  time.c (time_s_alloc), ext/digest/digest.c (rb_digest_base_alloc),
+	  ext/tcltklib/tcltklib.c (ip_alloc),
+	  ext/win32ole/win32ole.c (fole_s_allocate, fev_s_allocate)
+	  : add prototype to get rid of VC++ warnings.
+
+	* ext/sdbm/init.c (fsdbm_alloc): allocator takes only one argument.
+
 Sun Dec 22 00:36:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): accept pure ruby libraries.

@@ -715,6 +715,7 @@ ole_set_member(self, dispatch)
     return self;
 }
 
+static VALUE fole_s_allocate _((VALUE));
 static VALUE
 fole_s_allocate(klass)
     VALUE klass;
@@ -5071,6 +5072,7 @@ ole_event_free(poleev)
     }
 }
 
+static VALUE fev_s_allocate _((VALUE));
 static VALUE
 fev_s_allocate(klass)
     VALUE klass;

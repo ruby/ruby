@@ -511,6 +511,7 @@ make_regexp(s, len, flags)
 
 static VALUE rb_cMatch;
 
+static VALUE match_alloc _((VALUE));
 static VALUE
 match_alloc(klass)
     VALUE klass;
@@ -1002,6 +1003,7 @@ rb_reg_initialize(obj, s, len, options)
     }
 }
 
+static VALUE rb_reg_s_alloc _((VALUE));
 static VALUE
 rb_reg_s_alloc(klass)
     VALUE klass;

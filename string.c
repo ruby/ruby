@@ -36,6 +36,7 @@ VALUE rb_cString;
 
 VALUE rb_fs;
 
+static VALUE str_alloc _((VALUE));
 static VALUE
 str_alloc(klass)
     VALUE klass;

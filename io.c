@@ -275,6 +275,7 @@ ruby_dup(orig)
     return fd;
 }
 
+static VALUE io_alloc _((VALUE));
 static VALUE
 io_alloc(klass)
     VALUE klass;

@@ -56,10 +56,9 @@ fsdbm_close(obj)
     return Qnil;
 }
 
+static VALUE fsdbm_alloc _((VALUE));
 static VALUE
-fsdbm_alloc(argc, argv, klass)
-    int argc;
-    VALUE *argv;
+fsdbm_alloc(klass)
     VALUE klass;
 {
     return Data_Wrap_Struct(klass, 0, free_sdbm, 0);

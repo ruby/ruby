@@ -684,6 +684,7 @@ rb_class_initialize(argc, argv, klass)
     return rb_mod_initialize(klass);
 }
 
+static VALUE rb_module_s_alloc _((VALUE));
 static VALUE
 rb_module_s_alloc(klass)
     VALUE klass;
@@ -724,6 +725,7 @@ rb_obj_alloc(klass)
     return obj;
 }
 
+static VALUE rb_class_allocate_instance _((VALUE));
 static VALUE
 rb_class_allocate_instance(klass)
     VALUE klass;

@@ -1973,6 +1973,7 @@ rb_f_test(argc, argv)
     return Qnil;		/* not reached */
 }
 
+static VALUE rb_stat_s_alloc _((VALUE));
 static VALUE
 rb_stat_s_alloc(klass)
     VALUE klass;

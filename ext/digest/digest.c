@@ -57,7 +57,8 @@ get_digest_base_metadata(klass)
 
     return algo;
 }
-	
+
+static VALUE rb_digest_base_alloc _((VALUE));
 static VALUE
 rb_digest_base_alloc(klass)
     VALUE klass;

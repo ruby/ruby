@@ -86,6 +86,7 @@ rb_ary_frozen_p(ary)
     return Qfalse;
 }
 
+static VALUE ary_alloc _((VALUE));
 static VALUE
 ary_alloc(klass)
     VALUE klass;
