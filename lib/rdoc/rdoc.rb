@@ -150,14 +150,22 @@ module RDoc
 
     # Given a list of files and directories, create a list
     # of all the Ruby files they contain. 
-    
-    def normalized_file_list(options, relative_files)
+    #
+    # If +force_dic+ is true, we always add the given files.
+    # If false, only add files that we guarantee we can parse
+    # It is true when looking at files given on the command line,
+    # false when recursing through subdirectories. 
+    #
+    # The effect of this is that if you want a file with a non-
+    # standard extension parsed, you must name it explicity.
+
+    def normalized_file_list(options, relative_files, force_doc = false)
       file_list = []
 
       relative_files.each do |rel_file_name|
         case type = File.stat(rel_file_name).ftype
         when "file"
-          file_list << rel_file_name
+          file_list << rel_file_name if force_doc || ParserFactory.can_parse(rel_file_name)
         when "directory"
           next if rel_file_name == "CVS" || rel_file_name == ".svn"
           next if options.exclude && options.exclude =~ rel_file_name
@@ -194,7 +202,7 @@ module RDoc
       files = options.files
       files = ["."] if files.empty?
 
-      file_list = normalized_file_list(options, files)
+      file_list = normalized_file_list(options, files, true)
 
       file_list.each do |fn|
         $stderr.printf("\n%35s: ", File.basename(fn)) unless options.quiet
