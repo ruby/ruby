@@ -263,7 +263,6 @@ config.h:
 \#define FILE_READPTR curp
 \#define DEFAULT_KCODE KCODE_NONE
 \#define DLEXT ".so"
-\#define DLEXT2 ".dll"
 \#define RUBY_LIB "/lib/ruby/$(MAJOR).$(MINOR)"
 \#define RUBY_SITE_LIB "/lib/ruby/site_ruby"
 \#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/$(MAJOR).$(MINOR)"
@@ -357,7 +356,6 @@ s,@STATIC@,$(STATIC),;t t
 s,@CCDLFLAGS@,,;t t
 s,@LDSHARED@,$(LDSHARED),;t t
 s,@DLEXT@,so,;t t
-s,@DLEXT2@,dll,;t t
 s,@LIBEXT@,lib,;t t
 s,@STRIP@,$(STRIP),;t t
 s,@EXTSTATIC@,$(EXTSTATIC),;t t

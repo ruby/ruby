@@ -985,9 +985,7 @@ else
     os2-emx*)	DLEXT=dll
 	 	AC_DEFINE(DLEXT, ".dll");;
     cygwin*|mingw*)	DLEXT=so
-	 	AC_DEFINE(DLEXT, ".so")
-		DLEXT2=dll
-	 	AC_DEFINE(DLEXT2, ".dll");;
+	 	AC_DEFINE(DLEXT, ".so");;
     *)		DLEXT=so
     		AC_DEFINE(DLEXT, ".so");;
   esac
