@@ -335,7 +335,8 @@ range_step(argc, argv, range)
 	    if (unit == 0) rb_raise(rb_eArgError, "step can't be 0");
 	    args[0] = b; args[1] = e; args[2] = range;
 	    iter[0] = 1; iter[1] = unit;
-	    rb_iterate(str_step, (VALUE)args, step_i, (VALUE)iter);
+	    rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i,
+		       (VALUE)iter);
 	}
 	else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
 	    ID c = rb_intern(EXCL(range) ? "<" : "<=");
@@ -417,7 +418,8 @@ range_each(range)
 
 	args[0] = beg; args[1] = end; args[2] = range;
 	iter[0] = 1; iter[1] = 1;
-	rb_iterate(str_step, (VALUE)args, step_i, (VALUE)iter);
+	rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i,
+		   (VALUE)iter);
     }
     else {
 	range_each_func(range, each_i, beg, end, NULL);

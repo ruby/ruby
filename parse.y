@@ -8504,6 +8504,7 @@ ripper_lex_get_generic(parser, src)
     return rb_funcall(src, ripper_id_gets, 0);
 }
 
+static VALUE ripper_s_allocate _((VALUE));
 static VALUE
 ripper_s_allocate(klass)
     VALUE klass;
