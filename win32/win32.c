@@ -84,6 +84,8 @@ static char *str_grow(struct RString *str, size_t new_size);
 static DWORD wait_events(HANDLE event, DWORD timeout);
 #ifndef __BORLANDC__
 static int rb_w32_open_osfhandle(long osfhandle, int flags);
+#else
+#define rb_w32_open_osfhandle(osfhandle, flags) _open_osfhandle(osfhandle, flags)
 #endif
 
 char *NTLoginName;
@@ -430,7 +432,6 @@ SOCKET
 rb_w32_get_osfhandle(int fh)
 {
     return _get_osfhandle(fh);
-
 }
 
 pid_t
@@ -508,16 +509,10 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 	    CloseHandle(hWriteOut);
 	}
 	CloseHandle(hCurProc);
-	ret = 0;
-    } while (0));
-    if (ret != 0) {
-	return ret;
-    }
 
-    /* create child process */
-    child = CreateChild(cmd, &sa, NULL, NULL, NULL);
-    if (!child) {
-	RUBY_CRITICAL({
+	/* create child process */
+	child = CreateChild(cmd, &sa, NULL, NULL, NULL);
+	if (!child) {
 	    if (reading) {
 		SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdOut);
 		CloseHandle(hReadOut);
@@ -528,13 +523,10 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 		CloseHandle(hWriteIn);
 		CloseHandle(hDupOutFile);
 	    }
-	});
-	return -1;
-    }
+	    break;
+	}
 
-    /* restore STDIN/STDOUT */
-    RUBY_CRITICAL(do {
-	ret = -1;
+	/* restore STDIN/STDOUT */
 	if (reading) {
 	    if (!SetStdHandle(STD_OUTPUT_HANDLE, hSavedStdOut)) {
 		errno = GetLastError();
@@ -561,71 +553,61 @@ pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 		break;
 	    }
 	}
-	ret = 0;
-    } while (0));
-    if (ret != 0) {
-	return ret;
-    }
 
-    if (reading) {
-#ifdef __BORLANDC__
-	fdin = _open_osfhandle((long)hDupInFile, (_O_RDONLY | pipemode));
-#else
-	fdin = rb_w32_open_osfhandle((long)hDupInFile, (_O_RDONLY | pipemode));
-#endif
-	CloseHandle(hReadOut);
-	if (fdin == -1) {
-	    CloseHandle(hDupInFile);
-	    if (writing) {
-		CloseHandle(hWriteIn);
+	if (reading) {
+	    fdin = rb_w32_open_osfhandle((long)hDupInFile,
+					 (_O_RDONLY | pipemode));
+	    CloseHandle(hReadOut);
+	    if (fdin == -1) {
+		CloseHandle(hDupInFile);
+		if (writing) {
+		    CloseHandle(hWriteIn);
+		    CloseHandle(hDupOutFile);
+		}
+		CloseChildHandle(child);
+		break;
+	    }
+	}
+	if (writing) {
+	    fdout = rb_w32_open_osfhandle((long)hDupOutFile,
+					  (_O_WRONLY | pipemode));
+	    CloseHandle(hWriteIn);
+	    if (fdout == -1) {
 		CloseHandle(hDupOutFile);
+		if (reading) {
+		    _close(fdin);
+		}
+		CloseChildHandle(child);
+		break;
 	    }
-	    CloseChildHandle(child);
-	    return -1;
 	}
-    }
-    if (writing) {
-#ifdef __BORLANDC__
-	fdout = _open_osfhandle((long)hDupOutFile, (_O_WRONLY | pipemode));
-#else
-	fdout = rb_w32_open_osfhandle((long)hDupOutFile,
-				      (_O_WRONLY | pipemode));
-#endif
-	CloseHandle(hWriteIn);
-	if (fdout == -1) {
-	    CloseHandle(hDupOutFile);
-	    if (reading) {
+
+	if (reading) {
+	    sprintf(modes, "r%s", pipemode == O_BINARY ? "b" : "");
+	    if ((*fpr = (FILE *)fdopen(fdin, modes)) == NULL) {
 		_close(fdin);
+		if (writing) {
+		    _close(fdout);
+		}
+		CloseChildHandle(child);
+		break;
 	    }
-	    CloseChildHandle(child);
-	    return -1;
 	}
-    }
-
-    if (reading) {
-	sprintf(modes, "r%s", pipemode == O_BINARY ? "b" : "");
-	if ((*fpr = (FILE *)fdopen(fdin, modes)) == NULL) {
-	    _close(fdin);
-	    if (writing) {
+	if (writing) {
+	    sprintf(modes, "w%s", pipemode == O_BINARY ? "b" : "");
+	    if ((*fpw = (FILE *)fdopen(fdout, modes)) == NULL) {
 		_close(fdout);
+		if (reading) {
+		    fclose(*fpr);
+		}
+		CloseChildHandle(child);
+		break;
 	    }
-	    CloseChildHandle(child);
-	    return -1;
 	}
-    }
-    if (writing) {
-	sprintf(modes, "w%s", pipemode == O_BINARY ? "b" : "");
-	if ((*fpw = (FILE *)fdopen(fdout, modes)) == NULL) {
-	    _close(fdout);
-	    if (reading) {
-		fclose(*fpr);
-	    }
-	    CloseChildHandle(child);
-	    return -1;
-	}
-    }
+	ret = child->pid;
+    } while (0));
 
-    return child->pid;
+    return ret;
 }
 
 extern VALUE rb_last_status;
@@ -1409,13 +1391,6 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 #define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
 #define _set_osflags(fh, flags) (_osfile(fh) = (flags))
 
-#else
-
-#define _set_osfhnd(fh, osfh) (void)((fh), (osfh))
-#define _set_osflags(fh, flags) (void)((fh), (flags))
-
-#endif
-
 #define FOPEN			0x01	/* file handle open */
 #define FNOINHERIT		0x10	/* file handle opened O_NOINHERIT */
 #define FAPPEND			0x20	/* file handle opened O_APPEND */
@@ -1427,6 +1402,7 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
 {
     int fh;
     char fileflags;		/* _osfile flags */
+    HANDLE hF;
 
     /* copy relevant flags from second parameter */
     fileflags = FDEV;
@@ -1440,29 +1416,33 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
     if (flags & O_NOINHERIT)
 	fileflags |= FNOINHERIT;
 
-    RUBY_CRITICAL({
-	/* attempt to allocate a C Runtime file handle */
-	HANDLE hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
-	fh = _open_osfhandle((long)hF, 0);
-	CloseHandle(hF);
-	if (fh == -1) {
-	    errno = EMFILE;		/* too many open files */
-	    _doserrno = 0L;		/* not an OS error */
-	}
-	else {
+    /* attempt to allocate a C Runtime file handle */
+    hF = CreateFile("NUL", 0, 0, NULL, OPEN_ALWAYS, 0, NULL);
+    fh = _open_osfhandle((long)hF, 0);
+    CloseHandle(hF);
+    if (fh == -1) {
+	errno = EMFILE;		/* too many open files */
+	_doserrno = 0L;		/* not an OS error */
+    }
+    else {
 
-	    MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fh)->lock)));
-	    /* the file is open. now, set the info in _osfhnd array */
-	    _set_osfhnd(fh, osfhandle);
+	MTHREAD_ONLY(EnterCriticalSection(&(_pioinfo(fh)->lock)));
+	/* the file is open. now, set the info in _osfhnd array */
+	_set_osfhnd(fh, osfhandle);
 
-	    fileflags |= FOPEN;		/* mark as open */
+	fileflags |= FOPEN;		/* mark as open */
 
-	    _set_osflags(fh, fileflags); /* set osfile entry */
-	    MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fh)->lock));
-	}
-    });
+	_set_osflags(fh, fileflags); /* set osfile entry */
+	MTHREAD_ONLY(LeaveCriticalSection(&_pioinfo(fh)->lock));
+    }
     return fh;			/* return handle */
 }
+#else
+
+#define _set_osfhnd(fh, osfh) (void)((fh), (osfh))
+#define _set_osflags(fh, flags) (void)((fh), (flags))
+
+#endif
 
 #undef getsockopt
 
@@ -1500,7 +1480,8 @@ rb_w32_fddup (int fd)
     if (s == -1)
 	return -1;
 
-    return rb_w32_open_osfhandle(s, O_RDWR|O_BINARY);
+    RUBY_CRITICAL(fd = rb_w32_open_osfhandle(s, O_RDWR|O_BINARY));
+    return fd;
 }
 
 
@@ -1810,8 +1791,8 @@ StartSockets ()
 
 #undef accept
 
-SOCKET
-rb_w32_accept (SOCKET s, struct sockaddr *addr, int *addrlen)
+int
+rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
 
@@ -1820,16 +1801,21 @@ rb_w32_accept (SOCKET s, struct sockaddr *addr, int *addrlen)
     }
     RUBY_CRITICAL({
 	r = accept(TO_SOCKET(s), addr, addrlen);
-	if (r == INVALID_SOCKET)
+	if (r == INVALID_SOCKET) {
 	    errno = WSAGetLastError();
+	    s = -1;
+	}
+	else {
+	    s = rb_w32_open_osfhandle(r, O_RDWR|O_BINARY);
+	}
     });
-    return rb_w32_open_osfhandle(r, O_RDWR|O_BINARY);
+    return s;
 }
 
 #undef bind
 
 int 
-rb_w32_bind (SOCKET s, struct sockaddr *addr, int addrlen)
+rb_w32_bind(int s, struct sockaddr *addr, int addrlen)
 {
     int r;
 
@@ -1847,7 +1833,7 @@ rb_w32_bind (SOCKET s, struct sockaddr *addr, int addrlen)
 #undef connect
 
 int 
-rb_w32_connect (SOCKET s, struct sockaddr *addr, int addrlen)
+rb_w32_connect(int s, struct sockaddr *addr, int addrlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1865,7 +1851,7 @@ rb_w32_connect (SOCKET s, struct sockaddr *addr, int addrlen)
 #undef getpeername
 
 int 
-rb_w32_getpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
+rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1882,7 +1868,7 @@ rb_w32_getpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
 #undef getsockname
 
 int 
-rb_w32_getsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
+rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1897,7 +1883,7 @@ rb_w32_getsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
 }
 
 int 
-rb_w32_getsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
+rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1914,7 +1900,7 @@ rb_w32_getsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
 #undef ioctlsocket
 
 int 
-rb_w32_ioctlsocket (SOCKET s, long cmd, u_long *argp)
+rb_w32_ioctlsocket(int s, long cmd, u_long *argp)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1931,7 +1917,7 @@ rb_w32_ioctlsocket (SOCKET s, long cmd, u_long *argp)
 #undef listen
 
 int 
-rb_w32_listen (SOCKET s, int backlog)
+rb_w32_listen(int s, int backlog)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1948,7 +1934,7 @@ rb_w32_listen (SOCKET s, int backlog)
 #undef recv
 
 int 
-rb_w32_recv (SOCKET s, char *buf, int len, int flags)
+rb_w32_recv(int s, char *buf, int len, int flags)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1965,7 +1951,7 @@ rb_w32_recv (SOCKET s, char *buf, int len, int flags)
 #undef recvfrom
 
 int 
-rb_w32_recvfrom (SOCKET s, char *buf, int len, int flags, 
+rb_w32_recvfrom(int s, char *buf, int len, int flags, 
 		struct sockaddr *from, int *fromlen)
 {
     int r;
@@ -1983,7 +1969,7 @@ rb_w32_recvfrom (SOCKET s, char *buf, int len, int flags,
 #undef send
 
 int 
-rb_w32_send (SOCKET s, char *buf, int len, int flags)
+rb_w32_send(int s, char *buf, int len, int flags)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -2000,8 +1986,8 @@ rb_w32_send (SOCKET s, char *buf, int len, int flags)
 #undef sendto
 
 int 
-rb_w32_sendto (SOCKET s, char *buf, int len, int flags, 
-		struct sockaddr *to, int tolen)
+rb_w32_sendto(int s, char *buf, int len, int flags, 
+	      struct sockaddr *to, int tolen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -2018,7 +2004,7 @@ rb_w32_sendto (SOCKET s, char *buf, int len, int flags,
 #undef setsockopt
 
 int 
-rb_w32_setsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
+rb_w32_setsockopt(int s, int level, int optname, char *optval, int optlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -2035,7 +2021,7 @@ rb_w32_setsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
 #undef shutdown
 
 int 
-rb_w32_shutdown (SOCKET s, int how)
+rb_w32_shutdown(int s, int how)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -2051,23 +2037,26 @@ rb_w32_shutdown (SOCKET s, int how)
 
 #undef socket
 
-SOCKET 
-rb_w32_socket (int af, int type, int protocol)
+int 
+rb_w32_socket(int af, int type, int protocol)
 {
     SOCKET s;
+    int fd;
+
     if (!NtSocketsInitialized++) {
 	StartSockets();
     }
     RUBY_CRITICAL({
 	s = socket(af, type, protocol);
-	if (s == INVALID_SOCKET)
+	if (s == INVALID_SOCKET) {
 	    errno = WSAGetLastError();
+	    fd = -1;
+	}
+	else {
+	    fd = rb_w32_open_osfhandle(s, O_RDWR|O_BINARY);
+	}
     });
-#ifdef __BORLANDC__
-    return _open_osfhandle(s, O_RDWR|O_BINARY);
-#else
-    return rb_w32_open_osfhandle(s, O_RDWR|O_BINARY);
-#endif
+    return fd;
 }
 
 #undef gethostbyaddr
