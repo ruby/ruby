@@ -1,3 +1,7 @@
+Sun May 11 05:50:39 2003  Tanaka Akira  <akr@m17n.org>
+
+        * lib/pp.rb (PP::ObjectMixin#pretty_print): refine to_s handling.
+
 Sat May 10 19:00:08 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/string.c: file removed.

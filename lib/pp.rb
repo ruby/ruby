@@ -239,13 +239,15 @@ class PP < PrettyPrint
 
   module ObjectMixin
     # 1. specific pretty_print
-    # 2. specific inspect or to_s
-    # 3. generic pretty_print
+    # 2. specific inspect
+    # 3. specific to_s if instance variable is empty
+    # 4. generic pretty_print
 
     def pretty_print(pp)
-      if /\(Kernel\)#/ !~ method(:inspect).inspect ||
-         /\(Kernel\)#/ !~ method(:to_s).inspect
-        pp.text inspect
+      if /\(Kernel\)#/ !~ method(:inspect).inspect
+        pp.text self.inspect
+      elsif /\(Kernel\)#/ !~ method(:to_s).inspect && instance_variables.empty?
+        pp.text self.to_s
       else
         pp.pp_object(self)
       end
@@ -519,6 +521,23 @@ if __FILE__ == $0
 
     def test_proc
       a = proc {1}
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
+    end
+
+    class Test_to_s_with_iv
+      def initialize() @a = nil end
+      def to_s() "aaa" end
+    end
+    def test_to_s_with_iv
+      a = Test_to_s_with_iv.new
+      assert_equal("#{a.inspect}\n", PP.pp(a, ''))
+    end
+    
+    class Test_to_s_without_iv
+      def to_s() "aaa" end
+    end
+    def test_to_s_without_iv
+      a = Test_to_s_without_iv.new
       assert_equal("#{a.inspect}\n", PP.pp(a, ''))
     end
   end
