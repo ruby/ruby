@@ -2957,12 +2957,12 @@ heredoc_identifier()
     }
     switch (c) {
       case '\'':
-	func |= str_squote; goto qutoed;
+	func |= str_squote; goto quoted;
       case '"':
-	func |= str_dquote; goto qutoed;
+	func |= str_dquote; goto quoted;
       case '`':
 	func |= str_xquote;
-      qutoed:
+      quoted:
 	newtok();
 	tokadd(func);
 	term = c;

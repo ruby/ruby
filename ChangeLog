@@ -1,3 +1,7 @@
+Mon Jul 15 10:35:35 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (heredoc_identifier): modify typo.
+
 Sat Jul 13 09:30:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (literal_concat_string): wrong optimization.
