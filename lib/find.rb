@@ -9,11 +9,9 @@
 
 module Find
   def find(*path)
-p ["find", path]
     while file = path.shift
       catch(:prune) {
 	yield file
-p ["find", file]
        if File.lstat(file).directory? then
 	  d = Dir.open(file)
 	  begin
