@@ -382,10 +382,38 @@ struct_aref(s, idx)
 }
 
 VALUE
+struct_aset_id(s, id, val)
+    VALUE s, val;
+    ID id;
+{
+    VALUE member;
+    int i, len;
+    VALUE *p;
+
+    member = rb_iv_get(CLASS_OF(s), "__member__");
+    if (NIL_P(member)) {
+	Bug("non-initialized struct");
+    }
+
+    len = RARRAY(member)->len;
+    for (i=0; i<len; i++) {
+	if (FIX2INT(RARRAY(member)->ptr[i]) == id) {
+	    RSTRUCT(s)->ptr[i] = val;
+	    return val;
+	}
+    }
+    NameError("no member '%s' in struct", rb_id2name(id));
+}
+
+VALUE
 struct_aset(s, idx, val)
     VALUE s, idx, val;
 {
     int i;
+
+    if (TYPE(idx) == T_STRING) {
+	return struct_aref_id(s, rb_to_id(idx));
+    }
 
     i = NUM2INT(idx);
     if (i < 0) i = RSTRUCT(s)->len + i;
