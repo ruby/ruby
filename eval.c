@@ -7136,6 +7136,7 @@ rb_mod_define_method(argc, argv, mod)
 	body = bind_clone(body);
 	Data_Get_Struct(body, struct BLOCK, block);
 	block->frame.last_func = id;
+	block->frame.orig_func = id;
 	block->frame.last_class = mod;
 	node = NEW_BMETHOD(body);
     }
