@@ -434,7 +434,7 @@ static unsigned long utf8_to_uv _((char*,long*));
  *       w     |  BER-compressed integer\fnm
  *       X     |  Back up a byte
  *       x     |  Null byte
- *       Z     |  Same as ``A''
+ *       Z     |  Same as ``a'', except that null is added with *
  */
 
 static VALUE
@@ -523,8 +523,11 @@ pack_pack(ary, fmt)
 	      case 'a':		/* arbitrary binary string (null padded)  */
 	      case 'A':		/* ASCII string (space padded) */
 	      case 'Z':		/* null terminated ASCII string  */
-		if (plen >= len)
+		if (plen >= len) {
 		    rb_str_buf_cat(res, ptr, len);
+		    if (p[-1] == '*' && type == 'Z')
+			rb_str_buf_cat(res, nul10, 1);
+		}
 		else {
 		    rb_str_buf_cat(res, ptr, plen);
 		    len -= plen;
@@ -1173,6 +1176,7 @@ infected_str_new(ptr, len, str)
  *     
  *     "abc \0\0abc \0\0".unpack('A6Z6')   #=> ["abc", "abc "]
  *     "abc \0\0".unpack('a3a3')           #=> ["abc", " \000\000"]
+ *     "abc \0abc \0".unpack('Z*Z*')       #=> ["abc ", "abc "]
  *     "aa".unpack('b8B8')                 #=> ["10000110", "01100001"]
  *     "aaa".unpack('h2H2c')               #=> ["16", "61", 97]
  *     "\xfe\xff\xfe\xff".unpack('sS')     #=> [-2, 65534]
@@ -1284,6 +1288,7 @@ infected_str_new(ptr, len, str)
  *       x    | ---     | skip forward one character
  *     -------+---------+-----------------------------------------
  *       Z    | String  | with trailing nulls removed
+ *            |         | upto first null with *
  *     -------+---------+-----------------------------------------
  *       @    | ---     | skip to the offset given by the 
  *            |         | length argument
@@ -1375,17 +1380,14 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'Z':
-	    if (len > send - s) len = send - s;
 	    {
-		long end = len;
-		char *t = s + len - 1;
+		char *t = s;
 
-		while (t >= s) {
-		    if (*t) break;
-		    t--; len--;
-		}
-		rb_ary_push(ary, infected_str_new(s, len, str));
-		s += end;
+		if (len > send-s) len = send-s;
+		while (t < s+len && *t) t++;
+		rb_ary_push(ary, infected_str_new(s, t-s, str));
+		if (t < send) t++;
+		s = star ? t : s+len;
 	    }
 	    break;
 
