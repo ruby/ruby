@@ -1348,6 +1348,7 @@ rb_eval_string_wrap(str, state)
 static void
 localjump_error(mesg, status)
     const char *mesg;
+    VALUE status;
 {
     VALUE exc = rb_exc_new2(rb_eLocalJumpError, mesg);
     rb_iv_set(exc, "@status", status);

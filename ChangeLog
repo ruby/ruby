@@ -1,3 +1,7 @@
+Tue Jul 30 08:37:11 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* eval.c (localjump_error): add parameter type declaration.
+
 Mon Jul 29 16:00:54 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in: always use File.expand_path for $top_srcdir.
