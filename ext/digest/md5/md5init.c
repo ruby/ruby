@@ -29,6 +29,6 @@ Init_md5()
 
     id_metadata = rb_intern("metadata");
 
-    rb_cvar_declare(cDigest_MD5, id_metadata,
-		    Data_Wrap_Struct(rb_cObject, 0, 0, &md5));
+    rb_cvar_set(cDigest_MD5, id_metadata,
+		Data_Wrap_Struct(rb_cObject, 0, 0, &md5), Qtrue);
 }

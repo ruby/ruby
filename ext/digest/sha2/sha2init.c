@@ -40,8 +40,8 @@ Init_sha2()
 #define DEFINE_ALGO_CLASS(bitlen) \
     cDigest_SHA##bitlen = rb_define_class_under(mDigest, "SHA" #bitlen, cDigest_Base); \
 \
-    rb_cvar_declare(cDigest_SHA##bitlen, id_metadata, \
-		    Data_Wrap_Struct(rb_cObject, 0, 0, &sha##bitlen));
+    rb_cvar_set(cDigest_SHA##bitlen, id_metadata, \
+		Data_Wrap_Struct(rb_cObject, 0, 0, &sha##bitlen), Qtrue);
 
     FOREACH_BITLEN(DEFINE_ALGO_CLASS)
 }

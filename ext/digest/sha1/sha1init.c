@@ -29,6 +29,6 @@ Init_sha1()
 
     id_metadata = rb_intern("metadata");
 
-    rb_cvar_declare(cDigest_SHA1, id_metadata,
-		    Data_Wrap_Struct(rb_cObject, 0, 0, &sha1));
+    rb_cvar_set(cDigest_SHA1, id_metadata,
+		Data_Wrap_Struct(rb_cObject, 0, 0, &sha1), Qtrue);
 }
