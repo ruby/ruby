@@ -4,29 +4,12 @@
 # Author:: Nobu Nakada
 # Documentation:: Nobu Nakada and Gavin Sinclair.
 #
+# See OptionParser for documentation. 
+#
 
 
-#
-# == OptionParser
-#
-# === Introduction
-#
-# OptionParser (in optparse.rb) is a library for command-line option analysis.
-# It is much more advanced, yet also easier to use, than GetoptLong, and is a
-# more Ruby-oriented solution.
-#
-# === Features
+# == Developer Documentation (not for RDoc output) 
 # 
-# 1. The argument specification and the code to handle it are written in the same
-#    place.
-# 2. It can output an option summary; you don't need to maintain this string
-#    separately.
-# 3. Optional and mandatory arguments are specified very gracefully.
-# 4. Arguments can be automatically converted to a specified class.
-# 5. Arguments can be restricted to a certain set.
-#
-# All of these features are demonstrated in the example below.
-#
 # === Class tree
 #
 # - OptionParser:: front end
@@ -58,10 +41,34 @@
 #               reject   |(shared between|      +----------+
 #                        | all instances)|
 #                        +---------------+
+
+
+#
+# == OptionParser
+#
+# === Introduction
+#
+# OptionParser is a class for command-line option analysis.  It is much more
+# advanced, yet also easier to use, than GetoptLong, and is a more Ruby-oriented
+# solution.
+#
+# === Features
+# 
+# 1. The argument specification and the code to handle it are written in the same
+#    place.
+# 2. It can output an option summary; you don't need to maintain this string
+#    separately.
+# 3. Optional and mandatory arguments are specified very gracefully.
+# 4. Arguments can be automatically converted to a specified class.
+# 5. Arguments can be restricted to a certain set.
+#
+# All of these features are demonstrated in the example below.
+#
 # === Example
 #
 # The following example is a complete Ruby program.  You can run it and see the
-# effect of specifying various options.
+# effect of specifying various options.  This is probably the best way to learn
+# the features of +optparse+.
 #
 #   require 'optparse'
 #   require 'optparse/time'
@@ -71,7 +78,7 @@
 #   class OptparseExample
 #   
 #     CODES = %w[iso-2022-jp shift_jis euc-jp utf8 binary]
-#     CODE_ALIASES = {"jis" => "iso-2022-jp", "sjis" => "shift_jis"}
+#     CODE_ALIASES = { "jis" => "iso-2022-jp", "sjis" => "shift_jis" }
 #   
 #     #
 #     # Return a structure describing the options.
@@ -138,7 +145,8 @@
 #         end
 #       
 #         # Optional argument with keyword completion.
-#         opts.on("--type [TYPE]", [:text, :binary, :auto], "Select transfer type (text, binary, auto)") do |t|
+#         opts.on("--type [TYPE]", [:text, :binary, :auto],
+#                 "Select transfer type (text, binary, auto)") do |t|
 #           options.transfer_type = t
 #         end
 #       
@@ -173,9 +181,14 @@
 #   options = OptparseExample.parse(ARGV)
 #   pp options
 #
-# Note: if you get errors or strange results from any of the above code, make
-# sure you have the latest version installed.  Some changes have been made since
-# Ruby 1.8.0 was released. 
+# Note: some bugs were fixed between 1.8.0 and 1.8.1.  If you experience trouble
+# with the above code, keep this in mind.
+#
+# === Further documentation
+#
+# The methods are not individually documented at this stage.  The above example
+# should be enough to learn how to use this class.  If you have any questions,
+# email me (gsinclair@soyabean.com.au) and I will update this document.
 #
 class OptionParser
   # :stopdoc:
@@ -191,10 +204,9 @@ class OptionParser
 
   #
   # Keyword completion module.  This allows partial arguments to be specified
-  # and resolved against a list of acceptable values.  The average user does not
-  # need to comprehend this.
+  # and resolved against a list of acceptable values.
   #
-  module Completion # :nodoc:
+  module Completion
     def complete(key, pat = nil)
       pat ||= Regexp.new('\A' + Regexp.quote(key).gsub(/\w+\b/, '\&\w*'),
                          ignore_case?)
@@ -259,7 +271,10 @@ class OptionParser
 
 
   #
-  # Individual switch class.
+  # Individual switch class.  Not important to the user.
+  #
+  # Defined within Switch are several Switch-derived classes: NoArgument,
+  # RequiredArgument, etc. 
   #
   class Switch
     attr_reader :pattern, :conv, :short, :long, :arg, :desc, :block
@@ -299,19 +314,17 @@ class OptionParser
         pattern, conv, short, long, arg, desc, block
     end
 
-=begin
-=== Instance methods
-=end
-=begin private
---- OptionParser::Switch#parse_arg(arg) {non-serious error handler}
-    Parses argument and returns rest of ((|arg|)), and matched portion
-    to the argument pattern.
-    :Parameters:
-      : ((|arg|))
-        option argument to be parsed.
-      : (({block}))
-        yields when the pattern doesn't match sub-string.
-=end #'#"#`#
+    #
+    # OptionParser::Switch#parse_arg(arg) {non-serious error handler}
+    #
+    # Parses argument and returns rest of ((|arg|)), and matched portion
+    # to the argument pattern.
+    #  :Parameters:
+    #    : ((|arg|))
+    #      option argument to be parsed.
+    #    : (({block}))
+    #      yields when the pattern doesn't match sub-string.
+    #
     def parse_arg(arg)
       pattern or return nil, arg
       unless m = pattern.match(arg)
@@ -332,21 +345,22 @@ class OptionParser
     end
     private :parse_arg
 
-=begin private
---- OptionParser::Switch#conv_arg(arg, val) {semi-error handler}
-    Parses argument, convert and returns ((|arg|)), ((|block|)) and
-    result of conversion.
-    : Arguments to ((|@conv|))
-      substrings matched to ((|@pattern|)), ((|$&|)), ((|$1|)),
-      ((|$2|)) and so on.
-    :Parameters:
-      : ((|arg|))
-        argument string follows the switch.
-      : ((|val|))
-        following argument.
-      : (({block}))
-        (({yields})) at semi-error condition, instead of raises exception.
-=end #'#"#`#
+    #
+    # OptionParser::Switch#conv_arg(arg, val) {semi-error handler}
+    #
+    # Parses argument, convert and returns ((|arg|)), ((|block|)) and
+    # result of conversion.
+    #  : Arguments to ((|@conv|))
+    #    substrings matched to ((|@pattern|)), ((|$&|)), ((|$1|)),
+    #    ((|$2|)) and so on.
+    #  :Parameters:
+    #    : ((|arg|))
+    #      argument string follows the switch.
+    #    : ((|val|))
+    #      following argument.
+    #    : (({block}))
+    #      (({yields})) at semi-error condition, instead of raises exception.
+    #
     def conv_arg(arg, val = nil)
       if block
         if conv
@@ -361,24 +375,25 @@ class OptionParser
     end
     private :conv_arg
 
-=begin private
---- OptionParser::Switch#summarize(sdone, ldone, width, max, indent)
-    Makes summary strings.
-    :Parameters:
-      : ((|sdone|))
-        already summarized short style options keyed hash.
-      : ((|ldone|))
-        already summarized long style options keyed hash.
-      : ((|width|))
-        width of left side, option part. in other word, right side,
-        description part strings start at ((|width|)) column.
-      : ((|max|))
-        maximum width of left side, options are filled within ((|max|)) columns.
-      : ((|indent|))
-        prefix string indents each summarized lines.
-      : (({block}))
-        to be passed each lines(without newline).
-=end #'#"#`#
+    #
+    # OptionParser::Switch#summarize(sdone, ldone, width, max, indent)
+    #
+    # Makes summary strings.
+    #  :Parameters:
+    #    : ((|sdone|))
+    #      already summarized short style options keyed hash.
+    #    : ((|ldone|))
+    #      already summarized long style options keyed hash.
+    #    : ((|width|))
+    #      width of left side, option part. in other word, right side,
+    #      description part strings start at ((|width|)) column.
+    #    : ((|max|))
+    #      maximum width of left side, options are filled within ((|max|)) columns.
+    #    : ((|indent|))
+    #      prefix string indents each summarized lines.
+    #    : (({block}))
+    #      to be passed each lines(without newline).
+    #
     def summarize(sdone = [], ldone = [], width = 1, max = width - 1, indent = "")
       sopts, lopts, s = [], [], nil
       @short.each {|s| sdone.fetch(s) {sopts << s}; sdone[s] = true} if @short
@@ -410,20 +425,13 @@ class OptionParser
       self
     end
 
-=begin private
-== Switch classes
-=end #'#"#`#
-
-=begin private
-=== ((:OptionParser::Switch::NoArgument:))
-Switch that takes no arguments.
-==== Superclass
-((<OptionParser::Switch>))
-==== Instance methods
---- OptionParser::Switch::NoArgument#parse
-    Raises an exception if any arguments given.
-=end #'#"#`#
+    #
+    # Switch that takes no arguments.
+    #
     class NoArgument < self
+      #
+      # Raises an exception if any arguments given.
+      #
       def parse(arg, argv, &error)
         yield(NeedlessArgument, arg) if arg
         conv_arg(arg)
@@ -435,16 +443,13 @@ Switch that takes no arguments.
       end
     end
 
-=begin private
-=== ((:OptionParser::Switch::RequiredArgument:))
-Switch that takes an argument.
-==== Superclass
-((<OptionParser::Switch>))
-==== Instance methods
---- OptionParser::Switch::RequiredArgument#parse
-    Raises an exception if argument is not present.
-=end #'#"#`#
+    #
+    # Switch that takes an argument.
+    #
     class RequiredArgument < self
+      #
+      # Raises an exception if argument is not present.
+      #
       def parse(arg, argv, &error)
         unless arg
           raise MissingArgument if argv.empty?
@@ -454,16 +459,13 @@ Switch that takes an argument.
       end
     end
 
-=begin private
-=== ((:OptionParser::Switch::OptionalArgument:))
-Switch that can omit argument.
-==== Superclass
-((<OptionParser::Switch>))
-==== Instance methods
---- OptionParser::Switch::OptionalArgument#parse
-    Parses argument if given, or uses default value.
-=end #'#"#`#
+    #
+    # Switch that can omit argument.
+    #
     class OptionalArgument < self
+      #
+      # Parses argument if given, or uses default value.
+      #
       def parse(arg, argv, &error)
         if arg
           conv_arg(*parse_arg(arg, &error))
@@ -473,7 +475,13 @@ Switch that can omit argument.
       end
     end
 
+    #
+    # ?
+    #
     class PlacedArgument < self
+      #
+      # ?
+      #
       def parse(arg, argv, &error)
         if !(val = arg) and (argv.empty? or /\A-/ =~ (val = argv[0]))
           return nil, block, nil
@@ -490,22 +498,28 @@ Switch that can omit argument.
     end
   end
 
-
-=begin
-== ((:OptionParser::List:))
-Simple option list providing mapping from short and/or long option
-string to ((<OptionParser::Switch>)), and mapping from acceptable
-argument to matching pattern and converter pair.  Also provides
-summary feature.
-=end #'#"#`#
+  #
+  # Simple option list providing mapping from short and/or long option
+  # string to ((<OptionParser::Switch>)), and mapping from acceptable
+  # argument to matching pattern and converter pair.  Also provides
+  # summary feature.
+  #
   class List
-=begin
-=== Class methods
-=end #'#"#`#
-=begin private
---- OptionParser::List.new
-    Just initializes all instance variables.
-=end #'#"#`#
+    # Map from acceptable argument types to pattern and converter pairs.
+    attr_reader :atype
+    
+    # Map from short style option switches to actual switch objects.
+    attr_reader :short
+    
+    # Map from long style option switches to actual switch objects.
+    attr_reader :long
+    
+    # List of all switches and summary string.
+    attr_reader :list
+
+    #
+    # Just initializes all instance variables.
+    #
     def initialize
       @atype = {}
       @short = OptionMap.new
@@ -513,27 +527,9 @@ summary feature.
       @list = []
     end
 
-=begin
-=== Instance methods
-=end #'#"#`#
-=begin
---- OptionParser::List#atype
-    Map from acceptable argument types to pattern and converter pairs.
---- OptionParser::List#short
-    Map from short style option switches to actual switch objects.
---- OptionParser::List#long
-    Map from long style option switches to actual switch objects.
---- OptionParser::List#list
-    List of all switches and summary string.
-=end #'#"#`#
-    attr_reader :atype, :short, :long, :list
-
-=begin private
---- OptionParser::List#accept(type[, pattern]) {...}
-    see ((<OptionParser.accept>)).
---- OptionParser::List#reject(type)
-    see ((<OptionParser.reject>)).
-=end #'#"#`#
+    #
+    # See OptionParser.accept.
+    #
     def accept(t, pat = /.*/, &block)
       if pat
         pat.respond_to?(:match) or raise TypeError, "has no `match'"
@@ -546,24 +542,28 @@ summary feature.
       @atype[t] = [pat, block]
     end
 
+    #
+    # See OptionParser.reject.
+    #
     def reject(t)
       @atype.delete(t)
     end
 
-=begin private
---- OptionParser::List#update(sw, sopts, lopts, nlopts = nil)
-    Adds ((|sw|)) according to ((|sopts|)), ((|lopts|)) and
-    ((|nlopts|)).
-    :Parameters:
-      : ((|sw|))
-        ((<OptionParser::Switch>)) instance to be added.
-      : ((|sopts|))
-        short style options list.
-      : ((|lopts|))
-        long style options list.
-      : ((|nlopts|))
-        negated long style options list.
-=end #'#"#`#
+    #
+    # OptionParser::List#update(sw, sopts, lopts, nlopts = nil)
+    #
+    # Adds ((|sw|)) according to ((|sopts|)), ((|lopts|)) and
+    # ((|nlopts|)).
+    #  :Parameters:
+    #    : ((|sw|))
+    #      ((<OptionParser::Switch>)) instance to be added.
+    #    : ((|sopts|))
+    #      short style options list.
+    #    : ((|lopts|))
+    #      long style options list.
+    #    : ((|nlopts|))
+    #      negated long style options list.
+    #
     def update(sw, sopts, lopts, nsw = nil, nlopts = nil)
       o = nil
       sopts.each {|o| @short[o] = sw} if sopts
@@ -574,44 +574,47 @@ summary feature.
     end
     private :update
 
-=begin
---- OptionParser::List#prepend(switch, short_opts, long_opts, nolong_opts)
-    Inserts ((|switch|)) at head of the list, and associates short,
-    long and negated long options.
---- OptionParser::List#append(switch, short_opts, long_opts, nolong_opts)
-    Appends ((|switch|)) at tail of the list, and associates short,
-    long and negated long options.
-    :Parameters:
-      : ((|switch|))
-        ((<OptionParser::Switch>)) instance to be inserted.
-      : ((|short_opts|))
-        list of short style options.
-      : ((|long_opts|))
-        list of long style options.
-      : ((|nolong_opts|))
-        list of long style options with (({"no-"})) prefix.
-=end #'#"#`#
+    #
+    # OptionParser::List#prepend(switch, short_opts, long_opts, nolong_opts)
+    #
+    # Inserts ((|switch|)) at head of the list, and associates short,
+    # long and negated long options.
     def prepend(*args)
       update(*args)
       @list.unshift(args[0])
     end
 
+    #
+    # OptionParser::List#append(switch, short_opts, long_opts, nolong_opts)
+    #
+    # Appends ((|switch|)) at tail of the list, and associates short,
+    # long and negated long options.
+    #  :Parameters:
+    #    : ((|switch|))
+    #      ((<OptionParser::Switch>)) instance to be inserted.
+    #    : ((|short_opts|))
+    #      list of short style options.
+    #    : ((|long_opts|))
+    #      list of long style options.
+    #    : ((|nolong_opts|))
+    #      list of long style options with (({"no-"})) prefix.
     def append(*args)
       update(*args)
       @list.push(args[0])
     end
 
-=begin
---- OptionParser::List#search(id, key) [{block}]
-    Searches ((|key|)) in ((|id|)) list.
-    :Parameters:
-      : ((|id|))
-        searching list.
-      : ((|k|))
-        searching key.
-      : (({block}))
-        yielded with the found value when succeeded.
-=end #'#"#`#
+    #
+    # OptionParser::List#search(id, key) [{block}]
+    #
+    # Searches ((|key|)) in ((|id|)) list.
+    #  :Parameters:
+    #    : ((|id|))
+    #      searching list.
+    #    : ((|k|))
+    #      searching key.
+    #    : (({block}))
+    #      yielded with the found value when succeeded.
+    #
     def search(id, key)
       if list = __send__(id)
         val = list.fetch(key) {return nil}
@@ -620,33 +623,35 @@ summary feature.
       end
     end
 
-=begin
---- OptionParser::List#complete(id, opt, *pat, &block)
-    Searches list ((|id|)) for ((|opt|)) and ((|*pat|)).
-    :Parameters:
-      : ((|id|))
-        searching list.
-      : ((|opt|))
-        searching key.
-      : ((|*pat|))
-        optional pattern for completion.
-      : (({block}))
-        yielded with the found value when succeeded.
-=end #'#"#`#
+    #
+    # OptionParser::List#complete(id, opt, *pat, &block)
+    #
+    # Searches list ((|id|)) for ((|opt|)) and ((|*pat|)).
+    #  :Parameters:
+    #    : ((|id|))
+    #      searching list.
+    #    : ((|opt|))
+    #      searching key.
+    #    : ((|*pat|))
+    #      optional pattern for completion.
+    #    : (({block}))
+    #      yielded with the found value when succeeded.
+    #
     def complete(id, opt, *pat, &block)
       __send__(id).complete(opt, *pat, &block)
     end
 
-=begin
---- OptionParser::List#summarize(*args) {...}
-    Making summary table, yields the (({block})) with each lines.
-    Each elements of (({@list})) should be able to (({summarize})).
-    :Parameters:
-      : ((|args|))
-        passed to elements#summarize through.
-      : (({block}))
-        to be passed each lines(without newline).
-=end #'#"#`#
+    #
+    # OptionParser::List#summarize(*args) {...}
+    #
+    # Making summary table, yields the (({block})) with each lines.
+    # Each elements of (({@list})) should be able to (({summarize})).
+    #  :Parameters:
+    #    : ((|args|))
+    #      passed to elements#summarize through.
+    #    : (({block}))
+    #      to be passed each lines(without newline).
+    #
     def summarize(*args, &block)
       list.each do |opt|
         if opt.respond_to?(:summarize) # perhaps OptionParser::Switch
@@ -660,23 +665,17 @@ summary feature.
     end
   end
 
-
-=begin private
-== ((:OptionParser::CompletingHash:))
-(({Hash})) with completion search feature.
-=== Superclass
-(({Hash}))
-=== Including modules
-((<OptionParser::Completion>))
-=end #'#"#`#
+  #
+  # Hash with completion search feature.  See Completion module.
+  #
   class CompletingHash < Hash
     include Completion
 
-=begin private
-=== Instance methods
---- OptionParser::CompletingHash#match(key)
-    Completion for hash key.
-=end #'#"#`#
+    #
+    # OptionParser::CompletingHash#match(key)
+    #
+    # Completion for hash key.
+    #
     def match(key)
       return key, *fetch(key) {
         raise AmbiguousArgument, catch(:ambiguous) {return complete(key)}
@@ -684,54 +683,47 @@ summary feature.
     end
   end
 
-
-=begin
-== ((:OptionParser:))
-The front-end of (({OptionParser})).
-=end #'#"#`#
+  #
+  # OptionParser::ArgumentStyle
+  # Enumeration of acceptable argument styles; possible values are:
+  # : OptionParser::NO_ARGUMENT
+  #   the switch takes no arguments. ((({:NONE}))) 
+  # : OptionParser::REQUIRED_ARGUMENT
+  #   the switch requires an argument. ((({:REQUIRED})))
+  # : OptionParser::OPTIONAL_ARGUMENT
+  #   the switch requires an optional argument, that is, may take or
+  #   not. ((({:OPTIONAL})))
+  #
+  # Use like (({--switch=argument}))(long style) or
+  # (({-Xargument}))(short style). For short style, only portion
+  # matched to ((<argument pattern>)) is dealed as argument.
+  #
 
-=begin
-=== Constants
-=end #'#"#`#
-
-=begin
---- OptionParser::ArgumentStyle
-    Enumeration of acceptable argument styles; possible values are:
-    : OptionParser::NO_ARGUMENT
-      the switch takes no arguments. ((({:NONE}))) 
-    : OptionParser::REQUIRED_ARGUMENT
-      the switch requires an argument. ((({:REQUIRED})))
-    : OptionParser::OPTIONAL_ARGUMENT
-      the switch requires an optional argument, that is, may take or
-      not. ((({:OPTIONAL})))
-
-    Use like (({--switch=argument}))(long style) or
-    (({-Xargument}))(short style). For short style, only portion
-    matched to ((<argument pattern>)) is dealed as argument.
-=end #'#"#`#
+  # :stopdoc: 
   ArgumentStyle = {}
   NoArgument.each {|el| ArgumentStyle[el] = Switch::NoArgument}
   RequiredArgument.each {|el| ArgumentStyle[el] = Switch::RequiredArgument}
   OptionalArgument.each {|el| ArgumentStyle[el] = Switch::OptionalArgument}
   ArgumentStyle.freeze
 
-=begin private
---- OptionParser::DefaultList
-    Switches common used such as '--', and also provides default
-    argument classes
-=end #'#"#`#
+  #
+  # OptionParser::DefaultList
+  #
+  # Switches common used such as '--', and also provides default
+  # argument classes
+  #
+  
   DefaultList = List.new
   DefaultList.short['-'] = Switch::NoArgument.new {}
   DefaultList.long[''] = Switch::NoArgument.new {throw :terminate}
 
-=begin undocumented
-=== Default options
-Default options, which never appear in option summary.
---- --help
-    Shows option summary.
---- --version
-    Shows version string if (({::Version})) is defined.
-=end #'#"#`#
+  #
+  # Default options, which never appear in option summary.
+  #   --help
+  #   Shows option summary.
+  #   --version
+  #   Shows version string if (({::Version})) is defined.
+  #
   DefaultList.long['help'] = Switch::NoArgument.new do
     puts ARGV.options
     exit
@@ -752,9 +744,11 @@ Default options, which never appear in option summary.
     exit
   end
 
-=begin
-=== Class methods
-=end #'#"#`#
+  # :startdoc:
+
+  #
+  # Class methods
+  #
 
 =begin
 --- OptionParser.with([banner[, width[, indent]]]) [{...}]

@@ -1,3 +1,7 @@
+Mon Dec 29 02:25:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/optparse.rb: Improved documentation.
+
 Mon Dec 29 02:20:54 2003  Dave Thomas  <dave@wireless_3.local.thomases.com>
 
 	* eval.c: Add RDoc for class Proc, Method, UnboundMethod
