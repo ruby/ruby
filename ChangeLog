@@ -1,3 +1,8 @@
+Mon Jan 29 14:25:39 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): return from block jumps directory to
+	  block invoker.
+
 Mon Jan 29 01:40:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (str_independent): should not clear str->orig here.

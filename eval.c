@@ -6333,7 +6333,23 @@ block_pass(self, node)
     POP_TAG();
     POP_ITER();
     if (_block.tag->dst == state) {
-	state &= TAG_MASK;
+	if (orphan) {
+	    state &= TAG_MASK;
+	}
+	else {
+	    struct BLOCK *ptr = old_block;
+
+	    while (ptr) {
+		if (ptr->scope == _block.scope) {
+		    ptr->tag->dst = state;
+		    break;
+		}
+		ptr = ptr->prev;
+	    }
+	    if (!ptr) {
+		state &= TAG_MASK;
+	    }
+	}
     }
     ruby_block = old_block;
     ruby_safe_level = safe;
