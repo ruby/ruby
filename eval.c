@@ -5967,7 +5967,7 @@ rb_exec_end_proc()
 
     save = link = end_procs;
     while (link) {
-	rb_protect((VALUE(*)())link->func, link->data, &status);
+	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);
 	}
@@ -5975,7 +5975,7 @@ rb_exec_end_proc()
     }
     link = end_procs;
     while (link != save) {
-	rb_protect((VALUE(*)())link->func, link->data, &status);
+	rb_protect((VALUE(*)_((VALUE)))link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);
 	}
@@ -6948,14 +6948,14 @@ static VALUE
 method_proc(method)
     VALUE method;
 {
-    return rb_iterate(mproc, 0, bmcall, method);
+    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, bmcall, method);
 }
 
 static VALUE
 umethod_proc(method)
     VALUE method;
 {
-    return rb_iterate(mproc, 0, umcall, method);
+    return rb_iterate((VALUE(*)_((VALUE)))mproc, 0, umcall, method);
 }
 
 static VALUE
@@ -9074,7 +9074,7 @@ rb_catch(tag, proc, data)
     VALUE (*proc)();
     VALUE data;
 {
-    return rb_iterate(catch_i, rb_intern(tag), proc, data);
+    return rb_iterate((VALUE(*)_((VALUE)))catch_i, rb_intern(tag), proc, data);
 }
 
 static VALUE

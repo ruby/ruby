@@ -381,7 +381,7 @@ static VALUE
 fsdbm_update(obj, other)
     VALUE obj, other;
 {
-    rb_iterate(each_pair, other, update_i, obj);
+    rb_iterate((VALUE(*)_((VALUE)))each_pair, other, update_i, obj);
     return obj;
 }
 
@@ -390,7 +390,7 @@ fsdbm_replace(obj, other)
     VALUE obj, other;
 {
     fsdbm_clear(obj);
-    rb_iterate(each_pair, other, update_i, obj);
+    rb_iterate((VALUE(*)_((VALUE)))each_pair, other, update_i, obj);
     return obj;
 }
 

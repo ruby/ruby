@@ -311,7 +311,8 @@ range_step(argc, argv, range)
 
 	args[0] = b; args[1] = e; args[2] = range;
 	iter[0] = 1; iter[1] = NUM2LONG(step);
-	rb_iterate(r_step_str, (VALUE)args, r_step_str_i, (VALUE)iter);
+	rb_iterate((VALUE(*)_((VALUE)))r_step_str, (VALUE)args, r_step_str_i,
+		   (VALUE)iter);
     }
     else {			/* generic each */
 	VALUE v = b;

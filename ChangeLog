@@ -1,6 +1,19 @@
+Mon Oct 29 14:56:44 2001  Usaku Nakamura <usa@ruby-lang.org>
+
+	* intern.h (rb_protect_inspect): follow the change of array.c.
+
+	* eval.c (rb_exec_end_proc): follow the change of rb_protect().
+
+	* eval.c (method_proc, umethod_proc, rb_catch): cast the first
+	  parameter of rb_iterate() to avoid VC++ warning.
+
+	* range.c (range_step): ditto.
+
+	* ext/sdbm/init.c (fsdbm_update, fsdbm_replace): ditto.
+
 Mon Oct 29 07:57:31 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* parse.y (str_extend): shuould allow interpolation of $-x.
+	* parse.y (str_extend): should allow interpolation of $-x.
 
 	* variable.c (rb_cvar_set): empty iv_tbl may cause infinite loop.
 
