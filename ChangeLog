@@ -1,3 +1,7 @@
+Wed Mar 21 23:07:45 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c (win32_stat): WinNT/2k "//host/share" support.
+
 Wed Mar 21 01:26:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (id2ref): sometimes confused symbol and reference.

@@ -2594,6 +2594,24 @@ myrename(const char *oldpath, const char *newpath)
     return res;
 }
 
+static int
+isUNCRoot(const char *path)
+{
+    if (path[0] == '\\' && path[1] == '\\') {
+	const char *p;
+	if (p = strchr(path + 3, '\\')) {
+	    if (!p[1])
+		return 0;
+	    if (p = strchr(p + 1, '\\')) {
+		if (!p[1])
+		    return 1;
+	    } else
+		return 1;
+	}
+    }
+    return 0;
+}
+
 int
 win32_stat(const char *path, struct stat *st)
 {
@@ -2612,10 +2630,11 @@ win32_stat(const char *path, struct stat *st)
     *s = '\0';
     len = strlen(buf1);
     p = CharPrev(buf1, buf1 + len);
-    if (*p == '\\' || *p == ':')
+    if (isUNCRoot(buf1)) {
+	if (*p != '\\')
+	    strcat(buf1, "\\");
+    } else if (*p == '\\' || *p == ':')
 	strcat(buf1, ".");
-    else if (buf1[0] == '\\' && buf1[1] == '\\')
-	strcat(buf1, "\\.");
     if (_fullpath(buf2, buf1, MAXPATHLEN))
 	return stat(buf2, st);
     else
