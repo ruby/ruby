@@ -36,6 +36,12 @@
 #   endif
 #  endif
 # endif
+#else /* TCL_MAJOR_VERSION == 7 */
+# ifdef CONST
+#  define CONST84 CONST
+# else
+#  define CONST84
+# endif
 #endif
 
 /* for ruby_debug */
