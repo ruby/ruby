@@ -1588,8 +1588,8 @@ rb_file_s_open(argc, argv, klass)
     path = RSTRING(fname)->ptr;
 
     if (FIXNUM_P(vmode)) {
-	int flags = FIX2INT(vmode);
-	int fmode = NIL_P(perm) ? 0666 : FIX2INT(perm);
+	int flags = NUM2INT(vmode);
+	int fmode = NIL_P(perm) ? 0666 : NUM2INT(perm);
 
 	file = rb_file_sysopen_internal(klass, path, flags, fmode);
     }
@@ -1629,7 +1629,7 @@ rb_f_open(argc, argv)
 	mode = "r";
     }
     else if (FIXNUM_P(pmode)) {
-	mode = rb_io_flags_mode(FIX2INT(pmode));
+	mode = rb_io_flags_mode(NUM2INT(pmode));
     }
     else {
 	int len;

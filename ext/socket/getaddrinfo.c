@@ -38,6 +38,7 @@
  * - PF_UNSPEC case would be handled in getipnodebyname() with the AI_ALL flag.
  */
 
+#include "config.h"
 #include <sys/types.h>
 #ifndef NT
 #include <sys/param.h>
@@ -66,7 +67,6 @@
 #include <socks.h>
 #endif
 
-#include "config.h"
 #include "addrinfo.h"
 #include "sockport.h"
 

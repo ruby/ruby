@@ -580,6 +580,10 @@ rb_str_index_method(argc, argv, str)
     else {
 	pos = 0;
     }
+    if (pos < 0) {
+	pos += RSTRING(str)->len;
+	if (pos < 0) return Qnil;
+    }
 
     switch (TYPE(sub)) {
       case T_REGEXP:

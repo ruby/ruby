@@ -683,7 +683,11 @@ load_file(fname, script)
 		}
 	    }
 	}
-	else if (!NIL_P(c)) {
+	else if (NIL_P(c)) {
+	    rb_io_close(f);
+	    return;
+	}
+	else {
 	    rb_io_ungetc(f, c);
 	}
     }

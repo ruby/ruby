@@ -34,6 +34,7 @@
  *   but INRIA implementation returns EAI_xxx defined for getaddrinfo().
  */
 
+#include "config.h"
 #include <sys/types.h>
 #ifndef NT
 #include <sys/socket.h>
@@ -60,7 +61,6 @@
 #include <socks.h>
 #endif
 
-#include "config.h"
 #include "addrinfo.h"
 #include "sockport.h"
 

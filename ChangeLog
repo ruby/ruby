@@ -1,3 +1,41 @@
+Wed Feb 16 00:32:49 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (method_arity): nd_rest is -1 for no rest argument.
+
+	* process.c (rb_f_waitpid): returns nil when waitpid(2) returns 0.
+
+Tue Feb 15 01:47:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (rb_f_waitpid): pid_t should be signed.
+
+Mon Feb 14 13:59:01 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (load_file): exit if reading file is empty.
+
+Mon Feb 14 03:34:52 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yylex): `foo.bar=' should be <foo><.><bar><=>.
+
+	* eval.c (rb_thread_restore_context): process according to
+	  RESTORE_* is moved after longjmp().
+
+	* eval.c (thread_switch): new function to process RESTORE_*.
+
+Thu Feb 10 02:12:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_index_m): did not support negative offset.
+
+Wed Feb  9 21:54:26 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/getaddrinfo.c: gcc --traditional support.
+	  Rearrange headers to work AC_C_CONST.
+	* ext/socket/getnameinfo.c: ditto.
+	* ext/socket/socket.c: mswin32: use double instead of long long.
+
+Wed Feb  9 16:30:41 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* numeric.c (num_coerce): should return [y, x].
+
 Fri Feb  4 10:20:25 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_io_close): should not check closed IO.
@@ -5,6 +43,10 @@ Fri Feb  4 10:20:25 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Fri Feb  4 05:44:01 2000  Kentaro Inagaki  <inagaki@tg.rim.or.jp>
 
 	* ext/socket/socket.c (s_recv): TRAP_BEG after retry entry.
+
+Thu Jan 27 01:27:10 2000  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* dir.c (glob): glob pattern "/*" did not match.
 
 Wed Jan 26 22:30:47 2000  Shigeo Kobayashi  <shigeo@tinyforest.gr.jp>
 

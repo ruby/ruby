@@ -43,8 +43,8 @@ num_coerce(x, y)
     VALUE x, y;
 {
     if (CLASS_OF(x) == CLASS_OF(y))
-	return rb_assoc_new(x, y);
-    return rb_assoc_new(rb_Float(x), rb_Float(y));
+	return rb_assoc_new(y, x);
+    return rb_assoc_new(rb_Float(y), rb_Float(x));
 }
 
 static VALUE

@@ -3622,7 +3622,7 @@ rb_f_missing(argc, argv, obj)
 
     if (argc == 0) rb_raise(rb_eArgError, "no id given");
 
-    id = FIX2INT(argv[0]);
+    id = NUM2INT(argv[0]);
     argc--; argv++;
 
     switch (TYPE(obj)) {
@@ -5736,7 +5736,7 @@ proc_arity(proc)
     int n;
 
     Data_Get_Struct(proc, struct BLOCK, data);
-    if (data->var == 0) return FIX2INT(-1);
+    if (data->var == 0) return INT2FIX(-1);
     switch (nd_type(data->var)) {
       default:
 	return INT2FIX(-2);
@@ -5933,7 +5933,7 @@ method_arity(method)
 	    body = body->nd_head;
 	if (!body) return INT2FIX(0);
 	n = body->nd_cnt;
-	if (body->nd_rest) n = -n-1;
+	if (body->nd_rest >= 0) n = -n-1;
 	return INT2FIX(n);
     }
 }
@@ -6223,6 +6223,21 @@ rb_thread_check(data)
     return (thread_t)RDATA(data)->data;
 }
 
+static int   th_raise_argc;
+static VALUE th_raise_argv[2];
+static char *th_raise_file;
+static int   th_raise_line;
+static VALUE th_cmd;
+static int   th_sig;
+static char *th_signm;
+
+#define RESTORE_NORMAL		1
+#define RESTORE_FATAL		2
+#define RESTORE_INTERRUPT	3
+#define RESTORE_TRAP		4
+#define RESTORE_RAISE		5
+#define RESTORE_SIGNAL		6
+
 static void
 rb_thread_save_context(th)
     thread_t th;
@@ -6260,6 +6275,41 @@ rb_thread_save_context(th)
     th->line = ruby_sourceline;
 }
 
+static int
+thread_switch(n)
+    int n;
+{
+    switch (n) {
+      case 0:
+	return 0;
+      case RESTORE_FATAL:
+	JUMP_TAG(TAG_FATAL);
+	break;
+      case RESTORE_INTERRUPT:
+	rb_interrupt();
+	break;
+      case RESTORE_TRAP:
+	rb_trap_eval(th_cmd, th_sig);
+	errno = EINTR;
+	break;
+      case RESTORE_RAISE:
+	ruby_frame->last_func = 0;
+	ruby_sourcefile = th_raise_file;
+	ruby_sourceline = th_raise_line;
+	rb_f_raise(th_raise_argc, th_raise_argv);
+	break;
+      case RESTORE_SIGNAL:
+	rb_raise(rb_eSignal, "SIG%s", th_signm);
+	break;
+      case RESTORE_NORMAL:
+      default:
+	return 1;
+    }
+}
+
+#define THREAD_SAVE_CONTEXT(th) \
+    (rb_thread_save_context(th),thread_switch(setjmp((th)->context)))
+
 static void rb_thread_restore_context _((thread_t,int));
 
 static void
@@ -6272,21 +6322,6 @@ stack_extend(th, exit)
     memset(space, 0, 1);	/* prevent array from optimization */
     rb_thread_restore_context(th, exit);
 }
-
-static int   th_raise_argc;
-static VALUE th_raise_argv[2];
-static char *th_raise_file;
-static int   th_raise_line;
-static VALUE th_cmd;
-static int   th_sig;
-static char *th_signm;
-
-#define RESTORE_NORMAL		0 
-#define RESTORE_FATAL		1
-#define RESTORE_INTERRUPT	2
-#define RESTORE_TRAP		3
-#define RESTORE_RAISE		4
-#define RESTORE_SIGNAL		5
 
 static void
 rb_thread_restore_context(th, exit)
@@ -6333,35 +6368,7 @@ rb_thread_restore_context(th, exit)
     rb_lastline_set(tmp->last_line);
     rb_backref_set(tmp->last_match);
 
-    switch (ex) {
-      case RESTORE_FATAL:
-	JUMP_TAG(TAG_FATAL);
-	break;
-
-      case RESTORE_INTERRUPT:
-	rb_interrupt();
-	break;
-
-      case RESTORE_TRAP:
-	rb_trap_eval(th_cmd, th_sig);
-	errno = EINTR;
-	break;
-
-      case RESTORE_SIGNAL:
-	rb_raise(rb_eSignal, "SIG%s", th_signm);
-	break;
-
-      case RESTORE_RAISE:
-	ruby_frame->last_func = 0;
-	ruby_sourcefile = th_raise_file;
-	ruby_sourceline = th_raise_line;
-	rb_f_raise(th_raise_argc, th_raise_argv);
-	break;
-
-      case RESTORE_NORMAL:
-      default:
-	longjmp(tmp->context, 1);
-    }
+    longjmp(tmp->context, ex);
 }
 
 static void
@@ -6595,8 +6602,7 @@ rb_thread_schedule()
 
     /* context switch */
     if (curr == curr_thread) {
-	rb_thread_save_context(curr);
-	if (setjmp(curr->context)) {
+	if (THREAD_SAVE_CONTEXT(curr)) {
 	    return;
 	}
     }
@@ -7098,15 +7104,13 @@ rb_thread_create_0(fn, arg, klass)
 #endif
 
     FL_SET(ruby_scope, SCOPE_SHARED);
-    rb_thread_save_context(curr_thread);
-    if (setjmp(curr_thread->context)) {
+    if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	return thread;
     }
 
     PUSH_TAG(PROT_THREAD);
     if ((state = EXEC_TAG()) == 0) {
-	rb_thread_save_context(th);
-	if (setjmp(th->context) == 0) {
+	if (THREAD_SAVE_CONTEXT(th) == 0) {
 	    curr_thread = th;
 	    th->result = (*fn)(arg, th);
 	}
@@ -7260,8 +7264,7 @@ rb_thread_interrupt()
     if (curr_thread == main_thread) {
 	rb_interrupt();
     }
-    rb_thread_save_context(curr_thread);
-    if (setjmp(curr_thread->context)) {
+    if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	return;
     }
     curr_thread = main_thread;
@@ -7279,8 +7282,7 @@ rb_thread_signal_raise(sig)
 	rb_raise(rb_eSignal, "SIG%s", sig);
     }
     rb_thread_ready(main_thread);
-    rb_thread_save_context(curr_thread);
-    if (setjmp(curr_thread->context)) {
+    if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	return;
     }
     th_signm = sig;
@@ -7300,8 +7302,7 @@ rb_thread_trap_eval(cmd, sig)
 	return;
     }
     rb_thread_ready(main_thread);
-    rb_thread_save_context(curr_thread);
-    if (setjmp(curr_thread->context)) {
+    if (THREAD_SAVE_CONTEXT(curr_thread)) {
 	return;
     }
     th_cmd = cmd;
@@ -7323,9 +7324,9 @@ rb_thread_raise(argc, argv, thread)
 	rb_f_raise(argc, argv);
     }
 
-    if (curr_thread->status != THREAD_KILLED)
+    if (!curr_thread->status != THREAD_KILLED)
 	rb_thread_save_context(curr_thread);
-    if (setjmp(curr_thread->context)) {
+    if (thread_switch(setjmp(curr_thread->context))) {
 	return thread;
     }
 
@@ -7452,8 +7453,7 @@ rb_callcc(self)
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
-    rb_thread_save_context(th);
-    if (setjmp(th->context)) {
+    if (THREAD_SAVE_CONTEXT(th)) {
 	return th->result;
     }
     else {
@@ -7561,7 +7561,7 @@ static VALUE
 catch_i(tag)
     ID tag;
 {
-    return rb_funcall(Qnil, rb_intern("catch"), 0, FIX2INT(tag));
+    return rb_funcall(Qnil, rb_intern("catch"), 0, INT2FIX(tag));
 }
 
 VALUE
@@ -7614,7 +7614,7 @@ rb_throw(tag, val)
     VALUE argv[2];
     ID t = rb_intern(tag);
 
-    argv[0] = FIX2INT(t);
+    argv[0] = INT2FIX(t);
     argv[1] = val;
     rb_f_throw(2, argv);
 }

@@ -3264,8 +3264,8 @@ yylex()
 	    }
 	    else {
 		result = tIDENTIFIER;
-		if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
-		    if ((c = nextc()) == '=' && !peek('=')) {
+		if (lex_state == EXPR_FNAME) {
+		    if ((c = nextc()) == '=' && !peek('=') && !peek('~')) {
 			tokadd(c);
 		    }
 		    else {

@@ -195,10 +195,11 @@ rb_f_waitpid(obj, vpid, vflags)
     int pid, flags, status;
 
     if (NIL_P(vflags)) flags = 0;
-    else flags = FIX2UINT(vflags);
+    else flags = NUM2UINT(vflags);
 
-    if ((pid = rb_waitpid(FIX2UINT(vpid), flags, &status)) < 0)
+    if ((pid = rb_waitpid(NUM2INT(vpid), flags, &status)) < 0)
 	rb_sys_fail(0);
+    if (pid == 0) return Qnil;
     return INT2FIX(pid);
 }
 

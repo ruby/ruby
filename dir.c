@@ -576,11 +576,11 @@ glob(path, func, arg)
 		break;
 	    }
 	    magic = extract_elem(p);
+#define BASE (*base && !(*base == '/' && !base[1]))
+
 	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
 		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
 		    char *fix = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
-		    #define BASE (*base && !(*base == '/' && !base[1]))
-
 		    sprintf(fix, "%s%s%s", base, (BASE)?"/":"", dp->d_name);
 		    if (!m) {
 			(*func)(fix, arg);

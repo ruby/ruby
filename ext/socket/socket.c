@@ -86,7 +86,7 @@ int Rconnect();
  * RFC 2553: protocol-independent placeholder for socket addresses
  */
 #define _SS_MAXSIZE	128
-#define _SS_ALIGNSIZE	(sizeof(long long))
+#define _SS_ALIGNSIZE	(sizeof(double))
 #define _SS_PAD1SIZE	(_SS_ALIGNSIZE - sizeof(unsigned char) * 2)
 #define _SS_PAD2SIZE	(_SS_MAXSIZE - sizeof(unsigned char) * 2 - \
 				_SS_PAD1SIZE - _SS_ALIGNSIZE)
@@ -99,7 +99,7 @@ struct sockaddr_storage {
 	unsigned short ss_family;
 #endif
 	char	__ss_pad1[_SS_PAD1SIZE];
-	long long __ss_align;	/* force desired structure storage alignment */
+	double	__ss_align;	/* force desired structure storage alignment */
 	char	__ss_pad2[_SS_PAD2SIZE];
 };
 #endif
