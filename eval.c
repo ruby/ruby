@@ -3991,9 +3991,9 @@ rb_ensure(b_proc, data1, e_proc, data2)
 	result = (*b_proc)(data1);
     }
     POP_TAG();
-    retval = prot_tag->retval;	/* save retval */
+    retval = prot_tag ? prot_tag->retval : Qnil;	/* save retval */
     (*e_proc)(data2);
-    return_value(retval);
+    if (prot_tag) return_value(retval);
 
     if (state) JUMP_TAG(state);
     return result;
@@ -7538,6 +7538,7 @@ rb_thread_schedule()
 	next->gid = 0;
 	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;
+	rb_thread_save_context(curr_thread);
 	rb_thread_deadlock();
     }
     next->wait_for = 0;

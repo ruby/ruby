@@ -1468,7 +1468,7 @@ rb_ary_and(ary1, ary2)
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	VALUE v = RARRAY(ary1)->ptr[i];
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    rb_ary_push(ary3, v);
+	    rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
 	}
     }
 
@@ -1490,13 +1490,13 @@ rb_ary_or(ary1, ary2)
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	v = RARRAY(ary1)->ptr[i];
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    rb_ary_push(ary3, v);
+	    rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
 	}
     }
     for (i=0; i<RARRAY(ary2)->len; i++) {
 	v = RARRAY(ary2)->ptr[i];
 	if (st_delete(RHASH(hash)->tbl, &v, 0)) {
-	    rb_ary_push(ary3, v);
+	    rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
 	}
     }
 

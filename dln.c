@@ -1204,7 +1204,7 @@ aix_loaderror(const char *pathname)
 	    if (nerr == load_errtab[i].errno && load_errtab[i].errstr)
 		ERRBUF_APPEND(load_errtab[i].errstr);
 	}
-	while (ISDIGIT(*message[i])) message[i]++; 
+	while (isdigit(*message[i])) message[i]++; 
 	ERRBUF_APPEND(message[i]);
 	ERRBUF_APPEND("\n");
     }

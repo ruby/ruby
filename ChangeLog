@@ -1,3 +1,24 @@
+Tue May 15 17:46:37 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_and): should not push frozen key string.
+
+	* array.c (rb_ary_or): ditto.
+
+Mon May 14 13:50:22 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_schedule): should save context before raising
+	  deadlock, saved context for current thread might be obsolete.
+
+	* time.c (make_time_t): non DST timezone shift supported (hopefully).
+
+Mon May 14 11:54:20 2001  Tanaka Akira  <akr@m17n.org>
+
+	* signal.c: SIGINFO added.
+
+Mon May 14 08:57:06 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_ensure): should not SEGV when prot_tag is NULL.
+
 Sun May 13 23:49:25 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/resource.rb: Modify copyright in resource script.

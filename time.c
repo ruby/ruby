@@ -353,11 +353,19 @@ make_time_t(tptr, utc_or_local)
 	tm = localtime(&guess);
 	if (!tm) goto error;
 	if (lt.tm_isdst != tm->tm_isdst || tptr->tm_hour != tm->tm_hour) {
-	    oguess = guess - 3600;
-	    tm = localtime(&oguess);
+	    time_t tmp = guess - 3600;
+	    tm = localtime(&tmp);
 	    if (!tm) goto error;
 	    if (tptr->tm_hour == tm->tm_hour) {
-		guess = oguess;
+		guess = tmp;
+	    }
+	    else if (lt.tm_isdst == tm->tm_isdst) {
+		tmp = guess + 3600;
+		tm = localtime(&tmp);
+		if (!tm) goto error;
+		if (tptr->tm_hour == tm->tm_hour) {
+		    guess = tmp;
+		}
 	    }
 	}
 	if (guess < 0) {

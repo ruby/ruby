@@ -170,7 +170,7 @@ class Queue
     Thread.critical = true
     begin
       loop do
-	if @que.length == 0
+       if @que.empty?
 	  if non_block
 	    raise ThreadError, "queue empty"
 	  end
@@ -184,13 +184,11 @@ class Queue
       Thread.critical = false
     end
   end
-  def shift(non_block=false)
-    pop(non_block)
-  end
-  alias deq shift
+  alias shift pop
+  alias deq pop
 
   def empty?
-    @que.length == 0
+    @que.empty?
   end
 
   def clear
@@ -223,11 +221,11 @@ class SizedQueue<Queue
 
   def max=(max)
     Thread.critical = true
-    if max >= @max
+    if max <= @max
       @max = max
       Thread.critical = false
     else
-      diff = max - @max
+      diff = @max - max
       @max = max
       Thread.critical = false
       diff.times do
@@ -253,6 +251,7 @@ class SizedQueue<Queue
   end
 
   def pop(*args)
+    retval = super
     Thread.critical = true
     if @que.length < @max
       begin
@@ -265,7 +264,7 @@ class SizedQueue<Queue
       end
       t.run if t
     end
-    super
+    retval
   end
 
   def num_waiting
