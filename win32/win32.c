@@ -758,6 +758,7 @@ char *cmd;
       case P_NOWAIT:
 	return child->pid;
       case P_OVERLAY:
+	WaitForSingleObject(child->hProcess, INFINITE);
 	exit(0);
       default:
 	return -1;	/* not reached */
@@ -848,6 +849,7 @@ char **argv;
       case P_NOWAIT:
 	return child->pid;
       case P_OVERLAY:
+	WaitForSingleObject(child->hProcess, INFINITE);
 	exit(0);
       default:
 	return -1;	/* not reached */
