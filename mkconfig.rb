@@ -48,7 +48,7 @@ File.foreach "config.status" do |line|
       v_others << v
     end
     has_version = true if name == "MAJOR"
-  elsif /^(?:ac_given_)srcdir=(.*)/ =~ line
+  elsif /^(?:ac_given_)?srcdir=(.*)/ =~ line
     v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path($1) + "\"\n"
     has_srcdir = true
   elsif /^ac_given_INSTALL=(.*)/ =~ line
