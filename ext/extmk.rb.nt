@@ -322,7 +322,7 @@ VPATH = .
 
 CC = cl
 
-CFLAGS   = %s -I../.. -I../../missing -I../../win32 -I. -O -DNT %s #{CFLAGS} #$CFLAGS %s
+CFLAGS   = %s -I../.. -I../../missing -I../../win32 -I. -O -DNT %s #{CFLAGS} #{$CFLAGS} %s
 
 RUBYLIB  = ../../ruby.lib
 DLDFLAGS =  /DLL
@@ -436,6 +436,7 @@ def extmake(target)
 
   return if $nodynamic and not $static
 
+  $objs = nil
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
   $CFLAGS = ""
   $LDFLAGS = ""

@@ -191,7 +191,7 @@ addpath(path)
 #if defined(__CYGWIN32__)
     {
 	char rubylib[FILENAME_MAX];
-	conv_to_posix_path(path, rubylib);
+	conv_to_posix_path(path, rubylib, FILENAME_MAX);
 	path = rubylib;
     }
 #endif

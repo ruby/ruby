@@ -78,7 +78,7 @@ int eaccess();
 #endif
 
 #ifndef FUNCNAME_PATTERN
-# if defined(__hp9000s300) ||  (defined(__NetBSD__) && (!defined(__alpha__) && !defined(__mips__))) || defined(__BORLANDC__) || (defined(__FreeBSD__) && __FreeBSD__ < 3) || defined(NeXT) || defined(__WATCOMC__)
+# if defined(__hp9000s300) ||  (defined(__NetBSD__) && (!defined(__alpha__) && !defined(__mips__))) || defined(__BORLANDC__) || (defined(__FreeBSD__) && __FreeBSD__ < 3) || defined(NeXT) || defined(__WATCOMC__) || defined(__APPLE__)
 #  define FUNCNAME_PATTERN "_Init_%.200s"
 # else
 #  define FUNCNAME_PATTERN "Init_%.200s"
@@ -1095,6 +1095,10 @@ dln_sym(name)
 #include <mach-o/dyld.h>
 #endif
 #endif
+#ifdef __APPLE__
+#include <mach-o/dyld.h>
+#endif
+
 
 #ifdef _WIN32
 #include <windows.h>
@@ -1356,7 +1360,7 @@ dln_load(file)
     }
 #endif /* _AIX */
 
-#ifdef NeXT
+#if defined(NeXT) || defined(__APPLE__)
 #define DLN_DEFINED
 /*----------------------------------------------------
    By SHIROYAMA Takayuki Psi@fortune.nest.or.jp
@@ -1366,7 +1370,8 @@ dln_load(file)
     Mi hisho@tasihara.nest.or.jp,
     and... Miss ARAI Akino(^^;)
  ----------------------------------------------------*/
-#if NS_TARGET_MAJOR < 4 /* NeXTSTEP rld functions */
+#if defined(NeXT) && ( NS_TARGET_MAJOR < 4 )/* NeXTSTEP rld functions */
+
     {
 	unsigned long init_address;
 	char *object_files[2] = {NULL, NULL};
@@ -1572,9 +1577,10 @@ dln_find_file(fname, path)
 
 #if defined(__CYGWIN32__)
 const char *
-conv_to_posix_path(win32, posix)
+conv_to_posix_path(win32, posix, len)
     char *win32;
     char *posix;
+    int len;
 {
     char *first = win32;
     char *p = win32;
@@ -1589,7 +1595,10 @@ conv_to_posix_path(win32, posix)
 	    first = p + 1;
 	    *p = ';';
 	}
-    cygwin32_conv_to_posix_path(first, posix);
+    if (len < strlen(first))
+	fprintf(stderr, "PATH length too long: %s\n", first);
+    else
+	strcpy(posix, first);
     return dst;
 }
 #endif
@@ -1612,8 +1621,10 @@ dln_find_1(fname, path, exe_flag)
 #endif
 
 #if defined(__CYGWIN32__)
-    char rubypath[MAXPATHLEN];
-    conv_to_posix_path(path, rubypath);
+    int pathlen = 2 * strlen(path);
+    int rubypathlen = pathlen > MAXPATHLEN ? pathlen : MAXPATHLEN;
+    char *rubypath = alloca(rubypathlen);
+    conv_to_posix_path(path, rubypath, rubypathlen);
     path = rubypath;
 #endif
     if (fname[0] == '/') return fname;

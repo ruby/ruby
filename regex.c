@@ -2968,9 +2968,11 @@ re_search(bufp, string, size, startpos, range, regs)
 	while (range > 0) {
 	  c = *p++;
 	  if (ismbchar(c)) {
-	    int len = mbclen(c) - 1;
+	    int len;
+
 	    if (fastmap[c])
 	      break;
+	    len = mbclen(c) - 1;
 	    while (len--) {
 	      c = *p++;
 	      range--;
@@ -2981,8 +2983,8 @@ re_search(bufp, string, size, startpos, range, regs)
 	  else {
 	    if (fastmap[MAY_TRANSLATE() ? translate[c] : c])
 	      break;
-	    range--;
 	  }
+	  range--;
 	}
       startpos_adjust:
 	startpos += irange - range;

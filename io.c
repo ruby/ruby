@@ -2163,7 +2163,7 @@ next_argv()
 		}
 		file = prep_stdio(fr, FMODE_READABLE, rb_cFile);
 	    }
-	    rb_io_binmode(file);
+	    if (binmode) rb_io_binmode(file);
 	}
 	else {
 	    init_p = 0;
