@@ -197,6 +197,9 @@ static int ip_ruby_cmd _((ClientData, Tcl_Interp *, int, char **));
 /*---- class TclTkIp ----*/
 struct tcltkip {
     Tcl_Interp *ip;		/* the interpreter */
+    int has_orig_exit;	        /* has original 'exit' command ? */
+    Tcl_CmdInfo orig_exit_info;	/* command info of original 'exit' command */
+    int ref_count;	        /* reference count of rbtk_preserve_ip call */
     int allow_ruby_exit;	/* allow exiting ruby by 'exit' function */
     int return_value;		/* return value */
 };
@@ -212,6 +215,102 @@ get_ip(self)
 	rb_raise(rb_eTypeError, "uninitialized TclTkIp");
     }
     return ptr;
+}
+
+/* increment/decrement reference count of tcltkip */
+static int
+rbtk_preserve_ip(ptr)
+    struct tcltkip *ptr;
+{
+    ptr->ref_count++;
+    Tcl_Preserve((ClientData)ptr->ip);
+    return(ptr->ref_count);
+}
+
+static int
+rbtk_release_ip(ptr)
+    struct tcltkip *ptr;
+{
+    ptr->ref_count--;
+    if (ptr->ref_count < 0) {
+	ptr->ref_count = 0;
+    } else {
+	Tcl_Release((ClientData)ptr->ip);
+    }
+    return(ptr->ref_count);
+}
+
+/* call original 'exit' command */
+static void 
+call_original_exit(ptr, state)
+    struct tcltkip *ptr;
+    int state;
+{
+    int  thr_crit_bup;
+    Tcl_CmdInfo *info;
+#if TCL_MAJOR_VERSION >= 8
+    Tcl_Obj *state_obj;
+#endif
+
+    if (!(ptr->has_orig_exit)) return;
+
+    thr_crit_bup = rb_thread_critical;
+    rb_thread_critical = Qtrue;
+
+    Tcl_ResetResult(ptr->ip);
+
+    info = &(ptr->orig_exit_info);
+
+    /* memory allocation for arguments of this command */
+#if TCL_MAJOR_VERSION >= 8
+    state_obj = Tcl_NewIntObj(state);
+    Tcl_IncrRefCount(state_obj);
+
+    if (info->isNativeObjectProc) {
+	Tcl_Obj **argv;
+	argv = (Tcl_Obj **)ALLOC_N(Tcl_Obj *, 3);
+	argv[0] = Tcl_NewStringObj("exit", 4);
+	argv[1] = state_obj;
+	argv[2] = (Tcl_Obj *)NULL;
+
+	ptr->return_value 
+	    = (*(info->objProc))(info->objClientData, ptr->ip, 2, argv);
+
+	free(argv);
+
+    } else {
+	/* string interface */
+	char **argv;
+	argv = (char **)ALLOC_N(char *, 3);
+	argv[0] = "exit";
+	argv[1] = Tcl_GetString(state_obj);
+	argv[2] = (char *)NULL;
+
+	ptr->return_value = (*(info->proc))(info->clientData, ptr->ip, 
+					    2, (CONST84 char **)argv);
+
+	free(argv);
+    }
+
+    Tcl_DecrRefCount(state_obj);
+
+#else /* TCL_MAJOR_VERSION < 8 */
+    {
+	/* string interface */
+	char **argv;
+	argv = (char **)ALLOC_N(char *, 3);
+	argv[0] = "exit";
+	argv[1] = RSTRING(rb_fix2str(INT2NUM(state), 10))->ptr;
+	argv[2] = (char *)NULL;
+
+	ptr->return_value = (*(info->proc))(info->clientData, ptr->ip, 
+					    2, argv);
+
+	free(argv);
+    }
+#endif
+
+    rb_thread_critical = thr_crit_bup;
 }
 
 /* Tk_ThreadTimer */
@@ -2967,7 +3066,6 @@ ip_thread_tkwait(self, mode, target)
     return ip_invoke_real(3, argv, self);
 }
 
-
 /* destroy interpreter */
 VALUE del_root(ip)
     Tcl_Interp *ip;
@@ -3064,7 +3162,8 @@ ip_free(ptr)
 	rb_thread_critical = Qtrue;
 
 	if (!Tcl_InterpDeleted(ptr->ip)) {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 
 	    delete_slaves(ptr->ip);
 
@@ -3087,8 +3186,11 @@ ip_free(ptr)
 		Tcl_DeleteInterp(ptr->ip);
 	    }
 
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	}
+
+	rbtk_release_ip(ptr);
 
 	free(ptr);
 
@@ -3127,14 +3229,22 @@ ip_init(argc, argv, self)
     Data_Get_Struct(self, struct tcltkip, ptr);
     ptr = ALLOC(struct tcltkip);
     DATA_PTR(self) = ptr;
+    ptr->ref_count = 0;
     ptr->allow_ruby_exit = 1;
     ptr->return_value = 0;
 
     /* from Tk_Main() */
     DUMP1("Tcl_CreateInterp");
     ptr->ip = Tcl_CreateInterp();
-    Tcl_Preserve((ClientData)ptr->ip);
+    if (ptr->ip == NULL) {
+	rb_raise(rb_eRuntimeError, "fail to create a new Tk interpreter");
+    }
+
+    rbtk_preserve_ip((ClientData)ptr->ip);
     current_interp = ptr->ip;
+
+    ptr->has_orig_exit 
+	= Tcl_GetCommandInfo(ptr->ip, "exit", &(ptr->orig_exit_info));
 
     /* from Tcl_AppInit() */
     DUMP1("Tcl_Init");
@@ -3355,14 +3465,19 @@ ip_create_slave(argc, argv, self)
     }
 
     /* create slave-ip */
+    slave->ref_count = 0;
+    slave->allow_ruby_exit = 0;
+    slave->return_value = 0;
+
     slave->ip = Tcl_CreateSlave(master->ip, StringValuePtr(name), safe);
     if (slave->ip == NULL) {
 	rb_thread_critical = thr_crit_bup;
 	rb_raise(rb_eRuntimeError, "fail to create the new slave interpreter");
     }
-    Tcl_Preserve((ClientData)slave->ip);
-    slave->allow_ruby_exit = 0;
-    slave->return_value = 0;
+    rbtk_preserve_ip(slave);
+
+    slave->has_orig_exit 
+	= Tcl_GetCommandInfo(slave->ip, "exit", &(slave->orig_exit_info));
 
     /* replace 'exit' command --> 'interp_exit' command */
     mainWin = Tk_MainWindow(slave->ip);
@@ -3518,7 +3633,8 @@ ip_delete(self)
 {
     struct tcltkip *ptr = get_ip(self);
 
-    Tcl_Preserve(ptr->ip);
+    /* Tcl_Preserve(ptr->ip); */
+    rbtk_preserve_ip(ptr);
 
     if (!Tcl_InterpDeleted(ptr->ip)) {
 	Tcl_Eval(ptr->ip, "foreach i [after info] { after cancel $i }");
@@ -3532,7 +3648,8 @@ ip_delete(self)
 	Tcl_DeleteInterp(ptr->ip);
     }
 
-    Tcl_Release(ptr->ip);
+    /* Tcl_Release(ptr->ip); */
+    rbtk_release_ip(ptr);
 
     return Qnil;
 }
@@ -3655,7 +3772,9 @@ ip_eval_real(self, cmd_str, cmd_len)
 	  ptr->return_value = TCL_OK;
 	  return rb_tainted_str_new2("");
       } else {
-	  Tcl_Preserve(ptr->ip);
+	  /* Tcl_Preserve(ptr->ip); */
+	  rbtk_preserve_ip(ptr);
+	  
 	  ptr->return_value = Tcl_EvalObj(ptr->ip, cmd);
 	  /* ptr->return_value = Tcl_GlobalEvalObj(ptr->ip, cmd); */
       }
@@ -3668,7 +3787,9 @@ ip_eval_real(self, cmd_str, cmd_len)
 	volatile VALUE exc;
 	exc = create_ip_exc(self, rb_eRuntimeError, 
 			    "%s", Tcl_GetStringResult(ptr->ip));
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
+
 	rb_thread_critical = thr_crit_bup;
 	rb_exc_raise(exc);
     }
@@ -3676,7 +3797,8 @@ ip_eval_real(self, cmd_str, cmd_len)
 
     /* pass back the result (as string) */
     ret =  ip_get_result_string_obj(ptr->ip);
-    Tcl_Release(ptr->ip);
+    /* Tcl_Release(ptr->ip); */
+    rbtk_release_ip(ptr);
     rb_thread_critical = thr_crit_bup;
     return ret;
 
@@ -3689,7 +3811,8 @@ ip_eval_real(self, cmd_str, cmd_len)
 	ptr->return_value = TCL_OK;
 	return rb_tainted_str_new2("");
     } else {
-	Tcl_Preserve(ptr->ip);
+	/* Tcl_Preserve(ptr->ip); */
+	rbtk_preserve_ip(ptr);
 	ptr->return_value = Tcl_Eval(ptr->ip, cmd_str);
 	/* ptr->return_value = Tcl_GlobalEval(ptr->ip, cmd_str); */
     }
@@ -3697,14 +3820,16 @@ ip_eval_real(self, cmd_str, cmd_len)
     if (ptr->return_value == TCL_ERROR) {
 	volatile VALUE exc;
 	exc = create_ip_exc(self, rb_eRuntimeError, "%s", ptr->ip->result);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_exc_raise(exc);
     }
     DUMP2("(TCL_Eval result) %d", ptr->return_value);
 
     /* pass back the result (as string) */
     ret =  ip_get_result_string_obj(ptr->ip);
-    Tcl_Release(ptr->ip);
+    /* Tcl_Release(ptr->ip); */
+    rbtk_release_ip(ptr);
     return ret;
 #endif
 }
@@ -3883,7 +4008,8 @@ lib_restart(self)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-    Tcl_Preserve(ptr->ip);
+    /* Tcl_Preserve(ptr->ip); */
+    rbtk_preserve_ip(ptr);
 
     /* destroy the root wdiget */
     ptr->return_value = Tcl_Eval(ptr->ip, "destroy .");
@@ -3909,7 +4035,8 @@ lib_restart(self)
 	DUMP1("Tk_SafeInit");
 	if (Tk_SafeInit(ptr->ip) == TCL_ERROR) {
 	    exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	    rb_thread_critical = thr_crit_bup;
 	    rb_exc_raise(exc);
 	}
@@ -3917,7 +4044,8 @@ lib_restart(self)
 	DUMP1("Tk_Init");
 	if (Tk_Init(ptr->ip) == TCL_ERROR) {
 	    exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	    rb_thread_critical = thr_crit_bup;
 	    rb_exc_raise(exc);
 	}
@@ -3926,12 +4054,14 @@ lib_restart(self)
     DUMP1("Tk_Init");
     if (Tk_Init(ptr->ip) == TCL_ERROR) {
 	exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_exc_raise(exc);
     }
 #endif
 
-    Tcl_Release(ptr->ip);
+    /* Tcl_Release(ptr->ip); */
+    rbtk_release_ip(ptr);
 
     rb_thread_critical = thr_crit_bup;
 
@@ -4838,7 +4968,8 @@ ip_get_variable(self, varname_arg, flag_arg)
 	    rb_thread_critical = thr_crit_bup;
 	    return rb_tainted_str_new2("");
 	} else {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 	    ret = Tcl_ObjGetVar2(ptr->ip, nameobj, (Tcl_Obj*)NULL, 
 				 FIX2INT(flag));
 	}
@@ -4852,7 +4983,8 @@ ip_get_variable(self, varname_arg, flag_arg)
 #else /* TCL_MAJOR_VERSION < 8 */
 	    exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
 #endif
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	    rb_thread_critical = thr_crit_bup;
 	    rb_exc_raise(exc);
 	}
@@ -4863,7 +4995,8 @@ ip_get_variable(self, varname_arg, flag_arg)
 	s = Tcl_GetStringFromObj(ret, &len);
 	strval = rb_tainted_str_new(s, len);
 	Tcl_DecrRefCount(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 	return(strval);
 
@@ -4881,7 +5014,8 @@ ip_get_variable(self, varname_arg, flag_arg)
 	}
 
 	Tcl_DecrRefCount(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 
 	return(strval);
@@ -4896,7 +5030,8 @@ ip_get_variable(self, varname_arg, flag_arg)
 	    DUMP1("ip is deleted");
 	    return rb_tainted_str_new2("");
 	} else {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 	    ret = Tcl_GetVar2(ptr->ip, RSTRING(varname)->ptr, 
 			      (char*)NULL, FIX2INT(flag));
 	}
@@ -4908,13 +5043,15 @@ ip_get_variable(self, varname_arg, flag_arg)
 #else /* TCL_MAJOR_VERSION < 8 */
 	    exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
 #endif
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	    rb_thread_critical = thr_crit_bup;
 	    rb_exc_raise(exc);
 	}
 
 	strval = rb_tainted_str_new2(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 
 	return(strval);
@@ -4968,7 +5105,8 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
 	    rb_thread_critical = thr_crit_bup;
 	    return rb_tainted_str_new2("");
 	} else {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 	    ret = Tcl_ObjGetVar2(ptr->ip, nameobj, idxobj, FIX2INT(flag));
 	}
 
@@ -4982,7 +5120,8 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
 #else /* TCL_MAJOR_VERSION < 8 */
 	    exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
 #endif
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	    rb_thread_critical = thr_crit_bup;
 	    rb_exc_raise(exc);
 	}
@@ -4993,7 +5132,8 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
 	s = Tcl_GetStringFromObj(ret, &len);
 	strval = rb_tainted_str_new(s, len);
 	Tcl_DecrRefCount(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 	return(strval);
 
@@ -5011,7 +5151,8 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
 	}
 
 	Tcl_DecrRefCount(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 
 	return(strval);
@@ -5026,7 +5167,8 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
 	    DUMP1("ip is deleted");
 	    return rb_tainted_str_new2("");
 	} else {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 	    ret = Tcl_GetVar2(ptr->ip, RSTRING(varname)->ptr, 
 			      RSTRING(index)->ptr, FIX2INT(flag));
 	}
@@ -5038,13 +5180,15 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
 #else /* TCL_MAJOR_VERSION < 8 */
 	    exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
 #endif
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	    rb_thread_critical = thr_crit_bup;
 	    rb_exc_raise(exc);
 	}
 
 	strval = rb_tainted_str_new2(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 
 	return(strval);
@@ -5123,7 +5267,8 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
 	    rb_thread_critical = thr_crit_bup;
 	    return rb_tainted_str_new2("");
 	} else {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 	    ret = Tcl_ObjSetVar2(ptr->ip, nameobj, (Tcl_Obj*)NULL, valobj, 
 				 FIX2INT(flag));
 	}
@@ -5138,7 +5283,8 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
 #else /* TCL_MAJOR_VERSION < 8 */
 	    exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
 #endif
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	    rb_thread_critical = thr_crit_bup;
 	    rb_exc_raise(exc);
 	}
@@ -5170,7 +5316,8 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
 
 	Tcl_DecrRefCount(ret);
 
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 
 	return(strval);
@@ -5184,7 +5331,8 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
 	    DUMP1("ip is deleted");
 	    return rb_tainted_str_new2("");
 	} else {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 	    ret = Tcl_SetVar2(ptr->ip, RSTRING(varname)->ptr, (char*)NULL, 
 			      RSTRING(value)->ptr, (int)FIX2INT(flag));
 	}
@@ -5194,7 +5342,8 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
 	}
 
 	strval = rb_tainted_str_new2(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 
 	return(strval);
@@ -5283,7 +5432,8 @@ ip_set_variable2(self, varname_arg, index_arg, value_arg, flag_arg)
 	    rb_thread_critical = thr_crit_bup;
 	    return rb_tainted_str_new2("");
 	} else {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 	    ret = Tcl_ObjSetVar2(ptr->ip, nameobj, idxobj, valobj, 
 				 FIX2INT(flag));
 	}
@@ -5299,7 +5449,8 @@ ip_set_variable2(self, varname_arg, index_arg, value_arg, flag_arg)
 #else /* TCL_MAJOR_VERSION < 8 */
 	    exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
 #endif
-	    Tcl_Release(ptr->ip);
+	    /* Tcl_Release(ptr->ip); */
+	    rbtk_release_ip(ptr);
 	    rb_thread_critical = thr_crit_bup;
 	    rb_exc_raise(exc);
 	}
@@ -5323,7 +5474,8 @@ ip_set_variable2(self, varname_arg, index_arg, value_arg, flag_arg)
 # endif
 
 	Tcl_DecrRefCount(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 
 	return(strval);
@@ -5337,7 +5489,8 @@ ip_set_variable2(self, varname_arg, index_arg, value_arg, flag_arg)
 	    DUMP1("ip is deleted");
 	    return rb_tainted_str_new2("");
 	} else {
-	    Tcl_Preserve(ptr->ip);
+	    /* Tcl_Preserve(ptr->ip); */
+	    rbtk_preserve_ip(ptr);
 	    ret = Tcl_SetVar2(ptr->ip, RSTRING(varname)->ptr, 
 			      RSTRING(index)->ptr, 
 			      RSTRING(value)->ptr, FIX2INT(flag));
@@ -5352,7 +5505,8 @@ ip_set_variable2(self, varname_arg, index_arg, value_arg, flag_arg)
 	strval = rb_tainted_str_new2(ret);
 
 	Tcl_DecrRefCount(ret);
-	Tcl_Release(ptr->ip);
+	/* Tcl_Release(ptr->ip); */
+	rbtk_release_ip(ptr);
 	rb_thread_critical = thr_crit_bup;
 
 	return(strval);
