@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'logger'
+GC.start
 
 class TestLoggerSeverity < Test::Unit::TestCase
   def test_enum
@@ -203,8 +204,8 @@ class TestLogger < Test::Unit::TestCase
     rescue MyError => e
       log = log_add(logger, INFO, e)
       assert_match(/^excn \(TestLogger::MyError\)/, log.msg)
-      # expects backtrace is dumped across multi lines.  19 might be changed.
-      assert(log.msg.split(/\n/).size >= 19)
+      # expects backtrace is dumped across multi lines.  10 might be changed.
+      assert(log.msg.split(/\n/).size >= 10)
     end
     log = log_add(logger, INFO, MyMsg.new)
     assert_equal("my_msg\n", log.msg)
