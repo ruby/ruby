@@ -1,5 +1,10 @@
 #!./miniruby -s
 
+# avoid warnings with -d.
+$srcdir ||= nil
+$install_name ||= nil
+$so_name ||= nil
+
 require File.dirname($0)+"/lib/ftools"
 mkconfig = File.basename($0)
 
