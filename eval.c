@@ -4536,7 +4536,7 @@ return_jump(retval)
 	}
 	tt = tt->prev;
     }
-    proc_jump_error(TAG_RETURN, retval);
+    localjump_error("unexpected return", retval, TAG_RETURN);
 }
 
 static void
@@ -4561,7 +4561,7 @@ break_jump(retval)
 	}
 	tt = tt->prev;
     }
-    proc_jump_error(TAG_BREAK, retval);
+    localjump_error("unexpected break", retval, TAG_BREAK);
 }
 
 static VALUE

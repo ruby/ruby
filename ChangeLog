@@ -1,3 +1,8 @@
+Tue Jun 22 23:59:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (return_jump, break_jump): raise unexpceted local jump
+	  exception directly.  [ruby-dev:23740]
+
 Tue Jun 22 23:35:43 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): support FZERO and FSPACE with NaN/Inf.
