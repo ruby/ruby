@@ -27,13 +27,10 @@ For details of HTTP, refer [RFC2616]
 
 === Getting Document From Server
 
-Be care to ',' (comma) putted after "response".
-This is required for compatibility.
-
     require 'net/http'
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-      response , = http.get('/index.html')
-      puts response.body
+        response = http.get('/index.html')
+        puts response.body
     }
 
 (shorter version)
@@ -45,8 +42,8 @@ This is required for compatibility.
 
     require 'net/http'
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
-        response , = http.post( '/cgi-bin/any.rhtml',
-                                'querytype=subject&target=ruby' )
+        response = http.post( '/cgi-bin/any.rhtml',
+                              'querytype=subject&target=ruby' )
     }
 
 === Accessing via Proxy
@@ -71,37 +68,26 @@ there's no need to change code if there's proxy or not.
 === Redirect
 
     require 'net/http'
-    Net::HTTP.version_1_1
+    require 'uri'
 
-    host = 'www.ruby-lang.org'
-    path = '/'
-    begin
-      Net::HTTP.start( host, 80 ) {|http|
-	response , = http.get(path)
-        print response.body
-      }
-    rescue Net::ProtoRetriableError => err
-      if m = %r<http://([^/]+)>.match( err.response['location'] ) then
-	host = m[1].strip
-	path = m.post_match
-	retry
+    def read_uri( uri )
+      response = HTTP.get_uri(URI.parse(uri))
+      case response
+      when Net::HTTPSuccess     then response
+      when Net::HTTPRedirection then read_uri(response['location'])
+      else
+        response.error!
       end
     end
 
-NOTE: This code is using ad-hoc way to extract host name, but in future
-URI class will be included in ruby standard library.
+    p read_uri('http://www.ruby-lang.org')
+
+Net::HTTPSuccess and Net::HTTPRedirection is a HTTPResponse class.
+All HTTPResponse objects belong to its own response class which
+indicate HTTP result status. For details of response classes,
+see section "HTTP Response Classes".
 
 === Basic Authentication
-
-    require 'net/http'
-
-    Net::HTTP.start( 'auth.some.domain' ) {|http|
-        response , = http.get( '/need-auth.cgi',
-                'Authorization' => 'Basic ' + ["#{account}:#{password}"].pack('m').strip )
-        print response.body
-    }
-
-In version 1.2 (Ruby 1.7 or later), you can write like this:
 
     require 'net/http'
 
@@ -112,11 +98,70 @@ In version 1.2 (Ruby 1.7 or later), you can write like this:
         print response.body
     }
 
+=== HTTP Response Classes
+
+Followings are sub classes of Net::HTTPResponse. All classes are
+defined under the Net module. Indentation indicates inheritance.
+
+  xxx        HTTPResponse
+
+    1xx        HTTPInformation
+      100        HTTPContinue    
+      101        HTTPSwitchProtocol
+
+    2xx        HTTPSuccess
+      200        HTTPOK
+      201        HTTPCreated
+      202        HTTPAccepted
+      203        HTTPNonAuthoritativeInformation
+      204        HTTPNoContent
+      205        HTTPResetContent
+      206        HTTPPartialContent
+
+    3xx        HTTPRedirection
+      300        HTTPMultipleChoice
+      301        HTTPMovedPermanently
+      302        HTTPFound
+      303        HTTPSeeOther
+      304        HTTPNotModified
+      305        HTTPUseProxy
+      307        HTTPTemporaryRedirect
+
+    4xx        HTTPClientError
+      400        HTTPBadRequest
+      401        HTTPUnauthorized
+      402        HTTPPaymentRequired
+      403        HTTPForbidden
+      404        HTTPNotFound
+      405        HTTPMethodNotAllowed
+      406        HTTPNotAcceptable
+      407        HTTPProxyAuthenticationRequired
+      408        HTTPRequestTimeOut
+      409        HTTPConflict
+      410        HTTPGone
+      411        HTTPLengthRequired
+      412        HTTPPreconditionFailed
+      413        HTTPRequestEntityTooLarge
+      414        HTTPRequestURITooLong
+      415        HTTPUnsupportedMediaType
+      416        HTTPRequestedRangeNotSatisfiable
+      417        HTTPExpectationFailed
+
+    5xx        HTTPServerError
+      500        HTTPInternalServerError
+      501        HTTPNotImplemented
+      502        HTTPBadGateway
+      503        HTTPServiceUnavailable
+      504        HTTPGatewayTimeOut
+      505        HTTPVersionNotSupported
+
+    xxx        HTTPUnknownResponse
+
 == Switching Net::HTTP versions
 
-You can use old Net::HTTP (in Ruby 1.6) features by calling
-HTTP.version_1_1. And calling Net::HTTP.version_1_2 allows
-you to use 1.2 features again.
+You can use net/http.rb 1.1 features (bundled with Ruby 1.6)
+by calling HTTP.version_1_1. Calling Net::HTTP.version_1_2
+allows you to use 1.2 features again.
 
     # example
     Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
@@ -127,7 +172,7 @@ you to use 1.2 features again.
     Net::HTTP.version_1_2
     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
 
-Yes, this is not thread-safe.
+This function is not thread-safe.
 
 == class Net::HTTP
 
@@ -138,10 +183,14 @@ Yes, this is not thread-safe.
     If proxy_addr is given, creates an Net::HTTP object with proxy support.
 
 : start( address, port = 80, proxy_addr = nil, proxy_port = nil )
-: start( address, port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
-    is equals to
+    creates a new Net::HTTP object and returns it
+    with opening HTTP session. 
 
-        Net::HTTP.new(address, port, proxy_addr, proxy_port).start(&block)
+: start( address, port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
+    creates a new Net::HTTP object and gives it to the block.
+    HTTP session is kept to open while the block is exected.
+
+    This method returns the return value of the block.
 
 : get( address, path, port = 80 )
     gets entity body from path and returns it.
@@ -176,13 +225,13 @@ Yes, this is not thread-safe.
 
 : start
 : start {|http| .... }
-    creates a new Net::HTTP object and starts HTTP session.
+    opens HTTP session.
 
-    When this method is called with block, gives a HTTP object to block
-    and close the HTTP session after block call finished.
+    When this method is called with block, gives a HTTP object
+    to the block and closes the HTTP session after block call finished.
 
-: active?
-    true if HTTP session is started.
+: started?
+    returns true if HTTP session is started.
 
 : address
     the address to connect
@@ -342,7 +391,7 @@ Yes, this is not thread-safe.
             p response['content-type']
             response.read_body do |str|   # read body now
               print str
-	    end
+            end
         }
 
 : request( request [, data] )
@@ -356,10 +405,10 @@ Yes, this is not thread-safe.
 
     This method never raises Net::* exceptions.
 
-== class Net::HTTP::Get, Head, Post
+== class Net::HTTPRequest
 
-HTTP request classes. These classes wraps request header and
-entity path. All arguments named "key" is case-insensitive.
+HTTP request class. This class wraps request header and entity path.
+You MUST use its subclass, Net::HTTP::Get, Post, Head.
 
 === Class Methods
 
@@ -485,20 +534,32 @@ module Net
     # short cut methods
     #
 
-    def HTTP.get( addr, path, port = nil )
-      req = Get.new( path )
-      resp = nil
-      new( addr, port || HTTP.default_port ).start {|http|
-          resp = http.request( req )
-      }
-      resp.body
-    end
-
     def HTTP.get_print( addr, path, port = nil )
-      new( addr, port || HTTP.port ).start {|http|
+      new( addr, port || HTTP.default_port ).start {|http|
           http.get path, nil, $stdout
       }
       nil
+    end
+
+    def HTTP.get( arg1, arg2 = nil, arg3 = nil )
+      if arg2 then
+        get_path(arg1, arg2, arg3).body
+      else
+        get_uri(arg1).body
+      end
+    end
+
+    def HTTP.get_path( addr, path, port = nil )
+      new( addr, port || HTTP.default_port ).start {|http|
+          return http.request(Get.new(path))
+      }
+    end
+    private_class_method :get_path
+
+    def HTTP.get_uri( uri )
+      new(uri.addr, uri.port).start {|http|
+          return http.request(Get.new(http_path(uri)))
+      }
     end
 
 
@@ -527,7 +588,10 @@ module Net
       super
       @curr_http_version = HTTPVersion
       @seems_1_0_server = false
+      @close_on_empty_response = false
     end
+
+    attr_accessor :close_on_empty_response
 
     private
 
@@ -577,15 +641,15 @@ module Net
     end
 
     def proxy?
-      type.proxy_class?
+      self.class.proxy_class?
     end
 
     def proxy_address
-      type.proxy_address
+      self.class.proxy_address
     end
 
     def proxy_port
-      type.proxy_port
+      self.class.proxy_port
     end
 
     alias proxyaddr proxy_address
@@ -701,7 +765,7 @@ module Net
 
 
     def request( req, body = nil, &block )
-      unless active? then
+      unless started? then
         start {
             req['connection'] = 'close'
             return request(req, body, &block)
@@ -709,12 +773,13 @@ module Net
       end
         
       begin_transport req
-          req.__send__(:exec,
-                       @socket, @curr_http_version, edit_path(req.path), body)
+          req.exec @socket, @curr_http_version, edit_path(req.path), body
           begin
-            res = HTTPResponse.read_new(@socket, req.response_body_permitted?)
+            res = HTTPResponse.read_new(@socket)
           end while HTTPContinue === res
-          yield res if block_given?
+          res.reading_body(@socket, req.response_body_permitted?) {
+              yield res if block_given?
+          }
       end_transport req, res
 
       res
@@ -726,24 +791,26 @@ module Net
       if @socket.closed? then
         reconn_socket
       end
-      if not req.body_exist? or @seems_1_0_server then
+      if @seems_1_0_server then
+        req['connection'] = 'close'
+      end
+      if not req.response_body_permitted? and @close_on_empty_response then
         req['connection'] = 'close'
       end
       req['host'] = addr_port()
     end
 
     def end_transport( req, res )
-      res.__send__ :terminate
       @curr_http_version = res.http_version
 
-      if not res.body then
+      if not res.body and @close_on_empty_response then
+        D 'Conn close'
         @socket.close
       elsif keep_alive? req, res then
         D 'Conn keep-alive'
-        if @socket.closed? then   # (only) read stream had been closed
+        if @socket.closed? then
           D 'Conn (but seems 1.0 server)'
           @seems_1_0_server = true
-          @socket.close
         end
       else
         D 'Conn close'
@@ -776,9 +843,9 @@ module Net
     end
 
     def D( msg )
-      if @dout then
-        @dout << msg
-        @dout << "\n"
+      if @debug_output then
+        @debug_output << msg
+        @debug_output << "\n"
       end
     end
 
@@ -891,11 +958,9 @@ module Net
     alias set_range range=
 
     def content_length
-      s = @header['content-length']
-      s or return nil
-
-      m = /\d+/.match(s)
-      m or raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
+      s = @header['content-length'] or return nil
+      m = /\d+/.match(s) or
+              raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
       m[0].to_i
     end
 
@@ -905,17 +970,14 @@ module Net
     end
 
     def content_range
-      s = @header['content-range']
-      s or return nil
-
-      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>i.match( s )
-      m or raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
-
+      s = @header['content-range'] or return nil
+      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>i.match(s) or
+              raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
       m[1].to_i .. m[2].to_i + 1
     end
 
     def range_length
-      r = content_range
+      r = self.content_range
       r and r.length
     end
 
@@ -956,7 +1018,7 @@ module Net
     attr_reader :path
 
     def inspect
-      "\#<#{self.type} #{@method}>"
+      "\#<#{self.class} #{@method}>"
     end
 
     def request_body_permitted?
@@ -973,8 +1035,7 @@ module Net
     # write
     #
 
-    private
-
+    # internal use only
     def exec( sock, ver, path, body )
       if body then
         check_body_premitted
@@ -983,6 +1044,8 @@ module Net
         request sock, ver, path
       end
     end
+
+    private
 
     def check_body_premitted
       request_body_permitted? or
@@ -1023,9 +1086,9 @@ module Net
   class HTTPRequest < HTTPGenericRequest
 
     def initialize( path, initheader = nil )
-      super type::METHOD,
-            type::REQUEST_HAS_BODY,
-            type::RESPONSE_HAS_BODY,
+      super self.class::METHOD,
+            self.class::REQUEST_HAS_BODY,
+            self.class::RESPONSE_HAS_BODY,
             path, initheader
     end
 
@@ -1083,132 +1146,152 @@ module Net
     HAS_BODY = true
     EXCEPTION_TYPE = ProtocolError
   end
-  class HTTPInformation < HTTPResponse
+  class HTTPInformation < HTTPResponse           # 1xx
     HAS_BODY = false
     EXCEPTION_TYPE = ProtocolError
   end
-  class HTTPSuccess < HTTPResponse
+  class HTTPSuccess < HTTPResponse               # 2xx
     HAS_BODY = true
     EXCEPTION_TYPE = ProtocolError
   end
-  class HTTPRedirection < HTTPResponse
+  class HTTPRedirection < HTTPResponse           # 3xx
     HAS_BODY = true
     EXCEPTION_TYPE = ProtoRetriableError
   end
-  class HTTPClientError < HTTPResponse
+  class HTTPClientError < HTTPResponse           # 4xx
     HAS_BODY = true
     EXCEPTION_TYPE = ProtoFatalError
   end
-  class HTTPServerError < HTTPResponse
+  class HTTPServerError < HTTPResponse           # 5xx
     HAS_BODY = true
     EXCEPTION_TYPE = ProtoServerError
   end
-  class HTTPContinue < HTTPInformation
+
+  class HTTPContinue < HTTPInformation           # 100
     HAS_BODY = false
   end
-  class HTTPSwitchProtocol < HTTPInformation
+  class HTTPSwitchProtocol < HTTPInformation     # 101
     HAS_BODY = false
   end
-  class HTTPOK < HTTPSuccess
+
+  class HTTPOK < HTTPSuccess                            # 200
     HAS_BODY = true
   end
-  class HTTPCreated < HTTPSuccess
+  class HTTPCreated < HTTPSuccess                       # 201
     HAS_BODY = true
   end
-  class HTTPAccepted < HTTPSuccess
+  class HTTPAccepted < HTTPSuccess                      # 202
     HAS_BODY = true
   end
-  class HTTPNonAuthoritativeInformation < HTTPSuccess
+  class HTTPNonAuthoritativeInformation < HTTPSuccess   # 203
     HAS_BODY = true
   end
-  class HTTPNoContent < HTTPSuccess
+  class HTTPNoContent < HTTPSuccess                     # 204
     HAS_BODY = false
   end
-  class HTTPResetContent < HTTPSuccess
+  class HTTPResetContent < HTTPSuccess                  # 205
     HAS_BODY = false
   end
-  class HTTPPartialContent < HTTPSuccess
+  class HTTPPartialContent < HTTPSuccess                # 206
     HAS_BODY = true
   end
-  class HTTPMultipleChoice < HTTPRedirection
+
+  class HTTPMultipleChoice < HTTPRedirection     # 300
     HAS_BODY = true
   end
-  class HTTPMovedPermanently < HTTPRedirection
+  class HTTPMovedPermanently < HTTPRedirection   # 301
     HAS_BODY = true
   end
-  class HTTPMovedTemporarily < HTTPRedirection
+  class HTTPFound < HTTPRedirection              # 302
     HAS_BODY = true
   end
-  class HTTPNotModified < HTTPRedirection
+  HTTPMovedTemporarily = HTTPFound
+  class HTTPSeeOther < HTTPRedirection           # 303
+    HAS_BODY = true
+  end
+  class HTTPNotModified < HTTPRedirection        # 304
     HAS_BODY = false
   end
-  class HTTPUseProxy < HTTPRedirection
+  class HTTPUseProxy < HTTPRedirection           # 305
     HAS_BODY = false
   end
-  class HTTPBadRequest < HTTPClientError
+  # 306 unused
+  class HTTPTemporaryRedirect < HTTPRedirection  # 307
     HAS_BODY = true
   end
-  class HTTPUnauthorized < HTTPClientError
+
+  class HTTPBadRequest < HTTPClientError                    # 400
     HAS_BODY = true
   end
-  class HTTPPaymentRequired < HTTPClientError
+  class HTTPUnauthorized < HTTPClientError                  # 401
     HAS_BODY = true
   end
-  class HTTPForbidden < HTTPClientError
+  class HTTPPaymentRequired < HTTPClientError               # 402
     HAS_BODY = true
   end
-  class HTTPNotFound < HTTPClientError
+  class HTTPForbidden < HTTPClientError                     # 403
     HAS_BODY = true
   end
-  class HTTPMethodNotAllowed < HTTPClientError
+  class HTTPNotFound < HTTPClientError                      # 404
     HAS_BODY = true
   end
-  class HTTPNotAcceptable < HTTPClientError
+  class HTTPMethodNotAllowed < HTTPClientError              # 405
     HAS_BODY = true
   end
-  class HTTPProxyAuthenticationRequired < HTTPClientError
+  class HTTPNotAcceptable < HTTPClientError                 # 406
     HAS_BODY = true
   end
-  class HTTPRequestTimeOut < HTTPClientError
+  class HTTPProxyAuthenticationRequired < HTTPClientError   # 407
     HAS_BODY = true
   end
-  class HTTPConflict < HTTPClientError
+  class HTTPRequestTimeOut < HTTPClientError                # 408
     HAS_BODY = true
   end
-  class HTTPGone < HTTPClientError
+  class HTTPConflict < HTTPClientError                      # 409
     HAS_BODY = true
   end
-  class HTTPLengthRequired < HTTPClientError
+  class HTTPGone < HTTPClientError                          # 410
     HAS_BODY = true
   end
-  class HTTPPreconditionFailed < HTTPClientError
+  class HTTPLengthRequired < HTTPClientError                # 411
     HAS_BODY = true
   end
-  class HTTPRequestEntityTooLarge < HTTPClientError
+  class HTTPPreconditionFailed < HTTPClientError            # 412
     HAS_BODY = true
   end
-  class HTTPRequestURITooLarge < HTTPClientError
+  class HTTPRequestEntityTooLarge < HTTPClientError         # 413
     HAS_BODY = true
   end
-  class HTTPUnsupportedMediaType < HTTPClientError
+  class HTTPRequestURITooLong < HTTPClientError             # 414
     HAS_BODY = true
   end
-  class HTTPInternalServerError < HTTPServerError
+  HTTPRequestURITooLarge = HTTPRequestURITooLong
+  class HTTPUnsupportedMediaType < HTTPClientError          # 415
     HAS_BODY = true
   end
-  class HTTPNotImplemented < HTTPServerError
+  class HTTPRequestedRangeNotSatisfiable < HTTPClientError  # 416
     HAS_BODY = true
   end
-  class HTTPBadGateway < HTTPServerError
+  class HTTPExpectationFailed < HTTPClientError             # 417
     HAS_BODY = true
   end
-  class HTTPServiceUnavailable < HTTPServerError
+
+  class HTTPInternalServerError < HTTPServerError   # 500
     HAS_BODY = true
   end
-  class HTTPGatewayTimeOut < HTTPServerError
+  class HTTPNotImplemented < HTTPServerError        # 501
     HAS_BODY = true
   end
-  class HTTPVersionNotSupported < HTTPServerError
+  class HTTPBadGateway < HTTPServerError            # 502
+    HAS_BODY = true
+  end
+  class HTTPServiceUnavailable < HTTPServerError    # 503
+    HAS_BODY = true
+  end
+  class HTTPGatewayTimeOut < HTTPServerError        # 504
+    HAS_BODY = true
+  end
+  class HTTPVersionNotSupported < HTTPServerError   # 505
     HAS_BODY = true
   end
 
@@ -1236,9 +1319,11 @@ module Net
 
       '300' => HTTPMultipleChoice,
       '301' => HTTPMovedPermanently,
-      '302' => HTTPMovedTemporarily,
+      '302' => HTTPFound,
+      '303' => HTTPSeeOther,
       '304' => HTTPNotModified,
       '305' => HTTPUseProxy,
+      '307' => HTTPTemporaryRedirect,
 
       '400' => HTTPBadRequest,
       '401' => HTTPUnauthorized,
@@ -1254,8 +1339,10 @@ module Net
       '411' => HTTPLengthRequired,
       '412' => HTTPPreconditionFailed,
       '413' => HTTPRequestEntityTooLarge,
-      '414' => HTTPRequestURITooLarge,
+      '414' => HTTPRequestURITooLong,
       '415' => HTTPUnsupportedMediaType,
+      '416' => HTTPRequestedRangeNotSatisfiable,
+      '417' => HTTPExpectationFailed,
 
       '501' => HTTPInternalServerError,
       '501' => HTTPNotImplemented,
@@ -1268,9 +1355,9 @@ module Net
 
     class << self
 
-      def read_new( sock, hasbody )
+      def read_new( sock )
         httpv, code, msg = read_status_line(sock)
-        res = response_class(code).new( httpv, code, msg, sock, hasbody )
+        res = response_class(code).new(httpv, code, msg)
         each_response_header(sock) do |k,v|
           if res.key? k then
             res[k] << ', ' << v
@@ -1314,12 +1401,10 @@ module Net
 
     include HTTPHeader
 
-    def initialize( httpv, code, msg, sock, hasbody )
+    def initialize( httpv, code, msg )
       @http_version = httpv
       @code         = code
       @message      = msg
-      @socket       = sock
-      @body_exist   = hasbody
 
       @header = {}
       @body = nil
@@ -1332,7 +1417,7 @@ module Net
     alias msg message
 
     def inspect
-      "#<#{type} #{@code} readbody=#{@read}>"
+      "#<#{self.class} #{@code} readbody=#{@read}>"
     end
 
     #
@@ -1340,15 +1425,15 @@ module Net
     #
 
     def code_type
-      self.type
+      self.class
     end
 
     def error!
-      raise error_type.new(@code + ' ' + @message.dump, self)
+      raise error_type().new(@code + ' ' + @message.dump, self)
     end
 
     def error_type
-      type::EXCEPTION_TYPE
+      self.class::EXCEPTION_TYPE
     end
 
     def value
@@ -1356,7 +1441,7 @@ module Net
     end
 
     #
-    # header (for backward compatibility)
+    # header (for backward compatibility only; DO NOT USE)
     #
 
     def response
@@ -1370,16 +1455,25 @@ module Net
     # body
     #
 
+    # internal use only
+    def reading_body( sock, reqmethodallowbody )
+      @socket = sock
+      @body_exist = reqmethodallowbody && self.class.body_permitted?
+      yield
+      self.body
+      @socket = nil
+    end
+
     def read_body( dest = nil, &block )
       if @read then
         (dest or block) and
-                raise IOError, "#{type}\#read_body called twice with argument"
+                raise IOError, "#{self.class}\#read_body called twice"
         return @body
       end
 
       to = procdest(dest, block)
       stream_check
-      if @body_exist and self.type.body_permitted? then
+      if @body_exist then
         read_body_0 to
         @body = to
       else
@@ -1394,10 +1488,6 @@ module Net
     alias entity read_body
 
     private
-
-    def terminate
-      read_body
-    end
 
     def read_body_0( dest )
       if chunked? then

@@ -76,17 +76,17 @@ module Net
 
     def initialize( addr, port = nil )
       @address = addr
-      @port    = port || type.default_port
+      @port    = port || self.class.default_port
 
       @command = nil
       @socket  = nil
 
-      @active = false
+      @started = false
 
       @open_timeout = 30
       @read_timeout = 60
 
-      @dout = nil
+      @debug_output = nil
     end
 
     attr_reader :address
@@ -96,6 +96,7 @@ module Net
     attr_reader :socket
 
     attr_accessor :open_timeout
+
     attr_reader :read_timeout
 
     def read_timeout=( sec )
@@ -103,18 +104,18 @@ module Net
       @read_timeout = sec
     end
 
-    def active?
-      @active
+    def started?
+      @started
     end
+
+    alias active? started?
 
     def set_debug_output( arg )   # un-documented
-      @dout = arg
+      @debug_output = arg
     end
 
-    alias set_pipe set_debug_output
-
     def inspect
-      "#<#{type} #{address}:#{port} open=#{active?}>"
+      "#<#{self.class} #{@address}:#{@port} open=#{active?}>"
     end
 
     #
@@ -122,20 +123,20 @@ module Net
     #
 
     def start( *args )
-      @active and raise IOError, 'protocol has been opened already'
+      @started and raise IOError, 'protocol has been opened already'
 
       if block_given? then
         begin
           do_start( *args )
-          @active = true
+          @started = true
           return yield(self)
         ensure
-          finish if @active
+          finish if @started
         end
       end
 
       do_start( *args )
-      @active = true
+      @started = true
       self
     end
 
@@ -144,9 +145,9 @@ module Net
     # abstract do_start()
 
     def conn_socket
-      @socket = type.socket_type.open(
+      @socket = self.class.socket_type.open(
               conn_address(), conn_port(),
-              @open_timeout, @read_timeout, @dout )
+              @open_timeout, @read_timeout, @debug_output )
       on_connect
     end
 
@@ -159,7 +160,7 @@ module Net
     end
 
     def conn_command
-      @command = type.command_type.new(@socket)
+      @command = self.class.command_type.new(@socket)
     end
 
     def on_connect
@@ -172,9 +173,9 @@ module Net
     public
 
     def finish
-      active? or raise IOError, 'closing already closed protocol'
+      @started or raise IOError, 'closing already closed protocol'
       do_finish
-      @active = false
+      @started = false
       nil
     end
 
@@ -208,15 +209,21 @@ module Net
       super()
     end
 
-    attr_reader :code_type, :code, :message
+    attr_reader :code_type
+    attr_reader :code
+    attr_reader :message
     alias msg message
 
     def inspect
-      "#<#{type} #{code}>"
+      "#<#{self.class} #{@code}>"
     end
 
     def error!
-      raise @code_type.error_type.new( code + ' ' + msg.dump, self )
+      raise error_type().new(code + ' ' + @message.dump, self)
+    end
+
+    def error_type
+      @code_type.error_type
     end
 
   end
@@ -243,7 +250,7 @@ module Net
     alias data response
 
     def inspect
-      "#<#{type}>"
+      "#<#{self.class} #{self.message}>"
     end
   
   end
@@ -253,28 +260,26 @@ module Net
 
     def initialize( paren, err )
       @parents = [self] + paren
-      @err = err
+      @error_type = err
     end
 
     def parents
       @parents.dup
     end
 
-    def inspect
-      "#<#{type} #{sprintf '0x%x', __id__}>"
-    end
+    attr_reader :error_type
 
-    def error_type
-      @err
+    def inspect
+      "#<#{self.class} #{sprintf '0x%x', __id__}>"
     end
 
     def ===( response )
-      response.code_type.parents.each {|c| return true if c == self }
+      response.code_type.parents.each {|c| c == self and return true }
       false
     end
 
     def mkchild( err = nil )
-      type.new( @parents, err || @err )
+      self.class.new(@parents, err || @error_type)
     end
   
   end
@@ -304,7 +309,7 @@ module Net
     attr_reader :last_reply
 
     def inspect
-      "#<#{type}>"
+      "#<#{self.class} socket=#{@socket.inspect} critical=#{@atomic}>"
     end
 
     # abstract quit()
@@ -331,7 +336,7 @@ module Net
     end
 
     #
-    # error handle
+    # critical session
     #
 
     public
@@ -366,7 +371,7 @@ module Net
       @address      = addr
       @port         = port
       @read_timeout = rtime
-      @debugout = dout
+      @debug_output = dout
 
       @socket  = nil
       @rbuf    = nil
@@ -502,7 +507,7 @@ module Net
 
     def rbuf_moveto( dest, len )
       dest << (s = @rbuf.slice!(0, len))
-      @debugout << %Q[-> #{s.dump}\n] if @debugout
+      @debug_output << %Q[-> #{s.dump}\n] if @debug_output
       len
     end
 
@@ -559,15 +564,15 @@ module Net
 
     def writing
       @writtensize = 0
-      @debugout << '<- ' if @debugout
+      @debug_output << '<- ' if @debug_output
       yield
       @socket.flush
-      @debugout << "\n" if @debugout
+      @debug_output << "\n" if @debug_output
       @writtensize
     end
 
     def do_write( str )
-      @debugout << str.dump if @debugout
+      @debug_output << str.dump if @debug_output
       @writtensize += (n = @socket.write(str))
       n
     end
@@ -693,18 +698,18 @@ module Net
 
     def D_off( msg )
       D msg
-      @savedo, @debugout = @debugout, nil
+      @savedo, @debug_output = @debug_output, nil
     end
 
     def D_on( msg )
-      @debugout = @savedo
+      @debug_output = @savedo
       D msg
     end
 
     def D( msg )
-      @debugout or return
-      @debugout << msg
-      @debugout << "\n"
+      @debug_output or return
+      @debug_output << msg
+      @debug_output << "\n"
     end
   
   end

@@ -1,3 +1,9 @@
+Tue Mar 26 20:28:50 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: HTTP.get accepts URI.
+
+	* lib/net/http.rb: add some HTTP 1.1 response codes.
+
 Tue Mar 26 20:25:28 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* doc/net/protocol.rd.ja, smtp.rd.ja, pop.rd.ja: removed.
