@@ -1,3 +1,8 @@
+Tue Apr 13 16:48:00 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb: merge POP3S patch.  This patch is contributed by
+	  Daniel Hobe.
+
 Tue Apr 13 02:56:29 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
 
 	* common.mk: changed the order of ascii.c alphabetically.

@@ -36,12 +36,13 @@
 #     require 'net/pop'
 # 
 #     pop = Net::POP3.new('pop.example.com')
-#     pop.start('YourAccount', 'YourPassword')             # (1)
+#     pop = pop.enable_ssl(verify, certs) if $use_ssl        # (1)
+#     pop.start('YourAccount', 'YourPassword')             # (2)
 #     if pop.mails.empty?
 #       puts 'no mail.'
 #     else
 #       i = 0
-#       pop.each_mail do |m|   # or "pop.mails.each ..."   # (2)
+#       pop.each_mail do |m|   # or "pop.mails.each ..."   # (3)
 #         File.open("inbox/#{i}", 'w') {|f|
 #           f.write m.pop
 #         }
@@ -50,11 +51,12 @@
 #       end
 #       puts "#{pop.mails.size} mails popped."
 #     end
-#     pop.finish                                           # (3)
+#     pop.finish                                           # (4)
 # 
-# 1. call Net::POP3#start and start POP session
-# 2. access messages by using POP3#each_mail and/or POP3#mails
-# 3. close POP session by calling POP3#finish or use the block form of #start.
+# 1. optionally enable SSL for this POP connection
+# 2. call Net::POP3#start and start POP session
+# 3. access messages by using POP3#each_mail and/or POP3#mails
+# 4. close POP session by calling POP3#finish or use the block form of #start.
 # 
 # === Shortened Code
 # 
@@ -141,10 +143,31 @@
 # 
 #     # Use APOP authentication if $isapop == true
 #     pop = Net::POP3.APOP($is_apop).new('apop.example.com', 110)
-#     pop.start(YourAccount', 'YourPassword') {|pop|
+#     pop.start('YourAccount', 'YourPassword') {|pop|
 #       # Rest code is same.
 #     }
+#
+# === Using SSL
+# The net/pop library supports POP3 over SSL.
+# To use SSL:
+#
+#   Example 1:
+#     require 'net/pop'
+#     
+#     pop = Net::POP3.APOP($is_apop)
+#     pop = pop.enable_ssl if $use_ssl
+#     pop.start(server, port, account, password) do |pop|
+#      ...
+#     end 
 # 
+#   Example 2:
+#     require 'net/pop'
+#     pop = Net::POP3.new('pop.example.com').enable_ssl
+#     pop.start(username, password) do |pop|
+#       ...
+#     end
+#     
+#
 # === Fetch Only Selected Mail Using `UIDL' POP Command
 # 
 # If your POP server provides UIDL functionality,
@@ -169,6 +192,11 @@
 require 'net/protocol'
 require 'digest/md5'
 require 'timeout'
+
+begin
+  require "openssl"
+rescue LoadError
+end
 
 module Net
 
@@ -196,9 +224,22 @@ module Net
     # Class Parameters
     #
 
-    # The default port for POP3 connections, port 110
+    @@usessl = false
+    @@verify = nil
+    @@certs = nil
+
     def POP3.default_port
+      default_pop3_port()
+    end
+
+    # The default port for POP3 connections, port 110
+    def POP3.default_pop3_port
       110
+    end
+    
+    # The default port for POP3S connections, port 995
+    def POP3.default_pop3s_port
+      995
     end
 
     def POP3.socket_type   #:nodoc: obsolete
@@ -324,17 +365,38 @@ module Net
       new(address, port, isapop).start(account, password, &block)
     end
 
+    # Enable SSL for all new instances.
+    # +verify+ is the type of verification to do on the Server Cert; Defaults
+    # to OpenSSL::SSL::VERIFY_PEER.
+    # +certs+ is a file or directory holding CA certs to use to verify the 
+    # server cert; Defaults to nil.
+    def POP3.enable_ssl(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil)
+      @@usessl = true
+      @@verify = verify
+      @@certs = certs  
+    end
+
+    # Disable SSL for all new instances.
+    def POP3.disable_ssl
+      @@usessl = nil
+      @@verify = nil
+      @@certs = nil
+    end
+    
     # Creates a new POP3 object.
-    # +address+ is the hostname or ip address of your POP3 server.
-    # The optional +port+ is the port to connect to; it defaults to 110.
+    # +addr+ is the hostname or ip address of your POP3 server.
+    # The optional +port+ is the port to connect to.
     # The optional +isapop+ specifies whether this connection is going
     # to use APOP authentication; it defaults to +false+.
     # This method does *not* open the TCP connection.
     def initialize(addr, port = nil, isapop = false)
       @address = addr
-      @port = port || self.class.default_port
+      @usessl = @@usessl
+      @port = port || (@usessl ? POP3.default_pop3s_port : POP3.default_pop3_port)
       @apop = isapop
-
+      @certs = @@certs
+      @verify = @@verify
+      
       @command = nil
       @socket = nil
       @started = false
@@ -350,6 +412,32 @@ module Net
     # Does this instance use APOP authentication?
     def apop?
       @apop
+    end
+
+    # does this instance use SSL?
+    def use_ssl?
+      @usessl
+    end
+   
+    # Enables SSL for this instance.  Must be called before the connection is
+    # established to have any effect.
+    # +verify+ is the type of verification to do on the Server Cert; Defaults
+    # to OpenSSL::SSL::VERIFY_PEER.
+    # +certs+ is a file or directory holding CA certs to use to verify the 
+    # server cert; Defaults to nil.
+    # +port+ is port to establish the SSL conection on; Defaults to 995.
+    def enable_ssl(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil, 
+                   port = POP3.default_pop3s_port)
+      @usessl = true
+      @verify = verify
+      @certs = certs
+      @port = port
+    end
+    
+    def disable_ssl
+      @usessl = nil
+      @verify = nil
+      @certs = nil
     end
 
     # Provide human-readable stringification of class state.
@@ -424,9 +512,27 @@ module Net
     end
 
     def do_start(account, password)
-      @socket = InternetMessageIO.new(timeout(@open_timeout) {
-                  TCPSocket.open(@address, @port)
-                })
+      s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }
+      if @usessl
+        raise 'SSL extension not installed' unless defined?(OpenSSL)
+        sslctx = OpenSSL::SSL::SSLContext.new
+        sslctx.verify_mode = @verify
+        if @certs
+          if File.file?(@certs)
+            sslctx.ca_file = @certs
+          elsif File.directory?(@certs)
+            sslctx.ca_path = @certs
+          else
+            raise ArgumentError, "certs path is not file/directory: #{@certs}"
+          end
+        end
+        s = OpenSSL::SSL::SSLSocket.new(s, sslctx)
+        s.sync_close = true
+        s.connect
+      end
+      
+      @socket = InternetMessageIO.new(s)
+      
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
       @socket.read_timeout = @read_timeout
       @socket.debug_output = @debug_output
@@ -439,7 +545,8 @@ module Net
       end
       @started = true
     ensure
-      do_finish if not @started
+      s.close if s and not s.closed?
+      do_finish unless @started
     end
     private :do_start
 
