@@ -126,13 +126,6 @@ module OpenURI
   end
 
   def OpenURI.open_loop(uri, options) # :nodoc:
-    header = {}
-    options.each {|k, v|
-      if String === k
-        header[k] = v
-      end
-    }
-
     case opt_proxy = options.fetch(:proxy, true)
     when true
       find_proxy = lambda {|u| u.find_proxy}
@@ -151,9 +144,9 @@ module OpenURI
     begin
       buf = Buffer.new
       if proxy_uri = find_proxy.call(uri)
-        proxy_uri.proxy_open(buf, uri, header)
+        proxy_uri.proxy_open(buf, uri, options)
       else
-        uri.direct_open(buf, header)
+        uri.direct_open(buf, options)
       end
     rescue Redirect
       loc = $!.uri
@@ -191,12 +184,15 @@ module OpenURI
   class Buffer # :nodoc:
     def initialize
       @io = StringIO.new
+      @size = 0
     end
+    attr_reader :size
 
     StringMax = 10240
     def <<(str)
       @io << str
-      if StringIO === @io && StringMax < @io.size
+      @size += str.length
+      if StringIO === @io && StringMax < @size
         require 'tempfile'
         io = Tempfile.new('open-uri')
         Meta.init io, @io if Meta === @io
@@ -364,14 +360,19 @@ module URI
   end
 
   class HTTP
-    def direct_open(buf, header) # :nodoc:
-      proxy_open(buf, request_uri, header)
+    def direct_open(buf, options) # :nodoc:
+      proxy_open(buf, request_uri, options)
     end
 
-    def proxy_open(buf, uri, header) # :nodoc:
+    def proxy_open(buf, uri, options) # :nodoc:
+      header = {}
+      options.each {|k, v| header[k] = v if String === k }
+
       require 'net/http'
       resp = Net::HTTP.start(self.host, self.port) {|http|
-               http.get(uri.to_s, header) {|str| buf << str}
+               http.get(uri.to_s, header) {|str|
+                 buf << str
+               }
              }
       io = buf.io
       io.rewind
@@ -393,9 +394,8 @@ module URI
   end
 
   class FTP
-    def direct_open(buf, header) # :nodoc:
+    def direct_open(buf, options) # :nodoc:
       require 'net/ftp'
-      # xxx: header is discarded. 
       # todo: extract user/passwd from .netrc.
       user = 'anonymous'
       passwd = nil
@@ -403,7 +403,9 @@ module URI
 
       ftp = Net::FTP.open(self.host)
       ftp.login(user, passwd)
-      ftp.getbinaryfile(self.path, '/dev/null', Net::FTP::DEFAULT_BLOCKSIZE) {|str| buf << str}
+      ftp.getbinaryfile(self.path, '/dev/null', Net::FTP::DEFAULT_BLOCKSIZE) {|str|
+        buf << str
+      }
       ftp.close
       buf.io.rewind
     end
