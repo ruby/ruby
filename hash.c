@@ -121,24 +121,33 @@ struct rb_hash_foreach_arg {
 };
 
 static int
-rb_hash_foreach_iter(key, value, arg)
+rb_hash_foreach_iter(key, value, arg, err)
     VALUE key, value;
     struct rb_hash_foreach_arg *arg;
+    int err;
 {
     int status;
-    st_table *tbl = RHASH(arg->hash)->tbl;
-    struct st_table_entry **bins = tbl->bins;
+    st_table *tbl;
 
+    if (err) {
+ 	rb_raise(rb_eRuntimeError, "hash modified during iteration");
+    }
+    tbl = RHASH(arg->hash)->tbl;    
     if (key == Qundef) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
-    if (RHASH(arg->hash)->tbl != tbl ||
-	RHASH(arg->hash)->tbl->bins != bins) {
-	rb_raise(rb_eIndexError, "rehash occurred during iteration");
+    if (RHASH(arg->hash)->tbl != tbl) {
+	rb_raise(rb_eRuntimeError, "rehash occurred during iteration");
     }
-    if (RHASH(arg->hash)->iter_lev == 0) {
-	rb_raise(rb_eArgError, "block re-entered");
+    switch (status) {
+      case ST_DELETE:
+ 	st_delete_safe(tbl, (st_data_t*)&key, 0, Qundef);
+	FL_SET(arg->hash, HASH_DELETED);
+      case ST_CONTINUE:
+ 	break;
+      case ST_STOP:
+ 	return ST_STOP;
     }
-    return status;
+    return ST_CHECK;
 }
 
 static VALUE
@@ -836,8 +845,12 @@ static VALUE
 rb_hash_clear(hash)
     VALUE hash;
 {
+    void *tmp;
+
     rb_hash_modify(hash);
-    st_foreach(RHASH(hash)->tbl, clear_i, 0);
+    if (RHASH(hash)->tbl->num_entries > 0) {
+	st_foreach(RHASH(hash)->tbl, clear_i, 0);
+    }
 
     return hash;
 }

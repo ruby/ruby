@@ -1717,7 +1717,7 @@ rb_ary_collect_bang(ary)
 
     rb_ary_modify(ary);
     for (i = 0; i < RARRAY(ary)->len; i++) {
-	RARRAY(ary)->ptr[i] = rb_yield(RARRAY(ary)->ptr[i]);
+	rb_ary_store(ary, i, rb_yield(RARRAY(ary)->ptr[i]));
     }
     return ary;
 }
@@ -1983,14 +1983,16 @@ rb_ary_reject_bang(ary)
 
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
-	if (RTEST(rb_yield(RARRAY(ary)->ptr[i1]))) continue;
+	VALUE v = RARRAY(ary)->ptr[i1];
+	if (RTEST(rb_yield(v))) continue;
 	if (i1 != i2) {
-	    RARRAY(ary)->ptr[i2] = RARRAY(ary)->ptr[i1];
+	    rb_ary_store(ary, i2, v);
 	}
 	i2++;
     }
     if (RARRAY(ary)->len == i2) return Qnil;
-    RARRAY(ary)->len = i2;
+    if (i2 < RARRAY(ary)->len)
+	RARRAY(ary)->len = i2;
 
     return ary;
 }
@@ -2497,7 +2499,7 @@ rb_ary_eql(ary1, ary2)
     if (TYPE(ary2) != T_ARRAY) return Qfalse;
     if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
-	if (!rb_eql(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))
+	if (!rb_eql(rb_ary_elt(ary1, i), rb_ary_elt(ary2, i)))
 	    return Qfalse;
     }
     return Qtrue;

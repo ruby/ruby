@@ -25,7 +25,7 @@ struct st_table {
 
 #define st_is_member(table,key) st_lookup(table,key,(st_data_t *)0)
 
-enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE};
+enum st_retval {ST_CONTINUE, ST_STOP, ST_DELETE, ST_CHECK};
 
 st_table *st_init_table(struct st_hash_type *);
 st_table *st_init_table_with_size(struct st_hash_type *, int);

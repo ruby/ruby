@@ -3,6 +3,7 @@
 /* static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible"; */
 
 #include "config.h"
+#include "defines.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -492,8 +493,21 @@ st_foreach(table, func, arg)
     for(i = 0; i < table->num_bins; i++) {
 	last = 0;
 	for(ptr = table->bins[i]; ptr != 0;) {
-	    retval = (*func)(ptr->key, ptr->record, arg);
+	    retval = (*func)(ptr->key, ptr->record, arg, 0);
 	    switch (retval) {
+	    case ST_CHECK:	/* check if hash is modified during iteration */
+	        tmp = 0;
+		if (i < table->num_bins) {
+		    for (tmp = table->bins[i]; tmp; tmp=tmp->next) {
+			if (tmp == ptr) break;
+		    }
+		}
+		if (!tmp) {
+		    /* call func with error notice */
+		    retval = (*func)(0, 0, arg, 1);
+		    return;
+		}
+		/* fall through */
 	    case ST_CONTINUE:
 		last = ptr;
 		ptr = ptr->next;
