@@ -12,17 +12,17 @@ It is possible to lookup various resources of DNS using DNS module directly.
   Resolv::DNS.new.getresources("www.ruby-lang.org", Resolv::DNS::Resource::IN::A).collect {|r| r.address}
   Resolv::DNS.new.getresources("ruby-lang.org", Resolv::DNS::Resource::IN::MX).collect {|r| [r.exchange.to_s, r.preference]}
 
-== Resolv module
+== Resolv class
 
-=== module methods
+=== class methods
 --- Resolv.getaddress(name)
 --- Resolv.getaddresses(name)
 --- Resolv.each_address(name) {|address| ...}
     They lookups IP addresses of ((|name|)) which represents a hostname
-    as a string.
+    as a string by default resolver.
 
     getaddress returns first entry of lookupped addresses.
-    getaddresses returns lookupped addresses.
+    getaddresses returns lookupped addresses as an array.
     each_address iterates over lookupped addresses.
 
 --- Resolv.getname(address)
@@ -31,7 +31,7 @@ It is possible to lookup various resources of DNS using DNS module directly.
     lookups hostnames of ((|address|)) which represents IP address as a string.
 
     getname returns first entry of lookupped names.
-    getnames returns lookupped names.
+    getnames returns lookupped names as an array.
     each_names iterates over lookupped names.
 
 == Resolv::Hosts class
@@ -63,7 +63,7 @@ DNS stub resolver.
 --- Resolv::DNS#each_address(name) {|address| ...}
     address lookup methods.
 
-    ((|name|)) must be a instance of Resolv::Name or String.  Lookupped
+    ((|name|)) must be a instance of Resolv::DNS::Name or String.  Lookupped
     address is represented as an instance of Resolv::IPv4 or Resolv::IPv6.
 
 --- Resolv::DNS#getname(address)
@@ -72,7 +72,7 @@ DNS stub resolver.
     hostnames lookup methods.
 
     ((|address|)) must be a instance of Resolv::IPv4, Resolv::IPv6 or String.
-    Lookupped name is represented as an instance of Resolv::Name.
+    Lookupped name is represented as an instance of Resolv::DNS::Name.
 
 --- Resolv::DNS#getresource(name, typeclass)
 --- Resolv::DNS#getresources(name, typeclass)
@@ -97,6 +97,7 @@ DNS stub resolver.
 
     Lookupped resource is represented as an instance of (a subclass of)
     Resolv::DNS::Resource. 
+    (Resolv::DNS::Resource::IN::A, etc.)
 
 == Resolv::DNS::Resource::IN::NS class
 --- name
@@ -168,6 +169,7 @@ DNS stub resolver.
 
 == Bugs
 NIS is not supported.
+/etc/nsswitch.conf is not supported.
 
 =end
 
@@ -1540,11 +1542,32 @@ class Resolv
   end
 
   class IPv6
-    Regex_8Hex = /\A([0-9A-Fa-f]{1,4}:){7,7}[0-9A-Fa-f]{1,4}\z/
-    Regex_CompressedHex = /\A((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)::((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)\z/
-    Regex_6Hex4Dec = /\A((?:[0-9A-Fa-f]{1,4}:){6,6})(\d+)\.(\d+)\.(\d+)\.(\d+)\z/
-    Regex_CompressedHex4Dec = /\A((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)::((?:[0-9A-Fa-f]{1,4}:)*)(\d+)\.(\d+)\.(\d+)\.(\d+)\z/
-    Regex = /(?:#{Regex_8Hex.source})|(?:#{Regex_CompressedHex.source})|(?:#{Regex_6Hex4Dec.source})|(?:#{Regex_CompressedHex4Dec.source})/
+    Regex_8Hex = /\A
+      (?:[0-9A-Fa-f]{1,4}:){7}
+	 [0-9A-Fa-f]{1,4}
+      \z/x
+
+    Regex_CompressedHex = /\A
+      ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?) ::
+      ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?)
+      \z/x
+
+    Regex_6Hex4Dec = /\A
+      ((?:[0-9A-Fa-f]{1,4}:){6,6})
+      (\d+)\.(\d+)\.(\d+)\.(\d+)
+      \z/x
+
+    Regex_CompressedHex4Dec = /\A
+      ((?:[0-9A-Fa-f]{1,4}(?::[0-9A-Fa-f]{1,4})*)?) ::
+      ((?:[0-9A-Fa-f]{1,4}:)*)
+      (\d+)\.(\d+)\.(\d+)\.(\d+)
+      \z/x
+
+    Regex = /
+      (?:#{Regex_8Hex.source}) |
+      (?:#{Regex_CompressedHex.source}) |
+      (?:#{Regex_6Hex4Dec.source}) |
+      (?:#{Regex_CompressedHex4Dec.source})/x
 
     def self.create(arg)
       case arg

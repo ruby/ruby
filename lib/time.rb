@@ -1,6 +1,5 @@
 # $Id$
 
-require 'date'
 require 'parsedate'
 
 =begin

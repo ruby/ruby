@@ -1,3 +1,9 @@
+Wed Dec 19 03:08:40 2001  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb: date.rb is not required anymore.
+
+	* lib/resolv.rb: fix document.  refine IPv6 regex.
+
 Tue Dec 18 17:54:53 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* sample/test.rb: Hash#indexes -> Hash#select.
