@@ -1,3 +1,4 @@
+bin: $(PROGRAM) $(WPROGRAM)
 lib: $(LIBRUBY);
 dll: $(LIBRUBY_SO);
 
@@ -61,6 +62,7 @@ EXTMK_ARGS    =	$(SCRIPT_ARGS) --extout="$(EXTOUT)" --extension $(EXTS) --extsta
 
 all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
+prog: $(PROGRAM) $(WPROGRAM)
 
 miniruby$(EXEEXT): config.status $(LIBRUBY_A) $(MAINOBJ) $(OBJS) $(DMYEXT)
 
@@ -80,11 +82,21 @@ ruby.imp: $(LIBRUBY_A)
 install: install-nodoc $(RDOCTARGET)
 install-all: install-nodoc install-doc
 
-install-nodoc: install-local install-ext
-install-local: $(RBCONFIG)
+install-nodoc: install-local post-install-local install-ext post-install-ext
+install-local: pre-install-local do-install-local post-install-local
+install-ext: pre-install-ext do-install-ext post-install-ext
+
+do-install-local: $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --mantype="$(MANTYPE)"
-install-ext: $(RBCONFIG)
+do-install-ext: $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS) install
+
+install-bin: $(RBCONFIG)
+	$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --install=bin
+install-lib: $(RBCONFIG)
+	$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --install=lib
+install-man: $(RBCONFIG)
+	$(MINIRUBY) $(srcdir)/instruby.rb $(SCRIPT_ARGS) --install=man --mantype="$(MANTYPE)"
 
 what-where-all no-install-all: no-install no-install-doc
 what-where no-install: no-install-local no-install-ext
@@ -95,9 +107,18 @@ what-where-ext: no-install-ext
 no-install-ext: $(RBCONFIG)
 	$(MINIRUBY) $(srcdir)/ext/extmk.rb -n $(EXTMK_ARGS) install
 
-install-doc: $(PROGRAM)
+install-doc: pre-install-doc do-install-doc post-install-doc
+do-install-doc: $(PROGRAM)
 	@echo Generating RDoc documentation
 	$(RUNRUBY) "$(srcdir)/bin/rdoc" --all --ri --op "$(RIDATADIR)" "$(srcdir)"
+
+pre-install: pre-install-local pre-install-ext
+pre-install-local:: PHONY
+pre-install-ext:: PHONY
+
+post-install: post-install-local post-install-ext
+post-install-local:: PHONY
+post-install-ext:: PHONY
 
 clean: clean-ext clean-local
 clean-local::

@@ -426,6 +426,10 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 			-so_name=$(RUBY_SO_NAME) \
 			. $(icondirs) $(srcdir)win32
 
+post-install-ext::
+	$(MINIRUBY) -I$(srcdir)lib -rrbconfig -rfileutils \
+		-e 'FileUtils.rm_f(Dir[File.join(Config::CONFIG["archdir"],"**","*.tds")])'
+
 clean-local::
 		@$(RM) ext\extinit.c ext\extinit.$(OBJEXT) *.tds *.il? $(RUBY_SO_NAME).lib
 		@$(RM) $(RUBY_INSTALL_NAME).res $(RUBYW_INSTALL_NAME).res $(RUBY_SO_NAME).res

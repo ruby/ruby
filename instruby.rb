@@ -11,6 +11,7 @@ require 'optparse'
 require 'optparse/shellwords'
 require 'tempfile'
 
+STDOUT.sync = true
 File.umask(0)
 
 def parse_args()
@@ -18,6 +19,7 @@ def parse_args()
   $destdir = nil
   $make = 'make'
   $mflags = []
+  $install = []
   opt = OptionParser.new
   opt.on('-n') {$dryrun = true}
   opt.on('--dest-dir=DIR') {|dir| $destdir = dir}
@@ -29,6 +31,7 @@ def parse_args()
     end
     $mflags.concat(v)
   end
+  opt.on('--install=TYPE', [:bin, :lib, :man]) {|ins| $install << ins}
   opt.parse! rescue abort [$!.message, opt].join("\n")
 
   $make, *rest = Shellwords.shellwords($make)
@@ -56,6 +59,10 @@ include FileUtils::Verbose
 include FileUtils::NoWrite if $dryrun
 @fileutils_output = STDOUT
 @fileutils_label = ''
+
+def install?(type)
+  yield if $install.empty? or $install.include?(type)
+end
 
 def install(src, dest, options = {})
   options[:preserve] = true
@@ -101,6 +108,7 @@ arc = CONFIG["LIBRUBY_A"]
 
 makedirs [bindir, libdir, rubylibdir, archlibdir, sitelibdir, sitearchlibdir]
 
+install?(:bin) do
 ruby_bin = File.join(bindir, ruby_install_name)
 
 install ruby_install_name+exeext, ruby_bin+exeext, :mode => 0755
@@ -123,9 +131,11 @@ if dll == lib and dll != arc
     ln_sf(dll, File.join(libdir, link))
   end
 end
+end
 
 Dir.chdir srcdir
 
+install?(:lib) do
 ruby_shebang = File.join(CONFIG["bindir"], ruby_install_name)
 if File::ALT_SEPARATOR
   ruby_bin_dosish = ruby_shebang.tr(File::SEPARATOR, File::ALT_SEPARATOR)
@@ -178,7 +188,9 @@ for f in Dir["lib/**/*{.rb,help-message}"]
   makedirs dir
   install f, dir, :mode => 0644
 end
+end
 
+install?(:bin) do
 for f in Dir["*.h"]
   install f, archlibdir, :mode => 0644
 end
@@ -187,7 +199,9 @@ if RUBY_PLATFORM =~ /mswin32|mingw|bccwin32/
   makedirs File.join(archlibdir, "win32")
   install "win32/win32.h", File.join(archlibdir, "win32"), :mode => 0644
 end
+end
 
+install?(:man) do
 for mdoc in Dir["*.[1-9]"]
   next unless File.file?(mdoc) and open(mdoc){|fh| fh.read(1) == '.'}
 
@@ -213,6 +227,7 @@ for mdoc in Dir["*.[1-9]"]
 
     install w.path, destfile, :mode => 0644
   end
+end
 end
 
 # vi:set sw=2:
