@@ -1,3 +1,8 @@
+Wed Jul  9 23:52:13 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* regex.c (mbctab_sjis): 0x80 is not shift jis first byte.
+	  [ruby-dev:20516]
+
 Wed Jul  9 16:12:13 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* instruby.rb: do not install shared libraries as man pages.
