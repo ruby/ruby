@@ -172,8 +172,8 @@ module OpenURI
       }
       if redirect
         if redirect.relative?
-          # Although it violates RFC 2616, Location: field may have relative
-          # URI.  It is converted to absolute URI using uri.
+          # Although it violates RFC2616, Location: field may have relative
+          # URI.  It is converted to absolute URI using uri as a base URI.
           redirect = uri + redirect
         end
         unless OpenURI.redirectable?(uri, redirect)
@@ -282,7 +282,7 @@ module OpenURI
 
     def content_type_parse # :nodoc:
       v = @meta['content-type']
-      # The last (?:;#{RE_LWS}?)? matches extra ";" which is not permitted by RFC2045.
+      # The last (?:;#{RE_LWS}?)? matches extra ";" which violates RFC2045.
       if v && %r{\A#{RE_LWS}?(#{RE_TOKEN})#{RE_LWS}?/(#{RE_TOKEN})#{RE_LWS}?(#{RE_PARAMETERS})(?:;#{RE_LWS}?)?\z}no =~ v
         type = $1.downcase
         subtype = $2.downcase
