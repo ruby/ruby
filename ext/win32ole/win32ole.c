@@ -20,6 +20,7 @@
 #include "st.h"
 #include <windows.h>
 #include <ocidl.h>
+#include <olectl.h>
 #include <ole2.h>
 #ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
