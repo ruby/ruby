@@ -359,4 +359,43 @@ class TestIterator < Test::Unit::TestCase
   def test_iter4
     ITER_TEST4.new.foo(44){55}
   end
+
+  def test_break__nested_loop1
+    _test_break__nested_loop1 do
+      break
+    end
+  end
+
+  def _test_break__nested_loop1
+    while true
+      yield
+    end
+    assert(false, "must not reach here")
+  end
+
+  def test_break__nested_loop2
+    _test_break__nested_loop2 do
+      break
+    end
+  end
+
+  def _test_break__nested_loop2
+    until false
+      yield
+    end
+    assert(false, "must not reach here")
+  end
+
+  def test_break__nested_loop3
+    _test_break__nested_loop3 do
+      break
+    end
+  end
+
+  def _test_break__nested_loop3
+    loop do
+      yield
+    end
+    assert(false, "must not reach here")
+  end
 end
