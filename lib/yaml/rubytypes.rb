@@ -1,6 +1,5 @@
 # -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*- vim: sw=4 ts=4
 require 'date'
-require 'yaml/compat'
 #
 # Type conversions
 #
