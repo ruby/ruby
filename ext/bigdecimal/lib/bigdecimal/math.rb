@@ -7,6 +7,7 @@
 #   exp (x, prec)
 #   log (x, prec)
 #   PI  (prec)
+#   E   (prec) == exp(1.0,prec)
 #
 # where:
 #   x    ... BigDecimal number to be computed.
@@ -51,7 +52,7 @@ module BigMath
   end
 
   def cos(x, prec)
-    raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
+    raise ArgumentError, "Zero or negative precision for cos" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
     n    = prec + BigDecimal.double_fig
     one  = BigDecimal("1")
@@ -76,7 +77,7 @@ module BigMath
   end
 
   def atan(x, prec)
-    raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
+    raise ArgumentError, "Zero or negative precision for atan" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
     raise ArgumentError, "x.abs must be less than 1.0" if x.abs>=1
     n    = prec + BigDecimal.double_fig
@@ -96,7 +97,7 @@ module BigMath
   end
 
   def exp(x, prec)
-    raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
+    raise ArgumentError, "Zero or negative precision for exp" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
     n    = prec + BigDecimal.double_fig
     one  = BigDecimal("1")
@@ -173,5 +174,23 @@ module BigMath
       k   = k+two
     end
     pi
+  end
+
+  def E(prec)
+    raise ArgumentError, "Zero or negative precision for E" if prec <= 0
+    n    = prec + BigDecimal.double_fig
+    one  = BigDecimal("1")
+    y  = one
+    d  = y
+    z  = one
+    i  = 0
+    while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
+      m = BigDecimal.double_fig if m < BigDecimal.double_fig
+      i += 1
+      z *= i
+      d  = one.div(z,m)
+      y += d
+    end
+    y
   end
 end
