@@ -1,3 +1,7 @@
+Sat Aug  7 00:50:01 2004  Tanaka Akira  <akr@m17n.org>
+
+	* ext/zlib/zlib.c: Zlib::GzipReader#read(0) returns "" instead of nil.
+
 Mon Aug  3 13:49:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/namespace.rb: bug fix

@@ -2075,7 +2075,10 @@ gzfile_read(gz, len)
 {
     VALUE dst;
 
-    if (len <= 0) return Qnil;
+    if (len < 0)
+        rb_raise(rb_eArgError, "negative length %d given", len);
+    if (len == 0)
+	return rb_str_new(0, 0);
     while (!ZSTREAM_IS_FINISHED(&gz->z) && gz->z.buf_filled < len) {
 	gzfile_read_more(gz);
     }
