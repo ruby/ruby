@@ -1,3 +1,10 @@
+Tue Jan 20 13:22:39 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/html_generator.rb: Document aliases at 
+	  top-most level.
+
+	* lib/English.rb: Document English.rb. 
+
 Tue Jan 20 04:41:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/ruby/test_marshal.rb (MarshalTestLib::test_exception): test

@@ -2313,6 +2313,7 @@ module RDoc
         skip_tkspace
       end
       old_name = get_symbol_or_name
+
       al = Alias.new(get_tkread, old_name, new_name, comment)
       read_documentation_modifiers(al, ATTR_MODIFIERS)
       if al.document_self
