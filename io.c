@@ -3222,6 +3222,7 @@ argf_fileno()
 static VALUE
 argf_to_io()
 {
+    next_argv();
     return current_file;
 }
 

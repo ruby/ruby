@@ -7891,7 +7891,9 @@ rb_thread_schedule()
 	next->gid = 0;
 	rb_thread_ready(next);
 	next->status = THREAD_TO_KILL;
-	rb_thread_save_context(curr_thread);
+	if (!rb_thread_dead(curr_thread)) {
+	    rb_thread_save_context(curr_thread);
+	}
 	rb_thread_deadlock();
     }
     next->wait_for = 0;
