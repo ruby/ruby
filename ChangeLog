@@ -1,3 +1,8 @@
+Sun Feb 15 01:46:05 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/mkmf.rb: absolute path of ruby is assigned to $(RUBY).
+	  [ruby-dev:22870]
+
 Sat Feb 14 23:59:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* mkconfig.rb: use fileutils.rb instead of ftools.rb.

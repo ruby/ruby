@@ -1048,7 +1048,7 @@ $configure_args["--topsrcdir"] ||= $srcdir
 Config::CONFIG["topdir"] = CONFIG["topdir"] =
   $curdir = arg_config("--curdir", Dir.pwd)
 $configure_args["--topdir"] ||= $curdir
-$ruby = arg_config("--ruby", CONFIG["ruby_install_name"])
+$ruby = arg_config("--ruby", File.join(CONFIG["bindir"], CONFIG["ruby_install_name"]))
 
 split = Shellwords.method(:shellwords).to_proc
 
