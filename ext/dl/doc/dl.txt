@@ -47,17 +47,16 @@ struct and union which are defined in "dl/struct.rb" as follows:
   require "dl/struct"
   module LIBC
     extend DL::Importable
-    Timeval = struct [       # define the timeval structure.
+    Timeval = struct [       # define timeval structure.
       "long tv_sec",
       "long tv_uses",
     ]
   end
-  val = LIBC::Timeval.malloc # allocate the memory.
+  val = LIBC::Timeval.malloc # allocate memory.
 
-The above example uses LIBC::Timeval.malloc, since we use LIBC::Timeval.new(ptr)
-to wrap the given PtrData object which is, for example, created by DL::malloc().
-DL::malloc() is a function to allocate a memory by using the C library function
-malloc().
+Notice that the above example takes LIBC::Timeval.malloc to allocate memory,
+rather than LIBC::Timeval.new. It is because DL::Timeval.new is for wrapping
+an object, PtrData, which has already been created.
 
 We can define a callback using the module function "callback" as follows:
 
