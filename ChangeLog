@@ -1,3 +1,10 @@
+Tue Feb 17 01:24:35 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: backport from 1.9 - configure. (Thanks Nakada)
+	  [ruby-dev:22910]
+	* win32/Makefile.sub: ditto.
+	* wince/Makefile.sub: ditto.
+
 Tue Feb 17 00:38:10 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb: TupleSpace#initialize, stop doubling timeout
