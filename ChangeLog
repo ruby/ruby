@@ -1,3 +1,8 @@
+Thu Aug 19 15:15:24 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (free_dir): fix memory leak.  reported by yamamoto
+	  madoka.
+
 Thu Aug 19 09:19:27 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in, win32/Makefile.sub (LIBS): need to link shell32
@@ -34,6 +39,17 @@ Wed Aug 18 11:22:52 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.c (init_env): initialize HOME and USER environment
 	  variables unless set.
+
+Wed Aug 18 10:17:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (bind_eval): new method. [RCR 251]
+
+	* string.c (rb_str_clear): new method. [ruby-dev:24104]
+
+Tue Aug 17 17:20:59 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_reopen): should clear allocated OpenFile.  pointed
+	  out by Guy Decoux. [ruby-core:03288]
 
 Tue Aug 17 01:36:32 2004  Dave Thomas  <dave@pragprog.com>
 
@@ -110,9 +126,18 @@ Sun Aug  8 00:43:31 2004  why the lucky stiff  <why@ruby-lang.org>
 	  collections.  plain scalars are trimmed if indentation follows in
 	  an ambiguous flow collection.
 
+Sat Aug  7 03:08:21 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_daemon): new method.  should be modified for
+	  platforms without /dev/null.
+
 Sat Aug  7 00:50:01 2004  Tanaka Akira  <akr@m17n.org>
 
 	* ext/zlib/zlib.c: Zlib::GzipReader#read(0) returns "" instead of nil.
+
+Wed Aug  4 13:26:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (r_bytes0): optimize out read(0). [ruby-talk:108276]
 
 Tue Aug  3 13:49:12 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

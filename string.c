@@ -2212,6 +2212,31 @@ rb_str_replace(str, str2)
     return str;
 }
 
+/* 
+ *  call-seq:
+ *     string.clear    ->  string
+ *
+ *  Makes string empty.
+ *
+ *     a = "abcde"
+ *     a.clear    #=> ""
+ */
+
+static VALUE
+rb_str_clear(str)
+    VALUE str;
+{
+    /* rb_str_modify() */	/* no need for str_make_independent */
+    if (str_independent(str)) {
+	free(RSTRING(str)->ptr);
+    }
+    RSTRING(str)->aux.shared = 0;
+    FL_UNSET(str, ELTS_SHARED|STR_ASSOC);
+    RSTRING(str)->ptr = 0;
+    RARRAY(str)->len = 0;
+    return str;
+}
+
 static VALUE
 uscore_get()
 {
@@ -4593,6 +4618,7 @@ Init_String()
     rb_define_method(rb_cString, "index", rb_str_index_m, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex_m, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace, 1);
+    rb_define_method(rb_cString, "clear", rb_str_clear, 0);
 
     rb_define_method(rb_cString, "to_i", rb_str_to_i, -1);
     rb_define_method(rb_cString, "to_f", rb_str_to_f, 0);

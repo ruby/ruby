@@ -235,9 +235,6 @@ rb_io_check_readable(fptr)
     OpenFile *fptr;
 {
     rb_io_check_closed(fptr);
-    if (!(fptr->mode & FMODE_READABLE)) {
-	rb_raise(rb_eIOError, "not opened for reading");
-    }
 #if NEED_IO_SEEK_BETWEEN_RW
     if (((fptr->mode & FMODE_WBUF) ||
 	 (fptr->mode & (FMODE_SYNCWRITE|FMODE_RBUF)) == FMODE_SYNCWRITE) &&
@@ -256,6 +253,9 @@ rb_io_check_writable(fptr)
     rb_io_check_closed(fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
+    }
+    if (READ_DATA_BUFFERED(fptr->f)) {
+	rb_warn("read buffer data lost");
     }
 #if NEED_IO_SEEK_BETWEEN_RW
     if ((fptr->mode & FMODE_RBUF) && !feof(fptr->f) && !fptr->f2) {
@@ -1913,10 +1913,9 @@ rb_io_fptr_finalize(fptr)
 	free(fptr->path);
 	fptr->path = 0;
     }
-    if (!fptr->f && !fptr->f2) return 0;
-    if (fileno(fptr->f) < 3) return 0;
-
-    rb_io_fptr_cleanup(fptr, Qtrue);
+    if ((fptr->f && fileno(fptr->f) > 2) || fptr->f2) {
+	rb_io_fptr_cleanup(fptr, Qtrue);
+    }
     free(fptr);
     return 1;
 }

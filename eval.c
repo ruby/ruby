@@ -6380,8 +6380,14 @@ rb_obj_instance_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE klass = rb_singleton_class(self);
+    VALUE klass;
 
+    if (FIXNUM_P(self) || SYMBOL_P(self)) {
+	klass = Qnil;
+    }
+    else {
+	klass = rb_singleton_class(self);
+    }
     return specific_eval(argc, argv, klass, self);
 }
 
@@ -7881,6 +7887,23 @@ rb_f_binding(self)
     return bind;
 }
 
+static VALUE
+bind_eval(argc, argv, bind)
+    int argc;
+    VALUE *argv;
+    VALUE bind;
+{
+    struct BLOCK *data;
+    VALUE args[4];
+    VALUE dummy;
+
+    rb_scan_args(argc, argv, "12", &args[0], &args[2], &args[3]);
+    args[1] = bind;
+    Data_Get_Struct(bind, struct BLOCK, data);
+
+    return rb_f_eval(argc+1, args, data->self);
+}
+
 #define PROC_TSHIFT (FL_USHIFT+1)
 #define PROC_TMASK  (FL_USER1|FL_USER2|FL_USER3)
 #define PROC_TMAX   (PROC_TMASK >> PROC_TSHIFT)
@@ -9306,6 +9329,7 @@ Init_Binding()
     rb_undef_alloc_func(rb_cBinding);
     rb_undef_method(CLASS_OF(rb_cBinding), "new");
     rb_define_method(rb_cBinding, "clone", proc_clone, 0);
+    rb_define_method(rb_cBinding, "eval", bind_eval, -1);
     rb_define_global_function("binding", rb_f_binding, 0);
 }
 

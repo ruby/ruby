@@ -349,7 +349,11 @@ static void
 free_dir(dir)
     struct dir_data *dir;
 {
-    if (dir && dir->dir) closedir(dir->dir);
+    if (dir) {
+	if (dir->dir) closedir(dir->dir);
+	if (dir->path) free(dir->path);
+    }
+    free(dir);
 }
 
 static VALUE dir_close _((VALUE));
