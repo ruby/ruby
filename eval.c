@@ -4100,8 +4100,7 @@ rb_yield_0(val, self, klass, flags, avalue)
 		if (avalue) {
 		    len = RARRAY(val)->len;
 		    if (len == 0) {
-			val = Qnil;
-			goto multi_values;
+			goto zero_arg;
 		    }
 		    if (len == 1) {
 			val = RARRAY(val)->ptr[0];
@@ -4111,6 +4110,7 @@ rb_yield_0(val, self, klass, flags, avalue)
 		    }
 		}
 		else if (val == Qundef) {
+		  zero_arg:
 		    val = Qnil;
 		  multi_values:
 		    {
