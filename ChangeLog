@@ -1,3 +1,7 @@
+Mon Jan 20 17:50:05 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* mdoc2man.rb (parse_macro): Understand .Ux.
+
 Mon Jan 20 17:32:56 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* mdoc2man.rb: New file.  A mdoc to man converter ported from

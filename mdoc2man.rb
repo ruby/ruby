@@ -173,6 +173,9 @@ def parse_macro(line)
 
       $reference = false
       break
+    when 'Ux'
+      retval << "UNIX"
+      next
     end
 
     if $reference
