@@ -140,7 +140,7 @@ class Tk::Iwidgets::Notebook
   alias scrollbar yscrollbar
 
   def view(*idxs)
-    if idxss.size == 0
+    if idxs.size == 0
       window(tk_send_without_enc('view'))
     else
       tk_send_without_enc('view', *idxs)
