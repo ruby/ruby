@@ -14,7 +14,6 @@ prevdir = Dir.pwd
 tmproot = TestFileUtils::TMPROOT
 Dir.mkdir tmproot unless File.directory?(tmproot)
 Dir.chdir tmproot
-p tmproot
 
 def have_drive_letter?
   /djgpp|mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
