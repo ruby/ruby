@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.5.7"
+#define WIN32OLE_VERSION "0.5.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2718,9 +2718,7 @@ fole_methods( self )
  * Returns get properties.
  */
 static VALUE
-fole_get_methods( argc, argv, self )
-    int argc;
-    VALUE *argv;
+fole_get_methods( self )
     VALUE self;
 {
     return ole_methods( self, INVOKE_PROPERTYGET);
@@ -2732,9 +2730,7 @@ fole_get_methods( argc, argv, self )
  * Returns put properties.
  */
 static VALUE
-fole_put_methods( argc, argv, self )
-    int argc;
-    VALUE *argv;
+fole_put_methods( self )
     VALUE self;
 {
     return ole_methods( self, INVOKE_PROPERTYPUT);
@@ -2746,9 +2742,7 @@ fole_put_methods( argc, argv, self )
  * Returns OLE func methods.
  */
 static VALUE
-fole_func_methods( argc, argv, self )
-    int argc;
-    VALUE *argv;
+fole_func_methods( self )
     VALUE self;
 {
     return ole_methods( self, INVOKE_FUNC);
