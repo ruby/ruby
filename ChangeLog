@@ -1,3 +1,18 @@
+Tue Oct 29 02:00:08 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/extmk.rb (extmake): use dummy_makefile to create dummy
+	  Makefile.
+
+	* lib/mkmf.rb (find_executable0): EXEEXT is optional.
+
+	* lib/mkmf.rb (dummy_makefile): make dummy Makefile content.
+
+	* lib/mkmf.rb (create_makefile): define EXTLIB replacing -l.
+
+	* lib/mkmf.rb ($bccwin): detect Borland make by help message.
+
+	* lib/mkmf.rb (CLEANINGS): common rules to clean.
+
 Mon Oct 28 01:27:17 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* djgpp/config.sed (@program_transform_name@): use `%', not `,'.

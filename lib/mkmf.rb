@@ -51,6 +51,10 @@ $human = /human/ =~ RUBY_PLATFORM
 $netbsd = /netbsd/ =~ RUBY_PLATFORM
 $os2 = /os2/ =~ RUBY_PLATFORM
 
+def config_string(key, config = CONFIG)
+  s = config[key] and !s.empty? and block_given? ? yield(s) : s
+end
+
 def dir_re(dir)
   Regexp.new('\$(?:\('+dir+'\)|\{'+dir+'\})(?:\$\(target_prefix\)|\{target_prefix\})?')
 end
@@ -110,9 +114,7 @@ end
 
 def older(target, *files)
   mtime = proc do |f|
-    break f if Time === f
-    break f.mtime if f.respond_to?(:mtime)
-    File.mtime(f) rescue nil
+    Time === f ? f : f.respond_to?(:mtime) ? f.mtime : File.mtime(f) rescue nil
   end
   t = mtime[target] or return true
   for f in files
@@ -445,10 +447,11 @@ end
 
 def find_executable0(bin, path = nil)
   path = (path || ENV['PATH']).split(File::PATH_SEPARATOR)
-  bin += Config::CONFIG['EXEEXT']
+  ext = config_string('EXEEXT')
   file = nil
   path.each do |dir|
     return file if File.executable?(file = File.join(dir, bin))
+    return file if ext and File.executable?(file << ext)
   end
   nil
 end
@@ -580,54 +583,8 @@ INSTALL_DATA = $(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)
 }
 end
 
-def makerules(target, target_prefix = "")
-  mk = []
-  if target
-    mk << %{
-target_prefix = #{target_prefix}
-LOCAL_LIBS = #{$LOCAL_LIBS}
-LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
-OBJS = #{$objs}
-TARGET = #{target}
-DLLIB = $(TARGET).#{$static ? $LIBEXT : CONFIG['DLEXT']}
-}
-    if $extmk
-      mk << %{
-RUBYCOMMONDIR = $(rubylibdir)
-RUBYLIBDIR    = $(rubylibdir)$(target_prefix)
-RUBYARCHDIR   = $(archdir)$(target_prefix)
-}
-    else
-      mk << %{
-RUBYCOMMONDIR = $(sitedir)$(target_prefix)
-RUBYLIBDIR    = $(sitelibdir)$(target_prefix)
-RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
-}
-    end
-    mk << %{
-all:		$(DLLIB)
-
-clean:
-		@$(RM) $(TARGET).lib $(TARGET).exp $(TARGET).il? $(TARGET).tds $(TARGET).map
-}
-  else
-    mk << %{
-all:		Makefile
-
-clean:
-}
-  end
-  mk << %{\
-		@$(RM) *.#{$OBJEXT} *.so *.sl *.#{$LIBEXT} $(DLLIB)
-		@$(RM) *.pdb *.bak $(CLEANFILES)
-
-distclean:	clean
-		@$(RM) Makefile extconf.h conftest.* mkmf.log
-		@$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES)
-
-realclean:	distclean
-
-}
+def dummy_makefile(srcdir)
+  configuration(srcdir) << "all install: Makefile\n" << CLEANINGS
 end
 
 def create_makefile(target, srcprefix = nil)
@@ -636,10 +593,10 @@ def create_makefile(target, srcprefix = nil)
   message "creating Makefile\n"
   rm_f "conftest*"
   if CONFIG["DLEXT"] == $OBJEXT
-    for lib in $libs.split
+    for lib in libs = $libs.split
       lib.sub!(/-l(.*)/, %%"lib\\1.#{$LIBEXT}"%)
     end
-    $defs.push(format("-DEXTLIB='%s'", $libs.split.join(",")))
+    $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
 
   if target.include?('/')
@@ -703,8 +660,35 @@ DEFFILE = #{deffile}
 
 CLEANFILES = #{cleanfiles.join(' ')}
 DISTCLEANFILES = #{distcleanfiles.join(' ')}
+
+target_prefix = #{target_prefix}
+LOCAL_LIBS = #{$LOCAL_LIBS}
+LIBS = #{$LIBRUBYARG} #{$libs} #{$LIBS}
+OBJS = #{$objs}
+TARGET = #{target}
+DLLIB = $(TARGET).#{$static ? $LIBEXT : CONFIG['DLEXT']}
 }
-  mfile.print makerules(target, target_prefix)
+  if $extmk
+    mfile.print %{
+RUBYCOMMONDIR = $(rubylibdir)
+RUBYLIBDIR    = $(rubylibdir)$(target_prefix)
+RUBYARCHDIR   = $(archdir)$(target_prefix)
+}
+  else
+    mfile.print %{
+RUBYCOMMONDIR = $(sitedir)$(target_prefix)
+RUBYLIBDIR    = $(sitelibdir)$(target_prefix)
+RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
+}
+  end
+  mfile.print %{
+all:		$(DLLIB)
+
+clean::
+		@$(RM) "$(TARGET).{lib,exp,il?,tds,map}" $(DLLIB)
+		@$(RM) "*.{#{$OBJEXT},#{$LIBEXT},s[ol],pdb,bak}"
+}
+  mfile.print CLEANINGS
   dirs = []
   unless $static
     dirs << (dir = "$(RUBYARCHDIR)")
@@ -770,7 +754,7 @@ DISTCLEANFILES = #{distcleanfiles.join(' ')}
       mfile.printf "###\n"
       while line = dfile.gets()
 	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
-	line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if $nmake||$bccwin
+	line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if $nmake
 	line.gsub!(/\$\(hdrdir\)\/config.h/, $config_h) if $config_h
 	mfile.print line
       end
@@ -813,7 +797,7 @@ case
 when $mswin
   $nmake = ?m if /nmake/i =~ $make
 when $bccwin
-  $nmake = ?b if /\bbcc/i =~ $make or /\bbcc/i =~ find_executable0($make)
+  $nmake = ?b if /Borland/i =~ `#$make -h`
 end
 
 Config::CONFIG["srcdir"] = CONFIG["srcdir"] =
@@ -823,12 +807,6 @@ Config::CONFIG["topdir"] = CONFIG["topdir"] =
   $curdir = arg_config("--curdir", Dir.pwd)
 $configure_args["--topdir"] ||= $curdir
 $ruby = arg_config("--ruby", CONFIG["ruby_install_name"])
-
-def config_string(key, config = CONFIG)
-  return unless s = config[key] and !s.empty?
-  return s unless block_given?
-  yield s
-end
 
 split = Shellwords.method(:shellwords).to_proc
 
@@ -862,3 +840,14 @@ LINK_SO = config_string('LINK_SO') ||
   end
 LIBPATHFLAG = config_string('LIBPATHFLAG') || ' -L%s'
 LIBARG = config_string('LIBARG') || '-l%s'
+
+CLEANINGS = "
+clean::
+		@$(RM) $(CLEANFILES)
+
+distclean::	clean
+		@$(RM) Makefile extconf.h conftest.* mkmf.log
+		@$(RM) core ruby$(EXEEXT) *~ $(DISTCLEANFILES)
+
+realclean::	distclean
+"

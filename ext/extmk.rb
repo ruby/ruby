@@ -74,10 +74,7 @@ def extmake(target)
       end
     else
       open("./Makefile", "w") {|f|
-        f.print configuration($srcdir), makerules(nil), "install:\n"
-        if /bccwin32/ =~ RUBY_PLATFORM
-          f.print "\t@\n"
-        end
+        f.print dummy_makefile($srcdir)
       }
     end
     if $static
