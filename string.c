@@ -211,6 +211,8 @@ rb_str_dup(str)
     }
     else if (RSTRING(str)->orig) {
 	str2 = rb_str_new3(RSTRING(str)->orig);
+	FL_UNSET(str2, FL_TAINT);
+	OBJ_INFECT(str2, str);
     }
     else {
 	str2 = rb_str_new3(rb_str_new4(str));

@@ -669,24 +669,29 @@ arg		: lhs '=' arg
 		    }
 		| variable tOP_ASGN {$$ = assignable($1, 0);} arg
 		    {
-			if ($2 == tOROP) {
-			    $<node>3->nd_value = $4;
-			    $$ = NEW_OP_ASGN_OR(gettable($1), $<node>3);
-			    if (is_instance_id($1)) {
-				$$->nd_aid = $1;
+			if ($<node>3) {
+			    if ($2 == tOROP) {
+				$<node>3->nd_value = $4;
+				$$ = NEW_OP_ASGN_OR(gettable($1), $<node>3);
+				if (is_instance_id($1)) {
+				    $$->nd_aid = $1;
+				}
 			    }
-			}
-			else if ($2 == tANDOP) {
-			    $<node>3->nd_value = $4;
-			    $$ = NEW_OP_ASGN_AND(gettable($1), $<node>3);
+			    else if ($2 == tANDOP) {
+				$<node>3->nd_value = $4;
+				$$ = NEW_OP_ASGN_AND(gettable($1), $<node>3);
+			    }
+			    else {
+				$$ = $<node>3;
+				if ($$) {
+				    $$->nd_value = call_op(gettable($1),$2,1,$4);
+				}
+			    }
+			    fixpos($$, $4);
 			}
 			else {
-			    $$ = $<node>3;
-			    if ($$) {
-				$$->nd_value = call_op(gettable($1),$2,1,$4);
-			    }
+			    $$ = 0;
 			}
-			fixpos($$, $4);
 		    }
 		| primary '[' aref_args ']' tOP_ASGN arg
 		    {

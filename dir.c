@@ -419,20 +419,29 @@ dir_s_chdir(argc, argv, obj)
     return INT2FIX(0);
 }
 
+static char *
+my_getcwd()
+{
+    int size = MAXPATHLEN;
+    char *buf = xmalloc(size);
+
+    while (!getcwd(buf, size)) {
+	if (errno != ERANGE) rb_sys_fail(buf);
+	size *= 2;
+	buf = xrealloc(buf, size);
+    }
+    return buf;
+}
+
 static VALUE
 dir_s_getwd(dir)
     VALUE dir;
 {
-    char path[MAXPATHLEN];
+    char *path = my_getcwd();
+    VALUE cwd = rb_tainted_str_new2(path);
 
-#ifdef HAVE_GETCWD
-    if (getcwd(path, sizeof(path)) == 0) rb_sys_fail(path);
-#else
-    extern char *getwd();
-    if (getwd(path) == 0) rb_sys_fail(path);
-#endif
-
-    return rb_tainted_str_new2(path);
+    free(path);
+    return cwd;
 }
 
 static VALUE

@@ -3502,7 +3502,8 @@ rb_iterator_p()
 static VALUE
 rb_f_block_given_p()
 {
-    if (ruby_frame->prev && ruby_frame->prev->iter) return Qtrue;
+    if (ruby_frame->prev && ruby_frame->prev->iter && ruby_block)
+	return Qtrue;
     return Qfalse;
 }
 
@@ -3521,8 +3522,8 @@ rb_yield_0(val, self, klass, acheck)
     int state;
     static unsigned serial = 1;
 
-    if (!(rb_block_given_p() || rb_f_block_given_p()) || !ruby_block) {
-	rb_raise(rb_eLocalJumpError, "yield called out of block");
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eLocalJumpError, "no block given");
     }
 
     PUSH_VARS();
@@ -4470,7 +4471,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 				v = rb_ary_new4(argc,argv);
 			    else
 				v = rb_ary_new2(0);
-			    local_vars[node->nd_rest] = v;
+			    ruby_scope->local_vars[node->nd_rest] = v;
 			}
 		    }
 		}

@@ -2118,10 +2118,10 @@ rb_path_check(path)
 
 	if (pend) *pend = '\0';
 	safe = path_check_1(p);
-       if (!safe) {
-           if (pend) *pend = sep;
-           return 0;
-       }
+	if (!safe) {
+	    if (pend) *pend = sep;
+	    return 0;
+	}
 	if (!pend) break;
 	*pend = sep;
 	p = pend + 1;

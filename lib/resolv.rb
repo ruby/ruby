@@ -1,3 +1,176 @@
+=begin
+= resolv library
+resolv.rb is a resolver library written in Ruby.
+Since it is written in Ruby, it is thread-aware.
+I.e. it can resolv many hostnames concurrently.
+
+It is possible to lookup various resources of DNS using DNS module directly.
+
+== example
+  Resolv.getaddress("www.ruby-lang.org")
+  Resolv.getname("210.251.121.214").to_s
+  Resolv::DNS.new.getresources("www.ruby-lang.org", Resolv::DNS::Resource::IN::A).collect {|r| r.address}
+  Resolv::DNS.new.getresources("ruby-lang.org", Resolv::DNS::Resource::IN::MX).collect {|r| [r.exchange.to_s, r.preference]}
+
+== Resolv module
+
+=== module methods
+--- Resolv.getaddress(name)
+--- Resolv.getaddresses(name)
+--- Resolv.each_address(name) {|address| ...}
+    They lookups IP addresses of ((|name|)) which represents a hostname
+    as a string.
+
+    getaddress returns first entry of lookupped addresses.
+    getaddresses returns lookupped addresses.
+    each_address iterates over lookupped addresses.
+
+--- Resolv.getname(address)
+--- Resolv.getnames(address)
+--- Resolv.each_name(address) {|name| ...}
+    lookups hostnames of ((|address|)) which represents IP address as a string.
+
+    getname returns first entry of lookupped names.
+    getnames returns lookupped names.
+    each_names iterates over lookupped names.
+
+== Resolv::Hosts class
+hostname resolver using /etc/hosts format.
+
+=== class methods
+--- Resolv::Hosts.new(hosts='/etc/hosts')
+
+=== methods
+--- Resolv::Hosts#getaddress(name)
+--- Resolv::Hosts#getaddresses(name)
+--- Resolv::Hosts#each_address(name) {|address| ...}
+    address lookup methods.
+
+--- Resolv::Hosts#getname(address)
+--- Resolv::Hosts#getnames(address)
+--- Resolv::Hosts#each_name(address) {|name| ...}
+    hostnames lookup methods.
+
+== Resolv::DNS class
+DNS stub resolver.
+
+=== class methods
+--- Resolv::DNS.new(resolv_conf='/etc/resolv.conf')
+
+=== methods
+--- Resolv::DNS#getaddress(name)
+--- Resolv::DNS#getaddresses(name)
+--- Resolv::DNS#each_address(name) {|address| ...}
+    address lookup methods.
+
+    ((|name|)) must be a instance of Resolv::Name or String.  Lookupped
+    address is represented as an instance of Resolv::IPv4 or Resolv::IPv6.
+
+--- Resolv::DNS#getname(address)
+--- Resolv::DNS#getnames(address)
+--- Resolv::DNS#each_name(address) {|name| ...}
+    hostnames lookup methods.
+
+    ((|address|)) must be a instance of Resolv::IPv4, Resolv::IPv6 or String.
+    Lookupped name is represented as an instance of Resolv::Name.
+
+--- Resolv::DNS#getresource(name, typeclass)
+--- Resolv::DNS#getresources(name, typeclass)
+--- Resolv::DNS#each_resource(name, typeclass) {|resource| ...}
+    They lookup DNS resources of ((|name|)).
+    ((|name|)) must be a instance of Resolv::Name or String.
+
+    ((|typeclass|)) should be one of follows:
+    * Resolv::DNS::Resource::IN::ANY
+    * Resolv::DNS::Resource::IN::NS
+    * Resolv::DNS::Resource::IN::CNAME
+    * Resolv::DNS::Resource::IN::SOA
+    * Resolv::DNS::Resource::IN::HINFO
+    * Resolv::DNS::Resource::IN::MINFO
+    * Resolv::DNS::Resource::IN::MX
+    * Resolv::DNS::Resource::IN::TXT
+    * Resolv::DNS::Resource::IN::ANY
+    * Resolv::DNS::Resource::IN::A
+    * Resolv::DNS::Resource::IN::WKS
+    * Resolv::DNS::Resource::IN::PTR
+    * Resolv::DNS::Resource::IN::AAAA
+
+    Lookupped resource is represented as an instance of (a subclass of)
+    Resolv::DNS::Resource. 
+
+== Resolv::DNS::Resource::IN::NS class
+--- name
+== Resolv::DNS::Resource::IN::CNAME class
+--- name
+== Resolv::DNS::Resource::IN::SOA class
+--- mname
+--- rname
+--- serial
+--- refresh
+--- retry
+--- expire
+--- minimum
+== Resolv::DNS::Resource::IN::HINFO class
+--- cpu
+--- os
+== Resolv::DNS::Resource::IN::MINFO class
+--- rmailbx
+--- emailbx
+== Resolv::DNS::Resource::IN::MX class
+--- preference
+--- exchange
+== Resolv::DNS::Resource::IN::TXT class
+--- data
+== Resolv::DNS::Resource::IN::A class
+--- address
+== Resolv::DNS::Resource::IN::WKS class
+--- address
+--- protocol
+--- bitmap
+== Resolv::DNS::Resource::IN::PTR class
+--- name
+== Resolv::DNS::Resource::IN::AAAA class
+--- address
+
+== Resolv::DNS::Name class
+
+=== class methods
+--- Resolv::DNS::Name.create(name)
+
+=== methods
+--- Resolv::DNS::Name#to_s
+
+== Resolv::DNS::Resource class
+
+== Resolv::IPv4 class
+=== class methods
+--- Resolv::IPv4.create(address)
+
+=== methods
+--- Resolv::IPv4#to_s
+--- Resolv::IPv4#to_name
+
+=== constants
+--- Resolv::IPv4::Regex
+    regular expression for IPv4 address.
+
+== Resolv::IPv6 class
+=== class methods
+--- Resolv::IPv6.create(address)
+
+=== methods
+--- Resolv::IPv6#to_s
+--- Resolv::IPv6#to_name
+
+=== constants
+--- Resolv::IPv6::Regex
+    regular expression for IPv6 address.
+
+== Bugs
+NIS is not supported.
+
+=end
+
 require 'socket'
 require 'fcntl'
 require 'timeout'
@@ -8,8 +181,24 @@ class Resolv
     DefaultResolver.getaddress(name)
   end
 
+  def self.getaddresses(name)
+    DefaultResolver.getaddresses(name)
+  end
+
+  def self.each_address(name, &block)
+    DefaultResolver.each_address(name, &block)
+  end
+
   def self.getname(address)
     DefaultResolver.getname(address)
+  end
+
+  def self.getnames(address)
+    DefaultResolver.getnames(address)
+  end
+
+  def self.each_name(address, &proc)
+    DefaultResolver.each_name(address, &proc)
   end
 
   def initialize(resolvers=[Hosts.new, DNS.new])
@@ -17,26 +206,51 @@ class Resolv
   end
 
   def getaddress(name)
-    return name if AddressRegex =~ name
-    rs = @resolvers.dup
-    begin
-      r = rs.shift
-      return r.getaddress(name)
-    rescue ResolvError
-      retry unless rs.empty?
-      raise
+    each_address(name) {|address| return address}
+    raise ResolvError.new("no address for #{name}")
+  end
+
+  def getaddresses(name)
+    ret = []
+    each_address(name) {|address| ret << address}
+    return ret
+  end
+
+  def each_address(name)
+    if AddressRegex =~ name
+      yield name
+      return
     end
+    yielded = false
+    @resolvers.each {|r|
+      r.each_address(name) {|address|
+        yield address.to_s
+	yielded = true
+      }
+      return if yielded
+    }
   end
 
   def getname(address)
-    rs = @resolvers.dup
-    begin
-      r = rs.shift
-      return r.getname(address)
-    rescue ResolvError
-      retry unless rs.empty?
-      raise
-    end
+    each_name(address) {|name| return name}
+    raise ResolvError.new("no name for #{address}")
+  end
+
+  def getnames(address)
+    ret = []
+    each_name(address) {|name| ret << name}
+    return ret
+  end
+
+  def each_name(address)
+    yielded = false
+    @resolvers.each {|r|
+      r.each_name(address) {|name|
+        yield name.to_s
+	yielded = true
+      }
+      return if yielded
+    }
   end
 
   class ResolvError < StandardError
@@ -79,20 +293,38 @@ class Resolv
     end
 
     def getaddress(name)
+      each_address(name) {|address| return address}
+      raise ResolvError.new("#{@filename} has no name: #{name}")
+    end
+
+    def getaddresses(name)
+      ret = []
+      each_address(name) {|address| ret << address}
+      return ret
+    end
+
+    def each_address(name, &proc)
       lazy_initialize
       if @name2addr.include?(name)
-        return @name2addr[name][0]
-      else
-        raise ResolvError.new("#{@filename} has no name: #{name}")
+	@name2addr[name].each(&proc)
       end
     end
 
     def getname(address)
+      each_name(address) {|name| return name}
+      raise ResolvError.new("#{@filename} has no address: #{address}")
+    end
+
+    def getnames(address)
+      ret = []
+      each_name(address) {|name| ret << name}
+      return ret
+    end
+
+    def each_name(address, &proc)
       lazy_initialize
       if @addr2name.include?(address)
-        return @addr2name[address][0]
-      else
-        raise ResolvError.new("#{@filename} has no address: #{address}")
+        @addr2name[address].each(&proc)
       end
     end
   end
@@ -127,10 +359,32 @@ class Resolv
     end
 
     def getaddress(name)
-      return getresource(name, Resource::IN::A).address
+      each_address(name) {|address| return address}
+      raise ResolvError.new("DNS result has no information for #{name}")
+    end
+
+    def getaddresses(name)
+      ret = []
+      each_address(name) {|address| ret << address}
+      return ret
+    end
+
+    def each_address(name)
+      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
     end
 
     def getname(address)
+      each_name(address) {|name| return name}
+      raise ResolvError.new("DNS result has no information for #{address}")
+    end
+
+    def getnames(address)
+      ret = []
+      each_name(address) {|name| ret << name}
+      return ret
+    end
+
+    def each_name(address)
       case address
       when Name
         ptr = address
@@ -141,10 +395,21 @@ class Resolv
       else
         raise ResolvError.new("cannot interpret as address: #{address}")
       end
-      return getresource(ptr, Resource::IN::PTR).name
+      each_resource(ptr, Resource::IN::PTR) {|resource| yield resource.name}
     end
 
     def getresource(name, typeclass)
+      each_resource(name, typeclass) {|resource| return resource}
+      raise ResolvError.new("DNS result has no information for #{name}")
+    end
+
+    def getresources(name, typeclass)
+      ret = []
+      each_resource(name, typeclass) {|resource| ret << resource}
+      return ret
+    end
+
+    def each_resource(name, typeclass, &proc)
       lazy_initialize
       q = Queue.new
       senders = {}
@@ -162,7 +427,8 @@ class Resolv
           timeout(tout) { reply, reply_name = q.pop }
           case reply.rcode
           when RCode::NoError
-            return extract_resource(reply, reply_name, typeclass)
+            extract_resources(reply, reply_name, typeclass, &proc)
+	    return
           when RCode::NXDomain
             raise Config::NXDomain.new(reply_name)
           else
@@ -174,27 +440,35 @@ class Resolv
       end
     end
 
-    def extract_resource(msg, name, typeclass)
+    def extract_resources(msg, name, typeclass)
+      if typeclass < Resource::ANY
+	n0 = Name.create(name)
+        msg.each_answer {|n, ttl, data|
+	  yield data if n0 == n
+	}
+      end
+      yielded = false
       n0 = Name.create(name)
       msg.each_answer {|n, ttl, data|
         if n0 == n
           case data
           when typeclass
-            return data
+	    yield data
+	    yielded = true
           when Resource::CNAME
             n0 = data.name
           end
         end
       }
+      return if yielded
       msg.each_answer {|n, ttl, data|
         if n0 == n
           case data
           when typeclass
-            return data
+	    yield data
           end
         end
       }
-      raise ResolvError.new("DNS result has no information for #{name}")
     end
 
     class Requester
@@ -550,6 +824,10 @@ class Resolv
         def to_s
           return @string
         end
+
+	def inspect
+	  return "#<#{self.class} #{self.to_s}>"
+	end
 
         def ==(other)
           return @downcase == other.downcase
@@ -1101,7 +1379,7 @@ class Resolv
         end
 
         def self.decode_rdata(msg)
-          preference = msg.get_unpack('n')
+          preference, = msg.get_unpack('n')
           exchange = msg.get_name
           return self.new(preference, exchange)
         end
@@ -1180,7 +1458,7 @@ class Resolv
 
           def self.decode_rdata(msg)
             address = IPv4.new(msg.get_bytes(4))
-            protocol = msg.get_unpack("n")
+            protocol, = msg.get_unpack("n")
             bitmap = msg.get_bytes
             return self.new(address, protocol, bitmap)
           end
@@ -1237,6 +1515,10 @@ class Resolv
 
     def to_s
       return sprintf("%d.%d.%d.%d", *@address.unpack("CCCC"))
+    end
+
+    def inspect
+      return "#<#{self.class} #{self.to_s}>"
     end
 
     def to_name
@@ -1312,7 +1594,7 @@ class Resolv
 
     def initialize(address)
       unless address.kind_of?(String) && address.length == 16
-        raise ArgumentError.new('IPv4 address muse be 16 bytes')
+        raise ArgumentError.new('IPv6 address muse be 16 bytes')
       end
       @address = address
     end
@@ -1324,6 +1606,10 @@ class Resolv
         address.sub!(/(^|:)0(:|$)/, '::')
       end
       return address
+    end
+
+    def inspect
+      return "#<#{self.class} #{self.to_s}>"
     end
 
     def to_name
@@ -1345,5 +1631,5 @@ class Resolv
   end
 
   DefaultResolver = self.new
-  AddressRegex = /(?:#{IPv4::Regex.source})|(?:#{IPv6::Regex})/
+  AddressRegex = /(?:#{IPv4::Regex.source})|(?:#{IPv6::Regex.source})/
 end
