@@ -1614,6 +1614,39 @@ rb_io_binmode(io)
     return io;
 }
 
+char*
+rb_io_flags_mode(flags, mode)
+    int flags;
+    char *mode;
+{
+    char *p = mode;
+
+    switch (flags & FMODE_READWRITE) {
+      case FMODE_READABLE:
+	*p++ = 'r';
+	break;
+      case FMODE_WRITABLE:
+	*p++ = 'w';
+	break;
+      case FMODE_READWRITE:
+	*p++ = 'r';
+	*p++ = '+';
+	break;
+    }
+    *p++ = '\0';
+#ifdef O_BINARY
+    if (flags & FMODE_BINMODE) {
+	if (mode[1] == '+') {
+	    mode[1] = 'b'; mode[2] = '+'; mode[3] = '\0';
+	}
+	else {
+	    mode[1] = 'b'; mode[2] = '\0';
+	}
+    }
+#endif
+    return mode;
+}
+
 int
 rb_io_mode_flags(mode)
     const char *mode;
@@ -2387,14 +2420,18 @@ rb_io_reopen(argc, argv, file)
     }
 
     SafeStringValue(fname);
+
+    rb_io_taint_check(file);
+    fptr = RFILE(file)->fptr;
+
     if (!NIL_P(nmode)) {
 	mode = StringValuePtr(nmode);
     }
     else {
-	mode = "r";
+	mode = ALLOCA_N(char, 4);
+	rb_io_flags_mode(fptr->mode, mode);
     }
 
-    GetOpenFile(file, fptr);
     if (fptr->path) {
 	free(fptr->path);
 	fptr->path = 0;
