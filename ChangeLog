@@ -5,6 +5,9 @@ Fri Oct 29 11:35:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Fri Oct 29 10:00:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* eval.c (rb_thread_start_0): forget to free some memory chunks.
+	  [ruby-core:03611]
+
 	* eval.c (ruby_cleanup): ruby_finalize_1 may cause exception,
 	  should be wrapped by PUSH_TAG/POP_TAG().  [ruby-dev:24627]
 
