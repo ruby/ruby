@@ -22,6 +22,7 @@ syck_alloc_node( enum syck_kind_tag type )
     s->id = 0;
     s->type_id = NULL;
     s->anchor = NULL;
+    s->shortcut = NULL;
 
     return s;
 }
@@ -205,6 +206,24 @@ syck_map_count( SyckNode *map )
     ASSERT( map != NULL );
     ASSERT( map->data.pairs != NULL );
     return map->data.pairs->idx;
+}
+
+void
+syck_map_assign( SyckNode *map, enum map_part p, long idx, SYMID id )
+{
+    struct SyckMap *m;
+
+    ASSERT( map != NULL );
+    m = map->data.pairs;
+    ASSERT( m != NULL );
+    if ( p == map_key )
+    {
+        m->keys[idx] = id;
+    }
+    else
+    {
+        m->values[idx] = id;
+    }
 }
 
 SYMID

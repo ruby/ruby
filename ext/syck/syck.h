@@ -10,15 +10,11 @@
 #ifndef SYCK_H
 #define SYCK_H
 
-#define SYCK_VERSION    "0.25"
+#define SYCK_VERSION    "0.28"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
-#ifdef HAVE_ST_H
-#include <st.h>
-#else
-#include "syck_st.h"
-#endif
+#include "../../st.h"
 
 #if defined(__cplusplus)
 extern "C" {
@@ -116,6 +112,7 @@ struct _syck_node {
             long len;
         } *str;
     } data;
+    void *shortcut;
 };
 
 /*
@@ -248,11 +245,13 @@ SyckNode *syck_new_map( SYMID, SYMID );
 void syck_map_add( SyckNode *, SYMID, SYMID );
 SYMID syck_map_read( SyckNode *, enum map_part, long );
 long syck_map_count( SyckNode * );
+void syck_map_assign( SyckNode *, enum map_part, long, SYMID );
 void syck_map_update( SyckNode *, SyckNode * );
 SyckNode *syck_new_seq( SYMID );
 void syck_seq_add( SyckNode *, SYMID );
 SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
+void apply_seq_in_map( SyckParser *, SyckNode * );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

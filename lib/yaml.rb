@@ -9,7 +9,7 @@
 module YAML
 
     begin
-        require 'syck'
+        require 'yaml/syck'
         @@parser = YAML::Syck::Parser
         @@loader = YAML::Syck::DefaultLoader
     rescue LoadError
