@@ -4359,7 +4359,7 @@ literal_concat_string(head, tail, str)
     NODE *head, *tail;
     VALUE str;
 {
-    NODE *last = head, *last1 = 0;
+    NODE *last = head, *last1 = 0, *prev = 0;
 
     for (;;) {
 	switch (nd_type(last)) {
@@ -4368,10 +4368,11 @@ literal_concat_string(head, tail, str)
 	    break;
 	  case NODE_BLOCK:
 	  case NODE_DSTR:
+	    if (!last1) last1 = prev;
+	    prev = last;
 	    while (last->nd_next) {
 		last = last->nd_next;
 	    }
-	    if (!last1) last1 = last;
 	    last = last->nd_head;
 	    break;
 	  case NODE_STR:
