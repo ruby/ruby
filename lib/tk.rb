@@ -548,6 +548,19 @@ module Tk
     tk_call 'bell'
   end
 
+  def Tk.focus(display=nil)
+    if display == nil
+      r = tk_call('focus')
+    else
+      r = tk_call('focus', '-displayof', display)
+    end
+    tk_tcl2ruby(r)
+  end
+
+  def Tk.focus_lastfor(win)
+    tk_tcl2ruby(tk_call('focus', '-lastfor', win))
+  end
+
   def toUTF8(str,encoding)
     INTERP._toUTF8(str,encoding)
   end
@@ -636,9 +649,15 @@ module Tk
     def positionfrom(*args)
       tk_call 'wm', 'positionfrom', path, *args
     end
-    def protocol(name, func=None)
-      func = install_cmd(func) if not func == None
-      tk_call 'wm', 'command', path, name, func
+    def protocol(name=nil, cmd=nil)
+      if cmd
+	tk_call('wm', 'protocol', path, name, cmd)
+      elsif name
+	result = tk_call('wm', 'protocol', path, name)
+	(result == "")? nil : tk_tcl2ruby(result)
+      else
+	tk_split_simplelist(tk_call('wm', 'protocol', path))
+      end
     end
     def resizable(*args)
       w = tk_call('wm', 'resizable', path, *args)
@@ -1402,8 +1421,8 @@ module TkOption
   def clear
     tk_call 'option', 'clear'
   end
-  def get win, classname, name
-    tk_call 'option', 'get', classname, name
+  def get win, name, klass
+    tk_call 'option', 'get', win ,name, klass
   end
   def readfile file, pri=None
     tk_call 'option', 'readfile', file, pri
@@ -1735,8 +1754,12 @@ class TkWindow<TkObject
     list(tk_call('place', 'slaves', epath))
   end
 
-  def focus
-    tk_call 'focus', path
+  def focus(force=false)
+    if force
+      tk_call 'focus', '-force', path
+    else
+      tk_call 'focus', path
+    end
     self
   end
 

@@ -17,41 +17,44 @@ class Tempfile < SimpleDelegator
 
   def Tempfile.callback(path)
     lambda{
-      print "removing ", path, "..."
+      print "removing ", path, "..." if $DEBUG
       if File.exist?(path)
 	File.unlink(path) 
       end
       if File.exist?(path + '.lock')
-	File.unlink(path + '.lock')
+	File.rmdir(path + '.lock')
       end
-      print "done\n"
+      print "done\n" if $DEBUG
     }
   end
 
   def initialize(basename, tmpdir = '/tmp')
     umask = File.umask(0177)
+    tmpname = lock = nil
     begin
       n = 0
       while true
 	begin
-	  @tmpname = sprintf('%s/%s.%d.%d', tmpdir, basename, $$, n)
-	  unless File.exist?(@tmpname)
-	    File.symlink(tmpdir, @tmpname + '.lock')
+	  tmpname = sprintf('%s/%s.%d.%d', tmpdir, basename, $$, n)
+	  lock = tmpname + '.lock'
+	  unless File.exist?(lock)
+	    Dir.mkdir(lock)
 	    break
 	  end
 	rescue
-	  raise "cannot generate tmpfile `%s'" % @tmpname if n >= Max_try
+	  raise "cannot generate tmpfile `%s'" % tmpname if n >= Max_try
 	  #sleep(1)
 	end
 	n += 1
       end
 
-      @clean_files = Tempfile.callback(@tmpname)
+      @clean_files = Tempfile.callback(tmpname)
       ObjectSpace.define_finalizer(self, @clean_files)
 
-      @tmpfile = File.open(@tmpname, 'w+')
+      @tmpname = tmpname
+      @tmpfile = File.open(tmpname, 'w+')
       super(@tmpfile)
-      File.unlink(@tmpname + '.lock')
+      Dir.rmdir(lock)
     ensure
       File.umask(umask)
     end
@@ -78,6 +81,7 @@ class Tempfile < SimpleDelegator
 end
 
 if __FILE__ == $0
+#  $DEBUG = true
   f = Tempfile.new("foo")
   f.print("foo\n")
   f.close

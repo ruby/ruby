@@ -310,7 +310,7 @@ class TkCanvas<TkWindow
 	  || key == 'latinfont' || key == 'asciifont' )
 	tagfont_configure(tagid(tagOrId), {key=>value})
       else
-	tk_call 'itemconfigure', tagid(tagOrId), "-#{key}", value
+	tk_send 'itemconfigure', tagid(tagOrId), "-#{key}", value
       end
     end
   end

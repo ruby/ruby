@@ -42,7 +42,7 @@ class TkFont
       r | []
 
     when /^8\.*/
-      list(tk_call('font', 'names'))
+      tk_split_simplelist(tk_call('font', 'names'))
 
     end
   end
@@ -89,10 +89,14 @@ class TkFont
       if fnt == []
 	TkFont.new(nil, nil).call_font_configure(path, *(args + [{}]))
       else
-	compound = Hash[*list(tk_call('font', 'configure', 
-				      fnt))].collect{|key,value|
-	  [key[1..-1], value]
-	}.assoc('compound')[1]
+	begin
+	  compound = Hash[*list(tk_call('font', 'configure', 
+					fnt))].collect{|key,value|
+	    [key[1..-1], value]
+	  }.assoc('compound')[1]
+	rescue
+	  compound = []
+	end
 	if compound == []
 	  TkFont.new(fnt, DEFAULT_KANJI_FONT_NAME) \
 	  .call_font_configure(path, *(args + [{}]))
@@ -156,14 +160,19 @@ class TkFont
     elsif font.kind_of? Array
       finfo = {}
       finfo['family'] = font[0].to_s
-      if font[1] && font[1] != '0' && font[1] =~ /^(|\+|-)([0-9]+)$/
-	if $1 == '-'
-	  finfo['pixels'] = font[1].to_s
+      if font[1]
+	fsize = font[1].to_s
+	if fsize != '0' && fsize =~ /^(|\+|-)([0-9]+)$/
+	  if $1 == '-'
+	    finfo['pixels'] = $2
+	  else
+	    finfo['points'] = $2
+	  end
 	else
-	  finfo['points'] = font[1].to_s
+	  finfo['points'] = '13'
 	end
       end
-      finfo[2..-1].each{|style|
+      font[2..-1].each{|style|
 	case (style)
 	when 'normal'
 	  finfo['weight'] = style
@@ -199,16 +208,19 @@ class TkFont
     elsif font.kind_of? Array
       finfo = {}
       finfo['family'] = font[0].to_s
-      if font[1] && font[1] != '0' && font[1] =~ /^(|\+|-)([0-9]+)$/
-	if $1 == '-'
-	  finfo['pixels'] = $2
+      if font[1]
+	fsize = font[1].to_s
+	if fsize != '0' && fsize =~ /^(|\+|-)([0-9]+)$/
+	  if $1 == '-'
+	    finfo['pixels'] = $2
+	  else
+	    finfo['points'] = $2
+	  end
 	else
-	  finfo['points'] = $2
+	  finfo['points'] = '13'
 	end
-      else
-	finfo['points'] = '13'
       end
-      finfo[2..-1].each{|style|
+      font[2..-1].each{|style|
 	case (style)
 	when 'normal'
 	  finfo['weight'] = style

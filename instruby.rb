@@ -18,6 +18,7 @@ libdir = prefix + "/lib/" + ruby_install_name
 archdir = libdir+"/"+CONFIG["arch"]
 mandir = CONFIG["mandir"] + "/man1"
 
+File.makedirs bindir, TRUE
 File.install "ruby#{binsuffix}",
   "#{bindir}/#{ruby_install_name}#{binsuffix}", 0755, TRUE
 for dll in Dir['*.dll']

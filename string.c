@@ -851,6 +851,9 @@ str_replace(str, beg, len, val)
 		RSTRING(str)->ptr+beg+len,
 		RSTRING(str)->len-(beg+len));
     }
+    if (RSTRING(str)->len < beg && len < 0) {
+	MEMZERO(RSTRING(str)->ptr+RSTRING(str)->len, char, -len);
+    }
     memcpy(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
     RSTRING(str)->len += RSTRING(val)->len - len;
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
@@ -1407,7 +1410,7 @@ str_inspect(str)
 	    *b++ = c;
 	    *b++ = *p++;
 	}
-	else if (c & 0x80) {
+	else if ((c & 0x80) && current_mbctype != MBCTYPE_EUC) {
 	    CHECK(1);
 	    *b++ = c;
 	}

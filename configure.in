@@ -539,6 +539,9 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no)])
     setup=Setup
     ;;
 esac
+
+
+
 AC_SUBST(binsuffix)
 AC_SUBST(setup)
 
@@ -547,7 +550,7 @@ if test "$prefix" = NONE; then
 fi
 
 if test "$fat_binary" = yes ; then
-  CFLAGS="$CFLAGS -pipe $ARCH_FLAG"
+  CFLAGS="$CFLAGS $ARCH_FLAG"
 fi
 
 LIBRUBY='libruby.a'
@@ -575,9 +578,19 @@ if test "$enable_shared" = 'yes'; then
   LIBRUBYARG='-L./ -lruby'
 fi
 
-if test "$host_os" = "rhapsody" ; then
-    CFLAGS="$CFLAGS -no-precomp"
-fi
+case "$host_os" in
+	nextstep*)
+    	CFLAGS="$CFLAGS -pipe"
+		;;
+	openstep*)
+    	CFLAGS="$CFLAGS -pipe"
+		;;
+	rhasody*)
+    	CFLAGS="$CFLAGS -pipe -no-precomp"
+		;;
+	*)
+		;;	
+esac
 
 
 AC_SUBST(LIBRUBY)

@@ -23,7 +23,7 @@
 
 #ifdef NeXT
 #define DYNAMIC_ENDIAN		/* determine endian at runtime */
-#ifndef __Apple__
+#ifndef __APPLE__
 #define S_IXUSR _S_IXUSR        /* execute/search permission, owner */
 #endif
 #define S_IXGRP 0000010         /* execute/search permission, group */

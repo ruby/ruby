@@ -27,6 +27,17 @@ memclear(mem, size)
     }
 }
 
+static void
+memfill(mem, size, val)
+    register VALUE *mem;
+    register int size;
+    register VALUE val;
+{
+    while (size--) {
+	*mem++ = val;
+    }
+}
+
 #define ARY_FREEZE   FL_USER1
 
 static void
@@ -131,9 +142,6 @@ ary_new4(n, elts)
     if (elts) {
 	MEMCPY(RARRAY(ary)->ptr, elts, VALUE, n);
     }
-    else {
-	memclear(RARRAY(ary)->ptr, n);
-    }
     RARRAY(ary)->len = n;
 
     return ary;
@@ -159,13 +167,13 @@ ary_s_new(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    VALUE size;
+    VALUE size, val;
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, klass, T_ARRAY);
 
     ary->len = 0;
     ary->ptr = 0;
-    if (rb_scan_args(argc, argv, "01", &size) == 0) {
+    if (rb_scan_args(argc, argv, "02", &size, &val) == 0) {
 	ary->capa = ARY_DEFAULT_SIZE;
     }
     else {
@@ -174,13 +182,14 @@ ary_s_new(argc, argv, klass)
 	if (capa < 0) {
 	    ArgError("negative array size");
 	}
-	if (capa*sizeof(VALUE) < 0) {
+	if (capa > 0 && capa*sizeof(VALUE) <= 0) {
 	    ArgError("array size too big");
 	}
 	ary->capa = capa;
+	ary->len = capa;
     }
     ary->ptr = ALLOC_N(VALUE, ary->capa);
-    memclear(ary->ptr, ary->capa);
+    memfill(ary->ptr, ary->len, val);
     obj_call_init((VALUE)ary);
 
     return (VALUE)ary;

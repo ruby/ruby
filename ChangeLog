@@ -1,3 +1,22 @@
+Tue Jul 28 13:03:25 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (ary_s_new): argument to specify initial value is added.
+
+	* array.c (ary_s_new): specifies size, not capacity.
+
+Mon Jul 27 12:39:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (str_replace): zero fill for expansion gap.
+
+	* regex.c (mbctab_euc): set flags on for 0xA1-0xFE.  suggested by
+	  <inaba@st.rim.or.jp>.
+
+	* string.c (str_inspect): consider current_mbctype.
+
+Sun Jul 26 15:37:11 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* array.c (ary_s_new): Array.new(1<<30) dumps core.
+
 Fri Jul 24 13:40:19 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c1 released.
@@ -14,7 +33,7 @@ Fri Jul 24 02:10:22 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Thu Jul 23 13:11:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (rb_attr): argument should be symbol or a string.
+	* eval.c (rb_attr): argument should be symbol or string.
 
 Wed Jul 22 11:59:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

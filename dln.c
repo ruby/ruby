@@ -1088,7 +1088,11 @@ dln_sym(name)
 #endif
 
 #ifdef NeXT
-/*#include <mach-o/rld.h>*/
+#if NS_TARGET_MAJOR < 4
+#include <mach-o/rld.h>
+#else
+#include <mach-o/dyld.h>
+#endif
 #endif
 
 #ifdef _WIN32
@@ -1316,6 +1320,7 @@ dln_load(file)
     Mi hisho@tasihara.nest.or.jp,
     and... Miss ARAI Akino(^^;)
  ----------------------------------------------------*/
+#if NS_TARGET_MAJOR < 4 /* NeXTSTEP rld functions */
     {
 	unsigned long init_address;
 	char *object_files[2] = {NULL, NULL};
@@ -1341,6 +1346,42 @@ dln_load(file)
 	(*init_fct)();
 	return ;
     }
+#else/* OPENSTEP dyld functions */
+	{
+	int dyld_result ;
+	NSObjectFileImage obj_file ; /* handle, but not use it */
+	/* "file" is module file name .
+	   "buf" is initial function name with "_" . */
+
+	void (*init_fct)();
+
+
+    dyld_result = NSCreateObjectFileImageFromFile( file, &obj_file );
+
+    if (dyld_result != NSObjectFileImageSuccess)
+    {
+	    LoadError("Failed to load %.200s", file);
+    }
+
+    NSLinkModule(obj_file, file, TRUE);
+
+
+	/* lookup the initial function */
+	 /*NSIsSymbolNameDefined require function name without "_" */
+    if( NSIsSymbolNameDefined( buf + 1 ) )
+    {
+	    LoadError("Failed to lookup Init function %.200s",file);
+	}
+
+	/* NSLookupAndBindSymbol require function name with "_" !! */
+
+	init_fct = NSAddressOfSymbol( NSLookupAndBindSymbol( buf ) );
+	(*init_fct)();
+
+
+	return ;
+    }
+#endif /* rld or dyld */
 #endif
 
 #ifdef __BEOS__
