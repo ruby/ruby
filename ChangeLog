@@ -1,3 +1,8 @@
+Sat Oct 11 17:09:21 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/rexml/quickpath.rb (REXML::QuickPath::match):
+	  escape '[' to avoid warning.
+
 Sat Oct 11 16:08:41 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (realpath): check existence of the file.

@@ -31,7 +31,7 @@ module REXML
 				results = filter([element], path)
 			when /^\*/u
 				results = filter(element.to_a, path)
-			when /^[[!\w:]/u
+			when /^[\[!\w:]/u
 				# match on child
 				matches = []
 				children = element.to_a
