@@ -1,3 +1,14 @@
+Thu Mar 28 18:03:51 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: add taint check.
+
+	* ext/strscan/strscan.c: #getch/#get_byte should set regexp
+	  registers.
+
+	* ext/strscan/strscan.c: remove useless #include directive.
+
+	* ext/strscan/strscan.c: refactor struct strscanner.
+
 Wed Mar 27 14:47:32 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* io.c (READ_DATA_PENDING): configure.in has supported for uClibc,
