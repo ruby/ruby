@@ -685,6 +685,10 @@ ruby_prog_init()
     rb_define_readonly_variable("$-p", &do_print);
     rb_define_readonly_variable("$-l", &do_line);
 
+    if (rb_safe_level() == 0) {
+	addpath(".");
+    }
+
 #if defined(_WIN32) || defined(DJGPP)
     addpath(ruby_libpath());
 #endif
@@ -701,9 +705,6 @@ ruby_prog_init()
     addpath(RUBY_ARCHLIB);
 #endif
     addpath(RUBY_LIB);
-    if (rb_safe_level() == 0) {
-	addpath(".");
-    }
 
     rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
 

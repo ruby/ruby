@@ -4371,6 +4371,7 @@ Init_eval()
     rb_define_global_function("global_variables", f_global_variables, 0);
 
     rb_define_method(mKernel, "send", f_send, -1);
+    rb_define_method(mKernel, "__send__", f_send, -1);
     rb_define_method(mKernel, "instance_eval", obj_instance_eval, 1);
 
     rb_define_private_method(cModule, "append_features", mod_append_features, 1);

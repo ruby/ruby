@@ -1,3 +1,9 @@
+Tue Mar 24 12:50:06 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (ruby_prog_init): `.' should come last in the load-path.
+
+	* eval.c (Init_eval): `__send__', alias for `send'.
+
 Mon Mar 23 12:44:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (str_chomp_bang): now takes rs as an argument.
