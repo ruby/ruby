@@ -3958,10 +3958,6 @@ rb_io_initialize(argc, argv, io)
 
     rb_secure(4);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
-    orig = rb_io_check_io(fnum);
-    if (NIL_P(orig)) {
-	fd = NUM2INT(fnum);
-    }
     if (argc == 2) {
 	if (FIXNUM_P(mode)) {
 	    flags = FIX2LONG(mode);
@@ -3971,14 +3967,18 @@ rb_io_initialize(argc, argv, io)
 	    flags = rb_io_mode_modenum(RSTRING(mode)->ptr);
 	}
     }
+    orig = rb_io_check_io(fnum);
+    if (NIL_P(orig)) {
+	fd = NUM2INT(fnum);
+    }
     else {
-	if (!NIL_P(orig)) {
-	    GetOpenFile(orig, ofp);
-	    if (ofp->refcnt == LONG_MAX) {
-		VALUE s = rb_inspect(orig);
-		rb_raise(rb_eIOError, "too many shared IO for %s", StringValuePtr(s));
-	    }
+	GetOpenFile(orig, ofp);
+	if (ofp->refcnt == LONG_MAX) {
+	    VALUE s = rb_inspect(orig);
+	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValuePtr(s));
 	}
+    }
+    if (argc != 2) {
 #if defined(HAVE_FCNTL) && defined(F_GETFL)
 	flags = fcntl(fd, F_GETFL);
 	if (flags == -1) rb_sys_fail(0);
