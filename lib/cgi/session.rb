@@ -134,14 +134,13 @@ class CGI
       end
 
       def close
-	return unless @f.closed?
+	return if @f.closed?
 	update
 	@f.close
       end
 
       def delete
 	path = @f.path
-	return unless @f.closed?
 	@f.close
 	File::unlink path
       end
