@@ -5898,9 +5898,7 @@ backtrace(lev)
 	else {
 	    snprintf(buf, BUFSIZ, "%s:%d", ruby_sourcefile, ruby_sourceline);
 	}
-	fprintf(stderr, "=ary=%p(0x%x)\n", ary, BUILTIN_TYPE(ary));
 	rb_ary_push(ary, rb_str_new2(buf));
-	fprintf(stderr, "#ary=%p(0x%x)\n", ary, BUILTIN_TYPE(ary));
 	if (lev < -1) return ary;
     }
     else {
@@ -5912,7 +5910,6 @@ backtrace(lev)
 	    }
 	}
     }
-    fprintf(stderr, ">ary=%p(0x%x)\n", ary, BUILTIN_TYPE(ary));
     while (frame && (n = frame->node)) {
 	if (frame->prev && frame->prev->last_func) {
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
