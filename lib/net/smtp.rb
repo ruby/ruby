@@ -601,7 +601,7 @@ module Net # :nodoc:
 
     def check_response( res, allow_continue = false )
       return res if /\A2/ === res
-      return res if allow_continue and /\A354/ === res
+      return res if allow_continue and /\A3/ === res
       err = case res
             when /\A4/  then SMTPServerBusy
             when /\A50/ then SMTPSyntaxError

@@ -1,3 +1,8 @@
+Wed Aug 27 15:07:57 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/smtp.rb (check_response): AUTH CRAM-MD5 returns 334
+	  response. [ruby-list:38279]
+
 Wed Aug 27 05:10:15 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/win32.c (map_errno): support winsock error.
