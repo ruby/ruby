@@ -1371,7 +1371,7 @@ rb_const_assign(klass, id, val)
     }
     /* pre-defined class */
     if (st_lookup(rb_class_tbl, id, 0)) {
-	st_delete(rb_class_tbl, id, 0);
+	st_delete(rb_class_tbl, &id, 0);
 	st_insert(RCLASS(rb_cObject)->iv_tbl, id, val);
 	return;
     }

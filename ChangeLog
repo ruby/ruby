@@ -1,3 +1,7 @@
+Fri Aug 30 19:45:52 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* variable.c (rb_const_assign): st_delete() takes pointer to key.
+
 Fri Aug 30 19:40:28 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/Win32API/Win32API.c (Win32API_Call): RSTRING()->ptr may be
