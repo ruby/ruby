@@ -1300,8 +1300,8 @@ Init_Array()
     rb_define_method(cArray, "&", ary_and, 1);
     rb_define_method(cArray, "|", ary_or, 1);
 
-    rb_define_method(cArray, "uniq!", ary_uniq_bang, 0);
     rb_define_method(cArray, "uniq", ary_uniq, 0);
+    rb_define_method(cArray, "uniq!", ary_uniq_bang, 0);
     rb_define_method(cArray, "compact", ary_compact, 0);
     rb_define_method(cArray, "compact!", ary_compact_bang, 0);
     rb_define_method(cArray, "nitems", ary_nitems, 0);

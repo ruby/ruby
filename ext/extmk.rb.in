@@ -59,20 +59,37 @@ end
 
 if PLATFORM == "m68k-human"
 CFLAGS = "@CFLAGS@".gsub(/-c..-stack=[0-9]+ */, '')
-LINK = "@CC@ -o conftest -I#{$topdir} " + CFLAGS + " %s @LDFLAGS@ %s conftest.c @LIBS@ %s > nul 2>&1"
-CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} " + CFLAGS + " %s conftest.c > nul 2>&1"
+LINK = "@CC@ -o conftest -I#{$topdir} " + CFLAGS + " %s @LDFLAGS@ %s conftest.c @LIBS@ %s"
+CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} " + CFLAGS + " %s conftest.c"
 else
 CFLAGS = "@CFLAGS@"
-LINK = "@CC@ -o conftest -I#{$topdir} " + CFLAGS + " %s @LDFLAGS@ %s conftest.c %s > /dev/null 2>&1"
-CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} " + CFLAGS + " %s conftest.c > /dev/null 2>&1"
+LINK = "@CC@ -o conftest -I#{$topdir} " + CFLAGS + " %s @LDFLAGS@ %s conftest.c %s"
+CPP = "@CPP@ @CPPFLAGS@ -I#{$topdir} " + CFLAGS + " %s conftest.c"
+end
+
+if /win32|djgpp|mingw32/i =~ PLATFORM
+  $null = open("nul", "w")
+else
+  $null = open("/dev/null", "w")
+end
+
+$orgerr = $stderr.dup
+$orgout = $stdout.dup
+def xsystem command
+  $stderr.reopen($null) 
+  $stdout.reopen($null) 
+  r = system(command)
+  $stderr.reopen($orgerr)
+  $stdout.reopen($orgout)
+  return r
 end
 
 def try_link(libs)
-  system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+  xsystem(format(LINK, $CFLAGS, $LDFLAGS, libs))
 end
 
 def try_cpp
-  system(format(CPP, $CFLAGS))
+  xsystem(format(CPP, $CFLAGS))
 end
 
 def have_library(lib, func)

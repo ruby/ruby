@@ -1,5 +1,9 @@
 Tue Apr 14 11:34:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* experimental release 1.1b9_10.
+
+	* parse.y: token names prefixed by `t'.
+
 	* struct.c (struct_s_def): supports subclassing of Struct.
 
 	* io.c (io_s_new): supports subclassing of IO.
@@ -18,11 +22,11 @@ Mon Apr 13 11:07:39 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Mon Apr 13 13:18:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* eval.c (thread_trap_eval): all handlers executed under main_thread.
+	* eval.c (thread_trap_eval): all signals delivered to main_thread.
 
 Mon Apr 13 12:47:03 1998  TAKAHASHI Masayoshi  <maki@inac.co.jp>
 
-	* re.c (kcode_set_option): did not SJIS on SJIS condition.
+	* re.c (kcode_set_option): did not set SJIS on SJIS condition.
 
 Sun Apr 12 22:14:07 1998  Kazunori NISHI  <kazunori@swlab.csce.kyushu-u.ac.jp>
 
