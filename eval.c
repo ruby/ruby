@@ -1964,7 +1964,7 @@ copy_node_scope(node, rval)
     if (ruby_iter->iter == ITER_PRE) {\
 	ruby_block = ruby_block->outer;\
     }\
-    PUSH_ITER((ruby_iter->prev ? ruby_iter->prev->iter : ITER_NOT))
+    PUSH_ITER(ITER_NOT)
 
 #define END_CALLARGS \
     ruby_block = tmp_block;\
