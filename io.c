@@ -4131,8 +4131,8 @@ rb_io_s_for_fd(argc, argv, klass)
 static int binmode = 0;
 
 static VALUE
-argf_forward(argv)
-    VALUE *argv;
+argf_forward(
+    VALUE *argv)
 {
     return rb_funcall3(current_file, ruby_frame->last_func, ruby_frame->argc, argv);
 }
@@ -5224,7 +5224,7 @@ argf_read(argc, argv)
 	return str;
     }
     if (TYPE(current_file) != T_FILE) {
-	tmp = argf_forward();
+	tmp = argf_forward(argv);
     }
     else {
 	tmp = io_read(argc, argv, current_file);

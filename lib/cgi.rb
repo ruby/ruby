@@ -1023,7 +1023,7 @@ class CGI
           content_length -= c.size
         end
 
-        buf = buf.sub(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|--)/n) do
+        buf = buf.sub(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|#{LF}|--)/n) do
           body.print $1
           if "--" == $2
             content_length = -1

@@ -1,3 +1,8 @@
+Fri Oct 29 10:00:30 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): ruby_finalize_1 may cause exception,
+	  should be wrapped by PUSH_TAG/POP_TAG().  [ruby-dev:24627]
+
 Wed Oct 27 09:17:30 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_gsub): use a string object for exception safeness.

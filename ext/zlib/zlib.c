@@ -640,7 +640,13 @@ zstream_detach_input(z)
 {
     VALUE dst;
 
-    dst = NIL_P(z->input) ? rb_str_new(0, 0) : z->input;
+    if (NIL_P(z->input)) {
+	dst = rb_str_new(0, 0);
+    }
+    else {
+	dst = z->input;
+	RBASIC(dst)->klass = rb_cString;
+    }
     z->input = Qnil;
     RBASIC(dst)->klass = rb_cString;
     return dst;

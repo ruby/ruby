@@ -1430,9 +1430,9 @@ ruby_cleanup(ex)
     POP_ITER();
     ruby_errinfo = err;
     ex = error_handle(ex);
+    ruby_finalize_1();
     POP_TAG();
 
-    ruby_finalize_1();
     if (err && rb_obj_is_kind_of(err, rb_eSystemExit)) {
 	VALUE st = rb_iv_get(err, "status");
 	return NUM2INT(st);
