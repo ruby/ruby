@@ -2599,13 +2599,16 @@ isUNCRoot(const char *path)
 {
     if (path[0] == '\\' && path[1] == '\\') {
 	const char *p;
-	if (p = strchr(path + 3, '\\')) {
-	    if (!p[1])
-		return 0;
-	    if (p = strchr(p + 1, '\\')) {
-		if (!p[1])
-		    return 1;
-	    } else
+	for (p = path + 3; *p; p = CharNext(p)) {
+	    if (*p == '\\')
+		break;
+	}
+	if (p[0] && p[1]) {
+	    for (p++; *p; p = CharNext(p)) {
+		if (*p == '\\')
+		    break;
+	    }
+	    if (!p[0] || !p[1])
 		return 1;
 	}
     }
