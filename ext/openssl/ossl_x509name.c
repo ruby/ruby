@@ -88,7 +88,7 @@ ossl_x509name_alloc(VALUE klass)
 }
 
 static int id_aref;
-static VALUE ossl_x509name_add_entry(VALUE, VALUE, VALUE, VALUE);
+static VALUE ossl_x509name_add_entry(int, VALUE*, VALUE);
 #define rb_aref(obj, key) rb_funcall(obj, id_aref, 1, key)
 
 static VALUE
@@ -96,16 +96,16 @@ ossl_x509name_init_i(VALUE i, VALUE args)
 {
     VALUE self = rb_ary_entry(args, 0);
     VALUE template = rb_ary_entry(args, 1);
-    VALUE oid, val, type;
+    VALUE entry[3];
 
     Check_Type(i, T_ARRAY);
-    oid = rb_ary_entry(i, 0);
-    val = rb_ary_entry(i, 1);
-    type = rb_ary_entry(i, 2);
-    if(NIL_P(type)) type = rb_aref(template, oid);
-    if(NIL_P(type)) type = DEFAULT_OBJECT_TYPE;
+    entry[0] = rb_ary_entry(i, 0);
+    entry[1] = rb_ary_entry(i, 1);
+    entry[2] = rb_ary_entry(i, 2);
+    if(NIL_P(entry[2])) entry[2] = rb_aref(template, entry[0]);
+    if(NIL_P(entry[2])) entry[2] = DEFAULT_OBJECT_TYPE;
 
-    ossl_x509name_add_entry(self, oid, val, type);
+    ossl_x509name_add_entry(3, entry, self);
 }
 
 static VALUE
@@ -138,15 +138,18 @@ ossl_x509name_initialize(int argc, VALUE *argv, VALUE self)
 }
 
 static
-VALUE ossl_x509name_add_entry(VALUE self, VALUE oid, VALUE val, VALUE type)
+VALUE ossl_x509name_add_entry(int argc, VALUE *argv, VALUE self)
 {
     X509_NAME *name;
+    VALUE oid, value, type;
 
-    GetX509Name(self, name);
+    rb_scan_args(argc, argv, "21", &oid, &value, &type);
     StringValue(oid);
-    StringValue(val);
+    StringValue(value);
+    if(NIL_P(type)) type = rb_aref(OBJECT_TYPE_TEMPLATE, oid);
+    GetX509Name(self, name);
     if (!X509_NAME_add_entry_by_txt(name, RSTRING(oid)->ptr, NUM2INT(type),
-		RSTRING(val)->ptr, RSTRING(val)->len, -1, 0)) {
+		RSTRING(value)->ptr, RSTRING(value)->len, -1, 0)) {
 	ossl_raise(eX509NameError, NULL);
     }
 
@@ -274,7 +277,7 @@ ossl_x509name_to_der(VALUE self)
 void 
 Init_ossl_x509name()
 {
-    VALUE utf8str, ptrstr, hash;
+    VALUE utf8str, ptrstr, ia5str, hash;
 
     id_aref = rb_intern("[]");
     eX509NameError = rb_define_class_under(mX509, "NameError", eOSSLError);
@@ -282,7 +285,7 @@ Init_ossl_x509name()
 
     rb_define_alloc_func(cX509Name, ossl_x509name_alloc);
     rb_define_method(cX509Name, "initialize", ossl_x509name_initialize, -1);
-    rb_define_method(cX509Name, "add_entry", ossl_x509name_add_entry, 3);
+    rb_define_method(cX509Name, "add_entry", ossl_x509name_add_entry, -1);
     rb_define_method(cX509Name, "to_s", ossl_x509name_to_s, 0);
     rb_define_method(cX509Name, "to_a", ossl_x509name_to_a, 0);
     rb_define_method(cX509Name, "cmp", ossl_x509name_cmp, 1);
@@ -293,11 +296,14 @@ Init_ossl_x509name()
 
     utf8str = INT2NUM(V_ASN1_UTF8STRING);
     ptrstr = INT2NUM(V_ASN1_PRINTABLESTRING);
+    ia5str = INT2NUM(V_ASN1_IA5STRING);
     rb_define_const(cX509Name, "DEFAULT_OBJECT_TYPE", utf8str);
     hash = rb_funcall(rb_cHash, rb_intern("new"), 1, DEFAULT_OBJECT_TYPE);
     rb_hash_aset(hash, rb_str_new2("C"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("countryName"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("serialNumber"), ptrstr);
     rb_hash_aset(hash, rb_str_new2("dnQualifier"), ptrstr);
+    rb_hash_aset(hash, rb_str_new2("domainComponent"), ia5str);
+    rb_hash_aset(hash, rb_str_new2("emailAddress"), ia5str);
     rb_define_const(cX509Name, "OBJECT_TYPE_TEMPLATE", hash);
 }
