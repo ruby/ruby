@@ -9,6 +9,14 @@ Tue Oct  9 17:08:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* eval.c (rb_thread_priority_set): return the priority not but
 	  self.
 
+Sat Oct  6 23:07:08 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): NODE_MATCH3 was confusing left and right. sigh.
+
+Fri Oct  5 15:27:30 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c: backport from 1.7 marshal.c
+
 Thu Oct  4 14:11:03 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): EALREADY is the equivalent
