@@ -1,19 +1,22 @@
 #
 # $Id$
 #
-# The class for temporary files.
-#  o creates a temporary file, which name is "basename.pid.n" with mode "w+".
-#  o Tempfile objects can be used like IO object.
-#  o the temporary directory is determined by ENV['TMPDIR'], ENV['TMP'],
-#    ENV['TEMP'] and /tmp, in the order named.
-#  o when $SAFE > 0, you should specify a directory via the second argument
+# This is a class for managing temporary files.
+#
+#  o Tempfile::new("basename") creates a temporary file whose name is
+#    "basename.pid.n" and opens with mode "w+".
+#  o A Tempfile object can be treated as an IO object.
+#  o The temporary directory is determined by ENV['TMPDIR'],
+#    ENV['TMP'], and ENV['TEMP'] in the order named, and if none of
+#    them is available, it is set to /tmp.
+#  o When $SAFE > 0, you should specify a directory via the second argument
 #    of Tempfile::new(), or it will end up finding an ENV value tainted and
 #    pick /tmp.  In case you don't have it, an exception will be raised.
-#  o tempfile.close(true) gets the temporary file removed immediately.
-#  o otherwise, the removal is delayed until the object is finalized.
-#  o with Tempfile#open, you can reopen the temporary file.
-#  o file mode of the temporary files is 0600.
-#  o this library is (considered to be) thread safe.
+#  o Tempfile#close(true) gets the temporary file removed immediately.
+#  o Otherwise, the removal is delayed until the object is finalized.
+#  o With Tempfile#open, you can reopen the temporary file.
+#  o The file mode for the temporary files is 0600.
+#  o This library is (considered to be) thread safe.
 
 require 'delegate'
 
