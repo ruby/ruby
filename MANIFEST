@@ -204,6 +204,7 @@ lib/optparse/uri.rb
 lib/ostruct.rb
 lib/parsearg.rb
 lib/parsedate.rb
+lib/pathname.rb
 lib/ping.rb
 lib/pp.rb
 lib/prettyprint.rb
