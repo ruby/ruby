@@ -31,6 +31,14 @@ module DRb
       else
 	soc = UNIXServer.open(filename)
       end
+      owner = config[:UNIXFileOwner]
+      group = config[:UNIXFileGroup]
+      if owner || group
+        require 'etc'
+        owner = Etc.getpwnam( owner ).uid  if owner
+        group = Etc.getgrnam( group ).gid  if group
+        File.chown owner, group, filename
+      end
       mode = config[:UNIXFileMode]
       File.chmod(mode, filename) if mode
 

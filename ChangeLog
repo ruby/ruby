@@ -1,3 +1,7 @@
+Sun Jul 27 10:21:28 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/unix.rb: add UNIXFileOwner, UNIXFileGroup.
+
 Sun Jul 27 03:10:43 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (io_reopen): avoid dup2() equal handles not to close itself and
