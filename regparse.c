@@ -2020,26 +2020,29 @@ popular_qualifier_num(QualifierNode* qf)
   return -1;
 }
 
+enum ReduceType {
+  RQ_ASIS = 0, /* as is */
+  RQ_DEL  = 1, /* delete parent */
+  RQ_A,        /* to '*'    */
+  RQ_AQ,       /* to '*?'   */
+  RQ_QQ,       /* to '??'   */
+  RQ_P_QQ,     /* to '+)??' */
+  RQ_PQ_Q,     /* to '+?)?' */
+};
+
+static enum ReduceType ReduceTypeTable[6][6] = {
+  {RQ_DEL,  RQ_A,    RQ_A,   RQ_QQ,   RQ_AQ,   RQ_ASIS}, /* '?'  */
+  {RQ_DEL,  RQ_DEL,  RQ_DEL, RQ_P_QQ, RQ_P_QQ, RQ_DEL},  /* '*'  */
+  {RQ_A,    RQ_A,    RQ_DEL, RQ_ASIS, RQ_P_QQ, RQ_DEL},  /* '+'  */
+  {RQ_DEL,  RQ_AQ,   RQ_AQ,  RQ_DEL,  RQ_AQ,   RQ_AQ},   /* '??' */
+  {RQ_DEL,  RQ_DEL,  RQ_DEL, RQ_DEL,  RQ_DEL,  RQ_DEL},  /* '*?' */
+  {RQ_ASIS, RQ_PQ_Q, RQ_DEL, RQ_AQ,   RQ_AQ,   RQ_DEL}   /* '+?' */
+};
+
+
 extern void
 onig_reduce_nested_qualifier(Node* pnode, Node* cnode)
 {
-#define NQ_ASIS    0   /* as is     */
-#define NQ_DEL     1   /* delete parent */
-#define NQ_A       2   /* to '*'    */
-#define NQ_AQ      3   /* to '*?'   */
-#define NQ_QQ      4   /* to '??'   */
-#define NQ_P_QQ    5   /* to '+)??' */
-#define NQ_PQ_Q    6   /* to '+?)?' */
-
-  static char reduces[][6] = {
-    {NQ_DEL,  NQ_A,    NQ_A,   NQ_QQ,   NQ_AQ,   NQ_ASIS}, /* '?'  */
-    {NQ_DEL,  NQ_DEL,  NQ_DEL, NQ_P_QQ, NQ_P_QQ, NQ_DEL},  /* '*'  */
-    {NQ_A,    NQ_A,    NQ_DEL, NQ_ASIS, NQ_P_QQ, NQ_DEL},  /* '+'  */
-    {NQ_DEL,  NQ_AQ,   NQ_AQ,  NQ_DEL,  NQ_AQ,   NQ_AQ},   /* '??' */
-    {NQ_DEL,  NQ_DEL,  NQ_DEL, NQ_DEL,  NQ_DEL,  NQ_DEL},  /* '*?' */
-    {NQ_ASIS, NQ_PQ_Q, NQ_DEL, NQ_AQ,   NQ_AQ,   NQ_DEL}   /* '+?' */
-  };
-
   int pnum, cnum;
   QualifierNode *p, *c;
 
@@ -2048,35 +2051,35 @@ onig_reduce_nested_qualifier(Node* pnode, Node* cnode)
   pnum = popular_qualifier_num(p);
   cnum = popular_qualifier_num(c);
 
-  switch(reduces[cnum][pnum]) {
-  case NQ_DEL:
+  switch(ReduceTypeTable[cnum][pnum]) {
+  case RQ_DEL:
     *p = *c;
     break;
-  case NQ_A:
+  case RQ_A:
     p->target = c->target;
     p->lower  = 0;  p->upper = REPEAT_INFINITE;  p->greedy = 1;
     break;
-  case NQ_AQ:
+  case RQ_AQ:
     p->target = c->target;
     p->lower  = 0;  p->upper = REPEAT_INFINITE;  p->greedy = 0;
     break;
-  case NQ_QQ:
+  case RQ_QQ:
     p->target = c->target;
     p->lower  = 0;  p->upper = 1;  p->greedy = 0;
     break;
-  case NQ_P_QQ:
+  case RQ_P_QQ:
     p->target = cnode;
     p->lower  = 0;  p->upper = 1;  p->greedy = 0;
     c->lower  = 1;  c->upper = REPEAT_INFINITE;  c->greedy = 1;
     return ;
     break;
-  case NQ_PQ_Q:
+  case RQ_PQ_Q:
     p->target = cnode;
     p->lower  = 0;  p->upper = 1;  p->greedy = 1;
     c->lower  = 1;  c->upper = REPEAT_INFINITE;  c->greedy = 0;
     return ;
     break;
-  case NQ_ASIS:
+  case RQ_ASIS:
     p->target = cnode;
     return ;
     break;
@@ -2312,6 +2315,7 @@ fetch_name(UChar** src, UChar* end, UChar** rname_end, ScanEnv* env, int ref)
 {
   int r, len, is_num;
   int c = 0;
+  OnigCodePoint code, first_code;
   UChar *name_end;
   UChar *p = *src;
 
@@ -2322,17 +2326,22 @@ fetch_name(UChar** src, UChar* end, UChar** rname_end, ScanEnv* env, int ref)
     return ONIGERR_EMPTY_GROUP_NAME;
   }
   else {
+    first_code = ONIGENC_MBC_TO_CODE(env->enc, p, end);
     PFETCH(c);
     if (c == '>')
       return ONIGERR_EMPTY_GROUP_NAME;
 
-    if (ONIGENC_IS_CODE_DIGIT(env->enc, c)) {
+    if (ONIGENC_IS_CODE_DIGIT(env->enc, first_code)) {
       if (ref == 1)
 	is_num = 1;
       else {
 	r = ONIGERR_INVALID_GROUP_NAME;
       }
     }
+    else if (! ONIGENC_IS_CODE_WORD(env->enc, first_code)) {
+      r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
+    }
+
     len = enc_len(env->enc, c);
     while (!PEND && len-- > 1)
       PFETCH(c);
@@ -2340,25 +2349,27 @@ fetch_name(UChar** src, UChar* end, UChar** rname_end, ScanEnv* env, int ref)
 
   while (!PEND) {
     name_end = p;
+    code = ONIGENC_MBC_TO_CODE(env->enc, p, end);
     PFETCH(c);
     if (c == '>' || c == ')') break;
 
     len = enc_len(env->enc, c);
     if (is_num == 1) {
-      if (! ONIGENC_IS_CODE_DIGIT(env->enc, c)) {
-	if (!ONIGENC_IS_CODE_ALPHA(env->enc, c) && c != '_')
-	  r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
-	else
-	  r = ONIGERR_INVALID_GROUP_NAME;
+      if (len == 1) {
+        if (! ONIGENC_IS_CODE_DIGIT(env->enc, code)) {
+          if (!ONIGENC_IS_CODE_WORD(env->enc, code))
+            r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
+          else
+            r = ONIGERR_INVALID_GROUP_NAME;
+        }
+      }
+      else {
+        r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
       }
     }
     else {
-      if (len == 1) {
-	if (!ONIGENC_IS_CODE_ALPHA(env->enc, c) &&
-	    !ONIGENC_IS_CODE_DIGIT(env->enc, c) &&
-	    c != '_') {
-	  r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
-	}
+      if (! ONIGENC_IS_CODE_WORD(env->enc, code)) {
+        r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
       }
     }
 
@@ -2370,8 +2381,7 @@ fetch_name(UChar** src, UChar* end, UChar** rname_end, ScanEnv* env, int ref)
     name_end = end;
   }
   else {
-    c = **src;
-    if (ONIGENC_IS_CODE_UPPER(env->enc, c))
+    if (ONIGENC_IS_CODE_UPPER(env->enc, first_code))
       r = ONIGERR_INVALID_GROUP_NAME;
   }
 
@@ -2391,19 +2401,24 @@ fetch_name(UChar** src, UChar* end, UChar** rname_end, ScanEnv* env, int ref)
 {
   int r, len;
   int c = 0;
+  OnigCodePoint code;
   UChar *name_end;
   UChar *p = *src;
 
   r = 0;
   while (!PEND) {
     name_end = p;
+    code = ONIGENC_MBC_TO_CODE(env->enc, p, end);
+    len = enc_len(env->enc, c);
     PFETCH(c);
-    if (enc_len(env->enc, c) > 1)
+    if (len > 1)
       r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
 
     if (c == '>' || c == ')') break;
-    if (! ONIGENC_IS_CODE_DIGIT(env->enc, c))
+    if (! ONIGENC_IS_CODE_DIGIT(env->enc, code))
       r = ONIGERR_INVALID_CHAR_IN_GROUP_NAME;
+
+    p += (len - 1);
   }
   if (c != '>') {
     r = ONIGERR_INVALID_GROUP_NAME;
@@ -3174,6 +3189,21 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
       break;
 
     case '(':
+      if (PPEEK == '?' &&
+          IS_SYNTAX_OP2(syn, ONIG_SYN_OP2_QMARK_GROUP_EFFECT)) {
+        PINC;
+        if (PPEEK == '#') {
+          PFETCH(c);
+          while (1) {
+            if (PEND) return ONIGERR_END_PATTERN_IN_GROUP;
+            PFETCH(c);
+            if (c == ')') break;
+          }
+          goto start;
+        }
+        PUNFETCH;
+      }
+
       if (! IS_SYNTAX_OP(syn, ONIG_SYN_OP_LPAREN_SUBEXP)) break;
       tok->type = TK_SUBEXP_OPEN;
       break;
@@ -4024,16 +4054,6 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
 
     PFETCH(c);
     switch (c) {
-    case '#':   /* (?#...) comment */
-      while (1) {
-	if (PEND) return ONIGERR_END_PATTERN_IN_GROUP;
-	PFETCH(c);
-	if (c == ')') break;
-      }
-      *src = p;
-      return 3; /* 3: comment */
-      break;
-
     case ':':   /* (?:...) grouping only */
     group:
       r = fetch_token(tok, &p, end, env);
@@ -4231,6 +4251,15 @@ parse_effect(Node** np, OnigToken* tok, int term, UChar** src, UChar* end,
   return 0;
 }
 
+
+static char* PopularQStr[] = {
+  "?", "*", "+", "??", "*?", "+?"
+};
+
+static char* ReduceQStr[] = {
+  "", "", "*", "*?", "??", "+ and ??", "+? and ?"
+};
+
 static int
 set_qualifier(Node* qnode, Node* target, int group, ScanEnv* env)
 {
@@ -4263,38 +4292,38 @@ set_qualifier(Node* qnode, Node* target, int group, ScanEnv* env)
 #ifdef USE_WARNING_REDUNDANT_NESTED_REPEAT_OPERATOR
       if (qn->by_number == 0 && qnt->by_number == 0 &&
 	  IS_SYNTAX_BV(env->syntax, ONIG_SYN_WARN_REDUNDANT_NESTED_REPEAT)) {
-	if (IS_REPEAT_INFINITE(qn->upper)) {
-	  if (qn->lower == 0) { /* '*' */
-	  redundant:
-	    {
-	      char buf[WARN_BUFSIZE];
-	      if (onig_verb_warn != onig_null_warn) {
-		onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
-			    env->pattern, env->pattern_end,
-			    "redundant nested repeat operator");
-		(*onig_verb_warn)(buf);
-	      }
-	      goto warn_exit;
-	    }
-	  }
-	  else if (qn->lower == 1) { /* '+' */
-	    /* (?:a?)+? only allowed. */
-	    if (qn->greedy || !(qnt->upper == 1 && qnt->greedy))
-	      goto redundant;
-	  }
-	}
-	else if (qn->upper == 1 && qn->lower == 0) {
-	  if (qn->greedy) { /* '?' */
-	    if (!(qnt->lower == 1 && qnt->greedy == 0)) /* not '+?' */
-	      goto redundant;
-	  }
-	  else { /* '??' */
-	    /* '(?:a+)?? only allowd. (?:a*)?? can be replaced to (?:a+)?? */
-	    if (!(qnt->greedy && qnt->lower == 1 &&
-		  IS_REPEAT_INFINITE(qnt->upper)))
-	      goto redundant;
-	  }
-	}
+        int nestq_num, targetq_num;
+        char buf[WARN_BUFSIZE];
+
+        nestq_num   = popular_qualifier_num(qn);
+        targetq_num = popular_qualifier_num(qnt);
+
+        switch(ReduceTypeTable[targetq_num][nestq_num]) {
+        case RQ_ASIS:
+          break;
+
+        case RQ_DEL:
+          if (onig_verb_warn != onig_null_warn) {
+            onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
+                                       env->pattern, env->pattern_end,
+                                       "redundant nested repeat operator");
+            (*onig_verb_warn)(buf);
+          }
+          goto warn_exit;
+          break;
+
+        default:
+          if (onig_verb_warn != onig_null_warn) {
+            onig_snprintf_with_pattern(buf, WARN_BUFSIZE, env->enc,
+                                       env->pattern, env->pattern_end,
+            "nested repeat operator '%s and %s' should be replaced with '%s'",
+            PopularQStr[targetq_num], PopularQStr[nestq_num],
+            ReduceQStr[ReduceTypeTable[targetq_num][nestq_num]]);
+            (*onig_verb_warn)(buf);
+          }
+          goto warn_exit;
+          break;
+        }
       }
 
     warn_exit:
@@ -4392,7 +4421,6 @@ parse_exp(Node** np, OnigToken* tok, int term,
   Node* qn;
   Node** targetp;
 
- start:
   *np = NULL;
   if (tok->type == term)
     goto end_of_token;
@@ -4421,11 +4449,6 @@ parse_exp(Node** np, OnigToken* tok, int term,
       if (r < 0) return r;
       NEFFECT(*np).target = target;	
       return tok->type;
-    }
-    else if (r == 3) { /* comment */
-      r = fetch_token(tok, src, end, env);
-      if (r < 0) return r;
-      goto start;
     }
     break;
 
