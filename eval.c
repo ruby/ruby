@@ -1105,13 +1105,13 @@ mod_alias_method(mod, new, old)
 
 #if defined(C_ALLOCA) && defined(THREAD)
 # define TMP_PROTECT NODE *__protect_tmp=0
-# define ALLOCTMP(type,n)						   \
+# define TMP_ALLOC(type,n)						   \
     (__protect_tmp = node_newnode(NODE_ALLOCA,				   \
 			     str_new(0,sizeof(type)*(n)),0,__protect_tmp), \
      (void*)RSTRING(__protect_tmp->nd_head)->ptr)
 #else
 # define TMP_PROTECT typedef int foobazzz
-# define ALLOCTMP(type,n) ALLOCA_N(type,n)
+# define TMP_ALLOC(type,n) ALLOCA_N(type,n)
 #endif
 
 #define SETUP_ARGS(anode) {\
@@ -1127,7 +1127,7 @@ mod_alias_method(mod, new, old)
 	    int line = sourceline;\
             int i;\
 	    n = anode;\
-	    argv = ALLOCTMP(VALUE,argc);\
+	    argv = TMP_ALLOC(VALUE,argc);\
 	    for (i=0;i<argc;i++) {\
 		argv[i] = rb_eval(self,n->nd_head);\
 		n=n->nd_next;\
@@ -2349,7 +2349,7 @@ module_setup(module, node)
 
     if (node->nd_rval) the_frame->cbase = node->nd_rval;
     if (node->nd_tbl) {
-	VALUE *vars = ALLOCTMP(VALUE, node->nd_tbl[0]+1);
+	VALUE *vars = TMP_ALLOC(VALUE, node->nd_tbl[0]+1);
 	*vars++ = (VALUE)node;
 	the_scope->local_vars = vars;
 	memclear(the_scope->local_vars, node->nd_tbl[0]);
@@ -3239,7 +3239,7 @@ rb_call(class, recv, mid, argc, argv, scope)
 
 	    if (body->nd_rval) the_frame->cbase = body->nd_rval;
 	    if (body->nd_tbl) {
-		local_vars = ALLOCTMP(VALUE, body->nd_tbl[0]+1);
+		local_vars = TMP_ALLOC(VALUE, body->nd_tbl[0]+1);
 		*local_vars++ = (VALUE)body;
 		memclear(local_vars, body->nd_tbl[0]);
 		the_scope->local_tbl = body->nd_tbl;
@@ -3752,7 +3752,7 @@ f_load(obj, fname)
     if (top_scope->local_tbl) {
 	int len = top_scope->local_tbl[0]+1;
 	ID *tbl = ALLOC_N(ID, len);
-	VALUE *vars = ALLOCTMP(VALUE, len);
+	VALUE *vars = TMP_ALLOC(VALUE, len);
 	*vars++ = 0;
 	MEMCPY(tbl, top_scope->local_tbl, ID, len);
 	MEMCPY(vars, top_scope->local_vars, ID, len-1);

@@ -92,6 +92,7 @@ lib/delegate.rb
 lib/e2mmap.rb
 lib/eregex.rb
 lib/find.rb
+lib/final.rb
 lib/finalize.rb
 lib/ftplib.rb
 lib/ftools.rb

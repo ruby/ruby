@@ -680,7 +680,7 @@ fail_to_flo(val)
 
 double big2dbl();
 
-static VALUE
+VALUE
 f_float(obj, arg)
     VALUE obj, arg;
 {
