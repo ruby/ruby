@@ -1,7 +1,7 @@
 #! /usr/bin/env ruby
 
 # cal.rb: Written by Tadayoshi Funaba 1998-2000
-# $Id: cal.rb,v 1.10 2000/05/20 02:09:47 tadf Exp $
+# $Id: cal.rb,v 1.11 2000-07-16 10:28:50+09 tadf Exp $
 
 require 'date2'
 require 'getopts'
@@ -38,7 +38,7 @@ end
 
 def pict(y, m, sg)
   d = (1..31).detect{|d| Date.exist?(y, m, d, sg)}
-  fi = Date.new3(y, m, d, sg)
+  fi = Date.new(y, m, d, sg)
   fi -= (fi.jd - $k + 1) % 7
 
   ve  = (fi..fi +  6).collect{|cu|
@@ -54,9 +54,8 @@ def pict(y, m, sg)
   gr = trans(gr) if $OPT_t
   ta = gr.collect{|xs| xs.join(' ')}
 
-  ca = %w(January   February  March     April
-	  May       June      July      August
-	  September October   November  December)[m - 1]
+  ca = %w(January February March April May June July
+	  August September October November December)[m - 1]
   ca = ca + ' ' + y.to_s if not $OPT_y
   ca = ca.center($mw)
 

@@ -1859,7 +1859,7 @@ yycompile(f, line)
 {
     int n;
 
-    if (!ruby_in_eval && rb_safe_level() == 0 &&
+    if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
 	VALUE hash, fname;
 

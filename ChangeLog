@@ -1,3 +1,10 @@
+Tue Jul 18 14:58:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (ruby_options): should treat SystemExit etc. properly.
+
+	* parse.y (yycompile): should check compile_for_eval, not
+	  ruby_in_eval.
+
 Mon Jul 17 04:29:50 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/mkmf.rb: converts extention of $objs into $OBJEXT.

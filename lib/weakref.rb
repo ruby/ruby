@@ -43,8 +43,8 @@ class WeakRef<Delegator
   def initialize(orig)
     super
     @__id = orig.__id__
-        ObjectSpace.define_finalizer orig, @@final
-    ObjectSpace.defin_finalizer self, @@final
+    ObjectSpace.define_finalizer orig, @@final
+    ObjectSpace.define_finalizer self, @@final
     ID_MAP[@__id] = [] unless ID_MAP[@__id]
     ID_MAP[@__id].push self.__id__
     ID_REV_MAP[self.id] = @__id

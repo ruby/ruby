@@ -578,6 +578,7 @@ EOHELP
     end
 
     def excn_handle(file, line, id, binding)
+      p $!
       if $!.type <= SystemExit
 	set_trace_func nil
 	exit

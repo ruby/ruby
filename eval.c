@@ -1002,26 +1002,6 @@ ruby_init()
     ruby_scope = top_scope;
 }
 
-void
-ruby_options(argc, argv)
-    int argc;
-    char **argv;
-{
-    int state;
-
-    PUSH_TAG(PROT_NONE)
-    if ((state = EXEC_TAG()) == 0) {
-	ruby_process_options(argc, argv);
-    }
-    POP_TAG();
-    if (state) {
-	trace_func = 0;
-	tracing = 0;
-	error_print();
-	exit(1);
-    }
-}
-
 static VALUE
 eval_node(self)
     VALUE self;
@@ -1097,6 +1077,25 @@ error_handle(ex)
 	break;
     }
     return ex;
+}
+
+void
+ruby_options(argc, argv)
+    int argc;
+    char **argv;
+{
+    int state;
+
+    PUSH_TAG(PROT_NONE)
+    if ((state = EXEC_TAG()) == 0) {
+	ruby_process_options(argc, argv);
+    }
+    POP_TAG();
+    if (state) {
+	trace_func = 0;
+	tracing = 0;
+	exit(error_handle(state));
+    }
 }
 
 void

@@ -500,5 +500,3 @@ module Math
   module_function :atanh!
   
 end
-
-
