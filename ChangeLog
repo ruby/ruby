@@ -1,3 +1,9 @@
+Mon Mar  4 13:23:16 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/extmk.rb.in (dir_config): Sync with mkmf.rb: Fix a bug where
+	  --with-xx-{include,lib} is ignored when --with-xx-dir is
+	  specified.
+
 Fri Mar  1 23:08:16 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.7 released.
