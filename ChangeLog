@@ -1,3 +1,7 @@
+Fri Feb 27 01:00:09 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb, test/drb/drbtest.rb: require drb/eq.rb by default
+
 Wed Feb 25 21:16:25 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb (with_destdir): should return the given argument if no
