@@ -1,3 +1,10 @@
+Thu Jul 16 22:58:48 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (scan_once): substrings to the block should not be
+ 	  tainted.  use reg_nth_match(), not str_substr().
+
+	* string.c (str_substr): needed to transfer taint.
+
 Wed Jul 15 15:11:57 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_31.

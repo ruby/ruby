@@ -53,18 +53,16 @@ class CGI < SimpleDelegator
     when "GET"
       # exception messages should be printed to stdout.
       STDERR.reopen(STDOUT)
-
       ENV['QUERY_STRING'] or ""
     when "POST"
       # exception messages should be printed to stdout.
       STDERR.reopen(STDOUT)
-
-      input.read ENV['CONTENT_LENGTH'].to_i
+      input.read Integer(ENV['CONTENT_LENGTH'])
     else
       read_from_cmdline
     end.split(/&/).each do |x|
       key, val = x.split(/=/,2).collect{|x|unescape(x)}
-      if @inputs.include?('key')
+      if @inputs.include?(key)
         @inputs[key] += "\0" + (val or "")
       else
         @inputs[key] = (val or "")

@@ -287,6 +287,8 @@ str_substr(str, start, len)
     VALUE str;
     int start, len;
 {
+    VALUE str2;
+
     if (start < 0) {
 	start = RSTRING(str)->len + start;
     }
@@ -297,7 +299,10 @@ str_substr(str, start, len)
 	len = RSTRING(str)->len - start;
     }
 
-    return str_new(RSTRING(str)->ptr+start, len);
+    str2 = str_new(RSTRING(str)->ptr+start, len);
+    if (str_tainted(str)) str_taint(str2);
+
+    return str2;
 }
 
 static VALUE
@@ -972,7 +977,7 @@ str_sub_iter_s(str, pat, once)
     VALUE pat;
     int once;
 {
-    VALUE val, result;
+    VALUE val, match, result;
     int beg, offset, n;
     struct re_registers *regs;
 
@@ -998,10 +1003,11 @@ str_sub_iter_s(str, pat, once)
     while ((beg=reg_search(pat, str, offset, 0)) >= 0) {
 
 	n++;
-	regs = RMATCH(backref_get())->regs;
+	match = backref_get();
+	regs = RMATCH(match)->regs;
 	str_cat(result, RSTRING(str)->ptr+offset, beg-offset);
 
-	val = obj_as_string(rb_yield(reg_nth_match(0, backref_get())));
+	val = obj_as_string(rb_yield(reg_nth_match(0, match)));
 	str_cat(result, RSTRING(val)->ptr, RSTRING(val)->len);
 
 	if (BEG(0) == END(0)) {
@@ -2391,12 +2397,13 @@ scan_once(str, pat, start)
     VALUE str, pat;
     int *start;
 {
-    VALUE result;
+    VALUE result, match;
     struct re_registers *regs;
     int i;
 
     if (reg_search(pat, str, *start, 0) >= 0) {
-	regs = RMATCH(backref_get())->regs;
+	match = backref_get();
+	regs = RMATCH(match)->regs;
 	if (END(0) == *start) {
 	    *start = END(0)+1;
 	}
@@ -2404,16 +2411,11 @@ scan_once(str, pat, start)
 	    *start = END(0);
 	}
 	if (regs->num_regs == 1) {
-	    return str_substr(str, BEG(0), END(0)-BEG(0));
+	    return reg_nth_match(0, match);
 	}
 	result = ary_new2(regs->num_regs);
 	for (i=1; i < regs->num_regs; i++) {
-	    if (BEG(i) == -1) {
-		ary_push(result, Qnil);
-	    }
-	    else {
-		ary_push(result, str_substr(str, BEG(i), END(i)-BEG(i)));
-	    }
+	    ary_push(result, reg_nth_match(i, match));
 	}
 
 	return result;
