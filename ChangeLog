@@ -1,3 +1,10 @@
+Thu Nov 28 02:40:42 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/mkmf.rb: Make sure to dig the destination directory before
+	  installing a file there.  Formerly "make install" could fail
+	  depending on make(1)'s mood of the moment, especially when -jN
+	  is given.
+
 Wed Nov 27 17:39:38 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/syslog/syslog.c: Cut redundancy.

@@ -700,7 +700,7 @@ clean::
     f = "$(DLLIB)"
     dest = "#{dir}/#{f}"
     mfile.print "install: #{dest}\n"
-    mfile.print "#{dest}: #{f}\n\t@$(INSTALL_PROG) #{f} #{dir}\n"
+    mfile.print "#{dest}: #{f} #{dir}\n\t@$(INSTALL_PROG) #{f} #{dir}\n"
   end
   for i in [[["lib/**/*.rb", "$(RUBYLIBDIR)", "lib"]], $INSTALLFILES]
     files = install_files(mfile, i, nil, srcprefix) or next
@@ -712,7 +712,7 @@ clean::
       files.each do |f|
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install: #{dest}\n")
-	mfile.print("#{dest}: #{f}\n\t@$(INSTALL_DATA) #{f} #{dir}\n")
+	mfile.print("#{dest}: #{f} #{dir}\n\t@$(INSTALL_DATA) #{f} #{dir}\n")
       end
     end
   end
