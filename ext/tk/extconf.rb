@@ -307,25 +307,34 @@ if mac_need_framework ||
     mk_tkutil << CLEANINGS.sub(/\$\(CLEANLIBS\)/, "$(CLEANLIBS) $(CLEANLIBS2)")
     mk_tkutil << "\n\n"
 
-    mk_tkutil << "$(DLLIB2): $(OBJS2)\n\t"
+    DLDFLAGS2 = "#$LDFLAGS #$DLDFLAGS #$ARCH_FLAG".gsub(/\$\(DEFFILE\)/, '$(DEFFILE2)')
+    mk_tkutil << "DLDFLAGS2 = #{DLDFLAGS2}\n"
+    mk_tkutil << "DEFFILE2 = $(TARGET2)-$(arch).def\n" if EXPORT_PREFIX
+    mk_tkutil << "\n"
+
+    mk_tkutil << "$(DLLIB2): #{EXPORT_PREFIX ? '$(DEFFILE2) ':''}$(OBJS2)\n\t"
     mk_tkutil << "@-$(RM) $@\n\t"
     mk_tkutil << "@-$(RM) $(TARGET2).lib\n\t" if $mswin
 
-    LINK_SO2 = if CONFIG["DLEXT"] == $OBJEXT
-                 "ld $(DLDFLAGS) -r -o $(DLLIB2) $(OBJS2)\n"
-               else
-                 "$(LDSHARED) $(DLDFLAGS) $(LIBPATH) #{OUTFLAG}$(DLLIB2) " \
-                 "$(OBJS2) $(LOCAL_LIBS) $(LIBS)"
-               end
+    LINK_SO2 = LINK_SO.gsub(/\$\(DLLIB\)/, '$(DLLIB2)').gsub(/\$\(OBJS\)/, '$(OBJS2)').gsub(/\$\(DLDFLAGS\)/, '$(DLDFLAGS2)')
     mk_tkutil << LINK_SO2
 
     mk_tkutil << "\n\n"
-    mk_tkutil << "$(STATIC_LIB2): $(OBJS2)\n\t"
-    mk_tkutil << "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS2)"
-    if ranlib = config_string('RANLIB')
-      mk_tkutil << "\n\t@-#{ranlib} $(DLLIB2) 2> /dev/null || true"
+    unless $static.nil?
+      mk_tkutil << "$(STATIC_LIB2): $(OBJS2)\n\t"
+      mk_tkutil << "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS2)"
+      if ranlib = config_string('RANLIB')
+        mk_tkutil << "\n\t@-#{ranlib} $(DLLIB2) 2> /dev/null || true"
+      end
     end
-    mk_tkutil << "\n\n\n"
+    mk_tkutil << "\n\n"
+
+    if EXPORT_PREFIX
+      mk_tkutil << "$(DEFFILE2):\n"
+      mk_tkutil << %Q!\t$(RUBY) -e "puts 'EXPORTS', 'Init_$(TARGET2)'" > $@\n!
+      mk_tkutil << "\n\n"
+    end
+    mk_tkutil << "\n"
 
     mk_tkutil << "install: $(RUBYARCHDIR)/$(DLLIB2)\n"
     mk_tkutil << "$(RUBYARCHDIR)/$(DLLIB2): $(DLLIB2) $(RUBYARCHDIR)\n"
