@@ -1,3 +1,9 @@
+Fri Dec 27 02:45:17 2002  Wakou Aoyama  <wakou@ruby-lang.org>
+
+	* lib/net/telnet.rb: Telnet#print not add "\n".
+
+	* lib/cgi.rb: cgi['key'] is equal cgi['key'][0]
+
 Thu Dec 26 22:33:18 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb (create_makefile): check only `-' option.

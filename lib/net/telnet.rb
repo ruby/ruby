@@ -4,7 +4,7 @@
 
 net/telnet.rb - simple telnet client library
 
-Wakou Aoyama <wakou@fsinet.or.jp>
+Wakou Aoyama <wakou@ruby-lang.org>
 
 
 === MAKE NEW TELNET OBJECT
@@ -90,7 +90,7 @@ of cource, set sync=true or flush is necessary.
 
 Telnet#puts() adds "\n" to the last of "string".
 
-WARNING: Telnet#print() NOT adds "\n" to the last of "string", in the future.
+CAUTION: Telnet#print() NOT adds "\n" to the last of "string".
 
 If "Telnetmode" option is true, then escape IAC code ("\xFF"). If
 "Binmode" option is false, then convert "\n" to EOL(end of line) code.
@@ -504,7 +504,7 @@ module Net
       end
     end
 
-    def _print(string)
+    def print(string)
       string = string.gsub(/#{IAC}/no, IAC + IAC) if @options["Telnetmode"]
 
       if @options["Binmode"]
@@ -524,15 +524,7 @@ module Net
     end
 
     def puts(string)
-      self._print(string + "\n")
-    end
-
-    def print(string)
-      if $VERBOSE
-        $stderr.puts 'WARNING: Telnet#print("string") NOT adds "\n" to the last of "string", in the future.'
-        $stderr.puts '         cf. Telnet#puts().'
-      end
-      self.puts(string)
+      self.print(string + "\n")
     end
 
     def cmd(options)

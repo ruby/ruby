@@ -18,14 +18,16 @@ Wakou Aoyama <wakou@ruby-lang.org>
 
   require "cgi"
   cgi = CGI.new
-  values = cgi['field_name']   # <== array of 'field_name'
-    # if not 'field_name' included, then return [].
+  value = cgi['field_name']   # <== value string for 'field_name'
+    # if not 'field_name' included, then return "".
   fields = cgi.keys            # <== array of field names
 
   # returns true if form has 'field_name'
   cgi.has_key?('field_name')
   cgi.has_key?('field_name')
   cgi.include?('field_name')
+
+CAUTION! cgi['field_name'] retuen Array with old cgi.rb(included ruby 1.6)
 
 
 === GET FORM VALUES AS HASH
@@ -64,13 +66,13 @@ cgi.params is a hash.
 
   require "cgi"
   cgi = CGI.new
-  values = cgi['field_name']   # <== array of 'field_name'
-  values[0].read               # <== body of values[0]
-  values[0].local_path         # <== path to local file of values[0]
-  values[0].original_filename  # <== original filename of values[0]
-  values[0].content_type       # <== content_type of values[0]
+  value = cgi['field_name']   # <== value string for 'field_name'
+  value.read                  # <== body of value
+  value.local_path            # <== path to local file of value
+  value.original_filename     # <== original filename of value
+  value.content_type          # <== content_type of value
 
-and values[0] has StringIO or Tempfile class methods.
+and value has StringIO or Tempfile class methods.
 
 
 === GET COOKIE VALUES
@@ -939,8 +941,21 @@ convert string charset, and set language to "ja".
     end
     private :initialize_query
 
-    def [](*args)
-      @params[*args]
+    def [](key)
+      value = @params[key][0]
+      def value.[](key)
+        $stderr.puts <<END
+CAUTION! cgi['key'] == cgi.params['key'][0] If want Array, use cgi.params['key']
+END
+        self
+      end
+      def value.first
+        $stderr.puts <<END
+CAUTION! cgi['key'] == cgi.params['key'][0] If want Array, use cgi.params['key']
+END
+        self
+      end
+      value
     end
 
     def keys(*args)
