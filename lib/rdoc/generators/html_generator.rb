@@ -1227,6 +1227,9 @@ module Generators
           'title'        => CGI.escapeHTML(@options.title),
           'charset'      => @options.charset
         }
+        if @options.inline_source
+          values['inline_source'] = true
+        end
         template.write_html_on(f, values)
       end
     end

@@ -272,6 +272,19 @@ IF:m_desc
 %m_desc%
 </div>
 ENDIF:m_desc
+IF:aka
+<div class="aka">
+This method is also aliased as
+START:aka
+<a href="%aref%">%name%</a>
+END:aka
+</div>
+ENDIF:aka
+IF:sourcecode
+<pre class="source">
+%sourcecode%
+</pre>
+ENDIF:sourcecode
 END:methods
 ENDIF:methods
 END:method_list
@@ -369,10 +382,15 @@ INDEX = %{
         <frame src="fr_class_index.html"  name="Classes">
         <frame src="fr_method_index.html" name="Methods">
     </frameset>
+IF:inline_source
+      <frame  src="%initial_page%" name="docwin">
+ENDIF:inline_source
+IFNOT:inline_source
     <frameset rows="80%,20%">
       <frame  src="%initial_page%" name="docwin">
       <frame  src="blank.html" name="source">
     </frameset>
+ENDIF:inline_source
     <noframes>
           <body bgcolor="white">
             Click <a href="html/index.html">here</a> for a non-frames
