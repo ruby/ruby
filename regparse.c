@@ -866,6 +866,7 @@ static FreeNode* FreeNodeList = (FreeNode* )NULL;
 extern void
 onig_node_free(Node* node)
 {
+ start:
   if (IS_NULL(node)) return ;
 
   switch (NTYPE(node)) {
@@ -878,7 +879,23 @@ onig_node_free(Node* node)
   case N_LIST:
   case N_ALT:
     onig_node_free(NCONS(node).left);
-    onig_node_free(NCONS(node).right);
+    /* onig_node_free(NCONS(node).right); */
+    {
+      Node* next_node = NCONS(node).right;
+
+#ifdef USE_RECYCLE_NODE
+      {
+	FreeNode* n = (FreeNode* )node;
+	n->next = FreeNodeList;
+	FreeNodeList = n;
+      }
+#else
+      xfree(node);
+#endif
+
+      node = next_node;
+      goto start;
+    }
     break;
 
   case N_CCLASS:
@@ -909,9 +926,7 @@ onig_node_free(Node* node)
 
 #ifdef USE_RECYCLE_NODE
   {
-    FreeNode* n;
-
-    n = (FreeNode* )node;
+    FreeNode* n = (FreeNode* )node;
     n->next = FreeNodeList;
     FreeNodeList = n;
   }

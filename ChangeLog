@@ -1,3 +1,8 @@
+Tue Nov 30 00:12:57 2004  Kazuo Saito  <ksaito@uranus.dti.ne.jp>
+
+	* regparse.c: now handles many alternatives (over 500000)
+	in regexp. [ruby-dev:24773]
+
 Mon Nov 29 16:06:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c (strio_write): insufficiently filled string
