@@ -121,6 +121,9 @@ dup2.o: @srcdir@/missing/dup2.c
 flock.o: @srcdir@/missing/flock.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/flock.c
 
+memcmp.o: @srcdir@/missing/memcmp.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/memcmp.c
+
 memmove.o: @srcdir@/missing/memmove.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/memmove.c
 
@@ -133,11 +136,14 @@ setenv.o: @srcdir@/missing/setenv.c
 strcasecmp.o: @srcdir@/missing/strcasecmp.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strcasecmp.c
 
-strerror.o: @srcdir@/missing/strerror.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strerror.c
+strchr.o: @srcdir@/missing/strchr.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strchr.c
 
 strdup.o: @srcdir@/missing/strdup.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strdup.c
+
+strerror.o: @srcdir@/missing/strerror.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strerror.c
 
 strftime.o: @srcdir@/missing/strftime.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strftime.c
