@@ -2572,11 +2572,11 @@ rb_file_sysopen_internal(io, fname, flags, mode)
 
     MakeOpenFile(io, fptr);
 
-    fd = rb_sysopen(fname, flags, mode);
+    fptr->path = strdup(fname);
     m = rb_io_modenum_mode(flags);
     fptr->mode = rb_io_modenum_flags(flags);
+    fd = rb_sysopen(fptr->path, flags, mode);
     fptr->f = rb_fdopen(fd, m);
-    fptr->path = strdup(fname);
 
     return io;
 }
@@ -3007,12 +3007,11 @@ rb_open_file(argc, argv, io)
     VALUE io;
 {
     VALUE fname, vmode, perm;
-    char *path, *mode;
+    char *mode;
     int flags, fmode;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
     FilePathValue(fname);
-    path = RSTRING(fname)->ptr;
 
     if (FIXNUM_P(vmode) || !NIL_P(perm)) {
 	if (FIXNUM_P(vmode)) {
@@ -3024,7 +3023,7 @@ rb_open_file(argc, argv, io)
 	}
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
 
-	rb_file_sysopen_internal(io, path, flags, fmode);
+	rb_file_sysopen_internal(io, RSTRING(fname)->ptr, flags, fmode);
     }
     else {
 	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
@@ -3079,6 +3078,7 @@ rb_io_s_sysopen(argc, argv)
 {
     VALUE fname, vmode, perm;
     int flags, fmode, fd;
+    char *path;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
     FilePathValue(fname);
@@ -3092,7 +3092,9 @@ rb_io_s_sysopen(argc, argv)
     if (NIL_P(perm)) fmode = 0666;
     else             fmode = NUM2INT(perm);
 
-    fd = rb_sysopen(RSTRING(fname)->ptr, flags, fmode);
+    path = ALLOCA_N(char, strlen(RSTRING(fname)->ptr)+1);
+    strcpy(path, RSTRING(fname)->ptr);
+    fd = rb_sysopen(path, flags, fmode);
     return INT2NUM(fd);
 }
 

@@ -1,3 +1,8 @@
+Thu Oct  7 00:08:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_sysopen): preserve path in the buffer allocated by
+	  ALLOCA_N() to prevent modification.  [ruby-dev:24438]
+
 Wed Oct  6 09:21:00 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_mode_flags): preserve append mode flag.
