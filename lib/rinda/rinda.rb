@@ -10,6 +10,7 @@
 # (See the samples directory in the Ruby distribution, from 1.8.2 onwards.)
 #
 
+require 'drb/drb'
 require 'thread'
 
 #
