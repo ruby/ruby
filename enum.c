@@ -280,8 +280,9 @@ enum_sort_by(obj)
 
     ary  = rb_ary_new2((TYPE(obj) == T_ARRAY) ? RARRAY(obj)->len : 2000);
     rb_iterate(rb_each, obj, sort_by_i, ary);
-    if (RARRAY(ary)->len <= 1) return ary;
-    qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp);
+    if (RARRAY(obj)->len > 1) {
+	qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE), sort_by_cmp);
+    }
     for (i=0; i<RARRAY(ary)->len; i++) {
 	VALUE e = RARRAY(ary)->ptr[i];
 	RARRAY(ary)->ptr[i] = RARRAY(e)->ptr[1];

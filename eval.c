@@ -2100,6 +2100,7 @@ svalue_to_avalue(v)
     VALUE v;
 {
     if (NIL_P(v)) return rb_ary_new2(0);
+    if (v == Qundef) return rb_ary_new2(0);
     if (TYPE(v) == T_ARRAY) {
 	if (RARRAY(v)->len > 1) return v;
 	return rb_ary_new3(1, v);

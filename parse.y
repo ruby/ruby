@@ -3241,11 +3241,11 @@ yylex()
 	return '>';
 
       case '"':
-	return parse_string(c,c,c);
+	return parse_string(c,c,0);
       case '`':
 	if (lex_state == EXPR_FNAME) return c;
 	if (lex_state == EXPR_DOT) return c;
-	return parse_string(c,c,c);
+	return parse_string(c,c,0);
 
       case '\'':
 	return parse_qstring(c,0);
@@ -3896,7 +3896,12 @@ yylex()
 	    c = nextc();
 	}
 	if (ISDIGIT(c)) {
-	    rb_compile_error("`@%c' is not a valid instance variable name", c);
+	    if (tokidx == 1) {
+		rb_compile_error("`@%c' is not a valid instance variable name", c);
+	    }
+	    else {
+		rb_compile_error("`@@%c' is not a valid class variable name", c);
+	    }
 	}
 	if (!is_identchar(c)) {
 	    pushback(c);
@@ -4196,7 +4201,7 @@ str_extend(list, term, paren)
 		if (c == paren) paren_nest++;
 		else if (c == term && (!paren || paren_nest-- == 0)) {
 		    pushback(c);
-		    list_append(list, NEW_STR(rb_str_new2("#")));
+		    list_append(list, NEW_STR(rb_str_new2("#{")));
 		    rb_warn("bad substitution in string");
 		    tokfix();
 		    list_append(list, NEW_STR(rb_str_new(tok(), toklen())));
