@@ -74,6 +74,14 @@ Net::Protocol
     protocol_param :command_type, '::Net::SMTPCommand'
 
 
+    def initialize( addr = nil, port = nil )
+      super
+      @esmtp = true
+    end
+
+
+    attr :esmtp
+
     def sendmail( mailsrc, fromaddr, toaddrs )
       do_ready fromaddr, toaddrs
       @command.write_mail mailsrc, nil
@@ -83,9 +91,6 @@ Net::Protocol
       do_ready fromaddr, toaddrs
       @command.write_mail nil, block
     end
-
-
-    attr :esmtp
 
 
     private
@@ -104,10 +109,18 @@ Net::Protocol
 
       @esmtp = false
       begin
-        @command.ehlo helodom
-        @esmtp = true
+        if @esmtp then
+          @command.ehlo helodom
+        else
+          @command.helo helodom
+        end
       rescue ProtocolError
-        @command.helo helodom
+        if @esmtp then
+          @esmtp = false
+          retry
+        else
+          raise
+        end
       end
     end
 

@@ -15,7 +15,7 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.13'
+  Version = '1.1.14'
 
 =begin
 
@@ -224,13 +224,12 @@ Object
 
     def initialize( sock )
       @socket = sock
-      @error_occured = false
       @last_reply = nil
       @critical = false
     end
 
-    attr_reader :socket, :error_occured, :last_reply
-    attr_writer :socket
+    attr_accessor :socket
+    attr_reader :last_reply
 
     # abstract quit
 
@@ -250,9 +249,7 @@ Object
           return rep
         end
       end
-
-      @error_occured = true
-      rep.error! @socket.sending
+      rep.error!
     end
 
     def getok( line, ok = SuccessCode )
@@ -298,17 +295,8 @@ Object
     attr_reader :code_type, :code, :message
     alias msg message
 
-    def error!( sending )
-      raise @code_type.error_type,
-            sprintf( <<MSG, @code, Net.quote(sending), Net.quote(@message) )
-
-status %s
-writing string is:
-%s
-
-error message from server is:
-%s
-MSG
+    def error!
+      raise @code_type.error_type, @code + ' ' + Net.quote(@message)
     end
 
   end
