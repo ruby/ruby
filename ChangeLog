@@ -1,3 +1,12 @@
+Wed Oct  9 07:11:25 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* gc.c (gc_sweep): also adjust heaps_limits when free unused heap
+	  page.  [ruby-core:00526]
+
+	* io.c (io_fflush): condition to retry can occur.
+
+	* io.c (io_write): returned 0 wrongly if no error occurred.
+
 Tue Oct  8 14:19:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (io_write): must check returned value from fwrite() before

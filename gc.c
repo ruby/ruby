@@ -946,6 +946,7 @@ gc_sweep()
 	else {
 	    if (i != j) {
 		heaps[j] = heaps[i];
+		heaps_limits[j] = heaps_limits[i];
 	    }
 	    j++;
 	}

@@ -277,10 +277,14 @@ io_fflush(f, fptr)
     int n;
 
     rb_thread_fd_writable(fileno(f));
-    TRAP_BEG;
-    n = fflush(f);
-    TRAP_END;
-    if (n == EOF) rb_sys_fail(fptr->path);
+    for (;;) {
+	TRAP_BEG;
+	n = fflush(f);
+	TRAP_END;
+	if (n != EOF) break;
+	if (!rb_io_wait_writable(fileno(f)))
+	    rb_sys_fail(fptr->path);
+    }
     fptr->mode &= ~FMODE_WBUF;
 }
 
@@ -374,7 +378,7 @@ io_write(io, str)
 	}
     } while (--n > 0);
 #else
-    for (; (r = fwrite(ptr, 1, n, f)) < n; ptr += r, n -= r) {
+    while (ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
 	if (ferror(f)) {
 	    if (rb_io_wait_writable(fileno(f))) {
 		clearerr(f);
@@ -1277,13 +1281,20 @@ fptr_finalize(fptr, fin)
 
     if (fptr->f2) {
 	f2 = fileno(fptr->f2);
-	n2 = fclose(fptr->f2);
+	while ((n2 = fclose(fptr->f2)) < 0) {
+	    if (!rb_io_wait_writable(f2)) {
+		e = errno;
+		break;
+	    }
+	}
 	fptr->f2 = 0;
-	if (n2 < 0) e = errno;
     }
     if (fptr->f) {
 	f1 = fileno(fptr->f);
-	n1 = fclose(fptr->f);
+	while ((n1 = fclose(fptr->f)) < 0) {
+	    if (f2 != -1 || !(fptr->mode & FMODE_WBUF)) break;
+	    if (!rb_io_wait_writable(f1)) break;
+	}
 	fptr->f = 0;
 	if (n1 < 0 && errno == EBADF) {
 	    if (f1 == f2 || !(fptr->mode & FMODE_WBUF)) {
