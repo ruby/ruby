@@ -1032,7 +1032,7 @@ if $0 == __FILE__
     end
 
     def test_null_character
-      assert_raises(ArgumentError) { Pathname.new("\0") }
+      assert_raise(ArgumentError) { Pathname.new("\0") }
     end
 
     def assert_relpath(result, dest, base)
@@ -1041,7 +1041,7 @@ if $0 == __FILE__
     end
 
     def assert_relpath_err(dest, base)
-      assert_raises(ArgumentError) {
+      assert_raise(ArgumentError) {
         Pathname.new(dest).relative_path_from(Pathname.new(base))
       }
     end

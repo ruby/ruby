@@ -522,7 +522,7 @@ if __FILE__ == $0
       a = PrettyPrintInspect.new(1)
       assert_equal("<pretty_print:1>", a.inspect)
       a = PrettyPrintInspectWithoutPrettyPrint.new
-      assert_raises(RuntimeError) { a.inspect }
+      assert_raise(RuntimeError) { a.inspect }
     end
 
     def test_proc
