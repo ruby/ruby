@@ -1,6 +1,7 @@
 MANIFEST
 depend
-md5.doc
+md5.txt
+md5.txt.jp
 md5.h
 md5c.c
 md5init.c

@@ -2412,6 +2412,9 @@ class TkMenubutton<TkLabel
 end
 
 module TkComposite
+  include Tk
+  extend Tk
+
   def initialize(parent=nil, *args)
     @frame = TkFrame.new(parent)
     @path = @epath = @frame.path

@@ -723,7 +723,7 @@ Makefileが依存関係をチェックしてくれます．
 
 (7) MANIFESTファイルにファイル名を入れる
 
-  % ls > MANIFEST
+  % find * -type f -print > MANIFEST
   % vi MANIFEST
 
 *.o, *~など不必要なファイル以外はMANIFESTに追加しておきます．

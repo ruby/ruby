@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -582,8 +582,6 @@ rb_module_s_new(klass)
     rb_obj_call_init(mod);
     return mod;
 }
-
-VALUE rb_class_new_instance();
 
 static VALUE
 rb_class_s_new(argc, argv)
