@@ -48,7 +48,7 @@ s%@OBJEXT@%obj%g
 s%@XLDFLAGS@%%g
 s%@DLDFLAGS@%%g
 s%@STATIC@%%g
-s%@CCDLFLAGS@%%g
+s%@CCDLFLAGS@%-DIMPORT%g
 s%@LDSHARED@%cl -LD%g
 s%@DLEXT@%dll%g
 s%@STRIP@%%g

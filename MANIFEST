@@ -32,6 +32,7 @@ file.c
 gc.c
 hash.c
 inits.c
+install-sh
 instruby.rb
 intern.h
 io.c

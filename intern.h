@@ -243,7 +243,8 @@ void rb_set_kcode _((const char*));
 int rb_ignorecase_p _((void));
 void rb_match_busy _((VALUE, int));
 /* ruby.c */
-extern VALUE rb_argv0;
+EXTERN VALUE rb_argv;
+EXTERN VALUE rb_argv0;
 void rb_load_file _((char*));
 void ruby_script _((char*));
 void ruby_prog_init _((void));
