@@ -1,3 +1,7 @@
+Tue Mar  4 00:33:04 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* MANIFEST: Belatedly add Test::Unit files.  D'oh!
+
 Sun Mar  2 09:51:47 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* marshal.c (w_nbyte): should output always via rb_io_write().
