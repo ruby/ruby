@@ -114,7 +114,7 @@ extern long strtol _((char *, char **, int));
 */
 
 #ifndef HAVE_STRTOUL
-extern long strtoul _((char *, char **, int));
+extern unsigned long strtoul _((char *, char **, int));
 #endif
 
 #ifndef HAVE_VSNPRINTF

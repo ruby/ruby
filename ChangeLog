@@ -1,3 +1,7 @@
+Thu Feb 20 15:45:33 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* missing.h (strtoul): fix prototype of strtoul.
+
 Thu Feb 20 10:11:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (clhs): allow "Foo::Bar = x".
