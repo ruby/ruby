@@ -119,6 +119,7 @@ extern "C++" {
 #endif
 #define vsnprintf  _vsnprintf
 #define snprintf   _snprintf
+#define fsync      _commit
 #undef stat
 #define stat(path,st) rb_w32_stat(path,st)
 
