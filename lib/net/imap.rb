@@ -41,9 +41,9 @@ Object
       ex).
         imap.select("inbox")
         p imap.responses["EXISTS"][-1]
-        #=> [2]
+        #=> 2
         p imap.responses["UIDVALIDITY"][-1]
-        #=> [968263756]
+        #=> 968263756
 
 : disconnect
       Disconnects from the server.
@@ -107,7 +107,7 @@ Object
         imap.create("foo/bar")
         imap.create("foo/baz")
         p imap.list("", "foo/%")
-        #=> [[[:NoSelect], "/", "foo/"], [[:NoInferiors], "/", "foo/baz"], [[:NoInferiors], "/", "foo/bar"]]
+        #=> [#<Net::IMAP::MailboxList attr=[:NoSelect], delim="/", name="foo/">, #<Net::IMAP::MailboxList attr=[:NoInferiors, :Marked], delim="/", name="foo/bar">, #<Net::IMAP::MailboxList attr=[:NoInferiors], delim="/", name="foo/baz">]
 
 : lsub(refname, mailbox)
       Sends a LSUB command, and returns a subset of names from the set
@@ -120,7 +120,7 @@ Object
 
       ex).
         p imap.status("inbox", ["MESSAGES", "RECENT"])
-        #=> {"RECENT"=>0, "MESSAGES"=>5}
+        #=> {"RECENT"=>0, "MESSAGES"=>44}
 
 : append(mailbox, message, flags = nil, date_time = nil)
       Sends a APPEND command to append the message to the end of
@@ -169,16 +169,17 @@ Object
 
       ex).
         p imap.fetch(6..8, "UID")
-        #=> [[6, ["UID", 98]], [7, ["UID", 99]], [8, ["UID", 100]]]
+        #=> [#<Net::IMAP::FetchData seqno=6, attr={"UID"=>98}>, #<Net::IMAP::FetchData seqno=7, attr={"UID"=>99}>, #<Net::IMAP::FetchData seqno=8, attr={"UID"=>100}>]
         p imap.fetch(6, "BODY[HEADER.FIELDS (SUBJECT)]")
-        #=> [[6, ["BODY[HEADER.FIELDS (\"SUBJECT\")]", "Subject: test\r\n\r\n"]]]
-        seqno, data = imap.uid_fetch(98, ["RFC822.SIZE", "INTERNALDATE"])[0]
-        attr = Hash[*data]
-        p attr["RFC822.SIZE"]
+        #=> [#<Net::IMAP::FetchData seqno=6, attr={"BODY[HEADER.FIELDS (SUBJECT)]"=>"Subject: test\r\n\r\n"}>]
+        data = imap.uid_fetch(98, ["RFC822.SIZE", "INTERNALDATE"])[0]
+        p data.seqno
+        #=> 6
+        p data.attr["RFC822.SIZE"]
         #=> 611
-        p attr["INTERNALDATE"]
+        p data.attr["INTERNALDATE"]
         #=> "12-Oct-2000 22:40:59 +0900"
-        p attr["UID"]
+        p data.attr["UID"]
         #=> 98
 
 : store(set, attr, flags)
@@ -190,7 +191,7 @@ Object
 
       ex).
         p imap.store(6..8, "+FLAGS", [:Deleted])
-        #=> [[6, ["FLAGS", [:Seen, :Deleted]]], [7, ["FLAGS", [:Seen, :Deleted]]], [8, ["FLAGS", [:Deleted]]]]
+        #=> [#<Net::IMAP::FetchData seqno=6, attr={"FLAGS"=>[:Seen, :Deleted]}>, #<Net::IMAP::FetchData seqno=7, attr={"FLAGS"=>[:Seen, :Deleted]}>, #<Net::IMAP::FetchData seqno=8, attr={"FLAGS"=>[:Seen, :Deleted]}>]
 
 : copy(set, mailbox)
 : uid_copy(set, mailbox)
@@ -255,8 +256,8 @@ module Net
       end
       authenticator = @@authenticators[auth_type].new(*args)
       send_command("AUTHENTICATE", auth_type) do |resp|
-	if resp.prefix == "+"
-	  data = authenticator.process(resp[0].unpack("m")[0])
+	if resp.instance_of?(ContinueRequest)
+	  data = authenticator.process(resp.data.text.unpack("m")[0])
 	  send_data([data].pack("m").chomp)
 	end
       end
@@ -308,8 +309,7 @@ module Net
 
     def status(mailbox, attr)
       send_command("STATUS", mailbox, attr)
-      status_list = @responses.delete("STATUS")[-1][1]
-      return Hash[*status_list]
+      return @responses.delete("STATUS")[-1][1]
     end
 
     def append(mailbox, message, flags = nil, date_time = nil)
@@ -332,7 +332,7 @@ module Net
 
     def expunge
       send_command("EXPUNGE")
-      return @responses.delete("EXPUNGE").collect {|i| i[0]}
+      return @responses.delete("EXPUNGE")
     end
 
     def search(keys, charset = nil)
@@ -432,29 +432,28 @@ module Net
 	if @@debug
 	  $stderr.puts(resp.inspect)
 	end
-	if resp.prefix == tag
+	case resp
+	when TaggedResponse
 	  case resp.name
-	  when /\ANO\z/ni
-	    raise NoResponseError, resp[0]
-	  when /\ABAD\z/ni
-	    raise BadResponseError, resp[0]
+	  when /\A(?:NO)\z/ni
+	    raise NoResponseError, resp.data.text
+	  when /\A(?:BAD)\z/ni
+	    raise BadResponseError, resp.data.text
 	  else
 	    return resp
 	  end
-	else
-	  if resp.prefix == "*"
-	    if /\ABYE\z/ni =~ resp.name &&
-		cmd != "LOGOUT"
-	      raise ByeResponseError, resp[0]
-	    end
-	    record_response(resp.name, resp.data)
-	    if /\A(OK|NO|BAD)\z/ni =~ resp.name &&
-		resp[0].instance_of?(Array)
-	      record_response(resp[0][0], resp[0][1..-1])
-	    end
+	when UntaggedResponse
+	  if /\ABYE\z/ni =~ resp.name &&
+	      cmd != "LOGOUT"
+	    raise ByeResponseError, resp.data.text
 	  end
-	  block.call(resp) if block
+	  record_response(resp.name, resp.data)
+	  if resp.data.instance_of?(ResponseText) &&
+	      (code = resp.data.code)
+	    record_response(code.name, code.data)
+	  end
 	end
+	block.call(resp) if block
       end
     end
 
@@ -479,7 +478,6 @@ module Net
     end
 
     def record_response(name, data)
-      name = name.upcase
       unless @responses.has_key?(name)
 	@responses[name] = []
       end
@@ -509,7 +507,7 @@ module Net
       case str
       when ""
 	return '""'
-      when /[\r\n]/n
+      when /[\x80-\xff\r\n]/n
 	# literal
 	return "{" + str.length.to_s + "}" + CRLF + str
       when /[(){ \x00-\x1f\x7f%*"\\]/n
@@ -564,6 +562,7 @@ module Net
       if attr.instance_of?(String)
 	attr = RawData.new(attr)
       end
+      @responses.delete("FETCH")
       send_command(cmd, MessageSet.new(set), attr)
       return @responses.delete("FETCH")
     end
@@ -572,6 +571,7 @@ module Net
       if attr.instance_of?(String)
 	attr = RawData.new(attr)
       end
+      @responses.delete("FETCH")
       send_command(cmd, MessageSet.new(set), attr, flags)
       return @responses.delete("FETCH")
     end
@@ -689,39 +689,57 @@ module Net
       end
     end
 
-    class Response
-      attr_reader :prefix, :name, :data, :raw_data
+    ContinueRequest = Struct.new(:data, :raw_data)
+    UntaggedResponse = Struct.new(:name, :data, :raw_data)
+    TaggedResponse = Struct.new(:tag, :name, :data, :raw_data)
+    ResponseText = Struct.new(:code, :text)
+    ResponseCode = Struct.new(:name, :data)
+    MailboxList = Struct.new(:attr, :delim, :name)
+    StatusData = Struct.new(:mailbox, :attr)
+    FetchData = Struct.new(:seqno, :attr)
+    Envelope = Struct.new(:date, :subject, :from, :sender, :reply_to,
+			  :to, :cc, :bcc, :in_reply_to, :message_id)
+    Address = Struct.new(:name, :route, :mailbox, :host)
+    ContentDisposition = Struct.new(:dsp_type, :param)
 
-      def inspect
-	s = @data.collect{|i| i.inspect}.join(" ")
-	if @name
-	  return "#<Response: " + @prefix + " " + @name + " " + s + ">"
-	else
-	  return "#<Response: " + @prefix + " " + s + ">"
-	end
+    class BodyTypeBasic < Struct.new(:media_type, :media_subtype,
+				     :param, :content_id,
+				     :description, :encoding, :size,
+				     :md5, :disposition, :language,
+				     :extension)
+      def multipart?
+	return false
       end
+    end
 
-      def method_missing(mid, *args)
-	return @data.send(mid, *args)
+    class BodyTypeText < Struct.new(:media_type, :media_subtype,
+				    :param, :content_id,
+				    :description, :encoding, :size,
+				    :lines,
+				    :md5, :disposition, :language,
+				    :extension)
+      def multipart?
+	return false
       end
+    end
 
-      private
+    class BodyTypeMessage < Struct.new(:media_type, :media_subtype,
+				       :param, :content_id,
+				       :description, :encoding, :size,
+				       :envelope, :body, :lines,
+				       :md5, :disposition, :language,
+				       :extension)
+      def multipart?
+	return false
+      end
+    end
 
-      def initialize(prefix, data, raw_data)
-	@prefix = prefix
-	if prefix == "+"
-	  @name = nil
-	else
-	  data.each_with_index do |item, i|
-	    if item.instance_of?(String)
-	      @name = item
-	      data.delete_at(i)
-	      break
-	    end
-	  end
-	end
-	@data = data
-	@raw_data = raw_data
+    class BodyTypeMultipart < Struct.new(:media_type, :media_subtype,
+					 :parts,
+					 :param, :disposition, :language,
+					 :extension)
+      def multipart?
+	return true
       end
     end
 
@@ -729,313 +747,981 @@ module Net
       def parse(str)
 	@str = str
 	@pos = 0
-	@lex_state = EXPR_DATA
-	@token.symbol = nil
-	return parse_response
+	@lex_state = EXPR_BEG
+	@token = nil
+	return response
       end
 
       private
 
-      EXPR_DATA		= :DATA
+      EXPR_BEG		= :BEG
       EXPR_TEXT		= :TEXT
-      EXPR_CODE		= :CODE
-      EXPR_CODE_TEXT	= :CODE_TEXT
+      EXPR_RTEXT	= :RTEXT
+      EXPR_CTEXT	= :CTEXT
 
+      T_SPACE	= :SPACE
       T_NIL	= :NIL
       T_NUMBER	= :NUMBER
-      T_ATTR	= :ATTR
       T_ATOM	= :ATOM
       T_QUOTED	= :QUOTED
-      T_LITERAL	= :LITERAL
-      T_FLAG	= :FLAG
-      T_LPAREN	= :LPAREN
-      T_RPAREN	= :RPAREN
+      T_LPAR	= :LPAR
+      T_RPAR	= :RPAR
+      T_BSLASH	= :BSLASH
       T_STAR	= :STAR
-      T_CRLF	= :CRLF
-      T_EOF	= :EOF
       T_LBRA	= :LBRA
       T_RBRA	= :RBRA
+      T_LITERAL	= :LITERAL
+      T_PLUS	= :PLUS
+      T_PERCENT	= :PERCENT
+      T_CRLF	= :CRLF
+      T_EOF	= :EOF
       T_TEXT	= :TEXT
 
-      DATA_REGEXP = /\G *(?:\
-(?# 1:	NIL	)(NIL)|\
-(?# 2:	NUMBER	)(\d+)|\
-(?# 3:	ATTR	)(BODY\[[^\]]*\](?:<\d+>)?)|\
-(?# 4:	ATOM	)([^(){ \x00-\x1f\x7f%*"\\]+)|\
-(?# 5:	QUOTED	)"((?:[^"\\]|\\["\\])*)"|\
-(?# 6:	LITERAL	)\{(\d+)\}\r\n|\
-(?# 7:	FLAG	)(\\(?:[^(){ \x00-\x1f\x7f%*"\\]+|\*))|\
-(?# 8:	LPAREN	)(\()|\
-(?# 9:	RPAREN	)(\))|\
-(?# 10:	STAR	)(\*)|\
-(?# 11:	CRLF	)(\r\n)|\
-(?# 12:	EOF	)(\z))/ni
+      BEG_REGEXP = /\G(?:\
+(?# 1:	SPACE	)( )|\
+(?# 2:	NIL	)(NIL)(?=[\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+])|\
+(?# 3:	NUMBER	)(\d+)(?=[\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+])|\
+(?# 4:	ATOM	)([^\x80-\xff(){ \x00-\x1f\x7f%*"\\\[\]+]+)|\
+(?# 5:	QUOTED	)"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)"|\
+(?# 6:	LPAR	)(\()|\
+(?# 7:	RPAR	)(\))|\
+(?# 8:	BSLASH	)(\\)|\
+(?# 9:	STAR	)(\*)|\
+(?# 10:	LBRA	)(\[)|\
+(?# 11:	RBRA	)(\])|\
+(?# 12:	LITERAL	)\{(\d+)\}\r\n|\
+(?# 13:	PLUS	)(\+)|\
+(?# 14:	PERCENT	)(%)|\
+(?# 15:	CRLF	)(\r\n)|\
+(?# 16:	EOF	)(\z))/ni
 
-      CODE_REGEXP = /\G *(?:\
-(?# 1:	NUMBER	)(\d+)|\
-(?# 2:	ATOM	)([^(){ \x00-\x1f\x7f%*"\\\[\]]+)|\
-(?# 3:	FLAG	)(\\(?:[^(){ \x00-\x1f\x7f%*"\\]+|\*))|\
-(?# 4:	LPAREN	)(\()|\
-(?# 5:	RPAREN	)(\))|\
-(?# 6:	LBRA	)(\[)|\
-(?# 7:	RBRA	)(\]))/ni
+      TEXT_REGEXP = /\G(?:\
+(?# 1:	TEXT	)([^\x00\x80-\xff\r\n]*))/ni
 
-      CODE_TEXT_REGEXP = /\G *(?:\
-(?# 1:	TEXT	)([^\r\n\]]*))/ni
-
-      TEXT_REGEXP = /\G *(?:\
+      RTEXT_REGEXP = /\G(?:\
 (?# 1:	LBRA	)(\[)|\
-(?# 2:	TEXT	)([^\r\n]*))/ni
+(?# 2:	TEXT	)([^\x00\x80-\xff\r\n]*))/ni
 
-      Token = Struct.new("Token", :symbol, :value)
+      CTEXT_REGEXP = /\G(?:\
+(?# 1:	TEXT	)([^\x00\x80-\xff\r\n\]]*))/ni
 
-      def initialize
-	@token = Token.new(nil, nil)
-      end
+      Token = Struct.new(:symbol, :value)
 
-      def parse_response
-	prefix = parse_prefix
-	case prefix
-	when "+"
-	  data = parse_resp_text
-	when "*"
-	  data = parse_response_data
+      def response
+	token = lookahead
+	case token.symbol
+	when T_PLUS
+	  result = continue_req
+	when T_STAR
+	  result = response_untagged
 	else
-	  data = parse_response_cond
+	  result = response_tagged
 	end
-	match_token(T_CRLF)
-	match_token(T_EOF)
-	return Response.new(prefix, data, @str)
+	match(T_CRLF)
+	match(T_EOF)
+	return result
       end
 
-      def parse_prefix
-	token = match_token(T_STAR, T_ATOM)
-	return token.value
+      def continue_req
+	match(T_PLUS)
+	match(T_SPACE)
+	return ContinueRequest.new(resp_text, @str)
       end
 
-      def parse_resp_text
-	val = []
-	@lex_state = EXPR_TEXT
-	token = get_token
-	if token.symbol == T_LBRA
-	  val.push(parse_resp_text_code)
-	end
-	val.push(parse_text)
-	@lex_state = EXPR_DATA
-	return val
-      end
-
-      def parse_resp_text_code
-	val = []
-	@lex_state = EXPR_CODE
-	match_token(T_LBRA)
-	token = match_token(T_ATOM)
-	val.push(token.value)
-	case token.value
-	when /\A(ALERT|PARSE|READ-ONLY|READ-WRITE|TRYCREATE)\z/n
-	  # do nothing
-	when /\A(PERMANENTFLAGS)\z/n
-	  token = get_token
-	  if token.symbol != T_LPAREN
-	    parse_error('unexpected token %s (expected "(")',
-			token.symbol.id2name)
-	  end
-	  val.push(parse_parenthesized_list)
-	when /\A(UIDVALIDITY|UIDNEXT|UNSEEN)\z/n
-	  token = match_token(T_NUMBER)
-	  val.push(token.value)
-	else
-	  @lex_state = EXPR_CODE_TEXT
-	  val.push(parse_text)
-	  @lex_state = EXPR_CODE
-	end
-	match_token(T_RBRA)
-	@lex_state = EXPR_TEXT
-	return val
-      end
-
-      def parse_text
-	token = match_token(T_TEXT)
-	return token.value
-      end
-
-      def parse_response_data
-	token = get_token
-	if token.symbol == T_ATOM &&
-	    /\A(OK|NO|BAD|PREAUTH|BYE)\z/n =~ token.value
-	  return parse_response_cond
-	else
-	  return parse_data_list
-	end
-      end
-
-      def parse_response_cond
-	val = []
-	token = match_token(T_ATOM)
-	val.push(token.value)
-	val += parse_resp_text
-	return val
-      end
-
-      def parse_data_list
-	val = []
-	while true
-	  token = get_token
-	  case token.symbol
-	  when T_EOF
-	    parse_error('unexpected token %s', token.symbol.id2name)
-	  when T_CRLF, T_RPAREN
-	    return val
-	  when T_LPAREN
-	    val.push(parse_parenthesized_list)
+      def response_untagged
+	match(T_STAR)
+	match(T_SPACE)
+	token = lookahead
+	if token.symbol == T_NUMBER
+	  return numeric_response
+	elsif token.symbol == T_ATOM
+	  case token.value
+	  when /\A(?:OK|NO|BAD|BYE|PREAUTH)\z/ni
+	    return response_cond
+	  when /\A(?:FLAGS)\z/ni
+	    return flags_response
+	  when /\A(?:LIST|LSUB)\z/ni
+	    return list_response
+	  when /\A(?:SEARCH|SORT)\z/ni
+	    return search_response
+	  when /\A(?:STATUS)\z/ni
+	    return status_response
+	  when /\A(?:CAPABILITY)\z/ni
+	    return capability_response
 	  else
-	    val.push(token.value)
-	    @token.symbol = nil
+	    return text_response
+	  end
+	else
+	  parse_error("unexpected token %s", token.symbol)
+	end
+      end
+
+      def response_tagged
+	tag = atom
+	match(T_SPACE)
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return TaggedResponse.new(tag, name, resp_text, @str)
+      end
+
+      def response_cond
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return UntaggedResponse.new(name, resp_text, @str)
+      end
+
+      def numeric_response
+	n = number
+	match(T_SPACE)
+	token = match(T_ATOM)
+	name = token.value.upcase
+	case name
+	when "EXISTS", "RECENT", "EXPUNGE"
+	  return UntaggedResponse.new(name, n, @str)
+	when "FETCH"
+	  shift_token
+	  match(T_SPACE)
+	  data = FetchData.new(n, msg_att)
+	  return UntaggedResponse.new(name, data, @str)
+	end
+      end
+
+      def msg_att
+	match(T_LPAR)
+	attr = {}
+	while true
+	  token = lookahead
+	  case token.symbol
+	  when T_RPAR
+	    shift_token
+	    break
+	  when T_SPACE
+	    shift_token
+	    token = lookahead
+	  end
+	  case token.value
+	  when /\A(?:ENVELOPE)\z/ni
+	    name, val = envelope_data
+	  when /\A(?:FLAGS)\z/ni
+	    name, val = flags_data
+	  when /\A(?:INTERNALDATE)\z/ni
+	    name, val = internaldate_data
+	  when /\A(?:RFC822(?:\.HEADER|\.TEXT)?)\z/ni
+	    name, val = rfc822_text
+	  when /\A(?:RFC822\.SIZE)\z/ni
+	    name, val = rfc822_size
+	  when /\A(?:BODY(?:STRUCTURE)?)\z/ni
+	    name, val = body_data
+	  when /\A(?:UID)\z/ni
+	    name, val = uid_data
+	  else
+	    parse_error("unknown attribute `%s'", token.value)
+	  end
+	  attr[name] = val
+	end
+	return attr
+      end
+
+      def envelope_data
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return name, envelope
+      end
+
+      def envelope
+	match(T_LPAR)
+	date = nstring
+	match(T_SPACE)
+	subject = nstring
+	match(T_SPACE)
+	from = address_list
+	match(T_SPACE)
+	sender = address_list
+	match(T_SPACE)
+	reply_to = address_list
+	match(T_SPACE)
+	to = address_list
+	match(T_SPACE)
+	cc = address_list
+	match(T_SPACE)
+	bcc = address_list
+	match(T_SPACE)
+	in_reply_to = nstring
+	match(T_SPACE)
+	message_id = nstring
+	match(T_RPAR)
+	return Envelope.new(date, subject, from, sender, reply_to,
+			    to, cc, bcc, in_reply_to, message_id)
+      end
+
+      def flags_data
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return name, flag_list
+      end
+
+      def internaldate_data
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	token = match(T_QUOTED)
+	return name, token.value
+      end
+
+      def rfc822_text
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return name, nstring
+      end
+
+      def rfc822_size
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return name, number
+      end
+
+      def body_data
+	token = match(T_ATOM)
+	name = token.value.upcase
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	  return name, body
+	end
+	name.concat(section)
+	token = lookahead
+	if token.symbol == T_ATOM
+	  name.concat(token.value)
+	  shift_token
+	end
+	match(T_SPACE)
+	data = nstring
+	return name, data
+      end
+
+      def body
+	match(T_LPAR)
+	token = lookahead
+	if token.symbol == T_LPAR
+	  result = body_type_mpart
+	else
+	  result = body_type_1part
+	end
+	match(T_RPAR)
+	return result
+      end
+
+      def body_type_1part
+	token = lookahead
+	case token.value
+	when /\A(?:TEXT)\z/ni
+	  return body_type_text
+	when /\A(?:MESSAGE)\z/ni
+	  return body_type_msg
+	else
+	  return body_type_basic
+	end
+      end
+
+      def body_type_basic
+	mtype, msubtype = media_type
+	match(T_SPACE)
+	param, content_id, desc, enc, size = body_fields
+	md5, disposition, language, extension = body_ext_1part
+	return BodyTypeBasic.new(mtype, msubtype,
+				 param, content_id,
+				 desc, enc, size,
+				 md5, disposition, language, extension)
+      end
+
+      def body_type_text
+	mtype, msubtype = media_type
+	match(T_SPACE)
+	param, content_id, desc, enc, size = body_fields
+	match(T_SPACE)
+	lines = number
+	md5, disposition, language, extension = body_ext_1part
+	return BodyTypeText.new(mtype, msubtype,
+				param, content_id,
+				desc, enc, size,
+				lines,
+				md5, disposition, language, extension)
+      end
+
+      def body_type_msg
+	mtype, msubtype = media_type
+	match(T_SPACE)
+	param, content_id, desc, enc, size = body_fields
+	match(T_SPACE)
+	env = envelope
+	match(T_SPACE)
+	b = body
+	match(T_SPACE)
+	lines = number
+	md5, disposition, language, extension = body_ext_1part
+	return BodyTypeMessage.new(mtype, msubtype,
+				   param, content_id,
+				   desc, enc, size,
+				   env, b, lines,
+				   md5, disposition, language, extension)
+      end
+
+      def body_type_mpart
+	parts = []
+	while true
+	  token = lookahead
+	  if token.symbol == T_SPACE
+	    shift_token
+	    break
+	  end
+	  parts.push(body)
+	end
+	mtype = "MULTIPART"
+	msubtype = string.upcase
+	param, disposition, language, extension = body_ext_mpart
+	return BodyTypeMultipart.new(mtype, msubtype, parts,
+				     param, disposition, language,
+				     extension)
+      end
+
+      def media_type
+	mtype = string.upcase
+	match(T_SPACE)
+	msubtype = string.upcase
+	return mtype, msubtype
+      end
+
+      def body_fields
+	param = body_fld_param
+	match(T_SPACE)
+	content_id = nstring
+	match(T_SPACE)
+	desc = nstring
+	match(T_SPACE)
+	enc = string.upcase
+	match(T_SPACE)
+	size = number
+	return param, content_id, desc, enc, size
+      end
+
+      def body_fld_param
+	token = lookahead
+	if token.symbol == T_NIL
+	  shift_token
+	  return nil
+	end
+	match(T_LPAR)
+	param = {}
+	while true
+	  token = lookahead
+	  case token.symbol
+	  when T_RPAR
+	    shift_token
+	    break
+	  when T_SPACE
+	    shift_token
+	  end
+	  name = string.upcase
+	  match(T_SPACE)
+	  val = string
+	  param[name] = val
+	end
+	return param
+      end
+
+      def body_ext_1part
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	else
+	  return nil
+	end
+	md5 = nstring
+
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	else
+	  return md5
+	end
+	disposition = body_fld_dsp
+
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	else
+	  return md5, disposition
+	end
+	language = body_fld_lang
+
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	else
+	  return md5, disposition, language
+	end
+
+	extension = body_extensions
+	return md5, disposition, language, extension
+      end
+
+      def body_ext_mpart
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	else
+	  return nil
+	end
+	param = body_fld_param
+
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	else
+	  return param
+	end
+	disposition = body_fld_dsp
+	match(T_SPACE)
+	language = body_fld_lang
+
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	else
+	  return param, disposition, language
+	end
+
+	extension = body_extensions
+	return param, disposition, language, extension
+      end
+
+      def body_fld_dsp
+	token = lookahead
+	if token.symbol == T_NIL
+	  shift_token
+	  return nil
+	end
+	match(T_LPAR)
+	dsp_type = string.upcase
+	match(T_SPACE)
+	param = body_fld_param
+	match(T_RPAR)
+	return ContentDisposition.new(dsp_type, param)
+      end
+
+      def body_fld_lang
+	token = lookahead
+	if token.symbol == T_LPAR
+	  shift_token
+	  result = []
+	  while true
+	    token = lookahead
+	    case token.symbol
+	    when T_RPAR
+	      shift_token
+	      return result
+	    when T_SPACE
+	      shift_token
+	    end
+	    result.push(string.upcase)
+	  end
+	else
+	  lang = nstring
+	  if lang
+	    return lang.upcase
+	  else
+	    return lang
 	  end
 	end
       end
 
-      def parse_parenthesized_list
-	match_token(T_LPAREN)
-	val = parse_data_list
-	match_token(T_RPAREN)
-	return val
+      def body_extensions
+	result = []
+	while true
+	  token = lookahead
+	  case token.symbol
+	  when T_RPAR
+	    return result
+	  when T_SPACE
+	    shift_token
+	  end
+	  result.push(body_extension)
+	end
       end
 
-      def match_token(*args)
-	token = get_token
+      def body_extension
+	token = lookahead
+	case token.symbol
+	when T_LPAR
+	  shift_token
+	  result = body_extensions
+	  match(T_RPAR)
+	  return result
+	when T_NUMBER
+	  return number
+	else
+	  return nstring
+	end
+      end
+
+      def section
+	str = ""
+	token = match(T_LBRA)
+	str.concat(token.value)
+	token = match(T_ATOM)
+	str.concat(token.value)
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	  str.concat(token.value)
+	  token = match(T_LPAR)
+	  str.concat(token.value)
+	  while true
+	    token = lookahead
+	    case token.symbol
+	    when T_RPAR
+	      str.concat(token.value)
+	      shift_token
+	      break
+	    when T_SPACE
+	      shift_token
+	      str.concat(token.value)
+	    end
+	    str.concat(format_string(astring))
+	  end
+	end
+	token = match(T_RBRA)
+	str.concat(token.value)
+	return str
+      end
+
+      def format_string(str)
+	case str
+	when ""
+	  return '""'
+	when /[\x80-\xff\r\n]/n
+	  # literal
+	  return "{" + str.length.to_s + "}" + CRLF + str
+	when /[(){ \x00-\x1f\x7f%*"\\]/n
+	  # quoted string
+	  return '"' + str.gsub(/["\\]/n, "\\\\\\&") + '"'
+	else
+	  # atom
+	  return str
+	end
+      end
+
+      def uid_data
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return name, number
+      end
+
+      def text_response
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	@lex_state = EXPR_TEXT
+	token = match(T_TEXT)
+	@lex_state = EXPR_BEG
+	return UntaggedResponse.new(name, token.value)
+      end
+
+      def flags_response
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return UntaggedResponse.new(name, flag_list, @str)
+      end
+
+      def list_response
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	return UntaggedResponse.new(name, mailbox_list, @str)
+      end
+
+      def mailbox_list
+	attr = flag_list
+	match(T_SPACE)
+	token = match(T_QUOTED, T_NIL)
+	if token.symbol == T_NIL
+	  delim = nil
+	else
+	  delim = token.value
+	end
+	match(T_SPACE)
+	name = astring
+	return MailboxList.new(attr, delim, name)
+      end
+
+      def search_response
+	token = match(T_ATOM)
+	name = token.value.upcase
+	token = lookahead
+	if token.symbol == T_SPACE
+	  shift_token
+	  data = []
+	  while true
+	    token = lookahead
+	    case token.symbol
+	    when T_CRLF
+	      break
+	    when T_SPACE
+	      shift_token
+	    end
+	    data.push(number)
+	  end
+	else
+	  data = []
+	end
+	return UntaggedResponse.new(name, data, @str)
+      end
+
+      def status_response
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	mailbox = astring
+	match(T_SPACE)
+	match(T_LPAR)
+	attr = {}
+	while true
+	  token = lookahead
+	  case token.symbol
+	  when T_RPAR
+	    shift_token
+	    break
+	  when T_SPACE
+	    shift_token
+	  end
+	  token = match(T_ATOM)
+	  key = token.value.upcase
+	  match(T_SPACE)
+	  val = number
+	  attr[key] = val
+	end
+	data = StatusData.new(mailbox, attr)
+	return UntaggedResponse.new(name, data, @str)
+      end
+
+      def capability_response
+	token = match(T_ATOM)
+	name = token.value.upcase
+	match(T_SPACE)
+	data = []
+	while true
+	  token = lookahead
+	  case token.symbol
+	  when T_CRLF
+	    break
+	  when T_SPACE
+	    shift_token
+	  end
+	  data.push(atom.upcase)
+	end
+	return UntaggedResponse.new(name, data, @str)
+      end
+
+      def resp_text
+	@lex_state = EXPR_RTEXT
+	token = lookahead
+	if token.symbol == T_LBRA
+	  code = resp_text_code
+	else
+	  code = nil
+	end
+	token = match(T_TEXT)
+	@lex_state = EXPR_BEG
+	return ResponseText.new(code, token.value)
+      end
+
+      def resp_text_code
+	@lex_state = EXPR_BEG
+	match(T_LBRA)
+	token = match(T_ATOM)
+	name = token.value.upcase
+	case name
+	when /\A(?:ALERT|PARSE|READ-ONLY|READ-WRITE|TRYCREATE)\z/n
+	  result = ResponseCode.new(name, nil)
+	when /\A(?:PERMANENTFLAGS)\z/n
+	  match(T_SPACE)
+	  result = ResponseCode.new(name, flag_list)
+	when /\A(?:UIDVALIDITY|UIDNEXT|UNSEEN)\z/n
+	  match(T_SPACE)
+	  result = ResponseCode.new(name, number)
+	end
+	match(T_RBRA)
+	@lex_state = EXPR_RTEXT
+	return result
+      end
+
+      def address_list
+	token = lookahead
+	if token.symbol == T_NIL
+	  shift_token
+	  return nil
+	else
+	  result = []
+	  match(T_LPAR)
+	  while true
+	    token = lookahead
+	    case token.symbol
+	    when T_RPAR
+	      shift_token
+	      break
+	    when T_SPACE
+	      shift_token
+	    end
+	    result.push(address)
+	  end
+	  return result
+	end
+      end
+
+      def address
+	match(T_LPAR)
+	name = nstring
+	match(T_SPACE)
+	route = nstring
+	match(T_SPACE)
+	mailbox = nstring
+	match(T_SPACE)
+	host = nstring
+	match(T_RPAR)
+	return Address.new(name, route, mailbox, host)
+      end
+
+      def flag_list
+	result = []
+	match(T_LPAR)
+	while true
+	  token = lookahead
+	  case token.symbol
+	  when T_RPAR
+	    shift_token
+	    break
+	  when T_SPACE
+	    shift_token
+	  end
+	  result.push(flag)
+	end
+	return result
+      end
+
+      def flag
+	token = lookahead
+	if token.symbol == T_BSLASH
+	  shift_token
+	  token = lookahead
+	  if token.symbol == T_STAR
+	    shift_token
+	    return token.value.intern
+	  else
+	    return atom.intern
+	  end
+	else
+	  return atom
+	end
+      end
+
+      def nstring
+	token = lookahead
+	if token.symbol == T_NIL
+	  shift_token
+	  return nil
+	else
+	  return string
+	end
+      end
+
+      def astring
+	token = lookahead
+	if string_token?(token)
+	  return string
+	else
+	  return atom
+	end
+      end
+
+      def string
+	token = match(T_QUOTED, T_LITERAL)
+	return token.value
+      end
+
+      STRING_TOKENS = [T_QUOTED, T_LITERAL]
+
+      def string_token?(token)
+	return STRING_TOKENS.include?(token.symbol)
+      end
+
+      def atom
+  	result = ""
+  	while true
+  	  token = lookahead
+  	  if atom_token?(token)
+  	    result.concat(token.value)
+  	    shift_token
+  	  else
+  	    if result.empty?
+  	      parse_error("unexpected token %s", token.symbol)
+  	    else
+  	      return result
+  	    end
+  	  end
+  	end
+      end
+
+      ATOM_TOKENS = [
+	T_ATOM,
+	T_NUMBER,
+	T_NIL,
+	T_LBRA,
+	T_RBRA,
+	T_PLUS
+      ]
+
+      def atom_token?(token)
+	return ATOM_TOKENS.include?(token.symbol)
+      end
+
+      def number
+	token = match(T_NUMBER)
+	return token.value.to_i
+      end
+
+      def nil_atom
+	match(T_NIL)
+	return nil
+      end
+
+      def match(*args)
+	token = lookahead
 	unless args.include?(token.symbol)
 	  parse_error('unexpected token %s (expected %s)',
 		      token.symbol.id2name,
 		      args.collect {|i| i.id2name}.join(" or "))
 	end
-	@token.symbol = nil
+	shift_token
 	return token
       end
 
-      def get_token
-	unless @token.symbol
-	  next_token
+      def lookahead
+	unless @token
+	  @token = next_token
 	end
 	return @token
       end
 
+      def shift_token
+	@token = nil
+      end
+
       def next_token
 	case @lex_state
-	when EXPR_DATA
-	  if @str.index(DATA_REGEXP, @pos)
+	when EXPR_BEG
+	  if @str.index(BEG_REGEXP, @pos)
 	    @pos = $~.end(0)
 	    if $1
-	      @token.value = nil
-	      @token.symbol = T_NIL
+	      return Token.new(T_SPACE, $+)
 	    elsif $2
-	      @token.value = $+.to_i
-	      @token.symbol = T_NUMBER
+	      return Token.new(T_NIL, $+)
 	    elsif $3
-	      @token.value = $+
-	      @token.symbol = T_ATTR
+	      return Token.new(T_NUMBER, $+)
 	    elsif $4
-	      @token.value = $+
-	      @token.symbol = T_ATOM
+	      return Token.new(T_ATOM, $+)
 	    elsif $5
-	      @token.value = $+.gsub(/\\(["\\])/n, "\\1")
-	      @token.symbol = T_QUOTED
+	      return Token.new(T_QUOTED,
+				 $+.gsub(/\\(["\\])/n, "\\1"))
 	    elsif $6
-	      len = $+.to_i
-	      @token.value = @str[@pos, len]
-	      @pos += len
-	      @token.symbol = T_LITERAL
+	      return Token.new(T_LPAR, $+)
 	    elsif $7
-	      @token.value = $+[1..-1].intern
-	      @token.symbol = T_FLAG
+	      return Token.new(T_RPAR, $+)
 	    elsif $8
-	      @token.value = nil
-	      @token.symbol = T_LPAREN
+	      return Token.new(T_BSLASH, $+)
 	    elsif $9
-	      @token.value = nil
-	      @token.symbol = T_RPAREN
+	      return Token.new(T_STAR, $+)
 	    elsif $10
-	      @token.value = $+
-	      @token.symbol = T_STAR
+	      return Token.new(T_LBRA, $+)
 	    elsif $11
-	      @token.value = nil
-	      @token.symbol = T_CRLF
+	      return Token.new(T_RBRA, $+)
 	    elsif $12
-	      @token.value = nil
-	      @token.symbol = T_EOF
+	      len = $+.to_i
+	      val = @str[@pos, len]
+	      @pos += len
+	      return Token.new(T_LITERAL, val)
+	    elsif $13
+	      return Token.new(T_PLUS, $+)
+	    elsif $14
+	      return Token.new(T_PERCENT, $+)
+	    elsif $15
+	      return Token.new(T_CRLF, $+)
+	    elsif $16
+	      return Token.new(T_EOF, $+)
 	    else
-	      parse_error("[BUG] DATA_REGEXP is invalid")
+	      parse_error("[Net::IMAP BUG] BEG_REGEXP is invalid")
 	    end
-	    return
+	  else
+	    @str.index(/\S*/n, @pos)
+	    parse_error("unknown token - %s", $&.dump)
 	  end
 	when EXPR_TEXT
 	  if @str.index(TEXT_REGEXP, @pos)
 	    @pos = $~.end(0)
 	    if $1
-	      @token.value = nil
-	      @token.symbol = T_LBRA
-	    elsif $2
-	      @token.value = $+
-	      @token.symbol = T_TEXT
+	      return Token.new(T_TEXT, $+)
 	    else
-	      parse_error("[BUG] TEXT_REGEXP is invalid")
+	      parse_error("[Net::IMAP BUG] TEXT_REGEXP is invalid")
 	    end
-	    return
+	  else
+	    @str.index(/\S*/n, @pos)
+	    parse_error("unknown token - %s", $&.dump)
 	  end
-	when EXPR_CODE
-	  if @str.index(CODE_REGEXP, @pos)
+	when EXPR_RTEXT
+	  if @str.index(RTEXT_REGEXP, @pos)
 	    @pos = $~.end(0)
 	    if $1
-	      @token.value = $+.to_i
-	      @token.symbol = T_NUMBER
+	      return Token.new(T_LBRA, $+)
 	    elsif $2
-	      @token.value = $+
-	      @token.symbol = T_ATOM
-	    elsif $3
-	      @token.value = $+[1..-1].capitalize.intern
-	      @token.symbol = T_FLAG
-	    elsif $4
-	      @token.value = nil
-	      @token.symbol = T_LPAREN
-	    elsif $5
-	      @token.value = nil
-	      @token.symbol = T_RPAREN
-	    elsif $6
-	      @token.value = nil
-	      @token.symbol = T_LBRA
-	    elsif $7
-	      @token.value = nil
-	      @token.symbol = T_RBRA
+	      return Token.new(T_TEXT, $+)
 	    else
-	      parse_error("[BUG] CODE_REGEXP is invalid")
+	      parse_error("[Net::IMAP BUG] RTEXT_REGEXP is invalid")
 	    end
-	    return
+	  else
+	    @str.index(/\S*/n, @pos)
+	    parse_error("unknown token - %s", $&.dump)
 	  end
-	when EXPR_CODE_TEXT
-	  if @str.index(CODE_TEXT_REGEXP, @pos)
+	when EXPR_CTEXT
+	  if @str.index(CTEXT_REGEXP, @pos)
 	    @pos = $~.end(0)
 	    if $1
-	      @token.value = $+
-	      @token.symbol = T_TEXT
+	      return Token.new(T_TEXT, $+)
 	    else
-	      parse_error("[BUG] CODE_TEXT_REGEXP is invalid")
+	      parse_error("[Net::IMAP BUG] CTEXT_REGEXP is invalid")
 	    end
-	    return
+	  else
+	    @str.index(/\S*/n, @pos) #/
+	    parse_error("unknown token - %s", $&.dump)
 	  end
 	else
 	  parse_error("illegal @lex_state - %s", @lex_state.inspect)
 	end
-	@str.index(/\S*/n, @pos)
-	parse_error("unknown token - %s", $&.dump)
       end
 
       def parse_error(fmt, *args)
 	if IMAP.debug
 	  $stderr.printf("@str: %s\n", @str.dump)
 	  $stderr.printf("@pos: %d\n", @pos)
-	  $stderr.printf("@lex_state: %s\n", @lex_state.inspect)
+	  $stderr.printf("@lex_state: %s\n", @lex_state)
 	  if @token.symbol
-	    $stderr.printf("@token.symbol: %s\n", @token.symbol.id2name)
+	    $stderr.printf("@token.symbol: %s\n", @token.symbol)
 	    $stderr.printf("@token.value: %s\n", @token.value.inspect)
 	  end
 	end
