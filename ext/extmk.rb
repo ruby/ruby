@@ -126,7 +126,7 @@ def extmake(target)
     end
     args = sysquote($mflags)
     if $static
-      args += ["static"]
+      args += ["static"] unless $clean
       $extlist.push [$static, $target, File.basename($target), $preload]
     end
     unless system($make, *args)
@@ -317,10 +317,10 @@ exts |= Dir.glob("#{ext_prefix}/*/**/MANIFEST").collect {|d|
 } unless $extension
 
 if $extout
-  Config.expand(extout = $extout+"/.", Config::CONFIG.merge("topdir"=>$topdir))
+  Config.expand(extout = $extout, Config::CONFIG.merge("topdir"=>$topdir))
   if $install
     Config.expand(dest = "#{$destdir}#{$rubylibdir}")
-    FileUtils.cp_r(extout, dest, :verbose => true, :noop => $dryrun)
+    FileUtils.cp_r(extout+"/.", dest, :verbose => true, :noop => $dryrun)
     exit
   end
   unless $ignore
@@ -340,10 +340,11 @@ $hdrdir = $top_srcdir = srcdir
 $topdir = "."
 
 if $ignore
+  FileUtils.rm_f(%W"extinit.c extinit.#{$OBJEXT}") if $clean
   Dir.chdir ".."
   if $clean
     Dir.rmdir('ext') rescue nil
-    FileUtils.rm_rf($extout) if $extout
+    FileUtils.rm_rf(extout) if $extout
   end
   exit
 end
