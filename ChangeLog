@@ -1,3 +1,12 @@
+Wed Jan 16 11:12:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* object.c (rb_Float): remove underscores between digits.
+
+	* bignum.c (rb_cstr2inum): reject prefix followed by spaces only.
+
+	* class.c (rb_class_inherited): should use Object when no super
+	  class.
+
 Tue Jan 15 12:43:34 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb: Protocol#start returns the return value of

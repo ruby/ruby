@@ -940,7 +940,6 @@ rb_Float(val)
 
 	    q = p = STR2CSTR(val);
 	    while (*p && ISSPACE(*p)) p++;
-	  again:
 	    d = strtod(p, &end);
 	    if (p == end) {
 	      bad:
@@ -949,12 +948,19 @@ rb_Float(val)
 	    if (*end) {
 		if (*end == '_') {
 		    char *buf = ALLOCA_N(char, strlen(p));
-		    char *n = buf, *last;
+		    char *n = buf, *last = p;
 
+		    while (p < end) *n++ = *p++;
 		    while (*p) {
-			if (*p == '_') {
+			if (*p == '_' && (n > buf && ISDIGIT(n[-1]))) {
+			    /* remove underscores between digits */
 			    last = ++p;
+			    while (*p == '_') ++p;
+			    if (!ISDIGIT(*p)) {
+				while (last < p) *n++ = *last++;
 			    continue;
+			}
+			    last = p;
 			}
 			*n++ = *p++;
 		    }
@@ -963,7 +969,8 @@ rb_Float(val)
 		    if (!*last) goto bad;
 		    *n = '\0';
 		    p = buf;
-		    goto again;
+		    d = strtod(p, &end);
+		    if (p == end) goto bad;
 		}
 		while (*end && ISSPACE(*end)) end++;
 		if (*end) goto bad;

@@ -149,6 +149,7 @@ VALUE
 rb_class_inherited(super, klass)
     VALUE super, klass;
 {
+    if (!super) super = rb_cObject;
     return rb_funcall(super, rb_intern("inherited"), 1, klass);
 }
 
