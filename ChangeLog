@@ -1,3 +1,8 @@
+Mon Nov 29 15:22:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/io/nonblock/test_flush.rb: abandon tests when io/nonblock is
+	  not supported.
+
 Mon Nov 29 13:37:54 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (fptr_finalize): must not use FILE after fclose().
@@ -107,7 +112,7 @@ Sat Nov 27 17:21:30 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/rss_recent.rb: ditto.
 
-Sat Nov 27 14:44:15 2004  Kent Sibilev  <ksibilev@bellsouth.net>	
+Sat Nov 27 14:44:15 2004  Kent Sibilev  <ksibilev@bellsouth.net>
 
 	* lib/cgi/session.rb (CGI::Session::initialize): [ruby-core:03832]
 

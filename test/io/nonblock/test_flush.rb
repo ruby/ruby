@@ -1,5 +1,8 @@
 require 'test/unit'
-require 'io/nonblock'
+begin
+  require 'io/nonblock'
+rescue LoadError
+end
 
 class TestIONonblock < Test::Unit::TestCase
   def test_flush                # [ruby-dev:24985]
@@ -23,4 +26,4 @@ class TestIONonblock < Test::Unit::TestCase
     t.join
     assert_equal("b", result)
   end
-end
+end if IO.method_defined?(:nonblock)
