@@ -1,5 +1,7 @@
 Tue Feb 10 17:29:08 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* version 1.1b7 released.
+
 	* string.c (str_aset): string insertion by `str[n] = str2'.
 
 	* string.c (str_oct): does recognize `0x'.

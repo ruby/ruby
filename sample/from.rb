@@ -36,6 +36,7 @@ else
   ARGV.clear
 end
 
+file = ARGV[0]
 [ENV['SPOOLDIR'], '/usr/spool', '/var/spool', '/usr', '/var'].each do |m|
   break if File.exist? file = "#{m}/mail/#{user}" 
 end
