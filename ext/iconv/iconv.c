@@ -188,7 +188,7 @@ iconv_failure_initialize
     struct iconv_env_t *env;
 #endif /* HAVE_PROTOTYPES */
 {
-    if (NIL_P(rb_ivar_get(error, rb_mesg)))
+    if (!rb_ivar_defined(error, rb_mesg) || NIL_P(rb_ivar_get(error, rb_mesg)))
 	rb_ivar_set(error, rb_mesg, rb_inspect(failed));
     if (env) {
 	success = rb_funcall3(env->ret, rb_inserter, 1, &success);

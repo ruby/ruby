@@ -1216,7 +1216,7 @@ rb_reg_s_quote(argc, argv)
 	  case '(': case ')': case '|': case '-':
 	  case '*': case '.': case '\\':
 	  case '?': case '+': case '^': case '$':
-	  case ' ':
+	  case ' ': case '#':
 	    *t++ = '\\';
 	    break;
 	}
