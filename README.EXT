@@ -1031,6 +1031,11 @@ Appendix C. Functions Available in extconf.rb
 
 These functions are available in extconf.rb:
 
+ have_macro(macro, headers)
+
+Checks whether macro is defined with header.  Returns true if the macro
+is defined.
+
  have_library(lib, func)
 
 Checks whether the library exists, containing the specified function.
@@ -1047,19 +1052,60 @@ Checks whether func exists with header.  Returns true if the function
 exists.  To check functions in an additional library, you need to
 check that library first using have_library().
 
+ have_var(var, header)
+
+Checks whether var exists with header.  Returns true if the variable
+exists.  To check variables in an additional library, you need to
+check that library first using have_library().
+
  have_header(header)
 
 Checks whether header exists.  Returns true if the header file exists.
+
+ find_header(header, path...)
+
+Checks whether header exists in path.  Returns true if the header file
+exists.
+
+ have_struct_member(type, member, header)
+
+Checks whether type has member with header.  Returns true if the type
+is defined and has the member.
+
+ have_type(type, header, opt)
+
+Checks whether type is defined with header.  Returns true if the type
+is defined.
+
+ check_sizeof(type, header)
+
+Checks the size of type in char with header.  Returns the size if the
+type is defined, otherwise nil.
 
  create_makefile(target)
 
 Generates the Makefile for the extension library.  If you don't invoke
 this method, the compilation will not be done.
 
+ find_executable(bin, path)
+
+Finds command in path, which is File::PATH_SEPARATOR-separated list of
+directories.  If path is nil or omitted, environment varialbe PATH
+will be used.  Returns the path name of the command if it is found,
+otherwise nil.
+
  with_config(withval[, default=nil])
 
 Parses the command line options and returns the value specified by
 --with-<withval>.
+
+ enable_config(config, *defaults)
+ disable_config(config, *defaults)
+
+Parses the command line options for boolean.  Returns true if
+--enable-<config> is given, or false if --disable-<config> is given.
+Otherwise, yields defaults to the given block and returns the result
+if it is called with a block, or returns defaults.
 
  dir_config(target[, default_dir])
  dir_config(target[, default_include, default_lib])
@@ -1069,6 +1115,12 @@ Parses the command line options and adds the directories specified by
 to $CFLAGS and/or $LDFLAGS.  --with-<target>-dir=/path is equivalent to
 --with-<target>-include=/path/include --with-<target>-lib=/path/lib.
 Returns an array of the added directories ([include_dir, lib_dir]).
+
+ pkg_config(pkg)
+
+Obtains the information of pkg by pkg-config command.  The actual
+command name can be overriden by --with-pkg-config command line
+option.
 
 /*
  * Local variables:

@@ -1,3 +1,10 @@
+Thu Mar 31 22:23:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (SRC_EXT): exclude just case different suffixes on case
+	  insensitive file system platforms.
+
+	* README.EXT, README.EXT.ja (Appendix C): utility functions.
+
 Thu Mar 31 14:08:43 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should return
@@ -6,13 +13,13 @@ Thu Mar 31 14:08:43 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Thu Mar 31 11:07:50 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb: @@setter -> @@setters.
-	
+
 	* lib/rss/parser.rb
 	  (RSS::BaseListener.register_uri)
 	  (RSS::BaseListener.uri_registered?)
 	  (RSS::BaseListener.install_get_text_element):
 	  swapped the first argument and the second argument.
-    
+
 	* lib/rss/taxonomy.rb: swapped the first argument and the second
 	  argument for RSS::BaseListener.install_get_text_element.
 	* lib/rss/image.rb: ditto.

@@ -8,7 +8,10 @@ require 'shellwords'
 CONFIG = Config::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
-SRC_EXT = ["c", "cc", "m", "cxx", "cpp", "C"]
+SRC_EXT = %w[c cc m cxx cpp]
+if /mswin|bccwin|mingw|msdosdjgpp|human|os2/ !~ CONFIG['build_os']
+  SRC_EXT.concat(%w[C])
+end
 $static = $config_h = nil
 
 unless defined? $configure_args
@@ -1164,6 +1167,7 @@ def init_mkmf(config = CONFIG)
   $INSTALLFILES = nil
 
   $objs = nil
+  $srcs = nil
   $libs = ""
   if $enable_shared or Config.expand(config["LIBRUBY"].dup) != Config.expand(config["LIBRUBY_A"].dup)
     $LIBRUBYARG = config['LIBRUBYARG']
