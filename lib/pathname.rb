@@ -111,11 +111,7 @@ class Pathname
   # it may return relative pathname.
   # Otherwise it returns absolute pathname.
   def realpath(force_absolute=true)
-    if relative? && force_absolute
-      path = File.join Dir.pwd, @path
-    else
-      path = @path
-    end
+    path = @path
     stats = {}
     if %r{\A/} =~ path || realpath_root?('.', stats)
       resolved = '/'
@@ -123,7 +119,12 @@ class Pathname
       resolved = '.'
     end
     resolved = realpath_rec(resolved, path, stats)
-    Pathname.new(resolved)
+    if %r{\A/} !~ resolved && force_absolute
+      # Note that Dir.pwd and resolved has no symlinks.
+      Pathname.new(File.join(Dir.pwd, resolved)).cleanpath
+    else
+      Pathname.new(resolved)
+    end
   end
 
   def realpath_root?(path, stats) # :nodoc:
@@ -156,6 +157,7 @@ class Pathname
         if File.lstat(path).symlink?
           raise Errno::ELOOP.new(path) if rec.include? path
           link = File.readlink path
+          resolved = '/' if %r{\A/} =~ link
           begin
             rec[path] = true
             resolved = realpath_rec(resolved, link, stats, rec)
