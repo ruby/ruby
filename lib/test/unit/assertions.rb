@@ -235,6 +235,9 @@ EOT
         end
       end
 
+      UncaughtThrow = {NameError => /^uncaught throw \`(.+)\'$/,
+                       ThreadError => /^uncaught throw \`(.+)\' in thread /}
+
       # Passes if block throws symbol.
       public
       def assert_throws(expected_symbol, message="", &proc)
@@ -249,13 +252,13 @@ EOT
             end
             full_message = build_message(message, "<?> should have been thrown.", expected_symbol)
             assert_block(full_message){caught}
-          rescue NameError => name_error
-            if ( name_error.message !~ /^uncaught throw `(.+)'$/ )  #`
-              raise name_error
+          rescue NameError, ThreadError => error
+            if UncaughtThrow[error.class] !~ error.message
+              raise error
             end
             full_message = build_message(message, "<?> expected to be thrown but\n<?> was thrown.", expected_symbol, $1.intern)
             flunk(full_message)
-          end  
+          end
         end
       end
 
@@ -266,9 +269,9 @@ EOT
           assert(block_given?, "Should have passed a block to assert_nothing_thrown")
           begin
             proc.call
-          rescue NameError => name_error
-            if (name_error.message !~ /^uncaught throw `(.+)'$/ )  #`
-              raise name_error
+          rescue NameError, ThreadError => error
+            if UncaughtThrow[error.class] !~ error.message
+              raise error
             end
             full_message = build_message(message, "<?> was thrown when nothing was expected", $1.intern)
             flunk(full_message)

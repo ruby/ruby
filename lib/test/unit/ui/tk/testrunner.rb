@@ -172,7 +172,7 @@ module Test
             f = TkFrame.new(nil, 'relief'=>'sunken', 'borderwidth'=>3, 'height'=>20).pack('fill'=>'x', 'padx'=>1)
             @test_progress_bar = TkFrame.new(f, 'background'=>'green').place('anchor'=>'nw', 'relwidth'=>0.0, 'relheight'=>1.0)
 
-            info_frame = TkFrame.new.pack('fill'=>'x', 'expand'=>true)
+            info_frame = TkFrame.new.pack('fill'=>'x')
             @test_count_label = create_count_label(info_frame, 'Tests:')
             @assertion_count_label = create_count_label(info_frame, 'Assertions:')
             @failure_count_label = create_count_label(info_frame, 'Failures:')

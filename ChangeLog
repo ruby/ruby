@@ -1,3 +1,11 @@
+Wed Nov 12 17:32:49 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb (assert_throws, assert_nothing_thrown):
+	  uncaught throw in sub thread raises ThreadError.
+
+	* lib/test/unit/ui/tk/testrunner.rb (setup_ui): "expand" is not
+	  necessary.
+
 Wed Nov 12 14:09:43 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/monitor/test_monitor.rb: fix the timing problem by Queue.
@@ -12,15 +20,15 @@ Wed Nov 12 10:14:28 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 Wed Nov 12 06:11:39 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* ext/openssl/ossl.c (ossl_x509_sk2ary, ossl_x509crl_sk2ary): 
+	* ext/openssl/ossl.c (ossl_x509_sk2ary, ossl_x509crl_sk2ary):
 	  add functions to convert STACK into Array.
 
 	* ext/openssl/ossl.h: add prototypes.
 
-	* ext/openssl/ossl_pkcs7.c (ossl_pkcs7_set_certificates, 
+	* ext/openssl/ossl_pkcs7.c (ossl_pkcs7_set_certificates,
 	  ossl_pkcs7_get_certificates, ossl_pkcs7_get_crls,
 	  ossl_pkcs7_set_crls): add functions for PKCS7#certificates=
-	  PKCS7#certificates, PKCS7#crls= and PKCS7#crls. 
+	  PKCS7#certificates, PKCS7#crls= and PKCS7#crls.
 
 Tue Nov 12 00:47:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
@@ -52,7 +60,7 @@ Tue Nov 11 03:30:43 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Mon Nov 10 11:40:29 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/monitor.rb (wait): return true on signal/broadcastfalse and
-	false on timeout. Thanks Gennady Bystritsky.
+	  false on timeout. Thanks Gennady Bystritsky.
 
 Mon Nov 10 00:07:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
