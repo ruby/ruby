@@ -75,7 +75,6 @@ util.c
 variable.c
 version.c
 version.h
-beos/ruby.def.in
 cygwin/GNUmakefile.in
 ext/Setup
 ext/Setup.dj
