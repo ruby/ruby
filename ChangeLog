@@ -1,3 +1,7 @@
+Mon Jun  3 20:39:51 2002  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/extconf.rb : change PLATFORM with RUBY_PLATFORM.
+
 Mon Jun  3 07:07:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (here_document): check if identifier is terminated.
@@ -8,7 +12,7 @@ Mon Jun  3 07:07:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 Sat Jun  1 19:20:07 2002  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole: merge from rough
+	* ext/win32ole: merge from rough.
 
 Thu May 30 12:52:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
