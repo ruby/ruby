@@ -16,7 +16,7 @@ static ID id_call;
 
 static int
 rb_dl_scan_callback_args(long stack[], const char *proto,
-			 int *argc, VALUE (*argv)[])
+			 int *argc, VALUE argv[])
 {
   int i;
   long *sp;
@@ -93,7 +93,7 @@ rb_dl_scan_callback_args(long stack[], const char *proto,
       rb_raise(rb_eDLTypeError, "unsupported type `%c'", proto[i]);
       break;
     }
-    (*argv)[i-1] = val;
+    argv[i-1] = val;
   }
   *argc = (i - 1);
 
@@ -608,7 +608,7 @@ rb_dl_callback(int argc, VALUE argv[], VALUE self)
     rettype = 0x07;
     break;
   default:
-    rb_raise(rb_eDLTypeError, "unsupported type `%s'", STR2CSTR(rettype));
+    rb_raise(rb_eDLTypeError, "unsupported type `%c'", STR2CSTR(type)[0]);
   }
 
   entry = -1;

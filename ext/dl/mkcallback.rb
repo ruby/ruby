@@ -33,7 +33,7 @@ def mkfunc(rettype, fnum, argc)
     "  obj = rb_hash_aref(DLFuncTable, rb_assoc_new(INT2NUM(#{rettype.to_s}),INT2NUM(#{fnum.to_s})));",
     "  proto = rb_ary_entry(obj, 0);",
     "  proc  = rb_ary_entry(obj, 1);",
-    "  rb_dl_scan_callback_args(buff, STR2CSTR(proto), &argc, &argv);",
+    "  rb_dl_scan_callback_args(buff, STR2CSTR(proto), &argc, argv);",
     "  retval = rb_funcall2(proc, id_call, argc, argv);",
     "",
     ret_code,
