@@ -1,7 +1,7 @@
 Sun Apr 11 19:10:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (require_libraries): restore source file/line after
-	  statically linked extensions initialized.
+	  statically linked extensions initialized.  [ruby-dev:23357]
 
 Sun Apr 11 10:47:04 2004  Dave Thomas  <dave@pragprog.com>
 
