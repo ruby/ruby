@@ -1,10 +1,7 @@
 Mon Nov 29 01:18:18 2004  Tanaka Akira  <akr@m17n.org>
 
-	* io.c (rb_io_check_writable): restrict io_seek by
-	  READ_DATA_PENDING because io_seek(fptr, 0, SEEK_CUR) is
-	  meaningful only if read buffer is not empty.
-	  call io_seek regardless of NEED_IO_SEEK_BETWEEN_RW.
-	  [ruby-dev:24986]
+	* io.c (rb_io_check_writable): call io_seek regardless of
+	  NEED_IO_SEEK_BETWEEN_RW.  [ruby-dev:24986]
 
 Sun Nov 28 15:57:58 2004  Kouhei Sutou  <kou@cozmixng.org>
 
