@@ -1457,52 +1457,56 @@ ev_const_get(cref, id)
 	}
 	cbase = cbase->nd_next;
     }
+#if 1
+    return rb_const_get(ruby_class, id);
+#else
     return rb_const_get(cref->nd_clss, id);
+#endif
 }
 
-static VALUE
-ev_const_set(cref, id, val)
-    NODE *cref;
-    ID id;
-    VALUE val;
-{
-    NODE *cbase = cref;
+ static VALUE
+ ev_const_set(cref, id, val)
+     NODE *cref;
+     ID id;
+     VALUE val;
+ {
+     NODE *cbase = cref;
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
-	struct RClass *klass = RCLASS(cbase->nd_clss);
+     while (cbase && cbase->nd_clss != rb_cObject) {
+	 struct RClass *klass = RCLASS(cbase->nd_clss);
 
-	if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
-	    st_insert(klass->iv_tbl, id, val);
-	    return val;
-	}
-	cbase = cbase->nd_next;
-    }
-    rb_const_assign(cbase->nd_clss, id, val);
-    return val;
-}
+	 if (klass->iv_tbl && st_lookup(klass->iv_tbl, id, 0)) {
+	     st_insert(klass->iv_tbl, id, val);
+	     return val;
+	 }
+	 cbase = cbase->nd_next;
+     }
+     rb_const_assign(cbase->nd_clss, id, val);
+     return val;
+ }
 
-static VALUE
-rb_mod_nesting()
-{
-    NODE *cbase = RNODE(ruby_frame->cbase);
-    VALUE ary = rb_ary_new();
+ static VALUE
+ rb_mod_nesting()
+ {
+     NODE *cbase = RNODE(ruby_frame->cbase);
+     VALUE ary = rb_ary_new();
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
-	rb_ary_push(ary, cbase->nd_clss);
-	cbase = cbase->nd_next;
-    }
-    return ary;
-}
+     while (cbase && cbase->nd_clss != rb_cObject) {
+	 rb_ary_push(ary, cbase->nd_clss);
+	 cbase = cbase->nd_next;
+     }
+     return ary;
+ }
 
-static VALUE
-rb_mod_s_constants()
-{
-    NODE *cbase = RNODE(ruby_frame->cbase);
-    VALUE ary = rb_ary_new();
+ static VALUE
+ rb_mod_s_constants()
+ {
+     NODE *cbase = RNODE(ruby_frame->cbase);
+     VALUE ary = rb_ary_new();
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
-	rb_mod_const_at(cbase->nd_clss, ary);
-	cbase = cbase->nd_next;
+     while (cbase && cbase->nd_clss != rb_cObject) {
+	 rb_mod_const_at(cbase->nd_clss, ary);
+		cbase = cbase->nd_next;
     }
 
     rb_mod_const_of(ruby_cbase, ary);
@@ -2942,6 +2946,11 @@ rb_eval(self, n)
 		rb_warn("redefining `%s' may cause serious problem",
 			rb_id2name(node->nd_mid));
 	    }
+	    if (node->nd_defn->nd_rval &&
+		((NODE*)node->nd_defn->nd_rval)->nd_clss != ruby_class) {
+		node->nd_defn->nd_rval =
+		    (VALUE)rb_node_newnode(NODE_CREF,ruby_class,0, node->nd_defn->nd_rval);
+	    }
 	    rb_frozen_class_p(ruby_class);
 	    body = search_method(ruby_class, node->nd_mid, &origin);
 	    if (body){
@@ -3004,6 +3013,11 @@ rb_eval(self, n)
 			 rb_class2name(CLASS_OF(recv)));
 	    }
 
+	    if (node->nd_defn->nd_rval &&
+		((NODE*)node->nd_defn->nd_rval)->nd_clss != ruby_class) {
+		node->nd_defn->nd_rval =
+		    (VALUE)rb_node_newnode(NODE_CREF,ruby_class,0, node->nd_defn->nd_rval);
+	    }
 	    if (OBJ_FROZEN(recv)) rb_error_frozen("object");
 	    klass = rb_singleton_class(recv);
 	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, &body)) {
@@ -4982,8 +4996,8 @@ yield_under_i(self)
 	VALUE result;
 	int state;
 
-	block = *ruby_block;
 	/* copy the block to avoid modifying global data. */
+	block = *ruby_block;
 	block.frame.cbase = ruby_frame->cbase;
 	ruby_block = &block;
 
@@ -6335,6 +6349,20 @@ proc_arity(proc)
 }
 
 static VALUE
+proc_eq(self, other)
+    VALUE self, other;
+{
+    struct BLOCK *data, *data2;
+
+    if (TYPE(other) != T_DATA) return Qfalse;
+    if (RDATA(other)->dmark != blk_mark) Qfalse;
+    Data_Get_Struct(self, struct BLOCK, data);
+    Data_Get_Struct(other, struct BLOCK, data2);
+    if (data->tag == data2->tag) return Qtrue;
+    return Qfalse;
+}
+
+static VALUE
 block_pass(self, node)
     VALUE self;
     NODE *node;
@@ -6751,6 +6779,7 @@ Init_Proc()
     rb_define_method(rb_cProc, "call", proc_call, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
     rb_define_method(rb_cProc, "[]", proc_call, -2);
+    rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_global_function("proc", rb_f_lambda, 0);
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);

@@ -82,6 +82,7 @@ Extension Libraries
 * ptk.rb pTk wrapper that is compatible to tk.rb
 * Berkeley DB extension
 * BitVector
+* thread-safe fcgi
 
 Ruby Libraries
 

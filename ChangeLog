@@ -1,3 +1,7 @@
+Mon Mar  5 17:25:13 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_eq): compare Procs using blocktag equality.
+
 Mon Mar  5 17:19:56 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (gettimeofday): use GetLocalTime() instead of ftime()
@@ -6,6 +10,12 @@ Mon Mar  5 17:19:56 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 Sun Mar  4 17:01:09 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* string.c (trnext): support backslash escape in String#tr.
+
+Sat Mar  3 16:15:16 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): push cbase if ruby_cbase != ruby_class, for
+	  example in the case NODE_DEFN/NODE_DEFS are called within
+	  module_eval.
 
 Wed Feb 28 11:02:41 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
