@@ -1,3 +1,10 @@
+Mon Feb 25 19:35:48 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* process.c (rb_syswait): argument order of rb_waitpid() inverted.
+
+	* sample/test.rb (system): test with scripts under the source
+	  directory.
+
 Mon Feb 25 13:32:13 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/shell.rb (Shell::expand_path): relative to @cwd.

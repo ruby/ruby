@@ -1006,7 +1006,12 @@ File.unlink "script_tmp" or `/bin/rm -f "script_tmp"`
 File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
 $bad = false
-for script in Dir["{lib,sample,ext}/**/*.rb"]
+if (dir = File.dirname(File.dirname(dir))) == '.'
+  dir = ""
+else
+  dir << "/"
+end
+for script in Dir["#{dir}{lib,sample,ext}/**/*.rb"]
   `./miniruby -c #{script}`
   unless $?
     $bad = true

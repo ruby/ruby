@@ -606,7 +606,7 @@ rb_syswait(pid)
     }
 
     do {
-	i = rb_waitpid(pid, &status, 0);
+	i = rb_waitpid(pid, 0, &status);
     } while (i == -1 && errno == EINTR);
 
     if (hooked) {
