@@ -7,7 +7,9 @@
 # You can freely distribute/modify this library.
 #
 # Documentation: Shugo Maeda, with RDoc conversion and overview by William
-# Webber. 
+# Webber.
+#
+# See Net::IMAP for documentation. 
 #
 
 
@@ -19,13 +21,13 @@ begin
 rescue LoadError
 end
 
-module Net # :nodoc:
+module Net
 
   #
   # Net::IMAP implements Internet Message Access Protocol (IMAP) client
   # functionality.  The protocol is described in [IMAP].
   #
-  # == IMAP OVERVIEW
+  # == IMAP Overview
   #
   # An IMAP client connects to a server, and then authenticates
   # itself using either #authenticate() or #login().  Having
@@ -63,7 +65,7 @@ module Net # :nodoc:
   # UIDs have to be reassigned.  An IMAP client cannot thus
   # rearrange message orders.
   #
-  # == EXAMPLES OF USAGE
+  # == Examples of Usage
   #
   # === List sender and subject of all recent messages in the default mailbox
   #
@@ -89,7 +91,7 @@ module Net # :nodoc:
   #   end
   #   imap.expunge
   # 
-  # == THREAD-SAFENESS
+  # == Thread Safety
   #
   # Net::IMAP supports concurrent threads. For example,
   # 
@@ -103,7 +105,7 @@ module Net # :nodoc:
   # 
   # This script invokes the FETCH command and the SEARCH command concurrently.
   #
-  # == ERRORS
+  # == Errors
   #
   # An IMAP server can send three different types of responses to indicate
   # failure:

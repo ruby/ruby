@@ -1,5 +1,5 @@
 # 
-# = net/ftp.rb
+# = net/ftp.rb - FTP Client Library
 # 
 # Written by Shugo Maeda <shugo@ruby-lang.org>.
 #
@@ -17,7 +17,7 @@
 require "socket"
 require "monitor"
 
-module Net # :nodoc:
+module Net
 
   # :stopdoc:
   class FTPError < StandardError; end
@@ -58,7 +58,7 @@ module Net # :nodoc:
   # == Major Methods
   #
   # The following are the methods most likely to be useful to users:
-  # - FTP::open
+  # - FTP.open
   # - #getbinaryfile
   # - #gettextfile
   # - #putbinaryfile
@@ -81,7 +81,7 @@ module Net # :nodoc:
     # When +true+, transfers are performed in binary mode.  Default: +true+.
     attr_accessor :binary
 
-    # When +true+, the connection is in passive mode.  Default: false.
+    # When +true+, the connection is in passive mode.  Default: +false+.
     attr_accessor :passive
 
     # When +true+, all traffic to and from the server is written
@@ -103,7 +103,7 @@ module Net # :nodoc:
     attr_reader :last_response
     
     #
-    # A synonym for +FTP.new+, but with a mandatory host parameter.
+    # A synonym for <tt>FTP.new</tt>, but with a mandatory host parameter.
     #
     # If a block is given, it is passed the +FTP+ object, which will be closed
     # when the block finishes, or when an exception is raised.
@@ -165,7 +165,7 @@ module Net # :nodoc:
     # Establishes an FTP connection to host, optionally overriding the default
     # port. If the environment variable +SOCKS_SERVER+ is set, sets up the
     # connection through a SOCKS proxy. Raises an exception (typically
-    # +Errno::ECONNREFUSED+) if the connection cannot be established.
+    # <tt>Errno::ECONNREFUSED</tt>) if the connection cannot be established.
     #
     def connect(host, port = FTP_PORT)
       if @debug_mode

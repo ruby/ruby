@@ -1,3 +1,11 @@
+Sun May  9 23:38:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/net/ftp.rb: ported documentation improvement from 1.8 branch
+	* lib/net/imap.rb:   ditto
+	* lib/net/pop.rb:    ditto
+	* lib/net/smtp.rb:   ditto
+	* lib/net/telnet.rb: ditto
+
 Sun May  9 23:34:51 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/test_float.rb: added test_strtod to test Float("0").
