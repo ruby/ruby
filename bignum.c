@@ -230,26 +230,31 @@ rb_cstr2inum(str, base)
 	}
     }
     if (base == 8) {
-	while (*str == '0') str++;
-	if (!*str) return INT2FIX(0);
-	while (*str == '_') str++;
-	len = 3*strlen(str)*sizeof(char);
+	len = 3;
     }
     else {			/* base == 10, 2 or 16 */
 	if (base == 16 && str[0] == '0' && (str[1] == 'x'||str[1] == 'X')) {
 	    str += 2;
 	}
-	if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
+	else if (base == 2 && str[0] == '0' && (str[1] == 'b'||str[1] == 'B')) {
 	    str += 2;
 	}
-	while (*str && *str == '0') str++;
+	len = 4;
+    }
+    if (*str == '0') {
+	do str++; while (*str == '0');
+	if (!*str) return INT2FIX(0);
+	while (*str == '_') str++;
+	if (!*str) str--;
 	if (ISSPACE(*str)) {
-	    if (badcheck) goto bad;
+	    if (badcheck) {
+		while (ISSPACE(*str)) str++;
+		if (*str) goto bad;
+	    }
 	    return INT2FIX(0);
 	}
-	if (!*str) str--;
-	len = 4*strlen(str)*sizeof(char);
     }
+    len *= strlen(str)*sizeof(char);
 
     if (len <= (sizeof(VALUE)*CHAR_BIT)) {
 	unsigned long val = strtoul((char*)str, &end, base);
@@ -330,9 +335,7 @@ rb_cstr2inum(str, base)
     if (badcheck) {
 	str--;
 	if (s+1 < str && str[-1] == '_') goto bad;
-	if (ISSPACE(c)) {
-	    while (*str && ISSPACE(*str)) str++;
-	}
+	while (*str && ISSPACE(*str)) str++;
 	if (*str) goto bad;
     }
 

@@ -1,3 +1,7 @@
+Thu Dec 27 01:54:02 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* bignum.c (rb_cstr2inum): allow "0\n" and so on.
+
 Tue Dec 25 23:28:47 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.6 released.
