@@ -9,7 +9,7 @@ class Mail
     @header = {}
     @body = []
     begin
-      f.each do |line|
+      while line = f.gets()
 	line.chop!
 	next if /^From /=~line	# skip From-line
 	break if /^$/=~line	# end of header
