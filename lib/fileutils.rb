@@ -75,6 +75,11 @@
 
 require 'find'
 
+unless defined?(Errno::EXDEV)
+  module Errno
+    class EXDEV < SystemCallError; end
+  end
+end
 
 module FileUtils
 
@@ -573,30 +578,44 @@ module FileUtils
     return if options[:noop]
 
     fu_each_src_dest(src, dest) do |s,d|
-      if rename_cannot_overwrite_file? and File.file?(d)
-        begin
-          File.unlink d
-        rescue SystemCallError
-          raise unless options[:force]
-        end
-      end
+      src_stat = fu_lstat(s)
+      dest_stat = fu_stat(d)
       begin
-        File.rename s, d
-      rescue SystemCallError
-        begin
-          copy_entry s, d, true
-          File.unlink s
-        rescue SystemCallError
-          raise unless options[:force]
+        if rename_cannot_overwrite_file? and dest_stat and not dest_stat.directory?
+          File.unlink d
         end
+        if dest_stat and dest_stat.directory?
+          raise Errno::EISDIR, dest
+        end
+        begin
+          File.rename s, d
+        rescue Errno::EXDEV
+          copy_entry s, d, true
+        end
+      rescue SystemCallError
+        raise unless options[:force]
       end
     end
   end
 
   alias move mv
 
+  def fu_stat(path)
+    File.stat(path)
+  rescue SystemCallError
+    nil
+  end
+  private :fu_stat
+
+  def fu_lstat(path)
+    File.lstat(path)
+  rescue SystemCallError
+    nil
+  end
+  private :fu_lstat
+
   def rename_cannot_overwrite_file?   #:nodoc:
-    /djgpp|cygwin|mswin|mingw|bccwin|wince|emx/ !~ RUBY_PLATFORM
+    /djgpp|cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM
   end
   private :rename_cannot_overwrite_file?
 

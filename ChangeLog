@@ -1,3 +1,11 @@
+Mon Dec 27 15:15:18 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mv): should raise error when moving a
+	  directory to the (empty) directory. [ruby-talk:124368]
+
+	* lib/fileutils.rb (mv): wrongly did not overwrite file on Win32
+	  platforms.
+
 Mon Dec 27 14:36:20 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* process.c (NUM2RLIM, RLIM2NUM): Without SIZEOF_RLIM_T is not error.
