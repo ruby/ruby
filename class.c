@@ -412,6 +412,23 @@ rb_include_module(klass, module)
     if (changed) rb_clear_cache();
 }
 
+/*
+ *  call-seq:
+ *     mod.included_modules -> array
+ *  
+ *  Returns the list of modules included in <i>mod</i>.
+ *     
+ *     module Mixin
+ *     end
+ *     
+ *     module Outer
+ *       include Mixin
+ *     end
+ *     
+ *     Mixin.included_modules   #=> []
+ *     Outer.included_modules   #=> [Mixin]
+ */
+
 VALUE
 rb_mod_included_modules(mod)
     VALUE mod;
@@ -426,6 +443,25 @@ rb_mod_included_modules(mod)
     }
     return ary;
 }
+
+/*
+ *  call-seq:
+ *     mod.include?(module)    => true or false
+ *  
+ *  Returns <code>true</code> if <i>module</i> is included in
+ *  <i>mod</i> or one of <i>mod</i>'s ancestors.
+ *     
+ *     module A
+ *     end
+ *     class B
+ *       include A
+ *     end
+ *     class C < B
+ *     end
+ *     B.include?(A)   #=> true
+ *     C.include?(A)   #=> true
+ *     A.include?(A)   #=> false
+ */
 
 VALUE
 rb_mod_include_p(mod, mod2)
@@ -442,6 +478,22 @@ rb_mod_include_p(mod, mod2)
     }
     return Qfalse;
 }
+
+/*
+ *  call-seq:
+ *     mod.ancestors -> array
+ *  
+ *  Returns a list of modules included in <i>mod</i> (including
+ *  <i>mod</i> itself).
+ *     
+ *     module Mod
+ *       include Math
+ *       include Comparable
+ *     end
+ *     
+ *     Mod.ancestors    #=> [Mod, Comparable, Math]
+ *     Math.ancestors   #=> [Math]
+ */
 
 VALUE
 rb_mod_ancestors(mod)
@@ -576,6 +628,33 @@ class_instance_method_list(argc, argv, mod, func)
     return ary;
 }
 
+/*
+ *  call-seq:
+ *     mod.instance_methods(include_super=false)   => array
+ *  
+ *  Returns an array containing the names of public instance methods in
+ *  the receiver. For a module, these are the public methods; for a
+ *  class, they are the instance (not singleton) methods. With no
+ *  argument, or with an argument that is <code>false</code>, the
+ *  instance methods in <i>mod</i> are returned, otherwise the methods
+ *  in <i>mod</i> and <i>mod</i>'s superclasses are returned.
+ *     
+ *     module A
+ *       def method1()  end
+ *     end
+ *     class B
+ *       def method2()  end
+ *     end
+ *     class C < B
+ *       def method3()  end
+ *     end
+ *     
+ *     A.instance_methods                #=> ["method1"]
+ *     B.instance_methods                #=> ["method2"]
+ *     C.instance_methods                #=> ["method3"]
+ *     C.instance_methods(true).length   #=> 43
+ */
+
 VALUE
 rb_class_instance_methods(argc, argv, mod)
     int argc;
@@ -584,6 +663,15 @@ rb_class_instance_methods(argc, argv, mod)
 {
     return class_instance_method_list(argc, argv, mod, ins_methods_i);
 }
+
+/*
+ *  call-seq:
+ *     mod.protected_instance_methods(include_super=false)   => array
+ *  
+ *  Returns a list of the protected instance methods defined in
+ *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
+ *  methods of any ancestors are included.
+ */
 
 VALUE
 rb_class_protected_instance_methods(argc, argv, mod)
@@ -594,6 +682,23 @@ rb_class_protected_instance_methods(argc, argv, mod)
     return class_instance_method_list(argc, argv, mod, ins_methods_prot_i);
 }
 
+/*
+ *  call-seq:
+ *     mod.private_instance_methods(include_super=false)    => array
+ *  
+ *  Returns a list of the private instance methods defined in
+ *  <i>mod</i>. If the optional parameter is not <code>false</code>, the
+ *  methods of any ancestors are included.
+ *     
+ *     module Mod
+ *       def method1()  end
+ *       private :method1
+ *       def method2()  end
+ *     end
+ *     Mod.instance_methods           #=> ["method2"]
+ *     Mod.private_instance_methods   #=> ["method1"]
+ */
+
 VALUE
 rb_class_private_instance_methods(argc, argv, mod)
     int argc;
@@ -603,6 +708,15 @@ rb_class_private_instance_methods(argc, argv, mod)
     return class_instance_method_list(argc, argv, mod, ins_methods_priv_i);
 }
 
+/*
+ *  call-seq:
+ *     mod.public_instance_methods(include_super=false)   => array
+ *  
+ *  Returns a list of the public instance methods defined in <i>mod</i>.
+ *  If the optional parameter is not <code>false</code>, the methods of
+ *  any ancestors are included.
+ */
+
 VALUE
 rb_class_public_instance_methods(argc, argv, mod)
     int argc;
@@ -611,6 +725,36 @@ rb_class_public_instance_methods(argc, argv, mod)
 {
     return class_instance_method_list(argc, argv, mod, ins_methods_pub_i);
 }
+
+/*
+ *  call-seq:
+ *     obj.singleton_methods(all=false)    => array
+ *  
+ *  Returns an array of the names of singleton methods for <i>obj</i>.
+ *  If the optional <i>all</i> parameter is true, the list will include
+ *  methods in modules included in <i>obj</i>.
+ *     
+ *     module Other
+ *       def three() end
+ *     end
+ *     
+ *     class Single
+ *       def Single.four() end
+ *     end
+ *     
+ *     a = Single.new
+ *     
+ *     def a.one()
+ *     
+ *     class << a
+ *       include Other
+ *       def two()
+ *     end
+ *     
+ *     Single.singleton_methods    #=> ["four"]
+ *     a.singleton_methods         #=> ["two", "one"]
+ *     a.singleton_methods(true)   #=> ["two", "one", "three"]
+ */
 
 VALUE
 rb_obj_singleton_methods(argc, argv, obj)

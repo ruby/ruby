@@ -167,6 +167,13 @@ classname(klass)
     return find_class_path(klass);
 }
 
+/*
+ *  call-seq:
+ *     mod.name    => string
+ *  
+ *  Returns the name of the module <i>mod</i>.
+ */
+
 VALUE
 rb_mod_name(mod)
     VALUE mod;
@@ -1034,6 +1041,23 @@ ivar_i(key, entry, ary)
     return ST_CONTINUE;
 }
 
+/*
+ *  call-seq:
+ *     obj.instance_variables    => array
+ *  
+ *  Returns an array of instance variable names for the receiver. Note
+ *  that simply defining an accessor does not create the corresponding
+ *  instance variable.
+ *     
+ *     class Fred
+ *       attr_accessor :a1
+ *       def initialize
+ *         @iv = 3
+ *       end
+ *     end
+ *     Fred.new.instance_variables   #=> ["@iv"]
+ */
+
 VALUE
 rb_obj_instance_variables(obj)
     VALUE obj;
@@ -1062,6 +1086,28 @@ rb_obj_instance_variables(obj)
     }
     return ary;
 }
+
+/*
+ *  call-seq:
+ *     obj.remove_instance_variable(symbol)    => obj
+ *  
+ *  Removes the named instance variable from <i>obj</i>, returning that
+ *  variable's value.
+ *     
+ *     class Dummy
+ *       attr_reader :var
+ *       def initialize
+ *         @var = 99
+ *       end
+ *       def remove
+ *         remove_instance_variable(:@var)
+ *       end
+ *     end
+ *     d = Dummy.new
+ *     d.var      #=> 99
+ *     d.remove   #=> 99
+ *     d.var      #=> nil
+ */
 
 VALUE
 rb_obj_remove_instance_variable(obj, name)
@@ -1119,6 +1165,35 @@ const_missing(klass, id)
 {
     return rb_funcall(klass, rb_intern("const_missing"), 1, ID2SYM(id));
 }
+
+
+/*
+ * call-seq:
+ *    mod.const_missing(sym)    => obj
+ *
+ *  Invoked when a reference is made to an undefined constant in
+ *  <i>mod</i>. It is passed a symbol for the undefined constant, and
+ *  returns a value to be used for that constant. The
+ *  following code is a (very bad) example: if reference is made to
+ *  an undefined constant, it attempts to load a file whose name is
+ *  the lowercase version of the constant (thus class <code>Fred</code> is
+ *  assumed to be in file <code>fred.rb</code>). If found, it returns the
+ *  value of the loaded class. It therefore implements a perverse
+ *  kind of autoload facility.
+ *  
+ *    def Object.const_missing(name)
+ *      @looked_for ||= {}
+ *      str_name = name.to_s
+ *      raise "Class not found: #{name}" if @looked_for[str_name]
+ *      @looked_for[str_name] = 1
+ *      file = str_name.downcase
+ *      require file
+ *      klass = const_get(name)
+ *      return klass if klass
+ *      raise "Class not found: #{name}"
+ *    end
+ *  
+ */
 
 VALUE
 rb_mod_const_missing(klass, name)
@@ -1325,6 +1400,15 @@ rb_const_get_at(klass, id)
     return rb_const_get_0(klass, id, Qtrue, Qfalse);
 }
 
+/*
+ *  call-seq:
+ *     remove_const(sym)   => obj
+ *  
+ *  Removes the definition of the given constant, returning that
+ *  constant's value. Predefined classes and singleton objects (such as
+ *  <i>true</i>) cannot be removed.
+ */
+
 VALUE
 rb_mod_remove_const(mod, name)
     VALUE mod, name;
@@ -1422,6 +1506,15 @@ rb_const_list(data)
 
     return ary;
 }
+
+/*
+ *  call-seq:
+ *     mod.constants    => array
+ *  
+ *  Returns an array of the names of the constants accessible in
+ *  <i>mod</i>. This includes the names of constants in any included
+ *  modules (example at start of section).
+ */
 
 VALUE
 rb_mod_constants(mod)
@@ -1709,6 +1802,23 @@ cv_i(key, value, ary)
     return ST_CONTINUE;
 }
 
+/*
+ *  call-seq:
+ *     mod.class_variables   => array
+ *  
+ *  Returns an array of the names of class variables in <i>mod</i> and
+ *  the ancestors of <i>mod</i>.
+ *     
+ *     class One
+ *       @@var1 = 1
+ *     end
+ *     class Two < One
+ *       @@var2 = 2
+ *     end
+ *     One.class_variables   #=> ["@@var1"]
+ *     Two.class_variables   #=> ["@@var2", "@@var1"]
+ */
+
 VALUE
 rb_mod_class_variables(obj)
     VALUE obj;
@@ -1724,6 +1834,26 @@ rb_mod_class_variables(obj)
     }
     return ary;
 }
+
+/*
+ *  call-seq:
+ *     remove_class_variable(sym)    => obj
+ *  
+ *  Removes the definition of the <i>sym</i>, returning that
+ *  constant's value.
+ *     
+ *     class Dummy
+ *       @@var = 99
+ *       puts @@var
+ *       remove_class_variable(:@@var)
+ *       puts(defined? @@var)
+ *     end
+ *     
+ *  <em>produces:</em>
+ *     
+ *     99
+ *     nil
+ */
 
 VALUE
 rb_mod_remove_cvar(mod, name)

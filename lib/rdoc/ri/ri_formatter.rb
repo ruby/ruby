@@ -171,7 +171,7 @@ module RI
         draw_line
 
       else
-        fail "xxUnknown flow element: #{item.class}"
+        fail "Unknown flow element: #{item.class}"
       end
     end
 

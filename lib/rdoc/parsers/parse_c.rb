@@ -124,6 +124,7 @@ module RDoc
     extend ParserFactory
     parse_files_matching(/\.(c|cc|cpp|CC)$/)
 
+    @@known_bodies = {}
 
     # prepare to parse a C file
     def initialize(top_level, file_name, body, options)
@@ -245,24 +246,39 @@ module RDoc
     ############################################################
     
     def do_methods
-      @body.scan(/rb_define_(singleton_method|method|module_function)\(\s*(\w+),
-                               \s*"([^"]+)",
-                               \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
-                               \s*(-?\w+)\s*\)/xm) do  #"
-        |type, var_name, meth_name, meth_body, param_count|
-        
+      @body.scan(%r{rb_define_
+                     (
+                        singleton_method |
+                        method           |
+                        module_function  |
+                        private_method
+                     )
+                     \(\s*(\w+),
+                       \s*"([^"]+)",
+                       \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
+                       \s*(-?\w+)\s*\)
+                     (?:;\s*//\s+in\s+(\w+?\.[cy]))?
+                   }xm) do
+        |type, var_name, meth_name, meth_body, param_count, source_file|
+       #" 
         next if meth_name == "initialize_copy"
-
-        handle_method(type, var_name, meth_name, meth_body, param_count)
+        next if var_name  == "ruby_top_self"
+                          
+        var_name = "rb_cObject" if var_name == "rb_mKernel"
+        handle_method(type, var_name, meth_name, 
+                      meth_body, param_count, source_file)
       end
 
-      @body.scan(/rb_define_global_function\(
+      @body.scan(%r{rb_define_global_function\(
                                \s*"([^"]+)",
                                \s*(?:RUBY_METHOD_FUNC\(|VALUEFUNC\()?(\w+)\)?,
-                               \s*(-?\w+)\s*\)/xm) do  #"
-        |meth_name, meth_body, param_count|
+                               \s*(-?\w+)\s*\)
+                  (?:;\s*//\s+in\s+(\w+?\.[cy]))?
+                  }xm) do  #"
+        |meth_name, meth_body, param_count, source_file|
         
-        handle_method("method", "rb_mKernel", meth_name, meth_body, param_count)
+        handle_method("method", "rb_mKernel", meth_name, 
+                      meth_body, param_count, source_file)
       end
   
       @body.scan(/define_filetest_function\(
@@ -278,7 +294,9 @@ module RDoc
 
     ############################################################
 
-    def handle_method(type, var_name, meth_name, meth_body, param_count)
+    def handle_method(type, var_name, meth_name, 
+                      meth_body, param_count, source_file = nil)
+
       class_name = @known_classes[var_name] || var_name
       class_obj  = find_class(var_name, class_name)
       
@@ -301,8 +319,13 @@ module RDoc
                             (1..p_count).map{|i| "p#{i}"}.join(", ") + 
                                                 ")"
         end
-        
-        find_body(meth_body, meth_obj)
+
+        if source_file
+          body = (@@known_bodies[source_file] ||= File.read(source_file))
+        else
+          body = @body
+        end
+        find_body(meth_body, meth_obj, body)
         class_obj.add_method(meth_obj)
       end
     end
@@ -310,8 +333,8 @@ module RDoc
     ############################################################
 
     # Find the C code corresponding to a c method
-    def find_body(meth_name, meth_obj)
-      if @body =~ %r{((?>/\*.*?\*/\s+))(static\s+)?VALUE\s+#{meth_name}
+    def find_body(meth_name, meth_obj, body)
+      if body =~ %r{((?>/\*.*?\*/\s+))(static\s+)?VALUE\s+#{meth_name}
                     \s*(\(.*?\)).*?^}xm
         comment, params = $1, $3
         body_text = $&
@@ -319,7 +342,7 @@ module RDoc
         # see if we can find the whole body
         
         re = Regexp.escape(body_text) + "[^(]*^{.*?^}"
-        if Regexp.new(re, Regexp::MULTILINE).match(@body)
+        if Regexp.new(re, Regexp::MULTILINE).match(body)
           body_text = $&
         end
 
