@@ -61,6 +61,10 @@ char *strchr _((char*,char));
 
 #include <ctype.h>
 
+#ifndef HAVE_LSTAT
+#define lstat rb_sys_stat
+#endif
+
 #define FNM_NOESCAPE	0x01
 #define FNM_PATHNAME	0x02
 #define FNM_PERIOD	0x04
