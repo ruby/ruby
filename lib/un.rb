@@ -21,20 +21,19 @@
 #   ruby -run -e touch -- [OPTION] FILE
 #   ruby -run -e help [COMMAND]
 
-require 'fileutils'
-require 'getopts'
+require "fileutils"
+require "optparse"
 
 module FileUtils
-#  @fileutils_label = ''
+#  @fileutils_label = ""
   @fileutils_output = $stdout
 end
 
 def setup(options = "")
-  options += "v"
   ARGV.map! do |x|
     case x
     when /^-/
-      x.delete "^-#{options}"
+      x.delete "^-#{options}v"
     when /[*?\[{]/
       Dir[x]
     else
@@ -42,13 +41,18 @@ def setup(options = "")
     end
   end
   ARGV.flatten!
-  ARGV.delete_if{|x| x == '-'}
-  getopts(options)
-  options = {}
-  options[:verbose] = true if $OPT["v"]
-  options[:force] = true if $OPT["f"]
-  options[:preserve] = true if $OPT["p"]
-  yield ARGV, options, $OPT
+  ARGV.delete_if{|x| x == "-"}
+  opt_hash = {}
+  OptionParser.new do |o|
+    options.scan(/.:?/) do |s|
+      o.on("-" + s.tr(":", " ")) do |val|
+        opt_hash[s.delete(":").intern] = val
+      end
+    end
+    o.on("-v") do opt_hash[:verbose] = true end
+    o.parse!
+  end
+  yield ARGV, opt_hash
 end
 
 ##
@@ -62,9 +66,10 @@ end
 #
 
 def cp
-  setup("pr") do |argv, options, opt|
+  setup("pr") do |argv, options|
     cmd = "cp"
-    cmd += "_r" if opt["r"]
+    cmd += "_r" if options.delete :r
+    options[:preserve] = true if options.delete :p
     dest = argv.pop
     argv = argv[0] if argv.size == 1
     FileUtils.send cmd, argv, dest, options
@@ -82,9 +87,10 @@ end
 #
 
 def ln
-  setup("sf") do |argv, options, opt|
+  setup("sf") do |argv, options|
     cmd = "ln"
-    cmd += "_s" if opt["s"]
+    cmd += "_s" if options.delete :s
+    options[:force] = true if options.delete :f
     dest = argv.pop
     argv = argv[0] if argv.size == 1
     FileUtils.send cmd, argv, dest, options
@@ -118,9 +124,10 @@ end
 #
 
 def rm
-  setup("fr") do |argv, options, opt|
+  setup("fr") do |argv, options|
     cmd = "rm"
-    cmd += "_r" if opt["r"]
+    cmd += "_r" if options.delete :r
+    options[:force] = true if options.delete :f
     FileUtils.send cmd, argv, options
   end
 end
@@ -135,9 +142,9 @@ end
 #
 
 def mkdir
-  setup("p") do |argv, options, opt|
+  setup("p") do |argv, options|
     cmd = "mkdir"
-    cmd += "_p" if options.delete :preserve
+    cmd += "_p" if options.delete :p
     FileUtils.send cmd, argv, options
   end
 end
@@ -168,8 +175,9 @@ end
 #
 
 def install
-  setup("pm:") do |argv, options, opt|
-    options[:mode] = opt["m"] ? opt["m"].oct : 0755
+  setup("pm:") do |argv, options|
+    options[:mode] = (mode = options.delete :m) ? mode.oct : 0755
+    options[:preserve] = true if options.delete :p
     dest = argv.pop
     argv = argv[0] if argv.size == 1
     FileUtils.install argv, dest, options
