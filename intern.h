@@ -107,6 +107,7 @@ VALUE rb_exc_new3 _((VALUE, VALUE));
 NORETURN(void rb_loaderror __((const char*, ...)));
 void rb_compile_error __((const char*, ...));
 void rb_compile_error_append __((const char*, ...));
+NORETURN(void rb_load_fail _((char*)));
 NORETURN(void rb_error_frozen _((char*)));
 /* eval.c */
 NORETURN(void rb_exc_raise _((VALUE)));

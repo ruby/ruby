@@ -219,7 +219,7 @@ rb_global_variable(var)
 typedef struct RVALUE {
     union {
 	struct {
-	    unsigned long flag;	/* always 0 for freed obj */
+	    unsigned long flags;	/* always 0 for freed obj */
 	    struct RVALUE *next;
 	} free;
 	struct RBasic  basic;
@@ -275,7 +275,7 @@ add_heap()
     if (himem < pend) himem = pend;
 
     while (p < pend) {
-	p->as.free.flag = 0;
+	p->as.free.flags = 0;
 	p->as.free.next = freelist;
 	freelist = p;
 	p++;
@@ -627,7 +627,7 @@ rb_gc_mark(ptr)
 	break;
 
       case T_SCOPE:
-	if (obj->as.scope.local_vars && (obj->as.scope.flag & SCOPE_MALLOC)) {
+	if (obj->as.scope.local_vars && (obj->as.scope.flags & SCOPE_MALLOC)) {
 	    int n = obj->as.scope.local_tbl[0]+1;
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
@@ -689,12 +689,12 @@ gc_sweep()
 		    obj_free((VALUE)p);
 		}
 		if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
-		    p->as.free.flag = FL_MARK; /* remain marked */
+		    p->as.free.flags = FL_MARK; /* remain marked */
 		    p->as.free.next = final_list;
 		    final_list = p;
 		}
 		else {
-		    p->as.free.flag = 0;
+		    p->as.free.flags = 0;
 		    p->as.free.next = freelist;
 		    freelist = p;
 		}
@@ -728,7 +728,7 @@ gc_sweep()
 	for (p = final_list; p; p = tmp) {
 	    tmp = p->as.free.next;
 	    run_final((VALUE)p);
-	    p->as.free.flag = 0;
+	    p->as.free.flags = 0;
 	    p->as.free.next = freelist;
 	    freelist = p;
 	}
@@ -739,7 +739,7 @@ void
 rb_gc_force_recycle(p)
     VALUE p;
 {
-    RANY(p)->as.free.flag = 0;
+    RANY(p)->as.free.flags = 0;
     RANY(p)->as.free.next = freelist;
     freelist = RANY(p);
 }
@@ -852,11 +852,11 @@ obj_free(obj)
 
       case T_SCOPE:
 	if (RANY(obj)->as.scope.local_vars &&
-            RANY(obj)->as.scope.flag != SCOPE_ALLOCA) {
+            RANY(obj)->as.scope.flags != SCOPE_ALLOCA) {
 	    VALUE *vars = RANY(obj)->as.scope.local_vars-1;
 	    if (vars[0] == 0)
 		RUBY_CRITICAL(free(RANY(obj)->as.scope.local_tbl));
-	    if (RANY(obj)->as.scope.flag&SCOPE_MALLOC)
+	    if (RANY(obj)->as.scope.flags & SCOPE_MALLOC)
 		RUBY_CRITICAL(free(vars));
 	}
 	break;
@@ -1257,11 +1257,11 @@ rb_gc_call_finalizer_at_exit()
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree) {
-		p->as.free.flag = 0;
+		p->as.free.flags = 0;
 		(*RANY(p)->as.data.dfree)(DATA_PTR(p));
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
-		p->as.free.flag = 0;
+		p->as.free.flags = 0;
 		rb_io_fptr_finalize(RANY(p)->as.file.fptr);
 	    }
 	    p++;

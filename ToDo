@@ -44,11 +44,13 @@ Hacking Interpreter
 * warn for inconsistent local variable usage (lv m and method m at the same time). 
 * MicroRuby
 * Built-in Interactive Ruby.
+* regex /\ba/ on "[a in HIRAGANA]a[a in HIRAGANA]"
 
 Standard Libraries
 
 - Module#define_method which takes a name and a body (block, proc or method).
 - Enume#inject
+- Array#fetch
 * Enumerable#sort_by for Schwartzian transformation
 * String#scanf(?)
 * Object#fmt(?)
@@ -69,7 +71,6 @@ Standard Libraries
 * fork_and_kill_other_threads.
 * way to specify immortal (fork endurance) thread;
 * or raise ForkException to every thread but fork caller.
-* Array#fetch
 * Hash::new{default} or recommend Hash#fetch?
 
 Extension Libraries

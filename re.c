@@ -389,9 +389,9 @@ rb_reg_kcode_m(re)
 }
 
 static Regexp*
-make_regexp(s, len, flag)
+make_regexp(s, len, flags)
     const char *s;
-    int len, flag;
+    int len, flags;
 {
     Regexp *rp;
     char *err;
@@ -408,8 +408,8 @@ make_regexp(s, len, flag)
     rp->buffer = ALLOC_N(char, 16);
     rp->allocated = 16;
     rp->fastmap = ALLOC_N(char, 256);
-    if (flag) {
-	rp->options = flag;
+    if (flags) {
+	rp->options = flags;
     }
     err = re_compile_pattern(s, len, rp);
     if (err != NULL) {
@@ -973,30 +973,30 @@ rb_reg_initialize_m(argc, argv, self)
     VALUE self;
 {
     VALUE src;
-    int flag = 0;
+    int flags = 0;
 
     if (argc == 0 || argc > 3) {
 	rb_raise(rb_eArgError, "wrong # of argument");
     }
     if (argc >= 2) {
-	if (FIXNUM_P(argv[1])) flag = FIX2INT(argv[1]);
-	else if (RTEST(argv[1])) flag = RE_OPTION_IGNORECASE;
+	if (FIXNUM_P(argv[1])) flags = FIX2INT(argv[1]);
+	else if (RTEST(argv[1])) flags = RE_OPTION_IGNORECASE;
     }
     if (argc == 3) {
 	char *kcode = STR2CSTR(argv[2]);
 
 	switch (kcode[0]) {
 	  case 'n': case 'N':
-	    flag |= 16;
+	    flags |= 16;
 	    break;
 	  case 'e': case 'E':
-	    flag |= 32;
+	    flags |= 32;
 	    break;
 	  case 's': case 'S':
-	    flag |= 48;
+	    flags |= 48;
 	    break;
 	  case 'u': case 'U':
-	    flag |= 64;
+	    flags |= 64;
 	    break;
 	  default:
 	    break;
@@ -1006,14 +1006,14 @@ rb_reg_initialize_m(argc, argv, self)
     src = argv[0];
     if (TYPE(src) == T_REGEXP) {
 	rb_reg_check(src);
-	rb_reg_initialize(self, RREGEXP(src)->str, RREGEXP(src)->len, flag);
+	rb_reg_initialize(self, RREGEXP(src)->str, RREGEXP(src)->len, flags);
     }
     else {
 	char *p;
 	int len;
 
 	p = rb_str2cstr(src, &len);
-	rb_reg_initialize(self, p, len, flag);
+	rb_reg_initialize(self, p, len, flags);
     }
     return self;
 }

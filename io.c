@@ -1325,18 +1325,18 @@ rb_io_flags_mode(flags)
 }
 
 static int
-rb_sysopen(fname, flag, mode)
+rb_sysopen(fname, flags, mode)
     char *fname;
-    int flag;
+    int flags;
     unsigned int mode;
 {
     int fd;
 
-    fd = open(fname, flag, mode);
+    fd = open(fname, flags, mode);
     if (fd < 0) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    fd = open(fname, flag, mode);
+	    fd = open(fname, flags, mode);
 	}
 	if (fd < 0) {
 	    rb_sys_fail(fname);

@@ -3392,8 +3392,7 @@ yylex()
 	return c;
 
       case '{':
-	if (lex_state != EXPR_END &&
-	    lex_state != EXPR_ARG)
+	if (lex_state != EXPR_END && lex_state != EXPR_ARG)
 	    c = tLBRACE;
 	lex_state = EXPR_BEG;
 	return c;
@@ -4694,7 +4693,7 @@ top_local_setup()
 	i = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
 
 	if (i < len) {
-	    if (i == 0 || (ruby_scope->flag & SCOPE_MALLOC) == 0) {
+	    if (i == 0 || (ruby_scope->flags & SCOPE_MALLOC) == 0) {
 		VALUE *vars = ALLOC_N(VALUE, len+1);
 		if (ruby_scope->local_vars) {
 		    *vars++ = ruby_scope->local_vars[-1];
@@ -4706,7 +4705,7 @@ top_local_setup()
 		    rb_mem_clear(vars, len);
 		}
 		ruby_scope->local_vars = vars;
-		ruby_scope->flag |= SCOPE_MALLOC;
+		ruby_scope->flags |= SCOPE_MALLOC;
 	    }
 	    else {
 		VALUE *vars = ruby_scope->local_vars-1;

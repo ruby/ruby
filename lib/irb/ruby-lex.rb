@@ -28,7 +28,7 @@ class RubyLex
   include RubyToken
 
   class << self
-    attr :debug_level, TRUE
+    attr_accessor :debug_level
     def debug?
       @debug_level > 0
     end
@@ -54,14 +54,14 @@ class RubyLex
     @exception_on_syntax_error = true
   end
 
-  attr :skip_space, true
-  attr :readed_auto_clean_up, true
-  attr :exception_on_syntax_error, true
+  attr_accessor :skip_space
+  attr_accessor :readed_auto_clean_up
+  attr_accessor :exception_on_syntax_error
 
-  attr :seek
-  attr :char_no
-  attr :line_no
-  attr :indent
+  attr_reader :seek
+  attr_reader :char_no
+  attr_reader :line_no
+  attr_reader :indent
 
   # io functions
   def set_input(io, p = nil)
@@ -203,7 +203,7 @@ class RubyLex
     @here_header = false
     
     prompt
-    @continue = FALSE
+    @continue = false
 
     @line = ""
     @exp_line_no = @line_no
@@ -212,7 +212,7 @@ class RubyLex
   def each_top_level_statement
     initialize_input
     loop do
-      @continue = FALSE
+      @continue = false
       prompt
       unless l = lex
 	break if @line == ''
@@ -315,7 +315,7 @@ class RubyLex
     end
 
     @OP.def_rules(" ", "\t", "\f", "\r", "\13") do
-      @space_seen = TRUE
+      @space_seen = true
       while getc =~ /[ \t\f\r\13]/; end
       ungetc
       Token(TkSPACE)
@@ -342,9 +342,9 @@ class RubyLex
       print "\\n\n" if RubyLex.debug?
       case @lex_state
       when EXPR_BEG, EXPR_FNAME, EXPR_DOT
-	@continue = TRUE
+	@continue = true
       else
-	@continue = FALSE
+	@continue = false
 	@lex_state = EXPR_BEG
       end
       @here_header = false
@@ -835,8 +835,8 @@ class RubyLex
     end
     
     type = TkINTEGER
-    allow_point = TRUE
-    allow_e = TRUE
+    allow_point = true
+    allow_e = true
     while ch = getc
       case ch
       when /[0-9_]/

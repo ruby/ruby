@@ -1288,17 +1288,20 @@ str_gsub(argc, argv, str, bang)
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);
 	}
+	else {
+	    RSTRING(str)->orig = 0;
+	}
     }
     else {
 	NEWOBJ(dup, struct RString);
 	OBJSETUP(dup, rb_cString, T_STRING);
 	OBJ_INFECT(dup, str);
 	str = (VALUE)dup;
+	dup->orig = 0;
     }
     RSTRING(str)->ptr = buf;
     RSTRING(str)->len = len = bp - buf;
     RSTRING(str)->ptr[len] = '\0';
-    RSTRING(str)->orig = 0;
 
     if (tainted) OBJ_TAINT(str);
     return str;

@@ -68,14 +68,14 @@ range_initialize(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    VALUE beg, end, flag;
+    VALUE beg, end, flags;
     
-    rb_scan_args(argc, argv, "21", &beg, &end, &flag);
+    rb_scan_args(argc, argv, "21", &beg, &end, &flags);
     /* Ranges are immutable, so that they should be initialized only once. */
     if (rb_ivar_defined(obj, id_beg)) {
 	rb_raise(rb_eNameError, "`initialize' called twice");
     }
-    range_init(obj, beg, end, RTEST(flag));
+    range_init(obj, beg, end, RTEST(flags));
     return Qnil;
 }
 

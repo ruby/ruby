@@ -602,6 +602,8 @@ struct RVarmap *ruby_dyna_vars;
     ruby_dyna_vars = 0;
 
 #define POP_VARS()			\
+   if (_old && (ruby_scope->flags & SCOPE_DONT_RECYCLE)) \
+       FL_SET(_old, DVAR_DONT_RECYCLE); \
     ruby_dyna_vars = _old;		\
 }
 
@@ -808,7 +810,7 @@ static VALUE ruby_wrapper;	/* security wrapper */
     OBJSETUP(_scope, 0, T_SCOPE);	\
     _scope->local_tbl = 0;		\
     _scope->local_vars = 0;		\
-    _scope->flag = 0;			\
+    _scope->flags = 0;			\
     _old = ruby_scope;			\
     ruby_scope = _scope;		\
     scope_vmode = SCOPE_PUBLIC;
@@ -819,18 +821,18 @@ static rb_thread_t main_thread;
 static void scope_dup _((struct SCOPE *));
 
 #define POP_SCOPE() 			\
-    if (ruby_scope->flag & SCOPE_DONT_RECYCLE) {\
+    if (ruby_scope->flags & SCOPE_DONT_RECYCLE) {\
        if (_old) scope_dup(_old);	\
     }					\
-    if (!(ruby_scope->flag & SCOPE_MALLOC)) {\
+    if (!(ruby_scope->flags & SCOPE_MALLOC)) {\
 	ruby_scope->local_vars = 0;	\
 	ruby_scope->local_tbl  = 0;	\
-	if (!(ruby_scope->flag & SCOPE_DONT_RECYCLE) && \
+	if (!(ruby_scope->flags & SCOPE_DONT_RECYCLE) && \
             ruby_scope != top_scope) {	\
 	    rb_gc_force_recycle((VALUE)ruby_scope);\
         }				\
     }					\
-    ruby_scope->flag |= SCOPE_NOSTACK;	\
+    ruby_scope->flags |= SCOPE_NOSTACK;	\
     ruby_scope = _old;			\
     scope_vmode = _vmode;		\
 }
@@ -1305,7 +1307,7 @@ rb_eval_cmd(cmd, arg)
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
 
-    if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
+    if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
        scope_dup(saved_scope);
     ruby_scope = saved_scope;
     ruby_safe_level = safe;
@@ -2234,10 +2236,9 @@ rb_eval(self, n)
 
 	    state = EXEC_TAG();
 	    if (state == 0) {
+		PUSH_ITER(ITER_PRE);
 		if (nd_type(node) == NODE_ITER) {
-		    PUSH_ITER(ITER_PRE);
 		    result = rb_eval(self, node->nd_iter);
-		    POP_ITER();
 		}
 		else {
 		    VALUE recv;
@@ -2245,13 +2246,14 @@ rb_eval(self, n)
 		    int line = ruby_sourceline;
 
 		    _block.flags &= ~BLOCK_D_SCOPE;
+		    BEGIN_CALLARGS;
 		    recv = rb_eval(self, node->nd_iter);
-		    PUSH_ITER(ITER_PRE);
+		    END_CALLARGS;
 		    ruby_sourcefile = file;
 		    ruby_sourceline = line;
 		    result = rb_call(CLASS_OF(recv),recv,each,0,0,0);
-		    POP_ITER();
 		}
+		POP_ITER();
 	    }
 	    else if (_block.tag->dst == state) {
 		state &= TAG_MASK;
@@ -3580,8 +3582,11 @@ rb_yield_0(val, self, klass, acheck)
   pop_state:
     POP_ITER();
     POP_CLASS();
+#if 0
     if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
-	!FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
+	(!(ruby_scope->flags & SCOPE_DONT_RECYCLE) ||
+	 !(block->tag->flags & BLOCK_DYNAMIC) ||
+	 !FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE))) {
 	struct RVarmap *vars, *tmp;
 
 	if (ruby_dyna_vars->id == 0) {
@@ -3594,10 +3599,26 @@ rb_yield_0(val, self, klass, acheck)
 	    }
 	}
     }
+#else
+    if (ruby_dyna_vars && (block->flags & BLOCK_D_SCOPE) &&
+	!FL_TEST(ruby_dyna_vars, DVAR_DONT_RECYCLE)) {
+	struct RVarmap *vars = ruby_dyna_vars;
+
+	if (ruby_dyna_vars->id == 0) {
+	    vars = ruby_dyna_vars->next;
+	    rb_gc_force_recycle((VALUE)ruby_dyna_vars);
+	    while (vars && vars->id != 0) {
+		struct RVarmap *tmp = vars->next;
+		rb_gc_force_recycle((VALUE)vars);
+		vars = tmp;
+	    }
+	}
+    }
+#endif
     POP_VARS();
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
-    if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
+    if (ruby_scope->flags & SCOPE_DONT_RECYCLE)
        scope_dup(old_scope);
     ruby_scope = old_scope;
     if (state) {
@@ -4739,7 +4760,6 @@ eval(self, src, scope, file, line)
 	}
 
 	Data_Get_Struct(scope, struct BLOCK, data);
-
 	/* PUSH BLOCK from data */
 	frame = data->frame;
 	frame.tmp = ruby_frame;	/* gc protection */
@@ -4785,14 +4805,33 @@ eval(self, src, scope, file, line)
     POP_CLASS();
     ruby_in_eval--;
     if (!NIL_P(scope)) {
+	int dont_recycle = ruby_scope->flags & SCOPE_DONT_RECYCLE;
+
 	ruby_frame = frame.tmp;
-	if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
-           scope_dup(old_scope);
 	ruby_scope = old_scope;
 	ruby_block = old_block;
 	ruby_dyna_vars = old_dyna_vars;
 	data->vmode = scope_vmode; /* write back visibility mode */
 	scope_vmode = old_vmode;
+	if (dont_recycle) {
+	   struct tag *tag;
+	   struct RVarmap *vars;
+
+           scope_dup(ruby_scope);
+	   for (tag=prot_tag; tag; tag=tag->prev) {
+	       scope_dup(tag->scope);
+	   }
+	   if (ruby_block) {
+	       struct BLOCK *block = ruby_block;
+	       while (block) {
+		   block->tag->flags |= BLOCK_DYNAMIC;
+		   block = block->prev;
+	       }
+	   }
+	   for (vars = ruby_dyna_vars; vars; vars = vars->next) {
+	       FL_SET(vars, DVAR_DONT_RECYCLE);
+	   }
+	}
     }
     else {
 	ruby_frame->iter = iter;
@@ -5116,7 +5155,7 @@ rb_load(fname, wrap)
 	}
     }
     ruby_frame->last_func = last_func;
-    if (ruby_scope->flag == SCOPE_ALLOCA && ruby_class == rb_cObject) {
+    if (ruby_scope->flags == SCOPE_ALLOCA && ruby_class == rb_cObject) {
 	if (ruby_scope->local_tbl) /* toplevel was empty */
 	    free(ruby_scope->local_tbl);
     }
@@ -5896,8 +5935,8 @@ scope_dup(scope)
     ID *tbl;
     VALUE *vars;
 
-    scope->flag |= SCOPE_DONT_RECYCLE;
-    if (scope->flag & SCOPE_MALLOC) return;
+    scope->flags |= SCOPE_DONT_RECYCLE;
+    if (scope->flags & SCOPE_MALLOC) return;
 
     if (scope->local_tbl) {
 	tbl = scope->local_tbl;
@@ -5905,7 +5944,7 @@ scope_dup(scope)
 	*vars++ = scope->local_vars[-1];
 	MEMCPY(vars, scope->local_vars, VALUE, tbl[0]);
 	scope->local_vars = vars;
-	scope->flag |= SCOPE_MALLOC;
+	scope->flags |= SCOPE_MALLOC;
     }
 }
 
@@ -6163,7 +6202,7 @@ static int
 blk_orphan(data)
     struct BLOCK *data;
 {
-    if (!(data->scope->flag & SCOPE_NOSTACK)) {
+    if (!(data->scope->flags & SCOPE_NOSTACK)) {
 	return 0;
     }
     if ((data->tag->flags & BLOCK_ORPHAN)) {

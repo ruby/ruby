@@ -384,7 +384,7 @@ rb_ary_entry(ary, offset)
     if (RARRAY(ary)->len == 0) return Qnil;
 
     if (offset < 0) {
-	offset = RARRAY(ary)->len + offset;
+	offset += RARRAY(ary)->len;
     }
     if (offset < 0 || RARRAY(ary)->len <= offset) {
 	return Qnil;
@@ -431,7 +431,7 @@ rb_ary_aref(argc, argv, ary)
 	beg = NUM2LONG(arg1);
 	len = NUM2LONG(arg2);
 	if (beg < 0) {
-	    beg = RARRAY(ary)->len + beg;
+	    beg += RARRAY(ary)->len;
 	}
 	return rb_ary_subseq(ary, beg, len);
     }
@@ -478,6 +478,27 @@ rb_ary_last(ary)
 {
     if (RARRAY(ary)->len == 0) return Qnil;
     return RARRAY(ary)->ptr[RARRAY(ary)->len-1];
+}
+
+static VALUE
+rb_ary_fetch(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    VALUE pos, ifnone;
+    long idx;
+
+    rb_scan_args(argc, argv, "11", &pos, &ifnone);
+    idx = NUM2LONG(pos);
+
+    if (idx < 0) {
+	idx +=  RARRAY(ary)->len;
+    }
+    if (idx < 0 || RARRAY(ary)->len <= idx) {
+	return ifnone;
+    }
+    return RARRAY(ary)->ptr[idx];
 }
 
 static VALUE
@@ -979,7 +1000,7 @@ rb_ary_sort_bang(ary)
     VALUE ary;
 {
     rb_ary_modify(ary);
-    if (RARRAY(ary)->len <= 1) return Qnil;
+    if (RARRAY(ary)->len <= 1) return ary;
 
     FL_SET(ary, ARY_TMPLOCK);	/* prohibit modification during sort */
     rb_ensure(sort_internal, ary, sort_unlock, ary);
@@ -1649,6 +1670,7 @@ Init_Array()
     rb_define_method(rb_cArray, "[]", rb_ary_aref, -1);
     rb_define_method(rb_cArray, "[]=", rb_ary_aset, -1);
     rb_define_method(rb_cArray, "at", rb_ary_at, 1);
+    rb_define_method(rb_cArray, "fetch", rb_ary_fetch, -1);
     rb_define_method(rb_cArray, "first", rb_ary_first, 0);
     rb_define_method(rb_cArray, "last", rb_ary_last, 0);
     rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);

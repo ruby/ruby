@@ -37,7 +37,7 @@ extern struct SCOPE {
     struct RBasic super;
     ID *local_tbl;
     VALUE *local_vars;
-    int flag;
+    int flags;
 } *ruby_scope;
 
 #define SCOPE_ALLOCA  0
