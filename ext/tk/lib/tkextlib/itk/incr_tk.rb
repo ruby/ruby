@@ -330,7 +330,18 @@ module Tk
         end
       end
 
-      def bind(*args)
+      #def bind(*args)
+      #  unless @widget
+      #    begin
+      #      @widget = window(tk_call(@master, 'component', @component))
+      #      @path = @widget.path
+      #    rescue
+      #      fail RuntimeError, 'component is not assigned to a widget'
+      #    end
+      #  end
+      #  @widget.bind(*args)
+      #end
+      def bind(context, *args)
         unless @widget
           begin
             @widget = window(tk_call(@master, 'component', @component))
@@ -339,10 +350,26 @@ module Tk
             fail RuntimeError, 'component is not assigned to a widget'
           end
         end
-        @widget.bind(*args)
+        if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+          cmd = args.shift
+        else
+          cmd = Proc.new
+        end
+        @widget.bind(context, cmd, *args)
       end
 
-      def bind_append(*args)
+      #def bind_append(*args)
+      #  unless @widget
+      #    begin
+      #      @widget = window(tk_call(@master, 'component', @component))
+      #      @path = @widget.path
+      #    rescue
+      #      fail RuntimeError, 'component is not assigned to a widget'
+      #    end
+      #  end
+      #  @widget.bind_append(*args)
+      #end
+      def bind_append(context, *args)
         unless @widget
           begin
             @widget = window(tk_call(@master, 'component', @component))
@@ -351,7 +378,12 @@ module Tk
             fail RuntimeError, 'component is not assigned to a widget'
           end
         end
-        @widget.bind_append(*args)
+        if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+          cmd = args.shift
+        else
+          cmd = Proc.new
+        end
+        @widget.bind_append(context, cmd, *args)
       end
 
       def bind_remove(*args)

@@ -41,13 +41,33 @@ class Tk::BWidget::Tree
     end
   end
 
-  def imagebind(*args)
-    _bind_for_event_class(Event_for_Items, [path, 'bindImage'], *args)
+  #def imagebind(*args)
+  #  _bind_for_event_class(Event_for_Items, [path, 'bindImage'], *args)
+  #  self
+  #end
+  def imagebind(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_for_event_class(Event_for_Items, [path, 'bindImage'], 
+                          context, cmd, *args)
     self
   end
 
-  def imagebind_append(*args)
-    _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'], *args)
+  #def imagebind_append(*args)
+  #  _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'], *args)
+  #  self
+  #end
+  def imagebind_append(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindImage'], 
+                                 context, cmd, *args)
     self
   end
 
@@ -60,13 +80,33 @@ class Tk::BWidget::Tree
     _bindinfo_for_event_class(Event_for_Items, [path, 'bindImage'], *args)
   end
 
-  def textbind(*args)
-    _bind_for_event_class(Event_for_Items, [path, 'bindText'], *args)
+  #def textbind(*args)
+  #  _bind_for_event_class(Event_for_Items, [path, 'bindText'], *args)
+  #  self
+  #end
+  def textbind(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_for_event_class(Event_for_Items, [path, 'bindText'], 
+                          context, cmd, *args)
     self
   end
 
-  def textbind_append(*args)
-    _bind_append_for_event_class(Event_for_Items, [path, 'bindText'], *args)
+  #def textbind_append(*args)
+  #  _bind_append_for_event_class(Event_for_Items, [path, 'bindText'], *args)
+  #  self
+  #end
+  def textbind_append(context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
+    _bind_append_for_event_class(Event_for_Items, [path, 'bindText'], 
+                                 context, cmd, *args)
     self
   end
 

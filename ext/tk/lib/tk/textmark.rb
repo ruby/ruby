@@ -122,13 +122,13 @@ class TkTextMarkInsert<TkTextNamedMark
   end
 end
 
-class TkTextMarkCurrent<TkTextMark
+class TkTextMarkCurrent<TkTextNamedMark
   def self.new(parent,*args)
     super(parent, 'current', *args)
   end
 end
 
-class TkTextMarkAnchor<TkTextMark
+class TkTextMarkAnchor<TkTextNamedMark
   def self.new(parent,*args)
     super(parent, 'anchor', *args)
   end

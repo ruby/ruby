@@ -3461,8 +3461,14 @@ ip_init(argc, argv, self)
     case 1:
         /* argv0 */
         if (!NIL_P(argv0)) {
-            /* Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0); */
-            Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), TCL_GLOBAL_ONLY);
+            if (strncmp(StringValuePtr(argv0), "-e", 3) == 0
+                || strncmp(StringValuePtr(argv0), "-", 2) == 0) {
+                Tcl_SetVar(ptr->ip, "argv0", "ruby", TCL_GLOBAL_ONLY);
+            } else {
+                /* Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0); */
+                Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 
+                           TCL_GLOBAL_ONLY);
+            }
         }
     case 0:
         /* no args */

@@ -20,6 +20,17 @@ class TkFont
     Tk_FontUseTBL.clear
   }
 
+  # option_type : default => string
+  OptionType = Hash.new(?s)
+  OptionType['size'] = ?n
+  OptionType['pointadjust'] = ?n
+  OptionType['underline'] = ?b
+  OptionType['overstrike'] = ?b
+
+  # metric_type : default => num_or_str
+  MetricType = Hash.new(?n)
+  MetricType['fixed'] = ?b
+
   # set default font
   case Tk::TK_VERSION
   when /^4\.*/
@@ -112,6 +123,8 @@ class TkFont
       case type
       when 'kanji', 'latin', 'ascii'
         @type = type
+      when :kanji, :latin, :ascii
+        @type = type.to_s
       else
         fail ArgumentError, "unknown type '#{type}'"
       end
@@ -637,7 +650,7 @@ class TkFont
       begin
         actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
       rescue
-        latinkeys {}
+        latinkeys = {}
       end
       if latinkeys != {}
         tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
@@ -648,7 +661,7 @@ class TkFont
         begin
           actual_core(@kanjifont).each{|key,val| kanjikeys[key] = val}
         rescue
-          kanjikeys {}
+          kanjikeys = {}
         end
         if kanjikeys != {}
           tk_call('font', 'configure', @compoundfont, *hash_kv(kanjikeys))
@@ -662,23 +675,41 @@ class TkFont
 
   def actual_core_tk4x(font, window=nil, option=nil)
     # dummy
-    if option
-      ""
+    if option == 'pointadjust' || option == :pointadjust
+        1.0
+    elsif option
+      case OptionType[option.to_s]
+      when ?n
+        0
+      when ?b
+        false
+      else
+        ''
+      end
     else
-      [['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
-        ['underline',[]], ['overstrike',[]], ['charset',[]], 
-        ['pointadjust',[]]]
+      [['family',''], ['size',0], ['weight',''], ['slant',''], 
+        ['underline',false], ['overstrike',false], ['charset',''], 
+        ['pointadjust',0]]
     end
   end
 
   def actual_core_tk8x(font, window=nil, option=nil)
-    if option == 'compound'
+    if option == 'compound' || option == :compound
       ""
     elsif option
       if window
-        tk_call('font', 'actual', font, "-displayof", window, "-#{option}")
+        val = tk_call('font', 'actual', font, 
+                      "-displayof", window, "-#{option}")
       else
-        tk_call('font', 'actual', font, "-#{option}")
+        val = tk_call('font', 'actual', font, "-#{option}")
+      end
+      case OptionType[option.to_s]
+      when ?n
+        num_or_str(val)
+      when ?b
+        bool(val)
+      else
+        val
       end
     else
       l = tk_split_simplelist(if window
@@ -692,7 +723,16 @@ class TkFont
         if key == '-compound'
           l.shift
         else
-          r.push [key[1..-1], l.shift]
+          key = key[1..-1]
+          val = l.shift
+          case OptionType[key]
+          when ?n
+            r.push [key, num_or_str(val)]
+          when ?b
+            r.push [key, bool(val)]
+          else
+            r.push [key, val]
+          end
         end
       end
       r
@@ -707,12 +747,21 @@ class TkFont
   def configinfo_core_tk4x(font, option=nil)
     # dummy
     if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
-      if option
-        ""
+      if option == 'pointadjust' || option == :pointadjust
+        1.0
+      elsif option
+        case OptionType[option.to_s]
+        when ?n
+          0
+        when ?b
+          false
+        else
+          ''
+        end
       else
-        [['family',[]], ['size',[]], ['weight',[]], ['slant',[]], 
-          ['underline',[]], ['overstrike',[]], ['charset',[]], 
-          ['pointadjust',[]]]
+        [['family',''], ['size',0], ['weight',''], ['slant',''], 
+          ['underline',false], ['overstrike',false], ['charset',''], 
+          ['pointadjust',1.0]]
       end
     else # ! TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
       current_configinfo_core_tk4x(font, option)
@@ -721,10 +770,18 @@ class TkFont
 
   def current_configinfo_core_tk4x(font, option=nil)
     if option
-      ""
+      case OptionType[option.to_s]
+      when ?n
+        0
+      when ?b
+        false
+      else
+        ''
+      end
     else
-      {'family'=>'', 'size'=>'', 'weight'=>'', 'slant'=>'', 
-        'underline'=>'', 'overstrike'=>'', 'charset'=>'', 'pointadjust'=>''}
+      {'family'=>'', 'size'=>0, 'weight'=>'', 'slant'=>'', 
+        'underline'=>false, 'overstrike'=>false, 
+        'charset'=>false, 'pointadjust'=>1.0}
     end
   end
 
@@ -797,10 +854,18 @@ class TkFont
 
   def configinfo_core_tk8x(font, option=nil)
     if TkComm::GET_CONFIGINFOwoRES_AS_ARRAY
-      if option == 'compound'
+      if option == 'compound' || option == :compound
         ""
       elsif option
-        tk_call('font', 'configure', font, "-#{option}")
+        val = tk_call('font', 'configure', font, "-#{option}")
+        case OptionType[option.to_s]
+        when ?n
+          num_or_str(val)
+        when ?b
+          bool(val)
+        else
+          val
+        end
       else
         l = tk_split_simplelist(tk_call('font', 'configure', font))
         r = []
@@ -808,7 +873,16 @@ class TkFont
           if key == '-compound'
             l.shift
           else
-            r.push [key[1..-1], l.shift]
+            key = key[1..-1]
+            val = l.shift
+            case OptionType[key]
+            when ?n
+              r.push [key, num_or_str(val)]
+            when ?b
+              r.push [key, bool(val)]
+            else
+              r.push [key, val]
+            end
           end
         end
         r
@@ -822,7 +896,15 @@ class TkFont
     if option == 'compound'
       ""
     elsif option
-      tk_call('font', 'configure', font, "-#{option}")
+      val = tk_call('font', 'configure', font, "-#{option}")
+      case OptionType[option.to_s]
+      when ?n
+        num_or_str(val)
+      when ?b
+        bool(val)
+      else
+        val
+      end
     else
       l = tk_split_simplelist(tk_call('font', 'configure', font))
       r = {}
@@ -830,7 +912,16 @@ class TkFont
         if key == '-compound'
           l.shift
         else
-          r[key[1..-1]] = l.shift
+          key = key[1..-1]
+          val = l.shift
+          case OptionType[key]
+          when ?n
+            r.push [key, num_or_str(val)]
+          when ?b
+            r.push [key, bool(val)]
+          else
+            r.push [key, val]
+          end
         end
       end
       r
@@ -958,7 +1049,7 @@ class TkFont
         begin
           actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
         rescue
-          latinkeys {}
+          latinkeys = {}
         end
         if latinkeys != {}
           tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))
@@ -981,7 +1072,7 @@ class TkFont
       begin
         actual_core(@latinfont).each{|key,val| latinkeys[key] = val}
       rescue
-        latinkeys {}
+        latinkeys = {}
       end
       if latinkeys != {}
         tk_call('font', 'configure', @compoundfont, *hash_kv(latinkeys))

@@ -97,12 +97,30 @@ class Tk::Iwidgets::Scrolledcanvas
                              *tags.collect{|t| tagid(t)}))
   end
 
-  def itembind(tag, context, cmd=Proc.new, *args)
+  #def itembind(tag, context, cmd=Proc.new, *args)
+  #  _bind([path, "bind", tagid(tag)], context, cmd, *args)
+  #  self
+  #end
+  def itembind(tag, context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     _bind([path, "bind", tagid(tag)], context, cmd, *args)
     self
   end
 
-  def itembind_append(tag, context, cmd=Proc.new, *args)
+  #def itembind_append(tag, context, cmd=Proc.new, *args)
+  #  _bind_append([path, "bind", tagid(tag)], context, cmd, *args)
+  #  self
+  #end
+  def itembind_append(tag, context, *args)
+    if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
+      cmd = args.shift
+    else
+      cmd = Proc.new
+    end
     _bind_append([path, "bind", tagid(tag)], context, cmd, *args)
     self
   end

@@ -1,3 +1,52 @@
+Thu Dec  9 03:08:36 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_init): set root-win title to "ruby" when
+	  the running script is '-e one-liner' or '-' (stdin). 
+
+	* ext/tcltklib/extconf.rb: add find_library("#{lib}#{ver}",..) for
+	  stub libs 
+
+	* ext/tk/lib/tk/textmark.rb: TkTextMarkCurrent and TkTextMarkAnchor
+	  have a wrong parent class. 
+
+	* ext/tk/lib/tk/dialog.rb: rename TkDialog2 --> TkDialogObj and 
+	  TkWarning2 --> TkWarningObj (old names are changed to alias names)
+
+	* ext/tk/lib/tk/dialog.rb: bug fix of treatment of 'prev_command'
+	  option and hashes for configuration
+
+	* ext/tk/lib/tk/dialog.rb: add TkDialogObj#name to return the
+	  button name 
+
+	* ext/tk/lib/tk/radiobutton.rb: rename enbugged method value() ==>
+	  get_value() and value=(val) ==> set_value(val).
+
+	* ext/tk/lib/tk/menu.rb: add TkMenu.new_menuspec
+
+	* ext/tk/lib/tk/menu.rb: add alias (TkMenuButton = TkMenubutton, 
+	  TkOptionMenuButton = TkOptionMenubutton)
+
+	* ext/tk/lib/tk/event.rb: new method aliases (same as option keys of
+	  event_generate) for Event object
+
+	* ext/tk/lib/tk/font.rb: configinfo returns proper types of values
+
+	* ext/tk/lib/tk.rb: bind methods accept subst_args + block
+
+	* ext/tk/lib/tk/canvas.rb: ditto
+
+	* ext/tk/lib/tk/canvastag.rb: ditto
+
+	* ext/tk/lib/tk/frame.rb: ditto
+
+	* ext/tk/lib/tk/text.rb: ditto
+
+	* ext/tk/lib/tk/texttag.rb: ditto
+
+	* ext/tk/lib/tk/toplevel.rb: ditto
+
+	* ext/tk/lib/tkextlib/*: ditto and bug fix
+
 Wed Dec  8 23:54:29 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/html/html.rb (RDoc::Page): Typo
