@@ -588,8 +588,7 @@ undef_list	: fitem
 			$$ = block_append($1, NEW_UNDEF($4));
 		    }
 
-op		: tDOT2		{ $$ = tDOT2; }
-		| '|'		{ $$ = '|'; }
+op		: '|'		{ $$ = '|'; }
 		| '^'		{ $$ = '^'; }
 		| '&'		{ $$ = '&'; }
 		| tCMP		{ $$ = tCMP; }

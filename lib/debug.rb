@@ -109,7 +109,7 @@ class DEBUGGER__
 
     def var_list(ary, binding)
       ary.sort!
-      if ary.size > 24
+      if false # ary.size < 0
 	f = open("|less", "w")
 	for v in ary
 	  f.printf "  %s => %s\n", v, eval(v, binding).inspect
@@ -125,7 +125,6 @@ class DEBUGGER__
     def debug_variable_info(input, binding)
       case input
       when /^\s*g(?:lobal)?$/
-	f = open("|less", "w")
 	var_list(global_variables, binding)
 
       when /^\s*l(?:ocal)?$/
@@ -162,9 +161,9 @@ class DEBUGGER__
 	stdout.print "\n"
 
       else
-	obj = debug_eval($', binding)
+	obj = debug_eval(input, binding)
 	unless obj.kind_of? Module
-	  stdout.print "should be Class/Module: ", $', "\n"
+	  stdout.print "should be Class/Module: ", input, "\n"
 	else
 	  len = 0
 	  for v in obj.instance_methods.sort

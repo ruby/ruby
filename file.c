@@ -403,8 +403,8 @@ eaccess(path, mode)
   if (st.st_mode & mode) return 0;
 
   return -1;
-#else  /* !NT*/
-	return 0;
+#else  /* !NT */
+  return access(path, mode);
 #endif
 }
 
@@ -1502,6 +1502,9 @@ rb_file_flock(obj, operation)
     rb_secure(2);
     GetOpenFile(obj, fptr);
 
+    if (fptr->mode & FMODE_WRITABLE) {
+	fflush(GetWriteFile(fptr));
+    }
     if (flock(fileno(fptr->f), NUM2INT(operation)) < 0) {
 #ifdef EWOULDBLOCK
 	if (errno == EWOULDBLOCK) {

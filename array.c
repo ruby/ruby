@@ -292,31 +292,6 @@ rb_ary_pop(ary)
     return RARRAY(ary)->ptr[--RARRAY(ary)->len];
 }
 
-static VALUE
-rb_ary_pop_m(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
-{
-    int n = 1;
-    VALUE result;
-
-    if (argc == 0) {
-	return rb_ary_pop(ary);
-    }
-    if (argc > 2) {
-	rb_raise(rb_eArgError, "wrong # of arguments (%d for 1)", argc);
-    }
-    n = NUM2INT(argv[0]);
-    if (RARRAY(ary)->len < n)
-	n = RARRAY(ary)->len;
-    result = rb_ary_new2(n);
-    while (n--) {
-	rb_ary_store(result, n, rb_ary_pop(ary));
-    }
-    return result;
-}
-
 VALUE
 rb_ary_shift(ary)
     VALUE ary;
@@ -337,31 +312,6 @@ rb_ary_shift(ary)
     }
 
     return top;
-}
-
-static VALUE
-rb_ary_shift_m(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
-{
-    int n = 1;
-    VALUE result;
-
-    if (argc == 0) {
-	return rb_ary_shift(ary);
-    }
-    if (argc > 2) {
-	rb_raise(rb_eArgError, "wrong # of arguments (%d for 1)", argc);
-    }
-    n = NUM2INT(argv[0]);
-    if (RARRAY(ary)->len < n)
-	n = RARRAY(ary)->len;
-    result = rb_ary_new2(n);
-    while (n--) {
-	rb_ary_push(result, rb_ary_shift(ary));
-    }
-    return result;
 }
 
 VALUE
@@ -1600,8 +1550,8 @@ Init_Array()
     rb_define_method(rb_cArray, "concat", rb_ary_concat, 1);
     rb_define_method(rb_cArray, "<<", rb_ary_push, 1);
     rb_define_method(rb_cArray, "push", rb_ary_push_m, -1);
-    rb_define_method(rb_cArray, "pop", rb_ary_pop_m, -1);
-    rb_define_method(rb_cArray, "shift", rb_ary_shift_m, -1);
+    rb_define_method(rb_cArray, "pop", rb_ary_pop, 0);
+    rb_define_method(rb_cArray, "shift", rb_ary_shift, 0);
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift, 1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);

@@ -92,10 +92,13 @@ static void
 sock_finalize(fptr)
     OpenFile *fptr;
 {
-    if (!fptr->f) return;
+    SOCKET s;
 
+    if (!fptr->f) return;
+    s = get_osfhandle(fileno(fptr->f));
     myfdclose(fptr->f);
-    if(fptr->f2) myfdclose(fptr->f2);
+    if (fptr->f2) myfdclose(fptr->f2);
+    closesocket(s);
 }
 #endif
 
