@@ -1,3 +1,9 @@
+Mon Aug 20 19:53:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/digest/sha2/extconf.rb: fix support for cross-compiling.
+
+	* mkconfig.rb: fix support for autoconf 2.52.
+
 Wed Aug 17 13:55:33 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub: merge from 1.7: use del instead of rm.
