@@ -59,6 +59,7 @@ static VALUE rb_eIconvOutOfRange;
 static ID rb_inserter;
 
 static ID rb_success, rb_failed, rb_mesg;
+static VALUE iconv_fail _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env));
 static VALUE iconv_failure_initialize _((VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env));
 static VALUE iconv_failure_success _((VALUE self));
 static VALUE iconv_failure_failed _((VALUE self));
@@ -108,12 +109,16 @@ map_charset
 {
     VALUE val = *code;
 
-    StringValuePtr(val);
     if (RHASH(charset_map)->tbl && RHASH(charset_map)->tbl->num_entries) {
+	val = rb_funcall2(val, rb_intern("downcase"), 0, 0);
+	StringValuePtr(val);
 	if (st_lookup(RHASH(charset_map)->tbl, val, &val)) {
 	    StringValuePtr(val);
 	    *code = val;
 	}
+    }
+    else {
+	StringValuePtr(val);
     }
     return RSTRING(val)->ptr;
 }
@@ -231,9 +236,6 @@ iconv_try
     return Qfalse;
 }
 
-#define iconv_fail(error, success, failed, env) \
-	rb_exc_raise(iconv_failure_initialize(error, success, failed, env))
-
 #define FAILED_MAXLEN 16
 
 static VALUE
@@ -268,6 +270,21 @@ iconv_failure_initialize
     rb_ivar_set(error, rb_success, success);
     rb_ivar_set(error, rb_failed, failed);
     return error;
+}
+
+static VALUE
+iconv_fail
+#ifdef HAVE_PROTOTYPES
+    (VALUE error, VALUE success, VALUE failed, struct iconv_env_t* env)
+#else /* HAVE_PROTOTYPES */
+    (error, success, failed, env)
+    VALUE error, success, failed;
+    struct iconv_env_t *env;
+#endif /* HAVE_PROTOTYPES */
+{
+    error = iconv_failure_initialize(error, success, failed, env);
+    if (!rb_block_given_p()) rb_exc_raise(error);
+    return rb_yield(error);
 }
 
 static VALUE
@@ -327,8 +344,17 @@ iconv_convert
 	outptr = buffer;
 	outlen = sizeof(buffer);
 	error = iconv_try(cd, &inptr, &inlen, &outptr, &outlen);
-	if (error)
-	    iconv_fail(error, Qnil, Qnil, env);
+	if (error) {
+	    unsigned int i;
+	    str = iconv_fail(error, Qnil, Qnil, env);
+	    if (FIXNUM_P(str) && (i = FIX2INT(str)) <= 0xff) {
+		char c = i;
+		str = rb_str_new(&c, 1);
+	    }
+	    else if (!NIL_P(str)) {
+		StringValue(str);
+	    }
+	}
 
 	inptr = NULL;
 	length = 0;
@@ -395,7 +421,7 @@ iconv_convert
 	    if (!ret)
 		ret = rb_str_derive(str, instart, inptr - instart);
 	    str = rb_str_derive(str, inptr, inlen);
-	    iconv_fail(error, ret, str, env);
+	    rb_str_concat(str, iconv_fail(error, ret, str, env));
 	}
     } while (inlen > 0);
 

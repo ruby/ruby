@@ -1,3 +1,19 @@
+Tue Sep  2 00:41:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (map_charset): use lower case keys.
+
+	* ext/iconv/iconv.c (iconv_fail): just yield error and return the
+	  result if a block is given.
+
+	* ext/iconv/iconv.c (iconv_convert): yield error and append the
+	  result if a block is given.
+
+	* ext/iconv/charset_alias.rb (charset_alias): optional third
+	  argument.
+
+	* ext/iconv/charset_alias.rb (charset_alias): use CP932 instead of
+	  SHIFT_JIS on cygwin.
+
 Mon Sep  1 18:34:25 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval): make tail recursion in ELSE clause of
