@@ -1,3 +1,7 @@
+Mon May 10 22:28:14 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/protocol.rb (each_crlf_line): remove junk line.
+
 Mon May 10 21:44:42 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb: Change scheme for

@@ -278,7 +278,6 @@ module Net # :nodoc:
       yield
       if not @wbuf.empty?   # unterminated last line
         write0 @wbuf.chomp + "\r\n"
-        @wbuf.string = ''
       elsif @written_bytes == 0   # empty src
         write0 "\r\n"
       end
