@@ -1,4 +1,4 @@
-Thu Oct  3 20:16:12 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Thu Oct  3 20:22:11 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bcc32/mkexports.rb: to work on cygwin via telnet.
 	  [ruby-win32:358]
@@ -15,6 +15,9 @@ Thu Oct  3 20:16:12 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_f_require): set source file name for extension
 	  libraries.  [ruby-dev:18445]
+
+	* gc.c (Init_stack): prefer address of argument rather than local
+	  variable to initialize rb_gc_stack_start.
 
 	* ruby.c (translate_char): translate a character in a string;
 	  DOSISH only.  [ruby-dev:18274]

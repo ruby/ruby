@@ -1225,9 +1225,7 @@ Init_stack(addr)
     extern void *_SEND;
     rb_gc_stack_start = _SEND;
 #else
-    VALUE start;
-
-    if (!addr) addr = &start;
+    if (!addr) addr = (VALUE *)&addr;
     rb_gc_stack_start = addr;
 #endif
 #ifdef HAVE_GETRLIMIT
