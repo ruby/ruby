@@ -1,7 +1,0 @@
-tr -d '\r' < bigdecimal-rational.rb > unix/bigdecimal-rational.rb
-tr -d '\r' <jacobian.rb > unix/jacobian.rb
-tr -d '\r' <linear.rb > unix/linear.rb
-tr -d '\r' <ludcmp.rb > unix/ludcmp.rb
-tr -d '\r' <newton.rb > unix/newton.rb
-tr -d '\r' <nlsolve.rb > unix/nlsolve.rb
-tr -d '\r' <pai.rb > unix/pai.rb
