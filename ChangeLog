@@ -1,3 +1,9 @@
+Thu Apr 15 17:12:13 2004  Tanaka Akira  <akr@m17n.org>
+
+	* ext/gdbm/gdbm.c (Init_gdbm): define GDBM::READER, GDBM::WRITER,
+	  GDBM::WRCREAT and GDBM::NEWDB.
+	  (fgdbm_initialize): use specified read/write flag.
+
 Wed Apr 14 13:06:09 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
 
 	* array.c, enum.c, eval.c, file.c, io.c, numeric.c, object.c, prec.c,
