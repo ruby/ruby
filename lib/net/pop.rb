@@ -28,21 +28,28 @@ Net::Protocol
 === Class Methods
 
 : new( address = 'localhost', port = 110 )
-  This method create a new POP3 object.
-  This will not open connection yet.
+  creates a new Net::POP3 object.
+  This method does not open TCP connection yet.
 
+: start( address = 'localhost', port = 110, *protoargs )
+: start( address = 'localhost', port = 110, *protoargs ) {|pop| .... }
+  equals to Net::POP3.new( address, port ).start( *protoargs )
 
 === Methods
 
 : start( account, password )
-  This method start POP3.
+: start( account, password ) {|pop| .... }
+  starts POP3 session.
 
-: each{|popmail| ...}
+  When called as iterator, give a POP3 object to block and
+  close session after block call is finished.
+
+: each {|popmail| .... }
   This method is equals to "pop3.mails.each"
 
 : mails
-  This method returns an array of ((URL:#POPMail)).
-  This array is renewed when login.
+  an array of ((URL:#POPMail)).
+  This array is renewed when session started.
 
 =end
 

@@ -30,16 +30,14 @@ Object
 : new( address = 'localhost', port = nil )
   This method Creates a new protocol object.
 
-: start( address = 'localhost', port = nil, *args )
-: start( address = 'localhost', port = nil, *args ){|proto| .... }
-  This method creates a new Protocol object and start session.
-  If you call this method with block, Protocol object give itself
-  to block and finish session when block returns.
+: start( address = 'localhost', port = nil, *protoargs )
+: start( address = 'localhost', port = nil, *protoargs ) {|proto| .... }
+  This method creates a new Protocol object and opens a session.
+  equals to Net::Protocol.new( address, port ).start( *protoargs )
 
 : Proxy( address, port )
   This method creates a proxy class of its protocol.
   Arguments are address/port of proxy host.
-
 
 === Methods
 
@@ -50,10 +48,14 @@ Object
   connecting port number
 
 : start( *args )
-  This method start protocol. If you call this method when the protocol
-  is already started, this only returns false without doing anything.
+: start( *args ) {|proto| .... }
+  This method starts protocol. If protocol was already started,
+  do nothing and returns false.
 
   '*args' are specified in subclasses.
+
+  When is called as iterator, gives Protocol object to block and
+  close session when block finished.
 
 : finish
   This method ends protocol. If you call this method before protocol starts,
