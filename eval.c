@@ -7840,7 +7840,12 @@ enum thread_status {
 
 struct thread {
     struct thread *next, *prev;
+#ifdef __ia64__
+    ucontext_t context;
+    int context_status;
+#else
     jmp_buf context;
+#endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
     DWORD win32_exception_list;
 #endif
@@ -8216,7 +8221,7 @@ rb_thread_save_context(th)
 #endif
 	th->bstr_len = top - bot;
 	REALLOC_N(th->bstr_ptr, VALUE, th->bstr_len);
-	MEMCPY(th->bstr_ptr, __libc_ia64_register_backing_store_base, VALUE, th->bstr_len);
+	MEMCPY(th->bstr_ptr, (VALUE*)__libc_ia64_register_backing_store_base, VALUE, th->bstr_len);
     }
 #endif
 #ifdef SAVE_WIN32_EXCEPTION_LIST
@@ -8280,9 +8285,16 @@ rb_thread_switch(n)
     return 1;
 }
 
-#define THREAD_SAVE_CONTEXT(th) \
+#ifdef __ia64__
+# define THREAD_SAVE_CONTEXT(th) \
+    (rb_thread_save_context(th),\
+     th->context_status = 0,\
+     rb_thread_switch((FLUSH_REGISTER_WINDOWS, getcontext(&th->context),(th)->context_status)))
+#else
+# define THREAD_SAVE_CONTEXT(th) \
     (rb_thread_save_context(th),\
      rb_thread_switch((FLUSH_REGISTER_WINDOWS, setjmp((th)->context))))
+#endif
 
 static void rb_thread_restore_context _((rb_thread_t,int));
 
@@ -8360,7 +8372,12 @@ rb_thread_restore_context(th, exit)
     rb_backref_set(tmp->last_match);
     tmp->last_match = tval;
 
+#ifdef __ia64__
+    tmp->context_status = ex;
+    setcontext(&tmp->context);
+#else
     longjmp(tmp->context, ex);
+#endif
 }
 
 static void

@@ -1,5 +1,8 @@
 Tue Aug 12 02:48:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* eval.c (THREAD_SAVE_CONTEXT): should explicitly turn off the
+	  flag before calling getcontext(2).
+
 	* eval.c (struct thread): add member to save backing store on
 	  IA64. (ruby-bugs PR1086)
 
