@@ -33,7 +33,7 @@ module YAML
 		#
 		# Emit plain, normal flowing text
 		#
-		def node_text( value, block = '>' )
+		def node_text( value, block = nil )
             @seq_map = false
 			valx = value.dup
             unless block
@@ -45,6 +45,13 @@ module YAML
                 else
                     '>'
                 end 
+
+                indt = $&.to_i if block =~ /\d+/
+                if valx =~ /(\A\n*[ \t#]|^---\s+)/
+                    indt = options(:Indent) unless indt.to_i > 0
+                    block += indt.to_s
+                end
+
             block +=
                 if valx =~ /\n\Z\n/
                     "+"
@@ -53,19 +60,19 @@ module YAML
                 else
                     "-"
                 end
-                if valx =~ /\A[ \t#]/
-                    block += options(:Indent).to_s
-                end
             end
-			if valx =~ /#{YAML::ESCAPE_CHAR}/
-				valx = YAML::escape( valx )
-			end
-			if block[0] == ?> 
-				valx = fold( valx ) 
-			end
-            indt = nil
-            indt = $&.to_i if block =~ /\d+/
-			self << block + indent_text( valx, indt ) + "\n"
+            block += "\n"
+            if block[0] == ?"
+                esc_skip = ( "\t\n" unless valx =~ /^[ \t]/ ) || ""
+                valx = fold( YAML::escape( valx, esc_skip ) + "\"" ).chomp
+                self << '"' + indent_text( valx, indt, false )
+            else
+                if block[0] == ?> 
+                    valx = fold( valx ) 
+                end
+                #p [block, indt]
+                self << block + indent_text( valx, indt )
+            end
 		end
 
 		#
@@ -93,18 +100,25 @@ module YAML
 		#
 		# Write a text block with the current indent
 		#
-		def indent_text( text, indt = nil )
+		def indent_text( text, mod, first_line = true )
 			return "" if text.to_s.empty?
-            spacing = " " * ( level * ( indt || options(:Indent) ) )
-			return "\n" + text.gsub( /^([^\n])/, "#{spacing}\\1" )
+            spacing = indent( mod )
+            text = text.gsub( /\A([^\n])/, "#{ spacing }\\1" ) if first_line
+			return text.gsub( /\n^([^\n])/, "\n#{spacing}\\1" )
 		end
 
 		#
 		# Write a current indent
 		#
-		def indent
-            #p [ self.id, @level, :INDENT ]
-			return " " * ( level * options(:Indent) )
+        def indent( mod = nil )
+            #p [ self.id, level, mod, :INDENT ]
+            if level <= 0
+                mod ||= 0
+            else
+                mod ||= options(:Indent)
+                mod += ( level - 1 ) * options(:Indent)
+            end
+            return " " * mod
 		end
 
 		#
@@ -118,25 +132,9 @@ module YAML
 		# Folding paragraphs within a column
 		#
 		def fold( value )
-			value.gsub!( /\A\n+/, '' )
-			folded = $&.to_s
-			width = (0..options(:BestWidth))
-			while not value.empty?
-				last = value.index( /(\n+)/ )
-				chop_s = false
-				if width.include?( last )
-					last += $1.length - 1
-				elsif width.include?( value.length )
-					last = value.length
-				else
-					last = value.rindex( /[ \t]/, options(:BestWidth) )
-					chop_s = true
-				end
-				folded += value.slice!( 0, width.include?( last ) ? last + 1 : options(:BestWidth) )
-				folded.chop! if chop_s
-				folded += "\n" unless value.empty?
-			end
-			folded
+            value.gsub( /(^[ \t]+.*$)|(\S.{0,#{options(:BestWidth) - 1}})(?:[ \t]+|(\n+(?=[ \t]|\Z))|$)/ ) do |s| 
+                $1 || $2 + ( $3 || "\n" )
+            end
 		end
 
         #
