@@ -1,3 +1,7 @@
+Mon Jan 26 22:53:04 2004  Dave Thomas  <dave@pragprog.com>
+
+	* io.c: Remove documentation references to $defout.
+
 Mon Jan 26 15:11:47 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* sample/exyacc.rb: escape '}' to avoid warning.
