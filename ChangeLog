@@ -1,3 +1,13 @@
+Sat Aug  5 16:43:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* djgpp/*: convert DOS line endings to UNIX style.
+
+	* djgpp/config.status: rename to config.sed for SFN.
+
+	* lib/ftools.rb (compare, safe_unlink, chmod): avoid warnings.
+
+	* lib/ftools.rb (move): typo. not `tpath', but `to'.
+
 Wed Aug  2 18:27:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_thread_wait_fd): prohibit thread context switch

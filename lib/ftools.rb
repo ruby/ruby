@@ -81,7 +81,7 @@ class << File
 	syscopy from, to and unlink from
 	utime(from_stat.atime, from_stat.mtime, to)
 	begin
-	  chown(fstat.uid, fstat.gid, tpath)
+	  chown(fstat.uid, fstat.gid, to)
 	rescue
 	end
       end
@@ -110,7 +110,8 @@ class << File
 
     begin
       while fr == tr
-	if fr = from.read(fsize)
+	fr = from.read(fsize)
+	if fr
 	  tr = to.read(fr.size)
 	else
 	  ret = to.read(fsize)
@@ -136,7 +137,7 @@ class << File
     begin
       $stderr.print files.join(" "), "\n" if verbose
       chmod 0777, *files
-      unlink *files
+      unlink(*files)
     rescue
 #      STDERR.print "warning: Couldn't unlink #{files.join ' '}\n"
     end
@@ -163,11 +164,13 @@ class << File
 
   alias o_chmod chmod
 
+  vsave, $VERBOSE = $VERBOSE, false
   def chmod(mode, *files)
     verbose = if files[-1].is_a? String then false else files.pop end
     $stderr.printf "chmod %04o %s\n", mode, files.join(" ") if verbose
     o_chmod mode, *files
   end
+  $VERBOSE = vsave
 
   def install(from, to, mode = nil, verbose = false)
     to = catname(from, to)
