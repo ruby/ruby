@@ -1,3 +1,9 @@
+Tue Dec 16 03:17:29 2003  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb: comments in strings. [ruby-talk:88012]
+
+	* test/yaml/test_yaml.rb: add test.
+
 Tue Dec 16 01:14:44 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (catch_timer): check rb_thread_crtical in main native

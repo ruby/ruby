@@ -304,7 +304,7 @@ class String
                             self
                         elsif empty?
                             "''"
-                        elsif self =~ /^[^#{YAML::WORD_CHAR}]|#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |$)| $|\n|\'/
+                        elsif self =~ /^[^#{YAML::WORD_CHAR}]| \#|#{YAML::ESCAPE_CHAR}|[#{YAML::SPACE_INDICATORS}]( |$)| $|\n|\'/
                             "\"#{YAML.escape( self )}\"" 
                         elsif YAML.detect_implicit( self ) != 'str'
                             "\"#{YAML.escape( self )}\"" 

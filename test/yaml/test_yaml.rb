@@ -189,6 +189,13 @@ EOY
 		)
 	end
 
+    def test_ambiguous_comments
+        # [ruby-talk:88012]
+        assert_to_yaml( "Call the method #dave", <<EOY )
+--- "Call the method #dave"
+EOY
+    end
+
 	def test_spec_nested_comments
 		# Map and sequences with comments
 		assert_parse_only(
