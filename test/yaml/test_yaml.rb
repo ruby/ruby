@@ -1210,6 +1210,12 @@ EOY
       #
       t = "0".."1"
       assert_equal( t, YAML.load( YAML.dump( t ) ) )
+      t = ".."..."..."
+      assert_equal( t, YAML.load( YAML.dump( t ) ) )
+      t = ".rb"..".pl"
+      assert_equal( t, YAML.load( YAML.dump( t ) ) )
+      t = ".rb"...".pl"
+      assert_equal( t, YAML.load( YAML.dump( t ) ) )
     end
 
     #
