@@ -157,6 +157,7 @@ sample/exyacc.rb
 sample/fact.rb
 sample/fib.awk
 sample/fib.pl
+sample/fib.py
 sample/fib.rb
 sample/fib.scm
 sample/freq.rb
