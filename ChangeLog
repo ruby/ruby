@@ -1,3 +1,18 @@
+Sun Mar 18 08:58:18 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/net/cgi.rb: // === '' --> //.match('')
+
+	* lib/net/cgi.rb: cgi#header(): improvement for mod_ruby.
+
+	* lib/net/cgi.rb: cgi#rfc1123date(): improvement.
+	  thanks to TADA Tadashi <sho@spc.gr.jp>.
+
+	* lib/net/cgi.rb: cgi#rfc1123date(): document bug fix.
+	  thanks to Kazuhiro NISHIYAMA <zn@mbf.nifty.com>.
+
+	* lib/net/cgi.rb: cgi#header(): bug fix.
+	  thanks to IWATSUKI Hiroyuki <don@na.rim.or.jp>.
+
 Fri Mar 16 17:21:25 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Set SOLIBS properly for all ELF and
