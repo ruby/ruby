@@ -1,7 +1,11 @@
-Wed Mar 31 11:52:39 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Mar 31 12:05:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/delegate.rb (DelegateClass): define internal methods of the
-	  result class, but not metaclass of the caller.
+	  result class, but not metaclass of the caller.  [ruby-talk:96156]
+
+	* intern.h: provide proper prototypes.  [ruby-core:02724]
+
+	* ruby.h: missing.h is now prerequisite to intern.h.
 
 Wed Mar 31 11:17:16 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -673,8 +673,8 @@ rb_special_const_p(obj)
     return Qfalse;
 }
 
-#include "intern.h"
 #include "missing.h"
+#include "intern.h"
 
 #if defined(EXTLIB) && defined(USE_DLN_A_OUT)
 /* hook for external modules */

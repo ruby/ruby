@@ -213,8 +213,8 @@ VALUE rb_thread_create _((VALUE (*)(ANYARGS), void*));
 void rb_thread_interrupt _((void));
 void rb_thread_trap_eval _((VALUE, int));
 void rb_thread_signal_raise _((char*));
-int rb_thread_select(ANYARGS);
-void rb_thread_wait_for(ANYARGS);
+int rb_thread_select _((int, fd_set *, fd_set *, fd_set *, struct timeval *));
+void rb_thread_wait_for _((struct timeval time));
 VALUE rb_thread_current _((void));
 VALUE rb_thread_main _((void));
 VALUE rb_thread_local_aref _((VALUE, ID));
@@ -444,7 +444,7 @@ VALUE rb_struct_aset _((VALUE, VALUE, VALUE));
 VALUE rb_struct_getmember _((VALUE, ID));
 VALUE rb_struct_iv_get _((VALUE, char*));
 /* time.c */
-VALUE rb_time_new(ANYARGS);
+VALUE rb_time_new _((time_t, time_t));
 /* variable.c */
 VALUE rb_mod_name _((VALUE));
 VALUE rb_class_path _((VALUE));
