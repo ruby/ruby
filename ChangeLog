@@ -1,3 +1,11 @@
+Sat Oct 26 04:38:25 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/dbm/dbm.c (fdbm_indexes, fdbm_select): add a missing
+	  argument and prevent coredump when a nonexistent key is
+	  specified.
+
+	* ext/sdbm/init.c (fsdbm_indexes, fsdbm_select): ditto.
+  
 Sat Oct 26 04:36:01 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* eval.c, gc.c: use a common set of alloca() #ifdef's.  This fixes
