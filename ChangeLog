@@ -1,3 +1,10 @@
+Thu Jan 23 17:25:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): do not warn discarding already undefined
+	  method.
+
+	* lib/rational.rb: undef quo before replacing.
+
 Thu Jan 23 15:49:57 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (arg): missing arguments.

@@ -317,6 +317,7 @@ class Fixnum
     alias power! **;
   end
   
+  undef quo
   def quo(other)
     Rational.new!(self,1) / other
   end
@@ -339,7 +340,8 @@ class Bignum
   if not defined? power!
     alias power! **
   end
-  
+
+  undef quo
   def quo(other)
     Rational.new!(self,1) / other
   end

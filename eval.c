@@ -3203,7 +3203,7 @@ rb_eval(self, n)
 	    rb_frozen_class_p(ruby_class);
 	    body = search_method(ruby_class, node->nd_mid, &origin);
 	    if (body){
-		if (RTEST(ruby_verbose) && ruby_class == origin && body->nd_cnt == 0) {
+		if (RTEST(ruby_verbose) && ruby_class == origin && body->nd_cnt == 0 && body->nd_body) {
 		    rb_warning("method redefined; discarding old %s", rb_id2name(node->nd_mid));
 		}
 	    }
