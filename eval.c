@@ -8188,7 +8188,7 @@ rb_thread_check(data)
     return (rb_thread_t)RDATA(data)->data;
 }
 
-static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
+static VALUE rb_thread_raise _((int, VALUE*, volatile rb_thread_t));
 
 static int   th_raise_argc;
 static VALUE th_raise_argv[2];
