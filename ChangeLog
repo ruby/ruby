@@ -5,6 +5,11 @@ Thu Feb 17 20:09:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* test/digest/test_digest.rb: separate test case for each algorithms.
 	  (Thanks nobu) [ruby-dev:25412]
 
+Thu Feb 17 14:31:52 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_start_1): initialize newly pushed frame.
+	  fixed: [ruby-dev:25707]
+
 Thu Feb 17 13:46:00 2005  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/collector.rb (collect_file): now deletes paths added
