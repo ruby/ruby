@@ -357,7 +357,7 @@ isInternalCmd(char *cmd)
         int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
 
         for( i = 0; szInternalCmds[i] ; i++){
-	    if(!strcmp(szInternalCmds[i], vec[0])){
+	    if(!strcasecmp(szInternalCmds[i], vec[0])){
 		fRet = 1;
 		break;
 	    }
