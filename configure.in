@@ -893,7 +893,7 @@ LIBRUBYARG='$(LIBRUBY_A)'
 SOLIBS=
 
 case "$target_os" in
-  cygwin*|mingw*|beos*|openstep*|nextstep*|rhapsody*|darwin*|os2_emx*)
+  cygwin*|mingw*|beos*|openstep*|nextstep*|rhapsody*|darwin*|os2_emx*|*djgpp*)
     DLDLIBS=""
     ;;
   *)
