@@ -21,16 +21,18 @@ if $DEBUG
   Thread.abort_on_exception = true
 end
 
-#
-# FIXME: not documented in Pickaxe or Nutshell.
-#
-def Thread.exclusive
-  _old = Thread.critical
-  begin
-    Thread.critical = true
-    return yield
-  ensure
-    Thread.critical = _old
+class Thread
+  #
+  # FIXME: not documented in Pickaxe or Nutshell.
+  #
+  def Thread.exclusive
+    _old = Thread.critical
+    begin
+      Thread.critical = true
+      return yield
+    ensure
+      Thread.critical = _old
+    end
   end
 end
 

@@ -1,3 +1,8 @@
+Sun Nov 16 10:49:38 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/thread.rb (Thread.exclusive): wrap method definition in
+	  class Thread to enable rdoc to process.
+
 Sun Nov 16 09:45:23 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (set_debug_output): warn if method is called
