@@ -102,7 +102,8 @@ w_byten(s, n, arg)
     struct dump_arg *arg;
 {
     if (arg->fp) {
-	fwrite(s, 1, n, arg->fp);
+	if (rb_io_fwrite(s, n, arg->fp) < 0)
+	    rb_sys_fail(0);
     }
     else {
 	VALUE buf = arg->str;

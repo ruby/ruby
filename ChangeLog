@@ -1,3 +1,12 @@
+Fri Dec 20 18:29:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* io.c (rb_io_fwrite): separated from io_write().
+
+	* marshal.c (w_byten): use rb_io_fwrite() to support non-blocking
+	  IO, and added error check.
+
+	* rubyio.h: prototypes; rb_io_fwrite
+
 Fri Dec 20 17:40:59 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (Init_Object): should not remove Class#allocate.

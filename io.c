@@ -363,14 +363,43 @@ rb_io_wait_writable(f)
 }
 
 /* writing functions */
+long
+rb_io_fwrite(ptr, len, f)
+    const char *ptr;
+    long len;
+    FILE *f;
+{
+    long n, r;
+
+    if ((n = len) <= 0) return n;
+#ifdef __human68k__
+    do {
+	if (fputc(*ptr++, f) == EOF) {
+	    if (ferror(f)) return -1L;
+	    break;
+	}
+    } while (--n > 0);
+#else
+    while (ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
+	if (ferror(f)) {
+	    if (rb_io_wait_writable(fileno(f))) {
+		clearerr(f);
+		continue;
+	    }
+	    return -1L;
+	}
+    }
+#endif
+    return len - n;
+}
+
 static VALUE
 io_write(io, str)
     VALUE io, str;
 {
     OpenFile *fptr;
     FILE *f;
-    long n, r;
-    register char *ptr;
+    long n;
 
     rb_secure(4);
     if (TYPE(str) != T_STRING)
@@ -386,27 +415,8 @@ io_write(io, str)
     rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
-    ptr = RSTRING(str)->ptr;
-    n = RSTRING(str)->len;
-#ifdef __human68k__
-    do {
-	if (fputc(*ptr++, f) == EOF) {
-	    if (ferror(f)) rb_sys_fail(fptr->path);
-	    break;
-	}
-    } while (--n > 0);
-#else
-    while (ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
-	if (ferror(f)) {
-	    if (rb_io_wait_writable(fileno(f))) {
-		clearerr(f);
-		continue;
-	    }
-	    rb_sys_fail(fptr->path);
-	}
-    }
-#endif
-    n = ptr - RSTRING(str)->ptr;
+    n = rb_io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, f);
+    if (n == -1L) rb_sys_fail(fptr->path);
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr);
     }
