@@ -64,7 +64,7 @@ module Net
 
   class Protocol
 
-    Version = '1.1.25'
+    Version = '1.1.26'
 
 
     class << self
@@ -173,13 +173,12 @@ module Net
     end
 
     def finish
-      ret = active?
+      return false unless active?
 
       do_finish
       disconnect
       @active = false
-
-      ret
+      true
     end
 
     def active?
