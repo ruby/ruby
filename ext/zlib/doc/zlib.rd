@@ -465,7 +465,7 @@ to duplicate (clone, dup) itself.
 
 == Zlib::GzipFile
 
-The abstruct class for handling a gzip formatted compressed file.
+The abstract class for handling a gzip formatted compressed file.
 The operations are defined in the subclasses,
 ((<Zlib::GzipReader>)) for reading, and ((<Zlib::GzipWriter>))
 for writing.

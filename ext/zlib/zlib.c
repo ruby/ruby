@@ -2239,7 +2239,7 @@ get_gzfile(obj)
 /*
  * Document-class: Zlib::GzipFile
  *
- * Zlib::GzipFile is an abstruct class for handling a gzip formatted
+ * Zlib::GzipFile is an abstract class for handling a gzip formatted
  * compressed file. The operations are defined in the subclasses,
  * Zlib::GzipReader for reading, and Zlib::GzipWriter for writing.
  *

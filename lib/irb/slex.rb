@@ -119,7 +119,7 @@ class SLex
 	  p node
 	  SLex.fail ErrNodeAlreadyExists
 	else
-	  print "Warn: change abstruct node to real node\n" if SLex.debug?
+	  print "Warn: change abstract node to real node\n" if SLex.debug?
 	  @preproc = preproc
 	  @postproc = postproc
 	end
@@ -136,7 +136,7 @@ class SLex
 	    p chrs
 	    SLex.fail ErrNodeAlreadyExists
 	  else
-	    print "Warn: change abstruct node to real node\n" if SLex.debug?
+	    print "Warn: change abstract node to real node\n" if SLex.debug?
 	    node.preproc = preproc
 	    node.postproc = postproc
 	  end
