@@ -180,6 +180,7 @@ lib/irb/workspace.rb
 lib/irb/ws-for-case-2.rb
 lib/irb/xmp.rb
 lib/jcode.rb
+lib/logger.rb
 lib/mailread.rb
 lib/mathn.rb
 lib/matrix.rb
@@ -444,6 +445,9 @@ sample/less.rb
 sample/list.rb
 sample/list2.rb
 sample/list3.rb
+sample/logger/app.rb
+sample/logger/log.rb
+sample/logger/shifting.rb
 sample/mine.rb
 sample/mkproto.rb
 sample/mpart.rb

@@ -1,3 +1,10 @@
+Mon Sep 18 15:27:05 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/logger.rb: new file.  Logger, formerly called devel-logger or
+	  Devel::Logger.
+
+	* sample/logger/*: new file.  samples of logger.rb.
+
 Wed Sep 17 23:41:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (localjump_destination): should not raise ThreadError
