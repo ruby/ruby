@@ -9,7 +9,7 @@ class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE
 
   def _regex_quote(str)
-    str.gsub(/(\\[-\\])|\\(.)|([][\\])/) do
+    str.gsub(/(\\[][\-\\])|\\(.)|([][\\])/) do
       $1 || $2 || '\\' + $3
     end
   end
@@ -97,15 +97,18 @@ class String
 
   def _expand_ch str
     a = []
-    str.scan(/(?:\\([-\\]))|(.)-(.)|(.)/m) do
-      if s = $1 || $4
-	a.push s
-      elsif $2.length != $3.length
+    str.scan(/(?:\\(.)|([^\\]))-(?:\\(.)|([^\\]))|(?:\\(.)|(.))/m) do
+      from = $1 || $2
+      to = $3 || $4
+      one = $5 || $6
+      if one
+	a.push one
+      elsif from.length != to.length
 	next
-      elsif $2.length == 1
-	$2[0].upto($3[0]) { |c| a.push c.chr }
+      elsif from.length == 1
+	from[0].upto(to[0]) { |c| a.push c.chr }
       else
-	$2.upto($3) { |c| a.push c }
+	from.upto(to) { |c| a.push c }
       end
     end
     a
