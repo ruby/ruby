@@ -1853,7 +1853,7 @@ gzfile_get32(src)
     n  = *(src++) & 0xff;
     n |= (*(src++) & 0xff) << 8;
     n |= (*(src++) & 0xff) << 16;
-    n |= (*(src++) & 0xff) << 24;
+    n |= (*(src++) & 0xffU) << 24;
     return n;
 }
 
