@@ -8,15 +8,11 @@ class Win32API
   def initialize(dllname, func, import, export = "0")
     prototype = (export + import.to_s).tr("VPpNnLlIi", "0SSI")
     handle = DLL[dllname] ||= DL::Handle.new(dllname)
-    begin
-      @sym = handle.sym(func, prototype)
-    rescue RuntimeError
-      @sym = handle.sym(func + "A", prototype)
-    end
+    @sym = handle.sym(func, prototype)
   end
 
   def call(*args)
-    import = @sym.proto[1..-1] || ""
+    import = @sym.split("", 2)[1]
     args.each_with_index do |x, i|
       args[i] = nil if x == 0 and import[i] == ?S
       args[i], = [x].pack("I").unpack("i") if import[i] == ?I
