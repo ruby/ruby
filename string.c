@@ -2532,7 +2532,7 @@ rb_str_intern(str)
     if (strlen(RSTRING(str)->ptr) != RSTRING(str)->len)
 	rb_raise(rb_eArgError, "string contains `\\0'");
     id = rb_intern(RSTRING(str)->ptr);
-    return INT2FIX(id);
+    return ID2SYM(id);
 }
 
 static VALUE

@@ -29,13 +29,6 @@
 #include <sys/un.h>
 #endif
 
-#ifdef USE_CWGUSI
-extern int fileno(FILE *stream); /* <unix.mac.h> */
-extern int rb_thread_select(int, fd_set*, fd_set*, fd_set*, struct timeval*); /* thread.c */
-# include <sys/errno.h>
-# include <GUSI.h>
-#endif
-
 #if defined(HAVE_FCNTL)
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>

@@ -721,7 +721,7 @@ rb_num2long(val)
 
 	    sprintf(buf, "%-.10g", RFLOAT(val)->value);
 	    if (s = strchr(buf, ' ')) *s = '\0';
-	    rb_raise(rb_eTypeError, "float %s out of rang of integer", buf);
+	    rb_raise(rb_eRangeError, "float %s out of rang of integer", buf);
 	}
 
       case T_BIGNUM:
@@ -763,7 +763,7 @@ rb_num2int(val)
     long num = rb_num2long(val);
 
     if (num < INT_MIN || INT_MAX < num) {
-	rb_raise(rb_eArgError, "integer %d too big to convert to `int'", num);
+	rb_raise(rb_eRangeError, "integer %d too big to convert to `int'", num);
     }
     return (int)num;
 }
@@ -775,7 +775,7 @@ rb_fix2int(val)
     long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2long(val);
 
     if (num < INT_MIN || INT_MAX < num) {
-	rb_raise(rb_eArgError, "integer %d too big to convert to `int'", num);
+	rb_raise(rb_eRangeError, "integer %d too big to convert to `int'", num);
     }
     return (int)num;
 }
@@ -805,7 +805,7 @@ rb_num2fix(val)
 
     v = rb_num2long(val);
     if (!FIXABLE(v))
-	rb_raise(rb_eTypeError, "integer %d out of range of fixnum", v);
+	rb_raise(rb_eRangeError, "integer %d out of range of fixnum", v);
     return INT2FIX(v);
 }
 
@@ -831,7 +831,7 @@ int_chr(num)
     long i = NUM2LONG(num);
 
     if (i < 0 || 0xff < i)
-	rb_raise(rb_eTypeError, "%d out of char range", i);
+	rb_raise(rb_eRangeError, "%d out of char range", i);
     c = i;
     return rb_str_new(&c, 1);
 }

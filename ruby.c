@@ -28,10 +28,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef USE_CWGUSI
-#include "macruby_missing.h"
-#endif
-
 #ifndef HAVE_STRING_H
 char *strchr _((const char*,const char));
 char *strrchr _((const char*,const char));
@@ -707,7 +703,6 @@ load_file(fname, script)
 		    while (p < pend && ISSPACE(*p))
 			p++;
 		    path = p;	/* interpreter path */
-#ifndef USE_CWGUSI
 		    while (p < pend && !ISSPACE(*p))
 			p++;
 		    *p++ = '\0';
@@ -721,7 +716,7 @@ load_file(fname, script)
 		    }
 		    argv[0] = path;
 		    execv(path, argv);
-#endif
+
 		    ruby_sourcefile = fname;
 		    ruby_sourceline = 1;
 		    rb_fatal("Can't exec %s", path);

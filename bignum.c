@@ -404,7 +404,7 @@ big2ulong(x, type)
     USHORT *ds;
 
     if (len > sizeof(long)/sizeof(USHORT))
-	rb_raise(rb_eArgError, "bignum too big to convert into `%s'", type);
+	rb_raise(rb_eRangeError, "bignum too big to convert into `%s'", type);
     ds = BDIGITS(x);
     num = 0;
     while (len--) {
@@ -430,7 +430,7 @@ rb_big2long(x)
     unsigned long num = big2ulong(x, "int");
 
     if ((long)num < 0) {
-	rb_raise(rb_eArgError, "bignum too big to convert into `int'");
+	rb_raise(rb_eRangeError, "bignum too big to convert into `int'");
     }
     if (!RBIGNUM(x)->sign) return -(long)num;
     return num;

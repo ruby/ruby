@@ -19,10 +19,6 @@
 char *strchr _((char*,char));
 #endif
 
-#ifdef USE_CWGUSI
-char* strdup(const char*);
-#endif
-
 #define HASH_DELETED  FL_USER1
 
 static void

@@ -15,10 +15,6 @@
 #include "st.h"
 #include <ctype.h>
 
-#ifdef USE_CWGUSI
-#include <stdio.h>
-#endif
-
 extern st_table *rb_class_tbl;
 
 VALUE
@@ -511,6 +507,7 @@ rb_singleton_class(obj)
     VALUE obj;
 {
     VALUE klass;
+
     if (rb_special_const_p(obj)) {
 	rb_raise(rb_eTypeError, "can't define singleton");
     }

@@ -30,12 +30,6 @@ struct timeval {
 #include <sys/times.h>
 #endif
 
-#ifdef USE_CWGUSI
-#define time_t long
-int gettimeofday(struct timeval*, struct timezone*);
-int strcasecmp(char*, char*);
-#endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -99,10 +93,9 @@ time_new_internal(klass, sec, usec)
     VALUE obj;
     struct time_object *tobj;
 
-#ifndef USE_CWGUSI
     if (sec < 0 || (sec == 0 && usec < 0))
 	rb_raise(rb_eArgError, "time must be positive");
-#endif
+
     obj = Data_Make_Struct(klass, struct time_object, 0, free, tobj);
     tobj->tm_got = 0;
     tobj->tv.tv_sec = sec;

@@ -17,7 +17,7 @@ double strtod();
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   3
+#define MARSHAL_MINOR   4
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -252,6 +252,10 @@ w_object(obj, arg, limit)
 	    return;
 	}
 #endif
+    }
+    else if (SYMBOL_P(obj)) {
+	w_symbol(obj, arg);
+	return;
     }
     else {
 	int num;
@@ -877,6 +881,8 @@ r_object(arg)
 	    }
 	    return r_regist(m, arg);
 	}
+      case TYPE_SYMBOL:
+	return ID2SYM(r_symbol(arg));
 
       default:
 	rb_raise(rb_eArgError, "dump format error(0x%x)", type);

@@ -58,13 +58,6 @@ char *strrchr _((const char*,const char));
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef USE_CWGUSI
- #include "macruby_missing.h"
- extern int fileno(FILE *stream);
- extern int utimes();
- char* strdup(char*);
-#endif
-
 #ifdef __EMX__
 #define lstat stat
 #endif
@@ -107,11 +100,7 @@ rb_file_path(obj)
     return rb_str_new2(fptr->path);
 }
 
-#ifndef NT
-# ifndef USE_CWGUSI
-#  include <sys/file.h>
-# endif
-#else
+#ifdef NT
 #include "missing/file.h"
 #endif
 
@@ -343,7 +332,7 @@ static int
 group_member(gid)
     GETGROUPS_T gid;
 {
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
     if (getgid() ==  gid || getegid() == gid)
 	return Qtrue;
 
@@ -902,7 +891,7 @@ rb_file_chmod(obj, vmode)
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(NT) || defined(USE_CWGUSI) || defined(__BEOS__) || defined(__EMX__)
+#if defined(DJGPP) || defined(NT) || defined(__BEOS__) || defined(__EMX__)
     if (!fptr->path) return Qnil;
     if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
@@ -962,7 +951,7 @@ rb_file_chown(obj, owner, group)
 
     rb_secure(2);
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(USE_CWGUSI) || defined(__EMX__)
+#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(__EMX__)
     if (!fptr->path) return Qnil;
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
@@ -1061,16 +1050,12 @@ static VALUE
 rb_file_s_link(obj, from, to)
     VALUE obj, from, to;
 {
-#if defined(USE_CWGUSI)
-        rb_notimplement();
-#else
     Check_SafeStr(from);
     Check_SafeStr(to);
 
     if (link(RSTRING(from)->ptr, RSTRING(to)->ptr) < 0)
 	rb_sys_fail(RSTRING(from)->ptr);
     return INT2FIX(0);
-#endif /* USE_CWGUSI */
 }
 
 static VALUE
@@ -1146,9 +1131,6 @@ rb_file_s_umask(argc, argv)
     int argc;
     VALUE *argv;
 {
-#ifdef USE_CWGUSI
-    rb_notimplement();
-#else
     int omask = 0;
 
     rb_secure(2);
@@ -1163,7 +1145,6 @@ rb_file_s_umask(argc, argv)
 	rb_raise(rb_eArgError, "wrong # of argument");
     }
     return INT2FIX(omask);
-#endif /* USE_CWGUSI */
 }
 
 #if defined DOSISH
@@ -1495,9 +1476,6 @@ rb_file_flock(obj, operation)
     VALUE obj;
     VALUE operation;
 {
-#ifdef USE_CWGUSI
-    rb_notimplement();
-#else
     OpenFile *fptr;
 
     rb_secure(2);
@@ -1515,7 +1493,6 @@ rb_file_flock(obj, operation)
 	rb_sys_fail(fptr->path);
     }
     return INT2FIX(0);
-#endif /* USE_CWGUSI */
 }
 #undef flock
 

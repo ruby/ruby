@@ -20,11 +20,7 @@
 double strtod();
 #endif
 
-#ifdef USE_CWGUSI
-static void fmt_setup();
-#else
 static void fmt_setup _((char*,int,int,int,int));
-#endif
 
 static char*
 remove_sign_bits(str, base)

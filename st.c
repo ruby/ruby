@@ -6,10 +6,6 @@ static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
 #include <stdio.h>
 #include "st.h"
 
-#ifdef USE_CWGUSI
-#include <stdlib.h>
-#endif
-
 #ifdef NT
 #include <malloc.h>
 #endif

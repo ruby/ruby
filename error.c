@@ -21,11 +21,6 @@
 #define va_init_list(a,b) va_start(a)
 #endif
 
-#ifdef USE_CWGUSI
-#include <sys/errno.h>
-int sys_nerr = 256;
-#endif
-
 #if defined __CYGWIN__
 # include <cygwin/version.h>
 # if (CYGWIN_VERSION_API_MAJOR > 0) || (CYGWIN_VERSION_API_MINOR >= 8)
@@ -185,8 +180,10 @@ static struct types {
     T_STRUCT,	"Struct",
     T_BIGNUM,	"Bignum",
     T_FILE,	"File",
-    T_TRUE,	"TRUE",
-    T_FALSE,	"FALSE",
+    T_TRUE,	"true",
+    T_FALSE,	"false",
+    T_UNDEF,	"Symbol",	/* :symbol */
+    T_UNDEF,	"undef",	/* internal use: #undef */
     T_DATA,	"Data",		/* internal use: wrapped C pointers */
     T_MATCH,	"Match",	/* data of $~ */
     T_VARMAP,	"Varmap",	/* internal use: dynamic variables */
@@ -242,6 +239,7 @@ VALUE rb_eRuntimeError;
 VALUE rb_eTypeError;
 VALUE rb_eArgError;
 VALUE rb_eIndexError;
+VALUE rb_eRangeError;
 VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
@@ -538,6 +536,7 @@ Init_Exception()
     rb_eTypeError   = rb_define_class("TypeError", rb_eStandardError);
     rb_eArgError    = rb_define_class("ArgumentError", rb_eStandardError);
     rb_eIndexError  = rb_define_class("IndexError", rb_eStandardError);
+    rb_eRangeError  = rb_define_class("RangeError", rb_eStandardError);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
@@ -650,17 +649,6 @@ rb_sys_fail(mesg)
 	ee = set_syserr(n, name);
    }
 #else
-# ifdef USE_CWGUSI
-    if (n < 0) {
-	int macoserr_index = sys_nerr - 1;
-	if (!syserr_list[macoserr_index]) {
-	    char name[6];
-	    sprintf(name, "E%03d", macoserr_index);
-	    ee = set_syserr(macoserr_index, name);
-	}
-    }
-    else
-#endif /* USE_CWGUSI */
     if (n > sys_nerr || !syserr_list[n]) {
 	char name[6];
 

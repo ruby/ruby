@@ -54,12 +54,6 @@ struct timeval {
 #include <unistd.h>
 #endif
 
-#ifdef USE_CWGUSI
- #include <sys/errno.h>
- #include <unix.mac.h>
- #include <compat.h>
-#endif
-
 #ifndef strdup
 char *strdup();
 #endif
@@ -110,8 +104,6 @@ static VALUE lineno;
 #  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #elif defined(__BEOS__)
 #  define ReadDataPending(fp) (fp->_state._eof == 0)
-#elif defined(USE_CWGUSI)
-#  define READ_DATA_PENDING(fp) (fp->state.eof == 0)
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
@@ -1109,8 +1101,7 @@ VALUE
 rb_io_binmode(io)
     VALUE io;
 {
-#if defined(NT) || defined(DJGPP) || defined(__CYGWIN__)\
-    || defined(__human68k__) || defined(USE_CWGUSI) || defined(__EMX__)
+#if defined(NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
@@ -1120,17 +1111,10 @@ rb_io_binmode(io)
     if (fptr->f2)
 	fmode(fptr->f2, _IOBIN);
 #else
-# ifndef USE_CWGUSI
     if (fptr->f && setmode(fileno(fptr->f), O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
     if (fptr->f2 && setmode(fileno(fptr->f2), O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
-# else  /* USE_CWGUSI */
-	if (fptr->f)
-		fptr->f->mode.binary_io = 1;
-	if (fptr->f2)
-		fptr->f2->mode.binary_io = 1;
-# endif /* USE_CWGUSI */
 #endif
 
     fptr->mode |= FMODE_BINMODE;
@@ -1327,12 +1311,6 @@ rb_file_sysopen_internal(klass, fname, flags, mode)
     char *fname;
     int flags, mode;
 {
-#ifdef USE_CWGUSI
-    if (mode != 0666) {
-	rb_warn("can't specify file mode on this platform");
-    }
-    return rb_file_open_internal(klass, fname, rb_io_flags_mode(flags));
-#else
     OpenFile *fptr;
     int fd;
     char *m;
@@ -1347,7 +1325,6 @@ rb_file_sysopen_internal(klass, fname, flags, mode)
     fptr->path = strdup(fname);
 
     return (VALUE)port;
-#endif
 }
 
 VALUE
@@ -1450,7 +1427,6 @@ static VALUE
 pipe_open(pname, mode)
     char *pname, *mode;
 {
-#ifndef USE_CWGUSI
     int modef = rb_io_mode_flags(mode);
     OpenFile *fptr;
 
@@ -1556,10 +1532,6 @@ pipe_open(pname, mode)
 	    return (VALUE)port;
 	}
     }
-#endif
-#else /* USE_CWGUSI */
-    rb_notimplement();  
-    return Qnil;		/* not reached */
 #endif
 }
 
@@ -2135,19 +2107,7 @@ set_stdin(val, id, var)
 
     GetOpenFile(val, fptr);
     rb_io_check_readable(fptr);
-
-    GetOpenFile(*var, fptr);
-    mode = rb_io_mode_string(fptr);
-    fd = rb_dup(fileno(fptr->f));
-    if (fileno(fptr->f) > 2) {
-	fclose(fptr->f);
-    }
-    fptr->f = rb_fdopen(fd, mode);
-
-    GetOpenFile(val, fptr);
     dup2(fileno(fptr->f), 0);
-    fclose(fptr->f);
-    fptr->f = stdin;
 
     *var = val;
 }
@@ -2181,22 +2141,8 @@ set_outfile(val, var, orig, stdf)
     rb_io_check_writable(fptr);
 
     GetOpenFile(*var, fptr);
-    mode = rb_io_mode_string(fptr);
-    f = GetWriteFile(fptr);
-    fd = rb_dup(fileno(f));
-    if (fileno(f) > 2) {
-	fclose(fptr->f);
-    }
-    f = rb_fdopen(fd, mode);
-    if (fptr->f2) fptr->f2 = f;
-    else          fptr->f = f;
-
-    GetOpenFile(val, fptr);
     f = GetWriteFile(fptr);
     dup2(fileno(f), fileno(stdf));
-    fclose(f);
-    if (fptr->f2) fptr->f2 = stdf;
-    else          fptr->f = stdf;
 
     *var = val;
 }
@@ -2351,7 +2297,7 @@ next_argv()
 #endif
 		    }
 		    fw = rb_fopen(fn, "w");
-#if !defined(MSDOS) && !defined(__CYGWIN__) && !(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__) && !defined(__EMX__)
+#if !defined(MSDOS) && !defined(__CYGWIN__) && !(NT) && !defined(__human68k__) && !defined(__BEOS__) && !defined(__EMX__)
 		    fstat(fileno(fw), &st2);
 		    fchmod(fileno(fw), st.st_mode);
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
@@ -2704,7 +2650,7 @@ rb_io_ctl(io, req, arg, io_p)
     fd = fileno(fptr->f);
 #ifdef HAVE_FCNTL
     TRAP_BEG;
-# if defined(USE_CWGUSI) || defined(__CYGWIN__)
+# if defined(__CYGWIN__)
     retval = io_p?ioctl(fd, cmd, (void*) narg):fcntl(fd, cmd, narg);
 # else
     retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);

@@ -450,7 +450,6 @@ rb_gc_mark(ptr)
   Top:
     if (FIXNUM_P(obj)) return;	                /* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
-    if ((VALUE)obj == Qundef) return;           /* special placeholder */
     if (obj->as.basic.flags == 0) return;       /* free cell */
     if (obj->as.basic.flags & FL_MARK) return;  /* already marked */
 
@@ -1219,10 +1218,10 @@ id2ref(obj, id)
 
     ptr = id ^ FIXNUM_FLAG;
     if (!looks_pointerp(ptr)) {
-	rb_raise(rb_eIndexError, "0x%x is not id value", ptr);
+	rb_raise(rb_eRangeError, "0x%x is not id value", ptr);
     }
     if (BUILTIN_TYPE(ptr) == 0) {
-	rb_raise(rb_eIndexError, "0x%x is recycled object", ptr);
+	rb_raise(rb_eRangeError, "0x%x is recycled object", ptr);
     }
     return (VALUE)ptr;
 }

@@ -43,11 +43,6 @@ struct timeval rb_time_interval _((VALUE));
 #endif
 #include "st.h"
 
-#ifdef USE_CWGUSI
-# include <sys/errno.h>
-# include "macruby_missing.h"
-#endif
-
 #ifdef __EMX__
 #undef HAVE_GETPGRP
 #endif
@@ -220,11 +215,9 @@ security(str)
     char *str;
 {
     if (rb_safe_level() > 0) {
-#ifndef USE_CWGUSI
 	if (rb_env_path_tainted()) {
 	    rb_raise(rb_eSecurityError, "Insecure PATH - %s", str);
 	}
-#endif
     }
 }
 
@@ -233,7 +226,6 @@ proc_exec_v(argv, prog)
     char **argv;
     char *prog;
 {
-#ifndef USE_CWGUSI
     if (prog) {
 	security(prog);
     }
@@ -286,9 +278,6 @@ proc_exec_v(argv, prog)
     execv(prog, argv);
     after_exec();
     return -1;
-#else /* USE_CWGUSI */
-    rb_notimplement();
-#endif /* USE_CWGUSI */
 }
 
 static int
@@ -319,7 +308,6 @@ int
 rb_proc_exec(str)
     const char *str;
 {
-#ifndef USE_CWGUSI
     const char *s = str;
     char *ss, *t;
     char **argv, **a;
@@ -369,9 +357,6 @@ rb_proc_exec(str)
     }
     errno = ENOENT;
     return -1;
-#else /* USE_CWGUSI */
-    rb_notimplement();
-#endif /* USE_CWGUSI */
 }
 
 #if defined(__human68k__)
@@ -556,11 +541,8 @@ rb_f_exit_bang(argc, argv, obj)
     else {
 	istatus = -1;
     }
-#ifdef USE_CWGUSI
-    exit(istatus);
-#else
     _exit(istatus);
-#endif
+
     return Qnil;		/* not reached */
 }
 
@@ -678,9 +660,6 @@ rb_f_system(argc, argv)
     rb_last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
     return state == 0 ? Qtrue : Qfalse;
 #else
-#if defined(USE_CWGUSI)
-    rb_notimplement();
-#else
     volatile VALUE prog = 0;
     int pid;
     int i;
@@ -732,7 +711,6 @@ rb_f_system(argc, argv)
 
     if (rb_last_status == INT2FIX(0)) return Qtrue;
     return Qfalse;
-#endif /* USE_CWGUSI */
 #endif /* __human68k__ */
 #endif /* DJGPP */
 #endif /* NT */
@@ -1022,13 +1000,9 @@ VALUE rb_mProcess;
 void
 Init_process()
 {
-#ifndef USE_CWGUSI
     rb_define_virtual_variable("$$", get_pid, 0);
-#endif
     rb_define_readonly_variable("$?", &rb_last_status);
-#ifndef USE_CWGUSI
     rb_define_global_function("exec", rb_f_exec, -1);
-#endif
     rb_define_global_function("fork", rb_f_fork, 0);
     rb_define_global_function("exit!", rb_f_exit_bang, -1);
     rb_define_global_function("system", rb_f_system, -1);
@@ -1053,17 +1027,13 @@ Init_process()
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
 #endif
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, -1);
-#ifndef USE_CWGUSI
     rb_define_module_function(rb_mProcess, "kill", rb_f_kill, -1);
-#endif
 #ifndef NT
     rb_define_module_function(rb_mProcess, "wait", proc_wait, 0);
     rb_define_module_function(rb_mProcess, "waitpid", proc_waitpid, 2);
 
-#ifndef USE_CWGUSI
     rb_define_module_function(rb_mProcess, "pid", get_pid, 0);
     rb_define_module_function(rb_mProcess, "ppid", get_ppid, 0);
-#endif /* ifndef USE_CWGUSI */
 #endif /* ifndef NT */
 
     rb_define_module_function(rb_mProcess, "getpgrp", proc_getpgrp, -1);

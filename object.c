@@ -23,6 +23,7 @@ VALUE rb_cData;
 VALUE rb_cNilClass;
 VALUE rb_cTrueClass;
 VALUE rb_cFalseClass;
+VALUE rb_cSymbol;
 
 VALUE rb_f_sprintf();
 VALUE rb_obj_alloc();
@@ -477,6 +478,29 @@ rb_obj_alloc(klass)
 }
 
 static VALUE
+sym_type(sym)
+    VALUE sym;
+{
+    return rb_cSymbol;
+}
+
+static VALUE
+sym_to_i(sym)
+    VALUE sym;
+{
+    ID id = SYM2ID(sym);
+
+    return INT2FIX(id);
+}
+
+static VALUE
+sym_to_s(sym)
+    VALUE sym;
+{
+    return rb_str_new2(rb_id2name(SYM2ID(sym)));
+}
+
+static VALUE
 rb_mod_clone(module)
     VALUE module;
 {
@@ -644,12 +668,18 @@ rb_to_id(name)
 {
     ID id;
 
-    if (TYPE(name) == T_STRING) {
+    switch (TYPE(name)) {
+      case T_STRING:
 	return rb_intern(RSTRING(name)->ptr);
-    }
-    id = NUM2UINT(name);
-    if (!rb_id2name(id)) {
-	rb_raise(rb_eArgError, "%d is not a symbol", id);
+      case T_FIXNUM:
+	id = FIX2INT(name);
+	if (!rb_id2name(id)) {
+	    rb_raise(rb_eArgError, "%d is not a symbol", id);
+	}
+	break;
+      case T_SYMBOL:
+	id = SYM2ID(name);
+	break;
     }
     return id;
 }
@@ -1068,6 +1098,13 @@ Init_Object()
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
     rb_define_global_const("NIL", Qnil);
+
+    rb_cSymbol = rb_define_class("Symbol", rb_cObject);
+    rb_undef_method(CLASS_OF(rb_cNilClass), "new");
+    rb_define_method(rb_cSymbol, "type", sym_type, 0);
+    rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
+    rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
+    rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);

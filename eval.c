@@ -32,12 +32,6 @@ char *strrchr _((const char*,const char));
 #include <net/socket.h>
 #endif
 
-#ifdef USE_CWGUSI
-#include <sys/stat.h>
-#include <sys/errno.h>
-#include <compat.h>
-#endif
-
 #ifdef __MACOS__
 #include "macruby_private.h"
 #endif
@@ -3814,7 +3808,7 @@ rb_undefined(obj, id, argc, argv, call_status)
     VALUE *nargv;
 
     nargv = ALLOCA_N(VALUE, argc+1);
-    nargv[0] = INT2FIX(id);
+    nargv[0] = ID2SYM(id);
     MEMCPY(nargv+1, argv, VALUE, argc);
 
     last_call_status = call_status;

@@ -18,8 +18,6 @@
 #	    :
 #          rown]
 #
-#   column: Îó
-#   row:    ¹Ô
 #
 # module ExceptionForMatrix::
 #   Exceptions:

@@ -18,9 +18,6 @@
 #include <ndbm.h>
 #include <fcntl.h>
 #include <errno.h>
-#ifdef USE_CWGUSI
-# include <sys/errno.h>
-#endif
 
 VALUE cDBM;
 

@@ -323,20 +323,18 @@ else
 fi
 
 dnl default value for $KANJI
-AC_SUBST(DEFAULT_KCODE)
+DEFAULT_KCODE="KCODE_NONE"
+
 AC_ARG_WITH(default-kcode, 
 	[--with-default-kcode=CODE specify default value for \$KCODE (utf8|euc|sjis|none)], 
 	[case $withval in
-	utf8) AC_DEFINE(DEFAULT_KCODE, KCODE_UTF8)
-	      DEFAULT_KCODE="KCODE_UTF8";;
-	euc)  AC_DEFINE(DEFAULT_KCODE, KCODE_EUC)
-	      DEFAULT_KCODE="KCODE_EUC";;
-	sjis) AC_DEFINE(DEFAULT_KCODE, KCODE_SJIS)
-	      DEFAULT_KCODE="KCODE_SJIS";;
-	none) AC_DEFINE(DEFAULT_KCODE, KCODE_NONE)
-	      DEFAULT_KCODE="KCODE_NONE";;
+	utf8) DEFAULT_KCODE="KCODE_UTF8";;
+	euc)  DEFAULT_KCODE="KCODE_EUC";;
+	sjis) DEFAULT_KCODE="KCODE_SJIS";;
+	none) DEFAULT_KCODE="KCODE_NONE";;
         *)    AC_MSG_WARN($withval is not valid kcode; ignored);;
 	esac])
+AC_DEFINE_UNQUOTED(DEFAULT_KCODE, $DEFAULT_KCODE)
 
 dnl wheather use dln_a_out ot not
 AC_ARG_WITH(dln-a-out, 

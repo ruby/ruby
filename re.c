@@ -1292,6 +1292,7 @@ Init_Regexp()
     rb_define_method(rb_cRegexp, "source", rb_reg_source, 0);
     rb_define_method(rb_cRegexp, "casefold?", rb_reg_casefold_p, 0);
     rb_define_method(rb_cRegexp, "kcode", rb_reg_kcode_m, 0);
+    rb_define_method(rb_cRegexp, "last_match", match_getter, 0);
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));

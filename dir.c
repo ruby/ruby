@@ -48,9 +48,6 @@
 #endif
 
 #include <errno.h>
-#ifdef USE_CWGUSI
-# include <sys/errno.h>
-#endif
 
 #ifndef HAVE_STDLIB_H
 char *getenv();
@@ -430,7 +427,7 @@ static VALUE
 dir_s_chroot(dir, path)
     VALUE dir, path;
 {
-#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__) && !defined(__EMX__) && !defined(riscos)
+#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__) && !defined(__BEOS__) && !defined(__EMX__) && !defined(riscos)
     rb_secure(2);
     Check_SafeStr(path);
 
@@ -462,7 +459,7 @@ dir_s_mkdir(argc, argv, obj)
 
     Check_SafeStr(path);
     rb_secure(2);
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
 #else
@@ -482,7 +479,7 @@ dir_s_rmdir(obj, dir)
     if (rmdir(RSTRING(dir)->ptr) < 0)
 	rb_sys_fail(RSTRING(dir)->ptr);
 
-    return Qtrue;
+    return INT2FIX(0);
 }
 
 /* Return nonzero if S has any special globbing chars in it.  */

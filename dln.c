@@ -37,11 +37,7 @@ void *xrealloc();
 #endif
 
 #include <stdio.h>
-#ifndef NT
-# ifndef USE_CWGUSI
-#  include <sys/file.h>
-# endif
-#else
+#ifdef NT
 #include "missing/file.h"
 #endif
 #include <sys/types.h>

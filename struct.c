@@ -10,10 +10,6 @@
 
 #include "ruby.h"
 
-#ifdef USE_CWGUSI
-#include <stdio.h>
-#endif
-
 VALUE rb_cStruct;
 
 static VALUE struct_alloc _((int, VALUE*, VALUE));

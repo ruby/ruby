@@ -60,7 +60,7 @@ module Exception2MessageMapper
     cl.bind(self) unless cl == E2MM
   end
   
-  # 以前との互換性のために残してある.
+  # backward compatibility
   def E2MM.extend_to(b)
     c = eval("self", b)
     c.extend(self)
@@ -81,15 +81,15 @@ module Exception2MessageMapper
   end
 
   # Fail(err, *rest)
-  #	err:	例外
-  #	rest:	メッセージに渡すパラメータ
+  #	err:	exception
+  #	rest:	message arguments
   #
   def Raise(err = nil, *rest)
     E2MM.Raise(self, err, *rest)
   end
   alias Fail Raise
 
-  # 過去の互換性のため
+  # backward compatibility
   alias fail! fail
   def fail(err = nil, *rest)
     begin 
@@ -106,17 +106,17 @@ module Exception2MessageMapper
   # def_e2message(c, m)
   #	    c:  exception
   #	    m:  message_form
-  #	例外cのメッセージをmとする.
+  #	define exception c with message m.
   #
   def def_e2message(c, m)
     E2MM.def_e2message(self, c, m)
   end
   
-  # def_exception(c, m)
+  # def_exception(c, m, s)
   #	    n:  exception_name
   #	    m:  message_form
-  #	    s:	例外スーパークラス(デフォルト: StandardError)
-  #	例外名``c''をもつ例外を定義し, そのメッセージをmとする.
+  #	    s:	superclass(default: StandardError)
+  #	define exception named ``c'' with message m.
   #
   def def_exception(n, m, s = StandardError)
     E2MM.def_exception(self, n, m, s)
@@ -129,22 +129,22 @@ module Exception2MessageMapper
   @MessageMap = {}
 
   # E2MM.def_exception(k, e, m)
-  #	    k:  例外を定義するクラス
+  #	    k:  class to define exception under.
   #	    e:  exception
   #	    m:  message_form
-  #	例外cのメッセージをmとする.
+  #	define exception c with message m.
   #
   def E2MM.def_e2message(k, c, m)
     E2MM.instance_eval{@MessageMap[[k, c]] = m}
     c
   end
   
-  # E2MM.def_exception(k, c, m)
-  #	    k:  例外を定義するクラス
+  # E2MM.def_exception(k, c, m, s)
+  #	    k:  class to define exception under.
   #	    n:  exception_name
   #	    m:  message_form
-  #	    s:	例外スーパークラス(デフォルト: StandardError)
-  #	例外名``c''をもつ例外を定義し, そのメッセージをmとする.
+  #	    s:	superclass(default: StandardError)
+  #	define exception named ``c'' with message m.
   #
   def E2MM.def_exception(k, n, m, s = StandardError)
     n = n.id2name if n.kind_of?(Fixnum)
@@ -154,9 +154,9 @@ module Exception2MessageMapper
   end
 
   # Fail(klass, err, *rest)
-  #     klass:  例外の定義されているクラス
-  #	err:	例外
-  #	rest:	メッセージに渡すパラメータ
+  #	klass:  class to define exception under.
+  #	err:	exception
+  #	rest:	message arguments
   #
   def E2MM.Raise(klass = E2MM, err = nil, *rest)
     if form = e2mm_message(klass, err)

@@ -19,10 +19,6 @@
 #define RUBY_NO_INLINE
 #include "ruby.h"
 
-#ifdef USE_CWGUSI
-extern char* mktemp(char*);
-#endif
-
 VALUE
 rb_class_of(obj)
     VALUE obj;
@@ -31,6 +27,7 @@ rb_class_of(obj)
     if (obj == Qnil) return rb_cNilClass;
     if (obj == Qfalse) return rb_cFalseClass;
     if (obj == Qtrue) return rb_cTrueClass;
+    if (SYMBOL_P(obj)) return rb_cSymbol;
 
     return RBASIC(obj)->klass;
 }
@@ -43,6 +40,7 @@ rb_type(obj)
     if (obj == Qnil) return T_NIL;
     if (obj == Qfalse) return T_FALSE;
     if (obj == Qtrue) return T_TRUE;
+    if (SYMBOL_P(obj)) return T_SYMBOL;
 
     return BUILTIN_TYPE(obj);
 }

@@ -1459,7 +1459,7 @@ ensure		: none
 literal		: numeric
 		| symbol
 		    {
-			$$ = INT2FIX($1);
+			$$ = ID2SYM($1);
 		    }
 		| tREGEXP
 

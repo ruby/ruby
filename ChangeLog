@@ -1,4 +1,26 @@
+Tue Mar  7 01:44:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (set_stdin): simplified procedure, allows $stdin = DATA;
+	  experimental.
+
+	* io.c (set_outfile): ditto.
+
+	* re.c (Init_Regexp): new method Regexp#last_match added; it's a
+	  replacement for $~.
+
+	* configure.in (DEFAULT_KCODE): KCODE_NONE should be the default.
+
+	* dir.c (dir_s_rmdir): should return 0 on success.
+
+	* signal.c: remove CWGUSI support.
+
 Mon Mar  6 12:28:37 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (w_symbol): support symbol object.
+
+	* util.c: make symbol as separated class.
+
+	* error.c (Init_Exception): new exception RangeError.
 
 	* ext/socket/socket.c (ip_addrsetup): should check length of hostname.
 

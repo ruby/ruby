@@ -114,7 +114,7 @@ typedef unsigned long ID;
 #define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
 
 #define FIXNUM_FLAG 0x01
-#define INT2FIX(i) (VALUE)(((long)(i))<<1 | FIXNUM_FLAG)
+#define INT2FIX(i) ((VALUE)(((long)(i))<<1 | FIXNUM_FLAG))
 #define rb_fix_new(v) INT2FIX(v)
 VALUE rb_int2inum _((long));
 #define INT2NUM(v) rb_int2inum(v)
@@ -129,6 +129,14 @@ VALUE rb_uint2inum _((unsigned long));
 #define POSFIXABLE(f) ((f) <= FIXNUM_MAX)
 #define NEGFIXABLE(f) ((f) >= FIXNUM_MIN)
 #define FIXABLE(f) (POSFIXABLE(f) && NEGFIXABLE(f))
+
+#define IMMEDIATE_MASK 0x03
+#define IMMEDIATE_P(x) ((VALUE)(x) & IMMEDIATE_MASK)
+
+#define SYMBOL_FLAG 0x0e
+#define SYMBOL_P(x) (((VALUE)(x)&0xff)==SYMBOL_FLAG)
+#define ID2SYM(x) ((VALUE)(((long)(x))<<8|SYMBOL_FLAG))
+#define SYM2ID(x) RSHIFT((long)x,8)
 
 /* special contants - i.e. non-zero and non-fixnum constants */
 #define Qfalse 0
@@ -162,7 +170,9 @@ VALUE rb_uint2inum _((unsigned long));
 #define T_FALSE  0x21
 #define T_DATA   0x22
 #define T_MATCH  0x23
+#define T_SYMBOL 0x24
 
+#define T_UNDEF  0x3c
 #define T_VARMAP 0x3d
 #define T_SCOPE  0x3e
 #define T_NODE   0x3f
@@ -352,7 +362,7 @@ struct RBignum {
 
 #define FL_UMASK  (0xff<<FL_USHIFT)
 
-#define SPECIAL_CONST_P(x) (FIXNUM_P((VALUE)x) || (VALUE)(x) <= Qundef)
+#define SPECIAL_CONST_P(x) (IMMEDIATE_P(x) || !RTEST(x))
 
 #define FL_ABLE(x) (!SPECIAL_CONST_P(x))
 #define FL_TEST(x,f) (FL_ABLE(x)?(RBASIC(x)->flags&(f)):0)
@@ -489,6 +499,7 @@ EXTERN VALUE rb_cProc;
 EXTERN VALUE rb_cRange;
 EXTERN VALUE rb_cRegexp;
 EXTERN VALUE rb_cString;
+EXTERN VALUE rb_cSymbol;
 EXTERN VALUE rb_cThread;
 EXTERN VALUE rb_cTime;
 EXTERN VALUE rb_cTrueClass;
@@ -503,6 +514,7 @@ EXTERN VALUE rb_eFatal;
 EXTERN VALUE rb_eArgError;
 EXTERN VALUE rb_eEOFError;
 EXTERN VALUE rb_eIndexError;
+EXTERN VALUE rb_eRangeError;
 EXTERN VALUE rb_eIOError;
 EXTERN VALUE rb_eLoadError;
 EXTERN VALUE rb_eNameError;
@@ -528,6 +540,7 @@ rb_class_of(VALUE obj)
     if (obj == Qnil) return rb_cNilClass;
     if (obj == Qfalse) return rb_cFalseClass;
     if (obj == Qtrue) return rb_cTrueClass;
+    if (SYMBOL_P(obj)) return rb_cSymbol;
 
     return RBASIC(obj)->klass;
 }
@@ -539,6 +552,8 @@ rb_type(VALUE obj)
     if (obj == Qnil) return T_NIL;
     if (obj == Qfalse) return T_FALSE;
     if (obj == Qtrue) return T_TRUE;
+    if (obj == Qtrue) return T_UNDEF;
+    if (SYMBOL_P(obj)) return T_SYMBOL;
     return BUILTIN_TYPE(obj);
 }
 

@@ -25,11 +25,6 @@
 # endif
 #endif
 
-#ifdef USE_CWGUSI
-# undef NSIG
-# define NSIG __signal_max
-#endif
-
 static struct signals {
     char *signm;
     int  signo;
@@ -196,9 +191,6 @@ rb_f_kill(argc, argv)
     int argc;
     VALUE *argv;
 {
-#ifdef USE_CWGUSI
-    rb_notimplement();
-#else
     int negative = 0;
     int sig;
     int i;
@@ -261,7 +253,6 @@ rb_f_kill(argc, argv)
 	}
     }
     return INT2FIX(i-1);
-#endif /* USE_CWGUSI */
 }
 
 static VALUE trap_list[NSIG];
@@ -409,7 +400,7 @@ rb_trap_exec()
 }
 
 struct trap_arg {
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
 # ifdef HAVE_SIGPROCMASK
     sigset_t mask;
 # else
@@ -538,7 +529,7 @@ trap(arg)
 
     trap_list[sig] = command;
     /* enable at least specified signal. */
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
 #ifdef HAVE_SIGPROCMASK
     sigdelset(&arg->mask, sig);
 #else
@@ -548,7 +539,7 @@ trap(arg)
     return old;
 }
 
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
 static VALUE
 trap_ensure(arg)
     struct trap_arg *arg;
@@ -567,7 +558,7 @@ trap_ensure(arg)
 void
 rb_trap_restore_mask()
 {
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
 # ifdef HAVE_SIGPROCMASK
     sigprocmask(SIG_SETMASK, &trap_last_mask, NULL);
 # else
@@ -596,7 +587,7 @@ rb_f_trap(argc, argv)
 	arg.cmd = argv[1];
     }
 
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
     /* disable interrupt */
 # ifdef HAVE_SIGPROCMASK
     sigfillset(&arg.mask);
