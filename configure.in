@@ -90,14 +90,20 @@ AC_CHECK_TOOL(AR, ar)
 AC_CHECK_PROGS(AR, ar aal, ar)
 
 case "$target_os" in
-    cygwin*|mingw*)
-	AC_CHECK_TOOL(NM, nm)
-	AC_CHECK_TOOL(DLLWRAP, dllwrap)
-	AC_CHECK_TOOL(AS, as)
-	AC_CHECK_TOOL(DLLTOOL, dlltool)
-	AC_CHECK_TOOL(WINDRES, windres)
-	;;
+cygwin*|mingw*)
+    AC_CHECK_TOOL(NM, nm)
+    AC_CHECK_TOOL(DLLWRAP, dllwrap)
+    AC_CHECK_TOOL(AS, as)
+    AC_CHECK_TOOL(DLLTOOL, dlltool)
+    AC_CHECK_TOOL(WINDRES, windres)
+    echo 'main(){}' > conftest.c
+    if $CC -mwin32 -c conftest.c 2> /dev/null; then
+	MWIN32=-mwin32
+	CFLAGS="$CFLAGS $MWIN32"
+    fi
+    ;;
 esac
+AC_SUBST(MWIN32)
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET

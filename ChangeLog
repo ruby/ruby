@@ -1,3 +1,10 @@
+Wed Jan 31 22:27:29 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in: gcc-2.95.2-7(cygwin) support.
+	  add -mwin32 if available.
+
+	* cygwin/GNUmakefile: ditto.
+
 Tue Jan 23 18:51:57 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (rb_gc_call_finalizer_at_exit): should finalize objects in
