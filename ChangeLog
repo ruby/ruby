@@ -1,3 +1,7 @@
+Wed Jul  3 13:45:42 2002  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb: use &block and yield for speed.
+
 Wed Jul  3 02:32:31 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#initialize): improvement for mod_ruby.

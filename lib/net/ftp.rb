@@ -261,26 +261,21 @@ module Net
       @welcome = resp
     end
     
-    def retrbinary(cmd, blocksize, rest_offset = nil, callback = Proc.new)
+    def retrbinary(cmd, blocksize, rest_offset = nil)
       synchronize do
 	voidcmd("TYPE I")
 	conn = transfercmd(cmd, rest_offset)
 	loop do
 	  data = conn.read(blocksize)
 	  break if data == nil
-	  callback.call(data)
+	  yield(data)
 	end
 	conn.close
 	voidresp
       end
     end
     
-    def retrlines(cmd, callback = nil)
-      if block_given?
-	callback = Proc.new
-      elsif not callback.is_a?(Proc)
-	callback = Proc.new {|line| print line, "\n"}
-      end
+    def retrlines(cmd)
       synchronize do
 	voidcmd("TYPE A")
 	conn = transfercmd(cmd)
@@ -292,18 +287,14 @@ module Net
 	  elsif line[-1] == ?\n
 	    line = line[0 .. -2]
 	  end
-	  callback.call(line)
+	  yield(line)
 	end
 	conn.close
 	voidresp
       end
     end
     
-    def storbinary(cmd, file, blocksize, rest_offset = nil, callback = nil)
-      if block_given?
-	callback = Proc.new
-      end
-      use_callback = callback.is_a?(Proc)
+    def storbinary(cmd, file, blocksize, rest_offset = nil, &block)
       synchronize do
 	voidcmd("TYPE I")
 	conn = transfercmd(cmd, rest_offset)
@@ -311,18 +302,14 @@ module Net
 	  buf = file.read(blocksize)
 	  break if buf == nil
 	  conn.write(buf)
-	  callback.call(buf) if use_callback
+	  yield(buf) if block
 	end
 	conn.close
 	voidresp
       end
     end
     
-    def storlines(cmd, file, callback = nil)
-      if block_given?
-	callback = Proc.new
-      end
-      use_callback = callback.is_a?(Proc)
+    def storlines(cmd, file, &block)
       synchronize do
 	voidcmd("TYPE A")
 	conn = transfercmd(cmd)
@@ -333,7 +320,7 @@ module Net
 	    buf = buf.chomp + CRLF
 	  end
 	  conn.write(buf)
-	  callback.call(buf) if use_callback
+	  yield(buf) if block
 	end
 	conn.close
 	voidresp
@@ -341,11 +328,7 @@ module Net
     end
     
     def getbinaryfile(remotefile, localfile,
-		      blocksize = DEFAULT_BLOCKSIZE, callback = nil)
-      if block_given?
-	callback = Proc.new
-      end
-      use_callback = callback.is_a?(Proc)
+		      blocksize = DEFAULT_BLOCKSIZE, &block)
       if @resume
 	rest_offset = File.size?(localfile)
 	f = open(localfile, "a")
@@ -357,24 +340,20 @@ module Net
 	f.binmode
 	retrbinary("RETR " + remotefile, blocksize, rest_offset) do |data|
 	  f.write(data)
-	  callback.call(data) if use_callback
+	  yield(data) if block
 	end
       ensure
 	f.close
       end
     end
     
-    def gettextfile(remotefile, localfile, callback = nil)
-      if block_given?
-	callback = Proc.new
-      end
-      use_callback = callback.is_a?(Proc)
+    def gettextfile(remotefile, localfile, &block)
       f = open(localfile, "w")
       begin
 	retrlines("RETR " + remotefile) do |line|
 	  line = line + @return_code
 	  f.write(line)
-	  callback.call(line) if use_callback
+	  yield(line) if block
 	end
       ensure
 	f.close
@@ -382,11 +361,7 @@ module Net
     end
     
     def putbinaryfile(localfile, remotefile,
-		      blocksize = DEFAULT_BLOCKSIZE, callback = nil)
-      if block_given?
-	callback = Proc.new
-      end
-      use_callback = callback.is_a?(Proc)
+		      blocksize = DEFAULT_BLOCKSIZE, &block)
       if @resume
 	rest_offset = size(remotefile)
       else
@@ -395,24 +370,16 @@ module Net
       f = open(localfile)
       begin
 	f.binmode
-	storbinary("STOR " + remotefile, f, blocksize, rest_offset) do |data|
-	  callback.call(data) if use_callback
-	end
+	storbinary("STOR " + remotefile, f, blocksize, rest_offset, &block)
       ensure
 	f.close
       end
     end
     
-    def puttextfile(localfile, remotefile, callback = nil)
-      if block_given?
-	callback = Proc.new
-      end
-      use_callback = callback.is_a?(Proc)
+    def puttextfile(localfile, remotefile, &block)
       f = open(localfile)
       begin
-	storlines("STOR " + remotefile, f) do |line|
-	  callback.call(line) if use_callback
-	end
+	storlines("STOR " + remotefile, f, &block)
       ensure
 	f.close
       end
