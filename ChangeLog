@@ -1,3 +1,8 @@
+Sat Sep  8 07:13:42 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/net/telnet.rb: waitfor(): improvement. thanks to
+	  nobu.nakada@nifty.ne.jp
+
 Fri Sep  7 09:44:44 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/net/telnet.rb: waitfor(): bug fix.
