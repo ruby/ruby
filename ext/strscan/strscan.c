@@ -240,7 +240,13 @@ strscan_init_copy(vself, vorig)
     Data_Get_Struct(vself, struct strscanner, self);
     check_strscan(vorig);
     Data_Get_Struct(vorig, struct strscanner, orig);
-    memmove(self, orig, sizeof(struct strscanner));
+    if (self != orig) {
+	self->flags = orig->flags;
+	self->str = orig->str;
+	self->prev = orig->prev;
+	self->curr = orig->curr;
+	re_copy_registers(&self->regs, &orig->regs);
+    }
 
     return vself;
 }

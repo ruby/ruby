@@ -1,8 +1,11 @@
-Sat Mar  6 14:27:32 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Mar  6 15:15:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/strscan/depend: depends on re.h and regex.h.
 
 	* ext/strscan/strscan.c: no version check needed.
+
+	* ext/strscan/strscan.c (strscan_init_copy): struct re_registers must
+	  not be bitwise copied.
 
 Sat Mar  6 11:14:33 2004  David Black  <dblack@wobblini.net>
 
