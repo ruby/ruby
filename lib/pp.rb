@@ -6,38 +6,46 @@
 == Which seems better?
 
 non-pretty-printed output by (({p})) is:
-  #<PP:0x806486c @stack=[], @nest=[0], @buf=#<PP::Group:0x8064844 @tail=0, @singleline_length=9, @buf=[#<PP::Group:0x80647cc @tail=0, @singleline_length=9, @buf=[#<PP::Text:0x8064768 @text="[">, #<PP::Group:0x80646c8 @tail=1, @singleline_length=1, @buf=[#<PP::Text:0x8064664 @text="1">]>, #<PP::Text:0x80646b4 @text=",">, #<PP::Breakable:0x8064650 @indent=1, @sep=" ">, #<PP::Group:0x8064614 @tail=1, @singleline_length=1, @buf=[#<PP::Text:0x80645b0 @text="2">]>, #<PP::Text:0x8064600 @text=",">, #<PP::Breakable:0x806459c @indent=1, @sep=" ">, #<PP::Group:0x8064560 @tail=1, @singleline_length=1, @buf=[#<PP::Text:0x80644fc @text="3">]>, #<PP::Text:0x806472c @text="]">]>]>>
+  #<PP:0x81a0d10 @stack=[], @genspace=#<Proc:0x81a0cc0>, @nest=[0], @newline="\n", @buf=#<PrettyPrint::Group:0x81a0c98 @group=0, @tail=0, @buf=[#<PrettyPrint::Group:0x81a0ba8 @group=1, @tail=0, @buf=[#<PrettyPrint::Text:0x81a0b30 @tail=2, @width=1, @text="[">, #<PrettyPrint::Group:0x81a0a68 @group=2, @tail=1, @buf=[#<PrettyPrint::Text:0x81a09f0 @tail=1, @width=1, @text="1">], @singleline_width=1>, #<PrettyPrint::Text:0x81a0a7c @tail=0, @width=1, @text=",">, #<PrettyPrint::Breakable:0x81a0a2c @group=2, @genspace=#<Proc:0x81a0cc0>, @newline="\n", @indent=1, @tail=2, @sep=" ", @width=1>, #<PrettyPrint::Group:0x81a09c8 @group=2, @tail=1, @buf=[#<PrettyPrint::Text:0x81a0950 @tail=1, @width=1, @text="2">], @singleline_width=1>, #<PrettyPrint::Text:0x81a0af4 @tail=0, @width=1, @text="]">], @singleline_width=6>], @singleline_width=6>, @sharing_detection=false>
 
 pretty-printed output by (({pp})) is:
-  #<PP:0x403279c
+  #<PP:0x40d0688
    @buf=
-    #<PP::Group:0x4032666
+    #<PrettyPrint::Group:0x40d064c
      @buf=
-      [#<PP::Group:0x4032666
-        @buf=
-         [#<PP::Text:0x40326de @text="[">,
-          #<PP::Group:0x4032666
-           @buf=[#<PP::Text:0x40326de @text="1">],
-           @singleline_length=1,
-           @tail=1>,
-          #<PP::Text:0x40326de @text=",">,
-          #<PP::Breakable:0x40326b6 @indent=1, @sep=" ">,
-          #<PP::Group:0x4032666
-           @buf=[#<PP::Text:0x40326de @text="2">],
-           @singleline_length=1,
-           @tail=1>,
-          #<PP::Text:0x40326de @text=",">,
-          #<PP::Breakable:0x40326b6 @indent=1, @sep=" ">,
-          #<PP::Group:0x4032666
-           @buf=[#<PP::Text:0x40326de @text="3">],
-           @singleline_length=1,
-           @tail=1>,
-          #<PP::Text:0x40326de @text="]">],
-        @singleline_length=9,
-        @tail=0>],
-     @singleline_length=9,
+      [#<PrettyPrint::Group:0x40d05d4
+	@buf=
+	 [#<PrettyPrint::Text:0x40d0598 @tail=2, @text="[", @width=1>,
+	  #<PrettyPrint::Group:0x40d0534
+	   @buf=[#<PrettyPrint::Text:0x40d04f8 @tail=1, @text="1", @width=1>],
+	   @group=2,
+	   @singleline_width=1,
+	   @tail=1>,
+	  #<PrettyPrint::Text:0x40d053e @tail=0, @text=",", @width=1>,
+	  #<PrettyPrint::Breakable:0x40d0516
+	   @genspace=#<Proc:0x40d0656>,
+	   @group=2,
+	   @indent=1,
+	   @newline="\n",
+	   @sep=" ",
+	   @tail=2,
+	   @width=1>,
+	  #<PrettyPrint::Group:0x40d04e4
+	   @buf=[#<PrettyPrint::Text:0x40d04a8 @tail=1, @text="2", @width=1>],
+	   @group=2,
+	   @singleline_width=1,
+	   @tail=1>,
+	  #<PrettyPrint::Text:0x40d057a @tail=0, @text="]", @width=1>],
+	@group=1,
+	@singleline_width=6,
+	@tail=0>],
+     @group=0,
+     @singleline_width=6,
      @tail=0>,
+   @genspace=#<Proc:0x40d0656>,
    @nest=[0],
+   @newline="\n",
+   @sharing_detection=false,
    @stack=[]>
 
 I like the latter.  If you do too, this library is for you.
@@ -110,6 +118,7 @@ class PP < PrettyPrint
     pp = PP.new
     pp.guard_inspect_key {pp.pp obj}
     pp.format(out, width)
+    #$pp = pp
     out << "\n"
   end
 

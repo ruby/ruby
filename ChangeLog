@@ -1,3 +1,7 @@
+Fri Feb 22 11:30:01 2002  Tanaka Akira  <akr@m17n.org>
+
+	* prettyprint.rb: FillGroup implemented.
+
 Thu Feb 21 21:40:18 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* ext/extmk.rb.in (create_makefile): remove unnecessary -L option from

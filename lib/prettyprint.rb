@@ -49,6 +49,11 @@ non-string formatting, etc.
 
 --- group {...}
     groups line break hints added in the block.
+    The line break hints are all to be breaked or not.
+
+--- fill_group {...}
+    groups line break hints added in the block.
+    The each line break hints may be breaked or not differently.
 
 --- format(out[, width])
     outputs buffered data to ((|out|)).
@@ -65,17 +70,13 @@ non-string formatting, etc.
     a result of a given block for (({PrettyPrint.new})). 
 
 == Bugs
-* Line breaks in a group is constrained to whether all line break hints are
-  to be breaked or not.  Maybe, non-constrained version of
-  PrettyPrint#group should be provided to filling multi lines.
-
-* Box based formatting?
+* Box based formatting?  Other (better) model/algorithm?
 
 == References
-Strictly Pretty, Christian Lindig, March 2000,
+Christian Lindig, Strictly Pretty, March 2000,
 ((<URL:http://www.gaertner.de/~lindig/papers/strictly-pretty.html>))
 
-A prettier printer, Philip Wadler, March 1998,
+Philip Wadler, A prettier printer, March 1998,
 ((<URL:http://cm.bell-labs.com/cm/cs/who/wadler/topics/recent.html#prettier>))
 
 =end
@@ -98,40 +99,36 @@ class PrettyPrint
   end
 
   def nest(indent)
-    nest_enter(indent)
+    @nest << @nest.last + indent
     begin
       yield
     ensure
-      nest_leave
+      @nest.pop
     end
-  end
-
-  def nest_enter(indent)
-    @nest << @nest.last + indent
-  end
-
-  def nest_leave
-    @nest.pop
   end
 
   def group
-    group_enter
-    begin
-      yield
-    ensure
-      group_leave
-    end
-  end
-
-  def group_enter
     g = Group.new
     @buf << g
     @stack << @buf
     @buf = g
+    begin
+      yield
+    ensure
+      @buf = @stack.pop
+    end
   end
 
-  def group_leave
-    @buf = @stack.pop
+  def fill_group
+    g = FillGroup.new
+    @buf << g
+    @stack << @buf
+    @buf = g
+    begin
+      yield
+    ensure
+      @buf = @stack.pop
+    end
   end
 
   def format(out, width=79)
@@ -147,8 +144,10 @@ class PrettyPrint
     end
 
     def update_tails(tails, group)
+      @tail = tails[-1][1]
       tails[-1][1] += @width
     end
+    attr_reader :tail
 
     def singleline_width
       return @width
@@ -174,6 +173,7 @@ class PrettyPrint
     end
 
     def update_tails(tails, group)
+      @tail = tails[-1][1]
       if group == tails[-1][0]
 	tails[-2][1] += @width + tails[-1][1]
 	tails[-1][1] = 0
@@ -182,6 +182,7 @@ class PrettyPrint
 	tails << [group, 0]
       end
     end
+    attr_reader :tail
 
     def singleline_width
       return @width
@@ -209,18 +210,19 @@ class PrettyPrint
     end
 
     def update_tails(tails, group)
-      @tail = tails.empty? ? 0 : tails[-1][1]
+      @tail = tails[-1][1]
       len = 0
       @buf.reverse_each {|obj|
         obj.update_tails(tails, group + 1)
 	len += obj.singleline_width
       }
       @singleline_width = len
-      while !tails.empty? && group <= tails[-1][0]
+      while group < tails[-1][0]
 	tails[-2][1] += tails[-1][1]
         tails.pop
       end
     end
+    attr_reader :tail
 
     def singleline_width
       return @singleline_width
@@ -233,12 +235,26 @@ class PrettyPrint
     def multiline_output(out, group, margin, width)
       if margin + singleline_width + @tail <= width
 	singleline_output(out)
-	margin += singleline_width
+	margin += @singleline_width
       else
         @buf.each {|obj|
 	  margin = obj.multiline_output(out, group + 1, margin, width)
 	}
       end
+      return margin
+    end
+  end
+
+  class FillGroup < Group
+    def multiline_output(out, group, margin, width)
+      @buf.each {|obj|
+        if margin + obj.singleline_width + obj.tail <= width
+	  obj.singleline_output(out)
+	  margin += obj.singleline_width
+	else
+	  margin = obj.multiline_output(out, group + 1, margin, width)
+	end
+      }
       return margin
     end
   end
@@ -674,8 +690,113 @@ End
 
   end
 
+  class Fill < RUNIT::TestCase
+    def setup
+      @pp = PrettyPrint.new
+      @pp.fill_group {
+        @pp.text 'abc'
+	@pp.breakable
+        @pp.text 'def'
+	@pp.breakable
+        @pp.text 'ghi'
+	@pp.breakable
+        @pp.text 'jkl'
+	@pp.breakable
+        @pp.text 'mno'
+	@pp.breakable
+        @pp.text 'pqr'
+	@pp.breakable
+        @pp.text 'stu'
+      }
+    end
+
+    def test_0_6
+      expected = <<'End'.chomp
+abc
+def
+ghi
+jkl
+mno
+pqr
+stu
+End
+      @pp.format(out='', 0)
+      assert_equal(expected, out)
+      @pp.format(out='', 6)
+      assert_equal(expected, out)
+    end
+
+    def test_7_10
+      expected = <<'End'.chomp
+abc def
+ghi jkl
+mno pqr
+stu
+End
+      @pp.format(out='', 7)
+      assert_equal(expected, out)
+      @pp.format(out='', 10)
+      assert_equal(expected, out)
+    end
+
+    def test_11_14
+      expected = <<'End'.chomp
+abc def ghi
+jkl mno pqr
+stu
+End
+      @pp.format(out='', 11)
+      assert_equal(expected, out)
+      @pp.format(out='', 14)
+      assert_equal(expected, out)
+    end
+
+    def test_15_18
+      expected = <<'End'.chomp
+abc def ghi jkl
+mno pqr stu
+End
+      @pp.format(out='', 15)
+      assert_equal(expected, out)
+      @pp.format(out='', 18)
+      assert_equal(expected, out)
+    end
+
+    def test_19_22
+      expected = <<'End'.chomp
+abc def ghi jkl mno
+pqr stu
+End
+      @pp.format(out='', 19)
+      assert_equal(expected, out)
+      @pp.format(out='', 22)
+      assert_equal(expected, out)
+    end
+
+    def test_23_26
+      expected = <<'End'.chomp
+abc def ghi jkl mno pqr
+stu
+End
+      @pp.format(out='', 23)
+      assert_equal(expected, out)
+      @pp.format(out='', 26)
+      assert_equal(expected, out)
+    end
+
+    def test_27
+      expected = <<'End'.chomp
+abc def ghi jkl mno pqr stu
+End
+      @pp.format(out='', 27)
+      assert_equal(expected, out)
+    end
+
+  end
+
   RUNIT::CUI::TestRunner.run(WadlerExample.suite)
   RUNIT::CUI::TestRunner.run(StrictPrettyExample.suite)
   RUNIT::CUI::TestRunner.run(TailGroup.suite)
   RUNIT::CUI::TestRunner.run(NonString.suite)
+  RUNIT::CUI::TestRunner.run(Fill.suite)
 end
