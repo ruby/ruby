@@ -203,7 +203,7 @@ addpath(path)
 	while (*p) {
 	    while (*p == sep) p++;
 	    if (s = strchr(p, sep)) {
-		rb_ary_push(ary, rb_str_new2(rubylib_mangle(p, (int)(s-p))));
+		rb_ary_push(ary, rb_str_new(rubylib_mangle(p, (int)(s-p)), (int)(s-p)));
 		p = s + 1;
 	    }
 	    else {

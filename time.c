@@ -944,7 +944,7 @@ time_load(klass, str)
     }
 
     if ((p & (1<<31)) == 0) {
-	return time_new_internal(klass, sec, usec);
+	return time_new_internal(klass, p, s);
     }
     p &= ~(1<<31);
     tm.tm_year = (p >> 14) & 0x1ffff;

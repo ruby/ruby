@@ -3636,7 +3636,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	      goto fail;
 	    SET_REGS_MATCHED;
 	    d += mbclen(*d);
-	    break;
+	    continue;
 	  }
 	  if (!(options&RE_OPTION_POSIXLINE) &&
 	      (TRANSLATE_P() ? translate[*d] : *d) == '\n')

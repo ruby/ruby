@@ -49,6 +49,8 @@ end
 Dir.chdir wdir
 File.makedirs pkglibdir, true
 File.makedirs archdir, true
+File.makedirs pkglibdir+"/site_ruby", true
+File.makedirs pkglibdir+"/site_ruby/"+CONFIG["arch"], true
 
 if PLATFORM =~ /-aix/
   File.install "ruby.imp", archdir, 0644, true

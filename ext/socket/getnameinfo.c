@@ -86,7 +86,7 @@ struct sockinet {
 static const char *
 inet_ntop(af, addr, numaddr, numaddr_len)
 	int af;
-	__const void *addr;
+	const void *addr;
 	char *numaddr;
 	size_t numaddr_len;
 {

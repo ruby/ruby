@@ -1143,10 +1143,10 @@ rb_eval_string_wrap(str, state)
 
     POP_CLASS();
     if (state) {
-	if (status == 0) {
-	    JUMP_TAG(state);
-	}
 	*state = status;
+	if (status == 0) {
+	    JUMP_TAG(status);
+	}
     }
     return val;
 }

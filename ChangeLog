@@ -1,3 +1,17 @@
+Fri May 14 12:46:56 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* time.c (time_load): a bug in old marshal format support.
+
+	* instruby.rb: make site_ruby directory.
+
+Fri May 14 10:18:02 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* regex.c (re_match): a bug in inline `.*' etc.
+
+Fri May 14 09:58:46 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* ruby.c (addpath): should have specified string length.
+
 Thu May 13 10:40:44 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval_string_wrap): new function.
