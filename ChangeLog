@@ -1,3 +1,8 @@
+Tue Nov  2 01:20:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): nail down dyna_var node when Proc object
+	  or continuation is created.  [ruby-dev:24671]
+
 Mon Nov  1 13:59:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb (MANIFEST): do not use anymore, use extconf.rb instead.
@@ -8,6 +13,10 @@ Mon Nov  1 13:59:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* MANIFEST, ext/**/MANIFEST: removed.
 
 	* README.EXT, README.EXT.ja: remove MANIFEST stuff.
+
+Mon Nov  1 01:14:52 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_f_open): create copy of popen specifier.  [ruby-dev:24656]
 
 Mon Nov  1 00:36:48 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 

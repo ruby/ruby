@@ -463,7 +463,9 @@ io_write(io, str)
     f = GetWriteFile(fptr);
 
     rb_str_locktmp(str);
+    rb_str_locktmp(str);
     n = rb_io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, f);
+    rb_str_unlocktmp(str);
     rb_str_unlocktmp(str);
     if (n == -1L) rb_sys_fail(fptr->path);
     if (fptr->mode & FMODE_SYNC) {
@@ -2580,16 +2582,20 @@ rb_io_unbuffered(fptr)
     rb_io_synchronized(fptr);
 }
 
+static VALUE pipe_open(VALUE pstr, char *pname, char *mode);
+
 static VALUE
-pipe_open(pname, mode)
+pipe_open(pstr, pname, mode)
+    VALUE pstr;
     char *pname, *mode;
 {
     int modef = rb_io_mode_flags(mode);
     OpenFile *fptr;
 
+    if (!pname) pname = StringValuePtr(pstr);
 #if defined(DJGPP) || defined(__human68k__) || defined(__VMS)
     FILE *f = popen(pname, mode);
-
+    
     if (!f) rb_sys_fail(pname);
     else {
 	VALUE port = io_alloc(rb_cIO);
@@ -2728,44 +2734,6 @@ retry:
 #endif
 }
 
-static VALUE
-rb_io_popen(str, argc, argv, klass)
-    char *str;
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    char *mode;
-    VALUE pname, pmode, port;
-
-    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
-	mode = "r";
-    }
-    else if (FIXNUM_P(pmode)) {
-	mode = rb_io_modenum_mode(FIX2INT(pmode));
-    }
-    else {
-	mode = rb_io_flags_mode(rb_io_mode_flags(StringValuePtr(pmode)));
-    }
-    SafeStringValue(pname);
-    port = pipe_open(str, mode);
-    if (NIL_P(port)) {
-	/* child */
-	if (rb_block_given_p()) {
-	    rb_yield(Qnil);
-	    fflush(stdout);
-	    fflush(stderr);
-	    _exit(0);
-	}
-	return Qnil;
-    }
-    RBASIC(port)->klass = klass;
-    if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, port, io_close, port);
-    }
-    return port;
-}
-
 /*
  *  call-seq:
  *     IO.popen(cmd_string, mode="r" )               => io
@@ -2813,12 +2781,35 @@ rb_io_s_popen(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    char *str = 0;
+    char *mode;
+    VALUE pname, pmode, port;
 
-    if (argc >= 1) {
-	str = StringValuePtr(argv[0]);
+    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
+	mode = "r";
     }
-    return rb_io_popen(str, argc, argv, klass);
+    else if (FIXNUM_P(pmode)) {
+	mode = rb_io_modenum_mode(FIX2INT(pmode));
+    }
+    else {
+	mode = rb_io_flags_mode(rb_io_mode_flags(StringValuePtr(pmode)));
+    }
+    SafeStringValue(pname);
+    port = pipe_open(pname, 0, mode);
+    if (NIL_P(port)) {
+	/* child */
+	if (rb_block_given_p()) {
+	    rb_yield(Qnil);
+	    fflush(stdout);
+	    fflush(stderr);
+	    _exit(0);
+	}
+	return Qnil;
+    }
+    RBASIC(port)->klass = klass;
+    if (rb_block_given_p()) {
+	return rb_ensure(rb_yield, port, io_close, port);
+    }
+    return port;
 }
 
 static VALUE
@@ -3010,7 +3001,10 @@ rb_f_open(argc, argv)
 	char *str = StringValuePtr(argv[0]);
 
 	if (str[0] == '|') {
-	    return rb_io_popen(str+1, argc, argv, rb_cIO);
+	    VALUE tmp = rb_str_new(str+1, RSTRING(tmp)->len-1);
+	    OBJ_INFECT(tmp, argv[0]);
+	    argv[0] = tmp;
+	    return rb_io_s_popen(argc, argv, rb_cIO);
 	}
     }
     return rb_io_s_open(argc, argv, rb_cFile);
@@ -3021,7 +3015,7 @@ rb_io_open(fname, mode)
     char *fname, *mode;
 {
     if (fname[0] == '|') {
-	return pipe_open(fname+1, mode);
+	return pipe_open(0, fname+1, mode);
     }
     else {
 	return rb_file_open(fname, mode);
@@ -4218,7 +4212,7 @@ rb_f_backquote(obj, str)
     OpenFile *fptr;
 
     SafeStringValue(str);
-    port = pipe_open(RSTRING(str)->ptr, "r");
+    port = pipe_open(str, 0, "r");
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);
