@@ -1,3 +1,10 @@
+Thu May 15 16:55:16 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_le): returns nil if two classes/modules are not
+	  in class-superclass relationship.
+
+	* object.c (rb_mod_cmp): uses new rb_mod_le() behavior.
+
 Thu May 15 07:45:30 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
 
     * ext/ruby/ext/syck/rubyext.c, lib/implicit.re: timestamp repairs to
@@ -6,6 +13,9 @@ Thu May 15 07:45:30 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
     * lib/syck.c (syck_parser_reset_levels): duplicate string literal to avoid warning.
 
 Thu May 15 13:26:48 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_class_instance_methods): default will be changed in
+	  1.8.1.
 
 	* io.c (set_stdio): better message.
 

@@ -564,8 +564,8 @@ rb_class_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-#if RUBY_RELEASE_CODE < 20040101
-	rb_warn("instance_methods parameter will default to 'true' in Jan 2004");
+#if RUBY_VERSION_CODE < 181
+	rb_warn("instance_methods parameter will default to 'true' after 1.8.1");
 #else
 	recur = Qtrue;
 #endif
@@ -583,8 +583,8 @@ rb_class_protected_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-#if RUBY_RELEASE_CODE < 20040101
-	rb_warn("protected_instance_methods parameter will default to 'true' in Jan 2004");
+#if RUBY_VERSION_CODE < 181
+	rb_warn("protected_instance_methods parameter will default to 'true' after 1.8.1");
 #else
 	recur = Qtrue;
 #endif
@@ -602,8 +602,8 @@ rb_class_private_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-#if RUBY_RELEASE_CODE < 20040101
-	rb_warn("private_instance_methods parameter will default to 'true' in Jan 2004");
+#if RUBY_VERSION_CODE < 181
+	rb_warn("private_instance_methods parameter will default to 'true' after 1.8.1");
 #else
 	recur = Qtrue;
 #endif
@@ -621,8 +621,8 @@ rb_class_public_instance_methods(argc, argv, mod)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-#if RUBY_RELEASE_CODE < 20040101
-	rb_warn("public_instance_methods parameter will default to 'true' in Jan 2004");
+#if RUBY_VERSION_CODE < 181
+	rb_warn("public_instance_methods parameter will default to 'true' after 1.8.1");
 #else
 	recur = Qtrue;
 #endif
@@ -641,8 +641,8 @@ rb_obj_singleton_methods(argc, argv, obj)
 
     rb_scan_args(argc, argv, "01", &recur);
     if (argc == 0) {
-#if RUBY_RELEASE_CODE < 20040101
-	rb_warn("singleton_methods parameter will default to 'true' in Jan 2004");
+#if RUBY_VERSION_CODE < 181
+	rb_warn("singleton_methods parameter will default to 'true' after 1.8.1");
 #else
 	recur = Qtrue;
 #endif

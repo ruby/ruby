@@ -597,6 +597,8 @@ static VALUE
 rb_mod_le(mod, arg)
     VALUE mod, arg;
 {
+    VALUE start = mod;
+
     if (mod == arg) return Qtrue;
     switch (TYPE(arg)) {
       case T_MODULE:
@@ -611,7 +613,13 @@ rb_mod_le(mod, arg)
 	    return Qtrue;
 	mod = RCLASS(mod)->super;
     }
-    return Qfalse;
+    /* not mod < arg; check if mod > arg */
+    while (arg) {
+	if (RCLASS(arg)->m_tbl == RCLASS(start)->m_tbl)
+	    return Qfalse;
+	arg = RCLASS(arg)->super;
+    }
+    return Qnil;
 }
 
 static VALUE
@@ -650,6 +658,7 @@ rb_mod_cmp(mod, arg)
     VALUE mod, arg;
 {
     VALUE start = mod;
+    VALUE cmp;
 
     if (mod == arg) return INT2FIX(0);
     switch (TYPE(arg)) {
@@ -660,16 +669,13 @@ rb_mod_cmp(mod, arg)
 	return Qnil;
     }
 
-    if (rb_mod_le(mod, arg)) {
+    cmp = rb_mod_le(mod, arg);
+
+    if (cmp) {
 	return INT2FIX(-1);
     }
-
-    while (arg) {
-	if (RCLASS(arg)->m_tbl == RCLASS(start)->m_tbl)
-	    return INT2FIX(1);
-	arg = RCLASS(arg)->super;
-    }
-    return Qnil;
+    if (NIL_P(cmp)) return Qnil;
+    return INT2FIX(1);
 }
 
 static VALUE
