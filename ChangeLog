@@ -1,6 +1,6 @@
 Mon Jan 17 00:09:42 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
-	* lib/uri/common.rb (PORT): typo fix. fiex: [ruby-core:04256] 
+	* lib/uri/common.rb (PORT): typo fix. fixed: [ruby-core:04256] 
 
 Sat Jan 15 14:57:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
