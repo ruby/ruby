@@ -43,7 +43,7 @@ printf("[[%c][%c][%d]]\n", c, output[output_ctr - 1], output_ctr);
 }
 
 #define PERL_XS 1
-#include "1.7/nkf.c"
+#include "nkf1.7/nkf.c"
 
 static VALUE
 rb_nkf_kconv(obj, opt, src)
