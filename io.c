@@ -1005,7 +1005,7 @@ io_fread(ptr, len, fptr)
 			clearerr(fptr->f);
 		    }
                     saved_errno = errno;
-                    rb_warn("nonblocking IO#read is obsolete; use IO#readpartial or IO#sysread");
+                    rb_warning("nonblocking IO#read is obsolete; use IO#readpartial or IO#sysread");
                     errno = saved_errno;
 		}
 		if (len == n) return 0;
