@@ -363,6 +363,11 @@
 
   Fixed so that "*a = nil" results in "a == []".
 
+: Net::HTTP
+
+  New version of Net::HTTP has introduced seriously incompatible
+  changes. For details, see document embedded in net/http.rb itself.
+
 : NameError and NoMethodError
 
   Moved and now NoMethodError < NameError < StandardError.
