@@ -1,9 +1,9 @@
-# $RoughId: extconf.rb,v 1.1 2001/07/13 15:38:27 knu Exp $
+# $RoughId: extconf.rb,v 1.4 2001/08/14 19:54:51 knu Exp $
 # $Id$
 
 require "mkmf"
 
-$CFLAGS << " -DHAVE_CONFIG_H -I$(srcdir)/.."
+$CFLAGS << " -DHAVE_CONFIG_H -I#{File.dirname(__FILE__)}/.."
 
 $objs = [
   "sha2.#{$OBJEXT}",
@@ -17,8 +17,8 @@ have_header("inttypes.h")
 
 have_header("unistd.h")
 
-if try_run(<<SRC, $defs.join(' ') + " -I#{$srcdir}")
-#include "../defs.h"
+if try_run(<<SRC, $defs.join(' '))
+#include "defs.h"
 int main(void) {
 #ifdef NO_UINT64_T
     return 1;

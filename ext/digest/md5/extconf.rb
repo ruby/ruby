@@ -1,9 +1,9 @@
-# $RoughId: extconf.rb,v 1.1 2001/07/13 15:38:27 knu Exp $
+# $RoughId: extconf.rb,v 1.3 2001/08/14 19:54:51 knu Exp $
 # $Id$
 
 require "mkmf"
 
-$CFLAGS << " -DHAVE_CONFIG_H -I$(srcdir)/.."
+$CFLAGS << " -DHAVE_CONFIG_H -I#{File.dirname(__FILE__)}/.."
 
 $objs = [
   "md5.#{$OBJEXT}",

@@ -1,3 +1,8 @@
+Wed Aug 15 04:59:15 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/digest/*/extconf.rb: really fix so that they build from any
+	  directory.
+
 Wed Aug 15 04:04:02 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/digest/sha2/extconf.rb: fix so that they build from any
