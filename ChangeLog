@@ -1,3 +1,9 @@
+Tue Oct 19 22:43:12 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_attr): If
+	  we come across 'attr' in a context where it isn't
+	  followed by a symbol, just issue a warning.
+
 Tue Oct 19 20:32:50 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole.c(ole_invoke): retrieve the result value when 
