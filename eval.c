@@ -6953,6 +6953,8 @@ frame_dup(frame)
     }
 }
 
+
+
 /*
  * MISSING: documentation
  */
@@ -7096,6 +7098,23 @@ proc_alloc(klass, proc)
     return block;
 }
 
+/*
+ *  call-seq:
+ *     Proc.new {|...| block } => a_proc 
+ *     Proc.new                => a_proc 
+ *  
+ *  Creates a new <code>Proc</code> object, bound to the current
+ *  context. <code>Proc::new</code> may be called without a block only
+ *  within a method with an attached block, in which case that block is
+ *  converted to the <code>Proc</code> object.
+ *     
+ *     def proc_from
+ *       Proc.new
+ *     end
+ *     proc = proc_from { "hello" }
+ *     proc.call   #=> "hello"
+ */
+
 static VALUE
 proc_s_new(argc, argv, klass)
     int argc;
@@ -7120,6 +7139,15 @@ rb_f_lambda()
     rb_warn("rb_f_lambda() is deprecated; use rb_block_proc() instead");
     return proc_alloc(rb_cProc, Qtrue);
 }
+
+/*
+ * call-seq:
+ *   proc   { |...| block }  => a_proc
+ *   lambda { |...| block }  => a_proc
+ *
+ * Equivalent to <code>Proc.new</code>, except the resulting Proc objects
+ * check the number of parameters passed when called.
+ */
 
 static VALUE
 proc_lambda()
@@ -7225,6 +7253,40 @@ proc_invoke(proc, args, self, klass)
     return result;
 }
 
+/* CHECKME: are the argument checking semantics correct? */
+
+/*
+ *  call-seq:
+ *     prc.call(params,...)   => obj
+ *     prc[params,...]        => obj
+ *  
+ *  Invokes the block, setting the block's parameters to the values in
+ *  <i>params</i> using something close to method calling semantics.
+ *  Generates a warning if multiple values are passed to a proc that
+ *  expects just one (previously this silently converted the parameters
+ *  to an array). 
+ *
+ *  For procs created using <code>Kernel.proc</code>, generates an 
+ *  error if the wrong number of parameters
+ *  are passed to a proc with multiple parameters. For procs created using
+ *  <code>Proc.new</code>, extra parameters are silently discarded.
+ *
+ *  Returns the value of the last expression evaluated in the block. See
+ *  also <code>Proc#yield</code>.
+ *     
+ *     a_proc = Proc.new {|a, *b| b.collect {|i| i*a }}
+ *     a_proc.call(9, 1, 2, 3)   #=> [9, 18, 27]
+ *     a_proc[9, 1, 2, 3]        #=> [9, 18, 27]
+ *     a_proc = Proc.new {|a,b| a}
+ *     a_proc.call(1,2,3)
+ *     
+ *  <em>produces:</em>
+ *     
+ *     prog.rb:5: wrong number of arguments (3 for 2) (ArgumentError)
+ *     	from prog.rb:4:in `call'
+ *     	from prog.rb:5
+ */
+
 static VALUE
 proc_call(proc, args)
     VALUE proc, args;		/* OK */
@@ -7234,6 +7296,27 @@ proc_call(proc, args)
 
 static VALUE bmcall _((VALUE, VALUE));
 static VALUE method_arity _((VALUE));
+
+/*
+ *  call-seq:
+ *     prc.arity -> fixnum
+ *  
+ *  Returns the number of arguments required by the block. If the block
+ *  is declared to take no arguments, returns 0. If the block is known
+ *  to take exactly n arguments, returns n. If the block has optional
+ *  arguments, return -n-1, where n is the number of mandatory
+ *  arguments. A <code>proc</code> with no argument declarations 
+ *  returns -1, as it can accept (and ignore) an arbitrary number of
+ *  parameters.
+ *     
+ *     Proc.new {}.arity          #=> -1
+ *     Proc.new {||}.arity        #=>  0
+ *     Proc.new {|a|}.arity       #=>  1
+ *     Proc.new {|a,b|}.arity     #=>  2
+ *     Proc.new {|a,b,c|}.arity   #=>  3
+ *     Proc.new {|*a|}.arity      #=> -1
+ *     Proc.new {|a,*b|}.arity    #=> -2
+ */
 
 static VALUE
 proc_arity(proc)
@@ -7268,6 +7351,14 @@ proc_arity(proc)
     }
 }
 
+/*
+ * call-seq:
+ *   prc == other_proc   =>  true or false
+ *
+ * Return <code>true</code> if <i>prc</i> is the same object as
+ * <i>other_proc</i>, or if they are both procs with the same body.
+ */
+
 static VALUE
 proc_eq(self, other)
     VALUE self, other;
@@ -7283,6 +7374,14 @@ proc_eq(self, other)
     if (data->body == data2->body) return Qtrue;
     return Qfalse;
 }
+
+/*
+ * call-seq:
+ *   prc.to_s   => string
+ *
+ * Shows the unique identifier for this proc, along with
+ * an indication of where the proc was defined.
+ */
 
 static VALUE
 proc_to_s(self, other)
@@ -7312,12 +7411,38 @@ proc_to_s(self, other)
     return str;
 }
 
+/*
+ *  call-seq:
+ *     prc.to_proc -> prc
+ *  
+ *  Part of the protocol for converting objects to <code>Proc</code>
+ *  objects. Instances of class <code>Proc</code> simply return
+ *  themselves.
+ */
+
 static VALUE
 proc_to_self(self)
     VALUE self;
 {
     return self;
 }
+
+/*
+ *  call-seq:
+ *     prc.binding    => binding
+ *  
+ *  Returns the binding associated with <i>prc</i>. Note that
+ *  <code>Kernel#eval</code> accepts either a <code>Proc</code> or a
+ *  <code>Binding</code> object as its second parameter.
+ *     
+ *     def fred(param)
+ *       proc {}
+ *     end
+ *     
+ *     b = fred(99)
+ *     eval("param", b.binding)   #=> 99
+ *     eval("param", b)           #=> 99
+ */
 
 static VALUE
 proc_binding(proc)
@@ -7488,6 +7613,40 @@ mnew(klass, obj, id, mklass)
     return method;
 }
 
+
+/**********************************************************************
+ *
+ * Document-class : Method
+ *
+ *  Method objects are created by <code>Object#method</code>, and are
+ *  associated with a particular object (not just with a class). They
+ *  may be used to invoke the method within the object, and as a block
+ *  associated with an iterator. They may also be unbound from one
+ *  object (creating an <code>UnboundMethod</code>) and bound to
+ *  another.
+ *     
+ *     class Thing
+ *       def square(n)
+ *         n*n
+ *       end
+ *     end
+ *     thing = Thing.new
+ *     meth  = thing.method(:square)
+ *     
+ *     meth.call(9)                 #=> 81
+ *     [ 1, 2, 3 ].collect(&meth)   #=> [1, 4, 9]
+ *     
+ */
+
+/*
+ * call-seq:
+ *   meth == other_meth  => true or false
+ *
+ * Two method objects are equal if that are bound to the same
+ * object and contain the same body.
+ */
+
+
 static VALUE
 method_eq(method, other)
     VALUE method, other;
@@ -7509,6 +7668,15 @@ method_eq(method, other)
     return Qtrue;
 }
 
+/*
+ *  call-seq:
+ *     meth.unbind    => unbound_method
+ *  
+ *  Dissociates <i>meth</i> from it's current receiver. The resulting
+ *  <code>UnboundMethod</code> can subsequently be bound to a new object
+ *  of the same class (see <code>UnboundMethod</code>).
+ */
+
 static VALUE
 method_unbind(obj)
     VALUE obj;
@@ -7529,6 +7697,34 @@ method_unbind(obj)
     return method;
 }
 
+/*
+ *  call-seq:
+ *     obj.method(sym)    => method
+ *  
+ *  Looks up the named method as a receiver in <i>obj</i>, returning a
+ *  <code>Method</code> object (or raising <code>NameError</code>). The
+ *  <code>Method</code> object acts as a closure in <i>obj</i>'s object
+ *  instance, so instance variables and the value of <code>self</code>
+ *  remain available.
+ *     
+ *     class Demo
+ *       def initialize(n)
+ *         @iv = n
+ *       end
+ *       def hello()
+ *         "Hello, @iv = #{@iv}"
+ *       end
+ *     end
+ *     
+ *     k = Demo.new(99)
+ *     m = k.method(:hello)
+ *     m.call   #=> "Hello, @iv = 99"
+ *     
+ *     l = Demo.new('Fred')
+ *     m = l.method("hello")
+ *     m.call   #=> "Hello, @iv = Fred"
+ */
+
 static VALUE
 rb_obj_method(obj, vid)
     VALUE obj;
@@ -7545,6 +7741,10 @@ rb_mod_method(mod, vid)
     return mnew(mod, Qundef, rb_to_id(vid), rb_cUnboundMethod);
 }
 
+/*
+ * MISSING: documentation
+ */
+
 static VALUE
 method_clone(self)
     VALUE self;
@@ -7559,6 +7759,19 @@ method_clone(self)
 
     return clone;
 }
+
+/*
+ *  call-seq:
+ *     meth.call(args, ...)    => obj
+ *     meth[args, ...]         => obj
+ *  
+ *  Invokes the <i>meth</i> with the specified arguments, returning the
+ *  method's return value.
+ *     
+ *     m = 12.method("+")
+ *     m.call(3)    #=> 15
+ *     m.call(20)   #=> 32
+ */
 
 static VALUE
 method_call(argc, argv, method)
@@ -7590,6 +7803,97 @@ method_call(argc, argv, method)
     return result;
 }
 
+/**********************************************************************
+ *
+ * Document-class: UnboundMethod
+ *
+ *  Ruby supports two forms of objectified methods. Class
+ *  <code>Method</code> is used to represent methods that are associated
+ *  with a particular object: these method objects are bound to that
+ *  object. Bound method objects for an object can be created using
+ *  <code>Object#method</code>.
+ *     
+ *  Ruby also supports unbound methods; methods objects that are not
+ *  associated with a particular object. These can be created either by
+ *  calling <code>Module#instance_method</code> or by calling
+ *  <code>unbind</code> on a bound method object. The result of both of
+ *  these is an <code>UnboundMethod</code> object.
+ *     
+ *  Unbound methods can only be called after they are bound to an
+ *  object. That object must be be a kind_of? the method's original
+ *  class.
+ *     
+ *     class Square
+ *       def area
+ *         @side * @side
+ *       end
+ *       def initialize(side)
+ *         @side = side
+ *       end
+ *     end
+ *     
+ *     area_un = Square.instance_method(:area)
+ *     
+ *     s = Square.new(12)
+ *     area = area_un.bind(s)
+ *     area.call   #=> 144
+ *     
+ *  Unbound methods are a reference to the method at the time it was
+ *  objectified: subsequent changes to the underlying class will not
+ *  affect the unbound method.
+ *     
+ *     class Test
+ *       def test
+ *         :original
+ *       end
+ *     end
+ *     um = Test.instance_method(:test)
+ *     class Test
+ *       def test
+ *         :modified
+ *       end
+ *     end
+ *     t = Test.new
+ *     t.test            #=> :modified
+ *     um.bind(t).call   #=> :original
+ *     
+ */
+
+/*
+ *  call-seq:
+ *     umeth.bind(obj) -> method
+ *  
+ *  Bind <i>umeth</i> to <i>obj</i>. If <code>Klass</code> was the class
+ *  from which <i>umeth</i> was obtained,
+ *  <code>obj.kind_of?(Klass)</code> must be true.
+ *     
+ *     class A
+ *       def test
+ *         puts "In test, class = #{self.class}"
+ *       end
+ *     end
+ *     class B < A
+ *     end
+ *     class C < B
+ *     end
+ *     
+ *     
+ *     um = B.instance_method(:test)
+ *     bm = um.bind(C.new)
+ *     bm.call
+ *     bm = um.bind(B.new)
+ *     bm.call
+ *     bm = um.bind(A.new)
+ *     bm.call
+ *     
+ *  <em>produces:</em>
+ *     
+ *     In test, class = C
+ *     In test, class = B
+ *     prog.rb:16:in `bind': bind argument must be an instance of B (TypeError)
+ *     	from prog.rb:16
+ */
+
 static VALUE
 umethod_bind(method, recv)
     VALUE method, recv;
@@ -7620,6 +7924,39 @@ umethod_bind(method, recv)
 
     return method;
 }
+
+/*
+ *  call-seq:
+ *     meth.arity    => fixnum
+ *  
+ *  Returns an indication of the number of arguments accepted by a
+ *  method. Returns a nonnegative integer for methods that take a fixed
+ *  number of arguments. For Ruby methods that take a variable number of
+ *  arguments, returns -n-1, where n is the number of required
+ *  arguments. For methods written in C, returns -1 if the call takes a
+ *  variable number of arguments.
+ *     
+ *     class C
+ *       def one;    end
+ *       def two(a); end
+ *       def three(*a);  end
+ *       def four(a, b); end
+ *       def five(a, b, *c);    end
+ *       def six(a, b, *c, &d); end
+ *     end
+ *     c = C.new
+ *     c.method(:one).arity     #=> 0
+ *     c.method(:two).arity     #=> 1
+ *     c.method(:three).arity   #=> -1
+ *     c.method(:four).arity    #=> 2
+ *     c.method(:five).arity    #=> -3
+ *     c.method(:six).arity     #=> -3
+ *     
+ *     "cat".method(:size).arity      #=> 0
+ *     "cat".method(:replace).arity   #=> 1
+ *     "cat".method(:squeeze).arity   #=> -1
+ *     "cat".method(:count).arity     #=> -1
+ */
 
 static VALUE
 method_arity(method)
@@ -7656,6 +7993,16 @@ method_arity(method)
 	return INT2FIX(n);
     }
 }
+
+/*
+ *  call-seq:
+ *   meth.to_s      =>  string
+ *   meth.inspect   =>  string
+ *
+ *  Show the name of the underlying method.
+ *
+ *    "cat".method(:count).inspect   #=> "#<Method: String#count>"
+ */
 
 static VALUE
 method_inspect(method)
@@ -7744,6 +8091,13 @@ rb_proc_new(func, val)
     return proc;
 }
 
+/*
+ *  call-seq:
+ *     meth.to_proc    => prc
+ *  
+ *  Returns a <code>Proc</code> object corresponding to this method.
+ */
+
 static VALUE
 method_proc(method)
     VALUE method;
@@ -7828,6 +8182,24 @@ rb_mod_define_method(argc, argv, mod)
     rb_add_method(mod, id, node, noex);
     return body;
 }
+
+/*
+ *  <code>Proc</code> objects are blocks of code that have been bound to
+ *  a set of local variables. Once bound, the code may be called in
+ *  different contexts and still access those variables.
+ *     
+ *     def gen_times(factor)
+ *       return Proc.new {|n| n*factor }
+ *     end
+ *     
+ *     times3 = gen_times(3)
+ *     times5 = gen_times(5)
+ *     
+ *     times3.call(12)               #=> 36
+ *     times5.call(5)                #=> 25
+ *     times3.call(times5.call(4))   #=> 60
+ *     
+ */
 
 void
 Init_Proc()
