@@ -1,7 +1,7 @@
-Wed Mar  3 18:58:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Mar  4 01:17:28 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/rdoc/ri/ri_display.rb (DefaultDisplay::setup_pager): ensure
-	  pager closes and stdout is restored.
+	* lib/rdoc/ri/ri_display.rb (DefaultDisplay::page): wait until the
+	  pager terminates.
 
 Wed Mar  3 13:10:56 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -183,11 +183,15 @@ class  DefaultDisplay
   ######################################################################
 
   def page
-    pager = setup_pager
+    return yield unless pager = setup_pager
     begin
+      save_stdout = STDOUT.clone
+      STDOUT.reopen(pager)
       yield
     ensure
-      page_output(pager)
+      STDOUT.reopen(save_stdout)
+      save_stdout.close
+      pager.close
     end
   end
 
@@ -196,26 +200,11 @@ class  DefaultDisplay
   def setup_pager
     unless @options.use_stdout
       for pager in [ ENV['PAGER'], "less", "more", 'pager' ].compact.uniq
-        begin
-          pager = IO.popen(pager, "w")
-        rescue
-        else
-          @save_stdout = STDOUT.clone
-          STDOUT.reopen(pager)
-          return pager
-        end
+        return IO.popen(pager, "w") rescue nil
       end
       @options.use_stdout = true
       nil
     end
-  end
-
-  ######################################################################
-
-  def page_output(pager)
-    STDOUT.reopen(@save_stdout) if @save_stdout
-    @save_stdout = nil
-    pager.close if pager
   end
 
   ######################################################################
