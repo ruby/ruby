@@ -298,7 +298,10 @@ rb_f_kill(argc, argv)
     return INT2FIX(i-1);
 }
 
-static VALUE trap_list[NSIG];
+static struct {
+    VALUE cmd;
+    int safe;
+} trap_list[NSIG];
 static rb_atomic_t trap_pending_list[NSIG];
 rb_atomic_t rb_trap_pending;
 rb_atomic_t rb_trap_immediate;
@@ -311,8 +314,8 @@ rb_gc_mark_trap_list()
     int i;
 
     for (i=0; i<NSIG; i++) {
-	if (trap_list[i])
-	    rb_gc_mark(trap_list[i]);
+	if (trap_list[i].cmd)
+	    rb_gc_mark(trap_list[i].cmd);
     }
 #endif /* MACOS_UNUSE_SIGNAL */
 }
@@ -366,7 +369,7 @@ static void
 signal_exec(sig)
     int sig;
 {
-    if (trap_list[sig] == 0) {
+    if (trap_list[sig].cmd == 0) {
 	switch (sig) {
 	  case SIGINT:
 	    rb_thread_interrupt();
@@ -391,7 +394,7 @@ signal_exec(sig)
 	}
     }
     else {
-	rb_thread_trap_eval(trap_list[sig], sig);
+	rb_thread_trap_eval(trap_list[sig].cmd, sig, trap_list[sig].safe);
     }
 }
 
@@ -458,11 +461,11 @@ void
 rb_trap_exit()
 {
 #ifndef MACOS_UNUSE_SIGNAL
-    if (trap_list[0]) {
-	VALUE trap_exit = trap_list[0];
+    if (trap_list[0].cmd) {
+	VALUE trap_exit = trap_list[0].cmd;
 
-	trap_list[0] = 0;
-	rb_eval_cmd(trap_exit, rb_ary_new3(1, INT2FIX(0)), 0);
+	trap_list[0].cmd = 0;
+	rb_eval_cmd(trap_exit, rb_ary_new3(1, INT2FIX(0)), trap_list[0].safe);
     }
 #endif
 }
@@ -620,14 +623,15 @@ trap(arg)
 	}
     }
     oldfunc = ruby_signal(sig, func);
-    oldcmd = trap_list[sig];
+    oldcmd = trap_list[sig].cmd;
     if (!oldcmd) {
 	if (oldfunc == SIG_IGN) oldcmd = rb_str_new2("IGNORE");
 	else if (oldfunc == sighandler) oldcmd = rb_str_new2("DEFAULT");
 	else oldcmd = Qnil;
     }
 
-    trap_list[sig] = command;
+    trap_list[sig].cmd = command;
+    trap_list[sig].safe = ruby_safe_level;
     /* enable at least specified signal. */
 #ifndef _WIN32
 #ifdef HAVE_SIGPROCMASK
@@ -794,7 +798,7 @@ init_sigchld(sig)
     if (oldfunc != SIG_DFL && oldfunc != SIG_IGN) {
 	ruby_signal(sig, oldfunc);
     } else {
-	trap_list[sig] = 0;
+	trap_list[sig].cmd = 0;
     }
 
 #ifndef _WIN32

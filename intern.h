@@ -215,7 +215,7 @@ VALUE rb_thread_run _((VALUE));
 VALUE rb_thread_kill _((VALUE));
 VALUE rb_thread_create _((VALUE (*)(ANYARGS), void*));
 void rb_thread_interrupt _((void));
-void rb_thread_trap_eval _((VALUE, int));
+void rb_thread_trap_eval _((VALUE, int, int));
 void rb_thread_signal_raise _((char*));
 int rb_thread_select _((int, fd_set *, fd_set *, fd_set *, struct timeval *));
 void rb_thread_wait_for _((struct timeval));

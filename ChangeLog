@@ -1,3 +1,13 @@
+Tue Jun 29 10:31:19 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval_cmd, rb_thread_trap_eval): restore safe level.
+
+	* gc.c (define_final, run_final): preserve and restore safe level for
+	  finalizers.  [ruby-core:03058]
+
+	* signal.c (signal_exec, rb_trap_exit, trap): preserve and restore
+	  safe level for signal handlers.  [ruby-dev:23829]
+
 Mon Jun 28 14:57:56 2004  Jeff Mitchell  <quixoticsycophant@yahoo.com>
 
 	* configure.in, lib/mkmf.rb (LIBPATHFLAG): use double quotes due to
