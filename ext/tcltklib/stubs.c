@@ -1,3 +1,5 @@
+int ruby_tcltk_stubs();
+
 #if defined USE_TCL_STUBS && defined USE_TK_STUBS
 #include <tcl.h>
 #include <tk.h>
