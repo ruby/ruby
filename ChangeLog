@@ -1,3 +1,8 @@
+Fri May 14 12:13:46  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* util.c (ruby_strtod): strtod("0", &end); => end should point '\0'.
+	 [ruby-dev:23498]
+
 Thu May 13 15:47:30 2004  akira yamada  <akira@ruby-lang.org>
 
 	* lib/net/telnet.rb (Net::Telnet::login): "options" can specify
