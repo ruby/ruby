@@ -210,7 +210,7 @@ rb_obj_inspect(obj)
 	    return str;
 	}
 	str = rb_str_new(0, strlen(c)+6+16+1); /* 6:tags 16:addr 1:eos */
-	sprintf(RSTRING(str)->ptr, "-<%s:0x%lx ", c, obj);
+	sprintf(RSTRING(str)->ptr, "-<%s:0x%lx", c, obj);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return rb_protect_inspect(inspect_obj, obj, str);
     }
