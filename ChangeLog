@@ -1,3 +1,10 @@
+Wed Sep 11 16:49:26 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/open3.rb: Merge from 1.7: Turn sync on for the writer
+	  handle.
+
+	* lib/ping.rb: Merge from 1.7: Fix a typo.
+
 Wed Sep 11 16:24:22 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/thread.rb: Merge from 1.7: Get rid of race condition in

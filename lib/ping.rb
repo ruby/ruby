@@ -44,7 +44,7 @@ module Ping
   def pingecho(host, timeout=5, service="echo")
     begin
       timeout(timeout) do
-	s = TCPsocket.new(host, service)
+	s = TCPSocket.new(host, service)
 	s.close
       end
     rescue Errno::ECONNREFUSED
