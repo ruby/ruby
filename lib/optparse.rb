@@ -414,11 +414,7 @@ summary feature.
 	pat = t if t.respond_to?(:match)
       end
       unless block
-<<<<<<< optparse.rb
-       block = pat.method(:convert).to_block if pat.respond_to?(:convert)
-=======
 	block = pat.method(:convert).to_block if pat.respond_to?(:convert)
->>>>>>> 1.19
       end
       @atype[t] = [pat, block]
     end
@@ -953,11 +949,7 @@ Default options, which never appear in option summary.
       # directly specified pattern(any object possible to match)
       if !(String === o) and o.respond_to?(:match)
 	pattern = notwice(o, pattern, 'pattern')
-<<<<<<< optparse.rb
-       conv = (pattern.method(:convert).to_block if pattern.respond_to?(:convert))
-=======
 	conv = (pattern.method(:convert).to_block if pattern.respond_to?(:convert))
->>>>>>> 1.19
 	next
       end
 
@@ -970,11 +962,7 @@ Default options, which never appear in option summary.
 	when CompletingHash
 	when nil
 	  pattern = CompletingHash.new
-<<<<<<< optparse.rb
-         conv = (pattern.method(:convert).to_block if pattern.respond_to?(:convert))
-=======
 	  conv = (pattern.method(:convert).to_block if pattern.respond_to?(:convert))
->>>>>>> 1.19
 	else
 	  raise ArgumentError, "argument pattern given twice"
 	end
