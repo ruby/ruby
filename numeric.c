@@ -490,9 +490,7 @@ flo_to_s(flt)
     VALUE flt;
 {
     char buf[32];
-    char *fmt = "%.15f";
     double value = RFLOAT(flt)->value;
-    double avalue, d1, d2;
     char *p, *e;
 
     if (isinf(value))
@@ -500,19 +498,20 @@ flo_to_s(flt)
     else if(isnan(value))
 	return rb_str_new2("NaN");
 
-    avalue = fabs(value);
-    if (avalue < 1.0e-7 || avalue >= 1.0e15) {
-	fmt = "%.15e";
-    }    
-    sprintf(buf, fmt, value);
+    sprintf(buf, "%#.15g", value); /* ensure to print decimal point */
     if (!(e = strchr(buf, 'e'))) {
 	e = buf + strlen(buf);
     }
+    if (!ISDIGIT(e[-1])) { /* reformat if ended with decimal point (ex 111111111111111.) */
+	sprintf(buf, "%#.14e", value);
+	if (!(e = strchr(buf, 'e'))) {
+	    e = buf + strlen(buf);
+	}
+    }
     p = e;
-    while (*--p=='0')
-	;
-    if (*p == '.') *p++;
-    memmove(p+1, e, strlen(e)+1);
+    while (p[-1]=='0' && ISDIGIT(p[-2]))
+	p--;
+    memmove(p, e, strlen(e)+1);
     return rb_str_new2(buf);
 }
 
