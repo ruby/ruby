@@ -1217,10 +1217,10 @@ bigdivrem(x, y, divp, modp)
 	for (i = 0;i < j;i++) zds[i] = zds[i+ny];
 	RBIGNUM(*divp)->len = i;
     }
-    if (modp) {			/* just normalize remainder */
+    if (modp) {			/* normalize remainder */
 	*modp = rb_big_clone(z);
 	zds = BDIGITS(*modp);
-	while (ny-- && !zds[ny]); ++ny;
+	while (--ny && !zds[ny]); ++ny;
 	if (dd) {
 	    t2 = 0; i = ny;
 	    while(i--) {
