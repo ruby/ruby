@@ -288,11 +288,11 @@ rb_reg_desc(s, len, re)
     rb_str_cat2(str, "/");
     if (re) {
 	rb_reg_check(re);
-	if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
-	    rb_str_cat2(str, "m");
 	/* /p is obsolete; to be removed */
 	if ((RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE)
 	    rb_str_cat2(str, "p");
+	else if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
+	    rb_str_cat2(str, "m");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
 	    rb_str_cat2(str, "i");
 	if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
@@ -1123,6 +1123,12 @@ rb_reg_options(re)
     rb_reg_check(re);
     if (RREGEXP(re)->ptr->options & RE_OPTION_IGNORECASE)
 	options |= RE_OPTION_IGNORECASE;
+    if ((RREGEXP(re)->ptr->options & RE_OPTION_POSIXLINE) == RE_OPTION_POSIXLINE)
+	options |= RE_OPTION_POSIXLINE;
+    else if (RREGEXP(re)->ptr->options & RE_OPTION_MULTILINE)
+	options |= RE_OPTION_MULTILINE;
+    if (RREGEXP(re)->ptr->options & RE_OPTION_EXTENDED)
+	options |= RE_OPTION_EXTENDED;
     if (FL_TEST(re, KCODE_FIXED)) {
 	options |= rb_reg_get_kcode(re);
     }
