@@ -1,3 +1,6 @@
+Sat Aug 23 16:48:41 2003  Keiju Ishitsuka <keiju@ishitsuka.com>
+	* lib/irb/ruby-lex.rb: bug fix for "foo" !~ /bar/. [ruby-talk:79942]
+	
 Sat Aug 23 15:59:58 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval, rb_iterate, block_pass): reduce PUSH/POP_TAG and

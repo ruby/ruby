@@ -392,7 +392,7 @@ class RubyLex
 
     @OP.def_rules("!", "!=", "!~") do
       |op, io|
-      #@lex_state = EXPR_BEG
+      @lex_state = EXPR_BEG
       Token(op)
     end
 
