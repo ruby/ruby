@@ -526,7 +526,7 @@ isInternalCmd(const char *cmd)
     while (isalpha(c)) {
 	*b++ = tolower(c);
 	if (b == cmdname + sizeof(cmdname)) return 0;
-	if (!(c = *cmd++)) return 0;
+	c = *cmd++;
     }
     if (c == '.') c = *cmd;
     switch (c) {
