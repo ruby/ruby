@@ -289,9 +289,7 @@ dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
 AC_TYPE_SIZE_T
 AC_STRUCT_ST_BLKSIZE
-save_LIBOJBS="$LIBOBJS"
 AC_STRUCT_ST_BLOCKS
-LIBOBJS="$save_LIBOBJS"
 AC_STRUCT_ST_RDEV
 
 dnl Checks for library functions.
@@ -429,7 +427,7 @@ main()
   exit(0);
 }
 ], rb_cv_func_strtod=yes, rb_cv_func_strtod=no, rb_cv_func_strtod=no)])
-test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
+test $rb_cv_func_strtod = no && AC_LIBOBJ([strtod])
 
 AC_C_BIGENDIAN
 AC_C_CONST
@@ -817,7 +815,7 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
     if test "$rb_cv_missing_fconvert" = yes; then
       AC_DEFINE(MISSING_FCONVERT)
     fi
-    LIBOBJS="$LIBOBJS x68.o"
+    AC_LIBOBJ([x68.o])
     CFLAGS="$CFLAGS -fansi-only -cc1-stack=262144 -cpp-stack=2694144"
     EXEEXT=.x
     OBJEXT=o
@@ -825,7 +823,7 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
     ;;
   dnl OS/2 environment w/ Autoconf 2.1x for EMX
   os2_emx)
-    LIBOBJS="$LIBOBJS os2.$OBJEXT"
+    AC_LIBOBJ([os2])
     setup=Setup.emx
     ;;
   *djgpp*)
@@ -1018,10 +1016,10 @@ case "$target_os" in
 	SOLIBS='$(LIBS)'
 	case "$target_os" in
 	cygwin*)
-	    LIBOBJS="$LIBOBJS strftime.o"
+	    AC_LIBOBJ([strftime])
 	    CCDLFLAGS=-DUSEIMPORTLIB ;;
 	mingw*)
-	    LIBOBJS="$LIBOBJS win32.o"
+	    AC_LIBOBJ([win32])
 	    CFLAGS="-DNT -D__MSVCRT__ $CFLAGS"
 	    CCDLFLAGS=-DIMPORT ;;
 	esac
