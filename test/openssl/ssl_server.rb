@@ -49,30 +49,29 @@ Socket.do_not_reverse_lookup = true
 tcps = TCPServer.new("0.0.0.0", port)
 ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
 ssls.start_immediately = start_immediately
-ssock = nil
 
 Thread.start{
-  while line = $stdin.gets
-    if /STARTTLS/ =~ line
-      ssock && ssock.accept
-    end
+  while true
+    $stdin.gets || exit
   end
-  exit
 }
 
 $stdout.sync = true
 $stdout.puts Process.pid
 
 loop do
-  s = ssls.accept
-  ssock = s
+  ssl = ssls.accept
   Thread.start{
     q = Queue.new
-    th = Thread.start{ s.write(q.shift) while true }
-    while line = s.gets
+    th = Thread.start{ ssl.write(q.shift) while true }
+    while line = ssl.gets
+      if line =~ /^STARTTLS$/
+        ssl.accept
+        next
+      end
       q.push(line)
     end
-    th.kill
-    s.close unless s.closed?
+    th.kill if q.empty?
+    ssl.close
   }
 end

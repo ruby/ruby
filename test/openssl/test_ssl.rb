@@ -16,7 +16,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   )
   SSL_SERVER = File.join(File.dirname(__FILE__), "ssl_server.rb")
   PORT = 20443
- ITERATIONS = ($0 == __FILE__) ? 100 : 10
+  ITERATIONS = ($0 == __FILE__) ? 100 : 10
 
   def setup
     @ca_key  = OpenSSL::TestUtils::TEST_KEY_RSA2048
@@ -65,13 +65,21 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
       server.write(@ca_cert.to_pem)
       server.write(@svr_cert.to_pem)
       server.write(@svr_key.to_pem)
-      def server.starttls; self.puts("STARTTLS") end
       pid = Integer(server.gets)
       $stderr.printf("%s started: pid=%d\n", SSL_SERVER, pid) if $DEBUG
       block.call(server)
     ensure
-      server.close if server
+      if server
+        server.close_write
+        Process.kill(:TERM, pid) rescue nil
+        Process.waitpid(pid)
+      end
     end
+  end
+
+  def starttls(ssl)
+    ssl.puts("STARTTLS")
+    ssl.connect
   end
 
   def test_connect_and_close
@@ -148,8 +156,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
         assert_equal(str, ssl.gets)
       }
 
-      s.starttls
-      ssl.connect
+      starttls(ssl)
 
       ITERATIONS.times{
         ssl.puts(str)
@@ -177,6 +184,7 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
           assert_equal(str, ssl.gets)
         }
       }
+      ssls.each{|ssl| ssl.close }
     }
   end
 end
