@@ -65,8 +65,8 @@ math_exp(obj, x)
 }
 
 #if defined __CYGWIN__
-#define log(x) ((x) < 0.0 ? 0.0 / 0.0 : log(x))
-#define log10(x) ((x) < 0.0 ? 0.0 / 0.0 : log10(x))
+#define log(x) ((x) < 0.0 ? nan() : log(x))
+#define log10(x) ((x) < 0.0 ? nan() : log10(x))
 #endif
 
 static VALUE
