@@ -261,7 +261,7 @@ module Net
 
   class ProtocolError
   
-    def initialize( msg, data )
+    def initialize( msg, data = nil )
       super msg
       @data = data
     end
@@ -306,6 +306,7 @@ module Net
   end
   
   ReplyCode       = Code.new( [], ProtoUnknownError )
+  InformationCode = ReplyCode.mkchild( ProtoUnknownError )
   SuccessCode     = ReplyCode.mkchild( ProtoUnknownError )
   ContinueCode    = ReplyCode.mkchild( ProtoUnknownError )
   ErrorCode       = ReplyCode.mkchild( ProtocolError )

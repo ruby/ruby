@@ -251,15 +251,6 @@ module Net
 
     class << self
 
-      def procdest( dest, block )
-        if block then
-          return NetPrivate::ReadAdapter.new( block ), nil
-        else
-          dest ||= ''
-          return dest, dest
-        end
-      end
-
       alias orig_new new
 
       def new( address = nil, port = nil, p_addr = nil, p_port = nil )
@@ -459,16 +450,89 @@ SRC
   HTTPSession = HTTP
 
 
+  class HTTPResponseReceiver
+
+    def initialize( command, body_exist )
+      @command = command
+      @body_exist = body_exist
+      @header = @body = nil
+    end
+
+    def inspect
+      "#<#{type}>"
+    end
+
+    def read_header
+      unless @header then
+        stream_check
+        @header = @command.get_response
+      end
+      @header
+    end
+
+    alias header read_header
+    alias response read_header
+
+    def body( dest = nil, &block )
+      unless @body then
+        self.read_header
+
+        to = procdest( dest, block )
+        stream_check
+        if @body_exist and header.code_type.body_exist? then
+          @command.get_body header, to
+          header.body = @body = to
+        else
+          @command.no_body
+          header.body = nil
+          @body = 1
+        end
+      end
+      @body == 1 ? nil : @body
+    end
+
+    alias entity body
+
+    def terminate
+      header
+      body
+      @command = nil
+    end
+
+
+    private
+
+    def stream_check
+      unless @command then
+        raise IOError, 'receiver was used out of block'
+      end
+    end
+
+    def procdest( dest, block )
+      if dest and block then
+        raise ArgumentError,
+          'both of arg and block are given for HTTP method'
+      end
+      if block then
+        NetPrivate::ReadAdapter.new block
+      else
+        dest or ''
+      end
+    end
+
+  end
+
+  HTTPReadAdapter = HTTPResponseReceiver
+
+
   class HTTPResponse < Response
 
-    def initialize( code_type, bexist, code, msg )
-      super( code_type, code, msg )
+    def initialize( code_type, code, msg )
+      super
       @data = {}
-      @http_body_exist = bexist
       @body = nil
     end
 
-    attr_reader :http_body_exist
     attr_accessor :body
 
     def inspect
@@ -516,101 +580,68 @@ SRC
   end
 
 
-  HTTPSuccessCode                   = SuccessCode.mkchild
-  HTTPRetriableCode                 = RetriableCode.mkchild
-  HTTPFatalErrorCode                = FatalErrorCode.mkchild
+  class Code
 
-
-  HTTPSwitchProtocol                = HTTPSuccessCode.mkchild
-
-  HTTPOK                            = HTTPSuccessCode.mkchild
-  HTTPCreated                       = HTTPSuccessCode.mkchild
-  HTTPAccepted                      = HTTPSuccessCode.mkchild
-  HTTPNonAuthoritativeInformation   = HTTPSuccessCode.mkchild
-  HTTPNoContent                     = HTTPSuccessCode.mkchild
-  HTTPResetContent                  = HTTPSuccessCode.mkchild
-  HTTPPartialContent                = HTTPSuccessCode.mkchild
-
-  HTTPMultipleChoice                = HTTPRetriableCode.mkchild
-  HTTPMovedPermanently              = HTTPRetriableCode.mkchild
-  HTTPMovedTemporarily              = HTTPRetriableCode.mkchild
-  HTTPNotModified                   = HTTPRetriableCode.mkchild
-  HTTPUseProxy                      = HTTPRetriableCode.mkchild
-  
-  HTTPBadRequest                    = HTTPRetriableCode.mkchild
-  HTTPUnauthorized                  = HTTPRetriableCode.mkchild
-  HTTPPaymentRequired               = HTTPRetriableCode.mkchild
-  HTTPForbidden                     = HTTPFatalErrorCode.mkchild
-  HTTPNotFound                      = HTTPFatalErrorCode.mkchild
-  HTTPMethodNotAllowed              = HTTPFatalErrorCode.mkchild
-  HTTPNotAcceptable                 = HTTPFatalErrorCode.mkchild
-  HTTPProxyAuthenticationRequired   = HTTPRetriableCode.mkchild
-  HTTPRequestTimeOut                = HTTPFatalErrorCode.mkchild
-  HTTPConflict                      = HTTPFatalErrorCode.mkchild
-  HTTPGone                          = HTTPFatalErrorCode.mkchild
-  HTTPLengthRequired                = HTTPFatalErrorCode.mkchild
-  HTTPPreconditionFailed            = HTTPFatalErrorCode.mkchild
-  HTTPRequestEntityTooLarge         = HTTPFatalErrorCode.mkchild
-  HTTPRequestURITooLarge            = HTTPFatalErrorCode.mkchild
-  HTTPUnsupportedMediaType          = HTTPFatalErrorCode.mkchild
-
-  HTTPNotImplemented                = HTTPFatalErrorCode.mkchild
-  HTTPBadGateway                    = HTTPFatalErrorCode.mkchild
-  HTTPServiceUnavailable            = HTTPFatalErrorCode.mkchild
-  HTTPGatewayTimeOut                = HTTPFatalErrorCode.mkchild
-  HTTPVersionNotSupported           = HTTPFatalErrorCode.mkchild
-
-
-  class HTTPResponseReceiver
-
-    def initialize( command, body_exist )
-      @command = command
-      @body_exist = body_exist
-      @header = @body = nil
+    def http_mkchild( bodyexist = nil )
+      c = mkchild(nil)
+      be = if bodyexist.nil? then @body_exist else bodyexist end
+      c.instance_eval { @body_exist = be }
+      c
     end
 
-    def inspect
-      "#<#{type}>"
-    end
-
-    def header
-      unless @header then
-        stream_check
-        @header = @body_exist ? @command.get_response :
-                                @command.get_response_no_body
-      end
-      @header
-    end
-    alias response header
-
-    def body( dest = nil, &block )
-      dest, ret = HTTP.procdest( dest, block )
-      unless @body then
-        stream_check
-        @body = @command.get_body( header, dest )
-      end
-      @body
-    end
-    alias entity body
-
-    def terminate
-      header
-      body if @body_exist
-      @command = nil
-    end
-
-    private
-
-    def stream_check
-      unless @command then
-        raise IOError, 'receiver was used out of block'
-      end
+    def body_exist?
+      @body_exist
     end
   
   end
 
-  HTTPReadAdapter = HTTPResponseReceiver
+  HTTPInformationCode               = InformationCode.http_mkchild( false )
+  HTTPSuccessCode                   = SuccessCode    .http_mkchild( true )
+  HTTPRedirectionCode               = RetriableCode  .http_mkchild( true )
+  HTTPRetriableCode = HTTPRedirectionCode
+  HTTPClientErrorCode               = FatalErrorCode .http_mkchild( true )
+  HTTPFatalErrorCode = HTTPClientErrorCode
+  HTTPServerErrorCode               = ServerErrorCode.http_mkchild( true )
 
+
+  HTTPSwitchProtocol                = HTTPInformationCode.http_mkchild
+
+  HTTPOK                            = HTTPSuccessCode.http_mkchild
+  HTTPCreated                       = HTTPSuccessCode.http_mkchild
+  HTTPAccepted                      = HTTPSuccessCode.http_mkchild
+  HTTPNonAuthoritativeInformation   = HTTPSuccessCode.http_mkchild
+  HTTPNoContent                     = HTTPSuccessCode.http_mkchild( false )
+  HTTPResetContent                  = HTTPSuccessCode.http_mkchild( false )
+  HTTPPartialContent                = HTTPSuccessCode.http_mkchild
+
+  HTTPMultipleChoice                = HTTPRedirectionCode.http_mkchild
+  HTTPMovedPermanently              = HTTPRedirectionCode.http_mkchild
+  HTTPMovedTemporarily              = HTTPRedirectionCode.http_mkchild
+  HTTPNotModified                   = HTTPRedirectionCode.http_mkchild( false )
+  HTTPUseProxy                      = HTTPRedirectionCode.http_mkchild( false )
+  
+  HTTPBadRequest                    = HTTPClientErrorCode.http_mkchild
+  HTTPUnauthorized                  = HTTPClientErrorCode.http_mkchild
+  HTTPPaymentRequired               = HTTPClientErrorCode.http_mkchild
+  HTTPForbidden                     = HTTPClientErrorCode.http_mkchild
+  HTTPNotFound                      = HTTPClientErrorCode.http_mkchild
+  HTTPMethodNotAllowed              = HTTPClientErrorCode.http_mkchild
+  HTTPNotAcceptable                 = HTTPClientErrorCode.http_mkchild
+  HTTPProxyAuthenticationRequired   = HTTPClientErrorCode.http_mkchild
+  HTTPRequestTimeOut                = HTTPClientErrorCode.http_mkchild
+  HTTPConflict                      = HTTPClientErrorCode.http_mkchild
+  HTTPGone                          = HTTPClientErrorCode.http_mkchild
+  HTTPLengthRequired                = HTTPClientErrorCode.http_mkchild
+  HTTPPreconditionFailed            = HTTPClientErrorCode.http_mkchild
+  HTTPRequestEntityTooLarge         = HTTPClientErrorCode.http_mkchild
+  HTTPRequestURITooLarge            = HTTPClientErrorCode.http_mkchild
+  HTTPUnsupportedMediaType          = HTTPClientErrorCode.http_mkchild
+
+  HTTPNotImplemented                = HTTPServerErrorCode.http_mkchild
+  HTTPBadGateway                    = HTTPServerErrorCode.http_mkchild
+  HTTPServiceUnavailable            = HTTPServerErrorCode.http_mkchild
+  HTTPGatewayTimeOut                = HTTPServerErrorCode.http_mkchild
+  HTTPVersionNotSupported           = HTTPServerErrorCode.http_mkchild
 
 
   module NetPrivate
@@ -637,6 +668,7 @@ SRC
     def inspect
       "#<Net::HTTPCommand>"
     end
+
 
     def get( path, u_header )
       return unless begin_critical
@@ -695,43 +727,36 @@ SRC
       resp
     end
 
-    def get_body( resp, dest )
-      resp.body = dest
 
-      if resp.http_body_exist then
-        if chunked? resp then
-          read_chunked( dest, resp )
+    def get_body( resp, dest )
+      if chunked? resp then
+        read_chunked( dest, resp )
+      else
+        clen = content_length( resp )
+        if clen then
+          @socket.read clen, dest
         else
-          clen = content_length( resp )
+          clen = range_length( resp )
           if clen then
             @socket.read clen, dest
           else
-            clen = range_length( resp )
-            if clen then
-              @socket.read clen, dest
+            tmp = resp['connection']
+            if tmp and /close/i === tmp then
+              @socket.read_all dest
             else
-              tmp = resp['connection']
+              tmp = resp['proxy-connection']
               if tmp and /close/i === tmp then
                 @socket.read_all dest
-              else
-                tmp = resp['proxy-connection']
-                if tmp and /close/i === tmp then
-                  @socket.read_all dest
-                end
               end
             end
           end
         end
       end
       end_critical
-
-      dest
     end
 
-    def get_response_no_body
-      resp = get_response
+    def no_body
       end_critical
-      resp
     end
 
 
@@ -752,48 +777,56 @@ SRC
     end
 
 
+    HTTPCODE_CLASS_TO_OBJ = {
+      '1' => HTTPInformationCode,
+      '2' => HTTPSuccessCode,
+      '3' => HTTPRedirectionCode,
+      '4' => HTTPClientErrorCode,
+      '5' => HTTPServerErrorCode
+    }
+
     HTTPCODE_TO_OBJ = {
-      '100' => [ContinueCode,                        false],
-      '100' => [HTTPSwitchProtocol,                  false],
+      '100' => ContinueCode,
+      '100' => HTTPSwitchProtocol,
 
-      '200' => [HTTPOK,                              true],
-      '201' => [HTTPCreated,                         true],
-      '202' => [HTTPAccepted,                        true],
-      '203' => [HTTPNonAuthoritativeInformation,     true],
-      '204' => [HTTPNoContent,                       false],
-      '205' => [HTTPResetContent,                    false],
-      '206' => [HTTPPartialContent,                  true],
+      '200' => HTTPOK,
+      '201' => HTTPCreated,
+      '202' => HTTPAccepted,
+      '203' => HTTPNonAuthoritativeInformation,
+      '204' => HTTPNoContent,
+      '205' => HTTPResetContent,
+      '206' => HTTPPartialContent,
 
-      '300' => [HTTPMultipleChoice,                  true],
-      '301' => [HTTPMovedPermanently,                true],
-      '302' => [HTTPMovedTemporarily,                true],
-      '303' => [HTTPMovedPermanently,                true],
-      '304' => [HTTPNotModified,                     false],
-      '305' => [HTTPUseProxy,                        false],
+      '300' => HTTPMultipleChoice,
+      '301' => HTTPMovedPermanently,
+      '302' => HTTPMovedTemporarily,
+      '303' => HTTPMovedPermanently,
+      '304' => HTTPNotModified,
+      '305' => HTTPUseProxy,
 
-      '400' => [HTTPBadRequest,                      true],
-      '401' => [HTTPUnauthorized,                    true],
-      '402' => [HTTPPaymentRequired,                 true],
-      '403' => [HTTPForbidden,                       true],
-      '404' => [HTTPNotFound,                        true],
-      '405' => [HTTPMethodNotAllowed,                true],
-      '406' => [HTTPNotAcceptable,                   true],
-      '407' => [HTTPProxyAuthenticationRequired,     true],
-      '408' => [HTTPRequestTimeOut,                  true],
-      '409' => [HTTPConflict,                        true],
-      '410' => [HTTPGone,                            true],
-      '411' => [HTTPFatalErrorCode,                  true],
-      '412' => [HTTPPreconditionFailed,              true],
-      '413' => [HTTPRequestEntityTooLarge,           true],
-      '414' => [HTTPRequestURITooLarge,              true],
-      '415' => [HTTPUnsupportedMediaType,            true],
+      '400' => HTTPBadRequest,
+      '401' => HTTPUnauthorized,
+      '402' => HTTPPaymentRequired,
+      '403' => HTTPForbidden,
+      '404' => HTTPNotFound,
+      '405' => HTTPMethodNotAllowed,
+      '406' => HTTPNotAcceptable,
+      '407' => HTTPProxyAuthenticationRequired,
+      '408' => HTTPRequestTimeOut,
+      '409' => HTTPConflict,
+      '410' => HTTPGone,
+      '411' => HTTPFatalErrorCode,
+      '412' => HTTPPreconditionFailed,
+      '413' => HTTPRequestEntityTooLarge,
+      '414' => HTTPRequestURITooLarge,
+      '415' => HTTPUnsupportedMediaType,
 
-      '500' => [HTTPFatalErrorCode,                  true],
-      '501' => [HTTPNotImplemented,                  true],
-      '502' => [HTTPBadGateway,                      true],
-      '503' => [HTTPServiceUnavailable,              true],
-      '504' => [HTTPGatewayTimeOut,                  true],
-      '505' => [HTTPVersionNotSupported,             true]
+      '500' => HTTPFatalErrorCode,
+      '501' => HTTPNotImplemented,
+      '502' => HTTPBadGateway,
+      '503' => HTTPServiceUnavailable,
+      '504' => HTTPGatewayTimeOut,
+      '505' => HTTPVersionNotSupported
     }
 
     def get_reply
@@ -806,8 +839,10 @@ SRC
       status  = m[2]
       discrip = m[3]
       
-      klass, bodyexist = HTTPCODE_TO_OBJ[status] || [UnknownCode, true]
-      HTTPResponse.new( klass, bodyexist, status, discrip )
+      code = HTTPCODE_TO_OBJ[status] ||
+             HTTPCODE_CLASS_TO_OBJ[status[0,1]] ||
+             UnknownCode
+      HTTPResponse.new( code, status, discrip )
     end
 
     def read_chunked( ret, header )
@@ -845,11 +880,7 @@ SRC
 
     def chunked?( header )
       str = header[ 'transfer-encoding' ]
-      if str and /(?:\A|\s+)chunked(?:\s+|\z)/i === str then
-        true
-      else
-        false
-      end
+      str and /(?:\A|\s+)chunked(?:\s+|\z)/i === str
     end
 
     def range_length( header )
