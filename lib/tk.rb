@@ -241,6 +241,15 @@ module TkComm
 		    uninstall_cmd myid
 		  })
   end
+
+  def update(idle=nil)
+    if idle
+      tk_call 'update', 'idletasks'
+    else
+      tk_call 'update'
+    end
+  end
+
 end
 
 module TkCore
