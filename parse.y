@@ -1022,7 +1022,26 @@ arg		: lhs '=' arg
 		    }
 		| arg tPOW arg
 		    {
+			int need_negate = Qfalse;
+
+			if ($1 && nd_type($1) == NODE_LIT) {
+
+			    switch (TYPE($1->nd_lit)) {
+			      case T_FIXNUM:
+			      case T_FLOAT:
+			      case T_BIGNUM:
+				if (RTEST(rb_funcall($1->nd_lit,'<',1,INT2FIX(0)))) {
+				    $1->nd_lit = rb_funcall($1->nd_lit,rb_intern("-@"),0,0);
+				    need_negate = Qtrue;
+				}
+			      default:
+				break;
+			    }
+			}
 			$$ = call_op($1, tPOW, 1, $3);
+			if (need_negate) {
+			    $$ = call_op($$, tUMINUS, 0, 0);
+			}
 		    }
 		| tUPLUS arg
 		    {
