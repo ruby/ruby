@@ -5114,14 +5114,6 @@ rb_f_send(argc, argv, recv)
     return vid;
 }
 
-#ifdef HAVE_STDARG_PROTOTYPES
-#include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start(a)
-#endif
-
 VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
 rb_funcall(VALUE recv, ID mid, int n, ...)

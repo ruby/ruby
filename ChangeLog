@@ -1,4 +1,6 @@
-Tue May 27 20:07:52 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Tue May 27 20:33:18 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c, util.c: removed duplicated includes/defines.
 
 	* ext/socket/socket.c (sock_addrinfo): get rid of SEGV at NULL ptr
 	  String.  increase buffer size for 64bit platforms.

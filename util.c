@@ -75,10 +75,6 @@ scan_hex(start, len, retlen)
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
 #endif
 
-#ifdef _WIN32
-#include "missing/file.h"
-#endif
-
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(_WIN32)
 /*
  *  Copyright (c) 1993, Intergraph Corporation
