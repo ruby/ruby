@@ -1605,6 +1605,9 @@ dir_entries(io, dirname)
  *     File.fnmatch('ca[a-z]', 'cat')          #=> true  : inclusive bracket expression
  *     File.fnmatch('ca[^t]',  'cat')          #=> false : exclusive bracket expression ('^' or '!')
  *
+ *     File.fnmatch('cat', 'CAT')                     #=> false : case sensitive
+ *     File.fnmatch('cat', 'CAT', File::FNM_CASEFOLD) #=> true  : case insensitive
+ *
  *     File.fnmatch('?',   '/', File::FNM_PATHNAME)  #=> false : wildcard doesn't match '/' on FNM_PATHNAME
  *     File.fnmatch('*',   '/', File::FNM_PATHNAME)  #=> false : ditto
  *     File.fnmatch('[/]', '/', File::FNM_PATHNAME)  #=> false : ditto

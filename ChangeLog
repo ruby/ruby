@@ -1,3 +1,7 @@
+Sat Jun 12 14:15:20  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c: RDOC for File::FNM_CASEFOLD was missed.
+
 Sat Jun 12 11:15:53 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (target_os): strip -gnu suffix on Linux.
