@@ -58,9 +58,10 @@ s%@LIBRUBY@%$(RUBY_SO_NAME).lib%g
 s%@LIBRUBYARG@%$(RUBY_SO_NAME).lib%g
 s%@SOLIBS@%%g
 s%@DLDLIBS@%%g
+s%@ENABLE_SHARED@%yes%g
 s%@arch@%i586-mswin32%g
 s%@sitedir@%${prefix}/lib/ruby/site_ruby%g
-s%@configure_args@%--with-make-prog=nmake%g
+s%@configure_args@%--with-make-prog=nmake --enable-shared%g
 s%@configure_input@%$configure_input%g
 s%@srcdir@%$srcdir%g
 s%@top_srcdir@%$top_srcdir%g

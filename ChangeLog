@@ -1,3 +1,9 @@
+Fri Jul 20 22:35:23 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* win32/config.h.in: merge from 1.7: add SIZEOF___INT64 definition.
+
+	* win32/config.status.in: merge from 1.7: add ENABLE_SHARED = yes.
+
 Thu Jul 19 19:16:50 2001 Stephen White <spwhite@chariot.net.au>
 
 	* lib/irb/input-method.rb: patch to irb to remove blank lines from
