@@ -1,5 +1,7 @@
 #
-# observer.rb implements the _Observer_ object-oriented design pattern.
+# observer.rb implements the _Observer_ object-oriented design pattern.  The
+# following documentation is copied, with modifications, from "Programming
+# Ruby", by Hunt and Thomas; http://www.rubycentral.com/book/lib_patterns.html.
 #
 # == About
 #
