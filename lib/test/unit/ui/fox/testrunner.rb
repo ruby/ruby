@@ -41,6 +41,7 @@ module Test
               @suite = suite
             end
 
+            @result = nil
             @red = false
           end
   
@@ -50,6 +51,7 @@ module Test
             setup_mediator
             attach_to_mediator
             start_ui
+            @result
           end
 
           def setup_mediator # :nodoc:
@@ -132,6 +134,7 @@ module Test
           end
           
           def started(result) # :nodoc:
+            @result = result
             output_status("Started...")
           end
           

@@ -33,6 +33,7 @@ module Test
             else
               @suite = suite
             end
+            @result = nil
 
             @runner = Thread.current
             @restart_signal = Class.new(Exception)
@@ -49,6 +50,7 @@ module Test
             setup_ui
             attach_to_mediator
             start_ui
+            @result
           end
 
           private
@@ -94,7 +96,6 @@ module Test
               retry
             rescue
             end
-            exit !@red
           end
           
           def stop(*) # :nodoc:
@@ -145,6 +146,7 @@ module Test
           end
           
           def started(result) # :nodoc:
+            @result = result
             output_status("Started...")
           end
           

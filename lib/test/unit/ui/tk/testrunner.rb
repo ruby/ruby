@@ -34,6 +34,7 @@ module Test
             else
               @suite = suite
             end
+            @result = nil
 
             @red = false
             @fault_detail_list = []
@@ -52,6 +53,7 @@ module Test
             setup_mediator
             attach_to_mediator
             start_ui
+            @result
           end
 
           private
@@ -102,7 +104,6 @@ module Test
               retry
             rescue
             end
-            exit !@red
           end
 
           def stop # :nodoc:
@@ -112,7 +113,7 @@ module Test
           def reset_ui(count) # :nodoc:
             @test_total_count = count.to_f
             @test_progress_bar.configure('background'=>'green')
-            @test_progress_bar.place('relwidth'=>0/count)
+            @test_progress_bar.place('relwidth'=>(count.zero? ? 0 : 0/count))
             @red = false
 
             @test_count_label.value = 0
@@ -155,6 +156,7 @@ module Test
           end
 
           def started(result) # :nodoc:
+            @result = result
             output_status("Started...")
           end
 

@@ -5,11 +5,11 @@ require 'test/unit/ui/console/testrunner'
 module Test
   module Unit
     class AutoRunner
-      def self.run(current_file=nil, default_dir=nil, &block)
+      def self.run(current_file=nil, default_dir=nil, argv=ARGV, &block)
         if(!current_file || current_file == $0)
           r = new(!current_file, &block)
-          if(default_dir && r.to_run.empty?)
-            r.to_run = default_dir
+          if !r.process_args(argv) && default_dir
+            r.to_run << default_dir
           end
           r.run
         end
@@ -17,9 +17,7 @@ module Test
 
       RUNNERS = {
         :console => proc do |r|
-          output_level = r.output_level || Test::Unit::UI::Console::TestRunner::NORMAL
-          passed = Test::Unit::UI::Console::TestRunner.run(r.suite, output_level).passed?
-          exit(passed ? 0 : 1)
+          Test::Unit::UI::Console::TestRunner.run(r.suite, r.output_level)
         end,
         :gtk => proc do |r|
           require 'test/unit/ui/gtk/testrunner'
@@ -73,104 +71,106 @@ module Test
         @collector = COLLECTORS[(standalone ? :dir : :objectspace)]
         @filters = []
         @to_run = []
-        process_args
+        @output_level = Test::Unit::UI::Console::TestRunner::NORMAL
         yield(self) if(block_given?)
       end
 
-      def process_args
-        catch(:stop_processing) do
-          ARGV.options do |o|
-            o.program_name = "test/unit.rb"
-            o.banner = "Test::Unit automatic runner."
-            o.banner = "#{$0} [options] [-- untouched arguments]"
+      def process_args(args = ARGV)
+        begin
+          @to_run.concat options.parse!(args)
+        rescue OptionParser::ParseError => e
+          puts e
+          puts options
+          $! = nil
+          abort
+        else
+          @filters << proc{false} unless(@filters.empty?)
+        end
+        not @to_run.empty?
+      end
 
-            o.on
-            o.on('-r', '--runner=RUNNER', RUNNERS.keys,
-              "Use the given RUNNER.",
-              "(" + keyword_display(RUNNERS.keys) + ")") do |r|
-              @runner = RUNNERS[r]
+      def options
+        @options ||= OptionParser.new do |o|
+          o.banner = "Test::Unit automatic runner."
+          o.banner << "\nUsage: #{$0} [options] [-- untouched arguments]"
+
+          o.on
+          o.on('-r', '--runner=RUNNER', RUNNERS.keys,
+               "Use the given RUNNER.",
+               "(" + keyword_display(RUNNERS.keys) + ")") do |r|
+            @runner = RUNNERS[r]
+          end
+
+          if(@standalone)
+            o.on('-a', '--add=TORUN', Array,
+                 "Add TORUN to the list of things to run;",
+                 "can be a file or a directory.") do |a|
+              @to_run.concat(a)
             end
 
-            if(@standalone)
-              o.on('-a', '--add=TORUN', Array,
-                "Add TORUN to the list of things to run;",
-                "can be a file or a directory.") do |a|
-                @to_run.concat(a)
-              end
-
-              o.on('-p', '--pattern=PATTERN', String,
-                "Match files to collect against PATTERN.") do |e|
-                @pattern = Regexp.new(e.sub(%r{\A/(.*)/\Z}m, '\\1'))
-              end
-            end
-
-            o.on('-n', '--name=NAME', String,
-              "Runs tests matching NAME.",
-              "(patterns may be used).") do |n|
-              n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
-              case n
-                when Regexp
-                  @filters << proc{|t| n =~ t.method_name ? true : nil}
-                else
-                  @filters << proc{|t| n == t.method_name ? true : nil}
-              end
-            end
-            
-            o.on('-t', '--testcase=TESTCASE', String,
-              "Runs tests in TestCases matching TESTCASE.",
-              "(patterns may be used).") do |n|
-              n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
-              case n
-                when Regexp
-                  @filters << proc{|t| n =~ t.class.name ? true : nil}
-                else
-                  @filters << proc{|t| n == t.class.name ? true : nil}
-              end
-            end
-            
-            o.on('-v', '--verbose=[LEVEL]', OUTPUT_LEVELS.keys,
-              "Set the output level (default is verbose).",
-              "(" + keyword_display(OUTPUT_LEVELS.keys) + ")") do |l|
-              @output_level = (l ? OUTPUT_LEVELS[l] : OUTPUT_LEVELS[:verbose])
-            end
-
-            o.on('--',
-              "Stop processing options so that the",
-              "remaining options will be passed to the",
-              "test."){throw :stop_processing}
-
-            o.on('-h', '--help', 'Display this help.'){puts o; exit(0)}
-
-            o.on_tail
-            o.on_tail('Deprecated options:')
-            
-            o.on_tail('--console', 'Console runner (use --runner).') do
-              warn("Deprecated option (--console).")
-              @runner = RUNNERS[:console]
-            end
-            
-            o.on_tail('--gtk', 'GTK runner (use --runner).') do
-              warn("Deprecated option (--gtk).")
-              @runner = RUNNERS[:gtk]
-            end
-            
-            o.on_tail('--fox', 'Fox runner (use --runner).') do
-              warn("Deprecated option (--fox).")
-              @runner = RUNNERS[:fox]
-            end
-            
-            o.on_tail
-
-            begin
-              o.parse!
-            rescue OptionParser::ParseError => e
-              puts e
-              puts o
-              exit(1)
+            o.on('-p', '--pattern=PATTERN', String,
+                 "Match files to collect against PATTERN.") do |e|
+              @pattern = Regexp.new(e.sub(%r{\A/(.*)/\Z}m, '\\1'))
             end
           end
+
+          o.on('-n', '--name=NAME', String,
+               "Runs tests matching NAME.",
+               "(patterns may be used).") do |n|
+            n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
+            case n
+            when Regexp
+              @filters << proc{|t| n =~ t.method_name ? true : nil}
+            else
+              @filters << proc{|t| n == t.method_name ? true : nil}
+            end
+          end
+
+          o.on('-t', '--testcase=TESTCASE', String,
+               "Runs tests in TestCases matching TESTCASE.",
+               "(patterns may be used).") do |n|
+            n = (%r{\A/(.*)/\Z} =~ n ? Regexp.new($1) : n)
+            case n
+            when Regexp
+              @filters << proc{|t| n =~ t.class.name ? true : nil}
+            else
+              @filters << proc{|t| n == t.class.name ? true : nil}
+            end
+          end
+
+          o.on('-v', '--verbose=[LEVEL]', OUTPUT_LEVELS.keys,
+               "Set the output level (default is verbose).",
+               "(" + keyword_display(OUTPUT_LEVELS.keys) + ")") do |l|
+            @output_level = (l ? OUTPUT_LEVELS[l] : OUTPUT_LEVELS[:verbose])
+          end
+
+          o.on('--',
+               "Stop processing options so that the",
+               "remaining options will be passed to the",
+               "test."){o.terminate}
+
+          o.on('-h', '--help', 'Display this help.'){puts o; exit}
+
+          o.on_tail
+          o.on_tail('Deprecated options:')
+
+          o.on_tail('--console', 'Console runner (use --runner).') do
+            warn("Deprecated option (--console).")
+            @runner = RUNNERS[:console]
+          end
+
+          o.on_tail('--gtk', 'GTK runner (use --runner).') do
+            warn("Deprecated option (--gtk).")
+            @runner = RUNNERS[:gtk]
+          end
+
+          o.on_tail('--fox', 'Fox runner (use --runner).') do
+            warn("Deprecated option (--fox).")
+            @runner = RUNNERS[:fox]
+          end
+
+          o.on_tail
         end
-        @filters << proc{false} unless(@filters.empty?)
       end
 
       def keyword_display(array)
@@ -179,7 +179,8 @@ module Test
 
       def run
         @suite = @collector[self]
-        @runner[self]
+        result = @runner[self] or return false
+        result.passed?
       end
     end
   end

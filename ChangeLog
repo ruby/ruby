@@ -1,3 +1,18 @@
+Tue Dec  2 21:31:42 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* bin/testrb: new test runner.  [ruby-core:01845]
+
+	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner.run,
+	  Test::Unit::AutoRunner#initialize): take test list to run.
+
+	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::RUNNERS,
+	  Test::Unit::AutoRunner#run): should not exit inside a library, just
+	  return the result instead.
+
+	* lib/test/unit.rb: ditto.
+
+	* test/runner.rb: exit with the test result.
+
 Tue Dec  2 20:03:20 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: check if Pathnames are usable

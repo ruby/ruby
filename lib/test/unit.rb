@@ -272,4 +272,4 @@ module Test
   end
 end
 
-at_exit{Test::Unit::AutoRunner.run($0) unless($! || Test::Unit.run?)}
+at_exit{exit(Test::Unit::AutoRunner.run($0)) unless($! || Test::Unit.run?)}

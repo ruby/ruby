@@ -322,6 +322,7 @@ module Test
           private :test_started
 
           def started(result) # :nodoc:
+            @result = result
             output_status("Started...")
           end # def started(result)
           private :started
@@ -405,8 +406,8 @@ module Test
             rescue @restart_signal
               retry
             rescue
+              puts $!, $@
             end
-            exit !@red
           end # def start_ui
           private :start_ui
 
@@ -437,6 +438,7 @@ module Test
             setup_ui
             attach_to_mediator
             start_ui
+            @result
           end # def start
 
           def initialize(suite)
@@ -445,6 +447,7 @@ module Test
             else
               @suite = suite
             end
+            @result = nil
 
             @runner = Thread.current
             @restart_signal = Class.new(Exception)
