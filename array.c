@@ -1448,8 +1448,7 @@ rb_ary_concat(x, y)
 
 static VALUE
 rb_ary_times(ary, times)
-    VALUE ary;
-    VALUE times;
+    VALUE ary, times;
 {
     VALUE ary2;
     long i, len;
@@ -1496,8 +1495,7 @@ rb_ary_assoc(ary, key)
 
 VALUE
 rb_ary_rassoc(ary, value)
-    VALUE ary;
-    VALUE value;
+    VALUE ary, value;
 {
     VALUE *p, *pend;
 
@@ -1549,9 +1547,8 @@ static VALUE
 rb_ary_hash(ary)
     VALUE ary;
 {
-    long i;
+    long i, h;
     VALUE n;
-    long h;
 
     h = RARRAY(ary)->len;
     for (i=0; i<RARRAY(ary)->len; i++) {
@@ -1568,6 +1565,7 @@ rb_ary_includes(ary, item)
     VALUE item;
 {
     long i;
+    
     for (i=0; i<RARRAY(ary)->len; i++) {
 	if (rb_equal(RARRAY(ary)->ptr[i], item)) {
 	    return Qtrue;
@@ -1577,26 +1575,23 @@ rb_ary_includes(ary, item)
 }
 
 VALUE
-rb_ary_cmp(ary, ary2)
-    VALUE ary;
-    VALUE ary2;
+rb_ary_cmp(ary1, ary2)
+    VALUE ary1, ary2;
 {
     long i, len;
 
-    if (TYPE(ary2) != T_ARRAY) {
-	ary2 = to_ary(ary2);
-    }
-    len = RARRAY(ary)->len;
+    ary2 = to_ary(ary2);
+    len = RARRAY(ary1)->len;
     if (len > RARRAY(ary2)->len) {
 	len = RARRAY(ary2)->len;
     }
     for (i=0; i<len; i++) {
-	VALUE v = rb_funcall(RARRAY(ary)->ptr[i],id_cmp,1,RARRAY(ary2)->ptr[i]);
+	VALUE v = rb_funcall(RARRAY(ary1)->ptr[i], id_cmp, 1, RARRAY(ary2)->ptr[i]);
 	if (v != INT2FIX(0)) {
 	    return v;
 	}
     }
-    len = RARRAY(ary)->len - RARRAY(ary2)->len;
+    len = RARRAY(ary1)->len - RARRAY(ary2)->len;
     if (len == 0) return INT2FIX(0);
     if (len > 0) return INT2FIX(1);
     return INT2FIX(-1);
@@ -1624,7 +1619,7 @@ ary_make_hash(ary1, ary2)
     VALUE ary1, ary2;
 {
     VALUE hash = rb_hash_new();
-    int i;
+    long i;
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	rb_hash_aset(hash, RARRAY(ary1)->ptr[i], Qtrue);
@@ -1641,11 +1636,12 @@ static VALUE
 rb_ary_and(ary1, ary2)
     VALUE ary1, ary2;
 {
-    VALUE hash;
-    VALUE ary3 = rb_ary_new();
+    VALUE hash, ary3;
     long i;
 
     ary2 = to_ary(ary2);
+    ary3 = rb_ary_new2(RARRAY(ary1)->len < RARRAY(ary2)->len ?
+	    RARRAY(ary1)->len : RARRAY(ary2)->len);
     hash = ary_make_hash(ary2, 0);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
@@ -1662,12 +1658,12 @@ static VALUE
 rb_ary_or(ary1, ary2)
     VALUE ary1, ary2;
 {
-    VALUE hash;
-    VALUE ary3 = rb_ary_new();
+    VALUE hash, ary3;
     VALUE v;
     long i;
 
     ary2 = to_ary(ary2);
+    ary3 = rb_ary_new2(RARRAY(ary1)->len+RARRAY(ary2)->len);
     hash = ary_make_hash(ary1, ary2);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
@@ -1682,7 +1678,6 @@ rb_ary_or(ary1, ary2)
 	    rb_ary_push(ary3, RARRAY(ary2)->ptr[i]);
 	}
     }
-
     return ary3;
 }
 
@@ -1690,14 +1685,16 @@ static VALUE
 rb_ary_uniq_bang(ary)
     VALUE ary;
 {
-    VALUE hash = ary_make_hash(ary, 0);
+    VALUE hash;
     VALUE *p, *q, *end;
+
+    rb_ary_modify(ary); 
+
+    hash = ary_make_hash(ary, 0);
 
     if (RARRAY(ary)->len == RHASH(hash)->tbl->num_entries) {
 	return Qnil;
     }
-
-    rb_ary_modify(ary);
     p = q = RARRAY(ary)->ptr;
     end = p + RARRAY(ary)->len;
     while (p < end) {
