@@ -1,3 +1,10 @@
+Thu Mar 27 12:10:15 2003  Tanaka Akira  <akr@m17n.org>
+
+        * regex.c (re_compile_pattern): fix [:name:] handling.
+          /[\[:digit:]]/ was treated as /[[:digit:]]/.
+          /[[:-@]/ was treated as /[\[:\-@]/.
+          /[%-[:digit:]]/ was treated as /[%-\[:digit:]\]/.
+
 Thu Mar 27 03:26:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* string.c (rb_str_capitalize_bang): check length before upcase

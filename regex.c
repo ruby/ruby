@@ -1593,32 +1593,7 @@ re_compile_pattern(pattern, size, bufp)
 	    break;
 	  }
 	}
-
-	/* Get a range.  */
-	if (range) {
-	  if (last > c)
-	    goto invalid_pattern;
-
-	  range = 0;
-	  if (had_mbchar == 0) {
-	    for (;last<=c;last++)
-	      SET_LIST_BIT(last);
-	  }
-	  else if (had_mbchar == 2) {
-	    set_list_bits(last, c, b);
-	  }
-	  else {
-	    /* restriction: range between sbc and mbc */
-	    goto invalid_pattern;
-	  }
-	}
-	else if (p[0] == '-' && p[1] != ']') {
-	  last = c;
-	  PATFETCH(c1);
-	  range = 1;
-	  goto range_retry;
-	}
-	else if (c == '[' && *p == ':') {
+        else if (c == '[' && *p == ':') { /* [:...:] */
 	  /* Leave room for the null.  */
 	  char str[CHAR_CLASS_MAX_LENGTH + 1];
 
@@ -1638,9 +1613,9 @@ re_compile_pattern(pattern, size, bufp)
 	  }
 	  str[c1] = '\0';
 
-	  /* If isn't a word bracketed by `[:' and:`]':
-	     undo the ending character, the letters, and leave 
-	     the leading `:' and `[' (but set bits for them).  */
+	  /* If isn't a word bracketed by `[:' and `:]':
+	     undo the ending character, the letters, and
+	     the leading `:' and `['.  */
 	  if (c == ':' && *p == ']') {
 	    int ch;
 	    char is_alnum = STREQ(str, "alnum");
@@ -1684,17 +1659,40 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(ch);
 	    }
 	    had_char_class = 1;
+            continue;
 	  }
 	  else {
-	    c1++;
+	    c1 += 2;
 	    while (c1--)    
 	      PATUNFETCH;
             re_warning("character class has `[' without escape");
-	    SET_LIST_BIT(TRANSLATE_P()?translate['[']:'[');
-	    SET_LIST_BIT(TRANSLATE_P()?translate[':']:':');
-	    had_char_class = 0;
-	    last = ':';
+            c = '[';
 	  }
+	}
+
+	/* Get a range.  */
+	if (range) {
+	  if (last > c)
+	    goto invalid_pattern;
+
+	  range = 0;
+	  if (had_mbchar == 0) {
+	    for (;last<=c;last++)
+	      SET_LIST_BIT(last);
+	  }
+	  else if (had_mbchar == 2) {
+	    set_list_bits(last, c, b);
+	  }
+	  else {
+	    /* restriction: range between sbc and mbc */
+	    goto invalid_pattern;
+	  }
+	}
+	else if (p[0] == '-' && p[1] != ']') {
+	  last = c;
+	  PATFETCH(c1);
+	  range = 1;
+	  goto range_retry;
 	}
 	else if (had_mbchar == 0 && (!current_mbctype || !had_num_literal)) {
 	  SET_LIST_BIT(c);
