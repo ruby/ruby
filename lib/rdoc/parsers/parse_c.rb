@@ -150,7 +150,7 @@ module RDoc
     # prepare to parse a C file
     def initialize(top_level, file_name, body, options, stats)
       @known_classes = KNOWN_CLASSES.dup
-      @body = body
+      @body = handle_ifdefs_in(body)
       @options = options
       @stats   = stats
       @top_level = top_level
@@ -272,6 +272,7 @@ module RDoc
     ############################################################
     
     def do_methods
+
       @body.scan(%r{rb_define_
                      (
                         singleton_method |
@@ -293,7 +294,7 @@ module RDoc
         next if var_name == "nstr"
         next if var_name == "envtbl"
         next if var_name == "argf"   # it'd be nice to handle this one
-                          
+
         var_name = "rb_cObject" if var_name == "rb_mKernel"
         handle_method(type, var_name, meth_name, 
                       meth_body, param_count, source_file)
@@ -338,7 +339,6 @@ module RDoc
 
     def handle_method(type, var_name, meth_name, 
                       meth_body, param_count, source_file = nil)
-      
       @stats.num_methods += 1
       class_name = @known_classes[var_name]
 
@@ -383,6 +383,7 @@ module RDoc
     def find_body(meth_name, meth_obj, body)
       if body =~ %r{((?>/\*.*?\*/\s*))(static\s+)?VALUE\s+#{meth_name}
                     \s*(\(.*?\)).*?^}xm
+
         comment, params = $1, $3
         body_text = $&
 
@@ -485,6 +486,13 @@ module RDoc
       end
       @classes[raw_name]
     end
+
+    # Remove #ifdefs that would otherwise confuse us
+    
+    def handle_ifdefs_in(body)
+      body.gsub(/^#ifdef HAVE_PROTOTYPES.*?#else.*?\n(.*?)#endif.*?\n/m) { $1 }
+    end
+    
   end
-  
+
 end

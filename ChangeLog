@@ -1,3 +1,8 @@
+Mon Apr 19 08:14:18 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser::find_body): Allow for
+	  #ifdef HAVE_PROTOTYPES
+
 Fri Apr 16 12:38:48 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/drb/drb.rb (DRb::DRbUnknown::initialize): Exception#to_str is
