@@ -1,4 +1,6 @@
-Mon Jun 23 13:45:30 2003  Tanaka Akira  <akr@m17n.org>
+Mon Jun 23 16:18:12 2003  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_open_file): initialize flags.
 
 	* time.c (time_arg): initialize v[6] even when argc is 10 to
 	  avoid valgrind error.

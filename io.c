@@ -2236,7 +2236,7 @@ rb_open_file(argc, argv, io)
 	}
 	else {
 	    SafeStringValue(vmode);
-	    rb_io_mode_modenum(RSTRING(vmode)->ptr);
+	    flags = rb_io_mode_modenum(RSTRING(vmode)->ptr);
 	}
 	fmode = NIL_P(perm) ? 0666 :  NUM2INT(perm);
 
