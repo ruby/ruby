@@ -4,6 +4,10 @@
  *		Oct. 24, 1997	Y. Matsumoto
  */
 
+#if defined(NT)
+# include <windows.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <tcl.h>

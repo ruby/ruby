@@ -29,7 +29,10 @@ end
 # get absolute path
 $topdir = File.expand_path("..")
 
-load "#{$top_srcdir}/lib/find.rb"
+$:.push $top_srcdir
+$:.push $top_srcdir+"/lib"
+
+require 'find'
 
 if File.exist?("config.cache") then
   f = open("config.cache", "r")
@@ -64,8 +67,8 @@ if RUBY_PLATFORM == "m68k-human"
 else
   CFLAGS = "@CFLAGS@"
 end
-LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
-CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir -I@includedir@ #{CFLAGS} %s %s conftest.c"
+LINK = "@CC@ -o conftest -I#$topdir -I#$top_srcdir #{CFLAGS} -I@includedir@ @LDFLAGS@ %s %s conftest.c %s %s @LIBS@"
+CPP = "@CPP@ @CPPFLAGS@ -I#$topdir -I#$top_srcdir #{CFLAGS} -I@includedir@ %s %s conftest.c"
 
 if /cygwin|mswin32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ RUBY_PLATFORM
   $null = open("nul", "w")
@@ -180,10 +183,28 @@ def have_library(lib, func="main")
 
   if func && func != ""
     libs = append_library($libs, lib)
-    unless try_link(<<"SRC", libs)
+    if /mswin32/ =~ RUBY_PLATFORM
+      r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
+      unless r
+        r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
+int main() { return 0; }
+int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
+SRC
+      end
+    else
+      r = try_link(<<"SRC", libs)
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+    end
+    unless r
       $lib_cache[lib] = 'no'
       $cache_mod = true
       return false
@@ -200,7 +221,7 @@ end
 
 def find_library(lib, func, *paths)
   ldflags = $LDFLAGS
-  libs = "-l" + lib + " " + $libs 
+  libs = append_library($libs, lib)
   until try_link(<<"SRC", libs)
 int main() { return 0; }
 int t() { #{func}(); return 0; }
@@ -227,11 +248,28 @@ def have_func(func)
 
   libs = $libs
 
-  unless try_link(<<"SRC", libs)
-char #{func}();
+  if /mswin32/ =~ RUBY_PLATFORM
+    r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
 int main() { return 0; }
 int t() { #{func}(); return 0; }
 SRC
+    unless r
+      r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
+int main() { return 0; }
+int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
+SRC
+    end
+  else
+    r = try_link(<<"SRC", libs)
+int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+  end
+  unless r
     $func_cache[func] = 'no'
     $cache_mod = true
     return false
@@ -270,7 +308,10 @@ end
 def arg_config(config, default=nil)
   unless defined? $configure_args
     $configure_args = {}
-    for arg in "@configure_args@".split
+    if /mswin32/ =~ RUBY_PLATFORM and ENV["CONFIGURE_ARGS"]
+      args = args + " " + ENV["CONFIGURE_ARGS"]
+    end
+    for arg in args.split
       next unless /^--/ =~ arg
       if /=/ =~ arg
 	$configure_args[$`] = $'
@@ -330,11 +371,13 @@ def dir_config(target)
 end
 
 def create_makefile(target)
+  $target = target
+
   system "rm -f conftest*"
   if "@DLEXT@" == $OBJEXT
     libs = $libs.split
     for lib in libs
-      lib.sub!(/-l(.*)/, '"lib\1.a"')
+      lib.sub!(/-l(.*)/, '"lib\1.#{$LIBEXT}"')
     end
     $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
   end
@@ -371,7 +414,7 @@ DESTDIR =
 
 CC = @CC@
 
-CFLAGS   = %s -I$(topdir) -I$(hdrdir) -I@includedir@ #{CFLAGS} #$CFLAGS %s
+CFLAGS   = %s -I$(topdir) -I$(hdrdir) #{CFLAGS} #$CFLAGS -I@includedir@ %s
 DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@ #{defflag}
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
@@ -405,17 +448,24 @@ archdir = $(pkglibdir)/@arch@
   mfile.printf $objs.join(" ")
   mfile.printf "\n"
 
+  ruby_interpreter = "$(topdir)/miniruby@EXEEXT@"
+  if /mswin32/ =~ RUBY_PLATFORM
+    ruby_interpreter = $topdir + "/miniruby@EXEEXT@"
+    ruby_interpreter.gsub!("/", "\\")
+  end
+
   mfile.printf <<EOS
 TARGET = #{target}
-DLLIB = $(TARGET).#{$static ? "a" : "@DLEXT@"}
+DLLIB = $(TARGET).#{$static ? $LIBEXT : "@DLEXT@"}
 
-RUBY = ../../miniruby@EXEEXT@
+RUBY = #{ruby_interpreter} -I$(topdir) -I$(hdrdir)/lib
 
 EXEEXT = @EXEEXT@
 
 all:		$(DLLIB)
 
-clean:;		@rm -f *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
+clean:;		@rm -f *.#{$OBJEXT} *.so *.sl *.#{$LIBEXT} $(DLLIB)
+		@rm -f *.ilk *.exp *.pdb *.bak
 		@rm -f Makefile extconf.h conftest.*
 		@rm -f core ruby$(EXEEXT) *~
 
@@ -436,11 +486,18 @@ EOS
   mfile.printf "\n"
 
   if $static
-    mfile.printf "\
+    if "@AR@" =~ /^lib\b/i
+      mfile.printf "\
+$(DLLIB): $(OBJS)
+	@AR@ /OUT:$(DLLIB) $(OBJS)
+"
+    else
+      mfile.printf "\
 $(DLLIB): $(OBJS)
 	@AR@ cru $(DLLIB) $(OBJS)
 	@-@RANLIB@ $(DLLIB) 2> /dev/null || true
 "
+    end
   elsif "@DLEXT@" != $OBJEXT
     mfile.printf "\
 $(DLLIB): $(OBJS)
@@ -494,14 +551,16 @@ def extmake(target)
   end
 
   $OBJEXT = "@OBJEXT@"
+  $LIBEXT = "a"
   $objs = nil
   $local_flags = ""
   case RUBY_PLATFORM
   when /cygwin|beos|openstep|nextstep|rhapsody/
     $libs = ""
   when /mswin32/
+    $LIBEXT = "lib"
     $libs = ""
-    $local_flags = "rubymw.lib -link /LIBPATH:$(topdir) /EXPORT:Init_$(TARGET)"
+    $local_flags = "$(topdir)/rubymw.lib -link /EXPORT:Init_$(TARGET)"
   else
     $libs = "-lc"
   end
@@ -526,16 +585,20 @@ def extmake(target)
   begin
     system "mkdir", target unless File.directory?(target)
     Dir.chdir target
+    $target = target
     $mdir = target
     unless $install or $clean
       if $static_ext.size > 0 ||
 	!File.exist?("./Makefile") ||
 	older("./Makefile", "#{$top_srcdir}/ext/@setup@") ||
 	older("./Makefile", "../extmk.rb") ||
+	older("./Makefile", "#{$top_srcdir}/ext/#{target}/makefile.rb") ||
 	older("./Makefile", "#{$top_srcdir}/ext/#{target}/extconf.rb")
       then
 	$defs = []
-	if File.exist?("#{$top_srcdir}/ext/#{target}/extconf.rb")
+	if File.exist?("#{$top_srcdir}/ext/#{target}/makefile.rb")
+	  load "#{$top_srcdir}/ext/#{target}/makefile.rb"
+	elsif File.exist?("#{$top_srcdir}/ext/#{target}/extconf.rb")
 	  load "#{$top_srcdir}/ext/#{target}/extconf.rb"
 	else
 	  create_makefile(target)
@@ -544,7 +607,7 @@ def extmake(target)
     end
     if File.exist?("./Makefile")
       if $static
-	$extlist.push [$static,target]
+ 	$extlist.push [$static,$target]
       end
       if $install
 	system "#{$make} install DESTDIR=#{$destdir}"
@@ -582,7 +645,9 @@ for setup in ["@setup@", "#{$top_srcdir}/ext/@setup@"]
 	$nodynamic = true
 	next
       end
-      $static_ext[$_.split[0]] = true
+      target = $_.split[0]
+      target = target.downcase if /mswin32/ =~ RUBY_PLATFORM
+      $static_ext[target] = true
     end
     f.close
     break
@@ -630,7 +695,7 @@ miniruby = "miniruby@EXEEXT@"
 $extobjs = "" unless $extobjs
 if $extlist.size > 0
   for s,t in $extlist
-    f = format("%s/%s.a", s, t)
+    f = format("%s/%s.%s", s, t, $LIBEXT)
     if File.exist?(f)
       $extinit += format("\
 \tInit_%s();\n\

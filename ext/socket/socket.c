@@ -394,19 +394,13 @@ s_recv(sock, argc, argv, from)
       case RECV_RECV:
 	return (VALUE)str;
       case RECV_TCP:
+      case RECV_UDP:
 #if 0
 	if (alen != sizeof(struct sockaddr_in)) {
 	    rb_raise(rb_eTypeError, "sockaddr size differs - should not happen");
 	}
 #endif
 	return rb_assoc_new(str, ipaddr((struct sockaddr *)buf));
-      case RECV_UDP:
-        {
-	    VALUE addr = ipaddr((struct sockaddr *)buf);
-
-	    return rb_assoc_new(str, rb_assoc_new(RARRAY(addr)->ptr[2],
-						  RARRAY(addr)->ptr[1]));
-	}
 #ifdef HAVE_SYS_UN_H
       case RECV_UNIX:
 	return rb_assoc_new(str, unixaddr((struct sockaddr_un *)buf));

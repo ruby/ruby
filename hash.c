@@ -68,6 +68,13 @@ rb_hash(obj)
     return rb_funcall(obj, hash, 0);
 }
 
+static VALUE
+eql(args)
+    VALUE *args;
+{
+    return (VALUE)rb_eql(args[0], args[1]);
+}
+
 static int
 rb_any_cmp(a, b)
     VALUE a, b;
@@ -78,11 +85,13 @@ rb_any_cmp(a, b)
     else if (TYPE(a) == T_STRING) {
 	if (TYPE(b) == T_STRING) return rb_str_cmp(a, b);
     }
+    else {
+	VALUE args[2];
 
-    DEFER_INTS;
-    a = !rb_eql(a, b);
-    ENABLE_INTS;
-    return a;
+	args[0] = a;
+	args[1] = b;
+	return !rb_with_disable_interrupt(eql, (VALUE)args);
+    }
 }
 
 static int
@@ -944,7 +953,7 @@ rb_path_check(path)
     char *path;
 {
     char *p, *pend;
-    const char sep = RUBY_PATH_SEP[0];
+    const char sep = PATH_SEP_CHAR;
 
     if (!path) return 1;
 

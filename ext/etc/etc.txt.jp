@@ -5,8 +5,7 @@
 /etcディレクトリ以下の情報を得るためのモジュール．クラスにインクルード
 して使うこともできる．
 
-Methods:
-Single Methods:
+Module Function:
 
    getlogin
 

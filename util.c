@@ -113,7 +113,7 @@ int *retlen;
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined(HAVE_FCNTL)
+#if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
 #endif
 

@@ -4495,26 +4495,21 @@ EOF
     fi
     LIBOBJS="$LIBOBJS x68.o"
     CFLAGS="$CFLAGS -fansi-only -cc1-stack=196608 -cpp-stack=2694144"
-    binsuffix=.x
+    EXEEXT=.x
+    OBJEXT=o
     setup=Setup.x68
     ;;
     os2_emx)
     LIBOBJS="$LIBOBJS os2.o"
-    binsuffix=.exe
     setup=Setup.emx
     ;;
   cygwin*)
-    binsuffix=.exe
     setup=Setup
     ;;
   *)
-    binsuffix=
     setup=Setup
     ;;
 esac
-
-
-
 
 
 
@@ -4887,7 +4882,6 @@ s%@LDSHARED@%$LDSHARED%g
 s%@DLEXT@%$DLEXT%g
 s%@STRIP@%$STRIP%g
 s%@EXTSTATIC@%$EXTSTATIC%g
-s%@binsuffix@%$binsuffix%g
 s%@setup@%$setup%g
 s%@LIBRUBY_LDSHARED@%$LIBRUBY_LDSHARED%g
 s%@LIBRUBY_DLDFLAGS@%$LIBRUBY_DLDFLAGS%g

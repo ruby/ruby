@@ -639,7 +639,7 @@ An end of a defun is found by moving forward from the beginning of one."
   (defvar ruby-font-lock-keywords
     (list
      (cons (concat
-	    "\\(^\\|[^_:.]\\|\\.\\.\\)\\b\\("
+	    "\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\("
 	    (mapconcat
 	     'identity
 	     '("alias"
@@ -679,7 +679,7 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "while"
 	       )
 	     "\\|")
-	    "\\)\\b")
+	    "\\)\\>[^_]")
 	   2)
      ;; variables
      '("\\b\\(nil\\|self\\|true\\|false\\)\\b"

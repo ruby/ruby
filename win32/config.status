@@ -1,12 +1,11 @@
 ac_given_srcdir=.
-ac_given_INSTALL="ginstall -c"
 s%@SHELL@%%g
 s%@CFLAGS@%-nologo -DNT=1 -Ox%g
 s%@CPPFLAGS@%%g
 s%@CXXFLAGS@%%g
 s%@FFLAGS@%%g
 s%@DEFS@%
- -DUSE_THREAD -DSIZEOF_INT=4 -DSIZEOF_SHORT=2 -DSIZEOF_LONG=4 -DSIZEOF_VOIDP=4 -DSIZEOF_FLOAT=4 -DSIZEOF_DOUBLE=8 -DHAVE_PROTOTYPES=1 -DHAVE_STDARG_PROTOTYPES=1 -DHAVE_STDLIB_H=1 -DHAVE_LIMITS_H=1 -DHAVE_SYS_FILE_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_ST_RDEV=1 -DGETGROUPS_T=int -DRETSIGTYPE=void -DHAVE_ALLOCA=1 -DHAVE_FMOD=1 -DHAVE_WAITPID=1 -DHAVE_GETCWD=1 -DHAVE_CHSIZE=1 -DHAVE_GETGROUPS=1 -DHAVE_GETLOGIN=1 -DRSHIFT=\(x,y\)\ \(\(x\)\>\>y\) -DFILE_COUNT=_cnt -DDLEXT=\".dll\" -DRUBY_LIB=\";/usr/local/lib/ruby;.\" -DRUBY_ARCHLIB=\"/usr/local/lib/ruby/i386-mswin32\" -DRUBY_PLATFORM=\"i386-mswin32\" %g
+ -DUSE_THREAD -DSIZEOF_INT=4 -DSIZEOF_SHORT=2 -DSIZEOF_LONG=4 -DSIZEOF_VOIDP=4 -DSIZEOF_FLOAT=4 -DSIZEOF_DOUBLE=8 -DHAVE_PROTOTYPES=1 -DHAVE_STDARG_PROTOTYPES=1 -DHAVE_STDLIB_H=1 -DHAVE_LIMITS_H=1 -DHAVE_SYS_FILE_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_ST_RDEV=1 -DGETGROUPS_T=int -DRETSIGTYPE=void -DHAVE_ALLOCA=1 -DHAVE_FMOD=1 -DHAVE_WAITPID=1 -DHAVE_GETCWD=1 -DHAVE_CHSIZE=1 -DHAVE_GETGROUPS=1 -DHAVE_GETLOGIN=1 -DRSHIFT=\(x,y\)\ \(\(x\)\>\>y\) -DFILE_COUNT=_cnt -DDLEXT=\".dll\" -DRUBY_LIB=\"/usr/local/lib/ruby/1.3\" -DRUBY_ARCHLIB=\"/usr/local/lib/ruby/1.3/i386-mswin32\" -DRUBY_PLATFORM=\"i386-mswin32\" %g
 s%@LDFLAGS@%%g
 s%@LIBS@%advapi32.lib wsock32.lib%g
 s%@exec_prefix@%${prefix}%g
@@ -32,12 +31,8 @@ s%@host_os@%mswin32%g
 s%@CC@%cl%g
 s%@CPP@%cl -E%g
 s%@YACC@%byacc%g
-s%@RANLIB@%%g
-s%@AR@%lib%g
-s%@INSTALL_PROGRAM@%${INSTALL}%g
-s%@INSTALL_SCRIPT@%${INSTALL_PROGRAM}%g
-s%@INSTALL_DATA@%${INSTALL} -m 644%g
-s%@INSTALL_DLLIB@%${INSTALL} -m 555%g
+s%@RANLIB@%rem%g
+s%@AR@%lib -nologo%g
 s%@LN_S@%%g
 s%@SET_MAKE@%%g
 s%@LIBOBJS@% crypt.obj alloca.obj win32.obj fnmatch.obj isinf.obj isnan.obj%g
@@ -53,8 +48,7 @@ s%@LDSHARED@%cl -LD%g
 s%@DLEXT@%dll%g
 s%@STRIP@%%g
 s%@EXTSTATIC@%%g
-s%@binsuffix@%.exe%g
-s%@setup@%Setup%g
+s%@setup@%Setup.nt%g
 s%@LIBRUBY_LDSHARED@%%g
 s%@LIBRUBY_DLDFLAGS@%%g
 s%@RUBY_INSTALL_NAME@%ruby%g
@@ -65,8 +59,7 @@ s%@LIBRUBY@%libruby.lib%g
 s%@LIBRUBYARG@%libruby.lib%g
 s%@SOLIBS@%%g
 s%@arch@%i386-mswin32%g
-s%@configure_args@%%g
+s%@configure_args@%--with-make-prog=nmake%g
 s%@configure_input@%$configure_input%g
 s%@srcdir@%$srcdir%g
 s%@top_srcdir@%$top_srcdir%g
-s%@INSTALL@%$INSTALL%g

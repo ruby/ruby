@@ -906,7 +906,10 @@ rb_gc()
 
     /* mark frame stack */
     for (frame = ruby_frame; frame; frame = frame->prev) {
-	rb_gc_mark_frame(frame);
+	rb_gc_mark_frame(frame); 
+    }
+    for (frame = ruby_frame; frame; frame = frame->prev) {
+	if (frame->tmp) rb_gc_mark_frame(frame->tmp); 
     }
     rb_gc_mark(ruby_class);
     rb_gc_mark(ruby_scope);

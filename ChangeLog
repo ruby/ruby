@@ -1,3 +1,78 @@
+Fri Aug  6 15:01:07 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.3.7 - version 1.4 beta
+
+	* ext/socket/socket.c (s_recv): UDPsocket#recvfrom now returns
+	  IPsocket#addr information.
+
+	* array.c (rb_ary_subary): ary[-3,3] should not return nil.
+
+Thu Aug  5 10:58:01 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (thread_mark): protect old ruby_frame from GC during it
+	  replaced by eval().
+
+	* eval.c (eval): do not modify frame.prev; binding should preserve
+	  information about calling() too.
+
+	* eval.c (rb_yield_0): no arity check for mere yield; but only for
+	  Proc#call.
+
+Tue Aug  3 22:07:13 1999  Kazuhiro HIWADA  <hiwada@kuee.kyoto-u.ac.jp>
+
+	* object.c (rb_mod_clone): should check if iv_tbl, m_tbl are
+	  initialized.
+
+Tue Aug  3 19:03:02 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* hash.c (rb_any_cmp): use rb_with_disable_interrupt() to ensure
+	  clearance of rb_prohibit_interrupt even on failure.
+
+	* eval.c (rb_with_disable_interrupt): new function added.
+
+Sat Jul 31 23:23:44 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_create_0): set THREAD_RAISED flag on thread
+	  termination by exception.
+
+	* eval.c (rb_thread_join): `$!' may not be nil for the threads
+	  created in rescue clause.
+
+	* eval.c (rb_thread_status): ditto.
+
+	* eval.c (rb_thread_join): should re-raise exception for already
+	  dead threads too.
+
+Fri Jul 30 17:56:54 1999  GOTO Kentaro  <gotoken@math.sci.hokudai.ac.jp>
+
+	* object.c (rb_mod_ge): wrong comparison.
+
+Fri Jul 30 12:15:44 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/tcltklib/extconf.rb: win32 support.
+
+	* lib/mkmf.rb: use append_library().
+
+	* ext/extmk.rb.in: ditto.
+
+Fri Jul 30 02:11:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* array.c (rb_ary_delete): should return nil for deleting non
+	  existing item.
+
+	* io.c (rb_io_close): call rb_sys_wait() on explicit close.
+
+	* io.c (rb_io_fptr_close): do not call rb_sys_wait() on finalize.
+
+	* eval.c (yield_under_i): cbase context should be maintaind for
+	  Module#module_eval().  suggested by <inaba@st.rim.or.jp>.
+
+Wed Jul 28 01:18:28 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* Makefile.in: add -I$(hdrdir)/lib to install using ftools.
+
+	* util.c: use HAVE_FCNTL_H, not HAVE_FCNTL
+
 Wed Jul 28 18:24:45 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.3.6 - version 1.4 alpha
@@ -30,6 +105,11 @@ Thu Jul 22 19:37:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_thread_join): get_backtrace() may retrun Qnil.
 	  typecheck added.
+
+Tue Jul 20 14:36:43 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* range.c (range_each): do not treat String specially (for future
+	  override).
 
 Tue Jul 20 02:28:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

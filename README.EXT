@@ -2,7 +2,7 @@
 
 This document explains how to make extention libraries for Ruby.
 
-1¡¥Basic knowledge
+1. Basic knowledge
 
 In C, variables have types and data do not have types.  In contrast,
 Ruby variables do not have static type and data themselves have
@@ -417,7 +417,7 @@ The pointer to the structure will be assigned to the variable sval.
 
 See example below for detail. 
 
-4¡¥Example - Creating dbm extension
+4. Example - Creating dbm extension
 
 OK, here's the example to make extension library.  This is the
 extension to access dbm.  The full source is included in ext/

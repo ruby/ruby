@@ -19,6 +19,7 @@ extern struct FRAME {
     VALUE last_class;
     VALUE cbase;
     struct FRAME *prev;
+    struct FRAME *tmp;
     char *file;
     int line;
     int iter;

@@ -33,11 +33,11 @@ s%@AR@%ar%g
 s%@INSTALL_PROGRAM@%${INSTALL}%g
 s%@INSTALL_DATA@%${INSTALL} -m 644%g
 s%@SET_MAKE@%%g
-s%@LIBOBJS@% crypt.o flock.o vsnprintf.o%g
+s%@LIBOBJS@% crypt.o flock.o fnmatch.o vsnprintf.o%g
 s%@ALLOCA@%%g
 s%@DEFAULT_KCODE@%%g
 s%@EXEEXT@%.exe%g
-s%@OBJEXT@%obj%g
+s%@OBJEXT@%o%g
 s%@XLDFLAGS@%%g
 s%@DLDFLAGS@%%g
 s%@STATIC@%%g
@@ -52,6 +52,7 @@ s%@RUBY_INSTALL_NAME@%ruby%g
 s%@LIBRUBY@%libruby.a%g
 s%@LIBRUBY_A@%libruby.a%g
 s%@LIBRUBYARG@%libruby.a%g
+s%@LIBRUBY_SO@%%g
 s%@SOLIBS@%%g
 s%@arch@%i386-djgpp%g
 s%/bin/rm%rm%

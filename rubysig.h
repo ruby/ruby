@@ -14,25 +14,27 @@ EXTERN int rb_trap_immediate;
 #define TRAP_BEG (rb_trap_immediate=1)
 #define TRAP_END (rb_trap_immediate=0)
 
-extern int rb_prohibit_interrupt;
+EXTERN int rb_prohibit_interrupt;
 #define DEFER_INTS {rb_prohibit_interrupt++;}
 #define ALLOW_INTS {rb_prohibit_interrupt--; CHECK_INTS;}
 #define ENABLE_INTS {rb_prohibit_interrupt--;}
 
-extern int rb_trap_pending;
+VALUE rb_with_disable_interrupt _((VALUE(*)(),VALUE));
+
+EXTERN int rb_trap_pending;
 void rb_trap_restore_mask _((void));
 
-extern int rb_thread_critical;
+EXTERN int rb_thread_critical;
 void rb_thread_schedule _((void));
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
-extern int rb_thread_pending;
+EXTERN int rb_thread_pending;
 # define CHECK_INTS if (!rb_prohibit_interrupt) {\
     if (rb_trap_pending) rb_trap_exec();\
     if (rb_thread_pending && !rb_thread_critical) rb_thread_schedule();\
 }
 #else
 /* pseudo preemptive thread switching */
-extern int rb_thread_tick;
+EXTERN int rb_thread_tick;
 #define THREAD_TICK 500
 #define CHECK_INTS if (!rb_prohibit_interrupt) {\
     if (rb_trap_pending) rb_trap_exec();\

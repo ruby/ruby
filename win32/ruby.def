@@ -2,78 +2,117 @@ LIBRARY rubymw.dll
 DESCRIPTION 'win32 rubymw.dll'
 EXPORTS
 ;;global objects
-;array.c:
+;array.c
 	rb_cArray
-;bignum.c:
+;bignum.c
 	rb_cBignum
+;compar.c
+	rb_mComparable
+;dir.c
+	rb_cDir
 ;enum.c
 	rb_mEnumerable
 ;error.c
-	rb_eException;
+	rb_eException
 	rb_eSystemExit
 	rb_eInterrupt
-	rb_eFatal;
-	rb_eStandardError;
-	rb_eRuntimeError;
-	rb_eSyntaxError;
-	rb_eTypeError;
-	rb_eArgError;
-	rb_eNameError;
-	rb_eIndexError;
-	rb_eLoadError;
-	rb_eSecurityError;
-	rb_eNotImpError;
-	rb_eSystemCallError;
-	rb_mErrno;
-;eval.c:
+	rb_eSignal
+	rb_eFatal
+	rb_eStandardError
+	rb_eRuntimeError
+	rb_eSyntaxError
+	rb_eTypeError
+	rb_eArgError
+	rb_eNameError
+	rb_eIndexError
+	rb_eLoadError
+	rb_eSecurityError
+	rb_eNotImpError
+	rb_eSystemCallError
+	rb_eZeroDivError
+	rb_mErrno
+;eval.c
 	rb_cProc
-        rb_thread_tick
-        rb_thread_critical
-;file.c:
+	rb_cThread
+	rb_thread_tick
+	rb_thread_critical
+;file.c
 	rb_cFile
-;hash.c:
+	rb_mFileTest
+;gc.c
+	rb_mGC
+;hash.c
 	rb_cHash
-	ruby_setenv
-	ruby_unsetenv
-;io.c:
+;io.c
 	rb_cIO
-        rb_io_check_closed
-;numeric.c:
+	rb_eEOFError
+	rb_eIOError
+;math.c
+	rb_mMath
+;numeric.c
 	rb_cNumeric
 	rb_cFloat
 	rb_cInteger
 	rb_cFixnum
+	rb_eFloatDomainError
 ;object.c
 	rb_mKernel
 	rb_cObject
 	rb_cModule
 	rb_cClass
 	rb_cData
-
 	rb_cNilClass
 	rb_cTrueClass
 	rb_cFalseClass
-;re.c:
+;prec.c
+	rb_mPrecision
+;process.c
+	rb_mProcess
+;range.c
+	rb_cRange
+;re.c
 	rb_cRegexp
-;signal.c:
-        rb_trap_immediate
-        rb_trap_pending
-        rb_prohibit_interrupt
-;string.c:
+;ruby.c
+	ruby_debug
+	ruby_verbose
+	rb_progname
+	rb_argv
+	rb_argv0
+;signal.c
+	rb_trap_pending
+	rb_trap_immediate
+	rb_prohibit_interrupt
+;string.c
 	rb_cString
 	rb_cStruct
+;time.c
+	rb_cTime
 
-; procedures/methods
-;missing/nt.c
+;;procedures/methods
+;missing/alloca.c
+	alloca
+;missing/crypt.c
+	definekey
+	encrypt
+	crypt
+;missing/fnmatch.c
+	fnmatch
+;missing/isinf.c
+	isinf
+;missing/isnan.c
+	isnan
+;missing/isnan.c
+	isnan
+;win32/win32.c
 	NtInitialize
 	myfdopen
 	myfdclose
 	myaccept
 	mybind
 	myconnect
-        myfdset
-        myfdisset
-        myselect
+	myfdset
+	myfdisset
+	myselect
 	mygetpeername
 	mygetsockname
 	mygetsockopt
@@ -93,8 +132,9 @@ EXPORTS
 	mygetprotobynumber
 	mygetservbyname
 	mygetservbyport
-        myget_osfhandle
+	myget_osfhandle
 ;array.c
+	rb_mem_clear
 	rb_ary_freeze
 	rb_ary_new
 	rb_ary_new2
@@ -111,6 +151,8 @@ EXPORTS
 	rb_ary_each
 	rb_ary_join
 	rb_ary_to_s
+	rb_protect_inspect
+	rb_inspecting_p
 	rb_ary_reverse
 	rb_ary_sort_bang
 	rb_ary_sort
@@ -130,7 +172,6 @@ EXPORTS
 	rb_uint2inum
 	rb_int2inum
 	rb_str2inum
-        rb_str2cstr
 	rb_big2str
 	rb_big2ulong
 	rb_big2long
@@ -149,6 +190,7 @@ EXPORTS
 	rb_class_new
 	rb_singleton_class_new
 	rb_singleton_class_clone
+	rb_singleton_class_attached
 	rb_define_class_id
 	rb_define_class
 	rb_define_class_under
@@ -157,11 +199,17 @@ EXPORTS
 	rb_define_module
 	rb_define_module_under
 	rb_include_module
+	rb_mod_included_modules
+	rb_mod_ancestors
+	rb_class_instance_methods
+	rb_class_protected_instance_methods
+	rb_class_private_instance_methods
+	rb_obj_singleton_methods
 	rb_define_method_id
 	rb_define_method
-	rb_undef_method
-	rb_define_private_method
 	rb_define_protected_method
+	rb_define_private_method
+	rb_undef_method
 	rb_singleton_class
 	rb_define_singleton_method
 	rb_define_module_function
@@ -169,16 +217,14 @@ EXPORTS
 	rb_define_alias
 	rb_define_attr
 	rb_scan_args
-; dln.c
-	dln_find_exe
-	dln_find_file
+;dln.c
 	dln_load
 	dln_find_exe
 	dln_find_file
-; enum.c
+;enum.c
 	rb_each
 	rb_enum_length
-; error.c
+;error.c
 	rb_compile_error
 	rb_compile_error_append
 	rb_warn
@@ -195,12 +241,17 @@ EXPORTS
 	rb_sys_fail
 ;eval.c
 	rb_clear_cache
-	rb_alias
 	rb_add_method
+	rb_alias
 	rb_remove_method
 	rb_disable_super
 	rb_enable_super
 	rb_method_boundp
+	rb_attr
+	rb_dvar_defined
+	rb_dvar_ref
+	rb_dvar_push
+	rb_dvar_asgn
 	rb_safe_level
 	rb_set_safe_level
 	rb_check_safe_str
@@ -209,59 +260,66 @@ EXPORTS
 	ruby_options
 	ruby_run
 	rb_eval_string
+	rb_eval_string_protect
+	rb_eval_string_wrap
 	rb_eval_cmd
-	rb_test_false_or_nil
 	rb_respond_to
 	rb_exit
-	rb_raise
-	rb_fatal
+	rb_iter_break
+	rb_exc_raise
+	rb_exc_fatal
 	rb_interrupt
+	rb_jump_tag
 	rb_iterator_p
+	rb_yield
 	rb_iterate
 	rb_rescue
+	rb_protect
 	rb_ensure
 	rb_apply
 	rb_funcall
 	rb_funcall2
 	rb_backtrace
 	rb_frame_last_func
+	rb_obj_instance_eval
 	rb_load
+	rb_load_protect
 	rb_provide
 	rb_f_require
-	rb_obj_instance_eval
 	rb_obj_call_init
 	rb_class_new_instance
 	rb_extend_object
-	rb_f_global_variables
 	rb_set_end_proc
-	rb_f_autoload
+	rb_exec_end_proc
 	rb_f_lambda
 	rb_gc_mark_threads
+	rb_thread_fd_close
 	rb_thread_schedule
 	rb_thread_wait_fd
 	rb_thread_fd_writable
 	rb_thread_wait_for
 	rb_thread_alone
 	rb_thread_select
+	rb_thread_current
+	rb_thread_main
+	rb_thread_wakeup
+	rb_thread_run
+	rb_thread_stop
 	rb_thread_sleep
 	rb_thread_sleep_forever
 	rb_thread_create
 	rb_thread_scope_shared_p
 	rb_thread_interrupt
+	rb_thread_signal_raise
 	rb_thread_trap_eval
-        rb_thread_fd_close
-        rb_thread_stop
-        rb_thread_wakeup
-        rb_thread_run
-        rb_thread_create
+	rb_thread_local_aref
+	rb_thread_local_aset
 	rb_catch
 	rb_throw
-	rb_yield
-; file.c
-	rb_file_open
+;file.c
 	eaccess
 	rb_file_s_expand_path
-; gc.c
+;gc.c
 	xmalloc
 	xcalloc
 	xrealloc
@@ -269,61 +327,91 @@ EXPORTS
 	rb_newobj
 	rb_data_object_alloc
 	rb_gc_mark_locations
+	rb_mark_tbl
+	rb_mark_hash
 	rb_gc_mark_maybe
 	rb_gc_mark
 	rb_gc_force_recycle
 	rb_gc_mark_frame
 	rb_gc
-; hash.c
+	rb_gc_call_finalizer_at_exit
+;hash.c
 	rb_hash_freeze
 	rb_hash
 	rb_hash_new
 	rb_hash_aref
 	rb_hash_aset
-; inits.c
+	rb_path_check
+	rb_env_path_tainted
+	ruby_setenv
+	ruby_unsetenv
+;inits.c
 	rb_call_inits
-; io.c
+;io.c
 	rb_eof_error
+	rb_io_check_closed
+	rb_io_check_readable
+	rb_io_check_writable
+	rb_read_check
 	rb_io_write
+	rb_io_eof
 	rb_io_gets
 	rb_io_getc
+	rb_getc
 	rb_io_ungetc
 	rb_io_fptr_finalize
 	rb_io_close
+	rb_io_close_read
 	rb_io_binmode
+	rb_io_mode_flags
 	rb_fopen
 	rb_fdopen
+	rb_file_open
+	rb_file_sysopen
 	rb_io_unbuffered
+	rb_p
+	rb_gets
 	rb_str_setter
-; numeric.c
+;numeric.c
 	rb_num_zerodiv
 	rb_num_coerce_bin
 	rb_float_new
 	rb_num2long
 	rb_num2ulong
+	rb_num2int
+	rb_fix2int
 	rb_num2fix
 	rb_fix2str
-; object.c
+	rb_fix_upto
+;object.c
 	rb_equal
 	rb_eql
+	rb_obj_id
+	rb_obj_clone
 	rb_any_to_s
 	rb_inspect
 	rb_obj_is_instance_of
 	rb_obj_is_kind_of
+	rb_obj_tainted
+	rb_obj_taint
+	rb_obj_untaint
 	rb_obj_alloc
-        rb_obj_taint
 	rb_to_id
-	rb_class_of
-	rb_type
-	rb_special_const_p
+	rb_convert_type
 	rb_Integer
 	rb_Float
+	rb_num2dbl
+	rb_str2cstr
 	rb_String
 	rb_Array
-        rb_num2dbl
-; parse.c
+;parse.c
+	rb_compile_string
+	rb_compile_cstr
+	rb_compile_file
 	rb_node_newnode
 	rb_id_attrset
+	rb_parser_append_print
+	rb_parser_while_loop
 	rb_intern
 	rb_id2name
 	rb_is_const_id
@@ -332,13 +420,15 @@ EXPORTS
 	rb_backref_set
 	rb_lastline_get
 	rb_lastline_set
-; process.c
+;process.c
 	rb_proc_exec
 	rb_syswait
-; range.c
+;range.c
 	rb_range_new
-; re.c
+	rb_range_beg_len
+;re.c
 	rb_str_cicmp
+	rb_match_busy
 	rb_reg_search
 	rb_reg_nth_defined
 	rb_reg_nth_match
@@ -350,29 +440,33 @@ EXPORTS
 	rb_reg_regcomp
 	rb_reg_match
 	rb_reg_match2
+	rb_kcode
+	rb_reg_options
 	rb_reg_regsub
 	rb_get_kcode
 	rb_set_kcode
-; ruby.c
-        rb_argv
-        rb_argv0
-        rb_progname
+;ruby.c
+	ruby_require_libraries
 	rb_load_file
 	ruby_script
 	ruby_prog_init
 	ruby_set_argv
 	ruby_process_options
-; signal.c
+;signal.c
+	rb_f_kill
 	rb_gc_mark_trap_list
 	rb_trap_exit
 	rb_trap_exec
-; sprintf.c
+	rb_trap_restore_mask
+;sprintf.c
 	rb_f_sprintf
-; st.c
+;st.c
 	st_init_table_with_size
 	st_init_table
 	st_init_numtable
+	st_init_numtable_with_size
 	st_init_strtable
+	st_init_strtable_with_size
 	st_free_table
 	st_lookup
 	st_insert
@@ -380,8 +474,9 @@ EXPORTS
 	st_copy
 	st_delete
 	st_delete_safe
+	st_cleanup_safe
 	st_foreach
-; string.c
+;string.c
 	rb_str_new
 	rb_str_new2
 	rb_tainted_str_new
@@ -399,29 +494,34 @@ EXPORTS
 	rb_str_dup_frozen
 	rb_str_resize
 	rb_str_cat
+	rb_str_concat
 	rb_str_hash
 	rb_str_cmp
 	rb_str_upto
 	rb_str_inspect
 	rb_str_split
-; struct.c
+;struct.c
 	rb_struct_getmember
 	rb_struct_define
 	rb_struct_alloc
 	rb_struct_new
 	rb_struct_aref
 	rb_struct_aset
-; time.c
+;time.c
 	rb_time_new
+	rb_time_interval
 	rb_time_timeval
-; util.c
+;util.c
 	rb_class_of
 	rb_type
 	rb_special_const_p
 	rb_test_false_or_nil
 	ruby_scan_oct
 	ruby_scan_hex
+	ruby_mktemp
+	ruby_qsort
 ;variable.c
+	rb_mod_name
 	rb_class_path
 	rb_set_class_path
 	rb_path2class
@@ -435,16 +535,25 @@ EXPORTS
 	rb_define_variable
 	rb_define_readonly_variable
 	rb_define_virtual_variable
+	rb_f_trace_var
+	rb_f_untrace_var
 	rb_gvar_get
 	rb_gvar_set
 	rb_gvar_set2
 	rb_gvar_defined
+	rb_f_global_variables
 	rb_alias_variable
+	rb_mark_generic_ivar
+	rb_mark_generic_ivar_tbl
+	rb_free_generic_ivar
 	rb_ivar_get
 	rb_ivar_set
 	rb_ivar_defined
+	rb_obj_instance_variables
+	rb_obj_remove_instance_variable
 	rb_const_get_at
 	rb_const_get
+	rb_mod_remove_const
 	rb_mod_const_at
 	rb_mod_constants
 	rb_mod_const_of
@@ -456,7 +565,6 @@ EXPORTS
 	rb_define_global_const
 	rb_iv_get
 	rb_iv_set
-; version.c
+;version.c
 	ruby_show_version
 	ruby_show_copyright
-

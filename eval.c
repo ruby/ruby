@@ -398,6 +398,7 @@ static struct SCOPE *top_scope;
 #define PUSH_FRAME() {			\
     struct FRAME _frame;		\
     _frame.prev = ruby_frame;		\
+    _frame.tmp  = 0;			\
     _frame.file = ruby_sourcefile;	\
     _frame.line = ruby_sourceline;	\
     _frame.iter = ruby_iter->iter;	\
@@ -420,11 +421,15 @@ struct BLOCK {
     struct tag *tag;
     int iter;
     int vmode;
-    int d_scope;
+    int flags;
     struct RVarmap *d_vars;
     VALUE orig_thread;
     struct BLOCK *prev;
 };
+
+#define BLOCK_D_SCOPE 1
+#define BLOCK_DYNAMIC 2
+
 static struct BLOCK *ruby_block;
 
 #define PUSH_BLOCK(v,b) {		\
@@ -441,7 +446,7 @@ static struct BLOCK *ruby_block;
     _block.prev = ruby_block;		\
     _block.iter = ruby_iter->iter;	\
     _block.vmode = scope_vmode;		\
-    _block.d_scope = Qtrue;		\
+    _block.flags = BLOCK_D_SCOPE;	\
     _block.d_vars = ruby_dyna_vars;	\
     ruby_block = &_block;
 
@@ -679,7 +684,7 @@ static VALUE ruby_wrapper;	/* security wrapper */
 static VALUE rb_eval _((VALUE,NODE*));
 static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
 static NODE *compile _((VALUE, char*, int));
-static VALUE rb_yield_0 _((VALUE, VALUE, VALUE));
+static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int));
 
 static VALUE rb_call _((VALUE,VALUE,ID,int,VALUE*,int));
 static VALUE module_setup _((VALUE,NODE*));
@@ -1159,7 +1164,7 @@ rb_eval_string_wrap(str, state)
     POP_CLASS();
     if (state) {
 	*state = status;
-	if (status == 0) {
+	if (status) {
 	    JUMP_TAG(status);
 	}
     }
@@ -1931,7 +1936,7 @@ rb_eval(self, node)
 		    char *file = ruby_sourcefile;
 		    int line = ruby_sourceline;
 
-		    _block.d_scope = Qfalse;
+		    _block.flags &= ~BLOCK_D_SCOPE;
 		    recv = rb_eval(self, node->nd_iter);
 		    PUSH_ITER(ITER_PRE);
 		    ruby_sourcefile = file;
@@ -2002,7 +2007,7 @@ rb_eval(self, node)
 	else {
 	    result = Qnil;
 	}
-	result = rb_yield_0(result, 0, 0);
+	result = rb_yield_0(result, 0, 0, Qfalse);
 	break;
 
       case NODE_RESCUE:
@@ -3114,8 +3119,9 @@ rb_f_iterator_p()
 }
 
 static VALUE
-rb_yield_0(val, self, klass)
+rb_yield_0(val, self, klass, acheck)
     VALUE val, self, klass;	/* OK */
+    int acheck;
 {
     NODE *node;
     volatile VALUE result = Qnil;
@@ -3138,7 +3144,7 @@ rb_yield_0(val, self, klass)
     old_scope = ruby_scope;
     ruby_scope = block->scope;
     ruby_block = block->prev;
-    if (block->d_scope) {
+    if (block->flags & BLOCK_D_SCOPE) {
 	/* put place holder for dynamic (in-block) local variables */
 	ruby_dyna_vars = new_dvar(0, 0, block->d_vars);
     }
@@ -3153,9 +3159,9 @@ rb_yield_0(val, self, klass)
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    if (nd_type(block->var) == NODE_MASGN)
-		massign(self, block->var, val, 1);
+		massign(self, block->var, val, acheck);
 	    else
-		assign(self, block->var, val, 1);
+		assign(self, block->var, val, acheck);
 	}
 	POP_TAG();
 	if (state) goto pop_state;
@@ -3211,13 +3217,13 @@ VALUE
 rb_yield(val)
     VALUE val;
 {
-    return rb_yield_0(val, 0, 0);
+    return rb_yield_0(val, 0, 0, Qfalse);
 }
 
 static VALUE
 rb_f_loop()
 {
-    for (;;) { rb_yield_0(Qnil, 0, 0); }
+    for (;;) { rb_yield_0(Qnil, 0, 0, Qfalse); }
 }
 
 static VALUE
@@ -3498,6 +3504,26 @@ rb_ensure(b_proc, data1, e_proc, data2)
     return_value(retval);
 
     if (state) JUMP_TAG(state);
+    return result;
+}
+
+VALUE
+rb_with_disable_interrupt(proc, data)
+    VALUE (*proc)();
+    VALUE data;
+{
+    VALUE result;		/* OK */
+    int status;
+
+    DEFER_INTS;
+    PUSH_TAG(PROT_NONE);
+    if ((status = EXEC_TAG()) == 0) {
+	result = (*proc)(data);
+    }
+    POP_TAG();
+    ALLOW_INTS;
+    if (status) JUMP_TAG(status);
+
     return result;
 }
 
@@ -3846,10 +3872,8 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 			    rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)",
 				     argc, opt);
 			}
-#if 1
 			ruby_frame->argc = opt;
 			ruby_frame->argv = local_vars+2;
-#endif
 		    }
 
 		    if (local_vars) {
@@ -4175,6 +4199,7 @@ eval(self, src, scope, file, line)
     struct BLOCK * volatile old_block;
     struct RVarmap * volatile old_d_vars;
     int volatile old_vmode;
+    struct FRAME * volatile old_frame;
     struct FRAME frame;
     char *filesave = ruby_sourcefile;
     int linesave = ruby_sourceline;
@@ -4195,7 +4220,8 @@ eval(self, src, scope, file, line)
 
 	/* PUSH BLOCK from data */
 	frame = data->frame;
-	frame.prev = ruby_frame;
+	frame.tmp = ruby_frame;	/* gc protection */
+	old_frame = ruby_frame;
 	ruby_frame = &(frame);
 	old_scope = ruby_scope;
 	ruby_scope = data->scope;
@@ -4233,7 +4259,7 @@ eval(self, src, scope, file, line)
     POP_CLASS();
     ruby_in_eval--;
     if (!NIL_P(scope)) {
-	ruby_frame = ruby_frame->prev;
+	ruby_frame = old_frame;
 	if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
 	    FL_SET(old_scope, SCOPE_DONT_RECYCLE);
 	ruby_scope = old_scope;
@@ -4296,6 +4322,7 @@ rb_f_eval(argc, argv, self)
     return eval(self, src, scope, file, line);
 }
 
+/* function to call func under the specified class/module context */
 static VALUE
 exec_under(func, under, args)
     VALUE (*func)();
@@ -4337,6 +4364,7 @@ eval_under_i(args)
     return eval(args[0], args[1], Qnil, (char*)args[2], (int)args[3]);
 }
 
+/* string eval under the class/module context */
 static VALUE
 eval_under(under, self, src, file, line)
     VALUE under, self, src;
@@ -4357,9 +4385,35 @@ static VALUE
 yield_under_i(self)
     VALUE self;
 {
-    return rb_yield_0(self, self, ruby_class);
+    if (ruby_block->flags & BLOCK_DYNAMIC) {
+	struct BLOCK * volatile old_block = ruby_block;
+	struct BLOCK block = *ruby_block;
+	volatile VALUE cbase = ruby_block->frame.cbase;
+	/* cbase should be pointed from volatile local variable */
+	/* to be protected from GC. 				*/
+	VALUE result;
+	int state;
+
+	/* copy the block to avoid modifying global data. */
+	block.frame.cbase = ruby_frame->cbase;
+	ruby_block = &block;
+
+	PUSH_TAG(PROT_NONE);
+	if ((state = EXEC_TAG()) == 0) {
+	    result = rb_yield_0(self, self, ruby_class, Qfalse);
+	}
+	POP_TAG();
+	ruby_block = old_block;
+	if (state) JUMP_TAG(state);
+	
+	return result;
+    }
+    /* static block, no need to restore */
+    ruby_block->frame.cbase = ruby_frame->cbase;
+    return rb_yield_0(self, self, ruby_class, Qfalse);
 }
 
+/* block eval under the class/module context */
 static VALUE
 yield_under(under, self)
     VALUE under, self;
@@ -4496,7 +4550,7 @@ find_file(file)
 		rb_ary_push(vpath, str);
 	    }
 	}
-	vpath = rb_ary_join(vpath, rb_str_new2(RUBY_PATH_SEP));
+	vpath = rb_ary_join(vpath, rb_str_new2(PATH_SEP));
 	path = STR2CSTR(vpath);
 	if (safe_level >= 2 && !rb_path_check(path)) {
 	    rb_raise(rb_eSecurityError, "loading from unsefe path %s", path);
@@ -4751,6 +4805,13 @@ rb_f_require(obj, fname)
     if (state) JUMP_TAG(state);
 
     return Qtrue;
+}
+
+VALUE
+rb_require(fname)
+    const char *fname;
+{
+    return rb_f_require(Qnil, rb_str_new2(fname));
 }
 
 static VALUE
@@ -5414,6 +5475,7 @@ proc_s_new(klass)
     else {
 	data->prev = 0;
     }
+    data->flags |= BLOCK_DYNAMIC;
 
     scope_dup(data->scope);
     proc_save_safe_level(proc);
@@ -5485,7 +5547,7 @@ proc_call(proc, args)
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
-	result = rb_yield_0(args, 0, 0);
+	result = rb_yield_0(args, 0, 0, Qtrue);
     }
     POP_TAG();
 
@@ -5871,7 +5933,7 @@ struct thread {
     VALUE wrapper;
 
     VALUE trace;
-    int misc;			/* misc. states (vmode/rb_trap_immediate) */
+    int flags;		/* misc. states (vmode/rb_trap_immediate/raised) */
 
     char *file;
     int   line;
@@ -5895,6 +5957,8 @@ struct thread {
 
     VALUE thread;
 };
+
+#define THREAD_RAISED 0x200
 
 static thread_t curr_thread = 0;
 static int num_waiting_on_fd = 0;
@@ -5954,17 +6018,22 @@ thread_mark(th)
     frame = th->frame;
     while (frame && frame != top_frame) {
 	frame = ADJ(frame);
-	if (frame->argv && !STACK(frame->argv)) {
-	    rb_gc_mark_frame(frame);
+	rb_gc_mark_frame(frame);
+	if (frame->tmp) {
+	    struct FRAME *tmp = ADJ(frame->tmp);
+
+	    while (tmp && tmp != top_frame) {
+		tmp = ADJ(tmp);
+		rb_gc_mark_frame(tmp);
+		tmp = tmp->prev;
+	    }
 	}
 	frame = frame->prev;
     }
     block = th->block;
     while (block) {
 	block = ADJ(block);
-	if (block->frame.argv && !STACK(block->frame.argv)) {
-	    rb_gc_mark_frame(&block->frame);
-	}
+	rb_gc_mark_frame(&block->frame);
 	block = block->prev;
     }
 }
@@ -6025,7 +6094,7 @@ rb_thread_save_context(th)
     th->wrapper = ruby_wrapper;
     th->dyna_vars = ruby_dyna_vars;
     th->block = ruby_block;
-    th->misc = scope_vmode | (rb_trap_immediate<<8);
+    th->flags = scope_vmode | (rb_trap_immediate<<8);
     th->iter = ruby_iter;
     th->tag = prot_tag;
     th->errinfo = ruby_errinfo;
@@ -6093,8 +6162,8 @@ rb_thread_restore_context(th, exit)
     ruby_wrapper = th->wrapper;
     ruby_dyna_vars = th->dyna_vars;
     ruby_block = th->block;
-    scope_vmode = th->misc&SCOPE_MASK;
-    rb_trap_immediate = th->misc>>8;
+    scope_vmode = th->flags&SCOPE_MASK;
+    rb_trap_immediate = (th->flags&0x100)?1:0;
     ruby_iter = th->iter;
     prot_tag = th->tag;
     ruby_errinfo = th->errinfo;
@@ -6563,18 +6632,19 @@ rb_thread_join(thread)
 {
     thread_t th = rb_thread_check(thread);
 
-    if (rb_thread_dead(th)) return thread;
-    if (th == curr_thread)
-	rb_raise(rb_eThreadError, "recursive join");
-    if ((th->wait_for & WAIT_JOIN) && th->join == curr_thread)
-	rb_raise(rb_eThreadError, "Thread#join: deadlock");
-    curr_thread->status = THREAD_STOPPED;
-    curr_thread->join = th;
-    num_waiting_on_join++;
-    curr_thread->wait_for |= WAIT_JOIN;
-    rb_thread_schedule();
+    if (!rb_thread_dead(th)) {
+	if (th == curr_thread)
+	    rb_raise(rb_eThreadError, "recursive join");
+	if ((th->wait_for & WAIT_JOIN) && th->join == curr_thread)
+	    rb_raise(rb_eThreadError, "Thread#join: deadlock - mutual join");
+	curr_thread->status = THREAD_STOPPED;
+	curr_thread->join = th;
+	num_waiting_on_join++;
+	curr_thread->wait_for |= WAIT_JOIN;
+	rb_thread_schedule();
+    }
 
-    if (!NIL_P(th->errinfo)) {
+    if (!NIL_P(th->errinfo) && (th->flags & THREAD_RAISED)) {
 	VALUE oldbt = get_backtrace(th->errinfo);
 	VALUE errat = make_backtrace();
 
@@ -6895,6 +6965,7 @@ rb_thread_create_0(fn, arg, klass)
     status = th->status;
     rb_thread_remove();
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
+	th->flags |= THREAD_RAISED;
 	if (state == TAG_FATAL) { 
 	    /* fatal error within this thread, need to stop whole script */
 	    main_thread->errinfo = ruby_errinfo;
@@ -6904,14 +6975,14 @@ rb_thread_create_0(fn, arg, klass)
 	    /* delegate exception to main_thread */
 	    rb_thread_raise(1, &ruby_errinfo, main_thread->thread);
 	}
-	else if (thread_abort || curr_thread->abort || RTEST(ruby_debug)) {
+	else if (thread_abort || th->abort || RTEST(ruby_debug)) {
 	    VALUE err = rb_exc_new(rb_eSystemExit, 0, 0);
 	    error_print();
 	    /* exit on main_thread */
 	    rb_thread_raise(1, &err, main_thread->thread);
 	}
 	else {
-	    curr_thread->errinfo = ruby_errinfo;
+	    th->errinfo = ruby_errinfo;
 	}
     }
     rb_thread_schedule();
@@ -6938,7 +7009,7 @@ rb_thread_yield(arg, th)
     thread_t th;
 {
     scope_dup(ruby_block->scope);
-    return rb_yield_0(th->thread, 0, 0);
+    return rb_yield_0(th->thread, 0, 0, Qfalse);
 }
 
 static VALUE
@@ -6969,7 +7040,8 @@ rb_thread_status(thread)
     thread_t th = rb_thread_check(thread);
 
     if (rb_thread_dead(th)) {
-	if (NIL_P(th->errinfo)) return Qfalse;
+	if (NIL_P(th->errinfo) && (th->flags & THREAD_RAISED))
+	    return Qfalse;
 	return Qnil;
     }
 
@@ -7320,7 +7392,7 @@ rb_f_catch(dmy, tag)
     t = rb_to_id(tag);
     PUSH_TAG(t);
     if ((state = EXEC_TAG()) == 0) {
-	val = rb_yield_0(tag, 0, 0);
+	val = rb_yield_0(tag, 0, 0, Qfalse);
     }
     else if (state == TAG_THROW && t == prot_tag->dst) {
 	val = prot_tag->retval;

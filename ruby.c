@@ -18,7 +18,6 @@
 #include "node.h"
 #include <stdio.h>
 #include <sys/types.h>
-#include <fcntl.h>
 #include <ctype.h>
 
 #ifdef __hpux
@@ -185,7 +184,7 @@ static void
 addpath(path)
     const char *path;
 {
-    const char sep = RUBY_PATH_SEP[0];
+    const char sep = PATH_SEP_CHAR;
 
     if (path == 0) return;
 #if defined(__CYGWIN32__)

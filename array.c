@@ -355,9 +355,12 @@ rb_ary_subary(ary, beg, len)
 {
     VALUE ary2;
 
-    if (len < 0) return Qnil;
     if (beg > RARRAY(ary)->len) return Qnil;
-    if (beg < 0) return Qnil;
+    if (beg < 0) {
+	len += beg;
+	beg = 0;
+    }
+    if (len < 0) return Qnil;
     if (beg + len > RARRAY(ary)->len) {
 	len = RARRAY(ary)->len - beg;
     }

@@ -538,7 +538,7 @@ dir_s_glob(dir, str)
 {
     char *p, *pend;
     char buffer[MAXPATHLEN], *buf = buffer;
-    char *t, *t0;
+    char *t;
     int nest;
     VALUE ary;
 
@@ -552,18 +552,14 @@ dir_s_glob(dir, str)
 
     while (p < pend) {
 	t = buf;
+	nest = 0;
 	while (p < pend && isdelim(*p)) p++;
 	while (p < pend && !isdelim(*p)) {
+	    if (*p == '{') nest+=2;
+	    if (*p == '}') nest+=3;
 	    *t++ = *p++;
 	}
 	*t = '\0';
-	t0 = buf;
-	nest = 0;
-	while (t0 < t) {
-	    if (*t0 == '{') nest+=2;
-	    if (*t0 == '}') nest+=3;
-	    t0++;
-	}
 	if (nest == 0) {
 	    push_globs(ary, buf);
 	}

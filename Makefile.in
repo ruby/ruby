@@ -234,7 +234,6 @@ enum.@OBJEXT@: enum.c ruby.h config.h defines.h intern.h
 error.@OBJEXT@: error.c ruby.h config.h defines.h intern.h env.h
 eval.@OBJEXT@: eval.c ruby.h config.h defines.h intern.h node.h env.h rubysig.h st.h dln.h
 file.@OBJEXT@: file.c ruby.h config.h defines.h intern.h rubyio.h rubysig.h
-fnmatch.@OBJEXT@: fnmatch.c config.h fnmatch.h
 gc.@OBJEXT@: gc.c ruby.h config.h defines.h intern.h rubysig.h st.h node.h env.h re.h regex.h
 hash.@OBJEXT@: hash.c ruby.h config.h defines.h intern.h st.h rubysig.h util.h
 inits.@OBJEXT@: inits.c ruby.h config.h defines.h intern.h

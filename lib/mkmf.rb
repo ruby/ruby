@@ -58,8 +58,8 @@ if /win32|djgpp|mingw32|m68k-human|i386-os2_emx/i =~ RUBY_PLATFORM
 else
   $null = open("/dev/null", "w")
 end
-LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} -I#{CONFIG['includedir']} #{CFLAGS} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
-CPP = "#{CONFIG['CPP']} -E -I#{$hdrdir} -I#{CONFIG['includedir']} #{CFLAGS} %s %s conftest.c"
+LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
+CPP = "#{CONFIG['CPP']} -E -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s conftest.c"
 
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
@@ -216,7 +216,7 @@ def find_library(lib, func, *paths)
   STDOUT.flush
 
   ldflags = $LDFLAGS
-  libs = "-l" + lib + " " + $libs 
+  libs = append_library($libs, lib)
   until try_link(<<"SRC", libs)
 int main() { return 0; }
 int t() { #{func}(); return 0; }
@@ -427,7 +427,7 @@ hdrdir = #{$hdrdir}
 
 CC = #{CONFIG["CC"]}
 
-CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I$(hdrdir) -I#{CONFIG["includedir"]} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
+CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I$(hdrdir) #{CFLAGS} #{$CFLAGS} -I#{CONFIG["includedir"]} #{$defs.join(" ")}
 CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}

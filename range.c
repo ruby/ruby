@@ -134,9 +134,6 @@ range_each(range)
 	    rb_yield(INT2NUM(i));
 	}
     }
-    else if (TYPE(b) == T_STRING) {
-	rb_str_upto(b, e, EXCL(range));
-    }
     else {			      /* generic each */
 	VALUE v = b;
 	ID le = EXCL(range)?'<':rb_intern("<=");

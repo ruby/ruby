@@ -39,8 +39,8 @@ def find_tk(tklib)
 end
 
 if have_header("tcl.h") && have_header("tk.h") &&
-    find_library("X11", "XOpenDisplay",
-		 "/usr/X11/lib", "/usr/X11R6/lib", "/usr/openwin/lib") &&
+    (/mswin32/ =~ RUBY_PLATFORM || find_library("X11", "XOpenDisplay",
+	"/usr/X11/lib", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
     find_tcl(tcllib) &&
     find_tk(tklib)
   create_makefile("tcltklib")

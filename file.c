@@ -160,6 +160,9 @@ rb_stat(file, st)
 	return fstat(fileno(fptr->f), st);
     }
     Check_SafeStr(file);
+#if defined DJGPP
+    if (RSTRING(file)->len == 0) return -1;
+#endif
     return stat(RSTRING(file)->ptr, st);
 }
 
@@ -1045,14 +1048,10 @@ rb_file_s_umask(argc, argv)
 #endif /* USE_CWGUSI */
 }
 
-#if defined(MSDOS) || defined(_WIN32) || defined(__human68k__)
-#define DOSISH 1
-#endif
-
 #if defined DOSISH
-#define ispathsep(x) ((x) == '/' || (x) == '\\')
+#define isdirsep(x) ((x) == '/' || (x) == '\\')
 #else
-#define ispathsep(x) ((x) == '/')
+#define isdirsep(x) ((x) == '/')
 #endif
 
 VALUE
@@ -1069,7 +1068,7 @@ rb_file_s_expand_path(argc, argv)
     s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
-	if (ispathsep(s[1]) || s[1] == '\0') {
+	if (isdirsep(s[1]) || s[1] == '\0') {
 	    char *dir = getenv("HOME");
 
 	    if (!dir) {
@@ -1084,7 +1083,7 @@ rb_file_s_expand_path(argc, argv)
 	    struct passwd *pwPtr;
 	    s++;
 #endif
-	    while (*s && !ispathsep(*s)) {
+	    while (*s && !isdirsep(*s)) {
 		*p++ = *s++;
 	    }
 	    *p = '\0';
@@ -1101,8 +1100,9 @@ rb_file_s_expand_path(argc, argv)
 	}
     }
 #if defined DOSISH
-    else if (isalpha(s[0]) && s[1] == ':' && ispathsep(s[2])) {
-	while (*s && !ispathsep(*s)) {
+    /* skip drive letter */
+    else if (isalpha(s[0]) && s[1] == ':' && isdirsep(s[2])) {
+	while (*s && !isdirsep(*s)) {
 	    *p++ = *s++;
 	}
     }
@@ -1130,10 +1130,10 @@ rb_file_s_expand_path(argc, argv)
 	    if (*(s+1)) {
 		switch (*++s) {
 		  case '.':
-		    if (*(s+1) == '\0' || ispathsep(*(s+1))) { 
+		    if (*(s+1) == '\0' || isdirsep(*(s+1))) { 
 			/* We must go back to the parent */
-			if (ispathsep(*p) && p > buf) p--;
-			while (p > buf && !ispathsep(*p)) p--;
+			if (isdirsep(*p) && p > buf) p--;
+			while (p > buf && !isdirsep(*p)) p--;
 		    }
 		    else {
 			*++p = '.';
@@ -1144,7 +1144,7 @@ rb_file_s_expand_path(argc, argv)
 #if defined DOSISH
 		  case '\\':
 #endif
-		    if (!ispathsep(*p)) *++p = '/'; 
+		    if (!isdirsep(*p)) *++p = '/'; 
 		    break;
 		  default:
 		    *++p = '.'; *++p = *s; break;
@@ -1155,14 +1155,14 @@ rb_file_s_expand_path(argc, argv)
 #if defined DOSISH
 	  case '\\':
 #endif
-	    if (!ispathsep(*p)) *++p = '/'; break;
+	    if (!isdirsep(*p)) *++p = '/'; break;
 	  default:
 	    *++p = *s;
 	}
     }
   
     /* Place a \0 at end. If path ends with a "/", delete it */
-    if (p == buf || !ispathsep(*p)) p++;
+    if (p == buf || !isdirsep(*p)) p++;
     *p = '\0';
 
     return rb_tainted_str_new2(buf);
@@ -1612,7 +1612,12 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
-    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_str_new2(RUBY_PATH_SEP));
+#ifdef DOSISH
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_str_new2("\\");
+#else
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
+#endif
+    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_str_new2(PATH_SEP));
 
     rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
     rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);

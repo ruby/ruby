@@ -907,10 +907,6 @@ rb_io_fptr_close(fptr)
     }
     else {
 	fptr_finalize(fptr);
-	if (fptr->pid) {
-	    rb_syswait(fptr->pid);
-	    fptr->pid = 0;
-	}
     }
     fptr->f = fptr->f2 = NULL;
     rb_thread_fd_close(fd);
@@ -935,6 +931,10 @@ rb_io_close(io)
 
     GetOpenFile(io, fptr);
     rb_io_fptr_close(fptr);
+    if (fptr->pid) {
+	rb_syswait(fptr->pid);
+	fptr->pid = 0;
+    }
 
     return Qnil;
 }

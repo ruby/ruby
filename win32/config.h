@@ -6,6 +6,7 @@
 #define HAVE_STDLIB_H 1
 #define HAVE_LIMITS_H 1
 #define HAVE_SYS_FILE_H 1
+#define HAVE_FCNTL_H 1
 /* #define HAVE_PWD_H 1       */
 /* #define HAVE_SYS_TIME_H 1  */
 /* #define HAVE_SYS_TIMES_H 1 */
@@ -38,8 +39,8 @@
 #define RSHIFT(x,y) ((x)>>y)
 #define FILE_COUNT _cnt
 #define DLEXT ".dll"
-#define RUBY_LIB ";/usr/local/lib/ruby;."
-#define RUBY_ARCHLIB "/usr/local/lib/ruby/i386-mswin32"
+#define RUBY_LIB "/usr/local/lib/ruby/1.3"
+#define RUBY_ARCHLIB "/usr/local/lib/ruby/1.3/i386-mswin32"
 #define RUBY_PLATFORM "i386-mswin32"
 
 #define SIZEOF_INT   4

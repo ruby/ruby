@@ -83,9 +83,8 @@ ext/Setup.emx
 ext/Setup.nt
 ext/Setup.x68
 ext/aix_mksym.rb
-ext/cygwin32_ld.rb
+ext/mswin32_extmk.rb
 ext/extmk.rb.in
-ext/extmk.rb.nt
 lib/CGI.rb
 lib/English.rb
 lib/Env.rb

@@ -103,7 +103,7 @@ init_funcname(buf, file)
 #endif
 
     sprintf(buf, FUNCNAME_PATTERN, slash + 1);
-    for (p = buf; *p; p++) {         /* Delete suffix it it exists */
+    for (p = buf; *p; p++) {         /* Delete suffix if it exists */
 	if (*p == '.') {
 	    *p = '\0'; break;
 	}
@@ -1605,7 +1605,7 @@ dln_find_1(fname, path, exe_flag)
 	int fspace;
 
 	/* extract a component */
-	ep = strchr(dp, RUBY_PATH_SEP[0]);
+	ep = strchr(dp, PATH_SEP[0]);
 	if (ep == NULL)
 	    ep = dp+strlen(dp);
 

@@ -432,6 +432,8 @@ VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
 VALUE rb_catch _((const char*,VALUE(*)(),VALUE));
 void rb_throw _((const char*,VALUE)) NORETURN;
 
+VALUE rb_require _((const char*));
+
 void ruby_init _((void));
 void ruby_options _((int, char**));
 void ruby_run _((void));

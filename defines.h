@@ -44,11 +44,16 @@
 #define FLUSH_REGISTER_WINDOWS /* empty */
 #endif
 
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
-#define RUBY_PATH_SEP ";"
-#else
-#define RUBY_PATH_SEP ":"
+#if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__)
+#define DOSISH 1
 #endif
+
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+#define PATH_SEP ";"
+#else
+#define PATH_SEP ":"
+#endif
+#define PATH_SEP_CHAR PATH_SEP[0]
 
 #if defined(__human68k__) || defined(__CYGWIN32__)
 #undef HAVE_RANDOM

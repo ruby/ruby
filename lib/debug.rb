@@ -68,7 +68,7 @@ class DEBUGGER__
       end
 
       case input
-      when /^b(?:reak)?\s+((?:[^:\n]+:)?.+)/
+      when /^b(?:reak)?\s+((?:[^:\n]+:)?.+)$/
 	pos = $1
 	if pos.index(":")
 	  file, pos = pos.split(":")
@@ -84,7 +84,7 @@ class DEBUGGER__
 	STDOUT.printf "Set breakpoint %d at %s:%s\n", @break_points.size, file,
 	  pname
 
-      when /^wat(?:ch)?\s+((?:[^:\n]+:)?.+)$/
+      when /^wat(?:ch)?\s+(.+)$/
 	exp = $1
 	@break_points.push [true, 1, exp]
 	STDOUT.printf "Set watchpoint %d\n", @break_points.size, exp
@@ -154,10 +154,10 @@ class DEBUGGER__
 	  end
 	end
 
-      when /^co(?:nt)?$/
+      when /^c(?:ont)?$/
 	return
 
-      when /^s(?:tep)?\s*(\d+)?$/
+      when /^s(?:tep)?\s+(\d+)?$/
 	if $1
 	  lev = $1.to_i
 	else
@@ -166,7 +166,7 @@ class DEBUGGER__
 	@stop_next = lev
 	return
 
-      when /^n(?:ext)?\s*(\d+)?$/
+      when /^n(?:ext)?\s+(\d+)?$/
 	if $1
 	  lev = $1.to_i
 	else
@@ -221,7 +221,7 @@ class DEBUGGER__
           STDOUT.printf "no sourcefile available for %s\n", binding_file
         end
 
-      when /^up\s*(\d+)?$/
+      when /^up\s+(\d+)?$/
 	previus_line = nil
         if $1
           lev = $1.to_i
@@ -237,7 +237,7 @@ class DEBUGGER__
         info, binding_file, binding_line = frame_info(frame_pos)
         STDOUT.printf "#%d %s\n", frame_pos, info
 
-      when /^down\s*(\d+)?$/
+      when /^down\s+(\d+)?$/
 	previus_line = nil
         if $1
           lev = $1.to_i
