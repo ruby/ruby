@@ -1,3 +1,7 @@
+Mon Sep 20 15:17:47 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/lib/ripper/tokenizer.rb: new file.
+
 Mon Sep 20 15:13:52 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ripper/test_scanner_events.rb: test #lineno and #column.
