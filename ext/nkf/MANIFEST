@@ -1,9 +1,0 @@
-MANIFEST
-depend
-extconf.rb
-lib/kconv.rb
-nkf.c
-nkf-utf8/config.h
-nkf-utf8/nkf.c
-nkf-utf8/utf8tbl.c
-test.rb

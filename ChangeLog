@@ -5,6 +5,8 @@ Mon Nov  1 13:59:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 	* ext/enumerator/extconf.rb, ext/fcntl/extconf.rb,
 	  ext/stringio/extconf.rb: added.
 
+	* MANIFEST, ext/**/MANIFEST: removed.
+
 Mon Nov  1 11:52:18 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (pipe_open): avoid conflict of variable name. [ruby-dev:24662]
