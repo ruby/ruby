@@ -1,3 +1,8 @@
+Thu Jul 15 22:59:48 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/extconf.rb: added dir_config for curses, ncurses,
+	termcap.
+
 Thu Jul 15 20:44:46 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* class.c: rdoc patch
