@@ -146,9 +146,22 @@ module RDoc
     # visibility of the corresponding AnyMethod object
 
     def set_visibility_for(methods, vis, singleton=false)
-      @method_list.each_with_index do |m,i|
+      count = 0
+      @method_list.each do |m|
         if methods.include?(m.name) && m.singleton == singleton
           m.visibility = vis
+          count += 1
+        end
+      end
+
+      return if count == methods.size || singleton
+
+      # perhaps we need to look at attributes
+
+      @attributes.each do |a|
+        if methods.include?(a.name)
+          a.visibility = vis
+          count += 1
         end
       end
     end
@@ -627,13 +640,14 @@ module RDoc
 
   # Represent attributes
   class Attr < CodeObject
-    attr_accessor :text, :name, :rw
+    attr_accessor :text, :name, :rw, :visibility
 
     def initialize(text, name, rw, comment)
       super()
       @text = text
       @name = name
       @rw = rw
+      @visibility = :public
       self.comment = comment
     end
 
