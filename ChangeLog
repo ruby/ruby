@@ -1,3 +1,8 @@
+Mon Dec 30 21:10:59 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* parse.y (yylex): use strncmp instead of strcmp. 
+	  accept "__END__\r\n".  ([ruby-dev:19241])
+
 Mon Dec 30 19:10:30 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/extmk.rb: split --make argument contains options, assume

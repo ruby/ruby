@@ -4321,8 +4321,8 @@ yylex()
 	    }
 	}
 	tokfix();
-	if (strcmp(tok(), "__END__") == 0 &&
-	    lex_p - lex_pbeg == 7 &&
+	if (strncmp(tok(), "__END__", 7) == 0 &&
+	    (lex_p - lex_pbeg == 7 || lex_p - lex_pbeg == 8) &&
 	    (lex_pend == lex_p || *lex_p == '\n' || *lex_p == '\r')) {
 	    ruby__end__seen = 1;
 	    lex_lastline = 0;
