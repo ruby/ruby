@@ -1,3 +1,14 @@
+Wed Mar 24 20:49:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/uri.rb: Documented (thanks Dmitry V. Sabanin).
+	* lib/uri/common.rb: Ditto.
+	* lib/uri/ftp.rb: Ditto.
+	* lib/uri/generic.rb: Ditto.
+	* lib/uri/http.rb: Ditto.
+	* lib/uri/https.rb: Ditto.
+	* lib/uri/ldap.rb: Ditto.
+	* lib/uri/mailto.rb: Ditto.
+
 Wed Mar 24 18:48:05 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb ($ruby, $topdir, $hdrdir): should not be affected by

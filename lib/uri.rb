@@ -1,37 +1,23 @@
 #
-# $Id$
+# = uri.rb
 #
-# Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
-# You can redistribute it and/or modify it under the same term as Ruby.
+# URI support for Ruby
 #
-
-=begin
-
-  Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
-  You can redistribute it and/or modify it under the same term as Ruby.
-
-= URI - URI support for Ruby
-
-=end
+# Author:: Akira Yamada <akira@ruby-lang.org>
+# Documentation:: Akira Yamada <akira@ruby-lang.org>, Dmitry V. Sabanin <sdmitry@lrn.ru>
+# License:: 
+#  Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
+#  You can redistribute it and/or modify it under the same term as Ruby.
+# Revision:: $Id$
+# 
+# See URI for documentation
+#
 
 module URI
   VERSION_CODE = '000911'.freeze
   VERSION = VERSION_CODE.scan(/../).collect{|n| n.to_i}.join('.').freeze
 end
 
-=begin
-
-== Components
-
-  * ((<URI>)) Module
-  * ((<URI::Generic>)) Class
-  * ((<URI::FTP>)) Class
-  * ((<URI::HTTP>)) Class
-  * ((<URI::HTTPS>)) Class
-  * ((<URI::LDAP>)) Class
-  * ((<URI::MailTo>)) Class
-
-=end
 require 'uri/common'
 require 'uri/generic'
 require 'uri/ftp'

@@ -1,19 +1,19 @@
+# = uri/common.rb
 #
-# $Id$
+# Author:: Akira Yamada <akira@ruby-lang.org>
+# Revision:: $Id$
+# License:: 
+#   You can redistribute it and/or modify it under the same term as Ruby.
 #
-# Copyright (c) 2001 akira yamada <akira@ruby-lang.org>
-# You can redistribute it and/or modify it under the same term as Ruby.
-#
-
-=begin
-
-== URI
-
-=end
 
 module URI
   module REGEXP
+    #
+    # Patterns used to parse URI's
+    #
     module PATTERN
+      # :stopdoc:
+
       # RFC 2396 (URI Generic Syntax)
       # RFC 2732 (IPv6 Literal Addresses in URL's)
       # RFC 2373 (IPv6 Addressing Architecture)
@@ -143,23 +143,23 @@ module URI
 
       # XXX:
       X_ABS_URI = "
-	(#{PATTERN::SCHEME}):                     (?# 1: scheme)
-	(?:
-	   (#{PATTERN::OPAQUE_PART})              (?# 2: opaque)
-	|
-	   (?:(?:
-	     //(?:
-		 (?:(?:(#{PATTERN::USERINFO})@)?  (?# 3: userinfo)
-		   (?:(#{PATTERN::HOST})(?::(\\d*))?))?(?# 4: host, 5: port)
-	       |
-		 (#{PATTERN::REG_NAME})           (?# 6: registry)
-	       )
-	     |
-	     (?!//))                              (?# XXX: '//' is the mark for hostport)
-	     (#{PATTERN::ABS_PATH})?              (?# 7: path)
-	   )(?:\\?(#{PATTERN::QUERY}))?           (?# 8: query)
-	)
-	(?:\\#(#{PATTERN::FRAGMENT}))?            (?# 9: fragment)
+        (#{PATTERN::SCHEME}):                     (?# 1: scheme)
+        (?:
+           (#{PATTERN::OPAQUE_PART})              (?# 2: opaque)
+        |
+           (?:(?:
+             //(?:
+                 (?:(?:(#{PATTERN::USERINFO})@)?  (?# 3: userinfo)
+                   (?:(#{PATTERN::HOST})(?::(\\d*))?))?(?# 4: host, 5: port)
+               |
+                 (#{PATTERN::REG_NAME})           (?# 6: registry)
+               )
+             |
+             (?!//))                              (?# XXX: '//' is the mark for hostport)
+             (#{PATTERN::ABS_PATH})?              (?# 7: path)
+           )(?:\\?(#{PATTERN::QUERY}))?           (?# 8: query)
+        )
+        (?:\\#(#{PATTERN::FRAGMENT}))?            (?# 9: fragment)
       "
       X_REL_URI = "
         (?:
@@ -179,13 +179,16 @@ module URI
         (?:\\?(#{PATTERN::QUERY}))?              (?# 7: query)
         (?:\\#(#{PATTERN::FRAGMENT}))?           (?# 8: fragment)
       "
+      # :startdoc:
     end # PATTERN
+
+    # :stopdoc:
 
     # for URI::split
     ABS_URI = Regexp.new('^' + PATTERN::X_ABS_URI + '$', #'
-			 Regexp::EXTENDED, 'N').freeze
+                         Regexp::EXTENDED, 'N').freeze
     REL_URI = Regexp.new('^' + PATTERN::X_REL_URI + '$', #'
-			 Regexp::EXTENDED, 'N').freeze
+                         Regexp::EXTENDED, 'N').freeze
 
     # for URI::extract
     URI_REF     = Regexp.new(PATTERN::URI_REF, false, 'N').freeze
@@ -195,7 +198,7 @@ module URI
     # for URI::escape/unescape
     ESCAPED = Regexp.new(PATTERN::ESCAPED, false, 'N').freeze
     UNSAFE  = Regexp.new("[^#{PATTERN::UNRESERVED}#{PATTERN::RESERVED}]",
-			 false, 'N').freeze
+                         false, 'N').freeze
 
     # for Generic#initialize
     SCHEME   = Regexp.new("^#{PATTERN::SCHEME}$", false, 'N').freeze #"
@@ -208,32 +211,33 @@ module URI
     REL_PATH = Regexp.new("^#{PATTERN::REL_PATH}$", false, 'N').freeze #"
     QUERY    = Regexp.new("^#{PATTERN::QUERY}$", false, 'N').freeze #"
     FRAGMENT = Regexp.new("^#{PATTERN::FRAGMENT}$", false, 'N').freeze #"
+    # :startdoc:
   end # REGEXP
 
   module Util
     def make_components_hash(klass, array_hash)
       tmp = {}
       if array_hash.kind_of?(Array) &&
-	  array_hash.size == klass.component.size - 1
-	klass.component[1..-1].each_index do |i|
-	  begin
-	    tmp[klass.component[i + 1]] = array_hash[i].clone
-	  rescue TypeError
-	    tmp[klass.component[i + 1]] = array_hash[i]
-	  end
-	end
+          array_hash.size == klass.component.size - 1
+        klass.component[1..-1].each_index do |i|
+          begin
+            tmp[klass.component[i + 1]] = array_hash[i].clone
+          rescue TypeError
+            tmp[klass.component[i + 1]] = array_hash[i]
+          end
+        end
 
       elsif array_hash.kind_of?(Hash)
-	array_hash.each do |key, value|
-	  begin
-	    tmp[key] = value.clone
-	  rescue TypeError
-	    tmp[key] = value
-	  end
-	end
+        array_hash.each do |key, value|
+          begin
+            tmp[key] = value.clone
+          rescue TypeError
+            tmp[key] = value
+          end
+        end
       else
-	raise ArgumentError, 
-	  "expected Array of or Hash of components of #{klass.to_s} (#{klass.component[1..-1].join(', ')})"
+        raise ArgumentError, 
+          "expected Array of or Hash of components of #{klass.to_s} (#{klass.component[1..-1].join(', ')})"
       end
       tmp[:scheme] = klass.to_s.sub(/\A.*::/, '').downcase
 
@@ -245,24 +249,72 @@ module URI
   module Escape
     include REGEXP
 
+    #
+    # == Synopsis
+    #
+    #   URI.escape(str [, unsafe])
+    #
+    # == Args
+    #
+    # +str+::
+    #   String to replaces in.
+    # +unsafe+::
+    #   Regexp that matches all symbols that must be replaced with codes.
+    #   By default uses <tt>REGEXP::SAFE</tt>.
+    #
+    # == Description
+    #
+    # Escapes the string, replacing all unsafe characters with codes.
+    #
+    # == Usage
+    #
+    #   require 'uri'
+    #
+    #   enc_uri = URI.escape("http://foobar.com/?a=\11\15")
+    #   p enc_uri
+    #   # => "http://foobar.com/?a=%09%0D"
+    #
+    #   p URI.unescape(enc_uri)
+    #   # => "http://foobar.com/?a=\t\r"
+    #
     def escape(str, unsafe = UNSAFE)
       unless unsafe.kind_of?(Regexp)
-	# perhaps unsafe is String object
-	unsafe = Regexp.new(Regexp.quote(unsafe), false, 'N')
+        # perhaps unsafe is String object
+        unsafe = Regexp.new(Regexp.quote(unsafe), false, 'N')
       end
       str.gsub(unsafe) do |us|
-	tmp = ''
-	us.each_byte do |uc|
-	  tmp << sprintf('%%%02X', uc)
-	end
-	tmp
+        tmp = ''
+        us.each_byte do |uc|
+          tmp << sprintf('%%%02X', uc)
+        end
+        tmp
       end
     end
     alias encode escape
-
+    #
+    # == Synopsis
+    #
+    #   URI.unescape(str)
+    #
+    # == Args
+    #
+    # +str+::
+    #   Unescapes the string.
+    #
+    # == Usage
+    #
+    #   require 'uri'
+    #
+    #   enc_uri = URI.escape("http://foobar.com/?a=\11\15")
+    #   p enc_uri
+    #   # => "http://foobar.com/?a=%09%0D"
+    #
+    #   p URI.unescape(enc_uri)
+    #   # => "http://foobar.com/?a=\t\r"
+    #
     def unescape(str)
       str.gsub(ESCAPED) do
-	$&[1,2].hex.chr
+        $&[1,2].hex.chr
       end
     end
     alias decode unescape
@@ -272,20 +324,55 @@ module URI
   extend Escape
 
   @@schemes = {}
-
+  
+  #
+  # Base class for all URI exceptions.
+  #
   class Error < StandardError; end
-  class InvalidURIError < Error; end # it is not URI.
-  class InvalidComponentError < Error; end # it is not component of URI.
-  class BadURIError < Error; end # the URI is valid but it is bad for the position.
+  #
+  # Not a URI.
+  #
+  class InvalidURIError < Error; end
+  #
+  # Not a URI component.
+  #
+  class InvalidComponentError < Error; end
+  #
+  # URI is valid, bad usage is not.
+  #
+  class BadURIError < Error; end
 
-=begin
-
-=== Methods
-
---- URI::split(uri)
-
-=end
-
+  #
+  # == Synopsis
+  #
+  #   URI::split(uri)
+  #
+  # == Args
+  #
+  # +uri+::
+  #   String with URI.
+  #
+  # == Description
+  #
+  # Splits the string on following parts and returns array with result:
+  #
+  #   * Scheme
+  #   * Userinfo
+  #   * Host
+  #   * Port
+  #   * Registry
+  #   * Path
+  #   * Opaque
+  #   * Query
+  #   * Fragment
+  # 
+  # == Usage
+  #
+  #   require 'uri'
+  #
+  #   p URI.split("http://www.ruby-lang.org/")
+  #   # => ["http", nil, "www.ruby-lang.org", nil, nil, "/", nil, nil, nil]
+  #
   def self.split(uri)
     case uri
     when ''
@@ -293,7 +380,7 @@ module URI
 
     when ABS_URI
       scheme, opaque, userinfo, host, port, 
-	registry, path, query, fragment = $~[1..-1]
+        registry, path, query, fragment = $~[1..-1]
 
       # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
 
@@ -308,12 +395,12 @@ module URI
       # server        = [ [ userinfo "@" ] hostport ]
 
       if !scheme
-	raise InvalidURIError, 
-	  "bad URI(absolute but no scheme): #{uri}"
+        raise InvalidURIError, 
+          "bad URI(absolute but no scheme): #{uri}"
       end
       if !opaque && (!path && (!host && !registry))
-	raise InvalidURIError,
-	  "bad URI(absolute but no path): #{uri}" 
+        raise InvalidURIError,
+          "bad URI(absolute but no path): #{uri}" 
       end
 
     when REL_URI
@@ -321,13 +408,13 @@ module URI
       opaque = nil
 
       userinfo, host, port, registry, 
-	rel_segment, abs_path, query, fragment = $~[1..-1]
+        rel_segment, abs_path, query, fragment = $~[1..-1]
       if rel_segment && abs_path
-	path = rel_segment + abs_path
+        path = rel_segment + abs_path
       elsif rel_segment
-	path = rel_segment
+        path = rel_segment
       elsif abs_path
-	path = abs_path
+        path = abs_path
       end
 
       # URI-reference = [ absoluteURI | relativeURI ] [ "#" fragment ]
@@ -348,41 +435,83 @@ module URI
     path = '' if !path && !opaque # (see RFC2396 Section 5.2)
     ret = [
       scheme, 
-      userinfo, host, port, 	# X
-      registry,			# X
-      path, 			# Y
-      opaque,			# Y
+      userinfo, host, port,         # X
+      registry,                        # X
+      path,                         # Y
+      opaque,                        # Y
       query,
       fragment
     ]
     return ret
   end
 
-=begin
-
---- URI::parse(uri_str)
-
-=end
+  #
+  # == Synopsis
+  #
+  #   URI::parse(uri_str)
+  #
+  # == Args
+  #
+  # +uri_str+::
+  #   String with URI.
+  #
+  # == Description
+  #
+  # Creates one of the URI's subclasses instance from the string.
+  #  
+  # == Raises
+  #
+  # URI::InvalidURIError
+  #   Raised if URI given is not a correct one.
+  #
+  # == Usage
+  #
+  #   require 'uri'
+  #
+  #   uri = URI.parse("http://www.ruby-lang.org/")
+  #   p uri
+  #   # => #<URI::HTTP:0x202281be URL:http://www.ruby-lang.org/>
+  #   p uri.scheme 
+  #   # => "http" 
+  #   p uri.host 
+  #   # => "www.ruby-lang.org" 
+  # 
   def self.parse(uri)
     scheme, userinfo, host, port, 
       registry, path, opaque, query, fragment = self.split(uri)
 
     if scheme && @@schemes.include?(scheme.upcase)
       @@schemes[scheme.upcase].new(scheme, userinfo, host, port, 
-				   registry, path, opaque, query, 
-				   fragment)
+                                   registry, path, opaque, query, 
+                                   fragment)
     else
       Generic.new(scheme, userinfo, host, port, 
-		  registry, path, opaque, query, 
-		  fragment)
+                  registry, path, opaque, query, 
+                  fragment)
     end
   end
 
-=begin
-
---- URI::join(str[, str, ...])
-
-=end
+  #
+  # == Synopsis
+  #
+  #   URI::join(str[, str, ...])
+  #
+  # == Args
+  #
+  # +str+::
+  #   String(s) to work with
+  #
+  # == Description
+  #
+  # Joins URIs.
+  #
+  # == Usage
+  #
+  #   require 'uri'
+  #
+  #   p URI.join("http:/localhost/","main.rbx")
+  #   # => #<URI::HTTP:0x2022ac02 URL:http:/localhost/main.php>
+  #
   def self.join(*str)
     u = self.parse(str[0])
     str[1 .. -1].each do |x|
@@ -391,11 +520,30 @@ module URI
     u
   end
 
-=begin
-
---- URI::extract(str[, schemes])
-
-=end
+  #
+  # == Synopsis
+  #
+  #   URI::extract(str[, schemes][,&blk])
+  #
+  # == Args
+  #
+  # +str+:: 
+  #   String to extract URIs from.
+  # +schemes+::
+  #   Limit URI matching to a specific schemes.
+  #
+  # == Description
+  #
+  # Extracts URIs from a string. If block given, iterates through all matched URIs.
+  # Returns nil if block given or array with matches.
+  #
+  # == Usage
+  #
+  #   require "uri"
+  #
+  #   URI.extract("text here http://foo.bar.org/bla and here mailto:test@ruby.com and here also.")
+  #   # => ["http://foo.bar.com/foobar", "mailto:foo@bar.com"]
+  #
   def self.extract(str, schemes = nil, &block)
     if block_given?
       str.scan(regexp(schemes)) { yield $& }
@@ -407,30 +555,37 @@ module URI
     end
   end
 
-=begin
-
---- URI::regexp([match_schemes])
-
-    Returns a Regexp object which matches to URI-like strings.
-    If MATCH_SCHEMES given, resulting regexp matches to URIs
-    whose scheme is one of the MATCH_SCHEMES.
-
-    The Regexp object returned by this method includes arbitrary
-    number of capture group (parentheses).  Never rely on its
-    number.
-
-      # extract first URI from html_string
-      html_string.slice(URI.regexp)
-
-      # remove ftp URIs
-      html_string.sub(URI.regexp(['ftp'])
-
-      # You should not rely on the number of parentheses
-      html_string.scan(URI.regexp) do |*matches|
-        p $&
-      end
-
-=end
+  #
+  # == Synopsis
+  #
+  #   URI::regexp([match_schemes])
+  #
+  # == Args
+  #
+  # +match_schemes+:: 
+  #   Array of schemes. If given, resulting regexp matches to URIs
+  #   whose scheme is one of the match_schemes.
+  # 
+  # == Description
+  # Returns a Regexp object which matches to URI-like strings.
+  # The Regexp object returned by this method includes arbitrary
+  # number of capture group (parentheses).  Never rely on it's number.
+  # 
+  # == Usage
+  #
+  #   require 'uri'
+  #
+  #   # extract first URI from html_string
+  #   html_string.slice(URI.regexp)
+  # 
+  #   # remove ftp URIs
+  #   html_string.sub(URI.regexp(['ftp'])
+  # 
+  #   # You should not rely on the number of parentheses
+  #   html_string.scan(URI.regexp) do |*matches|
+  #     p $&
+  #   end
+  #
   def self.regexp(schemes = nil)
     unless schemes
       ABS_URI_REF
@@ -439,4 +594,4 @@ module URI
     end
   end
 
-end # URI
+end
