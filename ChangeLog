@@ -1,3 +1,8 @@
+Wed Aug 13 13:50:59 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): should pass some
+	  class to first argument of Data_Wrap_Struct(). (ruby-bugs PR#1109)
+
 Tue Aug 12 16:55:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in: static link libraries to LIBRUBY_SO with static linked

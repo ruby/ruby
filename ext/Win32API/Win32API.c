@@ -53,7 +53,7 @@ Win32API_initialize(self, dllname, proc, import, export)
     hdll = LoadLibrary(RSTRING(dllname)->ptr);
     if (!hdll)
 	rb_raise(rb_eRuntimeError, "LoadLibrary: %s\n", RSTRING(dllname)->ptr);
-    rb_iv_set(self, "__hdll__", Data_Wrap_Struct(self, 0, Win32API_FreeLibrary, hdll));
+    rb_iv_set(self, "__hdll__", Data_Wrap_Struct(rb_cData, 0, Win32API_FreeLibrary, hdll));
     hproc = GetProcAddress(hdll, RSTRING(proc)->ptr);
     if (!hproc) {
 	str = rb_str_new3(proc);
