@@ -114,7 +114,7 @@ dep: $(SRCS)
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $^ -MM | \\
 	$(RUBY) -p -e 'BEGIN{S = []' \\
 		-e 'while !ARGV.empty? and /^(\\w+)=(.*)/ =~ ARGV[0]' \\
-		  -e 'S << [/\#{Regexp.quote($$2)}/, "$$(\#{$$1})"]' \\
+		  -e 'S << [/\#{Regexp.quote($$2)}\\//, "$$(\#{$$1})/"]' \\
 		  -e 'ARGV.shift' \\
 		-e 'end' \\
 		-e '}' -e 'S.each(&method(:gsub!))' -- \\
