@@ -3144,6 +3144,7 @@ unsigned char *mime_pattern[] = {
    (unsigned char *)"\075?ISO-2022-JP?Q?",
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
    (unsigned char *)"\075?UTF-8?B?",
+   (unsigned char *)"\075?UTF-8?Q?",
 #endif
    (unsigned char *)"\075?US-ASCII?Q?",
    NULL
@@ -3154,7 +3155,7 @@ unsigned char *mime_pattern[] = {
 int (*mime_priority_func[])PROTO((int c2, int c1, int c0)) = {
     e_iconv, s_iconv, 0, 0, 0, 0,
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
-    w_iconv,
+    w_iconv, w_iconv,
 #endif
     0,
 };
@@ -3162,7 +3163,7 @@ int (*mime_priority_func[])PROTO((int c2, int c1, int c0)) = {
 int      mime_encode[] = {
     JAPANESE_EUC, SHIFT_JIS,ISO8859_1, ISO8859_1, X0208, X0201,
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
-    UTF8,
+    UTF8, UTF8,
 #endif
     ASCII,
     0
@@ -3171,7 +3172,7 @@ int      mime_encode[] = {
 int      mime_encode_method[] = {
     'B', 'B','Q', 'B', 'B', 'Q',
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
-    'B',
+    'B', 'Q',
 #endif
     'Q',
     0
