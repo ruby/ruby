@@ -143,6 +143,14 @@ Mon Jan 26 15:11:47 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* sample/exyacc.rb: escape '}' to avoid warning.
 
+Mon Jan 26 14:41:46 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator::initialize): preserve
+	  singleton_method_added method [ruby-dev:22685]
+
+	* lib/delegate.rb (Delegator::initialize): use Kernel::raise
+	  instead of mere raise.  [ruby-dev:22681]
+
 Mon Jan 26 12:47:17 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: define CONST84 when TCL_MAJOR_VERSION == 7

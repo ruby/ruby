@@ -36,7 +36,8 @@ module Find
     paths.collect!{|d| d.dup}
     while file = paths.shift
       catch(:prune) do
-	yield file
+        next unless File.exist? file
+	yield file.dup.taint
 	begin
 	  if File.lstat(file).directory? then
 	    d = Dir.open(file)
@@ -50,7 +51,7 @@ module Find
 		else
 		  f = File.join(file, f)
 		end
-		paths.unshift f
+		paths.unshift f.untaint
 	      end
 	    ensure
 	      d.close
