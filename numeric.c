@@ -2768,6 +2768,9 @@ Init_Numeric()
 #elif defined(_UNICOSMP)
     /* Turn off floating point exceptions for divide by zero, etc. */
     _set_Creg(0, 0);
+#elif defined(__BORLANDC__)
+    /* Turn off floating point exceptions for overflow, etc. */
+    _control87(MCW_EM, MCW_EM);
 #endif
     id_coerce = rb_intern("coerce");
     id_to_i = rb_intern("to_i");

@@ -1,3 +1,8 @@
+Tue Jan 11 09:37:53 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* numeric.c (Init_Numeric): turn off floating point exceptions
+	  on bcc32. "1e300".to_f had crashed by overflow.
+
 Mon Jan 10 23:07:45 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_autoload): hide internal data from ruby level.
