@@ -598,8 +598,8 @@ class Pathname    # * File *
   # See <tt>File.chmod</tt>.  Changes permissions.
   def chmod(mode) File.chmod(mode, @path) end
 
-  # See <tt>File.chmod</tt>.
-  def lchmod(mode) File.chmod(mode, @path) end
+  # See <tt>File.lchmod</tt>.
+  def lchmod(mode) File.lchmod(mode, @path) end
 
   # See <tt>File.chown</tt>.  Change owner and group of file.
   def chown(owner, group) File.chown(owner, group, @path) end
