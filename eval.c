@@ -6028,6 +6028,9 @@ static VALUE
 mcall(args, method)
     VALUE args, method;
 {
+    if (NIL_P(args)) {
+	return method_call(0, 0, method);
+    }
     if (TYPE(args) == T_ARRAY) {
 	return method_call(RARRAY(args)->len, RARRAY(args)->ptr, method);
     }
