@@ -71,9 +71,7 @@ time_modify(time)
  *
  *  Synonym for <code>Time.new</code>. Returns a +Time+ object
  *  initialized tot he current system time.
- */
-
-/*
+ *
  *  call-seq:
  *     Time.new -> time
  *  

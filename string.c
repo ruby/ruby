@@ -2236,7 +2236,6 @@ uscore_get()
     return line;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     sub!(pattern, replacement)    => $_ or nil
@@ -2245,6 +2244,7 @@ static VALUE
  *  Equivalent to <code>$_.sub!(<i>args</i>)</code>.
  */
 
+static VALUE
 rb_f_sub_bang(argc, argv)
     int argc;
     VALUE *argv;
@@ -2252,7 +2252,6 @@ rb_f_sub_bang(argc, argv)
     return rb_str_sub_bang(argc, argv, uscore_get());
 }
 
-static VALUE
 /*
  *  call-seq:
  *     sub(pattern, replacement)   => $_
@@ -2262,6 +2261,7 @@ static VALUE
  *  <code>$_</code> will be updated if substitution occurs.
  */
 
+static VALUE
 rb_f_sub(argc, argv)
     int argc;
     VALUE *argv;
@@ -2274,7 +2274,6 @@ rb_f_sub(argc, argv)
     return str;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     gsub!(pattern, replacement)    => string or nil
@@ -2288,6 +2287,7 @@ static VALUE
  *     $_                 #=> "quick brown fox"
  */
 
+static VALUE
 rb_f_gsub_bang(argc, argv)
     int argc;
     VALUE *argv;
@@ -2295,7 +2295,6 @@ rb_f_gsub_bang(argc, argv)
     return rb_str_gsub_bang(argc, argv, uscore_get());
 }
 
-static VALUE
 /*
  *  call-seq:
  *     gsub(pattern, replacement)    => string
@@ -2309,6 +2308,7 @@ static VALUE
  *     $_                    #=> "q**ck br*wn f*x"
  */
 
+static VALUE
 rb_f_gsub(argc, argv)
     int argc;
     VALUE *argv;
@@ -3562,7 +3562,6 @@ rb_str_split(str, sep0)
     return rb_str_split_m(1, &sep, str);
 }
 
-static VALUE
 /*
  *  call-seq:
  *     split([pattern [, limit]])    => array
@@ -3571,6 +3570,7 @@ static VALUE
  *  See <code>String#split</code>.
  */
 
+static VALUE
 rb_f_split(argc, argv)
     int argc;
     VALUE *argv;

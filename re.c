@@ -1613,10 +1613,7 @@ rb_reg_match_m(re, str)
  * Document-method: compile
  *
  * Synonym for <code>Regexp.new</code>
- */
-
-
-/*
+ *
  *  call-seq:
  *     Regexp.new(string [, options [, lang]])       => regexp
  *     Regexp.new(regexp)                            => regexp

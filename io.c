@@ -409,7 +409,6 @@ rb_io_fwrite(ptr, len, f)
     return len - n;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.write(string)    => integer
@@ -428,6 +427,7 @@ static VALUE
  *     That was 15 bytes of data
  */
 
+static VALUE
 io_write(io, str)
     VALUE io, str;
 {
@@ -468,7 +468,6 @@ rb_io_write(io, str)
     return rb_funcall(io, id_write, 1, str);
 }
 
-VALUE
 /*
  *  call-seq:
  *     ios << obj     => ios
@@ -484,7 +483,7 @@ VALUE
  *     Hello world!
  */
 
-
+VALUE
 rb_io_addstr(io, str)
     VALUE io, str;
 {
@@ -492,7 +491,6 @@ rb_io_addstr(io, str)
     return io;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.flush    => ios
@@ -509,6 +507,7 @@ static VALUE
  *     no newline
  */
 
+static VALUE
 rb_io_flush(io)
     VALUE io;
 {
@@ -524,8 +523,6 @@ rb_io_flush(io)
     return io;
 }
 
-static VALUE
-
 /*
  *  call-seq:
  *     ios.pos     => integer
@@ -539,6 +536,7 @@ static VALUE
  *     f.pos    #=> 17
  */
 
+static VALUE
 rb_io_tell(io)
      VALUE io;
 {
@@ -567,7 +565,6 @@ rb_io_seek(io, offset, whence)
     return INT2FIX(0);
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.seek(amount, whence=SEEK_SET) -> 0
@@ -589,6 +586,7 @@ static VALUE
  *     f.readline                  #=> "And so on...\n"
  */
 
+static VALUE
 rb_io_seek_m(argc, argv, io)
     int argc;
     VALUE *argv;
@@ -604,7 +602,6 @@ rb_io_seek_m(argc, argv, io)
     return rb_io_seek(io, offset, whence);
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.pos = integer    => 0
@@ -616,6 +613,7 @@ static VALUE
  *     f.gets   #=> "This is line two\n"
  */
 
+static VALUE
 rb_io_set_pos(io, offset)
      VALUE io, offset;
 {
@@ -630,7 +628,6 @@ rb_io_set_pos(io, offset)
     return OFFT2NUM(pos);
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.rewind    => 0
@@ -645,6 +642,7 @@ static VALUE
  *     f.readline   #=> "This is line one\n"
  */
 
+static VALUE
 rb_io_rewind(io)
     VALUE io;
 {
@@ -661,7 +659,6 @@ rb_io_rewind(io)
     return INT2FIX(0);
 }
 
-VALUE
 /*
  *  call-seq:
  *     ios.eof     => true or false
@@ -675,6 +672,7 @@ VALUE
  *     f.eof   #=> true
  */
 
+VALUE
 rb_io_eof(io)
     VALUE io;
 {
@@ -699,7 +697,6 @@ rb_io_eof(io)
     return Qtrue;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.sync    => true or false
@@ -713,6 +710,7 @@ static VALUE
  *     f.sync   #=> false
  */
 
+static VALUE
 rb_io_sync(io)
     VALUE io;
 {
@@ -722,7 +720,6 @@ rb_io_sync(io)
     return (fptr->mode & FMODE_SYNC) ? Qtrue : Qfalse;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.sync = boolean   => boolean
@@ -738,6 +735,7 @@ static VALUE
  *  <em>(produces no output)</em>
  */
 
+static VALUE
 rb_io_set_sync(io, mode)
     VALUE io, mode;
 {
@@ -753,7 +751,6 @@ rb_io_set_sync(io, mode)
     return mode;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.fsync   => 0 or nil
@@ -766,6 +763,7 @@ static VALUE
  *  operating system actually writes it to disk.
  */
 
+static VALUE
 rb_io_fsync(io)
     VALUE io;
 {
@@ -787,7 +785,6 @@ rb_io_fsync(io)
 #endif
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.fileno    => fixnum
@@ -800,6 +797,7 @@ static VALUE
  *     $stdout.fileno   #=> 1
  */
 
+static VALUE
 rb_io_fileno(io)
     VALUE io;
 {
@@ -810,8 +808,6 @@ rb_io_fileno(io)
     fd = fileno(fptr->f);
     return INT2FIX(fd);
 }
-
-static VALUE
 
 /*
  *  call-seq:
@@ -833,6 +829,7 @@ static VALUE
  *     In parent, child pid is 26209
  */
 
+static VALUE
 rb_io_pid(io)
     VALUE io;
 {
@@ -844,8 +841,6 @@ rb_io_pid(io)
     return INT2FIX(fptr->pid);
 }
 
-static VALUE
-
 /*
  * call-seq:
  *   ios.inspect   => string
@@ -853,6 +848,7 @@ static VALUE
  * Return a string describing this IO object.
  */
 
+static VALUE
 rb_io_inspect(obj)
     VALUE obj;
 {
@@ -873,7 +869,6 @@ rb_io_inspect(obj)
     return rb_str_new2(buf);
 }
 
-static VALUE
 /*
  *  call-seq:
  *     ios.to_io -> ios
@@ -881,6 +876,7 @@ static VALUE
  *  Returns <em>ios</em>.
  */
 
+static VALUE
 rb_io_to_io(io)
     VALUE io;
 {
@@ -1022,8 +1018,6 @@ read_all(fptr, siz, str)
     return str;
 }
 
-static VALUE
-io_read(argc, argv, io)
 /*
  *  call-seq:
  *     ios.read([integer [, buffer]])    => string, buffer, or nil
@@ -1038,6 +1032,8 @@ io_read(argc, argv, io)
  *     f.read(16)   #=> "This is line one"
  */
 
+static VALUE
+io_read(argc, argv, io)
     int argc;
     VALUE *argv;
     VALUE io;
@@ -1314,9 +1310,6 @@ rb_io_gets(io)
     return rb_io_getline_fast(fptr, '\n');
 }
 
-static VALUE
-rb_io_gets_m(argc, argv, io)
-    int argc;
 /*
  *  call-seq:
  *     ios.gets(sep_string=$/)   => string or nil
@@ -1334,6 +1327,9 @@ rb_io_gets_m(argc, argv, io)
  *     $_                          #=> "This is line one\n"
  */
 
+static VALUE
+rb_io_gets_m(argc, argv, io)
+    int argc;
     VALUE *argv;
     VALUE io;
 {
@@ -1355,9 +1351,6 @@ rb_io_gets_m(argc, argv, io)
     return str;
 }
 
-static VALUE
-rb_io_lineno(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.lineno    => integer
@@ -1377,6 +1370,9 @@ rb_io_lineno(io)
  *     f.lineno   #=> 2
  */
 
+static VALUE
+rb_io_lineno(io)
+    VALUE io;
 {
     OpenFile *fptr;
 
@@ -1385,9 +1381,6 @@ rb_io_lineno(io)
     return INT2NUM(fptr->lineno);
 }
 
-static VALUE
-rb_io_set_lineno(io, lineno)
-    VALUE io, lineno;
 /*
  *  call-seq:
  *     ios.lineno = integer    => integer
@@ -1405,6 +1398,9 @@ rb_io_set_lineno(io, lineno)
  *     $. # lineno of last read   #=> 1001
  */
 
+static VALUE
+rb_io_set_lineno(io, lineno)
+    VALUE io, lineno;
 {
     OpenFile *fptr;
 
@@ -1439,9 +1435,6 @@ argf_lineno()
     return lineno;
 }
 
-static VALUE
-rb_io_readline(argc, argv, io)
-    int argc;
 /*
  *  call-seq:
  *     ios.readline(sep_string=$/)   => string
@@ -1450,6 +1443,9 @@ rb_io_readline(argc, argv, io)
  *  <code>EOFError</code> on end of file.
  */
 
+static VALUE
+rb_io_readline(argc, argv, io)
+    int argc;
     VALUE *argv;
     VALUE io;
 {
@@ -1461,9 +1457,6 @@ rb_io_readline(argc, argv, io)
     return line;
 }
 
-static VALUE
-rb_io_readlines(argc, argv, io)
-    int argc;
 /*
  *  call-seq:
  *     ios.readlines(sep_string=$/)  =>   array
@@ -1479,6 +1472,9 @@ rb_io_readlines(argc, argv, io)
  *     f.readlines[0]   #=> "This is line one\n"
  */
 
+static VALUE
+rb_io_readlines(argc, argv, io)
+    int argc;
     VALUE *argv;
     VALUE io;
 {
@@ -1500,9 +1496,6 @@ rb_io_readlines(argc, argv, io)
     return ary;
 }
 
-static VALUE
-rb_io_each_line(argc, argv, io)
-    int argc;
 /*
  *  call-seq:
  *     ios.each(sep_string=$/)      {|line| block }  => ios
@@ -1523,6 +1516,9 @@ rb_io_each_line(argc, argv, io)
  *     4: And so on...
  */
 
+static VALUE
+rb_io_each_line(argc, argv, io)
+    int argc;
     VALUE *argv;
     VALUE io;
 {
@@ -1543,9 +1539,6 @@ rb_io_each_line(argc, argv, io)
     return io;
 }
 
-static VALUE
-rb_io_each_byte(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.each_byte {|byte| block }  => nil
@@ -1560,6 +1553,9 @@ rb_io_each_byte(io)
  *     checksum                           #=> 12
  */
 
+static VALUE
+rb_io_each_byte(io)
+    VALUE io;
 {
     OpenFile *fptr;
     FILE *f;
@@ -1589,9 +1585,6 @@ rb_io_each_byte(io)
     return io;
 }
 
-VALUE
-rb_io_getc(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.getc   => fixnum or nil
@@ -1604,6 +1597,9 @@ rb_io_getc(io)
  *     f.getc   #=> 104
  */
 
+VALUE
+rb_io_getc(io)
+    VALUE io;
 {
     OpenFile *fptr;
     FILE *f;
@@ -1647,9 +1643,6 @@ rb_getc(f)
     return c;
 }
 
-static VALUE
-rb_io_readchar(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.readchar   => fixnum
@@ -1658,6 +1651,9 @@ rb_io_readchar(io)
  *  <code>EOFError</code> on end of file.
  */
 
+static VALUE
+rb_io_readchar(io)
+    VALUE io;
 {
     VALUE c = rb_io_getc(io);
 
@@ -1667,9 +1663,6 @@ rb_io_readchar(io)
     return c;
 }
 
-VALUE
-rb_io_ungetc(io, c)
-    VALUE io, c;
 /*
  *  call-seq:
  *     ios.ungetc(integer)   => nil
@@ -1686,6 +1679,9 @@ rb_io_ungetc(io, c)
  *     f.getc                     #=> 84
  */
 
+VALUE
+rb_io_ungetc(io, c)
+    VALUE io, c;
 {
     OpenFile *fptr;
     int cc = NUM2INT(c);
@@ -1700,9 +1696,6 @@ rb_io_ungetc(io, c)
     return Qnil;
 }
 
-static VALUE
-rb_io_isatty(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.isatty   => true or false
@@ -1715,6 +1708,9 @@ rb_io_isatty(io)
  *     File.new("/dev/tty").isatty   #=> true
  */
 
+static VALUE
+rb_io_isatty(io)
+    VALUE io;
 {
     OpenFile *fptr;
 
@@ -1818,9 +1814,6 @@ rb_io_close(io)
     return Qnil;
 }
 
-static VALUE
-rb_io_close_m(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.close   => nil
@@ -1832,6 +1825,9 @@ rb_io_close_m(io)
  *  garbage collector.
  */
 
+static VALUE
+rb_io_close_m(io)
+    VALUE io;
 {
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
@@ -1848,9 +1844,6 @@ io_close(io)
     return rb_funcall(io, rb_intern("close"), 0, 0);
 }
 
-static VALUE
-rb_io_closed(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.closed?    => true or false
@@ -1869,7 +1862,9 @@ rb_io_closed(io)
  *     f.closed?       #=> true
  */
 
-
+static VALUE
+rb_io_closed(io)
+    VALUE io;
 {
     OpenFile *fptr;
 
@@ -1877,9 +1872,6 @@ rb_io_closed(io)
     return (fptr->f || fptr->f2)?Qfalse:Qtrue;
 }
 
-static VALUE
-rb_io_close_read(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.close_read    => nil
@@ -1898,6 +1890,9 @@ rb_io_close_read(io)
  *     	from prog.rb:3
  */
 
+static VALUE
+rb_io_close_read(io)
+    VALUE io;
 {
     OpenFile *fptr;
     int n;
@@ -1921,9 +1916,6 @@ rb_io_close_read(io)
     return Qnil;
 }
 
-static VALUE
-rb_io_close_write(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.close_write   => nil
@@ -1943,6 +1935,9 @@ rb_io_close_write(io)
  *     	from prog.rb:3
  */
 
+static VALUE
+rb_io_close_write(io)
+    VALUE io;
 {
     OpenFile *fptr;
     int n;
@@ -1965,9 +1960,6 @@ rb_io_close_write(io)
     return Qnil;
 }
 
-static VALUE
-rb_io_sysseek(argc, argv, io)
-    int argc;
 /*
  *  call-seq:
  *     ios.sysseek(offset, whence=SEEK_SET)   => integer
@@ -1981,6 +1973,9 @@ rb_io_sysseek(argc, argv, io)
  *     f.sysread(10)                  #=> "And so on."
  */
 
+static VALUE
+rb_io_sysseek(argc, argv, io)
+    int argc;
     VALUE *argv;
     VALUE io;
 {
@@ -2007,9 +2002,6 @@ rb_io_sysseek(argc, argv, io)
     return OFFT2NUM(pos);
 }
 
-static VALUE
-rb_io_syswrite(io, str)
-    VALUE io, str;
 /*
  *  call-seq:
  *     ios.syswrite(string )   => integer
@@ -2023,6 +2015,9 @@ rb_io_syswrite(io, str)
  *     f.syswrite("ABCDEF")   #=> 6
  */
 
+static VALUE
+rb_io_syswrite(io, str)
+    VALUE io, str;
 {
     OpenFile *fptr;
     FILE *f;
@@ -2049,9 +2044,6 @@ rb_io_syswrite(io, str)
     return LONG2FIX(n);
 }
 
-static VALUE
-rb_io_sysread(argc, argv, io)
-    int argc;
 /*
  *  call-seq:
  *     ios.sysread(integer )    => string
@@ -2066,6 +2058,9 @@ rb_io_sysread(argc, argv, io)
  *     f.sysread(16)   #=> "This is line one"
  */
 
+static VALUE
+rb_io_sysread(argc, argv, io)
+    int argc;
     VALUE *argv;
     VALUE io;
 {
@@ -2113,9 +2108,6 @@ rb_io_sysread(argc, argv, io)
     return str;
 }
 
-VALUE
-rb_io_binmode(io)
-    VALUE io;
 /*
  *  call-seq:
  *     ios.binmode    => ios
@@ -2125,6 +2117,9 @@ rb_io_binmode(io)
  *  cannot be reset to nonbinary mode.
  */
 
+VALUE
+rb_io_binmode(io)
+    VALUE io;
 {
 #if defined(_WIN32) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__) || defined(__EMX__)
     OpenFile *fptr;
@@ -2731,9 +2726,6 @@ rb_io_popen(str, argc, argv, klass)
     return port;
 }
 
-static VALUE
-rb_io_s_popen(argc, argv, klass)
-    int argc;
 /*
  *  call-seq:
  *     IO.popen(cmd_string, mode="r" )               => io
@@ -2775,6 +2767,9 @@ rb_io_s_popen(argc, argv, klass)
  *     26166 is here, f is #<IO:0x401b3d44>
  */
 
+static VALUE
+rb_io_s_popen(argc, argv, klass)
+    int argc;
     VALUE *argv;
     VALUE klass;
 {
@@ -2819,9 +2814,6 @@ rb_open_file(argc, argv, io)
     return io;
 }
 
-static VALUE
-rb_io_s_open(argc, argv, klass)
-    int argc;
 /*
  *  call-seq:
  *     IO.open(fd, mode_string="r" )               => io
@@ -2835,6 +2827,9 @@ rb_io_s_open(argc, argv, klass)
  *     
  */
 
+static VALUE
+rb_io_s_open(argc, argv, klass)
+    int argc;
     VALUE *argv;
     VALUE klass;
 {
@@ -2847,9 +2842,6 @@ rb_io_s_open(argc, argv, klass)
     return io;
 }
 
-static VALUE
-rb_io_s_sysopen(argc, argv)
-    int argc;
 /*
  *  call-seq:
  *     IO.sysopen(path, [mode, [perm]])  => fixnum
@@ -2861,6 +2853,9 @@ rb_io_s_sysopen(argc, argv)
  *     
  */
 
+static VALUE
+rb_io_s_sysopen(argc, argv)
+    int argc;
     VALUE *argv;
 {
     VALUE fname, vmode, perm;
@@ -2882,7 +2877,6 @@ rb_io_s_sysopen(argc, argv)
     return INT2NUM(fd);
 }
 
-static VALUE
 /*
  *  call-seq:
  *     open(path [, mode [, perm]] )                => io or nil
@@ -2965,6 +2959,7 @@ static VALUE
  *     Got: in Child
  */
 
+static VALUE
 rb_f_open(argc, argv)
     int argc;
     VALUE *argv;
@@ -3099,9 +3094,6 @@ io_reopen(io, nfile)
     return io;
 }
 
-static VALUE
-rb_io_reopen(argc, argv, file)
-    int argc;
 /*
  *  call-seq:
  *     ios.reopen(other_IO)         => ios 
@@ -3118,6 +3110,9 @@ rb_io_reopen(argc, argv, file)
  *     f2.readlines[0]   #=> "This is line one\n"
  */
 
+static VALUE
+rb_io_reopen(argc, argv, file)
+    int argc;
     VALUE *argv;
     VALUE file;
 {
@@ -3239,9 +3234,6 @@ rb_io_init_copy(dest, io)
     return dest;
 }
 
-VALUE
-rb_io_printf(argc, argv, out)
-    int argc;
 /*
  *  call-seq:
  *     ios.printf(format_string [, obj, ...] )   => nil
@@ -3251,6 +3243,9 @@ rb_io_printf(argc, argv, out)
  *  for details.
  */
 
+VALUE
+rb_io_printf(argc, argv, out)
+    int argc;
     VALUE argv[];
     VALUE out;
 {
@@ -3258,7 +3253,6 @@ rb_io_printf(argc, argv, out)
     return Qnil;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     printf(io, string [, obj ... ] )    => nil
@@ -3270,6 +3264,7 @@ static VALUE
  *     $defout.write(sprintf(string, obj, ...)
  */
 
+static VALUE
 rb_f_printf(argc, argv)
     int argc;
     VALUE argv[];
@@ -3290,9 +3285,6 @@ rb_f_printf(argc, argv)
     return Qnil;
 }
 
-VALUE
-rb_io_print(argc, argv, out)
-    int argc;
 /*
  *  call-seq:
  *     ios.print()             => nil
@@ -3313,6 +3305,9 @@ rb_io_print(argc, argv, out)
  *     This is 100 percent.
  */
 
+VALUE
+rb_io_print(argc, argv, out)
+    int argc;
     VALUE *argv;
     VALUE out;
 {
@@ -3345,7 +3340,6 @@ rb_io_print(argc, argv, out)
     return Qnil;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     print(obj, ...)    => nil
@@ -3369,6 +3363,7 @@ static VALUE
  *     cat, 1, 2, 3, 99
  */
 
+static VALUE
 rb_f_print(argc, argv)
     int argc;
     VALUE *argv;
@@ -3377,9 +3372,6 @@ rb_f_print(argc, argv)
     return Qnil;
 }
 
-static VALUE
-rb_io_putc(io, ch)
-    VALUE io, ch;
 /*
  *  call-seq:
  *     ios.putc(obj)    => obj
@@ -3396,6 +3388,9 @@ rb_io_putc(io, ch)
  *     AA
  */
 
+static VALUE
+rb_io_putc(io, ch)
+    VALUE io, ch;
 {
     char c = NUM2CHR(ch);
 
@@ -3403,7 +3398,6 @@ rb_io_putc(io, ch)
     return ch;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     putc(int)   => int
@@ -3413,6 +3407,7 @@ static VALUE
  *    $defout.putc(int)
  */
 
+static VALUE
 rb_f_putc(recv, ch)
     VALUE recv, ch;
 {
@@ -3436,9 +3431,6 @@ io_puts_ary(ary, out)
     return Qnil;
 }
 
-VALUE
-rb_io_puts(argc, argv, out)
-    int argc;
 /*
  *  call-seq:
  *     ios.puts(obj, ...)    => nil
@@ -3459,6 +3451,9 @@ rb_io_puts(argc, argv, out)
  *     test
  */
 
+VALUE
+rb_io_puts(argc, argv, out)
+    int argc;
     VALUE *argv;
     VALUE out;
 {
@@ -3492,7 +3487,6 @@ rb_io_puts(argc, argv, out)
     return Qnil;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     puts(obj, ...)    => nil
@@ -3502,6 +3496,7 @@ static VALUE
  *      $defout.puts(obj, ...)
  */
 
+static VALUE
 rb_f_puts(argc, argv)
     int argc;
     VALUE *argv;
@@ -3518,7 +3513,6 @@ rb_p(obj)			/* for debug print within C code */
     rb_io_write(rb_stdout, rb_default_rs);
 }
 
-static VALUE
 /*
  *  call-seq:
  *     p(obj, ...)    => nil
@@ -3537,6 +3531,7 @@ static VALUE
  *     #<S name="dave", state="TX">
  */
 
+static VALUE
 rb_f_p(argc, argv)
     int argc;
     VALUE *argv;
@@ -3552,7 +3547,6 @@ rb_f_p(argc, argv)
     return Qnil;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     obj.display(port=$>)    => nil
@@ -3576,6 +3570,7 @@ static VALUE
  *     1cat456
  */
 
+static VALUE
 rb_obj_display(argc, argv, self)
     int argc;
     VALUE *argv;
@@ -3684,9 +3679,6 @@ prep_path(io, path)
     fptr->path = strdup(path);
 }
 
-static VALUE
-rb_io_initialize(argc, argv, io)
-    int argc;
 /*
  *  call-seq:
  *     IO.new(fd, mode)   => io
@@ -3705,6 +3697,9 @@ rb_io_initialize(argc, argv, io)
  *     World
  */
 
+static VALUE
+rb_io_initialize(argc, argv, io)
+    int argc;
     VALUE *argv;
     VALUE io;
 {
@@ -3739,8 +3734,6 @@ rb_io_initialize(argc, argv, io)
     return io;
 }
 
-static VALUE
-
 /*
  *  call-seq:
  *     File.new(filename, mode="r")            => file
@@ -3762,6 +3755,7 @@ static VALUE
  *     f = File.new("newfile", File::CREAT|File::TRUNC|File::RDWR, 0644)
  */
 
+static VALUE
 rb_file_initialize(argc, argv, io)
     int argc;
     VALUE *argv;
@@ -3785,9 +3779,6 @@ rb_file_initialize(argc, argv, io)
     return io;
 }
 
-static VALUE
-rb_io_s_new(argc, argv, klass)
-    int argc;
 /*
  *  call-seq:
  *     IO.new(fd, mode_string)   => io
@@ -3806,6 +3797,9 @@ rb_io_s_new(argc, argv, klass)
  *     World
  */
 
+static VALUE
+rb_io_s_new(argc, argv, klass)
+    int argc;
     VALUE *argv;
     VALUE klass;
 {
@@ -3818,10 +3812,6 @@ rb_io_s_new(argc, argv, klass)
     return rb_class_new_instance(argc, argv, klass);
 }
 
-static VALUE
-rb_io_s_for_fd(argc, argv, klass)
-    int argc;
-
 /*
  *  call-seq:
  *     IO.for_fd(fd, mode)    => io
@@ -3830,6 +3820,9 @@ rb_io_s_for_fd(argc, argv, klass)
  *     
  */
 
+static VALUE
+rb_io_s_for_fd(argc, argv, klass)
+    int argc;
     VALUE *argv;
     VALUE klass;
 {
@@ -4020,7 +4013,6 @@ argf_getline(argc, argv)
     return line;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     gets(separator=$/)    => string or nil
@@ -4050,6 +4042,7 @@ static VALUE
  *  parameter is gradually losing favor in the Ruby community.
  */
 
+static VALUE
 rb_f_gets(argc, argv)
     int argc;
     VALUE *argv;
@@ -4093,7 +4086,6 @@ rb_gets()
     return line;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     readline(separator=$/    => string
@@ -4102,6 +4094,7 @@ static VALUE
  *  +readline+ raises +EOFError+ at end of file.
  */
 
+static VALUE
 rb_f_readline(argc, argv)
     int argc;
     VALUE *argv;
@@ -4118,10 +4111,11 @@ rb_f_readline(argc, argv)
     return line;
 }
 
-static VALUE
 /*
  * obsolete
  */
+
+static VALUE
 rb_f_getc()
 {
     rb_warn("getc is obsolete; use STDIN.getc instead");
@@ -4131,7 +4125,6 @@ rb_f_getc()
     return rb_io_getc(rb_stdin);
 }
 
-static VALUE
 /*
  *  call-seq:
  *     readlines(separator=$/)    => array
@@ -4140,6 +4133,7 @@ static VALUE
  *  <code>Kernel.gets(<i>aString</i>)</code> until the end of file.
  */
 
+static VALUE
 rb_f_readlines(argc, argv)
     int argc;
     VALUE *argv;
@@ -4155,7 +4149,6 @@ rb_f_readlines(argc, argv)
     return ary;
 }
 
-static VALUE
 /*
  *  call-seq:
  *     `cmd`    => string
@@ -4170,6 +4163,7 @@ static VALUE
  *     $?.exitstatus            #=> 99
  */
 
+static VALUE
 rb_f_backquote(obj, str)
     VALUE obj, str;
 {
@@ -4191,11 +4185,6 @@ rb_f_backquote(obj, str)
 #include <sys/select.h>
 #endif
 
-static VALUE
-rb_f_select(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
 /*
  *  call-seq:
  *     IO.select(read_array 
@@ -4206,6 +4195,11 @@ rb_f_select(argc, argv, obj)
  *  See <code>Kernel#select</code>.
  */
 
+static VALUE
+rb_f_select(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
 {
     VALUE read, write, except, timeout, res, list;
     fd_set rset, wset, eset, pset;
@@ -4438,12 +4432,6 @@ rb_io_ctl(io, req, arg, io_p)
 #endif
 }
 
-static VALUE
-rb_io_ioctl(argc, argv, io)
-    int argc;
-    VALUE *argv;
-    VALUE io;
-
 /*
  *  call-seq:
  *     ios.ioctl(integer_cmd, arg)    => integer
@@ -4456,6 +4444,11 @@ rb_io_ioctl(argc, argv, io)
  *  all platforms.
  */
 
+static VALUE
+rb_io_ioctl(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
 {
     VALUE req, arg;
 
@@ -4463,11 +4456,6 @@ rb_io_ioctl(argc, argv, io)
     return rb_io_ctl(io, req, arg, 1);
 }
 
-static VALUE
-rb_io_fcntl(argc, argv, io)
-    int argc;
-    VALUE *argv;
-    VALUE io;
 /*
  *  call-seq:
  *     ios.fcntl(integer_cmd, arg)    => integer
@@ -4481,6 +4469,11 @@ rb_io_fcntl(argc, argv, io)
  *  Not implemented on all platforms.
  */
 
+static VALUE
+rb_io_fcntl(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
 {
 #ifdef HAVE_FCNTL
     VALUE req, arg;
@@ -4492,7 +4485,6 @@ rb_io_fcntl(argc, argv, io)
     return Qnil;		/* not reached */
 #endif
 }
-
 
 /*
  *  call-seq:
@@ -4512,6 +4504,7 @@ rb_io_fcntl(argc, argv, io)
  *     
  *     hello
  */
+
 static VALUE
 rb_f_syscall(argc, argv)
     int argc;
@@ -4621,11 +4614,6 @@ io_new_instance(args)
     return rb_class_new_instance(2, (VALUE*)args+1, *(VALUE*)args);
 }
 
-static VALUE
-rb_io_s_pipe(klass)
-    VALUE klass;
-{
-#ifndef __human68k__
 /*
  *  call-seq:
  *     IO.pipe -> array
@@ -4662,6 +4650,11 @@ rb_io_s_pipe(klass)
  *     Parent got: <Hi Dad>
  */
 
+static VALUE
+rb_io_s_pipe(klass)
+    VALUE klass;
+{
+#ifndef __human68k__
     int pipes[2], state;
     VALUE r, w, args[3];
 
@@ -4717,11 +4710,6 @@ io_s_foreach(arg)
     return Qnil;
 }
 
-static VALUE
-rb_io_s_foreach(argc, argv)
-    int argc;
-    VALUE *argv;
-{
 /*
  *  call-seq:
  *     IO.foreach(name, sep_string=$/) {|line| block }   => nil
@@ -4739,6 +4727,11 @@ rb_io_s_foreach(argc, argv)
  *     GOT And so on...
  */     
 
+static VALUE
+rb_io_s_foreach(argc, argv)
+    int argc;
+    VALUE *argv;
+{
     VALUE fname, io;
     OpenFile *fptr;
     struct foreach_arg arg;
@@ -4764,11 +4757,6 @@ io_s_readlines(arg)
     return rb_io_readlines(arg->argc, &arg->sep, arg->io);
 }
 
-static VALUE
-rb_io_s_readlines(argc, argv, io)
-    int argc;
-    VALUE *argv;
-    VALUE io;
 /*
  *  call-seq:
  *     IO.readlines(name, sep_string=$/)   => array
@@ -4782,6 +4770,11 @@ rb_io_s_readlines(argc, argv, io)
  *     
  */
 
+static VALUE
+rb_io_s_readlines(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
 {
     VALUE fname;
     struct foreach_arg arg;
@@ -4802,11 +4795,6 @@ io_s_read(arg)
     return io_read(arg->argc, &arg->sep, arg->io);
 }
 
-static VALUE
-rb_io_s_read(argc, argv, io)
-    int argc;
-    VALUE *argv;
-    VALUE io;
 /*
  *  call-seq:
  *     IO.read(rane, [length [, offset]] )   => string
@@ -4820,6 +4808,11 @@ rb_io_s_read(argc, argv, io)
  *     IO.read("testfile", 20, 10)   #=> "ne one\nThis is line "
  */
 
+static VALUE
+rb_io_s_read(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
 {
     VALUE fname, offset;
     struct foreach_arg arg;
