@@ -1,5 +1,9 @@
 2005-04-02  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
+	* lib/tkextlib/treectrl/tktreectrl.rb: support TreeCtrl's cvs head.
+
+2005-04-02  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
 	* lib/tkextlib/blt/component.rb: add TreeCtrl#legend_window_create().
 
 	* sample/tkextlib/blt/graph6.rb: use legend_window_create().

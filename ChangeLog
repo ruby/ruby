@@ -1,3 +1,17 @@
+Sat Apr  2 16:59:46 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: forgot to update RELEASE_DATE
+
+	* ext/tk/lib/tk/variable.rb: fix namespace trouble when autoloading
+
+	* ext/tk/lib/tk/palette.rb: define Tcl variable 'tkPalette' as global
+
+	* ext/tk/lib/tk/dialog.rb: use array2tk_list method when calling
+	  Tk.ip_eval.
+
+	* ext/tk/lib/tk/autoload.rb: add autoload entry 'TkDialogObj' and 
+	  'TkWarningObj'
+
 Sat Apr  2 13:23:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* hash.c (env_key): ENV.index is deprecated as well as Hash#index.

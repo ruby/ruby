@@ -35,6 +35,7 @@ module TkPalette
       fail "2nd arg need to be Hash"
     end
 
+    tk_call('global', "tkPalette")
     colors.each{|key, value|
       begin
         if win.cget(key) == tk_call('set', "tkPalette(#{key})")

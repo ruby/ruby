@@ -47,8 +47,10 @@ autoload :TkConsole,          'tk/console'
 
 autoload :TkDialog,           'tk/dialog'
 autoload :TkDialog2,          'tk/dialog'
+autoload :TkDialogObj,        'tk/dialog'
 autoload :TkWarning,          'tk/dialog'
 autoload :TkWarning2,         'tk/dialog'
+autoload :TkWarningObj,       'tk/dialog'
 
 autoload :TkEntry,            'tk/entry'
 
