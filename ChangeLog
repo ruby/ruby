@@ -1,3 +1,9 @@
+Fri Oct  6 14:50:24 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb.in, lib/mkmf.rb: remove "DESTDIR =".
+
+	* Makefile.in, win32/Makefile.sub, ruby.1: renamed -X to -C.
+
 Thu Oct  5 18:02:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_obj_dup): should have propagated taint flag.

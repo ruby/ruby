@@ -381,7 +381,6 @@ VPATH = #{$srcdir}
 
 topdir = #{$topdir}
 hdrdir = #{$top_srcdir}
-DESTDIR = 
 
 CC = @CC@
 

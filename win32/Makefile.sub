@@ -102,7 +102,7 @@ OBJS          = array.obj \
 all:		miniruby$(EXEEXT) rbconfig.rb ext/extmk.rb \
 		$(LIBRUBY) $(MISCLIBS)
 		set LIB=../../win32;$(ORGLIBPATH)
-		@.\miniruby$(EXEEXT) -Xext extmk.rb 
+		@.\miniruby$(EXEEXT) -Cext extmk.rb 
 
 ruby: $(PROGRAM)
 rubyw: $(WPROGRAM)
@@ -154,7 +154,7 @@ install:	rbconfig.rb
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.obj ext/vc*.pdb *.obj *.res
-		@-.\miniruby$(EXEEXT) -Xext extmk.rb clean
+		@-.\miniruby$(EXEEXT) -Cext extmk.rb clean
 
 distclean:	clean
 		@rm -f Makefile ext/extmk.rb config.h

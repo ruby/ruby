@@ -407,7 +407,6 @@ LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}
 RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
 RUBY_SO_NAME = #{CONFIG["RUBY_SO_NAME"]}
 
-DESTDIR =
 prefix = $(DESTDIR)#{CONFIG["prefix"]}
 exec_prefix = $(DESTDIR)#{CONFIG["exec_prefix"]}
 libdir = $(DESTDIR)#{$libdir}#{target_prefix}

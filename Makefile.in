@@ -83,7 +83,7 @@ OBJS	      = array.@OBJEXT@ \
 		$(MISSING)
 
 all:		miniruby$(EXEEXT) @PREP@ rbconfig.rb $(LIBRUBY)
-		@@MINIRUBY@ -Xext extmk.rb @EXTSTATIC@
+		@@MINIRUBY@ -Cext extmk.rb @EXTSTATIC@
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
 		@rm -f $@
@@ -108,7 +108,7 @@ install:	rbconfig.rb
 
 clean:;		@rm -f $(OBJS) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES) $(MAINOBJ) rbconfig.rb
 		@rm -f ext/extinit.c ext/extinit.@OBJEXT@ dmyext.@OBJEXT@
-		@-@MINIRUBY@ -Xext extmk.rb clean 2> /dev/null || true
+		@-@MINIRUBY@ -Cext extmk.rb clean 2> /dev/null || true
 		@rm -f $(PROGRAM) miniruby$(EXEEXT)
 
 distclean:	clean
