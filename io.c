@@ -2963,9 +2963,11 @@ next_argv()
     OpenFile *fptr;
     int stdout_binmode = 0;
 
-    GetOpenFile(rb_stdout, fptr);
-    if (fptr->mode & FMODE_BINMODE)
-	stdout_binmode = 1;
+    if (TYPE(rb_stdout) == T_FILE) {
+        GetOpenFile(rb_stdout, fptr);
+        if (fptr->mode & FMODE_BINMODE)
+            stdout_binmode = 1;
+    }
 
     if (init_p == 0) {
 	if (RARRAY(rb_argv)->len > 0) {

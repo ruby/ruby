@@ -1,3 +1,8 @@
+Tue Aug 19 11:19:33 2003  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* io.c (next_argv): should not call GetOpenFile() if rb_stdout is
+	not a IO (T_FILE).
+
 Tue Aug 19 07:47:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c: sync_close is moved to SSLSocket as
