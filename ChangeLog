@@ -1,3 +1,11 @@
+Sat Jun 14 16:58:41 2003  Guy Decoux  <ts@moulon.inra.fr>
+
+	* regex.c (calculate_must_string): should handle option_set
+	  properly. [ruby-talk:73481]
+
+	* regex.c (re_compile_fastmap): a bug in flag manipulation.
+	  [ruby-talk:73549]
+
 Sat Jun 14 17:59:59 2003  Guy Decoux  <ts@moulon.inra.fr>
 
 	* eval.c (method_arity): should handle NODE_BMETHOD and

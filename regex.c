@@ -1037,6 +1037,7 @@ calculate_must_string(start, end)
       break;
 
     case duplicate:
+    case option_set:
       p++;
       break;
 
@@ -1062,7 +1063,6 @@ calculate_must_string(start, end)
     case push_dummy_failure:
     case start_paren:
     case stop_paren:
-    case option_set:
       break;
 
     case charset:
@@ -2815,8 +2815,11 @@ re_compile_fastmap(bufp)
 
       case casefold_on:
 	bufp->options |= RE_MAY_IGNORECASE;
+	options |= RE_OPTION_IGNORECASE;
+	continue;
+
       case casefold_off:
-	options ^= RE_OPTION_IGNORECASE;
+	options &= ~RE_OPTION_IGNORECASE;
 	continue;
 
       case option_set:
