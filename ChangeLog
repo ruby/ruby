@@ -1,3 +1,7 @@
+Fri Aug  9 13:31:40 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/Win32API/extconf.rb: check existence of <windows.h>.
+
 Thu Aug  8 09:37:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb (NilClass): must provide conversion block.
