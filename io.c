@@ -113,7 +113,7 @@ struct timeval rb_time_interval _((VALUE));
 
 static VALUE filename, current_file;
 static int gets_lineno;
-static int init_p = 0, next_p = 0, first_p = 1;
+static int init_p = 0, next_p = 0;
 static VALUE lineno;
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
@@ -2934,7 +2934,6 @@ next_argv()
 	    filename = rb_str_new2("-");
 	}
 	init_p = 1;
-	first_p = 0;
 	gets_lineno = 0;
     }
 
@@ -3034,10 +3033,7 @@ argf_getline(argc, argv)
 
   retry:
     if (!next_argv()) return Qnil;
-    if (TYPE(current_file) != T_FILE) {
-	line = rb_funcall3(current_file, rb_intern("gets"), argc, argv);
-    }
-    else if (argc == 0 && rb_rs == rb_default_rs) {
+    if (argc == 0 && rb_rs == rb_default_rs) {
 	line = rb_io_gets(current_file);
     }
     else {
@@ -3719,7 +3715,7 @@ argf_read(argc, argv)
     if (NIL_P(tmp) && next_p != -1) {
 	io_close(current_file);
 	next_p = 1;
-	goto retry;
+	return str;
     }
     if (NIL_P(tmp) || RSTRING(tmp)->len == 0) return str;
     else if (NIL_P(str)) str = tmp;
@@ -3743,12 +3739,7 @@ argf_getc()
 
   retry:
     if (!next_argv()) return Qnil;
-    if (TYPE(current_file) != T_FILE) {
-	byte = rb_funcall3(current_file, rb_intern("getc"), 0, 0);
-    }
-    else {
-	byte = rb_io_getc(current_file);
-    }
+    byte = rb_io_getc(current_file);
     if (NIL_P(byte) && next_p != -1) {
 	io_close(current_file);
 	next_p = 1;

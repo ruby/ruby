@@ -1,3 +1,7 @@
+Fri Apr 25 18:40:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_read): read should not span two files. [ruby-dev:20073]
+
 Fri Apr 25 18:19:03 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (splat_value): split splat_value() and avalue_splat().
