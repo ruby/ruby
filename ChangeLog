@@ -643,7 +643,7 @@ Thu Jul  1 03:16:09 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/opnessl/lib/openssl/ssl.rb
 	  (OpenSSL::SSL::SocketForwarder#listen): fix typo.
 
-Wed Jun 30 11:38:51 2004  Elven  <elven@elven.de>
+Wed Jun 30 11:38:51 2004  Mikael Brockman <phubuh@phubuh.org>
 
 	* parse.y (primary): should not be NULL.  [ruby-core:03098]
 
@@ -1018,7 +1018,7 @@ Thu May 20 14:35:52 2004  Tanaka Akira  <akr@m17n.org>
 
 Thu May 20 12:38:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* numeric.c (flo_eq): alway check if operands are NaN.
+	* numeric.c (flo_eq): always check if operands are NaN.
 	  [ruby-list:39685]
 
 Thu May 20 12:34:39 2004  Dave Thomas  <dave@pragprog.com>
@@ -1229,7 +1229,8 @@ Fri May  7 21:31:56 2004  Minero Aoki  <aamine@loveruby.net>
 
 Fri May  7 11:25:53 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* util.c (ruby_strtod): 0.0000000000000000001 == 0.0 should be false.
+	* util.c (ruby_strtod): "0.0000000000000000001" should be converted
+	  to 1.0e-19 instead of 0.0. (leading zeros aren't significant digits)
 	  [ruby-talk:99318] [ruby-dev:23465]
 
 Fri May  7 10:00:05 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
