@@ -1383,7 +1383,7 @@ push_pattern(path, ary)
 {
     VALUE str = rb_tainted_str_new2(path);
 
-    if (ary) {
+    if (!NIL_P(ary)) {
 	rb_ary_push(ary, str);
     }
     else {
@@ -1392,123 +1392,88 @@ push_pattern(path, ary)
 }
 
 static int
-push_globs(ary, s, flags)
+push_glob(ary, s, flags)
     VALUE ary;
     const char *s;
     int flags;
 {
-    return rb_glob2(s, flags, push_pattern, ary);
-}
+    const int escape = !(flags & FNM_NOESCAPE);
 
-static int
-push_braces(ary, s, flags)
-    VALUE ary;
-    const char *s;
-    int flags;
-{
-    char *buf, *b;
-    const char *p, *t;
-    const char *lbrace, *rbrace;
-    int nest = 0;
-    int status = 0;
+    const char *p = s;
+    const char *lbrace = 0, *rbrace = 0;
+    int nest = 0, status = 0;
 
-    p = s;
-    lbrace = rbrace = 0;
     while (*p) {
-	if (*p == '{') {
+	if (*p == '{' && nest++ == 0) {
 	    lbrace = p;
-	    break;
 	}
-	Inc(p);
-    }
-    while (*p) {
-	if (*p == '{') nest++;
-	if (*p == '}' && --nest == 0) {
+	if (*p == '}' && --nest <= 0) {
 	    rbrace = p;
 	    break;
+	}
+	if (*p == '\\' && escape) {
+	    if (!*++p) break;
 	}
 	Inc(p);
     }
 
     if (lbrace && rbrace) {
-	int len = strlen(s);
-	buf = xmalloc(len + 1);
+	char *buf, *b;
+	buf = xmalloc(strlen(s) + 1);
 	memcpy(buf, s, lbrace-s);
 	b = buf + (lbrace-s);
 	p = lbrace;
-	while (*p != '}') {
-	    t = Next(p);
-	    for (p = t; *p!='}' && *p!=','; Inc(p)) {
-		/* skip inner braces */
-		if (*p == '{') while (*p!='}') Inc(p);
+	while (p < rbrace) {
+	    const char *t = ++p;
+	    nest = 0;
+	    while (p < rbrace && !(*p == ',' && nest == 0)) {
+		if (*p == '{') nest++;
+		if (*p == '}') nest--;
+		if (*p == '\\' && escape) {
+		    if (++p == rbrace) break;
+		}
+		Inc(p);
 	    }
 	    memcpy(b, t, p-t);
-	    strcpy(b+(p-t), Next(rbrace));
-	    status = push_braces(ary, buf, flags);
+	    strcpy(b+(p-t), rbrace+1);
+	    status = push_glob(ary, buf, flags);
 	    if (status) break;
 	}
 	free(buf);
     }
-    else {
-	status = push_globs(ary, s, flags);
+    else if (!lbrace && !rbrace) {
+	status = rb_glob2(s, flags, push_pattern, ary);
     }
 
     return status;
 }
 
-#define isdelim(c) ((c)=='\0')
 static VALUE
-rb_push_glob(str, flags)
+rb_push_glob(str, flags) /* '\0' is delimiter */
     VALUE str;
     int flags;
 {
     const char *p, *pend;
-    char *buf;
-    const char *t;
-    int nest, maxnest;
-    int status = 0;
-    int escape = !(flags & FNM_NOESCAPE);
     VALUE ary;
 
     if (rb_block_given_p())
-	ary = 0;
+	ary = Qnil;
     else
 	ary = rb_ary_new();
 
     FilePathValue(str);
-    buf = xmalloc(RSTRING(str)->len + 1);
 
     p = RSTRING(str)->ptr;
     pend = p + RSTRING(str)->len;
 
     while (p < pend) {
-	nest = maxnest = 0;
-	while (p < pend && isdelim(*p)) p++;
-	t = p;
-	while (p < pend && !isdelim(*p)) {
-	    if (*p == '{') nest++, maxnest++;
-	    if (*p == '}') nest--;
-	    if (escape && *p == '\\') {
-		p++;
-		if (p == pend || isdelim(*p)) break;
-	    }
-	    Inc(p);
-	}
-	memcpy(buf, t, p - t);
-	buf[p - t] = '\0';
-	if (maxnest == 0) {
-	    status = push_globs(ary, buf, flags);
-	    if (status) break;
-	}
-	else if (nest == 0) {
-	    status = push_braces(ary, buf, flags);
-	    if (status) break;
-	}
-	/* else unmatched braces */
+	int status;
+	while (p < pend && *p == '\0') p++;
+	if (p == pend) break;
+	status = push_glob(ary, p, flags);
+	if (status) rb_jump_tag(status);
+	while (p < pend && *p != '\0') p++;
     }
-    free(buf);
-
-    if (status) rb_jump_tag(status);
 
     return ary;
 }
@@ -1531,7 +1496,7 @@ dir_s_aref(obj, str)
 /*
  *  call-seq:
  *     Dir.glob( string, [flags] ) => array
- *     Dir.glob( string, [flags] ) {| filename | block }  => false
+ *     Dir.glob( string, [flags] ) {| filename | block }  => nil
  *
  *  Returns the filenames found by expanding the pattern given in
  *  <i>string</i>, either as an <i>array</i> or as parameters to the

@@ -1,3 +1,14 @@
+Thu Apr 15 19:26:54  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c (rb_push_glob): Dir.glob() should return nil if block is given.
+	  (http://www.ruby-lang.org/ja/man/index.cgi?cmd=view;name=Dir)
+
+	* dir.c (push_braces): Dir.glob() should handle '{ }' nested more than
+	  3 times.
+
+	* dir.c (push_braces, rb_push_glob): Dir.glob() should handle escaped
+	  '{' and '}' and ','.
+
 Thu Apr 15 17:12:13 2004  Tanaka Akira  <akr@m17n.org>
 
 	* ext/gdbm/gdbm.c (Init_gdbm): define GDBM::READER, GDBM::WRITER,
