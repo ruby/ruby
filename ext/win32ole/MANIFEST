@@ -22,3 +22,4 @@ tests/testVARIANT.rb
 tests/testWIN32OLE.rb
 tests/testall.rb
 win32ole.c
+.document
