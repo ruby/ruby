@@ -397,6 +397,9 @@ def create_makefile(target)
     libpath = $LIBPATH.join(';')
   else
     $LIBPATH.each {|d| $DLDFLAGS << " -L" << d}
+    if /netbsdelf/ =~ RUBY_PLATFORM
+      $LIBPATH.each {|d| $DLDFLAGS << " -Wl,-R" + d}
+    end
   end
 
   $srcdir = $top_srcdir + "/ext/" + $mdir

@@ -399,6 +399,9 @@ def create_makefile(target, srcdir = File.dirname($0))
     libpath = $LIBPATH.join(';')
   else
     $LIBPATH.each {|d| $DLDFLAGS << " -L" << d}
+    if /netbsdelf/ =~ RUBY_PLATFORM
+      $LIBPATH.each {|d| $DLDFLAGS << " -Wl,-R" + d}
+    end
   end
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
 
