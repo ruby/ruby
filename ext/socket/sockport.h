@@ -40,4 +40,8 @@
 # define SET_SIN_LEN(si,len) (len)
 #endif
 
+#if defined(HOST_NOT_FOUND) && !defined(h_errno) && !defined(__CYGWIN__)
+extern int h_errno;
+#endif
+
 #endif

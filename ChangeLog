@@ -1,3 +1,7 @@
+Thu Aug 24 15:27:39 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/socket/socketport.h: use `extern int h_errno' if needed.
+
 Sat Aug 19 01:34:02 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/sdbm/_sdbm.c (sdbm_prep): flags should be or-ed by O_BINARY on
