@@ -1,3 +1,9 @@
+Sat Feb 19 01:28:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bigdecimal/newton.rb: resolve LoadError.
+
+	* bigdecimal/nlsolve.rb: ditto.
+
 Thu Feb 17 22:15:34 2005  K.Kosako <sndgk@ybb.ne.jp>
 
 	* ext/strscan/strscan.c: calls Oniguruma API directly.

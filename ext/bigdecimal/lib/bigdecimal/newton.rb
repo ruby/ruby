@@ -20,8 +20,8 @@
 #         f.eps       convergence criterion
 #   x ... initial values
 #
-require "ludcmp"
-require "jacobian"
+require "bigdecimal/ludcmp"
+require "bigdecimal/jacobian"
 
 module Newton
   include LUSolve
