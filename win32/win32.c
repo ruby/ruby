@@ -1332,8 +1332,8 @@ rb_w32_opendir(const char *filename)
     char               scannamespc[PATHLEN];
     char	      *scanname = scannamespc;
     struct stat	       sbuf;
-    struct _finddata_t fd;
-    long               fh;
+    WIN32_FIND_DATA fd;
+    HANDLE          fh;
 
     //
     // check to see if we've got a directory
@@ -1371,8 +1371,9 @@ rb_w32_opendir(const char *filename)
     // do the FindFirstFile call
     //
 
-    fh = _findfirst(scanname, &fd);
-    if (fh == -1) {
+    fh = FindFirstFile(scanname, &fd);
+    if (fh == INVALID_HANDLE_VALUE) {
+	errno = map_errno(GetLastError());
 	return NULL;
     }
 
@@ -1381,19 +1382,19 @@ rb_w32_opendir(const char *filename)
     // filenames that we find.
     //
 
-    idx = strlen(fd.name)+1;
+    idx = strlen(fd.cFileName)+1;
     p->start = ALLOC_N(char, idx);
-    strcpy(p->start, fd.name);
+    strcpy(p->start, fd.cFileName);
     p->nfiles++;
-    
+
     //
     // loop finding all the files that match the wildcard
     // (which should be all of them in this directory!).
     // the variable idx should point one past the null terminator
     // of the previous string found.
     //
-    while (_findnext(fh, &fd) == 0) {
-	len = strlen(fd.name);
+    while (FindNextFile(fh, &fd)) {
+	len = strlen(fd.cFileName);
 
 	//
 	// bump the string table size by enough for the
@@ -1406,11 +1407,11 @@ rb_w32_opendir(const char *filename)
 	if (p->start == NULL) {
             rb_fatal ("opendir: malloc failed!\n");
 	}
-	strcpy(&p->start[idx], fd.name);
+	strcpy(&p->start[idx], fd.cFileName);
 	p->nfiles++;
 	idx += len+1;
     }
-    _findclose(fh);
+    FindClose(fh);
     p->size = idx;
     p->curr = p->start;
     return p;

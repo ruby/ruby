@@ -1,3 +1,9 @@
+Mon Jun 21 10:19:23 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_opendir): use FindFirstFile()/FindNextFile()/
+	  FindClose() instead of _findfirst()/_findnext()/_findclose().
+	  merge from HEAD.
+
 Sat Jun 19 13:24:15 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (method_call): allow changing $SAFE.  [ruby-dev:23713]
