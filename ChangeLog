@@ -1,6 +1,11 @@
+Mon Dec  6 17:19:13 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* rubysig.h (TRAP_BEG, TRAP_END): safe errno around CHECK_INTS.
+	  (backported from CVS HEAD)  [ruby-dev:24993]
+
 Mon Dec  6 10:18:17 2004  Dave Thomas  <dave@pragprog.com>
 
-	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::look_for_directives_in): 
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::look_for_directives_in):
 	  Oops - 1.8 doesn't have String#clear
 
 Mon Dec  6 01:42:08 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>

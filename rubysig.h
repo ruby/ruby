@@ -46,10 +46,13 @@ typedef int rb_atomic_t;
 # define ATOMIC_DEC(var) (--(var))
 
 # define TRAP_BEG do {\
+    int saved_errno = 0;\
     int trap_immediate = rb_trap_immediate;\
     rb_trap_immediate = 1
 # define TRAP_END rb_trap_immediate = trap_immediate;\
-  CHECK_INTS;\
+    saved_errno = errno;\
+    CHECK_INTS;\
+    errno = saved_errno;\
 } while (0)
 
 # define RUBY_CRITICAL(statements) do {\
