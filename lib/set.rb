@@ -1,40 +1,53 @@
 #!/usr/bin/env ruby
-#
-# set - defines the Set class
-#
+#--
+# set.rb - defines the Set class
+#++
 # Copyright (c) 2002 Akinori MUSHA <knu@iDaemons.org>
 #
-# All rights reserved.
+# Documentation by Akinori MUSHA and Gavin Sinclair. 
 #
-# You can redistribute and/or modify it under the same terms as Ruby.
+# All rights reserved.  You can redistribute and/or modify it under the same
+# terms as Ruby.
 #
-# $Id$
+#   $Id$
+#
+# == Overview 
 # 
 # This library provides the Set class that deals with a collection of
 # unordered values with no duplicates.  It is a hybrid of Array's
 # intuitive inter-operation facilities and Hash's fast lookup.
 #
-#== Example
+# It also provides the SortedSet class which keeps the elements sorted,
+# and adds the method +to_set+ to Enumerable.
 #
-#  require 'set'
-#
-#  set1 = Set.new ["foo", "bar", "baz"]
-#
-#  p set1			#=> #<Set: {"baz", "foo", "bar"}>
-#
-#  p set1.include?("bar")	#=> true
-#
-#  set1.add("heh")
-#  set1.delete("foo")
-#
-#  p set1			#=> #<Set: {"heh", "baz", "bar"}>
+# See the Set class for an example of usage.
 
+
+#
 # Set implements a collection of unordered values with no duplicates.
 # This is a hybrid of Array's intuitive inter-operation facilities and
 # Hash's fast lookup.
 #
+# Several methods accept any Enumerable object (implementing +each+)
+# for greater flexibility: new, replace, merge, subtract, |, &, -, ^.
+#
 # The equality of each couple of elements is determined according to
 # Object#eql? and Object#hash, since Set uses Hash as storage.
+#
+# Finally, if you are using class Set, you can also use Enumerable#to_set
+# for convenience.
+#
+# == Example
+#
+#   require 'set'
+#   s1 = Set.new [1, 2]                   # -> #<Set: {1, 2}>
+#   s2 = [1, 2].to_set                    # -> #<Set: {1, 2}>
+#   s1 == s2                              # -> true
+#   s1.add("foo")                         # -> #<Set: {1, 2, "foo"}>
+#   s1.merge([2, 6])                      # -> #<Set: {6, 1, 2, "foo"}>
+#   s1.subset? s2                         # -> false
+#   s2.subset? s1                         # -> true
+#
 class Set
   include Enumerable
 
@@ -181,7 +194,8 @@ class Set
     self
   end
 
-  # Adds the given object to the set and returns self.
+  # Adds the given object to the set and returns self.  Use +merge+ to
+  # add several elements at once.
   def add(o)
     @hash[o] = true
     self
@@ -381,7 +395,7 @@ class Set
     end
   end
 
-  InspectKey = :__inspect_key__
+  InspectKey = :__inspect_key__         # :nodoc:
 
   # Returns a string containing a human-readable representation of the
   # set. ("#<Set: {element1, element2, ...}>")
@@ -422,7 +436,7 @@ class Set
   end
 end
 
-# SortedSet implements a set which elements are sorted in order.
+# SortedSet implements a set which elements are sorted in order.  See Set.
 class SortedSet < Set
   @@setup = false
 
