@@ -1,1 +1,0 @@
-nkf.o : nkf.c $(hdrdir)/ruby.h $(topdir)/config.h $(hdrdir)/defines.h $(srcdir)/nkf1.7/nkf.c
