@@ -12,7 +12,7 @@
 #	obj = Object.new
 #	obj.extend Mutex_m
 #	...
-#	後はMutexと同じ使い方
+#	extended object can be handled like Mutex
 #
 
 require "finalize"
@@ -36,7 +36,7 @@ module Mutex_m
       dummy = cl.new
       Mutex_m.extendable_module(dummy)
     rescue NameError
-      # newが定義されていない時は, DATAとみなす.
+      # if new is not defined, cl must be Data.
       For_primitive_object
     end
   end
@@ -44,8 +44,8 @@ module Mutex_m
   def Mutex_m.extend_class(cl)
     return super if cl.instance_of?(Module)
     
-    # モジュールの時は何もしない. クラスの場合, 適切なモジュールの決定
-    # とaliasを行う.  
+    # do nothing for Modules
+    # make aliases and include the proper module.
     real = includable_module(cl)
     cl.module_eval %q{
       include real
@@ -162,7 +162,6 @@ module Mutex_m
     def For_primitive_object.mu_finalize(id)
       Thread.critical = TRUE
       if wait = Mu_Locked.delete(id)
-	# wait == [] ときだけ GCされるので, for w in wait は意味なし.
 	Thread.critical = FALSE
 	for w in wait
 	  w.run

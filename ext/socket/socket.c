@@ -96,6 +96,8 @@ sock_new(class, fd)
     fp->f = rb_fdopen(fd, "r");
 #ifdef NT
     fp->finalize = sock_finalize;
+#else
+    fd = dup(fd);
 #endif
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
@@ -140,11 +142,13 @@ bsock_close_read(sock)
 
     rb_secure(4);
     GetOpenFile(sock, fptr);
+    shutdown(fileno(fptr->f), 0);
     if (fptr->f2 == 0) {
 	return rb_io_close(sock);
     }
-    if (shutdown(fileno(fptr->f), 0) == -1)
-	rb_sys_fail(0);
+#ifdef USE_THREAD
+    rb_thread_fd_close(fileno(fptr->f));
+#endif
     fptr->mode &= ~FMODE_READABLE;
 #ifdef NT
     free(fptr->f);
@@ -168,8 +172,7 @@ bsock_close_write(sock)
     if (fptr->f2 == 0) {
 	return rb_io_close(sock);
     }
-    if (shutdown(fileno(fptr->f), 1) == -1)
-	rb_sys_fail(0);
+    shutdown(fileno(fptr->f2), 1);
     fptr->mode &= ~FMODE_WRITABLE;
 #ifdef NT
     free(fptr->f2);

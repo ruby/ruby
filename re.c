@@ -5,7 +5,7 @@
   $Author$
   created at: Mon Aug  9 18:24:49 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -330,7 +330,7 @@ rb_reg_kcode_method(re)
 static Regexp*
 make_regexp(s, len, flag)
     char *s;
-    size_t len, flag;
+    int len, flag;
 {
     Regexp *rp;
     char *err;
@@ -390,6 +390,21 @@ match_clone(orig)
     CLONESETUP(match, orig);
 
     return (VALUE)match;
+}
+
+#define MATCH_BUSY FL_USER2
+
+void
+rb_match_busy(match, busy)
+    VALUE match;
+    int busy;
+{
+    if (busy) {
+	FL_SET(match, MATCH_BUSY);
+    }
+    else {
+	FL_UNSET(match, MATCH_BUSY);
+    }
 }
 
 int ruby_ignorecase;
@@ -462,7 +477,7 @@ rb_reg_search(reg, str, start, reverse)
 #else
     match = rb_backref_get();
 #endif
-    if (NIL_P(match)) {
+    if (NIL_P(match) || FL_TEST(match, MATCH_BUSY)) {
 	if (matchcache) {
 	    match = matchcache;
 	    matchcache = 0;
@@ -481,6 +496,8 @@ rb_reg_search(reg, str, start, reverse)
     }
     result = re_search(RREGEXP(reg)->ptr,RSTRING(str)->ptr,RSTRING(str)->len,
 		       start, range, regs);
+    if (FL_TEST(reg, KCODE_FIXED))
+	kcode_reset_option();
 
     if (result == -2) {
 	rb_reg_raise(RREGEXP(reg)->str, RREGEXP(reg)->len,
@@ -653,7 +670,7 @@ static VALUE
 rb_reg_new_1(klass, s, len, options)
     VALUE klass;
     char *s;
-    size_t len;
+    int len;
     int options;		/* CASEFOLD  = 1 */
 				/* EXTENDED  = 2 */
 				/* CODE_NONE = 4 */
@@ -711,7 +728,7 @@ rb_reg_new_1(klass, s, len, options)
 VALUE
 rb_reg_new(s, len, options)
     char *s;
-    size_t len;
+    int len;
     int options;
 {
     return rb_reg_new_1(rb_cRegexp, s, len, options);
@@ -826,6 +843,9 @@ rb_reg_s_new(argc, argv, self)
 	  case 's': case 'S':
 	    flag |= 12;
 	    break;
+	  case 'u': case 'U':
+	    flag |= 16;
+	    break;
 	  default:
 	    break;
 	}
@@ -837,7 +857,7 @@ rb_reg_s_new(argc, argv, self)
     }
     else {
 	char *p;
-	size_t len;
+	int len;
 
 	p = str2cstr(src, &len);
 	return rb_reg_new_1(self, p, len, flag);
@@ -886,6 +906,8 @@ rb_kcode()
 	return MBCTYPE_EUC;
       case KCODE_SJIS:
 	return MBCTYPE_SJIS;
+      case KCODE_UTF8:
+	return MBCTYPE_UTF8;
       case KCODE_NONE:
 	return MBCTYPE_ASCII;
     }
@@ -905,6 +927,8 @@ rb_reg_get_kcode(re)
 	kcode |= 8; break;
       case KCODE_SJIS:
 	kcode |= 12; break;
+      case KCODE_UTF8:
+	kcode |= 16; break;
       default:
 	break;
     }
@@ -1092,7 +1116,10 @@ ignorecase_setter(val)
 static VALUE
 match_getter()
 {
-    return match_clone(rb_backref_get());
+    VALUE match = rb_backref_get();
+
+    if (NIL_P(match)) return Qnil;
+    return match_clone(match);
 }
 
 static void

@@ -183,7 +183,7 @@ ok(i>4)
 check "exception";
 
 begin
-  fail "this must be handled"
+  raise "this must be handled"
   ok(false)
 rescue
   ok(true)
@@ -191,7 +191,7 @@ end
 
 $bad = true
 begin
-  fail "this must be handled no.2"
+  raise "this must be handled no.2"
 rescue
   if $bad
     $bad = false
@@ -205,9 +205,9 @@ ok(true)
 $string = "this must be handled no.3"
 begin
   begin
-    fail "exception in rescue clause"
+    raise "exception in rescue clause"
   rescue 
-    fail $string
+    raise $string
   end
   ok(false)
 rescue
@@ -217,9 +217,9 @@ end
 # exception in ensure clause
 begin
   begin
-    fail "this must be handled no.4"
+    raise "this must be handled no.4"
   ensure 
-    fail "exception in ensure clause"
+    raise "exception in ensure clause"
   end
   ok(false)
 rescue
@@ -229,7 +229,7 @@ end
 $bad = true
 begin
   begin
-    fail "this must be handled no.5"
+    raise "this must be handled no.5"
   ensure
     $bad = false
   end
@@ -240,7 +240,7 @@ ok(!$bad)
 $bad = true
 begin
   begin
-    fail "this must be handled no.6"
+    raise "this must be handled no.6"
   ensure
     $bad = false
   end
@@ -355,7 +355,7 @@ ok($x[1] == 2)
 
 ok(begin   
      for k,v in $y
-       fail if k*2 != v
+       raise if k*2 != v
      end
      true
    rescue
@@ -746,7 +746,7 @@ if defined? Process.kill
   sleep 0.1
   ok($x == 2)
 
-  trap "SIGINT", proc{fail "Interrupt"}
+  trap "SIGINT", proc{raise "Interrupt"}
 
   x = false
   begin
@@ -867,21 +867,21 @@ ok(i6 == nil)
 
 check "system"
 ok(`echo foobar` == "foobar\n")
-ok(`./ruby -e 'print "foobar"'` == 'foobar')
+ok(`./miniruby -e 'print "foobar"'` == 'foobar')
 
 tmp = open("script_tmp", "w")
 tmp.print "print $zzz\n";
 tmp.close
 
-ok(`./ruby -s script_tmp -zzz` == 'true')
-ok(`./ruby -s script_tmp -zzz=555` == '555')
+ok(`./miniruby -s script_tmp -zzz` == 'true')
+ok(`./miniruby -s script_tmp -zzz=555` == '555')
 
 tmp = open("script_tmp", "w")
 tmp.print "#! /usr/local/bin/ruby -s\n";
 tmp.print "print $zzz\n";
 tmp.close
 
-ok(`./ruby script_tmp -zzz=678` == '678')
+ok(`./miniruby script_tmp -zzz=678` == '678')
 
 tmp = open("script_tmp", "w")
 tmp.print "this is a leading junk\n";
@@ -891,8 +891,8 @@ tmp.print "__END__\n";
 tmp.print "this is a trailing junk\n";
 tmp.close
 
-ok(`./ruby -x script_tmp` == 'nil')
-ok(`./ruby -x script_tmp -zzz=555` == '555')
+ok(`./miniruby -x script_tmp` == 'nil')
+ok(`./miniruby -x script_tmp -zzz=555` == '555')
 
 tmp = open("script_tmp", "w")
 for i in 1..5
@@ -900,7 +900,7 @@ for i in 1..5
 end
 tmp.close
 
-`./ruby -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
+`./miniruby -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
 done = true
 tmp = open("script_tmp", "r")
 while tmp.gets
@@ -917,7 +917,7 @@ File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
 $bad = false
 for script in Dir["{lib,sample}/*.rb"]
-  unless `./ruby -c #{script}`.chomp == "Syntax OK"
+  unless `./miniruby -c #{script}`.chomp == "Syntax OK"
     $bad = true
   end
 end

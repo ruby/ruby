@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 14:30:50 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -138,7 +138,7 @@ rb_waitpid(pid, flags, st)
 	    pid_tbl = st_init_numtable();
 	st_insert(pid_tbl, pid, st);
 #ifdef USE_THREAD
-	if (!thread_alone()) rb_thread_schedule();
+	if (!rb_thread_alone()) rb_thread_schedule();
 #endif
     }
 #endif
@@ -521,7 +521,7 @@ static VALUE
 rb_f_fork(obj)
     VALUE obj;
 {
-#if !defined(__human68k__)
+#if !defined(__human68k__) && !defined(__MACOS__)
     int pid;
 
     rb_secure(2);
@@ -670,7 +670,10 @@ rb_f_system(argc, argv)
     rb_last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
     return state == 0 ? Qtrue : Qfalse ;
 #else
-    volatile VALUE prog = 0;
+#if defined(USE_CWGUSI)
+    rb_notimplement();
+#else
+   volatile VALUE prog = 0;
     int pid;
     int i;
 
@@ -725,9 +728,10 @@ rb_f_system(argc, argv)
 
     if (rb_last_status == INT2FIX(0)) return Qtrue;
     return Qfalse;
-#endif
-#endif
-#endif
+#endif /* USE_CWGUSI */
+#endif /* __human68k__ */
+#endif /* DJGPP */
+#endif /* NT */
 }
 
 static VALUE
@@ -778,13 +782,13 @@ proc_getpgrp(argc, argv)
     VALUE *argv;
 {
     int pgrp;
-#ifdef BSD_GETPGRP
+#ifndef GETPGRP_VOID
     VALUE vpid;
     int pid;
 
     rb_scan_args(argc, argv, "01", &vpid);
     pid = NIL_P(vpid)?0:NUM2INT(vpid);
-    pgrp = BSD_GETPGRP(pid);
+    pgrp = getpgrp(pid);
 #else
     rb_scan_args(argc, argv, "0");
     pgrp = getpgrp();
@@ -799,7 +803,7 @@ proc_setpgrp(argc, argv)
     VALUE *argv;
 {
 #ifdef HAVE_SETPGRP
-#ifdef BSD_SETPGRP
+#ifndef SETPGRP_VOID
     VALUE pid, pgrp;
     int ipid, ipgrp;
 
@@ -807,7 +811,7 @@ proc_setpgrp(argc, argv)
 
     ipid = NIL_P(pid)?0:NUM2INT(pid);
     ipgrp = NIL_P(pgrp)?0:NUM2INT(pgrp);
-    if (BSD_SETPGRP(ipid, ipgrp) < 0) rb_sys_fail(0);
+    if (setpgrp(ipid, ipgrp) < 0) rb_sys_fail(0);
 #else
     rb_scan_args(argc, argv, "0");
     if (setpgrp() < 0) rb_sys_fail(0);
@@ -1032,13 +1036,11 @@ Init_process()
 #ifndef USE_CWGUSI
     rb_define_global_function("exec", rb_f_exec, -1);
 #endif
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
     rb_define_global_function("fork", rb_f_fork, 0);
 #endif
     rb_define_global_function("exit!", rb_f_exit_bang, 1);
-#ifndef USE_CWGUSI
     rb_define_global_function("system", rb_f_system, -1);
-#endif
     rb_define_global_function("sleep", rb_f_sleep, -1);
 
     rb_mProcess = rb_define_module("Process");
@@ -1056,7 +1058,7 @@ Init_process()
 #endif
 #endif
 
-#if !defined(NT) && !defined(USE_CWGUSI)
+#if !defined(NT)
     rb_define_singleton_method(rb_mProcess, "fork", rb_f_fork, 0);
 #endif
     rb_define_singleton_method(rb_mProcess, "exit!", rb_f_exit_bang, 1);

@@ -27,7 +27,7 @@
 #define vfork fork
 #define HAVE_FMOD 1
 /* #define HAVE_RANDOM 1    */
-/* #define HAVE_WAITPID 1   */
+#define HAVE_WAITPID 1
 #define HAVE_GETCWD 1
 /* #define HAVE_TRUNCATE 1  */
 #define HAVE_CHSIZE 1
@@ -37,6 +37,8 @@
 /* #define HAVE_SETITIMER 1 */
 #define HAVE_GETGROUPS 1
 /* #define HAVE_SIGPROCMASK 1 */
+#define HAVE_GETLOGIN 1
+
 #define RSHIFT(x,y) ((x)>>y)
 #define FILE_COUNT _cnt
 #define DLEXT ".dll"
@@ -44,27 +46,9 @@
 #define RUBY_ARCHLIB "/usr/local/lib/ruby/i386-mswin32"
 #define RUBY_PLATFORM "i386-mswin32"
 
-/* NNN */
-#define strcasecmp _strcmpi
-#define popen _popen
-#define pclose _pclose
-#define pipe   _pipe
-#define bzero(x, y) memset(x, 0, y)
-#define snprintf _snprintf
-#define vsnprintf _vsnprintf
-
-
-#define S_IFMT   _S_IFMT
-#define S_IFDIR  _S_IFDIR
-#define S_IFCHR  _S_IFCHR
-#define S_IFREG  _S_IFREG
-#define S_IREAD  _S_IREAD
-#define S_IWRITE _S_IWRITE
-#define S_IEXEC  _S_IEXEC
-#define S_IFIFO  _S_IFIFO
-
-#define UIDTYPE int
-#define GIDTYPE int
-#define pid_t   int
-#define WNOHANG -1
-//#define NT
+#define SIZEOF_INT   4
+#define SIZEOF_SHORT 2
+#define SIZEOF_LONG  4
+#define SIZEOF_VOIDP 4
+#define SIZEOF_FLOAT 4
+#define SIZEOF_DOUBLE 8

@@ -507,7 +507,7 @@ trap_ensure(arg)
 void
 rb_trap_restore_mask()
 {
-#ifndef NT
+#if !defined(NT) && !defined(USE_CWGUSI)
 # ifdef HAVE_SIGPROCMASK
     sigprocmask(SIG_SETMASK, &trap_last_mask, NULL);
 # else
