@@ -1,3 +1,7 @@
+Mon Nov  1 00:36:48 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* main.c (_stklen): move to gc.c.
+
 Sun Oct 31 00:22:28 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_locktmp): lock string temporarily.

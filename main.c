@@ -12,10 +12,6 @@
 
 #include "ruby.h"
 
-#ifdef DJGPP
-unsigned int _stklen = 0x180000;
-#endif
-
 #ifdef __human68k__
 int _stacksize = 262144;
 #endif
