@@ -1,3 +1,9 @@
+Mon Aug 20 19:53:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/digest/sha2/extconf.rb: fix support for cross-compiling.
+
+	* mkconfig.rb: fix support for autoconf 2.52.
+
 Mon Aug 20 15:14:27 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (tokadd_escape): escaped backslashes too much.

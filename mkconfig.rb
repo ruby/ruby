@@ -28,7 +28,7 @@ has_srcdir = false
 has_version = false
 File.foreach "config.status" do |line|
   next if /^#/ =~ line
-  if /^s[%,]@program_transform_name@[%,]s,(.*)[%,]/ =~ line
+  if /^s[%,]@program_transform_name@[%,]s,(.*)/ =~ line
     next if $install_name
     ptn = $1.sub(/\$\$/, '$').split(/,/)	#'
     v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + "ruby".sub(ptn[0],ptn[1]) + "\"\n"
