@@ -1,3 +1,8 @@
+Thu Jul  6 00:51:43 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* win32/win32.c (NtCmdGlob): patterns should be separated and
+	  NUL terminated.
+
 Wed Jul  5 22:27:56 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* cygwin/GNUmakefile: use ruby.def to make rubycw.dll.

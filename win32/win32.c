@@ -872,13 +872,28 @@ insert(char *path, ListInfo *listinfo)
     }
 }
 
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
+#else
+# define MAXPATHLEN 512
+#endif
+
+void
 NtCmdGlob (NtCmdLineElement *patt)
 {
     ListInfo listinfo;
+    char buffer[MAXPATHLEN], *buf = buffer;
 
     listinfo.head = listinfo.tail = 0;
 
-    rb_glob(patt->str, insert, (VALUE)&listinfo);
+    if (patt->len >= MAXPATHLEN)
+	buf = ruby_xmalloc(patt->len + 1);
+
+    strncpy(buf, patt->str, patt->len);
+    buf[patt->len] = 0;
+    rb_glob(buf, insert, (VALUE)&listinfo);
+    if (buf != buffer)
+	free(buf);
 
     if (listinfo.head && listinfo.tail) {
 	listinfo.head->prev = patt->prev;
