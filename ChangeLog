@@ -1,3 +1,7 @@
+Thu Oct 24 03:19:22 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb (init_mkmf): libdir prior to topdir.
+
 Thu Oct 24 02:22:41 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (LIBPATHFLAG): should escape $.  [ruby-dev:18572]

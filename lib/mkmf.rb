@@ -792,7 +792,7 @@ def init_mkmf(config = CONFIG)
   $libs = ""
   if $configure_args['--enable-shared'] or config["LIBRUBY"] != config["LIBRUBY_A"]
     $LIBPATH = ["$(topdir)"]
-    $LIBPATH << "$(libdir)" unless $extmk or defined? CROSS_COMPILING
+    $LIBPATH.unshift("$(libdir)") unless $extmk or defined? CROSS_COMPILING
   end
   $LIBPATH << "$(archdir)"
 
