@@ -65,7 +65,7 @@ static void rehash();
 #define EQUAL(table,x,y) ((x)==(y) || (*table->type->compare)((x),(y)) == 0)
 
 #define do_hash(key,table) (unsigned int)(*(table)->type->hash)((key))
-#define do_hash_bin(key,table) (do_hash(key, table)&(table)->num_bins)
+#define do_hash_bin(key,table) (do_hash(key, table)%(table)->num_bins)
 
 /*
  * MINSIZE is the minimum size of a dictionary.
