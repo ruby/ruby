@@ -1,10 +1,19 @@
-Thu Apr 16 01:38:02 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Thu Apr 16 16:52:01 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_longjmp): trace event on exception in raising
+ 	  context, just before raising exception.
+
+	* struct.c (struct_s_members): forgot to check singletons.
+
+	* struct.c (struct_aref): members can be accessed by names too.
 
 	* array.c (ary_flatten): new method.
 
 	* eval.c (rb_longjmp): prints exception information with `-d'.
 
 	* object.c (any_to_s): remove class name restriction.
+
+Thu Apr 16 01:38:02 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* file.c (thread_flock): do not block other threads.
 
@@ -13,6 +22,14 @@ Thu Apr 16 01:38:02 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
  	  signals are forwarded to the main thread.
 
 	* string.c (str_new4): need not to duplicate frozen strings.
+
+Wed Apr 15 12:24:32 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* config.sub: x68 condition restored.
+
+Wed Apr 15 08:33:47 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* struct.c (struct_inspect): remove restriction for struct names.
 
 Wed Apr 15 01:22:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -27,6 +44,10 @@ Wed Apr 15 01:22:56 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
  	  instead.
 
 	* io.c (f_p): ditto.
+
+Tue Apr 14 22:18:17 1998  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
+
+	* struct.c (struct_aref): should not subtract negative index.
 
 Tue Apr 14 11:34:50 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

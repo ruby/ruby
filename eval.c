@@ -2672,13 +2672,12 @@ rb_longjmp(tag, mesg, at)
     if (NIL_P(errinfo) && NIL_P(mesg)) {
 	errinfo = exc_new(eRuntimeError, 0, 0);
     }
-#if 1
-    if (debug) {
-	fprintf(stderr, "Exception `%s' occurred at %s:%d\n",
+
+    if (debug && !NIL_P(errinfo)) {
+	fprintf(stderr, "Exception `%s' at %s:%d\n",
 		rb_class2name(CLASS_OF(errinfo)),
 		sourcefile, sourceline);
     }
-#endif
     if (!NIL_P(at)) {
 	errat = check_errat(at);
     }
@@ -2695,13 +2694,12 @@ rb_longjmp(tag, mesg, at)
 	}
 	str_freeze(errinfo);
     }
-#if 0
-    if (debug) {
-	error_print();
-    }
-#endif
 
     trap_restore_mask();
+    if (trace_func && tag != TAG_FATAL) {
+	call_trace_func("raise", sourcefile, sourceline,
+			the_frame->self, the_frame->last_func);
+    }
     JUMP_TAG(tag);
 }
 

@@ -541,10 +541,8 @@ static VALUE
 tcp_s_open(class, host, serv)
     VALUE class, host, serv;
 {
-    VALUE s;
     Check_SafeStr(host);
-    s = open_inet(class, host, serv, INET_CLIENT);
-    return s;
+    return open_inet(class, host, serv, INET_CLIENT);
 }
 
 #ifdef SOCKS
@@ -553,7 +551,6 @@ socks_s_open(class, host, serv)
     VALUE class, host, serv;
 {
     static init = 0;
-    VALUE s;
 
     if (init == 0) {
 	SOCKSinit("ruby");
@@ -561,8 +558,7 @@ socks_s_open(class, host, serv)
     }
 	
     Check_SafeStr(host);
-    s = open_inet(class, host, serv, INET_SOCKS);
-    return s;
+    return open_inet(class, host, serv, INET_SOCKS);
 }
 #endif
 
@@ -572,13 +568,12 @@ tcp_svr_s_open(argc, argv, class)
     VALUE *argv;
     VALUE class;
 {
-    VALUE arg1, arg2, s;
+    VALUE arg1, arg2;
 
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2)
-	s = open_inet(class, arg1, arg2, INET_SERVER);
+	return open_inet(class, arg1, arg2, INET_SERVER);
     else
-	s = open_inet(class, 0, arg1, INET_SERVER);
-    return s;
+	return open_inet(class, 0, arg1, INET_SERVER);
 }
 
 static VALUE
@@ -807,10 +802,7 @@ static VALUE
 udp_s_open(class)
     VALUE class;
 {
-    VALUE s;
-
-    s = sock_new(class, socket(AF_INET, SOCK_DGRAM, 0));
-    return s;
+    return sock_new(class, socket(AF_INET, SOCK_DGRAM, 0));
 }
 
 static void
@@ -953,9 +945,7 @@ static VALUE
 unix_s_sock_open(sock, path)
     VALUE sock, path;
 {
-    VALUE s;
-    s = open_unix(sock, path, 0);
-    return s;
+    return open_unix(sock, path, 0);
 }
 
 static VALUE
@@ -979,9 +969,7 @@ static VALUE
 unix_svr_s_open(sock, path)
     VALUE sock, path;
 {
-    VALUE s;
-    s = open_unix(sock, path, 1);
-    return s;
+    return open_unix(sock, path, 1);
 }
 
 static VALUE

@@ -1,7 +1,7 @@
 ## ftplib.rb
 
 # Author: Shugo Maeda <shugo@po.aianet.ne.jp>
-# Version: $Revision: 1.6 $
+# Version: $Revision: 1.7 $
 
 ## Code:
 
@@ -16,7 +16,7 @@ class FTPProtoError < FTPError; end
 
 class FTP
   
-  RCS_ID = %q$Id: ftplib.rb,v 1.6 1998/03/01 08:49:57 shugo Exp shugo $
+  RCS_ID = %q$Id: ftplib.rb,v 1.7 1998/04/13 12:34:24 shugo Exp shugo $ 
   
   include MonitorMixin
   
@@ -444,11 +444,20 @@ class FTP
   def size(filename)
     voidcmd("TYPE I")
     resp = sendcmd("SIZE " + filename)
-    if resp[0, 3] == "213"
-      return resp[3 .. -1].strip.to_i
+    if resp[0, 3] != "213" 
+      raise FTPReplyError, resp
     end
+    return resp[3..-1].strip 
   end
-   
+
+  MDTM_REGEXP = /^(\d\d\d\d)(\d\d)(\d\d)(\d\d)(\d\d)(\d\d)$/
+
+  def mtime(filename) 
+    str = mdtm(filename)
+    ary = str.scan(MDTM_REGEXP)[0].collect {|i| i.to_i} 
+    return Time.gm(*ary) 
+  end
+
   def mkdir(dirname)
     resp = sendcmd("MKD " + dirname)
     return parse257(resp)

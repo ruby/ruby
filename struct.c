@@ -15,18 +15,28 @@ VALUE cStruct;
 extern VALUE mEnumerable;
 
 static VALUE
+class_of(obj)
+    VALUE obj;
+{
+    obj = CLASS_OF(obj);
+    if (FL_TEST(obj, FL_SINGLETON))
+	return RCLASS(obj)->super;
+    return obj;
+}
+
+static VALUE
 struct_s_members(obj)
     VALUE obj;
 {
-    struct RArray *member;
-    VALUE ary, *p, *pend;
+    VALUE member, ary;
+    VALUE *p, *pend;
 
-    member = RARRAY(rb_iv_get(obj, "__member__"));
+    member = rb_iv_get(obj, "__member__");
     if (NIL_P(member)) {
-	Fatal("non-initialized struct");
+	Bug("non-initialized struct");
     }
-    ary = ary_new2(member->len);
-    p = member->ptr; pend = p + member->len;
+    ary = ary_new2(RARRAY(member)->len);
+    p = RARRAY(member)->ptr; pend = p + RARRAY(member)->len;
     while (p < pend) {
 	ary_push(ary, str_new2(rb_id2name(FIX2INT(*p))));
 	p++;
@@ -39,7 +49,7 @@ static VALUE
 struct_members(obj)
     VALUE obj;
 {
-    return struct_s_members(CLASS_OF(obj));
+    return struct_s_members(class_of(obj));
 }
 
 VALUE
@@ -47,11 +57,10 @@ struct_getmember(obj, id)
     VALUE obj;
     ID id;
 {
-    VALUE nstr, member, slot;
+    VALUE member, slot;
     int i;
 
-    nstr = CLASS_OF(obj);
-    member = rb_iv_get(nstr, "__member__");
+    member = rb_iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
 	Bug("non-initialized struct");
     }
@@ -100,11 +109,10 @@ static VALUE
 struct_set(obj, val)
     VALUE obj, val;
 {
-    VALUE nstr, member, slot;
+    VALUE member, slot;
     int i;
 
-    nstr = CLASS_OF(obj);
-    member = rb_iv_get(nstr, "__member__");
+    member = rb_iv_get(class_of(obj), "__member__");
     if (NIL_P(member)) {
 	Fatal("non-initialized struct");
     }
@@ -280,7 +288,6 @@ struct_inspect(s)
 {
     char *name = rb_class2name(CLASS_OF(s));
     VALUE str, member;
-    char buf[256];
     int i;
 
     member = rb_iv_get(CLASS_OF(s), "__member__");
@@ -288,8 +295,9 @@ struct_inspect(s)
 	Fatal("non-initialized struct");
     }
 
-    sprintf(buf, "#<%s ", name);
-    str = str_new2(buf);
+    str = str_new2("#<");
+    str_cat(str, name, strlen(name));
+    str_cat(str, " ", 1);
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	VALUE str2, slot;
 	char *p;
@@ -331,14 +339,41 @@ struct_clone(s)
     return (VALUE)st;
 }
 
+static VALUE
+struct_aref_id(s, id)
+    VALUE s;
+    ID id;
+{
+    VALUE member;
+    int i, len;
+    VALUE *p;
+
+    member = rb_iv_get(CLASS_OF(s), "__member__");
+    if (NIL_P(member)) {
+	Bug("non-initialized struct");
+    }
+
+    len = RARRAY(member)->len;
+    for (i=0; i<len; i++) {
+	if (FIX2INT(RARRAY(member)->ptr[i]) == id) {
+	    return RSTRUCT(s)->ptr[i];
+	}
+    }
+    NameError("no member '%s' in struct", rb_id2name(id));
+}
+
 VALUE
 struct_aref(s, idx)
     VALUE s, idx;
 {
     int i;
 
+    if (TYPE(idx) == T_STRING) {
+	return struct_aref_id(s, rb_to_id(idx));
+    }
+
     i = NUM2INT(idx);
-    if (i < 0) i = RSTRUCT(s)->len - i;
+    if (i < 0) i = RSTRUCT(s)->len + i;
     if (i < 0)
         IndexError("offset %d too small for struct(size:%d)", i, RSTRUCT(s)->len);
     if (RSTRUCT(s)->len <= i)
@@ -353,7 +388,7 @@ struct_aset(s, idx, val)
     int i;
 
     i = NUM2INT(idx);
-    if (i < 0) i = RSTRUCT(s)->len - i;
+    if (i < 0) i = RSTRUCT(s)->len + i;
     if (i < 0)
         IndexError("offset %d too small for struct(size:%d)", i, RSTRUCT(s)->len);
     if (RSTRUCT(s)->len <= i)

@@ -662,6 +662,10 @@ case $basic_machine in
 	orion105)
 		basic_machine=clipper-highlevel
 		;;
+        human)
+		basic_machine=m68k-sharp
+		os=-human
+                ;;
 	*)
 		echo Invalid configuration \`$1\': machine \`$basic_machine\' not recognized 1>&2
 		exit 1
