@@ -74,8 +74,6 @@ elsif RUBY_PLATFORM =~ /-nextstep|-rhapsody|-darwin/
   CFLAGS.gsub!( /-arch\s\w*/, '' )
 end
 
-$log = open('mkmf.log', 'w')
-
 if /mswin32/ =~ RUBY_PLATFORM
   OUTFLAG = '-Fe'
 elsif /bccwin32/ =~ RUBY_PLATFORM
@@ -97,14 +95,17 @@ def rm_f(*files)
   end
 end
 
+$log = nil
 $orgerr = $stderr.dup
 $orgout = $stdout.dup
+
 def xsystem command
   Config.expand(command)
   if $DEBUG
     puts command
     return system(command)
   end
+  $log ||= open('mkmf.log', 'w')
   $stderr.reopen($log) 
   $stdout.reopen($log) 
   puts command
