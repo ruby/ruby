@@ -1,3 +1,10 @@
+Sat Feb 19 10:43:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extract_makefile): remove no longer existing installed
+	  files.
+
+	* lib/mkmf.rb (install_dirs): return installation directory list.
+
 Sat Feb 19 01:28:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/bigdecimal/lib/bigdecimal/newton.rb: resolve LoadError.

@@ -74,6 +74,32 @@ INSTALL_DIRS = [
   [dir_re('sitearchdir'), "$(RUBYARCHDIR)"]
 ]
 
+def install_dirs(target_prefix = nil)
+  if $extout
+    dirs = [
+      ['RUBYCOMMONDIR', '$(extout)'],
+      ['RUBYLIBDIR',    '$(extout)$(target_prefix)'],
+      ['RUBYARCHDIR',   '$(extout)/$(arch)$(target_prefix)'],
+      ['extout',        "#$extout"],
+      ['extout_prefix', "#$extout_prefix"],
+    ]
+  elsif $extmk
+    dirs = [
+      ['RUBYCOMMONDIR', '$(rubylibdir)'],
+      ['RUBYLIBDIR',    '$(rubylibdir)$(target_prefix)'],
+      ['RUBYARCHDIR',   '$(archdir)$(target_prefix)'],
+    ]
+  else
+    dirs = [
+      ['RUBYCOMMONDIR', '$(sitedir)$(target_prefix)'],
+      ['RUBYLIBDIR',    '$(sitelibdir)$(target_prefix)'],
+      ['RUBYARCHDIR',   '$(sitearchdir)$(target_prefix)'],
+    ]
+  end
+  dirs << ['target_prefix', (target_prefix ? "/#{target_prefix}" : "")]
+  dirs
+end
+
 def map_dir(dir, map = nil)
   map ||= INSTALL_DIRS
   map.inject(dir) {|dir, (orig, new)| dir.gsub(orig, new)}
@@ -896,9 +922,6 @@ def create_makefile(target, srcprefix = nil)
 
   if target.include?('/')
     target_prefix, target = File.split(target)
-    target_prefix[0,0] = '/'
-  else
-    target_prefix = ""
   end
 
   srcprefix ||= '$(srcdir)'
@@ -961,26 +984,9 @@ OBJS = #{$objs}
 TARGET = #{target}
 DLLIB = #{dllib}
 STATIC_LIB = #{staticlib unless $static.nil?}
+
 }
-  if $extout
-    mfile.print %{
-RUBYCOMMONDIR = $(extout)
-RUBYLIBDIR    = $(extout)$(target_prefix)
-RUBYARCHDIR   = $(extout)/$(arch)$(target_prefix)
-}
-  elsif $extmk
-    mfile.print %{
-RUBYCOMMONDIR = $(rubylibdir)
-RUBYLIBDIR    = $(rubylibdir)$(target_prefix)
-RUBYARCHDIR   = $(archdir)$(target_prefix)
-}
-  else
-    mfile.print %{
-RUBYCOMMONDIR = $(sitedir)$(target_prefix)
-RUBYLIBDIR    = $(sitelibdir)$(target_prefix)
-RUBYARCHDIR   = $(sitearchdir)$(target_prefix)
-}
-  end
+  install_dirs.each {|d| mfile.print("%-14s= %s\n" % d) if /^[[:upper:]]/ =~ d[0]}
   n = ($extout ? '$(RUBYARCHDIR)/' : '') + '$(TARGET).'
   mfile.print %{
 TARGET_SO     = #{($extout ? '$(RUBYARCHDIR)/' : '')}$(DLLIB)

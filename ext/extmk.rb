@@ -56,9 +56,15 @@ def extract_makefile(makefile, keep = true)
   newrb = install_rb(nil, "").collect {|d, *f| f}.flatten.sort
   if target_prefix = m[/^target_prefix[ \t]*=[ \t]*\/(.*)/, 1]
     target = "#{target_prefix}/#{target}"
-    unless (oldrb -= newrb).empty?
-      return false
+  end
+  unless oldrb == newrb
+    if $extout
+      newrb.each {|f| installrb.delete(f)}
+      config = CONFIG.dup
+      install_dirs(target_prefix).each {|var, val| config[var] = val}
+      FileUtils.rm_f(installrb.values.collect {|f| Config.expand(f, config)}, verbose: true)
     end
+    return false
   end
   $target = target
   /^STATIC_LIB[ \t]*=[ \t]*\S+/ =~ m or $static = nil
