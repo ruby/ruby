@@ -400,7 +400,8 @@ module Kernel
     # ryan:: Either way, I certainly will have a pony parade.
     #
 
-    def y( *x )
+    def y( o, *x )
+        x.unshift o
         puts( if x.length == 1
                   YAML::dump( *x )
               else
