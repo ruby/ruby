@@ -747,10 +747,12 @@ rb_class_public_instance_methods(argc, argv, mod)
  *     def a.one()
  *     
  *     class << a
+ *     end
  *       include Other
  *       def two()
  *     end
  *     
+ *       end
  *     Single.singleton_methods    #=> ["four"]
  *     a.singleton_methods         #=> ["two", "one"]
  *     a.singleton_methods(true)   #=> ["two", "one", "three"]
