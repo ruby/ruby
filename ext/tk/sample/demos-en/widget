@@ -509,6 +509,12 @@ else # ver >= 8.4
   alias showVars showVars2
 end
 
+def _null_binding
+  # binding
+  Module.new.instance_eval{binding}
+end
+private :_null_binding
+
 # invoke --
 # This procedure is called when the user clicks on a demo description.
 # It is responsible for invoking the demonstration.
@@ -516,7 +522,20 @@ end
 # Arguments:
 # txt -         Name of text widget
 # index -       The index of the character that the user clicked on.
+def invoke(txt, idx)
+  tag = txt.tag_names(idx).find{|t| t.kind_of?(String) && t =~ /^demo-/}
+  return unless tag
 
+  cursor = txt.cget('cursor')
+  txt.cursor('watch')
+  Tk.update
+  eval(IO.readlines("#{[$demo_dir, tag[5..-1]].join(File::Separator)}.rb").join, _null_binding)
+  Tk.update
+  txt.cursor(cursor)
+
+  $tag_visited.add("#{idx} linestart +1 chars", "#{idx} lineend +1 chars")
+end
+=begin
 def invoke (txt, idx)
   tag = txt.tag_names(idx).find{|t| t.kind_of?(String) && t =~ /^demo-/}
   return unless tag
@@ -532,7 +551,7 @@ def invoke (txt, idx)
 
   $tag_visited.add("#{idx} linestart +1 chars", "#{idx} lineend +1 chars")
 end
-
+=end
 # showStatus --
 #
 #       Show the name of the demo program in the status bar. This procedure
@@ -577,7 +596,7 @@ def showCode1(demo)
     }.pack('side'=>'left', 'expand'=>'yes', 'pady'=>2)
     TkButton.new(f) {
       text "Rerun Demo"
-      command proc{eval($code_text.get('1.0','end'))}
+      command proc{eval($code_text.get('1.0','end'), _null_binding)}
     }.pack('side'=>'left', 'expand'=>'yes', 'pady'=>2)
 #    f.pack('side'=>'bottom', 'expand'=>'yes', 'fill'=>'x')
     f.pack('side'=>'bottom', 'fill'=>'x')
@@ -670,7 +689,9 @@ def showCode2(demo)
                          :command=>proc{printCode($code_text, file)}, 
                          :image=>$image['print'], :compound=>:left)
     b_run = TkButton.new(bf, :text=>'Rerun Demo', 
-                         :command=>proc{eval($code_text.get('1.0','end'))}, 
+                         :command=>proc{
+                           eval($code_text.get('1.0','end'), _null_binding)
+                         }, 
                          :image=>$image['refresh'], :compound=>:left)
 
     TkGrid('x', b_run, b_prn, b_dis, :padx=>4, :pady=>[6,4])
@@ -791,7 +812,7 @@ end
 #
 def aboutBox
   Tk.messageBox('icon'=>'info', 'type'=>'ok', 'title'=>'About Widget Demo', 
-                'message'=>"Ruby/Tk widget demonstration Ver.1.5.3-en\n\n" + 
+                'message'=>"Ruby/Tk widget demonstration Ver.1.5.4-en\n\n" + 
                            "based on demos of Tk8.1 -- 8.5  " + 
                            "( Copyright:: " + 
                            "(c) 1996-1997 Sun Microsystems, Inc. / " + 
@@ -812,7 +833,8 @@ ARGV.each{|cmd|
   if cmd =~ /(.*).rb/
     cmd = $1
   end
-  eval IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join
+  eval(IO.readlines("#{[$demo_dir, cmd].join(File::Separator)}.rb").join, 
+       _null_binding)
 }
 if no_launcher
   $root.withdraw   # hide root window
