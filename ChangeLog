@@ -1952,11 +1952,6 @@ Mon Oct 11 17:51:34 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  prevent access to recycled object (via continuation for
 	  example).  [ruby-dev:24463]
 
-Sat Oct  9 00:25:39 2004  Tanaka Akira  <akr@m17n.org>
-
-	* io.c (rb_io_fread): rb_thread_wait_fd() was lost.
-	  [ruby-dev:24457]
-
 Fri Oct  1 11:40:14 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_f_eval): defer pointer retrieval to prevent unsafe
