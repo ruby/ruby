@@ -1,7 +1,7 @@
 # 
 # = fileutils.rb
 # 
-# Copyright (c) 2000-2004 Minero Aoki <aamine@loveruby.net>
+# Copyright (c) 2000-2005 Minero Aoki <aamine@loveruby.net>
 # 
 # This program is free software.
 # You can distribute/modify this program under the same terms of ruby.
@@ -47,12 +47,14 @@
 #
 # There are some `low level' methods, which does not accept any option:
 #
-#   uptodate?(file, cmp_list)
 #   copy_entry(src, dest, preserve = false, dereference = false)
 #   copy_file(src, dest, preserve = false, dereference = true)
 #   copy_stream(srcstream, deststream)
+#   remove_file(path, force = false)
+#   remove_dir(path, force = false)
 #   compare_file(path_a, path_b)
 #   compare_stream(stream_a, stream_b)
+#   uptodate?(file, cmp_list)
 #
 # == module FileUtils::Verbose
 # 
@@ -219,7 +221,6 @@ module FileUtils
   end
   private :fu_mkdir
 
-
   #
   # Options: noop, verbose
   # 
@@ -240,7 +241,6 @@ module FileUtils
       Dir.rmdir dir.sub(%r</\z>, '')
     end
   end
-
 
   #
   # Options: force noop verbose
@@ -324,7 +324,6 @@ module FileUtils
     options[:force] = true
     ln_s src, dest, options
   end
-
 
   #
   # Options: preserve noop verbose
@@ -413,7 +412,8 @@ module FileUtils
   # Both of +src+ and +dest+ must be a path name.
   # +src+ must exist, +dest+ must not exist.
   #
-  # If +preserve+ is true, this method preserves owner, group and permissions.
+  # If +preserve+ is true, this method preserves owner, group, permissions
+  # and modified time.
   # If +dereference+ is true, this method copies a target of symbolic link
   # instead of a symbolic link itself.
   #
@@ -431,23 +431,21 @@ module FileUtils
 
   #
   # Copies stream +src+ to +dest+.
-  # Both of +src+ and +dest+ must be a IO.
+  # +src+ must respond to #read(n) and
+  # +dest+ must respond to #write(str).
   #
   def copy_stream(src, dest)
     fu_copy_stream0 src, dest, fu_stream_blksize(src, dest)
   end
 
   def fu_copy_stream0(src, dest, blksize)   #:nodoc:
-    begin
-      while true
-        dest.syswrite src.sysread(blksize)
-      end
-    rescue EOFError
+    while s = src.read(blksize)
+      dest.write s
     end
   end
   private :fu_copy_stream0
 
-  class CopyContext_
+  class CopyContext_    #:nodoc: internal use only
     include ::FileUtils
 
     def initialize(preserve = false, dereference = false, stat = nil)
@@ -527,7 +525,11 @@ module FileUtils
     end
 
     def stat(path)
-      @stat ||= ::File.stat(path)
+      if @dereference
+        @stat ||= ::File.stat(path)
+      else
+        @stat ||= ::File.lstat(path)
+      end
     end
 
     def chmod(mode, path)
@@ -615,7 +617,6 @@ module FileUtils
     /djgpp|cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM
   end
   private :rename_cannot_overwrite_file?
-
 
   #
   # Options: force noop verbose
@@ -736,7 +737,6 @@ module FileUtils
     end
   end
 
-
   #
   # Returns true if the contents of a file A and a file B are identical.
   # 
@@ -773,7 +773,6 @@ module FileUtils
     false
   end
 
-
   #
   # Options: mode noop verbose
   # 
@@ -799,7 +798,6 @@ module FileUtils
     end
   end
 
-
   #
   # Options: noop verbose
   # 
@@ -817,7 +815,6 @@ module FileUtils
     return if options[:noop]
     File.chmod mode, *list
   end
-
 
   #
   # Options: noop verbose
@@ -968,7 +965,6 @@ module FileUtils
     'symlink'      => %w( noop verbose force ),
     'touch'        => %w( noop verbose )
   }
-
 
   # 
   # This module has all methods of FileUtils module, but it outputs messages

@@ -1,3 +1,11 @@
+Tue Jan 11 03:10:10 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (copy_entry): could not copy symbolic link.
+	  [ruby-talk:125733]
+
+	* lib/fileutils.rb (copy_stream): use read/write instead of
+	  sysread/syswrite.
+
 Mon Jan 10 23:08:15 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* variable.c (rb_autoload): hide internal data from ruby level.
