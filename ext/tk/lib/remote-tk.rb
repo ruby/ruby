@@ -282,6 +282,10 @@ class RemoteTkIp
     end
   end
 
+  def null_namespace?
+    false
+  end
+
   def restart
     fail RuntimeError, 'cannot restart the remote interpreter'
   end

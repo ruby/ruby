@@ -166,6 +166,15 @@ def pthread_check()
     # tcl-thread is unknown
     if try_run(<<EOF)
 #include <tcl.h>
+int main() { 
+   Tcl_Interp *ip;
+   ip = Tcl_CreateInterp();
+   exit((Tcl_Eval(ip, "set tcl_platform(threaded)") == TCL_OK)? 0: 1);
+}
+EOF
+      tcl_enable_thread = true
+    elsif try_run(<<EOF)
+#include <tcl.h>
 static Tcl_ThreadDataKey dataKey;
 int main() { exit((Tcl_GetThreadData(&dataKey, 1) == dataKey)? 1: 0); }
 EOF
@@ -230,11 +239,11 @@ EOF
 **
 *****************************************************************************
 ')
-      $CPPFLAGS += ' -DWITH_TCL_ENABLE_THREAD=0'
+      $CPPFLAGS += ' -DWITH_TCL_ENABLE_THREAD=1'
       return false
     else
       # ruby -> disable && tcl -> disable
-      $CPPFLAGS += ' -DWITH_TCL_ENABLE_THREAD=1'
+      $CPPFLAGS += ' -DWITH_TCL_ENABLE_THREAD=0'
       return true
     end
   end

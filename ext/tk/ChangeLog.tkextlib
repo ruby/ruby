@@ -1,3 +1,33 @@
+2005-01-25  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/blt/component.rb: bug fix. cannot accept
+          a callback ID string for a command argument. [ruby-dev:25479]
+
+	* ext/tk/lib/tkextlib/blt/tabset.rb: ditto
+
+	* ext/tk/lib/tkextlib/blt/treeview.rb: ditto
+
+	* ext/tk/lib/tkextlib/bwidget/labelentry.rb: ditto
+
+	* ext/tk/lib/tkextlib/bwidget/listbox.rb: ditto
+
+	* ext/tk/lib/tkextlib/bwidget/notebook.rb: ditto
+
+	* ext/tk/lib/tkextlib/bwidget/spinbox.rb: ditto
+
+	* ext/tk/lib/tkextlib/bwidget/tree.rb: ditto
+
+	* ext/tk/lib/tkextlib/itk/incr_tk.rb: ditto
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb: ditto
+
+	* ext/tk/lib/tkextlib/tkDND/tkdnd.rb: ditto
+
+	* ext/tk/lib/tkextlib/treectrl/tktreectrl.rb: ditto
+
+	* ext/tk/sample/tkHTML/ss.rb: local variable scope bug fix
+          [ruby-dev:25479]
+
 2004-12-24  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* add BLT extension support

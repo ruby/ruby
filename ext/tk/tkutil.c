@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2004-12-23"
+#define TKUTIL_RELEASE_DATE "2005-01-25"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -824,6 +824,8 @@ tcl2rb_bool(self, value)
 
     value = rb_funcall(value, ID_downcase, 0);
 
+    if (RSTRING(value)->ptr == (char*)NULL) return Qnil;
+
     if (RSTRING(value)->ptr[0] == '\0'
         || strcmp(RSTRING(value)->ptr, "0") == 0
         || strcmp(RSTRING(value)->ptr, "no") == 0
@@ -880,6 +882,8 @@ tkstr_to_number(value)
 {
     rb_check_type(value, T_STRING);
 
+    if (RSTRING(value)->ptr == (char*)NULL) return INT2FIX(0);
+
     return rb_rescue2(tkstr_to_int, value, 
                       tkstr_rescue_float, value, 
                       rb_eArgError, 0);
@@ -916,6 +920,8 @@ tcl2rb_string(self, value)
 {
     rb_check_type(value, T_STRING);
 
+    if (RSTRING(value)->ptr == (char*)NULL) return rb_tainted_str_new2("");
+
     return tkstr_to_str(value);
 }
 
@@ -925,6 +931,8 @@ tcl2rb_num_or_str(self, value)
     VALUE value;
 {
     rb_check_type(value, T_STRING);
+
+    if (RSTRING(value)->ptr == (char*)NULL) return rb_tainted_str_new2("");
 
     return rb_rescue2(tkstr_to_number, value, 
                       tkstr_to_str, value, 

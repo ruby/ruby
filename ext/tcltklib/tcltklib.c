@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2004-12-27"
+#define TCLTKLIB_RELEASE_DATE "2005-01-25"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -74,8 +74,8 @@ const char tcltklib_release_date[] = TCLTKLIB_RELEASE_DATE;
 static char *finalize_hook_name = "INTERP_FINALIZE_HOOK";
 
 /* to cancel remained after-scripts when deleting IP */
-#define REMAINED_AFTER_IDS_VAR "__ruby_tcltklib_remained_after_script_list__"
-#define CANCEL_REMAINED_AFTER_IDS "foreach id $__ruby_tcltklib_remained_after_script_list__ {after cancel $id}"
+#define CANCEL_AFTER_SCRIPTS "__ruby_tcltklib_cancel_after_scripts__"
+#define DEF_CANCEL_AFTER_SCRIPTS_PROC "proc __ruby_tcltklib_cancel_after_scripts__ {} {foreach id [after info] {after cancel $id}}"
 
 /* for callback break & continue */
 static VALUE eTkCallbackReturn;
@@ -203,6 +203,14 @@ static int ip_ruby_cmd _((ClientData, Tcl_Interp *, int, Tcl_Obj *CONST*));
 static int ip_ruby_eval _((ClientData, Tcl_Interp *, int, char **));
 static int ip_ruby_cmd _((ClientData, Tcl_Interp *, int, char **));
 #endif
+
+static int ip_null_namespace _((Tcl_Interp *));
+#if TCL_MAJOR_VERSION >= 8
+#ifndef Tcl_GetCurrentNamespace
+EXTERN Tcl_Namespace *  Tcl_GetCurrentNamespace _((Tcl_Interp *));
+#endif
+#endif
+
 
 /*---- class TclTkIp ----*/
 struct tcltkip {
@@ -1881,7 +1889,7 @@ ip_InterpExitCommand(clientData, interp, argc, argv)
     char *argv[];
 #endif
 {
-    if (!Tcl_InterpDeleted(interp)) {
+    if (!Tcl_InterpDeleted(interp) && !ip_null_namespace(interp)) {
         Tcl_Preserve(interp);
         Tcl_Eval(interp, "interp eval {} {destroy .}; interp delete {}");
         Tcl_Release(interp);
@@ -3261,10 +3269,13 @@ VALUE del_root(ip)
 
     if (!Tcl_InterpDeleted(ip)) {
         Tcl_Preserve(ip);
-        while((main_win = Tk_MainWindow(ip)) != (Tk_Window)NULL) {
+
+        if ( (main_win = Tk_MainWindow(ip)) != (Tk_Window)NULL
+                && !(((Tk_FakeWin*)main_win)->flags & TK_ALREADY_DEAD) ) {
           DUMP1("wait main_win is destroyed");
           Tk_DestroyWindow(main_win);
         }
+
         Tcl_Release(ip);
     }
     return Qnil;
@@ -3277,8 +3288,14 @@ delete_slaves(ip)
 {
     Tcl_Interp *slave;
     Tcl_Obj *slave_list, *elem;
+    Tcl_CmdInfo info;
     char *slave_name;
     int i, len;
+
+    if (Tcl_InterpDeleted(ip) || ip_null_namespace(ip)) {
+        DUMP2("call delete_slaves() for deleted ip(%lx)", ip);
+        return;
+    }
 
     DUMP2("delete slaves of ip(%lx)", ip);
 
@@ -3316,14 +3333,18 @@ delete_slaves(ip)
 
         Tcl_Preserve(slave);
 
-        if (!Tcl_InterpDeleted(slave)) {
-            if (Tcl_Eval(slave, "after info") == TCL_OK
-                && Tcl_SetVar(slave, 
-                              REMAINED_AFTER_IDS_VAR, 
-                              Tcl_GetStringResult(slave), 
-                              TCL_GLOBAL_ONLY) != (char *)NULL) {
-                DUMP1("cancel after scripts");
-                Tcl_Eval(slave, CANCEL_REMAINED_AFTER_IDS);
+        if (!Tcl_InterpDeleted(slave) && !ip_null_namespace(slave)) {
+            if (Tcl_Eval(slave, DEF_CANCEL_AFTER_SCRIPTS_PROC) == TCL_OK) {
+                if (Tcl_GetCommandInfo(slave, CANCEL_AFTER_SCRIPTS, &info)) {
+                    DUMP2("call cancel after scripts proc '%s'", 
+                          CANCEL_AFTER_SCRIPTS);
+                    Tcl_Eval(slave, CANCEL_AFTER_SCRIPTS);
+                }
+            }
+
+            if (Tcl_GetCommandInfo(slave, finalize_hook_name, &info)) {
+                DUMP2("call finalize hook proc '%s'", finalize_hook_name);
+                Tcl_Eval(slave, finalize_hook_name);
             }
         }
 
@@ -3332,12 +3353,16 @@ delete_slaves(ip)
 
         /* delete slave */
         del_root(slave);
-        while(!Tcl_InterpDeleted(slave)) {
+        /* while(!rbtk_InterpDeleted(slave)) { */
+        if (!Tcl_InterpDeleted(slave)) {
             DUMP1("wait ip is deleted");
             Tcl_DeleteInterp(slave);
         }
 
         Tcl_Release(slave);
+
+        /* delete slave_name command */
+        Tcl_DeleteCommand(ip, slave_name);
     }
 
     Tcl_DecrRefCount(slave_list);
@@ -3359,7 +3384,7 @@ ip_free(ptr)
 
         DUMP2("IP ref_count = %d", ptr->ref_count);
 
-        if (!Tcl_InterpDeleted(ptr->ip)) {
+        if (!Tcl_InterpDeleted(ptr->ip) && !ip_null_namespace(ptr->ip)) {
             DUMP2("IP(%lx) is not deleted", ptr->ip);
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
@@ -3368,13 +3393,12 @@ ip_free(ptr)
 
             Tcl_ResetResult(ptr->ip);
 
-            if (Tcl_Eval(ptr->ip, "after info") == TCL_OK
-                && Tcl_SetVar(ptr->ip, 
-                              REMAINED_AFTER_IDS_VAR, 
-                              Tcl_GetStringResult(ptr->ip), 
-                              TCL_GLOBAL_ONLY) != (char *)NULL) {
-                DUMP1("cancel after scripts");
-                Tcl_Eval(ptr->ip, CANCEL_REMAINED_AFTER_IDS);
+            if (Tcl_Eval(ptr->ip, DEF_CANCEL_AFTER_SCRIPTS_PROC) == TCL_OK) {
+                if (Tcl_GetCommandInfo(ptr->ip, CANCEL_AFTER_SCRIPTS, &info)) {
+                    DUMP2("call cancel after scripts proc '%s'", 
+                          CANCEL_AFTER_SCRIPTS);
+                    Tcl_Eval(ptr->ip, CANCEL_AFTER_SCRIPTS);
+                }
             }
 
             if (Tcl_GetCommandInfo(ptr->ip, finalize_hook_name, &info)) {
@@ -3382,10 +3406,11 @@ ip_free(ptr)
                 Tcl_Eval(ptr->ip, finalize_hook_name);
             }
 
-            del_root(ptr->ip);
+            /* del_root(ptr->ip); */
 
             DUMP1("delete interp");
-            while(!Tcl_InterpDeleted(ptr->ip)) {
+            /* while(!rbtk_InterpDeleted(ptr->ip)) { */
+            if (!Tcl_InterpDeleted(ptr->ip)) {
                 DUMP1("wait ip is deleted");
                 Tcl_DeleteInterp(ptr->ip);
             }
@@ -3843,24 +3868,34 @@ static VALUE
 ip_delete(self)
     VALUE self;
 {
+    Tcl_CmdInfo info;
     struct tcltkip *ptr = get_ip(self);
 
     /* Tcl_Preserve(ptr->ip); */
     rbtk_preserve_ip(ptr);
 
-    if (Tcl_Eval(ptr->ip, "after info") == TCL_OK
-        && Tcl_SetVar(ptr->ip, 
-                      REMAINED_AFTER_IDS_VAR, 
-                      Tcl_GetStringResult(ptr->ip), 
-                      TCL_GLOBAL_ONLY) != (char *)NULL) {
-        DUMP1("cancel after scripts");
-        Tcl_Eval(ptr->ip, CANCEL_REMAINED_AFTER_IDS);
+    DUMP1("delete slaves");
+    delete_slaves(ptr->ip);
+
+    DUMP1("finalize operation");
+    if (Tcl_Eval(ptr->ip, DEF_CANCEL_AFTER_SCRIPTS_PROC) == TCL_OK) {
+        if (Tcl_GetCommandInfo(ptr->ip, CANCEL_AFTER_SCRIPTS, &info)) {
+            DUMP2("call cancel after scripts proc '%s'", 
+                  CANCEL_AFTER_SCRIPTS);
+            Tcl_Eval(ptr->ip, CANCEL_AFTER_SCRIPTS);
+        }
+    }
+
+    if (Tcl_GetCommandInfo(ptr->ip, finalize_hook_name, &info)) {
+        DUMP2("call finalize hook proc '%s'", finalize_hook_name);
+        Tcl_Eval(ptr->ip, finalize_hook_name);
     }
 
     del_root(ptr->ip);
 
     DUMP1("delete interp");
-    while(!Tcl_InterpDeleted(ptr->ip)) {
+    /* while(!rbtk_InterpDeleted(ptr->ip)) { */
+    if (!Tcl_InterpDeleted(ptr->ip)) {
         DUMP1("wait ip is deleted");
         Tcl_DeleteInterp(ptr->ip);
     }
@@ -3872,6 +3907,30 @@ ip_delete(self)
 }
 
 /* is deleted? */
+static int
+ip_null_namespace(interp)
+    Tcl_Interp *interp;
+{
+#if TCL_MAJOR_VERSION < 8
+    return 0;
+#else /* support Namespace */
+    return ( Tcl_GetCurrentNamespace(interp) == (Tcl_Namespace *)NULL );
+#endif
+}
+
+static VALUE
+ip_has_null_namespace_p(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (ip_null_namespace(ptr->ip)) {
+        return Qtrue;
+    } else {
+        return Qfalse;
+    }
+}
+
 static VALUE
 ip_is_deleted_p(self)
     VALUE self;
@@ -3922,7 +3981,11 @@ ip_get_result_string_obj(interp)
 
 # if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
     s = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &len);
-    return(rb_tainted_str_new(s, len));
+    if (s == (char*)NULL) {
+        return rb_tainted_str_new2("");
+    } else {
+        return(rb_tainted_str_new(s, len));
+    }
 
 # else /* TCL_VERSION >= 8.1 */
     volatile VALUE strval;
@@ -3937,12 +4000,20 @@ ip_get_result_string_obj(interp)
     if (Tcl_GetCharLength(retobj) != Tcl_UniCharLen(Tcl_GetUnicode(retobj))) {
         /* possibly binary string */
         s = Tcl_GetByteArrayFromObj(retobj, &len);
-        strval = rb_tainted_str_new(s, len);
+        if (s == (char*)NULL) {
+            strval = rb_tainted_str_new2("");
+        } else {
+            strval = rb_tainted_str_new(s, len);
+        }
         rb_ivar_set(strval, ID_at_enc, rb_str_new2("binary"));
     } else {
         /* possibly text string */
         s = Tcl_GetStringFromObj(retobj, &len);
-        strval = rb_tainted_str_new(s, len);
+        if (s == (char*)NULL) {
+            strval = rb_tainted_str_new2("");
+        } else {
+            strval = rb_tainted_str_new(s, len);
+        }
     }
 
     rb_thread_critical = thr_crit_bup;
@@ -3982,7 +4053,7 @@ ip_eval_real(self, cmd_str, cmd_len)
       Tcl_IncrRefCount(cmd);
 
       /* ip is deleted? */
-      if (Tcl_InterpDeleted(ptr->ip)) {
+      if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
           DUMP1("ip is deleted");
           Tcl_DecrRefCount(cmd);
           rb_thread_critical = thr_crit_bup;
@@ -4023,7 +4094,7 @@ ip_eval_real(self, cmd_str, cmd_len)
     DUMP2("Tcl_Eval(%s)", cmd_str);
 
     /* ip is deleted? */
-    if (Tcl_InterpDeleted(ptr->ip)) {
+    if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
         DUMP1("ip is deleted");
         ptr->return_value = TCL_OK;
         return rb_tainted_str_new2("");
@@ -4228,7 +4299,7 @@ lib_restart(self)
     rb_secure(4);
 
     /* ip is deleted? */
-    if (Tcl_InterpDeleted(ptr->ip)) {
+    if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
         DUMP1("ip is deleted");
         rb_raise(rb_eRuntimeError, "interpreter is deleted");
     }
@@ -4717,7 +4788,7 @@ ip_invoke_core(interp, argc, argv)
     ptr = get_ip(interp);
 
     /* ip is deleted? */
-    if (Tcl_InterpDeleted(ptr->ip)) {
+    if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
         DUMP1("ip is deleted");
         return rb_tainted_str_new2("");
     }
@@ -5199,7 +5270,7 @@ ip_get_variable(self, varname_arg, flag_arg)
         Tcl_IncrRefCount(nameobj);
 
         /* ip is deleted? */
-        if (Tcl_InterpDeleted(ptr->ip)) {
+        if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
             DUMP1("ip is deleted");
             Tcl_DecrRefCount(nameobj);
             rb_thread_critical = thr_crit_bup;
@@ -5263,7 +5334,7 @@ ip_get_variable(self, varname_arg, flag_arg)
         char *ret;
 
         /* ip is deleted? */
-        if (Tcl_InterpDeleted(ptr->ip)) {
+        if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
             DUMP1("ip is deleted");
             return rb_tainted_str_new2("");
         } else {
@@ -5335,7 +5406,7 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
         Tcl_IncrRefCount(idxobj);
 
         /* ip is deleted? */
-        if (Tcl_InterpDeleted(ptr->ip)) {
+        if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
             DUMP1("ip is deleted");
             Tcl_DecrRefCount(nameobj);
             Tcl_DecrRefCount(idxobj);
@@ -5400,7 +5471,7 @@ ip_get_variable2(self, varname_arg, index_arg, flag_arg)
         char *ret;
 
         /* ip is deleted? */
-        if (Tcl_InterpDeleted(ptr->ip)) {
+        if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
             DUMP1("ip is deleted");
             return rb_tainted_str_new2("");
         } else {
@@ -5447,7 +5518,7 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
     varname = varname_arg;
     value   = value_arg;
     flag    = flag_arg;
- 
+
     StringValue(varname);
     StringValue(value);
 
@@ -5497,7 +5568,7 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
 # endif
 
         /* ip is deleted? */
-        if (Tcl_InterpDeleted(ptr->ip)) {
+        if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
             DUMP1("ip is deleted");
             Tcl_DecrRefCount(nameobj);
             Tcl_DecrRefCount(valobj);
@@ -5564,7 +5635,7 @@ ip_set_variable(self, varname_arg, value_arg, flag_arg)
         CONST char *ret;
 
         /* ip is deleted? */
-        if (Tcl_InterpDeleted(ptr->ip)) {
+        if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
             DUMP1("ip is deleted");
             return rb_tainted_str_new2("");
         } else {
@@ -5661,7 +5732,7 @@ ip_set_variable2(self, varname_arg, index_arg, value_arg, flag_arg)
         Tcl_IncrRefCount(valobj);
 
         /* ip is deleted? */
-        if (Tcl_InterpDeleted(ptr->ip)) {
+        if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
             DUMP1("ip is deleted");
             Tcl_DecrRefCount(nameobj);
             Tcl_DecrRefCount(idxobj);
@@ -5722,7 +5793,7 @@ ip_set_variable2(self, varname_arg, index_arg, value_arg, flag_arg)
         CONST char *ret;
 
         /* ip is deleted? */
-        if (Tcl_InterpDeleted(ptr->ip)) {
+        if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
             DUMP1("ip is deleted");
             return rb_tainted_str_new2("");
         } else {
@@ -5766,7 +5837,7 @@ ip_unset_variable(self, varname_arg, flag_arg)
     StringValue(varname);
 
     /* ip is deleted? */
-    if (Tcl_InterpDeleted(ptr->ip)) {
+    if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
         DUMP1("ip is deleted");
         return Qtrue;
     }
@@ -5808,7 +5879,7 @@ ip_unset_variable2(self, varname_arg, index_arg, flag_arg)
     StringValue(index);
 
     /* ip is deleted? */
-    if (Tcl_InterpDeleted(ptr->ip)) {
+    if (Tcl_InterpDeleted(ptr->ip) || ip_null_namespace(ptr->ip)) {
         DUMP1("ip is deleted");
         return Qtrue;
     }
@@ -6401,6 +6472,7 @@ Init_tcltklib()
     rb_define_method(ip, "allow_ruby_exit=", ip_allow_ruby_exit_set, 1);
     rb_define_method(ip, "delete", ip_delete, 0);
     rb_define_method(ip, "deleted?", ip_is_deleted_p, 0);
+    rb_define_method(ip, "null_namespace?", ip_has_null_namespace_p, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
     rb_define_method(ip, "_toUTF8", ip_toUTF8, -1);
     rb_define_method(ip, "_fromUTF8", ip_fromUTF8, -1);

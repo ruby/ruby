@@ -438,6 +438,7 @@ class TkOptionMenubutton<TkMenubutton
 
     parent = nil
     if args[0].kind_of?(TkWindow) || args[0] == nil
+      keys.delete('parent') # ignore
       parent = args.shift 
     else
       parent = keys.delete('parent')
@@ -445,6 +446,7 @@ class TkOptionMenubutton<TkMenubutton
 
     @variable = nil
     if args[0].kind_of?(TkVariable) || args[0] == nil
+      keys.delete('variable') # ignore
       @variable = args.shift 
     else
       @variable = keys.delete('variable')

@@ -1,3 +1,40 @@
+Tue Jan 25 14:05:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: fix SEGV bug; trouble on canceling remained
+	  after scripts [ruby-dev:25479]: NULL current namespce when deleting
+	    Tk interpreter [ruby-talk:126225]
+
+	* ext/tcltklib/extconf.rb: bug fix; TCL_ENABLE_THREAD flag is inverted
+	  [ruby-talk:126360]
+
+	* ext/tcltklib/extconf.rb: add yet another native-thread check
+
+	* ext/tk/tkutil.c: fix SEGV bug; NULL string pointer when finalize
+	  Ruby interpreter
+
+	* ext/tk/lib/multi-tk.rb: avoid warning for deleted safeTk ip frame
+
+	* ext/tk/lib/tk/bindtag.rb: bug fix; new method of named bindtag
+	  doesn't return the created object [ruby-dev:25479]
+
+	* ext/tk/lib/tk/menu.rb: bug on treating arguments [ruby-dev:25479]
+
+	* ext/tk/lib/tk.rb: bug fix; cannot accept a callback ID string for 
+	  a command argument [ruby-dev:25479]
+
+	* ext/tk/lib/multi-tk.rb: ditto
+
+	* ext/tk/lib/tk/*.rb: ditto
+
+	* ext/tk/lib/tkextlib/*.rb: ditto
+
+	* ext/tk/sample/demos-jp/anilabel.rb: new demo script
+
+	* ext/tk/sample/demos-en/anilabel.rb: ditto
+
+	* ext/tk/sample/tkHTML/ss.rb: local variable scope bug fix
+	  [ruby-dev:25479]
+
 Mon Jan 24 16:00:53 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb (guess_old): not use NKF.guess_old

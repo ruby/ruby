@@ -292,7 +292,7 @@ class Tk::BLT::Treeview
   end
 
   def tag_bind(tag, seq, *args)
-    if TkComm._callback_entry?(args[0])
+    if TkComm._callback_entry?(args[0]) || !block_given?
       cmd = args.shift
     else
       cmd = Proc.new
@@ -301,7 +301,7 @@ class Tk::BLT::Treeview
     self
   end
   def tag_bind_append(tag, seq, *args)
-    if TkComm._callback_entry?(args[0])
+    if TkComm._callback_entry?(args[0]) || !block_given?
       cmd = args.shift
     else
       cmd = Proc.new
@@ -323,7 +323,7 @@ class Tk::BLT::Treeview
   end
 
   def button_bind(tag, seq, *args)
-    if TkComm._callback_entry?(args[0])
+    if TkComm._callback_entry?(args[0]) || !block_given?
       cmd = args.shift
     else
       cmd = Proc.new
@@ -332,7 +332,7 @@ class Tk::BLT::Treeview
     self
   end
   def button_bind_append(tag, seq, *args)
-    if TkComm._callback_entry?(args[0])
+    if TkComm._callback_entry?(args[0]) || !block_given?
       cmd = args.shift
     else
       cmd = Proc.new

@@ -78,7 +78,7 @@ module Tk::BLT
       #end
       def bind(context, *args)
         # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
-        if TkComm._callback_entry?(args[0])
+        if TkComm._callback_entry?(args[0]) || !block_given?
           cmd = args.shift
         else
           cmd = Proc.new
@@ -92,7 +92,7 @@ module Tk::BLT
       #end
       def bind_append(context, *args)
         # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
-        if TkComm._callback_entry?(args[0])
+        if TkComm._callback_entry?(args[0]) || !block_given?
           cmd = args.shift
         else
           cmd = Proc.new
@@ -243,7 +243,7 @@ module Tk::BLT
     #end
     def tabbind(tag, context, *args)
       # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
-      if TkComm._callback_entry?(args[0])
+      if TkComm._callback_entry?(args[0]) || !block_given?
         cmd = args.shift
       else
         cmd = Proc.new
@@ -257,7 +257,7 @@ module Tk::BLT
     #end
     def tabbind_append(tag, context, *args)
       # if args[0].kind_of?(Proc) || args[0].kind_of?(Method)
-      if TkComm._callback_entry?(args[0])
+      if TkComm._callback_entry?(args[0]) || !block_given?
         cmd = args.shift
       else
         cmd = Proc.new
