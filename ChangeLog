@@ -1,3 +1,7 @@
+Sat Jul 31 13:37:51 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (is_defined): avoid unnecessary method invocations.
+
 Sat Jul 31 05:35:37 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: exceptions were using an older

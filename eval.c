@@ -2159,7 +2159,7 @@ copy_node_scope(node, rval)
 
 #define MATCH_DATA *rb_svar(node->nd_cnt)
 
-static const char* is_defined _((VALUE, NODE*, char*));
+static const char* is_defined _((VALUE, NODE*, char*, int));
 
 static char*
 arg_defined(self, node, buf, type)
@@ -2176,13 +2176,13 @@ arg_defined(self, node, buf, type)
 	argc=node->nd_alen;
         if (argc > 0) {
 	    for (i=0;i<argc;i++) {
-		if (!is_defined(self, node->nd_head, buf))
+		if (!is_defined(self, node->nd_head, buf, 0))
 		    return 0;
 		node = node->nd_next;
 	    }
         }
     }
-    else if (!is_defined(self, node, buf)) {
+    else if (!is_defined(self, node, buf, 0)) {
 	return 0;
     }
     return type;
@@ -2201,10 +2201,11 @@ search_iclass(self, klass)
 }
 
 static const char*
-is_defined(self, node, buf)
+is_defined(self, node, buf, noeval)
     VALUE self;
     NODE *node;			/* OK */
     char *buf;
+    int noeval;
 {
     VALUE val;			/* OK */
     int state;
@@ -2239,7 +2240,8 @@ is_defined(self, node, buf)
 	val = self;
 	if (node->nd_recv == (NODE *)1) goto check_bound;
       case NODE_CALL:
-	if (!is_defined(self, node->nd_recv, buf)) return 0;
+	if (noeval) return ex;
+	if (!is_defined(self, node->nd_recv, buf, Qtrue)) return 0;
 	val = rb_eval(self, node->nd_recv);
       check_bound:
 	{
@@ -2331,8 +2333,8 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_COLON2:
-	if (!is_defined(self, node->nd_recv, buf)) return 0;
-	val = rb_eval(self, node->nd_head);
+	if (noeval) return ex;
+	if (!is_defined(self, node->nd_recv, buf, Qtrue)) return 0;
 	switch (TYPE(val)) {
 	  case T_CLASS:
 	  case T_MODULE:
@@ -3379,7 +3381,7 @@ rb_eval(self, n)
 	goto again;
 
       case NODE_OP_ASGN_OR:
-	if ((node->nd_aid && !is_defined(self, node->nd_head, 0)) ||
+	if ((node->nd_aid && !is_defined(self, node->nd_head, 0, 0)) ||
 	    !RTEST(result = rb_eval(self, node->nd_head))) {
 	    node = node->nd_value;
 	    goto again;
@@ -3870,7 +3872,7 @@ rb_eval(self, n)
       case NODE_DEFINED:
 	{
 	    char buf[20];
-	    const char *desc = is_defined(self, node->nd_head, buf);
+	    const char *desc = is_defined(self, node->nd_head, buf, 0);
 
 	    if (desc) result = rb_str_new2(desc);
 	    else result = Qnil;
