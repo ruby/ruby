@@ -1,3 +1,9 @@
+Wed Jan  7 20:51:51 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* test/net/test_httpheader.rb: new file.
+
+	* MANIFEST: add test/net/test_httpheader.rb.
+
 Wed Jan  7 20:42:06 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (HTTPHeader#content_length): should return nil
