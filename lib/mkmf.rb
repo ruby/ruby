@@ -159,8 +159,16 @@ def have_library(lib, func="main")
 #include <windows.h>
 #include <winsock.h>
 int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+      unless r
+        r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
+int main() { return 0; }
 int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
 SRC
+      end
     else
       r = try_link(<<"SRC", libs)
 int main() { return 0; }
@@ -213,8 +221,16 @@ def have_func(func)
 #include <windows.h>
 #include <winsock.h>
 int main() { return 0; }
+int t() { #{func}(); return 0; }
+SRC
+    unless r
+      r = try_link(<<"SRC", libs)
+#include <windows.h>
+#include <winsock.h>
+int main() { return 0; }
 int t() { void ((*p)()); p = (void ((*)()))#{func}; return 0; }
 SRC
+    end
   else
     r = try_link(<<"SRC", libs)
 int main() { return 0; }

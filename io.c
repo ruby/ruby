@@ -1613,8 +1613,7 @@ rb_io_popen(str, argc, argv, klass)
     }
     RBASIC(port)->klass = klass;
     if (rb_block_given_p()) {
-	rb_ensure(rb_yield, port, rb_io_close, port);
-	return Qnil;
+	return rb_ensure(rb_yield, port, rb_io_close, port);
     }
     return port;
 }
@@ -1665,8 +1664,7 @@ rb_file_s_open(argc, argv, klass)
     }
 
     if (rb_block_given_p()) {
-	rb_ensure(rb_yield, file, rb_io_close, file);
-	return Qnil;
+	return rb_ensure(rb_yield, file, rb_io_close, file);
     }
 
     return file;

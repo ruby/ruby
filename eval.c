@@ -6880,7 +6880,7 @@ rb_thread_schedule()
     }
 
     FOREACH_THREAD_FROM(curr, th) {
-	if (!next && (th->status <= THREAD_RUNNABLE)) {
+	if (th->status <= THREAD_RUNNABLE) {
 	    if (!next || next->priority < th->priority)
 	       next = th;
 	}
@@ -7283,6 +7283,7 @@ rb_thread_priority_set(thread, prio)
     th = rb_thread_check(thread);
 
     th->priority = NUM2INT(prio);
+    rb_thread_schedule();
     return thread;
 }
 
@@ -7643,6 +7644,7 @@ rb_thread_cleanup()
 	if (th != curr_thread && th->status != THREAD_KILLED) {
 	    rb_thread_ready(th);
 	    th->gid = 0;
+	    th->priority = 0;
 	    th->status = THREAD_TO_KILL;
 	}
     }

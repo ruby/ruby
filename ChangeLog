@@ -14,9 +14,31 @@ Sun Jun  4 02:01:10 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* lib/mkmf.rb: do not need to add -L$(topdir) in --enable-shared case.
 
+Sat Jun  3 13:50:06 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (rb_id2name): should support constant attrset
+	  identifiers. 
+
+	* bignum.c (rb_big_eq): Bignum#== should not raise exception.
+
+Fri Jun  2 11:24:48 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_popen): open with a block returns the value from the
+	  block.  old behavior was back.
+
+Fri Jun  2 00:42:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+
+	* eval.c (rb_thread_cleanup): should clear priority for thread
+	  termination.
+
 Thu Jun  1 00:59:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_yield_0): convert Qundef to [].
+
+Wed May 31 20:45:59 2000  Dave Thomas  <Dave@Thomases.com>
+
+	* string.c (rb_str_slice_bang): wrong argument number.
 
 Wed May 31 12:37:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -36,11 +58,6 @@ Wed May 31 01:54:21 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  not call rb_thread_restore_context()
 
 Tue May 30 23:33:41 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
-
-	* ext/extmk.rb.in (have_library, have_func): remove unnecessary
-	  try_link() call from the mswin32 platform branch.
-
-	* lib/mkmf.rb (have_library, have_func): ditto.
 
 	* lib/mkmf.rb (create_makefile): add $(TARGET).ilk and *.pdb
 	  to cleanup files for mswin32.

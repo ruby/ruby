@@ -4737,19 +4737,21 @@ rb_id2name(id)
 	return name;
 
     if (is_attrset_id(id)) {
-	char *res;
-	ID id2;
+	ID id2 = (id & ~ID_SCOPE_MASK) | ID_LOCAL;
 
-	id2 = (id & ~ID_SCOPE_MASK) | ID_LOCAL;
-	res = rb_id2name(id2);
+      again:
+	name = rb_id2name(id2);
+	if (name) {
+	    char *buf = ALLOCA_N(char, strlen(name)+2);
 
-	if (res) {
-	    char *buf = ALLOCA_N(char, strlen(res)+2);
-
-	    strcpy(buf, res);
+	    strcpy(buf, name);
 	    strcat(buf, "=");
 	    rb_intern(buf);
 	    return rb_id2name(id);
+	}
+	if (is_local_id(id2)) {
+	    id2 = (id & ~ID_SCOPE_MASK) | ID_CONST;
+	    goto again;
 	}
     }
     return 0;

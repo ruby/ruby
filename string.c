@@ -1053,8 +1053,8 @@ rb_str_slice_bang(argc, argv, str)
 	buf[i] = argv[i];
     }
     buf[i] = rb_str_new(0,0);
-    result = rb_str_aref_m(2, buf, str);
-    rb_str_aset_m(3, buf, str);
+    result = rb_str_aref_m(argc, buf, str);
+    rb_str_aset_m(argc+1, buf, str);
     return result;
 }
 
