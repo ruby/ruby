@@ -290,7 +290,7 @@ syck_emitter_start_obj( SyckEmitter *e, SYMID oid )
                      */
                     args->startpos = n->pos;
                     args->offset = alen + 1;
-                    st_foreach( e->anchors, syck_adjust_anchors, args );
+                    st_foreach( e->anchors, syck_adjust_anchors, (st_data_t)args );
                     S_FREE( args );
 
                     /*
