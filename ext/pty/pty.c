@@ -359,7 +359,7 @@ getDevice(master,slave)
     int	 i,j;
     char MasterName[DEVICELEN];
 
-#ifdef HAVE_PTSNAME
+#ifdef HAVE_DEV_PTMX
     char *pn;
     void (*s)();
 
