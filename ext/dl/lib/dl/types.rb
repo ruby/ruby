@@ -173,65 +173,73 @@ module DL
       @TYDEFS = TYPES.dup
     end
 
-    def encode_type(ty)
-      orig_ty = ty
-      enc = nil
-      dec = nil
-      senc = nil
-      sdec = nil
-      ty1 = ty
-      ty2 = ty
-      @TYDEFS.each{|t1,t2,c1,c2,t3,c3,c4|
-	if( (t1.is_a?(Regexp) && (t1 =~ ty1)) || (t1 == ty1) )
-	  ty1 = ty1.gsub(t1,t2) if t2
-          ty1.strip! if ty1
-	  if( enc )
-	    if( c1 )
-	      conv1 = enc
-	      enc = proc{|v| c1.call(conv1.call(v))}
+    def encode_argument_type(alias_type)
+      proc_encode = nil
+      proc_decode = nil
+      @TYDEFS.each{|aty,ty,enc,dec,_,_,_|
+	if( (aty.is_a?(Regexp) && (aty =~ alias_type)) || (aty == alias_type) )
+	  alias_type = alias_type.gsub(aty,ty) if ty
+          alias_type.strip! if alias_type
+	  if( proc_encode )
+	    if( enc )
+	      conv1 = proc_encode
+	      proc_encode = proc{|v| enc.call(conv1.call(v))}
 	    end
 	  else
-	    if( c1 )
-	      enc = c1
+	    if( enc )
+	      proc_encode = enc
 	    end
 	  end
-	  if( dec )
-	    if( c2 )
-	      conv2 = dec
-	      dec = proc{|v| c2.call(conv2.call(v))}
+	  if( proc_decode )
+	    if( dec )
+	      conv2 = proc_decode
+	      proc_decode = proc{|v| dec.call(conv2.call(v))}
 	    end
 	  else
-	    if( c2 )
-	      dec = c2
+	    if( dec )
+	      proc_decode = dec
 	    end
 	  end
 	end
-	if( (t1.is_a?(Regexp) && (t1 =~ ty2)) || (t1 == ty2) )
-          ty2 = ty2.gsub(t1,t3) if t3
-          ty2.strip! if ty2
-	  if( senc )
-	    if( c3 )
-	      conv3 = senc
-	      senc = proc{|v| c3.call(conv3.call(v))}
-	    end
-	  else
-	    if( c3 )
-	      senc = c3
-	    end
-	  end
-	  if( sdec )
-	    if( c4 )
-	      conv4 = sdec
-	      sdec = proc{|v| c4.call(conv4.call(v))}
-	    end
-	  else
-	    if( c4 )
-	      sdec = c4
-	    end
-	  end
-        end
       }
-      return [ty1,enc,dec,ty2,senc,sdec]
+      return [alias_type, proc_encode, proc_decode]
+    end
+
+    def encode_return_type(ty)
+      ty, enc, dec = encode_argument_type(ty)
+      return [ty, enc, dec]
+    end
+
+    def encode_struct_type(alias_type)
+      proc_encode = nil
+      proc_decode = nil
+      @TYDEFS.each{|aty,_,_,_,ty,enc,dec|
+	if( (aty.is_a?(Regexp) && (aty =~ alias_type)) || (aty == alias_type) )
+	  alias_type = alias_type.gsub(aty,ty) if ty
+          alias_type.strip! if alias_type
+	  if( proc_encode )
+	    if( enc )
+	      conv1 = proc_encode
+	      proc_encode = proc{|v| enc.call(conv1.call(v))}
+	    end
+	  else
+	    if( enc )
+	      proc_encode = enc
+	    end
+	  end
+	  if( proc_decode )
+	    if( dec )
+	      conv2 = proc_decode
+	      proc_decode = proc{|v| dec.call(conv2.call(v))}
+	    end
+	  else
+	    if( dec )
+	      proc_decode = dec
+	    end
+	  end
+	end
+      }
+      return [alias_type, proc_encode, proc_decode]
     end
   end # end of Types
 end
