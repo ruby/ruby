@@ -1,6 +1,16 @@
+Fri Mar  7 20:27:19 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/tcltklib/extconf.rb (find_tcl, find_tk): return true if
+	  non-versioned found.  [ruby-dev:19759]
+
 Fri Mar  7 15:05:35 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/dbm/extconf.rb: add QDBM support.
+
+Fri Mar  7 12:59:39 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (massign): deal with sole lhs, assign rest args from
+	  converted array.  [ruby-dev:19751]
 
 Fri Mar  7 03:31:36 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
