@@ -7,6 +7,8 @@ Mon Nov  1 13:59:28 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST, ext/**/MANIFEST: removed.
 
+	* README.EXT, README.EXT.ja: remove MANIFEST stuff.
+
 Mon Nov  1 11:52:18 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (pipe_open): avoid conflict of variable name. [ruby-dev:24662]
