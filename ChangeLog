@@ -1,3 +1,12 @@
+Fri Mar  5 20:58:37 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: Net::HTTPResponse#response is obsolete.
+	  [ruby-core:02592]
+
+	* lib/net/http.rb: Net::HTTPResponse#header is obsolete.
+
+	* lib/net/http.rb: Net::HTTPResponse#read_header is obsolete.
+
 Fri Mar  5 20:10:57 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: new method StringScanner#initialize_copy

@@ -1640,11 +1640,19 @@ module Net # :nodoc:
     #
 
     def response   #:nodoc:
+      warn "#{caller(1)[0]}: warning: HTTPResponse#response is obsolete" if $VERBOSE
       self
     end
 
-    alias header response        #:nodoc:
-    alias read_header response   #:nodoc:
+    def header   #:nodoc:
+      warn "#{caller(1)[0]}: warning: HTTPResponse#header is obsolete" if $VERBOSE
+      self
+    end
+
+    def read_header   #:nodoc:
+      warn "#{caller(1)[0]}: warning: HTTPResponse#read_header is obsolete" if $VERBOSE
+      self
+    end
 
     #
     # body
