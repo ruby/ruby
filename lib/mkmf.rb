@@ -249,6 +249,60 @@ def cpp_include(header)
   end
 end
 
+def try_static_assert(expr, headers = nil, opt = "")
+  headers = cpp_include(headers)
+  try_compile(<<SRC, opt)
+#{COMMON_HEADERS}
+#{headers}
+int tmp[(#{expr}) ? 1 : -1];
+SRC
+end
+
+def try_constant(const, headers = nil, opt = "")
+  if true # CROSS_COMPILING
+    unless try_compile(<<"SRC", opt)
+#{COMMON_HEADERS}
+#{cpp_include(headers)}
+int tmp = #{const};
+SRC
+      return nil
+    end
+    if try_static_assert("#{const} < 0", headers, opt)
+      neg = true
+      const = "-(#{const})"
+    elsif try_static_assert("#{const} == 0", headers, opt)
+      return 0
+    end
+    upper = 1
+    until try_static_assert("#{const} < #{upper}", headers, opt)
+      lower = upper
+      upper <<= 1
+    end
+    return nil unless lower
+    until try_static_assert("#{const} == #{upper}", headers, opt)
+      if try_static_assert("#{const} > #{(upper+lower)/2}", headers, opt)
+        lower = (upper+lower)/2
+      else
+        upper = (upper+lower)/2
+      end
+    end
+    upper = -upper if neg
+    return upper
+  else
+    src = %{#{COMMON_HEADERS}
+#{cpp_include(headers)}
+#include <stdio.h>
+int main() {printf("%d\\n", (int)(#{const})); return 0;}
+}
+    if try_link0(src, opt)
+      xpopen("./conftest") do |f|
+        return Integer(f.gets)
+      end
+    end
+  end
+  nil
+end
+
 def try_func(func, libs, headers = nil)
   headers = cpp_include(headers)
   try_link(<<"SRC", libs) or try_link(<<"SRC", libs)
@@ -440,6 +494,38 @@ SRC
       false
     end
   end
+end
+
+def have_type(type, header=nil, opt="")
+  checking_for type do
+    if try_compile(<<"SRC", opt) or try_compile(<<"SRC", opt)
+#{COMMON_HEADERS}
+#{cpp_include(header)}
+static #{type} t;
+SRC
+#{COMMON_HEADERS}
+#{cpp_include(header)}
+static #{type} *t;
+SRC
+      $defs.push(format("-DHAVE_TYPE_%s", type.upcase))
+      true
+    else
+      false
+    end
+  end
+end
+
+def check_sizeof(type, header=nil)
+  expr = "sizeof(#{type})"
+  m = "checking size of #{type}... "
+  message "%s", m
+  Logging::message "check_sizeof: %s--------------------\n", m
+  if size = try_constant(expr, header)
+    $defs.push(format("-DSIZEOF_%s", type.upcase))
+  end
+  message(a = size ? "#{size}\n" : "failed\n")
+  Logging::message "-------------------- %s\n", a
+  r
 end
 
 def find_executable0(bin, path = nil)

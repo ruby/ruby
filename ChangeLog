@@ -1,3 +1,12 @@
+Thu Jul 24 16:41:31 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/mkmf.rb (have_type): check if a type is defined.
+
+	* lib/mkmf.rb (check_sizeof): check size of a type.
+
+	* ext/dbm/extconf.rb: check if type DBM is defined.
+	  [ruby-talk:76693]
+
 Thu Jul 24 16:18:40 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ChangeLog (add-log-time-format): "%c" contains timezone on
