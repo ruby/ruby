@@ -2,6 +2,8 @@ Wed Jul  9 15:38:28 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* instruby.rb: do not install shared libraries as man pages.
 
+	* mkconfig.rb: support text-mount on Cygwin.
+
 Wed Jul 09 11:09:57 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* re.c (match_entry): add prototype to avoid VC++ warnings.
