@@ -27,6 +27,7 @@ module TkPlace
       tk_call_without_enc('place', 'configure', win, "-#{slot}", value)
     end
   end
+  alias place configure
 
   def configinfo(win, slot = nil)
     # for >= Tk8.4a2 ?
@@ -106,7 +107,7 @@ module TkPlace
     list(tk_call('place', 'slaves', master))
   end
 
-  module_function :configure, :configinfo, :current_configinfo
+  module_function :place, :configure, :configinfo, :current_configinfo
   module_function :forget, :info, :slaves
 end
 =begin

@@ -29,6 +29,7 @@ module TkPack
     }
     tk_call_without_enc("pack", 'configure', *params)
   end
+  alias pack configure
 
   def forget(*args)
     return '' if args.size == 0
@@ -66,7 +67,7 @@ module TkPack
     list(tk_call_without_enc('pack', 'slaves', master))
   end
 
-  module_function :configure, :forget, :info, :propagate, :slaves
+  module_function :pack, :configure, :forget, :info, :propagate, :slaves
 end
 =begin
 def TkPack(win, *args)
