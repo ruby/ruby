@@ -1,3 +1,8 @@
+Fri Sep  3 01:54:20 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: already built-in libraries satisfy dependencies.
+	  [ruby-dev:24028]
+
 Thu Sep  2 11:36:20 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* eval.c (rb_obj_instance_eval): backported from HEAD.

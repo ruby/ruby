@@ -233,9 +233,10 @@ if $extlist.size > 0
   $extinit ||= ""
   $extobjs ||= ""
   list = $extlist.dup
+  built = []
   while e = list.shift
     s,t,i,r = e
-    if r and !r.empty?
+    if r and !(r -= built).empty?
       l = list.size
       if (while l > 0; break true if r.include?(list[l-=1][1]) end)
         list.insert(l + 1, e)
@@ -246,6 +247,7 @@ if $extlist.size > 0
     if File.exist?(f)
       $extinit += "\tinit(Init_#{i}, \"#{t}.so\");\n"
       $extobjs += "ext/#{f} "
+      built << t
     end
   end
 
