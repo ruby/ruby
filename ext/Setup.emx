@@ -11,6 +11,7 @@ nkf
 #pty
 #readline
 #sdbm
+sha1
 socket
 #tcltklib
 #tk

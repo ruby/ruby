@@ -9,6 +9,7 @@
 #md5
 #pty
 #sdbm
+#sha1
 #socket
 #tk
 #tcltklib

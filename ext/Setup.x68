@@ -8,5 +8,6 @@ fcntl
 kconv
 marshal
 md5
+sha1
 #socket
 #tkutil
