@@ -1,3 +1,8 @@
+Tue Sep 30 09:11:43 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): while/until should not capture break unless
+	  they are destination of the break.
+
 Tue Sep 30 03:12:02 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (finish): revert to 1.93.

@@ -2650,8 +2650,11 @@ rb_eval(self, n)
 	    state = 0;
 	    goto while_next;
 	  case TAG_BREAK:
-	    state = 0;
-	    result = prot_tag->retval;
+	    if (TAG_DST()) {
+		state = 0;
+		result = prot_tag->retval;
+	    }
+	    /* fall through */
 	  default:
 	    break;
 	}
@@ -2682,8 +2685,11 @@ rb_eval(self, n)
 	    state = 0;
 	    goto until_next;
 	  case TAG_BREAK:
-	    state = 0;
-	    result = prot_tag->retval;
+	    if (TAG_DST()) {
+		state = 0;
+		result = prot_tag->retval;
+	    }
+	    /* fall through */
 	  default:
 	    break;
 	}

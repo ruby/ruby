@@ -3196,7 +3196,7 @@ re_search(bufp, string, size, startpos, range, regs)
     }
   }
   if (bufp->options & RE_OPTIMIZE_ANCHOR) {
-    if (bufp->options&RE_OPTION_SINGLELINE) {
+    if (bufp->options&RE_OPTION_MULTILINE && range > 0) {
       goto begbuf_match;
     }
     anchor = 1;

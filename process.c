@@ -159,7 +159,14 @@ pst_inspect(st)
     snprintf(buf, sizeof(buf), "#<%s: pid=%ld", rb_class2name(CLASS_OF(st)), NUM2LONG(pid));
     str = rb_str_new2(buf);
     if (WIFSTOPPED(status)) {
-	snprintf(buf, sizeof(buf), ",stopped(%d)", WSTOPSIG(status));
+	int stopsig = WSTOPSIG(status);
+	char *signame = ruby_signal_name(stopsig);
+	if (signame) {
+	    snprintf(buf, sizeof(buf), ",signaled(SIG%s=%d)", signame, stopsig);
+	}
+	else {
+	    snprintf(buf, sizeof(buf), ",signaled(%d)", stopsig);
+	}
 	rb_str_cat2(str, buf);
     }
     if (WIFSIGNALED(status)) {
