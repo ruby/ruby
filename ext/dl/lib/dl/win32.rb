@@ -12,7 +12,7 @@ class Win32API
   end
 
   def call(*args)
-    import = @sym.split("", 2)[1]
+    import = @sym.proto.split("", 2)[1]
     args.each_with_index do |x, i|
       args[i] = nil if x == 0 and import[i] == ?S
       args[i], = [x].pack("I").unpack("i") if import[i] == ?I
