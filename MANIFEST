@@ -120,6 +120,7 @@ lib/base64.rb
 lib/benchmark.rb
 lib/cgi-lib.rb
 lib/cgi.rb
+lib/cgi/.document
 lib/cgi/session.rb
 lib/cgi/session/pstore.rb
 lib/complex.rb
