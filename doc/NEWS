@@ -1,3 +1,42 @@
+: Digest module
+
+  Added as a replacement for md5 and sha1 modules.
+
+    require 'digest/md5'
+    include Digest
+
+    md = MD5.new
+    md << "abc"
+    puts md
+
+    puts MD5.hexdigest("123")
+
+: Dir::chdir
+
+  Changed to warn only when invoked from multiple threads or no block
+  is given. [ruby-dev:13823]
+
+    Dir.chdir("/tmp")
+
+    pwd = Dir.pwd	#=> "/tmp"
+    puts pwd
+
+    Dir.chdir("foo") {
+      pwd = Dir.pwd	#=> "/tmp/foo"
+      puts pwd
+
+      Dir.chdir("bar") {	# <-- previously warned
+        pwd = Dir.pwd	#=> "/tmp/foo/bar"
+        puts pwd
+      }
+
+      pwd = Dir.pwd	#=> "/tmp/foo"
+      puts pwd
+    }
+
+    pwd = Dir.pwd	#=> "/tmp"
+    puts pwd
+
 : Proc#yield
 
   Added.  This is equivalent to Proc#call except it does not check the
