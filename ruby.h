@@ -398,7 +398,7 @@ void xfree _((void*));
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
 
 void rb_glob _((char*,void(*)(),VALUE));
-void rb_iglob _((char*,void(*)(),VALUE));
+void rb_globi _((char*,void(*)(),VALUE));
 
 VALUE rb_define_class _((const char*,VALUE));
 VALUE rb_define_module _((const char*));

@@ -1,3 +1,7 @@
+Sun Jul  8 20:54:19 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ruby.h: fix a wrong function name: rb_iglob() -> rb_globi().
+
 Sun Jul  8 16:05:36 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/protocol.rb (ProtoSocket#read): modify typo.
