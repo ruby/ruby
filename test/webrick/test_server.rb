@@ -50,11 +50,9 @@ class TestWEBrickServer < Test::Unit::TestCase
       Process.fork{
         r.close
         WEBrick::Daemon.start
-        w.puts(Process.ppid)
         w.puts(Process.pid)
         sleep
       }
-      assert_equal(1, r.gets.to_i)
       assert(Process.kill(:KILL, r.gets.to_i))
     rescue NotImplementedError
       # snip this test

@@ -1,3 +1,8 @@
+Sun Jan  9 04:08:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* test/webrick/test_server.rb (test_daemon): delete an assertion
+	  which has possibility to fail by race condition.
+
 Sun Jan  9 03:22:46 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb (test_copy_entry): copy_entry
