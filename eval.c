@@ -1427,7 +1427,7 @@ ev_const_defined(cref, id, self)
 {
     NODE *cbase = cref;
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
+    while (cbase) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
 	if (NIL_P(klass)) return rb_const_defined(CLASS_OF(self), id);
@@ -1448,7 +1448,7 @@ ev_const_get(cref, id, self)
     NODE *cbase = cref;
     VALUE result;
 
-    while (cbase && cbase->nd_clss != rb_cObject) {
+    while (cbase) {
 	struct RClass *klass = RCLASS(cbase->nd_clss);
 
 	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);

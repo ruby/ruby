@@ -1,9 +1,15 @@
+Mon Mar 19 16:52:23 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (ev_const_defined): need not to check if cbase->nd_class
+	  is rb_cObject.
+
+	* eval.c (ev_const_get): ditto.
+
 Mon Mar 19 16:27:32 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (THREAD_ALLOC): flags should be initialized.
 
 	* signal.c (rb_f_kill): should use FIX2INT, not FIX2UINT.
-
 
 Sun Mar 18 08:58:18 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
