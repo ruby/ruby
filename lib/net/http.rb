@@ -1094,7 +1094,7 @@ module Net # :nodoc:
       @method = m
       @request_has_body = reqbody
       @response_has_body = resbody
-      raise ArgumentError, "invalid request path: #{path.inspect}" unless %r<\A/> =~ path
+      raise ArgumentError, "HTTP request path is empty" if path.empty?
       @path = path
 
       @header = {}

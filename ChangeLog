@@ -1,3 +1,8 @@
+Thu Jan 29 19:28:16 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (Request#initialize): reject only when a path is
+	  empty. [ruby-dev:22771]
+
 Thu Jan 29 17:03:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c: merge tuning from H.Yamamoto <ocean@m2.ccsnet.ne.jp>.
