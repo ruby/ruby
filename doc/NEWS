@@ -1,3 +1,36 @@
+: String#chomp
+
+  if $/ == '\n', chops off last newlines (any of \n, \r, \r\n).
+
+: IO#puts
+
+  do not treat Array specially.
+
+: Module::new/Class::new
+
+  takes block.
+
+: allocation framework
+
+  any instance of class can be allocated by class.allocate,
+  (except a few classes).
+
+: String#[]
+
+  starting offset can be specified as optional second parameter.
+
+: String/Array methods
+
+  returns an instance of receivers class.
+
+: String::new
+
+  returns "".
+
+: Dir#path
+
+  Added.
+
 : Enum#sort_by
 
   Added.

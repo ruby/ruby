@@ -76,7 +76,7 @@ DNS stub resolver.
 
 --- Resolv::DNS#getresource(name, typeclass)
 --- Resolv::DNS#getresources(name, typeclass)
---- Resolv::DNS#each_resources(name, typeclass) {|resource| ...}
+--- Resolv::DNS#each_resource(name, typeclass) {|resource| ...}
     They lookup DNS resources of ((|name|)).
     ((|name|)) must be a instance of Resolv::Name or String.
 
@@ -370,7 +370,7 @@ class Resolv
     end
 
     def each_address(name)
-      each_resources(name, Resource::IN::A) {|resource| yield resource.address}
+      each_resource(name, Resource::IN::A) {|resource| yield resource.address}
     end
 
     def getname(address)
@@ -395,21 +395,21 @@ class Resolv
       else
         raise ResolvError.new("cannot interpret as address: #{address}")
       end
-      each_resources(ptr, Resource::IN::PTR) {|resource| yield resource.name}
+      each_resource(ptr, Resource::IN::PTR) {|resource| yield resource.name}
     end
 
     def getresource(name, typeclass)
-      each_resources(name, typeclass) {|resource| return resource}
+      each_resource(name, typeclass) {|resource| return resource}
       raise ResolvError.new("DNS result has no information for #{name}")
     end
 
     def getresources(name, typeclass)
       ret = []
-      each_resources(name, typeclass) {|resource| ret << resource}
+      each_resource(name, typeclass) {|resource| ret << resource}
       return ret
     end
 
-    def each_resources(name, typeclass, &proc)
+    def each_resource(name, typeclass, &proc)
       lazy_initialize
       q = Queue.new
       senders = {}
@@ -1594,7 +1594,7 @@ class Resolv
 
     def initialize(address)
       unless address.kind_of?(String) && address.length == 16
-        raise ArgumentError.new('IPv4 address muse be 16 bytes')
+        raise ArgumentError.new('IPv6 address muse be 16 bytes')
       end
       @address = address
     end

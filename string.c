@@ -291,6 +291,8 @@ rb_str_dup(str)
     }
     else if (RSTRING(str)->orig) {
 	str2 = rb_str_new3(RSTRING(str)->orig);
+	FL_UNSET(str2, FL_TAINT);
+	OBJ_INFECT(str2, str);
     }
     else {
 	str2 = rb_str_new3(rb_str_new4(str));
@@ -2673,13 +2675,15 @@ rb_str_chomp_bang(argc, argv, str)
 		    RSTRING(str)->ptr[RSTRING(str)->len-1] == '\r') {
 		    RSTRING(str)->len--;
 		}
-		return str;
 	    }
 	    else if (RSTRING(str)->ptr[len-1] == '\r') {
 		RSTRING(str)->len--;
-		return str;
 	    }
-	    return Qnil;
+	    else {
+		return Qnil;
+	    }
+	    RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+	    return str;
 	}
     }
     if (NIL_P(rs)) return Qnil;

@@ -19,6 +19,7 @@
 #include "ruby.h"
 #include "rubyio.h"
 #include "rubysig.h"
+#include "util.h"
 #include "dln.h"
 
 #ifdef HAVE_UNISTD_H
@@ -1225,14 +1226,22 @@ rb_file_s_readlink(klass, path)
     VALUE klass, path;
 {
 #ifdef HAVE_READLINK
-    char buf[MAXPATHLEN];
-    int cc;
+    char *buf;
+    int size = 100;
+    int rv;
+    VALUE v;
 
     SafeStringValue(path);
-    if ((cc = readlink(RSTRING(path)->ptr, buf, MAXPATHLEN)) < 0)
-	rb_sys_fail(RSTRING(path)->ptr);
+    buf = xmalloc(size);
+    if ((rv = readlink(RSTRING(path)->ptr, buf, size)) == size) {
+	size *= 2;
+	buf = xrealloc(buf, size);
+    }
+    if (rv < 0) rb_sys_fail(RSTRING(path)->ptr);
+    v = rb_tainted_str_new(buf, rv);
+    free(buf);
 
-    return rb_tainted_str_new(buf, cc);
+    return v;
 #else
     rb_notimplement();
     return Qnil;		/* not reached */
@@ -1296,10 +1305,6 @@ rb_file_s_umask(argc, argv)
     }
     return INT2FIX(omask);
 }
-
-#ifndef HAVE_GETCWD
-#define getcwd(buf, len) ((void)(len), getwd(buf))
-#endif
 
 #if defined DOSISH
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
@@ -2228,29 +2233,31 @@ is_absolute_path(path)
 
 static int
 path_check_1(path)
-    char *path;
+     VALUE path;
 {
     struct stat st;
-    char *p = 0;
-    char *s;
+    char *p0 = RSTRING(path)->ptr;
+    char *p, *s;
 
-    if (!is_absolute_path(path)) {
-	char buf[MAXPATHLEN+1];
+    if (!is_absolute_path(p0)) {
+	char *buf = my_getcwd();
+	VALUE newpath;
 
-	if (getcwd(buf, MAXPATHLEN) == 0) return 0;
-	strncat(buf, "/", MAXPATHLEN);
-	strncat(buf, path, MAXPATHLEN);
-	buf[MAXPATHLEN] = '\0';
-	return path_check_1(buf);
+	newpath = rb_str_new2(buf);
+	free(buf);
+
+	rb_str_cat2(newpath, "/");
+	rb_str_cat2(newpath, p0);
+	return path_check_1(newpath);
     }
     for (;;) {
-	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
+	if (stat(p0, &st) == 0 && (st.st_mode & 002)) {
 	    if (p) *p = '/';
 	    return 0;
 	}
-	s = strrdirsep(path);
+	s = strrdirsep(p0);
 	if (p) *p = '/';
-	if (!s || s == path) return 1;
+	if (!s || s == p0) return 1;
 	p = s;
 	*p = '\0';
     }
@@ -2260,27 +2267,24 @@ int
 rb_path_check(path)
     char *path;
 {
-    char *p, *pend;
+    char *p0, *p, *pend;
     const char sep = PATH_SEP_CHAR;
 
     if (!path) return 1;
 
-    p = path;
-    pend = strchr(path, sep);
+    pend = path + strlen(path);
+    p0 = path;
+    p = strchr(path, sep);
+    if (!p) p = pend;
 
     for (;;) {
-	int safe;
-
-	if (pend) *pend = '\0';
-	safe = path_check_1(p);
-       if (!safe) {
-           if (pend) *pend = sep;
-           return 0;
-       }
-	if (!pend) break;
-	*pend = sep;
-	p = pend + 1;
-	pend = strchr(p, sep);
+	if (!path_check_1(rb_str_new(p0, p - p0))) {
+	    return 0;		/* not safe */
+	}
+	if (p0 > pend) break;
+	p0 = p + 1;
+	p = strchr(p0, sep);
+	if (!p) p = pend;
     }
     return 1;
 }

@@ -60,7 +60,11 @@ class WeakRef<Delegator
     unless ID_MAP[@__id]
       raise RefError, "Illegal Reference - probably recycled", caller(2)
     end
-    ObjectSpace._id2ref(@__id)
+    begin
+      ObjectSpace._id2ref(@__id)
+    rescue RangeError
+      raise RefError, "Illegal Reference - probably recycled", caller(2)
+    end
   end
 
   def weakref_alive?

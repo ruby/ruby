@@ -35,15 +35,16 @@ extern "C" {
 #include <stdio.h>
 
 /* need to include <ctype.h> to use these macros */
+#define ISASCII(c) isascii((unsigned char)(c))
 #undef ISPRINT
-#define ISPRINT(c) isprint((unsigned char)(c))
-#define ISSPACE(c) isspace((unsigned char)(c))
-#define ISUPPER(c) isupper((unsigned char)(c))
-#define ISLOWER(c) islower((unsigned char)(c))
-#define ISALNUM(c) isalnum((unsigned char)(c))
-#define ISALPHA(c) isalpha((unsigned char)(c))
-#define ISDIGIT(c) isdigit((unsigned char)(c))
-#define ISXDIGIT(c) isxdigit((unsigned char)(c))
+#define ISPRINT(c) (ISASCII(c) && isprint((unsigned char)(c)))
+#define ISSPACE(c) (ISASCII(c) && isspace((unsigned char)(c)))
+#define ISUPPER(c) (ISASCII(c) && isupper((unsigned char)(c)))
+#define ISLOWER(c) (ISASCII(c) && islower((unsigned char)(c)))
+#define ISALNUM(c) (ISASCII(c) && isalnum((unsigned char)(c)))
+#define ISALPHA(c) (ISASCII(c) && isalpha((unsigned char)(c)))
+#define ISDIGIT(c) (ISASCII(c) && isdigit((unsigned char)(c)))
+#define ISXDIGIT(c) (ISASCII(c) && isxdigit((unsigned char)(c)))
 
 #if !defined(__STDC__) && !defined(_MSC_VER)
 # define volatile

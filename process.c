@@ -422,9 +422,12 @@ static void
 security(str)
     char *str;
 {
-    if (rb_safe_level() > 0) {
-	if (rb_env_path_tainted()) {
+    if (rb_env_path_tainted()) {
+	if (rb_safe_level() > 0) {
 	    rb_raise(rb_eSecurityError, "Insecure PATH - %s", str);
+	}
+	else {
+	    rb_warn("Insecure PATH - %s", str);
 	}
     }
 }
@@ -520,8 +523,6 @@ rb_proc_exec(str)
     const char *s = str;
     char *ss, *t;
     char **argv, **a;
-
-    security(str);
 
     while (*str && ISSPACE(*str))
 	str++;

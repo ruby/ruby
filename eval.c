@@ -3645,8 +3645,8 @@ rb_yield_0(val, self, klass, pcall)
     int state;
     static unsigned serial = 1;
 
-    if (!(rb_block_given_p() || rb_f_block_given_p())) {
-	rb_raise(rb_eLocalJumpError, "yield called out of block");
+    if (!rb_block_given_p()) {
+	rb_raise(rb_eLocalJumpError, "no block given");
     }
 
     PUSH_VARS();

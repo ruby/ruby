@@ -428,24 +428,29 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		| variable tOP_ASGN command_call
 		    {
 		        NODE *n = assignable($1, 0);
-			if ($2 == tOROP) {
-			    n->nd_value = $3;
-			    $$ = NEW_OP_ASGN_OR(gettable($1), n);
-			    if (is_instance_id($1)) {
-				$$->nd_aid = $1;
+			if (n) {
+			    if ($2 == tOROP) {
+				n->nd_value = $3;
+				$$ = NEW_OP_ASGN_OR(gettable($1), n);
+				if (is_instance_id($1)) {
+				    $$->nd_aid = $1;
+				}
 			    }
-			}
-			else if ($2 == tANDOP) {
-			    n->nd_value = $3;
-			    $$ = NEW_OP_ASGN_AND(gettable($1), n);
+			    else if ($2 == tANDOP) {
+				n->nd_value = $3;
+				$$ = NEW_OP_ASGN_AND(gettable($1), n);
+			    }
+			    else {
+				$$ = n;
+				if ($$) {
+				    $$->nd_value = call_op(gettable($1),$2,1,$3);
+				}
+			    }
+			    fixpos($$, $3);
 			}
 			else {
-			    $$ = n;
-			    if ($$) {
-				$$->nd_value = call_op(gettable($1),$2,1,$3);
-			    }
+			    $$ = 0;
 			}
-			fixpos($$, $3);
 		    }
 		| primary '[' aref_args ']' tOP_ASGN command_call
 		    {
@@ -770,24 +775,29 @@ arg		: lhs '=' arg
 		| variable tOP_ASGN arg
 		    {
 		        NODE *n = assignable($1, 0);
-			if ($2 == tOROP) {
-			    n->nd_value = $3;
-			    $$ = NEW_OP_ASGN_OR(gettable($1), n);
-			    if (is_instance_id($1)) {
-				$$->nd_aid = $1;
+			if (n) {
+			    if ($2 == tOROP) {
+				n->nd_value = $3;
+				$$ = NEW_OP_ASGN_OR(gettable($1), n);
+				if (is_instance_id($1)) {
+				    $$->nd_aid = $1;
+				}
 			    }
-			}
-			else if ($2 == tANDOP) {
-			    n->nd_value = $3;
-			    $$ = NEW_OP_ASGN_AND(gettable($1), n);
+			    else if ($2 == tANDOP) {
+				n->nd_value = $3;
+				$$ = NEW_OP_ASGN_AND(gettable($1), n);
+			    }
+			    else {
+				$$ = n;
+				if ($$) {
+				    $$->nd_value = call_op(gettable($1),$2,1,$3);
+				}
+			    }
+			    fixpos($$, $3);
 			}
 			else {
-			    $$ = n;
-			    if ($$) {
-				$$->nd_value = call_op(gettable($1),$2,1,$3);
-			    }
+			    $$ = 0;
 			}
-			fixpos($$, $3);
 		    }
 		| primary '[' aref_args ']' tOP_ASGN arg
 		    {

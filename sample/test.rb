@@ -1329,6 +1329,16 @@ begin
 rescue
   test_ok false
 end
+class S
+  def initialize(a)
+    @a = a
+  end
+end
+l=nil
+100000.times {
+  l = S.new(l)
+}
+test_ok true   # reach here or dumps core
 
 if $failed > 0
   printf "test: %d failed %d\n", $ntest, $failed

@@ -610,6 +610,17 @@ rb_big_eq(x, y)
 }
 
 static VALUE
+rb_big_eql(x, y)
+    VALUE x, y;
+{
+    if (TYPE(y) != T_BIGNUM) return Qfalse;
+    if (RBIGNUM(x)->sign != RBIGNUM(y)->sign) return Qfalse;
+    if (RBIGNUM(x)->len != RBIGNUM(y)->len) return Qfalse;
+    if (MEMCMP(BDIGITS(x),BDIGITS(y),BDIGIT,RBIGNUM(y)->len) != 0) return Qfalse;
+    return Qtrue;
+}
+
+static VALUE
 rb_big_uminus(x)
     VALUE x;
 {
@@ -1454,7 +1465,7 @@ Init_Bignum()
     rb_define_method(rb_cBignum, "<=>", rb_big_cmp, 1);
     rb_define_method(rb_cBignum, "==", rb_big_eq, 1);
     rb_define_method(rb_cBignum, "===", rb_big_eq, 1);
-    rb_define_method(rb_cBignum, "eql?", rb_big_eq, 1);
+    rb_define_method(rb_cBignum, "eql?", rb_big_eql, 1);
     rb_define_method(rb_cBignum, "hash", rb_big_hash, 0);
     rb_define_method(rb_cBignum, "to_f", rb_big_to_f, 0);
     rb_define_method(rb_cBignum, "abs", rb_big_abs, 0);

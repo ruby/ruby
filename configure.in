@@ -293,7 +293,7 @@ AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul crypt flock vsnprintf\
 		 isinf isnan finite hypot)
-AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd chroot\
+AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall chroot\
 	      truncate chsize times utimes fcntl lockf lstat symlink readlink\
 	      setitimer setruid seteuid setreuid setresuid setproctitle\
 	      setrgid setegid setregid setresgid pause lchown lchmod\
@@ -581,7 +581,7 @@ if test "$with_dln_a_out" != yes; then
 			LDFLAGS="-Wl,-E"
 			rb_cv_dlopen=yes;;
 	solaris*) 	if test "$GCC" = yes; then
-			   LDSHARED='$(CC) -Wl,-G'
+			   LDSHARED='$(CC) -Wl,-G -shared'
 			   `$CC --print-prog-name=ld` -v 2>&1 | grep "GNU ld" > /dev/null && LDFLAGS="-Wl,-E"
 			else
 			   LDSHARED='ld -G'

@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include <stdio.h>
+#include <errno.h>
 
 #ifdef NT
 #include "missing/file.h"
@@ -627,4 +628,18 @@ ruby_strdup(str)
     memcpy(tmp, str, len);
 
     return tmp;
+}
+
+char *
+ruby_getcwd()
+{
+    int size = 200;
+    char *buf = xmalloc(size);
+
+    while (!getcwd(buf, size)) {
+	if (errno != ERANGE) rb_sys_fail(buf);
+	size *= 2;
+	buf = xrealloc(buf, size);
+    }
+    return buf;
 }

@@ -50,4 +50,7 @@ char *ruby_strdup _((const char*));
 #undef strdup
 #define strdup(s) ruby_strdup((s))
 
+char *ruby_getcwd _((void));
+#define my_getcwd() ruby_getcwd()
+
 #endif /* UTIL_H */

@@ -61,6 +61,8 @@ char *strchr _((char*,char));
 
 #include <ctype.h>
 
+#include "util.h"
+
 #ifndef HAVE_LSTAT
 #define lstat(path,st) stat(path,st)
 #endif
@@ -430,20 +432,15 @@ static VALUE chdir_thread = Qnil;
 
 static VALUE
 chdir_restore(path)
-    const char *path;
+    char *path;
 {
     chdir_blocking--;
     if (chdir_blocking == 0)
 	chdir_thread = Qnil;
     dir_chdir(path);
+    free(path);
     return Qnil;
 }
-
-#ifdef HAVE_GETCWD
-#define GETCWD(path) if (getcwd(path, sizeof(path)) == 0) rb_sys_fail(path)
-#else
-#define GETCWD(path) if (getwd(path) == 0) rb_sys_fail(path)
-#endif
 
 static VALUE
 dir_s_chdir(argc, argv, obj)
@@ -473,9 +470,7 @@ dir_s_chdir(argc, argv, obj)
     }
 
     if (rb_block_given_p()) {
-	char cwd[MAXPATHLEN];
-
-	GETCWD(cwd);
+	char *cwd = my_getcwd();
 	chdir_blocking++;
 	if (chdir_thread == Qnil)
 	    chdir_thread = rb_thread_current();
@@ -491,10 +486,11 @@ static VALUE
 dir_s_getwd(dir)
     VALUE dir;
 {
-    char path[MAXPATHLEN];
+    char *path = my_getcwd();
+    VALUE cwd = rb_tainted_str_new2(path);
 
-    GETCWD(path);
-    return rb_tainted_str_new2(path);
+    free(path);
+    return cwd;
 }
 
 static VALUE
