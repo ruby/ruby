@@ -1,3 +1,8 @@
+Fri Mar  5 00:51:35 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/test/unit.rb: MOve RDoc documentation so that you can 
+	  now say 'ri Test::Unit'
+
 Thu Mar  4 22:31:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in: miniruby is not needed for cross compile.
