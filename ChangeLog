@@ -1,3 +1,8 @@
+Tue Apr  9 05:17:48 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* re.c (match_select): fix index references and make
+	  MatchData#select actually work.
+
 Mon Apr  8 04:50:51 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (error_handle): default to 1 unless status is set.

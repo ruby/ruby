@@ -841,7 +841,7 @@ match_select(argc, argv, match)
 	    rb_ary_push(result, Qnil);
 	}
 	else {
-	    VALUE str = rb_str_new(ptr+regs->beg[i], regs->end[i]-regs->beg[i]);
+	    VALUE str = rb_str_new(ptr+regs->beg[idx], regs->end[idx]-regs->beg[idx]);
 	    if (taint) OBJ_TAINT(str);
 	    rb_ary_push(result, str);
 	}
