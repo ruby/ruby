@@ -1,3 +1,7 @@
+Wed Sep 11 16:15:06 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/tempfile.rb: Merge from 1.7: Add Tempfile#size.
+
 Mon Sep  9 23:43:33 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.h (S_I?USR): define only if not mingw32.
