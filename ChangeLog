@@ -1,3 +1,8 @@
+Wed Dec  8 23:54:29 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/generators/template/html/html.rb (RDoc::Page): Typo
+	  meant that h2 tag was invisible.
+
 Wed Dec  8 21:56:31 2004  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss, test/rss, sample/rss: backported from CVS HEAD.
