@@ -11,11 +11,6 @@ Sat Nov  1 18:21:09 2003 GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  ossl_x509extfactory_set_subject_req, ossl_x509extfactory_set_config):
 	  use underlying C struct without duplication not to leak momory.
 
-Sat Nov  1 18:11:18 2003  Akinori MUSHA  <knu@iDaemons.org>
-
-	* ext/io/wait/wait.c: #include <sys/time.h> is needed for struct
-	  timeval.
-
 Sat Nov  1 01:49:03 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/mapping/factory.rb: mark marshalled basetype objects when
