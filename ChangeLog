@@ -1,3 +1,8 @@
+Mon Aug  9 12:51:43 2004  Dave Thomas  <dave@pragprog.com>
+
+	* dir.c (dir_s_glob): Roll in Austin Ziegler's Dir.glob and
+	  fnmatch updates.
+
 Mon Aug  9 06:33:06 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (cp_r): copies symlink to symlink, except

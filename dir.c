@@ -1,3 +1,4 @@
+
 /**********************************************************************
 
   dir.c -
@@ -1501,10 +1502,34 @@ dir_s_aref(obj, str)
  *  Returns the filenames found by expanding the pattern given in
  *  <i>string</i>, either as an <i>array</i> or as parameters to the
  *  block. Note that this pattern is not a regexp (it's closer to a
- *  shell glob). See <code>File::fnmatch</code> for
- *  details of file name matching and the meaning of the <i>flags</i>
- *  parameter. Note that case sensitivity depends on your system. (so
- *  <code>File::FNM_CASEFOLD</code> is ignored)
+ *  shell glob). See <code>File::fnmatch</code> for the meaning of
+ *  the <i>flags</i> parameter. Note that case sensitivity 
+ *  depends on your system (so <code>File::FNM_CASEFOLD</code> is ignored)
+ *
+ *  <code>*</code>::        Matches any file. Can be restricted by
+ *                          other values in the glob. <code>*</code>
+ *                          will match all files; <code>c*</code> will
+ *                          match all files beginning with
+ *                          <code>c</code>; <code>*c</code> will match
+ *                          all files ending with <code>c</code>; and
+ *                          <code>*c*</code> will match all files that
+ *                          have <code>c</code> in them (including at
+ *                          the beginning or end). Equivalent to
+ *                          <code>/ .* /x</code> in regexp.
+ *  <code>**</code>::       Matches directories recursively.
+ *  <code>?</code>::        Matches any one character. Equivalent to
+ *                          <code>/.{1}/</code> in regexp.
+ *  <code>[set]</code>::    Matches any one character in +set+.
+ *                          Behaves exactly like character sets in
+ *                          Regexp, including set negation
+ *                          (<code>[^a-z]</code>).
+ *  <code>{p,q}</code>::    Matches either literal <code>p</code> or
+ *                          literal <code>q</code>. Matching literals
+ *                          may be more than one character in length.
+ *                          More than two literals may be specified.
+ *                          Equivalent to pattern alternation in
+ *                          regexp.
+ *  <code>\</code>::        Escapes the next metacharacter.
  *
  *     Dir["config.?"]                     #=> ["config.h"]
  *     Dir.glob("config.?")                #=> ["config.h"]
@@ -1514,6 +1539,23 @@ dir_s_aref(obj, str)
  *     Dir.glob("*")                       #=> ["config.h", "main.rb"]
  *     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h", "main.rb"]
  *
+ *     Dir.glob("*", File::FNM_DOTMATCH)   #=> [".", "..", "config.h",
+ *                                              "main.rb"]
+ *     Dir.glob("**.rb")                   #=> []
+ *
+ *     rbfiles = File.join("**", "*.rb")
+ *     Dir.glob(rbfiles)                   #=> ["main.rb",
+ *                                              "lib/song.rb",
+ *                                              "lib/song/karaoke.rb"]
+ *     libdirs = File.join("**", "lib")
+ *     Dir.glob(libdirs)                   #=> ["lib"]
+ *
+ *     librbfiles = File.join("**", "lib", "**", "*.rb")
+ *     Dir.glob(librbfiles)                #=> ["lib/song.rb",
+ *                                              "lib/song/karaoke.rb"]
+ *
+ *     librbfiles = File.join("**", "lib", "*.rb")
+ *     Dir.glob(librbfiles)                #=> ["lib/song.rb"]
  */
 static VALUE
 dir_s_glob(argc, argv, obj)
@@ -1591,8 +1633,29 @@ dir_entries(io, dirname)
  *  similar to shell filename globbing. It may contain the following
  *  metacharacters:
  *
- *  <i>flags</i> is a bitwise OR of the <code>FNM_xxx</code> parameters.
- *  The same glob pattern and flags are used by <code>Dir::glob</code>.
+ *  <code>*</code>::        Matches any file. Can be restricted by
+ *                          other values in the glob. <code>*</code>
+ *                          will match all files; <code>c*</code> will
+ *                          match all files beginning with
+ *                          <code>c</code>; <code>*c</code> will match
+ *                          all files ending with <code>c</code>; and
+ *                          <code>*c*</code> will match all files that
+ *                          have <code>c</code> in them (including at
+ *                          the beginning or end). Equivalent to
+ *                          <code>/ .* /x</code> in regexp.
+ *  <code>**</code>::       Matches directories recursively or files
+ *                          expansively.
+ *  <code>?</code>::        Matches any one character. Equivalent to
+ *                          <code>/.{1}/</code> in regexp.
+ *  <code>[set]</code>::    Matches any one character in +set+.
+ *                          Behaves exactly like character sets in
+ *                          Regexp, including set negation
+ *                          (<code>[^a-z]</code>).
+ *  <code>\</code>::        Escapes the next metacharacter.
+ *
+ *  <i>flags</i> is a bitwise OR of the <code>FNM_xxx</code>
+ *  parameters. The same glob pattern and flags are used by
+ *  <code>Dir::glob</code>.
  *
  *     File.fnmatch('cat',       'cat')        #=> true  : match entire string
  *     File.fnmatch('cat',       'category')   #=> false : only match partial string
@@ -1621,7 +1684,15 @@ dir_entries(io, dirname)
  *     File.fnmatch('*',   '.profile', File::FNM_DOTMATCH)  #=> true    period by default.
  *     File.fnmatch('.*',  '.profile')                      #=> true
  *
+ *     rbfiles = File.join("**", "*.rb")
+ *     File.fnmatch(rbfiles, 'main.rb')                    #=> false
+ *     File.fnmatch(rbfiles, './main.rb')                  #=> false
+ *     File.fnmatch(rbfiles, 'lib/song.rb')                #=> true
+ *     File.fnmatch('**.rb', 'main.rb')                    #=> true
+ *     File.fnmatch('**.rb', './main.rb')                  #=> false
+ *     File.fnmatch('**.rb', 'lib/song.rb')                #=> true
  *     File.fnmatch('*',           'dave/.profile')                      #=> true
+ *
  *     File.fnmatch('* IGNORE /*', 'dave/.profile', File::FNM_PATHNAME)  #=> false
  *     File.fnmatch('* IGNORE /*', 'dave/.profile', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
  *
