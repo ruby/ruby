@@ -1,3 +1,8 @@
+Mon Mar 14 12:21:03 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/timer.rb (TkRTTimer): forgot to reset the callback
+	  time. So, 'continue' do all callbacks between 'stop' and 'continue'.
+
 Mon Mar 14 00:13:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb (TkRTTimer): correct calculation of offset
