@@ -233,12 +233,16 @@ class TestDRbEval < Test::Unit::TestCase
     
     remote_class = four.remote_class
 
+    assert_equal(1, remote_class.class_eval('1'))
+
+    assert_equal(1, remote_class.module_eval('1'))
+
     assert_raises(SecurityError) do
-      remote_class.class_eval('ENV.inspect')
+      remote_class.class_eval('ENV = {}')
     end
 
     assert_raises(SecurityError) do
-      remote_class.module_eval('ENV.inspect')
+      remote_class.module_eval('ENV = {}')
     end
   end
 end

@@ -1,3 +1,7 @@
+Thu Feb 17 00:31:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/test_drb.rb, ut_safe1.rb: port from 1.8
+
 Wed Feb 16 23:54:14 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_start_1): outer block variables wasn't linked to
