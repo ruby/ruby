@@ -51,6 +51,7 @@ end
 
 def getPosition(z)
   pi = Math::PI
+  z  = Integer(z)
   phys = (50.0 * (1.0 + sin((z / 23.0 - (z / 23)) * 360.0 * pi / 180.0))).to_i
   emot = (50.0 * (1.0 + sin((z / 28.0 - (z / 28)) * 360.0 * pi / 180.0))).to_i
   geist =(50.0 * (1.0 + sin((z / 33.0 - (z / 33)) * 360.0 * pi / 180.0))).to_i
@@ -142,7 +143,7 @@ else
   print "                     Bad Condition    |    Good Condition\n"
   print "             -------------------------+-------------------------\n"
   
-  for z in (dd - bd)..(dd - bd + display_period)
+  (dd - bd).step(dd - bd + display_period) do |z|
     phys, emot, geist = getPosition(z)
     
     printf "%04d.%02d.%02d : ", dd.year, dd.month, dd.day

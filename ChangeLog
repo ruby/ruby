@@ -1,3 +1,8 @@
+Thu Jun  6 19:50:39 2002  KONISHI Hiromasa <H_Konishi@ruby-lang.org>
+
+	* sample/biorhythm.rb (getPosiiton,etc)
+	  fix at changing Date module ( Date is changed Fixnum to Rational )
+
 Thu Jun  6 12:04:30 2002  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (config.status): use sub! instead of []= because
