@@ -1,7 +1,7 @@
 Mon Sep 29 16:11:23 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: clean up temporaly symlink.
-	  [ruby-dev:21420]
+	  Patched by NaHi.  [ruby-dev:21420]
 
 Mon Sep 29 11:16:55 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
