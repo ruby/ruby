@@ -153,9 +153,12 @@ Object
       @socket  = nil
     end
 
-
     attr_reader :address, :port,
                 :command, :socket
+
+    def inspect
+      "#<#{type} #{address}:#{port} open=#{active?}>"
+    end
 
 
     def start( *args )
@@ -231,6 +234,10 @@ Object
     attr_accessor :socket
     attr_reader :last_reply
 
+    def inspect
+      "#<#{type}>"
+    end
+
     # abstract quit
 
 
@@ -295,6 +302,10 @@ Object
     attr_reader :code_type, :code, :message
     alias msg message
 
+    def inspect
+      "#<#{type} #{code}>"
+    end
+
     def error!( data = nil )
       raise code_type.error_type.new( code + ' ' + Net.quote(msg), data )
     end
@@ -320,6 +331,10 @@ Object
     end
 
     attr :data
+
+    def inspect
+      "#<#{type}>"
+    end
   
   end
 
@@ -334,6 +349,10 @@ Object
     end
 
     attr_reader :parents
+
+    def inspect
+      "#<#{type}>"
+    end
 
     def error_type
       @err
@@ -370,6 +389,10 @@ Object
       @mid = mid
     end
 
+    def inspect
+      "#<#{type}>"
+    end
+
     def write( str )
       @sock.__send__ @mid, str
     end
@@ -381,6 +404,10 @@ Object
 
     def initialize( block )
       @block = block
+    end
+
+    def inspect
+      "#<#{type}>"
     end
 
     def <<( str )
@@ -412,6 +439,10 @@ Object
 
     class << self
       alias open new
+    end
+
+    def inspect
+      "#<#{type} open=#{!@closed}>"
     end
 
     def reopen

@@ -7,17 +7,6 @@ written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This library is distributed under the terms of the Ruby license.
 You can freely distribute/modify this library.
 
-=end
-
-
-require 'net/protocol'
-require 'md5'
-
-
-module Net
-
-
-=begin
 
 == Net::POP3
 
@@ -51,52 +40,16 @@ Net::Protocol
   an array of ((URL:#POPMail)).
   This array is renewed when session started.
 
-=end
 
-  class POP3 < Protocol
+== Net::APOP
 
-    protocol_param :port,         '110'
-    protocol_param :command_type, '::Net::POP3Command'
+This class defines no new methods.
+Only difference from POP3 is using APOP authentification.
 
-    protocol_param :mail_type,    '::Net::POPMail'
+=== Super Class
 
-    def initialize( addr = nil, port = nil )
-      super
-      @mails = [].freeze
-    end
+Net::POP3
 
-        
-    attr :mails
-
-    def each
-      @mails.each {|m| yield m }
-    end
-
-
-    private
-
-
-    def do_start( acnt, pwd )
-      @command.auth( acnt, pwd )
-
-      @mails = []
-      t = type.mail_type
-      @command.list.each_with_index do |size,idx|
-        if size then
-          @mails.push t.new( idx, size, @command )
-        end
-      end
-      @mails.freeze
-    end
-
-  end
-
-  POP         = POP3
-  POPSession  = POP3
-  POP3Session = POP3
-
-
-=begin
 
 == Net::POPMail
 
@@ -107,7 +60,7 @@ A class of mail which exists on POP server.
 Object
 
 
-=== Method
+=== Methods
 
 : all( dest = '' )
 : pop
@@ -155,6 +108,54 @@ Object
 
 =end
 
+require 'net/protocol'
+require 'md5'
+
+
+module Net
+
+  class POP3 < Protocol
+
+    protocol_param :port,         '110'
+    protocol_param :command_type, '::Net::POP3Command'
+
+    protocol_param :mail_type,    '::Net::POPMail'
+
+    def initialize( addr = nil, port = nil )
+      super
+      @mails = [].freeze
+    end
+
+    attr :mails
+
+    def each
+      @mails.each {|m| yield m }
+    end
+
+
+    private
+
+    def do_start( acnt, pwd )
+      @command.auth( acnt, pwd )
+
+      @mails = []
+      t = type.mail_type
+      @command.list.each_with_index do |size,idx|
+        if size then
+          @mails.push t.new( idx, size, @command )
+        end
+      end
+      @mails.freeze
+    end
+
+  end
+
+  POP         = POP3
+  POPSession  = POP3
+  POP3Session = POP3
+
+
+
   class POPMail
 
     def initialize( n, s, cmd )
@@ -165,8 +166,11 @@ Object
       @deleted = false
     end
 
-
     attr :size
+
+    def inspect
+      "#<#{type} #{@num}#{@deleted ? ' deleted' : ''}>"
+    end
 
     def all( dest = '' )
       if iterator? then
@@ -202,23 +206,9 @@ Object
   end
 
 
-=begin
-
-== Net::APOP
-
-This class defines no new methods.
-Only difference from POP3 is using APOP authentification.
-
-=== Super Class
-
-Net::POP3
-
-=end
 
   class APOP < POP3
-
     protocol_param :command_type, 'Net::APOPCommand'
-
   end
 
   APOPSession = APOP
@@ -234,7 +224,6 @@ Net::POP3
       }
     end
 
-
     def auth( acnt, pass )
       critical {
         @socket.writeline 'USER ' + acnt
@@ -244,7 +233,6 @@ Net::POP3
         check_reply_auth
       }
     end
-
 
     def list
       arr = []
@@ -257,7 +245,6 @@ Net::POP3
       }
       arr
     end
-
 
     def rset
       critical {
@@ -273,14 +260,12 @@ Net::POP3
       }
     end
 
-
     def retr( num, dest = '', &block )
       critical {
         getok sprintf( 'RETR %d', num )
         @socket.read_pendstr( dest, &block )
       }
     end
-
     
     def dele( num )
       critical {
@@ -288,13 +273,11 @@ Net::POP3
       }
     end
 
-
     def uidl( num )
       critical {
         getok( sprintf 'UIDL %d', num ).msg.split(' ')[1]
       }
     end
-
 
     def quit
       critical {
@@ -305,7 +288,6 @@ Net::POP3
 
     private
 
-
     def check_reply_auth
       begin
         cod = check_reply( SuccessCode )
@@ -315,7 +297,6 @@ Net::POP3
 
       return cod
     end
-
 
     def get_reply
       str = @socket.readline
@@ -342,7 +323,6 @@ Net::POP3
       end
       @stamp = m[0]
     end
-
 
     def auth( account, pass )
       critical {

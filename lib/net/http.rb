@@ -8,16 +8,6 @@ This file is derived from "http-access.rb".
 This library is distributed under the terms of the Ruby license.
 You can freely distribute/modify this library.
 
-=end
-
-require 'net/protocol'
-
-
-module Net
-
-  class HTTPBadResponse < StandardError; end
-
-=begin
 
 = class HTTP
 
@@ -50,7 +40,10 @@ module Net
   get data from "path" on connecting host.
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   Data is written to "dest" by using "<<" method.
-  This method returns Net::HTTPResponse object and "dest".
+  This method returns Net::HTTPResponse object, and "dest".
+
+    # example
+    response, body = http.get( '/index.html' )
 
   If called as iterator, give a part String of entity body.
 
@@ -59,14 +52,14 @@ module Net
   raised. At that time, you can get Response object from 
   execption object. (same in head/post)
 
-    ex.
-
+    # example
     begin
-      head, body = http.get(...)
-    rescue ProtoRetriableError
+      response, body = http.get(...)
+    rescue Net::ProtoRetriableError
       response = $!.data
       ...
     end
+
 
 : head( path, header = nil )
   get only header from "path" on connecting host.
@@ -94,24 +87,45 @@ module Net
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   This method gives HTTPReadAdapter object to block.
 
+    ex.
+    
+    http.get2( '/index.html' ) do |f|
+      # f is a HTTPReadAdapter object
+      f.header
+      f.body
+    end
+
 : head2( path, header = nil )
   send HEAD request for "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   The difference between "head" method is that
   "head2" does not raise exceptions.
 
+    ex.
+    
+    http.head2( '/index.html' ) do |f|
+      f.header
+    end
+
 : post2( path, data, header = nil ) {|adapter| .... }
   post "data"(must be String now) to "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   This method gives HTTPReadAdapter object to block.
 
+    ex.
+    
+    http.post2( '/index.html', 'data data data...' ) do |f|
+      f.header
+      f.body
+    end
+
 
 = class HTTPResponse
 
-== Methods
-
 HTTP response object.
 All "key" is case-insensitive.
+
+== Methods
 
 : code
   HTTP result code. For example, '302'
@@ -134,6 +148,9 @@ All "key" is case-insensitive.
 : each {|name,value| .... }
   iterate for each field name and value pair
 
+: body
+  "dest" argument for HTTP#get, post, put
+
 
 = class HTTPReadAdapter
 
@@ -153,6 +170,14 @@ All "key" is case-insensitive.
   returns first "dest".
 
 =end
+
+require 'net/protocol'
+
+
+module Net
+
+  class HTTPBadResponse < StandardError; end
+
 
   class HTTP < Protocol
 
@@ -320,6 +345,10 @@ All "key" is case-insensitive.
       @header = @body = nil
     end
 
+    def inspect
+      "#<#{type}>"
+    end
+
     def header
       unless @header then
         @header = @command.get_response
@@ -357,6 +386,10 @@ All "key" is case-insensitive.
 
     attr_reader :http_body_exist
     attr_accessor :body
+
+    def inspect
+      "#<Net::HTTPResponse #{code}>"
+    end
 
     def []( key )
       @data[ key.downcase ]
@@ -463,10 +496,12 @@ All "key" is case-insensitive.
       super sock
     end
 
-
     attr_reader :http_version
 
-      
+    def inspect
+      "#<Net::HTTPCommand>"
+    end
+
     def get( path, u_header )
       return unless begin_critical
       request sprintf('GET %s HTTP/%s', path, HTTPVersion), u_header
