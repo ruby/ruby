@@ -1,20 +1,15 @@
-#
-# test/fileutils/test_nowrite.rb
-#
-
-$:.unshift File.dirname(__FILE__)
+# $Id$
 
 require 'fileutils'
 require 'fileasserts'
 require 'tmpdir'
 require 'test/unit'
 
-
 class TestNoWrite < Test::Unit::TestCase
 
   include FileUtils::NoWrite
 
-  def my_rm_rf( path )
+  def my_rm_rf(path)
     if File.exist?('/bin/rm')
       system %Q[/bin/rm -rf "#{path}"]
     else
@@ -52,7 +47,7 @@ class TestNoWrite < Test::Unit::TestCase
     check 'tmp/mv'
   end
 
-  def check( dest )
+  def check(dest)
     assert_file_not_exist dest
     assert_file_exist SRC
     assert_same_file SRC, COPY

@@ -1,3 +1,11 @@
+Mon Dec 27 15:47:48 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/fileasserts.rb: sync with HEAD.
+
+	* test/fileutils/test_fileutils.rb: ditto.
+
+	* test/fileutils/test_nowrite.rb: ditto.
+
 Mon Dec 27 15:21:07 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mv): should raise error when moving a

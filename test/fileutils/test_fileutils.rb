@@ -1,8 +1,4 @@
-#
-# test/fileutils/test_fileutils.rb
-#
-
-$:.unshift File.dirname(__FILE__)
+# $Id$
 
 require 'fileutils'
 require 'fileasserts'
@@ -20,7 +16,7 @@ Dir.mkdir tmproot unless File.directory?(tmproot)
 Dir.chdir tmproot
 
 def have_drive_letter?
-  /djgpp|mswin(?!ce)|mingw|bcc|emx/ === RUBY_PLATFORM
+  /djgpp|mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
 end
 
 def have_file_perm?
@@ -53,6 +49,18 @@ def have_hardlink?
   HAVE_HARDLINK
 end
 
+begin
+  Dir.mkdir("\n")
+  Dir.rmdir("\n")
+  def lf_in_path_allowed?
+    true
+  end
+rescue
+  def lf_in_path_allowed?
+    false
+  end
+end
+
 Dir.chdir prevdir
 Dir.rmdir tmproot
 
@@ -60,7 +68,7 @@ class TestFileUtils
 
   include FileUtils
 
-  def my_rm_rf( path )
+  def my_rm_rf(path)
     if File.exist?('/bin/rm')
       system %Q[/bin/rm -rf "#{path}"]
     else
@@ -70,7 +78,7 @@ class TestFileUtils
 
   def setup
     @prevdir = Dir.pwd
-    tmproot = "#{Dir.tmpdir}/fileutils.rb.#{$$}"
+    tmproot = TMPROOT
     Dir.mkdir tmproot unless File.directory?(tmproot)
     Dir.chdir tmproot
     my_rm_rf 'data'; Dir.mkdir 'data'
@@ -86,13 +94,12 @@ class TestFileUtils
   end
 
 
-  TARGETS = %w( data/same data/all data/random data/zero )
+  TARGETS = %w( data/a data/all data/random data/zero )
 
   def prepare_data_file
-    same_chars = 'a' * 50
-    File.open('data/same', 'w') {|f|
+    File.open('data/a', 'w') {|f|
       32.times do
-        f.puts same_chars
+        f.puts 'a' * 50
       end
     }
 
@@ -226,6 +233,44 @@ end
       assert_same_file fname, "tmp/#{fname}"
     end
 
+    cp_r 'data', 'tmp2', :preserve => true
+    TARGETS.each do |fname|
+      assert_same_entry fname, "tmp2/#{File.basename(fname)}"
+      assert_same_file fname, "tmp2/#{File.basename(fname)}"
+    end
+
+    # a/* -> b/*
+    mkdir 'tmp/cpr_src'
+    mkdir 'tmp/cpr_dest'
+    File.open('tmp/cpr_src/a', 'w') {|f| f.puts 'a' }
+    File.open('tmp/cpr_src/b', 'w') {|f| f.puts 'b' }
+    File.open('tmp/cpr_src/c', 'w') {|f| f.puts 'c' }
+    mkdir 'tmp/cpr_src/d'
+    cp_r 'tmp/cpr_src/.', 'tmp/cpr_dest'
+    assert_same_file 'tmp/cpr_src/a', 'tmp/cpr_dest/a'
+    assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
+    assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
+    assert_directory 'tmp/cpr_dest/d'
+    rm_rf 'tmp/cpr_src'
+    rm_rf 'tmp/cpr_dest'
+
+if have_symlink?
+    # symlink in a directory
+    mkdir 'tmp/cpr_src'
+    ln_s 'SLdest', 'tmp/cpr_src/symlink'
+    cp_r 'tmp/cpr_src', 'tmp/cpr_dest'
+    assert_symlink 'tmp/cpr_dest/symlink'
+    assert_equal 'SLdest', File.readlink('tmp/cpr_dest/symlink')
+
+    # root is a symlink
+    ln_s 'cpr_src', 'tmp/cpr_src2'
+    cp_r 'tmp/cpr_src2', 'tmp/cpr_dest2'
+    assert_directory 'tmp/cpr_dest2'
+    assert_not_symlink 'tmp/cpr_dest2'
+    assert_symlink 'tmp/cpr_dest2/symlink'
+    assert_equal 'SLdest', File.readlink('tmp/cpr_dest2/symlink')
+end
+
     # pathname
     touch 'tmp/cprtmp'
     assert_nothing_raised {
@@ -248,6 +293,17 @@ end
       mv 'tmp/dest/mvdest', 'tmp'
       assert_same_file fname, 'tmp/mvdest'
     end
+
+    # [ruby-talk:124368]
+    mkdir 'tmp/tmpdir'
+    mkdir_p 'tmp/dest2/tmpdir'
+    assert_raises(Errno::EISDIR) {
+      mv 'tmp/tmpdir', 'tmp/dest2'
+    }
+    mkdir 'tmp/dest2/tmpdir/junk'
+    assert_raises(Errno::EISDIR) {
+      mv 'tmp/tmpdir', 'tmp/dest2'
+    }
 
     # src==dest (1) same path
     touch 'tmp/cptmp'
@@ -323,6 +379,14 @@ end
     # rm_f 'tmpdatadir'
     Dir.rmdir 'tmpdatadir'
 
+    Dir.mkdir 'tmp/tmpdir'
+    File.open('tmp/tmpdir/a', 'w') {|f| f.puts 'dummy' }
+    File.open('tmp/tmpdir/c', 'w') {|f| f.puts 'dummy' }
+    rm_f ['tmp/tmpdir/a', 'tmp/tmpdir/b', 'tmp/tmpdir/c']
+    assert_file_not_exist 'tmp/tmpdir/a'
+    assert_file_not_exist 'tmp/tmpdir/c'
+    Dir.rmdir 'tmp/tmpdir'
+
     # pathname
     touch 'tmp/rmtmp1'
     touch 'tmp/rmtmp2'
@@ -366,6 +430,23 @@ end
     rm_r 'tmp/tmpdir'
     assert_file_not_exist 'tmp/tmpdir'
     assert_file_exist     'tmp'
+
+    Dir.mkdir 'tmp/tmpdir'
+    File.open('tmp/tmpdir/a', 'w') {|f| f.puts 'dummy' }
+    File.open('tmp/tmpdir/c', 'w') {|f| f.puts 'dummy' }
+    rm_r ['tmp/tmpdir/a', 'tmp/tmpdir/b', 'tmp/tmpdir/c'], :force => true
+    assert_file_not_exist 'tmp/tmpdir/a'
+    assert_file_not_exist 'tmp/tmpdir/c'
+    Dir.rmdir 'tmp/tmpdir'
+
+if have_symlink?
+    # [ruby-talk:94635] a symlink to the directory
+    Dir.mkdir 'tmp/tmpdir'
+    File.symlink '..', 'tmp/tmpdir/symlink_to_dir'
+    rm_r 'tmp/tmpdir'
+    assert_file_not_exist 'tmp/tmpdir'
+    assert_file_exist     'tmp'
+end
 
     # pathname
     Dir.mkdir 'tmp/tmpdir1'; touch 'tmp/tmpdir1/tmp'
@@ -509,6 +590,19 @@ end
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     Dir.rmdir 'tmp/tmp'
 
+if have_file_perm?
+    mkdir 'tmp/tmp', :mode => 07777
+    assert_directory 'tmp/tmp'
+    assert_equal 07777, (File.stat('tmp/tmp').mode & 07777)
+    Dir.rmdir 'tmp/tmp'
+end
+
+if lf_in_path_allowed?
+    mkdir "tmp-first-line\ntmp-second-line"
+    assert_directory "tmp-first-line\ntmp-second-line"
+    Dir.rmdir "tmp-first-line\ntmp-second-line"
+end
+
     # pathname
     assert_nothing_raised {
       mkdir Pathname.new('tmp/tmpdirtmp')
@@ -556,6 +650,22 @@ end
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777) if have_file_perm?
     rm_rf 'tmp/tmp'
+
+    mkdir_p 'tmp/tmp', :mode => 0
+    assert_directory 'tmp/tmp'
+    assert_equal 0, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
+    # DO NOT USE rm_rf here.
+    # (rm(1) try to chdir to parent directory, it fails to remove directory.)
+    Dir.rmdir 'tmp/tmp'
+    Dir.rmdir 'tmp'
+
+if have_file_perm?
+    mkdir_p 'tmp/tmp/tmp', :mode => 07777
+    assert_directory 'tmp/tmp/tmp'
+    assert_equal 07777, (File.stat('tmp/tmp/tmp').mode & 07777)
+    Dir.rmdir 'tmp/tmp/tmp'
+    Dir.rmdir 'tmp/tmp'
+end
 
     # pathname
     assert_nothing_raised {
@@ -638,5 +748,12 @@ end
       install [Pathname.new('tmp/a'), Pathname.new('tmp/b')], Pathname.new('tmp/dest')
     }
   end
+
+  def test_chmod
+    # FIXME
+  end
+
+  #def test_chown     # 1.8 does not have chown
+  #def test_chown_R   # 1.8 does not have chown_R
 
 end
