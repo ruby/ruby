@@ -1,3 +1,11 @@
+Fri Apr 23 23:24:47 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: $hdrdir should not contain macros, for backward
+	  compatibility.  [bruby-dev:28]
+
+	* lib/mkmf.rb (create_makefile): in the case of extout, just copy
+	  script files, without comparison.
+
 Fri Apr 23 16:38:46 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: sync taint/freeze flag between

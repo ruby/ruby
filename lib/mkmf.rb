@@ -80,8 +80,7 @@ end
 libdir = File.dirname(__FILE__)
 $extmk = libdir != Config::CONFIG["rubylibdir"]
 if not $extmk and File.exist?(Config::CONFIG["archdir"] + "/ruby.h")
-  $topdir = Config::CONFIG["archdir"]
-  $hdrdir = $archdir
+  $hdrdir = $topdir = Config::CONFIG["archdir"]
 elsif File.exist?(($top_srcdir ||= File.dirname(libdir))  + "/ruby.h") and
     File.exist?(($topdir ||= Config::CONFIG["topdir"]) + "/config.h")
   $hdrdir = $top_srcdir
@@ -782,6 +781,7 @@ RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
 MAKEDIRS = $(RUBY) -run -e mkdir -- -p
 INSTALL_PROG = $(RUBY) -run -e install -- -vpm 0755
 INSTALL_DATA = $(RUBY) -run -e install -- -vpm 0644
+COPY = $(RUBY) -run -e cp -- -v
 
 #### End of system configuration section. ####
 
@@ -939,7 +939,7 @@ static:		$(STATIC_LIB)
       files.each do |f|
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install-rb: #{dest}\n")
-	mfile.print("#{dest}: #{f}\n\t@$(INSTALL_DATA) #{f} #{dir}\n")
+	mfile.print("#{dest}: #{f}\n\t@$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} #{dir}\n")
       end
     end
   end
