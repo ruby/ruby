@@ -187,6 +187,8 @@ rb_int2inum(n)
 
 #ifdef HAVE_LONG_LONG
 
+#define DIGSPERLONGLONG ((unsigned int)(sizeof(LONG_LONG)/sizeof(BDIGIT)))
+
 void
 rb_quad_pack(buf, val)
     char *buf;
@@ -267,12 +269,20 @@ rb_quad_pack(buf, val)
     memset(buf, 0, QUAD_SIZE);
     val = rb_to_int(val);
     if (FIXNUM_P(val)) {
-	val = rb_uint2big(FIX2LONG(val));
+	val = rb_int2big(FIX2LONG(val));
     }
     len = RBIGNUM(val)->len * sizeof(BDIGIT);
     if (len > QUAD_SIZE) len = QUAD_SIZE;
     memcpy(buf, (char*)BDIGITS(val), len);
+    if (!RBIGNUM(val)->sign) {
+	len = QUAD_SIZE;
+	while (len--) {
+	    *buf = ~*buf++;
+	}
+    }
 }
+
+#define BNEG(b) (RSHIFT(((BDIGIT*)b)[QUAD_SIZE/sizeof(BDIGIT)-1],BITSPERDIG-1) != 0)
 
 VALUE
 rb_quad_unpack(buf, sign)
@@ -282,8 +292,14 @@ rb_quad_unpack(buf, sign)
     VALUE big = bignew(QUAD_SIZE/sizeof(BDIGIT), 1);
 
     memcpy((char*)BDIGITS(big), buf, QUAD_SIZE);
-    if (sign && (buf[7] & 0x80)) {
+    if (sign && BNEG(buf)) {
+	long len = QUAD_SIZE;
+	char *tmp = (char*)BDIGITS(big);
+
 	RBIGNUM(big)->sign = 0;
+	while (len--) {
+	    *tmp = ~*tmp++;
+	}
     }
 
     return bignorm(big);
