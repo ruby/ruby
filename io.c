@@ -1173,6 +1173,61 @@ read_all(fptr, siz, str)
     return str;
 }
 
+static VALUE
+io_getpartial(int argc, VALUE *argv, VALUE io)
+{
+    OpenFile *fptr;
+    VALUE length, str;
+    long n, len;
+
+    rb_scan_args(argc, argv, "11", &length, &str);
+
+    if ((len = NUM2LONG(length)) < 0) {
+	rb_raise(rb_eArgError, "negative length %ld given", len);
+    }
+
+    if (NIL_P(str)) {
+	str = rb_str_new(0, len);
+    }
+    else {
+	StringValue(str);
+	rb_str_modify(str);
+        rb_str_resize(str, len);
+    }
+    OBJ_TAINT(str);
+
+    GetOpenFile(io, fptr);
+    rb_io_check_readable(fptr);
+
+    if (len == 0)
+	return str;
+
+    READ_CHECK(fptr);
+    if (RSTRING(str)->len != len) {
+      modified:
+	rb_raise(rb_eRuntimeError, "buffer string modified");
+    }
+    n = read_buffered_data(RSTRING(str)->ptr, len, fptr);
+    if (n <= 0) {
+      again:
+	if (RSTRING(str)->len != len) goto modified;
+        TRAP_BEG;
+        n = read(fptr->fd, RSTRING(str)->ptr, len);
+        TRAP_END;
+        if (n < 0) {
+            if (rb_io_wait_readable(fptr->fd))
+                goto again;
+            rb_sys_fail(fptr->path);
+        }
+    }
+    rb_str_resize(str, n);
+
+    if (n == 0)
+        return Qnil;
+    else
+        return str;
+}
+
 /*
  *  call-seq:
  *     ios.readpartial(maxlen[, outbuf])    => string, outbuf
@@ -1232,56 +1287,13 @@ io_readpartial(argc, argv, io)
     VALUE *argv;
     VALUE io;
 {
-    OpenFile *fptr;
-    VALUE length, str;
-    long n, len;
+    VALUE ret;
 
-    rb_scan_args(argc, argv, "11", &length, &str);
-
-    if ((len = NUM2LONG(length)) < 0) {
-	rb_raise(rb_eArgError, "negative length %ld given", len);
-    }
-
-    if (NIL_P(str)) {
-	str = rb_str_new(0, len);
-    }
-    else {
-	StringValue(str);
-	rb_str_modify(str);
-        rb_str_resize(str, len);
-    }
-    OBJ_TAINT(str);
-
-    GetOpenFile(io, fptr);
-    rb_io_check_readable(fptr);
-
-    if (len == 0)
-	return str;
-
-    READ_CHECK(fptr);
-    if (RSTRING(str)->len != len) {
-      modified:
-	rb_raise(rb_eRuntimeError, "buffer string modified");
-    }
-    n = read_buffered_data(RSTRING(str)->ptr, len, fptr);
-    if (n <= 0) {
-      again:
-	if (RSTRING(str)->len != len) goto modified;
-        TRAP_BEG;
-        n = read(fptr->fd, RSTRING(str)->ptr, len);
-        TRAP_END;
-        if (n < 0) {
-            if (rb_io_wait_readable(fptr->fd))
-                goto again;
-            rb_sys_fail(fptr->path);
-        }
-    }
-    rb_str_resize(str, n);
-
-    if (n == 0)
+    ret = io_getpartial(argc, argv, io);
+    if (NIL_P(ret))
         rb_eof_error();
     else
-        return str;
+        return ret;
 }
 
 /*
@@ -4132,8 +4144,7 @@ rb_io_s_for_fd(argc, argv, klass)
 static int binmode = 0;
 
 static VALUE
-argf_forward(
-    VALUE *argv)
+argf_forward(VALUE *argv)
 {
     return rb_funcall3(current_file, ruby_frame->last_func, ruby_frame->argc, argv);
 }
@@ -5227,6 +5238,50 @@ argf_read(argc, argv)
 }
 
 static VALUE
+argf_readpartial_rescue(VALUE dummy)
+{
+    return Qnil;
+}
+
+static VALUE
+argf_readpartial(int argc, VALUE *argv)
+{
+    VALUE tmp, str, length;
+
+    rb_scan_args(argc, argv, "11", &length, &str);
+    if (!NIL_P(str)) {
+        StringValue(str);
+        argv[1] = str;
+    }
+
+    if (!next_argv()) {
+        rb_str_resize(str, 0);
+        rb_eof_error();
+    }
+    if (TYPE(current_file) != T_FILE) {
+        tmp = rb_rescue2(argf_forward, (VALUE)argv,
+                         argf_readpartial_rescue, (VALUE)Qnil,
+                         rb_eEOFError, (VALUE)0);
+    }
+    else {
+        tmp = io_getpartial(argc, argv, current_file);
+    }
+    if (NIL_P(tmp)) {
+        if (next_p == -1) {
+            rb_eof_error();
+        }
+        argf_close(current_file);
+        next_p = 1;
+        if (RARRAY(rb_argv)->len == 0)
+            rb_eof_error();
+        if (NIL_P(str))
+            str = rb_str_new(NULL, 0);
+        return str;
+    }
+    return tmp;
+}
+
+static VALUE
 argf_getc()
 {
     VALUE byte;
@@ -5624,6 +5679,7 @@ Init_IO()
     rb_define_singleton_method(argf, "each_byte",  argf_each_byte, 0);
 
     rb_define_singleton_method(argf, "read",  argf_read, -1);
+    rb_define_singleton_method(argf, "readpartial",  argf_readpartial, -1);
     rb_define_singleton_method(argf, "readlines", rb_f_readlines, -1);
     rb_define_singleton_method(argf, "to_a", rb_f_readlines, -1);
     rb_define_singleton_method(argf, "gets", rb_f_gets, -1);

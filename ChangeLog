@@ -1,3 +1,9 @@
+Sat Jan  1 20:23:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (argf_readpartial): new method ARGF.readpartial.
+	  (io_getpartial): extracted from io_readpartial.
+	  (io_readpartial): call io_getpartial.
+
 Sat Jan  1 17:44:54 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (each_capitalized): should join header field
