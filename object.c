@@ -288,7 +288,7 @@ rb_obj_taint(obj)
     VALUE obj;
 {
     rb_secure(4);
-    if (OBJ_TAINTED(obj)) {
+    if (!OBJ_TAINTED(obj)) {
 	if (OBJ_FROZEN(obj)) {
 	    rb_error_frozen("object");
 	}
@@ -302,7 +302,7 @@ rb_obj_untaint(obj)
     VALUE obj;
 {
     rb_secure(3);
-    if (!OBJ_TAINTED(obj)) {
+    if (OBJ_TAINTED(obj)) {
 	if (OBJ_FROZEN(obj)) {
 	    rb_error_frozen("object");
 	}
@@ -315,7 +315,7 @@ VALUE
 rb_obj_freeze(obj)
     VALUE obj;
 {
-    if (OBJ_FROZEN(obj)) {
+    if (!OBJ_FROZEN(obj)) {
 	if (rb_safe_level() >= 4 && !OBJ_TAINTED(obj)) {
 	    rb_raise(rb_eSecurityError, "Insecure: can't freeze object");
 	}

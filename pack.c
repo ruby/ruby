@@ -1625,8 +1625,12 @@ pack_unpack(str, fmt)
 		    p = RARRAY(a)->ptr;
 		    pend = p + RARRAY(a)->len;
 		    while (p < pend) {
-			if (TYPE(*p) == T_STRING && RSTRING(*p)->ptr == t)
+			if (TYPE(*p) == T_STRING && RSTRING(*p)->ptr == t) {
+			    if (len > RSTRING(*p)->len) {
+				len = RSTRING(*p)->len;
+			    }
 			    break;
+			}
 			p++;
 		    }
 		    if (p == pend) {
@@ -1649,13 +1653,31 @@ pack_unpack(str, fmt)
 		    break;
 		else {
 		    char *t;
-		    VALUE str = rb_str_new(0, 0);
+		    VALUE a, tmp;
+		    VALUE *p, *pend;
+
+
+		    if (!(a = rb_str_associated(str))) {
+			rb_raise(rb_eArgError, "no associated pointer");
+		    }
 		    memcpy(&t, s, sizeof(char *));
 		    s += sizeof(char *);
+
 		    if (t) {
-			rb_str_cat2(str, t);
+			p = RARRAY(a)->ptr;
+			pend = p + RARRAY(a)->len;
+			while (p < pend) {
+			    if (TYPE(*p) == T_STRING && RSTRING(*p)->ptr == t) {
+				break;
+			    }
+			    p++;
+			}
+			if (p == pend) {
+			    rb_raise(rb_eArgError, "non associated pointer");
+			}
+			tmp = rb_str_new2(t);
 		    }
-		    rb_ary_push(ary, str);
+		    rb_ary_push(ary, tmp);
 		}
 	    }
 	    break;

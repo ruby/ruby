@@ -43,6 +43,7 @@ Hacking Interpreter
 * remove stdio dependency from IOs.
 * warn for inconsistent local variable usage (lv m and method m at the same time). 
 * MicroRuby
+* Built-in Interactive Ruby.
 
 Standard Libraries
 

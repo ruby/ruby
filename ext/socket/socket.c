@@ -420,7 +420,7 @@ enum sock_recv_type {
     RECV_RECV,			/* BasicSocket#recv(no from) */
     RECV_IP,			/* IPSocket#recvfrom */
     RECV_UNIX,			/* UNIXSocket#recvfrom */
-    RECV_SOCKET,		/* Socket#recvfrom */
+    RECV_SOCKET			/* Socket#recvfrom */
 };
 
 static VALUE

@@ -1,3 +1,9 @@
+Thu Jan 18 04:28:14 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_read): new method to call IO#read from
+	  pathname.  In addition, it accepts third optional argument to
+	  specify starting point.
+
 Wed Jan 17 13:28:26 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: remove DEFS definition.
@@ -15,7 +21,8 @@ Tue Jan 16 17:00:50 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 Mon Jan 15 16:00:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_unpack): should check associated pointer packed by
-	  pack("P").  restriction added.
+	  pack("P").  Thus pointers can be retrieved only from pointer
+	  packed strings.  restriction added.
 
 Sun Jan 14 21:49:28 2001  Koji Arai  <JCA02266@nifty.ne.jp>
 

@@ -3022,7 +3022,7 @@ struct foreach_arg {
 };
 
 static VALUE
-rb_io_foreach_line(arg)
+io_s_foreach(arg)
     struct foreach_arg *arg;
 {
     VALUE str;
@@ -3048,21 +3048,14 @@ rb_io_s_foreach(argc, argv, io)
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
     if (NIL_P(arg.io)) return Qnil;
-    return rb_ensure(rb_io_foreach_line, (VALUE)&arg, rb_io_close, arg.io);
+    return rb_ensure(io_s_foreach, (VALUE)&arg, rb_io_close, arg.io);
 }
 
 static VALUE
-rb_io_readline_line(arg)
+io_s_readlines(arg)
     struct foreach_arg *arg;
 {
-    VALUE line, ary;
-
-    ary = rb_ary_new();
-    while (!NIL_P(line = rb_io_gets_internal(arg->argc, &arg->sep, arg->io))) {
-	rb_ary_push(ary, line);
-    }
-
-    return ary;
+    return rb_io_readlines(arg->argc, &arg->sep, arg->io);
 }
 
 static VALUE
@@ -3080,7 +3073,35 @@ rb_io_s_readlines(argc, argv, io)
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
     if (NIL_P(arg.io)) return Qnil;
-    return rb_ensure(rb_io_readline_line, (VALUE)&arg, rb_io_close, arg.io);
+    return rb_ensure(io_s_readlines, (VALUE)&arg, rb_io_close, arg.io);
+}
+
+static VALUE
+io_s_read(arg)
+    struct foreach_arg *arg;
+{
+    return io_read(arg->argc, &arg->sep, arg->io);
+}
+
+static VALUE
+rb_io_s_read(argc, argv, io)
+    int argc;
+    VALUE *argv;
+    VALUE io;
+{
+    VALUE fname, offset;
+    struct foreach_arg arg;
+
+    rb_scan_args(argc, argv, "12", &fname, &arg.sep, &offset);
+    Check_SafeStr(fname);
+
+    arg.argc = argc ? 1 : 0;
+    arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
+    if (NIL_P(arg.io)) return Qnil;
+    if (!NIL_P(offset)) {
+	rb_io_seek(1, &offset, arg.io);
+    }
+    return rb_ensure(io_s_read, (VALUE)&arg, rb_io_close, arg.io);
 }
 
 static VALUE
@@ -3115,7 +3136,7 @@ argf_set_pos(self, offset)
      VALUE self, offset;
 {
     if (!next_argv()) {
-	rb_raise(rb_eArgError, "no stream to pos");
+	rb_raise(rb_eArgError, "no stream to set position");
     }
 
     if (TYPE(current_file) != T_FILE) {
@@ -3365,6 +3386,7 @@ Init_IO()
     rb_define_singleton_method(rb_cIO, "popen", rb_io_s_popen, -1);
     rb_define_singleton_method(rb_cIO, "foreach", rb_io_s_foreach, -1);
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);
+    rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
     rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, 0);
 
