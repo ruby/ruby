@@ -1,11 +1,19 @@
+Thu Aug  8 08:29:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb (OptionParser::Switch::parse_arg): require block
+	  always.
+
+	* lib/optparse.rb (NilClass): must provide conversion block.
+
 Wed Aug  7 22:12:54 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
-	* optparse.rb (OptionParser::Completion::convert): returned all
-	  values not first one.
+	* lib/optparse.rb (OptionParser::Completion::convert): returned
+	  all values not first one.
 
-	* optparse.rb (OptionParser::Switch::parse): return values as is.
+	* lib/optparse.rb (OptionParser::Switch::parse): return values as
+	  is.
 
-	* optparse.rb (OptionParser::order): ditto.
+	* lib/optparse.rb (OptionParser::order): ditto.
 
 	* lib/optparse/time.rb: prior time.rb.
 

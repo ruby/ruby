@@ -210,7 +210,7 @@ Individual switch class.
 =end #'#"#`#
     def parse(arg, *val)
       if block
-	val = conv.yield(*val) if conv
+	val = conv.yield(*val)
 	return arg, block, val
       else
 	return arg, nil
@@ -1285,7 +1285,7 @@ Default options, which never appear in option summary.
 =end #'#"#`#
   accept(Object) {|s|s or s.nil?}
 
-  accept(NilClass)
+  accept(NilClass) {|s|s}
 
 =begin
 : String
