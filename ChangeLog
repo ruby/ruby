@@ -1,3 +1,8 @@
+Mon Dec  8 12:44:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c: define swap16 and swap32 only if they are not
+	  defined. OpenBSD defines these macros. [ruby-dev:22181]
+
 Sun Dec  7 20:54:17 2003  Tanaka Akira  <akr@m17n.org>
 
 	* ext/iconv/iconv.c (map_charset): make case sensitive.
