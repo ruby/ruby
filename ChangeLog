@@ -6,9 +6,9 @@ Mon Sep  8 19:26:33 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_config.h: export GetConfigPtr() and DupConfigPtr().
 
-	* ext/openssl/ossl_x509.c: new constants DEFAULT_CERT_AREA,
-	  DEFAULT_CERT_DIR, DEFAULT_CERT_FILE, DEFAULT_CERT_DIR_ENV,
-	  DEFAULT_CERT_FILE_ENV and DEFAULT_PRIVATE_DIR in X509 module.
+	* ext/openssl/ossl_x509.c: added new constants under X509 module.
+	  DEFAULT_CERT_AREA, DEFAULT_CERT_DIR, DEFAULT_CERT_FILE,
+	  DEFAULT_CERT_DIR_ENV, DEFAULT_CERT_FILE_ENV and DEFAULT_PRIVATE_DIR.
 
 	* ext/openssl/ossl_x509ext.c (ossl_x509extfactory_free): don't free
 	  the members of the struct. it's left to GC.

@@ -97,13 +97,7 @@ DupX509ExtPtr(VALUE obj)
 static void
 ossl_x509extfactory_free(X509V3_CTX *ctx)
 {
-    if (ctx) {
-	if (ctx->issuer_cert)	X509_free(ctx->issuer_cert);
-	if (ctx->subject_cert)	X509_free(ctx->subject_cert);
-	if (ctx->crl)		X509_CRL_free(ctx->crl);
-	if (ctx->subject_req)	X509_REQ_free(ctx->subject_req);
-	OPENSSL_free(ctx);
-    }
+    OPENSSL_free(ctx);
 }
 
 static VALUE 
@@ -123,6 +117,7 @@ ossl_x509extfactory_set_issuer_cert(VALUE self, VALUE cert)
     X509V3_CTX *ctx;
 
     GetX509ExtFactory(self, ctx);
+    rb_iv_set(self, "@issuer_certificate", cert);
     ctx->issuer_cert = DupX509CertPtr(cert); /* DUP NEEDED */
 
     return cert;
@@ -134,6 +129,7 @@ ossl_x509extfactory_set_subject_cert(VALUE self, VALUE cert)
     X509V3_CTX *ctx;
 
     GetX509ExtFactory(self, ctx);
+    rb_iv_set(self, "@subject_certificate", cert);
     ctx->subject_cert = DupX509CertPtr(cert); /* DUP NEEDED */
 
     return cert;
@@ -145,6 +141,7 @@ ossl_x509extfactory_set_subject_req(VALUE self, VALUE req)
     X509V3_CTX *ctx;
 
     GetX509ExtFactory(self, ctx);
+    rb_iv_set(self, "@subject_request", req);
     ctx->subject_req = DupX509ReqPtr(req);
 
     return req;
@@ -156,9 +153,24 @@ ossl_x509extfactory_set_crl(VALUE self, VALUE crl)
     X509V3_CTX *ctx;
 
     GetX509ExtFactory(self, ctx);
+    rb_iv_set(self, "@crl", crl);
     ctx->crl = DupX509CRLPtr(crl);
 
     return crl;
+}
+
+static VALUE
+ossl_x509extfactory_set_config(VALUE self, VALUE config)
+{
+    X509V3_CTX *ctx;
+    CONF *conf;
+
+    GetX509ExtFactory(self, ctx);
+    rb_iv_set(self, "@config", config);
+    conf = GetConfigPtr(config);
+    X509V3_set_nconf(ctx, conf);
+
+    return config;
 }
 
 static VALUE 
@@ -408,10 +420,17 @@ Init_ossl_x509ext()
     rb_define_alloc_func(cX509ExtFactory, ossl_x509extfactory_alloc);
     rb_define_method(cX509ExtFactory, "initialize", ossl_x509extfactory_initialize, -1);
 	
+    rb_attr(cX509ExtFactory, rb_intern("issuer_certificate"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern("subject_certificate"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern("subject_request"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern("crl"), 1, 0, Qfalse);
+    rb_attr(cX509ExtFactory, rb_intern("config"), 1, 0, Qfalse);
+
     rb_define_method(cX509ExtFactory, "issuer_certificate=", ossl_x509extfactory_set_issuer_cert, 1);
     rb_define_method(cX509ExtFactory, "subject_certificate=", ossl_x509extfactory_set_subject_cert, 1);
     rb_define_method(cX509ExtFactory, "subject_request=", ossl_x509extfactory_set_subject_req, 1);
     rb_define_method(cX509ExtFactory, "crl=", ossl_x509extfactory_set_crl, 1);
+    rb_define_method(cX509ExtFactory, "config=", ossl_x509extfactory_set_config, 1);
     rb_define_method(cX509ExtFactory, "create_ext_from_array", ossl_x509extfactory_create_ext_from_array, 1);
 	
     cX509Ext = rb_define_class_under(mX509, "Extension", rb_cObject);
