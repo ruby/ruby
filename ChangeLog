@@ -1,3 +1,7 @@
+Fri Oct 17 23:00:30 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/generator.rb: Add rdoc documentation.
+
 Fri Oct 17 22:16:42 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/set.rb: Reword and fix Overview.
