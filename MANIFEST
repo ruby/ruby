@@ -927,6 +927,7 @@ test/ruby/test_range.rb
 test/ruby/test_readpartial.rb
 test/ruby/test_signal.rb
 test/ruby/test_sprintf.rb
+test/ruby/test_string.rb
 test/ruby/test_stringchar.rb
 test/ruby/test_struct.rb
 test/ruby/test_system.rb
