@@ -675,13 +675,14 @@ ruby_options(argc, argv)
 
     PUSH_TAG()
     if ((state = EXEC_TAG()) == 0) {
-	NODE *save = eval_tree;
+	NODE *save;
 
 	Init_ext();
 	ext_init = 1;
+	ruby_process_options(argc, argv);
+	save = eval_tree;
 	rb_require_modules();
 	eval_tree = save;
-	ruby_process_options(argc, argv);
     }
     POP_TAG();
     if (state) error_print();
@@ -3537,8 +3538,19 @@ void
 rb_provide(feature)
     char *feature;
 {
-    if (!rb_provided(feature))
+    char *buf, *ext;
+
+    if (!rb_provided(feature)) {
+	ext = strrchr(feature, '.');
+	if (strcmp(DLEXT, ext) == 0) {
+	    buf = ALLOCA_N(char, strlen(feature)+1);
+	    strcpy(buf, feature);
+	    ext = strrchr(buf, '.');
+	    strcpy(ext, ".o");
+	    feature = buf;
+	}
 	ary_push(rb_features, str_new2(feature));
+    }
 }
 
 VALUE

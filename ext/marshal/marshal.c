@@ -620,7 +620,9 @@ r_object(arg)
 
       case TYPE_FLOAT:
 	{
+#ifndef atof
 	    double atof();
+#endif
 	    char *buf;
 
 	    r_bytes(buf, arg);
@@ -695,15 +697,17 @@ r_object(arg)
 	    len = r_long(arg);
 
 	    values = ary_new2(len);
-	    i = 0;
+	    for (i=0; i<len; i++) {
+		ary_push(values, Qnil);
+	    }
+	    v = struct_alloc(class, values);
+	    r_regist(v, arg);
 	    for (i=0; i<len; i++) {
 		ID slot = r_symbol(arg);
 		if (RARRAY(mem)->ptr[i] != INT2FIX(slot))
 		    TypeError("struct not compatible");
-		ary_push(values, r_object(arg));
+		struct_aset(v, INT2FIX(i), r_object(arg));
 	    }
-	    v = struct_alloc(class, values);
-	    st_insert(arg->data, num, v); /* re-regist */
 	    return v;
 	}
 	break;

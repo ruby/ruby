@@ -434,7 +434,6 @@ def fact(n)
     f *= n
     n -= 1
   end
-  p f
   return f
 end
 fact(3)
@@ -453,14 +452,14 @@ ok(2-(2**32) == -(2**32-2))
 ok(2**32 - 5 == (2**32-3)-2)
 
 $good = TRUE;
-for i in 1000..3000
+for i in 1000..1024
   $good = FALSE if ((1<<i) != (2**i))
 end
 ok($good)
 
 $good = TRUE;
-n1=1
-for i in 0..3000
+n1=1<<1000
+for i in 1000..1024
   $good = FALSE if ((1<<i) != n1)
   n1 *= 2
 end
@@ -468,7 +467,7 @@ ok($good)
 
 $good = TRUE;
 n2=n1
-for i in 3000..-1
+for i in 1..10
   n1 = n1 / 2
   n2 = n2 >> 1
   $good = FALSE if (n1 != n2)
@@ -476,7 +475,7 @@ end
 ok($good)
 
 $good = TRUE;
-for i in 3500..4000
+for i in 4000..4192
   n1 = 1 << i;
   $good = FALSE if ((n1**2-1) / (n1+1) != (n1-1))
 end

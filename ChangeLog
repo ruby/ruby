@@ -1,4 +1,15 @@
+Fri Oct  3 10:51:10 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.0-971003
+
+	* eval.c (ruby_options): f_require() called too early.
+
+	* eval.c (rb_provide): module extentions should always be `.o'.
+
 Thu Oct  2 17:59:18 1997  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/marshal/marshal.c (r_object): remove temporal regist for
+ 	  structs. (caused problem if structs form cycles.)
 
 	* version 1.0-971002
 

@@ -1,5 +1,6 @@
 /^SHELL/s,/bin/sh,$(COMPSEC),
-s/@srcdir@/./
+/^VPATH/s/:/;/g
+s/@srcdir@/./g
 s/@CC@/gcc/
 s/@CPP@/gcc -E/
 s/@CPPFLAGS@//

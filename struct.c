@@ -329,7 +329,7 @@ struct_clone(s)
     return (VALUE)st;
 }
 
-static VALUE
+VALUE
 struct_aref(s, idx)
     struct RStruct *s;
     VALUE idx;
@@ -345,7 +345,7 @@ struct_aref(s, idx)
     return s->ptr[i];
 }
 
-static VALUE
+VALUE
 struct_aset(s, idx, val)
     struct RStruct *s;
     VALUE idx, val;

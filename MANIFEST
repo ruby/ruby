@@ -48,6 +48,7 @@ re.c
 re.h
 regex.c
 regex.h
+ruby.1
 ruby.c
 ruby.h
 sig.h
