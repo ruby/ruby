@@ -1564,7 +1564,7 @@ rb_ary_equal(ary1, ary2)
 
     if (ary1 == ary2) return Qtrue;
     if (TYPE(ary2) != T_ARRAY) {
-	if (!rb_respond_to(ary2, rb_intern("to_str"))) {
+	if (!rb_respond_to(ary2, rb_intern("to_ary"))) {
 	    return Qfalse;
 	}
 	return rb_equal(ary2, ary1);
