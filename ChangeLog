@@ -1,3 +1,8 @@
+Fri May 18 05:36:08 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/extmk.rb.in (xsystem): backout the previous fix which was
+	  bogus.
+
 Fri May 18 05:19:55 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/mkmf.rb (xsystem): make a temporary fix to get $(...) macros
