@@ -3531,7 +3531,8 @@ rb_jump_tag(tag)
 int
 rb_block_given_p()
 {
-    if (ruby_frame->iter) return Qtrue;
+    if (ruby_frame->iter && ruby_block)
+	return Qtrue;
     return Qfalse;
 }
 
