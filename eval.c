@@ -3135,6 +3135,8 @@ rb_f_raise(argc, argv)
     VALUE *argv;
 {
     VALUE mesg;
+    ID exception;
+    int n;
 
     mesg = Qnil;
     switch (argc) {
@@ -3147,17 +3149,24 @@ rb_f_raise(argc, argv)
 	    mesg = rb_exc_new3(rb_eRuntimeError, argv[0]);
 	    break;
 	}
-	mesg = rb_funcall(argv[0], rb_intern("exception"), 0, 0);
-	break;
-      case 3:
+	n = 0;
+	goto exception_call;
+
       case 2:
-	mesg = rb_funcall(argv[0], rb_intern("exception"), 1, argv[1]);
+      case 3:
+	n = 1;
+      exception_call:
+	exception = rb_intern("exception");
+	if (!rb_respond_to(argv[0], exception)) {
+	    rb_raise(rb_eTypeError, "exception class/object expected");
+	}
+	mesg = rb_funcall(argv[0], exception, n, argv[1]);
 	break;
       default:
 	rb_raise(rb_eArgError, "wrong # of arguments");
 	break;
     }
-    if (!NIL_P(mesg)) {
+    if (argc > 0) {
 	if (!rb_obj_is_kind_of(mesg, rb_eException))
 	    rb_raise(rb_eTypeError, "exception object expected");
 	set_backtrace(mesg, (argc>2)?argv[2]:Qnil);
@@ -3617,12 +3626,13 @@ rb_f_missing(argc, argv, obj)
     volatile VALUE d = 0;
     char *format = 0;
     char *desc = "";
+    const char *mname;
     char *file = ruby_sourcefile;
     int   line = ruby_sourceline;
 
-    if (argc == 0) rb_raise(rb_eArgError, "no id given");
-
-    id = NUM2INT(argv[0]);
+    if (argc == 0 || (id = NUM2INT(argv[0]),  mname = rb_id2name(id)) == 0) {
+	rb_raise(rb_eArgError, "no id given");
+    }
     argc--; argv++;
 
     switch (TYPE(obj)) {
@@ -3650,8 +3660,6 @@ rb_f_missing(argc, argv, obj)
 	    format = "protected method `%s' called for %s%s%s";
 	}
 	else if (last_call_status & CSTAT_VCALL) {
-	    const char *mname = rb_id2name(id);
-
 	    if (('a' <= mname[0] && mname[0] <= 'z') || mname[0] == '_') {
 		format = "undefined local variable or method `%s' for %s%s%s";
 	    }
@@ -3670,7 +3678,7 @@ rb_f_missing(argc, argv, obj)
     PUSH_FRAME();		/* fake frame */
     *ruby_frame = *_frame.prev->prev;
 
-    rb_raise(rb_eNameError, format, rb_id2name(id),
+    rb_raise(rb_eNameError, format, mname,
 	     desc, desc[0]=='#'?"":":",
 	     desc[0]=='#'?"":rb_class2name(CLASS_OF(obj)));
     POP_FRAME();
@@ -5818,25 +5826,35 @@ block_pass(self, node)
     POP_TAG();
     POP_ITER();
     if (_block.tag->dst == state) {
-	state &= TAG_MASK;
-	orphan = 2;
+	if (orphan) {
+	    state &= TAG_MASK;
+	}
+	else {
+	    struct BLOCK *ptr = old_block;
+
+	    while (ptr) {
+		if (ptr->scope == _block.scope) {
+		    ptr->tag->dst = state;
+		    break;
+		}
+		ptr = ptr->prev;
+	    }
+	}
     }
     ruby_block = old_block;
     safe_level = safe;
 
     if (state) {
-	if (orphan == 2) {/* escape from orphan procedure */
-	    switch (state) {
-	      case TAG_BREAK:
-		rb_raise(rb_eLocalJumpError, "break from proc-closure");
-		break;
-	      case TAG_RETRY:
-		rb_raise(rb_eLocalJumpError, "retry from proc-closure");
-		break;
-	      case TAG_RETURN:
-		rb_raise(rb_eLocalJumpError, "return from proc-closure");
-		break;
-	    }
+	switch (state) {
+	  case TAG_BREAK:
+	    rb_raise(rb_eLocalJumpError, "break from proc-closure");
+	    break;
+	  case TAG_RETRY:
+	    rb_raise(rb_eLocalJumpError, "retry from proc-closure");
+	    break;
+	  case TAG_RETURN:
+	    rb_raise(rb_eLocalJumpError, "return from proc-closure");
+	    break;
 	}
 	JUMP_TAG(state);
     }

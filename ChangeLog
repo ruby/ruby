@@ -1,3 +1,31 @@
+Mon Mar 13 18:14:52 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* stable version 1.4.4 released.
+
+Mon Mar 13 16:12:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (block_pass): distinguish real orphan block and still
+	  on-stack block passed by block argument.
+
+Mon Mar 13 00:20:25 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (f_norm_arg): proper error message when constant comes
+	  in formal argument list.  this message is suggested by Muvaw
+	  Pnazte <bugathlon@yahoo.com>.
+
+	* eval.c (rb_f_raise): proper error message when the first
+	  argument is not an exception class/object.
+
+Sat Mar 11 22:03:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_missing): check if argv[0] is ID.
+
+Sat Mar 11 05:07:11 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* process.c (proc_setpriority): should return 0, not nil.
+
+	* process.c (proc_setpgid): ditto.
+
 Thu Mar  9 11:13:32 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_fastmap): fixed embarrassing brace bug.

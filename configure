@@ -2541,7 +2541,7 @@ else
 #include "confdefs.h"
 #include <alloca.h>
 int main() {
-char *p = alloca(2 * sizeof(int));
+void *p = alloca(2 * sizeof(int));
 ; return 0; }
 EOF
 if { (eval echo configure:2548: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest${ac_exeext}; then
@@ -4549,6 +4549,7 @@ if test "$fat_binary" = yes ; then
   CFLAGS="$CFLAGS $ARCH_FLAG"
 fi
 
+FIRSTMAKEFILE=""
 LIBRUBY_A='lib$(RUBY_INSTALL_NAME).a'
 LIBRUBY='$(LIBRUBY_A)'
 LIBRUBYARG='$(LIBRUBY_A)'
@@ -4565,6 +4566,7 @@ if test "$host_os" = "beos"; then
       ;;
     i586*)
       LDFLAGS="$LDFLAGS -L."
+      FIRSTMAKEFILE=GNUmakefile:beos/GNUmakefile.in
       ;;
     *)
       echo EXPORTS > ruby.def
@@ -4573,7 +4575,6 @@ if test "$host_os" = "beos"; then
   esac
 fi
 
-FIRSTMAKEFILE=""
 LIBRUBY_LDSHARED=$LDSHARED
 LIBRUBY_DLDFLAGS=$DLDFLAGS
 LIBRUBY_SO='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR).$(TEENY)'

@@ -75,6 +75,7 @@ util.c
 variable.c
 version.c
 version.h
+beos/GNUmakefile.in
 cygwin/GNUmakefile.in
 ext/Setup
 ext/Setup.dj
@@ -125,6 +126,8 @@ lib/matrix.rb
 lib/mkmf.rb
 lib/monitor.rb
 lib/mutex_m.rb
+lib/net/ftp.rb
+lib/net/http.rb
 lib/net/pop.rb
 lib/net/session.rb
 lib/net/smtp.rb
@@ -160,8 +163,6 @@ missing/dup2.c
 missing/file.h
 missing/finite.c
 missing/flock.c
-missing/fnmatch.c
-missing/fnmatch.h
 missing/isinf.c
 missing/isnan.c
 missing/memcmp.c
@@ -235,8 +236,6 @@ win32/config.h
 win32/config.status
 win32/ntsetup.bat
 win32/ruby.def
-win32/sdbm.c
-win32/sdbm.h
 win32/win32.c
 win32/win32.h
 x68/fconvert.c

@@ -50,7 +50,6 @@ static unsigned long malloc_memories = 0;
 static unsigned long alloc_objects = 0;
 
 static int malloc_called = 0;
-static int free_called = 0;
 
 #ifndef xmalloc
 void *
@@ -115,12 +114,11 @@ xrealloc(ptr, size)
     return mem;
 }
 
-static void
+void
 xfree(x)
     void *x;
 {
-    free_called++;
-    free(x);
+    if (x) free(x);
 }
 #endif
 

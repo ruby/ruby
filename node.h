@@ -314,8 +314,6 @@ typedef struct RNode {
 #define NEW_PREEXE(b) NEW_SCOPE(b)
 #define NEW_POSTEXE() rb_node_newnode(NODE_POSTEXE,0,0,0)
 
-NODE *rb_node_newnode();
-
 #define NOEX_PUBLIC    0
 #define NOEX_UNDEF     1
 #define NOEX_CFUNC     1

@@ -133,6 +133,7 @@ EXPORTS
 	mygetservbyname
 	mygetservbyport
 	myget_osfhandle
+	win32_getcwd
 	win32_getenv
 ;array.c
 	rb_mem_clear
@@ -282,6 +283,7 @@ EXPORTS
 	rb_funcall
 	rb_funcall2
 	rb_funcall3
+	rb_call_super
 	rb_backtrace
 	rb_frame_last_func
 	rb_obj_instance_eval
@@ -325,6 +327,7 @@ EXPORTS
 	rb_file_s_expand_path
 ;gc.c
 	xmalloc
+	xfree
 	xcalloc
 	xrealloc
 	rb_global_variable
@@ -372,7 +375,7 @@ EXPORTS
 	rb_fdopen
 	rb_file_open
 	rb_file_sysopen
-	rb_io_synchronized	
+	rb_io_synchronized
 	rb_p
 	rb_gets
 	rb_str_setter

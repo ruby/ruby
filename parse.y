@@ -1544,7 +1544,11 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 			$$ = NEW_ARGS(0, 0, -1);
 		    }
 
-f_norm_arg	: tIDENTIFIER
+f_norm_arg	: tCONSTANT
+		    {
+			yyerror("formal argument must not be constant");
+		    }
+		| tIDENTIFIER
 		    {
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
