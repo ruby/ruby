@@ -24,14 +24,17 @@ class TestTime < Test::Unit::TestCase
                 -Time.utc(2000, 3, 21, 3, 30), -3*3600)
   end
 
-  def test_timegm
+  def negative_time_t?
     begin
       Time.at(-1)
-      negative_time_t_supported = true
+      true
     rescue ArgumentError
-      negative_time_t_supported = false
+      false
     end
-    if negative_time_t_supported
+  end
+
+  def test_timegm
+    if negative_time_t?
       assert_equal(-0x80000000, Time.utc(1901, 12, 13, 20, 45, 52).tv_sec)
       assert_equal(-2, Time.utc(1969, 12, 31, 23, 59, 58).tv_sec)
       assert_equal(-1, Time.utc(1969, 12, 31, 23, 59, 59).tv_sec)
@@ -56,6 +59,13 @@ class TestTime < Test::Unit::TestCase
       assert_equal(78796801, Time.utc(1972, 7, 1, 0, 0, 0).tv_sec)
       assert_equal(78796802, Time.utc(1972, 7, 1, 0, 0, 1).tv_sec)
       assert_equal(946684822, Time.utc(2000, 1, 1, 0, 0, 0).tv_sec)
+    end
+  end
+
+  def test_huge_difference # [ruby-dev:22619]
+    if negative_time_t?
+      assert_equal(Time.at(-0x80000000), Time.at(0x7fffffff) - 0xffffffff)
+      assert_equal(Time.at(0x7fffffff), Time.at(-0x80000000) + 0xffffffff)
     end
   end
 end
