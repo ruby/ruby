@@ -1,6 +1,7 @@
 #! /usr/local/bin/ruby
 
 $".push 'mkmf.rb' #"
+require 'find'
 
 if ARGV[0] == 'static'
   $force_static = TRUE
@@ -107,7 +108,7 @@ def install_rb(mfile)
     mfile.printf "\t@test -d $(libdir)/%s || mkdir $(libdir)/%s\n", f, f
   end
   for f in path
-    mfile.printf "\t$(INSTALL_DATA) %s $(libdir)/%s\n", f, f
+    mfile.printf "\t$(INSTALL_DATA) lib/%s $(libdir)/%s\n", f, f
   end
 end
 
@@ -281,7 +282,8 @@ RUBY_INSTALL_NAME = `t='$(program_transform_name)'; echo ruby | sed $$t`
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
-libdir = @libdir@/$(RUBY_INSTALL_NAME)/@arch@
+libdir = @libdir@/$(RUBY_INSTALL_NAME)
+archdir = $(libdir)/@arch@
 @SET_MAKE@
 
 #### End of system configuration section. ####
@@ -323,10 +325,11 @@ realclean:	clean
 
 install:
 	@test -d $(libdir) || mkdir $(libdir)
+	@test -d $(archdir) || mkdir $(archdir)
 "
   if !$static
     mfile.printf "\
-	$(INSTALL) $(TARGET) $(libdir)/$(TARGET)
+	$(INSTALL) $(TARGET) $(archdir)/$(TARGET)
 "
   end
   install_rb(mfile)

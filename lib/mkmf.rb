@@ -98,7 +98,7 @@ def install_rb(mfile)
     mfile.printf "\t@test -d $(libdir)/%s || mkdir $(libdir)/%s\n", f, f
   end
   for f in path
-    mfile.printf "\t$(INSTALL_DATA) %s $(libdir)/%s\n", f, f
+    mfile.printf "\t$(INSTALL_DATA) lib/%s $(libdir)/%s\n", f, f
   end
 end
 
