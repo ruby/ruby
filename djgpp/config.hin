@@ -71,8 +71,6 @@
 #define HAVE_HYPOT 1
 #define HAVE_ACOSH 1
 #define HAVE_FMOD 1
-#define HAVE_DRAND48 1
-#define HAVE_RANDOM 1
 #define HAVE_WAITPID 1
 #define HAVE_FSYNC 1
 #define HAVE_TRUNCATE 1
@@ -96,7 +94,6 @@
 #define HAVE_COSH 1
 #define HAVE_SINH 1
 #define HAVE_TANH 1
-#define HAVE_INITSTATE 1
 #define HAVE_STRUCT_TM_TM_ZONE 1
 #define HAVE_TM_ZONE 1
 #define HAVE_STRUCT_TM_TM_GMTOFF 1
@@ -106,8 +103,9 @@
 #define RSHIFT(x,y) ((x)>>(int)y)
 #define FILE_COUNT _cnt
 #define FILE_READPTR _ptr
+#define NEED_IO_FLUSH_BETWEEN_RW 1
 #define DEFAULT_KCODE KCODE_NONE
-#define DLEXT ".o"
+#define DLEXT ".so"
 #define RUBY_LIB "/lib/ruby/@MAJOR@.@MINOR@"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
 #define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/@MAJOR@.@MINOR@"

@@ -141,10 +141,16 @@ static VALUE lineno;
 extern int ReadDataPending();
 #  define READ_DATA_PENDING(fp) (!feof(fp))
 #endif
+
 #ifndef READ_DATA_PENDING_PTR
 # ifdef FILE_READPTR
 #  define READ_DATA_PENDING_PTR(fp) ((fp)->FILE_READPTR)
 # endif
+#endif
+
+#if defined __DJGPP__
+# undef READ_DATA_PENDING_COUNT
+# undef READ_DATA_PENDING_PTR
 #endif
 
 #define READ_CHECK(fp) do {\

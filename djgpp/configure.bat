@@ -5,7 +5,6 @@ if exist djgpp\version.sed goto exist
 :exist
 set _conv_=-f djgpp\config.sed -f djgpp\version.sed
 sed %_conv_% < Makefile.in > Makefile
-sed %_conv_% < ext\extmk.rb.in > ext\extmk.rb
 sed %_conv_% < djgpp\config.hin > config.h
 echo LFN check > 12345678
 sed -n /LFN/d 123456789 > nul

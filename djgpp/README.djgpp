@@ -3,7 +3,7 @@
 This is what you need to do to compile and install Ruby:
 
   1. Run configure.bat, which will generate config.h and Makefile
-     and ext/extmk.rb(GNU sed required).
+     (GNU sed required).
      Message like this is normal:
        sed.exe: can't read 123456789: No such file or directory (ENOENT)
 

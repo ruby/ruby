@@ -207,6 +207,7 @@ if $extlist.size > 0
     "#{n}=#{v}" if v and !(v = v.strip).empty?
   }.compact
   puts conf
+  $stdout.flush
   ARGV.concat(conf)
 end
 rubies = []
@@ -216,6 +217,7 @@ rubies = []
 
 Dir.chdir ".."
 puts "making #{rubies.join(', ')}"
+$stdout.flush
 ARGV.concat(rubies)
 host = (defined?(CROSS_COMPILING) ? CROSS_COMPILING : RUBY_PLATFORM)
 /mswin|bccwin|mingw|djgpp|human|os2|macos/ =~ host or exec(*ARGV)

@@ -129,6 +129,7 @@ module Logging
 
   def self::open
     @log ||= File::open(@logfile, 'w')
+    @log.sync = true
     $stderr.reopen(@log)
     $stdout.reopen(@log)
     yield
@@ -139,12 +140,14 @@ module Logging
 
   def self::message(*s)
     @log ||= File::open(@logfile, 'w')
+    @log.sync = true
     @log.printf(*s)
   end
 
   def self::logfile file
     @logfile = file
     if @log and not @log.closed?
+      @log.flush
       @log.close
       @log = nil
     end
@@ -636,7 +639,7 @@ def create_makefile(target, srcprefix = nil)
     for lib in $libs.split
       lib.sub!(/-l(.*)/, %%"lib\\1.#{$LIBEXT}"%)
     end
-    $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
+    $defs.push(format("-DEXTLIB='%s'", $libs.split.join(",")))
   end
 
   if target.include?('/')
@@ -787,6 +790,7 @@ def init_mkmf(config = CONFIG)
   $OBJEXT = config["OBJEXT"].dup
   $LIBS = "#{config['LIBS']} #{config['DLDLIBS']}"
   $LIBRUBYARG = config['LIBRUBYARG']
+  $LIBPATH = []
 
   $objs = nil
   $libs = ""
