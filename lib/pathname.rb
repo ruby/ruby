@@ -105,27 +105,29 @@ class Pathname
     Pathname.new(path)
   end
 
-  # realpath returns real pathname of self in actual filesystem.
+  # realpath returns a real pathname of self in actual filesystem.
+  # The real pathname doesn't contain a symlink and useless dots.
   #
   # If false is given for the optional argument force_absolute,
   # it may return relative pathname.
   # Otherwise it returns absolute pathname.
   def realpath(force_absolute=true)
-    # Check file existence at first by File.stat.
-    # This test detects ELOOP.
-    #
-    # /tmp/a -> a
-    # /tmp/b -> b/b
-    # /tmp/c -> ./c
-    # /tmp/d -> ../tmp/d
-
-    File.stat(@path)
-
-    top = %r{\A/} =~ @path ? '/' : ''
-    unresolved = @path.scan(%r{[^/]+})
+    if %r{\A/} =~ @path
+      top = '/'
+      unresolved = @path.scan(%r{[^/]+})
+    elsif force_absolute
+      # Although POSIX getcwd returns a pathname which contains no symlink,
+      # 4.4BSD-Lite2 derived getcwd may return the environment variable $PWD
+      # which may contain a symlink.
+      # So the return value of Dir.pwd should be examined.
+      top = '/'
+      unresolved = Dir.pwd.scan(%r{[^/]+}) + @path.scan(%r{[^/]+})
+    else
+      top = ''
+      unresolved = @path.scan(%r{[^/]+})
+    end
     resolved = []
-    checked_path = {}
-    
+
     until unresolved.empty?
       case unresolved.last
       when '.'
@@ -133,34 +135,36 @@ class Pathname
       when '..'
         resolved.unshift unresolved.pop
       else
-        path = top + unresolved.join('/')
-        raise Errno::ELOOP.new(path) if checked_path[path]
-        checked_path[path] = true
-        if File.lstat(path).symlink?
-          link = File.readlink(path)
-          if %r{\A/} =~ link
+        loop_check = {}
+        while (stat = File.lstat(path = top + unresolved.join('/'))).symlink?
+          symlink_id = "#{stat.dev}:#{stat.ino}"
+          raise Errno::ELOOP.new(path) if loop_check[symlink_id]
+          loop_check[symlink_id] = true
+          if %r{\A/} =~ (link = File.readlink(path))
             top = '/'
             unresolved = link.scan(%r{[^/]+})
           else
-            unresolved.pop
-            unresolved.concat link.scan(%r{[^/]+})
+            unresolved[-1,1] = link.scan(%r{[^/]+})
           end
+        end
+        next if (filename = unresolved.pop) == '.'
+        if filename != '..' && resolved.first == '..'
+          resolved.shift
         else
-          resolved.unshift unresolved.pop
+          resolved.unshift filename
         end
       end
     end
-    
-    if resolved.empty?
-      path = top.empty? ? '.' : top
-    else
-      path = top + resolved.join('/')
+
+    if top == '/'
+      resolved.shift while resolved[0] == '..'
     end
     
-    # Note that Dir.pwd has no symlinks.
-    path = File.join(Dir.pwd, path) if %r{\A/} !~ path && force_absolute
-
-    Pathname.new(path).cleanpath
+    if resolved.empty?
+      Pathname.new(top.empty? ? '.' : '/')
+    else
+      Pathname.new(top + resolved.join('/'))
+    end
   end
 
   # parent method returns parent directory, i.e. ".." is joined at last.
@@ -297,7 +301,7 @@ end
 # IO
 class Pathname
   # Pathname#each_line iterates over lines of the file.
-  # It's yields String objects for each line.
+  # It's yields a String object for each line.
   #
   # This method is exist since 1.8.1.
   def each_line(*args, &block) IO.foreach(@path, *args, &block) end

@@ -1,3 +1,10 @@
+Wed Oct 29 17:27:05 2003  Tanaka Akira  <akr@m17n.org>
+
+	* re.c (rb_reg_s_union, Init_Regexp): new method `Regexp.union'.
+
+	* lib/pathname.rb (realpath): examine Dir.pwd because it may have
+	  symlinks.
+
 Wed Oct 29 17:16:31 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_longjmp): must not disturb original jump.

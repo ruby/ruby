@@ -1485,6 +1485,82 @@ rb_reg_options(re)
 }
 
 static VALUE
+rb_reg_s_union(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    if (argc == 0) {
+        VALUE args[1];
+        args[0] = rb_str_new2("(?!)");
+        return rb_class_new_instance(1, args, rb_cRegexp);
+    }
+    else if (argc == 1) {
+        VALUE v;
+        v = rb_check_convert_type(argv[0], T_REGEXP, "Regexp", "to_regexp");
+        if (!NIL_P(v))
+            return v;
+        else {
+            VALUE args[1];
+            args[0] = rb_reg_s_quote(argc, argv);
+            return rb_class_new_instance(1, args, rb_cRegexp);
+        }
+    }
+    else {
+        int i, kcode = -1;
+        VALUE kcode_re = Qnil;
+        VALUE source = rb_str_buf_new(0);
+        VALUE args[3];
+        for (i = 0; i < argc; i++) {
+            volatile VALUE v;
+            if (0 < i)
+                rb_str_buf_cat2(source, "|");
+            v = rb_check_convert_type(argv[i], T_REGEXP, "Regexp", "to_regexp");
+            if (!NIL_P(v)) {
+                if (FL_TEST(v, KCODE_FIXED)) {
+                    if (kcode == -1) {
+                        kcode_re = v;
+                        kcode = RBASIC(v)->flags & KCODE_MASK;
+                    }
+                    else if ((RBASIC(v)->flags & KCODE_MASK) != kcode) {
+                        volatile VALUE str1, str2;
+                        str1 = rb_inspect(kcode_re);
+                        str2 = rb_inspect(v);
+                        rb_raise(rb_eArgError, "mixed kcode: %s and %s",
+                            RSTRING(str1)->ptr, RSTRING(str2)->ptr);
+                    }
+                }
+                v = rb_reg_to_s(v);
+            }
+            else {
+                args[0] = argv[i];
+                v = rb_reg_s_quote(1, args);
+            }
+            rb_str_buf_append(source, v);
+        }
+        args[0] = source;
+        args[1] = Qnil;
+        switch (kcode) {
+          case -1:
+            args[2] = Qnil;
+            break;
+          case KCODE_NONE:
+            args[2] = rb_str_new2("n");
+            break;
+          case KCODE_EUC:
+            args[2] = rb_str_new2("e");
+            break;
+          case KCODE_SJIS:
+            args[2] = rb_str_new2("s");
+            break;
+          case KCODE_UTF8:
+            args[2] = rb_str_new2("u");
+            break;
+        }
+        return rb_class_new_instance(3, args, rb_cRegexp);
+    }
+}
+
+static VALUE
 rb_reg_init_copy(copy, re)
     VALUE copy, re;
 {
@@ -1732,6 +1808,7 @@ Init_Regexp()
     rb_define_singleton_method(rb_cRegexp, "compile", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_cRegexp, "quote", rb_reg_s_quote, -1);
     rb_define_singleton_method(rb_cRegexp, "escape", rb_reg_s_quote, -1);
+    rb_define_singleton_method(rb_cRegexp, "union", rb_reg_s_union, -1);
     rb_define_singleton_method(rb_cRegexp, "last_match", rb_reg_s_last_match, -1);
 
     rb_define_method(rb_cRegexp, "initialize", rb_reg_initialize_m, -1);
