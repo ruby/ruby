@@ -1,3 +1,10 @@
+Wed Nov  5 11:13:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* string.c: add #include "version.h". this file still depends on it.
+
+	* Makefile.in, bcc32/Makefile.sub, win32/Makefile.sub,
+	  wince/Makefile.sub: add version.h dependency to string.c.
+
 Wed Nov  5 09:14:23 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/monitor.rb: revert to the previous revision.
