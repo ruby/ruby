@@ -385,12 +385,14 @@ hdrdir = #{$hdrdir}
 
 CC = #{CONFIG["CC"]}
 
-CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I$(hdrdir) #{CFLAGS} #{$CFLAGS} -I#{CONFIG["includedir"]} #{$defs.join(" ")}
+CFLAGS   = #{CONFIG["CCDLFLAGS"]} #{CFLAGS} #{$CFLAGS}
+CPPFLAGS = -I$(hdrdir) -I#{CONFIG["includedir"]} #{$defs.join(" ")}
 CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}
 
 RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
+RUBY_SO_NAME = #{CONFIG["RUBY_SO_NAME"]}
 
 DESTDIR =
 prefix = $(DESTDIR)#{CONFIG["prefix"]}
@@ -444,11 +446,23 @@ EOMF
   install_rb(mfile, "$(sitelibdir)")
   mfile.printf "\n"
 
+  if /mswin32/ =~ RUBY_PLATFORM
+    mfile.print "
+.c.obj:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+{$(srcdir)}.c.obj:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+"
+  end
+
   if CONFIG["DLEXT"] != $OBJEXT
-    mfile.printf <<EOMF
-$(DLLIB): $(OBJS)
-	$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)
-EOMF
+    mfile.print "$(DLLIB): $(OBJS)\n"
+    if /mswin32/ =~ RUBY_PLATFORM
+      mfile.print "\tset LIB=$(topdir:/=\\);$(LIB)\n"
+    end
+    mfile.print "\t$(LDSHARED) $(DLDFLAGS) -o $(DLLIB) $(OBJS) $(LIBS) $(LOCAL_LIBS)\n"
   elsif not File.exist?(target + ".c") and not File.exist?(target + ".cc")
     mfile.print "$(DLLIB): $(OBJS)\n"
     case RUBY_PLATFORM
@@ -476,7 +490,7 @@ $libs = CONFIG["DLDLIBS"]
 $local_flags = ""
 case RUBY_PLATFORM
 when /mswin32/
-  $local_flags = "rubymw.lib -link /LIBPATH:$(topdir) /EXPORT:Init_$(TARGET)"
+  $local_flags = "$(RUBY_SO_NAME).lib -link /EXPORT:Init_$(TARGET)"
 end
 $LOCAL_LIBS = ""
 $defs = []

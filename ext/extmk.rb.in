@@ -374,7 +374,8 @@ DESTDIR =
 
 CC = @CC@
 
-CFLAGS   = %s -I$(topdir) -I$(hdrdir) #{CFLAGS} #$CFLAGS -I@includedir@ %s
+CFLAGS   = %s #{CFLAGS} #$CFLAGS
+CPPFLAGS = -I$(topdir) -I$(hdrdir) -I@includedir@ %s
 DLDFLAGS = #$DLDFLAGS #$LDFLAGS
 LDSHARED = @LDSHARED@ #{defflag}
 ", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
@@ -382,6 +383,7 @@ LDSHARED = @LDSHARED@ #{defflag}
   mfile.printf "\
 
 RUBY_INSTALL_NAME = @RUBY_INSTALL_NAME@
+RUBY_SO_NAME = @RUBY_SO_NAME@
 
 prefix = @prefix@
 exec_prefix = @exec_prefix@
@@ -455,6 +457,16 @@ EOS
   install_rb(mfile, $srcdir)
   mfile.printf "\n"
 
+  if /mswin32/ =~ RUBY_PLATFORM
+    mfile.puts "
+.c.obj:
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+{$(srcdir)}.c{}.obj:
+ 	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+
+"
+  end
+
   if $static
     if "@AR@" =~ /^lib\b/i
       mfile.printf "\
@@ -490,6 +502,7 @@ $(DLLIB): $(OBJS)
     mfile.printf "###\n"
     while line = dfile.gets()
       line.gsub!(/\.o\b/, ".#{$OBJEXT}")
+      line.gsub!(/(\s)([^\s\/]+\.[ch])/, '\1$(srcdir)/\2') if /mswin32/ =~ RUBY_PLATFORM
       mfile.printf "%s", line.gsub('\$\(hdrdir\)/config.h', '$(topdir)/config.h')
     end
     dfile.close
@@ -515,7 +528,7 @@ def extmake(target)
   $local_flags = ""
   if /mswin32/ =~ RUBY_PLATFORM
     $LIBEXT = "lib"
-    $local_flags = "$(topdir)/rubymw.lib -link /EXPORT:Init_$(TARGET)"
+    $local_flags = "$(topdir)/$(RUBY_SO_NAME).lib -link /EXPORT:Init_$(TARGET)"
   end
   $LOCAL_LIBS = ""		# to be assigned in extconf.rb
   dir = with_config("opt-dir")
@@ -536,7 +549,7 @@ def extmake(target)
   $LDFLAGS = ldir || ""
 
   begin
-    system "mkdir", target unless File.directory?(target)
+    Dir.mkdir target unless File.directory?(target)
     Dir.chdir target
     $target = target
     $mdir = target

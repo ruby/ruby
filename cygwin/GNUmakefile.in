@@ -7,10 +7,33 @@ ifneq (,$(findstring no, $(ENABLE_SHARED)))
   LIBRUBYARG = $(LIBRUBY_A)
 endif
 
+ifneq (,$(findstring ruby, $(RUBY_INSTALL_NAME)))
+  RUBYW_INSTALL_NAME = $(subst ruby,rubyw,$(RUBY_INSTALL_NAME))
+else
+  RUBYW_INSTALL_NAME = $(RUBY_INSTALL_NAME)w
+endif
+WPROGRAM = $(RUBYW_INSTALL_NAME)$(EXEEXT)
 RUBYDEF = $(RUBY_INSTALL_NAME).def
+SOLIBS := $(RUBY_INSTALL_NAME).dll.res.o $(SOLIBS)
+EXTOBJS += $(@:$(EXEEXT)=.res.o)
 
-$(LIBRUBY_SO): $(RUBYDEF)
+$(LIBRUBY_SO): $(RUBYDEF) $(RUBY_INSTALL_NAME).dll.res.o
 $(LIBRUBY): $(LIBRUBY_SO)
+
+%.res.o: %.rc
+	@WINDRES@ --include-dir . --include-dir $(<D) --include-dir $(srcdir)/win32 $< $@
+
+$(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_INSTALL_NAME).dll.rc: rbconfig.rb
+	@@MINIRUBY@ $(srcdir)/win32/resource.rb \
+	  -ruby_name=$(RUBY_INSTALL_NAME) -rubyw_name=$(RUBYW_INSTALL_NAME) \
+	  -so_name=$(RUBY_INSTALL_NAME).dll \
+	  . $(icondirs) $(srcdir)/win32
+
+$(PROGRAM): $(RUBY_INSTALL_NAME).res.o
+$(WPROGRAM): $(RUBYW_INSTALL_NAME).res.o
+	@rm -f $@
+	$(PURIFY) $(CC) -mwindows -e _mainCRTStartup $(LDFLAGS) $(XLDFLAGS) \
+	  $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
 $(RUBYDEF): $(LIBRUBY_A)
 	echo EXPORTS > $(RUBYDEF)

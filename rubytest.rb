@@ -1,6 +1,6 @@
-#! ./miniruby -I.
+#! ./miniruby
 
-require 'rbconfig'
+load './rbconfig.rb'
 include Config
 
 unless File.exist? "./#{CONFIG['ruby_install_name']}#{CONFIG['EXEEXT']}"
@@ -32,7 +32,7 @@ end
 $stderr.reopen($stdout)
 error = ''
 
-`./#{CONFIG["ruby_install_name"]} #{CONFIG["srcdir"]}/sample/test.rb`.each do |line|
+`./#{CONFIG["ruby_install_name"]}#{CONFIG["EXEEXT"]} #{CONFIG["srcdir"]}/sample/test.rb`.each do |line|
   if line =~ /^end of test/
     print "test succeeded\n"
     exit 0

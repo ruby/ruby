@@ -1,15 +1,16 @@
-#!./miniruby
+#!./miniruby -s
 
 require File.dirname($0)+"/lib/ftools"
 
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'
+srcdir = $srcdir if $srcdir
 File.makedirs(File.dirname(rbconfig_rb), true)
 
 version = VERSION
 config = open(rbconfig_rb, "w")
 $stdout.reopen(config)
 
-fast = {'prefix'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
+fast = {'prefix'=>TRUE, 'ruby_install_name'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
 print %[
 module Config
 
@@ -23,16 +24,20 @@ module Config
 print "  DESTDIR = '' if not defined? DESTDIR\n  CONFIG = {}\n"
 v_fast = []
 v_others = []
+has_srcdir = false
 has_version = false
 File.foreach "config.status" do |$_|
   next if /^#/
   if /^s%@program_transform_name@%s,(.*)%g$/
+    next if $install_name
     ptn = $1.sub(/\$\$/, '$').split(/,/)	#'
     v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + "ruby".sub(ptn[0],ptn[1]) + "\"\n"
   elsif /^s%@(\w+)@%(.*)%g/
     name = $1
     val = $2 || ""
     next if name =~ /^(INSTALL|DEFS|configure_input|srcdir|top_srcdir)$/
+    next if $install_name and name =~ /^RUBY_INSTALL_NAME$/
+    next if $so_name and name =~ /^RUBY_SO_NAME$/
     v = "  CONFIG[\"" + name + "\"] = " +
       val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$\{?([^(){}]+)\}?/) {
       "\#{CONFIG[\\\"#{$1}\\\"]}"
@@ -58,10 +63,15 @@ File.foreach "config.status" do |$_|
     end
   elsif /^ac_given_srcdir=(.*)/
     v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path($1) + "\"\n"
+    has_srcdir = true
   elsif /^ac_given_INSTALL=(.*)/
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
+end
+
+if not has_srcdir
+  v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path(srcdir) + "\"\n"
 end
 
 if not has_version
@@ -74,10 +84,20 @@ end
 
 v_fast.collect! do |x|
   if /"prefix"/ === x
-    x.sub(/= /, '= DESTDIR + ')
+    prefix = Regexp.quote('/lib/ruby/' + RUBY_VERSION.sub(/\.\d+$/, '') + '/' + RUBY_PLATFORM)
+    puts "  TOPDIR = File.dirname(__FILE__).sub!(%r'#{prefix}\\Z', '')"
+    x.sub(/= (.*)/, '= (TOPDIR || DESTDIR + \1)')
   else
     x
   end
+end
+
+if $install_name
+  v_fast << "  CONFIG[\"ruby_install_name\"] = \"" + $install_name + "\"\n"
+  v_fast << "  CONFIG[\"RUBY_INSTALL_NAME\"] = \"" + $install_name + "\"\n"
+end
+if $so_name
+  v_fast << "  CONFIG[\"RUBY_SO_NAME\"] = \"" + $so_name + "\"\n"
 end
 
 print v_fast, v_others

@@ -86,8 +86,8 @@ end
 if RUBY_PLATFORM =~ /mswin32|mingw/
   File.makedirs archlibdir + "/win32", true
   File.install "win32/win32.h", archlibdir + "/win32", 0644, true
-  if File.exist? wdir+'/rubymw.lib'
-    File.install wdir+'/rubymw.lib', archlibdir, 0644, true
+  if File.exist? wdir+'/'+CONFIG["LIBRUBY"]
+    File.install wdir+'/'+CONFIG["LIBRUBY"], archlibdir, 0644, true
   end
 end
 File.install wdir+'/'+CONFIG['LIBRUBY_A'], archlibdir, 0644, true

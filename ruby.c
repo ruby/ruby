@@ -206,30 +206,64 @@ ruby_incpush(path)
 void
 ruby_init_loadpath()
 {
+#if defined(_WIN32) || defined(DJGPP)
+    char libpath[FILENAME_MAX+1];
+    char *p;
+    size_t rest;
+#if defined(_WIN32)
+    GetModuleFileName(NULL, libpath, sizeof libpath);
+#elif defined(DJGPP)
+    extern char *__dos_argv0;
+    strncpy(libpath, __dos_argv0, FILENAME_MAX);
+#endif
+    p = strrchr(libpath, '\\');
+    if (p) {
+	*p = 0;
+	if (p-libpath > 3 && !strcasecmp(p-4, "\\bin")) {
+	    p -= 4;
+	    *p = 0;
+	}
+    } else {
+	strcpy(libpath, ".");
+	p = libpath + 1;
+    }
+
+#if !defined(__CYGWIN32__)
+#ifndef CharNext		/* defined as CharNext[AW] on Windows. */
+#define CharNext(p) ((p) + 1)
+#endif
+    for (p = libpath; *p; p = CharNext(p))
+	if (*p == '\\')
+	    *p = '/';
+#endif
+    rest = FILENAME_MAX - (p - libpath);
+
+#define RUBY_RELATIVE(path) (strncpy(p, (path), rest), libpath)
+#else
+#define RUBY_RELATIVE(path) (path)
+#endif
+
     if (rb_safe_level() == 0) {
 	ruby_incpush(getenv("RUBYLIB"));
     }
 
 #ifdef RUBY_SEARCH_PATH
-    ruby_incpush(RUBY_SEARCH_PATH);
+    ruby_incpush(RUBY_RELATIVE(RUBY_SEARCH_PATH));
 #endif
 
 #ifdef RUBY_SITE_THIN_ARCHLIB
-    ruby_incpush(RUBY_SITE_THIN_ARCHLIB);
+    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_THIN_ARCHLIB));
 #endif
-    ruby_incpush(RUBY_SITE_ARCHLIB);
-    ruby_incpush(RUBY_SITE_LIB2);
-    ruby_incpush(RUBY_SITE_LIB);
+    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_ARCHLIB));
+    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_LIB2));
+    ruby_incpush(RUBY_RELATIVE(RUBY_SITE_LIB));
 
 #ifdef RUBY_THIN_ARCHLIB
-    ruby_incpush(RUBY_THIN_ARCHLIB);
+    ruby_incpush(RUBY_RELATIVE(RUBY_THIN_ARCHLIB));
 #endif
-    ruby_incpush(RUBY_ARCHLIB);
+    ruby_incpush(RUBY_RELATIVE(RUBY_ARCHLIB));
 
-    ruby_incpush(RUBY_LIB);
-#if defined(_WIN32) || defined(DJGPP)
-    ruby_incpush(ruby_libpath());
-#endif
+    ruby_incpush(RUBY_RELATIVE(RUBY_LIB));
 
     if (rb_safe_level() == 0) {
 	ruby_incpush(".");
@@ -903,45 +937,6 @@ forbid_setid(s)
     if (rb_safe_level() > 0)
         rb_raise(rb_eSecurityError, "No %s allowed in tainted mode", s);
 }
-
-#if defined(_WIN32) || defined(DJGPP)
-static char *
-ruby_libpath()
-{
-    static char libpath[FILENAME_MAX+1];
-    char *p;
-#if defined(_WIN32)
-    GetModuleFileName(NULL, libpath, sizeof libpath);
-#elif defined(DJGPP)
-    extern char *__dos_argv0;
-    strcpy(libpath, __dos_argv0);
-#endif
-    p = strrchr(libpath, '\\');
-    if (p) {
-	*p = 0;
-	if (!strcasecmp(p-4, "\\bin"))
-	    p -= 4;
-    } else {
-	strcpy(libpath, ".");
-	p = libpath + 1;
-    }
-
-    strcpy(p, "\\lib");
-#if defined(__CYGWIN32__)
-    p = (char *)malloc(strlen(libpath)+10);
-    if (!p)
-	return 0;
-    cygwin32_conv_to_posix_path(libpath, p);
-    strcpy(libpath, p);
-    free(p);
-#else
-    for (p = libpath; *p; p++)
-	if (*p == '\\')
-	    *p = '/';
-#endif
-    return libpath;
-}
-#endif
 
 void
 ruby_prog_init()

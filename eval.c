@@ -8111,13 +8111,13 @@ rb_cont_call(argc, argv, cont)
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
     }
     switch (argc) {
-    case 0:
+      case 0:
 	th->result = Qnil;
 	break;
-    case 1:
+      case 1:
 	th->result = *argv;
 	break;
-    default:
+      default:
 	th->result = rb_ary_new4(argc, argv);
 	break;
     }

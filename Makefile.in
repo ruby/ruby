@@ -3,7 +3,7 @@ SHELL = /bin/sh
 #### Start of system configuration section. ####
 
 srcdir = @srcdir@
-VPATH = @srcdir@:@srcdir@/missing
+VPATH = $(srcdir):$(srcdir)/missing
 
 CC = @CC@
 YACC = @YACC@
@@ -13,7 +13,7 @@ AUTOCONF = autoconf
 
 prefix = @prefix@
 CFLAGS = @CFLAGS@
-CPPFLAGS = -I. -I@srcdir@ -I@includedir@
+CPPFLAGS = -I. -I$(srcdir) -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 XLDFLAGS = @XLDFLAGS@
 EXTLIBS = 
@@ -148,7 +148,7 @@ $(srcdir)/configure: $(srcdir)/configure.in
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
 lex.c: keywords
-	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ @srcdir@/keywords > lex.c
+	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $(srcdir)/keywords > lex.c
 
 parse.c: parse.y
 	$(YACC) $<
@@ -156,80 +156,80 @@ parse.c: parse.y
 
 parse.@OBJEXT@: parse.c
 
-alloca.@OBJEXT@: @srcdir@/missing/alloca.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/alloca.c
+alloca.@OBJEXT@: $(srcdir)/missing/alloca.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/alloca.c
 
-crypt.@OBJEXT@: @srcdir@/missing/crypt.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/crypt.c
+crypt.@OBJEXT@: $(srcdir)/missing/crypt.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/crypt.c
 
-dup2.@OBJEXT@: @srcdir@/missing/dup2.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/dup2.c
+dup2.@OBJEXT@: $(srcdir)/missing/dup2.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/dup2.c
 
-finite.@OBJEXT@: @srcdir@/missing/finite.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/finite.c
+finite.@OBJEXT@: $(srcdir)/missing/finite.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/finite.c
 
-flock.@OBJEXT@: @srcdir@/missing/flock.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/flock.c
+flock.@OBJEXT@: $(srcdir)/missing/flock.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/flock.c
 
-isinf.@OBJEXT@: @srcdir@/missing/isinf.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/isinf.c
+isinf.@OBJEXT@: $(srcdir)/missing/isinf.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/isinf.c
 
-isnan.@OBJEXT@: @srcdir@/missing/isnan.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/isnan.c
+isnan.@OBJEXT@: $(srcdir)/missing/isnan.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/isnan.c
 
-fnmatch.@OBJEXT@: @srcdir@/missing/fnmatch.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/fnmatch.c
+fnmatch.@OBJEXT@: $(srcdir)/missing/fnmatch.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/fnmatch.c
 
-memcmp.@OBJEXT@: @srcdir@/missing/memcmp.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/memcmp.c
+memcmp.@OBJEXT@: $(srcdir)/missing/memcmp.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/memcmp.c
 
-memmove.@OBJEXT@: @srcdir@/missing/memmove.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/memmove.c
+memmove.@OBJEXT@: $(srcdir)/missing/memmove.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/memmove.c
 
-mkdir.@OBJEXT@: @srcdir@/missing/mkdir.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/mkdir.c
+mkdir.@OBJEXT@: $(srcdir)/missing/mkdir.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/mkdir.c
 
-vsnprintf.@OBJEXT@: @srcdir@/missing/vsnprintf.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/vsnprintf.c
+vsnprintf.@OBJEXT@: $(srcdir)/missing/vsnprintf.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/vsnprintf.c
 
-strcasecmp.@OBJEXT@: @srcdir@/missing/strcasecmp.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strcasecmp.c
+strcasecmp.@OBJEXT@: $(srcdir)/missing/strcasecmp.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strcasecmp.c
 
-strncasecmp.@OBJEXT@: @srcdir@/missing/strncasecmp.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strncasecmp.c
+strncasecmp.@OBJEXT@: $(srcdir)/missing/strncasecmp.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strncasecmp.c
 
-strchr.@OBJEXT@: @srcdir@/missing/strchr.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strchr.c
+strchr.@OBJEXT@: $(srcdir)/missing/strchr.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strchr.c
 
-strerror.@OBJEXT@: @srcdir@/missing/strerror.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strerror.c
+strerror.@OBJEXT@: $(srcdir)/missing/strerror.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strerror.c
 
-strftime.@OBJEXT@: @srcdir@/missing/strftime.c
-	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strftime.c
+strftime.@OBJEXT@: $(srcdir)/missing/strftime.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strftime.c
 
-strstr.@OBJEXT@: @srcdir@/missing/strstr.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strstr.c
+strstr.@OBJEXT@: $(srcdir)/missing/strstr.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strstr.c
 
-strtod.@OBJEXT@: @srcdir@/missing/strtod.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtod.c
+strtod.@OBJEXT@: $(srcdir)/missing/strtod.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strtod.c
 
-strtol.@OBJEXT@: @srcdir@/missing/strtol.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtol.c
+strtol.@OBJEXT@: $(srcdir)/missing/strtol.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strtol.c
 
-strtoul.@OBJEXT@: @srcdir@/missing/strtoul.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strtoul.c
+strtoul.@OBJEXT@: $(srcdir)/missing/strtoul.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/strtoul.c
 
-x68.@OBJEXT@: @srcdir@/missing/x68.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/x68.c
+x68.@OBJEXT@: $(srcdir)/missing/x68.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/x68.c
 
-os2.@OBJEXT@: @srcdir@/missing/os2.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/os2.c
+os2.@OBJEXT@: $(srcdir)/missing/os2.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/os2.c
 
-dl_os2.@OBJEXT@: @srcdir@/missing/dl_os2.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/dl_os2.c
+dl_os2.@OBJEXT@: $(srcdir)/missing/dl_os2.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/dl_os2.c
 
-win32.@OBJEXT@: @srcdir@/win32/win32.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/win32/win32.c
+win32.@OBJEXT@: $(srcdir)/win32/win32.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/win32/win32.c
 
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
