@@ -1,3 +1,7 @@
+Tue May  4 23:52:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/gserver.rb: documented
+
 Tue May  4 23:46:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/xmlrpc/README.txt: introduced for documentation purposes
