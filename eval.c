@@ -6672,7 +6672,7 @@ block_pass(self, node)
 }
 
 struct METHOD {
-    VALUE klass, oklass;
+    VALUE klass, rklass;
     VALUE recv;
     ID id, oid;
     NODE *body;
@@ -6682,7 +6682,7 @@ static void
 bm_mark(data)
     struct METHOD *data;
 {
-    rb_gc_mark(data->oklass);
+    rb_gc_mark(data->rklass);
     rb_gc_mark(data->klass);
     rb_gc_mark(data->recv);
     rb_gc_mark((VALUE)data->body);
@@ -6697,12 +6697,12 @@ mnew(klass, obj, id, mklass)
     NODE *body;
     int noex;
     struct METHOD *data;
-    VALUE oklass = klass;
+    VALUE rklass = klass;
     ID oid = id;
 
   again:
     if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
-	print_undef(oklass, oid);
+	print_undef(rklass, oid);
     }
 
     if (nd_type(body) == NODE_ZSUPER) {
@@ -6715,7 +6715,7 @@ mnew(klass, obj, id, mklass)
     data->recv = obj;
     data->id = id;
     data->body = body;
-    data->oklass = oklass;
+    data->rklass = rklass;
     data->oid = oid;
     OBJ_INFECT(method, klass);
 
@@ -6736,7 +6736,7 @@ method_eq(method, other)
     Data_Get_Struct(method, struct METHOD, m1);
     Data_Get_Struct(other, struct METHOD, m2);
 
-    if (m1->klass != m2->klass || m1->oklass != m2->oklass ||
+    if (m1->klass != m2->klass || m1->rklass != m2->rklass ||
 	m1->recv != m2->recv || m1->body != m2->body)
 	return Qfalse;
 
@@ -6756,7 +6756,7 @@ method_unbind(obj)
     data->recv = 0;
     data->id = orig->id;
     data->body = orig->body;
-    data->oklass = orig->oklass;
+    data->rklass = orig->rklass;
     data->oid = orig->oid;
     OBJ_INFECT(method, obj);
 
@@ -6845,19 +6845,19 @@ umethod_bind(method, recv)
     struct METHOD *data, *bound;
 
     Data_Get_Struct(method, struct METHOD, data);
-    if (data->oklass != CLASS_OF(recv)) {
-	if (FL_TEST(data->oklass, FL_SINGLETON)) {
+    if (data->rklass != CLASS_OF(recv)) {
+	if (FL_TEST(data->rklass, FL_SINGLETON)) {
 	    rb_raise(rb_eTypeError, "singleton method called for a different object");
 	}
 	if (FL_TEST(CLASS_OF(recv), FL_SINGLETON) &&
 	    st_lookup(RCLASS(CLASS_OF(recv))->m_tbl, data->oid, 0)) {
 	    rb_raise(rb_eTypeError, "method `%s' overridden", rb_id2name(data->oid));
 	}
-	if (!((TYPE(data->oklass) == T_MODULE) ?
-	      rb_obj_is_kind_of(recv, data->oklass) :
-	      rb_obj_is_instance_of(recv, data->oklass))) {
+	if (!((TYPE(data->rklass) == T_MODULE) ?
+	      rb_obj_is_kind_of(recv, data->rklass) :
+	      rb_obj_is_instance_of(recv, data->rklass))) {
 	    rb_raise(rb_eTypeError, "bind argument must be an instance of %s",
-		     rb_class2name(data->oklass));
+		     rb_class2name(data->rklass));
 	}
     }
 
@@ -6914,7 +6914,7 @@ method_inspect(method)
     s = rb_class2name(CLASS_OF(method));
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, ": ");
-    s = rb_class2name(data->oklass);
+    s = rb_class2name(data->rklass);
     rb_str_buf_cat2(str, s);
     rb_str_buf_cat2(str, "(");
     s = rb_class2name(data->klass);

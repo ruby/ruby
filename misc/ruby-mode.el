@@ -189,6 +189,9 @@ The variable ruby-indent-level controls the amount of indentation.
   (make-local-variable 'imenu-create-index-function)
   (setq imenu-create-index-function 'ruby-imenu-create-index)
 
+  (make-local-variable 'add-log-current-defun-function)
+  (setq add-log-current-defun-function 'ruby-add-log-current-method)
+
   (run-hooks 'ruby-mode-hook))
 
 (defun ruby-current-indentation ()
@@ -681,6 +684,42 @@ An end of a defun is found by moving forward from the beginning of one."
   (push-mark (point) nil t)
   (ruby-beginning-of-defun)
   (re-search-backward "^\n" (- (point) 1) t))
+
+(defun ruby-add-log-current-method ()
+  "Return current method string."
+  (condition-case nil
+      (save-excursion
+	(let ((mlist nil) (indent 0))
+	  ;; get current method (or class/module)
+	  (if (re-search-backward
+	       (concat "^[ \t]*\\(def\\|class\\|module\\)[ \t]+"
+		       "\\(" ruby-symbol-re "+\\)")
+	       nil t)
+	      (progn
+		(setq mlist (list (buffer-substring
+				   (match-beginning 2) (match-end 2))))
+		(goto-char (match-beginning 1))
+		(setq indent (current-column))
+		(beginning-of-line)))
+	  ;; nest class/module
+	  (while (and (> indent 0)
+		      (re-search-backward
+		       (concat
+			"^[ \t]*\\(class\\|module\\)[ \t]+"
+			"\\([A-Z]" ruby-symbol-re "+\\)")
+		       nil t))
+	    (goto-char (match-beginning 1))
+	    (if (< (current-column) indent)
+		(progn
+		  (setq mlist
+			(cons (buffer-substring
+			       (match-beginning 2) (match-end 2)) mlist))
+		  (setq indent (current-column))
+		  (beginning-of-line))))
+	  ;; generate string
+	  (if (consp mlist)
+	      (mapconcat (function identity) mlist "::")
+	    nil)))))
 
 (cond
  ((featurep 'font-lock)

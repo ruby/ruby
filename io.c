@@ -963,7 +963,7 @@ rb_io_each_byte(io)
 	rb_yield(INT2FIX(c & 0xff));
     }
     if (ferror(f)) rb_sys_fail(fptr->path);
-    return Qnil;
+    return io;
 }
 
 VALUE
@@ -1127,6 +1127,7 @@ rb_io_close_m(io)
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
+    rb_io_check_closed(RFILE(io)->fptr);
     rb_io_close(io);
     return Qnil;
 }
@@ -1665,7 +1666,7 @@ pipe_open(pname, mode)
 	    else fptr->f = f;
 	    rb_io_synchronized(fptr);
 	}
-	return (VALUE)port;
+	return port;
     }
 #else
     int pid, pr[2], pw[2];
@@ -1748,7 +1749,7 @@ pipe_open(pname, mode)
 	    fptr->finalize = pipe_finalize;
 	    pipe_add_fptr(fptr);
 #endif
-	    return (VALUE)port;
+	    return port;
 	}
     }
 #endif
@@ -1835,20 +1836,18 @@ rb_open_file(argc, argv, io)
 }
 
 static VALUE
-rb_file_s_open(argc, argv, klass)
+rb_io_s_open(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
 {
-    VALUE io = rb_obj_alloc(klass);
+    VALUE io = rb_class_new_instance(argc, argv, klass);
 
-    RFILE(io)->fptr = 0;
-    rb_open_file(argc, argv, (VALUE)io);
     if (rb_block_given_p()) {
-	return rb_ensure(rb_yield, (VALUE)io, rb_io_close, (VALUE)io);
+	return rb_ensure(rb_yield, io, rb_io_close, io);
     }
 
-    return (VALUE)io;
+    return io;
 }
 
 static VALUE
@@ -1863,7 +1862,7 @@ rb_f_open(argc, argv)
 	    return rb_io_popen(str+1, argc, argv, rb_cIO);
 	}
     }
-    return rb_file_s_open(argc, argv, rb_cFile);
+    return rb_io_s_open(argc, argv, rb_cFile);
 }
 
 static VALUE
@@ -2083,10 +2082,10 @@ rb_io_clone(io)
 	fptr->f = rb_fdopen(fd, "w");
     }
     if (fptr->mode & FMODE_BINMODE) {
-	rb_io_binmode((VALUE)clone);
+	rb_io_binmode(clone);
     }
 
-    return (VALUE)clone;
+    return clone;
 }
 
 static VALUE
@@ -2413,7 +2412,7 @@ prep_stdio(f, mode, klass)
     fp->f = f;
     fp->mode = mode;
 
-    return (VALUE)io;
+    return io;
 }
 
 static void
@@ -2473,34 +2472,23 @@ rb_file_initialize(argc, argv, io)
 	RFILE(io)->fptr = 0;
     }
     rb_open_file(argc, argv, io);
-    if (rb_block_given_p()) {
-	rb_warn("File::new() does not take block; use File::open() instead");
-    }
 
     return io;
 }
 
 static VALUE
-rb_io_s_for_fd(argc, argv, klass)
+rb_io_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
     VALUE klass;
 {
-    VALUE fnum, mode;
-    OpenFile *fp;
-    char *m = "r";
-    VALUE io = rb_obj_alloc(klass);
+    if (rb_block_given_p()) {
+	char *cname = rb_class2name(klass);
 
-    if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
-	SafeStringValue(mode);
-	m = RSTRING(mode)->ptr;
+	rb_warn("%s::new() does not take block; use %::open() instead",
+		cname, cname);
     }
-    MakeOpenFile(io, fp);
-
-    fp->f = rb_fdopen(NUM2INT(fnum), m);
-    fp->mode = rb_io_mode_flags(m);
-
-    return io;
+    return rb_class_new_instance(argc, argv, klass);
 }
 
 static int binmode = 0;
@@ -3524,14 +3512,17 @@ Init_IO()
     rb_include_module(rb_cIO, rb_mEnumerable);
 
     rb_define_singleton_method(rb_cIO, "allocate", rb_io_s_alloc, 0);
-    rb_define_singleton_method(rb_cIO, "for_fd", rb_io_s_for_fd, -1);
-    rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
+    rb_define_singleton_method(rb_cIO, "new", rb_io_s_new, -1);
+    rb_define_singleton_method(rb_cIO, "open",  rb_io_s_open, -1);
+    rb_define_singleton_method(rb_cIO, "for_fd", rb_class_new_instance, -1);
     rb_define_singleton_method(rb_cIO, "popen", rb_io_s_popen, -1);
     rb_define_singleton_method(rb_cIO, "foreach", rb_io_s_foreach, -1);
     rb_define_singleton_method(rb_cIO, "readlines", rb_io_s_readlines, -1);
     rb_define_singleton_method(rb_cIO, "read", rb_io_s_read, -1);
     rb_define_singleton_method(rb_cIO, "select", rb_f_select, -1);
     rb_define_singleton_method(rb_cIO, "pipe", rb_io_s_pipe, 0);
+
+    rb_define_method(rb_cIO, "initialize", rb_io_initialize, -1);
 
     rb_output_fs = Qnil;
     rb_define_hooked_variable("$,", &rb_output_fs, 0, rb_str_setter);
@@ -3673,7 +3664,6 @@ Init_IO()
 
     Init_File();
 
-    rb_define_singleton_method(rb_cFile, "open",  rb_file_s_open, -1);
     rb_define_method(rb_cFile, "initialize",  rb_file_initialize, -1);
 
     rb_file_const("RDONLY", INT2FIX(O_RDONLY));

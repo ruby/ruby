@@ -1,6 +1,36 @@
+Fri Jan 18 17:32:09 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_s_new): block check moved from initialize to this
+	  method.
+
+	* io.c (rb_io_s_open): open should call initialize too. IO#for_fd
+	  also calls initialize. [new]
+
+Fri Jan 18 10:26:33 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_sys_fail): replace INT2FIX() by INT2NUM() since
+	  errno value may not fit in Fixnum size on Hurd.
+
+	* error.c (set_syserr): ditto.
+
 Fri Jan 18 10:12:00 2002  Usaku Nakamura <usa@ruby-lang.org>
 
 	* ext/socket/socket.c (tcp_svr_s_open): fix typo.
+
+Fri Jan 18 02:27:48 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_s_glob): returns nil if block given.
+
+	* io.c (rb_io_each_byte): should return self.
+
+	* io.c (rb_io_close_m): close check added.
+
+	* dir.c (dir_seek): should return pos.
+
+Fri Jan 18 01:21:53 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (fixpos): orig may be (NODE*)1, which should not be
+	  dereferenced.
 
 Thu Jan 17 16:21:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
