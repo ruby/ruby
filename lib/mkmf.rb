@@ -596,7 +596,8 @@ EOMF
     dfile = open(depend, "r")
     mfile.printf "###\n"
     while line = dfile.gets()
-      mfile.printf "%s", line.gsub(/\.o\b/, ".#{$OBJEXT}")
+      line.gsub!(/\.o\b/, ".#{$OBJEXT}")
+      mfile.printf "%s", line.gsub(/(\s)([^\s\/]+\.[ch])/, '\1{$(srcdir)}\2') if /nmake/i =~ $make
     end
     dfile.close
   end

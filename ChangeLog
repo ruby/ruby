@@ -1,3 +1,11 @@
+Wed Apr 24 00:42:41 2002  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/extmk.rb.in (create_makefile): use `{$(srcdir)}' directive instead
+	  of `$(srcdir)/' when including depend file.
+
+	* lib/mkmf.rb (create_makefile): add `{$(srcdir)}' when including depend
+	  file.
+
 Fri Apr 19 17:06:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/socket/extconf.rb: include <windows.h>, <winsock.h> on _WIN32.
