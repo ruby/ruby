@@ -99,7 +99,11 @@ extern "C++" {
 #include <time.h>
 #include <math.h>
 #include <sys/types.h>
-#include <sys/utime.h>
+#if !defined(__BORLANDC__)
+# include <sys/utime.h>
+#else
+# include <utime.h>
+#endif
 #include <io.h>
 #include <malloc.h>
 
@@ -230,7 +234,9 @@ extern int isnan(double);
 //
 // stubs
 //
+#if !defined(__BORLANDC__)
 extern int       ioctl (int, unsigned int, long);
+#endif
 extern UIDTYPE   getuid (void);
 extern UIDTYPE   geteuid (void);
 extern GIDTYPE   getgid (void);
