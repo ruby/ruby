@@ -1,3 +1,7 @@
+Tue Oct 21 00:22:57 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* test/drb/*: import drb/runit.
+
 Mon Oct 20 23:55:47 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval): set current node after arguments evaluation.
