@@ -691,16 +691,6 @@ time_usec(time)
 }
 
 static VALUE
-time_succ(time)
-    VALUE time;
-{
-    struct time_object *tobj;
-
-    GetTimeval(time, tobj);
-    return rb_time_new(tobj->tv.tv_sec + 1, tobj->tv.tv_usec);
-}
-
-static VALUE
 time_cmp(time1, time2)
     VALUE time1, time2;
 {
@@ -1449,8 +1439,6 @@ Init_Time()
     rb_define_method(rb_cTime, "hash", time_hash, 0);
     rb_define_method(rb_cTime, "clone", time_clone, 0);
     rb_define_method(rb_cTime, "dup", time_dup, 0);
-    rb_define_method(rb_cTime, "succ", time_succ, 0);
-    rb_define_method(rb_cTime, "next", time_succ, 0);
 
     rb_define_method(rb_cTime, "localtime", time_localtime, 0);
     rb_define_method(rb_cTime, "gmtime", time_gmtime, 0);

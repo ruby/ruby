@@ -1,3 +1,19 @@
+Thu May 30 12:52:42 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_step): iteration done using "+" if elements are
+	  Numeric.  Otherwise using "succ".
+
+	* range.c (range_each): iteration done using "succ".  If the
+	  elements does not respond to "succ", raise TypeError.  As a
+	  result, all Enumerable methods, e.g. collect, require elements
+	  to respond to "succ'.
+
+	* range.c (range_member): comparison done using "each", if
+	  elements are non-Numeric or no-"succ" objects.  Otherwise
+	  compare using "<=>".
+
+	* range.c (Init_Range): remove "size" and "length".
+
 Thu May 30 09:16:36 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb: if StringIO is usable then use it.
@@ -45,10 +61,6 @@ Tue May 28 12:13:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* eval.c (rb_call0): ditto.
 
 	* node.h (NEW_DASGN, NEW_DASGN_CURR): remove surplus semicolons.
-
-Mon May 27 04:31:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* time.c (time_succ): new method for Range support.
 
 Fri May 24 09:06:29 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

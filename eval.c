@@ -3851,7 +3851,7 @@ rb_yield_0(val, self, klass, pcall)
 	if (ruby_dyna_vars->id == 0) {
 	    vars = ruby_dyna_vars->next;
 	    rb_gc_force_recycle((VALUE)ruby_dyna_vars);
-	    while (vars && vars->id != 0) {
+	    while (vars && vars->id != 0 && vars != block->dyna_vars) {
 		struct RVarmap *tmp = vars->next;
 		rb_gc_force_recycle((VALUE)vars);
 		vars = tmp;
