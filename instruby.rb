@@ -76,7 +76,24 @@ else
 end
 Dir.chdir CONFIG["srcdir"]
 
-File.install "sample/irb.rb", "#{bindir}/irb", 0755, true
+for src in Dir["bin/*"]
+  next unless File.file?(src)
+
+  name = ruby_install_name.sub(/ruby/, File.basename(src))
+  dest = File.join(bindir, name)
+
+  File.install src, dest, 0755, true
+
+  open(dest, "r+") { |f|
+    shebang = f.gets
+    body = f.readlines
+
+    f.rewind
+
+    f.print shebang.sub(/ruby/, ruby_install_name), *body
+    f.truncate(f.pos)
+  }
+end
 
 Find.find("lib") do |f|
   next unless /\.rb$/ =~ f || /help-message$/ =~ f

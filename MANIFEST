@@ -74,6 +74,7 @@ util.c
 variable.c
 version.c
 version.h
+bin/irb
 djgpp/README.djgpp
 djgpp/config.hin
 djgpp/config.sed
@@ -249,7 +250,6 @@ sample/from.rb
 sample/fullpath.rb
 sample/getopts.test
 sample/goodfriday.rb
-sample/irb.rb
 sample/less.rb
 sample/list.rb
 sample/list2.rb

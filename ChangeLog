@@ -1,3 +1,12 @@
+Tue Nov 19 02:34:18 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* bin/irb: Moved from sample/irb.rb.
+
+	* instruby.rb: Install script files under bin/ with ruby's program
+	  prefix and suffix.
+
+	* instruby.rb: Rewrite installed scripts' shebang lines.
+
 Mon Nov 18 02:59:31 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb: Make this libary thread safe.
