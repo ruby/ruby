@@ -1,3 +1,19 @@
+Tue Jun 27 22:38:15 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.24.
+
+	* lib/net/protocol.rb: modified each_crlf_line again.
+
+	* lib/net/protocol.rb: do_write_beg,do_write_end -> writing{}
+	  do_write_do -> do_write
+
+	* lib/net/http.rb: can make proxy connection by passing
+	  addresses to HTTP.new, start.
+
+	* lib/net/http.rb: HTTP.new_implementation, old_implementation:
+	  can use 1.2 implementation of head, get, post, put.
+	  (see document)
+
 Tue Jun 27 12:05:10 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* win32.c (myfdclr): new function.
