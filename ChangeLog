@@ -1,3 +1,14 @@
+Sun Jun 18 22:49:13 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* configure.in: single quoted sitedir.
+
+	* mkconfig.rb: add DESTDIR for cross-compiling.
+
+	* lib/mkmf.rb: add DESTDIR.
+
+	* ruby.c (load_file): force binmode if fname includes ".exe"
+	  on DOSISH.
+
 Fri Jun 16 22:47:47 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.23.

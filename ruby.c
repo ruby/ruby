@@ -679,6 +679,13 @@ load_file(fname, script)
 	fclose(fp);
 
 	f = rb_file_open(fname, "r");
+#if defined DOSISH || defined __CYGWIN__
+	{
+	    char *ext = strrchr(fname, '.');
+	    if (ext && strcasecmp(ext, ".exe") == 0)
+		rb_io_binmode(f);
+	}
+#endif
     }
 
     if (script) {

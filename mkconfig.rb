@@ -20,7 +20,7 @@ module Config
 # made to this file will be lost the next time ruby is built.
 ]
 
-print "  CONFIG = {}\n"
+print "  DESTDIR = '' if not defined? DESTDIR\n  CONFIG = {}\n"
 v_fast = []
 v_others = []
 has_version = false
@@ -70,6 +70,14 @@ if not has_version
     print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
     print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"
   }
+end
+
+v_fast.collect! do |x|
+  if /"prefix"/ === x
+    x.sub(/= /, '= DESTDIR + ')
+  else
+    x
+  end
 end
 
 print v_fast, v_others

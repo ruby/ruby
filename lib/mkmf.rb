@@ -381,12 +381,13 @@ LDSHARED = #{CONFIG["LDSHARED"]} #{defflag}
 
 RUBY_INSTALL_NAME = #{CONFIG["RUBY_INSTALL_NAME"]}
 
-prefix = #{CONFIG["prefix"]}
-exec_prefix = #{CONFIG["exec_prefix"]}
-libdir = #{$libdir}
-archdir = #{$archdir}
-sitelibdir = #{$sitelibdir}
-sitearchdir = #{$sitearchdir}
+DESTDIR =
+prefix = $(DESTDIR)#{CONFIG["prefix"]}
+exec_prefix = $(DESTDIR)#{CONFIG["exec_prefix"]}
+libdir = $(DESTDIR)#{$libdir}
+archdir = $(DESTDIR)#{$archdir}
+sitelibdir = $(DESTDIR)#{$sitelibdir}
+sitearchdir = $(DESTDIR)#{$sitearchdir}
 
 #### End of system configuration section. ####
 

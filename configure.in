@@ -866,7 +866,7 @@ test "$program_suffix" != NONE &&
 RUBY_INSTALL_NAME="${ri_prefix}ruby${ri_suffix}"
 RUBY_LIB_PREFIX="${prefix}/lib/ruby"
 RUBY_LIB_PATH="${RUBY_LIB_PREFIX}/${MAJOR}.${MINOR}"
-sitedir="${prefix}/lib/ruby/site_ruby"
+sitedir='${prefix}/lib/ruby/site_ruby'
 AC_ARG_WITH(sitedir,
 	    [--with-sitedir=DIR        site libraries in DIR [PREFIX/lib/ruby/site_ruby]],
             [sitedir=$withval])
