@@ -308,6 +308,7 @@ end
 def arg_config(config, default=nil)
   unless defined? $configure_args
     $configure_args = {}
+    args = "@configure_args@"
     if /mswin32/ =~ RUBY_PLATFORM and ENV["CONFIGURE_ARGS"]
       args = args + " " + ENV["CONFIGURE_ARGS"]
     end

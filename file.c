@@ -1613,7 +1613,7 @@ Init_File()
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
 #ifdef DOSISH
-    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_str_new2("\\");
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_str_new2("\\"));
 #else
     rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
 #endif
