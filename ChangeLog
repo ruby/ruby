@@ -1,3 +1,10 @@
+Fri Sep 10 15:55:59 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mkdir_p): should pass mode argument to
+	  Dir.mkdir. [ruby-dev:24242]
+
+	* test/fileutils/test_fileutils.rb: test it.
+
 Fri Sep 10 02:43:54 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/template/kilmer.rb: James Buck's

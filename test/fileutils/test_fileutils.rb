@@ -633,6 +633,14 @@ end
     assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777) if have_file_perm?
     rm_rf 'tmp/tmp'
 
+    mkdir_p 'tmp/tmp', :mode => 0
+    assert_directory 'tmp/tmp'
+    assert_equal 0, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
+    # DO NOT USE rm_rf here.
+    # (rm(1) try to chdir to parent directory, it fails to remove directory.)
+    Dir.rmdir 'tmp/tmp'
+    Dir.rmdir 'tmp'
+
     # pathname
     assert_nothing_raised {
       mkdir_p Pathname.new('tmp/tmp/tmp')
