@@ -1,3 +1,7 @@
+Fri Dec 20 19:35:37 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb.in: get rid of --no-undefined option in $DLDFLAGS.
+
 Wed Dec 18 17:53:05 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_include_module): argument should be T_MODULE, not
