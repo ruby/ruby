@@ -156,7 +156,7 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h a.out.h utime.h memory.h direct.h)
+		 syscall.h pwd.h a.out.h utime.h memory.h direct.h sys/resource.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -180,7 +180,7 @@ AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority\
-	      dlopen sigprocmask sigaction _setjmp setsid)
+	      dlopen sigprocmask sigaction _setjmp setsid getrlimit)
 AC_STRUCT_TIMEZONE
 if test "$ac_cv_func_strftime" = no; then
     AC_TRY_LINK([],

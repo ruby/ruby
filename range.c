@@ -263,6 +263,25 @@ range_inspect(range)
 }
 
 static VALUE
+length_i(i, length)
+    VALUE i;
+    int *length;
+{
+    (*length)++;
+    return Qnil;
+}
+
+VALUE
+rb_length_by_each(obj)
+    VALUE obj;
+{
+    int length = 0;
+
+    rb_iterate(rb_each, obj, length_i, (VALUE)&length);
+    return INT2FIX(length);
+}
+
+static VALUE
 range_length(range)
     VALUE range;
 {
@@ -284,7 +303,7 @@ range_length(range)
 	}
     }
     if (!rb_obj_is_kind_of(beg, rb_cNumeric)) {
-	return rb_enum_length(range);
+	return rb_length_by_each(range);
     }
     size = rb_funcall(end, '-', 1, beg);
     if (!EXCL(range)) {

@@ -731,35 +731,35 @@ rb_file_s_size(obj, fname)
 }
 
 static VALUE
-rb_file_ftype(mode)
-    mode_t mode;
+rb_file_ftype(st)
+    struct stat *st;
 {
     char *t;
 
-    if (S_ISREG(mode)) {
+    if (S_ISREG(st->st_mode)) {
 	t = "file";
-    } else if (S_ISDIR(mode)) {
+    } else if (S_ISDIR(st->st_mode)) {
 	t = "directory";
-    } else if (S_ISCHR(mode)) {
+    } else if (S_ISCHR(st->st_mode)) {
 	t = "characterSpecial";
     }
 #ifdef S_ISBLK
-    else if (S_ISBLK(mode)) {
+    else if (S_ISBLK(st->st_mode)) {
 	t = "blockSpecial";
     }
 #endif
 #ifdef S_ISFIFO
-    else if (S_ISFIFO(mode)) {
+    else if (S_ISFIFO(st->st_mode)) {
 	t = "fifo";
     }
 #endif
 #ifdef S_ISLNK
-    else if (S_ISLNK(mode)) {
+    else if (S_ISLNK(st->st_mode)) {
 	t = "link";
     }
 #endif
 #ifdef S_ISSOCK
-    else if (S_ISSOCK(mode)) {
+    else if (S_ISSOCK(st->st_mode)) {
 	t = "socket";
     }
 #endif
@@ -786,7 +786,7 @@ rb_file_s_ftype(obj, fname)
     }
 #endif
 
-    return rb_file_ftype(st.st_mode);
+    return rb_file_ftype(&st);
 }
 
 static VALUE
@@ -1183,7 +1183,6 @@ rb_file_s_expand_path(argc, argv)
     s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
-	tainted = 1;
 	if (isdirsep(s[1]) || s[1] == '\0') {
 	    char *dir = getenv("HOME");
 
@@ -1193,6 +1192,7 @@ rb_file_s_expand_path(argc, argv)
 	    strcpy(buf, dir);
 	    p = &buf[strlen(buf)];
 	    s++;
+	    tainted = 1;
 	}
 	else {
 #ifdef HAVE_PWD_H
@@ -1670,7 +1670,7 @@ static VALUE
 rb_stat_ftype(obj)
     VALUE obj;
 {
-    return rb_file_ftype(get_stat(obj)->st_mode);
+    return rb_file_ftype(get_stat(obj));
 }
 
 static VALUE

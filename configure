@@ -2199,7 +2199,7 @@ fi
 
 for ac_hdr in stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h a.out.h utime.h memory.h direct.h
+		 syscall.h pwd.h a.out.h utime.h memory.h direct.h sys/resource.h
 do
 ac_safe=`echo "$ac_hdr" | sed 'y%./+-%__p_%'`
 echo $ac_n "checking for $ac_hdr""... $ac_c" 1>&6
@@ -3102,7 +3102,7 @@ for ac_func in fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
 	      getpgrp setpgrp getpgid setpgid getgroups getpriority\
-	      dlopen sigprocmask sigaction _setjmp setsid
+	      dlopen sigprocmask sigaction _setjmp setsid getrlimit
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:3109: checking for $ac_func" >&5

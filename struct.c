@@ -547,6 +547,13 @@ rb_struct_hash(s)
     return INT2FIX(h);
 }
 
+static VALUE
+rb_struct_size(s)
+    VALUE s;
+{
+    return INT2FIX(RSTRUCT(s)->len);
+}
+
 void
 Init_Struct()
 {
@@ -566,6 +573,8 @@ Init_Struct()
     rb_define_method(rb_cStruct, "inspect", rb_struct_inspect, 0);
     rb_define_method(rb_cStruct, "to_a", rb_struct_to_a, 0);
     rb_define_method(rb_cStruct, "values", rb_struct_to_a, 0);
+    rb_define_method(rb_cStruct, "size", rb_struct_size, 0);
+    rb_define_method(rb_cStruct, "length", rb_struct_size, 0);
 
     rb_define_method(rb_cStruct, "each", rb_struct_each, 0);
     rb_define_method(rb_cStruct, "[]", rb_struct_aref, 1);

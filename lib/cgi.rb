@@ -5,7 +5,7 @@ $Date$
 
 CGI.rb
 
-Version 1.01
+Version 1.10
 
 Copyright (C) 1999  Network Applied Communication Laboratory, Inc.
 
@@ -24,7 +24,7 @@ Wakou Aoyama <wakou@fsinet.or.jp>
 
 	# returns true if form has 'field_name'
 	cgi.has_key?('field_name')
-	cgi.key?('field_name')
+	cgi.has_key?('field_name')
 	cgi.include?('field_name')
 
 
@@ -182,7 +182,7 @@ class CGI
   EOL = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.01"
+  VERSION = "1.10"
   RELEASE_DATE = "$Date$"
 $-v = v
 
@@ -391,11 +391,11 @@ status:
       options = { "type" => options }
     end
 
-    unless options.key?("type")
+    unless options.has_key?("type")
       options["type"] = "text/html"
     end
 
-    if options.key?("charset")
+    if options.has_key?("charset")
       options["type"].concat( "; charset=" )
       options["type"].concat( options.delete("charset") )
     end
@@ -411,40 +411,40 @@ status:
         "Date: " + CGI::rfc1123_date(Time.now) + EOL
       )
 
-      unless options.key?("server")
+      unless options.has_key?("server")
         options["server"] = (env_table['SERVER_SOFTWARE'] or "")
       end
 
-      unless options.key?("connection")
+      unless options.has_key?("connection")
         options["connection"] = "close"
       end
 
     end
     options.delete("status")
 
-    if options.key?("server")
+    if options.has_key?("server")
       buf.concat("Server: " + options.delete("server") + EOL)
     end
 
-    if options.key?("connection")
+    if options.has_key?("connection")
       buf.concat("Connection: " + options.delete("connection") + EOL)
     end
 
     buf.concat("Content-Type: " + options.delete("type") + EOL)
 
-    if options.key?("length")
+    if options.has_key?("length")
       buf.concat("Content-Length: " + options.delete("length").to_s + EOL)
     end
 
-    if options.key?("language")
+    if options.has_key?("language")
       buf.concat("Content-Language: " + options.delete("language") + EOL)
     end
 
-    if options.key?("expires")
+    if options.has_key?("expires")
       buf.concat("Expires: " + CGI::rfc1123_date( options.delete("expires") ) + EOL)
     end
 
-    if options.key?("cookie")
+    if options.has_key?("cookie")
       if options["cookie"].kind_of?(String) or
            options["cookie"].kind_of?(Cookie)
         buf.concat("Set-Cookie: " + options.delete("cookie").to_s + EOL)
@@ -468,7 +468,7 @@ status:
       buf.concat(key + ": " + value + EOL)
     }
 
-    if env_table['MOD_RUBY']
+    if defined?(MOD_RUBY)
       buf.scan(/([^:]+): (.+)#{EOL}/n){
         Apache::request[$1] = $2
       }
@@ -518,18 +518,18 @@ convert string charset, and set language to "ja".
     options = { "type" => options } if options.kind_of?(String)
     content = yield
 
-    if options.key?("charset")
+    if options.has_key?("charset")
       require "nkf"
       case options["charset"]
       when /iso-2022-jp/ni
         content = NKF::nkf('-j', content)
-        options["language"] = "ja" unless options.key?("language")
+        options["language"] = "ja" unless options.has_key?("language")
       when /euc-jp/ni
         content = NKF::nkf('-e', content)
-        options["language"] = "ja" unless options.key?("language")
+        options["language"] = "ja" unless options.has_key?("language")
       when /shift_jis/ni
         content = NKF::nkf('-s', content)
-        options["language"] = "ja" unless options.key?("language")
+        options["language"] = "ja" unless options.has_key?("language")
       end
     end
 
@@ -588,7 +588,7 @@ convert string charset, and set language to "ja".
                 else
                   name
                 end
-      unless options.key?("name")
+      unless options.has_key?("name")
         raise ArgumentError, "`name' required"
       end
 
@@ -653,7 +653,7 @@ convert string charset, and set language to "ja".
       name, values = pairs.split('=',2)
       name = CGI::unescape(name)
       values = values.split('&').filter{|v| CGI::unescape(v) }
-      if cookies.key?(name)
+      if cookies.has_key?(name)
         cookies[name].value.push(*values)
       else
         cookies[name] = Cookie::new({ "name" => name, "value" => values })
@@ -675,7 +675,7 @@ convert string charset, and set language to "ja".
 
     query.split(/[&;]/n).each do |pairs|
       key, value = pairs.split('=',2).filter{|v| CGI::unescape(v) }
-      if params.key?(key)
+      if params.has_key?(key)
         params[key].push(value)
       else
         params[key] = [value]
@@ -812,7 +812,7 @@ convert string charset, and set language to "ja".
         /Content-Disposition:.* name="?([^\";]*)"?/ni === head
         name = $1.dup
 
-        if params.key?(name)
+        if params.has_key?(name)
           params[name].push(body)
         else
           params[name] = [body]
@@ -863,7 +863,7 @@ convert string charset, and set language to "ja".
         @params = CGI::parse(
                     case env_table['REQUEST_METHOD']
                     when "GET", "HEAD"
-                      if env_table['MOD_RUBY']
+                      if defined?(MOD_RUBY)
                         Apache::request.args or ""
                       else
                         env_table['QUERY_STRING'] or ""
@@ -958,8 +958,8 @@ convert string charset, and set language to "ja".
     # - -
     def nn_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
-          attributes.delete_if{|k,v| v == nil }
           "<element.upcase" + attributes.collect{|name, value|
+            next if value == nil
             " " + CGI::escapeHTML(name) +
             if true == value
               ""
@@ -979,8 +979,8 @@ convert string charset, and set language to "ja".
     # - O EMPTY
     def nOE_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
-          attributes.delete_if{|k,v| v == nil }
           "<element.upcase" + attributes.collect{|name, value|
+            next if value == nil
             " " + CGI::escapeHTML(name) +
             if true == value
               ""
@@ -994,8 +994,8 @@ convert string charset, and set language to "ja".
     # O O or - O
     def nO_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
-          attributes.delete_if{|k,v| v == nil }
           "<element.upcase" + attributes.collect{|name, value|
+            next if value == nil
             " " + CGI::escapeHTML(name) +
             if true == value
               ""
@@ -1210,10 +1210,10 @@ convert string charset, and set language to "ja".
                      { "METHOD" => method, "ACTION" => action,
                        "ENCTYPE" => enctype } 
                    else
-                     unless method.key?("METHOD")
+                     unless method.has_key?("METHOD")
                        method["METHOD"] = method
                      end
-                     unless method.key?("ENCTYPE")
+                     unless method.has_key?("ENCTYPE")
                        method["ENCTYPE"] = enctype
                      end
                      method
@@ -1298,7 +1298,7 @@ convert string charset, and set language to "ja".
       pretty = attributes.delete("PRETTY")
       buf = ""
 
-      if attributes.key?("DOCTYPE")
+      if attributes.has_key?("DOCTYPE")
         if attributes["DOCTYPE"]
           buf.concat( attributes.delete("DOCTYPE") )
         else
@@ -1381,10 +1381,10 @@ convert string charset, and set language to "ja".
                      { "METHOD" => "post", "ACTION" => action,
                        "ENCTYPE" => enctype } 
                    else
-                     unless action.key?("METHOD")
+                     unless action.has_key?("METHOD")
                        action["METHOD"] = "post"
                      end
-                     unless action.key?("ENCTYPE")
+                     unless action.has_key?("ENCTYPE")
                        action["ENCTYPE"] = enctype
                      end
                      action
@@ -1837,26 +1837,17 @@ convert string charset, and set language to "ja".
 
 
   def initialize(type = "query")
-    @params = nil
-    @cookies = nil
+    extend QueryExtension
+    if defined?(CGI_PARAMS)
+      @params  = CGI_PARAMS.nil?  ? nil : CGI_PARAMS.dup
+      @cookies = CGI_COOKIES.nil? ? nil : CGI_COOKIES.dup
+    else
+      initialize_query()  # set @params, @cookies
+      eval "CGI_PARAMS  = @params.nil?  ? nil : @params.dup"
+      eval "CGI_COOKIES = @cookies.nil? ? nil : @cookies.dup"
+    end
     @output_cookies = nil
     @output_hidden = nil
-
-    extend QueryExtension
-
-    #if defined? CGI::PARAMS
-    #  @params = "C" + (CGI::PARAMS.nil? ? nil : CGI::PARAMS.dup).inspect
-    #  @cookies = "C" + (CGI::COOKIES.nil? ? nil : CGI::COOKIES.dup).inspect
-    #else
-      initialize_query()
-    #   @params, @cookies initialized in initialize_query
-    #  eval "PARAMS = @params.nil? ? nil : @params.dup"
-    #  eval "COOKIES = @cookies.nil? ? nil : @cookies.dup"
-    #  at_exit {
-    #    remove_const(PARAMS)
-    #    remove_const(COOKIES)
-    #  }
-    #end
 
     case type
     when "html3"
@@ -1873,12 +1864,30 @@ convert string charset, and set language to "ja".
       extend HtmlExtension
     end
   end
+
+  if defined?(MOD_RUBY) and (RUBY_VERSION < "1.4.3")
+    raise "Please, use ruby1.4.3 or later."
+  else
+    at_exit() do
+      if defined?(CGI_PARAMS)
+        remove_const(:CGI_PARAMS)
+        remove_const(:CGI_COOKIES)
+      end
+    end
+  end
 end
 
 
 =begin
 
 == HISTRY
+
+=== Version 1.10 - wakou
+
+1999/12/06 20:16:34
+
+- can make many CGI objects.
+- if use mod_ruby, then require ruby1.4.3 or later.
 
 === Version 1.01 - wakou
 

@@ -198,7 +198,7 @@ min_i(i, min)
 	*min = i;
     else {
 	cmp = rb_funcall(i, id_cmp, 1, *min);
-	if (FIX2LONG(cmp) < 0)
+	if (NUM2LONG(cmp) < 0)
 	    *min = i;
     }
     return Qnil;
@@ -214,7 +214,7 @@ min_ii(i, min)
 	*min = i;
     else {
 	cmp = rb_yield(rb_assoc_new(i, *min));
-	if (FIX2LONG(cmp) < 0)
+	if (NUM2LONG(cmp) < 0)
 	    *min = i;
     }
     return Qnil;
@@ -240,7 +240,7 @@ max_i(i, max)
 	*max = i;
     else {
 	cmp = rb_funcall(i, id_cmp, 1, *max);
-	if (FIX2LONG(cmp) > 0)
+	if (NUM2LONG(cmp) > 0)
 	    *max = i;
     }
     return Qnil;
@@ -256,7 +256,7 @@ max_ii(i, max)
 	*max = i;
     else {
 	cmp = rb_yield(rb_assoc_new(i, *max));
-	if (FIX2LONG(cmp) > 0)
+	if (NUM2LONG(cmp) > 0)
 	    *max = i;
     }
     return Qnil;
@@ -333,32 +333,6 @@ enum_member(obj, val)
 }
 
 static VALUE
-length_i(i, length)
-    VALUE i;
-    int *length;
-{
-    (*length)++;
-    return Qnil;
-}
-
-static VALUE
-enum_length(obj)
-    VALUE obj;
-{
-    int length = 0;
-
-    rb_iterate(rb_each, obj, length_i, (VALUE)&length);
-    return INT2FIX(length);
-}
-
-VALUE
-rb_enum_length(obj)
-    VALUE obj;
-{
-    return enum_length(obj);
-}
-
-static VALUE
 each_with_index_i(val, indexp)
     VALUE val;
     int *indexp;
@@ -403,8 +377,6 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"index", enum_index, 1);
     rb_define_method(rb_mEnumerable,"member?", enum_member, 1);
     rb_define_method(rb_mEnumerable,"include?", enum_member, 1);
-    rb_define_method(rb_mEnumerable,"length", enum_length, 0);
-    rb_define_method(rb_mEnumerable,"size", enum_length, 0);
     rb_define_method(rb_mEnumerable,"each_with_index", enum_each_with_index, 0);
 
     id_eqq  = rb_intern("===");

@@ -550,7 +550,7 @@ rb_hash_replace(hash, hash2)
 }
 
 static VALUE
-rb_hash_length(hash)
+rb_hash_size(hash)
     VALUE hash;
 {
     return INT2FIX(RHASH(hash)->tbl->num_entries);
@@ -1454,8 +1454,8 @@ Init_Hash()
     rb_define_method(rb_cHash,"index", rb_hash_index, 1);
     rb_define_method(rb_cHash,"indexes", rb_hash_indexes, -1);
     rb_define_method(rb_cHash,"indices", rb_hash_indexes, -1);
-    rb_define_method(rb_cHash,"length", rb_hash_length, 0);
-    rb_define_alias(rb_cHash, "size", "length");
+    rb_define_method(rb_cHash,"size", rb_hash_size, 0);
+    rb_define_method(rb_cHash,"length", rb_hash_size, 0);
     rb_define_method(rb_cHash,"empty?", rb_hash_empty_p, 0);
 
     rb_define_method(rb_cHash,"each", rb_hash_each_pair, 0);
@@ -1503,6 +1503,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"index", env_index, 1);
     rb_define_singleton_method(envtbl,"indexes", env_indexes, -1);
     rb_define_singleton_method(envtbl,"indices", env_indexes, -1);
+    rb_define_singleton_method(envtbl,"size", env_size, 0);
     rb_define_singleton_method(envtbl,"length", env_size, 0);
     rb_define_singleton_method(envtbl,"empty?", env_empty_p, 0);
     rb_define_singleton_method(envtbl,"keys", env_keys, 0);

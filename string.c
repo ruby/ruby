@@ -2603,7 +2603,7 @@ Init_String()
     rb_define_method(rb_cString, "[]", rb_str_aref_method, -1);
     rb_define_method(rb_cString, "[]=", rb_str_aset_method, -1);
     rb_define_method(rb_cString, "length", rb_str_length, 0);
-    rb_define_alias(rb_cString,  "size", "length");
+    rb_define_method(rb_cString, "size", rb_str_length, 0);
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);
     rb_define_method(rb_cString, "=~", rb_str_match, 1);
     rb_define_method(rb_cString, "~", rb_str_match2, 0);

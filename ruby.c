@@ -73,7 +73,7 @@ usage(name)
     const char *name;
 {
     /* This message really ought to be max 23 lines.
-     * Removed -h because the user already knows that opton. Others? */
+     * Removed -h because the user already knows that option. Others? */
 
     static char *usage_msg[] = {
 "-0[octal]       specify record separator (\\0, if no argument)",
@@ -621,9 +621,9 @@ proc_options(argc, argv)
 	argc--; argv++;
     }
 
-    process_sflag();
     ruby_script(script);
     ruby_set_argv(argc, argv);
+    process_sflag();
 
     Init_ext();		/* should be called here for some reason :-( */
     require_libraries();

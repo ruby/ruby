@@ -1,13 +1,22 @@
+Tue Dec  7 11:16:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (Init_eval): calculate stack limit from rlimit where
+	  getrlimit(2) is available.
+
+Tue Dec  7 09:57:33 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* file.c (rb_file_ftype): should have removed mode_t.
+
 Mon Dec  6 15:55:30 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
-	* numeric.c (fix_rshift): Fix -1 >> 32 returned 0. (-1 is true)
+	* numeric.c (fix_rshift): Fix -1 >> 32 returned 0 (should be -1).
 
-	* numeric.c (fix_rshift): Fix  1 >> -1 returned 0. (2 is true)
+	* numeric.c (fix_rshift): Fix  1 >> -1 returned 0 (should be 2).
 
 Mon Dec  6 11:47:23 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* sprintf.c (rb_f_sprintf): formatted string must be tainted if
-	  any of parameters is tainted.
+	  any of parameters is a tainted string.
 
 	* file.c (rb_file_s_expand_path): expanded file path need not to
 	  be tainted always.

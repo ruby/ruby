@@ -49,6 +49,28 @@ char *strrchr _((const char*,const char));
 #endif
 #endif
 
+#include <sys/types.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#else
+#ifndef NT
+struct timeval {
+        long    tv_sec;         /* seconds */
+        long    tv_usec;        /* and microseconds */
+};
+#endif /* NT */
+#endif
+#include <signal.h>
+#include <errno.h>
+
+#ifdef HAVE_SYS_SELECT_H
+#include <sys/select.h>
+#endif
+
+#ifdef HAVE_SYS_RESOURCE_H
+#include <sys/resource.h>
+#endif
+
 VALUE rb_cProc;
 static VALUE rb_cBinding;
 static VALUE proc_call _((VALUE,VALUE));
@@ -3714,9 +3736,14 @@ rb_undefined(obj, id, argc, argv, call_status)
 extern int _stacksize;
 # define STACK_LEVEL_MAX (_stacksize - 4096)
 #else
+#ifdef HAVE_GETRLIMIT
+static int STACK_LEVEL_MAX = 655300;
+#else
 # define STACK_LEVEL_MAX 655300
 #endif
 #endif
+#endif
+
 extern VALUE *rb_gc_stack_start;
 static int
 stack_length()
@@ -3844,7 +3871,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	break;
     }
 
-    if ((++tick & 0x3ff) == 0) {
+    if ((++tick & 0xff) == 0) {
 	CHECK_INTS;		/* better than nothing */
 	if (stack_length() > STACK_LEVEL_MAX) {
 	    rb_raise(rb_eSysStackError, "stack level too deep");
@@ -5389,6 +5416,19 @@ Init_eval()
     rb_global_variable(&trace_func);
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
+
+#ifdef HAVE_GETRLIMIT
+    {
+	struct rlimit rlim;
+
+	if (getrlimit(RLIMIT_STACK, &rlim) == 0) {
+	    double space = (double)rlim.rlim_cur*0.2;
+
+	    if (space > 256*1024) space = 256*1024;
+	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / 4;
+	}
+    }
+#endif
 }
 
 VALUE rb_f_autoload();
@@ -6041,24 +6081,6 @@ static VALUE rb_eThreadError;
 int rb_thread_pending = 0;
 
 VALUE rb_cThread;
-
-#include <sys/types.h>
-#ifdef HAVE_SYS_TIME_H
-# include <sys/time.h>
-#else
-#ifndef NT
-struct timeval {
-        long    tv_sec;         /* seconds */
-        long    tv_usec;        /* and microseconds */
-};
-#endif /* NT */
-#endif
-#include <signal.h>
-#include <errno.h>
-
-#ifdef HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
 
 extern VALUE rb_last_status;
 

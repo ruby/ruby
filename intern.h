@@ -233,6 +233,7 @@ void rb_syswait _((int));
 /* range.c */
 VALUE rb_range_new _((VALUE, VALUE, int));
 VALUE rb_range_beg_len _((VALUE, long*, long*, long, int));
+VALUE rb_length_by_each _((VALUE));
 /* re.c */
 VALUE rb_reg_nth_defined _((int, VALUE));
 VALUE rb_reg_nth_match _((int, VALUE));

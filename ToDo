@@ -25,6 +25,7 @@ Hacking Interpreter
 - use eban's fnmatch
 - RUBYOPT environment variable
 - alias $defout $>
+* retrieve STACK_LEVEL_MAX from users' limit.
 * remove end_proc registered out of require only
 * non-blocking open (e.g. for named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
@@ -42,6 +43,7 @@ Standard Libraries
 - Dir.glob(pat){|f|...}
 - sprintf/printf's $ to specify argument order
 - Dir.glob("**/*.c") ala zsh
+- Remove Enumerable#{size,length}
 * SyntaxError and NameError should not be subclasses of StandardError, maybe.
 * debugger for thread programming
 * Struct::new([name,]member,...) ??
