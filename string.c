@@ -2076,6 +2076,9 @@ str_gsub(argc, argv, str, bang)
 
     blen = RSTRING(str)->len + 30; /* len + margin */
     dest = rb_str_new5(str, 0, blen);
+    if (bang) {
+	RBASIC(dest)->klass = 0;
+    }
     buf = RSTRING(dest)->ptr;
     bp = buf;
     sp = cp = RSTRING(str)->ptr;

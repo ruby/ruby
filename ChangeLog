@@ -1,3 +1,8 @@
+Fri Nov 19 00:59:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): internal buffer should not be listed by
+	  ObjectSpace.each_object().  [ruby-dev:24919]
+
 Thu Nov 18 23:42:36 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/depend: Never regenerate lib/ripper/core.rb
