@@ -2459,7 +2459,7 @@ module RDoc
 	  context.add_attribute(att)
 	end
       else
-	error("Missing argument to 'attr'")
+	warn("'attr' ignored - looks like a variable")
       end    
 
     end
