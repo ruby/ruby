@@ -1,3 +1,13 @@
+Tue Mar 25 12:01:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_initialize): should check rb_secure(4).
+
+	* dir.c (dir_s_getwd): should check rb_secure(4).
+
+	* object.c (rb_obj_infect): function version of OBJ_INFECT().
+
+	* eval.c (rb_secure_update): new function to check object update.
+
 Tue Mar 25 10:18:05 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: should infect also return values of

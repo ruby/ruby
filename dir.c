@@ -493,8 +493,12 @@ static VALUE
 dir_s_getwd(dir)
     VALUE dir;
 {
-    char *path = my_getcwd();
-    VALUE cwd = rb_tainted_str_new2(path);
+    char *path;
+    VALUE cwd;
+
+    rb_secure(4);
+    path = my_getcwd();
+    cwd = rb_tainted_str_new2(path);
 
     free(path);
     return cwd;

@@ -230,6 +230,7 @@ void rb_secure _((int));
 RUBY_EXTERN int ruby_safe_level;
 #define rb_safe_level() (ruby_safe_level)
 void rb_set_safe_level _((int));
+void rb_secure_update _((VALUE));
 
 long rb_num2long _((VALUE));
 unsigned long rb_num2ulong _((VALUE));
@@ -456,6 +457,8 @@ struct RBignum {
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
+
+void rb_obj_infect _((VALUE,VALUE));
 
 void rb_glob _((char*,void(*)(const char*,VALUE),VALUE));
 void rb_globi _((char*,void(*)(const char*,VALUE),VALUE));

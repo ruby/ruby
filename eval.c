@@ -139,6 +139,13 @@ rb_secure(level)
 }
 
 void
+rb_secure_update(obj)
+    VALUE obj;
+{
+    if (!OBJ_TAINTED(obj)) rb_secure(4);
+}
+
+void
 rb_check_safe_obj(x)
     VALUE x;
 {

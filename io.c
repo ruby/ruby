@@ -2826,6 +2826,7 @@ rb_io_initialize(argc, argv, io)
     int fd, flags;
     char mbuf[4];
 
+    rb_secure(4);
     rb_scan_args(argc, argv, "11", &fnum, &mode);
     fd = NUM2INT(fnum);
     if (argc == 2) {

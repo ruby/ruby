@@ -357,6 +357,13 @@ rb_obj_untaint(obj)
     return obj;
 }
 
+void
+rb_obj_infect(obj1, obj2)
+    VALUE obj1, obj2;
+{
+    OBJ_INFECT(obj1, obj2);
+}
+
 VALUE
 rb_obj_freeze(obj)
     VALUE obj;
