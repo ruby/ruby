@@ -1,3 +1,7 @@
+Wed Feb 18 18:07:09 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_sprintf.rb: added tests.
+
 Wed Feb 18 17:18:01 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/win32ole/win32ole.c: need to include <olectl.h> on Cygwin.
