@@ -453,6 +453,7 @@ if test "$fat_binary" = yes ; then
 fi
 
 AC_DEFINE_UNQUOTED(RUBY_LIB, "${prefix}/lib/ruby")
+AC_DEFINE_UNQUOTED(RUBY_SITE_LIB, "${prefix}/lib/site_ruby")
 AC_SUBST(arch)dnl
 
 if test "$fat_binary" = yes ; then
@@ -461,11 +462,16 @@ if test "$fat_binary" = yes ; then
     AC_DEFINE_UNQUOTED(RUBY_THIN_ARCHLIB,
                  "${prefix}/lib/ruby/" __ARCHITECTURE__ "-${host_os}" )
 
+    AC_DEFINE_UNQUOTED(RUBY_SITE_THIN_ARCHLIB,
+                 "${prefix}/lib/site_ruby/" __ARCHITECTURE__ "-${host_os}" )
+
     AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/ruby/${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/site_ruby/${arch}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM,  __ARCHITECTURE__ "-${host_os}" )
 else
     arch="${host_cpu}-${host_os}"
     AC_DEFINE_UNQUOTED(RUBY_ARCHLIB, "${prefix}/lib/ruby/${arch}")
+    AC_DEFINE_UNQUOTED(RUBY_SITE_ARCHLIB, "${prefix}/lib/site_ruby/${arch}")
     AC_DEFINE_UNQUOTED(RUBY_PLATFORM, "${arch}")
 fi
 

@@ -3760,6 +3760,10 @@ cat >> confdefs.h <<EOF
 #define RUBY_LIB "${prefix}/lib/ruby"
 EOF
 
+cat >> confdefs.h <<EOF
+#define RUBY_SITE_LIB "${prefix}/lib/site_ruby"
+EOF
+
 
 if test "$fat_binary" = yes ; then
     arch="fat-${host_os}"
@@ -3770,7 +3774,16 @@ EOF
 
 
     cat >> confdefs.h <<EOF
+#define RUBY_SITE_THIN_ARCHLIB "${prefix}/lib/site_ruby/" __ARCHITECTURE__ "-${host_os}" 
+EOF
+
+
+    cat >> confdefs.h <<EOF
 #define RUBY_ARCHLIB "${prefix}/lib/ruby/${arch}"
+EOF
+
+    cat >> confdefs.h <<EOF
+#define RUBY_SITE_ARCHLIB "${prefix}/lib/site_ruby/${arch}"
 EOF
 
     cat >> confdefs.h <<EOF
@@ -3781,6 +3794,10 @@ else
     arch="${host_cpu}-${host_os}"
     cat >> confdefs.h <<EOF
 #define RUBY_ARCHLIB "${prefix}/lib/ruby/${arch}"
+EOF
+
+    cat >> confdefs.h <<EOF
+#define RUBY_SITE_ARCHLIB "${prefix}/lib/site_ruby/${arch}"
 EOF
 
     cat >> confdefs.h <<EOF

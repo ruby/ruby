@@ -703,6 +703,16 @@ ruby_prog_init()
     addpath(RUBY_THIN_ARCHLIB);
 #endif
 
+#ifdef RUBY_SITE_LIB
+    addpath(RUBY_SITE_LIB);
+#endif
+#ifdef RUBY_SITE_ARCHLIB
+    addpath(RUBY_SITE_ARCHLIB);
+#endif
+#ifdef RUBY_SITE_THIN_ARCHLIB
+    addpath(RUBY_SITE_THIN_ARCHLIB);
+#endif
+
     if (rb_safe_level() == 0) {
 	addpath(getenv("RUBYLIB"));
     }
