@@ -99,7 +99,6 @@ class CGI
       def check_id(id)
 	/[^0-9a-zA-Z]/ =~ id.to_s ? false : true
       end
-      module_function :check_id
 
       def initialize(session, option={})
 	dir = option['tmpdir'] || ENV['TMP'] || '/tmp'

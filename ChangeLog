@@ -1,3 +1,7 @@
+Sat Jun  2 23:05:20 2001  Shugo Maeda <shugo@ruby-lang.org>
+
+	* lib/cgi/session.rb: don't use module_function for Class.
+
 Sat Jun  2 00:02:22 2001  Keiju Ishitsuka <keiju@ishitsuka.com>
 
 	* irb messages: fix typos.
