@@ -1,3 +1,8 @@
+Tue Nov 11 10:42:41 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: raise an exception when creating TkWindow
+	  object, because TkWindow class is an abstract class.
+
 Tue Nov 11 03:30:43 JST 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/ext/openssl/ossl_conf.c (ossl_config_get_value): return nil

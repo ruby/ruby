@@ -3989,6 +3989,7 @@ class TkWindow<TkObject
   end
 
   def create_self
+    fail RuntimeError, "TkWindow is an abstract class"
   end
   private :create_self
 
@@ -5124,7 +5125,7 @@ end
 
 class TkTextWin<TkWindow
   def create_self
-    fail TypeError, "TkTextWin is abstract class"
+    fail RuntimeError, "TkTextWin is an abstract class"
   end
 
   def bbox(index)
