@@ -52,9 +52,9 @@ struct and union which are defined in "dl/struct.rb" as follows:
       "long tv_uses",
     ]
   end
-  val = LIBC::Timeval.alloc  # allocate the memory.
+  val = LIBC::Timeval.malloc # allocate the memory.
 
-The above example uses LIBC::Timeval.alloc, since we use LIBC::Timeval.new(ptr)
+The above example uses LIBC::Timeval.malloc, since we use LIBC::Timeval.new(ptr)
 to wrap the given PtrData object which is, for example, created by DL::malloc().
 DL::malloc() is a function to allocate a memory by using the C library function
 malloc().
@@ -244,10 +244,10 @@ the type of each argument.
     p : a mutable object (void *)
     0 : void function (this must be a first character of the prototype)
 
-the cbtype consists of type specifiers 0, I, L, D and P.
+the cbtype consists of type specifiers 0, C, I, H, L, F, D, S and P.
 for example:
 
-    DL.set_callback('IPP',0){|ptr1,ptr2|
+    DL.callback('IPP'){|ptr1,ptr2|
       str1 = ptr1.ptr.to_s
       str2 = ptr2.ptr.to_s
       return str1 <=> str2

@@ -11,10 +11,8 @@ if( ARGV.include?("--help") )
   --with-type-char   strictly use type 'char'
   --with-type-short  strictly use type 'short'
   --with-type-float  strictly use type 'float'
-  --with-args=<max_arg>,<max_cbarg>,<max_cbent>
-                     <max_arg>:   maximum number of arguments of the function
-                     <max_cbarg>: maximum number of arguments of the callback
-                     <max_cbent>: maximum number of callback entries
+  --with-args=<max_arg>
+  --with-callback=<max_callback>
   --enable-asm       use the embedded assembler for passing arguments.
                      (this option is available for i386 machine now.)
   --enable-dlstack   use a stack emulation for constructing function call.
@@ -58,8 +56,6 @@ $with_type_int   &= DLTYPE[INT][:sym]
 $with_type_float &= DLTYPE[FLOAT][:sym]
 $with_type_voidp &= DLTYPE[VOIDP][:sym]
 
-$with_cbtype_voidp = DLTYPE[VOIDP][:cb]
-
 $with_type_char  = enable_config("type-char", $with_type_char)
 $with_type_short = enable_config("type-short", $with_type_short)
 $with_type_float = enable_config("type-float", $with_type_float)
@@ -68,7 +64,7 @@ $with_asm        = enable_config("asm", $with_asm)
 $with_dlstack    = enable_config("dlstack", $with_dlstack)
 
 args = with_config("args")
-max_arg = max_cbarg = max_cbent = nil
+max_arg = nil
 if( $with_asm || $with_dlstack )
   $with_type_char = true
   $with_type_short = true
@@ -76,31 +72,20 @@ if( $with_asm || $with_dlstack )
   max_arg = 0
 end
 if( args )
-  max_arg,max_cbarg,max_cbent = args.split(",").collect{|c| c.to_i}
-  if( !(max_arg && max_cbarg && max_cbent) )
-    print("--with-args=<max_arg>,<max_cbarg>,<max_cbent>\n")
+  max_arg = args.to_i
+  if( !max_arg )
+    print("--with-args=<max_arg>\n")
     exit(1)
   end
 end
 max_arg   ||= 6
-max_cbarg ||= 3
-max_cbent ||= 3
 
-max_callback_type = types2num(DLTYPE.keys.sort[-1,1] * (max_cbarg + 1)) + 1
-max_callback      = max_cbent
-
-#m = [1].pack("i")
-#c,cs = m.unpack("c")
-#bigendian = (c == 0)
-#print("bigendian ... #{bigendian ? 'true' : 'false'}\n")
+max_callback = with_config("callback","10").to_i
+callback_types = DLTYPE.keys.length
 
 
 $dlconfig_h = <<EOF
-#define MAX_ARG   #{max_arg}
-#define MAX_CBARG #{max_cbarg}
-#define MAX_CBENT #{max_cbent}
-#define MAX_CALLBACK_TYPE #{max_callback_type}
-#define MAX_CALLBACK      #{max_callback}
+#define MAX_ARG           #{max_arg}
 EOF
 
 def dlc_define(const)
@@ -109,6 +94,8 @@ def dlc_define(const)
                  "#endif\n"
 end
 
+$dlconfig_h << "#define MAX_CALLBACK #{max_callback}\n"
+$dlconfig_h << "#define CALLBACK_TYPES #{callback_types}\n"
 if( $with_dlstack )
   $dlconfig_h << "#define USE_DLSTACK\n"
 else
@@ -137,15 +124,6 @@ end
 if( $with_type_voidp )
   $dlconfig_h << "#define WITH_TYPE_VOIDP\n"
 end
-if( $with_cbtype_voidp )
-  $dlconfig_h << "#define WITH_CBTYPE_VOIDP\n"
-end
-#if( bigendian )
-#  $dlconfig_h << "#define BIGENDIAN"
-#else
-#  $dlconfig_h << "#define LITTLEENDIAN"
-#end
-
 
 if( have_header("dlfcn.h") )
   dlc_define("HAVE_DLFCN_H")
@@ -182,8 +160,8 @@ EOF
 
 File.update("dlconfig.rb", <<EOF)
 MAX_ARG = #{max_arg}
-MAX_CBARG = #{max_cbarg}
-MAX_CBENT = #{max_cbent}
+MAX_CALLBACK = #{max_callback}
+CALLBACK_TYPES = #{callback_types}
 DLTYPE[CHAR][:sym]  = #{$with_type_char}
 DLTYPE[SHORT][:sym] = #{$with_type_short}
 DLTYPE[INT][:sym]   = #{$with_type_int}

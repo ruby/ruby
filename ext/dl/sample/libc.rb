@@ -38,7 +38,7 @@ module LIBC
 end
 
 
-$cb1 = DL.set_callback('IPP', 0){|ptr1, ptr2|
+$cb1 = DL.callback('IPP'){|ptr1, ptr2|
   str1 = ptr1.ptr.to_s
   str2 = ptr2.ptr.to_s
   str1 <=> str2

@@ -11,8 +11,94 @@ VALUE rb_eDLError;
 VALUE rb_eDLTypeError;
 
 static VALUE DLFuncTable;
-static void *rb_dl_func_table[MAX_CALLBACK_TYPE][MAX_CALLBACK];
+static void *rb_dl_callback_table[CALLBACK_TYPES][MAX_CALLBACK];
 static ID id_call;
+
+static int
+rb_dl_scan_callback_args(long stack[], const char *proto,
+			 int *argc, VALUE (*argv)[])
+{
+  int i;
+  long *sp;
+  VALUE val;
+
+  sp = stack;
+  for( i=1; proto[i]; i++ ){
+    switch( proto[i] ){
+    case 'C':
+      {
+	char v;
+	memcpy(&v, sp, sizeof(long));
+	sp++;
+	val = INT2NUM(v);
+      }
+      break;
+    case 'H':
+      {
+	short v;
+	memcpy(&v, sp, sizeof(long));
+	sp++;
+	val = INT2NUM(v);
+      }
+      break;
+    case 'I':
+      {
+	int v;
+	memcpy(&v, sp, sizeof(long));
+	sp++;
+	val = INT2NUM(v);
+      }
+      break;
+    case 'L':
+      {
+	long v;
+	memcpy(&v, sp, sizeof(long));
+	sp++;
+	val = INT2NUM(v);
+      }
+      break;
+    case 'F':
+      {
+	float v;
+	memcpy(&v, sp, sizeof(float));
+	sp += sizeof(float)/sizeof(long);
+	val = rb_float_new(v);
+      }
+      break;
+    case 'D':
+      {
+	double v;
+	memcpy(&v, sp, sizeof(double));
+	sp += sizeof(double)/sizeof(long);
+	val = rb_float_new(v);
+      }
+      break;
+    case 'P':
+      {
+	void *v;
+	memcpy(&v, sp, sizeof(void*));
+	sp++;
+	val = rb_dlptr_new(v, 0, 0);
+      }
+      break;
+    case 'S':
+      {
+	char *v;
+	memcpy(&v, sp, sizeof(void*));
+	sp++;
+	val = rb_tainted_str_new2(v);
+      }
+      break;
+    default:
+      rb_raise(rb_eDLTypeError, "unsupported type `%c'", proto[i]);
+      break;
+    }
+    (*argv)[i-1] = val;
+  }
+  *argc = (i - 1);
+
+  return (*argc);
+}
 
 #include "callback.func"
 
@@ -476,121 +562,88 @@ rb_dl_sizeof(VALUE self, VALUE str)
 }
 
 static VALUE
-rb_dl_callback_type(VALUE *str)
+rb_dl_callback(int argc, VALUE argv[], VALUE self)
 {
-  char *type;
-  int len;
-  int i;
-  long ftype;
+  VALUE type, proc;
+  int rettype, entry, i;
+  char fname[127];
 
-  ftype = 0;
-  type = StringValuePtr(*str);
-  len  = RSTRING(*str)->len;
-
-  if( len - 1 > MAX_CBARG ){
-    rb_raise(rb_eDLError, "maximum number of the argument is %d.", MAX_CBARG);
-  };
-
-  for( i = len - 1; i > 0; i-- ){
-    switch( type[i] ){
-    case 'P':
-      CBPUSH_P(ftype);
-      break;
-    case 'I':
-      CBPUSH_I(ftype);
-      break;
-    case 'L':
-      CBPUSH_L(ftype);
-      break;
-    case 'F':
-      CBPUSH_F(ftype);
-      break;
-    case 'D':
-      CBPUSH_D(ftype);
-    default:
-      rb_raise(rb_eDLError, "unsupported type `%c'", type[i]);
-      break;
-    };
+  proc = Qnil;
+  switch( rb_scan_args(argc, argv, "11", &type, &proc) ){
+  case 1:
+    if( rb_block_given_p() ){
+      proc = rb_f_lambda();
+    }
+    else{
+      proc = Qnil;
+    }
+  default:
+    break;
   }
 
-  switch( type[0] ){
+  Check_Type(type, T_STRING);
+  switch( STR2CSTR(type)[0] ){
   case '0':
-    CBPUSH_0(ftype);
+    rettype = 0x00;
     break;
-  case 'P':
-    CBPUSH_P(ftype);
+  case 'C':
+    rettype = 0x01;
+    break;
+  case 'H':
+    rettype = 0x02;
     break;
   case 'I':
-    CBPUSH_I(ftype);
+    rettype = 0x03;
     break;
   case 'L':
-    CBPUSH_L(ftype);
+    rettype = 0x04;
     break;
   case 'F':
-    CBPUSH_F(ftype);
+    rettype = 0x05;
     break;
   case 'D':
-    CBPUSH_D(ftype);
+    rettype = 0x06;
+    break;
+  case 'P':
+    rettype = 0x07;
     break;
   default:
-    rb_raise(rb_eDLError, "unsupported type `%c'", type[i]);
-    break;
-  };
-
-  return INT2NUM(ftype);
-}
-
-VALUE
-rb_dl_set_callback(int argc, VALUE argv[], VALUE self)
-{
-  VALUE types, num, proc;
-  VALUE key;
-  VALUE entry;
-  void *func;
-
-  char func_name[1024];
-  extern dln_sym();
-
-  switch( rb_scan_args(argc, argv, "21", &types, &num, &proc) ){
-  case 2:
-    proc = rb_f_lambda();
-    break;
-  case 3:
-    break;
-  default:
-    rb_bug("rb_dl_set_callback");
-  };
-
-  key = rb_dl_callback_type(&types);
-  entry = rb_hash_aref(DLFuncTable, key);
-  if( entry == Qnil ){
-    entry = rb_hash_new();
-    rb_hash_aset(DLFuncTable, key, entry);
-  };
-
-  func = rb_dl_func_table[NUM2INT(key)][NUM2INT(num)];
-  if( func ){
-    rb_hash_aset(entry, num, proc);
-    snprintf(func_name, 1023, "rb_dl_func%d_%d", NUM2INT(key), NUM2INT(num));
-    return rb_dlsym_new(func, func_name, RSTRING(types)->ptr);
+    rb_raise(rb_eDLTypeError, "unsupported type `%s'", STR2CSTR(rettype));
   }
-  else{
-    return Qnil;
-  };
+
+  entry = -1;
+  for( i=0; i < MAX_CALLBACK; i++ ){
+    if( rb_hash_aref(DLFuncTable, rb_assoc_new(INT2NUM(rettype), INT2NUM(i))) == Qnil ){
+      entry = i;
+      break;
+    }
+  }
+  if( entry < 0 ){
+    rb_raise(rb_eDLError, "too many callbacks are defined.");
+  }
+
+  rb_hash_aset(DLFuncTable,
+	       rb_assoc_new(INT2NUM(rettype),INT2NUM(entry)),
+	       rb_assoc_new(type,proc));
+  sprintf(fname, "rb_dl_callback_func_%d_%d", rettype, entry);
+  return rb_dlsym_new(rb_dl_callback_table[rettype][entry], fname, STR2CSTR(type));
 }
 
-VALUE
-rb_dl_get_callback(VALUE self, VALUE types, VALUE num)
+static VALUE
+rb_dl_remove_callback(VALUE mod, VALUE sym)
 {
-  VALUE key;
-  VALUE entry;
+  freefunc_t f = rb_dlsym2csym(sym);
+  int i, j;
 
-  key = rb_dl_callback_type(&types);
-  entry = rb_hash_aref(DLFuncTable, key);
-  if( entry == Qnil ){
-    return Qnil;
-  };
-  return rb_hash_aref(entry, num);
+  for( i=0; i < CALLBACK_TYPES; i++ ){
+    for( j=0; j < MAX_CALLBACK; j++ ){
+      if( rb_dl_callback_table[i][j] == f ){
+	rb_hash_aset(DLFuncTable, rb_assoc_new(INT2NUM(i),INT2NUM(j)),Qnil);
+	break;
+      }
+    }
+  }
+  return Qnil;
 }
 
 void
@@ -627,13 +680,12 @@ Init_dl()
   rb_define_const(rb_mDL, "MINOR_VERSION", INT2NUM(DL_MINOR_VERSION));
   rb_define_const(rb_mDL, "PATCH_VERSION", INT2NUM(DL_PATCH_VERSION));
   rb_define_const(rb_mDL, "MAX_ARG", INT2NUM(MAX_ARG));
-  rb_define_const(rb_mDL, "MAX_CBARG", INT2NUM(MAX_CBARG));
-  rb_define_const(rb_mDL, "MAX_CBENT", INT2NUM(MAX_CBENT));
   rb_define_const(rb_mDL, "DLSTACK", rb_tainted_str_new2(DLSTACK_METHOD));
 
   rb_define_module_function(rb_mDL, "dlopen", rb_dl_dlopen, -1);
-  rb_define_module_function(rb_mDL, "set_callback", rb_dl_set_callback, -1);
-  rb_define_module_function(rb_mDL, "get_callback", rb_dl_get_callback, 2);
+  rb_define_module_function(rb_mDL, "callback", rb_dl_callback, -1);
+  rb_define_module_function(rb_mDL, "define_callback", rb_dl_callback, -1);
+  rb_define_module_function(rb_mDL, "remove_callback", rb_dl_remove_callback, 1);
   rb_define_module_function(rb_mDL, "malloc", rb_dl_malloc, 1);
   rb_define_module_function(rb_mDL, "strdup", rb_dl_strdup, 1);
   rb_define_module_function(rb_mDL, "sizeof", rb_dl_sizeof, 1);

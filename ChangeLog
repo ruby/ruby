@@ -1,3 +1,7 @@
+Sun Jun  9 17:40:41 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
+
+	* ext/dl: change the callback mechanism.
+
 Thu Jun  6 19:50:39 2002  KONISHI Hiromasa <H_Konishi@ruby-lang.org>
 
 	* sample/biorhythm.rb (getPosiiton,etc)

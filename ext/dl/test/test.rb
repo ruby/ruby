@@ -38,8 +38,6 @@ print("MINOR_VERSION = #{DL::MINOR_VERSION}\n")
 print("\n")
 print("DLSTACK   = #{DL::DLSTACK}\n")
 print("MAX_ARG   = #{DL::MAX_ARG}\n")
-print("MAX_CBARG = #{DL::MAX_CBARG}\n")
-print("MAX_CBENT = #{DL::MAX_CBENT}\n")
 print("\n")
 print("DL::FREE = #{DL::FREE.inspect}\n")
 print("\n")
@@ -205,8 +203,7 @@ debug r,rs
 assert("callback1", :must, r == 1)
 
 
-callback2 = DL.set_callback("LLP", 0){|arg1,arg2|
-  ptr = arg2 # DL::PtrData.new(arg2)
+callback2 = DL.callback("LLP"){|num,ptr|
   msg = ptr.to_s
   if( msg == "callback message" )
     2
@@ -218,7 +215,7 @@ debug callback2
 r,rs = h["test_call_func1", "IP"][callback2]
 debug r,rs
 assert("callback2", :must, r == 2)
-
+DL.remove_callback(callback2)
 
 ptr = DL.malloc(DL.sizeof('CL'))
 ptr.struct!("CL", :c, :l)
