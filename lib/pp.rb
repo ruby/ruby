@@ -88,6 +88,32 @@ PP#pp to print the object.
       text ','
       breakable
 
+--- seplist(list[, separator_proc[, iter_method]]) {|elt| ... }
+    adds a separated list.
+    The list is separated by comma with breakable space, by default.
+
+    seplist iterates the ((|list|)) using ((|iter_method|)).
+    It yields each object to the block given for seplist.
+    The procedure ((|separator_proc|)) is called between each yields.
+
+    If the iteration is zero times, ((|separator_proc|)) is not called at all.
+
+    If ((|separator_proc|)) is nil or not given,
+    (({lambda { comma_breakable }})) is used.
+    If ((|iter_method|)) is not given, (({:each})) is used.
+
+    For example, following 3 code fragments has similar effect.
+
+      q.seplist([1,2,3]) {|v| xxx v }
+
+      q.seplist([1,2,3], lambda { comma_breakable }, :each) {|v| xxx v }
+
+      xxx 1
+      q.comma_breakable
+      xxx 2
+      q.comma_breakable
+      xxx 3
+
 = Object
 --- pretty_print(pp)
     is a default pretty printing method for general objects.
@@ -199,6 +225,19 @@ class PP < PrettyPrint
     def comma_breakable
       text ','
       breakable
+    end
+
+    def seplist(list, sep=nil, iter_method=:each)
+      sep ||= lambda { comma_breakable }
+      first = true
+      list.__send__(iter_method) {|*v|
+        if first
+          first = false
+        else
+          sep.call
+        end
+        yield(*v)
+      }
     end
 
     def pp_object(obj)
@@ -601,6 +640,13 @@ if __FILE__ == $0
       ensure
         PP.sharing_detection = false
       end
+    end
+  end
+
+  class PPSingleLineTest < Test::Unit::TestCase
+    def test_hash
+      assert_equal("{1=>1}", PP.singleline_pp({ 1 => 1}, '')) # [ruby-core:02699]
+      assert_equal("[1#{', 1'*99}]", PP.singleline_pp([1]*100, ''))
     end
   end
 end

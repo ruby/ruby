@@ -1,3 +1,8 @@
+Sat Mar 27 10:40:48 2004  Tanaka Akira  <akr@m17n.org>
+
+	* (lib/pp.rb, lib/prettyprint.rb): define seplist in PP::PPMethods
+	  instead of PrettyPrint.
+
 Sat Mar 27 01:47:09 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/logger.rb: trim tail space of each line.  no user visible change.

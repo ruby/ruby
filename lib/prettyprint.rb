@@ -94,32 +94,6 @@ non-string formatting, etc.
 --- flush
     outputs buffered data.
 
---- seplist(list[, separator_proc[, iter_method]]) {|elt| ... }
-    adds a separated list.
-    The list is separated by comma with breakable space, by default.
-
-    seplist iterates the ((|list|)) using ((|iter_method|)).
-    It yields each object to the block given for seplist.
-    The procedure ((|separator_proc|)) is called between each yields.
-
-    If the iteration is zero times, ((|separator_proc|)) is not called at all.
-
-    If ((|separator_proc|)) is nil or not given,
-    (({lambda { comma_breakable }})) is used.
-    If ((|iter_method|)) is not given, (({:each})) is used.
-
-    For example, following 3 code fragments has similar effect.
-
-      q.seplist([1,2,3]) {|v| xxx v }
-
-      q.seplist([1,2,3], lambda { comma_breakable }, :each) {|v| xxx v }
-
-      xxx 1
-      q.comma_breakable
-      xxx 2
-      q.comma_breakable
-      xxx 3
-
 --- first?
     first? is obsoleted at 1.8.2.
 
@@ -185,19 +159,6 @@ class PrettyPrint
 
   def current_group
     @group_stack.last
-  end
-
-  def seplist(list, sep=nil, iter_method=:each)
-    sep ||= lambda { comma_breakable }
-    first = true
-    list.__send__(iter_method) {|*v|
-      if first
-        first = false
-      else
-        sep.call
-      end
-      yield(*v)
-    }
   end
 
   def first?
