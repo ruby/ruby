@@ -109,7 +109,9 @@ module Net # :nodoc:
   #       # always connect to your.proxy.addr:8080 using specified username and password
   #             :
   #     }
-  #     
+  #
+  # Note that net/http never rely on HTTP_PROXY environment variable.
+  # If you want to use proxy, set it explicitly.
   # 
   # === Following Redirection
   # 

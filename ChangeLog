@@ -1,3 +1,8 @@
+Tue Dec  2 23:18:12 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: wrote the warning about HTTP_PROXY environment
+	  variable.
+
 Tue Dec  2 21:31:42 2003  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* bin/testrb: new test runner.  [ruby-core:01845]
