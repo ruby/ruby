@@ -2164,7 +2164,7 @@ end_if:
             VpSetSign(c,VpGetSign(a_ptr) * sw);
         }
     }
-    VpInternalRound(c,0,(c->Prec>0)?a->frac[c->Prec-1]:0,mrv);
+    VpInternalRound(c,0,(c->Prec>0)?c->frac[c->Prec-1]:0,mrv);
 
 #ifdef _DEBUG
     if(gfDebug) {
