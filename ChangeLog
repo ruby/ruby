@@ -1,3 +1,7 @@
+Mon Jan 06 05:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+
+
 Mon Jan  6 02:32:46 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* struct.c (make_struct): needs meta class.

@@ -11,6 +11,10 @@ $extobjs = nil
 $ignore = nil
 $message = nil
 
+$progname = $0
+alias $PROGRAM_NAME $0
+alias $0 $progname
+
 $extlist = []
 
 $:.replace ["."]
@@ -78,7 +82,7 @@ def extmake(target)
 	  # ignore
 	ensure
 	  rm_f "conftest*"
-	  $0 = __FILE__
+	  $0 = $PROGRAM_NAME
 	  Config::CONFIG["srcdir"] = $top_srcdir
 	end
       end
