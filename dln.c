@@ -1115,12 +1115,7 @@ dln_sym(name)
 #endif /* USE_DLN_A_OUT */
 
 #ifdef USE_DLN_DLOPEN
-# ifdef __NetBSD__
-#  include <nlist.h>
-#  include <link.h>
-# else
-#  include <dlfcn.h>
-# endif
+# include <dlfcn.h>
 #endif
 
 #ifdef __hpux

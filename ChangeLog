@@ -1,3 +1,7 @@
+Thu Dec 25 15:30:17 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_update): call rb_str_modify().
+
 Thu Dec 25 05:08:09 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_required): search actual file name once when no

@@ -1579,8 +1579,8 @@ rb_str_aref_m(argc, argv, str)
     return rb_str_aref(str, argv[0]);
 }
 
-void
-rb_str_update(str, beg, len, val)
+static void
+rb_str_splice(str, beg, len, val)
     VALUE str;
     long beg, len;
     VALUE val;
@@ -1624,6 +1624,16 @@ rb_str_update(str, beg, len, val)
     OBJ_INFECT(str, val);
 }
 
+void
+rb_str_update(str, beg, len, val)
+    VALUE str;
+    long beg, len;
+    VALUE val;
+{
+    rb_str_modify(str);
+    return rb_str_splice(str, beg, len, val);
+}
+
 static void
 rb_str_subpat_set(str, re, nth, val)
     VALUE str, re;
@@ -1655,7 +1665,7 @@ rb_str_subpat_set(str, re, nth, val)
     end = RMATCH(match)->END(nth);
     len = end - start;
     rb_str_modify(str);
-    rb_str_update(str, start, len, val);
+    rb_str_splice(str, start, len, val);
 }
 
 static VALUE
@@ -1686,7 +1696,7 @@ rb_str_aset(str, indx, val)
 	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
 	}
 	else {
-	    rb_str_update(str, idx, 1, val);
+	    rb_str_splice(str, idx, 1, val);
 	}
 	return val;
 
@@ -1699,7 +1709,7 @@ rb_str_aset(str, indx, val)
 	if (beg < 0) {
 	    rb_raise(rb_eIndexError, "string not matched");
 	}
-	rb_str_update(str, beg, RSTRING(indx)->len, val);
+	rb_str_splice(str, beg, RSTRING(indx)->len, val);
 	return val;
 
       default:
@@ -1707,7 +1717,7 @@ rb_str_aset(str, indx, val)
 	{
 	    long beg, len;
 	    if (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 2)) {
-		rb_str_update(str, beg, len, val);
+		rb_str_splice(str, beg, len, val);
 		return val;
 	    }
 	}
@@ -1753,7 +1763,7 @@ rb_str_aset_m(argc, argv, str)
 	    rb_str_subpat_set(str, argv[0], NUM2INT(argv[1]), argv[2]);
 	}
 	else {
-	    rb_str_update(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
+	    rb_str_splice(str, NUM2LONG(argv[0]), NUM2LONG(argv[1]), argv[2]);
 	}
 	return argv[2];
     }
@@ -1793,7 +1803,7 @@ rb_str_insert(str, idx, str2)
     else if (pos < 0) {
 	pos++;
     }
-    rb_str_update(str, pos, 0, str2);
+    rb_str_splice(str, pos, 0, str2);
     return str;
 }
 

@@ -824,7 +824,7 @@ ip_ruby(clientData, interp, argc, argv)
 
     /* status check */
     if (arg.failed) {
-        VALUE eclass = CLASS_OF(arg.failed);
+        VALUE eclass = rb_obj_class(arg.failed);
 	DUMP1("(rb_eval_string result) failed");
 	Tcl_ResetResult(interp);
 	Tcl_AppendResult(interp, StringValuePtr(arg.failed), (char*)NULL);
