@@ -167,7 +167,7 @@ static void top_local_setup();
 
 #define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
 #define NODE_HEREDOC NODE_ARRAY 	/* 1, 3 to gc */
-#define SIGN_EXTEND(x,n) (((1<<(n))-1-((x)&~(~0<<(n))))^~(~0<<(n)))
+#define SIGN_EXTEND(x,n) (((1<<(n)-1)^((x)&~(~0<<(n))))-(1<<(n)-1))
 #define nd_func u1.id
 #if SIZEOF_SHORT == 2
 #define nd_term(node) ((signed short)(node)->u2.id)
@@ -526,6 +526,8 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 
 			value_expr($6);
 		        args = NEW_LIST($6);
+			if ($3 && nd_type($3) != NODE_ARRAY)
+			    $3 = NEW_LIST($3);
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
 			if ($5 == tOROP) {
@@ -988,6 +990,8 @@ arg		: lhs '=' arg
 
 			value_expr($6);
 			args = NEW_LIST($6);
+			if ($3 && nd_type($3) != NODE_ARRAY)
+			    $3 = NEW_LIST($3);
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
 			if ($5 == tOROP) {
@@ -1228,7 +1232,7 @@ aref_args	: none
 		| tSTAR arg opt_nl
 		    {
 			value_expr($2);
-			$$ = NEW_LIST(NEW_SPLAT($2));
+			$$ = NEW_NEWLINE(NEW_SPLAT($2));
 		    }
 		;
 
