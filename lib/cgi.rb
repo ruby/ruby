@@ -5,7 +5,7 @@ $Date$
 
 cgi.rb
 
-Version 1.40
+Version 1.50
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 Copyright (C) 2000  Information-technology Promotion Agency, Japan
@@ -185,7 +185,7 @@ class CGI
   EOL = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.40"
+  VERSION = "1.50"
   RELEASE_DATE = "$Date$"
 $-v = v
 
@@ -513,6 +513,8 @@ status:
 	         "my_header1" => "my_value",
 	         "my_header2" => "my_value"}){ "string" }
 
+if "HEAD" == REQUEST_METHOD then output only HTTP header.
+
 if charset is "iso-2022-jp" or "euc-jp" or "shift_jis" then
 convert string charset, and set language to "ja".
 
@@ -541,7 +543,7 @@ convert string charset, and set language to "ja".
     output = stdoutput
     output.binmode if defined? output.binmode
     output.print header(options)
-    output.print content
+    output.print content unless "HEAD" == env_table['REQUEST_METHOD']
   end
 
 
@@ -1904,6 +1906,13 @@ end
 =begin
 
 == HISTORY
+
+=== Version 1.50 - wakou
+
+2000/05/30 19:04:08
+
+- CGI#out()
+  if "HEAD" == REQUEST_METHOD then output only HTTP header.
 
 === Version 1.40 - wakou
 

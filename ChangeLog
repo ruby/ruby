@@ -1,3 +1,8 @@
+Wed May 31 04:06:41 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: change: CGI#out()
+	  if "HEAD" == REQUEST_METHOD then output only HTTP header.
+
 Mon May 29 10:41:10 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* file.c (rb_file_s_basename): should propagate taintness.
@@ -73,8 +78,9 @@ Wed May 24 16:32:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
-	* lib/cgi.rb bug fix: CGI::escape(), CGI::Cookie::new()
-	* lib/net/telnet.rb improve: binmode(), telnetmode() interface
+	* lib/cgi.rb: bug fix: CGI::escape(), CGI::Cookie::new()
+
+	* lib/net/telnet.rb: improve: binmode(), telnetmode() interface
 
 Wed May 24 13:12:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
