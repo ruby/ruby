@@ -43,7 +43,7 @@ else
   $null = open('test.log', 'w')
 end
 
-LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
+LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
 CPP = "#{CONFIG['CPP']} -E %s -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s conftest.c"
 
 def rm_f(*files)
@@ -155,7 +155,9 @@ def install_rb(mfile, dest, srcdir = nil)
     mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s/%s\n", dest, f
   end
   for f in path
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' lib/%s %s/%s\n", f, dest, f
+    d = '/' + File::dirname(f)
+    d = '' if d == '/.' 
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' %s/%s %s%s\n", libdir, f, dest, d
   end
 end
 
@@ -352,6 +354,8 @@ def dir_config(target, idefault=nil, ldefault=nil)
 end
 
 def create_makefile(target, srcdir = File.dirname($0))
+  save_libs = $libs.dup
+  save_libpath = $LIBPATH.dup
   print "creating Makefile\n"
   rm_f "conftest*"
   STDOUT.flush
@@ -370,15 +374,16 @@ def create_makefile(target, srcdir = File.dirname($0))
   end
   $DLDFLAGS = CONFIG["DLDFLAGS"]
 
-  if $configure_args['--enable-shared'] or CONFIG['LIBRUBY'] != CONFIG['LIBRUBY_A']
-    $libs = CONFIG["LIBRUBYARG"] + " " + $libs
-    $LIBPATH |= ["$(topdir)", CONFIG["libdir"]]
-  end
+  $libs = CONFIG["LIBRUBYARG"] + " " + $libs
+  $configure_args['--enable-shared'] or $LIBPATH |= [$topdir]
+  $LIBPATH |= [CONFIG["libdir"]]
 
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/
-    open(target + '.def', 'wb') do |f|
-      f.print "EXPORTS\n", "Init_", target, "\n"
+    if not File.exist? target + '.def'
+      open(target + '.def', 'wb') do |f|
+        f.print "EXPORTS\n", "Init_", target, "\n"
+      end
     end
     defflag = "--def=" + target + ".def"
   end
@@ -474,7 +479,7 @@ $(archdir)/$(DLLIB): $(DLLIB)
 	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(archdir)
 	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(archdir)/$(DLLIB)
 EOMF
-  install_rb(mfile, "$(libdir)")
+  install_rb(mfile, "$(libdir)", srcdir)
   mfile.printf "\n"
 
   mfile.printf <<EOMF
@@ -482,21 +487,42 @@ $(sitearchdir)/$(DLLIB): $(DLLIB)
 	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(libdir) $(sitearchdir)
 	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(sitearchdir)/$(DLLIB)
 EOMF
-  install_rb(mfile, "$(sitelibdir)")
+  install_rb(mfile, "$(sitelibdir)", srcdir)
   mfile.printf "\n"
 
   if /mswin32/ !~ RUBY_PLATFORM
     mfile.print "
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c -o $@ $<
+
+.cc.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+.cpp.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+.cxx.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
+.C.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c -o $@ $<
 "
   elsif /nmake/i =~ $make
     mfile.print "
 {$(srcdir)}.c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) -I$(<D) $(CPPFLAGS) -c $(<:/=\\)
-
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) -I$(<D) $(CPPFLAGS) -c $(<:/=\\)
+
+{$(srcdir)}.cc{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cc.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+{$(srcdir)}.cpp{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cpp.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+{$(srcdir)}.cxx{}.#{$OBJEXT}:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cxx.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
 "
   else
     mfile.print "
@@ -504,6 +530,9 @@ EOMF
 
 .c.#{$OBJEXT}:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
+
+.cc.#{$OBJEXT} .cpp.#{$OBJEXT} .cxx.#{$OBJEXT} .C.#{$OBJEXT}:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 "
   end
 
@@ -536,6 +565,8 @@ EOMF
     dfile.close
   end
   mfile.close
+  $libs = save_libs
+  $LIBPATH = save_libpath
 end
 
 $OBJEXT = CONFIG["OBJEXT"]

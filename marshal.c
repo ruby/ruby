@@ -14,7 +14,7 @@
 #include "rubyio.h"
 #include "st.h"
 
-#ifndef atof
+#if !defined(atof) && !defined(HAVE_STDLIB_H)
 double strtod();
 #endif
 
@@ -46,7 +46,7 @@ shortlen(len, ds)
 	num = SHORTDN(num);
 	offset++;
     }
-    return len*sizeof(BDIGIT)/sizeof(short) - offset;
+    return (len - 1)*sizeof(BDIGIT)/sizeof(short) + offset;
 }
 #define SHORTLEN(x) shortlen((x),d)
 #endif
@@ -378,7 +378,7 @@ w_object(obj, arg, limit)
 		    for (i=0; i<SIZEOF_BDIGITS; i+=sizeof(short)) {
 			w_short(num & SHORTMASK, arg);
 			num = SHORTDN(num);
-			if (num == 0) break;
+			if (len == 0 && num == 0) break;
 		    }
 #else
 		    w_short(*d, arg);
@@ -823,7 +823,11 @@ r_object(arg)
 	    OBJSETUP(big, rb_cBignum, T_BIGNUM);
 	    big->sign = (r_byte(arg) == '+');
 	    len = r_long(arg);
+#if SIZEOF_BDIGITS == SIZEOF_SHORT
+	    big->len = len;
+#else
 	    big->len = (len + 1) * sizeof(short) / sizeof(BDIGIT);
+#endif
 	    big->digits = digits = ALLOC_N(BDIGIT, big->len);
 	    while (len > 0) {
 #if SIZEOF_BDIGITS > SIZEOF_SHORT
@@ -1055,7 +1059,7 @@ marshal_load(argc, argv)
 \tformat version %d.%d required; %d.%d given",
 		 MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
     }
-    if (minor != MARSHAL_MINOR) {
+    if (ruby_verbose && minor != MARSHAL_MINOR) {
 	rb_warn("incompatible marshal file format (can be read)\n\
 \tformat version %d.%d required; %d.%d given",
 		MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);

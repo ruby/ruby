@@ -29,6 +29,7 @@
 #ifndef index
 #define index(x, y) strchr((x), (y))
 #endif
+#define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 #ifndef bool
 #define bool int
@@ -357,7 +358,7 @@ isInternalCmd(char *cmd)
         int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
 
         for( i = 0; szInternalCmds[i] ; i++){
-	    if(!strcmp(szInternalCmds[i], vec[0])){
+	    if(!strcasecmp(szInternalCmds[i], vec[0])){
 		fRet = 1;
 		break;
 	    }
@@ -777,10 +778,10 @@ char *cmd;
     strcpy(cmd2, cmd);
     a = argv;
     for (s = cmd2; *s;) {
-	while (*s && isspace(*s)) s++;
+	while (*s && ISSPACE(*s)) s++;
 	if (*s)
 	    *(a++) = s;
-	while (*s && !isspace(*s)) s++;
+	while (*s && !ISSPACE(*s)) s++;
 	if (*s)
 	    *s++ = '\0';
     }
@@ -1054,7 +1055,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
     //
 
     ptr = cmdline+(cmdlen - 1);
-    while(ptr >= cmdline && isspace(*ptr))
+    while(ptr >= cmdline && ISSPACE(*ptr))
         --ptr;
     *++ptr = '\0';
 
@@ -1074,7 +1075,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 	// zap any leading whitespace
 	//
 
-	while(isspace(*ptr))
+	while(ISSPACE(*ptr))
 	    ptr++;
 	base = ptr;
 
@@ -1277,7 +1278,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 }
 
 
-#if !defined __MINGW32__
 //
 // UNIX compatible directory access functions for NT
 //
@@ -1309,9 +1309,9 @@ opendir(char *filename)
     // check to see if we\'ve got a directory
     //
 
-    if ((stat (filename, &sbuf) < 0 ||
+    if ((win32_stat (filename, &sbuf) < 0 ||
 	sbuf.st_mode & _S_IFDIR == 0) &&
-	(!isalpha(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
+	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
 	return NULL;
     }
@@ -1466,7 +1466,6 @@ closedir(DIR *dirp)
 	free(dirp->start);
 	free(dirp);
 }
-#endif
 
 
 //
@@ -2425,13 +2424,23 @@ waitpid (pid_t pid, int *stat_loc, int options)
 int _cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
 {                                
-    struct timeb tb;
+    SYSTEMTIME st;
+    time_t t;
+    struct tm tm;
 
-    ftime(&tb);
-    tv->tv_sec = tb.time;
-    tv->tv_usec = tb.millitm * 1000;
+    GetLocalTime(&st);
+    tm.tm_sec = st.wSecond;
+    tm.tm_min = st.wMinute;
+    tm.tm_hour = st.wHour;
+    tm.tm_mday = st.wDay;
+    tm.tm_mon = st.wMonth - 1;
+    tm.tm_year = st.wYear - 1900;
+    tm.tm_isdst = -1;
+    t = mktime(&tm);
+    tv->tv_sec = t;
+    tv->tv_usec = st.wMilliseconds * 1000;
 
-	return 0;
+    return 0;
 }
 
 char *
@@ -2545,7 +2554,7 @@ myrename(const char *oldpath, const char *newpath)
     newatts = GetFileAttributes(newpath);
 
     if (oldatts == -1) {
-	printf("file to move doesn't exist");
+	errno = GetLastError();
 	return -1;
     }
 
@@ -2581,6 +2590,56 @@ myrename(const char *oldpath, const char *newpath)
 	SetFileAttributes(newpath, oldatts);
 
     return res;
+}
+
+static int
+isUNCRoot(const char *path)
+{
+    if (path[0] == '\\' && path[1] == '\\') {
+	const char *p;
+	for (p = path + 3; *p; p = CharNext(p)) {
+	    if (*p == '\\')
+		break;
+	}
+	if (p[0] && p[1]) {
+	    for (p++; *p; p = CharNext(p)) {
+		if (*p == '\\')
+		    break;
+	    }
+	    if (!p[0] || !p[1])
+		return 1;
+	}
+    }
+    return 0;
+}
+
+int
+win32_stat(const char *path, struct stat *st)
+{
+    const char *p;
+    char *buf1 = ALLOCA_N(char, strlen(path) + 1);
+    char *buf2 = ALLOCA_N(char, MAXPATHLEN);
+    char *s;
+    int len;
+
+    for (p = path, s = buf1; *p; p++, s++) {
+	if (*p == '/')
+	    *s = '\\';
+	else
+	    *s = *p;
+    }
+    *s = '\0';
+    len = strlen(buf1);
+    p = CharPrev(buf1, buf1 + len);
+    if (isUNCRoot(buf1)) {
+	if (*p != '\\')
+	    strcat(buf1, "\\");
+    } else if (*p == '\\' || *p == ':')
+	strcat(buf1, ".");
+    if (_fullpath(buf2, buf1, MAXPATHLEN))
+	return stat(buf2, st);
+    else
+	return -1;
 }
 
 static long

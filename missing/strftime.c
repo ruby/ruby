@@ -113,12 +113,6 @@ extern char *getenv();
 extern char *strchr();
 #endif
 
-#ifdef __GNUC__
-#define inline	__inline__
-#else
-#define inline	/**/
-#endif
-
 #define range(low, item, hi)	max(low, min(item, hi))
 
 #if !defined(OS2) && !defined(MSDOS) && defined(HAVE_TZNAME)

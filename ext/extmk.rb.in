@@ -370,13 +370,15 @@ def create_makefile(target)
 
   if $configure_args['--enable-shared'] or "@LIBRUBY@" != "@LIBRUBY_A@"
     $libs = "@LIBRUBYARG@ " + $libs
-    $LIBPATH |= [$topdir]
+    $LIBPATH.unshift $topdir
   end
 
   defflag = ''
   if RUBY_PLATFORM =~ /cygwin|mingw/ and not $static
-    open(target + '.def', 'wb') do |f|
-      f.print "EXPORTS\n", "Init_", target, "\n"
+    if not File.exist? target + '.def'
+      open(target + '.def', 'wb') do |f|
+        f.print "EXPORTS\n", "Init_", target, "\n"
+      end
     end
     defflag = "--def=" + target + ".def"
   end
@@ -492,19 +494,43 @@ EOS
     mfile.puts "
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
+
+.cc.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+.cpp.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+.cxx.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
+.C.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $<
 "
   elsif /nmake/i =~ $make
     mfile.print "
 {$(srcdir)}.c{}.@OBJEXT@:
 	$(CC) -I. -I$(<D) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
-
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+
+{$(srcdir)}.cc{}.@OBJEXT@:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cc.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+{$(srcdir)}.cpp{}.@OBJEXT@:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cpp.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+{$(srcdir)}.cxx{}.@OBJEXT@:
+	$(CXX) -I. -I$(<D) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
+.cxx.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(<:/=\\)
 "
   else
     mfile.print "
 .c.@OBJEXT@:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
+
+.cc.@OBJEXT@ .cpp.@OBJEXT@ .cxx.@OBJEXT@ .C.@OBJEXT@:
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) -c $(subst /,\\\\,$<)
 "
   end
 

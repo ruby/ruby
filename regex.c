@@ -1049,7 +1049,7 @@ calculate_must_string(start, end)
       EXTRACT_NUMBER_AND_INCR(mcnt, p);
       if (mcnt > 0) p += mcnt;
       if ((enum regexpcode)p[-3] == jump) {
-	p -= 3;
+       p -= 2;
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	if (mcnt > 0) p += mcnt;
       }
@@ -1438,6 +1438,10 @@ re_compile_pattern(pattern, size, bufp)
 	    EXTEND_BUFFER;
 	}
       range_retry:
+	if (range && had_char_class) {
+	  FREE_AND_RETURN(stackb, "invalid regular expression; can't use character class as a end value of range");
+	  goto invalid_pattern;
+	}
 	PATFETCH(c);
 
 	if (c == ']') {
@@ -1473,6 +1477,7 @@ re_compile_pattern(pattern, size, bufp)
 	    if (current_mbctype) {
 	      set_list_bits(0x80, 0xffffffff, b);
 	    }
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1483,6 +1488,7 @@ re_compile_pattern(pattern, size, bufp)
 		  !current_mbctype && SYNTAX(c) != Sword2))
 		SET_LIST_BIT(c);
 	    }
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1490,6 +1496,7 @@ re_compile_pattern(pattern, size, bufp)
 	    for (c = 0; c < 256; c++)
 	      if (ISSPACE(c))
 		SET_LIST_BIT(c);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1499,12 +1506,14 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(c);
 	    if (current_mbctype)
 	      set_list_bits(0x80, 0xffffffff, b);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
 	  case 'd':
 	    for (c = '0'; c <= '9'; c++)
 	      SET_LIST_BIT(c);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1514,6 +1523,7 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(c);
 	    if (current_mbctype)
 	      set_list_bits(0x80, 0xffffffff, b);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -3461,7 +3471,8 @@ re_search(bufp, string, size, startpos, range, regs)
 #define PREV_IS_A_LETTER(d) ((current_mbctype == MBCTYPE_SJIS)?		\
 			     IS_A_LETTER((d)-(!AT_STRINGS_BEG((d)-1)&&	\
 					      ismbchar((d)[-2])?2:1)):	\
-			     ((d)[-1] >= 0x80 || IS_A_LETTER((d)-1)))
+                             ((current_mbctype && ((d)[-1] >= 0x80)) ||	\
+			      IS_A_LETTER((d)-1)))
 
 static void
 init_regs(regs, num_regs)

@@ -26,10 +26,10 @@ The Ruby distribution can be found on:
 
 You can get it by anonymous CVS.  How to check out is:
 
-  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs login
-  (Logging in to anonymous@cvs.netlab.co.jp)
+  $ cvs -d :pserver:anonymous@cvs.ruby-lang.org:/home/cvs login
+  (Logging in to anonymous@cvs.ruby-lang.org)
   CVS password: guest
-  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs checkout ruby
+  $ cvs -d :pserver:anonymous@cvs.ruby-lang.org:/home/cvs checkout ruby
 
 * Mailing list
 
@@ -40,17 +40,20 @@ To subscribe this list, please send the following phrase
 e.g.
         subscribe Joseph Smith
 
-in the mail body (not subject) to the address <ruby-talk-ctl@netlab.co.jp>.
+in the mail body (not subject) to the address <ruby-talk-ctl@ruby-lang.org>.
 
 * How to compile and install
 
 This is what you need to do to compile and install Ruby:
 
-  1. Run ./configure, which will generate config.h and Makefile.
+  1. If ./configure does not exist or is older than configure.in,
+     run autoconf to (re)generate configure.
 
-  2. Edit defines.h if you need.  Probably this step will not need.
+  2. Run ./configure, which will generate config.h and Makefile.
 
-  3. Remove comment mark(#) before the module names from ext/Setup (or
+  3. Edit defines.h if you need.  Probably this step will not need.
+
+  4. Remove comment mark(#) before the module names from ext/Setup (or
      add module names if not present), if you want to link modules
      statically.
 
@@ -59,13 +62,13 @@ This is what you need to do to compile and install Ruby:
      remove comment mark from the line "#option nodynamic" in
      ext/Setup.
 
-  4. Run make.
+  5. Run make.
 
-  5. Optionally, run 'make test' to check whether the compiled Ruby
+  6. Optionally, run 'make test' to check whether the compiled Ruby
      interpreter works well.  If you see the message "test succeeded",
      your ruby works as it should (hopefully).
 
-  6. Run 'make install'
+  7. Run 'make install'
 
      You may have to be a super user to install ruby.
 

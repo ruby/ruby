@@ -7,12 +7,27 @@ require 'tk'
 class TkVirtualEvent<TkObject
   extend Tk
 
-  TkVirturlEventID = [0]
-  TkVirturlEventTBL = {}
+  TkVirtualEventID = [0]
+  TkVirtualEventTBL = {}
+
+  class PreDefVirtEvent<self
+    def initialize(event)
+      @path = @id = event
+      TkVirtualEvent::TkVirtualEventTBL[@id] = self
+    end
+  end
 
   def TkVirtualEvent.getobj(event)
-    obj = TkVirturlEventTBL[event]
-    obj ? obj : event
+    obj = TkVirtualEventTBL[event]
+    if obj
+      obj
+    else
+      if tk_call('event', 'info').index("<#{event}>")
+	PreDefVirtEvent.new(event)
+      else
+	fail ArgumentError, "undefined virtual event '<#{event}>'"
+      end
+    end
   end
 
   def TkVirtualEvent.info
@@ -22,8 +37,8 @@ class TkVirtualEvent<TkObject
   end
 
   def initialize(*sequences)
-    @path = @id = format("<VirtEvent%.4d>", TkVirturlEventID[0])
-    TkVirturlEventID[0] += 1
+    @path = @id = format("<VirtEvent%.4d>", TkVirtualEventID[0])
+    TkVirtualEventID[0] += 1
     add(*sequences)
   end
 
@@ -31,7 +46,7 @@ class TkVirtualEvent<TkObject
     if sequences != []
       tk_call('event', 'add', "<#{@id}>", 
 	      *(sequences.collect{|seq| "<#{tk_event_sequence(seq)}>"}) )
-      TkVirturlEventTBL[@id] = self
+      TkVirtualEventTBL[@id] = self
     end
     self
   end
@@ -39,11 +54,11 @@ class TkVirtualEvent<TkObject
   def delete(*sequences)
     if sequences == []
       tk_call('event', 'delete', "<#{@id}>")
-      TkVirturlEventTBL[@id] = nil
+      TkVirtualEventTBL[@id] = nil
     else
       tk_call('event', 'delete', "<#{@id}>", 
 	      *(sequences.collect{|seq| "<#{tk_event_sequence(seq)}>"}) )
-      TkVirturlEventTBL[@id] = nil if info == []
+      TkVirtualEventTBL[@id] = nil if info == []
     end
     self
   end

@@ -1,27 +1,44 @@
 =begin
 
-monitor.rb
-Author: Shugo Maeda <shugo@netlab.co.jp>
-Version: 1.2.1
+= monitor.rb
 
-USAGE:
+Copyright (C) 2001  Shugo Maeda <shugo@ruby-lang.org>
 
-  foo = Foo.new
-  foo.extend(MonitorMixin)
-  cond = foo.new_cond
+This library is distributed under the terms of the Ruby license.
+You can freely distribute/modify this library.
 
-  thread1:
-  foo.synchronize {
-    ...
-    cond.wait_until { foo.done? }
-    ...
-  }
+== example
 
-  thread2:
-  foo.synchronize {
-    foo.do_something
-    cond.signal
-  }
+This is a simple example.
+
+  require 'monitor.rb'
+  
+  buf = []
+  buf.extend(MonitorMixin)
+  empty_cond = buf.new_cond
+  
+  # consumer
+  Thread.start do
+    loop do
+      buf.synchronize do
+        empty_cond.wait_while { buf.empty? }
+        print buf.shift
+      end
+    end
+  end
+  
+  # producer
+  while line = ARGF.gets
+    buf.synchronize do
+      buf.push(line)
+      empty_cond.signal
+    end
+  end
+
+The consumer thread waits for the producer thread to push a line
+to buf while buf.empty?, and the producer thread (main thread)
+reads a line from ARGF and push it to buf, then call
+empty_cond.signal.
 
 =end
   
@@ -52,6 +69,15 @@ module MonitorMixin
 	raise ThreadError, "current thread not owner"
       end
       
+      if timeout
+	ct = Thread.current
+	timeout_thread = Thread.start {
+	  Thread.pass
+	  sleep(timeout)
+	  ct.raise(Timeout.new)
+	}
+      end
+
       Thread.critical = true
       count = @monitor.mon_count
       @monitor.mon_count = 0
@@ -63,34 +89,28 @@ module MonitorMixin
       end
       t.wakeup if t
       @waiters.push(Thread.current)
-      
-      if timeout
-	t = Thread.current
-	timeout_thread = Thread.start {
-	  sleep(timeout)
-	  t.raise(Timeout.new)
-	}
-      end
+
       begin
 	Thread.stop
       rescue Timeout
-	@waiters.delete(Thread.current)
       ensure
+	Thread.critical = true
 	if timeout && timeout_thread.alive?
 	  Thread.kill(timeout_thread)
 	end
+	if @waiters.include?(Thread.current)  # interrupted?
+	  @waiters.delete(Thread.current)
+	end
+	while @monitor.mon_owner &&
+	    @monitor.mon_owner != Thread.current
+	  @monitor.mon_waiting_queue.push(Thread.current)
+	  Thread.stop
+	  Thread.critical = true
+	end
+	@monitor.mon_owner = Thread.current
+	@monitor.mon_count = count
+	Thread.critical = false
       end
-      
-      Thread.critical = true
-      while @monitor.mon_owner &&
-	  @monitor.mon_owner != Thread.current
-	@monitor.mon_waiting_queue.push(Thread.current)
-	Thread.stop
-	Thread.critical = true
-      end
-      @monitor.mon_owner = Thread.current
-      @monitor.mon_count = count
-      Thread.critical = false
     end
     
     def wait_while
