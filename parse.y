@@ -1821,7 +1821,6 @@ case_body	: kWHEN when_args then
 			$$ = NEW_WHEN($2, $4, $5);
 		    }
 		;
-
 when_args	: args
 		| args ',' tSTAR arg_value
 		    {
@@ -5317,7 +5316,7 @@ logop(type, left, right)
     NODE *left, *right;
 {
     value_expr(left);
-    if (nd_type(left) == type) {
+    if (left && nd_type(left) == type) {
 	NODE *node = left, *second;
 	while ((second = node->nd_2nd) != 0 && nd_type(second) == type) {
 	    node = second;

@@ -2585,42 +2585,6 @@ rb_eval(self, n)
 	}
 	goto again;
 
-      case NODE_WHEN:
-	while (node) {
-	    NODE *tag;
-
-	    if (nd_type(node) != NODE_WHEN) goto again;
-	    tag = node->nd_head;
-	    while (tag) {
-		if (trace_func) {
-		    call_trace_func("line", tag, self,
-				    ruby_frame->last_func,
-				    ruby_frame->last_class);
-		}
-		if (nd_type(tag->nd_head) == NODE_WHEN) {
-		    VALUE v = rb_eval(self, tag->nd_head->nd_head);
-		    long i;
-
-		    if (TYPE(v) != T_ARRAY) v = rb_ary_to_ary(v);
-		    for (i=0; i<RARRAY(v)->len; i++) {
-			if (RTEST(RARRAY(v)->ptr[i])) {
-			    node = node->nd_body;
-			    goto again;
-			}
-		    }
-		    tag = tag->nd_next;
-		    continue;
-		}
-		if (RTEST(rb_eval(self, tag->nd_head))) {
-		    node = node->nd_body;
-		    goto again;
-		}
-		tag = tag->nd_next;
-	    }
-	    node = node->nd_next;
-	}
-	RETURN(Qnil);
-
       case NODE_CASE:
 	{
 	    VALUE val;
@@ -2640,7 +2604,7 @@ rb_eval(self, n)
 					ruby_frame->last_func,
 					ruby_frame->last_class);
 		    }
-		    if (nd_type(tag->nd_head) == NODE_WHEN) {
+		    if (tag->nd_head && nd_type(tag->nd_head) == NODE_WHEN) {
 			VALUE v = rb_eval(self, tag->nd_head->nd_head);
 			long i;
 
@@ -2973,16 +2937,14 @@ rb_eval(self, n)
       case NODE_ARGSCAT:
 	{
 	    VALUE args = rb_eval(self, node->nd_head);
-	    result = rb_ary_concat(args,
-				   splat_value(rb_eval(self, node->nd_body)));
+	    result = rb_ary_concat(args, splat_value(rb_eval(self, node->nd_body)));
 	}
 	break;
 
       case NODE_ARGSPUSH:
 	{
 	    VALUE args = rb_ary_dup(rb_eval(self, node->nd_head));
-	    result = rb_ary_push(args,
-				 rb_eval(self, node->nd_body));
+	    result = rb_ary_push(args, rb_eval(self, node->nd_body));
 	}
 	break;
 

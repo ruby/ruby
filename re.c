@@ -1735,7 +1735,7 @@ ignorecase_setter(val, id)
     VALUE val;
     ID id;
 {
-    rb_warn("modifying %s is deperecated", rb_id2name(id));
+    rb_warn("modifying %s is deprecated", rb_id2name(id));
     may_need_recompile = 1;
     ruby_ignorecase = RTEST(val);
 }
