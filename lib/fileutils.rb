@@ -170,14 +170,18 @@ module FileUtils
     return *list if options[:noop]
 
     mode = options[:mode] || (0777 & ~File.umask)
-    list.map {|n| File.expand_path(n) }.each do |dir|
+    list.map {|n| File.expand_path(n) }.each do |path|
       stack = []
-      until File.directory?(dir)
-        stack.push dir
-        dir = File.dirname(dir)
+      until path == stack.last   # dirname("/")=="/", dirname("C:/")=="C:/"
+        stack.push path
+        path = File.dirname(path)
       end
-      stack.reverse_each do |n|
-        Dir.mkdir n, mode
+      stack.reverse_each do |path|
+        begin
+          Dir.mkdir path, mode
+        rescue Errno::EEXIST => err
+          raise unless File.directory?(path)
+        end
       end
     end
 

@@ -1,3 +1,10 @@
+Thu Dec 11 19:08:02 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mkdir_p): check if it is a directory after
+	  mkdir(2) instead of before mkdir(2), to avoid race condition.
+	  [ruby-talk:87730]
+	  Refer: mkinstalldirs sh script, GNU mkdir(1) (coreutils 5.0)
+
 Thu Dec 11 18:49:30 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: def m( arg ) -> def m(arg).
