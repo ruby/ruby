@@ -1,3 +1,7 @@
+Fri Nov 21 16:12:11 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ruby.1: Fix markups and grammar.
+
 Fri Nov 21 14:49:42 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* ruby.1: wrote about ruby related environment variables.

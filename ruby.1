@@ -36,7 +36,7 @@ don't like too much parentheses, Ruby may be the language of your
 choice.
 .Sh FEATURES
 Ruby's features are as follows:
-.Bl -tag -width "12"
+.Bl -tag
 .It Sy "Interpretive"
 Ruby is an interpreted language, so you don't have to recompile
 programs written in Ruby to execute them.
@@ -110,7 +110,7 @@ on-the-fly.
 Ruby interpreter accepts following command-line options (switches).
 They are quite similar to those of
 .Xr perl 1 .
-.Bl -tag -width "12" -compact
+.Bl -tag -width "1234567890123" -compact
 .Pp
 .It Fl -copyright
 Prints the copyright notice.
@@ -150,11 +150,12 @@ Specifies KANJI (Japanese) encoding.
 Makes Ruby use the
 .Ev PATH
 environment variable to search for script, unless if its name begins
-with a slash.  This is used to emulate #! on machines that don't
-support it, in the following manner:
+with a slash.  This is used to emulate
+.Li #!
+on machines that don't support it, in the following manner:
 .Bd -literal -offset indent
 #! /usr/local/bin/ruby
-# This line makes the next one a comment in ruby \e
+# This line makes the next one a comment in Ruby \e
   exec /usr/local/bin/ruby -S $0 $*
 .Ed
 .Pp
@@ -180,11 +181,11 @@ to the standard output.
 .It Fl -debug
 Turns on debug mode.
 .Li "$DEBUG"
-will set true.
+will be set to true.
 .Pp
 .It Fl e Ar command
-Specifies script from command-line while telling Ruby to not search
-argv for script filenames.
+Specifies script from command-line while telling Ruby not to search
+the rest of arguments for a script file name.
 .Pp
 .It Fl h
 .It Fl -help
@@ -192,7 +193,7 @@ Prints a summary of the options.
 .Pp
 .It Fl i Ar extension
 Specifies in-place-edit mode.  The extension, if specified, is added
-to old filename to make a backup copy.  For example:
+to old file name to make a backup copy.  For example:
 .Bd -literal -offset indent
 % echo matz > /tmp/junk
 % cat /tmp/junk
@@ -216,7 +217,7 @@ and secondly chops every line read using
 .Pp
 .It Fl n
 Causes Ruby to assume the following loop around your script, which
-makes it iterate over filename arguments somewhat like
+makes it iterate over file name arguments somewhat like
 .Nm sed
 .Fl n
 or
@@ -244,7 +245,7 @@ or
 .Pp
 .It Fl s
 Enables some switch parsing for switches after script name but before
-any filename arguments (or before a
+any file name arguments (or before a
 .Fl - ) .
 Any switches found there are removed from
 .Li ARGV
@@ -289,8 +290,11 @@ will be discarded until the first that starts with
 and contains the string,
 .Dq ruby .
 Any meaningful switches on that line will applied.  The end of script
-must be specified with either EOF, ^D (control-D), ^Z (control-Z), or
-reserved word
+must be specified with either
+.Li EOF ,
+.Li "^D" ( Li "control-D" ) ,
+.Li "^Z" ( Li "control-Z" ) ,
+or reserved word
 .Li __END__ .
 If the directory name is specified, Ruby will switch to that directory
 before executing script.
@@ -303,31 +307,41 @@ this switch, unless you are going to debug the Ruby interpreter.
 .El
 .Pp
 .Sh ENVIRONMENT
-.Bl -tag -width "12"
+.Bl -tag -width "RUBYLIB_PREFIX" -compact
+.It Ev RUBYLIB
+A colon-separated list of directories that are appended to Ruby's
+library load path
+.Pf ( Li "$:" ) .
 .Pp
-.It Sy "RUBYLIB"
-A colon-separated list of directories
-that are appended to ruby's library load path ($:).
-e.g. RUBYLIB="$HOME/lib/ruby:$HOME/lib/rubyext"
+e.g.:
+.Dl RUBYLIB="$HOME/lib/ruby:$HOME/lib/rubyext"
 .Pp
-.It Sy "RUBYOPT"
-Additional ruby options.
-e.g. RUBYOPT="-w -Ke"
+.It Ev RUBYOPT
+Additional Ruby options.
 .Pp
-.It Sy "RUBYPATH"
-A colon-separated list of directories
-that are used when ruby searches ruby programs for "ruby -S".
-This variable precedes PATH environment variable.
+e.g.
+.Dl RUBYOPT="-w -Ke"
 .Pp
-.It Sy "RUBYSHELL"
-The path to the system shell command.
-This environment variable is enabled for only mswin32, mingw32, and OS/2 platform.
-When this variable is not defined, ruby refers to COMSPEC.
+.It Ev RUBYPATH
+A colon-separated list of directories that Ruby searches for
+Ruby programs when the
+.Fl S
+flag is specified.  This variable precedes the
+.Ev PATH
+environment variable.
 .Pp
-.It Sy "PATH"
-Ruby refers to PATH environment variable on calling Kernel#system.
+.It Ev RUBYSHELL
+The path to the system shell command.  This environment variable is
+enabled for only mswin32, mingw32, and OS/2 platforms.  If this
+variable is not defined, Ruby refers to
+.Ev COMSPEC .
 .Pp
-.It Sy "RUBYLIB_PREFIX"
+.It Ev PATH
+Ruby refers to the
+.Ev PATH
+environment variable on calling Kernel#system.
+.Pp
+.It Ev RUBYLIB_PREFIX
 This variable is obsolete.
 .El
 .Pp
