@@ -1,3 +1,13 @@
+Tue Nov 18 18:09:37 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): behave as IO at empty string.
+	  [ruby-dev:21939]
+
+	* ext/stringio/stringio.c (strio_getc, strio_getline): set EOF flag.
+
+	* ext/stringio/stringio.c (strio_rewind, strio_seek, strio_ungetc):
+	  clear EOF flag.
+
 Tue Nov 18 14:06:35 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_each_src_dest): raise if src==dest.

@@ -16,6 +16,7 @@
 #include "rubyio.h"
 
 #define STRIO_APPEND 4
+#define STRIO_EOF 8
 
 struct StringIO {
     VALUE string;
@@ -483,6 +484,7 @@ strio_rewind(self)
     struct StringIO *ptr = StringIO(self);
     ptr->pos = 0;
     ptr->lineno = 0;
+    ptr->flags &= ~STRIO_EOF;
     return INT2FIX(0);
 }
 
@@ -514,6 +516,7 @@ strio_seek(argc, argv, self)
 	error_inval(0);
     }
     ptr->pos = offset;
+    ptr->flags &= ~STRIO_EOF;
     return INT2FIX(0);
 }
 
@@ -548,6 +551,7 @@ strio_getc(self)
     struct StringIO *ptr = readable(StringIO(self));
     int c;
     if (ptr->pos >= RSTRING(ptr->string)->len) {
+	ptr->flags |= STRIO_EOF;
 	return Qnil;
     }
     c = RSTRING(ptr->string)->ptr[ptr->pos++];
@@ -578,6 +582,7 @@ strio_ungetc(self, ch)
 	    OBJ_INFECT(ptr->string, self);
 	}
 	--ptr->pos;
+	ptr->flags &= ~STRIO_EOF;
     }
     return Qnil;
 }
@@ -649,7 +654,10 @@ strio_getline(argc, argv, ptr)
 	if (!NIL_P(str)) StringValue(str);
     }
 
-    if (ptr->pos >= (n = RSTRING(ptr->string)->len)) return Qnil;
+    if (ptr->pos >= (n = RSTRING(ptr->string)->len)) {
+	ptr->flags |= STRIO_EOF;
+	return Qnil;
+    }
     s = RSTRING(ptr->string)->ptr;
     e = s + RSTRING(ptr->string)->len;
     s += ptr->pos;
@@ -659,7 +667,10 @@ strio_getline(argc, argv, ptr)
     else if ((n = RSTRING(str)->len) == 0) {
 	p = s;
 	while (*p == '\n') {
-	    if (++p == e) return Qnil;
+	    if (++p == e) {
+		ptr->flags |= STRIO_EOF;
+		return Qnil;
+	    }
 	}
 	s = p;
 	while (p = memchr(p, '\n', e - p)) {
@@ -827,24 +838,34 @@ strio_read(argc, argv, self)
     VALUE str;
     long len;
 
-    if (ptr->pos >= RSTRING(ptr->string)->len) {
-	return Qnil;
-    }
     switch (argc) {
       case 1:
 	if (!NIL_P(argv[0])) {
 	    len = NUM2LONG(argv[0]);
+	    if (len < 0) {
+		rb_raise(rb_eArgError, "negative length %ld given", len);
+	    }
+	    if (len > 0 && ptr->pos >= RSTRING(ptr->string)->len) {
+		ptr->flags |= STRIO_EOF;
+		return Qnil;
+	    }
 	    break;
 	}
 	/* fall through */
       case 0:
 	len = RSTRING(ptr->string)->len - ptr->pos;
+	if (len == 0 && ptr->pos == RSTRING(ptr->string)->len) {
+	    if (ptr->flags & STRIO_EOF) return Qnil;
+	}
 	break;
       default:
 	rb_raise(rb_eArgError, "wrong number arguments (%d for 0)", argc);
     }
     str = rb_str_substr(ptr->string, ptr->pos, len);
-    ptr->pos += len;
+    if (len > 0 &&
+	(NIL_P(str) || (ptr->pos += RSTRING(str)->len) >= RSTRING(ptr->string)->len)) {
+	ptr->flags |= STRIO_EOF;
+    }
     return str;
 }
 
