@@ -14,8 +14,7 @@ def charset_alias(config_charset, mapfile, target = OS)
     next comments << list if /^\#/ =~ list
     next unless /^(\S+)\s+(\S+)$/ =~ list
     sys, can = $1, $2
-    next if sys == can
-    next if can.downcase! and sys == can
+    can.downcase!
     map[can] = sys
   end
   case target

@@ -110,9 +110,9 @@ map_charset
     VALUE val = *code;
 
     if (RHASH(charset_map)->tbl && RHASH(charset_map)->tbl->num_entries) {
-	val = rb_funcall2(val, rb_intern("downcase"), 0, 0);
-	StringValuePtr(val);
-	if (st_lookup(RHASH(charset_map)->tbl, val, &val)) {
+	VALUE key = rb_funcall2(val, rb_intern("downcase"), 0, 0);
+	StringValuePtr(key);
+	if (st_lookup(RHASH(charset_map)->tbl, key, &val)) {
 	    StringValuePtr(val);
 	    *code = val;
 	}
