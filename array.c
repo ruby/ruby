@@ -1148,9 +1148,8 @@ rb_ary_update(ary, beg, len, rpl)
  *  the current capacity of the array, the array grows
  *  automatically. A negative indices will count backward
  *  from the end of the array. Inserts elements if _length_ is
- *  zero. If +nil+ is used in the second and third form,
- *  deletes elements from _self_. An +IndexError+ is raised if a
- *  negative index points past the beginning of the array. See also
+ *  zero. An +IndexError+ is raised if a negative index points
+ *  past the beginning of the array. See also
  *  <code>Array#push</code>, and <code>Array#unshift</code>.
  * 
  *     a = Array.new
@@ -1160,7 +1159,8 @@ rb_ary_update(ary, beg, len, rpl)
  *     a[0, 2] = "?"               #=> ["?", 2, nil, "4"]
  *     a[0..2] = "A"               #=> ["A", "4"]
  *     a[-1]   = "Z"               #=> ["A", "Z"]
- *     a[1..-1] = nil              #=> ["A"]
+ *     a[1..-1] = nil              #=> ["A", nil]
+ *     a[1..-1] = []              #=> ["A"]
  */
 
 static VALUE

@@ -1410,7 +1410,7 @@ rb_glob(path, func, arg)
 
     args.func = func;
     args.arg = arg;
-    status = rb_glob2(rb_str_new2(path), 0, func, &args);
+    status = rb_glob2(rb_str_new2(path), 0, rb_glob_caller, &args);
 
     if (status) rb_jump_tag(status);
 }
