@@ -1,3 +1,7 @@
+Tue Nov  9 14:27:18 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser::Officious): moved from DefaultList.
+
 Tue Nov  9 00:53:53 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* regex.c (slow_match): avoid GCC 3.4.x warnings.
@@ -40,7 +44,7 @@ Sun Nov  7 23:49:26 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Sat Nov  6 14:58:44 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/server.rb (WEBrick::HTTPServer#start): remove
-	  :DoNotReverseLookup option. (Socket#do_not_reverse_lookup is a 
+	  :DoNotReverseLookup option. (Socket#do_not_reverse_lookup is a
 	  ruby 1.9 feature)
 
 Sat Nov  6 11:31:04 2004  Tadayoshi Funaba  <tadf@dotrb.org>
@@ -54,7 +58,7 @@ Sat Nov  6 00:46:27 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Nov  5 18:12:42 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk/scrollable.rb: divide Scrollable module into 
+	* ext/tk/lib/tk/scrollable.rb: divide Scrollable module into
 	  X_Scrollable and Y_Scrollable
 
 	* ext/tk/lib/tk/entry.rb: include X_Scrollable instead of Scrollable
@@ -132,12 +136,12 @@ Wed Nov  3 17:13:02 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Wed Nov  3 16:58:07 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: support to use different Tcl commands between 
+	* ext/tk/lib/tk.rb: support to use different Tcl commands between
 	  configure and configinfo
 
 	* ext/tk/lib/font.rb: ditto.
 
-	* ext/tk/lib/itemconfig.rb: support to use different Tcl commands 
+	* ext/tk/lib/itemconfig.rb: support to use different Tcl commands
 	  between item_configure and item_configinfo
 
 	* ext/tk/lib/itemfont.rb: ditto.
@@ -155,7 +159,7 @@ Wed Nov  3 15:53:34 2004  Kouhei Sutou  <kou@cozmixng.org>
 	* test/rss/test_maker_*.rb: added tests for RSS Maker.
 
 	* lib/rss/maker.rb: added RSS Maker.
-	
+
 	* lib/rss/maker/*.rb: ditto.
 
 Tue Nov  2 16:35:57 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
