@@ -16,20 +16,10 @@
 #define EUC
 #undef SJIS
 
-
-/* define USE_DL to load object file(.o). */
-#define USE_DL
-
-/* a.out.h or dlopen() needed to load object */
-#if !defined(HAVE_DLOPEN) && !defined(HAVE_A_OUT_H)
-# undef USE_DL
-#endif
-
-#ifdef USE_MY_DLN
-#  define LIBC_NAME "libc.a"
-#  define DLN_DEFAULT_PATH "/lib:/usr/lib:."
-#endif
-
 #define SAFE_SIGHANDLE
+
+#ifdef NT
+#include "missing/nt.h"
+#endif
 
 #endif

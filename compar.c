@@ -12,12 +12,12 @@
 
 #include "ruby.h"
 
-VALUE M_Comparable;
+VALUE mComparable;
 
 static ID cmp;
 
 static VALUE
-Fcmp_eq(x, y)
+cmp_eq(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
@@ -28,7 +28,7 @@ Fcmp_eq(x, y)
 }
 
 static VALUE
-Fcmp_gt(x, y)
+cmp_gt(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
@@ -39,7 +39,7 @@ Fcmp_gt(x, y)
 }
 
 static VALUE
-Fcmp_ge(x, y)
+cmp_ge(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
@@ -50,7 +50,7 @@ Fcmp_ge(x, y)
 }
 
 static VALUE
-Fcmp_lt(x, y)
+cmp_lt(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
@@ -61,7 +61,7 @@ Fcmp_lt(x, y)
 }
 
 static VALUE
-Fcmp_le(x, y)
+cmp_le(x, y)
     VALUE x, y;
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
@@ -72,7 +72,7 @@ Fcmp_le(x, y)
 }
 
 static VALUE
-Fcmp_between(x, min, max)
+cmp_between(x, min, max)
     VALUE x, min, max;
 {
     VALUE c = rb_funcall(x, cmp, 1, min);
@@ -85,15 +85,16 @@ Fcmp_between(x, min, max)
     return TRUE;
 }
 
+void
 Init_Comparable()
 {
-    M_Comparable = rb_define_module("Comparable");
-    rb_define_method(M_Comparable, "==", Fcmp_eq, 1);
-    rb_define_method(M_Comparable, ">", Fcmp_gt, 1);
-    rb_define_method(M_Comparable, ">=", Fcmp_ge, 1);
-    rb_define_method(M_Comparable, "<", Fcmp_lt, 1);
-    rb_define_method(M_Comparable, "<=", Fcmp_le, 1);
-    rb_define_method(M_Comparable, "between", Fcmp_between, 2);
+    mComparable = rb_define_module("Comparable");
+    rb_define_method(mComparable, "==", cmp_eq, 1);
+    rb_define_method(mComparable, ">", cmp_gt, 1);
+    rb_define_method(mComparable, ">=", cmp_ge, 1);
+    rb_define_method(mComparable, "<", cmp_lt, 1);
+    rb_define_method(mComparable, "<=", cmp_le, 1);
+    rb_define_method(mComparable, "between?", cmp_between, 2);
 
     cmp = rb_intern("<=>");
 }

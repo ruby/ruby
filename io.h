@@ -14,6 +14,7 @@
 #ifndef IO_H
 #define IO_H
 
+#include "sig.h"
 #include <stdio.h>
 #include <errno.h>
 
@@ -24,6 +25,7 @@ typedef struct {
     int pid;			/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
+    void (*finalize)();		/* finalize proc */
 } OpenFile;
 
 #define FMODE_READABLE  1
@@ -35,15 +37,16 @@ extern ID id_fd;
 
 #define GetOpenFile(obj,fp) Get_Data_Struct(obj, id_fd, OpenFile, fp)
 
-void io_free_OpenFile();
+void io_fptr_finalize();
 
-#define MakeOpenFile(obj, fp) {\
-    Make_Data_Struct(obj, id_fd, OpenFile, Qnil, io_free_OpenFile, fp);\
+#define MakeOpenFile(obj, fp) do {\
+    Make_Data_Struct(obj, id_fd, OpenFile, 0, io_fptr_finalize, fp);\
     fp->f = fp->f2 = NULL;\
     fp->mode = 0;\
     fp->pid = 0;\
     fp->lineno = 0;\
     fp->path = NULL;\
-}
+    fp->finalize = 0;\
+} while (0)
 
 #endif

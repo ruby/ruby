@@ -1,0 +1,308 @@
+.\" README.EXT -  -*- Text -*- created at: Mon Aug  7 16:45:54 JST 1995
+
+Rubyを拡張するための方法を解説する．
+
+RubyはCコードを書くことによって，簡単に機能を追加できる．おおまかな手
+順は以下の通りである．
+
+  1. ファイルを用意する
+
+     extディレクトリの下に拡張モジュール用のディレクトリを用意して，そ
+     の配下に以下のファイルを用意する必要がある．
+
+     + MANIFEST．必要なファイルの一覧．
+
+       必ず必要．一時的なファイル以外の全てのファイル名を1行1ファイル
+       の形式で記述すること．
+
+     + Cのソースファイル．
+
+       モジュールが1ファイルだけからなる時はモジュール名と同じ名前のファ
+       イル名(モジュール.c)をつける．逆にモジュールが複数からなる時は
+       モジュール名のついたソースファイルは避けること．
+
+     + extconf.rb(optional)．設定用ファイル．
+
+       関数やライブラリ，ヘッダの存在チェックをしたり，モジュール名な
+       どを設定する．このファイルが無ければ全てデフォルトでコンパイル
+       される．
+
+     + depend(optional)．Makefileにインクルードするためのファ
+       イルの依存関係を記述したファイル．
+
+       `gcc -MM *.c > depend'とすれば自動的に生成できる．
+
+  2. Cのソースファイルを用意する
+
+     必ず「Init_モジュール名」という関数を用意し，その中で，変数やクラ
+     スの定義や，クラスへのメソッドの登録などの初期化を行うこと．この
+     関数の呼び出しはインタプリタの初期化時(静的リンクの場合)かモジュー
+     ルのロード時(動的リンクの場合)に自動的に行われる．
+
+* Ruby API
+
+C言語からRubyの機能を利用するAPIは以下の通りである．
+
+** 型
+
+ VALUE
+
+   Rubyオブジェクトを表現する型．必要に応じてキャストして用いる．組み
+   込み型を表現するCの型はruby.hに記述してあるRで始まる構造体である．
+   VALUE型をこれらにキャストするためにRで始まる構造体名を全て大文字に
+   した名前のマクロが用意されている．
+
+** 変数・定数
+
+ Qnil
+
+   定数: nilオブジェクト
+
+ Qself
+
+   変数: 現在のselfオブジェクトの値．一般にメソッドにはselfを指す引数
+   が与えられるので, この変数にアクセスする必要はない．この変数の値を
+   変更する時は以後のselfの値そのものが変わってしまうので, 特別な事情
+   がない限り代入してはならない．
+
+ TRUE
+
+   定数: tオブジェクト(真のデフォルト値)
+
+ FALSE
+
+   定数: nilオブジェクト
+
+** Cデータのカプセル化
+
+ VALUE data_new(void *sval, void (*mark)(), void (*free)())
+
+   Cの任意のポインタをカプセル化したrubyオブジェクトを返す．このポイン
+   タがrubyからアクセスされなくなった時，freeで指定した関数が呼ばれる．
+   また，このポインタの指すデータが他のrubyオブジェクトを指している場
+   合，markに指定する関数でマークする必要がある．
+
+ Make_Data_Struct(obj, iv, type, mark, free, sval)
+
+   type型のメモリをmallocし，変数svalに代入した後，それをカプセル化し
+   たデータをobjのインスタンス変数ivに代入するマクロ．
+
+ Get_Data_Struct(obj, iv, type, sval)
+
+   objのインスタンス変数ivが指すデータからtype型のポインタを取り出し
+   変数svalに代入するマクロ．
+
+** クラス/モジュール定義
+
+ VALUE rb_define_class(char *name, VALUE super)
+
+   superのサブクラスとして新しいRubyクラスを定義する．
+
+ VALUE rb_define_module(char *name)
+
+   新しいRubyモジュールを定義する．
+
+ void rb_include_module(VALUE class, VALUE module)
+
+   モジュールをインクルードする．classがすでにmoduleをインクルードして
+   いる時には何もしない(多重インクルードの禁止)．
+
+ void rb_extend_object(VALUE object, VALUE module)
+
+   オブジェクトをモジュール(で定義されているメソッド)で拡張する．
+
+** 大域変数定義
+
+ void rb_define_variable(char *name, VALUE *var)
+
+   RubyとCとで共有するグローバル変数を定義する．変数名が`$'で始まらな
+   い時には自動的に追加される．nameとしてrubyの識別子として許されない
+   文字(例えば` ')を含む場合にはrubyプログラムからは見えなくなる．
+
+ void rb_define_readonly_variable(char *name, VALUE *var)
+
+   RubyとCとで共有するread onlyのグローバル変数を定義する．read onlyで
+   あること以外はrb_define_variable()と同じ．
+
+ void rb_define_virtual_variable(char *name,
+				VALUE (*getter)(), VALUE (*setter)())
+
+   関数によって実現されるRuby変数を定義する．変数が参照された時には
+   getterが，関数に値がセットされた時にはsetterが呼ばれる．
+
+ void rb_define_hooked_variable(char *name, VALUE *var,
+				VALUE (*getter)(), VALUE (*setter)())
+
+   関数によってhookのつけられたグローバル変数を定義する．変数が参照さ
+   れた時にはgetterが，関数に値がセットされた時にはsetterが呼ばれる．
+   getterやsetterに0を指定した時にはhookを指定しないのと同じ事になる．
+
+ void rb_global_variable(VALUE *var)
+
+   GCのため，Rubyプログラムからはアクセスされないが, Rubyオブジェクト
+   を含む大域変数をマークする．
+
+** クラス定数
+
+ void rb_define_const(VALUE class, char *name, VALUE val)
+
+   クラス定数を定義する．
+
+** メソッド定義
+
+ rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
+
+   メソッドを定義する．argcはselfを除く引数の数．argcが-1の時, 関数に
+   は引数の数(selfを含まない)を第1引数, 引数の配列を第2引数とする形式
+   で与えられる(第3引数はself)．argcが-2の時, 引数はself, args(argsは
+   引数を含むrubyの配列)という形式で与えられる．
+
+ rb_define_private_method(VALUE class, char *name, VALUE (*func)(), int argc)
+
+   privateメソッドを定義する．引数はrb_define_method()と同じ．
+
+ rb_define_singleton_method(VALUE class, char *name, VALUE (*func)(), int argc)
+
+   特異メソッドを定義する．引数はrb_define_method()と同じ．
+
+ rb_scan_args(int atgc, VALUE *argv, char *fmt, ...)
+
+   argc,argv形式で与えられた引数を分解する．fmtは必須引数の数, 付加引
+   数の数, 残りの引数があるかを指定する文字列で, "数字数字*"という形式
+   である． 2 番目の数字と"*"はそれぞれ省略可能である．必須引数が一つ
+   もない場合は0を指定する．第3引数以降は変数へのポインタで, 該当する
+   要素がその変数に格納される．付加引数に対応する引数が与えられていな
+   い場合は変数にQnilが代入される．
+
+** Rubyメソッド呼び出し
+
+ VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
+
+   メソッド呼び出し．文字列からmidを得るためにはrb_intern()を使う．
+
+ VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
+
+   メソッド呼び出し．引数をargc,argv形式で渡す．
+
+ VALUE rb_eval_string(char *str)
+
+   文字列をrubyとスクリプトしてコンパイル・実行する．
+
+ ID rb_intern(char *name)
+
+   文字列に対応するIDを返す．
+
+ char *rb_id2name(ID id)
+
+   IDに対応する文字列を返す(デバッグ用)．
+
+ char *rb_class2name(VALUE class)
+
+   classの名前を返す(デバッグ用)．classが名前を持たない時には, 一番近
+   い名前を持つクラスの名前を返す．
+
+** インスタンス変数
+
+ VALUE rb_iv_get(VALUE obj, char *name)
+
+   objのインスタンス変数の値を得る．`@'で始まらないインスタンス変数は 
+   Rubyプログラムからアクセスできない「隠れた」インスタンス変数になる．
+
+ VALUE rb_iv_set(VALUE obj, char *name, VALUE val)
+
+   objのインスタンス変数をvalにセットする．
+
+** 制御構造
+
+ VALUE rb_iterate(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+
+   func2をブロックとして設定し, func1をイテレータとして呼ぶ． func1に
+   は arg1が引数として渡され, func2には第1引数にイテレータから与えられ
+   た値, 第2引数にarg2が渡される．
+ 
+ VALUE rb_yield(VALUE val)
+
+   valを値としてイテレータブロックを呼び出す．
+
+ VALUE rb_rescue(VALUE (*func1)(), void *arg1, VALUE (*func2)(), void *arg2)
+
+   関数func1をarg1を引数に呼び出す．func1の実行中に例外が発生した時に
+   は func2をarg2を引数として呼ぶ．戻り値は例外が発生しなかった時は
+   func1の戻り値, 例外が発生した時にはfunc2の戻り値である．
+
+ VALUE rb_ensure(VALUE (*func1)(), void *arg1, void (*func2)(), void *arg2)
+
+   関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が発生して
+   も) func2をarg2を引数として実行する．戻り値はfunc1の戻り値である(例
+   外が発生した時は戻らない)．
+
+** 例外・エラー
+
+ void Warning(char *fmt, ...)
+
+   verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
+
+ void Fail(char *fmt, ...)
+
+   例外を発生させる．引数はprintf()と同じ．
+
+ void Fatal(char *fmt, ...)
+
+   致命的例外を発生させる．通常の例外処理は行なわれず, インタープリタ
+   が終了する(ただしensureで指定されたコードは終了前に実行される)．
+
+ void Bug(char *fmt, ...)
+
+   インタープリタなどプログラムのバグでしか発生するはずのない状況の時
+   呼ぶ．インタープリタはコアダンプし直ちに終了する．例外処理は一切行
+   なわれない．
+
+** rubyの初期化・実行
+
+Rubyをアプリケーションに埋め込む場合には以下のインタフェースを使う．通
+常の拡張モジュールには必要ない．
+
+ void ruby_init(int argc, char **argv, char **envp)
+
+  rubyインタプリタの初期化を行なう．
+
+ void ruby_run()
+
+  rubyインタプリタを実行する．
+
+ void ruby_script(char *name)
+
+  rubyのスクリプト名($0)を設定する．
+
+* extconf.rbの記述
+
+拡張モジュールのディレクトリに`extconf.rb'というファイルが存在する時に
+は，それが実行され，モジュールのコンパイルに必要な条件のチェックなどを
+行う事が出来る．extconf.rbの中では以下の関数を使う事ができる．
+
+ have_library(lib, func)
+
+   関数funcを定義しているライブラリlibの存在をチェックする．ライブラリ
+   が存在する時，TRUEを返す．
+
+ have_func(func)
+
+   関数funcの存在をチェックする．funcが標準ではリンクされないライブラ
+   リ内のものである時には先にhave_libraryでそのライブラリをチェックし
+   ておく事．関数が存在する時，TRUEを返す．
+
+ have_header(header)
+
+   ヘッダファイルの存在をチェックする．ヘッダファイルが存在する時TRUE
+   を返す．
+
+ create_makefile(target)
+
+   拡張モジュール用のMakefileを生成する．この関数を呼ばなければそのモ
+   ジュールはコンパイルされない．
+
+/*
+ * Local variables:
+ * fill-column: 70
+ * end:
+ */

@@ -23,7 +23,6 @@ struct st_table {
     int num_entries;
     int max_density;
     int reorder_flag;
-    double grow_factor;
     st_table_entry **bins;
 };
 
@@ -49,7 +48,6 @@ st_table *st_copy();
 
 #define ST_DEFAULT_MAX_DENSITY 5
 #define ST_DEFAULT_INIT_TABLE_SIZE 11
-#define ST_DEFAULT_GROW_FACTOR 2.0
 #define ST_DEFAULT_REORDER_FLAG 0
 
 int st_strhash();

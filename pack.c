@@ -39,7 +39,7 @@
 #define vtohl(x) (x)
 #endif
 
-extern VALUE C_String, C_Array;
+extern VALUE cString, cArray;
 double atof();
 
 static char *toofew = "too few arguments";
@@ -48,7 +48,7 @@ int strtoul();
 static void encodes();
 
 static VALUE
-Fpck_pack(ary, fmt)
+pack_pack(ary, fmt)
     struct RArray *ary;
     struct RString *fmt;
 {
@@ -70,7 +70,7 @@ Fpck_pack(ary, fmt)
     items = ary->len;
     idx = 0;
 
-#define NEXTFROM (items-- > 0 ? ary->ptr[idx++] : Fail(toofew))
+#define NEXTFROM (items-- > 0 ? ary->ptr[idx++] : (Fail(toofew),0))
 
     while (p < pend) {
 	type = *p++;		/* get data type */
@@ -92,7 +92,7 @@ Fpck_pack(ary, fmt)
 	  case 'H': case 'h':
 	    from = NEXTFROM;
 	    if (from == Qnil) {
-		ptr = Qnil;
+		ptr = 0;
 		plen = 0;
 	    }
 	    else {
@@ -110,7 +110,7 @@ Fpck_pack(ary, fmt)
 		    str_cat(res, ptr, len);
 		else {
 		    str_cat(res, ptr, plen);
-		    len == plen;
+		    len = plen;
 		    while (len >= 10) {
 			str_cat(res, nul10, 10);
 			len -= 10;
@@ -124,7 +124,7 @@ Fpck_pack(ary, fmt)
 		    str_cat(res, ptr, len);
 		else {
 		    str_cat(res, ptr, plen);
-		    len == plen;
+		    len = plen;
 		    while (len >= 10) {
 			str_cat(res, spc10, 10);
 			len -= 10;
@@ -479,7 +479,7 @@ encodes(str, s, len)
 }
 
 static VALUE
-Fpck_unpack(str, fmt)
+pack_unpack(str, fmt)
     struct RString *str, *fmt;
 {
     static char *hexdigits = "0123456789abcdef0123456789ABCDEFx";
@@ -498,7 +498,6 @@ Fpck_unpack(str, fmt)
 
     ary = ary_new();
     while (p < pend) {
-      retry:
 	type = *p++;
 	if (*p == '*') {
 	    len = send - s;
@@ -840,8 +839,9 @@ Fpck_unpack(str, fmt)
     return ary;
 }
 
+void
 Init_pack()
 {
-    rb_define_method(C_Array, "pack", Fpck_pack, 1);
-    rb_define_method(C_String, "unpack", Fpck_unpack, 1);
+    rb_define_method(cArray, "pack", pack_pack, 1);
+    rb_define_method(cString, "unpack", pack_unpack, 1);
 }

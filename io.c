@@ -14,15 +14,27 @@
 #include "io.h"
 #include <ctype.h>
 #include <errno.h>
-#include <sys/time.h>
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#else
+struct timeval {
+        long    tv_sec;         /* seconds */
+        long    tv_usec;        /* and microseconds */
+};
+#endif
+#ifdef HAVE_VFORK_H
+#include <vfork.h>
+#endif
+
 VALUE rb_ad_string();
 
-VALUE C_IO;
-extern VALUE C_File;
+VALUE cIO;
+extern VALUE cFile;
 
 VALUE rb_stdin, rb_stdout, rb_stderr, rb_defout;
 
@@ -46,9 +58,6 @@ io_write(obj, str)
     VALUE out;
     int n;
 
-    if (TYPE(str) != T_STRING)
-	str = (struct RString*)obj_as_string(str);
-
     GetOpenFile(obj, fptr);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	Fail("not opened for writing");
@@ -57,6 +66,8 @@ io_write(obj, str)
     f = (fptr->f2) ? fptr->f2 : fptr->f;
     if (f == NULL) Fail("closed stream");
 
+    if (TYPE(str) != T_STRING)
+	str = (struct RString*)obj_as_string(str);
     if (str->len == 0) return INT2FIX(0);
 
     n = fwrite(str->ptr, sizeof(char), str->len, f);
@@ -71,7 +82,7 @@ io_write(obj, str)
 }
 
 static VALUE
-Fio_puts(obj, str)
+io_puts(obj, str)
     VALUE obj, str;
 {
     io_write(obj, str);
@@ -79,7 +90,7 @@ Fio_puts(obj, str)
 }
 
 static VALUE
-Fio_flush(obj)
+io_flush(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -98,7 +109,7 @@ Fio_flush(obj)
 }
 
 static VALUE
-Fio_eof(obj)
+io_eof(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -126,7 +137,7 @@ Fio_eof(obj)
 }
 
 static VALUE
-Fio_sync(obj)
+io_sync(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -136,7 +147,7 @@ Fio_sync(obj)
 }
 
 static VALUE
-Fio_set_sync(obj, mode)
+io_set_sync(obj, mode)
     VALUE obj, mode;
 {
     OpenFile *fptr;
@@ -152,7 +163,7 @@ Fio_set_sync(obj, mode)
 }
 
 static VALUE
-Fio_fileno(obj)
+io_fileno(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -194,7 +205,7 @@ read_all(port)
 }
 
 static VALUE
-Fio_read(argc, argv, obj)
+io_read(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -234,7 +245,7 @@ VALUE rb_lastline;
 static VALUE lineno;
 
 static VALUE
-Fio_gets(obj)
+io_gets(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -264,7 +275,7 @@ Fio_gets(obj)
 	rslen = 1;
     }
 
-    if (rslen == 0 && c == '\n') {
+    if (rslen == 0) {
 	do {
 	    TRAP_BEG;
 	    c = getc(f);
@@ -279,7 +290,6 @@ Fio_gets(obj)
     {
 	char buf[8192];
 	char *bp, *bpe = buf + sizeof buf - 3;
-	char *ptr;
 	int append = 0;
 
       again:
@@ -323,7 +333,7 @@ Fio_gets(obj)
     }
 
   return_gets:
-    if (rslen == 0 && c == '\n') {
+    if (rslen == 0) {
 	while (c != EOF) {
 	    TRAP_BEG;
 	    c = getc(f);
@@ -343,19 +353,19 @@ Fio_gets(obj)
 }
 
 static VALUE
-Fio_each(obj)
+io_each_line(obj)
     VALUE obj;
 {
     VALUE str;
 
-    while (str = Fio_gets(obj)) {
+    while (str = io_gets(obj)) {
 	rb_yield(str);
     }
     return Qnil;
 }
 
 static VALUE
-Fio_each_byte(obj)
+io_each_byte(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -381,7 +391,7 @@ Fio_each_byte(obj)
 }
 
 static VALUE
-Fio_getc(obj)
+io_getc(obj)
     VALUE obj;
 {
     OpenFile *fptr;
@@ -407,43 +417,78 @@ Fio_getc(obj)
 }
 
 static VALUE
-Fio_isatty(obj)
+io_isatty(obj)
     VALUE obj;
 {
     OpenFile *fptr;
 
+#ifndef NT
     GetOpenFile(obj, fptr);
     if (fptr->f == NULL) Fail("closed stream");
     if (isatty(fileno(fptr->f)) == 0)
 	return FALSE;
-
+#endif
     return TRUE;
 }
 
-static VALUE
-Fio_close(obj)
+static void
+fptr_finalize(fptr)
+    OpenFile *fptr;
+{
+    if (fptr->f != NULL) {
+	fclose(fptr->f);
+    }
+    if (fptr->f2 != NULL) {
+	fclose(fptr->f2);
+    }
+    if (fptr->path) {
+	free(fptr->path);
+	fptr->path = NULL;
+    }
+    if (fptr->pid) {
+	rb_syswait(fptr->pid);
+	fptr->pid = 0;
+    }
+}
+
+void
+io_fptr_finalize(fptr)
+    OpenFile *fptr;
+{
+    if (fptr->finalize) {
+	(*fptr->finalize)(fptr);
+	fptr->finalize = 0;
+    }
+    else {
+	fptr_finalize(fptr);
+    }
+    fptr->f = fptr->f2 = NULL;
+}
+
+VALUE
+io_close(obj)
     VALUE obj;
 {
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
+    io_fptr_finalize(fptr);
 
-    if (fptr->f2 != NULL) {
-	fclose(fptr->f2);
-    }
-    if (fptr->f != NULL) {
-	fclose(fptr->f);
-    }
-    fptr->f = fptr->f2 = NULL;
-    if (fptr->pid) {
-	rb_syswait(fptr->pid);
-	fptr->pid = 0;
-    }
     return Qnil;
 }
 
 static VALUE
-Fio_syswrite(obj, str)
+io_closed(obj)
+    VALUE obj;
+{
+    OpenFile *fptr;
+
+    GetOpenFile(obj, fptr);
+    return fptr->f?FALSE:TRUE;
+}
+
+static VALUE
+io_syswrite(obj, str)
     VALUE obj, str;
 {
     OpenFile *fptr;
@@ -468,7 +513,7 @@ Fio_syswrite(obj, str)
 }
 
 static VALUE
-Fio_sysread(obj, len)
+io_sysread(obj, len)
     VALUE obj, len;
 {
     OpenFile *fptr;
@@ -496,29 +541,11 @@ Fio_sysread(obj, len)
     return str;
 }
 
-void
-io_free_OpenFile(fptr)
-    OpenFile *fptr;
-{
-    if (fptr->f != NULL) {
-	fclose(fptr->f);
-    }
-    if (fptr->f2 != NULL) {
-	fclose(fptr->f2);
-    }
-    if (fptr->path) {
-	free(fptr->path);
-    }
-    if (fptr->pid) {
-	rb_syswait(fptr->pid);
-    }
-}
-
 static VALUE
-Fio_binmode(obj)
+io_binmode(obj)
     VALUE obj;
 {
-#ifdef MSDOS
+#ifdef NT
     OpenFile *fptr;
 
     GetOpenFile(obj, fptr);
@@ -530,6 +557,7 @@ Fio_binmode(obj)
 
 VALUE obj_alloc();
 
+int
 io_mode_flags(mode)
     char *mode;
 {
@@ -564,8 +592,7 @@ rb_fdopen(fd, mode)
 
     f = fdopen(fd, mode);
     if (f == NULL) {
-	if (errno = EMFILE) {
-	    gc();
+	if (errno == EMFILE) {
 	    f = fdopen(fd, mode);
 	}
 	if (f == NULL) {
@@ -575,22 +602,45 @@ rb_fdopen(fd, mode)
     return f;
 }
 
+#ifdef NT
+static void
+pipe_finalize(fptr)
+    OpenFile *fptr;
+{
+    if (fptr->f != NULL) {
+	pclose(fptr->f);
+    }
+    fptr->f = fptr->f2 = NULL;
+}
+#endif
+
 static VALUE
 pipe_open(pname, mode)
     char *pname, *mode;
 {
+    int modef = io_mode_flags(mode);
     VALUE port;
     OpenFile *fptr;
 
-    int pid, pr[2], pw[2];
-    int doexec;
+#ifdef NT
+    FILE *f = popen(pname, mode);
 
-    port = obj_alloc(C_IO);
+    if (f == NULL) rb_sys_fail(pname);
+
+    port = obj_alloc(cIO);
     MakeOpenFile(port, fptr);
-    fptr->mode = io_mode_flags(mode);
+    fptr->finalize = pipe_finalize;
 
-    if (((fptr->mode & FMODE_READABLE) && pipe(pr) == -1) ||
-	((fptr->mode & FMODE_WRITABLE) && pipe(pw) == -1))
+    if (modef & FMODE_READABLE) fptr->f  = f;
+    if (modef & FMODE_WRITABLE) fptr->f2 = f;
+    fptr->mode = modef | FMODE_SYNC;
+    return port;
+#else
+    int pid, pr[2], pw[2];
+    volatile int doexec;
+
+    if (((modef & FMODE_READABLE) && pipe(pr) == -1) ||
+	((modef & FMODE_WRITABLE) && pipe(pw) == -1))
 	rb_sys_fail(Qnil);
 
     doexec = (strcmp("-", pname) != 0);
@@ -603,18 +653,26 @@ pipe_open(pname, mode)
   retry:
     switch (pid = (doexec?vfork():fork())) {
       case 0:			/* child */
-	if (fptr->mode & FMODE_READABLE) {
+	if (modef & FMODE_READABLE) {
 	    close(pr[0]);
 	    dup2(pr[1], 1);
 	    close(pr[1]);
 	}
-	if (fptr->mode & FMODE_WRITABLE) {
+	if (modef & FMODE_WRITABLE) {
 	    close(pw[1]);
 	    dup2(pw[0], 0);
 	    close(pw[0]);
 	}
 
 	if (doexec) {
+	    VALUE fd = io_fileno(rb_stderr);
+	    int f = FIX2INT(fd);
+
+	    if (f != 2) {
+		close(2);
+		dup2(f, 2);
+		close(f);
+	    }
 	    rb_proc_exec(pname);
 	    _exit(127);
 	}
@@ -622,25 +680,28 @@ pipe_open(pname, mode)
 
       case -1:			/* fork failed */
 	if (errno == EAGAIN) {
-	    sleep(5);
+	    sleep(1);
 	    goto retry;
 	}
+	close(pr[0]); close(pw[1]);
+	rb_sys_fail(pname);
 	break;
 
       default:			/* parent */
-	if (fptr->mode & FMODE_READABLE) close(pr[1]);
-	if (fptr->mode & FMODE_WRITABLE) close(pw[0]);
-    }
-    if (pid == -1) {
-	close(pr[0]); close(pw[1]);
-	rb_sys_fail(Qnil);
+	port = obj_alloc(cIO);
+	MakeOpenFile(port, fptr);
+	if (modef & FMODE_READABLE) close(pr[1]);
+	if (modef & FMODE_WRITABLE) close(pw[0]);
+	fptr->mode = modef;
+	fptr->mode |= FMODE_SYNC;
     }
 
     fptr->pid = pid;
-    if (fptr->mode & FMODE_READABLE) fptr->f  = rb_fdopen(pr[0], "r");
-    if (fptr->mode & FMODE_WRITABLE) fptr->f2 = rb_fdopen(pw[1], "w");
+    if (modef & FMODE_READABLE) fptr->f  = rb_fdopen(pr[0], "r");
+    if (modef & FMODE_WRITABLE) fptr->f2 = rb_fdopen(pw[1], "w");
 
     return port;
+#endif
 }
 
 static VALUE
@@ -658,7 +719,7 @@ io_open(fname, mode)
 }
 
 static VALUE
-Fopen(argc, argv, self)
+f_open(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
@@ -683,7 +744,18 @@ Fopen(argc, argv, self)
 }
 
 static VALUE
-Fprintf(argc, argv)
+io_printf(argc, argv, out)
+    int argc;
+    VALUE argv[];
+    VALUE out;
+{
+    rb_funcall(out, id_write, 1, f_sprintf(argc, argv));
+
+    return Qnil;
+}
+
+static VALUE
+f_printf(argc, argv)
     int argc;
     VALUE argv[];
 {
@@ -693,7 +765,7 @@ Fprintf(argc, argv)
     if (TYPE(argv[0]) == T_STRING) {
 	out = rb_defout;
     }
-    else if (obj_responds_to(argv[0], INT2FIX(id_write))) {
+    else if (rb_responds_to(argv[0], id_write)) {
 	out = argv[0];
 	argv++;
 	argc--;
@@ -701,63 +773,78 @@ Fprintf(argc, argv)
     else {
 	Fail("output must responds to `write'");
     }
-    rb_funcall(out, id_write, 1, Fsprintf(argc, argv));
+    rb_funcall(out, id_write, 1, f_sprintf(argc, argv));
 
     return Qnil;
 }
 
 static VALUE
-Fprint(argc, argv, self)
+io_print(argc, argv, out)
     int argc;
     VALUE *argv;
-    VALUE self;
+    VALUE out;
 {
     int i;
+    VALUE line;
 
-    /* if no argument given, print recv */
+    /* if no argument given, print `$_' */
     if (argc == 0) {
-	rb_funcall(self, id_print_on, 1, rb_defout);
+	argc = 1;
+	if (rb_lastline)
+	    argv = &rb_lastline;
+	else {
+	    line = str_new(0,0);
+	    argv = &line;
+	}
     }
-    else {
-	for (i=0; i<argc; i++) {
-	    if (OFS && i>0) {
-		io_write(rb_defout, OFS);
-	    }
-	    switch (TYPE(argv[i])) {
-	      case T_STRING:
-		io_write(rb_defout, argv[i]);
-		break;
-	      case T_ARRAY:
-		Fary_print_on(argv[i], rb_defout);
-		break;
-	      default:
-		rb_funcall(argv[i], id_print_on, 1, rb_defout);
-		break;
-	    }
+    for (i=0; i<argc; i++) {
+	if (OFS && i>0) {
+	    io_write(out, OFS);
+	}
+	switch (TYPE(argv[i])) {
+	  case T_STRING:
+	    io_write(out, argv[i]);
+	    break;
+	  case T_ARRAY:
+	    ary_print_on(argv[i], out);
+	    break;
+	  default:
+	    rb_funcall(argv[i], id_print_on, 1, out);
+	    break;
 	}
     }
     if (ORS) {
-	io_write(rb_defout, ORS);
+	io_write(out, ORS);
     }
 
     return Qnil;
 }
 
 static VALUE
-io_defset(obj, val)
-    VALUE obj, val;
+f_print(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    io_print(argc, argv, rb_defout);
+    return Qnil;
+}
+
+static VALUE
+io_defset(val, id)
+    VALUE val;
+    ID id;
 {
     if (TYPE(val) == T_STRING) {
 	val = io_open(RSTRING(val)->ptr, "w");
     }
-    if (!obj_is_kind_of(val, C_IO)) {
+    if (!obj_is_kind_of(val, cIO)) {
 	Fail("$< must be a file, %s given", rb_class2name(CLASS_OF(val)));
     }
     return rb_defout = val;
 }
 
 static VALUE
-Fprint_on(obj, port)
+f_print_on(obj, port)
     VALUE obj, port;
 {
     return io_write(port, obj);
@@ -768,7 +855,7 @@ prep_stdio(f, mode)
     FILE *f;
     int mode;
 {
-    VALUE obj = obj_alloc(C_IO);
+    VALUE obj = obj_alloc(cIO);
     OpenFile *fp;
 
     MakeOpenFile(obj, fp);
@@ -815,18 +902,23 @@ next_argv()
 	    else {
 		FILE *fr = fopen(fn, "r");
 
+		if (!fr) rb_sys_fail(fn);
 		if (inplace) {
 		    struct stat st, st2;
 		    VALUE str;
 		    FILE *fw;
 
 		    if (rb_defout != rb_stdout) {
-			Fio_close(rb_defout);
+			io_close(rb_defout);
 		    }
 		    fstat(fileno(fr), &st);
 		    if (*inplace) {
 			str = str_new2(fn);
+#ifdef NT
+			add_suffix(str, inplace);
+#else
 			str_cat(str, inplace, strlen(inplace));
+#endif
 			if (rename(fn, RSTRING(str)->ptr) < 0) {
 			    Warning("Can't rename %s to %s: %s, skipping file",
 				    fn, RSTRING(str)->ptr, strerror(errno));
@@ -860,15 +952,15 @@ next_argv()
 }
 
 static VALUE
-Fgets()
+f_gets()
 {
     VALUE line;
 
   retry:
     if (!next_argv()) return Qnil;
-    line = Fio_gets(file);
+    line = io_gets(file);
     if (line == Qnil && next_p != -1) {
-	Fio_close(file);
+	io_close(file);
 	next_p = 1;
 	goto retry;
     }
@@ -880,11 +972,11 @@ Fgets()
 }
 
 static VALUE
-Feof()
+f_eof()
 {
     if (init_p == 0 && !next_argv())
 	return TRUE;
-    if (Fio_eof(file)) {
+    if (io_eof(file)) {
 	next_p = 1;
 	return TRUE;
     }
@@ -892,19 +984,19 @@ Feof()
 }
 
 static VALUE
-Fgetc()
+f_getc()
 {
-    return Fio_getc(rb_stdin);
+    return io_getc(rb_stdin);
 }
 
 static VALUE
-Freadlines(obj)
+f_readlines(obj)
     VALUE obj;
 {
     VALUE line, ary;
 
     ary = ary_new();
-    while (line = Fgets(obj)) {
+    while (line = f_gets(obj)) {
 	ary_push(ary, line);
     }
 
@@ -912,15 +1004,15 @@ Freadlines(obj)
 }
 
 VALUE
-rb_check_str(val, id)
+rb_str_setter(val, id, var)
     VALUE val;
     ID id;
+    VALUE *var;
 {
-    if (val == Qnil) return TRUE;
-    if (TYPE(val) != T_STRING) {
+    if (val && TYPE(val) != T_STRING) {
 	Fail("value of %s must be String", rb_id2name(id));
     }
-    return TRUE;
+    return *var = val;
 }
 
 VALUE
@@ -929,15 +1021,12 @@ rb_xstring(str)
 {
     VALUE port, result;
     OpenFile *fptr;
-    int mask;
 
     Check_Type(str, T_STRING);
     port = pipe_open(str->ptr, "r");
     result = read_all(port);
 
-    GetOpenFile(port, fptr);
-    rb_syswait(fptr->pid);
-    fptr->pid = 0;
+    io_close(port);
 
     return result;
 }
@@ -945,25 +1034,22 @@ rb_xstring(str)
 struct timeval *time_timeval();
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
-#  ifdef _other_gbase
+#  ifdef _IO_fpos_t
 #    define READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr < (fp)->_IO_read_end)
 #  else
 #    define READ_DATA_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
 #  endif
 #else
-#  if __SLBF
-#    define READ_DATA_PENDING(fp) (fp->_r > 0)
+#  ifdef FILE_COUNT
+#    define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
 #  else
-#    if STDSTDIO
-#      define READ_DATA_PENDING(fp) (fp->_cnt != 0)
-#    else
---------------> You Lose <--------------
-#    endif
+extern int ReadDataPending();
+#    define READ_DATA_PENDING(fp) ReadDataPending(fp)
 #  endif
 #endif
 
 static VALUE
-Fselect(argc, argv, obj)
+f_select(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -971,7 +1057,7 @@ Fselect(argc, argv, obj)
     VALUE read, write, except, timeout, res, list;
     fd_set rset, wset, eset, pset;
     fd_set *rp, *wp, *ep;
-    struct timeval time, *tp, timerec;
+    struct timeval *tp, timerec;
     OpenFile *fptr;
     int i, max = 0, n;
     int interrupt = 0;
@@ -1049,21 +1135,17 @@ Fselect(argc, argv, obj)
     n = select(max, rp, wp, ep, tp);
     TRAP_END;
     if (n < 0) {
-	if (errno == EINTR) {
-	    if (tp == NULL) goto retry;
-	    interrupt = 1;
+	if (errno != EINTR) {
+	    rb_sys_fail(Qnil);
 	}
-	rb_sys_fail(Qnil);
+	if (tp == NULL) goto retry;
+	interrupt = 1;
     }
-    if (n == 0) return Qnil;
 
     res = ary_new2(3);
-    RARRAY(res)->ptr[0] = rp?ary_new():Qnil;
-    RARRAY(res)->len++;
-    RARRAY(res)->ptr[1] = wp?ary_new():Qnil;
-    RARRAY(res)->len++;
-    RARRAY(res)->ptr[2] = ep?ary_new():Qnil;
-    RARRAY(res)->len++;
+    ary_push(res, rp?ary_new():ary_new2(0));
+    ary_push(res, wp?ary_new():ary_new2(0));
+    ary_push(res, ep?ary_new():ary_new2(0));
 
     if (interrupt == 0) {
 
@@ -1139,16 +1221,23 @@ io_ctl(obj, req, arg, io_p)
     }
     arg->ptr[len] = 17;
     fd = fileno(fptr->f);
+#ifdef HAVE_FCNTL
     if ((io_p?ioctl(fd, cmd, arg->ptr):fcntl(fd, cmd, arg->ptr))<0) {
 	rb_sys_fail(fptr->path);
     }
+#else
+    if (!io_p) {
+	Bug("fcntl() not implemented");
+    }
+    if (ioctl(fd, cmd, arg->ptr)<0) rb_sys_fail(fptr->path);
+#endif
     if (arg->ptr[len] != 17) {
 	Fail("Return value overflowed string");
     }
 }
 
 static VALUE
-Fio_ioctl(obj, req, arg)
+io_ioctl(obj, req, arg)
     VALUE obj, req;
     struct RString *arg;
 {
@@ -1157,7 +1246,7 @@ Fio_ioctl(obj, req, arg)
 }
 
 static VALUE
-Fsyscall(argc, argv)
+f_syscall(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -1251,7 +1340,7 @@ Fsyscall(argc, argv)
 }
 
 static VALUE
-Farg_read(obj)
+arg_read(obj)
     VALUE obj;
 {
     VALUE str, str2;
@@ -1260,9 +1349,9 @@ Farg_read(obj)
     for (;;) {
       retry:
 	if (!next_argv()) return Qnil;
-	str2 = Fio_read(0, Qnil, file);
+	str2 = io_read(0, Qnil, file);
 	if (str2 == Qnil && next_p != -1) {
-	    Fio_close(file);
+	    io_close(file);
 	    next_p = 1;
 	    goto retry;
 	}
@@ -1274,15 +1363,15 @@ Farg_read(obj)
 }
 
 static VALUE
-Farg_getc()
+arg_getc()
 {
     VALUE byte;
 
   retry:
     if (!next_argv()) return Qnil;
-    byte = Fio_getc(file);
+    byte = io_getc(file);
     if (byte == Qnil && next_p != -1) {
-	Fio_close(file);
+	io_close(file);
 	next_p = 1;
 	goto retry;
     }
@@ -1291,144 +1380,151 @@ Farg_getc()
 }
 
 static VALUE
-Farg_each()
+arg_each_line()
 {
     VALUE str;
 
-    while (str = Fgets()) {
+    while (str = f_gets()) {
 	rb_yield(str);
     }
     return Qnil;
 }
 
 static VALUE
-Farg_each_byte()
+arg_each_byte()
 {
     VALUE byte;
 
-    while (byte = Farg_getc()) {
+    while (byte = arg_getc()) {
 	rb_yield(byte);
     }
     return Qnil;
 }
 
 static VALUE
-Farg_filename()
+arg_filename()
 {
     return filename;
 }
 
 static VALUE
-Farg_file()
+arg_file()
 {
     return file;
 }
 
-extern VALUE M_Enumerable;
-VALUE rb_readonly_hook();
+extern VALUE mEnumerable;
 
+void
 Init_IO()
 {
-    extern VALUE C_Kernel;
+    extern VALUE cKernel;
 
     id_write = rb_intern("write");
     id_fd = rb_intern("fd");
     id_print_on = rb_intern("print_on");
 
-    rb_define_private_method(C_Kernel, "syscall", Fsyscall, -1);
+    rb_define_private_method(cKernel, "syscall", f_syscall, -1);
 
-    rb_define_private_method(C_Kernel, "open", Fopen, -1);
-    rb_define_private_method(C_Kernel, "printf", Fprintf, -1);
-    rb_define_private_method(C_Kernel, "gets", Fgets, 0);
-    rb_define_alias(C_Kernel,"readline", "gets");
-    rb_define_private_method(C_Kernel, "eof", Feof, 0);
-    rb_define_private_method(C_Kernel, "getc", Fgetc, 0);
-    rb_define_private_method(C_Kernel, "select", Fselect, -1);
+    rb_define_private_method(cKernel, "open", f_open, -1);
+    rb_define_private_method(cKernel, "printf", f_printf, -1);
+    rb_define_private_method(cKernel, "print", f_print, -1);
+    rb_define_private_method(cKernel, "gets", f_gets, 0);
+    rb_define_alias(cKernel,"readline", "gets");
+    rb_define_private_method(cKernel, "eof", f_eof, 0);
+    rb_define_private_method(cKernel, "getc", f_getc, 0);
+    rb_define_private_method(cKernel, "select", f_select, -1);
 
-    rb_define_private_method(C_Kernel, "readlines", Freadlines, 0);
+    rb_define_private_method(cKernel, "readlines", f_readlines, 0);
 
-    rb_define_method(C_Kernel, "print_on", Fprint_on, 1);
-    rb_define_method(C_Kernel, "print", Fprint, -1);
+    rb_define_method(cKernel, "print_on", f_print_on, 1);
 
-    C_IO = rb_define_class("IO", C_Object);
-    rb_include_module(C_IO, M_Enumerable);
+    cIO = rb_define_class("IO", cObject);
+    rb_include_module(cIO, mEnumerable);
 
-    rb_define_variable("$;", &FS,  Qnil, rb_check_str, 0);
-    rb_define_variable("$,", &OFS, Qnil, rb_check_str, 0);
+    rb_define_hooked_variable("$;", &FS, 0, rb_str_setter);
+    rb_define_hooked_variable("$,", &OFS, 0, rb_str_setter);
 
     RS = str_new2("\n");
-    rb_define_variable("$/",  &RS, Qnil, rb_check_str, 0);
-    rb_define_variable("$\\", &ORS, Qnil, rb_check_str, 0);
+    rb_define_hooked_variable("$/", &RS, 0, rb_str_setter);
+    rb_define_hooked_variable("$\\", &ORS, 0, rb_str_setter);
 
-    rb_define_variable("$.", &lineno, Qnil, Qnil, 0);
-    rb_define_variable("$_", &rb_lastline, Qnil, Qnil, 0);
+    rb_define_variable("$.", &lineno);
+    rb_define_variable("$_", &rb_lastline);
 
-    rb_define_method(C_IO, "each",  Fio_each, 0);
-    rb_define_method(C_IO, "each_byte",  Fio_each_byte, 0);
+    rb_define_method(cIO, "print", io_print, -1);
 
-    rb_define_method(C_IO, "syswrite", Fio_syswrite, 1);
-    rb_define_method(C_IO, "sysread",  Fio_sysread, 1);
+    rb_define_method(cIO, "each",  io_each_line, 0);
+    rb_define_method(cIO, "each_line",  io_each_line, 0);
+    rb_define_method(cIO, "each_byte",  io_each_byte, 0);
 
-    rb_define_method(C_IO, "fileno", Fio_fileno, 0);
-    rb_define_alias(C_IO, "to_i", "fileno");
+    rb_define_method(cIO, "syswrite", io_syswrite, 1);
+    rb_define_method(cIO, "sysread",  io_sysread, 1);
 
-    rb_define_method(C_IO, "sync",   Fio_sync, 0);
-    rb_define_method(C_IO, "sync=",  Fio_set_sync, 1);
+    rb_define_method(cIO, "fileno", io_fileno, 0);
+    rb_define_alias(cIO, "to_i", "fileno");
 
-    rb_define_alias(C_IO, "readlines", "to_a");
+    rb_define_method(cIO, "sync",   io_sync, 0);
+    rb_define_method(cIO, "sync=",  io_set_sync, 1);
 
-    rb_define_method(C_IO, "read",  Fio_read, -2);
-    rb_define_method(C_IO, "write", io_write, 1);
-    rb_define_method(C_IO, "gets",  Fio_gets, 0);
-    rb_define_alias(C_IO,  "readline", "gets");
-    rb_define_method(C_IO, "getc",  Fio_getc, 0);
-    rb_define_method(C_IO, "puts",  Fio_puts, 1);
-    rb_define_method(C_IO, "<<",    Fio_puts, 1);
-    rb_define_method(C_IO, "flush", Fio_flush, 0);
-    rb_define_method(C_IO, "eof", Fio_eof, 0);
+    rb_define_alias(cIO, "readlines", "to_a");
 
-    rb_define_method(C_IO, "close", Fio_close, 0);
+    rb_define_method(cIO, "read",  io_read, -2);
+    rb_define_method(cIO, "write", io_write, 1);
+    rb_define_method(cIO, "gets",  io_gets, 0);
+    rb_define_alias(cIO,  "readline", "gets");
+    rb_define_method(cIO, "getc",  io_getc, 0);
+    rb_define_method(cIO, "puts",  io_puts, 1);
+    rb_define_method(cIO, "<<",    io_puts, 1);
+    rb_define_method(cIO, "flush", io_flush, 0);
+    rb_define_method(cIO, "eof", io_eof, 0);
 
-    rb_define_method(C_IO, "isatty", Fio_isatty, 0);
-    rb_define_method(C_IO, "binmode",  Fio_binmode, 0);
+    rb_define_method(cIO, "close", io_close, 0);
+    rb_define_method(cIO, "closed?", io_closed, 0);
 
-    rb_define_method(C_IO, "ioctl", Fio_ioctl, 2);
+    rb_define_method(cIO, "isatty", io_isatty, 0);
+    rb_define_method(cIO, "tty?", io_isatty, 0);
+    rb_define_method(cIO, "binmode",  io_binmode, 0);
+
+    rb_define_method(cIO, "ioctl", io_ioctl, 2);
 
     rb_stdin = prep_stdio(stdin, FMODE_READABLE);
-    rb_define_variable("$stdin",  &rb_stdin, Qnil, rb_readonly_hook, 0);
+    rb_define_readonly_variable("$stdin", &rb_stdin);
     rb_stdout = prep_stdio(stdout, FMODE_WRITABLE);
-    rb_define_variable("$stdout", &rb_stdout, Qnil, rb_readonly_hook, 0);
+    rb_define_readonly_variable("$stdout", &rb_stdout);
     rb_stderr = prep_stdio(stderr, FMODE_WRITABLE);
-    rb_define_variable("$stderr", &rb_stderr, Qnil, rb_readonly_hook, 0);
+    rb_define_readonly_variable("$stderr", &rb_stderr);
     rb_defout = rb_stdout;
-    rb_define_variable("$>", &rb_defout, Qnil, io_defset, 0);
+    rb_define_hooked_variable("$>", &rb_defout, 0, io_defset);
 
-    rb_define_const(C_Object, "STDIN", rb_stdin);
-    rb_define_const(C_Object, "STDOUT", rb_stdout);
-    rb_define_const(C_Object, "STDERR", rb_stderr);
+    rb_define_const(cObject, "STDIN", rb_stdin);
+    rb_define_const(cObject, "STDOUT", rb_stdout);
+    rb_define_const(cObject, "STDERR", rb_stderr);
 
-    argf = obj_alloc(C_Object);
-    rb_extend_object(argf, M_Enumerable);
+    argf = obj_alloc(cObject);
+    rb_extend_object(argf, mEnumerable);
 
-    rb_define_variable("$<", &argf, Qnil, rb_readonly_hook, 0);
-    rb_define_variable("$ARGF", &argf, Qnil, rb_readonly_hook, 0);
+    rb_define_readonly_variable("$<", &argf);
+    rb_define_readonly_variable("$ARGF", &argf);
 
-    rb_define_single_method(argf, "each",  Farg_each, 0);
-    rb_define_single_method(argf, "each_byte",  Farg_each_byte, 0);
+    rb_define_singleton_method(argf, "each",  arg_each_line, 0);
+    rb_define_singleton_method(argf, "each_line",  arg_each_line, 0);
+    rb_define_singleton_method(argf, "each_byte",  arg_each_byte, 0);
 
-    rb_define_single_method(argf, "read",  Farg_read, 0);
-    rb_define_single_method(argf, "readlines", Freadlines, 0);
-    rb_define_single_method(argf, "gets", Fgets, 0);
-    rb_define_single_method(argf, "readline", Fgets, 0);
-    rb_define_single_method(argf, "getc", Farg_getc, 0);
-    rb_define_single_method(argf, "eof", Feof, 0);
+    rb_define_singleton_method(argf, "read",  arg_read, 0);
+    rb_define_singleton_method(argf, "readlines", f_readlines, 0);
+    rb_define_singleton_method(argf, "gets", f_gets, 0);
+    rb_define_singleton_method(argf, "readline", f_gets, 0);
+    rb_define_singleton_method(argf, "getc", arg_getc, 0);
+    rb_define_singleton_method(argf, "eof", f_eof, 0);
+    rb_define_singleton_method(argf, "eof?", f_eof, 0);
 
-    rb_define_single_method(argf, "to_s", Farg_filename, 0);
-    rb_define_single_method(argf, "filename", Farg_filename, 0);
-    rb_define_single_method(argf, "file", Farg_file, 0);
+    rb_define_singleton_method(argf, "to_s", arg_filename, 0);
+    rb_define_singleton_method(argf, "filename", arg_filename, 0);
+    rb_define_singleton_method(argf, "file", arg_file, 0);
 
     filename = str_new2("-");
-    rb_define_variable("$FILENAME", &filename, Qnil, rb_readonly_hook, 0);
+    rb_define_readonly_variable("$FILENAME", &filename);
     file = rb_stdin;
     rb_global_variable(&file);
 

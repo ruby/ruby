@@ -12,12 +12,27 @@
 
 #include "ruby.h"
 #include <sys/types.h>
-#include <sys/time.h>
+
+#include <time.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#else
+struct timeval {
+        long    tv_sec;         /* seconds */
+        long    tv_usec;        /* and microseconds */
+};
+#endif
+
+#ifdef HAVE_SYS_TIMES_H
 #include <sys/times.h>
+#endif
 #include <math.h>
 
-static VALUE C_Time;
-extern VALUE M_Comparable;
+static VALUE cTime;
+#if defined(HAVE_TIMES) || defined(NT)
+static VALUE S_Tms;
+#endif
+extern VALUE mComparable;
 
 struct time_object {
     struct timeval tv;
@@ -37,12 +52,12 @@ static ID id_tv;
 
 #define MakeTimeval(obj,tobj) {\
     if (!id_tv) id_tv = rb_intern("tv");\
-    Make_Data_Struct(obj, id_tv, struct time_object, Qnil, Qnil, tobj);\
+    Make_Data_Struct(obj, id_tv, struct time_object, 0, 0, tobj);\
     tobj->tm_got=0;\
 }
 
 static VALUE
-Stime_now(class)
+time_s_now(class)
     VALUE class;
 {
     VALUE obj = obj_alloc(class);
@@ -59,6 +74,7 @@ Stime_now(class)
 
 static VALUE
 time_new_internal(class, sec, usec)
+    VALUE class;
     int sec, usec;
 {
     VALUE obj = obj_alloc(class);
@@ -75,7 +91,7 @@ VALUE
 time_new(sec, usec)
     int sec, usec;
 {
-    return time_new_internal(C_Time, sec, usec);
+    return time_new_internal(cTime, sec, usec);
 }
 
 struct timeval*
@@ -107,7 +123,7 @@ time_timeval(time)
 	break;
 
       default:
-	if (!obj_is_kind_of(time, C_Time)) {
+	if (!obj_is_kind_of(time, cTime)) {
 	    Fail("Can't convert %s into Time", rb_class2name(CLASS_OF(time)));
 	}
 	GetTimeval(time, tobj);
@@ -118,12 +134,9 @@ time_timeval(time)
 }
 
 static VALUE
-Stime_at(class, time)
+time_s_at(class, time)
     VALUE class, time;
 {
-   VALUE obj;
-    int sec, usec;
-    struct time_object *tobj;
     struct timeval *tp;
 
     tp = time_timeval(time);
@@ -132,7 +145,7 @@ Stime_at(class, time)
 }
 
 static VALUE
-Ftime_to_i(time)
+time_to_i(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -142,7 +155,7 @@ Ftime_to_i(time)
 }
 
 static VALUE
-Ftime_to_f(time)
+time_to_f(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -152,7 +165,7 @@ Ftime_to_f(time)
 }
 
 static VALUE
-Ftime_usec(time)
+time_usec(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -162,14 +175,14 @@ Ftime_usec(time)
 }
 
 static VALUE
-Ftime_cmp(time1, time2)
+time_cmp(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj1, *tobj2;
     int i;
 
     GetTimeval(time1, tobj1);
-    if (obj_is_member_of(time2, C_Time)) {
+    if (obj_is_instance_of(time2, cTime)) {
 	GetTimeval(time2, tobj2);
 	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
 	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
@@ -186,7 +199,7 @@ Ftime_cmp(time1, time2)
 }
 
 static VALUE
-Ftime_hash(time)
+time_hash(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -198,7 +211,7 @@ Ftime_hash(time)
 }
 
 static VALUE
-Ftime_localtime(time)
+time_localtime(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -215,7 +228,7 @@ Ftime_localtime(time)
 }
 
 static VALUE
-Ftime_gmtime(time)
+time_gmtime(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -232,17 +245,16 @@ Ftime_gmtime(time)
 }
 
 static VALUE
-Ftime_asctime(time)
+time_asctime(time)
     VALUE time;
 {
     struct time_object *tobj;
-    char *ct;
     char buf[32];
     int len;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
 #ifndef HAVE_TM_ZONE
     if (tobj->gmt == 1)
@@ -256,21 +268,21 @@ Ftime_asctime(time)
 }
 
 static VALUE
-Ftime_coerce(time1, time2)
+time_coerce(time1, time2)
     VALUE time1, time2;
 {
     return time_new(CLASS_OF(time1), NUM2INT(time2), 0);
 }
 
 static VALUE
-Ftime_plus(time1, time2)
+time_plus(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj1, *tobj2;
     int sec, usec;
 
     GetTimeval(time1, tobj1);
-    if (obj_is_member_of(time2, C_Time)) {
+    if (obj_is_instance_of(time2, cTime)) {
 	GetTimeval(time2, tobj2);
 	sec = tobj1->tv.tv_sec + tobj2->tv.tv_sec;
 	usec = tobj1->tv.tv_usec + tobj2->tv.tv_usec;
@@ -287,14 +299,14 @@ Ftime_plus(time1, time2)
 }
 
 static VALUE
-Ftime_minus(time1, time2)
+time_minus(time1, time2)
     VALUE time1, time2;
 {
     struct time_object *tobj1, *tobj2;
     int sec, usec;
 
     GetTimeval(time1, tobj1);
-    if (obj_is_member_of(time2, C_Time)) {
+    if (obj_is_instance_of(time2, cTime)) {
 	GetTimeval(time2, tobj2);
 	sec = tobj1->tv.tv_sec - tobj2->tv.tv_sec;
 	usec = tobj1->tv.tv_usec - tobj2->tv.tv_usec;
@@ -311,124 +323,124 @@ Ftime_minus(time1, time2)
 }
 
 static VALUE
-Ftime_sec(time)
+time_sec(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_sec);
 }
 
 static VALUE
-Ftime_min(time)
+time_min(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_min);
 }
 
 static VALUE
-Ftime_hour(time)
+time_hour(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_hour);
 }
 
 static VALUE
-Ftime_mday(time)
+time_mday(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_mday);
 }
 
 static VALUE
-Ftime_mon(time)
+time_mon(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_mon);
 }
 
 static VALUE
-Ftime_year(time)
+time_year(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_year);
 }
 
 static VALUE
-Ftime_wday(time)
+time_wday(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_wday);
 }
 
 static VALUE
-Ftime_yday(time)
+time_yday(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_yday);
 }
 
 static VALUE
-Ftime_isdst(time)
+time_isdst(time)
     VALUE time;
 {
     struct time_object *tobj;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     return INT2FIX(tobj->tm.tm_isdst);
 }
 
 static VALUE
-Ftime_zone(time)
+time_zone(time)
     VALUE time;
 {
     struct time_object *tobj;
@@ -437,7 +449,7 @@ Ftime_zone(time)
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
 
     len = strftime(buf, 10, "%Z", &(tobj->tm));
@@ -445,17 +457,15 @@ Ftime_zone(time)
 }
 
 static VALUE
-Ftime_to_a(time)
+time_to_a(time)
     VALUE time;
 {
     struct time_object *tobj;
-    struct tm *tm;
-    char buf[10];
     VALUE ary;
 
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     ary = ary_new3(9,
 		   INT2FIX(tobj->tm.tm_sec),
@@ -471,7 +481,7 @@ Ftime_to_a(time)
 }
 
 static VALUE
-Ftime_strftime(time, format)
+time_strftime(time, format)
     VALUE time, format;
 {
     struct time_object *tobj;
@@ -481,12 +491,12 @@ Ftime_strftime(time, format)
     Check_Type(format, T_STRING);
     GetTimeval(time, tobj);
     if (tobj->tm_got == 0) {
-	Ftime_localtime(time);
+	time_localtime(time);
     }
     if (strlen(RSTRING(format)->ptr) < RSTRING(format)->len) {
 	/* Ruby string contains \0. */
 	VALUE str;
-	int l, total = 0;
+	int l;
 	char *p = RSTRING(format)->ptr, *pe = p + RSTRING(format)->len;
 
 	str = str_new(0, 0);
@@ -503,60 +513,89 @@ Ftime_strftime(time, format)
 }
 
 static VALUE
-Stime_times(obj)
+time_s_times(obj)
     VALUE obj;
 {
+#ifdef HAVE_TIMES
+#ifndef HZ
+#define HZ 60 /* Universal constant :-) */
+#endif /* HZ */
     struct tms buf;
 
     if (times(&buf) == -1) rb_sys_fail(Qnil);
-    return struct_new("tms",
-		      "utime", float_new((double)buf.tms_utime / 60.0),
-		      "stime", float_new((double)buf.tms_stime / 60.0),
-		      "cutime", float_new((double)buf.tms_cutime / 60.0),
-		      "cstime", float_new((double)buf.tms_cstime / 60.0),
+    return struct_new(S_Tms,
+		      float_new((double)buf.tms_utime / HZ),
+		      float_new((double)buf.tms_stime / HZ),
+		      float_new((double)buf.tms_cutime / HZ),
+		      float_new((double)buf.tms_cstime / HZ),
 		      Qnil);
+#else
+#ifdef NT
+    FILETIME create, exit, kernel, user;
+    HANDLE hProc;
+
+    hProc = GetCurrentProcess();
+    GetProcessTimes(hProc,&create, &exit, &kernel, &user);
+    return struct_new(S_Tms,
+      float_new((double)(kernel.dwHighDateTime*2E32+kernel.dwLowDateTime)/2E6),
+      float_new((double)(user.dwHighDateTime*2E32+user.dwLowDateTime)/2E6),
+      float_new((double)0),
+      float_new((double)0),
+      Qnil);
+#else
+    Fail("can't call times");
+    return Qnil;
+#endif
+#endif
 }
 
+void
 Init_Time()
 {
-    C_Time = rb_define_class("Time", C_Object);
-    rb_include_module(C_Time, M_Comparable);
+    cTime = rb_define_class("Time", cObject);
+    rb_include_module(cTime, mComparable);
 
-    rb_define_single_method(C_Time, "now", Stime_now, 0);
-    rb_define_single_method(C_Time, "new", Stime_now, 0);
-    rb_define_single_method(C_Time, "at", Stime_at, 1);
+    rb_define_singleton_method(cTime, "now", time_s_now, 0);
+    rb_define_singleton_method(cTime, "new", time_s_now, 0);
+    rb_define_singleton_method(cTime, "at", time_s_at, 1);
 
-    rb_define_single_method(C_Time, "times", Stime_times, 0);
+    rb_define_singleton_method(cTime, "times", time_s_times, 0);
 
-    rb_define_method(C_Time, "to_i", Ftime_to_i, 0);
-    rb_define_method(C_Time, "to_f", Ftime_to_f, 0);
-    rb_define_method(C_Time, "<=>", Ftime_cmp, 1);
-    rb_define_method(C_Time, "hash", Ftime_hash, 0);
+    rb_define_method(cTime, "to_i", time_to_i, 0);
+    rb_define_method(cTime, "to_f", time_to_f, 0);
+    rb_define_method(cTime, "<=>", time_cmp, 1);
+    rb_define_method(cTime, "hash", time_hash, 0);
 
-    rb_define_method(C_Time, "localtime", Ftime_localtime, 0);
-    rb_define_method(C_Time, "gmtime", Ftime_gmtime, 0);
-    rb_define_method(C_Time, "ctime", Ftime_asctime, 0);
-    rb_define_method(C_Time, "asctime", Ftime_asctime, 0);
-    rb_define_method(C_Time, "to_s", Ftime_asctime, 0);
-    rb_define_method(C_Time, "_inspect", Ftime_asctime, 0);
-    rb_define_method(C_Time, "to_a", Ftime_to_a, 0);
-    rb_define_method(C_Time, "coerce", Ftime_coerce, 1);
+    rb_define_method(cTime, "localtime", time_localtime, 0);
+    rb_define_method(cTime, "gmtime", time_gmtime, 0);
+    rb_define_method(cTime, "ctime", time_asctime, 0);
+    rb_define_method(cTime, "asctime", time_asctime, 0);
+    rb_define_method(cTime, "to_s", time_asctime, 0);
+    rb_define_method(cTime, "inspect", time_asctime, 0);
+    rb_define_method(cTime, "to_a", time_to_a, 0);
+    rb_define_method(cTime, "coerce", time_coerce, 1);
 
-    rb_define_method(C_Time, "+", Ftime_plus, 1);
-    rb_define_method(C_Time, "-", Ftime_minus, 1);
+    rb_define_method(cTime, "+", time_plus, 1);
+    rb_define_method(cTime, "-", time_minus, 1);
 
-    rb_define_method(C_Time, "sec", Ftime_sec, 0);
-    rb_define_method(C_Time, "min", Ftime_min, 0);
-    rb_define_method(C_Time, "hour", Ftime_hour, 0);
-    rb_define_method(C_Time, "mday", Ftime_mday, 0);
-    rb_define_method(C_Time, "year", Ftime_year, 0);
-    rb_define_method(C_Time, "wday", Ftime_wday, 0);
-    rb_define_method(C_Time, "yday", Ftime_yday, 0);
-    rb_define_method(C_Time, "isdst", Ftime_isdst, 0);
+    rb_define_method(cTime, "sec", time_sec, 0);
+    rb_define_method(cTime, "min", time_min, 0);
+    rb_define_method(cTime, "hour", time_hour, 0);
+    rb_define_method(cTime, "mday", time_mday, 0);
+    rb_define_method(cTime, "mon", time_mon, 0);
+    rb_define_method(cTime, "year", time_year, 0);
+    rb_define_method(cTime, "wday", time_wday, 0);
+    rb_define_method(cTime, "yday", time_yday, 0);
+    rb_define_method(cTime, "isdst", time_isdst, 0);
+    rb_define_method(cTime, "zone", time_zone, 0);
 
-    rb_define_method(C_Time, "tv_sec", Ftime_to_i, 0);
-    rb_define_method(C_Time, "tv_usec", Ftime_usec, 0);
-    rb_define_method(C_Time, "usec", Ftime_usec, 0);
+    rb_define_method(cTime, "tv_sec", time_to_i, 0);
+    rb_define_method(cTime, "tv_usec", time_usec, 0);
+    rb_define_method(cTime, "usec", time_usec, 0);
 
-    rb_define_method(C_Time, "strftime", Ftime_strftime, 1);
+    rb_define_method(cTime, "strftime", time_strftime, 1);
+
+#if defined(HAVE_TIMES) || defined(NT)
+    S_Tms = struct_define("Tms", "utime", "stime", "cutime", "cstime", Qnil);
+#endif
 }

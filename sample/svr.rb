@@ -1,6 +1,8 @@
 # socket example - server side
 # usage: ruby svr.rb
 
+require "socket"
+
 gs = TCPserver.open(0)
 addr = gs.addr
 addr.shift

@@ -14,6 +14,7 @@
 #include "env.h"
 #include "st.h"
 #include "node.h"
+#include "re.h"
 #include <stdio.h>
 #include <setjmp.h>
 
@@ -115,16 +116,16 @@ Cambridge, MA 02138
 static int dont_gc;
 
 VALUE
-Sgc_enable()
+gc_s_enable()
 {
     int old = dont_gc;
 
-    dont_gc = Qnil;
+    dont_gc = FALSE;
     return old;
 }
 
 VALUE
-Sgc_disable()
+gc_s_disable()
 {
     int old = dont_gc;
 
@@ -132,22 +133,7 @@ Sgc_disable()
     return old;
 }
 
-#include <sys/types.h>
-#include <sys/times.h>
-
-static
-Fgc_begin()
-{
-    return Qnil;
-}
-
-static
-Fgc_end()
-{
-    return Qnil;
-}
-
-VALUE M_GC;
+VALUE mGC;
 
 static struct gc_list {
     int n;
@@ -161,7 +147,7 @@ rb_global_variable(var)
 {
     struct gc_list *tmp;
 
-    tmp = (struct gc_list*)xmalloc(sizeof(struct gc_list));
+    tmp = ALLOC(struct gc_list);
     tmp->next = Global_List;
     tmp->varptr = var;
     tmp->n = 1;
@@ -186,12 +172,13 @@ typedef struct RVALUE {
 	struct RStruct rstruct;
 	struct RBignum bignum;
 	struct RNode   node;
-	struct RAssoc  assoc;
+	struct RMatch  match;
+	struct RVarmap varmap; 
 	struct SCOPE   scope;
     } as;
 } RVALUE;
 
-RVALUE *freelist = Qnil;
+RVALUE *freelist = 0;
 
 #define HEAPS_INCREMENT 10
 static RVALUE **heaps;
@@ -200,6 +187,8 @@ static int heaps_used   = 0;
 
 #define HEAP_SLOTS 10000
 #define FREE_MIN  512
+
+static RVALUE *himem, *lomem;
 
 static void
 add_heap()
@@ -212,12 +201,14 @@ add_heap()
 	heaps = (heaps_used)?
 	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE)):
 	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE));
-	if (heaps == Qnil) Fatal("can't alloc memory");
+	if (heaps == 0) Fatal("can't alloc memory");
     }
 
     p = heaps[heaps_used++] = (RVALUE*)malloc(sizeof(RVALUE)*HEAP_SLOTS);
-    if (p == Qnil) Fatal("can't alloc memory");
+    if (p == 0) Fatal("can't alloc memory");
     pend = p + HEAP_SLOTS;
+    if (lomem == 0 || lomem > p) lomem = p;
+    if (himem < pend) himem = pend;
 
     while (p < pend) {
 	p->as.free.flag = 0;
@@ -245,15 +236,15 @@ newobj()
 }
 
 VALUE
-data_new(datap, dfree, dmark)
-    VALUE *datap;
+data_new(datap, dmark, dfree)
+    void *datap;
     void (*dfree)();
     void (*dmark)();
 {
-    extern VALUE C_Data;
+    extern VALUE cData;
     struct RData *data = (struct RData*)newobj();
 
-    OBJSETUP(data, C_Data, T_DATA);
+    OBJSETUP(data, cData, T_DATA);
     data->data = datap;
     data->dfree = dfree;
     data->dmark = dmark;
@@ -271,7 +262,10 @@ looks_pointerp(p)
     register RVALUE *heap_org;
     register long i;
 
-    /* if p looks as a SCM pointer mark location */
+    if (p < lomem) return FALSE;
+    if (p > himem) return FALSE;
+
+    /* check if p looks like a pointer */
     for (i=0; i < heaps_used; i++) {
 	heap_org = heaps[i];
 	if (heap_org <= p && p < heap_org + HEAP_SLOTS
@@ -310,7 +304,7 @@ mark_locations(start, end)
     mark_locations_array(start,n);
 }
 
-static
+static int
 mark_entry(key, value)
     ID key;
     VALUE value;
@@ -319,14 +313,14 @@ mark_entry(key, value)
     return ST_CONTINUE;
 }
 
-static
+static int
 mark_tbl(tbl)
     st_table *tbl;
 {
     st_foreach(tbl, mark_entry, 0);
 }
 
-static
+static int
 mark_hashentry(key, value)
     ID key;
     VALUE value;
@@ -336,7 +330,7 @@ mark_hashentry(key, value)
     return ST_CONTINUE;
 }
 
-static
+static int
 mark_hash(tbl)
     st_table *tbl;
 {
@@ -393,8 +387,8 @@ gc_mark(obj)
 	break;
 
       case T_CLASS:
-	gc_mark(obj->as.class.super);
       case T_MODULE:
+	gc_mark(obj->as.class.super);
 	mark_tbl(obj->as.class.m_tbl);
 	if (obj->as.class.iv_tbl) mark_tbl(obj->as.class.iv_tbl);
 	break;
@@ -405,7 +399,7 @@ gc_mark(obj)
 	    VALUE *ptr = obj->as.array.ptr;
 
 	    for (i=0; i < len; i++)
-		gc_mark(ptr[i]);
+		gc_mark(*ptr++);
 	}
 	break;
 
@@ -425,40 +419,37 @@ gc_mark(obj)
 	if (obj->as.object.iv_tbl) mark_tbl(obj->as.object.iv_tbl);
 	break;
 
+      case T_MATCH:
       case T_REGEXP:
       case T_FLOAT:
       case T_BIGNUM:
 	break;
 
-      case T_STRUCT:
-	{
-	    int i, len = obj->as.rstruct.len;
-	    struct kv_pair *ptr = obj->as.rstruct.tbl;
-
-	    for (i=0; i < len; i++)
-		gc_mark(ptr[i].value);
-	}
+      case T_VARMAP:
+	gc_mark(obj->as.varmap.next);
 	break;
 
       case T_SCOPE:
-	{
-	    struct SCOPE *scope = (struct SCOPE*)obj;
-	    if (scope->local_vars) {
-		int n = scope->local_tbl[0];
-		VALUE *tbl = scope->local_vars;
+	if (obj->as.scope.local_vars) {
+	    int n = obj->as.scope.local_tbl[0];
+	    VALUE *tbl = obj->as.scope.local_vars;
 
-		while (n--) {
-		    gc_mark(*tbl);
-		    tbl++;
-		}
+	    while (n--) {
+		gc_mark(*tbl);
+		tbl++;
 	    }
 	}
 	break;
 
-      case T_ASSOC:
-	gc_mark(obj->as.assoc.car);
-	obj = (RVALUE*)obj->as.assoc.cdr;
-	goto Top;
+      case T_STRUCT:
+	{
+	    int i, len = obj->as.rstruct.len;
+	    VALUE *ptr = obj->as.rstruct.ptr;
+
+	    for (i=0; i < len; i++)
+		gc_mark(*ptr++);
+	}
+	break;
 
       default:
 	Bug("gc_mark(): unknown data type %d", obj->as.basic.flags & T_MASK);
@@ -475,7 +466,7 @@ gc_sweep()
     int freed = 0;
     int  i;
 
-    freelist = Qnil;
+    freelist = 0;
     for (i = 0; i < heaps_used; i++) {
 	RVALUE *p, *pend;
 	RVALUE *nfreelist;
@@ -542,14 +533,15 @@ obj_free(obj)
 	if (obj->as.data.dfree) (*obj->as.data.dfree)(DATA_PTR(obj));
 	free(DATA_PTR(obj));
 	break;
+      case T_MATCH:
+	re_free_registers(obj->as.match.regs);
+	free(obj->as.match.regs);
+	if (obj->as.match.ptr) free(obj->as.match.ptr);
+	break;
       case T_ICLASS:
 	/* iClass shares table with the module */
       case T_FLOAT:
-      case T_ASSOC:
-	break;
-      case T_STRUCT:
-	free(obj->as.rstruct.name);
-	free(obj->as.rstruct.tbl);
+      case T_VARMAP:
 	break;
       case T_BIGNUM:
 	free(obj->as.bignum.digits);
@@ -561,13 +553,14 @@ obj_free(obj)
 	return;			/* no need to free iv_tbl */
 
       case T_SCOPE:
-	{
-	    struct SCOPE *scope = (struct SCOPE*)obj;
-	    if (scope->local_vars)
-		free(scope->local_vars);
-	    if (scope->local_tbl)
-		free(scope->local_tbl);
-	}
+	if (obj->as.scope.local_vars)
+	    free(obj->as.scope.local_vars);
+	if (obj->as.scope.local_tbl)
+	    free(obj->as.scope.local_tbl);
+	break;
+
+      case T_STRUCT:
+	free(obj->as.rstruct.ptr);
 	break;
 
       default:
@@ -576,11 +569,11 @@ obj_free(obj)
 }
 
 void
-gc_mark_env(env)
-    struct ENVIRON *env;
+gc_mark_frame(frame)
+    struct FRAME *frame;
 {
-    int n = env->argc;
-    VALUE *tbl = env->argv;
+    int n = frame->argc;
+    VALUE *tbl = frame->argv;
 
     while (n--) {
 	gc_mark(*tbl);
@@ -592,7 +585,7 @@ void
 gc()
 {
     struct gc_list *list;
-    struct ENVIRON *env;
+    struct FRAME *frame;
     jmp_buf save_regs_gc_mark;
     VALUE stack_end;
 
@@ -603,9 +596,9 @@ gc()
     alloca(0);
 #endif
 
-    /* mark env stack */
-    for (env = the_env; env; env = env->prev) {
-	gc_mark_env(env);
+    /* mark frame stack */
+    for (frame = the_frame; frame; frame = frame->prev) {
+	gc_mark_frame(frame);
     }
     gc_mark(the_scope);
 
@@ -627,7 +620,6 @@ gc()
 
     gc_mark_global_tbl();
     mark_tbl(rb_class_tbl);
-
     gc_mark_trap_list();
 
     gc_sweep();
@@ -649,11 +641,12 @@ init_heap()
     add_heap();
 }
 
+void
 Init_GC()
 {
-    M_GC = rb_define_module("GC");
-    rb_define_single_method(M_GC, "start", gc, 0);
-    rb_define_single_method(M_GC, "enable", Sgc_enable, 0);
-    rb_define_single_method(M_GC, "disable", Sgc_disable, 0);
-    rb_define_method(M_GC, "garbage_collect", gc, 0);
+    mGC = rb_define_module("GC");
+    rb_define_singleton_method(mGC, "start", gc, 0);
+    rb_define_singleton_method(mGC, "enable", gc_s_enable, 0);
+    rb_define_singleton_method(mGC, "disable", gc_s_disable, 0);
+    rb_define_method(mGC, "garbage_collect", gc, 0);
 }

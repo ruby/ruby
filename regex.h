@@ -275,6 +275,7 @@ extern int re_search ();
 extern int re_match ();
 extern long re_set_syntax();
 extern void re_copy_registers ();
+extern void re_free_registers ();
 
 #endif /* __STDC__ */
 

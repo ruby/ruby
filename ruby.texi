@@ -1,0 +1,5044 @@
+\input texinfo  @c -*-texinfo-*- created at: Tue Jun 20 16:58:39 JST 1995
+@setfilename ruby.info
+@settitle Ruby Reference Manual
+
+@titlepage
+@title Ruby Reference Manual
+@subtitle The Object-Oriented Scripting Language
+@author Yukihiro Matsumoto
+@author matz@@caelum.co.jp
+@end titlepage
+
+@node Top, はじめに, (dir), (dir)
+
+Ruby Reference Manual
+
+@menu
+* はじめに::                    
+* コマンドラインオプション::    
+* rubyの文法::                  
+* 組み込み関数::                
+* 組み込み変数と定数::          
+* 組み込みクラスとモジュール::  
+* C言語とのインタフェース::     
+* 謝辞::                        
+* 文法::                        
+* Variables Index::             
+* Concept Index::               
+* Function Index::              
+@end menu
+
+@node はじめに, コマンドラインオプション, Top, Top
+@comment  node-name,  next,  previous,  up
+@chapter はじめに
+
+Rubyは, 手軽なオブジェクト指向プログラミングを実現するための種々の機能
+を持つオブジェクト指向スクリプト言語である．本格的なオブジェクト指向言
+語であるSmalltalk, EiffelやC++などでは大げさに思われるような領域でのオ
+ブジェクト指向プログラミングを支援することを目的とする．その設計の基本
+原則は, 以下の通りである.
+
+@itemize @bullet
+@item
+
+機能性
+
+単純で例外の少ない文法で，オブジェクト指向プログラミングとスクリプトプ
+ログラミングのために必要な機能を十分に備える.
+
+@item
+
+拡張性
+
+必要に応じて容易に機能を拡張できる．クラスを自由に追加できることは勿論,
+Cプログラムのリンクによってインタプリタにあらゆる機能を追加できる． さ
+らにプラットフォームによっては, 動的にオブジェクトコードをリンクする機
+能も提供する.
+
+@item
+
+一貫性
+
+少数の原則が全体に適用されるような一貫性のある言語仕様を持つ．これに
+よって「パズルの楽しさ」は減少したかも知れない．ただし,一貫性のため使
+いやすさを犠牲にすることはない.
+@end itemize
+
+Rubyは「手軽」ではあるが本格的なオブジェクト指向機能を持つので，perl,
+tcl, pythonなどスクリプト言語にオブジェクト指向機能を追加したような処
+理系よりも自然にオブジェクト指向できる．更にガーベージコレクタや例外処
+理機能はより快適なプログラミングを支援する．
+
+Rubyはテキスト処理関係の機能を豊富に(perlと同じくらい)持ち，OSを直接操
+作するような処理も記述できる．また, 純粋なオブジェクト指向言語でありな
+がら, 必要であれば手続き型プログラミングも可能である.
+
+Rubyはshやperlを知っている人にとっての常識にできる限り従ったので,それ
+らの言語に精通している人にとっては習得が(多分)容易だろう．プログラマが 
+Rubyのオブジェクト指向機能について学べば，より強力なこともできるように
+なるだろう．
+
+@node  コマンドラインオプション, rubyの文法, はじめに, Top
+@comment  node-name,  next,  previous,  up
+@chapter コマンドラインオプション
+
+rubyインタプリタは以下の引数を受け付ける.
+
+@table @samp
+
+@item -0数字
+
+入力レコードセパレータ(@code{$/})の8進数で指定する．
+
+数字を指定しない場合はヌルキャラクタがセパレータになる。数の後に他のス
+イッチがあってもよい。
+
+-00で, パラグラフモード, -0777で(そのコードを持つ文字は存在しないので)
+全ファイルを一度に読み込むモードに設定できる.
+
+@item -a
+@cindex{オートスプリットモード}
+
+@code{-n}や@code{-p}とともに用いて, オートスプリットモードをONにする． 
+オートスプリットモードでは各ループの先頭で,
+
+@example
+$F = $_.split
+@end example
+
+が実行される．@code{-n}か@code{-p}オプションが同時に指定されない限り,
+このオプションは意味を持たない.
+
+@item -c
+
+スクリプトの内部形式へのコンパイルのみを行い, 実行しない．コンパイル終
+了後, 文法エラーが無ければ, @samp{"Syntax OK"}と出力する.
+
+@item -K c
+
+rubyの処理する漢字コードを指定する． rubyは指定された文字が @code{E}ま
+たは@code{e}の場合は文字列やアクセスするファイルの内容のコードがEUCで
+あると仮定する．同様に@code{S}または@code{s}の場合はSJISとして処理する．
+@code{N}は漢字を処理しない．デフォルトはEUC.
+
+@example
+ruby -CE -e 'print "テスト"'
+ruby -Cs -e 'print "テスト"'
+ruby -Cn -e 'print "テスト"'
+@end example
+
+このオプションは将来文字コードの自動判別機能が追加された場合等には変更
+される.
+
+@item -d
+@itemx --debug
+
+デバッグモードをonにする．このフラグがセットされるとシステム変数
+@code{$DEBUG}がセットされる.
+
+@item -e @var{script}
+
+コマンドラインからスクリプトを指定する．-eオプションを付けた時には引数
+からスクリプトファイル名を取らない.
+
+@item -F @var{文字列}
+
+入力フィールドセパレータ(@code{$;})の値を文字列にセットする．awkの同名
+のオプションと同じ働きをする.
+
+@item -i @var{extension}
+
+引数で指定されたファイルの内容を置き換える(in-place edit)ことを指定す
+る．元のファイルは拡張子をつけた形で保存される.
+
+例:
+
+@example
+% echo matz > /tmp/junk
+% cat /tmp/junk
+matz
+% ruby -p -i.bak -e '$_.upcase' /tmp/junk
+% cat /tmp/junk
+MATZ
+% cat /tmp/junk.bak
+matz
+@end example
+
+拡張子がなければ，バックアップはされず，変更されたファイルだけが残る．
+
+@item -I @var{directory}
+
+ファイルをロードするパスを指定(追加)する．指定されたディレクトリはruby
+の配列変数@code{$:}に追加される.
+
+@item -l
+
+@code{$\}を@code{$/}と同じ値に設定し, @code{print}での出力時に改行を付
+加する．また, @samp{-n}または@samp{-p}とともに用いられると, 入力された
+各行の最後の文字を@code{chop!}する.
+
+@item -n
+
+このフラグがセットされるとプログラム全体が
+
+@example
+while gets
+  @dots{}
+end
+@end example
+
+で囲まれているように動作する.
+@item -p
+
+@code{-n}フラグと同じだが, 各ループの最後に変数@code{$_}の値を出力する.
+
+例:
+
+@example
+% echo matz | ruby -p -e '$_.tr! "a-z", "A-Z"'
+MATZ
+@end example
+
+@item -r ファイル名
+
+スクリプト実行前にファイル名で指定されるファイルを@code{require}する．
+@samp{-n}オプション，@samp{-p}オプションとともに使う時に特に有効である．
+
+@xref{組み込み関数}
+
+@item -s
+
+スクリプト名に続く, @code{-}で始まる引数を解釈して, 同名の大域変数に値
+を設定する．@code{--}なる引数以降は解釈を行なわない．該当する引数は
+@code{$ARGV}から取り除かれる.
+
+例:
+@example
+#! /usr/local/bin/ruby -s
+# -xyzオプションが与えられると"true"を表示する.
+print "true\n" if $xyz
+@end example
+
+@item -S
+
+スクリプト名が@code{/}で始まっていない場合, 環境変数@code{PATH}の値を
+使ってスクリプトを探す． これは、@samp{#!} をサポートしていないマシン
+で、@samp{#!} による実行をエミュレートするために、以下のようにして使う
+ことができる:
+
+例:
+@example
+#! /usr/local/bin/ruby
+# This line makes the next one a comment in ruby \
+  exec /usr/local/bin/ruby -S $0 $*
+@end example
+
+システムは最初の行を無視し，スクリプトを@code{/bin/sh}に渡す．
+@code{/bin/sh}はrubyスクリプトをシェルスクリプトとして実行しようとする．
+シェルは2行目だけをコメントであると解釈し，3行目を通常のシェルコマンド
+として実行し，rubyインタプリタを起動する．
+
+システムによっては@code{$0}は必ずしもフルパスを含まないので，@code{-S}
+を用いてrubyに必要に応じてスクリプトを探すように指示する．rubyがスクリ
+プトを見つけると、これらの行の解析を始めるが，rubyは2行目の行末にある
+バックスラッシュにより，2行目のコメントが3行目まで継続するとみなして，
+3行目を無視する．
+
+ファイル名に含まれるスペースなどを正しく扱うには，@code{$*}よりも
+@code{$@{1+"$@@"@}}のほうがよいだろうが，cshが解釈する場合には動作しな
+い．@cindex{OSが#!を解釈しない場合の対策}
+
+@item -v
+@itemx --verbose
+
+冗長モード．起動時にバージョン番号の表示を行い, システム変数
+@code{$VERBOSE}をセットする．この変数がセットされている時, いくつかの
+メソッドは実行時に冗長なメッセージを出力する．@samp{-v}オプションが指
+定されて, それ以外の引数がない時にはバージョンを表示した後, 実行を終了
+する(標準入力からのスクリプトを待たない).
+
+@item --version
+
+rubyのバージョンを表示する.
+
+表示例:
+
+@example
+ruby - version 0.87 (95/09/23)
+@end example
+
+@item -x[directory]
+
+メッセージ中のスクリプトを取り出して実行する．スクリプトを読み込む時に，
+@code{#!}で始まり, @code{ruby}という文字列を含む行までを読み飛ばす．ス
+クリプトの終りは@samp{EOF}(ファイルの終り), @samp{^D}(コントロールD),
+@samp{^Z}(コントロールZ)または予約語@code{__END__}で指定する.
+
+ディレクトリ名を指定すると，スクリプト実行前に指定されたディレクトリに
+移る.
+
+@item -X directory
+
+スクリプト実行前に指定されたディレクトリに移る.
+
+@item -y
+@itemx --yydebug
+
+コンパイラデバッグモード．スクリプトを内部表現にコンパイルする時の構文
+解析の過程を表示する．この表示は非常に冗長なので, コンパイラそのものを
+デバッグする人以外は表示させない方が良いと思う.
+@end table
+
+@node  rubyの文法, 組み込み関数, コマンドラインオプション, Top
+@comment  node-name,  next,  previous,  up
+@chapter rubyの文法
+
+@menu
+* Lexical structure::           
+* プログラム::                  
+* 式::                          
+@end menu
+
+@node  Lexical structure, プログラム, rubyの文法, rubyの文法
+@comment  node-name,  next,  previous,  up
+@section Lexical structure
+
+現在のrubyの実装はキャラクタセットとしてASCIIを用いる．rubyは大文字と
+小文字を区別する．識別子の途中でなければ任意のところに空白文字をおくこ
+とが出来る．空白文字はスペース(space)，タブ(tab)，垂直タブ(vertical
+tab)， CR(carriage return)，改頁(form feed)である．改行(newline)は明ら
+かに式が継続する場合には空白文字として，それ以外では文の区切りとして解
+釈される．
+
+識別子は英文字(@samp{"_"}を含む)から始まり，英数字が続いたものである．
+rubyの識別子の長さに制限はない．現在の実装は識別子としてマルチバイトコー
+ド(EUC,SJIS)も通すが勧められない．
+
+識別子の例
+
+@example
+foobar
+ruby_is_simple
+@end example
+
+@menu
+* コメント::
+* 予約語::
+* 区切り文字::
+@end menu
+
+@node コメント, 予約語, Lexical structure, Lexical structure
+@comment  node-name,  next,  previous,  up
+@subsection コメント
+
+例
+
+@example
+# this is a comment line
+@end example
+
+スクリプト言語の習慣にならい，文字列中や文字表現(@code{?#})以外の
+@code{#}から行末まではコメントと見なす．コメント行末のバックスラッシュ
+は次の行へのコメントの継続を意味する．
+
+@node 予約語, 区切り文字, コメント, Lexical structure
+@comment  node-name,  next,  previous,  up
+@subsection 予約語
+
+予約語は以下の通りである
+
+@display
+alias           def             for             redo            undef
+and             defined?        if              rescue          when
+begin           else            in              retry           while
+break           elsif           module          return          yield
+case            end             nil             self            __END__
+class           ensure          not             super           __FILE__
+continue        fail            or              then            __LINE__
+@end display
+
+予約語はクラス名，メソッド名，変数名などに用いることはできない．ただし，
+@samp{$}, @samp{@@}が先頭についたものは予約語と見なされないので，グロー
+バル変数，インスタンス変数については問題ない．
+
+@node 区切り文字,  , 予約語, Lexical structure
+@comment  node-name,  next,  previous,  up
+@subsection 区切り文字
+
+文字列などのリテラルの内部以外の場所の空白文字(タブとスペース)および改
+行(@samp{\n})が区切り記号となる．更に改行は
+
+@example
+a +
+b
+@end example
+
+のように行が式の途中で終り，次の行に続くことが明白な(最後の非空白文字
+が演算子あるいは@code{,}である)場合を除き，式の区切りとして認識される．
+
+@node プログラム, 式, Lexical structure, rubyの文法
+@comment  node-name,  next,  previous,  up
+@section プログラム
+
+例
+
+@example
+print "hello world!\n"
+@end example
+
+プログラムは式を並べたものである．式と式の間はセミコロン(@code{;})また
+は改行で区切られる．
+
+@node 式,  , プログラム, rubyの文法
+@comment  node-name,  next,  previous,  up
+@section 式
+
+例
+
+@example
+TRUE
+(1+2)*3
+foo()
+if test then ok else ng end
+@end example
+
+Rubyでは@code{nil}が偽，それ以外が真と評価される．CやPerlなどとは異な
+り，0や@code{""}(空文字列)は偽とは評価されないので気をつけること．
+
+式は括弧によってグルーピングすることができる．
+
+@menu
+* 文字列式::                    
+* コマンド出力::                
+* 正規表現式::                  
+* 変数展開::                    
+* 数値リテラル::                
+* 変数と定数::                  
+* グローバル変数::              
+* インスタンス変数::            
+* クラス定数::                  
+* ローカル変数::                
+* 疑似変数::                    
+* 配列式::                      
+* 連想配列式::                  
+* メソッド呼出式::              
+* SUPER::                       
+* 代入::                        
+* 演算子式::                    
+* 制御構造::                    
+* クラス定義::                  
+* モジュール定義::              
+* メソッド定義::                
+* 特異メソッド定義::            
+* ALIAS::                       
+* UNDEF::                       
+* DEFINED?::                     
+@end menu
+
+@node 文字列式, コマンド出力, 式, 式
+@comment  node-name,  next,  previous,  up
+@subsection 文字列式
+@cindex 文字列式
+
+例
+
+@example
+"this is a string expression\n"
+'文字列式'
+@end example
+
+ダブルクォート(@code{"})で括られた文字列の中はバックスラッシュに続く文
+字が以下のように解釈される．
+
+バックスラッシュ記法
+
+@table @samp
+@item \t
+タブ(0x09)
+@item \n
+改行文字(0x0a)
+@item \r
+復帰文字(0x0d)
+@item \f
+改ページ文字(0x0c)
+@item \b
+バックスペース(0x08)
+@item \a
+ベル(0x07)
+@item \e
+エスケープ(0x1b)
+@item \nnn
+8進数表記(nは0-7)
+@item \xnn
+16進数表記(nは0-9,a-f)
+@item \cx
+コントロール文字(xはASCII文字)
+@item \x
+文字xそのもの
+@end table
+
+また，@code{#}による変数展開も行われる．
+
+@xref{変数展開}
+
+一方，シングルクォート(@code{'})で括られた文字列は，@code{\\}(バックス
+ラッシュそのもの)と@code{\'}(シングルクォート)を除いて，文字列の中身の
+解釈を行わない．
+
+文字列式は毎回新しい文字列オブジェクトを生成するので，文字列の内容を変
+更しても，もともとの文字列は変わらない．
+
+@node コマンド出力, 正規表現式, 文字列式, 式
+@comment  node-name,  next,  previous,  up
+@subsection コマンド出力
+@cindex コマンド出力
+
+例
+
+@example
+`date`
+@end example
+
+Rubyではshのようにコマンドの実行結果を文字列リテラルのように使うことが
+できる．@code{``}で囲まれた文字列は，ダブルクォートで囲まれた文字列と
+同様にバックスラッシュ記法の解釈と変数展開が行なわれた後，コマンドとし
+て実行され，その実行結果が文字列として与えられる．コマンドは評価される
+たびに実行される．
+
+@node 正規表現式, 変数展開, コマンド出力, 式
+@comment  node-name,  next,  previous,  up
+@subsection 正規表現式
+@cindex 正規表現式
+
+例
+
+@example
+/^ruby the OOPL/
+/ruby/i
+@end example
+
+@code{/}で囲まれた文字列は正規表現を表す．終りの@code{/}の後ろに文字
+@code{i}が与えられた場合には，その正規表現はマッチ時に大文字小文字の区
+別をしない．
+
+@table @code
+@item ^
+行頭
+@item $
+行末
+@item .
+任意の1文字
+@item \w
+英数字．[0-9A-Za-z_]と同じ
+@item \W
+非英数字
+@item \s
+空白文字．[ \t\n\r\f]と同じ
+@item \S
+非空白文字
+@item \d
+数字．[0-9] と同じ
+@item \D
+非数字
+@item \b
+語境界文字(文字クラス外)
+@item \B
+非語境界文字
+@item \b
+後退(0x08)(文字クラス内)
+@item [ ]
+文字クラス指定
+@item *
+直前の表現の0回以上の繰り返し
+@item +
+直前の表現の1回以上の繰り返し
+@item {m,n}
+m回からn回の繰り返し
+@item ?
+0または1回
+@item |
+選択
+@item ( )
+正規表現をまとめる
+@end table
+
+その他に文字列と同じバックスラッシュ記法や変数展開も有効である．
+
+@node 変数展開,  数値リテラル,  正規表現式,  式
+@comment  node-name,  next,  previous,  up
+@subsection 変数展開
+@cindex 変数展開
+
+例
+
+@example
+"my name is #@{$ruby@}"
+@end example
+
+ダブルクォート(@code{"})で囲まれた文字列式，コマンド文字列，正規表現，
+およびワイルドカード式の中では@code{#{変数名}}という形式で変数の内容を
+展開することができる．変数が変数記号(@code{$},@code{@@})で始まる場合に
+は@code{#変数名}という形式でも展開できる．文字@code{#}に続く文字が 
+@code{@{},@code{$},@code{@@}でなければ，そのまま文字@code{#}として解釈
+される．
+
+@node 数値リテラル,  変数と定数,  変数展開,  式
+@comment  node-name,  next,  previous,  up
+@subsection 数値リテラル
+
+@table @samp
+@item 123
+整数
+@item -123
+整数(符合つき数)
+@item 1_234
+整数(10進数は@code{_}を含むことができる)
+@item 123.45
+浮動小数点数
+@item 1.2e-3
+浮動小数点数
+@item 0xffff
+16進整数
+@item 0377
+8進整数
+@item ?a
+文字@code{a}のコード(97)
+@item ?\C-a
+コントロールaのコード(1)
+@item ?\M-a
+メタaのコード(225)
+@item ?\M-\C-a
+メタ-コントロールaのコード(129)
+@item :シンボル
+識別子/変数名/演算子と一対一対応する整数．sendなどでメソッドを指定する
+時などに使う．
+@end table
+
+?表現では全てのバックスラッシュ記法が有効である．
+
+@node 変数と定数,  配列式,  数値リテラル,  式
+@comment  node-name,  next,  previous,  up
+@subsection 変数と定数
+
+Rubyの変数はスコープ(有効範囲)と寿命(有効期限)によって4種類に分類され，
+その種類は変数名の最初の一文字で決定される．通常の変数の2文字目以降は
+英数時または@code{_}であるが，システム変数の一部は「@code{$}+1文字の記
+号」という変数がある．変数名の長さに関して特別な制限はない．
+
+@menu
+* グローバル変数::
+* インスタンス変数::
+* クラス定数::
+* ローカル変数::
+* 疑似変数::
+@end menu
+
+@node グローバル変数,  インスタンス変数,  変数と定数,  変数と定数
+@comment  node-name,  next,  previous,  up
+@subsection グローバル変数
+
+例
+
+@example
+$foobar
+$/
+@end example
+
+@code{$}で始まる変数のスコープはグローバルであり，プログラムのどこから
+でも参照できる．その寿命はプログラムの寿命と等しい．グローバル変数には
+宣言は必要ない．初期化されていないグローバル変数を参照した時の値は
+@code{nil}である．
+
+@node インスタンス変数,  クラス定数,  グローバル変数,  変数と定数
+@comment  node-name,  next,  previous,  up
+@subsection インスタンス変数
+
+例
+
+@example
+@@foobar
+@end example
+
+@code{@@}で始まる変数はインスタンス変数であり，そのクラスまたはサブク
+ラスのメソッドから参照できる．スコープはメソッド内であり，その寿命はオ
+ブジェクトの寿命に等しい．インスタンス変数にも宣言は必要ない．初期化さ
+れていないインスタンス変数を参照した時の値は@code{nil}である．
+
+@node クラス定数,  ローカル変数,  インスタンス変数,  変数と定数
+@comment  node-name,  next,  previous,  up
+@subsection クラス定数
+
+例
+
+@example
+FOOBAR
+@end example
+
+大文字で始まる識別子は定数へのアクセスであり，最初に定義されたクラスと
+全てのサブクラスのスコープ内で参照できる．定数の定義は代入か，定数を定
+義しているモジュールをインクルードすることによって行なわれる．定数への
+代入はトップレベル，すなわちメソッドが定義できるレベルでのみ可能である．
+定数はクラス間で値が共有され，一度代入すると値を変更することができない
+(代入は例外を発生させる)．クラス定数の寿命はクラスの寿命と等しい．初期
+化されていないクラス定数を参照した時の値は@code{nil}である．
+
+クラス定義は自動的に定数を定義するので，クラス名は定数である．
+
+あるクラスまたはモジュールに属する定数を外部から参照するためには
+@code{::}演算子を用いる．
+
+例
+@example
+Foo::Bar
+@end example
+
+@code{::}演算子を用いた代入はできない．
+
+@node ローカル変数,  疑似変数,  クラス定数,  変数と定数
+@comment  node-name,  next,  previous,  up
+@subsection ローカル変数
+
+例
+
+@example
+foobar
+@end example
+
+小文字または@code{_}で始まる識別子はローカル変数またはメソッド呼出しで
+ある．ローカル変数スコープにおける小文字で始まる識別子への最初の代入は
+そのスコープに属するローカル変数の宣言になる．宣言されていない識別子の
+参照は引数の無いメソッド呼び出しとみなされる．
+
+ローカル変数のスコープは，その変数が宣言されたイテレータブロック，メソッ
+ド定義，またはクラス/モジュール定義ブロックの終りまでである．寿命もそ
+のブロックの終りまで(トップレベルのローカル変数はプログラムの終了まで)
+であるが，例外としてイテレータブロックが手続きオブジェクト化された場合
+は，そのオブジェクトが消滅するまで存在する．同じスコープを参照する手続
+きオブジェクト間ではローカル変数は共有される．
+
+@node 疑似変数, 変数と定数, ローカル変数,  変数と定数
+@comment  node-name,  next,  previous,  up
+@subsection 疑似変数
+
+通常の変数以外に疑似変数と呼ばれる特殊な変数が4つある．
+
+@table @code
+@item self
+現在のメソッドの実行主体
+@item nil
+Nilクラスの唯一のインスタンス(偽を表す)
+@item __FILE__
+スクリプトのファイル名(文字列)
+@item __LINE__
+現在の行番号(整数)
+@end table
+
+これらの疑似変数は代入によってその値を変更することはできない．これらの
+変数への代入は例外を発生させる．
+
+@node 配列式, 連想配列式,  変数と定数,  式
+@comment  node-name,  next,  previous,  up
+@subsection 配列式
+
+例
+
+@example
+[1, 2, 3]
+@end example
+
+配列はArrayクラスのインスタンスである．配列を生成する式は以下の形式で
+ある．
+
+@example
+@code{[} 式,@dots{}@code{]}
+@end example
+
+それぞれの式を評価した結果を含む配列を返す．要素数が0の空配列を生成す
+るためには空の配列式
+
+@example
+@code{[} @code{]}
+@end example
+
+を用いる．
+
+@node 連想配列式, メソッド呼出式, 配列式,  式
+@comment  node-name,  next,  previous,  up
+@subsection 連想配列式
+
+例
+
+@example
+@{1=>2, 2=>4, 3=>6@}
+@end example
+
+連想配列とは任意のオブジェクトをキー(添字)として持つ配列である．Rubyの
+連想配列はHash(連想配列)クラスのインスタンスである．詳細はクラス
+@code{Hash}の項を参照されたい．@xref{Hash}
+
+連想配列を生成する連想配列式は以下の形式である．
+
+@example
+@code{@{} 式 @code{=>} 式@dots{}@code{@}}
+@end example
+
+それぞれの式を評価した結果をキーと値とする連想配列オブジェクトを返す．
+要素数が0の連想配列を生成するためには空の連想配列式
+
+@example
+@code{@{} @code{@}}
+@end example
+
+を用いる．要素が1つ以上ある場合，曖昧でなければ@code{@{}, @code{@}}は
+省略できる．
+
+@node メソッド呼出式, SUPER, 連想配列式,  式
+@comment  node-name,  next,  previous,  up
+@subsection メソッド呼出式
+
+例
+
+@example
+foo.bar()
+foo.bar
+bar()
+print "hello world\n"
+print
+@end example
+
+オブジェクトにメッセージを送る基本的な構文がメッセージ式であり，その基
+本形式は以下の通りである．
+
+@display
+式1 `.' メソッド名 [`(' 引数@dots{}[`*' 引数] `)']
+@end display
+
+式1を評価して得られるオブジェクトの，識別子で指定されるメソッドを呼び
+出す．
+
+メソッド名には通常の識別子の他，識別子に@code{?}または@code{!}の続いた
+ものが許される．慣習として，述語(真偽値を返すメソッド)には@code{?}を，
+同名のメソッドに比べてより破壊的な作用をもつメソッド(例:@code{tr}と
+@code{tr!})には@code{!}をつける．
+
+メッセージ式で，レシーバが@code{self}の場合，レシーバを省略して通常の
+プログラミング言語における関数のような形式でメソッドを呼び出すことがで
+きる．
+
+@display
+メソッド名 `(' 引数@dots{}[`*' 引数]`)'
+@end display
+
+メソッド呼び出しの引数の周りの括弧を省略できるが，第一引数となる式が以
+下の文字または予約語で始まる場合は，解釈に曖昧性が生じる．
+
+@example
+(, [, @{, /, +, -, if, while, *
+@end example
+
+rubyは第1引数のように見える部分を，人間にとって自然だと思われるように
+演算子の前後の空白を見ながら，若干複雑なルールで解釈する．予想通りの結
+果が得られなかったり，どのように評価されるか分からない場合は省略せずに
+括弧をつける事．
+
+例
+
+@example
+foo bar+baz     # メソッド呼び出しfoo(bar+baz)
+foo(1+2)*5      # メソッド呼び出し(foo(1+2)) * 5
+foo (1+2)*5     # メソッド呼び出しfoo((1+2) * 5)
+foo 1           # メソッド呼び出しfoo(1)
+foo -1          # メソッド呼び出しfoo(-1)
+foo - 1         # ローカル変数foo - 1
+@end example
+
+メソッド呼び出しでは引数が1つもない時にも括弧を省略できる．ただし，レ
+シーバを指定しないメソッド呼び出しの場合はローカル変数の参照と解釈され
+うる．
+
+メソッド名としては任意の識別子を用いることができる．最初の文字は大文字
+でも小文字でも構わない．変数名とは識別子の名前空間が違うので重複しても
+構わない．
+
+クラスModuleで定義されているメソッド(@code{public},@code{private})でメ
+ソッドの呼び出し方を制御することが出来る．@code{private}で指定された制
+限されたメソッドは関数形式でしか呼び出すことが出来ない．
+
+@node SUPER, 代入 ,メソッド呼出式, 連想配列式,  式
+@comment  node-name,  next,  previous,  up
+@subsection SUPER
+
+例
+
+@example
+super
+super(1,2,3)
+@end example
+
+メッセージ式の特殊なケースとしてスーパークラスのメソッドの呼び出しがあ
+る．この形式はメソッドを再定義した時にスーパークラスの定義を利用するた
+めに使う．
+
+@display
+super
+@end display
+
+
+現在のメソッドに与えられた引数のままスーパクラスの同名のメソッドを呼び
+出す．引数として与えられた変数の値を変更しても，渡されるのは元の引数の
+値である．
+
+@display
+super`(' 引数@dots{}`)'
+@end display
+
+引数とともにスーパークラスの同名のメソッドを呼び出す．一番最後の引数が
+@code{*}に続く場合は通常のメソッド呼び出しと同様に展開して渡される．
+
+@node 代入, 演算子式, SUPER, 式
+@comment  node-name,  next,  previous,  up
+@subsection 代入
+
+例
+
+@example
+foo = bar
+foo[0] = bar
+foo.bar = baz
+@end example
+
+代入式は変数などに値を設定するために用いられる．代入式は演算子形式をとっ
+ているが，メソッドではないので再定義することはできない．左辺になること
+が出来るのは以下の3種類の式である．
+
+変数(`$'識別子 | `@@'識別子 | 識別子)
+
+@display
+変数 `=' 式
+@end display
+
+変数への代入は右辺の式を評価して得られた値を左辺で指定された変数に代入
+する．
+
+配列参照(式[式@dots{}])
+
+@display
+式1`[' 式2@dots{}`]' `=' 式n
+@end display
+
+配列参照式への代入は，式1を評価して得られるオブジェクトに，式2から式n
+までを引数として，@code{[]=} というメソッドを呼び出す．
+
+属性参照(式`.'識別子)
+
+@display
+式1 `.' 識別子 `=' 式2
+@end display
+
+属性参照(引数なしのメソッド呼び出し)への代入は，式1を評価して得られる
+オブジェクト(レシーバが省略された場合は@code{self})に対して，
+@code{識別子=}というメソッドを，式2を引数として呼び出す．
+
+@menu
+* 自己代入::                    
+* 多重代入::                    
+@end menu
+
+@node 自己代入, 多重代入, 代入, 代入
+@comment  node-name,  next,  previous,  up
+@subsubsection 自己代入
+
+例
+
+@example
+foo += 12
+@end example
+
+式の値そのものに演算を加えるために自己代入形式がある．
+
+@display
+式1 op= 式2     # 式1は代入可能でなければならない．
+@end display
+
+この形式は内部的に@code{式1 = 式1 op 式2}と同様に評価される．ただし，
+式1は1回しか評価されないので，式1に副作用がある場合は，
+@code{式1 = 式1 op 式2}とは動作が異なる結果となる．
+opとして使える演算子は
+
+@display
+        +, -, *, /, %, **, &, |, ^, <<, >>
+@end display
+
+の11種類である．演算子と@code{=}の間にスペースを空けてはいけない．
+
+@node 多重代入,  , 自己代入, 代入
+@comment  node-name,  next,  previous,  up
+@subsubsection 多重代入
+
+例
+
+@example
+foo, bar, baz = 1, 2, 3
+foo, = list()
+foo, *rest = list2()
+@end example
+
+同時に複数の変数に代入を行なうことができる．その形式は以下の通りである．
+
+@display
+    左辺 `,' [左辺 `,'@dots{}] [`*' 左辺]= 式 [, 式@dots{}]
+@end display
+
+左辺には代入式の3種類の式が来る．右辺の式が一つしかない場合は，その値
+を配列として(必要ならば@code{to_a}メソッドで配列に変換して)，要素をそ
+れぞれ左辺に代入する．それ以外の場合には，それぞれの式の値が左辺に代入
+される．左辺の数と右辺の要素の数が合わない時には足りない変数には 
+@code{nil}が代入され，余った要素は無視される．多重代入の最後の要素の前
+に@code{*}がある場合，残りの全て引数が配列として代入される．
+
+例
+
+@example
+foo, bar = [1, 2]	# foo = 1; bar = 2
+foo, bar = 1, 2	# foo = 1; bar = 2
+foo, bar = 1		# foo = 1; bar = nil
+
+foo, bar, baz = 1, 2	# foo = 1; bar = 2; baz = nil
+foo, bar = 1, 2, 3	# foo = 1; bar = 2
+foo,*bar = 1, 2, 3	# foo = 1; bar = [2, 3]
+@end example
+
+多重代入の値は(配列に変換された)右辺である．
+
+@node 演算子式, 制御構造, 代入, 式
+@comment  node-name,  next,  previous,  up
+@subsection 演算子式
+
+例
+
+@example
+1+2*3/4
+@end example
+
+プログラミングの利便のために一部のメソッド呼び出しと制御構造は演算子形
+式をとる．Rubyには以下にあげる演算子がある．上のものほど結合順位が強く，
+同じ列の演算子の結合順位は同じである．
+@cindex{結合規則}
+
+@display
+   強   ::
+        [](配列参照), []=(配列代入)
+        **
+        -(unary)  +(unary)  !  ~
+        *  /  %
+        +  -
+        <<  >>
+        &
+        |  ^
+        >  >=  <  <=
+        <=> ==  !=  =~  !~
+        &&
+        ||
+        .. ...
+        =(代入) 自己代入(+=, -=@dots{})
+        and or
+        not
+   弱   if修飾子 while修飾子
+@end display
+
+ほとんどの演算式にはメソッド呼び出しとして解釈される(クラス毎に再定義
+できる)が，一部再定義できない特殊なものがある．再定義できない特殊演算
+子は
+
+@display
+    =, .., ..., !, not, &&, and, |, or, if修飾子, while修飾子
+@end display
+
+の各演算子と，これらとの組み合わせになる !=, !~ および自己代入演算子で
+ある．
+
+上であげた特殊演算子以外の演算子形式は以下のようなメソッド呼び出しと見
+なされる．
+
+単項演算子(+, -, ~)
+
+@display
+式1. 演算子 ()
+@end display
+
+配列(連想配列を含む)の要素の参照(式1 `[' 式2@dots{}`]')
+
+@display
+式1. `[]' (式2@dots{})
+@end display
+
+配列要素の代入( 式1 `[' 式2@dots{}`]' `=' 式n)
+
+@display
+式1. `[]=' (式2@dots{}, 式n)
+@end display
+
+それ以外の2項演算子(式1 演算子 式2)
+
+@display
+式1. 演算子 (式2)
+@end display
+
+これはあくまでもそういう形式のメソッド呼び出しとして解釈されるというだ
+けで，rubyプログラムでこういう記述が許されるというわけではない．
+
+@node 制御構造, クラス定義, 演算子式, 式
+@comment  node-name,  next,  previous,  up
+@subsection 制御構造
+
+Rubyでは(Cなどとは異なり)制御構造は式であり，何らかの値を持つ．この点で
+lispなどに似ているといえる．RubyはC言語やPerlから引き継いだ制御構造を持
+つが，特徴的な制御構造としてイテレータを持つ．イテレータは繰り返しを始め
+とする制御をユーザが定義する事が出来るものである.
+@xref{イテレータ(繰り返し子)}
+
+@menu
+* IF::                          
+* IF修飾子::                    
+* CASE::                        
+* AND::                         
+* OR::                          
+* 範囲指定式::                  
+* NOT::                         
+* WHILE::                       
+* WHILE修飾子::                 
+* イテレータ(繰り返し子)::      
+* FOR::                         
+* YIELD::                       
+* FAIL::                        
+* BEGIN::                       
+* RETRY::                       
+* RETURN::                      
+* BREAK::                       
+* CONTINUE::                    
+* REDO::                        
+@end menu
+
+@node IF, IF修飾子, 制御構造, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection IF
+
+例
+
+@example
+if age >= 12 then print "adult fee\n" else print "child fee\n" end
+gender = if foo.gender == "male" then "male" else "female" end
+@end example
+
+構文
+
+@display
+if 式1 [then]
+  式@dots{}
+[elsif 式2 [then]
+  式@dots{}]@dots{}
+[else
+  式@dots{}]
+end
+@end display
+
+条件判断式．Rubyの@code{if}式は@code{else if}でも@code{elif}でもなく
+@code{elsif}で@code{if}の連続を行なうことに注意すること．条件が成立し
+て実行した式の値を返す．実行しなかった場合の値は@code{nil}．
+
+@code{if}の条件判断部の式では文字列と正規表現リテラルは式
+@example
+$_=~ リテラル
+@end example
+の省略であるとみなされる．
+
+@node IF修飾子, CASE, IF, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection IF修飾子
+
+例
+
+@example
+print "debug\n" if $debug
+@end example
+
+構文
+
+@display
+式 if 式
+@end display
+
+条件修飾子(@code{if})の式は先行する式に先だって評価される．動作も対応
+する@code{if}式と同様である．@code{if}修飾子のついた式の値は条件が成立
+した場合には式の値，不成立の場合には@code{nil}である．
+
+@node CASE, AND, IF修飾子, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection CASE
+
+例
+
+@example
+case $age
+when 0 .. 2
+  "baby"
+when 3 .. 6
+  "little child"
+when 7 .. 12
+  "child"
+when 12 .. 18
+  "youth"
+else
+  "adult"
+end
+@end example
+
+構文
+
+@display
+case 式0
+[when 式1 [, 式2]@dots{}[then]
+  式@dots{}]@dots{}
+[else
+  式@dots{}]
+end
+@end display
+
+条件分岐，Cの@code{switch}よりもPascalの@code{case}に似ている．
+@code{break}で脱出することも後ろの式に継続することもないので注意．
+
+条件の一致は@code{式n =~ 式0}で行なわれる．つまり，
+
+@example
+case expr0
+when expr1, expr2
+  stmt1
+when expr3, expr4
+  stmt2
+else
+  stmt3
+end
+@end example
+
+は以下の@code{if}式とほぼ等価である．
+
+@example
+_tmp = expr0
+if expr1 =~ _tmp || expr2 =~ _tmp
+  stmt1
+elsif expr3 =~ _tmp || expr4 =~ _tmp
+  stmt2
+else
+  stmt3
+end
+@end example
+
+@node AND, OR, CASE, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection AND
+
+例
+
+@example
+test && set
+test and set
+@end example
+
+構文
+
+@display
+式1 `&&' 式2
+式1 `and' 式2
+@end display
+
+式1を評価し，その値が真(@code{nil}以外)であれば，式2を評価する．
+@code{and}は優先順位が低い別名である．
+
+@code{and}の両辺の式では文字列と正規表現リテラルは式
+@code{$_ =~ リテラル} の省略であるとみなされる．
+
+@node OR, 範囲指定式, AND, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection OR
+
+例
+
+@example
+demo || die
+demo or die
+@end example
+
+構文
+
+@display
+式1 `||' 式2
+式1 'or 式2
+@end display
+
+式1を評価し，その値が偽であれば，式2を評価する．@code{or}は優先順位が
+低い別名である．
+
+@code{or}の両辺の式では文字列と正規表現リテラルは式
+@code{$_ =~ リテラル}の省略
+であるとみなされる．
+
+@node 範囲指定式, NOT, OR, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection 範囲指定式
+
+例
+
+@example
+1 .. 20
+/first/ ... /second/
+@end example
+
+構文
+
+@display
+式1 `..' 式2
+式1 `...' 式2
+@end display
+
+条件式以外の場所では式1から式2までの範囲オブジェクトを返す．
+
+条件式として範囲指定式が用いられた場合は，式1が真になるまでは偽を返し，
+その後は式2が真を返すまでは真を返す．式2が真になれば状態は偽に戻る．
+@code{..}は式1が真になった時に式2を評価し(awkのように)，@code{...}は次
+の評価まで式2を評価しない(sedのように)．
+
+条件式で範囲指定式の両辺となる式では，文字列と正規表現リテラルは式
+@code{$_ =~ リテラル}の省略，整数定数は@code{$. == 定数}の省略と解釈さ
+れる．
+
+@node NOT, WHILE, 範囲指定式, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection NOT
+
+例
+
+@example
+! me
+not me
+i != you
+@end example
+
+構文
+
+@display
+`!' 式
+not 式
+@end display
+
+式が真であれば偽，偽であれば真を返す．
+
+@code{!}式では文字列と正規表現リテラルは式@code{$_ =~ リテラル}の省略
+であるとみなされる．
+
+@display
+式1 `!=' 式2
+@end display
+
+@code{!(式1 == 式2)}の省略形
+
+@display
+式1 `!~' 式2
+@end display
+
+@code{!(式1 ~= 式2)}の省略形
+
+@node WHILE, WHILE修飾子, NOT, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection WHILE
+
+例
+
+@example
+while sunshine()
+  work()
+end
+@end example
+
+構文
+
+@display
+while 式
+  @dots{}
+end
+@end display
+
+式を評価した値が真の間，本体を繰り返し実行する．@code{while}式の値は
+@code{nil}である．
+
+whileの条件判断部の式では文字列と正規表現リテラルは式
+@code{$_ =~ リテラル} の省略であるとみなされる．
+
+@node WHILE修飾子, イテレータ(繰り返し子), WHILE, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection WHILE修飾子
+
+例
+
+@example
+sleep while idle
+@end example
+
+構文
+
+@display
+単純式 while 式
+@end display
+
+左の式を評価した値が真の間，右の単純式を繰り返し実行する．右の単純式が
+@code{begin}式である場合はまず@code{begin}式を評価してから条件式を評価
+する(最低一度はbegin式を実行する)．@code{while}修飾子のついた式の値は
+@code{nil}である．
+
+@node イテレータ(繰り返し子), FOR, WHILE修飾子, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection イテレータ(繰り返し子)
+
+例
+
+@example
+[1,2,3].each@{|i| print i*2, "\n"@}
+@end example
+
+イテレータとは制御構造(特にループ)の抽象化のために用いられるメソッドの
+一種である．コードの断片(ブロックと呼ばれる)を指定してイテレータを呼び
+出すと，イテレータは適当な値をセットしてブロックを評価する(おそらくは
+複数回)．イテレータからのブロックの呼び出しは@code{yield}式を用いる(後
+述)．
+
+イテレータの呼び出しは以下の構文で行なわれる．
+
+@display
+式 `@{' [`|' 左辺式@dots{}`|'] 式@dots{}`@}'
+@end display
+
+「式」をブロックとして設定し，「式」のメソッドをイテレータとして評価す
+る．「式」のトップレベルのメソッドだけがイテレータとして呼び出され，
+レシーバを表す式や，引数の式はイテレータとしては呼び出されない．「式」
+が複数の式を含む時，各々がイテレータとして順に呼ばれる．
+
+イテレータ内で@code{yield}式が実行されると，そこで指定された値が左辺式
+で指定された変数に代入され，ブロックが実行される．ブロックの実行が終了
+するとその値は @code{yield}式の値として返される．あるメソッドがイテレー
+タとして呼び出されたかどうかはメソッド@code{iterator?}の戻り値で知るこ
+とができる．中には@code{Enumerable:grep}メソッドのようにイテレータとし
+て呼ばれた時と普通のメソッドとして呼ばれた時とで動作が異なるメソッドも
+ある．
+
+@node FOR, YIELD, イテレータ(繰り返し子), 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection FOR
+
+例
+
+@example
+for i in [1, 2, 3]
+  print i*2, "\n"
+end
+@end example
+
+オブジェクトの各要素に対して操作を行なうための形式も提供されている．形
+式は以下の通り．
+
+@display
+for 左辺式@dots{} in 式
+  式
+end
+@end display
+
+式の各要素に対し式を実行する．これは以下の式とほぼ等価である．「ほぼ」
+というのは，イテレータブロックは新しいローカル変数の有効範囲を導入する
+のに対し，@code{for}文はローカル変数のスコープに影響を及ぼさない点が異
+なるからである
+
+@display
+(式).each `@{' `|' 左辺式@dots{}`|' 式 `@}'
+@end display
+
+よって式の値のオブジェクトがメソッド@code{each}を持たない場合，
+@code{for}を実行すると例外が発生する．
+
+@node YIELD, FAIL, FOR, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection YIELD
+
+例
+
+@example
+yield data
+@end example
+
+構文
+
+@display
+yield `(' [式 [`,' 式@dots{}]])
+@end display
+
+イテレータの中でブロックの呼び出しを行なう．@code{yield}を実行したメソッ
+ドがイテレータとして呼び出されていない時には例外が発生する．
+@code{yield} の値はブロックの戻り値である．
+
+@code{yield}の引数の括弧は曖昧でない限り省略できる．
+
+@node FAIL, BEGIN, YIELD, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection FAIL
+
+例
+
+@example
+fail
+fail "you lose"
+@end example
+
+構文
+
+@display
+fail `(' [メッセージ] `)'
+@end display
+
+例外を発生させる．メッセージが与えられた場合には発生したソースファイル
+名，行番号をシステム変数@code{$@@}に，メッセージを@code{$!}にセットする．
+
+@code{fail}の引数の括弧は省略できる．
+
+@node BEGIN, RETRY, FAIL, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection BEGIN
+
+例
+
+@example
+begin
+  do_something()
+rescue
+  recover()
+ensure
+  must_to_do()
+end
+@end example
+
+複数の式をまとめるためと例外所理のために@code{begin}式がある．
+@code{begin}式の形式は以下の通りである．
+
+@display
+begin
+  式@dots{}
+[rescue
+  式@dots{}]
+[ensure
+  式@dots{}]
+end
+@end display
+
+@code{begin}式の値は一番最後に評価された式の値である．@code{begin}式の
+処理中に発生した時に例外は@code{rescue}節で捕獲することが出来る．この
+場合の値@code{begin}式の値はは@code{rescue}部で最後に評価した式の値で
+ある．更に@code{ensure}節が存在する時は@code{begin}式を終了する前に必
+ず(正常終了時だけでなく，例外, @code{return}, @code{break},
+@code{continue}, @code{redo}などによる脱出でも)@code{ensure}節の式を評
+価する．
+
+@node RETRY, RETURN, BEGIN, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection RETRY
+
+例
+
+@example
+retry
+@end example
+
+構文
+
+@display
+retry
+@end display
+
+再実行．@code{begin}式の@code{rescue}節で使われた場合，@code{begin}式
+を始めからもう一度実行する．例外処理を行なってから再試行するのに使う．
+
+@example
+begin
+  何らかの処理(例外が発生する)
+rescue
+  例外処理
+  retry  # 例外に対応して再実行
+end
+@end example
+
+イテレータ，イテレータブロックまたはfor文の中で使われた場合には，その
+イテレータの評価自体を最初から実行する．イテレータの引数も再評価される．
+
+@example
+for i in 1..5
+  retry if some_condition # i == 1 からやり直し
+end
+@end example
+
+@example
+# ユーザ定義のuntil loop
+def until(cond)
+  yield
+  retry if not cond
+end
+@end example
+
+@code{rescue}節やイテレータ以外でretryが用いられた場合例外が発生する．
+
+@node RETURN, BREAK, RETRY, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection RETURN
+
+例
+
+@example
+return
+return 12
+return 1,2,3
+@end example
+
+構文
+
+@display
+return [式[`,' 式@dots{}]]
+@end display
+
+式の値を戻り値としてメソッドの実行を終了する．式が2つ以上与えられた時
+には，それらを要素とする配列をメソッドの戻り値とする．式が一つもない場
+合には @code{nil} が戻り値となる．
+
+@node BREAK, CONTINUE, RETURN, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection BREAK
+
+例
+
+@example
+break
+@end example
+
+構文
+
+@display
+break
+@end display
+
+@code{break} はループを脱出する．Cと違い，@code{break}はもっとも内側の
+ループを脱出する作用だけを持ち，@code{case} を抜ける作用は持たない．
+
+@node CONTINUE, REDO, BREAK, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection CONTINUE
+
+例
+
+@example
+continue
+@end example
+
+構文
+
+@display
+continue
+@end display
+
+@code{continue}はもっとも内側のループの次の繰り返しを始める．
+
+@node REDO, 制御構造, CONTINUE, 制御構造
+@comment  node-name,  next,  previous,  up
+@subsubsection REDO
+
+例
+
+@example
+redo
+@end example
+
+構文
+
+@display
+redo
+@end display
+
+@findex redo
+@code{redo}はループ条件のチェックを行なわず，現在の繰り返しをやり直す．
+
+@node クラス定義, モジュール定義, 制御構造, 式
+@comment  node-name,  next,  previous,  up
+@subsection クラス定義
+@cindex クラスを定義する
+
+例
+
+@example
+class Foo:Super
+  def test
+     :
+  end
+     :
+end
+@end example
+
+構文
+
+@display
+class クラス名 [`:' スーパークラス名 ]
+    定義実体
+end
+@end display
+
+@findex class
+クラス名は大文字で始まる識別子である．
+
+@node モジュール定義, メソッド定義, クラス定義, 式
+@comment  node-name,  next,  previous,  up
+@subsection モジュール定義
+@cindex モジュールを定義する
+
+例
+
+@example
+module Foo
+  def test
+     :
+  end
+     :
+end
+@end example
+
+構文
+
+@display
+module クラス名
+    定義実体
+end
+@end display
+
+@findex module
+モジュール名は大文字で始まる識別子である．
+
+@node メソッド定義, 特異メソッド定義, モジュール定義, 式
+@comment  node-name,  next,  previous,  up
+@subsection メソッド定義
+@cindex メソッドを定義する
+
+例
+
+@example
+def fact(n)
+  if n == 1 then
+     1 
+  else
+    n * fact(n-1)
+  end
+end
+@end example
+
+構文
+
+@display
+def メソッド名 [`(' [引数 [= デフォルト]]@dots{}[`,' `*' 引数 ]`)']
+    定義実体
+end
+@end display
+@findex def
+
+引数にデフォルト式が与えられた場合，メソッド呼び出し時に引数が与えられ
+なかった場合にはデフォルト式を評価した結果で初期化される(デフォルト式
+の評価は呼び出し時に行われる)．一番最後の引数が@code{*}に続く(単一の)
+式である場合，その式を評価した結果(配列でなければ変換される)を展開して，
+引数として追加する．
+
+通常メソッド定義はネストできないので，メソッド定義式中ではメソッド定義
+式を再び呼び出せない．
+
+メソッド名は識別子または文字列である．演算子の再定義をする時には文字列
+で指定する．仮引数並びの最後に@code{*}がある場合，仮引数より多く与えら
+れた実引数は，最後の引数に配列として与えられる(足りない時にはエラー)．
+
+メソッドには呼び出し制限を加えることができ，制限を加えられたメソッドは，
+関数形式でしか呼び出せない(privateメソッド)．
+
+新規にメソッドを定義する場合，クラス定義式の外にあるdef式はデフォルト
+ではprivateメソッドを定義し，クラス定義式の中にあるdef式はpublicメソッ
+ドを定義する．スーパークラスのメソッドを再定義する場合には定義されるメ
+ソッドの可視性はスーパークラスのメソッドのものを受け継ぐ．
+
+メソッドの可視性を変更する場合には@code{Module}クラスで定義されている
+@code{public}, @code{private}の各メソッドを用いる．
+
+@node 特異メソッド定義, ALIAS, メソッド定義, 式
+@comment  node-name,  next,  previous,  up
+@subsection 特異メソッド定義
+
+例
+
+@example
+def foo.test()
+  print "this is foo\n"
+end
+@end example
+
+構文
+
+@display
+def 式 `.' メソッド名 [`(' [引数 [= デフォルト]]@dots{}[`,' `*' 引数 ]`)']
+    定義実体
+end
+@end display
+
+特異メソッドとはある特定のオブジェクトに固有のメソッドである．
+
+この形式は式の値であるオブジェクトに特異メソッドを定義する．式の値は
+(ビルトインクラスでない)通常オブジェクトか，クラスまたはモジュールであ
+る必要がある．通常メソッド定義とは異なり，特異メソッドはメソッド本体内
+でもネストして定義することができる．
+
+特異メソッドは通常は継承しないが，例外としてクラスの特異メソッドはその
+サブクラスにも継承される．言い替えればクラスの特異メソッドは他のオブジェ
+クト指向システムにおけるクラスメソッドの働きをする．
+
+注意: インクルードしたモジュールの特異メソッドは継承しない．
+
+@node ALIAS, UNDEF, 特異メソッド, 式
+@comment  node-name,  next,  previous,  up
+@subsection ALIAS
+@cindex メソッドに別名をつける
+
+例
+
+@example
+alias foo bar
+@end example
+
+構文
+
+@display
+alias メソッド名1 メソッド名2
+@end display
+
+@findex alias
+@code{alias}文でメソッドに別名をつけることができる．別名を付けられたメ
+ソッドは，その時点でのメソッド定義を引き継ぎ，元のメソッドが再定義され
+ても，再定義前の古いメソッドが呼び出されたのと全く同じ働きをする．
+
+@node UNDEF, DEFINED?, ALIAS, 式
+@comment  node-name,  next,  previous,  up
+@subsection UNDEF
+@cindex メソッドの定義を取り消す
+
+例
+
+@example
+undef bar
+@end example
+
+構文
+
+@display
+undef メソッド名
+@end display
+
+@findex undef
+メソッドの定義を取り消すためにはundefを用いる．
+
+defによる別名定義と@code{undef}による定義取り消しによってクラスのイン
+タフェースをスーパークラスと独立に変更することができる．ただし，メソッ
+ドがselfにメッセージを送っている場合もあるので，よく注意しないと既存の
+メソッドが動作しなくなる可能性がある．
+
+@node  DEFINED?,  , UNDEF, 式
+@comment  node-name,  next,  previous,  up
+@subsection DEFINED?
+@cindex メソッドが定義されているかどうか
+@cindex 変数が定義されているかどうか
+@cindex 定数が定義されているかどうか
+
+例
+
+@example
+defined? print
+defined? File.print
+defined?(foobar)
+defined?($foobar)
+defined?(@@foobar)
+defined?(Foobar)
+@end example
+
+構文
+
+@display
+defined? 式
+@end display
+
+@findex defined?
+式がメソッド呼び出しの場合，そのメソッドが定義されている時に真を返す．
+式が変数や定数の参照である場合は，それらの変数や定数が定義されている時
+に真を返す．それ以外の式の場合は式を評価して，例外が発生しなければ真を
+返す．
+
+@node 組み込み関数, 組み込み変数と定数, rubyの文法, Top
+@comment  node-name,  next,  previous,  up
+@chapter 組み込み関数
+
+Rubyには厳密な意味では関数はないが@code{Kernel}クラスの関数メソッドは
+(全ての通常クラスから関数形式で呼び出せるので)，関数的に用いられる．関
+数的に用いられるメソッドを以下にあげる．これらのメソッドを再定義する際
+には互換性を考えて行なうべきである．
+
+@ftable @code
+@item autoload(@var{module}, @var{file})
+
+@var{module}に最初にアクセスした時に@var{file}を@code{require}するよう
+に設定する．@var{module}は文字列またはシンボルで指定する．
+
+@item caller([@var{level}])
+
+@var{level}段上の呼出し元の情報を@code{$@@}の形式で得る．トップレベル
+では@code{nil}を返す．callerの戻り値を@code{$@@}に代入することで例外の
+発生位置を設定できる．また，以下のようなコードで呼出し関係のバックトレー
+スを表示できる．
+
+@example
+n = 0
+while c = caller(n)
+  print c, "\n"
+end
+@end example
+
+@item eof
+@itemx eof?
+
+コマンドラインからの入力が@code{EOF}に到達している場合，真を返す．
+
+@item eval(@var{expr})
+
+@var{expr}として与えられた文字列をrubyプログラムとして解釈，実行する．
+
+@item exec(@var{command})
+
+プログラムの実行を終了する．@var{status}として整数が与えられた場合，そ
+の値をrubyコマンドの終了ステータスとする．デフォルトは0．
+
+@item exit!(@var{status})
+
+プログラムの実行を終了する．整数@var{status}を終了ステータスとする．
+@code{exit}とは違って，例外処理などは一切行なわない．@code{fork}の後，
+子プロセスを終了させる時などに用いる．
+
+@item fork
+
+@samp{fork}システムコールを実行し，子プロセスを生成する．詳細は
+@samp{fork(2)}を参照のこと．親プロセス側では子プロセスのプロセスidを返
+し，子プロセス側では@code{nil}を返す．何らかの原因で子プロセスの生成に
+失敗した時には例外が発生する．イテレータとして呼ばれた時は，生成した子
+プロセスで与えられたブロックを評価し，ブロックの評価が終了した時点で子
+プロセスは正常終了する．
+
+@item format(@var{format}@dots{})
+
+フォーマットとして与えられた文字列をC言語の@samp{sprintf}と同じように
+解釈し，引数を展開した文字列を返す．メソッド@code{sprintf}の別名．
+
+Rubyにおける@samp{format}指定子の拡張については@code{sprintf}の項を参
+照のこと．
+
+@item getc
+
+標準入力から一文字取り出す．戻り値は読み込んだ文字の文字コード(ASCII)
+を表す@code{Fixnum}である．
+
+@item gets
+
+引数として与えられたファイル(なければ標準入力)で構成される仮想
+的なファイル(システム変数@code{$<}でアクセスできる)から一行読み込ん
+で，読み込みに成功した時にはその文字列を返す．ファイルの終りに
+到達した時には@code{nil}を返す．行の区切りはシステム変数@code{$/}によって
+変更できる．読み込んだ文字列はシステム変数@code{$_}にもセットされる．
+
+@item gsub(@var{pattern}[, @var{replace}])
+@itemx gsub!(@var{pattern}[, @var{replace}])
+
+システム変数@code{$_}の指す文字列内で @var{pattern}にマッチする部分を
+全て@var{replace}に置き換える．@code{String}クラスの@code{gsub}メソッ
+ドの解説を参照のこと．引数@var{replace}が省略された時にはイテレータと
+して動作し，ブロックを評価した結果で置換する．@code{gsub}メソッドは
+@code{$_}の値をコピーして，コピーの方を更新し，@code{$_}に代入する．
+
+@code{gsub!}は@code{$_}の指している文字列そのものを書き換える．
+
+@item iterator?
+
+メソッドがイテレータとして呼び出された時には真，そうでない時に偽を返す
+述語．
+
+@item kill(@var{signal}, @var{pid}@dots{})
+
+@var{pid}で指定されたプロセスにシグナルを送る．@var{signal}はシグナル
+番号か名前で指定する．負の値を持つシグナル(あるいはシグナル名の前に
+@code{-})を与えるとプロセスではなくプロセスグループにシグナルを送る．
+
+@item load(@var{file})
+
+@var{file}をロードする．@var{file}をロードするパスはシステム変数
+@code{$:}で決定される．
+
+@item loop
+
+無限ループするイテレータ．(中断されない限り)永久にイテレータブロックを
+評価し続ける．
+
+@item open(@var{file}[, @var{mode}])
+
+@var{file}をオープンして，@code{File}オブジェクトを返す．ファイル名は
+オープンするファイルを示す．ファイル名が@code{|}で始まる時には続く文字
+列をコマンドとして起動し，パイプラインを生成する．
+
+コマンド名が@samp{"-"}である時，@code{open}はrubyの子プロセスを生成し，
+その子プロセスとのパイプを返す．
+
+@var{mode}はファイルのアクセスモードを指定する．これは以下のうちのいず
+れかの文字列である．
+
+@table @samp
+@item r
+読み込み専用．@code{open}するファイルはあらかじめ存在している必要があ
+る．
+
+@item r+
+読み書き両用．@code{open}するファイルはあらかじめ存在している必要があ
+る．
+
+@item w
+書き込み専用．ファイルが存在していた場合，長さを0にする．存在していな
+ければ新たにファイルを作成する．
+
+@item w+
+読み書き両用．読み込みが行なえること以外は@samp{"w"}と同じ働きをする．
+
+@item a
+追加書き込み専用．ファイルはあらかじめ存在している必要がある．書き込み
+はファイルの最後に追加される．
+
+@item a+
+読み書き両用．ファイルが存在していなければ新たに作成する．アクセス位置
+はファイルの最後に初期化される．
+@end table
+
+モードが省略された場合のデフォルトは@samp{"r"}である．
+
+@item print(@var{arg}1@dots{})
+
+引数を順に出力する．引数が与えられない時には@code{$_}の値を出力する．
+文字列以外のオブジェクトが引数として与えられた場合には，当該オブジェク
+トの@code{to_s}メソッドによって文字列に変換してから出力される．システ
+ム変数@code{$;}(出力フィールドセパレータ)に@code{nil}でない値がセット
+されている時には，各引数の間にその文字列を出力する．システム変数
+@code{$\}(出力フィールドセパレータ)に@code{nil}でない値がセットされている時
+には，最後にそれを出力する．
+
+@item printf([@var{port}, ]@var{format}, @var{arg}@dots{})
+
+C言語のprintfと同じように@var{format}に従い引数を文字列に変換し，出力
+する．第1引数がIOのサブクラスのインスタンスであった場合はそのオブジェ
+クトに対して出力を行なう．デフォルトは@code{$stdout}に出力する．
+
+Rubyにおけるformat指定子の拡張についてはsprintfの項を参照のこと．
+
+@item  proc
+@itemx lambda
+
+与えられたイテレータブロックを手続きオブジェクト(クラス@code{Proc}のイ
+ンスタンス)として返す．
+
+@item rand(@var{max})
+
+0から@var{max}を越えない範囲の整数の乱数を発生する．戻り値は
+@code{Fixnum}．
+
+@item require(@var{feature})
+
+@var{feature}で指定されるfileをロードする．@var{feature}はロードするファ
+イルを指定する文字列で，拡張子@code{.rb}が指定されている時はrubyスクリ
+プト，拡張子@code{.o}が指定されている時は，バイナリモジュールをロード
+する．ただし，いくつかのアーキテクチャではバイナリモジュールのロードは
+提供されない．バイナリモジュールの実際のファイルの拡張子はアーキテクチャ
+毎に異なるが，@var{feature}名の拡張子はいつも@code{.o}を用いる．
+
+拡張子が指定されない場合は，まず@code{.rb}，次に@code{.o}を補って，ファ
+イルを検索する．
+
+requireは実際にロードした時には @code{TRUE}，既にロードされている時に
+は@code{FALSE}を返す．またロードした@var{feature}の名前を(拡張子も含め
+て)，変数@code{$"}に追加する．
+
+@item select(@var{reads}[, @var{writes}[, @var{execpts}[, @var{timeout}]]])
+
+@samp{select(2)}を実行する．@var{reads}/@var{writes}/@var{execpts}には
+IO(またはそのサブクラス)のインスタンスの配列を与える．@var{timeout}は
+Fixnum/Float/Timeのいずれかで指定する．戻り値は@var{timeout}が成立した
+場合には@code{nil}，そうでないときは3要素の配列を返し，その各要素が入
+力/出力/例外待ちのオブジェクトの配列である(指定した配列のサブセット．
+待ちオブジェクトの配列を指定しなかった場合は@code{nil})．システムコー
+ル実行中に割込みが起こった場合には各配列は空になる．
+
+@item sleep([@var{sec}])
+
+@var{sec}秒だけプログラムの実行を停止する．@var{sec}が省略された場合，
+プロセスに@code{SIGALRM}が送られない限り，永久にスリープする．実際にス
+リープした秒数を返す．
+
+@item sprintf(@var{format}@dots{})
+
+@var{format}文字列をC言語の@samp{sprintf}と同じように解釈し，引数を展
+開した文字列を返す．メソッド@code{format}の別名．
+
+@var{format}指定子はC言語の@samp{sprintf}()が受け付けるもの(ただし，
+Rubyには unsignedがないので，%uは除く)に加えて, %b, %B, %O, %Xを使うこ
+とができる．%bは数値の2進表示，%B, %O, %Xはそれぞれ2進，8進，16進数の
+表示を行なうが，負の数の処理の際に2の補数表現ではなく，その絶対値表記
+の先頭に@code{-}をつけたものを表示する．
+
+@item srand([@var{seed}])
+
+乱数の@var{seed}を設定し，古い初期値を返す．初期値が省略された時には
+@samp{time(3)}の返す値をデフォルトとする．
+
+@item sub(@var{pattern}[, @var{replace}])
+@itemx sub!(@var{pattern}[, @var{replace}])
+
+システム変数@code{$_}の指す文字列で最初に@var{pattern}にマッチする部分
+を@var{replace}に置き換える．引数@var{replace} が省略された時にはイテ
+レータとして動作し，ブロックを評価した結果で置換する．subメソッドは
+@code{$_}の値をコピーして，コピーの方を更新し，@code{$_}に代入する．そ
+の他の詳細に関しては@code{String}クラスの@code{sub}メソッドの解説を参
+照のこと．
+
+@code{sub!}は@code{$_}の指している文字列そのものを書き換える．
+
+@item syscall(@var{num}, @var{arg}@dots{})
+
+@var{num}で指定された番号のシステムコールを実行する．第2引数以降をシス
+テムコールの引数として渡す．引数は文字列または整数でなければならない．
+
+@item system(@var{command})
+
+@var{command}を実行し，成功した時(サブプロセスがstatus 0で終了した時)
+には真を，失敗した時には偽を返す．終了ステータスは変数@code{$?}  で参
+照できる．
+
+@item test(@var{cmd}, @var{file} [, @var{file}])
+
+ファイルテストを行う．@var{cmd}は以下に示す文字リテラルである．ファイ
+ル名として@code{"&"}を指定すると，直前のファイルへの@samp{stat(2)}の結
+果を再利用する．
+
+
+1つの引数を取るもの
+
+@display
+?r        ファイルを実効 uid で読むことができる
+?w        ファイルに実効 uid で書くことができる
+?x        ファイルを実効 uid で実行することができる
+?o        ファイルの所有者が実効 uid である
+
+?R        ファイルを実 uid で読むことができる
+?W        ファイルに実 uid で書くことができる
+?X        ファイルを実 uid で実行することができる
+?O        ファイルの所有者が実 uid である
+
+?e        ファイルが存在する
+
+?z        ファイルサイズが 0 である
+?s        ファイルサイズが 0 でない(ファイルサイズを返す)
+
+?f        ファイルはプレーンファイルである
+?d        ファイルはディレクトリである
+?l        ファイルはシンボリックリンクである
+?p        ファイルは名前つきパイプ(FIFO)である
+?S        ファイルはソケットである
+?b        ファイルはブロック特殊ファイルである
+?c        ファイルはキャラクター特殊ファイルである
+
+?u        ファイルに setuid ビットがセットされている
+?g        ファイルに setgid ビットがセットされている
+?k        ファイルに sticky ビットがセットされている
+
+?M        スクリプトの実行を開始した時点でのファイルの古さ
+?A        スクリプトの実行を開始した時点でのファイルのアクセス時間
+?C        スクリプトの実行を開始した時点でのファイルの inode 変更時間
+@end display
+
+2つの引数を取るもの
+
+@display
+?=        ファイル1とファイル2のタイムスタンプが等しい
+?>        ファイル1の方がファイル2より更新時間が新しい
+?<        ファイル1の方がファイル2より更新時間が古い
+?-        ファイル1がファイル2にハードリンクされている
+@end display
+
+@item trace_var(@var{var}, @var{command})
+
+@var{var}で指定された大域変数の値が変更された時に評価される
+@var{command}を指定する．@var{command}は文字列，またはブロックで指定す
+る．traceを解除するためには@code{untrace_var}を用いる．
+
+@item trap(@var{signal}, @var{command})
+@itemx trap(@var{signal}) @{@dots{}@}
+
+@var{signal}の割り込みがかかった時に@var{command}を実行する．
+@var{signal}はシグナル名かシグナルの番号．@var{command}は文字列，また
+はブロックで指定する．commandとして@samp{"SIG_IGN"}または
+@samp{"IGNORE"}を指定した時にはそのシグナルを無視する(可能ならば)．
+@samp{"SIG_DFL"}または@samp{"DEFAULT"}を指定した時はデフォルトの動作を
+行なう．@samp{"EXIT"}を指定した時はシグナルを受け取ると(終了処理を行っ
+た後)，exit status 1で終了する．
+
+@item untrace_var(@var{var})
+
+@var{var}に対する全てのtraceを解除する．traceとして指定されているオブ
+ジェクトを配列にいれて返す．
+
+@item wait
+
+子プロセスが終了するのを待ち，終了した子プロセスのpidを返す．子プロセ
+スが一つもなければ@code{nil}を返す．
+
+@item waitpid(@var{pid}, @var{flags})
+
+@var{pid}で指定される特定の子プロセスの終了を待ち，そのプロセスが終了
+した時に真を返す．子プロセスが存在しないか，ノンブロッキングモードで子
+プロセスがまだ終了していない時には@code{nil}を返す．@samp{waitpid(2)}か
+@samp{wait4(2)}の実装されていないマシンでは@var{flags}はいつも@code{nil}また
+は0でなければならない．
+@end ftable
+
+@node 組み込み変数と定数, 組み込みクラスとモジュール, 組み込み関数, Top
+@comment  node-name,  next,  previous,  up
+@chapter 組み込み変数と定数
+@cindex{組込み変数}
+
+@table @samp
+
+@item $!
+エラーメッセージ．failで設定する．
+
+@item $@@
+エラーが発生した時点のファイル名と行番号が
+@example
+"ファイル:行番号[:メソッド名(あれば)]"
+@end display
+の形式で格納される．
+
+@item $&
+最後に成功したパターンマッチ
+
+@item $`
+最後のパターンマッチでマッチした文字列の前の文字列
+
+@item $'
+最後のパターンマッチでマッチした文字列の後に続く文字列
+
+@item $+
+最後の検索パターンでマッチした最後の括弧
+
+@item $1@dots{}$9
+最後に成功したパターンマッチでn番目の括弧にマッチした値が格納される．
+該当する括弧がなければ@code{nil}が入っている．
+
+@item $~
+最後のマッチに関する情報．これをセットすると@code{$&}や
+@samp{$1@dots{}$9}の値が変化する．
+
+@item $=
+この変数の値が@code{nil}でない時，パターンマッチや文字列の比較でアルファベッ
+トの大文字小文字を区別しない．デフォルトは@code{nil}(区別する)．
+
+@item $/
+入力レコードセパレータ．ファイルや文字列に対して@code{each}を行なう時
+の分割文字を指定する．$/に空文字列(@code{""})を指定すると段落単位で入
+力を行ない，@code{nil}を指定すると全体を一度に読み込む．@code{$/}には
+正規表現は使えない．デフォルトは@samp{"\n"}．
+
+@item $\
+出力レコードセパレータ．この変数に文字列を指定すると@code{write}や
+@code{print}の度に最後にこの文字列を付加して出力する．デフォルトは
+@code{nil} (なにも追加しない)．
+
+@item $,
+@code{Array:join}のデフォルトの区切り文字列．@code{print}の各引数の間
+に出力される文字列．
+
+@item $;
+@code{String:split}のデフォルトの区切り文字．
+
+@item $.
+最後に読んだ入力ファイルの行番号．
+
+@item $<
+引数(なければ標準入力)で構成される仮想ファイル．つまり@code{gets}は
+@code{$<.gets}と同じ意味である．@code{$<.file}で現在読み込み中のファイ
+ルオブジェクトが，@code{$<.filename}でそのファイル名が得られる．(覚え
+方: @code{<}はシェルの入力元指定)
+
+@item $>
+@code{print}や@code{printf}のデフォルトの出力先．初期値は
+@code{$stdout}．@samp{-i}オプションを指定した場合には読み込み元と同じ
+名前のファイル．(覚え方: @code{>}はシェルの出力先指定)
+
+@item $_
+最後に@code{gets}などで読み込んだ文字列．
+
+@item $0
+rubyスクリプトの名前．この変数に代入すると@samp{ps(1)}の出力が変化する．
+
+@item $*
+rubyスクリプトに与えられた引数．ruby自身に対する引数は取り除かれている．
+
+@item $$
+現在実行中のrubyプロセスのpid．
+
+@item $?
+最後に実行した子プロセスのstatus．
+
+@item $:
+ファイルをロードする時に検索するディレクトリへのパスを含む配列．起動時
+にはデフォルト値(コンパイル時に指定する)に加えて，環境変数
+@var{RUBYLIB}の値とruby起動時の@samp{-I}オプションで指定された値が追加
+される．(覚え方: コロンは環境変数@var{PATH}の区切り文字である)
+
+@item $"
+@code{require}でロードされたファイル名を含む配列．@code{require}で同じ
+ファイルを2回ロードしないために用いられる．(覚え方: prevent files to
+be doubly quoted(loaded))
+
+@item $ARGF
+@code{$<}の別名．
+
+@item $ARGV
+@code{$*}の別名．
+
+@item $DEBUG
+@code{-d}フラグの状態(真偽値)．
+
+@item $FILENAME
+仮想ファイル@code{$<}で現在読み込み中の(メソッドgetsが今読んでいる)ファ
+イル名．@code{$<.filename}と同じ．
+
+@item $KCODE
+現在処理対象としている漢字コードを表す文字列．@samp{"EUC"}，
+@samp{"SJIS"}または@samp{"NONE"}．この変数の値を変更すると正規表現のマッ
+チの直前に正規表現の再コンパイルが行われる．
+
+@item $LOAD_PATH
+@code{$:}の別名．
+
+@item $stdin
+標準入力
+
+@item $stdout
+標準出力
+
+@item $stderr
+標準エラー出力
+
+@item $VERBOSE
+@code{-v}フラグの状態(真偽値)
+
+@item TRUE
+@itemx FALSE
+それぞれ真偽値を表す(@code{TRUE}の値はt，@code{FALSE}の値は@code{nil})．
+条件判断は@code{nil}を偽，それ以外の全ての値を真として判断するため，
+@code{TRUE}の値は代表的な真の値という以上の意味を持たない．よって，あ
+るメソッドの返値が真であるということと，それが@code{TRUE}を返すという
+ことは厳密には同じではない(述語的に用いられるメソッドは大抵真の値とし
+て@code{TRUE}を返すようにはなっているが)．つまり
+
+@example
+if some.method() then @dots{} else @dots{} end
+@end example
+
+と
+
+@example
+if some.method() == TRUE then @dots{} else @dots{} end
+@end example
+
+は完全には同義ではない．@code{FALSE}に関しては，このような問題は生じ
+ない．
+
+@item STDIN
+標準入力($stdinの初期値)
+@item STDOUT
+標準出力($stdoutの初期値)
+@item STDERR
+標準エラー出力($stderrの初期値)
+
+@item ENV
+環境変数にアクセスする連想配列．文字列をキーとして与えると対応する環境
+変数の値が得られる．環境変数が存在しない場合は@code{nil}が返る．
+
+@item VERSION
+rubyのバージョンを示す文字列
+@end table
+
+@node 組み込みクラスとモジュール, C言語とのインタフェース, 組み込み変数と定数, Top
+@comment  node-name,  next,  previous,  up
+@chapter 組み込みクラスとモジュール
+
+@menu
+クラス
+* Array::
+* Bignum::
+* Class::
+* Dir::
+* File::
+* Fixnum::
+* Float::
+* Hash::
+* Integer::
+* IO::
+* Kernel::
+* Module::
+* Nil::
+* Numeric::
+* Object::
+* Proc::
+* Range::
+* Regexp::
+* String::
+* Struct::
+* Time::
+
+モジュール
+
+* Comparable::
+* Enumerable::
+* Etc::
+* FileTest::
+* GC::
+* Math::
+* Process::
+@end menu
+
+@node Array, Bignum, 組み込みクラスとモジュール, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Array
+
+数字を添字とした配列のクラスである．生成は一般的には配列式``[@dots{}]''で
+行なわれる．
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+@ftable @code
+@item  self[@var{nth}]
+@itemx self[@var{start}..@var{end}]
+@itemx self[@var{start}, @var{length}]
+
+配列の要素にアクセスする．最初の形式では配列の@var{nth}番目の要素を返
+し，2番目の形式では@var{start}番目の要素から@var{end}番目の要素を含む
+部分配列を返す．3番目の形式では@var{start}番目から@var{length}個の要素
+を含む部分配列を返す．
+
+@item  self[@var{nth}] = @var{val}
+@itemx self[@var{start}..@var{end}] = @var{val}
+@itemx self[@var{start}, @var{length}] = @var{val}
+
+配列の要素を変更する．最初の形式では配列の@var{nth}番目の要素を
+@var{val}に変更する．2番目の形式は@var{start}番目の要素から@var{end}番
+目の要素までを@var{val}に変更する．3番目の形式では@var{start}番目から
+@var{length}個の要素を@var{val}に変更する．
+
+2番目，3番目の形式では@var{val}は配列でなければならない．
+
+例
+
+@example
+ary = [1, 2, 3, 4, 5]
+ary[0..2] = [0, 0] # 配列の内容は [0, 0, 4, 5]
+ary[1, 0] = [7]    # 配列の内容は [0, 7, 0, 6, 5]
+@end example
+
+@item self + @var{other}
+
+配列の連結．@code{self}と@var{other}の両方の配列の内容を繋げた新しい配
+列を返す．
+
+@item self * @var{times}
+
+配列の繰り返し．
+
+@item self - @var{other}
+
+集合の差演算．@code{self}から@var{other}の要素を取り除いた内容の新しい
+配列を返す．重複する要素は1度だけ現れる．
+
+@item self * @var{other}
+
+集合の積演算．両方の配列に含まれる要素からなる新しい配列を返す．
+重複する要素は1度だけ現れる．
+
+@item self | @var{other}
+
+集合の和演算．両方の配列にいずれかに含まれる要素を全て含む新し
+い配列を返す．重複する要素は1度だけ現れる．
+
+@item self << @var{obj}
+
+objを配列の末尾に追加する．@code{self}を返すので@code{C++}的に連鎖でき
+る．
+
+@item assoc(@var{key})
+
+連想リスト(2要素の配列を要素とする配列)を検索し，第1要素が@var{key}と
+等しい (@code{==}で比較する)配列を返す．
+
+@item clear
+
+配列の大きさを0にする．
+
+@item delete(@var{val})
+
+@var{val}と一致する要素を削除する．
+
+@item delete_if @{@dots{}@}
+
+要素を削除するイテレータ．ブロックを評価した値が真の時，対応する要素を
+配列から削除する．
+
+@item each @{@dots{}@}
+
+配列の各要素を順に与えるイテレータ．
+
+@item  fill(@var{val})
+@itemx fill(@var{val}, @var{start}[, @var{length}])
+@itemx fill(@var{val}, @var{start}..@var{end})
+
+配列(の指定された部分)の要素の値を@var{val}に設定する．2番めの形式で
+@var{length}が省略された時は配列の終りまでの長さをとる．指定された部分
+配列が元の配列の範囲を越える時は自動的に拡張される．
+
+@item index(@var{val})
+
+@var{val}と等しい最初の要素のインデックスを返す．該当する要素が存在し
+ない場合は@code{nil}を返す．
+
+@item  indexes(@var{ary})
+@itemx indexes(@var{index_}1,@dots{}, @var{index_n})
+
+1番目の形式では整数の配列を引数として受けて，その要素をインデックスと
+する要素を含む配列を返す．2番目の形式では各引数の値をインデックスとす
+る要素を含む配列を返す．
+
+@item join([@var{sep}])
+
+配列の要素を連結した文字列を返す．各要素は文字列に変換され，間に
+@var{sep}を挟んで連結される．@var{sep}が省略された時にはシステム変数
+@code{$,}の値が用いられる．
+
+@item  length
+@itemx size
+
+配列の長さ(要素数)を返す．
+
+@item pack(@var{template})
+
+配列の内容を@var{template}文字列にしたがって，1つの文字列にパックする．
+パックした文字列を返す．テンプレートは型指定文字列とその長さ(省略時は
+1)を並べたものである．長さとして@code{*}が指定された時は「残りのデータ
+全て」の長さを表す．
+
+型指定文字は以下のものがある．
+
+@display
+a     ASCII文字列(null文字を詰める)
+A     ASCII文字列(スペースを詰める)
+b     ビットストリング(下位ビットから上位ビット)
+B     ビットストリング(上位ビットから下位ビット)
+h     16進文字列(下位ニブルが先)
+H     16進文字列(上位ニブルが先)
+c     char
+C     unsigned char
+s     sort
+S     unsigned sort
+i     int
+I     unsigned int
+l     long
+L     unsigned int
+n     ネットワークバイトオーダーのshort
+N     ネットワークバイトオーダーのlong
+f     単精度浮動小数点数(機種依存)
+d     倍精度浮動小数点数(機種依存)
+x     ナルバイト
+X     1バイト後退
+@@     絶対位置への移動
+@end display
+
+@item pop
+
+配列の末尾の要素を取り除いて，それを返す．
+
+@item push(@var{obj})
+
+@var{obj}を配列の末尾に追加する．
+
+@item rassoc(@var{value})
+
+連想リスト(2要素の配列を要素とする配列)を検索し，第2要素が@var{value}
+と等しい(@code{==}で比較する)配列を返す．
+
+@item shift
+
+配列の先頭の要素を取り除いて，それを返す．
+
+@item  sort
+@itemx sort @{|@var{a}, @var{b}|@dots{}@}
+
+配列の内容をソートする．イテレータとして呼び出された場合はブロックを評
+価した値で要素の大小を決定する．大きい時に正，等しい時に0，小さき時に
+負．通常のメソッドとして呼び出された場合は各要素を@code{<=>}で比較する．
+
+@item to_a
+
+自分自身を返す．対称性のために用意されているメソッドであまり面白くない．
+
+@item unshift(@var{obj})
+
+@var{obj}を配列の先頭に追加する．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item Array[@var{item}@dots{}]
+
+引数を要素とする配列を生成する．
+@end ftable
+
+@xref{Object}
+@xref{Enumerable}
+
+@node Bignum, Class, Array, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Bignum
+
+無限多倍長整数のクラス．演算の結果がこの@code{Fixnum}の範囲内である場
+合には自動的にクラスは@code{Fixnum}に変換される．一般的にrubyプログラ
+ムでは@code{Fixnum}と@code{Bignum}の変換は暗黙のうちに行われるので，意
+識する必要は無い．@code{Float}との混合に関しては，@code{Bignum}より
+@code{Float}の方がgenericityが高いのにも関わらず，@code{Bignum}の方が，
+大きな値を表現できるので，変換時に桁落ちが生じる可能性がある．
+
+SuperClass: Integer
+
+Methods:
+
+@ftable @code
+@item  self + @var{other}
+@itemx self - @var{other}
+@itemx self * @var{other}
+@itemx self / @var{other}
+@itemx self % @var{other}
+@itemx self ** @var{other}
+
+算術演算．それぞれ和，差，積，商，剰余，冪乗を返す．
+
+@item  ~ self
+@itemx self | @var{other}
+@itemx self & @var{other}
+@itemx self ^ @var{other}
+
+ビット演算．それぞれビット反転，論理和，論理積，排他的論理和を返す．
+
+@item  self << @var{bits}
+@itemx self >> @var{bits}
+
+シフト演算．それぞれ@var{bits}ビットだけ左右にビットシフトを行なう．
+
+@item divmod(@var{other})
+
+商と剰余からなる配列を返す．
+@end ftable
+
+@xref{Integer}
+
+@node Class, Comparable, Bignum, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Class
+
+クラスのクラス．より厳密に説明するとクラスは特異メソッドを継承するため
+に，それぞれメタクラスと呼ばれる名前のないクラスをクラスとして持ち，
+@code{Class}はそのメタクラスのクラスである(分かったかな?)．が，この解
+説が理解できなくても，rubyを使うことに何の支障もない．クラスには特異メ
+ソッドを定義できる事と，スーパークラスで定義された特異メソッドはそのサ
+ブクラスでも有効である事を知れば十分である．
+
+SuperClass: Module
+
+Private Methods:
+
+@ftable @code
+@item attr(@var{name}[, @var{public}])
+
+そのクラスのインスタンスに対して@var{name}で指定される属性を定義する．
+詳しくは@code{Module}の@code{attr}メソッドの項を参照のこと．
+@end ftable
+
+Methods:
+
+@ftable @code
+@item new(@dots{})
+
+クラスのインスタンスを生成する．多くの場合このメソッドはサブクラスの特
+異メソッドによってオーバーライドされ，クラスによって引数が異なる．
+@end ftable
+
+@xref{Module}
+
+@node Comparable, Dir, Class, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Comparable
+
+比較演算を許すクラスのための@code{Mixin}．このモジュールをインクルード
+することによって，@code{<=>}演算子を定義するだけで他の演算子はその定義
+を利用して派生できる．
+
+Methods:
+
+@ftable @code
+@item self == @var{other}
+
+@code{self}が@var{other}と等しい時真を返す．
+
+@item self > other
+
+@code{self}が@var{other}より大きい時真を返す．
+
+@item self >= @var{other}
+
+@code{self}が@var{other}より大きいか等しい時真を返す．
+
+@item self < @var{other}
+
+@code{self}が@var{other}より小さい時真を返す．
+
+@item self <= @var{other}
+
+@code{self}が@var{other}より小さいか等しい時真を返す．
+
+@item between?(min, max)
+
+@code{self}が@var{min}と@var{max}の範囲内にある時真を返す．
+@end ftable
+
+@node Dir, Enumerable, Comparable, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Dir
+
+ディレクトリ内の要素を順に返すディレクトリストリーム操作のためのクラス．
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+@ftable @code
+
+@item close
+
+ディレクトリストリームをクローズする．以後の操作は例外を発生させる．
+
+@item each @{|@var{item}|@dots{}@}
+
+ディレクトリ内の各要素を順に与えるイテレータ．
+
+@item  getwd
+@itemx pwd
+
+カレントディレクトリを返す．
+
+@item rewind
+
+ディレクトリストリームを先頭にリセットする．
+
+@item seek(@var{pos})
+
+ディレクトリストリームの位置を@var{pos}に設定する．
+
+@item tell
+
+ディレクトリストリームの現在の位置を返す．
+
+Single Methods:
+
+@item  self[@var{pat}]
+@itemx glob(@var{pat})
+
+文字列@var{pat}を@samp{sh}形式のワイルドカードとして展開した結果を文字
+列の配列として返す．書式は以下の通りである．
+
+@ftable @samp
+@item *
+任意の文字列(空文字列を含む)と一致
+@item ?
+任意の1文字と一致
+@item [ ]
+[]内のいずれか1文字と一致
+@item {@dots{}}
+{}内の(コンマで区切られた)いずれかの文字列と一致
+@end ftable
+
+@item chdir(@var{path})
+
+カレントディレクトリを@var{path}に変更する．
+
+@item chroot(@var{path})
+
+プロセスのルートディレクトリを変更する，同名のシステムコールと同じ働き
+をする．この操作は実効uidがスーパユーザである時だけに制限されている．
+ルートディレクトリを元に戻す(ルートディレクトリを上方に変更する)方法は
+提供されていない．
+
+@item mkdir(@var{path}[, @var{mode}])
+
+@var{mode}で指定されたモードを持つディレクトリ@var{path}を作成する．モー
+ドは@code{umask}によって修正される．@var{mode}のデフォルト値は0777．
+
+@item open(@var{path})
+
+@var{path}に対するディレクトリストリームをオープンする．
+
+@item rmdir(@var{path})
+
+@var{path}で指定されたディレクトリを削除する．ディレクトリは空である必
+要がある．
+@end ftable
+
+@xref{Object}
+@xref{Enumerable}
+
+@node Enumerable, File, Dir, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Enumerable
+
+要素に対する繰り返しを行なうクラスのための@code{Mixin}．このモジュール
+をインクルードするためには，メソッド@code{each}を定義する必要がある．
+
+Methods:
+
+@ftable @code
+
+@item collect @{|@var{item}|@dots{}@}
+
+各要素に対してブロックを評価した結果を全て含む配列を返す
+
+@item find @{|@var{item}|@dots{}@}
+
+要素に対してブロックを評価した値が真になった最初の要素を返す．
+
+@item find_all @{|@var{item}|@dots{}@}
+
+各要素に対してブロックを評価した値が真であった要素を全て含む配列を返す．
+
+@item grep(pattern)
+@itemx grep(pattern) @{|@var{item}|@dots{}@}
+
+@code{要素 =~ @var{pattern}}が成立する全ての要素を含む配列を返す．イテ
+レータとして用いられた時は上記の条件の成立した要素に対してブロックを実
+行する．
+
+@item member?(@var{val})
+
+@var{val}と@code{==}の関係にある要素を持つ時，真を返す．
+
+@item index(@var{val})
+
+@var{val}と@code{==}の関係にあるオブジェクトが何番目に現れたかを返す．
+一番最初の要素が0になる．要素が存在しない時には@code{nil}を返す．順序
+のないクラスに対してはあまり意味がない．
+
+@item length
+
+要素の数を返す．
+
+@item min
+
+最小の要素を返す．全ての要素がお互いに@code{<=>}メソッドで比較できるこ
+とを仮定している．
+
+@item max
+
+最大の要素を返す．各要素が@code{<=>}メソッドで比較できることを仮定して
+いる．
+
+@item reverse
+
+全ての要素を逆順に並べた配列を返す．
+
+@item sort
+@itemx sort @{|@var{a}, @var{b}|@dots{}@}
+
+全ての要素をソートした配列を返す．
+@end ftable
+
+@node File, FileTest, Enumerable, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section File
+
+ファイルアクセスのためのクラス．メソッド@code{open}で生成される．また，
+このクラスの特異メソッドとして@code{test}のファイルテスト演算子相当の
+メソッドが定義されている(@code{FileTest}モジュールのメソッド郡)．
+
+SuperClass: IO
+
+Methods:
+
+@ftable @code
+
+@item atime
+
+ファイルの最終アクセス時刻を返す．
+
+@item ctime
+
+ファイルの最終ステータス変更時刻を返す．
+
+@item chmod(@var{mode})
+
+ファイルのパーミッションを変更する(cf @samp{chmod(2)})．
+
+@item chown(@var{owner}, @var{group})
+
+ファイルの所有者とグループを変更する(cf @samp{chown(2)})．@code{nil}か
+@code{-1}を指定することによって所有者やグループを現在のまま変えないで
+おくことができる．
+
+@item eof
+@itemx eof?
+
+ファイルの終端に到達した時に真を返す．
+
+@item lstat
+
+ファイルに関する@code{Stat}構造体を返す．@code{lstat}はファイルがシン
+ボリックリンクであればリンクそのものに関する@code{Stat}構造体を返す．
+構造体の内容については@code{stat}を参照のこと．
+
+@item mtime
+
+ファイルの最終修正時刻を返す．
+
+@item rewind
+
+ファイルのファイルポインタの位置を先頭に移動する．
+
+@item path
+
+ファイルのパス名を返す．
+
+@item seek(@var{offset}, @var{ptrname})
+
+ファイルのファイルポインタの位置を@var{offset}に移動する．
+@var{ptrname}は0，1，2のいずれかであって，それぞれファイルの先頭，現在
+位置，ファイルの終端からの相対を示す．
+
+@item stat
+
+ファイルに関する@code{Stat}構造体を返す(@xref{Struct})．
+
+@display
+struct stat
+  dev	 	# ファイルの存在するデバイス
+  ino		# ファイルのi-node番号
+  mode		# モード
+  nlink		# ハードリンクの数
+  uid		# 所有者のユーザID
+  gid		# 所有者のグループID
+  rdev		# デバイスのID(スペシャルファイルのみ)
+  size		# ファイルサイズ(byte数)
+  blksize	# ファイルシステムにおいて適切なブロックサイズ
+  blocks	# ブロック数
+  atime		# 最終アクセス時間
+  mtime		# 最終更新時間
+  ctime		# 最終状態変更時間
+end
+@end display
+
+詳細な説明は@samp{stat(2)}を参照のこと．システム上で定義されている
+@code{Stat}構造体に該当するメンバがない場合は0が設定されている．
+
+@item tell
+
+ファイルの現在のファイルポインタの位置を返す．
+
+@item truncate(@var{length})
+
+ファイルを切り捨てて最大@var{length}バイトにする．ファイルは
+@code{write}モードでオープンされていなければならない．
+
+Single Methods:
+
+@item atime(@var{filename})
+
+@var{filename}の最終アクセス時刻を返す．
+
+@item basename(@var{filename}[, @var{suffix}])
+
+@var{filename}の最後の要素を返す．@var{suffix}が与えられた場合は，その
+拡張子も取り除く．
+
+@example
+basename("ruby/ruby.c")
+        @result{} "ruby.c"
+basename("ruby/ruby.c", ".c")
+        @result{} "ruby"
+@end example
+
+@item ctime(@var{filename})
+
+@var{filename}の最終ステータス変更時刻を返す．
+
+@item chmod(@var{mode}, @var{path}, @var{file}@dots{})
+
+ファイルのパーミッションを変更する(cf @samp{chmod(2)})．変更したファイ
+ル数を返す．
+
+@item chown(@var{owner}, @var{group}, @var{file}@dots{})
+
+ファイルの所有者とグループを変更する(cf @samp{chown(2)})．@code{nil}か
+@code{-1}を指定することによって所有者やグループを現在のまま変えないで
+おくことができる．変更したファイル数を返す．
+
+@item dirname(@var{fname})
+
+ファイル名の最後の要素以外を返す．
+
+@item expand_path(@var{path})
+
+ファイル名を絶対パスに展開する．@samp{~}はホームディレクトリに展開され
+る．
+
+@example
+expand_file_name("..")
+        @result{} "/home/matz/work"
+expand_file_name("~")
+        @result{} "/home/matz"
+expand_file_name("~matz")
+        @result{} "/home/matz"
+@end example
+
+@item link(@var{old}, @var{new})
+
+@var{old}へのハードリンク@var{new}を生成する．@samp{link(2)}と同じ制限
+がある．
+
+@item mtime(@var{filename})
+
+@var{filename}の最終修正時刻を返す．
+
+@item readlink(@var{path})
+
+シンボリックリンク@var{path}の内容を文字列として返す．
+
+@item rename(@var{from}, @var{to})
+
+ファイル名@var{from}を@var{to}に変更する．@samp{rename(2)}参照．既に
+@var{to}という名前のファイルが存在する時にはまずそのファイルが削除され
+る．
+
+@item stat(@var{filename})
+
+@var{filename}のファイルの@code{Stat}構造体を返す．
+
+@item symlink(@var{old}, @var{new})
+
+@var{old}へのシンボリックリンク@var{new}を生成する．
+
+@item truncate(@var{path}, @var{length})
+
+@var{path}で指定されたファイルを切り捨てて最大@var{length}バイトにする．
+
+@item type(@var{filename})
+
+@var{filename}のファイルのタイプを表す文字列を返す．文字列は
+@code{"file"}，@code{"directory"}，@code{"characterSpecial"}，
+@code{"blockSpecial"}，@code{"fifo"}，@code{"link"}，@code{"socket"}の
+うちのいずれか一つである．
+
+@item unlink(@var{file}@dots{})
+
+ファイルを削除する．ディレクトリの削除には@code{Dir.rmdir}を使うこと．
+
+@item utime(@var{atime}, @var{mtime}, @var{file}@dots{})
+
+ファイルのアクセス時刻を@var{atime}に，修正時刻を@var{mtime}に設定する．
+@var{atime}，@var{mtime}は数または@code{Time}クラスのインスタンスでな
+ければならない．
+@end ftable
+
+これ以外に@code{FileTest}モジュールのメソッドも特異メソッドとして持つ．
+
+@xref{IO}
+
+@node FileTest, Fixnum, File, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section FileTest
+
+ファイルテスト用メソッドを集めたモジュール．インクルードして用いること
+もできる．このモジュールのメソッドにファイル名として@code{"&"}を指定す
+ると，直前のファイルへの@samp{stat(2)}の結果を再利用する．
+
+Methods:
+Single Methods:
+
+@ftable @code
+@item blockdev?(@var{filename})
+
+@var{filename}のファイルがブロックスペシャルファイルである時，真を返す．
+
+@item chardev?(@var{filename})
+
+@var{filename}のファイルがキャラクタスペシャルファイルである時，真を返
+す．
+
+@item executable?(@var{filename})
+
+@var{filename}のファイルが実行可能の時，真を返す．
+
+@item executable_real?(@var{filename})
+
+@var{filename}のファイルが実uid/gidで実行可能の時，真を返す．
+
+@item exists?(@var{filename})
+
+@var{filename}のファイルが存在する時，真を返す．
+
+@item grpowned?(@var{filename})
+
+@var{filename}のファイルのgidが実効グループのgidと同じ時，真を返す．
+
+@item directory?(@var{filename})
+
+@var{filename}がディレクトリの時，真を返す．
+
+@item file?(@var{filename})
+
+@var{filename}のファイルが通常ファイルの時，真を返す．
+
+@item link?(@var{filename})
+
+@var{filename}のファイルがシンボリックリンクである時，真を返す．
+
+@item pipe?(@var{filename})
+
+@var{filename}のファイルが名前つきパイプ(@code{FIFO})である時，真を返
+す．
+
+@item socket?(@var{filename})
+
+@var{filename}のファイルがソケットである時，真を返す．
+
+@item  owned?(@var{filename})
+
+@var{filename}のファイルを実効ユーザが所有している時，真を返す．
+
+@item readable?(@var{filename})
+
+@var{filename}のファイルを読みとり可能の時，真を返す．
+
+@item readable_real?(@var{filename})
+
+@var{filename}のファイルを実uid/gidで読みとり可能の時，真を返す．
+
+@item setuid?(@var{filename})
+
+@var{filename}のファイルのsetuidビットがセットされている時，真を返す．
+
+@item setgid?(@var{filename})
+
+@var{filename}のファイルのsetgidビットがセットされている時，真を返す．
+
+@item size(@var{filename})
+
+@var{filename}のファイルが存在する時，ファイルの大きさを返す．存在しな
+い時は@code{nil}を返す．
+
+@item sticky?(@var{filename})
+
+@var{filename}のファイルのstickyビットがセットされている時，真を返す．
+
+@item symlink?(@var{filename})
+
+@var{filename}がシンボリックリンクである時，真を返す．
+
+@item writable?(@var{filename})
+
+@var{filename}のファイルが実uid/gidで書き込み可能の時，真を返す．
+
+@item writable_real?(@var{filename})
+
+@var{filename}のファイルが書き込み可能の時，真を返す．
+
+@item zero?(@var{filename})
+
+@var{filename}のファイルが存在し，大きさが0である時，真を返す．
+@end ftable
+
+@node Fixnum, Float, FileTest, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Fixnum
+
+31bit(マシンのlongの長さ-1 bit)整数のクラス．builtin classである．この
+クラスはpointer内の即値であるためcall by valueで呼び出される点が特徴的
+である(他のクラスはcall by reference)．演算の結果が31bitを越える場合に
+は自動的に@code{Bignum}(無限多倍長整数)に拡張される．
+
+イテレータ@code{upto}，@code{downto}，@code{step}は繰り返しのために用
+いられ，一般に@code{Range}クラスを用いるより高速である．
+
+SuperClass: Integer
+
+Methods:
+
+@ftable @code
+@item  self + @var{other}
+@itemx self - @var{other}
+@itemx self * @var{other}
+@itemx self / @var{other}
+@itemx self % @var{other}
+@itemx self ** @var{other}
+
+算術演算．それぞれ和，差，積，商，剰余，冪乗を返す．
+
+@item  ~ self
+@itemx self | @var{other}
+@itemx self & @var{other}
+@itemx self ^ @var{other}
+
+ビット演算．それぞれビット反転，論理和，論理積，排他的論理和を返す．
+
+@item  self << @var{bits}
+@itemx self >> @var{bits}
+
+シフト演算．それぞれ@var{bits}ビットだけ左右にビットシフトを行なう．
+
+@item downto(@var{min}) @{@dots{}@}
+
+イテレータ．@code{self}から@var{min}まで下向きに繰り返す．
+
+@item id2name
+
+整数値をIDだとみなして，相当する文字列を返す．相当する文字列が存在しな
+い場合は@code{nil}を返す．
+
+@item step(@var{max}, @var{step}) @{@dots{}@}
+
+イテレータ．@code{self}から@var{max}まで@var{step}ずつ変化しながら，繰
+り返す．
+
+@item to_f
+
+@code{self}を@code{Float}に変換したものを返す．
+
+@item to_i
+
+@code{self}をそのまま返す．
+
+@item upto(@var{max}) @{@dots{}@}
+
+イテレータ．@code{self}から@var{max}まで繰り返す．
+@end ftable
+
+@xref{Integer}
+
+@node Float, GC, Fixnum, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Float
+
+浮動小数点数のクラス．
+
+SuperClass: Numeric
+
+Methods:
+
+@ftable @code
+@item  self + @var{other}
+@itemx self - @var{other}
+@itemx self * @var{other}
+@itemx self / @var{other}
+@itemx self % @var{other}
+@itemx self ** @var{other}
+
+算術演算．それぞれ和，差，積，商，剰余，冪乗を返す．
+
+@item  self == @var{other}
+@itemx self > @var{other}
+
+比較演算．
+
+@item coerce(@var{num})
+
+@var{num}を@code{Float}に変換する．ただし現時点で@code{Float}が理解で
+きる他の数は@code{Fixnum}と@code{Bignum}だけである．
+
+@item to_f
+
+@code{self}をそのまま返す．
+
+@item to_i
+
+@code{self}を整数に変換した結果を返す．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item new(@var{float})
+
+@var{float}と同じ値を持つ新しい@code{Float}オブジェクトを返す．
+@end ftable
+
+@xref{Numeric}
+
+@node GC, Hash, Float, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section GC
+
+Ruby組み込みのgarbage collectorの制御を行なうためのモジュール．このモ
+ジュールのメソッドをを用いることによって，一時的にGCを止めたり，GCの起
+きるタイミングを制御したりできる．
+
+Methods:
+
+@ftable @code
+@item garbage_collect
+
+GCを開始する．@code{GC.start}と同義．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item disable
+
+GCを禁止する．
+
+@item enable
+
+GCを許可する．
+
+@item start
+
+GCを開始する．
+@end ftable
+
+@node Hash, Integer, GC, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Hash
+
+連想配列あるいはハッシュ表．任意のオブジェクトを添字とできる配列のクラ
+スである．連想配列オブジェクトの生成は一般的には連想配列式
+
+@display
+{a=>b,@dots{}}
+@end display
+
+で行なわれる．
+
+キーとして与えたオブジェクトの内容が変化し，メソッド@code{hash}の返す
+値が変わると@code{Hash}は正常に動作しない(値が取り出せなくなる)．内容
+によって@code{hash}の値が変化するクラス(たとえば@code{Array},
+@code{Hash}など)のインスタンスはキーに向かない．ただし，内容が
+@code{hash}の値に影響するオブジェクトのうち，文字列だけは特別に扱われ
+る．文字列をキーとして与えると，文字列をコピーし，コピーを更新不可に設
+定した上で，キーとして使用する．よって，元の文字列を更新してもキーの文
+字列は変化しない．@code{each}, @code{each_key}, @code{keys}などのメソッ
+ドがキーとして文字列を返す時，その文字列は更新できない(例外が発生する)．
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+@ftable @code
+@item self [@var{key}]
+
+@var{key}をキーとする値を返す．
+
+@item self [@var{key}]= @var{value}
+
+@var{key}をキーとして，@var{value}を格納する．@var{value}として
+@code{nil}を指定するとその@var{key}に対する項目の削除となる．つまり，
+@code{Hash}は値として@code{nil}を持つことはできない．
+
+@item clear
+
+連想配列を空にする．
+
+@item delete(@var{key})
+
+@var{key}をキーとする組を削除する．
+
+@item delete_if @{|@var{item}|@dots{}@}
+
+要素を削除するイテレータ．@code{[key,value]}という配列を与えて，ブロッ
+クを評価した値が真の時，該当する項目を削除する．
+
+@item  each @{|@var{key}, @var{value}|@dots{}@}
+@itemx each_pair @{|@var{key}, @var{value}|@dots{}@}
+
+@code{[key,value]}なる2要素の配列を与えるイテレータ．
+
+@item each_key @{|@var{key}|@dots{}@}
+
+全てのkeyに対して繰り返すイテレータ．
+
+@item each_value @{|@var{value}|@dots{}@}
+
+全てのvalueに対して繰り返すイテレータ．
+
+@item has_key?(@var{key})
+
+@var{key}をキーとする組が連想配列中に存在する時，真を返す
+
+@item has_value?(@var{value})
+
+@var{value}を値とする組が連想配列中に存在する時，真を返す
+
+@item  indexes(@var{ary})
+@itemx indexes(@var{key_}1,@dots{}, @var{key_n})
+
+1番目の形式では配列を引数として受けて，その要素をキーとする要素を含む
+配列を返す．2番目の形式では各引数の値をキーとする要素を含む配列を返す．
+
+@item keys
+
+連想配列中に存在するキー全てを含む配列を返す．
+@item  length
+@itemx size
+
+連想配列中の要素の数を返す．
+
+@item shift
+
+連想配列中の要素を一つ取り出し(削除して)，@code{[key,value]}なる2要素
+の配列を返す．
+
+@item to_a
+
+連想配列中の@code{key-value}2要素の配列を要素とする配列を返す．
+
+@item values
+
+連想配列中に存在する値全てを含む配列を返す．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item Hash[@var{key}, @var{value}@dots{}]
+
+奇数番目の引数を@var{key}，偶数番目の引数を@var{value}とする連想配列を
+生成する．
+
+@item new
+
+新しい(空の)連想配列オブジェクトを返す．
+@end ftable
+
+@xref{Object}
+@xref{Enumerable}
+
+@node Integer, IO, Hash, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Integer
+
+整数クラス．実際はその大きさによって@code{Fixnum}と@code{Bignum}いう二
+つのサブクラスで実現されている．@code{Integer}はそれらのスーパークラス
+となる抽象クラスである．Rubyではほとんどの場合，@code{Fixnum}と
+@code{Bignum}の区別は必要なく，相互の変換は自動的に行なわれる．整数を
+ビット列だとみなす場合には，無限の長さをもつビット列と考えて構わない．
+
+SuperClass: Numeric
+
+Methods:
+
+@ftable @code
+@item self[@var{idx}]
+
+整数の@var{idx}ビット目がセットされていれば1，セットされていなければ0
+を返す．
+
+@item chr
+
+その数をコードとする文字だけを含む1文字の文字列を返す．一般に長さ1以上
+の文字列について，次の関係が常に成立する．
+
+@example
+str[0].chr == str[0,1]
+@end example
+
+整数が文字の範囲内(0@dots{}255)になければ例外が発生する．
+
+@item integer?
+
+いつも真を返す．
+@end ftable
+
+@xref{Numeric}
+
+@node IO, Kernel, Integer, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section IO
+
+入出力のための基本クラス．
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+@ftable @code
+@item self << @var{object}
+
+@var{object}を出力する．@var{object}が文字列でない時にはメソッド
+@code{to_s}を用いて文字列に変換する．@code{self}を戻り値とするので，
+@code{C++}のような@code{<<}の連鎖を使える．
+
+例
+
+@example
+$stdout << 1 << " is a " << Fixnum << "\n"
+@end example
+
+@item close
+
+入出力ポートをクローズする．以後のこのオブジェクトに対する入出力操作は
+エラーになる．
+
+@item closed?
+
+ポートがクローズされている時，真を返す．
+
+@item each @{|@var{line}|@dots{}@}
+@item each_line @{|@var{line}|@dots{}@}
+
+一行ずつ読み込んでくるためのイテレータ．行の区切りはシステム変数
+@code{$/}によって変更できる．読み込んだ文字列はシステム変数@code{$_}に
+もセットされる．
+
+@itemx each_byte @{|@var{ch}|@dots{}@}
+
+一文字ずつ読み込んでくるためのイテレータ．文字は文字コードを表す
+@code{Fixnum}である．
+
+@item  fileno
+@itemx to_i
+
+@code{IO}オブジェクトが使っているファイルディスクリプタ(@code{Fixnum})
+を返す．
+
+@item flush
+
+バッファをフラッシュする．
+
+@item getc
+
+一行読み込んで，読み込みに成功した時にはその文字列を返す．ファイルの終
+りに到達した時には@code{nil}を返す．カーネルメソッド@code{getc}は
+@code{$stdin.getc}と同じ意味である．
+
+@item gets
+
+一行読み込んで，読み込みに成功した時にはその文字列を返す．ファイルの終
+りに到達した時には@code{nil}を返す．
+
+@item isatty
+@itemx tty?
+
+入出力ポートがttyである時，真を返す．
+
+@item print(@var{arg}@dots{})
+
+引数を順に出力する．出力先が@code{$>}でなく，レシーバである以外は
+@code{Kernel}クラスの@code{print}メソッドと同じ動作をする．
+
+@item printf(@var{format}, @var{arg}@dots{})
+
+@code{C}言語の@code{printf()}と同じ@var{format}に従い引数を文字列に変
+換し，レシーバに出力する．
+
+@item puts(@var{obj})
+
+@var{obj}を出力する．@code{self << obj}と同じ意味である．
+
+@item read([@var{length}])
+
+@var{length}バイト読み込んで，その文字列を返す．@var{length}が省略され
+た時には，@code{EOF}までの全てのデータを読み込む．
+
+@item readlines
+
+ファイルを全て読み込んで各行を要素としてもつ配列を返す．
+
+@item sync
+
+現在の出力同期モードを真偽値で返す．同期モードが真の時は出力関数の呼出
+毎にバッファがフラッシュされる．
+
+@item sync= @var{newstate}
+
+出力同期モードを設定する．
+
+@item sysread(@var{length})
+
+@samp{stdio}を経由せずに@samp{read(2)}を用いて入力を行なう．入力された
+データを含む文字列を返す．ファイルの終りに到達した時には@code{nil}を返
+す．@samp{read(2)}の性質により必ず@var{length}バイトの文字列が読み込ま
+れるわけではない．@code{gets}や@code{getc}など@samp{stdio}を経由するメ
+ソッドと混用することはバッファリングの不整合などで思わぬ動作をすること
+がある．
+
+@item syswrite(@var{str})
+
+@samp{stdio}を経由せずに，@samp{write(2)}を用いて出力を行なう．このメ
+ソッドはバッファリングなど@samp{stdio}がしてくれることは一切行なわない．
+@code{syswrite}は実際に書き込んだバイト数を返す．@code{print}や
+@code{printf}と@code{syswrite}を混用するのは推奨できない．
+
+@item write(@var{str})
+
+@var{str}を出力する．出力したバイト数を返す．
+@end ftable
+
+@xref{Object}
+@xref{Enumerable}
+
+@node Kernel, Math, IO, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Kernel
+
+全てのクラスの基底クラス．Ruby組み込みの全ての関数メソッドはこのクラス
+で定義されている．関数メソッドについては「関数」の項目を参照のこと．
+
+SuperClass: なし
+
+Methods:
+
+@ftable @code
+@item  self == @var{other}
+@itemx equal?(@var{other})
+
+オブジェクトの一致判定．レシーバと引数の引数が一致する時，真を返す．
+@code{Kernel}クラスの定義では双方のオブジェクトが同一の時真を返す．
+@code{==}メソッドは各オブジェクトの性質に応じて再定義する必要がある．
+@code{==}メソッドを再定義した時には，@code{hash}メソッドもそれに合わせ
+て再定義する必要がある．
+
+equal?メソッドは@code{==}メソッドの別名で，@code{==}を再定義した後でも
+オブジェクトの同一性判定を行なうために用いられる．よって@code{equal?}
+メソッドはサブクラスで再定義するべきではない．
+
+@item self =~ @var{other}
+
+マッチ．デフォルトの動作は@code{==}と同じである．@code{=~}は
+@code{case}文での比較にも用いられる．
+
+@item hash
+
+オブジェクトのハッシュ値(@code{Fixnum})を返す．@code{Hash}クラスでキー
+となるオブジェクトを格納するのに用いられている.@code{A == B}が成立する
+時は必ず@code{A.hash == B.hash}が成立する必要があるので，@code{==}を再
+定義した時には必ずこちらもそれに合わせて再定義すること．
+
+@item id
+
+各オブジェクトに対して一意の@code{Fixnum}を返す．が，@code{Fixnum}は自
+分自身を返すので，@code{id}が一致しても同じオブジェクトであることは保
+証されない．つまり，@code{obj1.id == obj2.id}が成立しても，どちらかが
+@code{Fixnum}であれば，@code{obj1}と@code{obj2}が同じであるとは限らな
+い．ただし，両方が@code{Fixnum}でないことが保証できれば，2つのオブジェ
+クトが同一であることは確実である．
+
+@item inspect
+
+オブジェクトを人間が読める形式の文字列に変換する．
+
+@item nil?
+
+オブジェクトが@code{nil}であるかどうか．@code{Kernel}クラスの定義では
+真を返す．@code{Nil}クラスで偽を返すよう再定義されている．
+
+
+@item type
+
+オブジェクトの動的な型(クラス)を返す．
+
+@example
+obj.is_kind_of?(obj.type)
+@end example
+
+は常に成立する．
+
+@item send(@var{symbol}[, @var{args}@dots{}])
+
+@var{symbol}で指定されるメソッドを@var{args}とともに呼び出す．
+
+@end ftable
+
+@node Math, Module, Kernel, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Math
+
+浮動小数点演算をサポートするクラス．Mathモジュールは同じ定義のメソッド
+と特異メソッドとの両方が定義されているので，特異メソッドを呼び出して使
+う使い方と，クラスにインクルードして使う使い方との両方ができる．
+
+例
+
+@example
+pi = Math.atan2(1, 1) * 4;
+include Math
+pi2 = atan2(1, 1)
+@end example
+
+Methods:
+Single Methods:
+
+@ftable @code
+@item atan2(@var{x}, @var{y})
+
+π〜-πの範囲で@var{x}/@var{y}のアークタンジェントを返す．
+
+@item  cos(@var{x})
+@itemx sin(@var{x})
+@itemx tan(@var{x})
+
+ラジアンで表された@var{x}の三角関数の値を返す．
+
+@item exp(@var{x})
+
+@var{x}の指数関数の値を返す．
+
+@item log(@var{x})
+
+@var{x}の自然対数を返す．
+
+@item log10(@var{x})
+
+@var{x}の常用対数を返す．
+
+@item sqrt(@var{x})
+
+@var{x}の平方根を返す．@var{x}の値が負である時には例外が発生する．
+
+@item cbrt(@var{x})
+
+@var{x}の立方根を返す．
+@end ftable
+
+@node Module, Nil, Math, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Module
+
+モジュールのクラス．
+
+SuperClass: Object
+
+Private Methods:
+
+@ftable @code
+@item attr(@var{name}[, @var{public}])
+
+そのモジュールをインクルードしたクラスのインスタンスに対して@var{name}
+で指定される属性を付加し，属性に対するアクセスメソッドを定義する．
+@code{attr("attr")}はクラス定義に以下に示すコードを追加するのとほぼ同
+義である．
+
+@example
+def attr; @@attr; end
+@end example
+
+省略可能な第2引数@var{public}が与えられて，かつその値が@code{nil}でな
+い時にはその属性には属性設定メソッドも用意され，外部から代入可能になる．
+
+@code{attr("attr", TRUE)}はクラス定義に以下のコードを追加するのとほぼ
+同義である．
+
+@example
+def attr; @@attr; end
+def attr=(val); @@attr = val; end
+@end example
+
+属性を構成するメソッドを再定義することによって，アクセス時の動作を変更
+できる．例えば
+
+@example
+attr("test", TRUE)
+def test=(val)
+  print("test was ", @@test, "\n")
+  print("and now is ", @@test = val, "\n")
+end
+@end example
+
+のように設定時に属性の値を表示するようなことが可能である．@var{attr}は
+アクセスメソッドがすでに定義されている場合は，デフォルトのアクセスメソッ
+ドを定義しない．
+@end ftable
+
+Methods:
+
+@ftable @code
+@item include(@var{module}@dots{})
+
+引数で指定したモジュールをインクルードして，メソッド，定数を追加する．
+クラス，モジュールに別のモジュールをインクルードすることによって，限定
+された多重継承(@code{Mixin})を実現できる．
+
+@item module_function(@var{name}@dots{})
+
+@var{name}で指定されたメソッドを@samp{module function}に指定する．
+@samp{Module function}とはモジュールの特異メソッドであり，かつそのモジュー
+ルをインクルードしたクラスのprivateメソッドにもなるようなメソッドの事
+である．例えば，Mathモジュールの関数群は@samp{module function}である．
+
+@item private(@var{name}@dots{})
+
+@var{name}で指定されたメソッドを関数形式でだけ呼び出し可能にする．すで
+にprivateメソッドである場合には何もしない．
+
+@item public(@var{name}@dots{})
+
+@var{name}で指定されたメソッドを通常形式で呼び出し可能にする．すでに
+publicメソッドである場合には何もしない．
+
+@example
+def foo() 1 end
+foo
+        @result{} 1
+self.foo
+        @result{} 1
+
+def bar() 2 end
+private :bar
+bar
+        @result{} 2
+self.bar
+        @error{} method `bar' not available for "main"(Object)
+
+Module Baz
+  def baz() 3 end
+  module_function :baz
+end
+Baz.baz
+        @result{} 3
+include Baz
+baz
+        @result{} 3
+self.baz
+        @error{} method `baz' not available for "main"(Object)
+@end example
+
+@item to_s
+
+モジュールの文字列表現であるモジュール名を返す．
+@end ftable
+
+@xref{Object}
+
+@node Nil, Numeric, Module, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Nil
+
+偽を表すオブジェクト@code{nil}のクラス．偽変数(の値)@code{nil}は
+@code{Nil}クラスの唯一のインスタンスである．
+
+SuperClass: Kernel
+
+Methods:
+
+@ftable @code
+@item self + @var{other}
+
+@var{other}が整数，浮動小数点数，文字列，配列である時，@var{other}を返
+す．
+
+@item nil?
+
+常に真を返す．
+@end ftable
+
+@xref{Kernel}
+
+@node Numeric, Object, Nil, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Numeric
+
+数一般の性質を表す抽象クラス．
+
+SuperClass: Object
+
+Included Modules: Comparable
+
+Methods:
+
+@ftable @code
+@item + self
+
+オブジェクト@code{self}そのものを返す
+
+@item - self
+
+@code{0 - self}の値を返す．サブクラスでより効率的に再定義されることが
+期待される．
+
+@item abs
+
+絶対値を返す．
+
+@item divmod(@var{other})
+
+商と剰余の2要素の配列を返す．
+
+@item next
+
+次の数を返す．次の数とはその数を越える最小の整数である．
+@end ftable
+
+@xref{Object}
+@xref{Comparable}
+
+@node Object, Proc, Numeric, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Object
+
+全ての通常クラスのスーパクラス．通常クラスのインスタンスの一般的な振舞
+いを定義している．このクラスのサブクラスでないクラスは@code{Kernel}と
+@code{Nil}だけである．
+
+SuperClass: Kernel
+
+Methods:
+
+@ftable @code
+@item extened(module@dots{})
+
+引数で指定したモジュールを@code{self}にインクルードする．モジュールで
+定義されているメソッドが特異メソッドとして追加される．
+
+@item initialize(@dots{})
+
+@code{Class:new}からオブジェクトの生成時に自動的に呼び出される．デフォ
+ルトの定義は何もしない．サブクラスで必要に応じて再定義されることが期待
+されている．@code{Class:new}に与えられた引数がそのまま渡される．
+
+@item is_instance_of?(@var{class})
+
+オブジェクト@code{self}がクラス@var{class}のインスタンスである時，真を
+返す．@code{obj.is_instance_of?(c)}が成立する時，いつも
+@code{obj.is_kind_of?(c)}も成立する．
+
+@item is_kind_of?(@var{class})
+
+オブジェクト@code{self}がクラス@var{class}かそのサブクラスのインスタン
+スである時，真を返す．
+
+@item clone
+@item dup
+
+オブジェクトの複製を作る．インスタンスが即値であるFixnumクラス以外のク
+ラスの場合，@code{obj.equal?(obj.clone)}は偽であるが，多くの場合
+@code{obj == obj.clone}は真である．
+
+Stringクラス以外では(特に再定義しない限り)dupはcloneの別名である．
+
+@item to_s
+
+オブジェクトの文字列表現を返す．このメソッドは内部的にprintやformatメ
+ソッドで用いられている．
+
+@item to_a
+
+オブジェクトを配列に変換する．@code{Kernel}クラスで定義されているデフォ
+ルトは，そのオブジェクト自身を含む1要素の配列を返す．
+@end ftable
+
+@xref{Kernel}
+
+@node  Proc, Process, Object, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Proc
+
+イテレータに渡されたイテレータブロックを手続きとしてオブジェクト化した
+もの．実行するコードだけでなくコンテキスト(ローカル変数)なども保存する．
+ブロックオブジェクトは，@code{call}メソッドによって，生成されたのと同
+じ環境で評価することができる．ただし，大域脱出(@code{return},
+@code{break}, @code{continue}, @code{redo}, @code{retry})の環境は保存
+されないので，ブロックオブジェクトからの大域脱出の実行は例外を発生させ
+ることになる．
+
+SuperClass: Object
+
+Methods:
+
+@ftable @code
+@item call(@var{arg}[,@dots{}])
+
+ブロックを実行する．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item new
+
+新しいブロックを生成する．@code{yield}を実行できる場所でこのメソッドが
+呼ばれると，その時点で実行されるべきコードをコンテキストとともに包み込
+んだオブジェクト(@code{Proc})を生成する．
+@end ftable
+
+@xref{Object}
+
+@node Process, Range, Proc, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Process
+
+プロセスに関する操作を行なうためのモジュール．@code{Math}モジュールと
+同様に全てのメソッドは特異メソッドとしても通常のメソッドとしても使える．
+@code{Process}はプロセスオブジェクトのクラスではなくて，プロセス操作の
+メソッドをまとめたものであることに注意すること．
+
+Methods:
+Single Methods:
+
+@ftable @code
+@item egid
+
+プロセスの現在の実効GIDを返す．
+
+@item egid= @var{gid}
+
+プロセスの現在の実効GIDを@var{gid}にセットする．
+
+@item euid
+
+プロセスの現在の実効UIDを返す．
+
+@item euid= @var{uid}
+
+プロセスの現在の実効UIDを@var{uid}にセットする．
+
+@item getpgrp([@var{pid}])
+
+@var{pid}で指定されたプロセスが現在所属しているプロセスグループのidを
+返す．@var{pid}を省略した時と@var{pid}に0を与えた時は現在実行している
+プロセスを対象にする．
+
+@item getpriority(@var{which}, @var{who})
+
+@var{which}と@var{who}で指定されるプロセス，プロセスグループ，ユーザの
+現在の優先順位を返す．詳細は@samp{getpriority(2)}を参照．Processモジュー
+ルではwhichとして指定できる定数@var{PRIO_PROCESS}，@var{PRIO_PGRP}，
+@var{PRIO_USER}が定義されている．
+
+@item gid
+
+プロセスの現在の実GIDを返す．
+
+@item gid= @var{gid}
+
+プロセスの現在の実GIDをgidにセットする.
+
+@item pid
+
+プロセスのプロセスIDを返す．これはシステム変数@code{$$}の値と同じであ
+る．
+
+@item ppid
+
+親プロセスのプロセスのプロセスIDを返す．UNIXでは直接の親プロセスが終了
+した場合，親プロセスのpidは1(initのpid)になる．
+
+@item setpgrp(@var{pid}, @var{pgrp})
+
+@var{pid}で指定されたプロセスのプロセスグループを@var{pgrp}にする．
+@var{pid}に0を与えると現在実行中のプロセスを対象にする．
+
+@item setpriority(@var{which}, @var{who}, @var{prio})
+
+@var{which}と@var{who}で指定されるプロセス，プロセスグループ，ユーザの
+現在の優先順位を@var{prio}に設定する．詳細は@samp{setpriority(2)}を参
+照のこと．
+
+@item uid
+
+プロセスの現在の実UIDを返す．
+
+@item uid= @var{uid}
+
+プロセスの現在の実UIDを@var{uid}にセットする.
+@end ftable
+
+@node Range, Regexp, Process, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Range
+
+範囲オブジェクトのクラス．範囲オブジェクトは@code{..}演算子によって生
+成され，一般的には以下のような使い方をする
+
+@example
+for i in 1..5
+  @dots{}
+end
+@end example
+
+しかし，この場合は以下の方が速い.
+
+@example
+1.upto(5) {
+  @dots{}
+}
+@end example
+
+範囲オブジェクトを生成する@code{..}演算子の両辺は@code{Comparable}を含
+むクラスのインスタンスであれば何でも構わない．範囲は始点と終点を含むこ
+とに注意すること.
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+@ftable @code
+@item self =~ @var{other}
+
+@code{self}が@var{other}と同じクラスに対する範囲オブジェクトで，その範
+囲内に@var{other}がある時(@code{start <= @var{other} <= end})，真を返
+す．これは@code{case}式で範囲指定する時に便利である．例えば
+
+@example
+case i
+when 1, 3..5
+  @dots{}
+end case
+@end example
+
+のようなコードを書くことができる．
+
+@item each
+
+範囲内に存在するオブジェクトを与えるイテレータ．主に@code{for}式のため
+に用いられる．
+
+@item end
+
+範囲の終点を返す
+
+@item start
+
+範囲の始点を返す．
+@end ftable
+
+@xref{Object}
+@xref{Enumerable}
+
+@node Regexp, String, Range, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Regexp
+
+正規表現のクラス．正規表現のリテラルは@code{/@dots{}/}という形式で表す
+が，動的に生成するためには
+
+@example
+Regexp.new(文字列)
+@end example
+
+とする．ただし，Stringクラスの@code{=~}を始めとして多くのメソッドは正
+規表現の替わりに文字列が与えられた時には内部的に正規表現を生成するので，
+生成コストを節約したいと思う時や，正規表現の大文字小文字の区別を明示的
+に指定したい時など以外は明示的に生成したいと思うことは少ないはずだ．
+
+SuperClass: Object
+
+Methods:
+
+@ftable @code
+@item self =~ @var{string}
+
+正規表現が文字列にマッチした場合，マッチした位置を返す．マッチしない場
+合は@code{nil}を返す．
+
+@item ~ self
+
+@code{$_ =~ self}と同義．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item  compile(@var{string}[, @var{casefold}])
+@itemx new(@var{string}[, @var{casefold}])
+
+文字列を正規表現に変換したオブジェクトを返す．省略可能な第2引数が与え
+られ，その値が@code{nil}でない時には，生成された正規表現オブジェクトは
+システム変数@code{$=}の値に関わらず，マッチする時に大文字小文字の違い
+を無視する．
+
+@item quote(@var{str})
+
+文字列の中の正規表現で意味を持つ文字をエスケープする．新しい文字列を返
+す．
+@end ftable
+
+@xref{Object}
+
+@node String, Struct, Regexp, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section String
+
+文字列クラス．Rubyの文字列はヌルターミネートではないので，バイナリデー
+タも扱える．従ってどちらかというと単なる文字列というよりバイト列である．
+その思想に基づいて，正規表現に関するメソッド以外は2byte系の文字を意識
+していない．これは作者の手抜きではなく意図的にそうしているのである(信
+じてくれ)．
+
+Stringクラスのメソッドのうち@code{!}で終るものはレシーバを書き換える．
+同じ名前で@code{!}の無いものはレシーバのコピーを作ってから，そちらを書
+き換える．@code{!}のあるものの方が高速だが，予期せぬ結果を招きやすいの
+で，無いものの方が安全である．
+
+@example
+f = "string"
+print f, sub("str", "ski"), f
+        @result{} string, skiing, string
+print f, sub!("str", "ski"), f
+        @result{} skiing, skiing, skiing
+@end example
+
+SuperClass: Object
+
+Included Modules: Comparable, Enumerable
+
+Methods:
+
+@ftable @code
+@item self + @var{other}
+
+文字列の連結．連結された文字列を返す．
+
+@item self * @var{times}
+
+文字列の繰り返し．例えば@code{x" * 4 == "xxxx"}である．
+
+@item self == @var{other}
+@item self > @var{other}
+
+文字列の比較．システム変数@code{$=}が@code{nil}でない時には大文字小文
+字を区別せずに比較を行なう．
+
+@item self =~ @var{other}
+
+文字列のマッチ．@var{other}は正規表現か文字列．@var{other}が文字列の場
+合には動的に正規表現に変換される．マッチした場合はマッチした位置，しな
+かった場合は@code{nil}が返る．
+
+@item ~ self
+
+@code{$_ =~ self}と同義．
+
+@item self[@var{nth}]
+@item self[@var{beg}..@var{end}]
+@item self[@var{beg}, @var{len}]
+
+内容の取り出し．1番目の形式では@var{nth}バイト目のデータをFixnumとして
+返す．2番目の形式では@var{beg}バイト目から@var{end}バイト目までの部分
+文字列を返す(両端を含む)．3番目の形式では@var{beg}バイト目から
+@var{len}バイト分の部分文字列を返す．
+
+@item self[@var{nth}] = @var{val}
+@item self[@var{beg}..@var{end}] = @var{val}
+@item self[@var{beg}, @var{len}] = @var{val}
+
+内容の更新．1番目の形式では@var{nth}バイト目のデータを@var{val}(整数)
+に変更する．2番目の形式は@var{beg}バイト目から@var{end}バイト目までの
+部分文字列を@var{val}として与えられた文字列で置き換える．3番目の形式は
+@var{beg}バイト目から@var{len}バイト分の部分文字列を@var{val}として与
+えられた文字列で置き換える．
+
+@item capitalize
+@itemx capitalize!
+
+文字列中の最初の文字を(それがアルファベットであれば)，大文字に変換し，
+残る文字列中のアルファベットを小文字に置き換える．
+
+@item chop
+@itemx chop!
+
+文字列の最後のバイトを切り落とす．元の文字列を変更することに注意するこ
+と．@code{chop!}は元の文字列を更新する．
+
+@item crypt(@var{salt})
+
+@samp{crypt(3)}を用いて暗号化した文字列を返す．@var{salt}は2バイト以上
+の長さの任意の文字列である．
+
+@item delete(@var{str})
+@itemx delete!(@var{str})
+
+文字列のうち，@var{str}に含まれる文字を削除する．文字列の指定は
+@code{tr}と同様であり，@code{a-b}で@code{a}から@code{b}までの範囲を，
+先頭の@code{^}で文字列の否定(含まれてないものを指定)を意味する．
+
+@item dup
+
+@code{self}と同じ内容を持つ文字列を生成する．@code{clone}は
+@code{freeze}状態もコピーするが，@code{dup}は内容だけが等しい文字列を
+生成する．
+
+@item downcase
+@itemx downcase!
+
+文字列中のアルファベットを全て小文字に置き換えた文字列を返す．
+@code{tr("A-Z", "a-z")}より少し速い．
+
+@item each @{|@var{char}|@dots{}@}
+@itemx each_byte @{|@var{char}|@dots{}@}
+
+文字列のそれぞれのバイトについて繰り返すイテレータ．
+
+@item each_line @{|@var{line}|@dots{}@}
+
+文字列から1行ずつ読み込んでくるイテレータ．
+
+@item freeze
+
+文字列を更新不可にする．一度更新不可に設定された文字列の内容を変更しよ
+うとすると例外が発生する．
+
+@item  gsub(@var{pattern}, @var{replace})
+@itemx gsub(@var{pattern}) @{@dots{}@}
+@itemx gsub!(@var{pattern}, @var{replace})
+@itemx gsub!(@var{pattern}) @{@dots{}@}
+
+文字列中で@var{pattern}にマッチする部分を全て@var{replace}に置き換える．
+置換文字列@var{replace}中の@samp{&}と@samp{\0}はマッチした文字列に，
+@samp{\1@dots{}\9}はn番目の括弧の内容に置き換えられる．引数
+@var{replace}が省略された時にはイテレータとして動作し，ブロックを評価
+した結果で置換する．
+
+@code{gsub}は置換された文字列を返す(置換が行なわれなかった場合は元の文
+字列を返す)．@code{gsub!}は置換が行なわれた時には対象となる文字列を，
+行なわれなかった時には@code{nil}を返す．
+
+@item hex
+
+文字列を16進数を表す文字列と解釈して，整数に変換する．
+
+@item index(@var{substr}[, @var{pos}])
+
+@var{substr}が最初に出現する位置を返す．@var{pos}を与えるとその位置か
+ら検索を開始する．見つからない時には@code{nil}を返す．
+
+@item intern
+
+文字列に一意に対応する整数を返す．文字列はナル文字を含んではならない．
+
+@item  length
+@itemx size
+
+文字列の長さ(バイト数)を返す．
+
+@item  ljust(@var{width})
+@itemx rjust(@var{width})
+@itemx center(@var{width})
+
+文字列をそれぞれ，右詰め，左詰め，真中寄せした幅@var{width}の文字列を
+返す．文字列長が@var{width}より長い場合は元の文字列を返し，切り詰めな
+い．
+
+@item next
+
+@code{self}の「次の」文字列を返す．次の文字列とは数字は数字として，英
+文字は英文字として増加し，桁上がりの処理が行なわれたものである．
+
+@example
+"aa".next @result{} "ab"
+"99".next @result{} "100"
+"a9".next @result{} "b0"
+@end example
+
+@item oct
+
+文字列を8進数を表す文字列と解釈して，整数に変換する．8進数の定義は
+@code{/[0-7]+/}であり，文字列の先頭からこのパターンにマッチする部分を
+整数に変換する．この定義に全く当てはまらない文字列に対しては0を返す．
+perlとは違って文字列が0xから始まっているからといって 16進数だと見なし
+てくれたりはしない．それらは先頭の0が8進数と認識され，0を返す．
+
+@item reverse
+@itemx reverse!
+
+文字列の各バイトを逆順に並べた文字列を返す．文字列が2バイトで構成され
+る文字を含んでいてもお構いなしにバイト単位で反転する．@code{split}は2
+バイト文字を理解するので，2バイト文字を含む文字列を文字単位に反転する
+には
+
+@example
+"全角文字列".split(//).reverse.join("")
+@end example
+
+とすればよい．
+
+@item rindex(@var{substr}[, @var{pos}])
+
+文字列@var{substr}が最後に出現する位置を返す．@var{pos}を与えるとその
+位置で検索を終了する．見つからない時には@code{nil}を返す．@code{index}
+との相違点は
+
+@itemize
+@item
+文字列の末尾から検索する．
+@item
+substrとして正規表現を受け付けない．
+@end itemize
+
+の2点である．
+
+@item split([@var{sep}[, @var{limit}]])
+
+文字列を@var{sep}で指定されたパターンによって，フィールドに分割する．
+@var{sep}が省略された時のデフォルトはシステム変数@code{$;}の値が用いら
+れる．@var{limit}が指定された時には最大@var{limit}個のフィールドに分割
+する．s@code{plit}は分割された文字列を含む配列を返す．@var{sep}で指定
+されたパターンが空文字列とマッチする場合は文字列が1文字ずつに分割され
+る．
+
+@item squeeze([@var{str}])
+@itemx squeeze!([@var{str}])
+
+文字列のうち，@var{str}に含まれる文字が連続していた場合，一文字に圧縮
+する．@var{str}が省略された場合，すべての文字を対象とする．文字列の指
+定はtrと同様であり，@code{a-b}で@code{a}から@code{b}までの範囲を，先頭
+の@code{^}で文字列の否定(含まれてないものを指定)を意味する．
+
+@item strip
+@itemx strip!
+
+文字列の前後の空白を取り除く．
+
+@item  sub(@var{pattern}, @var{replace})
+@itemx sub(@var{pattern}) @{@dots{}@}
+@itemx sub!(@var{pattern}, @var{replace})
+@itemx sub!(@var{pattern}) @{@dots{}@}
+
+文字列の@var{pattern}にマッチする最初の部分を@var{replace}に置き換える．
+置換文字列@var{replace}中の@samp{&}と@samp{\0}はマッチした文字列に，
+@samp{\1@dots{}\9}は n番目の括弧の内容に置き換えられる．引数
+@var{replace}のない形式の時にはイテレータとして動作し，ブロックを評価
+した結果で置換する．
+
+@code{sub}は置換された文字列を返す(置換が行なわれなかった場合は元の文
+字列を返す)．@code{sub!}は置換が行なわれた時には対象となる文字列を，行
+なわれなかった時には@code{nil}を返す．
+
+@item sum([@var{bits}])
+
+文字列の@var{bits}ビットのチェックサムを得る．省略値は16である．rubyで
+は以下のコードでSystem Vの@code{sum}プログラムと同じ値を得られる．
+
+@example
+while gets()
+  sum += $_.sum
+end
+sum %= 65536
+@end example
+
+@item swapcase
+@itemx swapcase!
+
+文字列中のアルファベットのうち大文字を小文字に，小文字を大文字に置き換
+える．
+
+@item to_f
+
+文字列をFloatに変換する．
+
+@item to_i
+
+文字列を10進数を表す文字列と解釈して，整数に変換する．
+
+@item tr(@var{search}, @var{replace})
+@itemx tr!(@var{search}, @var{replace})
+
+文字列の中に@var{search}文字列に含まれる文字が存在すれば，
+@var{replace}文字列の対応する文字で置き換える．@var{replace}文字列が省
+略された場合は空文字列が与えられたと見なす．@var{replace}文字列が
+@var{search}文字列よりも短い時は@var{replace}文字列の最後の文字が繰り
+返されていると見なす．@var{search}文字列の方が短い時には対応する文字の
+ない@var{replace}部は単に無視される(BSDの@samp{tr}の動作)．
+
+@var{search}文字列，@var{replace}文字列中に@code{a-b}という形式が現れ
+た場合，その@code{a}から@code{b}までの範囲の文字をASCIIの昇順で指定し
+たことになる．また，@var{search}文字列の最初の文字が@code{^}である場合，
+続く文字列に*含まれない*文字列が置換の対象になる．
+
+@samp{tr(1)}の機能のうち，文字を削除する機能，連続する文字を圧縮する機
+能は別のメソッドに分割されている．それらの機能については@code{delete}，
+@code{squeeze}を参照のこと．
+
+簡便のため，@code{str.tr(src,repl).squeeze(repl)}に相当するメソッド
+@code{tr_s(src,repl)}が提供されている．
+
+@item unpack(@var{template})
+
+文字列を@var{template}文字列にしたがってアンパックし，それらの要素を含
+む配列を返す．@var{template}文字列はArrayクラスのpackメソッドとほぼ同
+様である．
+
+@display
+a     ASCII文字列(後続するnull文字やスペースを残す)
+A     ASCII文字列(後続するnull文字やスペースを削除)
+b     ビットストリング(下位ビットから上位ビット)
+B     ビットストリング(上位ビットから下位ビット)
+h     16進文字列(下位ニブルが先)
+H     16進文字列(上位ニブルが先)
+c     char
+C     unsigned char
+s     sort
+S     unsigned sort
+i     int
+I     unsigned int
+l     long
+L     unsigned int
+n     ネットワークバイトオーダーのshort
+N     ネットワークバイトオーダーのlong
+f     単精度浮動小数点数(機種依存)
+d     倍精度浮動小数点数(機種依存)
+x     1バイト読み飛ばす
+X     1バイト後退
+@@     絶対位置への移動
+@end display
+
+rubyの@code{unpack}はperlと違ってチェックサムの計算機能がないことに注
+意すること．
+
+
+@item upcase
+@itemx upcase!
+
+文字列中のアルファベットを全て大文字に置き換えた文字列を返す．
+@code{tr("a-z", "A-Z")}より少し速い．
+
+@item upto(@var{end}) @{@dots{}@}
+
+@code{self}から始まって，@var{end}まで「次の」文字列を順に与えるイテレー
+タ．次の文字列とは@code{str.next}で与えられる文字列である．
+
+このメソッドは@code{Range:each}で用いられているので，以下のような処理
+が可能である．
+
+@example
+for i in "a" .. "ba"
+  print(i, "\n");
+end
+@end example
+
+これは@samp{a, b, c,@dots{}aa,@dots{}az, ba}までを各行に出力する．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item new(@var{string})
+
+@var{string}と同じ内容を持つ新しい文字列を返す．
+@end ftable
+
+@xref{Object}
+@xref{Enumerable}
+@xref{Comparable}
+
+@node Struct, Time, String, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Struct
+
+構造体クラス．このクラスのサブクラスは複数のデータをまとめる時に用いら
+れる(例: @code{Time:times})．データをまとめる時には配列クラスが用いら
+れることもあるが(例: @code{select})，構造体を使うべき時は以下のような
+場合である．@code{Struct:new}は@code{Struct}のサブクラスを新たに生成し
+て，それを返す．構造体はそのサブクラスのインスタンスとなる．
+
+@enumerate
+@item
+要素の数が固定
+
+要素の数が変動するものは構造体を使うのには向かない．
+
+@item
+要素の数が多い
+
+人間が一度に容易に扱える概念の数は7つまでであるという仮説がある．この
+仮説に従えば，要素が4つ以上あるデータの場合は配列を用いた場合，要素数
+の2倍(つまりオフセットとその意味の総和)が7を越える．よって，そのような
+場合には構造体を使った方が理解しやすいと思われる．
+
+@item
+同時に大量に生成されない
+
+構造体は配列よりも若干生成コストが高いので，速度が問題になる場合 (例え
+ば同時に大量に生成される場合など)は構造体の使用が適切でない可能性があ
+る．
+@end enumerate
+
+各構造体にはメンバ名と同名の引数のないメソッドが定義される．
+
+本ドキュメント内で，構造体を表現するためには以下の形式を使う．
+
+@display
+struct 構造体名
+  メンバ@dots{}
+end
+@end display
+
+しかし，プログラム中でこの形式で構造体を生成するわけではない．
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+@ftable @code
+@item self[@var{idx}]
+
+@var{idx}が数の時は@var{idx}番目の要素を返す．
+
+@item values
+@itemx to_a
+
+構造体のメンバの値を要素に持つ配列を返す．例えば以下のコードで自分の
+passwdエントリを出力することができる．
+
+@example
+print(Etc.getpwuid().values.join(":"), "\n")
+@end example
+
+この出力は@samp{grep "$USER" /etc/passwd}の出力と余分なフィールドがい
+くつか(システムによって異なる)がある以外は同じである．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item new(@var{name}, @var{member}@dots{})
+
+@var{name}という名前を持つ構造体のクラスを生成する．@var{member_value}
+は構造体のメンバを表す文字列である．生成された構造体クラスにはメンバで
+指定された名前のメソッドが定義されていて，そのメソッドによってメンバの
+内容を得ることができる．
+@end ftable
+
+Single Methods for subclasses:
+
+@ftable @code
+@item new(@var{value}@dots{})
+
+構造体クラスのインスタンスを生成する．@var{value}は構造体のメンバの値
+である．メンバの数が構造体クラスで定義された数と異なる時には例外が発生
+する．
+@end ftable
+
+@xref{Object}
+@xref{Enumerable}
+
+@node Time, , Struct, 組み込みクラスとモジュール
+@comment  node-name,  next,  previous,  up
+@section Time
+
+時間を表すクラス．大小比較などができる．@code{Time.now}で現在の時間を
+得ることができる．またファイルのタイムスタンプを得るメソッドの戻り値も
+このクラスのインスタンスである．
+
+SuperClass: Object
+
+Included Modules: Comparable
+
+Methods:
+
+@ftable @code
+@item self <=> @var{other}
+
+@var{other}はTimeのインスタンスか整数．整数が与えられた場合には
+@samp{1970年1月 1日 00:00:00 GMT}からの秒数であるとして時刻との比較を
+行なう．
+
+@item  asctime
+@itemx ctime
+@itemx to_s
+
+時刻を@samp{date(1)}形式の文字列に変換する．
+
+@item gmtime
+
+タイムゾーンの修正を行なわないGMTでの時刻を得る．このメソッドを受けとっ
+たTimeクラスのインスタンスは，以後の時刻変換をGMTで行なう．
+@code{gmtime}は自分自身を返す．
+
+ロンドンの時刻を表示するには@code{print(Time.now.gmtime, "\n")}とすれ
+ばよい．
+
+@item localtime
+
+タイムゾーンの修正を行なった時刻を得る(デフォルト)．@code{localtime}は
+自分自身を返す．
+
+@item  to_i
+@itemx tv_sec
+
+@samp{1970年 1月 1日 00:00:00 GMT}から時刻までの秒数を整数で返す．時刻
+のsecondの部分でもある．
+
+@item  sec
+@itemx min
+@itemx hour
+@itemx mday
+@itemx year
+@itemx wday
+@itemx yday
+@itemx zone
+@itemx isdst
+
+内部的に保持している@code{tm}構造体の内容を返す．@code{zone}以外は整数
+を返す．@code{zone}はタイムゾーンを表す文字列を返す．(cf
+@samp{localtime(3)})
+
+@item strftime(@var{format})
+
+時刻を@var{format}文字列に従って文字列に変換した結果を返す．
+@var{format}文字列として指定できるものは 以下の通りである．
+
+@display
+%A      曜日の名称(Sunday, Monday@dots{})
+%a      曜日の省略名(Sun, Mon@dots{})
+%B      月の名称(January, February@dots{})
+%b      月の省略名(Jan, Feb@dots{})
+%c      時刻表現(cf @samp{ctime(3)})
+%d      十進数での日(01-31)
+%H      24時間制の時(00-23)
+%I      12時間制の時(01-12)
+%j      年中の通算日(001-366)
+%M      分(00-59)
+%m      月を表す数字(01-12)
+%p      午前または午後(AM,PM)
+%S      秒(00-61)
+%U      週を表す数字．最初の日曜日が第1週の
+        始まり(00-53)
+%W      週を表す数字．最初の月曜日が第1週の
+        始まり(00-53)
+%w      曜日を表す数字．日曜日が0(0-6)
+%X      時刻(例: 15:01:06)
+%x      日付(例: Fri Jan 14 1994)
+%Y      西暦を表す数字
+%y      西暦の下2桁(00-99)
+%Z      タイムゾーン
+%%      %自身
+@end display
+
+@item  usec
+@itemx tv_usec
+
+時刻のmicro secondの部分を返す．
+@end ftable
+
+Single Methods:
+
+@ftable @code
+@item now
+
+現在の時刻を表す@code{Time}クラスのインスタンスを生成する．
+
+@item at(@var{time})
+
+@var{time}と同じ時刻を表す@code{Time}クラスのインスタンスを生成する．
+@var{time}は@code{Time}クラスのインスタンスかあるいは数(整数/浮動小数
+点数)であり，数の場合は@samp{1970年 1月 1日 00:00:00 GMT}からの秒数で
+あるとして時刻を計算する．
+
+@item times
+
+現在のプロセスとその子プロセスが消費したユーザ/システムCPUタイムの積算
+を構造体として返す(@xref{Struct})．
+
+@display
+struct tms
+  utime		# プロセスのユーザ時間
+  stime		# プロセスのシステム時間
+  cutime	# 子プロセスのユーザ時間
+  cstime	# 子プロセスのシステム時間
+end
+@end display
+
+時間の単位は秒であり，浮動小数点数で与えられる．詳細は@samp{times(3)}
+を参照のこと．
+@end ftable
+
+@xref{Object}
+@xref{Comparable}
+
+@node C言語とのインタフェース, 謝辞, 組み込みクラスとモジュール, Top
+@comment  node-name,  next,  previous,  up
+@chapter C言語とのインタフェース
+
+rubyはC言語とのインターフェースを提供し，C言語からのクラス，モジュール
+の定義，C言語で記述したメソッドの定義，rubyのメソッドの呼び出し，イテ
+レータの呼び出し，例外処理などを行なうことが出来る．また，OSが許せば実
+行時にCで書かれたモジュールをロードすることも出来る．
+
+具体的なインタフェースに関しては，別ドキュメント(添付ファイル C-IF)を
+参照のこと．
+
+@node 謝辞, 文法, C言語とのインタフェース, Top
+@comment  node-name,  next,  previous,  up
+@chapter 謝辞
+
+Rubyの言語仕様は数多くの言語の影響を受けている．以下にあげるのはその主
+な言語である．
+
+  C, Perl, CLU, Sather, CLOS, Eiffel, Icon, tcl, AWK, bourne shell,
+  Smalltalk, Emacs Lisp.
+
+またrubyの言語仕様を決定するために協力して下さった方々を以下にあげる．
+
+  石塚圭樹，大庭康生，伊藤純一郎，中村＠ＮＥＣ．関根＠日本ＤＥＣ，
+  たなか＠赤坂.富士通(敬称略)．
+
+@node 文法, Variables Index, 謝辞, Top
+@comment  node-name,  next,  previous,  up
+@chapter 文法
+
+以下は疑似BNFで記述したrubyの文法である．より正確な記述はparse.yを参照
+されたい．
+
+@example
+PROGRAM		: COMPEXPR
+
+COMPEXPR	: EXPR (TERM EXPR)* [TERM]
+
+EXPR		: MLHS `=' ARGS
+		| return ARGS
+		| fail ARGS
+		| yield ARGS
+		| defined? ARG
+		| identifier CALL_ARGS0
+		| PRIMARY `.' identifier CALL_ARGS0
+		| super CALL_ARGS
+		| undef FNAME
+		| alias FNAME FNAME
+		| include identifier (`,' identifier)*
+		| EXPR if EXPR
+		| EXPR while EXPR
+		| EXPR and EXPR
+		| EXPR or EXPR
+		| ASSOCS
+		| ARG
+
+ARG		: LHS `=' ARG
+		| LHS OP_ASGN ARG
+		| ARG `..' ARG
+		| ARG `...' ARG
+		| ARG `+' ARG
+		| ARG `-' ARG
+		| ARG `*' ARG
+		| ARG `/' ARG
+		| ARG `%' ARG
+		| ARG `**' ARG
+		| `+' ARG
+		| `-' ARG
+		| ARG `|' ARG
+		| ARG `^' ARG
+		| ARG `&' ARG
+		| ARG `<=>' ARG
+		| ARG `>' ARG
+		| ARG `>=' ARG
+		| ARG `<' ARG
+		| ARG `<=' ARG
+		| ARG `==' ARG
+		| ARG `!=' ARG
+		| ARG `=~' ARG
+		| ARG `!~' ARG
+		| `!' ARG
+		| `~' ARG
+		| ARG `<<' ARG
+		| ARG `>>' ARG
+		| ARG `&&' ARG
+		| ARG `||' ARG
+		| ARG `::' identifier
+		| PRIMARY
+
+PRIMARY		: `(' COMPEXPR `)'
+		| LITERAL
+		| VARIABLE
+		| super `(' [CALL_ARGS] `)'
+		| super
+		| PRIMARY `[' [ARGS] `]'
+		| `[' [ARGS [`,']] `]'
+		| `@{' [ (ARGS|ASSOCS) [`,'] ] `@}'
+		| redo
+		| break
+		| continue
+		| retry
+		| return
+		| fail [`(' [ARGS] `)']
+		| yield [`(' [ARGS] `)']
+		| defined? `(' ARG `)'
+		| PRIMARY `@{' [`|' [ITER_VAR] `|'] COMPEXPR `@}'
+		| OPERATION `(' [CALL_ARGS] `)'
+		| PRIMARY `.' OPERATION `(' [CALL_ARGS] `)'
+		| PRIMARY `.' OPERATION
+		| if EXPR THEN
+		  COMPEXPR
+		  (elsif EXPR THEN COMPEXPR)*
+		  [else COMPEXPR]
+		  end
+		| while EXPR TERM COMPEXPR end
+		| case COMPEXPR
+		  (when ARGS THEN)+
+		  [else COMPEXPR]
+		  end
+		| for ITER_VAR in EXPR TERM
+		  COMPEXPR
+		  end
+		| begin
+		  COMPEXPR
+		  [rescue COMPEXPR]
+		  [ensure COMPEXPR]
+		  end
+		| class identifier `:' identifier
+		  COMPEXPR
+		  end
+		| module identifier
+		  COMPEXPR
+		  end
+		| def FNAME ARGLIST
+		  COMPEXPR
+		  end
+		| def SINGLETON `.' FNAME ARGLIST
+		  COMPEXPR
+		  end
+
+THEN		: TERM
+		| then
+		| TERM then
+
+ITER_VAR	: LHS
+		| MLHS
+
+MLHS		: LHS `,' [LHS (`,' LHS)*] [`*' LHS]
+
+LHS		: VARIABLE
+		| PRIMARY `[' [ARGS] `]'
+		| PRIMARY `.' identifier
+
+CALL_ARGS	: ARGS
+		| ASSOCS
+		| ARGS [`,' ASSOCS] [`,' `*' ARG]
+		| `*' ARG
+
+ARGS 		: ARG (`,' ARG)*
+
+ARGLIST		: `('[identifier(`,'identifier)*][`*'identifier]`)'
+		| TERM
+
+SINGLETON	: VARIABLE
+		| `(' EXPR `)'
+
+ASSOCS		: ASSOC (`,' ASSOC)*
+
+ASSOC		: ARG `=>' ARG
+
+VARIABLE	: VARNAME
+		| nil
+		| self
+		| `__FILE__'
+		| `__LINE__'
+
+LITERAL		: numeric
+		| SYMBOL
+		| STRING
+		| REGEXP
+
+TERM		: `;'
+		| `\n'
+
+@end example
+
+ここより下は字句解析部で認識される．
+
+@example
+
+SYMBOL		: `:'FNAME
+		| `:'VARNAME
+
+FNAME		: identifier | `..' | `|' | `^' | `&'
+		| `<=>' | `==' | `=~' | `>' | `>=' | `<' | `<='
+		| `<<' | `>>' | `+' | `-' | `*' | `/' | `%' | `**'
+		| `~' | `+@@' | `-@@' | `[]' | `[]='
+
+OPERATION       : identifier
+                | identifier'!'
+                | identifier'?'
+
+VARNAME		: GLOBAL
+		| `@@'identifier
+		| identifier
+
+GLOBAL		: `$'identifier
+		| `$'any_char
+
+STRING		: `"' any_char* `"'
+		| `'' any_char* `''
+		| ``' any_char* ``'
+
+REGEXP		: `/' any_char* `/'[i]
+
+@end example
+
+@node Variables Index, Concept Index, Function Index, Top
+@comment    node-name,          next,       previous,  up
+@unnumbered Variable Index
+
+@printindex vr
+
+@node     Concept Index, Function Index    , Variables Index, Top
+@comment      node-name, next,        previous,  up
+@unnumbered Concept Index
+
+@printindex cp
+
+@node     Function Index, Top    , Concept Index, Top
+@comment      node-name, next,        previous,  up
+@unnumbered Function Index
+
+@printindex fn
+
+@summarycontents
+@contents
+@bye
+
+Local variables:
+fill-column: 70
+end:

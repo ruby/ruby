@@ -4,6 +4,23 @@ AC_INIT(ruby.h)
 PROGS="ruby"
 AC_SUBST(PROGS)dnl
 
+dnl checks for alternative programs
+AC_ARG_WITH(gcc, [--without-gcc             never use gcc], [
+	case $withval in
+	no)	CC=cc
+		without_gcc=yes;;
+	yes)	CC=gcc
+		without_gcc=no;;
+	*)	CC=$withval
+		without_gcc=$withval;;
+	esac], [without_gcc=no])
+dnl If the user switches compilers, we can't believe the cache
+if test ! -z "$ac_cv_prog_CC" -a ! -z "$CC" -a "$CC" != "$ac_cv_prog_CC"
+then
+  AC_ERROR(cached CC is different -- throw away $cache_file
+(it is also a good idea to do 'make clean' before compiling))
+fi
+
 dnl Checks for programs.
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
@@ -11,16 +28,21 @@ AC_PROG_YACC
 AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
+# checks for UNIX variants that set C preprocessor variables
+AC_AIX
+AC_MINIX
+
 dnl Checks for libraries.
-AC_CHECK_LIB(m, pow)
 AC_CHECK_LIB(crypt, crypt)
-AC_CHECK_LIB(dl, dlopen, [:])
+AC_CHECK_LIB(dl, dlopen, [:])	# Dynamic linking for SunOS/Solaris and SYSV
+AC_CHECK_LIB(dld, shl_load)	# Dynamic linking for HP-UX
 
 dnl Checks for header files.
 AC_HEADER_DIRENT
 AC_HEADER_STDC
-AC_CHECK_HEADERS(fcntl.h limits.h sys/file.h sys/ioctl.h sys/time.h unistd.h\
-		stdlib.h syscall.h a.out.h string.h utime.h)
+AC_CHECK_HEADERS(limits.h sys/file.h sys/ioctl.h pwd.h\
+		 sys/time.h sys/times.h sys/param.h unistd.h\
+		 syscall.h a.out.h string.h utime.h memory.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -34,12 +56,12 @@ AC_TYPE_GETGROUPS
 AC_TYPE_SIGNAL
 AC_FUNC_ALLOCA
 AC_FUNC_VFORK
-AC_REPLACE_FUNCS(memmove mkdir strerror strftime\
-		 strstr strtoul strdup)
+AC_REPLACE_FUNCS(dup2 setenv memmove mkdir strerror strftime\
+		 strstr strtoul strdup crypt)
 AC_CHECK_FUNCS(fmod killpg random wait4 waitpid syscall getcwd\
+	      truncate chsize times utimes fcntl\
 	      setruid seteuid setreuid setrgid setegid setregid\
-	      getpriority sigprocmask dlopen utimes)
-AC_CHECK_FUNC(setenv, [], AC_CHECK_FUNCS(putenv))
+	      getgroups getpriority sigprocmask dlopen)
 if test "$ac_cv_func strftime" = no; then
     AC_STRUCT_TIMEZONE
     AC_TRY_LINK([],
@@ -47,89 +69,125 @@ if test "$ac_cv_func strftime" = no; then
 fi
 
 AC_C_BIGENDIAN
-AC_MSG_CHECKING(std stdio)
-AC_CACHE_VAL(rb_cv_stdstdio,
-[AC_TRY_COMPILE([#include <stdio.h>], 
-	        [stdin->_cnt > 0;], 
-	        rb_cv_stdstdio=yes,
-	        rb_cv_stdstdio=no)])
-AC_MSG_RESULT($rb_cv_stdstdio)
-if test "$rb_cv_stdstdio" = yes; then
-  AC_DEFINE(STDSTDIO)
-fi
-AC_MSG_CHECKING(struct passwd)
-AC_EGREP_HEADER(pw_change, pwd.h, AC_DEFINE(PW_CHANGE))
-AC_EGREP_HEADER(pw_quota, pwd.h, AC_DEFINE(PW_QUOTA))
-AC_EGREP_HEADER(pw_age, pwd.h, AC_DEFINE(PW_AGE))
-AC_EGREP_HEADER(pw_class, pwd.h, AC_DEFINE(PW_CLASS))
-AC_EGREP_HEADER(pw_comment, pwd.h, AC_DEFINE(PW_COMMENT))
-AC_EGREP_HEADER(pw_expire, pwd.h, AC_DEFINE(PW_EXPIRE))
-AC_MSG_RESULT(done)
 
-if test "$ac_cv_header_a_out_h" = yes; then
+AC_MSG_CHECKING([count field in FILE structures])
+AC_CACHE_VAL(rb_cv_fcnt,
+[AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->_cnt = 0;], rb_cv_fcnt="_cnt", )
+if test "$rb_cv_fcnt=" = ""; then
+    AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->__cnt = 0;], rb_cv_fcnt="__cnt", )
+fi
+if test "$rb_cv_fcnt=" = ""; then
+    AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->_r = 0;], rb_cv_fcnt="_r", )
+fi
+if test "$rb_cv_fcnt=" = ""; then
+    AC_TRY_COMPILE([#include <stdio.h>],
+	[FILE *f = stdin; f->readCount = 0;], rb_cv_fcnt="readCount", )
+fi])
+if test "$rb_cv_fcnt"; then
+  AC_MSG_RESULT($rb_cv_fcnt)
+  AC_DEFINE_UNQUOTED(FILE_COUNT, $rb_cv_fcnt)
+else
+  AC_MSG_RESULT([not found(OK if using GNU libc)])
+fi
+
+if test "$ac_cv_func_getpwent" = yes; then
+  AC_MSG_CHECKING(struct passwd)
+  AC_EGREP_HEADER(pw_change, pwd.h, AC_DEFINE(PW_CHANGE))
+  AC_EGREP_HEADER(pw_quota, pwd.h, AC_DEFINE(PW_QUOTA))
+  AC_EGREP_HEADER(pw_age, pwd.h, AC_DEFINE(PW_AGE))
+  AC_EGREP_HEADER(pw_class, pwd.h, AC_DEFINE(PW_CLASS))
+  AC_EGREP_HEADER(pw_comment, pwd.h, AC_DEFINE(PW_COMMENT))
+  AC_EGREP_HEADER(pw_expire, pwd.h, AC_DEFINE(PW_EXPIRE))
+  AC_MSG_RESULT(done)
+fi
+
+dnl wheather use dln_a_out ot not
+AC_ARG_WITH(dln-a-out, [--with-dln-a-out     use dln_a_out if possible], [
+	case $withval in
+	yes) with_dln_a_out=yes;;
+	*)   with_dln_a_out=no;;
+	esac], [with_dln_a_out=no])
+
+if test "$with_dln_a_out" = yes && test "$ac_cv_header_a_out_h" = yes; then
+
  AC_MSG_CHECKING(whether matz's dln works)
- cp confdefs.h config.h
- AC_CACHE_VAL(rb_cv_mydln,
+ cat confdefs.h > config.h
+ AC_CACHE_VAL(rb_cv_dln_a_out,
  [AC_TRY_COMPILE([
-#define USE_MY_DLN
+#define USE_DLN_A_OUT
 #include "dln.c"
 ],
 	        [], 
-	        rb_cv_mydln=yes,
-	        rb_cv_mydln=no)])
- AC_MSG_RESULT($rb_cv_mydln)
- if test "$rb_cv_mydln" = yes; then
-   AC_DEFINE(USE_MY_DLN)
+	        rb_cv_dln_a_out=yes,
+	        rb_cv_dln_a_out=no)])
+ AC_MSG_RESULT($rb_cv_dln_a_out)
+ if test "$rb_cv_dln_a_out" = yes; then
+   AC_DEFINE(USE_DLN_A_OUT)
  fi
+else
+  rb_cv_dln_a_out=no
 fi
 
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
-AC_SUBST(LDDLFLAGS)dnl
+AC_SUBST(LDSHARED)dnl
 AC_SUBST(DLEXT)dnl
-AC_SUBST(EXTMAKE)dnl
 
-EXTMAKE=
 STATIC=
 
-if test "$rb_cv_mydln" = yes; then
-  EXTMAKE=extmake
-  if test "$HOSTTYPE" = sparc; then
-    if test "$ac_cv_prog_CC" = gcc; then
-      STATIC=-static
-    else
-      STATIC=-Bstatic
-    fi
+if test "$rb_cv_dln_a_out" = yes; then
+  if test "$GCC" = yes; then
+    STATIC=-static
+  else
+    STATIC=-Bstatic
   fi
   DLEXT=o
   AC_DEFINE(DLEXT, ".o")
   CCDLFLAGS=
   LDCMD=
-elif test "$ac_cv_lib_dl" = yes || test "$ac_cv_func_dlopen" = yes; then
+
+else
+
   AC_CANONICAL_HOST
-  echo "please mail this value to matz -- $host_os"
-  EXTMAKE=extmake
-  DLEXT=so
-  AC_DEFINE(DLEXT, ".so")
-  if test "$ac_cv_prog_CC" = gcc; then
+  case "$host_os" in
+    hpux*)	DLEXT=sl
+	 	AC_DEFINE(DLEXT, ".sl");;
+    *)		DLEXT=so
+    		AC_DEFINE(DLEXT, ".so");;
+  esac
+
+  if test "$GCC" = yes; then
     CCDLFLAGS=-fpic
   else
     case "$host_os" in
-	hpux*)		CCDLFLAGS='+z' ;;
+	hpux*)	CCDLFLAGS='+z';;
 	solaris*|irix*)	CCDLFLAGS='-K pic' ;;
 	sunos*)		CCDLFLAGS='-pic' ;;
 	svr4*|esix*) 	CCDLFLAGS='-Kpic' ;;
 	*)		CCDLFLAGS='' ;;
     esac
   fi
+
   case "$host_os" in
-	hpux*)		LDDLFLAGS='-b' ;;
-	solaris*) 	LDDLFLAGS='-G' ;;
-	sunos*) 	LDDLFLAGS='-assert nodefinitions' ;;
-	svr4*|esix*) 	LDDLFLAGS="-G $LDFLAGS" ;;
-	*) 		LDDLFLAGS="" ;;
+	hpux*)		LDSHARED='ld -b' ;;
+	solaris*) 	LDSHARED='ld -G' ;;
+	sunos*) 	LDSHARED='ld -assert nodefinitions' ;;
+	svr4*|esix*) 	LDSHARED="ld -G" ;;
+	linux*) 	LDSHARED="gcc-elf -shared" ;;
+	*) 		LDSHARED='ld' ;;
   esac
 fi
 
-cp confdefs.h config.h
+if test "$prefix" = NONE; then
+  AC_DEFINE_UNQUOTED(RUBY_LIB, ".:${ac_default_prefix}/lib/ruby")
+else
+  AC_DEFINE_UNQUOTED(RUBY_LIB, ".:${prefix}/lib/ruby")
+fi
+
+echo "creating config.h"
+cat confdefs.h > config.h
+
 AC_OUTPUT(Makefile ext/extmk.rb)

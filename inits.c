@@ -12,6 +12,7 @@
 
 #include "ruby.h"
 
+void
 rb_call_inits()
 {
     Init_sym();
@@ -23,7 +24,6 @@ rb_call_inits()
     Init_Enumerable();
     Init_Numeric();
     Init_Bignum();
-    Init_Assoc();
     Init_Array();
     Init_Hash();
     Init_Struct();
@@ -37,12 +37,9 @@ rb_call_inits()
     Init_Random();
     Init_signal();
     Init_process();
-    Init_Etc();
     Init_load();
-    Init_Block();
+    Init_Proc();
     Init_Math();
-    /* new Inits comes between here.. */
-
-    /* .. and here. */
+    Init_ext();
     Init_version();
 }

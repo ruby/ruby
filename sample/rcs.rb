@@ -16,7 +16,7 @@ while gets()
   s = "";
   while xr < hdw
     x = xr * (1 + y) - y * w / 2
-    i = (x / (1 + h) + sw /2)
+    i = (x / (1 + h) + sw / 2)
     if (1 < i && i < $_.length);
       c = $_[i, 1].to_i
     else

@@ -15,18 +15,21 @@
 #include "version.h"
 #include <stdio.h>
 
-extern VALUE C_Kernel;
+extern VALUE cKernel;
 
+void
 Init_version()
 {
-    rb_define_const(C_Kernel, "VERSION", str_new2(RUBY_VERSION));
+    rb_define_const(cKernel, "VERSION", str_new2(RUBY_VERSION));
 }
 
+void
 show_version()
 {
     fprintf(stderr, "ruby - version %s (%s)\n", RUBY_VERSION, VERSION_DATE);
 }
 
+void
 show_copyright()
 {
     fprintf(stderr, "ruby - Copyright (C) 1993-1995 Yukihiro Matsumoto\n");

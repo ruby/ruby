@@ -5,7 +5,7 @@ while gets()
   for word in $_.split(/\W+/)
     begin
       freq[word] = freq[word] + 1
-    resque
+    rescue
       freq[word] = 1
     end
   end

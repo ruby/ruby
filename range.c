@@ -12,18 +12,21 @@
 
 #include "ruby.h"
 
-VALUE M_Comparable;
-VALUE C_Range;
+VALUE mComparable;
+static VALUE cRange;
 
-static ID next;
+static ID upto;
 
 static VALUE
-Srng_new(class, start, end)
+range_s_new(class, start, end)
     VALUE class, start, end;
 {
     VALUE obj;
 
-    if (!obj_is_kind_of(start, M_Comparable) || TYPE(start) != TYPE(end)) {
+    if (!(FIXNUM_P(start) && FIXNUM_P(end))
+	&& (TYPE(start) != TYPE(end)
+	    || CLASS_OF(start) != CLASS_OF(end)
+	    || !rb_responds_to(start, upto))) {
 	Fail("bad value for range");
     }
 
@@ -39,11 +42,11 @@ VALUE
 range_new(start, end)
     VALUE start, end;
 {
-    return Srng_new(C_Range, start, end);
+    return range_s_new(cRange, start, end);
 }
 
 static VALUE
-Frng_match(rng, obj)
+range_match(rng, obj)
     VALUE rng, obj;
 {
     VALUE beg, end;
@@ -71,13 +74,15 @@ struct upto_data {
     VALUE end;
 };
 
-static rng_upto(data)
+static VALUE
+range_upto(data)
     struct upto_data *data;
 {
-    return rb_funcall(data->beg, rb_intern("upto"), 1, data->end);
+    return rb_funcall(data->beg, upto, 1, data->end);
 }
 
-static rng_upto_yield(v)
+static VALUE
+range_upto_yield(v)
     VALUE v;
 {
     rb_yield(v);
@@ -85,19 +90,19 @@ static rng_upto_yield(v)
 }
 
 static VALUE
-Frng_each(obj)
+range_each(obj)
     VALUE obj;
 {
-    VALUE b, e, current;
+    VALUE b, e;
 
     b = rb_iv_get(obj, "start");
     e = rb_iv_get(obj, "end");
 
     if (FIXNUM_P(b)) {		/* fixnum is a special case(for performance) */
-	Fnum_upto(b, e);
+	num_upto(b, e);
     }
     else if (TYPE(b) == T_STRING) {
-	Fstr_upto(b, e);
+	str_upto(b, e);
     }
     else {
 	struct upto_data data;
@@ -105,14 +110,14 @@ Frng_each(obj)
 	data.beg = b;
 	data.end = e;
 
-	rb_iterate(rng_upto, &data, rng_upto_yield, Qnil);
+	rb_iterate(range_upto, &data, range_upto_yield, Qnil);
     }
 
     return Qnil;
 }
 
 static VALUE
-Frng_start(obj)
+range_start(obj)
     VALUE obj;
 {
     VALUE b;
@@ -122,7 +127,7 @@ Frng_start(obj)
 }
 
 static VALUE
-Frng_end(obj)
+range_end(obj)
     VALUE obj;
 {
     VALUE e;
@@ -132,7 +137,7 @@ Frng_end(obj)
 }
 
 static VALUE
-Frng_to_s(obj)
+range_to_s(obj)
     VALUE obj;
 {
     VALUE args[4];
@@ -140,21 +145,36 @@ Frng_to_s(obj)
     args[0] = str_new2("%d..%d");
     args[1] = rb_iv_get(obj, "start");
     args[2] = rb_iv_get(obj, "end");
-    return Fsprintf(3, args);
+    return f_sprintf(3, args);
 }
 
-extern VALUE M_Enumerable;
+VALUE
+range_beg_end(range, begp, endp)
+    VALUE range;
+    int *begp, *endp;
+{
+    int beg, end;
 
+    if (!obj_is_kind_of(range, cRange)) return FALSE;
+
+    beg = rb_iv_get(range, "start"); *begp = NUM2INT(beg);
+    end = rb_iv_get(range, "end");   *endp = NUM2INT(end);
+    return TRUE;
+}
+
+extern VALUE mEnumerable;
+
+void
 Init_Range()
 {
-    C_Range = rb_define_class("Range", C_Object);
-    rb_include_module(C_Range, M_Enumerable);
-    rb_define_single_method(C_Range, "new", Srng_new, 2);
-    rb_define_method(C_Range, "=~", Frng_match, 1);
-    rb_define_method(C_Range, "each", Frng_each, 0);
-    rb_define_method(C_Range, "start", Frng_start, 0);
-    rb_define_method(C_Range, "end", Frng_end, 0);
-    rb_define_method(C_Range, "to_s", Frng_to_s, 0);
+    cRange = rb_define_class("Range", cObject);
+    rb_include_module(cRange, mEnumerable);
+    rb_define_singleton_method(cRange, "new", range_s_new, 2);
+    rb_define_method(cRange, "=~", range_match, 1);
+    rb_define_method(cRange, "each", range_each, 0);
+    rb_define_method(cRange, "start", range_start, 0);
+    rb_define_method(cRange, "end", range_end, 0);
+    rb_define_method(cRange, "to_s", range_to_s, 0);
 
-    next = rb_intern("next");
+    upto = rb_intern("upto");
 }

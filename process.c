@@ -11,11 +11,20 @@
 ************************************************/
 
 #include "ruby.h"
+#include "sig.h"
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
 #include <signal.h>
-#include <sys/time.h>
+#ifdef HAVE_SYS_TIME_H
+# include <sys/time.h>
+#else
+struct timeval {
+        long    tv_sec;         /* seconds */
+        long    tv_usec;        /* and microseconds */
+};
+#endif
+
 #include <sys/resource.h>
 #ifdef HAVE_VFORK_H
 #include <vfork.h>
@@ -31,8 +40,16 @@ get_pid()
 static VALUE
 get_ppid()
 {
+#ifdef NT
+    return INT2FIX(0);
+#else
     return INT2FIX(getppid());
+#endif
 }
+
+#ifdef NT
+#define HAVE_WAITPID
+#endif
 
 static VALUE status;
 
@@ -96,7 +113,7 @@ static wait_each(key, value)
 #endif
 
 static VALUE
-Fwait(obj)
+f_wait()
 {
     int pid, state;
 
@@ -118,12 +135,12 @@ Fwait(obj)
 }
 
 static VALUE
-Fwaitpid(obj, vpid, vflags)
+f_waitpid(obj, vpid, vflags)
     VALUE obj, vpid, vflags;
 {
     int pid, flags;
 
-    if (vflags == Qnil) flags = Qnil;
+    if (vflags == Qnil) flags = 0;
     else flags = FIX2UINT(vflags);
 
     if ((pid = rb_waitpid(FIX2UINT(vpid), flags)) < 0)
@@ -133,6 +150,7 @@ Fwaitpid(obj, vpid, vflags)
 
 char *strtok();
 
+int
 rb_proc_exec(str)
     char *str;
 {
@@ -161,7 +179,7 @@ rb_proc_exec(str)
 }
 
 static VALUE
-Fexec(obj, str)
+f_exec(obj, str)
     VALUE obj;
     struct RString *str;
 {
@@ -171,18 +189,22 @@ Fexec(obj, str)
 }
 
 static VALUE
-Ffork(obj)
+f_fork(obj)
     VALUE obj;
 {
     int pid;
 
     switch (pid = fork()) {
       case 0:
-	return INT2FIX(0);
+	if (iterator_p()) {
+	    rb_yield(Qnil);
+	    _exit(0);
+	}
+	return Qnil;
 
       case -1:
 	rb_sys_fail("fork(2)");
-	break;
+	return Qnil;
 
       default:
 	return INT2FIX(pid);
@@ -190,7 +212,7 @@ Ffork(obj)
 }
 
 static VALUE
-F_exit(obj, status)
+f_exit_bang(obj, status)
     VALUE obj, status;
 {
     int code = -1;
@@ -223,11 +245,21 @@ rb_syswait(pid)
 }
 
 static VALUE
-Fsystem(obj, str)
+f_system(obj, str)
     VALUE obj;
     struct RString *str;
 {
-    int pid, w;
+#ifdef NT
+    int state;
+
+    Check_Type(str, T_STRING);
+    state = do_spawn(str->ptr);
+    status = INT2FIX(state);
+
+    if (state == 0) return TRUE;
+    return FALSE;
+#else
+    int pid;
 
     Check_Type(str, T_STRING);
 
@@ -255,10 +287,13 @@ Fsystem(obj, str)
 	rb_syswait(pid);
     }
 
-    return status;
+    if (status == INT2FIX(0)) return TRUE;
+    return FALSE;
+#endif
 }
 
-Fsleep(argc, argv)
+VALUE
+f_sleep(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -269,7 +304,9 @@ Fsleep(argc, argv)
 	sleep((32767<<16)+32767);
     }
     else if (argc == 1) {
+	TRAP_BEG;
 	sleep(NUM2INT(argv[0]));
+	TRAP_END;
     }
     else {
 	Fail("wrong # of arguments");
@@ -280,8 +317,9 @@ Fsleep(argc, argv)
     return int2inum(end);
 }
 
+#ifndef NT
 static VALUE
-Fproc_getpgrp(argc, argv, obj)
+proc_getpgrp(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -302,7 +340,7 @@ Fproc_getpgrp(argc, argv, obj)
 }
 
 static VALUE
-Fproc_setpgrp(obj, pid, pgrp)
+proc_setpgrp(obj, pid, pgrp)
     VALUE obj, pid, pgrp;
 {
     int ipid, ipgrp;
@@ -316,7 +354,7 @@ Fproc_setpgrp(obj, pid, pgrp)
 }
 
 static VALUE
-Fproc_getpriority(obj, which, who)
+proc_getpriority(obj, which, who)
     VALUE obj, which, who;
 {
 #ifdef HAVE_GETPRIORITY
@@ -334,7 +372,7 @@ Fproc_getpriority(obj, which, who)
 }
 
 static VALUE
-Fproc_setpriority(obj, which, who, prio)
+proc_setpriority(obj, which, who, prio)
     VALUE obj, which, who, prio;
 {
 #ifdef HAVE_GETPRIORITY
@@ -351,9 +389,10 @@ Fproc_setpriority(obj, which, who, prio)
     Fail("The setpriority() function is unimplemented on this machine");
 #endif
 }
+#endif
 
 static VALUE
-Fproc_getuid(obj)
+proc_getuid(obj)
     VALUE obj;
 {
     int uid = getuid();
@@ -361,7 +400,7 @@ Fproc_getuid(obj)
 }
 
 static VALUE
-Fproc_setuid(obj, id)
+proc_setuid(obj, id)
     VALUE obj, id;
 {
     int uid;
@@ -385,7 +424,7 @@ Fproc_setuid(obj, id)
 }
 
 static VALUE
-Fproc_getgid(obj)
+proc_getgid(obj)
     VALUE obj;
 {
     int gid = getgid();
@@ -393,7 +432,7 @@ Fproc_getgid(obj)
 }
 
 static VALUE
-Fproc_setgid(obj, id)
+proc_setgid(obj, id)
     VALUE obj, id;
 {
     int gid;
@@ -417,7 +456,7 @@ Fproc_setgid(obj, id)
 }
 
 static VALUE
-Fproc_geteuid(obj)
+proc_geteuid(obj)
     VALUE obj;
 {
     int euid = geteuid();
@@ -425,7 +464,7 @@ Fproc_geteuid(obj)
 }
 
 static VALUE
-Fproc_seteuid(obj, euid)
+proc_seteuid(obj, euid)
     VALUE obj, euid;
 {
 #ifdef HAVE_SETEUID
@@ -445,7 +484,7 @@ Fproc_seteuid(obj, euid)
 }
 
 static VALUE
-Fproc_getegid(obj)
+proc_getegid(obj)
     VALUE obj;
 {
     int egid = getegid();
@@ -453,7 +492,7 @@ Fproc_getegid(obj)
 }
 
 static VALUE
-Fproc_setegid(obj, egid)
+proc_setegid(obj, egid)
     VALUE obj, egid;
 {
 #ifdef HAVE_SETEGID
@@ -472,53 +511,58 @@ Fproc_setegid(obj, egid)
     return egid;
 }
 
-VALUE rb_readonly_hook();
-VALUE M_Process;
+VALUE mProcess;
 
-extern VALUE Fkill();
+extern VALUE f_kill();
 
+void
 Init_process()
 {
-    extern VALUE C_Kernel;
+    extern VALUE cKernel;
 
-    rb_define_variable("$$", Qnil, get_pid, Qnil, 0);
-    rb_define_variable("$?", &status, Qnil, rb_readonly_hook, 0);
-    rb_define_private_method(C_Kernel, "exec", Fexec, 1);
-    rb_define_private_method(C_Kernel, "fork", Ffork, 0);
-    rb_define_private_method(C_Kernel, "_exit", Ffork, 1);
-    rb_define_private_method(C_Kernel, "wait", Fwait, 0);
-    rb_define_private_method(C_Kernel, "waitpid", Fwaitpid, 2);
-    rb_define_private_method(C_Kernel, "system", Fsystem, 1);
-    rb_define_private_method(C_Kernel, "sleep", Fsleep, -1);
+    rb_define_virtual_variable("$$", get_pid, Qnil);
+    rb_define_readonly_variable("$?", &status);
+#ifndef NT
+    rb_define_private_method(cKernel, "exec", f_exec, 1);
+    rb_define_private_method(cKernel, "fork", f_fork, 0);
+    rb_define_private_method(cKernel, "exit!", f_exit_bang, 1);
+    rb_define_private_method(cKernel, "wait", f_wait, 0);
+    rb_define_private_method(cKernel, "waitpid", f_waitpid, 2);
+#endif
+    rb_define_private_method(cKernel, "system", f_system, 1);
+    rb_define_private_method(cKernel, "sleep", f_sleep, -1);
 
-    M_Process = rb_define_module("Process");
-    rb_extend_object(M_Process, M_Process);
+    mProcess = rb_define_module("Process");
 
-    rb_define_single_method(M_Process, "fork", Ffork, 0);
-    rb_define_single_method(M_Process, "_exit", Ffork, 1);
-    rb_define_single_method(M_Process, "wait", Fwait, 0);
-    rb_define_single_method(M_Process, "waitpid", Fwaitpid, 2);
-    rb_define_single_method(M_Process, "kill", Fkill, -1);
+#ifndef NT
+    rb_define_singleton_method(mProcess, "fork", f_fork, 0);
+    rb_define_singleton_method(mProcess, "exit!", f_exit_bang, 1);
+    rb_define_singleton_method(mProcess, "wait", f_wait, 0);
+    rb_define_singleton_method(mProcess, "waitpid", f_waitpid, 2);
+    rb_define_singleton_method(mProcess, "kill", f_kill, -1);
+#endif
 
-    rb_define_method(M_Process, "pid", get_pid, 0);
-    rb_define_method(M_Process, "ppid", get_ppid, 0);
+    rb_define_module_function(mProcess, "pid", get_pid, 0);
+    rb_define_module_function(mProcess, "ppid", get_ppid, 0);
 
-    rb_define_method(M_Process, "getpgrp", Fproc_getpgrp, -1);
-    rb_define_method(M_Process, "setpgrp", Fproc_setpgrp, 2);
+#ifndef NT
+    rb_define_module_function(mProcess, "getpgrp", proc_getpgrp, -1);
+    rb_define_module_function(mProcess, "setpgrp", proc_setpgrp, 2);
 
-    rb_define_method(M_Process, "getpriority", Fproc_getpriority, 2);
-    rb_define_method(M_Process, "setpriority", Fproc_setpriority, 3);
+    rb_define_module_function(mProcess, "getpriority", proc_getpriority, 2);
+    rb_define_module_function(mProcess, "setpriority", proc_setpriority, 3);
 
-    rb_define_const(M_Process, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
-    rb_define_const(M_Process, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
-    rb_define_const(M_Process, "PRIO_USER", INT2FIX(PRIO_USER));
+    rb_define_const(mProcess, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
+    rb_define_const(mProcess, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
+    rb_define_const(mProcess, "PRIO_USER", INT2FIX(PRIO_USER));
 
-    rb_define_method(M_Process, "uid", Fproc_getuid, 0);
-    rb_define_method(M_Process, "uid=", Fproc_setuid, 1);
-    rb_define_method(M_Process, "gid", Fproc_getgid, 0);
-    rb_define_method(M_Process, "gid=", Fproc_setgid, 1);
-    rb_define_method(M_Process, "euid", Fproc_geteuid, 0);
-    rb_define_method(M_Process, "euid=", Fproc_seteuid, 1);
-    rb_define_method(M_Process, "egid", Fproc_getegid, 0);
-    rb_define_method(M_Process, "egid=", Fproc_setegid, 1);
+    rb_define_module_function(mProcess, "uid", proc_getuid, 0);
+    rb_define_module_function(mProcess, "uid=", proc_setuid, 1);
+    rb_define_module_function(mProcess, "gid", proc_getgid, 0);
+    rb_define_module_function(mProcess, "gid=", proc_setgid, 1);
+    rb_define_module_function(mProcess, "euid", proc_geteuid, 0);
+    rb_define_module_function(mProcess, "euid=", proc_seteuid, 1);
+    rb_define_module_function(mProcess, "egid", proc_getegid, 0);
+    rb_define_module_function(mProcess, "egid=", proc_setegid, 1);
+#endif
 }

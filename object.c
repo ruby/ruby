@@ -11,43 +11,25 @@
 ************************************************/
 
 #include "ruby.h"
-#include "env.h"
 #include "st.h"
 #include <stdio.h>
 
-VALUE C_Kernel;
-VALUE C_Object;
-VALUE C_Module;
-VALUE C_Class;
-VALUE C_Nil;
-VALUE C_Data;
+VALUE cKernel;
+VALUE cObject;
+VALUE cModule;
+VALUE cClass;
+VALUE cNil;
+VALUE cData;
 
 struct st_table *new_idhash();
 
-VALUE Fsprintf();
+VALUE f_sprintf();
 
-VALUE obj_responds_to();
 VALUE obj_alloc();
 
-static ID eq, match;
-
-static ID init_object;
+static ID eq;
 
 static ID init;
-
-static VALUE
-P_true(obj)
-    VALUE obj;
-{
-    return TRUE;
-}
-
-static VALUE
-P_false(obj)
-    VALUE obj;
-{
-    return FALSE;
-}
 
 VALUE
 rb_equal(obj1, obj2)
@@ -57,7 +39,14 @@ rb_equal(obj1, obj2)
 }
 
 static VALUE
-Fkrn_equal(obj1, obj2)
+krn_nil_p(obj)
+    VALUE obj;
+{
+    return FALSE;
+}
+
+static VALUE
+krn_equal(obj1, obj2)
     VALUE obj1, obj2;
 {
     if (obj1 == obj2) return TRUE;
@@ -65,45 +54,71 @@ Fkrn_equal(obj1, obj2)
 }
 
 static VALUE
-Fkrn_to_a(obj)
+krn_to_a(obj)
     VALUE obj;
 {
     return ary_new3(1, obj);
 }
 
 static VALUE
-Fkrn_id(obj)
+krn_id(obj)
     VALUE obj;
 {
     return obj | FIXNUM_FLAG;
 }
 
 static VALUE
-Fkrn_class(obj)
+krn_type(obj)
     struct RBasic *obj;
 {
     return obj->class;
 }
 
+static VALUE
+krn_clone(obj)
+    VALUE obj;
+{
+    VALUE clone;
+
+    if (TYPE(obj) != T_OBJECT) {
+	Fail("can't clone %s", rb_class2name(CLASS_OF(obj)));
+    }
+
+    clone = obj_alloc(RBASIC(obj)->class);
+    if (ROBJECT(obj)->iv_tbl) {
+	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
+    }
+    RBASIC(clone)->class = singleton_class_clone(RBASIC(obj)->class);
+
+    return clone;
+}
+
+static VALUE
+krn_dup(obj)
+    VALUE obj;
+{
+    return rb_funcall(obj, rb_intern("clone"), 0, 0);
+}
+
 VALUE
-Fkrn_to_s(obj)
+krn_to_s(obj)
     VALUE obj;
 {
     char buf[256];
 
-    sprintf(buf, "#<%s: 0x%x>", rb_class2name(CLASS_OF(obj)), obj);
+    sprintf(buf, "#<%s:0x%x>", rb_class2name(CLASS_OF(obj)), obj);
     return str_new2(buf);
 }
 
 VALUE
-Fkrn_inspect(obj)
+krn_inspect(obj)
     VALUE obj;
 {
-    return rb_funcall(obj, rb_intern("to_s"), 0, Qnil);
+    return rb_funcall(obj, rb_intern("to_s"), 0, 0);
 }
 
-static
-obj_inspect(id, value, str)
+static int
+inspect_i(id, value, str)
     ID id;
     VALUE value;
     struct RString *str;
@@ -120,31 +135,39 @@ obj_inspect(id, value, str)
     ivname = rb_id2name(id);
     str_cat(str, ivname, strlen(ivname));
     str_cat(str, "=", 1);
-    str2 = rb_funcall(value, rb_intern("_inspect"), 0, Qnil);
+    str2 = rb_funcall(value, rb_intern("inspect"), 0, 0);
     str_cat(str, RSTRING(str2)->ptr, RSTRING(str2)->len);
 
     return ST_CONTINUE;
 }
 
 static VALUE
-Fobj_inspect(obj)
+obj_inspect(obj)
     struct RObject *obj;
 {
     VALUE str;
     char buf[256];
 
-    if (FIXNUM_P(obj) || !obj->iv_tbl) return Fkrn_to_s(obj);
+    switch (TYPE(obj)) {
+      case T_OBJECT:
+      case T_MODULE:
+      case T_CLASS:
+	if (obj->iv_tbl) break;
+	/* fall through */
+      default:
+	return krn_inspect(obj);
+    }
 
     sprintf(buf, "-<%s: ", rb_class2name(CLASS_OF(obj)));
     str = str_new2(buf);
-    st_foreach(obj->iv_tbl, obj_inspect, str);
+    st_foreach(obj->iv_tbl, inspect_i, str);
     str_cat(str, ">", 1);
 
     return str;
 }
 
 VALUE
-obj_is_member_of(obj, c)
+obj_is_instance_of(obj, c)
     VALUE obj, c;
 {
     struct RClass *class = (struct RClass*)CLASS_OF(obj);
@@ -187,52 +210,42 @@ obj_is_kind_of(obj, c)
 }
 
 static VALUE
-Fobj_clone(obj)
-    VALUE obj;
-{
-    VALUE clone;
-
-    Check_Type(obj, T_OBJECT);
-
-    clone = obj_alloc(RBASIC(obj)->class);
-    if (ROBJECT(obj)->iv_tbl) {
-	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
-    }
-    RBASIC(clone)->class = single_class_clone(RBASIC(obj)->class);
-
-    return clone;
-}
-
-static VALUE
-Fobj_initialize(obj)
+obj_initialize(obj)
     VALUE obj;
 {
     return Qnil;
 }
 
 static VALUE
-Fobj_s_added(obj, id)
+obj_s_added(obj, id)
     VALUE obj, id;
 {
     return Qnil;
 }
 
 static VALUE
-Fnil_to_s(obj)
+nil_nil_p(obj)
+    VALUE obj;
+{
+    return TRUE;
+}
+
+static VALUE
+nil_to_s(obj)
     VALUE obj;
 {
     return str_new2("nil");
 }
 
 static VALUE
-Fnil_class(nil)
+nil_type(nil)
     VALUE nil;
 {
-    return C_Nil;
+    return cNil;
 }
 
 static VALUE
-Fnil_plus(x, y)
+nil_plus(x, y)
     VALUE x, y;
 {
     switch (TYPE(y)) {
@@ -250,14 +263,14 @@ Fnil_plus(x, y)
 }
 
 static VALUE
-Fmain_to_s(obj)
+main_to_s(obj)
     VALUE obj;
 {
     return str_new2("main");
 }
 
 static VALUE
-Ftrue_to_s(obj)
+true_to_s(obj)
     VALUE obj;
 {
     return str_new2("t");
@@ -274,7 +287,7 @@ obj_alloc(class)
 }
 
 static VALUE
-Fcls_new(argc, argv, class)
+mod_new(argc, argv, class)
     int argc;
     VALUE *argv;
     VALUE class;
@@ -286,78 +299,65 @@ Fcls_new(argc, argv, class)
 }
 
 static VALUE
-Fcls_to_s(class)
+mod_clone(module)
+    struct RClass *module;
+{
+    NEWOBJ(clone, struct RClass);
+    OBJSETUP(clone, CLASS_OF(module), TYPE(module));
+
+    clone->super = module->super;
+    clone->m_tbl = st_copy(module->m_tbl);
+
+    return (VALUE)clone;
+}
+
+char *rb_class2path();
+
+static VALUE
+mod_to_s(class)
     VALUE class;
 {
-    return str_new2(rb_class2name(class));
+    return rb_class_path(class);
+}
+
+ID
+rb_to_id(name)
+    VALUE name;
+{
+    if (TYPE(name) == T_STRING) {
+	return rb_intern(RSTRING(name)->ptr);
+    }
+    return NUM2INT(name);
 }
 
 static VALUE
-Fcls_attr(argc, argv, class)
+mod_attr(argc, argv, class)
     int argc;
     VALUE *argv;
     VALUE class;
 {
     VALUE name, pub;
-
-    rb_scan_args(argc, argv, "11", &name, &pub);
-    Check_Type(name, T_STRING);
-    rb_define_attr(class, RSTRING(name)->ptr, pub);
-    return Qnil;
-}
-
-void
-method_visibility(argc, argv, ex)
-    int argc;
-    VALUE *argv;
-    int ex;
-{
-    VALUE self = Qself;
-    int i;
     ID id;
 
-    for (i=0; i<argc; i++) {
-	if (FIXNUM_P(argv[i])) {
-	    id = FIX2INT(argv[i]);
-	}
-	else {
-	    Check_Type(argv[i], T_STRING);
-	    id = rb_intern(RSTRING(argv[i])->ptr);
-	}
-	rb_export_method(self, id, ex);
-    }
-}
-
-static VALUE
-Fcls_public(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    method_visibility(argc, argv, NOEX_PUBLIC);
+    rb_scan_args(argc, argv, "11", &name, &pub);
+    rb_define_attr(class, rb_to_id(name), pub);
     return Qnil;
 }
 
 static VALUE
-Fcls_private(argc, argv)
-    int argc;
-    VALUE *argv;
+mod_public_attr(class, name)
+    VALUE class, name;
 {
-    method_visibility(argc, argv, NOEX_PRIVATE);
+    rb_define_attr(class, rb_to_id(name), 1);
     return Qnil;
 }
 
 static VALUE
-Fcant_clone(obj)
-    VALUE obj;
+mod_private_attr(class, name)
+    VALUE class, name;
 {
-    Fail("can't clone %s", rb_class2name(CLASS_OF(obj)));
-}
-
-static VALUE
-Fdata_class(data)
-    VALUE data;
-{
-    return C_Data;
+    rb_define_attr(class, rb_to_id(name), 0);
+    return Qnil;
 }
 
 static
@@ -376,21 +376,22 @@ VALUE boot_defclass(name, super)
 }
 
 VALUE TopSelf;
-VALUE TRUE = 1;
+VALUE TRUE = INT2FIX(1);
 
+void
 Init_Object()
 {
     VALUE metaclass;
 
-    C_Kernel = boot_defclass("Kernel", Qnil);
-    C_Object = boot_defclass("Object", C_Kernel);
-    C_Module = boot_defclass("Module", C_Object);
-    C_Class =  boot_defclass("Class",  C_Module);
+    cKernel = boot_defclass("Kernel", Qnil);
+    cObject = boot_defclass("Object", cKernel);
+    cModule = boot_defclass("Module", cObject);
+    cClass =  boot_defclass("Class",  cModule);
 
-    metaclass = RBASIC(C_Kernel)->class = single_class_new(C_Class);
-    metaclass = RBASIC(C_Object)->class = single_class_new(metaclass);
-    metaclass = RBASIC(C_Module)->class = single_class_new(metaclass);
-    metaclass = RBASIC(C_Class)->class = single_class_new(metaclass);
+    metaclass = RBASIC(cKernel)->class = singleton_class_new(cClass);
+    metaclass = RBASIC(cObject)->class = singleton_class_new(metaclass);
+    metaclass = RBASIC(cModule)->class = singleton_class_new(metaclass);
+    metaclass = RBASIC(cClass)->class = singleton_class_new(metaclass);
 
     /*
      * Ruby's Class Hierarchy Chart
@@ -423,63 +424,60 @@ Init_Object()
      */
 
 
-    rb_define_method(C_Kernel, "is_nil", P_false, 0);
-    rb_define_method(C_Kernel, "==", Fkrn_equal, 1);
-    rb_define_alias(C_Kernel, "equal", "==");
-    rb_define_method(C_Kernel, "hash", Fkrn_id, 0);
-    rb_define_method(C_Kernel, "id", Fkrn_id, 0);
-    rb_define_method(C_Kernel, "class", Fkrn_class, 0);
-    rb_define_alias(C_Kernel, "=~", "==");
+    rb_define_method(cKernel, "nil?", krn_nil_p, 0);
+    rb_define_method(cKernel, "==", krn_equal, 1);
+    rb_define_alias(cKernel, "equal?", "==");
+    rb_define_alias(cKernel, "=~", "==");
 
-    rb_define_method(C_Kernel, "to_a", Fkrn_to_a, 0);
-    rb_define_method(C_Kernel, "to_s", Fkrn_to_s, 0);
-    rb_define_method(C_Kernel, "_inspect", Fkrn_inspect, 0);
+    rb_define_method(cKernel, "hash", krn_id, 0);
+    rb_define_method(cKernel, "id", krn_id, 0);
+    rb_define_method(cKernel, "type", krn_type, 0);
 
-    rb_define_private_method(C_Kernel, "sprintf", Fsprintf, -1);
-    rb_define_alias(C_Kernel, "format", "sprintf");
+    rb_define_method(cKernel, "clone", krn_clone, 0);
+    rb_define_method(cKernel, "dup", krn_dup, 0);
 
-    rb_define_private_method(C_Object, "initialize", Fobj_initialize, -1);
-    rb_define_private_method(C_Object, "single_method_added", Fobj_s_added, 1);
+    rb_define_method(cKernel, "to_a", krn_to_a, 0);
+    rb_define_method(cKernel, "to_s", krn_to_s, 0);
+    rb_define_method(cKernel, "inspect", krn_inspect, 0);
 
-    rb_define_method(C_Object, "clone", Fobj_clone, 0);
+    rb_define_private_method(cKernel, "sprintf", f_sprintf, -1);
+    rb_define_alias(cKernel, "format", "sprintf");
 
-    rb_define_method(C_Object, "responds_to", obj_responds_to, 1);
-    rb_define_method(C_Object, "is_member_of", obj_is_member_of, 1);
-    rb_define_method(C_Object, "is_kind_of", obj_is_kind_of, 1);
-    rb_define_method(C_Object, "clone", Fobj_clone, 0);
+    rb_define_private_method(cObject, "initialize", obj_initialize, -1);
+    rb_define_private_method(cObject, "singleton_method_added", obj_s_added, 1);
 
-    rb_define_method(C_Module, "to_s", Fcls_to_s, 0);
-    rb_define_method(C_Module, "clone", Fcant_clone, 0);
-    rb_define_private_method(C_Module, "attr", Fcls_attr, -1);
+    rb_define_method(cObject, "is_instance_of?", obj_is_instance_of, 1);
+    rb_define_method(cObject, "is_kind_of?", obj_is_kind_of, 1);
+    rb_define_method(cObject, "inspect", obj_inspect, 0);
 
-    rb_define_method(C_Module, "public", Fcls_public, -1);
-    rb_define_method(C_Module, "private", Fcls_private, -1);
+    rb_define_method(cModule, "to_s", mod_to_s, 0);
+    rb_define_method(cModule, "clone", mod_clone, 0);
+    rb_define_private_method(cModule, "attr", mod_attr, -1);
+    rb_define_private_method(cModule, "public_attr", mod_public_attr, -1);
+    rb_define_private_method(cModule, "private_attr", mod_private_attr, -1);
 
-    rb_define_method(C_Class, "new", Fcls_new, -1);
+    rb_define_method(cClass, "new", mod_new, -1);
 
-    C_Nil = rb_define_class("Nil", C_Kernel);
-    rb_define_method(C_Nil, "to_s", Fnil_to_s, 0);
-    rb_define_method(C_Nil, "clone", P_false, 0);
-    rb_define_method(C_Nil, "class", Fnil_class, 0);
+    cNil = rb_define_class("Nil", cKernel);
+    rb_define_method(cNil, "to_s", nil_to_s, 0);
+    rb_define_method(cNil, "type", nil_type, 0);
 
-    rb_define_method(C_Nil, "is_nil", P_true, 0);
+    rb_define_method(cNil, "nil?", nil_nil_p, 0);
 
     /* default addition */
-    rb_define_method(C_Nil, "+", Fnil_plus, 1);
+    rb_define_method(cNil, "+", nil_plus, 1);
 
-    C_Data = rb_define_class("Data", C_Kernel);
-    rb_define_method(C_Data, "clone", Fcant_clone, 0);
-    rb_define_method(C_Data, "class", Fdata_class, 0);
+    cData = rb_define_class("Data", cKernel);
 
     eq = rb_intern("==");
 
-    Qself = TopSelf = obj_alloc(C_Object);
-    rb_define_single_method(TopSelf, "to_s", Fmain_to_s, 0);
+    Qself = TopSelf = obj_alloc(cObject);
+    rb_define_singleton_method(TopSelf, "to_s", main_to_s, 0);
 
-    TRUE = obj_alloc(C_Object);
-    rb_define_single_method(TRUE, "to_s", Ftrue_to_s, 0);
-    rb_define_const(C_Kernel, "TRUE", TRUE);
-    rb_define_const(C_Kernel, "FALSE", FALSE);
+    TRUE = obj_alloc(cObject);
+    rb_define_singleton_method(TRUE, "to_s", true_to_s, 0);
+    rb_define_const(cKernel, "TRUE", TRUE);
+    rb_define_const(cKernel, "FALSE", FALSE);
 
     init = rb_intern("initialize");
 }

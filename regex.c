@@ -1743,7 +1743,6 @@ re_search(pbufp, string, size, startpos, range, regs)
 {
   register char *fastmap = pbufp->fastmap;
   register unsigned char *translate = (unsigned char *) pbufp->translate;
-  int endpos = startpos + range;
   int val;
 
   /* Check for out-of-range starting position.  */
@@ -1811,9 +1810,9 @@ re_search(pbufp, string, size, startpos, range, regs)
 	return -2;
 
 #ifndef NO_ALLOCA
-#ifdef C_ALLOCA
+#ifdef cALLOCA
       alloca(0);
-#endif /* C_ALLOCA */
+#endif /* cALLOCA */
 
 #endif /* NO_ALLOCA */
     advance:
@@ -1967,10 +1966,6 @@ struct register_info
           MATCHED_SOMETHING(reg_info[this_reg]) = 0;			\
       } 								\
   }
-
-/* Test if at very beginning or at very end of the virtual concatenation
-   of string1 and string2.  If there is only one string, we've put it in
-   string2.  */
 
 #define AT_STRINGS_BEG  (d == string)
 #define AT_STRINGS_END  (d == dend)	
@@ -2667,6 +2662,7 @@ re_copy_registers(regs1, regs2)
 {
     int i;
 
+    if (regs1 == regs2) return;
     if (regs1->allocated == 0) {
 	regs1->beg = TMALLOC(regs2->num_regs, int);
 	regs1->end = TMALLOC(regs2->num_regs, int);
@@ -2679,4 +2675,12 @@ re_copy_registers(regs1, regs2)
 	regs1->beg[i] = regs2->beg[i];
 	regs1->end[i] = regs2->end[i];
     }
+}
+
+void
+re_free_registers(regs)
+     struct re_registers *regs;
+{
+    if (regs->beg) free(regs->beg);
+    if (regs->end) free(regs->end);
 }

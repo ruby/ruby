@@ -9,6 +9,7 @@
 ************************************************/
 
 #include "ruby.h"
+#include "sig.h"
 #include <signal.h>
 #include <stdio.h>
 
@@ -162,7 +163,7 @@ signm2signo(nm)
 }
 
 VALUE
-Fkill(argc, argv)
+f_kill(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -251,7 +252,7 @@ static RETSIGTYPE
 sighandle(sig)
     int sig;
 {
-    if (sig >= NSIG || trap_list[sig] == Qnil)
+    if (sig >= NSIG ||(sig != SIGINT && trap_list[sig] == Qnil))
 	Fail("trap_handler: Bad signal %d", sig);
 
 #ifndef HAVE_BSD_SIGNALS
@@ -260,14 +261,16 @@ sighandle(sig)
 
 #ifdef SAFE_SIGHANDLE
     if (trap_immediate) {
-	rb_trap_eval(trap_list[sig]);
+	if (sig == SIGINT && !trap_list[sig]) Fail("Interrupt");
+	rb_trap_eval(trap_list[sig], sig);
     }
     else {
 	trap_pending++;
 	trap_pending_list[sig]++;
     }
 #else
-    rb_trap_eval(trap_list[sig]);
+    if (sig == SIGINT && !trap_list[sig]) Fail("Interrupt");
+    rb_trap_eval(trap_list[sig], sig);
 #endif
 }
 
@@ -275,119 +278,184 @@ void
 rb_trap_exit()
 {
     if (trap_list[0])
-	rb_trap_eval(trap_list[0]);
+	rb_trap_eval(trap_list[0], 0);
 }
 
 #ifdef SAFE_SIGHANDLE
+void
 rb_trap_exec()
 {
     int i;
 
-    trap_pending = 0;
     for (i=0; i<NSIG; i++) {
 	if (trap_pending_list[i]) {
 	    trap_pending_list[i] = 0;
-	    rb_trap_eval(trap_list[i]);
+	    if (i == SIGINT && trap_list[SIGINT] == 0)
+		Fail("Interrupt");
+	    rb_trap_eval(trap_list[i], i);
 	}
     }
+    trap_pending = 0;
 }
 #endif
 
+struct trap_arg {
+#ifndef NT
+# ifdef HAVE_SIGPROCMASK
+    sigset_t mask;
+# else
+    int mask;
+# endif
+#endif
+    VALUE sig, cmd;
+};
+
+static RETSIGTYPE
+sigexit()
+{
+    rb_exit(1);
+}
+
 static VALUE
-Ftrap(argc, argv)
-    int argc;
-    VALUE *argv;
+trap(arg)
+    struct trap_arg *arg;
 {
     RETSIGTYPE (*func)();
     VALUE command;
     int i, sig;
-#ifdef HAVE_SIGPROCMASK
-    sigset_t mask;
-#else
-    int mask;
-#endif
-
-    if (argc < 2)
-	Fail("wrong # of arguments -- kill(cmd, sig...)");
-
-    /* disable interrupt */
-#ifdef HAVE_SIGPROCMASK
-    sigfillset(&mask);
-    sigprocmask(SIG_BLOCK, &mask, &mask);
-#else
-    mask = sigblock(~0);
-#endif
 
     func = sighandle;
-
-    if (argv[0] == Qnil) {
+    command = arg->cmd;
+    if (command == Qnil) {
 	func = SIG_IGN;
-	command = Qnil;
     }
-    else {
-	Check_Type(argv[0], T_STRING);
-	command = argv[0];
-	if (RSTRING(argv[0])->len == 0) {
+    else if (TYPE(command) == T_STRING) {
+	if (RSTRING(command)->len == 0) {
 	    func = SIG_IGN;
 	}
-	else if (RSTRING(argv[0])->len == 7) {
-	    if (strncmp(RSTRING(argv[0])->ptr, "SIG_IGN", 7) == 0) {
+	else if (RSTRING(command)->len == 7) {
+	    if (strncmp(RSTRING(command)->ptr, "SIG_IGN", 7) == 0) {
 		func = SIG_IGN;
 	    }
-	    else if (strncmp(RSTRING(argv[0])->ptr, "SIG_DFL", 7) == 0) {
+	    else if (strncmp(RSTRING(command)->ptr, "SIG_DFL", 7) == 0) {
 		func = SIG_DFL;
 	    }
-	    else if (strncmp(RSTRING(argv[0])->ptr, "DEFAULT", 7) == 0) {
+	    else if (strncmp(RSTRING(command)->ptr, "DEFAULT", 7) == 0) {
 		func = SIG_DFL;
 	    }
 	}
-	else if (RSTRING(argv[0])->len == 6) {
-	    if (strncmp(RSTRING(argv[0])->ptr, "IGNORE", 6) == 0) {
+	else if (RSTRING(command)->len == 6) {
+	    if (strncmp(RSTRING(command)->ptr, "IGNORE", 6) == 0) {
 		func = SIG_IGN;
+	    }
+	}
+	else if (RSTRING(command)->len == 4) {
+	    if (strncmp(RSTRING(command)->ptr, "EXIT", 4) == 0) {
+		func = sigexit;
 	    }
 	}
     }
-    if (func == SIG_IGN || func == SIG_DFL)
+    if (func == SIG_IGN || func == SIG_DFL) {
 	command = Qnil;
-
-    for (i=1; i<argc; i++) {
-	if (TYPE(argv[i]) == T_STRING) {
-	    char *s = RSTRING(argv[i])->ptr;
-
-	    if (strncmp("SIG", s, 3) == 0)
-		s += 3;
-	    sig = signm2signo(s);
-	    if (sig == 0 && strcmp(s, "EXIT") != 0)
-		Fail("Invalid signal SIG%s", s);
-	}
-	else {
-	    sig = NUM2INT(argv[i]);
-	}
-	if (sig < 0 || sig > NSIG)
-	    Fail("Invalid signal no %d", sig);
-
-	signal(sig, sighandle);
-	trap_list[sig] = command;
-	/* enable at least specified signal. */
-#ifdef HAVE_SIGPROCMASK
-	sigdelset(&mask, sig);
-#else
-	mask &= ~sigmask(sig);
-#endif
     }
-    /* disable interrupt */
+
+    if (TYPE(arg->sig) == T_STRING) {
+	char *s = RSTRING(arg->sig)->ptr;
+
+	if (strncmp("SIG", s, 3) == 0)
+	    s += 3;
+	sig = signm2signo(s);
+	if (sig == 0 && strcmp(s, "EXIT") != 0)
+	    Fail("Invalid signal SIG%s", s);
+    }
+    else {
+	sig = NUM2INT(arg->sig);
+    }
+    if (sig < 0 || sig > NSIG) {
+	Fail("Invalid signal no %d", sig);
+    }
+    signal(sig, func);
+    trap_list[sig] = command;
+    /* enable at least specified signal. */
 #ifdef HAVE_SIGPROCMASK
-    sigprocmask(SIG_SETMASK, &mask, NULL);
+    sigdelset(&arg->mask, sig);
 #else
-    sigsetmask(mask);
+    arg->mask &= ~sigmask(sig);
 #endif
     return Qnil;
 }
 
+#ifndef NT
+static void
+trap_ensure(arg)
+    struct trap_arg *arg;
+{
+    /* enable interrupt */
+#ifdef HAVE_SIGPROCMASK
+    sigprocmask(SIG_SETMASK, &arg->mask, NULL);
+#else
+    sigsetmask(arg->mask);
+#endif
+}
+#endif
+
+static VALUE
+f_trap(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    struct trap_arg arg;
+
+    if (argc == 0 || argc > 2) {
+	Fail("wrong # of arguments -- trap(sig, cmd)/trap(sig){...}");
+    }
+
+    arg.sig = argv[0];
+    if (argc == 1) {
+	arg.cmd = f_lambda();
+    }
+    else if (argc == 2) {
+	arg.cmd = argv[1];
+    }
+
+#ifndef NT
+    /* disable interrupt */
+# ifdef HAVE_SIGPROCMASK
+    sigfillset(&arg.mask);
+    sigprocmask(SIG_BLOCK, &arg.mask, &arg.mask);
+# else
+    arg.mask = sigblock(~0);
+# endif
+
+    return rb_ensure(trap, &arg, trap_ensure, &arg);
+#else
+    return trap(&arg);
+#endif
+}
+
+SIGHANDLE
+sig_beg()
+{
+    if (!trap_list[SIGINT]) {
+	return signal(SIGINT, sighandle);
+    }
+    return 0;
+}
+
+void
+sig_end(handle)
+    SIGHANDLE handle;
+{
+    if (!trap_list[SIGINT]) {
+	signal(SIGINT, handle);
+    }
+}
+
+void
 Init_signal()
 {
-    extern VALUE C_Kernel;
+    extern VALUE cKernel;
 
-    rb_define_method(C_Kernel, "kill", Fkill, -1);
-    rb_define_method(C_Kernel, "trap", Ftrap, -1);
+    rb_define_method(cKernel, "kill", f_kill, -1);
+    rb_define_method(cKernel, "trap", f_trap, -1);
 }

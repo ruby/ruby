@@ -13,7 +13,7 @@
 #include "ruby.h"
 #include <math.h>
 
-VALUE M_Math;
+VALUE mMath;
 VALUE float_new();
 
 #define Need_Float(x) \
@@ -29,7 +29,7 @@ if (FIXNUM_P(x)) {\
 }
 
 static VALUE
-Fmath_atan2(obj, x, y)
+math_atan2(obj, x, y)
     VALUE obj;
     struct RFloat *x, *y;
 {
@@ -38,7 +38,7 @@ Fmath_atan2(obj, x, y)
 }
 
 static VALUE
-Fmath_cos(obj, x)
+math_cos(obj, x)
     VALUE obj;
     struct RFloat *x;
 {
@@ -48,7 +48,7 @@ Fmath_cos(obj, x)
 }
 
 static VALUE
-Fmath_sin(obj, x)
+math_sin(obj, x)
     VALUE obj;
     struct RFloat *x;
 {
@@ -58,7 +58,7 @@ Fmath_sin(obj, x)
 }
 
 static VALUE
-Fmath_tan(obj, x)
+math_tan(obj, x)
     VALUE obj;
     struct RFloat *x;
 {
@@ -68,7 +68,7 @@ Fmath_tan(obj, x)
 }
 
 static VALUE
-Fmath_exp(obj, x)
+math_exp(obj, x)
     VALUE obj;
     struct RFloat *x;
 {
@@ -77,7 +77,7 @@ Fmath_exp(obj, x)
 }
 
 static VALUE
-Fmath_log(obj, x)
+math_log(obj, x)
     VALUE obj;
     struct RFloat *x;
 {
@@ -86,7 +86,7 @@ Fmath_log(obj, x)
 }
 
 static VALUE
-Fmath_log10(obj, x)
+math_log10(obj, x)
     VALUE obj;
     struct RFloat *x;
 {
@@ -95,7 +95,7 @@ Fmath_log10(obj, x)
 }
 
 static VALUE
-Fmath_sqrt(obj, x)
+math_sqrt(obj, x)
     VALUE obj;
     struct RFloat *x;
 {
@@ -105,30 +105,30 @@ Fmath_sqrt(obj, x)
     return float_new(sqrt(x->value));
 }
 
+void
 Init_Math()
 {
-    M_Math = rb_define_module("Math");
-    rb_extend_object(M_Math, M_Math);
+    mMath = rb_define_module("Math");
 
 #ifdef M_PI
-    rb_define_const(M_Math, "PI", float_new(M_PI));
+    rb_define_const(mMath, "PI", float_new(M_PI));
 #else
-    rb_define_const(M_Math, "PI", float_new(atan(1.0)*4.0));
+    rb_define_const(mMath, "PI", float_new(atan(1.0)*4.0));
 #endif
 
 #ifdef M_E
-    rb_define_const(M_Math, "E", float_new(M_E));
+    rb_define_const(mMath, "E", float_new(M_E));
 #else
-    rb_define_const(M_Math, "E", float_new(exp(1.0)));
+    rb_define_const(mMath, "E", float_new(exp(1.0)));
 #endif
 
-    rb_define_method(M_Math, "atan2", Fmath_atan2, 2);
-    rb_define_method(M_Math, "cos", Fmath_cos, 1);
-    rb_define_method(M_Math, "sin", Fmath_sin, 1);
-    rb_define_method(M_Math, "tan", Fmath_tan, 1);
+    rb_define_module_function(mMath, "atan2", math_atan2, 2);
+    rb_define_module_function(mMath, "cos", math_cos, 1);
+    rb_define_module_function(mMath, "sin", math_sin, 1);
+    rb_define_module_function(mMath, "tan", math_tan, 1);
 
-    rb_define_method(M_Math, "exp", Fmath_exp, 1);
-    rb_define_method(M_Math, "log", Fmath_log, 1);
-    rb_define_method(M_Math, "log10", Fmath_log10, 1);
-    rb_define_method(M_Math, "sqrt", Fmath_sqrt, 1);
+    rb_define_module_function(mMath, "exp", math_exp, 1);
+    rb_define_module_function(mMath, "log", math_log, 1);
+    rb_define_module_function(mMath, "log10", math_log10, 1);
+    rb_define_module_function(mMath, "sqrt", math_sqrt, 1);
 }

@@ -16,13 +16,13 @@
 static void fmt_setup();
 
 VALUE
-Fsprintf(argc, argv)
+f_sprintf(argc, argv)
     int argc;
     VALUE *argv;
 {
     struct RString *fmt;
     char *buf, *p, *end;
-    int i, blen, bsiz;
+    int blen, bsiz;
     VALUE result;
 
 #define FNONE  0
@@ -51,7 +51,7 @@ Fsprintf(argc, argv)
 }
 
 #define GETARG() \
-    ((argc == 0)?Fail("too few argument."):(argc--, (argv++)[0]))
+    ((argc == 0)?Fail("too few argument."),0:(argc--, (argv++)[0]))
 
     fmt = (struct RString*)GETARG();
     Check_Type(fmt, T_STRING);
@@ -110,7 +110,7 @@ Fsprintf(argc, argv)
 	  case '5': case '6': case '7': case '8': case '9':
 	    flags |= FWIDTH;
 	    width = 0;
-	    for (p; p < end && isdigit(*p); p++) {
+	    for (; p < end && isdigit(*p); p++) {
 		width = 10 * width + (*p - '0');
 	    }
 	    if (p >= end) {
@@ -150,7 +150,7 @@ Fsprintf(argc, argv)
 		goto retry;
 	    }
 
-	    for (p; p < end && isdigit(*p); p++) {
+	    for (; p < end && isdigit(*p); p++) {
 		prec = 10 * prec + (*p - '0');
 	    }
 	    if (p >= end) {
@@ -178,22 +178,39 @@ Fsprintf(argc, argv)
 	    {
 		VALUE arg = GETARG();
 		int len;
-		char fbuf[32];
-#define 	MIN(a,b) ((a)<(b)?(a):(b))
 
 		str = obj_as_string(arg);
-		fmt_setup(fbuf, 's', flags, width, prec);
+		len = RSTRING(str)->len;
 		if (flags&FPREC) {
-		    CHECK(prec);
+		    if (prec < len) {
+			CHECK(prec);
+			memcpy(&buf[blen], RSTRING(str)->ptr, prec);
+			blen += prec;
+			break;
+		    }
 		}
-		else if ((flags&FWIDTH) && width > RSTRING(str)->len) {
-		    CHECK(width);
+		if (flags&FWIDTH) {
+		    if (width > len) {
+			width -= len;
+			CHECK(width);
+			if (!(flags&FMINUS)) {
+			    while (width--) {
+				buf[blen++] = ' ';
+			    }
+			}
+			memcpy(&buf[blen], RSTRING(str)->ptr, len);
+			blen += len;
+			if (flags&FMINUS) {
+			    while (width--) {
+				buf[blen++] = ' ';
+			    }
+			}
+			break;
+		    }
 		}
-		else {
-		    CHECK(RSTRING(str)->len);
-		}
-		sprintf(&buf[blen], fbuf, RSTRING(str)->ptr);
-		blen += strlen(&buf[blen]);
+		CHECK(len);
+		memcpy(&buf[blen], RSTRING(str)->ptr, len);
+		blen += len;
 	    }
 	    break;
 

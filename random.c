@@ -16,7 +16,7 @@ static int first = 1;
 static char state[256];
 
 static VALUE
-Fsrand(argc, argv, obj)
+f_srand(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -54,7 +54,7 @@ Fsrand(argc, argv, obj)
 }
 
 static VALUE
-Frand(obj, max)
+f_rand(obj, max)
     VALUE obj, max;
 {
     int val;
@@ -73,10 +73,11 @@ Frand(obj, max)
     return int2inum(val);
 }
 
+void
 Init_Random()
 {
-    extern VALUE C_Kernel;
+    extern VALUE cKernel;
 
-    rb_define_private_method(C_Kernel, "srand", Fsrand, -1);
-    rb_define_private_method(C_Kernel, "rand", Frand, 1);
+    rb_define_private_method(cKernel, "srand", f_srand, -1);
+    rb_define_private_method(cKernel, "rand", f_rand, 1);
 }

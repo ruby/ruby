@@ -1,10 +1,40 @@
 #! /usr/local/bin/ruby
 
+if $ARGV[0] == 'install'
+  $install = TRUE
+  $ARGV.shift
+end
+
+if $ARGV[0] == 'clean'
+  $clean = TRUE
+  $ARGV.shift
+end
+
+$cache_mod = FALSE;
+$lib_cache = {}
+$func_cache = {}
+$hdr_cache = {}
+
+if File.exists?("config.cache") then
+  f = open("config.cache", "r")
+  while f.gets
+    case $_
+    when /^lib: ([\w_]+) (yes|no)/
+      $lib_cache[$1] = $2
+    when /^func: ([\w_]+) (yes|no)/
+      $func_cache[$1] = $2
+    when /^hdr: (.+) (yes|no)/
+      $hdr_cache[$1] = $2
+    end
+  end
+  f.close
+end
+
 def older(file1, file2)
-  if !File.exists(file1) then
+  if !File.exists?(file1) then
     return TRUE
   end
-  if !File.exists(file2) then
+  if !File.exists?(file2) then
     return FALSE
   end
   if File.mtime(file1) < File.mtime(file2)
@@ -13,77 +43,144 @@ def older(file1, file2)
   return FALSE
 end
 
-if !File.exists("./Makefile") ||
-  older("./Makefile", "../extmk.rb") ||
-  older("./Makefile", "./extconf.rb") then
+LINK = "@CC@ -o conftest %s %s conftest.c %s > /dev/null 2>&1"
+CPP = "@CPP@ @CPPFLAGS@ %s conftest.c > /dev/null 2>&1"
 
-  LINK = "@CC@ -o conftest @CFLAGS@ @LDFLAGS@ conftest.c %s > /dev/null 2>&1"
-  $defs = []
+def have_library(lib, func)
+  if $lib_cache[lib]
+    if $lib_cache[lib] == "yes"
+      if $libs
+	$libs = $libs + " -l" + lib
+      else
+	$libs = "-l" + lib
+      end
+      return TRUE
+    else
+      return FALSE
+    end
+  end
 
-  def have_library(func, lib)
-    cfile = open("conftest.c", "w")
-    printf cfile, "\
+  cfile = open("conftest.c", "w")
+  printf cfile, "\
 int main() { return 0; }
 int t() { %s(); return 0; }
 ", func
-    cfile.close
+  cfile.close
 
-    begin
-      if system(format(LINK, "-l" + lib)) != 0
-	return FALSE
-      end
-    ensure
-      system "/bin/rm -f conftest*"
-    end
-
+  begin
     if $libs
-      $libs = $libs + " -l" + lib
+      libs = "-l" + lib + " " + $libs
     else
-      $libs = "-l" + lib
+      libs = "-l" + lib
     end
-    $defs.push(format("-DHAVE_LIB%s", lib.toupper))
-    return TRUE
+    if !system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+      $lib_cache[lib] = 'no'
+      $cache_mod = TRUE
+      return FALSE
+    end
+  ensure
+    system "/bin/rm -f conftest*"
   end
 
-  def have_func(func)
+  $libs = libs
+  $lib_cache[lib] = 'yes'
+  $cache_mod = TRUE
+  return TRUE
+end
 
-    cfile = open("conftest.c", "w")
-    printf cfile, "\
+def have_func(func)
+  if $func_cache[func]
+    if $func_cache[func] == "yes"
+      $defs.push(format("-DHAVE_%s", func.upcase))
+      return TRUE
+    else
+      return FALSE
+    end
+  end
+
+  cfile = open("conftest.c", "w")
+  printf cfile, "\
 char %s();
 int main() { return 0; }
 int t() { %s(); return 0; }
 ", func, func
-    cfile.close
+  cfile.close
 
-    libs = $libs
-    libs = "" if libs == nil
+  libs = $libs
+  libs = "" if libs == nil
 
-    begin
-      if system(format(LINK, libs)) != 0
-	return FALSE
-      end
-    ensure
-      system "/bin/rm -f conftest*"
+  begin
+    if !system(format(LINK, $CFLAGS, $LDFLAGS, libs))
+      $func_cache[func] = 'no'
+      $cache_mod = TRUE
+      return FALSE
     end
-    $defs.push(format("-DHAVE_%s", func.toupper))
-    return TRUE
+  ensure
+    system "/bin/rm -f conftest*"
+  end
+  $defs.push(format("-DHAVE_%s", func.upcase))
+  $func_cache[func] = 'yes'
+  $cache_mod = TRUE
+  return TRUE
+end
 
+def have_header(header)
+  if $hdr_cache[header]
+    if $hdr_cache[header] == "yes"
+      header.tr!("a-z./\055", "A-Z___")
+      $defs.push(format("-DHAVE_%s", header))
+      return TRUE
+    else
+      return FALSE
+    end
   end
 
-  def create_header()
-    if $defs.length > 0
-      hfile = open("extconf.h", "w")
-      for line in $defs
-	line =~ /^-D(.*)/
-	printf hfile, "#define %s 1\n", $1
-      end
-      hfile.close
-    end
-  end
+  cfile = open("conftest.c", "w")
+  printf cfile, "\
+#include <%s>
+", header
+  cfile.close
 
-  def create_makefile(target)
-    mfile = open("Makefile", "w")
-    printf mfile, "\
+  begin
+    if !system(format(CPP, $CFLAGS))
+      $hdr_cache[header] = 'no'
+      $cache_mod = TRUE
+      return FALSE
+    end
+  ensure
+    system "/bin/rm -f conftest*"
+  end
+  $hdr_cache[header] = 'yes'
+  header.tr!("a-z./\055", "A-Z___")
+  $defs.push(format("-DHAVE_%s", header))
+  $cache_mod = TRUE
+  return TRUE
+end
+
+def create_header()
+  if $defs.length > 0
+    hfile = open("extconf.h", "w")
+    for line in $defs
+      line =~ /^-D(.*)/
+      printf hfile, "#define %s 1\n", $1
+    end
+    hfile.close
+  end
+end
+
+def create_makefile(target)
+
+  if $libs and "@DLEXT@" == "o"
+    libs = $libs.split
+    for lib in libs
+      lib.sub!(/-l(.*)/, '"lib\1.a"')
+    end
+    $defs.push(format("-DEXTLIB='%s'", libs.join(",")))
+  end
+  $libs = "" if not $libs
+
+  mfile = open("Makefile", "w")
+  printf mfile, "\
 SHELL = /bin/sh
 
 #### Start of system configuration section. ####
@@ -93,84 +190,205 @@ VPATH = @srcdir@
 
 CC = @CC@
 
-CFLAGS = -I../.. @CCDLFLAGS@ @CFLAGS@ %s
-LDDLFLAGS = @LDDLFLAGS@
-", $defs.join(" ")
+CFLAGS = %s #$CFLAGS %s
+LDSHARED = @LDSHARED@
+", if $static then "" else "@CCDLFLAGS@" end, $defs.join(" ")
 
-    printf mfile, "\
+  printf mfile, "\
 
 prefix = @prefix@
 binprefix = 
 exec_prefix = @exec_prefix@
 bindir = $(exec_prefix)/bin
+libdir = @prefix@/lib/ruby
 @SET_MAKE@
 
 #### End of system configuration section. ####
 "
-    printf mfile, "OBJS = "
-    if !$objs then
-      $objs = Dir["*.c"]
-      for f in $objs
-	f.sub(/\.c$/, ".o")
-      end
+  printf mfile, "LIBS = %s\n", $libs
+  printf mfile, "OBJS = "
+  if !$objs then
+    $objs = Dir["*.c"]
+    for f in $objs
+      f.sub!(/\.c$/, ".o")
     end
-    printf mfile, $objs.join(" ")
-    printf mfile, "\n"
+  end
+  printf mfile, $objs.join(" ")
+  printf mfile, "\n"
 
-    printf mfile, "\
-TARGET = %s.@DLEXT@
+  printf mfile, "\
+TARGET = %s.%s
+
+INSTALL = @INSTALL@
+INSTALL_DATA = @INSTALL_DATA@
 
 all:		$(TARGET)
 
-clean:;		@rm -f *.o *.so
+clean:;		@rm -f *.o *.so *.sl
 		@rm -f Makefile extconf.h conftest.*
 		@rm -f core ruby *~
 
 realclean:	clean
-", target
+", target, if $static then "o" else "@DLEXT@" end
 
-    if "@DLEXT@" == "so"
-      printf mfile, "\
-.SUFFIXES: .so $(SUFFIXES)
+  if !$static
+    printf mfile, "\
 
-$(TARGET).so: $(OBJS)
-	ld $(LDDLFLAGS) -o $*.so $(OBJS)
+install:	$(libdir)/$(TARGET)
+
+$(libdir)/$(TARGET): $(TARGET)
+	@test -d $(libdir) || mkdir $(libdir)
+	$(INSTALL_DATA) $(TARGET) $(libdir)/$(TARGET)
 "
-    elsif !File.exists(target + ".c")
-      printf mfile, "\
-$(TARGET).o: $(OBJS)
-	ld $(LDDLFLAGS) -r $*.o $(OBJS)
-"
-    end
-
-    if File.exists("depend")
-      dfile = open("depend", "r")
-      printf mfile, "###\n"
-      while line = dfile.gets()
-	printf mfile, "%s", line
-      end
-      dfile.close
-    end
-    mfile.close
-  end
-
-  if File.exists("configure") &&
-    (!File.exists("config.status") ||
-     File.mtime("config.status") < File.mtime("configure")) then
-
-    system "./configure"
-
-  end
-
-  if File.exists("extconf.rb")
-    load "extconf.rb"
   else
-    Dir.pwd =~ /[^\/]+$/
-    create_makefile($&);
+    printf mfile, "\
+
+install:;
+"
   end
 
+  if !$static && "@DLEXT@" != "o"
+    printf mfile, "\
+$(TARGET): $(OBJS)
+	$(LDSHARED) -o $(TARGET) $(OBJS) $(LIBS)
+"
+  elsif !File.exists?(target + ".c")
+    printf mfile, "\
+$(TARGET): $(OBJS)
+	ld $(LDDLFLAGS) -r $(TARGET) $(OBJS)
+"
+  end
+
+  if File.exists?("depend")
+    dfile = open("depend", "r")
+    printf mfile, "###\n"
+    while line = dfile.gets()
+      printf mfile, "%s", line
+    end
+    dfile.close
+  end
+  mfile.close
+  if $static
+    $extinit += format("\
+\tInit_%s();\n\
+\trb_provide(\"%s.o\");\n\
+", target, target)
+    $extobjs += format("ext/%s/%s.o ", $static, target)
+  end
 end
-system "make all" if File.exists("./Makefile")
+
+def extmake(target)
+  if $static_ext[target]
+    $static = target
+  else
+    $static = FALSE
+  end
+
+  return if $nodynamic and not $static
+
+  $libs = nil
+  $objs = nil
+  $CFLAGS = "-I../.. @CFLAGS@"
+  $LDFLAGS = "@STATIC@ @LDFLAGS@"
+
+  begin
+    Dir.chdir target
+    if $static_ext.size > 0 ||
+      !File.exists?("./Makefile") ||
+      older("./Makefile", "../Setup") ||
+      older("./Makefile", "../extmk.rb") ||
+      older("./Makefile", "./extconf.rb")
+    then
+      $defs = []
+      if File.exists?("extconf.rb")
+	load "extconf.rb"
+      else
+	create_makefile(target);
+      end
+    end
+    if File.exists?("./Makefile")
+      if $install
+	system "make install"
+      elsif $clean
+	system "make clean"
+      else
+	system "make all"
+      end
+    end
+    $extlibs += " " + $libs if $static && $libs
+  ensure
+    Dir.chdir ".."
+  end
+end
+
+# get static-link modules
+$static_ext = {}
+if File.file? "./Setup"
+  f = open("./Setup") 
+  while f.gets()
+    $_.chop!
+    sub!(/#.*$/, '')
+    continue if /^\s*$/
+    if /^option +nodynamic/
+      $nodynamic = TRUE
+      continue
+    end
+    $static_ext[$_.split[0]] = TRUE
+  end
+  f.close
+end
+
+for d in Dir["*"]
+  File.directory?(d) || continue
+  File.file?(d + "/MANIFEST") || continue
+  
+  d = $1 if d =~ /\/([\/]*)$/
+  print "compiling ", d, "\n"
+
+  extmake(d)
+end
+
+if $cache_mod
+  f = open("config.cache", "w")
+  for k,v in $lib_cache
+    printf f, "lib: %s %s\n", k, v
+  end
+  for k,v in $func_cache
+    printf f, "func: %s %s\n", k, v
+  end
+  for k,v in $hdr_cache
+    printf f, "hdr: %s %s\n", k, v
+  end
+  f.close
+end
+
+exit if $install
+if $extobjs
+  if older("extinit.c", "Setup")
+    f = open("extinit.c", "w")
+    printf f, "void Init_ext() {\n"
+    printf f, $extinit
+    printf f, "}\n"
+    f.close
+  end
+  if older("extinit.o", "extinit.c")
+    cmd = "@CC@ @CFLAGS@ -c extinit.c"
+    print cmd, "\n"
+    system cmd or exit 1
+  end
+
+  Dir.chdir ".."
+  $extobjs = "ext/extinit.o " + $extobjs
+
+  if older("ruby", "ext/Setup") or older("ruby", "miniruby")
+    `rm -f ruby`
+  end
+  system format('make ruby PROGRAM=ruby EXTOBJS="%s" EXTLIBS="%s"', $extobjs, $extlibs)
+else
+  Dir.chdir ".."
+  `rm -f ruby`
+  `cp miniruby ruby`
+end
 
 #Local variables:
 # mode: ruby

@@ -10,7 +10,7 @@ static char *rcsid = "$Header: /usr/ext/cvsroot/ruby/st.c,v 1.3 1994/12/09 01:28
 #include "st.h"
 
 extern void *xmalloc();
-static rehash();
+static void rehash();
 
 #define max(a,b) ((a) > (b) ? (a) : (b))
 #define nil(type) ((type *) 0)
@@ -25,8 +25,6 @@ static rehash();
      * DEFAULT_INIT_TABLE_SIZE is the default for the number of bins
      * allocated initially
      *
-     * DEFAULT_GROW_FACTOR is the amount the hash table is expanded after
-     * the density has reached max_density
      */
 
 #define EQUAL(func, x, y) \
@@ -39,14 +37,13 @@ static rehash();
 	(table->hash == ST_NUMHASH) ? ((int) (key) % table->num_bins) :\
 	(*table->hash)((key), table->num_bins))
 
-st_table *st_init_table_with_params(compare, hash, size, density, grow_factor,
-				    reorder_flag)
-int (*compare)();
-int (*hash)();
-int size;
-int density;
-double grow_factor;
-int reorder_flag;
+st_table*
+st_init_table_with_params(compare, hash, size, density, reorder_flag)
+    int (*compare)();
+    int (*hash)();
+    int size;
+    int density;
+    int reorder_flag;
 {
     st_table *tbl;
 
@@ -55,7 +52,6 @@ int reorder_flag;
     tbl->hash = hash;
     tbl->num_entries = 0;
     tbl->max_density = density;
-    tbl->grow_factor = grow_factor;
     tbl->reorder_flag = reorder_flag;
     tbl->num_bins = size;
     tbl->bins =
@@ -63,18 +59,19 @@ int reorder_flag;
     return tbl;
 }
 
-st_table *st_init_table(compare, hash)
-int (*compare)();
-int (*hash)();
+st_table*
+st_init_table(compare, hash)
+    int (*compare)();
+    int (*hash)();
 {
     return st_init_table_with_params(compare, hash, ST_DEFAULT_INIT_TABLE_SIZE,
 				     ST_DEFAULT_MAX_DENSITY,
-				     ST_DEFAULT_GROW_FACTOR,
 				     ST_DEFAULT_REORDER_FLAG);
 }
 
+int
 st_free_table(table)
-st_table *table;
+    st_table *table;
 {
     register st_table_entry *ptr, *next;
     int i;
@@ -111,10 +108,11 @@ if (PTR_NOT_EQUAL(table, ptr, key)) {\
     }\
 }
 
+int
 st_lookup(table, key, value)
-st_table *table;
-register char *key;
-char **value;
+    st_table *table;
+    register char *key;
+    char **value;
 {
     int hash_val;
     register st_table_entry *ptr;
@@ -147,10 +145,11 @@ char **value;
     table->num_entries++;\
 }
 
+int
 st_insert(table, key, value)
-register st_table *table;
-register char *key;
-char *value;
+    register st_table *table;
+    register char *key;
+    char *value;
 {
     int hash_val;
     st_table_entry *tbl;
@@ -169,10 +168,11 @@ char *value;
     }
 }
 
+int
 st_add_direct(table, key, value)
-st_table *table;
-char *key;
-char *value;
+    st_table *table;
+    char *key;
+    char *value;
 {
     int hash_val;
     st_table_entry *tbl;
@@ -181,10 +181,11 @@ char *value;
     ADD_DIRECT(table, key, value, hash_val, tbl);
 }
 
+int
 st_find_or_add(table, key, slot)
-st_table *table;
-char *key;
-char ***slot;
+    st_table *table;
+    char *key;
+    char ***slot;
 {
     int hash_val;
     st_table_entry *tbl, *ptr;
@@ -203,13 +204,14 @@ char ***slot;
     }
 }
 
-static rehash(table)
-register st_table *table;
+static void
+rehash(table)
+    register st_table *table;
 {
     register st_table_entry *ptr, *next, **old_bins = table->bins;
     int i, old_num_bins = table->num_bins, hash_val;
 
-    table->num_bins = table->grow_factor*old_num_bins;
+    table->num_bins = 2*old_num_bins;
 
     if (table->num_bins%2 == 0) {
 	table->num_bins += 1;
@@ -234,8 +236,9 @@ register st_table *table;
     free((char *) old_bins);
 }
 
-st_table *st_copy(old_table)
-st_table *old_table;
+st_table*
+st_copy(old_table)
+    st_table *old_table;
 {
     st_table *new_table;
     st_table_entry *ptr, *tbl;
@@ -275,10 +278,11 @@ st_table *old_table;
     return new_table;
 }
 
+int
 st_delete(table, key, value)
-register st_table *table;
-register char **key;
-char **value;
+    register st_table *table;
+    register char **key;
+    char **value;
 {
     int hash_val;
     st_table_entry *tmp;
@@ -317,10 +321,11 @@ char **value;
     return 0;
 }
 
+int
 st_foreach(table, func, arg)
-st_table *table;
-enum st_retval (*func)();
-char *arg;
+    st_table *table;
+    enum st_retval (*func)();
+    char *arg;
 {
     st_table_entry *ptr, *last, *tmp;
     enum st_retval retval;
@@ -346,14 +351,16 @@ char *arg;
 		}
 		ptr = ptr->next;
 		free((char *) tmp);
+		table->num_entries--;
 	    }
 	}
     }
 }
 
+int
 st_strhash(string, modulus)
-register char *string;
-int modulus;
+    register char *string;
+    int modulus;
 {
     register int val = 0;
     register int c;

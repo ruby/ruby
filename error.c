@@ -59,18 +59,6 @@ err_print(fmt, args)
 }
 
 void
-yyerror(msg)
-    char *msg;
-{
-    static char *f;
-    static int line;
-
-    if (line == sourceline && strcmp(f, sourcefile) == 0)
-	return;
-    f = sourcefile; line = sourceline;
-    Error("%s", msg);
-}
-
 Error(fmt, va_alist)
     char *fmt;
     va_dcl
@@ -83,6 +71,21 @@ Error(fmt, va_alist)
     nerrs++;
 }
 
+int
+yyerror(msg)
+    char *msg;
+{
+    static char *f;
+    static int line;
+
+    if (line == sourceline && strcmp(f, sourcefile) == 0)
+	return;
+    f = sourcefile; line = sourceline;
+    Error("%s", msg);
+    return 0;
+}
+
+void
 Warning(fmt, va_alist)
     char *fmt;
     va_dcl
@@ -99,6 +102,7 @@ Warning(fmt, va_alist)
     va_end(args);
 }
 
+void
 Fatal(fmt, va_alist)
     char *fmt;
     va_dcl
@@ -111,6 +115,7 @@ Fatal(fmt, va_alist)
     rb_exit(1);
 }
 
+void
 Bug(fmt, va_alist)
     char *fmt;
     va_dcl
@@ -126,6 +131,7 @@ Bug(fmt, va_alist)
     abort();
 }
 
+void
 Fail(fmt, va_alist)
     char *fmt;
     va_dcl
@@ -140,16 +146,18 @@ Fail(fmt, va_alist)
     rb_fail(str_new2(buf));
 }
 
+void
 rb_sys_fail(mesg)
     char *mesg;
 {
+    char *strerror();
     char buf[BUFSIZ];
     extern int errno;
 
     if (mesg == Qnil)
-	sprintf(buf, "%s\n", strerror(errno));
+	sprintf(buf, "%s", strerror(errno));
     else
-	sprintf(buf, "%s - %s\n", strerror(errno), mesg);
+	sprintf(buf, "%s - %s", strerror(errno), mesg);
 
     errno = 0;
     rb_fail(str_new2(buf));
@@ -167,14 +175,13 @@ static char *builtin_types[] = {
     "Array",
     "Fixnum",
     "Hash",
-    "Data",
-    "Method",
     "Struct",
     "Bignum",
-    "Assoc",
     "Data",
+    "Match",
 };
 
+void
 WrongType(x, t)
     VALUE x;
     int t;

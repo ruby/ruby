@@ -1,10 +1,9 @@
-* Process Class
+* thread対応
+* Hand written parser(recursive decent)
 * クラスライブラリの見直し(UNIX依存を減らす)
 * format機能
 * here document
 * perlのようなsetuid check
-* 適切なsignal handling
-* rubyで定義する変数hookの実現
 * write debugger for ruby
 * re-write regex code for speed
 * byte code interpretor

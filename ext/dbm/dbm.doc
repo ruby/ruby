@@ -1,0 +1,107 @@
+.\" dbm.doc -  -*- Indented-Text -*- created at: Thu Mar 23 20:28:31 JST 1995
+
+** DBM(クラス)
+
+NDBMファイルをアクセスするクラス．キー，データともに文字列でなければな
+らないという制限と，データがファイルに保存されるという点を除いては 
+Dictクラスと全く同様に扱うことができる．NDBMを備えていないシステムでは
+このクラスは定義されない．
+
+SuperClass: Object
+
+Included Modules: Enumerable
+
+Methods:
+
+   self [key]
+
+        keyをキーとする値を返す．
+
+   self [key]= value
+
+        keyをキーとして，valueを格納する．valueとしてnilを指定すると，
+        keyに対する項目の削除となる．
+
+   clear
+
+	DBMファイルの中身を空にする．
+
+   close
+
+        DBMファイルをクローズする．以後の操作は例外を発生させる．
+
+   delete(key)
+
+        keyをキーとする組を削除する．
+
+   delete_if
+
+	要素を削除するイテレータ．key::valueというペアを与えて，ブロッ
+	クを評価した値が真の時，該当する項目を削除する．
+
+   each
+   each_pair
+
+        key::valueなるペアを与えるイテレータ．
+
+   each_key
+
+        全てのkeyに対して繰り返すイテレータ．
+
+   each_value
+
+        全てのvalueに対して繰り返すイテレータ．
+
+   has_key(key)
+   includes(key)
+
+        keyがデータベース中に存在する時，真を返す
+
+   has_value(value)
+
+        valueを値とする組がデータベース中に存在する時，真を
+        返す
+
+   indexes(ary)
+   indexes(key-1, ..., key-n)
+
+	1番目の形式では文字列の配列を引数として受けて，その要素をキー
+	とする要素を含む配列を返す．2番目の形式では各引数の値をキーと
+	する要素を含む配列を返す.
+
+   keys
+
+        データベース中に存在するキー全てを含む配列を返す．
+
+   length
+   size
+
+	データベース中の要素の数を返す．(注意:現在の実現では要素数を数
+	えるためにデータベースを全部検索するので，結構コストが高い．気
+	をつけて使うこと.)
+
+   shift
+
+	データベース中の要素を一つ取り出し(データベースから削除する)，
+	key::valueというペアを返す．
+
+   to_a
+
+	データベース中のkey-valueペアを要素とする配列を返す．
+
+   values
+
+        データベース中に存在する値全てを含む配列を返す．
+
+Single Methods:
+
+   open(dbname[, mode])
+
+        dbnameで指定したデータベースをモードをmodeに設定してオープンす
+        る．modeの省略値は0666である．modeとしてnilを指定するとデータ
+        ベースが既に存在しない時には新たにオープンせず，nilを返す．
+
+-------------------------------------------------------
+Local variables:
+fill-column: 70
+end:

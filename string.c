@@ -13,10 +13,13 @@
 #include "ruby.h"
 #include "re.h"
 
+#define BEG(no) regs.beg[no]
+#define END(no) regs.end[no]
+
 #include <stdio.h>
 #include <ctype.h>
 
-VALUE C_String;
+VALUE cString;
 
 #define STRLEN(s) RSTRING(s)->len
 
@@ -26,7 +29,7 @@ str_new(ptr, len)
     UINT len;
 {
     NEWOBJ(str, struct RString);
-    OBJSETUP(str, C_String, T_STRING);
+    OBJSETUP(str, cString, T_STRING);
 
     str->len = len;
     str->orig = Qnil;
@@ -50,7 +53,7 @@ str_new3(str)
     struct RString *str;
 {
     NEWOBJ(str2, struct RString);
-    OBJSETUP(str2, C_String, T_STRING);
+    OBJSETUP(str2, cString, T_STRING);
 
     str2->len = str->len;
     str2->ptr = str->ptr;
@@ -74,11 +77,11 @@ obj_as_string(obj)
     }
     str = rb_funcall(obj, pr_str, 0);
     if (TYPE(str) != T_STRING)
-	return Fkrn_to_s(obj);
+	return krn_to_s(obj);
     return str;
 }
 
-VALUE
+static VALUE
 str_clone(str)
     struct RString *str;
 {
@@ -92,36 +95,41 @@ str_clone(str)
     return obj;
 }
 
-static VALUE
-Sstr_new(class, str)
-    VALUE class;
+VALUE
+str_dup(str)
     struct RString *str;
 {
-    Check_Type(str, T_STRING);
-    {
-	NEWOBJ(str2, struct RString);
-	OBJSETUP(str2, class, T_STRING);
-
-	str2->len = str->len;
-	str2->ptr = ALLOC_N(char, str->len+1);
-	if (str2->ptr) {
-	    memcpy(str2->ptr, str->ptr, str->len);
-	}
-	str2->ptr[str->len] = '\0';
-	str2->orig = Qnil;
-	return (VALUE)str2;
-    }
+    return str_new(str->ptr, str->len);
 }
 
 static VALUE
-Fstr_length(str)
+str_s_new(class, str)
+    VALUE class;
+    struct RString *str;
+{
+    NEWOBJ(str2, struct RString);
+    OBJSETUP(str2, class, T_STRING);
+
+    str = as_str(str);
+    str2->len = str->len;
+    str2->ptr = ALLOC_N(char, str->len+1);
+    if (str2->ptr) {
+	memcpy(str2->ptr, str->ptr, str->len);
+    }
+    str2->ptr[str->len] = '\0';
+    str2->orig = Qnil;
+    return (VALUE)str2;
+}
+
+static VALUE
+str_length(str)
     struct RString *str;
 {
     return INT2FIX(str->len);
 }
 
 VALUE
-Fstr_plus(str1, str2)
+str_plus(str1, str2)
     struct RString *str1, *str2;
 {
     struct RString *str3;
@@ -136,7 +144,7 @@ Fstr_plus(str1, str2)
 }
 
 VALUE
-Fstr_times(str, times)
+str_times(str, times)
     struct RString *str;
     VALUE times;
 {
@@ -152,20 +160,6 @@ Fstr_times(str, times)
     str2->ptr[str2->len] = '\0';
 
     return (VALUE)str2;
-}
-
-extern VALUE C_Range;
-
-static VALUE
-Fstr_dot2(left, right)
-    VALUE left, right;
-{
-    extern VALUE C_Range;
-    VALUE str;
-
-    Check_Type(right, T_STRING);
-    str = range_new(left, right);
-    return str;
 }
 
 VALUE
@@ -206,13 +200,6 @@ str_subseq(str, beg, end)
 	if (end < 0) end = 0;
     }
 
-    if (beg > end) {
-	int tmp;
-
-	Warning("start %d is bigger than end %d", beg, end);
-	tmp = beg; beg = end; end = tmp;
-    }
-
     if (beg >= str->len) {
 	return str_new(0, 0);
     }
@@ -222,7 +209,7 @@ str_subseq(str, beg, end)
 
     len = end - beg + 1;
     if (len < 0) {
-	Fail("end %d too small(size %d)", end, str->len);
+	len = 0;
     }
 
     return str_substr(str, beg, len);
@@ -230,16 +217,45 @@ str_subseq(str, beg, end)
 
 extern VALUE ignorecase;
 
+#define STR_FREEZE FL_USER1
+
 void
 str_modify(str)
     struct RString *str;
 {
+    if (FL_TEST(str, STR_FREEZE)) Fail("can't modify frozen string");
     if (str->orig == Qnil) return;
     str->ptr = ALLOC_N(char, str->len+1);
     if (str->ptr) {
 	memcpy(str->ptr, str->orig->ptr, str->len+1);
     }
     str->orig = Qnil;
+}
+
+static VALUE
+str_freeze(str)
+    VALUE str;
+{
+    FL_SET(str, STR_FREEZE);
+    return str;
+}
+
+static VALUE
+str_frozen(str)
+    VALUE str;
+{
+    if (FL_TEST(str, STR_FREEZE))
+	return TRUE;
+    return FALSE;
+}
+
+VALUE
+str_dup_freezed(str)
+    VALUE str;
+{
+    str = str_dup(str);
+    str_freeze(str);
+    return str;
 }
 
 VALUE
@@ -275,7 +291,7 @@ str_cat(str, ptr, len)
 }
 
 static VALUE
-Fstr_concat(str1, str2)
+str_concat(str1, str2)
     struct RString *str1, *str2;
 {
     str2 = as_str(str2);
@@ -283,7 +299,7 @@ Fstr_concat(str1, str2)
     return (VALUE)str1;
 }
 
-static
+static int
 str_hash(str)
     struct RString *str;
 {
@@ -305,7 +321,7 @@ str_hash(str)
 }
 
 static VALUE
-Fstr_hash(str)
+str_hash_method(str)
     VALUE str;
 {
     int key = str_hash(str);
@@ -321,7 +337,7 @@ str_cmp(str1, str2)
     UINT len;
     int retval;
 
-    if (ignorecase != Qnil) {
+    if (ignorecase != FALSE) {
 	return str_cicmp(str1, str2);
     }
 
@@ -334,7 +350,7 @@ str_cmp(str1, str2)
 }
 
 static VALUE
-Fstr_equal(str1, str2)
+str_equal(str1, str2)
     struct RString *str1, *str2;
 {
     if (TYPE(str2) != T_STRING)
@@ -348,12 +364,12 @@ Fstr_equal(str1, str2)
 }
 
 static VALUE
-Fstr_cmp(str1, str2)
+str_cmp_method(str1, str2)
     VALUE str1, str2;
 {
     int result;
 
-    Check_Type(str2, T_STRING);
+    str2 = obj_as_string(str2);
     result = str_cmp(str1, str2);
     return INT2FIX(result);
 }
@@ -361,7 +377,7 @@ Fstr_cmp(str1, str2)
 VALUE Freg_match();
 
 static VALUE
-Fstr_match(x, y)
+str_match(x, y)
     struct RString *x, *y;
 {
     VALUE reg;
@@ -369,11 +385,11 @@ Fstr_match(x, y)
 
     switch (TYPE(y)) {
       case T_REGEXP:
-	return Freg_match(y, x);
+	return reg_match(y, x);
 
       case T_STRING:
-	reg = re_regcomp(y);
-	start = research(reg, x, 0);
+	reg = reg_regcomp(y);
+	start = reg_search(reg, x, 0, 0);
 	if (start == -1) {
 	    return FALSE;
 	}
@@ -386,7 +402,7 @@ Fstr_match(x, y)
 }
 
 static VALUE
-Fstr_match2(str)
+str_match2(str)
     struct RString *str;
 {
     extern VALUE rb_lastline;
@@ -396,8 +412,8 @@ Fstr_match2(str)
     if (TYPE(rb_lastline) != T_STRING)
 	Fail("$_ is not a string");
 
-    reg = re_regcomp(str);
-    start = research(reg, rb_lastline, 0);
+    reg = reg_regcomp(str);
+    start = reg_search(reg, rb_lastline, 0, 0);
     if (start == -1) {
 	return Qnil;
     }
@@ -427,7 +443,7 @@ str_index(str, sub, offset)
 }
 
 static VALUE
-Fstr_index(argc, argv, str)
+str_index_method(argc, argv, str)
     int argc;
     VALUE *argv;
     struct RString *str;
@@ -445,7 +461,7 @@ Fstr_index(argc, argv, str)
 
     switch (TYPE(sub)) {
       case T_REGEXP:
-	pos = research(sub, str, pos);
+	pos = reg_search(sub, str, pos, (struct re_registers *)-1);
 	break;
 
       case T_STRING:
@@ -461,7 +477,7 @@ Fstr_index(argc, argv, str)
 }
 
 static VALUE
-Fstr_rindex(argc, argv, str)
+str_rindex(argc, argv, str)
     int argc;
     VALUE *argv;
     struct RString *str;
@@ -519,7 +535,7 @@ str_next(s)
 }
 
 static VALUE
-Fstr_next(orig)
+str_next_method(orig)
     struct RString *orig;
 {
     struct RString *str, *str2;
@@ -545,7 +561,7 @@ Fstr_next(orig)
 }
 
 VALUE
-Fstr_upto(beg, end)
+str_upto(beg, end)
     VALUE beg, end;
 {
     VALUE current;
@@ -553,8 +569,10 @@ Fstr_upto(beg, end)
     current = beg;
     for (;;) {
 	rb_yield(current);
-	if (Fstr_equal(current, end)) break;
-	current = Fstr_next(current);
+	if (str_equal(current, end)) break;
+	current = str_next_method(current);
+	if (RSTRING(current)->len > RSTRING(end)->len)
+	    break;
     }
 
     return Qnil;
@@ -580,8 +598,8 @@ str_aref(str, indx)
 	return (VALUE)INT2FIX(str->ptr[idx] & 0xff);
 
       case T_REGEXP:
-	if (Fstr_index(str, indx))
-	    return re_last_match(0);
+	if (str_index(str, indx))
+	    return reg_last_match(0);
 	return Qnil;
 
       case T_STRING:
@@ -590,26 +608,18 @@ str_aref(str, indx)
 
       default:
 	/* check if indx is Range */
-	if (obj_is_kind_of(indx, C_Range)) {
+	{
 	    int beg, end;
-
-	    beg = rb_iv_get(indx, "start"); beg = NUM2INT(beg);
-	    end = rb_iv_get(indx, "end");   end = NUM2INT(end);
-	    if (beg > end) {
-		int tmp;
-
-		Warning("start %d is bigger than end %d", beg, end);
-		tmp = beg; beg = end; end = tmp;
+	    if (range_beg_end(indx, &beg, &end)) {
+		return str_subseq(str, beg, end);
 	    }
-
-	    return str_subseq(str, beg, end);
 	}
 	Fail("Invalid index for string");
     }
 }
 
 static VALUE
-Fstr_aref(argc, argv, str)
+str_aref_method(argc, argv, str)
     int argc;
     VALUE *argv;
     struct RString *str;
@@ -674,9 +684,10 @@ str_sub(str, pat, val, once)
     VALUE val;
     int once;
 {
-    int beg, end, offset, n;
+    int beg, offset, n;
+    struct re_registers regs;
 
-    Check_Type(val, T_STRING);
+    val = obj_as_string(val);
     str_modify(str);
 
     switch (TYPE(pat)) {
@@ -684,19 +695,19 @@ str_sub(str, pat, val, once)
 	break;
 
       case T_STRING:
-	return str_sub(str, re_regcomp(pat), val, once);
+	pat = (struct RRegexp*)reg_regcomp(pat);
+	break;
 
       default:
 	/* type failed */
 	Check_Type(pat, T_REGEXP);
     }
 
+    regs.allocated = 0;
     for (offset=0, n=0;
-	 (beg=research(pat, str, offset)) >= 0;
-	 offset=BEG(0)+STRLEN(val)) {
-	end = END(0)-1;
-	val = re_regsub(val);
-	str_replace2(str, beg, END(0)-1, val);
+	 (beg=reg_search(pat, str, offset, &regs)) >= 0;
+	 offset=END(0)+1) {
+	str_replace2(str, beg, END(0)-1, reg_regsub(val, str, &regs));
 	n++;
 	if (once) break;
     }
@@ -739,27 +750,19 @@ str_aset(str, indx, val)
 
       default:
 	/* check if indx is Range */
-	if (obj_is_kind_of(indx, C_Range)) {
-	    Check_Type(val, T_STRING);
-
-	    beg = rb_iv_get(indx, "start"); beg = NUM2INT(beg);
-	    end =  rb_iv_get(indx, "end");  end = NUM2INT(end);
-	    if (beg > end) {
-		int tmp;
-
-		Warning("start %d is bigger than end %d", beg, end);
-		tmp = beg; beg = end; end = tmp;
+	{
+	    int beg, end;
+	    if (range_beg_end(indx, &beg, &end)) {
+		str_replace2(str, beg, end, val);
+		return val;
 	    }
-
-	    str_replace2(str, beg, end, val);
-	    return val;
 	}
 	Fail("Invalid index for string");
     }
 }
 
 static VALUE
-Fstr_aset(argc, argv, str)
+str_aset_method(argc, argv, str)
     int argc;
     VALUE *argv;
     struct RString *str;
@@ -792,9 +795,11 @@ Fstr_aset(argc, argv, str)
 static VALUE
 str_sub_iter(str, pat, once)
     VALUE str, pat;
+    int once;
 {
     VALUE val;
-    int beg, end, offset, n;
+    int beg, offset;
+    struct re_registers regs;
 
     if (!iterator_p()) {
 	Fail("Wrong # of arguments(1 for 2)");
@@ -806,7 +811,7 @@ str_sub_iter(str, pat, once)
 	break;
 
       case T_STRING:
-	pat = re_regcomp(pat);
+	pat = reg_regcomp(pat);
 	break;
 
       default:
@@ -815,18 +820,20 @@ str_sub_iter(str, pat, once)
     }
 
     offset=0;
-    while ((beg=research(pat, str, offset)) >= 0) {
-	val = rb_yield(re_nth_match(0));
+    regs.allocated = 0;
+    while ((beg=reg_search(pat, str, offset, &regs)) >= 0) {
+	val = rb_yield(reg_nth_match(0, backref_get()));
 	val = obj_as_string(val);
 	str_replace2(str, beg, END(0)-1, val);
 	offset=BEG(0)+STRLEN(val);
 	if (once) break;
     }
+    re_free_registers(&regs);
     return (VALUE)str;
 }
 
 static VALUE
-Fstr_sub(argc, argv, str)
+str_sub_bang(argc, argv, str)
     int argc;
     VALUE *argv;
     VALUE str;
@@ -840,7 +847,16 @@ Fstr_sub(argc, argv, str)
 }
 
 static VALUE
-Fstr_gsub(argc, argv, str)
+str_sub_method(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    return str_sub_bang(argc, argv, str_dup(str));
+}
+
+static VALUE
+str_gsub_bang(argc, argv, str)
     int argc;
     VALUE *argv;
     VALUE str;
@@ -853,10 +869,21 @@ Fstr_gsub(argc, argv, str)
     return str_sub(str, pat, val, 0);
 }
 
+static VALUE
+str_gsub(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    VALUE v = str_gsub_bang(argc, argv, str_dup(str));
+    if (v) return v;
+    return str;
+}
+
 extern VALUE rb_lastline;
 
 static VALUE
-Fsub(argc, argv)
+f_sub_bang(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -870,7 +897,23 @@ Fsub(argc, argv)
 }
 
 static VALUE
-Fgsub(argc, argv)
+f_sub(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE v;
+
+    Check_Type(rb_lastline, T_STRING);
+    v = f_sub_bang(argc, argv, str_dup(rb_lastline));
+    if (v) {
+	rb_lastline = v;
+	return v;
+    }
+    return rb_lastline;
+}
+
+static VALUE
+f_gsub_bang(argc, argv)
     int argc;
     VALUE *argv;
 {
@@ -884,7 +927,41 @@ Fgsub(argc, argv)
 }
 
 static VALUE
-Fstr_reverse(str)
+f_gsub(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE v;
+
+    Check_Type(rb_lastline, T_STRING);
+    v = f_gsub_bang(argc, argv, str_dup(rb_lastline));
+    if (v) {
+	rb_lastline = v;
+	return v;
+    }
+    return rb_lastline;
+}
+
+static VALUE
+str_reverse_bang(str)
+    struct RString *str;
+{
+    char *s, *e, *p;
+
+    s = str->ptr;
+    e = s + str->len - 1;
+    p = ALLOCA_N(char, str->len);
+
+    while (e >= s) {
+	*p++ = *e--;
+    }
+    MEMCPY(str->ptr, p, char, str->len);
+
+    return (VALUE)str;
+}
+
+static VALUE
+str_reverse(str)
     struct RString *str;
 {
     VALUE obj = str_new(0, str->len);
@@ -901,14 +978,14 @@ Fstr_reverse(str)
 }
 
 static VALUE
-Fstr_to_i(str)
+str_to_i(str)
     struct RString *str;
 {
     return str2inum(str->ptr, 10);
 }
 
 static VALUE
-Fstr_to_f(str)
+str_to_f(str)
     struct RString *str;
 {
     double atof();
@@ -918,35 +995,50 @@ Fstr_to_f(str)
 }
 
 static VALUE
-Fstr_to_s(str)
+str_to_s(str)
     VALUE str;
 {
     return str;
 }
 
 static VALUE
-Fstr_inspect(str)
+str_inspect(str)
     struct RString *str;
 {
-    char buf[160];
+    struct RString *str0;
     char *p, *pend;
-    char *b, *bend;
+    char *b;
+    int offset;
 
-#define CHECK(n) if (b+n > bend) break;
+    str0 = (struct RString*)str_new2("\"");
+    offset = 1;
+#define CHECK(n) do {\
+    str_cat(str0, 0, n);\
+    b = str0->ptr + offset;\
+    offset += n;\
+} while (0)
 
     p = str->ptr; pend = p + str->len;
-    b = buf; bend = b + sizeof buf - (str->len>150?4:2);
-    *b++ = '"';
     while (p < pend) {
 	char c = *p++;
-	if (isprint(c)) {
-	    CHECK(1);
-	    *b++ = c;
-	}
-	else if (ismbchar(c)) {
+	if (ismbchar(c) && p+1 < pend) {
 	    CHECK(2);
 	    *b++ = c;
 	    *b++ = *p++;
+	}
+	else if (c == '"') {
+	    CHECK(2);
+	    *b++ = '\\';
+	    *b++ = '"';
+	}
+	else if (c == '\\') {
+	    CHECK(2);
+	    *b++ = '\\';
+	    *b++ = '\\';
+	}
+	else if (isprint(c)) {
+	    CHECK(1);
+	    *b++ = c;
 	}
 	else if (c == '\n') {
 	    CHECK(2);
@@ -973,7 +1065,7 @@ Fstr_inspect(str)
 	    *b++ = '\\';
 	    *b++ = 'v';
 	}
-	else if (c == '\1') {
+	else if (c == '\007') {
 	    CHECK(2);
 	    *b++ = '\\';
 	    *b++ = 'a';
@@ -983,28 +1075,19 @@ Fstr_inspect(str)
 	    *b++ = '\\';
 	    *b++ = 'e';
 	}
-	else if (iscntrl(c)) {
-	    CHECK(2);
-	    *b++ = '^';
-	    *b++ = c;
-	}
 	else {
-	    CHECK(1);
-	    *b++ = c;
+	    CHECK(4);
+	    *b++ = '\\';
+	    sprintf(b, "%03o", c);
+	    b += 3;
 	}
     }
-    *b++ = '"';
-    if (p < pend) {
-	bend = buf + sizeof buf;
-	while (b < bend) {
-	    *b++ = '.';
-	}
-    }
-    return str_new(buf, b - buf);
+    str_cat(str0, "\"", 1);
+    return (VALUE)str0;
 }
 
 static VALUE
-Fstr_upcase(str)
+str_upcase_bang(str)
     struct RString *str;
 {
     char *s, *send;
@@ -1022,7 +1105,14 @@ Fstr_upcase(str)
 }
 
 static VALUE
-Fstr_downcase(str)
+str_upcase(str)
+    struct RString *str;
+{
+    return str_upcase_bang(str_dup(str));
+}
+
+static VALUE
+str_downcase_bang(str)
     struct RString *str;
 {
     char *s, *send;
@@ -1040,7 +1130,14 @@ Fstr_downcase(str)
 }
 
 static VALUE
-Fstr_capitalize(str)
+str_downcase(str)
+    struct RString *str;
+{
+    return str_downcase_bang(str_dup(str));
+}
+
+static VALUE
+str_capitalize_bang(str)
     struct RString *str;
 {
     char *s, *send;
@@ -1058,7 +1155,14 @@ Fstr_capitalize(str)
 }
 
 static VALUE
-Fstr_swapcase(str)
+str_capitalize(str)
+    struct RString *str;
+{
+    return str_capitalize_bang(str_dup(str));
+}
+
+static VALUE
+str_swapcase_bang(str)
     struct RString *str;
 {
     char *s, *send;
@@ -1079,25 +1183,20 @@ Fstr_swapcase(str)
 }
 
 static VALUE
-Fstr_toupper(str)
+str_swapcase(str)
     struct RString *str;
 {
-    return Fstr_upcase(str_new(str->ptr, str->len));
+    return str_swapcase_bang(str_dup(str));
 }
 
-static VALUE
-Fstr_tolower(str)
-    struct RString *str;
-{
-    return Fstr_downcase(str_new(str->ptr, str->len));
-}
+typedef unsigned char *USTR;
 
 struct tr {
-    unsigned char gen, now, max;
+    int gen, now, max;
     char *p, *pend;
 } trsrc, trrepl;
 
-static char
+static int
 trnext(t)
     struct tr *t;
 {
@@ -1108,12 +1207,12 @@ trnext(t)
 	    if (t->p < t->pend && *t->p == '-') {
 		t->p++;
 		if (t->p < t->pend) {
-		    if (t->now > *t->p) {
+		    if (t->now > *(USTR)t->p) {
 			t->p++;
 			continue;
 		    }
 		    t->gen = 1;
-		    t->max = *t->p++;
+		    t->max = *(USTR)t->p++;
 		}
 	    }
 	    return t->now;
@@ -1129,13 +1228,13 @@ trnext(t)
 }
 
 static VALUE
-Fstr_tr(str, src, repl)
+str_tr_bang(str, src, repl)
     struct RString *str, *src, *repl;
 {
     struct tr trsrc, trrepl;
     int cflag = 0;
     char trans[256];
-    int i, c, save;
+    int i, c;
     char *s, *send, *t;
 
     Check_Type(src, T_STRING);
@@ -1176,7 +1275,7 @@ Fstr_tr(str, src, repl)
 	char r;
 
 	for (i=0; i<256; i++) {
-	    trans[i] = 0;
+	    trans[i] = i;
 	}
 	while ((c = trnext(&trsrc)) >= 0) {
 	    r = trnext(&trrepl);
@@ -1195,6 +1294,13 @@ Fstr_tr(str, src, repl)
     *t = '\0';
 
     return (VALUE)str;
+}
+
+static VALUE
+str_tr(str, src, repl)
+    struct RString *str, *src, *repl;
+{
+    return str_tr_bang(str_dup(str), src, repl);
 }
 
 static void
@@ -1222,7 +1328,7 @@ tr_setup_table(str, table)
 }
 
 static VALUE
-Fstr_delete(str1, str2)
+str_delete_bang(str1, str2)
     struct RString *str1, *str2;
 {
     char *s, *send, *t;
@@ -1245,6 +1351,13 @@ Fstr_delete(str1, str2)
     str1->len = t - str1->ptr;
 
     return (VALUE)str1;
+}
+
+static VALUE
+str_delete(str1, str2)
+    struct RString *str1, *str2;
+{
+    return str_delete_bang(str_dup(str1), str2);
 }
 
 static VALUE
@@ -1284,7 +1397,7 @@ tr_squeeze(str1, str2)
 }
 
 static VALUE
-Fstr_squeeze(argc, argv, str1)
+str_squeeze_bang(argc, argv, str1)
     int argc;
     VALUE *argv;
     VALUE str1;
@@ -1299,18 +1412,34 @@ Fstr_squeeze(argc, argv, str1)
 }
 
 static VALUE
-Fstr_tr_s(str, src, repl)
+str_squeeze(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    return str_squeeze_bang(argc, argv, str_dup(str));
+}
+
+static VALUE
+str_tr_s_bang(str, src, repl)
     VALUE str, src, repl;
 {
     Check_Type(src, T_STRING);
     Check_Type(repl, T_STRING);
-    Fstr_tr(str, src, repl);
+    str_tr(str, src, repl);
     tr_squeeze(str, repl);
     return str;
 }
 
 static VALUE
-Fstr_split(argc, argv, str)
+str_tr_s(str, src, repl)
+    VALUE str, src, repl;
+{
+    return str_tr_s_bang(str_dup(str), src, repl);
+}
+
+static VALUE
+str_split_method(argc, argv, str)
     int argc;
     VALUE *argv;
     struct RString *str;
@@ -1343,7 +1472,7 @@ Fstr_split(argc, argv, str)
 		char_sep = RSTRING(spat)->ptr[0];
 	    }
 	    else {
-		spat = (struct RRegexp*)re_regcomp(spat);
+		spat = (struct RRegexp*)reg_regcomp(spat);
 	    }
 	    break;
 	  case T_REGEXP:
@@ -1401,9 +1530,11 @@ Fstr_split(argc, argv, str)
 	int start = beg;
 	int last_null = 0;
 	int idx;
+	struct re_registers regs;
 
-	while ((end = research(spat, str, start)) >= 0) {
-	    if (start == end && BEG(0) == END(0)) {
+	regs.allocated = 0;
+	while ((end = reg_search(spat, str, start, &regs)) >= 0) {
+	    if (start == end && regs.beg[0] == regs.end[0]) {
 		if (last_null == 1) {
 		    if (ismbchar(str->ptr[beg]))
 			ary_push(result, str_substr(str, beg, 2));
@@ -1420,22 +1551,23 @@ Fstr_split(argc, argv, str)
 	    }
 	    else {
 		ary_push(result, str_substr(str, beg, end-beg));
-		beg = start = END(0);
+		beg = start = regs.end[0];
 		if (limit && lim <= ++i) break;
 	    }
 	    last_null = 0;
 
 	    for (idx=1; idx < 10; idx++) {
-		if (BEG(idx) == -1) break;
-		if (BEG(idx) == END(idx))
+		if (regs.beg[idx] == -1) break;
+		if (regs.beg[idx] == regs.end[idx])
 		    tmp = str_new(0, 0);
 		else
-		    tmp = str_subseq(str, BEG(idx), END(idx)-1);
+		    tmp = str_subseq(str, regs.beg[idx], regs.end[idx]-1);
 		ary_push(result, tmp);
 		if (limit && lim <= ++i) break;
 	    }
 
 	}
+	re_free_registers(&regs);
     }
     if (str->len > beg) {
 	ary_push(result, str_subseq(str, beg, -1));
@@ -1444,8 +1576,19 @@ Fstr_split(argc, argv, str)
     return result;
 }
 
+VALUE
+str_split(str, sep0)
+    struct RString* str;
+    char *sep0;
+{
+    VALUE sep;
+
+    sep = str_new2(sep0);
+    return str_split_method(1, &sep, str);
+}
+
 static VALUE
-Fstr_each(str)
+str_each_line(str)
     struct RString* str;
 {
     extern VALUE RS;
@@ -1453,6 +1596,7 @@ Fstr_each(str)
     int rslen;
     char *p = str->ptr, *pend = p + str->len, *s;
     char *ptr = p;
+    int len = str->len;
 
     if (RS == Qnil) {
 	rb_yield(str);
@@ -1478,7 +1622,8 @@ Fstr_each(str)
 	     memcmp(RSTRING(RS)->ptr, p-rslen+1, rslen) == 0)) {
 	    rb_lastline = str_new(s, p - s + 1);
 	    rb_yield(rb_lastline);
-	    if (str->ptr != ptr) Fail("string modified");
+	    if (str->ptr != ptr || str->len != len)
+		Fail("string modified");
 	    s = p + 1;
 	}
     }
@@ -1492,7 +1637,7 @@ Fstr_each(str)
 }
 
 static VALUE
-Fstr_each_byte(str)
+str_each_byte(str)
     struct RString* str;
 {
     int i;
@@ -1504,7 +1649,7 @@ Fstr_each_byte(str)
 }
 
 static VALUE
-Fstr_chop(str)
+str_chop_bang(str)
     struct RString *str;
 {
     str_modify(str);
@@ -1516,10 +1661,19 @@ Fstr_chop(str)
 }
 
 static VALUE
-Fstr_strip(str)
+str_chop(str)
+    struct RString *str;
+{
+    return str_chop_bang(str_dup(str));
+}
+
+static VALUE
+str_strip_bang(str)
     struct RString *str;
 {
     char *s, *t, *e;
+
+    str_modify(str);
 
     s = str->ptr;
     e = t = s + str->len;
@@ -1531,49 +1685,55 @@ Fstr_strip(str)
     while (s <= t && isspace(*t)) t--;
     t++;
 
-    if (s > str->ptr || t < e) {
+    str->len = t-s;
+    if (s > str->ptr) { 
 	char *p = str->ptr;
-	int len = t-s;
 
-	str->ptr = ALLOC_N(char, len+1);
-	memcpy(str->ptr, p, len);
-	str->ptr[len] = '\0';
-	if (str->orig) {
-	    str->orig = Qnil;
-	}
-	else {
-	    free(p);
-	}
+	str->ptr = ALLOC_N(char, str->len+1);
+	memcpy(str->ptr, s, str->len);
+	str->ptr[str->len] = '\0';
+	free(p);
     }
+    else if (t < e) {
+	str->ptr[str->len] = '\0';
+    }
+
     return (VALUE)str;
 }
 
 static VALUE
-Fstr_hex(str)
+str_strip(str)
+    struct RString *str;
+{
+    return str_strip_bang(str_dup(str));
+}
+
+static VALUE
+str_hex(str)
     struct RString *str;
 {
     return str2inum(str->ptr, 16);
 }
 
 static VALUE
-Fstr_oct(str)
+str_oct(str)
     struct RString *str;
 {
     return str2inum(str->ptr, 8);
 }
 
 static VALUE
-Fstr_crypt(str, salt)
+str_crypt(str, salt)
     struct RString *str, *salt;
 {
-    Check_Type(salt, T_STRING);
+    salt = as_str(salt);
     if (salt->len < 2)
-	Fail("salt too short(need 2 byte)");
+	Fail("salt too short(need >2 bytes)");
     return str_new2(crypt(str->ptr, salt->ptr));
 }
 
 static VALUE
-Fstr_intern(str)
+str_intern(str)
     struct RString *str;
 {
     if (strlen(str->ptr) != str->len)
@@ -1583,7 +1743,7 @@ Fstr_intern(str)
 }
 
 static VALUE
-Fstr_sum(argc, argv, str)
+str_sum(argc, argv, str)
     int argc;
     VALUE *argv;
     struct RString *str;
@@ -1624,7 +1784,8 @@ Fstr_sum(argc, argv, str)
     }
 }
 
-Fstr_ljust(str, w)
+VALUE
+str_ljust(str, w)
     struct RString *str;
     VALUE w;
 {
@@ -1642,7 +1803,8 @@ Fstr_ljust(str, w)
     return (VALUE)res;
 }
 
-Fstr_rjust(str, w)
+VALUE
+str_rjust(str, w)
     struct RString *str;
     VALUE w;
 {
@@ -1660,7 +1822,8 @@ Fstr_rjust(str, w)
     return (VALUE)res;
 }
 
-Fstr_center(str, w)
+VALUE
+str_center(str, w)
     struct RString *str;
     VALUE w;
 {
@@ -1684,76 +1847,97 @@ Fstr_center(str, w)
     return (VALUE)res;
 }
 
-extern VALUE C_Kernel;
-extern VALUE M_Comparable;
-extern VALUE M_Enumerable;
+extern VALUE cKernel;
+extern VALUE mComparable;
+extern VALUE mEnumerable;
 
+void
 Init_String()
 {
-    C_String  = rb_define_class("String", C_Object);
-    rb_include_module(C_String, M_Comparable);
-    rb_include_module(C_String, M_Enumerable);
-    rb_define_single_method(C_String, "new", Sstr_new, 1);
-    rb_define_method(C_String, "clone", str_clone, 0);
-    rb_define_method(C_String, "<=>", Fstr_cmp, 1);
-    rb_define_method(C_String, "==", Fstr_equal, 1);
-    rb_define_method(C_String, "hash", Fstr_hash, 0);
-    rb_define_method(C_String, "+", Fstr_plus, 1);
-    rb_define_method(C_String, "*", Fstr_times, 1);
-    rb_define_method(C_String, "..", Fstr_dot2, 1);
-    rb_define_method(C_String, "[]", Fstr_aref, -1);
-    rb_define_method(C_String, "[]=", Fstr_aset, -1);
-    rb_define_method(C_String, "length", Fstr_length, 0);
-    rb_define_alias(C_String,  "size", "length");
-    rb_define_method(C_String, "=~", Fstr_match, 1);
-    rb_define_method(C_String, "~", Fstr_match2, 0);
-    rb_define_method(C_String, "next", Fstr_next, 0);
-    rb_define_method(C_String, "upto", Fstr_next, 1);
-    rb_define_method(C_String, "index", Fstr_index, -1);
-    rb_define_method(C_String, "rindex", Fstr_rindex, -1);
+    cString  = rb_define_class("String", cObject);
+    rb_include_module(cString, mComparable);
+    rb_include_module(cString, mEnumerable);
+    rb_define_singleton_method(cString, "new", str_s_new, 1);
+    rb_define_method(cString, "clone", str_clone, 0);
+    rb_define_method(cString, "dup", str_dup, 0);
+    rb_define_method(cString, "<=>", str_cmp_method, 1);
+    rb_define_method(cString, "==", str_equal, 1);
+    rb_define_method(cString, "hash", str_hash_method, 0);
+    rb_define_method(cString, "+", str_plus, 1);
+    rb_define_method(cString, "*", str_times, 1);
+    rb_define_method(cString, "[]", str_aref_method, -1);
+    rb_define_method(cString, "[]=", str_aset_method, -1);
+    rb_define_method(cString, "length", str_length, 0);
+    rb_define_alias(cString,  "size", "length");
+    rb_define_method(cString, "=~", str_match, 1);
+    rb_define_method(cString, "~", str_match2, 0);
+    rb_define_method(cString, "next", str_next_method, 0);
+    rb_define_method(cString, "upto", str_next, 1);
+    rb_define_method(cString, "index", str_index_method, -1);
+    rb_define_method(cString, "rindex", str_rindex, -1);
 
-    rb_define_method(C_String, "to_i", Fstr_to_i, 0);
-    rb_define_method(C_String, "to_f", Fstr_to_f, 0);
-    rb_define_method(C_String, "to_s", Fstr_to_s, 0);
-    rb_define_method(C_String, "_inspect", Fstr_inspect, 0);
+    rb_define_method(cString, "freeze", str_freeze, 0);
+    rb_define_method(cString, "frozen?", str_frozen, 0);
 
-    rb_define_method(C_String, "toupper", Fstr_toupper, 0);
-    rb_define_method(C_String, "tolower", Fstr_tolower, 0);
+    rb_define_method(cString, "to_i", str_to_i, 0);
+    rb_define_method(cString, "to_f", str_to_f, 0);
+    rb_define_method(cString, "to_s", str_to_s, 0);
+    rb_define_method(cString, "inspect", str_inspect, 0);
 
-    rb_define_method(C_String, "upcase", Fstr_upcase, 0);
-    rb_define_method(C_String, "downcase", Fstr_downcase, 0);
-    rb_define_method(C_String, "capitalize", Fstr_capitalize, 0);
-    rb_define_method(C_String, "swapcase", Fstr_swapcase, 0);
+    rb_define_method(cString, "upcase", str_upcase, 0);
+    rb_define_method(cString, "downcase", str_downcase, 0);
+    rb_define_method(cString, "capitalize", str_capitalize, 0);
+    rb_define_method(cString, "swapcase", str_swapcase, 0);
 
-    rb_define_method(C_String, "hex", Fstr_hex, 0);
-    rb_define_method(C_String, "oct", Fstr_oct, 0);
-    rb_define_method(C_String, "split", Fstr_split, -1);
-    rb_define_method(C_String, "reverse", Fstr_reverse, 0);
-    rb_define_method(C_String, "concat", Fstr_concat, 1);
-    rb_define_method(C_String, "crypt", Fstr_crypt, 1);
-    rb_define_method(C_String, "intern", Fstr_intern, 0);
+    rb_define_method(cString, "upcase!", str_upcase_bang, 0);
+    rb_define_method(cString, "downcase!", str_downcase_bang, 0);
+    rb_define_method(cString, "capitalize!", str_capitalize_bang, 0);
+    rb_define_method(cString, "swapcase!", str_swapcase_bang, 0);
 
-    rb_define_method(C_String, "ljust", Fstr_ljust, 1);
-    rb_define_method(C_String, "rjust", Fstr_rjust, 1);
-    rb_define_method(C_String, "center", Fstr_center, 1);
+    rb_define_method(cString, "hex", str_hex, 0);
+    rb_define_method(cString, "oct", str_oct, 0);
+    rb_define_method(cString, "split", str_split_method, -1);
+    rb_define_method(cString, "reverse", str_reverse, 0);
+    rb_define_method(cString, "reverse!", str_reverse_bang, 0);
+    rb_define_method(cString, "concat", str_concat, 1);
+    rb_define_method(cString, "crypt", str_crypt, 1);
+    rb_define_method(cString, "intern", str_intern, 0);
 
-    rb_define_method(C_String, "sub", Fstr_sub, -1);
-    rb_define_method(C_String, "gsub", Fstr_gsub, -1);
-    rb_define_method(C_String, "chop", Fstr_chop, 0);
-    rb_define_method(C_String, "strip", Fstr_strip, 0);
+    rb_define_method(cString, "ljust", str_ljust, 1);
+    rb_define_method(cString, "rjust", str_rjust, 1);
+    rb_define_method(cString, "center", str_center, 1);
 
-    rb_define_method(C_String, "tr", Fstr_tr, 2);
-    rb_define_method(C_String, "tr_s", Fstr_tr_s, 2);
-    rb_define_method(C_String, "delete", Fstr_delete, 1);
-    rb_define_method(C_String, "squeeze", Fstr_squeeze, -1);
+    rb_define_method(cString, "sub", str_sub_method, -1);
+    rb_define_method(cString, "gsub", str_gsub, -1);
+    rb_define_method(cString, "chop", str_chop, 0);
+    rb_define_method(cString, "strip", str_strip, 0);
 
-    rb_define_method(C_String, "each", Fstr_each, 0);
-    rb_define_method(C_String, "each_byte", Fstr_each_byte, 0);
+    rb_define_method(cString, "sub!", str_sub_bang, -1);
+    rb_define_method(cString, "gsub!", str_gsub_bang, -1);
+    rb_define_method(cString, "strip!", str_strip_bang, 0);
+    rb_define_method(cString, "chop!", str_chop_bang, 0);
 
-    rb_define_method(C_String, "sum", Fstr_sum, -1);
+    rb_define_method(cString, "tr", str_tr, 2);
+    rb_define_method(cString, "tr_s", str_tr_s, 2);
+    rb_define_method(cString, "delete", str_delete, 1);
+    rb_define_method(cString, "squeeze", str_squeeze, -1);
 
-    rb_define_private_method(C_Kernel, "sub", Fsub, -1);
-    rb_define_private_method(C_Kernel, "gsub", Fgsub, -1);
+    rb_define_method(cString, "tr!", str_tr_bang, 2);
+    rb_define_method(cString, "tr_s!", str_tr_s_bang, 2);
+    rb_define_method(cString, "delete!", str_delete_bang, 1);
+    rb_define_method(cString, "squeeze!", str_squeeze_bang, -1);
+
+    rb_define_method(cString, "each_line", str_each_line, 0);
+    rb_define_method(cString, "each_byte", str_each_byte, 0);
+    rb_define_method(cString, "each", str_each_byte, 0);
+
+    rb_define_method(cString, "sum", str_sum, -1);
+
+    rb_define_private_method(cKernel, "sub", f_sub, -1);
+    rb_define_private_method(cKernel, "gsub", f_gsub, -1);
+
+    rb_define_private_method(cKernel, "sub!", f_sub_bang, -1);
+    rb_define_private_method(cKernel, "gsub!", f_gsub_bang, -1);
 
     pr_str = rb_intern("to_s");
 }

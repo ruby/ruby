@@ -10,7 +10,6 @@
 
 ************************************************/
 
-#include <sys/param.h>
 #include "ruby.h"
 
 #include <sys/types.h>
@@ -18,10 +17,10 @@
 #include <unistd.h>
 #endif
 
-#ifdef HAVE_STDLIB_H
-#include <stdlib.h>
+#ifdef HAVE_SYS_PARAM_H
+# include <sys/param.h>
 #else
-char *getenv();
+# define MAXPATHLEN 1024
 #endif
 
 #if HAVE_DIRENT_H
@@ -39,9 +38,14 @@ char *getenv();
 # if HAVE_NDIR_H
 #  include <ndir.h>
 # endif
+# ifdef NT
+#  include "missing/dirent.h"
+# endif
 #endif
 
-static VALUE C_Dir;
+char *getenv();
+
+static VALUE cDir;
 static ID id_dir;
 
 static void
@@ -52,7 +56,7 @@ free_dir(dir)
 }
 
 static VALUE
-Sdir_open(dir_class, dirname)
+dir_s_open(dir_class, dirname)
     VALUE dir_class;
     struct RString *dirname;
 {
@@ -66,7 +70,7 @@ Sdir_open(dir_class, dirname)
 
     obj = obj_alloc(dir_class);
     if (!id_dir) id_dir = rb_intern("dir");
-    Make_Data_Struct(obj, id_dir, DIR*, Qnil, free_dir, d);
+    Make_Data_Struct(obj, id_dir, DIR*, 0, free_dir, d);
     *d = dirp;
 
     return obj;
@@ -87,7 +91,7 @@ closeddir()
 }
 
 static VALUE
-Fdir_each(dir)
+dir_each(dir)
     VALUE dir;
 {
     extern VALUE rb_lastline;
@@ -103,7 +107,7 @@ Fdir_each(dir)
 }
 
 static VALUE
-Fdir_tell(dir)
+dir_tell(dir)
     VALUE dir;
 {
     DIR *dirp;
@@ -115,7 +119,7 @@ Fdir_tell(dir)
 }
 
 static VALUE
-Fdir_seek(dir, pos)
+dir_seek(dir, pos)
     VALUE dir, pos;
 {
     DIR *dirp;
@@ -126,7 +130,7 @@ Fdir_seek(dir, pos)
 }
 
 static VALUE
-Fdir_rewind(dir)
+dir_rewind(dir)
     VALUE dir;
 {
     DIR *dirp;
@@ -137,7 +141,7 @@ Fdir_rewind(dir)
 }
 
 static VALUE
-Fdir_close(dir)
+dir_close(dir)
     VALUE dir;
 {
     DIR **dirpp;
@@ -151,7 +155,7 @@ Fdir_close(dir)
 }
 
 static VALUE
-Sdir_chdir(argc, argv, obj)
+dir_s_chdir(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -178,7 +182,7 @@ Sdir_chdir(argc, argv, obj)
 }
 
 static VALUE
-Sdir_getwd(dir)
+dir_s_getwd(dir)
     VALUE dir;
 {
     extern char *getwd();
@@ -194,7 +198,7 @@ Sdir_getwd(dir)
 }
 
 static VALUE
-Sdir_chroot(dir, path)
+dir_s_chroot(dir, path)
     VALUE dir, path;
 {
     Check_Type(path, T_STRING);
@@ -206,7 +210,7 @@ Sdir_chroot(dir, path)
 }
 
 static VALUE
-Sdir_mkdir(argc, argv, obj)
+dir_s_mkdir(argc, argv, obj)
     int argc;
     VALUE *argv;
     VALUE obj;
@@ -229,7 +233,7 @@ Sdir_mkdir(argc, argv, obj)
 }
 
 static VALUE
-Sdir_rmdir(obj, dir)
+dir_s_rmdir(obj, dir)
     VALUE obj;
     struct RString *dir;
 {
@@ -262,7 +266,7 @@ push_globs(ary, s)
     free(fnames);
 }
 
-static int
+static void
 push_braces(ary, s)
     VALUE ary;
     char *s;
@@ -272,11 +276,11 @@ push_braces(ary, s)
     char *lbrace, *rbrace;
 
     p = s;
-    lbrace = rbrace = Qnil;
+    lbrace = rbrace = 0;
     while (*p) {
 	if (*p == '{' && !lbrace) lbrace = p;
 	if (*p == '}' && lbrace) rbrace = p;
-	*p++;
+	p++;
     }
 
     if (lbrace) {
@@ -300,7 +304,7 @@ push_braces(ary, s)
 }
 
 static VALUE
-Sdir_glob(dir, str)
+dir_s_glob(dir, str)
     VALUE dir;
     struct RString *str;
 {
@@ -342,31 +346,32 @@ Sdir_glob(dir, str)
     return ary;
 }
 
+void
 Init_Dir()
 {
-    extern VALUE M_Enumerable;
+    extern VALUE mEnumerable;
 
-    C_Dir = rb_define_class("Dir", C_Object);
+    cDir = rb_define_class("Dir", cObject);
 
-    rb_include_module(C_Dir, M_Enumerable);
+    rb_include_module(cDir, mEnumerable);
 
-    rb_define_single_method(C_Dir, "open", Sdir_open, 1);
+    rb_define_singleton_method(cDir, "open", dir_s_open, 1);
 
-    rb_define_method(C_Dir,"each", Fdir_each, 0);
-    rb_define_method(C_Dir,"rewind", Fdir_rewind, 0);
-    rb_define_method(C_Dir,"tell", Fdir_tell, 0);
-    rb_define_method(C_Dir,"seek", Fdir_seek, 1);
-    rb_define_method(C_Dir,"close", Fdir_close, 0);
+    rb_define_method(cDir,"each", dir_each, 0);
+    rb_define_method(cDir,"rewind", dir_rewind, 0);
+    rb_define_method(cDir,"tell", dir_tell, 0);
+    rb_define_method(cDir,"seek", dir_seek, 1);
+    rb_define_method(cDir,"close", dir_close, 0);
 
-    rb_define_single_method(C_Dir,"chdir", Sdir_chdir, -1);
-    rb_define_single_method(C_Dir,"getwd", Sdir_getwd, 0);
-    rb_define_single_method(C_Dir,"pwd", Sdir_getwd, 0);
-    rb_define_single_method(C_Dir,"chroot", Sdir_chroot, 1);
-    rb_define_single_method(C_Dir,"mkdir", Sdir_mkdir, -1);
-    rb_define_single_method(C_Dir,"rmdir", Sdir_rmdir, 1);
-    rb_define_single_method(C_Dir,"delete", Sdir_rmdir, 1);
-    rb_define_single_method(C_Dir,"unlink", Sdir_rmdir, 1);
+    rb_define_singleton_method(cDir,"chdir", dir_s_chdir, -1);
+    rb_define_singleton_method(cDir,"getwd", dir_s_getwd, 0);
+    rb_define_singleton_method(cDir,"pwd", dir_s_getwd, 0);
+    rb_define_singleton_method(cDir,"chroot", dir_s_chroot, 1);
+    rb_define_singleton_method(cDir,"mkdir", dir_s_mkdir, -1);
+    rb_define_singleton_method(cDir,"rmdir", dir_s_rmdir, 1);
+    rb_define_singleton_method(cDir,"delete", dir_s_rmdir, 1);
+    rb_define_singleton_method(cDir,"unlink", dir_s_rmdir, 1);
 
-    rb_define_single_method(C_Dir,"glob", Sdir_glob, 1);
-    rb_define_single_method(C_Dir,"[]", Sdir_glob, 1);
+    rb_define_singleton_method(cDir,"glob", dir_s_glob, 1);
+    rb_define_singleton_method(cDir,"[]", dir_s_glob, 1);
 }

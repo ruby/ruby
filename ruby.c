@@ -31,17 +31,13 @@ int debug = 0;
 int verbose = 0;
 static int sflag = FALSE;
 
-char *inplace = Qnil;
+char *inplace = 0;
 char *strdup();
 
 extern int yydebug;
 extern int nerrs;
 
 int xflag = FALSE;
-
-#ifdef USE_DL
-char *rb_dln_argv0;
-#endif
 
 static void load_stdin();
 static void load_file();
@@ -51,6 +47,37 @@ static int do_check = FALSE, do_line = FALSE;
 static int do_split = FALSE;
 
 static char *script;
+
+#ifndef RUBY_LIB
+#define RUBY_LIB ".:/usr/local/lib/ruby"
+#endif
+
+#define RUBY_LIB_SEP ':'
+
+extern VALUE rb_load_path;
+VALUE Frequire();
+
+static void
+addpath(path)
+    char *path;
+{
+    char *p, *s;
+
+    if (path == 0) return;
+
+    p = s = path;
+    while (*p) {
+	while (*p == RUBY_LIB_SEP) p++;
+	if (s = strchr(p, RUBY_LIB_SEP)) {
+	    ary_push(rb_load_path, str_new(p, (int)(s-p)));
+	    p = s + 1;
+	}
+	else {
+	    ary_push(rb_load_path, str_new2(p));
+	    break;
+	}
+    }
+}
 
 static void
 proc_options(argcp, argvp)
@@ -62,7 +89,6 @@ proc_options(argcp, argvp)
     int script_given, do_search;
     char *s;
 
-    extern VALUE rb_load_path;
     extern VALUE RS, ORS, FS;
 
     if (argc == 0) return;
@@ -81,7 +107,7 @@ proc_options(argcp, argvp)
 	    do_split = TRUE;
 	    s++;
 	    goto reswitch;
-	    
+
 	  case 'p':
 	    do_print = TRUE;
 	    /* through */
@@ -121,7 +147,7 @@ proc_options(argcp, argvp)
 	    ORS = RS;
 	    s++;
 	    goto reswitch;
-	    
+
 	  case 'S':
 	    do_search = TRUE;
 	    s++;
@@ -140,6 +166,16 @@ proc_options(argcp, argvp)
 	    yyparse();
 	    break;
 
+	  case 'r':
+	    if (*++s) {
+		f_require(Qnil, str_new2(s));
+	    }
+	    else if (argv[1]) {
+		f_require(Qnil, str_new2(argv[1]));
+		argc--,argv++;
+	    }
+	    break;
+
 	  case 'i':
 	    inplace = strdup(s+1);
 	    break;
@@ -152,18 +188,34 @@ proc_options(argcp, argvp)
 	    }
 	    break;
 
+	  case 'X':
+	    s++;
+	    if (!*s) {
+		s = argv[1];
+		argc--,argv++;
+	    }
+	    if (*s && chdir(s) < 0) {
+		Fatal("Can't chdir to %s", s);
+	    }
+	    break;
+
 	  case 'F':
 	    FS = str_new2(s+1);
 	    break;
 
 	  case 'K':
 	    s++;
-	    rb_set_kanjicode(s);
+	    rb_set_kcode(s);
 	    s++;
 	    goto reswitch;
 
 	  case 'I':
-	    ary_unshift(rb_load_path, str_new2(s+1));
+	    if (*++s)
+		ary_push(rb_load_path, str_new2(s));
+	    else if (argv[1]) {
+		ary_push(rb_load_path, str_new2(argv[1]));
+		argc--,argv++;
+	    }
 	    break;
 
 	  case '0':
@@ -184,9 +236,6 @@ proc_options(argcp, argvp)
 		}
 	    }
 	    goto reswitch;
-
-	  case 'u':
-	  case 'U':
 
 	  case '-':
 	    if (!s[1]) {
@@ -218,7 +267,7 @@ proc_options(argcp, argvp)
     }
 
   switch_end:
-    if (*argvp[0] == Qnil) return;
+    if (*argvp[0] == 0) return;
 
     if (version) {
 	show_version();
@@ -227,8 +276,6 @@ proc_options(argcp, argvp)
     if (copyright) {
 	show_copyright();
     }
-
-    rb_setup_kcode();
 
     if (script_given == 0) {
 	if (argc == 0) {	/* no more args */
@@ -263,10 +310,10 @@ proc_options(argcp, argvp)
 	    argv[0][0] = '$';
 	    if (s = strchr(argv[0], '=')) {
 		*s++ = '\0';
-		rb_gvar_set2((*argvp)[0], str_new2(s));
+		rb_gvar_set2(argv[0], str_new2(s));
 	    }
 	    else {
-		rb_gvar_set2((*argvp)[0], TRUE);
+		rb_gvar_set2(argv[0], TRUE);
 	    }
 	}
 	*argcp = argc; *argvp = argv;
@@ -281,7 +328,7 @@ readin(fd, fname, script)
     int script;
 {
     struct stat st;
-    char *ptr, *p, *pend, *s;
+    char *ptr, *p, *pend;
 
     if (fstat(fd, &st) < 0) rb_sys_fail(fname);
     if (!S_ISREG(st.st_mode))
@@ -351,7 +398,6 @@ load_file(fname, script)
     int script;
 {
     int fd;
-    char *ptr;
 
     if (fname[0] == '\0') {
 	load_stdin();
@@ -391,7 +437,7 @@ load_stdin()
     readin(fd, "-");
 }
 
-static VALUE Progname;
+VALUE Progname;
 VALUE Argv;
 
 static int origargc;
@@ -454,13 +500,13 @@ ruby_options(argc, argv, envp)
 
     origargc = argc; origargv = argv; origenvp = envp;
 
-    rb_define_variable("$@", &errat, Qnil, Qnil, 0);
+    rb_define_variable("$@", &errat);
     errat = str_new2(argv[0]);
-    rb_define_variable("$VERBOSE", &verbose, Qnil, Qnil, 0);
-    rb_define_variable("$DEBUG", &debug, Qnil, Qnil, 0);
+    rb_define_variable("$VERBOSE", &verbose);
+    rb_define_variable("$DEBUG", &debug);
 
-#ifdef USE_DL
-    rb_dln_argv0 = argv[0];
+#if defined(USE_DLN_A_OUT)
+    dln_argv0 = argv[0];
 #endif
 
     proc_options(&argc, &argv);
@@ -475,11 +521,14 @@ ruby_options(argc, argv, envp)
 	yywhole_loop(do_line, do_split);
     }
 
-    rb_define_variable("$0", &Progname, Qnil, set_arg0, 0);
+    rb_define_hooked_variable("$0", &Progname, 0, set_arg0);
     ruby_script(script);
 
-    rb_define_variable("$ARGV", &Argv, Qnil, Qnil, 0);
-    rb_define_variable("$*", &Argv, Qnil, Qnil, 0);
+    addpath(getenv("RUBYLIB"));
+    addpath(RUBY_LIB);
+
+    rb_define_readonly_variable("$ARGV", &Argv);
+    rb_define_readonly_variable("$*", &Argv);
     Argv = ary_new2(argc);
     for (i=0; i < argc; i++) {
 	ary_push(Argv, str_new2(argv[i]));

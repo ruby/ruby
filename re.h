@@ -21,16 +21,14 @@
 
 typedef struct re_pattern_buffer Regexp;
 
-struct match {
+struct RMatch {
+    struct RBasic basic;
     UINT len;
     char *ptr;
-    struct re_registers regs;
+    struct re_registers *regs;
 };
 
-extern struct match last_match;
-
-#define BEG(no) last_match.regs.beg[no]
-#define END(no) last_match.regs.end[no]
+#define RMATCH(obj)  (R_CAST(RMatch)(obj))
 
 VALUE re_regcomp();
 VALUE re_regsub();

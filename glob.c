@@ -21,15 +21,6 @@
 
 #include "config.h"
 
-#if defined (SHELL)
-#  if defined (HAVE_STDLIB_H)
-#    include <stdlib.h>
-#  else
-#    include "ansi_stdlib.h"
-#  endif /* HAVE_STDLIB_H */
-#  include <config.h>
-#endif
-
 #include <sys/types.h>
 
 #if !defined (SHELL) && (defined (_POSIX_VERSION) || defined (USGr3))

@@ -12,7 +12,7 @@ for i in 2 .. max
     print ", "
     print i
     sieve.push(i)
-  resque
+  rescue
   end
 end
 print "\n"

@@ -1,2 +1,2 @@
-#define RUBY_VERSION "0.76"
-#define VERSION_DATE "95/05/19"
+#define RUBY_VERSION "0.95"
+#define VERSION_DATE "95/12/21"

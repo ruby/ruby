@@ -13,16 +13,19 @@
 #ifndef RUBY_H
 #define RUBY_H
 
-#include "config.h"
+#ifndef NT
+# include "config.h"
+#endif
+
 #include "defines.h"
 
 #ifndef __STDC__
-#define volatile
-#ifdef __GNUC__
-#define const __const__
-#else
-#define const
-#endif
+# define volatile
+# ifdef __GNUC__
+#  define const __const__
+# else
+#  define const
+# endif
 #endif
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
@@ -39,9 +42,11 @@ typedef unsigned short USHORT;
 # include <limits.h>
 #else
 # ifndef LONG_MAX
-# if !defined(LONG_MAX) || !defined(CHAR_BIT)
-#  include <limits.h>
-# endif
+#  ifdef HAVE_LIMITS_H
+#   include <limits.h>
+#  else
+#   define LONG_MAX 2147483647	/* assuming 32bit(2's compliment) LONG */
+#  endif
 # endif
 # ifndef LONG_MIN
 #  if (0 != ~0)
@@ -50,17 +55,17 @@ typedef unsigned short USHORT;
 #   define LONG_MIN (-LONG_MAX)
 #  endif
 # endif
+# ifndef CHAR_BIT
+#  define CHAR_BIT 8
+# endif
 #endif
 
-#ifndef CHAR_BIT
-# define CHAR_BIT 8
-#endif
-
-# define FIXNUM_MAX (LONG_MAX>>1)
-# define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
+#define FIXNUM_MAX (LONG_MAX>>1)
+#define FIXNUM_MIN RSHIFT((long)LONG_MIN,1)
 
 #define FIXNUM_FLAG 0x01
 #define INT2FIX(i) (VALUE)(((int)(i))<<1 | FIXNUM_FLAG)
+VALUE int2inum();
 
 #if (-1==(((-1)<<1)&FIXNUM_FLAG)>>1)
 # define RSHIFT(x,y) ((x)>>y)
@@ -69,25 +74,24 @@ typedef unsigned short USHORT;
 #endif
 #define FIX2INT(x) RSHIFT((int)x,1)
 
-#define FIX2UINT(f) ((unsigned int)(f)>>1)
+#define FIX2UINT(f) ((UINT)(f)>>1)
 #define FIXNUM_P(f) (((int)(f))&FIXNUM_FLAG)
 #define POSFIXABLE(f) ((f) <= FIXNUM_MAX)
 #define NEGFIXABLE(f) ((f) >= FIXNUM_MIN)
 #define FIXABLE(f) (POSFIXABLE(f) && NEGFIXABLE(f))
 
-#define POINTER(p) (p)
 #define NIL_P(p) ((p) == Qnil)
 
 #undef TRUE
 extern VALUE TRUE;
 #define FALSE Qnil
 
-extern VALUE C_Object;
-extern VALUE C_Nil;
-extern VALUE C_Fixnum;
-extern VALUE C_Data;
+extern VALUE cObject;
+extern VALUE cNil;
+extern VALUE cFixnum;
+extern VALUE cData;
 
-#define CLASS_OF(obj) (FIXNUM_P(obj)?C_Fixnum: NIL_P(obj)?C_Nil:\
+#define CLASS_OF(obj) (FIXNUM_P(obj)?cFixnum: NIL_P(obj)?cNil:\
                        RBASIC(obj)->class)
 
 #define T_NIL    0x00
@@ -103,9 +107,11 @@ extern VALUE C_Data;
 #define T_HASH   0x0a
 #define T_STRUCT 0x0b
 #define T_BIGNUM 0x0c
-#define T_ASSOC  0x0f
-#define T_DATA   0x10
 
+#define T_DATA   0x10
+#define T_MATCH  0x11
+
+#define T_VARMAP 0xfd
 #define T_SCOPE  0xfe
 #define T_NODE   0xff
 
@@ -122,10 +128,10 @@ int   num2int();
 #define NEWOBJ(obj,type) type *obj = (type*)newobj()
 #define OBJSETUP(obj,c,t) {\
     RBASIC(obj)->class = (c);\
-    RBASIC(obj)->flags |= (t);\
+    RBASIC(obj)->flags = (t);\
 }
 #define CLONESETUP(obj1,obj2) \
-    OBJSETUP(obj1,RBASIC(obj2)->class,RBASIC(obj2)->flags&T_MASK);
+    OBJSETUP(obj1,RBASIC(obj2)->class,RBASIC(obj2)->flags);
 
 struct RBasic {
     UINT flags;
@@ -178,18 +184,18 @@ struct RData {
     struct RBasic basic;
     void (*dmark)();
     void (*dfree)();
-    VALUE *data;
+    void *data;
 };
 
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
 VALUE data_new();
-VALUE rb_ivar_get_1();
-VALUE rb_ivar_set_1();
+VALUE rb_ivar_get();
+VALUE rb_ivar_set();
 
 #define Get_Data_Struct(obj, iv, type, sval) {\
     VALUE _data_;\
-    _data_ = rb_ivar_get_1(obj, iv);\
+    _data_ = rb_ivar_get(obj, iv);\
     Check_Type(_data_, T_DATA);\
     sval = (type*)DATA_PTR(_data_);\
 }
@@ -197,19 +203,15 @@ VALUE rb_ivar_set_1();
 #define Make_Data_Struct(obj, iv, type, mark, free, sval) {\
     VALUE _new_;\
     sval = ALLOC(type);\
-    _new_ = data_new(sval,free,mark);\
+    _new_ = data_new(sval,mark,free);\
     memset(sval, 0, sizeof(type));\
-    rb_ivar_set_1(obj, iv, _new_);\
+    rb_ivar_set(obj, iv, _new_);\
 }
 
 struct RStruct {
     struct RBasic basic;
     UINT len;
-    struct kv_pair {
-	ID key;
-	VALUE value;
-    } *tbl;
-    char *name;
+    VALUE *ptr;
 };
 
 struct RBignum {
@@ -218,14 +220,6 @@ struct RBignum {
     UINT len;
     USHORT *digits;
 };
-
-struct RAssoc {
-    struct RBasic basic;
-    VALUE car, cdr;
-};
-
-#define CAR(c) (RASSOC(c)->car)
-#define CDR(c) (RASSOC(c)->cdr)
 
 #define R_CAST(st) (struct st*)
 #define RBASIC(obj)  (R_CAST(RBasic)(obj))
@@ -239,7 +233,6 @@ struct RAssoc {
 #define RDATA(obj)   (R_CAST(RData)(obj))
 #define RSTRUCT(obj) (R_CAST(RStruct)(obj))
 #define RBIGNUM(obj) (R_CAST(RBignum)(obj))
-#define RASSOC(obj)   (R_CAST(RAssoc)(obj))
 
 #define FL_SINGLE  (1<<8)
 #define FL_MARK    (1<<9)
@@ -271,38 +264,75 @@ extern VALUE Qself;
 
 #define MEMZERO(p,type,n) memset((p), 0, sizeof(type)*(n))
 #define MEMCPY(p1,p2,type,n) memcpy((p1), (p2), sizeof(type)*(n))
+#define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 
-#ifdef SAFE_SIGHANDLE
-extern int trap_immediate;
-# define TRAP_BEG (trap_immediate=1)
-# define TRAP_END (trap_immediate=0)
-#else
-# define TRAP_BEG
-# define TRAP_END
-#endif
+void *xmalloc();
+void *xcalloc();
+void *xrealloc();
 
 VALUE rb_define_class();
 VALUE rb_define_module();
+void rb_include_module();
+void rb_extend_object();
 
 void rb_define_variable();
 void rb_define_const();
 
 void rb_define_method();
-void rb_define_single_method();
+void rb_define_singleton_method();
 void rb_undef_method();
 void rb_define_alias();
 void rb_define_attr();
 
 ID rb_intern();
 char *rb_id2name();
+ID rb_to_id();
+
+char *rb_class2name();
+VALUE rb_method_boundp();
 
 VALUE rb_eval_string();
 VALUE rb_funcall();
 VALUE rb_funcall2();
 int rb_scan_args();
 
+VALUE rb_iv_get();
+VALUE rb_iv_set();
+void rb_const_set();
+
 VALUE rb_yield();
+VALUE iterator_p();
+
+VALUE rb_equal();
 
 extern int verbose, debug;
+
+#ifdef __GNUC__
+typedef void voidfn ();
+volatile voidfn Fail;
+volatile voidfn Fatal;
+volatile voidfn Bug;
+volatile voidfn WrongType;
+volatile voidfn rb_sys_fail;
+volatile voidfn rb_break;
+volatile voidfn rb_exit;
+volatile voidfn rb_fail;
+#else
+void Fail();
+void Fatal();
+void Bug();
+void WrongType();
+void rb_sys_fail();
+void rb_break();
+void rb_exit();
+void rb_fail();
+#endif
+
+void Warning();
+
+#if defined(EXTLIB) && defined(USE_DLN_A_OUT)
+/* hook for external modules */
+static char *libs_to_be_linked[] = { EXTLIB, 0 };
+#endif
 
 #endif

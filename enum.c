@@ -12,7 +12,7 @@
 
 #include "ruby.h"
 
-VALUE M_Enumerable;
+VALUE mEnumerable;
 static ID id_each, id_match, id_cmp;
 
 void
@@ -20,11 +20,11 @@ rb_each(obj)
     VALUE obj;
 {
     if (!id_each) id_each = rb_intern("each");
-    rb_funcall(obj, id_each, 0, Qnil);
+    rb_funcall(obj, id_each, 0, 0);
 }
 
 static void
-enum_grep(i, arg)
+grep_i(i, arg)
     VALUE i, *arg;
 {
     if (!id_match) id_match = rb_intern("=~");
@@ -34,7 +34,7 @@ enum_grep(i, arg)
 }
 
 static void
-enum_grep_iter(i, pat)
+grep_iter_i(i, pat)
     VALUE i, pat;
 {
     if (!id_match) id_match = rb_intern("=~");
@@ -44,25 +44,25 @@ enum_grep_iter(i, pat)
 }
 
 static VALUE
-Fenum_grep(obj, pat)
-    VALUE obj;
+enum_grep(obj, pat)
+    VALUE obj, pat;
 {
     if (iterator_p()) {
-	rb_iterate(rb_each, obj, enum_grep_iter, pat);
+	rb_iterate(rb_each, obj, grep_iter_i, pat);
 	return obj;
     }
     else {
 	VALUE tmp, arg[2];
 
 	arg[0] = pat; arg[1] = tmp = ary_new();
-	rb_iterate(rb_each, obj, enum_grep, arg);
+	rb_iterate(rb_each, obj, grep_i, arg);
 
 	return tmp;
     }
 }
 
 static void
-enum_find(i, foundp)
+find_i(i, foundp)
     VALUE i;
     int *foundp;
 {
@@ -73,19 +73,19 @@ enum_find(i, foundp)
 }
 
 static VALUE
-Fenum_find(obj)
+enum_find(obj)
     VALUE obj;
 {
     int enum_found;
 
     enum_found = FALSE;
-    rb_iterate(rb_each, obj, enum_find, &enum_found);
+    rb_iterate(rb_each, obj, find_i, &enum_found);
     return enum_found;
 }
 
 static void
-enum_find_all(i, tmp)
-    VALUE i;
+find_all_i(i, tmp)
+    VALUE i, tmp;
 {
     if (rb_yield(i)) {
 	ary_push(tmp, i);
@@ -93,20 +93,20 @@ enum_find_all(i, tmp)
 }
 
 static VALUE
-Fenum_find_all(obj)
+enum_find_all(obj)
     VALUE obj;
 {
     VALUE tmp;
 
     tmp = ary_new();
-    rb_iterate(rb_each, obj, enum_find_all, Qnil);
+    rb_iterate(rb_each, obj, find_all_i, 0);
 
     return tmp;
 }
 
 static void
-enum_collect(i, tmp)
-    VALUE i;
+collect_i(i, tmp)
+    VALUE i, tmp;
 {
     VALUE retval;
 
@@ -117,32 +117,32 @@ enum_collect(i, tmp)
 }
 
 static VALUE
-Fenum_collect(obj)
+enum_collect(obj)
     VALUE obj;
 {
     VALUE tmp;
 
     tmp = ary_new();
-    rb_iterate(rb_each, obj, enum_collect, tmp);
+    rb_iterate(rb_each, obj, collect_i, tmp);
 
     return tmp;
 }
 
 static void
-enum_reverse(i, tmp)
+reverse_i(i, tmp)
     VALUE i, tmp;
 {
     ary_unshift(tmp, i);
 }
 
 static VALUE
-Fenum_reverse(obj)
+enum_reverse(obj)
     VALUE obj;
 {
     VALUE tmp;
 
     tmp = ary_new();
-    rb_iterate(rb_each, obj, enum_reverse, tmp);
+    rb_iterate(rb_each, obj, reverse_i, tmp);
 
     return tmp;
 }
@@ -155,7 +155,7 @@ enum_all(i, ary)
 }
 
 static VALUE
-Fenum_to_a(obj)
+enum_to_a(obj)
     VALUE obj;
 {
     VALUE ary;
@@ -167,18 +167,14 @@ Fenum_to_a(obj)
 }
 
 static VALUE
-Fenum_sort(obj)
+enum_sort(obj)
     VALUE obj;
 {
-    VALUE ary;
-
-    ary = Fenum_to_a(obj);
-    Fary_sort(ary);
-    return ary;
+    return ary_sort(enum_to_a(obj));
 }
 
 static void
-enum_min(i, min)
+min_i(i, min)
     VALUE i, *min;
 {
     VALUE cmp;
@@ -194,17 +190,17 @@ enum_min(i, min)
 }
 
 static VALUE
-Fenum_min(obj)
+enum_min(obj)
     VALUE obj;
 {
     VALUE min = Qnil;
 
-    rb_iterate(rb_each, obj, enum_min, &min);
+    rb_iterate(rb_each, obj, min_i, &min);
     return min;
 }
 
 static void
-enum_max(i, max)
+max_i(i, max)
     VALUE i, *max;
 {
     VALUE cmp;
@@ -220,12 +216,12 @@ enum_max(i, max)
 }
 
 static VALUE
-Fenum_max(obj)
+enum_max(obj)
     VALUE obj;
 {
     VALUE max = Qnil;
 
-    rb_iterate(rb_each, obj, enum_max, &max);
+    rb_iterate(rb_each, obj, max_i, &max);
     return max;
 }
 
@@ -236,7 +232,7 @@ struct i_v_pair {
 };
 
 static void
-enum_index(item, iv)
+index_i(item, iv)
     VALUE item;
     struct i_v_pair *iv;
 {
@@ -250,21 +246,21 @@ enum_index(item, iv)
 }
 
 static VALUE
-Fenum_index(obj, val)
-    VALUE obj;
+enum_index(obj, val)
+    VALUE obj, val;
 {
     struct i_v_pair iv;
 
     iv.i = 0;
     iv.v = val;
     iv.found = 0;
-    rb_iterate(rb_each, obj, enum_index, &iv);
+    rb_iterate(rb_each, obj, index_i, &iv);
     if (iv.found) return INT2FIX(iv.i);
     return Qnil;		/* not found */
 }
 
 static void
-enum_includes(item, iv)
+member_i(item, iv)
     VALUE item;
     struct i_v_pair *iv;
 {
@@ -275,20 +271,20 @@ enum_includes(item, iv)
 }
 
 static VALUE
-Fenum_includes(obj, val)
-    VALUE obj;
+enum_member(obj, val)
+    VALUE obj, val;
 {
     struct i_v_pair iv;
 
     iv.i = 0;
     iv.v = val;
-    rb_iterate(rb_each, obj, enum_includes, &iv);
+    rb_iterate(rb_each, obj, member_i, &iv);
     if (iv.i) return TRUE;
     return FALSE;
 }
 
 static void
-enum_length(i, length)
+length_i(i, length)
     VALUE i;
     int *length;
 {
@@ -296,29 +292,31 @@ enum_length(i, length)
 }
 
 static VALUE
-Fenum_length(obj)
+enum_length(obj)
     VALUE obj;
 {
     int length = 0;
 
-    rb_iterate(rb_each, obj, enum_length, &length);
+    rb_iterate(rb_each, obj, length_i, &length);
     return INT2FIX(length);
 }
 
+void
 Init_Enumerable()
 {
-    M_Enumerable = rb_define_module("Enumerable");
+    mEnumerable = rb_define_module("Enumerable");
 
-    rb_define_method(M_Enumerable,"to_a", Fenum_to_a, 0);
+    rb_define_method(mEnumerable,"to_a", enum_to_a, 0);
 
-    rb_define_method(M_Enumerable,"grep", Fenum_grep, 1);
-    rb_define_method(M_Enumerable,"find", Fenum_find, 0);
-    rb_define_method(M_Enumerable,"find_all", Fenum_find_all, 0);
-    rb_define_method(M_Enumerable,"collect", Fenum_collect, 0);
-    rb_define_method(M_Enumerable,"reverse", Fenum_reverse, 0);
-    rb_define_method(M_Enumerable,"min", Fenum_min, 0);
-    rb_define_method(M_Enumerable,"max", Fenum_max, 0);
-    rb_define_method(M_Enumerable,"index", Fenum_index, 1);
-    rb_define_method(M_Enumerable,"includes", Fenum_includes, 1);
-    rb_define_method(M_Enumerable,"length", Fenum_length, 0);
+    rb_define_method(mEnumerable,"sort", enum_sort, 0);
+    rb_define_method(mEnumerable,"grep", enum_grep, 1);
+    rb_define_method(mEnumerable,"find", enum_find, 0);
+    rb_define_method(mEnumerable,"find_all", enum_find_all, 0);
+    rb_define_method(mEnumerable,"collect", enum_collect, 0);
+    rb_define_method(mEnumerable,"reverse", enum_reverse, 0);
+    rb_define_method(mEnumerable,"min", enum_min, 0);
+    rb_define_method(mEnumerable,"max", enum_max, 0);
+    rb_define_method(mEnumerable,"index", enum_index, 1);
+    rb_define_method(mEnumerable,"member?", enum_member, 1);
+    rb_define_method(mEnumerable,"length", enum_length, 0);
 }

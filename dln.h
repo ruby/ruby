@@ -11,16 +11,12 @@
 #ifndef DLN_H
 #define DLN_H
 
-#include <sys/errno.h>
-
 char *dln_find_exe();
 char *dln_find_file();
 
-int dln_init();
-int dln_load();
-int dln_load_lib();
+#ifdef USE_DLN_A_OUT
+extern char *dln_argv0;
+#endif
 
-char *dln_strerror();
-void dln_perror();
-
+void dln_load();
 #endif

@@ -11,22 +11,21 @@
 ************************************************/
 
 #include "ruby.h"
-#include "env.h"
 #include "node.h"
 #include "st.h"
 
 struct st_table *new_idhash();
 extern st_table *rb_class_tbl;
 
-extern VALUE C_Class;
-extern VALUE C_Module;
+extern VALUE cClass;
+extern VALUE cModule;
 
 VALUE
 class_new(super)
     struct RClass *super;
 {
     NEWOBJ(cls, struct RClass);
-    OBJSETUP(cls, C_Class, T_CLASS);
+    OBJSETUP(cls, cClass, T_CLASS);
 
     cls->super = super;
     cls->m_tbl = new_idhash();
@@ -35,7 +34,7 @@ class_new(super)
 }
 
 VALUE
-single_class_new(super)
+singleton_class_new(super)
     struct RClass *super;
 {
     struct RClass *cls = (struct RClass*)class_new(super);
@@ -56,13 +55,13 @@ clone_method(mid, body, tbl)
 }
 
 VALUE
-single_class_clone(class)
+singleton_class_clone(class)
     struct RClass *class;
 {
     if (!FL_TEST(class, FL_SINGLE))
 	return (VALUE)class;
     else {
-	/* copy single(unnamed) class */
+	/* copy singleton(unnamed) class */
 	NEWOBJ(clone, struct RClass);
 	CLONESETUP(clone, class);
 
@@ -81,9 +80,11 @@ rb_define_class_id(id, super)
 {
     struct RClass *cls = (struct RClass*)class_new(super);
 
+    if (!super) super = (struct RBasic*)cClass;
+    cls = (struct RClass*)class_new(super);
     rb_name_class(cls, id);
     /* make metaclass */
-    RBASIC(cls)->class = single_class_new(super?super->class:C_Class);
+    RBASIC(cls)->class = singleton_class_new(super->class);
 
     return (VALUE)cls;
 }
@@ -104,6 +105,7 @@ rb_define_class(name, super)
     return class;
 }
 
+VALUE
 rb_define_class_under(under, name, super)
     VALUE under;
     char *name;
@@ -124,7 +126,7 @@ VALUE
 module_new()
 {
     NEWOBJ(mdl, struct RClass);
-    OBJSETUP(mdl, C_Module, T_MODULE);
+    OBJSETUP(mdl, cModule, T_MODULE);
 
     mdl->super = Qnil;
     mdl->m_tbl = new_idhash();
@@ -158,6 +160,7 @@ rb_define_module(name)
     return module;
 }
 
+VALUE
 rb_define_module_under(under, name)
     VALUE under;
     char *name;
@@ -176,10 +179,8 @@ static struct RClass *
 include_class_new(module, super)
     struct RClass *module, *super;
 {
-    struct RClass *p;
-
     NEWOBJ(cls, struct RClass);
-    OBJSETUP(cls, C_Class, T_ICLASS);
+    OBJSETUP(cls, cClass, T_ICLASS);
 
     cls->m_tbl = module->m_tbl;
     cls->iv_tbl = module->iv_tbl;
@@ -202,8 +203,15 @@ rb_include_module(class, module)
 
     if (!module) return;
 
-    Check_Type(module, T_MODULE);
+    switch (TYPE(module)) {
+      case T_MODULE:
+      case T_CLASS:
+	break;
+      default:
+	Check_Type(module, T_MODULE);
+    }
 
+    if (class == module) return;
     if (BUILTIN_TYPE(class) == T_CLASS) {
 	rb_clear_cache(class);
     }
@@ -223,6 +231,16 @@ rb_include_module(class, module)
 	class = class->super;
 	module = module->super;
     }
+}
+
+void
+rb_define_method_id(class, name, func, argc)
+    struct RClass *class;
+    ID name;
+    VALUE (*func)();
+    int argc;
+{
+    rb_add_method(class, name, NEW_CFUNC(func, argc), NOEX_PUBLIC);
 }
 
 void
@@ -254,7 +272,7 @@ rb_define_private_method(class, name, func, argc)
 }
 
 VALUE
-rb_single_class(obj)
+rb_singleton_class(obj)
     struct RBasic *obj;
 {
     switch (TYPE(obj)) {
@@ -264,24 +282,24 @@ rb_single_class(obj)
       case T_STRUCT:
 	break;
       default:
-	Fail("can't define single method for built-in class");
+	Fail("can't define singleton method for built-in class");
 	break;
     }
 
     if (FL_TEST(obj->class, FL_SINGLE)) {
 	return (VALUE)obj->class;
     }
-    return obj->class = single_class_new(obj->class);
+    return obj->class = singleton_class_new(obj->class);
 }
 
 void
-rb_define_single_method(obj, name, func, argc)
+rb_define_singleton_method(obj, name, func, argc)
     VALUE obj;
     char *name;
     VALUE (*func)();
     int argc;
 {
-    rb_define_method(rb_single_class(obj), name, func, argc);
+    rb_define_method(rb_singleton_class(obj), name, func, argc);
 }
 
 void
@@ -292,7 +310,7 @@ rb_define_module_function(module, name, func, argc)
     int argc;
 {
     rb_define_private_method(module, name, func, argc);
-    rb_define_single_method(module, name, func, argc);
+    rb_define_singleton_method(module, name, func, argc);
 }
 
 void
@@ -304,35 +322,28 @@ rb_define_alias(class, name1, name2)
 }
 
 void
-rb_define_attr(class, name, pub)
+rb_define_attr(class, id, pub)
     struct RClass *class;
-    char *name;
+    ID id;
     int pub;
 {
+    char *name;
     char *buf;
     ID attr, attreq, attriv;
 
+    name = rb_id2name(id);
     attr = rb_intern(name);
     buf = ALLOCA_N(char,strlen(name)+2);
     sprintf(buf, "%s=", name);
     attreq = rb_intern(buf);
     sprintf(buf, "@%s", name);
     attriv = rb_intern(buf);
-    if (rb_method_boundp(class, attr) == Qnil) {
+    if (rb_method_boundp(class, attr) == FALSE) {
 	rb_add_method(class, attr, NEW_IVAR(attriv), 0);
     }
-    if (pub && rb_method_boundp(class, attreq) == Qnil) {
+    if (pub && rb_method_boundp(class, attreq) == FALSE) {
 	rb_add_method(class, attreq, NEW_ATTRSET(attriv), 0);
     }
-}
-
-void
-rb_define_single_attr(obj, name, pub)
-    VALUE obj;
-    char *name;
-    int pub;
-{
-    rb_define_attr(rb_single_class(obj), name, pub);
 }
 
 #include <varargs.h>
@@ -409,4 +420,5 @@ rb_scan_args(argc, argv, fmt, va_alist)
 
   error:
     Fail("bad scan arg format: %s", fmt);
+    return 0;
 }

@@ -3,7 +3,6 @@
   util.c -
 
   $Author$
-  $Revision$
   $Date$
   created at: Fri Mar 10 17:22:34 JST 1995
 

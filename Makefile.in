@@ -13,21 +13,23 @@ INSTALL_DATA = @INSTALL_DATA@
 PURIFY=
 @SET_MAKE@
 
-CFLAGS = @CFLAGS@
+CFLAGS = @CFLAGS@ -I.
 STATIC = @STATIC@
 LDFLAGS = $(CFLAGS) @LDFLAGS@
-LIBS = @LIBS@
+LIBS = -lm @LIBS@ $(EXTLIBS)
 MISSING = @LIBOBJS@ @ALLOCA@
 
 prefix = @prefix@
 binprefix = 
 exec_prefix = @exec_prefix@
 bindir = $(exec_prefix)/bin
+libdir = @prefix@/lib/ruby
 
 #### End of system configuration section. ####
 
+EXTOBJS	      = dmyext.o
+
 OBJS	      = array.o \
-		assoc.o \
 		bignum.o \
 		class.o \
 		compar.o \
@@ -35,7 +37,6 @@ OBJS	      = array.o \
 		dln.o \
 		enum.o \
 		error.o \
-		etc.o \
 		eval.o \
 		file.o \
 		fnmatch.o \
@@ -65,41 +66,49 @@ OBJS	      = array.o \
 		util.o \
 		variable.o \
 		version.o \
-		$(MISSING)
+		$(MISSING) \
+		$(EXTOBJS)
 
-PROGRAM	      = ruby
+PROGRAM	      = miniruby
 
-all:		$(PROGRAM) @EXTMAKE@
+all:		extruby
+
+extruby:	miniruby ext/Setup 
+		@if test -z "$$UNDER_EXTMAKE_RB"; \
+		then echo "Compiling ext modules"; \
+		UNDER_EXTMAKE_RB=yes; export UNDER_EXTMAKE_RB; \
+		cd ext; ../miniruby ./extmk.rb; fi
 
 $(PROGRAM):     $(OBJS)
 		@rm -f $(PROGRAM)
 		$(PURIFY) $(CC) $(STATIC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(PROGRAM)
 
-extmake:;	@echo "Compiling ext modules"; \
-		for extdir in ext/*; do \
-		  test -d $$extdir || continue; \
-		  test -f $$extdir/MANIFEST || continue; \
-		  echo `basename $$extdir`; \
-		  ( cd $$extdir; ../../ruby ../extmk.rb; );\
-		done
+$(bindir)/ruby: extruby
+		$(INSTALL_PROGRAM) ruby $(bindir)/ruby
+		strip $(bindir)/ruby
 
-$(bindir)/$(PROGRAM): $(PROGRAM)
-	$(INSTALL_PROGRAM) $(PROGRAM) $(bindir)/$(PROGRAM)
-
-install: $(bindir)/$(PROGRAM)
+install:	$(bindir)/ruby
+		cd ext; ../miniruby ./extmk.rb install
+		$(INSTALL_DATA) lib/*.rb $(libdir)
 
 clean:;		@rm -f $(OBJS)
-		@for extdir in ext/*; do \
-		  test -d $$extdir || continue; \
-		  test -f $$extdir/MANIFEST || continue; \
-		  if test -f $$extdir/Makefile; then \
-		    ( cd $$extdir; make clean ); \
-		  fi; \
-		done
+		@rm -f ext/extinit.c ext/extinit.o
+		cd ext; ../ruby ./extmk.rb install
 
 realclean:	clean
-		@rm -f ext/extmk.rb
-		@rm -f core ruby *~ config.* Makefile
+		@rm -f Makefile ext/extmk.rb
+		@rm -f config.cache config.h config.log config.status
+		@rm -f core ruby miniruby *~
+
+test:;		@-./ruby sample/test.rb > ./ruby_test 2>&1;\
+		 if grep '^end of test' ./ruby_test > /dev/null; then \
+		   echo "test succeeded"; \
+		 else \
+	           grep '^sample/test.rb' ./ruby_test; \
+		   grep '^not' ./ruby_test; \
+	   	   echo "test failed";\
+		 fi;\
+		 rm -f ./ruby_test
 
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
@@ -107,11 +116,20 @@ realclean:	clean
 alloca.o: missing/alloca.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/alloca.c
 
+crypt.o: missing/crypt.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/crypt.c
+
+dup2.o: missing/dup2.c
+	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c missing/dup2.c
+
 memmove.o: missing/memmove.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/memmove.c
 
 mkdir.o: missing/mkdir.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/mkdir.c
+
+setenv.o: missing/setenv.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/setenv.c
 
 strerror.o: missing/strerror.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strerror.c
@@ -131,47 +149,49 @@ strtol.o: missing/strtol.c
 strtoul.o: missing/strtoul.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/strtoul.c
 
+nt.o: missing/nt.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c missing/nt.c
+
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
 ###
-parse.o : parse.y ruby.h defines.h config.h env.h node.h st.h ident.h regex.h 
+parse.o : parse.y ruby.h defines.h config.h env.h node.h st.h regex.h 
 ###
 array.o: array.c ruby.h config.h defines.h
 bignum.o: bignum.c ruby.h config.h defines.h
-class.o: class.c ruby.h config.h defines.h env.h node.h st.h
+class.o: class.c ruby.h config.h defines.h node.h st.h
 compar.o: compar.c ruby.h config.h defines.h
-cons.o: cons.c ruby.h config.h defines.h
 dir.o: dir.c ruby.h config.h defines.h
 dln.o: dln.c config.h defines.h dln.h
+dmyext.o: dmyext.c
+dummy.o: dummy.c config.h dln.c defines.h dln.h
 enum.o: enum.c ruby.h config.h defines.h
 error.o: error.c ruby.h config.h defines.h env.h
-etc.o: etc.c ruby.h config.h defines.h
-eval.o: eval.c ruby.h config.h defines.h ident.h env.h node.h st.h dln.h
-file.o: file.c ruby.h config.h defines.h io.h
+eval.o: eval.c ruby.h config.h defines.h env.h node.h sig.h st.h dln.h
+file.o: file.c ruby.h config.h defines.h io.h sig.h
 fnmatch.o: fnmatch.c config.h fnmatch.h
-gc.o: gc.c ruby.h config.h defines.h env.h st.h node.h
+gc.o: gc.c ruby.h config.h defines.h env.h st.h node.h re.h regex.h
 glob.o: glob.c config.h fnmatch.h
 hash.o: hash.c ruby.h config.h defines.h st.h
 inits.o: inits.c ruby.h config.h defines.h
-io.o: io.c ruby.h config.h defines.h io.h
+io.o: io.c ruby.h config.h defines.h io.h sig.h
 main.o: main.c
 math.o: math.c ruby.h config.h defines.h
 numeric.o: numeric.c ruby.h config.h defines.h env.h
-object.o: object.c ruby.h config.h defines.h env.h st.h
+object.o: object.c ruby.h config.h defines.h st.h
 pack.o: pack.c ruby.h config.h defines.h
-process.o: process.c ruby.h config.h defines.h st.h
+process.o: process.c ruby.h config.h defines.h sig.h st.h
 random.o: random.c ruby.h config.h defines.h
 range.o: range.c ruby.h config.h defines.h
 re.o: re.c ruby.h config.h defines.h re.h regex.h
 regex.o: regex.c config.h defines.h regex.h util.h
 ruby.o: ruby.c ruby.h config.h defines.h re.h regex.h dln.h
-signal.o: signal.c ruby.h config.h defines.h
+signal.o: signal.c ruby.h config.h defines.h sig.h
 sprintf.o: sprintf.c ruby.h config.h defines.h
 st.o: st.c config.h st.h
 string.o: string.c ruby.h config.h defines.h re.h regex.h
 struct.o: struct.c ruby.h config.h defines.h env.h
-tclglob.o: tclglob.c
 time.o: time.c ruby.h config.h defines.h
 util.o: util.c defines.h config.h util.h
-variable.o: variable.c ruby.h config.h defines.h env.h ident.h st.h
+variable.o: variable.c ruby.h config.h defines.h env.h st.h
 version.o: version.c ruby.h config.h defines.h version.h
