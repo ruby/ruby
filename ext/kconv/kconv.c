@@ -592,7 +592,7 @@ do_kconv(in, out, out_code, in_code)
     inptr = (unsigned char *)RSTRING(in)->ptr;	/* input buffer */
     inlen = RSTRING(in)->len;			/* input buffer size*/
     outptr = RSTRING(out)->ptr;			/* output buffer */
-    outsiz = RSTRING(in)->len;			/* output buffer size */
+    outsiz = RSTRING(out)->len;			/* output buffer size */
     outlen = 0;		/* current length of output string */
 
     if (inlen <= 0) {
@@ -1885,7 +1885,7 @@ kconv_tosjis(obj, src)
 /*
  * Character code detection - Algorithm described in:
  * Ken Lunde. `Understanding Japanese Information Processing'
- * Sebastopol, CA: O'Reilly & Associates.
+ * O'Reilly & Associates, Sebastopol, CA.
  */
 
 static VALUE

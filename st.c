@@ -354,16 +354,8 @@ st_delete_safe(table, key, value, never)
 	return 0;
     }
 
-    if (EQUAL(table, *key, ptr->key)) {
-	table->num_entries--;
-	*key = ptr->key;
-	if (value != 0) *value = ptr->record;
-	ptr->key = ptr->record = never;
-	return 1;
-    }
-
-    for(; ptr->next != 0; ptr = ptr->next) {
-	if (EQUAL(table, ptr->next->key, *key)) {
+    for(; ptr != 0; ptr = ptr->next) {
+	if (EQUAL(table, ptr->key, *key)) {
 	    table->num_entries--;
 	    *key = ptr->key;
 	    if (value != 0) *value = ptr->record;

@@ -1,3 +1,11 @@
+Thu Jul 15 12:09:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.2.6 (repacked).
+
+Wed Jul  7 18:27:41 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* st.c (st_delete_safe): was modifying wrong slot.
+
 Mon Jun 21 15:29:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.2.6 (1.2 final) released.
@@ -80,7 +88,7 @@ Mon Apr 19 18:56:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* regex.c (IS_A_LETTER): a byte sequence shorter than mbc should
 	  not match with \w etc.
 
-Fri Apr 16 21:40:43 1999  Nobuetsu Nokada  <gea02117@nifty.ne.jp>
+Fri Apr 16 21:40:43 1999  Nobuyoshi Nakada  <gea02117@nifty.ne.jp>
 
 	* io.c (f_backquote): pipe_open may return nil.
 
@@ -126,7 +134,7 @@ Fri Mar 12 12:27:55 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* parse.y (parse_regx): need not to push backslashes before
 	  escaped characters.
 
-Sun Mar  7 14:21:32 1999  IKARASHI Akira <ikarashi@itlb.te.noda.sut.ac.jp>
+Sun Mar  7 14:21:32 1999  IKARASHI Akira  <ikarashi@itlb.te.noda.sut.ac.jp>
 
 	* string.c (rb_str_index): wrong end point calculation.
 
@@ -221,7 +229,7 @@ Tue Jan 19 05:01:16 1999  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* array.c (beg_len): round range value too much.
 
-Mon Jan 18 13:02:27 1999  Kuroda Jun  <jkuro@dwe.co.j>
+Mon Jan 18 13:02:27 1999  Kuroda Jun  <jkuro@dwe.co.jp>
 
 	* hash.c (env_keys): strchr() may return NULL.
 
@@ -559,7 +567,7 @@ Sat Aug 29 16:31:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): mask \nnn over 256.
 
-Sat Aug 29 02:09:46 1998 1998  Koji Arai  <JCA02266@nifty.ne.jp>
+Sat Aug 29 02:09:46 1998  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* sprintf.c (f_sprintf): wrong buffer size check.
 
@@ -1093,7 +1101,7 @@ Thu May 14 14:03:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* random.c (f_rand): use drand48 if possible.
 
-Wed May 13 19:05:20 1998 1998  MAEDA shugo  <shugo@aianet.ne.jp>
+Wed May 13 19:05:20 1998  MAEDA shugo  <shugo@aianet.ne.jp>
 
 	* BeOS patches for io.c, error.c and config.guess.
 
