@@ -88,7 +88,7 @@ module URI
       # host          = hostname | IPv4address | IPv6reference (RFC 2732)
       HOST = "(?:#{HOSTNAME}|#{IPV4ADDR}|#{IPV6REF})"
       # port          = *digit
-      PORT = "\d*"
+      PORT = '\d*'
       # hostport      = host [ ":" port ]
       HOSTPORT = "#{HOST}(?::#{PORT})?"
 
