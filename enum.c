@@ -343,7 +343,11 @@ each_with_index_i(val, indexp)
     VALUE val;
     int *indexp;
 {
+#if 0
     rb_yield(rb_assoc_new(val, INT2FIX(*indexp)));
+#else
+    rb_yield(rb_ary_concat(val, INT2FIX(*indexp)));
+#endif
     (*indexp)++;
     return Qnil;
 }

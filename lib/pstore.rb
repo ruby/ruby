@@ -110,6 +110,7 @@ class PStore
 	@abort = false
       end
     ensure
+      @table = nil
       @transaction = false
     end
     value

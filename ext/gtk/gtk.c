@@ -6647,11 +6647,11 @@ idle()
     return Qtrue;
 }
 
-static void
+static VALUE
 exec_interval(proc)
     VALUE proc;
 {
-    rb_funcall(proc, id_call, 0);
+    return rb_funcall(proc, id_call, 0);
 }
 
 static VALUE
@@ -6660,8 +6660,8 @@ timeout_add(self, interval)
 {
     int id;
 
-    id = gtk_timeout_add_interp(NUM2INT(interval), exec_interval,
-				(gpointer)rb_f_lambda(), 0);
+    id = gtk_timeout_add(NUM2INT(interval), (GtkFunction)exec_interval,
+			 (gpointer)rb_f_lambda());
     return INT2FIX(id);
 }
 
@@ -6679,7 +6679,7 @@ idle_add(self)
 {
     int id;
 
-    id = gtk_idle_add_interp(exec_interval, (gpointer)rb_f_lambda(), 0);
+    id = gtk_idle_add((GtkFunction)exec_interval, (gpointer)rb_f_lambda());
     return INT2FIX(id);
 }
 

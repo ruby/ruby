@@ -1,8 +1,8 @@
 (J;;;(B (J-*-Emacs-Lisp-*-(B
 ;;;
-;;;  $Id: inf-ruby.el,v 1.4 1998/05/20 02:45:58 senda Exp $
-;;;  $Author: senda $
-;;;  $Date: 1998/05/20 02:45:58 $
+;;;  $Id$
+;;;  $Author$
+;;;  $Date$
 ;;;
 ;;; Inferior Ruby Mode - ruby process in a buffer.
 ;;;                      adapted from cmuscheme.el
@@ -34,7 +34,10 @@
 ;;;
 ;;; HISTORY
 ;;; senda -  8 Apr 1998: Created.
-;;;	 $Log: inf-ruby.el,v $
+;;;	 $Log$
+;;;	 Revision 1.1.2.1  1998/12/16 07:30:36  matz
+;;;	 first public release of 1.1d (pre1.2) series
+;;;
 ;;;	 Revision 1.4  1998/05/20 02:45:58  senda
 ;;;	 default program to irb
 ;;;

@@ -1345,7 +1345,7 @@ rb_str_inspect(str)
 	    CHECK(1);
 	    *b++ = c;
 	}
-	else if (c == '"' || c == '\''|| c == '\\') {
+	else if (c == '"'|| c == '\\') {
 	    CHECK(2);
 	    *b++ = '\\';
 	    *b++ = c;
@@ -1414,7 +1414,7 @@ rb_str_dump(str)
     while (p < pend) {
 	char c = *p++;
 	switch (c) {
-	  case '"':  case '\'': case '\\':
+	  case '"':  case '\\':
 	  case '\n': case '\r':
 	  case '\t': case '\f':
 	  case '\013': case '\007': case '\033': 
@@ -1440,7 +1440,7 @@ rb_str_dump(str)
     while (p < pend) {
 	char c = *p++;
 
-	if (c == '"' || c == '\'' || c == '\\') {
+	if (c == '"' || c == '\\') {
 	    *q++ = '\\';
 	    *q++ = c;
 	}

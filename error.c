@@ -274,10 +274,7 @@ exc_initialize(argc, argv, exc)
 {
     VALUE mesg;
 
-    if (rb_scan_args(argc, argv, "01", &mesg) == 0) {
-	mesg = rb_str_new(0, 0);
-    }
-    else {
+    if (rb_scan_args(argc, argv, "01", &mesg) == 1) {
 	STR2CSTR(mesg);		/* ensure mesg can be converted to String */
     }
     rb_iv_set(exc, "mesg", mesg);
@@ -308,7 +305,10 @@ static VALUE
 exc_to_s(exc)
     VALUE exc;
 {
-    return rb_iv_get(exc, "mesg");
+    VALUE mesg = rb_iv_get(exc, "mesg");
+
+    if (NIL_P(mesg)) return rb_class_path(CLASS_OF(exc));
+    return mesg;
 }
 
 static VALUE

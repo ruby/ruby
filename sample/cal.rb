@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 
 # cal.rb (bsd compatible version): Written by Tadayoshi Funaba 1998
-# $Id: bsdcal.rb,v 1.1 1998/06/01 12:53:01 tadf Exp $
+# $Id: bsdcal.rb,v 1.2 1998/12/01 13:47:40 tadf Exp $
 
 require 'date2'
 
@@ -59,7 +59,7 @@ def zip(xs)
   until xs.empty?
     ln = (if $jd then l,    r, *xs = xs; [l,    r]
 		 else l, c, r, *xs = xs; [l, c, r] end).
-      collect{|x| x.split(/\n/no)}
+      collect{|x| x.split(/\n/no, -1)}
     8.times do
       yr << ln.collect{|x|
 	x.shift.ljust((($w + 1) * 7) - 1)}.join('  ') << "\n"

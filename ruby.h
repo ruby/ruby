@@ -163,11 +163,11 @@ VALUE rb_int2inum _((long));
 #define T_DATA   0x22
 #define T_MATCH  0x23
 
-#define T_VARMAP 0xfd
-#define T_SCOPE  0xfe
-#define T_NODE   0xff
+#define T_VARMAP 0x7d
+#define T_SCOPE  0x7e
+#define T_NODE   0x7f
 
-#define T_MASK   0xff
+#define T_MASK   0x7f
 
 #define BUILTIN_TYPE(x) (((struct RBasic*)(x))->flags & T_MASK)
 
@@ -271,6 +271,7 @@ struct RHash {
 
 struct RFile {
     struct RBasic basic;
+    struct st_table *iv_tbl;
     struct OpenFile *fptr;
 };
 
@@ -329,9 +330,10 @@ struct RBignum {
 #define RFILE(obj)   (R_CAST(RFile)(obj))
 
 #define FL_SINGLETON FL_USER0
-#define FL_MARK      (1<<8)
-#define FL_FINALIZE  (1<<9)
-#define FL_TAINT     (1<<10)
+#define FL_MARK      (1<<7)
+#define FL_FINALIZE  (1<<8)
+#define FL_TAINT     (1<<9)
+#define FL_EXIVAR    (1<<10)
 
 #define FL_USHIFT    11
 

@@ -392,6 +392,10 @@ rb_gc_mark(ptr)
 
     obj->as.basic.flags |= FL_MARK;
 
+    if (FL_TEST(obj, FL_EXIVAR)) {
+	return rb_mark_generic_ivar((VALUE)obj);
+    }
+
     switch (obj->as.basic.flags & T_MASK) {
       case T_NIL:
       case T_FIXNUM:
@@ -616,7 +620,7 @@ rb_gc_mark(ptr)
 
 #define MIN_FREE_OBJ 512
 
-static void obj_free();
+static void obj_free _((VALUE));
 
 static void
 gc_sweep()
@@ -693,6 +697,10 @@ obj_free(obj)
     if (need_call_final && FL_TEST(obj, FL_FINALIZE)) {
 	run_final(obj);
     }
+    if (FL_TEST(obj, FL_EXIVAR)) {
+	rb_free_generic_ivar((VALUE)obj);
+    }
+
     switch (RANY(obj)->as.basic.flags & T_MASK) {
       case T_OBJECT:
 	if (RANY(obj)->as.object.iv_tbl) {
@@ -871,10 +879,13 @@ rb_gc()
     for (list = Global_List; list; list = list->next) {
 	rb_gc_mark(*list->varptr);
     }
-
     rb_gc_mark_global_tbl();
+
     mark_tbl(rb_class_tbl);
     rb_gc_mark_trap_list();
+
+    /* mark generic instance variables for special constants */
+    rb_mark_generic_ivar_tbl();
 
     gc_sweep();
     dont_gc--;
@@ -1070,6 +1081,7 @@ id2ref(obj, id)
 {
     unsigned long ptr = NUM2UINT(id);
 
+    rb_secure(4);
     if (FIXNUM_P(ptr)) return (VALUE)ptr;
     if (ptr == Qtrue) return Qtrue;
     if (ptr == Qfalse) return Qfalse;

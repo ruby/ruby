@@ -1,3 +1,68 @@
+Wed Dec 16 16:28:31 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* experimental version 1.1d0 (pre1.2) released.
+
+Wed Dec 16 10:43:34 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_search): bound check before calling re_match().
+
+Tue Dec 15 13:59:01 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* error.c (exc_to_s): returns class name for unset mesg.
+
+	* error.c (exc_initialize): do not initialize @mesg by "".
+
+	* parse.y (nextc): __END__ should handle CR+LF newlines.
+
+Wed Dec  9 13:37:12 1998  MAEDA shugo  <shugo@aianet.ne.jp>
+
+	* pack.c (encodes): use buffering for B-encoding.
+
+	* pack.c (pack_pack): Q-encoding by 'M'.
+
+Tue Dec  8 14:10:00 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (generic_ivar_get): any object can have instance
+	  variables now.  great improvement.
+
+	* variable.c (rb_name_class): do not set __classpath__ by default,
+	  use __classid__ instead.
+
+Mon Dec  7 22:08:22 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.h (struct RFile): IO objects can have instance variables now.
+
+	* parse.y (primary): allows `def obj::foo; .. end'.
+
+Mon Dec  7 18:24:50 1998  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* ruby.c (set_arg0): $0 supprt for HP-UX.
+
+Mon Dec  7 01:30:28 1998  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
+
+	* dln.c (dln_strerror): better error messages on win32.
+
+Sat Dec  5 23:27:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (here_document): indentable here-doc delimiter by
+	  `<<-'.  Proposed by Clemens <c.hintze@gmx.net>.  Thanks.
+
+Thu Dec  3 16:50:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/extmk.rb.in (realclean): trouble on install.
+
+Sun Nov 29 22:25:39 1998  Takaaki Tateishi  <ttate@jaist.ac.jp>
+
+	* process.c (f_exec): check number of argument.
+
+Wed Nov 25 13:07:12 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (yycompile): reduce known memory leak (hard to remove).
+
+Thu Nov 26 17:27:30 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c9 released.
+
 Wed Nov 25 03:41:21 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* st.c (st_init_table_with_size): round size up to prime number.
@@ -20,6 +85,14 @@ Sat Nov 21 23:27:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_dup): do not copy additional data (STR_NO_ORIG).
 
+Sat Nov 21 18:44:06 1998  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* time.c (time_s_now): had memory leak.
+
+	* ext/md5/md5init.c (md5_new): had memory leak.
+
+	* ext/md5/md5init.c (md5_clone): ditto.
+
 Fri Nov 20 23:23:23 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* lib/delegate.rb: do not propagate hash and eql?.
@@ -34,14 +107,14 @@ Thu Nov 19 01:40:52 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): actual rest arguments extended arrays too much.
 
-Wed Nov 18 10:48:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
-
-	* io.c (read_all): SEGV on large files.
-
 Wed Nov 18 14:30:24 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* class.c (rb_define_global_function): global functions now be
 	  module function of the Kernel.
+
+Wed Nov 18 10:48:09 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (read_all): SEGV on large files.
 
 Tue Nov 17 18:11:20 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

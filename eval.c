@@ -97,41 +97,6 @@ rb_clear_cache()
     }
 }
 
-static int cache_conflict;
-static int eval_called;
-
-static int
-count_cent()
-{
-    struct cache_entry *ent, *end;
-    int n = 0, n2 = 0;
-    int p = 0;
-
-    fprintf(stderr, "\n|");
-    ent = cache; end = ent + CACHE_SIZE;
-    while (ent < end) {
-	fprintf(stderr, (ent->klass != 0)?"*":" ");
-	p++;
-	if (p % 80 == 0) {
-	    break;
-	}
-	ent++;
-    }
-    fprintf(stderr, "|\n|");
-    p = 0; ent = cache; 
-    while (ent < end) {
-	if (ent->klass != 0) {n++; n2++;}
-	p++;
-	if (p % 24 == 0) {
-	    fprintf(stderr, "%c", n2?(n2+'0'):' ');
-	    n2 = 0;
-	}
-	ent++;
-    }
-    fprintf(stderr, "|\n");
-    return n;
-}
-
 static void
 rb_clear_cache_by_id(id)
     ID id;
@@ -433,7 +398,10 @@ static struct SCOPE *top_scope;
     _frame.argc = 0;			\
     ruby_frame = &_frame;		\
 
-#define POP_FRAME()  ruby_frame = _frame.prev; }
+#define POP_FRAME()  			\
+    ruby_sourcefile = _frame.file;	\
+    ruby_sourceline = _frame.line;	\
+    ruby_frame = _frame.prev; }
 
 struct BLOCK {
     NODE *var;
@@ -873,7 +841,9 @@ error_print()
 
 	ep = RARRAY(errat);
 	for (i=1; i<ep->len; i++) {
-	    fprintf(stderr, "\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
+	    if (TYPE(ep->ptr[i]) == T_STRING) {
+		fprintf(stderr, "\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
+	    }
 	    if (i == TRACE_HEAD && ep->len > TRACE_MAX) {
 		fprintf(stderr, "\t ... %d levels...\n",
 			ep->len - TRACE_HEAD - TRACE_TAIL);
@@ -1016,11 +986,6 @@ ruby_run()
 #endif
 	exec_end_proc();
 	rb_gc_call_finalizer_at_exit();
-#if 1
-	fprintf(stderr, "%d/%d(%d)\n", count_cent(), CACHE_SIZE, cache_conflict);
-#else
-	fprintf(stderr, "rb_eval() called %d times\n", eval_called);
-#endif
     }
     else {
 	ex = state;
@@ -1665,8 +1630,6 @@ rb_eval(self, node)
 #endif
 
 #define RETURN(v) { result = (v); goto finish; }
-
-    eval_called++;
 
   again:
     if (!node) RETURN(Qnil);
@@ -3030,11 +2993,11 @@ rb_f_raise(argc, argv)
     }
 
     if (!NIL_P(mesg)) {
-	if (n >= 2) {
-	    mesg = rb_funcall(etype, rb_intern("new"), 1, mesg);
-	}
-	else if (TYPE(mesg) == T_STRING) {
+	if (n == 1 && TYPE(mesg) == T_STRING) {
 	    mesg = rb_exc_new3(rb_eRuntimeError, mesg);
+	}
+	else if (n == 1 || n == 2) {
+	    mesg = rb_funcall(etype, rb_intern("new"), n-1, mesg);
 	}
 	if (!rb_obj_is_kind_of(mesg, rb_eException)) {
 	    rb_raise(rb_eTypeError, "exception object expected");
@@ -3835,21 +3798,12 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	noex  = ent->noex;
 	body  = ent->method;
     }
-    else {
-    if (ent->mid) {
-	fprintf(stderr, "%s#%s -> %s#%s (%d)\n", rb_class2name(ent->klass),
-		                                 rb_id2name(ent->mid),
-		                                 rb_class2name(klass),
-		                                 rb_id2name(id), ent-cache);
-	cache_conflict++;
-    }
-    if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
+    else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
 	if (scope == 3) {
 	    rb_raise(rb_eNameError, "super: no superclass method `%s'",
 		     rb_id2name(mid));
 	}
 	return rb_undefined(recv, mid, argc, argv, scope==2?CSTAT_VCALL:0);
-    }
     }
 
     /* receiver specified form for private method */
@@ -4537,7 +4491,7 @@ rb_f_require(obj, fname)
     VALUE obj, fname;
 {
     char *ext, *file, *feature, *buf; /* OK */
-    VALUE load;
+    volatile VALUE load;
 
     rb_secure(4);
     Check_SafeStr(fname);
@@ -5510,7 +5464,7 @@ method_call(argc, argv, method)
     Data_Get_Struct(method, struct METHOD, data);
     PUSH_ITER(rb_iterator_p()?ITER_PRE:ITER_NOT);
     PUSH_TAG(PROT_NONE);
-    if (FL_TEST(data->recv, FL_TAINT)) {
+    if (FL_TEST(data->recv, FL_TAINT) || FL_TEST(method, FL_TAINT)) {
 	FL_SET(method, FL_TAINT);
 	if (safe_level < 4) safe_level = 4;
     }
@@ -6543,6 +6497,34 @@ static VALUE rb_thread_raise _((int, VALUE*, VALUE));
 
 #define SCOPE_SHARED  FL_USER1
 
+#if defined(HAVE_SETITIMER) && !defined(__BOW__)
+static int thread_init = 0;
+
+void
+thread_start_timer()
+{
+    struct itimerval tval;
+
+    if (!thread_init) return;
+    tval.it_interval.tv_sec = 0;
+    tval.it_interval.tv_usec = 100000;
+    tval.it_value = tval.it_interval;
+    setitimer(ITIMER_VIRTUAL, &tval, NULL);
+}
+
+void
+thread_stop_timer()
+{
+    struct itimerval tval;
+
+    if (!thread_init) return;
+    tval.it_interval.tv_sec = 0;
+    tval.it_interval.tv_usec = 0;
+    tval.it_value = tval.it_interval;
+    setitimer(ITIMER_VIRTUAL, &tval, NULL);
+}
+#endif
+
 static VALUE
 rb_thread_create_0(fn, arg, klass)
     VALUE (*fn)();
@@ -6554,11 +6536,7 @@ rb_thread_create_0(fn, arg, klass)
     int state;
 
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
-    static init = 0;
-
-    if (!init) {
-	struct itimerval tval;
-
+    if (!thread_init) {
 #ifdef POSIX_SIGNAL
 	posix_signal(SIGVTALRM, catch_timer);
 	posix_signal(SIGALRM, catch_timer);
@@ -6567,11 +6545,8 @@ rb_thread_create_0(fn, arg, klass)
 	signal(SIGALRM, catch_timer);
 #endif
 
-	tval.it_interval.tv_sec = 0;
-	tval.it_interval.tv_usec = 100000;
-	tval.it_value = tval.it_interval;
-	setitimer(ITIMER_VIRTUAL, &tval, NULL);
-	init = 1;
+	thread_init = 1;
+	thread_start_timer();
     }
 #endif
 

@@ -1044,7 +1044,7 @@ static VALUE
 fix_rev(num)
     VALUE num;
 {
-    unsigned long val = FIX2UINT(num);
+    unsigned long val = FIX2ULONG(num);
 
     val = ~val;
     return rb_int2inum(val);

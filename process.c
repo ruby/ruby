@@ -212,28 +212,9 @@ rb_f_waitpid(obj, vpid, vflags)
 
 char *strtok();
 
-#if defined(USE_THREAD) && defined(HAVE_SETITIMER)
-static void
-before_exec()
-{
-    struct itimerval tval;
-
-    tval.it_interval.tv_sec = 0;
-    tval.it_interval.tv_usec = 0;
-    tval.it_value = tval.it_interval;
-    setitimer(ITIMER_VIRTUAL, &tval, NULL);
-}
-
-static void
-after_exec()
-{
-    struct itimerval tval;
-
-    tval.it_interval.tv_sec = 0;
-    tval.it_interval.tv_usec = 100000;
-    tval.it_value = tval.it_interval;
-    setitimer(ITIMER_VIRTUAL, &tval, NULL);
-}
+#if defined(THREAD) && defined(HAVE_SETITIMER)
+#define before_exec() thread_stop_timer()
+#define after_exec() thread_start_timer()
 #else
 #define before_exec()
 #define after_exec()
@@ -503,6 +484,9 @@ rb_f_exec(argc, argv)
     VALUE prog = 0;
     int i;
 
+    if (argc == 0) {
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
 	    rb_raise(rb_eArgError, "wrong first argument");
@@ -835,6 +819,20 @@ proc_setpgrp(argc, argv)
 }
 
 static VALUE
+proc_getpgid(obj, pid)
+    VALUE obj, pid;
+{
+#ifdef HAVE_GETPGID
+    int i;
+
+    i = getpgid(NUM2INT(pid));
+    return INT2NUM(i);
+#else
+    rb_notimplement();
+#endif
+}
+
+static VALUE
 proc_setpgid(obj, pid, pgrp)
     VALUE obj, pid, pgrp;
 {
@@ -1085,7 +1083,7 @@ Init_process()
     rb_define_module_function(rb_mProcess, "getpriority", proc_getpriority, 2);
     rb_define_module_function(rb_mProcess, "setpriority", proc_setpriority, 3);
 
-#ifdef PRIO_PROCESS
+#ifdef HAVE_GETPRIORITY
     rb_define_const(rb_mProcess, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
     rb_define_const(rb_mProcess, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
     rb_define_const(rb_mProcess, "PRIO_USER", INT2FIX(PRIO_USER));

@@ -131,6 +131,11 @@ lib/thwait.rb
 lib/timeout.rb
 lib/tracer.rb
 lib/weakref.rb
+misc/README
+misc/inf-ruby.el
+misc/ruby-mode.el
+misc/rubydb2x.el
+mics/rubydb3x.el
 missing/alloca.c
 missing/crypt.c
 missing/dir.h
@@ -174,7 +179,6 @@ sample/from.rb
 sample/fullpath.rb
 sample/getopts.test
 sample/goodfriday.rb
-sample/inf-ruby.el
 sample/less.rb
 sample/list.rb
 sample/list2.rb
@@ -194,9 +198,6 @@ sample/rcs.awk
 sample/rcs.dat
 sample/rcs.rb
 sample/regx.rb
-sample/ruby-mode.el
-sample/rubydb2x.el
-sample/rubydb3x.el
 sample/sieve.rb
 sample/svr.rb
 sample/test.rb

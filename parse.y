@@ -1150,7 +1150,7 @@ primary		: literal
 		        local_pop();
 			cur_mid = 0;
 		    }
-		| kDEF singleton '.' {lex_state = EXPR_FNAME;} fname
+		| kDEF singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
 			value_expr($2);
 			in_single++;
@@ -1284,6 +1284,7 @@ method_call	: operation '(' opt_call_args ')'
 		    {
 			value_expr($1);
 			$$ = new_call($1, $3, 0);
+		        fixpos($$, $1);
 		    }
 		| primary tCOLON2 operation '(' opt_call_args ')'
 		    {
@@ -1557,6 +1558,9 @@ operation	: tIDENTIFIER
 		| tCONSTANT
 		| tFID
 
+dot_or_colon	: '.'
+		| tCOLON2
+
 opt_terms	: /* none */
 		| terms
 
@@ -1723,6 +1727,20 @@ rb_compile_file(f, file, start)
     return yycompile(strdup(f));
 }
 
+
+static void
+normalize_newline(line)
+    VALUE line;
+{
+    if (RSTRING(line)->len >= 2 &&
+	RSTRING(line)->ptr[RSTRING(line)->len-1] == '\n' &&
+	RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
+    {
+	RSTRING(line)->ptr[RSTRING(line)->len-2] = '\n';
+	RSTRING(line)->len--;
+    }
+}
+
 static int
 nextc()
 {
@@ -1737,19 +1755,20 @@ nextc()
 		ruby_sourceline = heredoc_end+1;
 		heredoc_end = 0;
 	    }
+	    normalize_newline(v);
 	    while (RSTRING(v)->len >= 2 &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-1] == '\n' &&
 		   RSTRING(v)->ptr[RSTRING(v)->len-2] == '\\') {
 		VALUE v2 = (*lex_gets)(lex_input);
 
 		if (!NIL_P(v2)) {
+		    normalize_newline(v2);
 		    rb_str_cat(v, RSTRING(v2)->ptr, RSTRING(v2)->len);
 		}
 	    }
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
-	    if (RSTRING(v)->len == 8 &&
-		strncmp(lex_pbeg, "__END__", 7) == 0) {
+	    if (strncmp(lex_pbeg, "__END__", 7) == 0 && lex_pbeg[7] == '\n') {
 		lex_lastline = 0;
 		return -1;
 	    }
@@ -2220,11 +2239,12 @@ parse_quotedword(term, paren)
 char *strdup();
 
 static int
-here_document(term)
+here_document(term, indent)
     char term;
+    int indent;
 {
     int c;
-    char *eos;
+    char *eos, *p;
     int len;
     VALUE str, line;
     char *save_beg, *save_end, *save_lexp;
@@ -2273,10 +2293,15 @@ here_document(term)
 	    free(eos);
 	    return 0;
 	}
+        normalize_newline(line);
 	ruby_sourceline++;
-	if (strncmp(eos, RSTRING(line)->ptr, len) == 0 &&
-	    (RSTRING(line)->ptr[len] == '\n' ||
-	     RSTRING(line)->ptr[len] == '\r')) {
+	p = RSTRING(line)->ptr;
+	if (indent) {
+	    while (*p && (*p == ' ' || *p == '\t')) {
+		p++;
+	    }
+	}
+	if (strncmp(eos, p, len) == 0 && p[len] == '\n') {
 	    break;
 	}
 
@@ -2486,8 +2511,13 @@ retry:
 	    lex_state != EXPR_END && lex_state != EXPR_CLASS &&
 	    (lex_state != EXPR_ARG || space_seen)) {
  	    int c2 = nextc();
+	    int indent = 0;
+	    if (c2 == '-') {
+		indent = 1;
+		c2 = nextc();
+	    }
 	    if (!ISSPACE(c2) && (strchr("\"'`", c2) || is_identchar(c2))) {
-		return here_document(c2);
+		return here_document(c2, indent);
 	    }
 	    pushback(c2);
 	}

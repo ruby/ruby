@@ -84,37 +84,28 @@ There are faster check-macros for fixnums and nil.
 
 1.3 Convert VALUE into C data
 
-データタイプがT_NIL, T_FALSE, T_TRUEである時，データはそれぞ
-れnil, false, trueです．このデータタイプのオブジェクトはひと
-つずつしか存在しません．
+The data for type T_NIL, T_FALSE, T_TRUE are nil, true, false
+respectively.  They are singletons for the data type.
 
-データタイプがT_FIXNUMの時，これは31bitのサイズを持つ整数で
-す．FIXNUMをCの整数に変換するためにはマクロ「FIX2INT()」を使
-います．それから，FIXNUMに限らずRubyのデータを整数に変換する
-「NUM2INT()」というマクロがあります．このマクロはデータタイ
-プのチェック無しで使えます(整数に変換できない場合には例外が
-発生する)．
+The T_FIXNUM data is the 31bit length fixed integer (63bit length on
+some machines), which can be conver to the C integer by using
+FIX2INT() macro.  There also be NUM2INT() which converts any Ruby
+numbers into C integer.  The NUM2INT() macro includes type check, so
+the exception will be raised if conversion failed.
 
-それ以外のデータタイプは対応するCの構造体があります．対応す
-る構造体のあるVALUEはそのままキャスト(型変換)すれば構造体の
-ポインタに変換できます．
+Other data types have corresponding C structures, e.g. struct RArray
+for T_ARRAY etc.  VALUE of the type which has corresponding structure
+can be cast to retrieve the pointer to the struct.  The casting macro
+RXXXX for each data type like RARRAY(obj).  see "ruby.h".
 
-構造体は「struct RXxxxx」という名前でruby.hで定義されていま
-す．例えば文字列は「struct RString」です．実際に使う可能性が
-あるのは文字列と配列くらいだと思います．
+For example, `RSTRING(size)->len' is the way to get the size of the
+Ruby String object.  The allocated region can be accessed by
+`RSTRING(str)->ptr'.  For arrays, `RARRAY(ary)->len' and
+`RARRAY(ary)->ptr' respectively.
 
-ruby.hでは構造体へキャストするマクロも「RXXXXX()」(全部大文
-字にしたもの)という名前で提供されています(例: RSTRING())．
-
-例えば，文字列strの長さを得るためには「RSTRING(str)->len」と
-し，文字列strをchar*として得るためには「RSTRING(str)->ptr」
-とします．配列の場合には，それぞれ「RARRAT(str)->len」，
-「RARRAT(str)->ptr」となります．
-
-Rubyの構造体を直接アクセスする時に気をつけなければならないこ
-とは，配列や文字列の構造体の中身は参照するだけで，直接変更し
-ないことです．直接変更した場合，オブジェクトの内容の整合性が
-とれなくなって，思わぬバグの原因になります．
+Notice: Do not change the value of the structure directly, unless you
+are responsible about the result.  It will be the cause of interesting
+bugs.
 
 1.4 Convert C data into VALUE
 
@@ -150,12 +141,9 @@ INT2NUM()は整数がFIXNUMの範囲に収まらない場合，Bignumに変換
 
 1.5 Manipulate Ruby data
 
-先程も述べた通り，Rubyの構造体をアクセスする時に内容の更新を
-行うことは勧められません．で，Rubyのデータを操作する時には
-Rubyが用意している関数を用いてください．
-
-ここではもっとも使われるであろう文字列と配列の生成/操作を行
-い関数をあげます(全部ではないです)．
+As I already told, it is not recommended to modify object's internal
+structure.  To manipulate objects, use functions supplied by Ruby
+interpreter.  Useful functions are listed below (not all):
 
  String funtions
 
@@ -213,160 +201,148 @@ Rubyで提供されている関数を使えばRubyインタプリタに新しい機能
 を追加することができます．Rubyでは以下の機能を追加する関数が
 提供されています．
 
- * クラス，モジュール
- * メソッド，特異メソッドなど
- * 定数
+ * Classes, Modules
+ * Methods, Singleton Methods
+ * Constants
 
 では順に紹介します．
 
 2.1.1 Class/module definition
 
-クラスやモジュールを定義するためには，以下の関数を使います．
+To define class or module, use functions below:
 
   VALUE rb_define_class(char *name, VALUE super)
   VALUE rb_define_module(char *name)
 
-これらの関数は新しく定義されたクラスやモジュールを返します．
-メソッドや定数の定義にこれらの値が必要なので，ほとんどの場合
-は戻り値を変数に格納しておく必要があるでしょう．
+These functions return the newly created class ot module.  You may
+want to save this reference into the variable to use later.
 
 2.1.2 Method/singleton method definition
 
-メソッドや特異メソッドを定義するには以下の関数を使います．
+To define methods or singleton methods, use functions below:
 
   void rb_define_method(VALUE class, char *name, 
 		        VALUE (*func)(), int argc)
 
   void rb_define_singleton_method(VALUE object, char *name, 
-			         VALUE (*func)(), int argc)
+			          VALUE (*func)(), int argc)
 
+The `argc' represents the number of the arguments to the C function,
+which must be less than 17.  But I believe you don't need that much. :-)
 
-念のため説明すると「特異メソッド」とは，その特定のオブジェク
-トに対してだけ有効なメソッドです．RubyではよくSmalltalkにお
-けるクラスメソッドとして，クラスに対する特異メソッドが使われ
-ます．
+If `argc' is negative, it specifies calling sequence, not number of
+the arguments.  
 
-これらの関数の argcという引数はCの関数へ渡される引数の数(と
-形式)を決めます．argcが正の時は関数に引き渡す引数の数を意味
-します．16個以上の引数は使えません(が，要りませんよね，そん
-なに)．
+If argc is -1, the function will be called like:
 
-argcが負の時は引数の数ではなく，形式を指定したことになります．
-argcが-1の時は引数を配列に入れて渡されます．argcが-2の時は引
-数はRubyの配列として渡されます．
+  VALUE func(int argc, VALUE *argv, VALUE obj)
 
-メソッドを定義する関数はもう二つあります．ひとつはprivateメ
-ソッドを定義する関数で，引数はrb_define_method()と同じです．
+where argc is the actual number of arguments, argv is the C array of
+the arguments, and obj is the receiver.
+
+if argc is -2, the arguments are passed in Ruby array. The function
+will be called like:
+
+  VALUE func(VALUE obj, VALUE args)
+
+where obj is the receiver, and args is the Ruby array containing
+actual arguments.
+
+There're two more functions to define method.  One is to define
+private method:
 
   void rb_define_private_method(VALUE class, char *name, 
 			        VALUE (*func)(), int argc)
 
-privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
-ドです．
-
-もうひとつはモジュール関数を定義するものです．モジュール関数
-とはモジュールの特異メソッドであり，同時にprivateメソッドで
-もあるものです．例をあげるとMathモジュールのsqrt()などがあげ
-られます．このメソッドは
+The other is to define module function, which is private AND singleton
+method of the module.  For example, sqrt is the module function
+defined in Math module.  It can be call in the form like:
 
   Math.sqrt(4)
 
-という形式でも
+or
 
   include Math
   sqrt(4)
 
-という形式でも使えます．モジュール関数を定義する関数は以下の
-通りです．
+To define module function
 
   void rb_define_module_function(VALUE module, char *name, 
 				 VALUE (*func)(), int argc)
 
-関数的メソッド(Kernelモジュールのprivaet method)を定義するた
-めの関数は以下の通りです．
+Oh, in addition, function-like method, which is private method defined
+in Kernel module, can be defined using:
 
   void rb_define_global_function(char *name, VALUE (*func)(), int argc)
 
 
 2.1.3 Constant definition
 
-拡張モジュールが必要な定数はあらかじめ定義しておいた方が良い
-でしょう．定数を定義する関数は二つあります．
+We have 2 functions to define constants:
 
   void rb_define_const(VALUE class, char *name, VALUE val)
   void rb_define_global_const(char *name, VALUE val)
 
-前者は特定のクラス/モジュールに属する定数を定義するもの，後
-者はグローバルな定数を定義するものです．
+The former is to define constant under specified class/module.  The
+latter is to define global constant.
 
 2.2 Use Ruby features from C
 
-既に『1.5 Rubyのデータを操作する』で一部紹介したような関数を
-使えば，Rubyの機能を実現している関数を直接呼び出すことが出来
-ます．
+There are several ways to invoke Ruby's features from C code.
 
-# このような関数の一覧表はいまのところありません．ソースを見
-# るしかないですね．
+2.2.1 Evaluate Ruby Program in String
 
-それ以外にもRubyの機能を呼び出す方法はいくつかあります．
-
-2.2.1 Rubyのプログラムをevalする
-
-CからRubyの機能を呼び出すもっとも簡単な方法として，文字列で
-与えられたRubyのプログラムを評価する関数があります．
+Easiest way to call Ruby's function from C program is to evaluate the
+string as Ruby program.  This function will do the job.
 
   VALUE rb_eval_string(char *str)
 
-この評価は現在の環境で行われます．つまり，現在のローカル変数
-などを受け継ぎます．
+Evaluation is done under current context, thus current local variables
+of the innermost method (which is defined by Ruby) can be accessed.
 
 2.2.2 ID or Symbol
 
-Cから文字列を経由せずにRubyのメソッドを呼び出すこともできま
-す．その前に，Rubyインタプリタ内でメソッドや変数名を指定する
-時に使われているIDについて説明しておきましょう．
+You can invoke methods directly, without parsing the string.  First I
+need to explain about symbols (which data type is ID).  ID is the
+integer number to represent Ruby's identifiers such as variable names.
+It can be accessed from Ruby in the form like:
 
-IDとは変数名，メソッド名を表す整数です．Rubyの中では
+ :Identifier
 
- :識別子
-
-でアクセスできます．Cからこの整数を得るためには関数
+You can get the symbol value from string within C code, by using
 
   rb_intern(char *name)
 
-を使います．また一文字の演算子はその文字コードがそのままシン
-ボルになっています．
+In addition, the symbols for one character operators (e.g +) is the
+code for that character.
 
 2.2.3 Invoke Ruby method from C
 
-Cから文字列を経由せずにRubyのメソッドを呼び出すためには以下
-の関数を使います．
+To invoke methods directly, you can use the function below
 
   VALUE rb_funcall(VALUE recv, ID mid, int argc, ...)
 
-この関数はオブジェクトrecvのmidで指定されるメソッドを呼び出
-します．
+This function invokes the method of the recv, which name is specified
+by the symbol mid.
 
-2.2.4 変数/定数を参照/更新する
+2.2.4 Accessing the variables and constants
 
 Cから関数を使って参照・更新できるのは，クラス定数，インスタ
 ンス変数です．大域変数は一部のものはCの大域変数としてアクセ
 スできます．ローカル変数を参照する方法は公開していません．
 
-オブジェクトのインスタンス変数を参照・更新する関数は以下の通
-りです．
+The functions to access/modify instance variables are below:
 
   VALUE rb_ivar_get(VALUE obj, ID id)
   VALUE rb_ivar_set(VALUE obj, ID id, VALUE val)
 
-idはrb_intern()で得られるものを使ってください．
+id must be the symbol, which can be retrieved by rb_intern().
 
-クラス定数を参照するには以下の関数を使ってください．
+To access the constants of the class/module:
 
   VALUE rb_const_get(VALUE obj, ID id)
 
-クラス定数を新しく定義するためには『2.1.3 定数定義』で紹介さ
-れている関数を使ってください．
+See 2.1.3 for defining new constant.
 
 3. Informatin sharing between Ruby and C
 
@@ -477,7 +453,7 @@ Cの構造体へのポインタは変数svalに代入されます．
 
 4．Example - Create dbm module
 
-ここまでの説明でとりあえず拡張モジュールは作れるはずです．
+ここまでの説明でとりあえず拡張ライブラリは作れるはずです．
 Rubyのextディレクトリにすでに含まれているdbmモジュールを例に
 して段階的に説明します．
 
@@ -485,39 +461,30 @@ Rubyのextディレクトリにすでに含まれているdbmモジュールを例に
 
   % mkdir ext/dbm
 
-Rubyを展開したディレクトリの下，extディレクトリの中に拡張モ
-ジュール用のディレクトリを作ります．名前は適当に選んで構いま
-せん．
+Make a directory for the extension library under ext directory.
 
 (2) create MANIFEST file
 
   % cd ext/dbm
   % touch MANIFEST
 
-拡張モジュールのディレクトリの下にはMANIFESTというファイルが
-必要なので，とりあえず空のファイルを作っておきます．後でこの
-ファイルには必要なファイル一覧が入ることになります．
-
-MANIFESTというファイルは，makeの時にディレクトリが拡張モジュー
-ルを含んでいるかどうか判定するために使われれています．
+There should be MANIFEST file in the directory for the extension
+library.  Make empty file now.
 
 (3) design the library
 
-まあ，当然なんですけど，どういう機能を実現するかどうかまず設
-計する必要があります．どんなクラスをつくるか，そのクラスには
-どんなメソッドがあるか，クラスが提供する定数などについて設計
-します．dbmクラスについてはext/dbm.docを参照してください．
+You need to design the library features, before making it.
 
 (4) write C code.
 
-拡張モジュール本体となるC言語のソースを書きます．C言語のソー
+拡張ライブラリ本体となるC言語のソースを書きます．C言語のソー
 スがひとつの時には「モジュール名.c」を選ぶと良いでしょう．C
 言語のソースが複数の場合には逆に「モジュール名.c」というファ
 イル名は避ける必要があります．オブジェクトファイルとモジュー
 ル生成時に中間的に生成される「モジュール名.o」というファイル
 とが衝突するからです．
 
-Rubyは拡張モジュールをロードする時に「Init_モジュール名」と
+Rubyは拡張ライブラリをロードする時に「Init_モジュール名」と
 いう関数を自動的に実行します．dbmモジュールの場合「Init_dbm」
 です．この関数の中でクラス，モジュール，メソッド，定数などの
 定義を行います．dbm.cから一部引用します．
@@ -525,22 +492,20 @@ Rubyは拡張モジュールをロードする時に「Init_モジュール名」と
 --
 Init_dbm()
 {
-    /* DBMクラスを定義する */
+    /* define DBM class */
     cDBM = rb_define_class("DBM", rb_cObject);
-    /* DBMはEnumerateモジュールをインクルードする */
+    /* DBM includes Enumerate module */
     rb_include_module(cDBM, rb_mEnumerable);
 
-    /* DBMクラスのクラスメソッドopen(): 引数はCの配列で受ける */
+    /* DBM has class method open(): arguments are received as C array */
     rb_define_singleton_method(cDBM, "open", fdbm_s_open, -1);
 
-    /* DBMクラスのメソッドclose(): 引数はなし */
+    /* DBM instance method close(): no args */
     rb_define_method(cDBM, "close", fdbm_close, 0);
-    /* DBMクラスのメソッド[]: 引数は1個 */
+    /* DBM instance method []: 1 argument */
     rb_define_method(cDBM, "[]", fdbm_fetch, 1);
 		:
 
-    /* DBMデータを格納するインスタンス変数名のためのID */
-    id_dbm = rb_intern("dbm");
 }
 --
 
@@ -646,11 +611,10 @@ fdbm_indexes(obj, args)
 らすため struct RArray* で受けていますが，VALUEでも同じこと
 です．
 
-** 注意事項
+** Notice
 
-Rubyと共有はしないがRubyのオブジェクトを格納する可能性のある
-Cの大域変数は以下の関数を使ってRubyインタプリタに変数の存在
-を教えてあげてください．でないとGCでトラブルを起こします．
+GC should know about global variables which refers Ruby's objects, but
+not exported to the Ruby world.  You need to protect them by
 
   void rb_global_variable(VALUE *var)
 
@@ -704,22 +668,22 @@ Rubyのディレクトリでmakeを実行するとMakefileを生成からmake，
 してくれます．extconf.rbを書き換えるなどしてMakefileの再生成
 が必要な時はまたRubyディレクトリでmakeしてください．
 
-(9) rb_debug
+(9) debug
 
 You may need to rb_debug the module.  The modules can be linked 
 statically by adding directory name in the ext/Setup file,
 so that you can inspect the module by the debugger.
 
-(10) done, now you have the extension module
+(10) done, now you have the extension library
 
 後はこっそり使うなり，広く公開するなり，売るなり，ご自由にお
-使いください．Rubyの作者は拡張モジュールに関して一切の権利を
+使いください．Rubyの作者は拡張ライブラリに関して一切の権利を
 主張しません．
 
 Appendix A. Rubyのソースコードの分類
 
 Rubyのソースはいくつかに分類することが出来ます．このうちクラ
-スライブラリの部分は基本的に拡張モジュールと同じ作り方になっ
+スライブラリの部分は基本的に拡張ライブラリと同じ作り方になっ
 ています．これらのソースは今までの説明でほとんど理解できると
 思います．
 
@@ -847,54 +811,63 @@ superのサブクラスとして新しいRubyクラスを定義し，moduleの定
 
 オブジェクトをモジュール(で定義されているメソッド)で拡張する．
 
-** 大域変数定義
+** Defining Global Variables
 
  void rb_define_variable(char *name, VALUE *var)
 
-RubyとCとで共有するグローバル変数を定義する．変数名が`$'で始
-まらない時には自動的に追加される．nameとしてRubyの識別子とし
-て許されない文字(例えば` ')を含む場合にはRubyプログラムから
-は見えなくなる．
+Defines a global variable which is shared between C and Ruby.  If name
+contains the character which is not allowed to be part of the symbol,
+it can't be seen from Ruby programs.
 
  void rb_define_readonly_variable(char *name, VALUE *var)
 
-RubyとCとで共有するread onlyのグローバル変数を定義する．read
-onlyであること以外はrb_define_variable()と同じ．
+Defines a read-only global variable.  Works just like
+rb_define_variable(), except defined variable is read-only.
 
  void rb_define_virtual_variable(char *name,
 				VALUE (*getter)(), VALUE (*setter)())
 
-関数によって実現されるRuby変数を定義する．変数が参照された時
-にはgetterが，変数に値がセットされた時にはsetterが呼ばれる．
+Defines a virtual variable, whose behavior is defined by pair of C
+functions.  The getter function is called when the variable is
+referred. The setter function is called when the value is set to the
+variable.  The prototype for getter/setter functions are:
+
+	VALUE getter(ID id)
+	void setter(VALUE val, ID id)
+
+The getter function must return the value for the access.
 
  void rb_define_hooked_variable(char *name, VALUE *var,
 				VALUE (*getter)(), VALUE (*setter)())
 
-関数によってhookのつけられたグローバル変数を定義する．変数が
-参照された時にはgetterが，関数に値がセットされた時にはsetter
-が呼ばれる．getterやsetterに0を指定した時にはhookを指定しな
-いのと同じ事になる．
+Defines hooked variable.  It's virtual variable with C variable.  The
+getter is called as
+
+	VALUE getter(ID id, VALUE *var)
+
+returning new value.  The setter is called as
+
+	void setter(VALUE val, ID id, VALUE *var)
+
+GC requires to mark the C global variables which hold Ruby values.
 
  void rb_global_variable(VALUE *var)
 
-GCのため，Rubyプログラムからはアクセスされないが, Rubyオブジェ
-クトを含む大域変数をマークする．
+Tells GC to protect these variables.
 
-** クラス定数
+** Constant Definition
 
- void rb_define_const(VALUE class, char *name, VALUE val)
+ void rb_define_const(VALUE klass, char *name, VALUE val)
 
-クラス定数を定義する．
+Defines a new constant under the class/module.
 
  void rb_define_global_const(char *name, VALUE val)
 
-大域定数を定義する．
+Defines global contant.  This is just work as
 
      rb_define_const(cKernal, name, val)
 
-と同じ意味．
-
-** メソッド定義
+** Method Definition
 
  rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
 
@@ -1008,50 +981,46 @@ rb_verbose時に標準エラー出力に警告情報を表示する．引数はprintf()と同じ．
 況の時呼ぶ．インタープリタはコアダンプし直ちに終了する．例外
 処理は一切行なわれない．
 
-** Rubyの初期化・実行
+** Initialize and Starts the Interpreter
 
-Rubyをアプリケーションに埋め込む場合には以下のインタフェース
-を使う．通常の拡張モジュールには必要ない．
+The embedding API are below (not needed for extension libraries):
 
  void ruby_init(int argc, char **argv, char **envp)
 
-Rubyインタプリタの初期化を行なう．
+Initializes the interpreter.
 
  void ruby_run()
 
-Rubyインタプリタを実行する．
+Starts execution of the interpreter.
 
  void ruby_script(char *name)
 
-Rubyのスクリプト名($0)を設定する．
+Specifies the name of the script ($0).
 
-
-Appendix B. extconf.rbで使える関数たち
+Appendix B. Functions Available in extconf.rb
 
 extconf.rbの中では利用可能なコンパイル条件チェックの関数は以
 下の通りである．
 
  have_library(lib, func)
 
-関数funcを定義しているライブラリlibの存在をチェックする．ラ
-イブラリが存在する時，Qtrueを返す．
+Checks whether library which contains specified function exists.
+Returns true if the library exists.
 
  have_func(func)
 
-関数funcの存在をチェックする．funcが標準ではリンクされないラ
-イブラリ内のものである時には先にhave_libraryでそのライブラリ
-をチェックしておく事．関数が存在する時TRUEを返す．
+Checks whether func exists.  Returns true if the function exists.  To
+check functions in the additional library, you need to check that
+library first using have_library().
 
  have_header(header)
 
-ヘッダファイルの存在をチェックする．ヘッダファイルが存在する
-時TRUEを返す．
+Checks for the header files.  Returns true if the header file exists.
 
  create_makefile(target)
 
-拡張モジュール用のMakefileを生成する．この関数を呼ばなければ
-そのモジュールはコンパイルされない．targetはモジュール名を表
-す．
+Generates the Makefile for the extension library.  If you don't invoke
+this method, the compilation will not be done.
 
 /*
  * Local variables:

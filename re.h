@@ -3,7 +3,6 @@
   re.h -
 
   $Author$
-  $Revision$
   $Date$
   created at: Thu Sep 30 14:18:32 JST 1993
 

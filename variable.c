@@ -129,7 +129,7 @@ classname(klass)
 	path = rb_ivar_get(klass, classid);
 	if (!NIL_P(path)) {
 	    path = rb_str_new2(rb_id2name(FIX2INT(path)));
-	    rb_ivar_set(klass, classid, path);
+	    rb_ivar_set(klass, rb_intern("__classpath__"), path);
 	    st_delete(RCLASS(klass)->iv_tbl, &classid, 0);
 	}
     }
@@ -205,12 +205,7 @@ rb_name_class(klass, id)
     VALUE klass;
     ID id;
 {
-    if (rb_cString) {
-	rb_iv_set(klass, "__classpath__", rb_str_new2(rb_id2name(id)));
-    }
-    else {
-	rb_iv_set(klass, "__classid__", INT2FIX(id));
-    }
+    rb_iv_set(klass, "__classid__", INT2FIX(id));
 }
 
 static st_table *autoload_tbl = 0;
@@ -690,6 +685,133 @@ rb_alias_variable(name1, name2)
     entry1->marker = entry2->marker;
 }
 
+static int special_generic_ivar = 0;
+static st_table *generic_iv_tbl;
+
+static VALUE
+generic_ivar_get(obj, id)
+    VALUE obj;
+    ID id;
+{
+    st_table *tbl;
+    VALUE val;
+
+    if (!generic_iv_tbl) return Qnil;
+    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return Qnil;
+    if (st_lookup(tbl, id, &val)) {
+	return val;
+    }
+    return Qnil;
+}
+
+static void
+generic_ivar_set(obj, id, val)
+    VALUE obj;
+    ID id;
+    VALUE val;
+{
+    st_table *tbl;
+
+    if (rb_special_const_p(obj)) {
+	special_generic_ivar = 1;
+    }
+    if (!generic_iv_tbl) {
+	generic_iv_tbl = st_init_numtable();
+    }
+
+    if (!st_lookup(generic_iv_tbl, obj, &tbl)) {
+	FL_SET(obj, FL_EXIVAR);
+	tbl = st_init_numtable();
+	st_add_direct(generic_iv_tbl, obj, tbl);
+	st_add_direct(tbl, id, val);
+	return;
+    }
+    st_insert(tbl, id, val);
+}
+
+static VALUE
+generic_ivar_defined(obj, id)
+    VALUE obj;
+    ID id;
+{
+    st_table *tbl;
+    VALUE val;
+
+    if (!generic_iv_tbl) return Qfalse;
+    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return Qfalse;
+    if (st_lookup(tbl, id, &val)) {
+	return Qtrue;
+    }
+    return Qfalse;
+}
+
+static VALUE
+generic_ivar_remove(obj, id)
+    VALUE obj;
+    ID id;
+{
+    st_table *tbl;
+    VALUE val;
+
+    if (!generic_iv_tbl) return Qnil;
+    if (!st_lookup(generic_iv_tbl, obj, &tbl)) return Qnil;
+    st_delete(tbl, &id, &val);
+    if (tbl->num_entries == 0) {
+	st_delete(generic_iv_tbl, &obj, &tbl);
+	st_free_table(tbl);
+    }
+    return val;
+}
+
+static int
+givar_mark_i(key, value)
+    ID key;
+    VALUE value;
+{
+    rb_gc_mark(value);
+    return ST_CONTINUE;
+}
+
+void
+rb_mark_generic_ivar(obj)
+    VALUE obj;
+{
+    st_table *tbl;
+
+    if (st_lookup(generic_iv_tbl, obj, &tbl)) {
+	st_foreach(tbl, givar_mark_i, 0);
+    }
+}
+
+static int
+givar_i(obj, tbl)
+    VALUE obj;
+    st_table *tbl;
+{
+    if (rb_special_const_p(obj)) {
+	st_foreach(tbl, givar_mark_i, 0);
+    }
+    return ST_CONTINUE;
+}
+
+void
+rb_mark_generic_ivar_tbl()
+{
+    if (special_generic_ivar == 0) return;
+    if (!generic_iv_tbl) return;
+    st_foreach(generic_iv_tbl, givar_i, 0);
+}
+
+void
+rb_free_generic_ivar(obj)
+    VALUE obj;
+{
+    st_table *tbl;
+
+    if (st_delete(generic_iv_tbl, &obj, &tbl))
+	st_free_table(tbl);
+}
+
 VALUE
 rb_ivar_get(obj, id)
     VALUE obj;
@@ -701,12 +823,13 @@ rb_ivar_get(obj, id)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl && st_lookup(ROBJECT(obj)->iv_tbl, id, &val))
 	    return val;
-	return Qnil;
+	break;
       default:
-	rb_raise(rb_eTypeError, "class %s can not have instance variables",
-		 rb_class2name(CLASS_OF(obj)));
+	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
+	    return generic_ivar_get(obj, id);
 	break;
     }
     if (rb_verbose) {
@@ -725,14 +848,14 @@ rb_ivar_set(obj, id, val)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
 	    rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
 	if (!ROBJECT(obj)->iv_tbl) ROBJECT(obj)->iv_tbl = st_init_numtable();
 	st_insert(ROBJECT(obj)->iv_tbl, id, val);
 	break;
       default:
-	rb_raise(rb_eTypeError, "class %s can not have instance variables",
-		 rb_class2name(CLASS_OF(obj)));
+	generic_ivar_set(obj, id, val);
 	break;
     }
     return val;
@@ -749,8 +872,13 @@ rb_ivar_defined(obj, id)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl && st_lookup(ROBJECT(obj)->iv_tbl, id, 0))
 	    return Qtrue;
+	break;
+      default:
+	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
+	    return generic_ivar_defined(obj, id);
 	break;
     }
     return Qfalse;
@@ -778,11 +906,22 @@ rb_obj_instance_variables(obj)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	ary = rb_ary_new();
 	if (ROBJECT(obj)->iv_tbl) {
 	    st_foreach(ROBJECT(obj)->iv_tbl, ivar_i, ary);
 	}
 	return ary;
+      default:
+	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj)) {
+	    st_table *tbl;
+
+	    if (st_lookup(generic_iv_tbl, obj, &tbl)) {
+		ary = rb_ary_new();
+		st_foreach(tbl, ivar_i, ary);
+		return ary;
+	    }
+	}
     }
     return Qnil;
 }
@@ -803,13 +942,14 @@ rb_obj_remove_instance_variable(obj, name)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
+      case T_FILE:
 	if (ROBJECT(obj)->iv_tbl) {
 	    st_delete(ROBJECT(obj)->iv_tbl, &id, &val);
 	}
 	break;
       default:
-	rb_raise(rb_eTypeError, "object %s can not have instance variables",
-		 rb_class2name(CLASS_OF(obj)));
+	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
+	    return generic_ivar_remove(obj, id);
 	break;
     }
     return val;

@@ -66,10 +66,9 @@ static void rehash();
 #define MINSIZE 8
 
 /*
-Table of irreducible polynomials to efficiently cycle through
-GF(2^n)-{0}, 2<=n<=30.
+Table of prime numbers 2^n+a, 2<=n<=30.
 */
-static long polys[] = {
+static long primes[] = {
 	8 + 3,
 	16 + 3,
 	32 + 5,
@@ -108,10 +107,10 @@ new_size(size)
     int i, newsize;
 
     for (i = 0, newsize = MINSIZE;
-	 i < sizeof(polys)/sizeof(polys[0]);
+	 i < sizeof(primes)/sizeof(primes[0]);
 	 i++, newsize <<= 1)
     {
-	if (newsize > size) return polys[i];
+	if (newsize > size) return primes[i];
     }
     /* Ran out of polynomials */
     return -1;			/* should raise exception */

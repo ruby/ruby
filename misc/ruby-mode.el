@@ -2,11 +2,19 @@
 ;;;  ruby-mode.el -
 ;;;
 ;;;  $Author$
+<<<<<<< ruby-mode.el
 ;;;  $Date$
+=======
+;;;  $Date$
+>>>>>>> 1.1.1.2.2.23
 ;;;  created at: Fri Feb  4 14:49:13 JST 1994
 ;;;
 
+<<<<<<< ruby-mode.el
 (defconst ruby-mode-revision "$Revision$")
+=======
+(defconst ruby-mode-revision "$Revision$")
+>>>>>>> 1.1.1.2.2.23
 
 (defconst ruby-mode-version
   (progn

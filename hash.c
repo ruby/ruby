@@ -1027,7 +1027,7 @@ static VALUE
 env_each(hash)
     VALUE hash;
 {
-    VALUE ary = env_keys();
+    volatile VALUE ary = env_keys();
     VALUE *ptr = RARRAY(ary)->ptr;
     int len = RARRAY(ary)->len; 
 
@@ -1044,7 +1044,7 @@ env_each(hash)
 static VALUE
 env_delete_if()
 {
-    VALUE ary;
+    volatile VALUE ary;
     VALUE *ptr;
     int len;
 
@@ -1124,7 +1124,7 @@ env_has_value(dmy, value)
     VALUE dmy, value;
 {
     char **env;
-    VALUE ary;
+    volatile VALUE ary;
 
     if (TYPE(value) != T_STRING) return Qfalse;
     ary = rb_ary_new();
@@ -1168,7 +1168,7 @@ env_to_hash(obj)
     VALUE obj;
 {
     VALUE hash = rb_hash_new();
-    VALUE ary = env_keys();
+    volatile VALUE ary = env_keys();
     VALUE *ptr = RARRAY(ary)->ptr;
     int len = RARRAY(ary)->len; 
 

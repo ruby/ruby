@@ -20,6 +20,10 @@
 #include <fcntl.h>
 #include <ctype.h>
 
+#ifdef __hpux
+#include <sys/pstat.h>
+#endif
+
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -607,6 +611,7 @@ set_arg0(val, id)
     static int len;
 
     if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");
+#ifndef __hpux
     if (len == 0) {
 	s = origargv[0];
 	s += strlen(s);
@@ -617,7 +622,9 @@ set_arg0(val, id)
 	}
 	len = s - origargv[0];
     }
+#endif
     s = str2cstr(val, &i);
+#ifndef __hpux
     if (i > len) {
 	memcpy(origargv[0], s, len);
 	origargv[0][len] = '\0';
@@ -630,6 +637,21 @@ set_arg0(val, id)
 	    *s++ = ' ';
     }
     rb_progname = rb_tainted_str_new2(origargv[0]);
+#else
+    if (i >= PST_CLEN) {
+      union pstun j;
+      j.pst_command = s;
+      i = PST_CLEN;
+      RSTRING(val)->len = i;
+      *(s + i) = '\0';
+      pstat(PSTAT_SETCMD, j, PST_CLEN, 0, 0);
+    } else {
+      union pstun j;
+      j.pst_command = s;
+      pstat(PSTAT_SETCMD, j, i, 0, 0);
+    }
+    rb_progname = str_taint(str_new(s, i));
+#endif
 }
 
 void

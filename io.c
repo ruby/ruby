@@ -2544,7 +2544,7 @@ arg_read(argc, argv)
 	next_p = 1;
 	goto retry;
     }
-    if (NIL_P(tmp)) return str;
+    if (NIL_P(tmp) || RSTRING(tmp)->len == 0) return str;
     else if (NIL_P(str)) str = tmp;
     else rb_str_cat(str, RSTRING(tmp)->ptr, RSTRING(tmp)->len);
     if (argc == 0) {

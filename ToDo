@@ -1,5 +1,36 @@
-* non-blocking open/write for thread
-* avoid blocking with gethostbyname/gethostbyaddr
+Language Spec.
+
 * package or access control for global variables
-* format
-* freeze or undump to bundle everything in birary format.
+* named arguments like foo(nation:="german").
+* multiple return values, yield values.  maybe imcompatible
+
+Hacking Interpreter
+
+* non-blocking open (e.g. named pipe) for thread
+* avoid blocking with gethostbyname/gethostbyaddr
+* objectify interpreters
+* remove rb_eval() recursions
+* syntax tree -> bytecode ???
+* scrambled script, or script filter
+
+Extension Libraries
+
+* mod_ruby, FastCGI ruby
+* InterBase module
+* ptk.rb pTk wrapper that is compatible to tk.rb
+
+Ruby Libraries
+
+* CGI.rb
+* httplib.rb, urllib.rb, nttplib.rb, etc.
+* format like perl's
+
+Tools
+
+* extension library maker like XS or SWIG
+* freeze or undump to bundle everything
+
+Misc
+
+* translate README.EXT fully into English
+* publish Ruby books

@@ -49,7 +49,7 @@ rb_eql(obj1, obj2)
     return rb_funcall(obj1, eql, 1, obj2);
 }
 
-VALUE
+static VALUE
 rb_obj_equal(obj1, obj2)
     VALUE obj1, obj2;
 {
@@ -598,13 +598,6 @@ rb_class_s_inherited()
     rb_raise(rb_eTypeError, "can't make subclass of Class");
 }
 
-VALUE rb_mod_name();
-VALUE rb_mod_included_modules();
-VALUE rb_mod_ancestors();
-VALUE rb_class_instance_methods();
-VALUE rb_class_protected_instance_methods();
-VALUE rb_class_private_instance_methods();
-
 static VALUE
 rb_class_superclass(klass)
     VALUE klass;
@@ -624,11 +617,16 @@ ID
 rb_to_id(name)
     VALUE name;
 {
+    ID id;
+
     if (TYPE(name) == T_STRING) {
 	return rb_intern(RSTRING(name)->ptr);
     }
-    Check_Type(name, T_FIXNUM);
-    return FIX2UINT(name);
+    id = NUM2UINT(name);
+    if (!rb_id2name(id)) {
+	rb_raise(rb_eArgError, "%d is not a symbol", id);
+    }
+    return id;
 }
 
 static VALUE
@@ -685,8 +683,6 @@ rb_mod_attr_accessor(argc, argv, klass)
     }
     return Qnil;
 }
-
-VALUE rb_mod_constants();
 
 static VALUE
 rb_mod_const_get(mod, name)
@@ -935,6 +931,7 @@ Init_Object()
 
     rb_mKernel = rb_define_module("Kernel");
     rb_include_module(rb_cObject, rb_mKernel);
+    rb_define_private_method(rb_cObject, "initialize", rb_obj_dummy, -1);
     rb_define_private_method(rb_cClass, "inherited", rb_obj_dummy, 1);
 
     /*
@@ -1022,7 +1019,6 @@ Init_Object()
     rb_define_method(rb_cNilClass, "+", nil_plus, 1);
 #endif
 
-    rb_define_global_function("initialize", rb_obj_dummy, -1);
     rb_define_global_function("singleton_method_added", rb_obj_dummy, 1);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);

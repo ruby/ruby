@@ -2812,6 +2812,7 @@ re_search(bufp, string, size, startpos, range, regs)
 	    }
 	}
 
+      if (startpos > size) return -1;
       if (fastmap && startpos == size && range >= 0
 	  && (bufp->can_be_null == 0 ||
 	      (bufp->can_be_null && size > 0

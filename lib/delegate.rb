@@ -20,24 +20,32 @@ class Delegator
 
   def initialize(obj)
     preserved = ::Kernel.instance_methods
+    preserved -= ["to_s","to_a","inspect","==","=~","==="]
     for t in self.type.ancestors
       preserved |= t.instance_methods
+      preserved |= t.private_instance_methods
+      preserved |= t.protected_instance_methods
       break if t == Delegator
     end
-    preserved -= ["to_s","to_a","inspect","==","=~","==="]
     for method in obj.methods
       next if preserved.include? method
-      eval <<EOS
-def self.#{method}(*args, &block)
-  begin
-    __getobj__.__send__(:#{method}, *args, &block)
-  rescue Exception
-    n = if /:in `__getobj__'$/ =~ $@[0] then 1 else 2 end #`
-    $@[1,n] = nil
-    raise
-  end
-end
-EOS
+      eval <<-EOS
+      def self.#{method}(*args, &block)
+	  begin
+	    __getobj__.__send__(:#{method}, *args, &block)
+	  rescue Exception
+	    c = -caller(0).size
+	    if /:in `__getobj__'$/ =~ $@[c-1]  #`
+	      n = 1
+	    else
+	      c -= 1
+	      n = 2
+	    end
+	    $@[c,n] = nil
+	    raise
+	  end
+      end
+      EOS
     end
   end
 
@@ -72,14 +80,14 @@ def DelegateClass(superclass)
   klass = Class.new
   methods = superclass.instance_methods
   methods -= ::Kernel.instance_methods
-  methods |= ["to_s","to_a","inspect","hash","eql?","==","=~","==="]
-  klass.module_eval <<EOS
+  methods |= ["to_s","to_a","inspect","==","=~","==="]
+  klass.module_eval <<-EOS
   def initialize(obj)
     @obj = obj
   end
-EOS
+  EOS
   for method in methods
-    klass.module_eval <<EOS
+    klass.module_eval <<-EOS
     def #{method}(*args, &block)
       begin
 	@obj.__send__(:#{method}, *args, &block)
@@ -88,7 +96,7 @@ EOS
 	raise
       end
     end
-EOS
+    EOS
   end
   return klass;
 end
@@ -107,10 +115,12 @@ if __FILE__ == $0
 
   foo = Object.new
   def foo.test
+    25
+  end
+  def foo.error
     raise 'this is OK'
   end
   foo2 = SimpleDelegator.new(foo)
-  p foo.hash == foo2.hash	# => true
-  foo.test			# raise error!
-
+  p foo.test == foo2.test	# => true
+  foo2.error			# raise error!
 end

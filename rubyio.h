@@ -45,6 +45,7 @@ typedef struct OpenFile {
     fp->finalize = 0;\
 } while (0)
 
+#define GetReadFile(fptr) ((fptr)->f)
 #define GetWriteFile(fptr) (((fptr)->f2) ? (fptr)->f2 : (fptr)->f)
 
 FILE *rb_fopen _((char *, char *));

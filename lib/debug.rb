@@ -267,6 +267,6 @@ class DEBUGGER__
   CONTEXT = new
 end
 
-set_trace_func proc{|event, file, line, id, binding, klass|
-  DEBUGGER__::CONTEXT.trace_func event, file, line, id, binding, klass
+set_trace_func proc{|event, file, line, id, binding|
+  DEBUGGER__::CONTEXT.trace_func event, file, line, id, binding
 }

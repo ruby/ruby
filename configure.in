@@ -34,25 +34,37 @@ fat_binary=no
 AC_ARG_ENABLE( fat-binary,
        [--enable-fat-binary       build a NeXT/Apple Multi Architecture Binary. ],
        [ fat_binary=$enableval ] )
-      if test "$fat_binary" = yes ; then
+ if test "$fat_binary" = yes ; then
 
     AC_MSG_CHECKING( target architecture )
 
-    if test "$host_os" = "rhapsody" ; then
-        echo -n "Rhapsody: "
-	if test "$TARGET_ARCHS" = "" ; then
-           TARGET_ARCHS="ppc i486"
+    case "$host_os" in
+    rhapsody*)
+        echo -n "MacOS X Server: "
+  	if test "$TARGET_ARCHS" = "" ; then
+           TARGET_ARCHS="ppc i386"
   	fi
-    else
+	;;
+    nextstep*|openstep*)
   	echo -n "NeXTSTEP/OPENSTEP: "
-        if test "$TARGET_ARCHS" = "" ; then
-           if test `/usr/bin/arch` = "m68k" ; then
-               TARGET_ARCHS="m68k i486"
-           else
-               TARGET_ARCHS="m68k `/usr/bin/arch`"
-           fi
+
+        if test "$host_os" = "rhapsody" ; then
+            echo -n "Rhapsody: "
+	    if test "$TARGET_ARCHS" = "" ; then
+               TARGET_ARCHS="ppc i486"
+  	    fi
+        else
+  	    echo -n "NeXTSTEP/OPENSTEP: "
+	    if test "$TARGET_ARCHS" = "" ; then
+	       if test `/usr/bin/arch` = "m68k" ; then
+		   TARGET_ARCHS="m68k i486"
+	       else # Black and Native one
+		   TARGET_ARCHS="m68k `/usr/bin/arch`"
+	       fi
+	    fi
         fi
-    fi
+        ;;
+    esac
     # /usr/lib/arch_tool -archify_list $TARGET_ARCHS
     for archs in $TARGET_ARCHS 
     do
@@ -163,7 +175,7 @@ AC_REPLACE_FUNCS(dup2 setenv memmove mkdir strcasecmp strerror strftime\
 AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
-	      setpgrp2 getpgid getgroups getpriority\
+	      setpgrp2 getpgid setpgid getgroups getpriority\
 	      dlopen sigprocmask sigaction _setjmp setpgrp setsid)
 if test "$ac_cv_func_strftime" = no; then
     AC_STRUCT_TIMEZONE

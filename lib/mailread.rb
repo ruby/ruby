@@ -1,7 +1,7 @@
 class Mail
 
   def initialize(f)
-    unless f.kind_of?(IO)
+    unless defined? f.gets
       f = open(f, "r")
       opened = true
     end

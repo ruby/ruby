@@ -77,6 +77,7 @@ endian()
 static char *toofew = "too few arguments";
 
 static void encodes _((VALUE,char*,int,int));
+static void qpencode _((VALUE,VALUE,int));
 
 static void
 pack_add_ptr(str, add)
@@ -104,7 +105,7 @@ pack_pack(ary, fmt)
     int plen;
 
     
-    p = str2cstr(fmt, &plen);
+    p = rb_str2cstr(fmt, &plen);
     pend = p + plen;
     res = rb_str_new(0, 0);
 
@@ -469,6 +470,13 @@ pack_pack(ary, fmt)
 	    }
 	    break;
 
+	  case 'M':
+	    from = rb_obj_as_string(NEXTFROM);
+	    if (len <= 1)
+		len = 72;
+	    qpencode(res, from, len);
+	    break;
+
 	  case 'P':
 	    len = 1;
 	    /* FALL THROUGH */
@@ -505,38 +513,121 @@ encodes(str, s, len, type)
     int len;
     int type;
 {
-    char hunk[4];
+    char *buff = ALLOCA_N(char, len * 4 / 3 + 6);
+    int i = 0;
     char *p, *pend;
     char *trans = type == 'u' ? uu_table : b64_table;
     int padding;
 
     if (type == 'u') {
-	*hunk = len + ' ';
-	rb_str_cat(str, hunk, 1);
+	buff[i++] = len + ' ';
 	padding = '`';
     }
     else {
 	padding = '=';
     }
-    while (len > 0) {
-	hunk[0] = trans[077 & (*s >> 2)];
-	hunk[1] = trans[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
-	hunk[2] = trans[077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03))];
-	hunk[3] = trans[077 & s[2]];
-	rb_str_cat(str, hunk, 4);
+    while (len >= 3) {
+	buff[i++] = trans[077 & (*s >> 2)];
+	buff[i++] = trans[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
+	buff[i++] = trans[077 & (((s[1] << 2) & 074) | ((s[2] >> 6) & 03))];
+	buff[i++] = trans[077 & s[2]];
 	s += 3;
 	len -= 3;
     }
-    p = RSTRING(str)->ptr;
-    pend = RSTRING(str)->ptr + RSTRING(str)->len;
-    if (len == -1) {
-	pend[-1] = padding;
+    if (len == 2) {
+	buff[i++] = trans[077 & (*s >> 2)];
+	buff[i++] = trans[077 & (((*s << 4) & 060) | ((s[1] >> 4) & 017))];
+	buff[i++] = trans[077 & (((s[1] << 2) & 074) | (('\0' >> 6) & 03))];
+	buff[i++] = padding;
     }
-    else if (len == -2) {
-	pend[-2] = padding;
-	pend[-1] = padding;
+    else if (len == 1) {
+	buff[i++] = trans[077 & (*s >> 2)];
+	buff[i++] = trans[077 & (((*s << 4) & 060) | (('\0' >> 4) & 017))];
+	buff[i++] = padding;
+	buff[i++] = padding;
     }
-    rb_str_cat(str, "\n", 1);
+    buff[i++] = '\n';
+    rb_str_cat(str, buff, i);
+}
+
+static char hex_table[] = "0123456789ABCDEF";
+
+static void
+qpencode(str, from, len)
+    VALUE str, from;
+    int len;
+{
+    char buff[1024];
+    int i = 0, n = 0, prev = EOF;
+    unsigned char *s = RSTRING(from)->ptr;
+    unsigned char *send = s + RSTRING(from)->len;
+
+    while (s < send) {
+        if ((*s > 126) ||
+	    (*s < 32 && *s != '\n' && *s != '\t') ||
+	    (*s == '=')) {
+	    buff[i++] = '=';
+	    buff[i++] = hex_table[*s >> 4];
+	    buff[i++] = hex_table[*s & 0x0f];
+            n += 3;
+            prev = EOF;
+        }
+	else if (*s == '\n') {
+            if (prev == ' ' || prev == '\t') {
+		buff[i++] = '=';
+		buff[i++] = *s;
+            }
+	    buff[i++] = *s;
+            n = 0;
+            prev = *s;
+        }
+	else {
+	    buff[i++] = *s;
+            n++;
+            prev = *s;
+        }
+        if (n > len) {
+	    buff[i++] = '=';
+	    buff[i++] = '\n';
+            n = 0;
+            prev = '\n';
+        }
+	if (i > 1024 - 5) {
+	    rb_str_cat(str, buff, i);
+	    i = 0;
+	}
+	s++;
+    }
+    if (n > 0) {
+	buff[i++] = '=';
+	buff[i++] = '\n';
+    }
+    if (i > 0) {
+	rb_str_cat(str, buff, i);
+    }
+}
+
+#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(RUBY_NO_INLINE)
+static __inline__ int
+#else
+static int
+#endif
+hex2num(c)
+    char c;
+{
+    switch (c) {
+    case '0': case '1': case '2': case '3': case '4':
+    case '5': case '6': case '7': case '8': case '9':
+        return c - '0';
+    case 'a': case 'b': case 'c':
+    case 'd': case 'e': case 'f':
+	return c - 'a' + 10;
+    case 'A': case 'B': case 'C':
+    case 'D': case 'E': case 'F':
+	return c - 'A' + 10;
+    default:
+	return -1;
+    }
 }
 
 static VALUE
@@ -550,9 +641,9 @@ pack_unpack(str, fmt)
     char type;
     int len;
 
-    s = str2cstr(str, &len);
+    s = rb_str2cstr(str, &len);
     send = s + len;
-    p = str2cstr(fmt, &len);
+    p = rb_str2cstr(fmt, &len);
     pend = p + len;
 
     ary = rb_ary_new();
@@ -923,6 +1014,32 @@ pack_unpack(str, fmt)
 		if (a != -1 && b != -1 && c != -1 && s[3] == '=') {
 		    *ptr++ = a << 2 | b >> 4;
 		    *ptr++ = b << 4 | c >> 2;
+		}
+		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
+		rb_ary_push(ary, str);
+	    }
+	    break;
+
+	  case 'M':
+	    {
+		VALUE str = rb_str_new(0, send - s);
+		char *ptr = RSTRING(str)->ptr;
+		int c1, c2;
+
+		while (s < send) {
+		    if (*s == '=') {
+			if (++s == send) break;
+			if (*s != '\n' && s < send - 1) {
+			    if ((c1 = hex2num(*s)) == -1) break;
+			    if (++s == send) break;
+			    if ((c2 = hex2num(*s)) == -1) break;
+			    *ptr++ = c1 << 4 | c2;
+			}
+		    }
+		    else {
+			*ptr++ = *s;
+		    }
+		    s++;
 		}
 		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
 		rb_ary_push(ary, str);
