@@ -1,3 +1,8 @@
+Fri Dec 27 17:55:00 2002  Takaaki Uematsu  <mail@uema2.cjb.net>
+
+	* wince/config, wince/configure.bat: replace 1.7 with 1.8
+	  in macros.
+
 Fri Dec 27 13:28:14 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* instruby.rb: fileutils.rb accepts only one argument.

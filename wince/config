@@ -75,18 +75,12 @@
 #define SETPGRP_VOID 1
 #define inline __inline
 #define RSHIFT(x,y) ((x)>>(int)y)
-/*#define FILE_COUNT _cnt*/
-/*#define FILE_READPTR _ptr*/
 #define DEFAULT_KCODE KCODE_NONE
 #define DLEXT ".so"
 #define DLEXT2 ".dll"
-/*#define NT 1*/
-#define RUBY_LIB "/lib/ruby/1.7"
+#define RUBY_LIB "/lib/ruby/1.8"
 #define RUBY_SITE_LIB "/lib/ruby/site_ruby"
-#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/1.7"
-/*#define RUBY_PLATFORM "mips-mswince"*/
-/*#define RUBY_ARCHLIB "/lib/ruby/1.7/mips-mswince"*/
-/*#define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/mips-mswince"*/
+#define RUBY_SITE_LIB2 "/lib/ruby/site_ruby/1.8"
 
 
 /* below wince's original definition. */

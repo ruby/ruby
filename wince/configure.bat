@@ -14,8 +14,8 @@ if "%1"=="SH4"  goto sh4
 
 copy config config.h
 echo #define RUBY_PLATFORM "mips-mswince" >> config.h
-echo #define RUBY_ARCHLIB "/lib/ruby/1.7/mips-mswince" >> config.h
-echo #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/mips-mswince" >> config.h
+echo #define RUBY_ARCHLIB "/lib/ruby/1.8/mips-mswince" >> config.h
+echo #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.8/mips-mswince" >> config.h
 
 if "%2"=="HPC2K"  goto mipshpc2k
 if "%2"=="PPC"    goto mipsppc
@@ -47,8 +47,8 @@ if "%2"=="HPCPRO" goto mipshpcpro
 
 copy config config.h
 echo #define RUBY_PLATFORM "arm-mswince" >> config.h
-echo #define RUBY_ARCHLIB "/lib/ruby/1.7/arm-mswince" >> config.h
-echo #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/arm-mswince" >> config.h
+echo #define RUBY_ARCHLIB "/lib/ruby/1.8/arm-mswince" >> config.h
+echo #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.8/arm-mswince" >> config.h
 
 if "%2"=="HPC2K"  goto armhpc2k
 if "%2"=="PPC"    goto armppc
@@ -80,8 +80,8 @@ if "%2"=="HPCPRO" goto armhpcpro
 
 copy config config.h
 echo #define RUBY_PLATFORM "sh3-mswince" >> config.h
-echo #define RUBY_ARCHLIB "/lib/ruby/1.7/sh3-mswince" >> config.h
-echo #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/sh3-mswince" >> config.h
+echo #define RUBY_ARCHLIB "/lib/ruby/1.8/sh3-mswince" >> config.h
+echo #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.8/sh3-mswince" >> config.h
 
 if "%2"=="HPC2K"  goto error
 if "%2"=="PPC"    goto sh3ppc
@@ -106,8 +106,8 @@ if "%2"=="HPCPRO" goto sh3hpcpro
 
 copy config config.h
 echo #define RUBY_PLATFORM "sh4-mswince" >> config.h
-echo #define RUBY_ARCHLIB "/lib/ruby/1.7/sh4-mswince" >> config.h
-echo #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.7/sh4-mswince" >> config.h
+echo #define RUBY_ARCHLIB "/lib/ruby/1.8/sh4-mswince" >> config.h
+echo #define RUBY_SITE_ARCHLIB "/lib/ruby/site_ruby/1.8/sh4-mswince" >> config.h
 
 if "%2"=="HPC2K"  goto error
 if "%2"=="PPC"    goto error
