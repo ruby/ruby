@@ -55,6 +55,7 @@ class TestTime < Test::Unit::TestCase
       assert_equal(0x7fffffff, Time.utc(2038, 1, 19, 3, 14, 7).tv_sec)
     else
       # leap seconds supported.
+      assert_equal(2, Time.utc(1972, 7, 1, 0, 0, 0) - Time.utc(1972, 6, 30, 23, 59, 59))
       assert_equal(78796800, Time.utc(1972, 6, 30, 23, 59, 60).tv_sec)
       assert_equal(78796801, Time.utc(1972, 7, 1, 0, 0, 0).tv_sec)
       assert_equal(78796802, Time.utc(1972, 7, 1, 0, 0, 1).tv_sec)
