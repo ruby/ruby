@@ -519,11 +519,11 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       PUSH_P(ftype);
       break;
     case 'H':
-      ANY2H(args[i]) = DLSHORT(NUM2CHR(argv[i]));
+      ANY2H(args[i]) = DLSHORT(NUM2INT(argv[i]));
       PUSH_C(ftype);
       break;
     case 'h':
-      ANY2H(dargs[i]) = DLSHORT(NUM2CHR(argv[i]));
+      ANY2H(dargs[i]) = DLSHORT(NUM2INT(argv[i]));
       ANY2P(args[i]) = DLVOIDP(&(ANY2H(dargs[i])));
       dtypes[i] = 'h';
       PUSH_P(ftype);
