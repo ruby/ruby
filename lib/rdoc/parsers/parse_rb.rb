@@ -1999,10 +1999,6 @@ module RDoc
           break
         when TkLBRACE
           nest += 1
-        when TkLBRACE
-          nest += 1
-        when TkLBRACE
-          nest += 1
         when TkRBRACE
           nest -= 1
           break if nest <= 0
@@ -2045,8 +2041,7 @@ module RDoc
           "#{@scanner.lex_state} #{nest}") if $DEBUG
         case tk
         when TkSEMICOLON
-          nest -= 1
-          break if nest <= 0
+          break
         when TkLPAREN, TkfLPAREN
           nest += 1
         when TkDO
@@ -2117,8 +2112,7 @@ module RDoc
           "#{@scanner.lex_state} #{nest}") if $DEBUG
         case tk
         when TkSEMICOLON
-          nest -= 1
-          break if nest <= 0
+          break
         when TkLPAREN, TkfLPAREN
           nest += 1
         when end_token
@@ -2313,13 +2307,13 @@ module RDoc
       skip_tkspace
       new_name = get_symbol_or_name
       @scanner.instance_eval{@lex_state = EXPR_FNAME}
-
       skip_tkspace
       if (peek_tk.kind_of? TkCOMMA)
         get_tk
         skip_tkspace
       end
       old_name = get_symbol_or_name
+
       al = Alias.new(get_tkread, old_name, new_name, comment)
       read_documentation_modifiers(al, ATTR_MODIFIERS)
       if al.document_self
