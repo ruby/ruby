@@ -1,3 +1,8 @@
+Mon Mar 25 19:30:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb.in (arg_config): get rid of single quotes
+	  for autoconf 2.53.
+
 Mon Mar 25 17:49:41 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* regex.c (mbc_startpos_func): VC6 seems to be unable to
