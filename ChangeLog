@@ -1,3 +1,9 @@
+Mon Dec 31 14:20:46 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (yycompile): always store copy of filename.
+
+	* parse.y (rb_compile_file): no longer need to strdup() here.
+
 Sun Dec 30 18:04:07 2001  Tanaka Akira  <akr@m17n.org>
 
 	* time.c (time_utc_offset): new function.

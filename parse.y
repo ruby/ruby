@@ -1947,6 +1947,8 @@ yycompile(f, line)
     int n;
     NODE *node = 0;
 
+    f = strdup(f);
+
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
 	VALUE hash, fname;
@@ -2057,7 +2059,7 @@ rb_compile_file(f, file, start)
     lex_pbeg = lex_p = lex_pend = 0;
     ruby_sourceline = start - 1;
 
-    return yycompile(strdup(f), start);
+    return yycompile(f, start);
 }
 
 static inline int
