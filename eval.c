@@ -668,7 +668,6 @@ static unsigned long frame_unique = 0;
     _frame.node = ruby_current_node;	\
     _frame.iter = ruby_iter->iter;	\
     _frame.argc = 0;			\
-    _frame.flags = FRAME_ALLOCA;	\
     _frame.uniq = frame_unique++;	\
     ruby_frame = &_frame
 
@@ -7750,6 +7749,20 @@ static void
 blk_free(data)
     struct BLOCK *data;
 {
+    struct FRAME *frame;
+    void *tmp;
+
+    frame = data->frame.prev;
+    while (frame) {
+	tmp = frame;
+	frame = frame->prev;
+	free(tmp);
+    }
+    while (data) {
+	tmp = data;
+	data = data->prev;
+	free(tmp);
+    }
 }
 
 static void
