@@ -1,3 +1,8 @@
+Mon Dec 20 12:42:17 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (io_fwrite): workaround for MSVCRT's bug.
+	  fixed: [ruby-core:03982]
+
 Mon Dec 20 11:21:04 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_eof): check if closed before clearerr().

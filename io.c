@@ -431,6 +431,14 @@ io_fwrite(str, fptr)
 	) {
 #ifdef __hpux
 	    if (!errno) errno = EAGAIN;
+#elif defined(_WIN32) && !defined(__BORLANDC__)
+	    /* workaround for MSVCRT's bug */
+	    if (!errno) {
+		if (GetLastError() == ERROR_NO_DATA)
+		    errno = EPIPE;
+		else
+		    errno = EBADF;
+	    }
 #endif
 	    if (rb_io_wait_writable(fileno(f))) {
 		rb_io_check_closed(fptr);
