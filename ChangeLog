@@ -1,3 +1,8 @@
+Fri Jul  9 19:26:39 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (URI::HTTPS#proxy_open): raise ArgumentError to
+	  notice https is not supported.
+
 Fri Jul  9 14:28:54 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_raise): accept third argument as well as
