@@ -1,3 +1,8 @@
+Sun Jul 27 21:16:30 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/openssl/extconf.rb: better support MinGW.  add
+	dir_config("kerberos") and with_config("pkg-config).
+
 Sun Jul 27 14:43:37 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/debug.rb: fix breakpoint parameter parsing/checking.
