@@ -1,3 +1,25 @@
+Mon Jun 18 17:38:50 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_require): searches ".rb" and ".so" at the same
+	  time.  previous behavior (search ".rb", then ".so") has a
+	  security risk (ruby-bugs#PR140).
+
+Mon Jun 18 00:43:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): avoid pushing unnecessary
+	  option_set.
+
+Sat Jun 16 10:58:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_load): tainted string is OK if wrapped *and*
+	  $SAFE >= 4.
+
+Thu Jun 14 16:27:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): should not nail down higher blocks
+	  before preserving original context (i.e. should not alter
+	  original context).
+
 Tue Jun 12 14:24:02 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* lib/mkmf.rb: target_prefix is only for installation, not for

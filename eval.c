@@ -5128,7 +5128,12 @@ rb_load(fname, wrap)
     NODE *saved_cref = ruby_cref;
     TMP_PROTECT;
 
-    Check_SafeStr(fname);
+    if (wrap && ruby_safe_level >= 4) {
+	Check_Type(fname, T_STRING);
+    }
+    else {
+	Check_SafeStr(fname);
+    }
     file = rb_find_file(RSTRING(fname)->ptr);
     if (!file) {
 	rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
@@ -5373,28 +5378,20 @@ rb_f_require(obj, fname)
     }
     buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
     strcpy(buf, RSTRING(fname)->ptr);
-    strcat(buf, ".rb");
-    if (rb_find_file(buf)) {
+    switch (rb_find_file_noext(buf)) {
+      case 0:
+	break;
+
+      case 1:
 	fname = rb_str_new2(buf);
-	feature = buf;
+	file = feature = buf;
 	goto load_rb;
-    }
-    strcpy(buf, RSTRING(fname)->ptr);
-    strcat(buf, DLEXT);
-    file = rb_find_file(buf);
-    if (file) {
+
+      default:
 	feature = buf;
+	file = rb_find_file(buf);
 	goto load_dyna;
     }
-#ifdef DLEXT2
-    strcpy(buf, RSTRING(fname)->ptr);
-    strcat(buf, DLEXT2);
-    file = rb_find_file(buf);
-    if (file) {
-	feature = buf;
-	goto load_dyna;
-    }
-#endif
     rb_raise(rb_eLoadError, "No such file to load -- %s",
 	     RSTRING(fname)->ptr);
 
@@ -8145,6 +8142,11 @@ rb_thread_start_0(fn, arg, th_arg)
     }
 #endif
 
+    FL_SET(ruby_scope, SCOPE_SHARED);
+    if (THREAD_SAVE_CONTEXT(curr_thread)) {
+	return thread;
+    }
+
     if (ruby_block) {		/* should nail down higher scopes */
 	struct BLOCK dummy;
 
@@ -8153,10 +8155,6 @@ rb_thread_start_0(fn, arg, th_arg)
 	saved_block = ruby_block = dummy.prev;
     }
     scope_dup(ruby_scope);
-    FL_SET(ruby_scope, SCOPE_SHARED);
-    if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	return thread;
-    }
 
     if (!th->next) {
 	/* merge in thread list */

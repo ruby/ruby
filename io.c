@@ -3346,12 +3346,17 @@ static void
 opt_i_set(val)
     VALUE val;
 {
-    if (ruby_inplace_mode) free(ruby_inplace_mode);
+    long len;
+
     if (!RTEST(val)) {
+	if (ruby_inplace_mode) free(ruby_inplace_mode);
 	ruby_inplace_mode = 0;
 	return;
     }
-    ruby_inplace_mode = strdup(STR2CSTR(val));
+    STR2CSTR(val);
+    len = RSTRING(val)->len;
+    REALLOC_N(ruby_inplace_mode, char, len + 1);
+    ((char *)MEMCPY(ruby_inplace_mode, RSTRING(val)->ptr, char, len))[len] = '\0';
 }
 
 void

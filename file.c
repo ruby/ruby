@@ -2124,40 +2124,100 @@ is_macos_native_path(path)
 }
 #endif
 
+static char*
+file_load_ok(file)
+    char *file;
+{
+    FILE *f;
+
+    f = fopen(file, "r");
+    if (f == NULL) return 0;
+    fclose(f);
+    return file;
+}
+
+extern VALUE rb_load_path;
+
+int
+rb_find_file_noext(file)
+    char *file;
+{
+    char *path, *e, *found;
+    char *fend = file + strlen(file);
+    VALUE fname;
+    int i, j;
+
+    static char *ext[] = {
+	".rb", DLEXT,
+#ifdef DLEXT2
+	DLEXT2,
+#endif
+	0
+    };
+
+    if (file[0] == '~') {
+	fname = rb_str_new2(file);
+	fname = rb_file_s_expand_path(1, &fname);
+	file = STR2CSTR(fname);
+    }
+
+    if (is_absolute_path(file)) {
+	for (i=0; ext[i]; i++) {
+	    strcpy(fend, ext[i]);
+	    if (file_load_ok(file)) return i+1;
+	}
+	return 0;
+    }
+
+    if (!rb_load_path) return 0;
+
+    Check_Type(rb_load_path, T_ARRAY);
+    for (i=0;i<RARRAY(rb_load_path)->len;i++) {
+	VALUE str = RARRAY(rb_load_path)->ptr[i];
+
+	Check_SafeStr(str);
+	path = RSTRING(str)->ptr;
+	for (j=0; ext[j]; j++) {
+	    strcpy(fend, ext[j]);
+	    found = dln_find_file(file, path);
+	    if (found && file_load_ok(found)) return j+1;
+	}
+    }
+    return 0;
+}
+
 char*
 rb_find_file(file)
     char *file;
 {
-    extern VALUE rb_load_path;
     volatile VALUE vpath;
     VALUE fname;
     char *path;
     struct stat st;
 
+    if (file[0] == '~') {
+	fname = rb_str_new2(file);
+	fname = rb_file_s_expand_path(1, &fname);
+	if (rb_safe_level() >= 2 && OBJ_TAINTED(fname)) {
+	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", file);
+	}
+	file = STR2CSTR(fname);
+    }
+
 #if defined(__MACOS__) || defined(riscos)
     if (is_macos_native_path(file)) {
-	FILE *f;
-
 	if (rb_safe_level() >= 2 && !rb_path_check(file)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", file);
 	}
-	f= fopen(file, "r");
-	if (f == NULL) return 0;
-	fclose(f);
-	return file;
+	return file_load_ok(file);
     }
 #endif
 
     if (is_absolute_path(file)) {
-	FILE *f;
-
 	if (rb_safe_level() >= 2 && !rb_path_check(file)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", file);
 	}
-	f = fopen(file, "r");
-	if (f == NULL) return 0;
-	fclose(f);
-	return file;
+	return file_load_ok(file);
     }
 
     if (file[0] == '~') {
@@ -2192,10 +2252,7 @@ rb_find_file(file)
     }
 
     path = dln_find_file(file, path);
-    if (path && stat(path, &st) == 0) {
-	return path;
-    }
-    return 0;
+    return file_load_ok(path);
 }
 
 static void

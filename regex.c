@@ -1260,7 +1260,6 @@ re_compile_pattern(pattern, size, bufp)
   int had_char_class = 0;
 
   int options = bufp->options;
-  int old_options = 0;
 
   bufp->fastmap_accurate = 0;
   bufp->must = 0;
@@ -1683,11 +1682,15 @@ re_compile_pattern(pattern, size, bufp)
       break;
 
     case '(':
-      old_options = options;
+      {
+	int old_options = options;
+	int push_option = 0;
+	int casefold = 0;
+
       PATFETCH(c);
       if (c == '?') {
 	int negative = 0;
-	int push_option = 0;
+
 	PATFETCH_RAW(c);
 	switch (c) {
 	case 'x': case 'p': case 'm': case 'i': case '-':
@@ -1736,13 +1739,12 @@ re_compile_pattern(pattern, size, bufp)
 	      if (negative) {
 		if (options&RE_OPTION_IGNORECASE) {
 		  options &= ~RE_OPTION_IGNORECASE;
-		  BUFPUSH(casefold_off);
 		}
 	      }
 	      else if (!(options&RE_OPTION_IGNORECASE)) {
 		options |= RE_OPTION_IGNORECASE;
-		BUFPUSH(casefold_on);
 	      }
+		casefold = 1;
 	      break;
 
 	    default:
@@ -1774,16 +1776,24 @@ re_compile_pattern(pattern, size, bufp)
 	default:
 	  FREE_AND_RETURN(stackb, "undefined (?...) sequence");
 	}
+	}
+	else {
+	  PATUNFETCH;
+	  c = '(';
+	}
+	if (c == '#') {
 	if (push_option) {
 	  BUFPUSH(option_set);
 	  BUFPUSH(options);
 	}
+	  if (casefold) {
+	    if (options & RE_OPTION_IGNORECASE)
+	      BUFPUSH(casefold_on);
+	    else
+	      BUFPUSH(casefold_off);
       }
-      else {
-	PATUNFETCH;
-	c = '(';
+	  break;
       }
-      if (c == '#') break;
       if (stackp+8 >= stacke) {
 	DOUBLE_STACK(int);
       }
@@ -1826,24 +1836,28 @@ re_compile_pattern(pattern, size, bufp)
       default:
 	break;
       }
+	if (push_option) {
+	  BUFPUSH(option_set);
+	  BUFPUSH(options);
+	}
+	if (casefold) {
+	  if (options & RE_OPTION_IGNORECASE)
+	    BUFPUSH(casefold_on);
+	  else
+	    BUFPUSH(casefold_off);
+	}
       *stackp++ = c;
       *stackp++ = old_options;
       fixup_alt_jump = 0;
       laststart = 0;
       begalt = b;
+      }
       break;
 
     case ')':
       if (stackp == stackb) 
 	FREE_AND_RETURN(stackb, "unmatched )");
 
-      if (options != stackp[-1]) {
-	if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
-	  BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
-	}
-	BUFPUSH(option_set);
-	BUFPUSH(stackp[-1]);
-      }
       pending_exact = 0;
       if (fixup_alt_jump) {
 	/* Push a dummy failure point at the end of the
@@ -1855,6 +1869,15 @@ re_compile_pattern(pattern, size, bufp)
 	/* We allocated space for this jump when we assigned
 	   to `fixup_alt_jump', in the `handle_alt' case below.  */
 	store_jump(fixup_alt_jump, jump, b);
+      }
+      if (options != stackp[-1]) {
+	if ((options ^ stackp[-1]) & RE_OPTION_IGNORECASE) {
+	  BUFPUSH((options&RE_OPTION_IGNORECASE)?casefold_off:casefold_on);
+	}
+	if ((options ^ stackp[-1]) != RE_OPTION_IGNORECASE) {
+	  BUFPUSH(option_set);
+	  BUFPUSH(stackp[-1]);
+	}
       }
       p0 = b;
       options = *--stackp;
@@ -3241,7 +3264,8 @@ re_search(bufp, string, size, startpos, range, regs)
     }
 
     if (startpos > size) return -1;
-    if (anchor && size > 0 && startpos == size) return -1;
+    if ((anchor || !bufp->can_be_null) && size > 0 && startpos == size)
+      return -1;
     val = re_match(bufp, string, size, startpos, regs);
     if (val >= 0) return startpos;
     if (val == -2) return -2;
