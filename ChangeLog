@@ -1,3 +1,10 @@
+Wed Jun  9 17:39:37 2004  Akinori MUSHA  <knu@iDaemons.org>
+
+	* config.guess, config.sub: Update to a more recent version as of
+	  2004-01-20.
+
+	* configure.in: Add support for DragonFly BSD.
+
 Wed Jun  2 20:16:03 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (str_new4): should share shared instance if it already

@@ -3,7 +3,7 @@
 #   Copyright (C) 1992, 1993, 1994, 1995, 1996, 1997, 1998, 1999,
 #   2000, 2001, 2002, 2003 Free Software Foundation, Inc.
 
-timestamp='2003-01-10'
+timestamp='2004-01-20'
 
 # This file is free software; you can redistribute it and/or modify it
 # under the terms of the GNU General Public License as published by
@@ -106,6 +106,7 @@ trap "rm -f \$tmpfiles 2>/dev/null; rmdir \$tmp 2>/dev/null; exit 1" 1 2 13 15 ;
 : ${TMPDIR=/tmp} ;
  { tmp=`(umask 077 && mktemp -d -q "$TMPDIR/cgXXXXXX") 2>/dev/null` && test -n "$tmp" && test -d "$tmp" ; } ||
  { test -n "$RANDOM" && tmp=$TMPDIR/cg$$-$RANDOM && (umask 077 && mkdir $tmp) ; } ||
+ { tmp=$TMPDIR/cg-$$ && (umask 077 && mkdir $tmp) && echo "Warning: creating insecure temp directory" >&2 ; } ||
  { echo "$me: cannot create a temporary directory in $TMPDIR" >&2 ; exit 1 ; } ;
 dummy=$tmp/dummy ;
 tmpfiles="$dummy.c $dummy.o $dummy.rel $dummy" ;
@@ -178,10 +179,23 @@ case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}:${UNAME_VERSION}" in
 	        os=netbsd
 		;;
 	esac
+	# The OS release
+	# Debian GNU/NetBSD machines have a different userland, and
+	# thus, need a distinct triplet. However, they do not need
+	# kernel version information, so it can be replaced with a
+	# suitable tag, in the style of linux-gnu.
+	case "${UNAME_VERSION}" in
+	    Debian*)
+		release='-gnu'
+		;;
+	    *)
+		release=`echo ${UNAME_RELEASE}|sed -e 's/[-_].*/\./'`
+		;;
+	esac
 	# Since CPU_TYPE-MANUFACTURER-KERNEL-OPERATING_SYSTEM:
 	# contains redundant information, the shorter form:
 	# CPU_TYPE-MANUFACTURER-OPERATING_SYSTEM is used.
-	echo "${machine}-${os}"
+	echo "${machine}-${os}${release}"
 	exit 0 ;;
     amiga:OpenBSD:*:*)
 	echo m68k-unknown-openbsd${UNAME_RELEASE}
@@ -207,6 +221,9 @@ case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}:${UNAME_VERSION}" in
     mvmeppc:OpenBSD:*:*)
 	echo powerpc-unknown-openbsd${UNAME_RELEASE}
 	exit 0 ;;
+    pegasos:OpenBSD:*:*)
+	echo powerpc-unknown-openbsd${UNAME_RELEASE}
+	exit 0 ;;
     pmax:OpenBSD:*:*)
 	echo mipsel-unknown-openbsd${UNAME_RELEASE}
 	exit 0 ;;
@@ -222,73 +239,55 @@ case "${UNAME_MACHINE}:${UNAME_SYSTEM}:${UNAME_RELEASE}:${UNAME_VERSION}" in
     *:OpenBSD:*:*)
 	echo ${UNAME_MACHINE}-unknown-openbsd${UNAME_RELEASE}
 	exit 0 ;;
-    *:MicroBSD:*:*)
-	echo ${UNAME_MACHINE}-unknown-microbsd${UNAME_RELEASE}
-	exit 0 ;;
     alpha:OSF1:*:*)
 	if test $UNAME_RELEASE = "V4.0"; then
 		UNAME_RELEASE=`/usr/sbin/sizer -v | awk '{print $3}'`
 	fi
+	# According to Compaq, /usr/sbin/psrinfo has been available on
+	# OSF/1 and Tru64 systems produced since 1995.  I hope that
+	# covers most systems running today.  This code pipes the CPU
+	# types through head -n 1, so we only detect the type of CPU 0.
+	ALPHA_CPU_TYPE=`/usr/sbin/psrinfo -v | sed -n -e 's/^  The alpha \(.*\) processor.*$/\1/p' | head -n 1`
+	case "$ALPHA_CPU_TYPE" in
+	    "EV4 (21064)")
+		UNAME_MACHINE="alpha" ;;
+	    "EV4.5 (21064)")
+		UNAME_MACHINE="alpha" ;;
+	    "LCA4 (21066/21068)")
+		UNAME_MACHINE="alpha" ;;
+	    "EV5 (21164)")
+		UNAME_MACHINE="alphaev5" ;;
+	    "EV5.6 (21164A)")
+		UNAME_MACHINE="alphaev56" ;;
+	    "EV5.6 (21164PC)")
+		UNAME_MACHINE="alphapca56" ;;
+	    "EV5.7 (21164PC)")
+		UNAME_MACHINE="alphapca57" ;;
+	    "EV6 (21264)")
+		UNAME_MACHINE="alphaev6" ;;
+	    "EV6.7 (21264A)")
+		UNAME_MACHINE="alphaev67" ;;
+	    "EV6.8CB (21264C)")
+		UNAME_MACHINE="alphaev68" ;;
+	    "EV6.8AL (21264B)")
+		UNAME_MACHINE="alphaev68" ;;
+	    "EV6.8CX (21264D)")
+		UNAME_MACHINE="alphaev68" ;;
+	    "EV6.9A (21264/EV69A)")
+		UNAME_MACHINE="alphaev69" ;;
+	    "EV7 (21364)")
+		UNAME_MACHINE="alphaev7" ;;
+	    "EV7.9 (21364A)")
+		UNAME_MACHINE="alphaev79" ;;
+	esac
 	# A Vn.n version is a released version.
 	# A Tn.n version is a released field test version.
 	# A Xn.n version is an unreleased experimental baselevel.
 	# 1.2 uses "1.2" for uname -r.
-	eval $set_cc_for_build
-	cat <<EOF >$dummy.s
-	.data
-\$Lformat:
-	.byte 37,100,45,37,120,10,0	# "%d-%x\n"
-
-	.text
-	.globl main
-	.align 4
-	.ent main
-main:
-	.frame \$30,16,\$26,0
-	ldgp \$29,0(\$27)
-	.prologue 1
-	.long 0x47e03d80 # implver \$0
-	lda \$2,-1
-	.long 0x47e20c21 # amask \$2,\$1
-	lda \$16,\$Lformat
-	mov \$0,\$17
-	not \$1,\$18
-	jsr \$26,printf
-	ldgp \$29,0(\$26)
-	mov 0,\$16
-	jsr \$26,exit
-	.end main
-EOF
-	$CC_FOR_BUILD -o $dummy $dummy.s 2>/dev/null
-	if test "$?" = 0 ; then
-		case `$dummy` in
-			0-0)
-				UNAME_MACHINE="alpha"
-				;;
-			1-0)
-				UNAME_MACHINE="alphaev5"
-				;;
-			1-1)
-				UNAME_MACHINE="alphaev56"
-				;;
-			1-101)
-				UNAME_MACHINE="alphapca56"
-				;;
-			2-303)
-				UNAME_MACHINE="alphaev6"
-				;;
-			2-307)
-				UNAME_MACHINE="alphaev67"
-				;;
-			2-1307)
-				UNAME_MACHINE="alphaev68"
-				;;
-			3-1307)
-				UNAME_MACHINE="alphaev7"
-				;;
-		esac
-	fi
 	echo ${UNAME_MACHINE}-dec-osf`echo ${UNAME_RELEASE} | sed -e 's/^[VTX]//' | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`
+	exit 0 ;;
+    Alpha*:OpenVMS:*:*)
+	echo alpha-hp-vms
 	exit 0 ;;
     Alpha\ *:Windows_NT*:*)
 	# How do we know it's Interix rather than the generic POSIX subsystem?
@@ -311,6 +310,9 @@ EOF
     *:OS/390:*:*)
 	echo i370-ibm-openedition
 	exit 0 ;;
+    *:OS400:*:*)
+        echo powerpc-ibm-os400
+	exit 0 ;;
     arm:RISC*:1.[012]*:*|arm:riscix:1.[012]*:*)
 	echo arm-acorn-riscix${UNAME_RELEASE}
 	exit 0;;
@@ -327,6 +329,9 @@ EOF
 	exit 0 ;;
     NILE*:*:*:dcosx)
 	echo pyramid-pyramid-svr4
+	exit 0 ;;
+    DRS?6000:unix:4.0:6*)
+	echo sparc-icl-nx6
 	exit 0 ;;
     DRS?6000:UNIX_SV:4.2*:7*)
 	case `/usr/bin/uname -p` in
@@ -735,7 +740,7 @@ EOF
 	echo sv1-cray-unicos${UNAME_RELEASE} | sed -e 's/\.[^.]*$/.X/'
 	exit 0 ;;
     *:UNICOS/mp:*:*)
-	echo nv1-cray-unicosmp${UNAME_RELEASE} | sed -e 's/\.[^.]*$/.X/' 
+	echo nv1-cray-unicosmp${UNAME_RELEASE} | sed -e 's/\.[^.]*$/.X/'
 	exit 0 ;;
     F30[01]:UNIX_System_V:*:* | F700:UNIX_System_V:*:*)
 	FUJITSU_PROC=`uname -m | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz'`
@@ -743,6 +748,11 @@ EOF
         FUJITSU_REL=`echo ${UNAME_RELEASE} | sed -e 's/ /_/'`
         echo "${FUJITSU_PROC}-fujitsu-${FUJITSU_SYS}${FUJITSU_REL}"
         exit 0 ;;
+    5000:UNIX_System_V:4.*:*)
+        FUJITSU_SYS=`uname -p | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz' | sed -e 's/\///'`
+        FUJITSU_REL=`echo ${UNAME_RELEASE} | tr 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' 'abcdefghijklmnopqrstuvwxyz' | sed -e 's/ /_/'`
+        echo "sparc-fujitsu-${FUJITSU_SYS}${FUJITSU_REL}"
+	exit 0 ;;
     i*86:BSD/386:*:* | i*86:BSD/OS:*:* | *:Ascend\ Embedded/OS:*:*)
 	echo ${UNAME_MACHINE}-pc-bsdi${UNAME_RELEASE}
 	exit 0 ;;
@@ -764,7 +774,10 @@ EOF
 	#endif
 EOF
 	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep ^LIBC=`
-	echo ${UNAME_MACHINE}-unknown-freebsd`echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`${LIBC:+-$LIBC}
+	# GNU/KFreeBSD systems have a "k" prefix to indicate we are using
+	# FreeBSD's kernel, but not the complete OS.
+	case ${LIBC} in gnu) kernel_only='k' ;; esac
+	echo ${UNAME_MACHINE}-unknown-${kernel_only}freebsd`echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`${LIBC:+-$LIBC}
 	exit 0 ;;
     i*:CYGWIN*:*)
 	echo ${UNAME_MACHINE}-pc-cygwin
@@ -775,8 +788,8 @@ EOF
     i*:PW*:*)
 	echo ${UNAME_MACHINE}-pc-pw32
 	exit 0 ;;
-    x86:Interix*:3*)
-	echo i586-pc-interix3
+    x86:Interix*:[34]*)
+	echo i586-pc-interix${UNAME_RELEASE}|sed -e 's/\..*//'
 	exit 0 ;;
     [345]86:Windows_95:* | [345]86:Windows_98:* | [345]86:Windows_NT:*)
 	echo i${UNAME_MACHINE}-pc-mks
@@ -797,19 +810,27 @@ EOF
 	echo powerpcle-unknown-solaris2`echo ${UNAME_RELEASE}|sed -e 's/[^.]*//'`
 	exit 0 ;;
     *:GNU:*:*)
+	# the GNU system
 	echo `echo ${UNAME_MACHINE}|sed -e 's,[-/].*$,,'`-unknown-gnu`echo ${UNAME_RELEASE}|sed -e 's,/.*$,,'`
+	exit 0 ;;
+    *:GNU/*:*:*)
+	# other systems with GNU libc and userland
+	echo ${UNAME_MACHINE}-unknown-`echo ${UNAME_SYSTEM} | sed 's,^[^/]*/,,' | tr '[A-Z]' '[a-z]'``echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`-gnu
 	exit 0 ;;
     i*86:Minix:*:*)
 	echo ${UNAME_MACHINE}-pc-minix
 	exit 0 ;;
     arm*:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux
+	echo ${UNAME_MACHINE}-unknown-linux-gnu
+	exit 0 ;;
+    cris:Linux:*:*)
+	echo cris-axis-linux-gnu
 	exit 0 ;;
     ia64:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux
+	echo ${UNAME_MACHINE}-unknown-linux-gnu
 	exit 0 ;;
     m68*:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux
+	echo ${UNAME_MACHINE}-unknown-linux-gnu
 	exit 0 ;;
     mips:Linux:*:*)
 	eval $set_cc_for_build
@@ -828,7 +849,7 @@ EOF
 	#endif
 EOF
 	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep ^CPU=`
-	test x"${CPU}" != x && echo "${CPU}-unknown-linux" && exit 0
+	test x"${CPU}" != x && echo "${CPU}-unknown-linux-gnu" && exit 0
 	;;
     mips64:Linux:*:*)
 	eval $set_cc_for_build
@@ -847,13 +868,13 @@ EOF
 	#endif
 EOF
 	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep ^CPU=`
-	test x"${CPU}" != x && echo "${CPU}-unknown-linux" && exit 0
+	test x"${CPU}" != x && echo "${CPU}-unknown-linux-gnu" && exit 0
 	;;
     ppc:Linux:*:*)
-	echo powerpc-unknown-linux
+	echo powerpc-unknown-linux-gnu
 	exit 0 ;;
     ppc64:Linux:*:*)
-	echo powerpc64-unknown-linux
+	echo powerpc64-unknown-linux-gnu
 	exit 0 ;;
     alpha:Linux:*:*)
 	case `sed -n '/^cpu model/s/^.*: \(.*\)/\1/p' < /proc/cpuinfo` in
@@ -866,31 +887,34 @@ EOF
 	  EV68*) UNAME_MACHINE=alphaev68 ;;
         esac
 	objdump --private-headers /bin/sh | grep ld.so.1 >/dev/null
-	if test "$?" = 0 ; then LIBC="-libc1" ; else LIBC="" ; fi
-	echo ${UNAME_MACHINE}-unknown-linux${LIBC}
+	if test "$?" = 0 ; then LIBC="libc1" ; else LIBC="" ; fi
+	echo ${UNAME_MACHINE}-unknown-linux-gnu${LIBC}
 	exit 0 ;;
     parisc:Linux:*:* | hppa:Linux:*:*)
 	# Look for CPU level
 	case `grep '^cpu[^a-z]*:' /proc/cpuinfo 2>/dev/null | cut -d' ' -f2` in
-	  PA7*) echo hppa1.1-unknown-linux;;
-	  PA8*) echo hppa2.0-unknown-linux;;
-	  *)    echo hppa-unknown-linux;;
+	  PA7*) echo hppa1.1-unknown-linux-gnu ;;
+	  PA8*) echo hppa2.0-unknown-linux-gnu ;;
+	  *)    echo hppa-unknown-linux-gnu ;;
 	esac
 	exit 0 ;;
     parisc64:Linux:*:* | hppa64:Linux:*:*)
-	echo hppa64-unknown-linux
+	echo hppa64-unknown-linux-gnu
 	exit 0 ;;
     s390:Linux:*:* | s390x:Linux:*:*)
 	echo ${UNAME_MACHINE}-ibm-linux
 	exit 0 ;;
+    sh64*:Linux:*:*)
+    	echo ${UNAME_MACHINE}-unknown-linux-gnu
+	exit 0 ;;
     sh*:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux
+	echo ${UNAME_MACHINE}-unknown-linux-gnu
 	exit 0 ;;
     sparc:Linux:*:* | sparc64:Linux:*:*)
-	echo ${UNAME_MACHINE}-unknown-linux
+	echo ${UNAME_MACHINE}-unknown-linux-gnu
 	exit 0 ;;
     x86_64:Linux:*:*)
-	echo x86_64-unknown-linux
+	echo x86_64-unknown-linux-gnu
 	exit 0 ;;
     i*86:Linux:*:*)
 	# The BFD linker knows what the default object file format is, so
@@ -905,20 +929,47 @@ EOF
 				    p'`
         case "$ld_supported_targets" in
 	  elf32-i386)
-		TENTATIVE="${UNAME_MACHINE}-pc-linux"
+		TENTATIVE="${UNAME_MACHINE}-pc-linux-gnu"
 		;;
 	  a.out-i386-linux)
-		echo "${UNAME_MACHINE}-pc-linux-aout"
+		echo "${UNAME_MACHINE}-pc-linux-gnuaout"
 		exit 0 ;;
 	  coff-i386)
-		echo "${UNAME_MACHINE}-pc-linux-coff"
+		echo "${UNAME_MACHINE}-pc-linux-gnucoff"
 		exit 0 ;;
 	  "")
-		# Either a pre-BFD a.out linker (linux-oldld) or
+		# Either a pre-BFD a.out linker (linux-gnuoldld) or
 		# one that does not give us useful --help.
-		echo "${UNAME_MACHINE}-pc-linux-oldld"
+		echo "${UNAME_MACHINE}-pc-linux-gnuoldld"
 		exit 0 ;;
 	esac
+	# Determine whether the default compiler is a.out or elf
+	eval $set_cc_for_build
+	sed 's/^	//' << EOF >$dummy.c
+	#include <features.h>
+	#ifdef __ELF__
+	# ifdef __GLIBC__
+	#  if __GLIBC__ >= 2
+	LIBC=gnu
+	#  else
+	LIBC=gnulibc1
+	#  endif
+	# else
+	LIBC=gnulibc1
+	# endif
+	#else
+	#ifdef __INTEL_COMPILER
+	LIBC=gnu
+	#else
+	LIBC=gnuaout
+	#endif
+	#endif
+	#ifdef __dietlibc__
+	LIBC=dietlibc
+	#endif
+EOF
+	eval `$CC_FOR_BUILD -E $dummy.c 2>/dev/null | grep ^LIBC=`
+	test x"${LIBC}" != x && echo "${UNAME_MACHINE}-pc-linux-${LIBC}" && exit 0
 	test x"${TENTATIVE}" != x && echo "${TENTATIVE}" && exit 0
 	;;
     i*86:DYNIX/ptx:4*:*)
@@ -945,6 +996,9 @@ EOF
 	exit 0 ;;
     i*86:atheos:*:*)
 	echo ${UNAME_MACHINE}-unknown-atheos
+	exit 0 ;;
+	i*86:syllable:*:*)
+	echo ${UNAME_MACHINE}-pc-syllable
 	exit 0 ;;
     i*86:LynxOS:2.*:* | i*86:LynxOS:3.[01]*:* | i*86:LynxOS:4.0*:*)
 	echo i386-unknown-lynxos${UNAME_RELEASE}
@@ -1017,7 +1071,7 @@ EOF
 	exit 0 ;;
     M68*:*:R3V[567]*:*)
 	test -r /sysV68 && echo 'm68k-motorola-sysv' && exit 0 ;;
-    3[34]??:*:4.0:3.0 | 3[34]??A:*:4.0:3.0 | 3[34]??,*:*:4.0:3.0 | 3[34]??/*:*:4.0:3.0 | 4400:*:4.0:3.0 | 4850:*:4.0:3.0 | SKA40:*:4.0:3.0 | SDS2:*:4.0:3.0)
+    3[345]??:*:4.0:3.0 | 3[34]??A:*:4.0:3.0 | 3[34]??,*:*:4.0:3.0 | 3[34]??/*:*:4.0:3.0 | 4400:*:4.0:3.0 | 4850:*:4.0:3.0 | SKA40:*:4.0:3.0 | SDS2:*:4.0:3.0 | SHG2:*:4.0:3.0)
 	OS_REL=''
 	test -r /etc/.relid \
 	&& OS_REL=.`sed -n 's/[^ ]* [^ ]* \([0-9][0-9]\).*/\1/p' < /etc/.relid`
@@ -1119,7 +1173,7 @@ EOF
 	    *86) UNAME_PROCESSOR=i686 ;;
 	    powerpc) UNAME_PROCESSOR=powerpc ;;
 	esac
-	echo ${UNAME_PROCESSOR}-apple-darwin
+	echo ${UNAME_PROCESSOR}-apple-darwin${UNAME_RELEASE}
 	exit 0 ;;
     *:procnto*:*:* | *:QNX:[0123456789]*:*)
 	UNAME_PROCESSOR=`uname -p`
@@ -1132,7 +1186,7 @@ EOF
     *:QNX:*:4*)
 	echo i386-pc-qnx
 	exit 0 ;;
-    NSR-[DGKLNPTVW]:NONSTOP_KERNEL:*:*)
+    NSR-?:NONSTOP_KERNEL:*:*)
 	echo nsr-tandem-nsk${UNAME_RELEASE}
 	exit 0 ;;
     *:NonStop-UX:*:*)
@@ -1172,6 +1226,12 @@ EOF
 	exit 0 ;;
     *:ITS:*:*)
 	echo pdp10-unknown-its
+	exit 0 ;;
+    SEI:*:*:SEIUX)
+        echo mips-sei-seiux${UNAME_RELEASE}
+	exit 0 ;;
+    *:DragonFly:*:*)
+	echo ${UNAME_MACHINE}-unknown-dragonfly`echo ${UNAME_RELEASE}|sed -e 's/[-(].*//'`
 	exit 0 ;;
 esac
 
