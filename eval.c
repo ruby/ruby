@@ -2891,7 +2891,7 @@ rb_eval(self, n)
 	goto again;
 
       case NODE_OP_ASGN_OR:
-	if ((node->nd_aid && !rb_ivar_defined(self, node->nd_aid)) ||
+	if ((node->nd_aid && !is_defined(self, node->nd_head, 0)) ||
 	    !RTEST(result = rb_eval(self, node->nd_head))) {
 	    node = node->nd_value;
 	    goto again;

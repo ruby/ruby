@@ -49,6 +49,11 @@
 #define is_const_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CONST)
 #define is_class_id(id) (is_notop_id(id)&&((id)&ID_SCOPE_MASK)==ID_CLASS)
 
+#define is_asgn_or_id(id) ((is_notop_id(id)) && \
+	(((id)&ID_SCOPE_MASK) == ID_GLOBAL || \
+	 ((id)&ID_SCOPE_MASK) == ID_INSTANCE || \
+	 ((id)&ID_SCOPE_MASK) == ID_CLASS))
+
 NODE *ruby_eval_tree_begin = 0;
 NODE *ruby_eval_tree = 0;
 
@@ -462,7 +467,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			    if ($2 == tOROP) {
 				$1->nd_value = $3;
 				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);
-				if (is_instance_id(vid)) {
+				if (is_asgn_or_id(vid)) {
 				    $$->nd_aid = vid;
 				}
 			    }
@@ -828,7 +833,7 @@ arg		: lhs '=' arg
 			    if ($2 == tOROP) {
 				$1->nd_value = $3;
 				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);
-				if (is_instance_id(vid)) {
+				if (is_asgn_or_id(vid)) {
 				    $$->nd_aid = vid;
 				}
 			    }
