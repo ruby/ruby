@@ -67,7 +67,7 @@ char *strrchr _((const char*,const char));
 #include <sys/stat.h>
 
 #ifndef HAVE_LSTAT
-#define lstat stat
+#define lstat rb_sys_stat
 #endif
  
 VALUE rb_cFile;
@@ -314,7 +314,7 @@ rb_stat(file, st)
 #if defined DJGPP
     if (RSTRING(file)->len == 0) return -1;
 #endif
-    return stat(RSTRING(file)->ptr, st);
+    return rb_sys_stat(RSTRING(file)->ptr, st);
 }
 
 static VALUE
@@ -324,7 +324,7 @@ rb_file_s_stat(obj, fname)
     struct stat st;
 
     Check_SafeStr(fname);
-    if (stat(RSTRING(fname)->ptr, &st) == -1) {
+    if (rb_sys_stat(RSTRING(fname)->ptr, &st) == -1) {
 	rb_sys_fail(RSTRING(fname)->ptr);
     }
     return stat_new(&st);
@@ -420,7 +420,7 @@ eaccess(path, mode)
   struct stat st;
   static int euid = -1;
 
-  if (stat(path, &st) < 0) return (-1);
+  if (rb_sys_stat(path, &st) < 0) return (-1);
 
   if (euid == -1)
     euid = geteuid ();
@@ -722,7 +722,7 @@ check3rdbyte(file, mode)
 {
     struct stat st;
 
-    if (stat(file, &st) < 0) return Qfalse;
+    if (rb_sys_stat(file, &st) < 0) return Qfalse;
     if (st.st_mode & mode) return Qtrue;
     return Qfalse;
 }

@@ -568,7 +568,7 @@ rb_glob_helper(path, flag, func, arg)
     char *p, *m;
 
     if (!has_magic(path, 0)) {
-	if (stat(path, &st) == 0) {
+	if (rb_sys_stat(path, &st) == 0) {
 	    (*func)(path, arg);
 	}
 	return;

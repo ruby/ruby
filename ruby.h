@@ -593,6 +593,10 @@ rb_special_const_p(VALUE obj)
 static char *dln_libs_to_be_linked[] = { EXTLIB, 0 };
 #endif
 
+#ifndef rb_sys_stat
+#define rb_sys_stat stat
+#endif
+
 #if defined(__cplusplus)
 }  /* extern "C" { */
 #endif

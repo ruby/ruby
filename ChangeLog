@@ -1,3 +1,16 @@
+Fri Feb 10 00:06:28 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* win32/win32.c (win32_stat): replace stat for enable when pathname
+	  ends with '/' or '\' for mswin32 on Win9X / Win2k.
+
+	* win32/win32.h: ditto.
+
+	* ruby.h: ditto.
+
+	* dir.c (rb_glob_helper): ditto.
+
+	* file.c (rb_stat, rb_file_s_stat, eaccess, check3rdbyte): ditto.
+
 Fri Feb  9 22:54:57 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ruby.c (ruby_init_loadpath): convert '\\' to '/'

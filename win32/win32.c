@@ -29,6 +29,7 @@
 #ifndef index
 #define index(x, y) strchr((x), (y))
 #endif
+#define isdirsep(x) ((x) == '/' || (x) == '\\')
 
 #ifndef bool
 #define bool int
@@ -2581,6 +2582,26 @@ myrename(const char *oldpath, const char *newpath)
 	SetFileAttributes(newpath, oldatts);
 
     return res;
+}
+
+int
+win32_stat(const char *path, struct stat *st)
+{
+    const char *p = path;
+
+    if ((isdirsep(*p) && (p++, TRUE)) || /* absolute path or UNC */
+	(ISALPHA(*p) && p[1] == ':' && (p += 2, TRUE))) { /* has drive */
+	if (isdirsep(*p)) p++;
+    }
+    if (*p && (p = CharPrev(p, p + strlen(p)), isdirsep(*p))) {
+	/* Win95/2000 fail with trailing path separator? */
+	int len = p - path;
+	char *s = ALLOCA_N(char, len + 1);
+	memcpy(s, path, len);
+	s[len] = '\0';
+	path = s;
+    }
+    return stat(path, st);
 }
 
 static long
