@@ -6,11 +6,7 @@
 
 (1) Visual C++ 5.0 or later.
 
-(2) If you want to run `((%nmake clean%))' or `((%nmake distclean%))'
-    properly, you must install UNIX compatible `((%rm%))' command on
-    your ((|PATH|)) if you want to clean after compile.
-
-(3) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
+(2) Please set environment variable (({INCLUDE})), (({LIB})), (({PATH}))
     to run required commands properly from the command line.
 
     Note: building ruby requires following commands.
@@ -19,11 +15,18 @@
      * lib
      * dumpbin
 
+(3) If you want to build from CVS source, following commands are required.
+     * byacc
+     * sed
+
 == How to compile and install
 
 (1) Execute win32\configure.bat on your build directory.
     You can specify the target platform as an argument.
     For example, run `((%configure i686-mswin32%))'
+    You can also specify the install directory.
+    For example, run `((%configure --prefix=<install_directory>%))'
+    Default of the install directory is /usr .
 
 (2) Change ((|RUBY_INSTALL_NAME|)) and ((|RUBY_SO_NAME|)) in (({Makefile}))
     if you want to change the name of the executable files. 
@@ -36,7 +39,7 @@
 
 (5) Run `((%nmake test%))'
 
-(6) Run `((%nmake DESTDIR=<install_directory> install%))'
+(6) Run `((%nmake install%))'
 
     This command will create following directories and install files onto them.
       * <install_directory>\bin
@@ -81,10 +84,10 @@ in Japanese, but you can download at least.
 
     C:
     cd \ruby
-    win32\configure
+    win32\configure --prefix=/usr/local
     nmake
     nmake test
-    nmake DESTDIR=/usr/local install
+    nmake install
 
 * Build on the relative directory from the ruby source directory.
 
@@ -97,10 +100,10 @@ in Japanese, but you can download at least.
     cd \ruby
     mkdir mswin32
     cd mswin32
-    ..\win32\configure
+    ..\win32\configure --prefix=/usr/local
     nmake
     nmake test
-    nmake DESTDIR=/usr/local install
+    nmake install
 
 * Build on the different drive.
 
@@ -111,10 +114,10 @@ in Japanese, but you can download at least.
 
     D:
     cd D:\build\ruby
-    C:\src\ruby\win32\configure
+    C:\src\ruby\win32\configure --prefix=C:/usr/local
     nmake
     nmake test
-    nmake DESTDIR=C:/usr/local install
+    nmake install
 
 == Bugs
 

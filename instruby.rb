@@ -71,19 +71,29 @@ def makedirs(dirs)
   super(dirs, :mode => 0755, :verbose => true) unless dirs.empty?
 end
 
+def join(dir1, dir2)
+  # same scheme as DESTDIR of lib/mkmf.rb
+  drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
+  if dir1.empty? || dir2.scan(drive).empty?
+    dir1 + dir2
+  else
+    dir1 + $'
+  end
+end
+
 exeext = CONFIG["EXEEXT"]
 
 ruby_install_name = CONFIG["ruby_install_name"]
 rubyw_install_name = CONFIG["rubyw_install_name"]
 
 version = CONFIG["ruby_version"]
-bindir = $destdir+CONFIG["bindir"]
-libdir = $destdir+CONFIG["libdir"]
-rubylibdir = $destdir+CONFIG["rubylibdir"]
-archlibdir = $destdir+CONFIG["archdir"]
-sitelibdir = $destdir+CONFIG["sitelibdir"]
-sitearchlibdir = $destdir+CONFIG["sitearchdir"]
-mandir = File.join($destdir+CONFIG["mandir"], "man")
+bindir = join($destdir, CONFIG["bindir"])
+libdir = join($destdir, CONFIG["libdir"])
+rubylibdir = join($destdir, CONFIG["rubylibdir"])
+archlibdir = join($destdir, CONFIG["archdir"])
+sitelibdir = join($destdir, CONFIG["sitelibdir"])
+sitearchlibdir = join($destdir, CONFIG["sitearchdir"])
+mandir = File.join(join($destdir, CONFIG["mandir"]), "man")
 configure_args = Shellwords.shellwords(CONFIG["configure_args"])
 enable_shared = CONFIG["ENABLE_SHARED"] == 'yes'
 dll = CONFIG["LIBRUBY_SO"]

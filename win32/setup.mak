@@ -9,6 +9,9 @@ srcdir = $(WIN32DIR:/win32=)
 !else
 srcdir = $(WIN32DIR)/..
 !endif
+!if "$(prefix)" == ""
+prefix = /usr
+!endif
 OS = mswin32
 RT = msvcrt
 INCLUDE = !include
@@ -32,6 +35,7 @@ alpha-$(OS): -prologue- -alpha- -epilogue-
 	@type << > $(MAKEFILE)
 ### Makefile for ruby $(OS) ###
 srcdir = $(srcdir:\=/)
+prefix = $(prefix:\=/)
 <<
 	@cl -nologo -EP -I$(srcdir) <<"Creating $(MAKEFILE)" >> $(MAKEFILE)
 #include "version.h"
@@ -73,7 +77,6 @@ $(CPU) = $(PROCESSOR_LEVEL)
 # RT = $(RT)
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
-# prefix = /usr
 # CFLAGS = -nologo -MD $$(DEBUGFLAGS) $$(OPTFLAGS) $$(PROCESSOR_FLAG)
 # CPPFLAGS = -I. -I$$(srcdir) -I$$(srcdir)/missing -DLIBRUBY_SO=\"$$(LIBRUBY_SO)\"
 # STACK = 0x2000000

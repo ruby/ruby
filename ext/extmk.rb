@@ -149,7 +149,7 @@ def parse_args()
   end
 
   $continue = $mflags.set?(?k)
-  $mflags |= ["DESTDIR=#{$destdir}"]
+  $mflags |= ["DESTDIR=#{$destdir}"] unless $destdir.to_s.empty?
 end
 
 parse_args()
