@@ -309,7 +309,7 @@ bodystmt	: compstmt
 			}
 			else if ($3) {
 			    rb_warn("else without rescue is useless");
-			    $$ = block_append($$, $4);
+			    $$ = block_append($$, $3);
 			}
 			if ($4) {
 			    $$ = NEW_ENSURE($$, $4);
