@@ -1,3 +1,21 @@
+Fri Dec  3 01:55:24 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: widget configuration by TkWindow#method_missing
+	  returns proper object. "widget.option = val" returns val, and
+	  "widget.option(val)" returns self.
+
+	* ext/tk/lib/tk/font.rb: TkFont#replace accepts only one font argument.
+
+	* ext/tk/lib/tk/radiobutton.rb: add TkRadiobutton#value and
+	  TkRadiobutton#value=(val).
+
+	* ext/tk/lib/tk/spinbox.rb: callback substitution support on
+	  command option.
+
+	* ext/tk/sample/demos-en/widget: bug fix (wrong image height)
+
+	* ext/tk/sample/demos-jp/widget: ditto.
+
 Thu Dec  2 15:13:53 2004  Michael Neumann  <mneumann@ruby-lang.org>
 
 	* test/xmlrpc/test_parser.rb, test/xmlrpc/data/*.expected: Expected

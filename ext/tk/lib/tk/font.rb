@@ -1362,7 +1362,8 @@ class TkFont
     end
   end
 
-  def replace(ltn, knj)
+  def replace(ltn, knj=None)
+    knj = ltn if knj == None
     latin_replace(ltn)
     kanji_replace(knj)
     self

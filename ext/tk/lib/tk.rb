@@ -3186,8 +3186,10 @@ class TkObject<TkKernel
     when 1
       if name[-1] == ?=
         configure name[0..-2], args[0]
+        args[0]
       else
         configure name, args[0]
+        self
       end
     when 0
       begin

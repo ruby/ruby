@@ -11,6 +11,50 @@ class TkSpinbox<TkEntry
   WidgetClassName = 'Spinbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  class SpinCommand < TkValidateCommand
+    class ValidateArgs < TkUtil::CallbackSubst
+      KEY_TBL = [
+        [ ?d, ?s, :direction ], 
+        [ ?s, ?e, :current ], 
+        [ ?W, ?w, :widget ], 
+        nil
+      ]
+
+      PROC_TBL = [
+        [ ?s, TkComm.method(:string) ], 
+        [ ?w, TkComm.method(:window) ], 
+
+        [ ?e, proc{|val|
+            enc = Tk.encoding
+            if enc
+              Tk.fromUTF8(TkComm::string(val), enc)
+            else
+              TkComm::string(val)
+            end
+          }
+        ], 
+
+        nil
+      ]
+
+      _setup_subst_table(KEY_TBL, PROC_TBL);
+
+      def self.ret_val(val)
+        (val)? '1': '0'
+      end
+    end
+
+    def self._config_keys
+      ['command']
+    end
+  end
+
+  def __validation_class_list
+    super << SpinCommand
+  end
+
+  Tk::ValidateConfigure.__def_validcmd(binding, SpinCommand)
+
   #def create_self(keys)
   #  tk_call_without_enc('spinbox', @path)
   #  if keys and keys != None
