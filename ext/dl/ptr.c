@@ -638,7 +638,7 @@ cary2ary(void *ptr, char t, int len)
       ptr = (char *)ptr + sizeof(float);
       break;
     case 'D':
-      elem = rb_float_new(*((float*)ptr));
+      elem = rb_float_new(*((double*)ptr));
       ptr = (char *)ptr + sizeof(double);
       break;
     case 'C':
