@@ -1,3 +1,7 @@
+Fri Sep  7 09:44:44 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/net/telnet.rb: waitfor(): bug fix.
+
 Fri Sep  7 07:11:34 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: CGI#doctype(): bug fix (html4Fr).
