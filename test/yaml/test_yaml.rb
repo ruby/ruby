@@ -1,3 +1,4 @@
+# -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*-
 #												vim:sw=4:ts=4
 # $Id$
 #
@@ -1065,7 +1066,7 @@ EOY
 		)
 
         assert_to_yaml( YAML_Tests::StructTest.new( 123 ), <<EOY )
---- !ruby/struct:Test::StructTest
+--- !ruby/struct:YAML_Tests::StructTest
 c: 123
 EOY
 
