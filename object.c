@@ -246,6 +246,10 @@ init_copy(dest, obj)
  *     s2.str[1,4] = "i"   #=> "i"
  *     s1.inspect          #=> "#<Klass:0x401b3a38 @str=\"Hi\">"
  *     s2.inspect          #=> "#<Klass:0x401b3998 @str=\"Hi\">"
+ *
+ *  This method may have class-specific behavior.  If so, that
+ *  behavior will be documented under the #+initialize_copy+ method of
+ *  the class.
  */
 
 VALUE
@@ -278,6 +282,10 @@ rb_obj_clone(obj)
  *  in descendent classes. While <code>clone</code> is used to duplicate
  *  an object, including its internal state, <code>dup</code> typically
  *  uses the class of the descendent object to create the new instance.
+ *
+ *  This method may have class-specific behavior.  If so, that
+ *  behavior will be documented under the #+initialize_copy+ method of
+ *  the class.
  */
 
 VALUE
