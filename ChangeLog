@@ -1,3 +1,9 @@
+Fri Jun 16 22:47:47 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.23.
+
+	* lib/net/protocol.rb: too many CRLF in last line.
+
 Fri Jun 16 21:23:59 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: add pause(2) checking.
@@ -76,7 +82,7 @@ Wed Jun 14 10:04:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_each_line): ditto.
 
-Wed 14 Jun 04:58:53 2000  Dave Thomas  <dave@thomases.com>
+Wed Jun 14 04:58:53 2000  Dave Thomas  <dave@thomases.com>
 
 	* io.c (rb_io_set_lineno): should have returned VALUE, not
 	  integer.
@@ -101,6 +107,12 @@ Tue Jun 13 11:46:17 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* time.c (time_zone): use tm.tm_zone if available.
 
+Tue Jun 13 01:50:57 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.22.
+
+	* lib/net/http.rb: HTTPResponse#body returns body.
+
 Mon Jun 12 23:41:54 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in (daylight): avoid GCC optimization.
@@ -114,6 +126,12 @@ Mon Jun 12 19:02:27 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 Sat Jun 10 23:10:32 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_io_seek): whence is optional, default is SEEK_SET.
+
+Fri Jun  9 17:00:29 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.21.
+
+	* lib/net/http.rb: exception is raised with response object.
 
 Fri Jun  9 15:11:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -181,6 +199,13 @@ Fri Jun  2 00:42:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* eval.c (rb_thread_cleanup): should clear priority for thread
 	  termination.
 
+Thu Jun 01 22:39:41 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.20.
+
+	* lib/net/http.rb: wrongly closed the socket twice
+	  when no Content-Length: was given.
+
 Thu Jun  1 00:59:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_yield_0): convert Qundef to [].
@@ -245,7 +270,7 @@ Thu May 25 22:01:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* win32/ruby.def: add ruby_ignorecase and regex.c's exports.
 
-Thu May 25 21:28:44 JST 2000  Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+Thu May 25 21:28:44 2000  Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
 	* re.c (rb_reg_expr_str): escape un-printable character.
 
@@ -305,6 +330,12 @@ Tue May 23 08:36:24 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_fastmap): anychar may match newline if
 	  RE_OPTION_MULTILINE or RE_OPTION_POSIXLINE is set.
+
+Mon May 22 22:45:06 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.19.
+
+	* lib/net/http.rb: do not use Regexp "p" option.
 
 Mon May 22 21:56:43 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
@@ -381,6 +412,14 @@ Thu May 18 23:55:26 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* parse.y (rb_intern): ditto.
 
+Thu May 18 18:00:35 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.18.
+
+	* lib/net/protocol.rb: Net::Version was removed.
+
+	* lib/net/smtp.rb: use Socket.gethostname to get local host name.
+
 Thu May 18 13:34:57 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/socket/socket.c (ruby_connect): should not have replaced
@@ -423,7 +462,7 @@ Wed May 17 00:40:15 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* win32/ruby.def: add symbol "rb_big_divmod".
 
-May 16 19:45:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+Tue May 16 19:45:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* intern.h: use EXTERN instead of extern.
 
@@ -580,6 +619,14 @@ Fri May  5 21:19:22 2000  MOROHOSHI Akihiko  <moro@remus.dti.ne.jp>
 
 	* parse.y (yylex): allow '$1foo' and such.
 
+Fri May  5 17:57:24 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.17.
+
+	* lib/net/http.rb: write also port number in Host: field.
+
+	* lib/net/http.rb: see Proxy-Connection: to decide socket connection.
+
 Fri May  5 03:25:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_fastmap): charset_not for multibyte
@@ -618,11 +665,11 @@ Mon May  1 23:42:44 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* ext/Win32API/Win32API.c: directly "call" in asm statement for
 	  gcc 2.95.x or newer.
 
-Sat Apr 29 04:58:12  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Sat Apr 29 04:58:12 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* array.c (rb_ary_unshift_m): performance improvement.
 
-Fri Apr 28 00:19:22  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Fri Apr 28 00:19:22 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* array.c (rb_ary_unshift_m): takes items to push.
 
@@ -635,6 +682,12 @@ Wed Apr 26 15:23:02 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_succ): use realloc and memmove.
 
+Tue Apr 25 18:28:45 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.16.
+
+	* lib/net/smtp.rb: add SMTP AUTH
+
 Tue Apr 25 14:30:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_io_gets_internal): shortcut when rs == rb_default_rs.
@@ -642,6 +695,13 @@ Tue Apr 25 14:30:13 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Sat Apr 22 23:14:41 2000  SHIROYAMA Takayuki  <psi@fortune.nest.or.jp>
 
 	* configure.in: MacOS X support.
+
+Sat Apr 22 16:37:10 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.15.
+
+	* lib/net/http.rb:  closing socket by watching both
+	  user header and server response
 
 Fri Apr 21 21:44:34 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
@@ -664,6 +724,14 @@ Wed Apr 19 02:09:30 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): ditto.
 
+Tue Apr 18 18:54:25 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.14.
+
+	* lib/net/http.rb: new method HTTP#head2.
+
+	* lib/net/http.rb: get2/post2 does not raise exceptions.
+
 Mon Apr 17 15:16:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_io_close): to detect some exceptional status, writable
@@ -672,6 +740,14 @@ Mon Apr 17 15:16:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Sat Apr 15 18:29:00 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* array.c (rb_ary_collect_bang): Array#filter renamed.
+
+Fri Apr 14 19:47:11 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.13.
+
+	* lib/net/pop.rb: accept illegal timestamp
+
+	* lib/net/http.rb: when body was chunked, does not set Content-Length:
 
 Tue Apr 11 21:14:42 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
@@ -732,6 +808,19 @@ Sat Apr  1 00:16:05 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* object.c (sym_inspect): inspect gives ":sym", to_s gives "sym".
 
+Fri Mar 31 22:07:04 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.12.
+
+	* lib/net/protocol.rb:  update Net::Protocol::Proxy#connect
+
+	* lib/net/protocol.rb:  ReplyCode is not a class
+
+	* lib/net/http.rb: header value format was change:
+	  values do not include header name
+
+	* lib/net/http.rb: header is not a Hash, but HTTPResponse
+
 Thu Mar 30 12:19:44 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* enum.c (enum_find): rb_eval_cmd() should be called with array.
@@ -741,6 +830,30 @@ Tue Mar 28 13:57:05 2000  Clemens Hintze  <c.hintze@gmx.net>
 	* ext/dbm/dbm.c (fdbm_invert): should return new hash.
 
 	* ext/gdbm/gdbm.c (fgdbm_invert): ditto.
+
+Tue Mar 28 00:58:03 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.11.
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: does not
+	  dispatch any commands while dispatching command.
+
+	* lib/net/protocol.rb: failed to get error class of
+	  inherited ReplyCode
+
+	* lib/net/http.rb: change feature of "get2", "post2"
+
+Mon Mar 27 01:34:58 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.10.
+
+	* lib/net/http.rb: return value of 'head' was wrong.
+
+Sun Mar 26 17:47:35 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.9.
+
+	* lib/net/smtp.rb: SMTP#do_ready wrongly took no arguments
 
 Sat Mar 25 23:21:10 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -754,6 +867,15 @@ Fri Mar 24 18:26:51 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Fri Mar 24 21:02:11 2000  Koji Arai  <JCA02266@nifty.ne.jp>
 
 	* signal.c (trap): should treat some symbols as the signal.
+
+Fri Mar 24 06:58:03 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.8.
+
+	* lib/net/http.rb:  post, get2, post2, get_body
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: separate
+	  Command/Socket documentation.
 
 Thu Mar 23 02:26:14 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -882,7 +1004,7 @@ Fri Mar 10 18:14:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* file.c (path_check_1): confusing buf and path.  this bug found
 	  by <decoux@moulon.inra.fr>.
 
-Fri Mar 10 09:37:49 JST 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+Fri Mar 10 09:37:49 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* MANIFEST: add beos/GNUmakefile.in.
 	* configure.in: support BeOS R4.5.2 (Intel).
@@ -901,6 +1023,12 @@ Thu Mar  9 00:29:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* object.c (sym_to_s): returns ":sym".
 
 	* object.c (sym_id2name): separated from to_s; returns "sym".
+
+Wed Mar  8 19:16:19 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.7.
+
+	* lib/net/http.rb (connecting): returns header
 
 Wed Mar  8 02:08:43 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -959,6 +1087,12 @@ Sun Mar  5 18:49:06 2000  Nakada.Nobuyoshi  <nobu.nokada@softhome.net>
 	* misc/ruby-mode.el (ruby-font-lock-keywords, hilit-set-mode-patterns):
 	  matches keywords at end of buffer.
 
+Sun Mar  5 18:08:53 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.6.
+
+	* lib/net/http.rb:  allow to omit 'start'
+
 Tue Feb 29 01:08:26 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* range.c (range_initialize): initialization done in `initialize';
@@ -1015,6 +1149,21 @@ Tue Feb 22 07:40:55 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* re.c (Init_Regexp): renamed to MatchData, old name MatchingData
 	  remain as alias.
+
+Tue Feb 22 00:20:21 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/protocol.rb, smtp.rb, pop.rb, http.rb: 1.1.5.
+
+	* lib/net/session.rb: rename to protocol.rb
+
+	* lib/net/protocol.rb: ProtocolSocket -> Net::Socket
+
+	* lib/net/protocol.rb: Net::Socket#write, write_pendstr
+	  can take block
+
+	* lib/net/smtp.rb: new methods SMTP#ready SMTPCommand#write_mail
+
+	* lib/net/pop.rb: POPMail#pop can take block
 
 Sat Feb 19 23:58:51 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
@@ -1139,7 +1288,7 @@ Fri Feb  4 05:44:01 2000  Kentaro Inagaki  <inagaki@tg.rim.or.jp>
 
 	* ext/socket/socket.c (s_recv): TRAP_BEG after retry entry.
 
-Wed Feb  2 22:33:45  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+Wed Feb  2 22:33:45 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* eval.c (rb_thread_start): receives argument from outside, like
 	  `Thread::start(1,2,3){|a,b,c| ... }'.
@@ -1234,6 +1383,13 @@ Sat Jan 22 00:00:41 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_slice_bang): new method `slice!'.
 
+Fri Jan 21 21:56:08 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb, http.rb: 1.1.4.
+
+	* lib/net/http.rb: can receive messages which have
+	  no Content-Length:.
+
 Fri Jan 21 16:15:59 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (thgroup_s_new): new class ThreadGroup.
@@ -1287,6 +1443,14 @@ Thu Jan  6 00:39:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* random.c (rb_f_rand): should be initialized unless srand is
 	  called before.
+
+Wed Jan  5 16:59:34 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb, http.rb: 1.1.3.
+
+	* lib/net/session.rb: Session -> Protocol, ...
+
+	* lib/net/http.rb: HTTPCommand implementation was changed.
 
 Wed Jan  5 02:14:46 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
@@ -1400,9 +1564,23 @@ Fri Dec 24 00:43:39 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
 	* io.c (pipe_open): check for `fptr->f == NULL'.
 	* win32/win32.c (mypopen): STDERR does not work during ` function.
 
+Wed Dec 22 22:50:40 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb, http.rb: 1.1.2.
+
+	* lib/net/http.rb: HTTP support is enhanced a little
+
+	* lib/net/http.rb: support proxy
+
 Tue Dec 21 17:21:28 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
 
 	* ext/socket/socket.c (sock_finalize): mswin32: fix FILE* leak.
+
+Tue Dec 21 05:33:56 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb, http.rb: 1.1.1.
+
+	* lib/net/http.rb: support HTTP chunk
 
 Mon Dec 20 19:08:12 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
@@ -1424,6 +1602,18 @@ Sat Dec 18 03:00:01 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* marshal.c (r_ivar): should restore generic_ivar too.
 
 	* marshal.c (w_ivar): should dump generic_ivar too.
+
+Fri Dec 17 22:46:46 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb, http.rb: 1.1.0.
+
+	* lib/net/http.rb: test release
+
+	* lib/net/session.rb: support class swapping
+
+	* lib/net/session.rb: Socket#flush_rbuf
+
+	* lib/net/session.rb: doquote -> Net.quote
 
 Fri Dec 17 19:27:43 1999  IWAMURO Motonori  <iwa@mmp.fujitsu.co.jp>
 
@@ -1782,6 +1972,12 @@ Mon Oct 18 16:15:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/nkf/nkf.c (rb_nkf_kconv): output should be NUL terminated.
 
+Mon Oct 18 09:03:01 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb: 1.0.3
+
+	* lib/net/pop.rb: new methods POP3Command#uidl, POPMail#uidl.
+
 Sun Oct 17 03:35:33 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
 
 	* array.c (rb_ary_pop): forgot some freeze checks.
@@ -1817,6 +2013,14 @@ Fri Oct 15 00:22:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Thu Oct 14 02:00:10 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (string): compile time string concatenation.
+
+Wed Oct 13 07:28:09 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb: 1.0.2
+
+	* lib/net/session.rb: new method Session#set_pipe.
+
+	* lib/net/session.rb, smtp.rb, pop.rb: add RD documentation.
 
 Wed Oct 13 02:17:05 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
 
@@ -1901,6 +2105,14 @@ Wed Sep 22 09:20:11 1999  Masahiro Tomita  <tommy@tmtm.org>
 
 	* ext/socket/socket.c: SOCKS5 support.
 
+Wed Sep 22 07:33:23 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb: 1.0.1
+
+	* lib/net/pop.rb: APOP did not work.
+
+	* lib/net/pop.rb: modify the way to make APOP challenge.
+
 Wed Sep 22 00:35:30 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_include): should return boolean value.
@@ -1978,6 +2190,10 @@ Mon Sep 13 10:49:19 1999  WATANABE Hirofumi  <watanabe@ase.ptg.sony.co.jp>
 
 	* eval.c (rb_eval): needless RTEST(ruby_verbose) removed.
 
+Mon Sep 13 09:10:11 1999  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
+
+	* lib/net/session.rb, smtp.rb, pop.rb: 1.0.0
+
 Wed Sep  8 11:37:38 1999  Tadayoshi Funaba  <tadf@kt.rim.or.jp>
 
 	* time.c (make_time_t): bit more strict comparison.
@@ -2000,7 +2216,7 @@ Fri Sep  3 11:14:31 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* compar.c (cmp_equal): should not raise exception; protect by
 	  rb_rescue().
 
-Thu Sep 2 05:23:05 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+Thu Sep  2 05:23:05 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* file.c (rb_file_s_expand_path): use dirsep, instead of character
 	  literal '/'.
