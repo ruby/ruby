@@ -1496,6 +1496,10 @@ rb_reg_match_pos(re, str, pos)
     VALUE re, str;
     long pos;
 {
+    if (NIL_P(str)) {
+	rb_backref_set(Qnil);
+	return Qnil;
+    }
     StringValue(str);
     if (pos != 0) {
 	if (pos < 0) {

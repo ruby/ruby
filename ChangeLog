@@ -1,5 +1,8 @@
 Sat Jul 17 14:18:11 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* string.c (rb_str_match_m): String#match should also take
+	  optional argument.  [ruby-core:03205]
+
 	* re.c (rb_reg_match_m): add optional second argugment "pos" to
 	  specify match start point.  [ruby-core:03203]
 

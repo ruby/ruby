@@ -1266,7 +1266,9 @@ static VALUE get_pat _((VALUE, int));
  *     str.match(pattern)   => matchdata or nil
  *  
  *  Converts <i>pattern</i> to a <code>Regexp</code> (if it isn't already one),
- *  then invokes its <code>match</code> method on <i>str</i>.
+ *  then invokes its <code>match</code> method on <i>str</i>.  If the second
+ *  parameter is present, it specifies the position in the string to begin the
+ *  search.
  *     
  *     'hello'.match('(.)\1')      #=> #<MatchData:0x401b3d30>
  *     'hello'.match('(.)\1')[0]   #=> "ll"
@@ -1275,10 +1277,17 @@ static VALUE get_pat _((VALUE, int));
  */
 
 static VALUE
-rb_str_match_m(str, re)
-    VALUE str, re;
+rb_str_match_m(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
 {
-    return rb_funcall(get_pat(re, 0), rb_intern("match"), 1, str);
+    VALUE re;
+    if (argc < 1) 
+	rb_raise(rb_eArgError, "wrong number of arguments(%d for 1)", argc);
+    re = argv[0];
+    argv[0] = str;
+    return rb_funcall2(get_pat(re, 0), rb_intern("match"), argc, argv);
 }
 
 static char
@@ -4573,7 +4582,7 @@ Init_String()
     rb_define_method(rb_cString, "size", rb_str_length, 0);
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);
     rb_define_method(rb_cString, "=~", rb_str_match, 1);
-    rb_define_method(rb_cString, "match", rb_str_match_m, 1);
+    rb_define_method(rb_cString, "match", rb_str_match_m, -1);
     rb_define_method(rb_cString, "succ", rb_str_succ, 0);
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "next", rb_str_succ, 0);
