@@ -1253,7 +1253,7 @@ convert string charset, and set language to "ja".
 
 The hash keys are case sensitive. Ask the samples.
 =end
-    def form(method = "post", action = nil, enctype = "application/x-www-form-urlencoded")
+    def form(method = "post", action = script_name, enctype = "application/x-www-form-urlencoded")
       attributes = if method.kind_of?(String)
                      { "METHOD" => method, "ACTION" => action,
                        "ENCTYPE" => enctype } 
@@ -1273,9 +1273,13 @@ The hash keys are case sensitive. Ask the samples.
       end
       if @output_hidden
         hidden = @output_hidden.collect{|k,v|
-          "<DIV><INPUT TYPE=HIDDEN NAME=\"#{k}\" VALUE=\"#{v}\"></DIV>"
+          "<INPUT TYPE=HIDDEN NAME=\"#{k}\" VALUE=\"#{v}\">"
         }.to_s
-        body += hidden
+        if defined? fieldset
+          body += fieldset{ hidden }
+        else
+          body += hidden
+        end
       end
       super(attributes){body}
     end
