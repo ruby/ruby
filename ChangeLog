@@ -1,3 +1,8 @@
+Mon Oct 27 00:23:50 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_ruby): bug fix on Win : hang-up when
+	  calling 'exit' in the Tk callback procedure. [ruby-list:38656]
+
 Sat Oct 25 09:18:04 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_method_missing): protect exception from within

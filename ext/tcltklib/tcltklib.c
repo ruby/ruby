@@ -820,7 +820,8 @@ ip_ruby(clientData, interp, argc, argv)
     rb_trap_immediate = 0;
     res = rb_rescue2(rb_eval_string, (VALUE)arg, 
                      ip_eval_rescue, (VALUE)&failed,
-                     rb_eStandardError, rb_eScriptError, (VALUE)0);
+                     rb_eStandardError, rb_eScriptError, rb_eSystemExit, 
+		     (VALUE)0);
     rb_trap_immediate = old_trapflg;
 
     /* status check */
@@ -833,6 +834,9 @@ ip_ruby(clientData, interp, argc, argv)
 	    return TCL_BREAK;
 	} else if (eclass == eTkCallbackContinue) {
 	    return TCL_CONTINUE;
+	} else if (eclass == rb_eSystemExit) {
+	    Tcl_Eval(interp, "destroy .");
+	    rb_raise(rb_eSystemExit, StringValuePtr(failed));
 	} else {
 	    return TCL_ERROR;
 	}
