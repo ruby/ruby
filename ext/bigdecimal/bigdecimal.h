@@ -148,9 +148,9 @@ VP_EXPORT int VpVtoD(double *d,S_LONG *e,Real *m);
 VP_EXPORT void VpDtoV(Real *m,double d);
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
 VP_EXPORT int VpSqrt(Real *y,Real *x);
-VP_EXPORT void VpActiveRound(Real *y,Real *x,int f,int il);
-VP_EXPORT void VpMidRound(Real *y, int f, int nf);
-VP_EXPORT void VpLeftRound(Real *y, int f, int nf);
+VP_EXPORT int VpActiveRound(Real *y,Real *x,int f,int il);
+VP_EXPORT int VpMidRound(Real *y, int f, int nf);
+VP_EXPORT int VpLeftRound(Real *y, int f, int nf);
 VP_EXPORT void VpFrac(Real *y,Real *x);
 VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
 
