@@ -11,6 +11,7 @@ You can freely distribute/modify this library.
 
 
 require 'net/protocol'
+require 'md5'
 
 
 module Net
@@ -32,9 +33,12 @@ Net::Protocol
 
 === Methods
 
-: start( helo_domain = ENV['HOSTNAME'] )
+: start( helo_domain = ENV['HOSTNAME'] || ENV['HOST'], account = nil, password = nil, authtype = nil )
   This method opens TCP connection and start SMTP.
   If protocol had been started, do nothing and return false.
+
+  If account and password are given, is trying to get authentication
+  by using AUTH command. "authtype" is :plain (symbol) or :cram_md5.
 
 : sendmail( mailsrc, from_addr, to_addrs )
   This method sends 'mailsrc' as mail. SMTPSession read strings
@@ -102,12 +106,15 @@ Net::Protocol
       @command.data
     end
 
-    def do_start( helodom = ENV['HOSTNAME'] )
+    def do_start( helodom = nil,
+                  user = nil, secret = nil, authtype = nil )
       unless helodom then
-        raise ArgumentError, "cannot get hostname"
+        helodom = ENV['HOSTNAME'] || ENV['HOST']
+        unless helodom then
+          raise ArgumentError, "cannot get hostname"
+        end
       end
 
-      @esmtp = false
       begin
         if @esmtp then
           @command.ehlo helodom
@@ -120,6 +127,15 @@ Net::Protocol
           retry
         else
           raise
+        end
+      end
+
+      if user and secret then
+        begin
+          mid = 'auth_' + (authtype || 'cram_md5').to_s
+          @command.send mid, user, secret
+        rescue NameError
+          raise ArgumentError, "wrong auth type #{authtype.to_s}"
         end
       end
     end
@@ -150,6 +166,35 @@ Net::Protocol
     def ehlo( fromdom )
       critical {
         getok sprintf( 'EHLO %s', fromdom )
+      }
+    end
+
+
+    # "PLAIN" authentication [RFC2554]
+    def auth_plain( user, secret )
+      critical {
+        getok sprintf( 'AUTH PLAIN %s',
+                       ["\0#{user}\0#{secret}"].pack('m').chomp )
+      }
+    end
+
+    # "CRAM-MD5" authentication [RFC2195]
+    def auth_cram_md5( user, secret )
+      critical {
+        rep = getok( 'AUTH CRAM-MD5', ContinueCode )
+        challenge = rep.msg.split(' ')[1].unpack('m')[0]
+        secret = MD5.new( secret ).digest if secret.size > 64
+
+        isecret = secret + "\0" * (64 - secret.size)
+        osecret = isecret.dup
+        0.upto( 63 ) do |i|
+          isecret[i] ^= 0x36
+          osecret[i] ^= 0x5c
+        end
+        tmp = MD5.new( isecret + challenge ).digest
+        tmp = MD5.new( osecret + tmp ).hexdigest
+
+        getok [user + ' ' + tmp].pack('m').chomp
       }
     end
 
@@ -198,7 +243,6 @@ Net::Protocol
       arr = read_reply
       stat = arr[0][0,3]
 
-      klass = UnknownCode
       klass = case stat[0]
               when ?2 then SuccessCode
               when ?3 then ContinueCode
@@ -206,9 +250,11 @@ Net::Protocol
               when ?5 then
                 case stat[1]
                 when ?0 then SyntaxErrorCode
+                when ?3 then AuthErrorCode
                 when ?5 then FatalErrorCode
                 end
               end
+      klass ||= UnknownCode
 
       Response.new( klass, stat, arr.join('') )
     end
@@ -217,7 +263,9 @@ Net::Protocol
     def read_reply
       arr = []
 
-      while (str = @socket.readline)[3] == ?- do   # ex: "210-..."
+      while true do
+        str = @socket.readline
+        break unless str[3] == ?-   # ex: "210-..."
         arr.push str
       end
       arr.push str

@@ -15,7 +15,7 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.15'
+  Version = '1.1.16'
 
 =begin
 
@@ -346,6 +346,7 @@ Object
   SyntaxErrorCode = ErrorCode.mkchild( ProtoSyntaxError )
   FatalErrorCode  = ErrorCode.mkchild( ProtoFatalError )
   ServerErrorCode = ErrorCode.mkchild( ProtoServerError )
+  AuthErrorCode   = ErrorCode.mkchild( ProtoAuthError )
   RetriableCode   = ReplyCode.mkchild( ProtoRetriableError )
   UnknownCode     = ReplyCode.mkchild( ProtoUnknownError )
 
