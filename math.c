@@ -6,7 +6,7 @@
   $Date: 1994/11/01 08:28:03 $
   created at: Tue Jan 25 14:12:56 JST 1994
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -110,9 +110,18 @@ Init_Math()
     M_Math = rb_define_module("Math");
     rb_extend_object(M_Math, M_Math);
 
+#ifdef M_PI
     rb_define_const(M_Math, "PI", float_new(M_PI));
+#else
+    rb_define_const(M_Math, "PI", float_new(atan(1.0)*4.0));
+#endif
+
+#ifdef M_E
     rb_define_const(M_Math, "E", float_new(M_E));
-    
+#else
+    rb_define_const(M_Math, "E", float_new(exp(1.0)));
+#endif
+
     rb_define_method(M_Math, "atan2", Fmath_atan2, 2);
     rb_define_method(M_Math, "cos", Fmath_cos, 1);
     rb_define_method(M_Math, "sin", Fmath_sin, 1);

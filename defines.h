@@ -21,7 +21,7 @@
 #define USE_DL
 
 /* a.out.h or dlopen() needed to load object */
-#if !defined(HAVE_DLOPEN) || !defined(HAVE_A_OUT_H)
+#if !defined(HAVE_DLOPEN) && !defined(HAVE_A_OUT_H)
 # undef USE_DL
 #endif
 
@@ -29,9 +29,6 @@
 #  define LIBC_NAME "libc.a"
 #  define DLN_DEFAULT_PATH "/lib:/usr/lib:."
 #endif
-
-/* define USE_DBM to use dbm class. */
-#define USE_DBM
 
 #define SAFE_SIGHANDLE
 

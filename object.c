@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:49 $
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -30,7 +30,10 @@ VALUE obj_responds_to();
 VALUE obj_alloc();
 
 static ID eq, match;
+
 static ID init_object;
+
+static ID init;
 
 static VALUE
 P_true(obj)
@@ -201,7 +204,7 @@ Fobj_clone(obj)
 }
 
 static VALUE
-Fobj_init_object(obj)
+Fobj_initialize(obj)
     VALUE obj;
 {
     return Qnil;
@@ -278,7 +281,7 @@ Fcls_new(argc, argv, class)
 {
     VALUE obj = obj_alloc(class);
 
-    rb_funcall2(obj, init_object, argc, argv);
+    rb_funcall2(obj, init, argc, argv);
     return obj;
 }
 
@@ -368,6 +371,7 @@ VALUE boot_defclass(name, super)
 
     rb_name_class(obj, id);
     st_add_direct(rb_class_tbl, id, obj);
+    rb_set_class_path(obj, 0, name);
     return (VALUE)obj;
 }
 
@@ -434,7 +438,7 @@ Init_Object()
     rb_define_private_method(C_Kernel, "sprintf", Fsprintf, -1);
     rb_define_alias(C_Kernel, "format", "sprintf");
 
-    rb_define_private_method(C_Object, "init_object", Fobj_init_object, -1);
+    rb_define_private_method(C_Object, "initialize", Fobj_initialize, -1);
     rb_define_private_method(C_Object, "single_method_added", Fobj_s_added, 1);
 
     rb_define_method(C_Object, "clone", Fobj_clone, 0);
@@ -477,5 +481,5 @@ Init_Object()
     rb_define_const(C_Kernel, "TRUE", TRUE);
     rb_define_const(C_Kernel, "FALSE", FALSE);
 
-    init_object = rb_intern("init_object");
+    init = rb_intern("initialize");
 }

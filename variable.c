@@ -19,7 +19,11 @@ st_table *rb_class_tbl;
 #define class_tbl rb_class_tbl
 #define instance_tbl (RBASIC(Qself)->iv_tbl)
 
-st_table *new_idhash()
+VALUE rb_const_bound();
+VALUE rb_const_get();
+
+st_table *
+new_idhash()
 {
     return st_init_table(ST_NUMCMP, ST_NUMHASH);
 }
@@ -31,13 +35,77 @@ Init_var_tables()
     class_tbl = new_idhash();
 }
 
+char *
+rb_class2path(class)
+    VALUE class;
+{
+    VALUE path = rb_ivar_get_1(class, rb_intern("__classpath__"));
+    if (TYPE(path) != T_STRING) Bug("class path does not set properly");
+    return RSTRING(path)->ptr;
+}
+
+void
+rb_set_class_path(class, under, name)
+    VALUE class, under;
+    char *name;
+{
+    VALUE str;
+    char *s;
+
+    str = str_new2(name);
+    if (under) {
+	str_cat(str, ":", 1);
+	s = rb_class2path(under);
+	str_cat(str, s, strlen(s));
+    }
+    rb_ivar_set_1(class, rb_intern("__classpath__"), str);
+}
+
+VALUE
+rb_path2class(path)
+    char *path;
+{
+    char *p, *name, *s;
+    ID id;
+    VALUE class;
+
+    p = path;
+    while (*p) {
+	if (*p == ':') break;
+	*p++;
+    }
+    if (*p == '\0') {		/* pre-defined class */
+	if (!st_lookup(class_tbl, rb_intern(path), &class)) {
+	    Fail("Undefined class -- %s", path);
+	}
+	return class;
+    }
+    class = rb_path2class(p+1);
+    name = ALLOCA_N(char, p-path+1);
+    s = name;
+    while (path<p) {
+	*s++ = *path++;
+    }
+    *s = '\0';
+    id = rb_intern(name);
+    if (!rb_const_bound(class, id))
+	Fail("%s not defined", name);
+    class = rb_const_get(class, id);
+    switch (TYPE(class)) {
+      case T_CLASS:
+      case T_MODULE:
+	break;
+      default:
+	Fail("%s not a module/class");
+    }
+    return class;
+}
+
 void
 rb_name_class(class, id)
     VALUE class;
     ID id;
 {
-    VALUE body;
-
     rb_ivar_set_1(class, rb_intern("__classname__"), INT2FIX(id));
 }
 
@@ -58,12 +126,8 @@ rb_class2name(class)
 	Fail("0x%x is not a class/module", class);
     }
 
-    while (FL_TEST(class, FL_SINGLE)) {
+    while (FL_TEST(class, FL_SINGLE) || TYPE(class) == T_ICLASS) {
 	class = (struct RClass*)class->super;
-    }
-
-    while (TYPE(class) == T_ICLASS) {
-        class = (struct RClass*)class->super;
     }
 
     name = rb_ivar_get_1(class, rb_intern("__classname__"));

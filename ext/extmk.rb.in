@@ -1,0 +1,177 @@
+#! /usr/local/bin/ruby
+
+def older(file1, file2)
+  if !File.exists(file1) then
+    return TRUE
+  end
+  if !File.exists(file2) then
+    return FALSE
+  end
+  if File.mtime(file1) < File.mtime(file2)
+    return TRUE
+  end
+  return FALSE
+end
+
+if !File.exists("./Makefile") ||
+  older("./Makefile", "../extmk.rb") ||
+  older("./Makefile", "./extconf.rb") then
+
+  LINK = "@CC@ -o conftest @CFLAGS@ @LDFLAGS@ conftest.c %s > /dev/null 2>&1"
+  $defs = []
+
+  def have_library(func, lib)
+    cfile = open("conftest.c", "w")
+    printf cfile, "\
+int main() { return 0; }
+int t() { %s(); return 0; }
+", func
+    cfile.close
+
+    begin
+      if system(format(LINK, "-l" + lib)) != 0
+	return FALSE
+      end
+    ensure
+      system "/bin/rm -f conftest*"
+    end
+
+    if $libs
+      $libs = $libs + " -l" + lib
+    else
+      $libs = "-l" + lib
+    end
+    $defs.push(format("-DHAVE_LIB%s", lib.toupper))
+    return TRUE
+  end
+
+  def have_func(func)
+
+    cfile = open("conftest.c", "w")
+    printf cfile, "\
+char %s();
+int main() { return 0; }
+int t() { %s(); return 0; }
+", func, func
+    cfile.close
+
+    libs = $libs
+    libs = "" if libs == nil
+
+    begin
+      if system(format(LINK, libs)) != 0
+	return FALSE
+      end
+    ensure
+      system "/bin/rm -f conftest*"
+    end
+    $defs.push(format("-DHAVE_%s", func.toupper))
+    return TRUE
+
+  end
+
+  def create_header()
+    if $defs.length > 0
+      hfile = open("extconf.h", "w")
+      for line in $defs
+	line =~ /^-D(.*)/
+	printf hfile, "#define %s 1\n", $1
+      end
+      hfile.close
+    end
+  end
+
+  def create_makefile(target)
+    mfile = open("Makefile", "w")
+    printf mfile, "\
+SHELL = /bin/sh
+
+#### Start of system configuration section. ####
+
+srcdir = @srcdir@
+VPATH = @srcdir@
+
+CC = @CC@
+
+CFLAGS = -I../.. @CCDLFLAGS@ @CFLAGS@ %s
+LDDLFLAGS = @LDDLFLAGS@
+", $defs.join(" ")
+
+    printf mfile, "\
+
+prefix = @prefix@
+binprefix = 
+exec_prefix = @exec_prefix@
+bindir = $(exec_prefix)/bin
+@SET_MAKE@
+
+#### End of system configuration section. ####
+"
+    printf mfile, "OBJS = "
+    if !$objs then
+      $objs = Dir["*.c"]
+      for f in $objs
+	f.sub(/\.c$/, ".o")
+      end
+    end
+    printf mfile, $objs.join(" ")
+    printf mfile, "\n"
+
+    printf mfile, "\
+TARGET = %s.@DLEXT@
+
+all:		$(TARGET)
+
+clean:;		@rm -f *.o *.so
+		@rm -f Makefile extconf.h conftest.*
+		@rm -f core ruby *~
+
+realclean:	clean
+", target
+
+    if "@DLEXT@" == "so"
+      printf mfile, "\
+.SUFFIXES: .so $(SUFFIXES)
+
+$(TARGET).so: $(OBJS)
+	ld $(LDDLFLAGS) -o $*.so $(OBJS)
+"
+    elsif !File.exists(target + ".c")
+      printf mfile, "\
+$(TARGET).o: $(OBJS)
+	ld $(LDDLFLAGS) -r $*.o $(OBJS)
+"
+    end
+
+    if File.exists("depend")
+      dfile = open("depend", "r")
+      printf mfile, "###\n"
+      while line = dfile.gets()
+	printf mfile, "%s", line
+      end
+      dfile.close
+    end
+    mfile.close
+  end
+
+  if File.exists("configure") &&
+    (!File.exists("config.status") ||
+     File.mtime("config.status") < File.mtime("configure")) then
+
+    system "./configure"
+
+  end
+
+  if File.exists("extconf.rb")
+    load "extconf.rb"
+  else
+    Dir.pwd =~ /[^\/]+$/
+    create_makefile($&);
+  end
+
+end
+system "make all" if File.exists("./Makefile")
+
+#Local variables:
+# mode: ruby
+#end:

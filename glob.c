@@ -77,16 +77,7 @@
 #  include <strings.h>
 #endif /* !HAVE_STRING_H */
 
-#if defined (USG)
-#  if !defined (isc386)
-#    include <memory.h>
-#  endif /* !isc386 */
-#  if defined (RISC6000)
-extern void bcopy ();
-#  else /* !RISC6000 */
-#    define bcopy(s, d, n) ((void) memcpy ((d), (s), (n)))
-#  endif /* !RISC6000 */
-#endif /* USG */
+# define bcopy(s, d, n) (memcpy ((d), (s), (n)))
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)
 #include <alloca.h>

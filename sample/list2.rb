@@ -1,6 +1,6 @@
 # Linked list example -- short version
 class Point
-  def init_object(x, y)
+  def initialize(x, y)
     @x = x; @y = y
     self
   end

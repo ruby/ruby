@@ -1,7 +1,7 @@
 # Linked list example
 class MyElem
   # オブジェクト生成時に自動的に呼ばれるメソッド
-  def init_object(item)
+  def initialize(item)
     # @変数はインスタンス変数(宣言は要らない)
     @data = item
     @next = nil
@@ -54,7 +54,7 @@ class MyList
 end
 
 class Point
-  def init_object(x, y)
+  def initialize(x, y)
     @x = x; @y = y
     self
   end

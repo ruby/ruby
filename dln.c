@@ -6,7 +6,7 @@
   $Date: 1994/12/09 01:28:23 $
   created at: Tue Jan 18 17:05:06 JST 1994
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -101,9 +101,9 @@ dln_load(file)
     /* Load the file as an object one */
     init_funcname(buf, file);
 
-    if ((init_fct = dlsym(handle, buf)) == NULL) {
+    if ((init_fct = (void(*)())dlsym(handle, buf)) == NULL) {
 	buf[0] = 'I';		/* try Init_.. */
-	if ((init_fct = dlsym(handle, buf)) == NULL) {
+	if ((init_fct = (void(*)())dlsym(handle, buf)) == NULL) {
 	    return -1;
 	}
     }
@@ -416,12 +416,18 @@ undef_print(key, value)
     return ST_CONTINUE;
 }
 
+static void
+dln_print_undef()
+{
+    fprintf(stderr, " Undefined symbols:\n");
+    st_foreach(undef_tbl, undef_print, NULL);
+}
+
 static
 dln_undefined()
 {
     fprintf(stderr, "dln: Calling undefined function\n");
-    fprintf(stderr, " Undefined symbols:\n");
-    st_foreach(undef_tbl, undef_print, NULL);
+    dln_print_undef();
 #ifdef RUBY
     rb_exit(1);
 #else
@@ -794,7 +800,7 @@ dln_load_1(fd, disp, need_init)
   err_exit:
     if (syms) free(syms);
     if (reloc) free(reloc);
-    if (block) free(block);
+    if (block) free((char*)block);
     return -1;
 }
 
@@ -888,7 +894,7 @@ dln_load_lib(lib)
     fd = open(file, O_RDONLY);
     if (fd == -1) goto syserr;
     size = read(fd, armagic, SARMAG);
-    if (fd == -1) goto syserr;
+    if (size == -1) goto syserr;
 
     if (size != SARMAG) {
 	dln_errno = DLN_ENOTLIB;
@@ -900,7 +906,7 @@ dln_load_lib(lib)
 	goto badlib;
     }
 
-    if (strncmp(ahdr.ar_name, "__.SYMDEF", 9) == 0 && ahdr.ar_name[9] == ' ') {
+    if (strncmp(ahdr.ar_name, "__.SYMDEF", 9) == 0) {
 	/* make hash table from __.SYMDEF */
 
 	lib_tbl = st_init_table(strcmp, st_strhash);

@@ -19,7 +19,7 @@ extern struct ENVIRON {
     struct ENVIRON *prev;
 } *the_env;
 
-struct SCOPE {
+extern struct SCOPE {
     struct RBasic super;
     ID *local_tbl;
     VALUE *local_vars;

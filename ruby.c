@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:51 $
   created at: Tue Aug 10 12:47:31 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -16,7 +16,6 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <signal.h>
 #include "dln.h"
 
 #ifdef HAVE_STRING_H
@@ -446,7 +445,7 @@ ruby_script(name)
 }
 
 void
-ruby_init0(argc, argv, envp)
+ruby_options(argc, argv, envp)
     int argc;
     char **argv, **envp;
 {

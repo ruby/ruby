@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:39 $
   created at: Fri Oct 15 18:08:59 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -285,14 +285,18 @@ Fio_gets(obj)
       again:
 	bp = buf;
 
+      retry:
 	TRAP_BEG;
 	while ((c = getc(f)) != EOF && (*bp++ = c) != newline && bp < bpe)
 	    ;
 	TRAP_END;
 
-	if (c == EOF && !append && bp == buf) {
-	    str = Qnil;
-	    goto return_gets;
+	if (c == EOF) {
+	    if (!feof(f)) goto retry;
+	    if (!append && bp == buf) {
+		str = Qnil;
+		goto return_gets;
+	    }
 	}
 
 	if (append)
@@ -941,17 +945,21 @@ rb_xstring(str)
 struct timeval *time_timeval();
 
 #ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
-#   ifdef _other_gbase
-#	define READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr < (fp)->_IO_read_end)
-#   else
-#	define READ_DATA_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
-#   endif
-#elif __SLBF
-#   define READ_DATA_PENDING(fp) (fp->_r > 0)
-#elif STDSTDIO
-#   define READ_DATA_PENDING(fp) (fp->_cnt != 0)
+#  ifdef _other_gbase
+#    define READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr < (fp)->_IO_read_end)
+#  else
+#    define READ_DATA_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
+#  endif
 #else
+#  if __SLBF
+#    define READ_DATA_PENDING(fp) (fp->_r > 0)
+#  else
+#    if STDSTDIO
+#      define READ_DATA_PENDING(fp) (fp->_cnt != 0)
+#    else
 --------------> You Lose <--------------
+#    endif
+#  endif
 #endif
 
 static VALUE
@@ -990,7 +998,7 @@ Fselect(argc, argv, obj)
 		pending++;
 		FD_SET(fileno(fptr->f), &pset);
 	    }
-	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
+	    if (max < (int)fileno(fptr->f)) max = fileno(fptr->f);
 	}
 	if (pending) {		/* no blocking if there's buffered data */
 	    timerec.tv_sec = timerec.tv_usec = 0;
@@ -1007,10 +1015,10 @@ Fselect(argc, argv, obj)
 	for (i=0; i<RARRAY(write)->len; i++) {
 	    GetOpenFile(RARRAY(write)->ptr[i], fptr);
 	    FD_SET(fileno(fptr->f), wp);
-	    if (max > fileno(fptr->f)) max = fileno(fptr->f);
+	    if (max > (int)fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
 		FD_SET(fileno(fptr->f2), wp);
-		if (max < fileno(fptr->f2)) max = fileno(fptr->f2);
+		if (max < (int)fileno(fptr->f2)) max = fileno(fptr->f2);
 	    }
 	}
     }
@@ -1024,10 +1032,10 @@ Fselect(argc, argv, obj)
 	for (i=0; i<RARRAY(except)->len; i++) {
 	    GetOpenFile(RARRAY(except)->ptr[i], fptr);
 	    FD_SET(fileno(fptr->f), ep);
-	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
+	    if (max < (int)fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
 		FD_SET(fileno(fptr->f2), ep);
-		if (max > fileno(fptr->f2)) max = fileno(fptr->f2);
+		if (max > (int)fileno(fptr->f2)) max = fileno(fptr->f2);
 	    }
 	}
     }
@@ -1118,7 +1126,7 @@ io_ctl(obj, req, arg, io_p)
 #endif
 #endif
 #ifdef IOCPARM_LEN
-    len = IOCPARM_LEN(cmd);	/* on BSDish systes we're safe */
+    len = IOCPARM_LEN(cmd);	/* on BSDish systems we're safe */
 #else
     len = 256;			/* otherwise guess at what's safe */
 #endif

@@ -12,8 +12,9 @@ class.c
 compar.c
 configure
 configure.in
+config.guess
+config.sub
 defines.h
-dict.c
 dir.c
 dln.c
 dln.h

@@ -383,3 +383,11 @@ Ftrap(argc, argv)
 #endif
     return Qnil;
 }
+
+Init_signal()
+{
+    extern VALUE C_Kernel;
+
+    rb_define_method(C_Kernel, "kill", Fkill, -1);
+    rb_define_method(C_Kernel, "trap", Ftrap, -1);
+}

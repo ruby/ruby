@@ -18,7 +18,7 @@
 (defconst ruby-block-end-re "end")
 
 (defconst ruby-delimiter
-  (concat "[$/(){}#\"'`]\\|\\[\\|\\]\\|\\b\\("
+  (concat "[$/<(){}#\"'`]\\|\\[\\|\\]\\|\\b\\("
 	  ruby-block-beg-re "\\|" ruby-block-end-re "\\)\\b")
   )
 
@@ -37,9 +37,10 @@
 (if ruby-mode-map
     nil
   (setq ruby-mode-map (make-sparse-keymap))
+  (define-key ruby-mode-map "{" 'ruby-electric-brace)
+  (define-key ruby-mode-map "}" 'ruby-electric-brace)
   (define-key ruby-mode-map "\e\C-a" 'ruby-beginning-of-defun)
   (define-key ruby-mode-map "\e\C-e" 'ruby-end-of-defun)
-  (define-key ruby-mode-map "\t" 'ruby-indent-command)
   (define-key ruby-mode-map "\t" 'ruby-indent-command)
   (define-key ruby-mode-map "\C-m" 'ruby-reindent-then-newline-and-indent)
   (define-key ruby-mode-map "\C-j" 'newline))
@@ -178,7 +179,9 @@ The variable ruby-indent-level controls the amount of indentation.
 	     (t
 	      (goto-char indent-point)
 	      (setq in-string t))))
-	   ((string= "/" w)
+	   ((or (string= "/" w)
+		(string= "<" w))
+	    (if (string= "<" w) (setq w ">"))
 	    (let (c)
 	      (save-excursion
 		(goto-char pnt)
@@ -198,120 +201,6 @@ The variable ruby-indent-level controls the amount of indentation.
 		    nil
 		  (goto-char indent-point)
 		  (setq in-string t))))))
-	   ((string= "$" w)		;skip $char
-	    (forward-char 1))
-	   ((string= "#" w)		;skip comment
-	    (forward-line 1))
-	   ((string= "(" w)		;skip to matching paren
-	    (let ((orig depth))
-	      (setq nest (cons (point) nest))
-	      (setq depth (1+ depth))
-	      (while (and (/= depth orig)
-			  (re-search-forward "[()]" indent-point t))
-		(cond
-		 ((= (char-after (match-beginning 0)) ?\( )
-		  (setq nest (cons (point) nest))
-		  (setq depth (1+ depth)))
-		 (t
-		  (setq nest (cdr nest))
-		  (setq depth (1- depth)))))
-	      (if (> depth orig) (setq in-paren ?\())))
-	   ((string= "[" w)		;skip to matching paren
-	    (let ((orig depth))
-	      (setq nest (cons (point) nest))
-	      (setq depth (1+ depth))
-	      (while (and (/= depth orig)
-			  (re-search-forward "\\[\\|\\]" indent-point t))
-		(cond
-		 ((= (char-after (match-beginning 0)) ?\[ )
-		  (setq nest (cons (point) nest))
-		  (setq depth (1+ depth)))
-		 (t
-		  (setq nest (cdr nest))
-		  (setq depth (1- depth)))))
-	      (if (> depth orig) (setq in-paren ?\[))))
-	   ((string= "{" w)		;skip to matching paren
-	    (let ((orig depth))
-	      (setq nest (cons (point) nest))
-	      (setq depth (1+ depth))
-	      (while (and (/= depth orig)
-			  (re-search-forward "[{}]" indent-point t))
-		(cond
-		 ((= (char-after (match-beginning 0)) ?{ )
-		  (setq nest (cons (point) nest))
-		  (setq depth (1+ depth)))
-		 (t
-		  (setq nest (cdr nest))
-		  (setq depth (1- depth)))))
-	      (if (> depth orig) (setq in-paren ?{))))
-	   ((string-match ruby-block-end-re w)
-	    (setq nest (cdr nest))
-	    (setq depth (1- depth)))
-	   ((string-match ruby-block-beg-re w)
-	    (let (c)
-	      (save-excursion
-		(goto-char pnt)
-		(skip-chars-backward " \t")
-		(setq c (char-after (1- (point)))))
-	      (if (or (null c) (= c ?\n) (= c ?\;))
-		  (progn
-		    (setq nest (cons (point) nest))
-		    (setq depth (1+ depth))))))
-	   (t
-	    (error (format "bad string %s" w)))))))
-    (list in-string in-paren (car nest) depth)))
-
-(defun ruby-parse-region (start end)
-  (let ((indent-point end)
-	(indent 0)
-	(in-string nil)
-	(in-paren nil)
-	(depth 0)
-	(nest nil))
-    (save-excursion
-      (if start
-	  (goto-char start)
-	(ruby-beginning-of-defun))
-      (while (and (> indent-point (point))
-		  (re-search-forward ruby-delimiter indent-point t))
-	(let ((w (buffer-substring (match-beginning 0) (match-end 0)))
-	      (pnt (match-beginning 0)))
-	  (cond
-	   ((or (string= "\"" w)	;skip string
-		(string= "'" w)
-		(string= "`" w))
-	    (cond 
-	     ((string= w (char-to-string (char-after (point))))
-	      (forward-char 1))
-	     ((re-search-forward (format "[^\\]%s" w) indent-point t)
-		nil)
-	     (t
-	      (goto-char indent-point)
-	      (setq in-string t))))
-	   ((or (string= "/" w)
-		(string= "<" w))
-	    (if (string= "<" w) (setq w ">"))
-	    (let (c)
-	      (save-excursion
-		(goto-char pnt)
-		(skip-chars-backward " \t")
-		(setq c (char-after (1- (point))))
-		(if c (setq c (char-syntax c))))
-	      (if (or (eq c ?.)
-		      (and (eq c ?w)
-			   (save-excursion
-			     (forward-word -1)
-			     (or 
-			      (looking-at ruby-block-beg-re)
-			      (looking-at ruby-block-mid-re)))))
-		  (cond
-		   ((string= w (char-to-string (char-after (point))))
-		    (forward-char 1))
-		   ((re-search-forward (format "[^\\]%s" w) indent-point t)
-		    nil)
-		   (t
-		    (goto-char indent-point)
-		    (setq in-string t))))))
 	   ((string= "$" w)		;skip $char
 	    (forward-char 1))
 	   ((string= "#" w)		;skip comment
@@ -413,6 +302,11 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (setq indent (- indent ruby-indent-level)))
       indent)))
 
+(defun ruby-electric-brace (arg)
+  (interactive "P")
+  (self-insert-command (prefix-numeric-value arg))
+  (ruby-indent-line t))
+
 (defun ruby-beginning-of-defun (&optional arg)
     "Move backward to next beginning-of-defun.
 With argument, do this that many times.
@@ -433,12 +327,12 @@ An end of a defun is found by moving forward from the beginning of one."
 
 (defun ruby-reindent-then-newline-and-indent ()
   (interactive "*")
+  (save-excursion
+    (delete-region (point) (progn (skip-chars-backward " \t") (point))))
   (insert ?\n)
   (save-excursion
     (forward-line -1)
-    (indent-according-to-mode)
-    (end-of-line)
-    (delete-region (point) (progn (skip-chars-backward " \t") (point))))
+    (indent-according-to-mode))
   (indent-according-to-mode))
 
 (defun ruby-encomment-region (beg end)

@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:45 $
   created at: Thu Jun 10 14:22:17 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -454,7 +454,7 @@ ruby_init(argc, argv, envp)
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
 	the_class = (struct RClass*)C_Object;
-	ruby_init0(argc, argv, envp);
+	ruby_options(argc, argv, envp);
     }
     POP_ITER();
     POP_TAG();
@@ -632,7 +632,7 @@ rb_trap_eval(cmd)
     }
 }
 
-#define SETUP_ARGS {\
+#define SETUP_ARGS do {\
     NODE *n = node->nd_args;\
     if (!n) {\
 	argc = 0;\
@@ -658,7 +658,7 @@ rb_trap_eval(cmd)
 	argv = ALLOCA_N(VALUE, argc);\
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
     }\
-}
+} while (0)
 
 static VALUE
 rb_eval(node)
@@ -1289,6 +1289,7 @@ rb_eval(node)
 		if (super == Qnil) super = C_Object;
 		class = rb_define_class_id(node->nd_cname, super);
 		rb_const_set(the_class, node->nd_cname, class);
+		rb_set_class_path(class,the_class,rb_id2name(node->nd_cname));
 	    }
 
 	    module_setup(class, node->nd_body);
@@ -1308,6 +1309,7 @@ rb_eval(node)
 	    else {
 		module = rb_define_module_id(node->nd_cname);
 		rb_const_set(the_class, node->nd_cname, module);
+		rb_set_class_path(module,the_class,rb_id2name(node->nd_cname));
 	    }
 
 	    module_setup(module, node->nd_body);
@@ -1992,7 +1994,6 @@ rb_call(class, recv, mid, argc, argv, scope)
 
 	    sourcefile = body->file;
 	    PUSH_SCOPE();
-	    PUSH_TAG();
 
 	    if (body->nd_cnt > 0) {
 		local_vars = ALLOCA_N(VALUE, body->nd_cnt);
@@ -2032,6 +2033,7 @@ rb_call(class, recv, mid, argc, argv, scope)
 		    }
 		}
 	    }
+	    PUSH_TAG();
 	    state = EXEC_TAG();
 	    if (state == 0) {
 		result = rb_eval(body);
@@ -2200,7 +2202,7 @@ find_file(file)
 {
     extern VALUE rb_load_path;
     VALUE sep, vpath;
-    char *path, *found;
+    char *path;
 
     if (file[0] == '/') return file;
 
@@ -2215,10 +2217,7 @@ find_file(file)
 	path = Qnil;
     }
 
-    found = dln_find_file(file, path);
-    if (found == Qnil) Fail("No such file to load -- %s", file);
-
-    return found;
+    return dln_find_file(file, path);
 }
 
 VALUE
@@ -2232,28 +2231,8 @@ Fload(obj, fname)
 
     Check_Type(fname, T_STRING);
     file = find_file(fname->ptr);
+    if (!file) Fail("No such file to load -- %s", file);
 
-#ifdef USE_DL
-    {
-	static int rb_dln_init = 0;
-	extern char *rb_dln_argv0;
-	int len = strlen(file);
-
-	if (len > 3
-	    && file[len-1] == 'o' && file[len-2] == '.'
-	    || len > 4
-	    && file[len-1] == 'o' && file[len-2] == 's' && file[len-3] == '.'){
-	    if (rb_dln_init == 0 && dln_init(rb_dln_argv0) == -1) {
-		Fail("%s: %s", rb_dln_argv0, dln_strerror());
-	    }
-
-	    if (dln_load(file) == -1)
-		Fail(dln_strerror());
-
-	    return TRUE;
-	}
-    }
-#endif
     PUSH_SELF(TopSelf);
     PUSH_TAG();
     PUSH_CLASS();
@@ -2291,6 +2270,18 @@ Frequire(obj, fname)
 
     Check_Type(fname, T_STRING);
     file = find_file(fname->ptr);
+    if (!file) {
+	char *buf = ALLOCA_N(char, strlen(fname->ptr) + 4);
+	sprintf(buf, "%s.rb", fname->ptr);
+	file = find_file(buf);
+#ifdef USE_DL
+	if (!file) {
+	    sprintf(buf, "%s%s", fname->ptr, DLEXT);
+	    file = find_file(buf);
+	}
+#endif
+	if (!file) Fail("No such file to load -- %s", file);
+    }
 
     p = RARRAY(rb_loadfiles)->ptr;
     pend = p + RARRAY(rb_loadfiles)->len;
@@ -2298,10 +2289,36 @@ Frequire(obj, fname)
 	Check_Type(*p, T_STRING);
 	if (strcmp(RSTRING(*p)->ptr, file) == 0) return FALSE;
     }
-    ary_push(rb_loadfiles, str_new2(file));
+    fname = (struct RString*)str_new2(file);
+    ary_push(rb_loadfiles, fname);
+    file = fname->ptr;
 
-    Fload(obj, fname);
-    return TRUE;
+#ifdef USE_DL
+    {
+	int len = strlen(file), extsiz = sizeof(DLEXT);
+
+	if (len > extsiz) {
+	    int i;
+	    for (i=1;i<extsiz;i++) {
+		if (file[len-i] != DLEXT[extsiz-i-1]) break;
+	    }
+	    if (i==extsiz) {
+		static int rb_dln_init = 0;
+		extern char *rb_dln_argv0;
+
+		if (rb_dln_init == 0 && dln_init(rb_dln_argv0) == -1) {
+		    Fail("%s: %s", rb_dln_argv0, dln_strerror());
+		}
+
+		if (dln_load(file) == -1)
+		    Fail(dln_strerror());
+
+		return TRUE;
+	    }
+	}
+    }
+#endif
+    return Fload(obj, fname);
 }
 
 #ifndef RUBY_LIB

@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:28 $
   created at: Wed Jan  5 09:51:01 JST 1994
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -24,23 +24,22 @@
 char *getenv();
 #endif
 
-/* unistd.h defines _POSIX_VERSION on POSIX.1 systems.  */
-#if defined(DIRENT) || defined(_POSIX_VERSION)
-#include <dirent.h>
-#define NLENGTH(dirent) (strlen((dirent)->d_name))
-#else /* not (DIRENT or _POSIX_VERSION) */
-#define dirent direct
-#define NLENGTH(dirent) ((dirent)->d_namlen)
-#ifdef SYSNDIR
-#include <sys/ndir.h>
-#endif /* SYSNDIR */
-#ifdef SYSDIR
-#include <sys/dir.h>
-#endif /* SYSDIR */
-#ifdef NDIR
-#include <ndir.h>
-#endif /* NDIR */
-#endif /* not (DIRENT or _POSIX_VERSION) */
+#if HAVE_DIRENT_H
+# include <dirent.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
+#else
+# define dirent direct
+# define NAMLEN(dirent) (dirent)->d_namlen
+# if HAVE_SYS_NDIR_H
+#  include <sys/ndir.h>
+# endif
+# if HAVE_SYS_DIR_H
+#  include <sys/dir.h>
+# endif
+# if HAVE_NDIR_H
+#  include <ndir.h>
+# endif
+#endif
 
 static VALUE C_Dir;
 static ID id_dir;
@@ -97,7 +96,7 @@ Fdir_each(dir)
 
     GetDIR(dir, dirp);
     for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-	rb_lastline = str_new(dp->d_name, NLENGTH(dp));
+	rb_lastline = str_new(dp->d_name, NAMLEN(dp));
 	rb_yield(rb_lastline);
     }
     return dir;

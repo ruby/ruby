@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:44 $
   created at: Tue Aug 10 15:05:44 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -99,6 +99,7 @@ rb_define_class(name, super)
     id = rb_intern(name);
     class = rb_define_class_id(id, super);
     st_add_direct(rb_class_tbl, id, class);
+    rb_set_class_path(class, 0, name);
 
     return class;
 }
@@ -114,6 +115,7 @@ rb_define_class_under(under, name, super)
     id = rb_intern(name);
     class = rb_define_class_id(id, super);
     rb_const_set(under, id, class);
+    rb_set_class_path(class, under, name);
 
     return class;
 }

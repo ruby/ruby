@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:50 $
   created at: Fri May 28 18:02:42 JST 1993
 
-  Copyright (C) 1994 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,6 +18,11 @@
 #include "node.h"
 #include "st.h"
 #include <stdio.h>
+
+/* hack for bison */
+#ifdef const
+# undef const
+#endif
 
 #include "ident.h"
 #define is_id_nonop(id) ((id)>LAST_TOKEN)
@@ -137,7 +142,7 @@ static void top_local_setup();
 %type <node> f_arglist f_args array assoc_list assocs assoc
 %type <node> mlhs mlhs_head mlhs_tail lhs iter_var opt_iter_var
 %type <id>   superclass variable symbol
-%type <id>   fname op rest_arg
+%type <id>   cname fname op rest_arg
 %type <num>  f_arg
 %token UPLUS 		/* unary+ */
 %token UMINUS 		/* unary- */
@@ -163,8 +168,7 @@ static void top_local_setup();
  */
 
 %left  IF_MOD WHILE_MOD
-%left  OR
-%left  AND
+%left  OR AND
 %left  YIELD RETURN FAIL
 %right '=' OP_ASGN
 %right COLON2
@@ -323,6 +327,12 @@ lhs		: variable
 		    {
 			$$ = attrset($1, $3, Qnil);
 		    }
+
+cname		: IDENTIFIER
+		    {
+			Error("class/module name must be CONSTANT");
+		    }
+		| CONSTANT
 
 fname		: IDENTIFIER
 		| CONSTANT
@@ -700,14 +710,14 @@ primary		: literal
 		    {
 			$$ = NEW_YIELD(Qnil);
 		    }
-		| primary '{' opt_iter_var '|' compexpr rbrace
+		| primary '{' opt_iter_var compexpr rbrace
 		    {
 			if (nd_type($1) == NODE_LVAR
 		            || nd_type($1) == NODE_LVAR2
 		            || nd_type($1) == NODE_CVAR) {
 			    $1 = NEW_FCALL($1->nd_vid, Qnil);
 			}
-			$$ = NEW_ITER($3, $1, $5);
+			$$ = NEW_ITER($3, $1, $4);
 		    }
 		| IDENTIFIER '(' call_args rparen
 		    {
@@ -767,7 +777,7 @@ primary		: literal
 		    {
 			$$ = $2;
 		    }
-		| CLASS CONSTANT superclass
+		| CLASS cname superclass
 		    {
 			if (cur_mid || in_single)
 			    Error("class definition in method body");
@@ -784,7 +794,7 @@ primary		: literal
 			cref_pop();
 			class_nest--;
 		    }
-		| MODULE CONSTANT
+		| MODULE cname
 		    {
 			if (cur_mid || in_single)
 			    Error("module definition in method body");
@@ -854,11 +864,18 @@ opt_else	: /* none */
 iter_var	: lhs
 		| mlhs
 
-opt_iter_var	: /* none */
+opt_iter_var	: '|' /* none */  '|'
 		    {
 			$$ = Qnil;
 		    }
-		| iter_var
+		| OROP
+		    {
+			$$ = Qnil;
+		    }
+		| '|' iter_var '|'
+		    {
+			$$ = $2;
+		    }
 
 case_body	: WHEN args then
 		  compexpr

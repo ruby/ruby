@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:47 $
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -20,6 +20,9 @@
 void *malloc();
 void *calloc();
 void *realloc();
+#ifdef C_ALLOCA
+void *alloca();
+#endif
 
 void gc();
 void gc_mark();
@@ -61,6 +64,7 @@ xrealloc(ptr, size)
 {
     void *mem;
 
+    if (ptr == Qnil) return xmalloc(size);
     mem = realloc(ptr, size);
     if (mem == Qnil) {
 	gc();
@@ -265,7 +269,7 @@ looks_pointerp(p)
     register RVALUE *p;
 {
     register RVALUE *heap_org;
-    register long i, j, n;
+    register long i;
 
     /* if p looks as a SCM pointer mark location */
     for (i=0; i < heaps_used; i++) {
@@ -282,14 +286,11 @@ mark_locations_array(x, n)
     VALUE *x;
     long n;
 {
-    int j;
-    VALUE p;
-
-    for(j=0;j<n;++j) {
-	p = x[j];
-	if (looks_pointerp(p)) {
-	    gc_mark(p);
+    while (n--) {
+	if (looks_pointerp(*x)) {
+	    gc_mark(*x);
 	}
+	x++;
     }
 }
 
@@ -442,8 +443,15 @@ gc_mark(obj)
       case T_SCOPE:
 	{
 	    struct SCOPE *scope = (struct SCOPE*)obj;
-	    if (scope->local_vars)
-		mark_locations_array(scope->local_vars, scope->local_tbl[0]);
+	    if (scope->local_vars) {
+		int n = scope->local_tbl[0];
+		VALUE *tbl = scope->local_vars;
+
+		while (n--) {
+		    gc_mark(*tbl);
+		    tbl++;
+		}
+	    }
 	}
 	break;
 
@@ -571,7 +579,13 @@ void
 gc_mark_env(env)
     struct ENVIRON *env;
 {
-    mark_locations_array(env->argv, env->argc);
+    int n = env->argc;
+    VALUE *tbl = env->argv;
+
+    while (n--) {
+	gc_mark(*tbl);
+	tbl++;
+    }
 }
 
 void
@@ -579,7 +593,6 @@ gc()
 {
     struct gc_list *list;
     struct ENVIRON *env;
-    int i, max;
     jmp_buf save_regs_gc_mark;
     VALUE stack_end;
 
@@ -594,6 +607,7 @@ gc()
     for (env = the_env; env; env = env->prev) {
 	gc_mark_env(env);
     }
+    gc_mark(the_scope);
 
     FLUSH_REGISTER_WINDOWS;
     /* This assumes that all registers are saved into the jmp_buf */

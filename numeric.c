@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:42 $
   created at: Fri Aug 13 18:33:09 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -163,6 +163,19 @@ Fnum_is_int(num)
     VALUE num;
 {
     return FALSE;
+}
+
+static VALUE
+Fnum_chr(num)
+    VALUE num;
+{
+    char c;
+    int i = NUM2INT(num);
+
+    if (i < 0 || 0xff < i)
+	Fail("%d out of char range", i);
+    c = i;
+    return str_new(&c, 1);
 }
 
 static VALUE
@@ -491,19 +504,6 @@ Fint_is_int(num)
     VALUE num;
 {
     return TRUE;
-}
-
-static VALUE
-Fint_chr(num)
-    VALUE num;
-{
-    char c;
-    int i = NUM2INT(num);
-
-    if (i < 0 || 0xff < i)
-	Fail("%d out of char range", i);
-    c = i;
-    return str_new(&c, 1);
 }
 
 static VALUE
@@ -938,11 +938,11 @@ Init_Numeric()
     rb_define_method(C_Numeric, "step", Fnum_step, 2);
     rb_define_method(C_Numeric, "times", Fnum_dotimes, 0);
     rb_define_method(C_Numeric, "is_integer", Fnum_is_int, 0);
+    rb_define_method(C_Numeric, "chr", Fnum_chr, 0);
     rb_define_method(C_Numeric, "_inspect", Fkrn_inspect, 0);
 
     C_Integer = rb_define_class("Integer", C_Numeric);
     rb_define_method(C_Integer, "is_integer", Fint_is_int, 0);
-    rb_define_method(C_Integer, "chr", Fint_chr, 0);
 
     C_Fixnum = rb_define_class("Fixnum", C_Integer);
 

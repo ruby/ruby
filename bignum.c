@@ -13,7 +13,7 @@
 #include <math.h>
 
 extern VALUE C_Integer;
-static VALUE C_Bignum;
+VALUE C_Bignum;
 
 #define BDIGITS(x) RBIGNUM(x)->digits
 #define BITSPERDIG (sizeof(USHORT)*CHAR_BIT)
@@ -367,7 +367,7 @@ dbl2big(d)
     double u = (d < 0)?-d:d;
 
     while (0 != (long)u) {
-	u /= BIGRAD;
+	u /= (double)(BIGRAD);
 	i++;
     }
     z = bignew(i, d>=0);
@@ -591,7 +591,7 @@ bigdivmod(x, y, div, mod)
     zds = BDIGITS(z);
     if (nx==ny) zds[nx+1] = 0;
     while (!yds[ny-1]) ny--;
-    if ((dd = BIGRAD/(yds[ny-1]+1)) != 1) {
+    if ((dd = BIGRAD/(int)(yds[ny-1]+1)) != 1) {
 	y = (struct RBignum*)big_clone(y);
 	tds = BDIGITS(y);
 	j = 0;

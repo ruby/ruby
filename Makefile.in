@@ -1,4 +1,4 @@
-2SHELL = /bin/sh
+SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
@@ -11,6 +11,7 @@ INSTALL = @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_DATA = @INSTALL_DATA@
 PURIFY=
+@SET_MAKE@
 
 CFLAGS = @CFLAGS@
 STATIC = @STATIC@
@@ -74,7 +75,13 @@ $(PROGRAM):     $(OBJS)
 		@rm -f $(PROGRAM)
 		$(PURIFY) $(CC) $(STATIC) $(LDFLAGS) $(OBJS) $(LIBS) -o $(PROGRAM)
 
-extmake:;	cd ext; make
+extmake:;	@echo "Compiling ext modules"; \
+		for extdir in ext/*; do \
+		  test -d $$extdir || continue; \
+		  test -f $$extdir/MANIFEST || continue; \
+		  echo `basename $$extdir`; \
+		  ( cd $$extdir; ../../ruby ../extmk.rb; );\
+		done
 
 $(bindir)/$(PROGRAM): $(PROGRAM)
 	$(INSTALL_PROGRAM) $(PROGRAM) $(bindir)/$(PROGRAM)
@@ -82,9 +89,18 @@ $(bindir)/$(PROGRAM): $(PROGRAM)
 install: $(bindir)/$(PROGRAM)
 
 clean:;		@rm -f $(OBJS)
+		@for extdir in ext/*; do \
+		  test -d $$extdir || continue; \
+		  test -f $$extdir/MANIFEST || continue; \
+		  if test -f $$extdir/Makefile; then \
+		    ( cd $$extdir; make clean ); \
+		  fi; \
+		done
 
-realclean:;	@rm -f $(OBJS)
-		@rm -f core ruby *~ config.status Makefile
+realclean:	clean
+		@rm -f ext/extmk.rb
+		@rm -f core ruby *~ config.* Makefile
+
 .c.o:
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 

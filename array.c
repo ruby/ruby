@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:18 $
   created at: Fri Aug  6 09:46:12 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -26,7 +26,10 @@ ary_new2(len)
 
     ary->len = 0;
     ary->capa = len;
-    ary->ptr = ALLOC_N(VALUE, len);
+    if (len == 0)
+	ary->ptr = Qnil;
+    else
+	ary->ptr = ALLOC_N(VALUE, len);
 
     return (VALUE)ary;
 }
@@ -102,8 +105,13 @@ Sary_create(argc, argv, class)
 
     ary->len = argc;
     ary->capa = argc;
-    ary->ptr = ALLOC_N(VALUE, argc);
-    MEMCPY(ary->ptr, argv, VALUE, argc);
+    if (argc == 0) {
+	ary->ptr = Qnil;
+    }
+    else {
+	ary->ptr = ALLOC_N(VALUE, argc);
+	MEMCPY(ary->ptr, argv, VALUE, argc);
+    }
 
     return (VALUE)ary;
 }
@@ -119,7 +127,7 @@ astore(ary, idx, val)
     }
 
     if (idx >= ary->capa) {
-	ary->capa = idx + ary->capa/5;
+	ary->capa = idx + ARY_DEFAULT_SIZE;
 	REALLOC_N(ary->ptr, VALUE, ary->capa);
     }
     if (idx > ary->len) {

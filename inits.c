@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:38 $
   created at: Tue Dec 28 16:01:58 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -35,6 +35,7 @@ rb_call_inits()
     Init_Dir();
     Init_Time();
     Init_Random();
+    Init_signal();
     Init_process();
     Init_Etc();
     Init_load();

@@ -7,7 +7,7 @@
   $Date: 1995/01/12 08:54:54 $
   created at: Thu Sep 30 20:08:01 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -29,6 +29,6 @@ show_version()
 
 show_copyright()
 {
-    fprintf(stderr, "ruby - Copyright (C) 1995 Yukihiro Matsumoto\n");
+    fprintf(stderr, "ruby - Copyright (C) 1993-1995 Yukihiro Matsumoto\n");
     exit(0);
 }

@@ -6,7 +6,7 @@
   $Date: 1995/01/12 08:54:52 $
   created at: Thu Jun 10 14:26:32 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 *************************************************/
 
@@ -16,10 +16,13 @@
 #include "config.h"
 #include "defines.h"
 
-#ifdef __STDC__
-#else
+#ifndef __STDC__
 #define volatile
+#ifdef __GNUC__
+#define const __const__
+#else
 #define const
+#endif
 #endif
 
 #if defined(HAVE_ALLOCA_H) && !defined(__GNUC__)

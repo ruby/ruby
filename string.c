@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:43:01 $
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -561,7 +561,7 @@ Fstr_upto(beg, end)
 }
 
 static VALUE
-Fstr_aref_internal(str, indx)
+str_aref(str, indx)
     struct RString *str;
     VALUE indx;
 {
@@ -619,7 +619,7 @@ Fstr_aref(argc, argv, str)
     if (rb_scan_args(argc, argv, "11", &arg1, &arg2) == 2) {
 	return str_substr(str, NUM2INT(arg1), NUM2INT(arg2));
     }
-    return Fstr_aref_internal(str, arg1);
+    return str_aref(str, arg1);
 }
 
 static void
@@ -676,6 +676,21 @@ str_sub(str, pat, val, once)
 {
     int beg, end, offset, n;
 
+    Check_Type(val, T_STRING);
+    str_modify(str);
+
+    switch (TYPE(pat)) {
+      case T_REGEXP:
+	break;
+
+      case T_STRING:
+	return str_sub(str, re_regcomp(pat), val, once);
+
+      default:
+	/* type failed */
+	Check_Type(pat, T_REGEXP);
+    }
+
     for (offset=0, n=0;
 	 (beg=research(pat, str, offset)) >= 0;
 	 offset=BEG(0)+STRLEN(val)) {
@@ -690,7 +705,7 @@ str_sub(str, pat, val, once)
 }
 
 static VALUE
-Fstr_aset_internal(str, indx, val)
+str_aset(str, indx, val)
     struct RString *str;
     VALUE indx, val;
 {
@@ -771,51 +786,19 @@ Fstr_aset(argc, argv, str)
 	str_replace(str, beg, len, arg3);
 	return arg3;
     }
-    return Fstr_aset_internal(str, arg1, arg2);
+    return str_aset(str, arg1, arg2);
 }
 
 static VALUE
-Fstr_sub_internal(str, pat, val, once)
-    VALUE str, pat, val;
-    int once;
-{
-    Check_Type(val, T_STRING);
-    str_modify(str);
-
-    switch (TYPE(pat)) {
-      case T_REGEXP:
-	return str_sub(str, pat, val, once);
-
-      case T_STRING:
-	return str_sub(str, re_regcomp(pat), val, once);
-
-      default:
-	/* type failed */
-	Check_Type(pat, T_REGEXP);
-    }
-    return Qnil;		/*  not reached */
-}
-
-static VALUE
-Fstr_sub(str, pat, val)
-    VALUE str, pat, val;
-{
-    return Fstr_sub_internal(str, pat, val, 1);
-}
-
-static VALUE
-Fstr_gsub(str, pat, val)
-    VALUE str, pat, val;
-{
-    return Fstr_sub_internal(str, pat, val, 0);
-}
-
-static VALUE
-Fstr_esub(str, pat)
+str_sub_iter(str, pat, once)
     VALUE str, pat;
 {
     VALUE val;
     int beg, end, offset, n;
+
+    if (!iterator_p()) {
+	Fail("Wrong # of arguments(1 for 2)");
+    }
 
     str_modify(str);
     switch (TYPE(pat)) {
@@ -837,34 +820,67 @@ Fstr_esub(str, pat)
 	val = obj_as_string(val);
 	str_replace2(str, beg, END(0)-1, val);
 	offset=BEG(0)+STRLEN(val);
+	if (once) break;
     }
     return (VALUE)str;
+}
+
+static VALUE
+Fstr_sub(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    VALUE pat, val;
+
+    if (rb_scan_args(argc, argv, "11", &pat, &val) == 1) {
+	return str_sub_iter(str, pat, 1);
+    }
+    return str_sub(str, pat, val, 1);
+}
+
+static VALUE
+Fstr_gsub(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    VALUE pat, val;
+
+    if (rb_scan_args(argc, argv, "11", &pat, &val) == 1) {
+	return str_sub_iter(str, pat, 0);
+    }
+    return str_sub(str, pat, val, 0);
 }
 
 extern VALUE rb_lastline;
 
 static VALUE
-Fsub(obj, pat, val)
-    VALUE obj, pat, val;
+Fsub(argc, argv)
+    int argc;
+    VALUE *argv;
 {
+    VALUE pat, val;
+
     Check_Type(rb_lastline, T_STRING);
-    return Fstr_sub_internal(rb_lastline, pat, val, 1);
+    if (rb_scan_args(argc, argv, "11", &pat, &val) == 1) {
+	return str_sub_iter(rb_lastline, pat, 1);
+    }
+    return str_sub(rb_lastline, pat, val, 1);
 }
 
 static VALUE
-Fgsub(obj, pat, val)
-    VALUE obj, pat, val;
+Fgsub(argc, argv)
+    int argc;
+    VALUE *argv;
 {
-    Check_Type(rb_lastline, T_STRING);
-    return Fstr_sub_internal(rb_lastline, pat, val, 0);
-}
+    VALUE pat, val;
 
-static VALUE
-Fesub(obj, pat)
-    VALUE obj, pat;
-{
     Check_Type(rb_lastline, T_STRING);
-    return Fstr_esub(rb_lastline, pat);
+    if (rb_scan_args(argc, argv, "11", &pat, &val) == 1) {
+	return str_sub_iter(rb_lastline, pat, 0);
+    }
+    return str_sub(rb_lastline, pat, val, 0);
 }
 
 static VALUE
@@ -1077,36 +1093,39 @@ Fstr_tolower(str)
 }
 
 struct tr {
-    int last, max;
+    unsigned char gen, now, max;
     char *p, *pend;
 } trsrc, trrepl;
 
-static
+static char
 trnext(t)
     struct tr *t;
 {
-    while (t->p < t->pend) {
-	if (t->max) {
-	    if (++t->last < t->max)
-		return t->last;
-	    t->last = t->max = 0;
-	}
-	else if (t->last && *t->p == '-') {
-	    t->p++;
-	    t->max = *t->p;
-	    if (t->p == t->pend) {
-		t->p--;
-		return '-';
+    for (;;) {
+	if (!t->gen) {
+	    if (t->p == t->pend) return -1;
+	    t->now = *t->p++;
+	    if (t->p < t->pend && *t->p == '-') {
+		t->p++;
+		if (t->p < t->pend) {
+		    if (t->now > *t->p) {
+			t->p++;
+			continue;
+		    }
+		    t->gen = 1;
+		    t->max = *t->p++;
+		}
 	    }
-	    else if (t->max < t->last) {
-		t->last = t->max - 1;
-		return '-';
-	    }
-	    continue;
+	    return t->now;
 	}
-	return t->last = *t->p++;
+	else if (++t->now < t->max) {
+	    return t->now;
+	}
+	else {
+	    t->gen = 0;
+	    return t->max;
+	}
     }
-    return -1;
 }
 
 static VALUE
@@ -1114,8 +1133,8 @@ Fstr_tr(str, src, repl)
     struct RString *str, *src, *repl;
 {
     struct tr trsrc, trrepl;
-    char trans[256];
     int cflag = 0;
+    char trans[256];
     int i, c, save;
     char *s, *send, *t;
 
@@ -1127,34 +1146,46 @@ Fstr_tr(str, src, repl)
     }
     Check_Type(repl, T_STRING);
     trrepl.p = repl->ptr; trrepl.pend = trrepl.p + repl->len;
-    trsrc.last = trrepl.last = trsrc.max = trrepl.max = 0;
+    trsrc.gen = trrepl.gen = 0;
+    trsrc.now = trrepl.now = 0;
+    trsrc.max = trrepl.max = 0;
 
-    for (i=0; i<256; i++) {
-	trans[i] = cflag ? 1 : 0;
-    }
-
-    while ((c = trnext(&trsrc)) >= 0) {
-	trans[c & 0xff] = cflag ? 0 : 1;
-    }
-
-    c = 0;
-    for (i=0; i<256; i++) {
-	if (trans[i] == 0) {
-	    trans[i] = i;
+    if (cflag) {
+	for (i=0; i<256; i++) {
+	    trans[i] = 1;
 	}
-	else {
-	    c = trnext(&trrepl);
-	    if (c == -1) {
-		trans[i] = trrepl.last;
+	while ((c = trnext(&trsrc)) >= 0) {
+	    trans[c & 0xff] = 0;
+	}
+	for (i=0; i<256; i++) {
+	    if (trans[i] == 0) {
+		trans[i] = i;
 	    }
 	    else {
-		trans[i] = c;
+		c = trnext(&trrepl);
+		if (c == -1) {
+		    trans[i] = trrepl.now;
+		}
+		else {
+		    trans[i] = c;
+		}
 	    }
+	}
+    }
+    else {
+	char r;
+
+	for (i=0; i<256; i++) {
+	    trans[i] = 0;
+	}
+	while ((c = trnext(&trsrc)) >= 0) {
+	    r = trnext(&trrepl);
+	    if (r == -1) r = trrepl.now;
+	    trans[c & 0xff] = r;
 	}
     }
 
     str_modify(str);
-
     t = s = str->ptr; send = s + str->len;
     while (s < send) {
 	c = *s++ & 0xff;
@@ -1162,7 +1193,6 @@ Fstr_tr(str, src, repl)
 	*t++ = c;
     }
     *t = '\0';
-    str->len = t - str->ptr;
 
     return (VALUE)str;
 }
@@ -1177,7 +1207,7 @@ tr_setup_table(str, table)
     char c;
 
     tr.p = str->ptr; tr.pend = tr.p + str->len;
-    tr.last = tr.max = 0;
+    tr.gen = tr.now = tr.max = 0;
     if (str->len > 2 && str->ptr[0] == '^') {
 	cflag++;
 	tr.p++;
@@ -1422,6 +1452,7 @@ Fstr_each(str)
     int newline;
     int rslen;
     char *p = str->ptr, *pend = p + str->len, *s;
+    char *ptr = p;
 
     if (RS == Qnil) {
 	rb_yield(str);
@@ -1447,6 +1478,7 @@ Fstr_each(str)
 	     memcmp(RSTRING(RS)->ptr, p-rslen+1, rslen) == 0)) {
 	    rb_lastline = str_new(s, p - s + 1);
 	    rb_yield(rb_lastline);
+	    if (str->ptr != ptr) Fail("string modified");
 	    s = p + 1;
 	}
     }
@@ -1465,8 +1497,8 @@ Fstr_each_byte(str)
 {
     int i;
 
-    for (i=0; str->len; i++) {
-	rb_yield(str->ptr[i] & 0xff);
+    for (i=0; i<str->len; i++) {
+	rb_yield(INT2FIX(str->ptr[i] & 0xff));
     }
     return (VALUE)str;
 }
@@ -1705,9 +1737,8 @@ Init_String()
     rb_define_method(C_String, "rjust", Fstr_rjust, 1);
     rb_define_method(C_String, "center", Fstr_center, 1);
 
-    rb_define_method(C_String, "sub", Fstr_sub, 2);
-    rb_define_method(C_String, "gsub", Fstr_gsub, 2);
-    rb_define_method(C_String, "esub", Fstr_esub, 1);
+    rb_define_method(C_String, "sub", Fstr_sub, -1);
+    rb_define_method(C_String, "gsub", Fstr_gsub, -1);
     rb_define_method(C_String, "chop", Fstr_chop, 0);
     rb_define_method(C_String, "strip", Fstr_strip, 0);
 
@@ -1721,9 +1752,8 @@ Init_String()
 
     rb_define_method(C_String, "sum", Fstr_sum, -1);
 
-    rb_define_private_method(C_Kernel, "sub", Fsub, 2);
-    rb_define_private_method(C_Kernel, "gsub", Fgsub, 2);
-    rb_define_private_method(C_Kernel, "esub", Fesub, 1);
+    rb_define_private_method(C_Kernel, "sub", Fsub, -1);
+    rb_define_private_method(C_Kernel, "gsub", Fgsub, -1);
 
     pr_str = rb_intern("to_s");
 }

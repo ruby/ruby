@@ -16,7 +16,7 @@ def tt
   end
 end
 
-test = tt{i|
+test = tt{|i|
   if i == 3; break end
   println("ttt: ", i);
 }

@@ -6,7 +6,7 @@
   $Date: 1995/01/10 10:42:29 $
   created at: Fri Oct  1 15:15:19 JST 1993
 
-  Copyright (C) 1995 Yukihiro Matsumoto
+  Copyright (C) 1993-1995 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -34,7 +34,7 @@ enum_grep(i, arg)
 }
 
 static void
-enum_grep2(i, pat)
+enum_grep_iter(i, pat)
     VALUE i, pat;
 {
     if (!id_match) id_match = rb_intern("=~");
@@ -48,7 +48,7 @@ Fenum_grep(obj, pat)
     VALUE obj;
 {
     if (iterator_p()) {
-	rb_iterate(rb_each, obj, enum_grep2, pat);
+	rb_iterate(rb_each, obj, enum_grep_iter, pat);
 	return obj;
     }
     else {

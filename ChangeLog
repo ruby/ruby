@@ -1,3 +1,100 @@
+Fri May 19 15:33:23 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* version 0.76
+
+Fri May 19 00:48:08 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* string.c (Fstr_each): イテレータブロック中で文字列の変更が行われ
+	  たかどうかをチェック．ポインタの値が変わっていれば例外を発生する．
+
+	* ruby-mode.el: ruby-electric-braceの新設．
+
+Thu May 18 12:27:23 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* string.c (Fstr_tr): trの置換対象に`\0'を含む時に正しく置換を行わ
+	  ないバグがあった．更に置換文字列をASCII順に指定しないと動作しな
+	  い問題もあった．結果としてtrを書き換えたので，copyrightの問題は
+	  無くなった(と思う)．
+
+	* gc.c (gc): the_scopeをマークしていなかったので，ローカル変数が間
+	  違って開放される場合があった．
+
+	* gc.c (mark_locations_array): 若干の高速化．
+
+Mon May 15 11:43:49 1995  Yukihiro Matsumoto  <matz@ix-02>
+
+	* ext/extmk.rb.in: Dynamic Loadモジュールのコンパイル用チェックを
+	  行うruby script．autoconfに近い感覚で使える．新しいモジュールを
+	  提供したい人はextの下にディレクトリを作るだけで良い．必須のファ
+	  イルはファイル名の一覧を記録した`MANIFEST'というファイルのみ．必
+	  要に応じて`depend'(ファイルの依存関係を記述するファイル gcc -MM
+	  の出力)，`extconf.rb'(コンパイル用にライブラリと関数の存在チェッ
+	  クするファイル)を用意できる．
+
+	* eval.c (rb_call): rubyメソッドの引数チェック時に未初期化の
+	  jmp_bufを使用していた．
+
+	* parse.y: `or'と`and'の優先順位を同じにした．
+
+Wed May  3 18:21:36 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* dln.c: Linuxでは`__.SYMDEF/'であった．
+
+	* dln.c: system callのエラーチェックを忘れていた．
+
+Wed Apr 26 09:50:56 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: イテレータブロックの変数宣言を`|'で括るようにした．これ
+	  でイテレータ変数がない時は宣言そのものを省略できる．文法の変更は
+	  久しぶりだ．
+
+Tue Apr 25 12:04:17 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* eval.c(require): loadからダイナミックロードの機能を移してきた．
+	  さらに拡張子の補完機能を追加してユーザがdln/dlopenの差を意識する
+	  必要のないようにした．
+
+	* string.c(sub,sub): イテレータとしても動作するように．
+
+	* object.c: init_object -> initialize.
+
+Mon Apr 24 14:22:39 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* NEWS-OS 3.4対応
+
+	* io.c: Solarisのstdioの動作が違うようだ．signalでEOFを返してしま
+	  う…．perlでも同様の問題がある．
+
+Fri Apr 21 20:04:39 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.75
+
+	* signal.c: trapがなくなっていた．うーむ．
+
+	* configure: Solaris 2.3対応．
+
+	* io.c: #elifのないcppもある．
+
+	* dir.c: autoconf 2.xへの対応が不十分
+
+Thu Apr 20 12:31:24 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* version 0.74
+
+	* env.h, gc.c, regex.c: IRIXへの移植対応
+
+	* configure: picを生成するoptionの検出のため，システムタイプをチェッ
+	  クするように．
+
+Tue Apr 18 19:08:17 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* gc.c(xrealloc): ptr=nilの時，malloc()と同じ働きを
+
+	* array.c(astore): 空の配列の0番目の要素に代入するとsize=0で
+	  realloc()を呼んでいた．
+
+	* configure, glob.c: Solaris 2.xでコンパイルできるように
+
 Mon Apr 10 18:36:06 1995  Yukihiro Matsumoto  (matz@ix-02)
 
 	* version 0.73

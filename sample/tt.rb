@@ -96,5 +96,5 @@ def tt
   end
 end
 
-test = tt() {i|break if i == 2}
+test = tt() {|i|break if i == 2}
 println([1,2,3,4].join(":"))
