@@ -164,150 +164,174 @@ CompareImpl(p1, p2, nocase)
 }
 #endif /* environment */
 
-#if defined DOSISH
-#define isdirsep(c) ((c) == '/' || (c) == '\\')
-#else
-#define isdirsep(c) ((c) == '/')
-#endif
-
-static const char *
-range(
-    const char *p, /* pattern */
-    const char *test,
-    int flags)
+static char *
+bracket(p, s, flags)
+    const char *p; /* pattern (next to '[') */
+    const char *s; /* string */
+    int flags;
 {
-    int not = 0, ok = 0;
-    const char *t1, *t2;
     const int nocase = flags & FNM_CASEFOLD;
     const int escape = !(flags & FNM_NOESCAPE);
+
+    int ok = 0, not = 0;
 
     if (*p == '!' || *p == '^') {
 	not = 1;
 	p++;
     }
 
-    while (*p) {
-	if (*p == ']')
-	    return ok == not ? 0 : p + 1;
-	t1 = p;
+    while (*p != ']') {
+	const char *t1 = p;
 	if (escape && *t1 == '\\')
 	    t1++;
 	if (!*t1)
-	    break;
+	    return 0;
 	p = Next(t1);
-	if (*p == '-' && p[1] != ']') {
-	    t2 = p + 1;
+	if (p[0] == '-' && p[1] != ']') {
+	    const char *t2 = p + 1;
 	    if (escape && *t2 == '\\')
 		t2++;
 	    if (!*t2)
-		break;
+		return 0;
 	    p = Next(t2);
-	    if (!ok && Compare(t1, test) <= 0 && Compare(test, t2) <= 0)
+	    if (!ok && Compare(t1, s) <= 0 && Compare(s, t2) <= 0)
 		ok = 1;
 	}
-	else {
-	    if (!ok && Compare(t1, test) == 0)
+	else
+	    if (!ok && Compare(t1, s) == 0)
 		ok = 1;
-	}
     }
 
-    return 0;
+    return ok == not ? 0 : (char *)p + 1;
 }
 
-#define ISDIRSEP(c) (pathname && isdirsep(c))
-#define PERIOD_S() (period && *s == '.' && \
-    (!s_prev || ISDIRSEP(*s_prev)))
-#define INC_S() (s = Next(s_prev = s))
+/* If FNM_PATHNAME is set, only path element will be matched. (upto '/' or '\0')
+   Otherwise, entire string will be matched.
+   End marker itself won't be compared.
+   And if function succeeds, *pcur reaches end marker.
+*/
+#define ISEND(c) (!(c) || (pathname && (c) == '/'))
+#define RETURN(val) return *pcur = p, *scur = s, (val);
+
 static int
-fnmatch(pat, string, flags)
-    const char *pat;
-    const char *string;
+fnmatch_helper(pcur, scur, flags)
+    const char **pcur; /* pattern */
+    const char **scur; /* string */
     int flags;
 {
-    int c;
-    const char *test;
-    const char *s = string, *s_prev = 0;
-    int escape = !(flags & FNM_NOESCAPE);
-    int pathname = flags & FNM_PATHNAME;
-    int period = !(flags & FNM_DOTMATCH);
-    int nocase = flags & FNM_CASEFOLD;
+    const int period = !(flags & FNM_DOTMATCH);
+    const int escape = !(flags & FNM_NOESCAPE);
+    const int nocase = flags & FNM_CASEFOLD;
+    const int pathname = flags & FNM_PATHNAME;
 
-    while (c = *pat) {
-	switch (c) {
+    const char *ptmp = 0;
+    const char *stmp = 0;
+
+    const char *p = *pcur;
+    const char *s = *scur;
+
+    if (period && *s == '.' && *p != '.') /* leading period */
+	RETURN(FNM_NOMATCH);
+
+    while (1) {
+	if (*p == '*') {
+	    do { p++; } while (*p == '*');
+	    if (ISEND(*p))
+		RETURN(0);
+	    ptmp = p;
+	    stmp = s;
+	}
+	if (ISEND(*s)) {
+	    RETURN(ISEND(*p) ? 0 : FNM_NOMATCH);
+	}
+	if (ISEND(*p)) {
+	    goto failed;
+	}
+	switch (*p) {
 	  case '?':
-	    if (!*s || ISDIRSEP(*s) || PERIOD_S())
-		return FNM_NOMATCH;
-	    INC_S();
-	    ++pat;
-	    break;
+	    p++;
+	    Inc(s);
+	    continue;
 
-	  case '*':
-	    while ((c = *++pat) == '*')
-		;
-
-	    if (PERIOD_S())
-		return FNM_NOMATCH;
-
-	    if (!c) {
-		if (pathname && *rb_path_next(s))
-		    return FNM_NOMATCH;
-		else
-		    return 0;
+	  case '[': {
+	    const char *t = bracket(p + 1, s, flags);
+	    if (t) {
+		p = t;
+		Inc(s);
+		continue;
 	    }
-	    else if (ISDIRSEP(c)) {
-		s = rb_path_next(s);
-		if (*s) {
-		    INC_S();
-		    ++pat;
-		    break;
-                }
-		return FNM_NOMATCH;
-	    }
-
-	    test = escape && c == '\\' ? pat+1 : pat;
-	    while (*s) {
-		if ((c == '?' || c == '[' || Compare(s, test) == 0) &&
-		    !fnmatch(pat, s, flags | FNM_DOTMATCH))
-		    return 0;
-		else if (ISDIRSEP(*s))
-		    break;
-		INC_S();
-	    }
-	    return FNM_NOMATCH;
-
-	  case '[':
-	    if (!*s || ISDIRSEP(*s) || PERIOD_S())
-		return FNM_NOMATCH;
-	    pat = range(pat+1, s, flags);
-	    if (!pat)
-		return FNM_NOMATCH;
-	    INC_S();
-	    break;
+	    goto failed;
+	  }
 
 	  case '\\':
-	    if (escape && pat[1]
-#if defined DOSISH
-		&& strchr("*?[]\\", pat[1])
-#endif
-		) {
-		c = *++pat;
-	    }
-	    /* FALLTHROUGH */
+	    if (escape && p[1])
+		p++;
+	    break; /* goto ordinary */
+	}
 
-	  default:
-#if defined DOSISH
-	    if (ISDIRSEP(c) && isdirsep(*s))
-		;
-	    else
-#endif
-	    if (Compare(pat, s) != 0)
-		return FNM_NOMATCH;
-	    INC_S();
-	    Inc(pat);
-	    break;
+	/* ordinary */
+	if (Compare(p, s) != 0) {
+	    goto failed;
+	}
+	Inc(p);
+	Inc(s);
+	continue;
+
+      failed: /* try next '*' position */
+	if (ptmp && stmp) {
+	    p = ptmp;
+	    Inc(stmp); /* !ISEND(*stmp) */
+	    s = stmp;
+	    continue;
+	}
+	RETURN(FNM_NOMATCH);
+    }
+}
+
+static int
+fnmatch(p, s, flags)
+    const char *p; /* pattern */
+    const char *s; /* string */
+    int flags;
+{
+    const int period = !(flags & FNM_DOTMATCH);
+    const int pathname = flags & FNM_PATHNAME;
+
+    const char *ptmp = 0;
+    const char *stmp = 0;
+
+    if (pathname) {
+	while (1) {
+	    if (p[0] == '*' && p[1] == '*' && p[2] == '/') {
+		do { p += 3; } while (p[0] == '*' && p[1] == '*' && p[2] == '/');
+		ptmp = p;
+		stmp = s;
+	    }
+	    if (fnmatch_helper(&p, &s, flags) == 0) {
+		while (*s && *s != '/') Inc(s);
+		if (*p && *s) {
+		    p++;
+		    s++;
+		    continue;
+		}
+		if (!*p && !*s)
+		    return 0;
+	    }
+	    /* failed : try next recursion */
+	    if (ptmp && stmp && !(period && *stmp == '.' && *ptmp != '.')) {
+		while (*stmp && *stmp != '/') Inc(stmp);
+		if (*stmp) {
+		    p = ptmp;
+		    stmp++;
+		    s = stmp;
+		    continue;
+		}
+	    }
+	    return FNM_NOMATCH;
 	}
     }
-    return !*s ? 0 : FNM_NOMATCH;
+    else
+	return fnmatch_helper(&p, &s, flags);
 }
 
 VALUE rb_cDir;
@@ -1586,6 +1610,8 @@ dir_entries(io, dirname)
  *     File.fnmatch('* / FIXME *', 'dave/.profile', File::FNM_PATHNAME)   #=> false
  *     STRICT = File::FNM_PATHNAME | File::FNM_DOTMATCH
  *     File.fnmatch('* / FIXME *', 'dave/.profile', STRICT)               #=> true
+ *
+ *     File.fnmatch('** ERASEME /t', 'c/a/b/c/t', File::FNM_PATHNAME) #=> true
  */
 static VALUE
 file_s_fnmatch(argc, argv, obj)
