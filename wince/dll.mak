@@ -68,7 +68,6 @@ CLEAN :
 	-@erase "$(INTDIR)\dir.obj"
 	-@erase "$(INTDIR)\dln.obj"
 	-@erase "$(INTDIR)\dmyext.obj"
-	-@erase "$(INTDIR)\dup2.obj"
 	-@erase "$(INTDIR)\enum.obj"
 	-@erase "$(INTDIR)\error.obj"
 	-@erase "$(INTDIR)\eval.obj"
@@ -108,7 +107,7 @@ CLEAN :
 	-@erase "$(OUTDIR)\mswince_ruby17.lib"
 	-@erase "$(OUTDIR)\wce\direct.obj"
 	-@erase "$(OUTDIR)\wce\errno.obj"
-	-@erase "$(OUTDIR)\wce\ceio.obj"
+	-@erase "$(OUTDIR)\wce\io.obj"
 	-@erase "$(OUTDIR)\wce\parse.obj"
 	-@erase "$(OUTDIR)\wce\process.obj"
 	-@erase "$(OUTDIR)\wce\signal.obj"
@@ -116,7 +115,7 @@ CLEAN :
 	-@erase "$(OUTDIR)\wce\stdio.obj"
 	-@erase "$(OUTDIR)\wce\stdlib.obj"
 	-@erase "$(OUTDIR)\wce\string.obj"
-	-@erase "$(OUTDIR)\wce\cetime.obj"
+	-@erase "$(OUTDIR)\wce\time.obj"
 	-@erase "$(OUTDIR)\wce\timeb.obj"
 	-@erase "$(OUTDIR)\wce\utime.obj"
 	-@erase "$(OUTDIR)\wce\wince.obj"
@@ -213,7 +212,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\win32.obj" \
 	"$(INTDIR)\acosh.obj" \
 	"$(INTDIR)\crypt.obj" \
-	"$(INTDIR)\dup2.obj" \
 	"$(INTDIR)\hypot.obj" \
 	"$(INTDIR)\isinf.obj" \
 	"$(INTDIR)\isnan.obj" \
@@ -260,7 +258,6 @@ CLEAN :
 	-@erase "$(INTDIR)\dir.obj"
 	-@erase "$(INTDIR)\dln.obj"
 	-@erase "$(INTDIR)\dmyext.obj"
-	-@erase "$(INTDIR)\dup2.obj"
 	-@erase "$(INTDIR)\enum.obj"
 	-@erase "$(INTDIR)\error.obj"
 	-@erase "$(INTDIR)\eval.obj"
@@ -405,7 +402,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\win32.obj" \
 	"$(INTDIR)\acosh.obj" \
 	"$(INTDIR)\crypt.obj" \
-	"$(INTDIR)\dup2.obj" \
 	"$(INTDIR)\hypot.obj" \
 	"$(INTDIR)\isinf.obj" \
 	"$(INTDIR)\isnan.obj" \
@@ -452,7 +448,6 @@ CLEAN :
 	-@erase "$(INTDIR)\dir.obj"
 	-@erase "$(INTDIR)\dln.obj"
 	-@erase "$(INTDIR)\dmyext.obj"
-	-@erase "$(INTDIR)\dup2.obj"
 	-@erase "$(INTDIR)\enum.obj"
 	-@erase "$(INTDIR)\error.obj"
 	-@erase "$(INTDIR)\eval.obj"
@@ -597,7 +592,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\win32.obj" \
 	"$(INTDIR)\acosh.obj" \
 	"$(INTDIR)\crypt.obj" \
-	"$(INTDIR)\dup2.obj" \
 	"$(INTDIR)\hypot.obj" \
 	"$(INTDIR)\isinf.obj" \
 	"$(INTDIR)\isnan.obj" \
@@ -644,7 +638,6 @@ CLEAN :
 	-@erase "$(INTDIR)\dir.obj"
 	-@erase "$(INTDIR)\dln.obj"
 	-@erase "$(INTDIR)\dmyext.obj"
-	-@erase "$(INTDIR)\dup2.obj"
 	-@erase "$(INTDIR)\enum.obj"
 	-@erase "$(INTDIR)\error.obj"
 	-@erase "$(INTDIR)\eval.obj"
@@ -789,7 +782,6 @@ LINK32_OBJS= \
 	"$(INTDIR)\win32.obj" \
 	"$(INTDIR)\acosh.obj" \
 	"$(INTDIR)\crypt.obj" \
-	"$(INTDIR)\dup2.obj" \
 	"$(INTDIR)\hypot.obj" \
 	"$(INTDIR)\isinf.obj" \
 	"$(INTDIR)\isnan.obj" \
@@ -1186,9 +1178,6 @@ LINK32_OBJS= \
 	".\config.h"\
 	".\wince.h"\
 
-..\missing\dup2.c : \
-	".\config.h"\
-
 ..\missing\isinf.c : \
 	".\config.h"\
 
@@ -1425,11 +1414,6 @@ SOURCE=..\missing\acosh.c
 SOURCE=..\missing\crypt.c
 
 "$(INTDIR)\crypt.obj" : $(SOURCE) "$(INTDIR)"
-	$(CPP) $(CPP_PROJ) $(SOURCE)
-
-SOURCE=..\missing\dup2.c
-
-"$(INTDIR)\dup2.obj" : $(SOURCE) "$(INTDIR)"
 	$(CPP) $(CPP_PROJ) $(SOURCE)
 
 SOURCE=..\missing\hypot.c

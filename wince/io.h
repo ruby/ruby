@@ -30,6 +30,7 @@ int _unlink(const char *file);
 int _umask(int cmask);
 int _chmod(const char *path, int mode);
 int _dup( int handle );
+int dup2( int handle1, int handle2 );
 int _isatty(int fd);
 int _pipe(int *phandles, unsigned int psize, int textmode);
 int _access(const char *filename, int flags);

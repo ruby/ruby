@@ -183,7 +183,15 @@ int _chmod(const char *path, int mode)
 	return 0;
 }
 
+/* WinCE doesn't have dup and dup2.  */
+/* so, we cannot use missing/dup2.c. */
 int _dup( int handle )
+{
+	errno = EBADF;
+	return -1;
+}
+
+int dup2( int handle1, int handle2 )
 {
 	errno = EBADF;
 	return -1;
