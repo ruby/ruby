@@ -8,7 +8,10 @@
 
 (defconst ruby-mode-revision "$Revision$")
 
-(defconst ruby-mode-version "$Id$")
+(defconst ruby-mode-version
+  (progn
+   (string-match "[0-9.]+" ruby-mode-revision)
+   (substring ruby-mode-revision (match-beginning 0) (match-end 0))))
 
 (defconst ruby-block-beg-re
   "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin\\|do"

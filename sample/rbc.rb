@@ -2,8 +2,8 @@
 #
 #   rbc.rb - 
 #   	$Release Version: 0.6 $
-#   	$Revision: 1.1.1.1 $
-#   	$Date: 1998/01/16 04:14:56 $
+#   	$Revision: 1.1.1.1.2.1 $
+#   	$Date: 1998/01/16 12:36:10 $
 #   	by Keiju ISHITSUKA(Nippon Rational Inc.)
 #
 # --
@@ -32,7 +32,7 @@ require "e2mmap.rb"
 $stdout.sync = TRUE
 
 module BC_APPLICATION__
-  RCS_ID='-$Header: /home/cvsroot/ruby/sample/rbc.rb,v 1.1.1.1 1998/01/16 04:14:56 matz Exp $-'
+  RCS_ID='-$Header: /home/cvsroot/ruby/sample/rbc.rb,v 1.1.1.1.2.1 1998/01/16 12:36:10 matz Exp $-'
   
   extend Exception2MessageMapper
   def_exception :UnrecognizedSwitch, "Unrecognized switch: %s"
@@ -120,9 +120,9 @@ module BC_APPLICATION__
 	if line != "\n"
 	  begin
 	    if CONFIG[:INSPECT]
-	      print (cont._=eval(line, bind)).inspect, "\n"
+	      print((cont._=eval(line, bind)).inspect, "\n")
 	    else
-	      print (cont._=eval(line, bind)), "\n"
+	      print((cont._=eval(line, bind)), "\n")
 	    end
 	  rescue
 	    #	$! = 'exception raised' unless $!

@@ -1,3 +1,15 @@
+Thu Jan 29 14:18:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* class.c (mod_ancestors): should not include singleton classes.
+
+	* object.c (obj_type): should not return internal class.
+
+	* io.c (io_reopen): unwillingly closes stdio streams.
+
+Thu Jan 29 11:50:35 1998  Toshihiko SHIMOKAWA  <toshi@csce.kyushu-u.ac.jp>
+
+	* ext/socket/socket.c (udp_addrsetup): forgot to use htons().
+
 Fri Jan 23 14:19:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1b6 released.

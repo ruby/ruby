@@ -81,7 +81,7 @@ obj_type(obj)
 {
     VALUE cl = CLASS_OF(obj);
 
-    if (FL_TEST(cl, FL_SINGLETON)) {
+    while (FL_TEST(cl, FL_SINGLETON) || TYPE(cl) == T_ICLASS) {
 	cl = RCLASS(cl)->super;
     }
     return cl;

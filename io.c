@@ -1144,18 +1144,21 @@ io_reopen(io, nfile)
 
     mode = io_mode_string(fptr);
     fd = fileno(fptr->f);
-    if (fileno(fptr->f) < 3)	/* need to keep stdio */
+    if (fileno(fptr->f) < 3) {
+	/* need to keep stdio */
+	dup2(fileno(orig->f), fd);
+    }
+    else {
 	fclose(fptr->f);
-    dup2(fileno(orig->f), fd);
-    fptr->f = rb_fdopen(fd, mode);
+	fptr->f = rb_fdopen(fd, mode);
+    }
 
     if (fptr->f2) {
 	fd = fileno(fptr->f2);
-	if (fileno(fptr->f2) < 3)
-	    fclose(fptr->f2);
+	fclose(fptr->f2);
 	if (orig->f2) {
 	    dup2(fileno(orig->f2), fd);
-	    fptr->f = rb_fdopen(fd, "w");
+	    fptr->f2 = rb_fdopen(fd, "w");
 	}
 	else {
 	    fptr->f2 = 0;
@@ -1397,32 +1400,12 @@ io_errset(val, id)
 {
     OpenFile *fptr;
     int fd;
+    FILE *f;
 
     if (TYPE(val) != T_FILE) {
 	TypeError("$stderr must be IO Object");
     }
-    GetOpenFile(val, fptr);
-    io_writable(fptr);
-    rb_stderr = val;
-
-    fd = fileno(fptr->f2?fptr->f2:fptr->f);
-    if (fd != 2) {
-	FILE *f;
-
-	fflush(stderr);
-	dup2(fd, 2);
-	f = rb_fdopen(2, io_mode_string(fptr));
-	if (fptr->f2) {
-	    if (fileno(fptr->f2) < 3)	/* need to keep stdio */
-		fclose(fptr->f2);
-	    fptr->f2 = f;
-	}
-	else {
-	    if (fileno(fptr->f) < 3)
-		fclose(fptr->f);
-	    fptr->f = f;
-	}
-    }
+    io_reopen(rb_stderr, val);
 }
 
 static VALUE

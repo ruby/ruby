@@ -267,6 +267,8 @@ mod_ancestors(mod)
     VALUE p;
 
     for (p = mod; p; p = RCLASS(p)->super) {
+	if (FL_TEST(p, FL_SINGLETON))
+	    continue;
 	if (BUILTIN_TYPE(p) == T_ICLASS) {
 	    ary_push(ary, RBASIC(p)->class);
 	}
