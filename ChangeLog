@@ -1,3 +1,7 @@
+Sat Sep 28 20:06:36 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* keywords: add braces around initializers.
+
 Sat Sep 28 13:19:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* hash.c (rb_hash_become): should check self-assignment after
