@@ -1174,8 +1174,8 @@ module Tk
 	procedure(tk_call('wm', 'command', path))
       end
     end
-    def deiconify
-      tk_call 'wm', 'deiconify', path
+    def deiconify(ex = true)
+      tk_call('wm', 'deiconify', path) if ex
       self
     end
     def focusmodel(mode = nil)
@@ -1221,8 +1221,8 @@ module Tk
 	tk_call 'wm', 'iconbitmap', path
       end
     end
-    def iconify
-      tk_call 'wm', 'iconify', path
+    def iconify(ex = true)
+      tk_call('wm', 'iconify', path) if ex
       self
     end
     def iconmask(bmp=nil)
@@ -1351,8 +1351,8 @@ module Tk
 	window(tk_call('wm', 'transient', path, master))
       end
     end
-    def withdraw
-      tk_call 'wm', 'withdraw', path
+    def withdraw(ex = true)
+      tk_call('wm', 'withdraw', path) if ex
       self
     end
   end
@@ -3544,7 +3544,15 @@ class TkRoot<TkWindow
       return ROOT[0]
     end
     new = super(:without_creating=>true, :widgetname=>'.')
-    keys.each{|k,v| new.send(k,v)} if keys  # wm commands
+    if keys  # wm commands
+      keys.each{|k,v|
+	if v.kind_of? Array
+	  new.send(k,*v)
+	else
+	  new.send(k,v)
+	end
+      }
+    end
     ROOT[0] = new
     Tk_WINDOWS["."] = new
   end
@@ -3599,6 +3607,7 @@ class TkToplevel<TkWindow
 #################
 
   def _wm_command_option_chk(keys)
+    keys = {} unless keys
     new_keys = {}
     wm_cmds = {}
     keys.each{|k,v|
@@ -3643,7 +3652,13 @@ class TkToplevel<TkWindow
       end
       keys, cmds = _wm_command_option_chk(keys)
       super(keys)
-      cmds.each{|k,v| self.send(k,v)}
+      cmds.each{|k,v| 
+	if v.kind_of? Array
+	  self.send(k,*v)
+	else
+	  self.send(k,v)
+	end
+      }
       return
     end
     if screen.kind_of? Hash
