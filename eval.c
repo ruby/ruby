@@ -5773,6 +5773,7 @@ rb_load(fname, wrap)
 {
     VALUE tmp;
     int state;
+    volatile int prohibit_int = rb_prohibit_interrupt;
     volatile ID last_func;
     volatile VALUE wrapper = 0;
     volatile VALUE self = ruby_top_self;
@@ -5850,6 +5851,7 @@ rb_load(fname, wrap)
 	    free(ruby_scope->local_tbl);
     }
     POP_TAG();
+    rb_prohibit_interrupt = prohibit_int;
     ruby_cref = saved_cref;
     POP_SCOPE();
     POP_FRAME();
