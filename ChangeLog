@@ -1,3 +1,9 @@
+Mon Feb 14 00:40:49 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/ddrb/drb.rb (InvokeMethod.perform): pass DRb info to sub thread.
+
+	* test/drb/test_drb.rb (test_01_safe1_safe4_eval): fix test case.
+
 Sun Feb 13 23:13:46 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/dublincore.rb (RSS::DublicCoreModel#date{,=}): added

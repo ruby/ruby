@@ -1455,13 +1455,16 @@ module DRb
 	setup_message
 
         if $SAFE < @safe_level
+          info = Thread.current['DRb']
           if @block
-            @result = Thread.new { 
+            @result = Thread.new {
+              Thread.current['DRb'] = info
               $SAFE = @safe_level
               perform_with_block
             }.value
           else
             @result = Thread.new { 
+              Thread.current['DRb'] = info
               $SAFE = @safe_level
               perform_without_block
             }.value
