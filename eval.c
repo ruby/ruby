@@ -217,6 +217,7 @@ rb_clear_cache()
 
 static void
 rb_clear_cache_for_undef(klass, id)
+    VALUE klass;
     ID id;
 {
     struct cache_entry *ent, *end;
@@ -591,7 +592,6 @@ static struct SCOPE *top_scope;
     _frame.tmp  = 0;			\
     _frame.node = ruby_current_node;	\
     _frame.iter = ruby_iter->iter;	\
-    _frame.cbase = ruby_frame->cbase;	\
     _frame.argc = 0;			\
     _frame.argv = 0;			\
     _frame.flags = FRAME_ALLOCA;	\
@@ -616,6 +616,7 @@ struct BLOCK {
     struct SCOPE *scope;
     struct BLOCKTAG *tag;
     VALUE klass;
+    NODE *cref;
     int iter;
     int vmode;
     int flags;
@@ -652,6 +653,7 @@ new_blktag()
     _block.self = self;			\
     _block.frame = *ruby_frame;		\
     _block.klass = ruby_class;		\
+    _block.cref = ruby_cref;		\
     _block.frame.node = ruby_current_node;\
     _block.scope = ruby_scope;		\
     _block.prev = ruby_block;		\
@@ -1185,7 +1187,6 @@ ruby_init()
 	ruby_frame->self = ruby_top_self;
 	top_cref = rb_node_newnode(NODE_CREF,rb_cObject,0,0);
 	ruby_cref = top_cref;
-	ruby_frame->cbase = (VALUE)ruby_cref;
 	rb_define_global_const("TOPLEVEL_BINDING", rb_f_binding(ruby_top_self));
 #ifdef __MACOS__
 	_macruby_init();
@@ -1446,7 +1447,7 @@ rb_eval_string_protect(str, state)
     const char *str;
     int *state;
 {
-    VALUE result;		/* OK */
+    VALUE result = Qnil;	/* OK */
     int status;
 
     PUSH_TAG(PROT_NONE);
@@ -1483,7 +1484,7 @@ rb_eval_string_wrap(str, state)
     ruby_frame->orig_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = self;
-    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_wrapper,0,0);
+    PUSH_CREF(ruby_wrapper);
     PUSH_SCOPE();
 
     val = rb_eval_string_protect(str, &status);
@@ -1582,7 +1583,7 @@ rb_eval_cmd(cmd, arg, tcheck)
     int tcheck;
 {
     int state;
-    VALUE val;			/* OK */
+    VALUE val = Qnil;		/* OK */
     struct SCOPE *saved_scope;
     volatile int safe = ruby_safe_level;
 
@@ -1600,8 +1601,7 @@ rb_eval_cmd(cmd, arg, tcheck)
     ruby_frame->orig_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = ruby_top_self;
-    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,0,0,0);
-    RNODE(ruby_frame->cbase)->nd_clss = ruby_wrapper ? ruby_wrapper : rb_cObject;
+    PUSH_CREF(ruby_wrapper ? ruby_wrapper : rb_cObject);
 
     if (tcheck && OBJ_TAINTED(cmd)) {
 	ruby_safe_level = 4;
@@ -1627,7 +1627,7 @@ superclass(self, node)
     VALUE self;
     NODE *node;
 {
-    VALUE val;			/* OK */
+    VALUE val = Qnil;		/* OK */
     int state;
 
     PUSH_TAG(PROT_NONE);
@@ -1659,7 +1659,7 @@ superclass(self, node)
     return val;
 }
 
-#define ruby_cbase (RNODE(ruby_frame->cbase)->nd_clss)
+#define ruby_cbase (ruby_cref->nd_clss)
 
 static VALUE
 ev_const_defined(cref, id, self)
@@ -1713,7 +1713,7 @@ ev_const_get(cref, id, self)
 static VALUE
 cvar_cbase()
 {
-    NODE *cref = RNODE(ruby_frame->cbase);
+    NODE *cref = ruby_cref;
 
     while (cref && cref->nd_next && FL_TEST(cref->nd_clss, FL_SINGLETON)) {
 	cref = cref->nd_next;
@@ -1727,7 +1727,7 @@ cvar_cbase()
 static VALUE
 rb_mod_nesting()
 {
-    NODE *cbase = RNODE(ruby_frame->cbase);
+    NODE *cbase = ruby_cref;
     VALUE ary = rb_ary_new();
 
     while (cbase && cbase->nd_next) {
@@ -1743,7 +1743,7 @@ rb_mod_nesting()
 static VALUE
 rb_mod_s_constants()
 {
-    NODE *cbase = RNODE(ruby_frame->cbase);
+    NODE *cbase = ruby_cref;
     void *data = 0;
 
     while (cbase) {
@@ -1789,7 +1789,7 @@ rb_undef(klass, id)
     VALUE origin;
     NODE *body;
 
-    if (ruby_class == rb_cObject && klass == ruby_class) {
+    if (ruby_cbase == rb_cObject && klass == rb_cObject) {
 	rb_secure(4);
     }
     if (ruby_safe_level >= 4 && !OBJ_TAINTED(klass)) {
@@ -2123,7 +2123,7 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CONST:
-	if (ev_const_defined(RNODE(ruby_frame->cbase), node->nd_vid, self)) {
+	if (ev_const_defined(ruby_cref, node->nd_vid, self)) {
 	    return "constant";
 	}
 	break;
@@ -3057,7 +3057,6 @@ rb_eval(self, n)
 	    if (node->nd_rval) {
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)node->nd_rval;
-		ruby_frame->cbase = node->nd_rval;
 	    }
 	    if (node->nd_tbl) {
 		VALUE *vars = ALLOCA_N(VALUE, node->nd_tbl[0]+1);
@@ -3229,7 +3228,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_CONST:
-	result = ev_const_get(RNODE(ruby_frame->cbase), node->nd_vid, self);
+	result = ev_const_get(ruby_cref, node->nd_vid, self);
 	break;
 
       case NODE_CVAR:
@@ -3658,7 +3657,7 @@ module_setup(module, n)
     NODE * volatile node = n->nd_body;
     int state;
     struct FRAME frame;
-    VALUE result;		/* OK */
+    VALUE result = Qnil;	/* OK */
     TMP_PROTECT;
 
     frame = *ruby_frame;
@@ -3683,7 +3682,6 @@ module_setup(module, n)
     }
 
     PUSH_CREF(module);
-    ruby_frame->cbase = (VALUE)ruby_cref;
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (trace_func) {
@@ -4055,7 +4053,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     frame.prev = ruby_frame;
     ruby_frame = &(frame);
     old_cref = (VALUE)ruby_cref;
-    ruby_cref = (NODE*)ruby_frame->cbase;
+    ruby_cref = block->cref;
     old_wrapper = ruby_wrapper;
     ruby_wrapper = block->wrapper;
     old_scope = ruby_scope;
@@ -4071,8 +4069,14 @@ rb_yield_0(val, self, klass, flags, avalue)
 	/* FOR does not introduce new scope */
 	ruby_dyna_vars = block->dyna_vars;
     }
-    ruby_class = klass ? klass : block->klass;
-    if (!klass) self = block->self;
+    if (klass) {
+	ruby_class = klass;
+	PUSH_CREF(klass);
+    }
+    else {
+	ruby_class = block->klass;
+	self = block->self;
+    }
     node = block->body;
 
     if (block->var) {
@@ -4552,7 +4556,7 @@ rb_protect(proc, data, state)
     VALUE data;
     int *state;
 {
-    VALUE result;		/* OK */
+    VALUE result = Qnil;	/* OK */
     int status;
 
     PUSH_TAG(PROT_NONE);
@@ -4599,7 +4603,7 @@ rb_with_disable_interrupt(proc, data)
     VALUE (*proc)();
     VALUE data;
 {
-    VALUE result;		/* OK */
+    VALUE result = Qnil;	/* OK */
     int status;
 
     DEFER_INTS;
@@ -4941,7 +4945,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    if (body->nd_rval) {
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)body->nd_rval;
-		ruby_frame->cbase = body->nd_rval;
+		ruby_class = ruby_cbase;
 	    }
 	    if (body->nd_tbl) {
 		local_vars = TMP_ALLOC(body->nd_tbl[0]+1);
@@ -5401,7 +5405,7 @@ eval(self, src, scope, file, line)
 	old_vmode = scope_vmode;
 	scope_vmode = data->vmode;
 	old_cref = (VALUE)ruby_cref;
-	ruby_cref = (NODE*)ruby_frame->cbase;
+	ruby_cref = data->cref;
 	old_wrapper = ruby_wrapper;
 	ruby_wrapper = data->wrapper;
 	if ((file == 0 || (line == 1 && strcmp(file, "(eval)") == 0)) && data->body) {
@@ -5557,7 +5561,7 @@ exec_under(func, under, cbase, args)
     VALUE under, cbase;
     void *args;
 {
-    VALUE val;			/* OK */
+    VALUE val = Qnil;		/* OK */
     int state;
     int mode;
 
@@ -5570,9 +5574,6 @@ exec_under(func, under, cbase, args)
     ruby_frame->argc = _frame.prev->argc;
     ruby_frame->argv = _frame.prev->argv;
     if (cbase) {
-	if (ruby_cbase != cbase) {
-	    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,under,0,ruby_frame->cbase);
-	}
 	PUSH_CREF(cbase);
     }
 
@@ -5753,7 +5754,7 @@ rb_load(fname, wrap)
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
     ruby_frame->self = self;
-    ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_class,0,0);
+    PUSH_CREF(ruby_class);
     PUSH_SCOPE();
     /* default visibility is private at loading toplevel */
     SCOPE_SET(SCOPE_PRIVATE);
@@ -6626,7 +6627,7 @@ rb_f_autoload(obj, sym, file)
     VALUE sym;
     VALUE file;
 {
-    return rb_mod_autoload(ruby_class, sym, file);
+    return rb_mod_autoload(ruby_cbase, sym, file);
 }
 
 static VALUE
@@ -6634,8 +6635,8 @@ rb_f_autoload_p(obj, sym)
     VALUE obj;
     VALUE sym;
 {
-    /* use ruby_class as same as rb_f_autoload. */
-    return rb_mod_autoload_p(ruby_class, sym);
+    /* use ruby_cbase as same as rb_f_autoload. */
+    return rb_mod_autoload_p(ruby_cbase, sym);
 }
 
 void
@@ -6692,7 +6693,7 @@ blk_mark(data)
 	rb_gc_mark((VALUE)data->body);
 	rb_gc_mark((VALUE)data->self);
 	rb_gc_mark((VALUE)data->dyna_vars);
-	rb_gc_mark((VALUE)data->klass);
+	rb_gc_mark((VALUE)data->cref);
 	rb_gc_mark((VALUE)data->tag);
 	rb_gc_mark(data->wrapper);
 	rb_gc_mark(data->block_obj);
@@ -7424,7 +7425,7 @@ method_call(argc, argv, method)
     VALUE *argv;
     VALUE method;
 {
-    VALUE result;	/* OK */
+    VALUE result = Qnil;	/* OK */
     struct METHOD *data;
     int state;
     volatile int safe = ruby_safe_level;
@@ -7968,7 +7969,7 @@ rb_trap_eval(cmd, sig)
     int sig;
 {
     int state;
-    VALUE val;			/* OK */
+    VALUE val = Qnil;		/* OK */
     volatile struct thread_status_t save;
 
     THREAD_COPY_STATUS(curr_thread, &save);
@@ -10070,7 +10071,7 @@ rb_f_catch(dmy, tag)
 {
     int state;
     ID t;
-    VALUE val;			/* OK */
+    VALUE val = Qnil;		/* OK */
 
     t = rb_to_id(tag);
     PUSH_TAG(t);

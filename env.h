@@ -20,7 +20,6 @@ extern struct FRAME {
     ID last_func;
     ID orig_func;
     VALUE last_class;
-    VALUE cbase;
     struct FRAME *prev;
     struct FRAME *tmp;
     struct RNode *node;

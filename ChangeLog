@@ -1,3 +1,13 @@
+Thu Aug  7 06:46:06 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): update ruby_class as well as ruby_cref.
+	  (ruby-bugs-ja PR#540)
+
+Thu Aug  7 04:52:50 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): remove ruby_frame->cbase and unify to
+	  ruby_cref.  [ruby-talk:78141]
+
 Thu Aug  7 04:19:15 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* gc.c: FreeBSD/ia64's mcontext_t is a bit different from that of
@@ -39,9 +49,44 @@ Wed Aug  6 17:28:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/digest/sha1/extconf.rb: have_library already appends library
 	  name.
 
+Wed Aug  6 17:23:57 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c: initialize /* OK */ variables by Qnil to stop warnings.
+
 Wed Aug  6 04:58:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* ext/Setup*: add io/wait and openssl.
+
+Wed Aug  6 01:13:38 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_autoload): use ruby_cbase instead of ruby_class.
+
+	* eval.c (rb_f_autoload_p): ditto.
+
+	* class.c (rb_mod_init_copy): no longer implements independent
+	  clone and dup methods.  override "initialize_copy" instead.
+	  [ruby-core:01352]
+
+	* object.c (rb_class_s_alloc): define Class allocation function.
+	  this makes Classes to follow clone framework that uses
+	  initialize_copy.
+
+	* object.c (rb_class_initialize): separate instantiation and
+	  initialization.
+
+	* object.c (rb_obj_alloc): prohibit instantiation from
+	  uninitialized class.
+
+	* object.c (rb_class_superclass): check uninitialized class.
+
+	* array.c (rb_ary_fill): wrong index processing with block.  this
+	  fix was done by Koji Arai <JCA02266@nifty.ne.jp> [ruby-list:38029]
+
+	* marshal.c (w_object): should preserve generic ivar for nil,
+	  true, false, symbols, and fixnums.
+
+	* marshal.c (w_uclass): base_klass check should be done after
+	  rb_class_real().
 
 Wed Aug  6 01:18:50 2003  Minero Aoki  <aamine@loveruby.net>
 
@@ -50,6 +95,11 @@ Wed Aug  6 01:18:50 2003  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/pop.rb: ditto.
 
 	* lib/net/protocol.rb: ditto.
+
+Wed Aug  6 00:48:37 2003  Koji Arai  <jca02266@nifty.ne.jp>
+
+	* marshal.c (w_object): should recommend marshal_dump rather than
+	_dump_data.
 
 Tue Aug  5 17:58:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 

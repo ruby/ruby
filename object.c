@@ -675,6 +675,25 @@ rb_mod_cmp(mod, arg)
     return INT2FIX(1);
 }
 
+static VALUE rb_module_s_alloc _((VALUE));
+static VALUE
+rb_module_s_alloc(klass)
+    VALUE klass;
+{
+    VALUE mod = rb_module_new();
+
+    RBASIC(mod)->klass = klass;
+    return mod;
+}
+
+static VALUE
+rb_class_s_alloc(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    return rb_class_boot(0);
+}
+
 static VALUE
 rb_mod_initialize(module)
     VALUE module;
@@ -691,33 +710,17 @@ rb_class_initialize(argc, argv, klass)
     VALUE *argv;
     VALUE klass;
 {
-    return rb_mod_initialize(klass);
-}
+    VALUE super;
 
-static VALUE rb_module_s_alloc _((VALUE));
-static VALUE
-rb_module_s_alloc(klass)
-    VALUE klass;
-{
-    VALUE mod = rb_module_new();
-
-    RBASIC(mod)->klass = klass;
-    return mod;
-}
-
-static VALUE
-rb_class_s_new(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    VALUE super, klass;
-
+    if (RCLASS(klass)->super != 0) {
+	rb_raise(rb_eTypeError, "already initialized class");
+    }
     if (rb_scan_args(argc, argv, "01", &super) == 0) {
 	super = rb_cObject;
     }
-    klass = rb_class_new(super);
+    RCLASS(klass)->super = super;
     rb_make_metaclass(klass, RBASIC(super)->klass);
-    rb_obj_call_init(klass, argc, argv);
+    rb_mod_initialize(klass);
     rb_class_inherited(super, klass);
 
     return klass;
@@ -729,6 +732,9 @@ rb_obj_alloc(klass)
 {
     VALUE obj;
 
+    if (RCLASS(klass)->super == 0) {
+	rb_raise(rb_eTypeError, "can't instantiate uninitialized class");
+    }
     if (FL_TEST(klass, FL_SINGLETON)) {
 	rb_raise(rb_eTypeError, "can't create instance of virtual class");
     }
@@ -769,6 +775,9 @@ rb_class_superclass(klass)
 {
     VALUE super = RCLASS(klass)->super;
 
+    if (!super) {
+	rb_raise(rb_eTypeError, "uninitialized class");
+    }
     while (TYPE(super) == T_ICLASS) {
 	super = RCLASS(super)->super;
     }
@@ -1491,8 +1500,7 @@ Init_Object()
     rb_define_method(rb_cModule, "<=", rb_mod_le, 1);
     rb_define_method(rb_cModule, ">",  rb_mod_gt, 1);
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
-    rb_define_method(rb_cModule, "clone", rb_mod_clone, 0);
-    rb_define_method(rb_cModule, "dup", rb_mod_dup, 0);
+    rb_define_method(rb_cModule, "initialize_copy", rb_mod_init_copy, 1);
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0);
     rb_define_method(rb_cModule, "include?", rb_mod_include_p, 1);
@@ -1524,8 +1532,7 @@ Init_Object()
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);
     rb_define_method(rb_cClass, "initialize", rb_class_initialize, -1);
     rb_define_method(rb_cClass, "superclass", rb_class_superclass, 0);
-    rb_undef_alloc_func(rb_cClass);
-    rb_define_singleton_method(rb_cClass, "new", rb_class_s_new, -1);
+    rb_define_alloc_func(rb_cClass, rb_class_s_alloc);
     rb_undef_method(rb_cClass, "extend_object");
     rb_undef_method(rb_cClass, "append_features");
 

@@ -327,7 +327,7 @@ static void top_local_setup();
 program		:  {
 			lex_state = EXPR_BEG;
                         top_local_init();
-			if ((VALUE)ruby_class == rb_cObject) class_nest = 0;
+			if (ruby_class == rb_cObject) class_nest = 0;
 			else class_nest = 1;
 		    }
 		  compstmt

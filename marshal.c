@@ -84,7 +84,7 @@ static ID s_getc, s_read, s_write, s_binmode;
 struct dump_arg {
     VALUE obj;
     VALUE str, dest;
-    st_table *symbol;
+    st_table *symbols;
     st_table *data;
     int taint;
 };
@@ -310,14 +310,14 @@ w_symbol(id, arg)
     char *sym = rb_id2name(id);
     long num;
 
-    if (st_lookup(arg->symbol, id, &num)) {
+    if (st_lookup(arg->symbols, id, &num)) {
 	w_byte(TYPE_SYMLINK, arg);
 	w_long(num, arg);
     }
     else {
 	w_byte(TYPE_SYMBOL, arg);
 	w_bytes(sym, strlen(sym), arg);
-	st_add_direct(arg->symbol, id, arg->symbol->num_entries);
+	st_add_direct(arg->symbols, id, arg->symbols->num_entries);
     }
 }
 
@@ -400,9 +400,10 @@ w_uclass(obj, base_klass, arg)
     VALUE klass = CLASS_OF(obj);
 
     w_extended(klass, arg);
+    klass = rb_class_real(klass);
     if (klass != base_klass) {
 	w_byte(TYPE_UCLASS, arg);
-	w_unique(rb_obj_classname(obj), arg);
+	w_unique(rb_class2name(klass), arg);
     }
 }
 
@@ -432,6 +433,10 @@ w_object(obj, arg, limit)
     if (limit == 0) {
 	rb_raise(rb_eArgError, "exceed depth limit");
     }
+
+    if (ivtbl = rb_generic_ivar_table(obj)) {
+	w_byte(TYPE_IVAR, arg);
+    }
     if (obj == Qnil) {
 	w_byte(TYPE_NIL, arg);
     }
@@ -452,13 +457,11 @@ w_object(obj, arg, limit)
 	}
 	else {
 	    w_object(rb_int2big(FIX2LONG(obj)), arg, limit);
-	    return;
 	}
 #endif
     }
     else if (SYMBOL_P(obj)) {
 	w_symbol(SYM2ID(obj), arg);
-	return;
     }
     else {
 	long num;
@@ -474,10 +477,6 @@ w_object(obj, arg, limit)
 	}
 
 	if (OBJ_TAINTED(obj)) arg->taint = Qtrue;
-
-	if (ivtbl = rb_generic_ivar_table(obj)) {
-	    w_byte(TYPE_IVAR, arg);
-	}
 
 	st_add_direct(arg->data, obj, arg->data->num_entries);
 	if (rb_respond_to(obj, s_mdump)) {
@@ -641,7 +640,7 @@ w_object(obj, arg, limit)
 		w_class(TYPE_DATA, obj, arg);
 		if (!rb_respond_to(obj, s_dump_data)) {
 		    rb_raise(rb_eTypeError,
-			     "class %s needs to have instance method `_dump_data'",
+			     "class %s needs to have instance method `marshal_dump'",
 			     rb_obj_classname(obj));
 		}
 		v = rb_funcall(obj, s_dump_data, 0);
@@ -676,7 +675,7 @@ static VALUE
 dump_ensure(arg)
     struct dump_arg *arg;
 {
-    st_free_table(arg->symbol);
+    st_free_table(arg->symbols);
     st_free_table(arg->data);
     if (arg->taint) {
 	OBJ_TAINT(arg->str);
@@ -723,11 +722,11 @@ marshal_dump(argc, argv)
 	arg.str = port;
     }
 
-    arg.symbol = st_init_numtable();
-    arg.data   = st_init_numtable();
-    arg.taint  = Qfalse;
-    c_arg.obj = obj;
-    c_arg.arg = &arg;
+    arg.symbols = st_init_numtable();
+    arg.data    = st_init_numtable();
+    arg.taint   = Qfalse;
+    c_arg.obj   = obj;
+    c_arg.arg   = &arg;
     c_arg.limit = limit;
 
     w_byte(MARSHAL_MAJOR, &arg);
@@ -740,7 +739,7 @@ marshal_dump(argc, argv)
 
 struct load_arg {
     char *ptr, *end;
-    st_table *symbol;
+    st_table *symbols;
     VALUE data;
     VALUE proc;
     int taint;
@@ -855,7 +854,7 @@ r_symlink(arg)
     ID id;
     long num = r_long(arg);
 
-    if (st_lookup(arg->symbol, num, &id)) {
+    if (st_lookup(arg->symbols, num, &id)) {
 	return id;
     }
     rb_raise(rb_eArgError, "bad symbol");
@@ -868,7 +867,7 @@ r_symreal(arg)
     ID id;
 
     id = rb_intern(RSTRING(r_bytes(arg))->ptr);
-    st_insert(arg->symbol, arg->symbol->num_entries, id);
+    st_insert(arg->symbols, arg->symbols->num_entries, id);
 
     return id;
 }
@@ -1295,7 +1294,7 @@ static VALUE
 load_ensure(arg)
     struct load_arg *arg;
 {
-    st_free_table(arg->symbol);
+    st_free_table(arg->symbols);
     return 0;
 }
 
@@ -1341,7 +1340,7 @@ marshal_load(argc, argv)
 		MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
     }
 
-    arg.symbol = st_init_numtable();
+    arg.symbols = st_init_numtable();
     arg.data   = rb_hash_new();
     if (NIL_P(proc)) arg.proc = 0;
     else             arg.proc = proc;

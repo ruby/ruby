@@ -60,39 +60,37 @@ clone_method(mid, body, tbl)
 }
 
 VALUE
-rb_mod_clone(module)
-    VALUE module;
+rb_mod_init_copy(clone, orig)
+    VALUE clone, orig;
 {
-    NEWOBJ(clone, struct RClass);
-    CLONESETUP(clone, module);
-
-    RCLASS(clone)->super = RCLASS(module)->super;
-    if (RCLASS(module)->iv_tbl) {
+    rb_obj_init_copy(clone, orig);
+    RCLASS(clone)->super = RCLASS(orig)->super;
+    if (RCLASS(orig)->iv_tbl) {
 	ID id;
 
-	RCLASS(clone)->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
+	RCLASS(clone)->iv_tbl = st_copy(RCLASS(orig)->iv_tbl);
 	id = rb_intern("__classpath__");
 	st_delete(RCLASS(clone)->iv_tbl, (st_data_t*)&id, 0);
 	id = rb_intern("__classid__");
 	st_delete(RCLASS(clone)->iv_tbl, (st_data_t*)&id, 0);
     }
-    if (RCLASS(module)->m_tbl) {
+    if (RCLASS(orig)->m_tbl) {
 	RCLASS(clone)->m_tbl = st_init_numtable();
-	st_foreach(RCLASS(module)->m_tbl, clone_method,
+	st_foreach(RCLASS(orig)->m_tbl, clone_method,
 	  (st_data_t)RCLASS(clone)->m_tbl);
     }
 
-    return (VALUE)clone;
+    return clone;
 }
 
 VALUE
-rb_mod_dup(mod)
-    VALUE mod;
+rb_class_init_copy(clone, orig)
+    VALUE clone, orig;
 {
-    VALUE dup = rb_mod_clone(mod);
-
-    RBASIC(dup)->flags = RBASIC(mod)->flags & (T_MASK|FL_TAINT|FL_SINGLETON);
-    return dup;
+    if (RCLASS(clone)->super != 0) {
+	rb_raise(rb_eTypeError, "already initialized class");
+    }
+    return rb_mod_init_copy(clone, orig);
 }
 
 VALUE
@@ -434,8 +432,7 @@ VALUE
 rb_mod_ancestors(mod)
     VALUE mod;
 {
-    VALUE ary = rb_ary_new();
-    VALUE p;
+    VALUE p, ary = rb_ary_new();
 
     for (p = mod; p; p = RCLASS(p)->super) {
 	if (FL_TEST(p, FL_SINGLETON))

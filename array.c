@@ -1570,9 +1570,8 @@ rb_ary_fill(argc, argv, ary)
 	VALUE v;
 	long i;
 
-	for (i=0; i<RARRAY(ary)->len; i++) {
-	    beg++;
-	    v = rb_yield(LONG2NUM(beg++));
+	for (i=beg; i<RARRAY(ary)->len; i++) {
+	    v = rb_yield(LONG2NUM(i));
 	    if (i>=RARRAY(ary)->len) break;
 	    RARRAY(ary)->ptr[i] = v;
 	}

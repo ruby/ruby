@@ -1157,7 +1157,6 @@ rb_gc_mark_frame(frame)
     struct FRAME *frame;
 {
     mark_locations_array(frame->argv, frame->argc);
-    rb_gc_mark(frame->cbase);
     rb_gc_mark((VALUE)frame->node);
 }
 
@@ -1229,7 +1228,6 @@ rb_gc()
 	    }
 	}
     }
-    rb_gc_mark((VALUE)ruby_class);
     rb_gc_mark((VALUE)ruby_scope);
     rb_gc_mark((VALUE)ruby_dyna_vars);
     if (finalizer_table) {
