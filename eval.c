@@ -292,10 +292,15 @@ rb_enable_super(klass, name)
     ID mid = rb_intern(name);
 
     body = search_method(klass, mid, &origin);
-    if (!body || !body->nd_body || origin != klass) {
+    if (!body) {
 	print_undef(klass, mid);
     }
-    body->nd_noex &= ~NOEX_UNDEF;
+    if (!body->nd_body) {
+	remove_method(klass, mid);
+    }
+    else {
+	body->nd_noex &= ~NOEX_UNDEF;
+    }
 }
 
 static void
@@ -1511,6 +1516,7 @@ is_defined(self, node, buf)
       case NODE_SUPER:
       case NODE_ZSUPER:
 	if (ruby_frame->last_func == 0) return 0;
+	else if (ruby_frame->last_class == 0) return 0;
 	else if (rb_method_boundp(RCLASS(ruby_frame->last_class)->super,
 				  ruby_frame->last_func, 0)) {
 	    if (nd_type(node) == NODE_SUPER) {
@@ -1707,7 +1713,7 @@ call_trace_func(event, file, line, self, id, klass)
 
     prev = ruby_frame;
     PUSH_FRAME();
-    *ruby_frame = *_frame.prev;
+    *ruby_frame = *prev;
     ruby_frame->prev = prev;
 
     if (file) {
@@ -4369,7 +4375,7 @@ rb_f_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE src, scope, vfile, vline;
+    VALUE src, scope, vfile, vline, val;
     char *file = "(eval)";
     int line = 1;
 
@@ -4383,6 +4389,19 @@ rb_f_eval(argc, argv, self)
     }
 
     Check_SafeStr(src);
+    if (NIL_P(scope) && ruby_frame->prev) {
+	struct FRAME *prev;
+	VALUE val;
+
+	prev = ruby_frame;
+	PUSH_FRAME();
+	*ruby_frame = *prev->prev;
+	ruby_frame->prev = prev;
+	val = eval(self, src, scope, file, line);
+	POP_FRAME();
+
+	return val;
+    }
     return eval(self, src, scope, file, line);
 }
 
@@ -5310,6 +5329,7 @@ Init_eval()
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);
 
     rb_define_global_function("set_trace_func", set_trace_func, 1);
+    rb_global_variable(&trace_func);
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
 }
@@ -5475,6 +5495,7 @@ rb_f_binding(self)
     frame_dup(&data->frame);
     if (ruby_frame->prev) {
 	data->frame.last_func = ruby_frame->prev->last_func;
+	data->frame.last_class = ruby_frame->prev->last_class;
     }
 
     if (data->iter) {
@@ -6092,6 +6113,7 @@ thread_mark(th)
     rb_gc_mark(th->errinfo);
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);
+    rb_gc_mark(th->trace);
     rb_mark_tbl(th->locals);
 
     /* mark data in copied stack */

@@ -26,6 +26,7 @@ class DEBUGGER__
     @last = [nil, nil]
     @scripts = {}
   end
+    @no_step = nil
 
   DEBUG_LAST_CMD = []
 

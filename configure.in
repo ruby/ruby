@@ -83,12 +83,12 @@ AC_OBJEXT
 # checks for UNIX variants that set C preprocessor variables
 AC_MINIX
 
-AC_CHECK_SIZEOF(int)
-AC_CHECK_SIZEOF(short)
-AC_CHECK_SIZEOF(long)
-AC_CHECK_SIZEOF(void*)
-AC_CHECK_SIZEOF(float)
-AC_CHECK_SIZEOF(double)
+AC_CHECK_SIZEOF(int, 4)
+AC_CHECK_SIZEOF(short, 2)
+AC_CHECK_SIZEOF(long, 4)
+AC_CHECK_SIZEOF(void*, 4)
+AC_CHECK_SIZEOF(float, 4)
+AC_CHECK_SIZEOF(double, 8)
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
@@ -253,7 +253,7 @@ test $rb_cv_func_strtod = no && LIBOBJS="$LIBOBJS strtod.o"
 
 AC_C_BIGENDIAN
 AC_C_CONST
-AC_CHAR_UNSIGNED
+AC_C_CHAR_UNSIGNED
 
 AC_CACHE_CHECK(whether right shift preserve sign bit, rb_cv_rshift_sign,
     [AC_TRY_RUN([
@@ -429,6 +429,10 @@ if test "$with_dln_a_out" != yes; then
 			fi
 			rb_cv_dlopen=yes ;;
 	netbsd*)  	LDSHARED="ld -shared"
+                      	case "$host_cpu" in
+                      	alpha)
+                          LDFLAGS="-export-dynamic" ;;
+                      	esac
 			rb_cv_dlopen=yes ;;
 	openbsd*) 	LDSHARED="ld -Bforcearchive -Bshareable"
 			rb_cv_dlopen=yes ;;

@@ -141,6 +141,8 @@ parse.c: parse.y
 	$(YACC) $<
 	mv -f y.tab.c parse.c
 
+parse.@OBJEXT@: parse.c
+
 alloca.@OBJEXT@: @srcdir@/missing/alloca.c
 	$(CC) -I. $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/alloca.c
 
