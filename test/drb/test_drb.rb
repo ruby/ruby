@@ -209,7 +209,7 @@ class TestDRbEval < Test::Unit::TestCase
     @ext.stop_service if @ext
   end
   
-  def test_01_safe1_eval
+  def test_01_safe1_safe4_eval
     assert_raises(SecurityError) do
       @there.method_missing(:instance_eval, 'ENV.inspect')
     end
@@ -219,6 +219,19 @@ class TestDRbEval < Test::Unit::TestCase
     end
 
     remote_class = @there.remote_class
+
+    assert_raises(SecurityError) do
+      remote_class.class_eval('ENV.inspect')
+    end
+
+    assert_raises(SecurityError) do
+      remote_class.module_eval('ENV.inspect')
+    end
+
+    four = @there.four
+    assert_equal(1, four.method_missing(:send, :eval, '1'))
+    
+    remote_class = four.remote_class
 
     assert_raises(SecurityError) do
       remote_class.class_eval('ENV.inspect')

@@ -1,3 +1,10 @@
+Mon Feb 14 00:10:17 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (DRbServer): add default_safe_level, safe_level,
+	  config[:safe_level] ([druby-ja:120])
+
+	* test/drb/test_drb.rb, ut_eval.rb, ut_safe1.rb: ditto.
+
 Sun Feb 13 23:13:46 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/dublincore.rb (RSS::DublicCoreModel#date{,=}): added

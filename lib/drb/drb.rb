@@ -1186,6 +1186,7 @@ module DRb
     @@argc_limit = 256
     @@load_limit = 256 * 102400
     @@verbose = false
+    @@safe_level = 0
 
     # Set the default value for the :argc_limit option.
     #
@@ -1215,6 +1216,10 @@ module DRb
       @@idconv = idconv
     end
 
+    def self.default_sefe_level(level)
+      @@level = level
+    end
+
     # Set the default value of the :verbose option.
     #
     # See #new().  The initial default value is false.
@@ -1233,7 +1238,8 @@ module DRb
 	:verbose => @@verbose,
 	:tcp_acl => @@acl,
 	:load_limit => @@load_limit,
-	:argc_limit => @@argc_limit
+	:argc_limit => @@argc_limit,
+        :safe_level => @@safe_level
       }
       default_config.update(hash)
     end
@@ -1298,6 +1304,7 @@ module DRb
 
       @front = front
       @idconv = @config[:idconv]
+      @safe_level = @config[:safe_level]
 
       @grp = ThreadGroup.new
       @thread = run
@@ -1325,6 +1332,8 @@ module DRb
 
     # The configuration of this DRbServer
     attr_reader :config
+
+    attr_reader :safe_level
 
     # Set whether to operate in verbose mode.
     #
@@ -1395,7 +1404,7 @@ module DRb
     #
     # These methods are not callable via dRuby.
     INSECURE_METHOD = [
-      :__send__, :instance_eval, :module_eval, :class_eval
+      :__send__
     ]
 
     # Has a method been included in the list of insecure methods?
@@ -1440,6 +1449,7 @@ module DRb
     class InvokeMethod  # :nodoc:
       def initialize(drb_server, client)
 	@drb_server = drb_server
+        @safe_level = drb_server.safe_level
 	@client = client
       end
 
@@ -1447,10 +1457,28 @@ module DRb
 	@result = nil
 	@succ = false
 	setup_message
-        if @block
-          @result = perform_with_block
+
+        if $SAFE < @safe_level
+          info = Thread.current['DRb']
+          if @block
+            @result = Thread.new { 
+              Thread.current['DRb'] = info
+              $SAFE = @safe_level
+              perform_with_block
+            }.value
+          else
+            @result = Thread.new { 
+              Thread.current['DRb'] = info
+              $SAFE = @safe_level
+              perform_without_block
+            }.value
+          end
         else
-          @result = perform_without_block
+          if @block
+            @result = perform_with_block
+          else
+            @result = perform_without_block
+          end
         end
 	@succ = true
 	if @msg_id == :to_ary
