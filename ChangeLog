@@ -1,3 +1,8 @@
+Fri Feb 15 13:36:58 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_rshift): should properly convert the nagative
+	  value to 2's compliment.
+
 Tue Feb 12 01:21:34 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (assignable): should emit CVASGN within the method
