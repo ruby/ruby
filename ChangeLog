@@ -1,3 +1,7 @@
+Mon Sep 20 11:01:55 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper]: adjust line number for heredoc.  [ruby-dev:24272]
+
 Mon Sep 20 04:49:22 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/ripper.rb.in: new const Ripper::PARSER_EVENT_TABLE.
@@ -14,9 +18,10 @@ Mon Sep 20 04:13:00 2004  Minero Aoki  <aamine@loveruby.net>
 Mon Sep 20 03:46:54 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper]: spaces before heredoc marker was lost.
+	  [ruby-dev:24272]
 
 	* keywords: rb_reserved_word() should be defined only in ruby
-	  core.
+	  core.  [ruby-dev:24272]
 
 	* lex.c: sync with keywords.
 

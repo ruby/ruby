@@ -4938,8 +4938,22 @@ parser_tokadd_string(parser, func, term, paren, nest)
     return c;
 }
 
-#define NEW_STRTERM(func, term, paren) \
+#define NEW_STRTERM0(func, term, paren) \
 	rb_node_newnode(NODE_STRTERM, (func), (term) | ((paren) << (CHAR_BIT * 2)), 0)
+#ifndef RIPPER
+#define NEW_STRTERM(func, term, paren) NEW_STRTERM0(func, term, paren)
+#else
+#define NEW_STRTERM(func, term, paren) ripper_new_strterm(parser, func, term, paren)
+static NODE *
+ripper_new_strterm(parser, func, term, paren)
+    struct parser_params *parser;
+    VALUE func, term, paren;
+{
+    NODE *node = NEW_STRTERM0(func, term, paren);
+    nd_set_line(node, ruby_sourceline);
+    return node;
+}
+#endif
 
 static int
 parser_parse_string(parser, quote)
@@ -5055,6 +5069,7 @@ parser_heredoc_identifier(parser)
 				  rb_str_new(tok(), toklen()),	/* nd_lit */
 				  len,				/* nd_nth */
 				  lex_lastline);		/* nd_orig */
+    nd_set_line(lex_strterm, ruby_sourceline);
     parser_clear_token(parser);
     return term == '`' ? tXSTRING_BEG : tSTRING_BEG;
 }
