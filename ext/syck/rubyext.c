@@ -15,7 +15,6 @@
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
 static ID s_utc, s_read, s_binmode;
-static VALUE str_taguri, str_xprivate;
 static VALUE sym_model, sym_generic;
 static VALUE sym_scalar, sym_seq, sym_map;
 VALUE cParser, cLoader, cNode, oDefaultLoader;
@@ -217,6 +216,7 @@ rb_syck_load_handler(p, n)
     VALUE obj;
     long i;
     int str = 0;
+    int check_transfers = 0;
 
     switch (n->kind)
     {
@@ -289,6 +289,7 @@ rb_syck_load_handler(p, n)
             }
             else
             {
+                check_transfers = 1;
                 obj = rb_str_new( n->data.str->ptr, n->data.str->len );
             }
         break;
@@ -299,6 +300,7 @@ rb_syck_load_handler(p, n)
             {
                 rb_ary_store( obj, i, syck_seq_read( n, i ) );
             }
+            check_transfers = 1;
         break;
 
         case syck_map_kind:
@@ -307,13 +309,21 @@ rb_syck_load_handler(p, n)
             {
                 rb_hash_aset( obj, syck_map_read( n, map_key, i ), syck_map_read( n, map_value, i ) );
             }
+            check_transfers = 1;
         break;
     }
+
 	if ( p->bonus != 0 )
 	{
 		VALUE proc = (VALUE)p->bonus;
 		rb_funcall(proc, rb_intern("call"), 1, obj);
 	}
+
+    if ( check_transfers == 1 && n->type_id != NULL )
+    {
+        obj = rb_funcall( oDefaultLoader, rb_intern( "transfer" ), 2, rb_str_new2( n->type_id ), obj );
+    }
+
     return obj;
 }
 
@@ -631,6 +641,8 @@ syck_loader_transfer( self, type, val )
     {
         VALUE scheme, name, type_hash, type_proc;
         VALUE type_uri = rb_str_new2( taguri );
+        VALUE str_taguri = rb_str_new2("taguri");
+        VALUE str_xprivate = rb_str_new2("x-private");
         VALUE parts = rb_str_split( type_uri, ":" );
                // rb_funcall(rb_mKernel, rb_intern("p"), 1, parts);
 
@@ -749,8 +761,6 @@ Init_syck()
     s_utc = rb_intern("utc");
     s_read = rb_intern("read");
     s_binmode = rb_intern("binmode");
-    str_taguri = rb_str_new2("taguri");
-    str_xprivate = rb_str_new2("x-private");
 	sym_model = ID2SYM(rb_intern("Model"));
 	sym_generic = ID2SYM(rb_intern("Generic"));
     sym_map = ID2SYM(rb_intern("map"));

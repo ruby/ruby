@@ -23,7 +23,7 @@ class Object
 	end
 end
 
-YAML.add_ruby_type( Object ) { |type, val|
+YAML.add_ruby_type( 'object' ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Object )
     YAML.object_maker( obj_class, val )
 }
@@ -78,8 +78,8 @@ hash_proc = Proc.new { |type, val|
 	end
 	val
 }
-YAML.add_builtin_type( /^map/, &hash_proc )
-YAML.add_ruby_type( Hash, &hash_proc ) 
+YAML.add_builtin_type( 'map', &hash_proc )
+YAML.add_ruby_type( 'hash', &hash_proc ) 
 
 module YAML
 
@@ -120,7 +120,7 @@ module YAML
         end
     end
 
-    YAML.add_ruby_type( :flexhash ) { |type, val|
+    YAML.add_ruby_type( 'flexhash' ) { |type, val|
         if Array === val
             p = FlexHash.new
             val.each { |v|
@@ -159,7 +159,7 @@ class Struct
 	end
 end
 
-YAML.add_ruby_type( Struct ) { |type, val|
+YAML.add_ruby_type( 'struct' ) { |type, val|
 	type =~ /^struct:(\w+)/
 	if Hash === val
 		type = $1
@@ -237,8 +237,8 @@ array_proc = Proc.new { |type, val|
         val.to_a
     end
 }
-YAML.add_builtin_type( /^seq/, &array_proc )
-YAML.add_ruby_type( Array, &array_proc ) 
+YAML.add_builtin_type( 'seq', &array_proc )
+YAML.add_ruby_type( 'array', &array_proc ) 
 
 #
 # String#to_yaml
@@ -318,8 +318,8 @@ symbol_proc = Proc.new { |type, val|
 		raise YAML::Error, "Invalid Symbol: " + val.inspect
 	end
 }
-YAML.add_ruby_type( Symbol, &symbol_proc ) 
-YAML.add_ruby_type( :sym, &symbol_proc ) 
+YAML.add_ruby_type( 'symbol', &symbol_proc ) 
+YAML.add_ruby_type( 'sym', &symbol_proc ) 
 
 #
 # Range#to_yaml
@@ -336,7 +336,7 @@ class Range
 	end
 end
 
-YAML.add_ruby_type( Range ) { |type, val|
+YAML.add_ruby_type( 'range' ) { |type, val|
 	if String === val and val =~ /^(.*[^.])(\.{2,3})([^.].*)$/
         r1, rdots, r2 = $1, $2, $3
 		Range.new( YAML.try_implicit( r1 ), YAML.try_implicit( r2 ), rdots.length == 3 )
@@ -384,7 +384,7 @@ regexp_proc = Proc.new { |type, val|
 	end
 }
 YAML.add_domain_type( "perl.yaml.org,2002", /^regexp/, &regexp_proc )
-YAML.add_ruby_type( Regexp, &regexp_proc )
+YAML.add_ruby_type( 'regexp', &regexp_proc )
 
 #
 # Emit a Time object as an ISO 8601 timestamp
