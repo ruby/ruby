@@ -1,3 +1,7 @@
+Sat Nov  8 13:28:46 2003 Takaaki Tateishi <ttate@ttsky.net>
+	* ext/dl/sym.c: Add DL.win32_last_error and DL.last_error.
+	  Thanks, Kaoru Shirai.
+
 Sat Nov  8 06:19:38 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: To fix 'pthread-enabled Tcl/Tk' problem, 

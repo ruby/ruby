@@ -127,6 +127,13 @@ if( $with_type_voidp )
   $dlconfig_h << "#define WITH_TYPE_VOIDP\n"
 end
 
+if( have_header("windows.h") )
+  have_library("kernel32")
+  have_func("GetLastError", "windows.h")
+  dlc_define("HAVE_WINDOWS_H")
+  have_windows_h = true
+end
+
 if( have_header("dlfcn.h") )
   dlc_define("HAVE_DLFCN_H")
   have_library("dl")
@@ -136,8 +143,7 @@ if( have_header("dlfcn.h") )
   if( have_func("dlerror") )
     dlc_define("HAVE_DLERROR")
   end
-elsif( have_header("windows.h") )
-  dlc_define("HAVE_WINDOWS_H")
+elsif ( have_windows_h )
   have_func("LoadLibrary")
   have_func("FreeLibrary")
   have_func("GetProcAddress")

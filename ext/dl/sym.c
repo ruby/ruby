@@ -3,6 +3,7 @@
  */
 
 #include <ruby.h>
+#include <errno.h>
 #include "dl.h"
 
 VALUE rb_cDLSymbol;
@@ -315,6 +316,41 @@ stack_size(struct sym_data *sym)
   }
   return size;
 }
+
+static ID rb_dl_id_DLErrno;
+
+static VALUE
+rb_dl_get_last_error(VALUE self)
+{
+  return rb_thread_local_aref(rb_thread_current(), rb_dl_id_DLErrno);
+}
+
+static VALUE
+rb_dl_set_last_error(VALUE self, VALUE val)
+{
+  errno = NUM2INT(val);
+  rb_thread_local_aset(rb_thread_current(), rb_dl_id_DLErrno, val);
+  return Qnil;
+}
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+static ID rb_dl_id_DLW32Error;
+
+static VALUE
+rb_dl_win32_get_lasterror(VALUE self)
+{
+  return rb_thread_local_aref(rb_thread_current(), rb_dl_id_DLW32Error);
+}
+
+static VALUE
+rb_dl_win32_set_lasterror(VALUE self, VALUE val)
+{
+    SetLastError(NUM2INT(val));
+    rb_thread_local_aset(rb_thread_current(), rb_dl_id_DLW32Error, val);
+    return Qnil;
+}
+#endif
 
 VALUE
 rb_dlsym_call(int argc, VALUE argv[], VALUE self)
@@ -675,6 +711,22 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
       rb_raise(rb_eDLTypeError, "unknown type `%c'", sym->type[0]);
     }
   }
+
+  {
+    /*
+     * We should get the value of errno/GetLastError() before calling another functions.
+     */
+    int last_errno = errno;
+#ifdef _WIN32
+    DWORD win32_last_err = GetLastError();
+#endif
+
+    rb_thread_local_aset(rb_thread_current(), rb_dl_id_DLErrno, INT2NUM(last_errno));
+#ifdef _WIN32
+    rb_thread_local_aset(rb_thread_current(), rb_dl_id_DLW32Error, INT2NUM(win32_last_err));
+#endif
+  }
+
   }
 #else /* defined(DLSTACK) */
   switch(ftype){
@@ -835,4 +887,13 @@ Init_dlsym()
   rb_define_method(rb_cDLSymbol, "to_s", rb_dlsym_cproto, 0);
   rb_define_method(rb_cDLSymbol, "to_ptr", rb_dlsym_to_ptr, 0);
   rb_define_method(rb_cDLSymbol, "to_i", rb_dlsym_to_i, 0);
+
+  rb_dl_id_DLErrno = rb_intern("DLErrno");
+  rb_define_singleton_method(rb_mDL, "last_error", rb_dl_get_last_error, 0);  
+  rb_define_singleton_method(rb_mDL, "last_error=", rb_dl_set_last_error, 1);
+#ifdef _WIN32
+  rb_dl_id_DLW32Error = rb_intern("DLW32Error");
+  rb_define_singleton_method(rb_mDL, "win32_last_error", rb_dl_win32_get_last_error, 0);
+  rb_define_singleton_method(rb_mDL, "win32_last_error=", rb_dl_win32_set_last_error, 1);
+#endif
 }
