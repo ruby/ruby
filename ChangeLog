@@ -1,6 +1,14 @@
+Wed Dec 15 15:31:02 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/set.rb (Set#==): [ruby-dev:25206]
+
 Wed Dec 15 14:32:18 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (rb_w32_fdisset): check whether the handle is valid.
+
+Wed Dec 15 10:30:37 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/openssl/ossl_digest.c (ossl_digest_initialize): [ruby-dev:25198]
 
 Tue Dec 14 19:17:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -127,11 +127,13 @@ ossl_ocspreq_add_nonce(int argc, VALUE *argv, VALUE self)
     int ret;
 
     rb_scan_args(argc, argv, "01", &val);
-    GetOCSPReq(self, req);
-    if(NIL_P(val))
+    if(NIL_P(val)) {
+	GetOCSPReq(self, req);
 	ret = OCSP_request_add1_nonce(req, NULL, -1);
+    }
     else{
 	StringValue(val);
+	GetOCSPReq(self, req);
 	ret = OCSP_request_add1_nonce(req, RSTRING(val)->ptr, RSTRING(val)->len);
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
@@ -214,7 +216,6 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
     int ret;
 
     rb_scan_args(argc, argv, "22", &signer_cert, &signer_key, &certs, &flags);
-    GetOCSPReq(self, req);
     signer = GetX509CertPtr(signer_cert);
     key = GetPrivPKeyPtr(signer_key);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
@@ -223,6 +224,7 @@ ossl_ocspreq_sign(int argc, VALUE *argv, VALUE self)
 	flags |= OCSP_NOCERTS;
     }
     else x509s = ossl_x509_ary2sk(certs);
+    GetOCSPReq(self, req);
     ret = OCSP_request_sign(req, signer, key, EVP_sha1(), x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
     if(!ret) ossl_raise(eOCSPError, NULL);
@@ -240,10 +242,10 @@ ossl_ocspreq_verify(int argc, VALUE *argv, VALUE self)
     int flg, result;
 
     rb_scan_args(argc, argv, "21", &certs, &store, &flags);
-    GetOCSPReq(self, req);
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : INT2NUM(flags);
     x509s = ossl_x509_ary2sk(certs);
+    GetOCSPReq(self, req);
     result = OCSP_request_verify(req, x509s, x509st, flg);
     sk_X509_pop_free(x509s, X509_free);
     if(!result) rb_warn("%s", ERR_error_string(ERR_peek_error(), NULL));
@@ -259,12 +261,11 @@ ossl_ocspreq_to_der(VALUE self)
     unsigned char *p;
     long len;
 
-    GetOCSPReq(self, req);
-
     if((len = i2d_OCSP_REQUEST(req, NULL)) <= 0)
 	ossl_raise(eOCSPError, NULL);
     str = rb_str_new(0, len);
     p = RSTRING(str)->ptr;
+    GetOCSPReq(self, req);
     if(i2d_OCSP_REQUEST(req, &p) <= 0)
 	ossl_raise(eOCSPError, NULL);
     ossl_str_adjust(str, p);
@@ -281,10 +282,11 @@ ossl_ocspres_s_create(VALUE klass, VALUE status, VALUE basic_resp)
     OCSP_BASICRESP *bs;
     OCSP_RESPONSE *res;
     VALUE obj;
+    int st = NUM2INT(status);
 
     if(NIL_P(basic_resp)) bs = NULL;
     else GetOCSPBasicRes(basic_resp, bs); /* NO NEED TO DUP */
-    if(!(res = OCSP_response_create(NUM2INT(status), bs)))
+    if(!(res = OCSP_response_create(st, bs)))
 	ossl_raise(eOCSPError, NULL);
     WrapOCSPRes(klass, obj, res);
 
@@ -426,12 +428,14 @@ ossl_ocspbres_add_nonce(int argc, VALUE *argv, VALUE self)
     VALUE val;
     int ret;
 
-    GetOCSPBasicRes(self, bs);
     rb_scan_args(argc, argv, "01", &val);
-    if(NIL_P(val))
+    if(NIL_P(val)) {
+	GetOCSPBasicRes(self, bs);
 	ret = OCSP_basic_add1_nonce(bs, NULL, -1);
+    }
     else{
 	StringValue(val);
+	GetOCSPBasicRes(self, bs);
 	ret = OCSP_basic_add1_nonce(bs, RSTRING(val)->ptr, RSTRING(val)->len);
     }
     if(!ret) ossl_raise(eOCSPError, NULL);
@@ -452,8 +456,6 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     int error, i, rstatus = 0;
     VALUE tmp;
 
-    GetOCSPBasicRes(self, bs);
-    SafeGetOCSPCertId(cid, id);
     st = NUM2INT(status);
     rsn = NIL_P(status) ? 0 : NUM2INT(reason);
     if(!NIL_P(ext)){
@@ -477,6 +479,8 @@ ossl_ocspbres_add_status(VALUE self, VALUE cid, VALUE status,
     if(rstatus) goto err;
     nxt = X509_gmtime_adj(NULL, NUM2INT(tmp));
 
+    GetOCSPBasicRes(self, bs);
+    SafeGetOCSPCertId(cid, id);
     if(!(single = OCSP_basic_add1_status(bs, id, st, rsn, rev, ths, nxt))){
 	error = 1;
 	goto err;
@@ -564,7 +568,6 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     int ret;
 
     rb_scan_args(argc, argv, "22", &signer_cert, &signer_key, &certs, &flags);
-    GetOCSPBasicRes(self, bs);
     signer = GetX509CertPtr(signer_cert);
     key = GetPrivPKeyPtr(signer_key);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
@@ -575,6 +578,7 @@ ossl_ocspbres_sign(int argc, VALUE *argv, VALUE self)
     else{
 	x509s = ossl_x509_ary2sk(certs);
     }
+    GetOCSPBasicRes(self, bs);
     ret = OCSP_basic_sign(bs, signer, key, EVP_sha1(), x509s, flg);
     sk_X509_pop_free(x509s, X509_free);
     if(!ret) ossl_raise(eOCSPError, NULL);
@@ -592,10 +596,10 @@ ossl_ocspbres_verify(int argc, VALUE *argv, VALUE self)
     int flg, result;
 
     rb_scan_args(argc, argv, "21", &certs, &store, &flags);
-    GetOCSPBasicRes(self, bs);
     x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : INT2NUM(flags);
     x509s = ossl_x509_ary2sk(certs);
+    GetOCSPBasicRes(self, bs);
     result = OCSP_basic_verify(bs, x509s, x509st, flg);
     sk_X509_pop_free(x509s, X509_free);
     if(!result) rb_warn("%s", ERR_error_string(ERR_peek_error(), NULL));
@@ -625,11 +629,11 @@ ossl_ocspcid_initialize(VALUE self, VALUE subject, VALUE issuer)
     OCSP_CERTID *id, *newid;
     X509 *x509s, *x509i;
 
-    GetOCSPCertId(self, id);
     x509s = GetX509CertPtr(subject); /* NO NEED TO DUP */
     x509i = GetX509CertPtr(issuer); /* NO NEED TO DUP */
     if(!(newid = OCSP_cert_to_id(NULL, x509s, x509i)))
 	ossl_raise(eOCSPError, NULL);
+    GetOCSPCertId(self, id);
     OCSP_CERTID_free(id);
     RDATA(self)->data = newid;
 

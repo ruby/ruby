@@ -193,7 +193,7 @@ class Set
   # Adds the given object to the set and returns self.  Use +merge+ to
   # add several elements at once.
   def add(o)
-    @hash[o] = true
+    @hash[o] = o
     self
   end
   alias << add
@@ -313,7 +313,7 @@ class Set
 
     set.is_a?(Set) && size == set.size or return false
 
-    set.all? { |o| include?(o) }
+    set.all? { |o| @hash.value?(o) }
   end
 
   def hash	# :nodoc:
@@ -466,7 +466,7 @@ class SortedSet < Set
 
 	  def add(o)
 	    @keys = nil
-	    @hash[o] = true
+	    @hash[o] = o
 	    self
 	  end
 	  alias << add
@@ -551,7 +551,7 @@ end
 #     if @proc.arity == 2
 #       instance_eval %{
 # 	def add(o)
-# 	  @hash[o] = true if @proc.call(self, o)
+# 	  @hash[o] = o if @proc.call(self, o)
 # 	  self
 # 	end
 # 	alias << add
@@ -560,7 +560,7 @@ end
 # 	  if include?(o) || !@proc.call(self, o)
 # 	    nil
 # 	  else
-# 	    @hash[o] = true
+# 	    @hash[o] = o
 # 	    self
 # 	  end
 # 	end
@@ -583,7 +583,7 @@ end
 #     else
 #       instance_eval %{
 # 	def add(o)
-# 	  @hash[o] = true if @proc.call(o)
+# 	  @hash[o] = o if @proc.call(o)
 # 	  self
 # 	end
 # 	alias << add
@@ -592,7 +592,7 @@ end
 # 	  if include?(o) || !@proc.call(o)
 # 	    nil
 # 	  else
-# 	    @hash[o] = true
+# 	    @hash[o] = o
 # 	    self
 # 	  end
 # 	end

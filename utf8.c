@@ -226,9 +226,9 @@ utf8_mbc_to_normalize(OnigAmbigType flag, UChar** pp, UChar* end, UChar* lower)
     if (*p == 195) { /* 195 == '\303' */
       int c = *(p + 1);
       if (c >= 128) {
-        if (c <= '\236' &&  /* upper */
+        if (c <= (unsigned char)'\236' &&  /* upper */
             (flag & ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE) != 0) {
-          if (c != '\227') {
+          if (c != (unsigned char)'\227') {
             *lower++ = *p;
             *lower   = (UChar )(c + 32);
             (*pp) += 2;
@@ -286,11 +286,11 @@ utf8_is_mbc_ambiguous(OnigAmbigType flag, UChar** pp, UChar* end)
       int c = *(p + 1);
       if (c >= 128) {
         if ((flag & ONIGENC_AMBIGUOUS_MATCH_NONASCII_CASE) != 0) {
-          if (c <= '\236') { /* upper */
+          if (c <= (unsigned char)'\236') { /* upper */
             if (c == '\227') return FALSE;
             return TRUE;
           }
-          else if (c >= '\240' && c <= '\276') { /* lower */
+          else if (c >= (unsigned char)'\240' && c <= (unsigned char)'\276') { /* lower */
             if (c == '\267') return FALSE;
             return TRUE;
           }

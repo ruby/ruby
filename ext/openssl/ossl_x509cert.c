@@ -268,10 +268,10 @@ ossl_x509_set_version(VALUE self, VALUE version)
     X509 *x509;
     long ver;
 
-    GetX509(self, x509);
     if ((ver = NUM2LONG(version)) < 0) {
 	ossl_raise(eX509CertError, "version must be >= 0!");
     }
+    GetX509(self, x509);
     if (!X509_set_version(x509, ver)) {
 	ossl_raise(eX509CertError, NULL);
     }
@@ -310,7 +310,6 @@ ossl_x509_get_signature_algorithm(VALUE self)
     VALUE str;
 
     GetX509(self, x509);
-	
     out = BIO_new(BIO_s_mem());
     if (!out) ossl_raise(eX509CertError, NULL);
 
@@ -397,8 +396,8 @@ ossl_x509_set_not_before(VALUE self, VALUE time)
     X509 *x509;
     time_t sec;
 	
-    GetX509(self, x509);
     sec = time_to_time_t(time);
+    GetX509(self, x509);
     if (!X509_time_adj(X509_get_notBefore(x509), 0, &sec)) {
 	ossl_raise(eX509CertError, NULL);
     }
@@ -426,8 +425,8 @@ ossl_x509_set_not_after(VALUE self, VALUE time)
     X509 *x509;
     time_t sec;
 	
-    GetX509(self, x509);
     sec = time_to_time_t(time);
+    GetX509(self, x509);
     if (!X509_time_adj(X509_get_notAfter(x509), 0, &sec)) {
 	ossl_raise(eX509CertError, NULL);
     }
@@ -469,9 +468,9 @@ ossl_x509_sign(VALUE self, VALUE key, VALUE digest)
     EVP_PKEY *pkey;
     const EVP_MD *md;
 
-    GetX509(self, x509);
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     md = GetDigestPtr(digest);
+    GetX509(self, x509);
     if (!X509_sign(x509, pkey, md)) {
 	ossl_raise(eX509CertError, NULL);
     }
@@ -489,8 +488,8 @@ ossl_x509_verify(VALUE self, VALUE key)
     EVP_PKEY *pkey;
     int i;
 
-    GetX509(self, x509);
     pkey = GetPKeyPtr(key); /* NO NEED TO DUP */
+    GetX509(self, x509);
     if ((i = X509_verify(x509, pkey)) < 0) {
 	ossl_raise(eX509CertError, NULL);
     } 
@@ -510,9 +509,9 @@ ossl_x509_check_private_key(VALUE self, VALUE key)
     X509 *x509;
     EVP_PKEY *pkey;
 	
-    GetX509(self, x509);
     /* not needed private key, but should be */
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
+    GetX509(self, x509);
     if (!X509_check_private_key(x509, pkey)) {
 	OSSL_Warning("Check private key:%s", OSSL_ErrMsg());
 	return Qfalse;
@@ -556,12 +555,12 @@ ossl_x509_set_extensions(VALUE self, VALUE ary)
     X509_EXTENSION *ext;
     int i;
 	
-    GetX509(self, x509);
     Check_Type(ary, T_ARRAY);
     /* All ary's members should be X509Extension */
     for (i=0; i<RARRAY(ary)->len; i++) {
 	OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Ext);
     }
+    GetX509(self, x509);
     sk_X509_EXTENSION_pop_free(x509->cert_info->extensions, X509_EXTENSION_free);
     x509->cert_info->extensions = NULL;
     for (i=0; i<RARRAY(ary)->len; i++) {

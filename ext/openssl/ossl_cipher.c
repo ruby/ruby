@@ -91,10 +91,8 @@ ossl_cipher_initialize(VALUE self, VALUE str)
     const EVP_CIPHER *cipher;
     char *name;
 
-    GetCipher(self, ctx);
-
     name = StringValuePtr(str);
-
+    GetCipher(self, ctx);
     if (!(cipher = EVP_get_cipherbyname(name))) {
 	ossl_raise(rb_eRuntimeError, "Unsupported cipher algorithm (%s).", name);
     }
@@ -139,7 +137,6 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
     unsigned char iv[EVP_MAX_IV_LENGTH], *p_iv = NULL;
     VALUE pass, init_v;
 
-    GetCipher(self, ctx);
     if(rb_scan_args(argc, argv, "02", &pass, &init_v) > 0){
 	/*
 	 * oops. this code mistakes salt for IV.
@@ -147,6 +144,7 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 	 * keeping this behaviour for backward compatibility.
 	 */
 	StringValue(pass);
+	GetCipher(self, ctx);
 	if (NIL_P(init_v)) memcpy(iv, "OpenSSL for Ruby rulez!", sizeof(iv));
 	else{
 	    char *cname  = rb_class2name(rb_obj_class(self));
@@ -163,6 +161,9 @@ ossl_cipher_init(int argc, VALUE *argv, VALUE self, int mode)
 		       RSTRING(pass)->ptr, RSTRING(pass)->len, 1, key, NULL);
 	p_key = key;
 	p_iv = iv;
+    }
+    else {
+	GetCipher(self, ctx);
     }
     if (EVP_CipherInit_ex(ctx, NULL, NULL, p_key, p_iv, mode) != 1) {
 	ossl_raise(eCipherError, NULL);
@@ -192,7 +193,6 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     unsigned char key[EVP_MAX_KEY_LENGTH], iv[EVP_MAX_IV_LENGTH], *salt = NULL;
     int iter;
 
-    GetCipher(self, ctx);
     rb_scan_args(argc, argv, "13", &vpass, &vsalt, &viter, &vdigest);
     StringValue(vpass);
     if(!NIL_P(vsalt)){
@@ -203,6 +203,7 @@ ossl_cipher_pkcs5_keyivgen(int argc, VALUE *argv, VALUE self)
     }
     iter = NIL_P(viter) ? 2048 : NUM2INT(viter);
     digest = NIL_P(vdigest) ? EVP_md5() : GetDigestPtr(vdigest);
+    GetCipher(self, ctx);
     EVP_BytesToKey(EVP_CIPHER_CTX_cipher(ctx), digest, salt,
 		   RSTRING(vpass)->ptr, RSTRING(vpass)->len, iter, key, iv); 
     if (EVP_CipherInit_ex(ctx, NULL, NULL, key, iv, -1) != 1)
@@ -221,10 +222,10 @@ ossl_cipher_update(VALUE self, VALUE data)
     int in_len, out_len;
     VALUE str;
 
-    GetCipher(self, ctx);
     StringValue(data);
     in = RSTRING(data)->ptr;
     in_len = RSTRING(data)->len;
+    GetCipher(self, ctx);
     str = rb_str_new(0, in_len+EVP_CIPHER_CTX_block_size(ctx));
     if (!EVP_CipherUpdate(ctx, RSTRING(str)->ptr, &out_len, in, in_len))
 	ossl_raise(eCipherError, NULL);
@@ -300,10 +301,11 @@ ossl_cipher_set_iv(VALUE self, VALUE iv)
 static VALUE
 ossl_cipher_set_key_length(VALUE self, VALUE key_length)
 {
+    int len = NUM2INT(key_length);
     EVP_CIPHER_CTX *ctx;
  
     GetCipher(self, ctx);
-    if (EVP_CIPHER_CTX_set_key_length(ctx, NUM2INT(key_length)) != 1)
+    if (EVP_CIPHER_CTX_set_key_length(ctx, len) != 1)
         ossl_raise(eCipherError, NULL);
 
     return key_length;
@@ -314,9 +316,10 @@ ossl_cipher_set_padding(VALUE self, VALUE padding)
 {
 #if defined(HAVE_EVP_CIPHER_CTX_SET_PADDING)
     EVP_CIPHER_CTX *ctx;
+    int pad = NUM2INT(padding);
 
     GetCipher(self, ctx);
-    if (EVP_CIPHER_CTX_set_padding(ctx, NUM2INT(padding)) != 1)
+    if (EVP_CIPHER_CTX_set_padding(ctx, pad) != 1)
 	ossl_raise(eCipherError, NULL);
 #else
     rb_notimplement();

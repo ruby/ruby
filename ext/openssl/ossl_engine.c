@@ -253,9 +253,10 @@ static VALUE
 ossl_engine_set_default(VALUE self, VALUE flag)
 {
     ENGINE *e;
+    int f = NUM2INT(flag);
 
     GetEngine(self, e);
-    ENGINE_set_default(e, NUM2INT(flag));
+    ENGINE_set_default(e, f);
 
     return Qtrue;
 }

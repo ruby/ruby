@@ -119,8 +119,6 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     int i;
     char *s;
 
-    Data_Get_Struct(self, SSL_CTX, ctx);
-
     for(i = 0; i < numberof(ossl_sslctx_attrs); i++){
 	char buf[32];
 	snprintf(buf, sizeof(buf), "@%s", ossl_sslctx_attrs[i]);
@@ -142,6 +140,7 @@ ossl_sslctx_initialize(int argc, VALUE *argv, VALUE self)
     if (!method) {
         ossl_raise(rb_eArgError, "unknown SSL method `%s'.", s);
     }
+    Data_Get_Struct(self, SSL_CTX, ctx);
     if (SSL_CTX_set_ssl_version(ctx, method) != 1) {
         ossl_raise(eSSLError, "SSL_CTX_set_ssl_version:");
     }
@@ -325,12 +324,6 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
     int i;
 
     rb_check_frozen(self);
-    Data_Get_Struct(self, SSL_CTX, ctx);
-    if(!ctx){
-        ossl_raise(eSSLError, "SSL_CTX is not initialized.");
-        return Qnil;
-    }
-
     if (TYPE(v) == T_ARRAY) {
         str = rb_str_new2(NULL);
         for (i = 0; i < RARRAY(v)->len; i++) {
@@ -345,6 +338,11 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
         StringValue(str);
     }
 
+    Data_Get_Struct(self, SSL_CTX, ctx);
+    if(!ctx){
+        ossl_raise(eSSLError, "SSL_CTX is not initialized.");
+        return Qnil;
+    }
     if (!SSL_CTX_set_cipher_list(ctx, RSTRING(str)->ptr)) {
         ossl_raise(eSSLError, "SSL_CTX_set_ciphers:");
     }
@@ -491,8 +489,6 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
     VALUE len, str;
     OpenFile *fptr;
 
-    Data_Get_Struct(self, SSL, ssl);
-    GetOpenFile(ossl_ssl_get_io(self), fptr);
     rb_scan_args(argc, argv, "11", &len, &str);
     ilen = NUM2INT(len);
     if(NIL_P(str)) str = rb_str_new(0, ilen);
@@ -503,6 +499,8 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
     }
     if(ilen == 0) return str;
 
+    Data_Get_Struct(self, SSL, ssl);
+    GetOpenFile(ossl_ssl_get_io(self), fptr);
     if (ssl) {
 	if(SSL_pending(ssl) <= 0)
 	    rb_thread_wait_fd(fptr->fd);
@@ -545,8 +543,8 @@ ossl_ssl_write(VALUE self, VALUE str)
     SSL *ssl;
     int nwrite = 0;
 
-    Data_Get_Struct(self, SSL, ssl);
     StringValue(str);
+    Data_Get_Struct(self, SSL, ssl);
 
     if (ssl) {
 	for (;;){

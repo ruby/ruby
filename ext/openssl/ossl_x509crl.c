@@ -146,11 +146,10 @@ ossl_x509crl_set_version(VALUE self, VALUE version)
     X509_CRL *crl;
     long ver;
 
-    GetX509CRL(self, crl);
-
     if ((ver = NUM2LONG(version)) < 0) {
 	ossl_raise(eX509CRLError, "version must be >= 0!");
     }
+    GetX509CRL(self, crl);
     if (!X509_CRL_set_version(crl, ver)) {
 	ossl_raise(eX509CRLError, NULL);
     }
@@ -167,7 +166,6 @@ ossl_x509crl_get_signature_algorithm(VALUE self)
     VALUE str;
 
     GetX509CRL(self, crl);
-	
     if (!(out = BIO_new(BIO_s_mem()))) {
 	ossl_raise(eX509CRLError, NULL);
     }
@@ -220,8 +218,8 @@ ossl_x509crl_set_last_update(VALUE self, VALUE time)
     X509_CRL *crl;
     time_t sec;
 
-    GetX509CRL(self, crl);
     sec = time_to_time_t(time);
+    GetX509CRL(self, crl);
     if (!X509_time_adj(crl->crl->lastUpdate, 0, &sec)) {
 	ossl_raise(eX509CRLError, NULL);
     }
@@ -245,8 +243,8 @@ ossl_x509crl_set_next_update(VALUE self, VALUE time)
     X509_CRL *crl;
     time_t sec;
 
-    GetX509CRL(self, crl);
     sec = time_to_time_t(time);
+    GetX509CRL(self, crl);
     /* This must be some thinko in OpenSSL */
     if (!(crl->crl->nextUpdate = X509_time_adj(crl->crl->nextUpdate, 0, &sec))){
 	ossl_raise(eX509CRLError, NULL);
@@ -287,12 +285,12 @@ ossl_x509crl_set_revoked(VALUE self, VALUE ary)
     X509_REVOKED *rev;
     int i;
 
-    GetX509CRL(self, crl);
     Check_Type(ary, T_ARRAY);
     /* All ary members should be X509 Revoked */
     for (i=0; i<RARRAY(ary)->len; i++) {
 	OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Rev);
     }
+    GetX509CRL(self, crl);
     sk_X509_REVOKED_pop_free(crl->crl->revoked, X509_REVOKED_free);
     crl->crl->revoked = NULL;
     for (i=0; i<RARRAY(ary)->len; i++) {
@@ -461,12 +459,12 @@ ossl_x509crl_set_extensions(VALUE self, VALUE ary)
     X509_EXTENSION *ext;
     int i;
 	
-    GetX509CRL(self, crl);
     Check_Type(ary, T_ARRAY);
     /* All ary members should be X509 Extensions */
     for (i=0; i<RARRAY(ary)->len; i++) {
 	OSSL_Check_Kind(RARRAY(ary)->ptr[i], cX509Ext);
     }
+    GetX509CRL(self, crl);
     sk_X509_EXTENSION_pop_free(crl->crl->extensions, X509_EXTENSION_free);
     crl->crl->extensions = NULL;
     for (i=0; i<RARRAY(ary)->len; i++) {

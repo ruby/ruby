@@ -122,9 +122,9 @@ ossl_pkcs7_s_write_smime(int argc, VALUE *argv, VALUE klass)
     int flg;
 
     rb_scan_args(argc, argv, "12", &pkcs7, &data, &flags);
-    SafeGetPKCS7(pkcs7, p7);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     if(NIL_P(data)) data = ossl_pkcs7_get_data(pkcs7);
+    SafeGetPKCS7(pkcs7, p7);
     if(!NIL_P(data) && PKCS7_is_detached(p7))
 	flg |= PKCS7_DETACHED;
     in = NIL_P(data) ? NULL : ossl_obj2bio(data);
@@ -400,8 +400,8 @@ ossl_pkcs7_add_signer(VALUE self, VALUE signer)
     PKCS7 *pkcs7;
     PKCS7_SIGNER_INFO *p7si;
 
-    GetPKCS7(self, pkcs7);
     p7si = DupPKCS7SignerPtr(signer); /* NEED TO DUP */
+    GetPKCS7(self, pkcs7);
     if (!PKCS7_add_signer(pkcs7, p7si)) {
 	PKCS7_SIGNER_INFO_free(p7si);
 	ossl_raise(ePKCS7Error, "Could not add signer.");
@@ -447,7 +447,6 @@ ossl_pkcs7_add_recipient(VALUE self, VALUE cert)
     PKCS7_RECIP_INFO *ri;
     X509 *x509;
 	
-    GetPKCS7(self, pkcs7);
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
     if (!(ri = PKCS7_RECIP_INFO_new())) {
 	ossl_raise(ePKCS7Error, NULL);
@@ -456,6 +455,7 @@ ossl_pkcs7_add_recipient(VALUE self, VALUE cert)
 	PKCS7_RECIP_INFO_free(ri);
 	ossl_raise(ePKCS7Error, NULL);
     }
+    GetPKCS7(self, pkcs7);
     if (!PKCS7_add_recipient_info(pkcs7, ri)) {
 	PKCS7_RECIP_INFO_free(ri);
 	ossl_raise(ePKCS7Error, NULL);
@@ -582,9 +582,7 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
     VALUE data;
     const char *msg;
 
-    GetPKCS7(self, p7);
     rb_scan_args(argc, argv, "22", &certs, &store, &indata, &flags);
-    x509st = GetX509StorePtr(store);
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
     if(NIL_P(indata)) indata = ossl_pkcs7_get_data(self);
     in = NIL_P(indata) ? NULL : ossl_obj2bio(indata);
@@ -596,6 +594,8 @@ ossl_pkcs7_verify(int argc, VALUE *argv, VALUE self)
 	    rb_jump_tag(status);
 	}
     }
+    x509st = GetX509StorePtr(store);
+    GetPKCS7(self, p7);
     if(!(out = BIO_new(BIO_s_mem()))){
 	BIO_free(in);
 	sk_X509_pop_free(x509s, X509_free);
@@ -624,10 +624,10 @@ ossl_pkcs7_decrypt(int argc, VALUE *argv, VALUE self)
     VALUE str;
 
     rb_scan_args(argc, argv, "21", &pkey, &cert, &flags);
-    GetPKCS7(self, p7);
     key = GetPrivPKeyPtr(pkey); /* NO NEED TO DUP */
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
     flg = NIL_P(flags) ? 0 : NUM2INT(flags);
+    GetPKCS7(self, p7);
     if(!(out = BIO_new(BIO_s_mem())))
 	ossl_raise(ePKCS7Error, NULL);
     if(!PKCS7_decrypt(p7, key, x509, out, flg)){
@@ -647,13 +647,12 @@ ossl_pkcs7_add_data(VALUE self, VALUE data)
     char buf[4096];
     int len;
 
-    in = out = NULL;
+    in = ossl_obj2bio(data);
     GetPKCS7(self, pkcs7);
     if(PKCS7_type_is_signed(pkcs7)){
 	if(!PKCS7_content_new(pkcs7, NID_pkcs7_data))
 	    ossl_raise(ePKCS7Error, NULL);
     }
-    in = ossl_obj2bio(data);
     if(!(out = PKCS7_dataInit(pkcs7, NULL))) goto err;
     for(;;){
 	if((len = BIO_read(in, buf, sizeof(buf))) <= 0)
@@ -739,10 +738,10 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
     X509 *x509;
     const EVP_MD *md;
 
-    GetPKCS7si(self, p7si);
     pkey = GetPrivPKeyPtr(key); /* NO NEED TO DUP */
     x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
     md = GetDigestPtr(digest);
+    GetPKCS7si(self, p7si);
     if (!(PKCS7_SIGNER_INFO_set(p7si, x509, pkey, (EVP_MD*)md))) {
 	ossl_raise(ePKCS7Error, NULL);
     }
