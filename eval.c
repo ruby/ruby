@@ -1348,6 +1348,7 @@ ruby_cleanup(ex)
 
     ruby_safe_level = 0;
     ruby_finalize_0();
+    if (ruby_errinfo) err = ruby_errinfo;
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
@@ -3913,8 +3914,6 @@ rb_longjmp(tag, mesg)
     VALUE at;
 
     if (thread_set_raised()) {
-	printf("%d (c:%p m:%p):", tag, curr_thread, main_thread);
-	rb_p(mesg);
 	ruby_errinfo = exception_error;
 	JUMP_TAG(TAG_FATAL);
     }

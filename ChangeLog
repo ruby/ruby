@@ -1,3 +1,8 @@
+Wed Oct 22 02:31:34 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): should not ignore exit_value in END
+	  execution. [ruby-dev:21670]
+
 Tue Oct 21 23:16:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (ruby_cleanup): call finalizers and exit procs before
