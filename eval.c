@@ -1899,19 +1899,21 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
-	if (NIL_P(ruby_cbase)) {
-	    if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
-		return "class variable";
+	if (!ruby_frame || !ruby_frame->last_class ||
+	    !FL_TEST(ruby_frame->last_class, FL_SINGLETON)) {
+	    if (NIL_P(ruby_cbase)) {
+		if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
+		    return "class variable";
+		}
+		break;
 	    }
-	    break;
-	}
-	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
-	    if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
-		return "class variable";
+	    if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
+		if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
+		    return "class variable";
+		}
+		break;
 	    }
-	    break;
 	}
-	self = rb_iv_get(ruby_cbase, "__attached__");
 	/* fall through */
       case NODE_CVAR2:
 	if (rb_cvar_defined(rb_cvar_singleton(self), node->nd_vid)) {
@@ -2901,13 +2903,17 @@ rb_eval(self, n)
 	break;
 
       case NODE_CVAR:		/* normal method */
-	if (NIL_P(ruby_cbase)) {
-	    result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
-	    break;
-	}
-	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
-	    result = rb_cvar_get(ruby_cbase, node->nd_vid);
-	    break;
+	if (!ruby_frame || !ruby_frame->last_class ||
+	    !FL_TEST(ruby_frame->last_class, FL_SINGLETON)) {
+	    /* non singleton method */
+	    if (NIL_P(ruby_cbase)) {
+		result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
+		break;
+	    }
+	    if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
+		result = rb_cvar_get(ruby_cbase, node->nd_vid);
+		break;
+	    }
 	}
 	/* fall through */
       case NODE_CVAR2:		/* singleton method */
