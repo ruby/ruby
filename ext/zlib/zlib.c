@@ -692,6 +692,11 @@ zstream_run(z, src, len, flush)
 	    break;
 	}
 	if (err != Z_OK) {
+	    if (flush != Z_FINISH && err == Z_BUF_ERROR
+		&& z->stream.avail_out > 0) {
+		z->flags |= ZSTREAM_FLAG_IN_STREAM;
+		break;
+	    }
 	    zstream_reset_input(z);
 	    if (z->stream.avail_in > 0) {
 		zstream_append_input(z, z->stream.next_in, z->stream.avail_in);
