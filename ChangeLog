@@ -1,3 +1,8 @@
+Mon Apr  5 08:18:23 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/rdoc.rb: Remove leading ./ from file names so that cross
+	  references work properly.
+
 Sun Apr  4 14:01:20 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/options.rb (Options::parse): Allow multiple -x options to RDoc.
