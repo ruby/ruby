@@ -1,7 +1,7 @@
 #! /usr/local/bin/ruby
 
-# cal.rb (bsd compatible version): Written by Tadayoshi Funaba 1998
-# $Id: bsdcal.rb,v 1.2 1998/12/01 13:47:40 tadf Exp $
+# cal.rb (bsd compatible version): Written by Tadayoshi Funaba 1998, 1999
+# $Id: bsdcal.rb,v 1.3 1999/02/06 08:52:21 tadf Exp $
 
 require 'date2'
 
@@ -68,7 +68,7 @@ def zip(xs)
   yr
 end
 
-while /^-(.*)$/no =~ $*[0]
+while /^-([^-].*)$/no =~ $*[0]
   a = $1
   if /^c(.+)?$/no =~ a then
     if $1 then
@@ -90,6 +90,7 @@ while /^-(.*)$/no =~ $*[0]
   end
   $*.shift
 end
+$*.shift if /^--/no =~ $*[0]
 usage if (gs = $tab[$cc]).nil?
 case $*.length
 when 0

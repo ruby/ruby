@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct  1 15:15:19 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -56,6 +56,7 @@ enum_grep(obj, pat)
 	arg[0] = pat; arg[1] = tmp = rb_ary_new();
 	rb_iterate(rb_each, obj, grep_i, (VALUE)arg);
 
+	if (RARRAY(tmp)->len == 0) return Qnil;
 	return tmp;
     }
 }
@@ -117,6 +118,28 @@ enum_find_all(obj)
 
     tmp = rb_ary_new();
     rb_iterate(rb_each, obj, find_all_i, tmp);
+
+    return tmp;
+}
+
+static VALUE
+reject_i(i, tmp)
+    VALUE i, tmp;
+{
+    if (!RTEST(rb_yield(i))) {
+	rb_ary_push(tmp, i);
+    }
+    return Qnil;
+}
+
+static VALUE
+enum_reject(obj)
+    VALUE obj;
+{
+    VALUE tmp;
+
+    tmp = rb_ary_new();
+    rb_iterate(rb_each, obj, reject_i, tmp);
 
     return tmp;
 }
@@ -373,7 +396,10 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"sort", enum_sort, 0);
     rb_define_method(rb_mEnumerable,"grep", enum_grep, 1);
     rb_define_method(rb_mEnumerable,"find", enum_find, -1);
+    rb_define_method(rb_mEnumerable,"detect", enum_find, -1);
     rb_define_method(rb_mEnumerable,"find_all", enum_find_all, 0);
+    rb_define_method(rb_mEnumerable,"select", enum_find_all, 0);
+    rb_define_method(rb_mEnumerable,"reject", enum_reject, 0);
     rb_define_method(rb_mEnumerable,"collect", enum_collect, 0);
     rb_define_method(rb_mEnumerable,"min", enum_min, 0);
     rb_define_method(rb_mEnumerable,"max", enum_max, 0);

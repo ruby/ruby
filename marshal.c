@@ -12,6 +12,10 @@
 #include "rubyio.h"
 #include "st.h"
 
+#ifndef atof
+double strtod();
+#endif
+
 #define MARSHAL_MAJOR   4
 #define MARSHAL_MINOR   0
 
@@ -249,7 +253,7 @@ w_object(obj, arg, limit)
 
 	    w_byte(TYPE_USERDEF, arg);
 	    w_unique(rb_class2name(CLASS_OF(obj)), arg);
-	    v = rb_funcall(obj, s_dump, 1, limit);
+	    v = rb_funcall(obj, s_dump, 1, INT2NUM(limit));
 	    if (TYPE(v) != T_STRING) {
 		rb_raise(rb_eTypeError, "_dump_to must return String");
 	    }
@@ -641,13 +645,10 @@ r_object(arg)
 
       case TYPE_FLOAT:
 	{
-#ifndef atof
-	    double atof();
-#endif
 	    char *buf;
 
 	    r_bytes(buf, arg);
-	    v = rb_float_new(atof(buf));
+	    v = rb_float_new(strtod(buf, 0));
 	    return r_regist(v, arg);
 	}
 
@@ -754,7 +755,7 @@ r_object(arg)
 		v = rb_funcall(klass, s_load, 1, r_string(arg));
 		return r_regist(v, arg);
 	    }
-	    rb_raise(rb_eTypeError, "class %s needs to have method `_load_from'",
+	    rb_raise(rb_eTypeError, "class %s needs to have method `_load'",
 		     rb_class2name(klass));
 	}
         break;

@@ -50,6 +50,7 @@ object.c
 pack.c
 parse.c
 parse.y
+prec.c
 process.c
 random.c
 range.c
@@ -152,6 +153,7 @@ missing/strdup.c
 missing/strerror.c
 missing/strftime.c
 missing/strstr.c
+missing/strtod.c
 missing/strtol.c
 missing/strtoul.c
 missing/vsnprintf.c

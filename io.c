@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Oct 15 18:08:59 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -20,7 +20,7 @@
 #if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>
 #endif
-#if defined(HAVE_FCNTL)
+#if defined(HAVE_FCNTL) || defined(NT)
 #include <fcntl.h>
 #endif
 
@@ -54,6 +54,7 @@ struct timeval {
  #include <sys/errno.h>
  #include <unix.mac.h>
  #include <compat.h>
+ extern char* strdup(const char*);
 #endif
 extern void Init_File _((void));
 
@@ -99,7 +100,7 @@ static VALUE lineno;
 #elif defined(__BEOS__)
 #  define ReadDataPending(fp) (fp->_state._eof == 0)
 #elif defined(USE_CWGUSI)
-#  define ReadDataPending(fp) (fp->state.eof == 0)
+#  define READ_DATA_PENDING(fp) (fp->state.eof == 0)
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
@@ -110,7 +111,10 @@ extern int ReadDataPending();
 # define READ_CHECK(fp) 0
 #else
 # define READ_CHECK(fp) do {\
-    if (!READ_DATA_PENDING(fp)) rb_thread_wait_fd(fileno(fp));\
+    if (!READ_DATA_PENDING(fp)) {\
+	rb_thread_wait_fd(fileno(fp));\
+        rb_io_check_closed(fptr);\
+     }\
 } while(0)
 #endif
 
@@ -840,7 +844,13 @@ static void
 rb_io_fptr_close(fptr)
     OpenFile *fptr;
 {
+    int fd;
+
     if (fptr->f == NULL && fptr->f2 == NULL) return;
+
+#ifdef USE_THREAD
+    rb_thread_fd_close(fileno(fptr->f));
+#endif
 
     if (fptr->finalize) {
 	(*fptr->finalize)(fptr);
@@ -953,7 +963,9 @@ rb_io_syswrite(io, str)
     f = GetWriteFile(fptr);
 
 #ifdef USE_THREAD
-    rb_thread_fd_writable(fileno(f));
+    if (!rb_thread_fd_writable(fileno(f))) {
+        rb_io_check_closed(fptr);
+    }
 #endif
     n = write(fileno(f), RSTRING(str)->ptr, RSTRING(str)->len);
 
@@ -1014,9 +1026,9 @@ rb_io_binmode(io)
 	rb_sys_fail(fptr->path);
 # else  /* USE_CWGUSI */
 	if (fptr->f)
-		fptr->f->mode.binrb_ary_io = 1;
+		fptr->f->mode.binary_io = 1;
 	if (fptr->f2)
-		fptr->f2->mode.binrb_ary_io = 1;
+		fptr->f2->mode.binary_io = 1;
 # endif /* USE_CWGUSI */
 #endif
 
@@ -1025,7 +1037,7 @@ rb_io_binmode(io)
     return io;
 }
 
-int
+static int
 rb_io_mode_flags(mode)
     char *mode;
 {
@@ -1042,7 +1054,8 @@ rb_io_mode_flags(mode)
 	flags |= FMODE_WRITABLE;
 	break;
       default:
-	rb_raise(rb_eArgError, "illegal access mode");
+      error:
+	rb_raise(rb_eArgError, "illegal access mode %s", mode);
     }
 
     if (mode[1] == 'b') {
@@ -1052,9 +1065,92 @@ rb_io_mode_flags(mode)
 
     if (mode[1] == '+') {
 	flags |= FMODE_READWRITE;
+	if (mode[2] != 0) goto error;
     }
+    else if (mode[1] != 0) goto error;
 
     return flags;
+}
+
+static int
+rb_io_mode_flags2(mode)
+    int mode;
+{
+    int flags;
+
+    switch (mode & (O_RDONLY|O_WRONLY|O_RDWR)) {
+      case O_RDONLY:	
+	flags = FMODE_READABLE;
+	break;
+      case O_WRONLY:
+	flags = FMODE_WRITABLE;
+	break;
+      case O_RDWR:
+	flags = FMODE_WRITABLE|FMODE_READABLE;
+	break;
+    }
+
+#ifdef O_BINARY
+    if (mode & O_BINARY) {
+	flags |= FMODE_BINMODE;
+    }
+#endif
+
+    return flags;
+}
+
+static char*
+rb_io_flags_mode(flags)
+    int flags;
+{
+    static char mode[4];
+    char *p = mode;
+
+    switch (flags & (O_RDONLY|O_WRONLY|O_RDWR)) {
+      case O_RDONLY:	
+	*p++ = 'r';
+	break;
+      case O_WRONLY:
+	*p++ = 'w';
+	break;
+      case O_RDWR:
+	*p++ = 'w';
+	*p++ = '+';
+	break;
+    }
+    *p++ = '\0';
+#ifdef O_BINARY
+    if (flags & O_BINARY) {
+	if (mode[1] == '+') {
+	    mode[1] = 'b'; mode[2] = '+'; mode[3] = '\0';
+	}
+	else {
+	    mode[1] = 'b'; mode[2] = '\0';
+	}
+    }
+#endif
+    return mode;
+}
+
+static int
+rb_open(fname, flag, mode)
+    char *fname;
+    int flag;
+    mode_t mode;
+{
+    int fd;
+
+    fd = open(fname, flag, mode);
+    if (fd < 0) {
+	if (errno == EMFILE || errno == ENFILE) {
+	    rb_gc();
+	    fd = open(fname, flag, mode);
+	}
+	if (fd < 0) {
+	    rb_sys_fail(fname);
+	}
+    }
+    return fd;
 }
 
 FILE *
@@ -1062,19 +1158,19 @@ rb_fopen(fname, mode)
     char *fname;
     char *mode;
 {
-    FILE *f;
+    FILE *file;
 
-    f = fopen(fname, mode);
-    if (f == NULL) {
+    file = fopen(fname, mode);
+    if (file == NULL) {
 	if (errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
-	    f = fopen(fname, mode);
+	    file = fopen(fname, mode);
 	}
-	if (f == NULL) {
+	if (file == NULL) {
 	    rb_sys_fail(fname);
 	}
     }
-    return f;
+    return file;
 }
 
 FILE *
@@ -1082,18 +1178,64 @@ rb_fdopen(fd, mode)
     int fd;
     char *mode;
 {
-    FILE *f;
+    FILE *file;
 
-    f = fdopen(fd, mode);
-    if (f == NULL) {
-	if (errno == EMFILE) {
-	    f = fdopen(fd, mode);
+    file = fdopen(fd, mode);
+    if (file == NULL) {
+	if (errno == EMFILE || errno == ENFILE) {
+	    rb_gc();
+	    file = fdopen(fd, mode);
 	}
-	if (f == NULL) {
+	if (file == NULL) {
 	    rb_sys_fail(0);
 	}
     }
-    return f;
+    return file;
+}
+
+VALUE
+rb_file_open(fname, mode)
+    char *fname, *mode;
+{
+    OpenFile *fptr;
+    NEWOBJ(port, struct RFile);
+    OBJSETUP(port, rb_cFile, T_FILE);
+    MakeOpenFile(port, fptr);
+
+    fptr->mode = rb_io_mode_flags(mode);
+    fptr->f = rb_fopen(fname, mode);
+    fptr->path = strdup(fname);
+    rb_obj_call_init((VALUE)port);
+
+    return (VALUE)port;
+}
+
+VALUE
+rb_file_sysopen(fname, flags, mode)
+    char *fname;
+    int flags, mode;
+{
+#ifdef USE_CWGUSI
+    if (mode != 0666) {
+	rb_warn("can't specify file mode on this platform");
+    }
+    return rb_file_open(fname, rb_io_flags_mode(flags));
+#else
+    OpenFile *fptr;
+    int fd;
+    char *m;
+    NEWOBJ(port, struct RFile);
+    OBJSETUP(port, rb_cFile, T_FILE);
+    MakeOpenFile(port, fptr);
+
+    fd = rb_open(fname, flags, mode);
+    fptr->mode = rb_io_mode_flags2(flags);
+    fptr->f = rb_fdopen(fd, m);
+    fptr->path = strdup(fname);
+    rb_obj_call_init((VALUE)port);
+
+    return (VALUE)port;
+#endif
 }
 
 #if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
@@ -1329,6 +1471,82 @@ rb_io_s_popen(argc, argv, self)
 }
 
 static VALUE
+rb_file_s_open(argc, argv, klass)
+    int argc;
+    VALUE *argv;
+    VALUE klass;
+{
+    VALUE fname, vmode, file, perm;
+    char *path, *mode;
+
+    rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
+    Check_SafeStr(fname);
+    path = RSTRING(fname)->ptr;
+
+    if (FIXNUM_P(vmode)) {
+	int flags = FIX2INT(vmode);
+	int fmode = NIL_P(perm) ? 0666 : FIX2INT(perm);
+
+	file = rb_file_sysopen(path, flags, fmode);
+    }
+    else {
+	if (!NIL_P(vmode)) {
+	    mode = STR2CSTR(vmode);
+	}
+	else {
+	    mode = "r";
+	}
+	file = rb_file_open(RSTRING(fname)->ptr, mode);
+    }
+
+    RBASIC(file)->klass = klass;
+    rb_obj_call_init(file);
+    if (rb_iterator_p()) {
+	return rb_ensure(rb_yield, file, rb_io_close, file);
+    }
+
+    return file;
+}
+
+static VALUE
+rb_f_open(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    char *mode;
+    VALUE pname, pmode, perm;
+    VALUE port;
+
+    rb_scan_args(argc, argv, "12", &pname, &pmode, &perm);
+    Check_SafeStr(pname);
+    if (RSTRING(pname)->ptr[0] != '|') /* open file */
+	return rb_file_s_open(argc, argv, rb_cFile);
+
+    /* open pipe */
+    if (NIL_P(pmode)) {
+	mode = "r";
+    }
+    else if (FIXNUM_P(pmode)) {
+	mode = rb_io_flags_mode(FIX2INT(pmode));
+    }
+    else {
+	int len;
+
+	mode = STR2CSTR(pmode);
+	len = strlen(mode);
+	if (len == 0 || len > 3)
+	    rb_raise(rb_eArgError, "illegal access mode %s", mode);
+    }
+
+    port = pipe_open(RSTRING(pname)->ptr+1, mode);
+    if (rb_iterator_p()) {
+	return rb_ensure(rb_yield, port, rb_io_close, port);
+    }
+
+    return port;
+}
+
+static VALUE
 rb_io_open(fname, mode)
     char *fname, *mode;
 {
@@ -1338,37 +1556,6 @@ rb_io_open(fname, mode)
     else {
 	return rb_file_open(fname, mode);
     }
-}
-
-static VALUE
-rb_f_open(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    char *mode;
-    VALUE pname, pmode;
-    VALUE port;
-
-    rb_scan_args(argc, argv, "11", &pname, &pmode);
-    Check_SafeStr(pname);
-    if (NIL_P(pmode)) {
-	mode = "r";
-    }
-    else {
-	int len;
-
-	mode = STR2CSTR(pmode);
-	len = strlen(mode);
-	if (len == 0 || len > 3)
-	    rb_raise(rb_eArgError, "illegal access mode");
-    }
-
-    port = rb_io_open(RSTRING(pname)->ptr, mode);
-    if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, port, rb_io_close, port);
-    }
-
-    return port;
 }
 
 static VALUE
@@ -1393,7 +1580,7 @@ rb_io_mode_string(fptr)
     }
 }
 
-VALUE
+static VALUE
 rb_io_reopen(io, nfile)
     VALUE io, nfile;
 {
@@ -1412,6 +1599,9 @@ rb_io_reopen(io, nfile)
     else if (orig->mode & FMODE_WRITABLE) {
 	fflush(orig->f);
     }
+#ifdef USE_THREAD
+    rb_thread_fd_close(fileno(fptr->f));
+#endif
 
     /* copy OpenFile structure */
     fptr->mode = orig->mode;
@@ -1455,6 +1645,56 @@ rb_io_reopen(io, nfile)
 
     RBASIC(io)->klass = RBASIC(nfile)->klass;
     return io;
+}
+
+static VALUE
+rb_file_reopen(argc, argv, file)
+    int argc;
+    VALUE *argv;
+    VALUE file;
+{
+    VALUE fname, nmode;
+    char *mode;
+    OpenFile *fptr;
+
+    rb_secure(4);
+    if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
+	if (TYPE(fname) == T_FILE) { /* fname must be IO */
+	    return rb_io_reopen(file, fname);
+	}
+    }
+
+    Check_SafeStr(fname);
+    if (!NIL_P(nmode)) {
+	mode = STR2CSTR(nmode);
+    }
+    else {
+	mode = "r";
+    }
+
+    GetOpenFile(file, fptr);
+    if (fptr->path) free(fptr->path);
+    fptr->path = strdup(RSTRING(fname)->ptr);
+    fptr->mode = rb_io_mode_flags(mode);
+    if (!fptr->f) {
+	fptr->f = rb_fopen(RSTRING(fname)->ptr, mode);
+	if (fptr->f2) {
+	    fclose(fptr->f2);
+	    fptr->f2 = NULL;
+	}
+	return file;
+    }
+
+    if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == NULL) {
+	rb_sys_fail(fptr->path);
+    }
+    if (fptr->f2) {
+	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == NULL) {
+	    rb_sys_fail(fptr->path);
+	}
+    }
+
+    return file;
 }
 
 static VALUE
@@ -1870,8 +2110,7 @@ next_argv()
 #endif
 		    }
 		    fw = rb_fopen(fn, "w");
-#if !defined(MSDOS) && !defined(__CYGWIN32__) && !(NT) && !defined(__human68k__)\
- && !defined(USE_CWGUSI) && !defined(__BEOS__)
+#if !defined(MSDOS) && !defined(__CYGWIN32__) && !(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__)
 		    fstat(fileno(fw), &st2);
 		    fchmod(fileno(fw), st.st_mode);
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
@@ -1900,7 +2139,12 @@ rb_f_gets_internal(argc, argv)
 
   retry:
     if (!next_argv()) return Qnil;
-    line = rb_io_gets_internal(argc, argv, file);
+    if (rb_rs == rb_default_rs) {
+	line = rb_io_gets(file);
+    }
+    else {
+	line = rb_io_gets_internal(argc, argv, file);
+    }
     if (NIL_P(line) && next_p != -1) {
 	rb_io_close(file);
 	next_p = 1;
@@ -1927,6 +2171,10 @@ VALUE
 rb_gets()
 {
     VALUE line;
+
+    if (rb_rs != rb_default_rs) {
+	return rb_f_gets(0, 0);
+    }
 
   retry:
     if (!next_argv()) return Qnil;
@@ -2452,8 +2700,8 @@ rb_io_s_pipe()
 #endif
 	rb_sys_fail(0);
 
-    r = prep_stdio(fdopen(pipes[0], "r"), FMODE_READABLE, rb_cIO);
-    w = prep_stdio(fdopen(pipes[1], "w"), FMODE_WRITABLE, rb_cIO);
+    r = prep_stdio(rb_fdopen(pipes[0], "r"), FMODE_READABLE, rb_cIO);
+    w = prep_stdio(rb_fdopen(pipes[1], "w"), FMODE_WRITABLE, rb_cIO);
 
     ary = rb_ary_new2(2);
     rb_ary_push(ary, r);
@@ -2550,7 +2798,7 @@ arg_read(argc, argv)
     VALUE *argv;
 {
     VALUE tmp, str;
-    size_t len;
+    int len;
 
     if (argc == 1) len = NUM2INT(argv[0]);
     str = Qnil;
@@ -2866,4 +3114,30 @@ Init_IO()
 #endif
 
     Init_File();
+
+    rb_define_method(rb_cFile, "reopen",  rb_file_reopen, -1);
+
+    rb_define_singleton_method(rb_cFile, "new",  rb_file_s_open, -1);
+    rb_define_singleton_method(rb_cFile, "open",  rb_file_s_open, -1);
+
+    rb_file_const("RDONLY", INT2FIX(O_RDONLY));
+    rb_file_const("WRONLY", INT2FIX(O_WRONLY));
+    rb_file_const("RDWR", INT2FIX(O_RDWR));
+    rb_file_const("APPEND", INT2FIX(O_APPEND));
+    rb_file_const("CREAT", INT2FIX(O_CREAT));
+    rb_file_const("EXCL", INT2FIX(O_EXCL));
+#if defined(O_NDELAY) || defined(O_NONBLOCK)
+#   ifdef O_NONBLOCK
+    rb_file_const("NONBLOCK", INT2FIX(O_NONBLOCK));
+#   else
+    rb_file_const("NONBLOCK", INT2FIX(O_NDELAY));
+#   endif
+#endif
+    rb_file_const("TRUNC", INT2FIX(O_TRUNC));
+#ifdef O_NOCTTY
+    rb_file_const("NOCTTY", INT2FIX(O_NOCTTY));
+#endif
+#ifdef O_BINARY
+    rb_file_const("BINARY", INT2FIX(O_BINARY));
+#endif
 }
