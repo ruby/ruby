@@ -33,7 +33,11 @@
 #define index(x, y) strchr((x), (y))
 #endif
 #define isdirsep(x) ((x) == '/' || (x) == '\\')
+
 #undef stat
+#undef fclose
+#undef close
+#undef setsockopt
 
 #ifndef bool
 #define bool int
@@ -1673,7 +1677,7 @@ rb_w32_select (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 #endif /* USE_INTERRUPT_WINSOCK */
     int file_nfds;
 
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     r = 0;
@@ -1727,7 +1731,7 @@ StartSockets ()
     WORD version;
     WSADATA retdata;
     int ret;
-	int iSockOpt;
+    int iSockOpt;
     
     //
     // initalize the winsock interface and insure that it's
@@ -1765,6 +1769,7 @@ StartSockets ()
     interrupted_event = CreateSignal();
     if (!interrupted_event)
 	rb_fatal("Unable to create interrupt event!\n");
+    NtSocketsInitialized = 1;
 }
 
 #undef accept
@@ -1774,7 +1779,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
 
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1797,7 +1802,7 @@ rb_w32_bind(int s, struct sockaddr *addr, int addrlen)
 {
     int r;
 
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1814,7 +1819,7 @@ int
 rb_w32_connect(int s, struct sockaddr *addr, int addrlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1832,7 +1837,7 @@ int
 rb_w32_getpeername(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1849,7 +1854,7 @@ int
 rb_w32_getsockname(int s, struct sockaddr *addr, int *addrlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1864,7 +1869,7 @@ int
 rb_w32_getsockopt(int s, int level, int optname, char *optval, int *optlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1881,7 +1886,7 @@ int
 rb_w32_ioctlsocket(int s, long cmd, u_long *argp)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1898,7 +1903,7 @@ int
 rb_w32_listen(int s, int backlog)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1915,7 +1920,7 @@ int
 rb_w32_recv(int s, char *buf, int len, int flags)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1933,7 +1938,7 @@ rb_w32_recvfrom(int s, char *buf, int len, int flags,
 		struct sockaddr *from, int *fromlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1950,7 +1955,7 @@ int
 rb_w32_send(int s, char *buf, int len, int flags)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1968,7 +1973,7 @@ rb_w32_sendto(int s, char *buf, int len, int flags,
 	      struct sockaddr *to, int tolen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -1985,7 +1990,7 @@ int
 rb_w32_setsockopt(int s, int level, int optname, char *optval, int optlen)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2002,7 +2007,7 @@ int
 rb_w32_shutdown(int s, int how)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2021,7 +2026,7 @@ rb_w32_socket(int af, int type, int protocol)
     SOCKET s;
     int fd;
 
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2043,7 +2048,7 @@ struct hostent *
 rb_w32_gethostbyaddr (char *addr, int len, int type)
 {
     struct hostent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2060,7 +2065,7 @@ struct hostent *
 rb_w32_gethostbyname (char *name)
 {
     struct hostent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2077,7 +2082,7 @@ int
 rb_w32_gethostname (char *name, int len)
 {
     int r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2094,7 +2099,7 @@ struct protoent *
 rb_w32_getprotobyname (char *name)
 {
     struct protoent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2111,7 +2116,7 @@ struct protoent *
 rb_w32_getprotobynumber (int num)
 {
     struct protoent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2128,7 +2133,7 @@ struct servent *
 rb_w32_getservbyname (char *name, char *proto)
 {
     struct servent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2145,7 +2150,7 @@ struct servent *
 rb_w32_getservbyport (int port, char *proto)
 {
     struct servent *r;
-    if (!NtSocketsInitialized++) {
+    if (!NtSocketsInitialized) {
 	StartSockets();
     }
     RUBY_CRITICAL({
@@ -2946,4 +2951,38 @@ pid_t rb_w32_getpid(void)
     if (IsWin95()) pid = -pid;
 
     return pid;
+}
+
+int
+rb_w32_fclose(FILE *fp)
+{
+    int fd = fileno(fp);
+    SOCKET sock = TO_SOCKET(fd);
+
+    if (fflush(fp)) return -1;
+    if (!is_socket(sock)) {
+	return fclose(fp);
+    }
+    _set_osfhnd(fd, (SOCKET)INVALID_HANDLE_VALUE);
+    fclose(fp);
+    if (closesocket(sock) == SOCKET_ERROR) {
+	errno = WSAGetLastError();
+	return -1;
+    }
+    return 0;
+}
+
+int
+rb_w32_close(int fd)
+{
+    SOCKET sock = TO_SOCKET(fd);
+
+    if (!is_socket(sock)) {
+	return _close(fd);
+    }
+    if (closesocket(sock) == SOCKET_ERROR) {
+	errno = WSAGetLastError();
+	return -1;
+    }
+    return 0;
 }

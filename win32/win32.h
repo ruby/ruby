@@ -1,5 +1,5 @@
-#ifndef EXT_NT_H
-#define EXT_NT_H
+#ifndef RUBY_WIN32_H
+#define RUBY_WIN32_H
 
 /*
  *  Copyright (c) 1993, Intergraph Corporation
@@ -87,8 +87,8 @@ extern "C++" {
 #define fputc(_c, _stream)	putc(_c, _stream)
 #define getchar()		rb_w32_getc(stdin)
 #define putchar(_c)		rb_w32_putc(_c, stdout)
-#define fgetchar(_stream)	getchar()
-#define fputchar(_c, _stream)	putchar(_c)
+#define fgetchar()		getchar()
+#define fputchar(_c)		putchar(_c)
 
 #ifndef __BORLANDC__
 
@@ -128,7 +128,8 @@ extern "C++" {
 #define _open       _sopen
 #endif
 
-#define close	   _close
+#define close	   rb_w32_close
+#define fclose	   rb_w32_fclose
 #define creat	   _creat
 #define eof	   _eof
 #define filelength _filelength
@@ -476,6 +477,8 @@ void rb_w32_enter_critical(void);
 void rb_w32_leave_critical(void);
 int  rb_w32_putc(int, FILE*);
 int  rb_w32_getc(FILE*);
+int  rb_w32_close(int);
+int  rb_w32_fclose(FILE*);
 #define Sleep(msec) (void)rb_w32_sleep(msec)
 
 /*
