@@ -262,7 +262,7 @@ BigDecimal_dump(int argc, VALUE *argv, VALUE self)
     VALUE dummy;
     rb_scan_args(argc, argv, "01", &dummy);
     GUARD_OBJ(vp,GetVpValue(self,1));
-    sprintf(sz,"%d:",VpMaxPrec(vp)*VpBaseFig());
+    sprintf(sz,"%lu:",VpMaxPrec(vp)*VpBaseFig());
     psz = ALLOCA_N(char,(unsigned int)VpNumOfChars(vp)+strlen(sz));
     sprintf(psz,"%s",sz);
     VpToString(vp, psz+strlen(psz), 0);
@@ -1119,7 +1119,7 @@ BigDecimal_inspect(VALUE self)
     psz1   = ALLOCA_N(char,nc);
     pszAll = ALLOCA_N(char,nc+256);
     VpToString(vp, psz1, 10);
-    sprintf(pszAll,"#<BigDecimal:%x,'%s',%u(%u)>",self,psz1,VpPrec(vp)*VpBaseFig(),VpMaxPrec(vp)*VpBaseFig());
+    sprintf(pszAll,"#<BigDecimal:%lx,'%s',%lu(%lu)>",self,psz1,VpPrec(vp)*VpBaseFig(),VpMaxPrec(vp)*VpBaseFig());
 
     obj = rb_str_new2(pszAll);
     return obj;
@@ -1851,12 +1851,12 @@ VpInit(U_LONG BaseVal)
 
 #ifdef _DEBUG
     if(gfDebug) {
-        printf("VpInit: BaseVal   = %u\n", BaseVal);
-        printf("  BASE   = %u\n", BASE);
-        printf("  HALF_BASE = %u\n", HALF_BASE);
-        printf("  BASE1  = %u\n", BASE1);
-        printf("  BASE_FIG  = %u\n", BASE_FIG);
-        printf("  DBLE_FIG  = %u\n", DBLE_FIG);
+        printf("VpInit: BaseVal   = %lu\n", BaseVal);
+        printf("  BASE   = %lu\n", BASE);
+        printf("  HALF_BASE = %lu\n", HALF_BASE);
+        printf("  BASE1  = %lu\n", BASE1);
+        printf("  BASE_FIG  = %lu\n", BASE_FIG);
+        printf("  DBLE_FIG  = %lu\n", DBLE_FIG);
     }
 #endif /* _DEBUG */
 
@@ -2834,11 +2834,11 @@ space_error:
     rb_fatal("ERROR(VpDivd): space for remainder too small.\n");
 #ifdef _DEBUG
     if(gfDebug) {
-        printf("   word_a=%d\n", word_a);
-        printf("   word_b=%d\n", word_b);
-        printf("   word_c=%d\n", word_c);
-        printf("   word_r=%d\n", word_r);
-        printf("   ind_r =%d\n", ind_r);
+        printf("   word_a=%lu\n", word_a);
+        printf("   word_b=%lu\n", word_b);
+        printf("   word_c=%lu\n", word_c);
+        printf("   word_r=%lu\n", word_r);
+        printf("   ind_r =%lu\n", ind_r);
     }
 #endif /* _DEBUG */
 
@@ -3037,7 +3037,7 @@ VPrint(FILE *fp, char *cntl_chr, Real *a)
                     while(m) {
                         nn = e / m;
                         if((!ZeroSup) || nn) {
-                            nc += fprintf(fp, "%u", nn);    /* The reading zero(s) */
+                            nc += fprintf(fp, "%lu", nn);    /* The reading zero(s) */
                             /* as 0.00xx will not */
                             /* be printed. */
                             ++nd;
@@ -3051,7 +3051,7 @@ VPrint(FILE *fp, char *cntl_chr, Real *a)
                         m /= 10;
                     }
                 }
-                nc += fprintf(fp, "E%d", VpExponent10(a));
+                nc += fprintf(fp, "E%ld", VpExponent10(a));
             } else {
                 nc += fprintf(fp, "0.0");
             }
@@ -3163,7 +3163,7 @@ VpSzMantissa(Real *a,char *psz)
             while(m) {
                 nn = e / m;
                 if((!ZeroSup) || nn) {
-                    sprintf(psz, "%u", nn);    /* The reading zero(s) */
+                    sprintf(psz, "%lu", nn);    /* The reading zero(s) */
                     psz += strlen(psz);
                     /* as 0.00xx will be ignored. */
                     ZeroSup = 0;    /* Set to print succeeding zeros */
@@ -3212,7 +3212,7 @@ VpToString(Real *a,char *psz,int fFmt)
             while(m) {
                 nn = e / m;
                 if((!ZeroSup) || nn) {
-                    sprintf(psz, "%u", nn);    /* The reading zero(s) */
+                    sprintf(psz, "%lu", nn);    /* The reading zero(s) */
                     psz += strlen(psz);
                     /* as 0.00xx will be ignored. */
                     ZeroSup = 0;    /* Set to print succeeding zeros */
@@ -3227,7 +3227,7 @@ VpToString(Real *a,char *psz,int fFmt)
             --ex;
             n /= 10;
         }
-        sprintf(psz, "E%d", ex);
+        sprintf(psz, "E%ld", ex);
     } else {
         if(VpIsPosZero(a)) sprintf(psz, "0.0");
         else      sprintf(psz, "-0.0");
@@ -3407,8 +3407,8 @@ Exit:
 #ifdef _DEBUG
     if(gfDebug) {
         VPrint(stdout, " VpVtoD: m=%\n", m);
-        printf("   d=%e * 10 **%d\n", *d, *e);
-        printf("   DBLE_FIG = %d\n", DBLE_FIG);
+        printf("   d=%e * 10 **%ld\n", *d, *e);
+        printf("   DBLE_FIG = %ld\n", DBLE_FIG);
     }
 #endif /*_DEBUG */
     return;
@@ -3537,7 +3537,7 @@ VpItoV(Real *m, S_INT ival)
 Exit:
 #ifdef _DEBUG
     if(gfDebug) {
-        printf(" VpItoV i=%ld\n", ival);
+        printf(" VpItoV i=%d\n", ival);
         VPrint(stdout, "  m=%\n", m);
     }
 #endif /* _DEBUG */
@@ -3623,7 +3623,7 @@ VpSqrt(Real *y, Real *x)
     /* */
 #ifdef _DEBUG
     if(gfDebug) {
-        printf("ERROR(VpSqrt): did not converge within %d iterations.\n",
+        printf("ERROR(VpSqrt): did not converge within %ld iterations.\n",
             nr);
     }
 #endif /* _DEBUG */
@@ -3636,7 +3636,7 @@ converge:
     if(gfDebug) {
         VpMult(r, y, y);
         VpAddSub(f, x, r, -1);
-        printf("VpSqrt: iterations = %d\n", nr);
+        printf("VpSqrt: iterations = %lu\n", nr);
         VPrint(stdout, "  y =% \n", y);
         VPrint(stdout, "  x =% \n", x);
         VPrint(stdout, "  x-y*y = % \n", f);
@@ -3944,7 +3944,7 @@ VpPai(Real *y)
     VpFree(f);
     VpFree(r);
 #ifdef _DEBUG
-    printf("VpPai: # of iterations=%d+%d\n",i1,i2);
+    printf("VpPai: # of iterations=%lu+%lu\n",i1,i2);
 #endif /* _DEBUG */
 }
 
@@ -4173,22 +4173,22 @@ VpVarCheck(Real * v)
     U_LONG i;
 
     if(v->MaxPrec <= 0) {
-        printf("ERROR(VpVarCheck): Illegal Max. Precision(=%u)\n",
+        printf("ERROR(VpVarCheck): Illegal Max. Precision(=%lu)\n",
             v->MaxPrec);
         return 1;
     }
     if((v->Prec <= 0) ||((v->Prec) >(v->MaxPrec))) {
-        printf("ERROR(VpVarCheck): Illegal Precision(=%u)\n", v->Prec);
-        printf("       Max. Prec.=%u\n", v->MaxPrec);
+        printf("ERROR(VpVarCheck): Illegal Precision(=%lu)\n", v->Prec);
+        printf("       Max. Prec.=%lu\n", v->MaxPrec);
         return 2;
     }
     for(i = 0; i < v->Prec; ++i) {
         if((v->frac[i] >= BASE)) {
             printf("ERROR(VpVarCheck): Illegal fraction\n");
-            printf("       Frac[%d]=%u\n", i, v->frac[i]);
-            printf("       Prec.   =%u\n", v->Prec);
+            printf("       Frac[%ld]=%lu\n", i, v->frac[i]);
+            printf("       Prec.   =%lu\n", v->Prec);
             printf("       Exp. =%d\n", v->exponent);
-            printf("       BASE =%u\n", BASE);
+            printf("       BASE =%lu\n", BASE);
             return 3;
         }
     }
