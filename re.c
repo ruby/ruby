@@ -778,8 +778,8 @@ rb_reg_nth_match(nth, match)
     if (start == -1) return Qnil;
     end = RMATCH(match)->END(nth);
     len = end - start;
-    str = rb_str_new(RSTRING(RMATCH(match)->str)->ptr + start, len);
-    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
+    str = rb_str_substr(RMATCH(match)->str, start, len);
+    OBJ_INFECT(str, match);
     return str;
 }
 

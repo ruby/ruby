@@ -1,4 +1,4 @@
-Tue Dec 17 19:29:45 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+Tue Dec 17 21:08:29 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* node.h (NODE_ATTRASGN): new node, assignment to attribute.
 	  [ruby-core:00637].
@@ -8,6 +8,8 @@ Tue Dec 17 19:29:45 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	* parse.y (attrset, node_assign): ditto.
 
 	* string.c (rb_str_substr): tail sharing.  [ruby-core:00650]
+
+	* re.c (rb_reg_nth_match): ditto.
 
 Tue Dec 17 04:03:45 2002  Tanaka Akira  <akr@m17n.org>
 
