@@ -2209,6 +2209,7 @@ rb_eval(self, n)
   again:
     if (!node) RETURN(Qnil);
 
+    ruby_sourceline = nd_line(node);
     switch (nd_type(node)) {
       case NODE_BLOCK:
 	while (node->nd_next) {
@@ -2294,7 +2295,6 @@ rb_eval(self, n)
 	RETURN(Qfalse);
 
       case NODE_IF:
-	ruby_sourceline = nd_line(node);
 	if (trace_func) {
 	    call_trace_func("line", node->nd_file, ruby_sourceline, self,
 			    ruby_frame->last_func,
@@ -2397,7 +2397,6 @@ rb_eval(self, n)
 	result = Qnil;
 	switch (state = EXEC_TAG()) {
 	  case 0:
-	    ruby_sourceline = nd_line(node);
 	    if (node->nd_state && !RTEST(rb_eval(self, node->nd_cond)))
 		goto while_out;
 	    do {
@@ -2430,7 +2429,6 @@ rb_eval(self, n)
 	result = Qnil;
 	switch (state = EXEC_TAG()) {
 	  case 0:
-	    ruby_sourceline = nd_line(node);
 	    if (node->nd_state && RTEST(rb_eval(self, node->nd_cond)))
 		goto until_out;
 	    do {
@@ -3075,7 +3073,6 @@ rb_eval(self, n)
 	break;
 
       case NODE_EVSTR:
-	ruby_sourceline = nd_line(node);
 	result = rb_obj_as_string(rb_eval(self, node->nd_body));
 	break;
 
@@ -6622,11 +6619,20 @@ proc_to_s(self, other)
 {
     struct BLOCK *data;
     char *cname = rb_class2name(CLASS_OF(self));
+    long len = strlen(cname)+6+16+1; /* 6:tags 16:addr 1:nul */
     VALUE str;
 
     Data_Get_Struct(self, struct BLOCK, data);
-    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:nul */
-    sprintf(RSTRING(str)->ptr, "#<%s:0x%p>", cname, data->tag);
+    if (data->body) {
+	len += strlen(data->body->nd_file)+16;
+	str = rb_str_new(0, len);
+	sprintf(RSTRING(str)->ptr, "#<%s:0x%p@%s:%d>", cname, data->tag,
+		data->body->nd_file, nd_line(data->body));
+    }
+    else {
+	str = rb_str_new(0, len);
+	sprintf(RSTRING(str)->ptr, "#<%s:0x%p>", cname, data->tag);
+    }
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
 

@@ -922,9 +922,7 @@ r_object(arg)
 #endif
 	    }
 	    v = rb_big_norm((VALUE)big);
-	    if (TYPE(v) == T_BIGNUM) {
-		r_regist(v, arg);
-	    }
+	    r_regist(v, arg);
 	}
 	break;
 
