@@ -544,7 +544,6 @@ Init_Exception()
     rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
-    rb_define_method(rb_eException, "to_str", exc_to_s, 0);
     rb_define_method(rb_eException, "message", exc_to_s, 0);
     rb_define_method(rb_eException, "inspect", exc_inspect, 0);
     rb_define_method(rb_eException, "backtrace", exc_backtrace, 0);
@@ -1115,7 +1114,7 @@ err_append(s)
 	    ruby_errinfo = rb_exc_new2(rb_eSyntaxError, s);
 	}
 	else {
-	    VALUE str = rb_str_to_str(ruby_errinfo);
+	    VALUE str = rb_obj_as_string(ruby_errinfo);
 
 	    rb_str_cat2(str, "\n");
 	    rb_str_cat2(str, s);

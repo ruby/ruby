@@ -1351,7 +1351,7 @@ compile_error(at)
     }
     rb_str_buf_cat(str, "\n", 1);
     if (!NIL_P(ruby_errinfo)) {
-	rb_str_append(str, ruby_errinfo);
+	rb_str_append(str, rb_obj_as_string(ruby_errinfo));
     }
     rb_exc_raise(rb_exc_new3(rb_eSyntaxError, str));
 }
@@ -5176,18 +5176,18 @@ eval(self, src, scope, file, line)
     ruby_set_current_source();
     if (state) {
 	if (state == TAG_RAISE) {
-	    VALUE err;
-	    VALUE errat;
+	    VALUE err, errat, mesg;
 
+	    mesg = rb_obj_as_string(ruby_errinfo);
 	    if (strcmp(file, "(eval)") == 0) {
 		if (ruby_sourceline > 1) {
 		    errat = get_backtrace(ruby_errinfo);
 		    err = rb_str_dup(RARRAY(errat)->ptr[0]);
 		    rb_str_cat2(err, ": ");
-		    rb_str_append(err, ruby_errinfo);
+		    rb_str_append(err, mesg);
 		}
 		else {
-		    err = rb_str_dup(ruby_errinfo);
+		    err = mesg;
 		}
 		rb_exc_raise(rb_funcall(ruby_errinfo, rb_intern("exception"), 1, err));
 	    }

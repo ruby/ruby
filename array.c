@@ -1649,23 +1649,6 @@ rb_ary_cmp(ary1, ary2)
 }
 
 static VALUE
-rb_ary_diff(ary1, ary2)
-    VALUE ary1, ary2;
-{
-    VALUE ary3;
-    long i;
-
-    ary2 = to_ary(ary2);
-    ary3 = rb_ary_new();
-    for (i=0; i<RARRAY(ary1)->len; i++) {
-	if (rb_ary_includes(ary2, RARRAY(ary1)->ptr[i])) continue;
-	if (rb_ary_includes(ary3, RARRAY(ary1)->ptr[i])) continue;
-	rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
-    }
-    return ary3;
-}
-
-static VALUE
 ary_make_hash(ary1, ary2)
     VALUE ary1, ary2;
 {
@@ -1681,6 +1664,23 @@ ary_make_hash(ary1, ary2)
 	}
     }
     return hash;
+}
+
+static VALUE
+rb_ary_diff(ary1, ary2)
+    VALUE ary1, ary2;
+{
+    VALUE ary3, hash;
+    long i;
+
+    hash = ary_make_hash(to_ary(ary2), 0);
+    ary3 = rb_ary_new();
+
+    for (i=0; i<RARRAY(ary1)->len; i++) {
+	if (st_lookup(RHASH(hash)->tbl, RARRAY(ary1)->ptr[i], 0)) continue;
+	rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
+    }
+    return ary3;
 }
 
 static VALUE

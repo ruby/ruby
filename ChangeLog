@@ -1,3 +1,20 @@
+Mon Feb  3 13:18:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_memsearch): algolithm body of String#index.
+
+	* error.c (Init_Exception): "to_str" removed.
+
+	* eval.c (eval): should not rely on Exception#to_str
+
+	* eval.c (compile_error): ditto.
+
+	* error.c (err_append): ditto.
+
+Sat Feb  1 23:56:29 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* hash.c (rb_hash_merge): Hash#merge, non destructive "update".
+	  now there's also Hash#merge! which is an alias to "update".
+
 Fri Jan 31 14:16:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_index): search using Karp-Rabin algolithm.

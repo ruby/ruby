@@ -96,6 +96,59 @@ rb_memcmp(p1, p2, len)
     return rb_memcicmp(p1, p2, len);
 }
 
+int
+rb_memsearch(x0, m, y0, n)
+    char *x0, *y0;
+    long m, n;
+{
+    unsigned char *x = x0, *y = y0;
+    unsigned char *s, *e;
+    long d, i;
+    unsigned long hx, hy;
+
+#define KR_REHASH(a, b, h) ((((h) - (a)*d) << 1) + (b))
+
+    s = y; e = s + n - m + 1;
+
+    /* Preprocessing */
+    /* computes d = 2^(m-1) with
+       the left-shift operator */
+    for (d = i = 1; i < m; ++i)
+	d = (d<<1);
+
+    if (ruby_ignorecase) {
+	/* Prepare hash value */
+	for (hy = hx = i = 0; i < m; ++i) {
+	    hx = ((hx<<1) + casetable[x[i]]);
+	    hy = ((hy<<1) + casetable[s[i]]);
+	}
+	/* Searching */
+	while (s < e) {
+	    if (hx == hy && rb_memcicmp(x, s, m) == 0) {
+		return s-y;
+	    }
+	    hy = KR_REHASH(casetable[*s], casetable[*(s+m)], hy);
+	    s++;
+	}
+    }
+    else {
+	/* Prepare hash value */
+	for (hy = hx = i = 0; i < m; ++i) {
+	    hx = ((hx<<1) + x[i]);
+	    hy = ((hy<<1) + s[i]);
+	}
+	/* Searching */
+	while (s < e) {
+	    if (hx == hy && memcmp(x, s, m) == 0) {
+		return s-y;
+	    }
+	    hy = KR_REHASH(*s, *(s+m), hy);
+	    s++;
+	}
+    }
+    return -1;
+}
+
 #define REG_CASESTATE  FL_USER0
 #define KCODE_NONE  0
 #define KCODE_EUC   FL_USER1
@@ -469,7 +522,7 @@ rb_reg_kcode_m(re)
 	  case KCODE_UTF8:
 	    kcode = "utf8"; break;
 	  default:
-	    rb_bug("unknow kcode - should not happen");
+	    rb_bug("unknown kcode - should not happen");
 	    break;
 	}
 	return rb_str_new2(kcode);

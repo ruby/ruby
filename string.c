@@ -838,48 +838,14 @@ rb_str_index(str, sub, offset)
     VALUE str, sub;
     long offset;
 {
-    char *s, *e, *p;
-    long len;
-    int d, hx, hy, i;
-
     if (offset < 0) {
 	offset += RSTRING(str)->len;
 	if (offset < 0) return -1;
     }
     if (RSTRING(str)->len - offset < RSTRING(sub)->len) return -1;
-    s = RSTRING(str)->ptr+offset;
-    p = RSTRING(sub)->ptr;
-    len = RSTRING(sub)->len;
-    if (len == 0) return offset;
-    e = RSTRING(str)->ptr + RSTRING(str)->len - len + 1;
-
-    /* seach using Karp-Rabin algolithm described in:
-
-       EXACT STRING MATCHING ALGORITHMS
-       http://www-igm.univ-mlv.fr/~lecroq/string/index.html
-    */
-
-#define KR_REHASH(a, b, h) ((((h) - (a)*d) << 1) + (b))
-
-    /* Preprocessing */
-    /* computes d = 2^(m-1) with
-       the left-shift operator */
-    for (d = i = 1; i < len; ++i)
-	d = (d<<1);
-
-    for (hy = hx = i = 0; i < len; ++i) {
-	hx = ((hx<<1) + p[i]);
-	hy = ((hy<<1) + s[i]);
-    }
-
-    /* Searching */
-    while (s < e) {
-	if (hx == hy && rb_memcmp(p, s, len) == 0)
-	    return (s-(RSTRING(str)->ptr));
-	hy = KR_REHASH(*s, *(s+len), hy);
-	s++;
-    }
-    return -1;
+    if (RSTRING(sub)->len == 0) return offset;
+    return rb_memsearch(RSTRING(sub)->ptr, RSTRING(sub)->len,
+			RSTRING(str)->ptr+offset, RSTRING(str)->len-offset);
 }
 
 static VALUE

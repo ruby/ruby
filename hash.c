@@ -937,6 +937,13 @@ rb_hash_update(hash1, hash2)
     return hash1;
 }
 
+static VALUE
+rb_hash_merge(hash1, hash2)
+    VALUE hash1, hash2;
+{
+    return rb_hash_update(rb_obj_dup(hash1), hash2);
+}
+
 static int path_tainted = -1;
 
 static char **origenviron;
@@ -1743,6 +1750,8 @@ Init_Hash()
     rb_define_method(rb_cHash,"invert", rb_hash_invert, 0);
     rb_define_method(rb_cHash,"update", rb_hash_update, 1);
     rb_define_method(rb_cHash,"replace", rb_hash_replace, 1);
+    rb_define_method(rb_cHash,"merge!", rb_hash_update, 1);
+    rb_define_method(rb_cHash,"merge", rb_hash_merge, 1);
 
     rb_define_method(rb_cHash,"include?", rb_hash_has_key, 1);
     rb_define_method(rb_cHash,"member?", rb_hash_has_key, 1);

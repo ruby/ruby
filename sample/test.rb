@@ -1228,7 +1228,7 @@ if defined? Process.kill
   rescue
     x = $!
   end
-  test_ok(x && /Interrupt/ =~ x)
+  test_ok(x && /Interrupt/ =~ x.message)
 end
 
 test_check "eval"
