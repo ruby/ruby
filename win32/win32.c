@@ -3520,6 +3520,7 @@ rb_w32_snprintf(char *buf, size_t size, const char *format, ...)
     return ret;
 }
 
+#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 int
 rb_w32_isatty(int fd)
 {
@@ -3533,6 +3534,7 @@ rb_w32_isatty(int fd)
     }
     return 1;
 }
+#endif
 
 #undef mkdir
 #undef rmdir

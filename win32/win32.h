@@ -105,7 +105,6 @@ extern "C++" {
 #define eof()			_eof()
 #define filelength(h)		_filelength(h)
 #define mktemp(t)		_mktemp(t)
-#define perror(s)		_perror(s)
 #define read(h, b, l)		_read(h, b, l)
 #define tell(h)			_tell(h)
 #define unlink(p)		_unlink(p)
@@ -127,8 +126,10 @@ extern "C++" {
 #define stat(path,st)		rb_w32_stat(path,st)
 #undef execv
 #define execv(path,argv)	rb_w32_aspawn(P_OVERLAY,path,argv)
+#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 #undef isatty
 #define isatty(h)		rb_w32_isatty(h)
+#endif
 
 #undef mkdir
 #define mkdir(p, m)		rb_w32_mkdir(p, m)
@@ -195,7 +196,9 @@ extern int rb_w32_aspawn(int, const char *, char *const *);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
 extern pid_t rb_w32_getpid(void);
+#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 extern int rb_w32_isatty(int);
+#endif
 extern int rb_w32_mkdir(const char *, int);
 extern int rb_w32_rmdir(const char *);
 

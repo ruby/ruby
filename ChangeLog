@@ -1,3 +1,12 @@
+Wed Jan  5 16:39:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* parse.y (BITSTACK_POP): workaround for bcc32 compiler's bug.
+	  shift assignment operator '>>=' for __int64 in struct may
+	  generate collapsed code. [ruby-dev:25342]
+
+	* win32/win32.[ch]: failed to compile on bcc32 (and probably wince)
+	  [ruby-dev:25306]
+
 Wed Jan  5 12:49:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_initialize): Thread objects cannot be initialized

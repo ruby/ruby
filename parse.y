@@ -73,7 +73,7 @@ typedef unsigned long stack_type;
 # endif
 
 # define BITSTACK_PUSH(stack, n)	(stack = (stack<<1)|((n)&1))
-# define BITSTACK_POP(stack)	(stack >>= 1)
+# define BITSTACK_POP(stack)	(stack = stack >> 1)
 # define BITSTACK_LEXPOP(stack)	(stack = (stack >> 1) | (stack & 1))
 # define BITSTACK_SET_P(stack)	(stack&1)
 
