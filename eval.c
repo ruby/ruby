@@ -7035,7 +7035,7 @@ proc_invoke(proc, args, self, klass)
 	proc_set_safe_level(proc);
 	result = rb_yield_0(args, self, self!=Qundef?CLASS_OF(self):0, pcall, Qtrue);
     }
-    else if (pcall || TAG_DST()) {
+    else if (pcall || orphan || TAG_DST()) {
 	result = prot_tag->retval;
     }
     POP_TAG();

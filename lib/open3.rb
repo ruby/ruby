@@ -1,6 +1,6 @@
 # open3.rb: Spawn a program like popen, but with stderr, too. You might also
 # want to use this if you want to bypass the shell. (By passing multiple args,
-# with IO#popen does not allow)
+# which IO#popen does not allow)
 #
 # Usage:
 #	require "open3"
