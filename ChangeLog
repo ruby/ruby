@@ -1,3 +1,12 @@
+Tue Apr  9 13:40:31 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* lib/mkmf.rb (try_link0): need expand macro in command, sync with
+	  ext/extmk.rb.in.
+
+	* lib/mkmf.rb (try_cpp): ditto.
+
+	* lib/mkmf.rb (egrep_cpp): ditto.
+
 Tue Apr  9 12:44:59 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/stringio/stringio.c (check_modifiable): performance

@@ -124,7 +124,7 @@ def try_link0(src, opt="")
     $LIBPATH.each {|d| $LDFLAGS << " -L" + d}
   end
   begin
-    xsystem(format(LINK, $CFLAGS, $CPPFLAGS, $LDFLAGS, opt, $LOCAL_LIBS))
+    xsystem(Config.expand(format(LINK, $CFLAGS, $CPPFLAGS, $LDFLAGS, opt, $LOCAL_LIBS)))
   ensure
     $LDFLAGS = ldflags
     ENV['LIB'] = ORIG_LIBPATH if /mswin32/ =~ RUBY_PLATFORM
@@ -144,7 +144,7 @@ def try_cpp(src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP, $CPPFLAGS, $CFLAGS, opt))
+    xsystem(Config.expand(format(CPP, $CPPFLAGS, $CFLAGS, opt)))
   ensure
     rm_f "conftest*"
   end
@@ -155,7 +155,7 @@ def egrep_cpp(pat, src, opt="")
   cfile.print src
   cfile.close
   begin
-    xsystem(format(CPP+"|egrep #{pat}", $CPPFLAGS, $CFLAGS, opt))
+    xsystem(Config.expand(format(CPP, $CPPFLAGS, $CFLAGS, opt))+"|egrep #{pat}")
   ensure
     rm_f "conftest*"
   end
