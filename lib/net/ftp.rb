@@ -327,7 +327,7 @@ module Net
       end
     end
     
-    def getbinaryfile(remotefile, localfile,
+    def getbinaryfile(remotefile, localfile = File.basename(remotefile),
 		      blocksize = DEFAULT_BLOCKSIZE, &block)
       if @resume
 	rest_offset = File.size?(localfile)
@@ -347,7 +347,7 @@ module Net
       end
     end
     
-    def gettextfile(remotefile, localfile, &block)
+    def gettextfile(remotefile, localfile = File.basename(remotefile), &block)
       f = open(localfile, "w")
       begin
 	retrlines("RETR " + remotefile) do |line|

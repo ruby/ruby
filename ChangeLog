@@ -1,3 +1,10 @@
+Wed Jul  3 13:57:53 2002  Sean Chittenden  <sean@ruby-lang.org>
+
+	* lib/net/ftp.rb (getbinaryfile): the second argument (localfile)
+	is now optional.
+
+	* lib/net/ftp.rb (gettextfile): ditto.
+
 Wed Jul  3 13:45:42 2002  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb: use &block and yield for speed.
