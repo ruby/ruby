@@ -978,14 +978,37 @@ class Resolv
         @absolute = absolute
       end
 
+      def inspect
+        "#<#{self.class}: #{self.to_s}#{@absolute ? '.' : ''}>"
+      end
+
       def absolute?
         return @absolute
       end
 
       def ==(other)
+        return false unless Name === other
         return @labels == other.to_a && @absolute == other.absolute?
       end
       alias eql? ==
+
+      # tests subdomain-of relation.
+      #
+      #   domain = Resolv::DNS::Name.create("y.z")
+      #   p Resolv::DNS::Name.create("w.x.y.z").subdomain_of?(domain) #=> true
+      #   p Resolv::DNS::Name.create("x.y.z").subdomain_of?(domain) #=> true
+      #   p Resolv::DNS::Name.create("y.z").subdomain_of?(domain) #=> false
+      #   p Resolv::DNS::Name.create("z").subdomain_of?(domain) #=> false
+      #   p Resolv::DNS::Name.create("x.y.z.").subdomain_of?(domain) #=> false
+      #   p Resolv::DNS::Name.create("w.z").subdomain_of?(domain) #=> false
+      #
+      def subdomain_of?(other)
+        raise ArgumentError, "not a domain name: #{other.inspect}" unless Name === other
+        return false if @absolute != other.absolute?
+        other_len = other.length
+        return false if @labels.length <= other_len
+        return @labels[-other_len, other_len] == other.to_a
+      end
 
       def hash
         return @labels.hash ^ @absolute.hash
@@ -1003,6 +1026,14 @@ class Resolv
         return @labels[i]
       end
 
+      # returns the domain name as a string.
+      #
+      # The domain name doesn't have a trailing dot even if the name object is
+      # absolute.
+      #
+      #   p Resolv::DNS::Name.create("x.y.z.").to_s #=> "x.y.z"
+      #   p Resolv::DNS::Name.create("x.y.z").to_s #=> "x.y.z"
+      #
       def to_s
         return @labels.join('.')
       end

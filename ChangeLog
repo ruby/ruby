@@ -1,3 +1,9 @@
+Tue Feb  8 00:19:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv.rb (Resolv::DNS::Name#subdomain_of?): new method.
+	  (Resolv::DNS::Name#inspect): ditto.
+	  Suggested by Sam Roberts.  [ruby-talk:129086]
+
 Mon Feb  7 01:56:20 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* instruby.rb, rubytest.rb (srcdir): no longer embed srcdir into
