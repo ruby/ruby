@@ -1,3 +1,8 @@
+Tue Aug 17 17:20:59 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_reopen): should clear allocated OpenFile.  pointed
+	  out by Guy Decoux. [ruby-core:03288]
+
 Tue Aug 17 01:36:32 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/usage.rb: Remove extra indent. Tidy 'ri' option

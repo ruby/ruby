@@ -1242,9 +1242,6 @@ static VALUE
 rb_str_match(x, y)
     VALUE x, y;
 {
-    VALUE reg;
-    long start;
-
     switch (TYPE(y)) {
       case T_STRING:
 	rb_raise(rb_eTypeError, "type mismatch: String given");

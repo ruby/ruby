@@ -4594,7 +4594,6 @@ break_jump(retval)
     VALUE retval;
 {
     struct tag *tt = prot_tag;
-    int yield = Qfalse;
 
     if (retval == Qundef) retval = Qnil;
     while (tt) {
