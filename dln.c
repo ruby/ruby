@@ -1318,7 +1318,7 @@ dln_load(file)
 	    rb_loaderror("%s - %s", strerror(errno), file);
 	}
 	shl_findsym(&lib, buf, TYPE_PROCEDURE, (void*)&init_fct);
-	free(buf)
+	free(buf);
 	if (init_fct == NULL) {
 	    shl_findsym(&lib, buf, TYPE_UNDEFINED, (void*)&init_fct);
 	    if (init_fct == NULL) {

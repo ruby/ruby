@@ -11,6 +11,8 @@ Fri Mar  1 06:25:49 2002  Tanaka Akira  <akr@m17n.org>
 	(Init_socket): define UNIXSocket#send_io, UNIXSocket#recv_io, 
 	UNIXSocket#socketpair and UNIXSocket#pair.
 
+	* dln.c (dln_load): fix typo.
+
 Wed Feb 27 16:30:50 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_mod_include): load modules in argument order.
