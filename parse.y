@@ -1908,8 +1908,7 @@ xstring		: tXSTRING_BEG xstring_contents tSTRING_END
 				nd_set_type(node, NODE_DXSTR);
 				break;
 			      default:
-				node = rb_node_newnode(NODE_DXSTR, rb_str_new(0, 0),
-						       1, NEW_LIST(node));
+				node = NEW_NODE(NODE_DXSTR, rb_str_new(0, 0), 1, NEW_LIST(node));
 				break;
 			    }
 			}
@@ -1935,8 +1934,7 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			    }
 			    break;
 			  default:
-			    node = rb_node_newnode(NODE_DSTR, rb_str_new(0, 0),
-						   1, NEW_LIST(node));
+			    node = NEW_NODE(NODE_DSTR, rb_str_new(0, 0), 1, NEW_LIST(node));
 			  case NODE_DSTR:
 			    if (options & RE_OPTION_ONCE) {
 				nd_set_type(node, NODE_DREGX_ONCE);
@@ -2104,8 +2102,7 @@ dsym		: tSYMBEG xstring_contents tSTRING_END
 				}
 				/* fall through */
 			      default:
-				$$ = rb_node_newnode(NODE_DSYM, rb_str_new(0, 0),
-						     1, NEW_LIST($$));
+				$$ = NEW_NODE(NODE_DSYM, rb_str_new(0, 0), 1, NEW_LIST($$));
 				break;
 			    }
 			}
@@ -4421,7 +4418,7 @@ yylex()
 NODE*
 rb_node_newnode(type, a0, a1, a2)
     enum node_type type;
-    NODE *a0, *a1, *a2;
+    VALUE a0, a1, a2;
 {
     NODE *n = (NODE*)rb_newobj();
 
@@ -4430,9 +4427,9 @@ rb_node_newnode(type, a0, a1, a2)
     nd_set_line(n, ruby_sourceline);
     n->nd_file = ruby_sourcefile;
 
-    n->u1.node = a0;
-    n->u2.node = a1;
-    n->u3.node = a2;
+    n->u1.value = a0;
+    n->u2.value = a1;
+    n->u3.value = a2;
 
     return n;
 }
@@ -5341,10 +5338,10 @@ logop(type, left, right)
 	while ((second = node->nd_2nd) != 0 && nd_type(second) == type) {
 	    node = second;
 	}
-	node->nd_2nd = rb_node_newnode(type, second, right, 0);
+	node->nd_2nd = NEW_NODE(type, second, right, 0);
 	return left;
     }
-    return rb_node_newnode(type, left, right, 0);
+    return NEW_NODE(type, left, right, 0);
 }
 
 static int

@@ -909,7 +909,7 @@ static VALUE ruby_wrapper;	/* security wrapper */
 
 static NODE *ruby_cref = 0;
 static NODE *top_cref;
-#define PUSH_CREF(c) ruby_cref = rb_node_newnode(NODE_CREF,(c),0,ruby_cref)
+#define PUSH_CREF(c) ruby_cref = NEW_NODE(NODE_CREF,(c),0,ruby_cref)
 #define POP_CREF() ruby_cref = ruby_cref->nd_next
 
 #define PUSH_SCOPE() do {		\
@@ -1896,7 +1896,7 @@ copy_node_scope(node, rval)
     NODE *node;
     NODE *rval;
 {
-    NODE *copy = rb_node_newnode(NODE_SCOPE,0,rval,node->nd_next);
+    NODE *copy = NEW_NODE(NODE_SCOPE,0,rval,node->nd_next);
 
     if (node->nd_tbl) {
 	copy->nd_tbl = ALLOC_N(ID, node->nd_tbl[0]+1);

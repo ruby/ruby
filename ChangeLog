@@ -1,3 +1,7 @@
+Sat Jul  5 00:22:59 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* node.h (NEW_NODE): cast arguments to rb_node_newnode().
+
 Fri Jul  4 21:48:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/syck/rubyext.c, ext/syck/syck.c, ext/syck/syck.h,
