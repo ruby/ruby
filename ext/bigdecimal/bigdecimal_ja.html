@@ -2,90 +2,30 @@
 <HEAD>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=Shift_JIS">
 <style type="text/css"><!--
-body {
-  color: #3f0f0f;
-  background: #fefeff;
-  margin-left: 2em; margin-right: 2em;
+body { color: #3f0f0f;  background: #fefeff; margin-left: 2em; margin-right: 2em;}
+h1 { color: #ffffff;  background-color: #3939AD;  border-color: #FF00FF;  width: 100%;
+  border-style: solid;  border-top-width: 0.1em;  border-bottom-width: 0.1em;  border-right: none;
+  border-left: none;  padding: 0.1em;  font-weight: bold;  font-size: 160%;  text-align: center;
 }
-h1 {
-  color: #ffffff;
-  background-color: #3939AD;
-  border-color: #FF00FF;
-  width: 100%;
-  border-style: solid;
-  border-top-width: 0.1em;
-  border-bottom-width: 0.1em;
-  border-right: none;
-  border-left: none;
+h2 {  color: #00007f;  background-color: #e7e7ff;  border-color: #000094;  width: 100%;
+  border-style: solid; border-left: none;  border-right: none;  border-top-width: 0.1em;  border-bottom-width: 0.1em;
   padding: 0.1em;
-  font-weight: bold;
-  font-size: 160%;
-  text-align: center;
+  font-weight: bold;  font-size: 110%;
 }
-h2 {
-  color: #00007f;
-  background-color: #e7e7ff;
-  border-color: #000094;
-  width: 100%;
-  border-style: solid;
-  border-left: none;
-  border-right: none;
-  border-top-width: 0.1em;
-  border-bottom-width: 0.1em;
-  padding: 0.1em;
-  font-weight: bold;
-  font-size: 110%;
-}
-h3 {
-  color: #00007f;
-  padding: 0.2em;
-  font-size: 110%;
-}
-h4, h5 {
-  color: #000000;
-  padding: 0.2em;
-  font-size: 100%;
-}
-table {
-  margin-top: 0.2em; margin-bottom: 0.2em;
-  margin-left: 2em; margin-right: 2em;
-}
-caption {
-  color: #7f0000;
-  font-weight: bold;
-}
-th {
-  background: #e7e7ff;
-  padding-left: 0.2em; padding-right: 0.2em;
-}
-td {
-  background: #f3f7ff;
-  padding-left: 0.2em; padding-right: 0.2em;
-}
-code {
-  color: #0000df;
-}
-dt {
-  margin-top: 0.2em;
-}
-li {
-  margin-top: 0.2em;
-}
+h3 {  color: #00007f;  padding: 0.2em;  font-size: 110%;}
+h4, h5 {  color: #000000;  padding: 0.2em;  font-size: 100%;}
+table {  margin-top: 0.2em; margin-bottom: 0.2em;  margin-left: 2em; margin-right: 2em;}
+caption {  color: #7f0000;  font-weight: bold;}
+th {  background: #e7e7ff;  padding-left: 0.2em; padding-right: 0.2em;}
+td {  background: #f3f7ff;  padding-left: 0.2em; padding-right: 0.2em;}
+code {  color: #0000df;}
+dt {  margin-top: 0.2em;}
+li {  margin-top: 0.2em;}
 pre
-{
-    BACKGROUND-COLOR: #d0d0d0;
-    BORDER-BOTTOM: medium none;
-    BORDER-LEFT: medium none;
-    BORDER-RIGHT: medium none;
-    BORDER-TOP: medium none;
-    LINE-HEIGHT: 100%;
-    MARGIN: 12px 12px 12px 12px;
-    PADDING-BOTTOM: 12px;
-    PADDING-LEFT: 12px;
-    PADDING-RIGHT: 12px;
-    PADDING-TOP: 12px;
-    WHITE-SPACE: pre;
-    WIDTH: 100%
+{    BACKGROUND-COLOR: #d0d0d0;    BORDER-BOTTOM: medium none;    BORDER-LEFT: medium none;
+    BORDER-RIGHT: medium none;    BORDER-TOP: medium none;    LINE-HEIGHT: 100%;    MARGIN: 12px 12px 12px 12px;
+    PADDING-BOTTOM: 12px;    PADDING-LEFT: 12px;    PADDING-RIGHT: 12px;    PADDING-TOP: 12px;
+    WHITE-SPACE: pre;    WIDTH: 100%
 }
 --></style>
 
@@ -99,7 +39,6 @@ BigDecimal はオブジェクト指向の強力なスクリプト言語である Ruby に可変長浮動小数�
 Ruby についての詳しい内容は以下のURLを参照してください。
 <UL>
 <LI><A HREF="http://www.ruby-lang.org/ja/">http://www.ruby-lang.org/ja/</A>：Ruby公式ページ</LI>
-<LI><A HREF="http://ruby.freak.ne.jp/">http://ruby.freak.ne.jp/</A>：Rubyに関する情報ページ</LI>
 <LI><A HREF="http://kahori.com/ruby/ring/">http://kahori.com/ruby/ring/</A>：Rubyに関するページを辿れます</LI>
 </UL> 
 <hr>
@@ -160,8 +99,9 @@ c=a+b
 例えば３２ビットのシステムでは１０進で４桁毎に計算します。従って、現状では、
 内部の「有効桁数」は４の倍数となっています。
 
+<H4><U>クラスメソッド</U></H4>
 <UL>
-<LI>new</LI><BR>
+<LI><B>new</B></LI><BLOCKQUOTE>
 新しい BigDecimal オブジェクトを生成します。<BR>
 a=BigDecimal::new(s[,n])<BR>
 s は初期値を文字列で指定します．
@@ -169,50 +109,151 @@ n は必要な有効桁数（a の最大有効桁数）を整数で指定します。
 n が 0 または省略されたときは、n の値は s の有効桁数とみなされます。
 s の有効桁数より n が小さいときも n=0 のときと同じです。
 a の最大有効桁数は n より若干大い値が採用されます。
-<LI>+</LI><BR>
+</BLOCKQUOTE>
+
+<LI><B>mode</B></LI><BLOCKQUOTE>
+BigDecimalの実行結果を制御します。以下の使用方法が定義されています。
+<P>
+<B>[例外処理]</B><P>
+計算結果が非数(NaN)やゼロによる除算になったときの処理を定義することができます。
+<BLOCKQUOTE>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_NaN,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_INFINITY,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_UNDERFLOW,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_OVERFLOW,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_ZERODIVIDE,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_ALL,flag)<BR>
+</BLOCKQUOTE>
+
+EXCEPTION_NaN は結果が NaN になったときの指定です。<BR>
+EXCEPTION_INFINITY は結果が無限大(±Infinity)になったときの指定です。<BR>
+EXCEPTION_UNDERFLOW は指数部がアンダーフローするときの指定です。<BR>
+EXCEPTION_OVERFLOW は指数部がオーバーフローするときの指定です。<BR>
+EXCEPTION_ZERODIVIDE はゼロによる割り算を実行したときの指定です。<BR>
+EXCEPTION_ALL は、可能な全てに対して一括して設定するときに使用します。<BR><BR>
+
+flag が true のときは、指定した状態になったときに例外を発行するようになります。<BR>
+flag が false（デフォルト）なら、例外は発行されません。計算結果は以下のようになります。<BR>
+<BLOCKQUOTE>
+EXCEPTION_NaN のとき、非数(NaN)<BR>
+EXCEPTION_INFINITY のとき、無限(+ or -Infinity)<BR>
+EXCEPTION_UNDERFLOW のとき、ゼロ<BR>
+EXCEPTION_OVERFLOW のとき、+Infinity か -Infinity<BR>
+EXCEPTION_ZERODIVIDE のとき、+Infinity か -Infinity<BR>
+</BLOCKQUOTE>
+EXCEPTION_INFINITY、EXCEPTION_OVERFLOW、EXCEPTION_ZERODIVIDE
+は今のところ同じです。<BR>
+戻り値は、設定前の値です。「値」の意味は、例えば
+BigDecimal::EXCEPTION_NaNと「値」の & が ゼロ以外ならば
+EXCEPTION_NaNが設定されているという意味です。<BR>
+引数に正しくないものが指定された場合は nil が返ります。
+
+<P>
+<B>[丸め処理指定]</B><P>
+計算途中の丸め操作の指定ができます。
+<BLOCKQUOTE>
+f = BigDecimal::mode(BigDecimal::COMP_MODE,flag)
+</BLOCKQUOTE>
+の形式で指定します。<BR>
+ここで、flag は以下の一つを指定します。
+<TABLE>
+<TR><TD>COMP_MODE_TRUNCATE</TD><TD>全て切り捨てます(truncate)。</TD></TR>
+<TR><TD>COMP_MODE_ROUNDUP</TD><TD>四捨五入します(roundup、デフォルト)。</TD></TR>
+<TR><TD>COMP_MODE_CEIL</TD><TD>数値の大きい方に繰り上げます(ceil)。</TD></TR>
+<TR><TD>COMP_MODE_FLOOR</TD><TD>数値の小さい方に繰り下げます(floor)。</TD></TR>
+<TR><TD>COMP_MODE_EVEN</TD><TD>四捨六入します。５の時は上位１桁が奇数の時のみ繰り上げます(Banker's rounding)。</TD></TR>
+</TABLE>
+戻り値は指定前の flag の値です。
+引数に正しくないものが指定された場合は nil が返ります。<BR>
+mode メソッドでは丸め操作の位置をユーザが指定することはできません。
+丸め操作と位置を自分で制御したい場合は truncate/roundup/ceil/floor といった
+インスタンスメソッドを使用して下さい。
+</BLOCKQUOTE>
+<LI><B>limit([n])</B></LI><BLOCKQUOTE>
+生成されるBigDecimalオブジェクトの最大桁数をn桁に制限します。戻り値は
+設定する前の値です。設定値のデフォルト値は０で、桁数無制限という意味です。
+nを指定しない場合は、現状の最大桁数が返ります。<BR>
+mf = BigDecimal::limit(n)<BR>
+</BLOCKQUOTE>
+<LI><B>double_fig</B></LI><BLOCKQUOTE>
+Ruby の Float クラスが保持できる有効数字の数を返します。
+<CODE><PRE>
+  p BigDecimal::double_fig  # ==> 20 (depends on the CPU etc.)
+</PRE></CODE>
+double_figは以下の C プログラムの結果と同じです。
+<CODE><PRE>
+ double v          = 1.0;
+ int    double_fig = 0;
+ while(v + 1.0 > 1.0) {
+    ++double_fig;
+    v /= 10;
+ }
+</PRE></CODE>
+</BLOCKQUOTE>
+
+<LI><B>BASE</B></LI><BLOCKQUOTE>
+内部で使用される基数の値です。整数が 32 ビットの処理系では10000です。<BR>
+b = BigDecimal::BASE<BR>
+</BLOCKQUOTE>
+
+<LI><B>E</B></LI><BLOCKQUOTE>
+自然対数の底e(=2.718281828....)を計算します（正直にテイラー展開で）。<BR>
+e = BigDecimal::E(n)<BR>
+nは必要な有効桁数を整数で指定します。
+</BLOCKQUOTE>
+<LI><B>PI</B></LI><BLOCKQUOTE>
+円周率(=3.14159265358979....)を計算します（J．Machinの公式を用います）。<BR>
+e = BigDecimal::PI(n)<BR>
+n は必要な有効桁数を整数で指定します。
+</BLOCKQUOTE>
+</UL>
+
+<H4><U>インスタンスメソッド</U></H4>
+<UL>
+<LI><B>+</B></LI><BLOCKQUOTE>
 加算（c = a + b）<BR>
 c の精度については「<A HREF="#PREC">計算精度について</A>」を参照してください。
-<LI>-</LI><BR>
+</BLOCKQUOTE>
+
+<LI><B>-</B></LI><BLOCKQUOTE>
 減算（c = a - b）、または符号反転（c = -a）<BR>
 c の精度については「<A HREF="#PREC">計算精度について</A>」を参照してください。
-<LI>*</LI><BR>
+
+</BLOCKQUOTE>
+<LI><B>*</B></LI><BLOCKQUOTE>
 乗算(c = a * b)<BR>
 cの精度は(aの精度)+(bの精度)程度です。<br>
 詳しくは「<A HREF="#PREC">計算精度について</A>」を参照してください。
 
-<LI>/</LI><BR>
+</BLOCKQUOTE>
+<LI><B>/</B></LI><BLOCKQUOTE>
 除算(c = a / b)<BR>
 c の精度については「<A HREF="#PREC">計算精度について</A>」を参照してください。
 
-<LI>assign</LI><BR>
-以下のように使用します。<BR>
-c = a.assign(n,f)<BR>
-f > 0 なら、a を c に、そのまま代入します。
-f < 0 なら、-a を c に代入します。
-f の絶対値（|f|）は１か２を指定してください。
-|f|=2 のときは、c の最大精度が a の実精度より小さいときには
-丸められます。|f|=1 のときは切り捨てられます。
-n は c の有効桁数です（n 桁以上の精度を持つ c が生成されます）。
+</BLOCKQUOTE>
 
-<LI>add</LI><BR>
+<LI><B>add</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c = a.add(b,n)<BR>
 c = a + b を最大で n 桁まで計算します。
 a + b の精度が n より大きいときは丸められます。
 
-<LI>sub</LI><BR>
+</BLOCKQUOTE>
+<LI><B>sub</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c = a.sub(b,n)<BR>
 c = a - b を最大で n 桁まで計算します。
 a - b の精度が n より大きいときは丸められます。
 
-<LI>mult</LI><BR>
+</BLOCKQUOTE>
+<LI><B>mult</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c = a.mult(b,n)<BR>
 c = a * b を最大で n 桁まで計算します。
 a * b の精度が n より大きいときは丸められます。
 
-<LI>div</LI><BR>
+</BLOCKQUOTE>
+<LI><B>div</B></LI><BLOCKQUOTE>
 以下のように使用します。<BR>
 c,r = a.div(b,n)<BR>
 c=a/b の計算をします。 r には剰余が代入されます。a/bは
@@ -220,63 +261,91 @@ c=a/b の計算をします。 r には剰余が代入されます。a/bは
 と異なり、c は整数とは限りません。
 また、 c は丸められることはありません。
  a = c*b + r の関係は成立します。
-<LI>%</LI><BR>
+</BLOCKQUOTE>
+<LI><B>%</B></LI><BLOCKQUOTE>
 r = a%b <BR>
 a/b の余りを計算します。以下の計算と同じものです。<BR>
 r = a-((a/b).floor)*b<BR>
-<LI>fix</LI><BR>
+</BLOCKQUOTE>
+<LI><B>fix</B></LI><BLOCKQUOTE>
 a の小数点以下の切り捨て。<BR>
 c = a.fix
-<LI>frac</LI><BR>
+</BLOCKQUOTE>
+<LI><B>frac</B></LI><BLOCKQUOTE>
 a の整数部分の切り捨て。<BR>
 c = a.frac
-<LI>floor</LI><BR>
-a 以下の最大整数を表す値（BigDecimal 値）を返します。<BR>
+</BLOCKQUOTE>
+
+<LI><B>floor[(n)]</B></LI><BLOCKQUOTE>
 c = a.floor<BR>
-以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます
-(少数点以下を、最大 n 桁にします)。<BR>
-c = BigDecimal("1.23456")<BR>
-d = c.floor(4) # d = 1.2345 になります。<BR>
- n が負のときは小数点以上 n 桁目を操作します。<BR>
-c = BigDecimal("15.23456")<BR>
-d = c.floor(-1) # d = 10.0 になります。<BR>
+a 以下の最大整数（BigDecimal 値）を返します。
+<PRE><CODE>
+c = BigDecimal("1.23456").floor  #  ==> 1
+c = BigDecimal("-1.23456").floor #  ==> -2
+</CODE></PRE>
+以下のように引数 n を与えることもできます。<BR>
+n>=0 なら、小数点以下 n+1 位の数字を操作します(少数点以下を、最大 n 桁にします)。<BR>
+n が負のときは小数点以上 n 桁目を操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
+<PRE><CODE>
+ c = BigDecimal::new("1.23456").floor(4)   #  ==> 1.2345
+ c = BigDecimal::new("15.23456").floor(-1) #  ==> 10.0
+</CODE></PRE>
 
-<LI>ceil</LI><BR>
-a 以上の整数のうち、最も小さい整数を計算し、その値（BigDecimal 値）を返します。<BR>
+</BLOCKQUOTE>
+<LI><B>ceil[(n)]</B></LI><BLOCKQUOTE>
 c = a.ceil<BR>
-以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます
-(少数点以下を、最大 n 桁にします)。<BR>
-c = BigDecimal::new("1.23456")<BR>
-d = c.ceil(4) # d = 1.2346 になります。<BR>
- n が負のときは小数点以上 n 桁目をを操作します。<BR>
-c = BigDecimal::new("15.23456")<BR>
-d = c.ceil(-1) # d = 20.0 になります。<BR>
+a 以上の整数のうち、最も小さい整数を計算し、その値（BigDecimal 値）を返します。
+<PRE><CODE>
+c = BigDecimal("1.23456").ceil  #  ==> 2
+c = BigDecimal("-1.23456").ceil #  ==> -1
+</CODE></PRE>
 
-<LI>round</LI><BR>
-小数点以下第一位の数を四捨五入して整数（BigDecimal 値）にします。<BR>
+以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます。<BR>
+n>=0 なら、小数点以下 n+1 位の数字を操作します(少数点以下を、最大 n 桁にします)。<BR>
+ n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
+<PRE><CODE>
+ c = BigDecimal::new("1.23456").ceil(4)   # ==> 1.2346
+ c = BigDecimal::new("15.23456").ceil(-1) # ==> 20.0
+</CODE></PRE>
+
+</BLOCKQUOTE>
+<LI><B>round[(n[,b])]</B></LI><BLOCKQUOTE>
 c = a.round<BR>
-以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます
-(少数点以下を、最大 n 桁にします)。<BR>
-n が正の時は、小数点以下 n+1 位の数字を四捨五入します。
-c = BigDecimal::new("1.23456")<BR>
-d = c.round(4)  # d = 1.235 になります。<BR>
- n が負のときは小数点以上 n 桁目をを操作します。<BR>
-c = BigDecimal::new("15.23456")<BR>
-d = c.round(-1) # d = 20.0 になります。<BR>
+小数点以下第一位の数を四捨五入して整数（BigDecimal 値）にします。<BR>
+<PRE><CODE>
+ c = BigDecimal("1.23456").round  #  ==> 1
+ c = BigDecimal("-1.23456").round #  ==> -1
+</CODE></PRE>
 
-<LI>truncate</LI><BR>
-小数点以下の数を切り捨てて整数（BigDecimal 値）にします。<BR>
+以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます。<BR>
+n が正の時は、小数点以下 n+1 位の数字を四捨五入します(少数点以下を、最大 n 桁にします)。<BR>
+n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。
+<PRE><CODE>
+c = BigDecimal::new("1.23456").round(4)   #  ==> 1.2346
+c = BigDecimal::new("15.23456").round(-1) #  ==> 20.0
+</CODE></PRE>
+２番目の引数（デフォルトは 0）にゼロ以外を指定すると、いわゆる Banker's rounding になります。<BR>
+ Banker's rounding とは、四捨五入する数字を p として、p &lt; 5 なら切り捨て p &gt; 5 なら切り上げ、
+p がちょうど５のときだけは切り上げ先の数字＋１が偶数になるときだけ切り上げます。
+<PRE><CODE>
+c = BigDecimal::new("1.23456").round(3,1)   #  ==> 1.234
+c = BigDecimal::new("1.23356").round(3,1)   #  ==> 1.234
+</CODE></PRE>
+
+</BLOCKQUOTE>
+<LI><B>truncate</B></LI><BLOCKQUOTE>
 c = a.truncate<BR>
-以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます
-(少数点以下を、最大 n 桁にします)。<BR>
-n が正の時は、小数点以下 n+1 位の数字を切り捨てます。
-c = BigDecimal::new("1.23456")<BR>
-d = c.truncate(4)  # d = 1.2345 になります。<BR>
- n が負のときは小数点以上 n 桁目をを操作します。<BR>
-c = BigDecimal::new("15.23456")<BR>
-d = c.truncate(-1) # d = 10.0 になります。<BR>
+小数点以下の数を切り捨てて整数（BigDecimal 値）にします。<BR>
+以下のように引数を与えて、小数点以下 n+1 位の数字を操作することもできます。<BR>
+n が正の時は、小数点以下 n+1 位の数字を切り捨てます(少数点以下を、最大 n 桁にします)。
+n が負のときは小数点以上 n 桁目をを操作します(小数点位置から左に少なくとも n 個の 0 が並びます)。<BR>
+<PRE><CODE>
+c = BigDecimal::new("1.23456").truncate(4)   #  ==> 1.2345
+c = BigDecimal::new("15.23456").truncate(-1) #  ==> 10.0
+</CODE></PRE>
 
-<LI>divmod</LI><BR>
+</BLOCKQUOTE>
+<LI><B>divmod</B></LI><BLOCKQUOTE>
 商と剰余の配列を返します。<BR>
 c,r = a.divmod(b) # a = c*b + r<BR>
 divmodメソッドは a = c * b + r となる a / b の浮動小数点型の商 c と剰余 r を
@@ -284,85 +353,44 @@ divmodメソッドは a = c * b + r となる a / b の浮動小数点型の商 c と剰余 r を
 c = (a/b).floor <BR>
 r = a - c*b<BR>
 で計算されます。
-<LI>remainder</LI><BR>
+</BLOCKQUOTE>
+<LI><B>remainder</B></LI><BLOCKQUOTE>
 r=a.remainder(b)<BR>
 a/b の剰余 r を計算します。<BR>
 c = (a/b).fix <BR>
 r = a - c*b<BR>
 で計算されます。
 
-<LI>abs</LI><BR>
+</BLOCKQUOTE>
+<LI><B>abs</B></LI><BLOCKQUOTE>
 ａの絶対値<BR>
 c = a.abs<BR>
 
-<LI>to_i</LI><BR>
+</BLOCKQUOTE>
+<LI><B>to_i</B></LI><BLOCKQUOTE>
 少数点以下を切り捨てて整数に変換します。<BR>
 i = a.to_i<BR>
 i は値に応じて Fixnum か Bignum になります。
 a が Infinity や NaN のとき、i は nil になります。
-<LI>to_f</LI><BR>
+</BLOCKQUOTE>
+<LI><B>to_f</B></LI><BLOCKQUOTE>
 dup と全く同じです。
 同じ値の BigDecimal オブジェクトを生成します。
-<LI>to_s[(n)]</LI><BR>
+</BLOCKQUOTE>
+<LI><B>to_s[(n)]</B></LI><BLOCKQUOTE>
 文字列に変換します("0.xxxxxEn"の形になります）。<BR>
 s = a.to_s<BR>
 n が指定されたときは、仮数部分を n 桁毎に空白で区切ります。<BR>
 s = a.to_s(n)
-<LI>exponent</LI><BR>
+</BLOCKQUOTE>
+<LI><B>exponent</B></LI><BLOCKQUOTE>
 指数部を整数値で返します。
 n = a.exponent <BR>
 は a の値が 0.xxxxxxx*10**n を意味します。
 
-<LI>E</LI><BR>
-自然対数の底e(=2.718281828....)を計算します（正直にテイラー展開で）。<BR>
-e = BigDecimal::E(n)<BR>
-nは必要な有効桁数を整数で指定します。
-<LI>PI</LI><BR>
-円周率(=3.14159265358979....)を計算します（J．Machinの公式を用います）。<BR>
-e = BigDecimal::PI(n)<BR>
-n は必要な有効桁数を整数で指定します。
-<LI>BASE</LI><BR>
-内部で使用される基数の値です。整数が 32 ビットの処理系では10000です。<BR>
-b = BigDecimal::BASE<BR>
-<LI>mode</LI><BR>
-BigDecimalの実行結果を制御します。以下の使用方法が定義されています。<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_NaN,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_INFINITY,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_UNDERFLOW,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_OVERFLOW,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_ZERODIVIDE,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_ALL,flag)<BR>
+</BLOCKQUOTE>
 
-EXCEPTION_NaN は結果が NaN になったときの指定です。
-EXCEPTION_INFINITY は結果が無限大(±Infinity)
-になったときの指定です。
-EXCEPTION_UNDERFLOW は指数部がアンダーフローするときの指定です。
-EXCEPTION_OVERFLOW は指数部がオーバーフローするときの指定です。
-EXCEPTION_ZERODIVIDE はゼロによる割り算を実行したときの指定です。
-EXCEPTION_ALL は、可能な全てに対して一括して設定するときに
-使用します。
-flag が true のときは、指定した状態になったときに例外を発行
-するようになります。
-flag が false（デフォルト）なら、例外は発行されません。計算結果は
-以下のようになります。<BR>
-EXCEPTION_NaN のとき、非数(NaN)<BR>
-EXCEPTION_INFINITY のとき、無限(+ or -Infinity)<BR>
-EXCEPTION_UNDERFLOW のとき、ゼロ<BR>
-EXCEPTION_OVERFLOW のとき、+Infinity か -Infinity<BR>
-EXCEPTION_ZERODIVIDE のとき、+Infinity か -Infinity<BR>
-EXCEPTION_INFINITY、EXCEPTION_OVERFLOW、EXCEPTION_ZERODIVIDE
-は今のところ同じです。<BR>
-戻り値は、設定後の値です。「値」の意味は、例えば
-BigDecimal::EXCEPTION_NaNと「値」の & が ゼロ以外ならば
-EXCEPTION_NaNが設定されているという意味です。
-flag が nil、または、true と false 以外なら現在の設定値が返ります。
-
-<LI>limit([n])</LI><BR>
-生成されるBigDecimalオブジェクトの最大桁数をn桁に制限します。戻り値は
-設定する前の値です。設定値のデフォルト値は０で、桁数無制限という意味です。
-nを指定しない場合は、現状の最大桁数が返ります。<BR>
-mf = BigDecimal::limit(n)<BR>
-<LI>sign</LI><BR>
+<LI><B>sign</B></LI><BLOCKQUOTE>
 値の属性を返します。
 n = a.sign <BR>
 としたとき n の値は a が以下のときを意味します。<BR>
@@ -375,26 +403,40 @@ n = BigDecimal::SIGN_NEGATIVE_FINITE(-2) : a は負の値<BR>
 n = BigDecimal::SIGN_POSITIVE_INFINITE(3) : a は+Infinity<BR>
 n = BigDecimal::SIGN_NEGATIVE_INFINITE(-3) : a は-Infinity<BR>
 
-<LI>nan?</LI><BR>
+</BLOCKQUOTE>
+<LI><B>nan?</B></LI><BLOCKQUOTE>
 a.nan? は a がNaNのとき真を返します。
-<LI>infinite?</LI><BR>
-a.infinite? は a が+∞または-∞のとき真を返します。
-<LI>finite?</LI><BR>
+</BLOCKQUOTE>
+<LI><B>infinite?</B></LI><BLOCKQUOTE>
+a.infinite? は a が+∞のとき 1 、-∞のときは -1、それ以外のときは nil を返します。
+</BLOCKQUOTE>
+<LI><B>finite?</B></LI><BLOCKQUOTE>
 a.finite? は a が∞または NaN でないとき真を返します。
+</BLOCKQUOTE>
 
-<LI>to_parts</LI><BR>
+<LI><B>zero?</B></LI><BLOCKQUOTE>
+a が 0 なら true になります。<BR>
+c = a.zero?
+</BLOCKQUOTE>
+<LI><B>nonzero?</B></LI><BLOCKQUOTE>
+a が 0 なら nil、0 以外なら a そのものが返ります。<BR>
+c = a.nonzero?
+
+</BLOCKQUOTE>
+<LI><B>split</B></LI><BLOCKQUOTE>
 BigDecimal 値を 0.xxxxxxx*10**n と表現したときに、符号（NaNのときは
 0、それ以外は+1か-1になります）、
 仮数部分の文字列（"xxxxxxx"）と、基数（10）、更に指数 n を配列で
 返します。<BR>
-a=BigDecimal::new("3.14159265",10)<BR>
-f,x,y,z = a.to_parts<BR>
+a=BigDecimal::new("3.14159265")<BR>
+f,x,y,z = a.split<BR>
 とすると、f=+1、x="314159265"、y=10、z=1になります。<BR>
 従って、<BR>
 s = "0."+x<BR>
 b = f*(s.to_f)*(y**z)<BR>
 で Float に変換することができます。
-<LI>inspect</LI><BR>
+</BLOCKQUOTE>
+<LI><B>inspect</B></LI><BLOCKQUOTE>
 デバッグ出力に使用されます。<BR>
 p a=BigDecimal::new("3.14",10)<BR>
 とすると、[0x112344:'0.314E1',4(12)]のように出力されます。
@@ -402,47 +444,54 @@ p a=BigDecimal::new("3.14",10)<BR>
 次の4は現在の有効桁数(表示より若干大きいことがあります)、
 最後はオブジェクトが取り得る最大桁数になります。
 
-<LI>dup</LI><BR>
+</BLOCKQUOTE>
+<LI><B>dup</B></LI><BLOCKQUOTE>
 同じ値の BigDecimal オブジェクトを生成します。
-<LI>sqrt</LI><BR>
+</BLOCKQUOTE>
+<LI><B>sqrt</B></LI><BLOCKQUOTE>
 aの有効桁 n 桁の平方根（n の平方根ではありません）。
 これまた、正直にニュートン法で計算します。<BR>
 c = a.sqrt(n)<BR>
-<LI>sincos</LI><BR>
+</BLOCKQUOTE>
+<LI><B>sincos</B></LI><BLOCKQUOTE>
 a の有効桁 n 桁の sin と cos を同時に（テイラー展開で）計算して、
  sin と cos の配列を返します。
 n は必要な有効桁数です（ n の sin や cos を計算するわけではありません）。
 <BR>
 sin,cos = a.sincos(n)<BR>
 |a|<2*3.1415....でないと正しい答えを計算できないこともあります。
-<LI>exp</LI><BR>
+</BLOCKQUOTE>
+<LI><B>exp</B></LI><BLOCKQUOTE>
 自然対数の底e(=2.718281828....)の a 乗を計算します。<BR>
 c = a.exp(n)<BR>
 n は必要な有効桁数です。
-<LI>power</LI><BR>
+</BLOCKQUOTE>
+<LI><B>**</B></LI><BLOCKQUOTE>
 a の n 乗を計算します。ｎは整数。<BR>
+c = a ** n<BR>
+結果として c の有効桁は a の n 倍以上になるので注意。
+</BLOCKQUOTE>
+<LI><B>power</B></LI><BLOCKQUOTE>
+** と同じで、a の n 乗を計算します。ｎは整数。<BR>
 c = a.power(n)<BR>
 結果として c の有効桁は a の n 倍以上になるので注意。
-<LI>zero?</LI><BR>
-a が 0 なら true になります。<BR>
-c = a.zero?<BR>
-<LI>nonzero?</LI><BR>
-a が 0 なら false、0 以外なら a そのものが返ります。<BR>
-c = a.nonzero?<BR>
-<LI>&lt=&gt</LI><BR>
+</BLOCKQUOTE>
+
+<LI><B>&lt=&gt</B></LI><BLOCKQUOTE>
 a==b なら 0、a &gt b なら 1、a &lt b なら -1 になります。<BR>
-c = a &lt=&gt b <BR>
+c = a &lt=&gt b 
+</BLOCKQUOTE>
 </UL>
 後は、読んで字の如くです。<BR>
 <UL>
-<LI>==</LI>
-<LI>===</LI>
+<LI><B>==</B></LI>
+<LI><B>===</B></LI>
 「==」と同じですが case 文で使用されます。
-<LI>!=</LI>
-<LI>&lt</LI>
-<LI>&lt=</LI>
-<LI>&gt</LI>
-<LI>&gt=</LI>
+<LI><B>!=</B></LI>
+<LI><B>&lt</B></LI>
+<LI><B>&lt=</B></LI>
+<LI><B>&gt</B></LI>
+<LI><B>&gt=</B></LI>
 </UL>
 <H3>coerceについて</H3>
 BigDecimal オブジェクトが算術演算子の左にあるときは、BigDecimal オブジェクトが

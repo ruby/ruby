@@ -2,90 +2,27 @@
 <HEAD>
 <META HTTP-EQUIV="Content-Type" CONTENT="text/html">
 <style type="text/css"><!--
-body {
-  color: #3f0f0f;
-  background: #fefeff;
-  margin-left: 2em; margin-right: 2em;
+body {  color: #3f0f0f;  background: #fefeff;  margin-left: 2em; margin-right: 2em;}
+h1 {  color: #ffffff;  background-color: #3939AD;  border-color: #FF00FF;  width: 100%;  border-style: solid;
+  border-top-width: 0.1em;  border-bottom-width: 0.1em;  border-right: none;  border-left: none;
+  padding: 0.1em;  font-weight: bold;  font-size: 160%;  text-align: center;}
+h2 {  color: #00007f;  background-color: #e7e7ff;  border-color: #000094;  width: 100%;  border-style: solid;  border-le  ft: none;  border-right: none;  border-top-width: 0.1em;  border-bottom-width: 0.1em;  padding: 0.1em;
+  font-weight: bold;  font-size: 110%;
 }
-h1 {
-  color: #ffffff;
-  background-color: #3939AD;
-  border-color: #FF00FF;
-  width: 100%;
-  border-style: solid;
-  border-top-width: 0.1em;
-  border-bottom-width: 0.1em;
-  border-right: none;
-  border-left: none;
-  padding: 0.1em;
-  font-weight: bold;
-  font-size: 160%;
-  text-align: center;
-}
-h2 {
-  color: #00007f;
-  background-color: #e7e7ff;
-  border-color: #000094;
-  width: 100%;
-  border-style: solid;
-  border-left: none;
-  border-right: none;
-  border-top-width: 0.1em;
-  border-bottom-width: 0.1em;
-  padding: 0.1em;
-  font-weight: bold;
-  font-size: 110%;
-}
-h3 {
-  color: #00007f;
-  padding: 0.2em;
-  font-size: 110%;
-}
-h4, h5 {
-  color: #000000;
-  padding: 0.2em;
-  font-size: 100%;
-}
-table {
-  margin-top: 0.2em; margin-bottom: 0.2em;
-  margin-left: 2em; margin-right: 2em;
-}
-caption {
-  color: #7f0000;
-  font-weight: bold;
-}
-th {
-  background: #e7e7ff;
-  padding-left: 0.2em; padding-right: 0.2em;
-}
-td {
-  background: #f3f7ff;
-  padding-left: 0.2em; padding-right: 0.2em;
-}
-code {
-  color: #0000df;
-}
-dt {
-  margin-top: 0.2em;
-}
-li {
-  margin-top: 0.2em;
-}
+h3 {  color: #00007f;  padding: 0.2em;  font-size: 110%;}
+h4, h5 {  color: #000000;  padding: 0.2em;  font-size: 100%;}
+table {  margin-top: 0.2em; margin-bottom: 0.2em;  margin-left: 2em; margin-right: 2em;}
+caption {  color: #7f0000;  font-weight: bold;}
+th {  background: #e7e7ff;  padding-left: 0.2em; padding-right: 0.2em;}
+td {  background: #f3f7ff;  padding-left: 0.2em; padding-right: 0.2em;}
+code {  color: #0000df;}
+dt {  margin-top: 0.2em;}
+li {  margin-top: 0.2em;}
 pre
-{
-    BACKGROUND-COLOR: #d0d0d0;
-    BORDER-BOTTOM: medium none;
-    BORDER-LEFT: medium none;
-    BORDER-RIGHT: medium none;
-    BORDER-TOP: medium none;
-    LINE-HEIGHT: 100%;
-    MARGIN: 12px 12px 12px 12px;
-    PADDING-BOTTOM: 12px;
-    PADDING-LEFT: 12px;
-    PADDING-RIGHT: 12px;
-    PADDING-TOP: 12px;
-    WHITE-SPACE: pre;
-    WIDTH: 100%
+{    BACKGROUND-COLOR: #d0d0d0;    BORDER-BOTTOM: medium none;    BORDER-LEFT: medium none;
+    BORDER-RIGHT: medium none;    BORDER-TOP: medium none;    LINE-HEIGHT: 100%;    MARGIN: 12px 12px 12px 12px;
+    PADDING-BOTTOM: 12px;    PADDING-LEFT: 12px;    PADDING-RIGHT: 12px;    PADDING-TOP: 12px;
+    WHITE-SPACE: pre;    WIDTH: 100%
 }
 --></style>
 
@@ -99,7 +36,6 @@ Using BigDecimal class, you can obtain any number of significant digits in compu
 For the details about Ruby see:<BR>
 <UL>
 <LI><A HREF="http://www.ruby-lang.org/en/">http://www.ruby-lang.org/en/</A>:Official Ruby page(English).</LI>
-<LI><A HREF="http://ruby.freak.ne.jp/">http://ruby.freak.ne.jp/</A>:Ruby informations(Japanese).</LI>
 <LI><A HREF="http://kahori.com/ruby/ring/">http://kahori.com/ruby/ring/</A>:Mutually linked pages relating to Ruby(Japanese).
 </LI>
 </UL> 
@@ -126,7 +62,7 @@ NOTE:<BR>
 <A NAME="#INTRO">
 <H2>Introduction</H2>
 Ruby already has builtin (variable length integer number) class Bignum. Using Bignum class,you can obtain
- any integer value in magnitude. But, variable length floating number class is not yet built in. 
+ any integer value in magnitude. But, variable length decimal number class is not yet built in. 
 This is why I made variable length floating class BigDecimal.
 Feel free to send any comments or bug reports to me.
 <A HREF="mailto:shigeo@tinyforest.gr.jp">shigeo@tinyforest.gr.jp</A>
@@ -155,16 +91,80 @@ not exactly but slightly excess memories will be allocated to newly created obje
 In 32 bits integer system,every 4 digits(in decimal) are computed simultaneously.
 This means the number of significant digits in BigDecimal is always a multiple of 4.
 
+<H4><U>Class methods</U></H4>
 <UL>
-<LI><B>new</B></LI><BR>
+<LI><B>new</B></LI><BLOCKQUOTE>
 "new" method creates a new BigDecimal object.<BR>
 a=BigDecimal::new(s[,n])<BR>
 where:<BR>
 s: Initial value string.<BR>
 n: Maximum number of significant digits of a. n must be a Fixnum object.
 If n is omitted or is equal to 0,then the maximum number of significant digits of a is determined from the length of s.
+</BLOCKQUOTE>
 
-<LI><B>double_fig</B></LI><BR>
+<LI><B>mode</B></LI><BLOCKQUOTE>
+mode method controls BigDecimal computation.Following usage are defined.<BR>
+<P><B>[EXCEPTION control]</B><P>
+Actions when computation results NaN or Infinity can be defined as follows.
+<P>
+<BLOCKQUOTE>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_NaN,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_INFINITY,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_UNDERFLOW,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_OVERFLOW,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_ZERODIVIDE,flag)<BR>
+f = BigDecimal::mode(BigDecimal::EXCEPTION_ALL,flag)<BR>
+</BLOCKQUOTE>
+EXCEPTION_NaN controls the execution when computation results to NaN.<BR>
+EXCEPTION_INFINITY controls the execution when computation results to Infinity(Å}Infinity).<BR>
+EXCEPTION_UNDERFLOW controls the execution when computation underflows.<BR>
+EXCEPTION_OVERFLOW controls the execution when computation overflows.<BR>
+EXCEPTION_ZERODIVIDE controls the execution when zero-division occures.<BR>
+EXCEPTION_ALL controls the execution for any exception defined occures.<BR>
+If the flag is true,then the relating exception is thrown.<BR>
+No exception is thrown when the flag is false(default) and computation 
+continues with the result:<BR>
+<BLOCKQUOTE>
+EXCEPTION_NaN results to NaN<BR>
+EXCEPTION_INFINITY results to +Infinity or -Infinity<BR>
+EXCEPTION_UNDERFLOW results to 0.<BR>
+EXCEPTION_OVERFLOW results to +Infinity or -Infinity<BR>
+EXCEPTION_ZERODIVIDE results to +Infinity or -Infinity<BR>
+</BLOCKQUOTE>
+EXCEPTION_INFINITY,EXCEPTION_OVERFLOW, and EXCEPTION_ZERODIVIDE are
+ currently the same.<BR>
+The return value of mode method is the previous value set.<BR>
+nil is returned if any argument is wrong.<BR>
+Suppose the return value of the mode method is f,then 
+ f &amp; BigDecimal::EXCEPTION_NaN !=0 means EXCEPTION_NaN is set to on.
+<P>
+<B>[ROUND error control]</B><P>
+Rounding operation can be controlled as:
+<BLOCKQUOTE>
+f = BigDecimal::mode(BigDecimal::COMP_MODE,flag)
+</BLOCKQUOTE>
+where flag must be one of:
+<TABLE>
+<TR><TD>COMP_MODE_TRUNCATE</TD><TD>truncate</TD></TR>
+<TR><TD>COMP_MODE_ROUNDUP</TD><TD>roundup,default</TD></TR>
+<TR><TD>COMP_MODE_CEIL</TD><TD>ceil</TD></TR>
+<TR><TD>COMP_MODE_FLOOR</TD><TD>floor</TD></TR>
+<TR><TD>COMP_MODE_EVEN</TD><TD>Banker's rounding</TD></TR>
+</TABLE>
+nil is returned if any argument is illegal.<BR>
+The digit location for rounding operation can not be specified by mode method,
+use truncate/roundup/ceil/floor mthods for each instance instead.
+
+</BLOCKQUOTE>
+
+<LI><B>limit[(n)]</B></LI><BLOCKQUOTE>
+Limits the maximum digits that the newly created BigDecimal objects can hold
+never exceed n. Returns maximum value before set.
+Zero,the default value,means no upper limit.<BR>
+mf = BigDecimal::limit(n)<BR>
+</BLOCKQUOTE>
+
+<LI><B>double_fig</B></LI><BLOCKQUOTE>
 double_fig is a class method which returns the number of digits 
 the Float class can have.
 <CODE><PRE>
@@ -180,71 +180,71 @@ double_fig is:
     v /= 10;
  }
 </PRE></CODE>
+</BLOCKQUOTE>
 
-<LI><B>prec</B></LI><BR>
-r,m = a.prec<BR>
-where r is the number of significant digits of a,
-m is the maximum number of significant digits a can hold.<br>
-<CODE><PRE>
-  require "bigdecimal"
-  a = BigDecimal.new("0.12345")
-  p a.prec                              # ==> [8, 12]
-  b = BigDecimal.new("0.1234500000000")
-  p b.prec                              # ==> [8, 20]
-  c = BigDecimal.new("0.12345",20)
-  p c.prec                              # ==> [8, 24]
-</PRE></CODE>
-r and m are always the multiple of log10(BigDecimal::BASE).
+<LI><B>BASE</B></LI><BLOCKQUOTE>
+Base value used in the BigDecimal calculation.
+On 32 bits integer system,the value of BASE is 10000.<BR>
+b = BigDecimal::BASE<BR>
+</BLOCKQUOTE>
 
-<LI><B>+</B></LI><BR>
+<LI><B>E</B></LI><BLOCKQUOTE>
+e = BigDecimal::E(n)<BR>
+where e(=2.718281828....) is the base value of natural logarithm.<BR>
+n specifies the length of significant digits of e.
+
+</BLOCKQUOTE>
+<LI><B>PI</B></LI><BLOCKQUOTE>
+e = BigDecimal::PI(n)<BR>
+returns at least n digits of the ratio of the circumference of a circle to its diameter
+(pi=3.14159265358979....) using J.Machin's formula.<BR>
+</BLOCKQUOTE>
+</UL>
+
+<H4><U>Instance methods</U></H4>
+<UL>
+<LI><B>+</B></LI><BLOCKQUOTE>
 addition(c = a + b)<BR>
 For the resulting number of significant digits of c,see <A HREF="#PREC">Resulting number of significant digits</A>.
 
-<LI><B>-</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>-</B></LI><BLOCKQUOTE>
 subtraction (c = a - b) or negation (c = -a)<BR>
 For the resulting number of significant digits of c,see <A HREF="#PREC">Resulting number of significant digits</A>.
 
-<LI><B>*</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>*</B></LI><BLOCKQUOTE>
 multiplication(c = a * b)<BR>
 For the resulting number of significant digits of c,see <A HREF="#PREC">Resulting number of significant digits</A>.
 
-<LI><B>/</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>/</B></LI><BLOCKQUOTE>
 division(c = a / b)<BR>
 For the resulting number of significant digits of c,see <A HREF="#PREC">Resulting number of significant digits</A>.
+</BLOCKQUOTE>
 
-<LI><B>assign</B></LI><BR>
-c = a.assign(n,f)<BR>
-assigns the value of a to c.<BR>
-n is the number of significant digits of resulting c.<BR>
-If f > 0,then a is assigned to c.<BR>
-If f < 0,then -a is assigned to c.<BR>
-The absolute value of f (|f|) must be 1 or 2.
-If |f|=2,then proper round operation over c is performed,when the maximum 
-number of significant digits of c is less than current 
-number of significant digits of a.
-If |f|=1 then extra digits are discarded when the maximum 
-number of significant digits of c is less than current 
-number of significant digits of a.
-
-<LI><B>add</B></LI><BR>
+<LI><B>add</B></LI><BLOCKQUOTE>
 c = a.add(b,n)<BR>
 c = a.add(b,n) performs c = a + b.
 If n is less than the actual significant digits of a + b,
 then c is rounded properly.
 
-<LI><B>sub</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>sub</B></LI><BLOCKQUOTE>
 c = a.sub(b,n)<BR>
 c = a.sub(b,n) performs c = a - b.
 If n is less than the actual significant digits of a - b,
 then c is rounded properly.
 
-<LI><B>mult</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>mult</B></LI><BLOCKQUOTE>
 c = a.mult(b,n)<BR>
 c = a.mult(b,n) performs c = a * b.
 If n is less than the actual significant digits of a * b,
 then c is rounded properly.
 
-<LI><B>div</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>div</B></LI><BLOCKQUOTE>
 c,r = a.div(b,n)<BR>
 c,r = a.div(b,n) performs c = a / b, r is the residue of a / b.
 If necessary,the divide operation continues to n digits which c
@@ -253,169 +253,154 @@ Unlike the divmod method,c is not always an integer.
 c is never rounded,and the equation a = c*b + r is always 
 valid unless c is NaN or Infinity.
 
-<LI><B>%</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>%</B></LI><BLOCKQUOTE>
 r = a%b <BR>
 is the same as:<BR>
 r = a-((a/b).floor)*b<BR>
 
-<LI><B>fix</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>fix</B></LI><BLOCKQUOTE>
 c = a.fix<BR>
 returns integer part of a.<BR>
 
-<LI><B>frac</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>frac</B></LI><BLOCKQUOTE>
 c = a.frac<BR>
 returns fraction part of a.<BR>
 
-<LI><B>floor[(n)]</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>floor[(n)]</B></LI><BLOCKQUOTE>
 c = a.floor<BR>
-returns the maximum integer value (in BigDecimal) which is less than or equal to a.<BR>
+returns the maximum integer value (in BigDecimal) which is less than or equal to a.
+<PRE><CODE>
+ c = BigDecimal("1.23456").floor  #  ==> 1
+ c = BigDecimal("-1.23456").floor #  ==> -2
+</CODE></PRE>
+
 As shown in the following example,an optional integer argument (n) specifying the position 
-of 'floor'ed digit can be given.
-If n> 0,then the (n+1)th digit counted from the decimal point in fraction part is 'floor'ed.
-If n<0,then the n-th digit counted from the decimal point in integer part is 'floor'ed.<BR>
+of the target digit can be given.<BR>
+If n> 0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
+If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
+<PRE><CODE>
+ c = BigDecimal::new("1.23456").floor(4)   #  ==> 1.2345
+ c = BigDecimal::new("15.23456").floor(-1) #  ==> 10.0
+</CODE></PRE>
 
-c = BigDecimal::new("1.23456")<BR>
-d = c.floor(4) # d = 1.2345<BR>
-c = BigDecimal::new("15.23456")<BR>
-d = c.floor(-1) # d = 10.0<BR>
-
-<LI><B>ceil[(n)]</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>ceil[(n)]</B></LI><BLOCKQUOTE>
 c = a.ceil<BR>
-returns the minimum integer value (in BigDecimal) which is greater than or equal to a.<BR>
+returns the minimum integer value (in BigDecimal) which is greater than or equal to a.
+<PRE><CODE>
+ c = BigDecimal("1.23456").ceil  #  ==> 2
+ c = BigDecimal("-1.23456").ceil #  ==> -1
+</CODE></PRE>
+
 As shown in the following example,an optional integer argument (n) specifying the position 
-of 'ceil'ed digit can be given.
-If n>0,then the (n+1)th digit counted from the decimal point in fraction part is 'ceil'ed.
-If n<0,then the n-th digit counted from the decimal point in integer part is 'ceil'ed.<BR>
+of the target digit can be given.<BR>
+If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
+If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
+<PRE><CODE>
+ c = BigDecimal::new("1.23456").ceil(4)   # ==> 1.2346
+ c = BigDecimal::new("15.23456").ceil(-1) # ==> 20.0
+</CODE></PRE>
 
-c = BigDecimal::new("1.23456")<BR>
-d = c.ceil(4) # d = 1.2346<BR>
-c = BigDecimal::new("15.23456")<BR>
-d = c.ceil(-1) # d = 20.0<BR>
-
-<LI><B>round[(n)]</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>round[(n[,b])]</B></LI><BLOCKQUOTE>
 c = a.round<BR>
-round off a to the nearest 1ÅD<BR>
+round a to the nearest 1ÅD<BR>
+<PRE><CODE>
+ c = BigDecimal("1.23456").round  #  ==> 1
+ c = BigDecimal("-1.23456").round #  ==> -1
+</CODE></PRE>
+
 As shown in the following example,an optional integer argument (n) specifying the position 
-of rounded digit can be given.
-If n>0,then the (n+1)th digit counted from the decimal point in fraction part is rounded.
-If n<0,then the n-th digit counted from the decimal point in integer part is rounded.<BR>
+of the target digit can be given.<BR>
+If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
+If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
+<PRE><CODE>
+c = BigDecimal::new("1.23456").round(4)   #  ==> 1.2346
+c = BigDecimal::new("15.23456").round(-1) #  ==> 20.0
+</CODE></PRE>
 
-c = BigDecimal::new("1.23456")<BR>
-d = c.round(4)  # d = 1.235 <BR>
-c = BigDecimal::new("15.23456")<BR>
-d = c.round(-1) # d = 20.0<BR>
+If the second optional argument b is given with the non-zero value(default is zero) then 
+so called Banker's rounding is performed.<BR>
+Suppose the digit p is to be rounded,then:<BR>
+ If p<5 then p is truncated<BR>
+ If p>5 then p is rounded up<BR>
+ If p is 5 then round up operation is taken only when the left hand side digit of p is odd.
+<PRE><CODE>
+c = BigDecimal::new("1.23456").round(3,1)   #  ==> 1.234
+c = BigDecimal::new("1.23356").round(3,1)   #  ==> 1.234
+</CODE></PRE>
 
-<LI><B>truncate[(n)]</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>truncate[(n)]</B></LI><BLOCKQUOTE>
 c = a.truncate<BR>
 truncate a to the nearest 1ÅD<BR>
 As shown in the following example,an optional integer argument (n) specifying the position 
-of truncated digit can be given.
-If n>0,then the (n+1)th digit counted from the decimal point in fraction part is truncated.
-If n<0,then the n-th digit counted from the decimal point in integer part is truncated.<BR>
+of the target digit can be given.<BR>
+If n>0,then the (n+1)th digit counted from the decimal point in fraction part is processed(resulting number of fraction part digits is less than or equal to n).<BR>
+If n<0,then the n-th digit counted from the decimal point in integer part is processed(at least n 0's are placed from the decimal point to left).
 
-c = BigDecimal::new("1.23456")<BR>
-d = c.truncate(4)  # d = 1.2345<BR>
-c = BigDecimal::new("15.23456")<BR>
-d = c.truncate(-1) # d = 10.0<BR>
+<PRE><CODE>
+c = BigDecimal::new("1.23456").truncate(4)   #  ==> 1.2345
+c = BigDecimal::new("15.23456").truncate(-1) #  ==> 10.0
+</CODE></PRE>
 
-<LI><B>divmod</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>divmod</B></LI><BLOCKQUOTE>
 c,r = a.divmod(b) # a = c*b + r<BR>
 returns the quotient and remainder of a/b.<BR>
 a = c * b + r is always satisfied.<BR>
-where c is the integer sutisfying
+where c is the integer satisfying
 c = (a/b).floor <BR>
 and,therefore 
 r = a - c*b<BR>
 
-<LI><B>remainder</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>remainder</B></LI><BLOCKQUOTE>
 r=a.remainder(b)<BR>
 returns the remainder of a/b.<BR>
-where c is the integer sutisfying 
+where c is the integer satisfying 
 c = (a/b).fix <BR>
 and,therefore: 
 r = a - c*b<BR>
 
-<LI><B>abs</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>abs</B></LI><BLOCKQUOTE>
 c = a.abs<BR>
 returns an absolute value of a.<BR>
 
-<LI><B>to_i</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>to_i</B></LI><BLOCKQUOTE>
 changes a to an integer.<BR>
 i = a.to_i<BR>
 i becomes to Fixnum or Bignum.
-IF a is Infinity or NaN,then i becomes to nil.
+If a is Infinity or NaN,then i becomes to nil.
 
-<LI><B>to_s[(n)]</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>to_s[(n)]</B></LI><BLOCKQUOTE>
 converts to string(results look like "0.xxxxxEn").<BR>
 s = a.to_s<BR>
 If n is given,then a space is inserted after every n digits for readability.<BR>
 s = a.to_s(n)
 
-<LI><B>exponent</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>exponent</B></LI><BLOCKQUOTE>
 returns an integer holding exponent value of a.<BR>
 n = a.exponent <BR>
 means a = 0.xxxxxxx*10**n.
 
-<LI><B>to_f</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>to_f</B></LI><BLOCKQUOTE>
 same as dup method.
 creates a new BigDecimal object having same value.
+</BLOCKQUOTE>
 
-<LI><B>E</B></LI><BR>
-e = BigDecimal::E(n)<BR>
-where e(=2.718281828....) is the base value of natural logarithm.<BR>
-n specifies the length of significant digits of e.
-
-<LI><B>PI</B></LI><BR>
-e = BigDecimal::PI(n)<BR>
-returns at least n digits of the ratio of the circumference of a circle to its dirmeter
-(pi=3.14159265358979....) using J.Machin's formula.<BR>
-
-<LI><B>BASE</B></LI><BR>
-Base value used in the BigDecimal calculation.
-On 32 bit integer system,the value of BASE is 10000.<BR>
-b = BigDecimal::BASE<BR>
-
-<LI><B>mode</B></LI><BR>
-mode method controls BigDecimal computation.
-Following usage are defined.<BR>
-
-f = BigDecimal::mode(BigDecimal::EXCEPTION_NaN,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_INFINITY,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_UNDERFLOW,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_OVERFLOW,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_ZERODIVIDE,flag)<BR>
-f = BigDecimal::mode(BigDecimal::EXCEPTION_ALL,flag)<BR>
-
-EXCEPTION_NaN controls the execution once computation results to NaN.
-EXCEPTION_INFINITY controls the execution once computation results to Infinity(Å}Infinity).
-EXCEPTION_UNDERFLOW controls the execution once computation underflows.
-EXCEPTION_OVERFLOW controls the execution once computation overflows.
-EXCEPTION_ZERODIVIDE controls the execution once zero-division occures.
-EXCEPTION_ALL controls the execution for any exception defined occures.
-If the flag is true,then the relating exception is thrown.
-No exception is thrown when the flag is false(default) and computation 
-continues with the result:<BR>
-EXCEPTION_NaN results to NaN<BR>
-EXCEPTION_INFINITY results to +Infinity or -Infinity<BR>
-EXCEPTION_UNDERFLOW results to 0.<BR>
-EXCEPTION_OVERFLOW results to +Infinity or -Infinity<BR>
-EXCEPTION_ZERODIVIDE results to +Infinity or -Infinity<BR>
-EXCEPTION_INFINITY,EXCEPTION_OVERFLOW, and EXCEPTION_ZERODIVIDE are
- currently the same.<BR>
-The return value of mode method is the value set.
-Suppose the return value of the mode method is f,then 
- f & BigDecimal::EXCEPTION_NaN !=0 means EXCEPTION_NaN is set to on.
-If the value of the argument flag is other than nil,true nor false then 
-current mode status is returned.
-
-<LI><B>limit[(n)]</B></LI><BR>
-Limits the maximum digits that the newly created BigDecimal objects can hold
-never exceed n. Returns maximum value before set.
-Zero,the default value,means no upper limit.<BR>
-mf = BigDecimal::limit(n)<BR>
-
-<LI><B>sign</B></LI><BR>
-returns the 'attribute'.
+</BLOCKQUOTE>
+<LI><B>sign</B></LI><BLOCKQUOTE>
+returns the 'attribute' of a.
 n = a.sign <BR>
 where the value of n means that a is:<BR>
 n = BigDecimal::SIGN_NaN(0) : a is NaN<BR>
@@ -427,28 +412,42 @@ n = BigDecimal::SIGN_POSITIVE_INFINITE(3) : a is +Infinity<BR>
 n = BigDecimal::SIGN_NEGATIVE_INFINITE(-3) : a is -Infinity<BR>
 The value in () is the actual value,see (<A HREF="#STRUCT">Internal structure</A>.<BR>
 
-<LI><B>nan?</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>nan?</B></LI><BLOCKQUOTE>
 a.nan? returns True when a is NaN.
 
-<LI><B>infinite?</B></LI><BR>
-a.infinite? returns True when a is +Åá or -Åá.
+</BLOCKQUOTE>
+<LI><B>infinite?</B></LI><BLOCKQUOTE>
+a.infinite? returns 1 when a is +Åá,-1 when a is -Åá, nil otherwise.
 
-<LI><B>finite?</B></LI><BR>
-a.finite? returns True when a is neither Åá nor NaN.
+</BLOCKQUOTE>
+<LI><B>finite?</B></LI><BLOCKQUOTE>
+a.finite? returns true when a is neither Åá nor NaN.
+</BLOCKQUOTE>
 
-<LI><B>to_parts</B></LI><BR>
+<LI><B>zero?</B></LI><BLOCKQUOTE>
+c = a.zero?<BR>
+returns true if a is equal to 0,otherwise returns false<BR>
+</BLOCKQUOTE>
+<LI><B>nonzero?</B></LI><BLOCKQUOTE>
+c = a.nonzero?<BR>
+returns nil if a is 0,otherwise returns a itself.<BR>
+</BLOCKQUOTE>
+
+<LI><B>split</B></LI><BLOCKQUOTE>
 decomposes a BigDecimal value to 4 parts.
 All 4 parts are returned as an array.<BR>
 Parts consist of a sign(0 when the value is NaN,+1 for positive and
  -1 for negative value), a string representing fraction part,base value(always 10 currently),and an integer(Fixnum) for exponent respectively.
-a=BigDecimal::new("3.14159265",10)<BR>
-f,x,y,z = a.to_parts<BR>
+a=BigDecimal::new("3.14159265")<BR>
+f,x,y,z = a.split<BR>
 where f=+1,x="314159265",y=10 and z=1<BR>
 therefore,you can translate BigDecimal value to Float as:<BR>
 s = "0."+x<BR>
 b = f*(s.to_f)*(y**z)<BR>
 
-<LI><B>inspect</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>inspect</B></LI><BLOCKQUOTE>
 is used for debugging output.<BR>
 p a=BigDecimal::new("3.14",10)<BR>
 should produce output like "#&lt;0x112344:'0.314E1',4(12)%gt;".
@@ -457,38 +456,44 @@ where "0x112344" is the address,
 and 12 is the maximum number of the significant digits 
 the object can hold.
 
-<LI><B>dup</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>dup</B></LI><BLOCKQUOTE>
 creates a new BigDecimal object having same value.
 
-<LI><B>sqrt</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>sqrt</B></LI><BLOCKQUOTE>
 c = a.sqrt(n)<BR>
 computes square root value of a with significant digit number n at least.<BR>
 
-<LI><B>sincos</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>sincos</B></LI><BLOCKQUOTE>
 computes and returns sine and cosine value of a with significant digit number n at least.<BR>
 sin,cos = a.sincos(n)<BR>
 Computation may return bad results unless |a|<2*3.1415..... 
-<LI><B>exp</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>exp</B></LI><BLOCKQUOTE>
 c = a.exp(n)<BR>
 computes the base of natural logarithm value(e=2.718281828....) powered by a
 with significant digit number n at least.<BR>
 
-<LI><B>power</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>**</B></LI><BLOCKQUOTE>
+c = a ** n<BR>
+returns the value of a powered by n.
+n must be an integer.<BR>
+
+</BLOCKQUOTE>
+<LI><B>power</B></LI><BLOCKQUOTE>
+The same as ** method.<BR>
 c = a.power(n)<BR>
 returns the value of a powered by n(c=a**n).
 n must be an integer.<BR>
 
-<LI><B>zero?</B></LI><BR>
-c = a.zero?<BR>
-returns true if a is equal to 0,otherwise returns false<BR>
-
-<LI><B>nonzero?</B></LI><BR>
-c = a.nonzero?<BR>
-returns false if a is 0,otherwise returns a itself.<BR>
-
-<LI><B>&lt;=&gt;</B></LI><BR>
+</BLOCKQUOTE>
+<LI><B>&lt;=&gt;</B></LI><BLOCKQUOTE>
 c = a &lt;=&gt; b <BR>
 returns 0 if a==b,1 if a &gt b,and returns -1 if a &lt b.<BR>
+</BLOCKQUOTE>
 </UL>
 
 Following methods need no explanation.<BR>

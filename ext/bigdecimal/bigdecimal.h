@@ -32,7 +32,7 @@ extern "C" {
 #define S_INT  int
 
 /* Exception codes */
-#define VP_EXCEPTION_ALL        ((unsigned short)0xFFFF)
+#define VP_EXCEPTION_ALL        ((unsigned short)0x00FF)
 #define VP_EXCEPTION_INFINITY   ((unsigned short)0x0001)
 #define VP_EXCEPTION_NaN        ((unsigned short)0x0002)
 #define VP_EXCEPTION_UNDERFLOW  ((unsigned short)0x0004)
@@ -42,6 +42,14 @@ extern "C" {
 /* Following 2 exceptions cann't controlled by user */
 #define VP_EXCEPTION_OP         ((unsigned short)0x0020)
 #define VP_EXCEPTION_MEMORY     ((unsigned short)0x0040)
+
+/* Computation mode */
+#define VP_COMP_MODE            ((unsigned short)0x0100)
+#define VP_COMP_MODE_TRUNCATE   0
+#define VP_COMP_MODE_ROUNDUP    1
+#define VP_COMP_MODE_CEIL       2
+#define VP_COMP_MODE_FLOOR      3
+#define VP_COMP_MODE_EVEN       4
 
 #define VP_SIGN_NaN                0 /* NaN                      */
 #define VP_SIGN_POSITIVE_ZERO      1 /* Positive zero            */
@@ -103,6 +111,10 @@ VP_EXPORT double VpGetDoubleNegZero(void);
 VP_EXPORT U_LONG VpGetPrecLimit(void);
 VP_EXPORT U_LONG VpSetPrecLimit(U_LONG n);
 
+/* Computation mode */
+VP_EXPORT unsigned long VpGetCompMode(void);
+VP_EXPORT unsigned long VpSetCompMode(unsigned long n);
+
 VP_EXPORT int VpException(unsigned short f,char *str,int always);
 VP_EXPORT int VpIsNegDoubleZero(double v);
 VP_EXPORT U_LONG VpNumOfChars(Real *vp);
@@ -123,14 +135,13 @@ VP_EXPORT void VpVtoD(double *d,S_LONG *e,Real *m);
 VP_EXPORT void VpDtoV(Real *m,double d);
 VP_EXPORT void VpItoV(Real *m,S_INT ival);
 VP_EXPORT int VpSqrt(Real *y,Real *x);
-VP_EXPORT void VpRound(Real *y,Real *x,int sw,int f,int il);
+VP_EXPORT void VpActiveRound(Real *y,Real *x,int f,int il);
 VP_EXPORT void VpFrac(Real *y,Real *x);
 VP_EXPORT int VpPower(Real *y,Real *x,S_INT n);
 VP_EXPORT void VpPi(Real *y);
 VP_EXPORT void VpExp1(Real *y);
 VP_EXPORT void VpExp(Real *y,Real *x);
 VP_EXPORT void VpSinCos(Real *psin,Real *pcos,Real *x);
-VP_EXPORT int VPrint(FILE *fp,char *cntl_chr,Real *a);
 
 /*  
  *  ------------------
@@ -177,9 +188,11 @@ VP_EXPORT int VPrint(FILE *fp,char *cntl_chr,Real *a);
 #define VpSetPosInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_POSITIVE_INFINITE)
 #define VpSetNegInf(a)  ((a)->frac[0]=0,(a)->Prec=1,(a)->sign=VP_SIGN_NEGATIVE_INFINITE)
 #define VpSetInf(a,s)   ( ((s)>0)?VpSetPosInf(a):VpSetNegInf(a) )
+#define VpIsOne(a)      ((a->Prec==1)&&(a->frac[0]==1)&&(a->exponent==1))
 
 #ifdef _DEBUG
 int VpVarCheck(Real * v);
+VP_EXPORT int VPrint(FILE *fp,char *cntl_chr,Real *a);
 #endif /* _DEBUG */
 
 #if defined(__cplusplus)
