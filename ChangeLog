@@ -1,3 +1,11 @@
+Tue Dec 30 08:32:32 2003  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_method):
+	  Handle undoing nsting of yield parameters correctly for:
+
+	    def each_entry(&b) Dir.foreach(@path) {|f| yield P.new(f) } end
+
+
 Tue Dec 30 07:30:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/pathname.rb: Added documentation.
