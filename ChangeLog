@@ -1,3 +1,8 @@
+Thu May 13 15:47:30 2004  akira yamada  <akira@ruby-lang.org>
+
+	* lib/net/telnet.rb (Net::Telnet::login): "options" can specify
+	  regexps for login prompt and/or password prompt.
+
 Thu May 13 14:17:57 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/rubyext.c (yaml_org_handler): some empty strings were

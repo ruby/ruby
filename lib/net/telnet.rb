@@ -704,27 +704,31 @@ module Net
     # the host should not echo).  If a block is passed in, this received
     # data is also yielded to the block as it is received.
     def login(options, password = nil) # :yield: recvdata
+      login_prompt = /[Ll]ogin[: ]*\z/n
+      password_prompt = /Password[: ]*\z/n
       if options.kind_of?(Hash)
         username = options["Name"]
         password = options["Password"]
+	login_prompt = options["LoginPrompt"] if options["LoginPrompt"]
+	password_prompt = options["PasswordPrompt"] if options["PasswordPrompt"]
       else
         username = options
       end
 
       if block_given?
-        line = waitfor(/[Ll]ogin[: ]*\z/n){|c| yield c }
+        line = waitfor(login_prompt){|c| yield c }
         if password
           line += cmd({"String" => username,
-                       "Match" => /Password[: ]*\z/n}){|c| yield c }
+                       "Match" => password_prompt}){|c| yield c }
           line += cmd(password){|c| yield c }
         else
           line += cmd(username){|c| yield c }
         end
       else
-        line = waitfor(/[Ll]ogin[: ]*\z/n)
+        line = waitfor(login_prompt)
         if password
           line += cmd({"String" => username,
-                       "Match" => /Password[: ]*\z/n})
+                       "Match" => password_prompt})
           line += cmd(password)
         else
           line += cmd(username)
