@@ -15,25 +15,33 @@
 
 typedef struct RVALUE {
     union {
+	struct {
+	    unsigned long flags;	/* always 0 for freed obj */
+	    struct RVALUE *next;
+	} free;
+	struct RBasic  basic;
+	struct RObject object;
+	struct RClass  klass;
+	struct RFloat  flonum;
+	struct RString string;
+	struct RArray  array;
+	struct RRegexp regexp;
+	struct RHash   hash;
+	struct RData   data;
+	struct RStruct rstruct;
+	struct RBignum bignum;
+	struct RFile   file;
 #if 0
-        struct {
-            unsigned long flags;	/* always 0 for freed obj */
-            struct RVALUE *next;
-        } free;
+	struct RNode   node;
+	struct RMatch  match;
+	struct RVarmap varmap; 
+	struct SCOPE   scope;
 #endif
-        struct RBasic  basic;
-        struct RObject object;
-        struct RClass  klass;
-        /*struct RFloat  flonum;*/
-        /*struct RString string;*/
-        struct RArray  array;
-        /*struct RRegexp regexp;*/
-        struct RHash   hash;
-        /*struct RData   data;*/
-        struct RStruct rstruct;
-        /*struct RBignum bignum;*/
-        /*struct RFile   file;*/
     } as;
+#ifdef GC_DEBUG
+    char *file;
+    int   line;
+#endif
 } RVALUE;
 
 typedef struct {
@@ -49,7 +57,7 @@ typedef struct {
 /*
  * symbols and constants
  */
-static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors, s_default_set;
+static ID s_new, s_utc, s_at, s_to_f, s_to_i, s_read, s_binmode, s_call, s_cmp, s_transfer, s_update, s_dup, s_match, s_keys, s_to_str, s_unpack, s_tr_bang, s_anchors, s_default_set;
 static ID s_anchors, s_domain, s_families, s_kind, s_name, s_options, s_private_types, s_type_id, s_value;
 static VALUE sym_model, sym_generic, sym_input, sym_bytecode;
 static VALUE sym_scalar, sym_seq, sym_map;
@@ -552,10 +560,9 @@ yaml_org_handler( n, ref )
 			}
             else if ( strncmp( n->data.str->ptr, ":", 1 ) == 0 )
             {
-                char *tmp;
-                tmp = syck_strndup( n->data.str->ptr + 1, n->data.str->len - 1 );
-                obj = ID2SYM( rb_intern( tmp ) );
-                free( tmp );
+                obj = rb_funcall( oDefaultLoader, s_transfer, 2, 
+                                  rb_str_new2( "ruby/sym" ), 
+                                  rb_str_new( n->data.str->ptr + 1, n->data.str->len - 1 ) );
             }
             else if ( strcmp( type_id, "str" ) == 0 )
             {
@@ -660,7 +667,7 @@ rb_syck_load_handler(p, n)
     /*
      * ID already set, let's alter the symbol table to accept the new object
      */
-    if (n->id > 0)
+    if (n->id > 0 && !NIL_P(obj))
     {
         MEMCPY((void *)n->id, (void *)obj, RVALUE, 1);
         MEMZERO((void *)obj, RVALUE, 1);
@@ -1147,6 +1154,19 @@ syck_badalias_initialize( self, val )
 }
 
 /*
+ * YAML::Syck::BadAlias.<=>
+ */
+VALUE
+syck_badalias_cmp( alias1, alias2 )
+    VALUE alias1, alias2;
+{
+    VALUE str1 = rb_ivar_get( alias1, s_name ); 
+    VALUE str2 = rb_ivar_get( alias2, s_name ); 
+    VALUE val = rb_funcall( str1, s_cmp, 1, str2 );
+    return val;
+}
+
+/*
  * YAML::Syck::DomainType.initialize
  */
 VALUE
@@ -1421,6 +1441,7 @@ Init_syck()
     s_binmode = rb_intern("binmode");
     s_transfer = rb_intern("transfer");
     s_call = rb_intern("call");
+    s_cmp = rb_intern("<=>");
     s_update = rb_intern("update");
     s_dup = rb_intern("dup");
     s_default_set = rb_intern("default=");
@@ -1512,6 +1533,8 @@ Init_syck()
     cBadAlias = rb_define_class_under( rb_syck, "BadAlias", rb_cObject );
     rb_define_attr( cBadAlias, "name", 1, 1 );
     rb_define_method( cBadAlias, "initialize", syck_badalias_initialize, 1);
+    rb_define_method( cBadAlias, "<=>", syck_badalias_cmp, 1);
+    rb_include_module( cBadAlias, rb_const_get( rb_cObject, rb_intern("Comparable") ) );
 
     /*
      * Define YAML::Syck::MergeKey class

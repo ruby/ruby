@@ -7,8 +7,8 @@
  * Copyright (C) 2003 why the lucky stiff
  */
 
-#include "syck.h"
 #include "ruby.h"
+#include "syck.h"
 
 SYMID 
 syck_hdlr_add_node( SyckParser *p, SyckNode *n )

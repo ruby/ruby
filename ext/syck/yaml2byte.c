@@ -9,11 +9,11 @@
  *   WARNING WARNING WARNING  --- THIS IS *NOT JUST* PLAYING
  *   ANYMORE! -- WHY HAS EMBRACED THIS AS THE REAL THING!
  */ 
+#include "ruby.h"
 #include <syck.h>
 #include <assert.h>
 #define YAMLBYTE_UTF8
 #include "yamlbyte.h"
-#include "ruby.h"
 
 #include <stdio.h>
 #define TRACE0(a)  \

@@ -8,8 +8,8 @@
  *
  * Copyright (C) 2003 why the lucky stiff
  */
-#include "syck.h"
 #include "ruby.h"
+#include "syck.h"
 #include "gram.h"
 
 #define QUOTELEN 128

@@ -9,11 +9,12 @@
  * All Base64 code from Ruby's pack.c.
  * Ruby is Copyright (C) 1993-2003 Yukihiro Matsumoto 
  */
+#include "ruby.h"
+
 #include <stdio.h>
 #include <string.h>
 
 #include "syck.h"
-#include "ruby.h"
 
 #define DEFAULT_ANCHOR_FORMAT "id%03d"
 
