@@ -292,7 +292,8 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 	else
 	    msg = ERR_reason_error_string(e);
 	ERR_clear_error();
-	len += snprintf(buf+len, BUFSIZ-len, ": %s", msg);
+	fmt = len ? ": %s" : "%s";
+	len += snprintf(buf+len, BUFSIZ-len, fmt, msg);
     }
 
     if(len > BUFSIZ) len = strlen(buf);

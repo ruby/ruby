@@ -1,3 +1,7 @@
+Thu Dec 16 18:36:52 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.c (ossl_raise): refine message format.
+
 Thu Dec 16 16:29:44 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/demos-en/widget: modify version check for
@@ -43,6 +47,24 @@ Wed Dec 15 18:48:42 2004  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/curses/curses.c (window_subwin): call NUM2INT() before
 	GetWINDOW(). (backported from CVS HEAD)
+
+Wed Dec 15 18:00:59 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): should wait
+	  for reading request till data arrive. [ruby-talk:121068]
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#start_thread):
+	  should log about all accepted socket. [ruby-core:03962]
+
+	* lib/webrick/accesslog.rb (WEBrick::AccessLog#setup_params):
+	  "%%" and "%u" are supported. [webricken:135]
+
+	* lib/webrick/httpservlet/filehandler.rb
+	  (WEBrick::HTTPServlet::FileHandler#check_filename):
+	  :NondisclosureName is acceptable if it is Enumerable.
+
+	* lib/webrick/config.rb (WEBrick::Config::FileHandler):
+	  default value of :NondisclosureName is [".ht*", "*~"].
 
 Wed Dec 15 17:03:50 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
