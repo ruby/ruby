@@ -1500,49 +1500,80 @@ module Net
 	end
       end
 
+      ADDRESS_REGEXP = /\G\
+(?# 1: NAME	)(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+(?# 2: ROUTE	)(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+(?# 3: MAILBOX	)(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)") \
+(?# 4: HOST	)(?:NIL|"((?:[^\x80-\xff\x00\r\n"\\]|\\["\\])*)")\
+\)/ni
+
       def address
 	match(T_LPAR)
-	name = nstring
-	match(T_SPACE)
-	route = nstring
-	match(T_SPACE)
-	mailbox = nstring
-	match(T_SPACE)
-	host = nstring
-	match(T_RPAR)
+	if @str.index(ADDRESS_REGEXP, @pos)
+	  # address does not include literal.
+	  @pos = $~.end(0)
+	  name = $1 ? $1.gsub(/\\(["\\])/n, "\\1") : nil
+	  route = $2 ? $2.gsub(/\\(["\\])/n, "\\1") : nil
+	  mailbox = $3 ? $3.gsub(/\\(["\\])/n, "\\1") : nil
+	  host = $4 ? $4.gsub(/\\(["\\])/n, "\\1") : nil
+	else
+	  name = nstring
+	  match(T_SPACE)
+	  route = nstring
+	  match(T_SPACE)
+	  mailbox = nstring
+	  match(T_SPACE)
+	  host = nstring
+	  match(T_RPAR)
+	end
 	return Address.new(name, route, mailbox, host)
       end
 
-      def flag_list
-	result = []
-	match(T_LPAR)
-	while true
-	  token = lookahead
-	  case token.symbol
-	  when T_RPAR
-	    shift_token
-	    break
-	  when T_SPACE
-	    shift_token
-	  end
-	  result.push(flag)
-	end
-	return result
-      end
+#        def flag_list
+#  	result = []
+#  	match(T_LPAR)
+#  	while true
+#  	  token = lookahead
+#  	  case token.symbol
+#  	  when T_RPAR
+#  	    shift_token
+#  	    break
+#  	  when T_SPACE
+#  	    shift_token
+#  	  end
+#  	  result.push(flag)
+#  	end
+#  	return result
+#        end
 
-      def flag
-	token = lookahead
-	if token.symbol == T_BSLASH
-	  shift_token
-	  token = lookahead
-	  if token.symbol == T_STAR
-	    shift_token
-	    return token.value.intern
-	  else
-	    return atom.intern
-	  end
+#        def flag
+#  	token = lookahead
+#  	if token.symbol == T_BSLASH
+#  	  shift_token
+#  	  token = lookahead
+#  	  if token.symbol == T_STAR
+#  	    shift_token
+#  	    return token.value.intern
+#  	  else
+#  	    return atom.intern
+#  	  end
+#  	else
+#  	  return atom
+#  	end
+#        end
+
+      FLAG_REGEXP = /\
+(?# FLAG	)\\([^\x80-\xff(){ \x00-\x1f\x7f%"\\]+)|\
+(?# ATOM	)([^\x80-\xff(){ \x00-\x1f\x7f%*"\\]+)/n
+
+      def flag_list
+	if @str.index(/\(([^)]*)\)/ni, @pos)
+	  @pos = $~.end(0)
+	  return $1.scan(FLAG_REGEXP).collect { |flag, atom|
+	    atom || flag.intern
+	  }
 	else
-	  return atom
+	  parse_error("invalid flag list")
 	end
       end
 
