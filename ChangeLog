@@ -1,7 +1,7 @@
-Sat Oct 11 14:35:14 2003  Tanaka Akira  <akr@m17n.org>
+Sat Oct 11 15:41:06 2003  Tanaka Akira  <akr@m17n.org>
 
-	* lib/pathname.rb (realpath_rec): fix handling of symlink to absolute
-	  path.
+	* lib/pathname.rb (realpath): re-implemented.
+	  (realpath_root?, realpath_rec): removed
 
 Sat Oct 11 10:19:39 2003  Shugo Maeda  <shugo@ruby-lang.org>
 

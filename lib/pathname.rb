@@ -111,65 +111,43 @@ class Pathname
   # it may return relative pathname.
   # Otherwise it returns absolute pathname.
   def realpath(force_absolute=true)
-    path = @path
-    stats = {}
-    if %r{\A/} =~ path || realpath_root?('.', stats)
-      resolved = '/'
-    else
-      resolved = '.'
-    end
-    resolved = realpath_rec(resolved, path, stats)
-    if %r{\A/} !~ resolved && force_absolute
-      # Note that Dir.pwd and resolved has no symlinks.
-      Pathname.new(File.join(Dir.pwd, resolved)).cleanpath
-    else
-      Pathname.new(resolved)
-    end
-  end
-
-  def realpath_root?(path, stats) # :nodoc:
-    path_stat = stats[path] ||= File.lstat(path)
-    parent = path == '.' ? '..' : File.join(path, '..')
-    parent_stat = stats[parent] ||= File.lstat(parent)
-    path_stat.dev == parent_stat.dev && path_stat.ino == parent_stat.ino
-  end
-
-  def realpath_rec(resolved, unresolved, stats, rec={}) # :nodoc:
-    unresolved.scan(%r{[^/]+}) {|f|
-      next if f == '.'
-      if f == '..'
-        case resolved
-        when '/'
-          # Since the parent directory of '/' is '/', do nothing.
-        when '.'
-          resolved = '..'
-          resolved = '/' if realpath_root?(resolved, stats)
-        when %r{(\A|/)\.\.\z}
-          resolved << '/..'
-          resolved = '/' if realpath_root?(resolved, stats)
-        when %r{/}
-          resolved = File.dirname(resolved)
-        else
-          resolved = '.'
-        end
+    top = %r{\A/} =~ @path ? '/' : ''
+    unresolved = @path.scan(%r{[^/]+})
+    resolved = []
+    
+    until unresolved.empty?
+      case unresolved.last
+      when '.'
+        unresolved.pop
+      when '..'
+        resolved.unshift unresolved.pop
       else
-        path = resolved == '.' ? f : File.join(resolved, f)
-        if File.lstat(path).symlink?
-          raise Errno::ELOOP.new(path) if rec.include? path
-          link = File.readlink path
-          resolved = '/' if %r{\A/} =~ link
-          begin
-            rec[path] = true
-            resolved = realpath_rec(resolved, link, stats, rec)
-          ensure
-            rec.delete path
+        path = top + unresolved.join('/')
+        if FileTest.symlink? path
+          link = File.readlink(path)
+          if %r{\A/} =~ link
+            top = '/'
+            unresolved = link.scan(%r{[^/]+})
+          else
+            unresolved.pop
+            unresolved.concat link.scan(%r{[^/]+})
           end
         else
-          resolved = path
+          resolved.unshift unresolved.pop
         end
       end
-    }
-    resolved
+    end
+    
+    if resolved.empty?
+      path = top.empty? ? '.' : top
+    else
+      path = top + resolved.join('/')
+    end
+    
+    # Note that Dir.pwd has no symlinks.
+    path = File.join(Dir.pwd, path) if %r{\A/} !~ path && force_absolute
+
+    Pathname.new(path).cleanpath
   end
 
   # parent method returns parent directory, i.e. ".." is joined at last.
