@@ -14,8 +14,10 @@ digest/sha2
 fcntl
 gdbm
 #iconv
+#io/wait
 nkf
 #pty
+#openssl
 racc/cparse
 readline
 sdbm

@@ -14,8 +14,10 @@
 #fcntl
 #gdbm
 #iconv
+#io/wait
 #nkf
 #pty
+#openssl
 #racc/cparse
 #readline
 #sdbm

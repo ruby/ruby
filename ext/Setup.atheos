@@ -1,5 +1,6 @@
 option nodynamic
 
+#Win32API
 bigdecimal
 curses
 dbm
@@ -13,8 +14,10 @@ etc
 fcntl
 gdbm
 iconv
+io/wait
 nkf
 pty
+#openssl
 racc/parse
 readline
 sdbm
@@ -25,4 +28,5 @@ syck
 syslog
 #tcltklib
 #tk
+#win32ole
 zlib
