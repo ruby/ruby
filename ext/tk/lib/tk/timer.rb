@@ -27,6 +27,10 @@ class TkTimer
   ###############################
   # class methods
   ###############################
+  def self.start(*args, &b)
+    self.new(*args, &b).start
+  end
+
   def self.callback(obj_id)
     ex_obj = Tk_CBTBL[obj_id]
     return "" if ex_obj == nil; # canceled
@@ -52,6 +56,7 @@ class TkTimer
       }
     end
   end
+
 
   ###############################
   # instance methods
@@ -131,7 +136,7 @@ class TkTimer
     set_callback(sleep, cmd_args)
   end
 
-  def initialize(*args)
+  def initialize(*args, &b)
     # @id = Tk_CBID.join('')
     @id = Tk_CBID.join(TkCore::INTERP._ip_id_)
     Tk_CBID[1].succ!
@@ -169,6 +174,17 @@ class TkTimer
     # exception is included in the array, Ruby/Tk cancels executing TkTimer 
     # callback procedures silently (TkTimer#cancel is called and no dialog is 
     # shown). 
+
+    if b
+      case args.size
+      when 0
+        add_procs(b)
+      when 1
+        args << -1 << b
+      else
+        args << b
+      end
+    end
 
     set_procs(*args) if args != []
 
@@ -227,8 +243,16 @@ class TkTimer
     #self
   end
 
+  def set_interval(interval)
+    if interval != 'idle' \
+       && !interval.kind_of?(Integer) && !interval.kind_of?(Proc)
+      fail ArguemntError, "expect Integer or Proc"
+    end
+    @sleep_time = interval
+  end
+
   def set_procs(interval, loop_exec, *procs)
-    if !interval == 'idle' \
+    if interval != 'idle' \
        && !interval.kind_of?(Integer) && !interval.kind_of?(Proc)
       fail ArguemntError, "expect Integer or Proc for 1st argument"
     end
@@ -245,20 +269,19 @@ class TkTimer
     @proc_max = @loop_proc.size
     @current_pos = 0
 
-    @do_loop = 0
-    if loop_exec
-      if loop_exec.kind_of?(Integer) && loop_exec < 0
-        @loop_exec = -1
-      elsif loop_exec == nil || loop_exec == false || loop_exec == 0
-        @loop_exec = 1
-      else
-        if not loop_exec.kind_of?(Integer)
-          fail ArguemntError, "expect Integer for 2nd argument"
-        end
-        @loop_exec = loop_exec
+    if loop_exec.kind_of?(Integer) && loop_exec < 0
+      @loop_exec = -1
+    elsif loop_exec == true
+      @loop_exec = -1
+    elsif loop_exec == nil || loop_exec == false || loop_exec == 0
+      @loop_exec = 0
+    else
+      if not loop_exec.kind_of?(Integer)
+        fail ArguemntError, "expect Integer for 2nd argument"
       end
-      @do_loop = @loop_exec
+      @loop_exec = loop_exec
     end
+    @do_loop = @loop_exec
 
     self
   end
