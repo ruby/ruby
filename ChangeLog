@@ -1,3 +1,15 @@
+Fri Feb 14 14:25:24 2003  akira yamada  <akira@arika.org>
+
+	* lib/uri/generic.rb, lib/uri/ldap.rb, lib/uri/mailto.ldap: all foo=()
+	  returns arguments passed by caller.
+
+	* lib/uri/generic.rb (Generic#to_str, Generic#to_s): removed to_str.
+	  Suggested by Tanaka Akira <akr@m17n.org> at [ruby-dev:19475].
+
+	* lib/uri/generic.rb (Generic#==): should not generate an URI object
+	  from argument. Suggested by Tanaka Akira <akr@m17n.org> at
+	  [ruby-dev:19475].
+
 Thu Feb 13 11:54:50 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ruby.c (ruby_init_loadpath): ensures buffer terminated

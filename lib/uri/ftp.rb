@@ -116,6 +116,7 @@ module URI
     def typecode=(typecode)
       check_typecode(typecode)
       set_typecode(typecode)
+      typecode
     end
 
 =begin
