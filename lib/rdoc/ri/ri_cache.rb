@@ -85,8 +85,9 @@ module RI
     # is a class method or not, otherwise we only return
     # those methods that match
     def local_methods_matching(name, is_class_method)
+
       list = case is_class_method
-             when nil then  @class_methods + @instance
+             when nil then  @class_methods + @instance_methods
              when true then @class_methods
              when false then @instance_methods
              else fail "Unknown is_class_method"
