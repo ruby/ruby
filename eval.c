@@ -794,10 +794,9 @@ static VALUE ruby_wrapper;	/* security wrapper */
 typedef struct thread * rb_thread_t;
 static rb_thread_t curr_thread = 0;
 
-#define SCOPE_DONT_RECYCLE FL_USER2
 #define POP_SCOPE() 			\
-    if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE)) {\
-	FL_SET(_old, SCOPE_DONT_RECYCLE);\
+    if (ruby_scope->flag & SCOPE_DONT_RECYCLE) {\
+	if (_old) _old->flag |= SCOPE_DONT_RECYCLE;\
     }					\
     else {				\
 	if (ruby_scope->flag == SCOPE_ALLOCA) {\
@@ -1255,8 +1254,8 @@ rb_eval_cmd(cmd, arg)
 	val = eval(ruby_top_self, cmd, Qnil, 0, 0);
     }
 
-    if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
-	FL_SET(saved_scope, SCOPE_DONT_RECYCLE);
+    if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
+	saved_scope->flag |= SCOPE_DONT_RECYCLE;
     ruby_scope = saved_scope;
     ruby_safe_level = safe;
     POP_TAG();
@@ -3488,8 +3487,8 @@ rb_yield_0(val, self, klass, acheck)
     POP_VARS();
     ruby_block = block;
     ruby_frame = ruby_frame->prev;
-    if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
-	FL_SET(old_scope, SCOPE_DONT_RECYCLE);
+    if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
+	old_scope->flag |= SCOPE_DONT_RECYCLE;
     ruby_scope = old_scope;
     if (state) JUMP_TAG(state);
     return result;
@@ -4626,8 +4625,8 @@ eval(self, src, scope, file, line)
     ruby_in_eval--;
     if (!NIL_P(scope)) {
 	ruby_frame = frame.tmp;
-	if (FL_TEST(ruby_scope, SCOPE_DONT_RECYCLE))
-	    FL_SET(old_scope, SCOPE_DONT_RECYCLE);
+	if (ruby_scope->flag & SCOPE_DONT_RECYCLE)
+	    old_scope->flag |= SCOPE_DONT_RECYCLE;
 	ruby_scope = old_scope;
 	ruby_block = old_block;
 	ruby_dyna_vars = old_d_vars;
@@ -5688,6 +5687,7 @@ scope_dup(scope)
     ID *tbl;
     VALUE *vars;
 
+    scope->flag |= SCOPE_DONT_RECYCLE;
     if (scope->flag & SCOPE_MALLOC) return;
 
     if (scope->local_tbl) {
@@ -5697,9 +5697,6 @@ scope_dup(scope)
 	MEMCPY(vars, scope->local_vars, VALUE, tbl[0]);
 	scope->local_vars = vars;
 	scope->flag = SCOPE_MALLOC;
-    }
-    else {
-        scope->flag = SCOPE_NOSTACK;
     }
 }
 
@@ -8146,7 +8143,7 @@ rb_callcc(self)
     cont = Data_Wrap_Struct(rb_cCont, thread_mark,
 					 thread_free, th);
 
-    FL_SET(ruby_scope, SCOPE_DONT_RECYCLE);
+    ruby_scope->flag |= SCOPE_DONT_RECYCLE;
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }

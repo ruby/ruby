@@ -1,6 +1,10 @@
-Thu Aug 31 14:28:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Thu Aug 31 17:06:09 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.0 released.
+
+Thu Aug 31 14:28:39 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (scope_dup): should not make all duped scope orphan.
 
 Thu Aug 31 10:11:47 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
