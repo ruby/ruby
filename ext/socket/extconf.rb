@@ -160,6 +160,10 @@ if try_run(<<EOF)
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#ifndef AF_LOCAL
+#define AF_LOCAL AF_UNIX
+#endif
+
 main()
 {
   int passive, gaierr, inet4 = 0, inet6 = 0;
@@ -176,6 +180,7 @@ main()
       goto bad;
     }
     for (ai = aitop; ai; ai = ai->ai_next) {
+      if (ai->ai_family == AF_LOCAL) continue;
       if (ai->ai_addr == NULL ||
           ai->ai_addrlen == 0 ||
           getnameinfo(ai->ai_addr, ai->ai_addrlen,

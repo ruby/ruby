@@ -1,6 +1,6 @@
 =begin
 
-= Net module version 1.0.2 reference manual
+= Net module version 1.0.3 reference manual
 
 smtp.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -212,7 +212,7 @@ Net::Command
   end
 
 
-  unless Session::Version == '1.0.2' then
+  unless Session::Version == '1.0.3' then
     $stderr.puts "WARNING: wrong version of session.rb & smtp.rb"
   end
 

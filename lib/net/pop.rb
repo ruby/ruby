@@ -1,6 +1,6 @@
 =begin
 
-= Net module version 1.0.2 reference manual
+= Net module version 1.0.3 reference manual
 
 pop.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -167,6 +167,10 @@ Object
         @deleted
       end
 
+      def uidl
+        @proto.uidl @num
+      end
+
     end
 
   end   # POP3Session
@@ -218,6 +222,11 @@ Net::Command
 =end
 
   class POP3Command < Command
+
+    def initialize( sock )
+      @uidl = nil
+      super
+    end
 
 
 =begin
@@ -323,10 +332,18 @@ Net::Command
 
     
     def dele( num )
-      @socket.writeline( sprintf( 'DELE %s', num ) )
+      @socket.writeline( 'DELE ' + num.to_s )
       check_reply( SuccessCode )
     end
 
+
+    def uidl( num )
+      @socket.writeline( 'UIDL ' + num.to_s )
+      rep = check_reply( SuccessCode )
+      uid = rep.msg.split(' ')[1]
+
+      uid
+    end
 
 
     private
@@ -412,7 +429,7 @@ POP3
   end
 
 
-  unless Session::Version == '1.0.2' then
+  unless Session::Version == '1.0.3' then
     $stderr.puts "WARNING: wrong version of session.rb & pop.rb"
   end
 

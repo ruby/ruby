@@ -280,6 +280,7 @@ VALUE
 rb_ary_pop(ary)
     VALUE ary;
 {
+    rb_ary_modify(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
     if (RARRAY(ary)->len * 10 < RARRAY(ary)->capa && RARRAY(ary)->capa > ARY_DEFAULT_SIZE) {
 	RARRAY(ary)->capa = RARRAY(ary)->len * 2;
@@ -294,6 +295,7 @@ rb_ary_shift(ary)
 {
     VALUE top;
 
+    rb_ary_modify(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
 
     top = RARRAY(ary)->ptr[0];
@@ -844,6 +846,7 @@ rb_ary_reverse(ary)
     VALUE *p1, *p2;
     VALUE tmp;
 
+    rb_ary_modify(ary);
     if (RARRAY(ary)->len == 0) return ary;
 
     p1 = RARRAY(ary)->ptr;
@@ -1026,6 +1029,7 @@ static VALUE
 rb_ary_clear(ary)
     VALUE ary;
 {
+    rb_ary_modify(ary);
     RARRAY(ary)->len = 0;
     if (ARY_DEFAULT_SIZE*3 < RARRAY(ary)->capa) {
 	RARRAY(ary)->capa = ARY_DEFAULT_SIZE * 2;

@@ -1,6 +1,6 @@
 =begin
 
-= Net module version 1.0.2 reference manual
+= Net module version 1.0.3 reference manual
 
 session.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 
@@ -39,7 +39,7 @@ Object
 
 : Version
 
-  The version of Session class. It is a string like "1.0.2".
+  The version of Session class. It is a string like "1.0.3".
 
 =end
 
@@ -48,7 +48,7 @@ module Net
 
   class Session
 
-    Version = '1.0.2'
+    Version = '1.0.3'
 
 =begin
 
@@ -71,7 +71,9 @@ module Net
       proto_initialize
       @address = addr
       @port    = port if port
+
       @active  = false
+      @pipe    = nil
     end
 
     class << self
@@ -133,12 +135,12 @@ module Net
       return false if active?
       @active = true
 
-      if ProtocolSocket === args[0] then
-        @socket = args.shift
-        @socket.pipe = @pipe
+      if Class === args[0] then
+        c = args.shift
       else
-        @socket = ProtocolSocket.open( @address, @port, @pipe )
+        c = ProtocolSocket
       end
+      @socket = c.open( @address, @port, @pipe )
       @pipe = nil
 
       @proto = @proto_type.new( @socket )

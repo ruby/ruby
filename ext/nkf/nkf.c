@@ -31,14 +31,12 @@ rb_nkf_putchar(c)
 {
   if (output_ctr >= o_len) {
     o_len += incsize;
-    rb_str_cat(dst, "", incsize);
+    rb_str_cat(dst, 0, incsize);
+    output = RSTRING(dst)->ptr;
     incsize *= 2;
   }
-  
   output[output_ctr++] = c;
-/*
-printf("[[%c][%c][%d]]\n", c, output[output_ctr - 1], output_ctr);
-*/
+
   return c;
 }
 
@@ -78,18 +76,8 @@ rb_nkf_kconv(obj, opt, src)
   } 
 
   kanji_convert(NULL);
-  if (output_ctr > 0) output_ctr--;
-  if (output[output_ctr] == '\0') {
-/*
-printf("([%c][%d])\n", output[output_ctr], output_ctr);
-*/
-    RSTRING(dst)->len = output_ctr;
-  } else {
-/*
-printf("<[%c][%d]>\n", output[output_ctr], output_ctr);
-*/
-    RSTRING(dst)->len = output_ctr + 1;
-  }
+  RSTRING(dst)->ptr[output_ctr] = '\0';
+  RSTRING(dst)->len = output_ctr;
 
   return dst;
 }

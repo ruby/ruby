@@ -655,6 +655,7 @@ load_file(fname, script)
 		    while (p < pend && ISSPACE(*p))
 			p++;
 		    path = p;	/* interpreter path */
+#ifndef USE_CWGUSI
 		    while (p < pend && !ISSPACE(*p))
 			p++;
 		    *p++ = '\0';
@@ -667,7 +668,6 @@ load_file(fname, script)
 			argv = origargv;
 		    }
 		    argv[0] = path;
-#ifndef USE_CWGUSI
 		    execv(path, argv);
 #endif
 		    ruby_sourcefile = fname;

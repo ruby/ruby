@@ -1,3 +1,15 @@
+Mon Oct 18 16:15:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/nkf/nkf.c (rb_nkf_kconv): output should be NUL terminated.
+
+Sun Oct 17 03:35:33 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* array.c (rb_ary_pop): forgot some freeze checks.
+
+Fri Oct 15 22:50:41 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* error.c (sys_nerr): on CYGWIN, it is _sys_nerr.
+
 Fri Oct 15 01:32:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* io.c (rb_io_ctl) :need to use NUM2ULONG, not NUM2INT.
