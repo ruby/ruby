@@ -1,3 +1,7 @@
+Fri Apr 19 14:57:44 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* re.c (rb_reg_to_s): remove redundant shy group.
+
 Fri Apr 19 01:08:20 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_thread_cleanup): current thread may be THREAD_STOPPED,

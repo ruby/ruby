@@ -368,7 +368,7 @@ rb_reg_to_s(re)
     ptr = RREGEXP(re)->str;
     len = RREGEXP(re)->len;
     if (len >= 4 && ptr[0] == '(' && ptr[1] == '?' && ptr[len-1] == ')') {
-	int nest = 0;
+	int err = 1;
 	ptr += 2;
 	if ((len -= 3) > 0) {
 	    do {
@@ -403,28 +403,14 @@ rb_reg_to_s(re)
 	    } while (--len > 0);
 	}
 	if (*ptr == ':') {
-	    const char* p = ++ptr;
-	    long l = --len;
+	    Regexp *rp = ALLOC(Regexp);
+	    MEMZERO((char *)rp, Regexp, 1);
 	    kcode_set_option(re);
-	    while (len > 0) {
-		int n;
-		if (*p == '(') {
-		    ++nest;
-		}
-		else if (*p == ')') {
-		    if (--nest < 0) break;
-		}
-		else if (*p == '\\') {
-		    --l;
-		    ++p;
-		}
-		n = mbclen(*p);
-		l -= n;
-		p += n;
-	    }
+	    err = re_compile_pattern(++ptr, --len, rp) != 0;
 	    kcode_reset_option();
+	    re_free_pattern(rp);
 	}
-	if (nest) {
+	if (err) {
 	    options = RREGEXP(re)->ptr->options;
 	    ptr = RREGEXP(re)->str;
 	    len = RREGEXP(re)->len;
