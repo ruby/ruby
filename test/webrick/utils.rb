@@ -1,5 +1,8 @@
 require "webrick"
-require "webrick/https"
+begin
+  require "webrick/https"
+rescue LoadError
+end
 require "webrick/httpproxy"
 
 module TestWEBrick
