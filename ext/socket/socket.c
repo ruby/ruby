@@ -973,7 +973,6 @@ static VALUE
 tcp_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
-#if 0
     struct sockaddr_storage addr;
     struct hostent *h;
     char **pch;
@@ -1086,33 +1085,6 @@ tcp_s_gethostbyname(obj, host)
 #endif
 
     return ary;
-#else
-
-    struct addrinfo hints, *res, *r;
-    VALUE ary, names;
-    int error;
-
-    rb_secure(3);
-    MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = PF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    r = res = ip_addrsetup(host, Qnil);
-    ary = rb_ary_new();
-    rb_ary_push(ary, rb_tainted_str_new2(r->ai_canonname));
-    r = r->ai_next;
-    names = rb_ary_new();
-    rb_ary_push(ary, names);
-    rb_ary_push(ary, INT2NUM(res->ai_family));
-    for (r = res; r; r = r->ai_next) {
-	if (r != res) {
-	    rb_ary_push(names, rb_tainted_str_new2(r->ai_canonname));
-	}
-	rb_ary_push(ary, mkipaddr(r->ai_addr));
-    }
-    freeaddrinfo(res);
-
-    return ary;
-#endif
 }
 
 static VALUE
