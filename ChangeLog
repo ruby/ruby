@@ -1,3 +1,8 @@
+Mon Sep  3 14:17:17 2001  Akinori MUSHA  <knu@iDaemons.org>
+
+	* error.c: unbreak the build on *BSD with gcc 3.0.1 by removing
+	  the conflicting declaration of sys_nerr for *BSD.
+
 Sat Sep  1 09:50:54 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ruby.c (set_arg0): prevent SEGV when val is longer than the
