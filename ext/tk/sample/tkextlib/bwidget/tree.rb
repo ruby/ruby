@@ -107,7 +107,7 @@ module DemoTree
                                     /\d+x\d+([+-]{1,2}\d+)([+-]{1,2}\d+)/
                                   global_w = ($1 || 0).to_i
                                   global_h = ($2 || 0).to_i
-                                  BWidget.place(@@top, 0, 0, :at, 
+                                  Tk::BWidget.place(@@top, 0, 0, :at, 
                                        global_w - Tk.root.winfo_screenwidth, 
                                        global_h)
                                 end
