@@ -6878,6 +6878,7 @@ mnew(klass, obj, id, mklass)
 	goto again;
     }
 
+    if (TYPE(klass) == T_ICLASS) klass = RBASIC(klass)->klass;
     method = Data_Make_Struct(mklass, struct METHOD, bm_mark, free, data);
     data->klass = klass;
     data->recv = obj;
