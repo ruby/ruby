@@ -1,3 +1,8 @@
+Mon Jan  3 14:01:54 2005  Tanaka Akira  <akr@m17n.org>
+
+	* random.c (random_seed): don't use /dev/urandom if it is not
+	  character device.
+
 Mon Jan  3 11:37:42 2005  Tanaka Akira  <akr@m17n.org>
 
 	* random.c (random_seed): use /dev/urandom if available.

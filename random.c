@@ -175,17 +175,29 @@ random_seed()
     unsigned long result;
     int fd;
     unsigned long buf;
+    struct stat statbuf;
 
     gettimeofday(&tv, 0);
     result = tv.tv_sec ^ tv.tv_usec ^ getpid() ^ n++;
 
     result += (unsigned long)&result;
 
-    if ((fd = open("/dev/urandom", O_RDONLY)) >= 0) {
-        read(fd, &buf, sizeof(buf));
+#ifdef S_ISCHR
+    if ((fd = open("/dev/urandom", O_RDONLY|O_NONBLOCK
+#ifdef O_NOCTTY
+            |O_NOCTTY
+#endif
+#ifdef O_NOFOLLOW
+            |O_NOFOLLOW
+#endif
+            )) >= 0) {
+        if (fstat(fd, &statbuf) == 0 && S_ISCHR(statbuf.st_mode)) {
+            read(fd, &buf, sizeof(buf));
+            result ^= buf;
+        }
         close(fd);
-        result ^= buf;
     }
+#endif
 
     return result;
 }
