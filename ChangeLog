@@ -1,3 +1,7 @@
+Thu Mar 18 21:44:38 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: backport drb.rb 1.16.
+
 Wed Mar 17 14:44:43  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (range): fix possible "\0" overrun. (in case of "\0-")
