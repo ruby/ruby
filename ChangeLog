@@ -1,3 +1,8 @@
+Sun Jan  5 17:44:37 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/extmk.rb (extmake): set $0 temporarily while loading
+	  extconf.rb.
+
 Sun Jan  5 14:46:46 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* instruby.rb: need paren in regexp(make -n install).

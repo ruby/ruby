@@ -66,14 +66,21 @@ def extmake(target)
 	$defs = []
 	Logging::logfile 'mkmf.log'
 	Config::CONFIG["srcdir"] = $srcdir
-	if File.exist?("#{$srcdir}/makefile.rb")
-	  load "#{$srcdir}/makefile.rb"
-	elsif File.exist?("#{$srcdir}/extconf.rb")
-	  load "#{$srcdir}/extconf.rb"
-	else
-	  create_makefile(target)
+	begin
+	  if File.exist?($0 = "#{$srcdir}/makefile.rb")
+	    load $0
+	  elsif File.exist?($0 = "#{$srcdir}/extconf.rb")
+	    load $0
+	  else
+	    create_makefile(target)
+	  end
+	rescue SystemExit
+	  # ignore
+	ensure
+	  rm_f "conftest*"
+	  $0 = __FILE__
+	  Config::CONFIG["srcdir"] = $top_srcdir
 	end
-	Config::CONFIG["srcdir"] = $top_srcdir
       end
     end
     if File.exist?("./Makefile")
@@ -96,10 +103,7 @@ def extmake(target)
       $extlibs += " " + $libs unless $libs == ""
       $extlibs += " " + $LOCAL_LIBS unless $LOCAL_LIBS == ""
     end
-  rescue SystemExit
-    # ignore
   ensure
-    rm_f "conftest*"
     Dir.chdir dir
   end
   true
