@@ -1,6 +1,6 @@
 #
 #   irb.rb - irb main module
-#   	$Release Version: 0.7.3 $
+#   	$Release Version: 0.7.4 $
 #   	$Revision$
 #   	$Date$
 #   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
@@ -209,8 +209,7 @@ module IRB
       case @signal_status
       when :IN_INPUT
 	print "^C\n"
-	@scanner.initialize_input
-	print @context.io.prompt
+	raise RubyLex::TerminateLineInput
       when :IN_EVAL
 	IRB.irb_abort(self)
       when :IN_LOAD
