@@ -7,17 +7,6 @@ written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
 This library is distributed under the terms of the Ruby license.
 You can freely distribute/modify this library.
 
-=end
-
-
-require 'net/protocol'
-require 'md5'
-
-
-module Net
-
-
-=begin
 
 == Net::SMTP
 
@@ -80,6 +69,13 @@ Net::Protocol
   If protocol had not started, do nothind and return false.
 
 =end
+
+require 'net/protocol'
+require 'md5'
+
+
+module Net
+
 
   class SMTP < Protocol
 
