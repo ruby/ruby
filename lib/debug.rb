@@ -231,7 +231,7 @@ class Context
 	stdout.print "Should be Class/Module: ", input, "\n"
       else
 	len = 0
-	for v in obj.instance_methods.sort
+	for v in obj.instance_methods(false).sort
 	  len += v.size + 1
 	  if len > 70
 	    len = v.size + 1

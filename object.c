@@ -142,8 +142,9 @@ rb_obj_clone(obj)
     }
     clone = rb_obj_alloc(rb_obj_class(obj));
     RBASIC(clone)->klass = rb_singleton_class_clone(obj);
-    RBASIC(clone)->flags = RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT);
+    RBASIC(clone)->flags = (RBASIC(obj)->flags | FL_TEST(clone, FL_TAINT)) & ~FL_FREEZE;
     init_copy(clone, obj);
+    RBASIC(clone)->flags |= RBASIC(obj)->flags & FL_FREEZE;
 
     return clone;
 }

@@ -1,3 +1,8 @@
+Fri May 23 01:26:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_clone): defer copying freezing state after
+	  calling initialize_copy().  [ruby-dev:20276]
+
 Thu May 22 17:12:10 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (run_final): use rb_thread_critical instead of DEFER_INTS.

@@ -140,7 +140,7 @@ module IRB
 	  ObjectSpace.each_object(Module){|m|
 	    next if m.name != "IRB::Context" and 
 	      /^(IRB|SLex|RubyLex|RubyToken)/ =~ m.name
-	    candidates.concat m.instance_methods
+	    candidates.concat m.instance_methods(false)
 	  }
 	  candidates.sort!
 	  candidates.uniq!
