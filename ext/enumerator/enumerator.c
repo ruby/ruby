@@ -20,7 +20,7 @@ static ID sym_each, sym_each_with_index, sym_each_slice, sym_each_cons;
 static ID id_new, id_enum_obj, id_enum_method, id_enum_args;
 
 static VALUE
-obj_enum_for(obj, enum_args)
+obj_to_enum(obj, enum_args)
     VALUE obj, enum_args;
 {
     rb_ary_unshift(enum_args, obj);
@@ -172,7 +172,8 @@ Init_enumerator()
 {
     VALUE rb_mEnumerable;
 
-    rb_define_method(rb_mKernel, "enum_for", obj_enum_for, -2);
+    rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -2);
+    rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -2);
 
     rb_mEnumerable = rb_path2class("Enumerable");
 

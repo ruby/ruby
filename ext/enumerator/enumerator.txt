@@ -38,6 +38,7 @@ Methods:
 
 Requiring this module also adds some methods to the Object class:
 
+    to_enum(method = :each, *args)
     enum_for(method = :each, *args)
 
 	Returns Enumerable::Enumerator.new(self, method, *args).
@@ -47,6 +48,10 @@ Requiring this module also adds some methods to the Object class:
 
 	    enum = str.enum_for(:each_byte)
 	    a = enum.map {|b| '%02x' % b } #=> ["78", "79", "7a"]
+
+	    # protects an array from being modified
+	    a = [1, 2, 3]
+	    some_method(a.to_enum)
 
 And the Enumerable module.
 

@@ -1,3 +1,9 @@
+Fri Oct 17 23:07:38 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* ext/enumerator/enumerator.c, ext/enumerator/enumerator.txt:
+	  Provide Kernel#to_enum as an alias for Kernel#enum_for.  Maybe
+	  this is a better name.
+
 Fri Oct 17 23:00:30 2003  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/generator.rb: Add rdoc documentation.
