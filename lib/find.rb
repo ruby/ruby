@@ -12,7 +12,7 @@ module Find
     while file = path.shift
       catch(:prune) {
 	yield file
-       if File.lstat(file).directory? then
+	if File.lstat(file).directory? then
 	  d = Dir.open(file)
 	  begin
 	    for f in d

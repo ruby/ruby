@@ -10,7 +10,7 @@
 #
 # U1)
 #   class Foo
-#     extend Exception2MassageMapper
+#     extend Exception2MessageMapper
 #     def_e2message ExistingExceptionClass, "message..."
 #     def_exception :NewExceptionClass, "message..."[, superclass]
 #     ...
@@ -18,13 +18,13 @@
 #
 # U2)
 #   module Error
-#     extend Exception2MassageMapper
+#     extend Exception2MessageMapper
 #     def_e2meggage ExistingExceptionClass, "message..."
 #     def_exception :NewExceptionClass, "message..."[, superclass]
 #     ...
 #   end
 #   class Foo
-#     include Exp
+#     include Error
 #     ...
 #   end
 #
@@ -33,7 +33,7 @@
 #
 # U3)
 #   module Error
-#     extend Exception2MassageMapper
+#     extend Exception2MessageMapper
 #     def_e2message ExistingExceptionClass, "message..."
 #     def_exception :NewExceptionClass, "message..."[, superclass]
 #     ...
@@ -112,7 +112,7 @@ module Exception2MessageMapper
     E2MM.def_e2message(self, c, m)
   end
   
-  # def_exception(c, m, s)
+  # def_exception(n, m, s)
   #	    n:  exception_name
   #	    m:  message_form
   #	    s:	superclass(default: StandardError)
@@ -139,7 +139,7 @@ module Exception2MessageMapper
     c
   end
   
-  # E2MM.def_exception(k, c, m, s)
+  # E2MM.def_exception(k, n, m, s)
   #	    k:  class to define exception under.
   #	    n:  exception_name
   #	    m:  message_form
