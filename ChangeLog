@@ -12,6 +12,31 @@ Tue Oct 26 23:30:39 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/code_objects.rb (RDoc::Context::add_class_or_module):
 	  Restore correct :nopdoc: behavior with nested classes and modules.
 
+Tue Oct 26 18:21:29 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (RESIZE_CAPA): check string attribute before modifying
+	  capacity member of string structure.  [ruby-dev:24594]
+
+Tue Oct 26 11:33:26 2004  David G. Andersen  <dga@lcs.mit.edu>
+
+	* ext/zlib/zlib.c (gzreader_gets): use memchr() to to gain
+	  performance.  [ruby-talk:117701]
+
+Tue Oct 26 10:56:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): raise ArgumentError for extra
+	  arguments, unless (digit)$ style used.
+
+Tue Oct 26 11:33:26 2004  David G. Andersen  <dga@lcs.mit.edu>
+
+	* ext/zlib/zlib.c (gzreader_gets): use memchr() to to gain
+	  performance.  [ruby-talk:117701]
+
+Tue Oct 26 10:56:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): raise ArgumentError for extra
+	  arguments, unless (digit)$ style used.
+
 Mon Oct 25 18:35:39 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/win32.c (isUNCRoot): should check NUL after '.'.
@@ -28,7 +53,15 @@ Sun Oct 24 00:41:09 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_load, search_required, rb_require_safe, rb_require): use
 	  frozen shared string to avoid outside modification.  [ruby-dev:24580]
 
+Sat Oct 23 22:18:32 2004  Guy Decoux  <ts@moulon.inra.fr>
+
+	* eval.c (frame_free): Guy Decoux solved the leak problem.
+	  Thanks.  [ruby-core:03549]
+
 Sat Oct 23 00:20:55 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/zlib/zlib.c (zstream_append_input): clear klass for z->input
+	  to avoid potential vulnerability.
 
 	* ext/zlib/zlib.c (zstream_run): always use zstream_append_input()
 	  to avoid SEGV.  [ruby-dev:24568]

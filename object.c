@@ -1118,7 +1118,6 @@ rb_obj_pattern_match(obj1, obj2)
 /*
  *  call-seq:
  *     sym.to_i      => fixnum
- *     sym.to_int    => fixnum
  *  
  *  Returns an integer that is unique for each symbol within a
  *  particular execution of a program.
@@ -1134,6 +1133,17 @@ sym_to_i(sym)
     ID id = SYM2ID(sym);
 
     return LONG2FIX(id);
+}
+
+
+/* :nodoc: */
+
+static VALUE
+sym_to_int(sym)
+    VALUE sym;
+{
+    rb_warning("treating Symbol as an integer");
+    return sym_to_i(sym);
 }
 
 
@@ -2604,7 +2614,7 @@ Init_Object()
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
 
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
-    rb_define_method(rb_cSymbol, "to_int", sym_to_i, 0);
+    rb_define_method(rb_cSymbol, "to_int", sym_to_int, 0);
     rb_define_method(rb_cSymbol, "inspect", sym_inspect, 0);
     rb_define_method(rb_cSymbol, "to_s", sym_to_s, 0);
     rb_define_method(rb_cSymbol, "id2name", sym_to_s, 0);

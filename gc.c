@@ -1425,6 +1425,15 @@ rb_gc_start()
 }
 
 void
+ruby_set_stack_size(size)
+    size_t *size;
+{
+#ifndef STACK_LEVEL_MAX
+    STACK_LEVEL_MAX = size;
+#endif
+}
+
+void
 Init_stack(addr)
     VALUE *addr;
 {

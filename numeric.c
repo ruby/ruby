@@ -1520,9 +1520,6 @@ rb_num2long(val)
       case T_BIGNUM:
 	return rb_big2long(val);
 
-      case T_SYMBOL:
-	rb_warning("treating Symbol as an integer");
-	/* fall through */
       default:
 	val = rb_to_int(val);
 	return NUM2LONG(val);

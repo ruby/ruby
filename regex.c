@@ -2641,14 +2641,14 @@ slow_match(little, lend, big, bend, translate)
 
 static int
 slow_search(little, llen, big, blen, translate)
-     unsigned char *little;
+     const unsigned char *little;
      int llen;
-     unsigned char *big;
+     const unsigned char *big;
      int blen;
-     char *translate;
+     const char *translate;
 {
-  unsigned char *bsave = big;
-  unsigned char *bend = big + blen;
+  const unsigned char *bsave = big;
+  const unsigned char *bend = big + blen;
   register int c;
   int fescape = 0;
 
@@ -2718,12 +2718,12 @@ bm_init_skip(skip, pat, m, translate)
 
 static int
 bm_search(little, llen, big, blen, skip, translate)
-     unsigned char *little;
+     const unsigned char *little;
      int llen;
-     unsigned char *big;
+     const unsigned char *big;
      int blen;
      int *skip;
-     unsigned char *translate;
+     const unsigned char *translate;
 {
   int i, j, k;
 

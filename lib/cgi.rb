@@ -1012,10 +1012,13 @@ class CGI
           end
 
           c = if bufsize < content_length
-                stdinput.read(bufsize) or ''
+                stdinput.read(bufsize)
               else
-                stdinput.read(content_length) or ''
+                stdinput.read(content_length)
               end
+          if c.nil?
+            raise EOFError, "bad content body"
+          end
           buf.concat(c)
           content_length -= c.size
         end
