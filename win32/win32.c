@@ -1972,21 +1972,17 @@ StartSockets(void)
 {
     WORD version;
     WSADATA retdata;
-    int ret;
     int iSockOpt;
     
     //
     // initalize the winsock interface and insure that it's
     // cleaned up at exit.
     //
-    version = MAKEWORD(1, 1);
-    if (ret = WSAStartup(version, &retdata))
+    version = MAKEWORD(2, 0);
+    if (WSAStartup(version, &retdata))
 	rb_fatal ("Unable to locate winsock library!\n");
-    if (LOBYTE(retdata.wVersion) != 1)
-	rb_fatal("could not find version 1 of winsock dll\n");
-
-    if (HIBYTE(retdata.wVersion) != 1)
-	rb_fatal("could not find version 1 of winsock dll\n");
+    if (LOBYTE(retdata.wVersion) != 2)
+	rb_fatal("could not find version 2 of winsock dll\n");
 
     atexit((void (*)(void)) WSACleanup);
 
@@ -3658,7 +3654,7 @@ rb_w32_fopen(const char *path, const char *mode)
 }
 
 FILE *
-rb_w32_fdopen(int handle, char *type)
+rb_w32_fdopen(int handle, const char *type)
 {
     FILE *f = (errno = 0, _fdopen(handle, type));
     if (f == NULL && errno == 0) {

@@ -1,3 +1,14 @@
+Thu Feb 10 13:52:42 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in, win32/Makefile.sub (LIBS, COMMON_HEADERS): use
+	  winsock2 on mswin32/mingw.
+
+	* ext/socket/extconf.rb: ditto.
+
+	* win32/win32.c (StartSockets): ditto.
+
+	* win32/win32.h: ditto.
+
 Thu Feb 10 12:09:16 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile): default to true if not compiled

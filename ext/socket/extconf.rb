@@ -1,13 +1,9 @@
 require 'mkmf'
 
 case RUBY_PLATFORM
-when /bccwin32/
+when /(ms|bcc)win32|mingw/
   test_func = "WSACleanup"
   have_library("ws2_32", "WSACleanup")
-  have_func("closesocket")
-when /mswin32|mingw/
-  test_func = "WSACleanup"
-  have_library("wsock32", "WSACleanup")
   have_func("closesocket")
 when /cygwin/
   test_func = "socket"
@@ -108,8 +104,7 @@ end
 
 #   doug's fix, NOW add -Dss_family... only if required!
 doug = proc {have_struct_member("struct sockaddr_storage", "ss_family", headers)}
-if /mswin32|mingw/ !~ RUBY_PLATFORM and
-   (doug[] or
+if (doug[] or
     with_cppflags($CPPFLAGS + " -Dss_family=__ss_family -Dss_len=__ss_len", &doug))
   $defs[-1] = "-DHAVE_SOCKADDR_STORAGE"
 end
