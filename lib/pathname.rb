@@ -35,7 +35,7 @@ class Pathname
   # cleanpath returns clean pathname of self which is without consecutive
   # slashes and useless dots.
   #
-  # If true is given to the optional artument consider_symlink,
+  # If true is given as the optional argument consider_symlink,
   # symbolic links are considered.  It makes more dots are retained.
   #
   # cleanpath doesn't access actual filesystem.
@@ -163,7 +163,7 @@ class Pathname
     self.join('..')
   end
 
-  # mountpoint? method returns true if self points mountpoint.
+  # mountpoint? method returns true if self points a mountpoint.
   def mountpoint?
     begin
       stat1 = self.lstat
@@ -184,6 +184,7 @@ class Pathname
 =end
 
   # root? method is a predicate for root directory.
+  # I.e. it returns true if the pathname consists of consecutive slashes.
   #
   # It doesn't access actual filesystem.
   # So it may return false for some pathnames
@@ -215,7 +216,8 @@ class Pathname
     @path.scan(%r{[^/]+}) { yield $& }
   end
 
-  # Pathname#+ return new pathname which is concatinated with self and an argument.
+  # Pathname#+ return new pathname which is concatenated with self and
+  # an argument.
   # If the argument is absolute pathname, it is just returned.
   def +(other)
     other = Pathname.new(other) unless Pathname === other
