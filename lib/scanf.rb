@@ -587,6 +587,7 @@ class IO
 #   no: continue  [this state could be analyzed further]
 #
 #
+
   def scanf(str,&b)
     return block_scanf(str,&b) if b
     return [] unless str.size > 0
@@ -606,6 +607,7 @@ class IO
       end
 
       source_buffer << gets
+
       current_match = fstr.match(source_buffer)
 
       spec = fstr.last_spec_tried
@@ -632,7 +634,6 @@ class IO
       break if fstr.last_spec
       fstr.prune
     end
-
     seek(start_position + matched_so_far, IO::SEEK_SET) rescue Errno::ESPIPE
     soak_up_spaces if fstr.last_spec && fstr.space
 
@@ -647,15 +648,18 @@ class IO
     until eof ||! c || /\S/.match(c.chr)
       c = getc
     end
-    ungetc(c) if c
+    ungetc(c) if (c && /\S/.match(c.chr))
   end
 
   def block_scanf(str)
     final = []
+# Sub-ideal, since another FS gets created in scanf.
+# But used here to determine the number of specifiers.
+    fstr = Scanf::FormatString.new(str)
     begin
       current = scanf(str)
       final.push(yield(current)) unless current.empty?
-    end until current.empty? || eof
+    end until eof || current.size < fstr.spec_count
     return final
   end
 end
