@@ -492,7 +492,7 @@ bsock_do_not_rev_lookup_set(self, val)
 }
 
 static void
-mkipaddr0(addr, buf, len)
+make_ipaddr0(addr, buf, len)
     struct sockaddr *addr;
     char *buf;
     size_t len;
@@ -506,17 +506,17 @@ mkipaddr0(addr, buf, len)
 }
 
 static VALUE
-mkipaddr(addr)
+make_ipaddr(addr)
     struct sockaddr *addr;
 {
     char buf[1024];
 
-    mkipaddr0(addr, buf, sizeof(buf));
+    make_ipaddr0(addr, buf, sizeof(buf));
     return rb_str_new2(buf);
 }
 
 static void
-mkinetaddr(host, buf, len)
+make_inetaddr(host, buf, len)
     long host;
     char *buf;
     size_t len;
@@ -527,7 +527,7 @@ mkinetaddr(host, buf, len)
     sin.sin_family = AF_INET;
     SET_SIN_LEN(&sin, sizeof(sin));
     sin.sin_addr.s_addr = host;
-    mkipaddr0((struct sockaddr*)&sin, buf, len);
+    make_ipaddr0((struct sockaddr*)&sin, buf, len);
 }
 
 static int
@@ -546,6 +546,75 @@ str_isnumber(p)
        return 0;
 }
 
+static char *
+host_str(host, hbuf, len)
+    VALUE host;
+    char *hbuf;
+    size_t len;
+{
+    if (NIL_P(host)) {
+	return NULL;
+    }
+    else if (rb_obj_is_kind_of(host, rb_cInteger)) {
+	long i = NUM2LONG(host);
+
+	make_inetaddr(htonl(i), hbuf, len);
+	return hbuf;
+    }
+    else {
+	char *name;
+
+	SafeStringValue(host);
+	name = RSTRING(host)->ptr;
+	if (!name || *name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
+	    make_inetaddr(INADDR_ANY, hbuf, len);
+	}
+	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
+	    make_inetaddr(INADDR_BROADCAST, hbuf, len);
+	}
+	else if (strlen(name) >= len) {
+	    rb_raise(rb_eArgError, "hostname too long (%d)", strlen(name));
+	}
+	else {
+	    strcpy(hbuf, name);
+	}
+	return hbuf;
+    }
+}
+
+static char *
+port_str(port, pbuf, len)
+    VALUE port;
+    char *pbuf;
+    size_t len;
+{
+    if (NIL_P(port)) {
+	return 0;
+    }
+    else if (FIXNUM_P(port)) {
+	snprintf(pbuf, len, "%d", FIX2INT(port));
+	return pbuf;
+    }
+    else {
+	char *serv;
+
+	SafeStringValue(port);
+	serv = RSTRING(port)->ptr;
+	if (strlen(serv) >= len) {
+	    rb_raise(rb_eArgError, "service name too long (%d)", strlen(serv));
+	}
+	strcpy(pbuf, serv);
+	return pbuf;
+    }
+}
+
+#ifndef NI_MAXHOST
+# define 1025
+#endif
+#ifndef NI_MAXSERV
+# define 32
+#endif
+
 static struct addrinfo*
 sock_addrinfo(host, port, socktype, flags)
     VALUE host, port;
@@ -554,47 +623,10 @@ sock_addrinfo(host, port, socktype, flags)
     struct addrinfo hints, *hintsp, *res;
     char *hostp, *portp;
     int error;
-    char hbuf[1024], pbuf[32];
+    char hbuf[NI_MAXHOST], pbuf[NI_MAXSERV];
 
-    if (NIL_P(host)) {
-	hostp = NULL;
-    }
-    else if (rb_obj_is_kind_of(host, rb_cInteger)) {
-	long i = NUM2LONG(host);
-
-	mkinetaddr(htonl(i), hbuf, sizeof(hbuf));
-	hostp = hbuf;
-    }
-    else {
-	char *name;
-
-	SafeStringValue(host);
-	name = RSTRING(host)->ptr;
-	if (!name || *name == 0 || (name[0] == '<' && strcmp(name, "<any>") == 0)) {
-	    mkinetaddr(INADDR_ANY, hbuf, sizeof(hbuf));
-	}
-	else if (name[0] == '<' && strcmp(name, "<broadcast>") == 0) {
-	    mkinetaddr(INADDR_BROADCAST, hbuf, sizeof(hbuf));
-	}
-	else if (strlen(name) >= sizeof(hbuf)) {
-	    rb_raise(rb_eArgError, "hostname too long (%d)", strlen(name));
-	}
-	else {
-	    strcpy(hbuf, name);
-	}
-	hostp = hbuf;
-    }
-    if (NIL_P(port)) {
-	portp = 0;
-    }
-    else if (FIXNUM_P(port)) {
-	snprintf(pbuf, sizeof(pbuf), "%d", FIX2INT(port));
-	portp = pbuf;
-    }
-    else {
-	SafeStringValue(port);
-	portp = RSTRING(port)->ptr;
-    }
+    hostp = host_str(host, hbuf, sizeof(hbuf));
+    portp = port_str(port, pbuf, sizeof(pbuf));
 
     if (socktype == 0 && flags == 0 && str_isnumber(portp)) {
        socktype = SOCK_DGRAM;
@@ -615,18 +647,6 @@ sock_addrinfo(host, port, socktype, flags)
     }
 
     return res;
-}
-
-static void
-setipaddr(name, addr)
-    VALUE name;
-    struct sockaddr_storage *addr;
-{
-    struct addrinfo *res = sock_addrinfo(name, Qnil, SOCK_STREAM, 0);
-
-    /* just take the first one */
-    memcpy(addr, res->ai_addr, res->ai_addrlen);
-    freeaddrinfo(res);
 }
 
 static VALUE
@@ -701,17 +721,6 @@ ruby_socket(domain, type, proto)
 	}
     }
     return fd;
-}
-
-static void
-thread_read_select(fd)
-    int fd;
-{
-    fd_set fds;
-
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-    rb_thread_select(fd+1, &fds, 0, 0, 0);
 }
 
 static void
@@ -842,46 +851,6 @@ ruby_connect(fd, sockaddr, len, socks)
 	fcntl(fd, F_SETFL, mode);
 #endif
 	return status;
-    }
-}
-
-static void
-load_addr_info(h, serv, type, res)
-    VALUE h, serv;
-    int type;
-    struct addrinfo **res;
-{
-    char *host;
-    char pbuf[1024], *portp;
-    struct addrinfo hints;
-    int error;
-
-    if (!NIL_P(h)) {
-	SafeStringValue(h);
-	host = RSTRING(h)->ptr;
-    }
-    else {
-	host = NULL;
-    }
-    if (FIXNUM_P(serv)) {
-	snprintf(pbuf, sizeof(pbuf), "%u", FIX2UINT(serv));
-	portp = pbuf;
-    }
-    else {
-	SafeStringValue(serv);
-	if (RSTRING(serv)->len >= sizeof(pbuf))
-	    rb_raise(rb_eArgError, "servicename too long (%ld)", RSTRING(serv)->len);
-	strcpy(pbuf, RSTRING(serv)->ptr);
-	portp = pbuf;
-    }
-    MEMZERO(&hints, struct addrinfo, 1);
-    hints.ai_family = PF_UNSPEC;
-    if (type == INET_SERVER) {
-	hints.ai_flags = AI_PASSIVE;
-    }
-    error = getaddrinfo(host, portp, &hints, res);
-    if (error) {
-	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 }
 
@@ -1052,110 +1021,59 @@ socks_s_close(sock)
 #endif
 #endif
 
-/*
- * NOTE: using gethostbyname() against AF_INET6 is a bad idea, as it
- * does not initialize sin_flowinfo nor sin_scope_id properly.
- */
-
-struct hostent*
-sock_hostbyname(host)
-    VALUE host;
+static VALUE
+make_hostent(addr, ipaddr)
+    struct addrinfo *addr;
+    VALUE (*ipaddr) _((struct sockaddr*, size_t));
 {
-    struct sockaddr_storage addr;
+    struct addrinfo *ai;
     struct hostent *h;
+    VALUE ary, names;
+    char **pch;
 
-    rb_secure(3);
-    setipaddr(host, &addr);
-    switch (addr.ss_family) {
-      case AF_INET:
-      {
-	struct sockaddr_in *sin;
-	sin = (struct sockaddr_in*)&addr;
-	h = gethostbyaddr((char*)&sin->sin_addr,
-			  sizeof(sin->sin_addr),
-			  sin->sin_family);
-	break;
-      }
-#ifdef INET6
-      case AF_INET6:
-      {
-	struct sockaddr_in6 *sin6;
-	sin6 = (struct sockaddr_in6*)&addr;
-	h = gethostbyaddr((char*)&sin6->sin6_addr,
-			  sizeof(sin6->sin6_addr),
-			  sin6->sin6_family);
-	break;
-      }
-#endif
-      default:
-	h = NULL;
-	break;
+    ary = rb_ary_new();
+    rb_ary_push(ary, rb_str_new2(addr->ai_canonname));
+    names = rb_ary_new();
+    rb_ary_push(ary, names);
+#if defined(HAVE_GETIPNODEBYNAME)
+    {
+	int error;
+
+	h = getipnodebyname(addr->ai_canonname, addr->ai_family, AI_ALL, &error);
     }
-
-    if (h == NULL) {
-#ifdef HAVE_HSTERROR
-	extern int h_errno;
-	rb_raise(rb_eSocket, "%s", (char*)hsterror(h_errno));
+#elif defined(HAVE_GETHOSTBYNAME2)
+    h = gethostbyname2(addr->ai_canonname, addr->ai_family);
 #else
-	rb_raise(rb_eSocket, "host not found");
+    h = gethostbyname(addr->ai_canonname);
 #endif
+    for (pch = h->h_aliases; *pch; pch++) {
+	rb_ary_push(names, rb_str_new2(*pch));
     }
-    return h;
+#if defined(HAVE_GETIPNODEBYNAME)
+    freehostent(h);
+#endif
+    rb_ary_push(ary, INT2NUM(addr->ai_family));
+    for (ai = addr; ai; ai = ai->ai_next) {
+	rb_ary_push(ary, (*ipaddr)(ai->ai_addr, ai->ai_addrlen));
+    }
+
+    return ary;
+}
+
+VALUE
+tcp_sockaddr(addr, len)
+    struct sockaddr *addr;
+    size_t len;
+{
+    return make_ipaddr(addr);
 }
 
 static VALUE
 tcp_s_gethostbyname(obj, host)
     VALUE obj, host;
 {
-    struct hostent *h = sock_hostbyname(host);
-    VALUE ary, names;
-    char **pch;
-
-    ary = rb_ary_new();
-    rb_ary_push(ary, rb_str_new2(h->h_name));
-    names = rb_ary_new();
-    rb_ary_push(ary, names);
-    for (pch = h->h_aliases; *pch; pch++) {
-	rb_ary_push(names, rb_str_new2(*pch));
-    }
-    rb_ary_push(ary, INT2NUM(h->h_addrtype));
-#ifdef h_addr
-    for (pch = h->h_addr_list; *pch; pch++) {
-	switch (h->h_length) {
-	  case 4: /* AF_INET */ {
-	    struct sockaddr_in sin;
-
-	    MEMZERO(&sin, struct sockaddr_in, 1);
-	    sin.sin_family = AF_INET;
-	    SET_SIN_LEN(&sin, sizeof(sin));
-	    memcpy((char*)&sin.sin_addr, *pch, h->h_length);
-	    rb_ary_push(ary, mkipaddr((struct sockaddr*)&sin));
-	    break;
-	  }
-#ifdef INET6
-	  case 8: /* AF_INET6 */ {
-	    struct sockaddr_in6 sin6;
-
-	    MEMZERO(&sin6, struct sockaddr_in6, 1);
-	    sin6.sin6_family = AF_INET6;
-#ifdef SIN6_LEN
-	    sin6.sin6_len = sizeof(sin6);
-#endif
-	    memcpy((char*)&sin6.sin6_addr, *pch, h->h_length);
-	    rb_ary_push(ary, mkipaddr((struct sockaddr*)&sin6));
-	    break;
-	  }
-#endif
-	  default:
-	    break;
-	}
-    }
-#else
-    memcpy((char*)&addr.sin_addr, h->h_addr, h->h_length);
-    rb_ary_push(ary, mkipaddr((struct sockaddr*)&addr));
-#endif
-
-    return ary;
+    rb_secure(3);
+    return make_hostent(sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), tcp_sockaddr);
 }
 
 static VALUE
@@ -1347,9 +1265,13 @@ ip_s_getaddress(obj, host)
     VALUE obj, host;
 {
     struct sockaddr_storage addr;
+    struct addrinfo *res = sock_addrinfo(host, Qnil, SOCK_STREAM, 0);
 
-    setipaddr(host, &addr);
-    return mkipaddr((struct sockaddr*)&addr);
+    /* just take the first one */
+    memcpy(&addr, res->ai_addr, res->ai_addrlen);
+    freeaddrinfo(res);
+
+    return make_ipaddr((struct sockaddr*)&addr);
 }
 
 static VALUE
@@ -1497,13 +1419,6 @@ unix_path(sock)
 	fptr->path = strdup(addr.sun_path);
     }
     return rb_str_new2(fptr->path);
-}
-
-static VALUE
-unix_svr_s_open(klass, path)
-    VALUE klass, path;
-{
-    return init_unixsock(rb_obj_alloc(klass), path, 1);
 }
 
 static VALUE
@@ -2023,12 +1938,65 @@ sock_gethostname(obj)
 #endif
 
 static VALUE
-sock_mkhostent(h)
-    struct hostent *h;
+make_addrinfo(res0)
+    struct addrinfo *res0;
 {
+    VALUE base, ary;
+    struct addrinfo *res;
+
+    if (res0 == NULL) {
+	rb_raise(rb_eSocket, "host not found");
+    }
+    base = rb_ary_new();
+    for (res = res0; res; res = res->ai_next) {
+	ary = ipaddr(res->ai_addr);
+	rb_ary_push(ary, INT2FIX(res->ai_family));
+	rb_ary_push(ary, INT2FIX(res->ai_socktype));
+	rb_ary_push(ary, INT2FIX(res->ai_protocol));
+	rb_ary_push(base, ary);
+    }
+    return base;
+}
+
+VALUE
+sock_sockaddr(addr, len)
+    struct sockaddr *addr;
+    size_t len;
+{
+    return rb_str_new((char*)addr, len);
+}
+
+static VALUE
+sock_s_gethostbyname(obj, host)
+    VALUE obj, host;
+{
+    rb_secure(3);
+    return make_hostent(sock_addrinfo(host, Qnil, SOCK_STREAM, AI_CANONNAME), sock_sockaddr);
+}
+
+static VALUE
+sock_s_gethostbyaddr(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE addr, type;
+    struct hostent *h;
+    struct sockaddr *sa;
     char **pch;
     VALUE ary, names;
+    int t = AF_INET;
 
+    rb_scan_args(argc, argv, "11", &addr, &type);
+    sa = (struct sockaddr*)StringValuePtr(addr);
+    if (!NIL_P(type)) {
+	t = NUM2INT(type);
+    }
+#ifdef INET6
+    else if (RSTRING(addr)->len == 16) {
+	t = AF_INET6;
+    }
+#endif
+    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len, t);
     if (h == NULL) {
 #ifdef HAVE_HSTRERROR
 	extern int h_errno;
@@ -2054,59 +2022,6 @@ sock_mkhostent(h)
 #endif
 
     return ary;
-}
-
-static VALUE
-mkaddrinfo(res0)
-    struct addrinfo *res0;
-{
-    VALUE base, ary;
-    struct addrinfo *res;
-
-    if (res0 == NULL) {
-	rb_raise(rb_eSocket, "host not found");
-    }
-    base = rb_ary_new();
-    for (res = res0; res; res = res->ai_next) {
-	ary = ipaddr(res->ai_addr);
-	rb_ary_push(ary, INT2FIX(res->ai_family));
-	rb_ary_push(ary, INT2FIX(res->ai_socktype));
-	rb_ary_push(ary, INT2FIX(res->ai_protocol));
-	rb_ary_push(base, ary);
-    }
-    return base;
-}
-
-static VALUE
-sock_s_gethostbyname(obj, host)
-    VALUE obj, host;
-{
-    return sock_mkhostent(sock_hostbyname(host));
-}
-
-static VALUE
-sock_s_gethostbyaddr(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    VALUE addr, type;
-    struct hostent *h;
-    struct sockaddr *sa;
-    int t = AF_INET;
-
-    rb_scan_args(argc, argv, "11", &addr, &type);
-    sa = (struct sockaddr*)StringValuePtr(addr);
-    if (!NIL_P(type)) {
-	t = NUM2INT(type);
-    }
-#ifdef INET6
-    else if (RSTRING(addr)->len == 16) {
-	t = AF_INET6;
-    }
-#endif
-    h = gethostbyaddr(RSTRING(addr)->ptr, RSTRING(addr)->len, t);
-
-    return sock_mkhostent(h);
 }
 
 static VALUE
@@ -2206,7 +2121,7 @@ sock_s_getaddrinfo(argc, argv)
 	rb_raise(rb_eSocket, "getaddrinfo: %s", gai_strerror(error));
     }
 
-    ret = mkaddrinfo(res);
+    ret = make_addrinfo(res);
     freeaddrinfo(res);
     return ret;
 }
@@ -2369,7 +2284,7 @@ sock_s_unpack_sockaddr_in(self, addr)
     VALUE host;
 
     sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
-    host = mkipaddr((struct sockaddr*)sockaddr);
+    host = make_ipaddr((struct sockaddr*)sockaddr);
     OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);
 }

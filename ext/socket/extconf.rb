@@ -385,6 +385,7 @@ have_header("sys/uio.h")
 
 if have_func(test_func)
   have_func("hsterror")
+  have_func("getipnodebyname") or have_func("gethostbyname2")
   unless have_func("gethostname")
     have_func("uname")
   end

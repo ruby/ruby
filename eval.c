@@ -9752,7 +9752,7 @@ static VALUE
 rb_thread_raise(argc, argv, th)
     int argc;
     VALUE *argv;
-    rb_thread_t th;
+    volatile rb_thread_t th;
 {
     if (rb_thread_dead(th)) return Qnil;
     if (curr_thread == th) {
@@ -9924,7 +9924,7 @@ rb_callcc(self)
     VALUE self;
 {
     volatile VALUE cont;
-    rb_thread_t th;
+    volatile rb_thread_t th;
     struct tag *tag;
     struct RVarmap *vars;
 

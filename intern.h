@@ -374,7 +374,7 @@ void posix_signal _((int, RETSIGTYPE (*)(int)));
 #endif
 void rb_trap_exit _((void));
 void rb_trap_exec _((void));
-char *ruby_signal_name _((int));
+const char *ruby_signal_name _((int));
 /* sprintf.c */
 VALUE rb_f_sprintf _((int, VALUE*));
 /* string.c */

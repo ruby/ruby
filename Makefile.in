@@ -218,7 +218,11 @@ $(srcdir)/configure: $(srcdir)/configure.in
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $<
 
 lex.c: keywords
-	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $(srcdir)/keywords > lex.c
+	if test "$(srcdir)" = "."; then \
+	  gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $> > $@; \
+	else \
+	  cp $(srcdir)/lex.c .; \
+	fi
 
 .y.c:
 	$(YACC) $<

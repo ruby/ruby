@@ -175,6 +175,40 @@ etc_passwd(obj)
     return Qnil;
 }
 
+static VALUE
+etc_setpwent(obj)
+    VALUE obj;
+{
+#ifdef HAVE_GETPWENT
+    setpwent();
+#endif
+    return Qnil;
+}
+
+static VALUE
+etc_endpwent(obj)
+    VALUE obj;
+{
+#ifdef HAVE_GETPWENT
+    endpwent();
+#endif
+    return Qnil;
+}
+
+static VALUE
+etc_getpwent(obj)
+    VALUE obj;
+{
+#ifdef HAVE_GETPWENT
+    struct passwd *pw;
+
+    if (pw = getpwent()) {
+	return setup_passwd(pw);
+    }
+#endif
+    return Qnil;
+}
+
 #ifdef HAVE_GETGRENT
 static VALUE
 setup_group(grp)
@@ -246,11 +280,11 @@ group_iterate()
 {
     struct group *pw;
 
-    setpwent();
+    setgrent();
     while (pw = getgrent()) {
 	rb_yield(setup_group(pw));
     }
-    endpwent();
+    endgrent();
     return Qnil;
 }
 #endif
@@ -277,6 +311,40 @@ etc_group(obj)
     return Qnil;
 }
 
+static VALUE
+etc_setgrent(obj)
+    VALUE obj;
+{
+#ifdef HAVE_GETGRENT
+    setgrent();
+#endif
+    return Qnil;
+}
+
+static VALUE
+etc_endgrent(obj)
+    VALUE obj;
+{
+#ifdef HAVE_GETGRENT
+    endgrent();
+#endif
+    return Qnil;
+}
+
+static VALUE
+etc_getgrent(obj)
+    VALUE obj;
+{
+#ifdef HAVE_GETGRENT
+    struct group *gr;
+
+    if (gr = getgrent()) {
+	return setup_passwd(gr);
+    }
+#endif
+    return Qnil;
+}
+
 static VALUE mEtc;
 
 void
@@ -288,11 +356,17 @@ Init_etc()
 
     rb_define_module_function(mEtc, "getpwuid", etc_getpwuid, -1);
     rb_define_module_function(mEtc, "getpwnam", etc_getpwnam, 1);
+    rb_define_module_function(mEtc, "setpwent", etc_setpwent, 0);
+    rb_define_module_function(mEtc, "endpwent", etc_endpwent, 0);
+    rb_define_module_function(mEtc, "getpwent", etc_getpwent, 0);
     rb_define_module_function(mEtc, "passwd", etc_passwd, 0);
 
     rb_define_module_function(mEtc, "getgrgid", etc_getgrgid, 1);
     rb_define_module_function(mEtc, "getgrnam", etc_getgrnam, 1);
     rb_define_module_function(mEtc, "group", etc_group, 0);
+    rb_define_module_function(mEtc, "setgrent", etc_setgrent, 0);
+    rb_define_module_function(mEtc, "endgrent", etc_endgrent, 0);
+    rb_define_module_function(mEtc, "getgrent", etc_g,etgrent, 0);
 
     sPasswd =  rb_struct_define("Passwd",
 				"name", "passwd", "uid", "gid",
