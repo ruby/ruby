@@ -33,6 +33,7 @@ cmd = TkOptionDB.new_proc_class(:BTN_CMD, [:show_msg, :bye_msg], 3) {
       print "==>#{str.tainted?} (<<< $SAFE=#{$SAFE}): "
       str
     end
+    private :__check_proc_string__
   end
 }
 

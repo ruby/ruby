@@ -51,6 +51,7 @@ class TkTextFrame < TkText
     # do configure
     configure keys unless keys.empty?
   end
+  private :initialize_composite
 
   # set background color of text widget
   def textbackground(color = nil)

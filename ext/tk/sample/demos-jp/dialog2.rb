@@ -2,6 +2,9 @@
 # a dialog box with a global grab (called by 'widget')
 #
 class TkDialog_Demo2 < TkDialog
+  ###############
+  private
+  ###############
   def title
     "Dialog with global grab"
   end

@@ -182,6 +182,7 @@ class TkMultiListbox < TkListbox
     delegate('borderwidth', @frame)
     delegate('relief', @frame)
   end
+  private :initialize_composite
 
   # set 'mode' option of listboxes
   def mode(sel_mode)

@@ -24,6 +24,9 @@ static unsigned char down_arrow_bits[] = {
    0x10, 0x00, 0x10, 0x00, 0x00, 0x00};
 EOD
 
+  ############################
+  private
+  ############################
   def initialize_composite(keys={})
     keys = _symbolkey2str(keys)
 
@@ -64,9 +67,6 @@ EOD
     configure keys unless keys.empty?
   end
 
-  ############################
-  private
-  ############################
   def _show_up_arrow
     unless @up_arrow.winfo_mapped?
       @up_arrow.pack(:side=>:top, :fill=>:x)
@@ -330,6 +330,7 @@ EOD
 
     configure keys unless keys.empty?
   end
+  private :initialize_composite
 
   def scrollbar(mode)
     @lst.scrollbar(mode)

@@ -139,6 +139,7 @@ class TkDialog2 < TkWindow
       @command.call(self)
     end
   end
+  private :create_self
 
   def show
     if @default_button.kind_of? String

@@ -21,6 +21,8 @@ module TkTreatTextTagFont
       self.path + ';' + tagOrId
     end
   end
+
+  private :__conf_cmd, :__item_pathname
 end
 
 class TkText<TkTextWin
@@ -57,6 +59,7 @@ class TkText<TkTextWin
     end
     init_instance_variable
   end
+  private :create_self
 
   def index(index)
     tk_send 'index', index

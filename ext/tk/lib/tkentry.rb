@@ -117,6 +117,7 @@ class TkEntry<TkLabel
       configure(keys)
     end
   end
+  private :create_self
 
   def configure(slot, value=None)
     if slot.kind_of? Hash
@@ -269,6 +270,7 @@ class TkSpinbox<TkEntry
       configure(keys)
     end
   end
+  private :create_self
 
   def identify(x, y)
     tk_send 'identify', x, y

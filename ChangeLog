@@ -1,3 +1,14 @@
+Tue Dec  9 23:32:23 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/tkcanvas.rb, ext/tk/lib/tkdialog.rb, 
+	  ext/tk/lib/tkentry.rb, ext/tk/lib/tkscrollbox.rb, ext/tk/lib/tktext.rb, 
+	  ext/tk/sample/tkalignbox.rb, ext/tk/sample/tkcombobox.rb, 
+	  ext/tk/sample/tkmultilistbox.rb, ext/tk/sample/tkoptdb.rb, ext/tk/sample/tktextframe.rb,
+	  ext/tk/sample/demos-en/dialog1.rb, ext/tk/sample/demos-en/dialog2.rb, 
+	  ext/tk/sample/demos-jp/dialog1.rb, ext/tk/sample/demos-jp/dialog2.rb: 
+	  overrided instance methods, which are private methods on the super
+	  class, are changed to 'private'
+
 Tue Dec  9 19:53:02 2003  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/generic.rb (URI::Generic#route_from0): make case insensitive

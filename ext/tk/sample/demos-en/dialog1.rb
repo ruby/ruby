@@ -2,6 +2,9 @@
 # a dialog box with a local grab (called by 'widget')
 #
 class TkDialog_Demo1 < TkDialog
+  ###############
+  private
+  ###############
   def title
     "Dialog with local grab"
   end

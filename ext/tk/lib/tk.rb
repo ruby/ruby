@@ -4458,6 +4458,8 @@ class TkRoot<TkWindow
   def create_self
     @path = '.'
   end
+  private :create_self
+
   def path
     "."
   end
@@ -4626,6 +4628,7 @@ class TkToplevel<TkWindow
       tk_call 'toplevel', @path
     end
   end
+  private :create_self
 
   def specific_class
     @classname
@@ -4744,6 +4747,7 @@ class TkFrame<TkWindow
       tk_call 'frame', @path
     end
   end
+  private :create_self
 
   def database_classname
     @classname
@@ -4801,6 +4805,7 @@ class TkLabelFrame<TkFrame
       tk_call 'labelframe', @path
     end
   end
+  private :create_self
 end
 TkLabelframe = TkLabelFrame
 
@@ -4815,6 +4820,7 @@ class TkPanedWindow<TkWindow
       tk_call 'panedwindow', @path
     end
   end
+  private :create_self
 
   def add(*args)
     keys = args.pop
@@ -4929,6 +4935,8 @@ class TkLabel<TkWindow
       tk_call 'label', @path
     end
   end
+  private :create_self
+
   def textvariable(v)
     configure 'textvariable', tk_trace_variable(v)
   end
@@ -4945,6 +4953,8 @@ class TkButton<TkLabel
       tk_call 'button', @path
     end
   end
+  private :create_self
+
   def invoke
     tk_send 'invoke'
   end
@@ -4965,6 +4975,8 @@ class TkRadioButton<TkButton
       tk_call 'radiobutton', @path
     end
   end
+  private :create_self
+
   def deselect
     tk_send 'deselect'
     self
@@ -4990,6 +5002,8 @@ class TkCheckButton<TkRadioButton
       tk_call 'checkbutton', @path
     end
   end
+  private :create_self
+
   def toggle
     tk_send 'toggle'
     self
@@ -5008,6 +5022,7 @@ class TkMessage<TkLabel
       tk_call 'message', @path
     end
   end
+  private :create_self
 end
 
 class TkScale<TkWindow
@@ -5026,6 +5041,7 @@ class TkScale<TkWindow
       tk_call 'scale', @path
     end
   end
+  private :create_self
 
   def _wrap_command_arg(cmd)
     proc{|val|
@@ -5094,6 +5110,7 @@ class TkScrollbar<TkWindow
       tk_call 'scrollbar', @path
     end
   end
+  private :create_self
 
   def delta(deltax=None, deltay=None)
     number(tk_send('delta', deltax, deltay))
@@ -5130,6 +5147,7 @@ class TkTextWin<TkWindow
   def create_self
     fail RuntimeError, "TkTextWin is an abstract class"
   end
+  private :create_self
 
   def bbox(index)
     list(tk_send('bbox', index))
@@ -5170,6 +5188,8 @@ module TkTreatListItemFont
   def __item_pathname(tagOrId)
     self.path + ';' + tagOrId.to_s
   end
+
+  private :__conf_cmd, :__item_pathname
 end
 
 class TkListbox<TkTextWin
@@ -5187,6 +5207,7 @@ class TkListbox<TkTextWin
       tk_call 'listbox', @path
     end
   end
+  private :create_self
 
   def activate(y)
     tk_send 'activate', y
@@ -5338,6 +5359,8 @@ module TkTreatMenuEntryFont
   def __item_pathname(tagOrId)
     self.path + ';' + tagOrId.to_s
   end
+
+  private :__conf_cmd, :__item_pathname
 end
 
 class TkMenu<TkWindow
@@ -5354,6 +5377,8 @@ class TkMenu<TkWindow
       tk_call 'menu', @path
     end
   end
+  private :create_self
+
   def activate(index)
     tk_send 'activate', index
     self
@@ -5591,6 +5616,7 @@ class TkMenubutton<TkLabel
       tk_call 'menubutton', @path
     end
   end
+  private :create_self
 end
 
 class TkOptionMenubutton<TkMenubutton

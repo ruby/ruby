@@ -26,4 +26,5 @@ class TkScrollbox<TkListbox
 
     configure keys if keys
   end
+  private :initialize_composite
 end

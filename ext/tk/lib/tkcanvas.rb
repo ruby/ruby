@@ -23,6 +23,8 @@ module TkTreatCItemFont
       self.path + ';' + tagOrId.to_s
     end
   end
+
+  private :__conf_cmd, :__item_pathname
 end
 
 class TkCanvas<TkWindow
@@ -44,6 +46,7 @@ class TkCanvas<TkWindow
       tk_call 'canvas', @path
     end
   end
+  private :create_self
 
   def tagid(tag)
     if tag.kind_of?(TkcItem) || tag.kind_of?(TkcTag)
@@ -701,6 +704,7 @@ class TkcGroup<TkcTag
     Tk_cGroup_ID[1].succ!
     add(*args) if args != []
   end
+  private :create_self
   
   def include(*tags)
     for i in tags
@@ -777,6 +781,7 @@ class TkcItem<TkObject
   end
   def create_self(*args); end
   private :create_self
+
   def id
     @id
   end
@@ -795,54 +800,71 @@ class TkcArc<TkcItem
   def create_self(*args)
     tk_call(@path, 'create', 'arc', *args)
   end
+  private :create_self
 end
+
 class TkcBitmap<TkcItem
   CItemTypeToClass['bitmap'] = self
   def create_self(*args)
     tk_call(@path, 'create', 'bitmap', *args)
   end
+  private :create_self
 end
+
 class TkcImage<TkcItem
   CItemTypeToClass['image'] = self
   def create_self(*args)
     tk_call(@path, 'create', 'image', *args)
   end
+  private :create_self
 end
+
 class TkcLine<TkcItem
   CItemTypeToClass['line'] = self
   def create_self(*args)
     tk_call(@path, 'create', 'line', *args)
   end
+  private :create_self
 end
+
 class TkcOval<TkcItem
   CItemTypeToClass['oval'] = self
   def create_self(*args)
     tk_call(@path, 'create', 'oval', *args)
   end
+  private :create_self
 end
+
 class TkcPolygon<TkcItem
   CItemTypeToClass['polygon'] = self
   def create_self(*args)
     tk_call(@path, 'create', 'polygon', *args)
   end
+  private :create_self
 end
+
 class TkcRectangle<TkcItem
   CItemTypeToClass['rectangle'] = self
   def create_self(*args)
     tk_call(@path, 'create', 'rectangle', *args)
   end
+  private :create_self
 end
+
 class TkcText<TkcItem
   CItemTypeToClass['text'] = self
   def create_self(*args)
     tk_call(@path, 'create', 'text', *args)
   end
+  private :create_self
 end
+
 class TkcWindow<TkcItem
   CItemTypeToClass['window'] = self
   def create_self(*args)
     tk_call(@path, 'create', 'window', *args)
   end
+  private :create_self
 end
 
 class TkImage<TkObject

@@ -12,6 +12,17 @@ require 'tk'
 
 class TkAlignBox < TkFrame
   def initialize(*args)
+    if self.class == TkAlignBox
+      fail RuntimeError, "TkAlignBox is an abstract class"
+    end
+    @padx = 0
+    @pady = 0
+    if args[-1].kind_of? Hash
+      keys = _symbolkey2str(args.pop)
+      @padx = keys.delete('padx') || 0
+      @pady = keys.delete('pady') || 0
+      args.push(keys)
+    end
     super(*args)
     @max_width = 0
     @max_height = 0
@@ -53,7 +64,6 @@ class TkAlignBox < TkFrame
       @max_height = sz if @max_height < sz
     }
     align
-    self
   end
 
   def <<(widget)
@@ -71,7 +81,6 @@ class TkAlignBox < TkFrame
     sz = widget.winfo_reqheight
     @max_height = sz if @max_height < sz
     align
-    self
   end
 
   def delete(idx)
@@ -87,46 +96,85 @@ class TkAlignBox < TkFrame
     ret
   end
 
+  def padx(size = nil)
+    if size
+      @padx = size
+      align
+    else
+      @padx
+    end
+  end
+
+  def pady(size = nil)
+    if size
+      @pady = size
+      align
+    else
+      @pady
+    end
+  end
+
   attr_accessor :propagate
 end
 
 class TkHBox < TkAlignBox
   def _set_framesize
     bd = self.borderwidth
-    self.width(@max_width * @widgets.size + 2 * bd)
-    self.height(@max_height + 2 * bd)
+    self.width((@max_width + 2*@padx) * @widgets.size + 2*bd)
+    self.height(@max_height + 2*@pady + 2*bd)
   end
+  private :_set_framesize
+
   def _place_config(widget, idx, cnt)
-    widget.place_in(self, 'relx'=>idx/cnt, 'relwidth'=>1.0/cnt, 
-		    'relheight'=>1.0)
+    widget.place_in(self, 
+		    'relx'=>idx/cnt, 'x'=>@padx, 
+		    'rely'=>0, 'y'=>@pady, 
+		    'relwidth'=>1.0/cnt, 'width'=>-2*@padx, 
+		    'relheight'=>1.0, 'height'=>-2*@pady)
   end
+  private :_place_config
 end
 TkHLBox = TkHBox
 
 class TkHRBox < TkHBox
   def _place_config(widget, idx, cnt)
-    widget.place_in(self, 'relx'=>(cnt - idx - 1)/cnt, 'relwidth'=>1.0/cnt, 
-		    'relheight'=>1.0)
+    widget.place_in(self, 
+		    'relx'=>(cnt - idx - 1)/cnt, 'x'=>@padx, 
+		    'rely'=>0, 'y'=>@pady, 
+		    'relwidth'=>1.0/cnt, 'width'=>-2*@padx, 
+		    'relheight'=>1.0, 'height'=>-2*@pady)
   end
+  private :_place_config
 end
 
 class TkVBox < TkAlignBox
   def _set_framesize
-    self.width(@max_width + 2 * bd)
-    self.height(@max_height * @widgets.size + 2 * bd)
+    bd = self.borderwidth
+    self.width(@max_width + 2*@padx + 2*bd)
+    self.height((@max_height + 2*@pady) * @widgets.size + 2*bd)
   end
+  private :_set_framesize
+
   def _place_config(widget, idx, cnt)
-    widget.place_in(self, 'rely'=>idx/cnt, 'relheight'=>1.0/cnt, 
-		    'relwidth'=>1.0)
+    widget.place_in(self, 
+		    'relx'=>0, 'x'=>@padx, 
+		    'rely'=>idx/cnt, 'y'=>@pady, 
+		    'relwidth'=>1.0, 'width'=>-2*@padx, 
+		    'relheight'=>1.0/cnt, 'height'=>-2*@pady)
   end
+  private :_place_config
 end
 TkVTBox = TkVBox
 
 class TkVBBox < TkVBox
   def _place_config(widget, idx, cnt)
-    widget.place_in(self, 'rely'=>(cnt - idx - 1)/cnt, 'relheight'=>1.0/cnt, 
-		    'relwidth'=>1.0)
+    widget.place_in(self, 
+		    'relx'=>0, 'x'=>@padx, 
+		    'rely'=>(cnt - idx - 1)/cnt, 'y'=>@pady, 
+		    'relwidth'=>1.0, 'width'=>-2*@padx, 
+		    'relheight'=>1.0/cnt, 'height'=>-2*@pady)
   end
+  private :_place_config
 end
 
 ################################################
@@ -134,6 +182,13 @@ end
 ################################################
 if __FILE__ == $0
   f = TkHBox.new(:borderwidth=>3, :relief=>'ridge').pack
+  f.add(TkButton.new(f, :text=>'a'),
+	TkButton.new(f, :text=>'aa', :font=>'Helvetica 16'),
+	TkButton.new(f, :text=>'aaa'),
+	TkButton.new(f, :text=>'aaaa'))
+
+  f = TkHBox.new(:borderwidth=>3, :relief=>'ridge', 
+		 :padx=>7, :pady=>3, :background=>'yellow').pack
   f.add(TkButton.new(f, :text=>'a'),
 	TkButton.new(f, :text=>'aa', :font=>'Helvetica 16'),
 	TkButton.new(f, :text=>'aaa'),
