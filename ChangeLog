@@ -1,3 +1,11 @@
+Mon Jan 26 11:30:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: Makefiles should depend on also rbconfig.rb.
+	  (ruby-bugs:PR#1256)
+
+	* ext/win32ole/win32ole.c (set_argv): set real arguments to
+	  WIN32OLE::ARGV.  [ruby-list:39073]
+
 Sun Jan 25 18:25:26 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509name.c (ossl_x509name_add_entry): third

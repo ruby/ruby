@@ -1686,6 +1686,22 @@ hash2named_arg(pair, pOp)
 }
 
 static VALUE
+set_argv(realargs, beg, end)
+    VARIANTARG* realargs;
+    unsigned int beg, end;
+{
+    VALUE argv = rb_const_get(cWIN32OLE, rb_intern("ARGV"));
+
+    Check_Type(argv, T_ARRAY);
+    rb_ary_clear(argv);
+    while (--end >= beg) {
+	rb_ary_push(argv, ole_variant2val(&realargs[end]));
+	VariantClear(&realargs[end]);
+    }
+    return argv;
+}
+
+static VALUE
 ole_invoke(argc, argv, self, wFlags)
     int argc;
     VALUE *argv;
@@ -1707,7 +1723,6 @@ ole_invoke(argc, argv, self, wFlags)
     DISPID* pDispID;
     EXCEPINFO excepinfo;
     VARIANT result;
-    VALUE args;
     VARIANTARG* realargs = NULL;
     unsigned int argErr = 0;
     unsigned int i;
@@ -1847,13 +1862,7 @@ ole_invoke(argc, argv, self, wFlags)
     }
     /* clear dispatch parameter */
     if(op.dp.cArgs > cNamedArgs) {
-        args = rb_cvar_get(cWIN32OLE, rb_intern("ARGV"));
-        rb_funcall(args, rb_intern("clear"), 0);
-        for(i = cNamedArgs; i < op.dp.cArgs; i++) {
-            n = op.dp.cArgs - i + cNamedArgs - 1;
-            rb_ary_push(args, ole_variant2val(&realargs[n]));
-            VariantClear(&realargs[n]);
-        }
+	set_argv(realargs, cNamedArgs, op.dp.cArgs);
     }
     else {
         for(i = 0; i < op.dp.cArgs; i++) {
@@ -2066,12 +2075,7 @@ ole_invoke2(self, dispid, args, types, dispkind)
 
     /* clear dispatch parameter */
     if(dispParams.cArgs > 0) {
-        VALUE argv = rb_cvar_get(cWIN32OLE, rb_intern("ARGV"));
-        rb_funcall(argv, rb_intern("clear"), 0);
-        for(i = dispParams.cArgs - 1; i >= 0; i--) {
-            rb_ary_push(argv, ole_variant2val(&realargs[i]));
-            VariantClear(&realargs[i]);
-        }
+	set_argv(realargs, 0, dispParams.cArgs);
     }
 
     obj = ole_variant2val(&result);
