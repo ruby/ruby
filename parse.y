@@ -898,10 +898,14 @@ arg		: lhs '=' arg
 		    }
 		| arg tDOT2 arg
 		    {
+			value_expr($1);
+			value_expr($3);
 			$$ = NEW_DOT2($1, $3);
 		    }
 		| arg tDOT3 arg
 		    {
+			value_expr($1);
+			value_expr($3);
 			$$ = NEW_DOT3($1, $3);
 		    }
 		| arg '+' arg
@@ -1003,7 +1007,6 @@ arg		: lhs '=' arg
 		    }
 		| '!' arg
 		    {
-			value_expr($2);
 			$$ = NEW_NOT(cond($2));
 		    }
 		| '~' arg
@@ -1292,7 +1295,7 @@ primary		: literal
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} ')'
 		    {
-		        rb_warning("%s (...) interpreted as grouped expression", rb_id2name($<id>1));
+		        rb_warning("(...) interpreted as grouped expression");
 			$$ = $2;
 		    }
 		| tLPAREN compstmt ')'
@@ -1983,19 +1986,24 @@ singleton	: var_ref
 		    }
 		| '(' {lex_state = EXPR_BEG;} expr opt_nl ')'
 		    {
-			switch (nd_type($3)) {
-			  case NODE_STR:
-			  case NODE_DSTR:
-			  case NODE_XSTR:
-			  case NODE_DXSTR:
-			  case NODE_DREGX:
-			  case NODE_LIT:
-			  case NODE_ARRAY:
-			  case NODE_ZARRAY:
-			    yyerror("can't define single method for literals.");
-			  default:
-		            value_expr($3);
-			    break;
+			if ($3 == 0) {
+			    yyerror("can't define single method for ().");
+			}
+			else {
+			    switch (nd_type($3)) {
+			      case NODE_STR:
+			      case NODE_DSTR:
+			      case NODE_XSTR:
+			      case NODE_DXSTR:
+			      case NODE_DREGX:
+			      case NODE_LIT:
+			      case NODE_ARRAY:
+			      case NODE_ZARRAY:
+				yyerror("can't define single method for literals");
+			      default:
+				value_expr($3);
+				break;
+			    }
 			}
 			$$ = $3;
 		    }
@@ -3980,6 +3988,8 @@ yylex()
 			if (COND_P()) return kDO_COND;
 			if (CMDARG_P() && state != EXPR_CMDARG)
 			    return kDO_BLOCK;
+			if (state == EXPR_ENDARG)
+			    return kDO_BLOCK;
 			return kDO;
 		    }
 		    if (state == EXPR_BEG)
@@ -4380,25 +4390,31 @@ match_gen(node1, node2)
 {
     local_cnt('~');
 
-    switch (nd_type(node1)) {
-      case NODE_DREGX:
-      case NODE_DREGX_ONCE:
-	return NEW_MATCH2(node1, node2);
-
-      case NODE_LIT:
-	if (TYPE(node1->nd_lit) == T_REGEXP) {
+    value_expr(node1);
+    value_expr(node2);
+    if (node1) {
+	switch (nd_type(node1)) {
+	  case NODE_DREGX:
+	  case NODE_DREGX_ONCE:
 	    return NEW_MATCH2(node1, node2);
+
+	  case NODE_LIT:
+	    if (TYPE(node1->nd_lit) == T_REGEXP) {
+		return NEW_MATCH2(node1, node2);
+	    }
 	}
     }
 
-    switch (nd_type(node2)) {
-      case NODE_DREGX:
-      case NODE_DREGX_ONCE:
-	return NEW_MATCH3(node2, node1);
-
-      case NODE_LIT:
-	if (TYPE(node2->nd_lit) == T_REGEXP) {
+    if (node2) {
+	switch (nd_type(node2)) {
+	  case NODE_DREGX:
+	  case NODE_DREGX_ONCE:
 	    return NEW_MATCH3(node2, node1);
+
+	  case NODE_LIT:
+	    if (TYPE(node2->nd_lit) == T_REGEXP) {
+		return NEW_MATCH3(node2, node1);
+	    }
 	}
     }
 
@@ -4519,7 +4535,6 @@ aryset(recv, idx)
     NODE *recv, *idx;
 {
     value_expr(recv);
-
     return NEW_CALL(recv, tASET, idx);
 }
 
@@ -4538,7 +4553,6 @@ attrset(recv, id)
     ID id;
 {
     value_expr(recv);
-
     return NEW_CALL(recv, rb_id_attrset(id), 0);
 }
 
@@ -4646,6 +4660,10 @@ value_expr(node)
 
       case NODE_IF:
 	return value_expr(node->nd_body) && value_expr(node->nd_else);
+
+      case NODE_AND:
+      case NODE_OR:
+	return value_expr(node->nd_2nd);
 
       case NODE_NEWLINE:
 	return value_expr(node->nd_next);
@@ -4843,6 +4861,7 @@ range_op(node)
     enum node_type type;
 
     if (!e_option_supplied()) return node;
+    if (node == 0) return 0;
 
     node = cond0(node);
     type = nd_type(node);
@@ -4861,6 +4880,7 @@ cond0(node)
     enum node_type type = nd_type(node);
 
     assign_in_cond(node);
+    value_expr(node);
 
     switch (type) {
       case NODE_DSTR:

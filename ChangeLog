@@ -2,12 +2,32 @@ Wed Jun 12 02:38:00 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* parse.y (stmt): fix typo.
 
+Wed Jun 12 01:10:55 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): 'do' should return kDO_BLOCK on EXPR_ENDARG.
+
+	* parse.y (singleton): "def (()).a end" dumped core.
+
+	* parse.y (range_op): node may be null.
+
+	* parse.y (match_gen): ditto.
+
 Tue Jun 11 19:20:34 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (LIBRUBY): rename to lib$(LIBRUBY_SO).a on Cygwin/MinGW.
 
 	* configure.in, cygwin/GNUmakefile: use dllwrap when --disable-shared
 	  is specified.
+
+Tue Jun 11 17:12:04 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (arg): void value check for "..", "...", "!", and "not".
+
+	* parse.y (match_gen): void value check for "=~".
+
+	* parse.y (value_expr): check NODE_AND and NODE_OR recursively.
+
+	* parse.y (cond0): void value check added for conditionals.
 
 Tue Jun 11 13:18:47 2002  Shugo Maeda  <shugo@ruby-lang.org>
 
