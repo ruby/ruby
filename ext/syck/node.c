@@ -297,27 +297,38 @@ syck_seq_read( SyckNode *seq, long idx )
 void
 syck_free_members( SyckNode *n )
 {
+    if ( n == NULL ) return;
+
     switch ( n->kind  )
     {
         case syck_str_kind:
-            if ( n->data.str->ptr != NULL ) 
+            if ( n->data.str != NULL ) 
             {
                 S_FREE( n->data.str->ptr );
                 n->data.str->ptr = NULL;
                 n->data.str->len = 0;
                 S_FREE( n->data.str );
+                n->data.str = NULL;
             }
         break;
 
         case syck_seq_kind:
-            S_FREE( n->data.list->items );
-            S_FREE( n->data.list );
+            if ( n->data.list != NULL )
+            {
+                S_FREE( n->data.list->items );
+                S_FREE( n->data.list );
+                n->data.list = NULL;
+            }
         break;
 
         case syck_map_kind:
-            S_FREE( n->data.pairs->keys );
-            S_FREE( n->data.pairs->values );
-            S_FREE( n->data.pairs );
+            if ( n->data.pairs != NULL )
+            {
+                S_FREE( n->data.pairs->keys );
+                S_FREE( n->data.pairs->values );
+                S_FREE( n->data.pairs );
+                n->data.pairs = NULL;
+            }
         break;
     }
 }
