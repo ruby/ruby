@@ -609,11 +609,20 @@ Default options, which never appear in option summary.
     puts ARGV.options
     exit
   end
-  DefaultList.long['version'] = Switch::NoArgument.new do
-    if v = ARGV.options.ver
-      puts v
-      exit
+  DefaultList.long['version'] = Switch::OptionalArgument.new do |pkg|
+    if pkg
+      begin
+        require 'optparse/version'
+      rescue LoadError
+        pkg = nil
+      else
+        show_version(*pkg.split(/,/))
+      end
     end
+    unless pkg
+      puts v if v = ARGV.options.ver
+    end
+    exit
   end
 
 =begin

@@ -1,3 +1,8 @@
+Sun Aug 31 12:25:06 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* lib/optparse.rb: --version takes an optional argument; "all" or
+	  a list of package names.
+
 Sun Aug 31 10:17:02 2003  Tadayoshi Funaba  <tadf@dotrb.org>
 
 	* lib/date/format.rb: yyyy/mm is not an acceptable format.
