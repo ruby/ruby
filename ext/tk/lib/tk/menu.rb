@@ -445,7 +445,7 @@ class TkOptionMenubutton<TkMenubutton
     @menu.invoke(index)
   end
   def insert(index, value)
-    @menu.add(index, 'radiobutton', 'variable'=>@variable, 
+    @menu.insert(index, 'radiobutton', 'variable'=>@variable, 
 	      'label'=>value, 'value'=>value)
     self
   end
