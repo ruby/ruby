@@ -1,3 +1,8 @@
+Thu Nov  1 13:23:50 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (gc_mark_children): should NOT treat last element of
+	  structs and arrays specially.
+
 Wed Oct 31 16:59:25 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (exec_under): should initialize ruby_frame->self;
