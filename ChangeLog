@@ -1,3 +1,8 @@
+Tue Sep 26 15:59:50 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_dup): metaclasses of class/module should not be
+	  cleared by rb_obj_dup.
+
 Tue Sep 26 02:44:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (GC_MALLOC_LIMIT): size extended.

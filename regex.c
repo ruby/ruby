@@ -84,8 +84,6 @@ void *xrealloc _((void*,size_t));
 void xfree _((void*));
 #endif
 
-#define	NO_ALLOCA	/* try it out for now */
-#ifndef NO_ALLOCA
 /* Make alloca work the best possible way.  */
 #ifdef __GNUC__
 # ifndef atarist
@@ -111,73 +109,55 @@ char *alloca();
 # include <strings.h>
 #endif
 
-#define RE_ALLOCATE alloca
 #ifdef C_ALLOCA
 #define FREE_VARIABLES() alloca(0)
 #else
 #define FREE_VARIABLES()
 #endif
 
-#define FREE_AND_RETURN_VOID(stackb)	return
-#define FREE_AND_RETURN(stackb,val)	return(val)
-#define DOUBLE_STACK(stackx,stackb,len,type)				\
-        (stackx = (type*)alloca(2 * len * sizeof(type)),		\
-	/* Only copy what is in use.  */				\
-        (type*)memcpy(stackx, stackb, len * sizeof (type)))
-#else  /* NO_ALLOCA defined */
-
-#define RE_ALLOCATE xmalloc
-
-#define FREE_VARIABLES()
-
 #define FREE_AND_RETURN_VOID(stackb)   do {				\
+  FREE_VARIABLES();							\
   if (stackb != stacka) xfree(stackb);					\
   return;								\
 } while(0)
 
 #define FREE_AND_RETURN(stackb,val)    do {				\
+  FREE_VARIABLES();							\
   if (stackb != stacka) xfree(stackb);					\
   return(val);								\
 } while(0)
 
-#define DOUBLE_STACK(stackx,stackb,len,type) do {			\
+#define DOUBLE_STACK(type) do {						\
+  type *stackx;								\
+  unsigned int xlen = stacke - stackb; 					\
   if (stackb == stacka) {						\
-    stackx = (type*)xmalloc(2*len*sizeof(type));			\
+    stackx = (type*)xmalloc(2 * xlen * sizeof(type));			\
+    memcpy(stackx, stackb, xlen * sizeof (type));			\
   }									\
   else {								\
-    stackx = (type*)xrealloc(stackb, 2 * len * sizeof(type));		\
+    stackx = (type*)xrealloc(stackb, 2 * xlen * sizeof(type));		\
   }									\
+  /* Rearrange the pointers. */						\
+  stackp = stackx + (stackp - stackb);					\
+  stackb = stackx;							\
+  stacke = stackb + 2 * xlen;						\
 } while (0)
 
-#endif /* NO_ALLOCA */
-
-#define RE_TALLOC(n,t)  ((t*)RE_ALLOCATE((n)*sizeof(t)))
+#define RE_TALLOC(n,t)  ((t*)alloca((n)*sizeof(t)))
 #define TMALLOC(n,t)    ((t*)xmalloc((n)*sizeof(t)))
 #define TREALLOC(s,n,t) (s=((t*)xrealloc(s,(n)*sizeof(t))))
 
-#define EXPAND_FAIL_STACK(stackx,stackb,len) 				\
-    do {								\
-        /* Roughly double the size of the stack.  */			\
-        DOUBLE_STACK(stackx,stackb,len,unsigned char*);			\
-	/* Rearrange the pointers. */					\
-	stackp = stackx + (stackp - stackb);				\
-	stackb = stackx;						\
-	stacke = stackb + 2 * len;					\
-    } while (0)
-
+#define EXPAND_FAIL_STACK() DOUBLE_STACK(unsigned char*)
 #define ENSURE_FAIL_STACK(n)						\
   do {									\
     if (stacke - stackp <= (n)) {					\
-	unsigned char **stackx;						\
-	unsigned int len = stacke - stackb;				\
 	/* if (len > re_max_failures * MAX_NUM_FAILURE_ITEMS)		\
 	   {								\
-	   FREE_VARIABLES();						\
 	   FREE_AND_RETURN(stackb,(-2));				\
 	   }*/								\
 									\
         /* Roughly double the size of the stack.  */			\
-        EXPAND_FAIL_STACK(stackx, stackb, len);				\
+        EXPAND_FAIL_STACK();						\
       }									\
   } while (0)
 
@@ -1794,14 +1774,7 @@ re_compile_pattern(pattern, size, bufp)
       }
       if (c == '#') break;
       if (stackp+8 >= stacke) {
-	int *stackx;
-	unsigned int len = stacke - stackb;
-
-	DOUBLE_STACK(stackx,stackb,len,int);
-	/* Rearrange the pointers. */
-	stackp = stackx + (stackp - stackb);
-	stackb = stackx;
-	stacke = stackb + 2 * len;
+	DOUBLE_STACK(int);
       }
 
       /* Laststart should point to the start_memory that we are about
@@ -2891,10 +2864,7 @@ re_compile_fastmap(bufp)
       EXTRACT_NUMBER_AND_INCR(j, p);
       if (p + j < pend) {
 	if (stackp == stacke) {
-	  unsigned char **stackx;
-	  unsigned int len = stacke - stackb;
-
-	  EXPAND_FAIL_STACK(stackx, stackb, len);
+	  EXPAND_FAIL_STACK();
 	}
 	*++stackp = p + j;	/* push */
       }
@@ -3564,7 +3534,7 @@ re_match(bufp, string_arg, size, pos, regs)
      ``dummy''; if a failure happens and the failure point is a dummy, it
      gets discarded and the next next one is tried.  */
 
-  unsigned char *stacka[MAX_NUM_FAILURE_ITEMS * NFAILURES];
+  unsigned char **stacka;
   unsigned char **stackb;
   unsigned char **stackp;
   unsigned char **stacke;
@@ -3613,6 +3583,7 @@ re_match(bufp, string_arg, size, pos, regs)
   }
 
   /* Initialize the stack. */
+  stacka = RE_TALLOC(MAX_NUM_FAILURE_ITEMS * NFAILURES, unsigned char*);
   stackb = stacka;
   stackp = stackb;
   stacke = &stackb[MAX_NUM_FAILURE_ITEMS * NFAILURES];
@@ -3714,7 +3685,6 @@ re_match(bufp, string_arg, size, pos, regs)
 	  regs->end[mcnt] = regend[mcnt] - string;
 	}
       }
-      FREE_VARIABLES();
       FREE_AND_RETURN(stackb, (d - pos - string));
     }
 
@@ -3797,7 +3767,6 @@ re_match(bufp, string_arg, size, pos, regs)
       case start_nowidth:
 	PUSH_FAILURE_POINT(0, d);
 	if (stackp - stackb > RE_DUP_MAX) {
-	   FREE_VARIABLES();
 	   FREE_AND_RETURN(stackb,(-2));
 	}
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
@@ -4375,7 +4344,6 @@ re_match(bufp, string_arg, size, pos, regs)
   if (best_regs_set)
     goto restore_best_regs;
 
-  FREE_VARIABLES();
   FREE_AND_RETURN(stackb,(-1)); 	/* Failure to match.  */
 }
 

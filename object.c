@@ -113,7 +113,6 @@ rb_obj_dup(obj)
     }
     if (!SPECIAL_CONST_P(dup)) {
 	OBJSETUP(dup, rb_obj_type(obj), BUILTIN_TYPE(obj));
-	OBJ_INFECT(dup, obj);
     }
     return dup;
 }
@@ -471,7 +470,6 @@ rb_obj_alloc(klass)
 {
     NEWOBJ(obj, struct RObject);
     OBJSETUP(obj, klass, T_OBJECT);
-    obj->iv_tbl = 0;
 
     return (VALUE)obj;
 }
@@ -528,6 +526,15 @@ rb_mod_clone(module)
     }
 
     return (VALUE)clone;
+}
+
+static VALUE
+rb_mod_dup(module)
+    VALUE module;
+{
+    VALUE dup = rb_mod_clone(module);
+    OBJSETUP(dup, RBASIC(module)->klass, BUILTIN_TYPE(module));
+    return dup;
 }
 
 static VALUE
@@ -1153,6 +1160,7 @@ Init_Object()
     rb_define_method(rb_cModule, ">",  rb_mod_gt, 1);
     rb_define_method(rb_cModule, ">=", rb_mod_ge, 1);
     rb_define_method(rb_cModule, "clone", rb_mod_clone, 0);
+    rb_define_method(rb_cModule, "dup", rb_mod_dup, 0);
     rb_define_method(rb_cModule, "to_s", rb_mod_to_s, 0);
     rb_define_method(rb_cModule, "included_modules", rb_mod_included_modules, 0);
     rb_define_method(rb_cModule, "name", rb_mod_name, 0);
