@@ -2406,10 +2406,12 @@ module RDoc
     when TkDSTRING
       warn "Skipping require of dynamic string: #{tk.text}"
     else
-      error("Unknown argument type to require: #{tk}")
+      warn "'require' used as variable"
     end
     if name
       context.add_require(Require.new(name, comment))
+    else
+      unget_tk(tk)
     end
   end
 
