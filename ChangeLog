@@ -1,3 +1,7 @@
+Tue Nov 18 22:20:10 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (fu_same?): temporal fix for windows.
+
 Tue Nov 18 19:05:04 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_same?): check by inode instead of path

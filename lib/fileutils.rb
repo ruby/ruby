@@ -465,7 +465,7 @@ module FileUtils
   alias move mv
 
   def cannot_overwrite_file? #:nodoc:
-    /djgpp|cygwin|mswin32/ === RUBY_PLATFORM
+    /djgpp|cygwin|mswin|mingw/ === RUBY_PLATFORM
   end
   private :cannot_overwrite_file?
 
@@ -739,9 +739,17 @@ module FileUtils
   end
 
   def fu_same?( a, b )
-    File.stat(a).ino == File.stat(b).ino
+    if have_st_ino?
+      File.stat(a).dev == File.stat(b).dev and File.stat(a).ino == File.stat(b).ino
+    else
+      File.expand_path(a) == File.expand_path(b)
+    end
   rescue Errno::ENOENT
     return false
+  end
+
+  def have_st_ino?
+    /mswin|mingw/ !~ RUBY_PLATFORM
   end
 
   def fu_stream_blksize( *streams )
