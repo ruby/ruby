@@ -1,3 +1,7 @@
+Fri Sep 22 10:16:21 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* win32/config.h.in: add HAVE_TELLDIR, HAVE_SEEKDIR
+
 Thu Sep 21 19:04:34 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* ext/extmk.rb, lib/mkmf.rb (install_rb): check whether libdir is
