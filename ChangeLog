@@ -1,3 +1,7 @@
+Tue Dec 24 02:12:45 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/README: Synchronize with reality.
+
 Tue Dec 24 02:05:51 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* MANIFEST, lib/README, lib/ipaddr.rb: Add ipaddr.rb from rough.
