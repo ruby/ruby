@@ -2422,15 +2422,8 @@ rb_str_include(str, arg)
     long i;
 
     if (FIXNUM_P(arg)) {
-	int c = FIX2INT(arg);
-	long len = RSTRING(str)->len;
-	char *p = RSTRING(str)->ptr;
-
-	for (i=0; i<len; i++) {
-	    if (p[i] == c) {
-		return Qtrue;
-	    }
-	}
+	if (memchr(RSTRING(str)->ptr, FIX2INT(arg), RSTRING(str)->len))
+	    return Qtrue;
 	return Qfalse;
     }
 

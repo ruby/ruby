@@ -1,3 +1,8 @@
+Fri Oct 22 00:20:33 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_include): should not treat char as negative value.
+	  [ruby-dev:24558]
+
 Thu Oct 21 19:06:15 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#send_body_io):
