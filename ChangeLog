@@ -1,3 +1,7 @@
+Sat Feb 14 11:14:12 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: add pretty_print, thanks gotoken.
+
 Fri Feb 13 21:51:00 2004  Gavin Sinclair <gsinclair@soyabean.com.au>
 
 	* lib/fileutils.rb: slighly improved documentation (sync with 1.8)
