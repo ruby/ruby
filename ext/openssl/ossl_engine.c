@@ -55,7 +55,10 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
     VALUE name;
 
     rb_scan_args(argc, argv, "01", &name);
-    if(NIL_P(name)) ENGINE_load_builtin_engines();
+    if(NIL_P(name)){
+        ENGINE_load_builtin_engines();
+        return Qtrue;
+    }
     StringValue(name);
     OSSL_ENGINE_LOAD_IF_MATCH(openssl);
     OSSL_ENGINE_LOAD_IF_MATCH(dynamic);
@@ -70,7 +73,8 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
 #ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
     OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto);
 #endif
-    rb_warning("no such engine `%s'", RSTRING(name)->ptr);
+    rb_warning("no such builtin loader for `%s'", RSTRING(name)->ptr);
+    return Qnil;
 #endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */
 }
 
