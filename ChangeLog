@@ -1,3 +1,14 @@
+Fri Sep  7 07:11:34 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: CGI#doctype(): bug fix (html4Fr).
+
+	* lib/net/telnet.rb, lib/cgi.rb: remove VERSION, RELEASE_DATE,
+	  VERSION_CODE, RELEASE_CODE. please use REVISION.
+
+	* lib/cgi.rb: CGI#header(): bug fix.
+
+	* lib/net/telnet.rb, lib/cgi.rb: concat --> +=
+
 Thu Sep  6 17:38:18 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* dir.c (dir_s_chdir): raise if environment variable HOME/LOGDIR

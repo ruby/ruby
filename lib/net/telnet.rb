@@ -4,8 +4,6 @@
 
 net/telnet.rb - simple telnet client library
 
-Version 1.6.3
-
 Wakou Aoyama <wakou@fsinet.or.jp>
 
 
@@ -239,10 +237,6 @@ module Net
     CR   = "\015"
     LF   = "\012"
     EOL  = CR + LF
-    VERSION = '1.6.3'
-    RELEASE_DATE = '2001-02-26'
-    VERSION_CODE = 163
-    RELEASE_CODE = 20010226
     REVISION = '$Id$'
 
     def initialize(options)
@@ -291,7 +285,7 @@ module Net
               line = x[offset, 16]
             end
             hexvals = line.unpack('H*')[0]
-            hexvals.concat ' ' * (32 - hexvals.length)
+            hexvals += ' ' * (32 - hexvals.length)
             hexvals = format "%s %s %s %s  " * 4, *hexvals.unpack('a2' * 16)
             line = line.gsub(/[\000-\037\177-\377]/n, '.')
             printf "%s 0x%5.5x: %s%s\n", dir, addr, hexvals, line
@@ -487,7 +481,7 @@ module Net
             end
           end
           @log.print(buf) if @options.has_key?("Output_log")
-          line.concat(buf)
+          line += buf
           yield buf if block_given?
         rescue EOFError # End of file reached
           if line == ''
@@ -571,20 +565,20 @@ module Net
       if block_given?
         line = waitfor(/login[: ]*\z/n){|c| yield c }
         if password
-          line.concat( cmd({"String" => username,
-                            "Match" => /Password[: ]*\z/n}){|c| yield c } )
-          line.concat( cmd(password){|c| yield c } )
+          line += cmd({"String" => username,
+                       "Match" => /Password[: ]*\z/n}){|c| yield c }
+          line += cmd(password){|c| yield c }
         else
-          line.concat( cmd(username){|c| yield c } )
+          line += cmd(username){|c| yield c }
         end
       else
         line = waitfor(/login[: ]*\z/n)
         if password
-          line.concat( cmd({"String" => username,
-                            "Match" => /Password[: ]*\z/n}) )
-          line.concat( cmd(password) )
+          line += cmd({"String" => username,
+                       "Match" => /Password[: ]*\z/n})
+          line += cmd(password)
         else
-          line.concat( cmd(username) )
+          line += cmd(username)
         end
       end
       line
