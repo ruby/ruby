@@ -1,3 +1,11 @@
+: Date and DateTime
+
+  lib/date.rb now provides both Date and DateTime.
+
+  Some methods have been renamed.  But the old names are still alive.
+
+  Some new methods have been added (Date::parse, Date#strftime, etc.).
+
 : Thread#join
 
   Optional argument limits maximum time to wait the thread in second.
