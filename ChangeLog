@@ -1,3 +1,10 @@
+Wed Apr 21 18:01:47 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/pop.rb: do not use class variables.
+
+	* lib/net/pop.rb (do_start): ensure to clean up connection when
+	  authentication failed.
+
 Wed Apr 21 17:23:59 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb (HTTP#connect): CONNECT must precede SSL connect.

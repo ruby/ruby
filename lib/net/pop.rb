@@ -224,10 +224,6 @@ module Net
     # Class Parameters
     #
 
-    @@usessl = false
-    @@verify = nil
-    @@certs = nil
-
     def POP3.default_port
       default_pop3_port()
     end
@@ -341,6 +337,44 @@ module Net
     end
 
     #
+    # SSL
+    #
+
+    @use_ssl = false
+    @verify = nil
+    @certs = nil
+
+    # Enable SSL for all new instances.
+    # +verify+ is the type of verification to do on the Server Cert; Defaults
+    # to OpenSSL::SSL::VERIFY_PEER.
+    # +certs+ is a file or directory holding CA certs to use to verify the 
+    # server cert; Defaults to nil.
+    def POP3.enable_ssl(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil)
+      @use_ssl = true
+      @verify = verify
+      @certs = certs  
+    end
+
+    # Disable SSL for all new instances.
+    def POP3.disable_ssl
+      @use_ssl = nil
+      @verify = nil
+      @certs = nil
+    end
+
+    def POP3.use_ssl?
+      @use_ssl
+    end
+
+    def POP3.verify
+      @verify
+    end
+
+    def POP3.certs
+      @certs
+    end
+
+    #
     # Session management
     #
 
@@ -364,24 +398,6 @@ module Net
                    isapop = false, &block)   # :yield: pop
       new(address, port, isapop).start(account, password, &block)
     end
-
-    # Enable SSL for all new instances.
-    # +verify+ is the type of verification to do on the Server Cert; Defaults
-    # to OpenSSL::SSL::VERIFY_PEER.
-    # +certs+ is a file or directory holding CA certs to use to verify the 
-    # server cert; Defaults to nil.
-    def POP3.enable_ssl(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil)
-      @@usessl = true
-      @@verify = verify
-      @@certs = certs  
-    end
-
-    # Disable SSL for all new instances.
-    def POP3.disable_ssl
-      @@usessl = nil
-      @@verify = nil
-      @@certs = nil
-    end
     
     # Creates a new POP3 object.
     # +addr+ is the hostname or ip address of your POP3 server.
@@ -391,11 +407,11 @@ module Net
     # This method does *not* open the TCP connection.
     def initialize(addr, port = nil, isapop = false)
       @address = addr
-      @usessl = @@usessl
-      @port = port || (@usessl ? POP3.default_pop3s_port : POP3.default_pop3_port)
+      @use_ssl = POP3.use_ssl?
+      @port = port || (POP3.use_ssl? ? POP3.default_pop3s_port : POP3.default_pop3_port)
       @apop = isapop
-      @certs = @@certs
-      @verify = @@verify
+      @certs = POP3.certs
+      @verify = POP3.verify
       
       @command = nil
       @socket = nil
@@ -416,7 +432,7 @@ module Net
 
     # does this instance use SSL?
     def use_ssl?
-      @usessl
+      @use_ssl
     end
    
     # Enables SSL for this instance.  Must be called before the connection is
@@ -428,14 +444,14 @@ module Net
     # +port+ is port to establish the SSL connection on; Defaults to 995.
     def enable_ssl(verify = OpenSSL::SSL::VERIFY_PEER, certs = nil, 
                    port = POP3.default_pop3s_port)
-      @usessl = true
+      @use_ssl = true
       @verify = verify
       @certs = certs
       @port = port
     end
     
     def disable_ssl
-      @usessl = nil
+      @use_ssl = false
       @verify = nil
       @certs = nil
     end
@@ -513,26 +529,24 @@ module Net
 
     def do_start(account, password)
       s = timeout(@open_timeout) { TCPSocket.open(@address, @port) }
-      if @usessl
-        raise 'SSL extension not installed' unless defined?(OpenSSL)
-        sslctx = OpenSSL::SSL::SSLContext.new
-        sslctx.verify_mode = @verify
+      if use_ssl?
+        raise 'openssl library not installed' unless defined?(OpenSSL)
+        context = OpenSSL::SSL::SSLContext.new
+        context.verify_mode = @verify
         if @certs
           if File.file?(@certs)
-            sslctx.ca_file = @certs
+            context.ca_file = @certs
           elsif File.directory?(@certs)
-            sslctx.ca_path = @certs
+            context.ca_path = @certs
           else
             raise ArgumentError, "certs path is not file/directory: #{@certs}"
           end
         end
-        s = OpenSSL::SSL::SSLSocket.new(s, sslctx)
+        s = OpenSSL::SSL::SSLSocket.new(s, context)
         s.sync_close = true
         s.connect
       end
-      
       @socket = InternetMessageIO.new(s)
-      
       logging "POP session started: #{@address}:#{@port} (#{@apop ? 'APOP' : 'POP'})"
       @socket.read_timeout = @read_timeout
       @socket.debug_output = @debug_output
@@ -545,8 +559,12 @@ module Net
       end
       @started = true
     ensure
-      s.close if s and not s.closed?
-      do_finish unless @started
+      # Authentication failed, clean up connection.
+      unless @started
+        s.close if s and not s.closed?
+        @socket = nil
+        @command = nil
+      end
     end
     private :do_start
 
