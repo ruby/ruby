@@ -1,3 +1,7 @@
+Thu Dec 27 18:43:04 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* bignum.c (rb_cstr2inum): deny "0_".
+
 Thu Dec 27 01:54:02 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* bignum.c (rb_cstr2inum): allow "0\n" and so on.

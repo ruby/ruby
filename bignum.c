@@ -241,18 +241,9 @@ rb_cstr2inum(str, base)
 	}
 	len = 4;
     }
-    if (*str == '0') {
-	do str++; while (*str == '0');
-	if (!*str) return INT2FIX(0);
-	while (*str == '_') str++;
-	if (!*str) str--;
-	if (ISSPACE(*str)) {
-	    if (badcheck) {
-		while (ISSPACE(*str)) str++;
-		if (*str) goto bad;
-	    }
-	    return INT2FIX(0);
-	}
+    if (*str == '0') {		/* squeeze preceeding 0s */
+	while (*++str == '0');
+	--str;
     }
     len *= strlen(str)*sizeof(char);
 
