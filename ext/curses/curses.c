@@ -511,6 +511,16 @@ curses_bkgd(VALUE obj, VALUE ch)
   return CHR2FIX(bkgd(NUM2CHR(ch)));
 }
 
+static VALUE
+curses_resizeterm(VALUE obj, VALUE lines, VALUE columns)
+{
+#if defined(HAVE_RESIZETERM)
+  return (resizeterm(NUM2INT(lines),NUM2INT(columns)) == OK) ? Qtrue : Qfalse;
+#else
+  return Qnil;
+#endif
+}
+
 #ifdef USE_COLOR
 static VALUE
 curses_start_color(VALUE obj)
@@ -1180,6 +1190,20 @@ window_getbkgd(VALUE obj)
   return CHR2FIX(getbkgd(winp->window));
 }
 
+static VALUE
+window_resize(VALUE obj, VALUE lines, VALUE columns)
+{
+#if defined(HAVE_WRESIZE)
+  struct windata *winp;
+
+  GetWINDOW(obj,winp);
+  return wresize(winp->window, NUM2INT(lines), NUM2INT(columns)) == OK ? Qtrue : Qfalse;
+#else
+  return Qnil;
+#endif
+}
+
+
 #ifdef HAVE_KEYPAD
 static VALUE
 window_keypad(VALUE obj, VALUE val)
@@ -1258,6 +1282,8 @@ Init_curses()
     rb_define_module_function(mCurses, "attrset", curses_attrset, 1);
     rb_define_module_function(mCurses, "bkgdset", curses_bkgdset, 1);
     rb_define_module_function(mCurses, "bkgd", curses_bkgd, 1);
+    rb_define_module_function(mCurses, "resizeterm", curses_resizeterm, 2);
+    rb_define_module_function(mCurses, "resize", curses_resizeterm, 2);
 #ifdef USE_COLOR
     rb_define_module_function(mCurses, "start_color", curses_start_color, 0);
     rb_define_module_function(mCurses, "init_pair", curses_init_pair, 3);
@@ -1309,6 +1335,7 @@ Init_curses()
     rb_define_method(cWindow, "idlok", window_idlok, 1);
     rb_define_method(cWindow, "setscrreg", window_setscrreg, 2);
     rb_define_method(cWindow, "scrl", window_scrl, 1);
+    rb_define_method(cWindow, "resize", window_resize, 2);
 #ifdef HAVE_KEYPAD
     rb_define_method(cWindow, "keypad", window_keypad, 1);
     rb_define_method(cWindow, "keypad=", window_keypad, 1);
@@ -1824,6 +1851,10 @@ Init_curses()
 #ifdef KEY_UNDO
     rb_curses_define_const(KEY_UNDO);
     rb_define_const(mKey, "UNDO", INT2NUM(KEY_UNDO));
+#endif
+#ifdef KEY_RESIZE
+    rb_curses_define_const(KEY_RESIZE);
+    rb_define_const(mKey, "RESIZE", INT2NUM(KEY_RESIZE));
 #endif
 #ifdef KEY_MAX
     rb_curses_define_const(KEY_MAX);
