@@ -460,6 +460,9 @@ rb_mod_remove_method(argc, argv, mod)
     return mod;
 }
 
+#undef rb_disable_super
+#undef rb_enable_super
+
 void
 rb_disable_super(klass, name)
     VALUE klass;

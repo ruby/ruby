@@ -1,3 +1,9 @@
+Fri Sep 12 12:30:41 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (rb_disable_super, rb_enable_super): replace with dummy
+	  expressions instead of prototypes.  the functions remain yet for
+	  binary compatibility.  [ruby-talk:81758]
+
 Fri Sep 12 12:09:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_and): convert argument using 'to_int'.
@@ -16,7 +22,7 @@ Thu Sep 11 08:43:44 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_f_require): allow "require" on $SAFE>0, if feature
 	  name is not tainted.
 
-	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::stream): 
+	* lib/rexml/parsers/baseparser.rb (REXML::Parsers::BaseParser::stream):
 	  Supports StringIO.
 
 Wed Sep 10 22:47:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
@@ -29,7 +35,7 @@ Wed Sep 10 22:47:30 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_config.c (ossl_config_add_value): ditto.
 
-	* ext/openssl/ossl_config.c (set_conf_section_i): should check 
+	* ext/openssl/ossl_config.c (set_conf_section_i): should check
 	  if the argument is Array.
 
 Wed Sep 10 22:41:54 2003  Tietew <tietew@tietew.net>

@@ -146,8 +146,8 @@ NORETURN(void rb_exc_fatal _((VALUE)));
 VALUE rb_f_exit _((int,VALUE*));
 VALUE rb_f_abort _((int,VALUE*));
 void rb_remove_method _((VALUE, const char*));
-void rb_disable_super _((VALUE, const char*));
-void rb_enable_super _((VALUE, const char*));
+#define rb_disable_super(klass, name) ((void)0)
+#define rb_enable_super(klass, name) ((void)0)
 #define HAVE_RB_DEFINE_ALLOC_FUNC 1
 void rb_define_alloc_func _((VALUE, VALUE (*)(VALUE)));
 void rb_undef_alloc_func _((VALUE));
