@@ -2131,6 +2131,8 @@ class TkTextWin<TkWindow
 end
 
 class TkListbox<TkTextWin
+  include Scrollable
+
   WidgetClassNames['Listbox'] = self
   def TkListbox.to_eval
     'Listbox'

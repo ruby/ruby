@@ -667,7 +667,20 @@ class TkFont
     alias measure_core        measure_core_tk8x
     alias metrics_core        metrics_core_tk8x
 
-  when /^8\.1/
+  when /^8\.[12]/
+    alias create_latinfont    create_latinfont_tk8x
+    alias create_kanjifont    create_kanjifont_tk81
+    alias create_compoundfont create_compoundfont_tk81
+    alias actual_core         actual_core_tk8x
+    alias configure_core      configure_core_tk8x
+    alias configinfo_core     configinfo_core_tk8x
+    alias delete_core         delete_core_tk8x
+    alias latin_replace_core  latin_replace_core_tk8x
+    alias kanji_replace_core  kanji_replace_core_tk81
+    alias measure_core        measure_core_tk8x
+    alias metrics_core        metrics_core_tk8x
+
+  when /^8\.*/
     alias create_latinfont    create_latinfont_tk8x
     alias create_kanjifont    create_kanjifont_tk81
     alias create_compoundfont create_compoundfont_tk81

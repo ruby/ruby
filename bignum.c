@@ -20,7 +20,7 @@ typedef unsigned short USHORT;
 #define BIGRAD (1L << BITSPERDIG)
 #define DIGSPERINT ((unsigned int)(sizeof(long)/sizeof(short)))
 #define BIGUP(x) ((unsigned long)(x) << BITSPERDIG)
-#define BIGDN(x) (((x)<0) ? ~((~(x))>>BITSPERDIG) : (x)>>BITSPERDIG)
+#define BIGDN(x) RSHIFT(x,BITSPERDIG)
 #define BIGLO(x) ((USHORT)((x) & (BIGRAD-1)))
 
 static VALUE
@@ -1255,20 +1255,17 @@ rb_big_abs(x)
 */
 
 VALUE
-rb_big_rand(max)
+rb_big_rand(max, rand)
     VALUE max;
+    double rand;
 {
-    struct RBignum *v;
+    VALUE v;
     long len;
 
-    len = RBIGNUM(max)->len;
-    v = RBIGNUM(bignew(len,1));
+    len = RBIGNUM(v)->len;
+    v = bignew(len,1);
     while (len--) {
-#ifdef HAVE_RANDOM
-	BDIGITS(v)[len] = random();
-#else
-	BDIGITS(v)[len] = rand();
-#endif
+	BDIGITS(v)[len] = ((USHORT)~0) * rand;
     }
 
     return rb_big_mod((VALUE)v, max);

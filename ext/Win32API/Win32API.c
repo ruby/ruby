@@ -140,7 +140,7 @@ Win32API_Call(argc, argv, obj)
 
     obj_proc = rb_iv_get(obj, "__proc__");
 
-    ApiFunction = (FARPROC)NUM2INT(obj_proc);
+    ApiFunction = (FARPROC)NUM2ULONG(obj_proc);
 
     obj_import = rb_iv_get(obj, "__import__");
     obj_export = rb_iv_get(obj, "__export__");
@@ -159,7 +159,7 @@ Win32API_Call(argc, argv, obj)
 	    switch (timport) {
 	    case _T_NUMBER:
 	    case _T_INTEGER:
-		lParam = NUM2INT(rb_ary_entry(args, i));
+		lParam = NUM2ULONG(rb_ary_entry(args, i));
 #if defined(_MSC_VER) || defined(__LCC__)
 		_asm {
 		    mov     eax, lParam
@@ -173,9 +173,15 @@ Win32API_Call(argc, argv, obj)
 		break;
 	    case _T_POINTER:
 		str = rb_ary_entry(args, i);
-		Check_Type(str, T_STRING);
-		rb_str_modify(str);
-		pParam = RSTRING(str)->ptr;
+		if (NIL_P(str)) {
+		    pParam = 0;
+		} else if (FIXNUM_P(str)){
+		    pParam = (char *)NUM2ULONG(str);
+		} else {
+		    Check_Type(str, T_STRING);
+		    rb_str_modify(str);
+		    pParam = RSTRING(str)->ptr;
+		}
 #if defined(_MSC_VER) || defined(__LCC__)
 		_asm {
 		    mov     eax, dword ptr pParam

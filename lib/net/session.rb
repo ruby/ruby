@@ -1,8 +1,14 @@
-#
-# session.rb  version 1.0.1
-#
-#   author: Minero Aoki <aamine@dp.u-netsurf.ne.jp>
-#
+=begin
+
+= Net module version 1.0.2 reference manual
+
+session.rb written by Minero Aoki <aamine@dp.u-netsurf.ne.jp>
+
+This library is distributed under the terms of Ruby style license.
+You can freely distribute/modify/copy this file.
+
+=end
+
 
 require 'socket'
 
@@ -19,16 +25,47 @@ class String
 end
 
 
+=begin
+
+== Net::Session
+
+the abstruct class for Internet session
+
+=== Super Class
+
+Object
+
+=== Constants
+
+: Version
+
+  The version of Session class. It is a string like "1.0.2".
+
+=end
+
 
 module Net
 
-  DEBUG = $DEBUG
-  # DEBUG = false
-
-
   class Session
 
-    Version = '1.0.1'
+    Version = '1.0.2'
+
+=begin
+
+=== Class Methods
+
+: new( address = 'localhost', port = nil )
+
+  This method Create a new Session object.
+
+: start( address = 'localhost', port = nil, *args )
+: start( address = 'localhost', port = nil, *args ){|session| .... }
+
+  This method create a new Session object and start session.
+  If you call this method with block, Session object give itself
+  to block and finish session when block returns.
+
+=end
 
     def initialize( addr = 'localhost', port = nil )
       proto_initialize
@@ -50,6 +87,19 @@ module Net
       end
     end
 
+=begin
+
+=== Methods
+
+: address
+
+  the address of connecting server (FQDN).
+
+: port
+
+  connecting port number
+
+=end
 
     attr :address
     attr :port
@@ -59,21 +109,45 @@ module Net
     attr :proto_type
     attr :proto, true
 
+=begin
+
+: start( *args )
+
+  This method start session. If you call this method when the session
+  is already started, this only returns false without doing anything.
+
+  '*args' are specified in subclasses.
+
+: finish
+
+  This method finish session. If you call this method before session starts,
+  it only return false without doing anything.
+
+: active?
+
+  true if session have been started
+
+=end
+
     def start( *args )
       return false if active?
+      @active = true
 
       if ProtocolSocket === args[0] then
         @socket = args.shift
+        @socket.pipe = @pipe
       else
-        @socket = ProtocolSocket.open( @address, @port )
+        @socket = ProtocolSocket.open( @address, @port, @pipe )
       end
+      @pipe = nil
+
       @proto = @proto_type.new( @socket )
       do_start( *args )
-
-      @active = true
     end
 
     def finish
+      @active = false
+
       if @proto then
         do_finish
         @proto = nil
@@ -86,9 +160,36 @@ module Net
 
     def active?() @active end
 
+    def set_pipe( arg )
+      @pipe = arg
+    end
+
   end
 
 
+=begin
+
+== Net::Command
+
+=== Super Class
+
+Object
+
+=== Class Methods
+
+: new( socket )
+
+  This method create new Command object. 'socket' must be ProtocolSocket.
+  This method is abstract class.
+
+
+=== Methods
+
+: quit
+
+  This method finishes protocol.
+
+=end
 
   class Command
 
@@ -181,12 +282,28 @@ MES
   end
 
 
+=begin
+
+== Net::ProtocolSocket
+
+=== Super Class
+
+Object
+
+=== Class Methods
+
+: new( address = 'localhost', port = nil )
+
+  This create new ProtocolSocket object, and connect to server.
+
+=end
 
   class ProtocolSocket
 
-    def initialize( addr, port )
+    def initialize( addr, port, pipe = nil )
       @address = addr
       @port    = port
+      @pipe    = pipe
 
       @ipaddr  = ''
       @closed  = false
@@ -195,14 +312,39 @@ MES
 
       @socket = TCPsocket.new( addr, port )
       @ipaddr = @socket.addr[3]
-
-      @dout = Net::DEBUG
     end
+
+    attr :pipe, true
 
     class << self
       alias open new
     end
 
+=begin
+
+=== Methods
+
+: close
+
+  This method closes socket.
+
+: addr
+
+  a FQDN address of server
+
+: ipaddr
+
+  an IP address of server
+
+: port
+
+  connecting port number.
+
+: closed?
+
+  true if ProtocolSokcet have been closed already
+
+=end
 
     attr :socket, true
 
@@ -224,6 +366,36 @@ MES
     D_CRLF  = ".\r\n"
     TERMEXP = /\n|\r\n|\r/o
 
+
+=begin
+
+: read( length )
+
+  This method read 'length' bytes and return the string.
+
+: readuntil( target )
+
+  This method read until find 'target'. Returns read string.
+
+: readline
+
+  read until "\r\n" and returns it without "\r\n".
+
+: read_pendstr
+
+  This method read until "\r\n.\r\n".
+  At the same time, delete period at line head and final line ("\r\n.\r\n").
+
+: read_pendlist
+: read_pendlist{|line| .... }
+
+  This method read until "\r\n.\r\n". This method resembles to 'read_pendstr',
+  but 'read_pendlist' don't check period at line head, and returns array which
+  each element is one line.
+
+  When this method was called with block, evaluate it for each reading a line.
+
+=end
 
     def read( len, ret = '' )
       rsize = 0
@@ -256,7 +428,7 @@ MES
 
 
     def read_pendstr( dest = '' )
-      $stderr.puts "reading pendstr" if pre = @dout ; @dout = false
+      @pipe << "reading text...\n" if pre = @pipe ; @pipe = nil
 
       rsize = 0
 
@@ -266,12 +438,14 @@ MES
         dest << str
       end
 
-      $stderr.puts "read pendstr #{rsize} bytes" if @dout = pre
+      @pipe << "read #{rsize} bytes\n" if @pipe = pre
       return dest
     end
 
 
     def read_pendlist
+      @pipe << "reading list...\n" if pre = @pipe ; @pipe = nil
+
       arr = []
       str = nil
       call = iterator?
@@ -282,6 +456,7 @@ MES
         yield str if iterator?
       end
 
+      @pipe << "read #{arr.size} lines\n" if @pipe = pre
       return arr
     end
 
@@ -300,16 +475,34 @@ MES
       ret = @buffer[ 0, len ]
       @buffer = @buffer[ len, bsi - len ]
 
-      if @dout then
-        $stderr.print 'read  "'
-        debugout ret
-        $stderr.print "\"\n"
-      end
+      @pipe << %{read  "#{debugstr ret}"\n} if @pipe
       return ret
     end
 
 
-    ### write
+=begin
+
+: write( src )
+
+  This method send 'src'. ProtocolSocket read strings from 'src' by 'each'
+  iterator. This method returns written bytes.
+
+: writebin( src )
+
+  This method send 'src'. ProtocolSokcet read string from 'src' by 'each'
+  iterator. This method returns written bytes.
+
+: writeline( str )
+
+  This method writes 'str'. There has not to be bare "\r" or "\n" in 'str'.
+
+: write_pendstr( src )
+
+  This method writes 'src' as a mail.
+  ProtocolSocket reads strings from 'src' by 'each' iterator.
+  This returns written bytes.
+
+=end
 
     public
 
@@ -341,8 +534,7 @@ MES
 
 
     def write_pendstr( src )
-      $stderr.puts "writing pendstr from #{src.type}" if pre = @dout
-      @dout = false
+      @pipe << "writing text from #{src.type}" if pre = @pipe ; @pipe = nil
 
       do_write_beg
       each_crlf_line( src ) do |line|
@@ -352,7 +544,7 @@ MES
       do_write_do D_CRLF
       wsize = do_write_fin
 
-      $stderr.puts "wrote pendstr #{wsize} bytes" if @dout = pre
+      @pipe << "wrote #{wsize} bytes text" if @pipe = pre
       return wsize
     end
 
@@ -382,7 +574,7 @@ MES
       buf << "\n" unless /\n|\r/o === buf[-1,1]
 
       beg = 0
-      while pos = buf.index(TERMEXP, beg) do
+      while pos = buf.index( TERMEXP, beg ) do
         pos += $&.size
         tmp = buf[ beg, pos - beg ]
         tmp.chop!
@@ -393,39 +585,46 @@ MES
 
 
     def do_write_beg
-      $stderr.print 'write "' if @dout
+      @wtmp = 'write "' if @pipe
 
       @writtensize = 0
       @sending = ''
     end
 
     def do_write_do( arg )
-      debugout arg if @dout
+      @wtmp << debugstr( arg ) if @pipe
 
       if @sending.size < 128 then
         @sending << arg
       else
         @sending << '...' unless @sending[-1] == ?.
       end
+
       s = @socket.write( arg )
       @writtensize += s
       return s
     end
 
     def do_write_fin
-      $stderr.puts if @dout
+      if @pipe then
+        @wtmp << "\n"
+        @pipe << @wtmp
+        @wtmp = nil
+      end
 
       @socket.flush
       return @writtensize
     end
 
 
-    def debugout( ret )
-      while ret and tmp = ret[ 0, 50 ] do
-        ret = ret[ 50, ret.size - 50 ]
+    def debugstr( str )
+      ret = ''
+      while str and tmp = str[ 0, 50 ] do
+        str = str[ 50, str.size - 50 ]
         tmp = tmp.inspect
-        $stderr.print tmp[ 1, tmp.size - 2 ]
+        ret << tmp[ 1, tmp.size - 2 ]
       end
+      ret
     end
 
   end

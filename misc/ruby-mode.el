@@ -180,12 +180,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	(back-to-indentation)
 	(setq top (current-column))
 	(skip-chars-backward " \t")
-	(cond
-	 ((>= x shift)
-	  (setq shift 0))
-	 ((>= shift top)
-	  (setq shift (- shift top)))
-	 (t (setq shift 0)))
+	(if (>= shift top) (setq shift (- shift top)))
 	(if (and (bolp)
 		 (= x top))
 	    (move-to-column (+ x shift))
@@ -669,7 +664,6 @@ An end of a defun is found by moving forward from the beginning of one."
 	       "return"
 	       "then"
 	       "throw"
-	       "self"
 	       "super"
 	       "unless"
 	       "undef"
@@ -681,8 +675,8 @@ An end of a defun is found by moving forward from the beginning of one."
 	    "\\)\\>[^_]")
 	   2)
      ;; variables
-     '("\\b\\(nil\\|self\\|true\\|false\\)\\b"
-       1 font-lock-variable-name-face)
+     '("\\(^\\|[^_:.@$]\\|\\.\\.\\)\\b\\(nil\\|self\\|true\\|false\\)\\b[^_]"
+       2 font-lock-variable-name-face)
      ;; variables
      '("[$@].\\(\\w\\|_\\)*"
        0 font-lock-variable-name-face)

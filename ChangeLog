@@ -1,3 +1,195 @@
+Mon Dec  6 15:55:30 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* numeric.c (fix_rshift): Fix -1 >> 32 returned 0. (-1 is true)
+
+	* numeric.c (fix_rshift): Fix  1 >> -1 returned 0. (2 is true)
+
+Mon Dec  6 11:47:23 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* sprintf.c (rb_f_sprintf): formatted string must be tainted if
+	  any of parameters is tainted.
+
+	* file.c (rb_file_s_expand_path): expanded file path need not to
+	  be tainted always.
+
+Sat Dec  4 01:40:22 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (rb_big_rand): should not use rand/random where drand48
+	  may be available.  RANDOM_NUMBER should be provided from outside.
+
+Fri Dec  3 09:54:59 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_require): should check require 'feature.o' too.
+
+Thu Dec  2 11:58:15 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* eval.c (rb_thread_loading): should maintain loading_tbl.
+
+Thu Dec  2 10:21:43 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_thread_loading_done): wrong parameter to st_delete().
+
+Wed Dec  1 09:47:33 1999  Kazunori NISHI  <kazunori@swlab.csce.kyushu-u.ac.jp>
+
+	* string.c (rb_str_split_method): should increment end too.
+
+Tue Nov 30 01:46:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* re.c (rb_reg_source): generated source string must be tainted if
+	  regex is tainted.
+
+	* file.c (rb_file_s_basename): basename should not be tainted
+	  unless the original path is tainted.
+
+	* file.c (rb_file_s_dirname): ditto.
+
+Mon Nov 29 15:28:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* variable.c (rb_path2class): evaluated value from path should be
+	  module or class.
+
+Fri Nov 26 18:12:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_exec_end_proc): should remove only end_procs defined
+	  within load wrapper.
+
+	* eval.c (rb_load): save and restore ruby_wrapper around loading.
+
+	* eval.c (rb_mark_end_proc): mark end procs registered by END{} or
+	  at_exit{}. 
+
+	* eval.c (rb_set_end_proc): should not call rb_global_variable()
+	  on heap address;  it crashed mod_ruby.
+
+Fri Nov 26 18:12:49 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* enum.c (enum_grep): does not return nil.
+
+	* eval.c (rb_mark_end_proc): mark end procs registered by END{} or
+	  at_exit{}. 
+
+	* eval.c (rb_set_end_proc): should not call rb_global_variable()
+	  on heap address;  it crashed mod_ruby.
+
+Thu Nov 18 16:18:27 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/pstore.rb: mutual lock by flock(2).
+
+Thu Nov 18 11:44:13 1999  Masahiro Tomita  <tommy@tmtm.org>
+
+	* io.c (read_all): should check bytes too.
+
+Mon Nov 15 16:50:34 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* enum.c (enum_grep): grep with block returns collection of
+	  evaluated values of block over matched elements.
+
+Mon Nov 15 04:50:33 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* re.c (rb_reg_source): should not call rb_reg_expr_str()
+	  everytime.
+
+Fri Nov 12 23:52:19 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* process.c (rb_f_system): argument check for NT, __EMX__, DJGPP.
+
+Wed Nov 10 21:54:11 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* hash.c (rb_any_cmp): Fixed return without value.
+
+Tue Nov  9 13:21:04 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: AC_MINIX move to before AC_EXEEXT and AC_OBJEXT.
+
+Mon Nov  8 19:52:29 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* configure.in: Renamed AC_CHAR_UNSIGNED to AC_C_CHAR_UNSIGNED.
+
+	* configure.in: Added default to AC_CHECK_SIZEOF().
+
+Mon Nov  8 14:28:18 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_f_eval): fake outer scope when eval() called without
+	  bindings.
+
+	* eval.c (rb_f_binding): should copy last_class in the outer frame too.
+
+Sun Nov  7 18:31:04 1999  Yasuhiro Fukuma  <yasuf@big.or.jp>
+
+	* eval.c (is_defined): last_class may be 0.
+
+Sat Nov  6 19:26:55 1999  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* Makefile.in: Added depend entry make parse.@OBJEXT@ from parse.c
+	  for UCB make
+
+Wed Nov  3 08:52:57 1999  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
+
+	* io.c (Init_IO): forgot to use INT2FIX() around SEEK_SET, etc. 
+
+Wed Nov  3 00:25:20 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): use mbclen2() to handle kcode
+	  option of regexp objects.
+
+Sun Oct 31 13:12:42 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* regex.c (re_compile_pattern): wrong [\W] match.
+
+Thu Oct 28 13:35:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_split_method): should be mbchar aware with
+	  single char separators.
+
+Wed Oct 27 12:57:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* random.c (rb_f_srand): random seed should be unsigned.
+
+Tue Oct 26 19:20:54 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* marshal.c (r_object): should register class/module objects.
+
+Sat Oct 23 15:59:39 1999  Takaaki Tateishi  <ttate@jaist.ac.jp>
+
+	* process.c (rb_f_system): should require at least one argument.
+
+Thu Oct 21 16:14:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* dir.c (fnmatch): use eban's fnmatch; do not depend on systems's
+	  fnmatch (which may have portability problem) anymore.
+
+Wed Oct 20 15:14:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* marshal.c (marshal_load): should protect the generated object
+	  table (arg->data) from GC.
+
+Mon Oct 18 16:15:52 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/nkf/nkf.c (rb_nkf_kconv): output should be NUL terminated.
+
+Fri Oct 15 22:50:41 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* error.c (sys_nerr): on CYGWIN, it is _sys_nerr.
+
+Fri Oct 15 01:32:31 1999  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_Call): need to use NUM2ULONG,
+	  not NUM2INT.
+
+Tue Oct 12 22:29:04 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (block_pass): should copy block to prevent modifications.
+	  tag in the structure should be updated from latest prot_tag.
+
+	* eval.c (proc_s_new): tag in struct BLOCK should not point into
+	  unused stack.
+
+	* io.c (io_read): length may be 0 or negative.
+
+Tue Oct 12 13:26:27 1999  Jun-ichiro itojun Hagino  <itojun@itojun.org>
+
+	* signal.c (posix_signal): RETSIGTYPE may be void.
+
 Mon Oct 11 17:42:25 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* parse.y (rb_intern): should generate distinct ID_ATTRSET symbols
@@ -15,6 +207,10 @@ Mon Oct 11 07:27:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 Mon Oct  4 12:42:32 1999  Kazuhiko Izawa  <izawa@erec.che.tohoku.ac.jp>
 
 	* pack.c (pack_unpack): % in printf format should be %%.
+
+Wed Oct  6 17:13:19 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ruby.c (addpath): rubylib_mangled_path() modified.
 
 Mon Oct  4 10:01:40 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

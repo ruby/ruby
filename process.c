@@ -600,6 +600,13 @@ rb_f_system(argc, argv)
     VALUE cmd;
     int state;
 
+    fflush(stdout);
+    fflush(stderr);
+    if (argc == 0) {
+	rb_last_status = INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
+
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
 	    rb_raise(rb_eArgError, "wrong first argument");
@@ -618,6 +625,11 @@ rb_f_system(argc, argv)
 #ifdef DJGPP
     VALUE cmd;
     int state;
+
+    if (argc == 0) {
+	rb_last_status = INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
 
     if (TYPE(argv[0]) == T_ARRAY) {
 	if (RARRAY(argv[0])->len != 2) {
@@ -644,7 +656,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = INT2FIX(0);
-	return INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {
@@ -667,7 +679,7 @@ rb_f_system(argc, argv)
 #if defined(USE_CWGUSI)
     rb_notimplement();
 #else
-   volatile VALUE prog = 0;
+    volatile VALUE prog = 0;
     int pid;
     int i;
 
@@ -675,7 +687,7 @@ rb_f_system(argc, argv)
     fflush(stderr);
     if (argc == 0) {
 	rb_last_status = INT2FIX(0);
-	return INT2FIX(0);
+	rb_raise(rb_eArgError, "wrong # of arguments");
     }
 
     if (TYPE(argv[0]) == T_ARRAY) {

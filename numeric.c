@@ -1169,12 +1169,10 @@ fix_rshift(x, y)
     long i, val;
 
     i = NUM2LONG(y);
-    if (i < sizeof(long) * 8) {
-	val = RSHIFT(FIX2LONG(x), i);
-	return INT2FIX(val);
-    }
-
-    return INT2FIX(0);
+    if (i < 0)
+	return fix_lshift(x, INT2FIX(-i));
+    val = RSHIFT(FIX2LONG(x), i);
+    return INT2FIX(val);
 }
 
 static VALUE

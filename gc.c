@@ -242,8 +242,8 @@ add_heap()
 	/* Realloc heaps */
 	heaps_length += HEAPS_INCREMENT;
 	heaps = (heaps_used>0)?
-	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE)):
-	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE));
+	    (RVALUE**)realloc(heaps, heaps_length*sizeof(RVALUE*)):
+	    (RVALUE**)malloc(heaps_length*sizeof(RVALUE*));
 	if (heaps == 0) rb_fatal("can't alloc memory");
     }
 
@@ -893,6 +893,10 @@ rb_gc()
     jmp_buf save_regs_gc_mark;
 #ifdef C_ALLOCA
     VALUE stack_end;
+    alloca(0);
+# define STACK_END (&stack_end)
+#else
+# define STACK_END alloca(1)
 #endif
 
     alloc_objects = 0;
@@ -900,10 +904,6 @@ rb_gc()
 
     if (during_gc) return;
     during_gc++;
-
-#ifdef C_ALLOCA
-    alloca(0);
-#endif
 
     /* mark frame stack */
     for (frame = ruby_frame; frame; frame = frame->prev) {
@@ -924,18 +924,14 @@ rb_gc()
     /* This assumes that all registers are saved into the jmp_buf */
     setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
-#ifdef C_ALLOCA
-    rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)&stack_end);
-#else
-    rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)alloca(1));
-#endif
+    rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END);
 #if defined(THINK_C) || defined(__human68k__)
 #ifndef __human68k__
     mark_locations_array((VALUE*)((char*)save_regs_gc_mark+2),
 			 sizeof(save_regs_gc_mark) / sizeof(VALUE *));
 #endif
     rb_gc_mark_locations((VALUE*)((char*)rb_gc_stack_start + 2),
-		   (VALUE*)((char*)&stack_end + 2));
+			 (VALUE*)((char*)STACK_END + 2));
 #endif
     rb_gc_mark_threads();
 
@@ -943,6 +939,7 @@ rb_gc()
     for (list = Global_List; list; list = list->next) {
 	rb_gc_mark(*list->varptr);
     }
+    rb_mark_end_proc();
     rb_gc_mark_global_tbl();
 
     rb_mark_tbl(rb_class_tbl);

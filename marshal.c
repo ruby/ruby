@@ -449,7 +449,7 @@ struct load_arg {
     FILE *fp;
     char *ptr, *end;
     st_table *symbol;
-    st_table *data;
+    VALUE data;
     VALUE proc;
 };
 
@@ -602,7 +602,7 @@ r_regist(v, arg)
     if (arg->proc) {
 	rb_funcall(arg->proc, rb_intern("call"), 1, v);
     }
-    st_insert(arg->data, arg->data->num_entries, v);
+    rb_hash_aset(arg->data, INT2FIX(RHASH(arg->data)->tbl->num_entries), v);
     return v;
 }
 
@@ -612,14 +612,17 @@ r_object(arg)
 {
     VALUE v;
     int type = r_byte(arg);
+    long id;
 
     switch (type) {
       case TYPE_LINK:
-	if (st_lookup(arg->data, r_long(arg), &v)) {
-	    return v;
+	id = r_long(arg);
+	v = rb_hash_aref(arg->data, INT2FIX(id));
+	if (NIL_P(v)) {
+	    rb_raise(rb_eArgError, "dump format error (unlinked)");
 	}
-	rb_raise(rb_eArgError, "dump format error (unlinked)");
-	break;
+	return v;
+      break;
 
       case TYPE_UCLASS:
 	{
@@ -789,7 +792,7 @@ r_object(arg)
         {
 	    char *buf;
 	    r_bytes(buf, arg);
-	    return rb_path2class(buf);
+	    return r_regist(rb_path2class(buf), arg);
 	}
 
       default:
@@ -811,7 +814,6 @@ load_ensure(arg)
     struct load_arg *arg;
 {
     st_free_table(arg->symbol);
-    st_free_table(arg->data);
     return 0;
 }
 
@@ -846,11 +848,13 @@ marshal_load(argc, argv)
 
     major = r_byte(&arg);
     if (major == MARSHAL_MAJOR) {
+	volatile VALUE hash;	/* protect from GC */
+
 	if (r_byte(&arg) != MARSHAL_MINOR) {
 	    rb_warn("Old marshal file format (can be read)");
 	}
 	arg.symbol = st_init_numtable();
-	arg.data   = st_init_numtable();
+	arg.data   = hash = rb_hash_new();
 	if (NIL_P(proc)) arg.proc = 0;
 	else             arg.proc = proc;
 	v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);

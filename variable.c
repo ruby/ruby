@@ -195,10 +195,20 @@ VALUE
 rb_path2class(path)
     const char *path;
 {
+    VALUE c;
+
     if (path[0] == '#') {
 	rb_raise(rb_eArgError, "can't retrieve anonymous class %s", path);
     }
-    return rb_eval_string(path);
+    c = rb_eval_string(path);
+    switch (TYPE(c)) {
+      case T_MODULE:
+      case T_CLASS:
+	break;
+      default:
+	rb_raise(rb_eTypeError, "class path %s does not point class", path);
+    }
+    return c;
 }
 
 void

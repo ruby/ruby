@@ -292,10 +292,15 @@ rb_enable_super(klass, name)
     ID mid = rb_intern(name);
 
     body = search_method(klass, mid, &origin);
-    if (!body || !body->nd_body || origin != klass) {
+    if (!body) {
 	print_undef(klass, mid);
     }
-    body->nd_noex &= ~NOEX_UNDEF;
+    if (!body->nd_body) {
+	remove_method(klass, mid);
+    }
+    else {
+	body->nd_noex &= ~NOEX_UNDEF;
+    }
 }
 
 static void
@@ -1511,6 +1516,7 @@ is_defined(self, node, buf)
       case NODE_SUPER:
       case NODE_ZSUPER:
 	if (ruby_frame->last_func == 0) return 0;
+	else if (ruby_frame->last_class == 0) return 0;
 	else if (rb_method_boundp(RCLASS(ruby_frame->last_class)->super,
 				  ruby_frame->last_func, 0)) {
 	    if (nd_type(node) == NODE_SUPER) {
@@ -1707,7 +1713,7 @@ call_trace_func(event, file, line, self, id, klass)
 
     prev = ruby_frame;
     PUSH_FRAME();
-    *ruby_frame = *_frame.prev;
+    *ruby_frame = *prev;
     ruby_frame->prev = prev;
 
     if (file) {
@@ -4369,7 +4375,7 @@ rb_f_eval(argc, argv, self)
     VALUE *argv;
     VALUE self;
 {
-    VALUE src, scope, vfile, vline;
+    VALUE src, scope, vfile, vline, val;
     char *file = "(eval)";
     int line = 1;
 
@@ -4383,6 +4389,19 @@ rb_f_eval(argc, argv, self)
     }
 
     Check_SafeStr(src);
+    if (NIL_P(scope) && ruby_frame->prev) {
+	struct FRAME *prev;
+	VALUE val;
+
+	prev = ruby_frame;
+	PUSH_FRAME();
+	*ruby_frame = *prev->prev;
+	ruby_frame->prev = prev;
+	val = eval(self, src, scope, file, line);
+	POP_FRAME();
+
+	return val;
+    }
     return eval(self, src, scope, file, line);
 }
 
@@ -4636,6 +4655,7 @@ rb_load(fname, wrap)
     int state;
     char *file;
     volatile ID last_func;
+    volatile VALUE wrapper = 0;
     VALUE self = ruby_top_self;
     TMP_PROTECT;
 
@@ -4652,9 +4672,11 @@ rb_load(fname, wrap)
 
     PUSH_VARS();
     PUSH_CLASS();
+    wrapper = ruby_wrapper;
     if (!wrap) {
 	rb_secure(4);		/* should alter global state */
 	ruby_class = rb_cObject;
+	ruby_wrapper = 0;
     }
     else {
 	/* load in anonymous module as toplevel */
@@ -4701,7 +4723,7 @@ rb_load(fname, wrap)
     POP_FRAME();
     POP_CLASS();
     POP_VARS();
-    ruby_wrapper = 0;
+    ruby_wrapper = wrapper;
     if (ruby_nerrs > 0) {
 	ruby_nerrs = 0;
 	rb_exc_raise(ruby_errinfo);
@@ -4812,6 +4834,7 @@ rb_f_require(obj, fname)
 		ext = strrchr(buf, '.');
 		strcpy(ext, DLEXT);
 		file = feature = buf;
+		if (rb_provided(feature)) return Qfalse;
 	    }
 	    file = find_file(file);
 	    if (file) goto load_dyna;
@@ -5174,7 +5197,8 @@ struct end_proc_data {
     VALUE data;
     struct end_proc_data *next;
 };
-static struct end_proc_data *end_proc_data;
+
+static struct end_proc_data *end_procs, *ephemeral_end_procs;
 
 void
 rb_set_end_proc(func, data)
@@ -5182,12 +5206,31 @@ rb_set_end_proc(func, data)
     VALUE data;
 {
     struct end_proc_data *link = ALLOC(struct end_proc_data);
+    struct end_proc_data **list;
 
-    link->next = end_proc_data;
+    if (ruby_wrapper) list = &ephemeral_end_procs;
+    else              list = &end_procs;
+    link->next = *list;
     link->func = func;
     link->data = data;
-    rb_global_variable(&link->data);
-    end_proc_data = link;
+    *list = link;
+}
+
+void
+rb_mark_end_proc()
+{
+    struct end_proc_data *link;
+
+    link = end_procs;
+    while (link) {
+	rb_gc_mark(link->data);
+	link = link->next;
+    }
+    link = ephemeral_end_procs;
+    while (link) {
+	rb_gc_mark(link->data);
+	link = link->next;
+    }
 }
 
 static void
@@ -5220,17 +5263,20 @@ rb_f_at_exit()
 void
 rb_exec_end_proc()
 {
-    struct end_proc_data *link = end_proc_data;
-    struct end_proc_data *tmp;
+    struct end_proc_data *link;
     int status;
 
+    link = end_procs;
     while (link) {
 	rb_protect((VALUE(*)())link->func, link->data, &status);
-	tmp = link->next;
-	free(link);
-	link = tmp;
+	link = link->next;
     }
-    end_proc_data = 0;
+    while (ephemeral_end_procs) {
+	link = ephemeral_end_procs;
+	ephemeral_end_procs = link->next;
+	rb_protect((VALUE(*)())link->func, link->data, &status);
+	free(link);
+    }
 }
 
 void
@@ -5310,6 +5356,7 @@ Init_eval()
     rb_define_global_function("untrace_var", rb_f_untrace_var, -1);
 
     rb_define_global_function("set_trace_func", set_trace_func, 1);
+    rb_global_variable(&trace_func);
 
     rb_define_virtual_variable("$SAFE", safe_getter, safe_setter);
 }
@@ -5475,6 +5522,7 @@ rb_f_binding(self)
     frame_dup(&data->frame);
     if (ruby_frame->prev) {
 	data->frame.last_func = ruby_frame->prev->last_func;
+	data->frame.last_class = ruby_frame->prev->last_class;
     }
 
     if (data->iter) {
@@ -5549,6 +5597,7 @@ proc_s_new(klass)
 
     data->orig_thread = rb_thread_current();
     data->iter = data->prev?Qtrue:Qfalse;
+    data->tag = 0;		/* should not point into stack */
     frame_dup(&data->frame);
     if (data->iter) {
 	blk_copy_prev(data);
@@ -5589,6 +5638,7 @@ proc_call(proc, args)
     VALUE proc, args;		/* OK */
 {
     struct BLOCK * volatile old_block;
+    struct BLOCK _block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
     int state;
@@ -5600,7 +5650,8 @@ proc_call(proc, args)
 
     /* PUSH BLOCK from data */
     old_block = ruby_block;
-    ruby_block = data;
+    _block = *data;
+    ruby_block = &_block;
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
 
@@ -5625,6 +5676,7 @@ proc_call(proc, args)
     }
 
     PUSH_TAG(PROT_NONE);
+    _block.tag = prot_tag;
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(proc);
@@ -5690,6 +5742,7 @@ block_pass(self, node)
 {
     VALUE block = rb_eval(self, node->nd_body);
     struct BLOCK * volatile old_block;
+    struct BLOCK _block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
     int state;
@@ -5712,11 +5765,13 @@ block_pass(self, node)
 
     /* PUSH BLOCK from data */
     old_block = ruby_block;
-    ruby_block = data;
+    _block = *data;
+    ruby_block = &_block;
     PUSH_ITER(ITER_PRE);
     ruby_frame->iter = ITER_PRE;
 
     PUSH_TAG(PROT_NONE);
+    _block.tag = prot_tag;
     state = EXEC_TAG();
     if (state == 0) {
 	proc_set_safe_level(block);
@@ -5724,7 +5779,7 @@ block_pass(self, node)
     }
     POP_TAG();
     POP_ITER();
-    if (ruby_block->tag->dst == state) {
+    if (_block.tag->dst == state) {
 	state &= TAG_MASK;
 	orphan = 2;
     }
@@ -5937,7 +5992,7 @@ Init_Proc()
     rb_define_global_function("lambda", rb_f_lambda, 0);
     rb_define_global_function("binding", rb_f_binding, 0);
     rb_cBinding = rb_define_class("Binding", rb_cObject);
-    rb_undef_method(CLASS_OF(rb_cMethod), "new");
+    rb_undef_method(CLASS_OF(rb_cBinding), "new");
     rb_define_method(rb_cBinding, "clone", bind_clone, 0);
 
     rb_cMethod = rb_define_class("Method", rb_cObject);
@@ -6085,6 +6140,7 @@ thread_mark(th)
     rb_gc_mark(th->errinfo);
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);
+    rb_gc_mark(th->trace);
     rb_mark_tbl(th->locals);
 
     /* mark data in copied stack */
@@ -7277,9 +7333,12 @@ static int
 rb_thread_loading(feature)
     const char *feature;
 {
-    if (!rb_provided(feature)) return Qfalse; /* need to load */
-    if (!loading_tbl) {
-	loading_tbl = st_init_strtable();
+    if (!rb_provided(feature)) {
+	if (!loading_tbl) {
+	    loading_tbl = st_init_strtable();
+	}
+	st_insert(loading_tbl, feature, 0);
+	return Qfalse; /* need to load */
     }
     while (st_lookup(loading_tbl, feature, 0)) {
 	CHECK_INTS;
@@ -7293,7 +7352,7 @@ rb_thread_loading_done(feature)
     const char *feature;
 {
     if (loading_tbl) {
-	st_delete(loading_tbl, feature, 0);
+	st_delete(loading_tbl, &feature, 0);
     }
 }
 
