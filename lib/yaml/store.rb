@@ -13,7 +13,7 @@ module YAML
 		def initialize( *o )
 			@opt = YAML::DEFAULTS.dup
             if String === o.first
-                super(o.pop)
+                super(o.shift)
             end
             if o.last.is_a? Hash
                 @opt.update(o.pop)

@@ -1,3 +1,8 @@
+Fri Aug  2 03:20:00 2003  why the lucky stiff  <ruby-cvs@whytheluckystiff.net>
+
+    * lib/yaml/store.rb (YAML::Store#initialize): filename is first
+      argument.  Thanks Kent Dahl.
+
 Sat Aug  2 00:49:31 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: refine document.
