@@ -159,16 +159,16 @@ iconv_try
 	    /* try the left in next loop */
 	    break;
 	  case EILSEQ:
-	    return rb_obj_alloc(rb_eIconvIllegalSeq);
+	    return rb_class_new_instance(0, 0, rb_eIconvIllegalSeq);
 	  case EINVAL:
-	    return rb_obj_alloc(rb_eIconvInvalidChar);
+	    return rb_class_new_instance(0, 0, rb_eIconvInvalidChar);
 	  default:
 	    rb_sys_fail("iconv");
 	}
     }
     else if (*inlen > 0) {
 	/* something goes wrong */
-	return rb_obj_alloc(rb_eIconvIllegalSeq);
+	return rb_class_new_instance(0, 0, rb_eIconvIllegalSeq);
     }
     return Qfalse;
 }
@@ -341,7 +341,7 @@ iconv_convert
 */
 /*
 =begin
---- Iconv.new(to, from)
+--- Iconv.new(to, from) {|cd| ...}
     Creates new code converter from a coding-system designated with ((|from|))
     to another one designated with ((|to|)).
     :Parameters
@@ -418,7 +418,7 @@ iconv_s_open
 =begin
 --- Iconv.iconv(to, from, *strs)
     Shorthand for
-      Iconv.open(to, from) {|cd| (strs + nil).collect {|s| cd.iconv(s)}}
+      Iconv.open(to, from) {|cd| (strs + [nil]).collect {|s| cd.iconv(s)}}
     :Parameters
       :((|to|)), ((|from|))
         see ((<Iconv.new>)).
@@ -661,14 +661,17 @@ iconv_failure_inspect
 
 =begin
 == Iconv::IllegalSequence
-Exception in the case of any illegal sequence detected.
+Input conversion stopped due to an input byte that does not belong to
+the input codeset, or the output codeset does not contain the
+character.
 === Superclass
 (({ArgumentError}))
 === Included Modules
 ((<Iconv::Failure>))
 
 == Iconv::InvalidCharacter
-Exception in the case of output coding system can't express the character.
+Input conversion stopped due to an incomplete character or shift
+sequence at the end of the input buffer.
 === Superclass
 (({ArgumentError}))
 === Included Modules

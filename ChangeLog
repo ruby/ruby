@@ -1,3 +1,8 @@
+Tue May  7 15:41:33 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/iconv/iconv.c (iconv_try): should initialize exceptions
+	  properly. (ruby-bugs-ja:PR#232)
+
 Tue May  7 15:28:03 2002  Minero Aoki  <aamine@loveruby.net>
 
 	* eval.c (rb_yield_0): The destination of the goto jump was wrong.
