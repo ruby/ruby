@@ -219,6 +219,37 @@ EOR
 
 		end
 
+		def test_rdf_li
+
+			rss = make_RDF(<<-EOR)
+<channel rdf:about="http://example.com/">
+  <title>hoge</title>
+  <link>http://example.com/</link>
+  <description>hogehoge</description>
+  <image rdf:resource="http://example.com/hoge.png" />
+  <items>
+    <rdf:Seq>
+      <rdf:li \#{rdf_li_attr}/>
+    </rdf:Seq>
+  </items>
+  <textinput rdf:resource="http://example.com/search" />
+</channel>
+#{make_item}
+EOR
+
+			source = Proc.new do |rdf_li_attr|
+				eval(%Q[%Q[#{rss}]], binding)
+			end
+
+			attr = %q[resource="http://example.com/hoge"]
+			assert_parse(source.call(attr), :nothing_raised)
+
+			attr = %q[rdf:resource="http://example.com/hoge"]
+			assert_parse(source.call(attr), :nothing_raised)
+
+			assert_parse(source.call(""), :missing_attribute, "li", "resource")
+		end
+
 	  def test_image
 
 			assert_parse(make_RDF(<<-EOR), :missing_attribute, "image", "about")

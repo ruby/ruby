@@ -260,19 +260,18 @@ module RSS
 		def start_else_element(local, prefix, attrs, ns)
 			class_name = local[0,1].upcase << local[1..-1]
 			current_class = @last_element.class
-			begin
-#			if current_class.const_defined?(class_name)
+#			begin
+			if current_class.constants.include?(class_name)
 				next_class = current_class.const_get(class_name)
 				start_have_something_element(local, prefix, attrs, ns, next_class)
-			rescue NameError
-#			else
+#			rescue NameError
+			else
 				if @ignore_unknown_element
 					@proc_stack.push(nil)
 				else
 					parent = "ROOT ELEMENT???"
-					begin
-						parent = current_class::TAG_NAME
-					rescue NameError
+					if current_class.const_defined?("TAG_NAME")
+						parent = current_class.const_get("TAG_NAME")
 					end
 					raise NotExceptedTagError.new(local, parent)
 				end
@@ -317,14 +316,18 @@ module RSS
 			
 			klass.get_attributes.each do |a_name, a_uri, required|
 
-				if a_uri
+				if a_uri.is_a?(String) or !a_uri.respond_to?(:include?)
+					a_uri = [a_uri]
+				end
+				unless a_uri == [nil]
 					for prefix, uri in ns
-						if uri == a_uri
+						if a_uri.include?(uri)
 							val = attrs["#{prefix}:#{a_name}"]
 							break if val
 						end
 					end
-				else
+				end
+				if val.nil? and a_uri.include?(nil)
 					val = attrs[a_name]
 				end
 

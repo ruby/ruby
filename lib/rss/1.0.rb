@@ -150,7 +150,7 @@ EOT
 			end
 			
 			[
-				["resource", nil, true]
+				["resource", [URI, nil], true]
 			].each do |name, uri, required|
 				install_get_attribute(name, uri, required)
 			end

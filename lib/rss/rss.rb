@@ -1,7 +1,7 @@
 require "time"
 
 class Time
-	class << Time
+	class << self
 		unless respond_to?(:w3cdtf)
 			def w3cdtf(date)
 				if /\A\s*
@@ -510,11 +510,8 @@ EOC
 
 				if not_shift
 					not_shift = false
-				else
-					begin
-						tag = tags.shift
-					rescue NameError
-					end
+				elsif tags
+					tag = tags.shift
 				end
 
 				if DEBUG
@@ -551,11 +548,9 @@ EOC
 					end
 				else
 					if elem[0] == tag
-						begin
-							if model[i+1][0] != elem[0] and tags.first == elem[0]
-								raise TooMuchTagError.new(elem[0], tag_name)
-							end
-						rescue NameError # for model[i+1][0] and tags.first
+						if model[i+1] and model[i+1][0] != elem[0] and
+								tags and tags.first == elem[0]
+							raise TooMuchTagError.new(elem[0], tag_name)
 						end
 					else
 						raise MissingTagError.new(elem[0], tag_name)

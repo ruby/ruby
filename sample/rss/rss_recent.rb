@@ -10,10 +10,8 @@ class String
 	end
 end
 
-require "rss/parser"
 require "rss/1.0"
 require "rss/2.0"
-require "rss/syndication"
 require "rss/dublincore"
 
 items = []
@@ -76,9 +74,10 @@ processing_time = Time.now - before_time
 items.sort do |x, y|
 	y[1].dc_date <=> x[1].dc_date
 end[0..20].each do |channel, item|
-	puts "#{item.dc_date.localtime.iso8601} : " <<
-		"#{channel.title} : #{item.title}"
-	puts " description : #{item.description.shorten(50)}" if item.description
+	puts "#{item.dc_date.localtime.iso8601}: " <<
+		"#{channel.title}: #{item.title}"
+	puts " Description: #{item.description.shorten(50)}" if item.description
 end
 
-puts "Processing Time : #{processing_time}s"
+puts "Used XML parser: #{RSS::Parser.default_parser}"
+puts "Processing time: #{processing_time}s"

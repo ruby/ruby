@@ -46,11 +46,11 @@ module RSS
 	# For backward compatibility
 	DublincoreModel = DublinCoreModel
 
-	class RDF < Element
-		class Channel < Element; include DublinCoreModel; end
-		class Image < Element; include DublinCoreModel; end
-		class Item < Element; include DublinCoreModel; end
-		class Textinput < Element; include DublinCoreModel; end
+	class RDF
+		class Channel; include DublinCoreModel; end
+		class Image; include DublinCoreModel; end
+		class Item; include DublinCoreModel; end
+		class Textinput; include DublinCoreModel; end
 	end
 
 	prefix_size = DC_PREFIX.size + 1

@@ -17,6 +17,14 @@ rescue LoadError
 	end
 end
 
+module XML
+	class Parser
+		unless defined?(Error)
+			Error = ::XMLParserError
+		end
+	end
+end
+
 module RSS
 	
 	class REXMLLikeXMLParser < ::XML::Parser
