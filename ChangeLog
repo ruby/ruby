@@ -1,3 +1,8 @@
+Sat Aug  2 20:59:38 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/https.rb: change an option name.
+	  :SSLCertStore -> :SSLCertificateStore.
+
 Sat Aug  2 19:18:40 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/smtp.rb: respond_to? needs 2nd argument.
