@@ -47,11 +47,26 @@
 
 (defconst ruby-block-end-re "end")
 
+(defconst ruby-here-doc-beg-re
+  (concat "<<\\([-]\\)?\\([a-zA-Z0-9]+\\)\\|"
+          "<<\\([-]\\)?[\"]\\([^\"]+\\)[\"]\\|"
+           "<<\\([-]\\)?[']\\([^']+\\)[']"))
+
+(defun ruby-here-doc-end-match ()
+  (concat "^"
+          (if (or (match-string 1)
+                  (match-string 3)
+                  (match-string 5))
+              "[ \t]*" nil)
+          (or (match-string 2)
+              (match-string 4)
+              (match-string 6))))
+
 (defconst ruby-delimiter
   (concat "[?$/%(){}#\"'`.:]\\|<<\\|\\[\\|\\]\\|\\<\\("
 	  ruby-block-beg-re
 	  "\\|" ruby-block-end-re
-	  "\\)\\>\\|^=begin")
+	  "\\)\\>\\|^=begin\\|" ruby-here-doc-beg-re)
   )
 
 (defconst ruby-negative
@@ -518,6 +533,12 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (goto-char pnt))))
        ((looking-at "^__END__$")
 	(goto-char pnt))
+       ((looking-at ruby-here-doc-beg-re)
+	(if (re-search-forward (ruby-here-doc-end-match)
+			       indent-point t)
+	    (forward-line 1)
+	  (setq in-string (match-end 0))
+	  (goto-char indent-point)))
        (t
 	(error (format "bad string %s"
 		       (buffer-substring (point) pnt)
@@ -1047,6 +1068,35 @@ balanced expression is found."
       (modify-syntax-entry ?_ "w" tbl)
       tbl))
 
+  (defun ruby-font-lock-here-docs (limit)
+    (if (re-search-forward ruby-here-doc-beg-re limit t)
+	(let (beg)
+	  (beginning-of-line)
+          (forward-line)
+	  (setq beg (point))
+	  (if (re-search-forward (ruby-here-doc-end-match) nil t)
+	      (progn
+		(set-match-data (list beg (point)))
+		t)))))
+
+  (defun ruby-font-lock-maybe-here-docs (limit)
+    (let (beg)
+      (save-excursion
+	(if (re-search-backward ruby-here-doc-beg-re nil t)
+	    (progn
+	      (beginning-of-line)
+              (forward-line)
+	      (setq beg (point)))))
+      (let ((end-match (ruby-here-doc-end-match)))
+        (if (and beg
+                 (not (re-search-backward end-match beg t))
+                 (re-search-forward end-match nil t))
+            (progn
+              (set-match-data (list beg (point)))
+              t)
+          nil))))
+
+
   (defvar ruby-font-lock-keywords
     (list
      ;; functions
@@ -1109,6 +1159,13 @@ balanced expression is found."
        0 font-lock-comment-face t)
      '(ruby-font-lock-maybe-docs
        0 font-lock-comment-face t)
+     ;; "here" document
+     '(ruby-font-lock-here-docs
+       0 font-lock-string-face t)
+     '(ruby-font-lock-maybe-here-docs
+       0 font-lock-string-face t)
+     `(,ruby-here-doc-beg-re
+       0 font-lock-string-face t)
      ;; constants
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+\\(\\w\\|_\\)*\\)"
        2 font-lock-type-face)

@@ -4254,11 +4254,20 @@ VALUE
 rb_yield_splat(values)
     VALUE values;
 {
-    values = svalue_to_avalue(values);
-    if (RARRAY(values)->len == 0) {
-	return rb_yield_0(Qundef, 0, 0, Qfalse, Qfalse);
+    VALUE tmp;
+    int avalue = Qfalse;
+
+    tmp = rb_check_array_type(values);
+    if (!NIL_P(tmp)) {
+	if (RARRAY(tmp)->len == 0) {
+	    values = Qundef;
+	}
+	else {
+	    values = tmp;
+	    avalue = Qtrue;
+	}
     }
-    return rb_yield_0(values, 0, 0, Qfalse, Qtrue);
+    return rb_yield_0(values, 0, 0, Qfalse, avalue);
 }
 
 static VALUE
