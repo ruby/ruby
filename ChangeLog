@@ -1,3 +1,8 @@
+Tue Nov 16 16:20:45 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_read): position was ignored when a
+	  buffer was passed.  http://www.yo.rim.or.jp/~nov/d/?date=20041116#p03
+
 Tue Nov 16 13:35:54 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::options): add
