@@ -1,3 +1,8 @@
+Wed Mar 20 00:46:54 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* dir.c (my_getcwd): the content of buf is uncertain and must not
+	  be printed when getcwd(buf, size) has failed.
+
 Mon Mar 18 10:55:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* enum.c (enum_find): catch a value before recycle.
