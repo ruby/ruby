@@ -1,3 +1,7 @@
+Mon Oct 20 18:28:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_catch): backout.
+
 Mon Oct 20 17:31:46 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (PUSH_FRAME): generate unique number to be TAG_JUMP()
