@@ -52,7 +52,7 @@
 
 (defconst ruby-negative
   (concat "^[ \t]*\\(\\(" ruby-block-mid-re "\\)\\>\\|\\("
-	    ruby-block-end-re "\\)\\>\\|\\}\\|\\]\\)")
+	    ruby-block-end-re "\\)\\>\\|}\\|\\]\\)")
   )
 
 (defconst ruby-operator-chars "-,.+*/%&|^~=<>:")
@@ -549,7 +549,7 @@ The variable ruby-indent-level controls the amount of indentation.
 			      (and (not (eolp))
 				   (progn
 				     (forward-char -1)
-				     (not (looking-at "\\{")))
+				     (not (looking-at "{")))
 				   (progn
 				     (forward-word -1)
 				     (not (looking-at "do\\>[^_]")))))

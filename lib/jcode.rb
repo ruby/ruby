@@ -1,5 +1,9 @@
 # jcode.rb - ruby code to handle japanese (EUC/SJIS) string
 
+if $VERBOSE && $KCODE == "NONE"
+  STDERR.puts "Warning: $KCODE is NONE."
+end
+
 $vsave, $VERBOSE = $VERBOSE, false
 class String
   printf STDERR, "feel free for some warnings:\n" if $VERBOSE

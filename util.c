@@ -509,21 +509,6 @@ fixpath(const char *in, char *out)
       break;
   }
 }
-
-#ifdef TEST
-
-int main (int argc, char *argv[])
-{
-  char fixed[FILENAME_MAX];
-  if (argc > 1)
-    {
-      _fixpath (argv[1], fixed);
-      printf ("You mean %s?\n", fixed);
-    }
-  return 0;
-}
-
-#endif
 #endif
 
 /* mm.c */

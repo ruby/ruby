@@ -9,6 +9,7 @@
 
 module Find
   def find(*path)
+    path.collect!{|d| d.dup}
     while file = path.shift
       catch(:prune) do
 	yield file

@@ -1468,90 +1468,65 @@ VALUE
 rb_str_inspect(str)
     VALUE str;
 {
-#define STRMAX 80
-    char buf[STRMAX];
+    long len;
     char *p, *pend;
-    char *b;
-    VALUE inspect;
+    char *q, *qend;
+    VALUE result = rb_str_new2("\"");
+    char s[5];
 
     p = RSTRING(str)->ptr; pend = p + RSTRING(str)->len;
-    b = buf;
-    *b++ = '"';
-
-#define CHECK(n) {\
-    if (b - buf + n > STRMAX - 4) {\
-	strcpy(b, "...");\
-	b += 3;\
-        break;\
-    }\
-}
-
     while (p < pend) {
 	char c = *p++;
 	if (ismbchar(c) && p < pend) {
 	    int len = mbclen(c);
-
-	    CHECK(len);
-	    *b++ = c;
-	    while (--len) {
-		*b++ = *p++;
-	    }
+	    rb_str_cat(result, p, len);
+	    p += len;
 	}
 	else if (c == '"'|| c == '\\') {
-	    CHECK(2);
-	    *b++ = '\\';
-	    *b++ = c;
+	    s[0] = '\\'; s[1] = c;
+	    rb_str_cat(result, s, 2);
 	}
 	else if (ISPRINT(c)) {
-	    CHECK(1);
-	    *b++ = c;
+	    s[0] = c;
+	    rb_str_cat(result, s, 1);
 	}
 	else if (c == '\n') {
-	    CHECK(2);
-	    *b++ = '\\';
-	    *b++ = 'n';
+	    s[0] = '\\'; s[1] = 'n';
+	    rb_str_cat(result, s, 2);
 	}
 	else if (c == '\r') {
-	    CHECK(2);
-	    *b++ = '\\';
-	    *b++ = 'r';
+	    s[0] = '\\'; s[1] = 'r';
+	    rb_str_cat(result, s, 2);
 	}
 	else if (c == '\t') {
-	    CHECK(2);
-	    *b++ = '\\';
-	    *b++ = 't';
+	    s[0] = '\\'; s[1] = 't';
+	    rb_str_cat(result, s, 2);
 	}
 	else if (c == '\f') {
-	    CHECK(2);
-	    *b++ = '\\';
-	    *b++ = 'f';
+	    s[0] = '\\'; s[1] = 'f';
+	    rb_str_cat(result, s, 2);
 	}
 	else if (c == '\013') {
-	    CHECK(2);
-	    *b++ = '\\';
-	    *b++ = 'v';
+	    s[0] = '\\'; s[1] = 'v';
+	    rb_str_cat(result, s, 2);
 	}
 	else if (c == '\007') {
-	    CHECK(2);
-	    *b++ = '\\';
-	    *b++ = 'a';
+	    s[0] = '\\'; s[1] = 'a';
+	    rb_str_cat(result, s, 2);
 	}
 	else if (c == 033) {
-	    CHECK(2);
-	    *b++ = '\\';
-	    *b++ = 'e';
+	    s[0] = '\\'; s[1] = 'e';
+	    rb_str_cat(result, s, 2);
 	}
 	else {
-	    CHECK(4);
-	    *b++ = '\\';
-	    sprintf(b, "%03o", c & 0377);
-	    b += 3;
+	    sprintf(s, "\\%03o", c & 0377);
+	    rb_str_cat2(result, s);
 	}
     }
-    *b++ = '"';
-    inspect = rb_str_new(buf, b - buf);
-    OBJ_INFECT(inspect, str);
-    return inspect;
+    rb_str_cat2(result, "\"");
+
+    OBJ_INFECT(result, str);
+    return result;
 }
 
 static VALUE
@@ -1641,6 +1616,7 @@ rb_str_dump(str)
     }
     *q++ = '"';
 
+    OBJ_INFECT(result, str);
     return result;
 }
 

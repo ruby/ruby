@@ -870,8 +870,6 @@ rb_ivar_get(obj, id)
 {
     VALUE val;
 
-    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't access instance variable");
     switch (TYPE(obj)) {
       case T_OBJECT:
       case T_CLASS:
@@ -951,8 +949,6 @@ rb_obj_instance_variables(obj)
 {
     VALUE ary;
 
-    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     switch (TYPE(obj)) {
       case T_OBJECT:
@@ -1152,8 +1148,6 @@ VALUE
 rb_mod_const_at(mod, ary)
     VALUE mod, ary;
 {
-    if (!OBJ_TAINTED(mod) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     if (RCLASS(mod)->iv_tbl) {
 	st_foreach(RCLASS(mod)->iv_tbl, sv_i, ary);
     }
@@ -1476,9 +1470,6 @@ rb_mod_class_variables(obj)
     VALUE obj;
 {
     VALUE ary = rb_ary_new();
-
-    if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
-	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
 
     if (FL_TEST(obj, FL_SINGLETON)) {
 	obj = rb_cvar_singleton(rb_iv_get(obj, "__attached__"));

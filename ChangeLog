@@ -2,6 +2,54 @@ Mon Dec  4 13:44:01 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/jcode.rb: consider multibyte. not /n.
 
+Mon Dec  4 09:49:36 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_inspect): output whole string contents. no more `...'
+
+	* string.c (rb_str_dump): should propagate taintness.
+
+	* hash.c (env_inspect): hash like human readable output.
+
+	* variable.c (rb_ivar_get): prohibiting instance variable access
+	  is too much restriction.
+
+	* class.c (method_list): retrieving information should not be
+	  restricted where $SAFE=4.
+
+	* class.c (rb_obj_singleton_methods): ditto.
+
+	* eval.c (rb_thread_priority): ditto.
+
+	* eval.c (rb_thread_local_aref): ditto.
+
+	* variable.c (rb_obj_instance_variables): ditto.
+
+	* variable.c (rb_mod_const_at): ditto.
+
+	* variable.c (rb_mod_class_variables): ditto.
+
+	* eval.c (rb_exec_end_proc): end_proc should be preserved.
+
+Sat Dec  2 22:32:43 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_yield_0): || should accept exactly zero argument.
+
+	* parse.y (stmt): multiple right hand side for single assignment
+	  (e.g. a = 1,2) is allowed.
+
+Wed Nov 29 07:55:29 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_long): dumping long should be smaller than 32bit max.
+
+	* marshal.c (w_long): shorter long format for small integers(-123..122).
+
+	* marshal.c (r_long): ditto.
+
+Tue Nov 28 18:10:51 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_define_method): quick hack to implement
+	  on-the-fly method definition.  experimental.
+
 Mon Nov 27 17:00:35 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): should not redefine builtin classes/modules

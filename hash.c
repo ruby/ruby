@@ -1257,6 +1257,35 @@ env_to_s()
 }
 
 static VALUE
+env_inspect()
+{
+    char **env;
+    VALUE str = rb_str_new2("{");
+    VALUE i;
+
+    env = environ;
+    while (*env) {
+	char *s = strchr(*env, '=');
+
+	if (env != environ) {
+	    rb_str_cat2(str, ", ");
+	}
+	if (s) {
+	    rb_str_cat2(str, "\"");
+	    rb_str_cat(str, *env, s-*env);
+	    rb_str_cat2(str, "\"=>");
+	    i = rb_inspect(rb_str_new2(s+1));
+	    rb_str_append(str, i);
+	}
+	env++;
+    }
+    rb_str_cat2(str, "}");
+    OBJ_TAINT(str);
+
+    return str;
+}
+
+static VALUE
 env_to_a()
 {
     char **env;
@@ -1473,6 +1502,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"reject", env_reject, 0);
     rb_define_singleton_method(envtbl,"reject!", env_reject_bang, 0);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
+    rb_define_singleton_method(envtbl,"inspect", env_inspect, 0);
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);
     rb_define_singleton_method(envtbl,"to_a", env_to_a, 0);
     rb_define_singleton_method(envtbl,"index", env_index, 1);

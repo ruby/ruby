@@ -23,10 +23,11 @@ Language Spec.
 * Fixnum 0 as false ????
 * discourage use of symbol variable (e.g. $/, etc.) in manual
 * discourage use of Perlish features by giving warnings.
-* `exception' method to be alternative for `$!'. ??
 * non confusing in-block local variable (is it possible?)
   + remove scope by block
   + variables appears within block may have independent values.
+* Regexp: make /o thread safe.
+* decide if begin with rescue or ensure make do..while loop.
 
 Hacking Interpreter
 
@@ -44,10 +45,11 @@ Hacking Interpreter
 * scrambled script, or script filter
 * setuid ruby
 * performance tune for in-block (dynamic) local variables.
-* generational GC ?
+* generational GC
 * give warnings to assign magic variables.
 * export rb_io_{addstr,printf,puts,print}
 * autoload should work with threads [ruby-talk:4589]
+* remove stdio dependency from IOs.
 
 Standard Libraries
 
@@ -73,7 +75,7 @@ Standard Libraries
 - performance tune for String's non-bang methods.
 - 'w' template for pack/unpack
 - alternative for interator? => block_given?
-- regex - /p (make obsolete), /m (new)
+- regex - /p (made obsolete), /m (new)
 - consistent /, %, divmod
 - unbound method object
 - integrate final.rb into the core.
@@ -92,6 +94,7 @@ Standard Libraries
 * Process::waitall [ruby-talk:4557]
 * synchronized method - synchronized{...}, synchronized :foo, :bar
 * move Time::times to Process.
+* Module#define_method which takes a name and a body (block, proc or method).
 
 Extension Libraries
 
@@ -115,4 +118,4 @@ Tools
 Misc
 
 - publish Ruby books
-* publish Ruby books in English
+- publish Ruby books in English

@@ -52,7 +52,7 @@ shortlen(len, ds)
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   4
+#define MARSHAL_MINOR   5
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -143,8 +143,23 @@ w_long(x, arg)
     char buf[sizeof(long)+1];
     int i, len = 0;
 
+#if SIZEOF_LONG > 4
+    if (!(RSHIFT(x, 32) == 0 || RSHIFT(x, 32) == -1)) {
+	/* big long does not fit in 4 bytes */
+	rb_raise(rb_eTypeError, "long too big to dump");
+    }
+#endif
+
     if (x == 0) {
 	w_byte(0, arg);
+	return;
+    }
+    if (0 < x && x < 123) {
+	w_byte(x + 5, arg);
+	return;
+    }
+    if (-124 < x && x < 0) {
+	w_byte((x - 5)&0xff, arg);
 	return;
     }
     for (i=1;i<sizeof(long)+1;i++) {
@@ -597,11 +612,14 @@ r_long(arg)
     struct load_arg *arg;
 {
     register long x;
-    int c = r_byte(arg);
+    int c = (char)r_byte(arg);
     int i;
 
     if (c == 0) return 0;
     if (c > 0) {
+	if (4 < c && c < 128) {
+	    return c - 5;
+	}
 	if (c > sizeof(long)) long_toobig(c);
 	x = 0;
 	for (i=0;i<c;i++) {
@@ -609,6 +627,9 @@ r_long(arg)
 	}
     }
     else {
+	if (-129 < c && c < -4) {
+	    return c + 5;
+	}
 	c = -c;
 	if (c > sizeof(long)) long_toobig(c);
 	x = -1;

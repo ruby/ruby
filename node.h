@@ -117,6 +117,8 @@ enum node_type {
 #ifdef C_ALLOCA
     NODE_ALLOCA,
 #endif
+    NODE_DMETHOD,
+    NODE_BMETHOD,
     NODE_MEMO,
     NODE_LAST
 };
@@ -324,6 +326,8 @@ typedef struct RNode {
 #define NEW_NEWLINE(n) rb_node_newnode(NODE_NEWLINE,0,0,n)
 #define NEW_PREEXE(b) NEW_SCOPE(b)
 #define NEW_POSTEXE() rb_node_newnode(NODE_POSTEXE,0,0,0)
+#define NEW_DMETHOD(b) rb_node_newnode(NODE_DMETHOD,0,0,b)
+#define NEW_BMETHOD(b) rb_node_newnode(NODE_BMETHOD,0,0,b)
 
 #define NOEX_PUBLIC    0
 #define NOEX_UNDEF     1

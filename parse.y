@@ -188,7 +188,7 @@ static void top_local_setup();
 %type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
 %type <node> opt_call_args call_args ret_args args when_args
 %type <node> aref_args opt_block_arg block_arg stmt_rhs
-%type <node> mrhs superclass generic_call block_call var_ref
+%type <node> mrhs mrhs_basic superclass generic_call block_call var_ref
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref
 %type <node> block_var opt_block_var brace_block do_block lhs none
@@ -406,6 +406,10 @@ stmt		: block_call
 			value_expr($3);
 			$1->nd_value = $3;
 			$$ = $1;
+		    }
+		| lhs '=' mrhs_basic
+		    {
+			$$ = node_assign($1, $3);
 		    }
 		| expr
 
@@ -1009,17 +1013,17 @@ args 		: arg
 			$$ = list_append($1, $3);
 		    }
 
-mrhs		: args
+mrhs		: arg
 		    {
-			if ($1 &&
-		            nd_type($1) == NODE_ARRAY &&
-		            $1->nd_next == 0)
-			{
-			    $$ = $1->nd_head;
-			}
-			else {
-			    $$ = $1;
-			}
+			value_expr($1);
+			$$ = $1;
+		    }
+		| mrhs_basic
+
+mrhs_basic	: args ',' arg
+		    {
+			value_expr($1);
+			$$ = list_append($1, $3);
 		    }
 		| args ',' tSTAR arg
 		    {
@@ -1211,7 +1215,7 @@ primary		: literal
 		  compstmt
 		  kEND
 		    {
-			value_expr($2);
+			value_expr($5);
 			$$ = NEW_FOR($2, $5, $8);
 		        fixpos($$, $2);
 		    }
@@ -1357,11 +1361,11 @@ block_var	: lhs
 opt_block_var	: none
 		| '|' /* none */ '|'
 		    {
-			$$ = 0;
+			$$ = (NODE*)1;
 		    }
 		| tOROP
 		    {
-			$$ = 0;
+			$$ = (NODE*)1;
 		    }
 		| '|' block_var '|'
 		    {
@@ -1390,7 +1394,7 @@ brace_block	: '{'
 		  compstmt '}'
 		    {
 			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $3?$3:$4);
+		        fixpos($$, $4);
 			dyna_pop($<vars>2);
 		    }
 		| kDO2
@@ -1402,7 +1406,7 @@ brace_block	: '{'
 		  kEND
 		    {
 			$$ = NEW_ITER($3, 0, $4);
-		        fixpos($$, $3?$3:$4);
+		        fixpos($$, $4);
 			dyna_pop($<vars>2);
 		    }
 

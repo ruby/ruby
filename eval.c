@@ -86,7 +86,10 @@ static VALUE rb_f_block_given_p _((void));
 static VALUE block_pass _((VALUE,NODE*));
 static VALUE rb_cMethod;
 static VALUE method_proc _((VALUE));
+static VALUE method_call _((int, VALUE*, VALUE));
 static VALUE rb_cUnboundMethod;
+static VALUE umethod_bind _((VALUE, VALUE));
+static VALUE rb_mod_define_method _((int, VALUE*, VALUE));
 
 static int scope_vmode;
 #define SCOPE_PUBLIC    0
@@ -1114,7 +1117,7 @@ ruby_options(argc, argv)
     }
 }
 
-static void rb_exec_end_proc _((void));
+void rb_exec_end_proc _((void));
 
 void
 ruby_finalize()
@@ -3458,14 +3461,24 @@ rb_yield_0(val, self, klass, acheck)
     if (block->var) {
 	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
-	    if (nd_type(block->var) == NODE_MASGN)
-		massign(self, block->var, val, acheck);
-	    else {
+	    if (block->var == (NODE*)1) {
 		if (acheck && val != Qundef &&
-		    TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
-		    val = RARRAY(val)->ptr[0];
+		    TYPE(val) == T_ARRAY && RARRAY(val)->len != 0) {
+		    rb_raise(rb_eArgError, "wrong # of arguments (%d for 0)",
+			     RARRAY(val)->len);
 		}
-		assign(self, block->var, val, acheck);
+	    }
+	    else {
+		if (nd_type(block->var) == NODE_MASGN)
+		    massign(self, block->var, val, acheck);
+		else {
+		    /* argument adjust for proc_call etc. */
+		    if (acheck && val != Qundef && 
+			TYPE(val) == T_ARRAY && RARRAY(val)->len == 1) {
+			val = RARRAY(val)->ptr[0];
+		    }
+		    assign(self, block->var, val, acheck);
+		}
 	    }
 	}
 	POP_TAG();
@@ -4208,6 +4221,14 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
       case NODE_ATTRSET:
       case NODE_IVAR:
 	result = rb_eval(recv, body);
+	break;
+
+      case NODE_DMETHOD:
+	result = method_call(argc, argv, umethod_bind(body->nd_cval, recv));
+	break;
+
+      case NODE_BMETHOD:
+	result = proc_call(body->nd_cval, rb_ary_new4(argc, argv));
 	break;
 
       default:
@@ -5639,20 +5660,19 @@ rb_f_at_exit()
     return proc;
 }
 
-static void
+void
 rb_exec_end_proc()
 {
     struct end_proc_data *link;
     int status;
 
-    while (end_procs) {
-	link = end_procs;
-	end_procs = link->next;
+    link = end_procs;
+    while (link) {
 	rb_protect((VALUE(*)())link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);
 	}
-	free(link);
+	link = link->next;
     }
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
@@ -5737,6 +5757,7 @@ Init_eval()
     rb_define_private_method(rb_cModule, "remove_method", rb_mod_remove_method, 1);
     rb_define_private_method(rb_cModule, "undef_method", rb_mod_undef_method, 1);
     rb_define_private_method(rb_cModule, "alias_method", rb_mod_alias_method, 2);
+    rb_define_private_method(rb_cModule, "define_method", rb_mod_define_method, -1);
 
     rb_define_singleton_method(rb_cModule, "nesting", rb_mod_nesting, 0);
     rb_define_singleton_method(rb_cModule, "constants", rb_mod_s_constants, 0);
@@ -6163,6 +6184,7 @@ proc_arity(proc)
 
     Data_Get_Struct(proc, struct BLOCK, data);
     if (data->var == 0) return INT2FIX(-1);
+    if (data->var == (NODE*)1) return INT2FIX(0);
     switch (nd_type(data->var)) {
       default:
 	return INT2FIX(-1);
@@ -6538,6 +6560,42 @@ umethod_proc(method)
     VALUE method;
 {
     return rb_iterate(mproc, 0, umcall, method);
+}
+
+static VALUE
+rb_mod_define_method(argc, argv, mod)
+    int argc;
+    VALUE *argv;
+    VALUE mod;
+{
+    ID id;
+    VALUE name, body;
+
+    if (argc == 1) {
+	id = rb_to_id(argv[0]);
+	body = rb_f_lambda();
+    }
+    else if (argc == 2) {
+	id = rb_to_id(argv[0]);
+	body = argv[1];
+    }
+    else {
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 1)", argc);
+    }
+    if (TYPE(body) != T_DATA) {
+	/* type error */
+    }
+    if (RDATA(body)->dmark == bm_mark) {
+	rb_add_method(mod, id, NEW_DMETHOD(method_unbind(body)), NOEX_PUBLIC);
+    }
+    else if (RDATA(body)->dmark != blk_mark) {
+	rb_add_method(mod, id, NEW_BMETHOD(body), NOEX_PUBLIC);
+    }
+    else {
+	/* type error */
+    }
+
+    return body;
 }
 
 void
@@ -7609,12 +7667,7 @@ static VALUE
 rb_thread_priority(thread)
     VALUE thread;
 {
-    rb_thread_t th = rb_thread_check(thread);;
-
-    if (rb_safe_level() >= 4 && th != curr_thread) {
-	rb_raise(rb_eSecurityError, "Insecure: can't get priority");
-    }
-    return INT2NUM(th->priority);
+    return INT2NUM(rb_thread_check(thread)->priority);
 }
 
 static VALUE
