@@ -37,13 +37,7 @@ elsif RUBY_PLATFORM =~ /-nextstep|-rhapsody|-darwin/
   CFLAGS.gsub!( /-arch\s\w*/, '' )
 end
 
-if FileTest.readable? 'nul'
-  $null = open('nul', 'w')
-elsif FileTest.readable? '/dev/null'
-  $null = open('/dev/null', 'w')
-else
-  $null = open('test.log', 'w')
-end
+$log = open('mkmf.log', 'w')
 
 LINK = "#{CONFIG['CC']} -o conftest -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s #{CONFIG['LDFLAGS']} %s conftest.c %s %s #{CONFIG['LIBS']}"
 CPP = "#{CONFIG['CPP']} -E %s -I#{$hdrdir} #{CFLAGS} -I#{CONFIG['includedir']} %s %s conftest.c"
@@ -64,11 +58,12 @@ $orgout = $stdout.dup
 def xsystem command
   Config.expand(command)
   if $DEBUG
-    print command, "\n"
+    puts command
     return system(command)
   end
-  $stderr.reopen($null) 
-  $stdout.reopen($null) 
+  $stderr.reopen($log) 
+  $stdout.reopen($log) 
+  puts command
   r = system(command)
   $stderr.reopen($orgerr)
   $stdout.reopen($orgout)
