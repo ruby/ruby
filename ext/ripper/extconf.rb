@@ -5,8 +5,10 @@ require 'rbconfig'
 
 def main
   unless have_command('bison')
-    $stderr.puts 'Ripper requires bison; abort'
-    exit 1
+    unless File.exist?('ripper.c') or File.exist?("#{$srcdir}/ripper.c")
+      $stderr.puts 'missing bison; abort'
+      exit 1
+    end
   end
   $objs = %w(ripper.o)
   $cleanfiles.concat %w(ripper.y ripper.c ripper.E ripper.output eventids1.c ids1 ids2)

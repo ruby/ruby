@@ -1,3 +1,8 @@
+Thu Dec 16 04:02:28 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/extconf.rb: bison is not needed if ripper.c exists.
+	  [ruby-dev:25191]
+
 Thu Dec 16 03:27:10 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: remove junk.
