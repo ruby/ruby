@@ -223,33 +223,6 @@ def try_run(src, opt="")
   end
 end
 
-def install_rb(mfile, dest, srcdir = nil)
-  libdir = "lib"
-  libdir = srcdir + "/" + libdir if srcdir
-  path = []
-  dir = []
-  if File.directory? libdir
-    Find.find(libdir) do |f|
-      next unless /\.rb$/ =~ f
-      f = f[libdir.length+1..-1]
-      path.push f
-      dir |= [File.dirname(f)]
-    end
-  end
-  for f in dir
-    if f == "."
-      mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s\n", dest
-    else
-      mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s/%s\n", dest, f
-    end
-  end
-  for f in path
-    d = '/' + File::dirname(f)
-    d = '' if d == '/.' 
-    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' %s/%s %s%s\n", libdir, f, dest, d
-  end
-end
-
 def append_library(libs, lib)
   if /mswin32/ =~ RUBY_PLATFORM
     lib + ".lib " + libs
@@ -437,6 +410,52 @@ def with_destdir(dir)
   /^\$[\(\{]/ =~ dir ? dir : "$(DESTDIR)"+dir
 end
 
+def install_dllib(mfile, target, site = false)
+  if site
+    dir = "$(sitearchdir)"
+    install = "site-install"
+  else
+    dir = "$(archdir)"
+    install = "install"
+  end
+  mfile.print target ? <<EOMF : <<EOMF
+#{install}:	#{dir}$(target_prefix)/$(DLLIB)
+
+#{dir}$(target_prefix)/$(DLLIB): $(DLLIB)
+	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' #{dir}$(target_prefix)
+	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0755, true)' $(DLLIB) #{dir}$(target_prefix)/$(DLLIB)
+EOMF
+#{install}:	Makefile
+EOMF
+end
+
+def install_rb(mfile, dest, srcdir = nil)
+  libdir = "lib"
+  libdir = srcdir + "/" + libdir if srcdir
+  path = []
+  dir = []
+  if File.directory? libdir
+    Find.find(libdir) do |f|
+      next unless /\.rb$/ =~ f
+      f = f[libdir.length+1..-1]
+      path.push f
+      dir |= [File.dirname(f)]
+    end
+  end
+  for f in dir
+    if f == "."
+      mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s\n", dest
+    else
+      mfile.printf "\t@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' %s/%s\n", dest, f
+    end
+  end
+  for f in path
+    d = '/' + File::dirname(f)
+    d = '' if d == '/.' 
+    mfile.printf "\t@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0644, true)' %s/%s %s%s\n", libdir, f, dest, d
+  end
+end
+
 def create_makefile(target, srcdir = $srcdir)
   save_libs = $libs.dup
   save_libpath = $LIBPATH.dup
@@ -462,9 +481,25 @@ def create_makefile(target, srcdir = $srcdir)
   $configure_args['--enable-shared'] or $LIBPATH |= ["$(topdir)"]
   $LIBPATH |= [CONFIG["libdir"]]
 
+  unless $objs then
+    $objs = []
+    for f in Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
+      f = File.basename(f)
+      f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
+      $objs.push f
+    end
+  else
+    for i in $objs
+      i.sub!(/\.o\z/, ".#{$OBJEXT}")
+    end
+  end
+  $objs = $objs.join(" ")
+
+  target = nil if $objs == ""
+
   srcdir ||= '.'
   defflag = ''
-  if RUBY_PLATFORM =~ /cygwin|mingw/
+  if target and RUBY_PLATFORM =~ /cygwin|mingw/
     deffile = target + '.def'
     if not File.exist? deffile
       if File.exist? File.join srcdir, deffile
@@ -488,20 +523,7 @@ def create_makefile(target, srcdir = $srcdir)
   end
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
 
-  unless $objs then
-    $objs = []
-    for f in Dir[File.join(srcdir, "*.{#{SRC_EXT.join(%q{,})}}")]
-      f = File.basename(f)
-      f.sub!(/(#{SRC_EXT.join(%q{|})})$/, $OBJEXT)
-      $objs.push f
-    end
-  else
-    for i in $objs
-      i.sub!(/\.o\z/, ".#{$OBJEXT}")
-    end
-  end
-  $objs = $objs.join(" ")
-
+  dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
   mfile = open("Makefile", "w")
   mfile.binmode if /mingw/ =~ RUBY_PLATFORM
   mfile.print  <<EOMF
@@ -551,14 +573,14 @@ LIBS = #{$libs}
 OBJS = #{$objs}
 
 TARGET = #{target}
-DLLIB = $(TARGET).#{CONFIG["DLEXT"]}
+DLLIB = #{dllib}
 
 RUBY = #{CONFIG["ruby_install_name"]}
 RM = $(RUBY) -rftools -e "File::rm_f(*ARGV.map do|x|Dir[x]end.flatten.uniq)"
 
 EXEEXT = #{CONFIG["EXEEXT"]}
 
-all:		$(DLLIB)
+all:		#{target ? "$(DLLIB)" : "Makefile"}
 
 clean:;		@$(RM) *.#{$OBJEXT} *.so *.sl *.a $(DLLIB)
 		@$(RM) $(TARGET).lib $(TARGET).exp $(TARGET).ilk *.pdb $(CLEANFILES)
@@ -569,24 +591,17 @@ distclean:	clean
 
 realclean:	distclean
 
-install:	$(archdir)$(target_prefix)/$(DLLIB)
-
-site-install:	$(sitearchdir)$(target_prefix)/$(DLLIB)
-
-$(archdir)$(target_prefix)/$(DLLIB): $(DLLIB)
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(rubylibdir) $(archdir)$(target_prefix)
-	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(archdir)$(target_prefix)/$(DLLIB)
 EOMF
+
+  install_dllib(mfile, target)
   install_rb(mfile, "$(rubylibdir)$(target_prefix)", srcdir)
   mfile.printf "\n"
 
-  mfile.printf <<EOMF
-$(sitearchdir)$(target_prefix)/$(DLLIB): $(DLLIB)
-	@$(RUBY) -r ftools -e 'File::makedirs(*ARGV)' $(sitearchdir)$(target_prefix)
-	@$(RUBY) -r ftools -e 'File::install(ARGV[0], ARGV[1], 0555, true)' $(DLLIB) $(sitearchdir)$(target_prefix)/$(DLLIB)
-EOMF
+  install_dllib(mfile, target, :site)
   install_rb(mfile, "$(sitelibdir)$(target_prefix)", srcdir)
   mfile.printf "\n"
+
+  return unless target
 
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   if /mswin32/ !~ RUBY_PLATFORM
@@ -664,6 +679,7 @@ EOMF
     end
     dfile.close
   end
+ensure
   mfile.close
   $libs = save_libs
   $LIBPATH = save_libpath

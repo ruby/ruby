@@ -1,3 +1,7 @@
+Sun Dec 22 00:36:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): accept pure ruby libraries.
+
 Fri Dec 20 19:35:37 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in: get rid of --no-undefined option in $DLDFLAGS.
