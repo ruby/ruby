@@ -702,6 +702,7 @@ wince/errno.c
 wince/errno.h
 wince/fcntl.h
 wince/io.h
+wince/mkconfig_wce.rb
 wince/process_wce.c
 wince/process.h
 wince/signal.h
