@@ -536,7 +536,7 @@ if __FILE__ == $0
     def test_object
       a = Object.new
       a.instance_eval {@a = a}
-      hex = '0x' + ('%x'%a.id)
+      hex = '0x' + ('%x' % (a.id * 2))
       assert_equal("#<Object:#{hex} @a=#<Object:#{hex} ...>>\n", PP.pp(a, 79, ''))
     end
 
