@@ -8092,16 +8092,15 @@ rb_callcc(self)
     struct tag *tag;
 
     THREAD_ALLOC(th);
-    th->status = THREAD_KILLED;
-    th->thread = cont = Data_Wrap_Struct(rb_cCont, thread_mark,
+    cont = Data_Wrap_Struct(rb_cCont, thread_mark,
 					 thread_free, th);
 
     FL_SET(ruby_scope, SCOPE_DONT_RECYCLE);
     for (tag=prot_tag; tag; tag=tag->prev) {
 	scope_dup(tag->scope);
     }
-    th->prev = 0;
-    th->next = curr_thread;
+    th->prev = th->next = 0;
+    th->thread = curr_thread->thread;
     if (THREAD_SAVE_CONTEXT(th)) {
 	return th->result;
     }
@@ -8118,7 +8117,7 @@ rb_cont_call(argc, argv, cont)
 {
     rb_thread_t th = rb_thread_check(cont);
 
-    if (th->next != curr_thread) {
+    if (th->thread != curr_thread->thread) {
 	rb_raise(rb_eRuntimeError, "continuation called across threads");
     }
     switch (argc) {
