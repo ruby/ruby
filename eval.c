@@ -7980,7 +7980,6 @@ rb_thread_remove(th)
 
     rb_thread_ready(th);
     rb_thread_die(th);
-    if (th->status == THREAD_KILLED) return; /* died in process */
     th->prev->next = th->next;
     th->next->prev = th->prev;
 }

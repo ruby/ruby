@@ -21,13 +21,10 @@ Fri Feb 21 05:16:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Feb 20 19:05:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* eval.c (rb_thread_remove): thread may die in the process of
-	  rb_thread_die().  this change was suggested by Rudi Cilibrasi
-	  <cilibrar@drachma.ugcs.caltech.edu>.
-
 	* eval.c (rb_thread_start_0): main thread swapped by fork() may
 	  terminate rb_thread_start_0() successfully. call ruby_stop(0);
-	  this change too was suggested by Rudi.
+	  this change was suggested by Rudi Cilibrasi
+	  <cilibrar@drachma.ugcs.caltech.edu>.
 
 Thu Feb 20 18:44:51 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
