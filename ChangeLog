@@ -1,3 +1,7 @@
+Mon Jan  8 21:35:10 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* file.c (path_check_1): should restore modified path.
+
 Sat Jan  6 00:55:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (pack_pack): template "m2" or "u2" caused inifinite loop.

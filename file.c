@@ -2029,6 +2029,7 @@ path_check_1(path)
     }
     for (;;) {
 	if (stat(path, &st) == 0 && (st.st_mode & 002)) {
+           if (p) *p = '/';
 	    return 0;
 	}
 	s = strrchr(path, '/');
@@ -2056,7 +2057,10 @@ rb_path_check(path)
 
 	if (pend) *pend = '\0';
 	safe = path_check_1(p);
-	if (!safe) return 0;
+       if (!safe) {
+           if (pend) *pend = sep;
+           return 0;
+       }
 	if (!pend) break;
 	*pend = sep;
 	p = pend + 1;
