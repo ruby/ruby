@@ -5052,7 +5052,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	noex  = ent->noex;
 	body  = ent->method;
     }
-    else if ((body = rb_get_method_body(&k, &id, &noex)) == 0) {
+    else if ((body = rb_get_method_body(&klass, &id, &noex)) == 0) {
 	if (scope == 3) {
 	    return rb_undefined(recv, mid, argc, argv, CSTAT_SUPER);
 	}
