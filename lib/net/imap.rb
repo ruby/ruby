@@ -3130,6 +3130,22 @@ module Net
     end
     add_authenticator "LOGIN", LoginAuthenticator
 
+    # Authenticator for the "PLAIN" authentication type.  See
+    # #authenticate().
+    class PlainAuthenticator
+      def process(data)
+        return "\0#{@user}\0#{@password}"
+      end
+
+      private
+
+      def initialize(user, password)
+        @user = user
+        @password = password
+      end
+    end 
+    add_authenticator "PLAIN", PlainAuthenticator
+
     # Authenticator for the "CRAM-MD5" authentication type.  See
     # #authenticate().
     class CramMD5Authenticator

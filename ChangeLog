@@ -1,3 +1,9 @@
+Sun Dec 26 16:21:39 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (Net::IMAP::PlainAuthenticator): added a new class
+	  to support the PLAIN authentication mechanism. Thanks, Benjamin
+	  Stiglitz.
+
 Fri Dec 24 23:27:18 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/image.rb: TkPhotoImage#cget bug fix
