@@ -68,7 +68,7 @@ class TestFileUtils
 
   include FileUtils
 
-  def my_rm_rf( path )
+  def my_rm_rf(path)
     if File.exist?('/bin/rm')
       system %Q[/bin/rm -rf "#{path}"]
     else
@@ -235,8 +235,8 @@ end
 
     cp_r 'data', 'tmp2', :preserve => true
     TARGETS.each do |fname|
-      assert_same_entry fname, "tmp/#{fname}"
-      assert_same_file fname, "tmp/#{fname}"
+      assert_same_entry fname, "tmp2/#{File.basename(fname)}"
+      assert_same_file fname, "tmp2/#{File.basename(fname)}"
     end
 
     # a/* -> b/*
@@ -293,6 +293,17 @@ end
       mv 'tmp/dest/mvdest', 'tmp'
       assert_same_file fname, 'tmp/mvdest'
     end
+
+    # [ruby-talk:124368]
+    mkdir 'tmp/tmpdir'
+    mkdir_p 'tmp/dest2/tmpdir'
+    assert_raises(Errno::EISDIR) {
+      mv 'tmp/tmpdir', 'tmp/dest2'
+    }
+    mkdir 'tmp/dest2/tmpdir/junk'
+    assert_raises(Errno::EISDIR) {
+      mv 'tmp/tmpdir', 'tmp/dest2'
+    }
 
     # src==dest (1) same path
     touch 'tmp/cptmp'

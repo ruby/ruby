@@ -1,3 +1,8 @@
+Mon Dec 27 15:29:12 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb (cp_r): tested wrong file name.
+	  [ruby-dev:25339]
+
 Mon Dec 27 15:15:18 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mv): should raise error when moving a
