@@ -15,10 +15,7 @@ require 'net/protocol'
 
 module Net
 
-
-class HTTPError < ProtocolError; end
-class HTTPBadResponse < HTTPError; end
-
+  class HTTPBadResponse < StandardError; end
 
 =begin
 
@@ -43,18 +40,20 @@ class HTTPBadResponse < HTTPError; end
   get data from "path" on connecting host.
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
   Data is written to "dest" by using "<<" method.
-  This method returns response header (Hash) and "dest".
+  This method returns Net::HTTPResponse object and "dest".
 
   If called as iterator, give a part String of entity body.
 
 : head( path, header = nil )
   get only header from "path" on connecting host.
   "header" is a Hash like { 'Accept' => '*/*', ... }.
-  This method returns header as a Hash like
+  This method returns Net::HTTPResponse object.
+  You can http header from this object like:
 
-    { 'content-length' => 'Content-Length: 2554',
-      'content-type'   => 'Content-Type: text/html',
-      ... }
+    response['content-length']   #-> '2554'
+    response['content-type']     #-> 'text/html'
+    response['Content-Type']     #-> 'text/html'
+    response['CoNtEnT-tYpe']     #-> 'text/html'
 
 : post( path, data, header = nil, dest = '' )
 : post( path, data, header = nil ) {|str| .... }
@@ -62,42 +61,58 @@ class HTTPBadResponse < HTTPError; end
   If body exists, also get entity body.
   It is written to "dest" by using "<<" method.
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
-  This method returns response header (Hash) and "dest".
+  This method returns Net::HTTPResponse object and "dest".
 
   If called as iterator, gives a part String of entity body.
 
 : get2( path, header = nil ) {|writer| .... }
   send GET request for "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
-  This method gives HTTPWriter object to block.
-
-: get_body( dest = '' )
-: get_body {|str| .... }
-  gets entity body of forwarded 'get2' or 'post2' methods.
-  Data is written in "dest" by using "<<" method.
-  This method returns "dest".
-
-  If called as iterator, gives a part String of entity body.
+  This method gives HTTPReadAdapter object to block.
 
 : post2( path, data, header = nil ) {|writer| .... }
   post "data"(must be String now) to "path".
   "header" must be a Hash like { 'Accept' => '*/*', ... }.
-  This method gives HTTPWriter object to block.
+  This method gives HTTPReadAdapter object to block.
 
 
-= class HTTPWriter
+= class HTTPResponse
+
+== Methods
+
+HTTP response object.
+All "key" is case-insensitive.
+
+: code
+  HTTP result code. ex. '302'
+
+: message
+  HTTP result message. ex. 'Not Found'
+
+: self[ key ]
+  returns header field for "key".
+  for HTTP, value is a string like 'text/plain'(for Content-Type),
+  '2045'(for Content-Length), 'bytes 0-1024/10024'(for Content-Range).
+  Multiple header had be joined by HTTP1.1 scheme.
+
+: self[ key ] = val
+  set field value for "key".
+
+: key?( key )
+  true if key is exist
+
+
+= class HTTPReadAdapter
 
 == Methods
 
 : header
-  HTTP header.
-
 : response
-  ReplyCode object.
+  Net::HTTPResponse object
 
 : entity( dest = '' )
 : body( dest = '' )
-  entity body.
+  entity body
 
 : entity {|str| ... }
   get entity body by using iterator.
@@ -130,30 +145,19 @@ class HTTPBadResponse < HTTPError; end
         @command.get_body( resp, dest )
       }
 
-      return resp['http-header'], ret
+      return resp, ret
     end
 
     def get2( path, u_header = nil )
       u_header = procheader( u_header )
       connecting( u_header ) {
         @command.get edit_path(path), u_header
-        tmp = HTTPWriter.new( @command )
+        tmp = HTTPReadAdapter.new( @command )
         yield tmp
         tmp.off
       }
     end
 
-=begin c
-    def get_body( dest = '', &block )
-      if block then
-        dest = ReadAdapter.new( block )
-      end
-      @command.get_body @response, dest
-      ensure_termination @u_header
-
-      dest
-    end
-=end
 
     def head( path, u_header = nil )
       u_header = procheader( u_header )
@@ -163,7 +167,7 @@ class HTTPBadResponse < HTTPError; end
         resp = @command.get_response_no_body
       }
 
-      resp['http-header']
+      resp
     end
 
     def post( path, data, u_header = nil, dest = nil, &block )
@@ -176,14 +180,14 @@ class HTTPBadResponse < HTTPError; end
         @command.get_body( resp, dest )
       }
 
-      return resp['http-header'], ret
+      return resp, ret
     end
 
     def post2( path, data, u_header = nil )
       u_header = procheader( u_header )
       connecting( u_header ) {
         @command.post edit_path(path), u_header, data
-        tmp = HTTPWriter.new( @command )
+        tmp = HTTPReadAdapter.new( @command )
         yield tmp
         tmp.off
       }
@@ -193,33 +197,18 @@ class HTTPBadResponse < HTTPError; end
     def put( path, src, u_header = nil )
       u_header = procheader( u_header )
       ret = ''
+      resp = nil
       connecting( u_header ) {
         @command.put path, u_header, src, dest
         resp = @comman.get_response
         @command.get_body( resp, ret )
       }
 
-      return header, ret
+      return resp, ret
     end
 
 
     private
-
-
-=begin c
-    def only_header( mid, path, u_header, data = nil )
-      @u_header = u_header
-      @response = nil
-      connecting u_header
-      if data then
-        @command.send mid, edit_path(path), u_header, data
-      else
-        @command.send mid, edit_path(path), u_header
-      end
-      @response = @command.get_response
-      @response['http-header']
-    end
-=end
 
 
     # called when connecting
@@ -255,8 +244,8 @@ class HTTPBadResponse < HTTPError; end
     end
 
     def keep_alive?( header )
-      if str = header['Connection'] then
-        if /\A\s*keep-alive/i === str then
+      if header.key? 'connection' then
+        if /\A\s*keep-alive/i === header['connection'] then
           return true
         end
       else
@@ -301,82 +290,126 @@ class HTTPBadResponse < HTTPError; end
   HTTPSession = HTTP
 
 
-  class HTTPWriter
+  class HTTPReadAdapter
 
     def initialize( command )
       @command = command
-      @response = @header = @entity = nil
-    end
-
-    def response
-      unless @resp then
-        @resp = @command.get_response
-      end
-      @resp
+      @header = @body = nil
     end
 
     def header
       unless @header then
-        @header = response['http-header']
+        @header = @command.get_response
       end
       @header
     end
+    alias response header
 
-    def entity( dest = nil, &block )
+    def body( dest = nil, &block )
       dest, ret = HTTP.procdest( dest, block )
-      unless @entity then
-        @entity = @command.get_body( response, dest )
+      unless @body then
+        @body = @command.get_body( response, dest )
       end
-      @entity
+      @body
     end
-    alias body entity
+    alias entity body
 
     def off
-      entity
+      body
       @command = nil
     end
   
   end
 
 
-  class HTTPSwitchProtocol                < SuccessCode; end
+  class HTTPResponse < Response
 
-  class HTTPOK                            < SuccessCode; end
-  class HTTPCreated                       < SuccessCode; end
-  class HTTPAccepted                      < SuccessCode; end
-  class HTTPNonAuthoritativeInformation   < SuccessCode; end
-  class HTTPNoContent                     < SuccessCode; end
-  class HTTPResetContent                  < SuccessCode; end
-  class HTTPPartialContent                < SuccessCode; end
+    def initialize( code_type, code, msg )
+      super
+      @data = {}
+      @http_body_exist = true
+    end
 
-  class HTTPMultipleChoice                < RetryCode; end
-  class HTTPMovedPermanently              < RetryCode; end
-  class HTTPMovedTemporarily              < RetryCode; end
-  class HTTPNotModified                   < RetryCode; end
-  class HTTPUseProxy                      < RetryCode; end
+    attr_accessor :http_body_exist
+
+    def []( key )
+      @data[ key.downcase ]
+    end
+
+    def []=( key, val )
+      @data[ key.downcase ] = val
+    end
+
+    def each( &block )
+      @data.each( &block )
+    end
+
+    def each_key( &block )
+      @data.each_key( &block )
+    end
+
+    def each_value( &block )
+      @data.each_value( &block )
+    end
+
+    def delete( key )
+      @data.delete key.downcase
+    end
+
+    def key?( key )
+      @data.key? key.downcase
+    end
+
+    def to_hash
+      @data.dup
+    end
+
+  end
+
+
+  HTTPSuccessCode                   = SuccessCode.mkchild
+  HTTPRetriableCode                 = RetriableCode.mkchild
+  HTTPFatalErrorCode                = FatalErrorCode.mkchild
+
+
+  HTTPSwitchProtocol                = HTTPSuccessCode.mkchild
+
+  HTTPOK                            = HTTPSuccessCode.mkchild
+  HTTPCreated                       = HTTPSuccessCode.mkchild
+  HTTPAccepted                      = HTTPSuccessCode.mkchild
+  HTTPNonAuthoritativeInformation   = HTTPSuccessCode.mkchild
+  HTTPNoContent                     = HTTPSuccessCode.mkchild
+  HTTPResetContent                  = HTTPSuccessCode.mkchild
+  HTTPPartialContent                = HTTPSuccessCode.mkchild
+
+  HTTPMultipleChoice                = HTTPRetriableCode.mkchild
+  HTTPMovedPermanently              = HTTPRetriableCode.mkchild
+  HTTPMovedTemporarily              = HTTPRetriableCode.mkchild
+  HTTPNotModified                   = HTTPRetriableCode.mkchild
+  HTTPUseProxy                      = HTTPRetriableCode.mkchild
   
-  class HTTPBadRequest                    < RetryCode; end
-  class HTTPUnauthorized                  < RetryCode; end
-  class HTTPPaymentRequired               < RetryCode; end
-  class HTTPForbidden                     < FatalErrorCode; end
-  class HTTPNotFound                      < FatalErrorCode; end
-  class HTTPMethodNotAllowed              < FatalErrorCode; end
-  class HTTPNotAcceptable                 < FatalErrorCode; end
-  class HTTPProxyAuthenticationRequired   < RetryCode; end
-  class HTTPRequestTimeOut                < FatalErrorCode; end
-  class HTTPConflict                      < FatalErrorCode; end
-  class HTTPGone                          < FatalErrorCode; end
-  class HTTPLengthRequired                < FatalErrorCode; end
-  class HTTPPreconditionFailed            < FatalErrorCode; end
-  class HTTPRequestEntityTooLarge         < FatalErrorCode; end
-  class HTTPRequestURITooLarge            < FatalErrorCode; end
-  class HTTPUnsupportedMediaType          < FatalErrorCode; end
+  HTTPBadRequest                    = HTTPRetriableCode.mkchild
+  HTTPUnauthorized                  = HTTPRetriableCode.mkchild
+  HTTPPaymentRequired               = HTTPRetriableCode.mkchild
+  HTTPForbidden                     = HTTPFatalErrorCode.mkchild
+  HTTPNotFound                      = HTTPFatalErrorCode.mkchild
+  HTTPMethodNotAllowed              = HTTPFatalErrorCode.mkchild
+  HTTPNotAcceptable                 = HTTPFatalErrorCode.mkchild
+  HTTPProxyAuthenticationRequired   = HTTPRetriableCode.mkchild
+  HTTPRequestTimeOut                = HTTPFatalErrorCode.mkchild
+  HTTPConflict                      = HTTPFatalErrorCode.mkchild
+  HTTPGone                          = HTTPFatalErrorCode.mkchild
+  HTTPLengthRequired                = HTTPFatalErrorCode.mkchild
+  HTTPPreconditionFailed            = HTTPFatalErrorCode.mkchild
+  HTTPRequestEntityTooLarge         = HTTPFatalErrorCode.mkchild
+  HTTPRequestURITooLarge            = HTTPFatalErrorCode.mkchild
+  HTTPUnsupportedMediaType          = HTTPFatalErrorCode.mkchild
 
-  class HTTPNotImplemented                < FatalErrorCode; end
-  class HTTPBadGateway                    < FatalErrorCode; end
-  class HTTPServiceUnavailable            < FatalErrorCode; end
-  class HTTPGatewayTimeOut                < FatalErrorCode; end
-  class HTTPVersionNotSupported           < FatalErrorCode; end
+  HTTPNotImplemented                = HTTPFatalErrorCode.mkchild
+  HTTPBadGateway                    = HTTPFatalErrorCode.mkchild
+  HTTPServiceUnavailable            = HTTPFatalErrorCode.mkchild
+  HTTPGatewayTimeOut                = HTTPFatalErrorCode.mkchild
+  HTTPVersionNotSupported           = HTTPFatalErrorCode.mkchild
 
 
   class HTTPCommand < Command
@@ -431,38 +464,48 @@ class HTTPBadResponse < HTTPError; end
 
 
     def get_response
-      rep = get_reply
-      rep = get_reply while ContinueCode === rep
-      header = {}
+      resp = get_reply
+      resp = get_reply while ContinueCode === resp
+
       while true do
         line = @socket.readline
         break if line.empty?
-        nm = /\A[^:]+/.match( line )[0].strip.downcase
-        header[nm] = line
-      end
-      rep['http-header'] = header
 
-      rep
+        m = /\A([^:]+):\s*(.*)/p.match( line )
+        unless m then
+          raise HTTPBadResponse, 'wrong header line format'
+        end
+        nm = m[1]
+        line = m[2]
+        if resp.key? nm then
+          resp[nm] << ', ' << line
+        else
+          resp[nm] = line
+        end
+      end
+
+      resp
     end
 
     def check_response( resp )
       reply_must resp, SuccessCode
     end
 
-    def get_body( rep, dest )
-      header = rep['http-header']
-
-      if rep['body-exist'] then
-        if chunked? header then
-          read_chunked( dest, header )
+    def get_body( resp, dest )
+      if resp.http_body_exist then
+        if chunked? resp then
+          read_chunked( dest, resp )
         else
-          if clen = content_length( header ) then
+          clen = content_length( resp )
+          if clen then
             @socket.read clen, dest
           else
-            if false then # "multipart/byteranges" check should be done
+            clen = range_length( resp )
+            if clen then
+              @socket.read clen, dest
             else
-              if header['Connection'] and
-                 /connection:\s*close/i === header['Connection'] then
+              tmp = resp['connection']
+              if tmp and /close/i === tmp then
                 @socket.read_all dest
                 @socket.close
               end
@@ -471,7 +514,7 @@ class HTTPBadResponse < HTTPError; end
         end
       end
       end_critical
-      reply_must rep, SuccessCode
+      reply_must resp, SuccessCode
 
       dest
     end
@@ -501,7 +544,7 @@ class HTTPBadResponse < HTTPError; end
     end
 
 
-    CODE_TO_CLASS = {
+    HTTPCODE_TO_OBJ = {
       '100' => [ContinueCode,                        false],
       '100' => [HTTPSwitchProtocol,                  false],
 
@@ -547,17 +590,18 @@ class HTTPBadResponse < HTTPError; end
 
     def get_reply
       str = @socket.readline
-      unless /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s*(.*)\z/i === str then
+      m = /\AHTTP\/(\d+\.\d+)?\s+(\d\d\d)\s*(.*)\z/i.match( str )
+      unless m then
         raise HTTPBadResponse, "wrong status line format: #{str}"
       end
-      @http_version = $1
-      status  = $2
-      discrip = $3
+      @http_version = m[1]
+      status  = m[2]
+      discrip = m[3]
       
-      klass, bodyexist = CODE_TO_CLASS[status] || [UnknownCode, true]
-      code = klass.new( status, discrip )
-      code['body-exist'] = bodyexist
-      code
+      klass, bodyexist = HTTPCODE_TO_OBJ[status] || [UnknownCode, true]
+      resp = HTTPResponse.new( klass, status, discrip )
+      resp.http_body_exist = bodyexist
+      resp
     end
 
     def read_chunked( ret, header )
@@ -567,10 +611,11 @@ class HTTPBadResponse < HTTPError; end
 
       while true do
         line = @socket.readline
-        unless /[0-9a-hA-H]+/ === line then
+        m = /[0-9a-hA-H]+/.match( line )
+        unless m then
           raise HTTPBadResponse, "chunk size not given"
         end
-        len = $&.hex
+        len = m[0].hex
         break if len == 0
         @socket.read( len, ret ); total += len
         @socket.read 2   # \r\n
@@ -581,28 +626,47 @@ class HTTPBadResponse < HTTPError; end
       end
 
       header.delete 'transfer-encoding'
-      header[ 'content-length' ] = "Content-Length: #{total}"
+      header[ 'content-length' ] = total.to_s
     end
 
     
     def content_length( header )
-      unless str = header[ 'content-length' ] then
-        return nil
+      if header.key? 'content-length' then
+        m = /\d+/.match( header['content-length'] )
+        unless m then
+          raise HTTPBadResponse, 'wrong Content-Length format'
+        end
+        m[0].to_i
+      else
+        nil
       end
-      unless /\Acontent-length:\s*(\d+)/i === str then
-        raise HTTPBadResponse, "content-length format error"
-      end
-      $1.to_i
     end
 
     def chunked?( header )
-      if str = header[ 'transfer-encoding' ] then
-        if /\Atransfer-encoding:\s*chunked/i === str then
-          return true
-        end
+      str = header[ 'transfer-encoding' ]
+      if str and /(\A|\s+)chunked(?:\s+|\z)/i === str then
+        true
+      else
+        false
       end
+    end
 
-      false
+    def range_length( header )
+      if header.key? 'content-range' then
+        m = %r<bytes\s+(\d+)-(\d+)/\d+>.match( header['content-range'] )
+        unless m then
+          raise HTTPBadResponse, 'wrong Content-Range format'
+        end
+        l = m[2].to_i
+        u = m[1].to_i
+        if l > u then
+          nil
+        else
+          u - l
+        end
+      else
+        nil
+      end
     end
 
   end

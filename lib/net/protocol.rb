@@ -15,7 +15,7 @@ require 'socket'
 
 module Net
 
-  Version = '1.1.11'
+  Version = '1.1.12'
 
 =begin
 
@@ -95,7 +95,7 @@ Object
             @port    = port
           end
 
-          def connect( addr, port )
+          def connect( addr = nil, port = nil )
             super @proxyaddr, @proxyport
           end
           private :connect
@@ -286,55 +286,21 @@ Object
   end
 
 
-  class ProtocolError        < StandardError   ; end
-  class   ProtoSyntaxError   <   ProtocolError ; end
-  class   ProtoFatalError    <   ProtocolError ; end
-  class   ProtoUnknownError  <   ProtocolError ; end
-  class   ProtoServerError   <   ProtocolError ; end
-  class   ProtoAuthError     <   ProtocolError ; end
-  class   ProtoCommandError  <   ProtocolError ; end
-  class   ProtoRetryError    <   ProtocolError ; end
+  class Response
 
-  class ReplyCode
-
-    class << self
-
-      def error_type( err )
-        module_eval "def self.get_error_type() #{err.name} end"
-      end
-
-      def error!( mes )
-        raise get_error_type, mes
-      end
-
-    end
-        
-    def initialize( cod, mes )
-      @code = cod
-      @msg  = mes
-      @data = nil
+    def initialize( ctype, cno, msg )
+      @code_type = ctype
+      @code      = cno
+      @message   = msg
+      super()
     end
 
-    attr_reader :code, :msg
-
-    def []( key )
-      if @data then
-        @data[key]
-      else
-        nil
-      end
-    end
-
-    def []=( key, val )
-      unless h = @data then
-        @data = h = {}
-      end
-      h[key] = val
-    end
-
+    attr_reader :code_type, :code, :message
+    alias msg message
 
     def error!( sending )
-      mes = <<MES
+      raise @code_type.error_type,
+            sprintf( <<MSG, @code, Net.quote(sending), Net.quote(@message) )
 
 status %s
 writing string is:
@@ -342,43 +308,58 @@ writing string is:
 
 error message from server is:
 %s
-MES
-      type.error! sprintf( mes, @code, Net.quote(sending), Net.quote(@msg) )
+MSG
     end
 
   end
 
-  class SuccessCode < ReplyCode
-    error_type ProtoUnknownError
-  end
 
-  class ContinueCode < SuccessCode
-    error_type ProtoUnknownError
-  end
+  class ProtocolError          < StandardError; end
+  class ProtoSyntaxError       < ProtocolError; end
+  class ProtoFatalError        < ProtocolError; end
+  class ProtoUnknownError      < ProtocolError; end
+  class ProtoServerError       < ProtocolError; end
+  class ProtoAuthError         < ProtocolError; end
+  class ProtoCommandError      < ProtocolError; end
+  class ProtoRetriableError    < ProtocolError; end
+  ProtocRetryError = ProtoRetriableError
 
-  class ErrorCode < ReplyCode
-    error_type ProtocolError
-  end
 
-  class SyntaxErrorCode < ErrorCode
-    error_type ProtoSyntaxError
-  end
+  class Code
 
-  class FatalErrorCode < ErrorCode
-    error_type ProtoFatalError
-  end
+    def initialize( paren, err )
+      @parents = paren
+      @err = err
 
-  class ServerBusyCode < ErrorCode
-    error_type ProtoServerError
-  end
+      @parents.push self
+    end
 
-  class RetryCode < ReplyCode
-    error_type ProtoRetryError
-  end
+    attr_reader :parents
 
-  class UnknownCode < ReplyCode
-    error_type ProtoUnknownError
+    def error_type
+      @err
+    end
+
+    def ===( response )
+      response.code_type.parents.reverse_each {|i| return true if i == self }
+      false
+    end
+
+    def mkchild( err = nil )
+      type.new( @parents + [self], err || @err )
+    end
+  
   end
+  
+  ReplyCode       = Code.new( [], ProtoUnknownError )
+  SuccessCode     = ReplyCode.mkchild( ProtoUnknownError )
+  ContinueCode    = ReplyCode.mkchild( ProtoUnknownError )
+  ErrorCode       = ReplyCode.mkchild( ProtocolError )
+  SyntaxErrorCode = ErrorCode.mkchild( ProtoSyntaxError )
+  FatalErrorCode  = ErrorCode.mkchild( ProtoFatalError )
+  ServerErrorCode = ErrorCode.mkchild( ProtoServerError )
+  RetriableCode   = ReplyCode.mkchild( ProtoRetriableError )
+  UnknownCode     = ReplyCode.mkchild( ProtoUnknownError )
 
 
 
@@ -415,6 +396,7 @@ MES
       @addr = addr
       @port = port
       @pipe = pipe
+      @prepipe = nil
 
       @closed  = true
       @ipaddr  = ''
@@ -471,47 +453,49 @@ MES
     TERMEXP = /\n|\r\n|\r/o
 
 
-    def read( len, ret = '' )
-      @pipe << "reading #{len} bytes...\n" if pre = @pipe ; @pipe = nil
+    def read( len, dest = '' )
+      @pipe << "reading #{len} bytes...\n" if @pipe; pipeoff
 
       rsize = 0
       while rsize + @buffer.size < len do
-        rsize += writeinto( ret, @buffer.size )
+        rsize += writeinto( dest, @buffer.size )
         fill_rbuf
       end
-      writeinto( ret, len - rsize )
+      writeinto( dest, len - rsize )
 
-      @pipe << "read #{len} bytes\n" if @pipe = pre
-      ret
+      @pipe << "read #{len} bytes\n" if pipeon
+      dest
     end
 
 
-    def read_all( ret = '' )
-      @pipe << "reading all...\n" if pre = @pipe; @pipe = nil
+    def read_all( dest = '' )
+      @pipe << "reading all...\n" if @pipe; pipeoff
 
       rsize = 0
       begin
         while true do
-          rsize += writeinto( ret, @buffer.size )
+          rsize += writeinto( dest, @buffer.size )
           fill_rbuf
         end
       rescue EOFError
         ;
       end
 
-      @pipe << "read #{rsize} bytes\n" if @pipe = pre
-      ret
+      @pipe << "read #{rsize} bytes\n" if pipeon
+      dest
     end
 
 
     def readuntil( target )
-      until idx = @buffer.index( target ) do
+      while true do
+        idx = @buffer.index( target )
+        break if idx
         fill_rbuf
       end
 
-      ret = ''
-      writeinto( ret, idx + target.size )
-      ret
+      dest = ''
+      writeinto( dest, idx + target.size )
+      dest
     end
 
         
@@ -522,8 +506,8 @@ MES
     end
 
 
-    def read_pendstr( dest = '' )
-      @pipe << "reading text...\n" if pre = @pipe ; @pipe = nil
+    def read_pendstr( dest )
+      @pipe << "reading text...\n" if @pipe; pipeoff
 
       rsize = 0
 
@@ -533,17 +517,16 @@ MES
         dest << str
       end
 
-      @pipe << "read #{rsize} bytes\n" if @pipe = pre
+      @pipe << "read #{rsize} bytes\n" if pipeon
       dest
     end
 
 
     def read_pendlist
-      @pipe << "reading list...\n" if pre = @pipe ; @pipe = nil
+      @pipe << "reading list...\n" if @pipe; pipeoff
 
       arr = []
       str = nil
-      call = iterator?
 
       while (str = readuntil( CRLF )) != D_CRLF do
         str.chop!
@@ -551,7 +534,7 @@ MES
         yield str if iterator?
       end
 
-      @pipe << "read #{arr.size} lines\n" if @pipe = pre
+      @pipe << "read #{arr.size} lines\n" if pipeon
       arr
     end
 
@@ -565,12 +548,12 @@ MES
       @buffer << @socket.sysread( READ_BLOCK )
     end
 
-    def writeinto( ret, len )
+    def writeinto( dest, len )
       bsi = @buffer.size
-      ret << @buffer[ 0, len ]
+      dest << @buffer[ 0, len ]
       @buffer = @buffer[ len, bsi - len ]
 
-      @pipe << %{read  "#{Net.quote ret}"\n} if @pipe
+      @pipe << %{read  "#{Net.quote dest}"\n} if @pipe
       len
     end
 
@@ -593,7 +576,7 @@ MES
     end
 
 
-    def write_bin( src, block = nil )
+    def write_bin( src, block )
       do_write_beg
       if block then
         block.call WriteAdapter.new( self, :do_write_do )
@@ -606,12 +589,12 @@ MES
     end
 
 
-    def write_pendstr( src )
-      @pipe << "writing text from #{src.type}\n" if pre = @pipe ; @pipe = nil
+    def write_pendstr( src, block )
+      @pipe << "writing text from #{src.type}\n" if @pipe; pipeoff
 
       do_write_beg
-      if iterator? then
-        yield WriteAdapter.new( self, :write_pendstr_inner )
+      if block then
+        block.call WriteAdapter.new( self, :write_pendstr_inner )
       else
         write_pendstr_inner src
       end
@@ -619,7 +602,7 @@ MES
       do_write_do D_CRLF
       wsize = do_write_fin
 
-      @pipe << "wrote #{wsize} bytes text" if @pipe = pre
+      @pipe << "wrote #{wsize} bytes text" if pipeon
       wsize
     end
 
@@ -649,11 +632,13 @@ MES
       adding( src ) do
         beg = 0
         buf = @wbuf
-        while pos = buf.index( TERMEXP, beg ) do
+        while true do
+          pos = buf.index( TERMEXP, beg )
+          break unless pos
           s = $&.size
           break if pos + s == buf.size - 1 and buf[-1] == ?\r
 
-          send mid, buf[ beg, pos - beg ] << CRLF
+          __send__ mid, buf[ beg, pos - beg ] << CRLF
           beg = pos + s
         end
         @wbuf = buf[ beg, buf.size - beg ] if beg != 0
@@ -671,7 +656,9 @@ MES
         end
 
       when File
-        while i = src.read( 512 ) do
+        while true do
+          i = src.read( 512 )
+          break unless i
           @wbuf << i
           yield
         end
@@ -691,8 +678,10 @@ MES
       buf << "\n" unless /\n|\r/o === buf[-1,1]
 
       beg = 0
-      while pos = buf.index( TERMEXP, beg ) do
-        send mid, buf[ beg, pos - beg ] << CRLF
+      while true do
+        pos = buf.index( TERMEXP, beg )
+        break unless pos
+        __send__ mid, buf[ beg, pos - beg ] << CRLF
         beg = pos + $&.size
       end
     end
@@ -725,6 +714,19 @@ MES
 
       @socket.flush
       @writtensize
+    end
+
+
+    def pipeoff
+      @prepipe = @pipe
+      @pipe = nil
+      @prepipe
+    end
+
+    def pipeon
+      @pipe = @prepipe
+      @prepipe = nil
+      @pipe
     end
 
   end

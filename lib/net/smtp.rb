@@ -76,12 +76,12 @@ Net::Protocol
 
     def sendmail( mailsrc, fromaddr, toaddrs )
       do_ready fromaddr, toaddrs
-      @command.write_mail mailsrc
+      @command.write_mail mailsrc, nil
     end
 
     def ready( fromaddr, toaddrs, &block )
       do_ready fromaddr, toaddrs
-      @command.write_mail( &block )
+      @command.write_mail nil, block
     end
 
 
@@ -163,8 +163,8 @@ Net::Protocol
     end
 
 
-    def write_mail( mailsrc = nil, &block )
-      @socket.write_pendstr mailsrc, &block
+    def write_mail( mailsrc, block )
+      @socket.write_pendstr mailsrc, block
       check_reply SuccessCode
       end_critical
     end
@@ -189,7 +189,7 @@ Net::Protocol
       klass = case stat[0]
               when ?2 then SuccessCode
               when ?3 then ContinueCode
-              when ?4 then ServerBusyCode
+              when ?4 then ServerErrorCode
               when ?5 then
                 case stat[1]
                 when ?0 then SyntaxErrorCode
@@ -197,7 +197,7 @@ Net::Protocol
                 end
               end
 
-      klass.new( stat, arr.join('') )
+      Response.new( klass, stat, arr.join('') )
     end
 
 

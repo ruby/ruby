@@ -314,9 +314,9 @@ Net::POP3
       str = @socket.readline
 
       if /\A\+/ === str then
-        return SuccessCode.new( str[0,3], str[3, str.size - 3].strip )
+        return Response.new( SuccessCode, str[0,3], str[3, str.size - 3].strip )
       else
-        return ErrorCode.new( str[0,4], str[4, str.size - 4].strip )
+        return Response.new( ErrorCode, str[0,4], str[4, str.size - 4].strip )
       end
     end
 
