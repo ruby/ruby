@@ -2123,6 +2123,10 @@ module Net # :nodoc:
 
       def body_type_basic
 	mtype, msubtype = media_type
+        token = lookahead
+        if token.symbol == T_RPAR
+          return BodyTypeBasic.new(mtype, msubtype)
+        end
 	match(T_SPACE)
 	param, content_id, desc, enc, size = body_fields
 	md5, disposition, language, extension = body_ext_1part
@@ -2175,7 +2179,7 @@ module Net # :nodoc:
 	  parts.push(body)
 	end
 	mtype = "MULTIPART"
-	msubtype = string.upcase
+	msubtype = case_insensitive_string
 	param, disposition, language, extension = body_ext_mpart
 	return BodyTypeMultipart.new(mtype, msubtype, parts,
 				     param, disposition, language,
@@ -2183,9 +2187,9 @@ module Net # :nodoc:
       end
 
       def media_type
-	mtype = string.upcase
+	mtype = case_insensitive_string
 	match(T_SPACE)
-	msubtype = string.upcase
+	msubtype = case_insensitive_string
 	return mtype, msubtype
       end
 
@@ -2196,7 +2200,7 @@ module Net # :nodoc:
 	match(T_SPACE)
 	desc = nstring
 	match(T_SPACE)
-	enc = string.upcase
+	enc = case_insensitive_string
 	match(T_SPACE)
 	size = number
 	return param, content_id, desc, enc, size
@@ -2219,7 +2223,7 @@ module Net # :nodoc:
 	  when T_SPACE
 	    shift_token
 	  end
-	  name = string.upcase
+	  name = case_insensitive_string
 	  match(T_SPACE)
 	  val = string
 	  param[name] = val
@@ -2300,7 +2304,7 @@ module Net # :nodoc:
 	  return nil
 	end
 	match(T_LPAR)
-	dsp_type = string.upcase
+	dsp_type = case_insensitive_string
 	match(T_SPACE)
 	param = body_fld_param
 	match(T_RPAR)
@@ -2321,7 +2325,7 @@ module Net # :nodoc:
 	    when T_SPACE
 	      shift_token
 	    end
-	    result.push(string.upcase)
+	    result.push(case_insensitive_string)
 	  end
 	else
 	  lang = nstring
@@ -2829,14 +2833,29 @@ module Net # :nodoc:
       end
 
       def string
+	token = lookahead
+        if token.symbol == T_NIL
+          shift_token
+          return nil
+        end
 	token = match(T_QUOTED, T_LITERAL)
 	return token.value
       end
 
-      STRING_TOKENS = [T_QUOTED, T_LITERAL]
+      STRING_TOKENS = [T_QUOTED, T_LITERAL, T_NIL]
 
       def string_token?(token)
 	return STRING_TOKENS.include?(token.symbol)
+      end
+
+      def case_insensitive_string
+	token = lookahead
+        if token.symbol == T_NIL
+          shift_token
+          return nil
+        end
+	token = match(T_QUOTED, T_LITERAL)
+	return token.value.upcase
       end
 
       def atom

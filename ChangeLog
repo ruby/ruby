@@ -1,3 +1,9 @@
+Thu May  6 11:40:28 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (string): accept NIL.
+
+	* lib/net/imap.rb (body_type_basic): allow body-fields omissions.
+
 Thu May  6 01:59:04 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/generators/html_generator.rb (Generators::HtmlMethod::params): 
