@@ -797,6 +797,7 @@ def init_mkmf(config = CONFIG)
   $LIBPATH << "$(archdir)"
 
   $LOCAL_LIBS = ""
+  dir_config("opt")
 end
 
 init_mkmf

@@ -1,9 +1,13 @@
+Tue Oct 22 23:56:41 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb (init_mkmf): add dir_config("opt").
+
 Tue Oct 22 19:44:03 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* bcc32/configure.bat : The command line when calling setup.mak is 
 	                        corrected. 
 
-	*bcc32/readme.bcc32 : It follows up about the option of configure.bat.
+	* bcc32/readme.bcc32 : It follows up about the option of configure.bat.
 
 Tue Oct 22 15:23:19 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
