@@ -1,3 +1,8 @@
+Tue Feb  8 23:48:36 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb: reject :instance_eval, :class_eval, :module_eval
+	  [druby-ja:117]
+
 Tue Feb  8 22:38:28 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* keywords, parse.y: separate EXPR_VALUE from EXPR_BEG.

@@ -1395,7 +1395,7 @@ module DRb
     #
     # These methods are not callable via dRuby.
     INSECURE_METHOD = [
-      :__send__
+      :__send__, :instance_eval, :module_eval, :class_eval
     ]
 
     # Has a method been included in the list of insecure methods?
