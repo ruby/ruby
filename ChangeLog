@@ -1,3 +1,7 @@
+Fri Oct 25 02:55:01 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* string.c (rb_str_split_m): RSTRING(str)->ptr might become NULL.
+
 Thu Oct 24 21:57:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* configure.in (LIBPATHFLAG): avoid $ substitution.

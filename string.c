@@ -2533,7 +2533,11 @@ rb_str_split_m(argc, argv, str)
 	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
 	    regs = RMATCH(rb_backref_get())->regs;
 	    if (start == end && BEG(0) == END(0)) {
-		if (last_null == 1) {
+		if (!RSTRING(str)->ptr) {
+		    rb_ary_push(result, rb_str_new("", 0));
+		    break;
+                }
+		else if (last_null == 1) {
 		    rb_ary_push(result, rb_str_substr(str, beg, mbclen2(RSTRING(str)->ptr[beg],spat)));
 		    beg = start;
 		}
