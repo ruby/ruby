@@ -1,3 +1,11 @@
+Mon Oct  6 09:19:54 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_object): should pass "weak" value to next level.
+	  [ruby-dev:21496]
+
+	* eval.c (proc_alloc): should not use cached object if klass is
+	  different. [ruby-talk:83685]
+
 Sun Oct  5 23:27:09 2003  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb: version information is added in document.

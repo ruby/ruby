@@ -6928,7 +6928,7 @@ proc_alloc(klass, proc)
 	rb_warn("tried to create Proc object without a block");
     }
 
-    if (!proc && ruby_block->block_obj) {
+    if (!proc && ruby_block->block_obj && CLASS_OF(ruby_block->block_obj) == klass) {
 	return ruby_block->block_obj;
     }
     block = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);

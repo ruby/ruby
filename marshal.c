@@ -439,7 +439,7 @@ w_object(obj, arg, limit, weak)
     limit--;
     c_arg.limit = limit;
     c_arg.arg = arg;
-    c_arg.weak = Qfalse;
+    c_arg.weak = weak;
 
     if (ivtbl = rb_generic_ivar_table(obj)) {
 	w_byte(TYPE_IVAR, arg);

@@ -934,7 +934,7 @@ static:		$(STATIC_LIB)
     end
   end
 ensure
-  mfile.close
+  mfile.close if mfile
 end
 
 def init_mkmf(config = CONFIG)
