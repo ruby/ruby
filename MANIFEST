@@ -86,6 +86,9 @@ doc/forwardable.rd.jp
 doc/irb/irb-tools.rd.jp
 doc/irb/irb.rd
 doc/irb/irb.rd.jp
+doc/net/http.rd.ja
+doc/net/pop.rd.ja
+doc/net/smtp.rd.ja
 doc/shell.rd
 doc/shell.rd.jp
 ext/Setup
