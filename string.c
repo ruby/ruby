@@ -2725,6 +2725,7 @@ rb_str_upcase_bang(str)
     char *s, *send;
     int modify = 0;
 
+    rb_str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
@@ -2838,6 +2839,7 @@ rb_str_capitalize_bang(str)
     char *s, *send;
     int modify = 0;
 
+    rb_str_modify(str);
     if (RSTRING(str)->len == 0 || !RSTRING(str)->ptr) return Qnil;
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     if (ISLOWER(*s)) {
@@ -2895,6 +2897,7 @@ rb_str_swapcase_bang(str)
     char *s, *send;
     int modify = 0;
 
+    rb_str_modify(str);
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
