@@ -688,6 +688,42 @@ rb_f_sprintf(argc, argv)
 		char fbuf[32];
 
 		fval = RFLOAT(rb_Float(val))->value;
+		if (isnan(fval) || isinf(fval)) {
+		    char *expr;
+
+		    if  (isnan(fval)) {
+			expr = "NaN";
+		    }
+		    else {
+			expr = "Inf";
+		    }
+		    need = strlen(expr);
+		    if (fval < 0.0 || (flags & FPLUS))
+			need++;
+		    if ((flags & FWIDTH) && need < width)
+			need = width;
+
+		    CHECK(need);
+		    sprintf(&buf[blen], "%*s", need, "");
+		    if (flags & FMINUS) {
+			if (fval < 0.0)
+			    buf[blen++] = '-';
+			else if (flags & FPLUS)
+			    buf[blen++] = '+';
+			strncpy(&buf[blen], expr, strlen(expr));
+		    }
+		    else {
+			if (fval < 0.0)
+			    buf[blen + need - strlen(expr) - 1] = '-';
+			else if (flags & FPLUS)
+			    buf[blen + need - strlen(expr) - 1] = '+';
+			strncpy(&buf[blen + need - strlen(expr)], expr,
+				strlen(expr));
+		    }
+		    blen += strlen(&buf[blen]);
+		    break;
+		}
+
 		fmt_setup(fbuf, *p, flags, width, prec);
 		need = 0;
 		if (*p != 'e' && *p != 'E') {

@@ -1,3 +1,8 @@
+Tue Jun 22 19:24:59 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): unify output of NaN, Inf and -Inf with
+	  "%f" or etc on all platform. [ruby-dev:23704], [ruby-dev:23747]
+
 Tue Jun 22 15:28:12 2004  Michal Rokos  <michal@ruby-lang.org>
 
 	* compar.c: Remove explicit NIL_P() checks since rb_cmpint() does it
