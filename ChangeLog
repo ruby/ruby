@@ -1,3 +1,7 @@
+Tue Jul 22 10:52:19 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* lib/tmpdir.rb: remove charcters after "\000" and regularize path.
+
 Tue Jul 22 02:22:45 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_equal): should not use rb_equal().
