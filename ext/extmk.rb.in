@@ -27,11 +27,9 @@ $extlist = []
 
 $libdir = "@libdir@"
 
-$top_srcdir = "@top_srcdir@"
-if $top_srcdir !~ ("^" + File::SEPARATOR)
-  # get absolute path
-  $top_srcdir = File.expand_path($top_srcdir)
-end
+# get absolute path
+$top_srcdir = File.expand_path("@top_srcdir@")
+
 # get absolute path
 $topdir = File.expand_path("..")
 
@@ -539,7 +537,7 @@ EOS
   mfile.printf "\n"
 
   unless /mswin32/ =~ RUBY_PLATFORM
-    if /bccwin32/=~ RUBY_PLATFORM
+    if /bccwin32/ =~ RUBY_PLATFORM
       src = '$(<:\\=/)'
     else
       src = '$<'

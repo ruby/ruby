@@ -1,3 +1,7 @@
+Mon Jul 29 16:00:54 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/extmk.rb.in: always use File.expand_path for $top_srcdir.
+
 Sat Jul 27 23:07:52 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (num_to_int): default to_int implementaion for every
