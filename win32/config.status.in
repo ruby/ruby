@@ -1,15 +1,14 @@
-ac_given_srcdir=.
 s%@SHELL@%%g
-s%@CFLAGS@%-nologo -DNT=1 -Ox%g
+s%@CFLAGS@%-nologo -DNT=1 -Zi -O2b2x -G5%g
 s%@CPPFLAGS@%%g
 s%@CXXFLAGS@%%g
 s%@FFLAGS@%%g
 s%@DEFS@%
- -DUSE_THREAD -DSIZEOF_INT=4 -DSIZEOF_SHORT=2 -DSIZEOF_LONG=4 -DSIZEOF_VOIDP=4 -DSIZEOF_FLOAT=4 -DSIZEOF_DOUBLE=8 -DHAVE_PROTOTYPES=1 -DHAVE_STDARG_PROTOTYPES=1 -DHAVE_STDLIB_H=1 -DHAVE_LIMITS_H=1 -DHAVE_FCNTL_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_ST_RDEV=1 -DGETGROUPS_T=int -DRETSIGTYPE=void -DHAVE_ALLOCA=1 -DHAVE_FMOD=1 -DHAVE_WAITPID=1 -DHAVE_GETCWD=1 -DHAVE_CHSIZE=1 -DHAVE_GETGROUPS=1 -DHAVE_GETLOGIN=1 -DRSHIFT=\(x,y\)\ \(\(x\)\>\>y\) -DFILE_COUNT=_cnt -DDLEXT=\".so\" -DDLEXT2=\".dll\" -DRUBY_PLATFORM=\"i386-mswin32\" %g
+ -DUSE_THREAD -DSIZEOF_INT=4 -DSIZEOF_SHORT=2 -DSIZEOF_LONG=4 -DSIZEOF_VOIDP=4 -DSIZEOF_FLOAT=4 -DSIZEOF_DOUBLE=8 -DHAVE_PROTOTYPES=1 -DHAVE_STDARG_PROTOTYPES=1 -DHAVE_STDLIB_H=1 -DHAVE_LIMITS_H=1 -DHAVE_FCNTL_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_ST_RDEV=1 -DGETGROUPS_T=int -DRETSIGTYPE=void -DHAVE_ALLOCA=1 -DHAVE_FMOD=1 -DHAVE_WAITPID=1 -DHAVE_GETCWD=1 -DHAVE_CHSIZE=1 -DHAVE_GETGROUPS=1 -DHAVE_GETLOGIN=1 -DRSHIFT=\(x,y\)\ \(\(x\)\>\>y\) -DFILE_COUNT=_cnt -DDLEXT=\".so\" -DDLEXT2=\".dll\" -DRUBY_PLATFORM=\"i586-mswin32\" %g
 s%@LDFLAGS@%-nologo -Ox%g
 s%@LIBS@%user32.lib advapi32.lib wsock32.lib%g
 s%@exec_prefix@%${prefix}%g
-s%@prefix@%/usr/local%g
+s%@prefix@%%g
 s%@program_transform_name@%s,x,x,%g
 s%@bindir@%${exec_prefix}/bin%g
 s%@sbindir@%${exec_prefix}/sbin%g
@@ -23,9 +22,9 @@ s%@includedir@%${prefix}/include%g
 s%@oldincludedir@%/usr/include%g
 s%@infodir@%${prefix}/info%g
 s%@mandir@%${prefix}/man%g
-s%@host@%i386-pc-mswin32%g
-s%@host_alias@%i386-mswin32%g
-s%@host_cpu@%i386%g
+s%@host@%i586-pc-mswin32%g
+s%@host_alias@%i586-mswin32%g
+s%@host_cpu@%i586%g
 s%@host_vendor@%pc%g
 s%@host_os@%mswin32%g
 s%@CC@%cl%g
@@ -53,14 +52,15 @@ s%@setup@%Setup%g
 s%@LIBRUBY_LDSHARED@%%g
 s%@LIBRUBY_DLDFLAGS@%%g
 s%@RUBY_INSTALL_NAME@%ruby%g
+s%@RUBY_SO_NAME@%ruby.mswin32%g
 s%@LIBRUBY_A@%lib$(RUBY_INSTALL_NAME).lib%g
 s%@LIBRUBY_SO@%%g
 s%@LIBRUBY_ALIASES@%%g
-s%@LIBRUBY@%libruby.lib%g
-s%@LIBRUBYARG@%$(topdir)/rubymw.lib%g
+s%@LIBRUBY@%$(RUBY_SO_NAME).lib%g
+s%@LIBRUBYARG@%$(topdir)/$(RUBY_SO_NAME).lib%g
 s%@SOLIBS@%%g
 s%@DLDLIBS@%%g
-s%@arch@%i386-mswin32%g
+s%@arch@%i586-mswin32%g
 s%@sitedir@%${prefix}/lib/ruby/site_ruby%g
 s%@configure_args@%--with-make-prog=nmake%g
 s%@configure_input@%$configure_input%g
