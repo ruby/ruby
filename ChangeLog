@@ -1,3 +1,7 @@
+Mon Aug 30 22:40:30 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: 'restart' method accepts arguments
+
 Mon Aug 30 15:10:46 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (GNU/k*BSD): fixed FTBFS on GNU/k*BSD. [ruby-dev:24051]
