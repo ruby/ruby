@@ -63,6 +63,10 @@ class TestFloat < Test::Unit::TestCase
     assert(a.abs < Float::EPSILON)
     a = Float("0." + "00" * Float::DIG + "1")
     assert(a != 0.0)
+    a = Float("+0." + "00" * Float::DIG + "1")
+    assert(a != 0.0)
+    a = Float("-0." + "00" * Float::DIG + "1")
+    assert(a != 0.0)
     # add expected behaviour here.
   end
 end

@@ -1,3 +1,7 @@
+Sat May 15 17:52:24  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/test_float.rb(test_strtod): Add test for signed 0.000...1
+
 Sat May 15 14:20:13 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/syck/depend: add ruby's headers.
