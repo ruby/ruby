@@ -4420,11 +4420,11 @@ rb_intern(name)
 	    strncpy(buf, name, last);
 	    buf[last] = '\0';
 	    id = rb_intern(buf);
-	    if (id > LAST_TOKEN) {
+	    if (id > LAST_TOKEN && !is_attrset_id(id)) {
 		id = rb_id_attrset(id);
 		goto id_regist;
 	    }
-	    id |= ID_ATTRSET;
+	    id = ID_ATTRSET;
 	}
 	else if (ISUPPER(name[0])) {
 	    id = ID_CONST;

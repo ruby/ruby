@@ -1,11 +1,11 @@
 =begin
-$Date: 1999/09/21 21:24:07 $
+$Date: 1999/10/04 22:51:26 $
 
 == SIMPLE TELNET CLIANT LIBRARY
 
 telnet.rb
 
-Version 0.50
+Version 1.00
 
 Wakou Aoyama <wakou@fsinet.or.jp>
 
@@ -154,6 +154,15 @@ of cource, set sync=true or flush is necessary.
 
 
 == HISTORY
+
+=== Version 1.00
+
+1999/10/04 22:51:26
+
+- bug fix: waitfor(preprocess) method
+  thanks to Shin-ichiro Hara <sinara@blade.nagaokaut.ac.jp>
+- add simple support for AO, DM, IP, NOP, SB, SE
+- COUTION! TimeOut --> TimeoutError
 
 === Version 0.50
 
@@ -331,7 +340,6 @@ require "socket"
 require "delegate"
 require "thread"
 require "timeout"
-TimeOut = TimeoutError
 
 class Telnet < SimpleDelegator
 
@@ -405,8 +413,8 @@ class Telnet < SimpleDelegator
   EOL  = CR + LF
 v = $-v
 $-v = false
-  VERSION = "0.50"
-  RELEASE_DATE = "$Date: 1999/09/21 21:24:07 $"
+  VERSION = "1.00"
+  RELEASE_DATE = "$Date: 1999/10/04 22:51:26 $"
 $-v = v
 
   def initialize(options)
@@ -456,7 +464,7 @@ $-v = v
           }
         end
       rescue TimeoutError
-        raise TimeOut, "timed-out; opening of the host"
+        raise TimeoutError, "timed-out; opening of the host"
       rescue
         @log.write($!.to_s + "\n") if @options.key?("Output_log")
         @dumplog.write($!.to_s + "\n") if @options.key?("Dump_log")
@@ -502,10 +510,10 @@ $-v = v
     str.gsub!(/#{EOL}/no, "\n") unless @options["Binmode"]
 
     str.gsub!(/#{IAC}(
-                 #{IAC}|
-                 #{AYT}|
+                 [#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]|
                  [#{DO}#{DONT}#{WILL}#{WONT}]
-                   [#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}]
+                   [#{OPT_BINARY}-#{OPT_NEW_ENVIRON}#{OPT_EXOPL}]|
+                 #{SB}[^#{IAC}]*#{IAC}#{SE}
                )/xno){
       if    IAC == $1         # handle escaped IAC characters
         IAC
@@ -539,6 +547,8 @@ $-v = v
           self.write(IAC + DONT + OPT_SGA)
         end
         ''
+      else
+        ''
       end
     }
 
@@ -551,7 +561,7 @@ $-v = v
 
     if options.kind_of?(Hash)
       prompt   = if options.key?("Match")
-                   options["Match"]   
+                   options["Match"]
                  elsif options.key?("Prompt")
                    options["Prompt"]
                  elsif options.key?("String")
@@ -569,24 +579,30 @@ $-v = v
 
     line = ''
     buf = ''
+    rest = ''
     until(prompt === line and not IO::select([@sock], nil, nil, waittime))
       unless IO::select([@sock], nil, nil, time_out)
-        raise TimeOut, "timed-out; wait for the next data"
+        raise TimeoutError, "timed-out; wait for the next data"
       end
       begin
         c = @sock.sysread(1024 * 1024)
         @dumplog.print(c) if @options.key?("Dump_log")
-        buf.concat c
         if @options["Telnetmode"]
-          buf = preprocess(buf) 
-          if /#{IAC}.?\z/no === buf
-            next
-          end 
-        end 
+          if Integer(c.rindex(/#{IAC}#{SE}/no)) <
+             Integer(c.rindex(/#{IAC}#{SB}/no))
+            buf = preprocess(rest + c[0 ... c.rindex(/#{IAC}#{SB}/no)])
+            rest = c[c.rindex(/#{IAC}#{SB}/no) .. -1]
+          elsif pt = c.rindex(/#{IAC}[^#{IAC}#{AO}#{AYT}#{DM}#{IP}#{NOP}]?\z/no)
+            buf = preprocess(rest + c[0 ... pt])
+            rest = c[pt .. -1]
+          else
+            buf = preprocess(c)
+            rest = ''
+          end
+        end
         @log.print(buf) if @options.key?("Output_log")
-        yield buf if iterator?
         line.concat(buf)
-        buf = ''
+        yield buf if iterator?
       rescue EOFError # End of file reached
         if line == ''
           line = nil

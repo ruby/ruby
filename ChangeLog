@@ -1,3 +1,17 @@
+Mon Oct 11 17:42:25 1999  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* parse.y (rb_intern): should generate distinct ID_ATTRSET symbols
+	  for the name with multiple `='s at the end.
+
+	* Makefile.in (CPPFLAGS): separate cpp flags from CFLAGS.
+
+Mon Oct 11 07:27:05 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): should not execute the `else' clause on the
+	  case the exceptions are handled by the `rescue' clause.
+
+	* signal.c (Init_signal): ignore SIGPIPE by default.
+
 Mon Oct  4 12:42:32 1999  Kazuhiko Izawa  <izawa@erec.che.tohoku.ac.jp>
 
 	* pack.c (pack_unpack): % in printf format should be %%.

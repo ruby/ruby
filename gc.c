@@ -10,7 +10,6 @@
 
 ************************************************/
 
-#define RUBY_NO_INLINE
 #include "ruby.h"
 #include "rubysig.h"
 #include "st.h"

@@ -1013,7 +1013,7 @@ VALUE rb_funcall2(VALUE recv, ID mid, int argc, VALUE *argv)
 
 VALUE rb_eval_string(char *str)
 
-  文字列をRubyとスクリプトしてコンパイル・実行する．
+  文字列をRubyスクリプトとしてコンパイル・実行する．
 
 ID rb_intern(char *name)
 
@@ -1027,6 +1027,10 @@ char *rb_class2name(VALUE class)
 
   classの名前を返す(デバッグ用)．classが名前を持たない時には, 
   祖先を遡って名前を持つクラスの名前を返す．
+
+int rb_respond_to(VALUE obj, ID id)
+
+  objがidで示されるメソッドを持つかどうかを返す。
 
 ** インスタンス変数
 

@@ -874,6 +874,10 @@ Returns the name corresponding ID.
 
 Returns the name of the class.
 
+  int rb_respond_to(VALUE object, ID id)
+
+Returns true if the object reponds to the message specified by id.
+
 ** Instance Variables
 
  VALUE rb_iv_get(VALUE obj, char *name)

@@ -294,6 +294,13 @@ posix_signal(signum, handler)
     sigact.sa_handler = handler;
     sigemptyset(&sigact.sa_mask);
     sigact.sa_flags = 0;
+#ifdef SA_RESTART
+    sigact.sa_flags |= SA_RESTART; /* SVR4, 4.3+BSD */
+#endif
+#ifdef SA_NOCLDWAIT
+    if (signum == SIGCHLD && handler == (RETSIGTYPE)SIG_IGN)
+	sigact.sa_flags |= SA_NOCLDWAIT;
+#endif
     sigaction(signum, &sigact, 0);
 }
 #define ruby_signal(sig,handle) posix_signal((sig),(handle))
@@ -312,9 +319,6 @@ signal_exec(sig)
 	    break;
 #ifndef NT
 	  case SIGHUP:
-#endif
-#ifdef SIGPIPE
-	  case SIGPIPE:
 #endif
 #ifdef SIGQUIT
 	  case SIGQUIT:
@@ -345,7 +349,7 @@ sighandle(sig)
 	rb_bug("trap_handler: Bad signal %d", sig);
     }
 
-#if !defined(POSIX_SIGNAL) && !defined(BSD_SIGNAL)
+#if !defined(BSD_SIGNAL)
     ruby_signal(sig, sighandle);
 #endif
 
@@ -509,9 +513,6 @@ trap(arg)
 #ifdef SIGUSR2
 	  case SIGUSR2:
 #endif
-#ifdef SIGPIPE
-	  case SIGPIPE:
-#endif
 	    func = sighandle;
 	    break;
 #ifdef SIGBUS
@@ -522,6 +523,11 @@ trap(arg)
 #ifdef SIGSEGV
 	  case SIGSEGV:
 	    func = sigsegv;
+	    break;
+#endif
+#ifdef SIGPIPE
+	  case SIGPIPE:
+	    func = SIG_IGN;
 	    break;
 #endif
 	}
@@ -614,9 +620,6 @@ Init_signal()
 #ifndef NT
     ruby_signal(SIGHUP, sighandle);
 #endif
-#ifdef SIGPIPE
-    ruby_signal(SIGPIPE, sighandle);
-#endif
 #ifdef SIGQUIT
     ruby_signal(SIGQUIT, sighandle);
 #endif
@@ -635,6 +638,9 @@ Init_signal()
 #endif
 #ifdef SIGSEGV
     ruby_signal(SIGSEGV, sigsegv);
+#endif
+#ifdef SIGPIPE
+    ruby_signal(SIGPIPE, SIG_IGN);
 #endif
 #endif /* MACOS_UNUSE_SIGNAL */
 }

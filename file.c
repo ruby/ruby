@@ -1521,20 +1521,20 @@ rb_f_test(argc, argv)
 	  case '-':
 	    if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
 		return Qtrue;
-	    break;
-
+            return Qfalse;
+                        
 	  case '=':
 	    if (st1.st_mtime == st2.st_mtime) return Qtrue;
-	    break;
-
+	    return Qfalse;
+                        
 	  case '>':
 	    if (st1.st_mtime > st2.st_mtime) return Qtrue;
-	    break;
-
+	    return Qfalse;
+            
 	  case '<':
 	    if (st1.st_mtime < st2.st_mtime) return Qtrue;
-	    break;
-	}
+	    return Qfalse;
+        }
     }
     /* unknown command */
     rb_raise(rb_eArgError, "unknown command ?%c", cmd);

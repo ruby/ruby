@@ -264,6 +264,7 @@ rb_hash_s_create(argc, argv, klass)
     hash = rb_hash_new2(klass);
 
     for (i=0; i<argc; i+=2) {
+	if (NIL_P(argv[i+1])) continue;
 	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
     }
 

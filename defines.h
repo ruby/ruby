@@ -14,7 +14,7 @@
 
 /* define RUBY_USE_EUC/SJIS for default kanji-code */
 #ifndef DEFAULT_KCODE
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2)
+#if defined(MSDOS) || defined(__CYGWIN32__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2) || defined(NT)
 #define DEFAULT_KCODE KCODE_SJIS
 #else
 #define DEFAULT_KCODE KCODE_EUC

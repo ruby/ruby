@@ -149,6 +149,8 @@ EOF
 end
 
 have_header("sys/sysctl.h")
+have_header("netinet/tcp.h")
+have_header("netinet/udp.h")
 
 $getaddr_info_ok = false
 if try_run(<<EOF)

@@ -12,7 +12,8 @@ AUTOCONF = autoconf
 @SET_MAKE@
 
 prefix = @prefix@
-CFLAGS = @CFLAGS@ -I. -I@srcdir@ -I@includedir@
+CFLAGS = @CFLAGS@
+CPPFLAGS = -I. -I@srcdir@ -I@includedir@
 LDFLAGS = @STATIC@ $(CFLAGS) @LDFLAGS@
 XLDFLAGS = @XLDFLAGS@
 EXTLIBS = 
@@ -38,7 +39,7 @@ LIBRUBY_ALIASES= @LIBRUBY_ALIASES@
 LIBRUBY	      = @LIBRUBY@
 LIBRUBYARG    = @LIBRUBYARG@
 
-EXTOBJS	      = dmyext.@OBJEXT@
+EXTOBJS	      = 
 
 MAINOBJ	      = main.@OBJEXT@
 
@@ -83,20 +84,20 @@ OBJS	      = array.@OBJEXT@ \
 all:		miniruby$(EXEEXT) rbconfig.rb
 		@./miniruby$(EXEEXT) -Xext extmk.rb @EXTSTATIC@
 
-miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) $(EXTOBJS)
+miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
 		@rm -f $@
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS) -o $@
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) dmyext.@OBJEXT@ $(LIBRUBY_A) $(LIBS) -o $@
 
 $(PROGRAM):     $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) 
 		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBYARG) $(LIBS) -o $@
 
-$(LIBRUBY_A):	$(OBJS)
-		@AR@ rcu $@ $(OBJS)
+$(LIBRUBY_A):	$(OBJS) dmyext.@OBJEXT@
+		@AR@ rcu $@ $(OBJS) dmyext.@OBJEXT@
 		@-@RANLIB@ $@ 2> /dev/null || true
 
-$(LIBRUBY_SO):	$(OBJS)
-		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) -o $@
+$(LIBRUBY_SO):	$(OBJS) dmyext.@OBJEXT@
+		$(LDSHARED) $(DLDFLAGS) $(SOLIBS) $(OBJS) dmyext.@OBJEXT@ -o $@
 		@-./miniruby -e 'ARGV.each{|link| File.delete link if File.exist? link; \
 						  File.symlink "$(LIBRUBY_SO)", link}' \
 				$(LIBRUBY_ALIASES) || true

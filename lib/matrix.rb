@@ -1,8 +1,9 @@
+#!/usr/local/bin/ruby
 #
 #   matrix.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.9 $
-#   	$Date: 1999/08/24 10:25:00 $
+#   	$Revision: 1.11 $
+#   	$Date: 1999/10/06 11:01:53 $
 #       Original Version from Smalltalk-80 version
 #	   on July 23, 1985 at 8:37:17 am
 #   	by Keiju ISHITSUKA
@@ -38,7 +39,7 @@
 #	    creates a matrix where `rows' indicates rows. 
 #	    `rows' is an array of arrays, 
 #	    e.g, Matrix[[11, 12], [21, 22]]
-#	Matrix.rows(rows, copy = true)
+#	Matrix.rows(rows, copy = TRUE)
 #	    creates a matrix where `rows' indicates rows. 
 #           if optional argument `copy' is false, use the array as
 #	    internal structure of the metrix without copying.
@@ -144,7 +145,7 @@
 #
 #   INSTANCE CREATION:
 #	Vector.[](*array)
-#	Vector.elements(array, copy = true)
+#	Vector.elements(array, copy = TRUE)
 #   ACCSESSING:
 #	[](i)
 #	size
@@ -185,7 +186,7 @@ module ExceptionForMatrix
 end
 
 class Matrix
-  @RCS_ID='-$Id: matrix.rb,v 1.8 1999/02/17 12:34:19 keiju Exp keiju $-'
+  @RCS_ID='-$Id: matrix.rb,v 1.11 1999/10/06 11:01:53 keiju Exp keiju $-'
   
 #  extend Exception2MessageMapper
   include ExceptionForMatrix
@@ -194,10 +195,10 @@ class Matrix
   private_class_method :new
   
   def Matrix.[](*rows)
-    new(:init_rows, rows, false)
+    new(:init_rows, rows, FALSE)
   end
   
-  def Matrix.rows(rows, copy = true)
+  def Matrix.rows(rows, copy = TRUE)
     new(:init_rows, rows, copy)
   end
   
@@ -209,7 +210,7 @@ class Matrix
 	columns[j][i]
       }
     }
-    Matrix.rows(rows, false)
+    Matrix.rows(rows, FALSE)
   end
   
   def Matrix.diagonal(*values)
@@ -220,7 +221,8 @@ class Matrix
       row[j] = values[j]
       row
     }
-    rows(rows, false)
+    self
+    rows(rows, FALSE)
   end
   
   def Matrix.scalar(n, value)
@@ -242,11 +244,11 @@ class Matrix
   def Matrix.row_vector(row)
     case row
     when Vector
-      Matrix.rows([row.to_a], false)
+      Matrix.rows([row.to_a], FALSE)
     when Array
-      Matrix.rows([row.dup], false)
+      Matrix.rows([row.dup], FALSE)
     else
-      Matrix.row([[row]], false)
+      Matrix.row([[row]], FALSE)
     end
   end
   
@@ -311,13 +313,13 @@ class Matrix
 	|i|
 	@rows[i][j]
       }
-      Vector.elements(col, false)
+      Vector.elements(col, FALSE)
     end
   end
   
   def collect
     rows = @rows.collect{|row| row.collect{|e| yield e}}
-    Matrix.rows(rows, false)
+    Matrix.rows(rows, FALSE)
   end
   alias map collect
   
@@ -345,7 +347,7 @@ class Matrix
       |row|
       row[from_col, size_col]
     }
-    Matrix.rows(rows, false)
+    Matrix.rows(rows, FALSE)
   end
   
   # TESTING
@@ -363,20 +365,20 @@ class Matrix
   
   # COMPARING
   def ==(other)
-    return false unless Matrix === other
+    return FALSE unless Matrix === other
     
     other.compare_by_row_vectors(@rows)
   end
   alias eql? ==
   
   def compare_by_row_vectors(rows)
-    return false unless @rows.size == rows.size
+    return FALSE unless @rows.size == rows.size
     
     0.upto(@rows.size - 1) do
       |i|
-      return false unless @rows[i] == rows[i]
+      return FALSE unless @rows[i] == rows[i]
     end
-    true
+    TRUE
   end
   
   def clone
@@ -405,7 +407,7 @@ class Matrix
 	  e * m
 	}
       }
-      return Matrix.rows(rows, false)
+      return Matrix.rows(rows, FALSE)
     when Vector
       m = Matrix.column_vector(m)
       r = self * m
@@ -425,7 +427,7 @@ class Matrix
 	  vij
 	}
       }
-      return Matrix.rows(rows, false)
+      return Matrix.rows(rows, FALSE)
     else
       x, y = m.coerce(self)
       return x * y
@@ -453,7 +455,7 @@ class Matrix
 	self[i, j] + m[i, j]
       }
     }
-    Matrix.rows(rows, false)
+    Matrix.rows(rows, FALSE)
   end
 
   def -(m)
@@ -477,7 +479,7 @@ class Matrix
 	self[i, j] - m[i, j]
       }
     }
-    Matrix.rows(rows, false)
+    Matrix.rows(rows, FALSE)
   end
   
   def /(other)
@@ -490,7 +492,7 @@ class Matrix
 	  e / other
 	}
       }
-      return Matrix.rows(rows, false)
+      return Matrix.rows(rows, FALSE)
     when Matrix
       return self * other.inverse
     else
@@ -619,17 +621,36 @@ class Matrix
     k = 0
     begin
       if (akk = a[k][k]) == 0
-	i = -1
-	nothing = false
+	i = k
+	exists = true
 	begin
 	  if (i += 1) > column_size - 1
-	    nothing = true
+	    exists = false
 	    break
 	  end
 	end while a[i][k] == 0
-	next if nothing
-	a[i], a[k] = a[k], a[i]
-	akk = a[k][k]
+	if exists
+	  a[i], a[k] = a[k], a[i]
+	  akk = a[k][k]
+	else
+	  i = k
+	  exists = true
+	  begin
+	    if (i += 1) > row_size - 1
+	      exists = false
+	      break
+	    end
+	  end while a[k][i] == 0
+	  if exists
+	    k.upto(column_size - 1) do
+	      |j|
+	      a[j][k], a[j][i] = a[j][i], a[j][k]
+	    end
+	    akk = a[k][k]
+	  else
+	    next
+	  end
+	end
       end
       (k + 1).upto(row_size - 1) do
 	|i|
@@ -806,10 +827,10 @@ class Vector
   
   private_class_method :new
   def Vector.[](*array)
-    new(:init_elements, array, copy = false)
+    new(:init_elements, array, copy = FALSE)
   end
   
-  def Vector.elements(array, copy = true)
+  def Vector.elements(array, copy = TRUE)
     new(:init_elements, array, copy)
   end
   
@@ -854,7 +875,7 @@ class Vector
 
   # COMPARING
   def ==(other)
-    return false unless Vector === other
+    return FALSE unless Vector === other
     
     other.compare_by(@elements)
   end
@@ -874,11 +895,11 @@ class Vector
   
   # ARITHMETIC
   
-  def *(x) # is matrix or number
+  def *(x) "is matrix or number"
     case x
     when Numeric
       els = @elements.collect{|e| e * x}
-      Vector.elements(els, false)
+      Vector.elements(els, FALSE)
     when Matrix
       self.covector * x
     else
@@ -895,7 +916,7 @@ class Vector
 	|v1, v2|
 	v1 + v2
       }
-      Vector.elements(els, false)
+      Vector.elements(els, FALSE)
     when Matrix
       Matrix.column_vector(self) + v
     else
@@ -912,7 +933,7 @@ class Vector
 	|v1, v2|
 	v1 - v2
       }
-      Vector.elements(els, false)
+      Vector.elements(els, FALSE)
     when Matrix
       Matrix.column_vector(self) - v
     else
@@ -939,7 +960,7 @@ class Vector
       |v|
       yield v
     }
-    Vector.elements(els, false)
+    Vector.elements(els, FALSE)
   end
   alias map collect
   
@@ -948,7 +969,7 @@ class Vector
       |v1, v2|
       yield v1, v2
     }
-    Vector.elements(els, false)
+    Vector.elements(els, FALSE)
   end
   
   def r
@@ -999,4 +1020,3 @@ class Vector
     str = "Vector"+@elements.inspect
   end
 end
-

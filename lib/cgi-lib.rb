@@ -117,6 +117,17 @@ class CGI < SimpleDelegator
   LF  = "\012"
   EOL = CR + LF
 
+  RFC822_DAYS = %w[ Sun Mon Tue Wed Thu Fri Sat ]
+  RFC822_MONTHS = %w[ Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec ]
+
+  # make rfc1123 date string
+  def rfc1123_date(time)
+    t = time.clone.gmtime
+    return format("%s, %.2d %s %d %.2d:%.2d:%.2d GMT",
+                RFC822_DAYS[t.wday], t.day, RFC822_MONTHS[t.month-1], t.year,
+                t.hour, t.min, t.sec)
+  end
+
   # escape url encode
   def escape(str)
     str.gsub(/[^a-zA-Z0-9_\-.]/n){ sprintf("%%%02X", $&.unpack("C")[0]) }
@@ -132,7 +143,7 @@ class CGI < SimpleDelegator
     str.gsub(/&/, "&amp;").gsub(/\"/, "&quot;").gsub(/>/, "&gt;").gsub(/</, "&lt;")
   end
 
-  module_function :escape, :unescape, :escapeHTML
+  module_function :escape, :unescape, :escapeHTML, :rfc1123_date
 
   # offline mode. read name=value pairs on standard input.
   def read_from_cmdline
@@ -160,7 +171,7 @@ class CGI < SimpleDelegator
       input.read(Integer(ENV['CONTENT_LENGTH'])) or ""
     else
       read_from_cmdline
-    end.split(/&/).each do |x|
+    end.split(/[&;]/).each do |x|
       key, val = x.split(/=/,2).collect{|x|unescape(x)}
       if @inputs.include?(key)
         @inputs[key] += "\0" + (val or "")
@@ -201,7 +212,7 @@ class CGI < SimpleDelegator
     "Set-Cookie: " + options['name'] + '=' + escape(options['value']) +
     (options['domain']  ? '; domain='  + options['domain'] : '') +
     (options['path']    ? '; path='    + options['path']   : '') +
-    (options['expires'] ? '; expires=' + options['expires'].strftime("%a, %d %b %Y %X %Z") : '') +
+    (options['expires'] ? '; expires=' + rfc1123_date(options['expires']) : '') +
     (options['secure']  ? '; secure' : '')
   end
 
@@ -218,7 +229,7 @@ class CGI < SimpleDelegator
     else
       if options.delete("nph") or (ENV['SERVER_SOFTWARE'] =~ /IIS/)
         [(ENV['SERVER_PROTOCOL'] or "HTTP/1.0") + " 200 OK",
-         "Date: " + Time.now.gmtime.strftime("%a, %d %b %Y %X %Z"),
+         "Date: " + rfc1123_date(Time.now),
          "Server: " + (ENV['SERVER_SOFTWARE'] or ""),
          "Connection: close"] +
         (options.empty? ? ["Content-Type: text/html"] : options)

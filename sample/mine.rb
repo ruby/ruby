@@ -1,3 +1,5 @@
+#! /usr/bin/ruby -Ke
+
 class Board
   def clr
     print "\e[2J"

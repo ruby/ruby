@@ -15,6 +15,7 @@ Language Spec.
 
 Hacking Interpreter
 
+* hash[key] = nil may not remove entry; hashes may have nil as the value.
 * RUBYOPT environment variable
 * non-blocking open (e.g. named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
@@ -26,6 +27,7 @@ Hacking Interpreter
 
 Standard Libraries
 
+* Array#{first,last,at}
 * Struct::new([name,]member,...) ??
 * String#scanf(?)
 * Object#fmt(?)
@@ -44,7 +46,6 @@ Extension Libraries
 
 Ruby Libraries
 
-* net/pop.rb net/smtp.rb
 * httplib.rb, urllib.rb, nttplib.rb, etc.
 * format like perl's
 

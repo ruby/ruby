@@ -330,7 +330,7 @@ exc_inspect(exc)
     str = rb_str_new2("#<");
     klass = rb_class_path(klass);
     rb_str_concat(str, klass);
-    rb_str_cat(str, ":", 1);
+    rb_str_cat(str, ": ", 2);
     rb_str_concat(str, exc);
     rb_str_cat(str, ">", 1);
 

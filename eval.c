@@ -2084,10 +2084,12 @@ rb_eval(self, node)
 		    resq = resq->nd_head; /* next rescue */
 		}
 	    }
-	    if (state) JUMP_TAG(state);
-	    if (node->nd_else) { /* no exception raised, else clause given */
-		result = rb_eval(self, node->nd_else);
+	    else if (node->nd_else) { /* else clause given */
+		if (!state) {	/* no exception raised */
+		    result = rb_eval(self, node->nd_else);
+		}
 	    }
+	    if (state) JUMP_TAG(state);
 	}
         break;
 

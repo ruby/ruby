@@ -16,6 +16,12 @@
 #ifndef NT
 #include <sys/socket.h>
 #include <netinet/in.h>
+#ifdef NETINET_TCP
+# include <netinet/tcp.h>
+#endif
+#ifdef NETINET_UDP
+# include <netinet/udp.h>
+#endif
 #include <netdb.h>
 #endif
 #include <errno.h>
