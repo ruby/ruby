@@ -1,4 +1,5 @@
-Wed Jun 27 08:53:04 2001  Minero Aoki  <#e(:global).g(:email)>\n
+Wed Jun 27 08:53:04 2001  Minero Aoki  <aamine@loveruby.net>
+
 	* lib/net/pop.rb: new methods POP3.auth_only, POP3#auth_only
 
 	* lib/net/http.rb: HTTP.Proxy returns self if ADDRESS is nil.
