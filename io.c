@@ -56,10 +56,6 @@ struct timeval {
 #include <unistd.h>
 #endif
 
-#ifndef strdup
-char *strdup();
-#endif
-
 extern void Init_File _((void));
 
 #ifdef __BEOS__

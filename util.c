@@ -300,7 +300,6 @@ valid_filename(char *s)
 #endif
 
 #ifdef DJGPP
-/* Copyright (C) 1995 DJ Delorie, see COPYING.DJ for details */
 #include <libc/stubs.h>
 #include <stdio.h>		/* For FILENAME_MAX */
 #include <errno.h>		/* For errno */
@@ -379,7 +378,7 @@ is_sjis1(int c)
    7. Converting all slashes to '/'
  */
 void
-_fixpath(const char *in, char *out)
+fixpath(const char *in, char *out)
 {
   int		drive_number;
   const char	*ip = in;
@@ -758,3 +757,16 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
  }
 }
 
+char *
+ruby_strdup(str)
+    const char *str;
+{
+    char *tmp;
+    int len = strlen(str) + 1;
+
+    tmp = xmalloc(len);
+    if (tmp == NULL) return NULL;
+    memcpy(tmp, str, len);
+
+    return tmp;
+}

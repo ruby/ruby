@@ -49,9 +49,6 @@ static int xflag = 0;
 extern int yydebug;
 
 char *ruby_inplace_mode = Qfalse;
-# ifndef strdup
-char *strdup();
-# endif
 
 static void load_stdin _((void));
 static void load_file _((char *, int));

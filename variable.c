@@ -17,10 +17,6 @@
 #include "node.h"
 #include "st.h"
 
-#ifndef strdup
-char *strdup();
-#endif
-
 static st_table *rb_global_tbl;
 st_table *rb_class_tbl;
 

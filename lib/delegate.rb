@@ -39,7 +39,7 @@ class Delegator
 	    raise
 	  end
 	end
-	EOS
+      EOS
     end
   end
 

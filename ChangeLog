@@ -5,6 +5,13 @@ Wed Jul 26 10:09:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 	* configure.in: LIBRUBY_SO='$(RUBY_INSTALL_NAME)'.$target_os.dll
 	  on cygwin and mingw32. ruby-cygwin.dll is bad. why?
 
+Wed Jul 26 10:04:03 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* gc.c (gc_sweep): avoid full scan during compilation.
+
+	* gc.c (rb_gc): add heap during no gc period (including
+	  compilation).
+
 Tue Jul 25 19:03:04 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* cygwin/GNUmakefile: use puts instead of print, because

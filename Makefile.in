@@ -201,9 +201,6 @@ strncasecmp.@OBJEXT@: @srcdir@/missing/strncasecmp.c
 strchr.@OBJEXT@: @srcdir@/missing/strchr.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strchr.c
 
-strdup.@OBJEXT@: @srcdir@/missing/strdup.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strdup.c
-
 strerror.@OBJEXT@: @srcdir@/missing/strerror.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c @srcdir@/missing/strerror.c
 

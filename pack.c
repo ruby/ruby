@@ -333,7 +333,7 @@ pack_pack(ary, fmt)
 #endif
 
 	if (ISSPACE(type)) continue;
-        if (*p == '_') {
+        if (*p == '_' || *p == '!') {
 	    char *natstr = "sSiIlL";
 
 	    if (strchr(natstr, type)) {
@@ -343,7 +343,7 @@ pack_pack(ary, fmt)
 		p++;
 	    }
 	    else {
-		rb_raise(rb_eArgError, "'_' allowed only after types %s", natstr);
+		rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
 	    }
 	}
 	if (*p == '*') {	/* set data length */
@@ -1077,7 +1077,7 @@ pack_unpack(str, fmt)
 #endif
 	star = 0;
 	type = *p++;
-	if (*p == '_') {
+	if (*p == '_' || *p == '!') {
 	    char *natstr = "sSiIlL";
 
 	    if (strchr(natstr, type)) {
@@ -1087,7 +1087,7 @@ pack_unpack(str, fmt)
 		p++;
 	    }
 	    else {
-		rb_raise(rb_eArgError, "'_' allowed only after types %s", natstr);
+		rb_raise(rb_eArgError, "'%c' allowed only after types %s", *p, natstr);
 	    }
 	}
 	if (p >= pend)

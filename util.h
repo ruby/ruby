@@ -36,8 +36,6 @@ void ruby_add_suffix();
 #define add_suffix ruby_add_suffix
 #endif
 
-char *ruby_mktemp _((void));
-
 void ruby_qsort _((void*, int, int, int (*)()));
 #define qsort(b,n,s,c) ruby_qsort(b,n,s,c)
 
@@ -47,5 +45,9 @@ void ruby_unsetenv _((const char*));
 #undef unsetenv
 #define setenv(name,val) ruby_setenv((name),(val))
 #define unsetenv(name,val) ruby_unsetenv((name));
+
+char *ruby_strdup _((const char*));
+#undef strdup
+#define strdup(s) ruby_strdup((s))
 
 #endif /* UTIL_H */

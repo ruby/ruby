@@ -1003,22 +1003,19 @@ ruby_init()
 }
 
 static VALUE
-eval_node(self)
+eval_node(self, node)
     VALUE self;
+    NODE *node;
 {
-    NODE *beg_tree, *tree;
+    NODE *beg_tree = ruby_eval_tree_begin;
 
-    beg_tree = ruby_eval_tree_begin;
-    tree = ruby_eval_tree;
+    ruby_eval_tree_begin = 0;
     if (beg_tree) {
-	ruby_eval_tree_begin = 0;
 	rb_eval(self, beg_tree);
     }
 
-    if (!tree) return Qnil;
-    ruby_eval_tree = 0;
-
-    return rb_eval(self, tree);
+    if (!node) return Qnil;
+    return rb_eval(self, node);
 }
 
 int ruby_in_eval;
@@ -1111,7 +1108,7 @@ ruby_run()
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
-	eval_node(ruby_top_self);
+	eval_node(ruby_top_self, ruby_eval_tree);
     }
     POP_ITER();
     POP_TAG();
@@ -4496,6 +4493,7 @@ compile(src, file, line)
 {
     NODE *node;
 
+    ruby_nerrs = 0;
     Check_Type(src, T_STRING);
     node = rb_compile_string(file, src, line);
 
@@ -4563,11 +4561,11 @@ eval(self, src, scope, file, line)
     }
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	compile(src, file, line);
+	NODE *node = compile(src, file, line);
 	if (ruby_nerrs > 0) {
 	    compile_error(0);
 	}
-	result = eval_node(self);
+	result = eval_node(self, node); 
     }
     POP_TAG();
     POP_CLASS();
@@ -4889,11 +4887,16 @@ rb_load(fname, wrap)
     state = EXEC_TAG();
     last_func = ruby_frame->last_func;
     if (state == 0) {
+	NODE *node;
+
+	DEFER_INTS;
 	ruby_in_eval++;
 	rb_load_file(file);
 	ruby_in_eval--;
+	node = ruby_eval_tree;
+	ALLOW_INTS;
 	if (ruby_nerrs == 0) {
-	    eval_node(self);
+	    eval_node(self, node);
 	}
     }
     ruby_frame->last_func = last_func;
@@ -6312,7 +6315,10 @@ method_inspect(method)
     rb_str_cat2(str, ": ");
     s = rb_class2name(data->oklass);
     rb_str_cat2(str, s);
-    rb_str_cat2(str, "#");
+    rb_str_cat2(str, "(");
+    s = rb_class2name(data->klass);
+    rb_str_cat2(str, s);
+    rb_str_cat2(str, ")#");
     s = rb_id2name(data->oid);
     rb_str_cat2(str, s);
     rb_str_cat2(str, ">");
@@ -6884,6 +6890,7 @@ find_bad_fds(dst, src, max)
 void
 rb_thread_schedule()
 {
+    extern int ruby_in_compile;
     rb_thread_t next;		/* OK */
     rb_thread_t th;
     rb_thread_t curr;
@@ -6896,6 +6903,11 @@ rb_thread_schedule()
     double delay, now;	/* OK */
     int n, max;
     int need_select = 0;
+
+    if (ruby_in_compile) {
+	printf("switch during compilation.\n");
+	abort();
+    }
 
     rb_thread_pending = 0;
     if (curr_thread == curr_thread->next

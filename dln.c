@@ -122,16 +122,15 @@ init_funcname(buf, file)
 static int dln_errno;
 
 #define DLN_ENOEXEC	ENOEXEC	/* Exec format error */
-#define DLN_ECONFL	201	/* Symbol name conflict */
-#define DLN_ENOINIT	202	/* No inititalizer given */
-#define DLN_EUNDEF	203	/* Undefine symbol remains */
-#define DLN_ENOTLIB	204	/* Not a library file */
-#define DLN_EBADLIB	205	/* Malformed library file */
-#define DLN_EINIT	206	/* Not initialized */
+#define DLN_ECONFL	1201	/* Symbol name conflict */
+#define DLN_ENOINIT	1202	/* No inititalizer given */
+#define DLN_EUNDEF	1203	/* Undefine symbol remains */
+#define DLN_ENOTLIB	1204	/* Not a library file */
+#define DLN_EBADLIB	1205	/* Malformed library file */
+#define DLN_EINIT	1206	/* Not initialized */
 
 static int dln_init_p = 0;
 
-#include "st.h"
 #include <ar.h>
 #include <a.out.h>
 #ifndef N_COMM
@@ -142,6 +141,9 @@ static int dln_init_p = 0;
 #endif
 
 #define INVALID_OBJECT(h) (N_MAGIC(h) != OMAGIC)
+
+#include "util.h"
+#include "st.h"
 
 static st_table *sym_tbl;
 static st_table *undef_tbl;

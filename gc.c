@@ -284,8 +284,7 @@ rb_newobj()
 	freelist = freelist->as.free.next;
 	return obj;
     }
-    if (dont_gc || during_gc || rb_prohibit_interrupt) add_heap();
-    else rb_gc();
+    rb_gc();
 
     goto retry;
 }
@@ -661,18 +660,6 @@ gc_sweep()
     int freed = 0;
     int i, used = heaps_used;
 
-    if (ruby_in_compile) {
-	/* sould not reclaim nodes during compilation */
-	for (i = 0; i < used; i++) {
-	    p = heaps[i]; pend = p + HEAP_SLOTS;
-	    while (p < pend) {
-		if (!(p->as.basic.flags&FL_MARK) && BUILTIN_TYPE(p) == T_NODE)
-		    rb_gc_mark(p);
-		p++;
-	    }
-	}
-    }
-
     freelist = 0;
     final_list = 0;
     for (i = 0; i < used; i++) {
@@ -912,6 +899,11 @@ rb_gc()
     VALUE *stack_end = alloca(1);
 # define STACK_END (stack_end)
 #endif
+
+    if (dont_gc || during_gc || rb_prohibit_interrupt || ruby_in_compile) {
+	add_heap();
+	return;
+    }
 
     malloc_memories = 0;
 

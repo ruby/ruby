@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "rubysig.h"
 #include "node.h"
 #include "st.h"
 #include <ctype.h>
@@ -526,6 +527,7 @@ rb_singleton_class(obj)
 	rb_bug("unknown immediate %d", obj);
     }
 
+    DEFER_INTS;
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
 	klass = RBASIC(obj)->klass;
     }
@@ -541,6 +543,7 @@ rb_singleton_class(obj)
 	FL_UNSET(klass, FL_TAINT);
     }
     if (OBJ_FROZEN(obj)) OBJ_FREEZE(klass);
+    ALLOW_INTS;
 
     return klass;
 }

@@ -1786,9 +1786,6 @@ none		: /* none */
 #include <sys/types.h>
 #include "regex.h"
 #include "util.h"
-#ifndef strdup
-char *strdup();
-#endif
 
 #define is_identchar(c) (((int)(c))!=-1&&(ISALNUM(c) || (c) == '_' || ismbchar(c)))
 
@@ -1862,6 +1859,7 @@ yycompile(f, line)
     int line;
 {
     int n;
+    NODE *node = 0;
 
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
@@ -1898,9 +1896,9 @@ yycompile(f, line)
     class_nest = 0;
     in_single = 0;
     cur_mid = 0;
-    if (n == 0) return ruby_eval_tree;
 
-    return 0;
+    if (n == 0) node = ruby_eval_tree;
+    return node;
 }
 
 static int lex_gets_ptr;
