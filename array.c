@@ -1355,8 +1355,7 @@ rb_ary_eql(ary1, ary2)
     long i;
 
     if (TYPE(ary2) != T_ARRAY) return Qfalse;
-    if (RARRAY(ary1)->len != RARRAY(ary2)->len)
-	return Qfalse;
+    if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (!rb_eql(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))
 	    return Qfalse;
