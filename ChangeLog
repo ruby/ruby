@@ -1,3 +1,9 @@
+Thu Jun  8 00:31:04 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* regex.h: export re_mbctab properly on cygwin.
+
+	* dln.c: use dlopen instead of LoadLibrary on cygwin.
+
 Mon Jun  5 00:18:08 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* bignum.c: avoid conflict with USHORT on mingw32.

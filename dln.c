@@ -71,7 +71,7 @@ char *getenv();
 
 int eaccess();
 
-#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(__CYGWIN32__) && !defined(_AIX)
+#if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
 #endif
@@ -1103,7 +1103,7 @@ dln_sym(name)
 #endif
 
 
-#ifdef _WIN32
+#if defined _WIN32 && !defined __CYGWIN__
 #include <windows.h>
 #endif
 
@@ -1135,7 +1135,7 @@ dln_strerror()
     return (char*)dlerror();
 #endif
 
-#ifdef _WIN32
+#if defined _WIN32 && !defined __CYGWIN__
     static char message[1024];
     int error = GetLastError();
     char *p = message;
@@ -1210,7 +1210,7 @@ void
 dln_load(file)
     const char *file;
 {
-#ifdef _WIN32
+#if defined _WIN32 && !defined __CYGWIN__
     HINSTANCE handle;
     char winfile[MAXPATHLEN];
     void (*init_fct)();
