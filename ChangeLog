@@ -1,3 +1,9 @@
+Fri Dec 20 05:06:49 2002  Akinori MUSHA  <knu@iDaemons.org>
+
+	* lib/README, lib/cgi/ftplib.rb, lib/telnet.rb: Delete ftplib.rb
+	  and telnet.rb.  It has been quite some time sinc they were
+	  obsoleted and made to emit warnings.
+
 Fri Dec 20 04:58:22 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/tempfile.rb: Embed Rdoc style comments.

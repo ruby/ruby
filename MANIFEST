@@ -129,7 +129,6 @@ lib/finalize.rb
 lib/find.rb
 lib/forwardable.rb
 lib/ftools.rb
-lib/ftplib.rb
 lib/getoptlong.rb
 lib/getopts.rb
 lib/importenv.rb
@@ -215,7 +214,6 @@ lib/shell/version.rb
 lib/shellwords.rb
 lib/singleton.rb
 lib/sync.rb
-lib/telnet.rb
 lib/tempfile.rb
 lib/thread.rb
 lib/thwait.rb
