@@ -1,3 +1,8 @@
+Sat Mar 08 11:30:59 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (massign): fix a bug not to expand in assigment to sole
+	  lhs.  [ruby-dev:19766]
+
 Fri Mar  7 21:57:25 2003  Tanaka Akira  <akr@m17n.org>
 
         * lib/pp.rb (Kernel.pp): module function.

@@ -4029,7 +4029,7 @@ massign(self, node, val, pcall)
 
     len = RARRAY(val)->len;
     list = node->nd_head;
-    if (len == 1 && list && (list->nd_next || node->nd_args)) {
+    if (len == 1 && list && (!pcall || list->nd_next || node->nd_args)) {
 	VALUE v = RARRAY(val)->ptr[0];
 	tmp = rb_check_array_type(v);
 
