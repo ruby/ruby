@@ -1,3 +1,9 @@
+Thu Sep  6 07:28:56 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_find_file_ext): add const qualifiers to ext.
+
+	* intern.h (rb_find_file_ext): ditto.
+
 Thu Sep  6 07:16:14 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/socket/socket.c (Init_socket): remove duplicating constants.
