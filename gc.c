@@ -776,15 +776,17 @@ rb_gc_mark_children(ptr)
 	break;
 
       case T_ARRAY:
-	{
+	if (FL_TEST(obj, ELTS_SHARED)) {
+	    rb_gc_mark(obj->as.array.aux.shared);
+	}
+	else {
 	    long i, len = obj->as.array.len;
 	    VALUE *ptr = obj->as.array.ptr;
 
-	    for (i=0; i < len; i++)
+	    for (i=0; i < len; i++) {
 		rb_gc_mark(*ptr++);
+	    }
 	}
-	if (FL_TEST(obj, ELTS_SHARED))
-	    rb_gc_mark(obj->as.array.aux.shared);
 	break;
 
       case T_HASH:
