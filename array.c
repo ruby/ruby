@@ -849,7 +849,9 @@ rb_inspecting_p(obj)
 {
     VALUE inspect_tbl;
 
-    if (!inspect_key) return Qfalse;
+    if (!inspect_key) {
+	inspect_key = rb_intern("__inspect_key__");
+    }
     inspect_tbl = rb_thread_local_aref(rb_thread_current(), inspect_key);
     if (NIL_P(inspect_tbl)) return Qfalse;
     return rb_ary_includes(inspect_tbl, rb_obj_id(obj));

@@ -1,6 +1,15 @@
+Tue Aug 14 11:49:00 2001  TOYOFUKU Chikanobu  <toyofuku@juice.or.jp>
+
+	* string.c (rb_str_cmp): remove needless conditional.
+
 Sat Aug 11 23:08:01 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* object.c (rb_obj_inspect): merge from 1.7: remove useless space.
+
+Sat Aug 11 14:43:47 2001  Tanaka Akira  <akr@m17n.org>
+
+	* array.c (rb_inspecting_p): initialize inspect_key if it is
+	  not initialized yet.
 
 Tue Aug  7 09:12:55 2001  Usaku Nakamura  <usa@ruby-lang.org>
 

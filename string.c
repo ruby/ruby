@@ -557,7 +557,6 @@ rb_str_cmp(str1, str2)
 	if (RSTRING(str1)->len > RSTRING(str2)->len) return 1;
 	return -1;
     }
-    if (retval == 0) return 0;
     if (retval > 0) return 1;
     return -1;
 }
