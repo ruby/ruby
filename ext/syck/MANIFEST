@@ -9,3 +9,4 @@ rubyext.c
 syck.c
 syck.h
 token.c
+emitter.c
