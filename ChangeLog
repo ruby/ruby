@@ -1,3 +1,7 @@
+Tue Jun 15 12:10:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: bug fix (TkWindow#grab)
+
 Mon Jun 14 18:23:27 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/remote-tk.rb: bug fix
