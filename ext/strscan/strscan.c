@@ -935,6 +935,18 @@ strscan_matched_size(self)
 }
 
 /*
+ * Equivalent to #matched_size.
+ * This method is obsolete; use #matched_size instead.
+ */
+static VALUE
+strscan_matchedsize(self)
+    VALUE self;
+{
+    rb_warning("StringScanner#matchedsize is obsolete; use #matched_size instead");
+    return strscan_matched_size(self);
+}
+
+/*
  * call-seq: [](n)
  *
  * Return the n-th subgroup in the most recent match.
@@ -1013,7 +1025,7 @@ strscan_post_match(self)
 
 /*
  * Returns the "rest" of the string (i.e. everything after the scan pointer).
- * If there is no more data, it returns <tt>""</tt>.
+ * If there is no more data (eos? = true), it returns <tt>""</tt>.
  */
 static VALUE
 strscan_rest(self)
@@ -1045,6 +1057,18 @@ strscan_rest_size(self)
 
     i = S_LEN(p) - p->curr;
     return INT2FIX(i);
+}
+
+/*
+ * <tt>s.restsize</tt> is equivalent to <tt>s.rest_size</tt>.
+ * This method is obsolete; use #rest_size instead.
+ */
+static VALUE
+strscan_restsize(self)
+    VALUE self;
+{
+    rb_warning("StringScanner#restsize is obsolete; use #rest_size instead");
+    return strscan_rest_size(self);
 }
 
 #define INSPECT_LENGTH 5
@@ -1304,14 +1328,14 @@ Init_strscan()
     rb_define_method(StringScanner, "matched?",    strscan_matched_p,   0);
     rb_define_method(StringScanner, "matched",     strscan_matched,     0);
     rb_define_method(StringScanner, "matched_size", strscan_matched_size, 0);
-    rb_define_method(StringScanner, "matchedsize", strscan_matched_size, 0);
+    rb_define_method(StringScanner, "matchedsize", strscan_matchedsize, 0);
     rb_define_method(StringScanner, "[]",          strscan_aref,        1);
     rb_define_method(StringScanner, "pre_match",   strscan_pre_match,   0);
     rb_define_method(StringScanner, "post_match",  strscan_post_match,  0);
 
     rb_define_method(StringScanner, "rest",        strscan_rest,        0);
     rb_define_method(StringScanner, "rest_size",   strscan_rest_size,   0);
-    rb_define_method(StringScanner, "restsize",    strscan_rest_size,   0);
+    rb_define_method(StringScanner, "restsize",    strscan_restsize,    0);
 
     rb_define_method(StringScanner, "inspect",     strscan_inspect,     0);
 }

@@ -1,3 +1,11 @@
+Thu Feb 19 03:05:49 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: StringScanner#restsize is obsolete;
+	  use #rest_size instead.
+
+	* ext/strscan/strscan.c: StringScanner#matchedsize is obsolete;
+	  use #matched_size instead.
+
 Thu Feb 19 02:42:19 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: don't use rb_eval_string, it defines
