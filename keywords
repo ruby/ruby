@@ -7,7 +7,7 @@ END, klEND, klEND, EXPR_END
 alias, kALIAS, kALIAS, EXPR_FNAME
 and, kAND, kAND, EXPR_BEG
 begin, kBEGIN, kBEGIN, EXPR_BEG
-break, kBREAK, kBREAK, EXPR_END
+break, kBREAK, kBREAK, EXPR_MID
 case, kCASE, kCASE, EXPR_BEG
 class, kCLASS, kCLASS, EXPR_CLASS
 def, kDEF, kDEF, EXPR_FNAME
@@ -22,7 +22,7 @@ for, kFOR, kFOR, EXPR_BEG
 if, kIF, kIF_MOD, EXPR_BEG
 in, kIN, kIN, EXPR_BEG
 module, kMODULE, kMODULE, EXPR_BEG
-next, kNEXT, kNEXT, EXPR_END
+next, kNEXT, kNEXT, EXPR_MID
 nil, kNIL, kNIL, EXPR_END
 not, kNOT, kNOT, EXPR_BEG
 or, kOR, kOR, EXPR_BEG

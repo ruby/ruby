@@ -27,6 +27,7 @@ Language Spec.
 * raise exception by `` error
 * jar like combined library package.
 * resumable Exception via Exception#resume.
+* method combination, e.g. before, after, around, etc.
 
 Hacking Interpreter
 

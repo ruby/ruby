@@ -286,7 +286,7 @@ range_step(argc, argv, range)
     }
     else if (TYPE(b) == T_STRING) {
 	VALUE args[5];
-	long *iter;
+	long iter[2];
 
 	args[0] = b; args[1] = e; args[2] = range;
 	iter[0] = 1; iter[1] = NUM2LONG(step);

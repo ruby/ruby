@@ -100,7 +100,7 @@ rb_str_new4(orig)
 {
     VALUE klass;
 
-    klass = rb_obj_type(orig);
+    klass = rb_obj_class(orig);
     if (RSTRING(orig)->orig) {
 	VALUE str;
 
@@ -257,7 +257,7 @@ rb_str_dup(str)
     VALUE klass;
 
     StringValue(str);
-    klass = rb_obj_type(str);
+    klass = rb_obj_class(str);
 
     if (OBJ_FROZEN(str)) str2 = rb_str_new3(str);
     else if (FL_TEST(str, STR_NO_ORIG)) {

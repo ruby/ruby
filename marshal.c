@@ -293,7 +293,7 @@ w_object(obj, arg, limit)
 	w_byte(TYPE_FIXNUM, arg);
 	w_long(FIX2INT(obj), arg);
 #else
-	if (RSHIFT((long)obj, 32) == 0 || RSHIFT((long)obj, 32) == -1) {
+	if (RSHIFT((long)obj, 30) == 0 || RSHIFT((long)obj, 30) == -1) {
 	    w_byte(TYPE_FIXNUM, arg);
 	    w_long(FIX2LONG(obj), arg);
 	}
@@ -447,13 +447,12 @@ w_object(obj, arg, limit)
 	    w_byte(TYPE_STRUCT, arg);
 	    {
 		long len = RSTRUCT(obj)->len;
-		char *path = rb_class2name(CLASS_OF(obj));
 		VALUE mem;
 		long i;
 
-		w_unique(path, arg);
+		w_unique(rb_class2name(CLASS_OF(obj)), arg);
 		w_long(len, arg);
-		mem = rb_ivar_get(CLASS_OF(obj), rb_intern("__member__"));
+		mem = rb_ivar_get(rb_obj_class(obj), rb_intern("__member__"));
 		if (mem == Qnil) {
 		    rb_raise(rb_eTypeError, "uninitialized struct");
 		}

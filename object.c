@@ -81,7 +81,7 @@ rb_class_real(cl)
 }
 
 VALUE
-rb_obj_type(obj)
+rb_obj_class(obj)
     VALUE obj;
 {
     return rb_class_real(CLASS_OF(obj));
@@ -116,7 +116,7 @@ rb_obj_dup(obj)
 	rb_raise(rb_eTypeError, "dupulicated object must be same type");
     }
     if (!SPECIAL_CONST_P(dup)) {
-	OBJSETUP(dup, rb_obj_type(obj), BUILTIN_TYPE(obj));
+	OBJSETUP(dup, rb_obj_class(obj), BUILTIN_TYPE(obj));
 	OBJ_INFECT(dup, obj);
 	if (FL_TEST(obj, FL_EXIVAR)) {
 	    FL_SET(dup, FL_EXIVAR);
@@ -233,7 +233,7 @@ rb_obj_is_instance_of(obj, c)
 	rb_raise(rb_eTypeError, "class or module required");
     }
 
-    if (rb_obj_type(obj) == c) return Qtrue;
+    if (rb_obj_class(obj) == c) return Qtrue;
     return Qfalse;
 }
 
@@ -1155,8 +1155,8 @@ Init_Object()
     rb_define_method(rb_mKernel, "hash", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "id", rb_obj_id, 0);
     rb_define_method(rb_mKernel, "__id__", rb_obj_id, 0);
-    rb_define_method(rb_mKernel, "type", rb_obj_type, 0);
-    rb_define_method(rb_mKernel, "class", rb_obj_type, 0);
+    rb_define_method(rb_mKernel, "type", rb_obj_class, 0);
+    rb_define_method(rb_mKernel, "class", rb_obj_class, 0);
 
     rb_define_method(rb_mKernel, "clone", rb_obj_clone, 0);
     rb_define_method(rb_mKernel, "dup", rb_obj_dup, 0);

@@ -2897,6 +2897,7 @@ re_compile_fastmap(bufp)
 
       case duplicate:
 	bufp->can_be_null = 1;
+	if (*p >= bufp->re_nsub) break;
 	fastmap['\n'] = 1;
       case anychar_repeat:
       case anychar:
@@ -3740,6 +3741,8 @@ re_match(bufp, string_arg, size, pos, regs)
 	  int regno = *p++;   /* Get which register to match against */
 	  register unsigned char *d2, *dend2;
 
+	  /* Check if there's corresponding group */
+	  if (regno >= num_regs) goto fail;
 	  /* Check if corresponding group is still open */
 	  if (IS_ACTIVE(reg_info[regno])) goto fail;
 

@@ -732,7 +732,7 @@ rb_ary_dup(ary)
 {
     VALUE dup = rb_ary_new2(RARRAY(ary)->len);
 
-    OBJSETUP(dup, rb_obj_type(ary), T_ARRAY);
+    OBJSETUP(dup, rb_obj_class(ary), T_ARRAY);
     MEMCPY(RARRAY(dup)->ptr, RARRAY(ary)->ptr, VALUE, RARRAY(ary)->len);
     RARRAY(dup)->len = RARRAY(ary)->len;
     OBJ_INFECT(dup, ary);

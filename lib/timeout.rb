@@ -25,7 +25,7 @@
 #
 #=end
 
-class TimeoutError<StandardError
+class TimeoutError<Interrupt
 end
 
 def timeout(sec)
@@ -37,14 +37,20 @@ def timeout(sec)
       x.raise TimeoutError, "execution expired" if x.alive?
     }
     yield sec
-    return true
+#    return true
   ensure
-    Thread.kill y if y and y.alive?
+    y.kill if y and y.alive?
   end
 end
 
 if __FILE__ == $0
-  timeout(5) {
-    p 10
+  p timeout(5) {
+    45
+  }
+  p timeout(5) {
+    loop {
+      p 10
+      sleep 1
+    }
   }
 end

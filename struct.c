@@ -17,16 +17,6 @@ VALUE rb_cStruct;
 static VALUE struct_alloc _((int, VALUE*, VALUE));
 
 static VALUE
-class_of(obj)
-    VALUE obj;
-{
-    obj = CLASS_OF(obj);
-    if (FL_TEST(obj, FL_SINGLETON))
-	return RCLASS(obj)->super;
-    return obj;
-}
-
-static VALUE
 iv_get(obj, name)
     VALUE obj;
     char *name;
@@ -68,7 +58,7 @@ static VALUE
 rb_struct_members(obj)
     VALUE obj;
 {
-    return rb_struct_s_members(class_of(obj));
+    return rb_struct_s_members(rb_obj_class(obj));
 }
 
 VALUE
@@ -79,7 +69,7 @@ rb_struct_getmember(obj, id)
     VALUE member, slot;
     long i;
 
-    member = iv_get(class_of(obj), "__member__");
+    member = iv_get(rb_obj_class(obj), "__member__");
     if (NIL_P(member)) {
 	rb_bug("uninitialized struct");
     }
@@ -140,7 +130,7 @@ rb_struct_set(obj, val)
     VALUE member, slot;
     long i;
 
-    member = iv_get(class_of(obj), "__member__");
+    member = iv_get(rb_obj_class(obj), "__member__");
     if (NIL_P(member)) {
 	rb_bug("non-initialized struct");
     }
@@ -260,7 +250,7 @@ static VALUE
 rb_struct_initialize(self, values)
     VALUE self, values;
 {
-    VALUE klass = CLASS_OF(self);
+    VALUE klass = rb_obj_class(self);
     VALUE size;
     long n;
 
@@ -349,7 +339,7 @@ static VALUE
 rb_struct_to_s(s)
     VALUE s;
 {
-    char *cname = rb_class2name(CLASS_OF(s));
+    char *cname = rb_class2name(rb_obj_class(s));
     VALUE str = rb_str_new(0, strlen(cname) + 4);
 
     sprintf(RSTRING(str)->ptr, "#<%s>", cname);
@@ -361,11 +351,11 @@ static VALUE
 inspect_struct(s)
     VALUE s;
 {
-    char *cname = rb_class2name(CLASS_OF(s));
+    char *cname = rb_class2name(rb_obj_class(s));
     VALUE str, member;
     long i;
 
-    member = iv_get(CLASS_OF(s), "__member__");
+    member = iv_get(rb_obj_class(s), "__member__");
     if (NIL_P(member)) {
 	rb_bug("non-initialized struct");
     }
@@ -398,7 +388,7 @@ rb_struct_inspect(s)
     VALUE s;
 {
     if (rb_inspecting_p(s)) {
-	char *cname = rb_class2name(CLASS_OF(s));
+	char *cname = rb_class2name(rb_obj_class(s));
 	VALUE str = rb_str_new(0, strlen(cname) + 8);
 
 	sprintf(RSTRING(str)->ptr, "#<%s:...>", cname);
@@ -436,7 +426,7 @@ rb_struct_aref_id(s, id)
     VALUE member;
     long i, len;
 
-    member = iv_get(CLASS_OF(s), "__member__");
+    member = iv_get(rb_obj_class(s), "__member__");
     if (NIL_P(member)) {
 	rb_bug("non-initialized struct");
     }
@@ -480,7 +470,7 @@ rb_struct_aset_id(s, id, val)
     VALUE member;
     long i, len;
 
-    member = iv_get(CLASS_OF(s), "__member__");
+    member = iv_get(rb_obj_class(s), "__member__");
     if (NIL_P(member)) {
 	rb_bug("non-initialized struct");
     }
@@ -527,7 +517,7 @@ rb_struct_equal(s, s2)
     long i;
 
     if (TYPE(s2) != T_STRUCT) return Qfalse;
-    if (CLASS_OF(s) != CLASS_OF(s2)) return Qfalse;
+    if (rb_obj_class(s) != rb_obj_class(s2)) return Qfalse;
     if (RSTRUCT(s)->len != RSTRUCT(s2)->len) {
 	rb_bug("inconsistent struct"); /* should never happen */
     }

@@ -244,7 +244,7 @@ VALUE rb_obj_tainted _((VALUE));
 VALUE rb_obj_untaint _((VALUE));
 VALUE rb_obj_freeze _((VALUE));
 VALUE rb_obj_id _((VALUE));
-VALUE rb_obj_type _((VALUE));
+VALUE rb_obj_class _((VALUE));
 VALUE rb_class_real _((VALUE));
 VALUE rb_convert_type _((VALUE,int,const char*,const char*));
 VALUE rb_to_int _((VALUE));
