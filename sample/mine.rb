@@ -81,7 +81,7 @@ class Board
     elsif y < 0 then 0
     elsif y >= @hi then 0
     else
-      @data[x*@wi+y]
+      @data[y*@wi+x]
     end
   end
   def count(x,y)

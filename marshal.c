@@ -17,7 +17,7 @@ double strtod();
 #endif
 
 #define MARSHAL_MAJOR   4
-#define MARSHAL_MINOR   1
+#define MARSHAL_MINOR   2
 
 #define TYPE_NIL	'0'
 #define TYPE_TRUE	'T'
@@ -33,8 +33,11 @@ double strtod();
 #define TYPE_REGEXP	'/'
 #define TYPE_ARRAY	'['
 #define TYPE_HASH	'{'
+#define TYPE_HASH_DEF	'}'
 #define TYPE_STRUCT	'S'
-#define TYPE_MODULE	'M'
+#define TYPE_MODULE_OLD	'M'
+#define TYPE_CLASS	'c'
+#define TYPE_MODULE	'm'
 
 #define TYPE_SYMBOL	':'
 #define TYPE_SYMLINK	';'
@@ -260,8 +263,15 @@ w_object(obj, arg, limit)
 	}
 
 	switch (BUILTIN_TYPE(obj)) {
-	  case T_MODULE:
 	  case T_CLASS:
+	    w_byte(TYPE_CLASS, arg);
+	    {
+		VALUE path = rb_class_path(obj);
+		w_bytes(RSTRING(path)->ptr, RSTRING(path)->len, arg);
+	    }
+	    return;
+
+	  case T_MODULE:
 	    w_byte(TYPE_MODULE, arg);
 	    {
 		VALUE path = rb_class_path(obj);
@@ -320,9 +330,17 @@ w_object(obj, arg, limit)
 
 	  case T_HASH:
 	    w_uclass(obj, rb_cHash, arg);
-	    w_byte(TYPE_HASH, arg);
+	    if (!NIL_P(RHASH(obj)->ifnone)) {
+		w_byte(TYPE_HASH_DEF, arg);
+	    }
+	    else {
+		w_byte(TYPE_HASH, arg);
+	    }
 	    w_long(RHASH(obj)->tbl->num_entries, arg);
 	    st_foreach(RHASH(obj)->tbl, hash_each, &c_arg);
+	    if (!NIL_P(RHASH(obj)->ifnone)) {
+		w_object(RHASH(obj)->ifnone, arg, limit);
+	    }
 	    break;
 
 	  case T_STRUCT:
@@ -706,6 +724,7 @@ r_object(arg)
 	}
 
       case TYPE_HASH:
+      case TYPE_HASH_DEF:
 	{
 	    int len = r_long(arg);
 
@@ -715,6 +734,9 @@ r_object(arg)
 		VALUE key = r_object(arg);
 		VALUE value = r_object(arg);
 		rb_hash_aset(v, key, value);
+	    }
+	    if (type = TYPE_HASH_DEF) {
+		RHASH(v)->ifnone = r_object(arg);
 	    }
 	    return v;
 	}
@@ -788,11 +810,37 @@ r_object(arg)
 	}
 	break;
 
-      case TYPE_MODULE:
+      case TYPE_MODULE_OLD:
         {
 	    char *buf;
 	    r_bytes(buf, arg);
 	    return r_regist(rb_path2class(buf), arg);
+	}
+
+      case TYPE_CLASS:
+        {
+	    VALUE c;
+
+	    char *buf;
+	    r_bytes(buf, arg);
+	    c = rb_path2class(buf);
+	    if (TYPE(c) != T_CLASS) {
+		rb_raise(rb_eTypeError, "%s is not a class", buf);
+	    }
+	    return r_regist(c, arg);
+	}
+
+      case TYPE_MODULE:
+        {
+	    VALUE m;
+
+	    char *buf;
+	    r_bytes(buf, arg);
+	    m = rb_path2class(buf);
+	    if (TYPE(m) != T_CLASS) {
+		rb_raise(rb_eTypeError, "%s is not a module", buf);
+	    }
+	    return r_regist(m, arg);
 	}
 
       default:

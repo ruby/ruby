@@ -275,7 +275,9 @@ static VALUE
 rb_reg_source(re)
     VALUE re;
 {
-    return rb_str_new(RREGEXP(re)->str,RREGEXP(re)->len);
+    VALUE str = rb_str_new(RREGEXP(re)->str,RREGEXP(re)->len);
+    if (OBJ_TAINTED(re)) OBJ_TAINT(str);
+    return str;
 }
 
 static VALUE
@@ -715,7 +717,8 @@ match_to_s(match)
 {
     VALUE str = rb_reg_last_match(match);
 
-    if (NIL_P(str)) return rb_str_new(0,0);
+    if (NIL_P(str)) str = rb_str_new(0,0);
+    if (OBJ_TAINTED(match)) OBJ_TAINT(str);
     return str;
 }
 

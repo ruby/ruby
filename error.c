@@ -325,6 +325,7 @@ exc_to_s(exc)
     VALUE mesg = rb_iv_get(exc, "mesg");
 
     if (NIL_P(mesg)) return rb_class_path(CLASS_OF(exc));
+    if (OBJ_TAINTED(exc)) OBJ_TAINT(mesg);
     return mesg;
 }
 

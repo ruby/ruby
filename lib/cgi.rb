@@ -5,7 +5,7 @@ $Date$
 
 CGI.rb
 
-Version 1.00
+Version 1.01
 
 Copyright (C) 1999  Network Applied Communication Laboratory, Inc.
 
@@ -182,7 +182,7 @@ class CGI
   EOL = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.00"
+  VERSION = "1.01"
   RELEASE_DATE = "$Date$"
 $-v = v
 
@@ -958,6 +958,7 @@ convert string charset, and set language to "ja".
     # - -
     def nn_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
+          attributes.delete_if{|k,v| v == nil }
           "<element.upcase" + attributes.collect{|name, value|
             " " + CGI::escapeHTML(name) +
             if true == value
@@ -978,6 +979,7 @@ convert string charset, and set language to "ja".
     # - O EMPTY
     def nOE_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
+          attributes.delete_if{|k,v| v == nil }
           "<element.upcase" + attributes.collect{|name, value|
             " " + CGI::escapeHTML(name) +
             if true == value
@@ -992,7 +994,8 @@ convert string charset, and set language to "ja".
     # O O or - O
     def nO_element_def(element)
       <<-END.gsub(/element\.downcase/n, element.downcase).gsub(/element\.upcase/n, element.upcase)
-         "<element.upcase" + attributes.collect{|name, value|
+          attributes.delete_if{|k,v| v == nil }
+          "<element.upcase" + attributes.collect{|name, value|
             " " + CGI::escapeHTML(name) +
             if true == value
               ""
@@ -1834,9 +1837,26 @@ convert string charset, and set language to "ja".
 
 
   def initialize(type = "query")
+    @params = nil
+    @cookies = nil
+    @output_cookies = nil
+    @output_hidden = nil
+
     extend QueryExtension
-    initialize_query()
-    # @params, @cookies initialized in initialize_query
+
+    #if defined? CGI::PARAMS
+    #  @params = "C" + (CGI::PARAMS.nil? ? nil : CGI::PARAMS.dup).inspect
+    #  @cookies = "C" + (CGI::COOKIES.nil? ? nil : CGI::COOKIES.dup).inspect
+    #else
+      initialize_query()
+    #   @params, @cookies initialized in initialize_query
+    #  eval "PARAMS = @params.nil? ? nil : @params.dup"
+    #  eval "COOKIES = @cookies.nil? ? nil : @cookies.dup"
+    #  at_exit {
+    #    remove_const(PARAMS)
+    #    remove_const(COOKIES)
+    #  }
+    #end
 
     case type
     when "html3"
@@ -1859,6 +1879,12 @@ end
 =begin
 
 == HISTRY
+
+=== Version 1.01 - wakou
+
+1999/11/29 21:35:58
+
+- support for ruby 1.5.0 (1999-11-20)
 
 === Version 1.00 - wakou
 

@@ -15,8 +15,8 @@ class TkEntry<TkLabel
   def create_self
     tk_call 'entry', @path
   end
-  def scrollcommand(cmd)
-    configure 'scrollcommand', cmd
+  def xscrollcommand(cmd=Proc.new)
+    configure_cmd 'xscrollcommand', cmd
   end
 
   def delete(s, e=None)
@@ -45,7 +45,7 @@ class TkEntry<TkLabel
     tk_send 'selection', 'adjust', index
   end
   def selection_clear
-    tk_send 'selection', 'clear', 'end'
+    tk_send 'selection', 'clear'
   end
   def selection_from(index)
     tk_send 'selection', 'from', index

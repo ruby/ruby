@@ -689,8 +689,12 @@ static VALUE
 hash_to_s(hash)
     VALUE hash;
 {
+    VALUE str;
+
     if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
-    return rb_ary_to_s(rb_hash_to_a(hash));
+    str = rb_ary_to_s(rb_hash_to_a(hash));
+    if (OBJ_TAINTED(hash)) OBJ_TAINT(str);
+    return hash;
 }
 
 static VALUE
@@ -798,7 +802,7 @@ equal_i(key, val1, data)
 {
     VALUE val2;
 
-    if (val1 == Qnil) return ST_CONTINUE;
+    if (key == Qnil) return ST_CONTINUE;
     if (!st_lookup(data->tbl, key, &val2)) {
 	data->result = Qfalse;
 	return ST_STOP;

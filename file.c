@@ -70,7 +70,7 @@ char *strrchr _((const char*,const char));
  
 VALUE rb_cFile;
 VALUE rb_mFileTest;
-static VALUE sStat;
+static VALUE rb_cStat;
 
 static int
 apply2files(func, vargs, arg)
@@ -118,33 +118,139 @@ static VALUE
 stat_new(st)
     struct stat *st;
 {
+    struct stat *nst;
     if (!st) rb_bug("stat_new() called with bad value");
-    return rb_struct_new(sStat,
-			 INT2FIX((int)st->st_dev),
-			 INT2FIX((int)st->st_ino),
-			 INT2FIX((int)st->st_mode),
-			 INT2FIX((int)st->st_nlink),
-			 INT2FIX((int)st->st_uid),
-			 INT2FIX((int)st->st_gid),
+
+    nst = ALLOC(struct stat);
+    *nst = *st;
+    return Data_Wrap_Struct(rb_cStat, NULL, free, nst);
+}
+
+static struct stat*
+get_stat(self)
+    VALUE self;
+{
+    struct stat* st;
+    Data_Get_Struct(self, struct stat, st);
+    if (!st) rb_bug("collapsed File::Stat");
+    return st;
+}
+
+static VALUE
+rb_stat_cmp(self, other)
+    VALUE self, other;
+{
+    time_t t1 = get_stat(self)->st_mtime;
+    time_t t2 = get_stat(other)->st_mtime;
+    if (t1 == t2)
+	return INT2FIX(0);
+    else if (t1 < t2)
+	return INT2FIX(-1);
+    else
+	return INT2FIX(1);
+}
+
+static VALUE
+rb_stat_dev(self)
+    VALUE self;
+{
+    return INT2FIX((int)get_stat(self)->st_dev);
+}
+
+static VALUE
+rb_stat_ino(self)
+    VALUE self;
+{
+    return INT2FIX((int)get_stat(self)->st_ino);
+}
+
+static VALUE
+rb_stat_mode(self)
+    VALUE self;
+{
+    return INT2FIX((int)get_stat(self)->st_mode);
+}
+
+static VALUE
+rb_stat_nlink(self)
+    VALUE self;
+{
+    return INT2FIX((int)get_stat(self)->st_nlink);
+}
+
+static VALUE
+rb_stat_uid(self)
+    VALUE self;
+{
+    return INT2FIX((int)get_stat(self)->st_uid);
+}
+
+static VALUE
+rb_stat_gid(self)
+    VALUE self;
+{
+    return INT2FIX((int)get_stat(self)->st_gid);
+}
+
+static VALUE
+rb_stat_rdev(self)
+    VALUE self;
+{
 #ifdef HAVE_ST_RDEV
-			 INT2FIX((int)st->st_rdev),
+    return INT2FIX((int)get_stat(self)->st_rdev);
 #else
-			 INT2FIX(0),
+    return INT2FIX(0);
 #endif
-			 INT2FIX((int)st->st_size),
+}
+
+static VALUE
+rb_stat_size(self)
+    VALUE self;
+{
+    return INT2FIX((int)get_stat(self)->st_size);
+}
+
+static VALUE
+rb_stat_blksize(self)
+    VALUE self;
+{
 #ifdef HAVE_ST_BLKSIZE
-			 INT2FIX((int)st->st_blksize),
+    return INT2FIX((int)get_stat(self)->st_blksize);
 #else
-			 INT2FIX(0),
+    return INT2FIX(0);
 #endif
+}
+
+static VALUE
+rb_stat_blocks(self)
+    VALUE self;
+{
 #ifdef HAVE_ST_BLOCKS
-			 INT2FIX((int)st->st_blocks),
+    return INT2FIX((int)get_stat(self)->st_blocks);
 #else
-			 INT2FIX(0),
+    return INT2FIX(0);
 #endif
-			 rb_time_new(st->st_atime, 0),
-			 rb_time_new(st->st_mtime, 0),
-			 rb_time_new(st->st_ctime, 0));
+}
+
+static VALUE
+rb_stat_atime(self)
+    VALUE self;
+{
+    return rb_time_new(get_stat(self)->st_atime, 0);
+}
+
+static VALUE
+rb_stat_mtime(self)
+    VALUE self;
+{
+    return rb_time_new(get_stat(self)->st_mtime, 0);
+}
+
+static VALUE
+rb_stat_ctime(self)
+    VALUE self;
+{
+    return rb_time_new(get_stat(self)->st_ctime, 0);
 }
 
 static int
@@ -1211,7 +1317,7 @@ rb_file_s_basename(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE fname, fext;
+    VALUE fname, fext, basename;
     char *name, *p, *ext;
     int f;
 
@@ -1232,7 +1338,9 @@ rb_file_s_basename(argc, argv)
 	f = rmext(p, ext);
 	if (f) return rb_str_new(p, f);
     }
-    return rb_tainted_str_new2(p);
+    basename = rb_str_new2(p);
+    if (OBJ_TAINTED(fname)) OBJ_TAINT(basename);
+    return basename;
 }
 
 static VALUE
@@ -1240,6 +1348,7 @@ rb_file_s_dirname(obj, fname)
     VALUE obj, fname;
 {
     char *name, *p;
+    VALUE dirname;
 
     name = STR2CSTR(fname);
     p = strrchr(name, '/');
@@ -1248,7 +1357,9 @@ rb_file_s_dirname(obj, fname)
     }
     if (p == name)
 	p++;
-    return rb_tainted_str_new(name, p - name);
+    dirname = rb_str_new(name, p - name);
+    if (OBJ_TAINTED(fname)) OBJ_TAINT(dirname);
+    return dirname;
 }
 
 static VALUE
@@ -1549,25 +1660,18 @@ rb_f_test(argc, argv)
     return Qnil;		/* not reached */
 }
 
-static ID rb_st_mode;
-static ID rb_st_size;
-static ID rb_st_uid;
-static ID rb_st_gid;
-
-#define ST_MODE(obj) FIX2INT(rb_funcall3((obj), rb_st_mode, 0, 0))
-
 static VALUE
 rb_stat_ftype(obj)
     VALUE obj;
 {
-    return rb_file_ftype(ST_MODE(obj));
+    return rb_file_ftype(get_stat(obj)->st_mode);
 }
 
 static VALUE
 rb_stat_d(obj)
     VALUE obj;
 {
-    if (S_ISDIR(ST_MODE(obj))) return Qtrue;
+    if (S_ISDIR(get_stat(obj)->st_mode)) return Qtrue;
     return Qfalse;
 }
 
@@ -1576,7 +1680,7 @@ rb_stat_p(obj)
     VALUE obj;
 {
 #ifdef S_IFIFO
-    if (S_ISFIFO(ST_MODE(obj))) return Qtrue;
+    if (S_ISFIFO(get_stat(obj)->st_mode)) return Qtrue;
 
 #endif
     return Qfalse;
@@ -1587,7 +1691,7 @@ rb_stat_l(obj)
     VALUE obj;
 {
 #ifdef S_ISLNK
-    if (S_ISLNK(ST_MODE(obj))) return Qtrue;
+    if (S_ISLNK(get_stat(obj)->st_mode)) return Qtrue;
 
 #endif
     return Qfalse;
@@ -1598,7 +1702,7 @@ rb_stat_S(obj)
     VALUE obj;
 {
 #ifdef S_ISSOCK
-    if (S_ISSOCK(ST_MODE(obj))) return Qtrue;
+    if (S_ISSOCK(get_stat(obj)->st_mode)) return Qtrue;
 
 #endif
     return Qfalse;
@@ -1609,7 +1713,7 @@ rb_stat_b(obj)
     VALUE obj;
 {
 #ifdef S_ISBLK
-    if (S_ISBLK(ST_MODE(obj))) return Qtrue;
+    if (S_ISBLK(get_stat(obj)->st_mode)) return Qtrue;
 
 #endif
     return Qfalse;
@@ -1619,7 +1723,7 @@ static VALUE
 rb_stat_c(obj)
     VALUE obj;
 {
-    if (S_ISBLK(ST_MODE(obj))) return Qtrue;
+    if (S_ISBLK(get_stat(obj)->st_mode)) return Qtrue;
 
     return Qfalse;
 }
@@ -1628,7 +1732,7 @@ static VALUE
 rb_stat_owned(obj)
     VALUE obj;
 {
-    if (FIX2INT(rb_funcall3(obj, rb_st_uid, 0, 0)) == geteuid()) return Qtrue;
+    if (get_stat(obj)->st_uid == geteuid()) return Qtrue;
     return Qfalse;
 }
 
@@ -1636,7 +1740,7 @@ static VALUE
 rb_stat_rowned(obj)
     VALUE obj;
 {
-    if (FIX2INT(rb_funcall3(obj, rb_st_uid, 0, 0)) == getuid()) return Qtrue;
+    if (get_stat(obj)->st_uid == getuid()) return Qtrue;
     return Qfalse;
 }
 
@@ -1645,7 +1749,7 @@ rb_stat_grpowned(obj)
     VALUE obj;
 {
 #ifndef NT
-    if (FIX2INT(rb_funcall3(obj, rb_st_gid, 0, 0)) == getegid()) return Qtrue;
+    if (get_stat(obj)->st_gid == getegid()) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -1654,7 +1758,7 @@ static VALUE
 rb_stat_r(obj)
     VALUE obj;
 {
-    mode_t mode = ST_MODE(obj);
+    mode_t mode = get_stat(obj)->st_mode;
 
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
@@ -1674,14 +1778,14 @@ static VALUE
 rb_stat_R(obj)
     VALUE obj;
 {
-    mode_t mode = ST_MODE(obj);
+    mode_t mode = get_stat(obj)->st_mode;
 
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
 	return mode & S_IRUSR ? Qtrue : Qfalse;
 #endif
 #ifdef S_IRGRP
-    if (group_member(FIX2INT(rb_funcall3(obj, rb_st_gid, 0, 0))))
+    if (group_member(get_stat(obj)->st_gid))
 	return mode & S_IRGRP ? Qtrue : Qfalse;
 #endif
 #ifdef S_IROTH
@@ -1694,7 +1798,7 @@ static VALUE
 rb_stat_w(obj)
     VALUE obj;
 {
-    mode_t mode = ST_MODE(obj);
+    mode_t mode = get_stat(obj)->st_mode;
 
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
@@ -1714,14 +1818,14 @@ static VALUE
 rb_stat_W(obj)
     VALUE obj;
 {
-    mode_t mode = ST_MODE(obj);
+    mode_t mode = get_stat(obj)->st_mode;
 
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
 	return mode & S_IWUSR ? Qtrue : Qfalse;
 #endif
 #ifdef S_IRGRP
-    if (group_member(FIX2INT(rb_funcall3(obj, rb_st_gid, 0, 0))))
+    if (group_member(get_stat(obj)->st_gid))
 	return mode & S_IWGRP ? Qtrue : Qfalse;
 #endif
 #ifdef S_IROTH
@@ -1734,7 +1838,7 @@ static VALUE
 rb_stat_x(obj)
     VALUE obj;
 {
-    mode_t mode = ST_MODE(obj);
+    mode_t mode = get_stat(obj)->st_mode;
 
 #ifdef S_IRUSR
     if (rb_stat_owned(obj))
@@ -1754,14 +1858,14 @@ static VALUE
 rb_stat_X(obj)
     VALUE obj;
 {
-    mode_t mode = ST_MODE(obj);
+    mode_t mode = get_stat(obj)->st_mode;
 
 #ifdef S_IRUSR
     if (rb_stat_rowned(obj))
 	return mode & S_IXUSR ? Qtrue : Qfalse;
 #endif
 #ifdef S_IRGRP
-    if (group_member(FIX2INT(rb_funcall3(obj, rb_st_gid, 0, 0))))
+    if (group_member(get_stat(obj)->st_gid))
 	return mode & S_IXGRP ? Qtrue : Qfalse;
 #endif
 #ifdef S_IROTH
@@ -1774,7 +1878,7 @@ static VALUE
 rb_stat_f(obj)
     VALUE obj;
 {
-    if (S_ISREG(ST_MODE(obj))) return Qtrue;
+    if (S_ISREG(get_stat(obj)->st_mode)) return Qtrue;
     return Qfalse;
 }
 
@@ -1782,7 +1886,7 @@ static VALUE
 rb_stat_z(obj)
     VALUE obj;
 {
-    if (rb_funcall3(obj, rb_st_size, 0, 0) == INT2FIX(0)) return Qtrue;
+    if (get_stat(obj)->st_size == 0) return Qtrue;
     return Qfalse;
 }
 
@@ -1790,10 +1894,10 @@ static VALUE
 rb_stat_s(obj)
     VALUE obj;
 {
-    VALUE size = rb_funcall3(obj, rb_st_size, 0, 0);
+    int size = get_stat(obj)->st_size;
 
-    if (size == INT2FIX(0)) return Qnil;
-    return size;
+    if (size == 0) return Qnil;
+    return INT2FIX(size);
 }
 
 static VALUE
@@ -1801,7 +1905,7 @@ rb_stat_suid(obj)
     VALUE obj;
 {
 #ifdef S_ISUID
-    if (ST_MODE(obj) & S_ISUID) return Qtrue;
+    if (get_stat(obj)->st_mode & S_ISUID) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -1811,7 +1915,7 @@ rb_stat_sgid(obj)
     VALUE obj;
 {
 #ifndef NT
-    if (ST_MODE(obj) & S_ISGID) return Qtrue;
+    if (get_stat(obj)->st_mode & S_ISGID) return Qtrue;
 #endif
     return Qfalse;
 }
@@ -1821,7 +1925,7 @@ rb_stat_sticky(obj)
     VALUE obj;
 {
 #ifdef S_ISVTX
-    if (ST_MODE(obj) & S_ISVTX) return Qtrue;
+    if (get_stat(obj)->st_mode & S_ISVTX) return Qtrue;
 #endif
     return Qnil;
 }
@@ -1934,39 +2038,49 @@ Init_File()
 
     rb_define_global_function("test", rb_f_test, -1);
 
-    sStat = rb_struct_define("Stat", "dev", "ino", "mode",
-			     "nlink", "uid", "gid", "rdev",
-			     "size", "blksize", "blocks", 
-			     "atime", "mtime", "ctime", 0);
+    rb_cStat = rb_define_class_under(rb_cFile, "Stat", rb_cObject);
 
-    rb_st_mode = rb_intern("mode");
-    rb_st_size = rb_intern("size");
-    rb_st_uid = rb_intern("uid");
-    rb_st_gid = rb_intern("gid");
+    rb_include_module(rb_cStat, rb_mComparable);
 
-    rb_define_method(sStat, "ftype",  rb_stat_ftype, 0);
+    rb_define_method(rb_cStat, "<=>", rb_stat_cmp, 1);
 
-    rb_define_method(sStat, "directory?",  rb_stat_d, 0);
-    rb_define_method(sStat, "readable?",  rb_stat_r, 0);
-    rb_define_method(sStat, "readable_real?",  rb_stat_R, 0);
-    rb_define_method(sStat, "writable?",  rb_stat_w, 0);
-    rb_define_method(sStat, "writable_real?",  rb_stat_W, 0);
-    rb_define_method(sStat, "executable?",  rb_stat_x, 0);
-    rb_define_method(sStat, "executable_real?",  rb_stat_X, 0);
-    rb_define_method(sStat, "file?",  rb_stat_f, 0);
-    rb_define_method(sStat, "zero?",  rb_stat_z, 0);
-    rb_define_method(sStat, "size?",  rb_stat_s, 0);
-    rb_define_method(sStat, "owned?",  rb_stat_owned, 0);
-    rb_define_method(sStat, "grpowned?",  rb_stat_grpowned, 0);
+    rb_define_method(rb_cStat, "dev", rb_stat_dev, 0);
+    rb_define_method(rb_cStat, "ino", rb_stat_ino, 0);
+    rb_define_method(rb_cStat, "mode", rb_stat_mode, 0);
+    rb_define_method(rb_cStat, "nlink", rb_stat_nlink, 0);
+    rb_define_method(rb_cStat, "uid", rb_stat_uid, 0);
+    rb_define_method(rb_cStat, "gid", rb_stat_gid, 0);
+    rb_define_method(rb_cStat, "rdev", rb_stat_rdev, 0);
+    rb_define_method(rb_cStat, "size", rb_stat_size, 0);
+    rb_define_method(rb_cStat, "blksize", rb_stat_blksize, 0);
+    rb_define_method(rb_cStat, "blocks", rb_stat_blocks, 0);
+    rb_define_method(rb_cStat, "atime", rb_stat_atime, 0);
+    rb_define_method(rb_cStat, "mtime", rb_stat_mtime, 0);
+    rb_define_method(rb_cStat, "ctime", rb_stat_ctime, 0);
 
-    rb_define_method(sStat, "pipe?",  rb_stat_p, 0);
-    rb_define_method(sStat, "symlink?",  rb_stat_l, 0);
-    rb_define_method(sStat, "socket?",  rb_stat_S, 0);
+    rb_define_method(rb_cStat, "ftype", rb_stat_ftype, 0);
 
-    rb_define_method(sStat, "blockdev?",  rb_stat_b, 0);
-    rb_define_method(sStat, "chardev?",  rb_stat_c, 0);
+    rb_define_method(rb_cStat, "directory?",  rb_stat_d, 0);
+    rb_define_method(rb_cStat, "readable?",  rb_stat_r, 0);
+    rb_define_method(rb_cStat, "readable_real?",  rb_stat_R, 0);
+    rb_define_method(rb_cStat, "writable?",  rb_stat_w, 0);
+    rb_define_method(rb_cStat, "writable_real?",  rb_stat_W, 0);
+    rb_define_method(rb_cStat, "executable?",  rb_stat_x, 0);
+    rb_define_method(rb_cStat, "executable_real?",  rb_stat_X, 0);
+    rb_define_method(rb_cStat, "file?",  rb_stat_f, 0);
+    rb_define_method(rb_cStat, "zero?",  rb_stat_z, 0);
+    rb_define_method(rb_cStat, "size?",  rb_stat_s, 0);
+    rb_define_method(rb_cStat, "owned?",  rb_stat_owned, 0);
+    rb_define_method(rb_cStat, "grpowned?",  rb_stat_grpowned, 0);
 
-    rb_define_method(sStat, "setuid?",  rb_stat_suid, 0);
-    rb_define_method(sStat, "setgid?",  rb_stat_sgid, 0);
-    rb_define_method(sStat, "sticky?",  rb_stat_sticky, 0);
+    rb_define_method(rb_cStat, "pipe?",  rb_stat_p, 0);
+    rb_define_method(rb_cStat, "symlink?",  rb_stat_l, 0);
+    rb_define_method(rb_cStat, "socket?",  rb_stat_S, 0);
+
+    rb_define_method(rb_cStat, "blockdev?",  rb_stat_b, 0);
+    rb_define_method(rb_cStat, "chardev?",  rb_stat_c, 0);
+
+    rb_define_method(rb_cStat, "setuid?",  rb_stat_suid, 0);
+    rb_define_method(rb_cStat, "setgid?",  rb_stat_sgid, 0);
+    rb_define_method(rb_cStat, "sticky?",  rb_stat_sticky, 0);
 }
