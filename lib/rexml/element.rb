@@ -107,7 +107,8 @@ module REXML
 		# Evaluates to the document to which this element belongs, or nil if this
 		# element doesn't belong to a document.
 		def document
-			root.parent if root
+      rt = root
+			rt.parent if rt
 		end
 
 		# Evaluates to +true+ if whitespace is respected for this element.  This
@@ -670,7 +671,7 @@ module REXML
         end
 				writer << "/" 
 			else
-				if transitive and indent>-1 and !@children[0].instance_of? Text
+				if transitive and indent>-1 and !@children[0].kind_of? Text
 					writer << "\n"
 					indent writer, indent+1
 				end
@@ -1044,10 +1045,11 @@ module REXML
 						return attr
 					end
 				end
-				if @element.document and @element.document.doctype
+        element_document = @element.document
+				if element_document and element_document.doctype
 					expn = @element.expanded_name
-					expn = @element.document.doctype.name if expn.size == 0
-					attr_val = @element.document.doctype.attribute_of(expn, name)
+					expn = element_document.doctype.name if expn.size == 0
+					attr_val = element_document.doctype.attribute_of(expn, name)
 					return Attribute.new( name, attr_val ) if attr_val
 				end
 				return nil

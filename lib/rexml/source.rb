@@ -116,11 +116,21 @@ module REXML
 		def initialize(arg, block_size=500)
 			@er_source = @source = arg
 			@to_utf = false
-      # FIXME
-      # This is broken.  If the user puts in enough carriage returns, this can fail
-      # to calculate the correct encoding.
-      super @source.read( 100 )
-			@line_break = encode( '>' )
+      # Determining the encoding is a deceptively difficult issue to resolve.
+      # First, we check the first two bytes for UTF-16.  Then we
+      # assume that the encoding is at least ASCII enough for the '>', and
+      # we read until we get one of those.  This gives us the XML declaration,
+      # if there is one.  If there isn't one, the file MUST be UTF-8, as per
+      # the XML spec.  If there is one, we can determine the encoding from
+      # it.
+      str = @source.read( 2 )
+      if (str[0] == 254 && str[1] == 255) || (str[0] == 255 && str[1] == 254)
+        @encoding = check_encoding( str )
+        @line_break = encode( '>' )
+      else
+        @line_break = '>'
+      end
+      super str+@source.readline( @line_break )
 		end
 
 		def scan(pattern, cons=false)
