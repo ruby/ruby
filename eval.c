@@ -2998,11 +2998,6 @@ rb_eval(self, n)
 		if (RTEST(ruby_verbose) && ruby_class == origin && body->nd_cnt == 0) {
 		    rb_warning("method redefined; discarding old %s", rb_id2name(node->nd_mid));
 		}
-		if (node->nd_noex) { /* toplevel */
-		    /* should upgrade to rb_warn() if no super was called inside? */
-		    rb_warning("overriding global function `%s'",
-			       rb_id2name(node->nd_mid));
-		}
 	    }
 
 	    if (node->nd_noex == NOEX_PUBLIC) {

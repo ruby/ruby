@@ -1,11 +1,15 @@
+Fri Nov  8 22:11:56 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* stable version 1.6.8 release candidate.
+
+Fri Nov  8 22:10:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): removed unnecessary toplevel check.
+
 Thu Nov  7 09:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (blk_orphan): a block created in a different thread is
 	  orphan.  [ruby-dev:17471]
-
-Wed Nov  8 08:12:17 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
-
-	* stable version 1.6.8 release candidate.
 
 Mon Nov  4 04:04:32 2002  Akinori MUSHA  <knu@iDaemons.org>
 
