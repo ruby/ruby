@@ -1,3 +1,7 @@
+Sat Dec 20 11:40:10 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/yaml.rb (YAML::YAML): adjust Marshal version.
+
 Sat Dec 20 02:41:02 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb: add file. (yet another CGI library)
@@ -14,7 +18,7 @@ Sat Dec 20 02:18:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Dec 19 21:24:22 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/httprequest.rb (meta_vers): should not set 
+	* lib/webrick/httprequest.rb (meta_vers): should not set
 	  HTTP_CONTENT_TYPE and HTTP_CONTENT_LENGTH.
 
 	* lib/webrick/https.rb (HTTPRequest#parse): should check presence

@@ -1,3 +1,4 @@
+# -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*- vim: sw=4 ts=4
 require 'date'
 #
 # Type conversions
@@ -23,7 +24,7 @@ class Object
 		YAML::quick_emit( self.object_id, opts ) { |out|
             out.map( self.to_yaml_type ) { |map|
 				to_yaml_properties.each { |m|
-                    map.add( m[1..-1], instance_eval( m ) )
+                    map.add( m[1..-1], instance_variable_get( m ) )
                 }
             }
 		}
@@ -253,7 +254,7 @@ class Exception
             out.map( self.to_yaml_type ) { |map|
                 map.add( 'message', self.message )
 				to_yaml_properties.each { |m|
-                    map.add( m[1..-1], instance_eval( m ) )
+                    map.add( m[1..-1], instance_variable_get( m ) )
                 }
             }
 		}
@@ -264,7 +265,7 @@ YAML.add_ruby_type( /^exception/ ) { |type, val|
     type, obj_class = YAML.read_type_class( type, Exception )
     o = YAML.object_maker( obj_class, { 'mesg' => val.delete( 'message' ) }, true )
     val.each_pair { |k,v|
-		o.instance_eval "@#{k} = v"
+		o.instance_variable_set("@#{k}", v)
 	}
 	o
 }

@@ -1,4 +1,4 @@
-#												vim:sw=4:ts=4
+# -*- mode: ruby; ruby-indent-level: 4; tab-width: 4 -*- vim: sw=4 ts=4
 # $Id$
 #
 #   YAML.rb
@@ -152,15 +152,15 @@ module YAML
     def YAML.object_maker( obj_class, val, is_attr = false )
         if Hash === val
             name = obj_class.name
-            ostr = sprintf( "\004\006o:%c%s\000", name.length + 5, name )
+            ostr = sprintf( "%c%co:%c%s\000", Marshal::MAJOR_VERSION, Marshal::MINOR_VERSION,
+                            name.length + 5, name )
             if is_attr
                 ostr[ -1, 1 ] = Marshal.dump( val ).sub( /^[^{]+\{/, '' )
-				p ostr
             end
             o = ::Marshal.load( ostr )
             unless is_attr
                 val.each_pair { |k,v|
-                    o.instance_eval "@#{k} = v"
+                    o.instance_variable_set("@#{k}", v)
                 }
             end
             o
