@@ -1,3 +1,7 @@
+Wed Sep 22 00:11:12 2004  Dave Thomas  <dave@pragprog.com>
+
+	* process.c: Add documentation for fork()
+
 Tue Sep 21 18:29:49 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_equal): merge miss.
