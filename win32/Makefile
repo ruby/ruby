@@ -91,11 +91,9 @@ ext/extmk.rb:	ext/extmk.rb.in rbconfig.rb
 miniruby$(EXEEXT):	$(OBJS) $(MAINOBJ) $(EXTOBJS) 
 		@echo $(EXTOBJS)
 		@echo $(LIBS)
-		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(OBJS) $(LIBS) -o $@
 
 $(PROGRAM):	$(LIBRUBY) $(MAINOBJ) $(LIBRUBY_SO)
-		@rm -f $@
 		$(PURIFY) $(CC) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) -o $@ $(LIBRUBYARG) -link /STACK:$(STACK)
 
 $(LIBRUBY_A):	$(OBJS) dmyext.obj
@@ -106,9 +104,7 @@ rubymw.lib:	ruby.def
 
 $(LIBRUBY_SO):	$(LIBRUBY_A) $(EXTOBJS) ruby.def
 		set LIB=.\win32;$(ORGLIBPATH)
-		@rm -f $@
 		$(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY_A) $(LIBS) -o $@ -link /DLL /DEF:ruby.def
-		@mv rubymw.map rubydll.map
 
 install:	rbconfig.rb
 		.\miniruby.exe $(srcdir)/instruby.rb $(DESTDIR)

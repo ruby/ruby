@@ -2154,6 +2154,8 @@ tokadd_escape()
 	{
 	    int numlen;
 
+	    tokadd('\\');
+	    tokadd(c);
 	    scan_hex(lex_p, 2, &numlen);
 	    while (numlen--)
 		tokadd(nextc());

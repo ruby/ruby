@@ -1,3 +1,34 @@
+Wed May 24 23:17:50 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/Makefile: remove unnecessary mv and rm command call.
+
+Thu May 25 01:35:15 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (tokadd_escape): forgot to add `\x' to hexadecimal
+	  escape sequences.
+
+	* object.c (rb_obj_dup): dup for normal object (T_OBJECT) copies
+	  instance variables only.
+
+Wed May 24 23:49:47 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* object.c (rb_mod_initialize): should provide initialize.
+
+Wed May 24 21:01:04 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/pty/pty.c: use "" instead of <> to include ruby.h and rubyio.h
+	  for BeOS (PowerPC).
+
+	* file.c (rb_find_file): should check dln_find_file() result.
+
+	* win32/ruby.def: add rb_block_given_p.
+
+Wed May 24 16:32:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (rb_io_popen): popen does not take 3rd argument anymore.
+
+	* re.c (rb_reg_desc): re may be zero, check before dereferencing.
+
 Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb bug fix: CGI::escape(), CGI::Cookie::new()
@@ -5,7 +36,9 @@ Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
 Wed May 24 13:12:31 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* misc/ruby-mode.el (ruby-parse-region): support `while .. do' etc.
+	* misc/ruby-mode.el (ruby-parse-region): support `while .. do'
+	  etc. But corresponding keywords must be at the beginning of
+	  line. 
 
 Tue May 23 23:50:12 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

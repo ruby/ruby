@@ -287,6 +287,7 @@ EXPORTS
 	rb_exc_fatal
 	rb_interrupt
 	rb_jump_tag
+	rb_block_given_p
 	rb_iterator_p
 	rb_yield
 	rb_iterate

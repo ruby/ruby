@@ -100,11 +100,10 @@ rb_obj_clone(obj)
 	rb_raise(rb_eTypeError, "can't clone %s", rb_class2name(CLASS_OF(obj)));
     }
     clone = rb_obj_alloc(RBASIC(obj)->klass);
+    ROBJECT(clone)->iv_tbl = 0;	/* avoid GC crash */
     CLONESETUP(clone,obj);
     if (ROBJECT(obj)->iv_tbl) {
 	ROBJECT(clone)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
-	RBASIC(clone)->klass = rb_singleton_class_clone(RBASIC(obj)->klass);
-	RBASIC(clone)->flags = RBASIC(obj)->flags;
     }
 
     return clone;
@@ -114,6 +113,15 @@ static VALUE
 rb_obj_dup(obj)
     VALUE obj;
 {
+    VALUE dup;
+
+    if (TYPE(obj) == T_OBJECT) {
+	dup = rb_obj_alloc(RBASIC(obj)->klass);
+	if (ROBJECT(obj)->iv_tbl) {
+	    ROBJECT(dup)->iv_tbl = st_copy(ROBJECT(obj)->iv_tbl);
+	}
+	return dup;
+    }
     return rb_funcall(obj, rb_intern("clone"), 0, 0);
 }
 
@@ -621,6 +629,14 @@ rb_mod_cmp(mod, arg)
 	return INT2FIX(-1);
     }
     return INT2FIX(1);
+}
+
+static VALUE
+rb_mod_initialize(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    return Qnil;
 }
 
 static VALUE
@@ -1145,6 +1161,7 @@ Init_Object()
     rb_define_private_method(rb_cModule, "attr_accessor", rb_mod_attr_accessor, -1);
 
     rb_define_singleton_method(rb_cModule, "new", rb_module_s_new, 0);
+    rb_define_method(rb_cModule, "initialize", rb_mod_initialize, -1);
     rb_define_method(rb_cModule, "instance_methods", rb_class_instance_methods, -1);
     rb_define_method(rb_cModule, "public_instance_methods", rb_class_instance_methods, -1);
     rb_define_method(rb_cModule, "protected_instance_methods", rb_class_protected_instance_methods, -1);

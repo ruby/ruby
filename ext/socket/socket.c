@@ -104,9 +104,9 @@ struct sockaddr_storage {
 };
 #endif
 
-#define LOOKUP_ORDER_INET	0
-#define LOOKUP_ORDER_INET6	1
-#define LOOKUP_ORDER_UNSPEC	2
+#define LOOKUP_ORDER_UNSPEC	0
+#define LOOKUP_ORDER_INET	1
+#define LOOKUP_ORDER_INET6	2
 
 #if   defined(DEFAULT_LOOKUP_ORDER_UNSPEC)
 # define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_UNSPEC
@@ -1928,6 +1928,11 @@ sock_s_getnameinfo(argc, argv)
     sa = flags = Qnil;
     rb_scan_args(argc, argv, "11", &sa, &flags);
 
+    fl = 0;
+    if (!NIL_P(flags)) {
+	fl = NUM2INT(flags);
+    }
+
     if (TYPE(sa) == T_STRING) {
 	if (sizeof(ss) < RSTRING(sa)->len) {
 	    rb_raise(rb_eTypeError, "sockaddr length too big");
@@ -1968,9 +1973,10 @@ sock_s_getnameinfo(argc, argv)
 	    strcpy(pbuf, "0");
 	    pptr = NULL;
 	}
-	else if (!NIL_P(port)) {
+	else if (FIXNUM_P(port)) {
 	    snprintf(pbuf, sizeof(pbuf), "%ld", NUM2INT(port));
 	    pptr = pbuf;
+	    fl |= NI_NUMERICSERV;
 	}
 	else {
 	    strncpy(pbuf, STR2CSTR(port), sizeof(pbuf));
@@ -1997,11 +2003,6 @@ sock_s_getnameinfo(argc, argv)
     }
     else {
 	rb_raise(rb_eTypeError, "expecting String or Array");
-    }
-
-    fl = 0;
-    if (!NIL_P(flags)) {
-	fl = NUM2INT(flags);
     }
 
     error = getnameinfo(sap, SA_LEN(sap), hbuf, sizeof(hbuf),

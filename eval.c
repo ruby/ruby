@@ -3330,7 +3330,7 @@ rb_yield_0(val, self, klass, acheck)
     static unsigned serial = 1;
 
     if (!ruby_frame->iter || !ruby_block) {
-	rb_raise(rb_eLocalJumpError, "yield called out of iterator");
+	rb_raise(rb_eLocalJumpError, "yield called out of block");
     }
 
     PUSH_VARS();
@@ -3513,7 +3513,7 @@ assign(self, lhs, val, check)
 
       case NODE_LASGN:
 	if (ruby_scope->local_vars == 0)
-	    rb_bug("unexpected iterator variable assignment");
+	    rb_bug("unexpected local variable assignment");
 	ruby_scope->local_vars[lhs->nd_cnt] = val;
 	break;
 
@@ -5768,7 +5768,7 @@ proc_new(klass)
     struct RVarmap *vars;
 
     if (!rb_block_given_p() && !rb_f_block_given_p()) {
-	rb_raise(rb_eArgError, "tried to create Procedure-Object out of iterator");
+	rb_raise(rb_eArgError, "tried to create Procedure-Object without a block");
     }
 
     proc = Data_Make_Struct(klass, struct BLOCK, blk_mark, blk_free, data);
@@ -6243,9 +6243,9 @@ VALUE rb_cThread;
 extern VALUE rb_last_status;
 
 enum thread_status {
+    THREAD_TO_KILL,
     THREAD_RUNNABLE,
     THREAD_STOPPED,
-    THREAD_TO_KILL,
     THREAD_KILLED
 };
 
@@ -6719,7 +6719,6 @@ rb_thread_schedule()
     int n, max;
     int need_select = 0;
 
-  select_err:
     rb_thread_pending = 0;
     if (curr_thread == curr_thread->next
 	&& curr_thread->status == THREAD_RUNNABLE)
@@ -6732,6 +6731,7 @@ rb_thread_schedule()
 	curr = curr->prev;
     }
 
+  again:
     max = 0;
     FD_ZERO(&readfds);
     FD_ZERO(&writefds);
@@ -6740,14 +6740,17 @@ rb_thread_schedule()
     now = -1.0;
 
     FOREACH_THREAD_FROM(curr, th) {
-	if (!next && (th->status == THREAD_RUNNABLE || th->status == THREAD_TO_KILL)) {
-	    found = 1;
+	if (!found) {
+	    if (th->status <= THREAD_RUNNABLE)
+		found = 1;
 	}
-	if ((th->wait_for & WAIT_JOIN) && rb_thread_dead(th->join)) {
-	    th->join = 0;
-	    th->wait_for = 0;
-	    th->status = THREAD_RUNNABLE;
-	    found = 1;
+	if (th->status != THREAD_STOPPED) continue;
+	if (th->wait_for & WAIT_JOIN) {
+	    if (rb_thread_dead(th->join)) {
+		th->wait_for = 0;
+		th->status = THREAD_RUNNABLE;
+		found = 1;
+	    }
 	}
 	if (th->wait_for & WAIT_FD) {
 	    FD_SET(th->fd, &readfds);
@@ -6780,87 +6783,79 @@ rb_thread_schedule()
     END_FOREACH_FROM(curr, th);
     
     /* Do the select if needed */
-    if (need_select) {
-	do {
-	    /* Convert delay to a timeval */
-	    /* If a thread is runnable, just poll */
-	    if (found) {
-		delay_tv.tv_sec = 0;
-		delay_tv.tv_usec = 0;
-		delay_ptr = &delay_tv;
-	    }
-	    else if (delay == DELAY_INFTY) {
-		delay_ptr = 0;
-	    }
-	    else {
-		delay_tv.tv_sec = delay;
-		delay_tv.tv_usec = (delay - (double)delay_tv.tv_sec)*1e6;
-		delay_ptr = &delay_tv;
-	    }
+    if (need_select || !found) {
+	/* Convert delay to a timeval */
+	/* If a thread is runnable, just poll */
+	if (found) {
+	    delay_tv.tv_sec = 0;
+	    delay_tv.tv_usec = 0;
+	    delay_ptr = &delay_tv;
+	}
+	else if (delay == DELAY_INFTY) {
+	    delay_ptr = 0;
+	}
+	else {
+	    delay_tv.tv_sec = delay;
+	    delay_tv.tv_usec = (delay - (double)delay_tv.tv_sec)*1e6;
+	    delay_ptr = &delay_tv;
+	}
 
-	    n = select(max+1, &readfds, &writefds, &exceptfds, delay_ptr);
-	    if (n < 0) {
-		if (rb_trap_pending) rb_trap_exec();
-		if (errno = EINTR) goto select_err;
-		FOREACH_THREAD(th) {
-		    if (th->wait_for & WAIT_SELECT) {
-			int v = 0;
+	n = select(max+1, &readfds, &writefds, &exceptfds, delay_ptr);
+	if (n < 0) {
+	    if (rb_trap_pending) rb_trap_exec();
+	    if (errno = EINTR) goto again;
+	    FOREACH_THREAD(th) {
+		if (th->wait_for & WAIT_SELECT) {
+		    int v = 0;
 
-			v |= find_bad_fds(&readfds, &th->readfds, th->fd);
-			v |= find_bad_fds(&writefds, &th->writefds, th->fd);
-			v |= find_bad_fds(&exceptfds, &th->exceptfds, th->fd);
-			if (v) {
-			    th->select_value = n;
-			    n = max;
-			}
-		    }
-		}
-		END_FOREACH(th);
-	    }
-	    if (n >= 0) {
-		now = -1.0;
-		/* Some descriptors are ready. 
-		   Make the corresponding threads runnable. */
-		FOREACH_THREAD_FROM(curr, th) {
-		    if ((th->wait_for&WAIT_FD) && FD_ISSET(th->fd, &readfds)) {
-			/* Wake up only one thread per fd. */
-			FD_CLR(th->fd, &readfds);
-			th->status = THREAD_RUNNABLE;
-			th->fd = 0;
-			th->wait_for = 0;
-			found = 1;
-		    }
-		    if ((th->wait_for&WAIT_SELECT) &&
-			(match_fds(&readfds, &th->readfds, max) ||
-			 match_fds(&writefds, &th->writefds, max) ||
-			 match_fds(&exceptfds, &th->exceptfds, max))) {
-			/* Wake up only one thread per fd. */
-			th->status = THREAD_RUNNABLE;
-			th->wait_for = 0;
-			intersect_fds(&readfds, &th->readfds, max);
-			intersect_fds(&writefds, &th->writefds, max);
-			intersect_fds(&exceptfds, &th->exceptfds, max);
+		    v |= find_bad_fds(&readfds, &th->readfds, th->fd);
+		    v |= find_bad_fds(&writefds, &th->writefds, th->fd);
+		    v |= find_bad_fds(&exceptfds, &th->exceptfds, th->fd);
+		    if (v) {
 			th->select_value = n;
-			found = 1;
-		    }
-		    if (th->wait_for & WAIT_TIME) {
-			if (now < 0.0) now = timeofday();
-			if (th->delay <= now) {
-			    th->wait_for = 0;
-			    th->status = THREAD_RUNNABLE;
-			    found = 1;
-			}
+			n = max;
 		    }
 		}
-		END_FOREACH_FROM(curr, th);
 	    }
-	} while (!found && delay != DELAY_INFTY);
+	    END_FOREACH(th);
+	}
+	if (n > 0) {
+	    now = -1.0;
+	    /* Some descriptors are ready. 
+	       Make the corresponding threads runnable. */
+	    FOREACH_THREAD_FROM(curr, th) {
+		if ((th->wait_for&WAIT_FD) && FD_ISSET(th->fd, &readfds)) {
+		    /* Wake up only one thread per fd. */
+		    FD_CLR(th->fd, &readfds);
+		    th->status = THREAD_RUNNABLE;
+		    th->fd = 0;
+		    th->wait_for = 0;
+		    found = 1;
+		}
+		if ((th->wait_for&WAIT_SELECT) &&
+		    (match_fds(&readfds, &th->readfds, max) ||
+		     match_fds(&writefds, &th->writefds, max) ||
+		     match_fds(&exceptfds, &th->exceptfds, max))) {
+		    /* Wake up only one thread per fd. */
+		    th->status = THREAD_RUNNABLE;
+		    th->wait_for = 0;
+		    intersect_fds(&readfds, &th->readfds, max);
+		    intersect_fds(&writefds, &th->writefds, max);
+		    intersect_fds(&exceptfds, &th->exceptfds, max);
+		    th->select_value = n;
+		    found = 1;
+		}
+	    }
+	    END_FOREACH_FROM(curr, th);
+	}
 	/* The delays for some of the threads should have expired.
 	   Go through the loop once more, to check the delays. */
+	if (!found && delay != DELAY_INFTY)
+	    goto again;
     }
 
     FOREACH_THREAD_FROM(curr, th) {
-	if (th->status == THREAD_RUNNABLE || th->status == THREAD_TO_KILL) {
+	if (!next && (th->status <= THREAD_RUNNABLE)) {
 	    if (!next || next->priority < th->priority)
 	       next = th;
 	}

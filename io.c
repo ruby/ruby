@@ -1591,9 +1591,9 @@ rb_io_popen(str, argc, argv, klass)
     VALUE klass;
 {
     char *mode;
-    VALUE pname, pmode, port, proc;
+    VALUE pname, pmode, port;
 
-    if (rb_scan_args(argc, argv, "12", &pname, &pmode, &proc) == 1) {
+    if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
     }
     else {
@@ -1603,15 +1603,13 @@ rb_io_popen(str, argc, argv, klass)
     port = pipe_open(str, mode);
     if (NIL_P(port)) {
 	/* child */
-	if (!NIL_P(proc)) {
-	    rb_eval_cmd(proc, rb_ary_new2(0));
-	}
-	else if (rb_block_given_p()) {
+	if (rb_block_given_p()) {
 	    rb_yield(Qnil);
+	    fflush(stdout);
+	    fflush(stderr);
+	    _exit(0);
 	}
-	fflush(stdout);
-	fflush(stderr);
-	_exit(0);
+	return Qnil;
     }
     RBASIC(port)->klass = klass;
     if (rb_block_given_p()) {

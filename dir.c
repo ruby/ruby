@@ -272,7 +272,9 @@ static VALUE
 dir_s_open(klass, dirname)
     VALUE klass, dirname;
 {
-    VALUE dir = dir_s_new(1, &dirname, klass);
+    VALUE dir = Data_Wrap_Struct(klass, 0, free_dir, 0);
+
+    dir_initialize(dir, dirname);
     if (rb_block_given_p()) {
 	rb_ensure(rb_yield, dir, dir_close, dir);
 	return Qnil;

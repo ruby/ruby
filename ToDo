@@ -76,6 +76,7 @@ Standard Libraries
 * String#{pred,prev}, String#downto
 * optional stepsize argument for succ()
 * Ruby module -- Ruby::Version, Ruby::Interpreter
+* introduce Boolean class; super of TrueClass, FalseClass
 
 Extension Libraries
 
