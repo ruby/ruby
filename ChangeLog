@@ -1,3 +1,8 @@
+Tue Nov 16 21:22:47 2004  Michael Neumann  <mneumann@ruby-lang.org>
+
+	* lib/xmlrpc/server.rb (CGIServer): fixed bug when client sends
+	  "Content-typ: text/xml; ..."
+
 Tue Nov 16 23:45:07 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (flo_divmod): protect float values from GC by

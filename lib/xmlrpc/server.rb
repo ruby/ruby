@@ -448,7 +448,7 @@ class CGIServer < BasicServer
       length = ENV['CONTENT_LENGTH'].to_i
 
       http_error(405, "Method Not Allowed") unless ENV['REQUEST_METHOD'] == "POST" 
-      http_error(400, "Bad Request")        unless ENV['CONTENT_TYPE'] == "text/xml"
+      http_error(400, "Bad Request")        unless parse_content_type(ENV['CONTENT_TYPE']).first == "text/xml"
       http_error(411, "Length Required")    unless length > 0 
 
       # TODO: do we need a call to binmode?
