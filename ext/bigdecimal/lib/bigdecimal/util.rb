@@ -19,13 +19,13 @@
 #
 class Float < Numeric
   def to_d
-    BigDecimal::new(selt.to_s)
+    BigDecimal(self.to_s)
   end
 end
 
 class String
   def to_d
-    BigDecimal::new(self)
+    BigDecimal(self)
   end
 end
 
