@@ -19,29 +19,21 @@ def parse_args()
   $dryrun = $OPT['n']
   $destdir = $OPT['dest-dir'] || ''
   $make = $OPT['make'] || $make || 'make'
-  make_flags = ($OPT['make-flags'] || '').strip
-  mflags = ($OPT['mflags'] || '').strip
-  $mantype = $OPT["mantype"]
-
-  # BSD make defines both MFLAGS and MAKEFLAGS, and MAKEFLAGS it
-  # defines includes a preceding '-' unlike other implementations.
-  # So we use MFLAGS if defined, otherwise use ('-' + MAKEFLAGS).
-  if mflags.empty?
-    mflags = "-#{make_flags}" unless make_flags.empty?
-  end
+  $mantype = $OPT['mantype']
+  mflags = ($OPT['make-flags'] || '').strip
+  mflags = ($OPT['mflags'] || '').strip if mflags.empty?
 
   $mflags = Shellwords.shellwords(mflags)
+  if arg = $mflags.first
+    arg.insert(0, '-') if /\A[^-][^=]*\Z/ =~ arg
+  end
+
   $make, *rest = Shellwords.shellwords($make)
   $mflags.unshift(*rest) unless rest.empty?
 
   def $mflags.set?(flag)
-    # Only nmake puts flags together
-    if /nmake/ =~ $make
-      grep(/^-(?!-).*#{'%c' % flag}/i) { return true }
-      false
-    else
-      include?('-%c' % flag)
-    end
+    grep(/\A-(?!-).*#{'%c' % flag}/i) { return true }
+    false
   end
 
   if $mflags.set?(?n)
