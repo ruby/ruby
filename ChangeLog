@@ -1,3 +1,10 @@
+Fri May 30 22:28:04 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* numeric.c (rb_num2uint, rb_fix2int): new function to convert
+	  values over INT_MAX.  [ruby-core:01099]
+
+	* ruby.h (NUM2UINT, FIX2INT): ditto.
+
 Fri May 30 14:55:44 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_Array): exclude Kernel#to_a instead of Object#to_a.

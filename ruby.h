@@ -241,8 +241,10 @@ int rb_num2int _((VALUE));
 #define NUM2INT(x) (FIXNUM_P(x)?FIX2INT(x):rb_num2int((VALUE)x))
 int rb_fix2int _((VALUE));
 #define FIX2INT(x) rb_fix2int((VALUE)x)
-#define NUM2UINT(x) ((unsigned int)NUM2INT(x))
-#define FIX2UINT(x) ((unsigned int)FIX2INT(x))
+unsigned int rb_num2uint _((VALUE));
+#define NUM2UINT(x) rb_num2uint(x)
+unsigned int rb_fix2uint _((VALUE));
+#define FIX2UINT(x) rb_fix2uint(x)
 #else
 #define NUM2INT(x) ((int)NUM2LONG(x))
 #define NUM2UINT(x) ((unsigned int)NUM2ULONG(x))

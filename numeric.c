@@ -1000,15 +1000,40 @@ rb_num2ulong(val)
 }
 
 #if SIZEOF_INT < SIZEOF_LONG
+static void
+check_int(num)
+    long num;
+{
+    const char *s;
+
+    if (num < INT_MIN) {
+	s = "small";
+    }
+    else if (num > INT_MAX) {
+	s = "big";
+    }
+    else {
+	return;
+    }
+    rb_raise(rb_eRangeError, "integer %ld too %s to convert to `int'", num, s);
+}
+
+static void
+check_uint(num)
+    unsigned long num;
+{
+    if (num > INT_MAX) {
+	rb_raise(rb_eRangeError, "integer %lu too big to convert to `int'", num);
+    }
+}
+
 int
 rb_num2int(val)
     VALUE val;
 {
     long num = rb_num2long(val);
 
-    if (num < INT_MIN || INT_MAX < num) {
-	rb_raise(rb_eRangeError, "integer %ld too big to convert to `int'", num);
-    }
+    check_int(num);
     return (int)num;
 }
 
@@ -1018,9 +1043,27 @@ rb_fix2int(val)
 {
     long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2long(val);
 
-    if (num < INT_MIN || INT_MAX < num) {
-	rb_raise(rb_eRangeError, "integer %ld too big to convert to `int'", num);
-    }
+    check_int(num);
+    return (int)num;
+}
+
+unsigned int
+rb_num2uint(val)
+    VALUE val;
+{
+    unsigned long num = rb_num2ulong(val);
+
+    check_uint(num);
+    return (int)num;
+}
+
+unsigned int
+rb_fix2int(val)
+    VALUE val;
+{
+    unsigned long num = FIXNUM_P(val)?FIX2LONG(val):rb_num2ulong(val);
+
+    check_uint(num);
     return (int)num;
 }
 #else
