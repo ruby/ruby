@@ -384,10 +384,10 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 #elif STACK_GROW_DIRECTION < 0
 # define STACK_LENGTH  (rb_gc_stack_start - STACK_END)
 #elif STACK_GROW_DIRECTION > 0
-# define STACK_LENGTH  (STACK_END - rb_gc_stack_start)
+# define STACK_LENGTH  (STACK_END - rb_gc_stack_start + 1)
 #else
 # define STACK_LENGTH  ((STACK_END < rb_gc_stack_start) ? rb_gc_stack_start - STACK_END\
-                                           : STACK_END - rb_gc_stack_start)
+                                           : STACK_END - rb_gc_stack_start + 1)
 #endif
 #if STACK_GROW_DIRECTION > 0
 # define STACK_UPPER(x, a, b) a
@@ -564,11 +564,6 @@ rb_gc_mark_locations(start, end)
     VALUE *tmp;
     long n;
 
-    if (start > end) {
-	tmp = start;
-	start = end;
-	end = tmp;
-    }
     n = end - start;
     mark_locations_array(start,n);
 }
@@ -1247,12 +1242,12 @@ rb_gc()
 #if STACK_GROW_DIRECTION < 0
     rb_gc_mark_locations((VALUE*)STACK_END, rb_gc_stack_start);
 #elif STACK_GROW_DIRECTION > 0
-    rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END);
+    rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END + 1);
 #else
     if ((VALUE*)STACK_END < rb_gc_stack_start)
 	rb_gc_mark_locations((VALUE*)STACK_END, rb_gc_stack_start);
     else
-	rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END);
+	rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END + 1);
 #endif
 #ifdef __ia64__
     /* mark backing store (flushed register window on the stack) */
@@ -1319,7 +1314,7 @@ Init_stack(addr)
     if (!addr) addr = (VALUE *)&addr;
     if (rb_gc_stack_start) {
 	if (STACK_UPPER(&addr,
-			rb_gc_stack_start > --addr,
+			rb_gc_stack_start > addr,
 			rb_gc_stack_start < ++addr))
 	    rb_gc_stack_start = addr;
 	return;
@@ -1597,7 +1592,7 @@ rb_gc_call_finalizer_at_exit()
 	    }
 	}
     }
-    /* run data object's finaliers */
+    /* run data object's finalizers */
     for (i = 0; i < heaps_used; i++) {
 	p = heaps[i]; pend = p + heaps_limits[i];
 	while (p < pend) {

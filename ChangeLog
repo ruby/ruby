@@ -1,3 +1,12 @@
+Fri Aug  1 23:57:45 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (rb_gc_mark_locations): no need to swap arguments.
+
+	* gc.c (STACK_LENGTH): insufficient for growing up stack
+	  architectures.
+
+	* gc.c (rb_gc, Init_stack) ditto.
+
 Fri Aug  1 23:33:36 2003  Masatoshi Seki  <mas@snow.local.>
 
 	* rubytest.rb: set dldpath on darwin.
