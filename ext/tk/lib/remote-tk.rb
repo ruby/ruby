@@ -11,11 +11,11 @@ class RemoteTkIp < MultiTkIp; end
 
 class MultiTkIp
   @@IP_TABLE = {}.taint unless defined?(@@IP_TABLE)
-  @@TK_TABLE_LIST = {}.taint unless defined?(@@TK_TABLE_LIST)
+  @@TK_TABLE_LIST = [].taint unless defined?(@@TK_TABLE_LIST)
   def self._IP_TABLE; @@IP_TABLE; end
   def self._TK_TABLE_LIST; @@TK_TABLE_LIST; end
 end
-class RemoteTkIp < MultiTkIp
+class RemoteTkIp
   @@IP_TABLE = MultiTkIp._IP_TABLE unless defined?(@@IP_TABLE)
   @@TK_TABLE_LIST = MultiTkIp._TK_TABLE_LIST unless defined?(@@TK_TABLE_LIST)
 end
@@ -28,10 +28,21 @@ require 'multi-tk'
 
 ###############################
 
-class RemoteTkIp < MultiTkIp
+class << RemoteTkIp
+  undef new_master, new_slave, new_safe_slave
+  undef new_trusted_slave, new_safeTk
+
+  def new(*args, &b)
+    ip = __new(*args)
+    ip.eval_proc(&b) if b
+    ip
+  end
+end
+
+class RemoteTkIp
   include TkUtil
 
-  def initialize(remote_ip, displayof=nil)
+  def initialize(remote_ip, displayof=nil, timeout=5)
     if $SAFE >= 4
       fail SecurityError, "cannot access another interpreter at level #{$SAFE}"
     end
@@ -77,6 +88,10 @@ class RemoteTkIp < MultiTkIp
       @tk_table_list << tbl
     }
 
+    @ret_val = TkVariable.new
+    if timeout > 0 && ! _available_check(timeout)
+      fail RuntimeError, "cannot create connection"
+    end
     @ip_id = _create_connection
 
     self.freeze  # defend against modification
@@ -85,6 +100,24 @@ class RemoteTkIp < MultiTkIp
   def _ip_id_
     @ip_id
   end
+
+  def _available_check(timeout = 5)
+    return nil if timeout < 1
+    @ret_val.value = ''
+    @interp._invoke('send', '-async', @remote, 
+		    'send', '-async', Tk.appname, 
+		    "set #{@ret_val.id} ready")
+    Tk.update
+    if @ret_val != 'ready'
+      (1..(timeout*5)).each{
+	sleep 0.2 
+	Tk.update
+	break if @ret_val == 'ready'
+      }
+    end
+    @ret_val.value == 'ready'
+  end
+  private :_available_check
 
   def _create_connection
     ip_id = '_' + @interp._invoke('send', @remote, <<-'EOS') + '_'
@@ -133,12 +166,17 @@ class RemoteTkIp < MultiTkIp
   end
   private :_appsend
 
-  def is_rubytk?
-    if _appsend(false, false, 'info', 'command', 'ruby') == ""
-      false
-    else
-      true
+  def ready?(timeout=5)
+    if timeout < 0
+      fail ArgumentError, "timeout must be positive number"
     end
+    _available_check(timeout)
+  end
+
+  def is_rubytk?
+    return false if _appsend(false, false, 'info', 'command', 'ruby') == ""
+    [ _appsend(false, false, 'ruby', 'RUBY_VERSION'), 
+      _appsend(false, false, 'set', 'tk_patchLevel') ]
   end
 
   def appsend(async, *args)
@@ -346,17 +384,6 @@ class RemoteTkIp < MultiTkIp
   end
   def mainloop_abort_on_exception=(*args)
     fail RuntimeError, 'not support "mainloop_abort_on_exception=" on the remote interpreter'
-  end
-end
-
-class << RemoteTkIp
-  undef new_master, new_slave, new_safe_slave
-  undef new_trusted_slave, new_safeTk
-
-  def new(ip_name, displayof=nil, &b)
-    ip = __new(ip_name, displayof)
-    ip.eval_proc(&b) if b
-    ip
   end
 end
 
