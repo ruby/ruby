@@ -1,3 +1,12 @@
+Mon Dec 27 15:21:07 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mv): should raise error when moving a
+	  directory to the (empty) directory. [ruby-talk:124368]
+	  (backport from HEAD 1.48)
+
+	* lib/fileutils.rb (mv): wrongly did not overwrite file on Win32
+	  platforms. (backport from HEAD 1.48)
+
 Sat Dec 25 11:11:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.8.2 released.
