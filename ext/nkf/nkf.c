@@ -31,14 +31,12 @@ rb_nkf_putchar(c)
 {
   if (output_ctr >= o_len) {
     o_len += incsize;
-    rb_str_cat(dst, "", incsize);
+    rb_str_cat(dst, 0, incsize);
+    output = RSTRING(dst)->ptr;
     incsize *= 2;
   }
-  
   output[output_ctr++] = c;
-/*
-printf("[[%c][%c][%d]]\n", c, output[output_ctr - 1], output_ctr);
-*/
+
   return c;
 }
 
@@ -51,6 +49,7 @@ rb_nkf_kconv(obj, opt, src)
 {
   int i;
   char *opt_ptr, *opt_end;
+  volatile VALUE v;
 
   reinit();
   opt_ptr = str2cstr(opt, &i);
@@ -66,7 +65,8 @@ rb_nkf_kconv(obj, opt, src)
 
   input_ctr = 0; 
   input     = str2cstr(src, &i_len);
-  dst = rb_str_new(0, i_len*3 + 10); /* large enough? */
+  dst = rb_str_new(0, i_len*3 + 10);
+  v = dst;
 
   output_ctr = 0;
   output     = RSTRING(dst)->ptr;
@@ -78,18 +78,8 @@ rb_nkf_kconv(obj, opt, src)
   } 
 
   kanji_convert(NULL);
-  if (output_ctr > 0) output_ctr--;
-  if (output[output_ctr] == '\0') {
-/*
-printf("([%c][%d])\n", output[output_ctr], output_ctr);
-*/
-    RSTRING(dst)->len = output_ctr;
-  } else {
-/*
-printf("<[%c][%d]>\n", output[output_ctr], output_ctr);
-*/
-    RSTRING(dst)->len = output_ctr + 1;
-  }
+  RSTRING(dst)->ptr[output_ctr] = '\0';
+  RSTRING(dst)->len = output_ctr;
 
   return dst;
 }

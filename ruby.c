@@ -176,8 +176,11 @@ rubylib_mangle(s, l)
     strcpy(ret + newl, s + oldl);
     return ret;
 }
+#define rubylib_mangled_path(s, l) rb_str_new2(rubylib_mangle((s), (l)))
+#define rubylib_mangled_path2(s) rb_str_new2(rubylib_mangle((s), 0))
 #else
-#define rubylib_mangle(s, l) (s)
+#define rubylib_mangled_path(s, l) rb_str_new((s), (l))
+#define rubylib_mangled_path2(s) rb_str_new2(s)
 #endif
 
 static void
@@ -202,18 +205,18 @@ addpath(path)
 	while (*p) {
 	    while (*p == sep) p++;
 	    if (s = strchr(p, sep)) {
-		rb_ary_push(ary, rb_str_new(rubylib_mangle(p, (int)(s-p)), (int)(s-p)));
+		rb_ary_push(ary, rubylib_mangled_path(p, (int)(s-p)));
 		p = s + 1;
 	    }
 	    else {
-		rb_ary_push(ary, rb_str_new2(rubylib_mangle(p, 0)));
+		rb_ary_push(ary, rubylib_mangled_path2(p));
 		break;
 	    }
 	}
 	rb_load_path = rb_ary_plus(ary, rb_load_path);
     }
     else {
-	rb_ary_unshift(rb_load_path, rb_str_new2(rubylib_mangle(path, 0)));
+	rb_ary_unshift(rb_load_path, rubylib_mangled_path2(path));
     }
 }
 

@@ -89,6 +89,7 @@ lib/Env.rb
 lib/README
 lib/base64.rb
 lib/cgi.rb
+lib/cgi/session.rb
 lib/cgi-lib.rb
 lib/complex.rb
 lib/date.rb

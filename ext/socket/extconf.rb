@@ -148,7 +148,6 @@ EOF
     $CFLAGS="-DHAVE_SA_LEN "+$CFLAGS
 end
 
-have_header("sys/sysctl.h")
 have_header("netinet/tcp.h")
 have_header("netinet/udp.h")
 
@@ -159,6 +158,10 @@ if try_run(<<EOF)
 #include <string.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+
+#ifndef AF_LOCAL
+#define AF_LOCAL AF_UNIX
+#endif
 
 main()
 {
@@ -176,6 +179,7 @@ main()
       goto bad;
     }
     for (ai = aitop; ai; ai = ai->ai_next) {
+      if (ai->ai_family == AF_LOCAL) continue;
       if (ai->ai_addr == NULL ||
           ai->ai_addrlen == 0 ||
           getnameinfo(ai->ai_addr, ai->ai_addrlen,

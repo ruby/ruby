@@ -31,6 +31,7 @@ EXPORTS
 	rb_eSystemCallError
 	rb_eZeroDivError
 	rb_mErrno
+	ruby_nerrs
 ;eval.c
 	rb_cProc
 	ruby_frame

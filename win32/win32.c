@@ -1218,12 +1218,6 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 // UNIX compatible directory access functions for NT
 //
 
-//
-// File names are converted to lowercase if the
-// CONVERT_TO_LOWER_CASE variable is defined.
-//
-
-#define CONVERT_TO_LOWER_CASE
 #define PATHLEN 1024
 
 //
@@ -1246,8 +1240,6 @@ opendir(char *filename)
     char            root[PATHLEN];
     char            volname[PATHLEN];
     DWORD           serial, maxname, flags;
-    BOOL            downcase;
-    char           *dummy;
 
     //
     // check to see if we\'ve got a directory
@@ -1256,21 +1248,6 @@ opendir(char *filename)
     if (stat (filename, &sbuf) < 0 ||
 	sbuf.st_mode & _S_IFDIR == 0) {
 	return NULL;
-    }
-
-    //
-    // check out the file system characteristics
-    //
-    if (GetFullPathName(filename, PATHLEN, root, &dummy)) {
-	if (dummy = strchr(root, '\\'))
-	    *++dummy = '\0';
-	if (GetVolumeInformation(root, volname, PATHLEN, 
-				 &serial, &maxname, &flags, 0, 0)) {
-	    downcase = !(flags & FS_CASE_SENSITIVE);
-	}
-    }
-    else {
-	downcase = TRUE;
     }
 
     //
@@ -1309,8 +1286,6 @@ opendir(char *filename)
     idx = strlen(FindData.cFileName)+1;
     p->start = ALLOC_N(char, idx);
     strcpy (p->start, FindData.cFileName);
-    if (downcase)
-	strlwr(p->start);
     p->nfiles++;
     
     //
@@ -1334,8 +1309,6 @@ opendir(char *filename)
             rb_fatal ("opendir: malloc failed!\n");
 	}
 	strcpy(&p->start[idx], FindData.cFileName);
-	if (downcase) 
-	    strlwr(&p->start[idx]);
 	p->nfiles++;
 	idx += len+1;
     }

@@ -26,6 +26,13 @@
 int sys_nerr = 256;
 #endif
 
+#if defined __CYGWIN__
+# include <cygwin/version.h>
+# if (CYGWIN_VERSION_API_MAJOR > 0) || (CYGWIN_VERSION_API_MINOR >= 8)
+#  define sys_nerr _sys_nerr
+# endif
+#endif
+
 int ruby_nerrs;
 
 static void
@@ -34,14 +41,20 @@ err_snprintf(buf, len, fmt, args)
     int len;
     va_list args;
 {
+    int n;
+
     if (!ruby_sourcefile) {
 	vsnprintf(buf, len, fmt, args);
+	return;
+    }
+    else if (ruby_sourceline == 0) {
+	n = snprintf(buf, len, "%s: ", ruby_sourcefile);
     }
     else {
-	int n = snprintf(buf, len, "%s:%d: ", ruby_sourcefile, ruby_sourceline);
-	if (len > n) {
-	    vsnprintf((char*)buf+n, len-n, fmt, args);
-	}
+	n = snprintf(buf, len, "%s:%d: ", ruby_sourcefile, ruby_sourceline);
+    }
+    if (len > n) {
+	vsnprintf((char*)buf+n, len-n, fmt, args);
     }
 }
 
@@ -432,7 +445,7 @@ static const syserr_index_entry syserr_index[]= {
 static VALUE *syserr_list;
 #endif
 
-#ifndef NT
+#if !defined NT && !defined sys_nerr
 extern int sys_nerr;
 #endif
 

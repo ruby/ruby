@@ -180,12 +180,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	(back-to-indentation)
 	(setq top (current-column))
 	(skip-chars-backward " \t")
-	(cond
-	 ((>= x shift)
-	  (setq shift 0))
-	 ((>= shift top)
-	  (setq shift (- shift top)))
-	 (t (setq shift 0)))
+	(if (>= shift top) (setq shift (- shift top)))
 	(if (and (bolp)
 		 (= x top))
 	    (move-to-column (+ x shift))

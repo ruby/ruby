@@ -3,6 +3,7 @@ README
 README.expect
 README.expect.jp
 README.jp
+depend
 expect_sample.rb
 extconf.rb
 lib/expect.rb

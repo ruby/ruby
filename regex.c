@@ -48,13 +48,6 @@
 # include <sys/types.h>
 #endif
 
-#if defined(STDC_HEADERS)
-# include <stddef.h>
-#else
-/* We need this for `regex.h', and perhaps for the Emacs include files.  */
-# include <sys/types.h>
-#endif
-
 #ifndef __STDC__
 # define volatile
 #endif
@@ -1406,7 +1399,8 @@ re_compile_pattern(pattern, size, bufp)
 	  case 'W':
 	    for (c = 0; c < (1 << BYTEWIDTH); c++) {
 	      if (SYNTAX(c) != Sword &&
-		  (current_mbctype || SYNTAX(c) != Sword2))
+		  (current_mbctype && !re_mbctab[c] ||
+		  !current_mbctype && SYNTAX(c) != Sword2))
 		SET_LIST_BIT(c);
 	    }
 	    last = -1;

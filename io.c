@@ -426,7 +426,7 @@ read_all(port)
 	TRAP_BEG;
 	n = fread(RSTRING(str)->ptr+bytes, 1, siz-bytes, fptr->f);
 	TRAP_END;
-	if (n == 0) {
+	if (n == 0 && bytes == 0) {
 	    if (feof(fptr->f)) return Qnil;
 	    rb_sys_fail(fptr->path);
 	}
@@ -452,15 +452,15 @@ io_fread(ptr, len, f)
     int c;
 
     while (n--) {
+	if (!READ_DATA_PENDING(f)) {
+	    rb_thread_wait_fd(fileno(f));
+	}
 	c = getc(f);
 	if (c == EOF) {
 	    *ptr = '\0';
 	    break;
 	}
 	*ptr++ = c;
-	if (!READ_DATA_PENDING(f)) {
-	    rb_thread_wait_fd(fileno(f));
-	}
     }
 
     return len - n - 1;
@@ -482,11 +482,15 @@ io_read(argc, argv, io)
     }
 
     len = NUM2INT(length);
+    if (len < 0) {
+	rb_raise(rb_eArgError, "negative length %d given", len);
+    }
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
     if (feof(fptr->f)) return Qnil;
     str = rb_str_new(0, len);
+    if (len == 0) return str;
 
     READ_CHECK(fptr->f);
     n = io_fread(RSTRING(str)->ptr, len, fptr->f);
@@ -1088,7 +1092,7 @@ VALUE
 rb_io_binmode(io)
     VALUE io;
 {
-#if defined(NT) || defined(DJGPP) || defined(__CYGWIN32__)\
+#if defined(NT) || defined(DJGPP) || defined(__CYGWIN__)\
     || defined(__human68k__) || defined(USE_CWGUSI) || defined(__EMX__)
     OpenFile *fptr;
 
@@ -1334,7 +1338,7 @@ rb_file_sysopen(fname, flags, mode)
     return rb_file_sysopen_internal(rb_cFile, fname, flags, mode);
 }
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__)
 static struct pipe_list {
     OpenFile *fptr;
     struct pipe_list *next;
@@ -1393,7 +1397,7 @@ static void
 pipe_finalize(fptr)
     OpenFile *fptr;
 {
-#if !defined (__CYGWIN32__)
+#if !defined (__CYGWIN__)
     if (fptr->f != NULL) {
 	pclose(fptr->f);
     }
@@ -1524,7 +1528,7 @@ pipe_open(pname, mode)
 		if (fptr->f) fptr->f2 = f;
 		else fptr->f = f;
 	    }
-#if defined (__CYGWIN32__)
+#if defined (__CYGWIN__)
 	    fptr->finalize = pipe_finalize;
 	    pipe_add_fptr(fptr);
 #endif
@@ -2283,13 +2287,13 @@ next_argv()
 		    fstat(fileno(fr), &st);
 		    if (*ruby_inplace_mode) {
 			str = rb_str_new2(fn);
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(NT)
+#if defined(MSDOS) || defined(__CYGWIN__) || defined(NT)
                         ruby_add_suffix(str, ruby_inplace_mode);
 #else
 			rb_str_cat(str, ruby_inplace_mode,
 				   strlen(ruby_inplace_mode));
 #endif
-#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN32__) || defined(NT) || defined(__human68k__) || defined(__EMX__)
+#if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(NT) || defined(__human68k__) || defined(__EMX__)
 			(void)fclose(fr);
 			(void)unlink(RSTRING(str)->ptr);
 			(void)rename(fn, RSTRING(str)->ptr);
@@ -2304,7 +2308,7 @@ next_argv()
 #endif
 		    }
 		    else {
-#if !defined(MSDOS) && !defined(__BOW__) && !defined(__CYGWIN32__) && !defined(NT) && !defined(__human68k__)
+#if !defined(MSDOS) && !defined(__BOW__) && !defined(__CYGWIN__) && !defined(NT) && !defined(__human68k__)
 			if (unlink(fn) < 0) {
 			    rb_warn("Can't remove %s: %s, skipping file",
 				    fn, strerror(errno));
@@ -2316,7 +2320,7 @@ next_argv()
 #endif
 		    }
 		    fw = rb_fopen(fn, "w");
-#if !defined(MSDOS) && !defined(__CYGWIN32__) && !(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__) && !defined(__EMX__)
+#if !defined(MSDOS) && !defined(__CYGWIN__) && !(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__) && !defined(__EMX__)
 		    fstat(fileno(fw), &st2);
 		    fchmod(fileno(fw), st.st_mode);
 		    if (st.st_uid!=st2.st_uid || st.st_gid!=st2.st_gid) {
@@ -2623,7 +2627,7 @@ rb_io_ctl(io, req, arg, io_p)
     int io_p;
 {
 #if !defined(MSDOS) && !defined(__human68k__)
-    int cmd = NUM2INT(req);
+    int cmd = NUM2ULONG(req);
     OpenFile *fptr;
     int len = 0;
     int fd;
@@ -2669,7 +2673,7 @@ rb_io_ctl(io, req, arg, io_p)
     fd = fileno(fptr->f);
 #ifdef HAVE_FCNTL
     TRAP_BEG;
-# ifdef USE_CWGUSI
+# if defined(USE_CWGUSI) || defined(__CYGWIN__)
     retval = io_p?ioctl(fd, cmd, (void*) narg):fcntl(fd, cmd, narg);
 # else
     retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
@@ -3250,9 +3254,9 @@ Init_IO()
     rb_define_method(rb_cIO, "flush", rb_io_flush, 0);
     rb_define_method(rb_cIO, "tell", rb_io_tell, 0);
     rb_define_method(rb_cIO, "seek", rb_io_seek, 2);
-    rb_define_const(rb_cIO, "SEEK_SET", SEEK_SET);
-    rb_define_const(rb_cIO, "SEEK_CUR", SEEK_CUR);
-    rb_define_const(rb_cIO, "SEEK_END", SEEK_END);
+    rb_define_const(rb_cIO, "SEEK_SET", INT2FIX(SEEK_SET));
+    rb_define_const(rb_cIO, "SEEK_CUR", INT2FIX(SEEK_CUR));
+    rb_define_const(rb_cIO, "SEEK_END", INT2FIX(SEEK_END));
     rb_define_method(rb_cIO, "rewind", rb_io_rewind, 0);
     rb_define_method(rb_cIO, "pos", rb_io_tell, 0);
     rb_define_method(rb_cIO, "pos=", rb_io_set_pos, 1);
@@ -3330,7 +3334,7 @@ Init_IO()
 
     rb_define_virtual_variable("$-i", opt_i_get, opt_i_set);
 
-#if defined (NT) || defined(DJGPP) || defined(__CYGWIN32__) || defined(__human68k__)
+#if defined (NT) || defined(DJGPP) || defined(__CYGWIN__) || defined(__human68k__)
     atexit(pipe_atexit);
 #endif
 

@@ -82,7 +82,7 @@ VALUE rb_singleton_class _((VALUE));
 /* enum.c */
 VALUE rb_enum_length _((VALUE));
 /* error.c */
-extern int ruby_nerrs;
+EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));
 VALUE rb_exc_new2 _((VALUE, const char*));
 VALUE rb_exc_new3 _((VALUE, VALUE));
@@ -210,6 +210,12 @@ VALUE rb_Array _((VALUE));
 /* parse.y */
 extern int   ruby_sourceline;
 extern char *ruby_sourcefile;
+#define yyparse rb_yyparse
+#define yylex rb_yylex
+#define yyerror rb_yyerror
+#define yylval rb_yylval
+#define yychar rb_yychar
+#define yydebug rb_yydebug
 int yyparse _((void));
 ID rb_id_attrset _((ID));
 void rb_parser_append_print _((void));
