@@ -362,11 +362,26 @@ typedef struct {
   };\
 } while(0)
 
+static unsigned int MatchStackLimitSize = DEFAULT_MATCH_STACK_LIMIT_SIZE;
+
+extern unsigned int
+onig_get_match_stack_limit_size(void)
+{
+  return MatchStackLimitSize;
+}
+
+extern int
+onig_set_match_stack_limit_size(unsigned int size)
+{
+  MatchStackLimitSize = size;
+  return 0;
+}
+
 static int
 stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
 	     StackType** arg_stk, StackType* stk_alloc, MatchArg* msa)
 {
-  int n;
+  unsigned int n;
   StackType *x, *stk_base, *stk_end, *stk;
 
   stk_base = *arg_stk_base;
@@ -385,7 +400,12 @@ stack_double(StackType** arg_stk_base, StackType** arg_stk_end,
   }
   else {
     n *= 2;
-    if (n > MATCH_STACK_LIMIT_SIZE) return ONIGERR_MATCH_STACK_LIMIT_OVER;
+    if (MatchStackLimitSize != 0 && n > MatchStackLimitSize) {
+      if ((unsigned int )(stk_end - stk_base) == MatchStackLimitSize)
+        return ONIGERR_MATCH_STACK_LIMIT_OVER;
+      else
+        n = MatchStackLimitSize;
+    }
     x = (StackType* )xrealloc(stk_base, sizeof(StackType) * n);
     if (IS_NULL(x)) {
       STACK_SAVE;
@@ -1171,10 +1191,9 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
 	  goto fail; /* for retry */
 	}
       }
-      else {
-	/* default behavior: return first-matching result. */
-	goto finish;
-      }
+
+      /* default behavior: return first-matching result. */
+      goto finish;
       break;
 
     case OP_EXACT1:  STAT_OP_IN(OP_EXACT1);
@@ -2574,11 +2593,13 @@ bm_search_notrev(regex_t* reg, UChar* target, UChar* target_end,
       if (t < target) return p + 1;
 
       skip = reg->map[*s];
-      p++;
+      p = s + 1;
+      if (p >= text_end) return (UChar* )NULL;
       t = p;
-      while ((p - t) < skip) {
+      do {
 	p += enc_len(reg->enc, *p);
-      }
+      } while ((p - t) < skip && p < text_end);
+
       s += (p - t);
     }
   }
@@ -2592,11 +2613,13 @@ bm_search_notrev(regex_t* reg, UChar* target, UChar* target_end,
       if (t < target) return p + 1;
 
       skip = reg->int_map[*s];
-      p++;
+      p = s + 1;
+      if (p >= text_end) return (UChar* )NULL;
       t = p;
-      while ((p - t) < skip) {
+      do {
 	p += enc_len(reg->enc, *p);
-      }
+      } while ((p - t) < skip && p < text_end);
+
       s += (p - t);
     }
   }
@@ -3287,14 +3310,4 @@ extern OnigSyntaxType*
 onig_get_syntax(regex_t* reg)
 {
   return reg->syntax;
-}
-
-extern const char*
-onig_version(void)
-{
-#define MSTR(a)  # a
-
-  return (MSTR(ONIGURUMA_VERSION_MAJOR) "."
-	  MSTR(ONIGURUMA_VERSION_MINOR) "."
-	  MSTR(ONIGURUMA_VERSION_TEENY));
 }

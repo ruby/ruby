@@ -3021,7 +3021,7 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
 	  NSTRING_SET_CASE_AMBIG(node);
 	  break;
 	}
-	p++;
+        p += enc_len(reg->enc, *p);
       }
     }
     break;
@@ -3950,22 +3950,17 @@ optimize_node_left(Node* node, NodeOptInfo* opt, OptEnv* env)
 	}
       }
 
-      if (IS_NULL(cc->mbuf)) {
-	if (cc->not) {
-	  for (i = 0; i < SINGLE_BYTE_SIZE; i++) {
-	    add_char_opt_map_info(&opt->map, i);
-	  }
-	  mb_found = 1;
-	}
-      }
-      else {
-	for (i = 0; i < SINGLE_BYTE_SIZE; i++) {
-	  z = ONIGENC_IS_MBC_HEAD(env->enc, i);
-	  if (z) {
-	    mb_found = 1;
-	    add_char_opt_map_info(&opt->map, i);
-	  }
-	}
+      if (! ONIGENC_IS_SINGLEBYTE(env->enc)) {
+        if (! IS_NULL(cc->mbuf) ||
+            (cc->not != 0 && found != 0)) {
+          for (i = 0; i < SINGLE_BYTE_SIZE; i++) {
+            z = ONIGENC_IS_MBC_HEAD(env->enc, i);
+            if (z) {
+              mb_found = 1;
+              add_char_opt_map_info(&opt->map, i);
+            }
+          }
+        }
       }
 
       if (mb_found) {
