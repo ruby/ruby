@@ -6984,6 +6984,7 @@ block_pass(self, node)
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
+    _block.prev = old_block;
     ruby_block = &_block;
     PUSH_ITER(ITER_PRE);
     ruby_frame->iter = ITER_PRE;

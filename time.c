@@ -716,26 +716,21 @@ time_cmp(time1, time2)
 	}
 	if (tobj1->tv.tv_sec > i) return INT2FIX(1);
 	return INT2FIX(-1);
-	
-      case T_FLOAT:
-	return rb_dbl_cmp((double)tobj1->tv.tv_sec + (double)tobj1->tv.tv_usec*1e-6,
-			  RFLOAT(time2)->value);
 
-      case T_BIGNUM:
-	return rb_dbl_cmp((double)tobj1->tv.tv_sec + (double)tobj1->tv.tv_usec*1e-6,
-			  rb_big2dbl(time2));
-    }
-
-    if (TYPE(time2) == T_DATA && RDATA(time2)->dfree == time_free) {
-	GetTimeval(time2, tobj2);
-	if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
-	    if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
-	    if (tobj1->tv.tv_usec > tobj2->tv.tv_usec) return INT2FIX(1);
+      case T_DATA:
+	if (RDATA(time2)->dfree == time_free) {
+	    GetTimeval(time2, tobj2);
+	    if (tobj1->tv.tv_sec == tobj2->tv.tv_sec) {
+		if (tobj1->tv.tv_usec == tobj2->tv.tv_usec) return INT2FIX(0);
+		if (tobj1->tv.tv_usec > tobj2->tv.tv_usec) return INT2FIX(1);
+		return INT2FIX(-1);
+	    }
+	    if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
 	    return INT2FIX(-1);
 	}
-	if (tobj1->tv.tv_sec > tobj2->tv.tv_sec) return INT2FIX(1);
-	return INT2FIX(-1);
+	break;
     }
+
     return Qnil;
 }
 
