@@ -109,7 +109,7 @@ module REXML
 			output << " #@long_name" if @long_name
 			output << " #@uri" if @uri
 			unless @children.empty?
-				next_indent = indent + 2
+				next_indent = indent + 1
 				output << ' ['
 				child = nil		# speed
 				@children.each { |child|
@@ -122,6 +122,10 @@ module REXML
 			end
 			output << STOP
 		end
+
+    def context
+      @parent.context
+    end
 
 		def entity( name )
 			@entities[name].unnormalized if @entities[name]

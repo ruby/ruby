@@ -632,7 +632,7 @@ module REXML
 			else
 				if transitive and indent>-1 and !@children[0].kind_of? Text
 					writer << "\n"
-					indent writer, indent+2
+					indent writer, indent+1
 				end
 				writer << ">"
 				write_children( writer, indent, transitive, ie_hack )
@@ -640,7 +640,7 @@ module REXML
 			end
 			if transitive and indent>-1
 				writer << "\n"
-				indent -= 2 if next_sibling.nil?
+				indent -= 1 if next_sibling.nil?
 				indent(writer, indent)
 			end
 			writer << ">"
@@ -661,12 +661,10 @@ module REXML
 		# A private helper method
 		def write_children( writer, indent, transitive, ie_hack )
 			cr = (indent < 0) ? '' : "\n"
-			#if size == 1 and @children[0].kind_of?(Text)
-			#	self[0].write( writer, -1 )
 			if indent == -1
 				each { |child| child.write( writer, indent, transitive, ie_hack ) }
 			else
-				next_indent = indent+2
+				next_indent = indent+1
 				last_child=nil
 				each { |child|
 					unless child.kind_of? Text or last_child.kind_of? Text or transitive

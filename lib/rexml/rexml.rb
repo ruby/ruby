@@ -21,6 +21,6 @@
 # A tutorial is available in docs/tutorial.html
 module REXML
 	Copyright = "Copyright #{Time.now.year} Sean Russell <ser@germane-software.com>"
-	Date = "+2003/346"
-	Version = "2.7.3"
+	Date = "+2004/044"
+	Version = "2.7.4"
 end

@@ -31,7 +31,6 @@ module REXML
 		def initialize(arg)
 			@orig = @buffer = arg
 			self.encoding = check_encoding( @buffer )
-			#@buffer = decode(@buffer) unless @encoding == UTF_8
 			@line = 0
 		end
 
@@ -96,7 +95,7 @@ module REXML
 
 		# @return true if the Source is exhausted
 		def empty?
-			@buffer.nil?
+			@buffer == ""
 		end
 
 		# @return the current line in the source
@@ -113,17 +112,14 @@ module REXML
 	class IOSource < Source
 		#attr_reader :block_size
 
+    # block_size has been deprecated
 		def initialize(arg, block_size=500)
 			@er_source = @source = arg
 			@to_utf = false
-			# READLINE OPT
-			# The following was commented out when IOSource started using readline
-			# to pull the data from the stream.
-			#@block_size = block_size
-			#super @source.read(@block_size)
-			@line_break = '>'
-			#super @source.readline( "\n" )
-			super @source.readline( @line_break )+@source.read
+      # FIXME
+      # This is broken.  If the user puts in enough carriage returns, this can fail
+      # to calculate the correct encoding.
+      super @source.read( 100 )
 			@line_break = encode( '>' )
 		end
 

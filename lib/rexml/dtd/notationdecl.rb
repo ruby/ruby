@@ -25,7 +25,7 @@ module REXML
 			end
 
 			def write( output, indent )
-				output << ('   '*indent) if indent > 0
+        indent( output, indent )
 				output << to_s
 			end
 

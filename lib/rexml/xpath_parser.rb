@@ -29,7 +29,8 @@ module REXML
 
 		def parse path, nodeset
 			path_stack = @parser.parse( path )
-			#puts "PARSE: #{path} => #{path_stack.inspect}"
+      #puts "PARSE: #{path} => #{path_stack.inspect}"
+      #puts "PARSE: nodeset = #{nodeset.collect{|x|x.to_s}.inspect}"
 			match( path_stack, nodeset )
 		end
 
@@ -46,7 +47,7 @@ module REXML
 
 		def match( path_stack, nodeset ) 
 			while ( path_stack.size > 0 and nodeset.size > 0 ) 
-				#puts "PARSE: #{path_stack.inspect} '#{nodeset.collect{|n|n.type}.inspect}'"
+				#puts "PARSE: #{path_stack.inspect} '#{nodeset.collect{|n|n.class}.inspect}'"
 				nodeset = internal_parse( path_stack, nodeset )
 				#puts "NODESET: #{nodeset.size}"
 				#puts "PATH_STACK: #{path_stack.inspect}"
@@ -55,8 +56,9 @@ module REXML
 		end
 
 		def internal_parse path_stack, nodeset
+      #puts "INTERNAL_PARSE RETURNING WITH NO RESULTS" if nodeset.size == 0 or path_stack.size == 0
 			return nodeset if nodeset.size == 0 or path_stack.size == 0
-			#puts "INTERNAL_PARSE: #{path_stack.inspect}, #{nodeset.collect{|n| n.type}.inspect}"
+			#puts "INTERNAL_PARSE: #{path_stack.inspect}, #{nodeset.collect{|n| n.class}.inspect}"
 			case path_stack.shift
 			when :document
 				return [ nodeset[0].root.parent ]
@@ -205,7 +207,7 @@ module REXML
 					Functions::index = index+1
 					#puts "Node #{node} and index=#{index+1}"
 					result = Predicate( predicate, node )
-					#puts "Predicate returned #{result} (#{result.type}) for #{node.type}"
+					#puts "Predicate returned #{result} (#{result.class}) for #{node.class}"
 					if result.kind_of? Numeric
 						#puts "#{result} == #{index} => #{result == index}"
 						new_nodeset << node if result == (index+1)
@@ -285,6 +287,7 @@ module REXML
 		end
 
 		##########################################################
+    # FIXME
 		# The next two methods are BAD MOJO!
 		# This is my achilles heel.  If anybody thinks of a better
 		# way of doing this, be my guest.  This really sucks, but 
@@ -294,23 +297,38 @@ module REXML
 		def descendant_or_self( path_stack, nodeset )
 			rs = []
 			d_o_s( path_stack, nodeset, rs )
-			#puts "RS = #{rs.collect{|n|n.to_s}.inspect}"
-			rs.flatten.compact
+      #puts "RS = #{rs.collect{|n|n.to_s}.inspect}"
+      document_order(rs.flatten.compact)
 		end
 
 		def d_o_s( p, ns, r )
-			#puts r.collect{|n|n.to_s}.inspect
-			#puts ns.collect{|n|n.to_s}.inspect
 			nt = nil
 			ns.each_index do |i|
 				n = ns[i]
 				x = match( p.clone, [ n ] )
-				#puts "Got a match on #{p.inspect} for #{ns.collect{|n|n.to_s+"("+n.type.to_s+")"}.inspect}"
 				nt = n.node_type
-				d_o_s( p, n.children, x ) if nt == :element or nt == :document
-				r[i,0] = [x] if x.size > 0
+				d_o_s( p, n.children, x ) if nt == :element or nt == :document and n.children.size > 0
+        r.concat(x) if x.size > 0
 			end
 		end
+
+
+    # Reorders an array of nodes so that they are in document order
+    # It tries to do this efficiently.
+    def document_order( array_of_nodes )
+      new_arry = []
+      array_of_nodes.each { |node|
+        node_idx = [] 
+        np = node.node_type == :attribute ? node.element : node
+        while np.parent and np.parent.node_type == :element
+          node_idx << np.parent.children.index( np )
+          np = np.parent
+        end
+        new_arry << [ node_idx.reverse.join, node ]
+      }
+      new_arry.sort{ |s1, s2| s1[0] <=> s2[0] }.collect{ |s| s[1] }
+    end
+
 
     def recurse( nodeset, &block )
       for node in nodeset
@@ -324,7 +342,7 @@ module REXML
 		def Predicate( predicate, node )
 			predicate = predicate.clone
 			#puts "#"*20
-			#puts "Predicate( #{predicate.inspect}, #{node.type} )"
+			#puts "Predicate( #{predicate.inspect}, #{node.class} )"
 			results = []
 			case (predicate[0])
 			when :and, :or, :eq, :neq, :lt, :lteq, :gt, :gteq

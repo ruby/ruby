@@ -164,9 +164,44 @@ module REXML
 			end
 			@unnormalized = Text::unnormalize( @string, doctype )
 		end
-
+ 		
+ 		def wrap(string, width, addnewline=false)
+ 			# Recursivly wrap string at width.
+ 			return string if string.length <= width
+ 			place = string.rindex(' ', width) # Position in string with last ' ' before cutoff
+ 			if addnewline then
+ 				return "\n" + string[0,place] + "\n" + wrap(string[place+1..-1], width)
+ 			else
+ 				return string[0,place] + "\n" + wrap(string[place+1..-1], width)
+ 			end
+ 		end
+ 
+ 		def indent(string, level=1, style="\t", indentfirstline=true)
+      return string if level < 0
+ 			new_string = ''
+ 			string.each { |line|
+ 				indent_string = style * level
+ 				new_line = (indent_string + line).sub(/[\s]+$/,'')
+ 				new_string << new_line
+ 			}
+ 			new_string.strip! unless indentfirstline
+ 			return new_string
+ 		end
+ 
 		def write( writer, indent=-1, transitive=false, ie_hack=false ) 
-			writer << to_s()
+			s = to_s()
+ 			if not (@parent and @parent.whitespace) then
+ 				s = wrap(s, 60, false) if @parent and @parent.context[:wordwrap] == :all
+ 				if @parent and not @parent.context[:indentstyle].nil? then
+ 					indentstyle = @parent.context[:indentstyle]
+ 				else
+ 					indentstyle = '  '
+ 				end
+ 				if s.count("\n") > 0 and indent > 0 then
+ 					s = indent(s, indent, indentstyle, false)
+ 				end
+ 			end
+      writer << s
 		end
 
 		# Writes out text, substituting special characters beforehand.
