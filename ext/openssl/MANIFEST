@@ -60,3 +60,7 @@ sample/gen_csr.rb
 sample/smime_read.rb
 sample/smime_write.rb
 sample/wget.rb
+sample/cert2text.rb
+sample/cert_store_view.rb
+sample/certstore.rb
+sample/crlstore.rb
