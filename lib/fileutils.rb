@@ -114,10 +114,10 @@ module FileUtils
   def uptodate?( new, old_list, options = nil )
     raise ArgumentError, 'uptodate? does not accept any option' if options
 
-    return false unless FileTest.exist?(new)
+    return false unless File.exist?(new)
     new_time = File.mtime(new)
     old_list.each do |old|
-      if FileTest.exist?(old)
+      if File.exist?(old)
         return false unless new_time > File.mtime(old)
       end
     end
@@ -172,7 +172,7 @@ module FileUtils
     mode = options[:mode] || (0777 & ~File.umask)
     list.map {|n| File.expand_path(n) }.each do |dir|
       stack = []
-      until FileTest.directory?(dir)
+      until File.directory?(dir)
         stack.push dir
         dir = File.dirname(dir)
       end
@@ -237,7 +237,7 @@ module FileUtils
     fu_output_message "ln#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
 
-    fu_each_src_dest(src, dest) do |s,d|
+    fu_each_src_dest0(src, dest) do |s,d|
       remove_file d, true if options[:force]
       File.link s, d
     end
@@ -272,7 +272,7 @@ module FileUtils
     fu_output_message "ln -s#{options[:force] ? 'f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
 
-    fu_each_src_dest(src, dest) do |s,d|
+    fu_each_src_dest0(src, dest) do |s,d|
       remove_file d, true if options[:force]
       File.symlink s, d
     end
@@ -343,7 +343,7 @@ module FileUtils
     return if options[:noop]
 
     fu_each_src_dest(src, dest) do |s,d|
-      if FileTest.directory?(s)
+      if File.directory?(s)
         fu_copy_dir s, d, '.', options[:preserve]
       else
         fu_p_copy s, d, options[:preserve]
@@ -354,10 +354,10 @@ module FileUtils
   def fu_copy_dir( src, dest, rel, preserve ) #:nodoc:
     fu_preserve_attr(preserve, "#{src}/#{rel}", "#{dest}/#{rel}") {|s,d|
         dir = File.expand_path(d)   # to remove '/./'
-        Dir.mkdir dir unless FileTest.directory? dir
+        Dir.mkdir dir unless File.directory?(dir)
     }
     Dir.entries("#{src}/#{rel}").each do |fname|
-      if FileTest.directory? File.join(src,rel,fname)
+      if File.directory?(File.join(src,rel,fname))
         next if /\A\.\.?\z/ === fname
         fu_copy_dir src, dest, "#{rel}/#{fname}", preserve
       else
@@ -437,14 +437,14 @@ module FileUtils
     return if options[:noop]
 
     fu_each_src_dest(src, dest) do |s,d|
-      if cannot_overwrite_file? and FileTest.file?(d)
+      if cannot_overwrite_file? and File.file?(d)
         File.unlink d
       end
 
       begin
         File.rename s, d
       rescue
-        if FileTest.symlink?(s)
+        if File.symlink?(s)
           File.symlink File.readlink(s), dest
           File.unlink s
         else
@@ -574,7 +574,7 @@ module FileUtils
     Dir.foreach(dir) do |file|
       next if /\A\.\.?\z/ === file
       path = "#{dir}/#{file}"
-      if FileTest.directory? path
+      if File.directory?(path)
         remove_dir path, force
       else
         remove_file path, force
@@ -639,7 +639,7 @@ module FileUtils
     return if options[:noop]
 
     fu_each_src_dest(src, dest) do |s,d|
-      unless FileTest.exist?(d) and compare_file(s,d)
+      unless File.exist?(d) and compare_file(s,d)
 	remove_file d, true
 	st = File.stat(s) if options[:preserve]
 	copy_file s, d
@@ -707,15 +707,22 @@ module FileUtils
   end
 
   def fu_list( arg )
-    Array === arg ? arg : [arg]
+    arg.is_a?(Array) ? arg : [arg]
   end
 
   def fu_each_src_dest( src, dest )
-    unless Array === src
+    fu_each_src_dest0(src, dest) do |s, d|
+      raise ArgumentError, "same file: #{s} and #{d}" if fu_same?(s, d)
+      yield s, d
+    end
+  end
+
+  def fu_each_src_dest0( src, dest )
+    unless src.is_a?(Array)
       yield src, fu_dest_filename(src, dest)
     else
       dir = dest
-      # FileTest.directory? dir or raise ArgumentError, "must be dir: #{dir}"
+      #raise ArgumentError, "not a directory: #{dir}" unless File.directory?(dir)
       dir += (dir[-1,1] == '/') ? '' : '/'
       src.each do |fname|
         yield fname, dir + File.basename(fname)
@@ -724,11 +731,43 @@ module FileUtils
   end
 
   def fu_dest_filename( src, dest )
-    if FileTest.directory? dest
+    if File.directory?(dest)
       (dest[-1,1] == '/' ? dest : dest + '/') + File.basename(src)
     else
       dest
     end
+  end
+
+  def fu_same?( a, b )
+    fu_resolve_symlink(a) == fu_resolve_symlink(b)
+  end
+
+  def fu_resolve_symlink( path, limit = 128 )
+    raise Errno::ELOOP, "too many levels of symlic links: #{path}" if limit < 0
+    if File.symlink?(path)
+    then fu_resolve_symlink(fu_readlink(File.expand_path(path)), limit-1)
+    else path
+    end
+  end
+
+  def fu_readlink( path )
+    dest = File.readlink(path)
+    if absolute_path?(dest)
+    then dest
+    else File.dirname(File.expand_path(path)) + '/' + dest
+    path = File.readlink(path)
+    end
+  end
+
+  def absolute_path?( path )
+    if have_drive_letter?
+    then %r<\A([a-z]:)?/> === path
+    else %r<\A/> === path
+    end
+  end
+
+  def have_drive_letter?
+    File::ALT_SEPARATOR ? true : false
   end
 
   def fu_stream_blksize( *streams )
@@ -750,7 +789,7 @@ module FileUtils
   end
 
   def fu_update_option( args, new )
-    if Hash === args.last
+    if args.last.is_a?(Hash)
       args.last.update new
     else
       args.push new
@@ -836,7 +875,7 @@ module FileUtils
     @fileutils_nowrite = true
 
     FileUtils::OPT_TABLE.each do |name, opts|
-      next unless opts.include? 'noop'
+      next unless opts.include?('noop')
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}( *args )
           unless defined?(@fileutils_nowrite)

@@ -1,3 +1,29 @@
+Tue Nov 18 14:06:35 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (fu_each_src_dest): raise if src==dest.
+	  [ruby-talk:85344] [ruby-core:01699]
+
+	* lib/fileutils.rb: use Object#is_a? instead of Class#=== to allow
+	  e.g. remote objects for receivers.
+
+	* lib/fileutils.rb: FileTest -> File.
+
+	* lib/fileutils.rb: put parentheses for arguments of File.xxxx?
+
+	* test/fileutils/test_fileutils.rb (test_cp): test "cp a a".
+
+	* test/fileutils/test_fileutils.rb (test_mv): test "mv a a".
+
+	* test/fileutils/test_fileutils.rb (test_ln): test "ln a a".
+
+	* test/fileutils/test_fileutils.rb (test_ln_s): test "ln_s a a".
+
+	* test/fileutils/test_fileutils.rb (test_install): test "install a a".
+
+	* test/fileutils/fileasserts.rb: new method assert_symlink.
+
+	* test/fileutils/fileasserts.rb: assert_is_directory -> assert_directory.
+
 Mon Nov 17 10:50:27 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser::Completion::complete): allow least

@@ -142,6 +142,22 @@ end
       assert_equal a.uid, b.uid
       assert_equal a.gid, b.gid
     end
+
+    # src==dest
+    touch 'tmp/cptmp'
+    assert_raises(ArgumentError) {
+      cp 'tmp/cptmp', 'tmp/cptmp'
+    }
+if have_symlink?
+    File.symlink 'tmp/cptmp', 'tmp/cptmp_symlink'
+    assert_raises(ArgumentError) {
+      cp 'tmp/cptmp', 'tmp/cptmp_symlink'
+    }
+    File.symlink 'tmp/symlink', 'tmp/symlink'
+    assert_raises(Errno::ELOOP) {
+      cp 'tmp/symlink', 'tmp/symlink'
+    }
+end
   end
 
   def test_cp_r
@@ -157,6 +173,22 @@ end
       mv 'tmp/mvsrc', 'tmp/mvdest'
       assert_same_file fname, 'tmp/mvdest'
     end
+
+    # src==dest
+    touch 'tmp/cptmp'
+    assert_raises(ArgumentError) {
+      mv 'tmp/cptmp', 'tmp/cptmp'
+    }
+if have_symlink?
+    File.symlink 'tmp/cptmp', 'tmp/cptmp_symlink'
+    assert_raises(ArgumentError) {
+      mv 'tmp/cptmp', 'tmp/cptmp_symlink'
+    }
+    File.symlink 'tmp/symlink', 'tmp/symlink'
+    assert_raises(Errno::ELOOP) {
+      mv 'tmp/symlink', 'tmp/symlink'
+    }
+end
   end
 
   def test_rm
@@ -249,6 +281,22 @@ end
     TARGETS.each do |fname|
       File.unlink 'tmp/' + File.basename(fname)
     end
+
+    # src==dest
+    touch 'tmp/cptmp'
+    assert_raises(Errno::EEXIST) {
+      ln 'tmp/cptmp', 'tmp/cptmp'
+    }
+if have_symlink?
+    File.symlink 'tmp/cptmp', 'tmp/cptmp_symlink'
+    assert_raises(Errno::EEXIST) {
+      ln 'tmp/cptmp', 'tmp/cptmp_symlink'
+    }
+    File.symlink 'tmp/symlink', 'tmp/symlink'
+    assert_raises(Errno::EEXIST) {
+      ln 'tmp/symlink', 'tmp/symlink'
+    }
+end
   end
 
 if have_symlink?
@@ -259,6 +307,10 @@ if have_symlink?
       assert_equal fname, File.readlink('tmp/lnsdest')
       rm_f 'tmp/lnsdest'
     end
+    assert_nothing_raised {
+      ln_s 'tmp/symlink', 'tmp/symlink'
+    }
+    assert_symlink 'tmp/symlink'
   end
 end
 
@@ -277,15 +329,15 @@ end
   def test_mkdir
     my_rm_rf 'tmpdatadir'
     mkdir 'tmpdatadir'
-    assert_is_directory 'tmpdatadir'
+    assert_directory 'tmpdatadir'
     Dir.rmdir 'tmpdatadir'
 
     mkdir 'tmp/mkdirdest'
-    assert_is_directory 'tmp/mkdirdest'
+    assert_directory 'tmp/mkdirdest'
     Dir.rmdir 'tmp/mkdirdest'
 
     mkdir 'tmp/tmp', :mode => 0700
-    assert_is_directory 'tmp/tmp'
+    assert_directory 'tmp/tmp'
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) unless windows?
     Dir.rmdir 'tmp/tmp'
   end
@@ -307,7 +359,7 @@ end
     rm_rf 'tmpdir'
     dirs.each do |d|
       mkdir_p d
-      assert_is_directory d
+      assert_directory d
       assert_file_not_exist "#{d}/a"
       assert_file_not_exist "#{d}/b"
       assert_file_not_exist "#{d}/c"
@@ -315,13 +367,13 @@ end
     end
     dirs.each do |d|
       mkdir_p d
-      assert_is_directory d
+      assert_directory d
     end
     rm_rf 'tmpdir'
 
     mkdir_p 'tmp/tmp/tmp', :mode => 0700
-    assert_is_directory 'tmp/tmp'
-    assert_is_directory 'tmp/tmp/tmp'
+    assert_directory 'tmp/tmp'
+    assert_directory 'tmp/tmp/tmp'
     assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) unless windows?
     assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777) unless windows?
     rm_rf 'tmp/tmp'
@@ -353,6 +405,22 @@ end
 
     File.unlink 'tmp/aaa'
     File.unlink 'tmp/bbb'
+
+    # src==dest
+    touch 'tmp/cptmp'
+    assert_raises(ArgumentError) {
+      install 'tmp/cptmp', 'tmp/cptmp'
+    }
+if have_symlink?
+    File.symlink 'tmp/cptmp', 'tmp/cptmp_symlink'
+    assert_raises(ArgumentError) {
+      install 'tmp/cptmp', 'tmp/cptmp_symlink'
+    }
+    File.symlink 'tmp/symlink', 'tmp/symlink'
+    assert_raises(Errno::ELOOP) {
+      install 'tmp/symlink', 'tmp/symlink'
+    }
+end
   end
 
 end

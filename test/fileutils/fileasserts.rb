@@ -14,26 +14,34 @@ module Test
         }
       end
 
-      def assert_file_exist( file )
+      def assert_file_exist( path )
         _wrap_assertion {
-          assert_block("file not exist: #{file}") {
-            File.exist?(file)
+          assert_block("file not exist: #{path}") {
+            File.exist?(path)
           }
         }
       end
 
-      def assert_file_not_exist( file )
+      def assert_file_not_exist( path )
         _wrap_assertion {
-          assert_block("file not exist: #{file}") {
-            not File.exist?(file)
+          assert_block("file not exist: #{path}") {
+            not File.exist?(path)
           }
         }
       end
 
-      def assert_is_directory( file )
+      def assert_directory( path )
         _wrap_assertion {
-          assert_block("is not directory: #{file}") {
-            File.directory?(file)
+          assert_block("is not directory: #{path}") {
+            File.directory?(path)
+          }
+        }
+      end
+
+      def assert_symlink( path )
+        _wrap_assertion {
+          assert_block("is no symlink: #{path}") {
+            File.symlink?(path)
           }
         }
       end
