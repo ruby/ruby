@@ -9,6 +9,8 @@
  * of this BigDecimal distribution.
  *
  * NOTES:
+ *  2003-04-17
+ *    Bug in negative.exp(n) reported by Hitoshi Miyazaki fixed.
  *  2003-03-28
  *    V1.0 checked in to CVS(ruby/ext/bigdecimal).
  *    use rb_str2cstr() instead of STR2CSTR().
@@ -4007,6 +4009,7 @@ VpExp(Real *y, Real *x)
     U_LONG p;
     U_LONG nc;
     U_LONG i;
+    short  fNeg=0;
 
     if(!VpIsDef(x)) {
         VpSetNaN(y); /* Not sure */
@@ -4021,6 +4024,9 @@ VpExp(Real *y, Real *x)
     p = p *(BASE_FIG + 2) + 2;
     if(p<maxnr) nc = maxnr;
     else  nc = p;
+
+    fNeg = x->sign;
+    if(fNeg<0) x->sign = -fNeg;
 
     /* allocate temporally variables  */
     z = VpAlloc(p, "#1");
@@ -4047,9 +4053,16 @@ VpExp(Real *y, Real *x)
         VpAsgn(y, div, 1);    /* y = y(new) */
     } while(((!VpIsZero(c)) &&(c->exponent >= 0 ||((U_LONG)(-c->exponent)) <= y->MaxPrec)) &&
             i<nc
-        );
+           );
+
+    if(fNeg < 0) {
+        x->sign = fNeg;
+        VpDivd(div, r, VpConstOne, y);
+        VpAsgn(y, div, 1);
+    }
 
 Exit:
+
 #ifdef _DEBUG
     if(gfDebug) {
         VPrint(stdout, "vpexp e=%\n", y);
