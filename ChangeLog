@@ -1,3 +1,9 @@
+Wed Jan 19 01:16:30 2005  Tanaka Akira  <akr@m17n.org>
+
+        * lib/resolv.rb (Resolv::DNS::Config.parse_resolv_conf): ignore
+          domain and search directive without an argument.
+	  reported by Sam Roberts.  [ruby-talk:126781]
+
 Tue Jan 18 15:03:05 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/ssl.rb (WEBrick::Config::SSL): the default value 
