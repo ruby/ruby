@@ -836,7 +836,7 @@ io_read(argc, argv, io)
     if (n == 0) {
 	rb_str_resize(str,0);
 	if (feof(fptr->f)) return Qnil;
-	rb_sys_fail(fptr->path);
+	if (len > 0) rb_sys_fail(fptr->path);
     }
     RSTRING(str)->len = n;
     RSTRING(str)->ptr[n] = '\0';

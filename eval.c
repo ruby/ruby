@@ -5087,6 +5087,9 @@ backtrace(lev)
     NODE *n;
 
     ary = rb_ary_new();
+    if (frame->last_func == ID_ALLOCATOR) {
+	frame = frame->prev;
+    }
     if (lev < 0) {
 	ruby_set_current_source();
 	if (frame->last_func) {
@@ -7317,13 +7320,6 @@ bmcall(args, method)
     return method_call(RARRAY(a)->len, RARRAY(a)->ptr, method);
 }
 
-static VALUE
-umcall(args, method)
-    VALUE args, method;
-{
-    return method_call(0, 0, method);
-}
-
 VALUE
 rb_proc_new(func, val)
     VALUE (*func)(ANYARGS);	/* VALUE yieldarg[, VALUE procarg] */
@@ -7343,7 +7339,8 @@ static VALUE
 umethod_proc(method)
     VALUE method;
 {
-    return rb_iterate((VALUE(*)_((VALUE)))mproc, method, umcall, method);
+    rb_raise(rb_eTypeError, "unbound method cannot be executed; bind first");
+    return Qnil; 		/* not reached */
 }
 
 static VALUE

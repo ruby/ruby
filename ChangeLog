@@ -1,6 +1,29 @@
+Mon Apr  7 15:49:09 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_s_unpack_sockaddr_in): remove struct
+	  size check.  getnameinfo(3) can handle. [ruby-dev:19967]
+
+Mon Apr  7 01:33:31 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_read): do not call rb_sys_fail() when required data
+	  length is zero. (ruby-bugs-ja PR#420)
+
+	* eval.c (umethod_proc): should raise TypeError, instead of
+	  returning error causing Proc.  Following the principle of "fail
+	  early".  [ruby-core:00927]
+
 Sun Apr  6 00:35:37 2003  Tanaka Akira  <akr@m17n.org>
 
         * sample/exyacc.rb: use Regexp in gsub!.
+
+Sat Apr  5 23:41:28 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): small but serious typo.
+
+Sat Apr  5 01:41:28 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (backtrace): skip internal allocator frame.
+	  (ruby-bugs-ja PR#416)
 
 Fri Apr  4 10:53:22 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

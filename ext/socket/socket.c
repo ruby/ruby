@@ -2328,10 +2328,6 @@ sock_s_unpack_sockaddr_in(self, addr)
     VALUE host;
 
     sockaddr = (struct sockaddr_in*)StringValuePtr(addr);
-    if (RSTRING(addr)->len != sizeof(struct sockaddr_in)) {
-	rb_raise(rb_eTypeError, "sockaddr_in size differs - %ld required; %d given",
-		 RSTRING(addr)->len, sizeof(struct sockaddr_in));
-    }
     host = mkipaddr((struct sockaddr*)sockaddr);
     OBJ_INFECT(host, addr);
     return rb_assoc_new(INT2NUM(ntohs(sockaddr->sin_port)), host);

@@ -550,7 +550,7 @@ pack_pack(ary, fmt)
 			char c = byte & 0xff;
 			rb_str_buf_cat(res, &c, 1);
 		    }
-		    len = 1;
+		    len = j;
 		    goto grow;
 		}
 		break;
