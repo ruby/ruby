@@ -240,7 +240,7 @@ extern int isnan(double);
 #define S_ISREG(m)  (((unsigned short)(m) & S_IFMT) == S_IFREG)
 #endif
 
-#ifndef S_IRUSR
+#if !defined S_IRUSR && !defined __MINGW32__
 #define S_IRUSR 0400
 #endif
 #ifndef S_IRGRP
@@ -250,7 +250,7 @@ extern int isnan(double);
 #define S_IROTH 0004
 #endif
 
-#ifndef S_IWUSR
+#if !defined S_IWUSR && !defined __MINGW32__
 #define S_IWUSR 0200
 #endif
 #ifndef S_IWGRP
@@ -260,7 +260,7 @@ extern int isnan(double);
 #define S_IWOTH 0002
 #endif
 
-#ifndef S_IXUSR
+#if !defined S_IXUSR && !defined __MINGW32__
 #define S_IXUSR 0100
 #endif
 #ifndef S_IXGRP
