@@ -289,6 +289,7 @@ VALUE rb_obj_is_kind_of _((VALUE, VALUE));
 VALUE rb_obj_alloc _((VALUE));
 VALUE rb_obj_clone _((VALUE));
 VALUE rb_obj_dup _((VALUE));
+VALUE rb_obj_init_copy _((VALUE,VALUE));
 VALUE rb_obj_taint _((VALUE));
 VALUE rb_obj_tainted _((VALUE));
 VALUE rb_obj_untaint _((VALUE));

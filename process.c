@@ -1231,13 +1231,13 @@ proc_getgroups(VALUE obj)
 {
 #ifdef HAVE_GETGROUPS
     VALUE ary;
-    size_t ngroups = 32;
+    size_t ngroups;
     gid_t *groups;
     int i;
 
     groups = ALLOCA_N(gid_t, maxgroups);
 
-    ngroups = getgroups(ngroups, groups);
+    ngroups = getgroups(maxgroups, groups);
     if (ngroups == -1)
         rb_sys_fail(0);
 
@@ -1312,7 +1312,7 @@ static VALUE
 proc_setmaxgroups(obj, val)
     VALUE obj;
 {
-    size_t  ngroups = INT2FIX(val);
+    size_t  ngroups = FIX2INT(val);
 
     if (ngroups > 4096)
          ngroups = 4096;

@@ -126,13 +126,7 @@
 #	column_vectors
 #	    array of column vectors
 #	to_a
-#	    converts each element to Array
-#	to_f
-#	    converts each element to Float
-#	to_i
-#	    converts each element to Integer
-#	to_r
-#	    converts each element to Rational
+#	    converts to Array of Arrays
 #   PRINTING:
 #	to_s
 #	    returns string representation
@@ -163,9 +157,6 @@
 #   CONVERTING:
 #	covector
 #	to_a
-#	to_f
-#	to_i
-#	to_r
 #	coerce(other)
 #   PRINTING:
 #	to_s
@@ -936,27 +927,6 @@ class Matrix
     @rows.collect{|row| row.collect{|e| e}}
   end
   
-  #
-  # Applies #to_f to all elements to return a new matrix.
-  #
-  def to_f
-    collect{|e| e.to_f}
-  end
-  
-  #
-  # Applies #to_i to all elements to return a new matrix.
-  #
-  def to_i
-    collect{|e| e.to_i}
-  end
-  
-  #
-  # Applies #to_r to all elements to return a new matrix.
-  #
-  def to_r
-    collect{|e| e.to_r}
-  end
-  
   #--
   # PRINTING -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   #++
@@ -1312,27 +1282,6 @@ class Vector
   #
   def to_a
     @elements.dup
-  end
-  
-  #
-  # Applies #to_f to each element to produce a new vector.
-  #
-  def to_f
-    collect{|e| e.to_f}
-  end
-  
-  #
-  # Applies #to_i to each element to produce a new vector.
-  #
-  def to_i
-    collect{|e| e.to_i}
-  end
-  
-  #
-  # Applies #to_f to each element to produce a new vector.
-  #
-  def to_r
-    collect{|e| e.to_r}
   end
   
   #

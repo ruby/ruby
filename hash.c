@@ -1019,10 +1019,11 @@ env_delete(obj, name)
 
 	ruby_setenv(nam, 0);
 #ifdef ENV_IGNORECASE
-	if (strcasecmp(nam, PATH_ENV) == 0) {
+	if (strcasecmp(nam, PATH_ENV) == 0)
 #else
-	if (strcmp(nam, PATH_ENV) == 0) {
+	if (strcmp(nam, PATH_ENV) == 0)
 #endif
+	{
 	    path_tainted = 0;
 	}
 	return value;
