@@ -46,11 +46,17 @@ end
 
 parse_args()
 
-include FileUtils::Verbose
+include FileUtils
 include FileUtils::NoWrite if $dryrun
 @fileutils_output = STDOUT
 @fileutils_label = ''
 alias makelink ln_sf
+class << self
+  body = proc {|*args|super(*args<<:verbose)}
+  for func in [:install, :makedirs, :makelink]
+    define_method(func, body)
+  end
+end
 
 exeext = CONFIG["EXEEXT"]
 

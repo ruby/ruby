@@ -776,17 +776,16 @@ module FileUtils
     @fileutils_label   = 'fileutils.'
     @fileutils_verbose = true
 
+    body = proc do |*args|
+      unless defined? @fileutils_verbose
+        @fileutils_verbose = true
+      end
+      args.push :verbose if @fileutils_verbose
+      super(*args)
+    end
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include? 'verbose'
-      module_eval(<<-End, __FILE__, __LINE__ + 1)
-          def #{name}( *args )
-            unless defined? @fileutils_verbose
-              @fileutils_verbose = true
-            end
-            args.push :verbose if @fileutils_verbose
-            super(*args)
-          end
-      End
+      define_method(name, body)
     end
 
     extend self
@@ -807,17 +806,16 @@ module FileUtils
     @fileutils_label   = 'fileutils.'
     @fileutils_nowrite = true
 
+    body = proc do |*args|
+      unless defined? @fileutils_nowrite
+        @fileutils_nowrite = true
+      end
+      args.push :noop if @fileutils_nowrite
+      super(*args)
+    end
     FileUtils::OPT_TABLE.each do |name, opts|
       next unless opts.include? 'noop'
-      module_eval(<<-End, __FILE__, __LINE__ + 1)
-          def #{name}( *args )
-            unless defined? @fileutils_nowrite
-              @fileutils_nowrite = true
-            end
-            args.push :noop if @fileutils_nowrite
-            super(*args)
-          end
-      End
+      define_method(name, body)
     end
 
     extend self
