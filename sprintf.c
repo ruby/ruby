@@ -25,31 +25,30 @@ remove_sign_bits(str, base)
     char *str;
     int base;
 {
-    char *s, *t, *end;
-    unsigned long len;
+    char *s, *t;
     
     s = t = str;
-    len = strlen(str);
-    end = str + len;
 
     if (base == 16) {
-	while (t<end && *t == 'f') {
+	while (*t == 'f') {
 	    t++;
 	}
     }
     else if (base == 8) {
 	if (*t == '3') t++;
-	while (t<end && *t == '7') {
+	while (*t == '7') {
 	    t++;
 	}
     }
     else if (base == 2) {
-	while (t<end && *t == '1') {
+	while (*t == '1') {
 	    t++;
 	}
     }
-    while (*t) *s++ = *t++;
-    *s = '\0';
+    if (t > s) {
+	while (*t) *s++ = *t++;
+	*s = '\0';
+    }
 
     return str;
 }
@@ -57,7 +56,7 @@ remove_sign_bits(str, base)
 static char
 sign_bits(base, p)
     int base;
-    char *p;
+    const char *p;
 {
     char c = '.';
 
@@ -234,7 +233,8 @@ rb_f_sprintf(argc, argv)
     VALUE *argv;
 {
     VALUE fmt;
-    char *buf, *p, *end;
+    const char *p, *end;
+    char *buf;
     int blen, bsiz;
     VALUE result;
 
@@ -257,7 +257,7 @@ rb_f_sprintf(argc, argv)
     buf = RSTRING(result)->ptr;
 
     for (; p < end; p++) {
-	char *t;
+	const char *t;
 	int n;
 
 	for (t = p; t < end && *t != '%'; t++) ;
@@ -549,7 +549,7 @@ rb_f_sprintf(argc, argv)
 				s += 2;
 			    }
 			}
-			sprintf(fbuf, "%%l%c", *p);
+			sprintf(fbuf, "%%l%c", *p == 'X' ? 'x' : *p);
 			sprintf(s, fbuf, v);
 			if (v < 0) {
 			    char d = 0;

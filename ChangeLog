@@ -1,3 +1,7 @@
+Sun Jul 18 08:13:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): remove extra sign digit.
+
 Sun Jul 18 03:19:14 2004  Akinori MUSHA  <knu@iDaemons.org>
 
 	* dir.c (bracket): use NULL instead of 0.
