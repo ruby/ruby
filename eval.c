@@ -1493,7 +1493,7 @@ localjump_error(mesg, value, reason)
     int reason;
 {
     VALUE exc = rb_exc_new2(rb_eLocalJumpError, mesg);
-    VALUE id;
+    ID id;
 
     rb_iv_set(exc, "@exit_value", value);
     switch (reason) {
@@ -3494,7 +3494,6 @@ rb_eval(self, n)
 		}
 	    }
 	    defn = copy_node_scope(node->nd_defn, ruby_cref);
-	    defn->nd_rval = (VALUE)ruby_cref;
 	    rb_add_method(klass, node->nd_mid, defn, 
 			  NOEX_PUBLIC|(body?body->nd_noex&NOEX_UNDEF:0));
 	    result = Qnil;
@@ -4077,7 +4076,6 @@ rb_yield_0(val, self, klass, flags, avalue)
     struct FRAME frame;
     NODE *cnode = ruby_current_node;
     int state;
-    static unsigned serial = 1;
 
     if (!rb_block_given_p()) {
 	localjump_error("no block given", Qnil, 0);
@@ -4164,15 +4162,13 @@ rb_yield_0(val, self, klass, flags, avalue)
 	POP_TAG();
 	if (state) goto pop_state;
     }
+    if (!node) goto pop_state;
 
     PUSH_ITER(block->iter);
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
       redo:
-	if (!node) {
-	    result = Qnil;
-	}
-	else if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
+	if (nd_type(node) == NODE_CFUNC || nd_type(node) == NODE_IFUNC) {
 	    if (node->nd_state == YIELD_FUNC_AVALUE) {
 		if (!avalue) {
 		    val = svalue_to_avalue(val);
@@ -6454,6 +6450,7 @@ call_end_proc(data)
     PUSH_ITER(ITER_NOT);
     PUSH_FRAME();
     ruby_frame->self = ruby_frame->prev->self;
+    ruby_frame->node = 0;
     ruby_frame->last_func = 0;
     ruby_frame->last_class = 0;
     proc_invoke(data, rb_ary_new2(0), Qundef, 0);
@@ -7045,6 +7042,7 @@ proc_invoke(proc, args, self, klass)
 
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
+    ruby_current_node = data->body;
     PUSH_TAG((pcall || orphan) ? PROT_PCALL : PROT_CALL);
     state = EXEC_TAG();
     if (state == 0) {
@@ -8199,7 +8197,7 @@ rb_thread_check(data)
     return (rb_thread_t)RDATA(data)->data;
 }
 
-static VALUE rb_thread_raise _((int, VALUE*, volatile rb_thread_t));
+static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
 
 static int   th_raise_argc;
 static VALUE th_raise_argv[2];
@@ -9401,14 +9399,13 @@ rb_thread_stop_timer()
 #endif
 
 static VALUE
-rb_thread_start_0(fn, arg, th_arg)
+rb_thread_start_0(fn, arg, th)
     VALUE (*fn)();
     void *arg;
-    rb_thread_t th_arg;
+    rb_thread_t th;
 {
-    volatile rb_thread_t th = th_arg;
-    volatile VALUE thread = th->thread;
-    volatile struct BLOCK* saved_block = 0;
+    volatile rb_thread_t th_save = th;
+    struct BLOCK *volatile saved_block = 0, *block;
     enum thread_status status;
     int state;
 
@@ -9431,7 +9428,7 @@ rb_thread_start_0(fn, arg, th_arg)
 #endif
 
     if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	return thread;
+	return th_save->thread;
     }
 
     if (ruby_block) {		/* should nail down higher blocks */
@@ -9460,18 +9457,22 @@ rb_thread_start_0(fn, arg, th_arg)
 	    th->result = (*fn)(arg, th);
 	}
     }
+    else if (TAG_DST()) {
+	th->result = prot_tag->retval;
+    }
+    th = th_save;
     POP_TAG();
     status = th->status;
 
     if (th == main_thread) ruby_stop(state);
     rb_thread_remove(th);
 
-    while (saved_block) {
-	volatile struct BLOCK *tmp = saved_block;
+    for (block = saved_block; block;) {
+	struct BLOCK *tmp = block;
 
 	if (tmp->frame.argc > 0)
 	    free(tmp->frame.argv);
-	saved_block = tmp->prev;
+	block = tmp->prev;
 	free((void*)tmp);
     }
 
@@ -9764,8 +9765,10 @@ static VALUE
 rb_thread_raise(argc, argv, th)
     int argc;
     VALUE *argv;
-    volatile rb_thread_t th;
+    rb_thread_t th;
 {
+    volatile rb_thread_t th_save = th;
+
     if (rb_thread_dead(th)) return Qnil;
     if (curr_thread == th) {
 	rb_f_raise(argc, argv);
@@ -9773,7 +9776,7 @@ rb_thread_raise(argc, argv, th)
 
     if (!rb_thread_dead(curr_thread)) {
 	if (THREAD_SAVE_CONTEXT(curr_thread)) {
-	    return th->thread;
+	    return th_save->thread;
 	}
     }
 
@@ -9936,7 +9939,8 @@ rb_callcc(self)
     VALUE self;
 {
     volatile VALUE cont;
-    volatile rb_thread_t th;
+    rb_thread_t th;
+    volatile rb_thread_t th_save;
     struct tag *tag;
     struct RVarmap *vars;
 
@@ -9954,8 +9958,9 @@ rb_callcc(self)
 	FL_SET(vars, DVAR_DONT_RECYCLE);
     }
 
+    th_save = th;
     if (THREAD_SAVE_CONTEXT(th)) {
-	return th->result;
+	return th_save->result;
     }
     else {
 	return rb_yield(cont);

@@ -1,3 +1,26 @@
+Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (localjump_error): id should be ID.
+
+	* eval.c (rb_eval): nd_rval is set in copy_node_scope().
+
+	* eval.c (rb_yield_0): unused variable.
+
+	* eval.c (rb_yield_0): nothing to do for empty node.
+
+Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (call_end_proc, proc_invoke): adjust backtrace in END.
+	  [ruby-dev:21551]
+
+Thu Oct  9 06:43:33 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_start_0): set the value by break as the result.
+	  [ruby-dev:21552]
+
+	* eval.c (rb_thread_start_0, rb_thread_raise, rb_callcc): save
+	  variables across THREAD_SAVE_CONTEXT.
+
 Wed Oct  8 22:19:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit.rb: removed installation instructions.
@@ -13,7 +36,7 @@ Wed Oct  8 22:19:00 2003  Nathaniel Talbott  <ntalbott@ruby-lang.org>
 
 	* lib/test/unit/collector/objectspace.rb: extracted common test
 	  collection functionality in to a module.
-	  
+
 	* lib/test/unit/collector.rb: ditto; added.
 
 	* test/testunit/collector/test_objectspace.rb: ditto.
