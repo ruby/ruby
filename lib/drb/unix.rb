@@ -29,6 +29,7 @@ module DRb
       filename, option = parse_uri(uri)
       if filename.size == 0
 	soc = temp_server
+        filename = soc.path
 	uri = 'drbunix:' + soc.path
       else
 	soc = UNIXServer.open(filename)
