@@ -5599,14 +5599,16 @@ rb_provide(feature)
     rb_provide_feature(rb_str_new2(feature));
 }
 
+NORETURN(static void load_failed _((VALUE)));
+static VALUE load_dyna _((VALUE, VALUE));
+static VALUE load_rb _((VALUE, VALUE));
+
 VALUE
 rb_f_require(obj, fname)
     VALUE obj, fname;
 {
     VALUE feature, tmp;
-    char *ext, *ftptr; /* OK */
-    int state;
-    volatile int safe = ruby_safe_level;
+    char *ext; /* OK */
 
     SafeStringValue(fname);
     ext = strrchr(RSTRING(fname)->ptr, '.');
@@ -5616,48 +5618,40 @@ rb_f_require(obj, fname)
 	    feature = rb_str_dup(fname);
 	    tmp = rb_find_file(fname);
 	    if (tmp) {
-		fname = tmp;
-		goto load_rb;
+		return load_rb(feature, tmp);
 	    }
-	    goto not_found;
+	    load_failed(fname);
 	}
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
 	    tmp = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
 #ifdef DLEXT2
 	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
-		feature = tmp;
-		fname = rb_find_file(tmp);
-		goto load_dyna;
+		return load_dyna(tmp, rb_find_file(tmp));
 	    }
 #else
 	    feature = tmp;
 	    rb_str_cat2(tmp, DLEXT);
 	    tmp = rb_find_file(tmp);
 	    if (tmp) {
-		fname = tmp;
-		goto load_dyna;
+		return load_dyna(feature, tmp);
 	    }
 #endif
-	    goto not_found;
+	    load_failed(fname);
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
 	    tmp = rb_find_file(fname);
 	    if (tmp) {
-		feature = fname;
-		fname = tmp;
-		goto load_dyna;
+		return load_dyna(fname, tmp);
 	    }
-	    goto not_found;
+	    load_failed(fname);
 	}
 #ifdef DLEXT2
 	else if (strcmp(DLEXT2, ext) == 0) {
 	    tmp = rb_find_file(fname);
 	    if (tmp) {
-		feature = fname;
-		fname = tmp;
-		goto load_dyna;
+		return load_dyna(fname, tmp);
 	    }
-	    goto not_found;
+	    load_failed(fname);
 	}
 #endif
     }
@@ -5667,20 +5661,29 @@ rb_f_require(obj, fname)
 	break;
 
       case 1:
-	feature = fname = tmp;
-	goto load_rb;
+	return load_rb(tmp, tmp);
 
       default:
-	feature = tmp;
-	fname = rb_find_file(tmp);
-	goto load_dyna;
+	return load_dyna(tmp, rb_find_file(tmp));
     }
-    if (rb_feature_p(RSTRING(fname)->ptr, Qfalse))
-	return Qfalse;
-  not_found:
-    rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
+    if (!rb_feature_p(RSTRING(fname)->ptr, Qfalse))
+	load_failed(fname);
+    return Qfalse;
+}
 
-  load_dyna:
+static void
+load_failed(fname)
+    VALUE fname;
+{
+    rb_raise(rb_eLoadError, "No such file to load -- %s", RSTRING(fname)->ptr);
+}
+
+static VALUE
+load_dyna(feature, fname)
+    VALUE feature, fname;
+{
+    int state;
+
     if (rb_feature_p(RSTRING(feature)->ptr, Qfalse))
 	return Qfalse;
     rb_provide_feature(feature);
@@ -5710,8 +5713,16 @@ rb_f_require(obj, fname)
     if (state) JUMP_TAG(state);
 
     return Qtrue;
+}
 
-  load_rb:
+static VALUE
+load_rb(feature, fname)
+    VALUE feature, fname;
+{
+    int state;
+    char *ftptr;
+    volatile int safe = ruby_safe_level;
+
     if (rb_feature_p(RSTRING(feature)->ptr, Qtrue))
 	return Qfalse;
     ruby_safe_level = 0;
