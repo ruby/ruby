@@ -221,7 +221,7 @@ def install_files(mfile, ifiles, map = INSTALL_DIRS, srcprefix = nil)
 end
 
 def install_rb(mfile, dest, srcdir = nil)
-  install_files(mfile, [["lib/**/*.rb", dest, "lib"]], INSTALL_DIRS, srcdir)
+  install_files(mfile, [["lib/**/*.rb", dest, "lib"]], nil, srcdir)
 end
 
 def append_library(libs, lib)
