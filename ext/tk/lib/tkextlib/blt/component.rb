@@ -58,8 +58,9 @@ module Tk::BLT
 
     def __item_config_cmd(id)
       if id.kind_of?(Array)
-        # id := [ type, name ]
-        [self.path, id[0], 'configure', id[1]]
+        # id := [ type, name, ... ]
+        type, *names = id
+        [self.path, type, 'configure'].concat(names)
       else
         [self.path, id, 'configure']
       end
@@ -75,29 +76,36 @@ module Tk::BLT
     private :__item_pathname
 
     def axis_cget(id, option)
-      ret = itemcget(['axis', id], option)
+      ret = itemcget(['axis', tagid(id)], option)
     end
-    def axis_configure(id, slot, value=None)
+    def axis_configure(*args)
+      slot = args.pop
       if slot.kind_of?(Hash)
+        value = None
         slot = _symbolkey2str(slot)
         if cmd = slot.delete('command')
           slot['command'] = proc{|w, tick| 
             cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
           }
         end
-      elsif slot == :command || slot == 'command'
-        cmd = value
-        value = proc{|w, tick| 
-          cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
-        }
+      else
+        value = slot
+        slot = args.pop
+        if slot == :command || slot == 'command'
+          cmd = value
+          value = proc{|w, tick| 
+            cmd.call(TkComm.window(w), TkComm.num_or_str(tick))
+          }
+        end
       end
-      itemconfigure(['axis', id], slot, value)
+      id_list = args.flatten.collect!{|id| tagid(id)}.unshift('axis')
+      itemconfigure(id_list, slot, value)
     end
     def axis_configinfo(id, slot=nil)
-      itemconfiginfo(['axis', id], slot)
+      itemconfiginfo(['axis', tagid(id)], slot)
     end
     def current_axis_configinfo(id, slot=nil)
-      current_itemconfiginfo(['axis', id], slot)
+      current_itemconfiginfo(['axis', tagid(id)], slot)
     end
 
     def crosshairs_cget(option)
@@ -114,42 +122,66 @@ module Tk::BLT
     end
 
     def element_cget(id, option)
-      itemcget(['element', id], option)
+      itemcget(['element', tagid(id)], option)
     end
-    def element_configure(id, slot, value=None)
-      itemconfigure(['element', id], slot, value)
+    def element_configure(*args)
+      slot = args.pop
+      if slot.kind_of?(Hash)
+        value = None
+      else
+        value = slot
+        slot = args.pop
+      end
+      id_list = args.flatten.collect!{|id| tagid(id)}.unshift('element')
+      itemconfigure(id_list, slot, value)
     end
     def element_configinfo(id, slot=nil)
-      itemconfiginfo(['element', id], slot)
+      itemconfiginfo(['element', tagid(id)], slot)
     end
     def current_element_configinfo(id, slot=nil)
-      current_itemconfiginfo(['element', id], slot)
+      current_itemconfiginfo(['element', tagid(id)], slot)
     end
 
     def bar_cget(id, option)
-      itemcget(['bar', id], option)
+      itemcget(['bar', tagid(id)], option)
     end
-    def bar_configure(id, slot, value=None)
-      itemconfigure(['bar', id], slot, value)
+    def bar_configure(*args)
+      slot = args.pop
+      if slot.kind_of?(Hash)
+        value = None
+      else
+        value = slot
+        slot = args.pop
+      end
+      id_list = args.flatten.collect!{|id| tagid(id)}.unshift('bar')
+      itemconfigure(id_list, slot, value)
     end
     def bar_configinfo(id, slot=nil)
-      itemconfiginfo(['bar', id], slot)
+      itemconfiginfo(['bar', tagid(id)], slot)
     end
     def current_bar_configinfo(id, slot=nil)
-      current_itemconfiginfo(['bar', id], slot)
+      current_itemconfiginfo(['bar', tagid(id)], slot)
     end
 
     def line_cget(id, option)
-      itemcget(['line', id], option)
+      itemcget(['line', tagid(id)], option)
     end
-    def line_configure(id, slot, value=None)
-      itemconfigure(['line', id], slot, value)
+    def line_configure(*args)
+      slot = args.pop
+      if slot.kind_of?(Hash)
+        value = None
+      else
+        value = slot
+        slot = args.pop
+      end
+      id_list = args.flatten.collect!{|id| tagid(id)}.unshift('line')
+      itemconfigure(id_list, slot, value)
     end
     def line_configinfo(id, slot=nil)
-      itemconfiginfo(['line', id], slot)
+      itemconfiginfo(['line', tagid(id)], slot)
     end
     def current_line_configinfo(id, slot=nil)
-      current_itemconfiginfo(['line', id], slot)
+      current_itemconfiginfo(['line', tagid(id)], slot)
     end
 
     def gridline_cget(option)
@@ -179,16 +211,24 @@ module Tk::BLT
     end
 
     def pen_cget(id, option)
-      itemcget(['pen', id], option)
+      itemcget(['pen', tagid(id)], option)
     end
-    def pen_configure(id, slot, value=None)
-      itemconfigure(['pen', id], slot, value)
+    def pen_configure(*args)
+      slot = args.pop
+      if slot.kind_of?(Hash)
+        value = None
+      else
+        value = slot
+        slot = args.pop
+      end
+      id_list = args.flatten.collect!{|id| tagid(id)}.unshift('pen')
+      itemconfigure(id_list, slot, value)
     end
     def pen_configinfo(id, slot=nil)
-      itemconfiginfo(['pen', id], slot)
+      itemconfiginfo(['pen', tagid(id)], slot)
     end
     def current_pen_configinfo(id, slot=nil)
-      current_itemconfiginfo(['pen', id], slot)
+      current_itemconfiginfo(['pen', tagid(id)], slot)
     end
 
     def postscript_cget(option)
@@ -205,16 +245,24 @@ module Tk::BLT
     end
 
     def marker_cget(id, option)
-      itemcget(['marker', id], option)
+      itemcget(['marker', tagid(id)], option)
     end
-    def marker_configure(id, slot, value=None)
-      itemconfigure(['marker', id], slot, value)
+    def marker_configure(*args)
+      slot = args.pop
+      if slot.kind_of?(Hash)
+        value = None
+      else
+        value = slot
+        slot = args.pop
+      end
+      id_list = args.flatten.collect!{|id| tagid(id)}.unshift('marker')
+      itemconfigure(id_list, slot, value)
     end
     def marker_configinfo(id, slot=nil)
-      itemconfiginfo(['marker', id], slot)
+      itemconfiginfo(['marker', tagid(id)], slot)
     end
     def current_marker_configinfo(id, slot=nil)
-      current_itemconfiginfo(['marker', id], slot)
+      current_itemconfiginfo(['marker', tagid(id)], slot)
     end
 
     alias __itemcget itemcget
@@ -223,7 +271,7 @@ module Tk::BLT
     private :__itemcget, :__itemconfiginfo, :__current_itemconfiginfo
 
     def itemcget(tagOrId, option)
-      ret = __itemcget(tagOrId, option)
+      ret = __itemcget(tagid(tagOrId), option)
       if option == 'bindtags' || option == :bindtags
         ret.collect{|tag| TkBindTag.id2obj(tag)}
       else
@@ -231,7 +279,7 @@ module Tk::BLT
       end
     end
     def itemconfiginfo(tagOrId, slot = nil)
-      ret = __itemconfiginfo(tagOrId, slot)
+      ret = __itemconfiginfo(tagid(tagOrId), slot)
 
       if TkComm::GET_CONFIGINFO_AS_ARRAY
         if slot
@@ -240,9 +288,10 @@ module Tk::BLT
             ret[-1] = ret[-1].collect{|tag| TkBindTag.id2obj(tag)}
           end
         else
-          inf = ret.assoc('bindtags')
-          inf[-2] = inf[-2].collect{|tag| TkBindTag.id2obj(tag)}
-          inf[-1] = inf[-1].collect{|tag| TkBindTag.id2obj(tag)}
+          if (inf = ret.assoc('bindtags'))
+            inf[-2] = inf[-2].collect{|tag| TkBindTag.id2obj(tag)}
+            inf[-1] = inf[-1].collect{|tag| TkBindTag.id2obj(tag)}
+          end
         end
 
       else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
@@ -256,7 +305,7 @@ module Tk::BLT
       ret
     end
     def current_itemconfiginfo(tagOrId, slot = nil)
-      ret = __current_itemconfiginfo(tagOrId, slot)
+      ret = __current_itemconfiginfo(tagid(tagOrId), slot)
 
       if (val = ret['bindtags'])
         ret['bindtags'] = val.collect{|tag| TkBindTag.id2obj(tag)}
@@ -1110,7 +1159,7 @@ module Tk::BLT
 
     def axis_create(id=nil, keys={})
       # tk_send('axis', 'create', tagid(id), keys)
-      Tk::BLT::PlotComponent::Axis.new(self, id, keys)
+      Tk::BLT::PlotComponent::Axis.new(self, tagid(id), keys)
     end
     def axis_delete(*ids)
       tk_send('axis', 'delete', *(ids.collect{|id| tagid(id)}))
@@ -1123,7 +1172,8 @@ module Tk::BLT
       list(tk_send('axis', 'limits', tagid(id)))
     end
     def axis_names(*pats)
-      simplelist(tk_send('axis', 'names', *pats)).collect{|axis|
+      simplelist(tk_send('axis', 'names', 
+                         *(pats.collect{|pat| tagid(pat)}))).collect{|axis|
         Tk::BLT::PlotComponent::Axis.id2obj(self, axis)
       }
     end
@@ -1164,19 +1214,27 @@ module Tk::BLT
 
     def element_create(id=nil, keys={})
       # tk_send('element', 'create', tagid(id), keys)
-      Tk::BLT::PlotComponent::Element.new(self, id, keys)
+      Tk::BLT::PlotComponent::Element.new(self, tagid(id), keys)
     end
-    def element_activate(id, *indices)
-      tk_send('element', 'activate', tagid(id), *indices)
-      self
+    def element_activate(*args)
+      if args.empty?
+        list(tk_send('element', 'activate')).collect{|elem|
+          Tk::BLT::PlotComponent::Element.id2obj(self, elem)
+        }
+      else
+        # id, *indices
+        id = args.shift
+        tk_send('element', 'activate', tagid(id), *args)
+      end
     end
     def element_closest(x, y, var, *args)
       if args[-1].kind_of?(Hash)
         keys = args.pop
-        bool(tk_send('element', 'activate', x, y, var, 
-                     *(hash_kv(keys).concat(args))))
+        bool(tk_send('element', 'closest', x, y, var, 
+                     *(hash_kv(keys).concat(args.collect{|id| tagid(id)}))))
       else
-        bool(tk_send('element', 'activate', x, y, var, *args))
+        bool(tk_send('element', 'closest', x, y, var, 
+                     *(args.collect{|id| tagid(id)})))
       end
     end
     def element_deactivate(*ids)
@@ -1191,7 +1249,8 @@ module Tk::BLT
       bool(tk_send('element', 'exists', tagid(id)))
     end
     def element_names(*pats)
-      simplelist(tk_send('element', 'names', *pats)).collect{|elem|
+      simplelist(tk_send('element', 'names', 
+                         *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
         Tk::BLT::PlotComponent::Element.id2obj(self, elem)
       }
     end
@@ -1199,7 +1258,7 @@ module Tk::BLT
       if names.empty?
         simplelist(tk_send('element', 'show'))
       else
-        tk_send('element', 'show', *names)
+        tk_send('element', 'show', *(names.collect{|n| tagid(n)}))
         self
       end
     end
@@ -1211,20 +1270,28 @@ module Tk::BLT
 
     def bar_create(id=nil, keys={})
       # tk_send('bar', 'create', tagid(id), keys)
-      Tk::BLT::PlotComponent::Bar.new(self, id, keys)
+      Tk::BLT::PlotComponent::Bar.new(self, tagid(id), keys)
     end
     alias bar bar_create
-    def bar_activate(id, *indices)
-      tk_send('bar', 'activate', tagid(id), *indices)
-      self
+    def bar_activate(*args)
+      if args.empty?
+        list(tk_send('bar', 'activate')).collect{|elem|
+          Tk::BLT::PlotComponent::Element.id2obj(self, elem)
+        }
+      else
+        # id, *indices
+        id = args.shift
+        tk_send('bar', 'activate', tagid(id), *args)
+      end
     end
     def bar_closest(x, y, var, *args)
       if args[-1].kind_of?(Hash)
         keys = args.pop
-        bool(tk_send('bar', 'activate', x, y, var, 
-                     *(hash_kv(keys).concat(args))))
+        bool(tk_send('bar', 'closest', x, y, var, 
+                     *(hash_kv(keys).concat(args.collect{|id| tagid(id)}))))
       else
-        bool(tk_send('bar', 'activate', x, y, var, *args))
+        bool(tk_send('bar', 'closest', x, y, var, 
+                     *(args.collect{|id| tagid(id)})))
       end
     end
     def bar_deactivate(*ids)
@@ -1239,7 +1306,8 @@ module Tk::BLT
       bool(tk_send('bar', 'exists', tagid(id)))
     end
     def bar_names(*pats)
-      simplelist(tk_send('bar', 'names', *pats)).collect{|elem|
+      simplelist(tk_send('bar', 'names', 
+                         *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
         Tk::BLT::PlotComponent::Element.id2obj(self, elem)
       }
     end
@@ -1247,7 +1315,7 @@ module Tk::BLT
       if names.empty?
         simplelist(tk_send('bar', 'show'))
       else
-        tk_send('bar', 'show', *names)
+        tk_send('bar', 'show', *(names.collect{|n| tagid(n)}))
         self
       end
     end
@@ -1259,20 +1327,28 @@ module Tk::BLT
 
     def line_create(id=nil, keys={})
       # tk_send('line', 'create', tagid(id), keys)
-      Tk::BLT::PlotComponent::Line.new(self, id, keys)
+      Tk::BLT::PlotComponent::Line.new(self, tagid(id), keys)
     end
     alias bar line_create
-    def line_activate(id, *indices)
-      tk_send('line', 'activate', tagid(id), *indices)
-      self
+    def line_activate(*args)
+      if args.empty?
+        list(tk_send('line', 'activate')).collect{|elem|
+          Tk::BLT::PlotComponent::Element.id2obj(self, elem)
+        }
+      else
+        # id, *indices
+        id = args.shift
+        tk_send('line', 'activate', tagid(id), *args)
+      end
     end
     def line_closest(x, y, var, *args)
       if args[-1].kind_of?(Hash)
         keys = args.pop
-        bool(tk_send('line', 'activate', x, y, var, 
-                     *(hash_kv(keys).concat(args))))
+        bool(tk_send('line', 'closest', x, y, var, 
+                     *(hash_kv(keys).concat(args.collect{|id| tagid(id)}))))
       else
-        bool(tk_send('line', 'activate', x, y, var, *args))
+        bool(tk_send('line', 'closest', x, y, var, 
+                     *(args.collect{|id| tagid(id)})))
       end
     end
     def line_deactivate(*ids)
@@ -1287,7 +1363,8 @@ module Tk::BLT
       bool(tk_send('line', 'exists', tagid(id)))
     end
     def line_names(*pats)
-      simplelist(tk_send('line', 'names', *pats)).collect{|elem|
+      simplelist(tk_send('line', 'names', 
+                         *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
         Tk::BLT::PlotComponent::Element.id2obj(self, elem)
       }
     end
@@ -1295,7 +1372,7 @@ module Tk::BLT
       if names.empty?
         simplelist(tk_send('line', 'show'))
       else
-        tk_send('line', 'show', *names)
+        tk_send('line', 'show', *(names.collect{|n| tagid(n)}))
         self
       end
     end
@@ -1321,12 +1398,16 @@ module Tk::BLT
     ###################
 
     def legend_activate(*pats)
-      tk_send('legend', 'activate', *pats)
-      self
+      list(tk_send('legend', 'activate', 
+                   *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
+        Tk::BLT::PlotComponent::Element.id2obj(self, elem)
+      }
     end
     def legend_deactivate(*pats)
-      tk_send('legend', 'deactivate', *pats)
-      self
+      list(tk_send('legend', 'deactivate', 
+                   *(pats.collect{|pat| tagid(pat)}))).collect{|elem|
+        Tk::BLT::PlotComponent::Element.id2obj(self, elem)
+      }
     end
     def legend_get(pos, y=nil)
       if y
@@ -1343,14 +1424,15 @@ module Tk::BLT
 
     def pen_create(id=nil, keys={})
       # tk_send('pen', 'create', tagid(id), keys)
-      Tk::BLT::PlotComponent::Pen.new(self, id, keys)
+      Tk::BLT::PlotComponent::Pen.new(self, tagid(id), keys)
     end
     def pen_delete(*ids)
       tk_send('pen', 'delete', *(ids.collect{|id| tagid(id)}))
       self
     end
     def pen_names(*pats)
-      simplelist(tk_send('pen', 'names', *pats)).collect{|pen|
+      simplelist(tk_send('pen', 'names', 
+                         *(pats.collect{|pat| tagid(pat)}))).collect{|pen|
         Tk::BLT::PlotComponent::Pen.id2obj(self, pen)
       }
     end
@@ -1419,7 +1501,8 @@ module Tk::BLT
       bool(tk_send('marker', 'exists', tagid(id)))
     end
     def marker_names(*pats)
-      simplelist(tk_send('marker', 'names', *pats)).collect{|id|
+      simplelist(tk_send('marker', 'names', 
+                         *(pats.collect{|pat| tagid(pat)}))).collect{|id|
         Tk::BLT::PlotComponent::Marker.id2obj(self, id)
       }
     end

@@ -1,3 +1,10 @@
+2005-04-01  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/blt/component.rb: bug fix on treatment of
+	  component objects.
+
+	* sample/tkextlib/blt/graph6.rb: a new sample script. 
+
 2005-03-31  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* sample/tkextlib/iwidgets/sample/hierarchy.rb: show basename
