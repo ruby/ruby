@@ -146,7 +146,6 @@ struct parser_params {
     char *parser_lex_pend;
     int parser_heredoc_end;
     int parser_command_start;
-    /*VALUE parser_ruby_debug_lines;*/
     int parser_lex_gets_ptr;
     VALUE (*parser_lex_gets) _((struct parser_params*,VALUE));
     struct local_vars *parser_lvtbl;
@@ -190,7 +189,6 @@ static int parser_yyerror _((struct parser_params*, const char*));
 #define lex_pend		(parser->parser_lex_pend)
 #define heredoc_end		(parser->parser_heredoc_end)
 #define command_start		(parser->parser_command_start)
-/*#define ruby_debug_lines	(parser->parser_ruby_debug_lines)*/
 #define lex_gets_ptr		(parser->parser_lex_gets_ptr)
 #define lex_gets		(parser->parser_lex_gets)
 #define lvtbl			(parser->parser_lvtbl)
@@ -365,9 +363,9 @@ static VALUE ripper_id2sym _((ID));
 #endif /* RIPPER */
 
 #ifndef RIPPER
-#define symbol(id) id
+# define ifndef_ripper(x) x
 #else
-#define symbol(id) ripper_id2sym(id)
+# define ifndef_ripper(x)
 #endif
 
 #ifndef RIPPER
@@ -1544,32 +1542,32 @@ undef_list	: fitem
 		    }
 		;
 
-op		: '|'		{ $$ = symbol('|'); }
-		| '^'		{ $$ = symbol('^'); }
-		| '&'		{ $$ = symbol('&'); }
-		| tCMP		{ $$ = symbol(tCMP); }
-		| tEQ		{ $$ = symbol(tEQ); }
-		| tEQQ		{ $$ = symbol(tEQQ); }
-		| tMATCH	{ $$ = symbol(tMATCH); }
-		| '>'		{ $$ = symbol('>'); }
-		| tGEQ		{ $$ = symbol(tGEQ); }
-		| '<'		{ $$ = symbol('<'); }
-		| tLEQ		{ $$ = symbol(tLEQ); }
-		| tLSHFT	{ $$ = symbol(tLSHFT); }
-		| tRSHFT	{ $$ = symbol(tRSHFT); }
-		| '+'		{ $$ = symbol('+'); }
-		| '-'		{ $$ = symbol('-'); }
-		| '*'		{ $$ = symbol('*'); }
-		| tSTAR		{ $$ = symbol('*'); }
-		| '/'		{ $$ = symbol('/'); }
-		| '%'		{ $$ = symbol('%'); }
-		| tPOW		{ $$ = symbol(tPOW); }
-		| '~'		{ $$ = symbol('~'); }
-		| tUPLUS	{ $$ = symbol(tUPLUS); }
-		| tUMINUS	{ $$ = symbol(tUMINUS); }
-		| tAREF		{ $$ = symbol(tAREF); }
-		| tASET		{ $$ = symbol(tASET); }
-		| '`'		{ $$ = symbol('`'); }
+op		: '|'		{ ifndef_ripper($$ = '|'); }
+		| '^'		{ ifndef_ripper($$ = '^'); }
+		| '&'		{ ifndef_ripper($$ = '&'); }
+		| tCMP		{ ifndef_ripper($$ = tCMP); }
+		| tEQ		{ ifndef_ripper($$ = tEQ); }
+		| tEQQ		{ ifndef_ripper($$ = tEQQ); }
+		| tMATCH	{ ifndef_ripper($$ = tMATCH); }
+		| '>'		{ ifndef_ripper($$ = '>'); }
+		| tGEQ		{ ifndef_ripper($$ = tGEQ); }
+		| '<'		{ ifndef_ripper($$ = '<'); }
+		| tLEQ		{ ifndef_ripper($$ = tLEQ); }
+		| tLSHFT	{ ifndef_ripper($$ = tLSHFT); }
+		| tRSHFT	{ ifndef_ripper($$ = tRSHFT); }
+		| '+'		{ ifndef_ripper($$ = '+'); }
+		| '-'		{ ifndef_ripper($$ = '-'); }
+		| '*'		{ ifndef_ripper($$ = '*'); }
+		| tSTAR		{ ifndef_ripper($$ = '*'); }
+		| '/'		{ ifndef_ripper($$ = '/'); }
+		| '%'		{ ifndef_ripper($$ = '%'); }
+		| tPOW		{ ifndef_ripper($$ = tPOW); }
+		| '~'		{ ifndef_ripper($$ = '~'); }
+		| tUPLUS	{ ifndef_ripper($$ = tUPLUS); }
+		| tUMINUS	{ ifndef_ripper($$ = tUMINUS); }
+		| tAREF		{ ifndef_ripper($$ = tAREF); }
+		| tASET		{ ifndef_ripper($$ = tASET); }
+		| '`'		{ ifndef_ripper($$ = '`'); }
 		;
 
 reswords	: k__LINE__ | k__FILE__  | klBEGIN | klEND
@@ -3710,12 +3708,12 @@ variable	: tIDENTIFIER
 		| tGVAR
 		| tCONSTANT
 		| tCVAR
-		| kNIL {$$ = symbol(kNIL);}
-		| kSELF {$$ = symbol(kSELF);}
-		| kTRUE {$$ = symbol(kTRUE);}
-		| kFALSE {$$ = symbol(kFALSE);}
-		| k__FILE__ {$$ = symbol(k__FILE__);}
-		| k__LINE__ {$$ = symbol(k__LINE__);}
+		| kNIL {ifndef_ripper($$ = kNIL);}
+		| kSELF {ifndef_ripper($$ = kSELF);}
+		| kTRUE {ifndef_ripper($$ = kTRUE);}
+		| kFALSE {ifndef_ripper($$ = kFALSE);}
+		| k__FILE__ {ifndef_ripper($$ = k__FILE__);}
+		| k__LINE__ {ifndef_ripper($$ = k__LINE__);}
 		;
 
 var_ref		: variable
@@ -4137,12 +4135,12 @@ operation3	: tIDENTIFIER
 dot_or_colon	: '.'
 		    /*%c%*/
 		    /*%c
-		    { $$ = ripper_id2sym('.'); }
+		    { $$ = $<val>1; }
 		    %*/
 		| tCOLON2
 		    /*%c%*/
 		    /*%c
-		    { $$ = ripper_intern("::"); }
+		    { $$ = $<val>1; }
 		    %*/
 		;
 
@@ -4220,11 +4218,15 @@ static int parser_here_document _((struct parser_params*,NODE*));
 # define set_yylval_num(x) yylval.num = x
 # define set_yylval_id(x)  yylval.id = x
 # define set_yylval_literal(x) yylval.node = NEW_LIT(x)
+# define set_yylval_node(x) yylval.node = x
+# define yylval_id() yylval.id
 #else
-# define set_yylval_str(x) yylval.val = x
-# define set_yylval_num(x) yylval.val = INT2NUM(x)
-# define set_yylval_id(x)  yylval.val = ripper_id2sym(x)
-# define set_yylval_literal(x) yylval.val = x
+# define set_yylval_str(x) x
+# define set_yylval_num(x) x
+# define set_yylval_id(x) x
+# define set_yylval_literal(x) x
+# define set_yylval_node(x) x
+# define yylval_id() SYM2ID(yylval.val)
 #endif
 
 #ifdef RIPPER
@@ -6214,7 +6216,7 @@ parser_yylex(parser)
 	    tokadd(c);
 	    tokfix();
             set_yylval_id(rb_intern(tok()));
-	    if (!is_global_id(yylval.id)) {
+	    if (!is_global_id(yylval_id())) {
 	    	rb_compile_error(PARSER_ARG  "invalid global variable `%s'", rb_id2name(yylval.id));
 		return 0;
 	    }
@@ -6224,17 +6226,7 @@ parser_yylex(parser)
 	  case '`':		/* $`: string before last match */
 	  case '\'':		/* $': string after last match */
 	  case '+':		/* $+: string matches last paren. */
-#ifndef RIPPER
-	    yylval.node = NEW_BACK_REF(c);
-#else
-            {
-                char buf[4];
-                buf[0] = '$';
-                buf[1] = c;
-                buf[2] = '\0';
-                yylval.val = ripper_intern(buf);
-            }
-#endif
+	    set_yylval_node(NEW_BACK_REF(c));
 	    return tBACK_REF;
 
 	  case '1': case '2': case '3':
@@ -6247,11 +6239,7 @@ parser_yylex(parser)
 	    } while (ISDIGIT(c));
 	    pushback(c);
 	    tokfix();
-#ifndef RIPPER
-	    yylval.node = NEW_NTH_REF(atoi(tok()+1));
-#else
-            yylval.val = ripper_intern(tok());
-#endif
+	    set_yylval_node(NEW_NTH_REF(atoi(tok()+1)));
 	    return tNTH_REF;
 
 	  default:
@@ -6406,7 +6394,7 @@ parser_yylex(parser)
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
 		    lex_state = EXPR_BEG;
 		    nextc();
-		    yylval.id = rb_intern(tok());
+		    set_yylval_id(rb_intern(tok()));
 		    return tLABEL;
 		}
 	    }

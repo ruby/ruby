@@ -1,3 +1,8 @@
+Sun Oct 31 14:18:56 2004  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper]: emit lexer-event values to the parser
+	  (still incomplete).
+
 Sat Oct 30 15:24:41 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_TYPELIB class. add 
