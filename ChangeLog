@@ -20,6 +20,8 @@ Sat Nov 20 23:25:12 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* io.c (rb_io_getline): f.gets("") did not work. [ruby-core:03771]
 
+	* test/ruby/test_io.rb (test_gets_rs): test it.
+
 Sat Nov 20 22:55:09 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* test/runner.rb (CROSS_COMPILING): need to require rbconfig.rb before
