@@ -1,3 +1,12 @@
+Fri Mar  4 19:39:55 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb (RDoc::C_Parser#do_includes): replace
+	  also locally defined modules.
+
+	* ext/iconv/iconv.c: rdocified.
+
+	* ext/strscan/strscan.c: moved misplaced rdoc.
+
 Fri Mar  4 16:11:20 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (rb_exec_recursive): matched the declaration to prototype.
@@ -47,7 +56,7 @@ Fri Mar  4 08:09:12 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Mar  4 07:07:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.63
+	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.63
 
 Thu Mar  3 23:24:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -418,7 +427,7 @@ Wed Feb 16 02:47:45 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Tue Feb 15 22:14:34 2005  sheepman  <sheepman@tcn.zaq.ne.jp>
 
-	* ext/readline/readline.c (Readline.readline): use rl_outstream 
+	* ext/readline/readline.c (Readline.readline): use rl_outstream
 	  and rl_instream.  [ruby-dev:25699]
 
 Mon Feb 14 23:58:17 2005  Kouhei Sutou  <kou@cozmixng.org>
@@ -3403,7 +3412,7 @@ Thu Oct 21 21:32:30 2004  IWATSUKI Hiroyuki  <don@na.rim.or.jp>
 
 	* lib/pstore.rb (PStore#transaction): Use the empty content when a
 	  file is not found.  [ruby-dev:24561]
-	
+
 Thu Oct 21 19:06:15 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpresponse.rb (WEBrick::HTTPResponse#send_body_io):

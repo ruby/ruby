@@ -303,7 +303,8 @@ strscan_terminate(self)
 }
 
 /*
- * Returns the string being scanned.
+ * Equivalent to #terminate.
+ * This method is obsolete; use #terminate instead.
  */
 static VALUE
 strscan_clear(self)
@@ -313,6 +314,9 @@ strscan_clear(self)
     return strscan_terminate(self);
 }
 
+/*
+ * Returns the string being scanned.
+ */
 static VALUE
 strscan_get_string(self)
     VALUE self;
@@ -744,6 +748,10 @@ strscan_get_byte(self)
                             p->prev + p->regs.end[0]);
 }
 
+/*
+ * Equivalent to #get_byte.
+ * This method is obsolete; use #get_byte instead.
+ */
 static VALUE
 strscan_getbyte(self)
     VALUE self;
@@ -782,6 +790,18 @@ strscan_peek(self, vlen)
 }
 
 /*
+ * Equivalent to #peek.
+ * This method is obsolete; use #peek instead.
+ */
+static VALUE
+strscan_peep(self, vlen)
+    VALUE self, vlen;
+{
+    rb_warning("StringScanner#peep is obsolete; use #peek instead");
+    return strscan_peek(self, vlen);
+}
+
+/*
  * Set the scan pointer to the previous position.  Only one previous position is
  * remembered, and it changes with each scanning operation.
  *
@@ -792,14 +812,6 @@ strscan_peek(self, vlen)
  *   s.scan(/\d/)         # => nil
  *   s.unscan             # ScanError: can't unscan: prev match had failed
  */
-static VALUE
-strscan_peep(self, vlen)
-    VALUE self, vlen;
-{
-    rb_warning("StringScanner#peep is obsolete; use #peek instead");
-    return strscan_peek(self, vlen);
-}
-
 static VALUE
 strscan_unscan(self)
     VALUE self;
