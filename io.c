@@ -1680,6 +1680,9 @@ rb_io_popen(str, argc, argv, klass)
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
     }
+    else if (FIXNUM_P(pmode)) {
+	mode = rb_io_flags_mode(NUM2INT(pmode));
+    }
     else {
 	mode = STR2CSTR(pmode);
     }

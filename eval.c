@@ -5311,6 +5311,14 @@ rb_feature_p(feature, wait)
     return Qtrue;
 }
 
+static const char *const loadable_ext[] = {
+    ".rb", DLEXT,
+#ifdef DLEXT2
+    DLEXT2,
+#endif
+    0
+};
+
 int
 rb_provided(feature)
     const char *feature;
@@ -5318,8 +5326,8 @@ rb_provided(feature)
     VALUE f = rb_str_new2(feature);
 
     if (strrchr(feature, '.') == 0) {
-	if (rb_find_file_noext(&f) == 0) {
-	    return Qfalse;
+	if (rb_find_file_ext(&f, loadable_ext) == 0) {
+	    return rb_feature_p(feature, Qfalse);
 	}
     }
     return rb_feature_p(RSTRING(f)->ptr, Qfalse);
@@ -5362,14 +5370,14 @@ rb_f_require(obj, fname)
 	}
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
 	    fname = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
-	    feature = tmp = rb_str_dup(fname);
-	    rb_str_cat2(tmp, DLEXT);
-	    tmp = rb_find_file(tmp);
-	    if (tmp) {
-		fname = tmp;
+#ifdef DLEXT2
+	    tmp = fname;
+	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
+		feature = tmp;
+		fname = rb_find_file(tmp);
 		goto load_dyna;
 	    }
-#ifdef DLEXT2
+#else
 	    feature = tmp = rb_str_dup(fname);
 	    rb_str_cat2(tmp, DLEXT);
 	    tmp = rb_find_file(tmp);
@@ -5399,7 +5407,7 @@ rb_f_require(obj, fname)
 #endif
     }
     tmp = fname;
-    switch (rb_find_file_noext(&tmp)) {
+    switch (rb_find_file_ext(&tmp, loadable_ext)) {
       case 0:
 	break;
 

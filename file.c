@@ -2154,21 +2154,14 @@ file_load_ok(file)
 extern VALUE rb_load_path;
 
 int
-rb_find_file_noext(filep)
+rb_find_file_ext(filep, ext)
     VALUE *filep;
+    char **ext;
 {
     char *path, *e, *found;
     char *f = RSTRING(*filep)->ptr;
     VALUE fname;
     int i, j;
-
-    static char *ext[] = {
-	".rb", DLEXT,
-#ifdef DLEXT2
-	DLEXT2,
-#endif
-	0
-    };
 
     if (f[0] == '~') {
 	fname = *filep;

@@ -2994,7 +2994,7 @@ yylex()
 	    return '?';
 	}
 	c = nextc();
-	if (c == -1 || c == 10) {
+	if (c == -1) {
 	    rb_compile_error("incomplete character syntax");
 	    return 0;
 	}

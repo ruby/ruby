@@ -11,6 +11,31 @@ Sat Sep  1 09:50:54 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* ruby.c (ruby_process_options): initialize total length of
 	  original arguments at first.
 
+Sat Sep  1 03:49:11 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_popen): accept integer flags as mode.
+
+Fri Aug 31 19:46:05 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (rb_find_file_ext): extension table can be supplied from
+	  outside.  renamed.
+
+	* eval.c (rb_f_require): replace rb_find_file_noext by
+	  rb_find_file_ext.
+
+Fri Aug 31 19:26:55 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_provided): should also check feature without
+	  extension.
+
+Fri Aug 31 13:06:33 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (flo_to_s): do not rely on decimal point to be '.'
+
+Wed Aug 29 02:18:53 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): ternary ? can be followed by newline.
+
 Mon Aug 27 07:32:23 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* dir.c (rb_glob_helper): merge from 1.7: traversed files twice

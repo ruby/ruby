@@ -4176,7 +4176,7 @@ re_match(bufp, string_arg, size, pos, regs)
 	  if (IS_A_LETTER(d)) break;
 	  else goto fail;
 	}
-	if (AT_STRINGS_BEG(d)) {
+	if (AT_STRINGS_END(d)) {
 	  if (PREV_IS_A_LETTER(d)) break;
 	  else goto fail;
 	}

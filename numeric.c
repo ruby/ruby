@@ -208,29 +208,31 @@ flo_to_s(flt)
     VALUE flt;
 {
     char buf[24];
-    char *s;
+    char *fmt = "%.10g";
     double value = RFLOAT(flt)->value;
+    double d1, d2;
 
     if (isinf(value))
 	return rb_str_new2(value < 0 ? "-Infinity" : "Infinity");
     else if(isnan(value))
 	return rb_str_new2("NaN");
-    else
-	sprintf(buf, "%-.10g", value);
-    if (s = strchr(buf, ' ')) *s = '\0';
-    s = buf; if (s[0] == '-') s++;
-    if (strchr(s, '.') == 0) {
-	int len = strlen(buf);
-	char *ind = strchr(buf, 'e');
 
-	if (ind) {
-	    memmove(ind+2, ind, len-(ind-buf)+1);
-	    ind[0] = '.';
-	    ind[1] = '0';
-	} else {
-	    strcat(buf, ".0");
-	}
+    if (value < 1.0e-3) {
+	d1 = value;
+	while (d1 < 1.0) d1 *= 10.0;
+	d1 = modf(d1, &d2);
+	if (d1 == 0) fmt = "%.1e";
+    }    
+    else if (value >= 1.0e10) {
+	d1 = value;
+	while (d1 > 10.0) d1 /= 10.0;
+	d1 = modf(d1, &d2);
+	if (d1 == 0) fmt = "%.1e";
+    }    
+    else if ((d1 = modf(value, &d2)) == 0) {
+	fmt = "%.1f";
     }
+    sprintf(buf, fmt, value);
 
     return rb_str_new2(buf);
 }
