@@ -3161,9 +3161,10 @@ if __FILE__ == $0
   require "getoptlong"
 
   $stdout.sync = true
-  $port = "imap2"
+  $port = nil
   $user = ENV["USER"] || ENV["LOGNAME"]
-  $auth = "cram-md5"
+  $auth = "login"
+  $ssl = false
 
   def usage
     $stderr.print <<EOF
@@ -3173,6 +3174,7 @@ usage: #{$0} [options] <host>
   --port=PORT                   specifies port
   --user=USER                   specifies user
   --auth=AUTH                   specifies auth type
+  --ssl                         use ssl
 EOF
   end
 
@@ -3201,7 +3203,8 @@ EOF
   		     ['--help', GetoptLong::NO_ARGUMENT],
 		     ['--port', GetoptLong::REQUIRED_ARGUMENT],
 		     ['--user', GetoptLong::REQUIRED_ARGUMENT],
-		     ['--auth', GetoptLong::REQUIRED_ARGUMENT])
+		     ['--auth', GetoptLong::REQUIRED_ARGUMENT],
+  		     ['--ssl', GetoptLong::NO_ARGUMENT])
   begin
     parser.each_option do |name, arg|
       case name
@@ -3211,6 +3214,8 @@ EOF
 	$user = arg
       when "--auth"
 	$auth = arg
+      when "--ssl"
+	$ssl = true
       when "--debug"
 	Net::IMAP.debug = true
       when "--help"
@@ -3228,8 +3233,9 @@ EOF
     usage
     exit(1)
   end
+  $port ||= $ssl ? 993 : 143
     
-  imap = Net::IMAP.new($host, $port)
+  imap = Net::IMAP.new($host, $port, $ssl)
   begin
     password = get_password
     imap.authenticate($auth, $user, password)

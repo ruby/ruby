@@ -1,3 +1,7 @@
+Wed Jun 23 17:37:54 2004  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: added new option --ssl.
+
 Wed Jun 23 01:45:27 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RubyLex::identify_quotation): 
