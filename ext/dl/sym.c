@@ -354,11 +354,11 @@ rb_dl_win32_set_last_error(VALUE self, VALUE val)
 
 #ifdef DLSTACK_GUARD
 # ifdef __MSVC_RUNTIME_CHECKS
-# pragma runtime_checks("s", off)
+#  pragma runtime_checks("s", off)
 # endif
-#ifdef _MSC_VER
+# if _MSC_VER >= 1300
 __declspec(noinline)
-#endif
+# endif
 static int
 rb_dlsym_guardcall(char type, ANY_TYPE *ret, long *stack, void *func)
 {
@@ -432,7 +432,7 @@ rb_dlsym_guardcall(char type, ANY_TYPE *ret, long *stack, void *func)
   return 1;
 }
 # ifdef __MSVC_RUNTIME_CHECKS
-# pragma runtime_checks("s", restore)
+#  pragma runtime_checks("s", restore)
 # endif
 #endif /* defined(DLSTACK_GUARD) */
 
