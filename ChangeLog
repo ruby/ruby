@@ -1,3 +1,12 @@
+Mon Oct 18 02:04:11 2004  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#virtual_host): new
+	  method to register virtual hosting servers.
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#accept): call
+	  do_not_reverse_lookup for each socket if :DoNotReverseLookup
+	  is set.  [ruby-core:02357]
+
 Sun Oct 17 23:03:48 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb: TkTimer#start and restart accept a block
@@ -25,6 +34,7 @@ Sat Oct 16 13:34:56 2004  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss: supported prety print.
 	* test/rss/test_1.0.rb: added test for calculating default indent size.
 
+>>>>>>> 1.2673.2.531
 Fri Oct 15 18:04:35 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb: TkTimer.new(interval, loop){ ... } is
