@@ -268,6 +268,7 @@ sample/iso2022-kr.txt
 sample/menubar1.rb
 sample/menubar2.rb
 sample/multi-ip_sample.rb
+sample/multi-ip_sample2.rb
 sample/optobj_sample.rb
 sample/propagate.rb
 sample/remote-ip_sample.rb

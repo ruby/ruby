@@ -971,10 +971,23 @@ class TkText<TkTextWin
     # call 'search' subcommand of text widget
     #   args ::= [<array_of_opts>] <pattern> <start_index> [<stop_index>]
     # If <pattern> is regexp, then it must be a regular expression of Tcl
+    nocase = false
     if args[0].kind_of?(Array)
-      opts = args.shift.collect{|opt| '-' + opt.to_s }
+      opts = args.shift.collect{|opt|
+	s_opt = opt.to_s
+	nocase = true if s_opt == 'nocase'
+	'-' + s_opt
+      }
     else
       opts = []
+    end
+
+    if args[0].kind_of?(Regexp)
+      regexp = args.shift
+      if !nocase && (regexp.options & Regexp::IGNORECASE) != 0
+	opts << '-nocase'
+      end
+      args.unshift(regexp.source)
     end
 
     opts << '--'
@@ -991,13 +1004,28 @@ class TkText<TkTextWin
     # call 'search' subcommand of text widget
     #   args ::= [<array_of_opts>] <var> <pattern> <start_index> [<stop_index>]
     # If <pattern> is regexp, then it must be a regular expression of Tcl
+    nocase = false
     if args[0].kind_of?(Array)
-      opts = args.shift.collect{|opt| '-' + opt.to_s }
+      opts = args.shift.collect{|opt|
+	s_opt = opt.to_s
+	nocase = true if s_opt == 'nocase'
+	'-' + s_opt
+      }
     else
       opts = []
     end
 
-    opts << '-count' << args.shift << '--'
+    opts << '-count' << args.shift
+
+    if args[0].kind_of?(Regexp)
+      regexp = args.shift
+      if !nocase && (regexp.options & Regexp::IGNORECASE) != 0
+	opts << '-nocase'
+      end
+      args.unshift(regexp.source)
+    end
+
+    opts << '--'
 
     ret = tk_send('search', *(opts + args))
     if ret == ""

@@ -125,7 +125,10 @@ class MultiTkIp
 
     if wait == 0
       # no wait
-      thread.raise exception
+      Thread.pass
+      if thread.stop?
+	thread.raise exception
+      end
       return thread
     end
 
@@ -294,7 +297,8 @@ class MultiTkIp
 	  obj.delete unless obj.deleted?
 	}
 =end
-	exit
+	#exit(e.status)
+	fail e
       end
       # break
 
@@ -1325,14 +1329,19 @@ class MultiTkIp
     rescue MultiTkIp_OK => ret
       # return value
       return ret.value
-    rescue SystemExit
+    rescue SystemExit => e
       # exit IP
       warn("Warning: " + $! + " on " + self.inspect) if $DEBUG
       begin
 	self._eval_without_enc('exit')
       rescue Exception
       end
-      self.delete
+      if !safe? && allow_ruby_exit?
+	self.delete
+	fail e
+      else
+	self.delete
+      end
     rescue Exception => e
       if $DEBUG
 	warn("Warning: " + e.class.inspect + 
@@ -1542,8 +1551,16 @@ class << MultiTkIp
     __getip.deleted?
   end
 
-  def exit(st = 0)
+  def abort(msg = nil)
+    __getip.abort(msg)
+  end
+
+  def exit(st = true)
     __getip.exit(st)
+  end
+
+  def exit!(st = false)
+    __getip.exit!(st)
   end
 
   def restart(app_name = nil, keys = {})
@@ -1852,9 +1869,32 @@ class MultiTkIp
     @interp.deleted?
   end
 
-  def exit(st = 0)
+  def abort(msg = nil)
+    if master?
+      if msg
+	Kernel.abort(msg)
+      else
+	Kernel.abort
+      end
+    else
+      # ignore msg
+      delete
+      1
+    end
+  end
+
+  def exit(st = true)
     if master?
       Kernel.exit(st)
+    else
+      delete
+      st
+    end
+  end
+
+  def exit!(st = false)
+    if master? && !safe? && allow_ruby_exit?
+      Kernel.exit!(st)
     else
       delete
       st
