@@ -1,7 +1,10 @@
-Thu Apr 15 19:53:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 15 19:57:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* process.c (pst_success_p): new method Process::Status#success?.
 	  [ruby-dev:23385]
+
+	* rubytest.rb: do nothing while cross-compiling, return status in
+	  system independent style.
 
 Thu Apr 15 19:26:54  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
