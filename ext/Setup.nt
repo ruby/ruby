@@ -1,6 +1,5 @@
 #option nodynamic
 
-#GD
 Win32API
 #curses
 #dbm
@@ -12,8 +11,6 @@ digest/sha2
 #etc
 fcntl
 #gdbm
-#gtk
-marshal
 nkf
 #pty
 #readline

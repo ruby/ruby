@@ -1,6 +1,6 @@
 option nodynamic
 
-#GD
+#Win32API
 #curses
 dbm
 digest
@@ -10,8 +10,12 @@ digest/sha1
 digest/sha2
 #etc
 fcntl
-kconv
-marshal
+#gdbm
+nkf
+#pty
+#readline
+#sdbm
 #socket
 #syslog
-#tkutil
+#tcltklib
+#tk
