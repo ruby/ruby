@@ -122,8 +122,8 @@ div#description {
     border: 1px dotted #999;
 }
 
-div#description h1,h3,h3,h4,h5,h6 {
-    color: black;
+div#description h1,h2,h3,h4,h5,h6 {
+    color: #125;;
     background: transparent;
 }
 
