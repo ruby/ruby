@@ -40,6 +40,7 @@ net/protocol.rb	abstract class for net library (DO NOT USE)
 net/smtp.rb	SMTP access
 net/telnet.rb	telnet library
 observer.rb	observer desing pattern library (provides Observable)
+open-uri.rb     easy-to-use network interface using URI and Net
 open3.rb	opens subprocess connection stdin/stdout/stderr
 ostruct.rb	python style object
 parsearg.rb	argument parser using getopts
