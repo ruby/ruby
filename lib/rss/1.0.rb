@@ -2,64 +2,64 @@ require "rss/parser"
 
 module RSS
 
-	module RSS10
-		NSPOOL = {}
-		ELEMENTS = []
+  module RSS10
+    NSPOOL = {}
+    ELEMENTS = []
 
-		def self.append_features(klass)
-			super
-			
-			klass.install_must_call_validator('', ::RSS::URI)
-		end
+    def self.append_features(klass)
+      super
+      
+      klass.install_must_call_validator('', ::RSS::URI)
+    end
 
-	end
+  end
 
-	class RDF < Element
+  class RDF < Element
 
-		include RSS10
-		include RootElementMixin
-		include XMLStyleSheetMixin
+    include RSS10
+    include RootElementMixin
+    include XMLStyleSheetMixin
 
-		class << self
+    class << self
 
-			def required_uri
-				URI
-			end
+      def required_uri
+        URI
+      end
 
-		end
+    end
 
-		@tag_name = 'RDF'
+    @tag_name = 'RDF'
 
-		PREFIX = 'rdf'
-		URI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+    PREFIX = 'rdf'
+    URI = "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
 
-		install_ns('', ::RSS::URI)
-		install_ns(PREFIX, URI)
+    install_ns('', ::RSS::URI)
+    install_ns(PREFIX, URI)
 
-		[
-			["channel", nil],
-			["image", "?"],
-			["item", "+"],
-			["textinput", "?"],
-		].each do |tag, occurs|
-			install_model(tag, occurs)
-		end
+    [
+      ["channel", nil],
+      ["image", "?"],
+      ["item", "+"],
+      ["textinput", "?"],
+    ].each do |tag, occurs|
+      install_model(tag, occurs)
+    end
 
-		%w(channel image textinput).each do |x|
-			install_have_child_element(x)
-		end
+    %w(channel image textinput).each do |x|
+      install_have_child_element(x)
+    end
 
-		install_have_children_element("item")
+    install_have_children_element("item")
 
-		attr_accessor :rss_version, :version, :encoding, :standalone
-		
-		def initialize(version=nil, encoding=nil, standalone=nil)
-			super('1.0', version, encoding, standalone)
-		end
+    attr_accessor :rss_version, :version, :encoding, :standalone
+    
+    def initialize(version=nil, encoding=nil, standalone=nil)
+      super('1.0', version, encoding, standalone)
+    end
 
-		def to_s(convert=true, indent=calc_indent)
-			next_indent = indent + INDENT
-			rv = <<-EORDF
+    def to_s(convert=true, indent=calc_indent)
+      next_indent = indent + INDENT
+      rv = <<-EORDF
 #{xmldecl}
 #{xml_stylesheet_pi}
 #{indent}<#{PREFIX}:RDF#{ns_declaration(next_indent)}>
@@ -72,170 +72,170 @@ module RSS
 EORDF
       rv = @converter.convert(rv) if convert and @converter
       remove_empty_newline(rv)
-		end
+    end
 
-		private
-		def rdf_validate(tags)
-			_validate(tags, [])
-		end
+    private
+    def rdf_validate(tags)
+      _validate(tags, [])
+    end
 
-		def children
-			[@channel, @image, @textinput, *@item]
-		end
+    def children
+      [@channel, @image, @textinput, *@item]
+    end
 
-		def _tags
-			rv = [
-				[::RSS::URI, "channel"],
-				[::RSS::URI, "image"],
-			].delete_if {|x| send(x[1]).nil?}
-			@item.each do |x|
-				rv << [::RSS::URI, "item"]
-			end
-			rv << [::RSS::URI, "textinput"] if @textinput
-			rv
-		end
+    def _tags
+      rv = [
+        [::RSS::URI, "channel"],
+        [::RSS::URI, "image"],
+      ].delete_if {|x| send(x[1]).nil?}
+      @item.each do |x|
+        rv << [::RSS::URI, "item"]
+      end
+      rv << [::RSS::URI, "textinput"] if @textinput
+      rv
+    end
 
-		class Seq < Element
+    class Seq < Element
 
-			include RSS10
+      include RSS10
 
-			class << self
-				
-				def required_uri
-					URI
-				end
-				
-			end
+      class << self
+        
+        def required_uri
+          URI
+        end
+        
+      end
 
-			@tag_name = 'Seq'
-			
-			install_have_children_element("li")
-			
-			install_must_call_validator('rdf', ::RSS::RDF::URI)
-			
-			def initialize(li=[])
-				super()
-				@li = li
-			end
-			
-			def to_s(convert=true, indent=calc_indent)
-				next_indent = indent + INDENT
-				<<-EOT
+      @tag_name = 'Seq'
+      
+      install_have_children_element("li")
+      
+      install_must_call_validator('rdf', ::RSS::RDF::URI)
+      
+      def initialize(li=[])
+        super()
+        @li = li
+      end
+      
+      def to_s(convert=true, indent=calc_indent)
+        next_indent = indent + INDENT
+        <<-EOT
 #{indent}<#{PREFIX}:Seq>
 #{li_elements(convert, next_indent)}
 #{other_element(convert, next_indent)}
 #{indent}</#{PREFIX}:Seq>
 EOT
-			end
+      end
 
   		private
-			def children
-				@li
-			end
-					
-			def rdf_validate(tags)
-				_validate(tags, [["li", '*']])
-			end
+      def children
+        @li
+      end
+          
+      def rdf_validate(tags)
+        _validate(tags, [["li", '*']])
+      end
 
-			def _tags
-				rv = []
-				@li.each do |x|
-					rv << [URI, "li"]
-				end
-				rv
-			end
+      def _tags
+        rv = []
+        @li.each do |x|
+          rv << [URI, "li"]
+        end
+        rv
+      end
 
-		end
+    end
 
-		class Li < Element
+    class Li < Element
 
-			include RSS10
+      include RSS10
 
-			class << self
-					
-				def required_uri
-					URI
-				end
-				
-			end
-			
-			[
-				["resource", [URI, nil], true]
-			].each do |name, uri, required|
-				install_get_attribute(name, uri, required)
-			end
-			
-			def initialize(resource=nil)
-				super()
-				@resource = resource
-			end
-			
-			def to_s(convert=true, indent=calc_indent)
-				if @resource
-					rv = %Q!#{indent}<#{PREFIX}:li resource="#{h @resource}" />\n!
-					rv = @converter.convert(rv) if convert and @converter
-					rv
-				else
-					''
-				end
-			end
+      class << self
+          
+        def required_uri
+          URI
+        end
+        
+      end
+      
+      [
+        ["resource", [URI, nil], true]
+      ].each do |name, uri, required|
+        install_get_attribute(name, uri, required)
+      end
+      
+      def initialize(resource=nil)
+        super()
+        @resource = resource
+      end
+      
+      def to_s(convert=true, indent=calc_indent)
+        if @resource
+          rv = %Q!#{indent}<#{PREFIX}:li resource="#{h @resource}" />\n!
+          rv = @converter.convert(rv) if convert and @converter
+          rv
+        else
+          ''
+        end
+      end
 
-			private
-			def _attrs
-				[
-					["resource", true]
-				]
-			end
-			
-		end
+      private
+      def _attrs
+        [
+          ["resource", true]
+        ]
+      end
+      
+    end
 
-		class Channel < Element
+    class Channel < Element
 
-			include RSS10
-			
-			class << self
+      include RSS10
+      
+      class << self
 
-				def required_uri
-					::RSS::URI
-				end
+        def required_uri
+          ::RSS::URI
+        end
 
-			end
+      end
 
  			[
-				["about", URI, true]
-			].each do |name, uri, required|
-				install_get_attribute(name, uri, required)
-			end
+        ["about", URI, true]
+      ].each do |name, uri, required|
+        install_get_attribute(name, uri, required)
+      end
 
-			%w(title link description).each do |x|
-				install_text_element(x)
-			end
+      %w(title link description).each do |x|
+        install_text_element(x)
+      end
 
-			%w(image items textinput).each do |x|
-				install_have_child_element(x)
-			end
-			
-			[
-				['title', nil],
-				['link', nil],
-				['description', nil],
-				['image', '?'],
-				['items', nil],
-				['textinput', '?'],
-			].each do |tag, occurs|
-				install_model(tag, occurs)
-			end
-			
-			def initialize(about=nil)
-				super()
-				@about = about
-			end
+      %w(image items textinput).each do |x|
+        install_have_child_element(x)
+      end
+      
+      [
+        ['title', nil],
+        ['link', nil],
+        ['description', nil],
+        ['image', '?'],
+        ['items', nil],
+        ['textinput', '?'],
+      ].each do |tag, occurs|
+        install_model(tag, occurs)
+      end
+      
+      def initialize(about=nil)
+        super()
+        @about = about
+      end
 
-			def to_s(convert=true, indent=calc_indent)
-				next_indent = indent + INDENT
-				about = ''
-				about << %Q!#{PREFIX}:about="#{h @about}"! if @about
-				rv = <<-EOT
+      def to_s(convert=true, indent=calc_indent)
+        next_indent = indent + INDENT
+        about = ''
+        about << %Q!#{PREFIX}:about="#{h @about}"! if @about
+        rv = <<-EOT
 #{indent}<channel #{about}>
 #{title_element(false, next_indent)}
 #{link_element(false, next_indent)}
@@ -246,216 +246,216 @@ EOT
 #{other_element(false, next_indent)}
 #{indent}</channel>
 EOT
-	      rv = @converter.convert(rv) if convert and @converter
+        rv = @converter.convert(rv) if convert and @converter
   	    rv
-			end
+      end
 
-	    private
-			def children
-				[@image, @items, @textinput]
-			end
+      private
+      def children
+        [@image, @items, @textinput]
+      end
 
-			def _tags
-				[
-					[::RSS::URI, 'title'],
-					[::RSS::URI, 'link'],
-					[::RSS::URI, 'description'],
-					[::RSS::URI, 'image'],
-					[::RSS::URI, 'items'],
-					[::RSS::URI, 'textinput'],
-				].delete_if do |x|
-					send(x[1]).nil?
-				end
-			end
+      def _tags
+        [
+          [::RSS::URI, 'title'],
+          [::RSS::URI, 'link'],
+          [::RSS::URI, 'description'],
+          [::RSS::URI, 'image'],
+          [::RSS::URI, 'items'],
+          [::RSS::URI, 'textinput'],
+        ].delete_if do |x|
+          send(x[1]).nil?
+        end
+      end
 
-			def _attrs
-				[
-					["about", true]
-				]
-			end
-			
-			class Image < Element
-				
-				include RSS10
+      def _attrs
+        [
+          ["about", true]
+        ]
+      end
+      
+      class Image < Element
+        
+        include RSS10
 
-				class << self
-					
-					def required_uri
-						::RSS::URI
-					end
+        class << self
+          
+          def required_uri
+            ::RSS::URI
+          end
 
-				end
+        end
 
-				[
-					["resource", URI, true]
-				].each do |name, uri, required|
-					install_get_attribute(name, uri, required)
-				end
-			
-				def initialize(resource=nil)
-					super()
-					@resource = resource
-				end
+        [
+          ["resource", URI, true]
+        ].each do |name, uri, required|
+          install_get_attribute(name, uri, required)
+        end
+      
+        def initialize(resource=nil)
+          super()
+          @resource = resource
+        end
 
-				def to_s(convert=true, indent=calc_indent)
-					if @resource
-						rv = %Q!#{indent}<image #{PREFIX}:resource="#{h @resource}" />!
-						rv = @converter.convert(rv) if convert and @converter
-						rv
-					else
-						''
-					end
-				end
+        def to_s(convert=true, indent=calc_indent)
+          if @resource
+            rv = %Q!#{indent}<image #{PREFIX}:resource="#{h @resource}" />!
+            rv = @converter.convert(rv) if convert and @converter
+            rv
+          else
+            ''
+          end
+        end
 
-				private
-				def _attrs
-					[
-						["resource", true]
-					]
-				end
+        private
+        def _attrs
+          [
+            ["resource", true]
+          ]
+        end
 
-			end
+      end
 
-			class Textinput < Element
-				
-				include RSS10
+      class Textinput < Element
+        
+        include RSS10
 
-				class << self
-					
-					def required_uri
-						::RSS::URI
-					end
+        class << self
+          
+          def required_uri
+            ::RSS::URI
+          end
 
-				end
+        end
 
-				[
-					["resource", URI, true]
-				].each do |name, uri, required|
-					install_get_attribute(name, uri, required)
-				end
-			
-				def initialize(resource=nil)
-					super()
-					@resource = resource
-				end
+        [
+          ["resource", URI, true]
+        ].each do |name, uri, required|
+          install_get_attribute(name, uri, required)
+        end
+      
+        def initialize(resource=nil)
+          super()
+          @resource = resource
+        end
 
-				def to_s(convert=true, indent=calc_indent)
-					if @resource
-						rv = %Q|#{indent}<textinput #{PREFIX}:resource="#{h @resource}" />|
-						rv = @converter.convert(rv) if convert and @converter
-						rv
-					else
-						''
-					end
-				end
-				
-				private
-				def _attrs
-					[
-						["resource", true],
-					]
-				end
+        def to_s(convert=true, indent=calc_indent)
+          if @resource
+            rv = %Q|#{indent}<textinput #{PREFIX}:resource="#{h @resource}" />|
+            rv = @converter.convert(rv) if convert and @converter
+            rv
+          else
+            ''
+          end
+        end
+        
+        private
+        def _attrs
+          [
+            ["resource", true],
+          ]
+        end
 
-			end
-			
-			class Items < Element
+      end
+      
+      class Items < Element
 
-				include RSS10
+        include RSS10
 
-				Seq = ::RSS::RDF::Seq
-				class Seq
-					unless const_defined?(:Li)
-						Li = ::RSS::RDF::Li
-					end
-				end
+        Seq = ::RSS::RDF::Seq
+        class Seq
+          unless const_defined?(:Li)
+            Li = ::RSS::RDF::Li
+          end
+        end
 
-				class << self
-					
-					def required_uri
-						::RSS::URI
-					end
-					
-				end
+        class << self
+          
+          def required_uri
+            ::RSS::URI
+          end
+          
+        end
 
-				install_have_child_element("Seq")
-				
-				install_must_call_validator('rdf', ::RSS::RDF::URI)
-				
-				def initialize(seq=Seq.new)
-					super()
-					@Seq = seq
-				end
-				
-				def to_s(convert=true, indent=calc_indent)
-					next_indent = indent + INDENT
-					<<-EOT
+        install_have_child_element("Seq")
+        
+        install_must_call_validator('rdf', ::RSS::RDF::URI)
+        
+        def initialize(seq=Seq.new)
+          super()
+          @Seq = seq
+        end
+        
+        def to_s(convert=true, indent=calc_indent)
+          next_indent = indent + INDENT
+          <<-EOT
 #{indent}<items>
 #{Seq_element(convert, next_indent)}
 #{other_element(convert, next_indent)}
 #{indent}</items>
 EOT
-				end
+        end
 
-				private
-				def children
-					[@Seq]
-				end
+        private
+        def children
+          [@Seq]
+        end
 
-				private
-				def _tags
-					rv = []
-					rv << [URI, 'Seq'] unless @Seq.nil?
-					rv
-				end
-				
-				def rdf_validate(tags)
-					_validate(tags, [["Seq", nil]])
-				end
+        private
+        def _tags
+          rv = []
+          rv << [URI, 'Seq'] unless @Seq.nil?
+          rv
+        end
+        
+        def rdf_validate(tags)
+          _validate(tags, [["Seq", nil]])
+        end
 
-			end
+      end
 
-		end
+    end
 
-		class Image < Element
+    class Image < Element
 
-			include RSS10
+      include RSS10
 
-			class << self
-				
-				def required_uri
-					::RSS::URI
-				end
+      class << self
+        
+        def required_uri
+          ::RSS::URI
+        end
 
-			end
-			
-			[
-				["about", URI, true]
-			].each do |name, uri, required|
-				install_get_attribute(name, uri, required)
-			end
+      end
+      
+      [
+        ["about", URI, true]
+      ].each do |name, uri, required|
+        install_get_attribute(name, uri, required)
+      end
 
-			%w(title url link).each do |x|
-				install_text_element(x)
-			end
-		
-			[
-				['title', nil],
-				['url', nil],
-				['link', nil],
-			].each do |tag, occurs|
-				install_model(tag, occurs)
-			end
+      %w(title url link).each do |x|
+        install_text_element(x)
+      end
+    
+      [
+        ['title', nil],
+        ['url', nil],
+        ['link', nil],
+      ].each do |tag, occurs|
+        install_model(tag, occurs)
+      end
 
-			def initialize(about=nil)
-				super()
-				@about = about
-			end
+      def initialize(about=nil)
+        super()
+        @about = about
+      end
 
-			def to_s(convert=true, indent=calc_indent)
-				next_indent = indent + INDENT
-				about = ''
-				about << %Q!#{PREFIX}:about="#{h @about}"! if @about
-				rv = <<-EOT
+      def to_s(convert=true, indent=calc_indent)
+        next_indent = indent + INDENT
+        about = ''
+        about << %Q!#{PREFIX}:about="#{h @about}"! if @about
+        rv = <<-EOT
 #{indent}<image #{about}>
 #{title_element(false, next_indent)}
 #{url_element(false, next_indent)}
@@ -463,69 +463,69 @@ EOT
 #{other_element(false, next_indent)}
 #{indent}</image>
 EOT
-	      rv = @converter.convert(rv) if convert and @converter
-	      rv
-			end
+        rv = @converter.convert(rv) if convert and @converter
+        rv
+      end
 
-			private
-			def _tags
-				[
-					[::RSS::URI, 'title'],
-					[::RSS::URI, 'url'],
-					[::RSS::URI, 'link'],
-				].delete_if do |x|
-					send(x[1]).nil?
-				end
-			end
+      private
+      def _tags
+        [
+          [::RSS::URI, 'title'],
+          [::RSS::URI, 'url'],
+          [::RSS::URI, 'link'],
+        ].delete_if do |x|
+          send(x[1]).nil?
+        end
+      end
 
-			def _attrs
-				[
-					["about", true],
-				]
-			end
+      def _attrs
+        [
+          ["about", true],
+        ]
+      end
 
-		end
+    end
 
-		class Item < Element
+    class Item < Element
 
-			include RSS10
+      include RSS10
 
-			class << self
+      class << self
 
-				def required_uri
-					::RSS::URI
-				end
-				
-			end
+        def required_uri
+          ::RSS::URI
+        end
+        
+      end
 
-			[
-				["about", URI, true]
-			].each do |name, uri, required|
-				install_get_attribute(name, uri, required)
-			end
+      [
+        ["about", URI, true]
+      ].each do |name, uri, required|
+        install_get_attribute(name, uri, required)
+      end
 
-			%w(title link description).each do |x|
-				install_text_element(x)
-			end
+      %w(title link description).each do |x|
+        install_text_element(x)
+      end
 
-			[
-				["title", nil],
-				["link", nil],
-				["description", "?"],
-			].each do |tag, occurs|
-				install_model(tag, occurs)
-			end
+      [
+        ["title", nil],
+        ["link", nil],
+        ["description", "?"],
+      ].each do |tag, occurs|
+        install_model(tag, occurs)
+      end
 
-			def initialize(about=nil)
-				super()
-				@about = about
-			end
+      def initialize(about=nil)
+        super()
+        @about = about
+      end
 
-			def to_s(convert=true, indent=calc_indent)
-				next_indent = indent + INDENT
-				about = ''
-				about << %Q!#{PREFIX}:about="#{h @about}"! if @about
-				rv = <<-EOT
+      def to_s(convert=true, indent=calc_indent)
+        next_indent = indent + INDENT
+        about = ''
+        about << %Q!#{PREFIX}:about="#{h @about}"! if @about
+        rv = <<-EOT
 #{indent}<item #{about}>
 #{title_element(false, next_indent)}
 #{link_element(false, next_indent)}
@@ -533,70 +533,70 @@ EOT
 #{other_element(false, next_indent)}
 #{indent}</item>
 EOT
-	      rv = @converter.convert(rv) if convert and @converter
-	      rv
-			end
+        rv = @converter.convert(rv) if convert and @converter
+        rv
+      end
  
-			private
-			def _tags
-				[
-					[::RSS::URI, 'title'],
-					[::RSS::URI, 'link'],
-					[::RSS::URI, 'description'],
-				].delete_if do |x|
-					send(x[1]).nil?
-				end
-			end
+      private
+      def _tags
+        [
+          [::RSS::URI, 'title'],
+          [::RSS::URI, 'link'],
+          [::RSS::URI, 'description'],
+        ].delete_if do |x|
+          send(x[1]).nil?
+        end
+      end
 
-			def _attrs
-				[
-					["about", true],
-				]
-			end
+      def _attrs
+        [
+          ["about", true],
+        ]
+      end
 
-		end
+    end
 
-		class Textinput < Element
+    class Textinput < Element
 
-			include RSS10
+      include RSS10
 
-			class << self
+      class << self
 
-				def required_uri
-					::RSS::URI
-				end
+        def required_uri
+          ::RSS::URI
+        end
 
-			end
+      end
 
-			[
-				["about", URI, true]
-			].each do |name, uri, required|
-				install_get_attribute(name, uri, required)
-			end
+      [
+        ["about", URI, true]
+      ].each do |name, uri, required|
+        install_get_attribute(name, uri, required)
+      end
 
-			%w(title description name link).each do |x|
-				install_text_element(x)
-			end
-		
-			[
-				["title", nil],
-				["description", nil],
-				["name", nil],
-				["link", nil],
-			].each do |tag, occurs|
-				install_model(tag, occurs)
-			end
+      %w(title description name link).each do |x|
+        install_text_element(x)
+      end
+    
+      [
+        ["title", nil],
+        ["description", nil],
+        ["name", nil],
+        ["link", nil],
+      ].each do |tag, occurs|
+        install_model(tag, occurs)
+      end
 
-			def initialize(about=nil)
-				super()
-				@about = about
-			end
+      def initialize(about=nil)
+        super()
+        @about = about
+      end
 
-			def to_s(convert=true, indent=calc_indent)
-				next_indent = indent + INDENT
-				about = ''
-				about << %Q!#{PREFIX}:about="#{h @about}"! if @about
-				rv = <<-EOT
+      def to_s(convert=true, indent=calc_indent)
+        next_indent = indent + INDENT
+        about = ''
+        about << %Q!#{PREFIX}:about="#{h @about}"! if @about
+        rv = <<-EOT
 #{indent}<textinput #{about}>
 #{title_element(false, next_indent)}
 #{description_element(false, next_indent)}
@@ -605,49 +605,49 @@ EOT
 #{other_element(false, next_indent)}
 #{indent}</textinput>
 EOT
-	      rv = @converter.convert(rv) if convert and @converter
-	      rv
-			end
+        rv = @converter.convert(rv) if convert and @converter
+        rv
+      end
 
-			private
-			def _tags
-				[
-					[::RSS::URI, 'title'],
-					[::RSS::URI, 'description'],
-					[::RSS::URI, 'name'],
-					[::RSS::URI, 'link'],
-				].delete_if do |x|
-					send(x[1]).nil?
-				end
-			end
-			
-			def _attrs
-				[
-					["about", true],
-				]
-			end
+      private
+      def _tags
+        [
+          [::RSS::URI, 'title'],
+          [::RSS::URI, 'description'],
+          [::RSS::URI, 'name'],
+          [::RSS::URI, 'link'],
+        ].delete_if do |x|
+          send(x[1]).nil?
+        end
+      end
+      
+      def _attrs
+        [
+          ["about", true],
+        ]
+      end
 
-		end
+    end
 
-	end
+  end
 
-	RSS10::ELEMENTS.each do |x|
-		BaseListener.install_get_text_element(x, URI, "#{x}=")
-	end
+  RSS10::ELEMENTS.each do |x|
+    BaseListener.install_get_text_element(x, URI, "#{x}=")
+  end
 
-	module ListenerMixin
-		private
-		def start_RDF(tag_name, prefix, attrs, ns)
-			check_ns(tag_name, prefix, ns, RDF::URI)
+  module ListenerMixin
+    private
+    def start_RDF(tag_name, prefix, attrs, ns)
+      check_ns(tag_name, prefix, ns, RDF::URI)
 
-			@rss = RDF.new(@version, @encoding, @standalone)
-			@rss.do_validate = @do_validate
-			@rss.xml_stylesheets = @xml_stylesheets
-			@last_element = @rss
-			@proc_stack.push Proc.new { |text, tags|
-				@rss.validate_for_stream(tags) if @do_validate
-			}
-		end
-	end
+      @rss = RDF.new(@version, @encoding, @standalone)
+      @rss.do_validate = @do_validate
+      @rss.xml_stylesheets = @xml_stylesheets
+      @last_element = @rss
+      @proc_stack.push Proc.new { |text, tags|
+        @rss.validate_for_stream(tags) if @do_validate
+      }
+    end
+  end
 
 end
