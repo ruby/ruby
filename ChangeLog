@@ -1,3 +1,11 @@
+Thu Nov  8 20:20:37 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* eval.c (rb_trap_eval): avoid annoying warning with signal.
+	  [ruby-talk:23225]
+
+	* eval.c (rb_call0): adjust caller source file/line while
+	  evaluating optional arguments.
+
 Tue Nov  6 14:38:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (my_getcwd): do not rely on MAXPATHLEN.

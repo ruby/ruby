@@ -1363,9 +1363,11 @@ rb_trap_eval(cmd, sig)
     VALUE val;			/* OK */
 
     PUSH_TAG(PROT_NONE);
+    PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
 	val = rb_eval_cmd(cmd, rb_ary_new3(1, INT2FIX(sig)));
     }
+    POP_ITER();
     POP_TAG();
     if (state) {
 	rb_trap_immediate = 0;
@@ -4462,7 +4464,11 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 				argv++; argc--;
 				opt = opt->nd_next;
 			    }
-			    rb_eval(recv, opt);
+			    if (opt) {
+				ruby_sourcefile = opt->nd_file;
+				ruby_sourceline = nd_line(opt);
+				rb_eval(recv, opt);
+			    }
 			}
 			if (node->nd_rest >= 0) {
 			    VALUE v;
