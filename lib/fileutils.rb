@@ -437,7 +437,7 @@ module FileUtils
     return if options[:noop]
 
     fu_each_src_dest(src, dest) do |s,d|
-      if cannot_overwrite_file? and File.file?(d)
+      if rename_cannot_overwrite_file? and File.file?(d)
         File.unlink d
       end
 
@@ -464,10 +464,10 @@ module FileUtils
 
   alias move mv
 
-  def cannot_overwrite_file?   #:nodoc:
-    /djgpp|cygwin|mswin|mingw|bccwin|wince/ === RUBY_PLATFORM
+  def rename_cannot_overwrite_file?   #:nodoc:
+    /djgpp|cygwin|mswin|mingw|bccwin|wince|emx/ !~ RUBY_PLATFORM
   end
-  private :cannot_overwrite_file?
+  private :rename_cannot_overwrite_file?
 
 
   #
@@ -751,7 +751,7 @@ module FileUtils
   end
 
   def have_st_ino?
-    /djgpp|mswin|mingw|bccwin|wince/ !~ RUBY_PLATFORM
+    /mswin|mingw|bccwin|wince|emx/ !~ RUBY_PLATFORM
   end
 
   def fu_stream_blksize( *streams )

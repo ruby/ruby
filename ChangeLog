@@ -1,3 +1,14 @@
+Thu Nov 20 19:15:50 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (have_st_ino?): emx (OS/2 with EMX) does not
+	  have st_ino (always 0). [ruby-dev:21972]
+
+	* lib/fileutils.rb (rename_cannot_overwrite_file?): emx does not
+	  allow overwriting files by rename(2).
+
+	* test/fileutils/test_fileutils.rb: windows? ->
+	  have_drive_letter?, have_file_perm?
+
 Thu Nov 20 17:50:58 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tkballoonhelp.rb: new sample script

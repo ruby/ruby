@@ -9,19 +9,24 @@ require 'test/unit'
 require 'fileasserts'
 
 
-def windows?
-  /mswin|mingw|bcc|djgpp/ === RUBY_PLATFORM
+def have_drive_letter?
+  /djgpp|mswin|mingw|bcc|wince|emx/ === RUBY_PLATFORM
 end
 
+def have_file_perm?
+  /djgpp|mswin|mingw|bcc|wince|emx/ !~ RUBY_PLATFORM
+end
+
+begin
+  File.symlink 'not_exist', 'symlink_test'
+  HAVE_SYMLINK = true
+rescue NotImplementedError
+  HAVE_SYMLINK = false
+ensure
+  File.unlink 'symlink_test' if File.symlink?('symlink_test')
+end
 def have_symlink?
-  begin
-    File.symlink 'not_exist', 'symlink_test'
-    return true
-  rescue NotImplementedError
-    return false
-  ensure
-    File.unlink 'symlink_test' if File.symlink?('symlink_test')
-  end
+  HAVE_SYMLINK
 end
 
 
@@ -103,7 +108,7 @@ class TestFileUtils < Test::Unit::TestCase
     assert_equal Dir.pwd, pwd()
 
     cwd = Dir.pwd
-if windows?
+if have_drive_letter?
     cd('C:/') {
       assert_equal 'C:/', pwd()
     }
@@ -338,7 +343,7 @@ end
 
     mkdir 'tmp/tmp', :mode => 0700
     assert_directory 'tmp/tmp'
-    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) unless windows?
+    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
     Dir.rmdir 'tmp/tmp'
   end
 
@@ -374,8 +379,8 @@ end
     mkdir_p 'tmp/tmp/tmp', :mode => 0700
     assert_directory 'tmp/tmp'
     assert_directory 'tmp/tmp/tmp'
-    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) unless windows?
-    assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777) unless windows?
+    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) if have_file_perm?
+    assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777) if have_file_perm?
     rm_rf 'tmp/tmp'
   end
 
@@ -395,12 +400,12 @@ end
     File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
     install 'tmp/aaa', 'tmp/bbb', :mode => 0600
     assert_equal "aaa\n", File.read('tmp/bbb')
-    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) unless windows?
+    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) if have_file_perm?
 
     t = File.mtime('tmp/bbb')
     install 'tmp/aaa', 'tmp/bbb'
     assert_equal "aaa\n", File.read('tmp/bbb')
-    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) unless windows?
+    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) if have_file_perm?
     assert_equal t, File.mtime('tmp/bbb')
 
     File.unlink 'tmp/aaa'
