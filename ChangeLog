@@ -78,7 +78,7 @@ Mon Sep 15 19:02:52 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/csv.rb: add extra pamameter to specify row(record) separater
 	  character.  To parse Mac's CR separated CSV, do like this.
-	  	    CSV.open("mac.csv", "r", ?,, ?\r) { |row| p row.to_a }
+	    CSV.open("mac.csv", "r", ?,, ?\r) { |row| p row.to_a }
 	  The 3rd parameter in this example ?, is for column separater and the
 	  4th ?\r is for row separater.  Row separater is nil by default.  Nil
 	  separater means "\r\n" or "\n".
