@@ -1,3 +1,10 @@
+Wed Feb  6 13:28:53 2002  Amos Gouaux  <amos+ruby@utdallas.edu>
+
+	* lib/net/imap.rb: OpenSSL support.
+
+	* lib/net/imap.rb (setquota): unset quota if the second argument
+	is nil.
+
 Wed Feb  6 02:10:30 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* io.c (fptr_finalize): ignore EBADF when f and f2 use same

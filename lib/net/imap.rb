@@ -684,10 +684,18 @@ Struct
 require "socket"
 require "monitor"
 require "digest/md5"
+begin
+  require "openssl"
+rescue LoadError
+end
 
 module Net
   class IMAP
     include MonitorMixin
+    if defined?(OpenSSL)
+      include OpenSSL
+      include SSL
+    end
 
     attr_reader :greeting, :responses, :response_handlers
 
@@ -716,7 +724,7 @@ module Net
     end
 
     def disconnect
-      @sock.shutdown
+      @sock.shutdown unless @usessl
       @receiver_thread.join
       @sock.close
     end
@@ -803,8 +811,13 @@ module Net
       end
     end
 
+    # setquota(mailbox, nil) will unset quota.
     def setquota(mailbox, quota)
-      data = '(STORAGE ' + quota.to_s + ')'
+      if quota.nil?
+        data = '()'
+      else
+        data = '(STORAGE ' + quota.to_s + ')'
+      end
       send_command("SETQUOTA", mailbox, RawData.new(data))
     end
 
@@ -914,7 +927,7 @@ module Net
     @@debug = false
     @@authenticators = {}
 
-    def initialize(host, port = PORT)
+    def initialize(host, port = PORT, usessl = false, certs = nil, verify = false)
       super()
       @host = host
       @port = port
@@ -922,6 +935,23 @@ module Net
       @tagno = 0
       @parser = ResponseParser.new
       @sock = TCPSocket.open(host, port)
+      if usessl
+        unless defined?(OpenSSL)
+          raise "SSL extension not installed"
+        end
+        @usessl = true
+        @sock = SSLSocket.new(@sock)
+
+        # verify the server.
+        @sock.ca_file = certs if certs && FileTest::file?(certs)
+        @sock.ca_path = certs if certs && FileTest::directory?(certs)
+        @sock.verify_mode = VERIFY_PEER if verify
+        @sock.verify_callback = VerifyCallbackProc if defined?(VerifyCallbackProc)
+
+        @sock.connect   # start ssl session.
+      else
+        @usessl = false
+      end
       @responses = Hash.new([].freeze)
       @tagged_responses = {}
       @response_handlers = []
@@ -1975,24 +2005,36 @@ module Net
       end
 
       def getquota_response
-        # If no quota set, get back
+        # If quota never established, get back
         # `NO Quota root does not exist'.
+        # If quota removed, get `()' after the
+        # folder spec with no mention of `STORAGE'.
         token = match(T_ATOM)
         name = token.value.upcase
         match(T_SPACE)
         mailbox = astring
         match(T_SPACE)
         match(T_LPAR)
-        match(T_ATOM)
-        match(T_SPACE)
-        token = match(T_NUMBER)
-        usage = token.value
-        match(T_SPACE)
-        token = match(T_NUMBER)
-        quota = token.value
-        match(T_RPAR)
-        data = MailboxQuota.new(mailbox, usage, quota)
-        return UntaggedResponse.new(name, data, @str)
+        token = lookahead
+        case token.symbol
+        when T_RPAR
+          shift_token
+          data = MailboxQuota.new(mailbox, nil, nil)
+          return UntaggedResponse.new(name, data, @str)
+        when T_ATOM
+          shift_token
+          match(T_SPACE)
+          token = match(T_NUMBER)
+          usage = token.value
+          match(T_SPACE)
+          token = match(T_NUMBER)
+          quota = token.value
+          match(T_RPAR)
+          data = MailboxQuota.new(mailbox, usage, quota)
+          return UntaggedResponse.new(name, data, @str)
+        else
+          parse_error("unexpected token %s", token.symbol)
+        end
       end
 
       def getacl_response
