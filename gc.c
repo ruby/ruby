@@ -432,7 +432,12 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 # define STACK_END (&stack_end)
 #else
 # if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS) && !defined(__ia64__)
-#  define  SET_STACK_END    VALUE *stack_end = __builtin_frame_address(0)
+__attribute__ ((noinline)) static VALUE *
+stack_end_address(void)
+{
+    return (VALUE *)__builtin_frame_address(0);
+}
+#  define  SET_STACK_END    VALUE *stack_end = stack_end_address()
 # else
 #  define  SET_STACK_END    VALUE *stack_end = alloca(1)
 # endif

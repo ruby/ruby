@@ -1,3 +1,15 @@
+Mon Dec 13 18:13:52 2004  Tanaka Akira  <akr@m17n.org>
+
+	* gc.c (stack_end_address): new function to obtain stack end address.
+	  stack_end_address calls __builtin_frame_address(0) to obtain the
+	  frame pointer of a stack frame of stack_end_address.  The address
+	  is the stack pointer of the caller's stack frame.
+	  (SET_STACK_END): use stack_end_address.
+	  This makes the conservative garbage collector to scan a stack frame
+	  of the garbage_collect function itself.  This is required because
+	  callee-save registers may be stored in the frame.
+	  [ruby-dev:25158]
+
 Mon Dec 13 00:58:02 2004  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (cleanpath_aggressive): make it private.
