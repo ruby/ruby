@@ -145,17 +145,28 @@ module Test
         }
 
         exceptions = [ArgumentError, TypeError]
+        modules = [Math, Comparable]
+        rescues = exceptions + modules
         exceptions.each do |exc|
           check_nothing_fails(true) {
-            return_value = assert_raise(*exceptions) {
+            return_value = assert_raise(*rescues) {
               raise exc, "Error"
             }
           }
           check(return_value.instance_of?(exc), "Should have returned #{exc} but was #{return_value.class}")
           check(return_value.message == "Error", "Should have returned the correct exception from a successful assert_raise")
         end
-        check_fails("<[ArgumentError, TypeError]> exception expected but none was thrown.") {
-          assert_raise(*exceptions) {
+        modules.each do |mod|
+          check_nothing_fails(true) {
+            return_value = assert_raise(*rescues) {
+              raise Exception.new("Error").extend(mod)
+            }
+          }
+          check(mod === return_value, "Should have returned #{mod}")
+          check(return_value.message == "Error", "Should have returned the correct exception from a successful assert_raise")
+        end
+        check_fails("<[ArgumentError, TypeError, Math, Comparable]> exception expected but none was thrown.") {
+          assert_raise(*rescues) {
             1 + 1
           }
         }
@@ -298,7 +309,7 @@ Message: <"Error">
         }
         check_nothing_fails {
           begin
-            assert_nothing_raised(RuntimeError, StandardError, "successful assert_nothing_raised") {
+            assert_nothing_raised(RuntimeError, StandardError, Comparable, "successful assert_nothing_raised") {
               raise ZeroDivisionError.new("ArgumentError")
             }
           rescue ZeroDivisionError

@@ -37,12 +37,12 @@ module Test
         end,
       }
 
-      OUTPUT_LEVELS = {
-        :silent => UI::SILENT,
-        :progress => UI::PROGRESS_ONLY,
-        :normal => UI::NORMAL,
-        :verbose => UI::VERBOSE,
-      }
+      OUTPUT_LEVELS = [
+        [:silent, UI::SILENT],
+        [:progress, UI::PROGRESS_ONLY],
+        [:normal, UI::NORMAL],
+        [:verbose, UI::VERBOSE],
+      ]
 
       COLLECTORS = {
         :objectspace => proc do |r|
@@ -95,10 +95,10 @@ module Test
           o.banner << "\nUsage: #{$0} [options] [-- untouched arguments]"
 
           o.on
-          o.on('-r', '--runner=RUNNER', RUNNERS.keys,
+          o.on('-r', '--runner=RUNNER', RUNNERS,
                "Use the given RUNNER.",
-               "(" + keyword_display(RUNNERS.keys) + ")") do |r|
-            @runner = RUNNERS[r]
+               "(" + keyword_display(RUNNERS) + ")") do |r|
+            @runner = r
           end
 
           if(@standalone)
@@ -138,10 +138,10 @@ module Test
             end
           end
 
-          o.on('-v', '--verbose=[LEVEL]', OUTPUT_LEVELS.keys,
+          o.on('-v', '--verbose=[LEVEL]', OUTPUT_LEVELS,
                "Set the output level (default is verbose).",
-               "(" + keyword_display(OUTPUT_LEVELS.keys) + ")") do |l|
-            @output_level = (l ? OUTPUT_LEVELS[l] : OUTPUT_LEVELS[:verbose])
+               "(" + keyword_display(OUTPUT_LEVELS) + ")") do |l|
+            @output_level = l || UI::VERBOSE
           end
 
           o.on('--',
@@ -174,7 +174,9 @@ module Test
       end
 
       def keyword_display(array)
-        array.collect{|e| e.to_s.sub(/^(.)([A-Za-z]+)(?=\w*$)/, '\\1[\\2]')}.sort.join(", ")
+        list = array.collect {|e, *| e.to_s}
+        Array === array or list.sort!
+        list.collect {|e| e.sub(/^(.)([A-Za-z]+)(?=\w*$)/, '\\1[\\2]')}.join(", ")
       end
 
       def run

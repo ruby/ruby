@@ -1,7 +1,19 @@
+Wed Dec 24 14:07:55 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/test/unit/assertions.rb: Modules are allowed to rescue.
+
+	* lib/test/unit/autorunner.rb: show output_level in order.
+
+	* lib/test/unit/collector/dir.rb: get rid of successive same
+	  directories in load path.
+
+	* test/testunit/test_assertions.rb (test_assert_nothing_raised,
+	  test_assert_raise): test for modules.
+
 Wed Dec 24 13:43:34 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (authenticate): remove "\n" from base64 encoded
-	strings.
+	  strings.
 
 Wed Dec 24 11:26:41 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

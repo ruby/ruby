@@ -56,18 +56,31 @@ EOT
         assert_block(full_message) { expected == actual }
       end
 
+      private
+      def _check_exception_class(args)
+        args.partition do |klass|
+          next if klass.instance_of?(Module)
+          assert(Exception >= klass, "Should expect a class of exception, #{klass}")
+          true
+        end
+      end
+
+      private
+      def _expected_exception?(actual_exception, exceptions, modules)
+        exceptions.include?(actual_exception.class) or
+          modules.any? {|mod| actual_exception.is_a?(mod)}
+      end
+
       # Passes if block raises one of the given exceptions.
       public
       def assert_raise(*args)
         _wrap_assertion do
-          if Class === args.last
+          if Module === args.last
             message = ""
           else
             message = args.pop
           end
-          args.each do |klass|
-            assert(Exception >= klass, "Should expect a class of exception, #{klass}")
-          end
+          exceptions, modules = _check_exception_class(args)
           expected = args.size == 1 ? args.first : args
           actual_exception = nil
           full_message = build_message(message, "<?> exception expected but none was thrown.", expected)
@@ -80,7 +93,7 @@ EOT
             false
           end
           full_message = build_message(message, "<?> exception expected but was\n?", expected, actual_exception)
-          assert_block(full_message) { args.include?(actual_exception.class) }
+          assert_block(full_message) {_expected_exception?(actual_exception, exceptions, modules)}
           actual_exception
         end
       end
@@ -188,21 +201,20 @@ EOT
       public
       def assert_nothing_raised(*args)
         _wrap_assertion do
-          if Class === args.last
+          if Module === args.last
             message = ""
           else
             message = args.pop
           end
-          args.each do |klass|
-            assert(Exception >= klass, "Should expect a class of exception, #{klass}")
-          end
+          exceptions, modules = _check_exception_class(args)
           begin
             yield
           rescue Exception => e
-            if ((args.empty? && !e.instance_of?(AssertionFailedError)) || args.include?(e.class))
+            if ((args.empty? && !e.instance_of?(AssertionFailedError)) ||
+                _expected_exception?(e, exceptions, modules))
               assert_block(build_message(message, "Exception raised:\n?", e)){false}
             else
-              raise e.class, e.message, e.backtrace
+              raise
             end
           end
           nil

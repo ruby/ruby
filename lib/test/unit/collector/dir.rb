@@ -68,7 +68,8 @@ module Test
 
         def collect_file(name, suites, already_gathered)
           loadpath = $:.dup
-          $:.unshift(File.dirname(name))
+          dir = File.dirname(File.expand_path(name))
+          $:.unshift(dir) unless $:.first == dir
           if(@req)
             @req.require(name)
           else
