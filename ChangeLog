@@ -1,3 +1,11 @@
+Sat Sep  1 09:50:54 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ruby.c (set_arg0): prevent SEGV when val is longer than the
+	  original arguments.
+
+	* ruby.c (ruby_process_options): initialize total length of
+	  original arguments at first.
+
 Wed Aug 29 02:18:53 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (yylex): ternary ? can be followed by newline.
