@@ -912,7 +912,7 @@ rb_push_glob(str, flags)
     VALUE ary;
 
     if (rb_block_given_p())
-	ary = Qnil;
+	ary = 0;
     else
 	ary = rb_ary_new();
 
