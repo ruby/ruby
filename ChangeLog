@@ -1,3 +1,16 @@
+Mon Aug 19 19:01:55 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/inf-ruby.el (inf-ruby-keys): ruby-send-definition
+	  conflicted with ruby-insert-end.
+
+	* misc/inf-ruby.el (inferior-ruby-mode): compilation-minor-mode.
+
+	* misc/inf-ruby.el (ruby-send-region): send as here document to
+	  adjust source file/line.  [ruby-talk:47113], [ruby-dev:17965]
+
+	* misc/inf-ruby.el (ruby-send-terminator): added to make unique
+	  terminator.
+
 Mon Aug 19 15:38:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (sort_2): comparison should be done as signed long.
