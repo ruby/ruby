@@ -1,3 +1,9 @@
+Wed Apr 16 00:14:06 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-special-char-p): should test at the
+	  point if no argument.  fixed by Michael Scholz
+	  <scholz-micha@gmx.de>.
+
 Tue Apr 15 19:35:08 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/fileutils.rb: rm_r should raise Errno::ENOENT if file

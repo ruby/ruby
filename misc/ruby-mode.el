@@ -282,7 +282,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	  (move-to-column (+ x shift))))))
 
 (defun ruby-special-char-p (&optional pnt)
-  (let ((c (char-before pnt)))
+  (let ((c (char-before (or pnt (point)))))
     (cond ((or (eq c ??) (eq c ?$)))
 	  ((eq c ?\\)
 	   (eq (char-before (1- (or pnt (point)))) ??)))))
