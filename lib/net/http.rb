@@ -39,7 +39,7 @@ module Net # :nodoc:
   # This library provides your program functions to access WWW
   # documents via HTTP, Hyper Text Transfer Protocol version 1.1.
   # For details of HTTP, refer [RFC2616]
-  # ((<URL:http://www.ietf.org/rfc/rfc2616.txt>)).
+  # (http://www.ietf.org/rfc/rfc2616.txt).
   # 
   # == Examples
   # 
@@ -160,13 +160,13 @@ module Net # :nodoc:
   # allows you to use 1.2 features again.
   # 
   #     # example
-  #     Net::HTTP.start {|http1| ...(http1 has 1.2 features)... }
+  #     Net::HTTP.start { |http1| ...(http1 has 1.2 features)... }
   # 
   #     Net::HTTP.version_1_1
-  #     Net::HTTP.start {|http2| ...(http2 has 1.1 features)... }
+  #     Net::HTTP.start { |http2| ...(http2 has 1.1 features)... }
   # 
   #     Net::HTTP.version_1_2
-  #     Net::HTTP.start {|http3| ...(http3 has 1.2 features)... }
+  #     Net::HTTP.start { |http3| ...(http3 has 1.2 features)... }
   # 
   # This function is NOT thread-safe.
   #
