@@ -1,3 +1,7 @@
+Wed Jan 08 17:10:32 2003  NAKAMURA Usaku <usa@ruby-lang.org>
+
+	* ext/Win32API/lib/win32/registry.rb: added. [new]
+
 Wed Jan  8 15:54:05 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c: remove ruby_last_node and assignments seems to be
