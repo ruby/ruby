@@ -1,3 +1,8 @@
+Mon May 26 21:39:46 2003  MoonWolf  <moonwolf@moonwolf.com>
+
+	* lib/mkmf.rb, lib/optparse.rb, lib/tracer.rb: use Method#to_block
+	  instead of deprecated Method#to_proc.  (ruby-bugs-ja:PR#477)
+
 Mon May 26 21:21:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb (OptionParser::Switch::parse,
