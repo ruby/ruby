@@ -100,6 +100,23 @@ module REXML
 				self.stream = source
 			end
 
+      def add_listener( listener )
+        if !defined?(@listeners) or !@listeners
+          @listeners = []
+          instance_eval <<-EOL
+            alias :_old_pull :pull
+            def pull
+              event = _old_pull
+              @listeners.each do |listener|
+                listener.receive event
+              end
+              event
+            end
+          EOL
+        end
+        @listeners << listener
+      end
+
       attr_reader :source
 
 			def stream=( source )
@@ -162,11 +179,11 @@ module REXML
 
 			# Returns the next event.  This is a +PullEvent+ object.
 			def pull
-				return [ :end_document ] if empty?
 				if @closed
 					x, @closed = @closed, nil
 					return [ :end_element, x ]
 				end
+				return [ :end_document ] if empty?
 				return @stack.shift if @stack.size > 0
 				@source.read if @source.buffer.size<2
 				if @document_status == nil
@@ -289,8 +306,9 @@ module REXML
 							last_tag = @tags.pop
 							#md = @source.match_to_consume( '>', CLOSE_MATCH)
 							md = @source.match( CLOSE_MATCH, true )
-							raise REXML::ParseException.new( "Missing end tag for '#{last_tag}' "+
-								"(got \"#{md[1]}\")", @source) unless last_tag == md[1]
+							raise REXML::ParseException.new( "Missing end tag for "+
+                "'#{last_tag}' (got \"#{md[1]}\")", 
+                @source) unless last_tag == md[1]
 							return [ :end_element, last_tag ]
 						elsif @source.buffer[1] == ?!
 							md = @source.match(/\A(\s*[^>]*>)/um)
@@ -411,3 +429,23 @@ module REXML
 		end
 	end
 end
+
+=begin
+  case event[0]
+  when :start_element
+  when :text
+  when :end_element
+  when :processing_instruction
+  when :cdata
+  when :comment
+  when :xmldecl
+  when :start_doctype
+  when :end_doctype
+  when :externalentity
+  when :elementdecl
+  when :entity
+  when :attlistdecl
+  when :notationdecl
+  when :end_doctype
+  end
+=end

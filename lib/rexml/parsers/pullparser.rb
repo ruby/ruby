@@ -29,7 +29,13 @@ module REXML
 			def initialize stream
 				super
 				@entities = {}
+        @listeners = nil
 			end
+
+      def add_listener( listener )
+        @listeners = [] unless @listeners
+        @listeners << listener
+      end
 
 			def each
 				while has_next?

@@ -9,6 +9,10 @@ module REXML
 				@parser = REXML::Parsers::BaseParser.new( stream )
 			end
 
+      def add_listener( listener )
+        @parser.add_listener( listener )
+      end
+
       def rewind
         @stream.rewind
         @parser.stream = @stream

@@ -14,6 +14,10 @@ module REXML
 				@tag_stack = []
 			end
 			
+      def add_listener( listener )
+        @parser.add_listener( listener )
+      end
+
 			# Listen arguments:
 			#
 			# Symbol, Array, Block
@@ -89,6 +93,7 @@ module REXML
 						if procs or listeners
 							# break out the namespace declarations
 							# The attributes live in event[2]
+							event[2].each {|n, v| event[2][n] = @parser.normalize(v)}
 							nsdecl = event[2].find_all { |n, value| n =~ /^xmlns(:|$)/ }
 							nsdecl.collect! { |n, value| [ n[6..-1], value ] }
 							@namespace_stack.push({})

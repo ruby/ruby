@@ -152,6 +152,12 @@ module REXML
       write( rv )
       rv
     end
+
+    def xpath
+      path = @element.xpath
+      path += "/@#{self.expanded_name}"
+      return path
+    end
 	end
 end
 #vim:ts=2 sw=2 noexpandtab:

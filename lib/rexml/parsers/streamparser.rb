@@ -6,6 +6,10 @@ module REXML
 				@parser = BaseParser.new( source )
 			end
 
+      def add_listener( listener )
+        @parser.add_listener( listener )
+      end
+
 			def parse
 				# entity string
 				while true
@@ -14,7 +18,10 @@ module REXML
 					when :end_document
 						return
 					when :start_element
-						@listener.tag_start( event[1], event[2] )
+						attrs = event[2].each do |n, v|
+							event[2][n] = @parser.unnormalize( v )
+						end
+						@listener.tag_start( event[1], attrs )
 					when :end_element
 						@listener.tag_end( event[1] )
 					when :text

@@ -30,46 +30,126 @@ module REXML
         parsed
       end
 
-      def to_string( path )
+      def abbreviate( path )
+        path = path.kind_of?(String) ? parse( path ) : path
         string = ""
+        document = false
         while path.size > 0
-          case path[0]
-          when :ancestor, :ancestor_or_self, :attribute, :child, :descendant, :descendant_or_self, :following, :following_sibling, :namespace, :parent, :preceding, :preceding_sibling, :self
-            op = path.shift
-            string << "/" unless string.size == 0
-            string << op.to_s
-            string << "::"
+          op = path.shift
+          case op
+          when :node
+          when :attribute
+						string << "/" if string.size > 0
+						string << "@"
+          when :child
+						string << "/" if string.size > 0
+          when :descendant_or_self
+            string << "/"
+          when :self
+            string << "."
+          when :parent
+            string << ".."
           when :any
-            path.shift
             string << "*"
+					when :text
+						string << "text()"
+          when :following, :following_sibling, 
+                :ancestor, :ancestor_or_self, :descendant, 
+                :namespace, :preceding, :preceding_sibling
+            string << "/" unless string.size == 0
+            string << op.to_s.tr("_", "-")
+            string << "::"
           when :qname
-            path.shift
             prefix = path.shift
             name = path.shift
             string << prefix+":" if prefix.size > 0
             string << name
           when :predicate
-            path.shift
             string << '['
-            string << predicate_to_string( path.shift )
-            string << ' ]'
+            string << predicate_to_string( path.shift ) {|x| abbreviate( x ) }
+            string << ']'
+          when :document
+            document = true
+					when :function
+						string << path.shift
+						string << "( "
+						string << predicate_to_string( path.shift[0] ) {|x| abbreviate( x )}
+						string << " )"
+					when :literal
+						string << %Q{ "#{path.shift}" }
           else
             string << "/" unless string.size == 0
             string << "UNKNOWN("
-            string << path.shift.inspect
+            string << op.inspect
             string << ")"
           end
         end
+				string = "/"+string if document
         return string
       end
 
-      def predicate_to_string( path )
+      def expand( path )
+        path = path.kind_of?(String) ? parse( path ) : path
+        string = ""
+        document = false
+        while path.size > 0
+          op = path.shift
+          case op
+          when :node
+            string << "node()"
+          when :attribute, :child, :following, :following_sibling, 
+                :ancestor, :ancestor_or_self, :descendant, :descendant_or_self,
+                :namespace, :preceding, :preceding_sibling, :self, :parent
+            string << "/" unless string.size == 0
+            string << op.to_s.tr("_", "-")
+            string << "::"
+          when :any
+            string << "*"
+          when :qname
+            prefix = path.shift
+            name = path.shift
+            string << prefix+":" if prefix.size > 0
+            string << name
+          when :predicate
+            string << '['
+            string << predicate_to_string( path.shift ) { |x| expand(x) }
+            string << ']'
+          when :document
+            document = true
+          else
+            string << "/" unless string.size == 0
+            string << "UNKNOWN("
+            string << op.inspect
+            string << ")"
+          end
+        end
+        string = "/"+string if document
+        return string
+      end
+
+      def predicate_to_string( path, &block )
         string = ""
         case path[0]
-        when :and, :or, :mult, :plus, :minus, :neq, :eq, :lt, :gt, :lteq, :gteq, :div, :mod, :neq, :union
+        when :and, :or, :mult, :plus, :minus, :neq, :eq, :lt, :gt, :lteq, :gteq, :div, :mod, :union
           op = path.shift
-          left = predicate_to_string( path.shift )
-          right = predicate_to_string( path.shift )
+          case op
+          when :eq
+            op = "="
+          when :lt
+            op = "<"
+          when :gt
+            op = ">"
+          when :lteq
+            op = "<="
+          when :gteq
+            op = ">="
+          when :neq
+            op = "!="
+          when :union
+            op = "|"
+          end
+          left = predicate_to_string( path.shift, &block )
+          right = predicate_to_string( path.shift, &block )
           string << " "
           string << left
           string << " "
@@ -82,7 +162,7 @@ module REXML
           name = path.shift
           string << name
           string << "( "
-          string << predicate_to_string( path.shift )
+          string << predicate_to_string( path.shift, &block )
           string << " )"
         when :literal
           path.shift
@@ -91,7 +171,7 @@ module REXML
           string << " "
         else
           string << " "
-          string << to_string( path )
+          string << yield( path )
           string << " "
         end
         return string.squeeze(" ")
@@ -534,7 +614,6 @@ module REXML
       #| FUNCTION_NAME '(' ( expr ( ',' expr )* )? ')'
       def FunctionCall rest, parsed
         path, arguments = parse_args(rest)
-        #puts "Function call >>> (#{arguments.inspect})" 
         argset = []
         for argument in arguments
           args = []
@@ -567,28 +646,39 @@ module REXML
       def parse_args( string )
         arguments = []
         ind = 0
+				inquot = false
+				inapos = false
         depth = 1
         begin
           case string[ind]
-          when ?(
-            depth += 1
-            if depth == 1
-              string = string[1..-1]
-              ind -= 1
-            end
-          when ?)
-            depth -= 1
-            if depth == 0
-              s = string[0,ind].strip
-              arguments << s unless s == ""
-              string = string[ind+1..-1]
-            end
-          when ?,
-            if depth == 1
-              s = string[0,ind].strip
-              arguments << s unless s == ""
-              string = string[ind+1..-1]
-              ind = 0
+          when ?"
+          	inquot = !inquot unless inapos
+          when ?'
+          	inapos = !inapos unless inquot
+          else
+          	unless inquot or inapos
+          		case string[ind]
+							when ?(
+								depth += 1
+                if depth == 1
+                	string = string[1..-1]
+                	ind -= 1
+                end
+							when ?)
+								depth -= 1
+								if depth == 0
+									s = string[0,ind].strip
+									arguments << s unless s == ""
+									string = string[ind+1..-1]
+								end
+							when ?,
+								if depth == 1
+									s = string[0,ind].strip
+									arguments << s unless s == ""
+									string = string[ind+1..-1]
+									ind = -1 
+								end
+							end
             end
           end
           ind += 1
