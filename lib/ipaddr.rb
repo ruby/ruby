@@ -32,6 +32,18 @@
 
 require 'socket'
 
+unless Socket.const_defined? "AF_INET6"
+  class Socket
+    AF_INET6 = Object.new
+  end
+  class << IPSocket
+    alias getaddress_orig getaddress
+    def getaddress(s)
+      /^::/ =~ s ? s : getaddress_orig(s)
+    end
+  end
+end
+
 # IPAddr provides a set of methods to manipulate an IP address.  Both
 # IPv4 and IPv6 are supported.
 class IPAddr

@@ -2511,10 +2511,10 @@ Init_socket()
     sock_define_const("AF_UNSPEC", AF_UNSPEC);
     sock_define_const("PF_UNSPEC", PF_UNSPEC);
 #endif
-#ifdef AF_INET6
+#ifdef INET6
     sock_define_const("AF_INET6", AF_INET6);
 #endif
-#ifdef PF_INET6
+#ifdef INET6
     sock_define_const("PF_INET6", PF_INET6);
 #endif
 

@@ -1,3 +1,11 @@
+Sun Dec 14 18:46:48 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/socket.c (Init_socket): IPv6 is not supported although
+	  AF_INET6 is defined on MinGW.
+
+	* lib/ipaddr.rb (AF_INET6): workaround in the environment which does
+	  not support IPv6.
+
 Sat Dec 13 18:55:16 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/charset_alias.rb: preserve original order.
