@@ -45,7 +45,10 @@ module WEBrick
       res = HTTPResponse.new(@config)
       unless @config[:NPH] or defined?(MOD_RUBY)
         def res.setup_header
-          @header["status"] ||= @status
+          unless @header["status"]
+            phrase = HTTPStatus::reason_phrase(@status)
+            @header["status"] = "#{@status} #{phrase}"
+          end
           super
         end
         def res.status_line
