@@ -64,6 +64,14 @@ require 'timeout'
 
 module Net
 
+  module NetPrivate
+  end
+
+  def self.net_private( &block )
+    ::Net::NetPrivate.module_eval( &block )
+  end
+
+
   class Protocol
 
     Version = '1.2.0'
@@ -232,6 +240,7 @@ module Net
   Session = Protocol
 
 
+  net_private {
 
   class Response
 
@@ -254,6 +263,8 @@ module Net
     end
 
   end
+
+  }
 
 
   class ProtocolError          < StandardError; end
@@ -326,8 +337,7 @@ module Net
 
 
 
-  module NetPrivate
-
+  net_private {
 
   class WriteAdapter
 
@@ -496,12 +506,14 @@ module Net
       "#<#{type} open=#{!@closed}>"
     end
 
-    def reopen
+    def reopen( otime = nil )
       unless closed? then
         close
         @buffer = ''
       end
-      @socket = TCPsocket.new( @addr, @port )
+      timeout( otime ) {
+        @socket = TCPsocket.new( @addr, @port )
+      }
       @closed = false
     end
 
@@ -676,7 +688,7 @@ module Net
     def write_bin( src, block )
       writing {
         if block then
-          block.call WriteAdapter.new( self, :do_write )
+          block.call ::Net::NetPrivate::WriteAdapter.new( self, :do_write )
         else
           src.each do |bin|
             do_write bin
@@ -690,7 +702,7 @@ module Net
 
       wsize = use_each_crlf_line {
         if block then
-          block.call WriteAdapter.new( self, :wpend_in )
+          block.call ::Net::NetPrivate::WriteAdapter.new( self, :wpend_in )
         else
           wpend_in src
         end
@@ -830,8 +842,7 @@ module Net
 
   end
 
-
-  end   # module Net::NetPrivate
+  }
 
 
   def Net.quote( str )

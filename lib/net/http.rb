@@ -221,6 +221,11 @@ module Net
     def do_finish
     end
 
+    def re_connect
+      @socket.reopen @open_timeout
+      on_connect
+    end
+
 
     ###
     ### proxy
@@ -425,8 +430,7 @@ module Net
         start
         req['connection'] = 'close'
       elsif @socket.closed? then
-        @socket.reopen
-        on_connect
+        re_connect
       end
       if @seems_1_0_server then
         req['connection'] = 'close'
@@ -553,11 +557,11 @@ module Net
 
 
 
-  class HTTP
-
   ###
   ### request
   ###
+
+  net_private {
 
   class HTTPRequest
 
@@ -577,8 +581,6 @@ module Net
       @response = nil
       @http_version = nil
     end
-
-  public
 
     attr_reader :path
     attr_reader :response
@@ -616,7 +618,8 @@ module Net
       @u_header.each_value( &block )
     end
 
-  private
+
+    private
 
     def canonical( k )
       k.split('-').collect {|i| i.capitalize }.join('-')
@@ -637,7 +640,7 @@ module Net
       @socket = sock
       ihead.update @u_header
       yield ihead
-      @response = read_response
+      @response = get_response
       @sock = nil
     end
 
@@ -653,13 +656,20 @@ module Net
     # read
     #
 
-    def read_response
-      resp = rdresp0
-      resp = rdresp0 while ContinueCode === resp
+    def get_response
+      begin
+        resp = read_response
+      end while ContinueCode === resp
       resp
     end
 
-    def rdresp0
+  end
+
+  module HTTPReadResponse
+
+    private
+
+    def read_response
       resp = get_resline
 
       while true do
@@ -694,13 +704,17 @@ module Net
       ::Net::NetPrivate::HTTPResponse.new(
               status, discrip, @socket, type::HAS_BODY )
     end
+  
+  end
 
+  class HTTPRequest
+    include ::Net::NetPrivate::HTTPReadResponse
   end
 
 
   class HTTPRequestWithData < HTTPRequest
   
-  private
+    private
 
     def exec( sock, ver, path, ihead, str = nil )
       check_arg str, block_given?
@@ -753,36 +767,40 @@ module Net
   
   end
 
+  }
 
-  class Get < HTTPRequest
-    HAS_BODY = true
-    METHOD = 'GET'
-  end
 
-  class Head < HTTPRequest
-    HAS_BODY = false
-    METHOD = 'HEAD'
-  end
+  class HTTP
 
-  class Post < HTTPRequestWithData
-    HAS_BODY = true
-    METHOD = 'POST'
-  end
+    class Get < ::Net::NetPrivate::HTTPRequest
+      HAS_BODY = true
+      METHOD = 'GET'
+    end
 
-  class Put < HTTPRequestWithData
-    HAS_BODY = true
-    METHOD = 'PUT'
-  end
+    class Head < ::Net::NetPrivate::HTTPRequest
+      HAS_BODY = false
+      METHOD = 'HEAD'
+    end
+
+    class Post < ::Net::NetPrivate::HTTPRequestWithData
+      HAS_BODY = true
+      METHOD = 'POST'
+    end
+
+    class Put < ::Net::NetPrivate::HTTPRequestWithData
+      HAS_BODY = true
+      METHOD = 'PUT'
+    end
 
   end   # HTTP::
 
 
 
-  module NetPrivate
-
   ###
   ### response
   ###
+
+  net_private {
 
   class HTTPResponse < Response
 
@@ -1027,7 +1045,7 @@ module Net
               'both of arg and block are given for HTTP method'
       end
       if block then
-        ReadAdapter.new block
+        ::Net::NetPrivate::ReadAdapter.new block
       else
         dest or ''
       end
@@ -1035,7 +1053,6 @@ module Net
 
   end
 
-
-  end   # module Net::NetPrivate
+  }
 
 end   # module Net
