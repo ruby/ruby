@@ -1,3 +1,8 @@
+Thu Mar 22 18:17:36 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_nesting): should not include Object at the
+	  toplevel.
+
 Thu Mar 22 17:43:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h: better inline function support.

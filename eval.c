@@ -1467,7 +1467,7 @@ rb_mod_nesting()
     NODE *cbase = RNODE(ruby_frame->cbase);
     VALUE ary = rb_ary_new();
 
-    while (cbase) {
+    while (cbase && cbase->nd_next) {
 	rb_ary_push(ary, cbase->nd_clss);
 	cbase = cbase->nd_next;
     }
