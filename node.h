@@ -352,6 +352,8 @@ NODE *rb_compile_file _((const char*, VALUE, int));
 void rb_add_method _((VALUE, ID, NODE *, int));
 NODE *rb_node_newnode _((enum node_type,VALUE,VALUE,VALUE));
 
+NODE* rb_method_node _((VALUE klass, ID id));
+
 struct global_entry *rb_global_entry _((ID));
 VALUE rb_gvar_get _((struct global_entry *));
 VALUE rb_gvar_set _((struct global_entry *, VALUE));

@@ -421,6 +421,16 @@ rb_get_method_body(klassp, idp, noexp)
     return body;
 }
 
+NODE*
+rb_method_node(klass, id)
+    VALUE klass;
+    ID id;
+{
+    int noex;
+
+    return rb_get_method_body(&klass, &id, &noex);
+}
+
 static void
 remove_method(klass, mid)
     VALUE klass;

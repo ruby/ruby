@@ -81,8 +81,8 @@ static VALUE
 rb_ary_frozen_p(ary)
     VALUE ary;
 {
-    if (FL_TEST(ary, FL_FREEZE|ARY_TMPLOCK))
-	return Qtrue;
+    if (OBJ_FROZEN(ary)) return Qtrue;
+    if (FL_TEST(ary, ARY_TMPLOCK)) return Qtrue;
     return Qfalse;
 }
 

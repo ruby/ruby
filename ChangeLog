@@ -1,3 +1,7 @@
+Sat Nov 15 07:40:14 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_method_node): new API to retrieve method body.
+
 Fri Nov 14 13:21:30 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: fix (en-bugged at 2003/11/07)
