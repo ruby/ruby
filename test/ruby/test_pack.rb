@@ -52,5 +52,6 @@ class TestPack < Test::Unit::TestCase
     assert_equal "\375\200\200\200\200\200", [0x40000000].pack("U")
     assert_equal "\375\277\277\277\277\277", [0x7fffffff].pack("U")
     assert_raises(RangeError) { [0x80000000].pack("U") }
+    assert_raises(RangeError) { [0x100000000].pack("U") }
   end
 end
