@@ -1,3 +1,9 @@
+Sat Jul 31 17:40:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg, ruby-parse-partial,
+	  ruby-calculate-indent, ruby-move-to-block, ruby-forward-sexp,
+	  ruby-backward-sexp): keywords must match word-wise.
+
 Sat Jul 31 05:47:37 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml.rb (YAML::load_file, YAML::parse_file): added.
@@ -73,7 +79,7 @@ Fri Jul 23 09:03:16 2004  Shugo Maeda  <shugo@ruby-lang.org>
 Thu Jul 22 16:41:54 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi/session.rb (CGI::Session::FileStore#update): sets the
-         permission of the session data file to 0600.
+	 permission of the session data file to 0600.
 
 	* lib/cgi/session/pstore.rb (CGI::Session::Pstore#initialize):
 	  ditto.
