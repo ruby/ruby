@@ -1,5 +1,5 @@
 #
-#
+# test/fileutils/test_nowrite.rb
 #
 
 $:.unshift File.dirname(__FILE__)
@@ -13,18 +13,27 @@ class TestNoWrite < Test::Unit::TestCase
 
   include FileUtils::NoWrite
 
+  def my_rm_rf( path )
+    if File.exist?('/bin/rm')
+      system "/bin/rm -rf #{path}"
+    else
+      FileUtils.rm_rf path
+    end
+  end
+
   SRC  = 'data/src'
   COPY = 'data/copy'
 
   def setup
-    system 'rm -rf data; mkdir data'
-    system 'rm -rf tmp; mkdir tmp'
-    File.open( SRC,  'w' ) {|f| f.puts 'dummy' }
-    File.open( COPY, 'w' ) {|f| f.puts 'dummy' }
+    my_rm_rf 'date'; Dir.mkdir 'data'
+    my_rm_rf 'tmp'; Dir.mkdir 'tmp'
+    File.open(SRC,  'w') {|f| f.puts 'dummy' }
+    File.open(COPY, 'w') {|f| f.puts 'dummy' }
   end
 
   def teardown
-    system 'rm -rf data tmp'
+    my_rm_rf 'data'
+    my_rm_rf 'tmp'
   end
 
   def test_cp

@@ -9,6 +9,22 @@ require 'test/unit'
 require 'fileasserts'
 
 
+def windows?
+  /mswin|mingw|bcc|djgpp/ === RUBY_PLATFORM
+end
+
+def have_symlink?
+  begin
+    File.symlink 'not_exist', 'not_exist_2'
+  rescue NotImplementedError
+    return false
+  rescue
+    return true
+  end
+  true   # never reach
+end
+
+
 class TestFileUtils < Test::Unit::TestCase
 
   include FileUtils
@@ -17,7 +33,7 @@ class TestFileUtils < Test::Unit::TestCase
     if File.exist?('/bin/rm')
       system "/bin/rm -rf #{path}"
     else
-      rm_rf path    # use FileUtils.
+      FileUtils.rm_rf path
     end
   end
 
@@ -85,10 +101,19 @@ class TestFileUtils < Test::Unit::TestCase
 
   def test_pwd
     assert_equal Dir.pwd, pwd()
+
+    cwd = Dir.pwd
+if windows?
+    cd('C:/') {
+      assert_equal 'C:/', pwd()
+    }
+    assert_equal cwd, pwd()
+else
     cd('/') {
       assert_equal '/', pwd()
     }
-    assert_equal Dir.pwd, pwd()
+    assert_equal cwd, pwd()
+end
   end
 
   def test_cmp
@@ -149,11 +174,13 @@ class TestFileUtils < Test::Unit::TestCase
       assert_file_not_exist 'tmp/rmsrc'
     end
 
+if have_symlink?
     File.open('tmp/lnf_symlink_src', 'w') {|f| f.puts 'dummy' }
     File.symlink 'tmp/lnf_symlink_src', 'tmp/lnf_symlink_dest'
     rm_f 'tmp/lnf_symlink_dest'
     assert_file_not_exist 'tmp/lnf_symlink_dest'
     assert_file_exist     'tmp/lnf_symlink_src'
+end
 
     rm_f 'notexistdatafile'
     rm_f 'tmp/notexistdatafile'
@@ -224,6 +251,7 @@ class TestFileUtils < Test::Unit::TestCase
     end
   end
 
+if have_symlink?
   def test_ln_s
     TARGETS.each do |fname|
       ln_s fname, 'tmp/lnsdest'
@@ -232,7 +260,9 @@ class TestFileUtils < Test::Unit::TestCase
       rm_f 'tmp/lnsdest'
     end
   end
+end
 
+if have_symlink?
   def test_ln_sf
     TARGETS.each do |fname|
       ln_sf fname, 'tmp/lnsdest'
@@ -242,6 +272,7 @@ class TestFileUtils < Test::Unit::TestCase
       ln_sf fname, 'tmp/lnsdest'
     end
   end
+end
 
   def test_mkdir
     my_rm_rf 'tmpdatadir'
@@ -255,7 +286,7 @@ class TestFileUtils < Test::Unit::TestCase
 
     mkdir 'tmp/tmp', :mode => 0700
     assert_is_directory 'tmp/tmp'
-    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777)
+    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) unless windows?
     Dir.rmdir 'tmp/tmp'
   end
 
@@ -291,8 +322,8 @@ class TestFileUtils < Test::Unit::TestCase
     mkdir_p 'tmp/tmp/tmp', :mode => 0700
     assert_is_directory 'tmp/tmp'
     assert_is_directory 'tmp/tmp/tmp'
-    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777)
-    assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777)
+    assert_equal 0700, (File.stat('tmp/tmp').mode & 0777) unless windows?
+    assert_equal 0700, (File.stat('tmp/tmp/tmp').mode & 0777) unless windows?
     rm_rf 'tmp/tmp'
   end
 
@@ -312,24 +343,16 @@ class TestFileUtils < Test::Unit::TestCase
     File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
     install 'tmp/aaa', 'tmp/bbb', :mode => 0600
     assert_equal "aaa\n", File.read('tmp/bbb')
-    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777)
+    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) unless windows?
 
     t = File.mtime('tmp/bbb')
     install 'tmp/aaa', 'tmp/bbb'
     assert_equal "aaa\n", File.read('tmp/bbb')
-    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777)
+    assert_equal 0600, (File.stat('tmp/bbb').mode & 0777) unless windows?
     assert_equal t, File.mtime('tmp/bbb')
 
     File.unlink 'tmp/aaa'
     File.unlink 'tmp/bbb'
   end
 
-end
-
-
-__END__
-#if $0 == __FILE__
-#  require 'test/unit/ui/console/testrunner'
-#
-#  Test::Unit::UI::Consle::TestRunner.run(TestFileUtils.suite)
 end

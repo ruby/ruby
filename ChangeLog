@@ -1,3 +1,9 @@
+Sat Sep 27 09:44:18 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb: clear all errors on Windows.
+
+	* test/fileutils/test_nowrite.rb: ditto.
+
 Mon Sep 27 04:57:07 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/ruby/test_file.rb: new file.  only asserts unlink-before-close
