@@ -164,7 +164,7 @@ module IRB
     end
 
     def file_input?
-      @io.type == FileInputMethod
+      @io.class == FileInputMethod
     end
 
     def inspect_mode=(opt)

@@ -149,8 +149,8 @@ module IRB
 	    output_value if @context.echo?
 	  rescue StandardError, ScriptError, Abort
 	    $! = RuntimeError.new("unknown exception raised") unless $!
-	    print $!.type, ": ", $!, "\n"
-	    if  $@[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && $!.type.to_s !~ /^IRB/
+	    print $!.class, ": ", $!, "\n"
+	    if  $@[0] =~ /irb(2)?(\/.*|-.*|\.rb)?:/ && $!.class.to_s !~ /^IRB/
 	      irb_bug = true 
 	    else
 	      irb_bug = false
@@ -307,7 +307,7 @@ module IRB
 	  ary.push format("%s=%s", iv, eval(iv))
 	end
       end
-      format("#<%s: %s>", type, ary.join(", "))
+      format("#<%s: %s>", self.class, ary.join(", "))
     end
   end
 

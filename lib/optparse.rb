@@ -629,7 +629,7 @@ Default options, which never appear in option summary.
     end
   end
   def inc(*args)
-    type.inc(*args)
+    self.class.inc(*args)
   end
 
 =begin
@@ -663,7 +663,7 @@ Default options, which never appear in option summary.
         string pushed back to be first non-option argument
 =end #'#"#`#
   def terminate(arg = nil)
-    type.terminate(arg)
+    self.class.terminate(arg)
   end
   def self.terminate(arg = nil)
     throw :terminate, arg
@@ -1422,11 +1422,11 @@ Base class of exceptions from ((<OptionParser>))
     end
 
     def reason
-      @reason || self.type::Reason
+      @reason || self.class::Reason
     end
 
     def inspect
-      '#<' + type.to_s + ': ' + args.join(' ') + '>'
+      "#<#{self.class.to_s}: #{args.join(' ')}>"
     end
 
     def message

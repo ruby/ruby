@@ -157,7 +157,7 @@ module IRB
 	select_message(receiver, message, candidates)
 
       else
-	candidates = eval("methods | private_methods | local_variables | type.constants", bind)
+	candidates = eval("methods | private_methods | local_variables | self.class.constants", bind)
 			  
 	(candidates|ReservedWords).grep(/^#{Regexp.quote(input)}/)
       end

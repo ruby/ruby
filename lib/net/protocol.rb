@@ -424,7 +424,7 @@ module Net
     end
 
     def inspect
-      "#<#{type} #{closed? ? 'closed' : 'opened'}>"
+      "#<#{self.class} #{closed? ? 'closed' : 'opened'}>"
     end
 
     ###
@@ -584,7 +584,7 @@ module Net
     public
 
     def write_message( src )
-      D_off "writing text from #{src.type}"
+      D_off "writing text from #{src.class}"
 
       wsize = using_each_crlf_line {
           wpend_in src
@@ -723,7 +723,7 @@ module Net
     end
 
     def inspect
-      "#<#{type} socket=#{@socket.inspect}>"
+      "#<#{self.class} socket=#{@socket.inspect}>"
     end
 
     def write( str )
@@ -755,7 +755,7 @@ module Net
     end
 
     def inspect
-      "#<#{type}>"
+      "#<#{self.class}>"
     end
 
     def <<( str )

@@ -76,7 +76,7 @@ module Singleton
         def included(klass)
             #  remove build in copying methods
             klass.class_eval do 
-	      define_method(:clone) {raise TypeError, "can't clone singleton #{self.type}"}
+	      define_method(:clone) {raise TypeError, "can't clone singleton #{self.class}"}
             end
             
             #  initialize the ``klass instance variable'' @__instance__ to nil
@@ -200,7 +200,7 @@ Thread.abort_on_exception = false
 
 class Ups < SomeSingletonClass
     def initialize
-        type.__sleep
+        self.class.__sleep
         puts "initialize called by thread ##{Thread.current[:i]}"
     end
     class << self

@@ -387,7 +387,7 @@ module Net
 
     def do_start( account, password )
       conn_socket
-      @command = (@apop ? type.apop_command_type : type.command_type).new(socket())
+      @command = (@apop ? self.class.apop_command_type : self.class.command_type).new(socket())
       @command.auth account, password
     end
 
@@ -408,7 +408,7 @@ module Net
       return @mails if @mails
 
       mails = []
-      mtype = type.mail_type
+      mtype = self.class.mail_type
       command().list.each_with_index do |size,idx|
         mails.push mtype.new(idx, size, command()) if size
       end
@@ -475,7 +475,7 @@ module Net
     attr :size
 
     def inspect
-      "#<#{type} #{@num}#{@deleted ? ' deleted' : ''}>"
+      "#<#{self.class} #{@num}#{@deleted ? ' deleted' : ''}>"
     end
 
     def pop( dest = '', &block )

@@ -69,7 +69,7 @@ module Exception2MessageMapper
   def bind(cl)
     self.module_eval %[
       def Raise(err = nil, *rest)
-	Exception2MessageMapper.Raise(self.type, err, *rest)
+	Exception2MessageMapper.Raise(self.class, err, *rest)
       end
       alias Fail Raise
 

@@ -15,8 +15,8 @@ require "shell/filter"
 class Shell
   class SystemCommand < Filter
     def initialize(sh, command, *opts)
-      if t = opts.find{|opt| !opt.kind_of?(String) && opt.type}
-	Shell.Fail TypeError, t.type, "String"
+      if t = opts.find{|opt| !opt.kind_of?(String) && opt.class}
+	Shell.Fail TypeError, t.class, "String"
       end
       super(sh)
       @command = command

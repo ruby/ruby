@@ -1239,11 +1239,11 @@ class Resolv
 
     class Query
       def encode_rdata(msg)
-        raise EncodeError.new("#{self.type} is query.") 
+        raise EncodeError.new("#{self.class} is query.") 
       end
 
       def self.decode_rdata(msg)
-        raise DecodeError.new("#{self.type} is query.") 
+        raise DecodeError.new("#{self.class} is query.") 
       end
     end
 
@@ -1259,7 +1259,7 @@ class Resolv
       end
 
       def ==(other)
-        return self.type == other.type &&
+        return self.class == other.class &&
           self.instance_variables == other.instance_variables &&
           self.instance_variables.collect {|name| self.instance_eval name} ==
             other.instance_variables.collect {|name| other.instance_eval name}

@@ -264,20 +264,20 @@ class Date
   def initialize(ajd=0, of=0, sg=ITALY) @ajd, @of, @sg = ajd, of, sg end
 
   def ajd() @ajd end
-  def amjd() type.ajd_to_amjd(@ajd) end
+  def amjd() self.class.ajd_to_amjd(@ajd) end
 
   once :amjd
 
-  def jd() type.ajd_to_jd(@ajd, @of)[0] end
-  def day_fraction() type.ajd_to_jd(@ajd, @of)[1] end
-  def mjd() type.jd_to_mjd(jd) end
-  def ld() type.jd_to_ld(jd) end
+  def jd() self.class.ajd_to_jd(@ajd, @of)[0] end
+  def day_fraction() self.class.ajd_to_jd(@ajd, @of)[1] end
+  def mjd() self.class.jd_to_mjd(jd) end
+  def ld() self.class.jd_to_ld(jd) end
 
   once :jd, :day_fraction, :mjd, :ld
 
-  def civil() type.jd_to_civil(jd, @sg) end
-  def ordinal() type.jd_to_ordinal(jd, @sg) end
-  def commercial() type.jd_to_commercial(jd, @sg) end
+  def civil() self.class.jd_to_civil(jd, @sg) end
+  def ordinal() self.class.jd_to_ordinal(jd, @sg) end
+  def commercial() self.class.jd_to_commercial(jd, @sg) end
 
   once :civil, :ordinal, :commercial
   private :civil, :ordinal, :commercial
@@ -290,7 +290,7 @@ class Date
   alias_method :month, :mon
   alias_method :day, :mday
 
-  def time() type.day_fraction_to_time(day_fraction) end
+  def time() self.class.day_fraction_to_time(day_fraction) end
 
   once :time
   private :time
@@ -316,45 +316,45 @@ class Date
   def cweek() commercial[1] end
   def cwday() commercial[2] end
 
-  def wday() type.jd_to_wday(jd) end
+  def wday() self.class.jd_to_wday(jd) end
 
   once :wday
 
-  def os? () type.os?(jd, @sg) end
-  def ns? () type.ns?(jd, @sg) end
+  def os? () self.class.os?(jd, @sg) end
+  def ns? () self.class.ns?(jd, @sg) end
 
   once :os?, :ns?
 
   def leap?
-    type.jd_to_civil(type.civil_to_jd(year, 3, 1, ns?) - 1,
+    self.class.jd_to_civil(self.class.civil_to_jd(year, 3, 1, ns?) - 1,
 		     ns?)[-1] == 29
   end
 
   once :leap?
 
   def start() @sg end
-  def new_start(sg=type::ITALY) type.new0(@ajd, @of, sg) end
+  def new_start(sg=self.class::ITALY) self.class.new0(@ajd, @of, sg) end
 
-  def italy() new_start(type::ITALY) end
-  def england() new_start(type::ENGLAND) end
-  def julian() new_start(type::JULIAN) end
-  def gregorian() new_start(type::GREGORIAN) end
+  def italy() new_start(self.class::ITALY) end
+  def england() new_start(self.class::ENGLAND) end
+  def julian() new_start(self.class::JULIAN) end
+  def gregorian() new_start(self.class::GREGORIAN) end
 
   def offset() @of end
-  def new_offset(of=0) type.new0(@ajd, of, @sg) end
+  def new_offset(of=0) self.class.new0(@ajd, of, @sg) end
 
   private :offset, :new_offset
 
   def + (n)
     case n
-    when Numeric; return type.new0(@ajd + n, @of, @sg)
+    when Numeric; return self.class.new0(@ajd + n, @of, @sg)
     end
     raise TypeError, 'expected numeric'
   end
 
   def - (x)
     case x
-    when Numeric; return type.new0(@ajd - x, @of, @sg)
+    when Numeric; return self.class.new0(@ajd - x, @of, @sg)
     when Date;    return @ajd - x.ajd
     end
     raise TypeError, 'expected numeric or date'
@@ -380,7 +380,7 @@ class Date
     y, m = clfloor(year * 12 + (mon - 1) + n, 12)
     m,   = clfloor(m + 1, 1)
     d = mday
-    d -= 1 until jd2 = type.valid_civil?(y, m, d, ns?)
+    d -= 1 until jd2 = self.class.valid_civil?(y, m, d, ns?)
     self + (jd2 - jd)
   end
 
@@ -406,7 +406,7 @@ class Date
   def eql? (other) Date === other and self == other end
   def hash() @ajd.hash end
 
-  def inspect() format('#<%s: %s,%s,%s>', type, @ajd, @of, @sg) end
+  def inspect() format('#<%s: %s,%s,%s>', self.class, @ajd, @of, @sg) end
   def to_s() strftime end
 
   def _dump(limit) Marshal.dump([@ajd, @of, @sg], -1) end
@@ -550,8 +550,8 @@ class Date
       def #{old}(*args, &block)
 	if $VERBOSE
 	  $stderr.puts("\#{caller.shift.sub(/:in .*/, '')}: " \
-		       "warning: \#{type}\##{old} is deprecated; " \
-		       "use \#{type}\##{new}")
+		       "warning: \#{self.class}\##{old} is deprecated; " \
+		       "use \#{self.class}\##{new}")
 	end
 	#{new}(*args, &block)
       end

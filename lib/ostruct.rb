@@ -35,14 +35,14 @@ class OpenStruct
   end
   
   def delete_field(name)
-    if name.type == Fixnum
+    if name.class == Fixnum
       name = name.id2name
     end
     @table.delete name
   end
 
   def inspect
-    str = "<#{self.type}"
+    str = "<#{self.class}"
     for k,v in @table
       str += " "
       str += k

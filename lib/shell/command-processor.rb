@@ -49,7 +49,7 @@ class Shell
       rescue LoadError, Errno::ENOENT
       rescue
 	print "load error: #{rc}\n"
-	print $!.type, ": ", $!, "\n"
+	print $!.class, ": ", $!, "\n"
 	for err in $@[0, $@.size - 2]
 	  print "\t", err, "\n"
 	end
@@ -277,7 +277,7 @@ class Shell
       when IO
 	AppendIO.new(@shell, to, filter)
       else
-	Shell.Fail CanNotMethodApply, "append", to.type
+	Shell.Fail CanNotMethodApply, "append", to.class
       end
     end
 

@@ -666,13 +666,13 @@ EOHELP
   end
 
   def excn_handle(file, line, id, binding)
-    if $!.type <= SystemExit
+    if $!.class <= SystemExit
       set_trace_func nil
       exit
     end
 
-    if @catch and ($!.type.ancestors.find { |e| e.to_s == @catch })
-      stdout.printf "%s:%d: `%s' (%s)\n", file, line, $!, $!.type
+    if @catch and ($!.class.ancestors.find { |e| e.to_s == @catch })
+      stdout.printf "%s:%d: `%s' (%s)\n", file, line, $!, $!.class
       fs = @frames.size
       tb = caller(0)[-fs..-1]
       if tb

@@ -226,7 +226,7 @@ class Set
 
   def dup
     myhash = @hash
-    type.new.instance_eval {
+    self.class.new.instance_eval {
       @hash.replace(myhash)
       self
     }
@@ -247,7 +247,7 @@ class Set
   end
 
   def replace(enum)
-    if enum.type == type
+    if enum.class == self.class
       @hash.replace(enum.instance_eval { @hash })
     else
       enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
@@ -282,7 +282,7 @@ class Set
   protected :flatten_merge
 
   def flatten
-    type.new.flatten_merge(self)
+    self.class.new.flatten_merge(self)
   end
 
   def flatten!
@@ -340,7 +340,7 @@ class Set
   end
 
   def collect!
-    set = type.new
+    set = self.class.new
     each { |o| set << yield(o) }
     replace(set)
   end
@@ -353,7 +353,7 @@ class Set
   end
 
   def merge(enum)
-    if enum.type == type
+    if enum.class == self.class
       @hash.update(enum.instance_eval { @hash })
     else
       enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
@@ -382,7 +382,7 @@ class Set
 
   def &(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
-    n = type.new
+    n = self.class.new
     enum.each { |o| include?(o) and n.add(o) }
     n
   end
@@ -415,7 +415,7 @@ class Set
 
     each { |i|
       x = yield(i)
-      (h[x] ||= type.new).add(i)
+      (h[x] ||= self.class.new).add(i)
     }
 
     h
@@ -441,7 +441,7 @@ class Set
 
       set = Set.new()
       dig.each_strongly_connected_component { |css|
-	set.add(type.new(css))
+	set.add(self.class.new(css))
       }
       set
     else
@@ -455,19 +455,19 @@ class Set
     ids = (Thread.current[InspectKey] ||= [])
 
     if ids.include?(id)
-      return sprintf('#<%s: {...}>', type.name)
+      return sprintf('#<%s: {...}>', self.class.name)
     end
 
     begin
       ids << id
-      return sprintf('#<%s: {%s}>', type, to_a.inspect[1..-2])
+      return sprintf('#<%s: {%s}>', self.class, to_a.inspect[1..-2])
     ensure
       ids.pop
     end
   end
 
   def pretty_print(pp)
-    pp.text sprintf('#<%s: {', type.name)
+    pp.text sprintf('#<%s: {', self.class.name)
     pp.nest(1) {
       first = true
       each { |o|
@@ -484,7 +484,7 @@ class Set
   end
 
   def pretty_print_cycle(pp)
-    pp.text sprintf('#<%s: {%s}>', type.name, empty? ? '' : '...')
+    pp.text sprintf('#<%s: {%s}>', self.class.name, empty? ? '' : '...')
   end
 end
 

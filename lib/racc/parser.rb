@@ -72,7 +72,7 @@ module Racc
 
 
     def _racc_setup
-      t = self.type
+      t = self.class
 
       unless t::Racc_debug_parser then
         @yydebug = false
@@ -115,7 +115,7 @@ module Racc
     end
 
     def next_token
-      raise NotImplementedError, "#{self.type}\#next_token is not defined"
+      raise NotImplementedError, "#{self.class}\#next_token is not defined"
     end
 
     def _racc_do_parse_rb( arg, in_debug )
@@ -467,12 +467,12 @@ nerr = 0   # tmp
     end
 
     def racc_token2str( tok )
-      type::Racc_token_to_s_table[tok] or
+      self.class::Racc_token_to_s_table[tok] or
         raise RuntimeError, "[Racc Bug] can't convert token #{tok} to string"
     end
 
     def token_to_str( t )
-      type::Racc_token_to_s_table[t]
+      self.class::Racc_token_to_s_table[t]
     end
 
   end

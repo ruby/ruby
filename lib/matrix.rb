@@ -688,7 +688,7 @@ class Matrix
     when Numeric
       return Scalar.new(other), self
     else
-      raise TypeError, "#{type} can't be coerced into #{other.type}"
+      raise TypeError, "#{self.class} can't be coerced into #{other.class}"
     end
   end
 
@@ -751,7 +751,7 @@ class Matrix
       when Numeric
 	Scalar.new(@value + other)
       when Vector, Matrix
-	Scalar.Raise WrongArgType, other.type, "Numeric or Scalar"
+	Scalar.Raise WrongArgType, other.class, "Numeric or Scalar"
       when Scalar
 	Scalar.new(@value + other.value)
       else
@@ -765,7 +765,7 @@ class Matrix
       when Numeric
 	Scalar.new(@value - other)
       when Vector, Matrix
-	Scalar.Raise WrongArgType, other.type, "Numeric or Scalar"
+	Scalar.Raise WrongArgType, other.class, "Numeric or Scalar"
       when Scalar
 	Scalar.new(@value - other.value)
       else
@@ -791,7 +791,7 @@ class Matrix
       when Numeric
 	Scalar.new(@value / other)
       when Vector
-	Scalar.Raise WrongArgType, other.type, "Numeric or Scalar or Matrix"
+	Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
       when Matrix
 	self * _M.inverse
       else
@@ -805,7 +805,7 @@ class Matrix
       when Numeric
 	Scalar.new(@value ** other)
       when Vector
-	Scalar.Raise WrongArgType, other.type, "Numeric or Scalar or Matrix"
+	Scalar.Raise WrongArgType, other.class, "Numeric or Scalar or Matrix"
       when Matrix
 	other.powered_by(self)
       else
@@ -1007,7 +1007,7 @@ class Vector
     when Numeric
       return Scalar.new(other), self
     else
-      raise TypeError, "#{type} can't be coerced into #{other.type}"
+      raise TypeError, "#{self.class} can't be coerced into #{other.class}"
     end
   end
   

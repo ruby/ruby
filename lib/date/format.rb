@@ -483,13 +483,13 @@ class Date
       when '%r'; o << strftime('%I:%M:%S %p')			# P2,ID
       when '%S'; o << '%02d' % sec
       when '%s'							# TZ,GL
-	d = ajd - type.jd_to_ajd(type.civil_to_jd(1970,1,1), 0)
+	d = ajd - self.class.jd_to_ajd(type.civil_to_jd(1970,1,1), 0)
 	s = (d * 86400).to_i
 	o << '%d' % s
       when '%T'; o << strftime('%H:%M:%S')			# P2,ID
       when '%t'; o << "\t"					# P2,ID
       when '%U', '%W'
-	a = type.civil_to_jd(year, 1, 1, ns?) + 6
+	a = self.class.civil_to_jd(year, 1, 1, ns?) + 6
 	k = if c == '%U' then 0 else 1 end
 	w = (jd - (a - ((a - k) + 1) % 7) + 7) / 7
 	o << '%02d' % w

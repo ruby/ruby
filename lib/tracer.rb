@@ -62,9 +62,7 @@ class Tracer
 	off
       end
     else
-      set_trace_func proc{|event, file, line, id, binding, klass, *rest|
-	trace_func event, file, line, id, binding, klass
-      }
+      set_trace_func method(:trace_func).to_proc
       stdout.print "Trace on\n" if Tracer.verbose?
     end
   end
@@ -114,7 +112,7 @@ class Tracer
     end
   end
   
-  def trace_func(event, file, line, id, binding, klass)
+  def trace_func(event, file, line, id, binding, klass, *)
     return if file == MY_FILE_NAME
     
     for p in @filters

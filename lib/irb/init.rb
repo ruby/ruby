@@ -191,7 +191,7 @@ module IRB
 	  rescue LoadError, Errno::ENOENT
 	  rescue
 	    print "load error: #{rc}\n"
-	    print $!.type, ": ", $!, "\n"
+	    print $!.class, ": ", $!, "\n"
 	    for err in $@[0, $@.size - 2]
 	      print "\t", err, "\n"
 	    end
@@ -208,7 +208,7 @@ module IRB
       begin
 	require m
       rescue
-	print $@[0], ":", $!.type, ": ", $!, "\n"
+	print $@[0], ":", $!.class, ": ", $!, "\n"
       end
     end
   end

@@ -36,7 +36,7 @@ Object
     end
 
     def default_port
-      self.type.default_port
+      self.class.default_port
     end
 
 =begin
@@ -121,7 +121,7 @@ Object
 	end
       else
 	raise ArgumentError, 
-	  "expected Array of or Hash of components of #{self.type} (#{self.type.component.join(', ')})"
+	  "expected Array of or Hash of components of #{self.class} (#{self.class.component.join(', ')})"
       end
 
       tmp << true
@@ -195,7 +195,7 @@ Object
 
 =end
     def component
-      self.type.component
+      self.class.component
     end
 
     # set_XXX method sets value to @XXX instance variable with no check, 
@@ -1087,7 +1087,7 @@ Object
 =begin
 =end
     def inspect
-      sprintf("#<%s:0x%x URL:%s>", self.type.to_s, self.id, self.to_s)
+      sprintf("#<%s:0x%x URL:%s>", self.class.to_s, self.id, self.to_s)
     end
 
 =begin
