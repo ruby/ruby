@@ -1,7 +1,9 @@
-Mon Jan 31 15:24:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+Wed Feb  2 02:06:07 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
-	* string.c (rb_str_sub): no bang method returns original string if
-	  no change is made.
+	* string.c (str_gsub_bang): gsub! now leaves information about
+	  last successful pattern match in $&.
+
+Mon Jan 31 15:24:58 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (str_sub_bang): bang method returns string always.
 	  experimental.

@@ -51,6 +51,7 @@ Standard Libraries
 - debugger for thread programming
 - SyntaxError, NameError, LoadError and NotImplementError are subclasses of
   ScriptError<Exception, not StandardError.
+- String's bang methods return string always
 * Struct::new([name,]member,...) ??
 * String#scanf(?)
 * Object#fmt(?)

@@ -679,8 +679,6 @@ ok("a".upcase![0] == ?A)
 ok("A".downcase![0] == ?a)
 ok("abc".tr!("a-z", "A-Z") == "ABC")
 ok("aabbcccc".tr_s!("a-z", "A-Z") == "ABC")
-$x = "abc"
-ok($x.tr("0-9", "A-Z").equal?($x))
 ok("abcc".squeeze!("a-z") == "abc")
 ok("abcd".delete!("bc") == "ad")
 

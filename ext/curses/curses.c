@@ -407,50 +407,50 @@ curses_cols()
 
 /*-------------------------- class Window --------------------------*/
 
-/* def new(lines, cols, top, left) */
+/* def new(h, w, top, left) */
 static VALUE
-window_s_new(class, lines, cols, top, left)
+window_s_new(class, h, w, top, left)
     VALUE class;
-    VALUE lines;
-    VALUE cols;
+    VALUE h;
+    VALUE w;
     VALUE top;
     VALUE left;
 {
-    VALUE w;
+    VALUE win;
     WINDOW *window;
     VALUE args[4];
     
-    window = newwin(NUM2INT(lines), NUM2INT(cols), NUM2INT(top), NUM2INT(left));
+    window = newwin(NUM2INT(h), NUM2INT(w), NUM2INT(top), NUM2INT(left));
     wclear(window);
-    w = prep_window(class, window);
-    args[0] = lines; args[1] = cols; args[2] = top; args[3] = left;
-    rb_obj_call_init(w, 4, args);
+    win = prep_window(class, window);
+    args[0] = h; args[1] = w; args[2] = top; args[3] = left;
+    rb_obj_call_init(win, 4, args);
 
-    return w;
+    return win;
 }
 
-/* def subwin(lines, cols, top, left) */
+/* def subwin(h, w, top, left) */
 static VALUE
-window_subwin(obj, lines, cols, top, left)
+window_subwin(obj, h, w, top, left)
     VALUE obj;
-    VALUE lines;
-    VALUE cols;
+    VALUE h;
+    VALUE w;
     VALUE top;
     VALUE left;
 {
     struct windata *winp;
     WINDOW *window;
-    VALUE w;
+    VALUE win;
     VALUE args[4];
 
     GetWINDOW(obj, winp);
-    window = subwin(winp->window, NUM2INT(lines), NUM2INT(cols),
+    window = subwin(winp->window, NUM2INT(h), NUM2INT(w),
 		                  NUM2INT(top), NUM2INT(left));
-    w = prep_window(cWindow, window);
-    args[0] = lines; args[1] = cols; args[2] = top; args[3] = left;
-    rb_obj_call_init(w, 4, args);
+    win = prep_window(cWindow, window);
+    args[0] = h; args[1] = w; args[2] = top; args[3] = left;
+    rb_obj_call_init(win, 4, args);
 
-    return w;
+    return win;
 }
 
 /* def close */
