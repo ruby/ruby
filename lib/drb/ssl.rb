@@ -171,6 +171,7 @@ module DRb
     end
       
     def accept
+      begin
       while true
 	soc = @socket.accept
 	break if (@acl ? @acl.allow_socket?(soc) : true) 
@@ -178,6 +179,10 @@ module DRb
       end
       ssl = @config.accept(soc)
       self.class.new(uri, ssl, @config, true)
+      rescue OpenSSL::SSL::SSLError
+	warn("#{__FILE__}:#{__LINE__}: warning: #{$!.message} (#{$!.class})") if verbose
+	retry
+      end
     end
   end
   
