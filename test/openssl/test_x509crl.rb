@@ -1,6 +1,11 @@
-require "openssl"
+begin
+  require "openssl"
+  require File.join(File.dirname(__FILE__), "utils.rb")
+rescue LoadError
+end
 require "test/unit"
-require File.join(File.dirname(__FILE__), "utils.rb")
+
+if defined?(OpenSSL)
 
 class OpenSSL::TestX509CRL < Test::Unit::TestCase
   def setup
@@ -206,4 +211,6 @@ class OpenSSL::TestX509CRL < Test::Unit::TestCase
     crl.version = 0
     assert_equal(false, crl.verify(@dsa512))
   end
+end
+
 end
