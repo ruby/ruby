@@ -504,7 +504,10 @@ module Net
     end
 
     def self.get_print( addr, path, port = nil )
-      print get( addr, path, port )
+      new( addr, port || HTTP.port ).start {|http|
+        http.get path, nil, $stdout
+      }
+      nil
     end
 
 
@@ -733,7 +736,7 @@ module Net
     end
 
     def basic_auth( acc, pass )
-      @header['authorization'] = ["#{acc}:#{pass}"].pack('m').gsub(/\s+/, '')
+      @header['authorization'] = 'Basic ' + ["#{acc}:#{pass}"].pack('m').strip
     end
 
   end

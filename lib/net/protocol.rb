@@ -363,7 +363,10 @@ module Net
       @sock.__send__ @mid, str
     end
 
-    alias << write
+    def <<( str )
+      @sock.__send__ @mid, str
+      self
+    end
   
   end
 
