@@ -10,7 +10,7 @@ This library extends Time class:
   * date-time defined by RFC 2822
   * HTTP-date defined by RFC 2616
   * dateTime defined by XML Schema Part 2: Datatypes (ISO 8601)
-  * various format handled by ParseDate. (string to time only)
+  * various format handled by ParseDate (string to time only)
 
 == Design Issue
 

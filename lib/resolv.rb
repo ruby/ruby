@@ -9,8 +9,10 @@ It is possible to lookup various resources of DNS using DNS module directly.
 == example
   Resolv.getaddress("www.ruby-lang.org")
   Resolv.getname("210.251.121.214")
-  Resolv::DNS.new.getresources("www.ruby-lang.org", Resolv::DNS::Resource::IN::A).collect {|r| r.address}
-  Resolv::DNS.new.getresources("ruby-lang.org", Resolv::DNS::Resource::IN::MX).collect {|r| [r.exchange.to_s, r.preference]}
+
+  dns = Resolv::DNS.new
+  dns.getresources("www.ruby-lang.org", Resolv::DNS::Resource::IN::A).collect {|r| r.address}
+  dns.getresources("ruby-lang.org", Resolv::DNS::Resource::IN::MX).collect {|r| [r.exchange.to_s, r.preference]}
 
 == Resolv class
 
@@ -171,6 +173,7 @@ DNS stub resolver.
 * NIS is not supported.
 * /etc/nsswitch.conf is not supported.
 * IPv6 is not supported.
+* There is no method to close DNS socket.
 
 =end
 
