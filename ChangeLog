@@ -1,3 +1,10 @@
+Mon Feb 28 23:10:13 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/socket/socket.c (Init_socket): IPv6 is not supported although
+	  AF_INET6 is defined on bcc32. (rev1.108 again)
+
+	* ext/socket/mkconstants.rb: ditto.
+
 Mon Feb 28 21:55:49 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
 
 	* ext/strscan/strscan.c (strscan_s_allocate):
