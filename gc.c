@@ -736,8 +736,9 @@ gc_sweep()
     int freed = 0;
     int i, used = heaps_used;
 
-    if (ruby_in_compile) {
-	/* should not reclaim nodes during compilation */
+    if (ruby_in_compile && ruby_parser_stack_on_heap()) {
+	/* should not reclaim nodes during compilation
+           if yacc's semantic stack is not allocated on machine stack */
 	for (i = 0; i < used; i++) {
 	    p = heaps[i]; pend = p + heaps_limits[i];
 	    while (p < pend) {

@@ -1,3 +1,14 @@
+Tue Sep  3 00:22:43 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* gc.c (gc_sweep): does reclaim nodes in also compile time, if we
+	  can.
+
+	* ruby.c (load_file): omit GC if we can.
+
+	* parse.y (ruby_parser_stack_on_heap): new function.
+
+	* intern.h (ruby_parser_stack_on_heap): added.
+
 Sun Aug 25 20:10:32 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb (CGI#form): fix ruby-bugs-ja:PR#280, add default action.

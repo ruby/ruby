@@ -266,6 +266,7 @@ int yyparse _((void));
 ID rb_id_attrset _((ID));
 void rb_parser_append_print _((void));
 void rb_parser_while_loop _((int, int));
+int ruby_parser_stack_on_heap _((void));
 int rb_is_const_id _((ID));
 int rb_is_instance_id _((ID));
 int rb_is_class_id _((ID));
