@@ -1314,7 +1314,9 @@ rb_str_update(str, beg, len, val)
 	memmove(RSTRING(str)->ptr+beg, RSTRING(val)->ptr, RSTRING(val)->len);
     }
     RSTRING(str)->len += RSTRING(val)->len - len;
-    RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+    if (RSTRING(str)->ptr) {
+	RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
+    }
     OBJ_INFECT(str, val);
 }
 
