@@ -305,7 +305,8 @@ Tue Nov 16 16:20:45 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Tue Nov 16 13:35:54 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/test/unit/autorunner.rb (Test::Unit::AutoRunner::options): add
-	  new option --exclude (-x) to skip some tests.
+	  new option --exclude (-x) to skip some tests. [ruby-core:3363],
+	  [ruby-dev:24865]
 
 	* lib/test/unit/collector/dir.rb (Test::Unit::Collector::Dir.exclude):
 	  ditto.
