@@ -76,7 +76,9 @@ struct timeval {
 /* EMX has sys/param.h, but.. */
 #if defined(HAVE_SYS_PARAM_H) && !(defined(__EMX__) || defined(__HIUX_MPP__))
 # include <sys/param.h>
-#else
+#endif
+
+#if !defined NOFILE
 # define NOFILE 64
 #endif
 

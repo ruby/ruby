@@ -1,3 +1,9 @@
+Fri Aug 16 15:58:16 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (NOFILE): define NOFILE as 64 if not defined.
+
+	* signal.c (sighandler_t): rename to sh_t on dietlibc.
+
 Fri Aug 16 15:37:04 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* bignum.c (rb_cstr_to_inum): new decimal and octal string.

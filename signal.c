@@ -288,6 +288,10 @@ rb_gc_mark_trap_list()
 #endif /* MACOS_UNUSE_SIGNAL */
 }
 
+#ifdef __dietlibc__
+#define sighandler_t sh_t
+#endif
+
 typedef RETSIGTYPE (*sighandler_t)_((int));
 
 #ifdef POSIX_SIGNAL
