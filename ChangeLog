@@ -20,8 +20,6 @@ Fri Oct  3 16:13:19 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.c (Init_openssl): call Init_ossl_asn1.
 
-	* ext/openssl/ossl.h: include ossl_asn1.h.
-
 	* ext/openssl/extconf.rb: check if X509_ATTRIBUTE has field "single".
 
 	* ext/openssl/ossl_x509attr.c (ossl_x509attr_set_value): accept

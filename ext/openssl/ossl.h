@@ -201,7 +201,6 @@ void ossl_debug(const char *, ...);
 #include "ossl_version.h"
 #include "ossl_x509.h"
 #include "ossl_engine.h"
-#include "ossl_asn1.h"
 
 void Init_openssl(void);
 
