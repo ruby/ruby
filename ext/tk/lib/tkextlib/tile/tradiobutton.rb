@@ -16,16 +16,11 @@ end
 class Tk::Tile::TRadioButton < TkRadioButton
   include Tk::Tile::TileWidget
 
-  TkCommandNames = ['tradiobutton'.freeze].freeze
+  if Tk::Tile::USE_TTK_NAMESPACE
+    TkCommandNames = ['::ttk::radiobutton'.freeze].freeze
+  else
+    TkCommandNames = ['::tradiobutton'.freeze].freeze
+  end
   WidgetClassName = 'TRadiobutton'.freeze
   WidgetClassNames[WidgetClassName] = self
-
-  def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('tradiobutton', @path, *hash_kv(keys, true))
-    else
-      tk_call_without_enc('tradiobutton', @path)
-    end
-  end
-  private :create_self
 end

@@ -45,18 +45,13 @@ class Tk::Tile::TNotebook < TkWindow
 
   include Tk::Tile::TileWidget
 
-  TkCommandNames = ['tnotebook'.freeze].freeze
+  if Tk::Tile::USE_TTK_NAMESPACE
+    TkCommandNames = ['::ttk::notebook'.freeze].freeze
+  else
+    TkCommandNames = ['::tnotebook'.freeze].freeze
+  end
   WidgetClassName = 'TNotebook'.freeze
   WidgetClassNames[WidgetClassName] = self
-
-  def create_self(keys)
-    if keys and keys != None
-      tk_call_without_enc('tnotebook', @path, *hash_kv(keys, true))
-    else
-      tk_call_without_enc('tnotebook', @path)
-    end
-  end
-  private :create_self
 
   def enable_traversal()
     tk_call_without_end('tile::enableNotebookTraversal', @path)

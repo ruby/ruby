@@ -1,0 +1,40 @@
+#
+#  tcombobox widget
+#                               by Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp)
+#
+require 'tk'
+require 'tkextlib/tile.rb'
+
+module Tk
+  module Tile
+    class TCombobox < Tk::Tile::TEntry
+    end
+  end
+end
+
+class Tk::Tile::TCombobox < Tk::Tile::TEntry
+  include Tk::Tile::TileWidget
+
+  if Tk::Tile::USE_TTK_NAMESPACE
+    TkCommandNames = ['::ttk::combobox'.freeze].freeze
+  else
+    TkCommandNames = ['::tcombobox'.freeze].freeze
+  end
+  WidgetClassName = 'TCombobox'.freeze
+  WidgetClassNames[WidgetClassName] = self
+
+  def current
+    number(tk_send_without_enc('current', idx))
+  end
+  def current=(idx)
+    tk_send_without_enc('current', idx)
+  end
+
+  def identify(x, y)
+    tk_send_without_enc('identify', x, y)
+  end
+
+  def set(val)
+    tk_send('set', val)
+  end
+end
