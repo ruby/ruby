@@ -1,7 +1,12 @@
+2005-03-18  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/treectrl/tktreectrl.rb: bug fix and define some
+	  classes for components of Tk::TreeCtrl
+
 2005-03-17  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/treectrl/tktreectrl.rb: call wrong method in
-          Tk::TreeCtrl#*_configinfo and current_*_configinfo method
+	  Tk::TreeCtrl#*_configinfo and current_*_configinfo method
 
 2005-03-16  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
