@@ -4,7 +4,10 @@
 $install_name ||= nil
 $so_name ||= nil
 
-require File.dirname($0)+"/lib/fileutils"
+srcdir = File.dirname(__FILE__)
+$:.replace [srcdir+"/lib", "."]
+
+require "fileutils"
 mkconfig = File.basename($0)
 
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'

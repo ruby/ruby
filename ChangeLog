@@ -1,3 +1,8 @@
+Sun Dec  5 00:54:32 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* mkconfig.rb: setup library paths before requiring library.
+	  [ruby-core:03892]
+
 Sat Dec  4 21:29:05 2004  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: (In previous commit) new method chown.
