@@ -466,10 +466,11 @@ dir_seek(dir, pos)
     VALUE dir, pos;
 {
     struct dir_data *dirp;
+    off_t p = NUM2OFFT(pos);
 
-#ifdef HAVE_SEEKDIR
     GetDIR(dir, dirp);
-    seekdir(dirp->dir, NUM2INT(pos));
+#ifdef HAVE_SEEKDIR
+    seekdir(dirp->dir, p);
     return dir;
 #else
     rb_notimplement();

@@ -61,7 +61,10 @@ class CGI
         md5 = Digest::MD5.hexdigest(id)[0,16]
 	path = dir+"/"+prefix+md5
 	path.untaint
-	unless File::exist? path
+	unless File::exist?(path)
+          unless session.new_session
+            raise RuntimeError, "uninitialized session"
+          end
 	  @hash = {}
 	end
 	@p = ::PStore.new(path)

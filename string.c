@@ -1625,6 +1625,10 @@ rb_str_splice(str, beg, len, val)
     VALUE val;
 {
     if (len < 0) rb_raise(rb_eIndexError, "negative length %ld", len);
+
+    StringValue(val);
+    rb_str_modify(str);
+
     if (RSTRING(str)->len < beg) {
       out_of_range:
 	rb_raise(rb_eIndexError, "index %ld out of string", beg);
@@ -1639,8 +1643,6 @@ rb_str_splice(str, beg, len, val)
 	len = RSTRING(str)->len - beg;
     }
 
-    StringValue(val);
-    rb_str_modify(str);
     if (len < RSTRING(val)->len) {
 	/* expand string */
 	RESIZE_CAPA(str, RSTRING(str)->len + RSTRING(val)->len - len + 1);
@@ -2070,7 +2072,7 @@ str_gsub(argc, argv, str, bang)
     }
 
     blen = RSTRING(str)->len + 30; /* len + margin */
-    dest = rb_str_new5(str, 0, blen);
+    dest = str_new(0, 0, blen);
     buf = RSTRING(dest)->ptr;
     bp = buf;
     sp = cp = RSTRING(str)->ptr;
@@ -2086,6 +2088,9 @@ str_gsub(argc, argv, str, bang)
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
 	    str_mod_check(str, sp, slen);
 	    if (bang) str_frozen_check(str);
+	    if (val == dest) {  /* paranoid chack [ruby-dev:24827] */
+		rb_raise(rb_eRuntimeError, "block should not cheat");
+	    }
 	    rb_backref_set(match);
 	}
 	else {
@@ -2147,6 +2152,7 @@ str_gsub(argc, argv, str, bang)
 	RSTRING(dest)->len = 0;
     }
     else {
+	RBASIC(dest)->klass = rb_obj_class(str);
 	OBJ_INFECT(dest, str);
 	str = dest;
     }

@@ -1,7 +1,25 @@
+Tue Nov 23 00:10:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_file_chown): integer conversion should be prior to
+	  GetOpenFile().  [ruby-dev:24947]
+
+	* file.c (rb_file_truncate): ditto.
+
+	* file.c (rb_file_s_truncate): ditto.
+
+	* dir.c (dir_seek): use NUM2OFFT().
+
+	* misc/ruby-mode.el (ruby-non-block-do-re): [ruby-core:03719]
+
 Mon Nov 22 22:33:02 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::parse_require): Don't use names
 	  of variables or constants when oarsing 'require'
+
+Mon Nov 22 00:13:35 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_seek): should retrieve dir_data after NUM2INT().
+	  [ruby-dev:24941]
 
 Sat Nov 20 23:57:33 2004  Dave Thomas  <dave@pragprog.com>
 
@@ -16,12 +34,10 @@ Sat Nov 20 23:56:54 2004  Dave Thomas  <dave@pragprog.com>
 	* lib/rdoc/options.rb (Options::parse): Force --inline-source if
 	  --one-file option given
 
-Thu Nov 18 18:41:08 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+Sat Nov 20 23:55:19 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* test/ruby/test_stringchar.rb (test_bang): added.
-
-	* string.c (rb_str_upcase_bang, rb_str_capitalize_bang)
-	(rb_str_swapcase_bang): missing rb_str_modify().  [ruby-dev:24915]
+	* string.c (rb_str_splice): should place index wrapping after
+	  possible modification.  [ruby-dev:24940]
 
 Tue Nov 20 13:26:03 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 
@@ -32,6 +48,34 @@ Tue Nov 20 05:34:24 2004  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/nkf/nkf-utf8/nkf.c: original nkf.c rev:1.40
 
 	* ext/nkf/test.rb: add test for mime encode/decode
+
+Sat Nov 20 01:37:34 2004  Johan Holmberg  <holmberg@iar.se>
+
+	* eval.c (error_print): nicer traceback at interrupt.
+	  [ruby-core:03774]
+
+Sat Nov 20 00:07:16 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): internal buffer should not be listed by
+	  ObjectSpace.each_object() by String#gsub.  [ruby-dev:24931]
+
+Fri Nov 19 01:20:22 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi/session.rb (CGI::Session::FileStore::initialize): raise
+	  exception if data corresponding to session specified from the
+	  client does not exist.
+
+Fri Nov 19 00:59:31 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (str_gsub): internal buffer should not be listed by
+	  ObjectSpace.each_object().  [ruby-dev:24919]
+
+Thu Nov 18 18:41:08 2004  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* test/ruby/test_stringchar.rb (test_bang): added.
+
+	* string.c (rb_str_upcase_bang, rb_str_capitalize_bang)
+	(rb_str_swapcase_bang): missing rb_str_modify().  [ruby-dev:24915]
 
 Thu Nov 18 00:21:15 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -1011,8 +1011,8 @@ calculate_must_string(start, end)
 {
   int mcnt;
   int max = 0;
-  char *p = start;
-  char *pend = end;
+  unsigned char *p = start;
+  unsigned char *pend = end;
   char *must = 0;
 
   if (start == NULL) return 0;

@@ -156,7 +156,7 @@ class CGI
   class Session
 
     # The id of this session.
-    attr_reader :session_id
+    attr_reader :session_id, :new_session
 
     def Session::callback(dbman)  #:nodoc:
       Proc.new{
@@ -170,7 +170,7 @@ class CGI
     # a random number, and a constant string.  This routine
     # is used internally for automatically generated
     # session ids. 
-    def Session::create_new_id
+    def create_new_id
       require 'digest/md5'
       md5 = Digest::MD5::new
       now = Time::now
@@ -179,8 +179,10 @@ class CGI
       md5.update(String(rand(0)))
       md5.update(String($$))
       md5.update('foobar')
+      @new_session = true
       md5.hexdigest[0,16]
     end
+    private :create_new_id
 
     # Create a new CGI::Session object for +request+.
     #
@@ -239,6 +241,7 @@ class CGI
     #   end
     #
     def initialize(request, option={})
+      @new_session = false
       session_key = option['session_key'] || '_session_id'
       id = option['session_id']
       unless id
@@ -367,6 +370,9 @@ class CGI
         md5 = Digest::MD5.hexdigest(id)[0,16]
 	@path = dir+"/"+prefix+md5+suffix
 	unless File::exist? @path
+          unless session.new_session
+            raise RuntimeError, "uninitialized session"
+          end
 	  @hash = {}
 	end
       end
@@ -433,7 +439,12 @@ class CGI
       # currently recognised.
       def initialize(session, option=nil)
 	@session_id = session.session_id
-	GLOBAL_HASH_TABLE[@session_id] ||= {}
+        unless GLOBAL_HASH_TABLE.key?(@session_id)
+          unless session.new_session
+            raise RuntimeError, "uninitialized session"
+          end
+          GLOBAL_HASH_TABLE[@session_id] = {}
+        end
       end
 
       # Restore session state.
