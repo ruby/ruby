@@ -1,6 +1,13 @@
 $:.unshift(File.dirname(File.expand_path(__FILE__)))
 require 'drbtest'
-require 'drb/unix'
+
+begin
+  require 'drb/unix'
+rescue LoadError
+end
+
+if Object.const_defined?("UNIXServer")
+
 
 class DRbUNIXService < DRbService
   %w(ut_drb_drbunix.rb ut_array_drbunix.rb).each do |nm|
@@ -45,4 +52,7 @@ class TestDRbUNIXAry < Test::Unit::TestCase
     @ext = DRbUNIXService.manager.service('ut_array_drbunix.rb')
     @there = @ext.front
   end
+end
+
+
 end

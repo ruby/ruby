@@ -1,6 +1,13 @@
 $:.unshift(File.dirname(File.expand_path(__FILE__)))
 require 'drbtest'
-require 'drb/ssl'
+
+begin
+  require 'drb/ssl'
+rescue LoadError
+end
+
+if Object.const_defined?("OpenSSL")
+
 
 class DRbSSLService < DRbService
   %w(ut_drb_drbssl.rb ut_array_drbssl.rb).each do |nm|
@@ -62,4 +69,7 @@ class TestDRbSSLAry < Test::Unit::TestCase
     @ext = DRbSSLService.manager.service('ut_array_drbssl.rb')
     @there = @ext.front
   end
+end
+
+
 end

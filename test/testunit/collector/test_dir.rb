@@ -148,7 +148,7 @@ module Test
             return false if(@required.include?(file))
             begin
               e = find(file)
-            rescue Errno::ENOENT => e
+            rescue Errno::ENOENT => ex
               if(/\.rb\Z/ =~ file)
                 raise LoadError, file
               end
@@ -213,10 +213,10 @@ module Test
             end
           end
           assert_equal('/', fs.pwd)
-          assert_raises(Errno::ENOENT) do
+          assert_raise(Errno::ENOENT) do
             fs.chdir('bogus')
           end
-          assert_raises(Errno::ENOTDIR) do
+          assert_raise(Errno::ENOTDIR) do
             fs.chdir('a')
           end
           fs.chdir('b')
@@ -248,10 +248,10 @@ module Test
           assert_equal(['.', '..', 'a', 'b', 'e', 'f'], fs.entries('.').sort)
           assert_equal(['.', '..', 'a', 'b', 'e', 'f'], fs.entries('b/..').sort)
           assert_equal(['.', '..', 'c', 'd'], fs.entries('b').sort)
-          assert_raises(Errno::ENOENT) do
+          assert_raise(Errno::ENOENT) do
             fs.entries('z')
           end
-          assert_raises(Errno::ENOTDIR) do
+          assert_raise(Errno::ENOTDIR) do
             fs.entries('a')
           end
           fs.chdir('f')
@@ -275,7 +275,7 @@ module Test
           end
           assert_equal([], c)
 
-          assert_raises(LoadError) do
+          assert_raise(LoadError) do
             fs.require('bogus')
           end
           
@@ -353,13 +353,18 @@ module Test
         end
 
         def test_collect_file
-          expected = TestSuite.new('test_1.rb')
-          expected << @t1.suite
-          assert_equal(expected, @c.collect('test_1.rb'))
+          expected = [@t1.suite]
+          subsuites = []
+	  @c.collect_file('test_1.rb', subsuites, @c.find_test_cases)
+          assert_equal(expected, subsuites)
           
-          expected = TestSuite.new('t4.rb')
-          expected << @t4.suite
-          assert_equal(expected, @c.collect('t4.rb'))
+          expected = [@t4.suite]
+	  subsuites = []
+          @c.collect_file('t4.rb', subsuites, @c.find_test_cases)
+          assert_equal(expected, subsuites)
+	  assert_raise(LoadError) do
+	    @c.collect_file('tloaderr.rb', [], [])
+	  end
         end
 
         def test_nil_pattern

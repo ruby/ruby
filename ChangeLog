@@ -1,3 +1,15 @@
+Fri Jan  9 13:14:59 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/test/unit/collector/dir.rb: do not ignore exceptions(LoadError
+	  and SystemExitError) while loading a testcase.  smell of bug.
+
+	* test/testunit/collector/test_dir.rb: add new test of the LoadError.
+
+	* test/drb/{test_drbssl.rb,test_drbunix.rb}: do not define testcase if
+	  openssl is not installed.
+
+	* test/testunit/collector/test_dir.rb: assert_raises -> assert_raise.
+
 Fri Jan  9 11:52:16 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* rubysig.h: <errno.h> is needed to use errno which may be a macro.
