@@ -21,6 +21,7 @@ sdbm
 socket
 stringio
 strscan
+syck
 syslog
 #tcltklib
 #tk

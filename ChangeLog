@@ -1,3 +1,12 @@
+Tue May 13 22:31:04 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * lib/yaml/rubytypes.rb, lib/yaml/types.rb: using Object#object_id
+      rather than deprecated Object#id.
+
+    * ext/token.c: changed ASCII escapes to octal notation.
+
+    * ext/Setup*: added entries for static linking of Syck extension.
+
 Tue May 13 20:31:58 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in: add '--Wl,--enable-auto-import' to DLDFLAGS
@@ -24,6 +33,16 @@ Tue May 13 14:48:07 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (error_print,error_handle,rb_longjmp,rb_thread_schedule):
 	  ditto.
 
+Tue May 13 06:34:19 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * lib/yaml/rubytypes.rb: object and struct loading
+    
+    * lib/yaml.rb: YAML::detect_implicit will discover typing for a Ruby
+      string
+    
+    * ext/syck/: Fixed portable comments, misuse of NULL and methods without
+      return VALUEs.
+
 Mon May 12 18:08:21 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (Init_IO): new variable $deferr which is default output
@@ -43,6 +62,26 @@ Sun May 11 13:50:12 2003  Tanaka Akira  <akr@m17n.org>
 
         * lib/pp.rb (PP::ObjectMixin#pretty_print): refine to_s handling.
 
+Sun May 11 06:32:13 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/implicit.c, ext/syck/rubyext.c: transfer methods applied to
+      native loading
+    
+    * ext/syck/token.c: fix for transfer methods on same indentation as nested
+      mapping
+    
+    * lib/yaml/rubytypes.rb: all type names in lowercase
+
+Sat May 10 19:55:18 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ext/syck/gram.c ext/syck/handler.c ext/syck/implicit.c 
+      ext/syck/node.c ext/syck/rubyext.c ext/syck/syck.c 
+      ext/syck/syck.h ext/syck/token.c: updated to Syck 0.27
+    
+    * lib/yaml/loader.rb: new YAML::Loader class
+    
+    * lib/yaml.rb: loading of type families leverages YAML::DefaultLoader
+
 Sat May 10 19:00:08 2003  Takaaki Uematsu  <uema2x@jcom.home.ne.jp>
 
 	* wince/string.c: file removed.
@@ -54,6 +93,10 @@ Sat May 10 16:17:02 2003  Shugo Maeda  <shugo@ruby-lang.org>
 	* lib/net/imap.rb (decode_utf7): new method.
 
 	* lib/net/imap.rb (encode_utf7): new method.
+
+Fri May  9 21:25:50 2003  why the lucky stiff <ruby-cvs@whytheluckystiff.net>
+
+    * ruby/ext/syck, ruby/lib/yaml: Initial checkin of YAML substances.
 
 Fri May  9 16:38:30 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

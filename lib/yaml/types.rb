@@ -1,6 +1,10 @@
 #
 # Classes required by the full core typeset
 #
+
+# Ruby 1.6.x Object#object_id
+class Object; alias_method :object_id, :id; end unless Object.respond_to? :object_id
+
 module YAML
 
 	#
@@ -12,7 +16,7 @@ module YAML
 			@type_id = type; @value = val
 		end
 		def to_yaml( opts = {} )
-			YAML::quick_emit( self.id, opts ) { |out|
+			YAML::quick_emit( self.object_id, opts ) { |out|
 				out << " !!#{@type_id}"
 				value.to_yaml( :Emitter => out )
 			}
@@ -35,7 +39,7 @@ module YAML
             "#{dom}/#{@type_id}"
         end
 		def to_yaml( opts = {} )
-			YAML::quick_emit( self.id, opts ) { |out|
+			YAML::quick_emit( self.object_id, opts ) { |out|
 				out << " !#{to_yaml_type} "
 				value.to_yaml( :Emitter => out )
 			}
@@ -95,7 +99,7 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.id, opts ) { |out|
+            YAML::quick_emit( self.object_id, opts ) { |out|
                 out.seq( "!omap" ) { |seq|
                     self.each { |v|
                         seq.add( Hash[ *v ] )
@@ -146,7 +150,7 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.id, opts ) { |out|
+            YAML::quick_emit( self.object_id, opts ) { |out|
                 out.seq( "!pairs" ) { |seq|
                     self.each { |v|
                         seq.add( Hash[ *v ] )

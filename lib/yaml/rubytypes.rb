@@ -2,6 +2,10 @@ require 'date'
 #
 # Type conversions
 #
+
+# Ruby 1.6.x Object#object_id
+class Object; alias_method :object_id, :id; end unless Object.respond_to? :object_id
+
 class Object
     def is_complex_yaml?
         true
@@ -13,7 +17,7 @@ class Object
         instance_variables.sort
     end
 	def to_yaml( opts = {} )
-		YAML::quick_emit( self.id, opts ) { |out|
+		YAML::quick_emit( self.object_id, opts ) { |out|
             out.map( self.to_yaml_type ) { |map|
 				to_yaml_properties.each { |m|
                     map.add( m[1..-1], instance_eval( m ) )
@@ -44,7 +48,7 @@ class Hash
     end
 	def to_yaml( opts = {} )
 		opts[:DocType] = self.class if Hash === opts
-		YAML::quick_emit( self.id, opts ) { |out|
+		YAML::quick_emit( self.object_id, opts ) { |out|
             hash_type = to_yaml_type
             if not out.options[:ExplicitTypes] and hash_type == "!map"
                 hash_type = ""
@@ -106,7 +110,7 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.id, opts ) { |out|
+            YAML::quick_emit( self.object_id, opts ) { |out|
                 out.seq( "!ruby/flexhash" ) { |seq|
                     self.each { |v|
                         if v[1]
@@ -145,7 +149,7 @@ class Struct
         true
     end
 	def to_yaml( opts = {} )
-		YAML::quick_emit( self.id, opts ) { |out|
+		YAML::quick_emit( self.object_id, opts ) { |out|
 			#
 			# Basic struct is passed as a YAML map
 			#
@@ -204,7 +208,7 @@ class Array
     end
 	def to_yaml( opts = {} )
 		opts[:DocType] = self.class if Hash === opts
-		YAML::quick_emit( self.id, opts ) { |out|
+		YAML::quick_emit( self.object_id, opts ) { |out|
             array_type = to_yaml_type 
             if not out.options[:ExplicitTypes] and array_type == "!seq"
                 array_type = ""
@@ -252,7 +256,7 @@ class String
                 complex = true
             end
         end
-		YAML::quick_emit( complex ? self.id : nil, opts ) { |out|
+		YAML::quick_emit( complex ? self.object_id : nil, opts ) { |out|
             if complex
                 if self.is_binary_data?
                     out.binary_base64( self )
@@ -299,7 +303,7 @@ class Symbol
 	def to_yaml( opts = {} )
 		YAML::quick_emit( nil, opts ) { |out|
 			out << "!ruby/sym "
-			self.id2name.to_yaml( :Emitter => out )
+			self.object_id2name.to_yaml( :Emitter => out )
 		}
 	end
 end
