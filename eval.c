@@ -436,7 +436,7 @@ rb_method_boundp(klass, id, ex)
     return Qfalse;
 }
 
-static ID init, eqq, each, aref, aset, match, to_ary, missing;
+static ID init, alloc, eqq, each, aref, aset, match, to_ary, missing;
 static ID added, singleton_added;
 static ID __id__, __send__;
 
@@ -1899,24 +1899,19 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_CVAR:
-	if (!ruby_frame || !ruby_frame->last_class ||
-	    !FL_TEST(ruby_frame->last_class, FL_SINGLETON)) {
-	    if (NIL_P(ruby_cbase)) {
-		if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
-		    return "class variable";
-		}
-		break;
+	if (NIL_P(ruby_cbase)) {
+	    if (rb_cvar_defined(CLASS_OF(self), node->nd_vid)) {
+		return "class variable";
 	    }
-	    if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
-		if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
-		    return "class variable";
-		}
-		break;
-	    }
+	    break;
 	}
-	/* fall through */
-      case NODE_CVAR2:
-	if (rb_cvar_defined(rb_cvar_singleton(self), node->nd_vid)) {
+	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    if (rb_cvar_defined(ruby_cbase, node->nd_vid)) {
+		return "class variable";
+	    }
+	    break;
+	}
+	if (rb_cvar_defined(rb_iv_get(ruby_cbase, "__attached__"), node->nd_vid)) {
 	    return "class variable";
 	}
 	break;
@@ -2866,17 +2861,15 @@ rb_eval(self, n)
 	    rb_raise(rb_eTypeError, "no class/module to define class variable");
 	}
 	result = rb_eval(self, node->nd_value);
-	if (FL_TEST(ruby_cbase, FL_SINGLETON)) {
-	    rb_cvar_declare(rb_cvar_singleton(rb_iv_get(ruby_cbase, "__attached__")),
-			    node->nd_vid, result);
-	    break;
+	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    rb_warn("declaring singleton class variable");
 	}
 	rb_cvar_declare(ruby_cbase, node->nd_vid, result);
 	break;
 
       case NODE_CVASGN:
 	result = rb_eval(self, node->nd_value);
-	rb_cvar_set(rb_cvar_singleton(self), node->nd_vid, result);
+	rb_cvar_set(ruby_cbase, node->nd_vid, result);
 	break;
 
       case NODE_LVAR:
@@ -2902,22 +2895,16 @@ rb_eval(self, n)
 	result = ev_const_get(RNODE(ruby_frame->cbase), node->nd_vid, self);
 	break;
 
-      case NODE_CVAR:		/* normal method */
-	if (!ruby_frame || !ruby_frame->last_class ||
-	    !FL_TEST(ruby_frame->last_class, FL_SINGLETON)) {
-	    /* non singleton method */
-	    if (NIL_P(ruby_cbase)) {
-		result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
-		break;
-	    }
-	    if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
-		result = rb_cvar_get(ruby_cbase, node->nd_vid);
-		break;
-	    }
+      case NODE_CVAR:
+	if (NIL_P(ruby_cbase)) {
+	    result = rb_cvar_get(CLASS_OF(self), node->nd_vid);
+	    break;
 	}
-	/* fall through */
-      case NODE_CVAR2:		/* singleton method */
-	result = rb_cvar_get(rb_cvar_singleton(self), node->nd_vid);
+	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    result = rb_cvar_get(ruby_cbase, node->nd_vid);
+	    break;
+	}
+	result = rb_cvar_get(rb_iv_get(ruby_cbase, "__attached__"), node->nd_vid);
 	break;
 
       case NODE_BLOCK_ARG:
@@ -3102,6 +3089,9 @@ rb_eval(self, n)
 
 	    if (NIL_P(ruby_class)) {
 		rb_raise(rb_eTypeError, "no class/module to add method");
+	    }
+	    if (ruby_class == rb_cClass && node->nd_mid == alloc) {
+		rb_raise(rb_eNameError, "redefining Class#allocate will cause infinite loop");
 	    }
 	    if (ruby_class == rb_cObject && node->nd_mid == init) {
 		rb_warn("redefining Object#initialize may cause infinite loop");
@@ -3922,14 +3912,14 @@ assign(self, lhs, val, pcall)
 	break;
 
       case NODE_CVDECL:
-	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
-	    rb_cvar_declare(ruby_cbase, lhs->nd_vid, val);
-	    break;
+	if (ruby_verbose && FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    rb_warn("declaring singleton class variable");
 	}
-	self = rb_iv_get(ruby_cbase, "__attached__");
-	/* fall through */
+	rb_cvar_declare(ruby_cbase, lhs->nd_vid, val);
+	break;
+
       case NODE_CVASGN:
-	rb_cvar_set(rb_cvar_singleton(self), lhs->nd_vid, val);
+	rb_cvar_set(ruby_cbase, lhs->nd_vid, val);
 	break;
 
       case NODE_MASGN:
@@ -6021,6 +6011,7 @@ void
 Init_eval()
 {
     init = rb_intern("initialize");
+    alloc = rb_intern("allocate");
     eqq = rb_intern("===");
     each = rb_intern("each");
 

@@ -215,7 +215,7 @@ static void top_local_setup();
 %type <node> compstmt stmts stmt expr arg primary command command_call method_call
 %type <node> if_tail opt_else case_body cases rescue exc_list exc_var ensure
 %type <node> args when_args call_args call_args2 open_args paren_args opt_paren_args
-%type <node> command_args aref_args opt_block_arg block_arg var_ref
+%type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs mrhs_basic superclass block_call block_command
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref
@@ -425,24 +425,24 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$1->nd_value = $3;
 			$$ = $1;
 		    }
-		| variable tOP_ASGN command_call
+		| var_lhs tOP_ASGN command_call
 		    {
-		        NODE *n = assignable($1, 0);
-			if (n) {
+			ID vid = $1->nd_vid;
+			if ($1) {
 			    if ($2 == tOROP) {
-				n->nd_value = $3;
-				$$ = NEW_OP_ASGN_OR(gettable($1), n);
-				if (is_instance_id($1)) {
-				    $$->nd_aid = $1;
+				$1->nd_value = $3;
+				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);
+				if (is_instance_id(vid)) {
+				    $$->nd_aid = vid;
 				}
 			    }
 			    else if ($2 == tANDOP) {
-				n->nd_value = $3;
-				$$ = NEW_OP_ASGN_AND(gettable($1), n);
+				$1->nd_value = $3;
+				$$ = NEW_OP_ASGN_AND(gettable(vid), $1);
 			    }
 			    else {
-				$$ = n;
-				$$->nd_value = call_op(gettable($1),$2,1,$3);
+				$$ = $1;
+				$$->nd_value = call_op(gettable(vid),$2,1,$3);
 			    }
 			    fixpos($$, $3);
 			}
@@ -770,24 +770,24 @@ arg		: lhs '=' arg
 			value_expr($3);
 			$$ = node_assign($1, $3);
 		    }
-		| variable tOP_ASGN arg
+		| var_lhs tOP_ASGN arg
 		    {
-		        NODE *n = assignable($1, 0);
-			if (n) {
+			ID vid = $1->nd_vid;
+			if ($1) {
 			    if ($2 == tOROP) {
-				n->nd_value = $3;
-				$$ = NEW_OP_ASGN_OR(gettable($1), n);
-				if (is_instance_id($1)) {
-				    $$->nd_aid = $1;
+				$1->nd_value = $3;
+				$$ = NEW_OP_ASGN_OR(gettable(vid), $1);
+				if (is_instance_id(vid)) {
+				    $$->nd_aid = vid;
 				}
 			    }
 			    else if ($2 == tANDOP) {
-				n->nd_value = $3;
-				$$ = NEW_OP_ASGN_AND(gettable($1), n);
+				$1->nd_value = $3;
+				$$ = NEW_OP_ASGN_AND(gettable(vid), $1);
 			    }
 			    else {
-				$$ = n;
-				$$->nd_value = call_op(gettable($1),$2,1,$3);
+				$$ = $1;
+				$$->nd_value = call_op(gettable(vid),$2,1,$3);
 			    }
 			    fixpos($$, $3);
 			}
@@ -1796,6 +1796,11 @@ variable	: tIDENTIFIER
 var_ref		: variable
 		    {
 			$$ = gettable($1);
+		    }
+
+var_lhs		: variable
+		    {
+			$$ = assignable($1);
 		    }
 
 backref		: tNTH_REF
@@ -4322,7 +4327,6 @@ gettable(id)
 	return NEW_CONST(id);
     }
     else if (is_class_id(id)) {
-	if (in_single) return NEW_CVAR2(id);
 	return NEW_CVAR(id);
     }
     rb_compile_error("identifier %s is not valid", rb_id2name(id));
@@ -4380,7 +4384,7 @@ assignable(id, val)
 	return NEW_CDECL(id, val);
     }
     else if (is_class_id(id)) {
-	if (in_single) return NEW_CVASGN(id, val);
+	if (in_def || in_single) return NEW_CVASGN(id, val);
 	return NEW_CVDECL(id, val);
     }
     else {

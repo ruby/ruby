@@ -316,6 +316,11 @@ typedef unsigned int U32;
 #define NUM2U32(x) NUM2UINT(x)
 #endif
 
+#ifdef HAVE_LONG_LONG
+# define QUAD_SIZE sizeof(LONG_LONG)
+#else
+# define QUAD_SIZE 8
+#endif
 static char *toofew = "too few arguments";
 
 static void encodes _((VALUE,char*,int,int));
@@ -591,6 +596,18 @@ pack_pack(ary, fmt)
 		    l = NATINT_U32(from);
 		}
 		rb_str_buf_cat(res, OFF32(&l), NATINT_LEN(long,4));
+	    }
+	    break;
+
+	  case 'q':
+	  case 'Q':
+	    while (len-- > 0) {
+		char tmp[QUAD_SIZE];
+
+		from = NEXTFROM;
+		if (NIL_P(from)) from = INT2FIX(0);
+		rb_quad_pack(tmp, from);
+		rb_str_buf_cat(res, (char*)&tmp, QUAD_SIZE);
 	    }
 	    break;
 
@@ -1007,26 +1024,24 @@ hex2num(c)
     }
 }
 
+#define PACK_LENGTH_ADJUST_SIZE(sz) do {	\
+    tmp = 0;					\
+    if (len > (send-s)/sz) {			\
+        if (!star) {				\
+	    tmp = len-(send-s)/sz;		\
+        }					\
+	len = (send-s)/sz;			\
+    }						\
+} while (0)
+
 #ifdef NATINT_PACK
 #define PACK_LENGTH_ADJUST(type,sz) do {	\
     int t__len = NATINT_LEN(type,(sz));		\
-    tmp = 0;					\
-    if (len > (send-s)/t__len) {		\
-        if (!star) {				\
-	    tmp = len-(send-s)/t__len;		\
-        }					\
-	len = (send-s)/t__len;			\
-    }						\
+    PACK_LENGTH_ADJUST_SIZE(t__len);		\
 } while (0)
 #else
 #define PACK_LENGTH_ADJUST(type,sz) do {	\
-    tmp = 0;					\
-    if (len > (send-s)/sizeof(type)) {		\
-        if (!star) {				\
-	    tmp = len - (send-s)/sizeof(type);	\
-        }					\
-	len = (send-s)/sizeof(type);		\
-    }						\
+    PACK_LENGTH_ADJUST_SIZE(sizeof(type));	\
 } while (0)
 #endif
 
@@ -1292,6 +1307,24 @@ pack_unpack(str, fmt)
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
 	    PACK_ITEM_ADJUST();
+	    break;
+
+	  case 'q':
+	    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
+	    while (len-- > 0) {
+		char *tmp = (char*)s;
+		s += QUAD_SIZE;
+		rb_ary_push(ary, rb_quad_unpack(tmp, 1));
+	    }
+	    PACK_ITEM_ADJUST();
+	    break;
+	case 'Q':
+	    PACK_LENGTH_ADJUST_SIZE(QUAD_SIZE);
+	    while (len-- > 0) {
+		char *tmp = (char*)s;
+		s += QUAD_SIZE;
+		rb_ary_push(ary, rb_quad_unpack(tmp, 0));
+	    }
 	    break;
 
 	  case 'n':

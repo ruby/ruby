@@ -71,7 +71,6 @@ enum node_type {
     NODE_IVAR,
     NODE_CONST,
     NODE_CVAR,
-    NODE_CVAR2,
     NODE_NTH_REF,
     NODE_BACK_REF,
     NODE_MATCH,
@@ -285,7 +284,6 @@ typedef struct RNode {
 #define NEW_IVAR(v) rb_node_newnode(NODE_IVAR,v,0,0)
 #define NEW_CONST(v) rb_node_newnode(NODE_CONST,v,0,0)
 #define NEW_CVAR(v) rb_node_newnode(NODE_CVAR,v,0,0)
-#define NEW_CVAR2(v) rb_node_newnode(NODE_CVAR2,v,0,0)
 #define NEW_NTH_REF(n)  rb_node_newnode(NODE_NTH_REF,0,n,local_cnt('~'))
 #define NEW_BACK_REF(n) rb_node_newnode(NODE_BACK_REF,0,n,local_cnt('~'))
 #define NEW_MATCH(c) rb_node_newnode(NODE_MATCH,c,0,0)

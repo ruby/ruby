@@ -185,6 +185,112 @@ rb_int2inum(n)
     return rb_int2big(n);
 }
 
+#ifdef HAVE_LONG_LONG
+
+void
+rb_quad_pack(buf, val)
+    char *buf;
+    VALUE val;
+{
+    LONG_LONG q;
+
+    val = rb_to_int(val);
+    if (FIXNUM_P(val)) {
+	q = FIX2LONG(val);
+    }
+    else {
+	long len = RBIGNUM(val)->len;
+	BDIGIT *ds;
+
+	ds = BDIGITS(val);
+	q = 0;
+	while (len--) {
+	    q = BIGUP(q);
+	    q += ds[len];
+	}
+    }
+    memcpy(buf, (char*)&q, sizeof(LONG_LONG));
+}
+
+VALUE
+rb_quad_unpack(buf, sign)
+    const char *buf;
+    int sign;
+{
+    unsigned LONG_LONG q;
+    long neg = 0;
+    long i = 0;
+    BDIGIT *digits;
+    VALUE big;
+
+    memcpy(&q, buf, sizeof(LONG_LONG));
+    if (sign) {
+	if (FIXABLE((LONG_LONG)q)) return INT2FIX((LONG_LONG)q);
+	if ((LONG_LONG)q < 0) {
+	    q = -(LONG_LONG)q;
+	    neg = 1;
+	}
+    }
+    else {
+	if (POSFIXABLE(q)) return INT2FIX(q);
+    }
+
+    i = 0;
+    big = bignew(DIGSPERLONGLONG, 1);
+    digits = BDIGITS(big);
+    while (i < DIGSPERLONGLONG) {
+	digits[i++] = BIGLO(q);
+	q = BIGDN(q);
+    }
+
+    i = DIGSPERLONGLONG;
+    while (i-- && !digits[i]) ;
+    RBIGNUM(big)->len = i+1;
+
+    if (neg) {
+	RBIGNUM(big)->sign = 0;
+    }
+    return bignorm(big);
+}
+
+#else
+
+#define QUAD_SIZE 8
+
+void
+rb_quad_pack(buf, val)
+    char *buf;
+    VALUE val;
+{
+    long len;
+
+    memset(buf, 0, QUAD_SIZE);
+    val = rb_to_int(val);
+    if (FIXNUM_P(val)) {
+	val = rb_uint2big(FIX2LONG(val));
+    }
+    len = RBIGNUM(val)->len * sizeof(BDIGIT);
+    if (len > QUAD_SIZE) len = QUAD_SIZE;
+    memcpy(buf, (char*)BDIGITS(val), len);
+}
+
+VALUE
+rb_quad_unpack(buf, sign)
+    const char *buf;
+    int sign;
+{
+    VALUE big = bignew(QUAD_SIZE/sizeof(BDIGIT), 1);
+
+    memcpy((char*)BDIGITS(big), buf, QUAD_SIZE);
+    if (sign && (buf[7] & 0x80)) {
+	RBIGNUM(big)->sign = 0;
+    }
+
+    return bignorm(big);
+}
+
+#endif
+
 VALUE
 rb_cstr_to_inum(str, base, badcheck)
     const char *str;

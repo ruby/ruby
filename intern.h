@@ -70,6 +70,8 @@ long rb_big2long _((VALUE));
 #define rb_big2int(x) rb_big2long(x)
 unsigned long rb_big2ulong _((VALUE));
 #define rb_big2uint(x) rb_big2ulong(x)
+void rb_quad_pack _((char*,VALUE));
+VALUE rb_quad_unpack _((const char*,int));
 VALUE rb_dbl2big _((double));
 double rb_big2dbl _((VALUE));
 VALUE rb_big_plus _((VALUE, VALUE));
@@ -424,7 +426,6 @@ void rb_cvar_declare _((VALUE, ID, VALUE));
 VALUE rb_cvar_defined _((VALUE, ID));
 void rb_cvar_set _((VALUE, ID, VALUE));
 VALUE rb_cvar_get _((VALUE, ID));
-VALUE rb_cvar_singleton _((VALUE));
 void rb_cv_set _((VALUE, const char *, VALUE));
 VALUE rb_cv_get _((VALUE, const char *));
 void rb_define_class_variable _((VALUE, const char *, VALUE));

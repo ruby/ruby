@@ -939,9 +939,6 @@ dir_s_glob(dir, str)
     if (buf != buffer)
 	free(buf);
     if (ary) {
-	if (RARRAY(ary)->len == 0) {
-	    rb_warning("no matches found: %s", RSTRING(str)->ptr);
-	}
 	return ary;
     }
     return Qnil;

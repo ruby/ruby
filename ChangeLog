@@ -1,3 +1,39 @@
+Wed Feb 13 17:58:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (stmt): local variable declaration order was changed
+	  since 1.6
+
+	* parse.y (arg): ditto.
+
+	* pack.c (pack_pack): add templates 'q' and 'Q'.
+
+	* pack.c (pack_unpack): ditto.
+
+	* bignum.c (rb_quad_pack): new utility function.
+
+	* bignum.c (rb_quad_unpack): ditto.
+
+Tue Feb 12 01:21:34 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (assignable): should emit CVASGN within the method
+	  body.
+
+Mon Feb 11 06:13:53 2002  Matt Armstrong  <matt@lickey.com>
+
+	* dir.c (dir_s_glob): should not warn even if no match found.
+
+Mon Feb 11 04:25:54 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): clean up class variable behavior.
+
+	* eval.c (assign): ditto.
+
+	* eval.c (is_defined): ditto.
+
+	* variable.c (rb_mod_class_variables): need not to call rb_cvar_singleton().
+
+	* variable.c (rb_cvar_singleton): removed.
+
 Sun Feb 10 16:52:53 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ruby.c (load_file): avoid SEGV on '#' only input.
