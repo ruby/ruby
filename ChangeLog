@@ -1,3 +1,8 @@
+Thu Nov  7 09:51:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* eval.c (blk_orphan): a block created in a different thread is
+	  orphan.  [ruby-dev:17471]
+
 Wed Nov  8 08:12:17 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.6.8 release candidate.

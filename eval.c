@@ -6381,10 +6381,8 @@ static int
 blk_orphan(data)
     struct BLOCK *data;
 {
-    if (!(data->scope->flag & SCOPE_NOSTACK)) {
-	return 0;
-    }
-    if ((data->tag->flags & BLOCK_ORPHAN)) {
+    if ((data->tag->flags & BLOCK_ORPHAN) &&
+	(data->scope->flag & SCOPE_NOSTACK)) {
 	return 1;
     }
     if (data->orig_thread != rb_thread_current()) {
