@@ -21,6 +21,54 @@
 #include "st.h"
 #include "intern.h"
 
+/*
+ * Document-class: Iconv
+ *
+ * == Summary
+ *
+ * Ruby extension for charset conversion.
+ * 
+ * == Abstract
+ *
+ * Iconv is a wrapper class for the UNIX 95 <tt>iconv()</tt> function family,
+ * which translates string between various encoding systems.
+ * 
+ * See Open Group's on-line documents for more details.
+ * * <tt>iconv.h</tt>:       http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.h.html
+ * * <tt>iconv_open()</tt>:  http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_open.html
+ * * <tt>iconv()</tt>:       http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.html
+ * * <tt>iconv_close()</tt>: http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_close.html
+ * 
+ * Which coding systems are available is platform-dependent.
+ * 
+ * == Examples
+ *
+ * 1. Instantiate a new Iconv and use method Iconv#iconv.
+ *
+ *      cd = Iconv.new(to, from)
+ *      begin
+ *        input.each { |s| output << cd.iconv(s) }
+ *        output << cd.iconv(nil)                   # Don't forget this!
+ *      ensure
+ *        cd.close
+ *      end
+ *
+ * 2. Invoke Iconv.open with a block.
+ *
+ *      Iconv.open(to, from) do |cd|
+ *        input.each { |s| output << cd.iconv(s) }
+ *        output << cd.iconv(nil)
+ *      end
+ *
+ * 3. Shorthand for (2).
+ *
+ *      Iconv.iconv(to, from, *input.to_a)
+ *
+ * 4. Simple conversion between two charsets.
+ *
+ *      converted_text = Iconv.new('iso-8859-15', 'utf-8').iconv(text)
+ */
+
 /* Invalid value for iconv_t is -1 but 0 for VALUE, I hope VALUE is
    big enough to keep iconv_t */
 #define VALUE2ICONV(v) ((iconv_t)((VALUE)(v) ^ -1))
@@ -429,36 +477,6 @@ iconv_convert
     return ret;
 }
 
-
-/*
-=begin
-=== Class methods
-=end
-*/
-/*
-=begin
---- Iconv.new(to, from) {|cd| ...}
-    Creates new code converter from a coding-system designated with ((|from|))
-    to another one designated with ((|to|)).
-    :Parameters
-      :((|to|))
-        coding-system name for destination.
-      :((|from|))
-        coding-system name for source.
-    :Exceptions
-      :(({TypeError}))
-        if ((|to|)) or ((|from|)) aren't String
-      :(({ArgumentError}))
-        if designated converter couldn't find out.
-      :(({SystemCallError}))
-        when (({iconv_open(3)})) failed.
-
---- Iconv.open(to, from)
-    Equivalents to ((<Iconv.new>)) except with in the case of called
-    with a block, yields with the new instance and closes it, and
-    returns the result which returned from the block.
-=end
-*/
 static VALUE
 iconv_s_allocate
 #ifdef HAVE_PROTOTYPES
@@ -471,6 +489,24 @@ iconv_s_allocate
     return Data_Wrap_Struct(klass, 0, ICONV_FREE, 0);
 }
 
+/*
+ * Document-method: new
+ * call-seq: Iconv.new(to, from)
+ *
+ * Creates new code converter from a coding-system designated with +from+
+ * to another one designated with +to+.
+ * 
+ * === Parameters
+ *
+ * +to+::   encoding name for destination
+ * +from+:: encoding name for source
+ *
+ * === Exceptions
+ *
+ * TypeError::       if +to+ or +from+ aren't String
+ * ArgumentError::   if designated converter couldn't find out
+ * SystemCallError:: if <tt>iconv_open3</tt> fails
+ */
 static VALUE
 iconv_initialize
 #ifdef HAVE_PROTOTYPES
@@ -488,6 +524,14 @@ iconv_initialize
     return self;
 }
 
+/*
+ * Document-method: open
+ * call-seq: Iconv.open(to, from) { |iconv| ... }
+ *
+ * Equivalent to Iconv.new except that when it is called with a block, it
+ * yields with the new instance and closes it, and returns the result which
+ * returned from the block.
+ */
 static VALUE
 iconv_s_open
 #ifdef HAVE_PROTOTYPES
@@ -509,22 +553,6 @@ iconv_s_open
 	return self;
     }
 }
-
-/*
-=begin
---- Iconv.iconv(to, from, *strs)
-    Shorthand for
-      Iconv.open(to, from) {|cd| (strs + [nil]).collect {|s| cd.iconv(s)}}
-    :Parameters
-      :((|to|)), ((|from|))
-        see ((<Iconv.new>)).
-      :((|strs|))
-        strings to be converted.
-    :Exceptions
-      exceptions thrown by ((<Iconv.new>)), ((<Iconv.open>)) and
-      ((<Iconv#iconv>)).
-=end
-*/
 
 static VALUE
 iconv_s_convert
@@ -551,6 +579,24 @@ iconv_s_convert
     return env->ret;
 }
 
+/*
+ * Document-method: iconv
+ * call-seq: Iconv.iconv(to, from, *strs)
+ *
+ * Shorthand for
+ *   Iconv.open(to, from) { |cd|
+ *     (strs + [nil]).collect { |s| cd.iconv(s) }
+ *   }
+ *
+ * === Parameters
+ *
+ * <tt>to, from</tt>:: see Iconv.new
+ * <tt>strs</tt>:: strings to be converted
+ *
+ * === Exceptions
+ *
+ * Exceptions thrown by Iconv.new, Iconv.open and Iconv#iconv.
+*/
 static VALUE
 iconv_s_iconv
 #ifdef HAVE_PROTOTYPES
@@ -575,6 +621,12 @@ iconv_s_iconv
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
 }
 
+/*
+ * Document-method: Iconv::conv
+ * call-seq: Iconv.iconv(to, from, *strs)
+ *
+ * See Iconv.iconv ???
+ */
 static VALUE
 iconv_s_conv
 #ifdef HAVE_PROTOTYPES
@@ -594,22 +646,16 @@ iconv_s_conv
     return rb_ensure(iconv_s_convert, (VALUE)&arg, iconv_free, ICONV2VALUE(arg.cd));
 }
 
-
 /*
-=begin
-=== Instance methods
-=end
-*/
-/*
-=begin
---- Iconv#close
-    Finishes conversion.
-    * After calling this, invoking method ((<Iconv#iconv>)) will cause
-      exception, but multiple calls of (({close})) are guaranteed to
-      end successfully.
-    * Returns a string contains the byte sequence to change the
-      output buffer to its initial shift state.
-=end
+ * Document-method: close
+ *
+ * Finishes conversion.
+ *
+ * After calling this, calling Iconv#iconv will cause an exception, but
+ * multiple calls of #close are guaranteed to end successfully.
+ *
+ * Returns a string containing the byte sequence to change the output buffer to
+ * its initial shift state.  <i>???</i>
 */
 static VALUE
 iconv_init_state
@@ -641,29 +687,31 @@ iconv_finish
 }
 
 /*
-=begin
---- Iconv#iconv(str, [ start = 0, [ length = -1 ] ])
-    Converts string and returns converted one.
-    * In the case of ((|str|)) is (({String})), converts (({str[start, length]})).
-      Returns converted string.
-    * In the case of ((|str|)) is (({nil})), places ((|converter|))
-      itself into initial shift state and just returns a string contains
-      the byte sequence to change the output buffer to its initial shift
-      state.
-    * Otherwise, causes exception.
-    :Parameters
-      :((|str|))
-        string to be converted or (({nil})).
-      :((|start|))
-        starting offset.
-      :((|length|))
-        conversion length,
-        (({nil})) or (({-1})) means whole string from (({start})).
-    :Exceptions
-      * ((<Iconv::IllegalSequence>))
-      * ((<Iconv::InvalidCharacter>))
-      * ((<Iconv::OutOfRange>))
-=end
+ * Document-method: iconv
+ * call-seq: iconv(str, start=0, length=-1)
+ *
+ * Converts string and returns the result.
+ * * If +str+ is a String, converts <tt>str[start, length]</tt> and returns the converted string.
+ * * If +str+ is +nil+, places converter itself into initial shift state and
+ *   just returns a string containing the byte sequence to change the output
+ *   buffer to its initial shift state.
+ * * Otherwise, raises an exception.
+ *
+ * === Parameters
+ *
+ * str::    string to be converted, or nil
+ * start::  starting offset
+ * length:: conversion length; nil or -1 means whole the string from start
+ *
+ * === Exceptions
+ *
+ * * IconvIllegalSequence
+ * * IconvInvalidCharacter
+ * * IconvOutOfRange
+ *
+ * === Examples
+ *
+ * See the Iconv documentation.
 */
 static VALUE
 iconv_iconv
@@ -801,53 +849,6 @@ iconv_failure_inspect
  * Iconv::Failure
  */
 
-/*
- * Document-class: Iconv
- *
- * == Summary
- *
- * Ruby extension for charset conversion.
- * 
- * == Abstract
- *
- * Iconv is a wrapper class for the UNIX 95 <tt>iconv()</tt> function family,
- * which translates string between various encoding systems.
- * 
- * See Open Group's on-line documents for more details.
- * * <tt>iconv.h</tt>:       http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.h.html
- * * <tt>iconv_open()</tt>:  http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_open.html
- * * <tt>iconv()</tt>:       http://www.opengroup.org/onlinepubs/007908799/xsh/iconv.html
- * * <tt>iconv_close()</tt>: http://www.opengroup.org/onlinepubs/007908799/xsh/iconv_close.html
- * 
- * Which coding systems are available is platform-dependent.
- * 
- * == Examples
- *
- * 1. Instantiate a new Iconv and use method Iconv#iconv.
- *
- *      cd = Iconv.new(to, from)
- *      begin
- *        input.each { |s| output << cd.iconv(s) }
- *        output << cd.iconv(nil)                   # Don't forget this!
- *      ensure
- *        cd.close
- *      end
- *
- * 2. Invoke Iconv.open with a block.
- *
- *      Iconv.open(to, from) do |cd|
- *        input.each { |s| output << cd.iconv(s) }
- *        output << cd.iconv(nil)
- *      end
- *
- * 3. Shorthand for (2).
- *
- *      Iconv.iconv(to, from, *input.to_a)
- *
- * 4. Simple conversion between two charsets.
- *
- *      converted_text = Iconv.new('iso-8859-15', 'utf-8').iconv(text)
- */
 void
 Init_iconv _((void))
 {
