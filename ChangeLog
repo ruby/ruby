@@ -1,3 +1,13 @@
+Tue Dec 21 16:15:21 2004  Michael Neumann  <mneumann@ruby-lang.org>
+
+	* lib/xmlrpc/client.rb: use "" instead of "." if prefix argument is
+	  nil in proxy methods. nil is default value.
+
+	* test/xmlrpc/test_webrick_server.rb, test/xmlrpc/webrick_testing.rb:
+	  use threads instead of forking. this should fix issue #1208
+	  (http://rubyforge.org/tracker/?func=detail&atid=1698&aid=1208&group_id=426).
+	  removed testing of SSL enabled servlet as this hangs.
+
 Wed Dec 22 00:05:10 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/soap/*, test/soap/*, sample/soap/authheader/*: eval cleanup.

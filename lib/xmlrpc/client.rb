@@ -457,19 +457,19 @@ module XMLRPC
 
     # Proxy generating methods ------------------------------------------
     
-    def proxy(prefix, *args)
+    def proxy(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call)
     end
 
-    def proxy2(prefix, *args)
+    def proxy2(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call2)
     end
 
-    def proxy_async(prefix, *args)
+    def proxy_async(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call_async)
     end
 
-    def proxy2_async(prefix, *args)
+    def proxy2_async(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call2_async)
     end
 
@@ -586,7 +586,7 @@ module XMLRPC
 
       def initialize(server, prefix, args=[], meth=:call, delim=".")
 	@server = server
-	@prefix = prefix + delim
+	@prefix = prefix ? prefix + delim : ""
 	@args   = args 
         @meth   = meth
       end

@@ -7,20 +7,20 @@ module WEBrick_Testing
   end
   
   def start_server(config={})
-    raise "already started" if @__server_pid or @__started
-    trap('HUP') { @__started = true }
-    @__server_pid = fork do 
-      w = WEBrick::HTTPServer.new(
+    raise "already started" if @__server
+    @__started = false
+
+    Thread.new {
+      @__server = WEBrick::HTTPServer.new(
         { 
           :Logger => DummyLog.new,
           :AccessLog => [],
-          :StartCallback => proc { Process.kill('HUP', Process.ppid) }
+          :StartCallback => proc { @__started = true }
         }.update(config))
-      yield w
-      trap('INT') { w.shutdown }
-      w.start
-      exit
-    end
+      yield @__server 
+      @__server.start
+      @__started = false
+    }
 
     Timeout.timeout(5) {
       nil until @__started # wait until the server is ready
@@ -28,10 +28,10 @@ module WEBrick_Testing
   end
 
   def stop_server
-    Process.kill('INT', @__server_pid)
-    @__server_pid = nil
-    @__started = false
-    Process.wait
-    raise unless $?.success?
+    Timeout.timeout(5) {
+      @__server.shutdown
+      nil while @__started # wait until the server is down
+    }
+    @__server = nil
   end
 end
