@@ -1,3 +1,23 @@
+Thu Jul 25 09:05:02 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* misc/ruby-mode.el (ruby-delimiter): include here document.
+
+	* misc/ruby-mode.el (ruby-deep-arglist): skips spaces after
+	  parenthesis when 'space.
+
+	* misc/ruby-mode.el (ruby-imenu-create-index): fix for nested
+	  classes.
+
+	* misc/ruby-mode.el (ruby-accurate-end-of-block): added.  scan a
+	  block in the order.
+
+	* misc/ruby-mode.el (ruby-expr-beg): support for here document.
+
+	* misc/ruby-mode.el (ruby-parse-partial): splitted from
+	  ruby-parse-region.
+
+	* misc/ruby-mode.el (ruby-move-to-block): skips RD style comments.
+
 Thu Jul 18 11:52:02 2002  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (set_socket): new method.
