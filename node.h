@@ -13,8 +13,6 @@
 #ifndef NODE_H
 #define NODE_H
 
-struct global_entry *rb_global_entry();
-
 enum node_type {
     NODE_METHOD,
     NODE_FBODY,
@@ -29,6 +27,10 @@ enum node_type {
     NODE_UNTIL,
     NODE_ITER,
     NODE_FOR,
+    NODE_BREAK,
+    NODE_NEXT,
+    NODE_REDO,
+    NODE_RETRY,
     NODE_BEGIN,
     NODE_RESCUE,
     NODE_RESBODY,
@@ -64,6 +66,8 @@ enum node_type {
     NODE_MATCH_REF,
     NODE_LASTLINE,
     NODE_MATCH,
+    NODE_MATCH2,
+    NODE_MATCH3,
     NODE_LIT,
     NODE_STR,
     NODE_DSTR,
@@ -91,14 +95,17 @@ enum node_type {
     NODE_ATTRSET,
     NODE_SELF,
     NODE_NIL,
+    NODE_TRUE,
+    NODE_FALSE,
     NODE_DEFINED,
     NODE_TAG,
     NODE_NEWLINE,
+    NODE_POSTEXE,
 };
 
 typedef struct RNode {
     UINT flags;
-    char *file;
+    char *nd_file;
     union {
 	struct RNode *node;
 	ID id;
@@ -185,7 +192,7 @@ typedef struct RNode {
 #define nd_argc  u2.argc
 
 #define nd_cname u1.id
-#define nd_super u3.id
+#define nd_super u3.node
 
 #define nd_modl  u1.id
 #define nd_clss  u1.value
@@ -200,8 +207,6 @@ typedef struct RNode {
 #define nd_tag   u1.id
 #define nd_tlev  u3.cnt
 #define nd_tval  u2.value
-
-#define nd_file  file
 
 #define NEW_METHOD(n,x) node_newnode(NODE_METHOD,x,n,0)
 #define NEW_FBODY(n,i,o) node_newnode(NODE_FBODY,n,i,o)
@@ -220,6 +225,10 @@ typedef struct RNode {
 #define NEW_UNTIL(c,b,n) node_newnode(NODE_UNTIL,c,b,n)
 #define NEW_FOR(v,i,b) node_newnode(NODE_FOR,v,b,i)
 #define NEW_ITER(v,i,b) node_newnode(NODE_ITER,v,b,i)
+#define NEW_BREAK() node_newnode(NODE_BREAK,0,0,0)
+#define NEW_NEXT() node_newnode(NODE_NEXT,0,0,0)
+#define NEW_REDO() node_newnode(NODE_REDO,0,0,0)
+#define NEW_RETRY() node_newnode(NODE_RETRY,0,0,0)
 #define NEW_BEGIN(b) node_newnode(NODE_BEGIN,0,b,0)
 #define NEW_RESCUE(b,res) node_newnode(NODE_RESCUE,b,res,0)
 #define NEW_RESBODY(a,ex,n) node_newnode(NODE_RESBODY,n,ex,a)
@@ -248,6 +257,8 @@ typedef struct RNode {
 #define NEW_NTH_REF(n)  node_newnode(NODE_NTH_REF,0,n,local_cnt('~'))
 #define NEW_BACK_REF(n) node_newnode(NODE_BACK_REF,0,n,local_cnt('~'))
 #define NEW_MATCH(c) node_newnode(NODE_MATCH,c,0,0)
+#define NEW_MATCH2(n1,n2) node_newnode(NODE_MATCH2,n1,n2,0)
+#define NEW_MATCH3(r,n2) node_newnode(NODE_MATCH3,r,n2,0)
 #define NEW_LIT(l) node_newnode(NODE_LIT,l,0,0)
 #define NEW_STR(s) node_newnode(NODE_STR,s,0,0)
 #define NEW_DSTR(s) node_newnode(NODE_DSTR,s,0,0)
@@ -275,8 +286,12 @@ typedef struct RNode {
 #define NEW_ATTRSET(a) node_newnode(NODE_ATTRSET,a,0,0)
 #define NEW_SELF() node_newnode(NODE_SELF,0,0,0)
 #define NEW_NIL() node_newnode(NODE_NIL,0,0,0)
+#define NEW_TRUE() node_newnode(NODE_TRUE,0,0,0)
+#define NEW_FALSE() node_newnode(NODE_FALSE,0,0,0)
 #define NEW_DEFINED(e) node_newnode(NODE_DEFINED,e,0,0)
 #define NEW_NEWLINE(n) node_newnode(NODE_NEWLINE,0,0,n)
+#define NEW_PREEXE(b) NEW_SCOPE(b)
+#define NEW_POSTEXE() node_newnode(NODE_POSTEXE,0,0,0)
 
 NODE *node_newnode();
 VALUE rb_method_booundp();
@@ -284,7 +299,19 @@ VALUE rb_method_booundp();
 #define NOEX_PUBLIC  0
 #define NOEX_PRIVATE 1
 
-NODE *compile_string();
-NODE *compile_file();
+NODE *compile_string _((char *, char *, int));
+NODE *compile_file _((char *, VALUE, int));
+
+void rb_add_method _((VALUE, ID, NODE *, int));
+void rb_remove_method _((VALUE, ID));
+NODE *node_newnode();
+
+enum node_type nodetype _((NODE *));
+int nodeline _((NODE *));
+
+struct global_entry *rb_global_entry _((ID));
+VALUE rb_gvar_get _((struct global_entry *));
+VALUE rb_gvar_set _((struct global_entry *, VALUE));
+VALUE rb_gvar_defined _((struct global_entry *));
 
 #endif

@@ -38,7 +38,7 @@
 #define FLUSH_REGISTER_WINDOWS /* empty */
 #endif
 
-#ifdef __human68k__
+#if defined(__human68k__) || defined(__CYGWIN32__)
 #undef HAVE_RANDOM
 #undef HAVE_SETITIMER
 #endif

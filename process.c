@@ -108,9 +108,6 @@ rb_waitpid(pid, flags, st)
     result = wait4(pid, st, flags, NULL);
     if (result < 0) {
 	if (errno == EINTR) {
-#ifdef THREAD
-	    thread_schedule();
-#endif
 	    goto retry;
 	}
 	return -1;
@@ -250,30 +247,36 @@ after_exec()
 #endif
 
 extern char *dln_find_exe();
+int env_path_tainted();
 
 static void
 security(str)
     char *str;
 {
-    extern int env_path_tainted;
     extern VALUE eSecurityError;
 
-    if (rb_safe_level() > 0 && env_path_tainted) {
-	Raise(eSecurityError, "Insecure PATH - %s", str);
+    if (rb_safe_level() > 0) {
+	if (env_path_tainted()) {
+	    Raise(eSecurityError, "Insecure PATH - %s", str);
+	}
     }
 }
 
 static int
-proc_exec_v(argv)
+proc_exec_v(argv, prog)
     char **argv;
-{
     char *prog;
-
-    security(argv[0]);
-    prog = dln_find_exe(argv[0], 0);
-    if (!prog) {
-	errno = ENOENT;
-	return -1;
+{
+    if (prog) {
+	security(prog);
+    }
+    else {
+	security(argv[0]);
+	prog = dln_find_exe(argv[0], 0);
+	if (!prog) {
+	    errno = ENOENT;
+	    return -1;
+	}
     }
 #if (defined(MSDOS) && !defined(DJGPP)) || defined(__human68k__)
     {
@@ -315,13 +318,19 @@ proc_exec_v(argv)
 }
 
 static int
-proc_exec_n(argc, argv)
+proc_exec_n(argc, argv, progv)
     int argc;
     VALUE *argv;
+    VALUE progv;
 {
+    char *prog = 0;
     char **args;
     int i;
 
+    if (progv) {
+	Check_SafeStr(progv);
+	prog = RSTRING(progv)->ptr;
+    }
     args = ALLOCA_N(char*, argc+1);
     for (i=0; i<argc; i++) {
 	Check_SafeStr(argv[i]);
@@ -329,7 +338,7 @@ proc_exec_n(argc, argv)
     }
     args[i] = 0;
     if (args[0]) {
-	return proc_exec_v(args);
+	return proc_exec_v(args, prog);
     }
     return -1;
 }
@@ -382,7 +391,7 @@ rb_proc_exec(str)
 	*a = NULL;
     }
     if (argv[0]) {
-	return proc_exec_v(argv);
+	return proc_exec_v(argv, 0);
     }
     errno = ENOENT;
     return -1;
@@ -390,16 +399,22 @@ rb_proc_exec(str)
 
 #if defined(__human68k__)
 static int
-proc_spawn_v(argv)
+proc_spawn_v(argv, prog)
     char **argv;
-{
     char *prog;
+{
     char *extension;
     int state;
 
-    prog = dln_find_exe(argv[0], 0);
-    if (!prog)
-	return -1;
+    if (prog) {
+	security(prog);
+    }
+    else {
+	security(argv[0]);
+	prog = dln_find_exe(argv[0], 0);
+	if (!prog)
+	    return -1;
+    }
 
     if ((extension = strrchr(prog, '.')) != NULL && strcasecmp(extension, ".bat") == 0) {
 	char **new_argv;
@@ -430,9 +445,10 @@ proc_spawn_v(argv)
 }
 
 static int
-proc_spawn_n(argc, argv)
+proc_spawn_n(argc, argv, prog)
     int argc;
     VALUE *argv;
+    VALUE prog;
 {
     char **args;
     int i;
@@ -442,9 +458,10 @@ proc_spawn_n(argc, argv)
 	Check_SafeStr(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
+    Check_SafeStr(prog);
     args[i] = (char *) 0;
     if (args[0])
-	return proc_exec_v(args);
+	return proc_spawn_v(args, RSTRING(prog)->ptr);
     return -1;
 }
 
@@ -473,7 +490,7 @@ proc_spawn(str)
 	    *a++ = t;
 	*a = NULL;
     }
-    return argv[0] ? proc_spawn_v(argv) : -1 ;
+    return argv[0] ? proc_spawn_v(argv, 0) : -1 ;
 }
 #endif /* __human68k__ */
 
@@ -482,12 +499,29 @@ f_exec(argc, argv)
     int argc;
     VALUE *argv;
 {
-    if (argc == 1) {
+    VALUE prog = 0;
+
+    if (TYPE(argv[0]) == T_ARRAY) {
+	if (RARRAY(argv[0])->len != 2) {
+	    ArgError("wrong first argument");
+	}
+	prog = RARRAY(argv[0])->ptr[0];
+	argv[0] = RARRAY(argv[0])->ptr[1];
+    }
+
+    if (TYPE(argv[0]) == T_ARRAY) {
+	if (RARRAY(argv[0])->len != 2) {
+	    ArgError("wrong first argument");
+	}
+	prog = RARRAY(argv[0])->ptr[0];
+	argv[0] = RARRAY(argv[0])->ptr[1];
+    }
+    if (argc == 1 && prog == 0) {
 	Check_SafeStr(argv[0]);
 	rb_proc_exec(RSTRING(argv[0])->ptr);
     }
     else {
-	proc_exec_n(argc, argv);
+	proc_exec_n(argc, argv, prog);
     }
     rb_sys_fail(RSTRING(argv[0])->ptr);
 }
@@ -574,6 +608,12 @@ f_system(argc, argv)
     VALUE cmd;
     int state;
 
+    if (TYPE(argv[0]) == T_ARRAY) {
+	if (RARRAY(argv[0])->len != 2) {
+	    ArgError("wrong first argument");
+	}
+	argv[0] = RARRAY(argv[0])->ptr[0];
+    }
     cmd = ary_join(ary_new4(argc, argv), str_new2(" "));
 
     Check_SafeStr(cmd);
@@ -587,6 +627,12 @@ f_system(argc, argv)
     VALUE cmd;
     int state;
 
+    if (TYPE(argv[0]) == T_ARRAY) {
+	if (RARRAY(argv[0])->len != 2) {
+	    ArgError("wrong first argument");
+	}
+	argv[0] = RARRAY(argv[0])->ptr[0];
+    }
     cmd = ary_join(ary_new4(argc, argv), str_new2(" "));
 
     Check_SafeStr(cmd);
@@ -597,6 +643,7 @@ f_system(argc, argv)
     return FALSE;
 #else
 #if defined(__human68k__)
+    VALUE prog = 0;
     int i;
     int state;
 
@@ -608,14 +655,25 @@ f_system(argc, argv)
 	return INT2FIX(0);
     }
 
-    for (i = 0; i < argc; i++)
-	Check_SafeStr(argv[i]);
+    if (TYPE(argv[0]) == T_ARRAY) {
+	if (RARRAY(argv[0])->len != 2) {
+	    ArgError("wrong first argument");
+	}
+	prog = RARRAY(argv[0])->ptr[0];
+	argv[0] = RARRAY(argv[0])->ptr[1];
+    }
 
-    state = argc == 1 ? proc_spawn(RSTRING(argv[0])->ptr) : proc_spawn_n(argc, argv) ;
+    if (argc == 1 && prog == 0) {
+	state = proc_spawn(RSTRING(argv[0])->ptr);
+    }
+    else {
+	state = proc_spawn_n(argc, argv, prog);
+    }
     last_status = state == -1 ? INT2FIX(127) : INT2FIX(state);
 
     return state == 0 ? TRUE : FALSE ;
 #else
+    VALUE prog = 0;
     int i;
     int pid;
 
@@ -627,18 +685,22 @@ f_system(argc, argv)
 	return INT2FIX(0);
     }
 
-    for (i=0; i<argc; i++) {
-	Check_SafeStr(argv[i]);
+    if (TYPE(argv[0]) == T_ARRAY) {
+	if (RARRAY(argv[0])->len != 2) {
+	    ArgError("wrong first argument");
+	}
+	prog = RARRAY(argv[0])->ptr[0];
+	argv[0] = RARRAY(argv[0])->ptr[1];
     }
 
   retry:
     switch (pid = vfork()) {
       case 0:
-	if (argc == 1) {
+	if (argc == 1 && prog == 0) {
 	    rb_proc_exec(RSTRING(argv[0])->ptr);
 	}
 	else {
-	    proc_exec_n(argc, argv);
+	    proc_exec_n(argc, argv, prog);
 	}
 	_exit(127);
 	break;			/* not reached */
@@ -930,8 +992,6 @@ extern VALUE f_kill();
 void
 Init_process()
 {
-    extern VALUE mKernel;
-
     rb_define_virtual_variable("$$", get_pid, 0);
     rb_define_readonly_variable("$?", &last_status);
     rb_define_global_function("exec", f_exec, -1);

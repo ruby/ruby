@@ -1,1 +1,1 @@
-fcntl.o: fcntl.c ../../ruby.h ../../config.h ../../defines.h
+fcntl.o: fcntl.c $(hdrdir)/ruby.h $(hdrdir)/config.h $(hdrdir)/defines.h

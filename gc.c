@@ -34,8 +34,6 @@
 void *alloca();
 #endif
 
-void gc();
-void gc_mark();
 static void run_final();
 
 #ifndef GC_MALLOC_LIMIT
@@ -57,11 +55,11 @@ xmalloc(size)
     if (size == 0) size = 1;
     malloc_memories += size;
     if (malloc_memories > GC_MALLOC_LIMIT) {
-	gc();
+	gc_gc();
     }
     mem = malloc(size);
     if (!mem) {
-	gc();
+	gc_gc();
 	mem = malloc(size);
 	if (!mem)
 	    Fatal("failed to allocate memory");
@@ -92,7 +90,7 @@ xrealloc(ptr, size)
     if (!ptr) return xmalloc(size);
     mem = realloc(ptr, size);
     if (!mem) {
-	gc();
+	gc_gc();
 	mem = realloc(ptr, size);
 	if (!mem)
 	    Fatal("failed to allocate memory(realloc)");
@@ -235,19 +233,21 @@ add_heap()
 	p++;
     }
 }
+#define RANY(o) ((RVALUE*)(o))
 
-struct RBasic *
+VALUE
 rb_newobj()
 {
-    struct RBasic *obj;
+    VALUE obj;
+
     if (freelist) {
       retry:
-	obj = (struct RBasic*)freelist;
+	obj = (VALUE)freelist;
 	freelist = freelist->as.free.next;
 	return obj;
     }
     if (dont_gc) add_heap();
-    else gc();
+    else gc_gc();
 
     goto retry;
 }
@@ -259,8 +259,7 @@ data_object_alloc(class, datap, dmark, dfree)
     void (*dfree)();
     void (*dmark)();
 {
-    struct RData *data = (struct RData*)rb_newobj();
-
+    NEWOBJ(data, struct RData);
     OBJSETUP(data, class, T_DATA);
     data->data = datap;
     data->dfree = dfree;
@@ -273,9 +272,10 @@ extern st_table *rb_class_tbl;
 VALUE *gc_stack_start;
 
 static int
-looks_pointerp(p)
-    register RVALUE *p;
+looks_pointerp(ptr)
+    void *ptr;
 {
+    register RVALUE *p = RANY(ptr);
     register RVALUE *heap_org;
     register long i;
 
@@ -365,9 +365,11 @@ gc_mark_maybe(obj)
 }
 
 void
-gc_mark(obj)
-    register RVALUE *obj;
+gc_mark(ptr)
+    void *ptr;
 {
+    register RVALUE *obj = RANY(ptr);
+
   Top:
     if (FIXNUM_P(obj)) return;	/* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
@@ -403,16 +405,18 @@ gc_mark(obj)
 	  case NODE_SUPER:	/* 3 */
 	  case NODE_FCALL:
 	  case NODE_NEWLINE:
-	    obj = (RVALUE*)obj->as.node.u3.node;
+	    obj = RANY(obj->as.node.u3.node);
 	    goto Top;
 
 	  case NODE_WHILE:	/* 1,2 */
 	  case NODE_UNTIL:
+	  case NODE_MATCH2:
+	  case NODE_MATCH3:
 	    gc_mark(obj->as.node.u1.node);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
 	  case NODE_NOT:
-	    obj = (RVALUE*)obj->as.node.u2.node;
+	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
 	  case NODE_HASH:	/* 1 */
@@ -420,12 +424,13 @@ gc_mark(obj)
 	  case NODE_STR:
 	  case NODE_XSTR:
 	  case NODE_DEFINED:
-	    obj = (RVALUE*)obj->as.node.u1.node;
+	  case NODE_MATCH:
+	    obj = RANY(obj->as.node.u1.node);
 	    goto Top;
 
 	  case NODE_SCOPE:	/* 2,3 */
 	    gc_mark(obj->as.node.u3.node);
-	    obj = (RVALUE*)obj->as.node.u2.node;
+	    obj = RANY(obj->as.node.u2.node);
 	    goto Top;
 
 	  case NODE_ZARRAY:	/* - */
@@ -443,6 +448,7 @@ gc_mark(obj)
 	  case NODE_UNDEF:
 	  case NODE_SELF:
 	  case NODE_NIL:
+	  case NODE_POSTEXE:
 	    break;
 
 	  default:
@@ -453,7 +459,7 @@ gc_mark(obj)
 		gc_mark(obj->as.node.u2.node);
 	    }
 	    if (looks_pointerp(obj->as.node.u3.node)) {
-		obj = (RVALUE*)obj->as.node.u3.node;
+		obj = RANY(obj->as.node.u3.node);
 		goto Top;
 	    }
 	}
@@ -491,7 +497,7 @@ gc_mark(obj)
 
       case T_STRING:
 	if (obj->as.string.orig) {
-	    obj = (RVALUE*)obj->as.string.orig;
+	    obj = RANY(obj->as.string.orig);
 	    goto Top;
 	}
 	break;
@@ -512,14 +518,14 @@ gc_mark(obj)
 
       case T_MATCH:
 	if (obj->as.match.str) {
-	    obj = (RVALUE*)obj->as.match.str;
+	    obj = RANY(obj->as.match.str);
 	    goto Top;
 	}
 	break;
 
       case T_VARMAP:
 	gc_mark(obj->as.varmap.val);
-	obj = (RVALUE*)obj->as.varmap.next;
+	obj = RANY(obj->as.varmap.next);
 	goto Top;
 	break;
 
@@ -604,20 +610,20 @@ gc_sweep()
 
 void
 gc_force_recycle(p)
-    RVALUE *p;
+    VALUE p;
 {
-    p->as.free.flag = 0;
-    p->as.free.next = freelist;
-    freelist = p;
+    RANY(p)->as.free.flag = 0;
+    RANY(p)->as.free.next = freelist;
+    freelist = RANY(p);
 }
 
 static int need_call_final = 0;
 
 static void
 obj_free(obj)
-    RVALUE *obj;
+    VALUE obj;
 {
-    switch (obj->as.basic.flags & T_MASK) {
+    switch (RANY(obj)->as.basic.flags & T_MASK) {
       case T_NIL:
       case T_FIXNUM:
       case T_TRUE:
@@ -629,40 +635,44 @@ obj_free(obj)
     if (need_call_final) {
 	run_final(obj);
     }
-    switch (obj->as.basic.flags & T_MASK) {
+    switch (RANY(obj)->as.basic.flags & T_MASK) {
       case T_OBJECT:
-	if (obj->as.object.iv_tbl) st_free_table(obj->as.object.iv_tbl);
+	if (RANY(obj)->as.object.iv_tbl) {
+	    st_free_table(RANY(obj)->as.object.iv_tbl);
+	}
 	break;
       case T_MODULE:
       case T_CLASS:
 	rb_clear_cache();
-	st_free_table(obj->as.class.m_tbl);
-	if (obj->as.object.iv_tbl) st_free_table(obj->as.object.iv_tbl);
+	st_free_table(RANY(obj)->as.class.m_tbl);
+	if (RANY(obj)->as.object.iv_tbl) {
+	    st_free_table(RANY(obj)->as.object.iv_tbl);
+	}
 	break;
       case T_STRING:
-	if (!obj->as.string.orig) free(obj->as.string.ptr);
+	if (!RANY(obj)->as.string.orig) free(RANY(obj)->as.string.ptr);
 	break;
       case T_ARRAY:
-	if (obj->as.array.ptr) free(obj->as.array.ptr);
+	if (RANY(obj)->as.array.ptr) free(RANY(obj)->as.array.ptr);
 	break;
       case T_HASH:
-	st_free_table(obj->as.hash.tbl);
+	st_free_table(RANY(obj)->as.hash.tbl);
 	break;
       case T_REGEXP:
-	reg_free(obj->as.regexp.ptr);
-	free(obj->as.regexp.str);
+	reg_free(RANY(obj)->as.regexp.ptr);
+	free(RANY(obj)->as.regexp.str);
 	break;
       case T_DATA:
-	if (obj->as.data.dfree && DATA_PTR(obj))
-	    (*obj->as.data.dfree)(DATA_PTR(obj));
+	if (RANY(obj)->as.data.dfree && DATA_PTR(obj))
+	    (*RANY(obj)->as.data.dfree)(DATA_PTR(obj));
 	break;
       case T_MATCH:
-	re_free_registers(obj->as.match.regs);
-	free(obj->as.match.regs);
+	re_free_registers(RANY(obj)->as.match.regs);
+	free(RANY(obj)->as.match.regs);
 	break;
       case T_FILE:
-	io_fptr_finalize(obj->as.file.fptr);
-	free(obj->as.file.fptr);
+	io_fptr_finalize(RANY(obj)->as.file.fptr);
+	free(RANY(obj)->as.file.fptr);
 	break;
       case T_ICLASS:
 	/* iClass shares table with the module */
@@ -673,30 +683,30 @@ obj_free(obj)
 	break;
 
       case T_BIGNUM:
-	if (obj->as.bignum.digits) free(obj->as.bignum.digits);
+	if (RANY(obj)->as.bignum.digits) free(RANY(obj)->as.bignum.digits);
 	break;
       case T_NODE:
-	if (nd_type(obj) == NODE_SCOPE && obj->as.node.u1.tbl) {
-	    free(obj->as.node.u1.tbl);
+	if (nd_type(obj) == NODE_SCOPE && RANY(obj)->as.node.u1.tbl) {
+	    free(RANY(obj)->as.node.u1.tbl);
 	}
 	return;			/* no need to free iv_tbl */
 
       case T_SCOPE:
-	if (obj->as.scope.local_vars) {
-	    VALUE *vars = obj->as.scope.local_vars-1;
+	if (RANY(obj)->as.scope.local_vars) {
+	    VALUE *vars = RANY(obj)->as.scope.local_vars-1;
 	    if (vars[0] == 0)
-		free(obj->as.scope.local_tbl);
-	    if (obj->as.scope.flag&SCOPE_MALLOC)
+		free(RANY(obj)->as.scope.local_tbl);
+	    if (RANY(obj)->as.scope.flag&SCOPE_MALLOC)
 		free(vars);
 	}
 	break;
 
       case T_STRUCT:
-	free(obj->as.rstruct.ptr);
+	free(RANY(obj)->as.rstruct.ptr);
 	break;
 
       default:
-	Bug("gc_sweep(): unknown data type %d", obj->as.basic.flags & T_MASK);
+	Bug("gc_sweep(): unknown data type %d", RANY(obj)->as.basic.flags & T_MASK);
     }
 }
 
@@ -750,7 +760,7 @@ int rb_setjmp (rb_jmp_buf);
 #endif /* __GNUC__ */
 
 void
-gc()
+gc_gc()
 {
     struct gc_list *list;
     struct FRAME *frame;
@@ -806,7 +816,7 @@ gc()
 static VALUE
 gc_method()
 {
-    gc();
+    gc_gc();
     return Qnil;
 }
 
@@ -851,7 +861,7 @@ os_live_obj()
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
-		    rb_yield(p);
+		    rb_yield((VALUE)p);
 		    n++;
 		}
 	    }
@@ -883,8 +893,8 @@ os_obj_of(of)
 		  case T_CLASS:
 		    if (FL_TEST(p, FL_SINGLETON)) continue;
 		  default:
-		    if (obj_is_kind_of(p, of)) {
-			rb_yield(p);
+		    if (obj_is_kind_of((VALUE)p, of)) {
+			rb_yield((VALUE)p);
 			n++;
 		    }
 		}
@@ -957,10 +967,45 @@ run_final(obj)
 
     if (!FL_TEST(obj, FL_FINALIZE)) return;
 
-    obj |= FIXNUM_FLAG;		/* make obj into id */
+    obj = INT2NUM((int)obj);	/* make obj into id */
     for (i=0; i<RARRAY(finalizers)->len; i++) {
-	rb_eval_cmd(RARRAY(finalizers)->ptr[i], obj);
+	rb_eval_cmd(RARRAY(finalizers)->ptr[i], ary_new3(1,obj));
     }
+}
+
+void
+gc_call_finalizer_at_exit()
+{
+    RVALUE *p, *pend;
+    int i;
+
+    for (i = 0; i < heaps_used; i++) {
+	p = heaps[i]; pend = p + HEAP_SLOTS;
+	while (p < pend) {
+	    run_final(p);
+	    if (BUILTIN_TYPE(p) == T_DATA &&
+		DATA_PTR(p) &&
+		RANY(p)->as.data.dfree)
+		(*RANY(p)->as.data.dfree)(DATA_PTR(p));
+	    p++;
+	}
+    }
+}
+
+static VALUE
+id2ref(obj, id)
+    VALUE obj, id;
+{
+    INT ptr = NUM2INT(id);
+
+    if (FIXNUM_P(ptr)) return (VALUE)ptr;
+    if (!looks_pointerp(ptr)) {
+	IndexError("0x%x is not the id value", ptr);
+    }
+    if (RANY(ptr)->as.free.flag == 0) {
+	IndexError("0x%x is recycled object", ptr);
+    }
+    return (VALUE)ptr;
 }
 
 extern VALUE cModule;
@@ -978,11 +1023,12 @@ Init_GC()
 
     mObSpace = rb_define_module("ObjectSpace");
     rb_define_module_function(mObSpace, "each_object", os_each_obj, -1);
-    rb_define_module_function(mObSpace, "garbage_collect", gc, 0);
+    rb_define_module_function(mObSpace, "garbage_collect", gc_method, 0);
     rb_define_module_function(mObSpace, "add_finalizer", add_final, 1);
     rb_define_module_function(mObSpace, "remove_finalizer", rm_final, 1);
     rb_define_module_function(mObSpace, "finalizers", finals, 0);
     rb_define_module_function(mObSpace, "call_finalizer", call_final, 1);
+    rb_define_module_function(mObSpace, "id2ref", id2ref, 1);
 
     rb_global_variable(&finalizers);
     finalizers = ary_new();

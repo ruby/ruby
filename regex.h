@@ -30,6 +30,7 @@
 
 #define BYTEWIDTH 8
 
+#define RE_REG_MAX ((1<<BYTEWIDTH)-1)
 
 /* Maximum number of duplicates an interval can allow.  */
 #ifndef RE_DUP_MAX
@@ -54,11 +55,6 @@ extern long re_syntax_options;
      literal.
    If not set, \| serves as the `or'-operator, and | is a literal.  */
 #define RE_NO_BK_VBAR (1L << 1)
-
-/* If this bit is not set, plain + or ? serves as an operator, and \+, \? are 
-     literals.
-   If set, \+, \? are operators and plain +, ? are literals.  */
-#define RE_BK_PLUS_QM (1L << 2)
 
 /* If this bit is set, | binds tighter than ^ or $.
    If not set, the contrary.  */
@@ -207,8 +203,9 @@ struct re_pattern_buffer
 		           comparing, or zero for no translation.
 			   The translation is applied to a pattern when it is 
                            compiled and to data when it is matched.  */
+    char *must;	        /* Pointer to exact pattern which strings should have
+			   to be matched.  */
 
-	
     long re_nsub;	/* Number of subexpressions found by the compiler. */
     char fastmap_accurate;
 			/* Set to zero when a new pattern is stored,

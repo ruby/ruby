@@ -15,29 +15,31 @@
 VALUE mEnumerable;
 static ID id_each, id_eqq, id_cmp;
 
-void
+VALUE
 rb_each(obj)
     VALUE obj;
 {
-    rb_funcall(obj, id_each, 0, 0);
+    return rb_funcall(obj, id_each, 0, 0);
 }
 
-static void
+static VALUE
 grep_i(i, arg)
     VALUE i, *arg;
 {
     if (RTEST(rb_funcall(arg[0], id_eqq, 1, i))) {
 	ary_push(arg[1], i);
     }
+    return Qnil;
 }
 
-static void
+static VALUE
 grep_iter_i(i, pat)
     VALUE i, pat;
 {
     if (RTEST(rb_funcall(pat, id_eqq, 1, i))) {
 	rb_yield(i);
     }
+    return Qnil;
 }
 
 static VALUE
@@ -52,7 +54,7 @@ enum_grep(obj, pat)
 	VALUE tmp, arg[2];
 
 	arg[0] = pat; arg[1] = tmp = ary_new();
-	rb_iterate(rb_each, obj, grep_i, arg);
+	rb_iterate(rb_each, obj, grep_i, (VALUE)arg);
 
 	return tmp;
     }
@@ -63,7 +65,7 @@ struct find_arg {
     VALUE val;
 };
     
-static void
+static VALUE
 find_i(i, arg)
     VALUE i;
     struct find_arg *arg;
@@ -71,14 +73,15 @@ find_i(i, arg)
     if (RTEST(rb_yield(i))) {
 	arg->found = TRUE;
 	arg->val = i;
-	rb_break();
+	rb_iter_break();
     }
+    return Qnil;
 }
 
 static VALUE
 enum_find(argc, argv, obj)
     int argc;
-    VALUE argv;
+    VALUE* argv;
     VALUE obj;
 {
     struct find_arg arg;
@@ -86,7 +89,7 @@ enum_find(argc, argv, obj)
 
     rb_scan_args(argc, argv, "01", &if_none);
     arg.found = FALSE;
-    rb_iterate(rb_each, obj, find_i, &arg);
+    rb_iterate(rb_each, obj, find_i, (VALUE)&arg);
     if (arg.found) {
 	return arg.val;
     }
@@ -96,13 +99,14 @@ enum_find(argc, argv, obj)
     return Qnil;
 }
 
-static void
+static VALUE
 find_all_i(i, tmp)
     VALUE i, tmp;
 {
     if (RTEST(rb_yield(i))) {
 	ary_push(tmp, i);
     }
+    return Qnil;
 }
 
 static VALUE
@@ -117,7 +121,7 @@ enum_find_all(obj)
     return tmp;
 }
 
-static void
+static VALUE
 collect_i(i, tmp)
     VALUE i, tmp;
 {
@@ -127,6 +131,7 @@ collect_i(i, tmp)
     if (RTEST(retval)) {
 	ary_push(tmp, retval);
     }
+    return Qnil;
 }
 
 static VALUE
@@ -141,11 +146,12 @@ enum_collect(obj)
     return tmp;
 }
 
-static void
+static VALUE
 reverse_i(i, tmp)
     VALUE i, tmp;
 {
     ary_unshift(tmp, i);
+    return Qnil;
 }
 
 static VALUE
@@ -160,11 +166,12 @@ enum_reverse(obj)
     return tmp;
 }
 
-static void
+static VALUE
 enum_all(i, ary)
     VALUE i, ary;
 {
     ary_push(ary, i);
+    return Qnil;
 }
 
 static VALUE
@@ -186,7 +193,7 @@ enum_sort(obj)
     return ary_sort(enum_to_a(obj));
 }
 
-static void
+static VALUE
 min_i(i, min)
     VALUE i, *min;
 {
@@ -199,9 +206,10 @@ min_i(i, min)
 	if (FIX2INT(cmp) < 0)
 	    *min = i;
     }
+    return Qnil;
 }
 
-static void
+static VALUE
 min_ii(i, min)
     VALUE i, *min;
 {
@@ -214,6 +222,7 @@ min_ii(i, min)
 	if (FIX2INT(cmp) < 0)
 	    *min = i;
     }
+    return Qnil;
 }
 
 static VALUE
@@ -222,11 +231,11 @@ enum_min(obj)
 {
     VALUE min = Qnil;
 
-    rb_iterate(rb_each, obj, iterator_p()?min_ii:min_i, &min);
+    rb_iterate(rb_each, obj, iterator_p()?min_ii:min_i, (VALUE)&min);
     return min;
 }
 
-static void
+static VALUE
 max_i(i, max)
     VALUE i, *max;
 {
@@ -239,9 +248,10 @@ max_i(i, max)
 	if (FIX2INT(cmp) > 0)
 	    *max = i;
     }
+    return Qnil;
 }
 
-static void
+static VALUE
 max_ii(i, max)
     VALUE i, *max;
 {
@@ -254,6 +264,7 @@ max_ii(i, max)
 	if (FIX2INT(cmp) > 0)
 	    *max = i;
     }
+    return Qnil;
 }
 
 static VALUE
@@ -262,7 +273,7 @@ enum_max(obj)
 {
     VALUE max = Qnil;
 
-    rb_iterate(rb_each, obj, iterator_p()?max_ii:max_i, &max);
+    rb_iterate(rb_each, obj, iterator_p()?max_ii:max_i, (VALUE)&max);
     return max;
 }
 
@@ -272,18 +283,19 @@ struct i_v_pair {
     int found;
 };
 
-static void
+static VALUE
 index_i(item, iv)
     VALUE item;
     struct i_v_pair *iv;
 {
     if (rb_equal(item, iv->v)) {
 	iv->found = 1;
-	rb_break();
+	rb_iter_break();
     }
     else {
 	iv->i++;
     }
+    return Qnil;
 }
 
 static VALUE
@@ -295,20 +307,21 @@ enum_index(obj, val)
     iv.i = 0;
     iv.v = val;
     iv.found = 0;
-    rb_iterate(rb_each, obj, index_i, &iv);
+    rb_iterate(rb_each, obj, index_i, (VALUE)&iv);
     if (iv.found) return INT2FIX(iv.i);
     return Qnil;		/* not found */
 }
 
-static void
+static VALUE
 member_i(item, iv)
     VALUE item;
     struct i_v_pair *iv;
 {
     if (rb_equal(item, iv->v)) {
 	iv->i = 1;
-	rb_break();
+	rb_iter_break();
     }
+    return Qnil;
 }
 
 static VALUE
@@ -319,17 +332,18 @@ enum_member(obj, val)
 
     iv.i = 0;
     iv.v = val;
-    rb_iterate(rb_each, obj, member_i, &iv);
+    rb_iterate(rb_each, obj, member_i, (VALUE)&iv);
     if (iv.i) return TRUE;
     return FALSE;
 }
 
-static void
+static VALUE
 length_i(i, length)
     VALUE i;
     int *length;
 {
     (*length)++;
+    return Qnil;
 }
 
 VALUE
@@ -338,7 +352,7 @@ enum_length(obj)
 {
     int length = 0;
 
-    rb_iterate(rb_each, obj, length_i, &length);
+    rb_iterate(rb_each, obj, length_i, (VALUE)&length);
     return INT2FIX(length);
 }
 

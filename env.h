@@ -15,13 +15,15 @@ extern struct FRAME {
     int argc;
     VALUE *argv;
     ID last_func;
-    struct RClass *last_class;
+    VALUE last_class;
     VALUE cbase;
     struct FRAME *prev;
     char *file;
     int line;
     int iter;
 } *the_frame;
+
+void gc_mark_frame _((struct FRAME *));
 
 extern struct SCOPE {
     struct RBasic super;
@@ -36,7 +38,7 @@ extern struct SCOPE {
 
 extern int rb_in_eval;
 
-extern struct RClass *the_class;
+extern VALUE the_class;
 
 struct RVarmap {
     struct RBasic super;

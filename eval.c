@@ -20,10 +20,12 @@
 #include "st.h"
 #include "dln.h"
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#else
+#ifndef HAVE_STRING_H
 char *strrchr();
+#endif
+
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
 #endif
 
 #ifndef setjmp
@@ -34,9 +36,13 @@ char *strrchr();
 #endif
 
 extern VALUE cData;
+
 VALUE cProc;
-static VALUE proc_call();
-static VALUE f_binding();
+static VALUE proc_call _((VALUE,VALUE));
+static VALUE f_binding _((VALUE));
+static void f_END _((void));
+
+#define SCOPE_PRIVATE  FL_USER4
 
 #define CACHE_SIZE 0x200
 #define CACHE_MASK 0x1ff
@@ -45,8 +51,8 @@ static VALUE f_binding();
 struct cache_entry {		/* method hash table. */
     ID mid;			/* method's id */
     ID mid0;			/* method's original id */
-    struct RClass *class;	/* receiver's class */
-    struct RClass *origin;	/* where method defined  */
+    VALUE class;		/* receiver's class */
+    VALUE origin;		/* where method defined  */
     NODE *method;
     int noex;
 };
@@ -65,29 +71,58 @@ rb_clear_cache()
     }
 }
 
+static void
+rb_clear_cache_by_id(id)
+    ID id;
+{
+    struct cache_entry *ent, *end;
+
+    ent = cache; end = ent + CACHE_SIZE;
+    while (ent < end) {
+	if (ent->mid == id) {
+	    ent->mid = 0;
+	}
+	ent++;
+    }
+}
+
 void
 rb_add_method(class, mid, node, noex)
-    struct RClass *class;
+    VALUE class;
     ID mid;
     NODE *node;
     int noex;
 {
     NODE *body;
 
-    if (NIL_P(class)) class = (struct RClass*)cObject;
+    if (NIL_P(class)) class = cObject;
     body = NEW_METHOD(node, noex);
-    st_insert(class->m_tbl, mid, body);
+    st_insert(RCLASS(class)->m_tbl, mid, body);
+}
+
+void
+rb_remove_method(class, mid)
+    VALUE class;
+    ID mid;
+{
+    NODE *body;
+
+    if (!st_delete(RCLASS(class)->m_tbl, &mid, &body)) {
+	NameError("method `%s' not defined in %s",
+		  rb_id2name(mid), rb_class2name(class));
+    }
+    rb_clear_cache_by_id(mid);
 }
 
 static NODE*
 search_method(class, id, origin)
-    struct RClass *class, **origin;
+    VALUE class, *origin;
     ID id;
 {
     NODE *body;
 
-    while (!st_lookup(class->m_tbl, id, &body)) {
-	class = class->super;
+    while (!st_lookup(RCLASS(class)->m_tbl, id, &body)) {
+	class = (VALUE)RCLASS(class)->super;
 	if (!class) return 0;
     }
 
@@ -97,14 +132,14 @@ search_method(class, id, origin)
 
 static NODE*
 rb_get_method_body(classp, idp, noexp)
-    struct RClass **classp;
+    VALUE *classp;
     ID *idp;
     int *noexp;
 {
     ID id = *idp;
-    struct RClass *class = *classp;
+    VALUE class = *classp;
+    VALUE origin;
     NODE *body;
-    struct RClass *origin;
     struct cache_entry *ent;
 
     if ((body = search_method(class, id, &origin)) == 0) {
@@ -119,12 +154,14 @@ rb_get_method_body(classp, idp, noexp)
     body = body->nd_body;
     if (nd_type(body) == NODE_FBODY) {
 	ent->mid = id;
-	*classp = ent->origin = (struct RClass*)body->nd_orig;
+	*classp = body->nd_orig;
+	ent->origin = body->nd_orig;
 	*idp = ent->mid0 = body->nd_mid;
 	body = ent->method = body->nd_head;
     }
     else {
-	*classp = ent->origin = origin;
+	*classp = (VALUE)origin;
+	ent->origin = origin;
 	ent->mid = ent->mid0 = id;
 	ent->method = body;
     }
@@ -135,10 +172,10 @@ rb_get_method_body(classp, idp, noexp)
 
 void
 rb_alias(class, name, def)
-    struct RClass *class;
+    VALUE class;
     ID name, def;
 {
-    struct RClass *origin;
+    VALUE origin;
     NODE *orig, *body;
 
     if (name == def) return;
@@ -156,16 +193,16 @@ rb_alias(class, name, def)
     if (nd_type(body) == NODE_FBODY) { /* was alias */
 	body = body->nd_head;
 	def = body->nd_mid;
-	origin = (struct RClass*)body->nd_orig;
+	origin = body->nd_orig;
     }
 
-    st_insert(class->m_tbl, name,
+    st_insert(RCLASS(class)->m_tbl, name,
 	      NEW_METHOD(NEW_FBODY(body, def, origin), orig->nd_noex));
 }
 
 static void
 rb_export_method(class, name, noex)
-    struct RClass *class;
+    VALUE class;
     ID name;
     int noex;
 {
@@ -178,14 +215,14 @@ rb_export_method(class, name, noex)
     }
     if (!body) {
 	NameError("undefined method `%s' for `%s'",
-		  rb_id2name(name), rb_class2name((VALUE)class));
+		  rb_id2name(name), rb_class2name(class));
     }
     if (body->nd_noex != noex) {
-	if (class == origin) {
+	if (class == (VALUE)origin) {
 	    body->nd_noex = noex;
 	}
 	else {
-	    rb_clear_cache();
+	    rb_clear_cache_by_id(name);
 	    rb_add_method(class, name, NEW_ZSUPER(), noex);
 	}
     }
@@ -193,7 +230,7 @@ rb_export_method(class, name, noex)
 
 static VALUE
 method_boundp(class, id, ex)
-    struct RClass *class;
+    VALUE class;
     ID id;
     int ex;
 {
@@ -208,18 +245,19 @@ method_boundp(class, id, ex)
 }
 
 int
-rb_method_boundp(class, id, priv)
+rb_method_boundp(class, id, ex)
     VALUE class;
     ID id;
-    int priv;
+    int ex;
 {
-    if (method_boundp(class, id, priv?NOEX_PRIVATE:NOEX_PUBLIC))
+    if (method_boundp(class, id, ex))
 	return TRUE;
     return FALSE;
 }
 
-static ID init, eqq, each, aref, aset;
+static ID init, eqq, each, aref, aset, match;
 VALUE errinfo = Qnil, errat = Qnil;
+extern NODE *eval_tree0;
 extern NODE *eval_tree;
 extern int nerrs;
 
@@ -244,15 +282,15 @@ static struct FRAME *top_frame;
 static struct SCOPE *top_scope;
 
 #define PUSH_FRAME() {			\
-    struct FRAME _frame;		\
-    _frame.prev = the_frame;		\
-    _frame.file = sourcefile;		\
-    _frame.line = sourceline;		\
-    _frame.iter = the_iter->iter;	\
-    _frame.cbase = the_frame->cbase;	\
-    the_frame = &_frame;		\
+    struct FRAME *_frame = ALLOCA_N(struct FRAME,1);\
+    _frame->prev = the_frame;		\
+    _frame->file = sourcefile;		\
+    _frame->line = sourceline;		\
+    _frame->iter = the_iter->iter;	\
+    _frame->cbase = the_frame->cbase;	\
+    the_frame = _frame;		\
 
-#define POP_FRAME()  the_frame = _frame.prev; }
+#define POP_FRAME()  the_frame = _frame->prev; }
 
 struct BLOCK {
     NODE *var;
@@ -260,8 +298,8 @@ struct BLOCK {
     VALUE self;
     struct FRAME frame;
     struct SCOPE *scope;
-    struct RClass *class;
-    int level;
+    VALUE class;
+    struct tag *tag;
     int iter;
     struct RVarmap *d_vars;
 #ifdef THREAD
@@ -271,26 +309,26 @@ struct BLOCK {
 } *the_block;
 
 #define PUSH_BLOCK(v,b) {		\
-    struct BLOCK _block;		\
-    _block.level = (int)prot_tag;	\
-    _block.var = v;			\
-    _block.body = b;			\
-    _block.self = self;			\
-    _block.frame = *the_frame;		\
-    _block.class = the_class;		\
-    _block.frame.file = sourcefile;	\
-    _block.frame.line = sourceline;	\
-    _block.scope = the_scope;		\
-    _block.d_vars = the_dyna_vars;	\
-    _block.prev = the_block;		\
-    _block.iter = the_iter->iter;	\
-    the_block = &_block;		\
+    struct BLOCK *_block = ALLOCA_N(struct BLOCK,1);\
+    _block->tag = prot_tag;		\
+    _block->var = v;			\
+    _block->body = b;			\
+    _block->self = self;		\
+    _block->frame = *the_frame;		\
+    _block->class = the_class;		\
+    _block->frame.file = sourcefile;	\
+    _block->frame.line = sourceline;	\
+    _block->scope = the_scope;		\
+    _block->d_vars = the_dyna_vars;	\
+    _block->prev = the_block;		\
+    _block->iter = the_iter->iter;	\
+    the_block = _block;
 
 #define PUSH_BLOCK2(b) {		\
-    struct BLOCK _block;		\
-    _block = *b;			\
-    _block.prev = the_block;		\
-    the_block = &_block;
+    struct BLOCK *_block = ALLOCA_N(struct BLOCK,1);\
+    *_block = *b;			\
+    _block->prev = the_block;		\
+    the_block = _block;
 
 #define POP_BLOCK() 			\
    the_block = the_block->prev; 	\
@@ -378,35 +416,53 @@ static struct iter {
     the_iter = _iter.prev;		\
 }
 
+#ifdef C_ALLOCA
+/* need to protect retval in struct tag from GC. */
+#define tag_retval_dcl VALUE *dd_retval
+#define tag_retval_init VALUE _tag_retval = Qnil;\
+    _tag->dd_retval = &_tag_retval;
+#define tag_retval dd_retval[0]
+#else
+#define tag_retval_dcl VALUE retval
+#define tag_retval_init _tag->retval = Qnil
+#define tag_retval retval
+#endif
+
 static struct tag {
     jmp_buf buf;
     struct FRAME *frame;
     struct iter *iter;
+    ID tag;
+    tag_retval_dcl;
+    ID dst;
     struct tag *prev;
 } *prot_tag;
 
-#define PUSH_TAG() {			\
-    struct tag _tag;			\
-    _tag.frame = the_frame;		\
-    _tag.iter = the_iter;		\
-    _tag.prev = prot_tag;		\
-    prot_tag = &_tag;
+#define PUSH_TAG(ptag) {		\
+    struct tag *_tag = ALLOCA_N(struct tag,1);\
+    tag_retval_init;			\
+    _tag->frame = the_frame;		\
+    _tag->iter = the_iter;		\
+    _tag->prev = prot_tag;		\
+    _tag->tag_retval = Qnil;		\
+    _tag->tag = ptag;			\
+    _tag->dst = 0;			\
+    prot_tag = _tag;
 
-#define EXEC_TAG()    ((NODE*)setjmp(prot_tag->buf))
+#define PROT_NONE   0
+#define PROT_FUNC   -1
+#define PROT_THREAD -2
+
+#define EXEC_TAG()    setjmp(prot_tag->buf)
 
 #define JUMP_TAG(st) {			\
     the_frame = prot_tag->frame;	\
     the_iter = prot_tag->iter;		\
-    longjmp(prot_tag->buf,(int)(st));	\
+    longjmp(prot_tag->buf,(st));	\
 }
 
-#define JUMP_TAG3(val,data1,data2) \
-    JUMP_TAG(node_newnode(NODE_TAG,(val),(data1),(data2)))
-
-#define JUMP_TAG2(val,data) JUMP_TAG3((val),(data),0)
-
 #define POP_TAG()			\
-    prot_tag = _tag.prev;		\
+    prot_tag = _tag->prev;		\
 }
 
 #define TAG_RETURN	0x1
@@ -417,13 +473,12 @@ static struct tag {
 #define TAG_RAISE	0x6
 #define TAG_THROW	0x7
 #define TAG_FATAL	0x8
+#define TAG_MASK	0xf
 
-#define IN_BLOCK       0x10
+VALUE the_class;
 
-struct RClass *the_class;
-
-#define PUSH_CLASS() {			\
-    struct RClass *_class = the_class;	\
+#define PUSH_CLASS() {		\
+    VALUE _class = the_class;	\
 
 #define POP_CLASS() the_class = _class; }
 
@@ -581,22 +636,34 @@ error_print()
 	fprintf(stderr, ": unhandled exception\n");
     }
     else {
-	PUSH_TAG();
-	if (EXEC_TAG() == 0) {
-	    VALUE epath = rb_class_path(eclass);
-	    if (RSTRING(epath)->ptr[0] != '#') {
-		fprintf(stderr, ": ");
-		fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
-	    }
-	}
-	POP_TAG();
+	VALUE epath;
 
-	if (RSTRING(errinfo)->len > 0) {
+	epath = rb_class_path(eclass);
+	if (RSTRING(errinfo)->len == 0) {
 	    fprintf(stderr, ": ");
-	    fwrite(RSTRING(errinfo)->ptr, 1, RSTRING(errinfo)->len, stderr);
-	}
-	if (RSTRING(errinfo)->ptr[RSTRING(errinfo)->len - 1] != '\n') {
+	    fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
 	    putc('\n', stderr);
+	}
+	else {
+	    unsigned char *tail  = 0;
+	    int len = RSTRING(errinfo)->len;
+
+	    if (RSTRING(epath)->ptr[0] == '#') epath = 0;
+	    if (tail = strchr(RSTRING(errinfo)->ptr, '\n')) {
+		len = tail - RSTRING(errinfo)->ptr;
+		tail++;		/* skip newline */
+	    }
+	    fprintf(stderr, ": ");
+	    fwrite(RSTRING(errinfo)->ptr, 1, len, stderr);
+	    if (epath) {
+		fprintf(stderr, " (");
+		fwrite(RSTRING(epath)->ptr, 1, RSTRING(epath)->len, stderr);
+		fprintf(stderr, ")\n");
+	    }
+	    if (tail) {
+		fwrite(tail, 1, RSTRING(errinfo)->len-len-1, stderr);
+		putc('\n', stderr);
+	    }
 	}
     }
 
@@ -608,6 +675,7 @@ error_print()
 #define TRACE_HEAD 8
 #define TRACE_TAIL 5
 
+	ep = RARRAY(errat);
 	for (i=1; i<ep->len; i++) {
 	    fprintf(stderr, "\tfrom %s\n", RSTRING(ep->ptr[i])->ptr);
 	    if (i == TRACE_HEAD && ep->len > TRACE_MAX) {
@@ -624,12 +692,18 @@ extern char **environ;
 #endif
 char **origenviron;
 
+void rb_call_inits _((void));
+void init_stack _((void));
+void init_heap _((void));
+void Init_ext _((void));
+void gc_call_finalizer_at_exit _((void));
+
 void
 ruby_init()
 {
     static struct FRAME frame;
     static struct iter iter;
-    NODE *state;
+    int state;
 
     the_frame = top_frame = &frame;
     the_iter = &iter;
@@ -641,11 +715,13 @@ ruby_init()
     the_scope->local_vars = 0;
     the_scope->local_tbl  = 0;
     top_scope = the_scope;
+    /* default visibility is private at toplevel */
+    FL_SET(top_scope, SCOPE_PRIVATE);
 
-    PUSH_TAG()
+    PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
 	rb_call_inits();
-	the_class = (struct RClass*)cObject;
+	the_class = cObject;
 	the_frame->cbase = (VALUE)node_newnode(NODE_CREF,cObject,0,0);
 	rb_define_global_const("TOPLEVEL_BINDING", f_binding(TopSelf));
 	ruby_prog_init();
@@ -663,16 +739,17 @@ ruby_options(argc, argv)
     int argc;
     char **argv;
 {
-    NODE *state;
+    int state;
 
-    PUSH_TAG()
+    PUSH_TAG(PROT_NONE)
     if ((state = EXEC_TAG()) == 0) {
 	NODE *save;
 
-	Init_ext();
-	ext_init = 1;
 	ruby_process_options(argc, argv);
 	save = eval_tree;
+	eval_tree = 0;
+	Init_ext();
+	ext_init = 1;
 	rb_require_modules();
 	eval_tree = save;
     }
@@ -689,6 +766,12 @@ eval_node(self)
 {
     VALUE result = Qnil;
     NODE *tree;
+
+    if (eval_tree0) {
+	tree = eval_tree0;
+	eval_tree0 = 0;
+	rb_eval(self, tree);
+    }
 
     if (!eval_tree) return Qnil;
 
@@ -709,18 +792,20 @@ static VALUE thread_current();
 
 static int exit_status;
 
+static void exec_end_proc();
+
 void
 ruby_run()
 {
-    NODE *state;
-    static NODE *ex;
+    int state;
+    static int ex;
 
     if (nerrs > 0) exit(nerrs);
 
     init_stack();
     errat = Qnil;		/* clear for execution */
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
 	if (!ext_init) Init_ext();
@@ -730,7 +815,7 @@ ruby_run()
     POP_TAG();
 
     if (state && !ex) ex = state;
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
 	rb_trap_exit();
@@ -738,6 +823,8 @@ ruby_run()
 	thread_cleanup();
 	thread_wait_other_threads();
 #endif
+	exec_end_proc();
+	gc_call_finalizer_at_exit();
     }
     else {
 	ex = state;
@@ -745,12 +832,10 @@ ruby_run()
     POP_ITER();
     POP_TAG();
 
-    if (!ex) {
+    switch (ex & 0xf) {
+      case 0:
 	exit(0);
-    }
 
-    switch (ex->nd_tag) {
-      case IN_BLOCK|TAG_RETURN:
       case TAG_RETURN:
 	error_pos();
 	fprintf(stderr, "unexpected return\n");
@@ -761,7 +846,6 @@ ruby_run()
 	fprintf(stderr, "unexpected next\n");
 	exit(1);
 	break;
-      case IN_BLOCK|TAG_BREAK:
       case TAG_BREAK:
 	error_pos();
 	fprintf(stderr, "unexpected break\n");
@@ -785,13 +869,8 @@ ruby_run()
 	error_print();
 	exit(1);
 	break;
-      case TAG_THROW:
-	error_pos();
-	fprintf(stderr, "uncaught throw `%s'\n", rb_id2name(ex->nd_tlev));
-	exit(1);
-	break;
       default:
-	Bug("Unknown longjmp status %d", ex->nd_tag);
+	Bug("Unknown longjmp status %d", ex);
 	break;
     }
 }
@@ -804,9 +883,12 @@ compile_error(at)
 
     mesg = errinfo;
     nerrs = 0;
-    errinfo = exc_new2(eSyntaxError, "compile error in ");
-    str_cat(errinfo, at, strlen(at));
-    str_cat(errinfo, ":\n", 2);
+    errinfo = exc_new2(eSyntaxError, "compile error");
+    if (at) {
+	str_cat(errinfo, " in ", 4);
+	str_cat(errinfo, at, strlen(at));
+    }
+    str_cat(errinfo, "\n", 1);
     str_cat(errinfo, RSTRING(mesg)->ptr, RSTRING(mesg)->len);
     rb_raise(errinfo);
 }
@@ -829,23 +911,23 @@ void
 rb_eval_cmd(cmd, arg)
     VALUE cmd, arg;
 {
-    NODE *state;
+    int state;
     struct SCOPE *saved_scope;
     volatile int safe = rb_safe_level();
 
     if (TYPE(cmd) != T_STRING) {
-	if (obj_is_kind_of(cmd, cProc)) {
-	    proc_call(cmd, arg);
-	    return;
-	}
+	Check_Type(arg, T_ARRAY);
+	rb_funcall2(cmd, rb_intern("call"),
+		    RARRAY(arg)->len, RARRAY(arg)->ptr);
+	return;
     }
 
     PUSH_CLASS();
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     saved_scope = the_scope;
     the_scope = top_scope;
 
-    the_class = (struct RClass*)cObject;
+    the_class = cObject;
     if (str_tainted(cmd)) {
 	safe_level = 5;
     }
@@ -859,8 +941,9 @@ rb_eval_cmd(cmd, arg)
     POP_TAG();
     POP_CLASS();
 
-    if (state == 0) return;
-    switch (state->nd_tag) {
+    switch (state) {
+      case 0:
+	break;
       case TAG_RETURN:
 	Raise(eLocalJumpError, "unexpected return");
 	break;
@@ -887,9 +970,9 @@ rb_trap_eval(cmd, sig)
     VALUE cmd;
     int sig;
 {
-    NODE *state;
+    int state;
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	rb_eval_cmd(cmd, ary_new3(1, INT2FIX(sig)));
     }
@@ -905,25 +988,23 @@ superclass(self, node)
     VALUE self;
     NODE *node;
 {
-    VALUE val = 0;
-    NODE *state;
+    VALUE val = 0;		/* OK */
+    int state;
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	val = rb_eval(self, node);
     }
     POP_TAG();
-    if (state) {
-	if (state->nd_tag == TAG_RAISE) {
-	  superclass_error:
-	    switch (nd_type(node)) {
-	      case NODE_COLON2:
-		TypeError("undefined superclass `%s'", rb_id2name(node->nd_mid));
-	      case NODE_CVAR:
-		TypeError("undefined superclass `%s'", rb_id2name(node->nd_vid));
-	      default:
-		TypeError("superclass undefined");
-	    }
+    if (state == TAG_RAISE) {
+      superclass_error:
+	switch (nd_type(node)) {
+	  case NODE_COLON2:
+	    TypeError("undefined superclass `%s'", rb_id2name(node->nd_mid));
+	  case NODE_CVAR:
+	    TypeError("undefined superclass `%s'", rb_id2name(node->nd_vid));
+	  default:
+	    TypeError("superclass undefined");
 	}
 	JUMP_TAG(state);
     }
@@ -974,6 +1055,64 @@ ev_const_get(cref, id)
     return rb_const_get(cref->nd_clss, id);
 }
 
+static VALUE
+mod_nesting()
+{
+    NODE *cbase = (NODE*)the_frame->cbase;
+    VALUE ary = ary_new();
+
+    while (cbase && cbase->nd_clss != cObject) {
+	ary_push(ary, cbase->nd_clss);
+	cbase = cbase->nd_next;
+    }
+    return ary;
+}
+
+static VALUE
+mod_s_constants()
+{
+    NODE *cbase = (NODE*)the_frame->cbase;
+    VALUE ary = ary_new();
+
+    while (cbase && cbase->nd_clss != cObject) {
+	mod_const_at(cbase->nd_clss, ary);
+	cbase = cbase->nd_next;
+    }
+
+    mod_const_of(((NODE*)the_frame->cbase)->nd_clss, ary);
+    return ary;
+}
+
+static VALUE
+mod_remove_method(mod, name)
+    VALUE mod, name;
+{
+    rb_remove_method(mod, rb_to_id(name));
+    return mod;
+}
+
+static VALUE
+mod_undef_method(mod, name)
+    VALUE mod, name;
+{
+    ID id = rb_to_id(name);
+
+    rb_add_method(mod, id, 0, NOEX_PUBLIC);
+    rb_clear_cache_by_id(id);
+    return mod;
+}
+
+static VALUE
+mod_alias_method(mod, new, old)
+    VALUE mod, new, old;
+{
+    ID id = rb_to_id(new);
+
+    rb_alias(mod, id, rb_to_id(old));
+    rb_clear_cache_by_id(id);
+    return mod;
+}
+
 #define SETUP_ARGS(anode) {\
     NODE *n = anode;\
     if (!n) {\
@@ -983,15 +1122,16 @@ ev_const_get(cref, id)
     else if (nd_type(n) == NODE_ARRAY) {\
 	argc=n->nd_alen;\
         if (argc > 0) {\
-            int i;\
+	    char *file = sourcefile;\
 	    int line = sourceline;\
+            int i;\
 	    n = anode;\
 	    argv = ALLOCA_N(VALUE,argc);\
 	    for (i=0;i<argc;i++) {\
 		argv[i] = rb_eval(self,n->nd_head);\
 		n=n->nd_next;\
 	    }\
-	    sourcefile = anode->file;\
+	    sourcefile = file;\
 	    sourceline = line;\
         }\
         else {\
@@ -1001,26 +1141,49 @@ ev_const_get(cref, id)
     }\
     else {\
         VALUE args = rb_eval(self,n);\
+	char *file = sourcefile;\
 	int line = sourceline;\
 	if (TYPE(args) != T_ARRAY)\
-	    args = rb_to_a(args);\
+	    args = rb_Array(args);\
         argc = RARRAY(args)->len;\
 	argv = ALLOCA_N(VALUE, argc);\
 	MEMCPY(argv, RARRAY(args)->ptr, VALUE, argc);\
-	sourcefile = anode->file;\
+	sourcefile = file;\
 	sourceline = line;\
     }\
 }
 
-int
-rb_test_false_or_nil(v)
-    VALUE v;
-{
-    return (v != Qnil) && (v != FALSE);
-}
-
 #define MATCH_DATA the_scope->local_vars[node->nd_cnt]
 
+static char* is_defined _((VALUE, NODE*, char*));
+
+static char*
+arg_defined(self, node, buf, type)
+    VALUE self;
+    NODE *node;
+    char *buf;
+    char *type;
+{
+    int argc;
+    int i;
+
+    if (!node) return type;	/* no args */
+    if (nd_type(node) == NODE_ARRAY) {
+	argc=node->nd_alen;
+        if (argc > 0) {
+	    for (i=0;i<argc;i++) {
+		if (!is_defined(self, node->nd_head, buf))
+		    return 0;
+		node = node->nd_next;
+	    }
+        }
+    }
+    else if (!is_defined(self, node, buf)) {
+	return 0;
+    }
+    return type;
+}
+    
 static char*
 is_defined(self, node, buf)
     VALUE self;
@@ -1028,16 +1191,17 @@ is_defined(self, node, buf)
     char *buf;
 {
     VALUE val;			/* OK */
-    NODE *state;
-
-    node = node->nd_head;
+    int state;
 
     switch (nd_type(node)) {
       case NODE_SUPER:
       case NODE_ZSUPER:
 	if (the_frame->last_func == 0) return 0;
-	else if (method_boundp(the_frame->last_class->super,
+	else if (method_boundp(RCLASS(the_frame->last_class)->super,
 			       the_frame->last_func, 1)) {
+	    if (nd_type(node) == NODE_SUPER) {
+		return arg_defined(self, node->nd_args, buf, "super");
+	    }
 	    return "super";
 	}
 	break;
@@ -1048,7 +1212,8 @@ is_defined(self, node, buf)
 	goto check_bound;
 
       case NODE_CALL:
-	PUSH_TAG();
+	if (!is_defined(self, node->nd_recv, buf)) return 0;
+	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_eval(self, node->nd_recv);
 	    val = CLASS_OF(val);
@@ -1058,11 +1223,14 @@ is_defined(self, node, buf)
 	    return 0;
 	}
       check_bound:
-	if (method_boundp(val, node->nd_mid,
-			  nd_type(node)== NODE_CALL)) {
-	    return "method";
+	if (method_boundp(val, node->nd_mid, nd_type(node)== NODE_CALL)) {
+	    return arg_defined(self, node->nd_args, buf, "method");
 	}
 	break;
+
+      case NODE_MATCH2:
+      case NODE_MATCH3:
+	return "method";
 
       case NODE_YIELD:
 	if (iterator_p()) {
@@ -1075,6 +1243,12 @@ is_defined(self, node, buf)
 
       case NODE_NIL:
 	return "nil";
+
+      case NODE_TRUE:
+	return "true";
+
+      case NODE_FALSE:
+	return "false";
 
       case NODE_ATTRSET:
       case NODE_OP_ASGN1:
@@ -1110,7 +1284,7 @@ is_defined(self, node, buf)
 	break;
 
       case NODE_COLON2:
-	PUSH_TAG();
+	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    val = rb_eval(self, node->nd_head);
 	}
@@ -1143,7 +1317,7 @@ is_defined(self, node, buf)
 	break;
 
       default:
-	PUSH_TAG();
+	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    rb_eval(self, node);
 	}
@@ -1163,17 +1337,16 @@ static void blk_free();
 
 static VALUE
 set_trace_func(obj, trace)
-    VALUE obj;
-    struct RData *trace;
+    VALUE obj, trace;
 {
     if (NIL_P(trace)) {
 	trace_func = 0;
 	return Qnil;
     }
-    if (TYPE(trace) != T_DATA || trace->dfree != blk_free) {
+    if (TYPE(trace) != T_DATA || RDATA(trace)->dfree != blk_free) {
 	TypeError("trace_func needs to be Proc");
     }
-    return trace_func = (VALUE)trace;
+    return trace_func = trace;
 }
 
 static void
@@ -1184,7 +1357,7 @@ call_trace_func(event, file, line, self, id)
     VALUE self;
     ID id;
 {
-    NODE *state;
+    int state;
     volatile VALUE trace;
     struct FRAME *prev;
 
@@ -1198,12 +1371,12 @@ call_trace_func(event, file, line, self, id)
 
     prev = the_frame;
     PUSH_FRAME();
-    *the_frame = *_frame.prev;
+    *the_frame = *_frame->prev;
     the_frame->prev = prev;
 
     the_frame->line = sourceline = line;
     the_frame->file = sourcefile = file;
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	proc_call(trace, ary_new3(5, str_new2(event),
 				  str_new2(sourcefile),
@@ -1221,12 +1394,13 @@ call_trace_func(event, file, line, self, id)
     if (state) JUMP_TAG(state);
 }
 
+static void return_value _((VALUE val));
 static VALUE
 rb_eval(self, node)
     VALUE self;
     NODE * volatile node;
 {
-    NODE *state;
+    int state;
     volatile VALUE result = Qnil;
 
 #define RETURN(v) { result = (v); goto finish; }
@@ -1234,16 +1408,18 @@ rb_eval(self, node)
   again:
     if (!node) RETURN(Qnil);
 
-#if 0
-    sourceline = nd_line(node);
-    sourcefile = node->file;
-#endif
     switch (nd_type(node)) {
       case NODE_BLOCK:
 	while (node) {
 	    result = rb_eval(self, node->nd_head);
 	    node = node->nd_next;
 	}
+	break;
+
+      case NODE_POSTEXE:
+	f_END();
+	nd_set_type(node, NODE_NIL); /* exec just once */
+	result = Qnil;
 	break;
 
 	/* begin .. end without clauses */
@@ -1254,6 +1430,26 @@ rb_eval(self, node)
 	/* nodes for speed-up(default match) */
       case NODE_MATCH:
 	result = reg_match2(node->nd_head->nd_lit);
+	break;
+
+	/* nodes for speed-up(literal match) */
+      case NODE_MATCH2:
+	result = reg_match(rb_eval(self,node->nd_recv),
+			   rb_eval(self,node->nd_value));
+	break;
+
+	/* nodes for speed-up(literal match) */
+      case NODE_MATCH3:
+        {
+	    VALUE r = rb_eval(self,node->nd_recv);
+	    VALUE l = rb_eval(self,node->nd_value);
+	    if (TYPE(r) == T_STRING) {
+		result = reg_match(l, r);
+	    }
+	    else {
+		result = rb_funcall(r, match, 1, l);
+	    }
+	}
 	break;
 
 	/* nodes for speed-up(top-level loop for -n/-p) */
@@ -1269,7 +1465,14 @@ rb_eval(self, node)
       case NODE_NIL:
 	RETURN(Qnil);
 
+      case NODE_TRUE:
+	RETURN(TRUE);
+
+      case NODE_FALSE:
+	RETURN(FALSE);
+
       case NODE_IF:
+	sourceline = nd_line(node);
 	if (RTEST(rb_eval(self, node->nd_cond))) {
 	    node = node->nd_body;
 	}
@@ -1293,9 +1496,10 @@ rb_eval(self, node)
 		tag = node->nd_head;
 		while (tag) {
 		    if (trace_func) {
-			call_trace_func("line", tag->file, nd_line(tag),
+			call_trace_func("line", tag->nd_file, nd_line(tag),
 					self, the_frame->last_func);	
 		    }
+		    sourceline = nd_line(tag);
 		    if (RTEST(rb_funcall2(rb_eval(self, tag->nd_head),eqq,1,&val))){
 			node = node->nd_body;
 			goto again;
@@ -1308,8 +1512,10 @@ rb_eval(self, node)
 	RETURN(Qnil);
 
       case NODE_WHILE:
-	PUSH_TAG();
-	if ((state = EXEC_TAG()) == 0) {
+	PUSH_TAG(PROT_NONE);
+	switch (state = EXEC_TAG()) {
+	  case 0:
+	    sourceline = nd_line(node);
 	    if (node->nd_state && !RTEST(rb_eval(self, node->nd_cond)))
 		goto while_out;
 	    do {
@@ -1318,20 +1524,18 @@ rb_eval(self, node)
 	      while_next:
 		;
 	    } while (RTEST(rb_eval(self, node->nd_cond)));
-	}
-	else {
-	    switch  (state->nd_tag) {
-	      case TAG_REDO:
-		state = 0;
-		goto while_redo;
-	      case TAG_NEXT:
-		state = 0;
-		goto while_next;
-	      case TAG_BREAK:
-		state = 0;
-	      default:
-		break;
-	    }
+	    break;
+
+	  case TAG_REDO:
+	    state = 0;
+	    goto while_redo;
+	  case TAG_NEXT:
+	    state = 0;
+	    goto while_next;
+	  case TAG_BREAK:
+	    state = 0;
+	  default:
+	    break;
 	}
       while_out:
 	POP_TAG();
@@ -1341,8 +1545,9 @@ rb_eval(self, node)
 	RETURN(Qnil);
 
       case NODE_UNTIL:
-	PUSH_TAG();
-	if ((state = EXEC_TAG()) == 0) {
+	PUSH_TAG(PROT_NONE);
+	switch (state = EXEC_TAG()) {
+	  case 0:
 	    if (node->nd_state && RTEST(rb_eval(self, node->nd_cond)))
 		goto until_out;
 	    do {
@@ -1351,20 +1556,18 @@ rb_eval(self, node)
 	      until_next:
 		;
 	    } while (!RTEST(rb_eval(self, node->nd_cond)));
-	}
-	else {
-	    switch  (state->nd_tag) {
-	      case TAG_REDO:
-		state = 0;
-		goto until_redo;
-	      case TAG_NEXT:
-		state = 0;
-		goto until_next;
-	      case TAG_BREAK:
-		state = 0;
-	      default:
-		break;
-	    }
+	    break;
+
+	  case TAG_REDO:
+	    state = 0;
+	    goto until_redo;
+	  case TAG_NEXT:
+	    state = 0;
+	    goto until_next;
+	  case TAG_BREAK:
+	    state = 0;
+	  default:
+	    break;
 	}
       until_out:
 	POP_TAG();
@@ -1376,11 +1579,9 @@ rb_eval(self, node)
       case NODE_ITER:
       case NODE_FOR:
 	{
-	    int tag_level;
-
 	  iter_retry:
 	    PUSH_BLOCK(node->nd_var, node->nd_body);
-	    PUSH_TAG();
+	    PUSH_TAG(PROT_FUNC);
 
 	    state = EXEC_TAG();
 	    if (state == 0) {
@@ -1391,39 +1592,58 @@ rb_eval(self, node)
 		}
 		else {
 		    VALUE recv;
+		    char *file = sourcefile;
 		    int line = sourceline;
 
 		    recv = rb_eval(self, node->nd_iter);
 		    PUSH_ITER(ITER_PRE);
-		    sourcefile = node->file;
+		    sourcefile = file;
 		    sourceline = line;
 		    result = rb_call(CLASS_OF(recv),recv,each,0,0,0);
 		    POP_ITER();
 		}
 	    }
+	    else if (the_block->tag->dst == state) {
+		state &= TAG_MASK;
+		if (state == TAG_RETURN) {
+		    result = prot_tag->tag_retval;
+		}
+	    }
 	    POP_TAG();
-	    tag_level = the_block->level;
 	    POP_BLOCK();
-	    if (state == 0) break;
-	    switch (state->nd_tag) {
+	    switch (state) {
+	      case 0:
+		break;
+
 	      case TAG_RETRY:
 		goto iter_retry;
 
-	      case IN_BLOCK|TAG_BREAK:
-		if (state->nd_tlev != tag_level) {
-		    JUMP_TAG(state);
-		}
+	      case TAG_BREAK:
 		result = Qnil;
 		break;
-	      case IN_BLOCK|TAG_RETURN:
-		if (state->nd_tlev == tag_level) {
-		    state->nd_tag &= ~IN_BLOCK;
-		}
+	      case TAG_RETURN:
+		return_value(result);
 		/* fall through */
 	      default:
 		JUMP_TAG(state);
 	    }
 	}
+	break;
+
+      case NODE_BREAK:
+	JUMP_TAG(TAG_BREAK);
+	break;
+
+      case NODE_NEXT:
+	JUMP_TAG(TAG_NEXT);
+	break;
+
+      case NODE_REDO:
+	JUMP_TAG(TAG_REDO);
+	break;
+
+      case NODE_RETRY:
+	JUMP_TAG(TAG_RETRY);
 	break;
 
       case NODE_YIELD:
@@ -1435,44 +1655,42 @@ rb_eval(self, node)
         {
 	    volatile VALUE e_info = errinfo, e_at = errat;
 
-	    PUSH_TAG();
+	    PUSH_TAG(PROT_NONE);
 	    if ((state = EXEC_TAG()) == 0) {
 		result = rb_eval(self, node->nd_head);
 	    }
 	    POP_TAG();
-	    if (state) {
-		if (state->nd_tag == TAG_RAISE) {
-		    NODE * volatile resq = node->nd_resq;
-		    while (resq) {
-			if (handle_rescue(self, resq)) {
-			    state = 0;
-			    PUSH_TAG();
-			    if ((state = EXEC_TAG()) == 0) {
-				result = rb_eval(self, resq->nd_body);
-			    }
-			    POP_TAG();
-			    if (state == 0) {
-				errinfo = e_info;
-				errat = e_at;
-			    }
-			    else if (state->nd_tag == TAG_RETRY) {
-				state = 0;
-				goto retry_entry;
-			    }
-			    break;
+	    if (state == TAG_RAISE) {
+		NODE * volatile resq = node->nd_resq;
+		while (resq) {
+		    if (handle_rescue(self, resq)) {
+			state = 0;
+			PUSH_TAG(PROT_NONE);
+			if ((state = EXEC_TAG()) == 0) {
+			    result = rb_eval(self, resq->nd_body);
 			}
-			resq = resq->nd_head; /* next rescue */
+			POP_TAG();
+			if (state == 0) {
+			    errinfo = e_info;
+			    errat = e_at;
+			}
+			else if (state == TAG_RETRY) {
+			    state = 0;
+			    goto retry_entry;
+			}
+			break;
 		    }
+		    resq = resq->nd_head; /* next rescue */
 		}
-		if (state) {
-		    JUMP_TAG(state);
-		}
+	    }
+	    if (state) {
+		JUMP_TAG(state);
 	    }
 	}
         break;
 
       case NODE_ENSURE:
-	PUSH_TAG();
+	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 	    result = rb_eval(self, node->nd_head);
 	}
@@ -1539,7 +1757,10 @@ rb_eval(self, node)
 	break;
 
       case NODE_RETURN:
-	JUMP_TAG2(TAG_RETURN,(node->nd_stts)?rb_eval(self, node->nd_stts):Qnil);
+	if (node->nd_stts) {
+	    return_value(rb_eval(self, node->nd_stts));
+	}
+	JUMP_TAG(TAG_RETURN);
 	break;
 
       case NODE_CALL:
@@ -1586,7 +1807,7 @@ rb_eval(self, node)
 	    }
 
 	    PUSH_ITER(the_iter->iter?ITER_PRE:ITER_NOT);
-	    result = rb_call(the_frame->last_class->super, self,
+	    result = rb_call(RCLASS(the_frame->last_class)->super, self,
 			     the_frame->last_func, argc, argv, 1);
 	    POP_ITER();
 	}
@@ -1597,7 +1818,7 @@ rb_eval(self, node)
 	    VALUE save = the_frame->cbase;
 
 	    PUSH_SCOPE();
-	    PUSH_TAG();
+	    PUSH_TAG(PROT_NONE);
 	    if (node->nd_rval) the_frame->cbase = (VALUE)node->nd_rval;
 	    if (node->nd_tbl) {
 		VALUE *vars = ALLOCA_N(VALUE, node->nd_tbl[0]+1);
@@ -1694,7 +1915,8 @@ rb_eval(self, node)
 
 	    val = rb_eval(self, node->nd_value);
 	    /* check for static scope constants */
-	    if (verbose && ev_const_defined(the_frame->cbase, node->nd_vid)) {
+	    if (RTEST(verbose) &&
+		ev_const_defined(the_frame->cbase, node->nd_vid)) {
 		Warning("already initialized constant %s",
 			rb_id2name(node->nd_vid));
 	    }
@@ -1826,6 +2048,7 @@ rb_eval(self, node)
 		else {
 		    if (nd_type(list->nd_head) == NODE_EVSTR) {
 			rb_in_eval++;
+			eval_tree = 0;
 			list->nd_head = compile(list->nd_head->nd_lit);
 			rb_in_eval--;
 			if (nerrs > 0) {
@@ -1884,15 +2107,27 @@ rb_eval(self, node)
 	    body = search_method(the_class, node->nd_mid, &origin);
 	    if (body) {
 		if (origin == (VALUE)the_class) {
-		    Warning("redefine %s", rb_id2name(node->nd_mid));
+		    Warning("discarding old %s", rb_id2name(node->nd_mid));
 		}
-		rb_clear_cache();
+		rb_clear_cache_by_id(node->nd_mid);
 	    }
 
-	    if (body) noex = body->nd_noex;
-	    else      noex = node->nd_noex; /* default(1 for toplevel) */
-
+	    if (FL_TEST(the_scope,SCOPE_PRIVATE)) {
+		noex = NOEX_PRIVATE;
+	    }
+	    else {
+		noex = NOEX_PUBLIC;
+	    }
 	    rb_add_method(the_class, node->nd_mid, node->nd_defn, noex);
+	    if (FL_TEST(the_class, FL_SINGLETON)) {
+		VALUE recv = rb_iv_get(the_class, "__attached__");
+		rb_funcall(recv, rb_intern("singleton_method_added"),
+			   1, INT2FIX(node->nd_mid));
+	    }
+	    else {
+		rb_funcall(the_class, rb_intern("method_added"),
+			   1, INT2FIX(node->nd_mid));
+	    }
 	    result = Qnil;
 	}
 	break;
@@ -1920,17 +2155,17 @@ rb_eval(self, node)
 	    if (st_lookup(RCLASS(class)->m_tbl, node->nd_mid, &body)) {
 		Warning("redefine %s", rb_id2name(node->nd_mid));
 	    }
-	    rb_clear_cache();
+	    rb_clear_cache_by_id(node->nd_mid);
+	    rb_add_method(class, node->nd_mid, node->nd_defn, NOEX_PUBLIC);
 	    rb_funcall(recv, rb_intern("singleton_method_added"),
 		       1, INT2FIX(node->nd_mid));
-	    rb_add_method(class, node->nd_mid, node->nd_defn, NOEX_PUBLIC);
 	    result = Qnil;
 	}
 	break;
 
       case NODE_UNDEF:
 	{
-	    struct RClass *origin;
+	    VALUE origin;
 	    NODE *body;
 
 	    body = search_method(the_class, node->nd_mid, &origin);
@@ -1938,7 +2173,7 @@ rb_eval(self, node)
 		NameError("undefined method `%s' for class `%s'",
 			  rb_id2name(node->nd_mid), rb_class2name((VALUE)the_class));
 	    }
-	    rb_clear_cache();
+	    rb_clear_cache_by_id(node->nd_mid);
 	    rb_add_method(the_class, node->nd_mid, 0, NOEX_PUBLIC);
 	    result = Qnil;
 	}
@@ -1946,6 +2181,8 @@ rb_eval(self, node)
 
       case NODE_ALIAS:
 	rb_alias(the_class, node->nd_new, node->nd_old);
+	rb_funcall(the_class, rb_intern("method_added"),
+		   1, INT2FIX(node->nd_mid));
 	result = Qnil;
 	break;
 
@@ -1956,8 +2193,7 @@ rb_eval(self, node)
 
       case NODE_CLASS:
 	{
-	    VALUE super, class;
-	    struct RClass *tmp;
+	    VALUE super, class, tmp;
 
 	    if (node->nd_super) {
 		super = superclass(self, node->nd_super);
@@ -1982,7 +2218,7 @@ rb_eval(self, node)
 		    while (TYPE(tmp) == T_ICLASS) {
 			tmp = RCLASS(tmp)->super;
 		    }
-		    if (tmp != RCLASS(super)) {
+		    if (tmp != super) {
 			TypeError("superclass mismatch for %s",
 				  rb_id2name(node->nd_cname));
 		    }
@@ -1991,7 +2227,6 @@ rb_eval(self, node)
 		    Raise(eSecurityError, "extending class prohibited");
 		}
 		rb_clear_cache();
-		Warning("extending class %s", rb_id2name(node->nd_cname));
 	    }
 	    else {
 		if (!super) super = cObject;
@@ -2000,7 +2235,7 @@ rb_eval(self, node)
 		rb_set_class_path(class,the_class,rb_id2name(node->nd_cname));
 	    }
 
-	    result = module_setup(class, node->nd_body);
+	    return module_setup(class, node->nd_body);
 	}
 	break;
 
@@ -2019,7 +2254,6 @@ rb_eval(self, node)
 		if (safe_level >= 4) {
 		    Raise(eSecurityError, "extending module prohibited");
 		}
-		Warning("extending module %s", rb_id2name(node->nd_cname));
 	    }
 	    else {
 		module = rb_define_module_id(node->nd_cname);
@@ -2047,8 +2281,8 @@ rb_eval(self, node)
 	    }
 	    if (FL_TEST(CLASS_OF(class), FL_SINGLETON)) {
 		rb_clear_cache();
+		class = rb_singleton_class(class);
 	    }
-	    class = rb_singleton_class(class);
 
 	    result = module_setup(class, node->nd_body);
 	}
@@ -2057,7 +2291,7 @@ rb_eval(self, node)
       case NODE_DEFINED:
 	{
 	    char buf[20];
-	    char *desc = is_defined(self, node, buf);
+	    char *desc = is_defined(self, node->nd_head, buf);
 
 	    if (desc) result = str_new2(desc);
 	    else result = FALSE;
@@ -2065,7 +2299,7 @@ rb_eval(self, node)
 	break;
 
     case NODE_NEWLINE:
-	sourcefile = node->file;
+	sourcefile = node->nd_file;
 	sourceline = node->nd_nth;
 	if (trace_func) {
 	    call_trace_func("line", sourcefile, sourceline,
@@ -2087,16 +2321,18 @@ module_setup(module, node)
     VALUE module;
     NODE * volatile node;
 {
-    NODE *state;
+    int state;
     VALUE save = the_frame->cbase;
     VALUE result;		/* OK */
+    char *file = sourcefile;
+    int line = sourceline;
 
     /* fill c-ref */
     node->nd_clss = module;
     node = node->nd_body;
 
     PUSH_CLASS();
-    the_class = (struct RClass*)module;
+    the_class = module;
     PUSH_SCOPE();
 
     if (node->nd_rval) the_frame->cbase = node->nd_rval;
@@ -2112,10 +2348,10 @@ module_setup(module, node)
 	the_scope->local_tbl  = 0;
     }
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	if (trace_func) {
-	    call_trace_func("class", node->file, nd_line(node),
+	    call_trace_func("class", file, line,
 			    the_class, the_frame->last_func);
 	}
 	result = rb_eval((VALUE)the_class, node->nd_body);
@@ -2123,10 +2359,10 @@ module_setup(module, node)
     POP_TAG();
     POP_SCOPE();
     POP_CLASS();
+
     the_frame->cbase = save;
     if (trace_func) {
-	call_trace_func("end", node->file, nd_line(node), 0,
-			the_frame->last_func);
+	call_trace_func("end", file, line, 0, the_frame->last_func);
     }
     if (state) JUMP_TAG(state);
 
@@ -2213,33 +2449,9 @@ f_abort()
 }
 
 void
-rb_break()
+rb_iter_break()
 {
-    JUMP_TAG2(TAG_BREAK, 0);
-}
-
-static VALUE
-f_break()
-{
-    JUMP_TAG2(TAG_BREAK, 0);
-}
-
-static VALUE
-f_next()
-{
-    JUMP_TAG2(TAG_NEXT, 0);
-}
-
-static VALUE
-f_redo()
-{
-    JUMP_TAG2(TAG_REDO, 0);
-}
-
-static VALUE
-f_retry()
-{
-    JUMP_TAG2(TAG_RETRY, 0);
+    JUMP_TAG(TAG_BREAK);
 }
 
 #ifdef __GNUC__
@@ -2248,16 +2460,42 @@ static volatile voidfn rb_longjmp;
 
 static VALUE make_backtrace();
 
+static VALUE
+check_errat(val)
+    VALUE val;
+{
+    int i;
+    static char *err = "value of $@ must be Array of String";
+
+    if (!NIL_P(val)) {
+	int t = TYPE(val);
+
+	if (t == T_STRING) return ary_new3(1, val);
+	if (t != T_ARRAY) {
+	    TypeError(err);
+	}
+	for (i=0;i<RARRAY(val)->len;i++) {
+	    if (TYPE(RARRAY(val)->ptr[i]) != T_STRING) {
+		TypeError(err);
+	    }
+	}
+    }
+    return val;
+}
+
 static void
-rb_longjmp(tag, mesg)
+rb_longjmp(tag, mesg, at)
     int tag;
-    VALUE mesg;
+    VALUE mesg, at;
 {
     if (NIL_P(errinfo) && NIL_P(mesg)) {
 	errinfo = exc_new(eRuntimeError, 0, 0);
     }
 
-    if (sourcefile && (NIL_P(errat) || !NIL_P(mesg))) {
+    if (!NIL_P(at)) {
+	errat = check_errat(at);
+    }
+    else if (sourcefile && (NIL_P(errat) || !NIL_P(mesg))) {
 	errat = make_backtrace();
     }
 
@@ -2271,21 +2509,21 @@ rb_longjmp(tag, mesg)
 	str_freeze(errinfo);
     }
 
-    JUMP_TAG2(tag, 0);
+    JUMP_TAG(tag);
 }
 
 void
 rb_raise(mesg)
     VALUE mesg;
 {
-    rb_longjmp(TAG_RAISE, mesg);
+    rb_longjmp(TAG_RAISE, mesg, Qnil);
 }
 
 void
 rb_fatal(mesg)
     VALUE mesg;
 {
-    rb_longjmp(TAG_FATAL, mesg);
+    rb_longjmp(TAG_FATAL, mesg, Qnil);
 }
 
 void
@@ -2299,17 +2537,18 @@ f_raise(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE arg1, arg2;
+    VALUE arg1, arg2, arg3;
     VALUE etype, mesg;
     int n;
 
     etype = eRuntimeError;
     mesg = Qnil;
-    switch (n = rb_scan_args(argc, argv, "02", &arg1, &arg2)) {
+    switch (n = rb_scan_args(argc, argv, "03", &arg1, &arg2, &arg3)) {
       case 1:
 	mesg = arg1;
 	break;
       case 2:
+      case 3:
 	etype = arg1;
 	if (obj_is_kind_of(etype, eGlobalExit)) {
 	    etype = CLASS_OF(etype);
@@ -2317,7 +2556,7 @@ f_raise(argc, argv)
 	else {
 	    Check_Type(etype, T_CLASS);
 	}
-	mesg  = arg2;
+	mesg = arg2;
 	break;
     }
 
@@ -2329,8 +2568,8 @@ f_raise(argc, argv)
     }
 
     PUSH_FRAME();		/* fake frame */
-    *the_frame = *_frame.prev->prev;
-    rb_raise(mesg);
+    *the_frame = *_frame->prev->prev;
+    rb_longjmp(TAG_RAISE, mesg, arg3);
     POP_FRAME();
 }
 
@@ -2354,11 +2593,12 @@ rb_yield_0(val, self)
     volatile VALUE self;
 {
     NODE *node;
-    NODE *state;
     volatile VALUE result = Qnil;
     struct BLOCK *block;
     struct SCOPE *old_scope;
     struct FRAME frame;
+    int state;
+    static USHORT serial = 1;
 
     if (!iterator_p()) {
 	Raise(eLocalJumpError, "yield called out of iterator");
@@ -2384,21 +2624,21 @@ rb_yield_0(val, self)
 	    assign(self, block->var, val);
     }
     PUSH_ITER(block->iter);
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
       redo:
 	if (!node) {
 	    result = Qnil;
 	}
 	else if (nd_type(node) == NODE_CFUNC) {
-	    result = (*node->nd_cfnc)(val, node->nd_argc, self);
+	    result = (*node->nd_cfnc)(val, node->nd_tval, self);
 	}
 	else {
 	    result = rb_eval(self, node);
 	}
     }
     else {
-	switch (state->nd_tag) {
+	switch (state) {
 	  case TAG_REDO:
 	    state = 0;
 	    goto redo;
@@ -2408,8 +2648,9 @@ rb_yield_0(val, self)
 	    break;
 	  case TAG_BREAK:
 	  case TAG_RETURN:
-	    state->nd_tlev = block->level;
-	    state->nd_tag = IN_BLOCK|state->nd_tag;
+	    state |= (serial++ << 8);
+	    state |= 0x10;
+	    block->tag->dst = state; 
 	    break;
 	  default:
 	    break;
@@ -2452,7 +2693,7 @@ massign(self, node, val)
 
     if (val) {
 	if (TYPE(val) != T_ARRAY) {
-	    val = rb_to_a(val);
+	    val = rb_Array(val);
 	}
 	len = RARRAY(val)->len;
 	for (i=0; list && i<len; i++) {
@@ -2535,49 +2776,48 @@ assign(self, lhs, val)
 VALUE
 rb_iterate(it_proc, data1, bl_proc, data2)
     VALUE (*it_proc)(), (*bl_proc)();
-    void *data1, *data2;
+    VALUE data1, data2;
 {
-    NODE *state;
+    int state;
     volatile VALUE retval = Qnil;
     NODE *node = NEW_CFUNC(bl_proc, data2);
     VALUE self = TopSelf;
-    int tag_level;
 
   iter_retry:
     PUSH_ITER(ITER_PRE);
     PUSH_BLOCK(0, node);
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
 
     state = EXEC_TAG();
     if (state == 0) {
 	retval = (*it_proc)(data1);
     }
+    if (the_block->tag->dst == state) {
+	state &= TAG_MASK;
+	if (state == TAG_RETURN) {
+	    retval = prot_tag->tag_retval;
+	}
+    }
     POP_TAG();
-
-    tag_level = the_block->level;
     POP_BLOCK();
     POP_ITER();
 
-    if (state) {
-	switch (state->nd_tag) {
-	  case TAG_RETRY:
-	    goto iter_retry;
+    switch (state) {
+      case 0:
+	break;
 
-	  case IN_BLOCK|TAG_BREAK:
-	    if (state->nd_tlev != tag_level) {
-		JUMP_TAG(state);
-	    }
-	    retval = Qnil;
-	    break;
+      case TAG_RETRY:
+	goto iter_retry;
 
-	  case IN_BLOCK|TAG_RETURN:
-	    if (state->nd_tlev == tag_level) {
-		state->nd_tag &= ~IN_BLOCK;
-	    }
-	    /* fall through */
-	  default:
-	    JUMP_TAG(state);
-	}
+      case TAG_BREAK:
+	retval = Qnil;
+	break;
+
+      case TAG_RETURN:
+	return_value(retval);
+	/* fall through */
+      default:
+	JUMP_TAG(state);
     }
     return retval;
 }
@@ -2609,36 +2849,34 @@ handle_rescue(self, node)
 VALUE
 rb_rescue(b_proc, data1, r_proc, data2)
     VALUE (*b_proc)(), (*r_proc)();
-    void *data1, *data2;
+    VALUE data1, data2;
 {
-    NODE *state;
+    int state;
     volatile VALUE result;
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
       retry_entry:
 	result = (*b_proc)(data1);
     }
-    else {
-	if (state->nd_tag == TAG_RAISE) { 
-	    if (r_proc) {
-		PUSH_TAG();
-		if ((state = EXEC_TAG()) == 0) {
-		    result = (*r_proc)(data2, errinfo);
-		}
-		POP_TAG();
-		if (state && state->nd_tag == TAG_RETRY) {
-		    state = 0;
-		    goto retry_entry;
-		}
+    else if (state == TAG_RAISE && obj_is_kind_of(errinfo, eException)) {
+	if (r_proc) {
+	    PUSH_TAG(PROT_NONE);
+	    if ((state = EXEC_TAG()) == 0) {
+		result = (*r_proc)(data2, errinfo);
 	    }
-	    else {
-		result = Qnil;
+	    POP_TAG();
+	    if (state == TAG_RETRY) {
 		state = 0;
+		goto retry_entry;
 	    }
-	    if (state == 0) {
-		errat = Qnil;
-	    }
+	}
+	else {
+	    result = Qnil;
+	    state = 0;
+	}
+	if (state == 0) {
+	    errat = Qnil;
 	}
     }
     POP_TAG();
@@ -2649,13 +2887,14 @@ rb_rescue(b_proc, data1, r_proc, data2)
 
 VALUE
 rb_ensure(b_proc, data1, e_proc, data2)
-    VALUE (*b_proc)(), (*e_proc)();
-    void *data1, *data2;
+    VALUE (*b_proc)();
+    void (*e_proc)();
+    VALUE data1, data2;
 {
-    NODE *state;
+    int state;
     volatile VALUE result = Qnil;
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
 	result = (*b_proc)(data1);
     }
@@ -2706,20 +2945,20 @@ f_missing(argc, argv, obj)
     }
     if (desc) {
 	if (last_call_status & CSTAT_NOEX) {
-	    format = "private method `%s' called for %s(%s)";
+	    format = "private method `%s' called for %s";
 	}
 	else if (iterator_p()) {
-	    format = "undefined iterator `%s' for %s(%s)";
+	    format = "undefined iterator `%s' for %s";
 	}
 	else if (last_call_status & CSTAT_VCALL) {
 	    char *mname = rb_id2name(id);
 
 	    if (('a' <= mname[0] && mname[0] <= 'z') || mname[0] == '_') {
-		format = "undefined local variable or method `%s' for %s(%s)";
+		format = "undefined local variable or method `%s' for %s";
 	    }
 	}
 	if (!format) {
-	    format = "undefined method `%s' for %s(%s)";
+	    format = "undefined method `%s' for %s";
 	}
 	if (RSTRING(desc)->len > 65) {
 	    desc = any_to_s(obj);
@@ -2729,12 +2968,11 @@ f_missing(argc, argv, obj)
     sourcefile = file;
     sourceline = line;
     PUSH_FRAME();		/* fake frame */
-    *the_frame = *_frame.prev->prev;
+    *the_frame = *_frame->prev->prev;
 
     NameError(format,
 	      rb_id2name(id),
-	      desc?(char*)RSTRING(desc)->ptr:"",
-	      desc?rb_class2name(CLASS_OF(obj)):"");
+	      desc?(char*)RSTRING(desc)->ptr:"");
     POP_FRAME();
 
     return Qnil;		/* not reached */
@@ -2785,8 +3023,7 @@ stack_length()
 
 static VALUE
 rb_call(class, recv, mid, argc, argv, scope)
-    struct RClass *class;
-    VALUE recv;
+    VALUE class, recv;
     ID    mid;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
@@ -2806,7 +3043,7 @@ rb_call(class, recv, mid, argc, argv, scope)
     ent = cache + EXPR1(class, mid);
     if (ent->mid == mid && ent->class == class) {
 	class = ent->origin;
-	id   = ent->mid0;
+	id    = ent->mid0;
 	noex  = ent->noex;
 	body  = ent->method;
     }
@@ -2833,19 +3070,19 @@ rb_call(class, recv, mid, argc, argv, scope)
 	/* for re-scoped/renamed method */
 	mid = id;
 	if (scope == 0) scope = 1;
-	if (class->super == 0) {
+	if (RCLASS(class)->super == 0) {
 	    /* origin is the Module, so need to scan superclass hierarchy. */
-	    struct RClass *cl = class;
+	    struct RClass *cl = RCLASS(class);
 
-	    class = (struct RClass*)RBASIC(recv)->class;
+	    class = RBASIC(recv)->class;
 	    while (class) {
-		if (class->m_tbl == cl->m_tbl)
+		if (RCLASS(class)->m_tbl == cl->m_tbl)
 		    break;
-		class = class->super;
+		class = RCLASS(class)->super;
 	    }
 	}
 	else {
-	    class = class->super;
+	    class = RCLASS(class)->super;
 	}
 	goto again;
     }
@@ -2981,8 +3218,8 @@ rb_call(class, recv, mid, argc, argv, scope)
 
       default:
 	{
-	    NODE  *state;
-	    VALUE *local_vars;
+	    int state;
+	    VALUE *local_vars;	/* OK */
 
 	    PUSH_SCOPE();
 
@@ -3000,7 +3237,7 @@ rb_call(class, recv, mid, argc, argv, scope)
 	    }
 	    b2 = body = body->nd_body;
 
-	    PUSH_TAG();
+	    PUSH_TAG(PROT_FUNC);
 	    PUSH_VARS();
 
 	    if ((state = EXEC_TAG()) == 0) {
@@ -3058,10 +3295,14 @@ rb_call(class, recv, mid, argc, argv, scope)
 		    body = 0;
 		}
 		if (trace_func) {
-		    call_trace_func("call", b2->file, nd_line(b2),
+		    call_trace_func("call", b2->nd_file, nd_line(b2),
 				    recv, the_frame->last_func);
 		}
 		result = rb_eval(recv, body);
+	    }
+	    else if (state == TAG_RETURN) {
+		result = prot_tag->tag_retval;
+		state = 0;
 	    }
 	    POP_VARS();
 	    POP_TAG();
@@ -3075,27 +3316,25 @@ rb_call(class, recv, mid, argc, argv, scope)
 		}
 		call_trace_func("return", file, line, 0, the_frame->last_func);
 	    }
-	    if (state) {
-		switch (state->nd_tag) {
-		  case TAG_NEXT:
-		    Raise(eLocalJumpError, "unexpected next");
-		    break;
-		  case TAG_BREAK:
-		    Raise(eLocalJumpError, "unexpected break");
-		    break;
-		  case TAG_REDO:
-		    Raise(eLocalJumpError, "unexpected redo");
-		    break;
-		  case TAG_RETURN:
-		    result = state->nd_tval;
-		    break;
-		  case TAG_RETRY:
-		    if (!iterator_p()) {
-			Raise(eLocalJumpError, "retry outside of rescue clause");
-		    }
-		  default:
-		    JUMP_TAG(state);
+	    switch (state) {
+	      case 0:
+		break;
+
+	      case TAG_NEXT:
+		Raise(eLocalJumpError, "unexpected next");
+		break;
+	      case TAG_BREAK:
+		Raise(eLocalJumpError, "unexpected break");
+		break;
+	      case TAG_REDO:
+		Raise(eLocalJumpError, "unexpected redo");
+		break;
+	      case TAG_RETRY:
+		if (!iterator_p()) {
+		    Raise(eLocalJumpError, "retry outside of rescue clause");
 		}
+	      default:
+		JUMP_TAG(state);
 	    }
 	}
     }
@@ -3107,8 +3346,8 @@ rb_call(class, recv, mid, argc, argv, scope)
 VALUE
 rb_apply(recv, mid, args)
     VALUE recv;
-    struct RArray *args;
     ID mid;
+    VALUE args;
 {
     int argc;
     VALUE *argv;
@@ -3274,13 +3513,13 @@ rb_frame_last_func()
 
 static NODE*
 compile(src)
-    struct RString *src;
+    VALUE src;
 {
     NODE *node;
 
     Check_Type(src, T_STRING);
 
-    node = compile_string(sourcefile, src->ptr, src->len);
+    node = compile_string(sourcefile, RSTRING(src)->ptr, RSTRING(src)->len);
 
     if (nerrs == 0) return node;
     return 0;
@@ -3288,23 +3527,21 @@ compile(src)
 
 static VALUE
 eval(self, src, scope)
-    VALUE self;
-    struct RString *src;
-    struct RData *scope;
+    VALUE self, src, scope;
 {
     struct BLOCK *data;
     volatile VALUE result = Qnil;
-    NODE *state;
-    volatile VALUE old_block;
-    volatile VALUE old_scope;
-    volatile VALUE old_d_vars;
+    struct SCOPE * volatile old_scope;
+    struct BLOCK * volatile old_block;
+    struct RVarmap * volatile old_d_vars;
     struct FRAME frame;
     char *file = sourcefile;
     int line = sourceline;
     volatile int iter = the_frame->iter;
+    int state;
 
     if (!NIL_P(scope)) {
-	if (TYPE(scope) != T_DATA || scope->dfree != blk_free) {
+	if (TYPE(scope) != T_DATA || RDATA(scope)->dfree != blk_free) {
 	    TypeError("wrong argument type %s (expected Proc/Binding)",
 		      rb_class2name(CLASS_OF(scope)));
 	}
@@ -3315,11 +3552,11 @@ eval(self, src, scope)
 	frame = data->frame;
 	frame.prev = the_frame;
 	the_frame = &(frame);
-	old_scope = (VALUE)the_scope;
+	old_scope = the_scope;
 	the_scope = data->scope;
-	old_block = (VALUE)the_block;
+	old_block = the_block;
 	the_block = data->prev;
-	old_d_vars = (VALUE)the_dyna_vars;
+	old_d_vars = the_dyna_vars;
 	the_dyna_vars = data->d_vars;
 
 	self = data->self;
@@ -3331,17 +3568,18 @@ eval(self, src, scope)
 	}
     }
     PUSH_CLASS();
-    the_class = (struct RClass*)((NODE*)the_frame->cbase)->nd_clss;
+    the_class = ((NODE*)the_frame->cbase)->nd_clss;
 
     rb_in_eval++;
     if (TYPE(the_class) == T_ICLASS) {
-	the_class = (struct RClass*)RBASIC(the_class)->class;
+	the_class = RBASIC(the_class)->class;
     }
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
+	eval_tree = 0;
 	compile(src);
 	if (nerrs > 0) {
-	    compile_error("eval()");
+	    compile_error(0);
 	}
 	result = eval_node(self);
     }
@@ -3350,22 +3588,21 @@ eval(self, src, scope)
     rb_in_eval--;
     if (!NIL_P(scope)) {
 	the_frame = the_frame->prev;
-	the_scope = (struct SCOPE*)old_scope;
-	the_block = (struct BLOCK*)old_block;
-	the_dyna_vars = (struct RVarmap*)old_d_vars;
+	the_scope = old_scope;
+	the_block = old_block;
+	the_dyna_vars = old_d_vars;
     }
     else {
 	the_frame->iter = iter;
     }
     if (state) {
-	VALUE err ;
+	VALUE err;
 
-	switch (state->nd_tag) {
-	  case TAG_RAISE:
+	if (state == TAG_RAISE) {
 	    sourcefile = file;
 	    sourceline = line;
 	    if (strcmp(sourcefile, "(eval)") == 0) {
-		err = errinfo;
+		err = str_dup(errinfo);
 		if (sourceline > 1) {
 		    err = RARRAY(errat)->ptr[0];
 		    str_cat(err, ": ", 2);
@@ -3394,6 +3631,48 @@ f_eval(argc, argv, self)
 
     Check_SafeStr(src);
     return eval(self, src, scope);
+}
+
+static VALUE
+eval_under(under, self, src)
+    VALUE under, self, src;
+{
+    VALUE val;			/* OK */
+    int state;
+    VALUE cbase = the_frame->cbase;
+
+    PUSH_CLASS();
+    the_class = under;
+    PUSH_FRAME();
+    the_frame->last_func = _frame->last_func;
+    the_frame->last_class = _frame->last_class;
+    the_frame->argc = 1;
+    the_frame->argv = &src;
+    the_frame->cbase = (VALUE)node_newnode(NODE_CREF,under,0,cbase);
+    PUSH_TAG(PROT_NONE);
+    if ((state = EXEC_TAG()) == 0) {
+	val = eval(self, src, Qnil);
+    }
+    POP_TAG();
+    POP_FRAME();
+    POP_CLASS();
+    if (state) JUMP_TAG(state);
+
+    return val;
+}
+
+static VALUE
+obj_instance_eval(self, src)
+    VALUE self, src;
+{
+    return eval_under(CLASS_OF(self), self, src);
+}
+
+static VALUE
+mod_module_eval(mod, src)
+    VALUE mod, src;
+{
+    return eval_under(mod, mod, src);
 }
 
 VALUE rb_load_path;
@@ -3438,23 +3717,22 @@ find_file(file)
 
 VALUE
 f_load(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
-    NODE *state;
+    int state;
     char *file;
     volatile ID last_func;
 
     Check_SafeStr(fname);
-    if (fname->ptr[0] == '~') {
-	fname = (struct RString*)file_s_expand_path(0, fname);
+    if (RSTRING(fname)->ptr[0] == '~') {
+	fname = file_s_expand_path(0, fname);
     }
-    file = find_file(fname->ptr);
-    if (!file) LoadError("No such file to load -- %s", fname->ptr);
+    file = find_file(RSTRING(fname)->ptr);
+    if (!file) LoadError("No such file to load -- %s", RSTRING(fname)->ptr);
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     PUSH_CLASS();
-    the_class = (struct RClass*)cObject;
+    the_class = cObject;
     PUSH_SCOPE();
     if (top_scope->local_tbl) {
 	int len = top_scope->local_tbl[0]+1;
@@ -3466,6 +3744,8 @@ f_load(obj, fname)
 	the_scope->local_tbl = tbl;
 	the_scope->local_vars = vars;
     }
+    /* default visibility is private at loading toplevel */
+    FL_SET(the_scope, SCOPE_PRIVATE);
 
     state = EXEC_TAG();
     last_func = the_frame->last_func;
@@ -3546,27 +3826,26 @@ rb_provide(feature)
 
 VALUE
 f_require(obj, fname)
-    VALUE obj;
-    struct RString *fname;
+    VALUE obj, fname;
 {
-    char *ext, *file, *feature, *buf;
-    volatile VALUE load;
+    char *ext, *file, *feature, *buf; /* OK */
+    VALUE load;
 
     Check_SafeStr(fname);
-    if (rb_provided(fname->ptr))
+    if (rb_provided(RSTRING(fname)->ptr))
 	return FALSE;
 
-    ext = strrchr(fname->ptr, '.');
+    ext = strrchr(RSTRING(fname)->ptr, '.');
     if (ext) {
 	if (strcmp(".rb", ext) == 0) {
-	    feature = file = fname->ptr;
+	    feature = file = RSTRING(fname)->ptr;
 	    file = find_file(file);
 	    if (file) goto rb_load;
 	}
 	else if (strcmp(".o", ext) == 0) {
-	    file = feature = fname->ptr;
+	    file = feature = RSTRING(fname)->ptr;
 	    if (strcmp(".o", DLEXT) != 0) {
-		buf = ALLOCA_N(char, strlen(fname->ptr)+sizeof(DLEXT)+1);
+		buf = ALLOCA_N(char, strlen(file)+sizeof(DLEXT)+1);
 		strcpy(buf, feature);
 		ext = strrchr(buf, '.');
 		strcpy(ext, DLEXT);
@@ -3575,33 +3854,33 @@ f_require(obj, fname)
 	    if (file) goto dyna_load;
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
-	    feature = fname->ptr;
+	    feature = RSTRING(fname)->ptr;
 	    file = find_file(feature);
 	    if (file) goto dyna_load;
 	}
     }
-    buf = ALLOCA_N(char, strlen(fname->ptr) + 5);
-    sprintf(buf, "%s.rb", fname->ptr);
+    buf = ALLOCA_N(char, strlen(RSTRING(fname)->ptr) + 5);
+    sprintf(buf, "%s.rb", RSTRING(fname)->ptr);
     file = find_file(buf);
     if (file) {
-	fname = (struct RString*)str_new2(file);
+	fname = str_new2(file);
 	feature = buf;
 	goto rb_load;
     }
-    sprintf(buf, "%s%s", fname->ptr, DLEXT);
+    sprintf(buf, "%s%s", RSTRING(fname)->ptr, DLEXT);
     file = find_file(buf);
     if (file) {
 	feature = buf;
 	goto dyna_load;
     }
-    LoadError("No such file to load -- %s", fname->ptr);
+    LoadError("No such file to load -- %s", RSTRING(fname)->ptr);
 
   dyna_load:
 #ifdef THREAD
     if (thread_loading(feature)) return FALSE;
     else {
-	NODE *state;
-	PUSH_TAG();
+	int state;
+	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 #endif
 	    load = str_new2(file);
@@ -3621,8 +3900,8 @@ f_require(obj, fname)
 #ifdef THREAD
     if (thread_loading(feature)) return FALSE;
     else {
-	NODE *state;
-	PUSH_TAG();
+	int state;
+	PUSH_TAG(PROT_NONE);
 	if ((state = EXEC_TAG()) == 0) {
 #endif
 	    f_load(obj, fname);
@@ -3657,7 +3936,12 @@ mod_public(argc, argv, module)
     VALUE *argv;
     VALUE module;
 {
-    set_method_visibility(module, argc, argv, NOEX_PUBLIC);
+    if (argc == 0) {
+	FL_UNSET(the_scope, SCOPE_PRIVATE);
+    }
+    else {
+	set_method_visibility(module, argc, argv, NOEX_PUBLIC);
+    }
     return module;
 }
 
@@ -3667,7 +3951,12 @@ mod_private(argc, argv, module)
     VALUE *argv;
     VALUE module;
 {
-    set_method_visibility(module, argc, argv, NOEX_PRIVATE);
+    if (argc == 0) {
+	FL_SET(the_scope, SCOPE_PRIVATE);
+    }
+    else {
+	set_method_visibility(module, argc, argv, NOEX_PRIVATE);
+    }
     return module;
 }
 
@@ -3689,6 +3978,22 @@ mod_private_method(argc, argv, obj)
 {
     set_method_visibility(CLASS_OF(obj), argc, argv, NOEX_PRIVATE);
     return obj;
+}
+
+static VALUE
+top_public(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    return mod_public(argc, argv, cObject);
+}
+
+static VALUE
+top_private(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    return mod_private(argc, argv, cObject);
 }
 
 static VALUE
@@ -3716,6 +4021,23 @@ mod_modfunc(argc, argv, module)
 }
 
 static VALUE
+mod_append_features(module, include)
+    VALUE module, include;
+{
+    switch (TYPE(include)) {
+      case T_CLASS:
+      case T_MODULE:
+	break;
+      default:
+	Check_Type(include, T_CLASS);
+	break;
+    }
+    rb_include_module(include, module);
+
+    return module;
+}
+
+static VALUE
 mod_include(argc, argv, module)
     int argc;
     VALUE *argv;
@@ -3725,29 +4047,10 @@ mod_include(argc, argv, module)
 
     for (i=0; i<argc; i++) {
 	Check_Type(argv[i], T_MODULE);
-	rb_include_module(module, argv[i]);
+	rb_funcall(argv[i], rb_intern("append_features"), 1, module);
     }
     return module;
 }
-
-VALUE
-class_s_new(argc, argv, class)
-    int argc;
-    VALUE *argv;
-    VALUE class;
-{
-    VALUE obj = obj_alloc(class);
-
-    if (FL_TEST(class, FL_SINGLETON)) {
-	TypeError("can't create instance of virtual class");
-    }
-    obj = obj_alloc(class);
-    PUSH_ITER(iterator_p()?ITER_PRE:ITER_NOT);
-    rb_funcall2(obj, init, argc, argv);
-    POP_ITER();
-    return obj;
-}
-
 
 VALUE
 class_new_instance(argc, argv, class)
@@ -3817,57 +4120,68 @@ errat_setter(val, id, var)
     ID id;
     VALUE *var;
 {
-    int i;
-    static char *err = "value of $@ must be Array of String";
+    *var = check_errat(val);
+}
 
-    if (!NIL_P(val)) {
-	if (TYPE(val) != T_ARRAY) {
-	    TypeError(err);
-	}
-	for (i=0;i<RARRAY(val)->len;i++) {
-	    if (TYPE(RARRAY(val)->ptr[i]) != T_STRING) {
-		TypeError(err);
-	    }
-	}
-    }
-    *var = val;
+VALUE f_global_variables();
+static VALUE f_catch();
+static VALUE f_throw();
+
+struct end_proc_data {
+    void (*func)();
+    VALUE data;
+    struct end_proc_data *next;
+} *end_proc_data;
+
+void
+rb_set_end_proc(func, data)
+    void (*func)();
+    VALUE data;
+{
+    struct end_proc_data *link = ALLOC(struct end_proc_data);
+
+    link->next = end_proc_data;
+    link->func = func;
+    link->data = data;
+    rb_global_variable(&link->data);
+    end_proc_data = link;
+}
+
+static void
+call_end_proc(data)
+    VALUE data;
+{
+    proc_call(data, Qnil);
+}
+
+static void
+f_END()
+{
+    PUSH_FRAME();
+    rb_set_end_proc(call_end_proc, f_lambda());
+    POP_FRAME();
 }
 
 static VALUE
-f_catch(dmy, tag)
-    VALUE dmy, tag;
+f_at_exit()
 {
-    NODE *state;
-    ID t;
-    VALUE val;
+    VALUE proc;
 
-    t = rb_to_id(tag);
-    PUSH_TAG();
-    if ((state = EXEC_TAG()) == 0) {
-	val = rb_yield(tag);
-    }
-    POP_TAG();
-    if (state) {
-	if (state->nd_tag == TAG_THROW && state->nd_tlev == t) {
-	    return state->nd_tval;
-	}
-	JUMP_TAG(state);
-    }
-    return val;
+    proc = f_lambda();
+
+    rb_set_end_proc(call_end_proc, proc);
+    return proc;
 }
 
-static VALUE
-f_throw(argc, argv)
-    int argc;
-    VALUE *argv;
+static void
+exec_end_proc()
 {
-    VALUE tag, value;
-    ID t;
+    struct end_proc_data *link = end_proc_data;
 
-    rb_scan_args(argc, argv, "11", &tag, &value);
-    t = rb_to_id(tag);
-    JUMP_TAG3(TAG_THROW, value, t);
-    /* not reached */
+    while (link) {
+	(*link->func)(link->data);
+	link = link->next;
+    }
 }
 
 void
@@ -3879,10 +4193,12 @@ Init_eval()
 
     aref = rb_intern("[]");
     aset = rb_intern("[]=");
+    match = rb_intern("=~");
 
-    rb_global_variable(&top_scope);
-    rb_global_variable(&eval_tree);
-    rb_global_variable(&the_dyna_vars);
+    rb_global_variable((VALUE*)&top_scope);
+    rb_global_variable((VALUE*)&eval_tree0);
+    rb_global_variable((VALUE*)&eval_tree);
+    rb_global_variable((VALUE*)&the_dyna_vars);
 
     rb_define_hooked_variable("$@", &errat, 0, errat_setter);
     rb_define_hooked_variable("$!", &errinfo, 0, rb_str_setter);
@@ -3894,15 +4210,6 @@ Init_eval()
 
     rb_define_method(mKernel, "respond_to?", obj_respond_to, -1);
 
-    rb_define_global_function("break", f_break, 0);
-    rb_define_alias(mKernel,  "break!", "break");
-    rb_define_global_function("next", f_next, 0);
-    rb_define_alias(mKernel,  "next!", "next");
-    rb_define_alias(mKernel,  "continue", "next");
-    rb_define_global_function("redo", f_redo, 0);
-    rb_define_alias(mKernel,  "redo!", "redo");
-    rb_define_global_function("retry", f_retry, 0);
-    rb_define_alias(mKernel,  "retry!", "retry");
     rb_define_global_function("raise", f_raise, -1);
     rb_define_alias(mKernel,  "fail", "raise");
 
@@ -3911,21 +4218,37 @@ Init_eval()
     rb_define_global_function("exit", f_exit, -1);
     rb_define_global_function("abort", f_abort, 0);
 
+    rb_define_global_function("at_exit", f_at_exit, 0);
+
     rb_define_global_function("catch", f_catch, 1);
     rb_define_global_function("throw", f_throw, -1);
+    rb_define_global_function("global_variables", f_global_variables, 0);
 
     rb_define_method(mKernel, "send", f_send, -1);
+    rb_define_method(mKernel, "instance_eval", obj_instance_eval, 1);
 
+    rb_define_private_method(cModule, "append_features", mod_append_features, 1);
+    rb_define_private_method(cModule, "extend_object", mod_extend_object, 1);
     rb_define_private_method(cModule, "include", mod_include, -1);
     rb_define_private_method(cModule, "public", mod_public, -1);
     rb_define_private_method(cModule, "private", mod_private, -1);
     rb_define_private_method(cModule, "module_function", mod_modfunc, -1);
     rb_define_method(cModule, "method_defined?", mod_method_defined, 1);
-    rb_define_method(cModule, "extend_object", mod_extend_object, 1);
     rb_define_method(cModule, "public_class_method", mod_public_method, -1);
     rb_define_method(cModule, "private_class_method", mod_private_method, -1);
+    rb_define_method(cModule, "module_eval", mod_module_eval, 1);
 
-    rb_define_method(CLASS_OF(TopSelf), "include", top_include, -1);
+    rb_define_method(cModule, "remove_method", mod_remove_method, -1);
+    rb_define_method(cModule, "undef_method", mod_undef_method, 1);
+    rb_define_method(cModule, "alias_method", mod_alias_method, 2);
+
+    rb_define_singleton_method(cModule, "nesting", mod_nesting, 0);
+    rb_define_singleton_method(cModule, "constants", mod_s_constants, 0);
+
+    rb_define_singleton_method(TopSelf, "include", top_include, -1);
+    rb_define_singleton_method(TopSelf, "public", top_public, -1);
+    rb_define_singleton_method(TopSelf, "private", top_private, -1);
+
     rb_define_method(mKernel, "extend", obj_extend, -1);
 
     rb_define_global_function("trace_var", f_trace_var, -1);
@@ -4027,7 +4350,7 @@ static VALUE
 proc_s_new(class)
     VALUE class;
 {
-    VALUE proc;
+    volatile VALUE proc;
     struct BLOCK *data;
 
     if (!iterator_p() && !f_iterator_p()) {
@@ -4071,19 +4394,18 @@ f_lambda()
 
 static VALUE
 proc_call(proc, args)
-    VALUE proc, args;
+    VALUE proc, args;		/* OK */
 {
     struct BLOCK *data;
     volatile VALUE result = Qnil;
-    NODE *state;
-    int tag_level;
+    int state;
     volatile int orphan;
     volatile int safe = safe_level;
 
     if (TYPE(args) == T_ARRAY) {
 	switch (RARRAY(args)->len) {
 	  case 0:
-	    args = 0;
+	    args = Qnil;
 	    break;
 	  case 1:
 	    args = RARRAY(args)->ptr[0];
@@ -4132,7 +4454,7 @@ proc_call(proc, args)
 	}
     }
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
 	result = rb_yield(args);
@@ -4140,30 +4462,25 @@ proc_call(proc, args)
     POP_TAG();
 
     POP_ITER();
-    tag_level = the_block->level;
+    if (the_block->tag->dst == state) {
+	state &= TAG_MASK;
+    }
     POP_BLOCK();
     safe_level = safe;
 
     if (state) {
 	if (orphan) {/* orphan procedure */
-	    switch (state->nd_tag) {
-	      case TAG_BREAK:	/* never happen */
-	      case IN_BLOCK|TAG_BREAK:
-		if (state->nd_tlev == tag_level)
-		    Raise(eLocalJumpError, "break from proc-closure");
+	    switch (state) {
+	      case TAG_BREAK:
+		Raise(eLocalJumpError, "break from proc-closure");
 		break;
 	      case TAG_RETRY:
 		Raise(eLocalJumpError, "retry from proc-closure");
 		break;
-	      case TAG_RETURN:	/* never happen */
-	      case IN_BLOCK|TAG_RETURN:
-		if (state->nd_tlev == tag_level)
-		    Raise(eLocalJumpError, "return from proc-closure");
+	      case TAG_RETURN:
+		Raise(eLocalJumpError, "return from proc-closure");
 		break;
 	    }
-	}
-	else if (state->nd_tlev == tag_level) {
-	    state->nd_tag &= ~IN_BLOCK;
 	}
 	JUMP_TAG(state);
     }
@@ -4241,11 +4558,11 @@ struct thread {
 
     struct FRAME *frame;
     struct SCOPE *scope;
-    struct RClass *class;
     struct RVarmap *dyna_vars;
     struct BLOCK *block;
     struct iter *iter;
     struct tag *tag;
+    VALUE class;
 
     VALUE trace;
 
@@ -4358,13 +4675,13 @@ thread_free(th)
 
 static thread_t
 thread_check(data)
-    struct RData *data;
+    VALUE data;
 {
-    if (TYPE(data) != T_DATA || data->dfree != thread_free) {
+    if (TYPE(data) != T_DATA || RDATA(data)->dfree != thread_free) {
 	TypeError("wrong argument type %s (expected Thread)",
 		  rb_class2name(CLASS_OF(data)));
     }
-    return (thread_t)data->data;
+    return (thread_t)RDATA(data)->data;
 }
 
 VALUE lastline_get();
@@ -4472,7 +4789,7 @@ thread_restore_context(th, exit)
 
     switch (ex) {
       case 1:
-	JUMP_TAG2(TAG_FATAL, INT2FIX(0));
+	JUMP_TAG(TAG_FATAL);
 	break;
 
       case 2:
@@ -4540,7 +4857,7 @@ thread_deadlock()
 void
 thread_schedule()
 {
-    thread_t next;
+    thread_t next;		/* OK */
     thread_t th;
     thread_t curr;
 
@@ -4564,8 +4881,6 @@ thread_schedule()
     END_FOREACH_FROM(curr,th); 
 
     if (num_waiting_on_join) {
-	curr_thread->file = sourcefile;	
-	curr_thread->line = sourceline;	
 	FOREACH_THREAD_FROM(curr,th) {
 	    if ((th->wait_for & WAIT_JOIN) && thread_dead(th->join)) {
 		th->join = 0;
@@ -4581,7 +4896,7 @@ thread_schedule()
     if (num_waiting_on_fd > 0 || num_waiting_on_timer > 0) {
 	fd_set readfds;
 	struct timeval delay_tv, *delay_ptr;
-	double delay, now;
+	double delay, now;	/* OK */
 
 	int n, max;
 
@@ -4664,6 +4979,8 @@ thread_schedule()
     }
 
     if (!next) {
+	curr_thread->file = sourcefile;
+	curr_thread->line = sourceline;
 	FOREACH_THREAD_FROM(curr,th) {
 	    fprintf(stderr, "%s:%d:deadlock 0x%x: %d:%d %s\n", 
 		    th->file, th->line, th->thread, th->status,
@@ -4969,6 +5286,8 @@ thread_stop()
     return Qnil;
 }
 
+struct timeval time_timeval();
+
 void
 thread_sleep(sec)
     int sec;
@@ -5111,7 +5430,7 @@ thread_create(fn, arg)
     void *arg;
 {
     thread_t th = thread_alloc();
-    NODE *state;
+    int state;
 
 #if defined(HAVE_SETITIMER) && !defined(__BOW__)
     static init = 0;
@@ -5139,7 +5458,7 @@ thread_create(fn, arg)
 	return th->thread;
     }
 
-    PUSH_TAG();
+    PUSH_TAG(PROT_THREAD);
     if ((state = EXEC_TAG()) == 0) {
 	thread_save_context(th);
 	if (setjmp(th->context) == 0) {
@@ -5148,47 +5467,34 @@ thread_create(fn, arg)
 	}
     }
     POP_TAG();
-    if (state) {
-	if (state->nd_tag == TAG_THROW) {
-	    char *mesg;
-	    char *tag = rb_id2name(state->nd_tlev);
-
-	    mesg = ALLOCA_N(char, strlen(tag) + 64);
-
-	    sprintf(mesg, "uncaught throw `%s' in thread 0x%x\n",
-		    tag, th->thread);
-	    curr_thread->errinfo = exc_new2(eThreadError, mesg);
-	    curr_thread->errat = make_backtrace();
+    if (state && th->status != THREAD_TO_KILL && !NIL_P(errinfo)) {
+	if (state == TAG_FATAL || obj_is_kind_of(errinfo, eSystemExit)) {
+	    /* fatal error or global exit within this thread */
+	    /* need to stop whole script */
+	    main_thread->errat = errat;
+	    main_thread->errinfo = errinfo;
+	    thread_cleanup();
 	}
-	else if (th->status != THREAD_TO_KILL && !NIL_P(errinfo)) {
-	    if (state->nd_tag == TAG_FATAL ||
-		obj_is_kind_of(errinfo, eSystemExit)) {
-		/* fatal error or global exit within this thread */
-		/* need to stop whole script */
-		main_thread->errat = errat;
-		main_thread->errinfo = errinfo;
-		thread_cleanup();
-	    }
-	    else if (thread_abort || curr_thread->abort) {
-		f_abort();
-	    }
-	    else {
-		curr_thread->errat = errat;
-		curr_thread->errinfo = errinfo;
-	    }
+	else if (thread_abort || curr_thread->abort || RTEST(debug)) {
+	    f_abort();
+	}
+	else {
+	    curr_thread->errat = errat;
+	    curr_thread->errinfo = errinfo;
 	}
     }
     thread_remove();
     return 0;
 }
 
-static void
+static VALUE
 thread_yield(arg, th) 
     int arg;
     thread_t th;
 {
     scope_dup(the_block->scope);
     rb_yield(th->thread);
+    return th->thread;
 }
 
 static VALUE
@@ -5400,3 +5706,83 @@ Init_Thread()
     main_thread = thread_alloc();
 }
 #endif
+
+static VALUE
+f_catch(dmy, tag)
+    VALUE dmy, tag;
+{
+    int state;
+    ID t;
+    VALUE val;			/* OK */
+
+    t = rb_to_id(tag);
+    PUSH_TAG(t);
+    if ((state = EXEC_TAG()) == 0) {
+	val = rb_yield(tag);
+    }
+    else if (state == TAG_THROW && prot_tag->tag == prot_tag->dst) {
+	val = prot_tag->tag_retval;
+	state = 0;
+    }
+    POP_TAG();
+    if (state) JUMP_TAG(state);
+
+    return val;
+}
+
+static VALUE
+f_throw(argc, argv)
+    int argc;
+    VALUE *argv;
+{
+    VALUE tag, value;
+    ID t;
+    struct tag *tt = prot_tag;
+
+    rb_scan_args(argc, argv, "11", &tag, &value);
+    t = rb_to_id(tag);
+
+    while (tt) {
+	if (tt->tag == t) {
+	    tt->dst = t;
+	    tt->tag_retval = value;
+	    break;
+	}
+#ifdef THREAD
+	if (tt->tag == PROT_THREAD) {
+	    Raise(eThreadError, "uncaught throw `%s' in thread 0x%x\n",
+		  rb_id2name(t),
+		  curr_thread);
+	}
+#endif
+	tt = tt->prev;
+    }
+
+    if (!tt) {
+	NameError("uncaught throw `%s'\n", rb_id2name(t));
+    }
+    JUMP_TAG(TAG_THROW);
+    /* not reached */
+}
+
+static void
+return_value(val)
+    VALUE val;
+{
+    struct tag *tt = prot_tag;
+	    
+    while (tt) {
+	if (tt->tag == PROT_FUNC) {
+	    tt->tag_retval = val;
+	    break;
+	}
+#ifdef THREAD
+	if (tt->tag == PROT_THREAD) {
+	    Raise(eThreadError, "return from within thread 0x%x\n",
+		  curr_thread);
+	}
+#endif
+	tt = tt->prev;
+    }
+}
+

@@ -1,1 +1,1 @@
-etc.o : etc.c ../../ruby.h ../../config.h ../../defines.h 
+etc.o : etc.c $(hdrdir)/ruby.h $(hdrdir)/config.h $(hdrdir)/defines.h 

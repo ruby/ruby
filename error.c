@@ -102,7 +102,7 @@ Warning(fmt, va_alist)
     char buf[BUFSIZ];
     va_list args;
 
-    if (!verbose) return;
+    if (!RTEST(verbose)) return;
 
     sprintf(buf, "warning: %s", fmt);
 
@@ -225,11 +225,10 @@ exc_new2(etype, s)
 
 VALUE
 exc_new3(etype, str)
-    VALUE etype;
-    struct RString *str;
+    VALUE etype, str;
 {
     Check_Type(str, T_STRING);
-    return exc_new(etype, str->ptr, str->len);
+    return exc_new(etype, RSTRING(str)->ptr, RSTRING(str)->len);
 }
 
 static VALUE
@@ -251,14 +250,20 @@ static VALUE
 exc_inspect(exc)
     VALUE exc;
 {
-    struct RString *classpath = RSTRING(rb_class_path(CLASS_OF(exc)));
-    VALUE str = str_new(classpath->ptr, classpath->len);
+    VALUE str, klass;
 
-    str_cat(str, ":", 1);
+    klass = CLASS_OF(exc);
     if (RSTRING(exc)->len == 0) {
-	str_cat(str, "\"\"", 2);
+	return rb_class_path(klass);
     }
+
+    str = str_new2("#<");
+    klass = rb_class_path(klass);
+    str_cat(str, RSTRING(klass)->ptr, RSTRING(klass)->len);
+    str_cat(str, ":", 1);
     str_cat(str, RSTRING(exc)->ptr, RSTRING(exc)->len);
+    str_cat(str, ">", 1);
+
     return str;
 }
 
@@ -285,7 +290,7 @@ exception(argc, argv)
 	}
     }
     for (i=0; i<argc; i++) {
-	v = rb_define_class(rb_id2name(rb_to_id(argv[i])), eException);
+	v = rb_define_class_under(the_class, rb_id2name(rb_to_id(argv[i])), eException);
     }
     return v;
 }
@@ -327,7 +332,7 @@ Init_Exception()
     eNameError   = rb_define_class("NameError", eException);
     eIndexError  = rb_define_class("IndexError", eException);
     eNotImpError = rb_define_class("NotImplementError", eException);
-    eLoadError = rb_define_class("LoadError", eException);
+    eLoadError   = rb_define_class("LoadError", eException);
 
     eRuntimeError = rb_define_class("RuntimeError", eException);
     eSecurityError = rb_define_class("SecurityError", eException);

@@ -21,7 +21,8 @@ f_srand(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    int seed, old;
+    VALUE seed;
+    int old;
     static int saved_seed;
 
     if (rb_scan_args(argc, argv, "01", &seed) == 0) {

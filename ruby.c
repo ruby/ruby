@@ -10,6 +10,9 @@
 
 ************************************************/
 
+#ifdef _WIN32
+#include <windows.h>
+#endif
 #include "ruby.h"
 #include "re.h"
 #include "dln.h"
@@ -18,9 +21,10 @@
 #include <sys/types.h>
 #include <fcntl.h>
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#else
+#ifdef HAVE_UNISTD_H
+#include <unistd.h>
+#endif
+#ifndef HAVE_STRING_H
 char *strchr();
 char *strrchr();
 char *strstr();
@@ -30,8 +34,8 @@ char *getenv();
 
 static int version, copyright;
 
-int debug = FALSE;
-int verbose = FALSE;
+VALUE debug = FALSE;
+VALUE verbose = FALSE;
 int tainting = FALSE;
 static int sflag = FALSE;
 
@@ -49,11 +53,17 @@ static void load_stdin();
 static void load_file _((char *, int));
 static void forbid_setid _((char *));
 
-static int do_loop = FALSE, do_print = FALSE;
-static int do_check = FALSE, do_line = FALSE;
-static int do_split = FALSE;
+static VALUE do_loop = FALSE, do_print = FALSE;
+static VALUE do_check = FALSE, do_line = FALSE;
+static VALUE do_split = FALSE;
 
 static char *script;
+
+static int origargc;
+static char **origargv;
+
+extern int   sourceline;
+extern char *sourcefile;
 
 #ifndef RUBY_LIB
 #define RUBY_LIB "/usr/local/lib/ruby"
@@ -118,18 +128,14 @@ rb_require_modules()
 {
     struct req_list *list = req_list;
     struct req_list *tmp;
-    extern void *eval_tree; /* hack to save syntax tree */
-    void *save;
 
     req_list = 0;
-    save = eval_tree;
     while (list) {
 	f_require(Qnil, str_new2(list->name));
 	tmp = list->next;
 	free(list);
 	list = tmp;
     }
-    eval_tree = save;
 }
 
 static void
@@ -331,6 +337,11 @@ proc_options(argcp, argvp)
 	    }
 	    break;
 
+	  case '*':
+	  case ' ':
+	    if (s[1] == '-') s+=2;
+	    break;
+
 	  default:
 	    Fatal("Unrecognized switch: -%s",s);
 
@@ -366,11 +377,12 @@ proc_options(argcp, argvp)
 		if (do_search) {
 		    char *path = getenv("RUBYPATH");
 
+		    script = 0;
 		    if (path) {
-			script = dln_find_file(script, path);
+			script = dln_find_file(argv[0], path);
 		    }
 		    if (!script) {
-			script = dln_find_file(script, getenv("PATH"));
+			script = dln_find_file(argv[0], getenv("PATH"));
 		    }
 		    if (!script) script = argv[0];
 		}
@@ -457,14 +469,45 @@ load_file(fname, script)
 
 		char *p;
 
+		if ((p = strstr(RSTRING(line)->ptr, "ruby")) == 0) {
+		    /* not ruby script, kick the program */
+		    char **argv;
+		    char *path;
+		    char *pend = RSTRING(line)->ptr + RSTRING(line)->len;
+
+		    p = RSTRING(line)->ptr + 2;	/* skip `#!' */
+		    if (pend[-1] == '\n') pend--; /* chomp line */
+		    if (pend[-1] == '\r') pend--;
+		    *pend = '\0';
+		    while (p < pend && isspace(*p))
+			p++;
+		    path = p;	/* interpreter path */
+		    while (p < pend && !isspace(*p))
+			p++;
+		    *p++ = '\0';
+		    if (p < pend) {
+			argv = ALLOCA_N(char*, origargc+3);
+			argv[1] = p;
+			MEMCPY(argv+2, origargv+1, char*, origargc);
+		    }
+		    else {
+			argv = origargv;
+		    }
+		    argv[0] = path;
+		    execv(path, argv);
+		    sourcefile = fname;
+		    sourceline = 1;
+		    Fatal("Can't exec %s", path);
+		}
+
 	      start_read:
 		if (p = strstr(RSTRING(line)->ptr, "ruby -")) {
 		    int argc; char *argv[2]; char **argvp = argv;
 		    UCHAR *s;
 
 		    s = RSTRING(line)->ptr;
-		    while (isspace(*s++))
-			;
+		    while (isspace(*s))
+			s++;
 		    *s = '\0';
 		    RSTRING(line)->ptr[RSTRING(line)->len-1] = '\0';
 		    if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
@@ -497,11 +540,9 @@ load_stdin()
     load_file("-", 1);
 }
 
-VALUE Progname;
-VALUE Argv;
-
-static int origargc;
-static char **origargv;
+VALUE rb_progname;
+VALUE rb_argv;
+VALUE rb_argv0;
 
 static void
 set_arg0(val, id)
@@ -537,7 +578,7 @@ set_arg0(val, id)
 	while (++i < len)
 	    *s++ = ' ';
     }
-    Progname = str_taint(str_new2(origargv[0]));
+    rb_progname = str_taint(str_new2(origargv[0]));
 }
 
 void
@@ -545,7 +586,7 @@ ruby_script(name)
     char *name;
 {
     if (name) {
-	Progname = str_taint(str_new2(name));
+	rb_progname = str_taint(str_new2(name));
 	sourcefile = name;
     }
 }
@@ -578,6 +619,40 @@ forbid_setid(s)
         Fatal("No %s allowed while running setgid", s);
 }
 
+#if defined(_WIN32) || defined(DJGPP)
+static char *
+ruby_libpath()
+{
+    static char libpath[FILENAME_MAX+1];
+    char *p;
+#if defined(_WIN32)
+    GetModuleFileName(NULL, libpath, sizeof libpath);
+#elif defined(DJGPP)
+    extern char *__dos_argv0;
+    strcpy(libpath, __dos_argv0);
+#endif
+    p = strrchr(libpath, '\\');
+    if (p)
+	*p = 0;
+    if (!strcasecmp(p-4, "\\bin"))
+	p -= 4;
+    strcpy(p, "\\lib");
+#if defined(__CYGWIN32__)
+    p = (char *)malloc(strlen(libpath)+10);
+    if (!p)
+	return 0;
+    cygwin32_conv_to_posix_path(libpath, p);
+    strcpy(libpath, p);
+    free(p);
+#else
+    for (p = libpath; *p; p++)
+	if (*p == '\\')
+	    *p = '/';
+#endif
+    return libpath;
+}
+#endif
+
 void
 ruby_prog_init()
 {
@@ -590,6 +665,10 @@ ruby_prog_init()
     rb_define_variable("$-d", &debug);
     rb_define_readonly_variable("$-p", &do_print);
     rb_define_readonly_variable("$-l", &do_line);
+
+#if defined(_WIN32) || defined(DJGPP)
+    addpath(ruby_libpath());
+#endif
 
     if (rb_safe_level() == 0) {
 	addpath(getenv("RUBYLIB"));
@@ -607,12 +686,13 @@ ruby_prog_init()
 	addpath(".");
     }
 
-    rb_define_hooked_variable("$0", &Progname, 0, set_arg0);
+    rb_define_hooked_variable("$0", &rb_progname, 0, set_arg0);
 
-    Argv = ary_new();
-    rb_define_readonly_variable("$*", &Argv);
-    rb_define_global_const("ARGV", Argv);
+    rb_argv = ary_new();
+    rb_define_readonly_variable("$*", &rb_argv);
+    rb_define_global_const("ARGV", rb_argv);
     rb_define_readonly_variable("$-a", &do_split);
+    rb_global_variable(&rb_argv0);
 
 #ifdef MSDOS
     /*
@@ -636,7 +716,7 @@ ruby_set_argv(argc, argv)
     else          dln_argv0 = argv[0];
 #endif
     for (i=0; i < argc; i++) {
-	ary_push(Argv, str_taint(str_new2(argv[i])));
+	ary_push(rb_argv, str_taint(str_new2(argv[i])));
     }
 }
 
@@ -650,6 +730,7 @@ ruby_process_options(argc, argv)
 
     origargc = argc; origargv = argv;
     ruby_script(argv[0]);	/* for the time being */
+    rb_argv0 = str_taint(str_new2(argv[0]));
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
 #endif

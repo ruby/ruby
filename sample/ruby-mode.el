@@ -131,7 +131,7 @@ The variable ruby-indent-level controls the amount of indentation.
   (make-variable-buffer-local 'comment-column)
   (setq comment-column 32)
   (make-variable-buffer-local 'comment-start-skip)
-  (setq comment-start-skip "#+ *")
+  (setq comment-start-skip "\\(^\\|\\s-\\);?#+ *")
   (make-local-variable 'parse-sexp-ignore-comments)
   (setq parse-sexp-ignore-comments t)
   (run-hooks 'ruby-mode-hook))
@@ -385,6 +385,8 @@ The variable ruby-indent-level controls the amount of indentation.
 	    ))
 
 	 ((and (nth 2 state)(> (nth 2 state) 0)) ; in nest
+	  (if (null (cdr (nth 1 state)))
+	      (error "invalid nest"))
 	  (goto-char (cdr (nth 1 state)))
 	  (forward-word -1)		; skip back a keyword
 	  (cond
@@ -440,7 +442,10 @@ The variable ruby-indent-level controls the amount of indentation.
 	    (and
 	     (or (and (looking-at ruby-symbol-chars)
 		      (skip-chars-backward ruby-symbol-chars)
-		      (looking-at ruby-block-op-re))
+		      (looking-at ruby-block-op-re)
+		      (save-excursion
+			(goto-char (match-end 0))
+			(not (looking-at "[a-z_]"))))
 		 (and (looking-at ruby-operator-chars)
 		      (or (not (or (eq ?/ (char-after (point)))))
 			  (null (nth 0 (ruby-parse-region parse-start (point)))))
@@ -627,7 +632,7 @@ An end of a defun is found by moving forward from the beginning of one."
      '("\\(^\\|[^_]\\)\\b\\([A-Z]+[a-zA-Z0-9_]*\\)"
        2 font-lock-type-face)
      ;; functions
-     '("\\bdef[ \t]+\\([a-zA-Z_]+[a-zA-Z0-9_]*[?!=]?\\|\\[\\]=?\\)"
+     '("^\\s *def[ \t]+.*$"
        0 font-lock-function-name-face))
     "*Additional expressions to highlight in ruby mode.")
   (if (and (>= (string-to-int emacs-version) 20)

@@ -12,7 +12,6 @@
 
 #include "ruby.h"
 
-VALUE mComparable;
 static VALUE cRange;
 extern VALUE cNumeric;
 
@@ -169,6 +168,8 @@ range_inspect(range)
 
     return str;
 }
+
+VALUE enum_length();
 
 static VALUE
 range_length(rng)

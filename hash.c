@@ -14,14 +14,43 @@
 #include "st.h"
 #include "sig.h"
 
-#ifdef HAVE_STRING_H
-# include <string.h>
-#else
+#include <sys/stat.h>
+
+#ifndef HAVE_STRING_H
 char *strchr();
 #endif
 
 #define HASH_DELETED  0x1
 #define HASH_REHASHED 0x2
+
+#define HASH_FREEZE   FL_USER1
+
+static void
+hash_modify(hash)
+    VALUE hash;
+{
+    rb_secure(5);
+    if (FL_TEST(hash, HASH_FREEZE)) {
+	TypeError("can't modify frozen hash");
+    }
+}
+
+VALUE
+hash_freeze(hash)
+    VALUE hash;
+{
+    FL_SET(hash, HASH_FREEZE);
+    return hash;
+}
+
+static VALUE
+hash_frozen_p(hash)
+    VALUE hash;
+{
+    if (FL_TEST(hash, HASH_FREEZE))
+	return TRUE;
+    return FALSE;
+}
 
 #ifndef NT
 char *getenv();
@@ -90,7 +119,7 @@ static struct st_hash_type objhash = {
 };
 
 struct hash_foreach_arg {
-    struct RHash *hash;
+    VALUE hash;
     enum st_retval (*func)();
     char *arg;
 };
@@ -104,7 +133,7 @@ hash_foreach_iter(key, value, arg)
 
     if (key == Qnil) return ST_CONTINUE;
     status = (*arg->func)(key, value, arg->arg);
-    if (arg->hash->status & HASH_REHASHED) return ST_STOP;
+    if (RHASH(arg->hash)->status & HASH_REHASHED) return ST_STOP;
     return status;
 }
 
@@ -112,7 +141,7 @@ static VALUE
 hash_foreach_call(arg)
     struct hash_foreach_arg *arg;
 {
-    st_foreach(arg->hash->tbl, hash_foreach_iter, arg);
+    st_foreach(RHASH(arg->hash)->tbl, hash_foreach_iter, arg);
     return Qnil;
 }
 
@@ -126,31 +155,31 @@ hash_delete_nil(key, value)
 
 static void
 hash_foreach_ensure(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
-    hash->iter_lev--;
+    RHASH(hash)->iter_lev--;
 
-    if (hash->iter_lev == 0) {
-	if (hash->status & HASH_DELETED) {
-	    st_foreach(hash->tbl, hash_delete_nil, 0);
+    if (RHASH(hash)->iter_lev == 0) {
+	if (RHASH(hash)->status & HASH_DELETED) {
+	    st_foreach(RHASH(hash)->tbl, hash_delete_nil, 0);
 	}
-	hash->status = 0;
+	RHASH(hash)->status = 0;
     }
 }
 
 static int
 hash_foreach(hash, func, farg)
-    struct RHash *hash;
+    VALUE hash;
     enum st_retval (*func)();
     char *farg;
 {
     struct hash_foreach_arg arg;
 
-    hash->iter_lev++;
+    RHASH(hash)->iter_lev++;
     arg.hash = hash;
     arg.func = func;
     arg.arg  = farg;
-    return rb_ensure(hash_foreach_call, &arg, hash_foreach_ensure, hash);
+    return rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, (VALUE)hash);
 }
 
 static VALUE
@@ -177,7 +206,7 @@ hash_s_new(argc, argv, class)
     return (VALUE)hash;
 }
 
-VALUE
+static VALUE
 hash_new2(class)
     VALUE class;
 {
@@ -196,7 +225,7 @@ hash_s_create(argc, argv, class)
     VALUE *argv;
     VALUE class;
 {
-    struct RHash *hash;
+    VALUE hash;
     int i;
 
     if (argc == 1 && TYPE(argv[0]) == T_HASH) {
@@ -216,18 +245,18 @@ hash_s_create(argc, argv, class)
     if (argc % 2 != 0) {
 	ArgError("odd number args for Hash");
     }
-    hash = (struct RHash*)hash_new2(class);
+    hash = hash_new2(class);
 
     for (i=0; i<argc; i+=2) {
-	st_insert(hash->tbl, argv[i], argv[i+1]);
+	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
     }
 
-    return (VALUE)hash;
+    return hash;
 }
 
 static VALUE
 hash_clone(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     NEWOBJ(hash2, struct RHash);
     CLONESETUP(hash2, hash);
@@ -235,7 +264,22 @@ hash_clone(hash)
     hash2->iter_lev = 0;
     hash2->status = 0;
     hash2->tbl = 0;		/* avoid GC crashing  */
-    hash2->tbl = (st_table*)st_copy(hash->tbl);
+    hash2->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
+
+    return (VALUE)hash2;
+}
+
+static VALUE
+hash_dup(hash)
+    VALUE hash;
+{
+    NEWOBJ(hash2, struct RHash);
+    OBJSETUP(hash2, CLASS_OF(hash), T_HASH);
+
+    hash2->iter_lev = 0;
+    hash2->status = 0;
+    hash2->tbl = 0;		/* avoid GC crashing  */
+    hash2->tbl = (st_table*)st_copy(RHASH(hash)->tbl);
 
     return (VALUE)hash2;
 }
@@ -253,26 +297,26 @@ hash_rehash_i(key, value, tbl)
 
 static VALUE
 hash_rehash(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
-    st_table *tbl = st_init_table_with_size(&objhash, hash->tbl->num_entries);
+    st_table *tbl;
 
-    st_foreach(hash->tbl, hash_rehash_i, tbl);
-    st_free_table(hash->tbl);
-    hash->tbl = tbl;
-    if (hash->iter_lev > 0) hash->status |= HASH_REHASHED;
+    tbl = st_init_table_with_size(&objhash, RHASH(hash)->tbl->num_entries);
+    st_foreach(RHASH(hash)->tbl, hash_rehash_i, tbl);
+    st_free_table(RHASH(hash)->tbl);
+    RHASH(hash)->tbl = tbl;
+    if (RHASH(hash)->iter_lev > 0) RHASH(hash)->status |= HASH_REHASHED;
 
     return (VALUE)hash;
 }
 
 VALUE
 hash_aref(hash, key)
-    struct RHash *hash;
-    VALUE key;
+    VALUE hash, key;
 {
     VALUE val;
 
-    if (!st_lookup(hash->tbl, key, &val)) {
+    if (!st_lookup(RHASH(hash)->tbl, key, &val)) {
 	return Qnil;
     }
     return val;
@@ -282,30 +326,30 @@ static VALUE
 hash_indexes(argc, argv, hash)
     int argc;
     VALUE *argv;
-    struct RHash *hash;
+    VALUE hash;
 {
-    struct RArray *indexes;
+    VALUE indexes;
     int i;
 
-    indexes = (struct RArray*)ary_new2(argc);
+    indexes = ary_new2(argc);
     for (i=0; i<argc; i++) {
-	indexes->ptr[i] = hash_aref(hash, argv[i]);
+	RARRAY(indexes)->ptr[i] = hash_aref(hash, argv[i]);
     }
-    indexes->len = i;
-    return (VALUE)indexes;
+    RARRAY(indexes)->len = i;
+    return indexes;
 }
 
 static VALUE
 hash_delete(hash, key)
-    struct RHash *hash;
-    VALUE key;
+    VALUE hash, key;
 {
     VALUE val;
 
-    rb_secure(5);
-    if (hash->iter_lev > 0 && st_delete_safe(hash->tbl, &key, &val, Qnil))
+    hash_modify(hash);
+    if (RHASH(hash)->iter_lev > 0
+	&& st_delete_safe(RHASH(hash)->tbl, &key, &val, Qnil))
 	return val;
-    else if (st_delete(hash->tbl, &key, &val))
+    else if (st_delete(RHASH(hash)->tbl, &key, &val))
 	return val;
     if (iterator_p()) rb_yield(key);
     return Qnil;
@@ -332,13 +376,13 @@ shift_i(key, value, var)
 
 static VALUE
 hash_shift(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     struct shift_var var;
 
-    rb_secure(5);
+    hash_modify(hash);
     var.stop = 0;
-    st_foreach(hash->tbl, shift_i, &var);
+    st_foreach(RHASH(hash)->tbl, shift_i, &var);
 
     if (var.stop == 0) return Qnil;
     return assoc_new(var.key, var.val);
@@ -356,9 +400,9 @@ delete_if_i(key, value)
 
 static VALUE
 hash_delete_if(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
-    rb_secure(5);
+    hash_modify(hash);
     hash_foreach(hash, delete_if_i, 0);
 
     return (VALUE)hash;
@@ -373,20 +417,19 @@ clear_i(key, value)
 
 static VALUE
 hash_clear(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
-    rb_secure(5);
-    st_foreach(hash->tbl, clear_i);
+    hash_modify(hash);
+    st_foreach(RHASH(hash)->tbl, clear_i);
 
     return (VALUE)hash;
 }
 
 VALUE
 hash_aset(hash, key, val)
-    struct RHash *hash;
-    VALUE key, val;
+    VALUE hash, key, val;
 {
-    rb_secure(5);
+    hash_modify(hash);
     if (NIL_P(val)) {
 	hash_delete(hash, key);
 	return Qnil;
@@ -394,22 +437,22 @@ hash_aset(hash, key, val)
     if (TYPE(key) == T_STRING) {
 	key = str_dup_freezed(key);
     }
-    st_insert(hash->tbl, key, val);
+    st_insert(RHASH(hash)->tbl, key, val);
     return val;
 }
 
 static VALUE
 hash_length(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
-    return INT2FIX(hash->tbl->num_entries);
+    return INT2FIX(RHASH(hash)->tbl->num_entries);
 }
 
-VALUE
+static VALUE
 hash_empty_p(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
-    if (hash->tbl->num_entries == 0)
+    if (RHASH(hash)->tbl->num_entries == 0)
 	return TRUE;
     return FALSE;
 }
@@ -425,7 +468,7 @@ each_value_i(key, value)
 
 static VALUE
 hash_each_value(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     hash_foreach(hash, each_value_i);
     return (VALUE)hash;
@@ -442,7 +485,7 @@ each_key_i(key, value)
 
 static VALUE
 hash_each_key(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     hash_foreach(hash, each_key_i);
     return (VALUE)hash;
@@ -459,7 +502,7 @@ each_pair_i(key, value)
 
 static VALUE
 hash_each_pair(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     hash_foreach(hash, each_pair_i);
     return (VALUE)hash;
@@ -476,25 +519,24 @@ to_a_i(key, value, ary)
 
 static VALUE
 hash_to_a(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     VALUE ary;
 
     ary = ary_new();
-    st_foreach(hash->tbl, to_a_i, ary);
+    st_foreach(RHASH(hash)->tbl, to_a_i, ary);
 
     return ary;
 }
 
 static int
 inspect_i(key, value, str)
-    VALUE key, value;
-    struct RString *str;
+    VALUE key, value, str;
 {
     VALUE str2;
 
     if (key == Qnil) return ST_CONTINUE;
-    if (str->len > 1) {
+    if (RSTRING(str)->len > 1) {
 	str_cat(str, ", ", 2);
     }
     str2 = rb_inspect(key);
@@ -508,12 +550,12 @@ inspect_i(key, value, str)
 
 static VALUE
 hash_inspect(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     VALUE str;
 
     str = str_new2("{");
-    st_foreach(hash->tbl, inspect_i, str);
+    st_foreach(RHASH(hash)->tbl, inspect_i, str);
     str_cat(str, "}", 1);
 
     return str;
@@ -537,12 +579,12 @@ keys_i(key, value, ary)
 
 static VALUE
 hash_keys(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     VALUE ary;
 
     ary = ary_new();
-    st_foreach(hash->tbl, keys_i, ary);
+    st_foreach(RHASH(hash)->tbl, keys_i, ary);
 
     return ary;
 }
@@ -558,22 +600,22 @@ values_i(key, value, ary)
 
 static VALUE
 hash_values(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     VALUE ary;
 
     ary = ary_new();
-    st_foreach(hash->tbl, values_i, ary);
+    st_foreach(RHASH(hash)->tbl, values_i, ary);
 
     return ary;
 }
 
 static VALUE
 hash_has_key(hash, key)
-    struct RHash *hash;
+    VALUE hash;
     VALUE key;
 {
-    if (st_lookup(hash->tbl, key, 0)) {
+    if (st_lookup(RHASH(hash)->tbl, key, 0)) {
 	return TRUE;
     }
     return FALSE;
@@ -593,14 +635,14 @@ hash_search_value(key, value, data)
 
 static VALUE
 hash_has_value(hash, val)
-    struct RHash *hash;
+    VALUE hash;
     VALUE val;
 {
     VALUE data[2];
 
     data[0] = FALSE;
     data[1] = val;
-    st_foreach(hash->tbl, hash_search_value, data);
+    st_foreach(RHASH(hash)->tbl, hash_search_value, data);
     return data[0];
 }
 
@@ -630,17 +672,17 @@ equal_i(key, val1, data)
 
 static VALUE
 hash_equal(hash1, hash2)
-    struct RHash *hash1, *hash2;
+    VALUE hash1, hash2;
 {
     struct equal_data data;
 
     if (TYPE(hash2) != T_HASH) return FALSE;
-    if (hash1->tbl->num_entries != hash2->tbl->num_entries)
+    if (RHASH(hash1)->tbl->num_entries != RHASH(hash2)->tbl->num_entries)
 	return FALSE;
 
-    data.tbl = hash2->tbl;
+    data.tbl = RHASH(hash2)->tbl;
     data.result = TRUE;
-    st_foreach(hash1->tbl, equal_i, &data);
+    st_foreach(RHASH(hash1)->tbl, equal_i, &data);
 
     return data.result;
 }
@@ -648,7 +690,7 @@ hash_equal(hash1, hash2)
 static int
 hash_invert_i(key, value, hash)
     VALUE key, value;
-    struct RHash *hash;
+    VALUE hash;
 {
     if (key == Qnil) return ST_CONTINUE;
     hash_aset(hash, value, key);
@@ -657,15 +699,36 @@ hash_invert_i(key, value, hash)
 
 static VALUE
 hash_invert(hash)
-    struct RHash *hash;
+    VALUE hash;
 {
     VALUE h = hash_new();
 
-    st_foreach(hash->tbl, hash_invert_i, h);
+    st_foreach(RHASH(hash)->tbl, hash_invert_i, h);
     return h;
 }
 
-int env_path_tainted = 0;
+static int
+hash_update_i(key, value, hash)
+    VALUE key, value;
+    VALUE hash;
+{
+    if (key == Qnil) return ST_CONTINUE;
+    hash_aset(hash, key, value);
+    return ST_CONTINUE;
+}
+
+static VALUE
+hash_update(hash1, hash2)
+    VALUE hash1, hash2;
+{
+    Check_Type(hash2, T_HASH);
+
+    st_foreach(RHASH(hash2)->tbl, hash_update_i, hash1);
+    return hash1;
+}
+
+int env_path_tainted();
+static int path_tainted = -1;
 
 #ifndef NT
 extern char **environ;
@@ -673,17 +736,16 @@ extern char **environ;
 
 static VALUE
 env_delete(obj, name)
-    VALUE obj;
-    struct RString *name;
+    VALUE obj, name;
 {
     int i, len;
     char *nam, *val = 0;
 
     rb_secure(4);
     Check_Type(name, T_STRING);
-    nam = name->ptr;
+    nam = RSTRING(name)->ptr;
     len = strlen(nam);
-    if (strcmp(nam, "PATH") == 0) env_path_tainted = 0;
+    if (strcmp(nam, "PATH") == 0) path_tainted = 0;
     for(i=0; environ[i]; i++) {
 	if (strncmp(environ[i], nam, len) == 0 && environ[i][len] == '=') {
 	    val = environ[i]+len+1;
@@ -701,30 +763,97 @@ env_delete(obj, name)
 }
 
 static VALUE
+env_delete_method(obj, name)
+    VALUE obj, name;
+{
+    VALUE val = env_delete(obj, name);
+    if (iterator_p()) rb_yield(name);
+    return val;
+}
+
+static VALUE
 f_getenv(obj, name)
-    VALUE obj;
-    struct RString *name;
+    VALUE obj, name;
 {
     char *env;
 
     Check_Type(name, T_STRING);
 
-    if (strlen(name->ptr) != name->len)
+    if (strlen(RSTRING(name)->ptr) != RSTRING(name)->len)
 	ArgError("Bad environment name");
 
-    env = getenv(name->ptr);
+    env = getenv(RSTRING(name)->ptr);
     if (env) {
-	if (strcmp(name->ptr, "PATH") == 0 && !env_path_tainted)
+	if (strcmp(RSTRING(name)->ptr, "PATH") == 0 && !env_path_tainted())
 	    return str_new2(env);
 	return str_taint(str_new2(env));
     }
     return Qnil;
 }
 
+static int
+path_check_1(path)
+    char *path;
+{
+    struct stat st;
+    char *p = 0;
+    char *s;
+
+    for (;;) {
+	if (stat(path, &st) == 0 && (st.st_mode & 2)) {
+	    return 0;
+	}
+	s = strrchr(path, '/');
+	if (p) *p = '/';
+	if (!s || s == path) return 1;
+	p = s;
+	*p = '\0';
+    }
+}
+
+static void
+path_check(path)
+    char *path;
+{
+    char *p = path;
+    char *pend = strchr(path, ':');
+
+    if (!path) {
+	path_tainted = 0;
+    }
+
+    p = path;
+    pend = strchr(path, ':');
+    
+    for (;;) {
+	int safe;
+
+	if (pend) *pend = '\0';
+	safe = path_check_1(p);
+	if (!pend) break;
+	*pend = ':';
+	if (!safe) {
+	    path_tainted = 1;
+	    return;
+	}
+	p = pend + 1;
+	pend = strchr(p, ':');
+    }
+    path_tainted = 0;
+}
+
+int
+env_path_tainted()
+{
+    if (path_tainted < 0) {
+	path_check(getenv("PATH"));
+    }
+    return path_tainted;
+}
+
 static VALUE
 f_setenv(obj, name, value)
-    VALUE obj;
-    struct RString *name, *value;
+    VALUE obj, name, value;
 {
     if (rb_safe_level() >= 4) {
 	extern VALUE eSecurityError;
@@ -738,13 +867,23 @@ f_setenv(obj, name, value)
     }
 
     Check_SafeStr(value);
-    if (strlen(name->ptr) != name->len)
+    if (strlen(RSTRING(name)->ptr) != RSTRING(name)->len)
 	ArgError("Bad environment name");
-    if (strlen(value->ptr) != value->len)
+    if (strlen(RSTRING(value)->ptr) != RSTRING(value)->len)
 	ArgError("Bad environment value");
 
-    setenv(name->ptr, value->ptr, 1);
-    if (strcmp(name->ptr, "PATH") == 0) env_path_tainted = 0;
+    setenv(RSTRING(name)->ptr, RSTRING(value)->ptr, 1);
+    if (strcmp(RSTRING(name)->ptr, "PATH") == 0) {
+	char *p, pend;
+
+	if (str_tainted(value)) {
+	    /* already tainted, no check */
+	    path_tainted = 1;
+	    return TRUE;
+	}
+
+	path_check(RSTRING(name)->ptr);
+    }
     return TRUE;
 }
 
@@ -941,15 +1080,19 @@ Init_Hash()
     rb_define_singleton_method(cHash, "new", hash_s_new, -1);
     rb_define_singleton_method(cHash, "[]", hash_s_create, -1);
 
-    rb_define_method(cHash,"clone",  hash_clone, 0);
-    rb_define_method(cHash,"rehash",  hash_rehash, 0);
+    rb_define_method(cHash,"clone", hash_clone, 0);
+    rb_define_method(cHash,"dup", hash_dup, 0);
+    rb_define_method(cHash,"rehash", hash_rehash, 0);
 
-    rb_define_method(cHash,"to_a",  hash_to_a, 0);
-    rb_define_method(cHash,"to_s",  hash_to_s, 0);
-    rb_define_method(cHash,"inspect",  hash_inspect, 0);
+    rb_define_method(cHash,"freeze", hash_freeze, 0);
+    rb_define_method(cHash,"frozen?",hash_frozen_p, 0);
 
-    rb_define_method(cHash,"==",  hash_equal, 1);
-    rb_define_method(cHash,"[]",  hash_aref, 1);
+    rb_define_method(cHash,"to_a", hash_to_a, 0);
+    rb_define_method(cHash,"to_s", hash_to_s, 0);
+    rb_define_method(cHash,"inspect", hash_inspect, 0);
+
+    rb_define_method(cHash,"==", hash_equal, 1);
+    rb_define_method(cHash,"[]", hash_aref, 1);
     rb_define_method(cHash,"[]=", hash_aset, 2);
     rb_define_method(cHash,"indexes", hash_indexes, -1);
     rb_define_method(cHash,"length", hash_length, 0);
@@ -969,6 +1112,7 @@ Init_Hash()
     rb_define_method(cHash,"delete_if", hash_delete_if, 0);
     rb_define_method(cHash,"clear", hash_clear, 0);
     rb_define_method(cHash,"invert", hash_invert, 0);
+    rb_define_method(cHash,"update", hash_update, 1);
 
     rb_define_method(cHash,"include?", hash_has_key, 1);
     rb_define_method(cHash,"has_key?", hash_has_key, 1);
@@ -985,7 +1129,7 @@ Init_Hash()
     rb_define_singleton_method(envtbl,"each_pair", env_each, 0);
     rb_define_singleton_method(envtbl,"each_key", env_each_key, 0);
     rb_define_singleton_method(envtbl,"each_value", env_each_value, 0);
-    rb_define_singleton_method(envtbl,"delete", env_delete, 1);
+    rb_define_singleton_method(envtbl,"delete", env_delete_method, 1);
     rb_define_singleton_method(envtbl,"delete_if", env_delete_if, 0);
     rb_define_singleton_method(envtbl,"to_s", env_to_s, 0);
     rb_define_singleton_method(envtbl,"rehash", env_none, 0);

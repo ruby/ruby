@@ -147,6 +147,29 @@ extern char *NtGetLib(void);
 extern char *NtGetBin(void);
 extern FILE *mypopen(char *, char *);
 extern int  flock(int fd, int oper);
+extern FILE *  myfdopen(int, char*);
+extern SOCKET  myaccept(SOCKET, struct sockaddr *, int *);
+extern int  mybind(SOCKET, struct sockaddr *, int);
+extern int  myconnect(SOCKET, struct sockaddr *, int);
+extern int  mygetpeername(SOCKET, struct sockaddr *, int *);
+extern int  mygetsockname(SOCKET, struct sockaddr *, int *);
+extern int  mygetsockopt(SOCKET, int, int, char *, int *);
+extern int  myioctlsocket(SOCKET, long, u_long *);
+extern int  mylisten(SOCKET, int);
+extern int  myrecv(SOCKET, char *, int, int);
+extern int  myrecvfrom(SOCKET, char *, int, int, struct sockaddr *, int *);
+extern int  mysend(SOCKET, char *, int, int);
+extern int  mysendto(SOCKET, char *, int, int, struct sockaddr *, int);
+extern int  mysetsockopt(SOCKET, int, int, char *, int);
+extern int  myshutdown(SOCKET, int);
+extern SOCKET  mysocket(int, int, int);
+extern struct hostent *  mygethostbyaddr(char *, int, int);
+extern struct hostent *  mygethostbyname(char *);
+extern int  mygethostname(char *, int);
+extern struct protoent *  mygetprotobyname(char *);
+extern struct protoent *  mygetprotobynumber(int);
+extern struct servent *  mygetservbyname(char *, char *);
+extern struct servent * mygetservbyport(int, char *);
 
 //
 // define this so we can do inplace editing
@@ -222,4 +245,118 @@ extern char *mystrerror(int);
 #undef va_start
 #undef va_end
 
+#ifdef fdopen
+#undef fdopen
+#endif
+#define fdopen myfdopen
+
+#ifdef accept
+#undef accept
+#endif
+#define accept myaccept
+
+#ifdef bind
+#undef bind
+#endif
+#define bind mybind
+
+#ifdef connect
+#undef connect
+#endif
+#define connect myconnect
+
+#ifdef getpeername
+#undef getpeername
+#endif
+#define getpeername mygetpeername
+
+#ifdef getsockname
+#undef getsockname
+#endif
+#define getsockname mygetsockname
+
+#ifdef getsockopt
+#undef getsockopt
+#endif
+#define getsockopt mygetsockopt
+
+#ifdef ioctlsocket
+#undef ioctlsocket
+#endif
+#define ioctlsocket myioctlsocket
+
+#ifdef listen
+#undef listen
+#endif
+#define listen mylisten
+
+#ifdef recv
+#undef recv
+#endif
+#define recv myrecv
+
+#ifdef recvfrom
+#undef recvfrom
+#endif
+#define recvfrom myrecvfrom
+
+#ifdef send
+#undef send
+#endif
+#define send mysend
+
+#ifdef sendto
+#undef sendto
+#endif
+#define sendto mysendto
+
+#ifdef setsockopt
+#undef setsockopt
+#endif
+#define setsockopt mysetsockopt
+
+#ifdef shutdown
+#undef shutdown
+#endif
+#define shutdown myshutdown
+
+#ifdef socket
+#undef socket
+#endif
+#define socket mysocket
+
+#ifdef gethostbyaddr
+#undef gethostbyaddr
+#endif
+#define gethostbyaddr mygethostbyaddr
+
+#ifdef gethostbyname
+#undef gethostbyname
+#endif
+#define gethostbyname mygethostbyname
+
+#ifdef gethostname
+#undef gethostname
+#endif
+#define gethostname mygethostname
+
+#ifdef getprotobyname
+#undef getprotobyname
+#endif
+#define getprotobyname mygetprotobyname
+
+#ifdef getprotobynumber
+#undef getprotobynumber
+#endif
+#define getprotobynumber mygetprotobynumber
+
+#ifdef getservbyname
+#undef getservbyname
+#endif
+#define getservbyname mygetservbyname
+
+#ifdef getservbyport
+#undef getservbyport
+#endif
+#define getservbyport mygetservbyport
 #endif

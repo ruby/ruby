@@ -1,12 +1,483 @@
 #
-#		tk.rb - Tk interface for ruby
+#		tk.rb - Tk interface modue using tcltklib
 #			$Date$
-#			by Yukihiro Matsumoto <matz@caelum.co.jp>
+#			by Yukihiro Matsumoto <matz@netlab.co.jp>
 
-if defined? Thread and $tk_thread_safe
-  require "tkthcore"
-else
-  require "tkcore"
+# use Shigehiro's tcltklib
+require "tcltklib"
+require "tkutil"
+
+module TkComm
+  None = Object.new
+  def None.to_s
+    'None'
+  end
+
+  Tk_CMDTBL = {}
+  Tk_WINDOWS = {}
+
+  def error_at
+    frames = caller(1)
+    frames.delete_if do |c|
+      c =~ %r!/tk(|core|thcore|canvas|text|entry|scrollbox)\.rb:\d+!
+    end
+    frames
+  end
+  private :error_at
+
+  def tk_tcl2ruby(val)
+    case val
+    when /^-?\d+$/
+      val.to_i
+    when /^\./
+      Tk_WINDOWS[val]
+    when /^rb_out (c\d+)/
+      Tk_CMDTBL[$1]
+    when / /
+      val.split.collect{|elt|
+	tk_tcl2ruby(elt)
+      }
+    when /^-?\d+\.\d*$/
+      val.to_f
+    else
+      val
+    end
+  end
+
+  def tk_split_list(str)
+    idx = str.index('{')
+    return tk_tcl2ruby(str) if not idx
+
+    list = tk_tcl2ruby(str[0,idx])
+    str = str[idx+1..-1]
+    i = -1
+    brace = 1
+    str.each_byte {|c|
+      i += 1
+      brace += 1 if c == ?{
+      brace -= 1 if c == ?}
+      break if brace == 0
+    }
+    if str[0, i] == ' '
+      list.push ' '
+    else
+      list.push tk_split_list(str[0, i])
+    end
+    list += tk_split_list(str[i+1..-1])
+    list
+  end
+  private :tk_tcl2ruby, :tk_split_list
+
+  def hash_kv(keys)
+    conf = []
+    if keys and keys != None
+      for k, v in keys
+	 conf.push("-#{k}")
+	 v = install_cmd(v) if v.kind_of? Proc
+	 conf.push(v)
+      end
+    end
+    conf
+  end
+  private :hash_kv
+
+  def bool(val)
+    case val
+    when "1", 1, 'yes', 'true'
+      TRUE
+    else
+      FALSE
+    end
+  end
+  def number(val)
+    case val
+    when /^-?\d+$/
+      val.to_i
+    when /^-?\d+\.\d*$/
+      val.to_f
+    else
+      val
+    end
+  end
+  def string(val)
+    if val == "{}"
+      ''
+    elsif val[0] == ?{
+      val[1..-2]
+    else
+      val
+    end
+  end
+  def list(val)
+    tk_split_list(val)
+  end
+  def window(val)
+    Tk_WINDOWS[val]
+  end
+  def procedure(val)
+    if val =~ /^rb_out (c\d+)/
+      Tk_CMDTBL[$1]
+    else
+      nil
+    end
+  end
+  private :bool, :number, :string, :list, :window, :procedure
+
+  Tk_IDs = [0]		# [0]-cmdid, [1]-winid
+  def _curr_cmd_id
+    id = format("c%.4d", Tk_IDs[0])
+  end
+  def _next_cmd_id
+    id = _curr_cmd_id
+    Tk_IDs[0] += 1
+  end
+  def install_cmd(cmd)
+    return '' if cmd == ''
+    id = _next_cmd_id
+    Tk_CMDTBL[id] = cmd
+    @cmdtbl = [] if not @cmdtbl
+    @cmdtbl.push id
+    return format("rb_out %s", id);
+  end
+  def uninstall_cmd(id)
+    Tk_CMDTBL[id] = nil
+  end
+  private :install_cmd, :uninstall_cmd
+
+  def install_win(ppath)
+    id = format("w%.4d", Tk_IDs[0])
+    Tk_IDs[0] += 1
+    if !ppath or ppath == "."
+      @path = format(".%s", id);
+    else
+      @path = format("%s.%s", ppath, id)
+    end
+    Tk_WINDOWS[@path] = self
+  end
+
+  def uninstall_win()
+    Tk_WINDOWS[@path] = nil
+  end
+
+  class Event
+    def initialize(seq,b,f,h,k,s,t,w,x,y,aa,ee,kk,nn,ww,tt,xx,yy)
+      @serial = seq
+      @num = b
+      @focus = (f == 1)
+      @height = h
+      @keycode = k
+      @state = s
+      @time = t
+      @width = w
+      @x = x
+      @y = y
+      @char = aa
+      @send_event = (ee == 1)
+      @keysym = kk
+      @keysym_num = nn
+      @type = tt
+      @widget = ww
+      @x_root = xx
+      @y_root = yy
+    end
+    attr :serial
+    attr :num
+    attr :focus
+    attr :height
+    attr :keycode
+    attr :state
+    attr :time
+    attr :width
+    attr :x
+    attr :y
+    attr :char
+    attr :send_event
+    attr :keysym
+    attr :keysym_num
+    attr :type
+    attr :widget
+    attr :x_root
+    attr :y_root
+  end
+
+  def install_bind(cmd, args=nil)
+    if args
+      id = install_cmd(proc{|arg|
+	TkUtil.eval_cmd cmd, *arg
+      })
+      id + " " + args
+    else
+      id = install_cmd(proc{|arg|
+	TkUtil.eval_cmd cmd, Event.new(*arg)
+      })
+      id + ' %# %b %f %h %k %s %t %w %x %y %A %E %K %N %W %T %X %Y'
+    end
+  end
+
+  def _bind(path, context, cmd, args=nil)
+    begin
+      id = install_bind(cmd, args)
+      tk_call 'bind', path, "<#{context}>", id
+    rescue
+      uninstall_cmd(id)
+      fail
+    end
+  end
+  private :install_bind, :_bind
+
+  def bind_all(context, cmd=Proc.new, args=nil)
+    _bind 'all', context, cmd, args
+  end
+
+  def pack(*args)
+    TkPack.configure *args
+  end
+
+  def after(ms, cmd=Proc.new)
+    myid = _curr_cmd_id
+    tk_call 'after', ms,
+      install_cmd(proc{
+		    TkUtil.eval_cmd cmd
+		    uninstall_cmd myid
+		  })
+  end
+end
+
+module TkCore
+  include TkComm
+  extend TkComm
+
+  INTERP = TclTkIp.new
+  INTERP._eval("proc rb_out {args} { ruby [format \"TkCore.callback %%Q!%s!\" $args] }")
+
+  def TkCore.callback(arg)
+    arg = Array(tk_split_list(arg))
+    TkUtil.eval_cmd Tk_CMDTBL[arg.shift], *arg
+  end
+
+  def mainloop
+    TclTkLib.mainloop
+  end
+
+  def _get_eval_string(*args)
+    argstr = ""
+    args.each{|arg|
+      next if arg == None
+      if arg.kind_of?(Hash)
+	str = hash_kv(arg).join(" ")
+      elsif arg == nil
+	str = ""
+      elsif arg == false
+	str = "0"
+      elsif arg == true
+	str = "1"
+      elsif (arg.respond_to?(:to_eval))
+	str = arg.to_eval()
+      else
+	str = arg.to_s()
+      end
+      argstr += " " if argstr != ""
+      argstr += '"' + str.gsub(/[][$"]/, '\\\\\&') + '"'
+    }
+    return argstr
+  end
+
+  def tk_call(*args)
+    argstr = _get_eval_string(*args)
+
+    res = INTERP._eval(argstr)
+    if  INTERP._return_value() != 0
+      fail RuntimeError, res, error_at
+    end
+    return res
+  end
+end
+
+module Tk
+  include TkCore
+  extend Tk
+
+  def root
+    TkRoot.new
+  end
+
+  def bell
+    tk_call 'bell'
+  end
+
+  def mainloop
+    TclTkLib.mainloop
+  end
+
+  module Scrollable
+    def xscrollcommand(cmd=Proc.new)
+      configure_cmd 'xscrollcommand', cmd
+    end
+    def yscrollcommand(cmd=Proc.new)
+      configure_cmd 'yscrollcommand', cmd
+    end
+  end
+
+  module Wm
+    def aspect(*args)
+      w = window(tk_call('wm', 'grid', path, *args))
+      w.split.collect{|s|s.to_i} if args.length == 0
+    end
+    def client(name=None)
+      tk_call 'wm', 'client', path, name
+    end
+    def colormapwindows(*args)
+      list(tk_call('wm', 'colormapwindows', path, *args))
+    end
+    def wm_command(value=None)
+      string(tk_call('wm', 'command', path, value))
+    end
+    def deiconify
+      tk_call 'wm', 'deiconify', path
+    end
+    def focusmodel(*args)
+      tk_call 'wm', 'focusmodel', path, *args
+    end
+    def frame
+      tk_call 'wm', 'frame', path
+    end
+    def geometry(*args)
+      list(tk_call('wm', 'geometry', path, *args))
+    end
+    def grid(*args)
+      w = tk_call('wm', 'grid', path, *args)
+      list(w) if args.size == 0
+    end
+    def group(*args)
+      tk_call 'wm', 'path', path, *args
+    end
+    def iconbitmap(*args)
+      tk_call 'wm', 'bitmap', path, *args
+    end
+    def iconify
+      tk_call 'wm', 'iconify'
+    end
+    def iconmask(*args)
+      tk_call 'wm', 'iconmask', path, *args
+    end
+    def iconname(*args)
+      tk_call 'wm', 'iconname', path, *args
+    end
+    def iconposition(*args)
+      w = tk_call('wm', 'iconposition', path, *args)
+      list(w) if args.size == 0
+    end
+    def iconwindow(*args)
+      tk_call 'wm', 'iconwindow', path, *args
+    end
+    def maxsize(*args)
+      w = tk_call('wm', 'maxsize', path, *args)
+      list(w) if not args.size == 0
+    end
+    def minsize(*args)
+      w = tk_call('wm', 'minsize', path, *args)
+      list(w) if args.size == 0
+    end
+    def overrideredirect(bool=None)
+      if bool == None
+	bool(tk_call('wm', 'overrideredirect', path))
+      else
+	tk_call 'wm', 'overrideredirect', path, bool
+      end
+    end
+    def positionfrom(*args)
+      tk_call 'wm', 'positionfrom', path, *args
+    end
+    def protocol(name, func=None)
+      func = install_cmd(func) if not func == None
+      tk_call 'wm', 'command', path, name, func
+    end
+    def resizable(*args)
+      w = tk_call('wm', 'resizable', path, *args)
+      if args.length == 0
+	list(w).collect{|e| bool(e)}
+      end
+    end
+    def sizefrom(*args)
+      list(tk_call('wm', 'sizefrom', path, *args))
+    end
+    def state
+      tk_call 'wm', 'state', path
+    end
+    def title(*args)
+      tk_call 'wm', 'title', path, *args
+    end
+    def transient(*args)
+      tk_call 'wm', 'transient', path, *args
+    end
+    def withdraw
+      tk_call 'wm', 'withdraw', path
+    end
+  end
+end
+
+class TkVariable
+  include Tk
+
+  Tk_VARIABLE_ID = ["v00000"]
+  def initialize(val="")
+    @id = Tk_VARIABLE_ID[0]
+    Tk_VARIABLE_ID[0] = Tk_VARIABLE_ID[0].succ
+    INTERP._eval(format('global %s; set %s %s', @id, @id, _get_eval_string(val)))
+  end
+
+  def id
+    @id
+  end
+
+  def value
+    INTERP._eval(format('global %s; set %s', @id, @id))
+  end
+
+  def value=(val)
+    INTERP._eval(format('global %s; set %s %s', @id, @id, _get_eval_string(val)))
+  end
+
+  def to_i
+    Integer(number(value))
+  end
+
+  def to_f
+    Float(number(value))
+  end
+
+  def to_s
+    String(string(value))
+  end
+
+  def inspect
+    format "<TkVariable: %s>", @id
+  end
+
+  def ==(other)
+    case other
+    when TkVariable
+      self.equal(self)
+    when String
+      self.to_s == other
+    when Integer
+      self.to_i == other
+    when Float
+      self.to_f == other
+    when Array
+      self.to_a == other
+    else
+      false
+    end
+  end
+
+  def to_a
+    list(value)
+  end
+
+  def to_eval
+    @id
+  end
 end
 
 module TkSelection
@@ -290,7 +761,7 @@ module TkPack
   end
 
   def propagate(master, bool=None)
-    bool(tk_call('pack', 'propagate', mastaer.epath, bool))
+    bool(tk_call('pack', 'propagate', master.epath, bool))
   end
   module_function :configure, :forget, :propagate
 end
@@ -322,6 +793,10 @@ class TkObject<TkKernel
 
   def epath
     return @path
+  end
+
+  def to_eval
+    @path
   end
 
   def tk_send(cmd, *rest)
@@ -372,60 +847,10 @@ class TkObject<TkKernel
   end
 end
 
-
-class TkVariable
-  include Tk
-  $tk_variable_id = "v00000"
-  def initialize(val="")
-    @id = $tk_variable_id
-    $tk_variable_id = $tk_variable_id.succ
-    tk_call(format('global %s; set %s', @id, @id), val)
-  end
-
-  def id
-    @id
-  end
-
-  def value
-    tk_call(format('global %s; set', @id), @id)
-  end
-
-  def value=(val)
-    tk_call(format('global %s; set %s', @id, @id), val)
-  end
-
-  def to_i
-    Integer(number(value))
-  end
-
-  def to_f
-    Float(number(value))
-  end
-
-  def to_s
-    String(string(value))
-  end
-
-  def inspect
-    format "<TkVariable: %s>", @id
-  end
-
-  def to_a
-    list(value)
-  end
-end
-
 class TkWindow<TkObject
-  $tk_window_id = "w00000"
+
   def initialize(parent=nil, keys=nil)
-    id = $tk_window_id
-    $tk_window_id = $tk_window_id.succ
-    if !parent or parent == Tk.root
-      @path = format(".%s", id);
-    else
-      @path = format("%s.%s", parent.path, id)
-    end
-    $tk_window_list[@path] = self
+    install_win(if parent then parent.path end)
     create_self
     if keys
       tk_call @path, 'configure', *hash_kv(keys)
@@ -527,30 +952,32 @@ class TkWindow<TkObject
 	uninstall_cmd id
       end
     end
-    $tk_window_list[path] = nil
-    super
+    uninstall_win
   end
 end
 
 class TkRoot<TkWindow
   include Wm
+  ROOT = []
   def TkRoot.new
-    return $tk_root if $tk_root
-    super
+    return ROOT[0] if ROOT[0]
+    new = super
+    ROOT[0] = new
+  end
+  def create_self
+    @path = '.'
   end
   def path
     "."
   end
-  $tk_root = TkRoot.new
-  $tk_window_list['.'] = $tk_root
 end
 
 class TkToplevel<TkWindow
   include Wm
-  def initialize(parent=nil, screen=nil, classname=nil)
+  def initialize(parent=nil, screen=nil, classname=nil, keys=nil)
     @screen = screen if screen
     @classname = classname if classname
-    super
+    super(parent, keys)
   end
 
   def create_self
@@ -661,7 +1088,7 @@ class TkScrollbar<TkWindow
     ary1 = tk_send('get', path).split
     ary2 = []
     for i in ary1
-      push number(i)
+      ary2.push number(i)
     end
     ary2
   end
@@ -671,7 +1098,6 @@ class TkScrollbar<TkWindow
   end
 end
 
-# abstract class for Text and Listbox
 class TkTextWin<TkWindow
   def bbox(index)
     tk_send 'bbox', index
@@ -681,9 +1107,6 @@ class TkTextWin<TkWindow
   end
   def get(*index)
     tk_send 'get', *index
-  end
-  def insert(index, *rest)
-    tk_send 'insert', index, *rest
   end
   def index(index)
     tk_send 'index', index
@@ -793,8 +1216,10 @@ module TkComposite
   private :initialize_composite
 
   def delegate(option, *wins)
-    @delegates = {} if not @delegates
-    @delegates['DEFAULT'] = @frame
+    unless @delegates
+      @delegates = {} 
+      @delegates['DEFAULT'] = @frame
+    end
     if option.kind_of?(String)
       @delegates[option] = wins
     else

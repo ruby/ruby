@@ -28,59 +28,59 @@ check "condition"
 
 $x = '0';
 
-$x == $x && ok(TRUE)
-$x != $x && ok(FALSE)
-$x == $x || ok(FALSE)
-$x != $x || ok(TRUE)
+$x == $x && ok(true)
+$x != $x && ok(false)
+$x == $x || ok(false)
+$x != $x || ok(true)
 
 # first test to see if we can run the tests.
 
 check "if/unless";
 
 $x = 'test';
-ok(if $x == $x then TRUE else FALSE end)
-$bad = FALSE
+ok(if $x == $x then true else false end)
+$bad = false
 unless $x == $x
-  $bad = TRUE
+  $bad = true
 end
 ok(!$bad)
-ok(unless $x != $x then TRUE else FALSE end)
+ok(unless $x != $x then true else false end)
 
 check "case"
 
 case 5
 when 1, 2, 3, 4, 6, 7, 8
-  ok(FALSE)
+  ok(false)
 when 5
-  ok(TRUE)
+  ok(true)
 end
 
 case 5
 when 5
-  ok(TRUE)
+  ok(true)
 when 1..10
-  ok(FALSE)
+  ok(false)
 end
 
 case 5
 when 1..10
-  ok(TRUE)
+  ok(true)
 else
-  ok(FALSE)
+  ok(false)
 end
 
 case 5
 when 5
-  ok(TRUE)
+  ok(true)
 else
-  ok(FALSE)
+  ok(false)
 end
 
 case "foobar"
 when /^f.*r$/
-  ok(TRUE)
+  ok(true)
 else
-  ok(FALSE)
+  ok(false)
 end
 
 check "while/until";
@@ -106,7 +106,7 @@ ok(!tmp.eof? && /vt100/)
 tmp.close
 
 # test next
-$bad = FALSE
+$bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
     next if /vt100/;
@@ -116,7 +116,7 @@ ok(!(!tmp.eof? || /vt100/ || $bad))
 tmp.close
 
 # test redo
-$bad = FALSE
+$bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
   if gsub!('vt100', 'VT100')
@@ -140,12 +140,12 @@ end
 ok(sum == 220)
 
 # test interval
-$bad = FALSE
+$bad = false
 tmp = open("while_tmp", "r")
 while tmp.gets()
   break unless 1..2
   if /vt100/ || /Amiga/ || /paper/
-    $bad = TRUE
+    $bad = true
     break
   end
 end
@@ -166,22 +166,22 @@ check "exception";
 
 begin
   fail "this must be handled"
-  ok(FALSE)
+  ok(false)
 rescue
-  ok(TRUE)
+  ok(true)
 end
 
-$bad = TRUE
+$bad = true
 begin
   fail "this must be handled no.2"
 rescue
   if $bad
-    $bad = FALSE
+    $bad = false
     retry
-    ok(FALSE)
+    ok(false)
   end
 end
-ok(TRUE)
+ok(true)
 
 # exception in rescue clause
 $string = "this must be handled no.3"
@@ -191,9 +191,9 @@ begin
   rescue 
     fail $string
   end
-  ok(FALSE)
+  ok(false)
 rescue
-  ok(TRUE) if $! == $string
+  ok(true) if $! == $string
 end
   
 # exception in ensure clause
@@ -203,39 +203,39 @@ begin
   ensure 
     fail "exception in ensure clause"
   end
-  ok(FALSE)
+  ok(false)
 rescue
-  ok(TRUE)
+  ok(true)
 end
 
-$bad = TRUE
+$bad = true
 begin
   begin
     fail "this must be handled no.5"
   ensure
-    $bad = FALSE
+    $bad = false
   end
 rescue
 end
 ok(!$bad)
 
-$bad = TRUE
+$bad = true
 begin
   begin
     fail "this must be handled no.6"
   ensure
-    $bad = FALSE
+    $bad = false
   end
 rescue
 end
 ok(!$bad)
 
-$bad = TRUE
-while TRUE
+$bad = true
+while true
   begin
     break
   ensure
-    $bad = FALSE
+    $bad = false
   end
 end
 ok(!$bad)
@@ -292,6 +292,11 @@ ok("1 byte string".split(//).reverse.join(":") == "g:n:i:r:t:s: :e:t:y:b: :1")
 $x = "a b c  d"
 ok($x.split == ['a', 'b', 'c', 'd'])
 ok($x.split(' ') == ['a', 'b', 'c', 'd'])
+ok(defined? "a".chomp)
+ok("abc".scan(/./) == ["a", "b", "c"])
+ok("1a2b3c".scan(/(\d.)/) == [["1a"], ["2b"], ["3c"]])
+# non-greedy match
+ok("a=12;b=22".scan(/(.*?)=(\d*?);?/) == [["a", "12"], ["b", "22"]])
 
 $x = [1]
 ok(($x * 5).join(":") == '1:1:1:1:1')
@@ -312,16 +317,16 @@ ok(begin
      for k,v in $y
        fail if k*2 != v
      end
-     TRUE
+     true
    rescue
-     FALSE
+     false
    end)
 
 ok($x.length == 3)
 ok($x.has_key?(1))
 ok($x.has_value?(4))
 ok($x.indexes(2,3) == [4,6])
-ok($x == (1=>2, 2=>4, 3=>6))
+ok($x == {1=>2, 2=>4, 3=>6})
 
 $z = $y.keys.join(":")
 ok($z == "1:2:3")
@@ -371,39 +376,39 @@ ok(i == 5)
 # iterator break/redo/next/retry
 unless defined? loop
   def loop
-    while TRUE
+    while true
       yield
     end
   end
-  ok(FALSE)
+  ok(false)
 else
-  ok(TRUE)
+  ok(true)
 end
 
-done = TRUE
+done = true
 loop{
   break
-  done = FALSE
+  done = false
 }
 ok(done)
 
-done = FALSE
-$bad = FALSE
+done = false
+$bad = false
 loop {
   break if done
-  done = TRUE
+  done = true
   next
-  $bad = TRUE
+  $bad = true
 }
 ok(!$bad)
 
-done = FALSE
-$bad = FALSE
+done = false
+$bad = false
 loop {
   break if done
-  done = TRUE
+  done = true
   redo
-  $bad = TRUE
+  $bad = true
 }
 ok(!$bad)
 
@@ -414,11 +419,11 @@ end
 ok($x.size == 7)
 ok($x == [1, 2, 3, 4, 5, 6, 7])
 
-$done = FALSE
+$done = false
 $x = []
 for i in 1 .. 7			# see how retry works in iterator loop
   if i == 4 and not $done
-    $done = TRUE
+    $done = true
     retry
   end
   $x.push(i)
@@ -451,33 +456,33 @@ ok($x == -815915283247897734345611269596115894272000000000)
 ok(2-(2**32) == -(2**32-2))
 ok(2**32 - 5 == (2**32-3)-2)
 
-$good = TRUE;
-for i in 1000..1024
-  $good = FALSE if ((1<<i) != (2**i))
+$good = true;
+for i in 1000..1014
+  $good = false if ((1<<i) != (2**i))
 end
 ok($good)
 
-$good = TRUE;
+$good = true;
 n1=1<<1000
-for i in 1000..1024
-  $good = FALSE if ((1<<i) != n1)
+for i in 1000..1014
+  $good = false if ((1<<i) != n1)
   n1 *= 2
 end
 ok($good)
 
-$good = TRUE;
+$good = true;
 n2=n1
 for i in 1..10
   n1 = n1 / 2
   n2 = n2 >> 1
-  $good = FALSE if (n1 != n2)
+  $good = false if (n1 != n2)
 end
 ok($good)
 
-$good = TRUE;
-for i in 4000..4192
+$good = true;
+for i in 4000..4096
   n1 = 1 << i;
-  $good = FALSE if ((n1**2-1) / (n1+1) != (n1-1))
+  $good = false if ((n1**2-1) / (n1+1) != (n1-1))
 end
 ok($good)
 
@@ -486,13 +491,21 @@ check "string & char"
 ok("abcd" == "abcd")
 ok("abcd" =~ "abcd")
 ok("abcd" === "abcd")
-ok(("abc" =~ /^$/) == FALSE)
-ok(("abc\n" =~ /^$/) == FALSE)
-ok(("abc" =~ /^d*$/) == FALSE)
+ok(("abc" =~ /^$/) == false)
+ok(("abc\n" =~ /^$/) == false)
+ok(("abc" =~ /^d*$/) == false)
 ok(("abc" =~ /d*$/) == 3)
 ok("" =~ /^$/)
 ok("\n" =~ /^$/)
 ok("a\n\n" =~ /^$/)
+"abcabc" =~ /.*a/
+ok($& == "abca")
+"abcabc" =~ /.*c/
+ok($& == "abcabc")
+"abcabc" =~ /.*?a/
+ok($& == "a")
+"abcabc" =~ /.*?c/
+ok($& == "abc")
 
 $foo = "abc"
 ok("#$foo = abc" == "abc = abc")
@@ -523,13 +536,18 @@ ok(?a == ?a)
 ok(?\C-a == 1)
 ok(?\M-a == 225)
 ok(?\M-\C-a == 129)
+ok("a".upcase![0] == ?A)
+ok("A".downcase![0] == ?a)
+ok("abc".tr!("a-z", "A-Z") == "ABC")
+ok("abcc".squeeze!("a-z") == "abc")
+ok("abcd".delete!("bc") == "ad")
 
 $x = "abcdef"
 $y = [ ?a, ?b, ?c, ?d, ?e, ?f ]
-$bad = FALSE
+$bad = false
 $x.each_byte {|i|
   if i != $y.shift
-    $bad = TRUE
+    $bad = true
     break
   end
 }
@@ -556,6 +574,9 @@ ok(a == 1 && b == [2, 3])
 *a = 1, 2, 3
 ok(a == [1, 2, 3])
 
+*a = 1..3
+ok(a == [1, 2, 3])
+
 check "call"
 def aaa(a, b=100, *rest)
   res = [a, b]
@@ -566,38 +587,20 @@ end
 # not enough argument
 begin
   aaa()				# need at least 1 arg
-  ok(FALSE)
+  ok(false)
 rescue
-  ok(TRUE)
+  ok(true)
 end
 
 begin
   aaa				# no arg given (exception raised)
-  ok(FALSE)
+  ok(false)
 rescue
-  ok(TRUE)
+  ok(true)
 end
 
-begin
-  if aaa(1) == [1, 100]
-    ok(TRUE)
-  else
-    fail
-  end
-rescue
-  ok(FALSE)
-end
-
-begin
-  if aaa(1, 2) == [1, 2]
-    ok(TRUE)
-  else
-    fail
-  end
-rescue
-  ok(FALSE)
-end
-
+ok(aaa(1) == [1, 100])
+ok(aaa(1, 2) == [1, 2])
 ok(aaa(1, 2, 3, 4) == [1, 2, 3, 4])
 ok(aaa(1, *[2, 3, 4]) == [1, 2, 3, 4])
 
@@ -639,7 +642,7 @@ if defined? Process.kill
 
   trap "SIGINT", proc{fail "Interrupt"}
 
-  x = FALSE
+  x = false
   begin
     Process.kill "SIGINT", $$
     sleep 0.1
@@ -648,26 +651,31 @@ if defined? Process.kill
   end
   ok(x && x =~ /Interrupt/)
 else
-  ok(FALSE)
+  ok(false)
 end
 
 check "eval"
 ok(eval("") == nil)
-$bad=FALSE
-eval 'while FALSE; $bad = TRUE; print "foo\n" end'
+$bad=false
+eval 'while false; $bad = true; print "foo\n" end'
 ok(!$bad)
 
 ok(eval('TRUE'))
+ok(eval('true'))
+ok(!eval('NIL'))
+ok(!eval('nil'))
+ok(!eval('FALSE'))
+ok(!eval('false'))
 
-$foo = 'ok(TRUE)'
+$foo = 'ok(true)'
 begin
   eval $foo
 rescue
-  ok(FALSE)
+  ok(false)
 end
 
-ok(eval("$foo") == 'ok(TRUE)')
-ok(eval("TRUE") == TRUE)
+ok(eval("$foo") == 'ok(true)')
+ok(eval("true") == true)
 i = 5
 ok(eval("i == 5"))
 ok(eval("i") == 5)
@@ -685,11 +693,11 @@ end
 $x = test_ev
 ok(eval("local1", $x) == "local1") # static local var
 ok(eval("local2", $x) == "local2") # dynamic local var
-$bad = TRUE
+$bad = true
 begin
   p eval("local1")
 rescue NameError		# must raise error
-  $bad = FALSE
+  $bad = false
 end
 ok(!$bad)
 
@@ -700,11 +708,11 @@ module EvTest
 end
 ok(eval("EVTEST1", $x) == 25)	# constant in module
 ok(eval("evtest2", $x) == 125)	# local var in module
-$bad = TRUE
+$bad = true
 begin
   eval("EVTEST1")
 rescue NameError		# must raise error
-  $bad = FALSE
+  $bad = false
 end
 ok(!$bad)
 
@@ -716,7 +724,7 @@ tmp = open("script_tmp", "w")
 tmp.print "print $zzz\n";
 tmp.close
 
-ok(`./ruby -s script_tmp -zzz` == 'TRUE')
+ok(`./ruby -s script_tmp -zzz` == 'true')
 ok(`./ruby -s script_tmp -zzz=555` == '555')
 
 tmp = open("script_tmp", "w")
@@ -744,11 +752,11 @@ end
 tmp.close
 
 `./ruby -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
-done = TRUE
+done = true
 tmp = open("script_tmp", "r")
 while tmp.gets
   if $_.to_i % 5 != 0
-    done = FALSE
+    done = false
     break
   end
 end
@@ -796,9 +804,9 @@ ok(foo.test == "test")
 
 begin
   foo.test2
-  ok FALSE
+  ok false
 rescue
-  ok TRUE
+  ok true
 end
 
 check "pack"
@@ -843,9 +851,9 @@ ok($$.instance_of?(Fixnum))
 # read-only variable
 begin
   $$ = 5
-  ok FALSE
+  ok false
 rescue
-  ok TRUE
+  ok true
 end
 
 foobar = "foobar"
@@ -931,9 +939,9 @@ begin
     tmp = [0,1,2,3,4,5,6,7,8,9]
   }
   tmp = nil
-  ok TRUE
+  ok true
 rescue
-  ok FALSE
+  ok false
 end
 
 if $failed > 0

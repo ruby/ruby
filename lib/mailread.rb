@@ -1,36 +1,35 @@
 class Mail
-  def Mail.new(f)
-    unless f.kind_of?(IO)
-      f = open(f, "r")
-      me = super(f)
-      f.close
-    else
-      me = super
-    end
-    return me
-  end
 
   def initialize(f)
+    unless f.kind_of?(IO)
+      f = open(f, "r")
+      opened = true
+    end
+
     @header = {}
     @body = []
-    while f.gets()
-      $_.chop!
-      next if /^From /		# skip From-line
-      break if /^$/		# end of header
+    begin
+      while f.gets()
+	$_.chop!
+	next if /^From /	# skip From-line
+	break if /^$/		# end of header
 
-      if /^(\S+):\s*(.*)/
-	@header[attr = $1.capitalize!] = $2
-      elsif attr
-	sub!(/^\s*/, '')
-	@header[attr] += "\n" + $_
+	if /^(\S+):\s*(.*)/
+	  @header[attr = $1.capitalize!] = $2
+	elsif attr
+	  sub!(/^\s*/, '')
+	  @header[attr] += "\n" + $_
+	end
       end
-    end
   
-    return unless $_
+      return unless $_
 
-    while f.gets()
-      break if /^From /
-      @body.push($_)
+      while f.gets()
+	break if /^From /
+	@body.push($_)
+      end
+    ensure
+      f.close if opened
     end
   end
 

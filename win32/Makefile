@@ -15,10 +15,10 @@ INSTALL_DATA = $(INSTALL) -m 644
 PURIFY =
 
 
-#CFLAGS = -nologo -DNT=1 -Ox 
-#LDFLAGS =  $(CFLAGS) -Fm
-CFLAGS = -nologo -DNT=1 -Zi -MD 
-LDFLAGS =  $(CFLAGS) -Fm -MD
+CFLAGS = -nologo -DNT=1 -Ox 
+LDFLAGS =  $(CFLAGS) -Fm
+#CFLAGS = -nologo -DNT=1 -Zi -MD 
+#LDFLAGS =  $(CFLAGS) -Fm -MD
 LIBS =  $(EXTLIBS)  advapi32.lib wsock32.lib
 MISSING = crypt.obj setenv.obj alloca.obj nt.obj
 
@@ -29,6 +29,8 @@ bindir =
 libdir = 
 
 STACK = 0x200000
+ORGLIBPATH = $(LIB)
+#MISCLIBS = win32\sdbm.lib
 
 #### End of system configuration section. ####
 
@@ -56,6 +58,7 @@ OBJS          = array.obj \
 		inits.obj \
 		io.obj \
 		math.obj \
+		marshal.obj \
 		numeric.obj \
 		object.obj \
 		pack.obj \
@@ -77,31 +80,29 @@ OBJS          = array.obj \
 		version.obj \
 		$(MISSING)
 
-all:            miniruby.exe ext/Setup 
+all:            miniruby.exe ext/Setup $(MISCLIBS)
 		cd ext
+		set LIB=..\..\win32;$(ORGLIBPATH)
 		..\miniruby .\extmk.rb  static
+#		..\miniruby .\extmk.rb
 		cd ..
 
 miniruby.exe:   $(OBJS) $(MAINOBJ) $(EXTOBJS) 
 		@echo $(EXTOBJS)
 		@echo $(LIBS)
 		@rm -f miniruby.exe
-#               $(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(LIBS) -o miniruby.exe
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(LIBS) -o miniruby.exe -link /NOD:LIBC
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(LIBS) -o miniruby.exe
 
-ruby.exe:       $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) ruby.dll 
-		@echo $(EXTOBJS)
-		@echo $(LIBS)
+ruby.exe:       $(LIBRUBY) $(MAINOBJ) $(EXTOBJS) rubymw.dll 
 		@rm -f ruby.exe
 #               $(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o ruby.exe
-#               $(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o ruby.exe -link /DEF:rubyexe.def /NOD:LIBC
-		$(CC) $(LDFLAGS) $(MAINOBJ) -o ruby.exe ruby.lib -link /NOD:LIBC /STACK:$(STACK)
+		$(CC) $(LDFLAGS) $(MAINOBJ) -o ruby.exe rubymw.lib -link /STACK:$(STACK)
 
-ruby.dll:       $(LIBRUBY) $(EXTOBJS) 
-		@echo $(EXTOBJS)
-		@echo $(LIBS)
-		@rm -f ruby.dll
-		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o ruby.dll  -link /DLL /DEF:ruby.def /NOD:LIBC
+rubymw.dll:       $(LIBRUBY) $(EXTOBJS) 
+		set LIB=.\win32;$(ORGLIBPATH)
+		@rm -f rubymw.dll
+		$(PURIFY) $(CC) $(LDFLAGS) $(MAINOBJ) $(EXTOBJS) $(LIBRUBY) $(LIBS) -o rubymw.dll  -link /DLL /DEF:ruby.def
+		@mv rubymw.map rubydll.map
 
 $(LIBRUBY):     $(OBJS)
 		lib /OUT:$(LIBRUBY) $(OBJS)
@@ -187,6 +188,13 @@ parse.c: parse.y
 	$(YACC) $(YFLAGS) parse.y
 	sed -e "s!^extern char \*getenv();!/* & */!" y.tab.c > parse.c
 	@rm y.tab.c
+
+win32\sdbm.lib : win32\sdbm.c win32\sdbm.h
+	cd win32
+	$(CC) $(CFLAGS) $(CPPFLAGS) -DMSDOS -c sdbm.c
+	lib /OUT:sdbm.lib sdbm.obj
+	copy sdbm.h ndbm.h
+	cd ..
 
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:
