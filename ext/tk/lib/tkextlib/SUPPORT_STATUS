@@ -18,6 +18,13 @@ script may give you some hints about that.
     'not support' does *NOT* mean that the extension doesn't work
     on Ruby/Tk. 
 
+    The version number of each extension means the latest version
+    which is checked its feature. That is, it does NOT means only 
+    version of working. Library files maybe include some features 
+    which is included in the former version but removed from the 
+    latest, and maybe able to support the later version then the 
+    shown version.
+
     Even if the status of the extension is 'not support', you can 
     control the functions/widgets of the extension without wrapper 
     libraries by Tk.tk_call(), Tk.ip_eval(), and so on. 
@@ -77,7 +84,7 @@ TclX         CVS/Hd(2005-02-07)
                        ==> tclx (partial support; infox command and 
                                                    XPG/3 message catalogs only)
 
-TkTreeCtrl   1.0     http://tktreectrl.sourceforge.net/          ==> treectrl
+TkTreeCtrl   1.1     http://tktreectrl.sourceforge.net/          ==> treectrl
 
 Tile         0.6     http://tktable.sourceforge.net/tile/        ==> tile
 
