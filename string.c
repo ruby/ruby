@@ -329,7 +329,8 @@ rb_str_substr(str, beg, len)
     VALUE str2;
 
     if (len < 0) return Qnil;
-    if (beg >= RSTRING(str)->len) return Qnil;
+    if (beg > RSTRING(str)->len) return Qnil;
+    if (beg == RSTRING(str)->len && len > 0) return Qnil;
     if (beg < 0) {
 	beg += RSTRING(str)->len;
 	if (beg < 0) return Qnil;
@@ -2226,7 +2227,11 @@ rb_str_split_m(argc, argv, str)
 	}
     }
     if (!NIL_P(limit) || RSTRING(str)->len > beg || lim < 0) {
-	rb_ary_push(result, rb_str_substr(str, beg, RSTRING(str)->len-beg));
+	if (RSTRING(str)->len == beg)
+	    tmp = rb_str_new(0, 0);
+	else
+	    tmp = rb_str_substr(str, beg, RSTRING(str)->len-beg);
+	rb_ary_push(result, tmp);
     }
     if (NIL_P(limit) && lim == 0) {
 	while (RARRAY(result)->len > 0 &&

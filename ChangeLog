@@ -1,3 +1,14 @@
+Fri Jun 23 01:11:27 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* string.c (rb_str_substr): should return empty string (""), 
+	  if beg == str.size and len == zero, mostly for convenience and
+	  backward compatibility.
+
+	* parse.y (new_super): should tweak block_pass node for super too.
+
+	* string.c (rb_str_split_m): last split element should not be nil,
+	  but "" when limit is specified.
+
 Thu Jun 22 17:27:46 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_substr): str[n,m] now returns nil when n equals

@@ -975,7 +975,7 @@ convert string charset, and set language to "ja".
               '="' + CGI::escapeHTML(value) + '"'
             end
           }.to_s + ">" +
-          if iterator?
+          if block_given?
             yield.to_s
           else
             ""
@@ -1011,7 +1011,7 @@ convert string charset, and set language to "ja".
               '="' + CGI::escapeHTML(value) + '"'
             end
           }.to_s + ">" +
-          if iterator?
+          if block_given?
             yield.to_s + "</element.upcase>"
           else
             ""
@@ -1036,7 +1036,7 @@ convert string charset, and set language to "ja".
                    else
                      href
                    end
-      if iterator?
+      if block_given?
         super(attributes){ yield }
       else
         super(attributes)
@@ -1055,7 +1055,7 @@ convert string charset, and set language to "ja".
                    else
                      href
                    end
-      if iterator?
+      if block_given?
         super(attributes){ yield }
       else
         super(attributes)
@@ -1074,7 +1074,7 @@ convert string charset, and set language to "ja".
                    else
                      cite or ""
                    end
-      if iterator?
+      if block_given?
         super(attributes){ yield }
       else
         super(attributes)
@@ -1093,7 +1093,7 @@ convert string charset, and set language to "ja".
                    else
                      align or ""
                    end
-      if iterator?
+      if block_given?
         super(attributes){ yield }
       else
         super(attributes)
@@ -1225,7 +1225,7 @@ convert string charset, and set language to "ja".
                      end
                      method
                    end
-      if iterator?
+      if block_given?
         body = yield
       else
         body = ""
@@ -1315,7 +1315,7 @@ convert string charset, and set language to "ja".
         buf.concat( doctype )
       end
 
-      if iterator?
+      if block_given?
         buf.concat( super(attributes){ yield } )
       else
         buf.concat( super(attributes) )
@@ -1397,7 +1397,7 @@ convert string charset, and set language to "ja".
                      end
                      action
                    end
-      if iterator?
+      if block_given?
         form(attributes){ yield }
       else
         form(attributes)
@@ -1672,7 +1672,7 @@ convert string charset, and set language to "ja".
                    else
                      name
                    end
-      if iterator?
+      if block_given?
         super(attributes){ yield }
       else
         super(attributes)
