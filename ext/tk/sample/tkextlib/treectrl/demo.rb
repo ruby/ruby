@@ -7,8 +7,14 @@ $ScriptDir = File.dirname(File.expand_path(__FILE__))
 
 $HasColumnCreate = Tk::TreeCtrl::HasColumnCreateCommand
 
-class Hash
-  alias key index
+if Hash.instance_methods.include?('key')
+  # probably ruby 1.9.x --> use Hash#key
+  # Because Hash#index show warning "Hash#index is deprecated; use Hash#key".
+else
+  # probably ruby 1.8.x --> use Hash#index
+  class Hash
+    alias key index
+  end
 end
 
 class TkTreeCtrl_demo
