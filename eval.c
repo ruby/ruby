@@ -2594,17 +2594,19 @@ rb_eval(self, n)
 	rb_const_set(ruby_class, node->nd_vid, result);
 	break;
 
-      case NODE_CVASGN2:
-	result = rb_eval(self, node->nd_value);
-	rb_cvar_set_singleton(self, node->nd_vid, result);
-	break;
-
       case NODE_CVDECL:
 	if (NIL_P(ruby_cbase)) {
 	    rb_raise(rb_eTypeError, "no class/module to define class variable");
 	}
+	if (!FL_TEST(ruby_cbase, FL_SINGLETON)) {
+	    result = rb_eval(self, node->nd_value);
+	    rb_cvar_declare(ruby_cbase, node->nd_vid, result);
+	    break;
+	}
+	/* fall through */
+      case NODE_CVASGN2:
 	result = rb_eval(self, node->nd_value);
-	rb_cvar_declare(ruby_cbase, node->nd_vid, result);
+	rb_cvar_set_singleton(self, node->nd_vid, result);
 	break;
 
       case NODE_LVAR:

@@ -453,13 +453,13 @@ rb_io_to_io(io)
 
 /* reading functions */
 
-static size_t
+static long
 io_fread(ptr, len, f)
     char *ptr;
-    size_t len;
+    long len;
     FILE *f;
 {
-    size_t n = len;
+    long n = len;
     int c;
 
     while (n--) {

@@ -208,7 +208,7 @@ ruby_init_loadpath()
 #if defined(_WIN32) || defined(DJGPP) || defined(__EMX__)
     char libpath[FILENAME_MAX+1];
     char *p;
-    size_t rest;
+    int rest;
 #if defined(_WIN32)
     GetModuleFileName(NULL, libpath, sizeof libpath);
 #elif defined(DJGPP)

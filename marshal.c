@@ -350,11 +350,11 @@ w_object(obj, arg, limit)
 	    w_byte(TYPE_BIGNUM, arg);
 	    {
 		char sign = RBIGNUM(obj)->sign?'+':'-';
-		int len = RBIGNUM(obj)->len;
+		long len = RBIGNUM(obj)->len;
 		BDIGIT *d = RBIGNUM(obj)->digits;
 
 		w_byte(sign, arg);
-		w_long(SHORTLEN(len), arg);
+		w_long(SHORTLEN(len), arg); /* w_short? */
 		while (len--) {
 #if SIZEOF_BDIGITS > SIZEOF_SHORT
 		    BDIGIT num = *d;
@@ -390,7 +390,7 @@ w_object(obj, arg, limit)
 	    w_uclass(obj, rb_cArray, arg);
 	    w_byte(TYPE_ARRAY, arg);
 	    {
-		int len = RARRAY(obj)->len;
+		long len = RARRAY(obj)->len;
 		VALUE *ptr = RARRAY(obj)->ptr;
 
 		w_long(len, arg);
@@ -419,10 +419,10 @@ w_object(obj, arg, limit)
 	  case T_STRUCT:
 	    w_byte(TYPE_STRUCT, arg);
 	    {
-		int len = RSTRUCT(obj)->len;
+		long len = RSTRUCT(obj)->len;
 		char *path = rb_class2name(CLASS_OF(obj));
 		VALUE mem;
-		int i;
+		long i;
 
 		w_unique(path, arg);
 		w_long(len, arg);
@@ -597,12 +597,12 @@ r_long(arg)
     struct load_arg *arg;
 {
     register long x;
-    int c = (char)r_byte(arg);
+    int c = r_byte(arg);
     int i;
 
     if (c == 0) return 0;
     if (c > 0) {
-	if (c > sizeof(long)) long_toobig((int)c);
+	if (c > sizeof(long)) long_toobig(c);
 	x = 0;
 	for (i=0;i<c;i++) {
 	    x |= (long)r_byte(arg) << (8*i);
@@ -610,7 +610,7 @@ r_long(arg)
     }
     else {
 	c = -c;
-	if (c > sizeof(long)) long_toobig((int)c);
+	if (c > sizeof(long)) long_toobig(c);
 	x = -1;
 	for (i=0;i<c;i++) {
 	    x &= ~(0xff << (8*i));
@@ -627,14 +627,14 @@ r_long(arg)
 } while (0)
 
 #define r_bytes(s, arg) do {		\
-    int r_bytes_len;			\
+    long r_bytes_len;			\
     r_bytes2((s), r_bytes_len, (arg));	\
 } while (0)
 
 static void
 r_bytes0(s, len, arg)
     char *s;
-    int len;
+    long len;
     struct load_arg *arg;
 {
     if (arg->fp) {
@@ -655,7 +655,7 @@ r_symlink(arg)
     struct load_arg *arg;
 {
     ID id;
-    int num = r_long(arg);
+    long num = r_long(arg);
 
     if (st_lookup(arg->symbol, num, &id)) {
 	return id;
@@ -699,7 +699,7 @@ r_string(arg)
     struct load_arg *arg;
 {
     char *buf;
-    int len;
+    long len;
 
     r_bytes2(buf, len, arg);
     return rb_str_new(buf, len);
@@ -723,7 +723,7 @@ r_ivar(obj, arg)
     VALUE obj;
     struct load_arg *arg;
 {
-    int len;
+    long len;
 
     len = r_long(arg);
     if (len > 0) {
@@ -780,7 +780,7 @@ r_object(arg)
 
       case TYPE_FIXNUM:
 	{
-	    int i = r_long(arg);
+	    long i = r_long(arg);
 	    return INT2FIX(i);
 	}
 
@@ -795,7 +795,7 @@ r_object(arg)
 
       case TYPE_BIGNUM:
 	{
-	    int len;
+	    long len;
 	    BDIGIT *digits;
 
 	    NEWOBJ(big, struct RBignum);
@@ -835,7 +835,7 @@ r_object(arg)
       case TYPE_REGEXP:
 	{
 	    char *buf;
-	    int len;
+	    long len;
 	    int options;
 
 	    r_bytes2(buf, len, arg);
@@ -845,7 +845,7 @@ r_object(arg)
 
       case TYPE_ARRAY:
 	{
-	    volatile int len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
+	    volatile long len = r_long(arg); /* gcc 2.7.2.3 -O2 bug?? */
 
 	    v = rb_ary_new2(len);
 	    r_regist(v, arg);
@@ -858,7 +858,7 @@ r_object(arg)
       case TYPE_HASH:
       case TYPE_HASH_DEF:
 	{
-	    int len = r_long(arg);
+	    long len = r_long(arg);
 
 	    v = rb_hash_new();
 	    r_regist(v, arg);
@@ -876,8 +876,8 @@ r_object(arg)
       case TYPE_STRUCT:
 	{
 	    VALUE klass, mem, values;
-	    volatile int i;	/* gcc 2.7.2.3 -O2 bug?? */
-	    int len;
+	    volatile long i;	/* gcc 2.7.2.3 -O2 bug?? */
+	    long len;
 	    ID slot;
 
 	    klass = rb_path2class(r_unique(arg));
@@ -1001,10 +1001,11 @@ marshal_load(argc, argv)
     VALUE *argv;
 {
     VALUE port, proc;
-    int major;
+    int major, minor;
     VALUE v;
     OpenFile *fptr;
     struct load_arg arg;
+    volatile VALUE hash;	/* protect from GC */
 
     rb_scan_args(argc, argv, "11", &port, &proc);
     if (rb_obj_is_kind_of(port, rb_cIO)) {
@@ -1027,21 +1028,23 @@ marshal_load(argc, argv)
     }
 
     major = r_byte(&arg);
-    if (major == MARSHAL_MAJOR) {
-	volatile VALUE hash;	/* protect from GC */
+    minor = r_byte(&arg);
+    if (major != MARSHAL_MAJOR) {
+	rb_raise(rb_eTypeError, "incompatible marshal file format (can't be read)\n\
+\tformat version %d.%d required; %d.%d given",
+		 MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
+    }
+    if (minor != MARSHAL_MINOR) {
+	rb_warn("incompatible marshal file format (can be read)\n\
+\tformat version %d.%d required; %d.%d given",
+		MARSHAL_MAJOR, MARSHAL_MINOR, major, minor);
+    }
 
-	if (r_byte(&arg) != MARSHAL_MINOR) {
-	    rb_warn("Old marshal file format (can be read)");
-	}
-	arg.symbol = st_init_numtable();
-	arg.data   = hash = rb_hash_new();
-	if (NIL_P(proc)) arg.proc = 0;
-	else             arg.proc = proc;
-	v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
-    }
-    else {
-	rb_raise(rb_eTypeError, "old marshal file format (can't read)");
-    }
+    arg.symbol = st_init_numtable();
+    arg.data   = hash = rb_hash_new();
+    if (NIL_P(proc)) arg.proc = 0;
+    else             arg.proc = proc;
+    v = rb_ensure(load, (VALUE)&arg, load_ensure, (VALUE)&arg);
 
     return v;
 }

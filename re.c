@@ -73,7 +73,7 @@ static const char casetable[] = {
 int
 rb_memcmp(p1, p2, len)
     char *p1, *p2;
-    size_t len;
+    long len;
 {
     int tmp;
 
@@ -1054,7 +1054,7 @@ rb_reg_s_quote(argc, argv)
 
     for (; s < send; s++) {
 	if (ismbchar(*s)) {
-	    size_t n = mbclen(*s);
+	    int n = mbclen(*s);
 
 	    while (n-- && s < send)
 		*t++ = *s++;

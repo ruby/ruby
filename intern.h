@@ -18,7 +18,7 @@
  */
 
 /* array.c */
-void rb_mem_clear _((register VALUE*, register size_t));
+void rb_mem_clear _((register VALUE*, register long));
 VALUE rb_assoc_new _((VALUE, VALUE));
 VALUE rb_ary_new _((void));
 VALUE rb_ary_new2 _((long));
@@ -260,7 +260,7 @@ VALUE rb_range_new _((VALUE, VALUE, int));
 VALUE rb_range_beg_len _((VALUE, long*, long*, long, int));
 VALUE rb_length_by_each _((VALUE));
 /* re.c */
-int rb_memcmp _((char*,char*,size_t));
+int rb_memcmp _((char*,char*,long));
 VALUE rb_reg_nth_defined _((int, VALUE));
 VALUE rb_reg_nth_match _((int, VALUE));
 VALUE rb_reg_last_match _((VALUE));

@@ -269,40 +269,61 @@ module TkComm
   end
 
   class Event
-    def initialize(seq,b,f,h,k,s,t,w,x,y,aa,ee,kk,nn,ww,tt,xx,yy)
+    def initialize(seq,a,b,c,d,f,h,k,m,o,p,s,t,w,x,y,
+	           aa,bb,dd,ee,kk,nn,rr,ss,tt,ww,xx,yy)
       @serial = seq
+      @above = a
       @num = b
+      @count = c
+      @detail = d
       @focus = (f == 1)
       @height = h
       @keycode = k
+      @mode = m
+      @override = (o == 1)
+      @place = p
       @state = s
       @time = t
       @width = w
       @x = x
       @y = y
       @char = aa
+      @borderwidth = bb
+      @wheel_delta = dd
       @send_event = (ee == 1)
       @keysym = kk
       @keysym_num = nn
+      @rootwin_id = rr
+      @subwindow = ss
       @type = tt
       @widget = ww
       @x_root = xx
       @y_root = yy
     end
     attr :serial
+    attr :above
     attr :num
+    attr :count
+    attr :detail
     attr :focus
     attr :height
     attr :keycode
+    attr :mode
+    attr :override
+    attr :place
     attr :state
     attr :time
     attr :width
     attr :x
     attr :y
     attr :char
+    attr :borderwidth
+    attr :wheel_delta
     attr :send_event
     attr :keysym
     attr :keysym_num
+    attr :rootwin_id
+    attr :subwindow
     attr :type
     attr :widget
     attr :x_root
@@ -319,7 +340,8 @@ module TkComm
       id = install_cmd(proc{|arg|
 	TkUtil.eval_cmd cmd, Event.new(*arg)
       })
-      id + ' %# %b %f %h %k %s %t %w %x %y %A %E %K %N %W %T %X %Y'
+      id + ' %# %a %b %c %d %f %h %k %m %o %p %s %t %w %x %y' + 
+	   ' %A %B %D %E %K %N %R %S %T %W %X %Y'
     end
   end
 
@@ -548,6 +570,10 @@ module TkCore
 
   def chooseColor(keys = nil)
     tk_call 'tk_chooseColor', *hash_kv(keys)
+  end
+
+  def chooseDirectory(keys = nil)
+    tk_call 'tk_chooseDirectory', *hash_kv(keys)
   end
 
   def tk_call(*args)
@@ -2352,7 +2378,7 @@ class TkRadiobutton<TkButton
     configure 'variable', tk_trace_variable(v)
   end
 end
-tkRadioButton = TkRadiobutton
+TkRadioButton = TkRadiobutton
 
 class TkCheckbutton<TkRadiobutton
   WidgetClassNames['Checkbutton'] = self
@@ -2377,6 +2403,7 @@ class TkMessage<TkLabel
     tk_call 'message', @path
   end
 end
+TkRadiobutton = TkRadioButton
 
 class TkScale<TkWindow
   WidgetClassName = 'Scale'.freeze
@@ -2405,6 +2432,7 @@ class TkScale<TkWindow
     set val
   end
 end
+TkCheckbutton = TkCheckButton
 
 class TkScrollbar<TkWindow
   WidgetClassName = 'Scrollbar'.freeze
@@ -2702,6 +2730,9 @@ class TkMenu<TkWindow
   def postcommand(cmd=Proc.new)
     configure_cmd 'postcommand', cmd
   end
+  def tearoffcommand(cmd=Proc.new)
+    configure_cmd 'tearoffcommand', cmd
+  end
   def menutype(index)
     tk_send 'type', index
   end
@@ -2744,6 +2775,17 @@ class TkMenu<TkWindow
 	conf
       }
     end
+  end
+end
+
+class TkMenuClone<TkMenu
+  def initialize(parent, type=nil)
+    unless parent.kind_of?(TkMenu)
+      fail ArgumentError, "parent must be TkMenu"
+    end
+    @parent = parent
+    install_win(@parent)
+    tk_call @parent.path, 'clone', @path, type
   end
 end
 
@@ -2932,6 +2974,7 @@ autoload :TkImage, 'tkcanvas'
 autoload :TkBitmapImage, 'tkcanvas'
 autoload :TkPhotoImage, 'tkcanvas'
 autoload :TkEntry, 'tkentry'
+autoload :TkSpinbox, 'tkentry'
 autoload :TkText, 'tktext'
 autoload :TkDialog, 'tkdialog'
 autoload :TkMenubar, 'tkmenubar'

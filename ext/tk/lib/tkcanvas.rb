@@ -781,6 +781,9 @@ class TkImage<TkObject
   def height
     number(tk_call('image', 'height', @path))
   end
+  def inuse
+    bool(tk_call('image', 'inuse', @path))
+  end
   def itemtype
     tk_call('image', 'type', @path)
   end

@@ -592,7 +592,7 @@ An end of a defun is found by moving forward from the beginning of one."
     (setq start (ruby-calculate-indent))
     (if (eobp)
 	nil
-      (while (and (not (bobp)) (not done))
+      (while (and (not (bobp)) (not (eobp)) (not done))
 	(forward-line n)
 	(cond
 	 ((looking-at "^$"))

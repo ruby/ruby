@@ -1,6 +1,35 @@
+Mon Nov 20 13:45:21 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should treat class variables specially in a
+	  method defined in the singleton class.
+
 Mon Nov 20 10:20:21 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c, win32/win32.c, ruby.h: add rb_iglob().
+
+Mon Nov 20 00:18:16 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_subseq): should return nil for outbound start
+	  index.
+
+	* marshal.c (marshal_load): show format versions explicitly when
+	  format version mismatch happens.
+
+Sun Nov 19 06:13:24 2000  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* marshal.c: use long for string/array length.
+
+	* pack.c (swaps): use bit-or(|) instead of plus(+).
+
+	* pack.c (swapl): ditto.
+
+Sat Nov 18 15:18:16 2000  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* array.c (rb_ary_replace): array size should be in long.
+
+	* array.c (rb_ary_concat): ditto.
+
+	* array.c (rb_ary_hash): ditto.
 
 Sat Nov 18 14:07:20 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
@@ -40,7 +69,7 @@ Thu Nov 16 23:06:07 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 	* lib/net/http.rb: not check Connection:/Proxy-Connection;
 	  always read until eof.
 
-	* lib/net/protocol: detects and catches "break" from block.
+	* lib/net/protocol.rb: detects and catches "break" from block.
 
 Thu Nov 16 16:32:45 2000  Masahiro Tanaka  <masa@stars.gsfc.nasa.gov>
 
@@ -266,7 +295,7 @@ Mon Oct 16 14:06:00 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* pack.c (I32,U32): 32 bit sized integer.
 
-	* pack.c (OFF16,OFF32B): big endien offset for network byteorder.
+	* pack.c (OFF16,OFF32B): big endian offset for network byteorder.
 
 Mon Oct 16 06:39:32 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 

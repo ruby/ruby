@@ -22,7 +22,7 @@ VALUE rb_cArray;
 void
 rb_mem_clear(mem, size)
     register VALUE *mem;
-    register size_t size;
+    register long size;
 {
     while (size--) {
 	*mem++ = Qnil;
@@ -32,7 +32,7 @@ rb_mem_clear(mem, size)
 static void
 memfill(mem, size, val)
     register VALUE *mem;
-    register size_t size;
+    register long size;
     register VALUE val;
 {
     while (size--) {
@@ -400,11 +400,8 @@ rb_ary_subseq(ary, beg, len)
     VALUE ary2;
 
     if (beg > RARRAY(ary)->len) return Qnil;
-    if (beg < 0) {
-	len += beg;
-	beg = 0;
-    }
-    if (len < 0) return Qnil;
+    if (beg < 0 || len < 0) return Qnil;
+
     if (beg + len > RARRAY(ary)->len) {
 	len = RARRAY(ary)->len - beg;
     }
@@ -532,7 +529,7 @@ rb_ary_replace(ary, beg, len, rpl)
     VALUE ary, rpl;
     long beg, len;
 {
-    int rlen;
+    long rlen;
 
     if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
     if (beg < 0) {
@@ -1254,8 +1251,8 @@ VALUE
 rb_ary_concat(x, y)
     VALUE x, y;
 {
-    int xlen = RARRAY(x)->len;
-    int ylen;
+    long xlen = RARRAY(x)->len;
+    long ylen;
 
     y = to_ary(y);
     ylen = RARRAY(y)->len;
@@ -1371,7 +1368,8 @@ rb_ary_hash(ary)
     VALUE ary;
 {
     long i;
-    int n, h;
+    VALUE n;
+    long h;
 
     h = RARRAY(ary)->len;
     for (i=0; i<RARRAY(ary)->len; i++) {
