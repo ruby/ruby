@@ -35,6 +35,11 @@ module LIBC
     "int tz_minuteswest",
     "int tz_dsttime",
   ]
+
+  def my_compare(ptr1, ptr2)
+    ptr1.ptr.to_s <=> ptr2.ptr.to_s
+  end
+  COMPARE = callback "int my_compare(char**, char**)"
 end
 
 
@@ -54,7 +59,7 @@ p LIBC.strcat("a", "b")
 
 ary = ["a","c","b"]
 ptr = ary.to_ptr
-LIBC.qsort(ptr, ary.length, DL.sizeof('P'), $cb1)
+LIBC.qsort(ptr, ary.length, DL.sizeof('P'), LIBC::COMPARE)
 p ptr.to_a('S', ary.length)
 
 tv = LIBC::Timeval.malloc

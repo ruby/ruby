@@ -59,6 +59,18 @@ to wrap the given PtrData object which is, for example, created by DL::malloc().
 DL::malloc() is a function to allocate a memory by using the C library function
 malloc().
 
+We can define a callback using the module function "callback" as follows:
+
+  module Foo
+    extend DL::Importable
+    def my_comp(str1,str2)
+      str1 <=> str2
+    end
+    COMPARE = callback "int my_comp(char*,char*)"
+  end
+
+where Foo::COMPARE is a Symbol object which invokes the method "my_comp".
+
 DL::Importable module is very useful. However, we sometimes encounter a case
 that we must directly use low-level functions such as dlsym(). In such case,
 we would use DL module functions. They are described in next section.
