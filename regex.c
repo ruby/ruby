@@ -1888,7 +1888,7 @@ re_compile_pattern(pattern, size, bufp)
 	      c1 = 0;
 	      c = scan_hex(p, 2, &numlen);
 	      p += numlen;
-	      if (current_mbctype && c > 0x7f)
+	      if (c > 0x7f)
 		  c1 = 0xff;
 	      goto numeric_char;
 
@@ -1897,7 +1897,7 @@ re_compile_pattern(pattern, size, bufp)
 	      c1 = 0;
 	      c = scan_oct(p, 3, &numlen);
 	      p += numlen;
-	      if (current_mbctype && c > 0x7f)
+	      if (c > 0x7f)
 		  c1 = 0xff;
 	      goto numeric_char;
 
@@ -1918,10 +1918,10 @@ re_compile_pattern(pattern, size, bufp)
 		  if (c1 >= regnum) {
 		      /* need to get octal */
 		      p = p_save;
-		      c = scan_oct(p_save, 3, &numlen);
+		      c = scan_oct(p_save, 3, &numlen) & 0xff;
 		      p = p_save + numlen;
 		      c1 = 0;
-		      if (current_mbctype && c > 0x7f)
+		      if (c > 0x7f)
 			  c1 = 0xff;
 		      goto numeric_char;
 		  }
@@ -2000,6 +2000,7 @@ re_compile_pattern(pattern, size, bufp)
 
   /* set optimize flags */
   laststart = bufp->buffer;
+  if (*laststart == exactn) bufp->options |= RE_OPTIMIZE_EXACTN;
   if (*laststart == start_memory) laststart += 3;
   if (*laststart == dummy_failure_jump) laststart += 3;
   else if (*laststart == try_next) laststart += 3;
@@ -2025,6 +2026,19 @@ re_compile_pattern(pattern, size, bufp)
   bufp->used = b - bufp->buffer;
   bufp->re_nsub = regnum;
   bufp->must = calculate_must_string(bufp->buffer, b);
+  if (current_mbctype) bufp->options |= RE_OPTIMIZE_NO_BM;
+  else if (bufp->must) {
+      int i;
+      int len = ((unsigned char)bufp->must[0]);
+
+      for (i=1; i<len; i++) {
+	  if ((unsigned char)bufp->must[i] == 0xff) {
+	      bufp->options |= RE_OPTIMIZE_NO_BM;
+	      break;
+	  }
+      }
+  }
+
   FREE_AND_RETURN(stackb, 0);
 
  invalid_pattern:
@@ -2195,16 +2209,15 @@ must_instr(little, llen, big, blen, translate)
      int blen;
      char *translate;
 {
+  unsigned char *bsave = big;
   unsigned char *bend = big + blen;
   register int c;
   int fescape = 0;
 
-  if (blen < llen)
-    return 0;
-
   c = *little;
   if (c == 0xff) {
     c = *++little;
+    llen--;
     fescape = 1;
   }
   else if (translate && !ismbchar(c)) {
@@ -2235,14 +2248,94 @@ must_instr(little, llen, big, blen, translate)
     }
 
     if (must_match(little, little+llen, big, bend, translate))
-      return 1;
+      return big - bsave;
 
     if (ismbchar(*big)) big++;
     big++;
   }
-  return 0;
+  return -1;
 }
 
+static void
+bm_init_skip(skip, pat, m)
+    int *skip;
+    unsigned char *pat;
+    int m;
+{
+    int j, c;
+
+    for (c=0; c<256; c++) {
+	skip[c] = m;
+    }
+    for (j=0; j<m-1; j++) {
+	skip[pat[j]] = m-1-j;
+    }
+}
+
+static void
+bm_init_next(next, pat, m)
+    int *next;
+    unsigned char *pat;
+    int m;
+{
+    int s, j;
+
+    for (s=m-1; s>=0; s--) {
+	j = m;
+	while (j >= 0 && pat[j-s] == pat[j]) {
+	    j--;
+	}
+	if (j > s) {
+	    next[j] = m-j+s;
+	}
+	else {
+	    while (j > 0) {
+		next[j] = m-j+s;
+		j--;
+	    }
+	}
+    }
+}
+
+static int
+bm_search(little, llen, big, blen, translate)
+     unsigned char *little;
+     int llen;
+     unsigned char *big;
+     int blen;
+     char *translate;
+{
+    int skip[256], next[256];
+    int i, j;
+
+    bm_init_skip(skip, little, llen);
+    bm_init_next(next, little, llen);
+    i = llen-1;
+    if (translate) {
+	while (i < blen) {
+	    j = llen-1;
+	    while (j >= 0 && translate[big[i]] == translate[little[j]]) {
+		i--;
+		j--;
+	    }
+	    if (j < 0) return i+1;
+	    
+	    i += skip[big[i]] > next[j] ? skip[big[i]] : next[j];
+	}
+	return -1;
+    }
+    while (i < blen) {
+	j = llen-1;
+	while (j >= 0 && big[i] == little[j]) {
+	    i--;
+	    j--;
+	}
+	if (j < 0) return i+1;
+
+	i += skip[big[i]] > next[j] ? skip[big[i]] : next[j];
+    }
+    return -1;
+}
 
 /* Given a pattern, compute a fastmap from it.  The fastmap records
    which of the (1 << BYTEWIDTH) possible characters can start a string
@@ -2601,18 +2694,26 @@ re_search(bufp, string, size, startpos, range, regs)
   }
 
   if (bufp->must) {
-    if (range > 0) {
-      if (!must_instr(bufp->must+1, bufp->must[0],
-		      string+startpos, size-startpos,
-		      TRY_TRANSLATE()?translate:0))
-	return -1;
+    int r = range;
+    int len = ((unsigned char*)bufp->must)[0];
+    int pos;
+
+    if (range >= 0) {
+      r = 0;
+    }
+    if (bufp->options & RE_OPTIMIZE_NO_BM) {
+      pos = must_instr(bufp->must+1, len,
+		       string+startpos, size-startpos-r,
+		       TRY_TRANSLATE()?translate:0);
     }
     else {
-      if (!must_instr(bufp->must+1, bufp->must[0],
-		      string+startpos+range, size-startpos-range,
-		      TRY_TRANSLATE()?translate:0))
-	return -1;
+      pos = bm_search(bufp->must+1, len,
+		      string+startpos, size-startpos-r,
+		      TRY_TRANSLATE()?translate:0);
     }
+    if (pos == -1) return -1;
+    if (bufp->options & RE_OPTIMIZE_EXACTN)
+      startpos += pos;
   }
 
   for (;;)

@@ -168,7 +168,9 @@ extern long re_syntax_options;
 #define RE_OPTION_IGNORECASE (1L<<1)
 #define RE_MAY_IGNORECASE    (1L<<2)
 #define RE_OPTIMIZE_ANCHOR   (1L<<4)
-#define RE_OPTIMIZE_CCLASS   (1L<<5)
+#define RE_OPTIMIZE_EXACTN   (1L<<5)
+#define RE_OPTIMIZE_CCLASS   (1L<<6)
+#define RE_OPTIMIZE_NO_BM    (1L<<7)
 
 /* For multi-byte char support */
 #define MBCTYPE_ASCII 0
