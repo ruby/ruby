@@ -3268,7 +3268,7 @@ rb_io_printf(argc, argv, out)
  *  Equivalent to:
  *     io.write(sprintf(string, obj, ...)
  *  or
- *     $defout.write(sprintf(string, obj, ...)
+ *     $stdout.write(sprintf(string, obj, ...)
  */
 
 static VALUE
@@ -3351,7 +3351,7 @@ rb_io_print(argc, argv, out)
  *  call-seq:
  *     print(obj, ...)    => nil
  *  
- *  Prints each object in turn to <code>$defout</code>. If the output
+ *  Prints each object in turn to <code>$stdout</code>. If the output
  *  field separator (<code>$,</code>) is not +nil+, its
  *  contents will appear between each field. If the output record
  *  separator (<code>$\</code>) is not +nil+, it will be
@@ -3411,7 +3411,7 @@ rb_io_putc(io, ch)
  *  
  *  Equivalent to:
  *
- *    $defout.putc(int)
+ *    $stdout.putc(int)
  */
 
 static VALUE
@@ -3500,7 +3500,7 @@ rb_io_puts(argc, argv, out)
  *  
  *  Equivalent to 
  *
- *      $defout.puts(obj, ...)
+ *      $stdout.puts(obj, ...)
  */
 
 static VALUE
@@ -3639,7 +3639,7 @@ defout_setter(val, id, variable)
     VALUE *variable;
 {
     stdout_setter(val, id, variable);
-    rb_warn("$defout is obslete; use $stdout instead");
+    rb_warn("$defout is obsolete; use $stdout instead");
 }
 
 static void
@@ -3649,7 +3649,7 @@ deferr_setter(val, id, variable)
     VALUE *variable;
 {
     stdout_setter(val, id, variable);
-    rb_warn("$deferr is obslete; use $stderr instead");
+    rb_warn("$deferr is obsolete; use $stderr instead");
 }
 
 static VALUE

@@ -1,3 +1,7 @@
+Mon Jan 26 22:53:04 2004  Dave Thomas  <dave@pragprog.com>
+
+	* io.c: Remove documentation references to $defout.
+
 Mon Jan 26 12:45:23 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: define CONST84 when TCL_MAJOR_VERSION == 7
