@@ -499,7 +499,6 @@ zip_i(val, memo)
 
     tmp = rb_ary_new2(RARRAY(args)->len + 1);
     rb_ary_store(tmp, 0, val);
-    RARRAY(tmp)->ptr[0] = val;
     for (i=0; i<RARRAY(args)->len; i++) {
 	rb_ary_push(tmp, rb_ary_entry(RARRAY(args)->ptr[i], idx));
     }

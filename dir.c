@@ -17,11 +17,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifdef HAVE_SYS_PARAM_H
-# include <sys/param.h>
-#else
-# define MAXPATHLEN 1024
-#endif
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif

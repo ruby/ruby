@@ -1029,20 +1029,6 @@ rb_ary_reverse_m(ary)
     return rb_ary_reverse(rb_ary_dup(ary));
 }
 
-int
-rb_cmpint(cmp)
-    VALUE cmp;
-{
-    if (FIXNUM_P(cmp)) return FIX2INT(cmp);
-    if (TYPE(cmp) == T_BIGNUM) {
-	if (RBIGNUM(cmp)->sign) return 1;
-	return -1;
-    }
-    if (RTEST(rb_funcall(cmp, '>', 1, INT2FIX(0)))) return 1;
-    if (RTEST(rb_funcall(cmp, '<', 1, INT2FIX(0)))) return -1;
-    return 0;
-}
-
 static int
 sort_1(a, b)
     VALUE *a, *b;

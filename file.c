@@ -34,7 +34,8 @@ int flock _((int, int));
 
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
-#else
+#endif
+#ifndef MAXPATHLEN
 # define MAXPATHLEN 1024
 #endif
 
@@ -158,7 +159,7 @@ rb_stat_cmp(self, other)
 	else
 	    return INT2FIX(1);
     }
-    rb_raise(rb_eTypeError, "operand is not File::Stat");
+    return Qnil;
 }
 
 static VALUE
@@ -1436,7 +1437,7 @@ rb_file_s_expand_path(argc, argv)
 	    if (!dir) {
 		rb_raise(rb_eArgError, "couldn't find HOME environment -- expanding `%s'", s);
 	    }
-	    BUFCHECK (strlen(dir) > buflen);
+	    BUFCHECK(strlen(dir) > buflen);
 	    strcpy(buf, dir);
 	    p = buf + strlen(dir);
 	    s++;
@@ -1451,7 +1452,7 @@ rb_file_s_expand_path(argc, argv)
 	    while (*s && !isdirsep(*s)) {
 		s = CharNext(s);
 	    }
-	    BUFCHECK (p + (s-b) >= pend);
+	    BUFCHECK(p + (s-b) >= pend);
 	    memcpy(p, b, s-b);
 	    p += s-b;
 	    *p = '\0';
@@ -1461,7 +1462,7 @@ rb_file_s_expand_path(argc, argv)
 		endpwent();
 		rb_raise(rb_eArgError, "user %s doesn't exist", buf);
 	    }
-	    BUFCHECK (strlen(pwPtr->pw_dir) > buflen);
+	    BUFCHECK(strlen(pwPtr->pw_dir) > buflen);
 	    strcpy(buf, pwPtr->pw_dir);
 	    p = buf + strlen(pwPtr->pw_dir);
 	    endpwent();
@@ -1475,7 +1476,7 @@ rb_file_s_expand_path(argc, argv)
 	while (*s && !isdirsep(*s)) {
 	    s = CharNext(s);
 	}
-	BUFCHECK (p + (s-b) >= pend);
+	BUFCHECK(p + (s-b) >= pend);
 	memcpy(p, b, s-b);
 	p += s-b;
     }
@@ -1484,7 +1485,7 @@ rb_file_s_expand_path(argc, argv)
 	if (!NIL_P(dname)) {
 	    dname = rb_file_s_expand_path(1, &dname);
 	    if (OBJ_TAINTED(dname)) tainted = 1;
-	    BUFCHECK (RSTRING(dname)->len > buflen);
+	    BUFCHECK(RSTRING(dname)->len > buflen);
 	    memcpy(buf, RSTRING(dname)->ptr, RSTRING(dname)->len);
 	    p += RSTRING(dname)->len;
 	}
@@ -1492,7 +1493,7 @@ rb_file_s_expand_path(argc, argv)
 	    char *dir = my_getcwd();
 
 	    tainted = 1;
-	    BUFCHECK (strlen(dir) > buflen);
+	    BUFCHECK(strlen(dir) > buflen);
 	    strcpy(buf, dir);
 	    free(dir);
 	    p = &buf[strlen(buf)];
@@ -1502,7 +1503,7 @@ rb_file_s_expand_path(argc, argv)
     else {
 	while (*s && isdirsep(*s)) {
 	    *p++ = '/';
-	    BUFCHECK (p >= pend);
+	    BUFCHECK(p >= pend);
 	    s++;
 	}
 	if (p > buf && *s) p--;
@@ -1548,7 +1549,7 @@ rb_file_s_expand_path(argc, argv)
 	  case '\\':
 #endif
 	    if (s > b) {
-		BUFCHECK (p + (s-b+1) >= pend);
+		BUFCHECK(p + (s-b+1) >= pend);
 		memcpy(++p, b, s-b);
 		p += s-b;
 		*p = '/';
@@ -1562,7 +1563,7 @@ rb_file_s_expand_path(argc, argv)
     }
 
     if (s > b) {
-	BUFCHECK (p + (s-b) >= pend);
+	BUFCHECK(p + (s-b) >= pend);
 	memcpy(++p, b, s-b);
 	p += s-b;
     }
@@ -2476,7 +2477,7 @@ rb_find_file_ext(filep, ext)
 	VALUE str = RARRAY(rb_load_path)->ptr[i];
 
 	SafeStringValue(str);
-	if (RSTRING(str)->len == 0) return 0;
+	if (RSTRING(str)->len == 0) continue;
 	path = RSTRING(str)->ptr;
 	for (j=0; ext[j]; j++) {
 	    fname = rb_str_dup(*filep);

@@ -452,7 +452,7 @@ rb_invalid_str(str, type)
     rb_raise(rb_eArgError, "invalid value for %s: %s", type, RSTRING(s)->ptr);
 }
 
-static st_table *syserr_tbl = 0;
+static st_table *syserr_tbl;
 
 static VALUE
 set_syserr(n, name)
@@ -653,8 +653,7 @@ rb_sys_fail(mesg)
     }
 
     errno = 0;
-    ee = get_syserr(n);
-    ee = rb_exc_new2(ee, buf);
+    ee = rb_exc_new2(get_syserr(n), buf);
     rb_iv_set(ee, "errno", INT2NUM(n));
     rb_exc_raise(ee);
 }

@@ -27,20 +27,20 @@ module IRB
 
     attr_reader :lang
 
+    @@LC2KCONV = {
+      #      "ja" => Kconv::JIS,
+      #      "ja_JP" => Kconv::JIS,
+      "ja_JP.ujis" => Kconv::EUC,
+      "ja_JP.euc" => Kconv::EUC,
+      "ja_JP.eucJP" => Kconv::EUC,
+      "ja_JP.sjis" => Kconv::SJIS,
+      "ja_JP.SJIS" => Kconv::SJIS,
+    }
+
     def String(mes)
       mes = super(mes)
       case @lang
       when /^ja/
-	@@LC2KCONV = {
-	  #      "ja" => Kconv::JIS,
-	  #      "ja_JP" => Kconv::JIS,
-	  "ja_JP.ujis" => Kconv::EUC,
-	  "ja_JP.euc" => Kconv::EUC,
-	  "ja_JP.eucJP" => Kconv::EUC,
-	  "ja_JP.sjis" => Kconv::SJIS,
-	  "ja_JP.SJIS" => Kconv::SJIS,
-	  } unless defined? @@LC2KCONV
-	
 	mes = Kconv::kconv(mes, @@LC2KCONV[@lang])
       else
 	mes

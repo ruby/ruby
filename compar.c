@@ -16,17 +16,31 @@ VALUE rb_mComparable;
 
 static ID cmp;
 
+int
+rb_cmpint(val)
+    VALUE val;
+{
+    if (FIXNUM_P(val)) return FIX2INT(val);
+    if (TYPE(val) == T_BIGNUM) {
+	if (RBIGNUM(val)->sign) return 1;
+	return -1;
+    }
+    if (RTEST(rb_funcall(val, '>', 1, INT2FIX(0)))) return 1;
+    if (RTEST(rb_funcall(val, '<', 1, INT2FIX(0)))) return -1;
+    return 0;
+}
+
 static VALUE
 cmp_equal(x, y)
     VALUE x, y;
 {
-    VALUE c = rb_funcall(x, cmp, 1, y);
+    int c;
 
+    if (x == y) return Qtrue;
+    c  = rb_funcall(x, cmp, 1, y);
     if (NIL_P(c)) return Qfalse;
     if (c == INT2FIX(0)) return Qtrue;
-    if (TYPE(c) == T_BIGNUM) {
-	if (rb_big_norm(c) == INT2FIX(0)) return Qtrue;
-    }
+    if (rb_cmpint(c) == 0) return Qtrue;
     return Qfalse;
 }
 
@@ -37,11 +51,7 @@ cmp_gt(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (FIXNUM_P(c) && FIX2INT(c) > 0) return Qtrue;
-    if (TYPE(c) == T_BIGNUM) {
-	if (rb_big_norm(x) == INT2FIX(0)) return Qfalse;
-	if (RBIGNUM(c)->sign) return Qtrue;
-    }
+    if (rb_cmpint(c) > 0) return Qtrue;
     return Qfalse;
 }
 
@@ -52,11 +62,7 @@ cmp_ge(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (FIXNUM_P(c) && FIX2INT(c) >= 0) return Qtrue;
-    if (TYPE(c) == T_BIGNUM) {
-	if (rb_big_norm(x) == INT2FIX(0)) return Qtrue;
-	if (RBIGNUM(c)->sign) return Qtrue;
-    }
+    if (rb_cmpint(c) >= 0) return Qtrue;
     return Qfalse;
 }
 
@@ -66,11 +72,7 @@ cmp_lt(x, y)
 {
     VALUE c = rb_funcall(x, cmp, 1, y);
 
-    if (FIXNUM_P(c) && FIX2INT(c) < 0) return Qtrue;
-    if (TYPE(c) == T_BIGNUM) {
-	if (rb_big_norm(x) == INT2FIX(0)) return Qfalse;
-	if (!RBIGNUM(c)->sign) return Qtrue;
-    }
+    if (rb_cmpint(c) < 0) return Qtrue;
     return Qfalse;
 }
 
@@ -81,11 +83,7 @@ cmp_le(x, y)
     VALUE c = rb_funcall(x, cmp, 1, y);
 
     if (NIL_P(c)) return Qfalse;
-    if (FIXNUM_P(c) && FIX2INT(c) <= 0) return Qtrue;
-    if (TYPE(c) == T_BIGNUM) {
-	if (rb_big_norm(x) == INT2FIX(0)) return Qtrue;
-	if (!RBIGNUM(c)->sign) return Qtrue;
-    }
+    if (rb_cmpint(c) <= 0) return Qtrue;
     return Qfalse;
 }
 

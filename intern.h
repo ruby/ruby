@@ -40,7 +40,6 @@ VALUE rb_ary_join _((VALUE, VALUE));
 VALUE rb_ary_print_on _((VALUE, VALUE));
 VALUE rb_ary_reverse _((VALUE));
 VALUE rb_ary_sort _((VALUE));
-int rb_cmpint _((VALUE));
 VALUE rb_ary_sort_bang _((VALUE));
 VALUE rb_ary_delete _((VALUE, VALUE));
 VALUE rb_ary_delete_at _((VALUE, long));
@@ -118,6 +117,8 @@ void rb_define_private_method _((VALUE, const char*, VALUE (*)(ANYARGS), int));
 void rb_define_singleton_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
 void rb_define_private_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
 VALUE rb_singleton_class _((VALUE));
+/* compar.c */
+int rb_cmpint _((VALUE));
 /* enum.c */
 /* error.c */
 EXTERN int ruby_nerrs;

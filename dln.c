@@ -60,8 +60,6 @@ void *xrealloc();
 
 #ifdef HAVE_SYS_PARAM_H
 # include <sys/param.h>
-#else
-# define MAXPATHLEN 1024
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -353,6 +351,10 @@ sym_hash(hdrp, syms)
     }
     return tbl;
 }
+
+#ifndef MAXPATHLEN
+# define MAXPATHLEN 1024
+#endif
 
 static int
 dln_init(prog)

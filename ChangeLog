@@ -20,6 +20,40 @@ Thu Nov 21 20:01:33 2002  Minero Aoki  <aamine@loveruby.net>
 	* lib/net/http.rb: support Proxy-Authorization.
 	(This patch is contributed by Alexander Bokovoy)
 
+Thu Nov 21 11:03:39 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_find_file_ext): should not terminate searching with
+	  empty path, just ignore.
+
+	* dir.c: remove <sys/parm.h> inclusion.
+
+Wed Nov 20 02:07:12 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* compar.c (cmp_eq,cmp_gt,cmp_ge,cmp_lt,cmp_le): check using
+	  rb_cmpint().
+
+	* error.c (init_syserr): remove sys_nerr dependency.
+
+Wed Nov 20 01:52:21 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (num_cmp): added to satisfy Comparable assumption.
+
+	* eval.c (rb_add_method): "initialize" should be public if it is a
+	  singleton method.
+
+Tue Nov 19 22:37:23 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_match): avoid dereferencing if size == 0.
+	  (ruby-bugs-ja:PR#360)
+
+Tue Nov 19 20:40:39 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (time_cmp): should return nil if an operand is not a
+	  number nor time. (ruby-bugs-ja:PR#359)
+
+	* file.c (rb_stat_cmp): should return nil if an operand is not
+	  File::Stat.
+
 Tue Nov 19 14:35:09 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_zip): iterates over items in the receiver.
