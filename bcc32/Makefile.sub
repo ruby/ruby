@@ -556,7 +556,7 @@ win32.obj: win32.c win32.h
 ###
 array.obj: array.c ruby.h config.h defines.h intern.h missing.h util.h st.h win32.h
 bignum.obj: bignum.c ruby.h config.h defines.h intern.h missing.h win32.h
-class.obj: class.c ruby.h config.h defines.h intern.h missing.h rubysig.h node.h st.h version.h win32.h
+class.obj: class.c ruby.h config.h defines.h intern.h missing.h rubysig.h node.h st.h win32.h
 compar.obj: compar.c ruby.h config.h defines.h intern.h missing.h win32.h
 dir.obj: dir.c ruby.h config.h defines.h intern.h missing.h util.h win32.h
 dln.obj: dln.c ruby.h config.h defines.h intern.h missing.h dln.h win32.h
@@ -566,7 +566,7 @@ error.obj: error.c ruby.h config.h defines.h intern.h missing.h env.h version.h 
 eval.obj: eval.c ruby.h config.h defines.h intern.h missing.h node.h env.h util.h rubysig.h st.h dln.h win32.h
 file.obj: file.c ruby.h config.h defines.h intern.h missing.h rubyio.h rubysig.h util.h dln.h win32.h
 gc.obj: gc.c ruby.h config.h defines.h intern.h missing.h rubysig.h st.h node.h env.h re.h regex.h win32.h
-hash.obj: hash.c ruby.h config.h defines.h intern.h missing.h st.h util.h rubysig.h version.h win32.h
+hash.obj: hash.c ruby.h config.h defines.h intern.h missing.h st.h util.h rubysig.h win32.h
 inits.obj: inits.c ruby.h config.h defines.h intern.h missing.h win32.h
 io.obj: io.c ruby.h config.h defines.h intern.h missing.h rubyio.h rubysig.h env.h util.h win32.h
 main.obj: main.c ruby.h config.h defines.h intern.h missing.h win32.h
@@ -586,7 +586,7 @@ ruby.obj: ruby.c ruby.h config.h defines.h intern.h missing.h dln.h node.h util.
 signal.obj: signal.c ruby.h config.h defines.h intern.h missing.h rubysig.h win32.h
 sprintf.obj: sprintf.c ruby.h config.h defines.h intern.h missing.h win32.h
 st.obj: st.c config.h st.h
-string.obj: string.c ruby.h config.h defines.h intern.h missing.h re.h regex.h version.h win32.h
+string.obj: string.c ruby.h config.h defines.h intern.h missing.h re.h regex.h win32.h
 struct.obj: struct.c ruby.h config.h defines.h intern.h missing.h win32.h
 time.obj: time.c ruby.h config.h defines.h intern.h missing.h win32.h
 util.obj: util.c ruby.h config.h defines.h intern.h missing.h util.h win32.h

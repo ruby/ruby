@@ -564,7 +564,7 @@ bignum.obj: {$(srcdir)}bignum.c {$(srcdir)}ruby.h config.h \
 class.obj: {$(srcdir)}class.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}rubysig.h {$(srcdir)}node.h {$(srcdir)}st.h \
-  {$(srcdir)}version.h {$(srcdir)}/win32/win32.h
+  {$(srcdir)}/win32/win32.h
 compar.obj: {$(srcdir)}compar.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
@@ -599,7 +599,7 @@ gc.obj: {$(srcdir)}gc.c {$(srcdir)}ruby.h config.h \
 hash.obj: {$(srcdir)}hash.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}st.h {$(srcdir)}util.h {$(srcdir)}rubysig.h \
-  {$(srcdir)}version.h {$(srcdir)}/win32/win32.h
+  {$(srcdir)}/win32/win32.h
 inits.obj: {$(srcdir)}inits.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
@@ -660,8 +660,7 @@ sprintf.obj: {$(srcdir)}sprintf.c {$(srcdir)}ruby.h config.h \
 st.obj: {$(srcdir)}st.c config.h {$(srcdir)}st.h
 string.obj: {$(srcdir)}string.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
-  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}version.h \
-  {$(srcdir)}/win32/win32.h
+  {$(srcdir)}re.h {$(srcdir)}regex.h {$(srcdir)}/win32/win32.h
 struct.obj: {$(srcdir)}struct.c {$(srcdir)}ruby.h config.h \
   {$(srcdir)}defines.h {$(srcdir)}intern.h {$(srcdir)}missing.h \
   {$(srcdir)}/win32/win32.h
