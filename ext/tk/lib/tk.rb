@@ -636,7 +636,7 @@ module TkCore
   include TkComm
   extend TkComm
 
-  INTERP = TclTkIp.new
+  INTERP = TclTkIp.new unless self.const_defined? :INTERP
 
   INTERP._invoke("proc", "rb_out", "args", <<-'EOL')
     regsub -all {!} $args {\\!} args
@@ -3138,7 +3138,7 @@ class TkObject<TkKernel
 	  slot['latinfont'] || slot[:latinfont] || 
           slot['asciifont'] || slot[:asciifont] )
 	font_configure(slot)
-      else
+      elsif slot.size > 0
 	tk_call path, 'configure', *hash_kv(slot)
       end
 
