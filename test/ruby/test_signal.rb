@@ -9,7 +9,7 @@ class TestSignal < Test::Unit::TestCase
       trap "SIGINT", proc{|sig| $x = 2}
       Process.kill "SIGINT", $$
       sleep 0.1
-      assert($x == 2)
+      assert_equal($x, 2)
     
       trap "SIGINT", proc{raise "Interrupt"}
     

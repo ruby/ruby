@@ -1,3 +1,7 @@
+Fri Sep  5 20:27:08 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/ruby/test_*.rb: replace 'assert(a == b)' with assert_equal(a, b)'
+
 Fri Sep  5 18:00:51 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/x509.rb: new method X509::Name::parse.

@@ -44,15 +44,15 @@ class TestVariable < Test::Unit::TestCase
     
     foobar = "foobar"
     $_ = foobar
-    assert($_ == foobar)
+    assert_equal($_, foobar)
 
-    assert(Gods.new.ruler0 == "Cronus")
-    assert(Gods.ruler1 == "Cronus")
-    assert(Gods.ruler2 == "Cronus")
-    assert(Titans.ruler1 == "Cronus")
-    assert(Titans.ruler2 == "Cronus")
+    assert_equal(Gods.new.ruler0, "Cronus")
+    assert_equal(Gods.ruler1, "Cronus")
+    assert_equal(Gods.ruler2, "Cronus")
+    assert_equal(Titans.ruler1, "Cronus")
+    assert_equal(Titans.ruler2, "Cronus")
     atlas = Titans.new
-    assert(atlas.ruler0 == "Cronus")
-    assert(atlas.ruler3 == "Zeus")
+    assert_equal(atlas.ruler0, "Cronus")
+    assert_equal(atlas.ruler3, "Zeus")
   end
 end

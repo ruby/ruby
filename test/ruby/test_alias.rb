@@ -28,11 +28,11 @@ class TestAlias < Test::Unit::TestCase
 
   def test_alias
     x = Alias2.new
-    assert(x.bar == "foo")
-    assert(x.baz == "foo+foo")
+    assert_equal(x.bar, "foo")
+    assert_equal(x.baz, "foo+foo")
     
     # test_check for cache
-    assert(x.baz == "foo+foo")
+    assert_equal(x.baz, "foo+foo")
     
     x = Alias3.new
     assert(!x.foo)

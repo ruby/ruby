@@ -20,16 +20,16 @@ class TestConst < Test::Unit::TestCase
     self.class.class_eval {
       include Const
     }
-    assert([TEST1,TEST2,TEST3,TEST4] == [1,2,3,4])
+    assert_equal([TEST1,TEST2,TEST3,TEST4], [1,2,3,4])
     
     self.class.class_eval {
       include Const2
     }
     STDERR.print "intentionally redefines TEST3, TEST4\n" if $VERBOSE
-    assert([TEST1,TEST2,TEST3,TEST4] == [1,2,6,8])
+    assert_equal([TEST1,TEST2,TEST3,TEST4], [1,2,6,8])
     
-    assert((String <=> Object) == -1)
-    assert((Object <=> String) == 1)
-    assert((Array <=> String) == nil)
+    assert_equal((String <=> Object), -1)
+    assert_equal((Object <=> String), 1)
+    assert_equal((Array <=> String), nil)
   end
 end

@@ -5,7 +5,7 @@ $KCODE = 'none'
 class TestStruct < Test::Unit::TestCase
   def test_struct
     struct_test = Struct.new("Test", :foo, :bar)
-    assert(struct_test == Struct::Test)
+    assert_equal(struct_test, Struct::Test)
     
     test = struct_test.new(1, 2)
     assert(test.foo == 1 && test.bar == 2)
@@ -15,9 +15,9 @@ class TestStruct < Test::Unit::TestCase
     assert(a == 1 && b == 2)
     
     test[0] = 22
-    assert(test.foo == 22)
+    assert_equal(test.foo, 22)
     
     test.bar = 47
-    assert(test.bar == 47)
+    assert_equal(test.bar, 47)
   end 
 end

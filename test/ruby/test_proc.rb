@@ -5,12 +5,12 @@ $KCODE = 'none'
 class TestProc < Test::Unit::TestCase
   def test_proc
     $proc = proc{|i| i}
-    assert($proc.call(2) == 2)
-    assert($proc.call(3) == 3)
+    assert_equal($proc.call(2), 2)
+    assert_equal($proc.call(3), 3)
     
     $proc = proc{|i| i*2}
-    assert($proc.call(2) == 4)
-    assert($proc.call(3) == 6)
+    assert_equal($proc.call(2), 4)
+    assert_equal($proc.call(3), 6)
     
     proc{
       iii=5				# nested local variable
@@ -40,6 +40,6 @@ class TestProc < Test::Unit::TestCase
     $x=0
     $proc.call(5)
     $proc2.call
-    assert($x == 5)
+    assert_equal($x, 5)
   end
 end

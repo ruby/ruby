@@ -54,7 +54,7 @@ class TestWhileuntil < Test::Unit::TestCase
         redo
       end
     end
-    assert(sum == 220)
+    assert_equal(sum, 220)
     
     $bad = false
     tmp = open("while_tmp", "r")

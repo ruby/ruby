@@ -9,22 +9,22 @@ class TestSystem < Test::Unit::TestCase
     else
       ruby = "ruby"
     end
-    assert(`echo foobar` == "foobar\n")
-    assert(`#{ruby} -e 'print "foobar"'` == 'foobar')
+    assert_equal(`echo foobar`, "foobar\n")
+    assert_equal(`#{ruby} -e 'print "foobar"'`, 'foobar')
     
     tmp = open("script_tmp", "w")
     tmp.print "print $zzz\n";
     tmp.close
     
-    assert(`#{ruby} -s script_tmp -zzz` == 'true')
-    assert(`#{ruby} -s script_tmp -zzz=555` == '555')
+    assert_equal(`#{ruby} -s script_tmp -zzz`, 'true')
+    assert_equal(`#{ruby} -s script_tmp -zzz=555`, '555')
     
     tmp = open("script_tmp", "w")
     tmp.print "#! /usr/local/bin/ruby -s\n";
     tmp.print "print $zzz\n";
     tmp.close
     
-    assert(`#{ruby} script_tmp -zzz=678` == '678')
+    assert_equal(`#{ruby} script_tmp -zzz=678`, '678')
     
     tmp = open("script_tmp", "w")
     tmp.print "this is a leading junk\n";
@@ -34,8 +34,8 @@ class TestSystem < Test::Unit::TestCase
     tmp.print "this is a trailing junk\n";
     tmp.close
     
-    assert(`#{ruby} -x script_tmp` == 'nil')
-    assert(`#{ruby} -x script_tmp -zzz=555` == '555')
+    assert_equal(`#{ruby} -x script_tmp`, 'nil')
+    assert_equal(`#{ruby} -x script_tmp -zzz=555`, '555')
     
     tmp = open("script_tmp", "w")
     for i in 1..5

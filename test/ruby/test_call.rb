@@ -24,9 +24,9 @@ class TestCall < Test::Unit::TestCase
       assert(true)
     end
     
-    assert(aaa(1) == [1, 100])
-    assert(aaa(1, 2) == [1, 2])
-    assert(aaa(1, 2, 3, 4) == [1, 2, 3, 4])
-    assert(aaa(1, *[2, 3, 4]) == [1, 2, 3, 4])
+    assert_equal(aaa(1), [1, 100])
+    assert_equal(aaa(1, 2), [1, 2])
+    assert_equal(aaa(1, 2, 3, 4), [1, 2, 3, 4])
+    assert_equal(aaa(1, *[2, 3, 4]), [1, 2, 3, 4])
   end
 end

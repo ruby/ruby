@@ -239,13 +239,13 @@ class TestIterator < Test::Unit::TestCase
     block = get_block{11}
     assert_instance_of(Proc, block)
     assert_instance_of(Proc, block.to_proc)
-    assert(block.clone.call == 11)
+    assert_equal(block.clone.call, 11)
     assert_instance_of(Proc, get_block(&block))
 
     lambda = lambda{44}
     assert_instance_of(Proc, lambda)
     assert_instance_of(Proc, lambda.to_proc)
-    assert(lambda.clone.call == 44)
+    assert_equal(lambda.clone.call, 44)
     assert_instance_of(Proc, get_block(&lambda))
 
     assert_equal(1, Proc.new{|a,| a}.call(1,2,3))

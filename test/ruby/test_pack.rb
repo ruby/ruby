@@ -11,11 +11,11 @@ class TestPack < Test::Unit::TestCase
     $x = ary.pack($format)
     ary2 = $x.unpack($format)
     
-    assert(ary.length == ary2.length)
-    assert(ary.join(':') == ary2.join(':'))
+    assert_equal(ary.length, ary2.length)
+    assert_equal(ary.join(':'), ary2.join(':'))
     assert($x =~ /def/)
     
     $x = [-1073741825]
-    assert($x.pack("q").unpack("q") == $x)
+    assert_equal($x.pack("q").unpack("q"), $x)
   end
 end

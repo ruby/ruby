@@ -26,7 +26,7 @@ class TestMarshal < Test::Unit::TestCase
       a = (x.to_f + y.to_f / z.to_f) * Math.exp(w.to_f / (x.to_f + y.to_f / z.to_f))
       ma = Marshal.dump(a)
       b = Marshal.load(ma)
-      assert(a == b)
+      assert_equal(a, b)
     }
   end
 end

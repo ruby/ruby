@@ -19,9 +19,9 @@ class TestClone < Test::Unit::TestCase
       "test2"
     end
     
-    assert(bar.test2 == "test2")
-    assert(bar.test == "test")
-    assert(foo.test == "test")  
+    assert_equal(bar.test2, "test2")
+    assert_equal(bar.test, "test")
+    assert_equal(foo.test, "test")  
     
     begin
       foo.test2
@@ -30,6 +30,6 @@ class TestClone < Test::Unit::TestCase
       assert true
     end
     
-    assert(M003.ancestors == [M003, M002, M001])
+    assert_equal(M003.ancestors, [M003, M002, M001])
   end
 end

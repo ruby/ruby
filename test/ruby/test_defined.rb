@@ -22,7 +22,7 @@ class TestDefined < Test::Unit::TestCase
     $x = nil
 
     assert(defined?($x))		# global variable
-    assert(defined?($x) == 'global-variable')# returns description
+    assert_equal(defined?($x), 'global-variable')# returns description
     
     foo=5
     assert(defined?(foo))		# local variable
@@ -33,7 +33,7 @@ class TestDefined < Test::Unit::TestCase
     assert(defined?(1 == 2))		# operator expression
     
     f = Foo.new
-    assert(defined?(f.foo) == nil)
+    assert_equal(defined?(f.foo), nil)
     f.bar(f) { |v| assert(v) }
     
     assert(defined_test)		# not iterator
