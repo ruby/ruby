@@ -1,16 +1,29 @@
 #
 # Contents:
-#   sin(x, prec)
-#   cos(x, prec)
-#   exp(x, prec)
-#   log(x, prec)
-#   PI (prec)
+#   sqrt(x, prec)
+#   sin (x, prec)
+#   cos (x, prec)
+#   atan(x, prec)  Note: |x|<1, x=0.9999 may not converge.
+#   exp (x, prec)
+#   log (x, prec)
+#   PI  (prec)
 #
 # where:
 #   x    ... BigDecimal number to be computed.
 #   prec ... Number of digits to be obtained.
 #
+# Usage:
+#   require "bigdecimal"
+#   require "bigdecimal/math.rb"
+#   include BigMath
+#   a = BigDecimal((PI(1000)/2).to_s)
+#   puts sin(a,1000) # => 0.10000000000000000000......E1
+#
 module BigMath
+  def sqrt(x,prec)
+    x.sqrt(prec)
+  end
+
   def sin(x, prec)
     raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
     return BigDecimal("NaN") if x.infinite? || x.nan?
@@ -59,6 +72,27 @@ module BigMath
       z  *= (i-one) * i
       d   = sign * x1.div(z,m)
       y  += d
+    end
+    y
+  end
+
+  def atan(x, prec)
+    raise ArgumentError, "Zero or negative precision for sin" if prec <= 0
+    return BigDecimal("NaN") if x.infinite? || x.nan?
+    raise ArgumentError, "x.abs must be less than 1.0" if x.abs>=1
+    n    = prec + BigDecimal.double_fig
+    n2   = n+n
+    y = x;
+    d = y;
+    t = x;
+    r = BigDecimal("3");
+    x2 = x*x
+    while d.nonzero? && ((m = n - (y.exponent - d.exponent).abs) > 0)
+      m = BigDecimal.double_fig if m < BigDecimal.double_fig
+      t = -t.mult(x2,n2)
+      d = t.div(r,m)
+      y += d
+      r += 2
     end
     y
   end

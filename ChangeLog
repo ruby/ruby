@@ -1,3 +1,10 @@
+Fri Aug 15 23:15:00 2003  Shigeo Kobayashi  <shigek@ruby-lang.org>
+
+	* ext/bigdecimal/bigdecimal.c .h: Bug in combination of limit & div
+	  method fixed.
+
+	* ext/bigdecimal/lib/bigdecimal/math.rb: atan() & sqrt() added.
+
 Fri Aug 15 12:01:43 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (HUGE_ST_INO): check whether struct stat.st_ino
