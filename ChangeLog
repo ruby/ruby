@@ -1,3 +1,12 @@
+Tue Dec 23 14:13:51 2003  akira yamada  <akira@ruby-lang.org>
+
+	* lib/uri/generic.rb (URI::Generic::check_userinfo,
+	  URI::Generic::check_user, URI::Generic::check_password): tests
+	  conflicts/depends with other components closely.
+
+	* test/uri/test_generic.rb (TestGeneric::test_set_component):
+	  added tets.
+	
 Tue Dec 23 11:08:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/xsd/test_noencoding.rb: rescue Errno::EINVAL and do not test.

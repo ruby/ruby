@@ -619,6 +619,22 @@ class TestGeneric < Test::Unit::TestCase
     assert_equal('http://foo:bar@zab:8080/?a=1', uri.to_s)
     assert_equal('b123', uri.fragment = 'b123')
     assert_equal('http://foo:bar@zab:8080/?a=1#b123', uri.to_s)
+
+    uri = URI.parse('http://example.com')
+    assert_raises(URI::InvalidURIError) { uri.password = 'bar' }
+    uri.userinfo = 'foo:bar'
+    assert_equal('http://foo:bar@example.com', uri.to_s)
+    assert_raises(URI::InvalidURIError) { uri.registry = 'bar' }
+    assert_raises(URI::InvalidURIError) { uri.opaque = 'bar' }
+
+    uri = URI.parse('mailto:foo@example.com')
+    assert_raises(URI::InvalidURIError) { uri.user = 'bar' }
+    assert_raises(URI::InvalidURIError) { uri.password = 'bar' }
+    assert_raises(URI::InvalidURIError) { uri.userinfo = ['bar', 'baz'] }
+    assert_raises(URI::InvalidURIError) { uri.host = 'bar' }
+    assert_raises(URI::InvalidURIError) { uri.port = 'bar' }
+    assert_raises(URI::InvalidURIError) { uri.path = 'bar' }
+    assert_raises(URI::InvalidURIError) { uri.query = 'bar' }
   end
 end
 

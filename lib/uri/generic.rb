@@ -265,23 +265,22 @@ Object
     # methods for userinfo
     #
     def check_userinfo(user, password = nil)
-      if (user || password) &&
-	  (@registry || @opaque)
-	raise InvalidURIError, 
-	  "can not set userinfo with registry or opaque"
-      end
-
       if !password
 	user, password = split_userinfo(user)
       end
       check_user(user)
-      check_password(password)
+      check_password(password, user)
 
       return true
     end
     private :check_userinfo
 
     def check_user(v)
+      if @registry || @opaque
+	raise InvalidURIError, 
+	  "can not set user with registry or opaque"
+      end
+
       return v unless v
 
       if USERINFO !~ v
@@ -293,10 +292,14 @@ Object
     end
     private :check_user
 
-    def check_password(v)
+    def check_password(v, user = @user)
+      if @registry || @opaque
+	raise InvalidURIError, 
+	  "can not set password with registry or opaque"
+      end
       return v unless v
 
-      if !@password
+      if !user
 	raise InvalidURIError,
 	  "password component depends user component"
       end
