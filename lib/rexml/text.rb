@@ -218,6 +218,14 @@ module REXML
       writer << s
 		end
 
+    # FIXME
+    # This probably won't work properly
+    def xpath
+      path = @parent.xpath
+      path += "/text()"
+      return path
+    end
+
 		# Writes out text, substituting special characters beforehand.
 		# +out+ A String, IO, or any other object supporting <<( String )
 		# +input+ the text to substitute and the write out

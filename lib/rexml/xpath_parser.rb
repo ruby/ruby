@@ -43,8 +43,6 @@ module REXML
       @variables[ variable_name ] = value
     end
 
-    private
-
     def match( path_stack, nodeset ) 
       while ( path_stack.size > 0 and nodeset.size > 0 ) 
         #puts "PARSE: #{path_stack.inspect} '#{nodeset.collect{|n|n.class}.inspect}'"
@@ -54,6 +52,8 @@ module REXML
       end
       nodeset
     end
+
+    private
 
     def internal_parse path_stack, nodeset
       #puts "INTERNAL_PARSE RETURNING WITH NO RESULTS" if nodeset.size == 0 or path_stack.size == 0
@@ -423,10 +423,9 @@ module REXML
       current_index = all_siblings.index( node )
       preceding_siblings = all_siblings[ 0 .. current_index-1 ]
 
-      preceding_siblings.reverse!
       preceding = []
-      recurse( preceding_siblings ) { |node| preceding << node }
-      preceding.reverse
+      recurse( preceding_siblings ) { |node| preceding.unshift( node ) }
+      preceding
     end
 
     def equality_relational_compare( set1, op, set2 )

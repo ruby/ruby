@@ -73,7 +73,8 @@ module REXML
       @attributes.each_attribute do |attr|
         rv << " "
         attr.write( rv, 0 )
-      end unless @attributes.empty?
+      end
+      rv << ">"
 
       if children.size > 0
         rv << " ... </>"
@@ -517,6 +518,17 @@ module REXML
       :element
     end
 
+    def xpath
+      path_elements = []
+      cur = self
+      path_elements << __to_xpath_helper( self )
+      while cur.parent
+        cur = cur.parent
+        path_elements << __to_xpath_helper( cur )
+      end
+      return path_elements.reverse.join( "/" )
+    end
+
 		#################################################
 		# Attributes                                    #
 		#################################################
@@ -677,6 +689,20 @@ module REXML
 
 
 		private
+    def __to_xpath_helper node
+      rv = node.expanded_name
+      if node.parent
+        results = node.parent.find_all {|n| 
+          n.kind_of?(REXML::Element) and n.expanded_name == node.expanded_name 
+        }
+        if results.length > 1
+          idx = results.index( node )
+          rv << "[#{idx+1}]"
+        end
+      end
+      rv
+    end
+
 		# A private helper method
 		def each_with_something( test, max=0, name=nil )
 			num = 0
