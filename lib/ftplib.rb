@@ -1,9 +1,4 @@
-## ftplib.rb
-
-# Author: Shugo Maeda <shugo@netlab.co.jp>
-# Version: $Revision$
-
-## Code:
+# ftplib.rb by Shugo Maeda <shugo@netlab.co.jp>
 
 require "socket"
 require "monitor"
@@ -632,5 +627,3 @@ class FTP
   end
   private :parse257
 end
-
-## ftplib.rb ends here
