@@ -1763,27 +1763,6 @@ is_socket(SOCKET fd)
     return TRUE;
 }
 
-int
-myfddup (int fd)
-{
-    SOCKET s = TO_SOCKET(fd);
-
-    if (s == -1)
-	return -1;
-
-    return my_open_osfhandle(s, O_RDWR|O_BINARY);
-}
-
-
-void
-myfdclose(FILE *fp)
-{
-#if !defined MSVCRT_THREADS
-    _free_osfhnd(fileno(fp));
-#endif
-    fclose(fp);
-}
-
 
 //
 // Since the errors returned by the socket error function 

@@ -183,8 +183,6 @@ extern char *NtGetBin(void);
 extern FILE *mypopen(char *, char *);
 extern int   mypclose(FILE *);
 extern int  flock(int fd, int oper);
-extern int  myfddup(int);
-extern void  myfdclose(FILE *);
 extern SOCKET  myaccept(SOCKET, struct sockaddr *, int *);
 extern int  mybind(SOCKET, struct sockaddr *, int);
 extern int  myconnect(SOCKET, struct sockaddr *, int);

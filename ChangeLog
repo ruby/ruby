@@ -1,3 +1,13 @@
+Tue Oct  1 23:48:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* ext/socket/socket.c (sock_new): duplicate underlying socket
+	  handle not only descriptor.  [ruby-talk:40015]
+
+	* ext/socket/socket.c (bsock_close_read, bsock_close_write): not
+	  use myfdclose().
+
+	* win32/win32.c, win32/win32.h (myfddup, myfdclose): delete.
+
 Wed Sep 25 16:14:51 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* regex.c (re_match): p1 may exceed pend limit.

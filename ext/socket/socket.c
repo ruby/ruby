@@ -159,21 +159,6 @@ rb_getaddrinfo(nodename, servname, hints, res)
 #define close closesocket
 #endif
 
-#ifdef NT
-static void
-sock_finalize(fptr)
-    OpenFile *fptr;
-{
-    SOCKET s;
-
-    if (!fptr->f) return;
-    s = get_osfhandle(fileno(fptr->f));
-    myfdclose(fptr->f);
-    if (fptr->f2) myfdclose(fptr->f2);
-    closesocket(s);
-}
-#endif
-
 static VALUE
 sock_new(class, fd)
     VALUE class;
@@ -185,12 +170,7 @@ sock_new(class, fd)
 
     MakeOpenFile(sock, fp);
     fp->f = rb_fdopen(fd, "r");
-#ifdef NT
-    fp->finalize = sock_finalize;
-    fd = myfddup(fd);
-#else
     fd = dup(fd);
-#endif
     fp->f2 = rb_fdopen(fd, "w");
     fp->mode = FMODE_READWRITE;
     rb_io_synchronized(fp);
@@ -243,11 +223,7 @@ bsock_close_read(sock)
     }
     rb_thread_fd_close(fileno(fptr->f));
     fptr->mode &= ~FMODE_READABLE;
-#ifdef NT
-    myfdclose(fptr->f);
-#else
     fclose(fptr->f);
-#endif
     fptr->f = fptr->f2;
     fptr->f2 = 0;
 
@@ -269,11 +245,7 @@ bsock_close_write(sock)
     }
     shutdown(fileno(fptr->f2), 1);
     fptr->mode &= ~FMODE_WRITABLE;
-#ifdef NT
-    myfdclose(fptr->f2);
-#else
     fclose(fptr->f2);
-#endif
     fptr->f2 = 0;
 
     return Qnil;
