@@ -1,5 +1,9 @@
-Sat Aug 23 02:32:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+Sat Aug 23 15:59:58 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
+	* eval.c (rb_eval, rb_iterate, block_pass): reduce PUSH/POP_TAG and
+	  EXEC_TAG() for retry.  [ruby-dev:21216]
+
+Sat Aug 23 02:32:33 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_yield_splat): should check if "values" is array.
 
 	* enum.c (each_with_index_i): typo.

@@ -2710,12 +2710,12 @@ rb_eval(self, n)
       case NODE_ITER:
       case NODE_FOR:
 	{
-	  iter_retry:
 	    PUSH_TAG(PROT_FUNC);
 	    PUSH_BLOCK(node->nd_var, node->nd_body);
 
 	    state = EXEC_TAG();
 	    if (state == 0) {
+	      iter_retry:
 		PUSH_ITER(ITER_PRE);
 		if (nd_type(node) == NODE_ITER) {
 		    result = rb_eval(self, node->nd_iter);
@@ -2733,10 +2733,16 @@ rb_eval(self, n)
 		}
 		POP_ITER();
 	    }
-	    else if (_block.tag->dst == state) {
-		state &= TAG_MASK;
-		if (state == TAG_RETURN || state == TAG_BREAK) {
-		    result = prot_tag->retval;
+	    else {
+		if (_block.tag->dst == state) {
+		    state &= TAG_MASK;
+		    if (state == TAG_RETURN || state == TAG_BREAK) {
+			result = prot_tag->retval;
+		    }
+		}
+		if (state == TAG_RETRY) {
+		    state = 0;
+		    goto iter_retry;
 		}
 	    }
 	    POP_BLOCK();
@@ -2744,9 +2750,6 @@ rb_eval(self, n)
 	    switch (state) {
 	      case 0:
 		break;
-
-	      case TAG_RETRY:
-		goto iter_retry;
 
 	      case TAG_BREAK:
 		break;
@@ -2807,46 +2810,45 @@ rb_eval(self, n)
 	break;
 
       case NODE_RESCUE:
-      retry_entry:
         {
 	    volatile VALUE e_info = ruby_errinfo;
+	    volatile int rescuing = 0;
 
 	    PUSH_TAG(PROT_NONE);
 	    if ((state = EXEC_TAG()) == 0) {
 		result = rb_eval(self, node->nd_head);
 	    }
-	    POP_TAG();
-	    if (state == TAG_RAISE) {
-		NODE * volatile resq = node->nd_resq;
+	    else if (rescuing) {
+		if (state == TAG_RETRY) {
+		    rescuing = state = 0;
+		    e_info = ruby_errinfo = Qnil;
+		    result = rb_eval(self, node->nd_head);
+		}
+		else if (state != TAG_RAISE) {
+		    ruby_errinfo = e_info;
+		}
+	    }
+	    else if (state == TAG_RAISE) {
+		NODE *resq = node->nd_resq;
 
 		while (resq) {
 		    ruby_current_node = resq;
 		    if (handle_rescue(self, resq)) {
 			state = 0;
-			PUSH_TAG(PROT_NONE);
-			if ((state = EXEC_TAG()) == 0) {
-			    result = rb_eval(self, resq->nd_body);
-			}
-			POP_TAG();
-			if (state == TAG_RETRY) {
-			    state = 0;
-			    ruby_errinfo = Qnil;
-			    goto retry_entry;
-			}
-			if (state != TAG_RAISE) {
-			    ruby_errinfo = e_info;
-			}
+			rescuing = 1;
+			result = rb_eval(self, resq->nd_body);
+			ruby_errinfo = e_info;
 			break;
 		    }
 		    resq = resq->nd_head; /* next rescue */
 		}
 	    }
-	    else if (node->nd_else) { /* else clause given */
-		if (!state) {	/* no exception raised */
-		    result = rb_eval(self, node->nd_else);
-		}
-	    }
+	    POP_TAG();
 	    if (state) JUMP_TAG(state);
+	    /* no exception raised */
+	    if (node->nd_else) { /* else clause given */
+		result = rb_eval(self, node->nd_else);
+	    }
 	}
         break;
 
@@ -4435,19 +4437,25 @@ rb_iterate(it_proc, data1, bl_proc, data2)
     NODE *node = NEW_IFUNC(bl_proc, data2);
     VALUE self = ruby_top_self;
 
-  iter_retry:
     PUSH_ITER(ITER_PRE);
     PUSH_BLOCK(0, node);
     PUSH_TAG(PROT_NONE);
 
     state = EXEC_TAG();
     if (state == 0) {
+  iter_retry:
 	retval = (*it_proc)(data1);
     }
-    if (ruby_block->tag->dst == state) {
-	state &= TAG_MASK;
-	if (state == TAG_RETURN || state == TAG_BREAK) {
-	    retval = prot_tag->retval;
+    else {
+	if (ruby_block->tag->dst == state) {
+	    state &= TAG_MASK;
+	    if (state == TAG_RETURN || state == TAG_BREAK) {
+		retval = prot_tag->retval;
+	    }
+	}
+	if (state == TAG_RETRY) {
+	    state = 0;
+	    goto iter_retry;
 	}
     }
     POP_TAG();
@@ -4457,9 +4465,6 @@ rb_iterate(it_proc, data1, bl_proc, data2)
     switch (state) {
       case 0:
 	break;
-
-      case TAG_RETRY:
-	goto iter_retry;
 
       case TAG_BREAK:
 	break;
@@ -7045,7 +7050,6 @@ proc_invoke(proc, args, self, klass)
     if (klass) _block.frame.last_class = klass;
     ruby_block = &_block;
 
-  again:
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;
     PUSH_TAG(PROT_NONE);
@@ -7259,7 +7263,6 @@ block_pass(self, node)
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = block_orphan(data);
 
-  retry:
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
@@ -7271,13 +7274,12 @@ block_pass(self, node)
     PUSH_TAG(PROT_NONE);
     state = EXEC_TAG();
     if (state == 0) {
+      retry:
 	proc_set_safe_level(proc);
 	if (safe > ruby_safe_level)
 	    ruby_safe_level = safe;
 	result = rb_eval(self, node->nd_iter);
     }
-    POP_TAG();
-    POP_ITER();
     if (_block.tag->dst == state) {
 	if (orphan) {
 	    state &= TAG_MASK;
@@ -7297,6 +7299,12 @@ block_pass(self, node)
 	    }
 	}
     }
+    if (state == TAG_RETRY) {
+	state = 0;
+	goto retry;
+    }
+    POP_TAG();
+    POP_ITER();
     ruby_block = old_block;
     ruby_safe_level = safe;
 
@@ -7306,8 +7314,6 @@ block_pass(self, node)
       case TAG_BREAK:
 	result = prot_tag->retval;
 	break;
-      case TAG_RETRY:
-	goto retry;
       case TAG_RETURN:
 	if (orphan) {
 	    localjump_error("return from proc-closure", prot_tag->retval, state);
