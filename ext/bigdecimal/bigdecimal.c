@@ -683,8 +683,10 @@ BigDecimal_div(VALUE self, VALUE r)
     /* c xxxxx
        r 00000yyyyy  ==> (y/b)*BASE >= HALF_BASE
      */
-    /* Round up ? */
-    VpInternalRound(c,0,c->frac[c->Prec-1],(VpBaseVal()*res->frac[0])/div->frac[0]);
+    /* Round */
+    if(VpIsDef(c)) {
+       VpInternalRound(c,0,c->frac[c->Prec-1],(VpBaseVal()*res->frac[0])/div->frac[0]);
+    }
     return ToValue(c);
 }
 
