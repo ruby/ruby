@@ -1,3 +1,8 @@
+Sun Apr  4 14:01:20 2004  Dave Thomas  <dave@pragprog.com>
+
+	* lib/rdoc/options.rb (Options::parse): Allow multiple -x options to RDoc.
+	  Fix bug where files weren't being excluded properly
+
 Sat Apr  3 09:36:38 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/syck.h: version 0.43.

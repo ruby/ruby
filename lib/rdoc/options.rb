@@ -346,7 +346,7 @@ class Options
       @show_all = false
       @main_page = nil
       @marge     = false
-      @exclude   = nil
+      @exclude   = []
       @quiet = false
       @generator_name = 'html'
       @generator = generators[@generator_name]
@@ -386,7 +386,7 @@ class Options
         when "--all"           then @show_all      = true
         when "--charset"       then @charset       = arg
         when "--debug"         then $DEBUG         = true
-        when "--exclude"       then @exclude       = Regexp.new(arg)
+        when "--exclude"       then @exclude       << Regexp.new(arg)
         when "--inline-source" then @inline_source = true
         when "--line-numbers"  then @include_line_numbers = true
         when "--main"          then @main_page     = arg
@@ -472,6 +472,12 @@ class Options
       @files = ARGV.dup
 
       @rdoc_include << "." if @rdoc_include.empty?
+
+      if @exclude.empty?
+        @exclude = nil
+      else
+        @exclude = Regexp.new(@exclude.join("|"))
+      end
 
       check_files
 
