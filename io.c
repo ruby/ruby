@@ -299,6 +299,9 @@ io_write(io, str)
     if (fptr->mode & FMODE_SYNC) {
 	io_fflush(f, fptr->path);
     }
+    else {
+	fptr->mode |= FMODE_WBUF;
+    }
 
     return INT2FIX(n);
 }
