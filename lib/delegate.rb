@@ -76,13 +76,13 @@ class SimpleDelegator<Delegator
     @_sd_obj = obj
   end
 
-  def clone(obj)
+  def clone
     super
-    __setobj__(obj.__getobj__.clone)
+    __setobj__(__getobj__.clone)
   end
-  def dup(obj)
+  def dup
     super
-    __setobj__(obj.__getobj__.dup)
+    __setobj__(__getobj__.dup)
   end
 end
 
@@ -112,13 +112,13 @@ def DelegateClass(superclass)
     def __setobj__(obj)
       @_dc_obj = obj
     end
-    def clone(obj)
+    def clone
       super
-      __setobj__(obj.__getobj__.clone)
+      __setobj__(__getobj__.clone)
     end
-    def dup(obj)
+    def dup
       super
-      __setobj__(obj.__getobj__.dup)
+      __setobj__(__getobj__.dup)
     end
   }
   for method in methods

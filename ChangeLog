@@ -1,3 +1,10 @@
+Wed Nov 10 22:49:01 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (SimpleDelegator::dup): wrong number of
+	  arguments.
+
+	* lib/delegate.rb (DelegateClass::dup): ditto.
+
 Wed Nov 10 19:47:55 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): path is a string object now.
