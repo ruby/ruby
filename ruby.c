@@ -430,6 +430,10 @@ proc_options(argc, argv)
 	    goto reswitch;
 
 	  case 'v':
+	    if (verbose) {
+		s++;
+		goto reswitch;
+	    }
 	    ruby_show_version();
 	    verbose = 1;
 	  case 'w':

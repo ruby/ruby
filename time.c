@@ -106,39 +106,37 @@ time_timeval(time, interval)
     int interval;
 {
     struct timeval t;
+    char *tstr = interval ? "time interval" : "time";
+
+#ifndef NEGATIVE_TIME_T
+    interval = 1;
+#endif
 
     switch (TYPE(time)) {
       case T_FIXNUM:
 	t.tv_sec = FIX2LONG(time);
-#ifndef NEGATIVE_TIME_T
-	if (t.tv_sec < 0)
-	    rb_raise(rb_eArgError, "time must be positive");
-#endif
+	if (interval && t.tv_sec < 0)
+	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_usec = 0;
 	break;
 
       case T_FLOAT:
-#ifndef NEGATIVE_TIME_T
-	if (RFLOAT(time)->value < 0.0)
-	    rb_raise(rb_eArgError, "time must be positive");
-#endif
+	if (interval && RFLOAT(time)->value < 0.0)
+	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_sec = (time_t)RFLOAT(time)->value;
 	t.tv_usec = (time_t)((RFLOAT(time)->value - (double)t.tv_sec)*1e6);
 	break;
 
       case T_BIGNUM:
 	t.tv_sec = NUM2LONG(time);
-#ifndef NEGATIVE_TIME_T
-	if (t.tv_sec < 0)
-	    rb_raise(rb_eArgError, "time must be positive");
-#endif
+	if (interval && t.tv_sec < 0)
+	    rb_raise(rb_eArgError, "%s must be positive", tstr);
 	t.tv_usec = 0;
 	break;
 
       default:
-	rb_raise(rb_eTypeError, "can't convert %s into Time%s",
-		 rb_class2name(CLASS_OF(time)),
-		 interval ? " interval" : "");
+	rb_raise(rb_eTypeError, "can't convert %s into %s",
+		 rb_class2name(CLASS_OF(time)), tstr);
 	break;
     }
     return t;

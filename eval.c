@@ -198,7 +198,6 @@ print_undef(klass, id)
 	     rb_class2name(klass));
 }
 
-
 #define CACHE_SIZE 0x800
 #define CACHE_MASK 0x7ff
 #define EXPR1(c,m) ((((c)>>3)^(m))&CACHE_MASK)
@@ -6261,19 +6260,11 @@ proc_call(proc, args)
     Data_Get_Struct(proc, struct BLOCK, data);
     orphan = blk_orphan(data);
 
-    if (orphan) {/* orphan procedure */
-	if (rb_block_given_p()) {
-	    ruby_block->frame.iter = ITER_CUR;
-	}
-	else {
-	    ruby_block->frame.iter = ITER_NOT;
-	}
-    }
-
     /* PUSH BLOCK from data */
     old_block = ruby_block;
     _block = *data;
     ruby_block = &_block;
+    ruby_block->frame.iter = ITER_NOT;
 
     PUSH_ITER(ITER_CUR);
     ruby_frame->iter = ITER_CUR;

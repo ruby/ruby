@@ -280,8 +280,7 @@ dir_s_open(klass, dirname)
 
     dir_initialize(dir, dirname);
     if (rb_block_given_p()) {
-	rb_ensure(rb_yield, dir, dir_close, dir);
-	return Qnil;
+	return rb_ensure(rb_yield, dir, dir_close, dir);
     }
 
     return dir;
