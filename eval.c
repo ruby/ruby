@@ -1311,9 +1311,8 @@ ruby_options(argc, argv)
 
 void rb_exec_end_proc _((void));
 
-static int
-ruby_finalize_0(ex)
-    int ex;
+static void
+ruby_finalize_0()
 {
     ruby_errinfo = 0;
     PUSH_TAG(PROT_NONE);
@@ -1322,20 +1321,22 @@ ruby_finalize_0(ex)
     }
     POP_TAG();
     rb_exec_end_proc();
+}
+
+static void
+ruby_finalize_1()
+{
+    ruby_errinfo = 0;
     rb_gc_call_finalizer_at_exit();
     trace_func = 0;
     tracing = 0;
-    if (ruby_errinfo && rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
-	VALUE st = rb_iv_get(ruby_errinfo, "status");
-	return NUM2INT(st);
-    }
-    return ex;
 }
 
 void
 ruby_finalize()
 {
-    ruby_finalize_0(EXIT_SUCCESS);
+    ruby_finalize_0();
+    ruby_finalize_1();
 }
 
 int
@@ -1343,8 +1344,10 @@ ruby_cleanup(ex)
     int ex;
 {
     int state;
+    volatile VALUE err = ruby_errinfo;
 
     ruby_safe_level = 0;
+    ruby_finalize_0();
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
@@ -1355,10 +1358,16 @@ ruby_cleanup(ex)
 	ex = state;
     }
     POP_ITER();
-
+    ruby_errinfo = err;
     ex = error_handle(ex);
     POP_TAG();
-    return ruby_finalize_0(ex);
+
+    ruby_finalize_1();
+    if (err && rb_obj_is_kind_of(err, rb_eSystemExit)) {
+	VALUE st = rb_iv_get(err, "status");
+	return NUM2INT(st);
+    }
+    return ex;
 }
 
 int
@@ -3904,6 +3913,8 @@ rb_longjmp(tag, mesg)
     VALUE at;
 
     if (thread_set_raised()) {
+	printf("%d (c:%p m:%p):", tag, curr_thread, main_thread);
+	rb_p(mesg);
 	ruby_errinfo = exception_error;
 	JUMP_TAG(TAG_FATAL);
     }

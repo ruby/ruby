@@ -467,7 +467,7 @@ eaccess(path, mode)
      const char *path;
      int mode;
 {
-#if defined(S_IXGRP) && !defined(_WIN32)
+#if defined(S_IXGRP) && !defined(_WIN32) && !defined(__CYGWIN__)
     struct stat st;
     int euid;
 

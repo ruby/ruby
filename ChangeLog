@@ -1,3 +1,10 @@
+Tue Oct 21 23:16:26 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_cleanup): call finalizers and exit procs before
+	  terminating threads.
+
+	* eval.c (ruby_cleanup): preserve ruby_errinfo before ruby_finalize_0().
+
 Tue Oct 21 15:57:11 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/test/unit/collector/dir.rb (Test::Unit::Collector::Dir#collect_file):
@@ -351,6 +358,10 @@ Sun Oct 12 14:45:03 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/win32ole/extconf.rb: check "windows.h", not "windows".
 	  [ruby-talk:84051]
+
+Sat Oct 11 20:41:03 2003  Corinna Vinschen  <corinna@vinschen.de>
+
+	* file.c (eaccess): Use access(2) on Cygwin.
 
 Sat Oct 11 17:09:21 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 

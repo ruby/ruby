@@ -134,4 +134,3 @@ if __FILE__ == $0
   es = DRb::ExtServ.new(ARGV.shift, ARGV.shift)
   DRb.thread.join
 end
-

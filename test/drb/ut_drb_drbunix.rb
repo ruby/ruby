@@ -1,4 +1,4 @@
-require 'ut_drb'
+require "#{File.dirname(File.expand_path(__FILE__))}/ut_drb"
 
 if __FILE__ == $0
   def ARGV.shift

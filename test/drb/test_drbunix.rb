@@ -1,12 +1,17 @@
-require 'test_drb'
+require "#{File.dirname(File.expand_path(__FILE__))}/drbtest"
+require 'drb/unix'
 
-class TestService
-  @@scripts = %w(ut_drb_drbunix.rb ut_array_drbunix.rb)
+class DRbUNIXService < DRbService
+  %w(ut_drb_drbunix.rb ut_array_drbunix.rb).each do |nm|
+    DRb::ExtServManager.command[nm] = "#{@@ruby} #{@@dir}/#{nm}"
+  end
+  @server = DRb::DRbServer.new(ARGV.shift || 'drbunix:', @@manager, {})
 end
 
-class DRbXCoreTest < DRbCoreTest
+class TestDRbUNIXCore < Test::Unit::TestCase
+  include DRbCore
   def setup
-    @ext = $manager.service('ut_drb_drbunix.rb')
+    @ext = DRbUNIXService.manager.service('ut_drb_drbunix.rb')
     @there = @ext.front
   end
 
@@ -21,26 +26,20 @@ class DRbXCoreTest < DRbCoreTest
 
   def test_06_timeout
     ten = Onecky.new(3)
-    assert_exception(TimeoutError) do
+    assert_raises(TimeoutError) do
       @there.do_timeout(ten)
     end
-    assert_exception(TimeoutError) do
+    assert_raises(TimeoutError) do
       @there.do_timeout(ten)
     end
     sleep 3
   end
 end
 
-class DRbXAryTest < DRbAryTest
+class TestDRbUNIXAry < Test::Unit::TestCase
+  include DRbAry
   def setup
-    @ext = $manager.service('ut_array_drbunix.rb')
+    @ext = DRbUNIXService.manager.service('ut_array_drbunix.rb')
     @there = @ext.front
   end
-end
-
-if __FILE__ == $0
-  $testservice = TestService.new(ARGV.shift || 'drbunix:')
-  $manager = $testservice.manager
-  RUNIT::CUI::TestRunner.run(DRbXCoreTest.suite)
-  RUNIT::CUI::TestRunner.run(DRbXAryTest.suite)
 end
