@@ -1,3 +1,14 @@
+Sat Feb 14 23:59:11 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* mkconfig.rb: use fileutils.rb instead of ftools.rb.
+
+	* bcc32/Makefile.sub, win32/Makefile.sub (config.h): define
+	  STACK_GROW_DIRECTION.
+
+	* bcc32/Makefile.sub (config.h): add newer checks.
+
+	* wince/Makefile.sub (config.h): define NEED_IO_SEEK_BETWEEN_RW.
+
 Sat Feb 14 23:26:27 2004  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/un.rb: use OptionParser instead of getopts.

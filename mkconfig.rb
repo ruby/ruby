@@ -5,12 +5,14 @@ $srcdir ||= nil
 $install_name ||= nil
 $so_name ||= nil
 
-require File.dirname($0)+"/lib/ftools"
+require File.dirname($0)+"/lib/fileutils"
 mkconfig = File.basename($0)
 
 rbconfig_rb = ARGV[0] || 'rbconfig.rb'
 srcdir = $srcdir || '.'
-File.makedirs(File.dirname(rbconfig_rb), true)
+unless File.directory?(dir = File.dirname(rbconfig_rb))
+  FileUtils.makedirs(File.dirname(rbconfig_rb), :verbose => true)
+end
 
 version = RUBY_VERSION
 rbconfig_rb_tmp = rbconfig_rb + '.tmp'
