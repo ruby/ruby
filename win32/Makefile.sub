@@ -340,6 +340,8 @@ s,@LIBRUBYARG@,$$(RUBY_SO_NAME).lib,;t t
 s,@SOLIBS@,$(SOLIBS),;t t
 s,@DLDLIBS@,$(DLDLIBS),;t t
 s,@ENABLE_SHARED@,yes,;t t
+s,@OUTFLAG@,-Fe,;t t
+s,@CPPOUTFILE@,-P,;t t
 s,@arch@,$(ARCH)-$(OS),;t t
 s,@sitearch@,$(ARCH)-$(RT),;t t
 s,@sitedir@,$${prefix}/lib/ruby/site_ruby,;t t

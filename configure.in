@@ -98,6 +98,16 @@ fi
 AC_PROG_CC
 AC_PROG_GCC_TRADITIONAL
 
+echo 'foo(){}' > conftest.c
+if ${CPP} -o conftest.i conftest.c >/dev/null 2>&1; then
+  CPPOUTFILE='-o conftest.i'
+else
+  CPPOUTFILE='> conftest.i'
+fi
+AC_SUBST(CPPOUTFILE)
+OUTFLAG='-o '
+AC_SUBST(OUTFLAG)
+
 AC_PROG_YACC
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)

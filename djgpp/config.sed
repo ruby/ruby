@@ -65,6 +65,8 @@ s%@arch@%i386-msdosdjgpp%g
 s%@sitedir@%${prefix}/lib/ruby/site_ruby%g
 s%@configure_args@%%g
 s%@MINIRUBY@%./miniruby%
+s%@OUTFLAG@%-o %
+s%@CPPOUTFILE@%-o conftest.i%
 s%@archlib@%/lib/ruby/i386-msdosdjgpp%
 ;s%|| true%%
 ;/\/dev\/null/ {

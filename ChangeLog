@@ -1,3 +1,19 @@
+Sun Sep 15 19:48:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (OUTFLAG, CPPOUTFILE): moved from lib/mkmf.rb.
+	  check whether ${CPP} accepts the -o option.
+
+	* win32/Makefile.sub (OUTFLAG, CPPOUTFILE): ditto.
+
+	* bcc32/Makefile.sub (OUTFLAG, CPPOUTFILE): ditto.
+
+	* djgpp/config.sed (OUTFLAG, CPPOUTFILE): ditto.
+
+	* lib/mkmf.rb (OUTFLAG, CPPOUTFILE): use CONFIG.
+	  make easy to understand log.
+
+	* mkconfig.rb (val): should not strip.
+
 Sat Sep 14 20:13:42 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* error.c(rb_sys_fail): remove case EPIPE on bcc32 .
