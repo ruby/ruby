@@ -110,7 +110,7 @@ class CGI
       end
 
       def initialize(session, option={})
-	dir = option['tmpdir'] || Dir::TMPDIR
+	dir = option['tmpdir'] || Dir::tmpdir
 	prefix = option['prefix'] || ''
 	id = session.session_id
 	unless check_id(id)

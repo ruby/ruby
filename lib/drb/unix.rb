@@ -53,7 +53,7 @@ module DRb
     Max_try = 10
     private
     def self.temp_server
-      tmpdir = Dir::TMPDIR
+      tmpdir = Dir::tmpdir
       n = 0
       while true
 	begin

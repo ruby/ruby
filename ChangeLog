@@ -1,3 +1,8 @@
+Thu Jul 24 01:32:04 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/tmpdir.rb (tmpdir): new method.  remove TMPDIR.
+	  use GetSystemWindowsDirectory(GetSystemDirectory), not GetTempPath.
+
 Thu Jul 24 01:08:43 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl: imported.

@@ -5,22 +5,38 @@
 #
 
 class Dir
-  begin
-    require "Win32API"
-    max_pathlen = 260
-    t_path = ' '*(max_pathlen+1)
-    t_path = t_path[0, Win32API.new('kernel32', 'GetTempPath', 'LP', 'L').call(t_path.size, t_path)]
-    t_path.untaint
-    TMPDIR = File.expand_path(t_path)
-  rescue LoadError
-    if $SAFE > 0
-      TMPDIR = '/tmp'
-    else
-      TMPDIR = File.expand_path(ENV['TMPDIR']||ENV['TMP']||ENV['TEMP']||'/tmp')
-    end
-  end
-end
 
-if __FILE__ == $0
-  puts Dir::TMPDIR
+  @@systmpdir = '/tmp'
+
+  begin
+    require 'Win32API'
+    max_pathlen = 260
+    windir = ' '*(max_pathlen+1)
+    begin
+      getdir = Win32API.new('kernel32', 'GetSystemWindowsDirectory', 'PL', 'L')
+    rescue RuntimeError
+      getdir = Win32API.new('kernel32', 'GetSystemDirectory', 'PL', 'L')
+    end
+    getdir.call(windir, windir.size)
+    windir = File.expand_path(windir.rstrip.untaint)
+    temp = File.join(windir, 'temp')
+    @@systmpdir = temp if File.directory?(temp) and File.writable?(temp)
+  rescue LoadError
+  end
+
+  def Dir::tmpdir
+    tmp = '.'
+    if $SAFE > 0
+      tmp = @@systmpdir
+    else
+      for dir in [ENV['TMPDIR'], ENV['TMP'], ENV['TEMP'],
+	          ENV['USERPROFILE'], @@systmpdir, '/tmp']
+	if dir and File.directory?(dir) and File.writable?(dir)
+	  tmp = dir
+	  break
+	end
+      end
+    end
+    File.expand_path(tmp)
+  end
 end

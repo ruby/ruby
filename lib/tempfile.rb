@@ -18,10 +18,10 @@ class Tempfile < SimpleDelegator
   # object works just like a File object.
   #
   # If tmpdir is omitted, the temporary directory is determined by
-  # Dir::TMPDIR provided by 'tmpdir.rb'.
+  # Dir::tmpdir provided by 'tmpdir.rb'.
   # When $SAFE > 0 and the given tmpdir is tainted, it uses
   # /tmp. (Note that ENV values are tainted by default)
-  def initialize(basename, tmpdir=Dir::TMPDIR)
+  def initialize(basename, tmpdir=Dir::tmpdir)
     if $SAFE > 0 and tmpdir.tainted?
       tmpdir = '/tmp'
     end
