@@ -59,4 +59,6 @@ void rb_io_unbuffered _((OpenFile*));
 void rb_io_check_closed _((OpenFile*));
 void rb_eof_error _((void));
 
+void rb_read_check _((FILE*));	/* thread aware check */
+
 #endif

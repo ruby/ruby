@@ -22,14 +22,13 @@ tk_eval_cmd(argc, argv)
 }
 
 static VALUE
-tk_s_new(argc, argv, class)
+tk_s_new(argc, argv, klass)
     int argc;
     VALUE *argv;
-    VALUE class;
+    VALUE klass;
 {
-    VALUE obj = rb_obj_alloc(class);
+    VALUE obj = rb_class_new_instance(argc, argv, klass);
 
-    rb_obj_call_init(obj, argc, argv);
     if (rb_iterator_p()) rb_obj_instance_eval(0, 0, obj);
     return obj;
 }

@@ -775,7 +775,6 @@ rb_reg_new_1(klass, s, len, options)
     if (options & ~0x7) {
 	kcode_reset_option();
     }
-    rb_obj_call_init((VALUE)re, 0, 0);
 
     return (VALUE)re;
 }

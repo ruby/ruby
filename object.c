@@ -565,7 +565,6 @@ rb_module_s_new(klass)
     VALUE mod = rb_module_new();
 
     RBASIC(mod)->klass = klass;
-    rb_obj_call_init(mod, 0, 0);
     return mod;
 }
 
@@ -587,7 +586,6 @@ rb_class_s_new(argc, argv)
     /* make metaclass */
     RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
     rb_singleton_class_attached(RBASIC(klass)->klass, klass);
-    rb_obj_call_init(klass, argc, argv);
 
     return klass;
 }

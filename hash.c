@@ -205,7 +205,6 @@ rb_hash_s_new(argc, argv, klass)
 
     hash->ifnone = ifnone;
     hash->tbl = st_init_table(&objhash);
-    rb_obj_call_init((VALUE)hash, argc, argv);
 
     return (VALUE)hash;
 }
@@ -249,7 +248,6 @@ rb_hash_s_create(argc, argv, klass)
 	    hash->ifnone = Qnil;
 	    hash->tbl = 0;	/* avoid GC crashing  */
 	    hash->tbl = st_copy(RHASH(argv[0])->tbl);
-	    rb_obj_call_init((VALUE)hash, argc, argv);
 
 	    return (VALUE)hash;
 	}
@@ -267,7 +265,6 @@ rb_hash_s_create(argc, argv, klass)
     for (i=0; i<argc; i+=2) {
 	st_insert(RHASH(hash)->tbl, argv[i], argv[i+1]);
     }
-    rb_obj_call_init(hash, argc, argv);
 
     return hash;
 }

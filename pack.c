@@ -361,7 +361,7 @@ pack_pack(ary, fmt)
 	}
 
 	switch (type) {
-	  case 'A': case 'a':
+	  case 'A': case 'a': case 'Z':
 	  case 'B': case 'b':
 	  case 'H': case 'h':
 	    from = NEXTFROM;

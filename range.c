@@ -52,7 +52,6 @@ range_new(klass, beg, end, exclude_end)
 
     rb_ivar_set(obj, id_beg, beg);
     rb_ivar_set(obj, id_end, end);
-    rb_obj_call_init(obj, 2, args);
 
     return obj;
 }

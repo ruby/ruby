@@ -18,6 +18,7 @@ Hacking Interpreter
 
 Standard Libraries
 
+* IO/File to call initialize
 * String#scanf(?)
 * Object#fmt(?)
 * Integer[num], Float[num] (String[str]?, Array[obj]??)
@@ -25,13 +26,11 @@ Standard Libraries
 
 Extension Libraries
 
-* mod_ruby, FastCGI ruby
-* InterBase module
+* FastCGI ruby
 * ptk.rb pTk wrapper that is compatible to tk.rb
 
 Ruby Libraries
 
-* CGI.rb
 * httplib.rb, urllib.rb, nttplib.rb, etc.
 * format like perl's
 
@@ -39,7 +38,6 @@ Tools
 
 * extension library maker like XS or SWIG
 * freeze or undump to bundle everything
-* eruby - embedded ruby
 
 Misc
 

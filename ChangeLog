@@ -1,3 +1,37 @@
+Fri Jun 10 13:42:10 1999  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* pack.c (pack_pack): template `Z' should be allowed.
+
+Fri Jun 11 15:21:21 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ext/etc/etc.c (etc_group): dumps core if there's no more group.
+
+Fri Jun 11 01:50:25 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (ruby_run): Init_stack() was called too late; local
+	  variables happend to be higher (or lower) than stack_start.
+
+Thu Jun 10 16:41:48 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c: do not call `initialize' for IO objects.  So with Array,
+	  Hash, Range, and Time objects.
+	
+	* ext/curses/curses.c (curses_getch): made thread aware using
+	  rb_read_check().
+
+	* ext/curses/curses.c (window_getch): ditto.
+
+	* ext/curses/curses.c (curses_getstr): made (partially) thread
+	  aware using rb_read_check().
+
+	* ext/curses/curses.c (window_getstr): ditto.
+
+	* io.c (rb_read_check): new function to help making something
+	  (like extension libraries) thread aware.
+
+	* eval.c (is_defined): `defined? super' should be true even for
+	  private superclass methods.
+
 Wed Jun  9 13:26:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_thread_loading): modified to avoid nested race
@@ -6,7 +40,8 @@ Wed Jun  9 13:26:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	* ext/tcltklib/tcltklib.c (ip_invoke): queue invocation on non
 	  main threads.
 
-	* ext/tcltklib/tcltklib.c (lib_mainloop): flush invoke queues.
+	* ext/tcltklib/tcltklib.c (lib_mainloop): flush invocation
+	  queues periodically.
 
 	* version.c (ruby_show_version): now print the message to stdout.
 
@@ -105,7 +140,7 @@ Sat May 29 18:27:13 1999  Koji Arai  <JCA02266@nifty.ne.jp>
 Sat May 29 12:27:00 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_invoke): proper ref count management
-	  to avoid leak.
+	  to avoid leak.  I HATE REF COUNTING!!
 
 	* eval.c (ruby_run): moved ruby_require_libraries() to handle `-r'
 	  from ruby_options() to avoid stack corruption for threads

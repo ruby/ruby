@@ -442,12 +442,10 @@ pty_getpty(self, shell)
     rfptr->mode = rb_io_mode_flags("r");
     rfptr->f = fdopen(info.fd, "r");
     rfptr->path = strdup(RSTRING(shell)->ptr);
-    rb_obj_call_init((VALUE)rport, 1, &shell);
 
     wfptr->mode = rb_io_mode_flags("w");
     wfptr->f = fdopen(dup(info.fd), "w");
     wfptr->path = strdup(RSTRING(shell)->ptr);
-    rb_obj_call_init((VALUE)wport, 1, &shell);
 
     res = rb_ary_new2(2);
     rb_ary_store(res,0,(VALUE)rport);

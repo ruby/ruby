@@ -321,7 +321,7 @@ rb_method_boundp(klass, id, ex)
     int noex;
 
     if (rb_get_method_body(&klass, &id, &noex)) {
-	if (ex && noex & NOEX_PRIVATE)
+	if (ex && (noex & NOEX_PRIVATE))
 	    return Qfalse;
 	return Qtrue;
     }
@@ -879,7 +879,7 @@ extern char **environ;
 char **rb_origenviron;
 
 void rb_call_inits _((void));
-void Init_stack _((void));
+void Init_stack _((void*));
 void Init_heap _((void));
 void Init_ext _((void));
 
@@ -899,6 +899,7 @@ ruby_init()
     rb_origenviron = environ;
 #endif
 
+    Init_stack(0);
     Init_heap();
     PUSH_SCOPE();
     ruby_scope->local_vars = 0;
@@ -978,16 +979,14 @@ ruby_run()
 {
     int state;
     static int ex;
+    NODE *save;
 
     if (ruby_nerrs > 0) exit(ruby_nerrs);
 
-    Init_stack();
-
+    Init_stack(&save);
     PUSH_TAG(PROT_NONE);
     PUSH_ITER(ITER_NOT);
     if ((state = EXEC_TAG()) == 0) {
-	NODE *save;
-
 	if (!ext_init) Init_ext();
 	save = ruby_eval_tree;
 	ruby_require_libraries();
@@ -1464,7 +1463,7 @@ is_defined(self, node, buf)
       case NODE_ZSUPER:
 	if (ruby_frame->last_func == 0) return 0;
 	else if (rb_method_boundp(RCLASS(ruby_frame->last_class)->super,
-				  ruby_frame->last_func, 1)) {
+				  ruby_frame->last_func, 0)) {
 	    if (nd_type(node) == NODE_SUPER) {
 		return arg_defined(self, node->nd_args, buf, "super");
 	    }
@@ -2739,7 +2738,6 @@ rb_eval(self, node)
 		klass = rb_define_class_id(node->nd_cname, super);
 		rb_const_set(ruby_class, node->nd_cname, klass);
 		rb_set_class_path(klass,ruby_class,rb_id2name(node->nd_cname));
-		rb_obj_call_init(klass, 0, 0);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(klass, ruby_wrapper);
@@ -2779,7 +2777,6 @@ rb_eval(self, node)
 		module = rb_define_module_id(node->nd_cname);
 		rb_const_set(ruby_class, node->nd_cname, module);
 		rb_set_class_path(module,ruby_class,rb_id2name(node->nd_cname));
-		rb_obj_call_init(module, 0, 0);
 	    }
 	    if (ruby_wrapper) {
 		rb_extend_object(module, ruby_wrapper);
@@ -5425,7 +5422,6 @@ proc_s_new(klass)
 
     scope_dup(data->scope);
     proc_save_safe_level(proc);
-    rb_obj_call_init(proc, 0, 0);
 
     return proc;
 }

@@ -298,7 +298,7 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 }
 
 extern st_table *rb_class_tbl;
-VALUE *rb_gc_stack_start;
+VALUE *rb_gc_stack_start = 0;
 
 #if defined(__GNUC__) && __GNUC__ >= 2
 __inline__
@@ -950,22 +950,26 @@ gc_start()
 }
 
 void
-Init_stack()
+Init_stack(addr)
+    VALUE *addr;
 {
 #ifdef __human68k__
     extern void *_SEND;
-    gc_stack_start = _SEND;
+    rb_gc_stack_start = _SEND;
 #else
     VALUE start;
 
-    rb_gc_stack_start = &start;
+    if (!addr) addr = &start;
+    rb_gc_stack_start = addr;
 #endif
 }
 
 void
 Init_heap()
 {
-    Init_stack();
+    if (!rb_gc_stack_start) {
+	Init_stack(0);
+    }
     add_heap();
 }
 

@@ -235,7 +235,6 @@ rb_struct_s_def(argc, argv, klass)
 	RARRAY(rest)->ptr[i] = INT2FIX(id);
     }
     st = make_struct(name, rest, klass);
-    rb_obj_call_init(st, argc, argv);
 
     return st;
 }

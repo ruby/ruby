@@ -194,7 +194,6 @@ rb_ary_s_new(argc, argv, klass)
     ary->ptr = ALLOC_N(VALUE, ary->capa);
     memfill(ary->ptr, len, val);
     ary->len = len;
-    rb_obj_call_init((VALUE)ary, argc, argv);
 
     return (VALUE)ary;
 }

@@ -214,10 +214,11 @@ etc_group(obj)
 	endgrent();
 	return obj;
     }
-    return setup_group(getgrent());
-#else
-    return Qnil;
+    if (grp = getgrent()) {
+	return setup_group(grp);
+    }
 #endif
+    return Qnil;
 }
 
 static VALUE mEtc;

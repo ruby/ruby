@@ -32,7 +32,9 @@
 #endif
 #endif
 
+#include "stdio.h"
 #include "ruby.h"
+#include "rubyio.h"
 
 static VALUE mCurses;
 static VALUE cWindow;
@@ -355,6 +357,7 @@ static VALUE
 curses_getch(obj)
     VALUE obj;
 {
+    rb_read_check(stdin);
     return CHR2FIX(getch());
 }
 
@@ -364,6 +367,8 @@ curses_getstr(obj)
     VALUE obj;
 {
     char rtn[1024]; /* This should be big enough.. I hope */
+
+    rb_read_check(stdin);
     getstr(rtn);
     return rb_tainted_str_new2(rtn);
 }
@@ -730,6 +735,7 @@ window_getch(obj)
 {
     struct windata *winp;
     
+    rb_read_check(stdin);
     GetWINDOW(obj, winp);
     return CHR2FIX(wgetch(winp->window));
 }
@@ -743,6 +749,7 @@ window_getstr(obj)
     char rtn[1024]; /* This should be big enough.. I hope */
     
     GetWINDOW(obj, winp);
+    rb_read_check(stdin);
     wgetstr(winp->window, rtn);
     return rb_tainted_str_new2(rtn);
 }

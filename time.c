@@ -69,7 +69,6 @@ time_s_now(klass)
     if (gettimeofday(&tobj->tv, 0) < 0) {
 	rb_sys_fail("gettimeofday");
     }
-    rb_obj_call_init(obj, 0, 0);
 
     return obj;
 }

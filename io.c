@@ -132,6 +132,9 @@ void
 rb_io_check_closed(fptr)
     OpenFile *fptr;
 {
+    if (!fptr) {
+	rb_raise(rb_eIOError, "uninitialized stream");
+    }
     if (fptr->f == NULL && fptr->f2 == NULL)
 	rb_raise(rb_eIOError, "closed stream");
 }
@@ -151,6 +154,15 @@ rb_io_check_writable(fptr)
 {
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
+    }
+}
+
+void
+rb_read_check(fp)
+    FILE *fp;
+{
+    if (!READ_DATA_PENDING(fp)) {
+	rb_thread_wait_fd(fileno(fp));
     }
 }
 
@@ -1242,7 +1254,6 @@ rb_file_open_internal(klass, fname, mode)
     fptr->mode = rb_io_mode_flags(mode);
     fptr->f = rb_fopen(fname, mode);
     fptr->path = strdup(fname);
-    rb_obj_call_init((VALUE)port, 0, 0);
 
     return (VALUE)port;
 }
@@ -1278,7 +1289,6 @@ rb_file_sysopen_internal(klass, fname, flags, mode)
     fptr->mode = rb_io_mode_flags2(flags);
     fptr->f = rb_fdopen(fd, m);
     fptr->path = strdup(fname);
-    rb_obj_call_init((VALUE)port, 0, 0);
 
     return (VALUE)port;
 #endif
@@ -1401,7 +1411,6 @@ pipe_open(pname, mode)
 	    fptr->f2 = f;
 	    rb_io_unbuffered(fptr);
 	}
-	rb_obj_call_init((VALUE)port, 0, 0);
 	return (VALUE)port;
     }
 #else
@@ -1483,7 +1492,6 @@ pipe_open(pname, mode)
 	    fptr->finalize = pipe_finalize;
 	    pipe_add_fptr(fptr);
 #endif
-	    rb_obj_call_init((VALUE)port, 0, 0);
 	    return (VALUE)port;
 	}
     }
@@ -1501,7 +1509,7 @@ rb_io_s_popen(argc, argv, self)
     VALUE self;
 {
     char *mode;
-    VALUE pname, pmode;
+    VALUE pname, pmode, port;
 
     if (rb_scan_args(argc, argv, "11", &pname, &pmode) == 1) {
 	mode = "r";
@@ -1515,7 +1523,9 @@ rb_io_s_popen(argc, argv, self)
 	    rb_raise(rb_eArgError, "illegal access mode");
     }
     Check_SafeStr(pname);
-    return pipe_open(RSTRING(pname)->ptr, mode);
+    port = pipe_open(RSTRING(pname)->ptr, mode);
+    if (NIL_P(port)) return Qnil;
+    return port;
 }
 
 static VALUE
@@ -2061,7 +2071,6 @@ prep_stdio(f, mode, klass)
     MakeOpenFile(io, fp);
     fp->f = f;
     fp->mode = mode;
-    rb_obj_call_init((VALUE)io, 0, 0);
 
     return (VALUE)io;
 }
