@@ -1,3 +1,28 @@
+Wed May  2 11:46:13 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (block_pass): should not downgrade safe level.
+
+Wed May  2 03:07:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dbm/extconf.rb: allow specifying dbm-type explicitly.
+
+	* ext/dbm/extconf.rb: avoid gdbm if possible, because it leaks
+	  memory, whereas gdbm.so doesn't.  potential incompatibility.
+
+Wed May  2 02:02:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_insert): new method.
+
+Tue May  1 17:55:58 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yylex): lex_state after RESCUE_MOD should be EXPR_BEG.
+
+Tue May  1 16:23:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_insert): new method.
+
+	* array.c (rb_ary_update): new utility function.
+
 Tue May  1 03:24:05 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/irb/completion.rb, lib/irb/frame.rb, lib/irb/xmp.rb,
@@ -12,12 +37,46 @@ Tue May  1 03:07:17 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* lib/irb/main.rb: This file is not needed anymore.
 
+Fri Apr 27 09:27:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (set_outfile): should check if closed before assignment.
+
 Thu Apr 26 22:36:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in:  don't use tzname on cygwin 1.3.1+.
 
 	* configure.in: add -mieee/-ieee to CFLAGS on OSF1/Alpha
 	  to disable "DIVISION BY ZERO" exception.
+
+Thu Apr 26 22:30:43 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should preserve value of ruby_errinfo.
+
+Thu Apr 26 10:36:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+       * eval.c (rb_thread_schedule): infinite sleep should not cause
+	  dead lock.
+
+Wed Apr 25 16:40:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_flatten_bang): proper recursive detection.
+
+Wed Apr 25 15:36:15 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+       * eval.c (yield_under): need not to prohibit at safe level 4.
+
+Wed Apr 25 15:22:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): p/P packs nil into NULL.
+
+	* pack.c (pack_unpack): p/P unpacks NULL into nil.
+
+Tue Apr 24 15:35:32 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* pack.c (pack_pack): size check for P template.
+
+	* ruby.c (set_arg0): wrong predicate when new $0 value is bigger
+	  than original space.
 
 Tue Apr 24 15:18:49 2001  Akinori MUSHA  <knu@iDaemons.org>
 
@@ -26,6 +85,33 @@ Tue Apr 24 15:18:49 2001  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: (dir_config) return a more useful
 	value, [include_dir, lib_dir].
+
+Mon Apr 23 14:43:59 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (id2ref): should use NUM2ULONG()
+
+	* object.c (rb_mod_const_get): check whether name is a class
+	  variable name.
+
+	* object.c (rb_mod_const_set): ditto.
+
+	* object.c (rb_mod_const_defined): ditto.
+
+Sat Apr 21 22:33:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* marshal.c (w_float): precision changed to "%.16g"
+
+Sat Apr 21 22:07:58 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* eval.c (rb_call0): wrong retry behavior.
+
+Fri Apr 20 19:12:20 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_aref): a bug on long>int architecture.
+
+Fri Apr 20 14:57:15 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_eval_string_wrap): should restore ruby_wrapper.
 
 Sun Apr 22 17:44:37 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -38,15 +124,144 @@ Wed Apr 18 04:37:51 2001  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: CGI::Cookie: no use PATH_INFO.
 
+Wed Apr 18 00:24:40 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): char class at either edge of range
+	  should be invalid.
+
+Tue Apr 17 17:33:55 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (handle_rescue): use === to compare exception match.
+
+	* error.c (syserr_eqq): comparison between SytemCallErrors should
+	  based on their error numbers.
+
+Tue Apr 17 16:54:39 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (safe_getter): should use INT2NUM().
+
+Tue Apr 17 15:12:56 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big2long): 2**31 cannot fit in 31 bit long.
+
+Sat Apr 14 22:46:43 2001  Guy Decoux  <decoux@moulon.inra.fr>
+
+	* regex.c (calculate_must_string): wrong length calculation.
+
 Sat Apr 14 13:37:32 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
 
 	* win32/config.status.in: no longer use missing/alloca.c.
 
 	* win32/Makefile.sub: ditto.
 
+Fri Apr 13 12:40:48 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_thread_start_0): fixed memory leak.
+
+Fri Apr 13 16:41:18 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (none): should clear cmdarg_stack too.
+
+Fri Apr 13 06:19:29 2001  GOTOU YUUZOU  <gotoyuzo@notwork.org>
+
+	* io.c (rb_fopen): use setvbuf() to avoid recursive malloc() on
+	  some platforms.
+
+Wed Apr 11 23:36:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (rb_stat_dev): device functions should honor stat field
+	  types (except long long such as dev_t).
+
+Wed Apr 11 18:07:53 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (rb_mod_nesting): should not push nil for nesting array.
+
+	* eval.c (rb_mod_s_constants): should not search array by
+	  rb_mod_const_at() for nil (happens for singleton class).
+
+Wed Apr 11 13:29:26 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_singleton_class_attached): should modify iv_tbl by
+	  itself, no longer use rb_iv_set() to avoid freeze check error.
+
+	* variable.c (rb_const_get): error message "uninitialized constant
+	  Foo at Bar::Baz" instead of "uninitialized constantBar::Baz::Foo".
+
+Tue Apr 10 17:52:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_mod_included): new hook called from rb_mod_include().
+
+Tue Apr 10 02:24:40 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* io.c (opt_i_set): should strdup() inplace_edit string.
+
+Mon Apr  9 23:29:54 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (exec_under): need to push cref too.
+
+Mon Apr  9 15:20:21 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_missing): raise NameError for "undefined local
+	  variable or method".
+
+	* error.c (Init_Exception): new exception NoMethodError.
+	  NameError moved under ScriptError again.
+
+	* eval.c (rb_f_missing): use NoMethodError instead of NameError.
+
+Mon Apr  9 12:05:44 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (Init_File): should redifine "new" class method.
+
 Mon Apr  9 11:56:52 2001  Shugo Maeda <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: fix typo.
+
+Fri Apr  6 01:46:35 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (PUSH_CREF): sharing cref node was problematic.  maintain
+	  runtime cref list instead.
+
+	* eval.c (rb_eval): copy defn node before registering.
+
+	* eval.c (rb_load): clear ruby_cref before loading.
+
+Thu Apr  5 22:40:12 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_const_get): no recursion to show full class path
+	  for modules.
+
+	* eval.c (rb_set_safe_level): should set safe level in curr_thread
+	  as well.
+
+	* eval.c (safe_setter): ditto.
+
+Thu Apr  5 13:46:06 2001  K.Kosako  <kosako@sofnec.co.jp>
+
+	* object.c (rb_obj_is_instance_of): nil belongs to false, not true.
+
+Thu Apr  5 02:19:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (make_time_t): proper (I hope) daylight saving time
+	  handling for both US and Europe.  I HATE DST!
+
+	* eval.c (rb_thread_wait_for): non blocked signal interrupt should
+	  stop the interval.
+
+Wed Apr  4 03:47:03 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_eq): class check aded.
+
+	* eval.c (proc_eq): typo fixed ("return" was ommitted).
+
+	* error.c (Init_Exception): move NameError under StandardError.
+
+	* class.c (rb_mod_clone): should copy method bodies too.
+
+	* bignum.c (bigdivrem): should trim trailing zero bdigits of
+	  remainder, even if dd == 0.
+
+	* file.c (check3rdbyte): safe string check moved here.
 
 Tue Apr  3 09:56:20 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -54,6 +269,26 @@ Tue Apr  3 09:56:20 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 	  it does not yet exist.
 
 	* lib/mkmf.rb: ditto.
+
+Tue Apr  3 00:05:07 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* time.c (make_time_t): remove HAVE_TM_ZONE code since it
+	  sometimes reports wrong time.
+
+	* time.c (make_time_t): remove unnecessary range check for
+	  platforms where negative time_t is available.
+
+Mon Apr  2 16:52:48 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_waitall): should push Process::Status instead of
+	  Finuxm status.  
+
+	* process.c (waitall_each): should add all entries in pid_tbl.
+	  these changes are inspired by Koji Arai.  Thanks.
+
+	* process.c (proc_wait): should not iterate if pid_tbl is 0.
+
+	* process.c (proc_waitall): ditto.
 
 Mon Apr  2 14:25:49 2001  Shugo Maeda <shugo@ruby-lang.org>
 
@@ -87,13 +322,48 @@ Mon Apr  2 01:16:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* win32/dir.h, dir.c, Makefile: ditto.
 
+Sun Apr  1 23:26:14 2001  TOYOFUKU Chikanobu  <toyofuku@juice.or.jp>
+
+	* numeric.c (flodivmod): a bug in no fmod case.
+
+Sun Apr  1 18:36:14 2001  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* process.c (pst_wifsignaled): should apply WIFSIGNALED for status
+	  (int), not st (VALUE).
+
 Sat Mar 31 04:47:55 2001  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: add document and example code.
 
+Sat Mar 31 03:24:10 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (Init_IO): value of $/ and $\ are no longer restricted to
+	  strings.  type checks are done on demand.
+
+	* class.c (rb_include_module): module inclusion should be check
+	  taints.
+
+	* ruby.h (STR2CSTR): replace to StringType() and StringTypePtr().
+
+	* ruby.h (rb_str2cstr): ditto.
+
+Fri Mar 30 23:37:49 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_load): should not copy topleve local variables.  It
+	  cause variable/method ambiguity.  Thanks to L. Peter Deutsch.
+
 Fri Mar 30 22:56:56 2001  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: rename ContinueRequest to ContinuationRequest.
+
+Fri Mar 30 12:51:19 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_include_module): freeze check at first.
+
+Thu Mar 29 17:05:09 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_attr): sprintf() and rb_intern() moved into
+	  conditional body.
 
 Wed Mar 28 23:43:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 

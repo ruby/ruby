@@ -33,16 +33,6 @@ rb_class_new(super)
     return (VALUE)klass;
 }
 
-VALUE
-rb_singleton_class_new(super)
-    VALUE super;
-{
-    VALUE klass = rb_class_new(super);
-
-    FL_SET(klass, FL_SINGLETON);
-    return klass;
-}
-
 static int
 clone_method(mid, body, tbl)
     ID mid;
@@ -51,6 +41,47 @@ clone_method(mid, body, tbl)
 {
     st_insert(tbl, mid, NEW_METHOD(body->nd_body, body->nd_noex));
     return ST_CONTINUE;
+}
+
+VALUE
+rb_mod_clone(module)
+    VALUE module;
+{
+    NEWOBJ(clone, struct RClass);
+    CLONESETUP(clone, module);
+
+    clone->super = RCLASS(module)->super;
+    if (RCLASS(module)->iv_tbl) {
+	clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
+    }
+    if (RCLASS(module)->m_tbl) {
+	clone->m_tbl = st_init_numtable();
+	st_foreach(RCLASS(module)->m_tbl, clone_method, clone->m_tbl);
+    }
+
+    return (VALUE)clone;
+}
+
+VALUE
+rb_mod_dup(mod)
+    VALUE mod;
+{
+    VALUE dup = rb_mod_clone(mod);
+    OBJSETUP(dup, RBASIC(mod)->klass, BUILTIN_TYPE(mod));
+    if (FL_TEST(mod, FL_SINGLETON)) {
+	FL_SET(dup, FL_SINGLETON);
+    }
+    return dup;
+}
+
+VALUE
+rb_singleton_class_new(super)
+    VALUE super;
+{
+    VALUE klass = rb_class_new(super);
+
+    FL_SET(klass, FL_SINGLETON);
+    return klass;
 }
 
 VALUE
@@ -81,8 +112,12 @@ void
 rb_singleton_class_attached(klass, obj)
     VALUE klass, obj;
 {
-    if (FL_TEST(klass, FL_SINGLETON))
-	rb_iv_set(klass, "__attached__", obj);
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	if (!RCLASS(klass)->iv_tbl) {
+	    RCLASS(klass)->iv_tbl = st_init_numtable();
+	}
+	st_insert(RCLASS(klass)->iv_tbl, rb_intern("__attached__"), obj);
+    }
 }
 
 VALUE
@@ -112,8 +147,11 @@ rb_define_class(name, super)
     ID id;
 
     id = rb_intern(name);
+    if (rb_const_defined(rb_cObject, id)) {
+	klass = rb_const_get(rb_cObject, id);
+	rb_raise(rb_eNameError, "%s is already defined", name);
+    }
     klass = rb_define_class_id(id, super);
-
     st_add_direct(rb_class_tbl, id, klass);
 
     return klass;
@@ -129,6 +167,10 @@ rb_define_class_under(outer, name, super)
     ID id;
 
     id = rb_intern(name);
+    if (rb_const_defined_at(outer, id)) {
+	klass = rb_const_get(outer, id);
+	rb_raise(rb_eNameError, "%s is already defined", name);
+    }
     klass = rb_define_class_id(id, super);
     rb_const_set(outer, id, klass);
     rb_set_class_path(klass, outer, name);
@@ -170,6 +212,12 @@ rb_define_module(name)
     ID id;
 
     id = rb_intern(name);
+    if (rb_const_defined(rb_cObject, id)) {
+	module = rb_const_get(rb_cObject, id);
+	if (TYPE(module) == T_MODULE)
+	    return module;
+	rb_raise(rb_eTypeError, "%s is not a module", rb_class2name(CLASS_OF(module)));
+    }
     module = rb_define_module_id(id);
     st_add_direct(rb_class_tbl, id, module);
 
@@ -185,6 +233,13 @@ rb_define_module_under(outer, name)
     ID id;
 
     id = rb_intern(name);
+    if (rb_const_defined(outer, id)) {
+	module = rb_const_get(rb_cObject, id);
+	if (TYPE(module) == T_MODULE)
+	    return module;
+	rb_raise(rb_eTypeError, "%s::%s is not a module",
+		 rb_class2name(outer), rb_class2name(CLASS_OF(module)));
+    }
     module = rb_define_module_id(id);
     rb_const_set(outer, id, module);
     rb_set_class_path(module, outer, name);
@@ -222,6 +277,11 @@ rb_include_module(klass, module)
     VALUE p;
     int changed = 0;
 
+    rb_frozen_class_p(klass);
+    if (!OBJ_TAINTED(klass)) {
+	rb_secure(4);
+    }
+    
     if (NIL_P(module)) return;
     if (klass == module) return;
 
@@ -246,7 +306,6 @@ rb_include_module(klass, module)
 		return;
 	    }
 	}
-	rb_frozen_class_p(klass);
 	RCLASS(klass)->super = include_class_new(module, RCLASS(klass)->super);
 	klass = RCLASS(klass)->super;
 	module = RCLASS(module)->super;

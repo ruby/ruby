@@ -226,12 +226,10 @@ rb_obj_is_instance_of(obj, c)
 	return Qfalse;
 
       case T_FALSE:
-	if (obj) return Qfalse;
-	return Qtrue;
+	return RTEST(obj) ? Qfalse : Qtrue;
 
       case T_TRUE:
-	if (obj) return Qtrue;
-	return Qfalse;
+	return RTEST(obj) ? Qtrue : Qfalse;
 
       default:
 	rb_raise(rb_eTypeError, "class or module required");
@@ -380,7 +378,7 @@ nil_plus(x, y)
 	return y;
       default:
 	rb_raise(rb_eTypeError, "tried to add %s(%s) to nil",
-		 STR2CSTR(rb_inspect(y)),
+		 RSTRING(rb_inspect(y))->ptr,
 		 rb_class2name(CLASS_OF(y)));
     }
     /* not reached */
@@ -530,36 +528,6 @@ sym_intern(sym)
     VALUE sym;
 {
     return sym;
-}
-
-static VALUE
-rb_mod_clone(module)
-    VALUE module;
-{
-    NEWOBJ(clone, struct RClass);
-    CLONESETUP(clone, module);
-
-    clone->super = RCLASS(module)->super;
-    if (RCLASS(module)->iv_tbl) {
-	clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
-    }
-    if (RCLASS(module)->m_tbl) {
-	clone->m_tbl = st_copy(RCLASS(module)->m_tbl);
-    }
-
-    return (VALUE)clone;
-}
-
-static VALUE
-rb_mod_dup(mod)
-    VALUE mod;
-{
-    VALUE dup = rb_mod_clone(mod);
-    OBJSETUP(dup, RBASIC(mod)->klass, BUILTIN_TYPE(mod));
-    if (FL_TEST(mod, FL_SINGLETON)) {
-	FL_SET(dup, FL_SINGLETON);
-    }
-    return dup;
 }
 
 static VALUE
@@ -734,7 +702,7 @@ rb_to_id(name)
 	id = SYM2ID(name);
 	break;
       default:
-	rb_raise(rb_eTypeError, "%s is not a symbol", STR2CSTR(rb_inspect(name)));
+	rb_raise(rb_eTypeError, "%s is not a symbol", RSTRING(rb_inspect(name))->ptr);
     }
     return id;
 }
@@ -798,14 +766,24 @@ static VALUE
 rb_mod_const_get(mod, name)
     VALUE mod, name;
 {
-    return rb_const_get(mod, rb_to_id(name));
+    ID id = rb_to_id(name);
+
+    if (!rb_is_const_id(id)) {
+	rb_raise(rb_eNameError, "wrong constant name %s", name);
+    }
+    return rb_const_get(mod, id);
 }
 
 static VALUE
 rb_mod_const_set(mod, name, value)
     VALUE mod, name, value;
 {
-    rb_const_set(mod, rb_to_id(name), value);
+    ID id = rb_to_id(name);
+
+    if (!rb_is_const_id(id)) {
+	rb_raise(rb_eNameError, "wrong constant name %s", name);
+    }
+    rb_const_set(mod, id, value);
     return value;
 }
 
@@ -813,7 +791,12 @@ static VALUE
 rb_mod_const_defined(mod, name)
     VALUE mod, name;
 {
-    return rb_const_defined_at(mod, rb_to_id(name));
+    ID id = rb_to_id(name);
+
+    if (!rb_is_const_id(id)) {
+	rb_raise(rb_eNameError, "wrong constant name %s", name);
+    }
+    return rb_const_defined_at(mod, id);
 }
 
 static VALUE
@@ -974,7 +957,7 @@ rb_Float(val)
 	    char *q, *p, *end;
 	    double d;
 
-	    q = p = STR2CSTR(val);
+	    q = p = StringValuePtr(val);
 	    while (*p && ISSPACE(*p)) p++;
 	  again:
 	    d = strtod(p, &end);
@@ -1054,9 +1037,7 @@ rb_str2cstr(str, len)
     VALUE str;
     int *len;
 {
-    if (TYPE(str) != T_STRING) {
-	str = rb_str_to_str(str);
-    }
+    StringValue(str);
     if (len) *len = RSTRING(str)->len;
     else if (ruby_verbose && RSTRING(str)->len != strlen(RSTRING(str)->ptr)) {
 	rb_warn("string contains \\0 character");
@@ -1232,6 +1213,8 @@ Init_Object()
 
     rb_cSymbol = rb_define_class("Symbol", rb_cObject);
     rb_undef_method(CLASS_OF(rb_cSymbol), "new");
+    rb_define_singleton_method(rb_cSymbol, "all_symbols", rb_sym_all_symbols, 0);
+
     rb_define_method(rb_cSymbol, "type", sym_type, 0);
     rb_define_method(rb_cSymbol, "to_i", sym_to_i, 0);
     rb_define_method(rb_cSymbol, "to_int", sym_to_i, 0);

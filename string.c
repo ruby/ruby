@@ -209,7 +209,7 @@ rb_str_dup(str)
     VALUE str2;
     VALUE klass;
 
-    if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
+    StringValue(str);
     klass = CLASS_OF(str);
     while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
 	klass = (VALUE)RCLASS(klass)->super;
@@ -278,7 +278,7 @@ rb_str_plus(str1, str2)
 {
     VALUE str3;
 
-    if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
+    StringValue(str2);
     str3 = rb_str_new(0, RSTRING(str1)->len+RSTRING(str2)->len);
     memcpy(RSTRING(str3)->ptr, RSTRING(str1)->ptr, RSTRING(str1)->len);
     memcpy(RSTRING(str3)->ptr + RSTRING(str1)->len,
@@ -470,7 +470,7 @@ VALUE
 rb_str_append(str1, str2)
     VALUE str1, str2;
 {
-    if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
+    StringValue(str2);
     str1 = rb_str_cat(str1, RSTRING(str2)->ptr, RSTRING(str2)->len);
     OBJ_INFECT(str1, str2);
 
@@ -590,7 +590,7 @@ rb_str_cmp_m(str1, str2)
 {
     int result;
 
-    if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
+    StringValue(str2);
     result = rb_str_cmp(str1, str2);
     return INT2FIX(result);
 }
@@ -865,8 +865,7 @@ rb_str_upto(beg, end, excl)
     VALUE current;
     ID succ = rb_intern("succ");
 
-    if (TYPE(end) != T_STRING) end = rb_str_to_str(end);
-
+    StringValue(end);
     current = beg;
     while (rb_str_cmp(current, end) <= 0) {
 	rb_yield(current);
@@ -952,14 +951,26 @@ rb_str_aref_m(argc, argv, str)
 
 static void
 rb_str_replace(str, beg, len, val)
-    VALUE str, val;
+    VALUE str;
     long beg;
     long len;
+    VALUE val;
 {
+    if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
+    if (beg < 0) {
+	beg += RSTRING(str)->len;
+    }
+    if (beg < 0 || RSTRING(str)->len < beg) {
+	if (beg < 0) {
+	    beg -= RSTRING(str)->len;
+	}
+	rb_raise(rb_eIndexError, "index %d out of string", beg);
+    }
     if (RSTRING(str)->len < beg + len) {
 	len = RSTRING(str)->len - beg;
     }
 
+    StringValue(val);
     if (len < RSTRING(val)->len) {
 	/* expand string */
 	REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len+RSTRING(val)->len-len+1);
@@ -1007,7 +1018,6 @@ rb_str_aset(str, indx, val)
 	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
 	}
 	else {
-	    if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
 	    rb_str_replace(str, idx, 1, val);
 	}
 	return val;
@@ -1024,7 +1034,6 @@ rb_str_aset(str, indx, val)
       case T_STRING:
 	beg = rb_str_index(str, indx, 0);
 	if (beg != -1) {
-	    if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
 	    rb_str_replace(str, beg, RSTRING(indx)->len, val);
 	}
 	return val;
@@ -1034,7 +1043,6 @@ rb_str_aset(str, indx, val)
 	{
 	    long beg, len;
 	    if (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 2)) {
-		if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
 		rb_str_replace(str, beg, len, val);
 		return val;
 	    }
@@ -1054,22 +1062,8 @@ rb_str_aset_m(argc, argv, str)
     if (argc == 3) {
 	long beg, len;
 
-	if (TYPE(argv[2]) != T_STRING) argv[2] = rb_str_to_str(argv[2]);
 	beg = NUM2INT(argv[0]);
 	len = NUM2INT(argv[1]);
-	if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
-	if (beg < 0) {
-	    beg += RSTRING(str)->len;
-	}
-	if (beg < 0 || RSTRING(str)->len < beg) {
-	    if (beg < 0) {
-		beg -= RSTRING(str)->len;
-	    }
-	    rb_raise(rb_eIndexError, "index %d out of string", beg);
-	}
-	if (beg + len > RSTRING(str)->len) {
-	    len = RSTRING(str)->len - beg;
-	}
 	rb_str_replace(str, beg, len, argv[2]);
 	return argv[2];
     }
@@ -1077,6 +1071,14 @@ rb_str_aset_m(argc, argv, str)
 	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
     }
     return rb_str_aset(str, argv[0], argv[1]);
+}
+
+static VALUE
+rb_str_insert(str, idx, str2)
+    VALUE str, idx, str2;
+{
+    rb_str_replace(str, NUM2LONG(idx), 0, str2);
+    return str;
 }
 
 static VALUE
@@ -1136,7 +1138,8 @@ rb_str_sub_bang(argc, argv, str)
 	iter = 1;
     }
     else if (argc == 2) {
-	repl = rb_str_to_str(argv[1]);;
+	repl = argv[1];
+	StringValue(repl);
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
@@ -1209,7 +1212,8 @@ str_gsub(argc, argv, str, bang)
 	iter = 1;
     }
     else if (argc == 2) {
-	repl = rb_str_to_str(argv[1]);
+	repl = argv[1];
+	StringValue(repl);
 	if (OBJ_TAINTED(repl)) tainted = 1;
     }
     else {
@@ -1329,8 +1333,8 @@ rb_str_replace_m(str, str2)
     VALUE str, str2;
 {
     if (str == str2) return str;
-    if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
 
+    StringValue(str2);
     if (RSTRING(str2)->orig && !FL_TEST(str2, STR_NO_ORIG)) {
 	if (str_independent(str)) {
 	    free(RSTRING(str)->ptr);
@@ -1462,7 +1466,7 @@ rb_str_include(str, arg)
 	return Qfalse;
     }
 
-    if (TYPE(arg) != T_STRING) arg = rb_str_to_str(arg);
+    StringValue(arg);
     i = rb_str_index(str, arg, 0);
 
     if (i == -1) return Qfalse;
@@ -1841,13 +1845,13 @@ tr_trans(str, src, repl, sflag)
     char *s, *send;
 
     rb_str_modify(str);
-    if (TYPE(src) != T_STRING) src = rb_str_to_str(src);
+    StringValue(src);
+    StringValue(repl);
     trsrc.p = RSTRING(src)->ptr; trsrc.pend = trsrc.p + RSTRING(src)->len;
     if (RSTRING(src)->len >= 2 && RSTRING(src)->ptr[0] == '^') {
 	cflag++;
 	trsrc.p++;
     }
-    if (TYPE(repl) != T_STRING) repl = rb_str_to_str(repl);
     if (RSTRING(repl)->len == 0) {
 	return rb_str_delete_bang(1, &src, str);
     }
@@ -1991,8 +1995,7 @@ rb_str_delete_bang(argc, argv, str)
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
 
-	if (TYPE(s) != T_STRING) 
-	    s = rb_str_to_str(s);
+	StringValue(s);
 	tr_setup_table(s, squeez, init);
 	init = 0;
     }
@@ -2046,8 +2049,7 @@ rb_str_squeeze_bang(argc, argv, str)
 	for (i=0; i<argc; i++) {
 	    VALUE s = argv[i];
 
-	    if (TYPE(s) != T_STRING) 
-		s = rb_str_to_str(s);
+	    StringValue(s);
 	    tr_setup_table(s, squeez, init);
 	    init = 0;
 	}
@@ -2118,8 +2120,7 @@ rb_str_count(argc, argv, str)
     for (i=0; i<argc; i++) {
 	VALUE s = argv[i];
 
-	if (TYPE(s) != T_STRING) 
-	    s = rb_str_to_str(s);
+	StringValue(s);
 	tr_setup_table(s, table, init);
 	init = 0;
     }
@@ -2284,7 +2285,7 @@ rb_str_split(str, sep0)
 {
     VALUE sep;
 
-    if (TYPE(str) != T_STRING) str = rb_str_to_str(str);
+    StringValue(str);
     sep = rb_str_new2(sep0);
     return rb_str_split_m(1, &sep, str);
 }
@@ -2319,10 +2320,7 @@ rb_str_each_line(argc, argv, str)
 	rb_yield(str);
 	return str;
     }
-    if (TYPE(rs) != T_STRING) {
-	rs = rb_str_to_str(rs);
-    }
-
+    StringValue(rs);
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
 	newline = '\n';
@@ -2434,7 +2432,7 @@ rb_str_chomp_bang(argc, argv, str)
     }
     if (NIL_P(rs)) return Qnil;
 
-    if (TYPE(rs) != T_STRING) rs = rb_str_to_str(rs);
+    StringValue(rs);
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
 	while (len>0 && p[len-1] == '\n') {
@@ -2645,7 +2643,7 @@ rb_str_crypt(str, salt)
 {
     extern char *crypt();
 
-    if (TYPE(salt) != T_STRING) salt = rb_str_to_str(salt);
+    StringValue(salt);
     if (RSTRING(salt)->len < 2)
 	rb_raise(rb_eArgError, "salt too short(need >=2 bytes)");
     return rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
@@ -2804,6 +2802,7 @@ Init_String()
     rb_define_method(rb_cString, "%", rb_str_format, 1);
     rb_define_method(rb_cString, "[]", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "[]=", rb_str_aset_m, -1);
+    rb_define_method(rb_cString, "insert", rb_str_insert, 2);
     rb_define_method(rb_cString, "length", rb_str_length, 0);
     rb_define_method(rb_cString, "size", rb_str_length, 0);
     rb_define_method(rb_cString, "empty?", rb_str_empty, 0);

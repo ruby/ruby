@@ -254,7 +254,7 @@ dir_initialize(dir, dirname)
 {
     DIR *dirp;
 
-    SafeStr(dirname);
+    SafeStringValue(dirname);
     if (DATA_PTR(dir)) closedir(DATA_PTR(dir));
     DATA_PTR(dir) = NULL;
     dirp = opendir(RSTRING(dirname)->ptr);
@@ -425,7 +425,7 @@ dir_s_chdir(argc, argv, obj)
 
     rb_secure(2);
     if (rb_scan_args(argc, argv, "01", &path) == 1) {
-	SafeStr(path);
+	SafeStringValue(path);
 	dist = RSTRING(path)->ptr;
     }
     else {
@@ -467,7 +467,7 @@ dir_s_chroot(dir, path)
 {
 #if defined(HAVE_CHROOT) && !defined(__CHECKER__)
     rb_secure(2);
-    SafeStr(path);
+    SafeStringValue(path);
 
     if (chroot(RSTRING(path)->ptr) == -1)
 	rb_sys_fail(RSTRING(path)->ptr);
@@ -495,7 +495,7 @@ dir_s_mkdir(argc, argv, obj)
 	mode = 0777;
     }
 
-    SafeStr(path);
+    SafeStringValue(path);
     rb_secure(2);
 #if !defined(NT)
     if (mkdir(RSTRING(path)->ptr, mode) == -1)
@@ -512,7 +512,7 @@ static VALUE
 dir_s_rmdir(obj, dir)
     VALUE obj, dir;
 {
-    SafeStr(dir);
+    SafeStringValue(dir);
     rb_secure(2);
     if (rmdir(RSTRING(dir)->ptr) < 0)
 	rb_sys_fail(RSTRING(dir)->ptr);
@@ -853,12 +853,13 @@ dir_s_glob(dir, str)
     int nest;
     VALUE ary = 0;
 
-    SafeStr(str);
+    SafeStringValue(str);
     if (!rb_block_given_p()) {
 	ary = rb_ary_new();
     }
-    if (RSTRING(str)->len >= MAXPATHLEN)
+    if (RSTRING(str)->len >= MAXPATHLEN) {
 	buf = xmalloc(RSTRING(str)->len + 1);
+    }
 
     p = RSTRING(str)->ptr;
     pend = p + RSTRING(str)->len;

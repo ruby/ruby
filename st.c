@@ -255,7 +255,8 @@ st_lookup(table, key, value)
 
     if (ptr == 0) {
 	return 0;
-    } else {
+    }
+    else {
 	if (value != 0)  *value = ptr->record;
 	return 1;
     }
@@ -294,7 +295,8 @@ st_insert(table, key, value)
     if (ptr == 0) {
 	ADD_DIRECT(table, key, value, hash_val, bin_pos);
 	return 0;
-    } else {
+    }
+    else {
 	ptr->record = value;
 	return 1;
     }
@@ -498,7 +500,8 @@ st_foreach(table, func, arg)
 		tmp = ptr;
 		if (last == 0) {
 		    table->bins[i] = ptr->next;
-		} else {
+		}
+		else {
 		    last->next = ptr->next;
 		}
 		ptr = ptr->next;

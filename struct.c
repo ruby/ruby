@@ -157,7 +157,7 @@ make_struct(name, member, klass)
 	nstr = rb_class_new(klass);
     }
     else {
-	char *cname = STR2CSTR(name);
+	char *cname = StringValuePtr(name);
 	id = rb_intern(cname);
 	if (!rb_is_const_id(id)) {
 	    rb_raise(rb_eNameError, "identifier %s needs to be constant", cname);

@@ -84,7 +84,7 @@ fdbm_initialize(argc, argv, obj)
     else {
 	mode = NUM2INT(vmode);
     }
-    Check_SafeStr(file);
+    SafeStringValue(file);
 
     dbm = 0;
     if (mode >= 0) {
@@ -150,7 +150,7 @@ fdbm_fetch(obj, keystr, ifnone)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    Check_Type(keystr, T_STRING);
+    StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
@@ -196,7 +196,7 @@ fdbm_index(obj, valstr)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    Check_Type(valstr, T_STRING);
+    StringValue(valstr);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 
@@ -238,7 +238,7 @@ fdbm_delete(obj, keystr)
     DBM *dbm;
 
     rb_secure(4);
-    Check_Type(keystr, T_STRING);
+    StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
@@ -273,14 +273,15 @@ fdbm_shift(obj)
     rb_secure(4);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
+    dbmp->di_size = -1;
 
     key = dbm_firstkey(dbm); 
     if (!key.dptr) return Qnil;
     val = dbm_fetch(dbm, key);
-    dbm_delete(dbm, key);
-
     keystr = rb_tainted_str_new(key.dptr, key.dsize);
     valstr = rb_tainted_str_new(val.dptr, val.dsize);
+    dbm_delete(dbm, key);
+
     return rb_assoc_new(keystr, valstr);
 }
 
@@ -292,20 +293,35 @@ fdbm_delete_if(obj)
     struct dbmdata *dbmp;
     DBM *dbm;
     VALUE keystr, valstr;
+    VALUE ret, ary = rb_ary_new();
+    int i, status = 0, n;
 
     rb_secure(4);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
+    n = dbmp->di_size;
+    dbmp->di_size = -1;
+
     for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
 	val = dbm_fetch(dbm, key);
 	keystr = rb_tainted_str_new(key.dptr, key.dsize);
 	valstr = rb_tainted_str_new(val.dptr, val.dsize);
-	if (RTEST(rb_yield(rb_assoc_new(keystr, valstr)))) {
-	    if (dbm_delete(dbm, key)) {
-		rb_raise(rb_eDBMError, "dbm_delete failed");
-	    }
+        ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
+        if (status != 0) break;
+	if (RTEST(ret)) rb_ary_push(ary, keystr);
+    }
+
+    for (i = 0; i < RARRAY(ary)->len; i++) {
+	keystr = RARRAY(ary)->ptr[i];
+	key.dptr = RSTRING(keystr)->ptr;
+	key.dsize = RSTRING(keystr)->len;
+	if (dbm_delete(dbm, key)) {
+	    rb_raise(rb_eDBMError, "dbm_delete failed");
 	}
     }
+    if (status) rb_jump_tag(status);
+    if (n > 0) dbmp->di_size = n - RARRAY(ary)->len;
+
     return obj;
 }
 
@@ -321,11 +337,13 @@ fdbm_clear(obj)
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     dbmp->di_size = -1;
-    for (key = dbm_firstkey(dbm); key.dptr; key = dbm_nextkey(dbm)) {
+    while (key = dbm_firstkey(dbm), key.dptr) {
 	if (dbm_delete(dbm, key)) {
 	    rb_raise(rb_eDBMError, "dbm_delete failed");
 	}
     }
+    dbmp->di_size = 0;
+
     return obj;
 }
 
@@ -569,7 +587,7 @@ fdbm_has_key(obj, keystr)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    Check_Type(keystr, T_STRING);
+    StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
@@ -588,7 +606,7 @@ fdbm_has_value(obj, valstr)
     struct dbmdata *dbmp;
     DBM *dbm;
 
-    Check_Type(valstr, T_STRING);
+    StringValue(valstr);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 
@@ -682,7 +700,7 @@ Init_dbm()
     rb_define_method(cDBM, "each_pair", fdbm_each_pair, 0);
     rb_define_method(cDBM, "keys", fdbm_keys, 0);
     rb_define_method(cDBM, "values", fdbm_values, 0);
-    rb_define_method(cDBM, "shift", fdbm_shift, 1);
+    rb_define_method(cDBM, "shift", fdbm_shift, 0);
     rb_define_method(cDBM, "delete", fdbm_delete, 1);
     rb_define_method(cDBM, "delete_if", fdbm_delete_if, 0);
     rb_define_method(cDBM, "reject!", fdbm_delete_if, 0);

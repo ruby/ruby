@@ -1,13 +1,38 @@
 require 'mkmf'
 
 dir_config("dbm")
-if have_library("gdbm", "dbm_open")
-  gdbm = true
+
+$db_hdr = "ndbm.h"
+$db_prefix = ""
+dblib = with_config("dbm-type", nil)
+
+def db_check(db)
+  if /^db2?$/ =~ db
+    $db_prefix = "__db_n"
+    $db_hdr = db+".h"
+  end
+  r = have_library(db, db_prefix("dbm_open"))
+  if db == "gdbm"
+    $have_gdbm = true
+  end
+  return r
 end
-gdbm or have_library("db", "dbm_open") or have_library("dbm", "dbm_open")
+
+def db_prefix(func)
+  $db_prefix+func
+end
+
+if dblib
+  db_check(dblib)
+else
+  for dblib in %w(db db2 db1 dbm gdbm)
+    db_check(dblib) and break
+  end
+end
+
 have_header("cdefs.h") 
 have_header("sys/cdefs.h") 
-if have_header("ndbm.h") and have_func("dbm_open")
-  have_func("dbm_clearerr") unless gdbm
+if have_header($db_hdr) and have_func(db_prefix("dbm_open"))
+  have_func(db_prefix("dbm_clearerr")) unless $have_gdbm
   create_makefile("dbm")
 end

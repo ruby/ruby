@@ -1147,7 +1147,7 @@ rm_final(os, proc)
 static VALUE
 finals()
 {
-    rb_warn("ObjectSpace::finals is deprecated");
+    rb_warn("ObjectSpace::finalizers is deprecated");
     return finalizers;
 }
 
@@ -1283,7 +1283,7 @@ id2ref(obj, id)
     unsigned long ptr, p0;
 
     rb_secure(4);
-    p0 = ptr = NUM2UINT(id);
+    p0 = ptr = NUM2ULONG(id);
     if (ptr == Qtrue) return Qtrue;
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
@@ -1330,38 +1330,4 @@ Init_GC()
     rb_global_variable(&finalizers);
     rb_gc_unregister_address(&rb_mObSpace);
     finalizers = rb_ary_new();
-}
-
-#undef xmalloc
-#undef xcalloc
-#undef xrealloc
-#undef xfree
-
-void*
-xmalloc(size)
-    long size;
-{
-    return ruby_xmalloc(size);
-}
-
-void*
-xcalloc(n,size)
-    long n,size;
-{
-    return ruby_xcalloc(n, size);
-}
-
-void*
-xrealloc(ptr,size)
-    void *ptr;
-    long size;
-{
-    return ruby_xrealloc(ptr, size);
-}
-
-void
-xfree(ptr)
-    void *ptr;
-{
-    ruby_xfree(ptr);
 }

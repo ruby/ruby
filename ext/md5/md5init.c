@@ -21,12 +21,10 @@ md5i_update(obj, str)
     VALUE obj, str;
 {
     md5_state_t *md5;
-    char *p;
-    int len;
 
-    p = rb_str2cstr(str, &len);
+    StringValue(str);
     Data_Get_Struct(obj, md5_state_t, md5);
-    md5_append(md5, p, len);
+    md5_append(md5, RSTRING(str)->ptr, RSTRING(str)->len);
 
     return obj;
 }
@@ -83,13 +81,14 @@ md5i_new(argc, argv, class)
     VALUE* argv;
     VALUE class;
 {
-    VALUE obj;
+    VALUE obj, str;
     md5_state_t *md5;
 
     obj = Data_Make_Struct(class, md5_state_t, 0, free, md5);
     md5_init(md5);
+    rb_scan_args(argc, argv, "01", &str);
     if (argc == 1) {
-	md5i_update(obj, argv[0]);
+	md5i_update(obj, str);
     }
 
     return obj;

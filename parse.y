@@ -56,10 +56,8 @@ static enum lex_state {
     EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
 
-#if SIZEOF_LONG_LONG > 0
-typedef unsigned long long stack_type;
-#elif SIZEOF___INT64 > 0
-typedef unsigned __int64 stack_type;
+#ifdef HAVE_LONG_LONG
+typedef unsigned LONG_LONG stack_type;
 #else
 typedef unsigned long stack_type;
 #endif
@@ -131,10 +129,6 @@ static ID  *local_tbl();
 static struct RVarmap *dyna_push();
 static void dyna_pop();
 static int dyna_in_block();
-
-#define cref_push() NEW_CREF()
-static void cref_pop();
-static NODE *cur_cref;
 
 static void top_local_init();
 static void top_local_setup();
@@ -270,7 +264,6 @@ program		:  {
 		        $<vars>$ = ruby_dyna_vars;
 			lex_state = EXPR_BEG;
                         top_local_init();
-			NEW_CREF0(); /* initialize constant c-ref */
 			if ((VALUE)ruby_class == rb_cObject) class_nest = 0;
 			else class_nest = 1;
 		    }
@@ -289,7 +282,6 @@ program		:  {
 			}
 			ruby_eval_tree = block_append(ruby_eval_tree, $2);
                         top_local_setup();
-			cur_cref = 0;
 			class_nest = 0;
 		        ruby_dyna_vars = $<vars>1;
 		    }
@@ -1249,7 +1241,6 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
 			class_nest++;
-			cref_push();
 			local_push();
 		        $<num>$ = ruby_sourceline;
 		    }
@@ -1259,7 +1250,6 @@ primary		: literal
 		        $$ = NEW_CLASS($2, $5, $3);
 		        nd_set_line($$, $<num>4);
 		        local_pop();
-			cref_pop();
 			class_nest--;
 		    }
 		| kCLASS tLSHFT expr
@@ -1272,7 +1262,6 @@ primary		: literal
 		        $<num>$ = in_single;
 		        in_single = 0;
 			class_nest++;
-			cref_push();
 			local_push();
 		    }
 		  compstmt
@@ -1281,7 +1270,6 @@ primary		: literal
 		        $$ = NEW_SCLASS($3, $7);
 		        fixpos($$, $3);
 		        local_pop();
-			cref_pop();
 			class_nest--;
 		        in_def = $<num>4;
 		        in_single = $<num>6;
@@ -1291,7 +1279,6 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
 			class_nest++;
-			cref_push();
 			local_push();
 		        $<num>$ = ruby_sourceline;
 		    }
@@ -1301,7 +1288,6 @@ primary		: literal
 		        $$ = NEW_MODULE($2, $4);
 		        nd_set_line($$, $<num>3);
 		        local_pop();
-			cref_pop();
 			class_nest--;
 		    }
 		| kDEF fname
@@ -1984,6 +1970,7 @@ yycompile(f, line)
     ruby_in_compile = 0;
     cond_nest = 0;
     cond_stack = 0;
+    cmdarg_stack = 0;
     class_nest = 0;
     in_single = 0;
     in_def = 0;
@@ -3634,7 +3621,13 @@ yylex()
 			if (CMDARG_P()) return kDO_BLOCK;
 			return kDO;
 		    }
-		    return kw->id[state != EXPR_BEG];
+		    if (state == EXPR_BEG)
+			return kw->id[0];
+		    else {
+			if (kw->id[0] != kw->id[1])
+			    lex_state = EXPR_BEG;
+			return kw->id[1];
+		    }
 		}
 	    }
 
@@ -4785,12 +4778,6 @@ dyna_in_block()
     return (lvtbl->dlev > 0);
 }
 
-static void
-cref_pop()
-{
-    cur_cref = cur_cref->nd_next;
-}
-
 void
 rb_parser_append_print()
 {
@@ -4874,7 +4861,6 @@ Init_sym()
 {
     sym_tbl = st_init_strtable_with_size(200);
     sym_rev_tbl = st_init_numtable_with_size(200);
-    rb_global_variable((VALUE*)&cur_cref);
     rb_global_variable((VALUE*)&lex_lastline);
 }
 
@@ -4981,6 +4967,25 @@ rb_id2name(id)
 	}
     }
     return 0;
+}
+
+static int
+symbols_i(key, value, ary)
+    char *key;
+    ID value;
+    VALUE ary;
+{
+    rb_ary_push(ary, ID2SYM(value));
+    return ST_CONTINUE;
+}
+
+VALUE
+rb_sym_all_symbols()
+{
+    VALUE ary = rb_ary_new2(sym_tbl->num_entries);
+
+    st_foreach(sym_tbl, symbols_i, ary);
+    return ary;
 }
 
 int

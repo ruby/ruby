@@ -249,7 +249,7 @@ VALUE
 rb_f_autoload(obj, klass, file)
     VALUE obj, klass, file;
 {
-    rb_autoload_id(rb_to_id(klass), STR2CSTR(file));
+    rb_autoload_id(rb_to_id(klass), StringValuePtr(file));
     return Qnil;
 }
 
@@ -1062,10 +1062,11 @@ rb_const_get(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE value;
-    VALUE tmp;
+    VALUE value, tmp;
+    int mod_retry = 0;
 
     tmp = klass;
+  retry:
     while (tmp) {
 	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    return value;
@@ -1073,15 +1074,18 @@ rb_const_get(klass, id)
 	if (tmp == rb_cObject && top_const_get(id, &value)) return value;
 	tmp = RCLASS(tmp)->super;
     }
-    if (BUILTIN_TYPE(klass) == T_MODULE) {
-	return rb_const_get(rb_cObject, id);
+    if (!mod_retry && BUILTIN_TYPE(klass) == T_MODULE) {
+	mod_retry = 1;
+	tmp = rb_cObject;
+	goto retry;
     }
 
     /* Uninitialized constant */
-    if (klass && klass != rb_cObject)
-	rb_raise(rb_eNameError, "uninitialized constant %s::%s",
-		 RSTRING(rb_class_path(klass))->ptr,
-		 rb_id2name(id));
+    if (klass && klass != rb_cObject) {
+	rb_raise(rb_eNameError, "uninitialized constant %s at %s",
+		 rb_id2name(id),
+		 RSTRING(rb_class_path(klass))->ptr);
+    }
     else {
 	rb_raise(rb_eNameError, "uninitialized constant %s",rb_id2name(id));
     }
@@ -1306,9 +1310,6 @@ rb_define_const(klass, name, val)
     if (klass == rb_cObject) {
 	rb_secure(4);
     }
-    if (!rb_is_const_id(id)) {
-	rb_raise(rb_eNameError, "wrong constant name %s", name);
-    }
     rb_const_set(klass, id, val);
 }
 
@@ -1424,7 +1425,11 @@ rb_cv_set(klass, name, val)
     const char *name;
     VALUE val;
 {
-    rb_cvar_set(klass, rb_intern(name), val);
+    ID id = rb_intern(name);
+    if (!rb_is_class_id(id)) {
+	rb_raise(rb_eNameError, "wrong class variable name %s", name);
+    }
+    rb_cvar_set(klass, id, val);
 }
 
 VALUE
@@ -1432,7 +1437,11 @@ rb_cv_get(klass, name)
     VALUE klass;
     const char *name;
 {
-    return rb_cvar_get(klass, rb_intern(name));
+    ID id = rb_intern(name);
+    if (!rb_is_class_id(id)) {
+	rb_raise(rb_eNameError, "wrong class variable name %s", name);
+    }
+    return rb_cvar_get(klass, id);
 }
 
 void

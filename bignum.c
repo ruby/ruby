@@ -22,12 +22,12 @@ VALUE rb_cBignum;
 
 #if SIZEOF_INT*2 <= SIZEOF_LONG_LONG
 typedef unsigned int BDIGIT;
-typedef unsigned long long BDIGIT_DBL;
+typedef unsigned LONG_LONG BDIGIT_DBL;
 typedef long long BDIGIT_DBL_SIGNED;
-#elif SIZEOF_INT*2 <= SIZEOF___INT64
+#elif SIZEOF_ING*2 <= SIZEOF_LONG
 typedef unsigned int BDIGIT;
-typedef unsigned __int64 BDIGIT_DBL;
-typedef __int64 BDIGIT_DBL_SIGNED;
+typedef unsigned long BDIGIT_DBL;
+typedef long long BDIGIT_DBL_SIGNED;
 #else
 typedef unsigned short BDIGIT;
 typedef unsigned long BDIGIT_DBL;
@@ -343,7 +343,9 @@ rb_str2inum(str, base)
     char *s;
     int len;
 
-    s = rb_str2cstr(str, &len);
+    StringValue(str);
+    s = RSTRING(str)->ptr;
+    len = RSTRING(str)->len;
     if (s[len]) {		/* no sentinel somehow */
 	char *p = ALLOCA_N(char, len+1);
 
@@ -471,7 +473,7 @@ rb_big2long(x)
 {
     unsigned long num = big2ulong(x, "int");
 
-    if ((long)num < 0 && (long)num != LONG_MIN) {
+    if ((long)num < 0 && (RBIGNUM(x)->sign || (long)num != LONG_MIN)) {
 	rb_raise(rb_eRangeError, "bignum too big to convert into `int'");
     }
     if (!RBIGNUM(x)->sign) return -(long)num;
@@ -917,10 +919,10 @@ bigdivrem(x, y, divp, modp)
     }
     if (modp) {			/* just normalize remainder */
 	*modp = rb_big_clone(z);
+	zds = BDIGITS(*modp);
+	while (!zds[ny-1]) ny--;
 	if (dd) {
-	    zds = BDIGITS(*modp);
-	    while (ny-- && !zds[ny]) ;
-	    t2 = 0; i = ++ny;
+	    t2 = 0; i = ny;
 	    while(i--) {
 		t2 = (t2 | zds[i]) >> dd;
 		q = zds[i];

@@ -465,7 +465,7 @@ trap(arg)
 	func = SIG_IGN;
     }
     else if (TYPE(command) == T_STRING) {
-	SafeStr(command);	/* taint check */
+	SafeStringValue(command);	/* taint check */
 	if (RSTRING(command)->len == 0) {
 	    func = SIG_IGN;
 	}

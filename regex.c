@@ -1049,7 +1049,7 @@ calculate_must_string(start, end)
       EXTRACT_NUMBER_AND_INCR(mcnt, p);
       if (mcnt > 0) p += mcnt;
       if ((enum regexpcode)p[-3] == jump) {
-	p -= 3;
+	p -= 2;
 	EXTRACT_NUMBER_AND_INCR(mcnt, p);
 	if (mcnt > 0) p += mcnt;
       }
@@ -1438,6 +1438,9 @@ re_compile_pattern(pattern, size, bufp)
 	    EXTEND_BUFFER;
 	}
       range_retry:
+	if (range && had_char_class) {
+	  FREE_AND_RETURN(stackb, "invalid regular expression; can't use character class as an end value of range");
+	}
 	PATFETCH(c);
 
 	if (c == ']') {
@@ -1459,6 +1462,7 @@ re_compile_pattern(pattern, size, bufp)
 	  PATFETCH_MBC(c);
 	  had_mbchar++;
 	}
+	had_char_class = 0;
 
 	/* \ escapes characters when inside [...].  */
 	if (c == '\\') {
@@ -1473,6 +1477,7 @@ re_compile_pattern(pattern, size, bufp)
 	    if (current_mbctype) {
 	      set_list_bits(0x80, 0xffffffff, b);
 	    }
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1483,6 +1488,7 @@ re_compile_pattern(pattern, size, bufp)
 		  !current_mbctype && SYNTAX(c) != Sword2))
 		SET_LIST_BIT(c);
 	    }
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1490,6 +1496,7 @@ re_compile_pattern(pattern, size, bufp)
 	    for (c = 0; c < 256; c++)
 	      if (ISSPACE(c))
 		SET_LIST_BIT(c);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1499,12 +1506,14 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(c);
 	    if (current_mbctype)
 	      set_list_bits(0x80, 0xffffffff, b);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
 	  case 'd':
 	    for (c = '0'; c <= '9'; c++)
 	      SET_LIST_BIT(c);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 
@@ -1514,6 +1523,7 @@ re_compile_pattern(pattern, size, bufp)
 		SET_LIST_BIT(c);
 	    if (current_mbctype)
 	      set_list_bits(0x80, 0xffffffff, b);
+	    had_char_class = 1;
 	    last = -1;
 	    continue;
 

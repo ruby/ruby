@@ -858,12 +858,12 @@ static VALUE
 env_delete(obj, name)
     VALUE obj, name;
 {
-    int len;
     char *nam, *val;
 
     rb_secure(4);
-    nam = rb_str2cstr(name, &len);
-    if (strlen(nam) != len) {
+    StringValue(name);
+    nam = RSTRING(name)->ptr;
+    if (strlen(nam) != RSTRING(name)->len) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     val = getenv(nam);
@@ -895,8 +895,9 @@ rb_f_getenv(obj, name)
     char *nam, *env;
     int len;
 
-    nam = rb_str2cstr(name, &len);
-    if (strlen(nam) != len) {
+    StringValue(name);
+    nam = RSTRING(name)->ptr;
+    if (strlen(nam) != RSTRING(name)->len) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     env = getenv(nam);
@@ -915,11 +916,11 @@ env_fetch(argc, argv)
 {
     VALUE key, if_none;
     char *nam, *env;
-    int len;
 
     rb_scan_args(argc, argv, "11", &key, &if_none);
-    nam = rb_str2cstr(key, &len);
-    if (strlen(nam) != len) {
+    StringValue(key);
+    nam = RSTRING(key)->ptr;
+    if (strlen(nam) != RSTRING(key)->len) {
 	rb_raise(rb_eArgError, "bad environment variable name");
     }
     env = getenv(nam);
@@ -1115,11 +1116,13 @@ rb_f_setenv(obj, nm, val)
 	return Qnil;
     }
 
-    name = rb_str2cstr(nm, &nlen);
-    value = rb_str2cstr(val, &vlen);
-    if (strlen(name) != nlen)
+    StringValue(nm);
+    StringValue(val);
+    name = RSTRING(nm)->ptr;
+    value = RSTRING(val)->ptr;
+    if (strlen(name) != RSTRING(nm)->len)
 	rb_raise(rb_eArgError, "bad environment variable name");
-    if (strlen(value) != vlen)
+    if (strlen(value) != RSTRING(val)->len)
 	rb_raise(rb_eArgError, "bad environment variable value");
 
     ruby_setenv(name, value);
@@ -1335,8 +1338,12 @@ static VALUE
 env_has_key(env, key)
     VALUE env, key;
 {
-    if (TYPE(key) != T_STRING) return Qfalse;
-    if (getenv(STR2CSTR(key))) return Qtrue;
+    char *s;
+
+    s = StringValuePtr(key);
+    if (strlen(s) != RSTRING(key)->len)
+	rb_raise(rb_eArgError, "bad environment variable name");
+    if (getenv(s)) return Qtrue;
     return Qfalse;
 }
 

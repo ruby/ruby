@@ -18,7 +18,7 @@
 double strtod();
 #endif
 
-#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG || SIZEOF_INT*2 <= SIZEOF___INT64
+#if SIZEOF_INT*2 <= SIZEOF_LONG_LONG || SIZEOF_ING*2 <= SIZEOF_LONG
 typedef unsigned int BDIGIT;
 #define SIZEOF_BDIGITS SIZEOF_INT
 #else
@@ -188,7 +188,7 @@ w_float(d, arg)
 {
     char buf[100];
 
-    sprintf(buf, "%.12g", d);
+    sprintf(buf, "%.16g", d);
     w_bytes(buf, strlen(buf), arg);
 }
 
@@ -1042,12 +1042,11 @@ marshal_load(argc, argv)
 	arg.taint = Qtrue;
     }
     else if (rb_respond_to(port, rb_intern("to_str"))) {
-	int len;
-
+	arg.taint = OBJ_TAINTED(port); /* original taintedness */
+	StringValue(port);	       /* possible conversion */
 	arg.fp = 0;
-	arg.ptr = rb_str2cstr(port, &len);
-	arg.end = arg.ptr + len;
-	arg.taint = OBJ_TAINTED(port);
+	arg.ptr = RSTRING(port)->ptr;
+	arg.end = arg.ptr + RSTRING(port)->len;
     }
     else {
 	rb_raise(rb_eTypeError, "instance of IO needed");

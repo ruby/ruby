@@ -14,7 +14,7 @@
 #include <fcntl.h>
 #include <errno.h>
 
-VALUE cGDBM, rb_eGDBMError;
+static VALUE cGDBM, rb_eGDBMError;
 
 #define MY_BLOCK_SIZE (2048)
 #define MY_FATAL_FUNC (0)
@@ -83,7 +83,7 @@ fgdbm_initialize(argc, argv, obj)
     if (!NIL_P(vflags))
         flags = NUM2INT(vflags);
 
-    Check_SafeStr(file);
+    SafeStringValue(file);
 
     dbm = 0;
     if (mode >= 0)
@@ -147,42 +147,112 @@ fgdbm_close(obj)
     return Qnil;
 }
 
-static datum
-gdbm_fetch_1(dbm, key)
+static VALUE
+rb_gdbm_fetch(dbm, key)
     GDBM_FILE dbm;
     datum key;
 {
-    static char *ptr;
     datum val;
+    NEWOBJ(str, struct RString);
+    OBJSETUP(str, rb_cString, T_STRING);
 
     val = gdbm_fetch(dbm, key);
-    if (ptr) free(ptr);
-    ptr = val.dptr;
+    if (val.dptr == 0)
+        return Qnil;
 
-    return val;
+    str->ptr = 0;
+    str->len = val.dsize;
+    str->orig = 0;
+    str->ptr = REALLOC_N(val.dptr,char,val.dsize+1);
+    str->ptr[str->len] = '\0';
+
+    OBJ_TAINT(str);
+    return (VALUE)str;
+}
+
+static VALUE
+rb_gdbm_fetch2(dbm, keystr)
+    GDBM_FILE dbm;
+    VALUE keystr;
+{
+    datum key;
+
+    StringValue(keystr);
+    key.dptr = RSTRING(keystr)->ptr;
+    key.dsize = RSTRING(keystr)->len;
+
+    return rb_gdbm_fetch(dbm, key);
+}
+
+static VALUE
+rb_gdbm_firstkey(dbm)
+    GDBM_FILE dbm;
+{
+    datum key;
+    NEWOBJ(str, struct RString);
+    OBJSETUP(str, rb_cString, T_STRING);
+
+    key = gdbm_firstkey(dbm);
+    if (key.dptr == 0)
+        return Qnil;
+
+    str->ptr = 0;
+    str->len = key.dsize;
+    str->orig = 0;
+    str->ptr = REALLOC_N(key.dptr,char,key.dsize+1);
+    str->ptr[str->len] = '\0';
+
+    OBJ_TAINT(str);
+    return (VALUE)str;
+}
+
+static VALUE
+rb_gdbm_nextkey(dbm, keystr)
+    GDBM_FILE dbm;
+    VALUE keystr;
+{
+    datum key, key2;
+    NEWOBJ(str, struct RString);
+    OBJSETUP(str, rb_cString, T_STRING);
+
+    key.dptr = RSTRING(keystr)->ptr;
+    key.dsize = RSTRING(keystr)->len;
+    key2 = gdbm_nextkey(dbm, key);
+    if (key2.dptr == 0)
+        return Qnil;
+
+    str->ptr = 0;
+    str->len = key2.dsize;
+    str->orig = 0;
+    str->ptr = REALLOC_N(key2.dptr,char,key2.dsize+1);
+    str->ptr[str->len] = '\0';
+
+    OBJ_TAINT(str);
+    return (VALUE)str;
 }
 
 static VALUE
 fgdbm_fetch(obj, keystr, ifnone)
     VALUE obj, keystr, ifnone;
 {
-    datum key, value;
+    datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    VALUE valstr;
 
-    Check_Type(keystr, T_STRING);
+    StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
-    value = gdbm_fetch_1(dbm, key);
-    if (value.dptr == 0) {
+    valstr = rb_gdbm_fetch(dbm, key);
+    if (NIL_P(valstr)) {
 	if (ifnone == Qnil && rb_block_given_p())
 	    return rb_yield(rb_tainted_str_new(key.dptr, key.dsize));
 	return ifnone;
     }
-    return rb_tainted_str_new(value.dptr, value.dsize);
+    return valstr;
 }
 
 static VALUE
@@ -212,21 +282,23 @@ static VALUE
 fgdbm_index(obj, valstr)
     VALUE obj, valstr;
 {
-    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    VALUE keystr, valstr2;
 
-    Check_Type(valstr, T_STRING);
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
-
+    StringValue(valstr);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	if (val.dsize == RSTRING(valstr)->len &&
-	    memcmp(val.dptr, RSTRING(valstr)->ptr, val.dsize) == 0)
-	    return rb_tainted_str_new(key.dptr, key.dsize);
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+	valstr2 = rb_gdbm_fetch2(dbm, keystr);
+        if (!NIL_P(valstr2) &&
+            RSTRING(valstr)->len == RSTRING(valstr2)->len &&
+            memcmp(RSTRING(valstr)->ptr, RSTRING(valstr2)->ptr,
+                   RSTRING(valstr)->len) == 0) {
+	    return keystr;
+        }
     }
     return Qnil;
 }
@@ -249,6 +321,36 @@ fgdbm_indexes(argc, argv, obj)
 }
 
 static VALUE
+rb_gdbm_delete(obj, keystr)
+    VALUE obj, keystr;
+{
+    datum key;
+    struct dbmdata *dbmp;
+    GDBM_FILE dbm;
+
+    rb_secure(4);
+    StringValue(keystr);
+    key.dptr = RSTRING(keystr)->ptr;
+    key.dsize = RSTRING(keystr)->len;
+
+    GetDBM(obj, dbmp);
+    dbm = dbmp->di_dbm;
+
+    if (!gdbm_exists(dbm, key)) {
+	return Qnil;
+    }
+
+    if (gdbm_delete(dbm, key)) {
+	dbmp->di_size = -1;
+	rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
+    }
+    else if (dbmp->di_size >= 0) {
+	dbmp->di_size--;
+    }
+    return obj;
+}
+
+static VALUE
 fgdbm_delete(obj, keystr)
     VALUE obj, keystr;
 {
@@ -257,7 +359,7 @@ fgdbm_delete(obj, keystr)
     GDBM_FILE dbm;
 
     rb_secure(4);
-    Check_Type(keystr, T_STRING);
+    StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
@@ -283,7 +385,6 @@ static VALUE
 fgdbm_shift(obj)
     VALUE obj;
 {
-    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
     VALUE keystr, valstr;
@@ -292,13 +393,11 @@ fgdbm_shift(obj)
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
 
-    key = gdbm_firstkey(dbm); 
-    if (!key.dptr) return Qnil;
-    val = gdbm_fetch_1(dbm, key);
-    gdbm_delete(dbm, key);
+    keystr = rb_gdbm_firstkey(dbm);
+    if (NIL_P(keystr)) return Qnil;
+    valstr = rb_gdbm_fetch2(dbm, keystr);
+    rb_gdbm_delete(obj, keystr);
 
-    keystr = rb_tainted_str_new(key.dptr, key.dsize);
-    valstr = rb_tainted_str_new(val.dptr, val.dsize);
     return rb_assoc_new(keystr, valstr);
 }
 
@@ -306,24 +405,32 @@ static VALUE
 fgdbm_delete_if(obj)
     VALUE obj;
 {
-    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
     VALUE keystr, valstr;
+    VALUE ret, ary = rb_ary_new();
+    int i, status = 0, n;
 
     rb_secure(4);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	keystr = rb_tainted_str_new(key.dptr, key.dsize);
-	valstr = rb_tainted_str_new(val.dptr, val.dsize);
-	if (RTEST(rb_yield(rb_assoc_new(keystr, valstr)))) {
-	    if (gdbm_delete(dbm, key)) {
-		rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
-	    }
-	}
+    n = dbmp->di_size;
+    dbmp->di_size = -1;
+
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+	valstr = rb_gdbm_fetch2(dbm, keystr);
+        ret = rb_protect(rb_yield, rb_assoc_new(rb_str_dup(keystr), valstr), &status);
+        if (status != 0) break;
+	if (RTEST(ret)) rb_ary_push(ary, keystr);
     }
+
+    for (i = 0; i < RARRAY(ary)->len; i++)
+        rb_gdbm_delete(obj, RARRAY(ary)->ptr[i]);
+    if (status) rb_jump_tag(status);
+    if (n > 0) dbmp->di_size = n - RARRAY(ary)->len;
+
     return obj;
 }
 
@@ -331,7 +438,7 @@ static VALUE
 fgdbm_clear(obj)
     VALUE obj;
 {
-    datum key, nextkey;
+    datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
@@ -339,12 +446,16 @@ fgdbm_clear(obj)
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
     dbmp->di_size = -1;
-    for (key = gdbm_firstkey(dbm); key.dptr; key = nextkey) {
-	nextkey = gdbm_nextkey(dbm, key);
+
+    while (key = gdbm_firstkey(dbm), key.dptr) {
 	if (gdbm_delete(dbm, key)) {
+	    free(key.dptr);
 	    rb_raise(rb_eGDBMError, "%s", gdbm_strerror(gdbm_errno));
 	}
+	free(key.dptr); 
     }
+    dbmp->di_size = 0;
+
     return obj;
 }
 
@@ -352,7 +463,6 @@ static VALUE
 fgdbm_invert(obj)
     VALUE obj;
 {
-    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
     VALUE keystr, valstr;
@@ -360,10 +470,10 @@ fgdbm_invert(obj)
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	keystr = rb_tainted_str_new(key.dptr, key.dsize);
-	valstr = rb_tainted_str_new(val.dptr, val.dsize);
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+	valstr = rb_gdbm_fetch2(dbm, keystr);
+
 	rb_hash_aset(hash, valstr, keystr);
     }
     return hash;
@@ -416,12 +526,11 @@ fgdbm_store(obj, keystr, valstr)
     GDBM_FILE dbm;
 
     rb_secure(4);
-    keystr = rb_obj_as_string(keystr);
-
+    StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
-    valstr = rb_obj_as_string(valstr);
+    StringValue(valstr);
     val.dptr = RSTRING(valstr)->ptr;
     val.dsize = RSTRING(valstr)->len;
 
@@ -440,7 +549,7 @@ static VALUE
 fgdbm_length(obj)
     VALUE obj;
 {
-    datum key;
+    datum key, nextkey;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
     int i = 0;
@@ -449,7 +558,9 @@ fgdbm_length(obj)
     if (dbmp->di_size > 0) return INT2FIX(dbmp->di_size);
     dbm = dbmp->di_dbm;
 
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
+    for (key = gdbm_firstkey(dbm); key.dptr; key = nextkey) {
+        nextkey = gdbm_nextkey(dbm, key);
+        free(key.dptr);
 	i++;
     }
     dbmp->di_size = i;
@@ -464,20 +575,20 @@ fgdbm_empty_p(obj)
     datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
-    int i = 0;
 
     GetDBM(obj, dbmp);
     if (dbmp->di_size < 0) {
 	dbm = dbmp->di_dbm;
 
-	for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	    i++;
+	key = gdbm_firstkey(dbm);
+        if (key.dptr) {
+            free(key.dptr);
+            return Qfalse;
 	}
+        return Qtrue;
     }
-    else {
-	i = dbmp->di_size;
-    }
-    if (i == 0) return Qtrue;
+
+    if (dbmp->di_size == 0) return Qtrue;
     return Qfalse;
 }
 
@@ -485,15 +596,17 @@ static VALUE
 fgdbm_each_value(obj)
     VALUE obj;
 {
-    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    VALUE keystr;
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	rb_yield(rb_tainted_str_new(val.dptr, val.dsize));
+
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+        rb_yield(rb_gdbm_fetch2(dbm, keystr));
     }
     return obj;
 }
@@ -502,14 +615,17 @@ static VALUE
 fgdbm_each_key(obj)
     VALUE obj;
 {
-    datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    VALUE keystr;
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	rb_yield(rb_tainted_str_new(key.dptr, key.dsize));
+
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+        rb_yield(rb_str_dup(keystr));
     }
     return obj;
 }
@@ -518,19 +634,18 @@ static VALUE
 fgdbm_each_pair(obj)
     VALUE obj;
 {
-    datum key, val;
     GDBM_FILE dbm;
     struct dbmdata *dbmp;
-    VALUE keystr, valstr;
+    VALUE keystr;
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
 
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	keystr = rb_tainted_str_new(key.dptr, key.dsize);
-	valstr = rb_tainted_str_new(val.dptr, val.dsize);
-	rb_yield(rb_assoc_new(keystr, valstr));
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+        rb_yield(rb_assoc_new(rb_str_dup(keystr), 
+                              rb_gdbm_fetch2(dbm, keystr)));
     }
 
     return obj;
@@ -540,17 +655,18 @@ static VALUE
 fgdbm_keys(obj)
     VALUE obj;
 {
-    datum key;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
-    VALUE ary;
+    VALUE keystr, ary;
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
 
     ary = rb_ary_new();
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	rb_ary_push(ary, rb_tainted_str_new(key.dptr, key.dsize));
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+        rb_ary_push(ary, keystr);
     }
 
     return ary;
@@ -560,18 +676,20 @@ static VALUE
 fgdbm_values(obj)
     VALUE obj;
 {
-    datum key, val;
+    datum key, nextkey;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
-    VALUE ary;
+    VALUE valstr, ary;
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
 
     ary = rb_ary_new();
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	rb_ary_push(ary, rb_tainted_str_new(val.dptr, val.dsize));
+    for (key = gdbm_firstkey(dbm); key.dptr; key = nextkey) {
+        nextkey = gdbm_nextkey(dbm, key);
+	valstr = rb_gdbm_fetch(dbm, key);
+        free(key.dptr);
+	rb_ary_push(ary, valstr);
     }
 
     return ary;
@@ -585,7 +703,7 @@ fgdbm_has_key(obj, keystr)
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
 
-    Check_Type(keystr, T_STRING);
+    StringValue(keystr);
     key.dptr = RSTRING(keystr)->ptr;
     key.dsize = RSTRING(keystr)->len;
 
@@ -600,21 +718,24 @@ static VALUE
 fgdbm_has_value(obj, valstr)
     VALUE obj, valstr;
 {
-    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
+    VALUE keystr, valstr2;
 
-    Check_Type(valstr, T_STRING);
-    val.dptr = RSTRING(valstr)->ptr;
-    val.dsize = RSTRING(valstr)->len;
-
+    StringValue(valstr);
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	if (val.dsize == RSTRING(valstr)->len &&
-	    memcmp(val.dptr, RSTRING(valstr)->ptr, val.dsize) == 0)
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+	valstr2 = rb_gdbm_fetch2(dbm, keystr);
+
+        if (!NIL_P(valstr2) &&
+            RSTRING(valstr)->len == RSTRING(valstr2)->len &&
+            memcmp(RSTRING(valstr)->ptr, RSTRING(valstr2)->ptr,
+                   RSTRING(valstr)->len) == 0) {
 	    return Qtrue;
+        }
     }
     return Qfalse;
 }
@@ -623,19 +744,19 @@ static VALUE
 fgdbm_to_a(obj)
     VALUE obj;
 {
-    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
-    VALUE ary;
+    VALUE keystr, ary;
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
 
     ary = rb_ary_new();
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	rb_ary_push(ary, rb_assoc_new(rb_tainted_str_new(key.dptr, key.dsize),
-				rb_tainted_str_new(val.dptr, val.dsize)));
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+        rb_ary_push(ary, rb_assoc_new(rb_str_dup(keystr),
+                                      rb_gdbm_fetch2(dbm, keystr)));
     }
 
     return ary;
@@ -675,7 +796,6 @@ fgdbm_set_cachesize(obj, val)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
-    VALUE hash;
     int optval;
 
     GetDBM(obj, dbmp);
@@ -694,7 +814,6 @@ fgdbm_set_fastmode(obj, val)
 {
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
-    VALUE hash;
     int optval;
 
     GetDBM(obj, dbmp);
@@ -720,7 +839,6 @@ fgdbm_set_syncmode(obj, val)
 #else
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
-    VALUE hash;
     int optval;
 
     GetDBM(obj, dbmp);
@@ -741,19 +859,18 @@ static VALUE
 fgdbm_to_hash(obj)
     VALUE obj;
 {
-    datum key, val;
     struct dbmdata *dbmp;
     GDBM_FILE dbm;
-    VALUE hash;
+    VALUE keystr, hash;
 
     GetDBM(obj, dbmp);
     dbm = dbmp->di_dbm;
 
     hash = rb_hash_new();
-    for (key = gdbm_firstkey(dbm); key.dptr; key = gdbm_nextkey(dbm, key)) {
-	val = gdbm_fetch_1(dbm, key);
-	rb_hash_aset(hash, rb_tainted_str_new(key.dptr, key.dsize),
-		           rb_tainted_str_new(val.dptr, val.dsize));
+    for (keystr = rb_gdbm_firstkey(dbm); RTEST(keystr);
+         keystr = rb_gdbm_nextkey(dbm, keystr)) {
+
+        rb_hash_aset(hash, keystr, rb_gdbm_fetch2(dbm, keystr));
     }
 
     return hash;
@@ -794,7 +911,7 @@ Init_gdbm()
     rb_define_method(cGDBM, "each_pair", fgdbm_each_pair, 0);
     rb_define_method(cGDBM, "keys", fgdbm_keys, 0);
     rb_define_method(cGDBM, "values", fgdbm_values, 0);
-    rb_define_method(cGDBM, "shift", fgdbm_shift, 1);
+    rb_define_method(cGDBM, "shift", fgdbm_shift, 0);
     rb_define_method(cGDBM, "delete", fgdbm_delete, 1);
     rb_define_method(cGDBM, "delete_if", fgdbm_delete_if, 0);
     rb_define_method(cGDBM, "reject!", fgdbm_delete_if, 0);

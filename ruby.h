@@ -63,6 +63,12 @@ extern "C" {
 # define __(args) ()
 #endif
 
+#ifdef __cplusplus
+#define ANYARGS ...
+#else
+#define ANYARGS
+#endif
+
 #ifndef NORETURN
 # define NORETURN(x) x
 #endif
@@ -108,9 +114,11 @@ typedef unsigned long ID;
 #define rb_fix_new(v) INT2FIX(v)
 VALUE rb_int2inum _((long));
 #define INT2NUM(v) rb_int2inum(v)
+#define LONG2NUM(v) INT2NUM(v)
 #define rb_int_new(v) rb_int2inum(v)
 VALUE rb_uint2inum _((unsigned long));
 #define UINT2NUM(v) rb_uint2inum(v)
+#define ULONG2NUM(v) UINT2NUM(v)
 #define rb_uint_new(v) rb_uint2inum(v)
 
 #define FIX2LONG(x) RSHIFT((long)x,1)
@@ -176,14 +184,21 @@ VALUE rb_uint2inum _((unsigned long));
 
 void rb_check_type _((VALUE,int));
 #define Check_Type(v,t) rb_check_type((VALUE)(v),t)
-void rb_check_safe_str _((VALUE));
-/* obsolete macro - use SafeStr(v) */
-#define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
+
 VALUE rb_str_to_str _((VALUE));
-#define SafeStr(v) do {\
-    v = rb_str_to_str(v);\
+#define StringValue(v) do {\
+    if (TYPE(v) != T_STRING) v = rb_str_to_str(v);\
+} while (0)
+void rb_check_safe_str _((VALUE));
+/* obsolete macro - use SafeStringValue(v) */
+#define Check_SafeStr(v) rb_check_safe_str((VALUE)(v))
+#define SafeStringValue(v) do {\
+    if (TYPE(v) != T_STRING) v = rb_str_to_str(v);\
     rb_check_safe_str(v);\
 } while (0)
+
+#define StringValuePtr(v) \
+    (((TYPE(v) != T_STRING) ? v = rb_str_to_str(v) : (v)), RSTRING(v)->ptr)
 
 void rb_secure _((int));
 
@@ -212,8 +227,9 @@ int rb_fix2int _((VALUE));
 double rb_num2dbl _((VALUE));
 #define NUM2DBL(x) rb_num2dbl((VALUE)(x))
 
+/* obsolete API - use StringValue() */
 char *rb_str2cstr _((VALUE,int*));
-#define str2cstr(x,l) rb_str2cstr((VALUE)(x),(l))
+/* obsolete API - use StringValuePtr() */
 #define STR2CSTR(x) rb_str2cstr((VALUE)(x),0)
 
 #define NUM2CHR(x) (((TYPE(x) == T_STRING)&&(RSTRING(x)->len>=1))?\
@@ -402,8 +418,8 @@ void xfree _((void*));
 #define MEMMOVE(p1,p2,type,n) memmove((p1), (p2), sizeof(type)*(n))
 #define MEMCMP(p1,p2,type,n) memcmp((p1), (p2), sizeof(type)*(n))
 
-void rb_glob _((char*,void(*)(),VALUE));
-void rb_iglob _((char*,void(*)(),VALUE));
+void rb_glob _((char*,void(*)(const char*,VALUE),VALUE));
+void rb_iglob _((char*,void(*)(const char*,VALUE),VALUE));
 
 VALUE rb_define_class _((const char*,VALUE));
 VALUE rb_define_module _((const char*));
@@ -414,16 +430,16 @@ void rb_include_module _((VALUE,VALUE));
 void rb_extend_object _((VALUE,VALUE));
 
 void rb_define_variable _((const char*,VALUE*));
-void rb_define_virtual_variable _((const char*,VALUE(*)(),void(*)()));
-void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(),void(*)()));
+void rb_define_virtual_variable _((const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS)));
+void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS)));
 void rb_define_readonly_variable _((const char*,VALUE*));
 void rb_define_const _((VALUE,const char*,VALUE));
 void rb_define_global_const _((const char*,VALUE));
 
-#define RUBY_METHOD_FUNC(func) ((VALUE (*)__((...)))func)
-void rb_define_method _((VALUE,const char*,VALUE(*)(),int));
-void rb_define_module_function _((VALUE,const char*,VALUE(*)(),int));
-void rb_define_global_function _((const char*,VALUE(*)(),int));
+#define RUBY_METHOD_FUNC(func) ((VALUE (*)(ANYARGS))func)
+void rb_define_method _((VALUE,const char*,VALUE(*)(ANYARGS),int));
+void rb_define_module_function _((VALUE,const char*,VALUE(*)(ANYARGS),int));
+void rb_define_global_function _((const char*,VALUE(*)(ANYARGS),int));
 
 void rb_undef_method _((VALUE,const char*));
 void rb_define_alias _((VALUE,const char*,const char*));
@@ -474,11 +490,11 @@ void rb_warn __((const char*, ...));		/* reports always */
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));
 int rb_block_given_p _((void));
-VALUE rb_iterate _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
-VALUE rb_rescue _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
-VALUE rb_rescue2 __((VALUE(*)(),VALUE,VALUE(*)(),VALUE,...));
-VALUE rb_ensure _((VALUE(*)(),VALUE,VALUE(*)(),VALUE));
-VALUE rb_catch _((const char*,VALUE(*)(),VALUE));
+VALUE rb_iterate _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
+VALUE rb_rescue _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
+VALUE rb_rescue2 __((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...));
+VALUE rb_ensure _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
+VALUE rb_catch _((const char*,VALUE(*)(ANYARGS),VALUE));
 NORETURN(void rb_throw _((const char*,VALUE)));
 
 VALUE rb_require _((const char*));
@@ -541,6 +557,7 @@ EXTERN VALUE rb_eTypeError;
 EXTERN VALUE rb_eZeroDivError;
 EXTERN VALUE rb_eNotImpError;
 EXTERN VALUE rb_eNoMemError;
+EXTERN VALUE rb_eNoMethodError;
 EXTERN VALUE rb_eFloatDomainError;
 
 EXTERN VALUE rb_eScriptError;

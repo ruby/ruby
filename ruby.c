@@ -138,7 +138,8 @@ rubylib_mangle(s, l)
 		if (*s == '\\') *s = '/';
 		s++;
 	    }
-	} else {
+	}
+	else {
 	    notfound = 1;
 	}
     }
@@ -234,7 +235,8 @@ ruby_init_loadpath()
 	    p -= 4;
 	    *p = 0;
 	}
-    } else {
+    }
+    else {
 	strcpy(libpath, ".");
 	p = libpath + 1;
     }
@@ -334,7 +336,8 @@ process_sflag()
 	n = RARRAY(rb_argv)->len;
 	args = RARRAY(rb_argv)->ptr;
 	while (n > 0) {
-	    char *s = STR2CSTR(*args++);
+	    VALUE v = *args++;
+	    char *s = StringValuePtr(v);
 	    char *p;
 
 	    if (s[0] != '-') break;
@@ -876,11 +879,13 @@ set_arg0(val, id)
 	len = s - origargv[0];
     }
 #endif
-    s = rb_str2cstr(val, &i);
+    StringValue(val);
+    s = RSTRING(val)->ptr;
+    i = RSTRING(val)->len;
 #ifndef __hpux
-    if (i > len) {
-	memcpy(origargv[0], s, len);
-	origargv[0][len] = '\0';
+    if (i < len) {
+	memcpy(origargv[0], s, i);
+	origargv[0][i] = '\0';
     }
     else {
 	memcpy(origargv[0], s, i);
@@ -898,7 +903,8 @@ set_arg0(val, id)
       RSTRING(val)->len = i;
       *(s + i) = '\0';
       pstat(PSTAT_SETCMD, j, PST_CLEN, 0, 0);
-    } else {
+    }
+    else {
       union pstun j;
       j.pst_command = s;
       pstat(PSTAT_SETCMD, j, i, 0, 0);

@@ -12,6 +12,16 @@
 
 #define RUBY
 
+#if SIZEOF_LONG_LONG > 0
+# define HAVE_LONG_LONG
+# define LONG_LONG long long
+#elif SIZEOF___INT64 > 0
+# define HAVE_LONG_LONG
+# define LONG_LONG __int64
+# undef SIZEOF_LONG_LONG
+# define SIZEOF_LONG_LONG SIZEOF___INT64
+#endif
+
 /* define RUBY_USE_EUC/SJIS for default kanji-code */
 #ifndef DEFAULT_KCODE
 #if defined(MSDOS) || defined(__CYGWIN__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2) || defined(NT)

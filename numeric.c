@@ -56,7 +56,7 @@ coerce_rescue(x)
 {
     rb_raise(rb_eTypeError, "%s can't be coerced into %s",
 	     rb_special_const_p(x[1])?
-	     STR2CSTR(rb_inspect(x[1])):
+	     RSTRING(rb_inspect(x[1]))->ptr:
 	     rb_class2name(CLASS_OF(x[1])),
 	     rb_class2name(CLASS_OF(x[0])));
     return Qnil;		/* dummy */
@@ -227,7 +227,8 @@ flo_to_s(flt)
 	    memmove(ind+2, ind, len-(ind-buf)+1);
 	    ind[0] = '.';
 	    ind[1] = '0';
-	} else {
+	}
+	else {
 	    strcat(buf, ".0");
 	}
     }
@@ -332,7 +333,7 @@ flodivmod(x, y, divp, modp)
 	double z;
 
 	modf(x/y, &z);
-	mod = x - z * x;
+	mod = x - z * y;
     }
 #endif
     div = (x - mod) / y;
@@ -448,6 +449,7 @@ flo_hash(num)
     int i, hash;
 
     d = RFLOAT(num)->value;
+    if (d == 0) d = fabs(d);
     c = (char*)&d;
     for (hash=0, i=0; i<sizeof(double);i++) {
 	hash += c[i] * 971;
@@ -593,8 +595,8 @@ static VALUE
 flo_eql(x, y)
     VALUE x, y;
 {
-    if (TYPE(y) == T_FLOAT) {
-	if (RFLOAT(x)->value == RFLOAT(y)->value) return Qtrue;
+    if (TYPE(y) == T_FLOAT && RFLOAT(x)->value == RFLOAT(y)->value) {
+	return Qtrue;
     }
     return Qfalse;
 }
@@ -1295,12 +1297,14 @@ static VALUE
 fix_aref(fix, idx)
     VALUE fix, idx;
 {
-    unsigned long val = FIX2LONG(fix);
+    long val = FIX2LONG(fix);
     int i = NUM2INT(idx);
 
-    if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i)
+    if (i < 0 || sizeof(VALUE)*CHAR_BIT-1 < i) {
+	if (val < 0) return INT2FIX(1);
 	return INT2FIX(0);
-    if (val & (1<<i))
+    }
+    if (val & (1L<<i))
 	return INT2FIX(1);
     return INT2FIX(0);
 }

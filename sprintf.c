@@ -174,8 +174,9 @@ rb_f_sprintf(argc, argv)
 
     fmt = GETARG();
     if (OBJ_TAINTED(fmt)) tainted = 1;
-    p = rb_str2cstr(fmt, &blen);
-    end = p + blen;
+    StringValue(fmt);
+    p = RSTRING(fmt)->ptr;
+    end = p + RSTRING(fmt)->len;
     blen = 0;
     bsiz = 120;
     buf = ALLOC_N(char, bsiz);

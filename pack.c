@@ -339,14 +339,16 @@ pack_pack(ary, fmt)
 #ifdef NATINT_PACK
     int natint;		/* native integer */
 #endif
-    
-    p = rb_str2cstr(fmt, &plen);
-    pend = p + plen;
+
+    StringValue(fmt);
+    p = RSTRING(fmt)->ptr;
+    pend = p + RSTRING(fmt)->len;
     res = rb_str_new(0, 0);
 
     items = RARRAY(ary)->len;
     idx = 0;
 
+#define THISFROM RARRAY(ary)->ptr[idx]
 #define NEXTFROM (items-- > 0 ? RARRAY(ary)->ptr[idx++] : (rb_raise(rb_eArgError, toofew),0))
 
     while (p < pend) {
@@ -390,7 +392,9 @@ pack_pack(ary, fmt)
 		plen = 0;
 	    }
 	    else {
-		ptr = rb_str2cstr(from, &plen);
+		StringValue(from);
+		ptr = RSTRING(from)->ptr;
+		plen = RSTRING(from)->len;
 	    }
 
 	    if (p[-1] == '*')
@@ -824,7 +828,10 @@ pack_pack(ary, fmt)
 
 	  case 'u':
 	  case 'm':
-	    ptr = rb_str2cstr(NEXTFROM, &plen);
+	    from = NEXTFROM;
+	    StringValue(from);
+	    ptr = RSTRING(from)->ptr;
+	    plen = RSTRING(from)->len;
 
 	    if (len <= 2)
 		len = 45;
@@ -851,6 +858,14 @@ pack_pack(ary, fmt)
 	    break;
 
 	  case 'P':
+	    from = THISFROM;
+	    if (!NIL_P(from)) {
+		StringValue(from);
+		if (RSTRING(from)->len < len) {
+		    rb_raise(rb_eArgError, "too short buffer for P(%d for %d)",
+			     RSTRING(from)->len, len);
+		}
+	    }
 	    len = 1;
 	    /* FALL THROUGH */
 	  case 'p':
@@ -858,9 +873,12 @@ pack_pack(ary, fmt)
 		char *t;
 		from = NEXTFROM;
 		if (NIL_P(from)) {
-		    from = rb_str_new(0, 0);
+		    t = 0;
 		}
-		t = STR2CSTR(from);
+		else {
+		    StringValue(from);
+		    t = RSTRING(from)->ptr;
+		}
 		rb_str_associate(res, from);
 		rb_str_cat(res, (char*)&t, sizeof(char*));
 	    }
@@ -1084,10 +1102,12 @@ pack_unpack(str, fmt)
     int natint;			/* native integer */
 #endif
 
-    s = rb_str2cstr(str, &len);
-    send = s + len;
-    p = rb_str2cstr(fmt, &len);
-    pend = p + len;
+    StringValue(str);
+    s = RSTRING(str)->ptr;
+    send = s + RSTRING(str)->len;
+    StringValue(fmt);
+    p = RSTRING(fmt)->ptr;
+    pend = p + RSTRING(fmt)->len;
 
     ary = rb_ary_new();
     while (p < pend) {
@@ -1611,17 +1631,17 @@ pack_unpack(str, fmt)
 	  case 'P':
 	    if (sizeof(char *) <= send - s) {
 		char *t;
-		VALUE a, tmp;
+		VALUE tmp;
 
-		if (!(a = rb_str_associated(str))) {
-		    rb_raise(rb_eArgError, "no associated pointer");
-		}
 		memcpy(&t, s, sizeof(char *));
 		s += sizeof(char *);
 
 		if (t) {
-		    VALUE *p, *pend;
+		    VALUE a, *p, *pend;
 
+		    if (!(a = rb_str_associated(str))) {
+			rb_raise(rb_eArgError, "no associated pointer");
+		    }
 		    p = RARRAY(a)->ptr;
 		    pend = p + RARRAY(a)->len;
 		    while (p < pend) {
@@ -1639,7 +1659,7 @@ pack_unpack(str, fmt)
 		    tmp = rb_tainted_str_new(t, len);
 		}
 		else {
-		    tmp = rb_str_new(0, 0);
+		    tmp = Qnil;
 		}
 		rb_ary_push(ary, tmp);
 	    }
@@ -1652,19 +1672,20 @@ pack_unpack(str, fmt)
 		if (send - s < sizeof(char *))
 		    break;
 		else {
+		    VALUE tmp;
 		    char *t;
-		    VALUE a, tmp;
-		    VALUE *p, *pend;
 
-
-		    if (!(a = rb_str_associated(str))) {
-			rb_raise(rb_eArgError, "no associated pointer");
-		    }
 		    memcpy(&t, s, sizeof(char *));
 		    s += sizeof(char *);
 
 		    if (t) {
+			VALUE a, tmp;
+			VALUE *p, *pend;
+
 			p = RARRAY(a)->ptr;
+			if (!(a = rb_str_associated(str))) {
+			    rb_raise(rb_eArgError, "no associated pointer");
+			}
 			pend = p + RARRAY(a)->len;
 			while (p < pend) {
 			    if (TYPE(*p) == T_STRING && RSTRING(*p)->ptr == t) {
@@ -1676,6 +1697,9 @@ pack_unpack(str, fmt)
 			    rb_raise(rb_eArgError, "non associated pointer");
 			}
 			tmp = rb_str_new2(t);
+		    }
+		    else {
+			tmp = Qnil;
 		    }
 		    rb_ary_push(ary, tmp);
 		}

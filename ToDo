@@ -46,6 +46,9 @@ Hacking Interpreter
 * MicroRuby
 * Built-in Interactive Ruby.
 * trap every method invocation, which can be enabled by e.g. trap_call :method.
+* unify Errno exceptions of same errno, or new exception comparison scheme.
+* signal list (Signal::trap, Signal::list??).
+* 2.times{|i| if i==0 then a = 15 else puts eval("a") end} should print nil.
 
 Standard Libraries
 
@@ -78,6 +81,7 @@ Standard Libraries
 * new user-defined marshal scheme. _dump(dumper), _load(restorer)
 * warn, warning for Ruby level
 * hash etc. should handle self referenceing array/hash
+* move NameError under StandardError.
 
 Extension Libraries
 

@@ -27,6 +27,10 @@
 # define NO_LONG_FNAME
 #endif
 
+#if defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(sun)
+# define USE_SETVBUF
+#endif
+
 #include <sys/types.h>
 #if !defined(DJGPP) && !defined(NT) && !defined(__human68k__)
 #include <sys/ioctl.h>
@@ -606,11 +610,10 @@ rb_io_gets_internal(argc, argv, io)
     VALUE rs;
 
     if (argc == 0) {
-	rs = rb_str_to_str(rb_rs);
+	rs = rb_default_rs;
     }
     else {
 	rb_scan_args(argc, argv, "1", &rs);
-	if (!NIL_P(rs)) rs = rb_str_to_str(rs);
     }
 
     if (NIL_P(rs)) {
@@ -621,6 +624,7 @@ rb_io_gets_internal(argc, argv, io)
 	return rb_io_gets(io);
     }
     else {
+	StringValue(rs);
 	rslen = RSTRING(rs)->len;
 	if (rslen == 0) {
 	    rsptr = "\n\n";
@@ -1379,6 +1383,10 @@ rb_fopen(fname, mode)
 	    rb_sys_fail(fname);
 	}
     }
+#ifdef USE_SETVBUF
+    if (setvbuf(file, NULL, _IOFBF, 0) != 0)
+	rb_warn("setvbuf() can't be honered for %s", fname);
+#endif
 #ifdef __human68k__
     fmode(file, _IOTEXT);
 #endif
@@ -1402,6 +1410,11 @@ rb_fdopen(fd, mode)
 	    rb_sys_fail(0);
 	}
     }
+
+#ifdef USE_SETVBUF
+    if (setvbuf(file, NULL, _IOFBF, 0) != 0)
+	rb_warn("setvbuf() can't be honered (fd=%d)", fd);
+#endif
     return file;
 }
 
@@ -1685,9 +1698,9 @@ rb_io_popen(str, argc, argv, klass)
 	mode = "r";
     }
     else {
-	mode = STR2CSTR(pmode);
+	mode = StringValuePtr(pmode);
     }
-    SafeStr(pname);
+    SafeStringValue(pname);
     port = pipe_open(str, mode);
     if (NIL_P(port)) {
 	/* child */
@@ -1715,7 +1728,7 @@ rb_io_s_popen(argc, argv, klass)
     char *str = 0;
 
     if (argc >= 1) {
-	str = STR2CSTR(argv[0]);
+	str = StringValuePtr(argv[0]);
     }
     return rb_io_popen(str, argc, argv, klass);
 }
@@ -1732,7 +1745,7 @@ rb_file_s_open(argc, argv, klass)
     NEWOBJ(io, struct RFile);
     OBJSETUP(io, klass, T_FILE);
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    SafeStr(fname);
+    SafeStringValue(fname);
     path = RSTRING(fname)->ptr;
 
     RFILE(io)->fptr = 0;
@@ -1743,7 +1756,7 @@ rb_file_s_open(argc, argv, klass)
 	file = rb_file_sysopen_internal((VALUE)io, path, flags, fmode);
     }
     else {
-	mode = NIL_P(vmode) ? "r" : STR2CSTR(vmode);
+	mode = NIL_P(vmode) ? "r" : StringValuePtr(vmode);
 	file = rb_file_open_internal((VALUE)io, RSTRING(fname)->ptr, mode);
     }
 
@@ -1760,7 +1773,7 @@ rb_f_open(argc, argv)
     VALUE *argv;
 {
     if (argc >= 1) {
-	char *str = STR2CSTR(argv[0]);
+	char *str = StringValuePtr(argv[0]);
 
 	if (str[0] == '|') {
 	    return rb_io_popen(str+1, argc, argv, rb_cIO);
@@ -1897,9 +1910,9 @@ rb_io_reopen(argc, argv, file)
 	}
     }
 
-    SafeStr(fname);
+    SafeStringValue(fname);
     if (!NIL_P(nmode)) {
-	mode = STR2CSTR(nmode);
+	mode = StringValuePtr(nmode);
     }
     else {
 	mode = "r";
@@ -1919,12 +1932,18 @@ rb_io_reopen(argc, argv, file)
 	    fclose(fptr->f2);
 	    fptr->f2 = 0;
 	}
+
 	return file;
     }
 
     if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == 0) {
 	rb_sys_fail(fptr->path);
     }
+#ifdef USE_SETVBUF
+    if (setvbuf(fptr->f, NULL, _IOFBF, 0) != 0)
+	rb_warn("setvbuf() can't be honered for %s", RSTRING(fname)->ptr);
+#endif
+
     if (fptr->f2) {
 	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == 0) {
 	    rb_sys_fail(fptr->path);
@@ -2255,7 +2274,7 @@ set_outfile(val, var, orig, stdf)
 
     if (val == *var) return;
 
-    if (TYPE(*var) == T_FILE) {
+    if (TYPE(*var) == T_FILE && !rb_io_closed(*var)) {
 	rb_io_flush(*var);
     }
     if (TYPE(val) != T_FILE) {
@@ -2361,7 +2380,7 @@ rb_io_initialize(argc, argv, io)
 	RFILE(io)->fptr = 0;
     }
     if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
-	SafeStr(mode);
+	SafeStringValue(mode);
 	m = RSTRING(mode)->ptr;
     }
     MakeOpenFile(io, fp);
@@ -2381,7 +2400,7 @@ rb_file_initialize(argc, argv, io)
     char *path, *mode;
 
     rb_scan_args(argc, argv, "12", &fname, &vmode, &perm);
-    SafeStr(fname);
+    SafeStringValue(fname);
     path = RSTRING(fname)->ptr;
 
     if (RFILE(io)->fptr) {
@@ -2400,7 +2419,7 @@ rb_file_initialize(argc, argv, io)
 	    mode = "r";
 	}
 	else {
-	    mode = STR2CSTR(vmode);
+	    mode = StringValuePtr(vmode);
 	}
 	file = rb_file_open_internal(io, RSTRING(fname)->ptr, mode);
     }
@@ -2424,7 +2443,7 @@ rb_io_s_for_fd(argc, argv, klass)
     OBJSETUP(io, klass, T_FILE);
     
     if (rb_scan_args(argc, argv, "11", &fnum, &mode) == 2) {
-	SafeStr(mode);
+	SafeStringValue(mode);
 	m = RSTRING(mode)->ptr;
     }
     MakeOpenFile(io, fp);
@@ -2482,7 +2501,7 @@ next_argv()
 	next_p = 0;
 	if (RARRAY(rb_argv)->len > 0) {
 	    filename = rb_ary_shift(rb_argv);
-	    fn = STR2CSTR(filename);
+	    fn = StringValuePtr(filename);
 	    if (strlen(fn) == 1 && fn[0] == '-') {
 		current_file = rb_stdin;
 		if (ruby_inplace_mode) {
@@ -2681,7 +2700,7 @@ rb_f_backquote(obj, str)
 {
     VALUE port, result;
 
-    SafeStr(str);
+    SafeStringValue(str);
     port = pipe_open(RSTRING(str)->ptr, "r");
     if (NIL_P(port)) return rb_str_new(0,0);
     result = read_all(port);
@@ -2885,7 +2904,7 @@ rb_io_ctl(io, req, arg, io_p)
 	narg = 1;
     }
     else {
-	arg = rb_str_to_str(arg);
+	StringValue(arg);
 
 #ifdef IOCPARM_MASK
 #ifndef IOCPARM_LEN
@@ -2984,10 +3003,11 @@ rb_f_syscall(argc, argv)
 	    arg[i] = (unsigned long)NUM2INT(*argv);
 	}
 	else {
-	    VALUE v = rb_str_to_str(*argv);
+	    VALUE v = *argv;
 
+	    StringValue(v);
 	    rb_str_modify(v);
-	    arg[i] = (unsigned long)RSTRING(*argv)->ptr;
+	    arg[i] = (unsigned long)RSTRING(v)->ptr;
 	}
 	argv++;
 	i++;
@@ -3107,7 +3127,7 @@ rb_io_s_foreach(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
-    SafeStr(fname);
+    SafeStringValue(fname);
 
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
@@ -3132,7 +3152,7 @@ rb_io_s_readlines(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
-    SafeStr(fname);
+    SafeStringValue(fname);
 
     arg.argc = argc - 1;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
@@ -3157,7 +3177,7 @@ rb_io_s_read(argc, argv, io)
     struct foreach_arg arg;
 
     rb_scan_args(argc, argv, "12", &fname, &arg.sep, &offset);
-    SafeStr(fname);
+    SafeStringValue(fname);
 
     arg.argc = argc ? 1 : 0;
     arg.io = rb_io_open(RSTRING(fname)->ptr, "r");
@@ -3256,7 +3276,7 @@ argf_read(argc, argv)
     if (!next_argv()) return str;
     if (TYPE(current_file) != T_FILE) {
 	tmp = argf_forward();
-	STR2CSTR(tmp);
+	StringValue(tmp);
     }
     else {
 	tmp = io_read(argc, argv, current_file);
@@ -3410,11 +3430,13 @@ static void
 opt_i_set(val)
     VALUE val;
 {
+    if (ruby_inplace_mode) free(ruby_inplace_mode);
     if (!RTEST(val)) {
 	ruby_inplace_mode = 0;
 	return;
     }
-    ruby_inplace_mode = STR2CSTR(val);
+    StringValue(val);
+    ruby_inplace_mode = strdup(RSTRING(val)->ptr);
 }
 
 void
@@ -3463,9 +3485,9 @@ Init_IO()
     rb_rs = rb_default_rs = rb_str_new2("\n"); rb_output_rs = Qnil;
     rb_global_variable(&rb_default_rs);
     OBJ_FREEZE(rb_default_rs);	/* avoid modifying RS_default */
-    rb_define_hooked_variable("$/", &rb_rs, 0, rb_str_setter);
-    rb_define_hooked_variable("$-0", &rb_rs, 0, rb_str_setter);
-    rb_define_hooked_variable("$\\", &rb_output_rs, 0, rb_str_setter);
+    rb_define_variable("$/", &rb_rs);
+    rb_define_variable("$-0", &rb_rs);
+    rb_define_variable("$\\", &rb_output_rs);
 
     rb_define_hooked_variable("$.", &lineno, 0, lineno_setter);
     rb_define_virtual_variable("$_", rb_lastline_get, rb_lastline_set);

@@ -47,7 +47,7 @@ VALUE rb_ary_concat _((VALUE, VALUE));
 VALUE rb_ary_assoc _((VALUE, VALUE));
 VALUE rb_ary_rassoc _((VALUE, VALUE));
 VALUE rb_ary_includes _((VALUE, VALUE));
-VALUE rb_protect_inspect _((VALUE(*)(),VALUE,VALUE));
+VALUE rb_protect_inspect _((VALUE(*)(VALUE,VALUE),VALUE,VALUE));
 VALUE rb_inspecting_p _((VALUE));
 /* bignum.c */
 VALUE rb_big_clone _((VALUE));
@@ -78,6 +78,8 @@ VALUE rb_big_lshift _((VALUE, VALUE));
 VALUE rb_big_rand _((VALUE, double));
 /* class.c */
 VALUE rb_class_new _((VALUE));
+VALUE rb_mod_clone _((VALUE));
+VALUE rb_mod_dup _((VALUE));
 VALUE rb_singleton_class_new _((VALUE));
 VALUE rb_singleton_class_clone _((VALUE));
 void rb_singleton_class_attached _((VALUE,VALUE));
@@ -90,13 +92,13 @@ VALUE rb_class_instance_methods _((int, VALUE*, VALUE));
 VALUE rb_class_protected_instance_methods _((int, VALUE*, VALUE));
 VALUE rb_class_private_instance_methods _((int, VALUE*, VALUE));
 VALUE rb_obj_singleton_methods _((VALUE));
-void rb_define_method_id _((VALUE, ID, VALUE (*)(), int));
+void rb_define_method_id _((VALUE, ID, VALUE (*)(ANYARGS), int));
 void rb_frozen_class_p _((VALUE));
 void rb_undef _((VALUE, ID));
-void rb_define_protected_method _((VALUE, const char*, VALUE (*)(), int));
-void rb_define_private_method _((VALUE, const char*, VALUE (*)(), int));
-void rb_define_singleton_method _((VALUE,const char*,VALUE(*)(),int));
-void rb_define_private_method _((VALUE,const char*,VALUE(*)(),int));
+void rb_define_protected_method _((VALUE, const char*, VALUE (*)(ANYARGS), int));
+void rb_define_private_method _((VALUE, const char*, VALUE (*)(ANYARGS), int));
+void rb_define_singleton_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
+void rb_define_private_method _((VALUE, const char*, VALUE(*)(ANYARGS), int));
 VALUE rb_singleton_class _((VALUE));
 /* enum.c */
 VALUE rb_enum_length _((VALUE));
@@ -141,8 +143,8 @@ VALUE rb_f_require _((VALUE, VALUE));
 void rb_obj_call_init _((VALUE, int, VALUE*));
 VALUE rb_class_new_instance _((int, VALUE*, VALUE));
 VALUE rb_f_lambda _((void));
-VALUE rb_protect _((VALUE (*)(), VALUE, int*));
-void rb_set_end_proc _((void (*)(), VALUE));
+VALUE rb_protect _((VALUE (*)(VALUE), VALUE, int*));
+void rb_set_end_proc _((void (*)(void), VALUE));
 void rb_mark_end_proc _((void));
 void rb_exec_end_proc _((void));
 void ruby_finalize _((void));
@@ -161,13 +163,13 @@ void rb_thread_sleep_forever _((void));
 VALUE rb_thread_stop _((void));
 VALUE rb_thread_wakeup _((VALUE));
 VALUE rb_thread_run _((VALUE));
-VALUE rb_thread_create _((VALUE (*)(), void*));
+VALUE rb_thread_create _((VALUE (*)(ANYARGS), void*));
 int rb_thread_scope_shared_p _((void));
 void rb_thread_interrupt _((void));
 void rb_thread_trap_eval _((VALUE, int));
 void rb_thread_signal_raise _((char*));
-int rb_thread_select();
-void rb_thread_wait_for();
+int rb_thread_select(ANYARGS);
+void rb_thread_wait_for(ANYARGS);
 VALUE rb_thread_current _((void));
 VALUE rb_thread_main _((void));
 VALUE rb_thread_local_aref _((VALUE, ID));
@@ -258,6 +260,7 @@ VALUE rb_backref_get _((void));
 void rb_backref_set _((VALUE));
 VALUE rb_lastline_get _((void));
 void rb_lastline_set _((VALUE));
+VALUE rb_sym_all_symbols _((void));
 /* process.c */
 int rb_proc_exec _((const char*));
 void rb_syswait _((int));
@@ -296,7 +299,7 @@ VALUE rb_f_kill _((int, VALUE*));
 void rb_gc_mark_trap_list _((void));
 #ifdef POSIX_SIGNAL
 #define posix_signal ruby_posix_signal
-void posix_signal _((int, void (*)()));
+void posix_signal _((int, RETSIGTYPE (*)(int)));
 #endif
 void rb_trap_exit _((void));
 void rb_trap_exec _((void));
@@ -337,7 +340,7 @@ VALUE rb_struct_aref _((VALUE, VALUE));
 VALUE rb_struct_aset _((VALUE, VALUE, VALUE));
 VALUE rb_struct_getmember _((VALUE, ID));
 /* time.c */
-VALUE rb_time_new();
+VALUE rb_time_new(ANYARGS);
 /* variable.c */
 VALUE rb_mod_name _((VALUE));
 VALUE rb_class_path _((VALUE));

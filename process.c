@@ -170,7 +170,7 @@ pst_wifsignaled(st)
 {
     int status = NUM2INT(st);
 
-    if (WIFSIGNALED(st))
+    if (WIFSIGNALED(status))
 	return Qtrue;
     else
 	return Qfalse;
@@ -314,27 +314,13 @@ wait_each(key, value, data)
     return ST_DELETE;
 }
 
-struct waitall_data {
-    int pid;
-    int status;
-    VALUE ary;
-};
-
 static int
 waitall_each(key, value, data)
     int key, value;
-    struct waitall_data *data;
+    VALUE data;
 {
-    VALUE pid_status_member;
-
-    if (data->status != -1) return ST_STOP;
-
-    data->pid = key;
-    data->status = value;
-    pid_status_member = rb_ary_new2(2);
-    rb_ary_push(pid_status_member, INT2NUM(key));
-    rb_ary_push(pid_status_member, INT2NUM(value));
-    rb_ary_push(data->ary, pid_status_member);
+    last_status_set(value);
+    rb_ary_push(data, rb_assoc_new(INT2NUM(key), rb_last_status));
     return ST_DELETE;
 }
 #endif
@@ -346,11 +332,13 @@ proc_wait()
 #ifdef NO_WAITPID
     struct wait_data data;
 
-    data.status = -1;
-    st_foreach(pid_tbl, wait_each, &data);
-    if (data.status != -1) {
-	last_status_set(data.status);
-	return INT2FIX(data.pid);
+    if (pid_tbl) {
+	data.status = -1;
+	st_foreach(pid_tbl, wait_each, &data);
+	if (data.status != -1) {
+	    last_status_set(data.status);
+	    return INT2FIX(data.pid);
+	}
     }
 
     while (1) {
@@ -416,17 +404,13 @@ proc_waitpid2(argc, argv)
 static VALUE
 proc_waitall()
 {
-    VALUE pid_status_ary, pid_status_member;
+    VALUE result;
     int pid, status;
-#ifdef NO_WAITPID
-    struct waitall_data data;
 
-    data.ary = pid_status_ary = rb_ary_new();
-    data.status = -1;
-    st_foreach(pid_tbl, waitall_each, &data);
-    if (data.status != -1) {
-	last_status_set(data.status);
-	return pid_status_ary;
+    result = rb_ary_new();
+#ifdef NO_WAITPID
+    if (pid_tbl) {
+	st_foreach(pid_tbl, waitall_each, result);
     }
 
     for (pid = -1;;) {
@@ -440,15 +424,11 @@ proc_waitall()
 	    }
 	    rb_sys_fail(0);
 	}
-	pid_status_member = rb_ary_new2(2);
-	rb_ary_push(pid_status_member, INT2NUM(pid));
-	rb_ary_push(pid_status_member, INT2NUM(status));
-	rb_ary_push(pid_status_ary, pid_status_member);
-    }
-    if (RARRAY(pid_status_ary)->len != 0)
 	last_status_set(status);
+	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status));
+    }
 #else
-    pid_status_ary = rb_ary_new();
+    rb_last_status = Qnil;
     for (pid = -1;;) {
 	pid = rb_waitpid(-1, 0, &status);
 	if (pid == -1) {
@@ -456,13 +436,10 @@ proc_waitall()
 		break;
 	    rb_sys_fail(0);
 	}
-	pid_status_member = rb_ary_new2(2);
-	rb_ary_push(pid_status_member, INT2NUM(pid));
-	rb_ary_push(pid_status_member, INT2NUM(status));
-	rb_ary_push(pid_status_ary, pid_status_member);
+	rb_ary_push(result, rb_assoc_new(INT2NUM(pid), rb_last_status));
     }
 #endif
-    return pid_status_ary;
+    return result;
 }
 
 #ifndef HAVE_STRING_H
@@ -564,7 +541,7 @@ proc_exec_n(argc, argv, progv)
     }
     args = ALLOCA_N(char*, argc+1);
     for (i=0; i<argc; i++) {
-	SafeStr(argv[i]);
+	SafeStringValue(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
     args[i] = 0;
@@ -694,7 +671,7 @@ proc_spawn_n(argc, argv, prog)
 	SafeStr(argv[i]);
 	args[i] = RSTRING(argv[i])->ptr;
     }
-    SafeStr(prog);
+    SafeStringValue(prog);
     args[i] = (char*) 0;
     if (args[0])
 	return proc_spawn_v(args, RSTRING(prog)->ptr);
@@ -710,7 +687,7 @@ proc_spawn(sv)
     char **argv, **a;
     int status;
 
-    SafeStr(sv);
+    SafeStringValue(sv);
     str = s = RSTRING(sv)->ptr;
     for (s = str; *s; s++) {
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
@@ -753,12 +730,12 @@ rb_f_exec(argc, argv)
 	argv[0] = RARRAY(argv[0])->ptr[1];
     }
     if (prog) {
-	SafeStr(prog);
+	SafeStringValue(prog);
     }
     if (argc == 1 && prog == 0) {
 	VALUE cmd = argv[0];
 
-	SafeStr(cmd);
+	SafeStringValue(cmd);
 	rb_proc_exec(RSTRING(cmd)->ptr);
     }
     else {
@@ -876,7 +853,7 @@ rb_f_system(argc, argv)
     }
     cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
-    SafeStr(cmd);
+    SafeStringValue(cmd);
     status = do_spawn(RSTRING(cmd)->ptr);
     last_status_set(status);
 
@@ -900,7 +877,7 @@ rb_f_system(argc, argv)
     }
     cmd = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
 
-    SafeStr(cmd);
+    SafeStringValue(cmd);
     status = system(RSTRING(cmd)->ptr);
     last_status_set((status & 0xff) << 8);
 
@@ -957,10 +934,10 @@ rb_f_system(argc, argv)
     }
 
     if (prog) {
-	SafeStr(prog);
+	SafeStringValue(prog);
     }
     for (i = 0; i < argc; i++) {
-	SafeStr(argv[i]);
+	SafeStringValue(argv[i]);
     }
   retry:
     switch (pid = vfork()) {

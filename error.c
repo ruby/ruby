@@ -262,6 +262,7 @@ VALUE rb_eRangeError;
 VALUE rb_eSecurityError;
 VALUE rb_eNotImpError;
 VALUE rb_eNoMemError;
+VALUE rb_eNoMethodError;
 
 VALUE rb_eScriptError;
 VALUE rb_eNameError;
@@ -295,11 +296,8 @@ VALUE
 rb_exc_new3(etype, str)
     VALUE etype, str;
 {
-    char *s;
-    int len;
-
-    s = rb_str2cstr(str, &len);
-    return rb_exc_new(etype, s, len);
+    StringValue(str);
+    return rb_exc_new(etype, RSTRING(str)->ptr, RSTRING(str)->len);
 }
 
 static VALUE
@@ -311,7 +309,7 @@ exc_initialize(argc, argv, exc)
     VALUE mesg;
 
     if (rb_scan_args(argc, argv, "01", &mesg) == 1) {
-	STR2CSTR(mesg);		/* ensure mesg can be converted to String */
+	StringValue(mesg);	/* ensure mesg can be converted to String */
     }
     rb_iv_set(exc, "mesg", mesg);
 
@@ -522,6 +520,29 @@ syserr_errno(self)
     return rb_iv_get(self, "errno");
 }
 
+static VALUE
+syserr_eqq(self, exc)
+    VALUE self, exc;
+{
+    VALUE num;
+
+    if (!rb_obj_is_kind_of(exc, rb_eSystemCallError)) return Qfalse;
+    if (self == rb_eSystemCallError) return Qtrue;
+
+    num = rb_iv_get(exc, "errno");
+    if (NIL_P(num)) {
+	VALUE klass = CLASS_OF(exc);
+
+	while (TYPE(klass) == T_ICLASS || FL_TEST(klass, FL_SINGLETON)) {
+	    klass = (VALUE)RCLASS(klass)->super;
+	}
+	num = rb_const_get(klass, rb_intern("Errno"));
+    }
+    if (rb_const_get(self, rb_intern("Errno")) == num)
+	return Qtrue;
+    return Qfalse;
+}
+
 #ifdef __BEOS__
 static VALUE
 get_syserr(int i)
@@ -568,10 +589,11 @@ Init_Exception()
     rb_eInterrupt   = rb_define_class("Interrupt", rb_eSignal);
 
     rb_eStandardError = rb_define_class("StandardError", rb_eException);
-    rb_eTypeError   = rb_define_class("TypeError", rb_eStandardError);
-    rb_eArgError    = rb_define_class("ArgumentError", rb_eStandardError);
-    rb_eIndexError  = rb_define_class("IndexError", rb_eStandardError);
-    rb_eRangeError  = rb_define_class("RangeError", rb_eStandardError);
+    rb_eTypeError     = rb_define_class("TypeError", rb_eStandardError);
+    rb_eArgError      = rb_define_class("ArgumentError", rb_eStandardError);
+    rb_eIndexError    = rb_define_class("IndexError", rb_eStandardError);
+    rb_eRangeError    = rb_define_class("RangeError", rb_eStandardError);
+    rb_eNoMethodError = rb_define_class("NoMethodError", rb_eStandardError);
 
     rb_eScriptError = rb_define_class("ScriptError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eScriptError);
@@ -749,6 +771,7 @@ init_syserr()
 #endif
     rb_eSystemCallError = rb_define_class("SystemCallError", rb_eStandardError);
     rb_define_method(rb_eSystemCallError, "errno", syserr_errno, 0);
+    rb_define_singleton_method(rb_eSystemCallError, "===", syserr_eqq, 1);
 
     rb_mErrno = rb_define_module("Errno");
 #ifdef __BEOS__

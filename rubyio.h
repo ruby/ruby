@@ -23,7 +23,7 @@ typedef struct OpenFile {
     int pid;			/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
-    void (*finalize)();		/* finalize proc */
+    void (*finalize) _((struct OpenFile*)); /* finalize proc */
 } OpenFile;
 
 #define FMODE_READABLE  1

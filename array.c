@@ -541,12 +541,12 @@ rb_ary_indexes(argc, argv, ary)
 }
 
 static void
-rb_ary_replace(ary, beg, len, rpl)
-    VALUE ary, rpl;
+rb_ary_update(ary, beg, len, rpl, rlen)
+    VALUE ary;
     long beg, len;
-{
+    VALUE *rpl;
     long rlen;
-
+{
     if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
     if (beg < 0) {
 	beg += RARRAY(ary)->len;
@@ -559,14 +559,6 @@ rb_ary_replace(ary, beg, len, rpl)
 	len = RARRAY(ary)->len - beg;
     }
 
-    if (NIL_P(rpl)) {
-	rpl = rb_ary_new2(0);
-    }
-    else if (TYPE(rpl) != T_ARRAY) {
-	rpl = rb_ary_new3(1, rpl);
-    }
-    rlen = RARRAY(rpl)->len;
-
     rb_ary_modify(ary);
     if (beg >= RARRAY(ary)->len) {
 	len = beg + rlen;
@@ -575,7 +567,7 @@ rb_ary_replace(ary, beg, len, rpl)
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
 	}
 	rb_mem_clear(RARRAY(ary)->ptr+RARRAY(ary)->len, beg-RARRAY(ary)->len);
-	MEMCPY(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, rlen);
+	MEMCPY(RARRAY(ary)->ptr+beg, rpl, VALUE, rlen);
 	RARRAY(ary)->len = len;
     }
     else {
@@ -591,13 +583,29 @@ rb_ary_replace(ary, beg, len, rpl)
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
 	}
 
-	if (len != RARRAY(rpl)->len) {
+	if (len != rlen) {
 	    MEMMOVE(RARRAY(ary)->ptr+beg+rlen, RARRAY(ary)->ptr+beg+len,
 		    VALUE, RARRAY(ary)->len-(beg+len));
 	    RARRAY(ary)->len = alen;
 	}
-	MEMMOVE(RARRAY(ary)->ptr+beg, RARRAY(rpl)->ptr, VALUE, rlen);
+	MEMMOVE(RARRAY(ary)->ptr+beg, rpl, VALUE, rlen);
     }
+}
+
+static void
+rb_ary_replace(ary, beg, len, rpl)
+    VALUE ary, rpl;
+    long beg, len;
+{
+    long rlen;
+
+    if (NIL_P(rpl)) {
+	rpl = rb_ary_new2(0);
+    }
+    else if (TYPE(rpl) != T_ARRAY) {
+	rpl = rb_ary_new3(1, rpl);
+    }
+    rb_ary_update(ary, beg, len, RARRAY(rpl)->ptr, RARRAY(rpl)->len);
 }
 
 static VALUE
@@ -632,6 +640,19 @@ rb_ary_aset(argc, argv, ary)
   fixnum:
     rb_ary_store(ary, offset, argv[1]);
     return argv[1];
+}
+
+static VALUE
+rb_ary_insert(argc, argv, ary)
+    int argc;
+    VALUE *argv;
+    VALUE ary;
+{
+    if (argc < 2) {
+	rb_raise(rb_eArgError, "wrong # of arguments(at least 2)");
+    }
+    rb_ary_update(ary, NUM2LONG(argv[0]), 0, argv+1, argc-1);
+    return ary;
 }
 
 VALUE
@@ -1233,7 +1254,7 @@ rb_ary_fill(argc, argv, ary)
     end = beg + len;
     if (end > RARRAY(ary)->len) {
 	if (end >= RARRAY(ary)->capa) {
-	    RARRAY(ary)->capa=end;
+	    RARRAY(ary)->capa = end;
 	    REALLOC_N(RARRAY(ary)->ptr, VALUE, RARRAY(ary)->capa);
 	}
 	if (beg > RARRAY(ary)->len) {
@@ -1267,19 +1288,11 @@ VALUE
 rb_ary_concat(x, y)
     VALUE x, y;
 {
-    long xlen = RARRAY(x)->len;
     long ylen;
 
     y = to_ary(y);
-    ylen = RARRAY(y)->len;
-    if (ylen > 0) {
-	rb_ary_modify(x);
-	if (xlen + ylen > RARRAY(x)->capa) {
-	    RARRAY(x)->capa = xlen + ylen;
-	    REALLOC_N(RARRAY(x)->ptr, VALUE, RARRAY(x)->capa);
-	}
-	MEMCPY(RARRAY(x)->ptr+xlen, RARRAY(y)->ptr, VALUE, ylen);
-	RARRAY(x)->len = xlen + ylen;
+    if (RARRAY(y)->len > 0) {
+	rb_ary_replace(x, RARRAY(x)->len, 0, y);
     }
     return x;
 }
@@ -1598,35 +1611,54 @@ rb_ary_nitems(ary)
     return INT2NUM(n);
 }
 
+static int
+flatten(ary, idx, ary2, memo)
+    VALUE ary;
+    long idx;
+    VALUE ary2, memo;
+{
+    VALUE id;
+    long i = idx;
+    long n, lim = idx + RARRAY(ary2)->len;
+
+    id = rb_obj_id(ary2);
+    if (rb_ary_includes(memo, id)) {
+	rb_raise(rb_eArgError, "tried to flatten recursive array");
+    }
+    rb_ary_push(memo, id);
+    rb_ary_replace(ary, idx, 1, ary2);
+    while (i < lim) {
+	if (TYPE(RARRAY(ary)->ptr[i]) == T_ARRAY) {
+	    n = flatten(ary, i, RARRAY(ary)->ptr[i], memo);
+	    i += n; lim += n;
+	}
+	i++;
+    }
+    rb_ary_pop(memo);
+
+    return lim - idx - 1;	/* returns number of increased items */
+}
+
 static VALUE
 rb_ary_flatten_bang(ary)
     VALUE ary;
 {
-    long i;
+    long i = 0;
     int mod = 0;
-    VALUE flattening = Qnil;
+    VALUE memo = Qnil;
 
     rb_ary_modify(ary);
-    for (i=0; i<RARRAY(ary)->len; i++) {
+    while (i<RARRAY(ary)->len) {
 	VALUE ary2 = RARRAY(ary)->ptr[i];
-	if (TYPE(ary2) == T_ARRAY) {
-	    if (ary == ary2) {
-		ary2 = Qnil;
-	    } else {
-		VALUE id;
 
-		if (NIL_P(flattening)) {
-		    flattening = rb_ary_new();
-		}
-		id = rb_obj_id(ary2);
-		if (rb_ary_includes(flattening, id)) {
-		    rb_raise(rb_eArgError, "tried to flatten recursive array");
-		}
-		rb_ary_push(flattening, id);
+	if (TYPE(ary2) == T_ARRAY) {
+	    if (NIL_P(memo)) {
+		memo = rb_ary_new();
 	    }
-	    rb_ary_replace(ary, i--, 1, ary2);
+	    i += flatten(ary, i, ary2, memo);
 	    mod = 1;
 	}
+	i++;
     }
     if (mod == 0) return Qnil;
     return ary;
@@ -1673,6 +1705,7 @@ Init_Array()
     rb_define_method(rb_cArray, "pop", rb_ary_pop, 0);
     rb_define_method(rb_cArray, "shift", rb_ary_shift, 0);
     rb_define_method(rb_cArray, "unshift", rb_ary_unshift_m, -1);
+    rb_define_method(rb_cArray, "insert", rb_ary_insert, -1);
     rb_define_method(rb_cArray, "each", rb_ary_each, 0);
     rb_define_method(rb_cArray, "each_index", rb_ary_each_index, 0);
     rb_define_method(rb_cArray, "reverse_each", rb_ary_reverse_each, 0);

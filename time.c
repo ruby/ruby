@@ -270,8 +270,11 @@ time_arg(argc, argv, tm, usec)
     tm->tm_sec  = NIL_P(v[5])?0:obj2long(v[5]);
 
     /* value validation */
-    if (   tm->tm_year < 69
-	|| tm->tm_mon  < 0 || tm->tm_mon  > 11
+    if (
+#ifndef NEGATIVE_TIME_T
+           tm->tm_year < 69 ||
+#endif
+	   tm->tm_mon  < 0 || tm->tm_mon  > 11
 	|| tm->tm_mday < 1 || tm->tm_mday > 31
 	|| tm->tm_hour < 0 || tm->tm_hour > 23
 	|| tm->tm_min  < 0 || tm->tm_min  > 59
@@ -284,14 +287,14 @@ static VALUE time_localtime _((VALUE));
 static VALUE time_get_tm _((VALUE, int));
 
 static time_t
-make_time_t(tptr, utc_or_local)
+make_time_t(tptr, utc_p)
     struct tm *tptr;
-    int utc_or_local;
+    int utc_p;
 {
     struct timeval tv;
     time_t oguess, guess;
     struct tm *tm;
-    long t, diff;
+    long t, diff, i;
 
     if (gettimeofday(&tv, 0) < 0) {
 	rb_sys_fail("gettimeofday");
@@ -301,11 +304,13 @@ make_time_t(tptr, utc_or_local)
     tm = gmtime(&guess);
     if (!tm) goto error;
     t = tptr->tm_year;
+#ifndef NEGATIVE_TIME_T
     if (t < 69) goto out_of_range;
+#endif
+    i = 0;
     while (diff = t - tm->tm_year) {
-	oguess = guess;
 	guess += diff * 363 * 24 * 3600;
-	if (diff > 0 && guess <= oguess) goto out_of_range;
+	if (i++ > 255) goto out_of_range;
 	tm = gmtime(&guess);
 	if (!tm) goto error;
     }
@@ -316,18 +321,18 @@ make_time_t(tptr, utc_or_local)
 	if (!tm) goto error;
 	if (tptr->tm_year != tm->tm_year) goto out_of_range;
     }
+    oguess = guess;
     guess += (tptr->tm_mday - tm->tm_mday) * 24 * 3600;
     guess += (tptr->tm_hour - tm->tm_hour) * 3600;
     guess += (tptr->tm_min - tm->tm_min) * 60;
     guess += (tptr->tm_sec - tm->tm_sec);
+#ifndef NEGATIVE_TIME_T
     if (guess < 0) goto out_of_range;
-
-    if (!utc_or_local) {	/* localtime zone adjust */
-#if defined(HAVE_TM_ZONE)
-	tm = localtime(&guess);
-	if (!tm) goto error;
-	guess -= tm->tm_gmtoff;
 #else
+    if (oguess > 365 * 24 * 3600 && guess < 0) goto out_of_range;
+#endif
+
+    if (!utc_p) {	/* localtime zone adjust */
 	struct tm gt, lt;
 	long tzsec;
 
@@ -351,18 +356,22 @@ make_time_t(tptr, utc_or_local)
 	}
 	if (lt.tm_isdst) guess += 3600;
 	guess += tzsec;
-	if (guess < 0) {
-	    goto out_of_range;
-	}
+#ifndef NEGATIVE_TIME_T
+	if (guess < 0) goto out_of_range;
+#endif
 	tm = localtime(&guess);
 	if (!tm) goto error;
-	if (lt.tm_isdst != tm->tm_isdst) {
-	    guess -= 3600;
+	if (lt.tm_isdst != tm->tm_isdst || tptr->tm_hour != tm->tm_hour) {
+	    oguess = guess - 3600;
+	    tm = localtime(&oguess);
+	    if (!tm) goto error;
+	    if (tptr->tm_hour == tm->tm_hour) {
+		guess = oguess;
+	    }
 	}
+#ifndef NEGATIVE_TIME_T
+	if (guess < 0) goto out_of_range;
 #endif
-	if (guess < 0) {
-	    goto out_of_range;
-	}
     }
 
     return guess;
@@ -926,7 +935,9 @@ time_strftime(time, format)
     if (tobj->tm_got == 0) {
 	time_get_tm(time, tobj->gmt);
     }
-    fmt = rb_str2cstr(format, &len);
+    StringValue(format);
+    fmt = RSTRING(format)->ptr;
+    len = RSTRING(format)->len;
     if (len == 0) {
 	rb_warning("strftime called with empty format string");
     }
@@ -1010,8 +1021,9 @@ time_load(klass, str)
     struct tm tm;
     int i;
 
-    buf = rb_str2cstr(str, &i);
-    if (i != 8) {
+    StringValue(str);
+    buf = RSTRING(str)->ptr;
+    if (RSTRING(str)->len != 8) {
 	rb_raise(rb_eTypeError, "marshaled time format differ");
     }
 

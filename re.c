@@ -936,7 +936,7 @@ rb_reg_match(re, str)
     int start;
 
     if (NIL_P(str)) return Qnil;
-    str = rb_str_to_str(str);
+    StringValue(str);
     start = rb_reg_search(re, str, 0, 0);
     if (start < 0) {
 	return Qnil;
@@ -990,7 +990,7 @@ rb_reg_initialize_m(argc, argv, self)
 	else if (RTEST(argv[1])) flags = RE_OPTION_IGNORECASE;
     }
     if (argc == 3) {
-	char *kcode = STR2CSTR(argv[2]);
+	char *kcode = StringValuePtr(argv[2]);
 
 	switch (kcode[0]) {
 	  case 'n': case 'N':
@@ -1016,11 +1016,8 @@ rb_reg_initialize_m(argc, argv, self)
 	rb_reg_initialize(self, RREGEXP(src)->str, RREGEXP(src)->len, flags);
     }
     else {
-	char *p;
-	int len;
-
-	p = rb_str2cstr(src, &len);
-	rb_reg_initialize(self, p, len, flags);
+	StringValue(src);
+	rb_reg_initialize(self, RSTRING(src)->ptr, RSTRING(src)->len, flags);
     }
     return self;
 }
@@ -1047,17 +1044,17 @@ rb_reg_s_quote(argc, argv)
     int kcode_saved = reg_kcode;
     char *s, *send, *t;
     VALUE tmp;
-    int len;
 
     rb_scan_args(argc, argv, "11", &str, &kcode);
     if (!NIL_P(kcode)) {
-	rb_set_kcode(STR2CSTR(kcode));
+	rb_set_kcode(StringValuePtr(kcode));
 	curr_kcode = reg_kcode;
 	reg_kcode = kcode_saved;
     }
-    s = rb_str2cstr(str, &len);
-    send = s + len;
-    tmp = rb_str_new(0, len*2);
+    StringValue(str);
+    s = RSTRING(str)->ptr;
+    send = s + RSTRING(str)->len;
+    tmp = rb_str_new(0, RSTRING(str)->len*2);
     t = RSTRING(tmp)->ptr;
 
     for (; s < send; s++) {
@@ -1288,10 +1285,10 @@ rb_set_kcode(code)
 
 static void
 kcode_setter(val)
-    struct RString *val;
+    VALUE val;
 {
     may_need_recompile = 1;
-    rb_set_kcode(STR2CSTR(val));
+    rb_set_kcode(StringValuePtr(val));
 }
 
 static VALUE
@@ -1406,6 +1403,7 @@ Init_Regexp()
     rb_define_method(rb_cMatch, "begin", match_begin, 1);
     rb_define_method(rb_cMatch, "end", match_end, 1);
     rb_define_method(rb_cMatch, "to_a", match_to_a, 0);
+    rb_define_method(rb_cMatch, "to_ary", match_to_a, 0);
     rb_define_method(rb_cMatch, "[]", match_aref, -1);
     rb_define_method(rb_cMatch, "pre_match", rb_reg_match_pre, 0);
     rb_define_method(rb_cMatch, "post_match", rb_reg_match_post, 0);
