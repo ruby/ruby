@@ -1,3 +1,20 @@
+Mon Mar 18 10:55:03 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* enum.c (enum_find): catch a value before recycle.
+
+	* enum.c (enum_min): ditto.
+
+	* enum.c (enum_max): ditto.
+
+	* parse.y (parse_string): part of multi-byte sequence must not
+	  match to paren.
+
+	* parse.y (parse_qstring): ditto.
+
+	* parse.y (parse_quotedwords): ditto.
+
+	* parse.y (str_extend): handle multi-byte characters.
+
 Thu Mar 14 16:42:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* class.c (rb_define_class): should handle autoload.
