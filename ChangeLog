@@ -1,4 +1,17 @@
+Mon Feb  2 00:01:19 2004  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv-replace.rb (BasicSocket#send): don't replace because
+	  it has no hostname argument.
+	  (IPSocket.getaddress): raise SocketError instead of
+	  Resolv::ResolvError for errors.
+	  (TCPSocket#initialize, UDPSocket#bind, UDPSocket#connect)
+	  (SOCKSSocket#initialize): use IPSocket.getaddress instead of
+	  Resolv.getaddress.
+	  (UDPSocket#send): recognize 3 arguments form.  try all addresses on
+	  4 arguments form.
+
 Sun Feb  1 23:00:00 2004  Shigeo Kobayashi <shigek@ruby-lang.org>
+
 	* ext/bigdecimal.c: Bug in BigDecimal("1e#{n}").add BigDecimal('.5'),n)
 	  reported and fixed by Javier Goizueta.
 
