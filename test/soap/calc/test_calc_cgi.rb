@@ -4,7 +4,7 @@ require 'logger'
 require 'webrick'
 begin
   loadpath = $:.dup
-  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
+  $:.replace($: | [File.expand_path("../../ruby", File.dirname(__FILE__))])
   require 'envutil'
 ensure
   $:.replace(loadpath)
