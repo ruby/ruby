@@ -32,7 +32,10 @@ backtrace = [%q{tc_thing.rb:4:in 'a'},
         %q{C:\some\old\path\test\unit\testcase.rb:44:in 'run'},
         %q{C:\some\old\path\test\unit.rb:44:in 'run'}]
       assert_equal(backtrace, filter_backtrace(backtrace, %q{C:\some\old\path\test\unit}), "Should filter out all TestUnit-specific lines")
+    end
 
+    def test_nil_backtrace
+      assert_equal(["No backtrace"], filter_backtrace(nil))
     end
   end
 end

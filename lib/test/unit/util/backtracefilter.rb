@@ -7,6 +7,7 @@ module Test
         TESTUNIT_RB_FILE = /\.rb\Z/
         
         def filter_backtrace(backtrace, prefix=nil)
+          return ["No backtrace"] unless(backtrace)
           split_p = if(prefix)
             prefix.split(TESTUNIT_FILE_SEPARATORS)
           else
