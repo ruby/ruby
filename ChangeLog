@@ -1,3 +1,9 @@
+Fri Feb 11 11:33:53 2005  Tanaka Akira  <akr@m17n.org>
+
+       * lib/open-uri.rb (URI::HTTP#proxy_open): new option supported:
+	 :http_basic_authentication.
+         suggested by Kent Sibilev.  [ruby-core:4392]
+
 Thu Feb 10 11:14:17 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub (COMMON_HEADERS): shouldn't include winsock2.h.
