@@ -78,9 +78,9 @@ void rb_trap_exec _((void));
 #define xrealloc ruby_xrealloc
 #define xfree ruby_xfree
 
-void *xmalloc _((size_t));
-void *xcalloc _((size_t,size_t));
-void *xrealloc _((void*,size_t));
+void *xmalloc _((long));
+void *xcalloc _((long,long));
+void *xrealloc _((void*,long));
 void xfree _((void*));
 #endif
 
