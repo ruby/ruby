@@ -1,6 +1,5 @@
 # scanf for Ruby
 #
-# $Release Version: 1.1.2 $
 # $Revision$
 # $Id$
 # $Author$
@@ -331,7 +330,6 @@ module Scanf
 
     def initialize(str)
       @spec_string = str
-
       h = '[A-Fa-f0-9]'
 
       @re_string, @handler = 
@@ -523,7 +521,7 @@ module Scanf
     end
 
     def to_s
-      @spec_string
+      @specs.join('')
     end
 
     def prune(n=matched_count)
@@ -588,11 +586,12 @@ class IO
 #   no: continue  [this state could be analyzed further]
 #
 #
+
   def scanf(str,&b)
     return block_scanf(str,&b) if b
     return [] unless str.size > 0
 
-    start_position = pos
+    start_position = pos rescue 0
     matched_so_far = 0
     source_buffer = ""
     result_buffer = []
@@ -601,12 +600,13 @@ class IO
     fstr = Scanf::FormatString.new(str)
 
     loop do
-      if eof
+      if eof || (tty? &&! fstr.match(source_buffer))
         final_result.concat(result_buffer)
         break
       end
 
       source_buffer << gets
+
       current_match = fstr.match(source_buffer)
 
       spec = fstr.last_spec_tried
@@ -616,6 +616,7 @@ class IO
           result_buffer.replace(current_match)
           next
         end
+
       elsif (fstr.matched_count == fstr.spec_count - 1)
         if /\A\s*\z/.match(fstr.string_left)
           break if spec.count_space?
@@ -632,10 +633,9 @@ class IO
       break if fstr.last_spec
       fstr.prune
     end
-    
     seek(start_position + matched_so_far, IO::SEEK_SET) rescue Errno::ESPIPE
     soak_up_spaces if fstr.last_spec && fstr.space
-    
+
     return final_result
   end
 
@@ -647,15 +647,20 @@ class IO
     until eof ||! c || /\S/.match(c.chr)
       c = getc
     end
-    ungetc(c) if c
+    ungetc(c) if (c && /\S/.match(c.chr))
   end
 
   def block_scanf(str)
     final = []
+# Sub-ideal, since another FS gets created in scanf.
+# But used here to determine the number of specifiers.
+    fstr = Scanf::FormatString.new(str)
+    last_spec = fstr.last_spec
     begin
       current = scanf(str)
-      final.push(yield(current)) unless current.empty?
-    end until current.empty? || eof
+      break if current.empty?
+      final.push(yield(current))
+    end until eof || fstr.last_spec_tried == last_spec
     return final
   end
 end
@@ -691,7 +696,7 @@ end
 
 module Kernel
   private
-  def scanf(fs)
-    STDIN.scanf(fs)
+  def scanf(fs,&b)
+    STDIN.scanf(fs,&b)
   end
 end
