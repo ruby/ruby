@@ -775,7 +775,6 @@ rb_io_fsync(io)
     FILE *f;
 
     GetOpenFile(io, fptr);
-    rb_io_check_writable(fptr);
     f = GetWriteFile(fptr);
 
     io_fflush(f, fptr);

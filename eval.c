@@ -8137,7 +8137,7 @@ static VALUE method_arity _((VALUE));
  *  returns -1, as it can accept (and ignore) an arbitrary number of
  *  parameters.
  *     
- *     Proc.new {}.arity          #=> -1
+ *     Proc.new {}.arity          #=>  0
  *     Proc.new {||}.arity        #=>  0
  *     Proc.new {|a|}.arity       #=>  1
  *     Proc.new {|a,b|}.arity     #=>  2

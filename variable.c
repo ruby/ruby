@@ -1702,26 +1702,6 @@ original_module(c)
     return c;
 }
 
-static void
-cvar_override_check(id, a)
-    ID id;
-    VALUE a;
-{
-    VALUE base = original_module(a);
-
-    a = RCLASS(a)->super;
-    while (a) {
-	if (RCLASS(a)->iv_tbl) {
-	    if (st_lookup(RCLASS(a)->iv_tbl,id,0)) {
-		rb_warning("class variable %s of %s is overridden by %s",
-			   rb_id2name(id), rb_class2name(original_module(a)),
-			   rb_class2name(base));
-	    }
-	}
-	a = RCLASS(a)->super;
-    }
-}
-
 void
 rb_cvar_set(klass, id, val, warn)
     VALUE klass;
@@ -1729,26 +1709,6 @@ rb_cvar_set(klass, id, val, warn)
     VALUE val;
     int warn;
 {
-    VALUE tmp;
-
-    tmp = klass;
-    while (tmp) {
-	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
-	    if (OBJ_FROZEN(tmp)) rb_error_frozen("class/module");
-	    if (!OBJ_TAINTED(tmp) && rb_safe_level() >= 4)
-		rb_raise(rb_eSecurityError, "Insecure: can't modify class variable");
-	    if (warn && RTEST(ruby_verbose) && klass != tmp) {
-		rb_warning("already initialized class variable %s", rb_id2name(id));
-	    }
-	    st_insert(RCLASS(tmp)->iv_tbl,id,val);
-	    if (RTEST(ruby_verbose)) {
-		cvar_override_check(id, tmp);
-	    }
-	    return;
-	}
-	tmp = RCLASS(tmp)->super;
-    }
-
     mod_av_set(klass, id, val, Qfalse);
 }
 
@@ -1760,17 +1720,8 @@ rb_cvar_get(klass, id)
     VALUE value;
     VALUE tmp;
 
-    tmp = klass;
-    while (tmp) {
-	if (RCLASS(tmp)->iv_tbl) {
-	    if (st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
-		if (RTEST(ruby_verbose)) {
-		    cvar_override_check(id, tmp);
-		}
-		return value;
-	    }
-	}
-	tmp = RCLASS(tmp)->super;
+    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,id,&value)) {
+	return value;
     }
 
     rb_name_error(id,"uninitialized class variable %s in %s",
@@ -1783,16 +1734,9 @@ rb_cvar_defined(klass, id)
     VALUE klass;
     ID id;
 {
-    VALUE tmp;
-
-    tmp = klass;
-    while (tmp) {
-	if (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,0)) {
-	    return Qtrue;
-	}
-	tmp = RCLASS(tmp)->super;
+    if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,id,0)) {
+	return Qtrue;
     }
-
     return Qfalse;
 }
 
