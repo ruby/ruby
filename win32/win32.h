@@ -117,6 +117,8 @@ extern "C++" {
 #define fsync(h)		_commit(h)
 #undef stat
 #define stat(path,st)		rb_w32_stat(path,st)
+#undef execv
+#define execv(path,argv)	do_aspawn(P_OVERLAY,path,argv)
 
 #ifdef __MINGW32__
 struct timezone {

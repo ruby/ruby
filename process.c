@@ -599,11 +599,7 @@ proc_exec_v(argv, prog)
     }
 #endif /* MSDOS or __human68k__ or __EMX__ */
     before_exec();
-#ifdef _WIN32
-    do_aspawn(P_OVERLAY, prog, argv);
-#else
     execv(prog, argv);
-#endif
     after_exec();
     return -1;
 }

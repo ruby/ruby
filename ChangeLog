@@ -1,3 +1,9 @@
+Wed Dec 10 12:53:05 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.h: define execv() using do_aspawn().
+
+	* process.c (proc_exec_v): remove #ifdef's which stopped needing.
+
 Tue Dec  9 23:32:23 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/tkcanvas.rb, ext/tk/lib/tkdialog.rb, 
