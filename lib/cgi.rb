@@ -4,7 +4,7 @@
 
 cgi.rb - cgi support library
 
-Version 2.1.1
+Version 2.1.2
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 
@@ -185,10 +185,10 @@ class CGI
   CR  = "\015"
   LF  = "\012"
   EOL = CR + LF
-  VERSION = "2.1.1"
-  RELEASE_DATE = "2000-12-14"
-  VERSION_CODE = 211
-  RELEASE_CODE = 20001214
+  VERSION = "2.1.2"
+  RELEASE_DATE = "2000-12-25"
+  VERSION_CODE = 212
+  RELEASE_CODE = 20001225
 
   NEEDS_BINMODE = true if /WIN/ni === RUBY_PLATFORM
   PATH_SEPARATOR = {'UNIX'=>'/', 'WINDOWS'=>'\\', 'MACINTOSH'=>':'}
@@ -241,7 +241,7 @@ class CGI
 =end
   def CGI::escape(string)
     string.gsub(/([^ a-zA-Z0-9_.-]+)/n) do
-      '%' + Regexp::last_match[1].unpack('H2' * Regexp::last_match[1].size).join('%').upcase
+      '%' + $1.unpack('H2' * $1.size).join('%').upcase
     end.tr(' ', '+')
   end
 
@@ -252,7 +252,7 @@ class CGI
 =end
   def CGI::unescape(string)
     string.tr('+', ' ').gsub(/((?:%[0-9a-fA-F]{2})+)/n) do
-      [Regexp::last_match[1].delete('%')].pack('H*')
+      [$1.delete('%')].pack('H*')
     end
   end
 
@@ -272,34 +272,34 @@ class CGI
 =end
   def CGI::unescapeHTML(string)
     string.gsub(/&(.*?);/n) do
-      match = Regexp::last_match[1].dup
+      match = $1.dup
       case match
       when /\Aamp\z/ni           then '&'
       when /\Aquot\z/ni          then '"'
       when /\Agt\z/ni            then '>'
       when /\Alt\z/ni            then '<'
-      when /\A#(\d+)\z/n         then
-        if Integer(Regexp::last_match[1]) < 256
-          Integer(Regexp::last_match[1]).chr
+      when /\A#0*(\d+)\z/n       then
+        if Integer($1) < 256
+          Integer($1).chr
         else
-          if Integer(Regexp::last_match[1]) < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
-            [Integer(Regexp::last_match[1])].pack("U")
+          if Integer($1) < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
+            [Integer($1)].pack("U")
           else
-            "&##{Regexp::last_match[1]};"
+            "&##{$1};"
           end
         end
       when /\A#x([0-9a-f]+)\z/ni then
-        if Regexp::last_match[1].hex < 256
-          Regexp::last_match[1].hex.chr
+        if $1.hex < 256
+          $1.hex.chr
         else
-          if Regexp::last_match[1].hex < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
-            [Regexp::last_match[1].hex].pack("U")
+          if $1.hex < 65536 and ($KCODE[0] == ?u or $KCODE[0] == ?U)
+            [$1.hex].pack("U")
           else
-            "&#x#{Regexp::last_match[1]};"
+            "&#x#{$1};"
           end
         end
       else
-        "&#{Regexp::last_match[1]};"
+        "&#{match};"
       end
     end
   end
@@ -313,10 +313,11 @@ class CGI
   print CGI::escapeElement('<BR><A HREF="url"></A>', ["A", "IMG"])
     # "<BR>&lt;A HREF="url"&gt;&lt;/A&gt"
 =end
-  def CGI::escapeElement(string, *element)
-    unless element.empty?
-      string.gsub(/<\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?>/ni) do
-        CGI::escapeHTML(Regexp::last_match[0])
+  def CGI::escapeElement(string, *elements)
+    elements = elements[0] if elements[0].kind_of?(Array)
+    unless elements.empty?
+      string.gsub(/<\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?>/ni) do
+        CGI::escapeHTML($&)
       end
     else
       string
@@ -334,9 +335,14 @@ class CGI
           CGI::escapeHTML('<BR><A HREF="url"></A>'), ["A", "IMG"])
     # "&lt;BR&gt;<A HREF="url"></A>"
 =end
-  def CGI::unescapeElement(string, *element)
-    string.gsub(/&lt;\/?(?:#{element.join("|")})(?!\w)(?:.|\n)*?&gt;/ni) do
-      CGI::unescapeHTML(Regexp::last_match[0])
+  def CGI::unescapeElement(string, *elements)
+    elements = elements[0] if elements[0].kind_of?(Array)
+    unless elements.empty?
+      string.gsub(/&lt;\/?(?:#{elements.join("|")})(?!\w)(?:.|\n)*?&gt;/ni) do
+        CGI::unescapeHTML($&)
+      end
+    else
+      string
     end
   end
 
@@ -491,7 +497,7 @@ status:
 
     if defined?(MOD_RUBY)
       buf.scan(/([^:]+): (.+)#{EOL}/n){
-        Apache::request[Regexp::last_match[1]] = Regexp::last_match[2]
+        Apache::request[$1] = $2
       }
       Apache::request.send_http_header
       ''
@@ -761,6 +767,10 @@ convert string charset, and set language to "ja".
       @params.update(hash)
     end
 
+    def param(name)
+      @params[name].join("\0")
+    end
+
     def read_multipart(boundary, content_length)
       params = Hash.new([])
       boundary = "--" + boundary
@@ -787,7 +797,7 @@ convert string charset, and set language to "ja".
 
           if (not head) and (/#{EOL}#{EOL}/n === buf)
             buf = buf.sub(/\A((?:.|\n)*?#{EOL})#{EOL}/n) do
-              head = Regexp::last_match[1].dup
+              head = $1.dup
               ""
             end
             next
@@ -809,8 +819,8 @@ convert string charset, and set language to "ja".
         end
 
         buf = buf.sub(/\A((?:.|\n)*?)(?:#{EOL})?#{boundary}(#{EOL}|--)/n) do
-          body.print Regexp::last_match[1]
-          if "--" == Regexp::last_match[2]
+          body.print $1
+          if "--" == $2
             content_length = -1
           end
           ""
@@ -843,12 +853,12 @@ convert string charset, and set language to "ja".
         /Content-Type: (.*)/ni === head
         eval <<-END
           def body.content_type
-            #{(Regexp::last_match[1] or "").dump.untaint}.taint
+            #{($1 or "").dump.untaint}.taint
           end
         END
 
         /Content-Disposition:.* name="?([^\";]*)"?/ni === head
-        name = Regexp::last_match[1].dup
+        name = $1.dup
 
         if params.has_key?(name)
           params[name].push(body)
@@ -891,7 +901,7 @@ convert string charset, and set language to "ja".
       if ("POST" == env_table['REQUEST_METHOD']) and
          (%r|\Amultipart/form-data.*boundary=\"?([^\";,]+)\"?|n ===
            env_table['CONTENT_TYPE'])
-        boundary = Regexp::last_match[1].dup
+        boundary = $1.dup
         @params = read_multipart(boundary, Integer(env_table['CONTENT_LENGTH']))
       else
         @params = CGI::parse(
@@ -951,7 +961,7 @@ convert string charset, and set language to "ja".
     lines = string.gsub(/(?!\A)<(?:.|\n)*?>/n, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/n, "\\0\n")
     end_pos = 0
     while end_pos = lines.index(/^<\/(\w+)/n, end_pos)
-      element = Regexp::last_match[1].dup
+      element = $1.dup
       start_pos = lines.rindex(/^\s*<#{element}/ni, end_pos)
       lines[start_pos ... end_pos] = "__" + lines[start_pos ... end_pos].gsub(/\n(?!\z)/n, "\n" + shift) + "__"
     end
@@ -1924,6 +1934,19 @@ end
 =begin
 
 == HISTORY
+
+* Mon Dec 25 05:02:27 JST 2000 - wakou
+  * version 2.1.2
+  * bug fix: CGI::escapeElement(): didn't accept empty element.
+  * bug fix: CGI::unescapeElement(): ditto.
+  * bug fix: CGI::unescapeHTML(): support for "&copy;, &hearts;, ..."
+    thanks to YANAGAWA Kazuhisa <kjana@os.xaxon.ne.jp>
+  * bug fix: CGI::unescapeHTML(): support for "&#09;"
+    thanks to OHSHIMA Ryunosuke <ryu@jaist.ac.jp>
+  * Regexp::last_match[0] --> $&
+  * Regexp::last_match[1] --> $1
+  * Regexp::last_match[2] --> $2
+  * add: CGI#param(): test implement. undocumented.
 
 * Mon Dec 11 00:16:51 JST 2000 - wakou
   * version 2.1.1

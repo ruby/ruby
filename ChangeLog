@@ -1,3 +1,11 @@
+Mon Dec 25 05:11:04 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb: version 2.1.2 (some bug fixes).
+
+	* lib/cgi.rb: Regexp::last_match[1] --> $1
+
+	* lib/net/telnet.rb: ditto.
+
 Mon Dec 25 04:43:02 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: does not send HEAD on closing socket.
@@ -84,7 +92,7 @@ Thu Dec 14 13:06:18 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* intern.h (rb_undef): prototyped not but rb_undef_method()
 	  which is also in ruby.h.
 
-Thu Dec 14 09:20:26 2000 Wakou Aoyama <wakou@fsinet.or.jp>
+Thu Dec 14 09:20:26 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: support -T1 on ruby 1.6.2
 
@@ -638,7 +646,7 @@ Thu Oct 12 18:56:28 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: a code for "Switch Protocol" was wrongly 100.
 
-Thu Oct 12 01:23:38 2000 Wakou Aoyama <wakou@fsinet.or.jp>
+Thu Oct 12 01:23:38 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: bug fix: CGI::html(): PRETTY option didn't work.
 
@@ -927,7 +935,7 @@ Wed Sep 13 06:39:54 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_mod_class_variables): Module#class_variables added.
 
-Wed Sep 13 06:09:26 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+Wed Sep 13 06:09:26 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: bug fix: CGI::header(): output status header.
 
@@ -949,7 +957,7 @@ Tue Sep 12 15:37:55 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* eval.c (rb_yield_0): stripped array too much, should remove just
 	  for proc_call().
 
-Tue Sep 12 07:05:24 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+Tue Sep 12 07:05:24 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: version 2.0.0: require ruby1.5.4 or later.
 
@@ -1858,7 +1866,7 @@ Tue Jun 20 10:54:19 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* configure.in: add eval sitedir.
 
-Tue Jun 20 06:14:43 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+Tue Jun 20 06:14:43 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: change: version syntax. old: x.yz, now: x.y.z
 
@@ -2017,7 +2025,7 @@ Wed Jun 14 09:29:42 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* string.c (rb_str_dup): dup should always propagate taintness.
 
-Wed Jun 14 00:50:14 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+Wed Jun 14 00:50:14 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: read_multipart(): if no content body then raise EOFError.
 
@@ -2099,7 +2107,7 @@ Mon Jun  5 00:13:35 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* eval.c (rb_thread_schedule): =/== typo.
 
-Sun Jun  4 03:17:36 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+Sun Jun  4 03:17:36 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: improve: CGI::pretty()
 
@@ -2144,7 +2152,7 @@ Wed May 31 12:37:04 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_exec_end_proc): print error message from END procs.
 
-Wed May 31 04:06:41 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+Wed May 31 04:06:41 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: change: CGI#out() if "HEAD" == REQUEST_METHOD then
 	  output only HTTP header.
@@ -2231,7 +2239,7 @@ Wed May 24 16:32:45 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* re.c (rb_reg_desc): re may be zero, check before dereferencing.
 
-Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+Wed May 24 16:03:06 2000  Wakou Aoyama  <wakou@fsinet.or.jp>
 
 	* lib/cgi.rb: bug fix: CGI::escape(), CGI::Cookie::new()
 
