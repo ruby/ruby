@@ -1,3 +1,8 @@
+Wed May 21 23:07:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_sys_fail): should not specify errno explicitly.
+	  [ruby-dev:20264]
+
 Thu May 22 02:46:38 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* eval.c (rb_eval): splat NODE_RESTARY.  [ruby-dev:20268]
@@ -16,6 +21,11 @@ Thu May 22 01:11:15 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 	  http://yowaken.dip.jp/tdiary/20030521.html#p02
 
 	* parse.y (yylex): slight optimization.
+
+Wed May 21 23:07:08 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_sys_fail): should not specify errno explicitly.
+	  [ruby-dev:20264]
 
 Wed May 21 20:51:47 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 

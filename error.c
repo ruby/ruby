@@ -727,16 +727,15 @@ rb_sys_fail(mesg)
 {
     extern int errno;
     int n = errno;
-    VALUE argv[2];
+    VALUE arg;
 
     errno = 0;
     if (n == 0) {
 	rb_bug("rb_sys_fail() - errno == 0");
     }
 
-    argv[0] = mesg ? rb_str_new2(mesg) : Qnil;
-    argv[1] = INT2NUM(n);
-    rb_exc_raise(rb_class_new_instance(2, argv, get_syserr(n)));
+    arg = mesg ? rb_str_new2(mesg) : Qnil;
+    rb_exc_raise(rb_class_new_instance(1, &arg, get_syserr(n)));
 }
 
 void
