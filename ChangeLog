@@ -25,6 +25,14 @@ Sun Sep  8 14:38:31 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/*/.cvsignore: add "*.def".
 
+	* lib/mkmf.rb (have_struct_member): moved from ext/socket/extconf.rb.
+
+	* ext/socket/extconf.rb: use macro_defined? instead of egrep_cpp.
+
+	* ext/etc/extconf.rb: use have_struct_member.
+
+	* ext/etc/etc.c: add prefix HAVE_ST_ to PW_ macros.
+
 Sun Sep  8 14:36:40 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
 
 	* bcc32/configure.bat : Control of a message.

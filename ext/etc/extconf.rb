@@ -1,22 +1,16 @@
 require 'mkmf'
 
-def etc_grep_header(field)
-  if egrep_cpp(field, "#include <pwd.h>\n")
-    $defs.push(format("-D%s", field.upcase))
-  end
-end
-
 have_library("sun", "getpwnam")	# NIS (== YP) interface for IRIX 4
 a = have_func("getlogin")
 b = have_func("getpwent")
 c = have_func("getgrent")
 if  a or b or c
-  etc_grep_header("pw_gecos")
-  etc_grep_header("pw_change")
-  etc_grep_header("pw_quota")
-  etc_grep_header("pw_age")
-  etc_grep_header("pw_class")
-  etc_grep_header("pw_comment") unless /cygwin/ === RUBY_PLATFORM
-  etc_grep_header("pw_expire")
+  have_struct_member('struct passwd', 'pw_gecos', 'pwd.h')
+  have_struct_member('struct passwd', 'pw_change', 'pwd.h')
+  have_struct_member('struct passwd', 'pw_quota', 'pwd.h')
+  have_struct_member('struct passwd', 'pw_age', 'pwd.h')
+  have_struct_member('struct passwd', 'pw_class', 'pwd.h')
+  have_struct_member('struct passwd', 'pw_comment', 'pwd.h') unless /cygwin/ === RUBY_PLATFORM
+  have_struct_member('struct passwd', 'pw_expire', 'pwd.h')
   create_makefile("etc")
 end

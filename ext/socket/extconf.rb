@@ -2,42 +2,6 @@ require 'mkmf'
 
 $CPPFLAGS += " -Dss_family=__ss_family -Dss_len=__ss_len"
 
-def have_struct_member(type, member, header=nil)
-  #printf "checking for %s.%s... ", type, member
-  #STDOUT.flush
-
-  libs = $libs
-  src = 
-    if /mswin32|mingw/ =~ RUBY_PLATFORM
-      r = <<"SRC"
-#include <windows.h>
-#include <winsock.h>
-SRC
-    else
-      ""
-    end
-  unless header.nil?
-    header = [header] unless header.kind_of? Array
-    header.each {|h|
-      src << <<"SRC"
-#include <#{h}>
-SRC
-    }
-  end
-  src << <<"SRC"
-int main() { return 0; }
-int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
-SRC
-  r = try_link(src, libs) # xxx try_compile is not available.
-  unless r
-    #print "no\n"
-    return false
-  end
-  $defs.push(format("-DHAVE_ST_%s", member.upcase))
-  #print "yes\n"
-  return true
-end
-
 case RUBY_PLATFORM
 when /bccwin32/
   test_func = "WSACleanup"
@@ -48,10 +12,7 @@ when /mswin32|mingw/
   have_library("wsock32", "WSACleanup")
   have_func("closesocket")
 when /cygwin/
-#  $LDFLAGS << " -L/usr/lib" if File.directory?("/usr/lib")
-#  $CFLAGS << " -I/usr/include"
   test_func = "socket"
-#  have_library("bind", "gethostbyaddr")
 when /beos/
   test_func = "socket"
   have_library("net", "socket")
@@ -86,19 +47,13 @@ $ipv6lib = nil
 $ipv6libdir = nil
 $ipv6trylibc = nil
 if $ipv6
-  if egrep_cpp("yes", <<EOF)
+  if macro_defined?("IPV6_INRIA_VERSION", <<EOF)
 #include <netinet/in.h>
-#ifdef IPV6_INRIA_VERSION
-yes
-#endif
 EOF
     $ipv6type = "inria"
     $CFLAGS="-DINET6 "+$CFLAGS
-  elsif egrep_cpp("yes", <<EOF)
+  elsif macro_defined?("__KAME__", <<EOF)
 #include <netinet/in.h>
-#ifdef __KAME__
-yes
-#endif
 EOF
     $ipv6type = "kame"
     $ipv6lib="inet6"
@@ -110,31 +65,22 @@ EOF
     $ipv6lib="inet6"
     $ipv6libdir="/usr/inet6/lib"
     $CFLAGS="-DINET6 -I/usr/inet6/include "+$CFLAGS
-  elsif egrep_cpp("yes", <<EOF)
+  elsif macro_defined?("_TOSHIBA_INET6", <<EOF)
 #include <sys/param.h>
-#ifdef _TOSHIBA_INET6
-yes
-#endif
 EOF
     $ipv6type = "toshiba"
     $ipv6lib="inet6"
     $ipv6libdir="/usr/local/v6/lib"
     $CFLAGS="-DINET6 "+$CFLAGS
-  elsif egrep_cpp("yes", <<EOF)
+  elsif macro_defined?("__V6D__", <<EOF)
 #include </usr/local/v6/include/sys/v6config.h>
-#ifdef __V6D__
-yes
-#endif
 EOF
     $ipv6type = "v6d"
     $ipv6lib="v6"
     $ipv6libdir="/usr/local/v6/lib"
     $CFLAGS="-DINET6 -I/usr/local/v6/include "+$CFLAGS
-  elsif egrep_cpp("yes", <<EOF)
+  elsif macro_defined?("_ZETA_MINAMI_INET6", <<EOF)
 #include <sys/param.h>
-#ifdef _ZETA_MINAMI_INET6
-yes
-#endif
 EOF
     $ipv6type = "zeta"
     $ipv6lib="inet6"

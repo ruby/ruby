@@ -58,27 +58,27 @@ setup_passwd(pwd)
 			 rb_tainted_str_new2(pwd->pw_passwd),
 			 INT2FIX(pwd->pw_uid),
 			 INT2FIX(pwd->pw_gid),
-#ifdef PW_GECOS
+#ifdef HAVE_ST_PW_GECOS
 			 rb_tainted_str_new2(pwd->pw_gecos),
 #endif
 			 rb_tainted_str_new2(pwd->pw_dir),
 			 rb_tainted_str_new2(pwd->pw_shell),
-#ifdef PW_CHANGE
+#ifdef HAVE_ST_PW_CHANGE
 			 INT2FIX(pwd->pw_change),
 #endif
-#ifdef PW_QUOTA
+#ifdef HAVE_ST_PW_QUOTA
 			 INT2FIX(pwd->pw_quota),
 #endif
-#ifdef PW_AGE
+#ifdef HAVE_ST_PW_AGE
 			 INT2FIX(pwd->pw_age),
 #endif
-#ifdef PW_CLASS
+#ifdef HAVE_ST_PW_CLASS
 			 rb_tainted_str_new2(pwd->pw_class),
 #endif
-#ifdef PW_COMMENT
+#ifdef HAVE_ST_PW_COMMENT
 			 rb_tainted_str_new2(pwd->pw_comment),
 #endif
-#ifdef PW_EXPIRE
+#ifdef HAVE_ST_PW_EXPIRE
 			 INT2FIX(pwd->pw_expire),
 #endif
 			 0		/*dummy*/
@@ -294,26 +294,26 @@ Init_etc()
 
     sPasswd =  rb_struct_define("Passwd",
 				"name", "passwd", "uid", "gid",
-#ifdef PW_GECOS
+#ifdef HAVE_ST_PW_GECOS
 				"gecos",
 #endif
 				"dir", "shell",
-#ifdef PW_CHANGE
+#ifdef HAVE_ST_PW_CHANGE
 				"change",
 #endif
-#ifdef PW_QUOTA
+#ifdef HAVE_ST_PW_QUOTA
 				"quota",
 #endif
-#ifdef PW_AGE
+#ifdef HAVE_ST_PW_AGE
 				"age",
 #endif
-#ifdef PW_CLASS
+#ifdef HAVE_ST_PW_CLASS
 				"uclass",
 #endif
-#ifdef PW_COMMENT
+#ifdef HAVE_ST_PW_COMMENT
 				"comment",
 #endif
-#ifdef PW_EXPIRE
+#ifdef HAVE_ST_PW_EXPIRE
 				"expire",
 #endif
 				0);

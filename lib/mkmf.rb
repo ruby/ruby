@@ -204,14 +204,6 @@ def try_compile(src, opt="")
   end
 end
 
-def macro_defined?(macro, src, opt="")
-  try_cpp(src + <<EOP, opt)
-#ifndef #{macro}
-# error
-#endif
-EOP
-end
-
 def try_cpp(src, opt="")
   cfile = open("conftest.c", "w")
   cfile.print src
@@ -250,6 +242,14 @@ def egrep_cpp(pat, src, opt="")
   ensure
     rm_f "conftest*"
   end
+end
+
+def macro_defined?(macro, src, opt="")
+  try_cpp(src + <<EOP, opt)
+#ifndef #{macro}
+# error
+#endif
+EOP
 end
 
 def try_run(src, opt="")
@@ -435,6 +435,40 @@ SRC
     return false
   end
   $defs.push(format("-DHAVE_%s", header.tr("a-z./\055", "A-Z___")))
+  message "yes\n"
+  return true
+end
+
+def have_struct_member(type, member, header=nil)
+  message "checking for #{type}.#{member}... "
+
+  src = 
+    if /mswin32|bccwin32|mingw/ =~ RUBY_PLATFORM
+      r = <<"SRC"
+#include <windows.h>
+#include <winsock.h>
+SRC
+    else
+      ""
+    end
+  unless header.nil?
+    header = [header] unless header.kind_of? Array
+    header.each {|h|
+      src << <<"SRC"
+#include <#{h}>
+SRC
+    }
+  end
+  src << <<"SRC"
+int main() { return 0; }
+int s = (char *)&((#{type}*)0)->#{member} - (char *)0;
+SRC
+  r = try_compile(src)
+  unless r
+    message "no\n"
+    return false
+  end
+  $defs.push(format("-DHAVE_ST_%s", member.upcase))
   message "yes\n"
   return true
 end
