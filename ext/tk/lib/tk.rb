@@ -3874,7 +3874,7 @@ class TkToplevel<TkWindow
     keys.each{|k,v|
       if Wm.method_defined?(k)
 	case k
-	when 'screen','class','colormap','container','screen','use','visual'
+	when 'screen','class','colormap','container','use','visual'
 	  new_keys[k] = v
 	else
 	  case self.method(k).arity
@@ -5074,7 +5074,10 @@ end
 require 'tkvirtevent'
 TkBindTag::ALL.bind(TkVirtualEvent.new('Destroy'), proc{|widget| 
 		      if widget.respond_to? :__destroy_hook__
-			widget.__destroy_hook__
+			begin
+			  widget.__destroy_hook__
+			rescue Exception
+			end
 		      end
 		    }, '%W')
 

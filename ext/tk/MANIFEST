@@ -3,6 +3,7 @@ extconf.rb
 depend
 tkutil.c
 lib/README
+lib/multi-tk.rb
 lib/tk.rb
 lib/tkafter.rb
 lib/tkbgerror.rb
@@ -20,6 +21,7 @@ lib/tkscrollbox.rb
 lib/tktext.rb
 lib/tkvirtevent.rb
 lib/tkwinpkg.rb
+sample/safe-tk.rb
 sample/tkbiff.rb
 sample/tkbrowse.rb
 sample/tkdialog.rb

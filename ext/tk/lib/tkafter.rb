@@ -12,10 +12,15 @@ class TkTimer
   TkCommandNames = ['after'.freeze].freeze
 
   Tk_CBID = ['a'.freeze, '00000']
-  Tk_CBTBL = TkCore::INTERP.create_table
+  Tk_CBTBL = {}
 
-  TkCore::INTERP.add_tk_procs('rb_after', 'id', 
-      "ruby [format \"#{self.name}.callback %%Q!%s!\" $id]")
+  TkCore::INTERP.add_tk_procs('rb_after', 'id', <<-'EOL')
+    if {[set st [catch {ruby [format "TkTimer.callback %%Q!%s!" $id]} ret]] != 0} {
+	return -code $st $ret
+    } {
+	return $ret
+    }
+  EOL
 
 
   ###############################
@@ -24,9 +29,14 @@ class TkTimer
   def self.callback(obj_id)
     @after_id = nil
     ex_obj = Tk_CBTBL[obj_id]
-    return nil if ex_obj == nil; # canceled
+    return "" if ex_obj == nil; # canceled
     #_get_eval_string(ex_obj.do_callback)
-    ex_obj.cb_call
+    begin
+      ex_obj.cb_call
+    rescue Exception
+      Tk_CBTBL[obj_id] = nil
+      ""
+    end
   end
 
   def self.info
@@ -43,7 +53,7 @@ class TkTimer
     @in_callback = true
     begin
       @return_value = @current_proc.call(self)
-    rescue StandardError, NameError
+    rescue Exception
       if @cancel_on_exception
 	cancel
 	return nil

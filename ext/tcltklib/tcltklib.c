@@ -83,6 +83,8 @@ static int timer_tick     = DEFAULT_TIMER_TICK;
 static int req_timer_tick = DEFAULT_TIMER_TICK;
 static int run_timer_flag = 0;
 
+static int event_loop_abort_no_cmd = 0;
+static int loop_counter = 0;
 
 #if TCL_MAJOR_VERSION >= 8
 static int ip_ruby _((ClientData, Tcl_Interp *, int, Tcl_Obj *CONST*));
@@ -108,10 +110,10 @@ _timer_for_tcl(clientData)
     run_timer_flag = 1;
 
     if (timer_tick > 0) {
-      timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
-					  (ClientData)0);
+	timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+					    (ClientData)0);
     } else {
-      timer_token = (Tcl_TimerToken)NULL;
+	timer_token = (Tcl_TimerToken)NULL;
     }
 
     /* rb_thread_schedule(); */
@@ -126,8 +128,8 @@ set_eventloop_tick(self, tick)
     int ttick = NUM2INT(tick);
 
     if (ttick < 0) {
-      rb_raise(rb_eArgError, 
-	       "timer-tick parameter must be 0 or positive number");
+	rb_raise(rb_eArgError, 
+		 "timer-tick parameter must be 0 or positive number");
     }
 
     /* delete old timer callback */
@@ -135,11 +137,11 @@ set_eventloop_tick(self, tick)
 
     timer_tick = req_timer_tick = ttick;
     if (timer_tick > 0) {
-      /* start timer callback */
-      timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
-					  (ClientData)0);
+	/* start timer callback */
+	timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+					    (ClientData)0);
     } else {
-      timer_token = (Tcl_TimerToken)NULL;
+	timer_token = (Tcl_TimerToken)NULL;
     }
 
     return tick;
@@ -160,8 +162,8 @@ set_no_event_wait(self, wait)
     int t_wait = NUM2INT(wait);
 
     if (t_wait <= 0) {
-      rb_raise(rb_eArgError, 
-	       "no_event_wait parameter must be positive number");
+	rb_raise(rb_eArgError, 
+		 "no_event_wait parameter must be positive number");
     }
 
     no_event_wait = t_wait;
@@ -186,7 +188,7 @@ set_eventloop_weight(self, loop_max, no_event)
     int no_ev = NUM2INT(no_event);
 
     if (lpmax <= 0 || no_ev <= 0) {
-      rb_raise(rb_eArgError, "weight parameters must be positive numbers");
+	rb_raise(rb_eArgError, "weight parameters must be positive numbers");
     }
 
     event_loop_max = lpmax;
@@ -202,85 +204,110 @@ get_eventloop_weight(self)
     return rb_ary_new3(2, INT2NUM(event_loop_max), INT2NUM(no_event_tick));
 }
 
+static VALUE
+rb_evloop_abort_no_cmd(self)
+    VALUE self;
+{
+    return event_loop_abort_no_cmd? Qtrue: Qfalse;
+}
+
+static VALUE
+rb_evloop_abort_no_cmd_set(self, val)
+    VALUE self, val;
+{
+    rb_secure(4);
+    event_loop_abort_no_cmd = (val == Qtrue)? 1: 0;
+    return rb_event_loop_abort_no_cmd();
+}
+
 VALUE
 lib_mainloop_core(check_root_widget)
-     VALUE check_root_widget;
+    VALUE check_root_widget;
 {
-  VALUE current = eventloop_thread;
-  int check = (check_root_widget == Qtrue);
-  int tick_counter;
-  struct timeval t;
+    VALUE current = eventloop_thread;
+    int check = (check_root_widget == Qtrue);
+    int tick_counter;
+    struct timeval t;
 
-  t.tv_sec = (time_t)0;
-  t.tv_usec = (time_t)(no_event_wait*1000.0);
+    t.tv_sec = (time_t)0;
+    t.tv_usec = (time_t)(no_event_wait*1000.0);
 
-  Tk_DeleteTimerHandler(timer_token);
-  run_timer_flag = 0;
-  if (timer_tick > 0) {
-    timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
-					(ClientData)0);
-  } else {
-    timer_token = (Tcl_TimerToken)NULL;
-  }
-
-  for(;;) {
-    if (rb_thread_alone()) {
-      DUMP1("no other thread");
-      if (timer_tick == 0) {
-	timer_tick = NO_THREAD_INTERRUPT_TIME;
+    Tk_DeleteTimerHandler(timer_token);
+    run_timer_flag = 0;
+    if (timer_tick > 0) {
 	timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
 					    (ClientData)0);
-      }
-
-      Tcl_DoOneEvent(TCL_ALL_EVENTS);
-
-      if (run_timer_flag) {
-	DUMP1("timer interrupt");
-	run_timer_flag = 0;
-	DUMP1("check Root Widget");
-	if (check && Tk_GetNumMainWindows() == 0) {
-	  return Qnil;
-	}
-      }
-
     } else {
-      DUMP1("there are other threads");
-      timer_tick = req_timer_tick;
-      tick_counter = 0;
-      while(tick_counter < event_loop_max) {
-	if (Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT)) {
-	  tick_counter++;
-	} else {
-	  tick_counter += no_event_tick;
-
-	  DUMP1("check Root Widget");
-	  if (check && Tk_GetNumMainWindows() == 0) {
-	    return Qnil;
-	  }
-
-	  rb_thread_wait_for(t);
-	}
-
-	if (watchdog_thread != 0 && eventloop_thread != current) {
-	  return Qnil;
-	}
-
-	if (run_timer_flag) {
-	  DUMP1("timer interrupt");
-	  run_timer_flag = 0;
-	  break; /* switch to other thread */
-	}
-      }
-
-      DUMP1("check Root Widget");
-      if (check && Tk_GetNumMainWindows() == 0) {
-	return Qnil;
-      }
+	timer_token = (Tcl_TimerToken)NULL;
     }
 
-    rb_thread_schedule();
-  }
-  return Qnil;
+    for(;;) {
+	if (rb_thread_alone()) {
+	    DUMP1("no other thread");
+	    if (timer_tick == 0) {
+		timer_tick = NO_THREAD_INTERRUPT_TIME;
+		timer_token = Tk_CreateTimerHandler(timer_tick, 
+						    _timer_for_tcl, 
+						    (ClientData)0);
+	    }
+
+	    Tcl_DoOneEvent(TCL_ALL_EVENTS);
+
+	    if (loop_counter++ > 30000) {
+		loop_counter = 0;
+	    }
+
+	    if (run_timer_flag) {
+		DUMP1("timer interrupt");
+		run_timer_flag = 0;
+		DUMP1("check Root Widget");
+		if (check && Tk_GetNumMainWindows() == 0) {
+		    return Qnil;
+		}
+	    }
+
+	} else {
+	    DUMP1("there are other threads");
+	    timer_tick = req_timer_tick;
+	    tick_counter = 0;
+	    while(tick_counter < event_loop_max) {
+		if (Tcl_DoOneEvent(TCL_ALL_EVENTS | TCL_DONT_WAIT)) {
+		    tick_counter++;
+		} else {
+		    tick_counter += no_event_tick;
+
+		    DUMP1("check Root Widget");
+		    if (check && Tk_GetNumMainWindows() == 0) {
+			return Qnil;
+		    }
+
+		    rb_thread_wait_for(t);
+		}
+
+		if (loop_counter++ > 30000) {
+		    loop_counter = 0;
+		}
+
+		if (watchdog_thread != 0 && eventloop_thread != current) {
+		    return Qnil;
+		}
+
+		if (run_timer_flag) {
+		    DUMP1("timer interrupt");
+		    run_timer_flag = 0;
+		    break; /* switch to other thread */
+		}
+	    }
+
+	    DUMP1("check Root Widget");
+	    if (check && Tk_GetNumMainWindows() == 0) {
+		return Qnil;
+	    }
+	}
+
+	rb_thread_schedule();
+    }
+    return Qnil;
 }
 
 VALUE
@@ -292,8 +319,8 @@ lib_mainloop_ensure(parent_evloop)
     DUMP2("mainloop-ensure: current-thread : %lx\n", rb_thread_current());
     DUMP2("mainloop-ensure: eventloop-thread : %lx\n", eventloop_thread);
     if (eventloop_thread == rb_thread_current()) {
-      DUMP2("tcltklib: eventloop-thread -> %lx\n", parent_evloop);
-      eventloop_thread = parent_evloop;
+	DUMP2("tcltklib: eventloop-thread -> %lx\n", parent_evloop);
+	eventloop_thread = parent_evloop;
     }
     return Qnil;
 }
@@ -307,8 +334,8 @@ lib_mainloop_launcher(check_rootwidget)
     eventloop_thread = rb_thread_current();
 
     if (ruby_debug) { 
-      fprintf(stderr, "tcltklib: eventloop-thread : %lx -> %lx\n", 
-	      parent_evloop, eventloop_thread);
+	fprintf(stderr, "tcltklib: eventloop-thread : %lx -> %lx\n", 
+		parent_evloop, eventloop_thread);
     }
 
     return rb_ensure(lib_mainloop_core, check_rootwidget, 
@@ -325,11 +352,11 @@ lib_mainloop(argc, argv, self)
     VALUE check_rootwidget;
 
     if (rb_scan_args(argc, argv, "01", &check_rootwidget) == 0) {
-      check_rootwidget = Qtrue;
+	check_rootwidget = Qtrue;
     } else if (RTEST(check_rootwidget)) {
-      check_rootwidget = Qtrue;
+	check_rootwidget = Qtrue;
     } else {
-      check_rootwidget = Qfalse;
+	check_rootwidget = Qfalse;
     }
 
     return lib_mainloop_launcher(check_rootwidget);
@@ -342,36 +369,37 @@ lib_watchdog_core(check_rootwidget)
     VALUE current = eventloop_thread;
     VALUE evloop;
     int   check = (check_rootwidget == Qtrue);
-    ID    stop = rb_intern("stop?");
+    int   prev_val = -1;
     struct timeval t;
+    VALUE ret;
 
     t.tv_sec  = (time_t)0;
     t.tv_usec = (time_t)((WATCHDOG_INTERVAL)*1000.0);
 
     /* check other watchdog thread */
     if (watchdog_thread != 0) {
-      if (rb_funcall(watchdog_thread, stop, 0) == Qtrue) {
-	rb_funcall(watchdog_thread, rb_intern("kill"), 0);
-      } else {
-	return Qnil;
-      }
+	if (rb_funcall(watchdog_thread, rb_intern("stop?"), 0) == Qtrue) {
+	    rb_funcall(watchdog_thread, rb_intern("kill"), 0);
+	} else {
+	    return Qnil;
+	}
     }
     watchdog_thread = rb_thread_current();
 
     /* watchdog start */
     do {
-      if (eventloop_thread == 0 
-	  || rb_funcall(eventloop_thread, stop, 0) == Qtrue) {
-	/* start new eventloop thread */
-	DUMP2("eventloop thread %lx is sleeping or dead", eventloop_thread);
-	evloop = rb_thread_create(lib_mainloop_launcher, 
-				  (void*)&check_rootwidget);
-	DUMP2("create new eventloop thread %lx", evloop);
-	rb_thread_run(evloop);
-      } else {
-	rb_thread_wait_for(t);
-	/* rb_thread_schedule(); */
-      }
+	if (eventloop_thread == 0 || loop_counter == prev_val) {
+	    /* start new eventloop thread */
+	    DUMP2("eventloop thread %lx is sleeping or dead", 
+		  eventloop_thread);
+	    evloop = rb_thread_create(lib_mainloop_launcher, 
+				      (void*)&check_rootwidget);
+	    DUMP2("create new eventloop thread %lx", evloop);
+	    rb_thread_run(evloop);
+	} else {
+	    rb_thread_wait_for(t);
+	    /* rb_thread_schedule(); */
+	}
     } while(!check || Tk_GetNumMainWindows() != 0);
 
     return Qnil;
@@ -394,11 +422,11 @@ lib_mainloop_watchdog(argc, argv, self)
     VALUE check_rootwidget;
 
     if (rb_scan_args(argc, argv, "01", &check_rootwidget) == 0) {
-      check_rootwidget = Qtrue;
+	check_rootwidget = Qtrue;
     } else if (RTEST(check_rootwidget)) {
-      check_rootwidget = Qtrue;
+	check_rootwidget = Qtrue;
     } else {
-      check_rootwidget = Qfalse;
+	check_rootwidget = Qfalse;
     }
 
     return rb_ensure(lib_watchdog_core, check_rootwidget, 
@@ -416,16 +444,16 @@ lib_do_one_event(argc, argv, self)
     int ret;
 
     if (rb_scan_args(argc, argv, "01", &vflags) == 0) {
-      flags = TCL_ALL_EVENTS;
+	flags = TCL_ALL_EVENTS;
     } else {
-      Check_Type(vflags, T_FIXNUM);
-      flags = FIX2INT(vflags);
+	Check_Type(vflags, T_FIXNUM);
+	flags = FIX2INT(vflags);
     }
     ret = Tcl_DoOneEvent(flags);
     if (ret) {
-      return Qtrue;
+	return Qtrue;
     } else {
-      return Qfalse;
+	return Qfalse;
     }
 }
 
@@ -473,15 +501,15 @@ lib_restart(self)
     /* execute Tk_Init of Tk_SafeInit */
 #if TCL_MAJOR_VERSION >= 8
     if (Tcl_IsSafe(ptr->ip)) {
-      DUMP1("Tk_SafeInit");
-      if (Tk_SafeInit(ptr->ip) == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
-      }
+	DUMP1("Tk_SafeInit");
+	if (Tk_SafeInit(ptr->ip) == TCL_ERROR) {
+	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	}
     } else {
-      DUMP1("Tk_Init");
-      if (Tk_Init(ptr->ip) == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
-      }
+	DUMP1("Tk_Init");
+	if (Tk_Init(ptr->ip) == TCL_ERROR) {
+	    rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	}
     }
 #else
     DUMP1("Tk_Init");
@@ -569,6 +597,7 @@ ip_free(ptr)
 {
     DUMP1("Tcl_DeleteInterp");
     if (ptr) {
+	Tcl_Release((ClientData)ptr->ip);
 	Tcl_DeleteInterp(ptr->ip);
 	free(ptr);
     }
@@ -602,6 +631,7 @@ ip_init(argc, argv, self)
     /* from Tk_Main() */
     DUMP1("Tcl_CreateInterp");
     ptr->ip = Tcl_CreateInterp();
+    Tcl_Preserve((ClientData)ptr->ip);
     current_interp = ptr->ip;
 
     /* from Tcl_AppInit() */
@@ -680,8 +710,10 @@ ip_create_slave(argc, argv, self)
     /* create slave-ip */
     if ((slave->ip = Tcl_CreateSlave(master->ip, StringValuePtr(name), safe)) 
 	== NULL) {
-	rb_raise(rb_eRuntimeError, "fail to create the new slave interpreter");
+	rb_ip_raise(self, rb_eRuntimeError, 
+		    "fail to create the new slave interpreter");
     }
+    Tcl_Preserve((ClientData)slave->ip);
     slave->return_value = 0;
 
     return Data_Wrap_Struct(CLASS_OF(self), 0, ip_free, slave);
@@ -695,7 +727,7 @@ ip_make_safe(self)
     struct tcltkip *ptr = get_ip(self);
     
     if (Tcl_MakeSafe(ptr->ip) == TCL_ERROR) {
-	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	rb_ip_raise(self, rb_eRuntimeError, "%s", ptr->ip->result);
     }
 
     return self;
@@ -715,6 +747,32 @@ ip_is_safe_p(self)
     }
 }
 
+/* delete interpreter */
+static VALUE
+ip_delete(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+    
+    Tcl_DeleteInterp(ptr->ip);
+
+    return Qnil;
+}
+
+/* is deleted? */
+static VALUE
+ip_is_deleted_p(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (Tcl_InterpDeleted(ptr->ip)) {
+	return Qtrue;
+    } else {
+	return Qfalse;
+    }
+}
+
 /* eval string in tcl by Tcl_Eval() */
 static VALUE
 ip_eval(self, str)
@@ -722,7 +780,7 @@ ip_eval(self, str)
     VALUE str;
 {
     char *s;
-    char *buf;			/* Tcl_Eval requires re-writable string region */
+    char *buf;	/* Tcl_Eval requires re-writable string region */
     struct tcltkip *ptr = get_ip(self);
 
     /* call Tcl_Eval() */
@@ -740,7 +798,6 @@ ip_eval(self, str)
     /* return(rb_str_new2(ptr->ip->result)); */
     return(rb_tainted_str_new2(ptr->ip->result));
 }
-
 
 static VALUE
 ip_toUTF8(self, str, encodename)
@@ -838,9 +895,21 @@ ip_invoke_real(argc, argv, obj)
     v = argv[0];
     cmd = StringValuePtr(v);
 
+    /* ip is deleted? */
+    if (Tcl_InterpDeleted(ptr->ip)) {
+	Tcl_ResetResult(ptr->ip);
+	return rb_tainted_str_new2("");
+    }
+
     /* map from the command name to a C procedure */
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
-	rb_raise(rb_eNameError, "invalid command name `%s'", cmd);
+	if (event_loop_abort_no_cmd || cmd[0] != '.')
+	    rb_raise(rb_eNameError, "invalid command name `%s'", cmd);
+	else {
+	    Tcl_ResetResult(ptr->ip);
+	    rb_warning("invalid command name `%s' (ignore)", cmd);
+	    return rb_tainted_str_new2("");
+	}
     }
 
     /* memory allocation for arguments of this command */
@@ -859,7 +928,7 @@ ip_invoke_real(argc, argv, obj)
     else
 #endif
     {
-      /* string interface */
+	/* string interface */
 	av = (char **)ALLOCA_N(char *, argc+1);
 	for (i = 0; i < argc; ++i) {
 	    v = argv[i];
@@ -931,8 +1000,8 @@ invoke_queue_handler(evPtr, flags)
     DUMP2("added by thread : %lx", q->thread);
 
     if (q->done) {
-      /* processed by another event-loop */
-      return 0;
+	/* processed by another event-loop */
+	return 0;
     }
 
     /* process it */
@@ -940,11 +1009,12 @@ invoke_queue_handler(evPtr, flags)
 
     /* check safe-level */
     if (rb_safe_level() != q->safe_level) {
-      *(q->result) = rb_funcall(rb_proc_new(ivq_safelevel_handler, 
-					    Data_Wrap_Struct(rb_cData,0,0,q)), 
-				rb_intern("call"), 0);
+	*(q->result) 
+	    = rb_funcall(rb_proc_new(ivq_safelevel_handler, 
+				     Data_Wrap_Struct(rb_cData,0,0,q)), 
+			 rb_intern("call"), 0);
     } else {
-      *(q->result) = ip_invoke_real(q->argc, q->argv, q->obj);
+	*(q->result) = ip_invoke_real(q->argc, q->argv, q->obj);
     }
 
     /* back to caller */
@@ -970,8 +1040,8 @@ ip_invoke(argc, argv, obj)
 	rb_raise(rb_eArgError, "command name missing");
     }
     if (eventloop_thread == 0 || current == eventloop_thread) {
-      DUMP2("invoke from current eventloop %lx", current);
-      return ip_invoke_real(argc, argv, obj);
+	DUMP2("invoke from current eventloop %lx", current);
+	return ip_invoke_real(argc, argv, obj);
     }
 
     DUMP2("invoke from thread %lx (NOT current eventloop)", current);
@@ -1071,12 +1141,18 @@ Init_tcltklib()
 			      set_eventloop_weight, 2);
     rb_define_module_function(lib, "get_eventloop_weight", 
 			      get_eventloop_weight, 0);
+    rb_define_module_function(lib, "mainloop_abort_on_no_widget_cmd", 
+                             rb_evloop_abort_no_cmd, 0);
+    rb_define_module_function(lib, "mainloop_abort_on_no_widget_cmd=",  
+                             rb_evloop_abort_no_cmd_set, 1);
 
     rb_define_alloc_func(ip, ip_alloc);
     rb_define_method(ip, "initialize", ip_init, -1);
     rb_define_method(ip, "create_slave", ip_create_slave, -1);
     rb_define_method(ip, "make_safe", ip_make_safe, 0);
     rb_define_method(ip, "safe?", ip_is_safe_p, 0);
+    rb_define_method(ip, "delete", ip_delete, 0);
+    rb_define_method(ip, "deleted?", ip_is_deleted_p, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
     rb_define_method(ip, "_toUTF8",ip_toUTF8,2);
     rb_define_method(ip, "_fromUTF8",ip_fromUTF8,2);
@@ -1085,6 +1161,10 @@ Init_tcltklib()
     rb_define_method(ip, "mainloop", lib_mainloop, -1);
     rb_define_method(ip, "mainloop_watchdog", lib_mainloop_watchdog, -1);
     rb_define_method(ip, "do_one_event", lib_do_one_event, -1);
+    rb_define_method(ip, "mainloop_abort_on no_widget_cmd", 
+		    rb_evloop_abort_no_cmd, 0);
+    rb_define_method(ip, "mainloop_abort_on_no_widget_cmd=", 
+		    rb_evloop_abort_no_cmd_set, 1);
     rb_define_method(ip, "set_eventloop_tick", set_eventloop_tick, 1);
     rb_define_method(ip, "get_eventloop_tick", get_eventloop_tick, 0);
     rb_define_method(ip, "set_no_event_wait", set_no_event_wait, 1);

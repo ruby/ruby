@@ -6,11 +6,12 @@ stubs.c
 depend
 extconf.rb
 lib/tcltk.rb
-demo/lines1.rb
 demo/lines0.tcl
+demo/lines1.rb
 demo/lines2.rb
+demo/safeTk.rb
+sample/sample0.rb
 sample/sample1.rb
 sample/sample2.rb
 sample/maru.gif
 sample/batsu.gif
-sample/sample0.rb
