@@ -800,12 +800,6 @@ Init_tcltklib()
     VALUE ip = rb_define_class("TclTkIp", rb_cObject);
 
     VALUE ev_flag = rb_define_module_under(lib, "EventFlag");
-    rb_define_const(ev_flag, "WINDOW",    INT2FIX(TCL_WINDOW_EVENTS));
-    rb_define_const(ev_flag, "FILE",      INT2FIX(TCL_FILE_EVENTS));
-    rb_define_const(ev_flag, "TIMER",     INT2FIX(TCL_TIMER_EVENTS));
-    rb_define_const(ev_flag, "IDLE",      INT2FIX(TCL_IDLE_EVENTS));
-    rb_define_const(ev_flag, "ALL",       INT2FIX(TCL_ALL_EVENTS));
-    rb_define_const(ev_flag, "DONT_WAIT", INT2FIX(TCL_DONT_WAIT));
 
 #if defined USE_TCL_STUBS && defined USE_TK_STUBS
     extern int ruby_tcltk_stubs();
@@ -813,6 +807,13 @@ Init_tcltklib()
     if (ret)
 	rb_raise(rb_eLoadError, "tcltklib: tcltk_stubs init error(%d)", ret);
 #endif
+
+    rb_define_const(ev_flag, "WINDOW",    INT2FIX(TCL_WINDOW_EVENTS));
+    rb_define_const(ev_flag, "FILE",      INT2FIX(TCL_FILE_EVENTS));
+    rb_define_const(ev_flag, "TIMER",     INT2FIX(TCL_TIMER_EVENTS));
+    rb_define_const(ev_flag, "IDLE",      INT2FIX(TCL_IDLE_EVENTS));
+    rb_define_const(ev_flag, "ALL",       INT2FIX(TCL_ALL_EVENTS));
+    rb_define_const(ev_flag, "DONT_WAIT", INT2FIX(TCL_DONT_WAIT));
 
     eTkCallbackBreak = rb_define_class("TkCallbackBreak", rb_eStandardError);
     eTkCallbackContinue = rb_define_class("TkCallbackContinue",rb_eStandardError);
