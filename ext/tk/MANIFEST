@@ -479,12 +479,12 @@ sample/msgs_tk/ja.msg
 sample/msgs_tk/nl.msg
 sample/msgs_tk/pl.msg
 sample/msgs_tk/ru.msg
-sample/tkextlib/ICONS/LICENSE.orig
+sample/tkextlib/ICONS/Orig_LICENSE.txt
 sample/tkextlib/ICONS/viewIcons.rb
 sample/tkextlib/ICONS/tkIcons
 sample/tkextlib/ICONS/tkIcons-sample.kde
 sample/tkextlib/ICONS/tkIcons.kde
-sample/tkextlib/bwidget/LICENSE.orig
+sample/tkextlib/bwidget/Orig_LICENSE.txt
 sample/tkextlib/bwidget/basic.rb
 sample/tkextlib/bwidget/bwidget.xbm
 sample/tkextlib/bwidget/demo.rb
@@ -494,7 +494,7 @@ sample/tkextlib/bwidget/select.rb
 sample/tkextlib/bwidget/tmpldlg.rb
 sample/tkextlib/bwidget/tree.rb
 sample/tkextlib/bwidget/x1.xbm
-sample/tkextlib/iwidgets/catalog_demo/LICENSE.orig
+sample/tkextlib/iwidgets/catalog_demo/Orig_LICENSE.txt
 sample/tkextlib/iwidgets/catalog_demo/images/box.xbm
 sample/tkextlib/iwidgets/catalog_demo/images/clear.gif
 sample/tkextlib/iwidgets/catalog_demo/images/close.gif
@@ -574,13 +574,13 @@ sample/tkextlib/iwidgets/sample/timeentry.rb
 sample/tkextlib/iwidgets/sample/timefield.rb
 sample/tkextlib/iwidgets/sample/toolbar.rb
 sample/tkextlib/iwidgets/sample/watch.rb
-sample/tkextlib/tcllib/LICENSE.orig
+sample/tkextlib/tcllib/Orig_LICENSE.txt
 sample/tkextlib/tcllib/datefield.rb
 sample/tkextlib/tcllib/plotdemos1.rb
 sample/tkextlib/tcllib/plotdemos2.rb
 sample/tkextlib/tcllib/plotdemos3.rb
 sample/tkextlib/tcllib/xyplot.rb
-sample/tkextlib/tkHTML/COPYRIGHT.orig
+sample/tkextlib/tkHTML/Orig_COPYRIGHT.txt
 sample/tkextlib/tkHTML/README
 sample/tkextlib/tkHTML/hv.rb
 sample/tkextlib/tkHTML/ss.rb
@@ -664,7 +664,7 @@ sample/tkextlib/tkHTML/page4/image7
 sample/tkextlib/tkHTML/page4/image8
 sample/tkextlib/tkHTML/page4/image9
 sample/tkextlib/tkHTML/page4/index.html
-sample/tkextlib/tktable/LICENSE.orig
+sample/tkextlib/tktable/Orig_LICENSE.txt
 sample/tkextlib/tktable/basic.rb
 sample/tkextlib/tktable/buttons.rb
 sample/tkextlib/tktable/command.rb
@@ -673,7 +673,7 @@ sample/tkextlib/tktable/dynarows.rb
 sample/tkextlib/tktable/maxsize.rb
 sample/tkextlib/tktable/spreadsheet.rb
 sample/tkextlib/tktable/valid.rb
-sample/tkextlib/vu/LICENSE.orig
+sample/tkextlib/vu/Orig_LICENSE.txt
 sample/tkextlib/vu/README.txt
 sample/tkextlib/vu/canvItems.rb
 sample/tkextlib/vu/canvSticker.rb
