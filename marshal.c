@@ -106,7 +106,7 @@ class2path(klass)
     char *n = RSTRING(path)->ptr;
 
     if (rb_path2class(n) != klass) {
-	rb_raise(rb_eArgError, "%s cannot be referfed", n);
+	rb_raise(rb_eArgError, "%s cannot be referred", n);
     }
     return path;
 }
