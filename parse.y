@@ -2257,6 +2257,8 @@ parse_regx(term, paren)
 		    options |= RE_OPTION_EXTENDED;
 		    break;
 		  case 'p':	/* /p is obsolete, works as /m */
+		    yyerror("/p option is obsolete; use /m\n\tnote: /m does not change ^, $ behavior");
+		    break;
 		  case 'm':
 		    options |= RE_OPTION_MULTILINE;
 		    break;

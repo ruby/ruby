@@ -189,11 +189,11 @@ VALUE rb_hash_aset _((VALUE, VALUE, VALUE));
 int rb_path_check _((char *));
 int rb_env_path_tainted _((void));
 /* io.c */
-extern VALUE rb_fs;
-extern VALUE rb_output_fs;
-extern VALUE rb_rs;
-extern VALUE rb_default_rs;
-extern VALUE rb_output_rs;
+EXTERN VALUE rb_fs;
+EXTERN VALUE rb_output_fs;
+EXTERN VALUE rb_rs;
+EXTERN VALUE rb_default_rs;
+EXTERN VALUE rb_output_rs;
 VALUE rb_io_write _((VALUE, VALUE));
 VALUE rb_io_gets _((VALUE));
 VALUE rb_io_getc _((VALUE));
@@ -230,8 +230,8 @@ VALUE rb_Float _((VALUE));
 VALUE rb_String _((VALUE));
 VALUE rb_Array _((VALUE));
 /* parse.y */
-extern int   ruby_sourceline;
-extern char *ruby_sourcefile;
+EXTERN int   ruby_sourceline;
+EXTERN char *ruby_sourcefile;
 #define yyparse rb_yyparse
 #define yylex rb_yylex
 #define yyerror rb_yyerror

@@ -90,7 +90,6 @@ rb_str_cicmp(str1, str2)
 #define REG_CASESTATE  FL_USER0
 #define REG_IGNORECASE FL_USER1
 #define REG_EXTENDED   FL_USER2
-#define REG_POSIXLINE  FL_USER3
 #define REG_MULTILINE  FL_USER3
 
 #define KCODE_NONE  0
@@ -1297,7 +1296,6 @@ Init_Regexp()
 
     rb_define_const(rb_cRegexp, "IGNORECASE", INT2FIX(RE_OPTION_IGNORECASE));
     rb_define_const(rb_cRegexp, "EXTENDED", INT2FIX(RE_OPTION_EXTENDED));
-    rb_define_const(rb_cRegexp, "POSIXLINE", INT2FIX(RE_OPTION_POSIXLINE));
     rb_define_const(rb_cRegexp, "MULTILINE", INT2FIX(RE_OPTION_MULTILINE));
 
     rb_global_variable(&reg_cache);

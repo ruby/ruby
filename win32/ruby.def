@@ -36,6 +36,7 @@ EXPORTS
 ;eval.c
 	rb_cProc
 	ruby_safe_level
+	ruby_errinfo
 	ruby_frame
 	rb_cThread
 	rb_thread_tick
@@ -51,6 +52,14 @@ EXPORTS
 	rb_cIO
 	rb_eEOFError
 	rb_eIOError
+	rb_stdin
+	rb_stdout
+	rb_stderr
+	rb_defout
+	rb_output_fs
+	rb_rs
+	rb_output_rs
+	rb_default_rs
 ;math.c
 	rb_mMath
 ;numeric.c
@@ -69,6 +78,9 @@ EXPORTS
 	rb_cTrueClass
 	rb_cFalseClass
 	rb_cSymbol
+;parse.c
+	ruby_sourcefile
+	ruby_sourceline
 ;prec.c
 	rb_mPrecision
 ;process.c
@@ -314,6 +326,7 @@ EXPORTS
 	rb_thread_wakeup
 	rb_thread_run
 	rb_thread_stop
+	rb_thread_polling
 	rb_thread_sleep
 	rb_thread_sleep_forever
 	rb_thread_create
@@ -332,10 +345,10 @@ EXPORTS
 	rb_find_file
 	rb_path_check
 ;gc.c
-	xmalloc
-	xfree
-	xcalloc
-	xrealloc
+	ruby_xmalloc
+	ruby_xcalloc
+	ruby_xrealloc
+	ruby_xfree
 	rb_global_variable
 	rb_newobj
 	rb_data_object_alloc
@@ -348,6 +361,10 @@ EXPORTS
 	rb_gc_mark_frame
 	rb_gc
 	rb_gc_call_finalizer_at_exit
+	xmalloc
+	xcalloc
+	xrealloc
+	xfree
 ;hash.c
 	rb_hash_freeze
 	rb_hash

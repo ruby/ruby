@@ -67,6 +67,8 @@ struct timeval {
 #include <sys/resource.h>
 #endif
 
+#include <sys/stat.h>
+
 VALUE rb_cProc;
 static VALUE rb_cBinding;
 static VALUE proc_call _((VALUE,VALUE));
@@ -6284,6 +6286,7 @@ struct thread {
     fd_set readfds;
     fd_set writefds;
     fd_set exceptfds;
+    int select_value;
     double delay;
     thread_t join;
 
@@ -6681,6 +6684,23 @@ intersect_fds(dst, src, max)
     return Qfalse;
 }
 
+static int
+find_bad_fds(dst, src, max)
+    fd_set *dst, *src;
+    int max;
+{
+    struct stat s;
+    int i, test = Qfalse;
+
+    for (i=0; i<=max; i++) {
+	if (FD_ISSET(i, src) && !FD_ISSET(i, dst)) {
+	    FD_CLR(i, src);
+	    test = Qtrue;
+	}
+    }
+    return test;
+}
+
 void
 rb_thread_schedule()
 {
@@ -6738,7 +6758,7 @@ rb_thread_schedule()
 	    copy_fds(&exceptfds, &th->exceptfds, th->fd);
 	    if (max < th->fd) max = th->fd;
 	    need_select = 1;
-	    th->fd = 0;
+	    th->select_value = 0;
 	}
 	if (th->wait_for & WAIT_TIME) {
 	    if (th->delay <= now) {
@@ -6777,15 +6797,21 @@ rb_thread_schedule()
 	    n = select(max+1, &readfds, &writefds, &exceptfds, delay_ptr);
 	    if (n < 0) {
 		if (rb_trap_pending) rb_trap_exec();
-		switch (errno) {
-		  case EBADF:
-		    /* xxx */
-		  case ENOMEM:
-		    n = 0;
-		    break;
-		  default:
-		    goto select_err;
+		if (errno = EINTR) goto select_err;
+		FOREACH_THREAD(th) {
+		    if (th->wait_for & WAIT_SELECT) {
+			int v = 0;
+
+			v |= find_bad_fds(&readfds, &th->readfds, th->fd);
+			v |= find_bad_fds(&writefds, &th->writefds, th->fd);
+			v |= find_bad_fds(&exceptfds, &th->exceptfds, th->fd);
+			if (v) {
+			    th->select_value = n;
+			    n = max;
+			}
+		    }
 		}
+		END_FOREACH(th);
 	    }
 	    if (n > 0) {
 		/* Some descriptors are ready. 
@@ -6809,7 +6835,7 @@ rb_thread_schedule()
 			intersect_fds(&readfds, &th->readfds, max);
 			intersect_fds(&writefds, &th->writefds, max);
 			intersect_fds(&exceptfds, &th->exceptfds, max);
-			th->fd = n;
+			th->select_value = n;
 			found = 1;
 		    }
 		}
@@ -7018,7 +7044,7 @@ rb_thread_select(max, read, write, except, timeout)
     if (read) *read = curr_thread->readfds;
     if (write) *write = curr_thread->writefds;
     if (except) *except = curr_thread->exceptfds;
-    return curr_thread->fd;
+    return curr_thread->select_value;
 }
 
 static VALUE

@@ -104,6 +104,91 @@ struct sockaddr_storage {
 };
 #endif
 
+#define LOOKUP_ORDER_INET	0
+#define LOOKUP_ORDER_INET6	1
+#define LOOKUP_ORDER_UNSPEC	2
+
+#if   defined(DEFAULT_LOOKUP_ORDER_UNSPEC)
+# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_UNSPEC
+#elif defined(DEFAULT_LOOKUP_ORDER_INET)
+# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_INET
+#elif defined(DEFAULT_LOOKUP_ORDER_INET6)
+# define LOOKUP_ORDER_DEFAULT LOOKUP_ORDER_INET6
+#endif
+
+#ifdef INET6
+#define LOOKUP_ORDERS		3
+int lookup_order_table[LOOKUP_ORDERS][LOOKUP_ORDERS] = {
+  {PF_UNSPEC, PF_UNSPEC, PF_UNSPEC},	/* 0:unspec */
+  {PF_INET, PF_INET6, PF_UNSPEC},	/* 1:inet inet6 */
+  {PF_INET6, PF_INET, PF_UNSPEC}	/* 2:inet6 inet */
+};
+
+static int lookup_order = LOOKUP_ORDER_DEFAULT;
+
+static VALUE
+lookup_order_get(self)
+    VALUE self;
+{
+    return INT2FIX(lookup_order);
+}
+
+static VALUE
+lookup_order_set(self, order)
+    VALUE self, order;
+{
+    int n = NUM2INT(order);
+
+    if (n < 0 || LOOKUP_ORDERS <= n) {
+	rb_raise(rb_eRuntimeError, "invalid value for lookup_order");
+    }
+    lookup_order = n;
+    return order;
+}
+
+static int
+rb_getaddrinfo(nodename, servname, hints, res)
+     char *nodename;
+     char *servname;
+     struct addrinfo *hints;
+     struct addrinfo **res;
+{
+    struct addrinfo tmp_hints;
+    int i, af, error;
+
+    for (i = 0; i < LOOKUP_ORDERS; i++) {
+	af = lookup_order_table[lookup_order][i];
+	MEMCPY(&tmp_hints, hints, struct addrinfo, 1);
+	tmp_hints.ai_family = af;
+	error = getaddrinfo(nodename, servname, &tmp_hints, res);
+	if (error) {
+	    if (tmp_hints.ai_family == PF_UNSPEC) {
+		break;
+	    }
+	}
+	else {
+	    break;
+	}
+    }
+
+    return error;
+}
+#else
+static VALUE
+lookup_order_get(self)
+    VALUE self;
+{
+    return INT2FIX(LOOKUP_ORDER_DEFAULT);
+}
+
+static VALUE
+lookup_order_set(self, order)
+    VALUE self, order;
+{
+    return order;
+}
+#endif
+
 #ifdef NT
 static void
 sock_finalize(fptr)
@@ -553,7 +638,11 @@ ip_addrsetup(host, port)
     MEMZERO(&hints, struct addrinfo, 1);
     hints.ai_family = PF_UNSPEC;
     hints.ai_socktype = SOCK_DGRAM;
+#ifndef INET6
     error = getaddrinfo(hostp, portp, &hints, &res);
+#else
+    error = rb_getaddrinfo(hostp, portp, &hints, &res);
+#endif
     if (error) {
 	if (hostp && hostp[strlen(hostp)-1] == '\n') {
 	    rb_raise(rb_eSocket, "newline at the end of hostname");
@@ -637,6 +726,17 @@ ruby_socket(domain, type, proto)
     return fd;
 }
 
+static void
+thread_write_select(fd)
+    int fd;
+{
+    fd_set fds;
+
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    rb_thread_select(fd+1, 0, &fds, 0, 0);
+}
+
 static int
 ruby_connect(fd, sockaddr, len, socks)
     int fd;
@@ -681,7 +781,7 @@ ruby_connect(fd, sockaddr, len, socks)
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
 #endif
-		rb_thread_fd_writable(fd);
+		thread_write_select(fd);
 		continue;
 
 #ifdef EISCONN
@@ -733,7 +833,11 @@ open_inet(class, h, serv, type)
     if (type == INET_SERVER) {
 	hints.ai_flags = AI_PASSIVE;
     }
+#ifndef INET6
     error = getaddrinfo(host, portp, &hints, &res0);
+#else
+    error = rb_getaddrinfo(host, portp, &hints, &res0);
+#endif
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
@@ -1205,7 +1309,7 @@ udp_send(argc, argv, sock)
 #if EAGAIN != EWOULDBLOCK
 	  case EAGAIN:
 #endif
-	    thread_write_select(fileno(f));
+	    rb_thread_fd_writable(fileno(f));
 	    goto retry;
 	}
     }
@@ -1728,8 +1832,7 @@ sock_s_getaddrinfo(argc, argv)
     int error;
 
     host = port = family = socktype = protocol = flags = Qnil;
-    rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol,
-		 &flags);
+    rb_scan_args(argc, argv, "24", &host, &port, &family, &socktype, &protocol, &flags);
     if (NIL_P(host)) {
 	hptr = NULL;
     }
@@ -1755,9 +1858,11 @@ sock_s_getaddrinfo(argc, argv)
     if (!NIL_P(family)) {
 	hints.ai_family = NUM2INT(family);
     }
+#ifndef INET6
     else {
 	hints.ai_family = PF_UNSPEC;
     }
+#endif
     if (!NIL_P(socktype)) {
 	hints.ai_socktype = NUM2INT(socktype);
     }
@@ -1767,7 +1872,16 @@ sock_s_getaddrinfo(argc, argv)
     if (!NIL_P(flags)) {
 	hints.ai_flags = NUM2INT(flags);
     }
+#ifndef INET6
     error = getaddrinfo(hptr, pptr, &hints, &res);
+#else
+    if (!NIL_P(family)) {
+      error = getaddrinfo(hptr, pptr, &hints, &res);
+    }
+    else {
+      error = rb_getaddrinfo(hptr, pptr, &hints, &res);
+    }
+#endif
     if (error) {
 	rb_raise(rb_eSocket, "%s", gai_strerror(error));
     }
@@ -2039,6 +2153,12 @@ Init_socket()
 #ifdef PF_INET6
     sock_define_const("PF_INET6", PF_INET6);
 #endif
+
+    sock_define_const("LOOKUP_INET", LOOKUP_ORDER_INET);
+    sock_define_const("LOOKUP_INET6", LOOKUP_ORDER_INET6);
+    sock_define_const("LOOKUP_UNSPEC", LOOKUP_ORDER_UNSPEC);
+    rb_define_singleton_method(rb_cBasicSocket, "lookup_order", lookup_order_get, 0);
+    rb_define_singleton_method(rb_cBasicSocket, "lookup_order=", lookup_order_set, 1);
 
     sock_define_const("MSG_OOB", MSG_OOB);
 #ifdef MSG_PEEK

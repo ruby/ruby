@@ -87,6 +87,7 @@ Extension Libraries
 Ruby Libraries
 
 - net/http.rb
+* add uri.rb
 * urllib.rb, nttplib.rb, etc.
 * format like perl's
 
@@ -99,3 +100,13 @@ Misc
 
 - publish Ruby books
 * publish Ruby books in English
+
+Things To Do Before 1.6
+
+* fix spec. for the following:
+
+  * alternative for $! (exception? in? into? =>?)
+  * alternative for interator?
+  * regex - /p, /m
+  * odd? even?
+  * mkmf.rb - create_makefile("net/socket")

@@ -25,6 +25,15 @@ Wed May 17 00:40:15 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
 
 	* win32/ruby.def: add symbol "rb_big_divmod".
 
+May 16 19:45:32 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* intern.h: use EXTERN instead of extern.
+
+	* win32/ruby.h: add rb_defout, rb_stdout, ruby_errinfo,
+	  ruby_sourceline, ruby_sourcefile to work with eruby
+	  reported by Hiroshi Saito <HiroshiSaito@pob.org>.
+	  Export both ruby_xmalloc and xmalloc etc.
+
 Tue May 16 17:00:05 2000  Masaki Fukushima  <fukusima@goto.info.waseda.ac.jp>
 
 	* eval.c (rb_thread_select): should check whether fds are null.
