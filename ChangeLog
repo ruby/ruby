@@ -1,3 +1,8 @@
+Tue Nov 25 18:56:06 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (URI::Generic#find_proxy): ENV case sensitivity test
+	  refined.
+
 Tue Nov 25 18:13:30 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: chdir Dir.tmpdir before each

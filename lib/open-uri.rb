@@ -458,9 +458,19 @@ module URI
         # HTTP_PROXY conflicts with *_proxy for proxy settings and
         # HTTP_* for header informatin in CGI.
         # So it should be careful to use it.
-        case_sentsitive = /djgpp|bccwin32|mingw|mswin32|mswince|emx/ !~ RUBY_PLATFORM
-        if case_sentsitive
-          # http_proxy is safe to use.
+        pairs = ENV.reject {|k, v| /\Ahttp_proxy\z/i !~ k }
+        case pairs.length
+        when 0 # no proxy setting anyway.
+          proxy_uri = nil
+        when 1
+          k, v = pairs[0]
+          if k == 'http_proxy' && ENV[k.upcase] == nil
+            # http_proxy is safe to use becase ENV is case sensitive.
+            proxy_uri = ENV[name]
+          else
+            proxy_uri = nil
+          end
+        else # http_proxy is safe to use becase ENV is case sensitive.
           proxy_uri = ENV[name]
         end
         if !proxy_uri
