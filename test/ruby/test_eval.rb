@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestEval < Test::Unit::TestCase
   # eval with binding
   def test_ev

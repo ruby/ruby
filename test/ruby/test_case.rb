@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestCase < Test::Unit::TestCase
   def test_case
     case 5

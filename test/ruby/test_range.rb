@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestRange < Test::Unit::TestCase
   def test_range_string
     # XXX: Is this really the test of Range?

@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestSprintf < Test::Unit::TestCase
   def test_binary
     assert_equal("0", sprintf("%b", 0))

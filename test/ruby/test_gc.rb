@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestGc < Test::Unit::TestCase
   class S
     def initialize(a)

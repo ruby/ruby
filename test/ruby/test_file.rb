@@ -2,8 +2,6 @@ require 'test/unit'
 require 'tempfile'
 require 'ut_eof'
 
-$KCODE = 'none'
-
 class TestFile < Test::Unit::TestCase
 
   # I don't know Ruby's spec about "unlink-before-close" exactly.

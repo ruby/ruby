@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestIfunless < Test::Unit::TestCase
   def test_if_unless
     $x = 'test';

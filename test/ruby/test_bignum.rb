@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestBignum < Test::Unit::TestCase
   def fact(n)
     return 1 if n == 0

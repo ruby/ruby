@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestArray < Test::Unit::TestCase
   def test_array
     assert_equal([1, 2, 3, 4], [1, 2] + [3, 4])

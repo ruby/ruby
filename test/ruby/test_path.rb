@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestPath < Test::Unit::TestCase
   def test_path
     assert_equal("a", File.basename("a"))

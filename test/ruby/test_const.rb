@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestConst < Test::Unit::TestCase
   TEST1 = 1
   TEST2 = 2

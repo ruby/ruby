@@ -1,3 +1,7 @@
+Wed Feb 18 22:03:11 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/*: should not depend on $KCODE.
+
 Wed Feb 18 18:07:09 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_sprintf.rb: added tests.

@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestHash < Test::Unit::TestCase
   def test_hash
     x = {1=>2, 2=>4, 3=>6}

@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestProc < Test::Unit::TestCase
   def test_proc
     p1 = proc{|i| i}

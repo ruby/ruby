@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestWhileuntil < Test::Unit::TestCase
   def test_while
     tmp = open("while_tmp", "w")

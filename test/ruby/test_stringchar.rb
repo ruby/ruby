@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestStringchar < Test::Unit::TestCase
   def test_string
     assert_equal("abcd", "abcd")

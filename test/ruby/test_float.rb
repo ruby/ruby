@@ -1,7 +1,5 @@
 require 'test/unit'
 
-$KCODE = 'none'
-
 class TestFloat < Test::Unit::TestCase
   def test_float
     assert_equal(2, 2.6.floor)
