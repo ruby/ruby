@@ -1,3 +1,9 @@
+Tue Dec 23 11:08:34 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* test/xsd/test_noencoding.rb: rescue Errno::EINVAL and do not test.
+	  "euc-jp" might not be in supported encoding name list.
+	  [ruby-talk:88650]
+
 Tue Dec 23 06:10:31 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (CGI): add support for mod_ruby.
