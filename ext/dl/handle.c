@@ -65,7 +65,7 @@ rb_dlhandle_initialize(int argc, VALUE argv[], VALUE self)
 
   ptr = dlopen(clib, cflag);
 #if defined(HAVE_DLERROR)
-  if( (err = dlerror()) ){
+  if( !ptr && (err = dlerror()) ){
     rb_raise(rb_eRuntimeError, err);
   }
 #else
@@ -168,7 +168,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
 
   func = dlsym(handle, name);
 #if defined(HAVE_DLERROR)
-  if( (err = dlerror()) && (!func) )
+  if( !func && (err = dlerror()) )
 #else
   if( !func )
 #endif
@@ -183,7 +183,7 @@ rb_dlhandle_sym(int argc, VALUE argv[], VALUE self)
       func = dlsym(handle, name_a);
       dlfree(name_a);
 #if defined(HAVE_DLERROR)
-      if( (err = dlerror()) && (!func) )
+      if( !func && (err = dlerror()) )
 #else
       if( !func )
 #endif
