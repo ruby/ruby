@@ -1,3 +1,20 @@
+Tue Jun  9 02:54:51 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* lib/parsedate.rb: wday moved to the last in the return values.
+
+Sat Jun  6 22:50:52 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (calculate_must_string): wrong condition for
+	  {start,stop}_nowidth.
+
+	* regex.c (re_match): various features imported from GNU regex.c
+ 	  0.12, such as nested grouping, avoiding infinite loop with empty
+ 	  match, etc.
+
+	* regex.c (register_info_type): now use union.
+
+	* regex.c (re_search): more precise anchor(^) check.
+
 Wed Jun  3 18:07:54 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* re.c (reg_raise): check rb_in_compile, not rb_in_eval.

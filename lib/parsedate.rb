@@ -17,10 +17,10 @@ module ParseDate
       return $1.to_i,
 	if $2 then $2.to_i else 1 end,
 	if $3 then $3.to_i else 1 end,
-	nil,
 	if $4 then $4.to_i end,
 	if $5 then $5.to_i end,
 	if $6 then $6.to_i end,
+	nil,
 	nil
     end
     date = date.dup
@@ -59,7 +59,7 @@ module ParseDate
 	year = $3.to_i
       end
     end
-    return year, mon, mday, wday, hour, min, sec, zone
+    return year, mon, mday, hour, min, sec, zone, wday
   end
 
   module_function :parsedate
