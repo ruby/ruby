@@ -319,6 +319,7 @@ class Resolv
           @initialized = true
         end
       }
+      self
     end
 
     def getaddress(name)
@@ -397,6 +398,7 @@ class Resolv
           @initialized = true
         end
       }
+      self
     end
 
     def close
@@ -739,6 +741,13 @@ class Resolv
             when 'search'
               next if args.empty?
               search = args
+            when 'options'
+              args.each {|arg|
+                case arg
+                when /\Andots:(\d+)\z/
+                  ndots = $1.to_i
+                end
+              }
             end
           }
         }
@@ -814,6 +823,7 @@ class Resolv
             @initialized = true
           end
         }
+        self
       end
 
       def single?
