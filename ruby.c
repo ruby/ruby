@@ -292,6 +292,26 @@ process_sflag()
     }
 }
 
+static void proc_options _((int argc, char **argv));
+
+static char*
+moreswitches(s)
+    char *s;
+{
+    int argc; char *argv[3]; char **argvp = argv;
+    char *p = s;
+
+    argc = 2; argv[0] = argv[2] = 0;
+    while (*s && !ISSPACE(*s))
+	s++;
+    argv[1] = ALLOCA_N(char, s - p + 2);
+    sprintf(argv[1], "-%s", p);
+    proc_options(argc, argv);
+    while (*s && ISSPACE(*s))
+	s++;
+    return s;
+}
+
 static void
 proc_options(argc, argv)
     int argc;
@@ -528,6 +548,34 @@ proc_options(argc, argv)
   switch_end:
     if (argv0 == 0) return;
 
+    if (rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
+	while (ISSPACE(*s)) s++;
+	if (*s == '-' && *(s+1) == 'T') {
+	    int numlen;
+	    int v = 1;
+
+	    s += 2;
+	    if (*++s) {
+		v = scan_oct(s, 2, &numlen);
+		if (numlen == 0) v = 1;
+	    }
+	    rb_set_safe_level(v);
+	}
+	else {
+	    while (s && *s) {
+		while (ISSPACE(*s)) s++;
+		if (*s == '-') {
+		    s++;
+		    if (ISSPACE(*s)) continue;
+		}
+		if (!*s) break;
+		if (!strchr("IdvwrK", *s))
+		    rb_raise(rb_eRuntimeError, "Illegal switch in RUBYOPT: -%c", *s);
+		s = moreswitches(s);
+	    }
+	}
+    }
+
     if (e_script) {
 	argc++, argv--;
 	argv[0] = script;
@@ -681,19 +729,8 @@ load_file(fname, script)
 		if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
 		    RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
 		if (p = strstr(p, " -")) {
-		    int argc; char *argv[3]; char **argvp = argv;
-		    char *s = ++p;
-
-		    argc = 2; argv[0] = argv[2] = 0;
 		    while (*p == '-') {
-			while (*s && !ISSPACE(*s))
-			    s++;
-			*s = '\0';
-			argv[1] = p;
-			proc_options(argc, argv);
-			p = ++s;
-			while (*p && ISSPACE(*p))
-			    p++;
+			p = moreswitches(p+1);
 		    }
 		}
 	    }

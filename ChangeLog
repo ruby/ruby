@@ -1,3 +1,14 @@
+Thu Oct 21 16:14:19 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (moreswitches): function to process string option;
+	  the name is stolen from perl (not implementation).
+
+	* ruby.c (proc_options): use RUBYOPT environment variable to
+	  retrieve the default options.
+
+	* dir.c (fnmatch): use eban's fnmatch; do not depend on systems's
+	  fnmatch (which may have portability problem) anymore.
+
 Wed Oct 20 15:14:24 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* marshal.c (marshal_load): should protect the generated object

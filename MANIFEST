@@ -160,8 +160,6 @@ missing/dup2.c
 missing/file.h
 missing/finite.c
 missing/flock.c
-missing/fnmatch.c
-missing/fnmatch.h
 missing/isinf.c
 missing/isnan.c
 missing/memcmp.c

@@ -16,7 +16,8 @@ Language Spec.
 
 Hacking Interpreter
 
-* RUBYOPT environment variable
+- use eban's fnmatch
+- RUBYOPT environment variable
 * non-blocking open (e.g. for named pipe) for thread
 * avoid blocking with gethostbyname/gethostbyaddr
 * objectify interpreters
@@ -36,7 +37,7 @@ Standard Libraries
 * Object#fmt(?)
 * Time::strptime
 * Integer[num], Float[num];  Fixnum[num]?
-* method to detect non-number trailer for to_i/to_f.
+* method to retrieve non-number trailer for to_i/to_f.
 * Stream or Port, abstract superclass of IO ?
 * String#{pred,prev}, String#downto
 * optional stepsize argument for succ()

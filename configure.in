@@ -156,7 +156,7 @@ AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 AC_CHECK_HEADERS(stdlib.h string.h unistd.h limits.h sys/file.h sys/ioctl.h\
 		 fcntl.h sys/fcntl.h sys/select.h sys/time.h sys/times.h sys/param.h\
-		 syscall.h pwd.h a.out.h utime.h memory.h direct.h fnmatch.h)
+		 syscall.h pwd.h a.out.h utime.h memory.h direct.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -175,7 +175,7 @@ AC_FUNC_VFORK
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove mkdir strcasecmp strncasecmp strerror strftime\
 		 strchr strstr strtoul strdup crypt flock vsnprintf\
-		 fnmatch isinf isnan finite)
+		 isinf isnan finite)
 AC_CHECK_FUNCS(fmod killpg drand48 random wait4 waitpid syscall getcwd\
 	      truncate chsize times utimes fcntl lockf setitimer\
 	      setruid seteuid setreuid setrgid setegid setregid\
