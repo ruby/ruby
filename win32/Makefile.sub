@@ -171,7 +171,7 @@ OBJS          = array.obj \
 
 all:		ext miniruby$(EXEEXT) rbconfig.rb \
 		$(LIBRUBY) $(MISCLIBS)
-		@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTSTATIC) $(MAKE) -$(MFLAGS)$(MAKEFLAGS)
+		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic=$(EXTSTATIC) --make="$(MAKE)" --make-flags="-$(MFLAGS)$(MAKEFLAGS)"
 
 ext:
 		@mkdir $@
@@ -406,7 +406,7 @@ $(RUBYDEF):	$(LIBRUBY_A) miniruby$(EXEEXT)
 
 install:	rbconfig.rb
 		$(MINIRUBY) $(srcdir)/instruby.rb -$(MFLAGS)$(MAKEFLAGS) $(DESTDIR)
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) -$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR) install
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="-$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
 
 clean:		clean-ext clean-local
 
@@ -421,7 +421,7 @@ clean-local:
 		@if exist *.res del *.res
 
 clean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) -$(MFLAGS)$(MAKEFLAGS) clean
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="-$(MFLAGS)$(MAKEFLAGS)" clean
 
 distclean:	distclean-ext distclean-local
 
@@ -455,7 +455,7 @@ distclean-local:	clean-local
 		@if exist miniruby$(EXEEXT) del miniruby$(EXEEXT)
 
 distclean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) -$(MFLAGS)$(MAKEFLAGS) distclean
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="-$(MFLAGS)$(MAKEFLAGS)" distclean
 
 realclean:	distclean
 		@if exist parse.c del parse.c

@@ -99,7 +99,7 @@ OBJS	      = array.@OBJEXT@ \
 		$(MISSING)
 
 all:		@MAKEFILES@ miniruby$(EXEEXT) rbconfig.rb $(LIBRUBY)
-		@$(MINIRUBY) $(srcdir)/ext/extmk.rb @EXTSTATIC@ $(MAKE) $(MFLAGS)$(MAKEFLAGS)
+		@$(MINIRUBY) $(srcdir)/ext/extmk.rb --extstatic="@EXTSTATIC@" --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)"
 
 miniruby$(EXEEXT):	config.status $(LIBRUBY_A) $(MAINOBJ) dmyext.@OBJEXT@
 		@rm -f $@
@@ -124,11 +124,11 @@ ruby.imp:	$(LIBRUBY_A)
 # $(MINIRUBY) $< $@
 
 install:	rbconfig.rb
-		$(MINIRUBY) $(srcdir)/instruby.rb --make=$(MAKE) $(MFLAGS)$(MAKEFLAGS) $(DESTDIR)
-		$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) $(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR) install
+		$(MINIRUBY) $(srcdir)/instruby.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" $(DESTDIR)
+		$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS) DESTDIR=$(DESTDIR)" install
 
 clean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) $(MFLAGS)$(MAKEFLAGS) clean 2> /dev/null || true
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" clean 2> /dev/null || true
 
 clean-local:
 		@rm -f $(OBJS) $(MAINOBJ) $(LIBRUBY_A) $(LIBRUBY_SO) $(LIBRUBY_ALIASES)
@@ -138,7 +138,7 @@ clean-local:
 clean: clean-ext clean-local
 
 distclean-ext:
-		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb $(MAKE) $(MFLAGS)$(MAKEFLAGS) distclean 2> /dev/null || true
+		@-$(MINIRUBY) $(srcdir)/ext/extmk.rb --make="$(MAKE)" --make-flags="$(MFLAGS)$(MAKEFLAGS)" distclean 2> /dev/null || true
 
 distclean-local: clean-local
 		@rm -f @MAKEFILES@ config.h rbconfig.rb

@@ -69,7 +69,7 @@ def extmake(target)
       if $static
 	$extlist.push [$static, $target, File.basename($target)]
       end
-      unless system *ARGV
+      unless system($make, *$mflags)
 	$ignore or $continue or exit(1)
       end
     else
@@ -93,13 +93,15 @@ def extmake(target)
   end
 end
 
-if ARGV[0] == "static"
-  ARGV.shift
-  $force_static = true
-end
+require 'getopts'
 
-$make = ARGV[0] if ARGV[0]
-ARGV << $make if ARGV.empty? and $make
+getopts('', 'extstatic', 'make:', 'make-flags:')
+
+$force_static = $OPT['extstatic']
+$make = $OPT['make'] || $make
+$mflags = $OPT['make-flags'] || ""
+$mflags = Shellwords.shellwords(mflags)
+
 if mflags = ENV["MAKEFLAGS"]
   mflags, = mflags.split(nil, 2)
 else
@@ -109,14 +111,15 @@ $continue = mflags.include?(?k)
 $dryrun = mflags.include?(?n)
 
 unless $message
-  if ARGV.size > 1 and /^[a-z]+$/ =~ ($message = ARGV[-1])
+  if $message = ARGV.shift and /^[a-z]+$/ =~ $message
     $message = $message.sub(/^(?:dist|real)(?=(?:clean)?$)/, '\1')
     case $message
     when "clean"
       $ignore ||= true
     when "install"
       $ignore ||= true
-      ARGV[1, 0] = ["INSTALL_PROG=install -m 0755", "INSTALL_DATA=install -m 0644"] if $dryrun
+      $mflags.unshift("INSTALL_PROG=install -m 0755",
+		      "INSTALL_DATA=install -m 0644") if $dryrun
     end
     $message.sub!(/e?$/, "ing")
   else
@@ -208,7 +211,7 @@ if $extlist.size > 0
   }.compact
   puts conf
   $stdout.flush
-  ARGV.concat(conf)
+  $mflags.concat(conf)
 end
 rubies = []
 %w[RUBY RUBYW].each {|r|
@@ -218,10 +221,10 @@ rubies = []
 Dir.chdir ".."
 puts "making #{rubies.join(', ')}"
 $stdout.flush
-ARGV.concat(rubies)
+$mflags.concat(rubies)
 host = (defined?(CROSS_COMPILING) ? CROSS_COMPILING : RUBY_PLATFORM)
-/mswin|bccwin|mingw|djgpp|human|os2|macos/ =~ host or exec(*ARGV)
-system(*ARGV.quote) or exit($?.exitstatus)
+/mswin|bccwin|mingw|djgpp|human|os2|macos/ =~ host or exec($make, *$mflags)
+system($make, *$mflags.quote) or exit($?.exitstatus)
 
 #Local variables:
 # mode: ruby
