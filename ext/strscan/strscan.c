@@ -1,8 +1,8 @@
-/* vi:set sw=4:
+/*
 
     strscan.c
 
-    Copyright (c) 1999-2002 Minero Aoki <aamine@loveruby.net>
+    Copyright (c) 1999-2003 Minero Aoki <aamine@loveruby.net>
 
     This program is free software.
     You can distribute/modify this program under the terms of
@@ -644,34 +644,35 @@ strscan_rest_size(self)
 
 
 #define INSPECT_LENGTH 5
+#define BUFSIZE 256
 
 static VALUE
 strscan_inspect(self)
     VALUE self;
 {
     struct strscanner *p;
-    char buf[256];
+    char buf[BUFSIZE];
     char buf_before[16];
     char buf_after[16];
     long len;
 
     Data_Get_Struct(self, struct strscanner, p);
     if (NIL_P(p->str)) {
-        len = sprintf(buf, "#<%s (uninitialized)>",
-                      rb_class2name(CLASS_OF(self)));
-        return rb_str_new(buf, len);
+        len = snprintf(buf, BUFSIZE, "#<%s (uninitialized)>",
+                       rb_class2name(CLASS_OF(self)));
+        return infect(rb_str_new(buf, len), p);
     }
     if (EOS_P(p)) {
-        len = sprintf(buf, "#<%s fin>",
-                      rb_class2name(CLASS_OF(self)));
-        return rb_str_new(buf, len);
+        len = snprintf(buf, BUFSIZE, "#<%s fin>",
+                       rb_class2name(CLASS_OF(self)));
+        return infect(rb_str_new(buf, len), p);
     }
-    len = sprintf(buf, "#<%s %ld/%ld %s@%s>",
-                  rb_class2name(CLASS_OF(self)),
-                  p->curr, S_LEN(p),
-                  inspect_before(p, buf_before),
-                  inspect_after(p, buf_after));
-    return rb_str_new(buf, len);
+    len = snprintf(buf, BUFSIZE, "#<%s %ld/%ld %s@%s>",
+                   rb_class2name(CLASS_OF(self)),
+                   p->curr, S_LEN(p),
+                   inspect_before(p, buf_before),
+                   inspect_after(p, buf_after));
+    return infect(rb_str_new(buf, len), p);
 }
 
 static char*
@@ -748,10 +749,8 @@ Init_strscan()
     rb_const_set(StringScanner, rb_intern("Id"), tmp);
     
     rb_define_alloc_func(StringScanner, strscan_s_allocate);
-    rb_define_private_method(StringScanner, "initialize",
-                             strscan_initialize, -1);
-    rb_define_singleton_method(StringScanner, "must_C_version",
-                               strscan_s_mustc, 0);
+    rb_define_private_method(StringScanner, "initialize", strscan_initialize, -1);
+    rb_define_singleton_method(StringScanner, "must_C_version", strscan_s_mustc, 0);
     rb_define_method(StringScanner, "reset",       strscan_reset,       0);
     rb_define_method(StringScanner, "terminate",   strscan_terminate,   0);
     rb_define_method(StringScanner, "clear",       strscan_terminate,   0);

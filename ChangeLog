@@ -1,3 +1,10 @@
+Tue Mar 25 10:18:05 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: should infect also return values of
+	  #inspect.
+
+	* ext/strscan/strscan.c: use snprintf() instead of sprintf().
+
 Mon Mar 24 16:55:04 2003  Takaaki Tateishi <ttate@ttsky.net>
 
 	* ext/dl/dl.c: added rb_secure(4). (Thanks to Minero Aoki)
