@@ -1,3 +1,21 @@
+Thu Aug 12 13:44:33 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (Init_load): require receives 1 argument.
+
+	* eval.c (frame_dup): should clear tmp to avoid dangling
+	  references.
+
+Wed Aug 11 13:33:13 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* eval.c (rb_eval): no automatic aggregate initialization.
+
+	* eval.c (module_setup): ditto.
+
+Wed Aug 11 18:18:41 1999  WATANABE Tetsuya  <tetsu@jpn.hp.com>
+
+	* eval.c (yield_under_i): automatic aggregate initialization is an
+	  ANSI feature.
+
 Wed Aug 11 10:10:02 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* parse.y (yylex): parse `[].length==0' as `([].length)==0', not

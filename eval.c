@@ -2213,8 +2213,9 @@ rb_eval(self, node)
 
       case NODE_SCOPE:
 	{
-	    struct FRAME frame = *ruby_frame;
+	    struct FRAME frame;
 
+	    frame = *ruby_frame;
 	    frame.tmp = ruby_frame;
 	    ruby_frame = &frame;
 
@@ -2851,12 +2852,13 @@ module_setup(module, node)
     NODE * volatile node;
 {
     int state;
-    struct FRAME frame = *ruby_frame;
+    struct FRAME frame;
     VALUE result;		/* OK */
     char *file = ruby_sourcefile;
     int line = ruby_sourceline;
     TMP_PROTECT;
 
+    frame = *ruby_frame;
     frame.tmp = ruby_frame;
     ruby_frame = &frame;
 
@@ -4392,13 +4394,14 @@ yield_under_i(self)
 {
     if (ruby_block->flags & BLOCK_DYNAMIC) {
 	struct BLOCK * volatile old_block = ruby_block;
-	struct BLOCK block = *ruby_block;
+	struct BLOCK block;
 	volatile VALUE cbase = ruby_block->frame.cbase;
 	/* cbase should be pointed from volatile local variable */
 	/* to be protected from GC. 				*/
 	VALUE result;
 	int state;
 
+	block = *ruby_block;
 	/* copy the block to avoid modifying global data. */
 	block.frame.cbase = ruby_frame->cbase;
 	ruby_block = &block;
@@ -4817,20 +4820,6 @@ rb_require(fname)
     const char *fname;
 {
     return rb_f_require(Qnil, rb_str_new2(fname));
-}
-
-static VALUE
-require_method(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
-{
-    int i;
-
-    for (i=0; i<argc; i++) {
-	rb_f_require(self, argv[i]);
-    }
-    return Qnil;
 }
 
 static void
@@ -5282,7 +5271,7 @@ Init_load()
     rb_define_readonly_variable("$\"", &rb_features);
 
     rb_define_global_function("load", rb_f_load, -1);
-    rb_define_global_function("require", require_method, -1);
+    rb_define_global_function("require", rb_f_require, 1);
     rb_define_global_function("autoload", rb_f_autoload, 2);
     rb_global_variable(&ruby_wrapper);
 }
@@ -5381,6 +5370,7 @@ frame_dup(frame)
 	    MEMCPY(argv, frame->argv, VALUE, frame->argc);
 	    frame->argv = argv;
 	}
+	frame->tmp = 0;		/* should not preserve tmp */
 	if (!frame->prev) break;
 	tmp = ALLOC(struct FRAME);
 	*tmp = *frame->prev;
