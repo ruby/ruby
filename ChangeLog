@@ -13,6 +13,9 @@ Wed Aug 30 11:31:47 2000  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* ext/Win32API/Win32API.c (Win32API_initialize): add the
 	  arguments checking.
 
+	* ext/Win32API/Win32API.c (Win32API_initialize): add taint
+	  checking. allow String object in the third argument.
+
 Tue Aug 29 15:18:20 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.c (proc_options): the value of -K may be empty.
