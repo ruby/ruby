@@ -14,7 +14,7 @@ Mon Jul 16 00:04:39 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (rb_file_s_expand_path): may overrun buffer on stack.
 
-Sat Jul 14 06:25:00 2001  Minero Aoki  <aamine@loveruby.net>
+Sat Jul 14 06:25:00 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/net/http.rb: HTTP#proxy? did not worked.
 
