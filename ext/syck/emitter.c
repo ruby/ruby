@@ -192,7 +192,7 @@ syck_emitter_flush( SyckEmitter *e, long check_room )
         {
             char *header = S_ALLOC_N( char, 64 );
             S_MEMZERO( header, char, 64 );
-            sprintf( header, "--- %YAML:%d.%d ", SYCK_YAML_MAJOR, SYCK_YAML_MINOR );
+            sprintf( header, "--- %%YAML:%d.%d ", SYCK_YAML_MAJOR, SYCK_YAML_MINOR );
             (e->handler)( e, header, strlen( header ) );
             S_FREE( header );
         }

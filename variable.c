@@ -155,7 +155,7 @@ classname(klass)
 	    }
 	    path = rb_str_new2(rb_id2name(SYM2ID(path)));
 	    st_insert(ROBJECT(klass)->iv_tbl, classpath, path);
-	    st_delete(RCLASS(klass)->iv_tbl, &classid, 0);
+	    st_delete(RCLASS(klass)->iv_tbl, (st_data_t*)&classid, 0);
 	}
 	if (TYPE(path) != T_STRING) {
 	    rb_bug("class path is not set properly");
@@ -188,7 +188,7 @@ rb_class_path(klass)
 
 	path = find_class_path(klass);
 	if (!NIL_P(path)) {
-	    st_delete(RCLASS(klass)->iv_tbl, &tmppath, 0);
+	    st_delete(RCLASS(klass)->iv_tbl, (st_data_t*)&tmppath, 0);
 	    return path;
 	}
 	if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, tmppath, &path)) {
@@ -1085,7 +1085,7 @@ rb_obj_remove_instance_variable(obj, name)
       case T_OBJECT:
       case T_CLASS:
       case T_MODULE:
-	if (ROBJECT(obj)->iv_tbl && st_delete(ROBJECT(obj)->iv_tbl, &id, &val)) {
+	if (ROBJECT(obj)->iv_tbl && st_delete(ROBJECT(obj)->iv_tbl, (st_data_t*)&id, &val)) {
 	    return val;
 	}
 	break;
@@ -1184,17 +1184,17 @@ autoload_delete(mod, id)
 {
     VALUE val, file = Qnil;
 
-    st_delete(RCLASS(mod)->iv_tbl, &id, 0);
+    st_delete(RCLASS(mod)->iv_tbl, (st_data_t*)&id, 0);
     if (st_lookup(RCLASS(mod)->iv_tbl, autoload, &val)) {
 	struct st_table *tbl = check_autoload_table(val);
 
-	if (!st_delete(tbl, &id, &file)) file = Qnil;
+	if (!st_delete(tbl, (st_data_t*)&id, &file)) file = Qnil;
 
 	if (tbl->num_entries == 0) {
 	    DATA_PTR(val) = 0;
 	    st_free_table(tbl);
 	    id = autoload;
-	    if (st_delete(RCLASS(mod)->iv_tbl, &id, &val)) {
+	    if (st_delete(RCLASS(mod)->iv_tbl, (st_data_t*)&id, &val)) {
 		rb_gc_force_recycle(val);
 	    }
 	}
@@ -1242,12 +1242,12 @@ autoload_file(mod, id)
     }
 
     /* already loaded but not defined */
-    st_delete(tbl, &id, 0);
+    st_delete(tbl, (st_data_t*)&id, 0);
     if (!tbl->num_entries) {
 	DATA_PTR(val) = 0;
 	st_free_table(tbl);
 	id = autoload;
-	if (st_delete(RCLASS(mod)->iv_tbl, &id, &val)) {
+	if (st_delete(RCLASS(mod)->iv_tbl, (st_data_t*)&id, &val)) {
 	    rb_gc_force_recycle(val);
 	}
     }
@@ -1349,7 +1349,7 @@ rb_mod_remove_const(mod, name)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove constant");
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
-    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &id, &val)) {
+    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, (st_data_t*)&id, &val)) {
 	if (val == Qundef) {
 	    autoload_delete(mod, id);
 	    val = Qnil;
@@ -1750,7 +1750,7 @@ rb_mod_remove_cvar(mod, name)
 	rb_raise(rb_eSecurityError, "Insecure: can't remove class variable");
     if (OBJ_FROZEN(mod)) rb_error_frozen("class/module");
 
-    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, &id, &val)) {
+    if (RCLASS(mod)->iv_tbl && st_delete(ROBJECT(mod)->iv_tbl, (st_data_t*)&id, &val)) {
 	return val;
     }
     if (rb_cvar_defined(mod, id)) {

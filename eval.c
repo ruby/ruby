@@ -8206,7 +8206,7 @@ rb_thread_save_context(th)
 }
 
 static int
-thread_switch(n)
+rb_thread_switch(n)
     int n;
 {
     rb_trap_immediate = (curr_thread->flags&0x100)?1:0;
@@ -8239,7 +8239,7 @@ thread_switch(n)
 
 #define THREAD_SAVE_CONTEXT(th) \
     (rb_thread_save_context(th),\
-     thread_switch((FLUSH_REGISTER_WINDOWS, setjmp((th)->context))))
+     rb_thread_switch((FLUSH_REGISTER_WINDOWS, setjmp((th)->context))))
 
 static void rb_thread_restore_context _((rb_thread_t,int));
 
@@ -9137,13 +9137,13 @@ rb_thread_safe_level(thread)
     return INT2NUM(th->safe);
 }
 
-static int thread_abort;
+static int ruby_thread_abort;
 static VALUE thgroup_default;
 
 static VALUE
 rb_thread_s_abort_exc()
 {
-    return thread_abort?Qtrue:Qfalse;
+    return ruby_thread_abort?Qtrue:Qfalse;
 }
 
 static VALUE
@@ -9151,7 +9151,7 @@ rb_thread_s_abort_exc_set(self, val)
     VALUE self, val;
 {
     rb_secure(4);
-    thread_abort = RTEST(val);
+    ruby_thread_abort = RTEST(val);
     return val;
 }
 
@@ -9380,7 +9380,7 @@ rb_thread_start_0(fn, arg, th_arg)
 		rb_thread_raise(1, &ruby_errinfo, main_thread);
 	    }
 	}
-	else if (th->safe < 4 && (thread_abort || th->abort || RTEST(ruby_debug))) {
+	else if (th->safe < 4 && (ruby_thread_abort || th->abort || RTEST(ruby_debug))) {
 	    VALUE err = system_exit(1, 0, 0);
 	    error_print();
 	    /* exit on main_thread */
@@ -9733,7 +9733,7 @@ rb_thread_local_aset(thread, id, val)
 	th->locals = st_init_numtable();
     }
     if (NIL_P(val)) {
-	st_delete(th->locals, &id, 0);
+	st_delete(th->locals, (st_data_t*)&id, 0);
 	return Qnil;
     }
     st_insert(th->locals, id, val);

@@ -1459,7 +1459,7 @@ undefine_final(os, obj)
     VALUE os, obj;
 {
     if (finalizer_table) {
-	st_delete(finalizer_table, &obj, 0);
+	st_delete(finalizer_table, (st_data_t*)&obj, 0);
     }
     return obj;
 }
@@ -1533,7 +1533,7 @@ run_final(obj)
 	args[0] = RARRAY(finalizers)->ptr[i];
 	rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
     }
-    if (finalizer_table && st_delete(finalizer_table, &obj, &table)) {
+    if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
 	    args[0] = RARRAY(table)->ptr[i];
 	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);

@@ -675,7 +675,7 @@ load_1(fd, disp, need_init)
 	    char *key = sym->n_un.n_name;
 
 	    if (st_lookup(sym_tbl, sym[1].n_un.n_name, &old_sym)) {
-		if (st_delete(undef_tbl, &key, NULL)) {
+		if (st_delete(undef_tbl, (st_data_t*)&key, NULL)) {
 		    unlink_undef(key, old_sym->n_value);
 		    free(key);
 		}
@@ -688,7 +688,7 @@ load_1(fd, disp, need_init)
 		st_foreach(reloc_tbl, reloc_repl, &data);
 
 		st_insert(undef_tbl, strdup(sym[1].n_un.n_name), NULL);
-		if (st_delete(undef_tbl, &key, NULL)) {
+		if (st_delete(undef_tbl, (st_data_t*)&key, NULL)) {
 		    free(key);
 		}
 	    }
@@ -756,7 +756,7 @@ load_1(fd, disp, need_init)
 	    }
 
 	    key = sym->n_un.n_name;
-	    if (st_delete(undef_tbl, &key, NULL) != 0) {
+	    if (st_delete(undef_tbl, (st_data_t*)&key, NULL) != 0) {
 		unlink_undef(key, sym->n_value);
 		free(key);
 	    }

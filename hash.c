@@ -407,12 +407,12 @@ rb_hash_delete(hash, key)
 
     rb_hash_modify(hash);
     if (RHASH(hash)->iter_lev > 0) {
-	if (st_delete_safe(RHASH(hash)->tbl, &key, &val, Qundef)) {
+	if (st_delete_safe(RHASH(hash)->tbl, (st_data_t*)&key, &val, Qundef)) {
 	    FL_SET(hash, HASH_DELETED);
 	    return val;
 	}
     }
-    else if (st_delete(RHASH(hash)->tbl, &key, &val))
+    else if (st_delete(RHASH(hash)->tbl, (st_data_t*)&key, &val))
 	return val;
     if (rb_block_given_p()) {
 	return rb_yield(key);

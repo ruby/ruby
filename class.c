@@ -72,9 +72,9 @@ rb_mod_clone(module)
 
 	RCLASS(clone)->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
 	id = rb_intern("__classpath__");
-	st_delete(RCLASS(clone)->iv_tbl, &id, 0);
+	st_delete(RCLASS(clone)->iv_tbl, (st_data_t*)&id, 0);
 	id = rb_intern("__classid__");
-	st_delete(RCLASS(clone)->iv_tbl, &id, 0);
+	st_delete(RCLASS(clone)->iv_tbl, (st_data_t*)&id, 0);
     }
     if (RCLASS(module)->m_tbl) {
 	RCLASS(clone)->m_tbl = st_init_numtable();

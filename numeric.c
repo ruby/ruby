@@ -11,6 +11,7 @@
 **********************************************************************/
 
 #include "ruby.h"
+#include "env.h"
 #include <math.h>
 #include <stdio.h>
 
@@ -131,7 +132,7 @@ rb_num_coerce_bin(x, y)
     VALUE x, y;
 {
     do_coerce(&x, &y, Qtrue);
-    return rb_funcall(x, rb_frame_last_func(), 1, y);
+    return rb_funcall(x, ruby_frame->orig_func, 1, y);
 }
 
 VALUE
@@ -139,7 +140,7 @@ rb_num_coerce_cmp(x, y)
     VALUE x, y;
 {
     if (do_coerce(&x, &y, Qfalse)) 
-	return rb_funcall(x, rb_frame_last_func(), 1, y);
+	return rb_funcall(x, ruby_frame->orig_func, 1, y);
     return Qnil;
 }
 
@@ -150,7 +151,7 @@ num_coerce_relop(x, y)
     VALUE c, x0 = x, y0 = y;
 
     if (!do_coerce(&x, &y, Qfalse) ||
-	NIL_P(c = rb_funcall(x, rb_frame_last_func(), 1, y))) {
+	NIL_P(c = rb_funcall(x, ruby_frame->orig_func, 1, y))) {
 	rb_cmperr(x0, y0);
 	return Qnil;		/* not reached */
     }

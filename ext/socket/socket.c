@@ -1092,7 +1092,6 @@ tcp_s_gethostbyname(obj, host)
     struct hostent *h = sock_hostbyname(host);
     VALUE ary, names;
     char **pch;
-    size_t size;
 
     ary = rb_ary_new();
     rb_ary_push(ary, rb_str_new2(h->h_name));
@@ -1124,7 +1123,7 @@ tcp_s_gethostbyname(obj, host)
 #ifdef SIN6_LEN
 	    sin6.sin6_len = sizeof(sin6);
 #endif
-	    memcpy((char*)&sin6.sin6_addr, *pch, size);
+	    memcpy((char*)&sin6.sin6_addr, *pch, h->h_length);
 	    rb_ary_push(ary, mkipaddr((struct sockaddr*)&sin6));
 	    break;
 	  }

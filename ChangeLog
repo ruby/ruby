@@ -1,3 +1,8 @@
+Fri Jul 25 14:34:55 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (tcp_s_gethostbyname): was using
+	  uninitialized size_t value. [ruby-talk:76946]
+
 Fri Jul 25 13:38:38 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* re.c (rb_reg_options_m): use rb_reg_options() to mask internal

@@ -297,7 +297,7 @@ rb_waitpid(pid, st, flags)
 #else  /* NO_WAITPID */
     if (pid_tbl && st_lookup(pid_tbl, pid, st)) {
 	last_status_set(*st, pid);
-	st_delete(pid_tbl, &pid, NULL);
+	st_delete(pid_tbl, (st_data_t*)&pid, NULL);
 	return pid;
     }
 
@@ -1487,6 +1487,7 @@ p_sys_issetugid(obj)
     }
 #else
     rb_notimplement();
+    return Qnil;		/* not reached */
 #endif
 }
 

@@ -1051,6 +1051,7 @@ rb_file_s_lchmod(argc, argv)
     VALUE *argv;
 {
     rb_notimplement();
+    return Qnil;		/* not reached */
 }
 #endif
 

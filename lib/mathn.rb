@@ -117,7 +117,7 @@ class Rational
   Unify = true
 
   def inspect
-    format "%s/%s", @numerator.inspect, @denominator.inspect
+    format "%s/%s", numerator.inspect, denominator.inspect
   end
 
   alias power! **
@@ -134,8 +134,8 @@ class Rational
 	return Rational(1,1)
       end
       
-      npd = @numerator.prime_division
-      dpd = @denominator.prime_division
+      npd = numerator.prime_division
+      dpd = denominator.prime_division
       if other < 0
 	other = -other
 	npd, dpd = dpd, npd
@@ -164,11 +164,11 @@ class Rational
       
     elsif other.kind_of?(Integer)
       if other > 0
-	num = @numerator ** other
-	den = @denominator ** other
+	num = numerator ** other
+	den = denominator ** other
       elsif other < 0
-	num = @denominator ** -other
-	den = @numerator ** -other
+	num = denominator ** -other
+	den = numerator ** -other
       elsif other == 0
 	num = 1
 	den = 1
@@ -208,11 +208,11 @@ class Rational
       
     elsif other.kind_of?(Integer)
       if other > 0
-	num = @numerator ** other
-	den = @denominator ** other
+	num = numerator ** other
+	den = denominator ** other
       elsif other < 0
-	num = @denominator ** -other
-	den = @numerator ** -other
+	num = denominator ** -other
+	den = numerator ** -other
       elsif other == 0
 	num = 1
 	den = 1
