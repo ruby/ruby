@@ -862,6 +862,8 @@ ip_ruby(clientData, interp, argc, argv)
 /**************************/
 /*  based on tclEvent.c   */
 /**************************/
+static char *VwaitVarProc _((ClientData, Tcl_Interp *, CONST char *,
+			     CONST char *, int));
 static char *
 VwaitVarProc(clientData, interp, name1, name2, flags)
     ClientData clientData;      /* Pointer to integer to set to 1. */
@@ -876,14 +878,18 @@ VwaitVarProc(clientData, interp, name1, name2, flags)
     return (char *) NULL;
 }
 
-static int
 #if TCL_MAJOR_VERSION >= 8
+static int ip_rbVwaitObjCmd _((ClientData, Tcl_Interp *, int,
+			       Tcl_Obj *CONST []));
+static int
 ip_rbVwaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
     Tcl_Interp *interp; 
     int objc;
     Tcl_Obj *CONST objv[];
 #else
+static int ip_rbVwaitCommand _((ClientData, Tcl_Interp *, int, char *[]));
+static int
 ip_rbVwaitCommand(clientData, interp, objc, objv)
     ClientData clientData;
     Tcl_Interp *interp;
@@ -947,6 +953,8 @@ ip_rbVwaitCommand(clientData, interp, objc, objv)
 /**************************/
 /*  based on tkCmd.c      */
 /**************************/
+static char *WaitVariableProc _((ClientData, Tcl_Interp *, CONST char *,
+				 CONST char *, int));
 static char *
 WaitVariableProc(clientData, interp, name1, name2, flags)
     ClientData clientData;      /* Pointer to integer to set to 1. */
@@ -961,6 +969,7 @@ WaitVariableProc(clientData, interp, name1, name2, flags)
     return (char *) NULL;
 }
 
+static void WaitVisibilityProc _((ClientData, XEvent *));
 static void
 WaitVisibilityProc(clientData, eventPtr)
     ClientData clientData;      /* Pointer to integer to set to 1. */
@@ -976,6 +985,7 @@ WaitVisibilityProc(clientData, eventPtr)
     }
 }
 
+static void WaitWindowProc _((ClientData, XEvent *));
 static void
 WaitWindowProc(clientData, eventPtr)
     ClientData clientData;      /* Pointer to integer to set to 1. */
@@ -988,14 +998,18 @@ WaitWindowProc(clientData, eventPtr)
     }
 }
 
-static int
 #if TCL_MAJOR_VERSION >= 8
+static int ip_rbTkWaitObjCmd _((ClientData, Tcl_Interp *, int,
+				Tcl_Obj *CONST []));
+static int
 ip_rbTkWaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
     Tcl_Interp *interp; 
     int objc;
     Tcl_Obj *CONST objv[];
 #else
+static int ip_rbTkWaitCommand _((ClientData, Tcl_Interp *, int, char *[]));
+static int
 ip_rbTkWaitCommand(clientData, interp, objc, objv)
     ClientData clientData;
     Tcl_Interp *interp;
@@ -1159,6 +1173,8 @@ struct th_vwait_param {
     int   done;
 };
 
+static char *rb_threadVwaitProc _((ClientData, Tcl_Interp *, CONST char *,
+				   CONST char *, int));
 static char *
 rb_threadVwaitProc(clientData, interp, name1, name2, flags)
     ClientData clientData;      /* Pointer to integer to set to 1. */
@@ -1175,6 +1191,7 @@ rb_threadVwaitProc(clientData, interp, name1, name2, flags)
     return (char *)NULL;
 }
 
+static void rb_threadWaitVisibilityProc _((ClientData, XEvent *));
 static void
 rb_threadWaitVisibilityProc(clientData, eventPtr)
     ClientData clientData;      /* Pointer to integer to set to 1. */
@@ -1190,6 +1207,7 @@ rb_threadWaitVisibilityProc(clientData, eventPtr)
     }
 }
 
+static void rb_threadWaitWindowProc _((ClientData, XEvent *));
 static void
 rb_threadWaitWindowProc(clientData, eventPtr)
     ClientData clientData;      /* Pointer to integer to set to 1. */
@@ -1202,14 +1220,19 @@ rb_threadWaitWindowProc(clientData, eventPtr)
     }
 }
 
-static int
 #if TCL_MAJOR_VERSION >= 8
+static int ip_rb_threadVwaitObjCmd _((ClientData, Tcl_Interp *, int,
+				      Tcl_Obj *CONST []));
+static int
 ip_rb_threadVwaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
     Tcl_Interp *interp; 
     int objc;
     Tcl_Obj *CONST objv[];
 #else
+static int ip_rb_threadVwaitCommand _((ClientData, Tcl_Interp *, int,
+				       char *[]));
+static int
 ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
     ClientData clientData;
     Tcl_Interp *interp;
@@ -1278,14 +1301,19 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
     return TCL_OK;
 }
 
-static int
 #if TCL_MAJOR_VERSION >= 8
+static int ip_rb_threadTkWaitObjCmd _((ClientData, Tcl_Interp *, int,
+				       Tcl_Obj *CONST []));
+static int
 ip_rb_threadTkWaitObjCmd(clientData, interp, objc, objv)
     ClientData clientData;
     Tcl_Interp *interp; 
     int objc;
     Tcl_Obj *CONST objv[];
 #else
+static int ip_rb_threadTkWaitCommand _((ClientData, Tcl_Interp *, int,
+					char *[]));
+static int
 ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
     ClientData clientData;
     Tcl_Interp *interp;
