@@ -17,6 +17,7 @@ class String
     len += 1
     me = self[0, len].ljust(len)
     if me =~ /.$/ and $&.size == 2
+      me[-2..-1] = '  '
       me[-2, 2] = '  '
     end
     me.chop!

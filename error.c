@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 16:11:34 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -45,10 +45,10 @@ err_snprintf(buf, len, fmt, args)
     }
 }
 
-static void err_append _((char*));
+static void err_append _((const char*));
 static void
 err_print(fmt, args)
-    char *fmt;
+    const char *fmt;
     va_list args;
 {
     char buf[BUFSIZ];
@@ -59,10 +59,10 @@ err_print(fmt, args)
 
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_compile_error(char *fmt, ...)
+rb_compile_error(const char *fmt, ...)
 #else
 rb_compile_error(fmt, va_alist)
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
@@ -76,10 +76,10 @@ rb_compile_error(fmt, va_alist)
 
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_compile_error_append(char *fmt, ...)
+rb_compile_error_append(const char *fmt, ...)
 #else
 rb_compile_error_append(fmt, va_alist)
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
@@ -94,10 +94,10 @@ rb_compile_error_append(fmt, va_alist)
 
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_warn(char *fmt, ...)
+rb_warn(const char *fmt, ...)
 #else
 rb_warn(fmt, va_alist)
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
@@ -114,17 +114,17 @@ rb_warn(fmt, va_alist)
 /* rb_warning() reports only in verbose mode */
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_warning(char *fmt, ...)
+rb_warning(const char *fmt, ...)
 #else
 rb_warning(fmt, va_alist)
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
     char buf[BUFSIZ];
     va_list args;
 
-    if (!RTEST(rb_verbose)) return;
+    if (!RTEST(ruby_verbose)) return;
 
     snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
@@ -135,10 +135,10 @@ rb_warning(fmt, va_alist)
 
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_bug(char *fmt, ...)
+rb_bug(const char *fmt, ...)
 #else
 rb_bug(fmt, va_alist)
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
@@ -146,7 +146,7 @@ rb_bug(fmt, va_alist)
     va_list args;
 
     snprintf(buf, BUFSIZ, "[BUG] %s", fmt);
-    rb_in_eval = 0;
+    ruby_in_eval = 0;
 
     va_init_list(args, fmt);
     err_print(buf, args);
@@ -156,7 +156,7 @@ rb_bug(fmt, va_alist)
 
 static struct types {
     int type;
-    char *name;
+    const char *name;
 } builtin_types[] = {
     T_NIL,	"nil",
     T_OBJECT,	"Object",
@@ -220,7 +220,10 @@ rb_check_type(x, t)
 #include <errno.h>
 
 VALUE rb_eException;
-VALUE rb_eSystemExit, rb_eInterrupt, rb_eFatal;
+VALUE rb_eSystemExit;
+VALUE rb_eInterrupt;
+VALUE rb_eSignal;
+VALUE rb_eFatal;
 VALUE rb_eStandardError;
 VALUE rb_eRuntimeError;
 VALUE rb_eSyntaxError;
@@ -238,8 +241,8 @@ VALUE rb_mErrno;
 VALUE
 rb_exc_new(etype, ptr, len)
     VALUE etype;
-    char *ptr;
-    int len;
+    const char *ptr;
+    long len;
 {
     VALUE exc = rb_obj_alloc(etype);
 
@@ -250,7 +253,7 @@ rb_exc_new(etype, ptr, len)
 VALUE
 rb_exc_new2(etype, s)
     VALUE etype;
-    char *s;
+    const char *s;
 {
     return rb_exc_new(etype, s, strlen(s));
 }
@@ -283,20 +286,21 @@ exc_initialize(argc, argv, exc)
 }
 
 static VALUE
-exc_new(argc, argv, self)
+exc_exception(argc, argv, self)
     int argc;
     VALUE *argv;
     VALUE self;
 {
     VALUE etype, exc;
 
+    if (argc == 0) return self;
     if (argc == 1 && self == argv[0]) return self;
     etype = CLASS_OF(self);
     while (FL_TEST(etype, FL_SINGLETON)) {
 	etype = RCLASS(etype)->super;
     }
     exc = rb_obj_alloc(etype);
-    rb_obj_call_init(exc);
+    rb_obj_call_init(exc, argc, argv);
 
     return exc;
 }
@@ -337,7 +341,10 @@ static VALUE
 exc_backtrace(exc)
     VALUE exc;
 {
-    return rb_iv_get(exc, "bt");
+    ID bt = rb_intern("bt");
+
+    if (!rb_ivar_defined(exc, bt)) return Qnil;
+    return rb_ivar_get(exc, bt);
 }
 
 static VALUE
@@ -370,54 +377,15 @@ exc_set_backtrace(exc, bt)
     return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
 
-static VALUE
-exception(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    VALUE v = Qnil;
-    VALUE etype = rb_eStandardError;
-    int i;
-    ID id;
-
-    if (argc == 0) {
-	rb_raise(rb_eArgError, "wrong # of arguments");
-    }
-    rb_warn("Exception() is now obsolete");
-    if (TYPE(argv[argc-1]) == T_CLASS) {
-	etype = argv[argc-1];
-	argc--;
-	if (!rb_funcall(etype, '<', 1, rb_eException)) {
-	    rb_raise(rb_eTypeError, "exception should be subclass of Exception");
-	}
-    }
-    for (i=0; i<argc; i++) {	/* argument check */
-	id = rb_to_id(argv[i]);
-	if (!rb_id2name(id)) {
-	    rb_raise(rb_eArgError, "argument needs to be symbol or string");
-	}
-	if (!rb_is_const_id(id)) {
-	    rb_raise(rb_eArgError, "identifier `%s' needs to be constant",
-		     rb_id2name(id));
-	}
-    }
-    for (i=0; i<argc; i++) {
-	v = rb_define_class_under(ruby_class,
-				  rb_id2name(rb_to_id(argv[i])),
-				  rb_eStandardError);
-    }
-    return v;
-}
-
 #ifdef __BEOS__
 typedef struct {
    VALUE *list;
-   size_t n;
+   int n;
 } syserr_list_entry;
 
 typedef struct {
    int ix;
-   size_t n;
+   int n;
 } syserr_index_entry;
 
 static VALUE syserr_list_b_general[16+1];
@@ -471,7 +439,7 @@ extern int sys_nerr;
 static VALUE
 set_syserr(i, name)
     int i;
-    char *name;
+    const char *name;
 {
 #ifdef __BEOS__
    VALUE *list;
@@ -533,7 +501,8 @@ void
 Init_Exception()
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
-    rb_define_method(rb_eException, "new", exc_new, -1);
+    rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
+    rb_define_method(rb_eException, "exception", exc_exception, -1);
     rb_define_method(rb_eException, "initialize", exc_initialize, -1);
     rb_define_method(rb_eException, "to_s", exc_to_s, 0);
     rb_define_method(rb_eException, "to_str", exc_to_s, 0);
@@ -543,8 +512,9 @@ Init_Exception()
     rb_define_method(rb_eException, "set_backtrace", exc_set_backtrace, 1);
 
     rb_eSystemExit  = rb_define_class("SystemExit", rb_eException);
-    rb_eFatal  	 = rb_define_class("fatal", rb_eException);
+    rb_eFatal  	    = rb_define_class("fatal", rb_eException);
     rb_eInterrupt   = rb_define_class("Interrupt", rb_eException);
+    rb_eSignal      = rb_define_class("SignalException", rb_eException);
 
     rb_eStandardError = rb_define_class("StandardError", rb_eException);
     rb_eSyntaxError = rb_define_class("SyntaxError", rb_eStandardError);
@@ -559,17 +529,15 @@ Init_Exception()
     rb_eNotImpError = rb_define_class("NotImplementError", rb_eException);
 
     init_syserr();
-
-    rb_define_global_function("Exception", exception, -1);
 }
 
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_raise(VALUE exc, char *fmt, ...)
+rb_raise(VALUE exc, const char *fmt, ...)
 #else
 rb_raise(exc, fmt, va_alist)
     VALUE exc;
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
@@ -584,10 +552,10 @@ rb_raise(exc, fmt, va_alist)
 
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_loaderror(char *fmt, ...)
+rb_loaderror(const char *fmt, ...)
 #else
 rb_loaderror(fmt, va_alist)
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
@@ -610,10 +578,10 @@ rb_notimplement()
 
 void
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_fatal(char *fmt, ...)
+rb_fatal(const char *fmt, ...)
 #else
 rb_fatal(fmt, va_alist)
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
@@ -624,13 +592,13 @@ rb_fatal(fmt, va_alist)
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
 
-    rb_in_eval = 0;
+    ruby_in_eval = 0;
     rb_exc_fatal(rb_exc_new2(rb_eFatal, buf));
 }
 
 void
 rb_sys_fail(mesg)
-    char *mesg;
+    const char *mesg;
 {
 #ifndef NT
     char *strerror();
@@ -1079,20 +1047,20 @@ init_syserr()
 
 static void
 err_append(s)
-    char *s;
+    const char *s;
 {
-    extern VALUE rb_errinfo;
+    extern VALUE ruby_errinfo;
 
-    if (rb_in_eval) {
-	if (NIL_P(rb_errinfo)) {
-	    rb_errinfo = rb_exc_new2(rb_eSyntaxError, s);
+    if (ruby_in_eval) {
+	if (NIL_P(ruby_errinfo)) {
+	    ruby_errinfo = rb_exc_new2(rb_eSyntaxError, s);
 	}
 	else {
-	    VALUE str = rb_str_to_str(rb_errinfo);
+	    VALUE str = rb_str_to_str(ruby_errinfo);
 
 	    rb_str_cat(str, "\n", 1);
 	    rb_str_cat(str, s, strlen(s));
-	    rb_errinfo = rb_exc_new3(rb_eSyntaxError, str);
+	    ruby_errinfo = rb_exc_new3(rb_eSyntaxError, str);
 	}
     }
     else {

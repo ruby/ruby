@@ -6,14 +6,25 @@
   $Date$
   created at: Fri Oct 15 10:39:26 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
 #include "ruby.h"
 #include <ctype.h>
+#include <math.h>
 
+#define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
+
+#ifndef atof
+double strtod();
+#endif
+
+#ifdef USE_CWGUSI
+static void fmt_setup();
+#else
 static void fmt_setup _((char*,char,int,int,int));
+#endif
 
 static char*
 remove_sign_bits(str, base)
@@ -548,11 +559,13 @@ rb_f_sprintf(argc, argv)
 
 	  case 'f':
 	  case 'g':
+	  case 'G':
 	  case 'e':
 	  case 'E':
 	    {
 		VALUE val = GETARG();
 		double fval;
+		int i, need = 6;
 		char fbuf[32];
 
 		switch (TYPE(val)) {
@@ -566,7 +579,7 @@ rb_f_sprintf(argc, argv)
 		    fval = rb_big2dbl(val);
 		    break;
 		  case T_STRING:
-		    fval = atof(RSTRING(val)->ptr);
+		    fval = strtod(RSTRING(val)->ptr, 0);
 		    break;
 		  default:
 		    Check_Type(val, T_FLOAT);
@@ -574,8 +587,19 @@ rb_f_sprintf(argc, argv)
 		}
 
 		fmt_setup(fbuf, *p, flags, width, prec);
+		need = 0;
+		if (*p != 'e' && *p != 'E') {
+		    i = INT_MIN;
+		    frexp(fval, &i);
+		    if (i > 0)
+			need = BIT_DIGITS(i);
+		}
+		need += (flags&FPREC) ? prec : 6;
+		if ((flags&FWIDTH) && need < width)
+		    need = width;
+		need += 20;
 
-		CHECK(22);
+		CHECK(need);
 		sprintf(&buf[blen], fbuf, fval);
 		blen += strlen(&buf[blen]);
 	    }
@@ -585,7 +609,7 @@ rb_f_sprintf(argc, argv)
     }
 
   sprint_exit:
-    if (RTEST(rb_verbose) && argc > 1) {
+    if (RTEST(ruby_verbose) && argc > 0) {
 	rb_raise(rb_eArgError, "too many argument for format string");
     }
     result = rb_str_new(buf, blen);

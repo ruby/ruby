@@ -183,7 +183,7 @@ ok(i>4)
 check "exception";
 
 begin
-  fail "this must be handled"
+  raise "this must be handled"
   ok(false)
 rescue
   ok(true)
@@ -191,7 +191,7 @@ end
 
 $bad = true
 begin
-  fail "this must be handled no.2"
+  raise "this must be handled no.2"
 rescue
   if $bad
     $bad = false
@@ -205,9 +205,9 @@ ok(true)
 $string = "this must be handled no.3"
 begin
   begin
-    fail "exception in rescue clause"
+    raise "exception in rescue clause"
   rescue 
-    fail $string
+    raise $string
   end
   ok(false)
 rescue
@@ -217,9 +217,9 @@ end
 # exception in ensure clause
 begin
   begin
-    fail "this must be handled no.4"
+    raise "this must be handled no.4"
   ensure 
-    fail "exception in ensure clause"
+    raise "exception in ensure clause"
   end
   ok(false)
 rescue
@@ -229,7 +229,7 @@ end
 $bad = true
 begin
   begin
-    fail "this must be handled no.5"
+    raise "this must be handled no.5"
   ensure
     $bad = false
   end
@@ -240,7 +240,7 @@ ok(!$bad)
 $bad = true
 begin
   begin
-    fail "this must be handled no.6"
+    raise "this must be handled no.6"
   ensure
     $bad = false
   end
@@ -355,7 +355,7 @@ ok($x[1] == 2)
 
 ok(begin   
      for k,v in $y
-       fail if k*2 != v
+       raise if k*2 != v
      end
      true
    rescue
@@ -417,7 +417,7 @@ ok(i == 5)
 done = true
 loop{
   break
-  done = false
+  done = false			# should not reach here
 }
 ok(done)
 
@@ -427,7 +427,7 @@ loop {
   break if done
   done = true
   next
-  $bad = true
+  $bad = true			# should not reach here
 }
 ok(!$bad)
 
@@ -437,7 +437,7 @@ loop {
   break if done
   done = true
   redo
-  $bad = true
+  $bad = true			# should not reach here
 }
 ok(!$bad)
 
@@ -599,14 +599,29 @@ ok(("abc" =~ /d*$/) == 3)
 ok("" =~ /^$/)
 ok("\n" =~ /^$/)
 ok("a\n\n" =~ /^$/)
-"abcabc" =~ /.*a/
-ok($& == "abca")
-"abcabc" =~ /.*c/
-ok($& == "abcabc")
-"abcabc" =~ /.*?a/
-ok($& == "a")
-"abcabc" =~ /.*?c/
-ok($& == "abc")
+ok("abcabc" =~ /.*a/ && $& == "abca")
+ok("abcabc" =~ /.*c/ && $& == "abcabc")
+ok("abcabc" =~ /.*?a/ && $& == "a")
+ok("abcabc" =~ /.*?c/ && $& == "abc")
+ok(/(.|\n)*?\n(b|\n)/ =~ "a\nb\n\n" && $& == "a\nb")
+$x = <<END;
+ABCD
+ABCD
+END
+
+ok(/^(ab+)+b/ =~ "ababb" && $& == "ababb")
+ok(/^(?:ab+)+b/ =~ "ababb" && $& == "ababb")
+ok(/^(ab+)+/ =~ "ababb" && $& == "ababb")
+ok(/^(?:ab+)+/ =~ "ababb" && $& == "ababb")
+
+ok(/(\s+\d+){2}/ =~ " 1 2" && $& == " 1 2")
+ok(/(?:\s+\d+){2}/ =~ " 1 2" && $& == " 1 2")
+
+$x.gsub!(/((.|\n)*?)B((.|\n)*?)D/){$1+$3}
+ok($x == "AC\nAC\n")
+
+ok("foobar" =~ /foo(?=(bar)|(baz))/)
+ok("foobaz" =~ /foo(?=(bar)|(baz))/)
 
 $foo = "abc"
 ok("#$foo = abc" == "abc = abc")
@@ -746,7 +761,7 @@ if defined? Process.kill
   sleep 0.1
   ok($x == 2)
 
-  trap "SIGINT", proc{fail "Interrupt"}
+  trap "SIGINT", proc{raise "Interrupt"}
 
   x = false
   begin
@@ -841,47 +856,55 @@ $x = []
 x = proc{binding}.call
 eval "(0..9).each{|i5| $x[i5] = proc{i5*2}}", x
 ok($x[4].call == 8)
+x = proc{binding}.call
+eval "for i6 in 1..1; j6=i6; end", x
+ok(eval("defined? i6", x))
+ok(eval("defined? j6", x))
 
 proc {
   p = binding
   eval "foo11 = 1", p
+  foo22 = 5
   proc{foo11=22}.call
+  proc{foo22=55}.call
   ok(eval("foo11", p) == eval("foo11"))
   ok(eval("foo11") == 1)
+  ok(eval("foo22", p) == eval("foo22"))
+  ok(eval("foo22") == 55)
 }.call
 
-p1 = proc{i6 = 0; proc{i6}}.call
+p1 = proc{i7 = 0; proc{i7}}.call
 ok(p1.call == 0)
-eval "i6=5", p1
+eval "i7=5", p1
 ok(p1.call == 5)
-ok(!defined?(i6))
+ok(!defined?(i7))
 
-p1 = proc{i6 = 0; proc{i6}}.call
-i6 = nil
+p1 = proc{i7 = 0; proc{i7}}.call
+i7 = nil
 ok(p1.call == 0)
-eval "i6=1", p1
+eval "i7=1", p1
 ok(p1.call == 1)
-eval "i6=5", p1
+eval "i7=5", p1
 ok(p1.call == 5)
-ok(i6 == nil)
+ok(i7 == nil)
 
 check "system"
 ok(`echo foobar` == "foobar\n")
-ok(`./ruby -e 'print "foobar"'` == 'foobar')
+ok(`./miniruby -e 'print "foobar"'` == 'foobar')
 
 tmp = open("script_tmp", "w")
 tmp.print "print $zzz\n";
 tmp.close
 
-ok(`./ruby -s script_tmp -zzz` == 'true')
-ok(`./ruby -s script_tmp -zzz=555` == '555')
+ok(`./miniruby -s script_tmp -zzz` == 'true')
+ok(`./miniruby -s script_tmp -zzz=555` == '555')
 
 tmp = open("script_tmp", "w")
 tmp.print "#! /usr/local/bin/ruby -s\n";
 tmp.print "print $zzz\n";
 tmp.close
 
-ok(`./ruby script_tmp -zzz=678` == '678')
+ok(`./miniruby script_tmp -zzz=678` == '678')
 
 tmp = open("script_tmp", "w")
 tmp.print "this is a leading junk\n";
@@ -891,8 +914,8 @@ tmp.print "__END__\n";
 tmp.print "this is a trailing junk\n";
 tmp.close
 
-ok(`./ruby -x script_tmp` == 'nil')
-ok(`./ruby -x script_tmp -zzz=555` == '555')
+ok(`./miniruby -x script_tmp` == 'nil')
+ok(`./miniruby -x script_tmp -zzz=555` == '555')
 
 tmp = open("script_tmp", "w")
 for i in 1..5
@@ -900,7 +923,7 @@ for i in 1..5
 end
 tmp.close
 
-`./ruby -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
+`./miniruby -i.bak -pe 'sub(/^[0-9]+$/){$&.to_i * 5}' script_tmp`
 done = true
 tmp = open("script_tmp", "r")
 while tmp.gets
@@ -917,7 +940,7 @@ File.unlink "script_tmp.bak" or `/bin/rm -f "script_tmp.bak"`
 
 $bad = false
 for script in Dir["{lib,sample}/*.rb"]
-  unless `./ruby -c #{script}`.chomp == "Syntax OK"
+  unless `./miniruby -c #{script}`.chomp == "Syntax OK"
     $bad = true
   end
 end

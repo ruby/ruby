@@ -34,14 +34,8 @@ class Delegator
 	  begin
 	    __getobj__.__send__(:#{method}, *args, &block)
 	  rescue Exception
-	    c = -caller(0).size
-	    if /:in `__getobj__'$/ =~ $@[c-1]  #`
-	      n = 1
-	    else
-	      c -= 1
-	      n = 2
-	    end
-	    $@[c,n] = nil
+	    $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
+	    $@.delete_if{|s| /^\\(eval\\):/ =~ s}
 	    raise
 	  end
 	end

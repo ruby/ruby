@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Feb 10 15:17:05 JST 1994
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -14,11 +14,141 @@
 #include <sys/types.h>
 #include <ctype.h>
 
+#define SIZE16 2
+#define SIZE32 4
+
+#if SIZEOF_SHORT != 2 || SIZEOF_LONG != 4
+# define NATINT_PACK
+#endif
+
+#ifdef NATINT_PACK
+# define NATINT_LEN(type,len) (natint?sizeof(type):(len))
+#else
+# define NATINT_LEN(type,len) sizeof(type)
+#endif
+
+#define define_swapx(x, xtype)		\
+static xtype				\
+TOKEN_PASTE(swap,x)(z)			\
+    xtype z;				\
+{					\
+    xtype r;				\
+    xtype *zp;				\
+    unsigned char *s, *t;		\
+    int i;				\
+					\
+    zp = (xtype *)malloc(sizeof(xtype));\
+    *zp = z;				\
+    s = (char *)zp;			\
+    t = (char *)malloc(sizeof(xtype));	\
+    for (i=0; i<sizeof(xtype); i++) {	\
+	t[sizeof(xtype)-i-1] = s[i];	\
+    }					\
+    r = *(xtype *)t;			\
+    free(t);				\
+    free(zp);				\
+    return r;				\
+}
+
+#if SIZEOF_SHORT == 2
 #define swaps(x)	((((x)&0xFF)<<8) + (((x)>>8)&0xFF))
+#else
+#if SIZEOF_SHORT == 4
+#define swaps(x)	((((x)&0xFF)<<24)	\
+			+(((x)>>24)&0xFF)	\
+			+(((x)&0x0000FF00)<<8)	\
+			+(((x)&0x00FF0000)>>8)	)
+#else
+define_swapx(s,short);
+#endif
+#endif
+
+#if SIZEOF_LONG == 4
 #define swapl(x)	((((x)&0xFF)<<24)	\
 			+(((x)>>24)&0xFF)	\
 			+(((x)&0x0000FF00)<<8)	\
 			+(((x)&0x00FF0000)>>8)	)
+#else
+#if SIZEOF_LONG == 8
+#define swapl(x)        ((((x)&0x00000000000000FF)<<56)	\
+			+(((x)&0xFF00000000000000)>>56)	\
+			+(((x)&0x000000000000FF00)<<40)	\
+			+(((x)&0x00FF000000000000)>>40)	\
+			+(((x)&0x0000000000FF0000)<<24)	\
+			+(((x)&0x0000FF0000000000)>>24)	\
+			+(((x)&0x00000000FF000000)<<8)	\
+			+(((x)&0x000000FF00000000)>>8))
+#else
+define_swapx(l,long);
+#endif
+#endif
+
+#if SIZEOF_FLOAT == 4
+#if SIZEOF_LONG == 4	/* SIZEOF_FLOAT == 4 == SIZEOF_LONG */
+#define swapf(x)	swapl(x)
+#define FLOAT_SWAPPER	unsigned long
+#else
+#if SIZEOF_SHORT == 4	/* SIZEOF_FLOAT == 4 == SIZEOF_SHORT */
+#define swapf(x)	swaps(x)
+#define FLOAT_SWAPPER	unsigned short
+#else	/* SIZEOF_FLOAT == 4 but undivide by known size of int */
+define_swapx(f,float);
+#endif	/* #if SIZEOF_SHORT == 4 */
+#endif	/* #if SIZEOF_LONG == 4 */
+#else	/* SIZEOF_FLOAT != 4 */
+define_swapx(f,float);
+#endif	/* #if SIZEOF_FLOAT == 4 */
+
+#if SIZEOF_DOUBLE == 8
+#if SIZEOF_LONG == 8	/* SIZEOF_DOUBLE == 8 == SIZEOF_LONG */
+#define swapd(x)	swapl(x)
+#define DOUBLE_SWAPPER	unsigned long
+#else
+#if SIZEOF_LONG == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_LONG */
+static double
+swapd(d)
+    const double d;
+{
+    double dtmp = d;
+    unsigned long utmp[2];
+    unsigned long utmp0;
+
+    utmp[0] = 0; utmp[1] = 0;
+    memcpy(utmp,&dtmp,sizeof(double));
+    utmp0 = utmp[0];
+    utmp[0] = swapl(utmp[1]);
+    utmp[1] = swapl(utmp0);
+    memcpy(&dtmp,utmp,sizeof(double));
+    return dtmp;
+}
+#else
+#if SIZEOF_SHORT == 4	/* SIZEOF_DOUBLE == 8 && 4 == SIZEOF_SHORT */
+static double
+swapd(d)
+    const double d;
+{
+    double dtmp = d;
+    unsigned short utmp[2];
+    unsigned short utmp0;
+
+    utmp[0] = 0; utmp[1] = 0;
+    memcpy(utmp,&dtmp,sizeof(double));
+    utmp0 = utmp[0];
+    utmp[0] = swaps(utmp[1]);
+    utmp[1] = swaps(utmp0);
+    memcpy(&dtmp,utmp,sizeof(double));
+    return dtmp;
+}
+#else	/* SIZEOF_DOUBLE == 8 but undivied by known size of int */
+define_swapx(d, double);
+#endif	/* #if SIZEOF_SHORT == 4 */
+#endif	/* #if SIZEOF_LONG == 4 */
+#endif	/* #if SIZEOF_LONG == 8 */
+#else	/* SIZEOF_DOUBLE != 8 */
+define_swapx(d, double);
+#endif	/* #if SIZEOF_DPOUBLE == 8 */
+
+#undef define_swapx
 
 #ifdef DYNAMIC_ENDIAN
 #ifdef ntohs
@@ -42,12 +172,20 @@ endian()
 
 #define ntohs(x) (endian()?(x):swaps(x))
 #define ntohl(x) (endian()?(x):swapl(x))
+#define ntohf(x) (endian()?(x):swapf(x))
+#define ntohd(x) (endian()?(x):swapd(x))
 #define htons(x) (endian()?(x):swaps(x))
 #define htonl(x) (endian()?(x):swapl(x))
+#define htonf(x) (endian()?(x):swapf(x))
+#define htond(x) (endian()?(x):swapd(x))
 #define htovs(x) (endian()?swaps(x):(x))
 #define htovl(x) (endian()?swapl(x):(x))
+#define htovf(x) (endian()?swapf(x):(x))
+#define htovd(x) (endian()?swapd(x):(x))
 #define vtohs(x) (endian()?swaps(x):(x))
 #define vtohl(x) (endian()?swapl(x):(x))
+#define vtohf(x) (endian()?swapf(x):(x))
+#define vtohd(x) (endian()?swapd(x):(x))
 #else
 #ifdef WORDS_BIGENDIAN
 #ifndef ntohs
@@ -56,28 +194,103 @@ endian()
 #define htons(x) (x)
 #define htonl(x) (x)
 #endif
+#define ntohf(x) (x)
+#define ntohd(x) (x)
+#define htonf(x) (x)
+#define htond(x) (x)
 #define htovs(x) swaps(x)
 #define htovl(x) swapl(x)
+#define htovf(x) swapf(x)
+#define htovd(x) swapd(x)
 #define vtohs(x) swaps(x)
 #define vtohl(x) swapl(x)
+#define vtohf(x) swapf(x)
+#define vtohd(x) swapd(x)
 #else /* LITTLE ENDIAN */
 #ifndef ntohs
+#undef ntohs
+#undef ntohl
+#undef htons
+#undef htonl
 #define ntohs(x) swaps(x)
 #define ntohl(x) swapl(x)
 #define htons(x) swaps(x)
 #define htonl(x) swapl(x)
 #endif
+#define ntohf(x) swapf(x)
+#define ntohd(x) swapd(x)
+#define htonf(x) swapf(x)
+#define htond(x) swapd(x)
 #define htovs(x) (x)
 #define htovl(x) (x)
+#define htovf(x) (x)
+#define htovd(x) (x)
 #define vtohs(x) (x)
 #define vtohl(x) (x)
+#define vtohf(x) (x)
+#define vtohd(x) (x)
 #endif
+#endif
+
+#ifdef FLOAT_SWAPPER
+#define FLOAT_CONVWITH(y)	FLOAT_SWAPPER y;
+#define HTONF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = htonf((FLOAT_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(float)),	\
+			 x)
+#define HTOVF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = htovf((FLOAT_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(float)),	\
+			 x)
+#define NTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = ntohf((FLOAT_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(float)),	\
+			 x)
+#define VTOHF(x,y)	(memcpy(&y,&x,sizeof(float)),	\
+			 y = vtohf((FLOAT_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(float)),	\
+			 x)
+#else
+#define FLOAT_CONVWITH(y)
+#define HTONF(x,y)	htonf(x)
+#define HTOVF(x,y)	htovf(x)
+#define NTOHF(x,y)	ntohf(x)
+#define VTOHF(x,y)	vtohf(x)
+#endif
+
+#ifdef DOUBLE_SWAPPER
+#define DOUBLE_CONVWITH(y)	DOUBLE_SWAPPER y;
+#define HTOND(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = htond((DOUBLE_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(double)),	\
+			 x)
+#define HTOVD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = htovd((DOUBLE_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(double)),	\
+			 x)
+#define NTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = ntohd((DOUBLE_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(double)),	\
+			 x)
+#define VTOHD(x,y)	(memcpy(&y,&x,sizeof(double)),	\
+			 y = vtohd((DOUBLE_SWAPPER)y),	\
+			 memcpy(&x,&y,sizeof(double)),	\
+			 x)
+#else
+#define DOUBLE_CONVWITH(y)
+#define HTOND(x,y)	htond(x)
+#define HTOVD(x,y)	htovd(x)
+#define NTOHD(x,y)	ntohd(x)
+#define VTOHD(x,y)	vtohd(x)
 #endif
 
 static char *toofew = "too few arguments";
 
 static void encodes _((VALUE,char*,int,int));
 static void qpencode _((VALUE,VALUE,int));
+
+static int uv_to_utf8 _((char*,unsigned long));
+static unsigned long utf8_to_uv _((char*,int*));
 
 static void
 pack_add_ptr(str, add)
@@ -103,9 +316,11 @@ pack_pack(ary, fmt)
     int items, len, idx;
     char *ptr;
     int plen;
-
+#ifdef NATINT_PACK
+    int natint;		/* native integer */
+#endif
     
-    p = rb_str2cstr(fmt, &plen);
+    p = str2cstr(fmt, &plen);
     pend = p + plen;
     res = rb_str_new(0, 0);
 
@@ -116,7 +331,24 @@ pack_pack(ary, fmt)
 
     while (p < pend) {
 	type = *p++;		/* get data type */
+#ifdef NATINT_PACK
+	natint = 0;
+#endif
 
+	if (ISSPACE(type)) continue;
+        if (*p == '_') {
+	    char *natstr = "sSiIlL";
+
+	    if (strchr(natstr, type)) {
+#ifdef NATINT_PACK
+		natint = 1;
+#endif
+		p++;
+	    }
+	    else {
+		rb_raise(rb_eArgError, "'_' allowed only after types %s", natstr);
+	    }
+	}
 	if (*p == '*') {	/* set data length */
 	    len = strchr("@Xxu", type) ? 0 : items;
             p++;
@@ -129,7 +361,7 @@ pack_pack(ary, fmt)
 	}
 
 	switch (type) {
-	  case 'A': case 'a':
+	  case 'A': case 'a': case 'Z':
 	  case 'B': case 'b':
 	  case 'H': case 'h':
 	    from = NEXTFROM;
@@ -138,9 +370,7 @@ pack_pack(ary, fmt)
 		plen = 0;
 	    }
 	    else {
-		from = rb_obj_as_string(from);
-		ptr = RSTRING(from)->ptr;
-		plen = RSTRING(from)->len;
+		ptr = str2cstr(from, &plen);
 	    }
 
 	    if (p[-1] == '*')
@@ -149,6 +379,7 @@ pack_pack(ary, fmt)
 	    switch (type) {
 	      case 'a':
 	      case 'A':
+	      case 'Z':
 		if (plen >= len)
 		    rb_str_cat(res, ptr, len);
 		else {
@@ -165,8 +396,12 @@ pack_pack(ary, fmt)
 	      case 'b':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j = 0;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
 			if (*ptr & 1)
 			    byte |= 128;
@@ -184,14 +419,21 @@ pack_pack(ary, fmt)
 			c = byte & 0xff;
 			rb_str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    rb_str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'B':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j = 0;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
 			byte |= *ptr & 1;
 			if (i & 7)
@@ -208,60 +450,73 @@ pack_pack(ary, fmt)
 			c = byte & 0xff;
 			rb_str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    rb_str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'h':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j = 0;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
-			if (ISXDIGIT(*ptr)) {
-			    if (ISALPHA(*ptr))
-				byte |= (((*ptr & 15) + 9) & 15) << 4;
-			    else
-				byte |= (*ptr & 15) << 4;
-			    if (i & 1)
-				byte >>= 4;
-			    else {
-				char c = byte & 0xff;
-				rb_str_cat(res, &c, 1);
-				byte = 0;
-			    }
+			if (ISALPHA(*ptr))
+			    byte |= (((*ptr & 15) + 9) & 15) << 4;
+			else
+			    byte |= (*ptr & 15) << 4;
+			if (i & 1)
+			    byte >>= 4;
+			else {
+			    char c = byte & 0xff;
+			    rb_str_cat(res, &c, 1);
+			    byte = 0;
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
 			rb_str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    rb_str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 
 	      case 'H':
 		{
 		    int byte = 0;
-		    int i;
+		    int i, j = 0;
 
+		    if (len > plen) {
+			j = (len - plen + 1)/2;
+			len = plen;
+		    }
 		    for (i=0; i++ < len; ptr++) {
-			if (ISXDIGIT(*ptr)) {
-			    if (ISALPHA(*ptr))
-				byte |= ((*ptr & 15) + 9) & 15;
-			    else
-				byte |= *ptr & 15;
-			    if (i & 1)
-				byte <<= 4;
-			    else {
-				char c = byte & 0xff;
-				rb_str_cat(res, &c, 1);
-				byte = 0;
-			    }
+			if (ISALPHA(*ptr))
+			    byte |= ((*ptr & 15) + 9) & 15;
+			else
+			    byte |= *ptr & 15;
+			if (i & 1)
+			    byte <<= 4;
+			else {
+			    char c = byte & 0xff;
+			    rb_str_cat(res, &c, 1);
+			    byte = 0;
 			}
 		    }
 		    if (len & 1) {
 			char c = byte & 0xff;
 			rb_str_cat(res, &c, 1);
 		    }
+		    len = RSTRING(res)->len;
+		    rb_str_resize(res, len+j);
+		    MEMZERO(RSTRING(res)->ptr+len, char, j);
 		}
 		break;
 	    }
@@ -291,7 +546,7 @@ pack_pack(ary, fmt)
 		else {
 		    s = NUM2INT(from);
 		}
-		rb_str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -319,7 +574,7 @@ pack_pack(ary, fmt)
 		else {
 		    l = NUM2ULONG(from);
 		}
-		rb_str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -333,7 +588,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htons(s);
-		rb_str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -347,7 +602,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		l = htonl(l);
-		rb_str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -361,7 +616,7 @@ pack_pack(ary, fmt)
 		    s = NUM2INT(from);
 		}
 		s = htovs(s);
-		rb_str_cat(res, (char*)&s, sizeof(short));
+		rb_str_cat(res, (char*)&s, NATINT_LEN(short,2));
 	    }
 	    break;
 
@@ -375,7 +630,7 @@ pack_pack(ary, fmt)
 		    l = NUM2ULONG(from);
 		}
 		l = htovl(l);
-		rb_str_cat(res, (char*)&l, sizeof(long));
+		rb_str_cat(res, (char*)&l, NATINT_LEN(long,4));
 	    }
 	    break;
 
@@ -390,12 +645,54 @@ pack_pack(ary, fmt)
 		    f = RFLOAT(from)->value;
 		    break;
 		  case T_STRING:
-		    f = atof(RSTRING(from)->ptr);
+		    f = strtod(RSTRING(from)->ptr, 0);
 		  default:
 		    f = (float)NUM2INT(from);
 		    break;
 		}
 		rb_str_cat(res, (char*)&f, sizeof(float));
+	    }
+	    break;
+
+	  case 'e':
+	    while (len-- > 0) {
+		float f;
+		FLOAT_CONVWITH(ftmp);
+
+		from = NEXTFROM;
+		switch (TYPE(from)) {
+		  case T_FLOAT:
+		    f = RFLOAT(from)->value;
+		    break;
+		  case T_STRING:
+		    f = strtod(RSTRING(from)->ptr, 0);
+		  default:
+		    f = (float)NUM2INT(from);
+		    break;
+		}
+		f = HTOVF(f,ftmp);
+		rb_str_cat(res, (char*)&f, sizeof(float));
+	    }
+	    break;
+
+	  case 'E':
+	    while (len-- > 0) {
+		double d;
+		DOUBLE_CONVWITH(dtmp);
+
+		from = NEXTFROM;
+		switch (TYPE(from)) {
+		  case T_FLOAT:
+		    d = RFLOAT(from)->value;
+		    break;
+		  case T_STRING:
+		    d = strtod(RSTRING(from)->ptr, 0);
+		  default:
+		    d = (double)NUM2INT(from);
+		    break;
+		}
+		d = HTOVD(d,dtmp);
+		rb_str_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
 
@@ -410,11 +707,53 @@ pack_pack(ary, fmt)
 		    d = RFLOAT(from)->value;
 		    break;
 		  case T_STRING:
-		    d = atof(RSTRING(from)->ptr);
+		    d = strtod(RSTRING(from)->ptr, 0);
 		  default:
 		    d = (double)NUM2INT(from);
 		    break;
 		}
+		rb_str_cat(res, (char*)&d, sizeof(double));
+	    }
+	    break;
+
+	  case 'g':
+	    while (len-- > 0) {
+		float f;
+		FLOAT_CONVWITH(ftmp);
+
+		from = NEXTFROM;
+		switch (TYPE(from)) {
+		  case T_FLOAT:
+		    f = RFLOAT(from)->value;
+		    break;
+		  case T_STRING:
+		    f = strtod(RSTRING(from)->ptr, 0);
+		  default:
+		    f = (float)NUM2INT(from);
+		    break;
+		}
+		f = HTONF(f,ftmp);
+		rb_str_cat(res, (char*)&f, sizeof(float));
+	    }
+	    break;
+
+	  case 'G':
+	    while (len-- > 0) {
+		double d;
+		DOUBLE_CONVWITH(dtmp);
+
+		from = NEXTFROM;
+		switch (TYPE(from)) {
+		  case T_FLOAT:
+		    d = RFLOAT(from)->value;
+		    break;
+		  case T_STRING:
+		    d = strtod(RSTRING(from)->ptr, 0);
+		  default:
+		    d = (double)NUM2INT(from);
+		    break;
+		}
+		d = HTOND(d,dtmp);
 		rb_str_cat(res, (char*)&d, sizeof(double));
 	    }
 	    break;
@@ -447,11 +786,25 @@ pack_pack(ary, fmt)
 	    rb_raise(rb_eArgError, "% may only be used in unpack");
 	    break;
 
+	  case 'U':
+	    while (len-- > 0) {
+		unsigned long l;
+		char buf[8];
+		int le;
+
+		from = NEXTFROM;
+		if (NIL_P(from)) l = 0;
+		else {
+		    l = NUM2ULONG(from);
+		}
+		le = uv_to_utf8(buf, l);
+		rb_str_cat(res, (char*)&buf, le);
+	    }
+	    break;
+
 	  case 'u':
 	  case 'm':
-	    from = rb_obj_as_string(NEXTFROM);
-	    ptr = RSTRING(from)->ptr;
-	    plen = RSTRING(from)->len;
+	    ptr = str2cstr(NEXTFROM, &plen);
 
 	    if (len <= 1)
 		len = 45;
@@ -558,7 +911,7 @@ qpencode(str, from, len)
 {
     char buff[1024];
     int i = 0, n = 0, prev = EOF;
-    unsigned char *s = RSTRING(from)->ptr;
+    unsigned char *s = (unsigned char*)RSTRING(from)->ptr;
     unsigned char *send = s + RSTRING(from)->len;
 
     while (s < send) {
@@ -629,6 +982,31 @@ hex2num(c)
     }
 }
 
+#ifdef NATINT_PACK
+#define PACK_LENGTH_ADJUST(type,sz) do {	\
+    int t__len = NATINT_LEN(type,(sz));		\
+    tmp = 0;					\
+    if (len > (send-s)/t__len) {		\
+        if (!star) {				\
+	    tmp = len-(send-s)/t__len;		\
+        }					\
+	len = (send-s)/t__len;			\
+    }						\
+} while (0)
+#else
+#define PACK_LENGTH_ADJUST(type,sz) do {	\
+    tmp = 0;					\
+    if (len > (send-s)/sizeof(type)) {		\
+        if (!star) {				\
+	    tmp = len - (send-s)/sizeof(type);	\
+        }					\
+	len = (send-s)/sizeof(type);		\
+    }						\
+} while (0)
+#endif
+
+#define PACK_ITEM_ADJUST() while (tmp--) rb_ary_push(ary, Qnil);
+
 static VALUE
 pack_unpack(str, fmt)
     VALUE str, fmt;
@@ -638,17 +1016,40 @@ pack_unpack(str, fmt)
     char *p, *pend;
     VALUE ary;
     char type;
-    int len;
+    int len, tmp, star;
+#ifdef NATINT_PACK
+    int natint;			/* native integer */
+#endif
 
-    s = rb_str2cstr(str, &len);
+    s = str2cstr(str, &len);
     send = s + len;
-    p = rb_str2cstr(fmt, &len);
+    p = str2cstr(fmt, &len);
     pend = p + len;
 
     ary = rb_ary_new();
     while (p < pend) {
+#ifdef NATINT_PACK
+	natint = 0;
+#endif
+	star = 0;
 	type = *p++;
-	if (*p == '*') {
+	if (*p == '_') {
+	    char *natstr = "sSiIlL";
+
+	    if (strchr(natstr, type)) {
+#ifdef NATINT_PACK
+		natint = 1;
+#endif
+		p++;
+	    }
+	    else {
+		rb_raise(rb_eArgError, "'_' allowed only after types %s", natstr);
+	    }
+	}
+	if (p >= pend)
+	    len = 1;
+	else if (*p == '*') {
+	    star = 1;
 	    len = send - s;
 	    p++;
 	}
@@ -672,8 +1073,22 @@ pack_unpack(str, fmt)
 
 		while (t >= s) {
 		    if (*t != ' ' && *t != '\0') break;
-		    t--;
-		    len--;
+		    t--; len--;
+		}
+		rb_ary_push(ary, rb_str_new(s, len));
+		s += end;
+	    }
+	    break;
+
+	  case 'Z':
+	    if (len > send - s) len = send - s;
+	    {
+		int end = len;
+		char *t = s + len - 1;
+
+		while (t >= s) {
+		    if (*t) break;
+		    t--; len--;
 		}
 		rb_ary_push(ary, rb_str_new(s, len));
 		s += end;
@@ -685,6 +1100,7 @@ pack_unpack(str, fmt)
 	    rb_ary_push(ary, rb_str_new(s, len));
 	    s += len;
 	    break;
+
 
 	  case 'b':
 	    {
@@ -767,159 +1183,227 @@ pack_unpack(str, fmt)
 	    break;
 
 	  case 'c':
-	    if (len > send - s)
-		len = send - s;
+	    PACK_LENGTH_ADJUST(char,sizeof(char));
 	    while (len-- > 0) {
                 int c = *s++;
                 if (c > (char)127) c-=256;
 		rb_ary_push(ary, INT2FIX(c));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'C':
-	    if (len > send - s)
-		len = send - s;
+	    PACK_LENGTH_ADJUST(unsigned char,sizeof(unsigned char));
 	    while (len-- > 0) {
 		unsigned char c = *s++;
 		rb_ary_push(ary, INT2FIX(c));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 's':
-	    if (len >= (send - s) / sizeof(short))
-		len = (send - s) / sizeof(short);
+	    PACK_LENGTH_ADJUST(short,2);
 	    while (len-- > 0) {
 		short tmp;
-		memcpy(&tmp, s, sizeof(short));
-		s += sizeof(short);
+		memcpy(&tmp, s, NATINT_LEN(short,2));
+		s += NATINT_LEN(short,2);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'S':
-	    if (len >= (send - s) / sizeof(short))
-		len = (send - s) / sizeof(short);
+	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
 		unsigned short tmp;
-		memcpy(&tmp, s, sizeof(short));
-		s += sizeof(short);
+		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		s += NATINT_LEN(unsigned short,2);
 		rb_ary_push(ary, INT2FIX(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'i':
-	    if (len >= (send - s) / sizeof(int))
-		len = (send - s) / sizeof(int);
+	    PACK_LENGTH_ADJUST(int,sizeof(int));
 	    while (len-- > 0) {
 		int tmp;
 		memcpy(&tmp, s, sizeof(int));
 		s += sizeof(int);
 		rb_ary_push(ary, rb_int2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'I':
-	    if (len >= (send - s) / sizeof(int))
-		len = (send - s) / sizeof(int);
+	    PACK_LENGTH_ADJUST(unsigned int,sizeof(unsigned int));
 	    while (len-- > 0) {
 		unsigned int tmp;
-		memcpy(&tmp, s, sizeof(int));
-		s += sizeof(int);
+		memcpy(&tmp, s, sizeof(unsigned int));
+		s += sizeof(unsigned int);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'l':
-	    if (len >= (send - s) / sizeof(long))
-		len = (send - s) / sizeof(long);
+	    PACK_LENGTH_ADJUST(long,4);
 	    while (len-- > 0) {
 		long tmp;
-		memcpy(&tmp, s, sizeof(long));
-		s += sizeof(long);
+		memcpy(&tmp, s, NATINT_LEN(long,4));
+		s += NATINT_LEN(long,4);
 		rb_ary_push(ary, rb_int2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'L':
-	    if (len >= (send - s) / sizeof(long))
-		len = (send - s) / sizeof(long);
+	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
 		unsigned long tmp;
-		memcpy(&tmp, s, sizeof(long));
-		s += sizeof(long);
+		memcpy(&tmp, s, NATINT_LEN(unsigned long,4));
+		s += NATINT_LEN(unsigned long,4);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'n':
-	    if (len >= (send - s) / sizeof(short))
-		len = (send - s) / sizeof(short);
+	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
 		unsigned short tmp;
-		memcpy(&tmp, s, sizeof(short));
-		s += sizeof(short);
+		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		s += NATINT_LEN(unsigned short,2);
 		tmp = ntohs(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'N':
-	    if (len >= (send - s) / sizeof(long))
-		len = (send - s) / sizeof(long);
+	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
 		unsigned long tmp;
-		memcpy(&tmp, s, sizeof(long));
-		s += sizeof(long);
+		memcpy(&tmp, s, NATINT_LEN(unsigned long,4));
+		s += NATINT_LEN(unsigned long,4);
 		tmp = ntohl(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'v':
-	    if (len >= (send - s) / sizeof(short))
-		len = (send - s) / sizeof(short);
+	    PACK_LENGTH_ADJUST(unsigned short,2);
 	    while (len-- > 0) {
 		unsigned short tmp;
-		memcpy(&tmp, s, sizeof(short));
-		s += sizeof(short);
+		memcpy(&tmp, s, NATINT_LEN(unsigned short,2));
+		s += NATINT_LEN(unsigned short,2);
 		tmp = vtohs(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'V':
-	    if (len >= (send - s) / sizeof(long))
-		len = (send - s) / sizeof(long);
+	    PACK_LENGTH_ADJUST(unsigned long,4);
 	    while (len-- > 0) {
 		unsigned long tmp;
-		memcpy(&tmp, s, sizeof(long));
-		s += sizeof(long);
+		memcpy(&tmp, s, NATINT_LEN(long,4));
+		s += NATINT_LEN(long,4);
 		tmp = vtohl(tmp);
 		rb_ary_push(ary, rb_uint2inum(tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
 	  case 'f':
 	  case 'F':
-	    if (len >= (send - s) / sizeof(float))
-		len = (send - s) / sizeof(float);
+	    PACK_LENGTH_ADJUST(float,sizeof(float));
 	    while (len-- > 0) {
 		float tmp;
 		memcpy(&tmp, s, sizeof(float));
 		s += sizeof(float);
 		rb_ary_push(ary, rb_float_new((double)tmp));
 	    }
+	    PACK_ITEM_ADJUST();
 	    break;
 
+	  case 'e':
+	    PACK_LENGTH_ADJUST(float,sizeof(float));
+	    while (len-- > 0) {
+	        float tmp;
+		FLOAT_CONVWITH(ftmp);
+
+		memcpy(&tmp, s, sizeof(float));
+		s += sizeof(float);
+		tmp = VTOHF(tmp,ftmp);
+		rb_ary_push(ary, rb_float_new((double)tmp));
+	    }
+	    PACK_ITEM_ADJUST();
+	    break;
+	    
+	  case 'E':
+	    PACK_LENGTH_ADJUST(double,sizeof(double));
+	    while (len-- > 0) {
+		double tmp;
+		DOUBLE_CONVWITH(dtmp);
+
+		memcpy(&tmp, s, sizeof(double));
+		s += sizeof(double);
+		tmp = VTOHD(tmp,dtmp);
+		rb_ary_push(ary, rb_float_new(tmp));
+	    }
+	    PACK_ITEM_ADJUST();
+	    break;
+	    
 	  case 'D':
 	  case 'd':
-	    if (len >= (send - s) / sizeof(double))
-		len = (send - s) / sizeof(double);
+	    PACK_LENGTH_ADJUST(double,sizeof(double));
 	    while (len-- > 0) {
 		double tmp;
 		memcpy(&tmp, s, sizeof(double));
 		s += sizeof(double);
 		rb_ary_push(ary, rb_float_new(tmp));
+	    }
+	    PACK_ITEM_ADJUST();
+	    break;
+
+	  case 'g':
+	    PACK_LENGTH_ADJUST(float,sizeof(float));
+	    while (len-- > 0) {
+	        float tmp;
+		FLOAT_CONVWITH(ftmp;)
+
+		memcpy(&tmp, s, sizeof(float));
+		s += sizeof(float);
+		tmp = NTOHF(tmp,ftmp);
+		rb_ary_push(ary, rb_float_new((double)tmp));
+	    }
+	    PACK_ITEM_ADJUST();
+	    break;
+	    
+	  case 'G':
+	    PACK_LENGTH_ADJUST(double,sizeof(double));
+	    while (len-- > 0) {
+		double tmp;
+		DOUBLE_CONVWITH(dtmp);
+
+		memcpy(&tmp, s, sizeof(double));
+		s += sizeof(double);
+		tmp = NTOHD(tmp,dtmp);
+		rb_ary_push(ary, rb_float_new(tmp));
+	    }
+	    PACK_ITEM_ADJUST();
+	    break;
+	    
+	  case 'U':
+	    if (len > send - s) len = send - s;
+	    while (len-- > 0 && s < send) {
+		int alen;
+		unsigned long l;
+
+		l = utf8_to_uv(s, &alen);
+		s += alen;
+		rb_ary_push(ary, rb_uint2inum(l));
 	    }
 	    break;
 
@@ -972,6 +1456,8 @@ pack_unpack(str, fmt)
 		    else if (s < send && (s+1 == send || s[1] == '\n'))
 			s += 2;	/* possible checksum byte */
 		}
+		
+		RSTRING(str)->ptr[total] = '\0';
 		RSTRING(str)->len = total;
 		rb_ary_push(ary, str);
 	    }
@@ -993,15 +1479,15 @@ pack_unpack(str, fmt)
 			b64_xtable[i] = -1;
 		    }
 		    for (i = 0; i < 64; i++) {
-			b64_xtable[b64_table[i]] = i;
+			b64_xtable[(int)b64_table[i]] = i;
 		    }
 		}
 		for (;;) {
 		    while (s[0] == '\r' || s[0] == '\n') { s++; }
-		    if ((a = b64_xtable[s[0]]) == -1) break;
-		    if ((b = b64_xtable[s[1]]) == -1) break;
-		    if ((c = b64_xtable[s[2]]) == -1) break;
-		    if ((d = b64_xtable[s[3]]) == -1) break;
+		    if ((a = b64_xtable[(int)s[0]]) == -1) break;
+		    if ((b = b64_xtable[(int)s[1]]) == -1) break;
+		    if ((c = b64_xtable[(int)s[2]]) == -1) break;
+		    if ((d = b64_xtable[(int)s[3]]) == -1) break;
 		    *ptr++ = a << 2 | b >> 4;
 		    *ptr++ = b << 4 | c >> 2;
 		    *ptr++ = c << 6 | d;
@@ -1014,6 +1500,7 @@ pack_unpack(str, fmt)
 		    *ptr++ = a << 2 | b >> 4;
 		    *ptr++ = b << 4 | c >> 2;
 		}
+		*ptr = '\0';
 		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
 		rb_ary_push(ary, str);
 	    }
@@ -1040,6 +1527,7 @@ pack_unpack(str, fmt)
 		    }
 		    s++;
 		}
+		*ptr = '\0';
 		RSTRING(str)->len = ptr - RSTRING(str)->ptr;
 		rb_ary_push(ary, str);
 	    }
@@ -1097,6 +1585,97 @@ pack_unpack(str, fmt)
     }
 
     return ary;
+}
+
+#define BYTEWIDTH 8
+
+static int
+uv_to_utf8(buf, uv)
+    char *buf;
+    unsigned long uv;
+{
+    if (uv <= 0x7f) {
+	buf[0] = (char)uv;
+	return 1;
+    }
+    if (uv <= 0x7ff) {
+	buf[0] = ((uv>>6)&0xff)|0xc0;
+	buf[1] = (uv&0x3f)|0x80;
+	return 2;
+    }
+    if (uv <= 0xffff) {
+	buf[0] = ((uv>>12)&0xff)|0xe0;
+	buf[1] = ((uv>>6)&0x3f)|0x80;
+	buf[2] = (uv&0x3f)|0x80;
+	return 3;
+    }
+    if (uv <= 0x1fffff) {
+	buf[0] = ((uv>>18)&0xff)|0xf0;
+	buf[1] = ((uv>>12)&0x3f)|0x80;
+	buf[2] = ((uv>>6)&0x3f)|0x80;
+	buf[3] = (uv&0x3f)|0x80;
+	return 4;
+    }
+    if (uv <= 0x3ffffff) {
+	buf[0] = ((uv>>24)&0xff)|0xf8;
+	buf[1] = ((uv>>18)&0x3f)|0x80;
+	buf[2] = ((uv>>12)&0x3f)|0x80;
+	buf[3] = ((uv>>6)&0x3f)|0x80;
+	buf[4] = (uv&0x3f)|0x80;
+	return 5;
+    }
+    if (uv <= 0x7fffffff) {
+	buf[0] = ((uv>>30)&0xff)|0xfc;
+	buf[1] = ((uv>>24)&0x3f)|0x80;
+	buf[2] = ((uv>>18)&0x3f)|0x80;
+	buf[3] = ((uv>>12)&0x3f)|0x80;
+	buf[4] = ((uv>>6)&0x3f)|0x80;
+	buf[5] = (uv&0x3f)|0x80;
+	return 6;
+    }
+#if SIZEOF_LONG > 4
+    if (uv <= 0xfffffffff) {
+#endif
+	buf[0] = 0xfe;
+	buf[1] = ((uv>>30)&0x3f)|0x80;
+	buf[2] = ((uv>>24)&0x3f)|0x80;
+	buf[3] = ((uv>>18)&0x3f)|0x80;
+	buf[4] = ((uv>>12)&0x3f)|0x80;
+	buf[5] = ((uv>>6)&0x3f)|0x80;
+	buf[6] = (uv&0x3f)|0x80;
+	return 7;
+#if SIZEOF_LONG > 4
+    }
+    rb_raise(rb_eArgError, "uv_to_utf8(); too big value");
+#endif
+}
+
+static unsigned long
+utf8_to_uv(p, lenp)
+    char *p;
+    int *lenp;
+{
+    int c = (*p++)&0xff;
+    unsigned long uv;
+    int n = 1;
+
+    if (c < 0xc0) n = 1;
+    else if (c < 0xe0) n = 2;
+    else if (c < 0xf0) n = 3;
+    else if (c < 0xf8) n = 4;
+    else if (c < 0xfc) n = 5;
+    else if (c < 0xfe) n = 6;
+    else if (c == 0xfe) n = 7;
+    *lenp = n--;
+
+    uv = c;
+    if (n != 0) {
+	uv &= (1<<(BYTEWIDTH-2-n)) - 1;
+	while (n--) {
+	    uv = uv << 6 | *p++ & ((1<<6)-1);
+	}
+    }
+    return uv;
 }
 
 void

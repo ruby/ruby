@@ -1,17 +1,14 @@
 # sieve of Eratosthenes
-sieve = []
 max = Integer(ARGV.shift || 100)
+sieve = []
+for i in 2 .. max
+  sieve[i] = i
+end
 
-print "1"
-for i in 2 .. max 
-  begin
-    for d in sieve
-      fail if i % d == 0
-    end
-    print ", "
-    print i
-    sieve.push(i)
-  rescue
+for i in 2 .. Math.sqrt(max)
+  next unless sieve[i]
+  (i*i).step(max, i) do |j|
+    sieve[j] = nil
   end
 end
-print "\n"
+puts sieve.compact.join ", "

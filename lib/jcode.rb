@@ -12,9 +12,10 @@ class String
   private :original_succ
 
   def mbchar?
-    if $KCODE =~ /^s/i
+    case $KCODE[0]
+    when ?s, ?S
       self =~ /[\x81-\x9f\xe0-\xef][\x40-\x7e\x80-\xfc]/n
-    elsif $KCODE =~ /^e/i
+    when ?e, ?E
       self =~ /[\xa1-\xfe][\xa1-\xfe]/n
     else
       false
@@ -22,16 +23,15 @@ class String
   end
 
   def succ
-    if self[-2] && self[-2] & 0x80 != 0
+    if self[-2] and self[-2, 2].mbchar?
       s = self.dup
       s[-1] += 1
-      s[-1] += 1 if !s.mbchar?
+      s[-1] += 1 unless s[-2, 2].mbchar?
       return s
     else
       original_succ
     end
   end
-  alias next succ
 
   def upto(to)
     return if self > to
@@ -58,9 +58,11 @@ class String
     return nil
   end
 
-  def _expand_ch
+  private
+
+  def _expand_ch str
     a = []
-    self.scan(/(.|\n)-(.|\n)|(.|\n)/) do |r|
+    str.scan(/(.|\n)-(.|\n)|(.|\n)/) do |r|
       if $3
 	a.push $3
       elsif $1.length != $2.length
@@ -74,32 +76,35 @@ class String
     a
   end
 
+  def expand_ch_hash from, to
+    h = {}
+    afrom = _expand_ch(from)
+    ato = _expand_ch(to)
+    afrom.each_with_index do |x,i| h[x] = ato[i] || ato[-1] end
+    h
+  end
+
+  def bsquote(str)
+    str.gsub(/\\/, '\\\\\\\\')
+  end
+
+  HashCache = {}
+  TrPatternCache = {}
+  DeletePatternCache = {}
+  SqueezePatternCache = {}
+
+  public
+
   def tr!(from, to)
     return self.delete!(from) if to.length == 0
 
-    if from =~ /^\^/
-      comp=TRUE
-      from = $'
-    end
-    afrom = from._expand_ch
-    ato = to._expand_ch
-    i = 0
-    if comp
-      self.gsub!(/(.|\n)/) do |c|
-	unless afrom.include?(c)
-	  ato[-1]
-	else
-	  c
-	end
-      end
+    pattern = TrPatternCache[from] ||= /[#{bsquote(from)}]/
+    if from[0] == ?^
+      last = /.$/.match(to)[0]
+      self.gsub!(pattern, last)
     else
-      self.gsub!(/(.|\n)/) do |c|
-	if i = afrom.index(c)
-	  if i < ato.size then ato[i] else ato[-1] end
-	else
-	  c
-	end
-      end
+      h = HashCache[from + "::" + to] ||= expand_ch_hash(from, to)
+      self.gsub!(pattern) do |c| h[c] end
     end
   end
 
@@ -108,22 +113,7 @@ class String
   end
 
   def delete!(del)
-    if del =~ /^\^/
-      comp=TRUE
-      del = $'
-    end
-    adel = del._expand_ch
-    if comp
-      self.gsub!(/(.|\n)/) do |c|
-	next unless adel.include?(c)
-	c
-      end
-    else
-      self.gsub!(/(.|\n)/) do |c|
-	next if adel.include?(c)
-	c
-      end
-    end
+    self.gsub!(DeletePatternCache[del] ||= /[#{bsquote(del)}]+/, '')
   end
 
   def delete(del)
@@ -131,27 +121,13 @@ class String
   end
 
   def squeeze!(del=nil)
-    if del
-      if del =~ /^\^/
-	comp=TRUE
-	del = $'
-      end
-      adel = del._expand_ch
-      if comp
-	self.gsub!(/(.|\n)\1+/) do
-	  next unless adel.include?($1)
-	  $&
-	end
+    pattern =
+      if del
+	SqueezePatternCache[del] ||= /([#{bsquote(del)}])\1+/
       else
-	for c in adel
-	  cq = Regexp.quote(c)
-	  self.gsub!(/#{cq}(#{cq})+/, cq)
-	end
+	/(.|\n)\1+/
       end
-      self
-    else
-      self.gsub!(/(.|\n)\1+/, '\1')
-    end
+    self.gsub!(pattern, '\1')
   end
 
   def squeeze(del=nil)
@@ -160,30 +136,14 @@ class String
 
   def tr_s!(from, to)
     return self.delete!(from) if to.length == 0
-    if from =~ /^\^/
-      comp=TRUE
-      from = $'
-    end
-    afrom = from._expand_ch
-    ato = to._expand_ch
-    i = 0
-    c = nil
-    last = nil
-    self.gsub!(/(.|\n)/) do |c|
-      if comp
-	unless afrom.include?(c)
-	  ato[-1]
-	else
-	  c
-	end
-      elsif i = afrom.index(c)
-	c = if i < ato.size then ato[i] else ato[-1] end
-	next if c == last
-	last = c
-      else
-	last = nil
-        c
-      end
+
+    pattern = SqueezePatternCache[from] ||= /([#{bsquote(from)}])\1+"/
+    if from[0] == ?^
+      last = /.$/.match(to)[0]
+      self.gsub!(pattern, last)
+    else
+      h = HashCache[from + "::" + to] ||= expand_ch_hash(from, to)
+      self.gsub!(pattern) do h[$1] end
     end
   end
 
@@ -191,18 +151,17 @@ class String
     (str = self.dup).tr_s!(from,to) or str
   end
 
-  alias original_chop! chop!
-  private :original_chop!
-
   def chop!
-    if self =~ /(.)$/ and $1.size == 2
-      original_chop!
-    end
-    original_chop!
+    self.gsub!(/(?:.|\r?\n)\z/, '')
   end
 
   def chop
     (str = self.dup).chop! or str
   end
+
+  def jcount(str)
+    self.delete("^#{str}").jlength
+  end
+
 end
 $VERBOSE = $vsave

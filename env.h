@@ -3,7 +3,6 @@
   env.h -
 
   $Author$
-  $Revision$
   $Date$
   created at: Mon Jul 11 11:53:03 JST 1994
 
@@ -19,6 +18,7 @@ extern struct FRAME {
     VALUE last_class;
     VALUE cbase;
     struct FRAME *prev;
+    struct FRAME *tmp;
     char *file;
     int line;
     int iter;
@@ -37,7 +37,7 @@ extern struct SCOPE {
 #define SCOPE_MALLOC  1
 #define SCOPE_NOSTACK 2
 
-extern int rb_in_eval;
+extern int ruby_in_eval;
 
 extern VALUE ruby_class;
 

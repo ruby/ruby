@@ -15,7 +15,7 @@ $RCS_ID=%q$Header$
 def isSingle(lopt)
   if lopt.index(":")
     if lopt.split(":")[0].length == 1
-      return TRUE
+      return true
     end
   end
   return nil
@@ -87,13 +87,13 @@ def getopts(single_opts, *options)
 	      return nil
 	    end
 	    setOption(compare, ARGV[1])
-	    opts[compare] = TRUE
+	    opts[compare] = true
 	    ARGV.shift
 	    count += 1
 	    break
 	  elsif lo == compare
-	    setOption(compare, TRUE)
-	    opts[compare] = TRUE
+	    setOption(compare, true)
+	    opts[compare] = true
 	    count += 1
 	    break
 	  end
@@ -106,19 +106,19 @@ def getopts(single_opts, *options)
       for idx in 1..(ARGV[0].length - 1)
 	compare = ARGV[0][idx, 1]
 	if single_opts && compare =~ "[" + single_opts + "]"
-	  setOption(compare, TRUE)
-	  opts[compare] = TRUE
+	  setOption(compare, true)
+	  opts[compare] = true
 	  count += 1
 	elsif single_colon != "" && compare =~ "[" + single_colon + "]"
 	  if ARGV[0][idx..-1].length > 1
 	    setOption(compare, ARGV[0][(idx + 1)..-1])
-	    opts[compare] = TRUE
+	    opts[compare] = true
 	    count += 1
 	  elsif ARGV.length <= 1
 	    return nil
 	  else
 	    setOption(compare, ARGV[1])
-	    opts[compare] = TRUE
+	    opts[compare] = true
 	    ARGV.shift
 	    count += 1
 	  end
@@ -127,7 +127,7 @@ def getopts(single_opts, *options)
       end
     else
       compare = ARGV[0]
-      opts[compare] = TRUE
+      opts[compare] = true
       newargv << ARGV[0]
     end
     

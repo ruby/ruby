@@ -1,8 +1,9 @@
+#!/usr/local/bin/ruby
 #
 #   matrix.rb - 
 #   	$Release Version: 1.0$
-#   	$Revision: 1.6 $
-#   	$Date: 1998/07/31 03:39:49 $
+#   	$Revision: 1.8 $
+#   	$Date: 1999/02/17 12:34:19 $
 #       Original Version from Smalltalk-80 version
 #	   on July 23, 1985 at 8:37:17 am
 #   	by Keiju ISHITSUKA
@@ -17,6 +18,8 @@
 #	    :
 #          rown]
 #
+#   column: Îó
+#   row:    ¹Ô
 #
 # module ExceptionForMatrix::
 #   Exceptions:
@@ -36,7 +39,7 @@
 #	    creates a matrix where `rows' indicates rows. 
 #	    `rows' is an array of arrays, 
 #	    e.g, Matrix[[11, 12], [21, 22]]
-#	Matrix.rows(rows, copy = TRUE)
+#	Matrix.rows(rows, copy = true)
 #	    creates a matrix where `rows' indicates rows. 
 #           if optional argument `copy' is false, use the array as
 #	    internal structure of the metrix without copying.
@@ -142,7 +145,7 @@
 #
 #   INSTANCE CREATION:
 #	Vector.[](*array)
-#	Vector.elements(array, copy = TRUE)
+#	Vector.elements(array, copy = true)
 #   ACCSESSING:
 #	[](i)
 #	size
@@ -173,29 +176,29 @@
 require "e2mmap.rb"
 
 module ExceptionForMatrix
-  Exception2MessageMapper.extend_to(binding)
-  
+  extend Exception2MessageMapper
   def_e2message(TypeError, "wrong argument type %s (expected %s)")
   def_e2message(ArgumentError, "Wrong # of arguments(%d for %d)")
   
-  def_exception("ErrDimensionMismatch", "\#{self.type} dimemsion mismatch")
+  def_exception("ErrDimensionMismatch", "\#{self.name} dimension mismatch")
   def_exception("ErrNotRegular", "Not Regular Matrix")
   def_exception("ErrOperationNotDefined", "This operation(%s) can\\'t defined")
 end
 
 class Matrix
-  @RCS_ID='-$Id: matrix.rb,v 1.6 1998/07/31 03:39:49 keiju Exp keiju $-'
-
+  @RCS_ID='-$Id: matrix.rb,v 1.8 1999/02/17 12:34:19 keiju Exp keiju $-'
+  
+#  extend Exception2MessageMapper
   include ExceptionForMatrix
   
   # instance creations
   private_class_method :new
   
   def Matrix.[](*rows)
-    new(:init_rows, rows, FALSE)
+    new(:init_rows, rows, false)
   end
   
-  def Matrix.rows(rows, copy = TRUE)
+  def Matrix.rows(rows, copy = true)
     new(:init_rows, rows, copy)
   end
   
@@ -207,7 +210,7 @@ class Matrix
 	columns[j][i]
       }
     }
-    Matrix.rows(rows, FALSE)
+    Matrix.rows(rows, false)
   end
   
   def Matrix.diagonal(*values)
@@ -218,8 +221,7 @@ class Matrix
       row[j] = values[j]
       row
     }
-    self
-    rows(rows, FALSE)
+    rows(rows, false)
   end
   
   def Matrix.scalar(n, value)
@@ -241,11 +243,11 @@ class Matrix
   def Matrix.row_vector(row)
     case row
     when Vector
-      Matrix.rows([row.to_a], FALSE)
+      Matrix.rows([row.to_a], false)
     when Array
-      Matrix.rows([row.dup], FALSE)
+      Matrix.rows([row.dup], false)
     else
-      Matrix.row([[row]], FALSE)
+      Matrix.row([[row]], false)
     end
   end
   
@@ -310,13 +312,13 @@ class Matrix
 	|i|
 	@rows[i][j]
       }
-      Vector.elements(col, FALSE)
+      Vector.elements(col, false)
     end
   end
   
   def collect
     rows = @rows.collect{|row| row.collect{|e| yield e}}
-    Matrix.rows(rows, FALSE)
+    Matrix.rows(rows, false)
   end
   alias map collect
   
@@ -337,14 +339,14 @@ class Matrix
       from_col = param[2]
       size_col = param[3]
     else
-      Matrix.fail ArgumentError, param.inspect
+      Matrix.Raise ArgumentError, param.inspect
     end
     
     rows = @rows[from_row, size_row].collect{
       |row|
       row[from_col, size_col]
     }
-    Matrix.rows(rows, FALSE)
+    Matrix.rows(rows, false)
   end
   
   # TESTING
@@ -362,20 +364,20 @@ class Matrix
   
   # COMPARING
   def ==(other)
-    return FALSE unless Matrix === other
+    return false unless Matrix === other
     
     other.compare_by_row_vectors(@rows)
   end
   alias eql? ==
   
   def compare_by_row_vectors(rows)
-    return FALSE unless @rows.size == rows.size
+    return false unless @rows.size == rows.size
     
     0.upto(@rows.size - 1) do
       |i|
-      return FALSE unless @rows[i] == rows[i]
+      return false unless @rows[i] == rows[i]
     end
-    TRUE
+    true
   end
   
   def clone
@@ -404,13 +406,13 @@ class Matrix
 	  e * m
 	}
       }
-      return Matrix.rows(rows, FALSE)
+      return Matrix.rows(rows, false)
     when Vector
       m = Matrix.column_vector(m)
       r = self * m
       return r.column(0)
     when Matrix
-      Matrix.fail ErrDimensionMismatch if column_size != m.row_size
+      Matrix.Raise ErrDimensionMismatch if column_size != m.row_size
     
       rows = (0 .. row_size - 1).collect {
 	|i|
@@ -424,7 +426,7 @@ class Matrix
 	  vij
 	}
       }
-      return Matrix.rows(rows, FALSE)
+      return Matrix.rows(rows, false)
     else
       x, y = m.coerce(self)
       return x * y
@@ -434,7 +436,7 @@ class Matrix
   def +(m)
     case m
     when Numeric
-      Matrix.fail ErrOperationNotDefined, "+"
+      Matrix.Raise ErrOperationNotDefined, "+"
     when Vector
       m = Matrix.column_vector(m)
     when Matrix
@@ -443,7 +445,7 @@ class Matrix
       return x + y
     end
     
-    Matrix.fail ErrDimensionMismatch unless row_size == m.row_size and column_size == m.column_size
+    Matrix.Raise ErrDimensionMismatch unless row_size == m.row_size and column_size == m.column_size
     
     rows = (0 .. row_size - 1).collect {
       |i|
@@ -452,13 +454,13 @@ class Matrix
 	self[i, j] + m[i, j]
       }
     }
-    Matrix.rows(rows, FALSE)
+    Matrix.rows(rows, false)
   end
 
   def -(m)
     case m
     when Numeric
-      Matrix.fail ErrOperationNotDefined, "-"
+      Matrix.Raise ErrOperationNotDefined, "-"
     when Vector
       m = Matrix.column_vector(m)
     when Matrix
@@ -467,7 +469,7 @@ class Matrix
       return x - y
     end
     
-    Matrix.fail ErrDimensionMismatch unless row_size == m.row_size and column_size == m.column_size
+    Matrix.Raise ErrDimensionMismatch unless row_size == m.row_size and column_size == m.column_size
     
     rows = (0 .. row_size - 1).collect {
       |i|
@@ -476,7 +478,7 @@ class Matrix
 	self[i, j] - m[i, j]
       }
     }
-    Matrix.rows(rows, FALSE)
+    Matrix.rows(rows, false)
   end
   
   def /(other)
@@ -489,7 +491,7 @@ class Matrix
 	  e / other
 	}
       }
-      return Matrix.rows(rows, FALSE)
+      return Matrix.rows(rows, false)
     when Matrix
       return self * other.inverse
     else
@@ -499,7 +501,7 @@ class Matrix
   end
 
   def inverse
-    Matrix.fail ErrDimensionMismatch unless square?
+    Matrix.Raise ErrDimensionMismatch unless square?
     Matrix.I(row_size).inverse_from(self)
   end
   alias inv inverse
@@ -512,7 +514,7 @@ class Matrix
       if (akk = a[k][k]) == 0
 	i = k
 	begin
-	  fail ErrNotRegular if (i += 1) > size
+	  Matrix.Raise ErrNotRegular if (i += 1) > size
 	end while a[i][k] == 0
 	a[i], a[k] = a[k], a[i]
 	@rows[i], @rows[k] = @rows[k], @rows[i]
@@ -568,9 +570,9 @@ class Matrix
       end
       z
     elsif other.kind_of?(Float) || defined?(Rational) && other.kind_of?(Rational)
-      fail ErrOperationNotDefined, "**"
+      Matrix.Raise ErrOperationNotDefined, "**"
     else
-      fail ErrOperationNotDefined, "**"
+      Matrix.Raise ErrOperationNotDefined, "**"
     end
   end
   
@@ -618,10 +620,10 @@ class Matrix
     begin
       if (akk = a[k][k]) == 0
 	i = -1
-	nothing = FALSE
+	nothing = false
 	begin
 	  if (i += 1) > column_size - 1
-	    nothing = TRUE
+	    nothing = true
 	    break
 	  end
 	end while a[i][k] == 0
@@ -663,6 +665,8 @@ class Matrix
     case other
     when Numeric
       return Scalar.new(other), self
+    else
+      raise TypeError, "#{type} can't be coerced into #{other.type}"
     end
   end
 
@@ -725,7 +729,7 @@ class Matrix
       when Numeric
 	Scalar.new(@value + other)
       when Vector, Matrix
-	Scalar.fail WrongArgType, other.type, "Numeric or Scalar"
+	Scalar.Raise WrongArgType, other.type, "Numeric or Scalar"
       when Scalar
 	Scalar.new(@value + other.value)
       else
@@ -739,7 +743,7 @@ class Matrix
       when Numeric
 	Scalar.new(@value - other)
       when Vector, Matrix
-	Scalar.fail WrongArgType, other.type, "Numeric or Scalar"
+	Scalar.Raise WrongArgType, other.type, "Numeric or Scalar"
       when Scalar
 	Scalar.new(@value - other.value)
       else
@@ -765,7 +769,7 @@ class Matrix
       when Numeric
 	Scalar.new(@value / other)
       when Vector
-	Scalar.fail WrongArgType, other.type, "Numeric or Scalar or Matrix"
+	Scalar.Raise WrongArgType, other.type, "Numeric or Scalar or Matrix"
       when Matrix
 	self * _M.inverse
       else
@@ -779,7 +783,7 @@ class Matrix
       when Numeric
 	Scalar.new(@value ** other)
       when Vector
-	Scalar.fail WrongArgType, other.type, "Numeric or Scalar or Matrix"
+	Scalar.Raise WrongArgType, other.type, "Numeric or Scalar or Matrix"
       when Matrix
 	other.powered_by(self)
       else
@@ -802,10 +806,10 @@ class Vector
   
   private_class_method :new
   def Vector.[](*array)
-    new(:init_elements, array, FALSE)
+    new(:init_elements, array, copy = false)
   end
   
-  def Vector.elements(array, copy = TRUE)
+  def Vector.elements(array, copy = true)
     new(:init_elements, array, copy)
   end
   
@@ -833,7 +837,7 @@ class Vector
   
   # ENUMRATIONS
   def each2(v)
-    Vector.fail ErrDimensionMismatch if size != v.size
+    Vector.Raise ErrDimensionMismatch if size != v.size
     0.upto(size - 1) do
       |i|
       yield @elements[i], v[i]
@@ -841,7 +845,7 @@ class Vector
   end
   
   def collect2(v)
-    Vector.fail ErrDimensionMismatch if size != v.size
+    Vector.Raise ErrDimensionMismatch if size != v.size
     (0 .. size - 1).collect do
       |i|
       yield @elements[i], v[i]
@@ -850,7 +854,7 @@ class Vector
 
   # COMPARING
   def ==(other)
-    return FALSE unless Vector === other
+    return false unless Vector === other
     
     other.compare_by(@elements)
   end
@@ -870,15 +874,15 @@ class Vector
   
   # ARITHMETIC
   
-  def *(x) "is matrix or number"
+  def *(x) # is matrix or number
     case x
     when Numeric
       els = @elements.collect{|e| e * x}
-      Vector.elements(els, FALSE)
+      Vector.elements(els, false)
     when Matrix
       self.covector * x
     else
-      s, x = X.corece(self)
+      s, x = X.coerce(self)
       s * x
     end
   end
@@ -886,16 +890,16 @@ class Vector
   def +(v)
     case v
     when Vector
-      Vector.fail ErrDimensionMismatch if size != v.size
+      Vector.Raise ErrDimensionMismatch if size != v.size
       els = collect2(v) {
 	|v1, v2|
 	v1 + v2
       }
-      Vector.elements(els, FALSE)
+      Vector.elements(els, false)
     when Matrix
       Matrix.column_vector(self) + v
     else
-      s, x = v.corece(self)
+      s, x = v.coerce(self)
       s + x
     end
   end
@@ -903,16 +907,16 @@ class Vector
   def -(v)
     case v
     when Vector
-      Vector.fail ErrDimensionMismatch if size != v.size
+      Vector.Raise ErrDimensionMismatch if size != v.size
       els = collect2(v) {
 	|v1, v2|
 	v1 - v2
       }
-      Vector.elements(els, FALSE)
+      Vector.elements(els, false)
     when Matrix
       Matrix.column_vector(self) - v
     else
-      s, x = v.corece(self)
+      s, x = v.coerce(self)
       s - x
     end
   end
@@ -920,7 +924,7 @@ class Vector
   # VECTOR FUNCTIONS
   
   def inner_product(v)
-    Vector.fail ErrDimensionMismatch if size != v.size
+    Vector.Raise ErrDimensionMismatch if size != v.size
     
     p = 0
     each2(v) {
@@ -935,7 +939,7 @@ class Vector
       |v|
       yield v
     }
-    Vector.elements(els, FALSE)
+    Vector.elements(els, false)
   end
   alias map collect
   
@@ -944,7 +948,7 @@ class Vector
       |v1, v2|
       yield v1, v2
     }
-    Vector.elements(els, FALSE)
+    Vector.elements(els, false)
   end
   
   def r
@@ -980,6 +984,8 @@ class Vector
     case other
     when Numeric
       return Scalar.new(other), self
+    else
+      raise TypeError, "#{type} can't be coerced into #{other.type}"
     end
   end
   

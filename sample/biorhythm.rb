@@ -19,11 +19,11 @@ def usage()
   print "Usage:\n"
   print "biorhythm.rb [options]\n"
   print "  options...\n"
-  print "    -D YYYYMMDD(birthday)     : すべて default 値を使う. \n"
-  print "    --sdate | --date YYYYMMDD : system date もしくは指定した日付を使う.\n"
-  print "    --birthday YYYYMMDD       : 誕生日の指定をする.  \n"
-  print "    -v | -g                   : Values or Graph の指定. \n"
-  print "    --days DAYS               : 期間の指定をする(Graph の時のみ有効). \n"
+  print "    -D YYYYMMDD(birthday)     : use default values.\n"
+  print "    --sdate | --date YYYYMMDD : use system date; use specified date.\n"
+  print "    --birthday YYYYMMDD       : specifies your birthday.\n"
+  print "    -v | -g                   : show values or graph.\n"
+  print "    --days DAYS               : graph range (only in effect for graphs).\n"
   print "    --help                    : help\n"
 end
 $USAGE = 'usage'

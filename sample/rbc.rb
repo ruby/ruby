@@ -273,7 +273,7 @@ module BC_APPLICATION__
 	  rests.unshift op
 	  identify_number(rests)
 	else
-	  # obj.if などの対応
+	  # handle ``obj.if'' and such
 	  identify_identifier(rests, TRUE)
 	  @lex_state = EXPR_ARG
 	end
@@ -344,7 +344,7 @@ module BC_APPLICATION__
 	  @lex_state = EXPR_BEG
 	end
       end
-      @OP.def_rule('$') do
+      @OP.def_rule('$') do	#'
 	|op, rests|
 	identify_gvar(rests)
       end
@@ -466,7 +466,7 @@ module BC_APPLICATION__
       print token, "\n" if CONFIG[:DEBUG]
       if state = CLAUSE_STATE_TRANS[token]
 	if @lex_state != EXPR_BEG and token =~ /^(if|unless|while|until)/
-	  # 修飾子
+	  # modifiers
 	else
 	  if ENINDENT_CLAUSE.include?(token)
 	    @indent += 1
@@ -640,7 +640,7 @@ module BC_APPLICATION__
     def_exception :ErrNodeAlreadyExists, "node already exists"
 
     class Node
-      # postprocがなければ抽象ノード, nilじゃなければ具象ノード
+      # abstract node if postproc is nil.
       def initialize(preproc = nil, postproc = nil)
 	@Tree = {}
 	@preproc = preproc

@@ -9,7 +9,7 @@ version = VERSION
 config = open(rbconfig_rb, "w")
 $stdout.reopen(config)
 
-fast = {'prefix'=>TRUE, 'INSTALL'=>TRUE, 'binsuffix'=>TRUE}
+fast = {'prefix'=>TRUE, 'INSTALL'=>TRUE, 'EXEEXT'=>TRUE}
 print %[
 module Config
 
@@ -23,6 +23,7 @@ module Config
 print "  CONFIG = {}\n"
 v_fast = []
 v_others = []
+has_version = false
 File.foreach "config.status" do |$_|
   next if /^#/
   if /^s%@program_transform_name@%s,(.*)%g$/
@@ -33,7 +34,7 @@ File.foreach "config.status" do |$_|
     val = $2 || ""
     next if name =~ /^(INSTALL|DEFS|configure_input|srcdir|top_srcdir)$/
     v = "  CONFIG[\"" + name + "\"] = " +
-      val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$[{(]?([^})]+)[})]?/) {
+      val.sub(/^\s*(.*)\s*$/, '"\1"').gsub(/\$\{?([^(){}]+)\}?/) {
       "\#{CONFIG[\\\"#{$1}\\\"]}"
     } + "\n"
     if fast[name]
@@ -41,6 +42,7 @@ File.foreach "config.status" do |$_|
     else
       v_others << v
     end
+    has_version = true if name == "MAJOR"
     if /DEFS/
       val.split(/\s*-D/).each do |i|
 	if i =~ /(.*)=(\\")?([^\\]*)(\\")?/
@@ -55,23 +57,36 @@ File.foreach "config.status" do |$_|
       end
     end
   elsif /^ac_given_srcdir=(.*)/
-    path = $1
-    cwd = Dir.pwd
-    begin
-      Dir.chdir path
-      v_fast << "  CONFIG[\"srcdir\"] = \"" + Dir.pwd + "\"\n"
-    ensure
-      Dir.chdir cwd
-    end
+    v_fast << "  CONFIG[\"srcdir\"] = \"" + File.expand_path($1) + "\"\n"
   elsif /^ac_given_INSTALL=(.*)/
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
 end
 
+if not has_version
+  VERSION.scan(/(\d+)\.(\d+)\.(\d+)/) {
+    print "  CONFIG[\"MAJOR\"] = \"" + $1 + "\"\n"
+    print "  CONFIG[\"MINOR\"] = \"" + $2 + "\"\n"
+    print "  CONFIG[\"TEENY\"] = \"" + $3 + "\"\n"
+  }
+end
+
 print v_fast, v_others
-Dir.chdir File.dirname($0)
-print "  CONFIG[\"compile_dir\"] = \"#{Dir.pwd}\"\n"
-print "end\n"
+print <<EOS
+  CONFIG["compile_dir"] = "#{Dir.pwd}"
+  CONFIG.each_value do |val|
+    val.gsub!(/\\$\\(([^()]+)\\)/) do |var|
+      key = $1
+      if CONFIG.key? key
+        "\#{CONFIG[\\\"\#{key}\\\"]}"
+      else
+	var
+      end
+    end
+  end
+end
+EOS
 config.close
+
 # vi:set sw=2:

@@ -11,11 +11,15 @@
 #include "ruby.h"
 
 #ifdef DJGPP
-unsigned int _stklen = 0x100000;
+unsigned int _stklen = 0x180000;
 #endif
 
 #ifdef __human68k__
 int _stacksize = 131072;
+#endif
+
+#if defined(__MACOS__) && defined(__MWERKS__)
+#include <console.h>
 #endif
 
 int
@@ -25,6 +29,9 @@ main(argc, argv, envp)
 {
 #if defined(NT)
     NtInitialize(&argc, &argv);
+#endif
+#if defined(__MACOS__) && defined(__MWERKS__)
+    argc = ccommand(&argv);
 #endif
 
     ruby_init();

@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Aug 10 15:05:44 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -105,7 +105,7 @@ rb_define_class_id(id, super)
 
 VALUE
 rb_define_class(name, super)
-    char *name;
+    const char *name;
     VALUE super;
 {
     VALUE klass;
@@ -122,7 +122,7 @@ rb_define_class(name, super)
 VALUE
 rb_define_class_under(outer, name, super)
     VALUE outer;
-    char *name;
+    const char *name;
     VALUE super;
 {
     VALUE klass;
@@ -164,7 +164,7 @@ rb_define_module_id(id)
 
 VALUE
 rb_define_module(name)
-    char *name;
+    const char *name;
 {
     VALUE module;
     ID id;
@@ -179,7 +179,7 @@ rb_define_module(name)
 VALUE
 rb_define_module_under(outer, name)
     VALUE outer;
-    char *name;
+    const char *name;
 {
     VALUE module;
     ID id;
@@ -199,8 +199,11 @@ include_class_new(module, super)
     NEWOBJ(klass, struct RClass);
     OBJSETUP(klass, rb_cClass, T_ICLASS);
 
-    klass->m_tbl = RCLASS(module)->m_tbl;
+    if (!RCLASS(module)->iv_tbl) {
+	RCLASS(module)->iv_tbl = st_init_numtable();
+    }
     klass->iv_tbl = RCLASS(module)->iv_tbl;
+    klass->m_tbl = RCLASS(module)->m_tbl;
     klass->super = super;
     if (TYPE(module) == T_ICLASS) {
 	RBASIC(klass)->klass = RBASIC(module)->klass;
@@ -365,6 +368,8 @@ method_list(mod, option, func)
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    if (!FL_TEST(mod, FL_TAINT) && rb_safe_level() >= 4)
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     for (klass = mod; klass; klass = RCLASS(klass)->super) {
 	st_foreach(RCLASS(klass)->m_tbl, func, ary);
@@ -426,6 +431,8 @@ rb_obj_singleton_methods(obj)
     VALUE klass;
     VALUE *p, *q, *pend;
 
+    if (rb_safe_level() >= 4 && !FL_TEST(obj, FL_TAINT))
+	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
     ary = rb_ary_new();
     klass = CLASS_OF(obj);
     while (klass && FL_TEST(klass, FL_SINGLETON)) {
@@ -458,7 +465,7 @@ rb_define_method_id(klass, name, func, argc)
 void
 rb_define_method(klass, name, func, argc)
     VALUE klass;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -472,7 +479,7 @@ rb_define_method(klass, name, func, argc)
 void
 rb_define_protected_method(klass, name, func, argc)
     VALUE klass;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -483,7 +490,7 @@ rb_define_protected_method(klass, name, func, argc)
 void
 rb_define_private_method(klass, name, func, argc)
     VALUE klass;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -494,7 +501,7 @@ rb_define_private_method(klass, name, func, argc)
 void
 rb_undef_method(klass, name)
     VALUE klass;
-    char *name;
+    const char *name;
 {
     rb_add_method(klass, rb_intern(name), 0, NOEX_UNDEF);
 }
@@ -504,7 +511,7 @@ rb_singleton_class(obj)
     VALUE obj;
 {
     if (rb_special_const_p(obj)) {
-	rb_raise(rb_eTypeError, "cannot define singleton");
+	rb_raise(rb_eTypeError, "can't define singleton");
     }
     if (FL_TEST(RBASIC(obj)->klass, FL_SINGLETON)) {
 	return RBASIC(obj)->klass;
@@ -517,7 +524,7 @@ rb_singleton_class(obj)
 void
 rb_define_singleton_method(obj, name, func, argc)
     VALUE obj;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -527,7 +534,7 @@ rb_define_singleton_method(obj, name, func, argc)
 void
 rb_define_module_function(module, name, func, argc)
     VALUE module;
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -537,7 +544,7 @@ rb_define_module_function(module, name, func, argc)
 
 void
 rb_define_global_function(name, func, argc)
-    char *name;
+    const char *name;
     VALUE (*func)();
     int argc;
 {
@@ -547,7 +554,7 @@ rb_define_global_function(name, func, argc)
 void
 rb_define_alias(klass, name1, name2)
     VALUE klass;
-    char *name1, *name2;
+    const char *name1, *name2;
 {
     rb_alias(klass, rb_intern(name1), rb_intern(name2));
 }
@@ -555,7 +562,7 @@ rb_define_alias(klass, name1, name2)
 void
 rb_define_attr(klass, name, read, write)
     VALUE klass;
-    char *name;
+    const char *name;
     int read, write;
 {
     rb_attr(klass, rb_intern(name), read, write, Qfalse);
@@ -571,17 +578,17 @@ rb_define_attr(klass, name, read, write)
 
 int
 #ifdef HAVE_STDARG_PROTOTYPES
-rb_scan_args(int argc, VALUE *argv, char *fmt, ...)
+rb_scan_args(int argc, VALUE *argv, const char *fmt, ...)
 #else
 rb_scan_args(argc, argv, fmt, va_alist)
     int argc;
     VALUE *argv;
-    char *fmt;
+    const char *fmt;
     va_dcl
 #endif
 {
     int n, i;
-    char *p = fmt;
+    const char *p = fmt;
     VALUE *var;
     va_list vargs;
 
@@ -596,10 +603,10 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if (ISDIGIT(*p)) {
 	n = *p - '0';
 	if (n > argc)
-	    rb_raise(rb_eArgError, "Wrong # of arguments (%d for %d)", argc, n);
+	    rb_raise(rb_eArgError, "wrong # of arguments (%d for %d)", argc, n);
 	for (i=0; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
-	    *var = argv[i];
+	    if (var) *var = argv[i];
 	}
 	p++;
     }
@@ -612,10 +619,10 @@ rb_scan_args(argc, argv, fmt, va_alist)
 	for (; i<n; i++) {
 	    var = va_arg(vargs, VALUE*);
 	    if (argc > i) {
-		*var = argv[i];
+		if (var) *var = argv[i];
 	    }
 	    else {
-		*var = Qnil;
+		if (var) *var = Qnil;
 	    }
 	}
 	p++;
@@ -624,15 +631,15 @@ rb_scan_args(argc, argv, fmt, va_alist)
     if(*p == '*') {
 	var = va_arg(vargs, VALUE*);
 	if (argc > i) {
-	    *var = rb_ary_new4(argc-i, argv+i);
+	    if (var) *var = rb_ary_new4(argc-i, argv+i);
 	}
 	else {
-	    *var = rb_ary_new();
+	    if (var) *var = rb_ary_new();
 	}
     }
     else if (*p == '\0') {
 	if (argc > i) {
-	    rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)", argc, i);
+	    rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, i);
 	}
     }
     else {

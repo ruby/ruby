@@ -2,9 +2,7 @@
 copy config.h ..
 copy Makefile ..
 copy ruby.def ..
-cd ..\ext
-copy Setup.nt Setup
-copy extmk.rb.nt extmk.rb
+copy config.status ..
 
 cd ..
 echo type `nmake' to make ruby for mswin32.

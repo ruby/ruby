@@ -13,12 +13,12 @@
 #define RUBY
 
 /* define RUBY_USE_EUC/SJIS for default kanji-code */
-#if defined(MSDOS) || defined(__CYGWIN32__) || defined(__human68k__) || defined(__MACOS__)
-#undef RUBY_USE_EUC
-#define RUBY_USE_SJIS
+#ifndef DEFAULT_KCODE
+#if defined(MSDOS) || defined(__CYGWIN32__) || defined(__human68k__) || defined(__MACOS__) || defined(__EMX__) || defined(OS2)
+#define DEFAULT_KCODE KCODE_SJIS
 #else
-#define RUBY_USE_EUC
-#undef RUBY_USE_SJIS
+#define DEFAULT_KCODE KCODE_EUC
+#endif
 #endif
 
 #ifdef NeXT
@@ -31,7 +31,7 @@
 #endif /* NeXT */
 
 #ifdef NT
-#include "missing/nt.h"
+#include "win32/win32.h"
 #endif
 
 #ifndef EXTERN
@@ -44,11 +44,16 @@
 #define FLUSH_REGISTER_WINDOWS /* empty */
 #endif
 
-#if defined(MSDOS) || defined(NT) || defined(__human68k__) || defined(__MACOS__)
-#define RUBY_PATH_SEP ";"
-#else
-#define RUBY_PATH_SEP ":"
+#if defined(MSDOS) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__)
+#define DOSISH 1
 #endif
+
+#if defined(MSDOS) || defined(NT) || defined(__human68k__)
+#define PATH_SEP ";"
+#else
+#define PATH_SEP ":"
+#endif
+#define PATH_SEP_CHAR PATH_SEP[0]
 
 #if defined(__human68k__) || defined(__CYGWIN32__)
 #undef HAVE_RANDOM

@@ -85,6 +85,11 @@
 #undef except
 #undef finally
 #undef leave
+
+#if defined(__cplusplus)
+}
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -94,10 +99,17 @@
 #include <math.h>
 #include <sys/types.h>
 #include <sys/utime.h>
+#include <io.h>
+#include <malloc.h>
 
-//
-// Grrr...
-//
+#if defined(__cplusplus)
+extern "C" {
+#endif
+
+#define UIDTYPE int
+#define GIDTYPE int
+#define pid_t   int
+#define WNOHANG -1
 
 #define access	   _access
 #define chmod	   _chmod
@@ -113,6 +125,7 @@
 #define lseek	   _lseek
 #define mktemp	   _mktemp
 #define open	   _open
+#define perror     _perror
 #define read	   _read
 #define setmode    _setmode
 #define sopen	   _sopen
@@ -129,6 +142,7 @@
 #define execvp	   _execvp
 #define execvpe    _execvpe
 #define getpid	   _getpid
+#define sleep(x)   Sleep((x)*1000)
 #define spawnl	   _spawnl
 #define spawnle    _spawnle
 #define spawnlp    _spawnlp
@@ -141,22 +155,29 @@
 #define fileno	   _fileno
 #endif
 #define utime      _utime
-//#define pipe       _pipe
-#define perror      _perror
-
-
+#define vsnprintf  _vsnprintf
+#define snprintf   _snprintf
+#define popen      _popen
+#define pclose     _pclose
+#define strcasecmp _stricmp
+#define strncasecmp _strnicmp
 /* these are defined in nt.c */
 
 extern int NtMakeCmdVector(char *, char ***, int);
-/* extern void NtInitialize(int *, char ***); */
+extern void NtInitialize(int *, char ***);
 extern char *NtGetLib(void);
 extern char *NtGetBin(void);
 extern FILE *mypopen(char *, char *);
+extern int   mypclose(FILE *);
 extern int  flock(int fd, int oper);
-extern FILE *  myfdopen(int, char*);
+extern FILE *  myfdopen(int, const char *);
+extern void  myfdclose(FILE *);
 extern SOCKET  myaccept(SOCKET, struct sockaddr *, int *);
 extern int  mybind(SOCKET, struct sockaddr *, int);
 extern int  myconnect(SOCKET, struct sockaddr *, int);
+extern void myfdset(int, fd_set*);
+extern int  myfdisset(int, fd_set*);
+extern long myselect(int, fd_set *, fd_set *, fd_set *, struct timeval *);
 extern int  mygetpeername(SOCKET, struct sockaddr *, int *);
 extern int  mygetsockname(SOCKET, struct sockaddr *, int *);
 extern int  mygetsockopt(SOCKET, int, int, char *, int *);
@@ -169,6 +190,7 @@ extern int  mysendto(SOCKET, char *, int, int, struct sockaddr *, int);
 extern int  mysetsockopt(SOCKET, int, int, char *, int);
 extern int  myshutdown(SOCKET, int);
 extern SOCKET  mysocket(int, int, int);
+extern SOCKET  myget_osfhandle(int);
 extern struct hostent *  mygethostbyaddr(char *, int, int);
 extern struct hostent *  mygethostbyname(char *);
 extern int  mygethostname(char *, int);
@@ -176,6 +198,17 @@ extern struct protoent *  mygetprotobyname(char *);
 extern struct protoent *  mygetprotobynumber(int);
 extern struct servent *  mygetservbyname(char *, char *);
 extern struct servent * mygetservbyport(int, char *);
+extern char *win32_getenv(const char *);
+
+extern int chown(const char *, int, int);
+extern int link(char *, char *);
+extern int gettimeofday(struct timeval *, struct timezone *);
+extern pid_t waitpid (pid_t, int *, int);
+extern int do_spawn(char *);
+extern int kill(int, int);
+extern int isinf(double);
+extern int isnan(double);
+
 
 //
 // define this so we can do inplace editing
@@ -186,14 +219,7 @@ extern struct servent * mygetservbyport(int, char *);
 //
 // stubs
 //
-// extern int       ioctl (int, unsigned int, char *);
 extern int       ioctl (int, unsigned int, long);
-#if 0
-extern void      sleep (unsigned int);
-#else
-#define sleep(x) Sleep(x*1000)
-#endif
-
 extern UIDTYPE   getuid (void);
 extern UIDTYPE   geteuid (void);
 extern GIDTYPE   getgid (void);
@@ -202,8 +228,6 @@ extern int       setuid (int);
 extern int       setgid (int);
 
 
-#undef IN  /* confict in parse.c */
-
 #if 0
 extern int sys_nerr;
 extern char *sys_errlist[];
@@ -214,11 +238,6 @@ extern char *mystrerror(int);
 
 #define PIPE_BUF 1024
 
-#define HAVE_STDLIB_H 1
-#define HAVE_GETLOGIN 1
-#define HAVE_WAITPID 1
-#define HAVE_GETCWD 1
-
 #define LOCK_SH 1
 #define LOCK_EX 2
 #define LOCK_NB 4
@@ -226,8 +245,6 @@ extern char *mystrerror(int);
 #ifndef EWOULDBLOCK
 #define EWOULDBLOCK 10035 /* EBASEERR + 35 (winsock.h) */
 #endif
-
-#define O_BINARY 0x8000
 
 #ifdef popen
 #undef popen
@@ -260,6 +277,15 @@ extern char *mystrerror(int);
 #undef connect
 #endif
 #define connect myconnect
+
+#undef FD_SET
+#define FD_SET myfdset
+
+#undef FD_ISSET
+#define FD_ISSET myfdisset
+
+#undef select
+#define select myselect
 
 #ifdef getpeername
 #undef getpeername
@@ -355,4 +381,15 @@ extern char *mystrerror(int);
 #undef getservbyport
 #endif
 #define getservbyport mygetservbyport
+
+#ifdef get_osfhandle
+#undef get_osfhandle
+#endif
+#define get_osfhandle myget_osfhandle
+
+#ifdef getenv
+#undef getenv
+#endif
+#define getenv win32_getenv
+
 #endif

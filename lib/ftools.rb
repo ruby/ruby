@@ -24,6 +24,9 @@ class << File
     fsize = 1024 if fsize < 512
     fsize = TOO_BIG if fsize > TOO_BIG
 
+    fmode = stat(from).mode
+    tpath = to
+
     from = open(from, "r")
     from.binmode
     to = open(to, "w")
@@ -47,6 +50,7 @@ class << File
       to.close
       from.close
     end
+    chmod(fmode, tpath)
     ret
   end
 
@@ -63,13 +67,24 @@ class << File
     to = catname(from, to)
     $stderr.print from, " -> ", to, "\n" if verbose
 
-    if PLATFORM =~ /djgpp|cygwin|mswin32/ and FileTest.file? to
+    if RUBY_PLATFORM =~ /djgpp|cygwin|mswin32/ and FileTest.file? to
       unlink to
     end
+    fstat = stat(from)
     begin
       rename from, to
     rescue
-      syscopy from, to and unlink from
+      begin
+        symlink File.readlink(from), to and unlink from
+      rescue
+	from_stat = stat(from)
+	syscopy from, to and unlink from
+	utime(from_stat.atime, from_stat.mtime, to)
+	begin
+	  chown(fstat.uid, fstat.gid, tpath)
+	rescue
+	end
+      end
     end
   end
 
@@ -98,7 +113,8 @@ class << File
 	if fr = from.read(fsize)
 	  tr = to.read(fr.size)
 	else
-	  ret = !to.read(fsize)
+	  ret = to.read(fsize)
+	  ret = !ret || ret.length == 0
 	  break
 	end
       end
@@ -137,7 +153,9 @@ class << File
       parent = dirname(dir)
       makedirs parent unless FileTest.directory? parent
       $stderr.print "mkdir ", dir, "\n" if verbose
-      Dir.mkdir dir, mode
+      if basename(dir) != ""
+	Dir.mkdir dir, mode
+      end
     end
   end
 
@@ -154,7 +172,7 @@ class << File
   def install(from, to, mode = nil, verbose = false)
     to = catname(from, to)
     unless FileTest.exist? to and cmp from, to
-      unlink to if FileTest.exist? to
+      safe_unlink to if FileTest.exist? to
       cp from, to, verbose
       chmod mode, to, verbose if mode
     end

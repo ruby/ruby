@@ -6,7 +6,7 @@
   $Date$
   created at: Tue Oct  5 09:44:46 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -42,14 +42,18 @@ static void run_final();
 #if defined(MSDOS) || defined(__human68k__)
 #define GC_MALLOC_LIMIT 100000
 #else
-#define GC_MALLOC_LIMIT 200000
+#define GC_MALLOC_LIMIT 400000
 #endif
 #endif
-#define GC_NEWOBJ_LIMIT 1000
+#define GC_NEWOBJ_LIMIT 10000
 
 static unsigned long malloc_memories = 0;
 static unsigned long alloc_objects = 0;
 
+static int malloc_called = 0;
+static int free_called = 0;
+
+#ifndef xmalloc
 void *
 xmalloc(size)
     size_t size;
@@ -64,6 +68,7 @@ xmalloc(size)
     if (malloc_memories > GC_MALLOC_LIMIT && alloc_objects > GC_NEWOBJ_LIMIT) {
 	rb_gc();
     }
+    malloc_called++;
     mem = malloc(size);
     if (!mem) {
 	rb_gc();
@@ -110,6 +115,15 @@ xrealloc(ptr, size)
 
     return mem;
 }
+
+static void
+xfree(x)
+    void *x;
+{
+    free_called++;
+    free(x);
+}
+#endif
 
 /* The way of garbage collecting which allows use of the cstack is due to */
 /* Scheme In One Defun, but in C this time.
@@ -284,7 +298,7 @@ rb_data_object_alloc(klass, datap, dmark, dfree)
 }
 
 extern st_table *rb_class_tbl;
-VALUE *rb_gc_stack_start;
+VALUE *rb_gc_stack_start = 0;
 
 #if defined(__GNUC__) && __GNUC__ >= 2
 __inline__
@@ -334,7 +348,7 @@ rb_gc_mark_locations(start, end)
 	start = end;
 	end = tmp;
     }
-    n = end - start;
+    n = end - start + 1;
     mark_locations_array(start,n);
 }
 
@@ -389,10 +403,10 @@ rb_gc_mark(ptr)
     register RVALUE *obj = RANY(ptr);
 
   Top:
-    if (FIXNUM_P(obj)) return;	/* fixnum not marked */
+    if (FIXNUM_P(obj)) return;	                /* fixnum not marked */
     if (rb_special_const_p((VALUE)obj)) return; /* special const not marked */
-    if (obj->as.basic.flags == 0) return; /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return; /* already marked */
+    if (obj->as.basic.flags == 0) return;       /* free cell */
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */
 
     obj->as.basic.flags |= FL_MARK;
 
@@ -445,7 +459,6 @@ rb_gc_mark(ptr)
 	  case NODE_OR:
 	  case NODE_CASE:
 	  case NODE_SCLASS:
-	  case NODE_ARGS:
 	  case NODE_DOT2:
 	  case NODE_DOT3:
 	  case NODE_FLIP2:
@@ -479,6 +492,7 @@ rb_gc_mark(ptr)
 	  case NODE_RETURN:
 	  case NODE_YIELD:
 	  case NODE_COLON2:
+	  case NODE_ARGS:
 	    obj = RANY(obj->as.node.u1.node);
 	    goto Top;
 
@@ -598,7 +612,8 @@ rb_gc_mark(ptr)
 	break;
 
       case T_SCOPE:
-	if (obj->as.scope.local_vars) {
+	if (obj->as.scope.local_vars &&
+            obj->as.scope.flag != SCOPE_ALLOCA) {
 	    int n = obj->as.scope.local_tbl[0]+1;
 	    VALUE *vars = &obj->as.scope.local_vars[-1];
 
@@ -660,7 +675,7 @@ gc_sweep()
 		if (p->as.basic.flags) {
 		    obj_free((VALUE)p);
 		}
-		if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
+	if (need_call_final && FL_TEST(p, FL_FINALIZE)) {
 		    p->as.free.flag = FL_MARK; /* remain marked */
 		    p->as.free.next = final_list;
 		    final_list = p;
@@ -769,10 +784,10 @@ obj_free(obj)
 	}
 	break;
       case T_MATCH:
-	if (RANY(obj)->as.match.regs)
+	if (RANY(obj)->as.match.regs) {
 	    re_free_registers(RANY(obj)->as.match.regs);
-	if (RANY(obj)->as.match.regs)
 	    free(RANY(obj)->as.match.regs);
+	}
 	break;
       case T_FILE:
 	if (RANY(obj)->as.file.fptr) {
@@ -807,7 +822,8 @@ obj_free(obj)
 	return;			/* no need to free iv_tbl */
 
       case T_SCOPE:
-	if (RANY(obj)->as.scope.local_vars) {
+	if (RANY(obj)->as.scope.local_vars &&
+            RANY(obj)->as.scope.flag != SCOPE_ALLOCA) {
 	    VALUE *vars = RANY(obj)->as.scope.local_vars-1;
 	    if (vars[0] == 0)
 		free(RANY(obj)->as.scope.local_tbl);
@@ -890,7 +906,16 @@ rb_gc()
 
     /* mark frame stack */
     for (frame = ruby_frame; frame; frame = frame->prev) {
-	rb_gc_mark_frame(frame);
+	rb_gc_mark_frame(frame); 
+    }
+    for (frame = ruby_frame; frame; frame = frame->prev) {
+	if (frame->tmp) {
+	    struct FRAME *tmp = frame->tmp;
+	    while (tmp) {
+		rb_gc_mark_frame(tmp);
+		tmp = tmp->prev;
+	    }
+	}
     }
     rb_gc_mark(ruby_class);
     rb_gc_mark(ruby_scope);
@@ -909,10 +934,7 @@ rb_gc()
     rb_gc_mark_locations((VALUE*)((char*)rb_gc_stack_start + 2),
 		   (VALUE*)((char*)&stack_end + 2));
 #endif
-
-#ifdef USE_THREAD
     rb_gc_mark_threads();
-#endif
 
     /* mark protected global variables */
     for (list = Global_List; list; list = list->next) {
@@ -937,22 +959,26 @@ gc_start()
 }
 
 void
-Init_stack()
+Init_stack(addr)
+    VALUE *addr;
 {
 #ifdef __human68k__
     extern void *_SEND;
-    gc_stack_start = _SEND;
+    rb_gc_stack_start = _SEND;
 #else
     VALUE start;
 
-    rb_gc_stack_start = &start;
+    if (!addr) addr = &start;
+    rb_gc_stack_start = addr;
 #endif
 }
 
 void
 Init_heap()
 {
-    Init_stack();
+    if (!rb_gc_stack_start) {
+	Init_stack(0);
+    }
     add_heap();
 }
 
@@ -1073,15 +1099,26 @@ call_final(os, obj)
     return obj;
 }
 
+static VALUE
+run_single_final(args)
+    VALUE *args;
+{
+    rb_eval_cmd(args[0], args[1]);
+    return Qnil;
+}
+
 static void
 run_final(obj)
     VALUE obj;
 {
-    int i;
+    int i, status;
+    VALUE args[2];
 
     obj = rb_obj_id(obj);	/* make obj into id */
+    args[1] = rb_ary_new3(1, obj);
     for (i=0; i<RARRAY(finalizers)->len; i++) {
-	rb_eval_cmd(RARRAY(finalizers)->ptr[i], rb_ary_new3(1, obj));
+	args[0] = RARRAY(finalizers)->ptr[i];
+	rb_protect(run_single_final, (VALUE)args, &status);
     }
 }
 
@@ -1105,9 +1142,12 @@ rb_gc_call_finalizer_at_exit()
 	p = heaps[i]; pend = p + HEAP_SLOTS;
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
-		DATA_PTR(p) &&
-		RANY(p)->as.data.dfree)
+		DATA_PTR(p) && RANY(p)->as.data.dfree) {
 		(*RANY(p)->as.data.dfree)(DATA_PTR(p));
+	    }
+	    else if (BUILTIN_TYPE(p) == T_FILE) {
+		rb_io_fptr_finalize(RANY(p)->as.file.fptr);
+	    }
 	    p++;
 	}
     }

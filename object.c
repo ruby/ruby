@@ -6,7 +6,7 @@
   $Date$
   created at: Thu Jul 15 12:01:24 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -47,7 +47,7 @@ int
 rb_eql(obj1, obj2)
     VALUE obj1, obj2;
 {
-    return rb_funcall(obj1, eql, 1, obj2);
+    return rb_funcall(obj1, eql, 1, obj2) == Qtrue;
 }
 
 static VALUE
@@ -130,7 +130,7 @@ rb_any_to_s(obj)
     VALUE str;
 
     s = ALLOCA_N(char, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:eos */
-    sprintf(s, "#<%s:0x%x>", cname, obj);
+    sprintf(s, "#<%s:0x%lx>", cname, obj);
     str = rb_str_new2(s);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
 
@@ -368,13 +368,6 @@ true_to_s(obj)
 }
 
 static VALUE
-true_to_i(obj)
-    VALUE obj;
-{
-    return INT2FIX(1);
-}
-
-static VALUE
 true_type(obj)
     VALUE obj;
 {
@@ -407,13 +400,6 @@ false_to_s(obj)
     VALUE obj;
 {
     return rb_str_new2("false");
-}
-
-static VALUE
-false_to_i(obj)
-    VALUE obj;
-{
-    return INT2FIX(0);
 }
 
 static VALUE
@@ -474,13 +460,17 @@ rb_mod_clone(module)
     VALUE module;
 {
     NEWOBJ(clone, struct RClass);
-    OBJSETUP(clone, CLASS_OF(module), TYPE(module));
+    CLONESETUP(clone, module);
 
     clone->super = RCLASS(module)->super;
     clone->iv_tbl = 0;
     clone->m_tbl = 0;		/* avoid GC crashing  */
-    clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
-    clone->m_tbl = st_copy(RCLASS(module)->m_tbl);
+    if (RCLASS(module)->iv_tbl) {
+	clone->iv_tbl = st_copy(RCLASS(module)->iv_tbl);
+    }
+    if (RCLASS(module)->m_tbl) {
+	clone->m_tbl = st_copy(RCLASS(module)->m_tbl);
+    }
 
     return (VALUE)clone;
 }
@@ -540,7 +530,7 @@ rb_mod_ge(mod, arg)
 	rb_raise(rb_eTypeError, "compared with non class/module");
     }
 
-    return rb_mod_lt(arg, mod);
+    return rb_mod_le(arg, mod);
 }
 
 static VALUE
@@ -579,11 +569,8 @@ rb_module_s_new(klass)
     VALUE mod = rb_module_new();
 
     RBASIC(mod)->klass = klass;
-    rb_obj_call_init(mod);
     return mod;
 }
-
-VALUE rb_class_new_instance();
 
 static VALUE
 rb_class_s_new(argc, argv)
@@ -603,7 +590,6 @@ rb_class_s_new(argc, argv)
     /* make metaclass */
     RBASIC(klass)->klass = rb_singleton_class_new(RBASIC(super)->klass);
     rb_singleton_class_attached(RBASIC(klass)->klass, klass);
-    rb_obj_call_init(klass);
 
     return klass;
 }
@@ -754,46 +740,9 @@ rb_obj_private_methods(obj)
     return rb_class_private_instance_methods(1, argv, CLASS_OF(obj));
 }
 
-VALUE
-rb_Integer(val)
-    VALUE val;
-{
-    long i;
-
-    switch (TYPE(val)) {
-      case T_FLOAT:
-	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
-	    && RFLOAT(val)->value >= (double)FIXNUM_MIN) {
-	    i = (long)RFLOAT(val)->value;
-	    break;
-	}
-	return rb_dbl2big(RFLOAT(val)->value);
-
-      case T_BIGNUM:
-	return val;
-
-      case T_STRING:
-	return rb_str2inum(RSTRING(val)->ptr, 0);
-
-      case T_NIL:
-	return INT2FIX(0);
-
-      default:
-	i = NUM2LONG(val);
-    }
-    return INT2NUM(i);
-}
-
-static VALUE
-rb_f_integer(obj, arg)
-    VALUE obj, arg;
-{
-    return rb_Integer(arg);
-}
-
 struct arg_to {
     VALUE val;
-    char *s;
+    const char *s;
 };
 
 static VALUE
@@ -819,7 +768,7 @@ VALUE
 rb_convert_type(val, type, tname, method)
     VALUE val;
     int type;
-    char *tname, *method;
+    const char *tname, *method;
 {
     struct arg_to arg1, arg2;
 
@@ -830,6 +779,50 @@ rb_convert_type(val, type, tname, method)
     val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
     Check_Type(val, type);
     return val;
+}
+
+VALUE
+rb_Integer(val)
+    VALUE val;
+{
+    struct arg_to arg1, arg2;
+
+    switch (TYPE(val)) {
+      case T_FLOAT:
+	if (RFLOAT(val)->value <= (double)FIXNUM_MAX
+	    && RFLOAT(val)->value >= (double)FIXNUM_MIN) {
+	    break;
+	}
+	return rb_dbl2big(RFLOAT(val)->value);
+
+      case T_BIGNUM:
+	return val;
+
+      case T_STRING:
+	return rb_str2inum(RSTRING(val)->ptr, 0);
+
+      case T_NIL:
+	return INT2FIX(0);
+
+      default:
+	break;
+    }
+
+    arg1.val = arg2.val = val;
+    arg1.s = "to_i";
+    arg2.s = "Integer";
+    val = rb_rescue(to_type, (VALUE)&arg1, fail_to_type, (VALUE)&arg2);
+    if (!rb_obj_is_kind_of(val, rb_cInteger)) {
+	rb_raise(rb_eTypeError, "to_i should return Integer");
+    }
+    return val;
+}
+
+static VALUE
+rb_f_integer(obj, arg)
+    VALUE obj, arg;
+{
+    return rb_Integer(arg);
 }
 
 double rb_big2dbl _((VALUE));
@@ -848,6 +841,9 @@ rb_Float(val)
       case T_BIGNUM:
 	return rb_float_new(rb_big2dbl(val));
 
+      case T_NIL:
+	return rb_float_new(0.0);
+
       default:
 	return rb_convert_type(val, T_FLOAT, "Float", "to_f");
     }
@@ -864,8 +860,23 @@ double
 rb_num2dbl(val)
     VALUE val;
 {
-    VALUE v = rb_Float(val);
-    return RFLOAT(v)->value;
+    switch (TYPE(val)) {
+      case T_FLOAT:
+	return RFLOAT(val)->value;
+
+      case T_STRING:
+	rb_raise(rb_eTypeError, "no implicit conversion from String");
+	break;
+
+      case T_NIL:
+	rb_raise(rb_eTypeError, "no implicit conversion from nil");
+	break;
+
+      default:
+	break;
+    }
+
+    return RFLOAT(rb_Float(val))->value;
 }
 
 char*
@@ -1010,6 +1021,8 @@ Init_Object()
     rb_define_method(rb_mKernel, "kind_of?", rb_obj_is_kind_of, 1);
     rb_define_method(rb_mKernel, "is_a?", rb_obj_is_kind_of, 1);
 
+    rb_define_global_function("singleton_method_added", rb_obj_dummy, 1);
+
     rb_define_global_function("sprintf", rb_f_sprintf, -1);
     rb_define_global_function("format", rb_f_sprintf, -1);
 
@@ -1025,17 +1038,13 @@ Init_Object()
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
     rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
+    rb_define_method(rb_cNilClass, "&", false_and, 1);
+    rb_define_method(rb_cNilClass, "|", false_or, 1);
+    rb_define_method(rb_cNilClass, "^", false_xor, 1);
 
     rb_define_method(rb_cNilClass, "nil?", rb_true, 0);
     rb_undef_method(CLASS_OF(rb_cNilClass), "new");
     rb_define_global_const("NIL", Qnil);
-
-    /* default addition */
-#ifdef NIL_PLUS
-    rb_define_method(rb_cNilClass, "+", nil_plus, 1);
-#endif
-
-    rb_define_global_function("singleton_method_added", rb_obj_dummy, 1);
 
     rb_define_method(rb_cModule, "===", rb_mod_eqq, 1);
     rb_define_method(rb_cModule, "<=>",  rb_mod_cmp, 1);
@@ -1083,7 +1092,6 @@ Init_Object()
 
     rb_cTrueClass = rb_define_class("TrueClass", rb_cObject);
     rb_define_method(rb_cTrueClass, "to_s", true_to_s, 0);
-    rb_define_method(rb_cTrueClass, "to_i", true_to_i, 0);
     rb_define_method(rb_cTrueClass, "type", true_type, 0);
     rb_define_method(rb_cTrueClass, "&", true_and, 1);
     rb_define_method(rb_cTrueClass, "|", true_or, 1);
@@ -1093,7 +1101,6 @@ Init_Object()
 
     rb_cFalseClass = rb_define_class("FalseClass", rb_cObject);
     rb_define_method(rb_cFalseClass, "to_s", false_to_s, 0);
-    rb_define_method(rb_cFalseClass, "to_i", false_to_i, 0);
     rb_define_method(rb_cFalseClass, "type", false_type, 0);
     rb_define_method(rb_cFalseClass, "&", false_and, 1);
     rb_define_method(rb_cFalseClass, "|", false_or, 1);

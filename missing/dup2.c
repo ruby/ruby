@@ -1,36 +1,61 @@
-/* 
- *    Copyright (c) 1991, Larry Wall
+/*
+ * Public domain dup2() lookalike
+ * by Curtis Jackson @ AT&T Technologies, Burlington, NC
+ * electronic address:  burl!rcj
  *
- *    You may distribute under the terms of either the GNU General Public
- *    License or the Artistic License, as specified in the README file.
+ * dup2 performs the following functions:
+ *
+ * Check to make sure that fd1 is a valid open file descriptor.
+ * Check to see if fd2 is already open; if so, close it.
+ * Duplicate fd1 onto fd2; checking to make sure fd2 is a valid fd.
+ * Return fd2 if all went well; return BADEXIT otherwise.
  */
 
-#include "defines.h"
+#include "config.h"
 
-#if defined(HAVE_FCNTL) && defined(F_DUPFD)
+#if defined(HAVE_FCNTL)
 # include <fcntl.h>
 #endif
 
+#if !defined(HAVE_FCNTL) || !defined(F_DUPFD)
+# include <errno.h>
+#endif
+
+#define BADEXIT -1
+
 int
-dup2(oldfd,newfd)
-int oldfd;
-int newfd;
+dup2(fd1, fd2)
+int fd1, fd2;
 {
 #if defined(HAVE_FCNTL) && defined(F_DUPFD)
-    close(newfd);
-    return fcntl(oldfd, F_DUPFD, newfd);
+	if (fd1 != fd2) {
+#ifdef F_GETFL
+		if (fcntl(fd1, F_GETFL) < 0)
+			return BADEXIT;
+		if (fcntl(fd2, F_GETFL) >= 0)
+			close(fd2);
 #else
-    int fdtmp[256];
-    int fdx = 0;
-    int fd;
+		close(fd2);
+#endif
+		if (fcntl(fd1, F_DUPFD, fd2) < 0)
+			return BADEXIT;
+	}
+	return fd2;
+#else
+	extern int errno;
+	int i, fd, fds[256];
 
-    if (oldfd == newfd)
-	return 0;
-    close(newfd);
-    while ((fd = dup(oldfd)) != newfd)	/* good enough for low fd's */
-	fdtmp[fdx++] = fd;
-    while (fdx > 0)
-	close(fdtmp[--fdx]);
-    return 0;
+	if (fd1 == fd2) return 0;
+	close(fd2);
+	for (i=0; i<256; i++) {
+		fd = fds[i] = dup(fd1);
+		if (fd == fd2) break;
+	}
+	while (i) {
+	    	close(fds[i--]);
+	}
+	if (fd == fd2) return 0;
+	errno = EMFILE;
+	return BADEXIT;
 #endif
 }

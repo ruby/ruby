@@ -17,6 +17,16 @@ if $DEBUG
   Thread.abort_on_exception = true
 end
 
+def Thread.exclusive
+  begin
+    Thread.critical = true
+    r = yield
+  ensure
+    Thread.critical = false
+  end
+  r
+end
+
 class Mutex
   def initialize
     @waiting = []
@@ -52,10 +62,10 @@ class Mutex
 
   def unlock
     return unless @locked
-    Thread.critical = TRUE
+    Thread.critical = true
     t = @waiting.shift
-    @locked = FALSE
-    Thread.critical = FALSE
+    @locked = false
+    Thread.critical = false
     t.run if t
     self
   end
@@ -68,39 +78,46 @@ class Mutex
       unlock
     end
   end
+
+  def exclusive_unlock
+    return unless @locked
+    Thread.exclusive do
+      t = @waiting.shift
+      @locked = false
+      t.wakeup if t
+      yield
+    end
+    self
+  end
 end
 
 class ConditionVariable
   def initialize
     @waiters = []
-    @waiters_mutex = Mutex.new
-    @waiters.taint		# enable tainted comunication
-    self.taint
   end
   
   def wait(mutex)
-    mutex.unlock
-    @waiters_mutex.synchronize {
+    mutex.exclusive_unlock do
       @waiters.push(Thread.current)
-    }
-    Thread.stop
+      Thread.stop
+    end
     mutex.lock
   end
   
   def signal
-    @waiters_mutex.synchronize {
-      t = @waiters.shift
-      t.run if t
-    }
+    t = @waiters.shift
+    t.run if t
   end
     
   def broadcast
-    @waiters_mutex.synchronize {
-      for t in @waiters
-	t.run
-      end
+    waiters0 = nil
+    Thread.exclusive do
+      waiters0 = @waiters.dup
       @waiters.clear
-    }
+    end
+    for t in waiters0
+      t.run
+    end
   end
 end
 
@@ -120,6 +137,7 @@ class Queue
     Thread.critical = false
     t.run if t
   end
+  alias enq push
 
   def pop non_block=false
     Thread.critical = true
@@ -139,9 +157,15 @@ class Queue
       Thread.critical = false
     end
   end
+  alias shift pop
+  alias deq pop
 
   def empty?
     @que.length == 0
+  end
+
+  def clear
+    @que.replace([])
   end
 
   def length
@@ -168,14 +192,14 @@ class SizedQueue<Queue
   end
 
   def max=(max)
-    Thread.critical = TRUE
+    Thread.critical = true
     if @max >= max
       @max = max
-      Thread.critical = FALSE
+      Thread.critical = false
     else
       diff = max - @max
       @max = max
-      Thread.critical = FALSE
+      Thread.critical = false
       diff.times do
 	t = @queue_wait.shift
 	t.run if t

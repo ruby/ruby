@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Dec 24 16:39:21 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -69,7 +69,7 @@ void srand48 _((long));
 #endif /* HAVE_RANDOM */
 
 /* 0 <= RANDOM_NUMBER <= 1 */
-#define RANDOM_NUMBER (((double)RANDOM())/(double)RANDOM_MAX)
+#define RANDOM_NUMBER (((double)RANDOM())/((double)RANDOM_MAX+1))
 
 #endif /* not HAVE_DRAND48 */
 

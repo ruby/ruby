@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Aug  9 17:12:58 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -22,6 +22,10 @@
 #include <unistd.h>
 #endif
 
+#ifndef atof
+double strtod();
+#endif
+
 VALUE rb_cString;
 
 #define STR_FREEZE FL_USER1
@@ -31,8 +35,8 @@ extern VALUE rb_rs;
 
 VALUE
 rb_str_new(ptr, len)
-    char *ptr;
-    size_t len;
+    const char *ptr;
+    long len;
 {
     NEWOBJ(str, struct RString);
     OBJSETUP(str, rb_cString, T_STRING);
@@ -50,24 +54,30 @@ rb_str_new(ptr, len)
 
 VALUE
 rb_str_new2(ptr)
-    char *ptr;
+    const char *ptr;
 {
     return rb_str_new(ptr, strlen(ptr));
 }
 
 VALUE
 rb_tainted_str_new(ptr, len)
-    char *ptr;
-    size_t len;
+    const char *ptr;
+    long len;
 {
-    return rb_obj_taint(rb_str_new(ptr, len));
+    VALUE str = rb_str_new(ptr, len);
+
+    FL_SET(str, FL_TAINT);
+    return str;
 }
 
 VALUE
 rb_tainted_str_new2(ptr)
-    char *ptr;
+    const char *ptr;
 {
-    return rb_obj_taint(rb_str_new2(ptr));
+    VALUE str = rb_str_new2(ptr);
+
+    FL_SET(str, FL_TAINT);
+    return str;
 }
 
 VALUE
@@ -102,7 +112,7 @@ rb_str_new4(orig)
 	str->ptr = RSTRING(orig)->ptr;
 	RSTRING(orig)->orig = (VALUE)str;
 	str->orig = 0;
-	if (rb_safe_level() >= 3) {
+	if (FL_TEST(str, FL_TAINT)) {
 	    FL_SET(str, FL_TAINT);
 	}
 	return (VALUE)str;
@@ -204,7 +214,6 @@ rb_str_s_new(klass, orig)
     if (rb_safe_level() >= 3) {
 	FL_SET(str, FL_TAINT);
     }
-    rb_obj_call_init((VALUE)str);
 
     return (VALUE)str;
 }
@@ -213,7 +222,7 @@ static VALUE
 rb_str_length(str)
     VALUE str;
 {
-    return INT2FIX(RSTRING(str)->len);
+    return INT2NUM(RSTRING(str)->len);
 }
 
 static VALUE
@@ -249,9 +258,9 @@ rb_str_times(str, times)
     VALUE times;
 {
     VALUE str2;
-    size_t i, len;
+    long i, len;
 
-    len = NUM2INT(times);
+    len = NUM2LONG(times);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
     }
@@ -290,61 +299,30 @@ rb_str_format(str, arg)
 }
 
 VALUE
-rb_str_substr(str, start, len)
+rb_str_substr(str, beg, len)
     VALUE str;
-    size_t start, len;
+    long beg, len;
 {
     VALUE str2;
 
-    if (start < 0) {
-	start = RSTRING(str)->len + start;
-    }
-    if (RSTRING(str)->len <= start || len < 0) {
-	return rb_str_new(0,0);
-    }
-    if (RSTRING(str)->len < start + len) {
-	len = RSTRING(str)->len - start;
-    }
-
-    str2 = rb_str_new(RSTRING(str)->ptr+start, len);
-    if (OBJ_TAINTED(str)) OBJ_TAINT(str2);
-
-    return str2;
-}
-
-static VALUE
-rb_str_subseq(str, beg, end)
-    VALUE str;
-    size_t beg, end;
-{
-    size_t len;
-
-    if ((beg > 0 && end > 0 || beg < 0 && end < 0) && beg > end) {
-	rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", beg, end);
-    }
-
+    if (len < 0) return Qnil;
+    if (beg > RSTRING(str)->len) return Qnil;
     if (beg < 0) {
-	beg = RSTRING(str)->len + beg;
-	if (beg < 0) beg = 0;
+	beg += RSTRING(str)->len;
+	if (beg < 0) return Qnil;
     }
-    if (end < 0) {
-	end = RSTRING(str)->len + end;
-	if (end < 0) end = -1;
-	else if (RSTRING(str)->len < end) {
-	    end = RSTRING(str)->len;
-	}
+    if (beg + len > RSTRING(str)->len) {
+	len = RSTRING(str)->len - beg;
     }
-
-    if (beg >= RSTRING(str)->len) {
-	return rb_str_new(0, 0);
-    }
-
-    len = end - beg + 1;
     if (len < 0) {
 	len = 0;
     }
+    if (len == 0) return rb_str_new(0,0);
 
-    return rb_str_substr(str, beg, len);
+    str2 = rb_str_new(RSTRING(str)->ptr+beg, len);
+    if (OBJ_TAINTED(str)) OBJ_TAINT(str2);
+
+    return str2;
 }
 
 void
@@ -355,7 +333,7 @@ rb_str_modify(str)
 
     if (FL_TEST(str, STR_FREEZE))
 	rb_raise(rb_eTypeError, "can't modify frozen string");
-    if (rb_safe_level() >= 4 && !FL_TEST(str, FL_TAINT))
+    if (!FL_TEST(str, FL_TAINT) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify string");
     if (!RSTRING(str)->orig || FL_TEST(str, STR_NO_ORIG)) return;
     ptr = RSTRING(str)->ptr;
@@ -399,7 +377,7 @@ rb_str_dup_frozen(str)
 VALUE
 rb_str_resize(str, len)
     VALUE str;
-    size_t len;
+    long len;
 {
     rb_str_modify(str);
 
@@ -416,8 +394,8 @@ rb_str_resize(str, len)
 VALUE
 rb_str_cat(str, ptr, len)
     VALUE str;
-    char *ptr;
-    size_t len;
+    const char *ptr;
+    long len;
 {
     if (len > 0) {
 	rb_str_modify(str);
@@ -434,6 +412,7 @@ VALUE
 rb_str_concat(str1, str2)
     VALUE str1, str2;
 {
+    rb_str_modify(str1);
     if (FIXNUM_P(str2)) {
 	int i = FIX2INT(str2);
 	if (0 <= i && i <= 0xff) { /* byte */
@@ -449,7 +428,7 @@ int
 rb_str_hash(str)
     VALUE str;
 {
-    register size_t len = RSTRING(str)->len;
+    register long len = RSTRING(str)->len;
     register char *p = RSTRING(str)->ptr;
     register int key = 0;
 
@@ -482,7 +461,7 @@ int
 rb_str_cmp(str1, str2)
     VALUE str1, str2;
 {
-    size_t len;
+    long len;
     int retval;
 
     if (ruby_ignorecase) {
@@ -531,7 +510,7 @@ rb_str_match(x, y)
     VALUE x, y;
 {
     VALUE reg;
-    size_t start;
+    long start;
 
     switch (TYPE(y)) {
       case T_REGEXP:
@@ -543,7 +522,7 @@ rb_str_match(x, y)
 	if (start == -1) {
 	    return Qfalse;
 	}
-	return INT2FIX(start);
+	return INT2NUM(start);
 
       default:
 	return rb_funcall(y, rb_intern("=~"), 1, x);
@@ -557,26 +536,31 @@ rb_str_match2(str)
     return rb_reg_match2(rb_reg_regcomp(str));
 }
 
-static size_t
+static long
 rb_str_index(str, sub, offset)
     VALUE str, sub;
-    size_t offset;
+    long offset;
 {
     char *s, *e, *p;
-    size_t len;
+    long len;
 
+    if (offset < 0) {
+	offset += RSTRING(str)->len;
+	if (offset < 0) return -1;
+    }
     if (RSTRING(str)->len - offset < RSTRING(sub)->len) return -1;
     s = RSTRING(str)->ptr+offset;
     p = RSTRING(sub)->ptr;
     len = RSTRING(sub)->len;
-    e = s + RSTRING(str)->len - len + 1;
+    if (len == 0) return offset;
+    e = RSTRING(str)->ptr + RSTRING(str)->len - len + 1;
     while (s < e) {
 	if (*s == *(RSTRING(sub)->ptr) && memcmp(s, p, len) == 0) {
 	    return (s-(RSTRING(str)->ptr));
 	}
 	s++;
     }
-    return (size_t)-1;
+    return -1;
 }
 
 static VALUE
@@ -587,10 +571,10 @@ rb_str_index_method(argc, argv, str)
 {
     VALUE sub;
     VALUE initpos;
-    size_t pos;
+    long pos;
 
     if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-	pos = NUM2UINT(initpos);
+	pos = NUM2LONG(initpos);
     }
     else {
 	pos = 0;
@@ -608,22 +592,22 @@ rb_str_index_method(argc, argv, str)
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
-	  size_t len = RSTRING(str)->len;
+	  long len = RSTRING(str)->len;
 	  char *p = RSTRING(str)->ptr;
 
 	  for (;pos<len;pos++) {
-	      if (p[pos] == c) return INT2FIX(pos);
+	      if (p[pos] == c) return INT2NUM(pos);
 	  }
 	  return Qnil;
       }
 
       default:
-	rb_raise(rb_eTypeError, "Type mismatch: %s given",
+	rb_raise(rb_eTypeError, "type mismatch: %s given",
 		 rb_class2name(CLASS_OF(sub)));
     }
 
     if (pos == -1) return Qnil;
-    return INT2FIX(pos);
+    return INT2NUM(pos);
 }
 
 static VALUE
@@ -633,13 +617,13 @@ rb_str_rindex(argc, argv, str)
     VALUE str;
 {
     VALUE sub;
-    VALUE initpos;
-    size_t pos, len;
+    VALUE position;
+    int pos, len;
     char *s, *sbeg, *t;
 
-    if (rb_scan_args(argc, argv, "11", &sub, &initpos) == 2) {
-	pos = NUM2UINT(initpos);
-	if (pos >= RSTRING(str)->len) pos = RSTRING(str)->len;
+    if (rb_scan_args(argc, argv, "11", &sub, &position) == 2) {
+	pos = NUM2INT(position);
+	if (pos > RSTRING(str)->len) pos = RSTRING(str)->len;
     }
     else {
 	pos = RSTRING(str)->len;
@@ -647,37 +631,50 @@ rb_str_rindex(argc, argv, str)
 
     switch (TYPE(sub)) {
       case T_REGEXP:
-	pos = rb_reg_search(sub, str, pos, 1);
-	if (pos >= 0) return INT2FIX(pos); 
+	if (RREGEXP(sub)->len) {
+	    pos = rb_reg_search(sub, str, pos, 1);
+	}
+	if (pos >= 0) return INT2NUM(pos);
 	break;
 
       case T_STRING:
-	/* substring longer than string */
-	if (pos > RSTRING(str)->len) return Qnil;
-	sbeg = RSTRING(str)->ptr; s = sbeg + pos - RSTRING(sub)->len;
-	t = RSTRING(sub)->ptr;
 	len = RSTRING(sub)->len;
-	while (sbeg <= s) {
-	    if (*s == *t && memcmp(s, t, len) == 0) {
-		return INT2FIX(s - sbeg);
+	/* substring longer than string */
+	if (RSTRING(str)->len < len) return Qnil;
+	if (RSTRING(str)->len - pos < len) {
+	    pos = RSTRING(str)->len - len;
+	}
+	sbeg = RSTRING(str)->ptr;
+	s = RSTRING(str)->ptr + pos;
+	t = RSTRING(sub)->ptr;
+	if (len) {
+	    while (sbeg <= s) {
+		if (*s == *t && memcmp(s, t, len) == 0) {
+		    return INT2NUM(s - RSTRING(str)->ptr);
+		}
+		s--;
 	    }
-	    s--;
+	}
+	else {
+	    return INT2NUM(pos);
 	}
 	break;
 
       case T_FIXNUM:
       {
 	  int c = FIX2INT(sub);
-	  char *p = RSTRING(str)->ptr;
+	  char *p = RSTRING(str)->ptr + pos;
+	  char *pbeg = RSTRING(str)->ptr;
 
-	  for (;pos>=0;pos--) {
-	      if (p[pos] == c) return INT2FIX(pos);
+	  while (pbeg <= p) {
+	      if (*p == c) return INT2NUM(p - RSTRING(str)->ptr);
+	      p--;
 	  }
 	  return Qnil;
       }
 
       default:
-	rb_raise(rb_eTypeError, "Type mismatch: %s given",
+	rb_raise(rb_eTypeError, "type mismatch: %s given",
 		 rb_class2name(CLASS_OF(sub)));
     }
     return Qnil;
@@ -714,7 +711,7 @@ rb_str_succ(orig)
 {
     VALUE str, str2;
     char *sbeg, *s;
-    char c = -1;
+    int c = -1;
 
     str = rb_str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
 
@@ -754,25 +751,32 @@ rb_str_succ_bang(str)
 }
 
 VALUE
-rb_str_upto(beg, end)
+rb_str_upto(beg, end, excl)
     VALUE beg, end;
+    int excl;
 {
     VALUE current;
 
     if (TYPE(end) != T_STRING) end = rb_str_to_str(end);
-    if (RTEST(rb_funcall(beg, '>', 1, end))) 
-	return Qnil;
 
     current = beg;
     for (;;) {
 	rb_yield(current);
-	if (rb_str_equal(current, end)) break;
+	if (!excl && rb_str_equal(current, end)) break;
 	current = rb_str_succ(current);
+	if (excl && rb_str_equal(current, end)) break;
 	if (RSTRING(current)->len > RSTRING(end)->len)
 	    break;
     }
 
-    return Qnil;
+    return beg;
+}
+
+static VALUE
+rb_str_upto_method(beg, end)
+    VALUE beg, end;
+{
+    return rb_str_upto(beg, end, 0);
 }
 
 static VALUE
@@ -780,11 +784,11 @@ rb_str_aref(str, indx)
     VALUE str;
     VALUE indx;
 {
-    size_t idx;
+    long idx;
 
     switch (TYPE(indx)) {
       case T_FIXNUM:
-	idx = FIX2INT(indx);
+	idx = FIX2LONG(indx);
 
 	if (idx < 0) {
 	    idx = RSTRING(str)->len + idx;
@@ -800,18 +804,23 @@ rb_str_aref(str, indx)
 	return Qnil;
 
       case T_STRING:
-	if (rb_str_index(str, indx, 0) != (size_t)-1) return indx;
+	if (rb_str_index(str, indx, 0) != -1) return indx;
 	return Qnil;
 
       default:
 	/* check if indx is Range */
 	{
-	    size_t beg, end;
-	    if (rb_range_beg_end(indx, &beg, &end)) {
-		return rb_str_subseq(str, beg, end);
+	    long beg, len;
+	    switch (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 0)) {
+	      case Qfalse:
+		break;
+	      case Qnil:
+		return Qnil;
+	      default:
+		return rb_str_substr(str, beg, len);
 	    }
 	}
-	rb_raise(rb_eIndexError, "Invalid index for string");
+	rb_raise(rb_eIndexError, "invalid index for string");
     }
     return Qnil;		/* not reached */
 }
@@ -833,7 +842,8 @@ rb_str_aref_method(argc, argv, str)
 static void
 rb_str_replace(str, beg, len, val)
     VALUE str, val;
-    size_t beg, len;
+    int beg;
+    int len;
 {
     if (len < RSTRING(val)->len) {
 	/* expand string */
@@ -853,44 +863,6 @@ rb_str_replace(str, beg, len, val)
     RSTRING(str)->ptr[RSTRING(str)->len] = '\0';
 }
 
-/* rb_str_replace2() understands negatice offset */
-static void
-rb_str_replace2(str, beg, end, val)
-    VALUE str, val;
-    size_t beg, end;
-{
-    size_t len;
-
-    if ((beg > 0 && end > 0 || beg < 0 && end < 0) && beg > end) {
-	rb_raise(rb_eIndexError, "end smaller than beg [%d..%d]", beg, end);
-    }
-
-    if (beg < 0) {
-	beg = RSTRING(str)->len + beg;
-	if (beg < 0) {
-	    beg = 0;
-	}
-    }
-    if (RSTRING(str)->len <= beg) {
-	beg = RSTRING(str)->len;
-    }
-    if (end < 0) {
-	end = RSTRING(str)->len + end;
-	if (end < 0) {
-	    end = 0;
-	}
-    }
-    if (RSTRING(str)->len <= end) {
-	end = RSTRING(str)->len - 1;
-    }
-    len = end - beg + 1;	/* length of substring */
-    if (len < 0) {
-	len = 0;
-    }
-
-    rb_str_replace(str, beg, len, val);
-}
-
 static VALUE rb_str_sub_bang _((int, VALUE*, VALUE));
 
 static VALUE
@@ -898,23 +870,28 @@ rb_str_aset(str, indx, val)
     VALUE str;
     VALUE indx, val;
 {
-    size_t idx, beg, end;
+    int idx;
+    int beg;
 
     switch (TYPE(indx)) {
       case T_FIXNUM:
-	idx = NUM2UINT(indx);
+	beg = idx = NUM2INT(indx);
 	if (idx < 0) {
-	    idx = RSTRING(str)->len + idx;
+	    idx += RSTRING(str)->len;
 	}
 	if (idx < 0 || RSTRING(str)->len <= idx) {
-	    rb_raise(rb_eIndexError, "index %d out of range [0..%d]", idx,
-		     RSTRING(str)->len - 1);
+	    rb_raise(rb_eIndexError, "index %d out of string", idx);
 	}
-	if (TYPE(val) == T_STRING) {
-	    rb_str_replace(str, idx, 1, val);
+	if (FIXNUM_P(val)) {
+	    if (RSTRING(str)->len == idx) {
+		RSTRING(str)->len += 1;
+		REALLOC_N(RSTRING(str)->ptr, char, RSTRING(str)->len);
+	    }
+	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
 	}
 	else {
-	    RSTRING(str)->ptr[idx] = NUM2INT(val) & 0xff;
+	    if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
+	    rb_str_replace(str, idx, 1, val);
 	}
 	return val;
 
@@ -929,23 +906,23 @@ rb_str_aset(str, indx, val)
 
       case T_STRING:
 	beg = rb_str_index(str, indx, 0);
-	if (beg != (size_t)-1) {
-	    end = beg + RSTRING(indx)->len - 1;
-	    rb_str_replace2(str, beg, end, val);
+	if (beg != -1) {
+	    if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
+	    rb_str_replace(str, beg, RSTRING(indx)->len, val);
 	}
 	return val;
 
       default:
 	/* check if indx is Range */
 	{
-	    size_t beg, end;
-	    if (rb_range_beg_end(indx, &beg, &end)) {
+	    long beg, len;
+	    if (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 2)) {
 		if (TYPE(val) != T_STRING) val = rb_str_to_str(val);
-		rb_str_replace2(str, beg, end, val);
+		rb_str_replace(str, beg, len, val);
 		return val;
 	    }
 	}
-	rb_raise(rb_eIndexError, "Invalid index for string");
+	rb_raise(rb_eIndexError, "invalid index for string");
     }
 }
 
@@ -960,16 +937,21 @@ rb_str_aset_method(argc, argv, str)
     rb_str_modify(str);
 
     if (rb_scan_args(argc, argv, "21", &arg1, &arg2, &arg3) == 3) {
-	size_t beg, len;
+	int beg, len;
 
 	if (TYPE(arg3) != T_STRING) arg3 = rb_str_to_str(arg3);
-	beg = NUM2UINT(arg1);
-	if (beg < 0) {
-	    beg = RSTRING(str)->len + beg;
-	    if (beg < 0) beg = 0;
-	}
-	len = NUM2UINT(arg2);
+	beg = NUM2INT(arg1);
+	len = NUM2INT(arg2);
 	if (len < 0) rb_raise(rb_eIndexError, "negative length %d", len);
+	if (beg < 0) {
+	    beg += RSTRING(str)->len;
+	}
+	if (beg < 0 || RSTRING(str)->len < beg) {
+	    if (beg < 0) {
+		beg -= RSTRING(str)->len;
+	    }
+	    rb_raise(rb_eIndexError, "index %d out of string", beg);
+	}
 	if (beg + len > RSTRING(str)->len) {
 	    len = RSTRING(str)->len - beg;
 	}
@@ -1007,7 +989,7 @@ rb_str_sub_bang(argc, argv, str)
     VALUE pat, repl, match;
     struct re_registers *regs;
     int iter = 0;
-    size_t plen;
+    int plen;
 
     if (argc == 1 && rb_iterator_p()) {
 	iter = 1;
@@ -1016,7 +998,7 @@ rb_str_sub_bang(argc, argv, str)
 	repl = rb_obj_as_string(argv[1]);;
     }
     else {
-	rb_raise(rb_eArgError, "Wrong # of arguments(%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
     }
 
     pat = get_pat(argv[0]);
@@ -1026,7 +1008,10 @@ rb_str_sub_bang(argc, argv, str)
 	regs = RMATCH(match)->regs;
 
 	if (iter) {
+	    rb_match_busy(match, Qtrue);
 	    repl = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    rb_match_busy(match, Qfalse);
+	    rb_backref_set(match);
 	}
 	else {
 	    repl = rb_reg_regsub(repl, str, regs);
@@ -1070,10 +1055,10 @@ rb_str_gsub_bang(argc, argv, str)
 {
     VALUE pat, val, repl, match;
     struct re_registers *regs;
-    int beg, offset, n;
+    int beg, n;
     int iter = 0;
     char *buf, *bp, *cp;
-    size_t blen, len;
+    int offset, blen, len;
 
     if (argc == 1 && rb_iterator_p()) {
 	iter = 1;
@@ -1082,7 +1067,7 @@ rb_str_gsub_bang(argc, argv, str)
 	repl = rb_obj_as_string(argv[1]);;
     }
     else {
-	rb_raise(rb_eArgError, "Wrong # of arguments(%d for 2)", argc);
+	rb_raise(rb_eArgError, "wrong # of arguments(%d for 2)", argc);
     }
 
     pat = get_pat(argv[0]);
@@ -1100,7 +1085,10 @@ rb_str_gsub_bang(argc, argv, str)
 	match = rb_backref_get();
 	regs = RMATCH(match)->regs;
 	if (iter) {
+	    rb_match_busy(match, Qtrue);
 	    val = rb_obj_as_string(rb_yield(rb_reg_nth_match(0, match)));
+	    rb_match_busy(match, Qfalse);
+	    rb_backref_set(match);
 	}
 	else {
 	    val = rb_reg_regsub(repl, str, regs);
@@ -1138,7 +1126,7 @@ rb_str_gsub_bang(argc, argv, str)
     }
     if (RSTRING(str)->len > offset) {
 	len = bp - buf;
-	if (blen - len < RSTRING(str)->len - offset) {
+	if (blen - len < RSTRING(str)->len - offset + 1) {
 	    REALLOC_N(buf, char, len + RSTRING(str)->len - offset + 1);
 	    bp = buf + len;
 	}
@@ -1207,8 +1195,8 @@ rb_f_sub(argc, argv)
 {
     VALUE line, v;
 
-    line = rb_str_dup(uscore_get());
-    v = rb_str_sub_bang(argc, argv, line);
+    line = uscore_get();
+    v = rb_str_sub_bang(argc, argv, line = rb_str_dup(line));
     if (NIL_P(v)) return line;
     rb_lastline_set(v);
     return v;
@@ -1229,8 +1217,8 @@ rb_f_gsub(argc, argv)
 {
     VALUE line, v;
 
-    line = rb_str_dup(uscore_get());
-    v = rb_str_gsub_bang(argc, argv, line);
+    line = uscore_get();
+    v = rb_str_gsub_bang(argc, argv, line = rb_str_dup(line));
     if (NIL_P(v)) return line;
     rb_lastline_set(v);
     return v;
@@ -1261,7 +1249,7 @@ rb_str_reverse(str)
     VALUE obj;
     char *s, *e, *p;
 
-    if (RSTRING(str)->len <= 1) return str;
+    if (RSTRING(str)->len <= 1) return rb_str_dup(str);
 
     obj = rb_str_new(0, RSTRING(str)->len);
     s = RSTRING(str)->ptr; e = s + RSTRING(str)->len - 1;
@@ -1278,16 +1266,16 @@ static VALUE
 rb_str_include(str, arg)
     VALUE str, arg;
 {
-    size_t i;
+    long i;
 
     if (FIXNUM_P(arg)) {
 	int c = FIX2INT(arg);
-	size_t len = RSTRING(str)->len;
+	long len = RSTRING(str)->len;
 	char *p = RSTRING(str)->ptr;
 
 	for (i=0; i<len; i++) {
 	    if (p[i] == c) {
-		return INT2FIX(i);
+		return INT2NUM(i);
 	    }
 	}
 	return Qfalse;
@@ -1296,8 +1284,8 @@ rb_str_include(str, arg)
     if (TYPE(arg) != T_STRING) arg = rb_str_to_str(arg);
     i = rb_str_index(str, arg, 0);
 
-    if (i == (size_t)-1) return Qfalse;
-    return INT2FIX(i);
+    if (i == -1) return Qfalse;
+    return INT2NUM(i);
 }
 
 static VALUE
@@ -1311,7 +1299,7 @@ static VALUE
 rb_str_to_f(str)
     VALUE str;
 {
-    double f = atof(RSTRING(str)->ptr);
+    double f = strtod(RSTRING(str)->ptr, 0);
 
     return rb_float_new(f);
 }
@@ -1347,18 +1335,20 @@ rb_str_inspect(str)
     while (p < pend) {
 	char c = *p++;
 	if (ismbchar(c) && p < pend) {
-	    int len = mbclen(c)-1;
+	    int len = mbclen(c);
 
 	    CHECK(len);
 	    *b++ = c;
-	    while (len--) {
+	    while (--len) {
 		*b++ = *p++;
 	    }
 	}
+#if 0
 	else if ((c & 0x80) && rb_kcode() != MBCTYPE_EUC) {
 	    CHECK(1);
 	    *b++ = c;
 	}
+#endif
 	else if (c == '"'|| c == '\\') {
 	    CHECK(2);
 	    *b++ = '\\';
@@ -1418,7 +1408,7 @@ static VALUE
 rb_str_dump(str)
     VALUE str;
 {
-    size_t len;
+    int len;
     char *p, *pend;
     char *q, *qend;
     VALUE result;
@@ -1430,7 +1420,7 @@ rb_str_dump(str)
 	switch (c) {
 	  case '"':  case '\\':
 	  case '\n': case '\r':
-	  case '\t': case '\f':
+	  case '\t': case '\f': case '#':
 	  case '\013': case '\007': case '\033': 
 	    len += 2;
 	    break;
@@ -1457,6 +1447,10 @@ rb_str_dump(str)
 	if (c == '"' || c == '\\') {
 	    *q++ = '\\';
 	    *q++ = c;
+	}
+	else if (c == '#') {
+	    *q++ = '\\';
+	    *q++ = '#';
 	}
 	else if (ISPRINT(c)) {
 	    *q++ = c;
@@ -1511,7 +1505,7 @@ rb_str_upcase_bang(str)
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
-	    s+=mbclen(*s);
+	    s+=mbclen(*s) - 1;
 	}
 	else if (islower(*s)) {
 	    *s = toupper(*s);
@@ -1545,7 +1539,7 @@ rb_str_downcase_bang(str)
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
-	    s+=mbclen(*s);
+	    s+=mbclen(*s) - 1;
 	}
 	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);
@@ -1583,7 +1577,7 @@ rb_str_capitalize_bang(str)
     }
     while (++s < send) {
 	if (ismbchar(*s)) {
-	    s+=mbclen(*s);
+	    s+=mbclen(*s) - 1;
 	}
 	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);
@@ -1615,7 +1609,7 @@ rb_str_swapcase_bang(str)
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
     while (s < send) {
 	if (ismbchar(*s)) {
-	    s+=mbclen(*s);
+	    s+=mbclen(*s) - 1;
 	}
 	else if (ISUPPER(*s)) {
 	    *s = tolower(*s);
@@ -1680,7 +1674,7 @@ trnext(t)
     }
 }
 
-static VALUE rb_str_delete_bang _((VALUE,VALUE));
+static VALUE rb_str_delete_bang _((int,VALUE*,VALUE));
 
 static VALUE
 tr_trans(str, src, repl, sflag)
@@ -1689,19 +1683,21 @@ tr_trans(str, src, repl, sflag)
 {
     struct tr trsrc, trrepl;
     int cflag = 0;
-    char trans[256];
-    int i, c, c0, modify = 0;
+    int trans[256];
+    int i, c, modify = 0;
     char *s, *send;
 
     rb_str_modify(str);
     if (TYPE(src) != T_STRING) src = rb_str_to_str(src);
     trsrc.p = RSTRING(src)->ptr; trsrc.pend = trsrc.p + RSTRING(src)->len;
-    if (RSTRING(src)->len > 2 && RSTRING(src)->ptr[0] == '^') {
+    if (RSTRING(src)->len >= 2 && RSTRING(src)->ptr[0] == '^') {
 	cflag++;
 	trsrc.p++;
     }
     if (TYPE(repl) != T_STRING) repl = rb_str_to_str(repl);
-    if (RSTRING(repl)->len == 0) return rb_str_delete_bang(str, src);
+    if (RSTRING(repl)->len == 0) {
+	return rb_str_delete_bang(1, &src, str);
+    }
     trrepl.p = RSTRING(repl)->ptr;
     trrepl.pend = trrepl.p + RSTRING(repl)->len;
     trsrc.gen = trrepl.gen = 0;
@@ -1713,28 +1709,21 @@ tr_trans(str, src, repl, sflag)
 	    trans[i] = 1;
 	}
 	while ((c = trnext(&trsrc)) >= 0) {
-	    trans[c & 0xff] = 0;
+	    trans[c & 0xff] = -1;
 	}
+	while ((c = trnext(&trrepl)) >= 0)
+	    /* retrieve last replacer */;
 	for (i=0; i<256; i++) {
-	    if (trans[i] == 0) {
-		trans[i] = i;
-	    }
-	    else {
-		c = trnext(&trrepl);
-		if (c == -1) {
-		    trans[i] = trrepl.now;
-		}
-		else {
-		    trans[i] = c;
-		}
+	    if (trans[i] >= 0) {
+		trans[i] = trrepl.now;
 	    }
 	}
     }
     else {
-	char r;
+	int r;
 
 	for (i=0; i<256; i++) {
-	    trans[i] = i;
+	    trans[i] = -1;
 	}
 	while ((c = trnext(&trsrc)) >= 0) {
 	    r = trnext(&trrepl);
@@ -1744,19 +1733,21 @@ tr_trans(str, src, repl, sflag)
     }
 
     s = RSTRING(str)->ptr; send = s + RSTRING(str)->len;
-    c0 = -1;
     if (sflag) {
 	char *t = s;
+	int c0, last = -1;
 
 	while (s < send) {
-	    c = trans[*s++ & 0xff] & 0xff;
-	    if (s[-1] == c || c != c0) {
-		c0 = (s[-1] == c)?-1:c;
-		if (*t != c) {
-		    *t = c;
-		    modify = 1;
-		}
-		*t++ = c;
+	    c0 = *s++;
+	    if ((c = trans[c0 & 0xff]) >= 0) {
+		if (last == c) continue;
+		last = c;
+		*t++ = c & 0xff;
+		modify = 1;
+	    }
+	    else {
+		last = -1;
+		*t++ = c0;
 	    }
 	}
 	if (RSTRING(str)->len > (t - RSTRING(str)->ptr)) {
@@ -1767,9 +1758,8 @@ tr_trans(str, src, repl, sflag)
     }
     else {
 	while (s < send) {
-	    c = trans[*s & 0xff] & 0xff;
-	    if (*s != c) {
-		*s = c;
+	    if ((c = trans[*s & 0xff]) >= 0) {
+		*s = c & 0xff;
 		modify = 1;
 	    }
 	    s++;
@@ -1798,44 +1788,63 @@ rb_str_tr(str, src, repl)
 }
 
 static void
-tr_setup_table(str, table)
+tr_setup_table(str, table, init)
     VALUE str;
     char table[256];
+    int init;
 {
+    char buf[256];
     struct tr tr;
-    int i, cflag = 0;
-    int c;
+    int i, c;
+    int cflag = 0;
 
     tr.p = RSTRING(str)->ptr; tr.pend = tr.p + RSTRING(str)->len;
     tr.gen = tr.now = tr.max = 0;
     if (RSTRING(str)->len > 1 && RSTRING(str)->ptr[0] == '^') {
-	cflag++;
+	cflag = 1;
 	tr.p++;
     }
 
-    for  (i=0; i<256; i++) {
-	table[i] = cflag ? 1 : 0;
+    if (init) {
+	for (i=0; i<256; i++) {
+	    table[i] = 1;
+	}
+    }
+    for (i=0; i<256; i++) {
+	buf[i] = cflag;
     }
     while ((c = trnext(&tr)) >= 0) {
-	table[c & 0xff] = cflag ? 0 : 1;
+	buf[c & 0xff] = !cflag;
+    }
+    for (i=0; i<256; i++) {
+	table[i] = table[i]&&buf[i];
     }
 }
 
 static VALUE
-rb_str_delete_bang(str1, str2)
-    VALUE str1, str2;
+rb_str_delete_bang(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
 {
     char *s, *send, *t;
     char squeez[256];
     int modify = 0;
+    int init = 1;
+    int i;
 
-    if (TYPE(str2) != T_STRING) str2 = rb_str_to_str(str2);
-    tr_setup_table(str2, squeez);
+    for (i=0; i<argc; i++) {
+	VALUE s = argv[i];
 
-    rb_str_modify(str1);
+	if (TYPE(s) != T_STRING) 
+	    s = rb_str_to_str(s);
+	tr_setup_table(s, squeez, init);
+	init = 0;
+    }
 
-    s = t = RSTRING(str1)->ptr;
-    send = s + RSTRING(str1)->len;
+    rb_str_modify(str);
+    s = t = RSTRING(str)->ptr;
+    send = s + RSTRING(str)->len;
     while (s < send) {
 	if (squeez[*s & 0xff])
 	    modify = 1;
@@ -1844,72 +1853,71 @@ rb_str_delete_bang(str1, str2)
 	s++;
     }
     *t = '\0';
-    RSTRING(str1)->len = t - RSTRING(str1)->ptr;
+    RSTRING(str)->len = t - RSTRING(str)->ptr;
 
-    if (modify) return str1;
+    if (modify) return str;
     return Qnil;
 }
 
 static VALUE
-rb_str_delete(str1, str2)
-    VALUE str1, str2;
+rb_str_delete(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
 {
-    VALUE val = rb_str_delete_bang(str1 = rb_str_dup(str1), str2);
+    VALUE val = rb_str_delete_bang(argc, argv, str = rb_str_dup(str));
 
-    if (NIL_P(val)) return str1;
+    if (NIL_P(val)) return str;
     return val;
 }
 
 static VALUE
-tr_squeeze(str1, str2)
-    VALUE str1, str2;
+rb_str_squeeze_bang(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
 {
     char squeez[256];
     char *s, *send, *t;
-    char c, save, modify = 0;
+    int c, save, modify = 0;
+    int init = 1;
+    int i;
 
-    if (!NIL_P(str2)) {
-	tr_setup_table(str2, squeez);
-    }
-    else {
-	int i;
-
+    if (argc == 0) {
 	for (i=0; i<256; i++) {
 	    squeez[i] = 1;
 	}
     }
+    else {
+	for (i=0; i<argc; i++) {
+	    VALUE s = argv[i];
 
-    rb_str_modify(str1);
+	    if (TYPE(s) != T_STRING) 
+		s = rb_str_to_str(s);
+	    tr_setup_table(s, squeez, init);
+	    init = 0;
+	}
+    }
 
-    s = t = RSTRING(str1)->ptr;
-    send = s + RSTRING(str1)->len;
+    rb_str_modify(str);
+
+    s = t = RSTRING(str)->ptr;
+    send = s + RSTRING(str)->len;
     save = -1;
     while (s < send) {
 	c = *s++ & 0xff;
-	if (c != save || !squeez[c & 0xff]) {
+	if (c != save || !squeez[c]) {
 	    *t++ = save = c;
-	    modify = 1;
 	}
     }
     *t = '\0';
-    RSTRING(str1)->len = t - RSTRING(str1)->ptr;
-
-    if (modify) return str1;
-    return Qnil;
-}
-
-static VALUE
-rb_str_squeeze_bang(argc, argv, str1)
-    int argc;
-    VALUE *argv;
-    VALUE str1;
-{
-    VALUE str2;
-
-    if (rb_scan_args(argc, argv, "01", &str2) == 1 && TYPE(str2) != T_STRING) {
-	str2 = rb_str_to_str(str2);
+    if (t - RSTRING(str)->ptr != RSTRING(str)->len) {
+	RSTRING(str)->len = t - RSTRING(str)->ptr;
+	modify = 1;
     }
-    return tr_squeeze(str1, str2);
+
+    if (modify) return str;
+    return Qnil;
 }
 
 static VALUE
@@ -1939,6 +1947,40 @@ rb_str_tr_s(str, src, repl)
 
     if (NIL_P(val)) return str;
     return val;
+}
+
+static VALUE
+rb_str_count(argc, argv, str)
+    int argc;
+    VALUE *argv;
+    VALUE str;
+{
+    char table[256];
+    char *s, *send;
+    int init = 1;
+    int i;
+
+    if (argc < 0) {
+	rb_raise(rb_eArgError, "wrong # of arguments");
+    }
+    for (i=0; i<argc; i++) {
+	VALUE s = argv[i];
+
+	if (TYPE(s) != T_STRING) 
+	    s = rb_str_to_str(s);
+	tr_setup_table(s, table, init);
+	init = 0;
+    }
+
+    s = RSTRING(str)->ptr;
+    send = s + RSTRING(str)->len;
+    i = 0;
+    while (s < send) {
+	if (table[*s++ & 0xff]) {
+	    i++;
+	}
+    }
+    return INT2NUM(i);
 }
 
 static VALUE
@@ -1990,7 +2032,7 @@ rb_str_split_method(argc, argv, str)
     beg = 0;
     if (char_sep >= 0) {
 	char *ptr = RSTRING(str)->ptr;
-	size_t len = RSTRING(str)->len;
+	int len = RSTRING(str)->len;
 	char *eptr = ptr + len;
 
 	if (char_sep == ' ') {	/* AWK emulation */
@@ -2031,9 +2073,9 @@ rb_str_split_method(argc, argv, str)
 	}
     }
     else {
-	size_t start = beg;
+	int start = beg;
 	int last_null = 0;
-	size_t idx;
+	int idx;
 	struct re_registers *regs;
 
 	while ((end = rb_reg_search(spat, str, start, 0)) >= 0) {
@@ -2060,14 +2102,14 @@ rb_str_split_method(argc, argv, str)
 		if (BEG(idx) == END(idx))
 		    tmp = rb_str_new(0, 0);
 		else
-		    tmp = rb_str_subseq(str, BEG(idx), END(idx)-1);
+		    tmp = rb_str_substr(str, BEG(idx), END(idx)-BEG(idx));
 		rb_ary_push(result, tmp);
 	    }
 	    if (!NIL_P(limit) && lim <= ++i) break;
 	}
     }
     if (!NIL_P(limit) || RSTRING(str)->len > beg || lim < 0) {
-	rb_ary_push(result, rb_str_subseq(str, beg, -1));
+	rb_ary_push(result, rb_str_substr(str, beg, RSTRING(str)->len-beg));
     }
     if (NIL_P(limit) && lim == 0) {
 	while (RARRAY(result)->len > 0 &&
@@ -2081,7 +2123,7 @@ rb_str_split_method(argc, argv, str)
 VALUE
 rb_str_split(str, sep0)
     VALUE str;
-    char *sep0;
+    const char *sep0;
 {
     VALUE sep;
 
@@ -2109,7 +2151,7 @@ rb_str_each_line(argc, argv, str)
     int rslen;
     char *p = RSTRING(str)->ptr, *pend = p + RSTRING(str)->len, *s;
     char *ptr = p;
-    size_t len = RSTRING(str)->len;
+    int len = RSTRING(str)->len;
     VALUE line;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
@@ -2118,9 +2160,11 @@ rb_str_each_line(argc, argv, str)
 
     if (NIL_P(rs)) {
 	rb_yield(str);
-	return Qnil;
+	return str;
     }
-    if (TYPE(rs) != T_STRING) rs = rb_str_to_str(rs);
+    if (TYPE(rs) != T_STRING) {
+	rs = rb_str_to_str(rs);
+    }
 
     rslen = RSTRING(rs)->len;
     if (rslen == 0) {
@@ -2132,7 +2176,7 @@ rb_str_each_line(argc, argv, str)
 
     for (s = p, p += rslen; p < pend; p++) {
 	if (rslen == 0 && *p == '\n') {
-	    if (p[1] != '\n') continue;
+	    if (*++p != '\n') continue;
 	    while (*p == '\n') p++;
 	}
 	if (p[-1] == newline &&
@@ -2147,23 +2191,24 @@ rb_str_each_line(argc, argv, str)
     }
 
     if (s != pend) {
+        if (p > pend) p = pend;
 	line = rb_str_new(s, p - s);
 	rb_yield(line);
     }
 
-    return Qnil;
+    return str;
 }
 
 static VALUE
 rb_str_each_byte(str)
-    struct RString* str;
+    VALUE str;
 {
-    size_t i;
+    int i;
 
     for (i=0; i<RSTRING(str)->len; i++) {
 	rb_yield(INT2FIX(RSTRING(str)->ptr[i] & 0xff));
     }
-    return Qnil;
+    return str;
 }
 
 static VALUE
@@ -2205,10 +2250,10 @@ rb_f_chop_bang(str)
 static VALUE
 rb_f_chop()
 {
-    VALUE str = rb_str_dup(uscore_get());
-    VALUE val = rb_str_chop_bang(str);
+    VALUE str = uscore_get();
+    VALUE val = rb_str_chop_bang(str = rb_str_dup(str));
 
-    if (NIL_P(str)) return str;
+    if (NIL_P(val)) return str;
     rb_lastline_set(val);
     return val;
 }
@@ -2223,7 +2268,7 @@ rb_str_chomp_bang(argc, argv, str)
     int newline;
     int rslen;
     char *p = RSTRING(str)->ptr;
-    size_t len = RSTRING(str)->len;
+    int len = RSTRING(str)->len;
 
     if (rb_scan_args(argc, argv, "01", &rs) == 0) {
 	rs = rb_rs;
@@ -2281,8 +2326,11 @@ rb_f_chomp(argc, argv)
     int argc;
     VALUE *argv;
 {
-    VALUE str = rb_str_dup(uscore_get());
-    VALUE val = rb_str_chomp_bang(argc, argv, str);
+    VALUE str = uscore_get();
+    VALUE val = rb_str_chomp_bang(argc, argv, str = rb_str_dup(str));
+
+    if (NIL_P(val)) return str;
+    rb_lastline_set(val);
     return val;
 }
 
@@ -2335,11 +2383,11 @@ rb_str_strip(str)
 static VALUE
 scan_once(str, pat, start)
     VALUE str, pat;
-    size_t *start;
+    long *start;
 {
     VALUE result, match;
     struct re_registers *regs;
-    size_t i;
+    long i;
 
     if (rb_reg_search(pat, str, *start, 0) >= 0) {
 	match = rb_backref_get();
@@ -2371,7 +2419,7 @@ rb_str_scan(str, pat)
     VALUE str, pat;
 {
     VALUE result;
-    size_t start = 0;
+    long start = 0;
 
     pat = get_pat(pat);
     if (!rb_iterator_p()) {
@@ -2386,7 +2434,7 @@ rb_str_scan(str, pat)
     while (!NIL_P(result = scan_once(str, pat, &start))) {
 	rb_yield(result);
     }
-    return Qnil;
+    return str;
 }
 
 static VALUE
@@ -2402,9 +2450,17 @@ rb_str_oct(str)
 {
     int base = 8;
 
-    if (RSTRING(str)->len > 2 && RSTRING(str)->ptr[0] == '0' &&
-	(RSTRING(str)->ptr[1] == 'x' || RSTRING(str)->ptr[1] == 'X')) {
-	base = 16;
+    if (RSTRING(str)->len > 2 && RSTRING(str)->ptr[0] == '0') {
+	switch (RSTRING(str)->ptr[1]) {
+	  case 'x':
+	  case 'X':
+	    base = 16;
+	    break;
+	  case 'b':
+	  case 'B':
+	    base = 2;
+	    break;
+	}
     }
     return rb_str2inum(RSTRING(str)->ptr, base);
 }
@@ -2417,7 +2473,7 @@ rb_str_crypt(str, salt)
 
     if (TYPE(salt) != T_STRING) salt = rb_str_to_str(salt);
     if (RSTRING(salt)->len < 2)
-	rb_raise(rb_eArgError, "salt too short(need >2 bytes)");
+	rb_raise(rb_eArgError, "salt too short(need >=2 bytes)");
     return rb_str_new2(crypt(RSTRING(str)->ptr, RSTRING(salt)->ptr));
 }
 
@@ -2484,7 +2540,7 @@ rb_str_ljust(str, w)
     VALUE str;
     VALUE w;
 {
-    size_t width = NUM2UINT(w);
+    long width = NUM2LONG(w);
     VALUE res;
     char *p, *pend;
 
@@ -2503,7 +2559,7 @@ rb_str_rjust(str, w)
     VALUE str;
     VALUE w;
 {
-    size_t width = NUM2UINT(w);
+    long width = NUM2LONG(w);
     VALUE res;
     char *p, *pend;
 
@@ -2522,10 +2578,10 @@ rb_str_center(str, w)
     VALUE str;
     VALUE w;
 {
-    size_t width = NUM2UINT(w);
+    long width = NUM2LONG(w);
     VALUE res;
     char *p, *pend;
-    size_t n;
+    long n;
 
     if (width < 0 || RSTRING(str)->len >= width) return str;
     res = rb_str_new(0, width);
@@ -2570,7 +2626,7 @@ Init_String()
     rb_define_method(rb_cString, "succ!", rb_str_succ_bang, 0);
     rb_define_method(rb_cString, "next", rb_str_succ, 0);
     rb_define_method(rb_cString, "next!", rb_str_succ_bang, 0);
-    rb_define_method(rb_cString, "upto", rb_str_upto, 1);
+    rb_define_method(rb_cString, "upto", rb_str_upto_method, 1);
     rb_define_method(rb_cString, "index", rb_str_index_method, -1);
     rb_define_method(rb_cString, "rindex", rb_str_rindex, -1);
     rb_define_method(rb_cString, "replace", rb_str_replace_method, 1);
@@ -2627,12 +2683,13 @@ Init_String()
 
     rb_define_method(rb_cString, "tr", rb_str_tr, 2);
     rb_define_method(rb_cString, "tr_s", rb_str_tr_s, 2);
-    rb_define_method(rb_cString, "delete", rb_str_delete, 1);
+    rb_define_method(rb_cString, "delete", rb_str_delete, -1);
     rb_define_method(rb_cString, "squeeze", rb_str_squeeze, -1);
+    rb_define_method(rb_cString, "count", rb_str_count, -1);
 
     rb_define_method(rb_cString, "tr!", rb_str_tr_bang, 2);
     rb_define_method(rb_cString, "tr_s!", rb_str_tr_s_bang, 2);
-    rb_define_method(rb_cString, "delete!", rb_str_delete_bang, 1);
+    rb_define_method(rb_cString, "delete!", rb_str_delete_bang, -1);
     rb_define_method(rb_cString, "squeeze!", rb_str_squeeze_bang, -1);
 
     rb_define_method(rb_cString, "each_line", rb_str_each_line, -1);

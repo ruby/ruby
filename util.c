@@ -6,7 +6,7 @@
   $Date$
   created at: Fri Mar 10 17:22:34 JST 1995
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -18,6 +18,10 @@
 
 #define RUBY_NO_INLINE
 #include "ruby.h"
+
+#ifdef USE_CWGUSI
+extern char* mktemp(char*);
+#endif
 
 VALUE
 rb_class_of(obj)
@@ -69,11 +73,11 @@ char *strchr _((char*,char));
 
 unsigned long
 scan_oct(start, len, retlen)
-char *start;
+const char *start;
 int len;
 int *retlen;
 {
-    register char *s = start;
+    register const char *s = start;
     register unsigned long retval = 0;
 
     while (len-- && *s >= '0' && *s <= '7') {
@@ -86,12 +90,12 @@ int *retlen;
 
 unsigned long
 scan_hex(start, len, retlen)
-char *start;
+const char *start;
 int len;
 int *retlen;
 {
     static char hexdigit[] = "0123456789abcdef0123456789ABCDEFx";
-    register char *s = start;
+    register const char *s = start;
     register unsigned long retval = 0;
     char *tmp;
 
@@ -109,7 +113,7 @@ int *retlen;
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#if defined(HAVE_FCNTL)
+#if defined(HAVE_FCNTL_H)
 #include <fcntl.h>
 #endif
 
@@ -262,7 +266,7 @@ ruby_add_suffix(str, suffix)
 
     slen = extlen;
     t = buf; baselen = 0; s = RSTRING(str)->ptr;
-    while ( (*t = *s) && *s != '.') {
+    while ((*t = *s) && *s != '.') {
 	baselen++;
 	if (*s == '\\' || *s == '/') baselen = 0;
  	s++; t++;
@@ -325,7 +329,6 @@ valid_filename(char *s)
 #endif
 
 #ifdef DJGPP
-/* Copyright (C) 1996 DJ Delorie, see COPYING.DJ for details */
 /* Copyright (C) 1995 DJ Delorie, see COPYING.DJ for details */
 #include <libc/stubs.h>
 #include <stdio.h>		/* For FILENAME_MAX */
@@ -569,14 +572,14 @@ static void mmprepare(base, size) void *base; int size;
  if (size <= 0) die("mmsize <= 0");
 #endif
 
- if ( ((int)base & (4-1)) == 0  &&  (size & (4-1)) == 0 )
-   if      (size >= 16) mmkind = 1;
-   else                 mmkind = 0;
- else                   mmkind = -1;
+ if (((long)base & (4-1)) == 0 && ((long)base & (4-1)) == 0)
+   if (size >= 16) mmkind = 1;
+   else            mmkind = 0;
+ else              mmkind = -1;
  
  mmsize = size;
  high = (size & (-16));
- low  = (size & 0x0C );
+ low  = (size & 0x0c);
 }
 
 static void mmswap(a, b) register char *a, *b;
@@ -591,7 +594,7 @@ static void mmswap(a, b) register char *a, *b;
        s = A[1]; A[1] = B[1]; B[1] = s;
        s = A[2]; A[2] = B[2]; B[2] = s;
        s = A[3]; A[3] = B[3]; B[3] = s;  a += 16; b += 16;
-     }while (a < t);
+     } while (a < t);
    }
    if (low != 0) { s = A[0]; A[0] = B[0]; B[0] = s;
      if (low >= 8) { s = A[1]; A[1] = B[1]; B[1] = s;
@@ -661,7 +664,7 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
 
 #define med3(a,b,c) ((*cmp)(a,b)<0 ?                                   \
                        ((*cmp)(b,c)<0 ? b : ((*cmp)(a,c)<0 ? c : a)) : \
-                       ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)) )
+                       ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)))
 
 void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)();
 {
@@ -673,7 +676,7 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
  stack_node stack[32], *top = stack;    /* 32 is enough for 32bit CPU */
 
  if (nel <= 1) return;        /* need not to sort */
- mmprepare( base, size );
+ mmprepare(base, size);
  goto start;
   
  nxt:
@@ -697,18 +700,18 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
        register char *p1 = l  + t;
        register char *p2 = p1 + t;
        register char *p3 = p2 + t;
-       m1 = med3( p1, p2, p3 );
+       m1 = med3(p1, p2, p3);
        p1 = m  + t;
        p2 = p1 + t;
        p3 = p2 + t;
-       m3 = med3( p1, p2, p3 );
+       m3 = med3(p1, p2, p3);
        }
      }else{
        t = size*(t>>2); /* number of bytes in splitting 4 */
        m1 = l + t;
        m3 = m + t;
      }
-     m = med3( m1, m, m3 );
+     m = med3(m1, m, m3);
    }
    
    if ((t = (*cmp)(l,m)) < 0) {                             /*3-5-?*/
@@ -757,7 +760,7 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
      if (t < 0)                 {mmswap(L,l); l = L; goto loopB;}  /*535-5*/
    }
    
-   loopA: eq_l = 1; eq_r = 1;  /* splitting type A */ /* left <= median < right±¦*/
+   loopA: eq_l = 1; eq_r = 1;  /* splitting type A */ /* left <= median < right */
    for (;;) {
      for (;;) {
        if ((l += size) == r)
@@ -805,3 +808,4 @@ void ruby_qsort (base, nel, size, cmp) void* base; int nel; int size; int (*cmp)
    else goto nxt;                         /* need not to sort both sides */
  }
 }
+

@@ -6,7 +6,7 @@
   $Date$
   created at: Fri May 28 15:14:02 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -144,7 +144,7 @@ typedef struct RNode {
     RNODE(n)->flags=((RNODE(n)->flags&~FL_UMASK)|(((t)<<FL_USHIFT)&FL_UMASK))
 
 #define NODE_LSHIFT (FL_USHIFT+8)
-#define NODE_LMASK  ((1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
+#define NODE_LMASK  (((long)1<<(sizeof(NODE*)*CHAR_BIT-NODE_LSHIFT))-1)
 #define nd_line(n) (((RNODE(n))->flags>>NODE_LSHIFT)&NODE_LMASK)
 #define nd_set_line(n,l) \
     RNODE(n)->flags=((RNODE(n)->flags&~(-1<<NODE_LSHIFT))|(((l)&NODE_LMASK)<<NODE_LSHIFT))
@@ -225,17 +225,9 @@ typedef struct RNode {
 #define NEW_RFUNC(b1,b2) NEW_SCOPE(block_append(b1,b2))
 #define NEW_SCOPE(b) rb_node_newnode(NODE_SCOPE,local_tbl(),cur_cref,(b))
 #define NEW_BLOCK(a) rb_node_newnode(NODE_BLOCK,a,0,0)
-#ifdef NOBLOCK_RECUR
-#define NEW_IF(c,t,e) block_append(c,rb_node_newnode(NODE_IF,0,t,e))
-#else
 #define NEW_IF(c,t,e) rb_node_newnode(NODE_IF,c,t,e)
-#endif
 #define NEW_UNLESS(c,t,e) NEW_IF(c,e,t)
-#ifdef NOBLOCK_RECUR
-#define NEW_CASE(h,b) block_append(h,rb_node_newnode(NODE_CASE,0,b,0))
-#else
 #define NEW_CASE(h,b) rb_node_newnode(NODE_CASE,h,b,0)
-#endif
 #define NEW_WHEN(c,t,e) rb_node_newnode(NODE_WHEN,c,t,e)
 #define NEW_OPT_N(b) rb_node_newnode(NODE_OPT_N,0,b,0)
 #define NEW_WHILE(c,b,n) rb_node_newnode(NODE_WHILE,c,b,n)
@@ -285,11 +277,7 @@ typedef struct RNode {
 #define NEW_XSTR(s) rb_node_newnode(NODE_XSTR,s,0,0)
 #define NEW_DXSTR(s) rb_node_newnode(NODE_DXSTR,s,0,0)
 #define NEW_EVSTR(s,l) rb_node_newnode(NODE_EVSTR,rb_str_new(s,l),0,0)
-#ifdef NOBLOCK_RECUR_incomplete
-#define NEW_CALL(r,m,a) block_append(r,rb_node_newnode(NODE_CALL,0,m,a))
-#else
 #define NEW_CALL(r,m,a) rb_node_newnode(NODE_CALL,r,m,a)
-#endif
 #define NEW_FCALL(m,a) rb_node_newnode(NODE_FCALL,0,m,a)
 #define NEW_VCALL(m) rb_node_newnode(NODE_VCALL,0,m,0)
 #define NEW_SUPER(a) rb_node_newnode(NODE_SUPER,0,0,a)
@@ -331,9 +319,9 @@ VALUE rb_method_booundp();
 #define NOEX_PRIVATE   2
 #define NOEX_PROTECTED 4 
 
-NODE *rb_compile_cstr _((char *, char *, int));
-NODE *rb_compile_string _((char *, VALUE));
-NODE *rb_compile_file _((char *, VALUE, int));
+NODE *rb_compile_cstr _((const char*, const char*, int, int));
+NODE *rb_compile_string _((const char*, VALUE, int));
+NODE *rb_compile_file _((const char*, VALUE, int));
 
 void rb_add_method _((VALUE, ID, NODE *, int));
 NODE *rb_node_newnode();

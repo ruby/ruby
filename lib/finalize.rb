@@ -157,7 +157,7 @@ module Finalizer
   # method to call finalize_* safely.
   def safe
     old_status = Thread.critical
-    Thread.critical = TRUE
+    Thread.critical = true
     ObjectSpace.remove_finalizer(@proc)
     yield
     ObjectSpace.add_finalizer(@proc)

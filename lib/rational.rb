@@ -77,7 +77,7 @@ class Rational < Numeric
       @denominator = den
     else
       @numerator = num.to_i
-      @denoninator = den.to_i
+      @denominator = den.to_i
     end
   end
   

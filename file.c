@@ -6,7 +6,7 @@
   $Date$
   created at: Mon Nov 15 12:24:34 JST 1993
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -28,6 +28,7 @@
 # define MAXPATHLEN 1024
 #endif
 
+#include <time.h>
 #ifdef HAVE_SYS_TIME_H
 # include <sys/time.h>
 #else
@@ -39,6 +40,8 @@ struct timeval {
 #endif /* NT */
 #endif
 
+VALUE rb_time_new _((time_t, time_t));
+
 #ifdef HAVE_UTIME_H
 #include <utime.h>
 #endif
@@ -48,7 +51,7 @@ struct timeval {
 #endif
 
 #ifndef HAVE_STRING_H
-char *strrchr _((char*,char));
+char *strrchr _((const char*,const char));
 #endif
 
 #include <sys/types.h>
@@ -58,106 +61,16 @@ char *strrchr _((char*,char));
  #include "macruby_missing.h"
  extern int fileno(FILE *stream);
  extern int utimes();
+ char* strdup(char*);
 #endif
 
+#ifdef __EMX__
+#define lstat stat
+#endif
+ 
 VALUE rb_cFile;
 VALUE rb_mFileTest;
 static VALUE sStat;
-
-VALUE
-rb_file_open(fname, mode)
-    char *fname, *mode;
-{
-    OpenFile *fptr;
-    NEWOBJ(port, struct RFile);
-    OBJSETUP(port, rb_cFile, T_FILE);
-    MakeOpenFile(port, fptr);
-
-    fptr->mode = rb_io_mode_flags(mode);
-    fptr->f = rb_fopen(fname, mode);
-    fptr->path = strdup(fname);
-    rb_obj_call_init((VALUE)port);
-
-    return (VALUE)port;
-}
-
-static VALUE
-rb_file_s_open(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
-{
-    VALUE fname, vmode, file;
-    char *mode;
-
-    rb_scan_args(argc, argv, "11", &fname, &vmode);
-    Check_SafeStr(fname);
-    if (!NIL_P(vmode)) {
-	mode = STR2CSTR(vmode);
-    }
-    else {
-	mode = "r";
-    }
-    file = rb_file_open(RSTRING(fname)->ptr, mode);
-
-    RBASIC(file)->klass = klass;
-    rb_obj_call_init(file);
-    if (rb_iterator_p()) {
-	return rb_ensure(rb_yield, file, rb_io_close, file);
-    }
-
-    return file;
-}
-
-static VALUE
-rb_file_reopen(argc, argv, file)
-    int argc;
-    VALUE *argv;
-    VALUE file;
-{
-    VALUE fname, nmode;
-    char *mode;
-    OpenFile *fptr;
-
-    rb_secure(4);
-    if (rb_scan_args(argc, argv, "11", &fname, &nmode) == 1) {
-	if (TYPE(fname) == T_FILE) { /* fname must be IO */
-	    return rb_io_reopen(file, fname);
-	}
-    }
-
-    Check_SafeStr(fname);
-    if (!NIL_P(nmode)) {
-	mode = STR2CSTR(nmode);
-    }
-    else {
-	mode = "r";
-    }
-
-    GetOpenFile(file, fptr);
-    if (fptr->path) free(fptr->path);
-    fptr->path = strdup(RSTRING(fname)->ptr);
-    fptr->mode = rb_io_mode_flags(mode);
-    if (!fptr->f) {
-	fptr->f = rb_fopen(RSTRING(fname)->ptr, mode);
-	if (fptr->f2) {
-	    fclose(fptr->f2);
-	    fptr->f2 = NULL;
-	}
-	return file;
-    }
-
-    if (freopen(RSTRING(fname)->ptr, mode, fptr->f) == NULL) {
-	rb_sys_fail(fptr->path);
-    }
-    if (fptr->f2) {
-	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == NULL) {
-	    rb_sys_fail(fptr->path);
-	}
-    }
-
-    return file;
-}
 
 static int
 apply2files(func, vargs, arg)
@@ -247,6 +160,9 @@ rb_stat(file, st)
 	return fstat(fileno(fptr->f), st);
     }
     Check_SafeStr(file);
+#if defined DJGPP
+    if (RSTRING(file)->len == 0) return -1;
+#endif
     return stat(RSTRING(file)->ptr, st);
 }
 
@@ -281,7 +197,7 @@ static VALUE
 rb_file_s_lstat(obj, fname)
     VALUE obj, fname;
 {
-#if !defined(MSDOS) && !defined(NT)
+#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
     struct stat st;
 
     Check_SafeStr(fname);
@@ -299,7 +215,7 @@ static VALUE
 rb_file_lstat(obj)
     VALUE obj;
 {
-#if !defined(MSDOS) && !defined(NT) 
+#if !defined(MSDOS) && !defined(NT)
     OpenFile *fptr;
     struct stat st;
 
@@ -347,7 +263,7 @@ group_member(gid)
 
 int
 eaccess(path, mode)
-     char *path;
+     const char *path;
      int mode;
 {
 #ifndef NT
@@ -608,8 +524,8 @@ test_s(obj, fname)
 {
     struct stat st;
 
-    if (rb_stat(fname, &st) < 0) return Qfalse;
-    if (st.st_size == 0) return Qfalse;
+    if (rb_stat(fname, &st) < 0) return Qnil;
+    if (st.st_size == 0) return Qnil;
     return rb_int2inum(st.st_size);
 }
 
@@ -651,7 +567,7 @@ test_grpowned(obj, fname)
 #if defined(S_ISUID) || defined(S_ISGID) || defined(S_ISVTX)
 static VALUE
 check3rdbyte(file, mode)
-    char *file;
+    const char *file;
     int mode;
 {
     struct stat st;
@@ -693,7 +609,7 @@ test_sticky(obj, fname)
 #ifdef S_ISVTX
     return check3rdbyte(STR2CSTR(fname), S_ISVTX);
 #else
-    return Qfalse;
+    return Qnil;
 #endif
 }
 
@@ -836,7 +752,7 @@ rb_file_ctime(obj)
 
 static void
 chmod_internal(path, mode)
-    char *path;
+    const char *path;
     int mode;
 {
     if (chmod(path, mode) == -1)
@@ -870,7 +786,7 @@ rb_file_chmod(obj, vmode)
     mode = NUM2INT(vmode);
 
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(NT) || defined(USE_CWGUSI) || defined(__BEOS__)
+#if defined(DJGPP) || defined(NT) || defined(USE_CWGUSI) || defined(__BEOS__) || defined(__EMX__)
     if (chmod(fptr->path, mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -887,7 +803,7 @@ struct chown_args {
 
 static void
 chown_internal(path, args)
-    char *path;
+    const char *path;
     struct chown_args *args;
 {
     if (chown(path, args->owner, args->group) < 0)
@@ -929,7 +845,7 @@ rb_file_chown(obj, owner, group)
 
     rb_secure(4);
     GetOpenFile(obj, fptr);
-#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(USE_CWGUSI)
+#if defined(DJGPP) || defined(__CYGWIN32__) || defined(NT) || defined(USE_CWGUSI) || defined(__EMX__)
     if (chown(fptr->path, NUM2INT(owner), NUM2INT(group)) == -1)
 	rb_sys_fail(fptr->path);
 #else
@@ -993,7 +909,7 @@ struct utimbuf {
 
 static void
 utime_internal(path, utp)
-    char *path;
+    const char *path;
     struct utimbuf *utp;
 {
     if (utime(path, utp) < 0)
@@ -1043,7 +959,7 @@ static VALUE
 rb_file_s_symlink(obj, from, to)
     VALUE obj, from, to;
 {
-#if !defined(MSDOS) && !defined(NT)
+#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
     Check_SafeStr(from);
     Check_SafeStr(to);
 
@@ -1060,7 +976,7 @@ static VALUE
 rb_file_s_readlink(obj, path)
     VALUE obj, path;
 {
-#if !defined(MSDOS) && !defined(NT)
+#if !defined(MSDOS) && !defined(NT) && !defined(__EMX__)
     char buf[MAXPATHLEN];
     int cc;
 
@@ -1078,7 +994,7 @@ rb_file_s_readlink(obj, path)
 
 static void
 unlink_internal(path)
-    char *path;
+    const char *path;
 {
     if (unlink(path) < 0)
 	rb_sys_fail(path);
@@ -1132,6 +1048,12 @@ rb_file_s_umask(argc, argv)
 #endif /* USE_CWGUSI */
 }
 
+#if defined DOSISH
+#define isdirsep(x) ((x) == '/' || (x) == '\\')
+#else
+#define isdirsep(x) ((x) == '/')
+#endif
+
 VALUE
 rb_file_s_expand_path(argc, argv)
     int argc;
@@ -1146,11 +1068,7 @@ rb_file_s_expand_path(argc, argv)
     s = STR2CSTR(fname);
     p = buf;
     if (s[0] == '~') {
-	if (s[1] == '/' || 
-#if defined(MSDOS) || defined(NT) || defined(__human68k__)
-	    s[1] == '\\' || 
-#endif
-	    s[1] == '\0') {
+	if (isdirsep(s[1]) || s[1] == '\0') {
 	    char *dir = getenv("HOME");
 
 	    if (!dir) {
@@ -1165,7 +1083,7 @@ rb_file_s_expand_path(argc, argv)
 	    struct passwd *pwPtr;
 	    s++;
 #endif
-	    while (*s && *s != '/') {
+	    while (*s && !isdirsep(*s)) {
 		*p++ = *s++;
 	    }
 	    *p = '\0';
@@ -1181,6 +1099,14 @@ rb_file_s_expand_path(argc, argv)
 #endif
 	}
     }
+#if defined DOSISH
+    /* skip drive letter */
+    else if (isalpha(s[0]) && s[1] == ':' && isdirsep(s[2])) {
+	while (*s && !isdirsep(*s)) {
+	    *p++ = *s++;
+	}
+    }
+#endif
     else if (s[0] != '/') {
 	if (argc == 2) {
 	    dname = rb_file_s_expand_path(1, &dname);
@@ -1204,10 +1130,10 @@ rb_file_s_expand_path(argc, argv)
 	    if (*(s+1)) {
 		switch (*++s) {
 		  case '.':
-		    if (*(s+1) == '\0' || *(s+1) == '/') { 
+		    if (*(s+1) == '\0' || isdirsep(*(s+1))) { 
 			/* We must go back to the parent */
-			if (*p == '/' && p > buf) p--;
-			while (p > buf && *p != '/') p--;
+			if (isdirsep(*p) && p > buf) p--;
+			while (p > buf && !isdirsep(*p)) p--;
 		    }
 		    else {
 			*++p = '.';
@@ -1215,7 +1141,10 @@ rb_file_s_expand_path(argc, argv)
 		    }
 		    break;
 		  case '/':
-		    if (*p != '/') *++p = '/'; 
+#if defined DOSISH
+		  case '\\':
+#endif
+		    if (!isdirsep(*p)) *++p = '/'; 
 		    break;
 		  default:
 		    *++p = '.'; *++p = *s; break;
@@ -1223,14 +1152,17 @@ rb_file_s_expand_path(argc, argv)
 	    }
 	    break;
 	  case '/':
-	    if (*p != '/') *++p = '/'; break;
+#if defined DOSISH
+	  case '\\':
+#endif
+	    if (!isdirsep(*p)) *++p = '/'; break;
 	  default:
 	    *++p = *s;
 	}
     }
   
     /* Place a \0 at end. If path ends with a "/", delete it */
-    if (p == buf || *p != '/') p++;
+    if (p == buf || !isdirsep(*p)) p++;
     *p = '\0';
 
     return rb_tainted_str_new2(buf);
@@ -1238,7 +1170,7 @@ rb_file_s_expand_path(argc, argv)
 
 static int
 rmext(p, e)
-    char *p, *e;
+    const char *p, *e;
 {
     int l1, l2;
 
@@ -1394,10 +1326,11 @@ rb_file_truncate(obj, len)
 #  define LOCK_UN 8
 # endif
 
-#if defined(USE_THREAD) && defined(EWOULDBLOCK)
+#if defined(EWOULDBLOCK)
 static int
-rb_thread_flock(fd, op)
+rb_thread_flock(fd, op, fptr)
     int fd, op;
+    OpenFile *fptr;
 {
     if (rb_thread_alone() || (op & LOCK_NB)) {
 	return flock(fd, op);
@@ -1408,6 +1341,7 @@ rb_thread_flock(fd, op)
 	  case EINTR:		/* can be happen? */
 	  case EWOULDBLOCK:
 	    rb_thread_schedule();	/* busy wait */
+	    rb_io_check_closed(fptr);
 	    break;
 	  default:
 	    return -1;
@@ -1415,7 +1349,7 @@ rb_thread_flock(fd, op)
     }
     return 0;
 }
-#define flock rb_thread_flock
+#define flock(fd, op) rb_thread_flock(fd, op, fptr)
 #endif
 
 static VALUE
@@ -1452,7 +1386,7 @@ test_check(n, argc, argv)
     int i;
 
     n+=1;
-    if (n < argc) rb_raise(rb_eArgError, "Wrong # of arguments(%d for %d)", argc, n);
+    if (n < argc) rb_raise(rb_eArgError, "wrong # of arguments(%d for %d)", argc, n);
     for (i=1; i<n; i++) {
 	switch (TYPE(argv[i])) {
 	  case T_STRING:
@@ -1476,7 +1410,7 @@ rb_f_test(argc, argv)
 {
     int cmd;
 
-    if (argc == 0) rb_raise(rb_eArgError, "Wrong # of arguments");
+    if (argc == 0) rb_raise(rb_eArgError, "wrong # of arguments");
     cmd = NUM2CHR(argv[0]);
     if (cmd == 0) return Qfalse;
     if (strchr("bcdefgGkloOprRsSuwWxXz", cmd)) {
@@ -1596,15 +1530,24 @@ rb_f_test(argc, argv)
 	}
     }
     /* unknown command */
-    rb_raise(rb_eArgError, "unknow command ?%c", cmd);
+    rb_raise(rb_eArgError, "unknown command ?%c", cmd);
     return Qnil;		/* not reached */
+}
+
+static VALUE rb_mConst;
+
+void
+rb_file_const(name, value)
+    const char *name;
+    VALUE value;
+{
+    rb_define_const(rb_cFile, name, value);
+    rb_define_const(rb_mConst, name, value);
 }
 
 void
 Init_File()
 {
-    VALUE rb_mConst;
-
     rb_mFileTest = rb_define_module("FileTest");
 
     rb_define_module_function(rb_mFileTest, "directory?",  test_d, 1);
@@ -1637,9 +1580,6 @@ Init_File()
     rb_cFile = rb_define_class("File", rb_cIO);
     rb_extend_object(rb_cFile, CLASS_OF(rb_mFileTest));
 
-    rb_define_singleton_method(rb_cFile, "new",  rb_file_s_open, -1);
-    rb_define_singleton_method(rb_cFile, "open",  rb_file_s_open, -1);
-
     rb_define_singleton_method(rb_cFile, "stat",  rb_file_s_stat, 1);
     rb_define_singleton_method(rb_cFile, "lstat", rb_file_s_lstat, 1);
     rb_define_singleton_method(rb_cFile, "ftype", rb_file_s_ftype, 1);
@@ -1668,10 +1608,16 @@ Init_File()
 
     separator = rb_str_new2("/");
     rb_define_const(rb_cFile, "Separator", separator);
+    rb_define_const(rb_cFile, "SEPARATOR", separator);
     rb_define_singleton_method(rb_cFile, "split",  rb_file_s_split, 1);
     rb_define_singleton_method(rb_cFile, "join",   rb_file_s_join, -2);
 
-    rb_define_method(rb_cFile, "reopen",  rb_file_reopen, -1);
+#ifdef DOSISH
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", rb_str_new2("\\"));
+#else
+    rb_define_const(rb_cFile, "ALT_SEPARATOR", Qnil);
+#endif
+    rb_define_const(rb_cFile, "PATH_SEPARATOR", rb_str_new2(PATH_SEP));
 
     rb_define_method(rb_cIO, "stat",  rb_io_stat, 0); /* this is IO's method */
     rb_define_method(rb_cFile, "lstat",  rb_file_lstat, 0);
@@ -1687,15 +1633,10 @@ Init_File()
     rb_define_method(rb_cFile, "flock", rb_file_flock, 1);
 
     rb_mConst = rb_define_module_under(rb_cFile, "Constants");
-    rb_define_const(rb_cFile, "LOCK_SH", INT2FIX(LOCK_SH));
-    rb_define_const(rb_cFile, "LOCK_EX", INT2FIX(LOCK_EX));
-    rb_define_const(rb_cFile, "LOCK_UN", INT2FIX(LOCK_UN));
-    rb_define_const(rb_cFile, "LOCK_NB", INT2FIX(LOCK_NB));
-
-    rb_define_const(rb_mConst, "LOCK_SH", INT2FIX(LOCK_SH));
-    rb_define_const(rb_mConst, "LOCK_EX", INT2FIX(LOCK_EX));
-    rb_define_const(rb_mConst, "LOCK_UN", INT2FIX(LOCK_UN));
-    rb_define_const(rb_mConst, "LOCK_NB", INT2FIX(LOCK_NB));
+    rb_file_const("LOCK_SH", INT2FIX(LOCK_SH));
+    rb_file_const("LOCK_EX", INT2FIX(LOCK_EX));
+    rb_file_const("LOCK_UN", INT2FIX(LOCK_UN));
+    rb_file_const("LOCK_NB", INT2FIX(LOCK_NB));
 
     rb_define_method(rb_cFile, "path",  rb_file_path, 0);
 

@@ -10,6 +10,10 @@ static	char	sccsid[] = "@(#) st.c 5.1 89/12/14 Crucible";
 #include <stdlib.h>
 #endif
 
+#ifdef NT
+#include <malloc.h>
+#endif
+
 typedef struct st_table_entry st_table_entry;
 
 struct st_table_entry {
@@ -45,9 +49,11 @@ static struct st_hash_type type_strhash = {
     strhash,
 };
 
+#ifndef xmalloc
 void *xmalloc();
 void *xcalloc();
 void *xrealloc();
+#endif
 static void rehash();
 
 #define alloc(type) (type*)xmalloc((unsigned)sizeof(type))
@@ -173,7 +179,7 @@ st_free_table(table)
     register st_table_entry *ptr, *next;
     int i;
 
-    for(i = 0; i < table->num_bins ; i++) {
+    for(i = 0; i < table->num_bins; i++) {
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
@@ -186,7 +192,7 @@ st_free_table(table)
 }
 
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
-((ptr) != 0 && ptr->hash != (hash_val) && !EQUAL((table), (key), (ptr)->key))
+((ptr) != 0 && (ptr->hash != (hash_val) || !EQUAL((table), (key), (ptr)->key)))
 
 #define FIND_ENTRY(table, ptr, hash_val, bin_pos) \
 bin_pos = hash_val%(table)->num_bins;\
@@ -220,19 +226,19 @@ st_lookup(table, key, value)
 
 #define ADD_DIRECT(table, key, value, hash_val, bin_pos)\
 {\
-    st_table_entry *tbl;\
+    st_table_entry *entry;\
     if (table->num_entries/table->num_bins > ST_DEFAULT_MAX_DENSITY) {\
 	rehash(table);\
         bin_pos = hash_val % table->num_bins;\
     }\
     \
-    tbl = alloc(st_table_entry);\
+    entry = alloc(st_table_entry);\
     \
-    tbl->hash = hash_val;\
-    tbl->key = key;\
-    tbl->record = value;\
-    tbl->next = table->bins[bin_pos];\
-    table->bins[bin_pos] = tbl;\
+    entry->hash = hash_val;\
+    entry->key = key;\
+    entry->record = value;\
+    entry->next = table->bins[bin_pos];\
+    table->bins[bin_pos] = entry;\
     table->num_entries++;\
 }
 
@@ -281,7 +287,7 @@ rehash(table)
     new_num_bins = new_size(old_num_bins);
     new_bins = (st_table_entry**)Calloc(new_num_bins, sizeof(st_table_entry*));
 
-    for(i = 0; i < old_num_bins ; i++) {
+    for(i = 0; i < old_num_bins; i++) {
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
@@ -301,7 +307,7 @@ st_copy(old_table)
     st_table *old_table;
 {
     st_table *new_table;
-    st_table_entry *ptr, *tbl;
+    st_table_entry *ptr, *entry;
     int i, num_bins = old_table->num_bins;
 
     new_table = alloc(st_table);
@@ -318,19 +324,19 @@ st_copy(old_table)
 	return 0;
     }
 
-    for(i = 0; i < num_bins ; i++) {
+    for(i = 0; i < num_bins; i++) {
 	new_table->bins[i] = 0;
 	ptr = old_table->bins[i];
 	while (ptr != 0) {
-	    tbl = alloc(st_table_entry);
-	    if (tbl == 0) {
+	    entry = alloc(st_table_entry);
+	    if (entry == 0) {
 		free(new_table->bins);
 		free(new_table);
 		return 0;
 	    }
-	    *tbl = *ptr;
-	    tbl->next = new_table->bins[i];
-	    new_table->bins[i] = tbl;
+	    *entry = *ptr;
+	    entry->next = new_table->bins[i];
+	    new_table->bins[i] = entry;
 	    ptr = ptr->next;
 	}
     }
@@ -397,16 +403,8 @@ st_delete_safe(table, key, value, never)
 	return 0;
     }
 
-    if (EQUAL(table, *key, ptr->key)) {
-	table->num_entries--;
-	*key = ptr->key;
-	if (value != 0) *value = ptr->record;
-	ptr->key = ptr->record = never;
-	return 1;
-    }
-
-    for(; ptr->next != 0; ptr = ptr->next) {
-	if (EQUAL(table, ptr->next->key, *key)) {
+    for(; ptr != 0; ptr = ptr->next) {
+	if (EQUAL(table, ptr->key, *key)) {
 	    table->num_entries--;
 	    *key = ptr->key;
 	    if (value != 0) *value = ptr->record;
@@ -416,6 +414,25 @@ st_delete_safe(table, key, value, never)
     }
 
     return 0;
+}
+
+static int
+delete_never(key, value, never)
+    char *key, *value, *never;
+{
+    if (value == never) return ST_DELETE;
+    return ST_CONTINUE;
+}
+
+void
+st_cleanup_safe(table, never)
+    st_table *table;
+    char *never;
+{
+    int num_entries = table->num_entries;
+
+    st_foreach(table, delete_never, never);
+    table->num_entries = num_entries;
 }
 
 void

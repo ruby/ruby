@@ -6,7 +6,7 @@
   $Date$
   created at: Wed Jan  5 09:51:01 JST 1994
 
-  Copyright (C) 1993-1998 Yukihiro Matsumoto
+  Copyright (C) 1993-1999 Yukihiro Matsumoto
 
 ************************************************/
 
@@ -47,14 +47,23 @@
 # endif
 #endif
 
-#include <errno.h>
+#ifdef HAVE_FNMATCH_H
+#include <fnmatch.h>
+#else
+#include "missing/fnmatch.h"
+#endif
 
-#ifndef NT
+#include <errno.h>
+#ifdef USE_CWGUSI
+# include <sys/errno.h>
+#endif
+
+#ifndef HAVE_STDLIB_H
 char *getenv();
 #endif
 
-#ifdef USE_CWGUSI
-# include <sys/errno.h>
+#ifndef HAVE_STRING_H
+char *strchr _((char*,char));
 #endif
 
 VALUE rb_cDir;
@@ -149,10 +158,10 @@ static VALUE
 dir_tell(dir)
     VALUE dir;
 {
-    DIR *dirp;
-    int pos;
-
 #if !defined(__CYGWIN32__) && !defined(__BEOS__)
+    DIR *dirp;
+    long pos;
+
     GetDIR(dir, dirp);
     pos = telldir(dirp);
     return rb_int2inum(pos);
@@ -248,7 +257,7 @@ static VALUE
 dir_s_chroot(dir, path)
     VALUE dir, path;
 {
-#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__)
+#if !defined(DJGPP) && !defined(NT) && !defined(__human68k__) && !defined(USE_CWGUSI) && !defined(__BEOS__) && !defined(__EMX__)
     rb_secure(2);
     Check_SafeStr(path);
 
@@ -303,29 +312,169 @@ dir_s_rmdir(obj, dir)
     return Qtrue;
 }
 
-#define isdelim(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\0')
+/* Return nonzero if S has any special globbing chars in it.  */
+static int
+has_magic(s, send)
+     char *s, *send;
+{
+    register char *p = s;
+    register char c;
+    int open = 0;
 
-char **glob_filename();
-extern char *glob_error_return;
+    while ((c = *p++) != '\0') {
+	switch (c) {
+	  case '?':
+	  case '*':
+	    return Qtrue;
+
+	  case '[':		/* Only accept an open brace if there is a close */
+	    open++;		/* brace to match it.  Bracket expressions must be */
+	    continue;	/* complete, according to Posix.2 */
+	  case ']':
+	    if (open)
+		return Qtrue;
+	    continue;
+
+	  case '\\':
+	    if (*p++ == '\0')
+		return Qfalse;
+	}
+
+	if (send && p >= send) break;
+    }
+    return Qfalse;
+}
+
+static char*
+extract_path(p, pend)
+    char *p, *pend;
+{
+    char *alloc;
+    int len;
+
+    len = pend - p;
+    alloc = ALLOC_N(char, len+1);
+    memcpy(alloc, p, len);
+    if (len > 0 && pend[-1] == '/') {
+	alloc[len-1] = 0;
+    }
+    else {
+	alloc[len] = 0;
+    }
+
+    return alloc;
+}
+
+static char*
+extract_elem(path)
+    char *path;
+{
+    char *pend;
+
+    pend = strchr(path, '/');
+    if (!pend) pend = path + strlen(path);
+
+    return extract_path(path, pend);
+}
+
+#ifndef S_ISDIR
+#   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
+#endif
+
+static void
+glob(path, func, arg)
+    char *path;
+    void (*func)();
+    VALUE arg;
+{
+    struct stat st;
+    char *p, *m;
+
+    if (!has_magic(path, 0)) {
+	if (stat(path, &st) == 0) {
+	    (*func)(path, arg);
+	}
+	return;
+    }
+
+    p = path;
+    while (p) {
+	if (*p == '/') p++;
+	m = strchr(p, '/');
+	if (has_magic(p, m)) {
+	    char *dir, *base, *magic;
+	    DIR *dirp;
+	    struct dirent *dp;
+
+	    struct d_link {
+		char *path;
+		struct d_link *next;
+	    } *tmp, *link = 0;
+
+	    base = extract_path(path, p);
+	    if (path == p) dir = ".";
+	    else dir = base;
+
+	    dirp = opendir(dir);
+	    if (dirp == NULL) {
+		free(base);
+		break;
+	    }
+	    magic = extract_elem(p);
+	    for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
+		if (fnmatch(magic, dp->d_name, FNM_PERIOD|FNM_PATHNAME) == 0) {
+		    char *fix = ALLOC_N(char, strlen(base)+NAMLEN(dp)+2);
+
+		    sprintf(fix, "%s%s%s", base, (*base)?"/":"", dp->d_name);
+		    if (!m) {
+			(*func)(fix, arg);
+			free(fix);
+			continue;
+		    }
+		    tmp = ALLOC(struct d_link);
+		    tmp->path = fix;
+		    tmp->next = link;
+		    link = tmp;
+		}
+	    }
+	    closedir(dirp);
+	    free(base);
+	    free(magic);
+	    while (link) {
+		stat(link->path, &st); /* should success */
+		if (S_ISDIR(st.st_mode)) {
+		    int len = strlen(link->path);
+		    int mlen = strlen(m);
+		    char *t = ALLOC_N(char, len+mlen+1);
+
+		    sprintf(t, "%s%s", link->path, m);
+		    glob(t, func, arg);
+		    free(t);
+		}
+		tmp = link;
+		link = link->next;
+		free(tmp->path);
+		free(tmp);
+	    }
+	}
+	p = m;
+    }
+}
+
+static void
+push_pattern(path, ary)
+    char *path;
+    VALUE ary;
+{
+    rb_ary_push(ary, rb_tainted_str_new2(path));
+}
 
 static void
 push_globs(ary, s)
     VALUE ary;
     char *s;
 {
-    char **fnames, **ff;
-
-    fnames = glob_filename(s);
-    if (fnames == (char**)-1) rb_sys_fail(s);
-    ff = fnames;
-    while (*ff) {
-	rb_ary_push(ary, rb_tainted_str_new2(*ff));
-	free(*ff);
-	ff++;
-    }
-    if (fnames != &glob_error_return) {
-        free(fnames);
-    }
+    glob(s, push_pattern, ary);
 }
 
 static void
@@ -333,9 +482,10 @@ push_braces(ary, s)
     VALUE ary;
     char *s;
 {
-    char buf[MAXPATHLEN];
+    char buffer[MAXPATHLEN], *buf = buffer;
     char *p, *t, *b;
     char *lbrace, *rbrace;
+    int nest = 0;
 
     p = s;
     lbrace = rbrace = 0;
@@ -347,7 +497,8 @@ push_braces(ary, s)
 	p++;
     }
     while (*p) {
-	if (*p == '}' && lbrace) {
+	if (*p == '{') nest++;
+	if (*p == '}' && --nest == 0) {
 	    rbrace = p;
 	    break;
 	}
@@ -355,6 +506,9 @@ push_braces(ary, s)
     }
 
     if (lbrace) {
+	int len = strlen(s);
+	if (len >= MAXPATHLEN)
+	    buf = xmalloc(len + 1);
 	memcpy(buf, s, lbrace-s);
 	b = buf + (lbrace-s);
 	p = lbrace;
@@ -368,46 +522,44 @@ push_braces(ary, s)
 	    strcpy(b+(p-t), rbrace+1);
 	    push_braces(ary, buf);
 	}
+	if (buf != buffer)
+	    free(buf);
     }
     else {
 	push_globs(ary, s);
     }
 }
 
+#define isdelim(c) ((c)==' '||(c)=='\t'||(c)=='\n'||(c)=='\0')
+
 static VALUE
 dir_s_glob(dir, str)
     VALUE dir, str;
 {
     char *p, *pend;
-    char buf[MAXPATHLEN];
-    char *t, *t0;
+    char buffer[MAXPATHLEN], *buf = buffer;
+    char *t;
     int nest;
     VALUE ary;
 
     Check_SafeStr(str);
-    if (RSTRING(str)->len > MAXPATHLEN) {
-	rb_raise(rb_eArgError, "pathname too long (%d bytes)",
-		 RSTRING(str)->len);
-    }
     ary = rb_ary_new();
+    if (RSTRING(str)->len >= MAXPATHLEN)
+	buf = xmalloc(RSTRING(str)->len + 1);
 
     p = RSTRING(str)->ptr;
     pend = p + RSTRING(str)->len;
 
     while (p < pend) {
 	t = buf;
+	nest = 0;
 	while (p < pend && isdelim(*p)) p++;
 	while (p < pend && !isdelim(*p)) {
+	    if (*p == '{') nest+=2;
+	    if (*p == '}') nest+=3;
 	    *t++ = *p++;
 	}
 	*t = '\0';
-	t0 = buf;
-	nest = 0;
-	while (t0 < t) {
-	    if (*t0 == '{') nest+=2;
-	    if (*t0 == '}') nest+=3;
-	    t0++;
-	}
 	if (nest == 0) {
 	    push_globs(ary, buf);
 	}
@@ -416,6 +568,8 @@ dir_s_glob(dir, str)
 	}
 	/* else unmatched braces */
     }
+    if (buf != buffer)
+	free(buf);
     return ary;
 }
 

@@ -1,5 +1,6 @@
 #! /usr/local/bin/ruby
-path = ENV['PATH'].split(/:/)
+
+path = ENV['PATH'].split(File::PATH_SEPARATOR)
 
 for dir in path
   if File.directory?(dir)

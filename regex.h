@@ -17,10 +17,24 @@
    Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.  */
 /* Multi-byte extension added May, 1993 by t^2 (Takahiro Tanimoto)
    Last change: May 21, 1993 by t^2  */
-/* modifis for Ruby by matz@caelum.co.jp */
+/* modified for Ruby by matz@netlab.co.jp */
 
 #ifndef __REGEXP_LIBRARY
 #define __REGEXP_LIBRARY
+
+/* symbol mangling for ruby */
+#ifdef RUBY
+# define re_compile_fastmap ruby_re_compile_fastmap
+# define re_compile_pattern ruby_re_compile_pattern
+# define re_copy_registers ruby_re_copy_registers
+# define re_free_pattern ruby_re_free_pattern
+# define re_free_registers ruby_re_free_registers
+# define re_match ruby_re_match
+# define re_mbcinit ruby_re_mbcinit
+# define re_search ruby_re_search
+# define re_set_casetable ruby_re_set_casetable
+# define register_info_type ruby_register_info_type
+#endif
 
 #include <stddef.h>
 
@@ -46,12 +60,19 @@
    If not set, then character classes are not supported.  */
 #define RE_CHAR_CLASSES (1L << 9)
 
-#define RE_OPTION_EXTENDED   (1L<<0)
-#define RE_OPTION_IGNORECASE (1L<<1)
-#define RE_MAY_IGNORECASE    (1L<<2)
-#define RE_OPTIMIZE_ANCHOR   (1L<<4)
-#define RE_OPTIMIZE_EXACTN   (1L<<5)
-#define RE_OPTIMIZE_NO_BM    (1L<<6)
+/* match will be done case insensetively */
+#define RE_OPTION_IGNORECASE (1L)
+/* perl-style extended pattern available */
+#define RE_OPTION_EXTENDED   (RE_OPTION_IGNORECASE<<1)
+/* newline will be included for . and invert charclass matches */
+#define RE_OPTION_POSIXLINE  (RE_OPTION_EXTENDED<<1)
+/* search for longest match, in accord with POSIX regexp */
+#define RE_OPTION_LONGEST    (RE_OPTION_POSIXLINE<<1)
+
+#define RE_MAY_IGNORECASE    (RE_OPTION_LONGEST<<1)
+#define RE_OPTIMIZE_ANCHOR   (RE_MAY_IGNORECASE<<1)
+#define RE_OPTIMIZE_EXACTN   (RE_OPTIMIZE_ANCHOR<<1)
+#define RE_OPTIMIZE_NO_BM    (RE_OPTIMIZE_EXACTN<<1)
 
 /* For multi-byte char support */
 #define MBCTYPE_ASCII 0
@@ -59,11 +80,10 @@
 #define MBCTYPE_SJIS 2
 #define MBCTYPE_UTF8 3
 
-#ifdef __STDC__
 extern const unsigned char *re_mbctab;
+#if defined(__STDC__)
 void re_mbcinit (int);
 #else
-extern unsigned char *re_mbctab;
 void re_mbcinit ();
 #endif
 
@@ -71,13 +91,24 @@ void re_mbcinit ();
 #define ismbchar(c) re_mbctab[(unsigned char)(c)]
 #define mbclen(c)   (re_mbctab[(unsigned char)(c)]+1)
 
+/* Structure used in re_match() */
+
+typedef union
+{
+  unsigned char *word;
+  struct {
+    unsigned is_active : 1;
+    unsigned matched_something : 1;
+  } bits;
+} register_info_type;
+
 /* This data structure is used to represent a compiled pattern.  */
 
 struct re_pattern_buffer
   {
     char *buffer;	/* Space holding the compiled pattern commands.  */
-    size_t allocated;	/* Size of space that `buffer' points to. */
-    size_t used;		/* Length of portion of buffer actually occupied  */
+    int allocated;	/* Size of space that `buffer' points to. */
+    int used;		/* Length of portion of buffer actually occupied  */
     char *fastmap;	/* Pointer to fastmap, if any, or zero if none.  */
 			/* re_search uses the fastmap, if there is one,
 			   to skip over totally implausible characters.  */
@@ -97,6 +128,15 @@ struct re_pattern_buffer
 			   2 as value means can match null string
 			   but at end of range or before a character
 			   listed in the fastmap.  */
+
+    /* stack & working area for re_match() */
+    unsigned char **regstart;
+    unsigned char **regend;
+    unsigned char **old_regstart;
+    unsigned char **old_regend;
+    register_info_type *reg_info;
+    unsigned char **best_regstart;
+    unsigned char **best_regend;
   };
 
 typedef struct re_pattern_buffer regex_t;
@@ -113,8 +153,8 @@ typedef struct re_pattern_buffer regex_t;
 
 struct re_registers
   {
-    size_t allocated;
-    size_t num_regs;
+    int allocated;
+    int num_regs;
     int *beg;
     int *end;
   };
@@ -138,22 +178,22 @@ typedef struct
 
 #ifdef __STDC__
 
-extern char *re_compile_pattern (char *, size_t, struct re_pattern_buffer *);
+extern char *re_compile_pattern (const char *, int, struct re_pattern_buffer *);
 void re_free_pattern (struct re_pattern_buffer *);
 /* Is this really advertised?  */
 extern void re_compile_fastmap (struct re_pattern_buffer *);
-extern int re_search (struct re_pattern_buffer *, char*, size_t, size_t, size_t,
+extern int re_search (struct re_pattern_buffer *, const char*, int, int, int,
 		      struct re_registers *);
-extern int re_match (struct re_pattern_buffer *, char *, size_t, size_t,
+extern int re_match (struct re_pattern_buffer *, const char *, int, int,
 		     struct re_registers *);
-extern void re_set_casetable (char *table);
+extern void re_set_casetable (const char *table);
 extern void re_copy_registers (struct re_registers*, struct re_registers*);
 extern void re_free_registers (struct re_registers*);
 
 #ifndef RUBY
 /* 4.2 bsd compatibility.  */
-extern char *re_comp (char *);
-extern int re_exec (char *);
+extern char *re_comp (const char *);
+extern int re_exec (const char *);
 #endif
 
 #else /* !__STDC__ */

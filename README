@@ -20,9 +20,27 @@ Perl).  It is simple, straight-forward, and extensible.
 
 * How to get Ruby
 
-The Ruby distribution can be found on
+The Ruby distribution can be found on:
 
   ftp://ftp.netlab.co.jp/pub/lang/ruby/
+
+You can get it by anonymous CVS.  How to check out is:
+
+  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs login
+  (Logging in to anonymous@cvs.netlab.co.jp)
+  CVS password: guest
+  $ cvs -d :pserver:anonymous@cvs.netlab.co.jp:/home/cvs checkout ruby
+
+* Mailing list
+
+There is a mailing list to talk about Ruby.
+To subscribe this list, please send the following phrase
+
+        subscribe Your-Last-Name Your-First-Name 
+e.g.
+        subscribe Joseph Smith
+
+in the mail body (not subject) to the address <ruby-talk-ctl@netlab.co.jp>.
 
 * How to compile and install
 
@@ -98,9 +116,9 @@ You can redistribute it and/or modify it under either the terms of the GPL
   4. You may modify and include the part of the software into any other
      software (possibly commercial).  But some files in the distribution
      are not written by the author, so that they are not under this terms.
-     They are gc.c(partly), utils.c(partly), regex.[ch], fnmatch.[ch],
-     glob.c, st.[ch] and some files under the ./missing directory.  See
-     each file for the copying condition.
+     They are gc.c(partly), utils.c(partly), regex.[ch], st.[ch] and some
+     files under the ./missing directory.  See each file for the copying
+     condition.
 
   5. The scripts and library files supplied as input to or produced as 
      output from the software do not automatically fall under the
