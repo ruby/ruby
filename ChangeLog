@@ -1,3 +1,8 @@
+Fri Mar 21 01:29:35 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* missing.h: include <stdarg.h> or <varargs.h> if HAVE_VSNPRINTF
+	  is not defined.
+
 Thu Mar 20 18:31:37 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* lib/optparse.rb (OptionParser#order!): follow recent change

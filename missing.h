@@ -118,6 +118,11 @@ extern unsigned long strtoul _((char *, char **, int));
 #endif
 
 #ifndef HAVE_VSNPRINTF
+# ifdef HAVE_STDARG_PROTOTYPES
+#  include <stdarg.h>
+# else
+#  include <varargs.h>
+# endif
 extern snprintf __((char *, size_t n, char const *, ...));
 extern vsnprintf _((char *, size_t n, char const *, va_list));
 #endif
