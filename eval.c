@@ -5425,18 +5425,18 @@ rb_f_require(obj, fname)
 		fname = tmp;
 		goto load_rb;
 	    }
+	    goto not_found;
 	}
 	else if (strcmp(".so", ext) == 0 || strcmp(".o", ext) == 0) {
-	    fname = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
+	    tmp = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
 #ifdef DLEXT2
-	    tmp = fname;
 	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
 		feature = tmp;
 		fname = rb_find_file(tmp);
 		goto load_dyna;
 	    }
 #else
-	    feature = tmp = rb_str_dup(fname);
+	    feature = tmp;
 	    rb_str_cat2(tmp, DLEXT);
 	    tmp = rb_find_file(tmp);
 	    if (tmp) {
@@ -5444,6 +5444,7 @@ rb_f_require(obj, fname)
 		goto load_dyna;
 	    }
 #endif
+	    goto not_found;
 	}
 	else if (strcmp(DLEXT, ext) == 0) {
 	    tmp = rb_find_file(fname);
@@ -5452,6 +5453,7 @@ rb_f_require(obj, fname)
 		fname = tmp;
 		goto load_dyna;
 	    }
+	    goto not_found;
 	}
 #ifdef DLEXT2
 	else if (strcmp(DLEXT2, ext) == 0) {
@@ -5461,6 +5463,7 @@ rb_f_require(obj, fname)
 		fname = tmp;
 		goto load_dyna;
 	    }
+	    goto not_found;
 	}
 #endif
     }
@@ -5480,6 +5483,7 @@ rb_f_require(obj, fname)
     }
     if (rb_feature_p(RSTRING(fname)->ptr, Qfalse))
 	return Qfalse;
+  not_found:
     rb_raise(rb_eLoadError, "No such file to load -- %s",
 	     RSTRING(fname)->ptr);
 
