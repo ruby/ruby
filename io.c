@@ -2767,8 +2767,21 @@ set_stdio(val, id, var)
     ID id;
     VALUE *var;
 {
-    rb_warn("assignment to %s is deprecated; use STDIN.reopen() instead", rb_id2name(id));
-    rb_name_error(id, "%s is a read-only variable", rb_id2name(id));
+    char *vn = rb_id2name(id);
+    char *cn = "IO#";
+
+    if (strlen(vn) > 5) {
+	switch (vn[4]) {
+	  case 'i':
+	    cn = "STDIN."; break;
+	  case 'o':
+	    cn = "STDOUT."; break;
+	  case 'e':
+	    cn = "STDERR."; break;
+	}
+    }
+    rb_warn("assignment to %s is deprecated; use %sreopen() instead", vn, cn);
+    rb_name_error(id, "%s is a read-only variable", vn);
 }
 
 static VALUE
