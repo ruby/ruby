@@ -1,3 +1,8 @@
+Sat Jun 26 00:13:08 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_fopen, rb_fdopen, rb_io_reopen): setvbuf() may return
+	  positive value on failure.  [ruby-dev:23792]
+
 Fri Jun 25 18:07:15 2004  Michal Rokos  <michal@ruby-lang.org>
 
 	* gc.c: bring back _stklen for DJGPP [ruby-core:3084]
