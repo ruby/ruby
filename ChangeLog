@@ -1,3 +1,8 @@
+Sun Dec 28 15:25:08 2003  Dave Thomas  <dave@pragprog.com>
+
+	* class.c,object.c,parse.y,sprintf.c,variable.c: Document classes
+	  Object, Module, etc...
+
 Sun Dec 28 11:55:29 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/csv/test_csv.rb: generate bom.csv and mac.csv files on the fly.
