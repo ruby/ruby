@@ -46,12 +46,22 @@ ctx.key = ssl_key
 ctx.verify_mode = verify_mode
 
 Socket.do_not_reverse_lookup = true
-tcps = TCPServer.new("0.0.0.0", port)
+tcps = nil
+100.times{|i|
+  begin
+    tcps = TCPServer.new("0.0.0.0", port+i)
+    port = port + i
+    break
+  rescue Errno::EADDRINUSE
+    next 
+  end
+}
 ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
 ssls.start_immediately = start_immediately
 
 $stdout.sync = true
 $stdout.puts Process.pid
+$stdout.puts port
 
 loop do
   ssl = ssls.accept

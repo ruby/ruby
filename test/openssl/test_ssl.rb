@@ -58,20 +58,24 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
     OpenSSL::TestUtils.issue_crl(*arg)
   end
 
-  def start_server(port, verify_mode, start_immediately, &block)
+  def start_server(port0, verify_mode, start_immediately, &block)
     server = nil
     begin
       cmd = [RUBY]
       cmd << "-d" if $DEBUG
-      cmd << SSL_SERVER << port.to_s << verify_mode.to_s
+      cmd << SSL_SERVER << port0.to_s << verify_mode.to_s
       cmd << (start_immediately ? "yes" : "no")
       server = IO.popen(cmd, "w+")
       server.write(@ca_cert.to_pem)
       server.write(@svr_cert.to_pem)
       server.write(@svr_key.to_pem)
       pid = Integer(server.gets)
-      $stderr.printf("%s started: pid=%d\n", SSL_SERVER, pid) if $DEBUG
-      block.call(server)
+      if port = server.gets
+        if $DEBUG
+          $stderr.printf("%s started: pid=%d port=%d\n", SSL_SERVER, pid, port)
+        end
+        block.call(server, port.to_i)
+      end
     ensure
       if server
         Process.kill(:KILL, pid)
@@ -90,15 +94,15 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_connect_and_close
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){
-      sock = TCPSocket.new("127.0.0.1", PORT)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
+      sock = TCPSocket.new("127.0.0.1", p)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       assert(ssl.connect)
       ssl.close
       assert(!sock.closed?)
       sock.close
 
-      sock = TCPSocket.new("127.0.0.1", PORT)
+      sock = TCPSocket.new("127.0.0.1", p)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.sync_close = true  # !!
       assert(ssl.connect)
@@ -108,8 +112,8 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_read_and_write
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){
-      sock = TCPSocket.new("127.0.0.1", PORT)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
+      sock = TCPSocket.new("127.0.0.1", p)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.sync_close = true
       ssl.connect
@@ -152,8 +156,8 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_starttls
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|s|
-      sock = TCPSocket.new("127.0.0.1", PORT)
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, false){|s, p|
+      sock = TCPSocket.new("127.0.0.1", p)
       ssl = OpenSSL::SSL::SSLSocket.new(sock)
       ssl.sync_close = true
       str = "x" * 1000 + "\n"
@@ -175,10 +179,10 @@ class OpenSSL::TestSSL < Test::Unit::TestCase
   end
 
   def test_parallel
-    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){
+    start_server(PORT, OpenSSL::SSL::VERIFY_NONE, true){|s, p|
       ssls = []
       10.times{
-        sock = TCPSocket.new("127.0.0.1", PORT)
+        sock = TCPSocket.new("127.0.0.1", p)
         ssl = OpenSSL::SSL::SSLSocket.new(sock)
         ssl.connect
         ssl.sync_close = true
