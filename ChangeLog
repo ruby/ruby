@@ -1,3 +1,24 @@
+Sat Jul  1 15:22:35 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_eval): the value from RTEST() is not valid Ruby
+	  objct.  result shoule be either true or false.
+
+Sat Jul  1 09:30:06 2000  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* re.c (rb_reg_initialize): was freeing invalid pointer.
+
+Sat Jul  1 03:25:56 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (call_args): command_call can be the last argument of
+	  call_args.  It had to be the only argument.
+
+	* re.c (rb_reg_s_quote): should not dump core even for unsane mbc
+	  string.
+
+Fri Jun 30 01:36:20 2000  Aleksi Niemela  <aleksi.niemela@cinnober.com>
+
+	* parse.y (f_norm_arg): better, nicer error message.
+
 Thu Jun 29 07:45:33 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* ext/socket/socket.c (udp_send): destination may be packed
@@ -18,6 +39,10 @@ Wed Jun 28 17:26:06 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 	  just before -r procedure.
 
 	* ruby.c (proc_options): -e, - did not exec -r.
+
+Wed Jun 28 14:52:28 2000  Koga Youichirou <y-koga@mms.mt.nec.co.jp>
+
+	* config.sub: NetBSD/hpcmips support.
 
 Wed Jun 28 10:11:06 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 

@@ -861,13 +861,13 @@ opt_call_args	: none
 		| call_args opt_nl
 
 call_args	: command_call
-		    {
-			value_expr($1);
-			$$ = NEW_LIST($1);
-		    }
 		| args ','
 		    {
 			$$ = $1;
+		    }
+		| args ',' command_call
+		    {
+			$$ = list_append($1, $3);
 		    }
 		| args opt_block_arg
 		    {
@@ -1592,7 +1592,19 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 
 f_norm_arg	: tCONSTANT
 		    {
-			yyerror("formal argument must not be constant");
+			yyerror("formal argument cannot be a constant");
+		    }
+                | tIVAR
+		    {
+                        yyerror("formal argument cannot be an instance variable");
+		    }
+                | tGVAR
+		    {
+                        yyerror("formal argument cannot be a global variable");
+		    }
+                | tCVAR
+		    {
+                        yyerror("formal argument cannot be a class variable");
 		    }
 		| tIDENTIFIER
 		    {

@@ -2311,7 +2311,7 @@ rb_eval(self, n)
 	    rb_bug("unexpected local variable");
 	}
 	if (!RTEST(ruby_scope->local_vars[node->nd_cnt])) {
-	    result = RTEST(rb_eval(self, node->nd_beg));
+	    result = RTEST(rb_eval(self, node->nd_beg)) ? Qtrue : Qfalse;
 	    ruby_scope->local_vars[node->nd_cnt] = result;
 	}
 	else {

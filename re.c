@@ -88,12 +88,6 @@ rb_memcmp(p1, p2, len)
     return 0;
 }
 
-int
-rb_str_cicmp(str1, str2)
-    VALUE str1, str2;
-{
-}
-
 #define REG_CASESTATE  FL_USER0
 #define KCODE_NONE  0
 #define KCODE_EUC   FL_USER1
@@ -830,7 +824,7 @@ rb_reg_initialize(obj, s, len, options)
     struct RRegexp *re = RREGEXP(obj);
 
     if (re->ptr) re_free_pattern(re->ptr);
-    if (re->str) free(re->ptr);
+    if (re->str) free(re->str);
     re->ptr = 0;
     re->str = 0;
 
@@ -879,7 +873,7 @@ rb_reg_new(s, len, options)
     NEWOBJ(re, struct RRegexp);
     OBJSETUP(re, rb_cRegexp, T_REGEXP);
 
-    re->ptr = 0; re->len = 0;
+    re->ptr = 0; re->len = 0; re->str = 0;
     rb_reg_initialize(re, s, len, options);
     return (VALUE)re;
 }
@@ -1036,7 +1030,7 @@ rb_reg_s_new(argc, argv, klass)
 {
     NEWOBJ(re, struct RRegexp);
     OBJSETUP(re, klass, T_REGEXP);
-    re->ptr = 0; re->len = 0;
+    re->ptr = 0; re->len = 0; re->str = 0;
     rb_obj_call_init((VALUE)re, argc, argv);
     return (VALUE)re;
 }
@@ -1063,11 +1057,11 @@ rb_reg_s_quote(argc, argv)
     tmp = ALLOCA_N(char, len*2);
     t = tmp;
 
-    for (; s != send; s++) {
+    for (; s < send; s++) {
 	if (ismbchar(*s)) {
 	    size_t n = mbclen(*s);
 
-	    while (n--)
+	    while (n-- && s < send)
 		*t++ = *s++;
 	    s--;
 	    continue;
@@ -1146,7 +1140,7 @@ rb_reg_clone(re)
     NEWOBJ(clone, struct RRegexp);
     CLONESETUP(clone, re);
     rb_reg_check(re);
-    clone->ptr = 0; clone->len = 0;
+    clone->ptr = 0; clone->len = 0; clone->str = 0;
     rb_reg_initialize(clone, RREGEXP(re)->str, RREGEXP(re)->len,
 		      rb_reg_options(re));
     return (VALUE)re;
