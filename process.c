@@ -234,7 +234,9 @@ proc_waitpid2(argc, argv)
     return rb_assoc_new(pid, rb_last_status);
 }
 
+#ifndef HAVE_STRING_H
 char *strtok();
+#endif
 
 #ifdef HAVE_SETITIMER
 #define before_exec() rb_thread_stop_timer()

@@ -18,7 +18,7 @@
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
-#ifndef atof
+#if !defined(atof) && !defined(HAVE_STDLIB_H)
 double strtod();
 #endif
 
