@@ -1,5 +1,7 @@
 Tue Apr 27 14:11:45 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
+	* parse.y (fname): lazy workaround for keywords did not work well.
+
 	* ext/extmk.rb.in: `--with-xxx=yyy' argument configuration.
 
 	* misc/ruby-mode.el: forgot to handle $`.

@@ -55,6 +55,7 @@ static enum lex_state {
     EXPR_END,			/* newline significant, +/- is a operator. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
     EXPR_FNAME,			/* ignore newline, no reserved words. */
+    EXPR_DOT,			/* right after `.' or `::', no reserved words. */
     EXPR_CLASS,			/* immediate after `class', no here document. */
 } lex_state;
 
@@ -542,6 +543,11 @@ fname		: tIDENTIFIER
 			lex_state = EXPR_END;
 			$$ = $1;
 		    }
+		| reswords
+		    {
+			lex_state = EXPR_END;
+			$$ = $<id>1;
+		    }
 
 undef_list	: fname
 		    {
@@ -579,6 +585,14 @@ op		: tDOT2		{ $$ = tDOT2; }
 		| tAREF		{ $$ = tAREF; }
 		| tASET		{ $$ = tASET; }
 		| '`'		{ $$ = '`'; }
+
+reswords	: k__LINE__ | k__FILE__ | klBEGIN | klEND
+		| kALIAS | kAND | kBEGIN | kBREAK | kCASE | kCLASS | kDEF
+		| kDEFINED | kDO | kELSE | kELSIF | kEND | kENSURE | kFALSE
+		| kFOR | kIF_MOD | kIN | kMODULE | kNEXT | kNIL | kNOT
+		| kOR | kREDO | kRESCUE | kRETRY | kRETURN | kSELF | kSUPER
+		| kTHEN | kTRUE | kUNDEF | kUNLESS_MOD | kUNTIL_MOD | kWHEN
+		| kWHILE_MOD | kYIELD
 
 arg		: lhs '=' arg
 		    {
@@ -1511,9 +1525,9 @@ singleton	: var_ref
 			    $$ = $1;
 			}
 		    }
-		| '(' expr opt_nl ')'
+		| '(' {lex_state = EXPR_BEG;} expr opt_nl ')'
 		    {
-			switch (nd_type($2)) {
+			switch (nd_type($3)) {
 			  case NODE_STR:
 			  case NODE_DSTR:
 			  case NODE_XSTR:
@@ -1526,7 +1540,7 @@ singleton	: var_ref
 			  default:
 			    break;
 			}
-			$$ = $2;
+			$$ = $3;
 		    }
 
 assoc_list	: none
@@ -2414,6 +2428,7 @@ yylex()
 	switch (lex_state) {
 	  case EXPR_BEG:
 	  case EXPR_FNAME:
+	  case EXPR_DOT:
 	    goto retry;
 	  default:
 	    break;
@@ -2552,6 +2567,7 @@ yylex()
 	return parse_string(c,c,c);
       case '`':
 	if (lex_state == EXPR_FNAME) return c;
+	if (lex_state == EXPR_DOT) return c;
 	return parse_string(c,c,c);
 
       case '\'':
@@ -2622,7 +2638,7 @@ yylex()
 
       case '+':
 	c = nextc();
-	if (lex_state == EXPR_FNAME) {
+	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 	    if (c == '@') {
 		return tUPLUS;
 	    }
@@ -2649,7 +2665,7 @@ yylex()
 
       case '-':
 	c = nextc();
-	if (lex_state == EXPR_FNAME) {
+	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 	    if (c == '@') {
 		return tUMINUS;
 	    }
@@ -2687,7 +2703,7 @@ yylex()
 	}
 	pushback(c);
 	if (!ISDIGIT(c)) {
-	    lex_state = EXPR_FNAME;
+	    lex_state = EXPR_DOT;
 	    return '.';
 	}
 	c = '.';
@@ -2846,7 +2862,7 @@ yylex()
 		lex_state = EXPR_BEG;
 		return tCOLON3;
 	    }
-	    lex_state = EXPR_FNAME;
+	    lex_state = EXPR_DOT;
 	    return tCOLON2;
 	}
 	pushback(c);
@@ -2892,7 +2908,7 @@ yylex()
 	return c;
 
       case '~':
-	if (lex_state == EXPR_FNAME) {
+	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 	    if ((c = nextc()) != '@') {
 		pushback(c);
 	    }
@@ -2911,7 +2927,7 @@ yylex()
 	return c;
 
       case '[':
-	if (lex_state == EXPR_FNAME) {
+	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 	    if ((c = nextc()) == ']') {
 		if ((c = nextc()) == '=') {
 		    return tASET;
@@ -3136,12 +3152,15 @@ yylex()
 	    result = tIVAR;
 	    break;
 	  default:
-	    if (lex_state != EXPR_FNAME) {
+	    if (lex_state != EXPR_DOT) {
 		/* See if it is a reserved word.  */
 		kw = rb_reserved_word(tok(), toklen());
 		if (kw) {
 		    enum lex_state state = lex_state;
 		    lex_state = kw->state;
+		    if (state == EXPR_FNAME) {
+			yylval.id = rb_intern(kw->name);
+		    }
 		    return kw->id[state != EXPR_BEG];
 		}
 	    }
