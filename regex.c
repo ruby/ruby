@@ -2718,8 +2718,9 @@ re_search(bufp, string, size, startpos, range, regs)
       if (range > 0) {
 	if (startpos > 0)
 	  return -1;
-	else 
-	  return re_match(bufp, string, size, 0, regs);
+	else if (re_match(bufp, string, size, 0, regs) >= 0)
+	  return 0;
+	return -1;
       }
       break;
 
