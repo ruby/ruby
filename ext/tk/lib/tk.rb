@@ -1,4 +1,4 @@
-#
+
 #		tk.rb - Tk interface module using tcltklib
 #			$Date$
 #			by Yukihiro Matsumoto <matz@netlab.jp>
@@ -251,7 +251,8 @@ module TkComm
   def procedure(val)
     if val =~ /^rb_out (c\d+)/
       #Tk_CMDTBL[$1]
-      TkCore::INTERP.tk_cmd_tbl[$1]
+      #TkCore::INTERP.tk_cmd_tbl[$1]
+      TkCore::INTERP.tk_cmd_tbl[$1].cmd
     else
       #nil
       val
@@ -291,6 +292,7 @@ module TkComm
     return str
   end
   private :_get_eval_string
+  module_function :_get_eval_string
 
   def ruby2tcl(v)
     if v.kind_of?(Hash)
@@ -319,7 +321,7 @@ module TkComm
     return '' if cmd == ''
     id = _next_cmd_id
     #Tk_CMDTBL[id] = cmd
-    TkCore::INTERP.tk_cmd_tbl[id] = cmd
+    TkCore::INTERP.tk_cmd_tbl[id] = TkCore::INTERP.get_cb_entry(cmd)
     @cmdtbl = [] unless defined? @cmdtbl
     @cmdtbl.push id
     return format("rb_out %s", id);
@@ -656,8 +658,8 @@ module TkCore
 
     INTERP = TclTkIp.new(name, opts)
 
-    def INTERP.__ip_id
-      nil
+    def INTERP.__getip
+      self
     end
 
     INTERP.instance_eval{
@@ -667,8 +669,20 @@ module TkCore
       @tk_table_list = []
 
       @init_ip_env  = [] # table of Procs
-      @add_tk_procs = [] # table of [name, body]
+      @add_tk_procs = [] # table of [name, args, body]
+
+      @cb_entry_class = Class.new{|c|
+	def initialize(ip, cmd)
+	  @ip = ip
+	  @cmd = cmd
+	end
+	attr_reader :ip, :cmd
+	def call(*args)
+	  @ip.cb_eval(@cmd, *args)
+	end
+      }
     }
+
     def INTERP.tk_cmd_tbl
       @tk_cmd_tbl
     end
@@ -691,13 +705,20 @@ module TkCore
       return obj
     end
 
+    def INTERP.get_cb_entry(cmd)
+      @cb_entry_class.new(__getip, cmd).freeze
+    end
+    def INTERP.cb_eval(cmd, *args)
+      TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args))
+    end
+
     def INTERP.init_ip_env(script = Proc.new)
       @init_ip_env << script
       script.call(self)
     end
-    def INTERP.add_tk_procs(name, args, body)
+    def INTERP.add_tk_procs(name, args = nil, body = nil)
       @add_tk_procs << [name, args, body]
-      self._invoke('proc', name, args, body)
+      self._invoke('proc', name, args, body) if args && body
     end
     def INTERP.init_ip_internal
       ip = self
@@ -724,6 +745,20 @@ module TkCore
 
   def callback_continue
     fail TkCallbackContinue, "Tk callback returns 'continue' status"
+  end
+
+  def TkCore.callback(arg)
+    # arg = tk_split_list(arg)
+    arg = tk_split_simplelist(arg)
+    #_get_eval_string(TkUtil.eval_cmd(Tk_CMDTBL[arg.shift], *arg))
+    #_get_eval_string(TkUtil.eval_cmd(TkCore::INTERP.tk_cmd_tbl[arg.shift], 
+    #  			     *arg))
+    cb_obj = TkCore::INTERP.tk_cmd_tbl[arg.shift]
+    cb_obj.call(*arg)
+  end
+
+  def load_cmd_on_ip(tk_cmd)
+    bool(tk_call('auto_load', tk_cmd))
   end
 
   def after(ms, cmd=Proc.new)
@@ -792,14 +827,6 @@ module TkCore
 
   def clock_seconds
     tk_call('clock','seconds').to_i
-  end
-
-  def TkCore.callback(arg)
-    # arg = tk_split_list(arg)
-    arg = tk_split_simplelist(arg)
-    #_get_eval_string(TkUtil.eval_cmd(Tk_CMDTBL[arg.shift], *arg))
-    _get_eval_string(TkUtil.eval_cmd(TkCore::INTERP.tk_cmd_tbl[arg.shift], 
-				     *arg))
   end
 
   def windowingsystem
@@ -898,7 +925,7 @@ module TkCore
     TkCore::INTERP.init_ip_internal
 
     tk_call('set', 'argv0', app_name) if app_name
-    if keys.kind_of?(Hash) && keys.size > 0
+    if keys.kind_of?(Hash)
       # tk_call('set', 'argc', keys.size * 2)
       tk_call('set', 'argv', hash_kv(keys).join(' '))
     end
@@ -935,10 +962,6 @@ module TkCore
 
   def chooseColor(keys = nil)
     tk_call 'tk_chooseColor', *hash_kv(keys)
-  end
-
-  def chooseDirectory(keys = nil)
-    tk_call 'tk_chooseDirectory', *hash_kv(keys)
   end
 
   def ip_eval(cmd_string)
@@ -1484,11 +1507,11 @@ if /^8\.[1-9]/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK
       TkCommandNames = ['encoding'.freeze].freeze
 
       def encoding=(name)
-	INTERP.encoding = name
+	TkCore::INTERP.encoding = name
       end
 
       def encoding
-	INTERP.encoding
+	TkCore::INTERP.encoding
       end
 
       def encoding_names

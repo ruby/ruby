@@ -25,7 +25,8 @@ class TkTimer
     @after_id = nil
     ex_obj = Tk_CBTBL[obj_id]
     return nil if ex_obj == nil; # canceled
-    _get_eval_string(ex_obj.do_callback)
+    #_get_eval_string(ex_obj.do_callback)
+    ex_obj.cb_call
   end
 
   def self.info
@@ -103,6 +104,8 @@ class TkTimer
     @id = Tk_CBID.join
     Tk_CBID[1].succ!
 
+    @cb_cmd = TkCore::INTERP.get_cb_entry(self.method(:do_callback))
+
     @set_next = true
 
     @init_sleep = 0
@@ -141,6 +144,10 @@ class TkTimer
   attr :return_value
 
   attr_accessor :loop_exec
+
+  def cb_call
+    @cb_cmd.call
+  end
 
   def get_procs
     [@init_sleep, @init_proc, @init_args, @sleep_time, @loop_exec, @loop_proc]
@@ -217,6 +224,28 @@ class TkTimer
     }
     @proc_max = @loop_proc.size
 
+    self
+  end
+
+  def delete_procs(*procs)
+    procs.each{|e|
+      if e.kind_of? Proc
+	@loop_proc.delete([e])
+      else
+	@loop_proc.delete(e)
+      end
+    }
+    @proc_max = @loop_proc.size
+
+    cancel if @proc_max == 0
+
+    self
+  end
+
+  def delete_at(n)
+    @loop_proc.delete_at(n)
+    @proc_max = @loop_proc.size
+    cancel if @proc_max == 0
     self
   end
 

@@ -1,5 +1,5 @@
 (tof)
-                                    2003/06/19  Hidetoshi NAGAI
+                                    2003/07/25  Hidetoshi NAGAI
 
 本ドキュメントには古い tcltk ライブラリ，tcltklib ライブラリの説明
 が含まれていますが，その記述内容は古いものとなっています．
@@ -245,7 +245,35 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : ( see set_eventloop_wait )
 
 クラス TclTkIp
+   クラスメソッド
+      new(ip_name=nil, options='')
+         : TclTkIp クラスのインスタンスを生成する．
+         : ip_name に文字列を与えた場合は，それが winfo interps などで
+         : 表示される名前になる．
+         : options には，-geometry や -use など，wish のコマンドライン
+         : 引数として与えるオプションと同様の情報を文字列として与える．
+         : 与えられた情報は，root widget 生成の際に用いられる．
+         : ( e.g. TclTkIp.new('FOO', '-geometry 500x200 -use 0x2200009') )
+
    インスタンスメソッド
+      create_slave(name, safe=false)
+         : レシーバを親とする name という名前のスレーブインタープリタを
+	 : 生成する．
+	 : safe には生成するインタープリタを safe インタープリタとする
+         : かを指定する．デフォルトは false ということになっているが，
+         : たとえ明確に false を指定していたとしても，親となるインター
+         : プリタが safe インタープリタであれば，その設定を引き継いで 
+         : safe インタープリタとして生成される．
+
+      make_safe
+         : Tcl/Tk インタープリタを safe インタープリタに変更する．
+         : 戻り値はレシーバであるインタープリタ自身である．
+         : 失敗した場合は RuntimeError の例外を発生する．
+
+      safe?
+         : Tcl/Tk インタープリタを safe インタープリタであるかを調べる．
+         : safe インタープリタであれば true を返す．
+
       restart
          : Tcl/Tk インタープリタの Tk 部分の初期化，再起動を行う．
          : 一旦 root widget を破壊した後に再度 Tk の機能が必要と
@@ -258,8 +286,13 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : _invoke は評価スクリプトの token ごとに一つの引数とな
          : るように与える．
          : _invoke の方は Tcl/Tk インタープリタの字句解析器を用い
-         : ないため，評価の負荷がより少なくてすむ．
-
+         : ないため，評価の負荷がより少なくてすむ．ただし，その代
+         : わりに auto_load のような機構は働かず，load 等によって
+         : Tcl/Tk インタープリタ上に既に登録済みのコマンドしか呼
+         : び出すことができない．
+         : _eval では auto_load 機構が働くため，一度 _eval を実行
+         : して登録に成功しさえすれば，以降は _invoke でも利用で
+         : きるようになる．
 
       _toUTF8(str, encoding)
       _fromUTF8(str, encoding)

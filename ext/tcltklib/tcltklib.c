@@ -614,22 +614,22 @@ ip_init(argc, argv, self)
     cnt = rb_scan_args(argc, argv, "02", &argv0, &opts);
     switch(cnt) {
     case 2:
-      /* options */
-      Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0);
+	/* options */
+	Tcl_SetVar(ptr->ip, "argv", StringValuePtr(opts), 0);
     case 1:
-      /* argv0 */
-      if (argv0 != Qnil) {
-	Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0);
-      }
+	/* argv0 */
+	if (argv0 != Qnil) {
+	    Tcl_SetVar(ptr->ip, "argv0", StringValuePtr(argv0), 0);
+	}
     case 0:
-      /* no args */
-      ;
+	/* no args */
+	;
     }
 
     /* from Tcl_AppInit() */
     DUMP1("Tk_Init");
     if (Tk_Init(ptr->ip) == TCL_ERROR) {
-      rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
     }
     DUMP1("Tcl_StaticPackage(\"Tk\")");
 #if TCL_MAJOR_VERSION >= 8
@@ -651,6 +651,68 @@ ip_init(argc, argv, self)
 #endif
 
     return self;
+}
+
+static VALUE
+ip_create_slave(argc, argv, self)
+    int   argc;
+    VALUE *argv;
+    VALUE self;
+{
+    struct tcltkip *master = get_ip(self);
+    struct tcltkip *slave = ALLOC(struct tcltkip);
+    VALUE name;
+    VALUE safemode;
+    int safe;
+
+    /* safe-mode check */
+    if (rb_scan_args(argc, argv, "11", &name, &safemode) == 1) {
+	safemode = Qfalse;
+    }
+    if (Tcl_IsSafe(master->ip) == 1) {
+	safe = 1;
+    } else if (safemode == Qfalse || safemode == Qnil) {
+	safe = 0;
+    } else {
+	safe = 1;
+    }
+
+    /* create slave-ip */
+    if ((slave->ip = Tcl_CreateSlave(master->ip, StringValuePtr(name), safe)) 
+	== NULL) {
+	rb_raise(rb_eRuntimeError, "fail to create the new slave interpreter");
+    }
+    slave->return_value = 0;
+
+    return Data_Wrap_Struct(CLASS_OF(self), 0, ip_free, slave);
+}
+
+/* make ip "safe" */
+static VALUE
+ip_make_safe(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+    
+    if (Tcl_MakeSafe(ptr->ip) == TCL_ERROR) {
+	rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+    }
+
+    return self;
+}
+
+/* is safe? */
+static VALUE
+ip_is_safe_p(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+    
+    if (Tcl_IsSafe(ptr->ip)) {
+	return Qtrue;
+    } else {
+	return Qfalse;
+    }
 }
 
 /* eval string in tcl by Tcl_Eval() */
@@ -1012,6 +1074,9 @@ Init_tcltklib()
 
     rb_define_alloc_func(ip, ip_alloc);
     rb_define_method(ip, "initialize", ip_init, -1);
+    rb_define_method(ip, "create_slave", ip_create_slave, -1);
+    rb_define_method(ip, "make_safe", ip_make_safe, 0);
+    rb_define_method(ip, "safe?", ip_is_safe_p, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
     rb_define_method(ip, "_toUTF8",ip_toUTF8,2);
     rb_define_method(ip, "_fromUTF8",ip_fromUTF8,2);
