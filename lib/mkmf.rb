@@ -294,25 +294,25 @@ end
 def with_cppflags(flags)
   cppflags = $CPPFLAGS
   $CPPFLAGS = flags
-  return yield
+  ret = yield
 ensure
-  $CPPFLAGS = cppflags
+  $CPPFLAGS = cppflags unless ret
 end
 
 def with_cflags(flags)
   cflags = $CFLAGS
   $CFLAGS = flags
-  return yield
+  ret = yield
 ensure
-  $CFLAGS = cflags
+  $CFLAGS = cflags unless ret
 end
 
 def with_ldflags(flags)
   ldflags = $LDFLAGS
   $LDFLAGS = flags
-  return yield
+  ret = yield
 ensure
-  $LDFLAGS = ldflags
+  $LDFLAGS = ldflags unless ret
 end
 
 def try_static_assert(expr, headers = nil, opt = "", &b)

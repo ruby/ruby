@@ -1,4 +1,4 @@
-Sun Feb  6 23:51:30 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Feb  7 01:22:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extract_makefile): extract previously collected
 	  informations from existing Makefile.
@@ -23,6 +23,9 @@ Sun Feb  6 23:51:30 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (dir_config): accept arrays of directory names as
 	  default values.
+
+	* lib/mkmf.rb (with_cppflags, with_cflags, with_ldflags): keep flags
+	  modified if the block returned true.
 
 Sun Feb  6 19:20:05 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
