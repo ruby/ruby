@@ -1,3 +1,8 @@
+Sat Jan  3 02:44:48 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* rubysig.h (TRAP_END): preserve errno before switching context.
+	  [ruby-core:02137]
+
 Sat Jan  3 01:18:08 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c: merge tuning from H.Yamamoto <ocean@m2.ccsnet.ne.jp>.
