@@ -36,9 +36,7 @@ static struct signals {
 #ifdef SIGHUP
     {"HUP", SIGHUP},
 #endif
-#ifdef SIGINT
     {"INT", SIGINT},
-#endif
 #ifdef SIGQUIT
     {"QUIT", SIGQUIT},
 #endif

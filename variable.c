@@ -188,17 +188,22 @@ rb_class_path(klass)
 
     if (path) return path;
     else {
-	char buf[256];
+	VALUE str;
 	char *s = "Class";
 
 	if (TYPE(klass) == T_MODULE) {
-	    if (rb_obj_class(klass) == rb_cModule)
+	    if (rb_obj_class(klass) == rb_cModule) {
 		s = "Module";
-	    else
+	    }
+	    else {
 		s = rb_class2name(RBASIC(klass)->klass);
+	    }
 	}
-	sprintf(buf, "#<%s:0x%lx>", s, klass);
-	return rb_str_new2(buf);
+	str = rb_str_new(0, 2 + strlen(s) + 3 + 2 * SIZEOF_LONG + 1);
+	sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", s, klass);
+	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+
+	return str;
     }
 }
 

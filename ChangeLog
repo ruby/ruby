@@ -1,3 +1,9 @@
+Wed Aug 28 23:59:15 2002  Michal Rokos  <michal@ruby-lang.org>
+
+	* signal.c: remove #ifdef SIGINT for struct signals.
+
+	* variable.c: get rid of fix length buffer in rb_class_path.
+
 Wed Aug 28 23:34:32 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* io.c (appendline): data was lost when raw mode.
