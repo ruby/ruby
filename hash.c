@@ -843,10 +843,18 @@ rb_hash_update(hash1, hash2)
 
 static int path_tainted = -1;
 
-#ifndef NT
-extern char **environ;
-#endif
 static char **origenviron;
+#ifdef NT
+#define GET_ENVIRON(e) (e = win32_get_environ())
+#define FREE_ENVIRON(e) win32_free_environ(e)
+static char **my_environ;
+#undef environ
+#define environ my_environ
+#else
+extern char **environ;
+#define GET_ENVIRON(e) (e)
+#define FREE_ENVIRON(e)
+#endif
 
 static VALUE
 env_delete(obj, name)
@@ -955,17 +963,20 @@ envix(nam)
 char *nam;
 {
     register int i, len = strlen(nam);
+    char **env;
 
-    for (i = 0; environ[i]; i++) {
+    env = GET_ENVIRON(environ);
+    for (i = 0; env[i]; i++) {
 	if (
 #ifdef WIN32
-	    strnicmp(environ[i],nam,len) == 0
+	    strnicmp(env[i],nam,len) == 0
 #else
-	    memcmp(environ[i],nam,len) == 0
+	    memcmp(env[i],nam,len) == 0
 #endif
-	    && environ[i][len] == '=')
+	    && env[i][len] == '=')
 	    break;			/* memcmp must come first to avoid */
     }					/* potential SEGV's */
+    FREE_ENVIRON(environ);
     return i;
 }
 
@@ -1141,7 +1152,7 @@ env_keys()
     char **env;
     VALUE ary = rb_ary_new();
 
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
@@ -1149,6 +1160,7 @@ env_keys()
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return ary;
 }
 
@@ -1158,7 +1170,7 @@ env_each_key(hash)
 {
     char **env;
 
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
@@ -1166,6 +1178,7 @@ env_each_key(hash)
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return Qnil;
 }
 
@@ -1175,7 +1188,7 @@ env_values()
     char **env;
     VALUE ary = rb_ary_new();
 
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
@@ -1183,6 +1196,7 @@ env_values()
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return ary;
 }
 
@@ -1192,7 +1206,7 @@ env_each_value(hash)
 {
     char **env;
 
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
@@ -1200,6 +1214,7 @@ env_each_value(hash)
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return Qnil;
 }
 
@@ -1209,7 +1224,7 @@ env_each(hash)
 {
     char **env;
 
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
@@ -1218,6 +1233,7 @@ env_each(hash)
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return Qnil;
 }
 
@@ -1267,7 +1283,7 @@ env_inspect()
     VALUE str = rb_str_buf_new2("{");
     VALUE i;
 
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 
@@ -1283,6 +1299,7 @@ env_inspect()
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     rb_str_buf_cat2(str, "}");
     OBJ_TAINT(str);
 
@@ -1295,7 +1312,7 @@ env_to_a()
     char **env;
     VALUE ary = rb_ary_new();
 
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
@@ -1304,6 +1321,7 @@ env_to_a()
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return ary;
 }
 
@@ -1317,16 +1335,26 @@ static VALUE
 env_size()
 {
     int i;
+    char **env;
 
-    for(i=0; environ[i]; i++)
+    env = GET_ENVIRON(environ);
+    for(i=0; env[i]; i++)
 	;
+    FREE_ENVIRON(environ);
     return INT2FIX(i);
 }
 
 static VALUE
 env_empty_p()
 {
-    if (environ[0] == 0) return Qtrue;
+    char **env;
+
+    env = GET_ENVIRON(environ);
+    if (env[0] == 0) {
+	FREE_ENVIRON(environ);
+	return Qtrue;
+    }
+    FREE_ENVIRON(environ);
     return Qfalse;
 }
 
@@ -1350,15 +1378,18 @@ env_has_value(dmy, value)
     char **env;
 
     if (TYPE(value) != T_STRING) return Qfalse;
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=')+1;
 	if (s) {
-	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0)
+	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
+		FREE_ENVIRON(environ);
 		return Qtrue;
+	    }
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return Qfalse;
 }
 
@@ -1367,18 +1398,22 @@ env_index(dmy, value)
     VALUE dmy, value;
 {
     char **env;
+    VALUE str;
 
     if (TYPE(value) != T_STRING) return Qnil;
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=')+1;
 	if (s) {
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-		return rb_tainted_str_new(*env, s-*env-1);
+		str = rb_tainted_str_new(*env, s-*env-1);
+		FREE_ENVIRON(environ);
+		return str;
 	    }
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return Qnil;
 }
 
@@ -1413,7 +1448,7 @@ env_to_hash()
     char **env;
     VALUE hash = rb_hash_new();
 
-    env = environ;
+    env = GET_ENVIRON(environ);
     while (*env) {
 	char *s = strchr(*env, '=');
 	if (s) {
@@ -1422,6 +1457,7 @@ env_to_hash()
 	}
 	env++;
     }
+    FREE_ENVIRON(environ);
     return hash;
 }
 

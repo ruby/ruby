@@ -72,6 +72,7 @@ extern char **environ;
 #define environ _environ
 #endif
 
+static struct ChildRecord *CreateChild(char *, SECURITY_ATTRIBUTES *, HANDLE, HANDLE, HANDLE);
 static bool NtHasRedirection (char *);
 static int valid_filename(char *s);
 static void StartSockets ();
@@ -294,24 +295,74 @@ char *getlogin()
 
 
 #if 1
-// popen stuff
+#define MAXCHILDNUM 256	/* max num of child processes */
 
-//
-// use these so I can remember which index is which
-//
+struct ChildRecord {
+    HANDLE hProcess;	/* process handle */
+    pid_t pid;		/* process id */
+    FILE* pipe;		/* pipe */
+} ChildRecord[MAXCHILDNUM];
 
-#define NtPipeRead  0	   // index of pipe read descriptor
-#define NtPipeWrite 1	   // index of pipe write descriptor
+#define FOREACH_CHILD(v) do { \
+    struct ChildRecord* v; \
+    for (v = ChildRecord; v < ChildRecord + sizeof(ChildRecord) / sizeof(ChildRecord[0]); ++v)
+#define END_FOREACH_CHILD } while (0)
 
-#define NtPipeSize  1024   // size of pipe buffer
+static struct ChildRecord *
+FindFirstChildSlot(void)
+{
+    FOREACH_CHILD(child) {
+	if (child->pid) return child;
+    } END_FOREACH_CHILD;
+    return NULL;
+}
 
-#define MYPOPENSIZE 256	   // size of book keeping structure
+static struct ChildRecord *
+FindChildSlot(pid_t pid)
+{
 
-struct {
-    int inuse;
-    int pid;
-    FILE *pipe;
-} MyPopenRecord[MYPOPENSIZE];
+    FOREACH_CHILD(child) {
+	if (child->pid == pid) {
+	    return child;
+	}
+    } END_FOREACH_CHILD;
+    return NULL;
+}
+
+static struct ChildRecord *
+FindPipedChildSlot(FILE *fp)
+{
+    FOREACH_CHILD(child) {
+	if (child->pid && child->pipe == fp) {
+	    return child;
+	}
+    } END_FOREACH_CHILD;
+    return NULL;
+}
+
+static void
+CloseChildHandle(struct ChildRecord *child)
+{
+    HANDLE h = child->hProcess;
+    child->hProcess = NULL;
+    child->pid = 0;
+    CloseHandle(h);
+}
+
+static struct ChildRecord *
+FindFreeChildSlot(void)
+{
+    FOREACH_CHILD(child) {
+	if (!child->pid) {
+	    child->pid = -1;	/* lock the slot */
+	    child->hProcess = NULL;
+	    child->pipe = NULL;
+	    return child;
+	}
+    } END_FOREACH_CHILD;
+    return NULL;
+}
+
 
 int SafeFree(char **vec, int vecc)
 {
@@ -398,34 +449,13 @@ FILE *
 mypopen (char *cmd, char *mode) 
 {
     FILE *fp;
-    int saved, reading;
+    int reading;
     int pipemode;
-    int pipes[2];
-    int pid;
-    int slot;
-    static initialized = 0;
-
-    //
-    // if first time through, intialize our book keeping structure
-    //
-
-    if (!initialized++) {
-	for (slot = 0; slot < MYPOPENSIZE; slot++)
-	    MyPopenRecord[slot].inuse = FALSE;
-    }
-
-    //printf("mypopen %s\n", cmd);
-    
-    //
-    // find a free popen slot
-    //
-
-    for (slot = 0; slot < MYPOPENSIZE && MyPopenRecord[slot].inuse; slot++)
-	;
-
-    if (slot > MYPOPENSIZE) {
-	return NULL;
-    }
+    struct ChildRecord* child;
+    BOOL fRet;
+    HANDLE hInFile, hOutFile;
+    SECURITY_ATTRIBUTES sa;
+    int fd;
 
     //
     // Figure out what we\'re doing...
@@ -437,410 +467,183 @@ mypopen (char *cmd, char *mode)
     //
     // Now get a pipe
     //
+    sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
+    sa.lpSecurityDescriptor = NULL;
+    sa.bInheritHandle       = TRUE;
 
-#if 0    
-    if (_pipe(pipes, NtPipeSize, pipemode) == -1) {
-	return NULL;
+    fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
+    if (!fRet) {
+	errno = GetLastError();
+	rb_sys_fail("mypopen: CreatePipe");
     }
 
     if (reading) {
-
-	//
-	// we\'re reading from the pipe, so we must hook up the
-	// write end of the pipe to the new processes stdout.
-	// To do this we must save our file handle from stdout
-	// by _dup\'ing it, then setting our stdout to be the pipe\'s 
-	// write descriptor. We must also make the write handle 
-	// inheritable so the new process can use it.
-
-	if ((saved = _dup(fileno(stdout))) == -1) {
-	    _close(pipes[NtPipeRead]);
-	    _close(pipes[NtPipeWrite]);
-	    return NULL;
-	}
-	if (_dup2 (pipes[NtPipeWrite], fileno(stdout)) == -1) {
-	    _close(pipes[NtPipeRead]);
-	    _close(pipes[NtPipeWrite]);
-	    return NULL;
-	}
+	child = CreateChild(cmd, &sa, NULL, hOutFile, NULL);
     }
     else {
-	//
-	// must be writing to the new process. Do the opposite of
-	// the above, i.e. hook up the processes stdin to the read
-	// end of the pipe.
-	//
-
-	if ((saved = _dup(fileno(stdin))) == -1) {
-	    _close(pipes[NtPipeRead]);
-	    _close(pipes[NtPipeWrite]);
-	    return NULL;
-	}
-	if (_dup2(pipes[NtPipeRead], fileno(stdin)) == -1) {
-	    _close(pipes[NtPipeRead]);
-	    _close(pipes[NtPipeWrite]);
-	    return NULL;
-	}
+	child = CreateChild(cmd, &sa, hInFile, NULL, NULL);
     }
 
-    //
-    // Start the new process. Must set _fileinfo to non-zero value
-    // for file descriptors to be inherited. Reset after the process
-    // is started.
-    //
-
-    if (NtHasRedirection(cmd)) {
-      docmd:
-	pid = spawnlpe(_P_NOWAIT, "cmd.exe", "/c", cmd, 0, environ);
-	if (pid == -1) {
-	    _close(pipes[NtPipeRead]);
-	    _close(pipes[NtPipeWrite]);
-	    return NULL;
-	}
-    }
-    else {
-	char **vec;
-	int vecc = NtMakeCmdVector(cmd, &vec, FALSE);
-
-	//pid = spawnvpe (_P_NOWAIT, vec[0], vec, environ);
-	pid = spawnvpe (_P_WAIT, vec[0], vec, environ);
-	if (pid == -1) {
-	    goto docmd;
-	}
-		Safefree (vec, vecc);
+    if (!child) {
+	CloseHandle(hInFile);
+	CloseHandle(hOutFile);
+	rb_sys_fail("mypopen: CreateChild");
     }
 
     if (reading) {
-
-	//
-	// We need to close our instance of the inherited pipe write
-	// handle now that it's been inherited so that it will actually close
-	// when the child process ends.
-	//
-
-	if (_close(pipes[NtPipeWrite]) == -1) {
-	    _close(pipes[NtPipeRead]);
-	    return NULL;
-	}
-	if (_dup2 (saved, fileno(stdout)) == -1) {
-	    _close(pipes[NtPipeRead]);
-	    return NULL;
-	}
-	_close(saved);
-
-	// 
-	// Now get a stream pointer to return to the calling program.
-	//
-
-	if ((fp = (FILE *) fdopen(pipes[NtPipeRead], mode)) == NULL) {
-	    return NULL;
-	}
+	fd = _open_osfhandle((long)hInFile,  (_O_RDONLY | pipemode));
+	CloseHandle(hOutFile);
     }
     else {
-
-	//
-	// need to close our read end of the pipe so that it will go 
-	// away when the write end is closed.
-	//
-
-	if (_close(pipes[NtPipeRead]) == -1) {
-	    _close(pipes[NtPipeWrite]);
-	    return NULL;
-	}
-	if (_dup2 (saved, fileno(stdin)) == -1) {
-	    _close(pipes[NtPipeWrite]);
-	    return NULL;
-	}
-	_close(saved);
-
-	// 
-	// Now get a stream pointer to return to the calling program.
-	//
-
-	if ((fp = (FILE *) fdopen(pipes[NtPipeWrite], mode)) == NULL) {
-	    _close(pipes[NtPipeWrite]);
-	    return NULL;
-	}
+	fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
+	CloseHandle(hInFile);
     }
 
-    //
-    // do the book keeping
-    //
+    if (fd == -1) {
+	CloseHandle(reading ? hInFile : hOutFile);
+	CloseChildHandle(child);
+	rb_sys_fail("mypopen: _open_osfhandle");
+    }
 
-    MyPopenRecord[slot].inuse = TRUE;
-    MyPopenRecord[slot].pipe = fp;
-    MyPopenRecord[slot].pid = pid;
+    if ((fp = (FILE *) fdopen(fd, mode)) == NULL) {
+	_close(fd);
+	CloseChildHandle(child);
+	rb_sys_fail("mypopen: fdopen");
+    }
+
+    child->pipe = fp;
 
     return fp;
-#else
-    {
-		int p[2];
-
-		BOOL fRet;
-		HANDLE hInFile, hOutFile;
-		LPCSTR lpApplicationName = NULL;
-		LPTSTR lpCommandLine;
-		LPTSTR lpCmd2 = NULL;
-		DWORD  dwCreationFlags;
-		STARTUPINFO aStartupInfo;
-		PROCESS_INFORMATION     aProcessInformation;
-		SECURITY_ATTRIBUTES sa;
-		int fd;
-
-		sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
-		sa.lpSecurityDescriptor = NULL;
-		sa.bInheritHandle       = TRUE;
-
-		fRet = CreatePipe(&hInFile, &hOutFile, &sa, 2048L);
-		if (!fRet) {
-			errno = GetLastError();
-			rb_sys_fail("mypopen: CreatePipe");
-		}
-
-		memset(&aStartupInfo, 0, sizeof (STARTUPINFO));
-		memset(&aProcessInformation, 0, sizeof (PROCESS_INFORMATION));
-		aStartupInfo.cb = sizeof (STARTUPINFO);
-		aStartupInfo.dwFlags    = STARTF_USESTDHANDLES;
-
-		if (reading) {
-			aStartupInfo.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
-			aStartupInfo.hStdOutput = hOutFile;
-		}
-		else {
-			aStartupInfo.hStdInput  = hInFile;
-			aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
-		}
-		aStartupInfo.hStdError  = GetStdHandle(STD_ERROR_HANDLE);
-
-		dwCreationFlags = (NORMAL_PRIORITY_CLASS);
-
-		lpCommandLine = cmd;
-		if (NtHasRedirection(cmd) || isInternalCmd(cmd)) {
-		  lpApplicationName = getenv("COMSPEC");
-		  lpCmd2 = xmalloc(strlen(lpApplicationName) + 1 + strlen(cmd) + sizeof (" /c "));
-		  sprintf(lpCmd2, "%s %s%s", lpApplicationName, " /c ", cmd);
-		  lpCommandLine = lpCmd2;
-		}
-
-		fRet = CreateProcess(lpApplicationName, lpCommandLine, &sa, &sa,
-			sa.bInheritHandle, dwCreationFlags, NULL, NULL, &aStartupInfo, &aProcessInformation);
-		errno = GetLastError();
-
-		if (lpCmd2)
-			free(lpCmd2);
-
-		if (!fRet) {
-			CloseHandle(hInFile);
-			CloseHandle(hOutFile);
-			return NULL;
-		}
-
-		CloseHandle(aProcessInformation.hThread);
-
-		if (reading) {
-			fd = _open_osfhandle((long)hInFile,  (_O_RDONLY | pipemode));
-			CloseHandle(hOutFile);
-		}
-		else {
-			fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
-			CloseHandle(hInFile);
-		}
-
-		if (fd == -1) {
-			CloseHandle(reading ? hInFile : hOutFile);
-			CloseHandle(aProcessInformation.hProcess);
-			rb_sys_fail("mypopen: _open_osfhandle");
-		}
-
-		if ((fp = (FILE *) fdopen(fd, mode)) == NULL) {
-			_close(fd);
-			CloseHandle(aProcessInformation.hProcess);
-			rb_sys_fail("mypopen: fdopen");
-		}
-
-		MyPopenRecord[slot].inuse = TRUE;
-		MyPopenRecord[slot].pipe  = fp;
-		MyPopenRecord[slot].pid   = (int)aProcessInformation.hProcess;
-		return fp;
-    }
-#endif
 }
+
+extern VALUE rb_last_status;
 
 int
 mypclose(FILE *fp)
 {
-    int i;
-    DWORD exitcode;
+    struct ChildRecord *child = FindPipedChildSlot(fp);
 
-    Sleep(100);
-    for (i = 0; i < MYPOPENSIZE; i++) {
-	if (MyPopenRecord[i].inuse && MyPopenRecord[i].pipe == fp)
-	    break;
+    if (!child) {
+	return -1;		/* may closed in waitpid() */
     }
-    if (i >= MYPOPENSIZE) {
-                rb_fatal("Invalid file pointer passed to mypclose!\n");
-    }
-
-    //
-    // get the return status of the process
-    //
-
-#if 0
-    if (_cwait(&exitcode, MyPopenRecord[i].pid, WAIT_CHILD) == -1) {
-	if (errno == ECHILD) {
-	    fprintf(stderr, "mypclose: nosuch child as pid %x\n", 
-		    MyPopenRecord[i].pid);
-	}
-    }
-#else
-	for (;;) {
-		if (GetExitCodeProcess((HANDLE)MyPopenRecord[i].pid, &exitcode)) {
-			if (exitcode == STILL_ACTIVE) {
-				//printf("Process is Active.\n");
-				Sleep(100);
-				TerminateProcess((HANDLE)MyPopenRecord[i].pid, 0); // ugly...
-				continue;
-			}
-			else if (exitcode == 0) {
-				//printf("done.\n");
-				break;
-			}
-			else {
-				//printf("never.\n");
-				break;
-			}
-		}
-	}
-	CloseHandle((HANDLE)MyPopenRecord[i].pid);
-#endif
 
     //
     // close the pipe
     //
-
+    child->pipe = NULL;
     fflush(fp);
     fclose(fp);
 
     //
-    // free this slot
+    // get the return status of the process
     //
-
-    MyPopenRecord[i].inuse = FALSE;
-    MyPopenRecord[i].pipe  = NULL;
-    MyPopenRecord[i].pid   = 0;
-
-    return (int)((exitcode & 0xff) << 8);
+    rb_syswait(child->pid);
+    return NUM2INT(rb_last_status);
 }
 #endif
 
 #if 1
 
 
-typedef char* CHARP;
-/*
- * The following code is based on the do_exec and do_aexec functions
- * in file doio.c
- */
-
 int
 do_spawn(cmd)
 char *cmd;
 {
-    register char **a;
-    register char *s;
-    char **argv;
-    int status = -1;
-    char *shell, *cmd2;
-    int mode = NtSyncProcess ? P_WAIT : P_NOWAIT;
-    char quote;
-    char *exec;
-
-    /* save an extra exec if possible */
-    if ((shell = getenv("RUBYSHELL")) != 0) {
-	if (NtHasRedirection(cmd)) {
-	    int  i;
-	    char *p;
-	    char *argv[4];
-	    char *cmdline = ALLOC_N(char, (strlen(cmd) * 2 + 1));
-
-	    p=cmdline;           
-	    *p++ = '"';
-	    for (s=cmd; *s;) {
-		if (*s == '"') 
-		    *p++ = '\\'; /* Escape d-quote */
-		*p++ = *s++;
-	    }
-	    *p++ = '"';
-	    *p   = '\0';
-
-	    /* fprintf(stderr, "do_spawn: %s %s\n", shell, cmdline); */
-	    argv[0] = shell;
-	    argv[1] = "-c";
-	    argv[2] = cmdline;
-	    argv[4] = NULL;
-	    status = spawnvpe(mode, argv[0], argv, environ);
-	    /* return spawnle(mode, shell, shell, "-c", cmd, (char*)0, environ); */
-	    free(cmdline);
-	    return (int)((status & 0xff) << 8);
-	} 
+    struct ChildRecord *child = CreateChild(cmd, NULL, NULL, NULL, NULL);
+    if (!child) {
+	rb_sys_fail("do_spawn: CreateChild");
     }
-    else if ((shell = getenv("COMSPEC")) != 0) {
-	if (NtHasRedirection(cmd) /* || isInternalCmd(cmd) */) {
-	    status = spawnle(mode, shell, shell, "/c", cmd, (char*)0, environ);
-	    return (int)((status & 0xff) << 8);
-	}
+    rb_syswait(child->pid);
+    return NUM2INT(rb_last_status);
+}
+
+static struct ChildRecord *
+CreateChild(char *cmd, SECURITY_ATTRIBUTES *psa, HANDLE hInput, HANDLE hOutput, HANDLE hError)
+{
+    BOOL fRet;
+    DWORD  dwCreationFlags;
+    STARTUPINFO aStartupInfo;
+    PROCESS_INFORMATION aProcessInformation;
+    SECURITY_ATTRIBUTES sa;
+    char *shell;
+    struct ChildRecord *child;
+
+    child = FindFreeChildSlot();
+    if (!child) {
+	errno = EAGAIN;
+	return NULL;
     }
 
-    argv = ALLOC_N(CHARP, (strlen(cmd) / 2 + 2));
-    cmd2 = ALLOC_N(char, (strlen(cmd) + 1));
-    strcpy(cmd2, cmd);
-    a = argv;
-    for (s = cmd2; *s;) {
-	while (*s && ISSPACE(*s)) s++;
-	if (*s == '"') {
-	    quote = *s;
-	    *(a++) = s++;
-	    while (*s) {
-		if (*s == '\\' && *(s + 1) == quote) {
-		    memmove(s, s + 1, strlen(s) + 1);
-		    s++;
-		}
-		else if (*s == quote) {
-		    s++;
-		    break;
-		}
-		s++;
-	    }
-	}
-	else if (*s) {
-	    *(a++) = s;
-	    while (*s && !ISSPACE(*s)) s++;
-	}
-	if (*s)
-	    *s++ = '\0';
+    if (!psa) {
+	sa.nLength              = sizeof (SECURITY_ATTRIBUTES);
+	sa.lpSecurityDescriptor = NULL;
+	sa.bInheritHandle       = TRUE;
+	psa = &sa;
     }
-    *a = NULL;
-    exec = NULL;
-    if (argv[0]) {
-	exec = ALLOC_N(char, (strlen(argv[0]) + 1));
-	if (argv[0][0] == '"' && argv[0][strlen(argv[0]) - 1] == '"') {
-	    strcpy(exec, &argv[0][1]);
-	    exec[strlen(exec) - 1] = '\0';
-	}
-	else {
-	    strcpy(exec, argv[0]);
-	}
-	if ((status = spawnvpe(mode, exec, argv, environ)) == -1) {
-	    free(exec);
-	    free(argv);
-	    free(cmd2);
-	    return -1;
-	}
+
+    memset(&aStartupInfo, 0, sizeof (STARTUPINFO));
+    memset(&aProcessInformation, 0, sizeof (PROCESS_INFORMATION));
+    aStartupInfo.cb = sizeof (STARTUPINFO);
+    aStartupInfo.dwFlags = STARTF_USESTDHANDLES;
+    if (hInput) {
+	aStartupInfo.hStdInput  = hInput;
     }
-    free(exec);
-    free(cmd2);
-    free(argv);
-    return (int)((status & 0xff) << 8);
+    else {
+	aStartupInfo.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
+    }
+    if (hOutput) {
+	aStartupInfo.hStdOutput = hOutput;
+    }
+    else {
+	aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    }
+    if (hError) {
+	aStartupInfo.hStdError = hError;
+    }
+    else {
+	aStartupInfo.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    }
+
+    dwCreationFlags = (NORMAL_PRIORITY_CLASS);
+
+    if ((shell = getenv("RUBYSHELL")) && NtHasRedirection(cmd)) {
+	char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) + sizeof (" -c "));
+	sprintf(tmp, "%s -c %s", shell, cmd);
+	cmd = tmp;
+    }
+    else if ((shell = getenv("COMSPEC")) &&
+	     (NtHasRedirection(cmd) || isInternalCmd(cmd))) {
+	char *tmp = ALLOCA_N(char, strlen(shell) + strlen(cmd) + sizeof (" /c "));
+	sprintf(tmp, "%s /c %s", shell, cmd);
+	cmd = tmp;
+    }
+    else {
+	shell = NULL;
+    }
+
+    RUBY_CRITICAL({
+	fRet = CreateProcess(shell, cmd, psa, psa,
+			     psa->bInheritHandle, dwCreationFlags, NULL, NULL,
+			     &aStartupInfo, &aProcessInformation);
+	errno = GetLastError();
+    });
+
+    if (!fRet) {
+	child->pid = 0;		/* release the slot */
+	return NULL;
+    }
+
+    CloseHandle(aProcessInformation.hThread);
+
+    child->hProcess = aProcessInformation.hProcess;
+    child->pid = (pid_t)aProcessInformation.dwProcessId;
+
+    if (!IsWinNT()) {
+	/* On Win9x, make pid positive similarly to cygwin and perl */
+	child->pid = -child->pid;
+    }
+
+    return child;
 }
 
 #endif
@@ -1062,6 +865,7 @@ NtHasRedirection (char *cmd)
 
 	  case '>':
 	  case '<':
+	  case '|':
 
 	    if (!inquote)
 		return TRUE;
@@ -2465,6 +2269,30 @@ void setservent (int stayopen) {}
 #define WNOHANG -1
 #endif
 
+static pid_t
+wait_child(struct ChildRecord *child, int *stat_loc, DWORD timeout)
+{
+    DWORD exitcode;
+
+    if (!GetExitCodeProcess(child->hProcess, &exitcode)) {
+	/* If an error occured, return immediatly. */
+	errno = GetLastError();
+	if (errno == ERROR_INVALID_PARAMETER) {
+	    errno = ECHILD;
+	}
+	CloseChildHandle(child);
+	return -1;
+    }
+    if (exitcode != STILL_ACTIVE) {
+	/* If already died, return immediatly. */
+	pid_t pid = child->pid;
+	CloseChildHandle(child);
+	if (stat_loc) *stat_loc = exitcode << 8;
+	return pid;
+    }
+    return 0;
+}
+
 pid_t
 waitpid (pid_t pid, int *stat_loc, int options)
 {
@@ -2475,17 +2303,54 @@ waitpid (pid_t pid, int *stat_loc, int options)
     } else {
 	timeout = INFINITE;
     }
-    RUBY_CRITICAL({
-	if (wait_events((HANDLE)pid, timeout) == WAIT_OBJECT_0) {
-	    pid = _cwait(stat_loc, pid, 0);
+
+    if (pid == -1) {
+	int count = 0;
+	DWORD ret;
+	HANDLE events[MAXCHILDNUM + 1];
+
+	FOREACH_CHILD(child) {
+	    if (!child->pid || child->pid < 0) continue;
+	    if ((pid = wait_child(child, stat_loc, 0))) return pid;
+	    events[count++] = child->hProcess;
+	} END_FOREACH_CHILD;
+	if (!count) {
+	    errno = ECHILD;
+	    return -1;
 	}
-	else {
-	    pid = 0;
+	events[count] = interrupted_event;
+
+	ret = WaitForMultipleEvents(count, events, FALSE, timeout, TRUE);
+	if (ret == WAIT_TIMEOUT) return 0;
+	if ((ret -= WAIT_OBJECT_0) == count) {
+	    ResetSignal(interrupted_event);
+	    errno = EINTR;
+	    return -1;
 	}
-    });
-#if !defined __BORLANDC__
-    if (pid) *stat_loc <<= 8;
-#endif
+	if (ret > count) {
+	    errno = GetLastError();
+	    return -1;
+	}
+
+	return wait_child(ChildRecord + ret, stat_loc, 0);
+    }
+    else {
+	struct ChildRecord* child = FindChildSlot(pid);
+	if (!child) {
+	    errno = ECHILD;
+	    return -1;
+	}
+
+	while (!(pid = wait_child(child, stat_loc, timeout))) {
+	    /* wait... */
+	    if (wait_events(child->hProcess, timeout) != WAIT_OBJECT_0) {
+		/* still active */
+		pid = 0;
+		break;
+	    }
+	}
+    }
+
     return pid;
 }
 
@@ -2493,7 +2358,7 @@ waitpid (pid_t pid, int *stat_loc, int options)
 
 int _cdecl
 gettimeofday(struct timeval *tv, struct timezone *tz)
-{                                
+{
     SYSTEMTIME st;
     time_t t;
     struct tm tm;
@@ -2559,39 +2424,56 @@ chown(const char *path, int owner, int group)
 }
 
 #include <signal.h>
+#ifndef SIGINT
+#define SIGINT 2
+#endif
+#ifndef SIGKILL
+#define SIGKILL	9
+#endif
 int
 kill(int pid, int sig)
 {
-    if ((unsigned int)pid == GetCurrentProcessId())
+    int ret = 0;
+
+    if ((unsigned int)pid == GetCurrentProcessId() && sig != SIGKILL)
 	return raise(sig);
 
-    if (sig == 2 && pid > 0) {
-	if (!GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid)) {
-	    errno = GetLastError();
-	    return -1;
-	}
+    if (sig == SIGINT && pid > 0) {
+	RUBY_CRITICAL({
+	    if (!GenerateConsoleCtrlEvent(CTRL_C_EVENT, (DWORD)pid)) {
+		errno = GetLastError();
+		ret = -1;
+	    }
+	});
     }
-    else if (sig == 9 && pid > 0) {
+    else if (sig == SIGKILL && pid > 0) {
 	HANDLE hProc;
 
-	hProc = OpenProcess(PROCESS_TERMINATE, FALSE, pid);
-	if (hProc == NULL || hProc == INVALID_HANDLE_VALUE) {
-	    errno = GetLastError();
-	    return -1;
-	}
-	if (!TerminateProcess(hProc, 0)) {
-	    errno = GetLastError();
+	RUBY_CRITICAL({
+	    hProc = OpenProcess(PROCESS_TERMINATE, FALSE,
+				IsWin95() ? -pid : pid);
+	    if (hProc == NULL || hProc == INVALID_HANDLE_VALUE) {
+		if (GetLastError() == ERROR_INVALID_PARAMETER) {
+		    errno = ESRCH;
+		}
+		else {
+		    errno = EPERM;
+		}
+		ret = -1;
+	    }
+	    else if (!TerminateProcess(hProc, 0)) {
+		errno = EPERM;
+		ret = -1;
+	    }
 	    CloseHandle(hProc);
-	    return -1;
-	}
-	CloseHandle(hProc);
+	});
     }
     else {
 	errno = EINVAL;
-	return -1;
+	ret = -1;
     }
 
-    return 0;
+    return ret;
 }
 
 int
@@ -2609,14 +2491,16 @@ wait()
 char *
 win32_getenv(const char *name)
 {
-    char *curitem = NULL;	/* XXX threadead */
-    DWORD curlen = 0;		/* XXX threadead */
+    static char *curitem = NULL;
+    static DWORD curlen = 0;
     DWORD needlen;
 
-    curlen = 512;
-    curitem = ALLOC_N(char, curlen);
+    if (curitem == NULL || curlen == 0) {
+	curlen = 512;
+	curitem = ALLOC_N(char, curlen);
+    }
 
-    needlen = GetEnvironmentVariable(name,curitem,curlen);
+    needlen = GetEnvironmentVariable(name, curitem, curlen);
     if (needlen != 0) {
 	while (needlen > curlen) {
 	    REALLOC_N(curitem, char, needlen);
@@ -3069,4 +2953,36 @@ VALUE win32_asynchronize(asynchronous_func_t func,
     }
 
     return val;
+}
+
+char **win32_get_environ(void)
+{
+    char *envtop, *env;
+    char **myenvtop, **myenv;
+    int num;
+
+    envtop = GetEnvironmentStrings();
+    for (env = envtop, num = 0; *env; env += strlen(env) + 1)
+	if (*env != '=') num++;
+
+    myenvtop = ALLOC_N(char*, num + 1);
+    for (env = envtop, myenv = myenvtop; *env; env += strlen(env) + 1) {
+	if (*env != '=') {
+	    *myenv = ALLOC_N(char, strlen(env) + 1);
+	    strcpy(*myenv, env);
+	    myenv++;
+	}
+    }
+    *myenv = NULL;
+    FreeEnvironmentStrings(envtop);
+
+    return myenvtop;
+}
+
+void win32_free_environ(char **env)
+{
+    char **t = env;
+
+    while (*t) free(*t++);
+    free(env);
 }
