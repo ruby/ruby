@@ -1,3 +1,8 @@
+Thu Aug 20 11:00:00 2004 Akiyoshi, Masamichi <masamichi.akiyoshi@hp.com>
+
+	* dln.c (dln_load): Modify to call lib$find_image_symbol for VMS.
+	* io.c (rb_io_fwrite): Use fputc() for VMS non-stream file.
+
 Thu Aug 19 06:07:45 2004  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/token.c: re2c no longer compiled with bit vectors.  caused

@@ -1261,6 +1261,19 @@ aix_loaderror(const char *pathname)
 }
 #endif
 
+#if defined(__VMS)
+#include <starlet.h>
+#include <rms.h>
+#include <stsdef.h>
+#include <unixlib.h>
+#include <descrip.h>
+#include <lib$routines.h>
+
+static char *vms_filespec;
+static int vms_fileact(char *filespec, int type);
+static long vms_fisexh(long *sigarr, long *mecarr);
+#endif
+
 void*
 dln_load(file)
     const char *file;
@@ -1561,8 +1574,15 @@ dln_load(file)
 #if defined(__VMS)
 #define DLN_DEFINED
     {
-	void *handle, (*init_fct)();
+	long status;
+	void (*init_fct)();
 	char *fname, *p1, *p2;
+
+	$DESCRIPTOR(fname_d, "");
+	$DESCRIPTOR(image_d, "");
+	$DESCRIPTOR(buf_d, "");
+
+	decc$to_vms(file, vms_fileact, 0, 0);
 
 	fname = (char *)__alloca(strlen(file)+1);
 	strcpy(fname,file);
@@ -1571,19 +1591,35 @@ dln_load(file)
 	if (p2 = strrchr(fname,'.'))
 	    *p2 = '\0';
 
-	if ((handle = (void*)dlopen(fname, 0)) == NULL) {
+	fname_d.dsc$w_length  = strlen(fname);
+	fname_d.dsc$a_pointer = fname;
+	image_d.dsc$w_length  = strlen(vms_filespec);
+	image_d.dsc$a_pointer = vms_filespec;
+	buf_d.dsc$w_length    = strlen(buf);
+	buf_d.dsc$a_pointer   = buf;
+
+	lib$establish(vms_fisexh);
+
+	status = lib$find_image_symbol (
+		     &fname_d,
+		     &buf_d, 
+		     &init_fct, 
+		     &image_d);
+
+	lib$establish(0);
+
+	if (status == RMS$_FNF) {
 	    error = dln_strerror();
+	    goto failed;
+	} else if (!$VMS_STATUS_SUCCESS(status)) {
+	    error = DLN_ERROR();
 	    goto failed;
 	}
 
-	if ((init_fct = (void (*)())dlsym(handle, buf)) == NULL) {
-	    error = DLN_ERROR();
-	    dlclose(handle);
-	    goto failed;
-	}
 	/* Call the init code */
 	(*init_fct)();
-	return handle;
+
+	return 1;
     }
 #endif /* __VMS */
 
@@ -1824,3 +1860,24 @@ dln_find_1(fname, path, exe_flag)
 	/* otherwise try the next component in the search path */
     }
 }
+
+#if defined(__VMS)
+
+/* action routine for decc$to_vms */
+static int vms_fileact(char *filespec, int type)
+{
+    if (vms_filespec)
+	free(vms_filespec);
+    vms_filespec = malloc(strlen(filespec)+1);
+    strcpy(vms_filespec, filespec);
+    return 1;
+}
+
+/* exception handler for LIB$FIND_IMAGE_SYMBOL */
+static long vms_fisexh(long *sigarr, long *mecarr)
+{
+    sys$unwind(1, 0);
+    return 1;
+}
+
+#endif /* __VMS */

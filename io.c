@@ -135,7 +135,9 @@ static VALUE lineno = INT2FIX(0);
 #elif defined(__BEOS__)
 #  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
 #elif defined(__VMS)
-#  define READ_DATA_PENDING(fp) (((unsigned int)((*(fp))->_flag) & _IOEOF) == 0)
+#  define READ_DATA_PENDING_COUNT(fp) ((unsigned int)(*(fp))->_cnt)
+#  define READ_DATA_PENDING(fp)       (((unsigned int)(*(fp))->_cnt) > 0)
+#  define READ_DATA_BUFFERED(fp) 0
 #else
 /* requires systems own version of the ReadDataPending() */
 extern int ReadDataPending();
@@ -385,7 +387,7 @@ rb_io_fwrite(ptr, len, f)
     long n, r;
 
     if ((n = len) <= 0) return n;
-#ifdef __human68k__
+#if defined(__human68k__) || defined(__vms)
     do {
 	if (fputc(*ptr++, f) == EOF) {
 	    if (ferror(f)) return -1L;
