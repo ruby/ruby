@@ -1,7 +1,9 @@
+# -*- tab-width: 2 -*- vim: ts=2
+
 require "test/unit"
 require "rss/parser"
 require "rss/1.0"
-require "test/common"
+require "common"
 
 class TestParser < Test::Unit::TestCase
 	include TestRSSMixin

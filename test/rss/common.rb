@@ -1,4 +1,6 @@
-require 'test/my-assertions'
+# -*- tab-width: 2 -*- vim: ts=2
+
+require 'my-assertions'
 
 module TestRSSMixin
 

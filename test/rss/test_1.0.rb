@@ -1,8 +1,10 @@
+# -*- tab-width: 2 -*- vim: ts=2
+
 require "test/unit"
 require "rexml/document"
 
 require "rss/1.0"
-require "test/common"
+require "common"
 
 class TestCore < Test::Unit::TestCase
 

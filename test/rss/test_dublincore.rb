@@ -1,10 +1,12 @@
+# -*- tab-width: 2 -*- vim: ts=2
+
 require "test/unit"
 require "cgi-lib"
 require "rexml/document"
 
 require "rss/parser"
 require "rss/dublincore"
-require "test/common"
+require "common"
 
 class TestDublinCore < Test::Unit::TestCase
 	include TestRSSMixin

@@ -1,3 +1,7 @@
+Wed Jan 28 15:09:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rss/*.rb: remove "test/" prefix.
+
 Wed Jan 28 13:07:02 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/iconv/extconf.rb: include iconv.h for libiconv.  [ruby-dev:22715]

@@ -1,3 +1,5 @@
+# -*- tab-width: 2 -*- vim: ts=2
+
 module Test
 	module Unit
 		module Assertions
