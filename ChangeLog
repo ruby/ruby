@@ -1,3 +1,8 @@
+Wed Jun 16 16:03:59 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_class_inherited_p): singleton class inherits Class
+	  rather than its object's class.  [ruby-dev:23690]
+
 Wed Jun 16 16:01:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (stack_grow_direction): memoize the direction.
