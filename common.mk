@@ -82,7 +82,7 @@ ruby.imp: $(LIBRUBY_A)
 install: install-nodoc $(RDOCTARGET)
 install-all: install-nodoc install-doc
 
-install-nodoc: install-local post-install-local install-ext post-install-ext
+install-nodoc: install-local install-ext
 install-local: pre-install-local do-install-local post-install-local
 install-ext: pre-install-ext do-install-ext post-install-ext
 
@@ -115,10 +115,12 @@ do-install-doc: $(PROGRAM)
 pre-install: pre-install-local pre-install-ext
 pre-install-local:: PHONY
 pre-install-ext:: PHONY
+pre-install-doc:: PHONY
 
 post-install: post-install-local post-install-ext
 post-install-local:: PHONY
 post-install-ext:: PHONY
+post-install-doc:: PHONY
 
 clean: clean-ext clean-local
 clean-local::
