@@ -82,9 +82,6 @@ public
   attr_reader :client
   
   NofRetry = 10       	# [times]
-  ConnectTimeout = 20   # [sec]
-  SendTimeout = 60	# [sec]
-  ReceiveTimeout = 60   # [sec]
 
   def initialize(endpoint_url, proxy = nil, charset = nil)
     super(endpoint_url)
@@ -93,9 +90,6 @@ public
     @wiredump_dev = nil	# Set an IO to get wiredump.
     @wiredump_file_base = nil
     @client = Client.new(@proxy, "SOAP4R/#{ Version }")
-    @client.session_manager.connect_timeout = ConnectTimeout
-    @client.session_manager.send_timeout = SendTimeout
-    @client.session_manager.receive_timeout = ReceiveTimeout
   end
 
   def inspect

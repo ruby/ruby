@@ -77,9 +77,10 @@ module Mapping
       end
     if detail.is_a?(Mapping::SOAPException)
       begin
+	remote_backtrace = detail.to_e.backtrace
         raise detail.to_e
       rescue Exception => e2
-        detail.set_backtrace(e2)
+	e2.set_backtrace(remote_backtrace + e2.backtrace)
         raise
       end
     else

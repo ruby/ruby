@@ -48,13 +48,22 @@ class ComplexType < Info
   end
 
   def child_defined_complextype(name)
-    unless compoundtype == :TYPE_STRUCT
-      raise RuntimeError.new("Assert: not for struct")
-    end
-    unless ele = find_element(name)
-      if name.namespace.nil?
-	ele = find_element_by_name(name.name)
+    ele = nil
+    case compoundtype
+    when :TYPE_STRUCT
+      unless ele = find_element(name)
+       	if name.namespace.nil?
+  	  ele = find_element_by_name(name.name)
+   	end
       end
+    when :TYPE_ARRAY
+      if content.elements.size == 1
+	ele = content.elements[0]
+      else
+	raise RuntimeError.new("Assert: must not reach.")
+      end
+    else
+      raise RuntimeError.new("Assert: Not implemented.")
     end
     unless ele
       raise RuntimeError.new("Cannot find #{name} as a children of #{@name}.")
@@ -83,10 +92,13 @@ class ComplexType < Info
 private
 
   def content_arytype
-    arytype = find_arytype
-    ns = arytype.namespace
-    name = arytype.name.sub(/\[(?:,)*\]$/, '')
-    XSD::QName.new(ns, name)
+    if arytype = find_arytype
+      ns = arytype.namespace
+      name = arytype.name.sub(/\[(?:,)*\]$/, '')
+      XSD::QName.new(ns, name)
+    else
+      nil
+    end
   end
 end
 

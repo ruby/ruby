@@ -731,8 +731,9 @@ test/wsdl/axisArray/test_axisarray.rb
 test/wsdl/emptycomplextype.wsdl
 test/wsdl/raa/RAA.rb
 test/wsdl/raa/README.txt
+test/wsdl/raa/RAAServant.rb
+test/wsdl/raa/RAAService.rb
 test/wsdl/raa/raa.wsdl
-test/wsdl/raa/server.rb
 test/wsdl/raa/test_raa.rb
 test/wsdl/test_emptycomplextype.rb
 test/xsd/test_xmlschemaparser.rb

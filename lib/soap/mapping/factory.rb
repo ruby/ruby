@@ -356,14 +356,21 @@ class HashFactory_ < Factory
     unless node.type == MapQName
       return false
     end
-    if node.key?('default')
+    if node.class == SOAPStruct and node.key?('default')
       return false
     end
     obj = create_empty_object(obj_class)
     mark_unmarshalled_obj(node, obj)
-    node.each do |key, value|
-      obj[Mapping._soap2obj(value['key'], map)] =
-	Mapping._soap2obj(value['value'], map)
+    if node.class == SOAPStruct
+      node.each do |key, value|
+	obj[Mapping._soap2obj(value['key'], map)] =
+	  Mapping._soap2obj(value['value'], map)
+      end
+    else
+      node.each do |value|
+	obj[Mapping._soap2obj(value['key'], map)] =
+	  Mapping._soap2obj(value['value'], map)
+      end
     end
     return true, obj
   end

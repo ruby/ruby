@@ -34,11 +34,9 @@ RubyIVarName = XSD::QName.new(RubyTypeInstanceNamespace, 'ivars')
 
 # Inner class to pass an exception.
 class SOAPException; include Marshallable
-  attr_reader :excn_type_name, :message, :backtrace, :cause
+  attr_reader :excn_type_name, :cause
   def initialize(e)
     @excn_type_name = Mapping.name2elename(e.class.to_s)
-    @message = e.message
-    @backtrace = e.backtrace
     @cause = e
   end
 
@@ -50,24 +48,14 @@ class SOAPException; include Marshallable
     klass = Mapping.class_from_name(
       Mapping.elename2name(@excn_type_name.to_s))
     if klass.nil?
-      raise RuntimeError.new(@message)
+      raise RuntimeError.new(@cause.message)
     end
     unless klass <= ::Exception
       raise NameError.new
     end
-    obj = klass.new(@message)
+    obj = klass.new(@cause.message)
     obj.extend(::SOAP::Mapping::MappedException)
     obj
-  end
-
-  def set_backtrace(e)
-    e.set_backtrace(
-      if @backtrace.is_a?(Array)
-        @backtrace
-      else
-        [@backtrace.inspect]
-      end
-  )
   end
 end
 
@@ -238,10 +226,12 @@ class Registry
     [::String,       ::SOAP::SOAPGMonth,     BasetypeFactory],
     [::String,       ::SOAP::SOAPQName,      BasetypeFactory],
 
+    [::Hash,         ::SOAP::SOAPArray,      HashFactory],
+    [::Hash,         ::SOAP::SOAPStruct,     HashFactory],
+
     [::Array,        ::SOAP::SOAPArray,      ArrayFactory,
       {:derived_class => true}],
 
-    [::Hash,         ::SOAP::SOAPStruct,     HashFactory],
     [::SOAP::Mapping::SOAPException,
 		     ::SOAP::SOAPStruct,     TypedStructFactory,
       {:type => XSD::QName.new(RubyCustomTypeNamespace, "SOAPException")}],
@@ -282,10 +272,12 @@ class Registry
     [::String,       ::SOAP::SOAPGMonth,     BasetypeFactory],
     [::String,       ::SOAP::SOAPQName,      BasetypeFactory],
 
+    [::Hash,         ::SOAP::SOAPArray,      HashFactory],
+    [::Hash,         ::SOAP::SOAPStruct,     HashFactory],
+
     # Does not allow Array's subclass here.
     [::Array,        ::SOAP::SOAPArray,      ArrayFactory],
 
-    [::Hash,         ::SOAP::SOAPStruct,     HashFactory],
     [::SOAP::Mapping::SOAPException,
                      ::SOAP::SOAPStruct,     TypedStructFactory,
       {:type => XSD::QName.new(RubyCustomTypeNamespace, "SOAPException")}],

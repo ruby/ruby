@@ -235,20 +235,9 @@ class StringArray < Array
 end
 
 # http://xml.apache.org/xml-soap
-class Map
+class Map < Array
+  # Contents type should be dumped here...
   @@schema_type = "Map"
   @@schema_ns = "http://xml.apache.org/xml-soap"
-
-  def item
-    @item
-  end
-
-  def item=(value)
-    @item = value
-  end
-
-  def initialize(item = nil)
-    @item = item
-  end
 end
 

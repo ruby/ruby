@@ -38,6 +38,7 @@ AMAZON_WSDL = 'http://soap.amazon.com/schemas3/AmazonWebServices.wsdl'
 amazon = SOAP::WSDLDriverFactory.new(AMAZON_WSDL).create_driver
 p "WSDL loaded"
 amazon.generate_explicit_type = true
+amazon.mandatorycharset = 'utf-8'	# AWS should fix this bug.
 #amazon.wiredump_dev = STDERR
 
 # Show sales rank.

@@ -18,9 +18,11 @@ class TestRAA < Test::Unit::TestCase
 
   def setup_server
     $:.push(DIR)
-    require File.join(DIR, 'server.rb')
+    require File.join(DIR, 'RAA.rb')
+    require File.join(DIR, 'RAAServant.rb')
+    require File.join(DIR, 'RAAService.rb')
     $:.delete(DIR)
-    @server = RAABaseServiceServer.new('RAA server', nil, '0.0.0.0', Port)
+    @server = App.new('RAA server', nil, '0.0.0.0', Port)
     @server.level = Logger::Severity::ERROR
     @t = Thread.new {
       Thread.current.abort_on_exception = true

@@ -1,3 +1,21 @@
+Fri Nov 28 14:41:52 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
+
+	* lib/soap/streamHandler.rb: drop unused http parameters.
+
+	* lib/soap/encodingstyle/soapHandler.rb, lib/soap/mapping/factory.rb,
+	  lib/soap/mapping/mapping.rb, lib/soap/mapping/registry.rb,
+	  lib/wsdl/soap/complexType.rb: ApacheSOAP's map support was broken
+	  under WSDL dynanic client environment.  fixed.
+
+	* test/wsdl/raa/*: add tests.
+
+	* lib/xsd/datatypes.rb: dateTime precision bug fix (at least, I hope.)
+	  bug of soap4r.  XSDDateTimeImple.to_time passed a Float to
+	  Time.local/Time.gm as an usec, and NUM2LONG(rb_num2long for Float)
+	  causes rounding error.
+
+	* test/soap/test_basetype.rb, test/xsd/test_xsd.rb: add tests.
+
 Fri Nov 28 04:15:24 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (method_arity): used wrong Proc object.  [ruby-talk:86504]
