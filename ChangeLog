@@ -1,3 +1,12 @@
+Fri Aug  1 19:48:56 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_emitter_write_m): forgot to declare
+	  "self", making it default to "int".
+
+	* ext/syck/rubyext.c (syck_emitter_simple_write): ditto.
+
+	* gc.c (rb_gc): should mark backing store region on IA64.
+
 Fri Aug  1 17:13:23 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/openssl/extconf.rb: should replace literally.

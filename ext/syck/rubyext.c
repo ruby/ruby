@@ -1104,11 +1104,11 @@ syck_emitter_flush_m( self )
  */
 VALUE
 syck_emitter_write_m( self, str )
-    VALUE str;
+    VALUE self, str;
 {
     SyckEmitter *emitter;
 
-	Data_Get_Struct(self, SyckEmitter, emitter);
+    Data_Get_Struct(self, SyckEmitter, emitter);
     syck_emitter_write( emitter, RSTRING(str)->ptr, RSTRING(str)->len );
     return self;
 }
@@ -1118,11 +1118,11 @@ syck_emitter_write_m( self, str )
  */
 VALUE
 syck_emitter_simple_write( self, str )
-    VALUE str;
+    VALUE self, str;
 {
     SyckEmitter *emitter;
 
-	Data_Get_Struct(self, SyckEmitter, emitter);
+    Data_Get_Struct(self, SyckEmitter, emitter);
     syck_emitter_simple( emitter, RSTRING(str)->ptr, RSTRING(str)->len );
     return self;
 }

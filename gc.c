@@ -30,6 +30,11 @@
 #include <sys/resource.h>
 #endif
 
+#ifdef __ia64__
+#include <ucontext.h>
+extern unsigned long __libc_ia64_register_backing_store_base;
+#endif
+
 void re_free_registers _((struct re_registers*));
 void rb_io_fptr_finalize _((struct OpenFile*));
 
@@ -367,7 +372,7 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 # define SET_STACK_END VALUE stack_end; alloca(0);
 # define STACK_END (&stack_end)
 #else
-# if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS)
+# if defined(__GNUC__) && defined(USE_BUILTIN_FRAME_ADDRESS) && !defined(__ia64__)
 #  define  SET_STACK_END    VALUE *stack_end = __builtin_frame_address(0)
 # else
 #  define  SET_STACK_END    VALUE *stack_end = alloca(1)
@@ -1236,7 +1241,7 @@ rb_gc()
     }
 
     FLUSH_REGISTER_WINDOWS;
-    /* This assumes that all registers are saved into the jmp_buf */
+    /* This assumes that all registers are saved into the jmp_buf (and stack) */
     setjmp(save_regs_gc_mark);
     mark_locations_array((VALUE*)save_regs_gc_mark, sizeof(save_regs_gc_mark) / sizeof(VALUE *));
 #if STACK_GROW_DIRECTION < 0
@@ -1248,6 +1253,20 @@ rb_gc()
 	rb_gc_mark_locations((VALUE*)STACK_END, rb_gc_stack_start);
     else
 	rb_gc_mark_locations(rb_gc_stack_start, (VALUE*)STACK_END);
+#endif
+#ifdef __ia64__
+    /* mark backing store (flushed register window on the stack) */
+    /* the basic idea from guile GC code                         */
+    {
+	ucontext_t ctx;
+	VALUE *top, *bot;
+	getcontext(&ctx);
+	rb_gc_mark_locations((VALUE*)&ctx.uc_mcontext,
+			     ((size_t)(sizeof(VALUE)-1 + sizeof ctx.uc_mcontext)/sizeof(VALUE)));
+	bot = (VALUE*)__libc_ia64_register_backing_store_base;
+	top = (VALUE*)ctx.uc_mcontext.sc_ar_bsp;
+	rb_gc_mark_locations(bot, top);
+    }
 #endif
 #if defined(__human68k__) || defined(__mc68000__)
     rb_gc_mark_locations((VALUE*)((char*)STACK_END + 2),
@@ -1322,7 +1341,7 @@ Init_stack(addr)
     /* ruby crashes on IA64 if compiled with optimizer on */
     /* when if STACK_LEVEL_MAX is greater than this magic number */
     /* I know this is a kludge.  I suspect optimizer bug */
-#define IA64_MAGIC_STACK_LIMIT 32768
+#define IA64_MAGIC_STACK_LIMIT 49152
     if (STACK_LEVEL_MAX > IA64_MAGIC_STACK_LIMIT)
 	STACK_LEVEL_MAX = IA64_MAGIC_STACK_LIMIT;
 #endif
