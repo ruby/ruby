@@ -18,7 +18,7 @@ module REXML
 
     # Convert to UTF-8
     def decode(str)
-b      str.unpack('C*').pack('U*')
+      str.unpack('C*').pack('U*')
     end
     EOL
   end
