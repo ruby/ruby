@@ -8026,8 +8026,8 @@ rb_thread_run(thread)
 }
 
 static VALUE
-thread_kill(thread, result)
-    VALUE thread, result;
+rb_thread_kill(thread)
+    VALUE thread;
 {
     rb_thread_t th = rb_thread_check(thread);
 
@@ -8041,16 +8041,8 @@ thread_kill(thread, result)
     rb_thread_ready(th);
     th->gid = 0;
     th->status = THREAD_TO_KILL;
-    th->result = result;
     if (!rb_thread_critical) rb_thread_schedule();
     return thread;
-}
-
-static VALUE
-rb_thread_kill(th)
-    VALUE th;
-{
-    return thread_kill(th, Qfalse);
 }
 
 static VALUE
@@ -8061,23 +8053,9 @@ rb_thread_s_kill(obj, th)
 }
 
 static VALUE
-rb_thread_exit(argc, argv, th)
-    int argc;
-    VALUE *argv;
-    VALUE th;
+rb_thread_exit()
 {
-    VALUE result = Qfalse;
-
-    rb_scan_args(argc, argv, "01", &result);
-    return rb_thread_kill(th, result);
-}
-
-static VALUE
-rb_thread_s_exit(argc, argv)
-    int argc;
-    VALUE *argv;
-{
-    return rb_thread_exit(argc, argv, curr_thread->thread);
+    return rb_thread_kill(curr_thread->thread);
 }
 
 static VALUE
@@ -8983,7 +8961,7 @@ Init_Thread()
 
     rb_define_singleton_method(rb_cThread, "stop", rb_thread_stop, 0);
     rb_define_singleton_method(rb_cThread, "kill", rb_thread_s_kill, 1);
-    rb_define_singleton_method(rb_cThread, "exit", rb_thread_s_exit, -1);
+    rb_define_singleton_method(rb_cThread, "exit", rb_thread_exit, 0);
     rb_define_singleton_method(rb_cThread, "pass", rb_thread_pass, 0);
     rb_define_singleton_method(rb_cThread, "current", rb_thread_current, 0);
     rb_define_singleton_method(rb_cThread, "main", rb_thread_main, 0);
@@ -8998,7 +8976,7 @@ Init_Thread()
     rb_define_method(rb_cThread, "run", rb_thread_run, 0);
     rb_define_method(rb_cThread, "wakeup", rb_thread_wakeup, 0);
     rb_define_method(rb_cThread, "kill", rb_thread_kill, 0);
-    rb_define_method(rb_cThread, "exit", rb_thread_exit, -1);
+    rb_define_method(rb_cThread, "exit", rb_thread_kill, 0);
     rb_define_method(rb_cThread, "value", rb_thread_value, 0);
     rb_define_method(rb_cThread, "status", rb_thread_status, 0);
     rb_define_method(rb_cThread, "join", rb_thread_join, 0);
