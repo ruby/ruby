@@ -5,7 +5,7 @@ max = max.to_i
 
 print "1"
 for i in 2 .. max 
-  protect
+  begin
     for d in sieve
       fail if i % d == 0
     end

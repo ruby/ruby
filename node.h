@@ -26,7 +26,7 @@ enum node_type {
     NODE_WHILE2,
     NODE_ITER,
     NODE_FOR,
-    NODE_PROT,
+    NODE_BEGIN,
     NODE_AND,
     NODE_OR,
     NODE_NOT,
@@ -187,7 +187,7 @@ typedef struct RNode {
 #define NEW_WHILE2(c,b) newnode(NODE_WHILE2,c,b,Qnil)
 #define NEW_FOR(v,i,b) newnode(NODE_FOR,v,b,i)
 #define NEW_ITER(v,i,b) newnode(NODE_ITER,v,b,i)
-#define NEW_PROT(b,ex,en) newnode(NODE_PROT,b,ex,en)
+#define NEW_BEGIN(b,ex,en) newnode(NODE_BEGIN,b,ex,en)
 #define NEW_REDO() newnode(NODE_REDO,Qnil,Qnil,Qnil)
 #define NEW_BREAK() newnode(NODE_BREAK,Qnil,Qnil,Qnil)
 #define NEW_CONT()  newnode(NODE_CONTINUE,Qnil,Qnil,Qnil)

@@ -8,7 +8,7 @@
 ;;;
 
 (defconst ruby-block-beg-re
-  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|protect"
+  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin"
   )
 
 (defconst ruby-block-mid-re

@@ -90,6 +90,10 @@ static void setup_top_local();
 	DEF
 	UNDEF
 	INCLUDE
+	BEGIN
+	RESQUE
+	ENSURE
+	END
 	IF
 	THEN
 	ELSIF
@@ -99,10 +103,6 @@ static void setup_top_local();
 	WHILE
 	FOR
 	IN
-	PROTECT
-	RESQUE
-	ENSURE
-	END
 	REDO
 	BREAK
 	CONTINUE
@@ -762,18 +762,17 @@ primary		: literal
 			value_expr($4);
 			$$ = NEW_FOR($2, $4, $6);
 		    }
-		| PROTECT
+		| BEGIN
 		  compexpr
 		  resque
 		  ensure
 		  END
 		    {
 			if ($3 == Qnil && $4 == Qnil) {
-			    Warning("useless protect clause");
 			    $$ = $2;
 			}
 			else {
-			    $$ = NEW_PROT($2, $3, $4);
+			    $$ = NEW_BEGIN($2, $3, $4);
 			}
 		    }
 		| LPAREN compexpr rparen
@@ -1312,6 +1311,7 @@ static struct kwtable {
     "__LINE__", _LINE_,         EXPR_END,
     "alias",	ALIAS,		EXPR_FNAME,
     "and",	AND,		EXPR_BEG,
+    "begin",	BEGIN,		EXPR_BEG,
     "break",	BREAK,		EXPR_END,
     "case",	CASE,		EXPR_BEG,
     "class",	CLASS,		EXPR_BEG,
@@ -1329,7 +1329,6 @@ static struct kwtable {
     "module",	MODULE,		EXPR_BEG,
     "nil",	NIL,		EXPR_END,
     "or",	OR,		EXPR_BEG,
-    "protect",	PROTECT,	EXPR_BEG,
     "redo",	REDO,		EXPR_END,
     "resque",	RESQUE,		EXPR_BEG,
     "retry",	RETRY,		EXPR_END,

@@ -1,3 +1,8 @@
+Thu Feb  9 16:18:37 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: protectをbeginに変更．begin..endは例外処理だけでなく，
+	  文括弧としても働くことになった．
+
 Wed Feb  1 19:48:24 1995  Yukihiro Matsumoto  (matz@ix-02)
 
 	* string.c(str_replace): 置き換える文字列の長さが等しい時メモリコ

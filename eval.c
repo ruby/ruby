@@ -788,7 +788,7 @@ rb_eval(node)
 	}
 	return result;
 
-      case NODE_PROT:
+      case NODE_BEGIN:
 	PUSH_TAG();
 	switch (state = EXEC_TAG()) {
 	  case 0:
@@ -1933,7 +1933,7 @@ rb_call(class, recv, mid, argc, argv, func)
 		Fatal("unexpected redo");
 		break;
 	      case TAG_RETRY:
-		Fatal("retry outside of protect clause");
+		Fatal("retry outside of resque clause");
 		break;
 	      case TAG_RETURN:
 		result = last_val;

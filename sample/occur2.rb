@@ -3,7 +3,7 @@
 freq = {}
 while gets()
   for word in $_.split(/\W+/)
-    protect
+    begin
       freq[word] = freq[word] + 1
     resque
       freq[word] = 1
