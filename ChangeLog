@@ -1,3 +1,8 @@
+Wed Mar  7 14:26:11 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* math.c (math_log, math_log10): should return NaN if x < 0.0
+	  on Cygwin.
+
 Tue Mar  6 10:50:29 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (primary): rescue and ensure clauses should be allowed
