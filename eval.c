@@ -6524,7 +6524,10 @@ block_pass(self, node)
     volatile int safe = ruby_safe_level;
 
     if (NIL_P(block)) {
-	return rb_eval(self, node->nd_iter);
+	PUSH_ITER(ITER_NOT);
+	result = rb_eval(self, node->nd_iter);
+	POP_ITER();
+	return result;
     }
     if (rb_obj_is_kind_of(block, rb_cMethod)) {
 	block = method_proc(block);

@@ -1,3 +1,7 @@
+Mon Feb 18 13:56:44 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (block_pass): "&nil" should clear block given.
+
 Fri Feb 15 13:36:58 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_rshift): should properly convert the nagative
