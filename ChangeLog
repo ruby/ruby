@@ -1,3 +1,9 @@
+Thu Oct 17 12:58:24 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: stat.blksize might become 0/nil.
+
+	* lib/fileutils.rb: change coding style.
+
 Wed Oct 16 22:35:53 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* sprintf.c (rb_f_sprintf): disallow mixed usage of numbered and
