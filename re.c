@@ -142,13 +142,13 @@ kcode_set_option(reg)
 
     switch ((RBASIC(reg)->flags & KCODE_MASK)) {
       case KCODE_NONE:
-	mbcinit(MBCTYPE_ASCII);
+	re_mbcinit(MBCTYPE_ASCII);
 	break;
       case KCODE_EUC:
-	mbcinit(MBCTYPE_EUC);
+	re_mbcinit(MBCTYPE_EUC);
 	break;
       case KCODE_SJIS:
-	mbcinit(MBCTYPE_SJIS);
+	re_mbcinit(MBCTYPE_SJIS);
 	break;
     }
 }	  
@@ -158,13 +158,13 @@ kcode_reset_option()
 {
     switch (reg_kcode) {
       case KCODE_NONE:
-	mbcinit(MBCTYPE_ASCII);
+	re_mbcinit(MBCTYPE_ASCII);
 	break;
       case KCODE_EUC:
-	mbcinit(MBCTYPE_EUC);
+	re_mbcinit(MBCTYPE_EUC);
 	break;
       case KCODE_SJIS:
-	mbcinit(MBCTYPE_SJIS);
+	re_mbcinit(MBCTYPE_SJIS);
 	break;
     }
 }
@@ -602,15 +602,6 @@ match_to_s(match)
     return str;
 }
 
-void
-reg_free(rp)
-Regexp *rp;
-{
-    free(rp->buffer);
-    free(rp->fastmap);
-    free(rp);
-}
-
 VALUE cRegexp;
 
 static VALUE
@@ -648,7 +639,7 @@ reg_new_1(klass, s, len, options)
 	break;
     }
 
-    kcode_set_option(re);
+    kcode_set_option((VALUE)re);
     if (RTEST(ignorecase)) {
 	options |= RE_OPTION_IGNORECASE;
 	FL_SET(re, REG_CASESTATE);
@@ -658,6 +649,9 @@ reg_new_1(klass, s, len, options)
     memcpy(re->str, s, len);
     re->str[len] = '\0';
     re->len = len;
+    if (options & ~0x3) {
+	kcode_reset_option();
+    }
     obj_call_init((VALUE)re);
 
     return (VALUE)re;
@@ -975,12 +969,12 @@ rb_set_kcode(code)
       case 'E':
       case 'e':
 	reg_kcode = KCODE_EUC;
-	mbcinit(MBCTYPE_EUC);
+	re_mbcinit(MBCTYPE_EUC);
 	break;
       case 'S':
       case 's':
 	reg_kcode = KCODE_SJIS;
-	mbcinit(MBCTYPE_SJIS);
+	re_mbcinit(MBCTYPE_SJIS);
 	break;
       default:
       case 'N':
@@ -989,7 +983,7 @@ rb_set_kcode(code)
       case 'a':
       set_no_conversion:
 	reg_kcode = KCODE_NONE;
-	mbcinit(MBCTYPE_ASCII);
+	re_mbcinit(MBCTYPE_ASCII);
 	break;
     }
 }
@@ -1029,12 +1023,12 @@ Init_Regexp()
     re_set_casetable(casetable);
 
 #ifdef RUBY_USE_EUC
-    mbcinit(MBCTYPE_EUC);
+    re_mbcinit(MBCTYPE_EUC);
 #else
 #ifdef RUBY_USE_SJIS
-    mbcinit(MBCTYPE_SJIS);
+    re_mbcinit(MBCTYPE_SJIS);
 #else
-    mbcinit(MBCTYPE_ASCII);
+    re_mbcinit(MBCTYPE_ASCII);
 #endif
 #endif
 

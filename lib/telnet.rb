@@ -1,7 +1,13 @@
 #
 # telnet.rb
-# ver0.13 1998/08/25
+# ver0.14 1998/09/01
 # Wakou Aoyama <wakou@fsinet.or.jp>
+#
+# ver0.14 1998/09/01
+# IAC WILL SGA             send EOL --> CR+NULL
+# IAC WILL SGA IAC DO BIN  send EOL --> CR
+# NONE                     send EOL --> LF
+# add Dump_log option.
 #
 # ver0.13 1998/08/25
 # add print method.
@@ -26,6 +32,7 @@
 # host = Telnet.new({"Binmode" => TRUE,              default: TRUE
 #                    "Host" => "localhost",          default: "localhost"
 #                    "Output_log" => "output_log",   default: not output
+#                    "Dump_log" => "dump_log",       default: not output
 #                    "Port" => 23,                   default: 23
 #                    "Prompt" => /[$%#>] $/,         default: /[$%#>] $/
 #                    "Telnetmode" => TRUE,           default: TRUE
@@ -131,29 +138,73 @@ class Telnet < SimpleDelegator
     is_timeout
   end
 
-  # For those who are curious, here are some of the special characters
-  # interpretted by the telnet protocol:
-  # Name     Octal    Dec.  Description
-    CR    = "\015"
-    LF    = "\012"
-    EOL   = CR + LF #       /* end of line */
-    IAC   = "\377"  # 255   /* interpret as command: */
-    DONT  = "\376"  # 254   /* you are not to use option */
-    DO    = "\375"  # 253   /* please, you use option */
-    WONT  = "\374"  # 252   /* I won't use option */
-    WILL  = "\373"  # 251   /* I will use option */
-  # SB    = "\372"  # 250   /* interpret as subnegotiation */
-  # GA    = "\371"  # 249   /* you may reverse the line */
-  # EL    = "\370"  # 248   /* erase the current line */
-  # EC    = "\367"  # 247   /* erase the current character */
-    AYT   = "\366"  # 246   /* are you there */
-  # AO    = "\365"  # 245   /* abort output--but let prog finish */
-  # IP    = "\364"  # 244   /* interrupt process--permanently */
-  # BREAK = "\363"  # 243   /* break */
-  # DM    = "\362"  # 242   /* data mark--for connect. cleaning */
-  # NOP   = "\361"  # 241   /* nop */
-  # SE    = "\360"  # 240   /* end sub negotiation */
-  # EOR   = "\357"  # 239   /* end of record (transparent mode) */
+  IAC   = 255.chr  # interpret as command:
+  DONT  = 254.chr  # you are not to use option
+  DO    = 253.chr  # please, you use option
+  WONT  = 252.chr  # I won't use option
+  WILL  = 251.chr  # I will use option
+  SB    = 250.chr  # interpret as subnegotiation
+  GA    = 249.chr  # you may reverse the line
+  EL    = 248.chr  # erase the current line
+  EC    = 247.chr  # erase the current character
+  AYT   = 246.chr  # are you there
+  AO    = 245.chr  # abort output--but let prog finish
+  IP    = 244.chr  # interrupt process--permanently
+  BREAK = 243.chr  # break
+  DM    = 242.chr  # data mark--for connect. cleaning
+  NOP   = 241.chr  # nop
+  SE    = 240.chr  # end sub negotiation
+  EOR   = 239.chr  # end of record (transparent mode)
+  ABORT = 238.chr  # Abort process
+  SUSP  = 237.chr  # Suspend process
+  EOF   = 236.chr  # End of file
+  SYNCH = 242.chr  # for telfunc calls
+
+  OPT_BINARY         =   0.chr  # Binary Transmission
+  OPT_ECHO           =   1.chr  # Echo
+  OPT_RCP            =   2.chr  # Reconnection
+  OPT_SGA            =   3.chr  # Suppress Go Ahead
+  OPT_NAMS           =   4.chr  # Approx Message Size Negotiation
+  OPT_STATUS         =   5.chr  # Status
+  OPT_TM             =   6.chr  # Timing Mark
+  OPT_RCTE           =   7.chr  # Remote Controlled Trans and Echo
+  OPT_NAOL           =   8.chr  # Output Line Width
+  OPT_NAOP           =   9.chr  # Output Page Size
+  OPT_NAOCRD         =  10.chr  # Output Carriage-Return Disposition
+  OPT_NAOHTS         =  11.chr  # Output Horizontal Tab Stops
+  OPT_NAOHTD         =  12.chr  # Output Horizontal Tab Disposition
+  OPT_NAOFFD         =  13.chr  # Output Formfeed Disposition
+  OPT_NAOVTS         =  14.chr  # Output Vertical Tabstops
+  OPT_NAOVTD         =  15.chr  # Output Vertical Tab Disposition
+  OPT_NAOLFD         =  16.chr  # Output Linefeed Disposition
+  OPT_XASCII         =  17.chr  # Extended ASCII
+  OPT_LOGOUT         =  18.chr  # Logout
+  OPT_BM             =  19.chr  # Byte Macro
+  OPT_DET            =  20.chr  # Data Entry Terminal
+  OPT_SUPDUP         =  21.chr  # SUPDUP
+  OPT_SUPDUPOUTPUT   =  22.chr  # SUPDUP Output
+  OPT_SNDLOC         =  23.chr  # Send Location
+  OPT_TTYPE          =  24.chr  # Terminal Type
+  OPT_EOR            =  25.chr  # End of Record
+  OPT_TUID           =  26.chr  # TACACS User Identification
+  OPT_OUTMRK         =  27.chr  # Output Marking
+  OPT_TTYLOC         =  28.chr  # Terminal Location Number
+  OPT_3270REGIME     =  29.chr  # Telnet 3270 Regime
+  OPT_X3PAD          =  30.chr  # X.3 PAD
+  OPT_NAWS           =  31.chr  # Negotiate About Window Size
+  OPT_TSPEED         =  32.chr  # Terminal Speed
+  OPT_LFLOW          =  33.chr  # Remote Flow Control
+  OPT_LINEMODE       =  34.chr  # Linemode
+  OPT_XDISPLOC       =  35.chr  # X Display Location
+  OPT_OLD_ENVIRON    =  36.chr  # Environment Option
+  OPT_AUTHENTICATION =  37.chr  # Authentication Option
+  OPT_ENCRYPT        =  38.chr  # Encryption Option
+  OPT_NEW_ENVIRON    =  39.chr  # New Environment Option
+
+  NULL = "\000"
+  CR   = "\015"
+  LF   = "\012"
+  EOL  = CR + LF
 
   def initialize(options)
     @options = options
@@ -165,21 +216,31 @@ class Telnet < SimpleDelegator
     @options["Timeout"]    = 10          if not @options.include?("Timeout")
     @options["Waittime"]   = 0           if not @options.include?("Waittime")
 
+    @telnet_option = { "SGA" => FALSE, "BINARY" => FALSE }
+
     if @options.include?("Output_log")
       @log = File.open(@options["Output_log"], 'a+')
       @log.sync = TRUE
       @log.binmode if @options["Binmode"]
     end
 
+    if @options.include?("Dump_log")
+      @dumplog = File.open(@options["Dump_log"], 'a+')
+      @dumplog.sync = TRUE
+      @dumplog.binmode
+    end
+
     message = "Trying " + @options["Host"] + "...\n"
     STDOUT.write(message)
     @log.write(message) if @options.include?("Output_log")
+    @dumplog.write(message) if @options.include?("Dump_log")
 
     is_timeout = timeout(@options["Timeout"]){
       begin
         @sock = TCPsocket.open(@options["Host"], @options["Port"])
       rescue
         @log.write($! + "\n") if @options.include?("Output_log")
+        @dumplog.write($! + "\n") if @options.include?("Dump_log")
         raise
       end
     }
@@ -190,26 +251,51 @@ class Telnet < SimpleDelegator
     message = "Connected to " + @options["Host"] + ".\n"
     STDOUT.write(message)
     @log.write(message) if @options.include?("Output_log")
+    @dumplog.write(message) if @options.include?("Dump_log")
 
     super(@sock)
   end
 
   def preprocess(str)
-    str.gsub!(/#{EOL}/no, "\n") # combine EOL into "\n"
+    str.gsub!(/#{CR}#{NULL}/no, CR) # combine CR+NULL into CR
+    str.gsub!(/#{EOL}/no, "\n")     # combine EOL into "\n"
 
-    # respond to "IAC DO x" or "IAC DON'T x" with "IAC WON'T x"
-    str.gsub!(/([^#{IAC}])?#{IAC}[#{DO}#{DONT}](.|\n)/no){
+    # respond to "IAC DO x"
+    str.gsub!(/([^#{IAC}])?#{IAC}#{DO}(.|\n)/no){
+      if OPT_BINARY == $2
+        @telnet_option["BINARY"] = TRUE
+        @sock.write(IAC + WILL + OPT_BINARY)
+        $1
+      else
         @sock.write(IAC + WONT + $2)
         $1
+      end
     }
 
-    # ignore "IAC WILL x" or "IAC WON'T x"
-    str.gsub!(/([^#{IAC}])?#{IAC}[#{WILL}#{WONT}](.|\n)/no, '\1')
+    # respond to "IAC DON'T x" with "IAC WON'T x"
+    str.gsub!(/([^#{IAC}])?#{IAC}#{DONT}(.|\n)/no){
+      @sock.write(IAC + WONT + $2)
+      $1
+    }
+
+    # respond to "IAC WILL x"
+    str.gsub!(/([^#{IAC}])?#{IAC}#{WILL}(.|\n)/no){
+      if OPT_SGA == $2
+        @telnet_option["SGA"] = TRUE
+        @sock.write(IAC + DO + OPT_SGA)
+        $1
+      else
+        $1
+      end
+    }
+
+    # ignore "IAC WON'T x"
+    str.gsub!(/([^#{IAC}])?#{IAC}#{WONT}(.|\n)/no, '\1')
 
     # respond to "IAC AYT" (are you there)
     str.gsub!(/([^#{IAC}])?#{IAC}#{AYT}/no){
-        @sock.write("nobody here but us pigeons" + EOL)
-        $1
+      @sock.write("nobody here but us pigeons" + EOL)
+      $1
     }
 
     str.gsub(/#{IAC}#{IAC}/no, IAC) # handle escaped IAC characters
@@ -235,11 +321,9 @@ class Telnet < SimpleDelegator
         not select([@sock], nil, nil, timeout)
       buf = ''
       begin
-        buf = if @options["Telnetmode"]
-                preprocess( @sock.sysread(1024 * 1024) )
-              else
-                @sock.sysread(1024 * 1024)
-              end
+        buf = @sock.sysread(1024 * 1024)
+        @dumplog.print(buf) if @options.include?("Dump_log")
+        buf = preprocess(buf) if @options["Telnetmode"]
       rescue EOFError # End of file reached
         break
       ensure
@@ -252,7 +336,16 @@ class Telnet < SimpleDelegator
   end
 
   def print(string)
-    @sock.write(string.gsub(/\n/, EOL) + EOL)
+    if @telnet_option["BINARY"] and @telnet_option["SGA"]
+      # IAC WILL SGA IAC DO BIN send EOL --> CR
+      @sock.write(string.gsub(/\n/, CR) + CR)
+    elsif @telnet_option["SGA"]
+      # IAC WILL SGA send EOL --> CR+NULL
+      @sock.write(string.gsub(/\n/, CR + NULL) + CR + NULL)
+    else
+      # NONE send EOL --> LF
+      @sock.write(string.gsub(/\n/, LF) + LF)
+    end
   end
 
   def cmd(options)
@@ -268,7 +361,7 @@ class Telnet < SimpleDelegator
     end
 
     select(nil, [@sock])
-    @sock.write(string.gsub(/\n/, EOL) + EOL)
+    print(string)
     if iterator?
       waitfor({"Prompt" => match, "Timeout" => timeout}){|c| yield c }
     else

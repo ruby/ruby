@@ -181,10 +181,10 @@ extern int current_mbctype;
 
 #ifdef __STDC__
 extern const unsigned char *mbctab;
-void mbcinit (int);
+void re_mbcinit (int);
 #else
 extern unsigned char *mbctab;
-void mbcinit ();
+void re_mbcinit ();
 #endif
 
 #undef ismbchar
@@ -202,7 +202,7 @@ struct re_pattern_buffer
 			   to skip over totally implausible characters.  */
     char *must;	        /* Pointer to exact pattern which strings should have
 			   to be matched.  */
-
+    int *must_skip;    /* Pointer to exact pattern skip table for bm_search */
     long options;	/* Flags for options such as extended_pattern. */
     long re_nsub;	/* Number of subexpressions found by the compiler. */
     char fastmap_accurate;
@@ -245,6 +245,7 @@ struct re_registers
 #ifdef __STDC__
 
 extern char *re_compile_pattern (char *, size_t, struct re_pattern_buffer *);
+void re_free_pattern (struct re_pattern_buffer *);
 /* Is this really advertised?  */
 extern void re_compile_fastmap (struct re_pattern_buffer *);
 extern int re_search (struct re_pattern_buffer *, char*, int, int, int,
@@ -252,7 +253,7 @@ extern int re_search (struct re_pattern_buffer *, char*, int, int, int,
 extern int re_match (struct re_pattern_buffer *, char *, int, int,
 		     struct re_registers *);
 extern long re_set_syntax (long syntax);
-extern void re_set_casetable(char *table);
+extern void re_set_casetable (char *table);
 extern void re_copy_registers (struct re_registers*, struct re_registers*);
 extern void re_free_registers (struct re_registers*);
 
@@ -265,12 +266,13 @@ extern int re_exec (char *);
 #else /* !__STDC__ */
 
 extern char *re_compile_pattern ();
+void re_free_regexp ();
 /* Is this really advertised? */
 extern void re_compile_fastmap ();
 extern int re_search ();
 extern int re_match ();
-extern long re_set_syntax();
-extern void re_set_casetable();
+extern long re_set_syntax ();
+extern void re_set_casetable ();
 extern void re_copy_registers ();
 extern void re_free_registers ();
 

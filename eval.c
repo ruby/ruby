@@ -704,8 +704,10 @@ rb_check_safe_str(x)
 	    Raise(eSecurityError, "Insecure operation - %s",
 		  rb_id2name(the_frame->last_func));
 	}
-	Warning("Insecure operation - %s",
-		rb_id2name(the_frame->last_func));
+	if (verbose) {
+	    Warning("Insecure operation - %s",
+		    rb_id2name(the_frame->last_func));
+	}
     }
 }
 
@@ -6124,7 +6126,7 @@ thread_sleep_forever()
 {
     if (curr_thread == curr_thread->next) {
 	TRAP_BEG;
-	sleep((32767<<16)+32767);
+	sleep((32767L<<16)+32767);
 	TRAP_END;
 	return;
     }
@@ -6466,7 +6468,8 @@ thread_raise(argc, argv, thread)
 	f_raise(argc, argv);
     }
 
-    thread_save_context(curr_thread);
+    if (curr_thread->status != THREAD_KILLED)
+	thread_save_context(curr_thread);
     if (setjmp(curr_thread->context)) {
 	return thread;
     }

@@ -134,7 +134,8 @@ addpath(path)
 struct req_list {
     char *name;
     struct req_list *next;
-} *req_list;
+} req_list_head;
+struct req_list *req_list_last = &req_list_head;
 
 static void
 add_modules(mod)
@@ -144,17 +145,18 @@ add_modules(mod)
 
     list = ALLOC(struct req_list);
     list->name = mod;
-    list->next = req_list;
-    req_list = list;
+    list->next = 0;
+    req_list_last->next = list;
+    req_list_last = list;
 }
 
 void
 ruby_require_modules()
 {
-    struct req_list *list = req_list;
+    struct req_list *list = req_list_head.next;
     struct req_list *tmp;
 
-    req_list = 0;
+    req_list_last = 0;
     while (list) {
 	f_require(Qnil, str_new2(list->name));
 	tmp = list->next;

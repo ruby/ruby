@@ -29,7 +29,6 @@ fi
 
 AC_CANONICAL_HOST
 
-
 dnl checks for fat-binary
 fat_binary=no
 AC_ARG_ENABLE( fat-binary,
@@ -73,7 +72,6 @@ AC_PROG_YACC
 AC_PROG_RANLIB
 AC_SUBST(AR)
 AC_CHECK_PROGS(AR, ar aal, ar)
-AC_PROG_INSTALL
 AC_PROG_MAKE_SET
 
 # checks for UNIX variants that set C preprocessor variables
@@ -141,7 +139,7 @@ AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_CHECK_HEADERS(stdlib.h unistd.h limits.h sys/file.h sys/ioctl.h pwd.h \
 		 sys/select.h sys/time.h sys/times.h sys/param.h sys/wait.h\
-		 syscall.h a.out.h string.h utime.h memory.h)
+		 syscall.h a.out.h string.h utime.h memory.h direct.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T

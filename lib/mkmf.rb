@@ -244,7 +244,7 @@ def create_makefile(target)
   end
 
   unless $objs then
-    $objs = Dir["*.c"]
+    $objs = Dir["*.{c,cc}"]
     for f in $objs
       f.sub!(/\.(c|cc)$/, ".o")
     end
@@ -264,6 +264,7 @@ CC = #{CONFIG["CC"]}
 
 prefix = #{CONFIG["prefix"]}
 CFLAGS   = #{CONFIG["CCDLFLAGS"]} -I$(hdrdir) -I#{CONFIG["includedir"]} #{CFLAGS} #{$CFLAGS} #{$defs.join(" ")}
+CXXFLAGS = $(CFLAGS)
 DLDFLAGS = #{$DLDFLAGS} #{$LDFLAGS}
 LDSHARED = #{CONFIG["LDSHARED"]}
 

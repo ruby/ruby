@@ -966,8 +966,14 @@ file_s_utime(argc, argv)
 
 #ifndef HAVE_UTIME_H
 # ifdef NT
+#   if defined(__BORLANDC__)
+#     include <utime.h>
+#   else
 #  include <sys/utime.h>
+#   endif
+#   if defined(_MSC_VER)
 #  define utimbuf _utimbuf
+#   endif
 # else
 struct utimbuf {
     long actime;

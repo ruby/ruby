@@ -1,3 +1,46 @@
+Thu Sep  3 14:08:14 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.1c4 released.
+
+Tue Sep  1 10:47:16 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (mbctab_euc): set 0x8e as multibyte character.
+
+	* string.c (str_inspect): mask character for octal output.
+
+Mon Aug 31 15:32:41 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_search): use calculated offset if exactn is the
+	  first opcode in the compiled regexp.
+
+	* regex.c (bm_search): use Boyer-Moore search for simple search.
+
+	* regex.c (must_instr): wrong length check if pattern includes
+	  byte escape by 0xff.
+
+	* regex.c (re_compile_pattern): need not to check current_mbctype.
+
+Sat Aug 29 16:31:40 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (rb_check_safe_str): avoid calling rb_id2name() in normal 
+	  cases to speed-up.
+
+	* eval.c (thread_raise): do not save context of terminated thread.
+
+	* regex.c (re_compile_pattern): mask \nnn over 256.
+
+Sat Aug 29 02:09:46 1998 1998  Koji Arai  <JCA02266@nifty.ne.jp>
+
+	* sprintf.c (f_sprintf): wrong buffer size check.
+
+Fri Aug 28 01:57:04 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* regex.c (re_compile_pattern): accepts (?ix-ix) and (?ix-ix:...).
+
+Fri Aug 28 12:25:33 1998  Hiroshi Igarashi  <igarashi@ueda.info.waseda.ac.jp>
+
+	* ruby.c (ruby_require_modules): load modules in appearing order.
+
 Thu Aug 27 12:54:28 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* version 1.1c3 released.

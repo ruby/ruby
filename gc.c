@@ -681,7 +681,7 @@ obj_free(obj)
 	    st_free_table(RANY(obj)->as.hash.tbl);
 	break;
       case T_REGEXP:
-	if (RANY(obj)->as.regexp.ptr) reg_free(RANY(obj)->as.regexp.ptr);
+	if (RANY(obj)->as.regexp.ptr) re_free_pattern(RANY(obj)->as.regexp.ptr);
 	if (RANY(obj)->as.regexp.str) free(RANY(obj)->as.regexp.str);
 	break;
       case T_DATA:

@@ -27,6 +27,9 @@
 #if HAVE_DIRENT_H
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
+#elif HAVE_DIRECT_H
+# include <direct.h>
+# define NAMLEN(dirent) strlen((dirent)->d_name)
 #else
 # define dirent direct
 # define NAMLEN(dirent) (dirent)->d_namlen
@@ -39,7 +42,7 @@
 # if HAVE_NDIR_H
 #  include <ndir.h>
 # endif
-# ifdef NT
+# if defined(NT) && defined(_MSC_VER)
 #  include "missing/dir.h"
 # endif
 #endif

@@ -287,8 +287,8 @@ f_sprintf(argc, argv)
 		}
 		if (flags&FWIDTH) {
 		    if (width > len) {
-			width -= len;
 			CHECK(width);
+			width -= len;
 			if (!(flags&FMINUS)) {
 			    while (width--) {
 				buf[blen++] = ' ';
@@ -357,6 +357,7 @@ f_sprintf(argc, argv)
 		    break;
 		  case T_FLOAT:
 		    val = dbl2big(RFLOAT(val)->value);
+		    if (FIXNUM_P(val)) goto bin_retry;
 		    bignum = 1;
 		    break;
 		  case T_STRING:

@@ -537,3 +537,256 @@ int main (int argc, char *argv[])
 
 #endif
 #endif
+
+/* mm.c */
+
+static int mmkind, mmsize, high, low;
+
+#define A ((int*)a)
+#define B ((int*)b)
+#define C ((int*)c)
+#define D ((int*)d)
+
+static void mmprepare( void *base, int size )
+{
+#ifdef DEBUG
+ if (sizeof(int) != 4) die("sizeof(int) != 4");
+ if (size <= 0) die("mmsize <= 0");
+#endif
+
+ if ( ((int)base & (4-1)) == 0  &&  (size & (4-1)) == 0 )
+   if      (size >= 16) mmkind = 1;
+   else                 mmkind = 0;
+ else                   mmkind = -1;
+ 
+ mmsize = size;
+ high = (size & (-16));
+ low  = (size & 0x0C );
+}
+
+static void mmswap( register char *a, register char *b )
+{
+ register int s;
+ if (a == b) return;
+ if (mmkind >= 0) {
+   if (mmkind > 0) {
+     register char *t = a + high;
+     do {
+       s = A[0]; A[0] = B[0]; B[0] = s;
+       s = A[1]; A[1] = B[1]; B[1] = s;
+       s = A[2]; A[2] = B[2]; B[2] = s;
+       s = A[3]; A[3] = B[3]; B[3] = s;  a += 16; b += 16;
+     }while (a < t);
+   }
+   if (low != 0) { s = A[0]; A[0] = B[0]; B[0] = s;
+     if (low >= 8) { s = A[1]; A[1] = B[1]; B[1] = s;
+       if (low == 12) {s = A[2]; A[2] = B[2]; B[2] = s;}}}
+ }else{
+   register char *t = a + mmsize;
+   do {s = *a; *a++ = *b; *b++ = s;} while (a < t);
+ }
+}
+
+static void mmswapblock( register char *a, register char *b, int size )
+{
+ register int s;
+ if (mmkind >= 0) {
+   register char *t = a + (size & (-16)); register int  lo = (size & 0x0C);
+   if (size >= 16) {
+     do {
+       s = A[0]; A[0] = B[0]; B[0] = s;
+       s = A[1]; A[1] = B[1]; B[1] = s;
+       s = A[2]; A[2] = B[2]; B[2] = s;
+       s = A[3]; A[3] = B[3]; B[3] = s;  a += 16; b += 16;
+     }while (a < t);
+   }
+   if (lo != 0) { s = A[0]; A[0] = B[0]; B[0] = s;
+     if (lo >= 8) { s = A[1]; A[1] = B[1]; B[1] = s;
+       if (lo == 12) {s = A[2]; A[2] = B[2]; B[2] = s;}}}
+ }else{
+   register char *t = a + size;
+   do {s = *a; *a++ = *b; *b++ = s;} while (a < t);
+ }
+}
+
+static void mmrot3( register char *a, register char *b, register char *c )
+{
+ register int s;
+ if (mmkind >= 0) {
+   if (mmkind > 0) {
+     register char *t = a + high;
+     do {
+       s = A[0]; A[0] = B[0]; B[0] = C[0]; C[0] = s;
+       s = A[1]; A[1] = B[1]; B[1] = C[1]; C[1] = s;
+       s = A[2]; A[2] = B[2]; B[2] = C[2]; C[2] = s;
+       s = A[3]; A[3] = B[3]; B[3] = C[3]; C[3] = s; a += 16; b += 16; c += 16;
+     }while (a < t);
+   }
+   if (low != 0) { s = A[0]; A[0] = B[0]; B[0] = C[0]; C[0] = s;
+     if (low >= 8) { s = A[1]; A[1] = B[1]; B[1] = C[1]; C[1] = s;
+       if (low == 12) {s = A[2]; A[2] = B[2]; B[2] = C[2]; C[2] = s;}}}
+ }else{
+   register char *t = a + mmsize;
+   do {s = *a; *a++ = *b; *b++ = *c; *c++ = s;} while (a < t);
+ }
+}
+
+/* qs6.c */
+/*****************************************************/
+/*                                                   */
+/*          qs6   (Quick sort function)              */
+/*                                                   */
+/* by  Tomoyuki Kawamura              1995.4.21      */
+/* kawamura@tokuyama.ac.jp                           */
+/*****************************************************/
+
+typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
+#define PUSH(ll,rr) {top->LL = (ll); top->RR = (rr); ++top;}  /* Push L,l,R,r */
+#define POP(ll,rr)  {--top; ll = top->LL; rr = top->RR;}      /* Pop L,l,R,r */
+
+#define med3(a,b,c) ((*cmp)(a,b)<0 ?                                   \
+                       ((*cmp)(b,c)<0 ? b : ((*cmp)(a,c)<0 ? c : a)) : \
+                       ((*cmp)(b,c)>0 ? b : ((*cmp)(a,c)<0 ? a : c)) )
+
+void qsort (base, nel, size, cmp) void* base; size_t nel; size_t size; int (*cmp)();
+{
+ register char *l, *r, *m;          /*l,r:左右の集団の端   m:配列の中央の位置*/
+ register int  t, eq_l, eq_r;       /*eq_l:左の集団が全てｓに等しいことを示す*/
+ char *L = base;                    /*現在分割している区間の左端の要素の先頭 */
+ char *R = base + size * (nel - 1); /*現在分割している区間の右端の要素の先頭 */
+ int  chklim = 63;                           /*昇(降)順検査をする要素数の下限*/
+ stack_node stack[32], *top = stack;         /* 32 ３２ビットマシンでは３２で十分*/
+
+ if (nel <= 1) return;        /* need not to sort */
+ mmprepare( base, size );
+ goto start;
+  
+ nxt:
+ if (stack == top) return;    /* return if stack is empty */
+ POP(L,R);
+   
+ for (;;) {
+   start:
+   if (L + size == R) {if ((*cmp)(L,R) > 0) mmswap(L,R); goto nxt;}/* 2 elements */
+   
+   l = L; r = R;
+   t = (r - l + size) / size;  /* number of elements */
+   m = l + size * (t >> 1);    /* calculate median value */
+   
+   if (t >= 60) {
+     register char *m1;
+     register char *m3;
+     if (t >= 200) {
+       t = size*(t>>3); /* number of bytes in splitting 8 */
+       {
+       register char *p1 = l  + t;
+       register char *p2 = p1 + t;
+       register char *p3 = p2 + t;
+       m1 = med3( p1, p2, p3 );
+       p1 = m  + t;
+       p2 = p1 + t;
+       p3 = p2 + t;
+       m3 = med3( p1, p2, p3 );
+       }
+     }else{
+       t = size*(t>>2); /* number of bytes in splitting 4 */
+       m1 = l + t;
+       m3 = m + t;
+     }
+     m = med3( m1, m, m3 );
+   }
+   
+   if ((t = (*cmp)(l,m)) < 0) {                             /*3-5-?*/
+     if ((t = (*cmp)(m,r)) < 0) {                           /*3-5-7*/
+       if (chklim && nel >= chklim) {   /* check if already ascending order */
+         char *p;
+         chklim = 0;
+         for (p=l; p<r; p+=size) if ((*cmp)(p,p+size) > 0) goto fail;
+         goto nxt;
+       }
+       fail: goto loopA;                                    /*3-5-7*/
+     }
+     if (t > 0) {
+       if ((*cmp)(l,r) <= 0) {mmswap(m,r); goto loopA;}     /*3-5-4*/
+       mmrot3(r,m,l); goto loopA;                           /*3-5-2*/
+     }
+     goto loopB;                                            /*3-5-5*/
+   }
+   
+   if (t > 0) {                                             /*7-5-?*/
+     if ((t = (*cmp)(m,r)) > 0) {                           /*7-5-3*/
+       if (chklim && nel >= chklim) {   /* check if already ascending order */
+         char *p;
+         chklim = 0;
+         for (p=l; p<r; p+=size) if ((*cmp)(p,p+size) < 0) goto fail2;
+         while (l<r) {mmswap(l,r); l+=size; r-=size;}  /* reverse region */
+         goto nxt;
+       }
+       fail2: mmswap(l,r); goto loopA;                      /*7-5-3*/
+     }
+     if (t < 0) {
+       if ((*cmp)(l,r) <= 0) {mmswap(l,m); goto loopB;}     /*7-5-8*/
+       mmrot3(l,m,r); goto loopA;                           /*7-5-6*/
+     }
+     mmswap(l,r); goto loopA;                               /*7-5-5*/
+   }
+    
+   if ((t = (*cmp)(m,r)) < 0)  {goto loopA;}                /*5-5-7*/
+   if (t > 0) {mmswap(l,r); goto loopB;}                    /*5-5-3*/
+   
+   /* deteming splitting type in case 5-5-5 */              /*5-5-5*/
+   for (;;) {
+     if ((l += size) == r)      goto nxt;                   /*5-5-5*/
+     if (l == m) continue;
+     if ((t = (*cmp)(l,m)) > 0) {mmswap(l,r); l = L; goto loopA;}  /*575-5*/
+     if (t < 0)                 {mmswap(L,l); l = L; goto loopB;}  /*535-5*/
+   }
+   
+   loopA: eq_l = 1; eq_r = 1;  /* splitting type A */ /* left <= median < right右*/
+   for (;;) {
+     for (;;) {
+       if ((l += size) == r)
+         {l -= size; if (l != m) mmswap(m,l); l -= size; goto fin;}
+       if (l == m) continue;
+       if ((t = (*cmp)(l,m)) > 0) {eq_r = 0; break;}
+       if (t < 0) eq_l = 0;
+     }
+     for (;;) {
+       if (l == (r -= size))
+         {l -= size; if (l != m) mmswap(m,l); l -= size; goto fin;}
+       if (r == m) {m = l; break;}
+       if ((t = (*cmp)(r,m)) < 0) {eq_l = 0; break;}
+       if (t == 0) break;
+     }
+     mmswap(l,r);    /* swap left and right */
+   }
+   
+   loopB: eq_l = 1; eq_r = 1;  /* splitting type B */ /* left < median <= right */
+   for (;;) {
+     for (;;) {
+       if (l == (r -= size))
+         {r += size; if (r != m) mmswap(r,m); r += size; goto fin;}
+       if (r == m) continue;
+       if ((t = (*cmp)(r,m)) < 0) {eq_l = 0; break;}
+       if (t > 0) eq_r = 0;
+     }
+     for (;;) {
+       if ((l += size) == r)
+         {r += size; if (r != m) mmswap(r,m); r += size; goto fin;}
+       if (l == m) {m = r; break;}
+       if ((t = (*cmp)(l,m)) > 0) {eq_r = 0; break;}
+       if (t == 0) break;
+     }
+     mmswap(l,r);    /* swap left and right */
+   }
+   
+   fin:
+   if (eq_l == 0)                         /* need to sort left side */
+     if (eq_r == 0)                       /* need to sort right side */
+       if (l-L < R-r) {PUSH(r,R); R = l;} /* sort left side first */
+       else           {PUSH(L,l); L = r;} /* sort right side first */
+     else R = l;                          /* need to sort left side only */
+   else if (eq_r == 0) L = r;             /* need to sort right side only */
+   else goto nxt;                         /* need not to sort both sides */
+ }
+}

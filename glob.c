@@ -46,6 +46,9 @@
 #if defined (HAVE_DIRENT_H)
 #  include <dirent.h>
 #  define D_NAMLEN(d) strlen ((d)->d_name)
+#elif HAVE_DIRECT_H
+#  include <direct.h>
+#  define D_NAMLEN(d) strlen ((d)->d_name)
 #else /* !HAVE_DIRENT_H */
 #  define D_NAMLEN(d) ((d)->d_namlen)
 #  if defined (HAVE_SYS_NDIR_H)
@@ -65,6 +68,8 @@
 #if defined (_POSIX_SOURCE) || defined(DJGPP) || defined(USE_CWGUSI)
 /* Posix does not require that the d_ino field be present, and some
    systems do not provide it. */
+#  define REAL_DIR_ENTRY(dp) 1
+#elif defined (__BORLANDC__)
 #  define REAL_DIR_ENTRY(dp) 1
 #else
 #  define REAL_DIR_ENTRY(dp) (dp->d_ino != 0)
@@ -111,7 +116,7 @@ extern void throw_to_top_level ();
 extern int interrupt_state;
 #endif /* SHELL */
 
-#if defined(NT)
+#if defined(NT) && defined(_MSC_VER)
 #include "missing/dir.h"
 #endif
 

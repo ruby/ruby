@@ -665,7 +665,7 @@ r_object(arg)
 	    }
 	    big = RBIGNUM(big_norm((VALUE)big));
 	    if (TYPE(big) == T_BIGNUM) {
-		r_regist(big, arg);
+		r_regist((VALUE)big, arg);
 	    }
 	    return (VALUE)big;
 	}

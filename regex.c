@@ -143,7 +143,7 @@ static int group_match_null_string_p ();
 /* Define the syntax stuff, so we can do the \<, \>, etc.  */
 
 /* This must be nonzero for the wordchar and notwordchar pattern
-   commands in re_match_2.  */
+   commands in re_match.  */
 #ifndef Sword 
 #define Sword 1
 #endif
@@ -153,6 +153,8 @@ static int group_match_null_string_p ();
 static char re_syntax_table[256];
 static void init_syntax_once P((void));
 static unsigned char *translate = 0;
+static void init_regs P((struct re_registers*, unsigned int));
+static void bm_init_skip P((int *, unsigned char*, int, char *));
 
 #undef P
 
@@ -247,6 +249,7 @@ enum regexpcode
     begbuf,   /* Succeeds if at beginning of buffer (if emacs) or at beginning
                  of string to be matched (if not).  */
     endbuf,   /* Analogously, for end of buffer/string.  */
+    endbuf2,  /* End of buffer/string, or newline just before it.  */
     jump,     /* Followed by two bytes giving relative address to jump to.  */
     jump_past_alt,/* Same as jump, but marks the end of an alternative.  */
     on_failure_jump,	 /* Followed by two bytes giving relative address of 
@@ -386,7 +389,7 @@ long re_syntax_options = 0;
 /* Macros for re_compile_pattern, which is found below these definitions.  */
 
 #define TRANSLATE_P() ((options&RE_OPTION_IGNORECASE) && translate)
-#define TRY_TRANSLATE() ((bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE)) && translate)
+#define MAY_TRANSLATE() ((bufp->options&(RE_OPTION_IGNORECASE|RE_MAY_IGNORECASE)) && translate)
 /* Fetch the next character in the uncompiled pattern---translating it 
    if necessary.  Also cast from a signed character in the constant
    string passed to us by the user to an unsigned char that we can use
@@ -836,6 +839,10 @@ print_partial_compiled_pattern(start, end)
 	  printf ("/endbuf");
           break;
 
+	case endbuf2:
+	  printf ("/endbuf2");
+          break;
+
         default:
           printf ("?%d", *(p-1));
 	}
@@ -908,6 +915,7 @@ calculate_must_string(start, end)
 	case notwordchar:
 	case begbuf:
 	case endbuf:
+	case endbuf2:
         case push_dummy_failure:
 	  break;
 
@@ -1060,6 +1068,7 @@ re_compile_pattern(pattern, size, bufp)
 
     bufp->fastmap_accurate = 0;
     bufp->must = 0;
+    bufp->must_skip = 0;
 
     /* Initialize the syntax table.  */
     init_syntax_once();
@@ -1449,41 +1458,49 @@ re_compile_pattern(pattern, size, bufp)
 	case '(':
 	  PATFETCH(c);
 	  if (c == '?') {
+	      int negative = 0;
 	      PATFETCH_RAW(c);
 	      switch (c) {
-		case 'x': case 'X':
-		case 'i': case 'I':
+		case 'x': case 'i': case '-':
 		  for (;;) {
 		    switch (c) {
+		    case '-':
+		      negative = 1;
+		      break;
+
 		    case ')':
+		    case ':':
 		      break;
 
 		    case 'x':
-		      options |= RE_OPTION_EXTENDED;
-		      break;
-		    case 'X':
-		      options &= ~RE_OPTION_EXTENDED;
+		      if (negative)
+			options &= ~RE_OPTION_EXTENDED;
+		      else
+			options |= RE_OPTION_EXTENDED;
 		      break;
 		    case 'i':
-		      if (!(options&RE_OPTION_IGNORECASE)) {
+		      if (negative) {
+			if (options&RE_OPTION_IGNORECASE) {
+			  options &= ~RE_OPTION_IGNORECASE;
+			  BUFPUSH(casefold_off);
+			}
+		      }
+		      else if (!(options&RE_OPTION_IGNORECASE)) {
 			options |= RE_OPTION_IGNORECASE;
 			BUFPUSH(casefold_on);
-		      }
-		      break;
-		    case 'I':
-		      if (options&RE_OPTION_IGNORECASE) {
-			options &= ~RE_OPTION_IGNORECASE;
-			BUFPUSH(casefold_off);
 		      }
 		      break;
 
 		    default:
 		      FREE_AND_RETURN(stackb, "undefined (?...) inline option");
 		    }
-		    if (c == ')') break;
+		    if (c == ')') {
+		      c = '#';	/* read whole in-line options */
+		      break;
+		    }
+		    if (c == ':') break;
 		    PATFETCH_RAW(c);
 		  }
-		  c = '#';	/* read whole in-line options */
 		  break;
 
 		case '#':
@@ -1577,7 +1594,7 @@ re_compile_pattern(pattern, size, bufp)
 		{ /* Push a dummy failure point at the end of the
 		     alternative for a possible future
 		     `finalize_jump' to pop.  See comments at
-		     `push_dummy_failure' in `re_match_2'.  */
+		     `push_dummy_failure' in `re_match'.  */
 		  BUFPUSH(push_dummy_failure);
                   
 		  /* We allocated space for this jump when we assigned
@@ -1881,6 +1898,10 @@ re_compile_pattern(pattern, size, bufp)
 	      break;
 
 	    case 'Z':
+	      BUFPUSH(endbuf2);
+	      break;
+
+	    case 'z':
 	      BUFPUSH(endbuf);
 	      break;
 
@@ -2025,9 +2046,11 @@ re_compile_pattern(pattern, size, bufp)
 
   bufp->used = b - bufp->buffer;
   bufp->re_nsub = regnum;
-  if (*bufp->buffer == exactn) {
+  laststart = bufp->buffer;
+  if (*laststart == start_memory) laststart += 3;
+  if (*laststart == exactn) {
     bufp->options |= RE_OPTIMIZE_EXACTN;
-    bufp->must = bufp->buffer+1;
+    bufp->must = laststart+1;
   }
   else {
     bufp->must = calculate_must_string(bufp->buffer, b);
@@ -2043,6 +2066,12 @@ re_compile_pattern(pattern, size, bufp)
 	bufp->options |= RE_OPTIMIZE_NO_BM;
 	break;
       }
+    }
+    if (!(bufp->options & RE_OPTIMIZE_NO_BM)) {
+      bufp->must_skip = (int *) xmalloc((1 << BYTEWIDTH)*sizeof(int));
+      bm_init_skip(bufp->must_skip, bufp->must+1,
+		   (unsigned char)bufp->must[0],
+		   MAY_TRANSLATE()?translate:0);
     }
   }
 
@@ -2064,6 +2093,15 @@ re_compile_pattern(pattern, size, bufp)
   FREE_AND_RETURN(stackb, "nested *?+ in regexp");
 }
 
+void
+re_free_pattern(bufp)
+    struct re_pattern_buffer *bufp;
+{
+    free(bufp->buffer);
+    free(bufp->fastmap);
+    if (bufp->must_skip) free(bufp->must_skip);
+    free(bufp);
+}
 
 /* Store a jump of the form <OPCODE> <relative address>.
    Store in the location FROM a jump operation to jump to relative
@@ -2189,7 +2227,7 @@ insert_op_2(op, there, current_end, num_1, num_2)
 
 #define trans_eq(c1, c2, translate) (translate?(translate[c1]==translate[c2]):((c1)==(c2)))
 static int
-must_match(little, lend, big, bend, translate)
+slow_match(little, lend, big, bend, translate)
      unsigned char *little, *lend;
      unsigned char *big, *bend;
      unsigned char *translate;
@@ -2198,10 +2236,8 @@ must_match(little, lend, big, bend, translate)
 
   while (little < lend && big < bend) {
     c = *little++;
-    if (c == 0xff) {
-      if (!trans_eq(*big++, *little++, translate)) break;
-      continue;
-    }
+    if (c == 0xff)
+      c = *little++;
     if (!trans_eq(*big++, c, translate)) break;
   }
   if (little == lend) return 1;
@@ -2209,7 +2245,7 @@ must_match(little, lend, big, bend, translate)
 }
 
 static int
-must_instr(little, llen, big, blen, translate)
+slow_search(little, llen, big, blen, translate)
      unsigned char *little;
      int llen;
      unsigned char *big;
@@ -2253,7 +2289,7 @@ must_instr(little, llen, big, blen, translate)
       }
     }
 
-    if (must_match(little, little+llen, big, bend, translate))
+    if (slow_match(little, little+llen, big, bend, translate))
       return big - bsave;
 
     if (ismbchar(*big)) big++;
@@ -2263,84 +2299,69 @@ must_instr(little, llen, big, blen, translate)
 }
 
 static void
-bm_init_skip(skip, pat, m)
+bm_init_skip(skip, pat, m, translate)
     int *skip;
     unsigned char *pat;
     int m;
+    char *translate;
 {
     int j, c;
 
     for (c=0; c<256; c++) {
 	skip[c] = m;
     }
-    for (j=0; j<m-1; j++) {
-	skip[pat[j]] = m-1-j;
+    if (translate) {
+      for (j=0; j<m-1; j++) {
+	skip[translate[pat[j]]] = m-1-j;
+      }
     }
-}
-
-static void
-bm_init_next(next, pat, m)
-    int *next;
-    unsigned char *pat;
-    int m;
-{
-    int s, j;
-
-    for (s=m-1; s>=0; s--) {
-	j = m;
-	while (j >= 0 && pat[j-s] == pat[j]) {
-	    j--;
-	}
-	if (j > s) {
-	    next[j] = m-j+s;
-	}
-	else {
-	    while (j > 0) {
-		next[j] = m-j+s;
-		j--;
-	    }
-	}
+    else {
+      for (j=0; j<m-1; j++) {
+	skip[pat[j]] = m-1-j;
+      }
     }
 }
 
 static int
-bm_search(little, llen, big, blen, translate)
+bm_search(little, llen, big, blen, skip, translate)
      unsigned char *little;
      int llen;
      unsigned char *big;
      int blen;
+     int *skip;
      char *translate;
 {
-    int skip[256], next[256];
-    int i, j;
+  int next[256];
+  int i, j, k;
+  unsigned char c;
 
-    bm_init_skip(skip, little, llen);
-    bm_init_next(next, little, llen);
-    i = llen-1;
-    if (translate) {
-	while (i < blen) {
-	    j = llen-1;
-	    while (j >= 0 && translate[big[i]] == translate[little[j]]) {
-		i--;
-		j--;
-	    }
-	    if (j < 0) return i+1;
-	    
-	    i += skip[big[i]] > next[j] ? skip[big[i]] : next[j];
-	}
-	return -1;
-    }
+  i = llen-1;
+  if (translate) {
     while (i < blen) {
-	j = llen-1;
-	while (j >= 0 && big[i] == little[j]) {
-	    i--;
-	    j--;
-	}
-	if (j < 0) return i+1;
+      k = i;
+      j = llen-1;
+      while (j >= 0 && translate[big[k]] == translate[little[j]]) {
+	k--;
+	j--;
+      }
+      if (j < 0) return k+1;
 
-	i += skip[big[i]] > next[j] ? skip[big[i]] : next[j];
+      i += skip[translate[big[i]]];
     }
     return -1;
+  }
+  while (i < blen) {
+    k = i;
+    j = llen-1;
+    while (j >= 0 && big[k] == little[j]) {
+      k--;
+      j--;
+    }
+    if (j < 0) return k+1;
+
+    i += skip[big[i]];
+  }
+  return -1;
 }
 
 /* Given a pattern, compute a fastmap from it.  The fastmap records
@@ -2402,6 +2423,7 @@ re_compile_fastmap(bufp)
         case begline:
 	case begbuf:
 	case endbuf:
+	case endbuf2:
 	case wordbound:
 	case notwordbound:
 	case wordbeg:
@@ -2602,18 +2624,20 @@ re_compile_fastmap(bufp)
 	  {
 	    unsigned short size;
 	    unsigned char c, beg;
+	    int byte_match = 0;
 
 	    p += p[-1] + 2;
 	    size = EXTRACT_UNSIGNED(&p[-2]);
 	    if (size == 0) {
-		for (j = 0x80; j < (1 << BYTEWIDTH); j++)
-		    if (ismbchar(j))
-			fastmap[j] = 1;
+	      for (j = 0x80; j < (1 << BYTEWIDTH); j++)
+		if (ismbchar(j))
+		  fastmap[j] = 1;
 	    }
 	    for (j = 0,c = 0x80;j < (int)size; j++) {
 	      if ((unsigned char)p[j*4] == 0xff) {
+		byte_match = 1;
 	        for (beg = (unsigned char)p[j*4+1]; c < beg; c++)
-		  fastmap[c] = 2;
+		  fastmap[c] = 1;
 	        c = (unsigned char)p[j*4+3] + 1;
 	      }
 	      else {
@@ -2622,6 +2646,18 @@ re_compile_fastmap(bufp)
 		    fastmap[c] = 1;
 	        c = (unsigned char)p[j*4 + 2] + 1;
 	      }
+	    }
+	    if (byte_match) {
+	      for (j = c; j < (1 << BYTEWIDTH); j++)
+		fastmap[j] = 1;
+	      for (j = 0; j < (1 << BYTEWIDTH); j++)
+		if (fastmap[j])
+		  fastmap[j] = 2;
+	    }
+	    else {
+	      for (j = c; j < (1 << BYTEWIDTH); j++)
+		if (ismbchar(j))
+		  fastmap[j] = 1;
 	    }
 	  }
 	  break;
@@ -2708,18 +2744,20 @@ re_search(bufp, string, size, startpos, range, regs)
       r = 0;
     }
     if (bufp->options & RE_OPTIMIZE_NO_BM) {
-      pos = must_instr(bufp->must+1, len,
-		       string+startpos, size-startpos-r,
-		       TRY_TRANSLATE()?translate:0);
+      pos = slow_search(bufp->must+1, len,
+			string+startpos, size-startpos-r,
+			MAY_TRANSLATE()?translate:0);
     }
     else {
       pos = bm_search(bufp->must+1, len,
 		      string+startpos, size-startpos-r,
-		      TRY_TRANSLATE()?translate:0);
+		      bufp->must_skip,
+		      MAY_TRANSLATE()?translate:0);
     }
     if (pos == -1) return -1;
-    if (bufp->options & RE_OPTIMIZE_EXACTN)
+    if (bufp->options & RE_OPTIMIZE_EXACTN) {
       startpos += pos;
+    }
   }
 
   for (;;)
@@ -2751,7 +2789,7 @@ re_search(bufp, string, size, startpos, range, regs)
 		    break;
 		}
 		else 
-		  if (fastmap[TRY_TRANSLATE() ? translate[c] : c])
+		  if (fastmap[MAY_TRANSLATE() ? translate[c] : c])
 		    break;
 		range--;
 	      }
@@ -2763,7 +2801,7 @@ re_search(bufp, string, size, startpos, range, regs)
 
 	      c = string[startpos];
               c &= 0xff;
-	      if (TRY_TRANSLATE() ? !fastmap[translate[c]] : !fastmap[c])
+	      if (MAY_TRANSLATE() ? !fastmap[translate[c]] : !fastmap[c])
 		goto advance;
 	    }
 	}
@@ -2781,9 +2819,9 @@ re_search(bufp, string, size, startpos, range, regs)
 	return -2;
 
 #ifndef NO_ALLOCA
-#ifdef cALLOCA
+#ifdef C_ALLOCA
       alloca(0);
-#endif /* cALLOCA */
+#endif /* C_ALLOCA */
 #endif /* NO_ALLOCA */
 
       if (range > 0) {
@@ -2807,7 +2845,7 @@ re_search(bufp, string, size, startpos, range, regs)
 	      if (fastmap[c] != 2) break;
 	    }
 	    else 
-	      if (!fastmap[TRY_TRANSLATE() ? translate[c] : c])
+	      if (!fastmap[MAY_TRANSLATE() ? translate[c] : c])
 		break;
 	    range--;
 	  }
@@ -2997,7 +3035,7 @@ typedef union
 static void
 init_regs(regs, num_regs)
     struct re_registers *regs;
-    unsigned num_regs;
+    unsigned int num_regs;
 {
     int i;
 
@@ -3476,6 +3514,12 @@ re_match(bufp, string_arg, size, pos, regs)
 
 	/* Match at the very end of the data. */
         case endbuf:
+	  if (AT_STRINGS_END(d))
+	    break;
+          goto fail;
+
+	/* Match at the very end of the data. */
+        case endbuf2:
 	  if (AT_STRINGS_END(d))
 	    break;
 	  /* .. or newline just before the end of the data. */
@@ -4047,6 +4091,7 @@ common_op_match_null_string_p (p, end, reg_info)
     case endline:
     case begbuf:
     case endbuf:
+    case endbuf2:
     case wordbeg:
     case wordend:
     case wordbound:
@@ -4200,6 +4245,7 @@ static const unsigned char mbctab_euc[] = { /* 0xA1-0xFE */
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0,
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
   0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -4231,7 +4277,7 @@ const unsigned char *mbctab = mbctab_ascii;
 int current_mbctype = MBCTYPE_ASCII;
 
 void
-mbcinit(mbctype)
+re_mbcinit(mbctype)
      int mbctype;
 {
   switch (mbctype) {

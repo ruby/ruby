@@ -119,7 +119,7 @@ static VALUE
 f_rand(obj, vmax)
     VALUE obj, vmax;
 {
-    int val, max;
+    long val, max;
 
     switch (TYPE(vmax)) {
       case T_BIGNUM:
@@ -131,7 +131,7 @@ f_rand(obj, vmax)
 	break;
     }
 
-    max = NUM2INT(vmax);
+    max = NUM2LONG(vmax);
     if (max == 0) {
 	return float_new(RANDOM_NUMBER);
     }

@@ -408,11 +408,7 @@ thread_connect(fd, sockaddr, len, type)
 #endif
 		FD_ZERO(&fds);
 		FD_SET(fd, &fds);
-#ifndef USE_CWGUSI
-		thread_select(fd+1, 0, &fds, 0, 0, 0);
-#else
 		thread_select(fd+1, 0, &fds, 0, 0);
-#endif
 		continue;
 #endif
 
