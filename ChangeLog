@@ -1,3 +1,7 @@
+Fri Aug  2 09:12:32 2002  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: follow allocation framework.
+
 Thu Aug  1 17:47:15 2002  Tachino Nobuhiro <tachino@jp.fujitsu.com>
 
 	* parse.y (tokadd_string): ignore backslashed spaces in %w.
