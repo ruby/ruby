@@ -267,6 +267,13 @@ io_fileno(io)
     return INT2FIX(fd);
 }
 
+static VALUE
+io_to_io(io)
+    VALUE io;
+{
+    return io;
+}
+
 /* reading functions */
 
 #ifndef S_ISREG
@@ -1161,6 +1168,17 @@ f_open(argc, argv)
     return port;
 }
 
+static VALUE
+io_get_io(io)
+    VALUE io;
+{
+    if (TYPE(io) != T_FILE) {
+	io = rb_funcall(io, rb_intern("to_io"), 0, 0);
+	Check_Type(io, T_FILE);
+    }
+    return io;
+}
+
 #ifndef NT
 extern char *strdup();
 #endif
@@ -1190,7 +1208,7 @@ io_reopen(io, nfile)
     int fd;
 
     GetOpenFile(io, fptr);
-    Check_Type(nfile, T_FILE);
+    nfile = io_get_io(nfile);
     GetOpenFile(nfile, orig);
 
     if (orig->f2) {
@@ -1827,8 +1845,9 @@ f_select(argc, argv, obj)
 	rp = &rset;
 	FD_ZERO(rp);
 	for (i=0; i<RARRAY(read)->len; i++) {
-	    Check_Type(RARRAY(read)->ptr[i], T_FILE);
-	    GetOpenFile(RARRAY(read)->ptr[i], fptr);
+	    VALUE io = io_get_io(RARRAY(read)->ptr[i]);
+
+	    GetOpenFile(io, fptr);
 	    FD_SET(fileno(fptr->f), rp);
 	    if (READ_DATA_PENDING(fptr->f)) { /* check for buffered data */
 		pending++;
@@ -1849,8 +1868,9 @@ f_select(argc, argv, obj)
 	wp = &wset;
 	FD_ZERO(wp);
 	for (i=0; i<RARRAY(write)->len; i++) {
-	    Check_Type(RARRAY(write)->ptr[i], T_FILE);
-	    GetOpenFile(RARRAY(write)->ptr[i], fptr);
+	    VALUE io = io_get_io(RARRAY(write)->ptr[i]);
+
+	    GetOpenFile(io, fptr);
 	    FD_SET(fileno(fptr->f), wp);
 	    if (max > fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
@@ -1867,8 +1887,9 @@ f_select(argc, argv, obj)
 	ep = &eset;
 	FD_ZERO(ep);
 	for (i=0; i<RARRAY(except)->len; i++) {
-	    Check_Type(RARRAY(except)->ptr[i], T_FILE);
-	    GetOpenFile(RARRAY(except)->ptr[i], fptr);
+	    VALUE io = io_get_io(RARRAY(except)->ptr[i]);
+
+	    GetOpenFile(io, fptr);
 	    FD_SET(fileno(fptr->f), ep);
 	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
 	    if (fptr->f2) {
@@ -2239,6 +2260,12 @@ arg_fileno()
 }
 
 static VALUE
+arg_to_io()
+{
+    return file;
+}
+
+static VALUE
 arg_read(argc, argv)
     int argc;
     VALUE *argv;
@@ -2458,6 +2485,7 @@ Init_IO()
 
     rb_define_method(cIO, "fileno", io_fileno, 0);
     rb_define_alias(cIO, "to_i", "fileno");
+    rb_define_method(cIO, "to_io", io_to_io, 0);
 
     rb_define_method(cIO, "sync",   io_sync, 0);
     rb_define_method(cIO, "sync=",  io_set_sync, 1);
@@ -2507,6 +2535,7 @@ Init_IO()
 
     rb_define_singleton_method(argf, "fileno", arg_fileno, 0);
     rb_define_singleton_method(argf, "to_i", arg_fileno, 0);
+    rb_define_singleton_method(argf, "to_io", arg_to_io, 0);
     rb_define_singleton_method(argf, "each",  arg_each_line, -1);
     rb_define_singleton_method(argf, "each_line",  arg_each_line, -1);
     rb_define_singleton_method(argf, "each_byte",  arg_each_byte, 0);

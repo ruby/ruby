@@ -148,6 +148,8 @@ str_clone(orig)
 	str = str_new3(RSTRING(orig)->orig);
     else
 	str = str_new(RSTRING(orig)->ptr, RSTRING(orig)->len);
+    if (RSTRING(orig)->orig && FL_TEST(orig, STR_NO_ORIG))
+	RSTRING(str)->orig = RSTRING(orig)->orig;
     CLONESETUP(str, orig);
     return str;
 }
@@ -158,6 +160,8 @@ str_dup(str)
 {
     VALUE s = str_new(RSTRING(str)->ptr, RSTRING(str)->len);
     if (str_tainted(str)) s = str_taint(s);
+    if (RSTRING(str)->orig && FL_TEST(str, STR_NO_ORIG))
+	RSTRING(s)->orig = RSTRING(str)->orig;
     return s;
 }
 

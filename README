@@ -31,16 +31,19 @@ This is what you need to do to compile and install Ruby:
 
   2. Edit defines.h if you need.  Probably this step will not need.
 
-  3. Remove comment mark(#) before the module names from ext/Setup, if 
-     you want to link modules statically.
+  3. Remove comment mark(#) before the module names from ext/Setup (or
+     add module names if not present), if you want to link modules
+     statically.
 
-     If you want to link all the extension modules, remove comment
-     mark from the line "#option nodynamic".
+     If you don't want to compile non static extension modules
+     (probably on architectures which does not allow dynamic loading),
+     remove comment mark from the line "#option nodynamic" in
+     ext/Setup.
 
   4. Run make.
 
-  5. Optionally, run 'make test' to check that the compiled Ruby
-     interpreter works well.  If you see the message "test succeeded", 
+  5. Optionally, run 'make test' to check whether the compiled Ruby
+     interpreter works well.  If you see the message "test succeeded",
      your Ruby works as it should (hopefully).
 
   6. Run 'make install'
@@ -61,12 +64,13 @@ You can redistribute it and/or modify it under either the terms of the GPL
   2. You may modify your copy of the software in any way, provided that
      you do at least ONE of the following:
 
-       a) place your modifications in the Public Domain or otherwise make them
-	  Freely Available, such as by posting said modifications to Usenet
-	  or an equivalent medium, or by allowing the author to include your
-	  modifications in the software.
+       a) place your modifications in the Public Domain or otherwise
+          make them Freely Available, such as by posting said
+	  modifications to Usenet or an equivalent medium, or by allowing
+	  the author to include your modifications in the software.
 
-       b) use the modified software only within your corporation or organization.
+       b) use the modified software only within your corporation or
+          organization.
 
        c) rename any non-standard executables so the names do not conflict
 	  with standard executables, which must also be provided.
@@ -84,8 +88,7 @@ You can redistribute it and/or modify it under either the terms of the GPL
 	  the software.
 
        c) give non-standard executables non-standard names, with
-          instructions on where to get the original software
-          distribution.
+          instructions on where to get the original software distribution.
 
        d) make other distribution arrangements with the author.
 

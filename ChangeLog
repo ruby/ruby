@@ -1,3 +1,10 @@
+Wed Apr 22 23:27:17 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* io.c (select_get_io): get IO object by `to_io'.
+
+	* io.c (io_to_io): method to retrieve IO object, from delegating
+ 	  object for example.
+
 Wed Apr 22 16:52:37 1998  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* experimental release 1.1b9_14.
