@@ -52,5 +52,19 @@ module RI
       File.open(path) {|f| RI::Description.deserialize(f) }
     end
 
+    # return the names of all classes and modules
+    def class_names
+      res = []
+      find_classes_in(res, @cache.toplevel)
+    end
+
+    def find_classes_in(res, klass)
+      classes = klass.classes_and_modules
+      for c in classes
+        res << c.name
+        find_classes_in(res, c)
+      end
+      res
+    end
   end
 end

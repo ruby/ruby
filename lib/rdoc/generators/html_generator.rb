@@ -394,16 +394,21 @@ module Generators
     def build_method_detail_list
       outer = []
 
+      methods = @methods.sort
       for singleton in [true, false]
         for vis in [ :public, :protected, :private ] 
           res = []
-          @methods.each do |m|
+          methods.each do |m|
             if m.document_self and m.visibility == vis and m.singleton == singleton
               row = {}
-              row["name"]        = CGI.escapeHTML(m.name)
+              if m.call_seq
+                row["callseq"] = m.call_seq
+              else
+                row["name"]        = CGI.escapeHTML(m.name)
+                row["params"]      = m.params
+              end
               desc = m.description.strip
               row["m_desc"]      = desc unless desc.empty?
-              row["params"]      = m.params
               row["aref"]        = m.aref
               row["visibility"]  = m.visibility.to_s
 
@@ -878,20 +883,33 @@ module Generators
       @context.singleton
     end
 
-    def params
-      p = @context.params.gsub(/\s*\#.*/, '')
-      p = p.tr("\n", " ").squeeze(" ")
-      p = "(" + p + ")" unless p[0] == ?(
-
-      if (block = @context.block_params)
-        block.gsub!(/\s*\#.*/, '')
-        block = block.tr("\n", " ").squeeze(" ")
-        if block[0] == ?(
-          block.sub!(/^\(/, '').sub!(/\)/, '')
-        end
-        p << " {|#{block.strip}| ...}"
+    def call_seq
+      cs = @context.call_seq
+      if cs
+        cs.gsub(/\n/, "<br />\n")
+      else
+        nil
       end
+    end
 
+    def params
+      # params coming from a call-seq in 'C' will start with the
+      # method name
+      p = @context.params
+      if p !~ /^\w/
+        p = @context.params.gsub(/\s*\#.*/, '')
+        p = p.tr("\n", " ").squeeze(" ")
+        p = "(" + p + ")" unless p[0] == ?(
+        
+        if (block = @context.block_params)
+          block.gsub!(/\s*\#.*/, '')
+          block = block.tr("\n", " ").squeeze(" ")
+          if block[0] == ?(
+            block.sub!(/^\(/, '').sub!(/\)/, '')
+          end
+          p << " {|#{block.strip}| ...}"
+        end
+      end
       CGI.escapeHTML(p)
     end
     
@@ -948,16 +966,7 @@ module Generators
                 end
 
         text = CGI.escapeHTML(t.text)
-#         case t
-#         when RubyToken::TkKW
-#           style = "kw"
-#         when RubyToken::TkCOMMENT
-#           style = "cmt"
-#         when RubyToken::TkSTRING
-#           style = "str"
-#         when RubyToken::TkREGEXP
-#           style = "re"
-#         end
+
         if style
           src << "<span class=\"#{style}\">#{text}</span>"
         else

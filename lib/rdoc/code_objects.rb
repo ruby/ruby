@@ -527,6 +527,9 @@ module RDoc
 
     attr_overridable :params, :param, :parameters, :parameter
 
+    attr_accessor :call_seq
+
+
     include TokenStream
 
     def initialize(text, name)
@@ -540,6 +543,7 @@ module RDoc
       @aliases       = []
       @is_alias_for  = nil
       @comment = ""
+      @call_seq = nil
     end
 
     def <=>(other)

@@ -18,13 +18,24 @@ module RI
 
     # The width of the output line
     attr_reader :width
-    
+
+    # the formatting we apply to the output
+    attr_reader :formatter
+
     module OptionList
       
       OPTION_LIST = [
         [ "--help",          "-h",   nil,
          "you're looking at it" ],
-             
+
+        [ "--format",       "-f",   "<name>",
+         "Format to use when displaying output:\n" +
+         "   " + RI::TextFormatter.list + "\n" +
+         "Use 'bs' (backspace) with most pager programs.\n" +
+         "To use ANSI, either also use the -T option, or\n\n" +
+         "tell your pager to allow control characters\n" +
+         "(for example using the -R option to less)"],
+
         [ "--no-pager",      "-T",   nil,
           "Send output directly to stdout." 
         ],
@@ -63,7 +74,7 @@ module RI
       
       # Show usage and exit
       
-      def OptionList.usage
+      def OptionList.usage(short_form=false)
         
         puts
         puts(RI::VERSION_STRING)
@@ -96,12 +107,15 @@ module RI
           containing puncuation:
 
               ri 'Array.[]'
-              ri compact\!
-
-          Options:
+              ri compact\\!
 
       EOT
-                                
+
+      if short_form
+        class_list
+        puts "For help, type 'ri -h'"
+      else
+        puts "Options:\n\n"
         OPTION_LIST.each do |long, short, arg, desc|
           opt = sprintf("%20s", "#{long}, #{short}")
           oparg = sprintf("%-7s", arg)
@@ -120,6 +134,23 @@ module RI
 
         exit 0
       end
+    end
+
+    def OptionList.class_list
+      paths = RI::Paths::PATH
+      if paths.empty?
+        puts "Before using ri, you need to generate documentation"
+        puts "using 'rdoc' with the --ri option"
+      else
+        @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
+        puts
+        puts "Classes and modules I know about:"
+        puts
+        puts @ri_reader.class_names.sort.join(", ")
+        puts
+      end
+    end
+
   end
 
     # Parse command line options.
@@ -128,7 +159,8 @@ module RI
 
       @use_stdout = !STDOUT.tty?
       @width = 72
-      
+      @formatter = RI::TextFormatter.for("plain") 
+
       begin
         
         go = GetoptLong.new(*OptionList.options)
@@ -138,6 +170,13 @@ module RI
           case opt
           when "--help"      then OptionList.usage
           when "--no-pager"  then @use_stdout = true
+          when "--format"
+            @formatter = RI::TextFormatter.for(arg)
+            unless @formatter
+              $stderr.print "Invalid formatter (should be one of "
+              $stderr.puts RI::TextFormatter.list + ")"
+              exit 1
+            end
           when "--width"
             begin
               @width = Integer(arg)

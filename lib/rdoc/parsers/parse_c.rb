@@ -324,7 +324,7 @@ module RDoc
         if comment.sub!(/call-seq:(.*?)^\s*\*?\s*$/m, '')
           seq = $1
           seq.gsub!(/^\s*\*\s*/, '')
-          meth_obj.params = "!verb!" + seq
+          meth_obj.call_seq = seq
         end
         
 #        meth_obj.params = params

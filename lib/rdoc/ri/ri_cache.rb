@@ -53,6 +53,10 @@ module RI
       @inferior_classes.find_all {|c| c.name[name]}
     end
 
+    def classes_and_modules
+      @inferior_classes
+    end
+
     # Return an exact match to a particular name
     def contained_class_named(name)
       @inferior_classes.find {|c| c.name == name}
@@ -60,7 +64,7 @@ module RI
 
     # return the list of local methods matching name
     # We're split into two because we need distinct behavior
-    # when called from the toplevel
+    # when called from the _toplevel_
     def methods_matching(name, is_class_method)
       local_methods_matching(name, is_class_method)
     end

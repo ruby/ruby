@@ -23,11 +23,12 @@ require 'rdoc/ri/ri_options'
 ######################################################################
 
 def display_usage
-  File.open(__FILE__) do |f|
-    f.gets
-    puts $1 while (f.gets =~ /^# ?(.*)/)
-  end
-  exit
+  RI::Options::OptionList.usage(short_form=true)
+#  File.open(__FILE__) do |f|
+#    f.gets
+#    puts $1 while (f.gets =~ /^# ?(.*)/)
+#  end
+#  exit
 end
 
 
@@ -48,7 +49,7 @@ class  RiDisplay
       exit 1                   
     end
     @ri_reader = RI::RiReader.new(RI::RiCache.new(paths))
-    @formatter = RI::TextFormatter.create(@options, "     ")
+    @formatter = @options.formatter.new(@options, "     ")
   end    
   
   
@@ -133,7 +134,7 @@ def display_class_info(class_entry)
 
   unless klass.includes.empty?
     @formatter.blankline
-    @formatter.wrap("Includes:", "")
+    @formatter.display_heading("Includes:", 2, "")
     incs = []
     klass.includes.each do |inc|
       inc_desc = @ri_reader.find_class_by_name(inc.name)
@@ -151,7 +152,7 @@ def display_class_info(class_entry)
 
   unless klass.constants.empty?
     @formatter.blankline
-    @formatter.wrap("Constants:", "")
+    @formatter.display_heading("Constants:", 2, "")
     len = 0
     klass.constants.each { |c| len = c.name.length if c.name.length > len }
     len += 2
@@ -163,13 +164,13 @@ def display_class_info(class_entry)
 
   unless klass.class_methods.empty?
     @formatter.blankline
-    @formatter.wrap("Class methods:", "")
+    @formatter.display_heading("Class methods:", 2, "")
     @formatter.wrap(klass.class_methods.map{|m| m.name}.sort.join(', '))
   end
 
   unless klass.instance_methods.empty?
     @formatter.blankline
-    @formatter.wrap("Instance methods:", "")
+    @formatter.display_heading("Instance methods:", 2, "")
     @formatter.wrap(klass.instance_methods.map{|m| m.name}.sort.join(', '))
   end
 

@@ -227,7 +227,8 @@ module SM
       add_html("em", :EM)
       add_html("i",  :EM)
       add_html("b",  :BOLD)
-      add_html("tt", :TT)
+      add_html("tt",   :TT)
+      add_html("code", :TT)
     end
 
     def add_word_pair(start, stop, name)

@@ -189,11 +189,11 @@ module Generators
     end
     
     def params_of(method)
-      params = method.params || ""
-
-      if params =~ /^!verb!(.*)/m
-        p = $1
+      if method.call_seq
+        method.call_seq
       else
+        params = method.params || ""
+        
         p = params.gsub(/\s*\#.*/, '')
         p = p.tr("\n", " ").squeeze(" ")
         p = "(" + p + ")" unless p[0] == ?(
@@ -206,8 +206,8 @@ module Generators
           end
           p << " {|#{block.strip}| ...}"
         end
+        p
       end
-      p
     end
 
     def markup(comment)

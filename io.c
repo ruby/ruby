@@ -4007,6 +4007,70 @@ opt_i_set(val)
     ruby_inplace_mode = strdup(RSTRING(val)->ptr);
 }
 
+/*
+ *  Class <code>IO</code> is the basis for all input and output in Ruby.
+ *  An I/O stream may be <em>duplexed</em> (that is, bidirectional), and
+ *  so may use more than one native operating system stream.
+ *     
+ *  Many of the examples in this section use class <code>File</code>,
+ *  the only standard subclass of <code>IO</code>. The two classes are
+ *  closely associated.
+ *     
+ *  As used in this section, <em>portname</em> may take any of the
+ *  following forms.
+ *     
+ *  * A plain string represents a filename suitable for the underlying
+ *    operating system.
+ *     
+ *  * A string starting with ``<code>|</code>'' indicates a subprocess.
+ *    The remainder of the string following the ``<code>|</code>'' is
+ *    invoked as a process with appropriate input/output channels
+ *    connected to it.
+ *     
+ *  * A string equal to ``<code>|-</code>'' will create another Ruby
+ *    instance as a subprocess.
+ *     
+ *  Ruby will convert pathnames between different operating system
+ *  conventions if possible. For instance, on a Windows system the
+ *  filename ``<code>/gumby/ruby/test.rb</code>'' will be opened as
+ *  ``<code>\gumby\ruby\test.rb</code>''. When specifying a
+ *  Windows-style filename in a Ruby string, remember to escape the
+ *  backslashes:
+ *     
+ *     "c:\\gumby\\ruby\\test.rb"
+ *     
+ *  Our examples here will use the Unix-style forward slashes;
+ *  <code>File::SEPARATOR</code> can be used to get the
+ *  platform-specific separator character.
+ *     
+ *  I/O ports may be opened in any one of several different modes, which
+ *  are shown in this section as <em>mode_string</em>. This mode string
+ *  must be one of the values listed in the following table.
+ *
+ *    Mode |  Meaning
+ *    -----+--------------------------------------------------------
+ *    "r"  |  Read-only, starts at beginning of file  (default mode).
+ *    -----+--------------------------------------------------------
+ *    "r+" |  Read-write, starts at beginning of file.
+ *    -----+--------------------------------------------------------
+ *    "w"  |  Write-only, truncates existing file 
+ *         |  to zero length or creates a new file for writing.
+ *    -----+--------------------------------------------------------
+ *    "w+" |  Read-write, truncates existing file to zero length
+ *         |  or creates a new file for reading and writing.
+ *    -----+--------------------------------------------------------
+ *    "a"  |  Write-only, starts at end of file if file exists,
+ *         |  otherwise creates a new file for writing.
+ *    -----+--------------------------------------------------------
+ *    "a+" |  Read-write, starts at end of file if file exists,
+ *         |  otherwise creates a new file for reading and 
+ *         |  writing.
+ *    -----+--------------------------------------------------------
+ *     "b" |  (DOS/Windows only) Binary file mode (may appear with 
+ *         |  any of the key letters listed above).
+ *
+ */
+
 void
 Init_IO()
 {
