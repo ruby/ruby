@@ -5,7 +5,7 @@ $Date$
 
 cgi.rb
 
-Version 1.50
+Version 1.60
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 Copyright (C) 2000  Information-technology Promotion Agency, Japan
@@ -94,14 +94,14 @@ and cgi.cookies is a hash.
 	for name, cookie in cgi.cookies
 	  cookie.expires = Time.now + 30
 	end
-	cgi.out({ "cookie" => cgi.cookies }){}
+	cgi.out("cookie" => cgi.cookies){"string"}
 
 	cgi.cookies # { "name1" => cookie1, "name2" => cookie2, ... }
 
 	require "cgi"
 	cgi = CGI.new
 	cgi.cookies['name'].expires = Time.now + 30
-	cgi.out({ "cookie" => cgi.cookies['name'] }){}
+	cgi.out("cookie" => cgi.cookies['name']){"string"}
 
 and see MAKE COOKIE OBJECT.
 
@@ -145,27 +145,27 @@ HTTP_REFERER HTTP_USER_AGENT
 
 	require "cgi"
 	cgi = CGI.new("html3")  # add HTML generation methods
-	cgi.out{
-	  cgi.html{
+	cgi.out() do
+	  cgi.html() do
 	    cgi.head{ cgi.title{"TITLE"} } +
-	    cgi.body{
-	      cgi.form{
+	    cgi.body() do
+	      cgi.form() do
 	        cgi.textarea("get_text") +
 	        cgi.br +
 	        cgi.submit
-	      } +
-	      cgi.pre{
+	      end +
+	      cgi.pre() do
 	        CGI::escapeHTML(
 	          "params: " + cgi.params.inspect + "\n" +
 	          "cookies: " + cgi.cookies.inspect + "\n" +
-	          ENV.collect{|key, value|
+	          ENV.collect() do |key, value|
 	            key + " --> " + value + "\n"
-	          }.to_s
+	          end.join("")
 	        )
-	      }
-	    }
-	  }
-	}
+	      end
+	    end
+	  end
+	end
 
 	# add HTML generation methods
 	CGI.new("html3")    # html3.2
@@ -185,7 +185,7 @@ class CGI
   EOL = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.50"
+  VERSION = "1.60"
   RELEASE_DATE = "$Date$"
 $-v = v
 
@@ -925,19 +925,15 @@ convert string charset, and set language to "ja".
 	  # 	</BODY>
 	  # </HTML>
 =end
-  def CGI::pretty_shift(string, shift = "  ")
-    shift = "  " if true == shift
-    string.gsub(/\n(?!\z)/n, "\n" + shift)
-  end
-  def CGI::pretty_nest(string, shift = "  ")
-    string.gsub(/(<(\w+).*?>)((?:.|\n)*?)(<\/\2>)/n) do
-      $1 + CGI::pretty_shift(CGI::pretty_nest($3, shift), shift) + $4
-    end
-  end
   def CGI::pretty(string, shift = "  ")
-    CGI::pretty_nest(
-      string.gsub(/<(?:.|\n)*?>/n, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/n, "\\0\n"), shift
-    )
+    lines = string.gsub(/(?!\A)<(?:.|\n)*?>/n, "\n\\0").gsub(/<(?:.|\n)*?>(?!\n)/n, "\\0\n")
+    end_pos = 0
+    while end_pos = lines.index(/^<\/(\w+)/n, end_pos)
+      element = $1.dup
+      start_pos = lines.rindex(/^\s*<#{element}/ni, end_pos)
+      lines[start_pos ... end_pos] = "__" + lines[start_pos ... end_pos].gsub(/\n(?!\z)/n, "\n" + shift) + "__"
+    end
+    lines.gsub(/^(\s*)__(?=<\/?\w)/n, '\1')
   end
 
 
@@ -1906,6 +1902,12 @@ end
 =begin
 
 == HISTORY
+
+=== Version 1.60 - wakou
+
+2000/06/03 18:16:17
+
+- improve: CGI::pretty()
 
 === Version 1.50 - wakou
 

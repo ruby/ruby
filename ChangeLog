@@ -1,3 +1,7 @@
+Sun Jun  4 03:17:36 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cig.rb: improve: CGI::pretty()
+
 Sun Jun  4 02:01:10 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
 
 	* lib/mkmf.rb: do not need to add -L$(topdir) in --enable-shared case.
@@ -21,8 +25,8 @@ Thu Jun  1 00:58:11 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 Wed May 31 04:06:41 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
-	* lib/cgi.rb: change: CGI#out()
-	  if "HEAD" == REQUEST_METHOD then output only HTTP header.
+	* lib/cgi.rb: change: CGI#out() if "HEAD" == REQUEST_METHOD
+	  then output only HTTP header.
 
 Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
 
