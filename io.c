@@ -3180,11 +3180,21 @@ io_reopen(io, nfile)
 		rb_sys_fail(orig->path);
 	}
 	else {
+	    FILE *f2 = fptr->f2;
 	    fclose(fptr->f);
-	    fptr->f = NULL;
+	    fptr->f = f2;
+	    fptr->f2 = NULL;
+	    fptr->mode &= ~FMODE_READABLE;
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
-	    fptr->f = rb_fdopen(fd, mode);
+	    if (f2) {
+		fptr->f = rb_fdopen(fd, "r");
+		fptr->f2 = f2;
+		fptr->mode |= FMODE_READABLE;
+	    }
+	    else {
+		fptr->f = rb_fdopen(fd, mode);
+	    }
 	}
 	rb_thread_fd_close(fd);
 	if ((orig->mode & FMODE_READABLE) && pos >= 0) {

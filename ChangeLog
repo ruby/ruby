@@ -1,3 +1,8 @@
+Tue Dec 21 12:22:40 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (io_reopen): keep duplex pipe in correct mode for exception
+	  safeness.  fixed: [ruby-dev:25152]
+
 Tue Dec 21 12:10:04 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/grid.rb: rescue bug of 'grid configure' on Tcl/Tk8.3-
@@ -43,7 +48,7 @@ Mon Dec 20 23:22:26 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 Mon Dec 20 22:56:39 2004  Tanaka Akira  <akr@m17n.org>
 
-	* gc.c (stack_end_address): gcc noinline attribute is available since 
+	* gc.c (stack_end_address): gcc noinline attribute is available since
 	  gcc-3.1.
 
 Mon Dec 20 14:07:02 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
