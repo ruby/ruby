@@ -4,7 +4,7 @@
 # You must have the V1.7 or later in your path
 # http://www.research.att.com/sw/tools/graphviz/
 
-require "dot/dot"
+require "rdoc/dot/dot"
 require 'rdoc/options'
 
 module RDoc
