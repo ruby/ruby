@@ -1,3 +1,8 @@
+Wed May 24 16:03:06 2000  Wakou Aoyama <wakou@fsinet.or.jp>
+
+	* lib/cgi.rb bug fix: CGI::escape(), CGI::Cookie::new()
+	* lib/net/telnet.rb improve: binmode(), telnetmode() interface
+
 Fri May 12 17:33:44 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* regex.c (re_compile_pattern): charset_not should not exclude

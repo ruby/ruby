@@ -5,7 +5,7 @@ $Date$
 
 cgi.rb
 
-Version 1.31
+Version 1.40
 
 Copyright (C) 2000  Network Applied Communication Laboratory, Inc.
 Copyright (C) 2000  Information-technology Promotion Agency, Japan
@@ -185,7 +185,7 @@ class CGI
   EOL = CR + LF
 v = $-v
 $-v = false
-  VERSION = "1.31"
+  VERSION = "1.40"
   RELEASE_DATE = "$Date$"
 $-v = v
 
@@ -239,8 +239,12 @@ $-v = v
 	url_encoded_string = CGI::escape("string")
 =end
   def CGI::escape(string)
-    string.gsub(/ /n, '+').gsub(/([^a-zA-Z0-9_.-])/n) do
-      sprintf("%%%02X", $1.unpack("C")[0])
+    string.gsub(/([^a-zA-Z0-9_.-])/n) do
+      if " " == $1
+        "+"
+      else
+        sprintf("%%%02X", $1.unpack("C")[0])
+      end
     end
   end
 
@@ -603,7 +607,7 @@ convert string charset, and set language to "ja".
           @path = @path[0...@path.rindex(ENV["PATH_INFO"])]
         end
       else
-        @path = ENV["SCRIPT_NAME"] or ""
+        @path = (ENV["SCRIPT_NAME"] or "")
       end
       @domain = options["domain"]
       @expires = options["expires"]
@@ -1900,6 +1904,15 @@ end
 =begin
 
 == HISTORY
+
+=== Version 1.40 - wakou
+
+2000/05/24 06:58:51
+
+- typo: CGI::Cookie::new()
+- bug fix: CGI::escape()
+  bad: " " --> "%2B"  true: " " --> "+"
+  thanks to Ryunosuke Ohshima <ryu@jaist.ac.jp>
 
 === Version 1.31 - wakou
 
