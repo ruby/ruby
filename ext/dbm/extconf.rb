@@ -6,7 +6,7 @@ dblib = with_config("dbm-type", nil)
 
 $dbm_conf_headers = {
   "db" => ["db.h"],
-  "db1" => ["db1/ndbm.h", "db1.h"],
+  "db1" => ["db1/ndbm.h", "db1.h", "ndbm.h"],
   "db2" => ["db2/db.h", "db2.h", "db.h"],
   "dbm" => ["ndbm.h"],
   "gdbm" => ["gdbm-ndbm.h", "gdbm.h"],
@@ -28,12 +28,10 @@ def db_check(db)
   if have_func(db_prefix("dbm_open")) || have_library(db, db_prefix("dbm_open"))
     for hdr in $dbm_conf_headers.fetch(db, ["ndbm.h"])
       if have_header(hdr.dup)
-	$CFLAGS = "-DDBM_HDR='<"+hdr+">'"
-	break
+	$CFLAGS += " " + hsearch + "-DDBM_HDR='<"+hdr+">'"
+	return true
       end
     end
-    $CFLAGS = hsearch + "-DDBM_HDR='<"+hdr+">'"
-    return true
   end
   return false
 end
