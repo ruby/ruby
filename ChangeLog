@@ -1,3 +1,8 @@
+Tue Dec 23 22:25:00 2003  Gavin Sinclair <gsinclair@soyabean.com.au>
+
+	* lib/optparse.rb: incomplete RDoc documentation added in place of
+	  existing RD comments.  Tabs converted to spaces.
+
 Tue Dec 23 19:44:47 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/soap/test_streamhandler.rb (test_basic_auth): removed.
