@@ -22,7 +22,7 @@
 #ifdef USE_DLN_A_OUT
 char *dln_argv0;
 #endif
-void rb_loaderror();
+//void rb_loaderror();
 
 #ifdef _AIX
 #pragma alloca

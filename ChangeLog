@@ -1,3 +1,7 @@
+Tue Jun 25 00:24:00 2002  KONISHI Hiromasa <konishih@fd6.so-net.ne.jp>
+
+	* dln.c: remark definition rb_loaderror().
+
 Thu Jun 20 21:09:37 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* ext/readline/readline.c (readline_readline): get rid of
