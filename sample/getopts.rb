@@ -28,7 +28,7 @@
 #
 #    オプションの指定があった場合, 変数 $OPT_?? に non-nil もしくは, そのオ
 #    プションの引数がセットされます. 
-#	-f -> $OPT_f = %TRUE
+#	-f -> $OPT_f = TRUE
 #	--geometry 300x400 -> $OPT_geometry = 300x400
 #
 #    - もしくは -- は, それ以降, 全てオプションの解析をしません. 
@@ -50,7 +50,8 @@ def getopts(single_opts, *opts)
       end
     end
   end
-  
+
+  opts = {}
   count = 0
   while ($ARGV.length != 0)
     compare = nil
@@ -68,11 +69,13 @@ def getopts(single_opts, *opts)
 	      return nil
             end
             eval("$OPT_" + compare + " = " + '$ARGV[1]')
+	    opts[compare] =  TRUE
             $ARGV.shift
 	    count += 1
 	    break
           elsif (option == compare)
-            eval("$OPT_" + compare + " = %TRUE")
+            eval("$OPT_" + compare + " = TRUE")
+	    opts[compare] =  TRUE
 	    count += 1
             break
           end
@@ -82,16 +85,19 @@ def getopts(single_opts, *opts)
       for index in 1..($ARGV[0].length - 1)
 	compare = $ARGV[0][index, 1]
 	if (single_opts && compare =~ "[" + single_opts + "]")
-	  eval("$OPT_" + compare + " = %TRUE")
+	  eval("$OPT_" + compare + " = TRUE")
+	  opts[compare] =  TRUE
 	  count += 1
 	elsif (single_colon != "" && compare =~ "[" + single_colon + "]")
 	  if ($ARGV[0][index..-1].length > 1)
 	    eval("$OPT_" + compare + " = " + '$ARGV[0][(index + 1)..-1]')
+	    opts[compare] =  TRUE
 	    count += 1
 	  elsif ($ARGV.length <= 1)
 	    return nil
 	  else
 	    eval("$OPT_" + compare + " = " + '$ARGV[1]')
+	    opts[compare] =  TRUE
 	    $ARGV.shift
 	    count = count + 1
 	  end
@@ -103,7 +109,7 @@ def getopts(single_opts, *opts)
     end
 
     $ARGV.shift
-    if (!defined("$OPT_" + compare))
+    if (!opts.includes(compare))
       return nil
     end
   end

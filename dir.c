@@ -241,8 +241,7 @@ Init_Dir()
 {
     extern VALUE M_Enumerable;
 
-    C_Dir = rb_define_class("Directory", C_Object);
-    rb_name_class(C_Dir, rb_intern("Dir")); /* alias */
+    C_Dir = rb_define_class("Dir", C_Object);
 
     rb_include_module(C_Dir, M_Enumerable);
 

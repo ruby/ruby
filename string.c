@@ -209,9 +209,7 @@ str_subseq(str, beg, end)
     if (beg > end) {
 	int tmp;
 
-	if (verbose) {
-	    Warning("start %d is bigger than end %d", beg, end);
-	}
+	Warning("start %d is bigger than end %d", beg, end);
 	tmp = beg; beg = end; end = tmp;
     }
 
@@ -606,9 +604,7 @@ Fstr_aref_internal(str, indx)
 	    if (beg > end) {
 		int tmp;
 
-		if (verbose) {
-		    Warning("start %d is bigger than end %d", beg, end);
-		}
+		Warning("start %d is bigger than end %d", beg, end);
 		tmp = beg; beg = end; end = tmp;
 	    }
 
@@ -743,9 +739,7 @@ Fstr_aset_internal(str, indx, val)
 	    if (beg > end) {
 		int tmp;
 
-		if (verbose) {
-		    Warning("start %d is bigger than end %d", beg, end);
-		}
+		Warning("start %d is bigger than end %d", beg, end);
 		tmp = beg; beg = end; end = tmp;
 	    }
 

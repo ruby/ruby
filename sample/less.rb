@@ -1,4 +1,4 @@
-#! /usr/local/bin/ruby -- -*- ruby -*-
+#! /usr/local/bin/ruby
 
 ZCAT = "/usr/local/bin/zcat"
 LESS = "/usr/local/bin/less"

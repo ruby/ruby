@@ -38,11 +38,40 @@ rb_name_class(class, id)
 {
     VALUE body;
 
-    if (st_lookup(class_tbl, id, &body)) {
-	Bug("%s %s already exists",
-	    TYPE(body)==T_CLASS?"class":"module", rb_id2name(id));
+    rb_ivar_set_1(class, rb_intern("__classname__"), INT2FIX(id));
+}
+
+char *
+rb_class2name(class)
+    struct RClass *class;
+{
+    int name;
+
+    switch (TYPE(class)) {
+      case T_ICLASS:
+        class = (struct RClass*)RBASIC(class)->class;
+	break;
+      case T_CLASS:
+      case T_MODULE:
+	break;
+      default:
+	Fail("0x%x is not a class/module", class);
     }
-    st_add_direct(class_tbl, id, class);
+
+    while (FL_TEST(class, FL_SINGLE)) {
+	class = (struct RClass*)class->super;
+    }
+
+    while (TYPE(class) == T_ICLASS) {
+        class = (struct RClass*)class->super;
+    }
+
+    name = rb_ivar_get_1(class, rb_intern("__classname__"));
+    if (name) {
+	name = FIX2INT(name);
+	return rb_id2name((ID)name);
+    }
+    Bug("class 0x%x not named", class);
 }
 
 struct global_entry {
@@ -203,8 +232,7 @@ rb_gvar_get(entry)
       default:
 	break;
     }
-    if (verbose)
-	Warning("global var %s not initialized", rb_id2name(entry->id));
+    Warning("global var %s not initialized", rb_id2name(entry->id));
     return Qnil;
 }
 
@@ -248,18 +276,6 @@ rb_gvar_set2(name, val)
 }
 
 VALUE
-rb_mvar_get(id)
-    ID id;
-{
-    VALUE val;
-
-    if (st_lookup(class_tbl, id, &val)) return val;
-    if (verbose)
-	Warning("local var %s not initialized", rb_id2name(id));
-    return Qnil;
-}
-
-VALUE
 rb_ivar_get_1(obj, id)
     struct RObject *obj;
     ID id;
@@ -278,9 +294,7 @@ rb_ivar_get_1(obj, id)
 	     rb_class2name(CLASS_OF(obj)));
 	break;
     }
-    if (verbose) {
-	Warning("instance var %s not initialized", rb_id2name(id));
-    }
+    Warning("instance var %s not initialized", rb_id2name(id));
     return Qnil;
 }
 
@@ -333,6 +347,10 @@ rb_const_get(id)
 	}
 	class = class->super;
     }
+
+    /* pre-defined class */
+    if (st_lookup(class_tbl, id, &value)) return value;
+
     Fail("Uninitialized constant %s", rb_id2name(id));
     /* not reached */
 }

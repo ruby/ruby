@@ -1,5 +1,4 @@
 MANIFEST
-Artistic
 aset.rb
 attr.rb
 biorhythm.rb
@@ -39,7 +38,7 @@ occur.pl
 occur.rb
 occur2.rb
 opt_s.rb
-opt_x.rb
+opt_x.test
 parsearg.rb
 rcs.awk
 rcs.dat

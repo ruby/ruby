@@ -1,3 +1,41 @@
+Mon Feb 20 16:10:14 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y(yylex): 定数を`%識別子'から，第1文字が大文字の識別子に変
+	  更．それにともないクラスは定数となった．
+
+	* eval.c: クラス定義内のselfがクラス定義外部のthe_classだった．
+
+	* variable.c(rb_name_class): クラス名をインスタンス変数に格納する．
+
+Thu Feb 16 15:36:17 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* parse.y: BLOCKをbraceで表現する文法に変更したものを作ってみる．
+	  MLに提示してみるが反応がない．
+
+	* object.c(do,forever): なくした．
+
+Wed Feb 15 13:20:49 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* re.c(new): 第2引数が与えられて，かつnilでないときだけ設定するよ
+	  うに(以前はnilの時にも設定を行なっていた)．
+
+	* parse.y(parse_regexp): 正規表現リテラルで大文字小文字を無視する
+	  かどうか指定できるように．
+
+Tue Feb 14 00:55:33 1995  Yukihiro Matsumoto  (matz@dyna)
+
+	* parse.y: (compexpr) -> (expr).
+
+Fri Feb 10 16:30:00 1995  Yukihiro Matsumoto  (matz@ix-02)
+
+	* ruby.c(load_file): scriptを読み込む時だけ"#!"の解析を行うように．
+
+	* ruby.c(readin): ファイル読み込み時に先頭に"#!"があり，rubyに引数
+	  が与えられていれば，その引数も有効になる．
+
+	* parse.y(yylex): コメント行の終りが`\'であった時，次の行に継続し
+	  ているとみなすようにした．
+
 Thu Feb  9 16:18:37 1995  Yukihiro Matsumoto  (matz@ix-02)
 
 	* parse.y: protectをbeginに変更．begin..endは例外処理だけでなく，

@@ -579,7 +579,6 @@ Init_Dict()
     hash = rb_intern("hash");
 
     C_Dict = rb_define_class("Dict", C_Object);
-    rb_name_class(C_Dict, rb_intern("Hash")); /* alias */
 
     rb_include_module(C_Dict, M_Enumerable);
 

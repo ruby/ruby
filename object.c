@@ -356,22 +356,13 @@ VALUE boot_defclass(name, super)
     char *name;
     VALUE super;
 {
+    extern st_table *rb_class_tbl;
     struct RClass *obj = (struct RClass*)class_new(super);
+    ID id = rb_intern(name);
 
-    rb_name_class(obj, rb_intern(name));
+    rb_name_class(obj, id);
+    st_add_direct(rb_class_tbl, id, obj);
     return (VALUE)obj;
-}
-
-Fdo()
-{
-    return rb_yield(Qnil);
-}
-
-Fforever()
-{
-    for (;;) {
-	rb_yield(Qnil);
-    }
 }
 
 VALUE TopSelf;
@@ -437,9 +428,6 @@ Init_Object()
     rb_define_private_method(C_Kernel, "sprintf", Fsprintf, -1);
     rb_define_alias(C_Kernel, "format", "sprintf");
 
-    rb_define_private_method(C_Kernel, "do", Fdo, 0);
-    rb_define_private_method(C_Kernel, "forever", Fforever, 0);
-
     rb_define_private_method(C_Object, "init_object", Fobj_init_object, -1);
 
     rb_define_method(C_Object, "clone", Fobj_clone, 0);
@@ -478,8 +466,8 @@ Init_Object()
 
     TRUE = obj_alloc(C_Object);
     rb_define_single_method(TRUE, "to_s", Ftrue_to_s, 0);
-    rb_define_const(C_Kernel, "%TRUE", TRUE);
-    rb_define_const(C_Kernel, "%FALSE", FALSE);
+    rb_define_const(C_Kernel, "TRUE", TRUE);
+    rb_define_const(C_Kernel, "FALSE", FALSE);
 
     init_object = rb_intern("init_object");
 }

@@ -4,7 +4,7 @@
 #	#<Foo: @test=10>
 
 class Foo
-  attr "test", %TRUE
+  attr "test", TRUE
 end
 
 foo = Foo.new

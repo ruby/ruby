@@ -508,9 +508,9 @@ Init_process()
     rb_define_module_function(M_Process, "getpriority", Fproc_getpriority, 2);
     rb_define_module_function(M_Process, "setpriority", Fproc_setpriority, 3);
 
-    rb_define_const(M_Process, "%PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
-    rb_define_const(M_Process, "%PRIO_PGRP", INT2FIX(PRIO_PGRP));
-    rb_define_const(M_Process, "%PRIO_USER", INT2FIX(PRIO_USER));
+    rb_define_const(M_Process, "PRIO_PROCESS", INT2FIX(PRIO_PROCESS));
+    rb_define_const(M_Process, "PRIO_PGRP", INT2FIX(PRIO_PGRP));
+    rb_define_const(M_Process, "PRIO_USER", INT2FIX(PRIO_USER));
 
     rb_define_module_function(M_Process, "uid", Fproc_getuid, 0);
     rb_define_module_function(M_Process, "uid=", Fproc_setuid, 1);

@@ -16,6 +16,7 @@
 #include "st.h"
 
 struct st_table *new_idhash();
+extern st_table *rb_class_tbl;
 
 extern VALUE C_Class;
 extern VALUE C_Module;
@@ -81,7 +82,6 @@ rb_define_class_id(id, super)
     struct RClass *cls = (struct RClass*)class_new(super);
 
     rb_name_class(cls, id);
-
     /* make metaclass */
     RBASIC(cls)->class = single_class_new(super?super->class:C_Class);
 
@@ -93,7 +93,29 @@ rb_define_class(name, super)
     char *name;
     VALUE super;
 {
-    return rb_define_class_id(rb_intern(name), super);
+    VALUE class;
+    ID id;
+
+    id = rb_intern(name);
+    class = rb_define_class_id(id, super);
+    st_add_direct(rb_class_tbl, id, class);
+
+    return class;
+}
+
+rb_define_class_under(under, name, super)
+    VALUE under;
+    char *name;
+    VALUE super;
+{
+    VALUE class;
+    ID id;
+
+    id = rb_intern(name);
+    class = rb_define_class_id(id, super);
+    rb_const_set(under, id, class);
+
+    return class;
 }
 
 VALUE
@@ -112,9 +134,11 @@ VALUE
 rb_define_module_id(id)
     ID id;
 {
+    extern st_table *rb_class_tbl;
     struct RClass *mdl = (struct RClass*)module_new();
 
     rb_name_class(mdl, id);
+
     return (VALUE)mdl;
 }
 
@@ -122,7 +146,28 @@ VALUE
 rb_define_module(name)
     char *name;
 {
-    return rb_define_module_id(rb_intern(name));
+    VALUE module;
+    ID id;
+
+    id = rb_intern(name);
+    module = rb_define_module_id(id);
+    st_add_direct(rb_class_tbl, id, module);
+
+    return module;
+}
+
+rb_define_module_under(under, name)
+    VALUE under;
+    char *name;
+{
+    VALUE module;
+    ID id;
+
+    id = rb_intern(name);
+    module = rb_define_module_id(id);
+    rb_const_set(under, id, module);
+
+    return module;
 }
 
 static struct RClass *
@@ -189,9 +234,7 @@ rb_add_method(class, mid, node, noex)
 
     if (class == Qnil) class = (struct RClass*)C_Object;
     if (st_lookup(class->m_tbl, mid, &body)) {
-	if (verbose) {
-	    Warning("redefine %s", rb_id2name(mid));
-	}
+	Warning("redefine %s", rb_id2name(mid));
 	rb_clear_cache(body);
     }
     body = NEW_METHOD(node, noex);

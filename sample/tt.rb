@@ -43,7 +43,7 @@ if offset = (ttt =~ /this ([^ ]*) (.*)/)
   println("2 = ", $2);
 end
 
-class Fib:Object
+class Fib : Object
   print("in Fib:Object\n")
 
   def Fib.test(*args)

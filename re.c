@@ -128,8 +128,9 @@ research(reg, str, start, ignorecase)
 {
     int result;
 
-    if (FL_TEST(reg, FL_USER1)) { /* case-flag set for the object */
-	ignorecase = FL_TEST(reg, FL_USER2); /* case-flag */
+    /* case-flag set for the object */
+    if (FL_TEST(reg, FL_USER1)) {
+	ignorecase = 1;
     }
     if (ignorecase)
 	reg->ptr->pat.translate = casetable;
@@ -387,14 +388,8 @@ Sreg_new(argc, argv, self)
 	Check_Type(src, T_STRING);
     }
 
-    if (argc == 2) {
+    if (argc == 2 && argv[1]) {
 	FL_SET(reg, FL_USER1);
-	if (argv[1]) {
-	    FL_SET(reg, FL_USER2);
-	}
-	else {
-	    FL_UNSET(reg, FL_USER2);
-	}
     }
 
     return Qnil;

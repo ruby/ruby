@@ -8,7 +8,7 @@
 ;;;
 
 (defconst ruby-block-beg-re
-  "class\\|module\\|def\\|if\\|unless\\|case\\|while\\|until\\|for\\|begin"
+  "class\\|module\\|def\\|if\\|case\\|while\\|for\\|begin"
   )
 
 (defconst ruby-block-mid-re
@@ -170,10 +170,14 @@ The variable ruby-indent-level controls the amount of indentation.
 	   ((or (string= "\"" w)	;skip string
 		(string= "'" w)
 		(string= "`" w))
-	    (if (search-forward w indent-point t)
-		nil
+	    (cond 
+	     ((string= w (char-to-string (char-after (point))))
+	      (forward-char 1))
+	     ((re-search-forward (format "[^\\]%s" w) indent-point t)
+		nil)
+	     (t
 	      (goto-char indent-point)
-	      (setq in-string t)))
+	      (setq in-string t))))
 	   ((or (string= "/" w)
 		(string= "<" w))
 	    (if (string= "<" w) (setq w ">"))
@@ -189,7 +193,9 @@ The variable ruby-indent-level controls the amount of indentation.
 		    (and (eq c ?w)
 			 (save-excursion
 			   (forward-word -1)
-			   (looking-at ruby-block-beg-re))))
+			   (or 
+			    (looking-at ruby-block-beg-re)
+			    (looking-at ruby-block-mid-re)))))
 		(if (search-forward w indent-point t)
 		    nil
 		  (goto-char indent-point)

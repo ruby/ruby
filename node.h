@@ -51,9 +51,9 @@ enum node_type {
     NODE_FAIL,
     NODE_YIELD,
     NODE_LVAR,
+    NODE_LVAR2,
     NODE_GVAR,
     NODE_IVAR,
-    NODE_MVAR,
     NODE_CVAR,
     NODE_CONST,
     NODE_LIT,
@@ -211,8 +211,8 @@ typedef struct RNode {
 #define NEW_OP_ASGN2(r,i,val) newnode(NODE_OP_ASGN1,r,val,i)
 #define NEW_GVAR(v) newnode(NODE_GVAR,v,Qnil,rb_global_entry(v))
 #define NEW_LVAR(v) newnode(NODE_LVAR,v,Qnil,local_cnt(v))
+#define NEW_LVAR2(v) newnode(NODE_LVAR2,v,Qnil,local_cnt(v))
 #define NEW_IVAR(v) newnode(NODE_IVAR,v,Qnil,Qnil)
-#define NEW_MVAR(v) newnode(NODE_MVAR,v,Qnil,Qnil)
 #define NEW_CVAR(v) newnode(NODE_CVAR,v,Qnil,Qnil)
 #define NEW_LIT(l) newnode(NODE_LIT,l,Qnil,Qnil)
 #define NEW_STR(s) newnode(NODE_STR,s,Qnil,Qnil)

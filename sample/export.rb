@@ -3,7 +3,7 @@
 #	foobar
 #	foo
 
-class foo
+class Foo
   export :printf
 end
 

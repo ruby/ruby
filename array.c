@@ -262,9 +262,7 @@ range_beg_end(range, begp, lenp, len)
     if (beg > end) {
 	int tmp;
 
-	if (verbose) {
-	    Warning("start %d is bigger than end %d", beg, end);
-	}
+	Warning("start %d is bigger than end %d", beg, end);
 	tmp = beg; beg = end; end = tmp;
     }
     *begp = beg; *lenp = end - beg + 1;

@@ -2,23 +2,23 @@
 # output:
 #	1234
 #	1268
-%test1 = 1
-%test2 = 2
+TEST1 = 1
+TEST2 = 2
 
 module Const
-  %test3 = 3
-  %test4 = 4
+  TEST3 = 3
+  TEST4 = 4
 end
 
 module Const2
-  %test3 = 6
-  %test4 = 8
+  TEST3 = 6
+  TEST4 = 8
 end
 
 include Const
 
-print(%test1,%test2,%test3,%test4,"\n")
+print(TEST1,TEST2,TEST3,TEST4,"\n")
 
 include Const2
 
-print(%test1,%test2,%test3,%test4,"\n")
+print(TEST1,TEST2,TEST3,TEST4,"\n")

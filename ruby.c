@@ -52,7 +52,7 @@ char *rb_dln_argv0;
 #endif
 
 static void load_stdin();
-void rb_load_file();
+static void load_file();
 
 static int do_loop = FALSE, do_print = FALSE;
 static int do_check = FALSE, do_line = FALSE;
@@ -210,7 +210,7 @@ proc_options(argcp, argvp)
 		script = dln_find_file(script, getenv("PATH"));
 		if (!script) script = argv[optind];
 	    }
-	    rb_load_file(script);
+	    load_file(script, 1);
 	    optind++;
 	}
     }
@@ -242,12 +242,13 @@ proc_options(argcp, argvp)
 }
 
 static void
-readin(fd, fname)
+readin(fd, fname, script)
     int fd;
     char *fname;
+    int script;
 {
     struct stat st;
-    char *ptr, *p, *pend;
+    char *ptr, *p, *pend, *s;
 
     if (fstat(fd, &st) < 0) rb_sys_fail(fname);
     if (!S_ISREG(st.st_mode))
@@ -259,39 +260,62 @@ readin(fd, fname)
 	rb_sys_fail(fname);
     }
     pend = p + st.st_size;
-    if (xflag) {
-	char *s = p;
+    *pend = '\0';
 
-	*pend = '\0';
-	xflag = FALSE;
-	while (p < pend) {
-	    while (s < pend && *s != '\n') s++;
-	    if (*s != '\n') break;
-	    *s = '\0';
-	    if (p[0] == '#' && p[1] == '!' && strstr(p, "ruby")) {
-		if (p = strstr(p, "ruby -")) {
-		    int argc; char *argv[2]; char **argvp = argv;
-		    argc = 2; argv[0] = Qnil; argv[1] = p + 5;
-		    proc_options(&argc, &argvp);
+    if (script) {
+	if (xflag) {
+	    xflag = FALSE;
+	    while (p < pend) {
+		if (p[0] == '#' && p[1] == '!') {
+		    char *s = p;
+		    while (s < pend && *s != '\n') s++;
+		    if (*s == '\n') {
+			*s = '\0';
+			if (strstr(p, "ruby")) {
+			    *s = '\n';
+			    goto start_read;
+			}
+		    }
+		    p = s + 1;
 		}
-		xflag = TRUE;
-		p = s + 1;
-		goto start_read;
+		else {
+		    while (p < pend && *p++ != '\n')
+			;
+		    if (p >= pend) break;
+		}
 	    }
-	    p = s + 1;
+	    free(ptr);
+	    Fail("No Ruby script found in input");
 	}
-	free(ptr);
-	Fail("No Ruby script found in input");
+
+      start_read:
+	if (p[0] == '#' && p[1] == '!') {
+	    char *s = p, *q;
+
+	    while (s < pend && *s != '\n') s++;
+	    if (*s == '\n') {
+		*s = '\0';
+		if (q = strstr(p, "ruby -")) {
+		    int argc; char *argv[2]; char **argvp = argv;
+		    argc = 2; argv[0] = Qnil; argv[1] = q + 5;
+		    proc_options(&argc, &argvp);
+		    p = s + 1;
+		}
+		else {
+		    *s = '\n';
+		}
+	    }
+	}
     }
-  start_read:
     lex_setsrc(fname, p, pend - p);
     yyparse();
     free(ptr);
 }
 
-void
-rb_load_file(fname)
+static void
+load_file(fname, script)
     char *fname;
+    int script;
 {
     int fd;
     char *ptr;
@@ -303,8 +327,15 @@ rb_load_file(fname)
 
     fd = open(fname, O_RDONLY, 0);
     if (fd < 0) rb_sys_fail(fname);
-    readin(fd, fname);
+    readin(fd, fname, script);
     close(fd);
+}
+
+void
+rb_load_file(fname)
+    char *fname;
+{
+    load_file(fname, 0);
 }
 
 static void
@@ -324,9 +355,6 @@ load_stdin()
 	putc(c, f);
     }
     fclose(f);
-
-    if (fd < 0) rb_sys_fail(buf);
-
     readin(fd, "-");
 }
 

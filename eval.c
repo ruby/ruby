@@ -115,9 +115,7 @@ rb_alias(class, name, def)
     }
 
     if (st_lookup(class->m_tbl, name, &old)) {
-	if (verbose) {
-	    Warning("redefine %s", rb_id2name(name));
-	}
+	Warning("redefine %s", rb_id2name(name));
 	rb_clear_cache(old->nd_body);
     }
 
@@ -1017,11 +1015,7 @@ rb_eval(node)
 	    Bug("unexpected local variable");
 	return the_scope->local_vars[node->nd_cnt];
 
-      case NODE_GVAR:
-	return rb_gvar_get(node->nd_entry);
-      case NODE_IVAR:
-	return rb_ivar_get(node->nd_vid);
-      case NODE_MVAR:
+      case NODE_LVAR2:
 	if (the_scope->flags & SCOPE_MALLOCED) {
 	    ID id = node->nd_vid, *tbl = the_scope->local_tbl;
 	    int i, len = tbl[0];
@@ -1034,7 +1028,13 @@ rb_eval(node)
 		return the_scope->local_vars[i];
 	    }
 	}
-	return rb_mvar_get(node->nd_vid);
+	Warning("local var %s not initialized", rb_id2name(node->nd_vid));
+	return Qnil;
+
+      case NODE_GVAR:
+	return rb_gvar_get(node->nd_entry);
+      case NODE_IVAR:
+	return rb_ivar_get(node->nd_vid);
 
       case NODE_CVAR:
 	{
@@ -1189,56 +1189,55 @@ rb_eval(node)
 	    else {
 		super = C_Object;
 	    }
-	    if (class = rb_id2class(node->nd_cname)) {
-		if (verbose) {
-		    Warning("redefine class %s", rb_id2name(node->nd_cname));
-		}
+	    if (verbose && rb_id2class(node->nd_cname)) {
+		Warning("redefine class %s", rb_id2name(node->nd_cname));
 	    }
 
-	    PUSH_SELF((VALUE)the_class);
+	    class = rb_define_class_id(node->nd_cname, super);
+	    rb_const_set(the_class, node->nd_cname, class);
 	    PUSH_CLASS();
-	    the_class = (struct RClass*)
-		rb_define_class_id(node->nd_cname, super);
+	    the_class = (struct RClass*)class;
+	    PUSH_SELF((VALUE)the_class);
 	    PUSH_TAG();
 	    if ((state = EXEC_TAG()) == 0) {
 		rb_eval(node->nd_body);
 	    }
 	    POP_TAG();
-	    POP_CLASS();
 	    POP_SELF();
+	    POP_CLASS();
 	    if (state) JUMP_TAG(state);
+	    return class;
 	}
-	return Qnil;
 
       case NODE_MODULE:
 	{
 	    VALUE module;
 
-	    if (module = rb_id2class(node->nd_cname)) {
-		if (verbose) {
-		    Warning("redefine module %s", rb_id2name(node->nd_cname));
-		}
+	    if (verbose && rb_id2class(node->nd_cname)) {
+		Warning("redefine module %s", rb_id2name(node->nd_cname));
 	    }
 
-	    PUSH_SELF((VALUE)the_class);
+	    module = rb_define_module_id(node->nd_cname);
+	    rb_const_set(the_class, node->nd_cname, module);
 	    PUSH_CLASS();
-	    the_class = (struct RClass*)rb_define_module_id(node->nd_cname);
+	    the_class = (struct RClass*)module;
+	    PUSH_SELF((VALUE)the_class);
 	    PUSH_TAG();
 	    if ((state = EXEC_TAG()) == 0) {
 		rb_eval(node->nd_body);
 	    }
 	    POP_TAG();
-	    POP_CLASS();
 	    POP_SELF();
+	    POP_CLASS();
 	    if (state) JUMP_TAG(state);
+	    return module;
 	}
-	return Qnil;
 
       case NODE_INC:
 	{
 	    struct RClass *module;
 
-	    module = (struct RClass*)rb_id2class(node->nd_modl);
+	    module = (struct RClass*)rb_const_get(node->nd_modl);
 	    if (module == Qnil) {
 		Fail("undefined module %s", rb_id2name(node->nd_modl));
 	    }

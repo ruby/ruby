@@ -1,4 +1,4 @@
-#! /mp/free/bin/ruby -- -*- ruby -*-
+#! /usr/local/bin/ruby
 
 load("parsearg.rb")
 

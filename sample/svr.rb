@@ -5,7 +5,7 @@ gs = TCPserver.open(0)
 printf("server port is on %d\n", gs.port)
 socks = [gs]
 
-while %TRUE
+while TRUE
   nsock = select(socks);
   if nsock == nil; continue end
   for s in nsock[0]

@@ -85,6 +85,8 @@ Warning(fmt, va_alist)
     char buf[BUFSIZ];
     va_list args;
 
+    if (!verbose) return;
+
     sprintf(buf, "warning: %s", fmt);
 
     va_start(args);

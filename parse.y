@@ -326,11 +326,11 @@ lhs		: variable
 			$$ = attrset($1, $3, Qnil);
 		    }
 
-inc_list	: IDENTIFIER
+inc_list	: CONSTANT
 		    {
 			$$ = NEW_INC($1);
 		    }
-		| inc_list comma IDENTIFIER
+		| inc_list comma CONSTANT
 		    {
 			$$ = block_append($1, NEW_INC($3));
 		    }
@@ -346,6 +346,7 @@ inc_list	: IDENTIFIER
 		    }
 
 fname		: IDENTIFIER
+		| CONSTANT
 		| op
 		    {
 			lex_state = EXPR_END;
@@ -718,7 +719,7 @@ primary		: literal
 		| primary '{' opt_iter_var '|' compexpr rbrace
 		    {
 			if (nd_type($1) == NODE_LVAR
-		            || nd_type($1) == NODE_MVAR) {
+		            || nd_type($1) == NODE_CVAR) {
 			    $1 = NEW_CALL(Qnil, $1->nd_vid, Qnil);
 			}
 			$$ = NEW_ITER($3, $1, $5);
@@ -775,14 +776,17 @@ primary		: literal
 			    $$ = NEW_BEGIN($2, $3, $4);
 			}
 		    }
-		| LPAREN compexpr rparen
+		| LPAREN expr 
+		  opt_nl
+		  rparen
 		    {
 			$$ = $2;
 		    }
-		| CLASS IDENTIFIER superclass
+		| CLASS CONSTANT superclass
 		    {
-			if (cur_class || cur_mid || in_single)
-			    Error("nested class definition");
+			if (cur_mid || in_single)
+			    Error("class definition in method body");
+
 			cur_class = $2;
 			push_local();
 		    }
@@ -793,10 +797,10 @@ primary		: literal
 		        pop_local();
 		        cur_class = Qnil;
 		    }
-		| MODULE IDENTIFIER
+		| MODULE CONSTANT
 		    {
-			if (cur_class != Qnil)
-			    Error("nested module definition");
+			if (cur_mid || in_single)
+			    Error("module definition in method body");
 			cur_class = $2;
 			in_module = 1;
 			push_local();
@@ -877,12 +881,7 @@ case_body	: WHEN args then
 		    }
 
 cases		: opt_else
-		| WHEN args then
-		  compexpr
-		  cases
-		    {
-			$$ = NEW_WHEN($2, $4, $5);
-		    }
+		| case_body
 
 resque		: /* none */
 		    {
@@ -916,7 +915,6 @@ literal		: numeric
 symbol		: fname
 		| IVAR
 		| GVAR
-		| CONSTANT
 
 numeric		: INTEGER
 		| FLOAT
@@ -947,7 +945,7 @@ superclass	: term
 		    {
 			lex_state = EXPR_BEG;
 		    }
-		  IDENTIFIER
+		  CONSTANT
 		    {
 			$$ = $3;
 		    }
@@ -1069,6 +1067,9 @@ assoc		: arg ASSOC arg
 opt_term	: /* none */
 		| term
 
+opt_nl		: /* none */
+		| nl
+
 term		: sc
 		| nl
 
@@ -1158,6 +1159,7 @@ static int
 parse_regx()
 {
     register int c;
+    int casefold = 0;
     int in_brack = 0;
     int re_start = sourceline;
     NODE *list = Qnil;
@@ -1199,6 +1201,13 @@ parse_regx()
 	    if (in_brack)
 		break;
 
+	    if ('i' == nextc()) {
+		casefold = 1;
+	    }
+	    else {
+		pushback();
+	    }
+
 	    tokfix();
 	    lex_state = EXPR_END;
 	    if (list) {
@@ -1207,11 +1216,13 @@ parse_regx()
 		    list_append(list, NEW_STR(ss));
 		}
 		nd_set_type(list, NODE_DREGX);
+		if (casefold) list->nd_cflag = 1;
 		yylval.node = list;
 		return DREGEXP;
 	    }
 	    else {
 		yylval.val = regexp_new(tok(), toklen());
+		if (casefold) FL_SET(yylval.val, FL_USER1);
 		return REGEXP;
 	    }
 	  case -1:
@@ -1347,7 +1358,6 @@ yylex()
 {
     register int c;
     struct kwtable *low = kwtable, *mid, *high = LAST(kwtable);
-    int last;
 
 retry:
     switch (c = nextc()) {
@@ -1366,6 +1376,10 @@ retry:
 	while ((c = nextc()) != '\n') {
 	    if (c == -1)
 		return 0;
+	    if (c == '\\') {	/* skip a char */
+		c = nextc();
+		if (c == '\n') sourceline++;
+	    }
 	}
 	/* fall through */
       case '\n':
@@ -1801,22 +1815,13 @@ retry:
 	return '\\';
 
       case '%':
-	if (lex_state == EXPR_BEG || lex_state == EXPR_MID) {
-	    /* class constant */
-	    newtok();
-	    tokadd('%');
-	    c = nextc();
-	    break;
+	lex_state = EXPR_BEG;
+	if (nextc() == '=') {
+	    yylval.id = '%';
+	    return OP_ASGN;
 	}
-	else {
-	    lex_state = EXPR_BEG;
-	    if (nextc() == '=') {
-		yylval.id = '%';
-		return OP_ASGN;
-	    }
-	    pushback();
-	    return c;
-	}
+	pushback();
+	return c;
 
       case '$':
 	newtok();
@@ -1844,14 +1849,16 @@ retry:
 	  case '>':		/* $>: default output handle */
 	  case '"':		/* $": already loaded files */
 	    tokadd(c);
-	    tokadd('\0');
-	    goto id_fetch;
+	    tokfix();
+	    yylval.id = rb_intern(tok());
+	    lex_state = EXPR_END;
+	    return GVAR;
 
 	  default:
-	    if (is_identchar(c))
-		break;
-	    pushback();
-	    return tok()[0];
+	    if (!is_identchar(c)) {
+		pushback();
+		return '$';
+	    }
 	}
 	break;
 
@@ -1886,51 +1893,55 @@ retry:
     pushback();
     tokfix();
 
-    /* See if it is a reserved word.  */
-    while (low <= high) {
-	mid = low + (high - low)/2;
-	if (( c = strcmp(mid->name, tok())) == 0) {
-	    enum lex_state state = lex_state;
-	    lex_state = mid->state;
-	    if (state != EXPR_BEG) {
-		if (mid->id == IF) return IF_MOD;
-		if (mid->id == WHILE) return WHILE_MOD;
-	    }
-	    return mid->id;
-	}
-	else if (c < 0) {
-	    low = mid + 1;
-	}
-	else {
-	    high = mid - 1;
-	}
-    }
-
-  id_fetch:
     {
-	enum lex_state state = lex_state;
+	int result;
 
-	lex_state = EXPR_END;
-	yylval.id = rb_intern(tok());
 	switch (tok()[0]) {
-	  case '%':
-	    return CONSTANT;
 	  case '$':
-	    return GVAR;
+	    result = GVAR;
+	    break;
 	  case '@':
-	    return IVAR;
+	    result = IVAR;
+	    break;
 	  default:
-	    if (state == EXPR_FNAME) {
+	    /* See if it is a reserved word.  */
+	    while (low <= high) {
+		mid = low + (high - low)/2;
+		if (( c = strcmp(mid->name, tok())) == 0) {
+		    enum lex_state state = lex_state;
+		    lex_state = mid->state;
+		    if (state != EXPR_BEG) {
+			if (mid->id == IF) return IF_MOD;
+			if (mid->id == WHILE) return WHILE_MOD;
+		    }
+		    return mid->id;
+		}
+		else if (c < 0) {
+		    low = mid + 1;
+		}
+		else {
+		    high = mid - 1;
+		}
+	    }
+
+	    if (lex_state == EXPR_FNAME) {
 		if ((c = nextc()) == '=') {
-		    yylval.id &= ~ID_SCOPE_MASK;
-		    yylval.id |= ID_ATTRSET;
+		    tokadd(c);
 		}
 		else {
 		    pushback();
 		}
 	    }
-	    return IDENTIFIER;
+	    if (isupper(tok()[0])) {
+		result = CONSTANT;
+	    }
+	    else {
+		result = IDENTIFIER;
+	    }
 	}
+	lex_state = EXPR_END;
+	yylval.id = rb_intern(tok());
+	return result;
     }
 }
 
@@ -1949,7 +1960,7 @@ var_extend(list, term)
 	tokadd('#');
 	pushback();
 	return list;
-      case '@': case '%':
+      case '@':
 	t = nextc();
 	pushback();
 	if (!is_identchar(t)) {
@@ -1998,7 +2009,7 @@ var_extend(list, term)
 		goto fetch_id;
 	    }
 	    /* through */
-	  case '@': case '%':
+	  case '@':
 	    tokadd(c);
 	    c = nextc();
 	    break;
@@ -2370,7 +2381,7 @@ gettable(id)
 	if (local_id(id))
 	    return NEW_LVAR(id);
 	else
-	    return NEW_MVAR(id);
+	    return NEW_LVAR2(id);
     }
     else if (is_global_id(id)) {
 	return NEW_GVAR(id);
@@ -2510,9 +2521,7 @@ cond(node)
       case NODE_GASGN:
       case NODE_IASGN:
       case NODE_CASGN:
-	if (verbose) {
-	    Warning("asignment in condition");
-	}
+	Warning("asignment in condition");
 	break;
     }
 
@@ -2771,11 +2780,6 @@ rb_intern(name)
       case '@':
 	id |= ID_INSTANCE;
 	break;
-      case '%':
-	if (name[1] != '\0') {
-	    id |= ID_CONST;
-	    break;
-	}
 	/* fall through */
       default:
 	if (name[0] != '_' && !isalpha(name[0]) && !ismbchar(name[0])) {
@@ -2792,6 +2796,7 @@ rb_intern(name)
 	    if (id == Qnil) Bug("Unknown operator `%s'", name);
 	    break;
 	}
+	
 	last = strlen(name)-1;
 	if (name[last] == '=') {
 	    /* attribute asignment */
@@ -2803,6 +2808,9 @@ rb_intern(name)
 	    id &= ~ID_SCOPE_MASK;
 	    id |= ID_ATTRSET;
 	}
+	else if (isupper(name[0])) {
+	    id |= ID_CONST;
+        }
 	else {
 	    id |= ID_LOCAL;
 	}
@@ -2859,40 +2867,6 @@ rb_id2name(id)
 	}
     }
     return find_ok;
-}
-
-char *
-rb_class2name(class)
-    struct RClass *class;
-{
-    extern st_table *rb_class_tbl;
-
-    find_ok = Qnil;
-
-    switch (TYPE(class)) {
-      case T_ICLASS:
-        class = (struct RClass*)RBASIC(class)->class;
-	break;
-      case T_CLASS:
-      case T_MODULE:
-	break;
-      default:
-	Fail("0x%x is not a class/module", class);
-    }
-
-    while (FL_TEST(class, FL_SINGLE)) {
-	class = (struct RClass*)class->super;
-    }
-
-    while (TYPE(class) == T_ICLASS) {
-        class = (struct RClass*)class->super;
-    }
-
-    st_foreach(rb_class_tbl, id_find, class);
-    if (find_ok) {
-	return rb_id2name((ID)find_ok);
-    }
-    Bug("class 0x%x not named", class);
 }
 
 static int
