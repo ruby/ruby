@@ -1,3 +1,7 @@
+Tue Apr  2 15:09:05 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/socket/socket.c (sock_addrinfo): should clear addrinfo hints.
+
 Mon Apr  1 23:48:12 2002  Takaaki Tateishi <ttate@kt.jaist.ac.jp>
 
 	* lib/mkmf.rb: install any files using $INSTALLFILES.

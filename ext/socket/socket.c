@@ -599,6 +599,7 @@ sock_addrinfo(host, port, socktype, flags)
     }
     else {
 	hintsp = &hints;
+	MEMZERO(&hints, struct addrinfo, 1);
 	hints.ai_family = PF_UNSPEC;
 	hints.ai_protocol = 0;
 	hints.ai_socktype = socktype;
