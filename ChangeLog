@@ -1,3 +1,9 @@
+Wed May 29 18:55:47 2002  KONISHI Hiromasa <H_Konishi@ruby-lang.org>
+
+	* function renames my* and win32_* to rb_w32_* in win32/win32.c
+	  fixed files win32/win32.c, win32/win32.h, win32/dir.h, 
+	              hash.c, rubysig.h, signal.c, ext/socket/socket.c
+
 Wed May 29 17:32:55 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* time.c (tmcmp, search_time_t): activate unless HAVE_TIMEGM.

@@ -237,7 +237,7 @@ flock(int fd, int oper)
     const asynchronous_func_t locker = flock_winnt;
 #endif
 
-    return win32_asynchronize(locker,
+    return rb_w32_asynchronize(locker,
 			      (VALUE)_get_osfhandle(fd), oper, NULL,
 			      (DWORD)-1);
 }
@@ -432,7 +432,7 @@ isInternalCmd(char *cmd)
 
 
 SOCKET
-myget_osfhandle(int fh)
+rb_w32_get_osfhandle(int fh)
 {
     return _get_osfhandle(fh);
 
@@ -440,7 +440,7 @@ myget_osfhandle(int fh)
 
 
 FILE *
-mypopen (char *cmd, char *mode) 
+rb_w32_popen (char *cmd, char *mode) 
 {
     FILE *fp;
     int reading;
@@ -559,7 +559,7 @@ mypopen (char *cmd, char *mode)
 extern VALUE rb_last_status;
 
 int
-mypclose(FILE *fp)
+rb_w32_pclose(FILE *fp)
 {
     struct ChildRecord *child = FindPipedChildSlot(fp);
 
@@ -1099,7 +1099,7 @@ NtMakeCmdVector (char *cmdline, char ***vec, int InputCmd)
 //
 
 DIR *
-opendir(const char *filename)
+rb_w32_opendir(const char *filename)
 {
     DIR            *p;
     long            len;
@@ -1114,7 +1114,7 @@ opendir(const char *filename)
     // check to see if we've got a directory
     //
 
-    if ((win32_stat (filename, &sbuf) < 0 ||
+    if ((rb_w32_stat (filename, &sbuf) < 0 ||
 	sbuf.st_mode & _S_IFDIR == 0) &&
 	(!ISALPHA(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
 	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
@@ -1196,7 +1196,7 @@ opendir(const char *filename)
 //
 
 struct direct  *
-readdir(DIR *dirp)
+rb_w32_readdir(DIR *dirp)
 {
     int         len;
     static int  dummy = 0;
@@ -1236,7 +1236,7 @@ readdir(DIR *dirp)
 //
 
 long
-telldir(DIR *dirp)
+rb_w32_telldir(DIR *dirp)
 {
 	return (long) dirp->curr;	/* ouch! pointer to long cast */
 }
@@ -1246,7 +1246,7 @@ telldir(DIR *dirp)
 // (Saved by telldir).
 
 void
-seekdir(DIR *dirp, long loc)
+rb_w32_seekdir(DIR *dirp, long loc)
 {
 	dirp->curr = (char *) loc;	/* ouch! long to pointer cast */
 }
@@ -1256,7 +1256,7 @@ seekdir(DIR *dirp, long loc)
 //
 
 void
-rewinddir(DIR *dirp)
+rb_w32_rewinddir(DIR *dirp)
 {
 	dirp->curr = dirp->start;
 }
@@ -1266,7 +1266,7 @@ rewinddir(DIR *dirp)
 //
 
 void
-closedir(DIR *dirp)
+rb_w32_closedir(DIR *dirp)
 {
 	free(dirp->start);
 	free(dirp);
@@ -1358,7 +1358,7 @@ EXTERN_C _CRTIMP ioinfo * __pioinfo[];
 #define _set_osfhnd(fh, osfh) (void)(_osfhnd(fh) = osfh)
 
 static int
-my_open_osfhandle(long osfhandle, int flags)
+rb_w32_open_osfhandle(long osfhandle, int flags)
 {
     int fh;
     char fileflags;		/* _osfile flags */
@@ -1427,19 +1427,19 @@ is_socket(SOCKET fd)
 }
 
 int
-myfddup (int fd)
+rb_w32_fddup (int fd)
 {
     SOCKET s = TO_SOCKET(fd);
 
     if (s == -1)
 	return -1;
 
-    return my_open_osfhandle(s, O_RDWR|O_BINARY);
+    return rb_w32_open_osfhandle(s, O_RDWR|O_BINARY);
 }
 
 
 void
-myfdclose(FILE *fp)
+rb_w32_fdclose(FILE *fp)
 {
     RUBY_CRITICAL({
 	STHREAD_ONLY(_free_osfhnd(fileno(fp)));
@@ -1456,7 +1456,7 @@ myfdclose(FILE *fp)
 #undef strerror
 
 char *
-mystrerror(int e)
+rb_w32_strerror(int e)
 {
     static char buffer[512];
 #if !defined __MINGW32__
@@ -1546,7 +1546,7 @@ ioctl(int i, unsigned int u, long data)
 #undef FD_SET
 
 void
-myfdset(int fd, fd_set *set)
+rb_w32_fdset(int fd, fd_set *set)
 {
     unsigned int i;
     SOCKET s = TO_SOCKET(fd);
@@ -1567,7 +1567,7 @@ myfdset(int fd, fd_set *set)
 #undef FD_CLR
 
 void
-myfdclr(int fd, fd_set *set)
+rb_w32_fdclr(int fd, fd_set *set)
 {
     unsigned int i;
     SOCKET s = TO_SOCKET(fd);
@@ -1587,7 +1587,7 @@ myfdclr(int fd, fd_set *set)
 #undef FD_ISSET
 
 int
-myfdisset(int fd, fd_set *set)
+rb_w32_fdisset(int fd, fd_set *set)
 {
        return __WSAFDIsSet(TO_SOCKET(fd), set);
 }
@@ -1633,7 +1633,7 @@ extract_file_fd(fd_set *set, fd_set *fileset)
 }
 
 long 
-myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
+rb_w32_select (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	       struct timeval *timeout)
 {
     long r;
@@ -1731,7 +1731,7 @@ StartSockets ()
 #undef accept
 
 SOCKET
-myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
+rb_w32_accept (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     SOCKET r;
 
@@ -1741,13 +1741,13 @@ myaccept (SOCKET s, struct sockaddr *addr, int *addrlen)
     RUBY_CRITICAL(r = accept (TO_SOCKET(s), addr, addrlen));
     if (r == INVALID_SOCKET)
 	errno = WSAGetLastError();
-    return my_open_osfhandle(r, O_RDWR|O_BINARY);
+    return rb_w32_open_osfhandle(r, O_RDWR|O_BINARY);
 }
 
 #undef bind
 
 int 
-mybind (SOCKET s, struct sockaddr *addr, int addrlen)
+rb_w32_bind (SOCKET s, struct sockaddr *addr, int addrlen)
 {
     int r;
 
@@ -1763,7 +1763,7 @@ mybind (SOCKET s, struct sockaddr *addr, int addrlen)
 #undef connect
 
 int 
-myconnect (SOCKET s, struct sockaddr *addr, int addrlen)
+rb_w32_connect (SOCKET s, struct sockaddr *addr, int addrlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1779,7 +1779,7 @@ myconnect (SOCKET s, struct sockaddr *addr, int addrlen)
 #undef getpeername
 
 int 
-mygetpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
+rb_w32_getpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1794,7 +1794,7 @@ mygetpeername (SOCKET s, struct sockaddr *addr, int *addrlen)
 #undef getsockname
 
 int 
-mygetsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
+rb_w32_getsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1807,7 +1807,7 @@ mygetsockname (SOCKET s, struct sockaddr *addr, int *addrlen)
 }
 
 int 
-mygetsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
+rb_w32_getsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1822,7 +1822,7 @@ mygetsockopt (SOCKET s, int level, int optname, char *optval, int *optlen)
 #undef ioctlsocket
 
 int 
-myioctlsocket (SOCKET s, long cmd, u_long *argp)
+rb_w32_ioctlsocket (SOCKET s, long cmd, u_long *argp)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1837,7 +1837,7 @@ myioctlsocket (SOCKET s, long cmd, u_long *argp)
 #undef listen
 
 int 
-mylisten (SOCKET s, int backlog)
+rb_w32_listen (SOCKET s, int backlog)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1852,7 +1852,7 @@ mylisten (SOCKET s, int backlog)
 #undef recv
 
 int 
-myrecv (SOCKET s, char *buf, int len, int flags)
+rb_w32_recv (SOCKET s, char *buf, int len, int flags)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1867,7 +1867,7 @@ myrecv (SOCKET s, char *buf, int len, int flags)
 #undef recvfrom
 
 int 
-myrecvfrom (SOCKET s, char *buf, int len, int flags, 
+rb_w32_recvfrom (SOCKET s, char *buf, int len, int flags, 
 		struct sockaddr *from, int *fromlen)
 {
     int r;
@@ -1883,7 +1883,7 @@ myrecvfrom (SOCKET s, char *buf, int len, int flags,
 #undef send
 
 int 
-mysend (SOCKET s, char *buf, int len, int flags)
+rb_w32_send (SOCKET s, char *buf, int len, int flags)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1898,7 +1898,7 @@ mysend (SOCKET s, char *buf, int len, int flags)
 #undef sendto
 
 int 
-mysendto (SOCKET s, char *buf, int len, int flags, 
+rb_w32_sendto (SOCKET s, char *buf, int len, int flags, 
 		struct sockaddr *to, int tolen)
 {
     int r;
@@ -1914,7 +1914,7 @@ mysendto (SOCKET s, char *buf, int len, int flags,
 #undef setsockopt
 
 int 
-mysetsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
+rb_w32_setsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1929,7 +1929,7 @@ mysetsockopt (SOCKET s, int level, int optname, char *optval, int optlen)
 #undef shutdown
 
 int 
-myshutdown (SOCKET s, int how)
+rb_w32_shutdown (SOCKET s, int how)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -1944,7 +1944,7 @@ myshutdown (SOCKET s, int how)
 #undef socket
 
 SOCKET 
-mysocket (int af, int type, int protocol)
+rb_w32_socket (int af, int type, int protocol)
 {
     SOCKET s;
     if (!NtSocketsInitialized++) {
@@ -1955,13 +1955,13 @@ mysocket (int af, int type, int protocol)
 	errno = WSAGetLastError();
 	//fprintf(stderr, "socket fail (%d)", WSAGetLastError());
     }
-    return my_open_osfhandle(s, O_RDWR|O_BINARY);
+    return rb_w32_open_osfhandle(s, O_RDWR|O_BINARY);
 }
 
 #undef gethostbyaddr
 
 struct hostent *
-mygethostbyaddr (char *addr, int len, int type)
+rb_w32_gethostbyaddr (char *addr, int len, int type)
 {
     struct hostent *r;
     if (!NtSocketsInitialized++) {
@@ -1976,7 +1976,7 @@ mygethostbyaddr (char *addr, int len, int type)
 #undef gethostbyname
 
 struct hostent *
-mygethostbyname (char *name)
+rb_w32_gethostbyname (char *name)
 {
     struct hostent *r;
     if (!NtSocketsInitialized++) {
@@ -1991,7 +1991,7 @@ mygethostbyname (char *name)
 #undef gethostname
 
 int
-mygethostname (char *name, int len)
+rb_w32_gethostname (char *name, int len)
 {
     int r;
     if (!NtSocketsInitialized++) {
@@ -2006,7 +2006,7 @@ mygethostname (char *name, int len)
 #undef getprotobyname
 
 struct protoent *
-mygetprotobyname (char *name)
+rb_w32_getprotobyname (char *name)
 {
     struct protoent *r;
     if (!NtSocketsInitialized++) {
@@ -2021,7 +2021,7 @@ mygetprotobyname (char *name)
 #undef getprotobynumber
 
 struct protoent *
-mygetprotobynumber (int num)
+rb_w32_getprotobynumber (int num)
 {
     struct protoent *r;
     if (!NtSocketsInitialized++) {
@@ -2036,7 +2036,7 @@ mygetprotobynumber (int num)
 #undef getservbyname
 
 struct servent *
-mygetservbyname (char *name, char *proto)
+rb_w32_getservbyname (char *name, char *proto)
 {
     struct servent *r;
     if (!NtSocketsInitialized++) {
@@ -2051,7 +2051,7 @@ mygetservbyname (char *name, char *proto)
 #undef getservbyport
 
 struct servent *
-mygetservbyport (int port, char *proto)
+rb_w32_getservbyport (int port, char *proto)
 {
     struct servent *r;
     if (!NtSocketsInitialized++) {
@@ -2204,7 +2204,7 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 }
 
 char *
-win32_getcwd(buffer, size)
+rb_w32_getcwd(buffer, size)
     char *buffer;
     int size;
 {
@@ -2314,7 +2314,7 @@ wait()
 }
 
 char *
-win32_getenv(const char *name)
+rb_w32_getenv(const char *name)
 {
     static char *curitem = NULL;
     static DWORD curlen = 0;
@@ -2341,7 +2341,7 @@ win32_getenv(const char *name)
 }
 
 int
-myrename(const char *oldpath, const char *newpath)
+rb_w32_rename(const char *oldpath, const char *newpath)
 {
     int res = 0;
     int oldatts;
@@ -2413,7 +2413,7 @@ isUNCRoot(const char *path)
 }
 
 int
-win32_stat(const char *path, struct stat *st)
+rb_w32_stat(const char *path, struct stat *st)
 {
     const char *p;
     char *buf1 = ALLOCA_N(char, strlen(path) + 1);
@@ -2452,7 +2452,7 @@ filetime_to_clock(FILETIME *ft)
 }
 
 int
-mytimes(struct tms *tmbuf)
+rb_w32_times(struct tms *tmbuf)
 {
     FILETIME create, exit, kernel, user;
 
@@ -2511,7 +2511,7 @@ static CRITICAL_SECTION* system_state(void)
 static LONG flag_interrupt = -1;
 static volatile DWORD tlsi_interrupt = TLS_OUT_OF_INDEXES;
 
-void win32_enter_critical(void)
+void rb_w32_enter_critical(void)
 {
     if (IsWinNT()) {
 	EnterCriticalSection(system_state());
@@ -2532,7 +2532,7 @@ void win32_enter_critical(void)
     }
 }
 
-void win32_leave_critical(void)
+void rb_w32_leave_critical(void)
 {
     if (IsWinNT()) {
 	LeaveCriticalSection(system_state());
@@ -2551,7 +2551,7 @@ struct handler_arg_t {
     HANDLE handshake;
 };
 
-static void win32_call_handler(struct handler_arg_t* h)
+static void rb_w32_call_handler(struct handler_arg_t* h)
 {
     int status;
     RUBY_CRITICAL(rb_protect((VALUE (*)(VALUE))h->handler, (VALUE)h->arg, &h->status);
@@ -2584,13 +2584,13 @@ static void setup_call(CONTEXT* ctx, struct handler_arg_t *harg)
     *--esp = (DWORD)harg;
     *--esp = ctx->Eip;
     ctx->Esp = (DWORD)esp;
-    ctx->Eip = (DWORD)win32_call_handler;
+    ctx->Eip = (DWORD)rb_w32_call_handler;
 #else
 #error unsupported processor
 #endif
 }
 
-int win32_main_context(int arg, void (*handler)(int))
+int rb_w32_main_context(int arg, void (*handler)(int))
 {
     static HANDLE interrupt_done = NULL;
     struct handler_arg_t harg;
@@ -2651,7 +2651,7 @@ int win32_main_context(int arg, void (*handler)(int))
     return TRUE;
 }
 
-int win32_sleep(unsigned long msec)
+int rb_w32_sleep(unsigned long msec)
 {
     DWORD ret;
     RUBY_CRITICAL(ret = wait_events(NULL, msec));
@@ -2668,7 +2668,7 @@ static void catch_interrupt(void)
 }
 
 #undef fgetc
-int win32_getc(FILE* stream)
+int rb_w32_getc(FILE* stream)
 {
     int c, trap_immediate = rb_trap_immediate;
     if (--stream->_cnt >= 0) {
@@ -2684,7 +2684,7 @@ int win32_getc(FILE* stream)
 }
 
 #undef fputc
-int win32_putc(int c, FILE* stream)
+int rb_w32_putc(int c, FILE* stream)
 {
     int trap_immediate = rb_trap_immediate;
     if (--stream->_cnt >= 0) {
@@ -2718,7 +2718,7 @@ call_asynchronous(PVOID argp)
     return (DWORD)arg->func(arg->self, arg->argc, arg->argv);
 }
 
-VALUE win32_asynchronize(asynchronous_func_t func,
+VALUE rb_w32_asynchronize(asynchronous_func_t func,
 			 VALUE self, int argc, VALUE* argv, VALUE intrval)
 {
     DWORD val;
@@ -2779,7 +2779,7 @@ VALUE win32_asynchronize(asynchronous_func_t func,
     return val;
 }
 
-char **win32_get_environ(void)
+char **rb_w32_get_environ(void)
 {
     char *envtop, *env;
     char **myenvtop, **myenv;
@@ -2788,7 +2788,7 @@ char **win32_get_environ(void)
     /*
      * We avoid values started with `='. If you want to deal those values,
      * change this function, and some functions in hash.c which recognize
-     * `=' as delimiter or win32_getenv() and ruby_setenv().
+     * `=' as delimiter or rb_w32_getenv() and ruby_setenv().
      * CygWin deals these values by changing first `=' to '!'. But we don't
      * use such trick and follow cmd.exe's way that just doesn't show these
      * values.
@@ -2812,7 +2812,7 @@ char **win32_get_environ(void)
     return myenvtop;
 }
 
-void win32_free_environ(char **env)
+void rb_w32_free_environ(char **env)
 {
     char **t = env;
 

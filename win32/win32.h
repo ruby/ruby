@@ -80,12 +80,12 @@ extern "C++" {
 #undef putchar
 #undef fgetchar
 #undef fputchar
-#define getc(_stream)		win32_getc(_stream)
-#define putc(_c, _stream)	win32_putc(_c, _stream)
+#define getc(_stream)		rb_w32_getc(_stream)
+#define putc(_c, _stream)	rb_w32_putc(_c, _stream)
 #define fgetc(_stream)		getc(_stream)
 #define fputc(_c, _stream)	putc(_c, _stream)
-#define getchar()		win32_getc(stdin)
-#define putchar(_c)		win32_putc(_c, stdout)
+#define getchar()		rb_w32_getc(stdin)
+#define putchar(_c)		rb_w32_putc(_c, stdout)
 #define fgetchar(_stream)	getchar()
 #define fputchar(_c, _stream)	putchar(_c)
 
@@ -120,7 +120,7 @@ extern "C++" {
 #define execvp	   _execvp
 #define execvpe    _execvpe
 #define getpid	   _getpid
-#define sleep(x)   win32_sleep((x)*1000)
+#define sleep(x)   rb_w32_sleep((x)*1000)
 #define spawnl	   _spawnl
 #define spawnle    _spawnle
 #define spawnlp    _spawnlp
@@ -140,7 +140,7 @@ extern "C++" {
 #define strcasecmp _stricmp
 #define strncasecmp _strnicmp
 #undef stat
-#define stat(path,st) win32_stat(path,st)
+#define stat(path,st) rb_w32_stat(path,st)
 /* these are defined in nt.c */
 
 #ifdef __MINGW32__
@@ -149,46 +149,46 @@ struct timezone {
   int tz_dsttime;
 };
 #endif
-extern int NtMakeCmdVector(char *, char ***, int);
-extern void NtInitialize(int *, char ***);
-extern char *NtGetLib(void);
-extern char *NtGetBin(void);
-extern FILE *mypopen(char *, char *);
-extern int   mypclose(FILE *);
-extern int  flock(int fd, int oper);
-extern int  myfddup(int);
-extern void  myfdclose(FILE *);
-extern SOCKET  myaccept(SOCKET, struct sockaddr *, int *);
-extern int  mybind(SOCKET, struct sockaddr *, int);
-extern int  myconnect(SOCKET, struct sockaddr *, int);
-extern void myfdset(int, fd_set*);
-extern void myfdclr(int, fd_set*);
-extern int  myfdisset(int, fd_set*);
-extern long myselect(int, fd_set *, fd_set *, fd_set *, struct timeval *);
-extern int  mygetpeername(SOCKET, struct sockaddr *, int *);
-extern int  mygetsockname(SOCKET, struct sockaddr *, int *);
-extern int  mygetsockopt(SOCKET, int, int, char *, int *);
-extern int  myioctlsocket(SOCKET, long, u_long *);
-extern int  mylisten(SOCKET, int);
-extern int  myrecv(SOCKET, char *, int, int);
-extern int  myrecvfrom(SOCKET, char *, int, int, struct sockaddr *, int *);
-extern int  mysend(SOCKET, char *, int, int);
-extern int  mysendto(SOCKET, char *, int, int, struct sockaddr *, int);
-extern int  mysetsockopt(SOCKET, int, int, char *, int);
-extern int  myshutdown(SOCKET, int);
-extern SOCKET  mysocket(int, int, int);
-extern SOCKET  myget_osfhandle(int);
-extern struct hostent *  mygethostbyaddr(char *, int, int);
-extern struct hostent *  mygethostbyname(char *);
-extern int  mygethostname(char *, int);
-extern struct protoent *  mygetprotobyname(char *);
-extern struct protoent *  mygetprotobynumber(int);
-extern struct servent *  mygetservbyname(char *, char *);
-extern struct servent * mygetservbyport(int, char *);
-extern char *win32_getenv(const char *);
-extern int myrename(const char *, const char *);
-extern char **win32_get_environ(void);
-extern void win32_free_environ(char **);
+extern int    NtMakeCmdVector(char *, char ***, int);
+extern void   NtInitialize(int *, char ***);
+extern char * NtGetLib(void);
+extern char * NtGetBin(void);
+extern FILE * rb_w32_popen(char *, char *);
+extern int    rb_w32_pclose(FILE *);
+extern int    flock(int fd, int oper);
+extern int    rb_w32_fddup(int);
+extern void   rb_w32_fdclose(FILE *);
+extern SOCKET rb_w32_accept(SOCKET, struct sockaddr *, int *);
+extern int    rb_w32_bind(SOCKET, struct sockaddr *, int);
+extern int    rb_w32_connect(SOCKET, struct sockaddr *, int);
+extern void   rb_w32_fdset(int, fd_set*);
+extern void   rb_w32_fdclr(int, fd_set*);
+extern int    rb_w32_fdisset(int, fd_set*);
+extern long   rb_w32_select(int, fd_set *, fd_set *, fd_set *, struct timeval *);
+extern int    rb_w32_getpeername(SOCKET, struct sockaddr *, int *);
+extern int    rb_w32_getsockname(SOCKET, struct sockaddr *, int *);
+extern int    rb_w32_getsockopt(SOCKET, int, int, char *, int *);
+extern int    rb_w32_ioctlsocket(SOCKET, long, u_long *);
+extern int    rb_w32_listen(SOCKET, int);
+extern int    rb_w32_recv(SOCKET, char *, int, int);
+extern int    rb_w32_recvfrom(SOCKET, char *, int, int, struct sockaddr *, int *);
+extern int    rb_w32_send(SOCKET, char *, int, int);
+extern int    rb_w32_sendto(SOCKET, char *, int, int, struct sockaddr *, int);
+extern int    rb_w32_setsockopt(SOCKET, int, int, char *, int);
+extern int    rb_w32_shutdown(SOCKET, int);
+extern SOCKET rb_w32_socket(int, int, int);
+extern SOCKET rb_w32_get_osfhandle(int);
+extern struct hostent * rb_w32_gethostbyaddr(char *, int, int);
+extern struct hostent * rb_w32_gethostbyname(char *);
+extern int    rb_w32_gethostname(char *, int);
+extern struct protoent * rb_w32_getprotobyname(char *);
+extern struct protoent * rb_w32_getprotobynumber(int);
+extern struct servent  * rb_w32_getservbyname(char *, char *);
+extern struct servent  * rb_w32_getservbyport(int, char *);
+extern char * rb_w32_getenv(const char *);
+extern int    rb_w32_rename(const char *, const char *);
+extern char **rb_w32_get_environ(void);
+extern void   rb_w32_free_environ(char **);
 
 extern int chown(const char *, int, int);
 extern int link(char *, char *);
@@ -219,9 +219,9 @@ extern GIDTYPE   getegid (void);
 extern int       setuid (int);
 extern int       setgid (int);
 
-extern char *mystrerror(int);
+extern char *rb_w32_strerror(int);
 
-#define strerror(e) mystrerror(e)
+#define strerror(e) rb_w32_strerror(e)
 
 #define PIPE_BUF 1024
 
@@ -235,11 +235,11 @@ extern char *mystrerror(int);
 
 #ifdef popen
 #undef popen
-#define popen    mypopen
+#define popen    rb_w32_popen
 #endif
 #ifdef pclose
 #undef pclose
-#define pclose   mypclose
+#define pclose   rb_w32_pclose
 #endif
 
 /* #undef va_start */
@@ -248,144 +248,144 @@ extern char *mystrerror(int);
 #ifdef accept
 #undef accept
 #endif
-#define accept myaccept
+#define accept rb_w32_accept
 
 #ifdef bind
 #undef bind
 #endif
-#define bind mybind
+#define bind rb_w32_bind
 
 #ifdef connect
 #undef connect
 #endif
-#define connect myconnect
+#define connect rb_w32_connect
 
 #undef FD_SET
-#define FD_SET myfdset
+#define FD_SET rb_w32_fdset
 
 #undef FD_CLR
-#define FD_CLR myfdclr
+#define FD_CLR rb_w32_fdclr
 
 #undef FD_ISSET
-#define FD_ISSET myfdisset
+#define FD_ISSET rb_w32_fdisset
 
 #undef select
-#define select myselect
+#define select rb_w32_select
 
 #ifdef getpeername
 #undef getpeername
 #endif
-#define getpeername mygetpeername
+#define getpeername rb_w32_getpeername
 
 #ifdef getsockname
 #undef getsockname
 #endif
-#define getsockname mygetsockname
+#define getsockname rb_w32_getsockname
 
 #ifdef getsockopt
 #undef getsockopt
 #endif
-#define getsockopt mygetsockopt
+#define getsockopt rb_w32_getsockopt
 
 #ifdef ioctlsocket
 #undef ioctlsocket
 #endif
-#define ioctlsocket myioctlsocket
+#define ioctlsocket rb_w32_ioctlsocket
 
 #ifdef listen
 #undef listen
 #endif
-#define listen mylisten
+#define listen rb_w32_listen
 
 #ifdef recv
 #undef recv
 #endif
-#define recv myrecv
+#define recv rb_w32_recv
 
 #ifdef recvfrom
 #undef recvfrom
 #endif
-#define recvfrom myrecvfrom
+#define recvfrom rb_w32_recvfrom
 
 #ifdef send
 #undef send
 #endif
-#define send mysend
+#define send rb_w32_send
 
 #ifdef sendto
 #undef sendto
 #endif
-#define sendto mysendto
+#define sendto rb_w32_sendto
 
 #ifdef setsockopt
 #undef setsockopt
 #endif
-#define setsockopt mysetsockopt
+#define setsockopt rb_w32_setsockopt
 
 #ifdef shutdown
 #undef shutdown
 #endif
-#define shutdown myshutdown
+#define shutdown rb_w32_shutdown
 
 #ifdef socket
 #undef socket
 #endif
-#define socket mysocket
+#define socket rb_w32_socket
 
 #ifdef gethostbyaddr
 #undef gethostbyaddr
 #endif
-#define gethostbyaddr mygethostbyaddr
+#define gethostbyaddr rb_w32_gethostbyaddr
 
 #ifdef gethostbyname
 #undef gethostbyname
 #endif
-#define gethostbyname mygethostbyname
+#define gethostbyname rb_w32_gethostbyname
 
 #ifdef gethostname
 #undef gethostname
 #endif
-#define gethostname mygethostname
+#define gethostname rb_w32_gethostname
 
 #ifdef getprotobyname
 #undef getprotobyname
 #endif
-#define getprotobyname mygetprotobyname
+#define getprotobyname rb_w32_getprotobyname
 
 #ifdef getprotobynumber
 #undef getprotobynumber
 #endif
-#define getprotobynumber mygetprotobynumber
+#define getprotobynumber rb_w32_getprotobynumber
 
 #ifdef getservbyname
 #undef getservbyname
 #endif
-#define getservbyname mygetservbyname
+#define getservbyname rb_w32_getservbyname
 
 #ifdef getservbyport
 #undef getservbyport
 #endif
-#define getservbyport mygetservbyport
+#define getservbyport rb_w32_getservbyport
 
 #ifdef get_osfhandle
 #undef get_osfhandle
 #endif
-#define get_osfhandle myget_osfhandle
+#define get_osfhandle rb_w32_get_osfhandle
 
 #ifdef getcwd
 #undef getcwd
 #endif
-#define getcwd win32_getcwd
+#define getcwd rb_w32_getcwd
 
 #ifdef getenv
 #undef getenv
 #endif
-#define getenv win32_getenv
+#define getenv rb_w32_getenv
 
 #ifdef rename
 #undef rename
 #endif
-#define rename myrename
+#define rename rb_w32_rename
 
 struct tms {
 	long	tms_utime;
@@ -397,17 +397,17 @@ struct tms {
 #ifdef times
 #undef times
 #endif
-#define times mytimes
+#define times rb_w32_times
 
 /* thread stuff */
 HANDLE GetCurrentThreadHandle(void);
-int win32_main_context(int arg, void (*handler)(int));
-int win32_sleep(unsigned long msec);
-void win32_enter_critical(void);
-void win32_leave_critical(void);
-int win32_putc(int, FILE*);
-int win32_getc(FILE*);
-#define Sleep(msec) (void)win32_sleep(msec)
+int  rb_w32_main_context(int arg, void (*handler)(int));
+int  rb_w32_sleep(unsigned long msec);
+void rb_w32_enter_critical(void);
+void rb_w32_leave_critical(void);
+int  rb_w32_putc(int, FILE*);
+int  rb_w32_getc(FILE*);
+#define Sleep(msec) (void)rb_w32_sleep(msec)
 
 /*
 == ***CAUTION***
@@ -417,6 +417,6 @@ Since this function is very dangerous, ((*NEVER*))
 in asynchronous_func_t.
 */
 typedef DWORD (*asynchronous_func_t)(DWORD self, int argc, DWORD* argv);
-DWORD win32_asynchronize(asynchronous_func_t func, DWORD self, int argc, DWORD* argv, DWORD intrval);
+DWORD rb_w32_asynchronize(asynchronous_func_t func, DWORD self, int argc, DWORD* argv, DWORD intrval);
 
 #endif

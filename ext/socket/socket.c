@@ -169,8 +169,8 @@ sock_finalize(fptr)
 
     if (!fptr->f) return;
     s = get_osfhandle(fileno(fptr->f));
-    myfdclose(fptr->f);
-    if (fptr->f2) myfdclose(fptr->f2);
+    rb_w32_fdclose(fptr->f);
+    if (fptr->f2) rb_w32_fdclose(fptr->f2);
     closesocket(s);
 }
 #endif

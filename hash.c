@@ -921,8 +921,8 @@ static int path_tainted = -1;
 
 static char **origenviron;
 #ifdef NT
-#define GET_ENVIRON(e) (e = win32_get_environ())
-#define FREE_ENVIRON(e) win32_free_environ(e)
+#define GET_ENVIRON(e) (e = rb_w32_get_environ())
+#define FREE_ENVIRON(e) rb_w32_free_environ(e)
 static char **my_environ;
 #undef environ
 #define environ my_environ

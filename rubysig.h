@@ -28,9 +28,9 @@ typedef LONG rb_atomic_t;
 	ATOMIC_SET(rb_trap_immediate, trap_immediate);\
 } while (0)
 # define RUBY_CRITICAL(statements) do {\
-    win32_enter_critical();\
+    rb_w32_enter_critical();\
     statements;\
-    win32_leave_critical();\
+    rb_w32_leave_critical();\
 } while (0)
 #else
 typedef int rb_atomic_t;

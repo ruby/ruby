@@ -12,9 +12,17 @@ typedef struct {
     struct direct dirstr;
 } DIR;
 
-DIR* opendir(const char*);
-struct direct* readdir(DIR *);
-long telldir(DIR *);
-void seekdir(DIR *, long);
-void rewinddir(DIR *);
-void closedir(DIR *);
+
+DIR*           rb_w32_opendir(const char*);
+struct direct* rb_w32_readdir(DIR *);
+long           rb_w32_telldir(DIR *);
+void           rb_w32_seekdir(DIR *, long);
+void           rb_w32_rewinddir(DIR *);
+void           rb_w32_closedir(DIR *);
+
+#define opendir   rb_w32_opendir
+#define readdir   rb_w32_readdir
+#define telldir   rb_w32_telldir
+#define seekdir   rb_w32_seekdir
+#define rewinddir rb_w32_rewinddir
+#define closedir  rb_w32_closedir

@@ -368,7 +368,7 @@ sighandler(sig)
     int sig;
 {
 #ifdef NT
-#define IN_MAIN_CONTEXT(f, a) (win32_main_context(a, f) ? (void)0 : f(a))
+#define IN_MAIN_CONTEXT(f, a) (rb_w32_main_context(a, f) ? (void)0 : f(a))
 #else
 #define IN_MAIN_CONTEXT(f, a) f(a)
 #endif
