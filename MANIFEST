@@ -125,12 +125,14 @@ lib/thread.rb
 lib/thwait.rb
 lib/tk.rb
 lib/tkafter.rb
+lib/tkbgerror.rb
 lib/tkcanvas.rb
 lib/tkclass.rb
 lib/tkdialog.rb
 lib/tkentry.rb
 lib/tkfont.rb
 lib/tkmenubar.rb
+lib/tkmngfocus.rb
 lib/tkpalette.rb
 lib/tkscrollbox.rb
 lib/tktext.rb
