@@ -227,6 +227,11 @@ Object
 : add_response_handler(handler = Proc.new)
       Adds a response handler.
 
+      ex).
+        imap.add_response_handler do |resp|
+          p resp
+        end
+
 : remove_response_handler(handler)
       Removes the response handler.
 
