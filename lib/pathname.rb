@@ -123,7 +123,7 @@ class Pathname
         resolved.unshift unresolved.pop
       else
         path = top + unresolved.join('/')
-        if FileTest.symlink? path
+        if File.lstat(path).symlink?
           link = File.readlink(path)
           if %r{\A/} =~ link
             top = '/'

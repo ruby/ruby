@@ -1,4 +1,6 @@
-Sat Oct 11 15:41:06 2003  Tanaka Akira  <akr@m17n.org>
+Sat Oct 11 16:08:41 2003  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (realpath): check existence of the file.
 
 	* lib/pathname.rb (realpath): re-implemented.
 	  (realpath_root?, realpath_rec): removed
