@@ -1,3 +1,9 @@
+Mon Dec 22 18:22:04 2003  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* bcc32/Makefile.sub, win32/Makefile.sub (config.h): remove
+	  HAVE_ISINF definition to follow previous commits of missing.h
+	  and win32/win32.h.
+
 Mon Dec 22 17:23:42 2003  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (ac_cv_func_setitimer): moved from defines.h

@@ -257,7 +257,6 @@ config.h:
 #define HAVE_GETCWD 1
 #define HAVE_FLOCK 1
 #define HAVE_VSNPRINTF 1
-#define HAVE_ISINF 1
 #define HAVE_ISNAN 1
 #define HAVE_FINITE 1
 #define HAVE_FMOD 1
