@@ -1,3 +1,9 @@
+Sun Feb 18 15:42:38 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/curses/extconf.rb: add dir_config.
+
+	* missing/flock.c: use fcntl(2) instead of lockf(2).
+
 Sun Feb 18 05:46:03 2001  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/http.rb: Response#range_length was not debugged.
