@@ -122,7 +122,7 @@ module Net
     #
 
     def start( *args )
-      return false if active?
+      active? and raise IOError, 'protocol has been opened already'
 
       if block_given? then
         begin
@@ -134,6 +134,7 @@ module Net
       else
         _start args
       end
+      nil
     end
 
     private
@@ -177,12 +178,12 @@ module Net
     public
 
     def finish
-      return false unless active?
+      active? or raise IOError, 'already closed protocol'
 
       do_finish if @command and not @command.critical?
       disconnect
       @active = false
-      true
+      nil
     end
 
     private

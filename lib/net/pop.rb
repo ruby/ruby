@@ -201,7 +201,7 @@ net/pop also supports APOP authentication. There's two way to use APOP:
 
 : finish
     finishes POP3 session.
-    If POP3 session had not be started, does nothing and return false.
+    If POP3 session had not be started, raises an IOError.
 
 : mails
     an array of Net::POPMail objects.

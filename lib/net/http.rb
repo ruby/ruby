@@ -203,7 +203,7 @@ Yes, this is not thread-safe.
 
 : finish
     finishes HTTP session.
-    If HTTP session had not started, do nothing and return false.
+    If HTTP session had not started, raises an IOError.
 
 : proxy?
     true if self is a HTTP proxy class
@@ -610,7 +610,7 @@ module Net
       req.response
     end
 
-    def request_by_name( name, path, header, body = nil )
+    def request_by_name( name, path, header = nil, body = nil )
       r = ::Net::NetPrivate::HTTPGenericRequest.new(
               name, body ? true : false, true,
               path, header )
@@ -622,17 +622,20 @@ module Net
 
 
     def connecting( req )
-      req['connection'] ||= 'keep-alive'
+      unless active? then
+        implicit = true
+        req['connection'] ||= 'close'
+      end
+
       if not @socket then
         start
-        req['connection'] = 'close'
       elsif @socket.closed? then
         re_connect
       end
       if not req.body_exist? or @seems_1_0_server then
         req['connection'] = 'close'
       end
-      req['host'] = addr_port
+      req['host'] = addr_port()
 
       yield req
       req.response.__send__ :terminate
@@ -650,6 +653,10 @@ module Net
       else
         D 'Conn close'
         @socket.close
+      end
+
+      if implicit then
+        finish
       end
     end
 

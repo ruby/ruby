@@ -1,3 +1,13 @@
+Wed Jul  4 04:07:36 2001  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb (HTTP#request_by_name): bug fix.
+
+	* lib/net/http.rb: does not write Connection: by default.
+
+	* lib/net/protocol.rb: "start" for started protocol is an error.
+
+	* lib/net/protocol.rb: "finish" for finished protocol is an error.
+
 Wed Jul  4 03:17:31 2001  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: new method HTTP#request_by_name (test)
