@@ -155,17 +155,6 @@ flock(int fd, int oper)
 //#undef const
 //FILE *fdopen(int, const char *);
 
-#if 0
-void
-sleep(unsigned int len)
-{
-	time_t end;
-
-	end = time((time_t *)0) + len;
-	while (time((time_t *)0) < end)
-		;
-}
-#endif
 
 //
 // Initialization stuff
@@ -2479,4 +2468,34 @@ done:
 	SetFileAttributes(newpath, oldatts);
 
     return res;
+}
+
+static long
+filetime_to_clock(FILETIME *ft)
+{
+    __int64 qw = ft->dwHighDateTime;
+    qw <<= 32;
+    qw |= ft->dwLowDateTime;
+    qw /= 10000;  /* File time ticks at 0.1uS, clock at 1mS */
+    return (long) qw;
+}
+
+int
+mytimes(struct tms *tmbuf)
+{
+    FILETIME create, exit, kernel, user;
+
+    if (GetProcessTimes(GetCurrentProcess(),&create, &exit, &kernel, &user)) {
+	tmbuf->tms_utime = filetime_to_clock(&user);
+	tmbuf->tms_stime = filetime_to_clock(&kernel);
+	tmbuf->cutime = 0;
+	tmbuf->cstime = 0;
+    }
+    else {
+	tmbuf->utime = clock();
+	tmbuf->stime = 0;
+	tmbuf->cutime = 0;
+	tmbuf->cstime = 0;
+    }
+    return 0;
 }

@@ -1460,6 +1460,10 @@ rb_undef(klass, id)
 	rb_raise(rb_eSecurityError, "Insecure: can't undef");
     }
     frozen_class_p(klass);
+    if (id == __id__ || id == __send__) {
+	rb_warn("undefining `%s' may cause serious problem",
+		rb_id2name(id));
+    }
     body = search_method(ruby_class, id, &origin);
     if (!body || !body->nd_body) {
 	char *s0 = " class";
@@ -2784,7 +2788,7 @@ rb_eval(self, n)
 		rb_raise(rb_eTypeError, "no class to add method");
 	    }
 	    if (ruby_class == rb_cObject && node->nd_mid == init) {
-		rb_warn("re-defining Object#initialize may cause infinite loop");
+		rb_warn("redefining Object#initialize may cause infinite loop");
 	    }
 	    if (node->nd_mid == __id__ || node->nd_mid == __send__) {
 		rb_warn("redefining `%s' may cause serious problem",
@@ -2856,7 +2860,7 @@ rb_eval(self, n)
 	    klass = rb_singleton_class(recv);
 	    if (st_lookup(RCLASS(klass)->m_tbl, node->nd_mid, &body)) {
 		if (rb_safe_level() >= 4) {
-		    rb_raise(rb_eSecurityError, "re-defining method prohibited");
+		    rb_raise(rb_eSecurityError, "redefining method prohibited");
 		}
 		if (RTEST(ruby_verbose)) {
 		    rb_warning("redefine %s", rb_id2name(node->nd_mid));
@@ -7778,8 +7782,8 @@ rb_thread_status(thread)
 
     if (rb_thread_dead(th)) {
 	if (NIL_P(th->errinfo) && (th->flags & THREAD_RAISED))
-	    return Qfalse;
-	return Qnil;
+	    return Qnil;
+	return Qfalse;
     }
 
     if (th->status == THREAD_STOPPED)

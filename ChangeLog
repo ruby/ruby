@@ -1,3 +1,17 @@
+Tue Aug 15 01:45:28 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (argf_eof): should return true at the end of ARGF without
+	  checking stdout if arguments are given.
+
+Mon Aug 14 10:34:32 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_thread_status): status should return false for normal
+	  termination, nil for termination by exception.
+
+Fri Aug 11 15:43:46 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_undef): give warning for undefining __id__, __send__.
+
 Thu Aug 10 08:05:03 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_callcc): returned current thread instaed of

@@ -93,14 +93,13 @@ usage(name)
 "-x[directory]   strip off text before #!ruby line and perhaps cd to directory",
 "--copyright     print the copyright",
 "--version       print the version",
-"\n",
 NULL
 };
     char **p = usage_msg;
 
-    printf("\nUsage: %s [switches] [--] [programfile] [arguments]", name);
+    printf("Usage: %s [switches] [--] [programfile] [arguments]\n", name);
     while (*p)
-	printf("\n  %s", *p++);
+	printf("  %s\n", *p++);
 }
 
 extern VALUE rb_load_path;

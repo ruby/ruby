@@ -957,20 +957,7 @@ time_s_times(obj)
 			 rb_float_new((double)buf.tms_cutime / HZ),
 			 rb_float_new((double)buf.tms_cstime / HZ));
 #else
-#ifdef NT
-    FILETIME create, exit, kernel, user;
-    HANDLE hProc;
-
-    hProc = GetCurrentProcess();
-    GetProcessTimes(hProc,&create, &exit, &kernel, &user);
-    return rb_struct_new(S_Tms,
-      rb_float_new((double)(kernel.dwHighDateTime*2e32+kernel.dwLowDateTime)/2e6),
-      rb_float_new((double)(user.dwHighDateTime*2e32+user.dwLowDateTime)/2e6),
-      rb_float_new((double)0),
-      rb_float_new((double)0));
-#else
     rb_notimplement();
-#endif
 #endif
 }
 

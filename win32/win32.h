@@ -414,4 +414,16 @@ extern char *mystrerror(int);
 #endif
 #define rename myrename
 
+struct tms {
+	long	tms_utime;
+	long	tms_stime;
+	long	tms_cutime;
+	long	tms_cstime;
+};
+
+#ifdef times
+#undef times
+#endif
+#define times mytimes
+
 #endif

@@ -452,7 +452,8 @@ class DEBUGGER__
       print <<EOHELP
 Debugger help v.-0.002b
 Commands
-  b[reak] [file or method:]<line>  set breakpoint to some position
+  b[reak] [file|method:]<line|method>
+	                     set breakpoint to some position
   wat[ch] <expression>       set watchpoint to some expression
   b[reak]                    list breakpoints
   del[ele][ nnn]             delete some or all breakpoints
@@ -475,7 +476,7 @@ Commands
   v[ar] i[nstance] <object>  show instance variables of object
   v[ar] c[onst] <object>     show constants of object
   m[ethod] i[nstance] <obj>  show methods of object
-  m[ethod] <class or module> show instance methods of class or module
+  m[ethod] <class|module>    show instance methods of class or module
   th[read] l[ist]            list all threads
   th[read] c[ur[rent]]       show current threads
   th[read] <nnn>             stop thread nnn
