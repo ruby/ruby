@@ -1,3 +1,8 @@
+Tue Oct 19 23:59:46 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_require_safe): provide the feature after loaded.
+	  [ruby-list:40085]
+
 Tue Oct 19 22:43:12 2004  Dave Thomas  <dave@pragprog.com>
 
 	* lib/rdoc/parsers/parse_rb.rb (RDoc::RubyParser::parse_attr): If
@@ -6,7 +11,7 @@ Tue Oct 19 22:43:12 2004  Dave Thomas  <dave@pragprog.com>
 
 Tue Oct 19 20:32:50 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole.c(ole_invoke): retrieve the result value when 
+	* ext/win32ole.c(ole_invoke): retrieve the result value when
 	  retrying the IDispatch::invoke.
 
 Tue Oct 19 17:24:11 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>

@@ -6625,19 +6625,20 @@ rb_provide(feature)
     rb_provide_feature(rb_str_new2(feature));
 }
 
-static void
+static int
 load_wait(ftptr)
     char *ftptr;
 {
     st_data_t th;
 
-    if (!loading_tbl) return;
-    if (!st_lookup(loading_tbl, (st_data_t)ftptr, &th)) return;
-    if ((rb_thread_t)th == curr_thread) return;
+    if (!loading_tbl) return Qfalse;
+    if (!st_lookup(loading_tbl, (st_data_t)ftptr, &th)) return Qfalse;
+    if ((rb_thread_t)th == curr_thread) return Qtrue;
     do {
 	CHECK_INTS;
 	rb_thread_schedule();
     } while (st_lookup(loading_tbl, (st_data_t)ftptr, &th));
+    return Qtrue;
 }
 
 /*
@@ -6762,13 +6763,11 @@ rb_require_safe(fname, safe)
 	ruby_safe_level = safe;
 	found = search_required(fname, &feature, &path);
 	if (found) {
-	    if (!path) {
-		load_wait(RSTRING(feature)->ptr);
+	    if (!path || load_wait(RSTRING(feature)->ptr)) {
 		result = Qfalse;
 	    }
 	    else {
 		ruby_safe_level = 0;
-		rb_provide_feature(feature);
 		switch (found) {
 		  case 'r':
 		    /* loading ruby library should be serialized. */
@@ -6795,6 +6794,7 @@ rb_require_safe(fname, safe)
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
+		rb_provide_feature(feature);
 		result = Qtrue;
 	    }
 	}
