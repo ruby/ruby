@@ -1,3 +1,11 @@
+Mon Jan 28 13:29:41 2002  K.Kosako  <kosako@sofnec.co.jp>
+
+	* eval.c (is_defined): defined?(Foo::Baz) should check constants
+	  only, no methods.
+
+	* eval.c (is_defined): should not dump core on defined?(a::b)
+	  where a is not a class nor a module.
+
 Fri Jan 25 17:48:43 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (solaris): add '-shared' only for GNU ld.

@@ -452,7 +452,7 @@ pty_getpty(self, command)
     rfptr->f = fdopen(info.fd, "r");
     rfptr->path = strdup(RSTRING(command)->ptr);
 
-    wfptr->mode = rb_io_mode_flags("w");
+    wfptr->mode = rb_io_mode_flags("w") | FMODE_SYNC;
     wfptr->f = fdopen(dup(info.fd), "w");
     wfptr->path = strdup(RSTRING(command)->ptr);
 

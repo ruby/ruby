@@ -304,7 +304,7 @@ void
 rb_include_module(klass, module)
     VALUE klass, module;
 {
-    VALUE p;
+    VALUE p, c;
     int changed = 0;
 
     rb_frozen_class_p(klass);
@@ -323,18 +323,19 @@ rb_include_module(klass, module)
 	Check_Type(module, T_MODULE);
     }
 
+    c = klass;
     while (module) {
 	if (RCLASS(klass)->m_tbl == RCLASS(module)->m_tbl)
 	    rb_raise(rb_eArgError, "cyclic include detected");
 	/* ignore if the module included already in superclasses */
 	for (p = RCLASS(klass)->super; p; p = RCLASS(p)->super) {
-	    if (BUILTIN_TYPE(p) == T_ICLASS &&
-		RCLASS(p)->m_tbl == RCLASS(module)->m_tbl) {
-		goto skip;
+	    if (BUILTIN_TYPE(p) == T_ICLASS) {
+		if (RCLASS(p)->m_tbl == RCLASS(module)->m_tbl)
+		    goto skip;
 	    }
 	}
-	RCLASS(klass)->super = include_class_new(module, RCLASS(klass)->super);
-	klass = RCLASS(klass)->super;
+	RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
+	c = RCLASS(c)->super;
 	changed = 1;
       skip:
 	module = RCLASS(module)->super;

@@ -813,12 +813,20 @@ class TkTextMark<TkObject
     tk_call @t.path, 'mark', 'gravity', @id, direction
   end
 
-  def next(index)
-    @t.tagid2obj(tk_call(@t.path, 'mark', 'next', index))
+  def next(index = nil)
+    if index
+      @t.tagid2obj(tk_call(@t.path, 'mark', 'next', index))
+    else
+      @t.tagid2obj(tk_call(@t.path, 'mark', 'next', @id))
+    end
   end
 
-  def previous(index)
-    @t.tagid2obj(tk_call(@t.path, 'mark', 'previous', index))
+  def previous(index = nil)
+    if index
+      @t.tagid2obj(tk_call(@t.path, 'mark', 'previous', index))
+    else
+      @t.tagid2obj(tk_call(@t.path, 'mark', 'previous', @id))
+    end
   end
 end
 

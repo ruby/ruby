@@ -1317,7 +1317,7 @@ class TkVariable
     opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
     idx = -1
     newopts = ''
-    @trace_var.each_with_index{|i,e| 
+    @trace_var.each_with_index{|e,i| 
       if idx < 0 && e[0] == opts && e[1] == cmd
 	idx = i
 	next
@@ -1351,7 +1351,7 @@ class TkVariable
     return unless @trace_elem[elem].kind_of? Array
     opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
     idx = -1
-    @trace_elem[elem].each_with_index{|i,e| 
+    @trace_elem[elem].each_with_index{|e,i| 
       if idx < 0 && e[0] == opts && e[1] == cmd
 	idx = i
 	next

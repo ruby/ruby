@@ -1871,8 +1871,9 @@ is_defined(self, node, buf)
 	      case T_MODULE:
 		if (rb_const_defined_at(val, node->nd_mid))
 		    return "constant";
+		break;
 	      default:
-		if (rb_method_boundp(val, node->nd_mid, 1)) {
+		if (rb_method_boundp(CLASS_OF(val), node->nd_mid, 1)) {
 		    return "method";
 		}
 	    }
@@ -6783,6 +6784,7 @@ umethod_bind(method, recv)
     method = Data_Make_Struct(rb_cMethod,struct METHOD,bm_mark,free,bound);
     *bound = *data;
     bound->recv = recv;
+    bound->rklass = CLASS_OF(recv);
 
     return method;
 }
