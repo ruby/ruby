@@ -1,3 +1,8 @@
+Fri Jun 20 23:28:27 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (proc_invoke): should not propagate TAG_BREAK and
+	  TAG_RETURN from orphan Proc object. [ruby-core:01148]
+
 Fri Jun 20 15:04:28 2003  NAKAMURA Usaku <usa@ruby-lang.org>
 
 	* defines.h (PATH_ENV): name of PATH environment. [new]. 

@@ -6940,7 +6940,7 @@ proc_invoke(proc, args, self, klass)
     volatile int safe = ruby_safe_level;
     volatile VALUE old_wrapper = ruby_wrapper;
     struct RVarmap * volatile old_dvars = ruby_dyna_vars;
-    int pcall;
+    volatile int pcall;
 
     if (rb_block_given_p() && ruby_frame->last_func) {
 	rb_warning("block for %s#%s is useless",
@@ -6973,7 +6973,7 @@ proc_invoke(proc, args, self, klass)
 
     POP_ITER();
     incoming_state = state;
-    if (ruby_block->tag->dst == state) {
+    if (orphan || ruby_block->tag->dst == state) {
 	state &= TAG_MASK;
     }
     ruby_block = old_block;
@@ -6986,7 +6986,7 @@ proc_invoke(proc, args, self, klass)
 	break;
       case TAG_RETRY:
 	if (pcall || orphan) {
-	    localjump_error("retry from block-closure", Qnil, state);
+	    localjump_error("retry from proc-closure", Qnil, state);
 	}
 	/* fall through */
       case TAG_BREAK:
@@ -6996,7 +6996,7 @@ proc_invoke(proc, args, self, klass)
 	}
 	else if (orphan) {	/* orphan block */
 	    char mesg[32];
-	    snprintf(mesg, sizeof mesg, "%s from block-closure",
+	    snprintf(mesg, sizeof mesg, "%s from proc-closure",
 		     state == TAG_BREAK ? "break" : "return");
 	    localjump_error(mesg, prot_tag->retval, state);
 	}
@@ -7006,7 +7006,7 @@ proc_invoke(proc, args, self, klass)
 	}
 	break;
       default:
-	JUMP_TAG(state);
+	JUMP_TAG(incoming_state);
     }
     return result;
 }
