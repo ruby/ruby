@@ -444,7 +444,7 @@ rb_hash_shift(hash)
     return rb_assoc_new(var.key, var.val);
 }
 
-static int
+static enum st_retval
 delete_if_i(key, value)
     VALUE key, value;
 {
@@ -549,7 +549,7 @@ rb_hash_empty_p(hash)
     return Qfalse;
 }
 
-static int
+static enum st_retval
 each_value_i(key, value)
     VALUE key, value;
 {
@@ -566,7 +566,7 @@ rb_hash_each_value(hash)
     return hash;
 }
 
-static int
+static enum st_retval
 each_key_i(key, value)
     VALUE key, value;
 {
@@ -583,7 +583,7 @@ rb_hash_each_key(hash)
     return hash;
 }
 
-static int
+static enum st_retval
 each_pair_i(key, value)
     VALUE key, value;
 {
@@ -982,7 +982,7 @@ rb_env_path_tainted()
 
 static int
 envix(nam)
-char *nam;
+const char *nam;
 {
     register int i, len = strlen(nam);
     char **env;

@@ -97,16 +97,17 @@ int eaccess();
 static void
 init_funcname(buf, file)
     char *buf;
-    char *file;
+    const char *file;
 {
-    char *p, *slash;
+    char *p;
+    const char *slash;
 
     /* Load the file as an object one */
-    for (p = file, slash = p-1; *p; p++) /* Find position of last '/' */
+    for (slash = file-1; *file; file++) /* Find position of last '/' */
 #ifdef __MACOS__
-	if (*p == ':') slash = p;
+	if (*file == ':') slash = file;
 #else
-	if (*p == '/') slash = p;
+	if (*file == '/') slash = file;
 #endif
 
     snprintf(buf, MAXPATHLEN, FUNCNAME_PATTERN, slash + 1);

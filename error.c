@@ -35,7 +35,8 @@ int ruby_nerrs;
 
 static void
 err_snprintf(buf, len, fmt, args)
-    char *buf, *fmt;
+    char *buf;
+    const char *fmt;
     int len;
     va_list args;
 {

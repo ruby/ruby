@@ -957,7 +957,7 @@ tcp_s_gethostbyname(obj, host)
 	sin->sin_addr.s_addr = htonl(i);
     }
     else {
-	setipaddr(host, &addr);
+	setipaddr(host, (struct sockaddr *)&addr);
     }
     switch (addr.ss_family) {
     case AF_INET:
@@ -1221,7 +1221,7 @@ ip_s_getaddress(obj, host)
 {
     struct sockaddr_storage addr;
 
-    setipaddr(host, &addr);
+    setipaddr(host, (struct sockaddr *)&addr);
     return mkipaddr((struct sockaddr *)&addr);
 }
 

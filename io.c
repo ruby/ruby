@@ -1328,7 +1328,7 @@ rb_io_flags_mode(flags)
 
 static int
 rb_sysopen(fname, flag, mode)
-    char *fname;
+    const char *fname;
     int flag;
     unsigned int mode;
 {
@@ -1427,7 +1427,7 @@ rb_file_open(fname, mode)
 static VALUE
 rb_file_sysopen_internal(io, fname, flags, mode)
     VALUE io;
-    char *fname;
+    const char *fname;
     int flags, mode;
 {
     OpenFile *fptr;

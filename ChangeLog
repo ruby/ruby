@@ -1,3 +1,23 @@
+Wed Jan 01 02:22:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* dln.c (init_funcname): get rid of gcc-3 -O3 warning.
+
+	* eval.c (copy_node_scope): ditto.
+
+	* error.c (err_snprintf): ditto.
+
+	* file.c (rb_file_s_chmod): ditto.
+
+	* hash.c (delete_if_i, each_value_i, each_key_i, each_pair_i,
+	  envix): ditto.
+
+	* io.c (rb_sysopen, rb_file_sysopen_internal): ditto.
+
+	* process.c (security): ditto.
+
+	* ext/socket/socket.c (tcp_s_gethostbyname, ip_s_getaddress):
+	  ditto.
+
 Tue Dec 31 20:23:25 2002  Akinori MUSHA  <knu@iDaemons.org>
 
 	* configure.in: Improve OpenBSD support. [obtained from: OpenBSD

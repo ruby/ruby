@@ -247,7 +247,7 @@ extern char *dln_find_exe();
 
 static void
 security(str)
-    char *str;
+    const char *str;
 {
     if (rb_safe_level() > 0) {
 	if (rb_env_path_tainted()) {

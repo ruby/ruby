@@ -935,7 +935,7 @@ rb_file_s_chmod(argc, argv)
     rb_scan_args(argc, argv, "1*", &vmode, &rest);
     mode = NUM2INT(vmode);
 
-    n = apply2files(chmod_internal, rest, mode);
+    n = apply2files(chmod_internal, rest, (void *)(long)mode);
     return INT2FIX(n);
 }
 
