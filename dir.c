@@ -45,7 +45,7 @@
 #  include <ndir.h>
 # endif
 # if defined(NT)
-#  include "missing/dir.h"
+#  include "win32/dir.h"
 # endif
 #endif
 

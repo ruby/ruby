@@ -1,3 +1,9 @@
+Sat May 26 00:15:57 2001  Usaku Nakamura  <usa@osb.att.ne.jp>
+
+	* win32/dir.h: replace missing/dir.h .
+
+	* dir.c: ditto.
+
 Fri May 25 14:19:25 2001  K.Kosako  <kosako@sofnec.co.jp>
 
 	* string.c (rb_str_replace): add taint status infection
