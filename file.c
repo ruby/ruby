@@ -1591,7 +1591,6 @@ file_expand_path(fname, dname, result)
 	    strcpy(buf, dir);
 	    free(dir);
 	}
-	p = skiproot(buf);
 #ifdef DOSISH
 	if (isdirsep(*s)) {
 	    /* specified full path, but not drive letter nor UNC */
@@ -1601,24 +1600,24 @@ file_expand_path(fname, dname, result)
 	    }
 	    else if (isdirsep(buf[0]) && isdirsep(buf[1])) {
 		/* or UNC share name */
-		if (*(p = nextdirsep(p))) p = nextdirsep(p + 1);
+		if (*(p = nextdirsep(buf + 2))) p = nextdirsep(p + 1);
 	    }
 	}
 	else
 #endif
-	if (*p)
-	    p = chompdirsep(p);
-	else if (p > buf)
-	    --p;
+	    p = chompdirsep(skiproot(buf));
     }
     else {
 	b = s;
 	do s++; while (isdirsep(*s));
-	p = buf + (s - b) - 1;
+	p = buf + (s - b);
 	BUFCHECK(p >= pend);
 	memset(buf, '/', p - buf);
     }
-    *p = '/';
+    if (p > buf && p[-1] == '/')
+	--p;
+    else
+	*p = '/';
 
     b = s;
     while (*s) {
