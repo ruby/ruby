@@ -1,4 +1,4 @@
 require 'pathname'
-require Pathname.new(__FILE__).parent.join('inlinetest.rb')
-target = __FILE__.scan(/test_(.*\.rb)$/)[0][0]
+require Pathname.new(__FILE__).dirname.join('inlinetest.rb')
+target = __FILE__[/test_(.*\.rb)$/, 1]
 InlineTest.loadtest(target)

@@ -1,3 +1,7 @@
+Tue Jan 13 13:04:24 2004  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/test_*.rb: Pathname#parent -> Pathname#dirname.
+
 Tue Jan 13 11:38:58 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/yaml/test_yaml.rb (YAML_Unit_Tests::test_spec_type_{int,float}):
