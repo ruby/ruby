@@ -1,3 +1,7 @@
+Thu Apr 17 11:10:59 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* ext/readline/readline.c: add the defined operator for bcc32.
+
 Wed Apr 16 00:14:06 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* misc/ruby-mode.el (ruby-special-char-p): should test at the

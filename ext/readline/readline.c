@@ -53,10 +53,10 @@ readline_readline(argc, argv, self)
     buff = (char*)rb_protect((VALUE(*)_((VALUE)))readline, (VALUE)prompt,
                               &status);
     if (status) {
-#if READLINE_40_OR_LATER
+#if defined READLINE_40_OR_LATER
         /* restore terminal mode and signal handler*/
         rl_cleanup_after_signal();
-#elif READLINE_21_OR_LATER
+#elif defined READLINE_21_OR_LATER
         /* restore terminal mode */
         (*rl_deprep_term_function)();
 #else
@@ -722,7 +722,7 @@ Init_readline()
     rb_define_singleton_method(ucomp, "call",
 			       username_completion_proc_call, 1);
     rb_define_const(mReadline, "USERNAME_COMPLETION_PROC", ucomp);
-#if READLINE_21_OR_LATER
+#if defined READLINE_21_OR_LATER
     rb_define_const(mReadline, "VERSION", rb_str_new2(rl_library_version));
 #else
     rb_define_const(mReadline, "VERSION",
