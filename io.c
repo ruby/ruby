@@ -1347,8 +1347,8 @@ fptr_finalize(fptr, noraise)
     if (fptr->f2) {
 	f2 = fileno(fptr->f2);
 	while ((n2 = fclose(fptr->f2)) < 0) {
+	    e = errno;
 	    if (!rb_io_wait_writable(f2)) {
-		e = errno;
 		break;
 	    }
 	    if (!fptr->f2) break;
