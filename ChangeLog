@@ -1,3 +1,7 @@
+Sat Nov  6 11:31:04 2004  Tadayoshi Funaba  <tadf@dotrb.org>
+
+	* lib/date.rb (_parse): checks whether zone was given.
+
 Sat Nov  6 00:46:27 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* string.c (rb_str_locktmp): check STR_TMPLOCK flag before

@@ -1,5 +1,5 @@
 # format.rb: Written by Tadayoshi Funaba 1999-2004
-# $Id: format.rb,v 2.13 2004-03-20 08:05:13+09 tadf Exp $
+# $Id: format.rb,v 2.14 2004-11-06 10:58:40+09 tadf Exp $
 
 require 'rational'
 
@@ -276,7 +276,9 @@ class Date
 	end
       end
 
-      zone = $6
+      if $6
+	zone = $6
+      end
     end
 
     # eu
@@ -423,7 +425,9 @@ class Date
       if $4
 	sec_fraction = $4.to_i.to_r / (10**$4.size)
       end
-      zone = $5
+      if $5
+	zone = $5
+      end
     end
 
     if str.sub!(/\b(bc\b|bce\b|b\.c\.|b\.c\.e\.)/ino, ' ')
