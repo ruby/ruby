@@ -1,11 +1,13 @@
 /* public domain rewrite of memcmp(3) */
 
-char *
-memmove (dst, src, n)
-    char *dst, *src;
+void *
+memmove (d, s, n)
+    void *d, *s;
     int n;
 {
-    char *ret = dst;
+    char *dst = d;
+    char *src = s;
+    void *ret = dst;
 
     if (src < dst) {
 	src += n;

@@ -1,3 +1,11 @@
+Tue Nov 18 23:31:36 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* missing/memmove.c (memmove): take void *, not char *.
+
+	* missing.h (memmove): ditto.
+
+	* missing.h (strchr, strrchr): return char *, not int.
+
 Tue Nov 18 22:20:10 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (fu_same?): temporal fix for windows.

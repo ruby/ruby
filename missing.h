@@ -74,7 +74,7 @@ extern int memcmp _((char *, char *, int));
 */
 
 #ifndef HAVE_MEMMOVE
-extern char *memmove _((char *, char *, int));
+extern void *memmove _((void *, void *, int));
 #endif
 
 #ifndef HAVE_MKDIR
@@ -96,8 +96,8 @@ extern int strncasecmp _((char *, char *, int));
 #endif
 
 #ifndef HAVE_STRCHR
-extern int strchr _((char *, int));
-extern int strrchr _((char *, int));
+extern char *strchr _((char *, int));
+extern char *strrchr _((char *, int));
 #endif
 
 #ifndef HAVE_STRERROR
