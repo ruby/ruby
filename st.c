@@ -536,10 +536,14 @@ strhash(string)
     register int val = 0;
 
     while ((c = *string++) != '\0') {
-	val = val*33 + c;
+	val += c;
+	val += (val << 10);
+	val ^= (val >> 6);
     }
+    val += (val << 3);
+    val ^= (val >> 11);
 
-    return val + (val>>5);
+    return val + (val << 15);
 #else
     register int val = 0;
 

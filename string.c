@@ -744,9 +744,13 @@ rb_str_hash(str)
     }
 #elif HASH_PERL
     while (len--) {
-	key = key*33 + *p++;
+	key += *p++;
+	key += (key << 10);
+	key ^= (key >> 6);
     }
-    key = key + (key>>5);
+    key += (key << 3);
+    key ^= (key >> 11);
+    key += (key << 15);
 #else
     while (len--) {
 	key = key*65599 + *p;

@@ -1,3 +1,10 @@
+Sun Nov  2 01:02:04 2003  Akinori MUSHA  <knu@iDaemons.org>
+
+	* string.c (rb_str_hash): Update the HASH_PERL alternative hash
+	  algorithm in sync with Perl 5.8.
+
+	* st.c (strhash): Ditto.
+
 Sat Nov  1 18:21:09 2003 GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ssl.c (ossl_ssl_peer_cert_chain): add new method
