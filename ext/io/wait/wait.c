@@ -40,15 +40,12 @@ io_ready_p(io)
     VALUE io;
 {
     OpenFile *fptr;
-    FILE *fp;
     int n;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    fp = fptr->f;
-    if (feof(fp)) return Qfalse;
-    if (rb_read_pending(fp)) return Qtrue;
-    if (ioctl(fileno(fp), FIONREAD, &n)) rb_sys_fail(0);
+    if (rb_io_read_pending(fptr)) return Qtrue;
+    if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
     if (n > 0) return INT2NUM(n);
     return Qnil;
 }
@@ -68,7 +65,6 @@ io_wait(argc, argv, io)
 {
     OpenFile *fptr;
     fd_set rd;
-    FILE *fp;
     int fd, n;
     VALUE timeout;
     struct timeval *tp, timerec;
@@ -84,16 +80,14 @@ io_wait(argc, argv, io)
 	tp = &timerec;
     }
 
-    fp = fptr->f;
-    if (feof(fp)) return Qfalse;
-    if (rb_read_pending(fp)) return Qtrue;
-    fd = fileno(fp);
+    if (rb_io_read_pending(fptr)) return Qtrue;
+    fd = fptr->fd;
     FD_ZERO(&rd);
     FD_SET(fd, &rd);
     if (rb_thread_select(fd + 1, &rd, NULL, NULL, tp) < 0)
 	rb_sys_fail(0);
     rb_io_check_closed(fptr);
-    if (ioctl(fileno(fp), FIONREAD, &n)) rb_sys_fail(0);
+    if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
     if (n > 0) return io;
     return Qnil;
 }

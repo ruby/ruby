@@ -20,8 +20,6 @@
 #include <sys/fcntl.h>
 #endif
 
-#define STRIO_EOF FMODE_SYNC
-
 struct StringIO {
     VALUE string;
     long pos;
@@ -490,7 +488,6 @@ strio_rewind(self)
     struct StringIO *ptr = StringIO(self);
     ptr->pos = 0;
     ptr->lineno = 0;
-    ptr->flags &= ~STRIO_EOF;
     return INT2FIX(0);
 }
 
@@ -522,7 +519,6 @@ strio_seek(argc, argv, self)
 	error_inval(0);
     }
     ptr->pos = offset;
-    ptr->flags &= ~STRIO_EOF;
     return INT2FIX(0);
 }
 
@@ -557,7 +553,6 @@ strio_getc(self)
     struct StringIO *ptr = readable(StringIO(self));
     int c;
     if (ptr->pos >= RSTRING(ptr->string)->len) {
-	ptr->flags |= STRIO_EOF;
 	return Qnil;
     }
     c = RSTRING(ptr->string)->ptr[ptr->pos++];
@@ -588,7 +583,6 @@ strio_ungetc(self, ch)
 	    OBJ_INFECT(ptr->string, self);
 	}
 	--ptr->pos;
-	ptr->flags &= ~STRIO_EOF;
     }
     return Qnil;
 }
@@ -661,7 +655,6 @@ strio_getline(argc, argv, ptr)
     }
 
     if (ptr->pos >= (n = RSTRING(ptr->string)->len)) {
-	ptr->flags |= STRIO_EOF;
 	return Qnil;
     }
     s = RSTRING(ptr->string)->ptr;
@@ -674,7 +667,6 @@ strio_getline(argc, argv, ptr)
 	p = s;
 	while (*p == '\n') {
 	    if (++p == e) {
-		ptr->flags |= STRIO_EOF;
 		return Qnil;
 	    }
 	}
@@ -858,11 +850,6 @@ strio_read(argc, argv, self)
 		rb_raise(rb_eArgError, "negative length %ld given", len);
 	    }
 	    if (len > 0 && ptr->pos >= RSTRING(ptr->string)->len) {
-		ptr->flags |= STRIO_EOF;
-		if (!NIL_P(str)) rb_str_resize(str, 0);
-		return Qnil;
-	    }
-	    else if (ptr->flags & STRIO_EOF) {
 		if (!NIL_P(str)) rb_str_resize(str, 0);
 		return Qnil;
 	    }
@@ -873,7 +860,6 @@ strio_read(argc, argv, self)
 	olen = -1;
 	len = RSTRING(ptr->string)->len;
 	if (len <= ptr->pos) {
-	    ptr->flags |= STRIO_EOF;
 	    if (NIL_P(str)) {
 		str = rb_str_new(0, 0);
 	    }
@@ -899,13 +885,12 @@ strio_read(argc, argv, self)
 	MEMCPY(RSTRING(str)->ptr, RSTRING(ptr->string)->ptr + ptr->pos, char, len);
     }
     if (NIL_P(str)) {
-	if (!(ptr->flags & STRIO_EOF)) str = rb_str_new(0, 0);
+	str = rb_str_new(0, 0);
 	len = 0;
     }
     else {
 	ptr->pos += len = RSTRING(str)->len;
     }
-    if (olen < 0 || olen > len) ptr->flags |= STRIO_EOF;
     return str;
 }
 

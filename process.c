@@ -1349,8 +1349,8 @@ rb_fork(status, chfunc, charg)
 #endif
 
 #ifndef __VMS
-    fflush(stdout);
-    fflush(stderr);
+    rb_io_flush(rb_stdout);
+    rb_io_flush(rb_stderr);
 #endif
 
 #ifdef FD_CLOEXEC

@@ -21,14 +21,22 @@
 #endif
 
 typedef struct OpenFile {
+    int fd;
     FILE *f;			/* stdio ptr for read/write */
-    FILE *f2;			/* additional ptr for rw pipes */
     int mode;			/* mode flags */
     int pid;			/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
     void (*finalize) _((struct OpenFile*,int)); /* finalize proc */
     long refcnt;
+    char *wbuf;
+    int wbuf_off;
+    int wbuf_len;
+    int wbuf_capa;
+    char *rbuf;
+    int rbuf_off;
+    int rbuf_len;
+    int rbuf_capa;
 } OpenFile;
 
 #define FMODE_READABLE  1
@@ -38,8 +46,8 @@ typedef struct OpenFile {
 #define FMODE_CREATE  128
 #define FMODE_BINMODE   4
 #define FMODE_SYNC      8
-#define FMODE_WBUF     16
-#define FMODE_RBUF     32
+#define FMODE_LINEBUF  16
+#define FMODE_UNSEEKABLE 32
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 
@@ -51,23 +59,29 @@ typedef struct OpenFile {
     }\
     fp = 0;\
     fp = RFILE(obj)->fptr = ALLOC(OpenFile);\
-    fp->f = fp->f2 = NULL;\
+    fp->fd = -1;\
+    fp->f = NULL;\
     fp->mode = 0;\
     fp->pid = 0;\
     fp->lineno = 0;\
     fp->path = NULL;\
     fp->finalize = 0;\
     fp->refcnt = 1;\
+    fp->wbuf = NULL;\
+    fp->wbuf_off = 0;\
+    fp->wbuf_len = 0;\
+    fp->wbuf_capa = 0;\
+    fp->rbuf = NULL;\
+    fp->rbuf_off = 0;\
+    fp->rbuf_len = 0;\
+    fp->rbuf_capa = 0;\
 } while (0)
 
 #define GetReadFile(fptr) ((fptr)->f)
-#define GetWriteFile(fptr) (((fptr)->f2) ? (fptr)->f2 : (fptr)->f)
+#define GetWriteFile(fptr) ((fptr)->f)
 
 FILE *rb_fopen _((const char*, const char*));
 FILE *rb_fdopen _((int, const char*));
-int rb_getc _((FILE*));
-long rb_io_fread _((char *, long, FILE *));
-long rb_io_fwrite _((const char *, long, FILE *));
 int  rb_io_mode_flags _((const char*));
 int  rb_io_modenum_flags _((int));
 void rb_io_check_writable _((OpenFile*));
@@ -82,6 +96,32 @@ int rb_io_wait_writable _((int));
 VALUE rb_io_taint_check _((VALUE));
 NORETURN(void rb_eof_error _((void)));
 
-void rb_read_check _((FILE*));
-int rb_read_pending _((FILE*));
+void rb_io_read_check _((OpenFile*));
+int rb_io_read_pending _((OpenFile*));
+
+int rb_getc _((FILE*))
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+  ;
+long rb_io_fread _((char *, long, FILE *))
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+  ;
+long rb_io_fwrite _((const char *, long, FILE *))
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+  ;
+void rb_read_check _((FILE*))
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+  ;
+int rb_read_pending _((FILE*))
+#ifdef __GNUC__
+  __attribute__ ((deprecated))
+#endif
+  ;
 #endif

@@ -429,7 +429,7 @@ ossl_ssl_setup(VALUE self)
         GetOpenFile(io, fptr);
         rb_io_check_readable(fptr);
         rb_io_check_writable(fptr);
-        SSL_set_fd(ssl, TO_SOCKET(fileno(fptr->f)));
+        SSL_set_fd(ssl, TO_SOCKET(fptr->fd));
     }
 
     return Qtrue;
@@ -505,7 +505,7 @@ ossl_ssl_read(int argc, VALUE *argv, VALUE self)
 
     if (ssl) {
 	if(SSL_pending(ssl) <= 0)
-	    rb_thread_wait_fd(fileno(fptr->f));
+	    rb_thread_wait_fd(fptr->fd);
 	for (;;){
 	    nread = SSL_read(ssl, RSTRING(str)->ptr, RSTRING(str)->len);
 	    switch(SSL_get_error(ssl, nread)){

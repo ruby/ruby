@@ -19,6 +19,8 @@
 #include <ctype.h>
 #include <errno.h>
 
+#include <sys/types.h>
+#include <sys/socket.h>
 
 #if defined(MSDOS) || defined(__BOW__) || defined(__CYGWIN__) || defined(_WIN32) || defined(__human68k__) || defined(__EMX__) || defined(__BEOS__)
 # define NO_SAFE_RENAME
@@ -101,7 +103,7 @@ VALUE rb_default_rs;
 
 static VALUE argf;
 
-static ID id_write, id_read, id_getc;
+static ID id_write, id_read, id_getc, id_flush;
 
 extern char *ruby_inplace_mode;
 
@@ -117,50 +119,14 @@ static VALUE lineno = INT2FIX(0);
 #define open(file_spec, flags, mode)  open(file_spec, flags, mode, "rfm=stmlf")
 #endif
 
-#ifdef _STDIO_USES_IOSTREAM  /* GNU libc */
-#  ifdef _IO_fpos_t
-#    define READ_DATA_PENDING(fp) ((fp)->_IO_read_ptr != (fp)->_IO_read_end)
-#    define READ_DATA_PENDING_COUNT(fp) ((fp)->_IO_read_end - (fp)->_IO_read_ptr)
-#    define READ_DATA_PENDING_PTR(fp) ((fp)->_IO_read_ptr)
-#  else
-#    define READ_DATA_PENDING(fp) ((fp)->_gptr < (fp)->_egptr)
-#    define READ_DATA_PENDING_COUNT(fp) ((fp)->_egptr - (fp)->_gptr)
-#    define READ_DATA_PENDING_PTR(fp) ((fp)->_gptr)
-#  endif
-#elif defined(FILE_COUNT)
-#  define READ_DATA_PENDING(fp) ((fp)->FILE_COUNT > 0)
-#  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_COUNT)
-#elif defined(FILE_READEND)
-#  define READ_DATA_PENDING(fp) ((fp)->FILE_READPTR < (fp)->FILE_READEND)
-#  define READ_DATA_PENDING_COUNT(fp) ((fp)->FILE_READEND - (fp)->FILE_READPTR)
-#elif defined(__BEOS__)
-#  define READ_DATA_PENDING(fp) (fp->_state._eof == 0)
-#elif defined(__VMS)
-#  define READ_DATA_PENDING(fp) (((unsigned int)((*(fp))->_flag) & _IOEOF) == 0)
-#else
-/* requires systems own version of the ReadDataPending() */
-extern int ReadDataPending();
-#  define READ_DATA_PENDING(fp) (!feof(fp))
-#  define READ_DATA_BUFFERED(fp) 0
-#endif
-#ifndef READ_DATA_BUFFERED
-#  define READ_DATA_BUFFERED(fp) READ_DATA_PENDING(fp)
-#endif
+#define READ_DATA_PENDING(fptr) ((fptr)->rbuf_len)
+#define READ_DATA_PENDING_COUNT(fptr) ((fptr)->rbuf_len)
+#define READ_DATA_PENDING_PTR(fptr) ((fptr)->rbuf+(fptr)->rbuf_off)
+#define READ_DATA_BUFFERED(fptr) READ_DATA_PENDING(fptr)
 
-#ifndef READ_DATA_PENDING_PTR
-# ifdef FILE_READPTR
-#  define READ_DATA_PENDING_PTR(fp) ((char *)(fp)->FILE_READPTR)
-# endif
-#endif
-
-#if defined __DJGPP__
-# undef READ_DATA_PENDING_COUNT
-# undef READ_DATA_PENDING_PTR
-#endif
-
-#define READ_CHECK(fp) do {\
-    if (!READ_DATA_PENDING(fp)) {\
-	rb_thread_wait_fd(fileno(fp));\
+#define READ_CHECK(fptr) do {\
+    if (!READ_DATA_PENDING(fptr)) {\
+	rb_thread_wait_fd((fptr)->fd);\
 	rb_io_check_closed(fptr);\
      }\
 } while(0)
@@ -195,12 +161,12 @@ rb_io_check_closed(fptr)
     OpenFile *fptr;
 {
     rb_io_check_initialized(fptr);
-    if (!fptr->f && !fptr->f2) {
+    if (fptr->fd < 0 || !fptr->f) {
 	rb_raise(rb_eIOError, "closed stream");
     }
 }
 
-static void io_fflush _((FILE *, OpenFile *));
+static int io_fflush _((OpenFile *));
 
 static VALUE
 rb_io_get_io(io)
@@ -216,18 +182,59 @@ rb_io_check_io(io)
     return rb_check_convert_type(io, T_FILE, "IO", "to_io");
 }
 
+static void
+io_unread(OpenFile *fptr)
+{
+    off_t r;
+    rb_io_check_closed(fptr);
+    if (fptr->rbuf_len == 0 || fptr->mode & FMODE_UNSEEKABLE)
+        return;
+    /* xxx: target position may be negative if buffer is filled by ungetc */
+    r = lseek(fptr->fd, -fptr->rbuf_len, SEEK_CUR);
+    if (r < 0) {
+        if (errno == ESPIPE)
+            fptr->mode |= FMODE_UNSEEKABLE;
+        return;
+    }
+    fptr->rbuf_off = 0;
+    fptr->rbuf_len = 0;
+    return;
+}
+
+static int
+io_ungetc(int c, OpenFile *fptr)
+{
+    if (fptr->rbuf == NULL) {
+        fptr->rbuf_off = 0;
+        fptr->rbuf_len = 0;
+        fptr->rbuf_capa = 8192;
+        fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
+    }
+    if (c < 0 || fptr->rbuf_len == fptr->rbuf_capa) {
+        return -1;
+    }
+    if (fptr->rbuf_off == 0) {
+        if (fptr->rbuf_len)
+            MEMMOVE(fptr->rbuf+1, fptr->rbuf, char, fptr->rbuf_len);
+        fptr->rbuf_off = 1;
+    }
+    fptr->rbuf_off--;
+    fptr->rbuf_len++;
+    fptr->rbuf[fptr->rbuf_off] = c;
+    return c;
+}
+
 static OpenFile *
 flush_before_seek(fptr)
     OpenFile *fptr;
 {
-    if (fptr->mode & FMODE_WBUF) {
-	io_fflush(GetWriteFile(fptr), fptr);
-    }
+    io_fflush(fptr);
+    io_unread(fptr);
     return fptr;
 }
 
-#define io_seek(fptr, ofs, whence) fseeko(flush_before_seek(fptr)->f, ofs, whence)
-#define io_tell(fptr) ftello(flush_before_seek(fptr)->f)
+#define io_seek(fptr, ofs, whence) lseek(flush_before_seek(fptr)->fd, ofs, whence)
+#define io_tell(fptr) lseek(flush_before_seek(fptr)->fd, 0, SEEK_CUR)
 
 #ifndef SEEK_CUR
 # define SEEK_SET 0
@@ -242,15 +249,12 @@ rb_io_check_readable(fptr)
     OpenFile *fptr;
 {
     rb_io_check_closed(fptr);
-#if NEED_IO_SEEK_BETWEEN_RW
-    if (((fptr->mode & FMODE_WBUF) ||
-	 (fptr->mode & (FMODE_SYNCWRITE|FMODE_RBUF)) == FMODE_SYNCWRITE) &&
-	!feof(fptr->f) &&
-	!fptr->f2) {
-	io_seek(fptr, 0, SEEK_CUR);
+    if (!(fptr->mode & FMODE_READABLE)) {
+	rb_raise(rb_eIOError, "not opened for reading");
     }
-#endif
-    fptr->mode |= FMODE_RBUF;
+    if (fptr->wbuf_len) {
+        io_fflush(fptr);
+    }
 }
 
 void
@@ -261,11 +265,8 @@ rb_io_check_writable(fptr)
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
-    if ((fptr->mode & FMODE_RBUF) && !feof(fptr->f) && !fptr->f2) {
-	io_seek(fptr, 0, SEEK_CUR);
-    }
-    if (!fptr->f2) {
-	fptr->mode &= ~FMODE_RBUF;
+    if (fptr->rbuf_len) {
+        io_unread(fptr);
     }
 }
 
@@ -273,16 +274,35 @@ int
 rb_read_pending(fp)
     FILE *fp;
 {
-    return READ_DATA_PENDING(fp);
+    /* xxx: return READ_DATA_PENDING(fp); */
+    return 1;
+}
+
+int
+rb_io_read_pending(OpenFile *fptr)
+{
+    return READ_DATA_PENDING(fptr);
 }
 
 void
 rb_read_check(fp)
     FILE *fp;
 {
+    /* xxx:
     if (!READ_DATA_PENDING(fp)) {
 	rb_thread_wait_fd(fileno(fp));
     }
+    */
+    return;
+}
+
+void
+rb_io_read_check(OpenFile *fptr)
+{
+    if (!READ_DATA_PENDING(fptr)) {
+	rb_thread_wait_fd(fptr->fd);
+    }
+    return;
 }
 
 static int
@@ -317,26 +337,42 @@ io_alloc(klass)
     return (VALUE)io;
 }
 
-static void
-io_fflush(f, fptr)
-    FILE *f;
+static int
+io_fflush(fptr)
     OpenFile *fptr;
 {
-    int n;
+    int r;
+    int wbuf_off, wbuf_len;
 
-    if (!rb_thread_fd_writable(fileno(f))) {
+    rb_io_check_closed(fptr);
+    if (fptr->wbuf_len == 0)
+        return 0;
+    if (!rb_thread_fd_writable(fptr->fd)) {
         rb_io_check_closed(fptr);
     }
-    for (;;) {
-	TRAP_BEG;
-	n = fflush(f);
-	TRAP_END;
-	if (n != EOF) break;
-	if (!rb_io_wait_writable(fileno(f)))
-	    rb_sys_fail(fptr->path);
-        rb_io_check_closed(fptr);
+  retry:
+    if (fptr->wbuf_len == 0)
+        return 0;
+    wbuf_off = fptr->wbuf_off;
+    wbuf_len = fptr->wbuf_len;
+    TRAP_BEG;
+    r = write(fptr->fd, fptr->wbuf+fptr->wbuf_off, fptr->wbuf_len);
+    TRAP_END; /* xxx: signal handler may modify wbuf */
+    if (r == fptr->wbuf_len) {
+        fptr->wbuf_off = 0;
+        fptr->wbuf_len = 0;
+        return 0;
     }
-    fptr->mode &= ~FMODE_WBUF;
+    if (0 <= r) {
+        fptr->wbuf_off = (wbuf_off += r);
+        fptr->wbuf_len = (wbuf_len -= r);
+        errno = EAGAIN;
+    }
+    if (rb_io_wait_writable(fptr->fd)) {
+        rb_io_check_closed(fptr);
+        goto retry;
+    }
+    return -1;
 }
 
 int
@@ -403,55 +439,59 @@ io_fwrite(ptr, len, fptr)
     OpenFile *fptr;
 {
     long n, r;
-    FILE *f = GetWriteFile(fptr);
 
     if ((n = len) <= 0) return n;
-    if (fptr->mode & FMODE_SYNC) {
-	io_fflush(f, fptr);
-	if (!rb_thread_fd_writable(fileno(f))) {
+    if (fptr->wbuf == NULL && !(fptr->mode & FMODE_SYNC)) {
+        fptr->wbuf_off = 0;
+        fptr->wbuf_len = 0;
+        fptr->wbuf_capa = 8192;
+        fptr->wbuf = ALLOC_N(char, fptr->wbuf_capa);
+    }
+    if ((fptr->mode & FMODE_SYNC) ||
+        (fptr->wbuf && fptr->wbuf_capa <= fptr->wbuf_len + len) ||
+        ((fptr->mode & FMODE_LINEBUF) && memchr(ptr, '\n', len))) {
+        /* xxx: use writev to avoid double write if available */
+        if (fptr->wbuf_len+len <= fptr->wbuf_capa) {
+            if (fptr->wbuf_capa < fptr->wbuf_off+fptr->wbuf_len+len) {
+                MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
+                fptr->wbuf_off = 0;
+            }
+            MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr, char, len);
+            fptr->wbuf_len += len;
+            n = 0;
+        }
+        if (io_fflush(fptr) < 0)
+            return -1L;
+        if (n == 0)
+            return len;
+	if (!rb_thread_fd_writable(fptr->fd)) {
 	    rb_io_check_closed(fptr);
 	}
       retry:
-	r = write(fileno(f), ptr, n);
+        TRAP_BEG;
+	r = write(fptr->fd, ptr, n);
+        TRAP_END; /* xxx: signal handler may modify given string. */
         if (r == n) return len;
         if (0 <= r) {
             ptr += r;
             n -= r;
             errno = EAGAIN;
         }
-        if (rb_io_wait_writable(fileno(f))) {
+        if (rb_io_wait_writable(fptr->fd)) {
             rb_io_check_closed(fptr);
             goto retry;
         }
         return -1L;
     }
-#if defined __human68k__
-    do {
-	if (fputc(*ptr++, f) == EOF) {
-	    if (ferror(f)) return -1L;
-	    break;
-	}
-    } while (--n > 0);
-#else
-    while (errno = 0, ptr += (r = fwrite(ptr, 1, n, f)), (n -= r) > 0) {
-	if (ferror(f)
-#if defined __BORLANDC__
-	    || errno
-#endif
-	) {
-#ifdef __hpux
-	    if (!errno) errno = EAGAIN;
-#endif
-	    if (rb_io_wait_writable(fileno(f))) {
-		rb_io_check_closed(fptr);
-		clearerr(f);
-		continue;
-	    }
-	    return -1L;
-	}
+
+    if (fptr->wbuf_off) {
+        if (fptr->wbuf_len)
+            MEMMOVE(fptr->wbuf, fptr->wbuf+fptr->wbuf_off, char, fptr->wbuf_len);
+        fptr->wbuf_off = 0;
     }
-#endif
-    return len - n;
+    MEMMOVE(fptr->wbuf+fptr->wbuf_off+fptr->wbuf_len, ptr, char, len);
+    fptr->wbuf_len += len;
+    return len;
 }
 
 long
@@ -462,8 +502,8 @@ rb_io_fwrite(ptr, len, f)
 {
     OpenFile of;
 
+    of.fd = fileno(f);
     of.f = f;
-    of.f2 = NULL;
     of.mode = FMODE_WRITABLE;
     of.path = NULL;
     return io_fwrite(ptr, len, &of);
@@ -512,9 +552,6 @@ io_write(io, str)
     n = io_fwrite(RSTRING(str)->ptr, RSTRING(str)->len, fptr);
     rb_str_unlocktmp(str);
     if (n == -1L) rb_sys_fail(fptr->path);
-    if (!(fptr->mode & FMODE_SYNC)) {
-	fptr->mode |= FMODE_WBUF;
-    }
 
     return LONG2FIX(n);
 }
@@ -566,22 +603,27 @@ rb_io_addstr(io, str)
  *     no newline
  */
 
-static VALUE
+VALUE
 rb_io_flush(io)
     VALUE io;
 {
     OpenFile *fptr;
-    FILE *f;
+
+    if (TYPE(io) != T_FILE) {
+        return rb_funcall(io, id_flush, 0);
+    }
 
     GetOpenFile(io, fptr);
-    rb_io_check_writable(fptr);
-    f = GetWriteFile(fptr);
 
-    io_fflush(f, fptr);
+    if (fptr->mode & FMODE_WRITABLE) {
+        io_fflush(fptr);
+    }
+    if (fptr->mode & FMODE_READABLE) {
+        io_unread(fptr);
+    }
 
     return io;
 }
-
 
 /*
  *  call-seq:
@@ -621,7 +663,6 @@ rb_io_seek(io, offset, whence)
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, whence);
     if (pos < 0) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
 
     return INT2FIX(0);
 }
@@ -685,7 +726,6 @@ rb_io_set_pos(io, offset)
     GetOpenFile(io, fptr);
     pos = io_seek(fptr, pos, SEEK_SET);
     if (pos < 0) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
 
     return OFFT2NUM(pos);
 }
@@ -712,13 +752,42 @@ rb_io_rewind(io)
 
     GetOpenFile(io, fptr);
     if (io_seek(fptr, 0L, 0) < 0) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
     if (io == current_file) {
 	gets_lineno -= fptr->lineno;
     }
     fptr->lineno = 0;
 
     return INT2FIX(0);
+}
+
+static int
+io_getc(OpenFile *fptr)
+{
+    int r;
+    if (fptr->rbuf == NULL) {
+        fptr->rbuf_off = 0;
+        fptr->rbuf_len = 0;
+        fptr->rbuf_capa = 8192;
+        fptr->rbuf = ALLOC_N(char, fptr->rbuf_capa);
+    }
+    if (fptr->rbuf_len == 0) {
+      retry:
+        TRAP_BEG;
+        r = read(fptr->fd, fptr->rbuf, fptr->rbuf_capa);
+        TRAP_END; /* xxx: signal handler may modify rbuf */
+        if (r < 0) {
+            if (rb_io_wait_readable(fptr->fd))
+                goto retry;
+            rb_sys_fail(fptr->path);
+        }
+        fptr->rbuf_off = 0;
+        fptr->rbuf_len = r;
+        if (r == 0)
+            return -1; /* EOF */
+    }
+    fptr->rbuf_off++;
+    fptr->rbuf_len--;
+    return (unsigned char)fptr->rbuf[fptr->rbuf_off-1];
 }
 
 /*
@@ -744,18 +813,14 @@ rb_io_eof(io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
-    if (feof(fptr->f)) return Qtrue;
-    if (READ_DATA_PENDING(fptr->f)) return Qfalse;
-    READ_CHECK(fptr->f);
-    TRAP_BEG;
-    ch = getc(fptr->f);
-    TRAP_END;
+    if (READ_DATA_PENDING(fptr)) return Qfalse;
+    READ_CHECK(fptr);
+    ch = io_getc(fptr);
 
     if (ch != EOF) {
-	ungetc(ch, fptr->f);
+	io_ungetc(ch, fptr);
 	return Qfalse;
     }
-    clearerr(fptr->f);
     return Qtrue;
 }
 
@@ -831,13 +896,11 @@ rb_io_fsync(io)
 {
 #ifdef HAVE_FSYNC
     OpenFile *fptr;
-    FILE *f;
 
     GetOpenFile(io, fptr);
-    f = GetWriteFile(fptr);
 
-    io_fflush(f, fptr);
-    if (fsync(fileno(f)) < 0)
+    io_fflush(fptr);
+    if (fsync(fptr->fd) < 0)
 	rb_sys_fail(fptr->path);
     return INT2FIX(0);
 #else
@@ -866,7 +929,7 @@ rb_io_fileno(io)
     int fd;
 
     GetOpenFile(io, fptr);
-    fd = fileno(fptr->f);
+    fd = fptr->fd;
     return INT2FIX(fd);
 }
 
@@ -923,7 +986,7 @@ rb_io_inspect(obj)
     if (!fptr || !fptr->path) return rb_any_to_s(obj);
     cname = rb_obj_classname(obj);
     len = strlen(cname) + strlen(fptr->path) + 5;
-    if (!(fptr->f || fptr->f2)) {
+    if (!fptr->f) {
 	st = " (closed)";
 	len += 9;
     }
@@ -948,24 +1011,17 @@ rb_io_to_io(io)
 
 /* reading functions */
 static long
-read_buffered_data(ptr, len, f)
-    char *ptr;
-    long len;
-    FILE *f;
+read_buffered_data(char *ptr, long len, OpenFile *fptr)
 {
     long n;
 
-#ifdef READ_DATA_PENDING_COUNT
-    n = READ_DATA_PENDING_COUNT(f);
+    n = READ_DATA_PENDING_COUNT(fptr);
     if (n <= 0) return 0;
     if (n > len) n = len;
-    return fread(ptr, 1, n, f);
-#else
-    for (n = 0; n < len && READ_DATA_PENDING(f); ++n) {
-	*ptr++ = getc(f);
-    }
+    MEMMOVE(ptr, fptr->rbuf+fptr->rbuf_off, char, n);
+    fptr->rbuf_off += n;
+    fptr->rbuf_len -= n;
     return n;
-#endif
 }
 
 long
@@ -978,37 +1034,15 @@ io_fread(ptr, len, fptr)
     int c;
 
     while (n > 0) {
-	c = read_buffered_data(ptr, n, fptr->f);
-	if (c < 0) goto eof;
+	c = read_buffered_data(ptr, n, fptr);
 	if (c > 0) {
 	    ptr += c;
 	    if ((n -= c) <= 0) break;
 	}
-	rb_thread_wait_fd(fileno(fptr->f));
+	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
-	TRAP_BEG;
-	c = getc(fptr->f);
-	TRAP_END;
-	if (c == EOF) {
-	  eof:
-	    if (ferror(fptr->f)) {
-		switch (errno) {
-		  case EINTR:
-#if defined(ERESTART)
-		  case ERESTART:
-#endif
-		    clearerr(fptr->f);
-		    continue;
-		  case EAGAIN:
-#if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-		  case EWOULDBLOCK:
-#endif
-		    if (len > n) {
-			clearerr(fptr->f);
-		    }
-		}
-		if (len == n) return 0;
-	    }
+	c = io_getc(fptr);
+	if (c < 0) {
 	    break;
 	}
 	*ptr++ = c;
@@ -1025,8 +1059,8 @@ rb_io_fread(ptr, len, f)
 {
     OpenFile of;
 
+    of.fd = fileno(f);
     of.f = f;
-    of.f2 = NULL;
     of.mode = FMODE_READABLE;
     return io_fread(ptr, len, &of);
 }
@@ -1045,8 +1079,7 @@ remain_size(fptr)
     off_t siz = BUFSIZ;
     off_t pos;
 
-    if (feof(fptr->f)) return 0;
-    if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
+    if (fstat(fptr->fd, &st) == 0  && S_ISREG(st.st_mode)
 #ifdef __BEOS__
 	&& (st.st_dev > 3)
 #endif
@@ -1081,14 +1114,11 @@ read_all(fptr, siz, str)
     }
     for (;;) {
 	rb_str_locktmp(str);
-	READ_CHECK(fptr->f);
+	READ_CHECK(fptr);
 	n = io_fread(RSTRING(str)->ptr+bytes, siz-bytes, fptr);
 	rb_str_unlocktmp(str);
 	if (n == 0 && bytes == 0) {
-	    if (!fptr->f) break;
-	    if (feof(fptr->f)) break;
-	    if (!ferror(fptr->f)) break;
-	    rb_sys_fail(fptr->path);
+            break;
 	}
 	bytes += n;
 	if (bytes < siz) break;
@@ -1186,20 +1216,20 @@ io_readpartial(argc, argv, io)
     if (len == 0)
 	return str;
 
-    READ_CHECK(fptr->f);
+    READ_CHECK(fptr);
     if (RSTRING(str)->len != len) {
       modified:
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
-    n = read_buffered_data(RSTRING(str)->ptr, len, fptr->f);
+    n = read_buffered_data(RSTRING(str)->ptr, len, fptr);
     if (n <= 0) {
       again:
 	if (RSTRING(str)->len != len) goto modified;
         TRAP_BEG;
-        n = read(fileno(fptr->f), RSTRING(str)->ptr, len);
+        n = read(fptr->fd, RSTRING(str)->ptr, len);
         TRAP_END;
         if (n < 0) {
-            if (rb_io_wait_readable(fileno(fptr->f)))
+            if (rb_io_wait_readable(fptr->fd))
                 goto again;
             rb_sys_fail(fptr->path);
         }
@@ -1260,11 +1290,10 @@ io_read(argc, argv, io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
-    if (feof(fptr->f)) return Qnil;
     if (len == 0) return str;
 
     rb_str_locktmp(str);
-    READ_CHECK(fptr->f);
+    READ_CHECK(fptr);
     if (RSTRING(str)->len != len) {
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
@@ -1272,11 +1301,8 @@ io_read(argc, argv, io)
     rb_str_unlocktmp(str);
     if (n == 0) {
 	if (!fptr->f) return Qnil;
-	if (feof(fptr->f)) {
-	    rb_str_resize(str, 0);
-	    return Qnil;
-	}
-	if (len > 0) rb_sys_fail(fptr->path);
+        rb_str_resize(str, 0);
+        return Qnil;
     }
     rb_str_resize(str, n);
     RSTRING(str)->len = n;
@@ -1292,20 +1318,13 @@ appendline(fptr, delim, strp)
     int delim;
     VALUE *strp;
 {
-    FILE *f = fptr->f;
     VALUE str = *strp;
     int c = EOF;
-#ifndef READ_DATA_PENDING_PTR
-    char buf[8192];
-    char *bp = buf, *bpe = buf + sizeof buf - 3;
-    int update = Qfalse;
-#endif
 
     do {
-#ifdef READ_DATA_PENDING_PTR
-	long pending = READ_DATA_PENDING_COUNT(f);
+	long pending = READ_DATA_PENDING_COUNT(fptr);
 	if (pending > 0) {
-	    const char *p = READ_DATA_PENDING_PTR(f);
+	    const char *p = READ_DATA_PENDING_PTR(fptr);
 	    const char *e = memchr(p, delim, pending);
 	    long last = 0, len = (c != EOF);
 	    if (e) pending = e - p + 1;
@@ -1322,7 +1341,7 @@ appendline(fptr, delim, strp)
 	    if (c != EOF) {
 		RSTRING(str)->ptr[last++] = c;
 	    }
-	    fread(RSTRING(str)->ptr + last, 1, pending, f); /* must not fail */
+	    read_buffered_data(RSTRING(str)->ptr + last, pending, fptr); /* must not fail */
 	    if (e) return delim;
 	}
 	else if (c != EOF) {
@@ -1335,47 +1354,14 @@ appendline(fptr, delim, strp)
 		RSTRING(str)->ptr[RSTRING(str)->len++] = c;
 	    }
 	}
-	rb_thread_wait_fd(fileno(f));
+	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
-#else
-	READ_CHECK(f);
-#endif
-	TRAP_BEG;
-	c = getc(f);
-	TRAP_END;
-	if (c == EOF) {
-	    if (ferror(f)) {
-		clearerr(f);
-		if (!rb_io_wait_readable(fileno(f)))
-		    rb_sys_fail(fptr->path);
-		continue;
-	    }
-#ifdef READ_DATA_PENDING_PTR
+	c = io_getc(fptr);
+	if (c < 0) {
 	    return c;
-#endif
 	}
-#ifndef READ_DATA_PENDING_PTR
-	if (c == EOF || (*bp++ = c) == delim || bp == bpe) {
-	    int cnt = bp - buf;
-
-	    if (cnt > 0) {
-		if (!NIL_P(str))
-		    rb_str_cat(str, buf, cnt);
-		else
-		    *strp = str = rb_str_new(buf, cnt);
-	    }
-	    if (c == EOF) {
-		if (update)
-		    return (int)RSTRING(str)->ptr[RSTRING(str)->len-1];
-		return c;
-	    }
-	    bp = buf;
-	}
-	update = Qtrue;
-#endif
     } while (c != delim);
 
-#ifdef READ_DATA_PENDING_PTR
     {
 	char ch = c;
 	if (!NIL_P(str)) {
@@ -1385,7 +1371,6 @@ appendline(fptr, delim, strp)
 	    *strp = str = rb_str_new(&ch, 1);
 	}
     }
-#endif
 
     return c;
 }
@@ -1395,33 +1380,26 @@ swallow(fptr, term)
     OpenFile *fptr;
     int term;
 {
-    FILE *f = fptr->f;
     int c;
 
     do {
-#ifdef READ_DATA_PENDING_PTR
 	long cnt;
-	while ((cnt = READ_DATA_PENDING_COUNT(f)) > 0) {
+	while ((cnt = READ_DATA_PENDING_COUNT(fptr)) > 0) {
 	    char buf[1024];
-	    const char *p = READ_DATA_PENDING_PTR(f);
+	    const char *p = READ_DATA_PENDING_PTR(fptr);
 	    int i;
 	    if (cnt > sizeof buf) cnt = sizeof buf;
 	    if (*p != term) return Qtrue;
 	    i = cnt;
 	    while (--i && *++p == term);
-	    if (!fread(buf, 1, cnt - i, f)) /* must not fail */
+	    if (!read_buffered_data(buf, cnt - i, fptr)) /* must not fail */
 		rb_sys_fail(fptr->path);
 	}
-	rb_thread_wait_fd(fileno(f));
+	rb_thread_wait_fd(fptr->fd);
 	rb_io_check_closed(fptr);
-#else
-	READ_CHECK(f);
-#endif
-	TRAP_BEG;
-	c = getc(f);
-	TRAP_END;
+	c = io_getc(fptr);
 	if (c != term) {
-	    ungetc(c, f);
+	    io_ungetc(c, fptr);
 	    return Qtrue;
 	}
     } while (c != EOF);
@@ -1782,22 +1760,13 @@ rb_io_each_byte(io)
     for (;;) {
 	rb_io_check_readable(fptr);
 	f = fptr->f;
-	READ_CHECK(f);
-	TRAP_BEG;
-	c = getc(f);
-	TRAP_END;
-	if (c == EOF) {
-	    if (ferror(f)) {
-		clearerr(f);
-		if (!rb_io_wait_readable(fileno(f)))
-		    rb_sys_fail(fptr->path);
-		continue;
-	    }
+	READ_CHECK(fptr);
+	c = io_getc(fptr);
+	if (c < 0) {
 	    break;
 	}
 	rb_yield(INT2FIX(c & 0xff));
     }
-    if (ferror(f)) rb_sys_fail(fptr->path);
     return io;
 }
 
@@ -1825,19 +1794,10 @@ rb_io_getc(io)
     rb_io_check_readable(fptr);
     f = fptr->f;
 
-  retry:
-    READ_CHECK(f);
-    TRAP_BEG;
-    c = getc(f);
-    TRAP_END;
+    READ_CHECK(fptr);
+    c = io_getc(fptr);
 
-    if (c == EOF) {
-	if (ferror(f)) {
-	    clearerr(f);
-	    if (!rb_io_wait_readable(fileno(f)))
-		rb_sys_fail(fptr->path);
-	    goto retry;
-	}
+    if (c < 0) {
 	return Qnil;
     }
     return INT2FIX(c & 0xff);
@@ -1847,6 +1807,7 @@ int
 rb_getc(f)
     FILE *f;
 {
+    /*xxx
     int c;
 
     if (!READ_DATA_PENDING(f)) {
@@ -1857,6 +1818,8 @@ rb_getc(f)
     TRAP_END;
 
     return c;
+    */
+    return -1;
 }
 
 /*
@@ -1903,11 +1866,9 @@ rb_io_ungetc(io, c)
     int cc = NUM2INT(c);
 
     GetOpenFile(io, fptr);
-    if (!(fptr->mode & FMODE_RBUF))
-	rb_raise(rb_eIOError, "unread stream");
     rb_io_check_readable(fptr);
 
-    if (ungetc(cc, fptr->f) == EOF && cc != EOF) {
+    if (io_ungetc(cc, fptr) == EOF && cc != EOF) {
 	rb_raise(rb_eIOError, "ungetc failed");
     }
     return Qnil;
@@ -1932,7 +1893,7 @@ rb_io_isatty(io)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
-    if (isatty(fileno(fptr->f)) == 0)
+    if (isatty(fptr->fd) == 0)
 	return Qfalse;
     return Qtrue;
 }
@@ -1942,43 +1903,18 @@ fptr_finalize(fptr, noraise)
     OpenFile *fptr;
     int noraise;
 {
-    int n1 = 0, n2 = 0, f1, f2 = -1;
-
-    if (fptr->f2) {
-	f2 = fileno(fptr->f2);
-	while (n2 = 0, fflush(fptr->f2) < 0) {
-	    n2 = errno;
-	    if (!rb_io_wait_writable(f2)) {
-		break;
-	    }
-	    if (!fptr->f2) break;
-	}
-	if (fclose(fptr->f2) < 0 && n2 == 0) {
-	    n2 = errno;
-	}
-	fptr->f2 = 0;
+    if (fptr->wbuf_len) {
+        io_fflush(fptr);
     }
-    if (fptr->f) {
-	f1 = fileno(fptr->f);
-	if ((f2 == -1) && (fptr->mode & FMODE_WBUF)) {
-	    while (n1 = 0, fflush(fptr->f) < 0) {
-		n1 = errno;
-		if (!rb_io_wait_writable(f1)) break;
-		if (!fptr->f) break;
-	    }
-	}
-	if (fclose(fptr->f) < 0 && n1 == 0) {
-	    n1 = errno;
-	}
-	fptr->f = 0;
-	if (n1 == EBADF && f1 == f2) {
-	    n1 = 0;
-	}
+    if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr || fptr->fd <= 2) {
+	return;
     }
-    if (!noraise && (n1 || n2)) {
-	errno = (n1 ? n1 : n2);
+    if (fptr->f && fclose(fptr->f) < 0 && !noraise) {
 	rb_sys_fail(fptr->path);
     }
+    fptr->fd = -1;
+    fptr->f = 0;
+    fptr->mode &= ~(FMODE_READABLE|FMODE_WRITABLE);
 }
 
 static void
@@ -1999,16 +1935,19 @@ rb_io_fptr_finalize(fptr)
     OpenFile *fptr;
 {
     if (!fptr) return 0;
-    if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr) {
-	return 0;
-    }
     if (fptr->refcnt <= 0 || --fptr->refcnt) return 0;
     if (fptr->path) {
 	free(fptr->path);
 	fptr->path = 0;
     }
-    if ((fptr->f && fileno(fptr->f) > 2) || fptr->f2) {
-	rb_io_fptr_cleanup(fptr, Qtrue);
+    rb_io_fptr_cleanup(fptr, Qtrue);
+    if (fptr->rbuf) {
+        free(fptr->rbuf);
+        fptr->rbuf = 0;
+    }
+    if (fptr->wbuf) {
+        free(fptr->wbuf);
+        fptr->wbuf = 0;
     }
     free(fptr);
     return 1;
@@ -2019,22 +1958,15 @@ rb_io_close(io)
     VALUE io;
 {
     OpenFile *fptr;
-    int fd, fd2;
+    int fd;
 
     fptr = RFILE(io)->fptr;
     if (!fptr) return Qnil;
-    if (fptr->f2) {
-	fd2 = fileno(fptr->f2);
-    }
-    else {
-	if (!fptr->f) return Qnil;
-	fd2 = -1;
-    }
+    if (!fptr->f) return Qnil;
 
-    fd = fileno(fptr->f);
+    fd = fptr->fd;
     rb_io_fptr_cleanup(fptr, Qfalse);
     rb_thread_fd_close(fd);
-    if (fd2 >= 0) rb_thread_fd_close(fd2);
 
     if (fptr->pid) {
 	rb_syswait(fptr->pid);
@@ -2101,7 +2033,7 @@ rb_io_closed(io)
 
     fptr = RFILE(io)->fptr;
     rb_io_check_initialized(fptr);
-    return (fptr->f || fptr->f2)?Qfalse:Qtrue;
+    return fptr->f ? Qfalse : Qtrue;
 }
 
 /*
@@ -2127,25 +2059,26 @@ rb_io_close_read(io)
     VALUE io;
 {
     OpenFile *fptr;
-    int n;
+    struct stat sbuf;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     GetOpenFile(io, fptr);
-    if (fptr->f2 == 0 && (fptr->mode & FMODE_WRITABLE)) {
+    if (fstat(fptr->fd, &sbuf) < 0)
+        rb_sys_fail(fptr->path);
+    if (S_ISSOCK(sbuf.st_mode)) {
+        if (shutdown(fptr->fd, 0) < 0)
+            rb_sys_fail(fptr->path);
+        fptr->mode &= ~FMODE_READABLE;
+        if (!(fptr->mode & FMODE_WRITABLE))
+            return rb_io_close(io);
+        return Qnil;
+    }
+    if (fptr->mode & FMODE_WRITABLE) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
     }
-    if (fptr->f2 == 0) {
-	return rb_io_close(io);
-    }
-    n = fclose(fptr->f);
-    fptr->mode &= ~FMODE_READABLE;
-    fptr->f = fptr->f2;
-    fptr->f2 = 0;
-    if (n < 0) rb_sys_fail(fptr->path);
-
-    return Qnil;
+    return rb_io_close(io);
 }
 
 /*
@@ -2172,24 +2105,27 @@ rb_io_close_write(io)
     VALUE io;
 {
     OpenFile *fptr;
-    int n;
+    struct stat sbuf;
 
     if (rb_safe_level() >= 4 && !OBJ_TAINTED(io)) {
 	rb_raise(rb_eSecurityError, "Insecure: can't close");
     }
     GetOpenFile(io, fptr);
-    if (fptr->f2 == 0 && (fptr->mode & FMODE_READABLE)) {
+    if (fstat(fptr->fd, &sbuf) < 0)
+        rb_sys_fail(fptr->path);
+    if (S_ISSOCK(sbuf.st_mode)) {
+        if (shutdown(fptr->fd, 1) < 0)
+            rb_sys_fail(fptr->path);
+        fptr->mode &= ~FMODE_WRITABLE;
+        if (!(fptr->mode & FMODE_READABLE))
+            return rb_io_close(io);
+        return Qnil;
+    }
+
+    if (fptr->mode & FMODE_READABLE) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
-    if (fptr->f2 == 0) {
-	return rb_io_close(io);
-    }
-    n = fclose(fptr->f2);
-    fptr->f2 = 0;
-    fptr->mode &= ~FMODE_WRITABLE;
-    if (n < 0) rb_sys_fail(fptr->path);
-
-    return Qnil;
+    return rb_io_close(io);
 }
 
 /*
@@ -2221,15 +2157,14 @@ rb_io_sysseek(argc, argv, io)
     }
     pos = NUM2OFFT(offset);
     GetOpenFile(io, fptr);
-    if ((fptr->mode & FMODE_READABLE) && READ_DATA_BUFFERED(fptr->f)) {
+    if ((fptr->mode & FMODE_READABLE) && READ_DATA_BUFFERED(fptr)) {
 	rb_raise(rb_eIOError, "sysseek for buffered IO");
     }
-    if ((fptr->mode & FMODE_WRITABLE) && (fptr->mode & FMODE_WBUF)) {
+    if ((fptr->mode & FMODE_WRITABLE) && fptr->wbuf_len) {
 	rb_warn("sysseek for buffered IO");
     }
-    pos = lseek(fileno(fptr->f), pos, whence);
+    pos = lseek(fptr->fd, pos, whence);
     if (pos == -1) rb_sys_fail(fptr->path);
-    clearerr(fptr->f);
 
     return OFFT2NUM(pos);
 }
@@ -2252,7 +2187,6 @@ rb_io_syswrite(io, str)
     VALUE io, str;
 {
     OpenFile *fptr;
-    FILE *f;
     long n;
 
     rb_secure(4);
@@ -2261,15 +2195,14 @@ rb_io_syswrite(io, str)
 
     GetOpenFile(io, fptr);
     rb_io_check_writable(fptr);
-    f = GetWriteFile(fptr);
 
-    if (fptr->mode & FMODE_WBUF) {
+    if (fptr->wbuf_len) {
 	rb_warn("syswrite for buffered IO");
     }
-    if (!rb_thread_fd_writable(fileno(f))) {
+    if (!rb_thread_fd_writable(fptr->fd)) {
         rb_io_check_closed(fptr);
     }
-    n = write(fileno(f), RSTRING(str)->ptr, RSTRING(str)->len);
+    n = write(fptr->fd, RSTRING(str)->ptr, RSTRING(str)->len);
 
     if (n == -1) rb_sys_fail(fptr->path);
 
@@ -2318,19 +2251,19 @@ rb_io_sysread(argc, argv, io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
-    if (READ_DATA_BUFFERED(fptr->f)) {
+    if (READ_DATA_BUFFERED(fptr)) {
 	rb_raise(rb_eIOError, "sysread for buffered IO");
     }
     rb_str_locktmp(str);
 
-    n = fileno(fptr->f);
-    rb_thread_wait_fd(fileno(fptr->f));
+    n = fptr->fd;
+    rb_thread_wait_fd(fptr->fd);
     rb_io_check_closed(fptr);
     if (RSTRING(str)->len != ilen) {
 	rb_raise(rb_eRuntimeError, "buffer string modified");
     }
     TRAP_BEG;
-    n = read(fileno(fptr->f), RSTRING(str)->ptr, ilen);
+    n = read(fptr->fd, RSTRING(str)->ptr, ilen);
     TRAP_END;
 
     rb_str_unlocktmp(str);
@@ -2365,18 +2298,14 @@ rb_io_binmode(io)
     OpenFile *fptr;
 
     GetOpenFile(io, fptr);
-    if (!(fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr->f)) {
+    if (!(fptr->mode & FMODE_BINMODE) && READ_DATA_BUFFERED(fptr)) {
 	rb_raise(rb_eIOError, "buffer already filled with text-mode content");
     }
 #ifdef __human68k__
     if (fptr->f)
 	fmode(fptr->f, _IOBIN);
-    if (fptr->f2)
-	fmode(fptr->f2, _IOBIN);
 #else
-    if (fptr->f && setmode(fileno(fptr->f), O_BINARY) == -1)
-	rb_sys_fail(fptr->path);
-    if (fptr->f2 && setmode(fileno(fptr->f2), O_BINARY) == -1)
+    if (fptr->f && setmode(fptr->fd, O_BINARY) == -1)
 	rb_sys_fail(fptr->path);
 #endif
 
@@ -2636,6 +2565,7 @@ rb_fdopen(fd, mode)
 	}
     }
 
+    /* xxx: should be _IONBF?  A buffer in FILE may have trouble. */
 #ifdef USE_SETVBUF
     if (setvbuf(file, NULL, _IOFBF, 0) != 0)
 	rb_warn("setvbuf() can't be honoured (fd=%d)", fd);
@@ -2653,7 +2583,10 @@ rb_file_open_internal(io, fname, mode)
     MakeOpenFile(io, fptr);
     fptr->mode = rb_io_mode_flags(mode);
     fptr->path = strdup(fname);
-    fptr->f = rb_fopen(fptr->path, rb_io_flags_mode(fptr->mode));
+    fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(rb_io_flags_mode(fptr->mode)), 0666);
+    fptr->f = rb_fdopen(fptr->fd, rb_io_flags_mode(fptr->mode));
+    if ((fptr->mode & FMODE_WRITABLE) && isatty(fptr->fd))
+        fptr->mode |= FMODE_LINEBUF;
 
     return io;
 }
@@ -2672,7 +2605,6 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     int flags, mode;
 {
     OpenFile *fptr;
-    int fd;
     char *m;
 
     MakeOpenFile(io, fptr);
@@ -2680,8 +2612,10 @@ rb_file_sysopen_internal(io, fname, flags, mode)
     fptr->path = strdup(fname);
     m = rb_io_modenum_mode(flags);
     fptr->mode = rb_io_modenum_flags(flags);
-    fd = rb_sysopen(fptr->path, flags, mode);
-    fptr->f = rb_fdopen(fd, m);
+    fptr->fd = rb_sysopen(fptr->path, flags, mode);
+    fptr->f = rb_fdopen(fptr->fd, m);
+    if ((fptr->mode & FMODE_WRITABLE) && isatty(fptr->fd))
+        fptr->mode |= FMODE_LINEBUF;
 
     return io;
 }
@@ -2762,10 +2696,8 @@ pipe_finalize(fptr, noraise)
     if (fptr->f) {
 	status = pclose(fptr->f);
     }
-    if (fptr->f2) {
-	status = pclose(fptr->f2);
-    }
-    fptr->f = fptr->f2 = 0;
+    fptr->fd = -1;
+    fptr->f = 0;
 #if defined DJGPP
     status <<= 8;
 #endif
@@ -2793,26 +2725,34 @@ rb_io_unbuffered(fptr)
 
 struct popen_arg {
     struct rb_exec_arg exec;
-    int pr[2], pw[2];
+    int modef;
+    int pair[2];
 };
 
 static void
 popen_redirect(p)
     struct popen_arg *p;
 {
-    if (p->pr[1] != -1) {
-	close(p->pr[0]);
-	if (p->pr[1] != 1) {
-	    dup2(p->pr[1], 1);
-	    close(p->pr[1]);
-	}
+    if ((p->modef & FMODE_READABLE) && (p->modef & FMODE_WRITABLE)) {
+        close(p->pair[0]);
+        dup2(p->pair[1], 0);
+        dup2(p->pair[1], 1);
+        if (2 <= p->pair[1])
+            close(p->pair[1]);
     }
-    if (p->pw[0] != -1) {
-	close(p->pw[1]);
-	if (p->pw[0] != 0) {
-	    dup2(p->pw[0], 0);
-	    close(p->pw[0]);
-	}
+    else if (p->modef & FMODE_READABLE) {
+        close(p->pair[0]);
+        if (p->pair[1] != 1) {
+            dup2(p->pair[1], 1);
+            close(p->pair[1]);
+        }
+    }
+    else {
+        close(p->pair[1]);
+        if (p->pair[0] != 0) {
+            dup2(p->pair[0], 0);
+            close(p->pair[0]);
+        }
     }
 }
 
@@ -2855,6 +2795,7 @@ pipe_open(argc, argv, mode)
     char *exename = NULL;
 #endif
     char *cmd;
+    FILE *fp;
 
     prog = rb_check_argv(argc, argv);
     if (!prog) {
@@ -2867,22 +2808,26 @@ pipe_open(argc, argv, mode)
     doexec = (strcmp("-", cmd) != 0);
     if (!doexec) {
 	fflush(stdin);		/* is it really needed? */
-	fflush(stdout);
-	fflush(stderr);
+        rb_io_flush(rb_stdout);
+        rb_io_flush(rb_stderr);
     }
-    arg.pr[0] = arg.pr[1] = arg.pw[0] = arg.pw[1] = -1;
-    if ((modef & FMODE_READABLE) && pipe(arg.pr) == -1) {
-	rb_sys_fail(cmd);
+    arg.modef = modef;
+    arg.pair[0] = arg.pair[1] = -1;
+    if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
+        if (socketpair(AF_UNIX, SOCK_STREAM, 0, arg.pair) < 0)
+            rb_sys_fail(cmd);
     }
-    if ((modef & FMODE_WRITABLE) && pipe(arg.pw) == -1) {
-	if (modef & FMODE_READABLE) {
-	    int e = errno;
-	    close(arg.pr[0]); close(arg.pr[1]);
-	    errno = e;
-	}
-	rb_sys_fail(cmd);
+    else if (modef & FMODE_READABLE) {
+        if (pipe(arg.pair) < 0)
+            rb_sys_fail(cmd);
     }
-
+    else if (modef & FMODE_WRITABLE) {
+        if (pipe(arg.pair) < 0)
+            rb_sys_fail(cmd);
+    }
+    else {
+        rb_sys_fail(cmd);
+    }
     if (doexec) {
 	arg.exec.argc = argc;
 	arg.exec.argv = argv;
@@ -2900,16 +2845,25 @@ pipe_open(argc, argv, mode)
     }
 
     /* parent */
-    if (modef & FMODE_READABLE) close(arg.pr[1]);
-    if (modef & FMODE_WRITABLE) close(arg.pw[0]);
     if (pid == -1) {
 	int e = errno;
-	if (modef & FMODE_READABLE) close(arg.pr[0]);
-	if (modef & FMODE_WRITABLE) close(arg.pw[1]);
+	close(arg.pair[0]);
+	close(arg.pair[1]);
 	errno = e;
 	rb_sys_fail(cmd);
     }
-#define PIPE_FDOPEN(i) (rb_fdopen((i?arg.pw:arg.pr)[i], i?"w":"r"))
+    if ((modef & FMODE_READABLE) && (modef & FMODE_WRITABLE)) {
+        close(arg.pair[1]);
+	fp = rb_fdopen(arg.pair[0], "r+");
+    }
+    else if (modef & FMODE_READABLE) {
+        close(arg.pair[1]);
+	fp = rb_fdopen(arg.pair[0], "r");
+    }
+    else {
+        close(arg.pair[0]);
+	fp = rb_fdopen(arg.pair[1], "w");
+    }
 #elif defined(_WIN32)
     if (argc) {
 	char **args = ALLOCA_N(char *, argc+1);
@@ -2943,25 +2897,18 @@ pipe_open(argc, argv, mode)
 #define PIPE_FDOPEN(i) (i?fpw:fpr)
 #else
     prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-    fpr = popen(StringValueCStr(prog), mode);
+    fp = popen(StringValueCStr(prog), mode);
 
-    if (!fpr) rb_sys_fail(RSTRING(prog)->ptr);
-#define PIPE_FDOPEN(i) (fpr)
+    if (!fp) rb_sys_fail(RSTRING(prog)->ptr);
 #endif
 
     port = io_alloc(rb_cIO);
     MakeOpenFile(port, fptr);
+    fptr->f = fp;
+    fptr->fd = fileno(fp);
     fptr->mode = modef | FMODE_SYNC;
     fptr->pid = pid;
 
-    if (modef & FMODE_READABLE) {
-	fptr->f = PIPE_FDOPEN(0);
-    }
-    if (modef & FMODE_WRITABLE) {
-	FILE *fpwt = PIPE_FDOPEN(1);
-	if (fptr->f) fptr->f2 = fpwt;
-	else fptr->f = fpwt;
-    }
 #if defined (__CYGWIN__) || !defined(HAVE_FORK)
     fptr->finalize = pipe_finalize;
     pipe_add_fptr(fptr);
@@ -3052,8 +2999,8 @@ rb_io_s_popen(argc, argv, klass)
 	/* child */
 	if (rb_block_given_p()) {
 	    rb_yield(Qnil);
-	    fflush(stdout);
-	    fflush(stderr);
+            rb_io_flush(rb_stdout);
+            rb_io_flush(rb_stderr);
 	    _exit(0);
 	}
 	return Qnil;
@@ -3323,14 +3270,11 @@ io_reopen(io, nfile)
     if (orig->mode & FMODE_READABLE) {
 	pos = io_tell(orig);
     }
-    if (orig->f2) {
-	io_fflush(orig->f2, orig);
-    }
-    else if (orig->mode & FMODE_WRITABLE) {
-	io_fflush(orig->f, orig);
+    if (orig->mode & FMODE_WRITABLE) {
+	io_fflush(orig);
     }
     if (fptr->mode & FMODE_WRITABLE) {
-	io_fflush(GetWriteFile(fptr), fptr);
+	io_fflush(fptr);
     }
 
     /* copy OpenFile structure */
@@ -3343,12 +3287,11 @@ io_reopen(io, nfile)
     fptr->finalize = orig->finalize;
 
     mode = rb_io_mode_string(fptr);
-    fd = fileno(fptr->f);
-    fd2 = fileno(orig->f);
+    fd = fptr->fd;
+    fd2 = orig->fd;
     if (fd != fd2) {
 #if !defined __CYGWIN__
 	if (fptr->f == stdin || fptr->f == stdout || fptr->f == stderr) {
-	    clearerr(fptr->f);
 	    /* need to keep stdio objects */
 	    if (dup2(fd2, fd) < 0)
 		rb_sys_fail(orig->path);
@@ -3370,22 +3313,6 @@ io_reopen(io, nfile)
 	    if (io_seek(orig, pos, SEEK_SET) < 0) {
 		rb_sys_fail(orig->path);
 	    }
-	}
-    }
-
-    if (fptr->f2 && fd != fileno(fptr->f2)) {
-	fd = fileno(fptr->f2);
-	if (!orig->f2) {
-	    fclose(fptr->f2);
-	    rb_thread_fd_close(fd);
-	    fptr->f2 = 0;
-	}
-	else if (fd != (fd2 = fileno(orig->f2))) {
-	    fclose(fptr->f2);
-	    rb_thread_fd_close(fd);
-	    if (dup2(fd2, fd) < 0)
-		rb_sys_fail(orig->path);
-	    fptr->f2 = rb_fdopen(fd, "w");
 	}
     }
 
@@ -3451,11 +3378,8 @@ rb_io_reopen(argc, argv, file)
     fptr->path = strdup(RSTRING(fname)->ptr);
     mode = rb_io_flags_mode(fptr->mode);
     if (!fptr->f) {
-	fptr->f = rb_fopen(fptr->path, mode);
-	if (fptr->f2) {
-	    fclose(fptr->f2);
-	    fptr->f2 = 0;
-	}
+        fptr->fd = rb_sysopen(fptr->path, rb_io_mode_modenum(mode), 0666);
+	fptr->f = rb_fdopen(fptr->fd, mode);
 	return file;
     }
 
@@ -3466,12 +3390,6 @@ rb_io_reopen(argc, argv, file)
     if (setvbuf(fptr->f, NULL, _IOFBF, 0) != 0)
 	rb_warn("setvbuf() can't be honoured for %s", RSTRING(fname)->ptr);
 #endif
-
-    if (fptr->f2) {
-	if (freopen(RSTRING(fname)->ptr, "w", fptr->f2) == 0) {
-	    rb_sys_fail(fptr->path);
-	}
-    }
 
     return file;
 }
@@ -3490,16 +3408,7 @@ rb_io_init_copy(dest, io)
     GetOpenFile(io, orig);
     MakeOpenFile(dest, fptr);
 
-    if (orig->f2) {
-	io_fflush(orig->f2, orig);
-	fseeko(orig->f, 0L, SEEK_CUR);
-    }
-    else if (orig->mode & FMODE_WRITABLE) {
-	io_fflush(orig->f, orig);
-    }
-    else {
-	fseeko(orig->f, 0L, SEEK_CUR);
-    }
+    rb_io_flush(io);
 
     /* copy OpenFile structure */
     fptr->mode = orig->mode;
@@ -3515,20 +3424,12 @@ rb_io_init_copy(dest, io)
       case FMODE_WRITABLE:
 	mode = "w"; break;
       case FMODE_READWRITE:
-	if (orig->f2) mode = "r";
-	else          mode = "r+";
-	break;
+	mode = "r+"; break;
     }
-    fd = ruby_dup(fileno(orig->f));
+    fd = ruby_dup(orig->fd);
+    fptr->fd = fd;
     fptr->f = rb_fdopen(fd, mode);
-    fseeko(fptr->f, ftello(orig->f), SEEK_SET);
-    if (orig->f2) {
-	if (fileno(orig->f) != fileno(orig->f2)) {
-	    fd = ruby_dup(fileno(orig->f2));
-	}
-	fptr->f2 = rb_fdopen(fd, "w");
-	fseeko(fptr->f2, ftello(orig->f2), SEEK_SET);
-    }
+    io_seek(fptr, io_tell(orig), SEEK_SET);
     if (fptr->mode & FMODE_BINMODE) {
 	rb_io_binmode(dest);
     }
@@ -3957,14 +3858,23 @@ prep_stdio(f, mode, klass)
     VALUE io = io_alloc(klass);
 
     MakeOpenFile(io, fp);
+    fp->fd = fileno(f);
 #ifdef __CYGWIN__
-    if (!isatty(fileno(f))) {
+    if (!isatty(fp->fd)) {
 	mode |= O_BINARY;
-	setmode(fileno(f), O_BINARY);
+	setmode(fp->fd, O_BINARY);
     }
 #endif
     fp->f = f;
     fp->mode = mode;
+    if (fp->mode & FMODE_WRITABLE) {
+        if (fp->fd == 2) { /* stderr must be unbuffered */
+            fp->mode |= FMODE_SYNC;
+        }
+        if (isatty(fp->fd)) {
+            fp->mode |= FMODE_LINEBUF;
+        }
+    }
 
     return io;
 }
@@ -4035,8 +3945,11 @@ rb_io_initialize(argc, argv, io)
 #endif
 	}
 	MakeOpenFile(io, fp);
+        fp->fd = fd;
 	fp->mode = rb_io_modenum_flags(flags);
 	fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags));
+        if ((fp->mode & FMODE_WRITABLE) && isatty(fp->fd))
+            fp->mode |= FMODE_LINEBUF;
     }
     else if (RFILE(io)->fptr) {
 	rb_raise(rb_eRuntimeError, "reinitializing IO");
@@ -4559,12 +4472,12 @@ rb_f_select(argc, argv, obj)
 	FD_ZERO(rp);
 	for (i=0; i<RARRAY(read)->len; i++) {
 	    GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
-	    FD_SET(fileno(fptr->f), rp);
-	    if (READ_DATA_PENDING(fptr->f)) { /* check for buffered data */
+	    FD_SET(fptr->fd, rp);
+	    if (READ_DATA_PENDING(fptr)) { /* check for buffered data */
 		pending++;
-		FD_SET(fileno(fptr->f), &pset);
+		FD_SET(fptr->fd, &pset);
 	    }
-	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
+	    if (max < fptr->fd) max = fptr->fd;
 	}
 	if (pending) {		/* no blocking if there's buffered data */
 	    timerec.tv_sec = timerec.tv_usec = 0;
@@ -4580,12 +4493,8 @@ rb_f_select(argc, argv, obj)
 	FD_ZERO(wp);
 	for (i=0; i<RARRAY(write)->len; i++) {
 	    GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
-	    FD_SET(fileno(fptr->f), wp);
-	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
-	    if (fptr->f2) {
-		FD_SET(fileno(fptr->f2), wp);
-		if (max < fileno(fptr->f2)) max = fileno(fptr->f2);
-	    }
+	    FD_SET(fptr->fd, wp);
+	    if (max < fptr->fd) max = fptr->fd;
 	}
     }
     else
@@ -4597,12 +4506,8 @@ rb_f_select(argc, argv, obj)
 	FD_ZERO(ep);
 	for (i=0; i<RARRAY(except)->len; i++) {
 	    GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
-	    FD_SET(fileno(fptr->f), ep);
-	    if (max < fileno(fptr->f)) max = fileno(fptr->f);
-	    if (fptr->f2) {
-		FD_SET(fileno(fptr->f2), ep);
-		if (max < fileno(fptr->f2)) max = fileno(fptr->f2);
-	    }
+	    FD_SET(fptr->fd, ep);
+	    if (max < fptr->fd) max = fptr->fd;
 	}
     }
     else {
@@ -4627,8 +4532,8 @@ rb_f_select(argc, argv, obj)
 	    list = RARRAY(res)->ptr[0];
 	    for (i=0; i< RARRAY(read)->len; i++) {
 		GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
-		if (FD_ISSET(fileno(fptr->f), rp)
-		    || FD_ISSET(fileno(fptr->f), &pset)) {
+		if (FD_ISSET(fptr->fd, rp)
+		    || FD_ISSET(fptr->fd, &pset)) {
 		    rb_ary_push(list, RARRAY(read)->ptr[i]);
 		}
 	    }
@@ -4638,10 +4543,7 @@ rb_f_select(argc, argv, obj)
 	    list = RARRAY(res)->ptr[1];
 	    for (i=0; i< RARRAY(write)->len; i++) {
 		GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
-		if (FD_ISSET(fileno(fptr->f), wp)) {
-		    rb_ary_push(list, RARRAY(write)->ptr[i]);
-		}
-		else if (fptr->f2 && FD_ISSET(fileno(fptr->f2), wp)) {
+		if (FD_ISSET(fptr->fd, wp)) {
 		    rb_ary_push(list, RARRAY(write)->ptr[i]);
 		}
 	    }
@@ -4651,10 +4553,7 @@ rb_f_select(argc, argv, obj)
 	    list = RARRAY(res)->ptr[2];
 	    for (i=0; i< RARRAY(except)->len; i++) {
 		GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
-		if (FD_ISSET(fileno(fptr->f), ep)) {
-		    rb_ary_push(list, RARRAY(except)->ptr[i]);
-		}
-		else if (fptr->f2 && FD_ISSET(fileno(fptr->f2), ep)) {
+		if (FD_ISSET(fptr->fd, ep)) {
 		    rb_ary_push(list, RARRAY(except)->ptr[i]);
 		}
 	    }
@@ -4746,15 +4645,10 @@ rb_io_ctl(io, req, arg, io_p)
 	}
     }
     GetOpenFile(io, fptr);
-    retval = io_cntl(fileno(fptr->f), cmd, narg, io_p);
+    retval = io_cntl(fptr->fd, cmd, narg, io_p);
     if (retval < 0) rb_sys_fail(fptr->path);
     if (TYPE(arg) == T_STRING && RSTRING(arg)->ptr[len] != 17) {
 	rb_raise(rb_eArgError, "return value overflowed string");
-    }
-
-    if (fptr->f2 && fileno(fptr->f) != fileno(fptr->f2)) {
-	/* call on f2 too; ignore result */
-	io_cntl(fileno(fptr->f2), cmd, narg, io_p);
     }
 
     return INT2NUM(retval);
@@ -5527,6 +5421,7 @@ Init_IO()
     id_write = rb_intern("write");
     id_read = rb_intern("read");
     id_getc = rb_intern("getc");
+    id_flush = rb_intern("flush");
 
     rb_define_global_function("syscall", rb_f_syscall, -1);
 

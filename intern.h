@@ -278,6 +278,7 @@ VALUE rb_io_gets _((VALUE));
 VALUE rb_io_getc _((VALUE));
 VALUE rb_io_ungetc _((VALUE, VALUE));
 VALUE rb_io_close _((VALUE));
+VALUE rb_io_flush _((VALUE));
 VALUE rb_io_eof _((VALUE));
 VALUE rb_io_binmode _((VALUE));
 VALUE rb_io_addstr _((VALUE, VALUE));

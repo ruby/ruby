@@ -1,3 +1,12 @@
+Mon Dec  6 17:32:38 2004  Tanaka Akira  <akr@m17n.org>
+
+	* rubyio.h, intern.h, io.c, file.c, process.c, ext/socket/socket.c,
+	  ext/pty/pty.c, ext/io/wait/wait.c, ext/openssl/ossl_ssl.c:
+	  Use own buffering mechanism instead of stdio.
+
+	* io.c, ext/stringio/stringio.c, test/ruby/ut_eof.rb:
+	  EOF flag removed.
+
 Mon Dec  6 17:15:17 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/socket/test_socket.rb (TestBasicSocket#test_setsockopt):

@@ -182,8 +182,8 @@ init_sock(sock, fd)
     OpenFile *fp;
 
     MakeOpenFile(sock, fp);
-    fp->f = rb_fdopen(fd, "r");
-    fp->f2 = rb_fdopen(fd, "w");
+    fp->fd = fd;
+    fp->f = rb_fdopen(fd, "r+");
     fp->mode = FMODE_READWRITE;
     if (do_not_reverse_lookup) {
 	fp->mode |= FMODE_NOREVLOOKUP;
@@ -228,7 +228,7 @@ bsock_shutdown(argc, argv, sock)
 	}
     }
     GetOpenFile(sock, fptr);
-    if (shutdown(fileno(fptr->f), how) == -1)
+    if (shutdown(fptr->fd, how) == -1)
 	rb_sys_fail(0);
 
     return INT2FIX(0);
@@ -244,7 +244,7 @@ bsock_close_read(sock)
 	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
     }
     GetOpenFile(sock, fptr);
-    shutdown(fileno(fptr->f), 0);
+    shutdown(fptr->fd, 0);
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	return rb_io_close(sock);
     }
@@ -266,7 +266,7 @@ bsock_close_write(sock)
     if (!(fptr->mode & FMODE_READABLE)) {
 	return rb_io_close(sock);
     }
-    shutdown(fileno(fptr->f2), 1);
+    shutdown(fptr->fd, 1);
     fptr->mode &= ~FMODE_WRITABLE;
 
     return Qnil;
@@ -306,7 +306,7 @@ bsock_setsockopt(sock, lev, optname, val)
 	break;
     }
 
-    if (setsockopt(fileno(fptr->f), level, option, v, vlen) < 0)
+    if (setsockopt(fptr->fd, level, option, v, vlen) < 0)
 	rb_sys_fail(fptr->path);
 
     return INT2FIX(0);
@@ -328,7 +328,7 @@ bsock_getsockopt(sock, lev, optname)
     buf = ALLOCA_N(char,len);
 
     GetOpenFile(sock, fptr);
-    if (getsockopt(fileno(fptr->f), level, option, buf, &len) < 0)
+    if (getsockopt(fptr->fd, level, option, buf, &len) < 0)
 	rb_sys_fail(fptr->path);
 
     return rb_str_new(buf, len);
@@ -346,7 +346,7 @@ bsock_getsockname(sock)
     OpenFile *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getsockname(fileno(fptr->f), (struct sockaddr*)buf, &len) < 0)
+    if (getsockname(fptr->fd, (struct sockaddr*)buf, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     return rb_str_new(buf, len);
 }
@@ -360,7 +360,7 @@ bsock_getpeername(sock)
     OpenFile *fptr;
 
     GetOpenFile(sock, fptr);
-    if (getpeername(fileno(fptr->f), (struct sockaddr*)buf, &len) < 0)
+    if (getpeername(fptr->fd, (struct sockaddr*)buf, &len) < 0)
 	rb_sys_fail("getpeername(2)");
     return rb_str_new(buf, len);
 }
@@ -374,15 +374,13 @@ bsock_send(argc, argv, sock)
     VALUE mesg, to;
     VALUE flags;
     OpenFile *fptr;
-    FILE *f;
     int fd, n;
 
     rb_secure(4);
     rb_scan_args(argc, argv, "21", &mesg, &flags, &to);
 
     GetOpenFile(sock, fptr);
-    f = GetWriteFile(fptr);
-    fd = fileno(f);
+    fd = fptr->fd;
     rb_thread_fd_writable(fd);
     StringValue(mesg);
   retry:
@@ -465,10 +463,10 @@ s_recvfrom(sock, argc, argv, from)
     else             flags = NUM2INT(flg);
 
     GetOpenFile(sock, fptr);
-    if (rb_read_pending(fptr->f)) {
+    if (rb_io_read_pending(fptr)) {
 	rb_raise(rb_eIOError, "recv for buffered IO");
     }
-    fd = fileno(fptr->f);
+    fd = fptr->fd;
 
     buflen = NUM2INT(len);
     str = rb_tainted_str_new(0, buflen);
@@ -1123,8 +1121,7 @@ socks_s_close(sock)
 	rb_raise(rb_eSecurityError, "Insecure: can't close socket");
     }
     GetOpenFile(sock, fptr);
-    shutdown(fileno(fptr->f), 2);
-    shutdown(fileno(fptr->f2), 2);
+    shutdown(fptr->fd, 2);
     return rb_io_close(sock);
 }
 #endif
@@ -1276,7 +1273,7 @@ tcp_accept(sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    return s_accept(rb_cTCPSocket, fileno(fptr->f),
+    return s_accept(rb_cTCPSocket, fptr->fd,
 		    (struct sockaddr*)&from, &fromlen);
 }
 
@@ -1290,7 +1287,7 @@ tcp_sysaccept(sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(from);
-    return s_accept(0, fileno(fptr->f), (struct sockaddr*)&from, &fromlen);
+    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 
 #ifdef HAVE_SYS_UN_H
@@ -1367,7 +1364,7 @@ ip_addr(sock)
 
     GetOpenFile(sock, fptr);
 
-    if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
+    if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
 }
@@ -1382,7 +1379,7 @@ ip_peeraddr(sock)
 
     GetOpenFile(sock, fptr);
 
-    if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
+    if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getpeername(2)");
     return ipaddr((struct sockaddr*)&addr, fptr->mode & FMODE_NOREVLOOKUP);
 }
@@ -1464,7 +1461,7 @@ udp_connect(sock, host, port)
     rb_secure(3);
     GetOpenFile(sock, fptr);
     arg.res = sock_addrinfo(host, port, SOCK_DGRAM, 0);
-    arg.fd = fileno(fptr->f);
+    arg.fd = fptr->fd;
     ret = rb_ensure(udp_connect_internal, (VALUE)&arg,
 		    RUBY_METHOD_FUNC(freeaddrinfo), (VALUE)arg.res);
     if (!ret) rb_sys_fail("connect(2)");
@@ -1482,7 +1479,7 @@ udp_bind(sock, host, port)
     GetOpenFile(sock, fptr);
     res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
     for (res = res0; res; res = res->ai_next) {
-	if (bind(fileno(fptr->f), res->ai_addr, res->ai_addrlen) < 0) {
+	if (bind(fptr->fd, res->ai_addr, res->ai_addrlen) < 0) {
 	    continue;
 	}
 	freeaddrinfo(res0);
@@ -1501,7 +1498,6 @@ udp_send(argc, argv, sock)
 {
     VALUE mesg, flags, host, port;
     OpenFile *fptr;
-    FILE *f;
     int n;
     struct addrinfo *res0, *res;
 
@@ -1513,17 +1509,16 @@ udp_send(argc, argv, sock)
 
     GetOpenFile(sock, fptr);
     res0 = sock_addrinfo(host, port, SOCK_DGRAM, 0);
-    f = GetWriteFile(fptr);
     StringValue(mesg);
     for (res = res0; res; res = res->ai_next) {
       retry:
-	n = sendto(fileno(f), RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
+	n = sendto(fptr->fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
 		   res->ai_addr, res->ai_addrlen);
 	if (n >= 0) {
 	    freeaddrinfo(res0);
 	    return INT2FIX(n);
 	}
-	if (rb_io_wait_writable(fileno(f))) {
+	if (rb_io_wait_writable(fptr->fd)) {
 	    goto retry;
 	}
     }
@@ -1550,7 +1545,7 @@ unix_path(sock)
     if (fptr->path == 0) {
 	struct sockaddr_un addr;
 	socklen_t len = sizeof(addr);
-	if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
+	if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	    rb_sys_fail(0);
 	fptr->path = strdup(addr.sun_path);
     }
@@ -1606,7 +1601,7 @@ unix_send_io(sock, val)
     if (rb_obj_is_kind_of(val, rb_cIO)) {
         OpenFile *valfptr;
 	GetOpenFile(val, valfptr);
-	fd = fileno(valfptr->f);
+	fd = valfptr->fd;
     }
     else if (FIXNUM_P(val)) {
         fd = FIX2INT(val);
@@ -1640,7 +1635,7 @@ unix_send_io(sock, val)
     msg.msg_accrightslen = sizeof(fd);
 #endif
 
-    if (sendmsg(fileno(fptr->f), &msg, 0) == -1)
+    if (sendmsg(fptr->fd, &msg, 0) == -1)
 	rb_sys_fail("sendmsg(2)");
 
     return Qnil;
@@ -1692,7 +1687,7 @@ unix_recv_io(argc, argv, sock)
 
     GetOpenFile(sock, fptr);
 
-    thread_read_select(fileno(fptr->f));
+    thread_read_select(fptr->fd);
 
     msg.msg_name = NULL;
     msg.msg_namelen = 0;
@@ -1716,7 +1711,7 @@ unix_recv_io(argc, argv, sock)
     fd = -1;
 #endif
 
-    if (recvmsg(fileno(fptr->f), &msg, 0) == -1)
+    if (recvmsg(fptr->fd, &msg, 0) == -1)
 	rb_sys_fail("recvmsg(2)");
 
     if (
@@ -1765,7 +1760,7 @@ unix_accept(sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_un);
-    return s_accept(rb_cUNIXSocket, fileno(fptr->f),
+    return s_accept(rb_cUNIXSocket, fptr->fd,
 		    (struct sockaddr*)&from, &fromlen);
 }
 
@@ -1779,7 +1774,7 @@ unix_sysaccept(sock)
 
     GetOpenFile(sock, fptr);
     fromlen = sizeof(struct sockaddr_un);
-    return s_accept(0, fileno(fptr->f), (struct sockaddr*)&from, &fromlen);
+    return s_accept(0, fptr->fd, (struct sockaddr*)&from, &fromlen);
 }
 
 #ifdef HAVE_SYS_UN_H
@@ -1802,7 +1797,7 @@ unix_addr(sock)
 
     GetOpenFile(sock, fptr);
 
-    if (getsockname(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
+    if (getsockname(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     if (len == 0)
         addr.sun_path[0] = '\0';
@@ -1819,7 +1814,7 @@ unix_peeraddr(sock)
 
     GetOpenFile(sock, fptr);
 
-    if (getpeername(fileno(fptr->f), (struct sockaddr*)&addr, &len) < 0)
+    if (getpeername(fptr->fd, (struct sockaddr*)&addr, &len) < 0)
 	rb_sys_fail("getsockname(2)");
     if (len == 0)
         addr.sun_path[0] = '\0';
@@ -1987,7 +1982,7 @@ sock_connect(sock, addr)
 
     StringValue(addr);
     GetOpenFile(sock, fptr);
-    fd = fileno(fptr->f);
+    fd = fptr->fd;
     rb_str_locktmp(addr);
     n = ruby_connect(fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len, 0);
     rb_str_unlocktmp(addr);
@@ -2006,7 +2001,7 @@ sock_bind(sock, addr)
 
     StringValue(addr);
     GetOpenFile(sock, fptr);
-    if (bind(fileno(fptr->f), (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len) < 0)
+    if (bind(fptr->fd, (struct sockaddr*)RSTRING(addr)->ptr, RSTRING(addr)->len) < 0)
 	rb_sys_fail("bind(2)");
 
     return INT2FIX(0);
@@ -2020,7 +2015,7 @@ sock_listen(sock, log)
 
     rb_secure(4);
     GetOpenFile(sock, fptr);
-    if (listen(fileno(fptr->f), NUM2INT(log)) < 0)
+    if (listen(fptr->fd, NUM2INT(log)) < 0)
 	rb_sys_fail("listen(2)");
 
     return INT2FIX(0);
@@ -2045,7 +2040,7 @@ sock_accept(sock)
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept(rb_cSocket,fileno(fptr->f),(struct sockaddr*)buf,&len);
+    sock2 = s_accept(rb_cSocket,fptr->fd,(struct sockaddr*)buf,&len);
 
     return rb_assoc_new(sock2, rb_str_new(buf, len));
 }
@@ -2060,7 +2055,7 @@ sock_sysaccept(sock)
     socklen_t len = sizeof buf;
 
     GetOpenFile(sock, fptr);
-    sock2 = s_accept(0,fileno(fptr->f),(struct sockaddr*)buf,&len);
+    sock2 = s_accept(0,fptr->fd,(struct sockaddr*)buf,&len);
 
     return rb_assoc_new(sock2, rb_str_new(buf, len));
 }

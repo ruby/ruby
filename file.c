@@ -639,7 +639,7 @@ rb_stat(file, st)
 	OpenFile *fptr;
 
 	GetOpenFile(tmp, fptr);
-	return fstat(fileno(fptr->f), st);
+	return fstat(fptr->fd, st);
     }
     FilePathValue(file);
     return stat(StringValueCStr(file), st);
@@ -693,7 +693,7 @@ rb_io_stat(obj)
     struct stat st;
 
     GetOpenFile(obj, fptr);
-    if (fstat(fileno(fptr->f), &st) == -1) {
+    if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
     return stat_new(&st);
@@ -1531,7 +1531,7 @@ rb_file_atime(obj)
     struct stat st;
 
     GetOpenFile(obj, fptr);
-    if (fstat(fileno(fptr->f), &st) == -1) {
+    if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
     return rb_time_new(st.st_atime, 0);
@@ -1576,7 +1576,7 @@ rb_file_mtime(obj)
     struct stat st;
 
     GetOpenFile(obj, fptr);
-    if (fstat(fileno(fptr->f), &st) == -1) {
+    if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
     return rb_time_new(st.st_mtime, 0);
@@ -1624,7 +1624,7 @@ rb_file_ctime(obj)
     struct stat st;
 
     GetOpenFile(obj, fptr);
-    if (fstat(fileno(fptr->f), &st) == -1) {
+    if (fstat(fptr->fd, &st) == -1) {
 	rb_sys_fail(fptr->path);
     }
     return rb_time_new(st.st_ctime, 0);
@@ -1695,7 +1695,7 @@ rb_file_chmod(obj, vmode)
 
     GetOpenFile(obj, fptr);
 #ifdef HAVE_FCHMOD
-    if (fchmod(fileno(fptr->f), mode) == -1)
+    if (fchmod(fptr->fd, mode) == -1)
 	rb_sys_fail(fptr->path);
 #else
     if (!fptr->path) return Qnil;
@@ -1840,7 +1840,7 @@ rb_file_chown(obj, owner, group)
     if (chown(fptr->path, o, g) == -1)
 	rb_sys_fail(fptr->path);
 #else
-    if (fchown(fileno(fptr->f), o, g) == -1)
+    if (fchown(fptr->fd, o, g) == -1)
 	rb_sys_fail(fptr->path);
 #endif
 
@@ -2973,7 +2973,6 @@ rb_file_truncate(obj, len)
     VALUE obj, len;
 {
     OpenFile *fptr;
-    FILE *f;
     off_t pos;
 
     rb_secure(2);
@@ -2982,15 +2981,13 @@ rb_file_truncate(obj, len)
     if (!(fptr->mode & FMODE_WRITABLE)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
-    f = GetWriteFile(fptr);
-    fflush(f);
-    fseeko(f, (off_t)0, SEEK_CUR);
+    rb_io_flush(obj);
 #ifdef HAVE_TRUNCATE
-    if (ftruncate(fileno(f), pos) < 0)
+    if (ftruncate(fptr->fd, pos) < 0)
 	rb_sys_fail(fptr->path);
 #else
 # ifdef HAVE_CHSIZE
-    if (chsize(fileno(f), pos) < 0)
+    if (chsize(fptr->fd, pos) < 0)
 	rb_sys_fail(fptr->path);
 # else
     rb_notimplement();
@@ -3084,10 +3081,10 @@ rb_file_flock(obj, operation)
     GetOpenFile(obj, fptr);
 
     if (fptr->mode & FMODE_WRITABLE) {
-	fflush(GetWriteFile(fptr));
+        rb_io_flush(obj);
     }
   retry:
-    if (flock(fileno(fptr->f), op) < 0) {
+    if (flock(fptr->fd, op) < 0) {
         switch (errno) {
           case EAGAIN:
           case EACCES:
