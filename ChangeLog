@@ -1,3 +1,7 @@
+Mon Sep 25 00:35:01 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* defines.h: #undef HAVE_SETITIMER on cygwin.
+
 Sun Sep 24 03:01:53 2000  Minero Aoki  <aamine@dp.u-netsurf.ne.jp>
 
 	* lib/net/protocol.rb, http.rb: typo.

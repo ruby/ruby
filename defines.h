@@ -73,7 +73,7 @@
 #undef HAVE_SETITIMER
 #endif
 
-#if defined(DJGPP) || defined(__BOW__)
+#if defined(DJGPP) || defined(__BOW__) || defined __CYGWIN__
 #undef HAVE_SETITIMER
 #endif
 
