@@ -999,6 +999,18 @@ proc{
 }.call
 test_ok(!defined?(iii))		# out of scope
 
+loop{iii=5; test_ok(eval("defined? iii")); break}
+loop {|iii|
+  iii = 10
+  def dyna_var_check
+    loop {
+      test_ok(!defined?(iii))
+      break
+    }
+  end
+  dyna_var_check
+  break
+}
 $x=0
 $proc.call(5)
 $proc2.call

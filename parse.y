@@ -394,7 +394,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			if (in_def || in_single) {
 			    yyerror("BEGIN in method");
 			}
-			local_push();
+			local_push(0);
 		    }
 		  '{' compstmt '}'
 		    {
@@ -1382,7 +1382,7 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("class definition in method body");
 			class_nest++;
-			local_push();
+			local_push(0);
 		        $<num>$ = ruby_sourceline;
 		    }
 		  compstmt
@@ -1403,7 +1403,7 @@ primary		: literal
 		        $<num>$ = in_single;
 		        in_single = 0;
 			class_nest++;
-			local_push();
+			local_push(0);
 		    }
 		  compstmt
 		  kEND
@@ -1420,7 +1420,7 @@ primary		: literal
 			if (in_def || in_single)
 			    yyerror("module definition in method body");
 			class_nest++;
-			local_push();
+			local_push(0);
 		        $<num>$ = ruby_sourceline;
 		    }
 		  compstmt
@@ -1438,7 +1438,7 @@ primary		: literal
 			$<id>$ = cur_mid;
 			cur_mid = $2;
 			in_def++;
-			local_push();
+			local_push(0);
 		    }
 		  f_arglist
 		  compstmt
@@ -1465,7 +1465,7 @@ primary		: literal
 		| kDEF singleton dot_or_colon {lex_state = EXPR_FNAME;} fname
 		    {
 			in_single++;
-			local_push();
+			local_push(0);
 		        lex_state = EXPR_END; /* force for args */
 		    }
 		  f_arglist
@@ -4927,11 +4927,13 @@ static struct local_vars {
     int nofree;
     int cnt;
     int dlev;
+    struct RVarmap* dyna_vars;
     struct local_vars *prev;
 } *lvtbl;
 
 static void
-local_push()
+local_push(top)
+    int top;
 {
     struct local_vars *local;
 
@@ -4941,7 +4943,13 @@ local_push()
     local->cnt = 0;
     local->tbl = 0;
     local->dlev = 0;
+    local->dyna_vars = ruby_dyna_vars;
     lvtbl = local;
+    if (!top) {
+	/* preserve reference for GC, but link should be cut. */
+	rb_dvar_push(0, (VALUE)ruby_dyna_vars);
+	ruby_dyna_vars->next = 0;
+    }
 }
 
 static void
@@ -4953,6 +4961,7 @@ local_pop()
 	if (!lvtbl->nofree) free(lvtbl->tbl);
 	else lvtbl->tbl[0] = lvtbl->cnt;
     }
+    ruby_dyna_vars = lvtbl->dyna_vars;
     free(lvtbl);
     lvtbl = local;
 }
@@ -5012,10 +5021,12 @@ local_id(id)
     return Qfalse;
 }
 
+static VALUE last_dyna_vars = 0;
+
 static void
 top_local_init()
 {
-    local_push();
+    local_push(1);
     lvtbl->cnt = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
     if (lvtbl->cnt > 0) {
 	lvtbl->tbl = ALLOC_N(ID, lvtbl->cnt+3);
@@ -5176,7 +5187,8 @@ Init_sym()
 {
     sym_tbl = st_init_strtable_with_size(200);
     sym_rev_tbl = st_init_numtable_with_size(200);
-    rb_global_variable((VALUE*)&lex_lastline);
+    rb_global_variable(&lex_lastline);
+    rb_global_variable(&last_dyna_vars);
 }
 
 static ID last_id = LAST_TOKEN;

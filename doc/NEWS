@@ -1,3 +1,11 @@
+: IO
+
+  64bit off_t support by Janathan Baker.
+
+: abort()
+
+  optional terminate message argument.
+
 : iconv module
 
   Imported.  Wrapper library of (({iconv})).

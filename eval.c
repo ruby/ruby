@@ -698,7 +698,7 @@ dvar_asgn_internal(id, value, curr)
     }
 }
 
-static void
+static inline void
 dvar_asgn(id, value)
     ID id;
     VALUE value;
@@ -706,7 +706,7 @@ dvar_asgn(id, value)
     dvar_asgn_internal(id, value, 0);
 }
 
-static void
+static inline void
 dvar_asgn_curr(id, value)
     ID id;
     VALUE value;

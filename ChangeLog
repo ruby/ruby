@@ -63,6 +63,15 @@ Sat Mar 16 22:43:53 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* missing/fileblocks.c: add for autoconf.
 
+Sat Mar 16 15:30:40 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (rb_reg_search): should clear last_match if pos is out of
+	  string range.
+
+	* string.c (rb_str_index_m): ditto.
+
+	* string.c (rb_str_rindex): ditto.
+
 Sat Mar 16 09:04:58 2002  Koji Arai <JCA02266@nifty.ne.jp>
 
 	* enum.c (enum_inject): use the first iterated element as the
@@ -95,6 +104,12 @@ Fri Mar 15 14:02:43 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 Thu Mar 14 22:17:45 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/iconv: imported.
+
+Thu Mar 14 16:42:37 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* class.c (rb_define_class): should handle autoload.
+
+	* class.c (rb_define_module): ditto.
 
 Thu Mar 14 16:18:12 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 

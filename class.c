@@ -184,6 +184,9 @@ rb_define_class(name, super)
     ID id;
 
     id = rb_intern(name);
+    if (rb_autoload_defined(id)) {
+	rb_autoload_load(id);
+    }
     if (rb_const_defined(rb_cObject, id)) {
 	klass = rb_const_get(rb_cObject, id);
 	if (TYPE(klass) != T_CLASS) {
@@ -270,6 +273,9 @@ rb_define_module(name)
     ID id;
 
     id = rb_intern(name);
+    if (rb_autoload_defined(id)) {
+	rb_autoload_load(id);
+    }
     if (rb_const_defined(rb_cObject, id)) {
 	module = rb_const_get(rb_cObject, id);
 	if (TYPE(module) == T_MODULE)
