@@ -66,7 +66,11 @@ if RUBY_PLATFORM =~ /-aix/
 end
 
 Dir.chdir "ext"
-system "../miniruby#{exeext} extmk.rb install #{destdir}"
+if defined? CROSS_COMPILING
+  system "#{CONFIG['MINIRUBY']} extmk.rb install #{destdir}"
+else
+  system "../miniruby#{exeext} extmk.rb install #{destdir}"
+end
 Dir.chdir CONFIG["srcdir"]
 
 Find.find("lib") do |f|

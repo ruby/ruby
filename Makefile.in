@@ -125,8 +125,18 @@ test:		miniruby$(EXEEXT)
 rbconfig.rb:	miniruby$(EXEEXT)
 		@@MINIRUBY@ $(srcdir)/mkconfig.rb rbconfig.rb
 
-prep.rb:	miniruby$(EXEEXT)
-		@echo 'PLATFORM=RUBY_PLATFORM="@arch@"' > $@
+fake.rb:	miniruby$(EXEEXT)
+		@echo ' \
+		class Object; \
+		  remove_const :RUBY_PLATFORM; \
+		  RUBY_PLATFORM = "@arch@"; \
+		  if defined? PLATFORM; \
+		    remove_const :PLATFORM; \
+		    PLATFORM = "@arch@"; \
+		  end; \
+		  CROSS_COMPILING = true; \
+		end \
+		' > $@
 
 config.status:	$(srcdir)/configure
 		$(SHELL) ./config.status --recheck

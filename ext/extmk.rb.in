@@ -402,6 +402,9 @@ archdir = $(pkglibdir)/@arch@
     ruby_interpreter = $topdir + "/miniruby@EXEEXT@"
     ruby_interpreter.gsub!("/", "\\")
   end
+  if defined? CROSS_COMPILING
+    ruby_interpreter = "@MINIRUBY@"
+  end
 
   mfile.printf <<EOS
 TARGET = #{target}

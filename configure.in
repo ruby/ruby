@@ -688,8 +688,8 @@ if test "$fat_binary" = yes ; then
 fi
 
 if test x"$cross_compiling" = xyes; then
-  MINIRUBY='ruby -I.. -rprep'
-  PREP=prep.rb
+  MINIRUBY="ruby -I`pwd` -rfake"
+  PREP=fake.rb
 else
   MINIRUBY='./miniruby$(EXEEXT)'
   PREP=''

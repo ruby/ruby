@@ -1,3 +1,15 @@
+Sun May 21 17:31:37 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* instruby.rb: support "make install" for cross-compiling.
+
+	* ext/extmk.rb.in: ditto.
+
+Sun May 21 14:22:49 2000  WATANABE Hirofumi  <eban@os.rim.or.jp>
+
+	* Makefile.in: rename prep.rb to fake.rb.
+
+	* configure.in: ditto.
+
 Wed May 17 14:14:23 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* re.c (rb_reg_new_1): use /m instead of /p.
