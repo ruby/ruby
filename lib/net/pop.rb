@@ -28,64 +28,67 @@ This example retrieves mails from server and delete it (on server).
 Mails are written in file named 'inbox/1', 'inbox/2', ....
 Replace 'pop3.server.address' your POP3 server address.
 
+    require 'net/pop'
 
-  require 'net/pop'
-
-  Net::POP3.start( 'pop3.server.address', 110,
-                   'YourAccount', 'YourPassword' ) {|pop|
-    if pop.mails.empty? then
-      puts 'no mail.'
-    else
-      i = 0
-      pop.each_mail do |m|   # or "pop.mails.each ..."
-        File.open( 'inbox/' + i.to_s, 'w' ) do |f|
-          f.write m.pop
+    Net::POP3.start( 'pop3.server.address', 110,
+                     'YourAccount', 'YourPassword' ) {|pop|
+      if pop.mails.empty? then
+        puts 'no mail.'
+      else
+        i = 0
+        pop.each_mail do |m|   # or "pop.mails.each ..."
+          File.open( 'inbox/' + i.to_s, 'w' ) {|f|
+            f.write m.pop
+          }
+          m.delete
+          i += 1
         end
-        m.delete
-        i += 1
       end
-    end
-    puts "#{pop.mails.size} mails popped."
-  }
+      puts "#{pop.mails.size} mails popped."
+    }
 
 === Shorter Version
 
-  require 'net/pop'
-  i = 0
-  Net::POP3.start( 'pop3.server.address', 110,
-                   'YourAccount', 'YourPassword' ) {|pop|
-    pop.delete_all do |m|
+    require 'net/pop'
+    Net::POP3.start( 'pop3.server.address', 110,
+                     'YourAccount', 'YourPassword' ) {|pop|
+      if pop.mails.empty? then
+        puts 'no mail.'
+      else
+        i = 0
+        pop.delete_all do |m|
+          File.open( 'inbox/' + i.to_s, 'w' ) {|f|
+            f.write m.pop
+          }
+          i += 1
+        end
+      end
+    }
+
+And here is more shorter example.
+
+    require 'net/pop'
+    i = 0
+    Net::POP3.delete_all( 'pop3.server.address', 110,
+                          'YourAccount', 'YourPassword' ) do |m|
       File.open( 'inbox/' + i.to_s, 'w' ) {|f|
         f.write m.pop
       }
       i += 1
     end
-  }
-
-And this is more shorter example.
-
-  require 'net/pop'
-  i = 0
-  Net::POP3.delete_all( 'pop3.server.address', 110,
-                        'YourAccount', 'YourPassword' ) do |m|
-    File.open( 'inbox/' + i.to_s, 'w' ) {|f|
-      f.write m.pop
-    }
-    i += 1
-  end
 
 === Writing to File directly
 
 All examples above get mail as one big string.
 This example does not create such one.
 
-  require 'net/pop'
-  Net::POP3.delete_all( 'pop3.server.address', 110,
-                        'YourAccount', 'YourPassword' ) do |m|
-    File.open( 'inbox', 'w' ) {|f|
-      m.pop f   ####
-    }
-  end
+    require 'net/pop'
+    Net::POP3.delete_all( 'pop3.server.address', 110,
+                          'YourAccount', 'YourPassword' ) do |m|
+      File.open( 'inbox', 'w' ) {|f|
+        m.pop f   ####
+      }
+    end
 
 === Using APOP
 
@@ -93,57 +96,57 @@ net/pop also supports APOP authentication. There's two way to use APOP:
 (1) using APOP class instead of POP3
 (2) passing true for fifth argument of POP3.start
 
-  # (1)
-  require 'net/pop'
-  Net::APOP.start( 'apop.server.address', 110,
-                   'YourAccount', 'YourPassword' ) {|pop|
-    # Rest code is same.
-  }
+    # (1)
+    require 'net/pop'
+    Net::APOP.start( 'apop.server.address', 110,
+                     'YourAccount', 'YourPassword' ) {|pop|
+      # Rest code is same.
+    }
 
-  # (2)
-  require 'net/pop'
-  Net::POP3.start( 'apop.server.address', 110,
-                   'YourAccount', 'YourPassword',
-                   true   ####
-  ) {|pop|
-    # Rest code is same.
-  }
+    # (2)
+    require 'net/pop'
+    Net::POP3.start( 'apop.server.address', 110,
+                     'YourAccount', 'YourPassword',
+                     true   ####
+    ) {|pop|
+      # Rest code is same.
+    }
 
 == Net::POP3 class
 
 === Class Methods
 
 : new( address = 'localhost', port = 110, apop = false )
-  creates a new Net::POP3 object.
-  This method does not open TCP connection yet.
+    creates a new Net::POP3 object.
+    This method does not open TCP connection yet.
 
 : start( address = 'localhost', port = 110, account, password )
 : start( address = 'localhost', port = 110, account, password ) {|pop| .... }
-  equals to Net::POP3.new( address, port ).start( account, password )
+    equals to Net::POP3.new( address, port ).start( account, password )
 
-    Net::POP3.start( addr, port, account, password ) do |pop|
-      pop.each_mail do |m|
-        file.write m.pop
-        m.delete
-      end
-    end
+        Net::POP3.start( addr, port, account, password ) do |pop|
+          pop.each_mail do |m|
+            file.write m.pop
+            m.delete
+          end
+        end
 
 : foreach( address = 'localhost', port = 110, account, password ) {|mail| .... }
-  starts protocol and iterate for each POPMail object.
-  This method equals to
+    starts POP3 protocol and iterates for each POPMail object.
+    This method equals to
 
-    Net::POP3.start( address, port, account, password ) do |pop|
-      pop.each do |m|
-        yield m
-      end
-    end
+        Net::POP3.start( address, port, account, password ) {|pop|
+          pop.each_mail do |m|
+            yield m
+          end
+        }
 
-  Typical usage:
-
-    Net::POP3.foreach( addr, nil, acnt, pass ) do |m|
-      m.pop file
-      m.delete
-    end
+        # example
+        Net::POP3.foreach( 'your.pop.server', 110,
+                           'YourAccount', 'YourPassword' ) do |m|
+          file.write m.pop
+          m.delete if $DELETE
+        end
 
 : delete_all( address = 'localhost', port = 110, account, password )
 : delete_all( address = 'localhost', port = 110, account, password ) {|mail| .... }
@@ -229,7 +232,7 @@ net/pop also supports APOP authentication. There's two way to use APOP:
         pop.auth_only 'YourAccount', 'YourPassword'
 
 : reset
-  reset the session. All "deleted mark" are removed.
+    reset the session. All "deleted mark" are removed.
 
 == Net::APOP
 

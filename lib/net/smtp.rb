@@ -36,10 +36,10 @@ is port number. Using SMTP.start with block is the most simple way
 to do it. SMTP Connection is closed automatically after block is
 executed.
 
-  require 'net/smtp'
-  Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-    # use smtp object only in this block
-  }
+    require 'net/smtp'
+    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+      # use smtp object only in this block
+    }
 
 Replace 'your.smtp.server' by your SMTP server. Normally
 your system manager or internet provider is supplying a server
@@ -47,19 +47,19 @@ for you.
 
 Then you can send mail.
 
-  require 'net/smtp'
+    require 'net/smtp'
 
-  Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-    smtp.send_mail <<EndOfMail, 'your@mail.address', 'to@some.domain'
-  From: Your Name <your@mail.address>
-  To: Dest Address <to@some.domain>
-  Subject: test mail
-  Date: Sat, 23 Jun 2001 16:26:43 +0900
-  Message-Id: <unique.message.id.string@some.domain>
+    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+      smtp.send_mail <<EndOfMail, 'your@mail.address', 'to@some.domain'
+    From: Your Name <your@mail.address>
+    To: Dest Address <to@some.domain>
+    Subject: test mail
+    Date: Sat, 23 Jun 2001 16:26:43 +0900
+    Message-Id: <unique.message.id.string@some.domain>
 
-  This is test mail.
-  EndOfMail
-  }
+    This is test mail.
+    EndOfMail
+    }
 
 === Sending Mails from Any Sources
 
@@ -67,20 +67,20 @@ In an example above I sent mail from String (here document literal).
 SMTP#send_mail accepts any objects which has "each" method
 like File and Array.
 
-  require 'net/smtp'
-  Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-    File.open( 'Mail/draft/1' ) {|f|
-      smtp.send_mail f, 'your@mail.address', 'to@some.domain'
+    require 'net/smtp'
+    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+      File.open( 'Mail/draft/1' ) {|f|
+        smtp.send_mail f, 'your@mail.address', 'to@some.domain'
+      }
     }
-  }
 
 === Giving "Hello" Domain
 
 If your machine does not have canonical host name, maybe you
 must designate the third argument of SMTP.start.
 
-  Net::SMTP.start( 'your.smtp.server', 25,
-                   'mail.from.domain' ) {|smtp|
+    Net::SMTP.start( 'your.smtp.server', 25,
+                     'mail.from.domain' ) {|smtp|
 
 This argument gives MAILFROM domain, the domain name that
 you send mail from. SMTP server might judge if he (or she?)
@@ -91,32 +91,32 @@ send or reject SMTP session by this data.
 === Class Methods
 
 : new( address = 'localhost', port = 25 )
-  creates a new Net::SMTP object.
+    creates a new Net::SMTP object.
 
 : start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil )
 : start( address = 'localhost', port = 25, helo_domain = Socket.gethostname, account = nil, password = nil, authtype = nil ) {|smtp| .... }
-  is equal to
-    Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
+    is equal to
+        Net::SMTP.new(address,port).start(helo_domain,account,password,authtype)
 
-    # example
-    Net::SMTP.start( 'your.smtp.server' ) {
-      smtp.send_mail mail_string, 'from@mail.address', 'dest@mail.address'
-    }
+        # example
+        Net::SMTP.start( 'your.smtp.server' ) {
+          smtp.send_mail mail_string, 'from@mail.address', 'dest@mail.address'
+        }
 
 === Instance Methods
 
 : start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil )
 : start( helo_domain = <local host name>, account = nil, password = nil, authtype = nil ) {|smtp| .... }
-  opens TCP connection and starts SMTP session.
-  If protocol had been started, do nothing and return false.
-  HELO_DOMAIN is a domain that you'll dispatch mails from.
+    opens TCP connection and starts SMTP session.
+    If protocol had been started, do nothing and return false.
+    HELO_DOMAIN is a domain that you'll dispatch mails from.
 
-  When this methods is called with block, give a SMTP object to block and
-  close session after block call finished.
+    When this methods is called with block, give a SMTP object to block and
+    close session after block call finished.
 
-  If both of account and password are given, is trying to get
-  authentication by using AUTH command. :plain or :cram_md5 is
-  allowed for AUTHTYPE.
+    If both of account and password are given, is trying to get
+    authentication by using AUTH command. :plain or :cram_md5 is
+    allowed for AUTHTYPE.
 
 : active?
     true if SMTP session is started.
@@ -144,38 +144,38 @@ send or reject SMTP session by this data.
     If SMTP session had not started, do nothing and return false.
 
 : send_mail( mailsrc, from_addr, *to_addrs )
-  This method sends MAILSRC as mail. A SMTP object read strings
-  from MAILSRC by calling "each" iterator, with converting them
-  into CRLF ("\r\n") terminated string when write.
+    This method sends MAILSRC as mail. A SMTP object read strings
+    from MAILSRC by calling "each" iterator, with converting them
+    into CRLF ("\r\n") terminated string when write.
 
-  FROM_ADDR must be a String, representing source mail address.
-  TO_ADDRS must be Strings or an Array of Strings, representing
-  destination mail addresses.
+    FROM_ADDR must be a String, representing source mail address.
+    TO_ADDRS must be Strings or an Array of Strings, representing
+    destination mail addresses.
 
-    # example
-    Net::SMTP.start( 'your.smtp.server' ) {|smtp|
-      smtp.send_mail mail_string,
-                     'from@mail.address',
-                     'dest@mail.address' 'dest2@mail.address'
-    }
+        # example
+        Net::SMTP.start( 'your.smtp.server' ) {|smtp|
+          smtp.send_mail mail_string,
+                         'from@mail.address',
+                         'dest@mail.address' 'dest2@mail.address'
+        }
 
 : ready( from_addr, *to_addrs ) {|adapter| .... }
-  This method stands by the SMTP object for sending mail and
-  give adapter object to the block. ADAPTER accepts only "write"
-  method.
+    This method stands by the SMTP object for sending mail and
+    give adapter object to the block. ADAPTER accepts only "write"
+    method.
 
-  FROM_ADDR must be a String, representing source mail address.
-  TO_ADDRS must be Strings or an Array of Strings, representing
-  destination mail addresses.
+    FROM_ADDR must be a String, representing source mail address.
+    TO_ADDRS must be Strings or an Array of Strings, representing
+    destination mail addresses.
 
-    # example
-    Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
-      smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) do |adapter|
-        adapter.write str1
-        adapter.write str2
-        adapter.write str3
-      end
-    }
+        # example
+        Net::SMTP.start( 'your.smtp.server', 25 ) {|smtp|
+          smtp.ready( 'from@mail.addr', 'dest@mail.addr' ) do |adapter|
+            adapter.write str1
+            adapter.write str2
+            adapter.write str3
+          end
+        }
 
 == Exceptions
 

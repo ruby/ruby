@@ -27,7 +27,7 @@ For details of HTTP, refer [RFC2616]
 === Getting Document From Server
 
 Be care to ',' (comma) putted after "response".
-This is required for feature compatibility.
+This is required for compatibility.
 
     require 'net/http'
     Net::HTTP.start( 'some.www.server', 80 ) {|http|
@@ -73,14 +73,17 @@ there's no need to change code if there's proxy or not.
     Net::HTTP.version_1_1
 
     host = 'www.ruby-lang.org'
+    path = '/'
     begin
       Net::HTTP.start( host, 80 ) {|http|
-        response , = http.get('/')
+	response , = http.get(path)
+        print response.body
       }
     rescue Net::ProtoRetriableError => err
-      if m = %r<http:([^/]+)>.match( err.response['location'] ) then
-        host = m[1].strip
-        retry
+      if m = %r<http://([^/]+)>.match( err.response['location'] ) then
+	host = m[1].strip
+	path = m.post_match
+	retry
       end
     end
 
@@ -131,8 +134,7 @@ Yes, this is not thread-safe.
 
 : new( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
     creates a new Net::HTTP object.
-    If proxy_addr is given, this method is equals to
-    Net::HTTP::Proxy(proxy_addr,proxy_port).
+    If proxy_addr is given, creates an Net::HTTP object with proxy support.
 
 : start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil )
 : start( address = 'localhost', port = 80, proxy_addr = nil, proxy_port = nil ) {|http| .... }
@@ -145,15 +147,14 @@ Yes, this is not thread-safe.
     return value is a String.
 
 : get_print( address, path, port = 80 )
-    gets entity body from path and print it.
-    return value is an entity body (a String).
+    gets entity body from path and output it to $stdout.
 
 : Proxy( address, port = 80 )
     creates a HTTP proxy class.
     Arguments are address/port of proxy host.
-    You can replace HTTP class by this proxy class.
+    You can replace HTTP class with created proxy class.
 
-    If ADDRESS is nil, this method returns self (Net::HTTP class).
+    If ADDRESS is nil, this method returns self (Net::HTTP).
 
         # example
         proxy_class = Net::HTTP::Proxy( 'proxy.foo.org', 8080 )
@@ -168,7 +169,7 @@ Yes, this is not thread-safe.
     If self is a class which was created by HTTP::Proxy(), true.
 
 : port
-    HTTP default port (80).
+    default HTTP port (80).
 
 === Instance Methods
 
@@ -208,30 +209,32 @@ Yes, this is not thread-safe.
     true if self is a HTTP proxy class
 
 : proxy_address
-    address of proxy host. If self is not a proxy, nil.
+    address of proxy host. If self does not use a proxy, nil.
 
 : proxy_port
-    port number of proxy host. If self is not a proxy, nil.
+    port number of proxy host. If self does not use a proxy, nil.
 
 : get( path, header = nil, dest = '' )
 : get( path, header = nil ) {|str| .... }
-    gets data from "path" on connecting host.
-    "header" must be a Hash like { 'Accept' => '*/*', ... }.
-    Response body is written into "dest" by using "<<" method.
+    gets data from PATH on the connecting host.
+    HEADER must be a Hash like { 'Accept' => '*/*', ... }.
+    Response body is written into DEST by using "<<" method.
+
     This method returns Net::HTTPResponse object.
 
-    If called with block, give a part String of entity body.
+    If called with block, gives entity body little by little
+    to the block (as String).
 
     In version 1.1, this method might raises exception for also
-    3xx (redirect). On the case you can get response object by
-    err.response.
+    3xx (redirect). On the case you can get a HTTPResponse object
+    by "anException.response".
 
     In version 1.2, this method never raises exception.
 
-        # version 1.1 (Ruby 1.6)
+        # version 1.1 (bundled with Ruby 1.6)
         response, body = http.get( '/index.html' )
 
-        # version 1.2 (Ruby 1.7 or later)
+        # version 1.2 (bundled with Ruby 1.7 or later)
         response = http.get( '/index.html' )
 
         # compatible in both version
@@ -244,16 +247,20 @@ Yes, this is not thread-safe.
             f.write str
           end
         }
-        # some effect
+        # same effect
         File.open( 'save.txt', 'w' ) {|f|
           http.get '/~foo/', nil, f
         }
 
 : head( path, header = nil )
-    gets only header from "path" on connecting host.
-    "header" is a Hash like { 'Accept' => '*/*', ... }.
+    gets only header from PATH on the connecting host.
+    HEADER is a Hash like { 'Accept' => '*/*', ... }.
+
     This method returns a Net::HTTPResponse object.
-    You can http header from this object like:
+
+    In version 1.1, this method might raises exception for also
+    3xx (redirect). On the case you can get a HTTPResponse object
+    by "anException.response".
 
         response = nil
         Net::HTTP.start( 'some.www.server', 80 ) {|http|
@@ -274,6 +281,10 @@ Yes, this is not thread-safe.
 
     If called with block, gives a part of entity body string.
 
+    In version 1.1, this method might raises exception for also
+    3xx (redirect). On the case you can get a HTTPResponse object
+    by "anException.response".
+
         # version 1.1
         response, body = http.post( '/index.html', 'querytype=subject&target=ruby' )
         # version 1.2
@@ -292,13 +303,15 @@ Yes, this is not thread-safe.
           http.post '/index.html', 'querytype=subject&target=ruby', nil, f
         }
 
-: request( request, [data] )
-: request( request, [src] ) {|response| .... }
-    sends REQUEST to (remote) http server. This method also writes
-    string from DATA string if REQUEST is a post/put request.
-    (giving DATA for get/head request causes ArgumentError.)
+: request( request [, data] )
+: request( request [, data] ) {|response| .... }
+    sends a HTTPRequest object REQUEST to (remote) http server.
+    This method also writes string from DATA string if REQUEST is
+    a post/put request. Giving DATA for get/head request causes
+    ArgumentError.
 
-    If called with block, gives a HTTPResponse object to the block.
+    If called with block, gives a HTTPResponse object to the block
+    with connecting server.
 
 == class Net::HTTP::Get, Head, Post
 
