@@ -1,7 +1,7 @@
 Tue Feb 24 18:42:03  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dir.c (glob_helper): '**/' should not match leading period 
-	  unless File::FNM_DOTMATCH is set. (like '*/')
+	  unless File::FNM_DOTMATCH is set. (like '*/') [ruby-dev:23014]
 
 Tue Feb 24 18:03:14 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
