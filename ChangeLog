@@ -1,3 +1,7 @@
+Thu Jul 31 12:36:11 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* bin/erb, lib/erb.rb: add explicit trim mode.
+
 Thu Jul 31 00:17:19 2003  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/ftp.rb (return_code): obsolete.

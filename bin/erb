@@ -35,6 +35,8 @@ class ERB
 	return '%>'
       when 2
 	return '%<>'
+      when '-'
+	return '%-'
       end
     end
     module_function :trim_mode_opt
@@ -64,6 +66,10 @@ class ERB
 	    safe_level = arg.to_i
 	  when '-T'			# trim mode
 	    arg = ARGV.req_arg
+	    if arg == '-'
+	      trim_mode = arg 
+	      next
+	    end
 	    raise "invalid trim mode #{arg.dump}" unless arg =~ /^[0-2]$/
 	    trim_mode = arg.to_i
 	  when '-K'			# KCODE
@@ -100,7 +106,7 @@ class ERB
   -r [library]     load a library
   -K [kcode]       specify KANJI code-set
   -S [safe_level]  set $SAFE (0..4)
-  -T [trim_mode]   specify trim_mode (0..2)
+  -T [trim_mode]   specify trim_mode (0..2, -)
   -P               disregard the lin which starts in "%" 
 EOU
 	exit 1

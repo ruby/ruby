@@ -24,7 +24,21 @@ class ERB
     class Scanner
       SplitRegexp = /(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
 
-      def initialize(src)
+      @scanner_map = {}
+      def self.regist_scanner(klass, trim_mode, percent)
+	@scanner_map[[trim_mode, percent]] = klass
+      end
+
+      def self.default_scanner=(klass)
+	@default_scanner = klass
+      end
+
+      def self.make_scanner(src, trim_mode, percent)
+	klass = @scanner_map.fetch([trim_mode, percent], @default_scanner)
+	klass.new(src, trim_mode, percent)
+      end
+
+      def initialize(src, trim_mode, percent)
 	@src = src
 	@stag = nil
       end
@@ -37,11 +51,15 @@ class ERB
       TrimSplitRegexp = /(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>\n)|(%>)|(\n)/
 
       def initialize(src, trim_mode, percent)
-	super(src)
+	super
 	@trim_mode = trim_mode
 	@percent = percent
-	if @trim_mode
-	  @scan_line = self.method(:trim_line)
+	if @trim_mode == '>'
+	  @scan_line = self.method(:trim_line1)
+	elsif @trim_mode == '<>'
+	  @scan_line = self.method(:trim_line2)
+	elsif @trim_mode == '-'
+	  @scan_line = self.method(:explicit_trim_line)
 	else
 	  @scan_line = self.method(:scan_line)
 	end
@@ -56,7 +74,7 @@ class ERB
 	  end
 	else
 	  @src.each do |line|
-	    trim_line(line, &block)
+	    @scan_line.call(line, &block)
 	  end
 	end
 	nil
@@ -82,17 +100,26 @@ class ERB
 	end
       end
 
-      def trim_line(line)
+      def trim_line1(line)
+	line.split(TrimSplitRegexp).each do |token|
+	  next if token.empty?
+	  if token == "%>\n"
+	    yield('%>')
+	    yield(:cr)
+	    break
+	  end
+	  yield(token)
+	end
+      end
+
+      def trim_line2(line)
 	head = nil
-	last = nil
 	line.split(TrimSplitRegexp).each do |token|
 	  next if token.empty?
 	  head = token unless head
 	  if token == "%>\n"
 	    yield('%>')
-	    if @trim_mode == '>' 
-	      yield(:cr)
-	    elsif  @trim_mode == '<>' && is_erb_stag?(head)
+	    if  is_erb_stag?(head)
 	      yield(:cr)
 	    else
 	      yield("\n")
@@ -103,11 +130,30 @@ class ERB
 	end
       end
 
+      ExplicitTrimRegexp = /(^[ \t]*<%-)|(-%>\n?$)|(<%-)|(-%>)|(<%%)|(%%>)|(<%=)|(<%#)|(<%)|(%>)|(\n)/
+      def explicit_trim_line(line)
+	line.split(ExplicitTrimRegexp).each do |token|
+	  next if token.empty?
+	  if @stag.nil? && /[ \t]*<%-/ =~ token
+	    yield('<%')
+	  elsif @stag && /-%>\n/ =~ token
+	    yield('%>')
+	    yield(:cr)
+	  elsif @stag && token == '-%>'
+	    yield('%>')
+	  else
+	    yield(token)
+	  end
+	end
+      end
+
       ERB_STAG = %w(<%= <%# <%)
       def is_erb_stag?(s)
 	ERB_STAG.member?(s)
       end
     end
+
+    Scanner.default_scanner = TrimScanner
 
     class SimpleScanner < Scanner
       def scan
@@ -118,6 +164,90 @@ class ERB
 	  end
 	end
       end
+    end
+    
+    Scanner.regist_scanner(SimpleScanner, nil, false)
+
+    begin
+      require 'strscan'
+      class SimpleScanner2 < Scanner
+        def scan
+          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\n|$)/
+          etag_reg = /(.*?)(%%>|%>|\n|$)/
+          scanner = StringScanner.new(@src)
+          while ! scanner.eos?
+            scanner.scan(@stag ? etag_reg : stag_reg)
+            text = scanner[1]
+            elem = scanner[2]
+            yield(text) unless text.empty?
+            yield(elem) unless elem.empty?
+          end
+        end
+      end
+      Scanner.regist_scanner(SimpleScanner2, nil, false)
+
+      class PercentScanner < Scanner
+	def scan
+	  new_line = true
+          stag_reg = /(.*?)(<%%|<%=|<%#|<%|\n|$)/
+          etag_reg = /(.*?)(%%>|%>|\n|$)/
+          scanner = StringScanner.new(@src)
+          while ! scanner.eos?
+	    if new_line && @stag.nil?
+	      if scanner.scan(/%%/)
+		yield('%')
+		new_line = false
+		next
+	      elsif scanner.scan(/%/)
+		yield(PercentLine.new(scanner.scan(/.*?(\n|$)/).chomp))
+		next
+	      end
+	    end
+	    scanner.scan(@stag ? etag_reg : stag_reg)
+            text = scanner[1]
+            elem = scanner[2]
+            yield(text) unless text.empty?
+            yield(elem) unless elem.empty?
+	    new_line = (elem == "\n")
+          end
+        end
+      end
+      Scanner.regist_scanner(PercentScanner, nil, true)
+
+      class ExplicitScanner < Scanner
+	def scan
+	  new_line = true
+          stag_reg = /(.*?)(<%%|<%=|<%#|<%-|<%|\n|$)/
+          etag_reg = /(.*?)(%%>|-%>|%>|\n|$)/
+          scanner = StringScanner.new(@src)
+          while ! scanner.eos?
+	    if new_line && @stag.nil? && scanner.scan(/[ \t]*<%-/)
+	      yield('<%')
+	      new_line = false
+	      next
+	    end
+	    scanner.scan(@stag ? etag_reg : stag_reg)
+            text = scanner[1]
+            elem = scanner[2]
+	    new_line = (elem == "\n")
+            yield(text) unless text.empty?
+	    if elem == '-%>'
+	      yield('%>')
+	      if scanner.scan(/(\n|$)/)
+		yield(:cr)
+		new_line = true
+	      end
+	    elsif elem == '<%-'
+	      yield('<%')
+	    else
+	      yield(elem) unless elem.empty?
+	    end
+          end
+        end
+      end
+      Scanner.regist_scanner(ExplicitScanner, '-', false)
+
+    rescue LoadError
     end
 
     class Buffer
@@ -221,7 +351,9 @@ class ERB
 	return [false, nil]
       when String
 	perc = mode.include?('%')
-	if mode.include?('<>')
+	if mode.include?('-')
+	  return [perc, '-']
+	elsif mode.include?('<>')
 	  return [perc, '<>']
 	elsif mode.include?('>')
 	  return [perc, '>']
@@ -234,11 +366,7 @@ class ERB
     end
 
     def make_scanner(src)
-      if @percent || @trim_mode
-	TrimScanner.new(src, @trim_mode, @percent)
-      else
-	SimpleScanner.new(src)
-      end
+      Scanner.make_scanner(src, @trim_mode, @percent)
     end
 
     def initialize(trim_mode)
