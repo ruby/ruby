@@ -1,3 +1,8 @@
+Tue Mar 15 23:49:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/iconv/iconv.c (Init_iconv): InvalidEncoding also should include
+	  Iconv::Failure.
+
 Tue Mar 15 16:38:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c (ary2list): give wrong arguments to hash2kv()
@@ -17,9 +22,9 @@ Mon Mar 14 12:21:03 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Mon Mar 14 00:13:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb (TkRTTimer): correct calculation of offset
-	  value. get a little better accuracy. 
+	  value. get a little better accuracy.
 
-	* ext/tk/sample/demos-en/widget: use a binding with no local variables 
+	* ext/tk/sample/demos-en/widget: use a binding with no local variables
 	  when eval a sample script.
 
 	* ext/tk/sample/demos-en/bind.rb: ditto.
@@ -46,10 +51,10 @@ Thu Mar 10 19:12:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tkrttimer.rb: sample of TkRTTimer class
 
-	* ext/tk/lib/tk/textmark.rb: move  TkTextMark#+ and TkTextMark#- to 
+	* ext/tk/lib/tk/textmark.rb: move  TkTextMark#+ and TkTextMark#- to
 	  TkText::IndexModMethods
 
-	* ext/tk/lib/tk/text.rb: improve TkTextMark#+ and TkTextMark#-, and 
+	* ext/tk/lib/tk/text.rb: improve TkTextMark#+ and TkTextMark#-, and
 	  add them to TkText::IndexModMethods module
 
 	* ext/tk/sample/tktextio.rb: add test part of "seek by text index
@@ -91,8 +96,8 @@ Tue Mar  8 12:36:17 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Tue Mar  8 01:27:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/nkf.c: follow nkf 1.66
-          fixed: [ruby-dev:25828]
+	* ext/nkf/nkf-utf8/nkf.c: follow nkf 1.66
+	  fixed: [ruby-dev:25828]
 
 Mon Mar  7 21:35:02 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -133,7 +138,7 @@ Wed Feb 16 02:55:21 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/lib/openssl/ssl.rb: set non-blocking flag to the
 	  underlying IO.
 
-        * ext/openssl/extconf.rb: get rid of GNUmakefile generation.
+	* ext/openssl/extconf.rb: get rid of GNUmakefile generation.
 
 	* text/openssl/test_pair.rb: test for IO like methods.
 
@@ -151,8 +156,8 @@ Mon Mar  7 09:18:42 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Mon Mar  7 01:22:14 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c: remove the some codes which depend on the
-	  difference between Ruby1.8 and 1.9, because st.c on Ruby1.9 
-	  was changed. 
+	  difference between Ruby1.8 and 1.9, because st.c on Ruby1.9
+	  was changed.
 
 Mon Mar  7 00:01:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
