@@ -28,33 +28,9 @@ message "=== OpenSSL for Ruby configurator ===\n"
 #
 if with_config("debug") or enable_config("debug")
   $defs.push("-DOSSL_DEBUG") unless $defs.include? "-DOSSL_DEBUG"
-  $CPPFLAGS += " -Wall" unless $CPPFLAGS.split.include? "-Wall"
 
-  if CONFIG["CC"] =~ /gcc/
-    srcs = []
-    for f in Dir[File.join($srcdir, "*.c")]
-      srcs.push File.basename(f)
-    end
-    srcs = srcs.join(" ")
-    
-    $distcleanfiles << "dep" if defined? $distcleanfiles
-    
-    File.open(File.join($srcdir, "depend"), "w") {|f|
-      f.print <<EOD
-SRCS = #{srcs}
-
-test-link:
-	$(CC) $(DLDFLAGS) -o .testlink $(OBJS) $(LIBPATH) $(LIBS) $(LOCAL_LIBS)
-	@$(RM) .testlink
-	@echo "Done."
-
-dep:
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(SRCS) -MM > dep
-
-include dep
-EOD
-    }
-    File.open(File.join($srcdir, "dep"), "w").close
+  if /gcc/ =~ CONFIG["CC"]
+    $CPPFLAGS += " -Wall" unless $CPPFLAGS.split.include? "-Wall"
   end
 end
 
@@ -120,5 +96,29 @@ message "=== Checking for Ruby features... ===\n"
 have_func("rb_obj_init_copy", "ruby.h")
 
 message "=== Checking done. ===\n"
+$distcleanfiles << "GNUmakefile" << "dep"
 create_makefile("openssl")
+if /gcc/ =~ CONFIG["CC"]
+  File.open("GNUmakefile", "w") {|f|
+    f.print <<EOD
+include Makefile
+
+SRCS = $(OBJS:.o=.c)
+
+test-link: $(OBJS)
+	$(CC) $(DLDFLAGS) #{OUTFLAG}.testlink $(OBJS) $(LIBPATH) $(LIBS) $(LOCAL_LIBS)
+	@$(RM) .testlink
+	@echo "Done."
+
+dep: $(SRCS)
+	$(CC) $(CFLAGS) $(CPPFLAGS) -c $^ -MM | \\
+	sed -e 's|$(topdir)/|$$(topdir)/|g' \\
+	    -e 's|$(srcdir)/|$$(srcdir)/|g' \\
+	    -e 's|$(hdrdir)/|$$(hdrdir)/|g' \\
+	> dep
+
+include dep
+EOD
+  }
+end
 message "Done.\n"

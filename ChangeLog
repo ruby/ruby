@@ -1,3 +1,8 @@
+Thu Jul 31 14:11:54 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: move gmake specific features
+	  into GNUmakefile.
+
 Thu Jul 31 12:36:11 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb, lib/erb.rb: add explicit trim mode.
