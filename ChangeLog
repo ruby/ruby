@@ -1,3 +1,8 @@
+Thu Mar 14 12:32:59 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* ext/stringio/stringio.c: fixed frozen string bug.  ungetc no
+	  longer raises on readonly stream unless modifies actually.
+
 Thu Mar 14 08:57:41 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* dir.c (rb_push_glob): avoid SEGV when a block given.

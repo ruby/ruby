@@ -4,6 +4,7 @@
 
   $Author$
   $Date$
+  $RoughId: stringio.c,v 1.13 2002/03/14 03:24:18 nobu Exp $
   created at: Tue Feb 19 04:10:38 JST 2002
 
   All the files in this distribution are covered under the Ruby's
@@ -89,11 +90,15 @@ get_strio(self)
 
 #define StringIO(obj) get_strio(obj)
 
+#define CLOSED(ptr) NIL_P((ptr)->string)
+#define READABLE(ptr) (!CLOSED(ptr) && ((ptr)->flags & FMODE_READABLE))
+#define WRITABLE(ptr) (!CLOSED(ptr) && ((ptr)->flags & FMODE_WRITABLE))
+
 static struct StringIO*
 readable(ptr)
     struct StringIO *ptr;
 {
-    if (NIL_P(ptr->string) || !(ptr->flags & FMODE_READABLE)) {
+    if (!READABLE(ptr)) {
 	rb_raise(rb_eIOError, "not opened for reading");
     }
     return ptr;
@@ -103,13 +108,23 @@ static struct StringIO*
 writable(ptr)
     struct StringIO *ptr;
 {
-    if (NIL_P(ptr->string) || !(ptr->flags & FMODE_WRITABLE)) {
+    if (!WRITABLE(ptr)) {
 	rb_raise(rb_eIOError, "not opened for writing");
     }
     if (!OBJ_TAINTED(ptr->string)) {
 	rb_secure(4);
     }
     return ptr;
+}
+
+static struct StringIO*
+check_modifiable(ptr)
+    struct StringIO *ptr;
+{
+    if (OBJ_FROZEN(ptr->string)) {
+	rb_raise(rb_eIOError, "not modifiable string");
+    }
+    rb_str_modify(ptr->string);
 }
 
 static VALUE strio_s_allocate _((VALUE));
@@ -199,6 +214,10 @@ strio_initialize(argc, argv, self)
 	StringValue(mode);
 	StringValue(string);
 	ptr->flags = rb_io_mode_flags(RSTRING(mode)->ptr);
+	if (ptr->flags & FMODE_WRITABLE && OBJ_FROZEN(string)) {
+	    errno = EACCES;
+	    rb_sys_fail(0);
+	}
 	switch (*RSTRING(mode)->ptr) {
 	  case 'a':
 	    ptr->flags |= STRIO_APPEND;
@@ -210,7 +229,7 @@ strio_initialize(argc, argv, self)
 	break;
       case 1:
 	StringValue(string);
-	ptr->flags = FMODE_READWRITE;
+	ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
 	break;
       case 0:
 	string = rb_str_new("", 0);
@@ -310,7 +329,7 @@ strio_close(self)
     VALUE self;
 {
     struct StringIO *ptr = StringIO(self);
-    if (NIL_P(ptr->string)) {
+    if (CLOSED(ptr)) {
 	rb_raise(rb_eIOError, "closed stream");
     }
     ptr->string = Qnil;
@@ -322,7 +341,10 @@ static VALUE
 strio_close_read(self)
     VALUE self;
 {
-    struct StringIO *ptr = readable(StringIO(self));
+    struct StringIO *ptr = StringIO(self);
+    if (!READABLE(ptr)) {
+	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
+    }
     if (!((ptr->flags &= ~FMODE_READABLE) & FMODE_READWRITE)) {
 	ptr->string = Qnil;
     }
@@ -333,7 +355,10 @@ static VALUE
 strio_close_write(self)
     VALUE self;
 {
-    struct StringIO *ptr = writable(StringIO(self));
+    struct StringIO *ptr = StringIO(self);
+    if (!WRITABLE(ptr)) {
+	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
+    }
     if (!((ptr->flags &= ~FMODE_WRITABLE) & FMODE_READWRITE)) {
 	ptr->string = Qnil;
     }
@@ -345,7 +370,7 @@ strio_closed(self)
     VALUE self;
 {
     struct StringIO *ptr = StringIO(self);
-    if (!NIL_P(ptr->string)) return Qfalse;
+    if (!CLOSED(ptr)) return Qfalse;
     return Qtrue;
 }
 
@@ -354,7 +379,7 @@ strio_closed_read(self)
     VALUE self;
 {
     struct StringIO *ptr = StringIO(self);
-    if (ptr->flags & FMODE_READABLE) return Qfalse;
+    if (READABLE(ptr)) return Qfalse;
     return Qtrue;
 }
 
@@ -363,7 +388,7 @@ strio_closed_write(self)
     VALUE self;
 {
     struct StringIO *ptr = StringIO(self);
-    if (ptr->flags & FMODE_WRITABLE) return Qfalse;
+    if (WRITABLE(ptr)) return Qfalse;
     return Qtrue;
 }
 
@@ -371,9 +396,7 @@ static VALUE
 strio_eof(self)
     VALUE self;
 {
-    struct StringIO *ptr = StringIO(self);
-    if (!(ptr->flags & FMODE_READABLE)) return Qtrue;
-    if (NIL_P(ptr->string)) return Qtrue;
+    struct StringIO *ptr = readable(StringIO(self));
     if (ptr->pos < RSTRING(ptr->string)->len) return Qfalse;
     return Qtrue;
 }
@@ -521,8 +544,11 @@ strio_ungetc(self, ch)
     int cc = NUM2INT(ch);
 
     if (cc != EOF && ptr->pos > 0) {
-	rb_str_modify(ptr->string);
-	RSTRING(ptr->string)->ptr[--ptr->pos] = cc;
+	if ((unsigned char)RSTRING(ptr->string)->ptr[--ptr->pos] !=
+	    (unsigned char)cc) {
+	    check_modifiable(ptr);
+	    RSTRING(ptr->string)->ptr[ptr->pos] = cc;
+	}
     }
     return Qnil;
 }
@@ -708,6 +734,8 @@ strio_write(self, str)
     if (TYPE(str) != T_STRING)
 	str = rb_obj_as_string(str);
     len = RSTRING(str)->len;
+    if (!len) return INT2FIX(0);
+    check_modifiable(ptr);
     if (ptr->flags & STRIO_APPEND) {
 	ptr->pos = RSTRING(ptr->string)->len;
     }
@@ -732,6 +760,10 @@ strio_putc(self, ch)
     struct StringIO *ptr = writable(StringIO(self));
     int c = NUM2CHR(ch);
 
+    check_modifiable(ptr);
+    if (ptr->flags & STRIO_APPEND) {
+	ptr->pos = RSTRING(ptr->string)->len;
+    }
     if (ptr->pos >= RSTRING(ptr->string)->len) {
 	rb_str_resize(ptr->string, ptr->pos + 1);
     }
