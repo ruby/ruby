@@ -230,7 +230,7 @@ dl_os2.@OBJEXT@: $(srcdir)/missing/dl_os2.c
 	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/missing/dl_os2.c
 
 win32.@OBJEXT@: $(srcdir)/win32/win32.c
-	$(CC) $(CFLAGS) $(CPPFLAGS) -c $(srcdir)/win32/win32.c
+	$(CC) $(CFLAGS) $(CPPFLAGS) -I$(srcdir)/missing -c $(srcdir)/win32/win32.c
 
 # Prevent GNU make v3 from overflowing arg limit on SysV.
 .NOEXPORT:

@@ -26,10 +26,10 @@
 #include <unistd.h>
 #endif
 
-#if HAVE_DIRENT_H
+#if defined HAVE_DIRENT_H && !defined NT
 # include <dirent.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
-#elif HAVE_DIRECT_H
+#elif defined HAVE_DIRECT_H && !defined NT
 # include <direct.h>
 # define NAMLEN(dirent) strlen((dirent)->d_name)
 #else
@@ -44,7 +44,7 @@
 # if HAVE_NDIR_H
 #  include <ndir.h>
 # endif
-# if defined(NT) && defined(_MSC_VER)
+# if defined(NT)
 #  include "missing/dir.h"
 # endif
 #endif
@@ -609,7 +609,7 @@ rb_glob_helper(path, flag, func, arg)
 		rb_glob_helper(buf, flag, func, arg);
 		free(buf);
 	    }
-	    if (stat(dir, &st) < 0) {
+	    if (rb_sys_stat(dir, &st) < 0) {
 	        free(base);
 	        break;
 	    }

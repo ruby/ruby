@@ -1,3 +1,9 @@
+Mon Apr  2 01:16:24 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c: use ruby's opendir on mingw32.
+
+	* missing/dir.h, dir.c, Makefile: ditto.
+
 Wed Mar 28 23:43:00 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* ext/extmk.rb.in, lib/mkmf.rb: add C++ rules in addition to C
