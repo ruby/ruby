@@ -1,0 +1,72 @@
+#!/bin/sh
+# Generated automatically by configure.
+# Run this file to recreate the current configuration.
+# This directory was configured as follows,
+# on host dyna:
+#
+# ./configure 
+
+for arg
+do
+  case "$arg" in
+    -recheck | --recheck | --rechec | --reche | --rech | --rec | --re | --r)
+    echo running ${CONFIG_SHELL-/bin/sh} ./configure 
+    exec ${CONFIG_SHELL-/bin/sh} ./configure  ;;
+    *) echo "Usage: config.status --recheck" 2>&1; exit 1 ;;
+  esac
+done
+
+trap 'rm -f Makefile; exit 1' 1 3 15
+PROGS='ruby'
+CC='gcc'
+CPP='gcc -E'
+DBM='-fpcc-struct-return'
+STATIC=''
+YACC='bison -y'
+INSTALL='/usr/bin/install -c'
+INSTALL_PROGRAM='$(INSTALL)'
+INSTALL_DATA='$(INSTALL) -m 644'
+ALLOCA=''
+LIBS=' -lm -ldbm'
+srcdir='.'
+DEFS=' -DHAVE_UNISTD_H=1 -DHAVE_SYSCALL_H=1 -DHAVE_A_OUT_H=1 -DDIRENT=1 -DGETGROUPS_T=gid_t -DRETSIGTYPE=void -DHAVE_GETOPT_LONG=1 -DHAVE_MEMMOVE=1 -DHAVE_STRERROR=1 -DHAVE_STRTOL=1 -DHAVE_STRTOUL=1 -DHAVE_STRDUP=1 -DHAVE_SETENV=1 -DHAVE_KILLPG=1 -DHAVE_MKDIR=1 -DHAVE_STRFTIME=1 -DHAVE_ALLOCA_H=1'
+prefix=''
+exec_prefix=''
+prsub=''
+extrasub=''
+
+top_srcdir=$srcdir
+
+CONFIG_FILES=${CONFIG_FILES-"Makefile"}
+for file in .. ${CONFIG_FILES}; do if test "x$file" != x..; then
+  srcdir=$top_srcdir
+  # Remove last slash and all that follows it.  Not all systems have dirname.
+  dir=`echo $file|sed 's%/[^/][^/]*$%%'`
+  if test "$dir" != "$file"; then
+    test "$top_srcdir" != . && srcdir=$top_srcdir/$dir
+    test ! -d $dir && mkdir $dir
+  fi
+  echo creating $file
+  rm -f $file
+  echo "# Generated automatically from `echo $file|sed 's|.*/||'`.in by configure." > $file
+  sed -e "
+$prsub
+$extrasub
+s%@PROGS@%$PROGS%g
+s%@CC@%$CC%g
+s%@CPP@%$CPP%g
+s%@DBM@%$DBM%g
+s%@STATIC@%$STATIC%g
+s%@YACC@%$YACC%g
+s%@INSTALL@%$INSTALL%g
+s%@INSTALL_PROGRAM@%$INSTALL_PROGRAM%g
+s%@INSTALL_DATA@%$INSTALL_DATA%g
+s%@ALLOCA@%$ALLOCA%g
+s%@LIBS@%$LIBS%g
+s%@srcdir@%$srcdir%g
+s%@DEFS@%$DEFS%
+" $top_srcdir/${file}.in >> $file
+fi; done
+
+
+exit 0

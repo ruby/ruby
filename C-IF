@@ -1,0 +1,135 @@
+.\" C-IF -  -*- Text -*- created at: Tue Oct 12 14:15:00 JST 1993
+
+Ruby-C インターフェース
+
+VALUE
+
+ Rubyオブジェクトを表現する型. 必要に応じてキャストして用いる.
+
+Qnil
+
+ 定数: nilオブジェクト
+
+Qself
+
+ 変数: 現在のselfオブジェクトの値. この変数の値を変更する時は以後の
+ selfの値そのものが変わってしまうので, 慎重に行なうこと.
+
+VALUE rb_define_class(char *name, VALUE super)
+
+ Rubyクラスを定義する.
+
+VALUE rb_define_module(char *name)
+
+ Rubyモジュールを定義する.
+
+rb_include_module(VALUE class, VALUE module)
+
+ モジュールをインクルードする. classがすでにmoduleをインクルードしてい
+ る時には何もしない(多重インクルードの禁止).
+
+void rb_define_variable(char *name, VALUE *var,
+			VALUE (*get_hook), VALUE (*set+hook)())
+
+ RubyとCとで共有するグローバル変数を定義する. Rubyオブジェクトを指す大
+ 域変数は全てこの関数によって定義されなければならない(GCから保護するた
+ め). get_hookがQnilでない時, 変数参照の際にget_hookにセットされた関数
+ が呼ばれる. set_hookがQnilでない時には代入の時にset_hookが呼ばれる.
+
+ 変数名が`$'で始まらない時には自動的に追加される. 変数名としてrubyの識
+ 別子として許されない文字(例えば` ')を含む場合にはrubyプログラムからア
+ クセスできなくなる.
+
+void rb_global_variable(VALUE *var)
+
+ GCにRubyからはアクセスされないが, Rubyオブジェクトを含む大域変数をマー
+ クさせる.
+
+void rb_read_only_hook()
+
+ 読み出し専用の変数のためのset_hook関数.
+
+rb_define_method(VALUE class, char *name, VALUE (*func)(), int argc)
+
+ メソッドを定義する. argcが-1の時, 引数はargc, argv形式で与えられる.
+
+rb_define_single_method(VALUE class, char *name, VALUE (*func)(), int argc)
+
+ 特異メソッドを定義する. 引数はrb_define_method()と同じ.
+
+ID rb_intern(char *name)
+
+ 文字列に対応するIDを返す.
+
+char *rb_id2name(ID id)
+
+  IDに対応する文字列を返す(デバッグ用).
+
+VALUE rb_funcall(VALUE recv, ID mid, int narg, ...)
+
+ メソッド呼び出し. 文字列からmidを得るためにはrb_intern()を使う.
+
+rb_iv_get(VALUE obj, char *name)
+
+ objのインスタンス変数を得る. @から始まらないインスタンス変数はRubyプ
+ ログラムからアクセスできない.
+
+rb_iv_set(VALUE obj, char *name, VALUE val)
+
+ objのインスタンス変数をvalにセットする.
+
+rb_call_super(VALUE args)
+
+ スーパークラスのメソッドを呼び出す. argsは引数リストとなる配列. args
+ がQnilの時は引数をそのまま引き継ぐ.
+
+rb_iterate(VALUE (*func1)(), char *arg1, VALUE (*func2)(), char *arg2)
+
+ func2をブロックとして設定し, func1をイテレータとして呼ぶ.  func1には
+ arg1が引数として渡され, func2には第1引数にイテレータとして与えられた
+ 値, 第2引数にarg2が渡される.
+ 
+rb_yield(VALUE val)
+
+ valを値としてイテレータブロックを呼び出す.
+
+rb_resque(VALUE (*func1)(), char *arg1, VALUE (*func2)(), char *arg2)
+
+ 関数func1をarg1を引数に呼び出す. func1の実行中に例外が発生した時には
+ func2をarg2を引数として呼ぶ. 戻り値は例外が発生しなかった時はfunc1の
+ 戻り値, 例外が発生した時にはfunc2の戻り値である.
+
+rb_ensure(VALUE (*func1)(), char *arg1, VALUE (*func2)(), char *arg2)
+
+ 関数func1をarg1を引数として実行し, 実行終了後(たとえ例外が発生しても)
+ func2をarg2を引数として実行する. 戻り値はfunc1の戻り値である(例外が発
+ 生した時はnil).
+
+GC_LINK
+
+ ローカル変数のGC保護を行なう宣言.
+
+GC_PRO(var)
+
+ ローカル変数をGCから保護する. ローカル変数が保護されていない可能性の
+ あるRubyオブジェクトを指している時にはGC_PRO()を使って保護する必要が
+ ある. GC_PRO()で保護される変数は必ず初期化されている必要がある(未初期
+ 化のゴミが入ってるとGCで落ちる).
+
+GC_PRO2(var)
+
+ GC保護, varをnilで初期化すること以外はGC_PRO(var)と同じ.
+
+GC_PRO2(var, init)
+
+ GC保護, varをinitに初期化すること以外はGC_PRO(var)と同じ.
+
+GC_UNLINK
+
+ GC保護終了の宣言.
+
+/*
+ * Local variables:
+ * fill-column: 70
+ * end:
+ */

@@ -1,0 +1,6 @@
+* $0への代入がpsの出力を変化させるように
+* rubyで定義する変数hookの実現
+* FUNC形式のメソッドは本当に必要か
+* write debugger for ruby
+* re-write regex code for speeding
+* byte code interpretor

@@ -1,0 +1,63 @@
+
+dnl Process this file with autoconf to produce a configure script.
+AC_INIT(ruby.h)
+PROGS="ruby"
+AC_SUBST(PROGS)dnl
+AC_PROG_CC
+AC_GCC_TRADITIONAL
+if test $GCC -eq 1 ; then
+  DBM=-fpcc-struct-return
+fi
+AC_SUBST(DBM)dnl
+if test "$HOSTTYPE" = sparc; then
+  if test $GCC -eq 1 ; then
+    STATIC=-static
+  else
+    STATIC=-Bstatic
+  fi
+else
+  STATIC=
+fi
+AC_SUBST(STATIC)dnl
+AC_PROG_YACC
+AC_PROG_INSTALL
+AC_HAVE_HEADERS(unistd.h syscall.h a.out.h)
+AC_DIR_HEADER
+AC_GETGROUPS_T
+AC_RETSIGTYPE
+AC_HAVE_FUNCS(getopt_long memmove strerror strtoul strdup strstr)
+AC_HAVE_FUNCS(setenv fmod killpg mkdir strftime socket random)
+AC_HAVE_FUNCS(wait4 waitpid)
+if echo $DEFS | grep "HAVE_SETENV" 2>&1 > /dev/null; then
+  :
+else
+  AC_HAVE_FUNCS(putenv)
+fi
+if echo $DEFS | grep "HAVE_STRFTIME" 2>&1 > /dev/null; then
+  :
+else
+  AC_TIMEZONE
+  AC_COMPILE_CHECK([daylight], [],
+  [extern int daylight; daylight;], AC_DEFINE(HAVE_DAYLIGHT))
+fi
+AC_ALLOCA
+AC_WORDS_BIGENDIAN
+AC_ST_BLKSIZE
+AC_ST_BLOCKS
+AC_ST_RDEV
+AC_COMPILE_CHECK([pw_change in struct passwd], [#include <pwd.h>],
+[struct passwd pw; pw.pw_change;], AC_DEFINE(PW_CHANGE))
+AC_COMPILE_CHECK([pw_quota in struct passwd], [#include <pwd.h>],
+[struct passwd pw; pw.pw_quota;], AC_DEFINE(PW_QUOTA))
+AC_COMPILE_CHECK([pw_age in struct passwd], [#include <pwd.h>],
+[struct passwd pw; pw.pw_age;], AC_DEFINE(PW_AGE))
+AC_COMPILE_CHECK([pw_class in struct passwd], [#include <pwd.h>],
+[struct passwd pw; pw.pw_class;], AC_DEFINE(PW_CLASSS))
+AC_COMPILE_CHECK([pw_comment in struct passwd], [#include <pwd.h>],
+[struct passwd pw; pw.pw_comment;], AC_DEFINE(PW_COMMENT))
+AC_COMPILE_CHECK([pw_expire in struct passwd], [#include <pwd.h>],
+[struct passwd pw; pw.pw_expire;], AC_DEFINE(PW_EXPIRE))
+AC_HAVE_LIBRARY(m, [LIBS="$LIBS -lm"])
+AC_HAVE_LIBRARY(dbm, [LIBS="$LIBS -ldbm"])
+AC_HAVE_LIBRARY(socket, [LIBS="$LIBS -lsocket"])
+AC_OUTPUT(Makefile)

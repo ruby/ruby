@@ -1,0 +1,31 @@
+#! /mp/free/bin/ruby -- -*- ruby -*-
+
+load("parsearg.rb")
+
+def usage()
+  printf("Usage:\n")
+  printf("This is Getopt test program \n")
+end
+
+$USAGE = 'usage'
+parseArgs(0, !nil, "d", "x:", "y:", "version", "geometry:")
+if ($OPT_d)
+  if ($OPT_x)
+    printf("x = %d\n", $OPT_x.atoi)
+  end
+  if ($OPT_y)
+    printf("y = %d\n", $OPT_y.atoi)
+  end
+  if ($OPT_geometry)
+    printf("geometry = %s\n", $OPT_geometry)
+  end
+end
+
+if ($OPT_version)
+  printf("version 1.00\n")
+end
+
+while ($ARGV.length != 0)
+  print ("other = ", $ARGV[0], "\n")
+  $ARGV.shift
+end
