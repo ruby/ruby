@@ -860,6 +860,9 @@ _rb_setjmp:
 	movem.l	d3-d7/a3-a5,(a0)
 	moveq.l	#0,d0
 	rts");
+#ifdef setjmp
+#undef setjmp
+#endif
 #else
 #if defined(DJGPP)
 typedef unsigned long rb_jmp_buf[6];

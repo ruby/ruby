@@ -93,16 +93,12 @@ sock_finalize(fptr)
     OpenFile *fptr;
 {
     SOCKET s;
-	extern int errno;
 
     if (!fptr->f) return;
-
-	myfdclose(fptr->f);
-	if(fptr->f2)  myfdclose(fptr->f);
-/*
-	s = get_osfhandle(fileno(fptr->f));
+    s = get_osfhandle(fileno(fptr->f));
+    myfdclose(fptr->f);
+    if (fptr->f2) myfdclose(fptr->f2);
     closesocket(s);
-*/
 }
 #endif
 

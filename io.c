@@ -1254,6 +1254,9 @@ rb_fopen(fname, mode)
 	    rb_sys_fail(fname);
 	}
     }
+#ifdef __human68k__
+    fmode(file, _IOTEXT);
+#endif
     return file;
 }
 

@@ -1732,7 +1732,7 @@ case "$host_os" in
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
-human*)		;;
+human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	;;
 *) LIBS="-lm $LIBS";;
@@ -4361,7 +4361,7 @@ else
   echo "$ac_t""no" 1>&6
 fi
 
-    for ac_func in select
+    for ac_func in select gettimeofday
 do
 echo $ac_n "checking for $ac_func""... $ac_c" 1>&6
 echo "configure:4368: checking for $ac_func" >&5
@@ -4502,7 +4502,7 @@ EOF
 
     fi
     LIBOBJS="$LIBOBJS x68.o"
-    CFLAGS="$CFLAGS -fansi-only -cc1-stack=196608 -cpp-stack=2694144"
+    CFLAGS="$CFLAGS -fansi-only -cc1-stack=262144 -cpp-stack=2694144"
     EXEEXT=.x
     OBJEXT=o
     setup=Setup.x68
@@ -4573,7 +4573,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     linux*)
-	XLDFLAGS='-Wl,-rpath,${prefix}/lib':/usr/lib:/lib
+	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     freebsd*)

@@ -4686,6 +4686,7 @@ rb_load(fname, wrap)
     }
     PUSH_FRAME();
     ruby_frame->last_func = 0;
+    ruby_frame->last_class = 0;
     ruby_frame->self = ruby_top_self;
     ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_class,0,0);
     PUSH_SCOPE();
@@ -6068,7 +6069,6 @@ struct thread {
     VALUE klass;
     VALUE wrapper;
 
-    VALUE trace;
     int flags;		/* misc. states (vmode/rb_trap_immediate/raised) */
 
     char *file;
@@ -6140,7 +6140,6 @@ thread_mark(th)
     rb_gc_mark(th->errinfo);
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);
-    rb_gc_mark(th->trace);
     rb_mark_tbl(th->locals);
 
     /* mark data in copied stack */
@@ -6241,7 +6240,6 @@ rb_thread_save_context(th)
     th->last_match = rb_backref_get();
     th->safe = safe_level;
 
-    th->trace = trace_func;
     th->file = ruby_sourcefile;
     th->line = ruby_sourceline;
 }
@@ -6308,7 +6306,6 @@ rb_thread_restore_context(th, exit)
     rb_last_status = th->last_status;
     safe_level = th->safe;
 
-    trace_func = th->trace;
     ruby_sourcefile = th->file;
     ruby_sourceline = th->line;
 
@@ -7548,7 +7545,7 @@ static VALUE
 catch_i(tag)
     ID tag;
 {
-    return rb_f_catch(0, FIX2INT(tag));
+    return rb_funcall(Qnil, rb_intern("catch"), 0, FIX2INT(tag));
 }
 
 VALUE

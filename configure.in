@@ -140,7 +140,7 @@ case "$host_os" in
 nextstep*)	;;
 openstep*)	;;
 rhapsody*)	;;
-human*)		;;
+human*)		ac_cv_func_getpgrp_void=yes;;
 beos*)		;;
 cygwin*)	;;
 *) LIBS="-lm $LIBS";;
@@ -564,7 +564,7 @@ case "$host_os" in
   human*)
     AC_CHECK_LIB(signal, _harderr)
     AC_CHECK_LIB(hmem, hmemset)
-    AC_CHECK_FUNCS(select)
+    AC_CHECK_FUNCS(select gettimeofday)
     AC_CACHE_CHECK(whether PD libc _dtos18 fail to convert big number,
 		   rb_cv_missing__dtos18,
     [AC_TRY_RUN(
@@ -603,7 +603,7 @@ rb_cv_missing_fconvert=yes, rb_cv_missing_fconvert=no, rb_cv_missing_fconvert=no
       AC_DEFINE(MISSING_FCONVERT)
     fi
     LIBOBJS="$LIBOBJS x68.o"
-    CFLAGS="$CFLAGS -fansi-only -cc1-stack=196608 -cpp-stack=2694144"
+    CFLAGS="$CFLAGS -fansi-only -cc1-stack=262144 -cpp-stack=2694144"
     EXEEXT=.x
     OBJEXT=o
     setup=Setup.x68
@@ -672,7 +672,7 @@ if test "$enable_shared" = 'yes'; then
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     linux*)
-	XLDFLAGS='-Wl,-rpath,${prefix}/lib':/usr/lib:/lib
+	LIBRUBY_DLDFLAGS='-Wl,-soname,lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR)'
 	LIBRUBY_ALIASES='lib$(RUBY_INSTALL_NAME).so.$(MAJOR).$(MINOR) lib$(RUBY_INSTALL_NAME).so'
 	;;
     freebsd*)

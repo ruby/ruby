@@ -392,7 +392,10 @@ proc_options(argcp, argvp)
 		s = argv[1];
 		argc--,argv++;
 	    }
-	    if (*s && chdir(s) < 0) {
+	    if (!s || !*s) {
+		rb_fatal("Can't chdir");
+	    }
+	    if (chdir(s) < 0) {
 		rb_fatal("Can't chdir to %s", s);
 	    }
 	    break;

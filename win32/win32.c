@@ -495,7 +495,7 @@ mypopen (char *cmd, char *mode)
 		int p[2];
 
 		BOOL fRet;
-		HANDLE hInFile, hOutFile, hStdin, hStdout;
+		HANDLE hInFile, hOutFile;
 		LPCSTR lpApplicationName = NULL;
 		LPTSTR lpCommandLine;
 		LPTSTR lpCmd2 = NULL;
@@ -533,35 +533,14 @@ mypopen (char *cmd, char *mode)
 		aStartupInfo.dwFlags    = STARTF_USESTDHANDLES;
 
 		if (reading) {
-			aStartupInfo.hStdInput  = GetStdHandle(STD_OUTPUT_HANDLE);//hStdin;
-			aStartupInfo.hStdError  = INVALID_HANDLE_VALUE;
-			//for save
-			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_OUTPUT_HANDLE),
-			  GetCurrentProcess(), &hStdout,
-			  0, FALSE, DUPLICATE_SAME_ACCESS
-			);
-			//for redirect
-			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_INPUT_HANDLE),
-			  GetCurrentProcess(), &hStdin,
-			  0, TRUE, DUPLICATE_SAME_ACCESS
-			);
+			aStartupInfo.hStdInput  = GetStdHandle(STD_INPUT_HANDLE);
 			aStartupInfo.hStdOutput = hOutFile;
 		}
 		else {
-			aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE); //hStdout;
-			aStartupInfo.hStdError  = INVALID_HANDLE_VALUE;
-			// for save
-			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_INPUT_HANDLE),
-			  GetCurrentProcess(), &hStdin,
-			  0, FALSE, DUPLICATE_SAME_ACCESS
-			);
-			//for redirect
-			DuplicateHandle(GetCurrentProcess(), GetStdHandle(STD_OUTPUT_HANDLE),
-			  GetCurrentProcess(), &hStdout,
-			  0, TRUE, DUPLICATE_SAME_ACCESS
-			);
-			aStartupInfo.hStdInput = hInFile;
+			aStartupInfo.hStdInput  = hInFile;
+			aStartupInfo.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
 		}
+		aStartupInfo.hStdError  = GetStdHandle(STD_ERROR_HANDLE);
 
 		dwCreationFlags = (NORMAL_PRIORITY_CLASS);
 
@@ -587,24 +566,12 @@ mypopen (char *cmd, char *mode)
 		CloseHandle(aProcessInformation.hThread);
 
 		if (reading) {
-			HANDLE hDummy;
-
 			fd = _open_osfhandle((long)hInFile,  (_O_RDONLY | pipemode));
 			CloseHandle(hOutFile);
-			DuplicateHandle(GetCurrentProcess(), hStdout,
-			  GetCurrentProcess(), &hDummy,
-			  0, TRUE, (DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)
-			);
 		}
 		else {
-			HANDLE hDummy;
-
 		    fd = _open_osfhandle((long)hOutFile, (_O_WRONLY | pipemode));
 			CloseHandle(hInFile);
-			DuplicateHandle(GetCurrentProcess(), hStdin,
-			  GetCurrentProcess(), &hDummy,
-			  0, TRUE, (DUPLICATE_SAME_ACCESS | DUPLICATE_CLOSE_SOURCE)
-			);
 		}
 
 		if (fd == -1) 
@@ -1245,8 +1212,10 @@ opendir(char *filename)
     // check to see if we\'ve got a directory
     //
 
-    if (stat (filename, &sbuf) < 0 ||
-	sbuf.st_mode & _S_IFDIR == 0) {
+    if ((stat (filename, &sbuf) < 0 ||
+	sbuf.st_mode & _S_IFDIR == 0) &&
+	(!isalpha(filename[0]) || filename[1] != ':' || filename[2] != '\0' ||
+	((1 << (filename[0] & 0x5f) - 'A') & GetLogicalDrives()) == 0)) {
 	return NULL;
     }
 
@@ -1264,7 +1233,7 @@ opendir(char *filename)
 
     strcpy(scanname, filename);
 
-    if (index("/\\", *(scanname + strlen(scanname) - 1)) == NULL)
+    if (index("/\\:", *CharPrev(scanname, scanname + strlen(scanname))) == NULL)
 	strcat(scanname, "/*");
     else
 	strcat(scanname, "*");
@@ -1660,7 +1629,8 @@ myfdopen (int fd, const char *mode)
 void
 myfdclose(FILE *fp)
 {
-	fclose(fp);
+    _free_osfhnd(fileno(fp));
+    fclose(fp);
 }
 
 
@@ -1801,6 +1771,10 @@ myselect (int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     long r;
     if (!NtSocketsInitialized++) {
 	StartSockets();
+    }
+    if (nfds == 0 && timeout) {
+	Sleep(timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
+	return 0;
     }
     if ((r = select (nfds, rd, wr, ex, timeout)) == SOCKET_ERROR) {
 	errno = WSAGetLastError();

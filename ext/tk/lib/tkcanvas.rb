@@ -30,8 +30,7 @@ module TkTreatCItemFont
     else
       pathname = self.path + ';' + tagOrId.to_s
     end
-    if (fnt = slot['font'])
-      slot['font'] = nil
+    if (fnt = slot.delete('font'))
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(pathname, 
 				       self.path,'itemconfigure',tagOrId,slot)
@@ -39,16 +38,13 @@ module TkTreatCItemFont
 	latintagfont_configure(tagOrId, fnt) if fnt
       end
     end
-    if (ltn = slot['latinfont'])
-      slot['latinfont'] = nil
+    if (ltn = slot.delete('latinfont'))
       latintagfont_configure(tagOrId, ltn) if ltn
     end
-    if (ltn = slot['asciifont'])
-      slot['asciifont'] = nil
+    if (ltn = slot.delete('asciifont'))
       latintagfont_configure(tagOrId, ltn) if ltn
     end
-    if (knj = slot['kanjifont'])
-      slot['kanjifont'] = nil
+    if (knj = slot.delete('kanjifont'))
       kanjitagfont_configure(tagOrId, knj) if knj
     end
 

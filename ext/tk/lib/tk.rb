@@ -1452,24 +1452,20 @@ module TkTreatFont
   alias fontobj font_configinfo
 
   def font_configure(slot)
-    if (fnt = slot['font'])
-      slot['font'] = nil
+    if (fnt = slot.delete('font'))
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(self.path, self.path,'configure',slot)
       else
 	latinfont_configure(fnt) if fnt
       end
     end
-    if (ltn = slot['latinfont'])
-      slot['latinfont'] = nil
+    if (ltn = slot.delete('latinfont'))
       latinfont_configure(ltn) if ltn
     end
-    if (ltn = slot['asciifont'])
-      slot['asciifont'] = nil
+    if (ltn = slot.delete('asciifont'))
       latinfont_configure(ltn) if ltn
     end
-    if (knj = slot['kanjifont'])
-      slot['kanjifont'] = nil
+    if (knj = slot.delete('kanjifont'))
       kanjifont_configure(knj) if knj
     end
 
@@ -1878,42 +1874,24 @@ class TkToplevel<TkWindow
     @classname = classname
     if keys.kind_of? Hash
       keys = keys.dup
-      if keys['classname']
-	@classname = keys['classname']
-	keys['classname'] = nil
-      end
-      if keys['colormap']
-	@colormap = keys['colormap']
-	keys['colormap'] = nil
-      end
-      if keys['container']
-	@classname = keys['container']
-	keys['classname'] = nil
-      end
-      if keys['screen']
-	@screen = keys['screen']
-	keys['screen'] = nil
-      end
-      if keys['use']
-	@use = keys['use']
-	keys['use'] = nil
-      end
-      if keys['visual']
-	@screen = keys['visual']
-	keys['visual'] = nil
-      end
+      @classname = keys.delete('classname')
+      @colormap  = keys.delete('colormap')
+      @container = keys.delete('container')
+      @screen    = keys.delete('screen')
+      @use       = keys.delete('use')
+      @visual    = keys.delete('visual')
     end
     super(parent, keys)
   end
 
   def create_self
     s = []
-    s.push << "-class"     << @classname if @classname
-    s.push << "-colormap"  << @colormap  if @colormap
-    s.push << "-container" << @container if @container
-    s.push << "-screen"    << @screen    if @screen 
-    s.push << "-use"       << @use       if @use
-    s.push << "-visual"    << @visual    if @visual
+    s << "-class"     << @classname if @classname
+    s << "-colormap"  << @colormap  if @colormap
+    s << "-container" << @container if @container
+    s << "-screen"    << @screen    if @screen 
+    s << "-use"       << @use       if @use
+    s << "-visual"    << @visual    if @visual
     tk_call 'toplevel', @path, *s
   end
 
@@ -1932,32 +1910,20 @@ class TkFrame<TkWindow
   def initialize(parent=nil, keys=nil)
     if keys.kind_of? Hash
       keys = keys.dup
-      if keys['classname']
-	@classname = keys['classname']
-	keys['classname'] = nil
-      end
-      if keys['colormap']
-	@colormap = keys['colormap']
-	keys['colormap'] = nil
-      end
-      if keys['container']
-      @classname = keys['container']
-	keys['classname'] = nil
-      end
-      if keys['visual']
-	@screen = keys['visual']
-	keys['visual'] = nil
-      end
+      @classname = keys.delete('classname')
+      @colormap  = keys.delete('colormap')
+      @container = keys.delete('container')
+      @visual    = keys.delete('visual')
     end
     super(parent, keys)
   end
 
   def create_self
     s = []
-    s.push << "-class"     << @classname if @classname
-    s.push << "-colormap"  << @colormap  if @colormap
-    s.push << "-container" << @container if @container
-    s.push << "-visual"    << @visual    if @visual
+    s << "-class"     << @classname if @classname
+    s << "-colormap"  << @colormap  if @colormap
+    s << "-container" << @container if @container
+    s << "-visual"    << @visual    if @visual
     tk_call 'frame', @path, *s
   end
 end
@@ -2189,8 +2155,7 @@ module TkTreatMenuEntryFont
 
   def tagfont_configure(index, slot)
     pathname = self.path + ';' + index
-    if (fnt = slot['font'])
-      slot['font'] = nil
+    if (fnt = slot.delete('font'))
       if fnt.kind_of? TkFont
 	return fnt.call_font_configure(pathname, 
 				       self.path,'entryconfigure',index,slot)
@@ -2198,16 +2163,13 @@ module TkTreatMenuEntryFont
 	latintagfont_configure(index, fnt) if fnt
       end
     end
-    if (ltn = slot['latinfont'])
-      slot['latinfont'] = nil
+    if (ltn = slot.delete('latinfont'))
       latintagfont_configure(index, ltn) if ltn
     end
-    if (ltn = slot['asciifont'])
-      slot['asciifont'] = nil
+    if (ltn = slot.delete('asciifont'))
       latintagfont_configure(index, ltn) if ltn
     end
-    if (knj = slot['kanjifont'])
-      slot['kanjifont'] = nil
+    if (knj = slot.delete('kanjifont'))
       kanjitagfont_configure(index, knj) if knj
     end
 

@@ -68,9 +68,9 @@ Win32API_initialize(self, dllname, proc, import, export)
 	    rb_raise(rb_eRuntimeError, "GetProcAddress: %s or %s\n",
 		RSTRING(proc)->ptr, RSTRING(str)->ptr);
     }
-    rb_iv_set(self, "__dll__", INT2NUM((int)hdll));
+    rb_iv_set(self, "__dll__", UINT2NUM((unsigned long)hdll));
     rb_iv_set(self, "__dllname__", dllname);
-    rb_iv_set(self, "__proc__", INT2NUM((int)hproc));
+    rb_iv_set(self, "__proc__", UINT2NUM((unsigned long)hproc));
 
     a_import = rb_ary_new();
     ptr = RARRAY(import)->ptr;
@@ -124,7 +124,7 @@ Win32API_Call(argc, argv, obj)
     ApiVoid     *ApiFunctionVoid;
     ApiInteger  *ApiFunctionInteger;
 
-    long  lParam; 
+    long  lParam;
     char *pParam;
 
     VALUE Return;
@@ -144,7 +144,7 @@ Win32API_Call(argc, argv, obj)
 
     obj_import = rb_iv_get(obj, "__import__");
     obj_export = rb_iv_get(obj, "__export__");
-    nimport  = RARRAY(obj_import)->len;
+    nimport = RARRAY(obj_import)->len;
     texport = FIX2INT(obj_export);
 
     if (items != nimport)
@@ -165,7 +165,7 @@ Win32API_Call(argc, argv, obj)
 		    mov     eax, lParam
 		    push    eax
 		}
-#elif defined(__CYGWIN32__) || defined(__MINGW32__)
+#elif defined(__CYGWIN__) || defined(__MINGW32__)
 		asm volatile ("pushl %0" :: "g" (lParam));
 #else
 #error
@@ -184,10 +184,10 @@ Win32API_Call(argc, argv, obj)
 		}
 #if defined(_MSC_VER) || defined(__LCC__)
 		_asm {
-		    mov     eax, dword ptr pParam
+		    mov     eax, pParam
 		    push    eax
 		}
-#elif defined(__CYGWIN32__) || defined(__MINGW32__)
+#elif defined(__CYGWIN__) || defined(__MINGW32__)
 		asm volatile ("pushl %0" :: "g" (pParam));
 #else
 #error
@@ -195,7 +195,6 @@ Win32API_Call(argc, argv, obj)
 		break;
 	    }
 	}
-
     }
 
     switch (texport) {

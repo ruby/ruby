@@ -330,21 +330,31 @@ stmt		: block_call
 		| stmt kWHILE_MOD expr
 		    {
 			value_expr($3);
-			if (nd_type($1) == NODE_BEGIN) {
-			    $$ = NEW_WHILE(cond($3), $1->nd_body, 0);
+			if ($1) {
+			    if (nd_type($1) == NODE_BEGIN) {
+				$$ = NEW_WHILE(cond($3), $1->nd_body, 0);
+			    }
+			    else {
+				$$ = NEW_WHILE(cond($3), $1, 1);
+			    }
 			}
 			else {
-			    $$ = NEW_WHILE(cond($3), $1, 1);
+			    $$ = 0;
 			}
 		    }
 		| stmt kUNTIL_MOD expr
 		    {
 			value_expr($3);
-			if (nd_type($1) == NODE_BEGIN) {
-			    $$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
+			if ($1) {
+			    if (nd_type($1) == NODE_BEGIN) {
+				$$ = NEW_UNTIL(cond($3), $1->nd_body, 0);
+			    }
+			    else {
+				$$ = NEW_UNTIL(cond($3), $1, 1);
+			    }
 			}
 			else {
-			    $$ = NEW_UNTIL(cond($3), $1, 1);
+			    $$ = 0;
 			}
 		    }
 		| klBEGIN
@@ -708,7 +718,7 @@ arg		: lhs '=' arg
 		    }
 		| tUPLUS arg
 		    {
-			if (nd_type($2) == NODE_LIT) {
+			if ($2 && nd_type($2) == NODE_LIT) {
 			    $$ = $2;
 			}
 			else {
@@ -717,7 +727,7 @@ arg		: lhs '=' arg
 		    }
 		| tUMINUS arg
 		    {
-			if (nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
+			if ($2 && nd_type($2) == NODE_LIT && FIXNUM_P($2->nd_lit)) {
 			    long i = FIX2LONG($2->nd_lit);
 
 			    $2->nd_lit = INT2FIX(-i);

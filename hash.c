@@ -688,10 +688,9 @@ rb_hash_inspect(hash)
 }
 
 static VALUE
-hash_to_s(hash)
+to_s_hash(hash)
     VALUE hash;
 {
-    if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
     return rb_ary_to_s(rb_hash_to_a(hash));
 }
 
@@ -699,8 +698,10 @@ static VALUE
 rb_hash_to_s(hash)
     VALUE hash;
 {
+    VALUE str;
+
     if (rb_inspecting_p(hash)) return rb_str_new2("{...}");
-    return rb_protect_inspect(hash_to_s, hash, 0);
+    return rb_protect_inspect(to_s_hash, hash, 0);
 }
 
 static VALUE
@@ -1366,7 +1367,7 @@ env_index(dmy, value)
 	char *s = strchr(*env, '=')+1;
 	if (s) {
 	    if (strncmp(s, RSTRING(value)->ptr, strlen(s)) == 0) {
-		return rb_tainted_str_new(*env, s-*env);
+		return rb_tainted_str_new(*env, s-*env-1);
 	    }
 	}
 	env++;

@@ -16,9 +16,9 @@ VALUE rb_cBignum;
 typedef unsigned short USHORT;
 
 #define BDIGITS(x) RBIGNUM(x)->digits
-#define BITSPERDIG (sizeof(short)*CHAR_BIT)
+#define BITSPERDIG (sizeof(USHORT)*CHAR_BIT)
 #define BIGRAD (1L << BITSPERDIG)
-#define DIGSPERINT ((unsigned int)(sizeof(long)/sizeof(short)))
+#define DIGSPERLONG ((unsigned int)(sizeof(long)/sizeof(USHORT)))
 #define BIGUP(x) ((unsigned long)(x) << BITSPERDIG)
 #define BIGDN(x) RSHIFT(x,BITSPERDIG)
 #define BIGLO(x) ((USHORT)((x) & (BIGRAD-1)))
@@ -33,7 +33,7 @@ bignew_1(klass, len, sign)
     OBJSETUP(big, klass, T_BIGNUM);
     big->sign = sign;
     big->len = len;
-    BDIGITS(big) = ALLOC_N(USHORT, len);
+    big->digits = ALLOC_N(USHORT, len);
 
     return (VALUE)big;
 }
@@ -116,14 +116,14 @@ rb_uint2big(n)
     VALUE big;
 
     i = 0;
-    big = bignew(DIGSPERINT, 1);
+    big = bignew(DIGSPERLONG, 1);
     digits = BDIGITS(big);
-    while (i < DIGSPERINT) {
+    while (i < DIGSPERLONG) {
 	digits[i++] = BIGLO(n);
 	n = BIGDN(n);
     }
 
-    i = DIGSPERINT;
+    i = DIGSPERLONG;
     while (i-- && !digits[i]) ;
     RBIGNUM(big)->len = i+1;
     return big;

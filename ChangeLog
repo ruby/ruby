@@ -1,3 +1,66 @@
+Wed Jan  5 02:14:46 2000  EGUCHI Osamu  <eguchi@shizuokanet.ne.jp>
+
+	* parse.y: Fix SEGV on empty parens with UMINUS or UPLUS.
+
+Tue Jan  4 22:25:54 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* parse.y (stmt): `() while cond' dumped core.
+
+Mon Dec 27 12:35:47 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/socket/socket.c (sock_finalize): mswin32: fix socket handle leak.
+
+	* win32/win32.c (myfdclose): ditto.
+
+Sun Dec 26 23:15:13 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* win32/win32.c (mypopen): raise catchable error instead of rb_fatal.
+	* win32/win32.c (mypclose): fix process handle laek.
+
+Sun Dec 26 16:17:11 1999  Katsuyuki Komatsu  <komatsu@sarion.co.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_initialize): use UINT2NUM
+	  instead of INT2NUM to set __dll__ and __proc__.
+
+Sat Dec 25 00:08:59 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* ext/Win32API/Win32API.c (Win32API_Call): remove 'dword ptr'
+	  from _asm.
+
+Fri Dec 24 10:26:47 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+
+	* win32/win32.h: use "C++" linkage.
+
+Fri Dec 24 02:00:57 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* eval.c (THREAD_ALLOC): should initialize th->trace.
+
+Fri Dec 24 00:43:39 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* io.c (pipe_open): check for `fptr->f == NULL'.
+	* win32/win32.c (mypopen): STDERR does not work during ` function.
+
+Tue Dec 21 17:21:28 1999  Koji Oda  <oda@bsd1.qnes.nec.co.jp>
+
+	* ext/socket/socket.c (sock_finalize): mswin32: fix FILE* leak.
+
+Sun Dec 19 22:56:31 1999  KANEKO Naoshi  <wbs01621@mail.wbs.ne.jp>
+
+	* lib/find.rb: support dosish root directory.
+	* win32/Makefile: ditto.
+	* win32/config.status: ditto.
+	* win32/win32.c (opendir): ditto.
+	* win32/win32.c (opendir): use CharPrev() to get last character
+	  of the directory name.
+
+Fri Dec 17 19:27:43 1999  IWAMURO Motonori  <iwa@mmp.fujitsu.co.jp>
+
+	* eval.c (rb_load): should initialize ruby_frame->last_class.
+
+Wed Dec 15 01:35:29 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* ruby.c (proc_options): argv boundary check for `-X'.
+
 Sat Dec 11 03:34:38 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* gc.c (mark_hashentry): key should be VALUE, not ID.
