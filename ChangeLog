@@ -1,7 +1,79 @@
+Mon Nov 27 17:00:35 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): should not redefine builtin classes/modules
+	  from within wrapped load.
+
+Mon Nov 27 08:57:33 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (call_end_proc): should be isolated from outer block.
+
+Mon Nov 27 00:10:08 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (rb_io_ctl): call ioctl/fcntl for fptr->f2 too.
+
+	* process.c (rb_f_fork): call rb_thread_atfork() after creating
+	  child process.
+
+	* eval.c (rb_thread_atfork): kill all other threads immediately,
+	  then turn the current thread into the main thread.
+
+Sat Nov 25 23:12:22 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (ruby_run): move calling point of rb_trap_exit after
+	  cleaning up threads.
+
+	* eval.c (ruby_finalize): new function to call EXIT trap, END
+	  procs and GC finalizers.
+
+	* eval.c (rb_exec_end_proc): prevent recursion.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): ditto.
+
+	* signal.c (rb_trap_exit): ditto. made static.
+
+	* process.c (rb_f_fork): should swallow all exceptions from block
+	  execution.
+
+	* process.c (fork_rescue): should call ruby_finalize().
+
+	* parse.y (yycompile): rb_gc() removed.  I don't remember why I put
+	  this here.  test code?
+
+Fri Nov 24 22:03:48 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (EXCL): exclusive infomation is now stored in an
+	  instance variable.  this enables proper marshal dump.
+
+	* process.c (proc_waitpid): should clear rb_last_status ($?) if
+	  no pid was given by waitpid(2).
+
+Thu Nov 23 01:35:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_waitpid2): returns nil if no pid found.
+
+Wed Nov 22 23:45:15 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (range_eq): new method.  Compares start and end of range
+	  respectively.
+
+Wed Nov 22 11:01:32 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_mod_class_variables): should honor singleton
+	  class variable rule defined yesterday.
+
+Tue Nov 21 23:24:14 2000  Mitsuteru S Nakao  <nakao@kuicr.kyoto-u.ac.jp>
+
+	* numeric.c (flodivmod): missing second operand (typo).
+
 Tue Nov 21 03:39:41 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* marshal.c (marshal_load): marshal format compatibility check
+	  revised.   greater minor revision is UPWARD compatibile;
+	  downward compatibility is not assured.
+
 	* eval.c (is_defined): clarify class variable behavior for
-	  singleton classes.
+	  singleton classes.  class variables within singleton class
+	  should be treated like within singleton method.
 
 Mon Nov 20 13:45:21 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

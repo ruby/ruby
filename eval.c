@@ -1114,6 +1114,39 @@ ruby_options(argc, argv)
     }
 }
 
+static void rb_exec_end_proc _((void));
+
+void
+ruby_finalize()
+{
+    rb_trap_exit();
+    rb_exec_end_proc();
+    rb_gc_call_finalizer_at_exit();
+}
+
+void
+ruby_stop(ex)
+    int ex;
+{
+    int state;
+
+    PUSH_TAG(PROT_NONE);
+    PUSH_ITER(ITER_NOT);
+    if ((state = EXEC_TAG()) == 0) {
+	rb_thread_cleanup();
+	rb_thread_wait_other_threads();
+    }
+    else if (ex == 0) {
+	ex = state;
+    }   
+    POP_ITER();
+    POP_TAG();
+
+    ex = error_handle(ex);
+    ruby_finalize();
+    exit(ex);
+}
+
 void
 ruby_run()
 {
@@ -1133,23 +1166,7 @@ ruby_run()
     POP_TAG();
 
     if (state && !ex) ex = state;
-    PUSH_TAG(PROT_NONE);
-    PUSH_ITER(ITER_NOT);
-    if ((state = EXEC_TAG()) == 0) {
-	rb_trap_exit();
-	rb_thread_cleanup();
-	rb_thread_wait_other_threads();
-    }
-    else {
-	ex = state;
-    }
-    POP_ITER();
-    POP_TAG();
-
-    ex = error_handle(ex);
-    rb_exec_end_proc();
-    rb_gc_call_finalizer_at_exit();
-    exit(ex);
+    ruby_stop(ex);
 }
 
 static void
@@ -2955,16 +2972,11 @@ rb_eval(self, n)
 	    }
 
 	    klass = 0;
-	    if ((ruby_class == rb_cObject || ruby_class == ruby_wrapper) &&
-		rb_autoload_defined(node->nd_cname)) {
+	    if ((ruby_class == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
 		rb_autoload_load(node->nd_cname);
 	    }
 	    if (rb_const_defined_at(ruby_class, node->nd_cname)) {
 		klass = rb_const_get(ruby_class, node->nd_cname);
-	    }
-	    if (!klass && ruby_class == ruby_wrapper &&
-		rb_const_defined_at(rb_cObject, node->nd_cname)) {
-		klass = rb_const_get(rb_cObject, node->nd_cname);
 	    }
 	    if (klass) {
 		if (TYPE(klass) != T_CLASS) {
@@ -3013,16 +3025,11 @@ rb_eval(self, n)
 		rb_raise(rb_eTypeError, "no outer class/module");
 	    }
 	    module = 0;
-	    if ((ruby_class == rb_cObject || ruby_class == ruby_wrapper) &&
-		rb_autoload_defined(node->nd_cname)) {
+	    if ((ruby_class == rb_cObject) && rb_autoload_defined(node->nd_cname)) {
 		rb_autoload_load(node->nd_cname);
 	    }
 	    if (rb_const_defined_at(ruby_class, node->nd_cname)) {
 		module = rb_const_get(ruby_class, node->nd_cname);
-	    }
-	    if (!module && ruby_class == ruby_wrapper &&
-		rb_const_defined_at(rb_cObject, node->nd_cname)) {
-		module = rb_const_get(rb_cObject, node->nd_cname);
 	    }
 	    if (module) {
 		if (TYPE(module) != T_MODULE) {
@@ -3208,11 +3215,14 @@ rb_exit(status)
     int status;
 {
     if (prot_tag) {
+	VALUE exit;
+
 	exit_status = status;
-	rb_exc_raise(rb_exc_new(rb_eSystemExit, 0, 0));
+	exit = rb_exc_new(rb_eSystemExit, 0, 0);
+	rb_iv_set(exit, "status", INT2NUM(status));
+	rb_exc_raise(exit);
     }
-    rb_exec_end_proc();
-    rb_gc_call_finalizer_at_exit();
+    ruby_finalize();
     exit(status);
 }
 
@@ -5602,7 +5612,11 @@ static void
 call_end_proc(data)
     VALUE data;
 {
+    PUSH_ITER(ITER_NOT);
+    PUSH_FRAME();
     proc_call(data, Qundef);
+    POP_FRAME();
+    POP_ITER();
 }
 
 static void
@@ -5625,24 +5639,28 @@ rb_f_at_exit()
     return proc;
 }
 
-void
+static void
 rb_exec_end_proc()
 {
     struct end_proc_data *link;
     int status;
 
-    link = end_procs;
-    while (link) {
+    while (end_procs) {
+	link = end_procs;
+	end_procs = link->next;
 	rb_protect((VALUE(*)())link->func, link->data, &status);
 	if (status) {
 	    error_handle(status);
 	}
-	link = link->next;
+	free(link);
     }
     while (ephemeral_end_procs) {
 	link = ephemeral_end_procs;
 	ephemeral_end_procs = link->next;
 	rb_protect((VALUE(*)())link->func, link->data, &status);
+	if (status) {
+	    error_handle(status);
+	}
 	free(link);
     }
 }
@@ -6915,6 +6933,7 @@ rb_thread_remove(th)
     rb_thread_t th;
 {
     if (th->status == THREAD_KILLED) return;
+
     rb_thread_ready(th);
     th->status = THREAD_KILLED;
     th->prev->next = th->next;
@@ -7816,6 +7835,7 @@ rb_thread_start_0(fn, arg, th_arg)
     }
     POP_TAG();
     status = th->status;
+    if (th == main_thread) ruby_stop(state);
     rb_thread_remove(th);
     if (state && status != THREAD_TO_KILL && !NIL_P(ruby_errinfo)) {
 	th->flags |= THREAD_RAISED;
@@ -8212,6 +8232,23 @@ rb_thread_inspect(thread)
     OBJ_INFECT(str, thread);
 
     return str;
+}
+
+void
+rb_thread_atfork()
+{
+    rb_thread_t th;
+
+    if (rb_thread_alone()) return;
+    FOREACH_THREAD(th) {
+	if (th != curr_thread) {
+	    th->status = THREAD_KILLED;
+	}
+    }
+    END_FOREACH(th);
+    main_thread = curr_thread;
+    curr_thread->next = curr_thread;
+    curr_thread->prev = curr_thread;
 }
 
 static VALUE rb_cCont;

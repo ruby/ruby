@@ -5,4 +5,4 @@
 
 (display (fib 20))
 (newline)
-
+(quit)

@@ -217,7 +217,10 @@ proc_waitpid(argc, argv)
 
     if ((pid = rb_waitpid(NUM2INT(vpid), flags, &status)) < 0)
 	rb_sys_fail(0);
-    if (pid == 0) return Qnil;
+    if (pid == 0) {
+	rb_last_status = Qnil;
+	return Qnil;
+    }
     return INT2FIX(pid);
 }
 
@@ -227,6 +230,7 @@ proc_waitpid2(argc, argv)
     VALUE *argv;
 {
     VALUE pid = proc_waitpid(argc, argv);
+    if (NIL_P(pid)) return Qnil;
     return rb_assoc_new(pid, rb_last_status);
 }
 
@@ -527,6 +531,21 @@ rb_f_exec(argc, argv)
 }
 
 static VALUE
+fork_rescue(data, errinfo)
+    VALUE data, errinfo;
+{
+    int status = 1;
+
+    if (rb_obj_is_kind_of(errinfo, rb_eSystemExit)) {
+	VALUE st = rb_iv_get(errinfo, "status");
+
+	status = NUM2INT(st);
+    }
+    ruby_finalize();
+    _exit(status);
+}
+
+static VALUE
 rb_f_fork(obj)
     VALUE obj;
 {
@@ -539,9 +558,17 @@ rb_f_fork(obj)
 #ifdef linux
 	after_exec();
 #endif
+	rb_thread_atfork();
 	if (rb_block_given_p()) {
-	    rb_yield(Qnil);
+#if 0
+	    rb_rescue2(rb_yield, Qnil, fork_rescue, 0, rb_eException, 0);
 	    _exit(0);
+#else
+	    int status;
+
+	    rb_protect(rb_yield, Qnil, &status);
+	    ruby_stop(status);
+#endif
 	}
 	return Qnil;
 

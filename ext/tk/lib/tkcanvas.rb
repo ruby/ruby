@@ -274,7 +274,19 @@ class TkCanvas<TkWindow
   end
 
   def itemcget(tagOrId, option)
-    tk_tcl2ruby tk_send 'itemcget', tagid(tagOrId), "-#{option}"
+    case option
+    when 'dash', 'activedash', 'disableddash'
+      conf = tk_send('itemcget', tagid(tagOrId), "-#{option}")
+      if conf =~ /^[0-9]/
+	list(conf)
+      else
+	conf
+      end
+    when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
+      tk_send 'itemcget', tagid(tagOrId), "-#{option}"
+    else
+      tk_tcl2ruby tk_send 'itemcget', tagid(tagOrId), "-#{option}"
+    end
   end
 
   def itemconfigure(tagOrId, key, value=None)
@@ -308,12 +320,55 @@ class TkCanvas<TkWindow
 
   def itemconfiginfo(tagOrId, key=nil)
     if key
-      conf = tk_split_list(tk_send 'itemconfigure', tagid(tagOrId), "-#{key}")
+      case key
+      when 'dash', 'activedash', 'disableddash'
+	conf = tk_split_simplelist(tk_send 'itemconfigure', 
+				   tagid(tagOrId), "-#{key}")
+	if conf[3] && conf[3] =~ /^[0-9]/
+	  conf[3] = list(conf[3])
+	end
+	if conf[4] && conf[4] =~ /^[0-9]/
+	  conf[4] = list(conf[4])
+	end
+      when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
+	conf = tk_split_simplelist(tk_send 'itemconfigure', 
+				   tagid(tagOrId), "-#{key}")
+      else
+	conf = tk_split_list(tk_send 'itemconfigure', 
+			     tagid(tagOrId), "-#{key}")
+      end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_list(tk_send 'itemconfigure', tagid(tagOrId)).collect{|conf|
+      tk_split_simplelist(tk_send 'itemconfigure', 
+			  tagid(tagOrId)).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
+	case conf[0]
+	when 'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile'
+	when 'dash', 'activedash', 'disableddash'
+	  if conf[3] && conf[3] =~ /^[0-9]/
+	    conf[3] = list(conf[3])
+	  end
+	  if conf[4] && conf[4] =~ /^[0-9]/
+	    conf[4] = list(conf[4])
+	  end
+	else
+	  if conf[3]
+	    if conf[3].index('{')
+	      conf[3] = tk_split_list(conf[3]) 
+	    else
+	      conf[3] = tk_tcl2ruby(conf[3]) 
+	    end
+	  end
+	  if conf[4]
+	    if conf[4].index('{')
+	      conf[4] = tk_split_list(conf[4]) 
+	    else
+	      conf[4] = tk_tcl2ruby(conf[4]) 
+	    end
+	  end
+	end
 	conf
       }
     end
@@ -820,7 +875,12 @@ class TkPhotoImage<TkImage
   end
 
   def cget(option)
-    tk_tcl2ruby tk_send 'cget', option
+    case option
+    when 'data', 'flie'
+      tk_send 'cget', option
+    else
+      tk_tcl2ruby tk_send 'cget', option
+    end
   end
 
   def copy(source, *opts)

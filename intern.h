@@ -140,8 +140,9 @@ VALUE rb_class_new_instance _((int, VALUE*, VALUE));
 VALUE rb_f_lambda _((void));
 VALUE rb_protect _((VALUE (*)(), VALUE, int*));
 void rb_set_end_proc _((void (*)(), VALUE));
-void rb_exec_end_proc _((void));
 void rb_mark_end_proc _((void));
+void ruby_finalize _((void));
+void ruby_stop _((int));
 void rb_gc_mark_threads _((void));
 void rb_thread_start_timer _((void));
 void rb_thread_stop_timer _((void));
@@ -167,6 +168,7 @@ VALUE rb_thread_current _((void));
 VALUE rb_thread_main _((void));
 VALUE rb_thread_local_aref _((VALUE, ID));
 VALUE rb_thread_local_aset _((VALUE, ID, VALUE));
+void rb_thread_atfork _((void));
 /* file.c */
 int eaccess _((const char*, int));
 VALUE rb_file_s_expand_path _((int, VALUE *));

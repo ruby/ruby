@@ -485,6 +485,56 @@ module TkCore
     end
   end
 
+  def after_idle(cmd=Proc.new)
+    myid = _curr_cmd_id
+    cmdid = install_cmd(cmd)
+    tk_call('after','idle',cmdid)
+  end
+
+  def clock_clicks(ms=nil)
+    if ms
+      tk_call('clock','clicks','-milliseconds').to_i
+    else
+      tk_call('clock','clicks').to_i
+    end
+  end
+
+  def clock_format(clk, form=nil)
+    if form
+      tk_call('clock','format',clk,'-format',form).to_i
+    else
+      tk_call('clock','format',clk).to_i
+    end
+  end
+
+  def clock_formatGMT(clk, form=nil)
+    if form
+      tk_call('clock','format',clk,'-format',form,'-gmt','1').to_i
+    else
+      tk_call('clock','format',clk,'-gmt','1').to_i
+    end
+  end
+
+  def clock_scan(str, base=nil)
+    if base
+      tk_call('clock','scan',str,'-base',base).to_i
+    else
+      tk_call('clock','scan',str).to_i
+    end
+  end
+
+  def clock_scanGMT(str, base=nil)
+    if base
+      tk_call('clock','scan',str,'-base',base,'-gmt','1').to_i
+    else
+      tk_call('clock','scan',str,'-gmt','1').to_i
+    end
+  end
+
+  def clock_seconds
+    tk_call('clock','seconds').to_i
+  end
+
   def TkCore.callback(arg)
     arg = Array(tk_split_list(arg))
     _get_eval_string(TkUtil.eval_cmd(Tk_CMDTBL[arg.shift], *arg))
@@ -1762,10 +1812,28 @@ module TkPack
     tk_call 'pack', 'forget' *args
   end
 
-  def propagate(master, bool=None)
-    bool(tk_call('pack', 'propagate', master.epath, bool))
+  def info(slave)
+    ilist = list(tk_call('pack', 'info', slave.epath))
+    info = {}
+    while key = ilist.shift
+      info[key[1..-1]] = ilist.shift
+    end
+    return info
   end
-  module_function :configure, :forget, :propagate
+
+  def propagate(master, bool=None)
+    if bool == None
+      bool(tk_call('pack', 'propagate', master.epath))
+    else
+      tk_call('pack', 'propagate', master.epath, bool)
+    end
+  end
+
+  def slaves(master)
+    list(tk_call('pack', 'slaves', master.epath))
+  end
+
+  module_function :configure, :forget, :info, :propagate, :slaves
 end
 
 module TkGrid
@@ -1795,6 +1863,32 @@ module TkGrid
     tk_call "grid", 'rowconfigure', master, index, *hash_kv(args)
   end
 
+  def columnconfiginfo(master, index, slot=nil)
+    if slot
+      tk_call 'grid', 'columnconfigure', master, index, "-#{slot}"
+    else
+      ilist = list(tk_call('grid', 'columnconfigure', master, index))
+      info = {}
+      while key = ilist.shift
+	info[key[1..-1]] = ilist.shift
+      end
+      info
+    end
+  end
+
+  def rowconfiginfo(master, index, slot=nil)
+    if slot
+      tk_call 'grid', 'rowconfigure', master, index, "-#{slot}"
+    else
+      ilist = list(tk_call('grid', 'rowconfigure', master, index))
+      info = {}
+      while key = ilist.shift
+	info[key[1..-1]] = ilist.shift
+      end
+      info
+    end
+  end
+
   def add(widget, *args)
     configure(widget, *args)
   end
@@ -1812,7 +1906,11 @@ module TkGrid
   end
 
   def propagate(master, bool=None)
-    bool(tk_call('grid', 'propagate', master.epath, bool))
+    if bool == None
+      bool(tk_call('grid', 'propagate', master.epath))
+    else
+      tk_call('grid', 'propagate', master.epath, bool)
+    end
   end
 
   def remove(*args)
@@ -1823,13 +1921,63 @@ module TkGrid
     tk_call 'grid', 'size', master
   end
 
-  def slaves(args)
-    list(tk_call('grid', 'slaves', *hash_kv(args)))
+  def slaves(master, args)
+    list(tk_call('grid', 'slaves', master, *hash_kv(args)))
   end
 
   module_function :bbox, :forget, :propagate, :info
   module_function :remove, :size, :slaves, :location
   module_function :configure, :columnconfigure, :rowconfigure
+  module_function :columnconfiginfo, :rowconfiginfo
+end
+
+module TkPlace
+  include Tk
+  extend Tk
+
+  def configure(win, slot, value=None)
+    if slot.kind_of? Hash
+      tk_call 'place', 'configure', win.epath, *hash_kv(slot)
+    else
+      tk_call 'place', 'configure', win.epath, "-#{slot}", value
+    end
+  end
+
+  def configinfo(win, slot = nil)
+    # for >= Tk8.4a2 ?
+    if slot
+      conf = tk_split_list(tk_call('place', 'configure', 
+				   win.epath, "-#{slot}") )
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_simplelist(tk_call('place', 'configure', 
+				  win.epath)).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
+	conf[0] = conf[0][1..-1]
+	conf
+      }
+    end
+  end
+
+  def forget(win)
+    tk_call 'place', 'forget', win
+  end
+
+  def info(win)
+    ilist = list(tk_call('place', 'info', win.epath))
+    info = {}
+    while key = ilist.shift
+      info[key[1..-1]] = ilist.shift
+    end
+    return info
+  end
+
+  def slaves(master)
+    list(tk_call('place', 'slaves', master.epath))
+  end
+
+  module_function :configure, :configinfo, :forget, :info, :slaves
 end
 
 module TkOption
@@ -1993,7 +2141,12 @@ class TkObject<TkKernel
   end
 
   def cget(slot)
-    tk_tcl2ruby tk_call path, 'cget', "-#{slot}"
+    case slot
+    when 'text', 'label', 'show', 'data', 'flie'
+      tk_call path, 'cget', "-#{slot}"
+    else
+      tk_tcl2ruby tk_call path, 'cget', "-#{slot}"
+    end
   end
 
   def configure(slot, value=None)
@@ -2028,17 +2181,43 @@ class TkObject<TkKernel
       fontobj
     else
       if slot
-	conf = tk_split_list(tk_send('configure', "-#{slot}") )
+	case slot
+	when 'text', 'label', 'show', 'data', 'flie'
+	  conf = tk_split_simplelist(tk_send('configure', "-#{slot}") )
+	else
+	  conf = tk_split_list(tk_send('configure', "-#{slot}") )
+	end
 	conf[0] = conf[0][1..-1]
 	conf
       else
-	ret = tk_split_list(tk_send('configure') ).collect{|conf|
+	ret = tk_split_simplelist(tk_send('configure') ).collect{|conflist|
+	  conf = tk_split_simplelist(conflist)
 	  conf[0] = conf[0][1..-1]
+	  case conf[0]
+	  when 'text', 'label', 'show', 'data', 'flie'
+	  else
+	    if conf[3]
+	      if conf[3].index('{')
+		conf[3] = tk_split_list(conf[3]) 
+	      else
+		conf[3] = tk_tcl2ruby(conf[3]) 
+	      end
+	    end
+	    if conf[4]
+	      if conf[4].index('{')
+		conf[4] = tk_split_list(conf[4]) 
+	      else
+		conf[4] = tk_tcl2ruby(conf[4]) 
+	      end
+	    end
+	  end
 	  conf
 	}
-	if ret.assoc('font')
+	fontconf = ret.assoc('font')
+	if fontconf
 	  ret.delete_if{|item| item[0] == 'font' || item[0] == 'kanjifont'}
-	  ret.push(['font', fontobj])
+	  fontconf[4] = fontobj
+	  ret.push(fontconf)
 	else
 	  ret
 	end
@@ -2093,6 +2272,36 @@ class TkWindow<TkObject
     tk_call 'pack', 'forget', epath
     self
   end
+  alias pack_forget unpack
+
+  def pack_config(slot, value=None)
+    if slot.kind_of? Hash
+      tk_call 'pack', 'configure', epath, *hash_kv(slot)
+    else
+      tk_call 'pack', 'configure', epath, "-#{slot}", value
+    end
+  end
+
+  def pack_info()
+    ilist = list(tk_call('pack', 'info', epath))
+    info = {}
+    while key = ilist.shift
+      info[key[1..-1]] = ilist.shift
+    end
+    return info
+  end
+
+  def pack_propagate(mode = nil)
+    if mode
+      tk_call('pack', 'propagate', epath, mode)
+    else
+      bool(tk_call('pack', 'propagate', epath))
+    end
+  end
+
+  def pack_slaves()
+    list(tk_call('pack', 'slaves', epath))
+  end
 
   def grid(keys = nil)
     tk_call 'grid', epath, *hash_kv(keys)
@@ -2102,6 +2311,81 @@ class TkWindow<TkObject
   def ungrid
     tk_call 'grid', 'forget', epath
     self
+  end
+  alias grid_forget ungrid
+
+  def grid_bbox(*args)
+    list(tk_call('grid', 'bbox', epath, *args))
+  end
+
+  def grid_config(slot, value=None)
+    if slot.kind_of? Hash
+      tk_call 'grid', 'configure', epath, *hash_kv(slot)
+    else
+      tk_call 'grid', 'configure', epath, "-#{slot}", value
+    end
+  end
+
+  def grid_columnconfig(index, keys)
+    tk_call('grid', 'columnconfigure', epath, index, hash_kv(keys))
+  end
+
+  def grid_rowconfig(index, keys)
+    tk_call('grid', 'rowconfigure', epath, index, hash_kv(keys))
+  end
+
+  def grid_columnconfiginfo(index, slot=nil)
+    if slot
+      tk_call('grid', 'columnconfigure', epath, index, "-#{slot}")
+    else
+      ilist = list(tk_call('grid', 'columnconfigure', epath, index))
+      info = {}
+      while key = ilist.shift
+	info[key[1..-1]] = ilist.shift
+      end
+      info
+    end
+  end
+
+  def grid_rowconfiginfo(index, slot=nil)
+    if slot
+      tk_call('grid', 'rowconfigure', epath, index, "-#{slot}")
+    else
+      ilist = list(tk_call('grid', 'rowconfigure', epath, index))
+      info = {}
+      while key = ilist.shift
+	info[key[1..-1]] = ilist.shift
+      end
+      info
+    end
+  end
+
+  def grid_info()
+    list(tk_call('grid', 'info', epath))
+  end
+
+  def grid_location(x, y)
+    list(tk_call('grid', 'location', epath, x, y))
+  end
+
+  def grid_propagate(mode=nil)
+    if mode
+      tk_call('grid', 'propagate', epath, bool)
+    else
+      bool(tk_call('grid', 'propagate', epath))
+    end
+  end
+
+  def grid_remove()
+    tk_call 'grid', 'remove', epath
+  end
+
+  def grid_size()
+    tk_call 'grid', 'size', epath
+  end
+
+  def grid_slaves(args)
+    list(tk_call('grid', 'slaves', epath, *hash_kv(args)))
   end
 
   def place(keys = nil)
@@ -2115,25 +2399,32 @@ class TkWindow<TkObject
   end
   alias place_forget unplace
 
-  def place_config(keys)
-    tk_call "place", 'configure', epath, *hash_kv(keys)
+  def place_config(slot, value=None)
+    if slot.kind_of? Hash
+      tk_call 'place', 'configure', epath, *hash_kv(slot)
+    else
+      tk_call 'place', 'configure', epath, "-#{slot}", value
+    end
+  end
+
+  def place_configinfo(slot = nil)
+    # for >= Tk8.4a2 ?
+    if slot
+      conf = tk_split_list(tk_call('place', 'configure', epath, "-#{slot}") )
+      conf[0] = conf[0][1..-1]
+      conf
+    else
+      tk_split_simplelist(tk_call('place', 
+				  'configure', epath)).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
+	conf[0] = conf[0][1..-1]
+	conf
+      }
+    end
   end
 
   def place_info()
     ilist = list(tk_call('place', 'info', epath))
-    info = {}
-    while key = ilist.shift
-      info[key[1..-1]] = ilist.shift
-    end
-    return info
-  end
-
-  def pack_slaves()
-    list(tk_call('pack', 'slaves', epath))
-  end
-
-  def pack_info()
-    ilist = list(tk_call('pack', 'info', epath))
     info = {}
     while key = ilist.shift
       info[key[1..-1]] = ilist.shift
@@ -2160,7 +2451,9 @@ class TkWindow<TkObject
     elsif args.length == 1
       case args[0]
       when 'global'
-	tk_call 'grab', 'set', '-global', path
+	return(tk_call 'grab', 'set', '-global', path)
+      when 'release'
+	return(tk_call 'grab', 'release', path)
       else
 	val = tk_call('grab', args[0], path)
       end
@@ -2360,9 +2653,9 @@ class TkButton<TkLabel
   end
 end
 
-class TkRadiobutton<TkButton
+class TkRadioButton<TkButton
   WidgetClassNames['Radiobutton'] = self
-  def TkRadiobutton.to_eval
+  def TkRadioButton.to_eval
     'Radiobutton'
   end
   def create_self
@@ -2378,11 +2671,11 @@ class TkRadiobutton<TkButton
     configure 'variable', tk_trace_variable(v)
   end
 end
-TkRadioButton = TkRadiobutton
+TkRadiobutton = TkRadioButton
 
-class TkCheckbutton<TkRadiobutton
+class TkCheckButton<TkRadioButton
   WidgetClassNames['Checkbutton'] = self
-  def TkCheckbutton.to_eval
+  def TkCheckButton.to_eval
     'Checkbutton'
   end
   def create_self
@@ -2392,7 +2685,7 @@ class TkCheckbutton<TkRadiobutton
     tk_send 'toggle'
   end
 end
-TkCheckButton = TkCheckbutton
+TkCheckbutton = TkCheckButton
 
 class TkMessage<TkLabel
   WidgetClassNames['Message'] = self
@@ -2403,7 +2696,6 @@ class TkMessage<TkLabel
     tk_call 'message', @path
   end
 end
-TkRadiobutton = TkRadioButton
 
 class TkScale<TkWindow
   WidgetClassName = 'Scale'.freeze
@@ -2432,7 +2724,6 @@ class TkScale<TkWindow
     set val
   end
 end
-TkCheckbutton = TkCheckButton
 
 class TkScrollbar<TkWindow
   WidgetClassName = 'Scrollbar'.freeze
@@ -2547,7 +2838,12 @@ class TkListbox<TkTextWin
   end
 
   def itemcget(index, key)
-    tk_tcl2ruby tk_send 'itemcget', index, "-#{key}"
+    case key
+    when 'text', 'label', 'show'
+      tk_send 'itemcget', index, "-#{key}"
+    else
+      tk_tcl2ruby tk_send 'itemcget', index, "-#{key}"
+    end
   end
   def itemconfigure(index, key, val=None)
     if key.kind_of? Hash
@@ -2570,12 +2866,36 @@ class TkListbox<TkTextWin
 
   def itemconfiginfo(index, key=nil)
     if key
-      conf = tk_split_list(tk_send('itemconfigure',index,"-#{key}"))
+      case key
+      when 'text', 'label', 'show'
+	conf = tk_split_simplelist(tk_send('itemconfigure',index,"-#{key}"))
+      else
+	conf = tk_split_list(tk_send('itemconfigure',index,"-#{key}"))
+      end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_list(tk_send('itemconfigure', index)).collect{|conf|
+      tk_split_simplelist(tk_send('itemconfigure', index)).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
+	case conf[0]
+	when 'text', 'label', 'show'
+	else
+	  if conf[3]
+	    if conf[3].index('{')
+	      conf[3] = tk_split_list(conf[3]) 
+	    else
+	      conf[3] = tk_tcl2ruby(conf[3]) 
+	    end
+	  end
+	  if conf[4]
+	    if conf[4].index('{')
+	      conf[4] = tk_split_list(conf[4]) 
+	    else
+	      conf[4] = tk_tcl2ruby(conf[4]) 
+	    end
+	  end
+	end
 	conf
       }
     end
@@ -2743,7 +3063,12 @@ class TkMenu<TkWindow
     number(tk_send('yposition', index))
   end
   def entrycget(index, key)
-    tk_tcl2ruby tk_send 'entrycget', index, "-#{key}"
+    case key
+    when 'text', 'label', 'show'
+      tk_send 'entrycget', index, "-#{key}"
+    else
+      tk_tcl2ruby tk_send 'entrycget', index, "-#{key}"
+    end
   end
   def entryconfigure(index, key, val=None)
     if key.kind_of? Hash
@@ -2766,12 +3091,36 @@ class TkMenu<TkWindow
 
   def entryconfiginfo(index, key=nil)
     if key
-      conf = tk_split_list(tk_send('entryconfigure',index,"-#{key}"))
+      case key
+      when 'text', 'label', 'show'
+	conf = tk_split_simplelist(tk_send('entryconfigure',index,"-#{key}"))
+      else
+	conf = tk_split_list(tk_send('entryconfigure',index,"-#{key}"))
+      end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_list(tk_send('entryconfigure', index)).collect{|conf|
+      tk_split_simplelist(tk_send('entryconfigure', index)).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
+	case conf[0]
+	when 'text', 'label', 'show'
+	else
+	  if conf[3]
+	    if conf[3].index('{')
+	      conf[3] = tk_split_list(conf[3]) 
+	    else
+	      conf[3] = tk_tcl2ruby(conf[3]) 
+	    end
+	  end
+	  if conf[4]
+	    if conf[4].index('{')
+	      conf[4] = tk_split_list(conf[4]) 
+	    else
+	      conf[4] = tk_tcl2ruby(conf[4]) 
+	    end
+	  end
+	end
 	conf
       }
     end
@@ -2977,8 +3326,15 @@ autoload :TkEntry, 'tkentry'
 autoload :TkSpinbox, 'tkentry'
 autoload :TkText, 'tktext'
 autoload :TkDialog, 'tkdialog'
+autoload :TkWarning, 'tkdialog'
 autoload :TkMenubar, 'tkmenubar'
 autoload :TkAfter, 'tkafter'
 autoload :TkPalette, 'tkpalette'
 autoload :TkFont, 'tkfont'
 autoload :TkVirtualEvent, 'tkvirtevent'
+autoload :TkBgError, 'tkbgerror'
+autoload :TkManageFocus, 'tkmngfocus'
+autoload :TkPalette, 'tkpalette'
+autoload :TkWinDDE, 'tkwinpkg'
+autoload :TkWinRegistry, 'tkwinpkg'
+autoload :TkMacResource, 'tkmacpkg'

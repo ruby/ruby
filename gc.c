@@ -61,7 +61,7 @@ mem_error(mesg)
 
 void *
 ruby_xmalloc(size)
-    size_t size;
+    long size;
 {
     void *mem;
 
@@ -91,7 +91,7 @@ ruby_xmalloc(size)
 
 void *
 ruby_xcalloc(n, size)
-    size_t n, size;
+    long n, size;
 {
     void *mem;
 
@@ -104,7 +104,7 @@ ruby_xcalloc(n, size)
 void *
 ruby_xrealloc(ptr, size)
     void *ptr;
-    size_t size;
+    long size;
 {
     void *mem;
 
@@ -1240,9 +1240,11 @@ rb_gc_call_finalizer_at_exit()
 	while (p < pend) {
 	    if (BUILTIN_TYPE(p) == T_DATA &&
 		DATA_PTR(p) && RANY(p)->as.data.dfree) {
+		p->as.free.flag = 0;
 		(*RANY(p)->as.data.dfree)(DATA_PTR(p));
 	    }
 	    else if (BUILTIN_TYPE(p) == T_FILE) {
+		p->as.free.flag = 0;
 		rb_io_fptr_finalize(RANY(p)->as.file.fptr);
 	    }
 	    p++;
@@ -1310,14 +1312,14 @@ Init_GC()
 
 void*
 xmalloc(size)
-    size_t size;
+    long size;
 {
     return ruby_xmalloc(size);
 }
 
 void*
 xcalloc(n,size)
-    size_t n,size;
+    long n,size;
 {
     return ruby_xcalloc(n, size);
 }
@@ -1325,7 +1327,7 @@ xcalloc(n,size)
 void*
 xrealloc(ptr,size)
     void *ptr;
-    size_t size;
+    long size;
 {
     return ruby_xrealloc(ptr, size);
 }

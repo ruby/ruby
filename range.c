@@ -13,10 +13,10 @@
 #include "ruby.h"
 
 VALUE rb_cRange;
-static ID id_cmp, id_beg, id_end;
+static ID id_cmp, id_beg, id_end, id_excl;
 
-#define EXCL(r) FL_TEST((r), FL_USER1)
-#define SET_EXCL(r) FL_SET((r), FL_USER1)
+#define EXCL(r) RTEST(rb_ivar_get((r), id_excl))
+#define SET_EXCL(r,v) rb_ivar_set((r), id_excl, (v)?Qtrue:Qfalse)
 
 static VALUE
 range_check(args)
@@ -46,10 +46,7 @@ range_init(obj, beg, end, exclude_end)
 		   rb_eStandardError, rb_eNameError, 0);
     }
 
-    if (exclude_end) {
-	SET_EXCL(obj);
-    }
-
+    SET_EXCL(obj, exclude_end);
     rb_ivar_set(obj, id_beg, beg);
     rb_ivar_set(obj, id_end, end);
 }
@@ -87,6 +84,22 @@ range_exclude_end_p(range)
     VALUE range;
 {
     return EXCL(range)?Qtrue:Qfalse;
+}
+
+static VALUE
+range_eq(range, obj)
+    VALUE range, obj;
+{
+    if (!rb_obj_is_kind_of(obj, rb_cRange)) return Qfalse;
+
+    if (!rb_equal(rb_ivar_get(range, id_beg), rb_ivar_get(obj, id_beg)))
+	return Qfalse;
+    if (!rb_equal(rb_ivar_get(range, id_end), rb_ivar_get(obj, id_end)))
+	return Qfalse;
+
+    if (EXCL(range) != EXCL(obj)) return Qfalse;
+
+    return Qtrue;
 }
 
 static VALUE
@@ -338,6 +351,7 @@ Init_Range()
     rb_cRange = rb_define_class("Range", rb_cObject);
     rb_include_module(rb_cRange, rb_mEnumerable);
     rb_define_method(rb_cRange, "initialize", range_initialize, -1);
+    rb_define_method(rb_cRange, "==", range_eq, 1);
     rb_define_method(rb_cRange, "===", range_eqq, 1);
     rb_define_method(rb_cRange, "each", range_each, 0);
     rb_define_method(rb_cRange, "first", range_first, 0);
@@ -355,4 +369,5 @@ Init_Range()
     id_cmp = rb_intern("<=>");
     id_beg = rb_intern("begin");
     id_end = rb_intern("end");
+    id_excl = rb_intern("excl");
 }

@@ -2763,6 +2763,32 @@ rb_f_select(argc, argv, obj)
     return res;			/* returns an empty array on interrupt */
 }
 
+static int
+io_cntl(fd,cmd,narg,io_p)
+    int fd, cmd, io_p;
+    long narg;
+{
+    int retval;
+
+#ifdef HAVE_FCNTL
+    TRAP_BEG;
+# if defined(__CYGWIN__)
+    retval = io_p?ioctl(fd, cmd, (void*)narg):fcntl(fd, cmd, narg);
+# else
+    retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
+# endif
+    TRAP_END;
+#else
+    if (!io_p) {
+	rb_notimplement();
+    }
+    TRAP_BEG;
+    retval = ioctl(fd, cmd, narg);
+    TRAP_END;
+#endif
+    return retval;
+}
+
 static VALUE
 rb_io_ctl(io, req, arg, io_p)
     VALUE io, req, arg;
@@ -2772,7 +2798,6 @@ rb_io_ctl(io, req, arg, io_p)
     int cmd = NUM2ULONG(req);
     OpenFile *fptr;
     int len = 0;
-    int fd;
     long narg = 0;
     int retval;
 
@@ -2812,27 +2837,16 @@ rb_io_ctl(io, req, arg, io_p)
 	RSTRING(arg)->ptr[len] = 17;	/* a little sanity check here */
 	narg = (long)RSTRING(arg)->ptr;
     }
-    fd = fileno(fptr->f);
-#ifdef HAVE_FCNTL
-    TRAP_BEG;
-# if defined(__CYGWIN__)
-    retval = io_p?ioctl(fd, cmd, (void*)narg):fcntl(fd, cmd, narg);
-# else
-    retval = io_p?ioctl(fd, cmd, narg):fcntl(fd, cmd, narg);
-# endif
-    TRAP_END;
-#else
-    if (!io_p) {
-	rb_notimplement();
-    }
-    TRAP_BEG;
-    retval = ioctl(fd, cmd, narg);
-    TRAP_END;
-#endif
+    retval = io_cntl(fileno(fptr->f), cmd, narg, io_p);
     if (retval < 0) rb_sys_fail(fptr->path);
     if (TYPE(arg) == T_STRING && RSTRING(arg)->ptr[len] != 17) {
 	rb_raise(rb_eArgError, "return value overflowed string");
     }
+
+    if (fptr->f2) {		/* call on f2 too; ignore result */
+	io_cntl(fileno(fptr->f2), cmd, narg, io_p);
+    }
+
     return INT2NUM(retval);
 #else
     rb_notimplement();

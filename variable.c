@@ -1480,6 +1480,10 @@ rb_mod_class_variables(obj)
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't get metainfo");
 
+    if (FL_TEST(obj, FL_SINGLETON)) {
+	obj = rb_cvar_singleton(rb_iv_get(obj, "__attached__"));
+    }
+
     for (;;) {
 	if (RCLASS(obj)->iv_tbl) {
 	    st_foreach(RCLASS(obj)->iv_tbl, cv_i, ary);

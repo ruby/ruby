@@ -989,7 +989,7 @@ case $os in
 	-xenix)
 		os=-xenix
 		;;
-        -*mint | -*MiNT)
+        -mint* | -MiNT*)
 	        os=-mint
 		;;
 	-uxpds)

@@ -14,6 +14,47 @@ class TkEntry<TkLabel
     WidgetClassName
   end
 
+  class ValidateCmd
+    include TkComm
+
+    class ValidateArgs
+      def initialize(d,i,s,v,pp,ss,vv,ww)
+	@action = d
+	@index = i
+	@current = s
+	@type = v
+	@value = pp
+	@string = ss
+	@triggered = vv
+	@widget = ww
+      end
+      attr :action
+      attr :index
+      attr :current
+      attr :type
+      attr :value
+      attr :string
+      attr :triggered
+      attr :widget
+    end
+
+    def initialize(cmd = Proc.new, args=nil)
+      if args
+	@id = install_cmd(proc{|*arg|
+			    TkUtil.eval_cmd cmd, *arg
+			  }) + " " + args
+      else
+	@id = install_cmd(proc{|arg|
+			    TkUtil.eval_cmd cmd, ValidateArgs.new(*arg)
+			  }) + ' %d %i %s %v %P %S %V %W'
+      end
+    end
+
+    def to_eval
+      @id
+    end
+  end
+
   def create_self
     tk_call 'entry', @path
   end
@@ -24,6 +65,47 @@ class TkEntry<TkLabel
 
   def delete(s, e=None)
     tk_send 'delete', s, e
+  end
+
+  def configure(slot, value=None)
+    if slot.kind_of? Hash
+      if slot['vcmd'].kind_of? Array
+	cmd, *args = slot['vcmd']
+	slot['vcmd'] = ValidateCmd.new(cmd, args.join(' '))
+      elsif slot['vcmd'].kind_of? Proc
+	slot['vcmd'] = ValidateCmd.new(slot['vcmd'])
+      end
+      if slot['validatecommand'].kind_of? Array
+	cmd, *args = slot['validatecommand']
+	slot['validatecommand'] = ValidateCmd.new(cmd, args.join(' '))
+      elsif slot['validatecommand'].kind_of? Proc
+	slot['validatecommand'] = ValidateCmd.new(slot['validatecommand'])
+      end
+      if slot['invcmd'].kind_of? Array
+	cmd, *args = slot['invcmd']
+	slot['invcmd'] = ValidateCmd.new(cmd, args.join(' '))
+      elsif slot['invcmd'].kind_of? Proc
+	slot['invcmd'] = ValidateCmd.new(slot['invcmd'])
+      end
+      if slot['invalidcommand'].kind_of? Array
+	cmd, *args = slot['invalidcommand']
+	slot['invalidcommand'] = ValidateCmd.new(cmd, args.join(' '))
+      elsif slot['invalidcommand'].kind_of? Proc
+	slot['invalidcommand'] = ValidateCmd.new(slot['invalidcommand'])
+      end
+      super(slot)
+    else
+      if (slot == 'vcmd' || slot == 'validatecommand' || 
+	  slot == 'invcmd' || slot == 'invalidcommand')
+	if value.kind_of? Array
+	  cmd, *args = value
+	  value = ValidateCmd.new(cmd, args.join(' '))
+	elsif value.kind_of? Proc
+	  value = ValidateCmd.new(value)
+	end
+      end
+      super(slot, value)
+    end
   end
 
   def cursor
@@ -72,47 +154,6 @@ class TkEntry<TkLabel
       else 
 	true
       end
-    end
-  end
-
-  class ValidateCmd
-    include TkComm
-
-    class ValidateArgs
-      def initialize(d,i,s,v,pp,ss,vv,ww)
-	@action = d
-	@index = i
-	@current = s
-	@type = v
-	@value = pp
-	@string = ss
-	@triggered = vv
-	@widget = ww
-      end
-      attr :action
-      attr :index
-      attr :current
-      attr :type
-      attr :value
-      attr :string
-      attr :triggered
-      attr :widget
-    end
-
-    def initialize(cmd = Proc.new, args=nil)
-      if args
-	@id = install_cmd(proc{|*arg|
-			    TkUtil.eval_cmd cmd, *arg
-			  }) + " " + args
-      else
-	@id = install_cmd(proc{|arg|
-			    TkUtil.eval_cmd cmd, ValidateArgs.new(*arg)
-			  }) + ' %d %i %s %v %P %S %V %W'
-      end
-    end
-
-    def to_eval
-      @id
     end
   end
 

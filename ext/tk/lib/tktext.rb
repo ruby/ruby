@@ -270,7 +270,12 @@ class TkText<TkTextWin
   end
 
   def tag_cget(tag, key)
-    tk_tcl2ruby tk_call @path, 'tag', 'cget', tag, "-#{key}"
+    case key
+    when 'text', 'label', 'show', 'data', 'flie'
+      tk_call @path, 'tag', 'cget', tag, "-#{key}"
+    else
+      tk_tcl2ruby tk_call @path, 'tag', 'cget', tag, "-#{key}"
+    end
   end
 
   def tag_configure(tag, key, val=None)
@@ -294,12 +299,36 @@ class TkText<TkTextWin
 
   def tag_configinfo(tag, key=nil)
     if key
-      conf = tk_split_list(tk_send('tag','configure',tag,"-#{key}"))
+      case key
+      when 'text', 'label', 'show', 'data', 'flie'
+	conf = tk_split_simplelist(tk_send('tag','configure',tag,"-#{key}"))
+      else
+	conf = tk_split_list(tk_send('tag','configure',tag,"-#{key}"))
+      end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_list(tk_send('tag', 'configure', tag)).collect{|conf|
+      tk_split_simplelist(tk_send('tag', 'configure', tag)).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
+	case conf[0]
+	when 'text', 'label', 'show', 'data', 'flie'
+	else
+	  if conf[3]
+	    if conf[3].index('{')
+	      conf[3] = tk_split_list(conf[3]) 
+	    else
+	      conf[3] = tk_tcl2ruby(conf[3]) 
+	    end
+	  end
+	  if conf[4]
+	    if conf[4].index('{')
+	      conf[4] = tk_split_list(conf[4]) 
+	    else
+	      conf[4] = tk_tcl2ruby(conf[4]) 
+	    end
+	  end
+	end
 	conf
       }
     end
@@ -674,7 +703,12 @@ class TkTextTag<TkObject
   end
 
   def cget(key)
-    tk_tcl2ruby tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
+    case key
+    when 'text', 'label', 'show', 'data', 'flie'
+      tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
+    else
+      tk_tcl2ruby tk_call @t.path, 'tag', 'cget', @id, "-#{key}"
+    end
   end
 
   def configure(key, val=None)
@@ -853,7 +887,12 @@ class TkTextWindow<TkObject
   end
 
   def cget(slot)
-    tk_tcl2ruby tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
+    case slot
+    when 'text', 'label', 'show', 'data', 'flie'
+      tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
+    else
+      tk_tcl2ruby tk_call @t.path, 'window', 'cget', @index, "-#{slot}"
+    end
   end
 
   def configure(slot, value=None)
@@ -899,14 +938,39 @@ class TkTextWindow<TkObject
 
   def configinfo(slot = nil)
     if slot
-      conf = tk_split_list(tk_call @t.path, 'window', 'configure', 
-			   @index, "-#{slot}")
+      case slot
+      when 'text', 'label', 'show', 'data', 'flie'
+	conf = tk_split_simplelist(tk_call @t.path, 'window', 'configure', 
+				   @index, "-#{slot}")
+      else
+	conf = tk_split_list(tk_call @t.path, 'window', 'configure', 
+			     @index, "-#{slot}")
+      end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_list(tk_call @t.path, 'window', 'configure', 
-		    @index).collect{|conf|
+      tk_split_simplelist(tk_call @t.path, 'window', 'configure', 
+			  @index).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
+	case conf[0]
+	when 'text', 'label', 'show', 'data', 'flie'
+	else
+	  if conf[3]
+	    if conf[3].index('{')
+	      conf[3] = tk_split_list(conf[3]) 
+	    else
+	      conf[3] = tk_tcl2ruby(conf[3]) 
+	    end
+	  end
+	  if conf[4]
+	    if conf[4].index('{')
+	      conf[4] = tk_split_list(conf[4]) 
+	    else
+	      conf[4] = tk_tcl2ruby(conf[4]) 
+	    end
+	  end
+	end
 	conf
       }
     end
@@ -944,7 +1008,12 @@ class TkTextImage<TkObject
   end
 
   def cget(slot)
-    tk_tcl2ruby tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
+    case slot
+    when 'text', 'label', 'show', 'data', 'flie'
+      tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
+    else
+      tk_tcl2ruby tk_call @t.path, 'image', 'cget', @index, "-#{slot}"
+    end
   end
 
   def configure(slot, value=None)
@@ -968,14 +1037,39 @@ class TkTextImage<TkObject
 
   def configinfo(slot = nil)
     if slot
-      conf = tk_split_list(tk_call @t.path, 'image', 'configure', 
-			   @index, "-#{slot}")
+      case slot
+      when 'text', 'label', 'show', 'data', 'flie'
+	conf = tk_split_simplelist(tk_call @t.path, 'image', 'configure', 
+				   @index, "-#{slot}")
+      else
+	conf = tk_split_list(tk_call @t.path, 'image', 'configure', 
+			     @index, "-#{slot}")
+      end
       conf[0] = conf[0][1..-1]
       conf
     else
-      tk_split_list(tk_call @t.path, 'image', 'configure', 
-		    @index).collect{|conf|
+      tk_split_simplelist(tk_call @t.path, 'image', 'configure', 
+			  @index).collect{|conflist|
+	conf = tk_split_simplelist(conflist)
 	conf[0] = conf[0][1..-1]
+	case conf[0]
+	when 'text', 'label', 'show', 'data', 'flie'
+	else
+	  if conf[3]
+	    if conf[3].index('{')
+	      conf[3] = tk_split_list(conf[3]) 
+	    else
+	      conf[3] = tk_tcl2ruby(conf[3]) 
+	    end
+	  end
+	  if conf[4]
+	    if conf[4].index('{')
+	      conf[4] = tk_split_list(conf[4]) 
+	    else
+	      conf[4] = tk_tcl2ruby(conf[4]) 
+	    end
+	  end
+	end
 	conf
       }
     end
