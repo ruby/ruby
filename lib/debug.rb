@@ -297,7 +297,7 @@ class Context
             stdout.print "Trace off.\n"
           end
 
-	when /^\s*b(?:reak)?\s+((?:.*?+:)?.+)$/
+	when /^\s*b(?:reak)?\s+((?:.+:)?.+)$/
 	  pos = $1
 	  if pos.index(":")
 	    pos = pos.split(":")
