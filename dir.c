@@ -542,24 +542,42 @@ dir_close(dir)
 
 static void
 dir_chdir(path)
-    const char *path;
+    VALUE path;
 {
-    if (chdir(path) < 0)
-	rb_sys_fail(path);
+    if (chdir(RSTRING(path)->ptr) < 0)
+	rb_sys_fail(RSTRING(path)->ptr);
 }
 
 static int chdir_blocking = 0;
 static VALUE chdir_thread = Qnil;
 
+struct chdir_data {
+    VALUE old_path, new_path;
+    int done;
+};
+
 static VALUE
-chdir_restore(path)
-    char *path;
+chdir_yield(args)
+    struct chdir_data *args;
 {
-    chdir_blocking--;
-    if (chdir_blocking == 0)
-	chdir_thread = Qnil;
-    dir_chdir(path);
-    free(path);
+    dir_chdir(args->new_path);
+    args->done = Qtrue;
+    chdir_blocking++;
+    if (chdir_thread == Qnil)
+	chdir_thread = rb_thread_current();
+    return rb_yield(args->new_path);
+}
+
+static VALUE
+chdir_restore(args)
+    struct chdir_data *args;
+{
+    if (args->done) {
+	chdir_blocking--;
+	if (chdir_blocking == 0)
+	    chdir_thread = Qnil;
+	dir_chdir(args->old_path);
+    }
     return Qnil;
 }
 
@@ -609,19 +627,18 @@ dir_s_chdir(argc, argv, obj)
     VALUE obj;
 {
     VALUE path = Qnil;
-    char *dist = "";
 
     rb_secure(2);
     if (rb_scan_args(argc, argv, "01", &path) == 1) {
 	SafeStringValue(path);
-	dist = RSTRING(path)->ptr;
     }
     else {
-	dist = getenv("HOME");
+	const char *dist = getenv("HOME");
 	if (!dist) {
 	    dist = getenv("LOGDIR");
 	    if (!dist) rb_raise(rb_eArgError, "HOME/LOGDIR not set");
 	}
+	path = rb_str_new2(dist);
     }
 
     if (chdir_blocking > 0) {
@@ -630,14 +647,14 @@ dir_s_chdir(argc, argv, obj)
     }
 
     if (rb_block_given_p()) {
-	char *cwd = my_getcwd();
-	chdir_blocking++;
-	if (chdir_thread == Qnil)
-	    chdir_thread = rb_thread_current();
-	dir_chdir(dist);
-	return rb_ensure(rb_yield, path, chdir_restore, (VALUE)cwd);
+	struct chdir_data args;
+
+	args.old_path = rb_str_new2(my_getcwd());
+	args.new_path = path;
+	args.done = Qfalse;
+	return rb_ensure(chdir_yield, (VALUE)&args, chdir_restore, (VALUE)&args);
     }
-    dir_chdir(dist);
+    dir_chdir(path);
 
     return INT2FIX(0);
 }

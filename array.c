@@ -304,7 +304,7 @@ rb_ary_initialize(argc, argv, ary)
 	    rb_warn("block supersedes default value argument");
 	}
 	for (i=0; i<len; i++) {
-	    RARRAY(ary)->ptr[i] = rb_yield(LONG2NUM(i));
+	    rb_ary_store(ary, i, rb_yield(LONG2NUM(i)));
 	    RARRAY(ary)->len = i + 1;
 	}
     }
@@ -873,6 +873,10 @@ rb_ary_rindex(ary, val)
     long i = RARRAY(ary)->len;
 
     while (i--) {
+	if (i > RARRAY(ary)->len) {
+	    i = RARRAY(ary)->len;
+	    continue;
+	}
 	if (rb_equal(RARRAY(ary)->ptr[i], val))
 	    return LONG2NUM(i);
     }
@@ -1771,7 +1775,7 @@ rb_ary_select(argc, argv, ary)
     result = rb_ary_new2(RARRAY(ary)->len);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
-	    rb_ary_push(result, RARRAY(ary)->ptr[i]);
+	    rb_ary_push(result, rb_ary_entry(ary, i));
 	}
     }
     return result;
@@ -1803,9 +1807,12 @@ rb_ary_delete(ary, item)
 
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
-	if (rb_equal(RARRAY(ary)->ptr[i1], item)) continue;
+	VALUE e = RARRAY(ary)->ptr[i1];
+
+	if (rb_equal(e, item)) continue;
 	if (i1 != i2) {
-	    RARRAY(ary)->ptr[i2] = RARRAY(ary)->ptr[i1];
+	    if (RARRAY(ary)->len < i2) break;
+	    RARRAY(ary)->ptr[i2] = e;
 	}
 	i2++;
     }
@@ -1816,7 +1823,8 @@ rb_ary_delete(ary, item)
 	return Qnil;
     }
 
-    RARRAY(ary)->len = i2;
+    if (RARRAY(ary)->len > i2)
+	RARRAY(ary)->len = i2;
     if (i2 * 2 < RARRAY(ary)->aux.capa &&
 	    RARRAY(ary)->aux.capa > ARY_DEFAULT_SIZE) {
 	REALLOC_N(RARRAY(ary)->ptr, VALUE, i2 * 2);
@@ -2073,7 +2081,7 @@ rb_ary_transpose(ary)
     alen = RARRAY(ary)->len;
     if (alen == 0) return rb_ary_dup(ary);
     for (i=0; i<alen; i++) {
-	tmp = to_ary(RARRAY(ary)->ptr[i]);
+	tmp = to_ary(rb_ary_entry(ary, i));
 	if (elen < 0) {		/* first element */
 	    elen = RARRAY(tmp)->len;
 	    result = rb_ary_new2(elen);
@@ -2086,7 +2094,7 @@ rb_ary_transpose(ary)
 		     RARRAY(tmp)->len, elen);
 	}
 	for (j=0; j<elen; j++) {
-	    rb_ary_store(RARRAY(result)->ptr[j], i, RARRAY(tmp)->ptr[j]);
+	    rb_ary_store(rb_ary_entry(result, j), i, rb_ary_entry(tmp, j));
 	}
     }
     return result;
@@ -2360,17 +2368,15 @@ VALUE
 rb_ary_assoc(ary, key)
     VALUE ary, key;
 {
-    VALUE *p, *pend;
+    long i;
+    VALUE v;
 
-    p = RARRAY(ary)->ptr;
-    pend = p + RARRAY(ary)->len;
-    
-    while (p < pend) {
-	if (TYPE(*p) == T_ARRAY &&
-		RARRAY(*p)->len > 0 &&
-		rb_equal(RARRAY(*p)->ptr[0], key))
-	    return *p;
-	p++;
+    for (i = 0; i < RARRAY(ary)->len; ++i) {
+	v = RARRAY(ary)->ptr[i];
+	if (TYPE(v) == T_ARRAY &&
+	    RARRAY(v)->len > 0 &&
+	    rb_equal(RARRAY(v)->ptr[0], key))
+	    return v;
     }
     return Qnil;
 }
@@ -2393,17 +2399,15 @@ VALUE
 rb_ary_rassoc(ary, value)
     VALUE ary, value;
 {
-    VALUE *p, *pend;
+    long i;
+    VALUE v;
 
-    p = RARRAY(ary)->ptr;
-    pend = p + RARRAY(ary)->len;
-
-    while (p < pend) {
-	if (TYPE(*p) == T_ARRAY
-	    && RARRAY(*p)->len > 1
-	    && rb_equal(RARRAY(*p)->ptr[1], value))
-	    return *p;
-	p++;
+    for (i = 0; i < RARRAY(ary)->len; ++i) {
+	v = RARRAY(ary)->ptr[i];
+	if (TYPE(v) == T_ARRAY &&
+	    RARRAY(v)->len > 1 &&
+	    rb_equal(RARRAY(v)->ptr[1], value))
+	    return v;
     }
     return Qnil;
 }
@@ -2435,8 +2439,8 @@ rb_ary_equal(ary1, ary2)
 	}
 	return rb_equal(ary2, ary1);
     }
-    if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
     for (i=0; i<RARRAY(ary1)->len; i++) {
+	if (RARRAY(ary1)->len != RARRAY(ary2)->len) return Qfalse;
 	if (!rb_equal(RARRAY(ary1)->ptr[i], RARRAY(ary2)->ptr[i]))
 	    return Qfalse;
     }
@@ -2605,7 +2609,7 @@ rb_ary_diff(ary1, ary2)
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
 	if (st_lookup(RHASH(hash)->tbl, RARRAY(ary1)->ptr[i], 0)) continue;
-	rb_ary_push(ary3, RARRAY(ary1)->ptr[i]);
+	rb_ary_push(ary3, rb_ary_entry(ary1, i));
     }
     return ary3;
 }
