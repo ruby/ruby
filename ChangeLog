@@ -1,3 +1,7 @@
+Tue Apr 13 14:59:25 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* version 1.2.5 (stable) released.
+
 Mon Apr 12 23:12:32 1999  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* io.c (rb_io_reopen): check for reopening same IO.
