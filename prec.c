@@ -123,7 +123,7 @@ prec_included(module, include)
  * Precision is a mixin for concrete numeric classes with
  * precision.  Here, `precision' means the fineness of approximation
  * of a real number, so, this module should not be included into
- * anything which is not a ubset of Real (so it should not be
+ * anything which is not a subset of Real (so it should not be
  * included in classes such as +Complex+ or +Matrix+).
 */
 

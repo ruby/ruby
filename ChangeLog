@@ -1,10 +1,15 @@
+Wed Apr 14 13:06:35 2004  Doug Kearns  <djkea2@mugca.its.monash.edu.au>
+
+	* array.c, enum.c, eval.c, file.c, io.c, numeric.c, object.c, prec.c,
+	  process.c, re.c, string.c: typos in RDoc comments.  [ruby-core:02783]
+
 Wed Apr 14 11:03:22  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* defines.h: include <net/socket.h> to get fd_set definition in BeOS.
 
 Tue Apr 13 23:06:30 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/rinda/rinda.rb: change pattern matching. 
+	* lib/rinda/rinda.rb: change pattern matching.
 	  a === b -> a == b || a === b. [druby-ja:98]
 
 	* test/rinda/test_rinda.rb: ditto.

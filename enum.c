@@ -864,7 +864,7 @@ zip_i(val, memo)
  *  <i>enum</i> with corresponding elements from each argument. This
  *  generates a sequence of <code>enum#size</code> <em>n</em>-element
  *  arrays, where <em>n</em> is one more that the count of arguments. If
- *  the size of any arguemnt is less than <code>enum#size</code>,
+ *  the size of any argument is less than <code>enum#size</code>,
  *  <code>nil</code> values are supplied. If a block given, it is
  *  invoked for each output array, otherwise an array of arrays is
  *  returned.
