@@ -336,7 +336,6 @@ static VALUE time_gmtime _((VALUE));
 static VALUE time_localtime _((VALUE));
 static VALUE time_get_tm _((VALUE, int));
 
-#if !defined HAVE_TIMEGM
 static int
 tmcmp(a, b)
     struct tm *a;
@@ -587,7 +586,6 @@ search_time_t(tptr, utc_p)
     rb_raise(rb_eArgError, "gmtime/localtime error");
     return 0;			/* not reached */
 }
-#endif
 
 static time_t
 make_time_t(tptr, utc_p)
@@ -599,43 +597,38 @@ make_time_t(tptr, utc_p)
     buf = *tptr;
     if (utc_p) {
 #if defined(HAVE_TIMEGM)
-	t = timegm(&buf);
-	if (t == -1) {
+	if ((t = timegm(&buf)) != -1)
+            return t;
 #ifdef NEGATIVE_TIME_T
-	    if (!(tmp = gmtime(&t)) ||
-	        tptr->tm_year != tmp->tm_year ||
-		tptr->tm_mon != tmp->tm_mon ||
-		tptr->tm_mday != tmp->tm_mday ||
-		tptr->tm_hour != tmp->tm_hour ||
-		tptr->tm_min != tmp->tm_min ||
-		tptr->tm_sec != tmp->tm_sec)
+        if ((tmp = gmtime(&t)) &&
+            tptr->tm_year == tmp->tm_year &&
+            tptr->tm_mon == tmp->tm_mon &&
+            tptr->tm_mday == tmp->tm_mday &&
+            tptr->tm_hour == tmp->tm_hour &&
+            tptr->tm_min == tmp->tm_min &&
+            tptr->tm_sec == tmp->tm_sec)
+            return t;
 #endif
-	    rb_raise(rb_eArgError, "gmtime error");
-        }
-#else
-	t = search_time_t(&buf, utc_p);
 #endif
+	return search_time_t(&buf, utc_p);
     }
     else {
 #if defined(HAVE_MKTIME)
-	t = mktime(&buf);
-	if (t == -1) {
+	if ((t = mktime(&buf)) != -1)
+            return t;
 #ifdef NEGATIVE_TIME_T
-	    if (!(tmp = localtime(&t)) ||
-	        tptr->tm_year != tmp->tm_year ||
-		tptr->tm_mon != tmp->tm_mon ||
-		tptr->tm_mday != tmp->tm_mday ||
-		tptr->tm_hour != tmp->tm_hour ||
-		tptr->tm_min != tmp->tm_min ||
-		tptr->tm_sec != tmp->tm_sec)
+        if ((tmp = localtime(&t)) &&
+            tptr->tm_year == tmp->tm_year &&
+            tptr->tm_mon == tmp->tm_mon &&
+            tptr->tm_mday == tmp->tm_mday &&
+            tptr->tm_hour == tmp->tm_hour &&
+            tptr->tm_min == tmp->tm_min &&
+            tptr->tm_sec == tmp->tm_sec)
+            return t;
 #endif
-	    rb_raise(rb_eArgError, "localtime error");
-        }
-#else
-	t = search_time_t(&buf, utc_p);
 #endif
+	return search_time_t(&buf, utc_p);
     }
-    return t;
 }
 
 static VALUE

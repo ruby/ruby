@@ -1,7 +1,11 @@
+Sat Mar 22 15:50:29 2003  Tanaka Akira  <akr@m17n.org>
+
+        * time.c (make_time_t): try search_time_t if mktime/timegm is failed.
+
 Sat Mar 22 13:26:33 2003  Tanaka Akira  <akr@m17n.org>
 
         * lib/optparse.rb, lib/jcode.rb, ext/tk/lib/tk.rb: reorder character
-          class /[\]\[]/ to /[\[\]]/ to readability.
+          class /[\]\[]/ to /[\[\]]/ for readability.
 
 Sat Mar 22 12:44:15 2003  Tanaka Akira  <akr@m17n.org>
 
