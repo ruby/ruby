@@ -1,5 +1,7 @@
 Fri Nov 26 14:29:39 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* io.c (rb_io_initialize): [ruby-dev:24963]
+
 	* io.c (rb_io_initialize): [ruby-dev:24962]
 
 Fri Nov 26 13:49:06 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>

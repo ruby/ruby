@@ -3970,6 +3970,17 @@ rb_io_initialize(argc, argv, io)
     orig = rb_io_check_io(fnum);
     if (NIL_P(orig)) {
 	fd = NUM2INT(fnum);
+	if (argc != 2) {
+#if defined(HAVE_FCNTL) && defined(F_GETFL)
+	    flags = fcntl(fd, F_GETFL);
+	    if (flags == -1) rb_sys_fail(0);
+#else
+	    flags = O_RDONLY;
+#endif
+	}
+	MakeOpenFile(io, fp);
+	fp->mode = rb_io_modenum_flags(flags);
+	fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags));
     }
     else {
 	GetOpenFile(orig, ofp);
@@ -3977,29 +3988,14 @@ rb_io_initialize(argc, argv, io)
 	    VALUE s = rb_inspect(orig);
 	    rb_raise(rb_eIOError, "too many shared IO for %s", StringValuePtr(s));
 	}
-    }
-    if (argc != 2) {
-#if defined(HAVE_FCNTL) && defined(F_GETFL)
-	flags = fcntl(fd, F_GETFL);
-	if (flags == -1) rb_sys_fail(0);
-#else
-	flags = O_RDONLY;
-#endif
-    }
-    fmode = rb_io_modenum_flags(flags);
-    if (!ofp) {
-	MakeOpenFile(io, fp);
-	fp->mode = fmode;
-	fp->f = rb_fdopen(fd, rb_io_modenum_mode(flags));
-    }
-    else {
 	if (argc == 2) {
+	    fmode = rb_io_modenum_flags(flags);
 	    if ((ofp->mode ^ fmode) & (FMODE_READWRITE|FMODE_BINMODE)) {
 		if (FIXNUM_P(mode)) {
 		    rb_raise(rb_eArgError, "incompatible mode 0%o", flags);
 		}
 		else {
-		    rb_raise(rb_eArgError, "incompatible mode %s", RSTRING(mode)->ptr);
+		    rb_raise(rb_eArgError, "incompatible mode \"%s\"", RSTRING(mode)->ptr);
 		}
 	    }
 	}
