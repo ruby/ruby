@@ -1,3 +1,8 @@
+Thu Dec 11 19:53:03 2003  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (mkdir_p): catch all SystemCallErrors.
+	  (mkdir("C:\") causes EACCESS on Windows 2000/NTFS)
+
 Thu Dec 11 19:08:02 2003  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (mkdir_p): check if it is a directory after
