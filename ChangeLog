@@ -1,3 +1,11 @@
+Mon Jun  3 07:07:07 2002  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
+
+	* parse.y (here_document): check if identifier is terminated.
+	  (ruby-bugs-ja:PR#239)
+
+	* parse.y (yylex): should pushback proper char after '**'.
+	  (ruby-bugs-ja:PR#240)
+
 Thu May 30 09:16:36 2002  Wakou Aoyama  <wakou@ruby-lang.org>
 
 	* lib/cgi.rb: if StringIO is usable then use it.

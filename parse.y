@@ -2769,6 +2769,14 @@ here_document(term, indent)
       case '"':
       case '`':
 	while ((c = nextc()) != term) {
+	    switch (c) {
+	      case -1:
+		rb_compile_error("unterminated here document identifier meets end of file");
+		return 0;
+	      case '\n':
+		rb_compile_error("unterminated here document identifier meets end of line");
+		return 0;
+	    }
 	    tokadd(c);
 	}
 	if (term == '\'') term = 0;
@@ -2801,8 +2809,8 @@ here_document(term, indent)
 	  error:
 	    ruby_sourceline = linesave;
 	    rb_compile_error("can't find string \"%s\" anywhere before EOF", eos);
-		free(eos);
-		return 0;
+	    free(eos);
+	    return 0;
 	}
 	ruby_sourceline++;
 	p = RSTRING(line)->ptr;
@@ -2942,7 +2950,7 @@ yylex()
 
       case '*':
 	if ((c = nextc()) == '*') {
-	    if (nextc() == '=') {
+	    if ((c = nextc()) == '=') {
 		lex_state = EXPR_BEG;
 		yylval.id = tPOW;
 		return tOP_ASGN;
