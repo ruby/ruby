@@ -1,3 +1,7 @@
+Sat Jul 26 07:00:53 2003  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/erb.rb: fix % line.
+
 Sat Jul 26 05:31:09 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.h: fix comment.
