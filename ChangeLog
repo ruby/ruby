@@ -1,3 +1,7 @@
+Tue Dec  9 12:49:22 2003  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_io_check_readable): Don't clear EOF flag by io_seek.
+
 Tue Dec  9 02:53:55 2003  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/tkalignbox.rb: new sample script

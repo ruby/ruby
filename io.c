@@ -226,6 +226,7 @@ rb_io_check_readable(fptr)
 #if NEED_IO_SEEK_BETWEEN_RW
     if (((fptr->mode & FMODE_WBUF) ||
 	 (fptr->mode & (FMODE_SYNCWRITE|FMODE_RBUF)) == FMODE_SYNCWRITE) &&
+	!feof(fptr->f) &&
 	!fptr->f2) {
 	io_seek(fptr, 0, SEEK_CUR);
     }
