@@ -1,3 +1,8 @@
+Thu Dec 20 10:37:32 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* intern.h: added prototypes: rb_cv_set(), rb_cv_get(),
+	  rb_define_class_variable()
+
 Wed Dec 19 14:05:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_mod_define_method): define_method should follow
