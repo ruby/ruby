@@ -477,6 +477,12 @@ module RDoc
       nil
     end
 
+    # Find a named module
+    def find_module_named(name)
+      find_class_or_module_named(name) || find_enclosing_module_named(name)
+    end
+
+
   end
 
   # ClassModule is the base class for objects representing either a

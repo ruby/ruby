@@ -1760,7 +1760,7 @@ module RDoc
 	else
 	  cls_type = NormalClass
 	end
-        
+
         cls = container.add_class(cls_type, name, superclass)
         read_documentation_modifiers(cls, CLASS_MODIFIERS)
         cls.record_location(@top_level)
