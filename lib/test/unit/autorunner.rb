@@ -1,3 +1,4 @@
+require 'test/unit'
 require 'test/unit/ui/testrunnerutilities'
 require 'optparse'
 
@@ -55,8 +56,8 @@ module Test
           require 'test/unit/collector/dir'
           c = Collector::Dir.new
           c.filter = r.filters
-          c.pattern = r.pattern if(r.pattern)
-          c.exclude = r.exclude if(r.exclude)
+          c.pattern.concat(r.pattern) if(r.pattern)
+          c.exclude.concat(r.exclude) if(r.exclude)
           c.collect(*(r.to_run.empty? ? ['.'] : r.to_run))
         end,
       }
@@ -109,14 +110,16 @@ module Test
               @to_run.concat(a)
             end
 
+            @pattern = []
             o.on('-p', '--pattern=PATTERN', Regexp,
                  "Match files to collect against PATTERN.") do |e|
-              @pattern = e
+              @pattern << e
             end
 
+            @exclude = []
             o.on('-x', '--exclude=PATTERN', Regexp,
                  "Ignore files to collect against PATTERN.") do |e|
-              @exclude = e
+              @exclude << e
             end
           end
 

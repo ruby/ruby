@@ -7,7 +7,7 @@ module Test
       class Dir
         include Collector
 
-        attr_writer :pattern, :exclude
+        attr_reader :pattern, :exclude
 
         def initialize(dir=::Dir, file=::File, object_space=::ObjectSpace, req=nil)
           super()
@@ -15,8 +15,8 @@ module Test
           @file = file
           @object_space = object_space
           @req = req
-          @pattern = /\btest_.*\.rb\Z/m
-          @exclude = nil
+          @pattern = [/\btest_.*\.rb\Z/m]
+          @exclude = []
         end
 
         def collect(*from)
@@ -52,13 +52,17 @@ module Test
               next if(e == '.' || e == '..')
               e_name = @file.join(name, e)
               if(@file.directory?(e_name))
+                next if /\ACVS\z/ =~ e
                 sub_suite = recursive_collect(e_name, already_gathered)
                 sub_suites << sub_suite unless(sub_suite.empty?)
               else
-                next if %r(/CVS|~\Z|\.\#) =~ e_name
-                next unless /test_/ =~ e_name
-                (next unless(@pattern =~ e_name)) if(@pattern)
-                (next if(@exclude =~ e_name)) if(@exclude)
+                next if /~\z/ =~ e_name or /\A\.\#/ =~ e
+                if @pattern and !@pattern.empty?
+                  next unless @pattern.any? {|pat| pat =~ e_name}
+                end
+                if @exclude and !@exclude.empty?
+                  next if @exclude.any? {|pat| pat =~ e_name}
+                end
                 collect_file(e_name, sub_suites, already_gathered)
               end
             end
