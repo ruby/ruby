@@ -1,3 +1,11 @@
+Thu Jan 27 00:02:40 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb (setup): support BSD style
+	  directory group inheritance. [ruby-dev:25440]
+
+	* test/fileutils/fileasserts.rb (assert_same_entry): show entry
+	  difference.
+
 Wed Jan 26 14:12:58 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/Setup*: remove tcltklib.

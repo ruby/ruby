@@ -14,6 +14,7 @@ prevdir = Dir.pwd
 tmproot = TestFileUtils::TMPROOT
 Dir.mkdir tmproot unless File.directory?(tmproot)
 Dir.chdir tmproot
+p tmproot
 
 def have_drive_letter?
   /djgpp|mswin(?!ce)|mingw|bcc|emx/ =~ RUBY_PLATFORM
@@ -76,10 +77,15 @@ class TestFileUtils
     end
   end
 
+  def mymkdir(path)
+    Dir.mkdir path
+    File.chown nil, Process.gid, path if have_file_perm?
+  end
+
   def setup
     @prevdir = Dir.pwd
     tmproot = TMPROOT
-    Dir.mkdir tmproot unless File.directory?(tmproot)
+    mymkdir tmproot unless File.directory?(tmproot)
     Dir.chdir tmproot
     my_rm_rf 'data'; Dir.mkdir 'data'
     my_rm_rf 'tmp';  Dir.mkdir 'tmp'
