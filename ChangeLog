@@ -1,3 +1,11 @@
+Tue Feb 19 13:38:10 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_cvar_set): define new class variable if it's not
+	  defined yet.
+
+	* eval.c (rb_eval_string_wrap): should hide the toplevel local
+	  variable bindings by PUSH_SCOPE().
+
 Tue Feb 19 13:16:08 2002  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
 	* io.c (rb_io_ungetc): don't fail pushed EOF back.

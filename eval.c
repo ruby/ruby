@@ -1270,10 +1270,12 @@ rb_eval_string_wrap(str, state)
     ruby_frame->last_class = 0;
     ruby_frame->self = self;
     ruby_frame->cbase = (VALUE)rb_node_newnode(NODE_CREF,ruby_wrapper,0,0);
+    PUSH_SCOPE();
 
     val = rb_eval_string_protect(str, &status);
     ruby_top_self = self;
 
+    POP_SCOPE();
     POP_FRAME();
     POP_CLASS();
     ruby_wrapper = wrapper;
