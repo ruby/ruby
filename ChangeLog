@@ -1,3 +1,8 @@
+Wed Jan 12 00:36:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (rb_class_superclass): superclass of singleton class also
+	  should be a singleton class.  fixed: [ruby-list:40519]
+
 Tue Jan 11 20:58:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (remain_size): use buffered data instead of unreading to avoid

@@ -1587,6 +1587,9 @@ rb_class_superclass(klass)
     if (!super) {
 	rb_raise(rb_eTypeError, "uninitialized class");
     }
+    if (FL_TEST(klass, FL_SINGLETON)) {
+	super = RBASIC(klass)->klass;
+    }
     while (TYPE(super) == T_ICLASS) {
 	super = RCLASS(super)->super;
     }
