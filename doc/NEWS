@@ -1,5 +1,10 @@
 Summary of the changes since 1.6.4:
 
+: lib/sync.rb
+: lib/mutex_m.rb
+
+  Fixed for obj.extend(Sync_m) and obj.extend(Mutex_m).
+
 : $SAFE / load
 
   Fixed a bug that a file with a tainted filename can be loaded even
