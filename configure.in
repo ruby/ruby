@@ -636,10 +636,10 @@ RUBY_CHECK_IO_NEED(seek between R/W, rb_cv_need_io_seek_between_rw, yes)
 if test "$rb_cv_need_io_seek_between_rw" = yes; then
   AC_DEFINE(NEED_IO_SEEK_BETWEEN_RW, 1)
 fi
-RUBY_CHECK_IO_NEED(flush before seek, rb_cv_need_io_flush_before_seek, no)
-if test "$rb_cv_need_io_flush_before_seek" = yes; then
-  AC_DEFINE(NEED_IO_FLUSH_BEFORE_SEEK, 1)
-fi
+dnl RUBY_CHECK_IO_NEED(flush before seek, rb_cv_need_io_flush_before_seek, no)
+dnl if test "$rb_cv_need_io_flush_before_seek" = yes; then
+dnl   AC_DEFINE(NEED_IO_FLUSH_BEFORE_SEEK, 1)
+dnl fi
 
 AC_CACHE_CHECK([whether st_ino is huge], rb_cv_huge_st_ino,
 [AC_COMPILE_IFELSE([AC_LANG_BOOL_COMPILE_TRY([

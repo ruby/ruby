@@ -1,3 +1,9 @@
+Sat Dec  6 21:45:10 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* io.c (flush_before_seek): flush before seek on any platform.
+
+	* configure.in: ditto.
+
 Sat Dec  6 17:23:00 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* lib/soap/soap.rb(SOAP::Env.getenv): allow upcase environment variable

@@ -194,7 +194,6 @@ rb_io_check_closed(fptr)
 
 static void io_fflush _((FILE *, OpenFile *));
 
-#if NEED_IO_FLUSH_BEFORE_SEEK
 static OpenFile *
 flush_before_seek(fptr)
     OpenFile *fptr;
@@ -204,9 +203,6 @@ flush_before_seek(fptr)
     }
     return fptr;
 }
-#else
-#define flush_before_seek(fptr) fptr
-#endif
 
 #define io_seek(fptr, ofs, whence) fseeko(flush_before_seek(fptr)->f, ofs, whence)
 #define io_tell(fptr) ftello(flush_before_seek(fptr)->f)
