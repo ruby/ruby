@@ -4532,7 +4532,7 @@ class TkScale<TkWindow
     elsif slot.kind_of?(Hash) && 
 	(slot.key?('command') || slot.key?(:command))
       slot = _symbolkey2str(slot)
-      slot['command'] = __wrap_command_arg(slot.delete('command'))
+      slot['command'] = _wrap_command_arg(slot.delete('command'))
     end
     super(slot, value)
   end
