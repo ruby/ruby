@@ -757,6 +757,13 @@ ruby_strtod(string, endPtr)
 	sign = FALSE;
     }
 
+    /* skip preceding zeros */
+    if (*p == '0') {
+	while (*p == '0')
+	    p++;
+	p--;
+    }
+
     /*
      * Count the number of digits in the mantissa (including the decimal
      * point), and also locate the decimal point.

@@ -9902,6 +9902,7 @@ rb_thread_atfork()
     if (rb_thread_alone()) return;
     FOREACH_THREAD(th) {
 	if (th != curr_thread) {
+	    rb_warn("fork terminates thread at %s:%s", th->node->nd_file, nd_line(th->node));
 	    rb_thread_die(th);
 	}
     }

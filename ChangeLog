@@ -38,6 +38,11 @@ Mon Sep 23 23:10:16 2003  NAKAMURA, Hiroshi  <nahi@ruby-lang.org>
 
 	* test/logger/test_logger.rb: ditto.
 
+Tue Sep 23 20:47:51 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (rb_warn_m): should not warn if -W0 is specified.
+	  [ruby-talk:82675]
+
 Mon Sep 22 21:28:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* MANIFEST: updated.
@@ -45,6 +50,11 @@ Mon Sep 22 21:28:57 2003  WATANABE Hirofumi  <eban@ruby-lang.org>
 Mon Sep 22 19:22:26 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* configure.in (AC_CHECK_FUNCS): add setuid and setgid.
+
+Mon Sep 22 12:34:55 2003  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* util.c (ruby_strtod): skip preceding zeros before counting
+	  digits in the mantissa. (ruby-bugs PR#1181)
 
 Sun Sep 21 04:12:36 2003  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
