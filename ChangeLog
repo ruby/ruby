@@ -1,3 +1,8 @@
+Mon Nov 13 19:02:08 2000  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* win32/win32.c, io.c, process.c: the exit status of program must be
+	  multiplied 256 on mswin32 and msdosdjgpp(system(), ``).
+
 Sat Nov 11 22:57:38 2000  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (arg): uniformed treatment of -a**b, where a is a

@@ -653,7 +653,7 @@ mypclose(FILE *fp)
     MyPopenRecord[i].pipe  = NULL;
     MyPopenRecord[i].pid   = 0;
 
-    return exitcode;
+    return (int)((exitcode & 0xff) << 8);
 }
 #endif
 
@@ -673,7 +673,7 @@ char *cmd;
     register char **a;
     register char *s;
     char **argv;
-    int status;
+    int status = -1;
     char *shell, *cmd2;
     int mode = NtSyncProcess ? P_WAIT : P_NOWAIT;
 
@@ -703,13 +703,13 @@ char *cmd;
 	    status = spawnvpe(mode, argv[0], argv, environ);
 	    /* return spawnle(mode, shell, shell, "-c", cmd, (char*)0, environ); */
 	    free(cmdline);
-	    return status;
+	    return (int)((status & 0xff) << 8);
 	} 
     }
     else if ((shell = getenv("COMSPEC")) != 0) {
 	if (NtHasRedirection(cmd) /* || isInternalCmd(cmd) */) {
-	  do_comspec_shell:
-	    return spawnle(mode, shell, shell, "/c", cmd, (char*)0, environ);
+	    status = spawnle(mode, shell, shell, "/c", cmd, (char*)0, environ);
+	    return (int)((status & 0xff) << 8);
 	}
     }
 
@@ -735,7 +735,7 @@ char *cmd;
     }
     free(cmd2);
     free(argv);
-    return status;
+    return (int)((status & 0xff) << 8);
 }
 
 #endif
@@ -2344,6 +2344,9 @@ waitpid (pid_t pid, int *stat_loc, int options)
     }
     if (WaitForSingleObject((HANDLE) pid, timeout) == WAIT_OBJECT_0) {
 	pid = _cwait(stat_loc, pid, 0);
+#if !defined __BORLANDC__
+	*stat_loc <<= 8;
+#endif
 	return pid;
     }
     return 0;

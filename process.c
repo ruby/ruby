@@ -657,7 +657,7 @@ rb_f_system(argc, argv)
 
     Check_SafeStr(cmd);
     state = system(RSTRING(cmd)->ptr);
-    rb_last_status = INT2FIX(state);
+    rb_last_status = INT2FIX((state & 0xff) << 8);
 
     if (state == 0) return Qtrue;
     return Qfalse;
