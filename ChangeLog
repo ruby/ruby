@@ -1,5 +1,8 @@
 Tue Nov  2 01:20:09 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* io.c (pipe_open): IO.popen should take array as 1st argument for
+	  a command line.  [ruby-dev:24678]
+
 	* eval.c (proc_invoke): nail down dyna_var node when Proc object
 	  or continuation is created.  [ruby-dev:24671]
 

@@ -2767,10 +2767,10 @@ popen_exec(p)
 #endif
 
 static VALUE
-pipe_open(argc, argv, pname, mode)
+pipe_open(argc, argv, mode)
     int argc;
     VALUE *argv;
-    char *pname, *mode;
+    char *mode;
 {
     int modef = rb_io_mode_flags(mode);
     int pid = 0;
@@ -2787,18 +2787,15 @@ pipe_open(argc, argv, pname, mode)
 #endif
     char *cmd;
 
-    if (!pname) {
-	prog = rb_check_argv(argc, argv);
-	if (!prog && argc == 1) {
-	    argc = 0;
-	    prog = argv[0];
-	}
-	pname = StringValueCStr(prog);
+    prog = rb_check_argv(argc, argv);
+    if (!prog) {
+	if (argc == 1) argc = 0;
+	prog = argv[0];
     }
-    cmd = pname;
 
 #if defined(HAVE_FORK)
-    doexec = (strcmp("-", pname) != 0);
+    cmd = StringValueCStr(prog);
+    doexec = (strcmp("-", cmd) != 0);
     if (!doexec) {
 	fflush(stdin);		/* is it really needed? */
 	fflush(stdout);
@@ -2806,7 +2803,7 @@ pipe_open(argc, argv, pname, mode)
     }
     arg.pr[0] = arg.pr[1] = arg.pw[0] = arg.pw[1] = -1;
     if ((modef & FMODE_READABLE) && pipe(arg.pr) == -1) {
-	rb_sys_fail(pname);
+	rb_sys_fail(cmd);
     }
     if ((modef & FMODE_WRITABLE) && pipe(arg.pw) == -1) {
 	if (modef & FMODE_READABLE) {
@@ -2814,7 +2811,7 @@ pipe_open(argc, argv, pname, mode)
 	    close(arg.pr[0]); close(arg.pr[1]);
 	    errno = e;
 	}
-	rb_sys_fail(pname);
+	rb_sys_fail(cmd);
     }
 
     if (doexec) {
@@ -2839,12 +2836,12 @@ pipe_open(argc, argv, pname, mode)
     if (pid == -1) {
 	if (modef & FMODE_READABLE) close(arg.pr[0]);
 	if (modef & FMODE_WRITABLE) close(arg.pw[1]);
-	rb_sys_fail(pname);
+	rb_sys_fail(cmd);
     }
 #define PIPE_FDOPEN(i) (rb_fdopen((i?arg.pw:arg.pr)[i], i?"w":"r"))
 #elif defined(_WIN32)
     if (argc) {
-	char **args = ALLOC_N(char *, argc+1);
+	char **args = ALLOCA_N(char *, argc+1);
 	int i;
 
 	for (i = 0; i < argc; ++i) {
@@ -2853,8 +2850,7 @@ pipe_open(argc, argv, pname, mode)
 	args[i] = NULL;
 	cmd = ALLOCA_N(char, rb_w32_argv_size(args));
 	rb_w32_join_argv(cmd, args);
-	free(args);
-	exename = pname;
+	exename = RSTRING(prog)->ptr;
     }
     while ((pid = rb_w32_pipe_exec(cmd, exename, openmode, &fpr, &fpw)) == -1) {
 	/* exec failed */
@@ -2866,19 +2862,16 @@ pipe_open(argc, argv, pname, mode)
 	    rb_thread_sleep(1);
 	    break;
 	  default:
-	    rb_sys_fail(pname);
+	    rb_sys_fail(RSTRING(prog)->ptr);
 	    break;
 	}
     }
 #define PIPE_FDOPEN(i) (i?fpw:fpr)
 #else
-    if (argc > 0) {
-	prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
-	cmd = StringValuePtr(prog);
-    }
-    fpr = popen(cmd, mode);
+    prog = rb_ary_join(rb_ary_new4(argc, argv), rb_str_new2(" "));
+    fpr = popen(StringValueCStr(prog), mode);
 
-    if (!fpr) rb_sys_fail(pname);
+    if (!fpr) rb_sys_fail(RSTRING(prog)->ptr);
 #define PIPE_FDOPEN(i) (fpr)
 #endif
 
@@ -2971,12 +2964,16 @@ rb_io_s_popen(argc, argv, klass)
     }
     tmp = rb_check_array_type(pname);
     if (!NIL_P(tmp)) {
+	VALUE *argv = ALLOCA_N(VALUE, RARRAY(tmp)->len);
+
+	MEMCPY(argv, RARRAY(tmp)->ptr, VALUE, RARRAY(tmp)->len);
+	port = pipe_open(RARRAY(tmp)->len, argv, mode);
 	pname = tmp;
     }
     else {
 	SafeStringValue(pname);
+	port = pipe_open(1, &pname, mode);
     }
-    port = pipe_open(1, &pname, 0, mode);
     if (NIL_P(port)) {
 	/* child */
 	if (rb_block_given_p()) {
@@ -3209,7 +3206,8 @@ rb_io_open(fname, mode)
     char *fname, *mode;
 {
     if (fname[0] == '|') {
-	return pipe_open(0, 0, fname+1, mode);
+	VALUE cmd = rb_str_new2(fname+1);
+	return pipe_open(1, &cmd, mode);
     }
     else {
 	return rb_file_open(fname, mode);
@@ -4437,7 +4435,7 @@ rb_f_backquote(obj, str)
     OpenFile *fptr;
 
     SafeStringValue(str);
-    port = pipe_open(1, &str, 0, "r");
+    port = pipe_open(1, &str, "r");
     if (NIL_P(port)) return rb_str_new(0,0);
 
     GetOpenFile(port, fptr);
