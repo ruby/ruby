@@ -4,6 +4,12 @@ Wed Jan  2 23:34:25 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): srcdir support(.def and depend file).
 
+Wed Jan  2 11:51:56 2002  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (rb_f_system): abandon vfork.
+
+	* io.c (pipe_open): ditto.
+
 Tue Jan  1 02:16:48 2002  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* Makefile.in (fake.rb): set RUBY_VERSION.
@@ -13,6 +19,10 @@ Mon Dec 31 14:20:46 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 	* parse.y (yycompile): always store copy of filename.
 
 	* parse.y (rb_compile_file): no longer need to strdup() here.
+
+Mon Dec 31 05:26:40 2001  Ferris McCormick  <fmccor@inforead.com>
+
+	* defines.h: sparc linux needs different FLUSH_REGISTER_WINDOWS
 
 Sun Dec 30 18:04:07 2001  Tanaka Akira  <akr@m17n.org>
 
@@ -26,6 +36,10 @@ Sun Dec 30 00:59:16 2001  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* ext/extmk.rb.in, lib/mkmf.rb (have_library): accept -lm
 	  unconditionally on mswin32/mingw32.
+
+Sat Dec 29 01:55:42 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* regex.c (re_search): abandon stclass optimization.
 
 Thu Dec 27 18:43:04 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
 
