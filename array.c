@@ -804,8 +804,9 @@ rb_ary_join(ary, sep)
 	    len += 10;
 	}
     }
-    if (!NIL_P(sep) && TYPE(sep) == T_STRING) {
-	len += RSTRING(sep)->len * RARRAY(ary)->len - 1;
+    if (!NIL_P(sep)) {
+	StringValue(sep);
+	len += RSTRING(sep)->len * (RARRAY(ary)->len - 1);
     }
     result = rb_str_buf_new(len);
     for (i=0; i<RARRAY(ary)->len; i++) {

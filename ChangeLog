@@ -1,3 +1,8 @@
+Thu Nov 15 15:29:39 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* array.c (rb_ary_join): non-nil separator must be converted to
+	  String.  and separators' total length was wrong.
+
 Thu Nov 15 03:37:17 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* hash.c (ruby_setenv): remove USE_WIN32_RTL_ENV block since it's
