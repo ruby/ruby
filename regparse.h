@@ -96,6 +96,7 @@ typedef struct {
 } CClassNode;
 
 typedef struct {
+  int state;
   struct _Node* target;
   int lower;
   int upper;
@@ -121,6 +122,7 @@ typedef struct {
 #define NST_ADDR_FIXED       (1<<9)
 #define NST_NAMED_GROUP      (1<<10)
 #define NST_NAME_REF         (1<<11)
+#define NST_IN_REPEAT        (1<<12) /* STK_REPEAT is nested in match stack. */
 
 #define SET_EFFECT_STATUS(node,f)      (node)->u.effect.state |=  (f)
 #define CLEAR_EFFECT_STATUS(node,f)    (node)->u.effect.state &= ~(f)
@@ -140,6 +142,7 @@ typedef struct {
 #define IS_CALL_RECURSION(cn)          (((cn)->state & NST_RECURSION)  != 0)
 #define IS_CALL_NAME_REF(cn)           (((cn)->state & NST_NAME_REF)   != 0)
 #define IS_BACKREF_NAME_REF(bn)        (((bn)->state & NST_NAME_REF)   != 0)
+#define IS_QUALIFIER_IN_REPEAT(qn)     (((qn)->state & NST_IN_REPEAT)  != 0)
 
 typedef struct {
   int state;

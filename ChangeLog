@@ -5,6 +5,18 @@ Sat Oct 30 15:24:41 2004  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/tests/testOLETYPELIB.rb: add WIN32OLE_TYPELIB class.
 
+Sat Oct 30 06:53:24 2004  Peter Vanbroekhoven  <peter.vanbroekhoven@cs.kuleuven.ac.be>
+
+	* eval.c (rb_eval): NODE_XSTR should pass copy of literal string.
+
+Sat Oct 30 00:19:40 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_update): a[n,m]=nil no longer works as element
+	  deletion.
+
+	* enum.c (enum_sort_by): protect continuation jump in.
+	  [ruby-dev:24642]
+
 Fri Oct 29 21:27:51 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_check_initialized): new function to check uninitialized

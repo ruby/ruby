@@ -217,9 +217,6 @@ typedef struct RNode {
 #define nd_noex  u1.id
 #define nd_defn  u3.node
 
-#define nd_old   u1.id
-#define nd_new   u2.id
-
 #define nd_cfnc  u1.cfunc
 #define nd_argc  u2.argc
 
@@ -319,8 +316,8 @@ typedef struct RNode {
 #define NEW_SVALUE(a) NEW_NODE(NODE_SVALUE,a,0,0)
 #define NEW_BLOCK_ARG(v) NEW_NODE(NODE_BLOCK_ARG,v,0,local_cnt(v))
 #define NEW_BLOCK_PASS(b) NEW_NODE(NODE_BLOCK_PASS,0,b,0)
-#define NEW_ALIAS(n,o) NEW_NODE(NODE_ALIAS,o,n,0)
-#define NEW_VALIAS(n,o) NEW_NODE(NODE_VALIAS,o,n,0)
+#define NEW_ALIAS(n,o) NEW_NODE(NODE_ALIAS,n,o,0)
+#define NEW_VALIAS(n,o) NEW_NODE(NODE_VALIAS,n,o,0)
 #define NEW_UNDEF(i) NEW_NODE(NODE_UNDEF,0,i,0)
 #define NEW_CLASS(n,b,s) NEW_NODE(NODE_CLASS,n,NEW_SCOPE(b),(s))
 #define NEW_SCLASS(r,b) NEW_NODE(NODE_SCLASS,r,NEW_SCOPE(b),0)

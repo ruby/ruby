@@ -500,6 +500,8 @@ enum OpCode {
   OP_REPEAT_NG,            /* {n,m}? (non greedy) */
   OP_REPEAT_INC,
   OP_REPEAT_INC_NG,        /* non greedy */
+  OP_REPEAT_INC_SG,        /* search and get in stack */
+  OP_REPEAT_INC_NG_SG,     /* search and get in stack (non greedy) */
   OP_NULL_CHECK_START,     /* null loop checker start */
   OP_NULL_CHECK_END,       /* null loop checker end   */
   OP_NULL_CHECK_END_MEMST, /* null loop checker end (with capture status) */

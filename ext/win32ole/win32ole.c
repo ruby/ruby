@@ -1816,7 +1816,7 @@ fole_initialize(argc, argv, self)
     SysFreeString(pBuf);
     if(FAILED(hr)) {
         ole_raise(hr, eWIN32OLE_RUNTIME_ERROR, 
-                  "Unknown OLE server `%s'",
+                  "Unknown OLE server: `%s'",
                   StringValuePtr(svr_name));
     }
 

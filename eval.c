@@ -3640,7 +3640,7 @@ rb_eval(self, n)
 	break;
 
       case NODE_XSTR:
-	result = rb_funcall(self, '`', 1, node->nd_lit);
+	result = rb_funcall(self, '`', 1, rb_str_new3(node->nd_lit));
 	break;
 
       case NODE_LIT:
@@ -3731,7 +3731,7 @@ rb_eval(self, n)
 	if (NIL_P(ruby_class)) {
 	    rb_raise(rb_eTypeError, "no class to undef method");
 	}
-	rb_undef(ruby_class, node->nd_mid);
+	rb_undef(ruby_class, rb_to_id(rb_eval(self, node->u2.node)));
 	result = Qnil;
 	break;
 
@@ -3739,12 +3739,13 @@ rb_eval(self, n)
 	if (NIL_P(ruby_class)) {
 	    rb_raise(rb_eTypeError, "no class to make alias");
 	}
-	rb_alias(ruby_class, node->nd_new, node->nd_old);
+	rb_alias(ruby_class, rb_to_id(rb_eval(self, node->u1.node)),
+		             rb_to_id(rb_eval(self, node->u2.node)));
 	result = Qnil;
 	break;
 
       case NODE_VALIAS:
-	rb_alias_variable(node->nd_new, node->nd_old);
+	rb_alias_variable(node->u1.id, node->u2.id);
 	result = Qnil;
 	break;
 

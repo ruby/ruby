@@ -1058,6 +1058,7 @@ node_new_qualifier(int lower, int upper, int by_number)
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
   node->type = N_QUALIFIER;
+  NQUALIFIER(node).state  = 0;
   NQUALIFIER(node).target = NULL;
   NQUALIFIER(node).lower  = lower;
   NQUALIFIER(node).upper  = upper;

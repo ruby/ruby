@@ -157,11 +157,6 @@ AC_SUBST(OUTFLAG)
 
 RUBY_MINGW32
 
-AC_PROG_YACC
-if test "$YACC" = "yacc"; then
-  AC_DEFINE([OLD_YACC])
-fi
-
 AC_CHECK_TOOL(RANLIB, ranlib, :)
 AC_CHECK_TOOL(AR, ar)
 if test -z "$AR"; then

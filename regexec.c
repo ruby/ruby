@@ -1053,6 +1053,7 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
   char *alloca_base;
   StackType *stk_alloc, *stk_base, *stk, *stk_end;
   StackType *stkp; /* used as any purpose. */
+  StackIndex si;
   StackIndex *repeat_stk;
   StackIndex *mem_start_stk, *mem_end_stk;
   n = reg->num_repeat + reg->num_mem * 2;
@@ -2170,77 +2171,65 @@ match_at(regex_t* reg, UChar* str, UChar* end, UChar* sstart,
       break;
 
     case OP_REPEAT_INC:  STAT_OP_IN(OP_REPEAT_INC);
-      {
-	StackIndex si;
+      GET_MEMNUM_INC(mem, p); /* mem: OP_REPEAT ID */
+      si = repeat_stk[mem];
+      stkp = STACK_AT(si);
 
-	GET_MEMNUM_INC(mem, p); /* mem: OP_REPEAT ID */
-#ifdef USE_SUBEXP_CALL
-	if (reg->num_call > 0) {
-	  STACK_GET_REPEAT(mem, stkp);
-	  si = GET_STACK_INDEX(stkp);
-	}
-	else {
-	  si = repeat_stk[mem];
-	  stkp = STACK_AT(si);
-	}
-#else
-	si = repeat_stk[mem];
-	stkp = STACK_AT(si);
-#endif
-	stkp->u.repeat.count++;
-	if (stkp->u.repeat.count == reg->repeat_range[mem].upper) {
-	  /* end of repeat. Nothing to do. */
-	}
-	else if (stkp->u.repeat.count >= reg->repeat_range[mem].lower) {
-	  STACK_PUSH_ALT(p, s, sprev);
-	  p = stkp->u.repeat.pcode;
-	}
-	else {
-	  p = stkp->u.repeat.pcode;
-	}
-	STACK_PUSH_REPEAT_INC(si);
+    repeat_inc:
+      stkp->u.repeat.count++;
+      if (stkp->u.repeat.count == reg->repeat_range[mem].upper) {
+        /* end of repeat. Nothing to do. */
+      }
+      else if (stkp->u.repeat.count >= reg->repeat_range[mem].lower) {
+        STACK_PUSH_ALT(p, s, sprev);
+        p = stkp->u.repeat.pcode;
+      }
+      else {
+        p = stkp->u.repeat.pcode;
+      }
+      STACK_PUSH_REPEAT_INC(si);
+      STAT_OP_OUT;
+      continue;
+      break;
+
+    case OP_REPEAT_INC_SG:  STAT_OP_IN(OP_REPEAT_INC_SG);
+      GET_MEMNUM_INC(mem, p); /* mem: OP_REPEAT ID */
+      STACK_GET_REPEAT(mem, stkp);
+      si = GET_STACK_INDEX(stkp);
+      goto repeat_inc;
+      break;
+
+    case OP_REPEAT_INC_NG:  STAT_OP_IN(OP_REPEAT_INC_NG);
+      GET_MEMNUM_INC(mem, p); /* mem: OP_REPEAT ID */
+      si = repeat_stk[mem];
+      stkp = STACK_AT(si);
+
+    repeat_inc_ng:
+      stkp->u.repeat.count++;
+      if (stkp->u.repeat.count < reg->repeat_range[mem].upper) {
+        if (stkp->u.repeat.count >= reg->repeat_range[mem].lower) {
+          UChar* pcode = stkp->u.repeat.pcode;
+          
+          STACK_PUSH_REPEAT_INC(si);
+          STACK_PUSH_ALT(pcode, s, sprev);
+        }
+        else {
+          p = stkp->u.repeat.pcode;
+          STACK_PUSH_REPEAT_INC(si);
+        }
+      }
+      else if (stkp->u.repeat.count == reg->repeat_range[mem].upper) {
+        STACK_PUSH_REPEAT_INC(si);
       }
       STAT_OP_OUT;
       continue;
       break;
 
-    case OP_REPEAT_INC_NG:  STAT_OP_IN(OP_REPEAT_INC_NG);
-      {
-	StackIndex si;
-
-	GET_MEMNUM_INC(mem, p); /* mem: OP_REPEAT ID */
-#ifdef USE_SUBEXP_CALL
-	if (reg->num_call > 0) {
-	  STACK_GET_REPEAT(mem, stkp);
-	  si = GET_STACK_INDEX(stkp);
-	}
-	else {
-	  si = repeat_stk[mem];
-	  stkp = STACK_AT(si);
-	}
-#else
-	si = repeat_stk[mem];
-	stkp = STACK_AT(si);
-#endif
-	stkp->u.repeat.count++;
-	if (stkp->u.repeat.count < reg->repeat_range[mem].upper) {
-	  if (stkp->u.repeat.count >= reg->repeat_range[mem].lower) {
-	    UChar* pcode = stkp->u.repeat.pcode;
-
-	    STACK_PUSH_REPEAT_INC(si);
-	    STACK_PUSH_ALT(pcode, s, sprev);
-	  }
-	  else {
-	    p = stkp->u.repeat.pcode;
-	    STACK_PUSH_REPEAT_INC(si);
-	  }
-	}
-	else if (stkp->u.repeat.count == reg->repeat_range[mem].upper) {
-	  STACK_PUSH_REPEAT_INC(si);
-	}
-      }
-      STAT_OP_OUT;
-      continue;
+    case OP_REPEAT_INC_NG_SG:  STAT_OP_IN(OP_REPEAT_INC_NG_SG);
+      GET_MEMNUM_INC(mem, p); /* mem: OP_REPEAT ID */
+      STACK_GET_REPEAT(mem, stkp);
+      si = GET_STACK_INDEX(stkp);
+      goto repeat_inc_ng;
       break;
 
     case OP_PUSH_POS:  STAT_OP_IN(OP_PUSH_POS);

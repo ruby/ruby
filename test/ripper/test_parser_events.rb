@@ -50,7 +50,7 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
   end
 
   def test_alias
-    assert_equal '[alias(a,b)]', parse('alias a b')
+    assert_equal '[alias(symbol_literal(a),symbol_literal(b))]', parse('alias a b')
   end
 
   def test_var_alias

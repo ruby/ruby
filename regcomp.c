@@ -684,7 +684,16 @@ compile_range_repeat_node(QualifierNode* qn, int target_len, int empty_info,
   r = compile_tree_empty_check(qn->target, reg, empty_info);
   if (r) return r;
 
-  r = add_opcode(reg, qn->greedy ? OP_REPEAT_INC : OP_REPEAT_INC_NG);
+  if (
+ #ifdef USE_SUBEXP_CALL
+      reg->num_call > 0 ||
+ #endif
+      IS_QUALIFIER_IN_REPEAT(qn)) {
+    r = add_opcode(reg, qn->greedy ? OP_REPEAT_INC_SG : OP_REPEAT_INC_NG_SG);
+  }
+  else {
+    r = add_opcode(reg, qn->greedy ? OP_REPEAT_INC : OP_REPEAT_INC_NG);
+  }
   if (r) return r;
   r = add_mem_num(reg, num_repeat); /* OP_REPEAT ID */
   return r;
@@ -3057,6 +3066,10 @@ setup_tree(Node* node, regex_t* reg, int state, ScanEnv* env)
       QualifierNode* qn = &(NQUALIFIER(node));
       Node* target = qn->target;
 
+      if ((state & IN_REPEAT) != 0) {
+	qn->state |= NST_IN_REPEAT;
+      }
+ 
       if (IS_REPEAT_INFINITE(qn->upper) || qn->upper >= 1) {
 	r = get_min_match_length(target, &d, env);
 	if (r) break;

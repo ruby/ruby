@@ -490,9 +490,9 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 %type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc kwargs undef_list backref string_dvar
 %type <node> for_var block_var opt_block_var block_par
-%type <node> brace_block cmd_brace_block do_block lhs none
+%type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
-%type <id>   fitem variable sym symbol operation operation2 operation3
+%type <id>   fsym variable sym symbol operation operation2 operation3
 %type <id>   cname fname op f_rest_arg
 %type <num>  f_norm_arg f_arg
 /*%%%*/
@@ -1511,8 +1511,19 @@ fname		: tIDENTIFIER
 		    }
 		;
 
-fitem		: fname
+fsym		: fname
 		| symbol
+		;
+
+fitem		: fsym
+		    {
+		    /*%%%*/
+			$$ = NEW_LIT(ID2SYM($1));
+		    /*%
+			$$ = dispatch1(symbol_literal, $1);
+		    %*/
+		    }
+		| dsym
 		;
 
 undef_list	: fitem

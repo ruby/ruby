@@ -6,7 +6,7 @@ srcdir = @srcdir@
 VPATH = $(srcdir):$(srcdir)/missing
 
 CC = @CC@
-YACC = @YACC@
+YACC = bison -y
 PURIFY =
 AUTOCONF = autoconf
 @SET_MAKE@

@@ -806,6 +806,8 @@ gc_mark_children(ptr, lev)
 	  case NODE_OP_ASGN_OR:
 	  case NODE_OP_ASGN_AND:
 	  case NODE_MODULE:
+	  case NODE_ALIAS:
+	  case NODE_VALIAS:
 	    gc_mark((VALUE)obj->as.node.u1.node, lev);
 	    /* fall through */
 	  case NODE_METHOD:	/* 2 */
@@ -820,6 +822,7 @@ gc_mark_children(ptr, lev)
 	  case NODE_COLON3:
 	  case NODE_OPT_N:
 	  case NODE_EVSTR:
+	  case NODE_UNDEF:
 	    ptr = (VALUE)obj->as.node.u2.node;
 	    goto again;
 
@@ -859,11 +862,8 @@ gc_mark_children(ptr, lev)
 	  case NODE_CVAR:
 	  case NODE_NTH_REF:
 	  case NODE_BACK_REF:
-	  case NODE_ALIAS:
-	  case NODE_VALIAS:
 	  case NODE_REDO:
 	  case NODE_RETRY:
-	  case NODE_UNDEF:
 	  case NODE_SELF:
 	  case NODE_NIL:
 	  case NODE_TRUE:

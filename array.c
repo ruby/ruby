@@ -1091,7 +1091,7 @@ rb_ary_update(ary, beg, len, rpl)
     }
 
     rb_ary_modify(ary);
-    if (NIL_P(rpl)) {
+    if (rpl == Qundef) {
 	rlen = 0;
     }
     else {
@@ -1683,7 +1683,7 @@ ary_sort_check(data)
     struct ary_sort_data *data;
 {
     if (RARRAY(data->ary)->ptr != data->ptr || RARRAY(data->ary)->len != data->len) {
-	rb_raise(rb_eArgError, "array modified during sort");
+	rb_raise(rb_eRuntimeError, "array modified during sort");
     }
 }
 
@@ -2085,7 +2085,7 @@ rb_ary_slice_bang(argc, argv, ary)
 	    pos = RARRAY(ary)->len + pos;
 	}
 	arg2 = rb_ary_subseq(ary, pos, len);
-	rb_ary_update(ary, pos, len, Qnil);	/* Qnil/rb_ary_new2(0) */
+	rb_ary_update(ary, pos, len, Qundef);	/* Qnil/rb_ary_new2(0) */
 	return arg2;
     }
 
