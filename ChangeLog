@@ -1,3 +1,17 @@
+Wed Dec 19 16:58:29 2001  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/readline.c: new methods
+	Readline::basic_word_break_characters,
+	Readline::basic_word_break_characters=,
+	Readline::completer_word_break_characters,
+	Readline::completer_word_break_characters=,
+	Readline::basic_quote_characters,
+	Readline::basic_quote_characters=,
+	Readline::completer_quote_characters,
+	Readline::completer_quote_characters=,
+	Readline::filename_quote_characters,
+	Readline::filename_quote_characters=.
+
 Wed Dec 19 14:05:00 2001  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_mod_define_method): define_method should follow

@@ -222,6 +222,206 @@ readline_s_get_completion_append_character(self)
 }
 
 static VALUE
+readline_s_set_basic_word_break_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    static char *basic_word_break_characters = NULL;
+    char *s;
+
+    StringValue(str);
+    if (basic_word_break_characters == NULL) {
+	basic_word_break_characters =
+	    ALLOC_N(char, RSTRING(str)->len + 1);
+    }
+    else {
+	REALLOC_N(basic_word_break_characters, char, RSTRING(str)->len + 1);
+    }
+    strncpy(basic_word_break_characters,
+	    RSTRING(str)->ptr, RSTRING(str)->len);
+    basic_word_break_characters[RSTRING(str)->len] = '\0';
+    rl_basic_word_break_characters = basic_word_break_characters;
+
+    return self;
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_get_basic_word_break_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    if (rl_basic_word_break_characters == NULL)
+	return Qnil;
+    return rb_str_new2(rl_basic_word_break_characters);
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_set_completer_word_break_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    static char *completer_word_break_characters = NULL;
+    char *s;
+
+    StringValue(str);
+    if (completer_word_break_characters == NULL) {
+	completer_word_break_characters =
+	    ALLOC_N(char, RSTRING(str)->len + 1);
+    }
+    else {
+	REALLOC_N(completer_word_break_characters, char, RSTRING(str)->len + 1);
+    }
+    strncpy(completer_word_break_characters,
+	    RSTRING(str)->ptr, RSTRING(str)->len);
+    completer_word_break_characters[RSTRING(str)->len] = '\0';
+    rl_completer_word_break_characters = completer_word_break_characters;
+
+    return self;
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_get_completer_word_break_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    if (rl_completer_word_break_characters == NULL)
+	return Qnil;
+    return rb_str_new2(rl_completer_word_break_characters);
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_set_basic_quote_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    static char *basic_quote_characters = NULL;
+    char *s;
+
+    StringValue(str);
+    if (basic_quote_characters == NULL) {
+	basic_quote_characters =
+	    ALLOC_N(char, RSTRING(str)->len + 1);
+    }
+    else {
+	REALLOC_N(basic_quote_characters, char, RSTRING(str)->len + 1);
+    }
+    strncpy(basic_quote_characters,
+	    RSTRING(str)->ptr, RSTRING(str)->len);
+    basic_quote_characters[RSTRING(str)->len] = '\0';
+    rl_basic_quote_characters = basic_quote_characters;
+
+    return self;
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_get_basic_quote_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    if (rl_basic_quote_characters == NULL)
+	return Qnil;
+    return rb_str_new2(rl_basic_quote_characters);
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_set_completer_quote_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    static char *completer_quote_characters = NULL;
+    char *s;
+
+    StringValue(str);
+    if (completer_quote_characters == NULL) {
+	completer_quote_characters =
+	    ALLOC_N(char, RSTRING(str)->len + 1);
+    }
+    else {
+	REALLOC_N(completer_quote_characters, char, RSTRING(str)->len + 1);
+    }
+    strncpy(completer_quote_characters,
+	    RSTRING(str)->ptr, RSTRING(str)->len);
+    completer_quote_characters[RSTRING(str)->len] = '\0';
+    rl_completer_quote_characters = completer_quote_characters;
+
+    return self;
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_get_completer_quote_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    if (rl_completer_quote_characters == NULL)
+	return Qnil;
+    return rb_str_new2(rl_completer_quote_characters);
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_set_filename_quote_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    static char *filename_quote_characters = NULL;
+    char *s;
+
+    StringValue(str);
+    if (filename_quote_characters == NULL) {
+	filename_quote_characters =
+	    ALLOC_N(char, RSTRING(str)->len + 1);
+    }
+    else {
+	REALLOC_N(filename_quote_characters, char, RSTRING(str)->len + 1);
+    }
+    strncpy(filename_quote_characters,
+	    RSTRING(str)->ptr, RSTRING(str)->len);
+    filename_quote_characters[RSTRING(str)->len] = '\0';
+    rl_filename_quote_characters = filename_quote_characters;
+
+    return self;
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
+readline_s_get_filename_quote_characters(self, str)
+    VALUE self, str;
+{
+#ifdef READLINE_21_OR_LATER
+    if (rl_filename_quote_characters == NULL)
+	return Qnil;
+    return rb_str_new2(rl_filename_quote_characters);
+#else
+    rb_notimplement();
+#endif /* READLINE_21_OR_LATER */
+}
+
+static VALUE
 rb_remove_history(index)
     int index;
 {
@@ -476,6 +676,26 @@ Init_readline()
 			       readline_s_set_completion_append_character, 1);
     rb_define_singleton_method(mReadline, "completion_append_character",
 			       readline_s_get_completion_append_character, 0);
+    rb_define_singleton_method(mReadline, "basic_word_break_characters=",
+			       readline_s_set_basic_word_break_characters, 1);
+    rb_define_singleton_method(mReadline, "basic_word_break_characters",
+			       readline_s_get_basic_word_break_characters, 0);
+    rb_define_singleton_method(mReadline, "completer_word_break_characters=",
+			       readline_s_set_completer_word_break_characters, 1);
+    rb_define_singleton_method(mReadline, "completer_word_break_characters",
+			       readline_s_get_completer_word_break_characters, 0);
+    rb_define_singleton_method(mReadline, "basic_quote_characters=",
+			       readline_s_set_basic_quote_characters, 1);
+    rb_define_singleton_method(mReadline, "basic_quote_characters",
+			       readline_s_get_basic_quote_characters, 0);
+    rb_define_singleton_method(mReadline, "completer_quote_characters=",
+			       readline_s_set_completer_quote_characters, 1);
+    rb_define_singleton_method(mReadline, "completer_quote_characters",
+			       readline_s_get_completer_quote_characters, 0);
+    rb_define_singleton_method(mReadline, "filename_quote_characters=",
+			       readline_s_set_filename_quote_characters, 1);
+    rb_define_singleton_method(mReadline, "filename_quote_characters",
+			       readline_s_get_filename_quote_characters, 0);
 
     histary = rb_obj_alloc(rb_cObject);
     rb_extend_object(histary, rb_mEnumerable);
