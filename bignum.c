@@ -868,10 +868,10 @@ bigdivrem(x, y, divp, modp)
     } while (--j >= ny);
     if (divp) {			/* move quotient down in z */
 	*divp = rb_big_clone(z);
-	zds = BDIGITS(*div);
+	zds = BDIGITS(*divp);
 	j = (nx==ny ? nx+2 : nx+1) - ny;
 	for (i = 0;i < j;i++) zds[i] = zds[i+ny];
-	RBIGNUM(*div)->len = i;
+	RBIGNUM(*divp)->len = i;
     }
     if (modp) {			/* just normalize remainder */
 	*modp = rb_big_clone(z);

@@ -1,3 +1,7 @@
+Wed Jul 12 15:32:57 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
+
+	* bignum.c (bigdivrem): small embarrassing typo.
+
 Wed Jul 12 15:06:28 2000  Yukihiro Matsumoto  <matz@netlab.co.jp>
 
 	* eval.c (rb_eval): use rb_const_get_at().
