@@ -1312,9 +1312,6 @@ strrdirsep(path)
     char *path;
 {
     char *last = NULL;
-#ifdef DOSISH
-    if (ISALPHA(path[0]) && path[1] == ':') path += 2;
-#endif
     while (*path) {
 	if (isdirsep(*path)) {
 	    last = path++;
@@ -1437,12 +1434,6 @@ rb_file_s_expand_path(argc, argv)
 			    p = b;
 			}
 			b = ++s;
-		    }
-		    else {
-			p = CharNext(p);
-			*p++ = '.';
-			*p = '.';
-			if (p >= bend) goto toolong;
 		    }
 		    break;
 		  case '/':

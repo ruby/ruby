@@ -1,3 +1,9 @@
+Thu Aug  2 01:29:42 2001  Nobuyoshi Nakada  <nobu.nakada@nifty.ne.jp>
+
+	* file.c (strrdirsep): removed meaningless code.
+
+	* file.c (rb_file_s_expand_path): reverted to 1.66.
+
 Wed Aug  1 15:42:16 2001  Usaku Nakamura  <usa@ruby-lang.org>
 
 	* eval.c (ruby_run): avoid VC++ warning.
