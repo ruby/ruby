@@ -1055,6 +1055,14 @@ module Net
       @response_handlers.delete(handler)
     end
 
+    def thread(argorithm, search_keys, charset)
+      return thread_internal("THREAD", argorithm, search_keys, charset)
+    end
+
+    def uid_thread(argorithm, search_keys, charset)
+      return thread_internal("UID THREAD", argorithm, search_keys, charset)
+    end
+
     private
 
     CRLF = "\r\n"
@@ -1322,6 +1330,17 @@ module Net
       end
     end
 
+    def thread_internal(cmd, argorithm, search_keys, charset)
+      if search_keys.instance_of?(String)
+	search_keys = [RawData.new(search_keys)]
+      else
+	normalize_searching_criteria(search_keys)
+      end
+      normalize_searching_criteria(search_keys)
+      send_command(cmd, argorithm, charset, *search_keys)
+      return @responses.delete("THREAD")[-1]
+    end
+
     def normalize_searching_criteria(keys)
       keys.collect! do |i|
 	case i
@@ -1408,6 +1427,9 @@ module Net
 	    ":" + format_internal(data.last)
 	when Array
 	  return data.collect {|i| format_internal(i)}.join(",")
+	when ThreadMember
+	  return data.seqno.to_s +
+	    ":" + data.children.collect {|i| format_internal(i).join(",")}
 	else
 	  raise DataFormatError, data.inspect
 	end
@@ -1435,6 +1457,7 @@ module Net
 			  :to, :cc, :bcc, :in_reply_to, :message_id)
     Address = Struct.new(:name, :route, :mailbox, :host)
     ContentDisposition = Struct.new(:dsp_type, :param)
+    ThreadMember = Struct.new(:seqno, :children)
 
     class BodyTypeBasic < Struct.new(:media_type, :subtype,
 				     :param, :content_id,
@@ -1618,6 +1641,8 @@ module Net
 	    return getacl_response
 	  when /\A(?:SEARCH|SORT)\z/ni
 	    return search_response
+	  when /\A(?:THREAD)\z/ni
+	    return thread_response
 	  when /\A(?:STATUS)\z/ni
 	    return status_response
 	  when /\A(?:CAPABILITY)\z/ni
@@ -2242,6 +2267,68 @@ module Net
 	  data = []
 	end
 	return UntaggedResponse.new(name, data, @str)
+      end
+
+      def thread_response
+	token = match(T_ATOM)
+	name = token.value.upcase
+	token = lookahead
+
+	if token.symbol == T_SPACE
+	  threads = []
+
+	  while true
+	    shift_token
+	    token = lookahead
+
+	    case token.symbol
+	    when T_LPAR
+	      threads << thread_branch(token)
+	    when T_CRLF
+	      break
+	    end
+	  end
+	else
+	  # no member
+	  threads = []
+	end
+
+	return UntaggedResponse.new(name, threads, @str)
+      end
+
+      def thread_branch(token)
+	rootmember = nil
+	lastmember = nil
+	
+	while true
+	  shift_token    # ignore first T_LPAR
+	  token = lookahead
+	  
+	  case token.symbol
+	  when T_NUMBER
+	    # new member
+	    newmember = ThreadMember.new(number, [])
+	    if rootmember.nil?
+	      rootmember = newmember
+	    else    
+	      lastmember.children << newmember
+	    end     
+	    lastmember = newmember
+	  when T_SPACE 
+	    # do nothing 
+	  when T_LPAR
+	    if rootmember.nil?
+	      # dummy member
+	      lastmember = rootmember = ThreadMember.new(nil, [])
+	    end     
+	    
+	    lastmember.children << thread_branch(token)
+	  when T_RPAR
+	    break   
+	  end     
+	end
+	
+	return rootmember
       end
 
       def status_response

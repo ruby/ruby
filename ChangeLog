@@ -1,3 +1,7 @@
+Wed Apr 30 14:12:00 2003  wanowa.kimura@nifty.ne.jp (kimura wataru)
+
+	* net/imap.rb: support THREAD extension.
+
 Sun Apr 27 23:13:20 2003  Nobuyoshi Nakada  <nobu.nokada@softhome.net>
 
 	* string.c (rb_str_to_i): disallow negative radix.
