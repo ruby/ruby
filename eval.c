@@ -5033,6 +5033,7 @@ rb_feature_p(feature, wait)
 {
     VALUE *p, *pend;
     char *f;
+    int len;
 
     p = RARRAY(rb_features)->ptr;
     pend = p + RARRAY(rb_features)->len;
