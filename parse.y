@@ -473,7 +473,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 		    {
                         NODE *args;
 
-			value_expr($5);
+			value_expr($6);
 		        args = NEW_LIST($6);
 			$3 = list_append($3, NEW_NIL());
 			list_concat(args, $3);
