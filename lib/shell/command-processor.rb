@@ -277,7 +277,7 @@ class Shell
       when IO
 	AppendIO.new(@shell, to, filter)
       else
-	Shell.Fail CanNotMethodApply, "append", to.class
+	Shell.Fail CantApplyMethod, "append", to.class
       end
     end
 

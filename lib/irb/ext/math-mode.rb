@@ -18,7 +18,7 @@ module IRB
 
     def math_mode=(opt)
       if @math_mode == true && opt == false
-	IRB.fail CantRetuenNormalMode
+	IRB.fail CantReturnToNormalMode
 	return
       end
 
