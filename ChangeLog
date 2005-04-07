@@ -1,3 +1,14 @@
+Thu Apr  7 11:49:53 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/dublincore.rb: _really_ supported multiple Dublin
+	  Core items.
+
+	* test/rss/rss-assertions.rb (assert_multiple_dublin_core): added
+	  an assertion for testing multiple Dublin Core items.
+
+	* test/rss/test_maker_dc.rb (test_rss10_multiple): added a test
+	  for making multiple Dublin Core items.
+	
 Wed Apr  6 16:06:30 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_env.rb (test_key): should test ENV.key instead of
@@ -20,7 +31,7 @@ Tue Apr  5 15:45:33 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 Tue Apr  5 15:15:26 2005  Kouhei Sutou  <kou@cozmixng.org>
 
-	* lib/rss/dublincore.rb: supported multiple DublinCore items.
+	* lib/rss/dublincore.rb: supported multiple Dublin Core items.
 
 	* lib/rss/parser.rb: added class name registry for complex model
 	  elements. (ex. have childlen elements, have some attributes and
@@ -28,9 +39,10 @@ Tue Apr  5 15:15:26 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb: added default current_element implementation.
 
-	* lib/rss/maker/dublincore.rb: supported multiple DublinCore items.
+	* lib/rss/maker/dublincore.rb: supported multiple Dublin Core
+	  items.
 
-	* lib/rss/maker/image.rb: supproted new DublinCore API.
+	* lib/rss/maker/image.rb: supproted new Dublin Core API.
 
 
 	* lib/rss/trackback.rb (RSS::TrackBackUtils.new_with_value_if_need):
@@ -53,7 +65,7 @@ Tue Apr  5 15:15:26 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 
 	* test/test_dublincore.rb: added tests for plural accessor and
-	  multiple DublinCore items.
+	  multiple Dublin Core items.
 
 	* test/test_setup_maker_1.0.rb: fixed swapped actual and expected
 	  values.

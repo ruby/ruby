@@ -56,14 +56,64 @@ module RSS
       assert_dublin_core(@elements, rss.textinput)
     end
 
+    def test_rss10_multiple
+      elems = []
+      @elements.each do |name, value|
+        plural = name.to_s + (name == :rights ? "es" : "s")
+        values = [value]
+        if name == :date
+          values << value + 60
+        else
+          values << value * 2
+        end
+        elems << [name, values, plural]
+      end
+      
+      rss = RSS::Maker.make("1.0") do |maker|
+        setup_dummy_channel(maker)
+        set_multiple_elements(maker.channel, elems)
+
+        setup_dummy_image(maker)
+        set_multiple_elements(maker.image, elems)
+
+        setup_dummy_item(maker)
+        item = maker.items.last
+        elems.each do |name, values, plural|
+          dc_elems = item.__send__("dc_#{plural}")
+          values.each do |value|
+            elem = dc_elems.__send__("new_#{name}")
+            elem.value = value
+          end
+        end
+
+        setup_dummy_textinput(maker)
+        set_multiple_elements(maker.textinput, elems)
+      end
+      assert_multiple_dublin_core(elems, rss.channel)
+      assert_multiple_dublin_core(elems, rss.image)
+      assert_multiple_dublin_core(elems, rss.items.last)
+      assert_multiple_dublin_core(elems, rss.textinput)
+    end
+
     private
     def accessor_name(name)
       "dc_#{name}"
     end
 
-    def set_elements(target)
-      @elements.each do |name, value|
+    def set_elements(target, elems=@elements)
+      elems.each do |name, value|
         target.__send__("#{accessor_name(name)}=", value)
+      end
+    end
+
+    def set_multiple_elements(target, elems)
+      elems.each do |name, values, plural|
+        plural ||= "#{name}s"
+        dc_elems = target.__send__("dc_#{plural}")
+        values.each do |value|
+          new_dc_elem = dc_elems.__send__("new_#{name}")
+          new_dc_elem.value = value
+        end
       end
     end
 

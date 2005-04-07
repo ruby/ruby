@@ -394,6 +394,16 @@ module RSS
       end
     end
     
+    def assert_multiple_dublin_core(elems, target)
+      _wrap_assertion do
+        elems.each do |name, values, plural|
+          plural ||= "#{name}s"
+          actual = target.__send__("dc_#{plural}").collect{|x| x.value}
+          assert_equal(values, actual)
+        end
+      end
+    end
+    
     def assert_syndication(elems, target)
       _wrap_assertion do
         elems.each do |name, value|

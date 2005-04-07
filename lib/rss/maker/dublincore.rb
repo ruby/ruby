@@ -83,12 +83,14 @@ EOC
           plural_name ||= "#{name}s"
           klass_name = Utils.to_class_name(name)
           plural_klass_name = "DublinCore#{Utils.to_class_name(plural_name)}"
+          full_klass_name = "DublinCore#{klass_name}"
           klass.module_eval(<<-EOC, *Utils.get_file_and_line_from_caller(1))
           class #{plural_klass_name} < #{plural_klass_name}Base
             class #{klass_name} < #{klass_name}Base
               def to_rss(rss, current)
                 if value and current.respond_to?(:dc_#{name})
-                  current.dc_#{name} = value
+                  new_item = current.class::#{full_klass_name}.new(value)
+                  current.dc_#{plural_name} << new_item
                 end
               end
             end
