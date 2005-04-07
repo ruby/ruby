@@ -1,3 +1,9 @@
+Thu Apr  7 17:43:25 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_call0): "return" event hook should be always executed
+	  if event_hooks is set.  fixed: [ruby-core:04662]
+	  (backported from HEAD)
+
 Mon Apr  4 23:17:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb (TkComm#array2tk_list): accept enc-mode argument to

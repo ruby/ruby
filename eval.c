@@ -5637,7 +5637,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    int state;
 	    VALUE *local_vars;	/* OK */
 	    NODE *saved_cref = 0;
-	    int hook_return = 0;
 
 	    PUSH_SCOPE();
 
@@ -5733,7 +5732,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 		if (event_hooks) {
 		    EXEC_EVENT_HOOK(RUBY_EVENT_CALL, b2, recv, id, klass);
-		    hook_return = 1;
 		}
 		result = rb_eval(recv, body);
 	    }
@@ -5746,7 +5744,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
-	    if (hook_return) {
+	    if (event_hooks) {
 		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
 	    }
 	    switch (state) {
