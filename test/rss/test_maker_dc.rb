@@ -95,6 +95,26 @@ module RSS
       assert_multiple_dublin_core(elems, rss.textinput)
     end
 
+    def test_date
+      t1 = Time.iso8601("2000-01-01T12:00:05+00:00")
+      t2 = Time.iso8601("2005-01-01T12:00:05+00:00")
+      
+      rss = RSS::Maker.make("1.0") do |maker|
+        setup_dummy_channel(maker)
+        maker.channel.date = t1
+        date = maker.channel.dc_dates.new_date
+        date.value = t2
+
+        setup_dummy_item(maker)
+        item = maker.items.last
+        item.date = t2
+        date = item.dc_dates.new_date
+        date.value = t1
+      end
+      assert_equal([t1, t2], rss.channel.dc_dates.collect{|x| x.value})
+      assert_equal([t2, t1], rss.items.last.dc_dates.collect{|x| x.value})
+    end
+    
     private
     def accessor_name(name)
       "dc_#{name}"
