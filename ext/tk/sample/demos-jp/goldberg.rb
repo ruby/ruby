@@ -54,6 +54,7 @@ $goldberg_demo = TkToplevel.new {|w|
 #  positionWindow(w)
 }
 
+=begin
 # label
 msg = TkLabel.new($goldberg_demo) {
   font 'Arial 10'
@@ -62,7 +63,9 @@ msg = TkLabel.new($goldberg_demo) {
   text "これは、あなたが自分のアニメーションをいかに入り組んだものにできるかを示すというだけのためのデモです。ボールをクリックすれば物が動き始めます！\n\n\"Man will always find a difficult means to perform a simple task\"\n - Rube Goldberg"
 }
 msg.pack('side'=>'top')
+=end
 
+=begin
 # frame
 TkFrame.new($goldberg_demo) {|frame|
   TkButton.new(frame) {
@@ -80,6 +83,7 @@ TkFrame.new($goldberg_demo) {|frame|
   }.pack('side'=>'left', 'expand'=>'yes')
 
 }.pack('side'=>'bottom', 'fill'=>'x', 'pady'=>'2m')
+=end
 
 #########################################
 
@@ -160,7 +164,7 @@ class TkGoldberg_Demo
                          :relief=>:raised).pack(:side=>:left, :fill=>:both, 
                                                 :expand=>true)
 
-    @canvas = TkCanvas.new(@parent, :width=>860, :height=>730, 
+    @canvas = TkCanvas.new(@parent, :width=>850, :height=>700, 
                           :bg=>@C['bg'], :highlightthickness=>0){
       scrollregion([0, 0, 1000, 1000]) # Kludge to move everything up
       yview_moveto(0.05)
@@ -172,9 +176,34 @@ class TkGoldberg_Demo
     do_ctrl_frame
     do_detail_frame
 
-    @show = TkButton.new(@parent, :text=>'>>', :command=>proc{show_ctrl}, 
+    msg = TkLabel.new(@parent, :bg=>@C['bg'], :fg=>'white') {
+      font 'Arial 10'
+      wraplength 600
+      justify 'left'
+      text "これは、あなたが自分のアニメーションをいかに入り組んだものにできるかを示すというだけのためのデモです。ボールをクリックすれば物が動き始めます！\n\"Man will always find a difficult means to perform a simple task\" - Rube Goldberg"
+    }
+    msg.place(:in=>@canvas, :relx=>0, :rely=>0, :anchor=>:nw)
+
+    frame = TkFrame.new(@parent, :bg=>@C['bg'])
+
+    TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
+      text '閉じる'
+      command proc{
+        tmppath = $goldberg_demo
+        $goldberg_demo = nil
+        tmppath.destroy
+      }
+    }.pack('side'=>'left')
+
+    TkButton.new(frame, :bg=>@C['bg'], :activebackground=>@C['bg']) {
+      text 'コード参照'
+      command proc{showCode 'goldberg'}
+    }.pack('side'=>'left', 'padx'=>5)
+
+    @show = TkButton.new(frame, :text=>'>>', :command=>proc{show_ctrl}, 
                          :bg=>@C['bg'], :activebackground=>@C['bg'])
-    @show.place(:in=>@canvas, :relx=>1, :rely=>0, :anchor=>:ne)
+    @show.pack('side'=>'left')
+    frame.place(:in=>@canvas, :relx=>1, :rely=>0, :anchor=>:ne)
 
     Tk.update
   end
@@ -1753,7 +1782,7 @@ class TkGoldberg_Demo
 
     if step >= 3
       @canvas.delete('I24', 'I26')
-      TkcText.new(@canvas, 430, 755, :anchor=>:s, :tag=>'I26', 
+      TkcText.new(@canvas, 430, 740, :anchor=>:s, :tag=>'I26', 
                   #:text=>'click to continue', 
                   :text=>'クリックでリセットします', 
                   :font=>['Times Roman', 24, :bold])
