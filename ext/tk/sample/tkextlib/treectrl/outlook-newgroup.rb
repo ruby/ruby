@@ -9,7 +9,7 @@ def demoOutlookNewsgroup(t)
   t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false, 
               :showroot=>false, :showrootbutton=>false, :showbuttons=>true)
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.column_create(:image=>@images['outlook-clip'], :tag=>'clip')
     t.column_create(:image=>@images['outlook-arrow'], :tag=>'arrow')
     t.column_create(:image=>@images['outlook-watch'], :tag=>'watch')
@@ -90,7 +90,7 @@ def demoOutlookNewsgroup(t)
   t.style_layout(s, 'sel.w', :detach=>true, :iexpand=>:es)
 
   # Set default item style
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.defaultstyle = ['', '', '', 's1', 's2.we', 's2.we', 's2.w']
   end
 
@@ -147,21 +147,21 @@ def demoOutlookNewsgroup(t)
     t.item_state_set(item_i, 'unread')  if anyUnreadDescendants(t, item_i)
 
     if t.item_numchildren(item_i) > 0
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         t.item_configure(item_i, :button=>true)
       else # TreeCtrl 1.0
         t.item_hasbutton(item_i, true)
       end
 
       # Collapse some messages
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         t.item_collapse(item_i) if rand(2) == 0
       else # TreeCtrl 1.0
         t.collapse(item_i) if rand(2) == 0
       end
     end
 
-    unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    unless $Version_1_1_OrLater
       t.item_style_set(item_i, 3, 's1', 4, 's2.we', 5, 's2.we', 6, 's2.w')
     end
     t.item_text(item_i, 3, subject, 4, from, 5, sent, 6, size)
@@ -211,7 +211,7 @@ def demoOutlookNewsgroup2(t)
   t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false, 
               :showroot=>false, :showrootbutton=>false, :showbuttons=>true)
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.column_create(:image=>@images['outlook-clip'], :tag=>'clip')
     t.column_create(:image=>@images['outlook-arrow'], :tag=>'arrow')
     t.column_create(:image=>@images['outlook-watch'], :tag=>'watch')
@@ -421,7 +421,7 @@ def demoOutlookNewsgroup2(t)
   (1...(msgCnt)).each{|i|
     if rand(2) == 0
       if t.item_numchildren(i) > 0
-        if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+        if $Version_1_1_OrLater
           t.item_collapse(i)
         else # TreeCtrl 1.0
           t.collapse(i)

@@ -2,7 +2,7 @@
 # Demo: Bitmaps
 #
 def demoBitmaps(t)
-  #if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  #if $Version_1_1_OrLater
   if @has_bgimg
     t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
                 :selectmode=>:browse, :orient=>:horizontal, :wrap=>'5 items', 
@@ -38,7 +38,7 @@ def demoBitmaps(t)
   t.style_layout(s, 'elemTxt',    :expand=>:we)
 
   # Set default item style
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.defaultstyle = [s]
   end
 
@@ -47,7 +47,7 @@ def demoBitmaps(t)
 
   bitmap_names.each{|name|
     i = t.item_create
-    unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    unless $Version_1_1_OrLater
       t.item_style_set(i, 0, s)
     end
     t.item_text(i, 0, name)

@@ -16,7 +16,7 @@ def demoRandom(t)
               :showlines=>true, :scrollmargin=>16, 
               :xscrolldelay=>[500, 50], :yscrolldelay=>[500, 50])
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.column_create(:expand=>true, :text=>'Item', 
                     :itembackground=>['#e0e8f0', []], :tag=>'item')
     t.column_create(:text=>'Parent', :justify=>:center, 
@@ -83,7 +83,7 @@ def demoRandom(t)
       item_j = items[j]
       break if t.depth(item_j) < 5
     }
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       t.item_collapse(item_i) if rand(2) == 0
     else # TreeCtrl 1.0
       t.collapse(item_i) if rand(2) == 0
@@ -103,7 +103,7 @@ def demoRandom(t)
     item_j = nil
     numChildren = t.item_numchildren(item_i)
     if numChildren > 0
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         t.item_configure(item_i, :button=>true)
       else # TreeCtrl 1.0
         t.item_hasbutton(item_i, true)
@@ -191,14 +191,14 @@ def randomButton1(t, x, y)
     where, item, arg1, arg2, arg3, arg4 = id
     case arg1
     when 'button'
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         t.item_toggle(item)
       else # TreeCtrl 1.0
         t.toggle(item)
       end
 
     when 'line'
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         t.item_toggle(arg2)
       else # TreeCtrl 1.0
         t.toggle(arg2)
@@ -423,7 +423,7 @@ def randomDrop(t, target, src, pos)
   parentList.each{|item|
     numChildren = t.item_numchildren(item)
     if numChildren == 0
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         t.item_configure(item, :button=>false)
       else # TreeCtrl 1.0
         t.item_hasbutton(item, false)
@@ -436,7 +436,7 @@ def randomDrop(t, target, src, pos)
 
   # Update the target that gained some children
   if t.item_style_set(parent, 0) != 's1'
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       t.item_configure(parent, :button=>true)
     else # TreeCtrl 1.0
       t.item_hasbutton(parent, true)

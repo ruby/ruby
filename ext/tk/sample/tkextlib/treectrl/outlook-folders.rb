@@ -84,7 +84,7 @@ def demoOutlookFolders(t)
      [0, :server, "news.gmane.org", true, 0], 
         [1, :group, "gmane.comp.lang.lua.general", false, 498]
   ].each{|depth, img, text, button, unread|
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       item = t.item_create(:button=>button)
     else
       item = t.item_create

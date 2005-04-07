@@ -47,7 +47,7 @@ def demoIMovie(t)
                  :ipadx=>6, :padx=>[0,3], :pady=>[0,3])
 
   # Set default item style
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.defaultstyle([s])
   end
 
@@ -62,7 +62,7 @@ def demoIMovie(t)
       ['07:20', 'Clip 7', @images['imovie-07']]
     ].each{|time, name, image|
       item = t.item_create
-      unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      unless $Version_1_1_OrLater
         t.item_style_set(item, 0, s)
       end
       t.item_element_configure(item, 0, 'elemTime', :text=>time)
