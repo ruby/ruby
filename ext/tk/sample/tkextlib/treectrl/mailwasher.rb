@@ -13,7 +13,7 @@ def demoMailWasher(t)
 
   pad = 4
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.column_create(:text=>'Delete', :textpadx=>pad, :tag=>'delete')
     t.column_create(:text=>'Bounce', :textpadx=>pad, :tag=>'bounce')
     t.column_create(:text=>'Status', :width=>80, :textpadx=>pad, 
@@ -70,7 +70,7 @@ def demoMailWasher(t)
   t.element_create('txtBlacklist', :text, :text=>'Blacklisted', :lines=>1, 
                    :fill=>[@SystemHighlightText, ['selected'], '#FF5800', []])
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     s = t.style_create('styCheck')
     t.style_elements(s, ['border', 'imgCheck'])
     t.style_layout(s, 'border', :detach=>true, :iexpand=>:es)
@@ -112,7 +112,7 @@ def demoMailWasher(t)
     status = ['styNormal','styPossSpam','styProbSpam','styBlacklist'][rand(4)]
     attachments = ['styNone','styYes'][rand(2)]
 
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       delete = [false, true][rand(2)]
       bounce = [false, true][rand(2)]
       t.item_style_set(item, 
@@ -197,7 +197,7 @@ def demoMailWasher(t)
 
   mailWasher = TkBindTag.new
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     mailWasher.bind('ButtonPress-1', 
                     proc{|w, x, y|
                       id = w.identify(x, y)
@@ -241,7 +241,7 @@ def demoMailWasher(t)
   t.bindtags = [t, mailWasher, Tk::TreeCtrl, t.winfo_toplevel, TkBindTag::ALL]
 end
 
-if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+if $Version_1_1_OrLater
   def compareOnOff(w, c, item1, item2)
     s1 = w.item_state_forcolumn(item1, c)
     s2 = w.item_state_forcolumn(item2, c)

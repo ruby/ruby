@@ -36,7 +36,7 @@ def demoLayout(t)
   t.style_layout(s, 'e7', :detach=>true, :expand=>:wn, 
                  :padx=>[0,2], :pady=>[0,2])
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     i = t.item_create(:button=>true)
   else
     i = t.item_create
@@ -47,7 +47,7 @@ def demoLayout(t)
   parent = i
 
   i = t.item_create()
-  unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  unless $Version_1_1_OrLater
     t.item_hasbutton(i, false)
   end
   t.item_style_set(i, 0, s)
@@ -61,7 +61,7 @@ def demoLayout(t)
   t.style_layout(s, 'e3', :union=>['e1'], :ipadx=>[20,4], :ipady=>[4,12])
   t.style_layout(s, 'e4', :detach=>true, :iexpand=>:es)
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     i = t.item_create(:button=>true)
   else
     i = t.item_create
@@ -71,7 +71,7 @@ def demoLayout(t)
   t.item_lastchild(:root, i)
 
   i2 = t.item_create()
-  unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  unless $Version_1_1_OrLater
     t.item_hasbutton(i2, false)
   end
   t.item_style_set(i2, 0, s)
@@ -85,7 +85,7 @@ def demoLayout(t)
   t.style_layout(s, 'e3', :union=>['e1', 'e5'], :ipadx=>4, :ipady=>4)
   t.style_layout(s, 'e5', :ipady=>[0,20])
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     i = t.item_create(:button=>true)
   else
     i = t.item_create
@@ -95,7 +95,7 @@ def demoLayout(t)
   t.item_lastchild(:root, i)
 
   i2 = t.item_create()
-  unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  unless $Version_1_1_OrLater
     t.item_hasbutton(i2, false)
   end
   t.item_style_set(i2, 0, s)
@@ -115,7 +115,7 @@ def demoLayout(t)
   t.style_layout(s, 'eb', :union=>['et'], :ipadx=>2, :ipady=>2)
   t.style_layout(s, 'et', :squeeze=>:x)
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     i = t.item_create(:button=>true)
   else
     i = t.item_create
@@ -127,7 +127,7 @@ def demoLayout(t)
   parent = i
 
   i = t.item_create()
-  unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  unless $Version_1_1_OrLater
     t.item_hasbutton(i, false)
   end
   t.item_style_set(i, 0, s)

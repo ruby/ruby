@@ -9,7 +9,7 @@ def demoHelpContents(t)
 
   init_pics('help-*')
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.column_create(:text=>'Help Contents')
   else # TreeCtrl 1.0
     t.column_configure(0, :text=>'Help Contents')
@@ -69,7 +69,7 @@ def demoHelpContents(t)
     item = t.item_create
     t.item_style_set(item, 0, style)
     t.item_element_configure(item, 0, 'e3', :text=>text)
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       t.item_collapse(item)
     else # TreeCtrl 1.0
       t.collapse(item)
@@ -147,7 +147,7 @@ def demoHelpContents2(t)
 
   init_pics('help-*')
 
-  if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+  if $Version_1_1_OrLater
     t.column_create(:text=>'Help Contents')
   else # TreeCtrl 1.0
     t.column_configure(0, :text=>'Help Contents')
@@ -222,7 +222,7 @@ def demoHelpContents2(t)
     item = t.item_create
     t.item_style_set(item, 0, style)
     t.item_element_configure(item, 0, 'e3', :text=>text)
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       t.item_collapse(item)
     else # TreeCtrl 1.0
       t.collapse(item)
@@ -301,13 +301,13 @@ def helpButton1(w, x, y)
     end
     if w.selection_get.length > 0
       item2 = w.selection_get[0]
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         w.item_collapse(item2)
       else # TreeCtrl 1.0
         w.collapse(item2)
       end
       w.item_ancestors(item2).each{|i|
-        if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+        if $Version_1_1_OrLater
           w.item_collapse(i) if w.compare(item, '!=', i)
         else # TreeCtrl 1.0
           w.collapse(i) if w.compare(item, '!=', i)
@@ -315,7 +315,7 @@ def helpButton1(w, x, y)
       }
     end
     w.activate(item)
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       w.item_ancestors(item).each{|i|
         w.item_expand(i)
       }

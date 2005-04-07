@@ -7,6 +7,8 @@ $ScriptDir = File.dirname(File.expand_path(__FILE__))
 
 $HasColumnCreate = Tk::TreeCtrl::HasColumnCreateCommand
 
+$Version_1_1_OrLater = (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+
 if Hash.instance_methods.include?('key')
   # probably ruby 1.9.x --> use Hash#key
   # Because Hash#index show warning "Hash#index is deprecated; use Hash#key".
@@ -53,7 +55,7 @@ class TkTreeCtrl_demo
     make_menubar()
     make_main_window()
 
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       begin
         @tree2[:backgroundimage]
         @has_bgimg = true
@@ -351,7 +353,7 @@ class TkTreeCtrl_demo
       [ 'Expand',   [], nil, '', {:menu_config=>{:tearoff=>false}} ]
     ]
 
-    # if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    # if $Version_1_1_OrLater
     if @has_bgimg
       menuspec << \
       [ 'Background Image', 
@@ -503,7 +505,7 @@ class TkTreeCtrl_demo
 
     m = @mTree[w].entrycget('Collapse', :menu)
     m.delete(0, :end)
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       m.add_command(:label=>'All', :command=>proc{w.item_collapse(:all)})
     else
       m.add_command(:label=>'All', :command=>proc{w.collapse(:all)})
@@ -511,7 +513,7 @@ class TkTreeCtrl_demo
     unless id.empty?
       if id[0] == 'item'
         item = id[1]
-        if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+        if $Version_1_1_OrLater
           m.add_command(:label=>"Item #{item}", 
                         :command=>proc{w.item_collapse(item)})
           m.add_command(:label=>"Item #{item} (recurse)", 
@@ -527,7 +529,7 @@ class TkTreeCtrl_demo
 
     m = @mTree[w].entrycget('Expand', :menu)
     m.delete(0, :end)
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       m.add_command(:label=>'All', :command=>proc{w.item_expand(:all)})
     else
       m.add_command(:label=>'All', :command=>proc{w.expand(:all)})
@@ -535,7 +537,7 @@ class TkTreeCtrl_demo
     unless id.empty?
       if id[0] == 'item'
         item = id[1]
-        if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+        if $Version_1_1_OrLater
           m.add_command(:label=>"Item #{item}", 
                         :command=>proc{w.item_expand(item)})
           m.add_command(:label=>"Item #{item} (recurse)", 
@@ -552,7 +554,7 @@ class TkTreeCtrl_demo
     [:data, :display, :enable].each{|k|
       @popup[:debug][k].value = w.debug_cget(k)
     }
-    # if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    # if $Version_1_1_OrLater
     if @has_bgimg
       @popup[:bgimg].value = @images.key(w[:backgroundimage])
     end
@@ -803,7 +805,7 @@ class TkTreeCtrl_demo
     @tree1.style_layout('s1', 'e2', :union=>['e1'], 
                         :ipadx=>2, :ipady=>[0, 1], :iexpand=>:e)
 
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       @tree1.defaultstyle = 's1'
     end
 
@@ -826,7 +828,7 @@ class TkTreeCtrl_demo
     ].each{|label, cmd, file|
       item = @tree1.item_create
       @tree1.item_lastchild(:root, item)
-      unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      unless $Version_1_1_OrLater
         @tree1.item_style_set(item, 0, 's1')
       end
       @tree1.item_text(item, 0, label)
@@ -883,7 +885,7 @@ class TkTreeCtrl_demo
     
     # One item for each element in the demo list
     @tree2.element_names.sort.each{|elem|
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         item = @tree4.item_create(:button=>true)
         @tree4.item_collapse(item)
       else
@@ -920,7 +922,7 @@ class TkTreeCtrl_demo
 
     # One item for each style in the demo list
     @tree2.style_names.sort.each{|sty|
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         item = @tree4.item_create(:button=>true)
         @tree4.item_collapse(item)
       else
@@ -933,7 +935,7 @@ class TkTreeCtrl_demo
 
       # One item for each element in the style
       @tree2.style_elements(sty).each{|elem|
-        if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+        if $Version_1_1_OrLater
           item2 = @tree4.item_create(:button=>true)
           @tree4.item_collapse(item2)
         else
@@ -948,7 +950,7 @@ class TkTreeCtrl_demo
         # One item for each layout option for this element in this style
         @tree2.style_layout(sty, elem).each{|k, v|
           item3 = @tree4.item_create
-          unless (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+          unless $Version_1_1_OrLater
             @tree4.item_hasbutton(item3, false)
           end
           @tree4.item_style_set(item3, 0, 's1')
@@ -1002,7 +1004,7 @@ class TkTreeCtrl_demo
     column = 0
     @tree2.item_style_set(item).each{|sty|
       item2 = @tree3.item_create
-      if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+      if $Version_1_1_OrLater
         @tree3.item_collapse(item2)
       else
         @tree3.collapse(item2)
@@ -1017,13 +1019,13 @@ class TkTreeCtrl_demo
       unless sty.to_s.empty?
         @tree2.item_style_elements(item, column).each{|elem|
           button = true
-          if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+          if $Version_1_1_OrLater
             item3 = @tree3.item_create(:button=>true)
           else
             item3 = @tree3.item_create
             @tree3.item_hasbutton(item3, true)
           end
-          if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+          if $Version_1_1_OrLater
             @tree3.item_collapse(item3)
           else
             @tree3.collapse(item3)
@@ -1060,7 +1062,7 @@ class TkTreeCtrl_demo
           }
           @tree3.item_lastchild(item2, item3)
         }
-        if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+        if $Version_1_1_OrLater
           @tree3.item_configure(item2, :button=>true) if button
         else
           @tree3.item_hasbutton(item2, true) if button
@@ -1101,7 +1103,7 @@ class TkTreeCtrl_demo
     # Delete all elements in demo list
     @tree2.element_delete(*(@tree2.element_names))
 
-    if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    if $Version_1_1_OrLater
       @tree2.item_configure(:root, :button=>false)
       @tree2.item_expand(:root)
     else
@@ -1110,7 +1112,7 @@ class TkTreeCtrl_demo
     end
 
     # Restore some happy defaults to the demo list
-    # if (TkPackage.vcompare(Tk::TreeCtrl.package_version, '1.1') >= 0)
+    # if $Version_1_1_OrLater
     if @has_bgimg
       @tree2.configure(:orient=>:vertical, :wrap=>'', 
                        :xscrollincrement=>0, :yscrollincrement=>0, 

@@ -554,12 +554,13 @@ class Tk::TreeCtrl
   end
 
   def collapse(*dsc)
-    tk_send('collapse', *dsc)
+    tk_send_without_enc('collapse', *(dsc.map!{|d| _get_eval_string(d, true)}))
     self
   end
 
   def collapse_recurse(*dsc)
-    tk_send('collapse', '-recurse', *dsc)
+    tk_send_without_enc('collapse', '-recurse', 
+                        *(dsc.map!{|d| _get_eval_string(d, true)}))
     self
   end
 
@@ -610,7 +611,7 @@ class Tk::TreeCtrl
   end
 
   def depth(item=None)
-    num_or_str(tk_send('depth', item))
+    num_or_str(tk_send_without_enc('depth', _get_eval_string(item, true)))
   end
 
   def dragimage_add(item, *args)
@@ -750,22 +751,25 @@ class Tk::TreeCtrl
   end
 
   def item_collapse(item)
-    tk_send('item', 'collapse', item)
+    tk_send_without_enc('item', 'collapse', _get_eval_string(item, true))
     self
   end
 
   def item_collapse_recurse(item)
-    tk_send('item', 'collapse', item, '-recurse')
+    tk_send_without_enc('item', 'collapse', 
+                        _get_eval_string(item, true), '-recurse')
     self
   end
 
   def item_complex(item, *args)
-    tk_send('item', 'complex', item, *args)
+    tk_send_without_enc('item', 'complex', 
+                        _get_eval_string(item, true), 
+                        *(args.map!{|arg| _get_eval_string(arg, true)}))
     self
   end
 
   def item_create(keys={})
-    num_or_str(tk_send('item', 'create', keys))
+    num_or_str(tk_send_without_enc('item', 'create', *hash_kv(keys, true)))
   end
 
   def _erase_children(item)
@@ -814,10 +818,13 @@ class Tk::TreeCtrl
 
   def item_firstchild(parent, child=nil)
     if child
-      tk_send('item', 'firstchild', parent, child)
+      tk_send_without_enc('item', 'firstchild', 
+                          _get_eval_string(parent, true), 
+                          _get_eval_string(child, true))
       self
     else
-      id = num_or_str(tk_send('item', 'firstchild', parent))
+      id = num_or_str(tk_send_without_enc('item', 'firstchild', 
+                                          _get_eval_string(parent, true)))
       Tk::TreeCtrl::Item.id2obj(self, id)
     end
   end
@@ -825,9 +832,12 @@ class Tk::TreeCtrl
 
   def item_hasbutton(item, st=None)
     if st == None
-      bool(tk_send('item', 'hasbutton'))
+      bool(tk_send_without_enc('item', 'hasbutton', 
+                               _get_eval_string(item, true)))
     else
-      tk_send('item', 'hasbutton', st)
+      tk_send_without_enc('item', 'hasbutton', 
+                          _get_eval_string(item, true), 
+                          _get_eval_string(st))
       self
     end
   end
@@ -860,10 +870,13 @@ class Tk::TreeCtrl
 
   def item_lastchild(parent, child=nil)
     if child
-      tk_send('item', 'lastchild', parent, child)
+      tk_send_without_enc('item', 'lastchild', 
+                          _get_eval_string(parent, true),
+                          _get_eval_string(child, true))
       self
     else
-      id = num_or_str(tk_send('item', 'lastchild', parent))
+      id = num_or_str(tk_send_without_enc('item', 'lastchild', 
+                                          _get_eval_string(parent, true)))
       Tk::TreeCtrl::Item.id2obj(self, id)
     end
   end
@@ -881,7 +894,8 @@ class Tk::TreeCtrl
   alias item_next_sibling item_nextsibling
 
   def item_numchildren(item)
-    number(tk_send('item', 'numchildren', item))
+    number(tk_send_without_enc('item', 'numchildren', 
+                               _get_eval_string(item, true)))
   end
   alias item_num_children  item_numchildren
   alias item_children_size item_numchildren
@@ -1005,15 +1019,23 @@ class Tk::TreeCtrl
   def item_style_set(item, column=nil, *args)
     if args.empty?
       if column
-        id = tk_send('item', 'style', 'set', item, column)
+        id = tk_send_without_enc('item', 'style', 'set', 
+                                 _get_eval_string(item, true), 
+                                 _get_eval_string(column, true))
         Tk::TreeCtrl::Style.id2obj(self, id)
       else
-        list(tk_send('item', 'style', 'set', item)).collect!{|id|
+        list(tk_send_without_enc('item', 'style', 'set', 
+                                 _get_eval_string(item, true))).collect!{|id|
           Tk::TreeCtrl::Style.id2obj(self, id)
         }
       end
     else
-      tk_send('item', 'style', 'set', item, column, *(args.flatten))
+      tk_send_without_enc('item', 'style', 'set', 
+                          _get_eval_string(item, true), 
+                          _get_eval_string(column, true), 
+                          *(args.flatten.map!{|arg|
+                              _get_eval_string(arg, true)
+                            }))
       self
     end
   end
