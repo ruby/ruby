@@ -8,10 +8,11 @@ require 'shellwords'
 CONFIG = Config::MAKEFILE_CONFIG
 ORIG_LIBPATH = ENV['LIB']
 
-SRC_EXT = %w[c cc m cxx cpp]
+CXX_EXT = %w[cc cxx cpp]
 if /mswin|bccwin|mingw|msdosdjgpp|human|os2/ !~ CONFIG['build_os']
-  SRC_EXT.concat(%w[C])
+  CXX_EXT.concat(%w[C])
 end
+SRC_EXT = %w[c m] << CXX_EXT
 $static = $config_h = nil
 
 unless defined? $configure_args
@@ -847,8 +848,8 @@ SHELL = /bin/sh
 #### Start of system configuration section. ####
 
 srcdir = #{srcdir}
-topdir = #{$topdir}
-hdrdir = #{$extmk ? $hdrdir : '$(topdir)'}
+topdir = #{$extmk ? CONFIG["topdir"] : $topdir}
+hdrdir = #{$extmk ? CONFIG["hdrdir"] : '$(topdir)'}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
@@ -938,7 +939,7 @@ def create_makefile(target, srcprefix = nil)
     target_prefix = ""
   end
 
-  srcprefix ||= '$(srcdir)'
+  srcprefix ||= CONFIG['srcdir']
   Config::expand(srcdir = srcprefix.dup)
 
   if not $objs
@@ -979,7 +980,7 @@ def create_makefile(target, srcprefix = nil)
   dllib = target ? "$(TARGET).#{CONFIG['DLEXT']}" : ""
   staticlib = target ? "$(TARGET).#$LIBEXT" : ""
   mfile = open("Makefile", "wb")
-  mfile.print configuration(srcdir)
+  mfile.print configuration(srcprefix)
   mfile.print %{
 libpath = #{$LIBPATH.join(" ")}
 LIBPATH = #{libpath}
@@ -1058,7 +1059,7 @@ site-install-rb: install-rb
   mfile.print ".SUFFIXES: .#{SRC_EXT.join(' .')} .#{$OBJEXT}\n"
   mfile.print "\n"
 
-  %w[cc cpp cxx C].each do |ext|
+  CXX_EXT.each do |ext|
     COMPILE_RULES.each do |rule|
       mfile.printf(rule, ext, $OBJEXT)
       mfile.printf("\n\t%s\n\n", COMPILE_CXX)

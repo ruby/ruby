@@ -1,3 +1,11 @@
+Thu Apr  7 23:58:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): keep directory names in Makefile as macros.
+
+	* lib/mkmf.rb (configuration, create_makefile): ditto.
+
+	* lib/mkmf.rb (CXX_EXT): separate C++ extensions.
+
 Thu Apr  7 17:43:25 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_call0): "return" event hook should be always executed
