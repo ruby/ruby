@@ -1,6 +1,16 @@
 2005-04-08  ocean  <ocean@ruby-lang.org>
 
-	* sample/tkextlib/treectrl/*.rb: fixed typo. (wrong itemheight)
+	* sample/tkextlib/treectrl/help.rb: fixed typo. (wrong color)
+
+2005-04-08  ocean  <ocean@ruby-lang.org>
+
+	* sample/tkextlib/treectrl/random.rb: fixed typo. (wrong itemheight)
+
+	* sample/tkextlib/treectrl/outlook-newgroup.rb: ditto.
+
+	* sample/tkextlib/treectrl/explorer.rb: ditto.
+
+	* sample/tkextlib/treectrl/help.rb: ditto.
 
 2005-04-07  ocean  <ocean@ruby-lang.org>
 
