@@ -1,3 +1,8 @@
+Thu Apr  7 17:24:17 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* eval.c (rb_call0): "return" event hook should be always executed
+	  if event_hooks is set.
+
 Thu Apr  7 14:33:09 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_maker_dc.rb (test_date): added a test for #date=
