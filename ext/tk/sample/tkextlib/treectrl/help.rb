@@ -2,8 +2,8 @@
 # Demo: Help contents
 #
 def demoHelpContents(t)
-  height = t.font.metrics(:linespace) + 2
-  hehght = 18 if height < 18
+  height = t.font.metrics(:linespace)
+  height = 18 if height < 18
   t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
               :itemheight=>height, :selectmode=>:browse)
 
@@ -140,8 +140,8 @@ end
 # This is an alternate implementation that does not define a new item state
 # to change the appearance of the item under the cursor.
 def demoHelpContents2(t)
-  height = t.font.metrics(:linespace) + 2
-  hehght = 18 if height < 18
+  height = t.font.metrics(:linespace)
+  height = 18 if height < 18
   t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
               :itemheight=>height, :selectmode=>:browse)
 

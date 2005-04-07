@@ -9,8 +9,8 @@ end
 def demoRandom(t)
   init_pics('folder-*', 'small-*')
 
-  height = t.font.metrics(:linespace) + 2
-  hehght = 18 if height < 18
+  height = t.font.metrics(:linespace)
+  height = 18 if height < 18
   t.configure(:itemheight=>height, :selectmode=>:extended, 
               :showroot=>true, :showrootbutton=>true, :showbuttons=>true, 
               :showlines=>true, :scrollmargin=>16, 

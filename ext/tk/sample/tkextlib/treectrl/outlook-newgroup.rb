@@ -4,8 +4,8 @@
 def demoOutlookNewsgroup(t)
   init_pics('outlook-*')
 
-  height = t.font.metrics(:linespace) + 2
-  hehght = 18 if height < 18
+  height = t.font.metrics(:linespace)
+  height = 18 if height < 18
   t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false, 
               :showroot=>false, :showrootbutton=>false, :showbuttons=>true)
 
@@ -206,8 +206,8 @@ end
 def demoOutlookNewsgroup2(t)
   init_pics('outlook-*')
 
-  height = t.font.metrics(:linespace) + 2
-  hehght = 18 if height < 18
+  height = t.font.metrics(:linespace)
+  height = 18 if height < 18
   t.configure(:itemheight=>height, :selectmode=>:browse, :showlines=>false, 
               :showroot=>false, :showrootbutton=>false, :showbuttons=>true)
 

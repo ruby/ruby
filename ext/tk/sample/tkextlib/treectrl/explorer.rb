@@ -46,8 +46,8 @@ end
 # Demo: explorer files
 #
 def demoExplorerDetails(t)
-  height = t.font.metrics(:linespace) + 2
-  hehght = 18 if height < 18
+  height = t.font.metrics(:linespace)
+  height = 18 if height < 18
 
   t.configure(:showroot=>false, :showbuttons=>false, :showlines=>false, 
               :itemheight=>height, :selectmode=>:extended, 

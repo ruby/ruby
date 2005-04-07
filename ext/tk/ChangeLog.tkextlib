@@ -1,12 +1,20 @@
-2005-04-07  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+2005-04-08  ocean  <ocean@ruby-lang.org>
 
-	* lib/treectrl/tktreectrl.rb: performance tuning. (call tk_send_without_enc
-	  if possible)
+	* sample/tkextlib/treectrl/*.rb: fixed typo. (wrong itemheight)
+
+2005-04-08  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* sample/demos-{en,jp}/goldberg.rb: reduced canvas size. [ruby-dev:25992]
 
 2005-04-07  ocean  <ocean@ruby-lang.org>
 
 	* sample/tkextlib/treectrl/*.rb: some speed up... cache the result of
 	  version checking.
+
+2005-04-07  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/treectrl/tktreectrl.rb: performance tuning. (call tk_send_without_enc
+	  if possible) [ruby-dev:25997]
 
 2005-04-04  ocean  <ocean@ruby-lang.org>
 
