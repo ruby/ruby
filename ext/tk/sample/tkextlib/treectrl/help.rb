@@ -30,7 +30,7 @@ def demoHelpContents(t)
                      'blue', ['mouseover']
                    ])
   t.element_create('e4', :rect, :showfocus=>true, 
-                   :fill=>[@SystemHighligh, ['selected', 'focus']])
+                   :fill=>[@SystemHighlight, ['selected', 'focus']])
 
   # book
   s = t.style_create('s1')
@@ -122,8 +122,7 @@ def demoHelpContents(t)
   treeCtrlHelp.bind('Button1-Motion', 
                     proc{|w, x, y|
                       if w.selection_get.length == 1
-                        if (TkPackage.vcompare(Tk::TreeCtrl.package_version, 
-                                               '1.1') >= 0)
+                        if $Version_1_1_OrLater
                           w.item_toggle(w.selection_get[0])
                         else # TreeCtrl 1.0
                           w.toggle(w.selection_get[0])
