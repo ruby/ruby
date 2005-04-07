@@ -1,3 +1,11 @@
+Thu Apr  7 23:58:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): keep directory names in Makefile as macros.
+
+	* lib/mkmf.rb (configuration, create_makefile): ditto.
+
+	* lib/mkmf.rb (CXX_EXT): separate C++ extensions.
+
 Thu Apr  7 17:24:17 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* eval.c (rb_call0): "return" event hook should be always executed
@@ -18,7 +26,7 @@ Thu Apr  7 11:49:53 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* test/rss/test_maker_dc.rb (test_rss10_multiple): added a test
 	  for making multiple Dublin Core items.
-	
+
 Wed Apr  6 16:06:30 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_env.rb (test_key): should test ENV.key instead of
@@ -57,19 +65,19 @@ Tue Apr  5 15:15:26 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/trackback.rb (RSS::TrackBackUtils.new_with_value_if_need):
 	  moved to RSS::Utils.
-	
+
 	* lib/rss/utils.rb (RSS::Utils.new_with_value_if_need):
 	  moved from RSS::TrackBackUtils.
-	
+
 
 	* lib/rss/maker/image.rb: fixed invalid argument of
 	  add_need_initialize_variable bug.
-	
+
 	* lib/rss/maker/trackback.rb: ditto.
 
 
 	* lib/rss/rss.rb (Hash#merge): added for ruby 1.6.
-	
+
 	* lib/rss/rss.rb (RSS::BaseModel.date_writer): changed to accept nil
 	  for date value.
 

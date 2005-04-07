@@ -102,6 +102,8 @@ def extmake(target)
     Dir.chdir target
     top_srcdir = $top_srcdir
     topdir = $topdir
+    mk_srcdir = CONFIG["srcdir"]
+    mk_topdir = CONFIG["topdir"]
     prefix = "../" * (target.count("/")+1)
     $hdrdir = $top_srcdir = relative_from(top_srcdir, prefix)
     $topdir = prefix + $topdir
@@ -115,6 +117,9 @@ def extmake(target)
     unless $ignore
       Config::CONFIG["srcdir"] = $srcdir
       Config::CONFIG["topdir"] = $topdir
+      CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)/"+top_srcdir
+      CONFIG["srcdir"] = "$(hdrdir)/ext/#{$mdir}"
+      CONFIG["topdir"] = $topdir
       begin
 	if (!(ok &&= extract_makefile(makefile)) ||
 	    !(t = modified?(makefile, MTIMES)) ||
@@ -140,14 +145,12 @@ def extmake(target)
 	rm_f "conftest*"
 	config = $0
 	$0 = $PROGRAM_NAME
-	Config::CONFIG["srcdir"] = $top_srcdir
-	Config::CONFIG["topdir"] = topdir
       end
     end
     ok = yield(ok) if block_given?
     unless ok
       open(makefile, "w") do |f|
-	f.print dummy_makefile($srcdir)
+	f.print dummy_makefile(CONFIG["srcdir"])
       end
       return true
     end
@@ -175,6 +178,10 @@ def extmake(target)
     end
   ensure
     Config::CONFIG["srcdir"] = $top_srcdir
+    Config::CONFIG["topdir"] = topdir
+    CONFIG["srcdir"] = mk_srcdir
+    CONFIG["topdir"] = mk_topdir
+    CONFIG.delete("hdrdir")
     $hdrdir = $top_srcdir = top_srcdir
     $topdir = topdir
     Dir.chdir dir
