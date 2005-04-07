@@ -117,7 +117,7 @@ def extmake(target)
     unless $ignore
       Config::CONFIG["srcdir"] = $srcdir
       Config::CONFIG["topdir"] = $topdir
-      CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)/"+top_srcdir
+      CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)"+top_srcdir[2..-1]
       CONFIG["srcdir"] = "$(hdrdir)/ext/#{$mdir}"
       CONFIG["topdir"] = $topdir
       begin
