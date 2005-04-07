@@ -1,3 +1,8 @@
+Fri Apr  8 01:55:20 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/sample/demos-{en,jp}/goldberg.rb: reduced canvas size.
+	  [ruby-dev:25992]
+
 Thu Apr  7 23:58:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): keep directory names in Makefile as macros.
@@ -1033,8 +1038,10 @@ Thu Feb 17 20:09:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/drb/drb.rb (DRbServer.default_safe_level): fix typo.
 
+Thu Feb 17 20:09:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
 	* test/digest/test_digest.rb: separate test case for each algorithms.
-	  (Thanks nobu) [ruby-dev:25412]
+	  [ruby-dev:25412]
 
 Thu Feb 17 14:31:52 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
