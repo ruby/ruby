@@ -1,6 +1,6 @@
 Fri Apr  8 01:55:20 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/sample/demos-{en,jp}/goldberg.rb: reduced canvas size.
+	* ext/tk/sample/demos-{en,jp}/goldberg.rb: reduced window size.
 	  [ruby-dev:25992]
 
 Thu Apr  7 23:58:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
