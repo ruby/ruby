@@ -38,10 +38,10 @@ module DL
 	case proto
 	when /^([\d\w\*_\s]+)\(([\d\w\*_\s\,\[\]]*)\)$/
 	  ret = $1
-	  args = $2
+	  args = $2.strip()
 	  ret = ret.split(/\s+/)
 	  args = args.split(/\s*,\s*/)
-	  func = ret.pop
+	  func = ret.pop()
 	  if( func =~ /^\*/ )
 	    func.gsub!(/^\*+/,"")
 	    ret.push("*")
