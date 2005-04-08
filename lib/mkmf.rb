@@ -847,7 +847,7 @@ SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
-srcdir = #{srcdir}
+srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {CONFIG[$1||$2]}}
 topdir = #{$extmk ? CONFIG["topdir"] : $topdir}
 hdrdir = #{$extmk ? CONFIG["hdrdir"] : '$(topdir)'}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
@@ -939,7 +939,7 @@ def create_makefile(target, srcprefix = nil)
     target_prefix = ""
   end
 
-  srcprefix ||= CONFIG['srcdir']
+  srcprefix ||= '$(srcdir)'
   Config::expand(srcdir = srcprefix.dup)
 
   if not $objs
