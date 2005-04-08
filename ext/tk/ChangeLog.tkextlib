@@ -1,5 +1,13 @@
 2005-04-08  ocean  <ocean@ruby-lang.org>
 
+	* lib/tkextlib/treectrl/tktreectrl.rb (selection_clear): fixed typo.
+
+	* sample/tkextlib/treectrl/random.rb: node deselection now works.
+
+	* sample/tkextlib/treectrl/demo.rb: fixed typo. (popup menu on column header)
+
+2005-04-08  ocean  <ocean@ruby-lang.org>
+
 	* sample/tkextlib/treectrl/help.rb: fixed typo. (wrong color)
 
 2005-04-08  ocean  <ocean@ruby-lang.org>

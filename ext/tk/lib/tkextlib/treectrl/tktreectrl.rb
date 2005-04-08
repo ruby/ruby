@@ -1302,7 +1302,7 @@ class Tk::TreeCtrl
   end
 
   def selection_clear(*args) # first, last
-    tk_send('selection', 'clear' *args)
+    tk_send('selection', 'clear', *args)
     self
   end
 
