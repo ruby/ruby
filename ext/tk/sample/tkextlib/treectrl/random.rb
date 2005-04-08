@@ -100,7 +100,6 @@ def demoRandom(t)
   clicks = Tk::Clock.clicks
   (0...(random_N())).each{|i|
     item_i = items[i]
-    item_j = nil
     numChildren = t.item_numchildren(item_i)
     if numChildren > 0
       if $Version_1_1_OrLater
@@ -179,15 +178,17 @@ def randomButton1(t, x, y)
   id = t.identify(x, y)
   puts id.inspect
   @Priv['buttonMode'] = ''
-  if id.empty?
-    # Click outside any item
 
+  # Click outside any item
+  if id.empty?
+    t.selection_clear
+
+  # Click in header
   elsif id[0] == 'header'
-    # Click in header
     Tk::TreeCtrl::BindCallback.buttonPress1(t, x, y)
 
+  # Click in item
   else
-    # Click in item
     where, item, arg1, arg2, arg3, arg4 = id
     case arg1
     when 'button'

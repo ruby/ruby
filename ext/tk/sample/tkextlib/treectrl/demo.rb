@@ -496,7 +496,7 @@ class TkTreeCtrl_demo
         @popup[:arrowside].value = w.column_cget(col, :arrowside)
         @popup[:arrowgravity].value = w.column_cget(col, :arrowgravity)
         @popup[:expand].value = w.column_cget(col, :expand)
-        @popup[:sqeeeze].value = w.column_cget(col, :squeeze)
+        @popup[:squeeze].value = w.column_cget(col, :squeeze)
         @popup[:justify].value = w.column_cget(col, :justify)
         @mHeader[w].popup(rootx, rooty)
         return
