@@ -293,7 +293,7 @@ def randomMotion(t, x, y)
         c, s, *eList = TkComm.simplelist(lst)
         next if column != t.column_index(c)
         next if t.item_style_set(item, c) != s
-        next unless eList.find{|val| val == e}
+        next unless eList.find{|val| val.to_s == e.to_s}
         ok = true
         break
       }
@@ -303,7 +303,7 @@ def randomMotion(t, x, y)
     if ok
       # If the item is not in the pre-drag selection
       # (i.e. not being dragged) see if we can drop on it
-      unless @Priv.list_element(:selection).find{|val| val == item}
+      unless @Priv.list_element(:selection).find{|val| val.to_s == item.to_s}
         drop = item
         # We can drop if dragged item isn't an ancestor
         @Priv.list_element(:selection).each{|item2|
@@ -384,7 +384,7 @@ def randomDrop(t, target, src, pos)
     # Ignore any item whose ancestor is also selected
     ignore = false
     t.item_ancestors(item).each{|ancestor|
-      if src.find{|val| val == ancestor}
+      if src.find{|val| val.to_s == ancestor.to_s}
         ignore = true
         break
       end
@@ -392,7 +392,7 @@ def randomDrop(t, target, src, pos)
     next if ignore
 
     # Update the old parent of this moved item later
-    unless parentList.find{|val| val == item}
+    unless parentList.find{|val| val.to_s == item.to_s}
       parentList << t.item_parent(item)
     end
 
@@ -406,10 +406,11 @@ def randomDrop(t, target, src, pos)
     t.item_element_configure(item, 'depth', 'e6', :text=>t.depth(item))
 
     # Recursively update text: depth
-    itemList = [ t.item_firstchild(item) ]
-    while itemList.length > 0
-      item = itemList.pop
+    itemList = []
+    item = t.item_firstchild(item)
+    itemList << item if item != ''
 
+    while item = itemList.pop
       t.item_element_configure(item, 'depth', 'e6', :text=>t.depth(item))
 
       item2 = t.item_nextsibling(item)
@@ -454,7 +455,7 @@ def randomAutoScanCheck(t, x, y)
   x1, y1, x2, y2 = t.contentbox
   margin = t.winfo_pixels(t.scrollmargin)
   if x < x1 + margin || x >= x2 - margin || y < y1 + margin || y >= y2 - margin
-    if ! @Priv.exist?(:auroscan, :afterID, t)
+    if ! @Priv.exist?(:auroscan, :afterId, t)
       if y >= y2 - margin
         t.yview(:scroll, 1, :units)
         delay = t.yscrolldelay
@@ -469,15 +470,16 @@ def randomAutoScanCheck(t, x, y)
         delay = t.xscrolldelay
       end
       if @Priv.exist?(:autoscan, :scanning, t)
-        delay = delay[2] if delay.kind_of?(Array)
-      else
         delay = delay[1] if delay.kind_of?(Array)
+      else
+        delay = delay[0] if delay.kind_of?(Array)
+        @Priv[:autoscan, :scanning, t] = true
       end
       case @Priv['buttonMode']
       when 'drag', 'marquee'
         randomMotion(t, x, y)
       end
-      @Priv[:autoscan, :scanning, t] = 
+      @Priv[:autoscan, :afterId, t] = 
         Tk.after(delay, proc{ randomAutoScanCheckAux(t) })
     end
     return
@@ -486,7 +488,7 @@ def randomAutoScanCheck(t, x, y)
 end
 
 def randomAutoScanCheckAux(t)
-  @Priv.unset(:autoscan, :afterID, t)
+  @Priv.unset(:autoscan, :afterId, t)
   x = t.winfo_pointerx - t.winfo_rootx
   y = t.winfo_pointery - t.winfo_rooty
   randomAutoScanCheck(t, x, y)

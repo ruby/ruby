@@ -172,11 +172,11 @@ def demoOutlookNewsgroup(t)
                 proc{|w|
                   if w.selection_count == 1
                     # One item is selected
-                    if @Message[:afterID][:id]
-                      Tk.after_cancel(@Message[:afterID][:id]) 
+                    if @Message[:afterId][:id]
+                      Tk.after_cancel(@Message[:afterId][:id]) 
                     end
-                    @Message[:afterID][:item] = w.selection_get[0]
-                    @Message[:afterID][:id] = Tk.after(500, proc{
+                    @Message[:afterId][:item] = w.selection_get[0]
+                    @Message[:afterId][:id] = Tk.after(500, proc{
                                                          messageReadDelayed(w)
                                                        })
                   end
@@ -184,8 +184,8 @@ def demoOutlookNewsgroup(t)
 end
 
 def messageReadDelayed(t)
-  @Message[:afterID].delete(:id)
-  i = @Message[:afterID][:item]
+  @Message[:afterId].delete(:id)
+  i = @Message[:afterId][:item]
   return unless t.selection_includes(i)
 
   # This message is not read
@@ -432,10 +432,11 @@ def demoOutlookNewsgroup2(t)
 end
 
 def anyUnreadDescendants(t, i)
-  itemList = [ t.item_firstchild(i) ]
-  while(itemList.length > 0)
-    item = itemList.pop
+  itemList = []
+  item = t.item_firstchild(i)
+  itemList.push(item) if item != ''
 
+  while item = itemList.pop
     return true unless @Message[:read][item]
 
     item2 = t.item_nextsibling(item)
