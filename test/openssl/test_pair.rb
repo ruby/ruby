@@ -16,31 +16,8 @@ module SSLPair
   def server
     host = "127.0.0.1"
     port = 0
-    key = OpenSSL::PKey::RSA.new(512)
-    cert = OpenSSL::X509::Certificate.new
-    cert.version = 2
-    cert.serial = 0
-    name = OpenSSL::X509::Name.new([["C","JP"],["O","TEST"],["CN","localhost"]])
-    cert.subject = name
-    cert.issuer = name
-    cert.not_before = Time.now
-    cert.not_after = Time.now + 3600
-    cert.public_key = key.public_key
-    ef = OpenSSL::X509::ExtensionFactory.new(nil,cert)
-    cert.extensions = [
-      ef.create_extension("basicConstraints","CA:FALSE"),
-      ef.create_extension("subjectKeyIdentifier","hash"),
-      ef.create_extension("extendedKeyUsage","serverAuth"),
-      ef.create_extension("keyUsage",
-                          "keyEncipherment,dataEncipherment,digitalSignature")
-    ]
-    ef.issuer_certificate = cert
-    cert.add_extension ef.create_extension("authorityKeyIdentifier",
-                                           "keyid:always,issuer:always")
-    cert.sign(key, OpenSSL::Digest::SHA1.new)
     ctx = OpenSSL::SSL::SSLContext.new()
-    ctx.key = key
-    ctx.cert = cert
+    ctx.ciphers = "ADH"
     tcps = TCPServer.new(host, port)
     ssls = OpenSSL::SSL::SSLServer.new(tcps, ctx)
     return ssls
@@ -49,6 +26,7 @@ module SSLPair
   def client(port)
     host = "127.0.0.1"
     ctx = OpenSSL::SSL::SSLContext.new()
+    ctx.ciphers = "ADH"
     s = TCPSocket.new(host, port)
     ssl = OpenSSL::SSL::SSLSocket.new(s, ctx)
     ssl.connect
