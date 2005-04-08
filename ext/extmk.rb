@@ -115,6 +115,7 @@ def extmake(target)
     makefile = "./Makefile"
     ok = File.exist?(makefile)
     unless $ignore
+      Config::CONFIG["hdrdir"] = $hdrdir
       Config::CONFIG["srcdir"] = $srcdir
       Config::CONFIG["topdir"] = $topdir
       CONFIG["hdrdir"] = ($hdrdir == top_srcdir) ? top_srcdir : "$(topdir)"+top_srcdir[2..-1]

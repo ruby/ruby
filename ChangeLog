@@ -1,3 +1,11 @@
+Fri Apr  8 20:17:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): hdrdir needs to be defined also in
+	  Config::CONFIG.
+
+	* lib/mkmf.rb (configuration, create_makefile): get rid of recursive
+	  macro reference.
+
 Fri Apr  8 01:55:20 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/sample/demos-{en,jp}/goldberg.rb: reduced window size.
