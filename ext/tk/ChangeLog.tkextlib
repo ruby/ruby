@@ -1,17 +1,18 @@
 2005-04-08  ocean  <ocean@ruby-lang.org>
 
-	* sample/tkextlib/treectrl/outlook-newgroup.rb: tk::treectrl uses 'afterId'
-	  not 'afterID'.
+	* sample/tkextlib/treectrl/outlook-newgrounp.rb: image had disappered when
+	  node was selected.
 
-	* sample/tkextlib/treectrl/random.rb: ditto.
+2005-04-08  ocean  <ocean@ruby-lang.org>
 
-	* sample/tkextlib/treectrl/outlook-newgroup.rb: item_firstchild can
-	  return empty string. (drag onto leaf node)
+	* sample/tkextlib/treectrl/{random,outlook-newgroup}.rb:
+	  tk::treectrl uses 'afterId' not 'afterID'.
 
-	* sample/tkextlib/treectrl/random.rb: ditto.
+	* sample/tkextlib/treectrl/{random,outlook-newgroup}.rb:
+	  item_firstchild can return empty string. (drop node to leaf node)
 
-	* sample/tkextlib/treectrl/random.rb: comparation failed at Enumerable#find
-	  because of type mismatch. (ex: "10" != 10)
+	* sample/tkextlib/treectrl/random.rb: Enumerable#find didn't work properly
+	  because tried to compare String with Integer. (drag node and leave widget)
 
 	* sample/tkextlib/treectrl/random.rb: and some fixes.
 

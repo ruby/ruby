@@ -39,12 +39,12 @@ def demoOutlookNewsgroup(t)
 
   t.element_create('elemImg', :image, 
                    :image=>[
-                     @images['outlook-read-2Sel'], 
+                     @sel_images['outlook-read-2'], 
                           ['selected', 'read', 'unread', '!open'], 
                      @images['outlook-read-2'], ['read', 'unread', '!open'],
-                     @images['outlook-readSel'], ['selected', 'read'], 
+                     @sel_images['outlook-read'], ['selected', 'read'], 
                      @images['outlook-read'], ['read'], 
-                     @images['outlook-unreadSel'], ['selected'], 
+                     @sel_images['outlook-unread'], ['selected'], 
                      @images['outlook-unread'], []
                    ])
   t.element_create('elemTxt', :text, :lines=>1, 
