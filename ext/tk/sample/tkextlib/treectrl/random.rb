@@ -455,7 +455,7 @@ def randomAutoScanCheck(t, x, y)
   x1, y1, x2, y2 = t.contentbox
   margin = t.winfo_pixels(t.scrollmargin)
   if x < x1 + margin || x >= x2 - margin || y < y1 + margin || y >= y2 - margin
-    if ! @Priv.exist?(:auroscan, :afterId, t)
+    if ! @Priv.exist?(:autoscan, :afterId, t)
       if y >= y2 - margin
         t.yview(:scroll, 1, :units)
         delay = t.yscrolldelay
