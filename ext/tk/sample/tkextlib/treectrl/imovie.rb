@@ -116,7 +116,7 @@ def iMovieButton1(w, x, y)
             ent.place(:y=>y1 - 1)
           end
           ent.selection_clear
-          x1, y1, x2, y2 = t.item_bbox(i)
+          x1, y1, x2, y2 = w.item_bbox(i)
           ent.place(:x=>x1 + 1, :width=>x2 - x1 - 5)
           puts "@#{x - (x1 + 1)}"
           # ent.icursor = ent.index("@#{x - (x1 + 1)}")
