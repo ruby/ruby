@@ -106,7 +106,7 @@ def demoMailWasher(t)
     ['whoami@spammer.com', "Find out what you think about yourself"],
     ['downsized@spammer.com', "You need a better job"], 
     ['poorhouse@spammer.com', "Your mortgage is a joke"], 
-    ['spam4ever@spammer.com' "You need more spam"]
+    ['spam4ever@spammer.com', "You need more spam"]
   ].each{|frm, subj|
     item = t.item_create
     status = ['styNormal','styPossSpam','styProbSpam','styBlacklist'][rand(4)]
