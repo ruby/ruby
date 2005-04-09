@@ -119,7 +119,7 @@ def demoHelpContents(t)
 
   treeCtrlHelp.bind('Leave', proc{|w, x, y| helpMotion(w, x, y) }, '%W %x %y')
 
-  treeCtrlHelp.bind('Button1-Motion', 
+  treeCtrlHelp.bind('KeyPress-Return', 
                     proc{|w, x, y|
                       if w.selection_get.length == 1
                         if $Version_1_1_OrLater
@@ -271,7 +271,7 @@ def demoHelpContents2(t)
 
   treeCtrlHelp.bind('Leave', proc{|w, x, y| helpMotion(w, x, y) }, '%W %x %y')
 
-  treeCtrlHelp.bind('Button1-Motion', 
+  treeCtrlHelp.bind('KeyPress-Return', 
                     proc{|w, x, y|
                       if w.selection_get.length == 1
                         w.item_toggle(w.selection_get[0])
@@ -347,7 +347,7 @@ end
 def helpRelease1(w, x, y)
   case @Priv['buttonMode']
   when 'resize', 'header'
-    Tk::TreeCtrl::BindCallback.Release1(w, x, y)
+    Tk::TreeCtrl::BindCallback.release1(w, x, y)
   end
   @Priv['buttonMode'] = ''
 end

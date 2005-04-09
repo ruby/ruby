@@ -276,7 +276,7 @@ end
 def optionMotion1(w, x, y)
   case @Priv['buttonMode']
   when 'resize', 'header'
-    Tk::TreeCtrl::BindCallback.Motion1(w, x, y)
+    Tk::TreeCtrl::BindCallback.motion1(w, x, y)
   end
 end
 
@@ -297,7 +297,7 @@ end
 def optionRelease1(w, x, y)
   case @Priv['buttonMode']
   when 'resize', 'header'
-    Tk::TreeCtrl::BindCallback.Release1(w, x, y)
+    Tk::TreeCtrl::BindCallback.release1(w, x, y)
   end
   @Priv['buttonMode'] = ''
 end
