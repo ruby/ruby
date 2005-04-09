@@ -3,14 +3,20 @@ raise LoadError unless defined? Iconv
 
 module REXML
   module Encoding
-    @@__REXML_encoding_methods =<<-EOL
-    def decode( str )
-      return Iconv::iconv("utf-8", @encoding, str)[0]
+    def decode_iconv(str)
+      Iconv.conv(UTF_8, @encoding, str)
     end
 
-    def encode( content )
-      return Iconv::iconv(@encoding, "utf-8", content)[0]
+    def encode_iconv(content)
+      Iconv.conv(@encoding, UTF_8, content)
     end
-    EOL
+
+    register("ICONV") do |obj|
+      Iconv.conv(UTF_8, obj.encoding, nil)
+      class << obj
+        alias decode decode_iconv
+        alias encode encode_iconv
+      end
+    end
   end
 end

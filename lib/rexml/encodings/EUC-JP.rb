@@ -1,37 +1,20 @@
-begin
-  require 'iconv'
+require 'uconv'
 
-  module REXML
-    module Encoding
-      @@__REXML_encoding_methods =<<-EOL
-      def decode(str)
-        return Iconv::iconv("utf-8", "euc-jp", str)[0]
-      end
-
-      def encode content
-        return Iconv::iconv("euc-jp", "utf-8", content)[0]
-      end
-      EOL
+module REXML
+  module Encoding
+    def decode_eucjp(str)
+      Uconv::euctou8(str)
     end
-  end
-rescue LoadError
-  begin
-    require 'uconv'
 
-    module REXML
-      module Encoding
-        @@__REXML_encoding_methods =<<-EOL
-        def decode(str)
-          return Uconv::euctou8(str)
-        end
+    def encode_eucjp content
+      Uconv::u8toeuc(content)
+    end
 
-        def encode content
-          return Uconv::u8toeuc(content)
-        end
-        EOL
+    register("EUC-JP") do |obj|
+      class << obj
+        alias decode decode_eucjp
+        alias encode encode_eucjp
       end
     end
-  rescue LoadError
-		raise "uconv or iconv is required for Japanese encoding support."
   end
 end

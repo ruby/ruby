@@ -1,8 +1,7 @@
 module REXML
   module Encoding
-    @@__REXML_encoding_methods = %q~
     # Convert from UTF-8
-    def encode content
+    def encode_ascii content
       array_utf8 = content.unpack('U*')
       array_enc = []
       array_utf8.each do |num|
@@ -17,9 +16,15 @@ module REXML
     end
 
     # Convert to UTF-8
-    def decode(str)
+    def decode_ascii(str)
       str.unpack('C*').pack('U*')
     end
-    ~
+
+    register("US-ASCII") do |obj|
+      class << obj
+        alias decode decode_ascii
+        alias encode encode_ascii
+      end
+    end
   end
 end

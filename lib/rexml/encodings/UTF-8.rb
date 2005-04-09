@@ -1,13 +1,18 @@
 module REXML
   module Encoding
-    @@__REXML_encoding_methods =<<-EOL
-    def encode content
+    def encode_utf8 content
       content
     end
 
-    def decode(str)
+    def decode_utf8(str)
       str
     end
-    EOL
+
+    register(UTF_8) do |obj|
+      class << obj
+        alias decode decode_utf8
+        alias encode encode_utf8
+      end
+    end
   end
 end
