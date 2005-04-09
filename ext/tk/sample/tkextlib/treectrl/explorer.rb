@@ -307,11 +307,7 @@ def demoExplorerLargeIcons(t)
     when '.txt'
       img = 'big-txt'
     else
-      if FileTest.executable?(file)
-        img = 'big-exe'
-      else
-        img = 'big-file'
-      end
+      img = 'big-file'
     end
 
     type = ext.upcase
@@ -414,11 +410,7 @@ def demoExplorerList(t)
     when '.txt'
       img = 'small-txt'
     else
-      if FileTest.executable?(file)
-        img = 'small-exe'
-      else
-        img = 'small-file'
-      end
+      img = 'small-file'
     end
 
     type = ext.upcase
