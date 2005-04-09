@@ -1,3 +1,7 @@
+2005-04-10  ocean  <ocean@ruby-lang.org>
+
+	* sample/tkextlib/treectrl/mailwasher.rb: fixed typo. [ruby-dev:26008]
+
 2005-04-09  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* sample/tkextlib/tile/demo.rb: new demo of Tile extension.
