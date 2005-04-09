@@ -1782,10 +1782,10 @@ class TkGoldberg_Demo
 
     if step >= 3
       @canvas.delete('I24', 'I26')
-      TkcText.new(@canvas, 430, 740, :anchor=>:s, :tag=>'I26', 
+      TkcText.new(@canvas, 430, 735, :anchor=>:s, :tag=>'I26', 
                   #:text=>'click to continue', 
                   :text=>'クリックでリセットします', 
-                  :font=>['Times Roman', 24, :bold])
+                  :font=>['Times Roman', 20, :bold])
       @canvas.bind('1', proc{reset})
       return 4
     end
