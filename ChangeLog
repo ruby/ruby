@@ -1,3 +1,17 @@
+Sat Apr  9 18:20:31 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/image.rb: support to create TkImage object without
+	  creating a new image object on Tk.
+
+	* ext/tk/lib/tk/menu.rb: use TkCommandNames on create_self()
+
+	* ext/tk/lib/tk/root.rb: TkRoot.to_eval() returns '.'.
+
+	* ext/tk/lib/tk/text.rb: add methods to create a TkText::IndexString
+	  from (x, y) coords.
+
+	* ext/tk/lib/tkextlib/tile/: add demo and update support status.
+
 Sat Apr  9 14:42:29 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/tdiary_plugin/rss-recent.rb: supported configuration

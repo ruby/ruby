@@ -22,4 +22,8 @@ class Tk::Tile::TEntry < TkEntry
   end
   WidgetClassName = 'TEntry'.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  def self.style(*args)
+    [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
+  end
 end

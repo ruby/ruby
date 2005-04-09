@@ -7,7 +7,7 @@ require 'tkextlib/tile.rb'
 
 module Tk
   module Tile
-    class TProgressbar < TkWidget
+    class TProgressbar < TkWindow
     end
   end
 end
@@ -22,6 +22,10 @@ class Tk::Tile::TProgressbar
   end
   WidgetClassName = 'TProgressbar'.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  def self.style(*args)
+    [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
+  end
 
   def step
     tk_send_without_enc('step').to_f

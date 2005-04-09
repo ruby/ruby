@@ -17,7 +17,13 @@ module Tk::Tile::Style
 end
 
 class << Tk::Tile::Style
-  def default(style, keys=nil)
+  def default(style=nil, keys=nil)
+    if style.kind_of?(Hash)
+      keys = style
+      style = nil
+    end
+    style = '.' unless style
+
     if keys && keys != None
       tk_call('style', 'default', style, *hash_kv(keys))
     else
@@ -25,7 +31,13 @@ class << Tk::Tile::Style
     end
   end
 
-  def map(style, keys=nil)
+  def map(style=nil, keys=nil)
+    if style.kind_of?(Hash)
+      keys = style
+      style = nil
+    end
+    style = '.' unless style
+
     if keys && keys != None
       tk_call('style', 'map', style, *hash_kv(keys))
     else
@@ -33,7 +45,13 @@ class << Tk::Tile::Style
     end
   end
 
-  def layout(style, spec=nil)
+  def layout(style=nil, spec=nil)
+    if style.kind_of?(Hash)
+      spec = style
+      style = nil
+    end
+    style = '.' unless style
+
     if spec
       tk_call('style', 'layout', style, spec)
     else
@@ -51,9 +69,9 @@ class << Tk::Tile::Style
 
   def theme_create(name, keys=nil)
     if keys && keys != None
-      tk_call('style', 'theme', 'create', name, type, *hash_kv(keys))
+      tk_call('style', 'theme', 'create', name, *hash_kv(keys))
     else
-      tk_call('style', 'theme', 'create', name, type)
+      tk_call('style', 'theme', 'create', name)
     end
   end
 

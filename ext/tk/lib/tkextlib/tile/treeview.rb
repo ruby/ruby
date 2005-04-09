@@ -117,6 +117,10 @@ class Tk::Tile::Treeview < TkWindow
   WidgetClassName = 'Treeview'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def self.style(*args)
+    [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
+  end
+
   def tagid(id)
     _get_eval_string(id)
   end

@@ -23,6 +23,10 @@ class Tk::Tile::TCombobox < Tk::Tile::TEntry
   WidgetClassName = 'TCombobox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def self.style(*args)
+    [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
+  end
+
   def current
     number(tk_send_without_enc('current', idx))
   end

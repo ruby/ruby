@@ -45,6 +45,43 @@ module Tk
       end
     end
 
+    def self.load_images(imgdir, pat=TkComm::None)
+      images = Hash[*TkComm.simplelist(Tk.tk_call('::tile::LoadImages', 
+                                                  imgdir, pat))]
+      images.keys.each{|k|
+        images[k] = TkPhotoImage.new(:imagename=>images[k], 
+                                     :without_creating=>true)
+      }
+
+      images
+    end
+
+    def self.style(*args)
+      args.map!{|arg| TkComm._get_eval_string(arg)}.join('.')
+    end
+
+    module KeyNav
+      def self.enableMnemonics(w)
+        Tk.tk_call('::keynav::enableMnemonics', w)
+      end
+      def self.defaultButton(w)
+        Tk.tk_call('::keynav::defaultButton', w)
+      end
+    end
+
+    module Font
+      Default      = 'TkDefaultFont'
+      Text         = 'TkTextFont'
+      Heading      = 'TkHeadingFont'
+      Caption      = 'TkCaptionFont'
+      Tooltip      = 'TkTooltipFont'
+
+      Fixed        = 'TkFixedFont'
+      Menu         = 'TkMenuFont'
+      SmallCaption = 'TkSmallCaptionFont'
+      Icon         = 'TkIconFont'
+    end
+
     module TileWidget
       def instate(state, script=nil, &b)
         if script
@@ -84,12 +121,17 @@ module Tk
 
     autoload :TNotebook,     'tkextlib/tile/tnotebook'
 
+    autoload :TPaned,        'tkextlib/tile/tpaned'
+
     autoload :TProgressbar,  'tkextlib/tile/tprogressbar'
 
     autoload :TRadioButton,  'tkextlib/tile/tradiobutton'
     autoload :TRadiobutton,  'tkextlib/tile/tradiobutton'
 
-    autoload :TScrollbar,    'tkextlib/tile/tsrollbar'
+    autoload :TScale,        'tkextlib/tile/tscale'
+    autoload :TProgress,     'tkextlib/tile/tscale'
+
+    autoload :TScrollbar,    'tkextlib/tile/tscrollbar'
 
     autoload :TSeparator,    'tkextlib/tile/tseparator'
 

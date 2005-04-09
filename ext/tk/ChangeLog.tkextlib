@@ -1,3 +1,93 @@
+2005-04-09  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* sample/tkextlib/tile/demo.rb: new demo of Tile extension.
+
+	* sample/tkextlib/tile/iconlib.tcl: part of the demo.
+
+	* sample/tkextlib/tile/toolbutton.tcl: ditto.
+
+	* sample/tkextlib/tile/readme.txt: document of the demo.
+
+	* sample/tkextlib/tile/Orig_LICENSE.txt: ditto.
+
+	* sample/tkextlib/tile/themes/kroc.tcl: sample theme written with Tcl.
+
+	* sample/tkextlib/tile/themes/pkgIndex.tcl: pkgIndex of kroc.tcl.
+
+	* sample/tkextlib/tile/themes/kroc.rb: Kroc theme written with Ruby.
+
+	* sample/tkextlib/tile/themes/kroc/button-h.gif: images for Kroc theme.
+
+	* sample/tkextlib/tile/themes/kroc/button-n.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/button-p.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/check-hc.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/check-hu.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/check-nc.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/check-nu.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/radio-hc.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/radio-hu.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/radio-nc.gif: ditto.
+
+	* sample/tkextlib/tile/themes/kroc/radio-nu.gif: ditto.
+
+	* lib/tkextlib/tile.rb: bug fix (tested on the new demo).
+
+	* lib/tkextlib/tile/style.rb: ditto.
+
+	* lib/tkextlib/tile/tbutton.rb: ditto.
+
+	* lib/tkextlib/tile/tcheckbutton.rb: ditto.
+
+	* lib/tkextlib/tile/tcombobox.rb: ditto.
+
+	* lib/tkextlib/tile/tentry.rb: ditto.
+
+	* lib/tkextlib/tile/tframe.rb: ditto.
+
+	* lib/tkextlib/tile/tlabel.rb: ditto.
+
+	* lib/tkextlib/tile/tlabelframe.rb: ditto.
+
+	* lib/tkextlib/tile/tmenubutton.rb: ditto.
+
+	* lib/tkextlib/tile/tnotebook.rb: ditto.
+
+	* lib/tkextlib/tile/tprogressbar.rb: ditto.
+
+	* lib/tkextlib/tile/tradiobutton.rb: ditto.
+
+	* lib/tkextlib/tile/treeview.rb: ditto.
+
+	* lib/tkextlib/tile/tscrollbar.rb: ditto.
+
+	* lib/tkextlib/tile/tseparator.rb: ditto.
+
+	* lib/tkextlib/tile/tsquare.rb: ditto.
+
+	* lib/tkextlib/tile/tpaned.rb: new library
+
+	* lib/tkextlib/tile/tscale.rb: ditto.
+
+	* lib/tkextlib/SUPPORT_STATUS: update support status of Tile extension.
+
+	* lib/tkextlib/tcllib/ctext.rb: use TkCommandNames on create_self().
+
+	* lib/tkextlib/tcllib/datefield.rb: ditto.
+
+	* lib/tkextlib/tcllib/ip_entry.rb: ditto.
+
+	* lib/tkextlib/tkHTML/htmlwidget.rb: ditto.
+
+	* lib/tkextlib/treectrl/tktreectrl.rb: ditto.
+
 2005-04-09  ocean  <ocean@ruby-lang.org>
 
 	* sample/tkextlib/treectrl/explorer.rb: File.executable? returns true
