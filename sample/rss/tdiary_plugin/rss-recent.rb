@@ -263,3 +263,27 @@ def rss_recent_pubDate_to_dc_date(target)
 		end
 	end
 end
+
+add_conf_proc('rss-recent', label_rss_recent_title) do
+	item = 'rss-recent.use-image-link'
+	if @mode == 'saveconf'
+		@conf[item] = (@cgi.params[item][0] == 't')
+	end
+
+	<<-HTML
+	<div class"body">
+		<h3 class="subtitle">#{label_rss_recent_use_image_link_title}</h3>
+		<p>#{label_rss_recent_use_image_link_description}</p>
+		<p>
+			<select name=#{item}>
+				<option value="f"#{@conf[item] ? '' : ' selected'}>
+					#{label_rss_recent_not_use_image_link}
+				</option>
+				<option value="t"#{@conf[item] ? ' selected' : ''}>
+					#{label_rss_recent_use_image_link}
+				</option>
+			</select>
+		</p>
+	</div>
+	HTML
+end
