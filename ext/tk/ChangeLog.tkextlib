@@ -1,5 +1,10 @@
 2005-04-09  ocean  <ocean@ruby-lang.org>
 
+	* sample/tkextlib/treectrl/explorer.rb: File.executable? returns true
+	  even if it's plain text file. (this function only checks access right)
+
+2005-04-09  ocean  <ocean@ruby-lang.org>
+
 	* sample/tkextlib/treectrl/{help,www-options}.rb: fixed typo.
 	  (click or resize column header)
 
