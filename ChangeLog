@@ -1,3 +1,8 @@
+Sat Apr  9 14:42:29 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* sample/rss/tdiary_plugin/rss-recent.rb: supported configuration
+	  via Web browser.
+
 Fri Apr  8 20:17:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): hdrdir needs to be defined also in
