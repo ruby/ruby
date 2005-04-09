@@ -52,6 +52,11 @@ class TkRoot<TkWindow
   WidgetClassName = 'Tk'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def self.to_eval
+    # self::WidgetClassName
+    '.'
+  end
+
   def create_self
     @path = '.'
   end

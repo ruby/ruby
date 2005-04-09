@@ -22,4 +22,8 @@ class Tk::Tile::TSeparator < TkWindow
   end
   WidgetClassName = 'TSeparator'.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  def self.style(*args)
+    [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
+  end
 end

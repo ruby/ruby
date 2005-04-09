@@ -79,8 +79,9 @@ BLT          2.4z   http://sourceforge.net/projects/blt
                       ==> blt
 
 TkTreeCtrl   CVS/Hd(2005-03-25)
-                    http://tktreectrl.sourceforge.net/          ==> treectrl
+                    http://tktreectrl.sourceforge.net/           ==> treectrl
 
+Tile         0.6     http://tktable.sourceforge.net/tile/        ==> tile
 
 
 ===< support (may be alpha or beta quality) >=================================
@@ -92,8 +93,6 @@ TclX         CVS/Hd(2005-02-07)
                      http://sf.net/projects/tclx
                        ==> tclx (partial support; infox command and 
                                                    XPG/3 message catalogs only)
-
-Tile         0.6     http://tktable.sourceforge.net/tile/        ==> tile
 
 
 

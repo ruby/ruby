@@ -131,6 +131,10 @@ class TkText<TkTextWin
   class IndexString < String
     include IndexModMethods
 
+    def self.at(x,y)
+      self.new("@#{x},#{y}")
+    end
+
     def self.new(str)
       if str.kind_of?(String)
         super(str)
@@ -182,6 +186,14 @@ class TkText<TkTextWin
     init_instance_variable
   end
   private :create_self
+
+  def self.at(x, y)
+    TkText::IndexString.at(x, y)
+  end
+
+  def at(x, y)
+    TkText::IndexString.at(x, y)
+  end
 
   def index(idx)
     TkText::IndexString.new(tk_send_without_enc('index', 

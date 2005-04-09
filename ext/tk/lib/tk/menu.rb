@@ -402,9 +402,12 @@ class TkMenubutton<TkLabel
   WidgetClassNames[WidgetClassName] = self
   def create_self(keys)
     if keys and keys != None
-      tk_call_without_enc('menubutton', @path, *hash_kv(keys, true))
+      # tk_call_without_enc('menubutton', @path, *hash_kv(keys, true))
+      tk_call_without_enc(self.class::TkCommandNames[0], @path, 
+                          *hash_kv(keys, true))
     else
-      tk_call_without_enc('menubutton', @path)
+      # tk_call_without_enc('menubutton', @path)
+      tk_call_without_enc(self.class::TkCommandNames[0], @path)
     end
   end
   private :create_self
