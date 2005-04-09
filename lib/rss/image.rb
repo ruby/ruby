@@ -54,7 +54,7 @@ module RSS
       %w(width height).each do |tag|
         full_name = "#{IMAGE_PREFIX}_#{tag}"
         install_text_element(full_name)
-        BaseListener.install_get_text_element(tag, IMAGE_URI, "#{full_name}=")
+        BaseListener.install_get_text_element(IMAGE_URI, tag, "#{full_name}=")
       end
 
       def initialize(about=nil, resource=nil)
@@ -105,8 +105,8 @@ module RSS
         [
           [IMAGE_URI, 'width'],
           [IMAGE_URI, 'height'],
-        ].delete_if do |x|
-          send(x[1]).nil?
+        ].delete_if do |uri, name|
+          send(name).nil?
         end
       end
         

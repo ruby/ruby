@@ -1,12 +1,16 @@
 # -*- indent-tabs-mode: t -*-
 # rss-recent.rb: RSS recent plugin 
 #
+# options:
+#   @options['rss-recent.use-image-link'] : use image as link
+#                                           instead of text if available.
+#
 # rss_recnet: show recnet list from RSS
 #   parameters (default):
 #      url: URL of RSS
 #      max: max of list itmes(5)
 #      cache_time: cache time(second) of RSS(60*60)
-#      
+#
 #
 # Copyright (c) 2003-2005 Kouhei Sutou <kou@cozmixng.org>
 # Distributed under the GPL
@@ -16,7 +20,7 @@ require "rss/rss"
 
 RSS_RECENT_FIELD_SEPARATOR = "\0"
 RSS_RECENT_ENTRY_SEPARATOR = "\1"
-RSS_RECENT_VERSION = "0.0.5"
+RSS_RECENT_VERSION = "0.0.6"
 RSS_RECENT_HTTP_HEADER = {
 	"User-Agent" => "tDiary RSS recent plugin version #{RSS_RECENT_VERSION}. " <<
 		"Using RSS parser version is #{::RSS::VERSION}.",
@@ -36,8 +40,8 @@ def rss_recent(url, max=5, cache_time=3600)
 	site_info, *infos = rss_recent_read_from_cache(cache_file)
   
 	if site_info
-		title, url, time = site_info
-		content = rss_recent_entry_to_html(title, url, time)
+		title, url, time, image = site_info
+		content = rss_recent_entry_to_html(title, url, time, image)
 		rv << "<div class='rss-recent-title'>\n"
 		rv << "<span class='#{rss_recent_modified_class(time)}'>#{content}</span>\n"
 		rv << "</div>\n"
@@ -47,12 +51,12 @@ def rss_recent(url, max=5, cache_time=3600)
   
 	rv << "<ul>\n" if have_entry
 	i = 0
-	infos.each do |title, url, time|
+	infos.each do |title, url, time, image|
 		break if i >= max
 		next if title.nil?
 		rv << '<li>'
 		rv << %Q[<span class="#{rss_recent_modified_class(time)}">]
-		rv << rss_recent_entry_to_html(title, url, time)
+		rv << rss_recent_entry_to_html(title, url, time, image)
 		rv << %Q[</span>]
 		rv << "</li>\n"
 		i += 1
@@ -81,6 +85,10 @@ def rss_recent_cache_rss(url, cache_file, cache_time)
 		require 'rss/1.0'
 		require 'rss/2.0'
 		require 'rss/dublincore'
+		begin
+			require 'rss/image'
+		rescue LoadError
+		end
 		
 		begin
 			uri = URI.parse(url)
@@ -107,11 +115,17 @@ def rss_recent_cache_rss(url, cache_file, cache_time)
 					rss.channel.title,
 					rss.channel.link,
 					rss.channel.dc_date,
+					rss.image && rss.image.url,
 				]
 			]
 			rss.items.each do |item|
 				rss_recent_pubDate_to_dc_date(item)
-				rss_infos << [item.title, item.link, item.dc_date]
+				if item.respond_to?(:image_item) and item.image_item
+					image = item.image_item.about
+				else
+					image = nil
+				end
+				rss_infos << [item.title, item.link, item.dc_date, image]
 			end
 			rss_recent_write_to_cache(cache_file, rss_infos)
 
@@ -174,11 +188,12 @@ def rss_recent_read_from_cache(cache_file)
 			infos << info.split(RSS_RECENT_FIELD_SEPARATOR)
 		end
 	end
-	infos.collect do |title, url, time|
+	infos.collect do |title, url, time, image|
 		[
 			rss_recent_convert(title),
 			rss_recent_convert(url),
 			rss_recent_convert(time) {|t| Time.parse(t)},
+			rss_recent_convert(image),
 		]
 	end
 end
@@ -195,14 +210,21 @@ def rss_recent_convert(str)
 	end
 end
 
-def rss_recent_entry_to_html(title, url, time)
+def rss_recent_entry_to_html(title, url, time, image=nil)
 	rv = ""
 	unless url.nil?
 		rv << %Q[<a href="#{CGI.escapeHTML(url)}" title="#{CGI.escapeHTML(title)}]
 		rv << %Q[ (#{CGI.escapeHTML(time.localtime.to_s)})] unless time.nil?
 		rv << %Q[">]
 	end
-	rv << CGI::escapeHTML(title)
+	if image and @options['rss-recent.use-image-link']
+		rv << %Q[<img src="#{CGI::escapeHTML(image)}"]
+		rv << %Q[ title="#{CGI.escapeHTML(title)}"]
+		rv << %Q[ alt="site image"]
+		rv << %Q[>\n]
+	else
+		rv << CGI::escapeHTML(title)
+	end
 	rv << '</a>' unless url.nil?
 	rv << "(#{rss_recent_modified(time)})"
 	rv

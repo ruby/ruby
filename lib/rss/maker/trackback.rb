@@ -56,7 +56,7 @@ module RSS
           include Base
 
           attr_accessor :value
-          add_need_initialize_variable(:value)
+          add_need_initialize_variable("value")
           
           alias_method(:resource, :value)
           alias_method(:resource=, :value=)

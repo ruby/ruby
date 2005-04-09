@@ -1,3 +1,90 @@
+Sat Apr  9 11:59:57 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss: backoported from HEAD.
+
+	* lib/rss: refactored.
+	  - gave a name to 'x'.
+	  - undef_method -> remove_method for avoiding a warning in ruby 1.6.
+
+
+	* lib/rss/parser.rb: @@setter -> @@setters.
+
+	* lib/rss/parser.rb
+	  (RSS::BaseListener.register_uri)
+	  (RSS::BaseListener.uri_registered?)
+	  (RSS::BaseListener.install_get_text_element):
+	  swapped the first argument and the second argument.
+
+	* lib/rss/taxonomy.rb: swapped the first argument and the second
+	  argument for RSS::BaseListener.install_get_text_element.
+	* lib/rss/image.rb: ditto.
+	* lib/rss/syndication.rb: ditto.
+	* lib/rss/dublincore.rb: ditto.
+	* lib/rss/parser.rb: ditto.
+	* lib/rss/1.0.rb: ditto.
+	* lib/rss/2.0.rb: ditto.
+	* lib/rss/0.9.rb: ditto.
+	* lib/rss/content.rb: ditto.
+
+	* lib/rss/parser.rb
+	  (RSS::BaseListener.install_setter)
+	  (RSS::BaseListener.register_uri): changed fallback way.
+
+	* lib/rss/parser.rb: added class name registry for complex model
+	  elements. (ex. have childlen elements, have some attributes and
+	  a child element and so on.)
+	
+
+	* lib/rss/dublincore.rb: supported multiple Dublin Core items.
+	* lib/rss/maker/dublincore.rb: ditto.
+
+	* lib/rss/maker/image.rb: supproted new Dublin Core API.
+	
+
+	* lib/rss/maker/base.rb: added default current_element implementation.
+
+
+	* lib/rss/trackback.rb (RSS::TrackBackUtils.new_with_value_if_need):
+	  moved to RSS::Utils.
+
+	* lib/rss/utils.rb (RSS::Utils.new_with_value_if_need):
+	  moved from RSS::TrackBackUtils.
+
+
+	* lib/rss/maker/image.rb: fixed invalid argument of
+	  add_need_initialize_variable bug.
+	* lib/rss/maker/trackback.rb: ditto.
+
+
+	* lib/rss/rss.rb (Hash#merge): added for ruby 1.6.
+
+	* lib/rss/rss.rb (RSS::BaseModel.date_writer): changed to accept nil
+	  for date value.
+
+
+	* test/test_dublincore.rb: added tests for plural accessor and
+	  multiple Dublin Core items.
+
+	* test/test_setup_maker_1.0.rb: fixed swapped actual and expected
+	  values.
+
+	* test/rss/rss-assertions.rb (assert_multiple_dublin_core): added
+	  an assertion for testing multiple Dublin Core items.
+
+	* test/rss/test_maker_dc.rb (test_rss10_multiple): added a test
+	  for making multiple Dublin Core items.
+
+	* test/rss/test_maker_dc.rb (test_date): added a test for #date=
+	  and #dc_date=.
+
+
+	* sample/rss/tdiary_plugin/rss-recent.rb:
+	  new option: @options['rss-recent.use-image-link']:
+	  use image as link instread of text if available.
+
+	* sample/rss/tdiary_plugin/rss-recent.rb (RSS_RECENT_VERSION):
+	  0.0.5 -> 0.0.6.
+
 Fri Apr  8 20:17:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): hdrdir needs to be defined also in

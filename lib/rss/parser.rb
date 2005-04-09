@@ -123,26 +123,18 @@ module RSS
 
     class << self
 
-      @@setter = {}
+      @@setters = {}
       @@registered_uris = {}
+      @@class_names = {}
 
       def install_setter(uri, tag_name, setter)
-        @@setter[uri] = {}  unless @@setter.has_key?(uri)
-        @@setter[uri][tag_name] = setter
-      end
-
-      def register_uri(name, uri)
-        @@registered_uris[name] = {}  unless @@registered_uris.has_key?(name)
-        @@registered_uris[name][uri] = nil
-      end
-
-      def uri_registered?(name, uri)
-        @@registered_uris[name].has_key?(uri)
+        @@setters[uri] ||= {}
+        @@setters[uri][tag_name] = setter
       end
 
       def setter(uri, tag_name)
         begin
-          @@setter[uri][tag_name]
+          @@setters[uri][tag_name]
         rescue NameError
           nil
         end
@@ -150,13 +142,35 @@ module RSS
 
       def available_tags(uri)
         begin
-          @@setter[uri].keys
+          @@setters[uri].keys
         rescue NameError
           []
         end
       end
-          
-      def install_get_text_element(name, uri, setter)
+      
+      def register_uri(uri, name)
+        @@registered_uris[name] ||= {}
+        @@registered_uris[name][uri] = nil
+      end
+      
+      def uri_registered?(uri, name)
+        @@registered_uris[name].has_key?(uri)
+      end
+
+      def install_class_name(uri, tag_name, class_name)
+        @@class_names[uri] ||= {}
+        @@class_names[uri][tag_name] = class_name
+      end
+
+      def class_name(uri, tag_name)
+        begin
+          @@class_names[uri][tag_name]
+        rescue NameError
+          tag_name[0,1].upcase + tag_name[1..-1]
+        end
+      end
+
+      def install_get_text_element(uri, name, setter)
         install_setter(uri, name, setter)
         def_get_text_element(uri, name, *get_file_and_line_from_caller(1))
       end
@@ -164,12 +178,12 @@ module RSS
       private
 
       def def_get_text_element(uri, name, file, line)
-        register_uri(name, uri)
+        register_uri(uri, name)
         unless private_instance_methods(false).include?("start_#{name}")
           module_eval(<<-EOT, file, line)
           def start_#{name}(name, prefix, attrs, ns)
             uri = ns[prefix]
-            if self.class.uri_registered?(#{name.inspect}, uri)
+            if self.class.uri_registered?(uri, #{name.inspect})
               if @do_validate
                 tags = self.class.available_tags(uri)
                 unless tags.include?(name)
@@ -275,13 +289,11 @@ module RSS
     end
 
     def start_else_element(local, prefix, attrs, ns)
-      class_name = local[0,1].upcase << local[1..-1]
+      class_name = self.class.class_name(ns[prefix], local)
       current_class = @last_element.class
-#			begin
       if current_class.constants.include?(class_name)
         next_class = current_class.const_get(class_name)
         start_have_something_element(local, prefix, attrs, ns, next_class)
-#			rescue NameError
       else
         if @ignore_unknown_element
           @proc_stack.push(nil)
