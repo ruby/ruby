@@ -1,3 +1,11 @@
+Sun Apr 10 10:12:42 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(ole_invoke): retry after converting Qnil
+	  to VT_EMPTY.
+
+	* ext/win32ole/win32ole/tests/testWIN32OLE.rb: correct error 
+	  message string "Unknown" => "unknown".
+
 Sat Apr  9 18:20:31 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/image.rb: support to create TkImage object without
