@@ -144,11 +144,7 @@ def demoExplorerDetails(t)
     when '.txt'
       img = 'small-txt'
     else
-      if FileTest.executable?(file)
-        img = 'small-exe'
-      else
-        img = 'small-file'
-      end
+      img = 'small-file'
     end
 
     type = ext.upcase
