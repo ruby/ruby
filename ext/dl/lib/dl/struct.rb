@@ -160,7 +160,7 @@ module DL
     end
   end
 
-  class CUnionEntity < CStruct
+  class CUnionEntity < CStructEntity
     include PackInfo
 
     def CUnionEntity.malloc(types, func=nil)
