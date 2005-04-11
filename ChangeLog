@@ -1,3 +1,7 @@
+Mon Apr 11 15:24:20 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* lib/mkmf.rb (configuration): shouldn't output hdrdir twice.
+
 Sat Apr  9 18:20:31 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/image.rb: support to create TkImage object without
