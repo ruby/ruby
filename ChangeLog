@@ -1,3 +1,8 @@
+Tue Apr 12 02:21:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (ip_finalize): add existence check of
+	  Tcl commands before calling Tcl_GlobalEval(). 
+
 Mon Apr 11 23:36:04 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.r: [druby-ja:123] fix: When reference of my object is 

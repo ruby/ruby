@@ -4407,16 +4407,29 @@ ip_finalize(ip)
     delete_slaves(ip);
 
     /* delete root widget */
-    Tcl_GlobalEval(ip, "catch {destroy .}");
+    DUMP1("check `destroy'");
+    if ( Tcl_GetCommandInfo(ip, "catch", &info)
+         && Tcl_GetCommandInfo(ip, "destroy", &info) ) {
+        DUMP1("call `destroy'");
+        Tcl_GlobalEval(ip, "catch {destroy .}");
+    }
 
     /* call finalize-hook-proc */
+    DUMP1("check `finalize-hook-proc'");
     if (Tcl_GetCommandInfo(ip, finalize_hook_name, &info)) {
         DUMP2("call finalize hook proc '%s'", finalize_hook_name);
         Tcl_GlobalEval(ip, finalize_hook_name);
     }
 
-    DUMP1("cancel after scripts");
-    Tcl_GlobalEval(ip, "catch {foreach id [after info] {after cancel $id}}");
+    DUMP1("cancel after callbacks");
+    DUMP1("check `foreach' & `after'");
+    if ( Tcl_GetCommandInfo(ip, "catch", &info)
+         && Tcl_GetCommandInfo(ip, "foreach", &info)
+         && Tcl_GetCommandInfo(ip, "after", &info) ) {
+        DUMP1("call `foreach' & `after'");
+        Tcl_GlobalEval(ip, 
+                       "catch {foreach id [after info] {after cancel $id}}");
+    }
 
     Tcl_Release(ip);
 
