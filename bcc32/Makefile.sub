@@ -94,7 +94,7 @@ exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 !endif
 !if !defined(datadir)
-datadir = $(prefix)/share
+datadir = /share
 !endif
 !ifndef EXTOUT
 EXTOUT = .ext
@@ -109,7 +109,7 @@ TESTUI = console
 TESTS =
 !endif
 !ifndef RDOCTARGET
-RDOCTARGET = install-doc
+RDOCTARGET = install-nodoc
 !endif
 
 OUTFLAG       = -o

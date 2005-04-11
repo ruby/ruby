@@ -1276,7 +1276,7 @@ dir_s_aref(obj, str)
 /*
  *  call-seq:
  *     Dir.glob( string, [flags] ) => array
- *     Dir.glob( string, [flags] ) {| filename | block }  => false
+ *     Dir.glob( string, [flags] ) {| filename | block }  => nil
  *
  *  Returns the filenames found by expanding the pattern given in
  *  <i>string</i>, either as an <i>array</i> or as parameters to the

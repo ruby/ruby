@@ -91,7 +91,7 @@ exec_prefix = $(prefix)
 libdir = $(exec_prefix)/lib
 !endif
 !if !defined(datadir)
-datadir = $(prefix)/share
+datadir = /share
 !endif
 !ifndef EXTOUT
 EXTOUT = .ext

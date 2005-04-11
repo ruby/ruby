@@ -1,3 +1,10 @@
+Mon Apr 11 12:09:05 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* {bcc32,win32,wince}/Makefile.sub: ri data was not installed
+	  into correct path. [ruby-dev:26011]
+
+	* bcc32/Makefile.sub: defaulted install-nodoc. [ruby-dev:26011]
+
 Sun Apr 10 10:12:42 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(ole_invoke): retry after converting Qnil
