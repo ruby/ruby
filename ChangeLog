@@ -1,3 +1,7 @@
+Mon Apr 11 22:18:23 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dir.c, file.c (lstat): avoid warnings for mingw.
+
 Mon Apr 11 20:11:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_finalize): adhoc patch to avoid SEGV when exit

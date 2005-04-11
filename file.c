@@ -64,8 +64,8 @@ char *strrchr _((const char*,const char));
 #include <sys/mkdev.h>
 #endif
 
-#ifndef HAVE_LSTAT
-#define lstat(path,st) stat(path,st)
+#if !defined HAVE_LSTAT && !defined lstat
+#define lstat stat
 #endif
 
 VALUE rb_cFile;
