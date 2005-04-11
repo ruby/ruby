@@ -862,7 +862,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   end
   CONFIG.each do |key, var|
     next if /^abs_/ =~ key
-    next unless /^(?:src|top|(.*))dir$/ =~ key and $1
+    next unless /^(?:src|top|hdr|(.*))dir$/ =~ key and $1
     mk << "#{key} = #{with_destdir(var.sub(drive, ''))}\n"
   end
   mk << %{
