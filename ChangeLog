@@ -1,3 +1,8 @@
+Mon Apr 11 20:11:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (ip_finalize): adhoc patch to avoid SEGV when exit
+	  on Tcl/Tk8.3.x.
+
 Mon Apr 11 15:24:20 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): shouldn't output hdrdir twice.
