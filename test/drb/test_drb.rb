@@ -102,6 +102,15 @@ class TestDRbYield < Test::Unit::TestCase
     @there.xarray_each {|x| assert_kind_of(XArray, x)}
     @there.xarray_each {|*x| assert_kind_of(XArray, x[0])}
   end
+
+  def test_06_taint
+    x = proc {}
+    assert(! x.tainted?)
+    @there.echo_yield(x) {|o|
+      assert_equal(x, o)
+      assert(! x.tainted?)
+    }
+  end
 end
 
 class TestRubyYield < TestDRbYield
