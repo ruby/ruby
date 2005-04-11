@@ -63,8 +63,8 @@ char *strchr _((char*,char));
 
 #include "util.h"
 
-#ifndef HAVE_LSTAT
-#define lstat(path,st) stat(path,st)
+#if !defined HAVE_LSTAT && !defined lstat
+#define lstat stat
 #endif
 
 #define FNM_NOESCAPE	0x01
