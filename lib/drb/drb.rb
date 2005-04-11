@@ -575,10 +575,19 @@ module DRb
       end
       raise(DRbConnError, 'connection closed') if str.nil?
       raise(DRbConnError, 'premature marshal format(can\'t read)') if str.size < sz
-      begin
-	Marshal::load(str)
-      rescue NameError, ArgumentError
-	DRbUnknown.new($!, str)
+      Thread.exclusive do
+        begin
+          save = Thread.current[:drb_untaint]
+          Thread.current[:drb_untaint] = []
+          Marshal::load(str)
+        rescue NameError, ArgumentError
+          DRbUnknown.new($!, str)
+        ensure
+          Thread.current[:drb_untaint].each do |x|
+            x.untaint
+          end
+          Thread.current[:drb_untaint] = save
+        end
       end
     end
 
@@ -988,8 +997,13 @@ module DRb
     # created to act as a stub for the remote referenced object.
     def self._load(s)
       uri, ref = Marshal.load(s)
+      
       if DRb.here?(uri)
-	return DRb.to_obj(ref)
+	obj = DRb.to_obj(ref)
+        if ((! obj.tainted?) && Thread.current[:drb_untaint])
+          Thread.current[:drb_untaint].push(obj)
+        end
+        return obj
       end
 
       self.new_with(uri, ref)
