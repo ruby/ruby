@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-03-30"
+#define TCLTKLIB_RELEASE_DATE "2005-04-12"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -4408,10 +4408,9 @@ ip_finalize(ip)
 
     /* delete root widget */
     DUMP1("check `destroy'");
-    if ( Tcl_GetCommandInfo(ip, "catch", &info)
-         && Tcl_GetCommandInfo(ip, "destroy", &info) ) {
+    if (Tcl_GetCommandInfo(ip, "destroy", &info)) {
         DUMP1("call `destroy'");
-        Tcl_GlobalEval(ip, "catch {destroy .}");
+        Tcl_GlobalEval(ip, "destroy .");
     }
 
     /* call finalize-hook-proc */
@@ -4422,14 +4421,21 @@ ip_finalize(ip)
     }
 
     DUMP1("cancel after callbacks");
+#define AFTER_CANCEL_CMD "foreach id [after info] {after cancel $id}"
     DUMP1("check `foreach' & `after'");
-    if ( Tcl_GetCommandInfo(ip, "catch", &info)
-         && Tcl_GetCommandInfo(ip, "foreach", &info)
+    if ( Tcl_GetCommandInfo(ip, "foreach", &info)
          && Tcl_GetCommandInfo(ip, "after", &info) ) {
-        DUMP1("call `foreach' & `after'");
-        Tcl_GlobalEval(ip, 
-                       "catch {foreach id [after info] {after cancel $id}}");
+        char *cmd;
+        if ((cmd = Tcl_Alloc(strlen(AFTER_CANCEL_CMD) + 1)) == (char*)NULL) {
+            DUMP1("cancel after callbacks : cannot allocate memory");
+        } else {
+            DUMP1("call `foreach' & `after'");
+            strcpy(cmd, AFTER_CANCEL_CMD);
+            Tcl_GlobalEval(ip, cmd);
+            Tcl_Free(cmd);
+        }
     }
+#undef AFTER_CANCEL_CMD
 
     Tcl_Release(ip);
 

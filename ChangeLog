@@ -1,3 +1,8 @@
+Tue Apr 12 12:38:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (ip_finalize): fix SEGV when Tcl_GlobalEval()
+	  modifies the argument string to eval. 
+
 Tue Apr 12 02:21:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_finalize): add existence check of
