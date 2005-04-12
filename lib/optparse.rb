@@ -416,6 +416,14 @@ class OptionParser
       self
     end
 
+    def add_banner(to)
+      if @short and @short.empty? and @long and @long.empty?
+        s = desc.join
+        to << " [" + s + "]..." unless s.empty?
+      end
+      to
+    end
+
     #
     # Switch that takes no arguments.
     #
@@ -635,6 +643,15 @@ class OptionParser
     end
 
     #
+    # OptionParser::List#each_option
+    #
+    # Iterates for each options.
+    #
+    def each_option(&block)
+      list.each(&block)
+    end
+
+    #
     # OptionParser::List#summarize(*args) {...}
     #
     # Making summary table, yields the (({block})) with each lines.
@@ -655,6 +672,15 @@ class OptionParser
           opt.each(&block)
         end
       end
+    end
+
+    def add_banner(to)
+      list.each do |opt|
+        if opt.respond_to?(:add_banner)
+          opt.add_banner(to)
+        end
+      end
+      to
     end
   end
 
@@ -890,7 +916,11 @@ class OptionParser
   attr_accessor :summary_width, :summary_indent
 
   def banner
-    @banner ||= "Usage: #{program_name} [options]"
+    unless @banner
+      @banner = "Usage: #{program_name} [options]"
+      @stack.reverse_each {|el|el.add_banner(@banner)}
+    end
+    @banner
   end
 
   def program_name
@@ -1178,13 +1208,17 @@ class OptionParser
     end
 
     default_pattern, conv = search(:atype, default_style.pattern) unless default_pattern
-    s = if short.empty? and long.empty?
-          raise ArgumentError, "no switch given" if style or pattern or block
-          desc
-        else
-          (style || default_style).new(pattern || default_pattern,
+    if !(short.empty? and long.empty?)
+      s = (style || default_style).new(pattern || default_pattern,
                                        conv, sdesc, ldesc, arg, desc, block)
-        end
+    elsif !block
+      raise ArgumentError, "no switch given" if style or pattern
+      s = desc
+    else
+      short << pattern
+      s = (style || default_style).new(pattern,
+                                       conv, sdesc, ldesc, arg, desc, block)
+    end
     return s, short, long,
       (not_style.new(not_pattern, not_conv, sdesc, ldesc, nil, desc, block) if not_style),
       nolong
@@ -1312,12 +1346,19 @@ class OptionParser
 
         # non-option argument
         else
-          nonopt.call(arg)
+          catch(:prune) do
+            visit(:each_option) do |sw|
+              sw.block.call(arg) if sw.pattern and sw.pattern =~ arg
+            end
+            nonopt.call(arg)
+          end
         end
       end
 
       nil
     }
+
+    visit(:search, :short, nil) {|sw| sw.block.call(argv) if !sw.pattern}
 
     argv
   end

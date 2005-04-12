@@ -1,21 +1,27 @@
+Tue Apr 12 19:30:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#make_switch, OptionParser#order!):
+	  added non-option and end-of-args handler.  [ruby-talk:136878]
+	  (EXPERIMENTAL
+
 Tue Apr 12 15:33:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/tcltklib.c (ip_finalize): better modification than the 
+	* ext/tk/tcltklib.c (ip_finalize): better modification than the
 	  previous commit [ruby-dev:26029].
 
 Tue Apr 12 12:38:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_finalize): fix SEGV when Tcl_GlobalEval()
-	  modifies the argument string to eval. 
+	  modifies the argument string to eval.
 
 Tue Apr 12 02:21:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_finalize): add existence check of
-	  Tcl commands before calling Tcl_GlobalEval(). 
+	  Tcl commands before calling Tcl_GlobalEval().
 
 Mon Apr 11 23:36:04 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/drb/drb.r: [druby-ja:123] fix: When reference of my object is 
+	* lib/drb/drb.r: [druby-ja:123] fix: When reference of my object is
 	  loaded, the object is tainted.
 
 	* test/drb/test_drb.rb: ditto.
