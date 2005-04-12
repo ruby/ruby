@@ -1,3 +1,8 @@
+Tue Apr 12 15:33:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (ip_finalize): better modification than the 
+	  previous commit [ruby-dev:26029].
+
 Tue Apr 12 12:38:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_finalize): fix SEGV when Tcl_GlobalEval()
