@@ -224,7 +224,7 @@ module IRB
 	    else
 	      io.ungetc ch
 	      if @postproc and @preproc.nil? || @preproc.call(op, io)
-		DOUT.exec_if(D_DETAIL) {printf "op2: %s\n", op.inspect}
+		DOUT.exec_if{D_DETAIL.printf "op2: %s\n", op.inspect}
 		@postproc.call(op, io)
 	      else
 		nil

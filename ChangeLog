@@ -1,3 +1,10 @@
+Thu Apr 14 05:35:45 2005  Keiju Ishitsuka  <keiju@gentoo>
+
+	* doc/irb/irb.rd.ja: a lost  of release IRB 0.9.5.
+
+	* lib/irb/slex.rb: bug fix by [ruby-core :04707].
+
+
 Thu Apr 14 00:20:31 2005 Keiju Ishitsuka <keiju@ruby-lang.org>
 	* bin/irb lib/irb.rb lib/irb/...: IRB 0.9.5.
 	

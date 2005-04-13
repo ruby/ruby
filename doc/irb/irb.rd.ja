@@ -1,8 +1,8 @@
 irb -- interactive ruby
-				$Release Version: 0.9 $
+				$Release Version: 0.9.5 $
 			   	$Revision$
 			   	$Date$
-			   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+			   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 =begin
 = irbとは?
 
@@ -112,6 +112,7 @@ irb起動時に``~/.irbrc''を読み込みます. もし存在しない場合は,
 
    IRB.conf[:PROMPT][:MY_PROMPT] = { # プロンプトモードの名前
      :PROMPT_I => nil,		  # 通常のプロンプト
+     :PROMPT_N => nil,		  # 継続行のプロンプト
      :PROMPT_S => nil,		  # 文字列などの継続行のプロンプト
      :PROMPT_C => nil,		  # 式が継続している時のプロンプト
      :RETURN => "    ==>%s\n"	  # リターン時のプロンプト
@@ -126,7 +127,7 @@ OKです.
 
   IRB.conf[:PROMPT_MODE] = :MY_PROMPT
 
-PROMPT_I, PROMPT_S, PROMPT_Cは, フォーマットを指定します.
+PROMPT_I, PROMPT_N, PROMPT_S, PROMPT_Cは, フォーマットを指定します.
 
   %N	起動しているコマンド名が出力される.
   %m	mainオブジェクト(self)がto_sで出力される.
@@ -141,6 +142,7 @@ PROMPT_I, PROMPT_S, PROMPT_Cは, フォーマットを指定します.
 
   IRB.conf[:PROMPT_MODE][:DEFAULT] = {
       :PROMPT_I => "%N(%m):%03n:%i> ",
+      :PROMPT_N => "%N(%m):%03n:%i> ",
       :PROMPT_S => "%N(%m):%03n:%i%l ",
       :PROMPT_C => "%N(%m):%03n:%i* ",
       :RETURN => "%s\n"
