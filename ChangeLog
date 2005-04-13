@@ -1,3 +1,8 @@
+Wed Apr 13 22:12:16 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (OptionParser#order!): call handlers iff matches
+	  non-switch.
+
 Wed Apr 13 21:20:35 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* configure.in (mingw32): extract msvcr*.dll from objdump result.

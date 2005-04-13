@@ -417,11 +417,15 @@ class OptionParser
     end
 
     def add_banner(to)
-      if @short and @short.empty? and @long and @long.empty?
+      unless @short or @long
         s = desc.join
         to << " [" + s + "]..." unless s.empty?
       end
       to
+    end
+
+    def match_nonswitch?(str)
+      @pattern =~ str unless @short or @long
     end
 
     #
@@ -1211,13 +1215,13 @@ class OptionParser
     if !(short.empty? and long.empty?)
       s = (style || default_style).new(pattern || default_pattern,
                                        conv, sdesc, ldesc, arg, desc, block)
-    elsif !block
+    elsif !block_given?
       raise ArgumentError, "no switch given" if style or pattern
       s = desc
     else
       short << pattern
       s = (style || default_style).new(pattern,
-                                       conv, sdesc, ldesc, arg, desc, block)
+                                       conv, nil, nil, arg, desc, block)
     end
     return s, short, long,
       (not_style.new(not_pattern, not_conv, sdesc, ldesc, nil, desc, block) if not_style),
@@ -1347,8 +1351,10 @@ class OptionParser
         # non-option argument
         else
           catch(:prune) do
+            require 'pp'
+            pp @stack
             visit(:each_option) do |sw|
-              sw.block.call(arg) if sw.pattern and sw.pattern =~ arg
+              sw.block.call(arg) if Switch === sw and sw.match_nonswitch?(arg)
             end
             nonopt.call(arg)
           end
