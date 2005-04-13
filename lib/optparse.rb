@@ -1351,8 +1351,6 @@ class OptionParser
         # non-option argument
         else
           catch(:prune) do
-            require 'pp'
-            pp @stack
             visit(:each_option) do |sw|
               sw.block.call(arg) if Switch === sw and sw.match_nonswitch?(arg)
             end
