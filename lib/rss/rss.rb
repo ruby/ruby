@@ -66,7 +66,7 @@ require "rss/xml-stylesheet"
 
 module RSS
 
-  VERSION = "0.1.3"
+  VERSION = "0.1.4"
 
   URI = "http://purl.org/rss/1.0/"
 
@@ -523,8 +523,12 @@ EOC
     
     def converter=(converter)
       @converter = converter
-      children.each do |child|
-        child.converter = converter unless child.nil?
+      targets = children.dup
+      self.class.have_children_elements.each do |variable_name, plural_name|
+        targets.concat(__send__(plural_name))
+      end
+      targets.each do |target|
+        target.converter = converter unless target.nil?
       end
     end
 
