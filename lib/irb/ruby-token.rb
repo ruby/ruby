@@ -1,9 +1,9 @@
 #
 #   irb/ruby-token.rb - ruby tokens 
-#   	$Release Version: 0.9$
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -64,7 +64,7 @@ module RubyToken
   class TkOPASGN < TkOp
     def initialize(seek, line_no, char_no, op)
       super(seek, line_no, char_no)
-      op = TkReading2Token[op] unless op.kind_of?(Symbol)
+      op = TkReading2Token[op][0] unless op.kind_of?(Symbol)
       @op = op
     end
     attr :op

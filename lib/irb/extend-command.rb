@@ -1,9 +1,9 @@
 #
-#   irb/extend-command.rb - irb command extend
-#   	$Release Version: 0.9$
+#   irb/extend-command.rb - irb extend command 
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -103,6 +103,7 @@ module IRB
 
       [:irb_help, :Help, "irb/cmd/help",
         [:help, NO_OVERRIDE]],
+
     ]
 
     def EXCB.install_extend_commands
@@ -192,6 +193,7 @@ module IRB
       [:use_tracer=, "irb/ext/tracer.rb"],
       [:math_mode=, "irb/ext/math-mode.rb"],
       [:use_loader=, "irb/ext/use-loader.rb"],
+      [:save_history=, "irb/ext/save-history.rb"],
     ]
 
     def CE.install_extend_commands
@@ -214,6 +216,49 @@ module IRB
     end
 
     CE.install_extend_commands
+  end
+
+  module MethodExtender
+    def def_pre_proc(base_method, extend_method)
+      base_method = base_method.to_s
+      extend_method = extend_method.to_s
+
+      alias_name = new_alias_name(base_method)
+      module_eval %[
+        alias_method alias_name, base_method
+        def #{base_method}(*opts)
+	  send :#{extend_method}, *opts
+	  send :#{alias_name}, *opts
+	end
+      ]
+    end
+
+    def def_post_proc(base_method, extend_method)
+      base_method = base_method.to_s
+      extend_method = extend_method.to_s
+
+      alias_name = new_alias_name(base_method)
+      module_eval %[
+        alias_method alias_name, base_method
+        def #{base_method}(*opts)
+	  send :#{alias_name}, *opts
+	  send :#{extend_method}, *opts
+	end
+      ]
+    end
+
+    # return #{prefix}#{name}#{postfix}<num>
+    def new_alias_name(name, prefix = "__alias_of__", postfix = "__")
+      base_name = "#{prefix}#{name}#{postfix}"
+      all_methods = instance_methods(true) + private_instance_methods(true)
+      same_methods = all_methods.grep(/^#{Regexp.quote(base_name)}[0-9]*$/)
+      return base_name if same_methods.empty?
+      no = same_methods.size
+      while !same_methods.include?(alias_name = base_name + no)
+	no += 1
+      end
+      alias_name
+    end
   end
 end
 

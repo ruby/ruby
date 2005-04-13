@@ -1,9 +1,9 @@
 #
-#   irb/input-method.rb - input methods using irb
-#   	$Release Version: 0.9$
+#   irb/input-method.rb - input methods used irb
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -85,49 +85,12 @@ module IRB
     require "readline"
     class ReadlineInputMethod < InputMethod
       include Readline 
-
-      def ReadlineInputMethod.create_finalizer(hist, file)
-	proc do
-	  if num = IRB.conf[:SAVE_HISTORY] and (num = num.to_i) > 0
-            if hf = IRB.conf[:HISTORY_FILE]
-	      file = File.expand_path(hf)
-            end
-            if file
-              open(file, 'w' ) do |f|
-                hist = hist.to_a
-                f.puts(hist[-num..-1] || hist)
-              end
-	    end
-	  end
-	end
-      end
-
       def initialize
 	super
 
 	@line_no = 0
 	@line = []
 	@eof = false
-
-	loader = proc {|f| f.each {|l| HISTORY << l.chomp}}
-	if hist = IRB.conf[:HISTORY_FILE]
-	  hist = File.expand_path(hist)
-	  begin
-	    open(hist, &loader) 
-	  rescue
-	  end
-	else
-	  IRB.rc_files("_history") do |hist|
-	    begin
-	      open(hist, &loader)
-	    rescue
-	      hist = nil
-	    else
-	      break
-	    end
-	  end
-	end
-	ObjectSpace.define_finalizer(self, ReadlineInputMethod.create_finalizer(HISTORY, hist))
       end
 
       def gets

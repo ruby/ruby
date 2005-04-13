@@ -1,9 +1,9 @@
 #
 #   irb/init.rb - irb initialize module
-#   	$Release Version: 0.9$
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -54,36 +54,43 @@ module IRB
     @CONF[:VERBOSE] = nil
 
     @CONF[:EVAL_HISTORY] = nil
+    @CONF[:SAVE_HISTORY] = nil
 
     @CONF[:BACK_TRACE_LIMIT] = 16
 
     @CONF[:PROMPT] = {
       :NULL => {
 	:PROMPT_I => nil,
+	:PROMPT_N => nil,
 	:PROMPT_S => nil,
 	:PROMPT_C => nil,
 	:RETURN => "%s\n"
       },
       :DEFAULT => {
 	:PROMPT_I => "%N(%m):%03n:%i> ",
+	:PROMPT_N => "%N(%m):%03n:%i> ",
 	:PROMPT_S => "%N(%m):%03n:%i%l ",
 	:PROMPT_C => "%N(%m):%03n:%i* ",
 	:RETURN => "=> %s\n"
       },
       :CLASSIC => {
 	:PROMPT_I => "%N(%m):%03n:%i> ",
+	:PROMPT_N => "%N(%m):%03n:%i> ",
 	:PROMPT_S => "%N(%m):%03n:%i%l ",
 	:PROMPT_C => "%N(%m):%03n:%i* ",
 	:RETURN => "%s\n"
       },
       :SIMPLE => {
 	:PROMPT_I => ">> ",
+	:PROMPT_N => ">> ",
 	:PROMPT_S => nil,
 	:PROMPT_C => "?> ",
 	:RETURN => "=> %s\n"
       },
       :INF_RUBY => {
 	:PROMPT_I => "%N(%m):%03n:%i> ",
+#	:PROMPT_N => "%N(%m):%03n:%i> ",
+	:PROMPT_N => nil,
 	:PROMPT_S => nil,
 	:PROMPT_C => nil,
 	:RETURN => "%s\n",
@@ -91,6 +98,7 @@ module IRB
       },
       :XMP => {
 	:PROMPT_I => nil,
+	:PROMPT_N => nil,
 	:PROMPT_S => nil,
 	:PROMPT_C => nil,
 	:RETURN => "    ==>%s\n"
@@ -183,35 +191,46 @@ module IRB
     end
   end
 
-  # enumerate possible rc files
-  def IRB.rc_files(rc)
-    yield File.expand_path("~/.irb#{rc}") if ENV.key?("HOME")
-    yield ".irb#{rc}"
-    yield "irb#{rc.sub(/\A_?/, '.')}"
-    yield "_irb#{rc}"
-    yield "$irb#{rc}"
-  end
-
   # running config
   def IRB.run_config
     if @CONF[:RC]
-      catch(:EXIT) do
-	rc_files("rc") do |rc|
-	  begin
-	    load rc
-	    throw :EXIT
-	  rescue LoadError, Errno::ENOENT
-	  rescue
-	    print "load error: #{rc}\n"
-	    print $!.class, ": ", $!, "\n"
-	    for err in $@[0, $@.size - 2]
-	      print "\t", err, "\n"
-	    end
-	    throw :EXIT
-	  end
+      begin
+	load rc_file
+      rescue LoadError, Errno::ENOENT
+      rescue
+	print "load error: #{rc_file}\n"
+	print $!.class, ": ", $!, "\n"
+	for err in $@[0, $@.size - 2]
+	  print "\t", err, "\n"
 	end
       end
     end
+  end
+
+  IRBRC_EXT = "rc"
+  def IRB.rc_file(ext = IRBRC_EXT)
+    if !@CONF[:RC_NAME_GENERATOR]
+      rc_file_generators do |rcgen|
+	@CONF[:RC_NAME_GENERATOR] ||= rcgen
+	if File.exist?(rcgen.call(IRBRC_EXT))
+	  @CONF[:RC_NAME_GENERATOR] = rcgen
+	  break
+	end
+      end
+    end
+    @CONF[:RC_NAME_GENERATOR].call ext
+  end
+
+  # enumerate possible rc-file base name generators
+  def IRB.rc_file_generators
+    if home = ENV["HOME"]
+      yield proc{|rc| home+"/.irb#{rc}"} 
+    end
+    home = Dir.pwd
+    yield proc{|rc| home+"/.irb#{rc}"}
+    yield proc{|rc| home+"/irb#{rc.sub(/\A_?/, '.')}"}
+    yield proc{|rc| home+"/_irb#{rc}"}
+    yield proc{|rc| home+"/$irb#{rc}"}
   end
 
   # loading modules

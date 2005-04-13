@@ -1,3 +1,18 @@
+#
+#   loader.rb - 
+#   	$Release Version: 0.9.5$
+#   	$Revision$
+#   	$Date$
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
+#
+# --
+#
+#   
+#
+
+@RCS_ID='-$Id$-'
+
+
 module IRB
   class LoadAbort < Exception;end
 

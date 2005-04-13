@@ -1,9 +1,9 @@
 #
 #   history.rb - 
-#   	$Release Version: 0.9$
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -21,8 +21,8 @@ module IRB
     def set_last_value(value)
       _set_last_value(value)
 
-      @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
-      if (@eval_history ||= nil) #and !@eval_history_values.equal?(llv)
+#      @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
+      if @eval_history #and !@eval_history_values.equal?(llv)
  	@eval_history_values.push @line_no, @last_value
  	@workspace.evaluate self, "__ = IRB.CurrentContext.instance_eval{@eval_history_values}"
       end
@@ -33,7 +33,7 @@ module IRB
     attr_reader :eval_history
     def eval_history=(no)
       if no
-	if (@eval_history ||= nil)
+	if @eval_history 
 	  @eval_history_values.size(no)
 	else
 	  @eval_history_values = History.new(no)

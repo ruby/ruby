@@ -1,9 +1,9 @@
 #
 #   irb/lc/ja/error.rb - 
-#   	$Release Version: 0.9$
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -25,5 +25,3 @@ module IRB
   def_exception :CantChangeBinding, 'バインディング(%s)に変更できません.'
   def_exception :UndefinedPromptMode, 'プロンプトモード(%s)は定義されていません.'
 end
-
-
