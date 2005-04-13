@@ -169,6 +169,19 @@ cygwin*|mingw*)
     AC_CHECK_TOOL(WINDRES, windres)
     AC_CHECK_TOOL(DLLWRAP, dllwrap)
     target_cpu=`echo $target_cpu | sed s/i.86/i386/`
+    case "$target_os" in
+    mingw*)
+	test "$rb_cv_msvcrt" = "" && unset rb_cv_msvcrt
+	AC_CHECK_TOOL(OBJDUMP, objdump)
+	AC_CACHE_CHECK(for mingw32 runtime DLL, rb_cv_msvcrt, [
+	AC_TRY_LINK([#include <stdio.h>],
+		    [FILE* volatile f = stdin; return 0;],
+		    [rb_cv_msvcrt=`$OBJDUMP -p conftest$ac_exeext |
+				   sed -n '/^[[ 	]]*DLL Name: /{s///p;q;}' |
+				   tr A-Z a-z | sed 's/\.dll$//'`],
+		    [rb_cv_msvcrt=msvcrt])])
+	test "$rb_cv_msvcrt" = "" && AC_MSG_ERROR([must be linked to DLL])
+    esac
     : ${enable_shared=yes}
     ;;
 aix*)
@@ -1298,7 +1311,7 @@ case "$target_os" in
 	    AC_LIBOBJ([strftime])
 	    ;;
 	mingw*)
-	    RUBY_SO_NAME=msvcrt-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
+	    RUBY_SO_NAME=${rb_cv_msvcrt}-'$(RUBY_INSTALL_NAME)'${MAJOR}${MINOR}
 	    if test x"$enable_shared" = xyes; then
 		LIBRUBY_SO='$(RUBY_SO_NAME)'.dll
 		LIBRUBY='lib$(LIBRUBY_SO).a'
@@ -1429,7 +1442,7 @@ else
 fi
 
 case "$target_os" in
-  mingw*) sitearch="i386-msvcrt" ;;
+  mingw*) sitearch="i386-$rb_cv_msvcrt" ;;
   *) sitearch="${arch}" ;;
 esac
 

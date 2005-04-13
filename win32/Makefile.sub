@@ -70,9 +70,11 @@ DEBUGFLAGS = -Zi
 !if !defined(OPTFLAGS)
 OPTFLAGS = -O2b2xg-
 !endif
-!if !defined(OS) || !defined(RT)
+!if !defined(OS)
 OS = mswin32
-RT = msvcrt
+!endif
+!if !defined(RT)
+!error RT not defined.  Retry from configure pass.
 !endif
 
 !ifndef RUBY_SO_NAME
