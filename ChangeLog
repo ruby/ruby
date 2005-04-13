@@ -1,3 +1,7 @@
+Wed Apr 13 21:20:35 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* configure.in (mingw32): extract msvcr*.dll from objdump result.
+
 Wed Apr 13 19:25:31 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (mingw32): use actual runtime DLL name as ruby DLL

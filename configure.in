@@ -177,8 +177,8 @@ cygwin*|mingw*)
 	AC_TRY_LINK([#include <stdio.h>],
 		    [FILE* volatile f = stdin; return 0;],
 		    [rb_cv_msvcrt=`$OBJDUMP -p conftest$ac_exeext |
-				   sed -n '/^[[ 	]]*DLL Name: /{s///p;q;}' |
-				   tr A-Z a-z | sed 's/\.dll$//'`],
+		     		   tr A-Z a-z |
+				   sed -n '/^[[ 	]]*dll name: \(msvc.*\)\.dll$/{s//\1/p;q;}'`],
 		    [rb_cv_msvcrt=msvcrt])])
 	test "$rb_cv_msvcrt" = "" && AC_MSG_ERROR([must be linked to DLL])
     esac
