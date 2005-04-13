@@ -1,12 +1,19 @@
+Wed Apr 13 20:24:30 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (mingw32): use actual runtime DLL name as ruby DLL
+	  name and default load path.
+
+	* win32/Makefile.sub, win32/setup.mak: ditto.
+
 Tue Apr 12 15:33:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c (ip_finalize): better modification than the 
+	* ext/tcltklib/tcltklib.c (ip_finalize): better modification than the
 	  previous commit [ruby-dev:26029].
 
 Tue Apr 12 12:38:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_finalize): fix SEGV when Tcl_GlobalEval()
-	  modifies the argument string to eval. 
+	  modifies the argument string to eval.
 
 Tue Apr 12 02:21:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -15,10 +22,10 @@ Tue Apr 12 02:21:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Mon Apr 11 23:47:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/drb/drb.r: [druby-ja:123] fix: When reference of my object is 
-          loaded, the object is tainted.
+	* lib/drb/drb.r: [druby-ja:123] fix: When reference of my object is
+	  loaded, the object is tainted.
 
-        * test/drb/test_drb.rb: ditto.
+	* test/drb/test_drb.rb: ditto.
 
 Mon Apr 11 22:18:23 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
@@ -26,7 +33,7 @@ Mon Apr 11 22:18:23 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 Mon Apr 11 20:11:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c (ip_finalize): adhoc patch to avoid SEGV 
+	* ext/tcltklib/tcltklib.c (ip_finalize): adhoc patch to avoid SEGV
 	  when exit on Tcl/Tk8.3.x.
 
 Mon Apr 11 15:26:25 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -45,7 +52,7 @@ Sun Apr 10 10:12:42 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 	* ext/win32ole/win32ole.c(ole_invoke): retry after converting Qnil
 	  to VT_EMPTY.
 
-	* ext/win32ole/win32ole/tests/testWIN32OLE.rb: correct error 
+	* ext/win32ole/win32ole/tests/testWIN32OLE.rb: correct error
 	  message string "Unknown" => "unknown".
 
 Sat Apr  9 18:20:31 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
@@ -102,13 +109,13 @@ Sat Apr  9 11:59:57 2005  Kouhei Sutou  <kou@cozmixng.org>
 	* lib/rss/parser.rb: added class name registry for complex model
 	  elements. (ex. have childlen elements, have some attributes and
 	  a child element and so on.)
-	
+
 
 	* lib/rss/dublincore.rb: supported multiple Dublin Core items.
 	* lib/rss/maker/dublincore.rb: ditto.
 
 	* lib/rss/maker/image.rb: supproted new Dublin Core API.
-	
+
 
 	* lib/rss/maker/base.rb: added default current_element implementation.
 
