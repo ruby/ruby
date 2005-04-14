@@ -702,24 +702,30 @@ module FileUtils
 
   alias rmtree rm_rf
 
-  def remove_file(fname, force = false) #:nodoc:
+  # Removes a file +path+.
+  # This method ignores StandardError if +force+ is true.
+  def remove_file(path, force = false)
     first_time_p = true
     begin
-      File.unlink fname
+      File.unlink path
     rescue Errno::ENOENT
       raise unless force
-    rescue
+    rescue => err
       if first_time_p
-        # try once more for Windows
         first_time_p = false
-        File.chmod 0777, fname
-        retry
+        begin
+          File.chmod 0777, path
+          retry
+        rescue SystemCallError
+        end
       end
-      raise unless force
+      raise err unless force
     end
   end
 
-  def remove_dir(dir, force = false) #:nodoc:
+  # Removes a directory +dir+ and its contents recursively.
+  # This method ignores StandardError if +force+ is true.
+  def remove_dir(dir, force = false)
     Dir.foreach(dir) do |file|
       next if /\A\.\.?\z/ =~ file
       path = "#{dir}/#{file.untaint}"
@@ -731,10 +737,21 @@ module FileUtils
         remove_file path, force
       end
     end
+    first_time_p = true
     begin
       Dir.rmdir dir.sub(%r</\z>, '')
     rescue Errno::ENOENT
       raise unless force
+    rescue => err
+      if first_time_p
+        first_time_p = false
+        begin
+          File.chmod 0777, dir
+          retry
+        rescue SystemCallError
+        end
+      end
+      raise err unless force
     end
   end
 

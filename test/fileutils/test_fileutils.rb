@@ -89,7 +89,6 @@ class TestFileUtils
     my_rm_rf 'data'; mymkdir 'data'
     my_rm_rf 'tmp';  mymkdir 'tmp'
     prepare_data_file
-    prepare_time_data
   end
 
   def teardown
@@ -146,9 +145,9 @@ class TestFileUtils
     File.utime t-4, t-4, 'data/newer'
   end
 
-  def each_sample_file
-    TARGETS.each do |srcpath|
-      yield srcpath, "tmp/#{File.basename(srcpath)}"
+  def each_srcdest
+    TARGETS.each do |path|
+      yield path, "tmp/#{File.basename(path)}"
     end
   end
 
@@ -191,7 +190,7 @@ end
   end
 
   def test_cp
-    each_sample_file do |srcpath, destpath|
+    each_srcdest do |srcpath, destpath|
       cp srcpath, destpath
       assert_same_file srcpath, destpath
 
@@ -753,7 +752,7 @@ end
   end
 
   def test_copy_entry
-    each_sample_file do |srcpath, destpath|
+    each_srcdest do |srcpath, destpath|
       copy_entry srcpath, destpath
       assert_same_file srcpath, destpath
       assert_equal File.stat(srcpath).ftype, File.stat(destpath).ftype
@@ -766,7 +765,7 @@ end
   end
 
   def test_copy_file
-    each_sample_file do |srcpath, destpath|
+    each_srcdest do |srcpath, destpath|
       copy_file srcpath, destpath
       assert_same_file srcpath, destpath
     end
@@ -774,7 +773,7 @@ end
 
   def test_copy_stream
     # IO
-    each_sample_file do |srcpath, destpath|
+    each_srcdest do |srcpath, destpath|
       File.open(srcpath) {|src|
         File.open(destpath, 'w') {|dest|
           copy_stream src, dest
@@ -786,7 +785,7 @@ end
     # duck typing test  [ruby-dev:25369]
     rm_rf 'tmp'
     Dir.mkdir 'tmp'
-    each_sample_file do |srcpath, destpath|
+    each_srcdest do |srcpath, destpath|
       File.open(srcpath) {|src|
         File.open(destpath, 'w') {|dest|
           copy_stream Stream.new(src), Stream.new(dest)
@@ -797,11 +796,28 @@ end
   end
 
   def test_remove_file
-    # FIXME
+    File.open('data/tmp', 'w') {|f| f.puts 'dummy' }
+    remove_file 'data/tmp'
+    assert_file_not_exist 'data/tmp'
+if have_file_perm?
+    File.open('data/tmp', 'w') {|f| f.puts 'dummy' }
+    File.chmod 0, 'data/tmp'
+    remove_file 'data/tmp'
+    assert_file_not_exist 'data/tmp'
+end
   end
 
   def test_remove_dir
-    # FIXME
+    Dir.mkdir 'data/tmpdir'
+    File.open('data/tmpdir/a', 'w') {|f| f.puts 'dummy' }
+    remove_dir 'data/tmpdir'
+    assert_file_not_exist 'data/tmpdir'
+if have_file_perm?
+    Dir.mkdir 'data/tmpdir'
+    File.chmod 0555, 'data/tmpdir'
+    remove_dir 'data/tmpdir'
+    assert_file_not_exist 'data/tmpdir'
+end
   end
 
   def test_compare_file
@@ -827,6 +843,7 @@ end
   end
 
   def test_uptodate?
+    prepare_time_data
     Dir.chdir('data') {
       assert(   uptodate?('newest', %w(old newer notexist)) )
       assert( ! uptodate?('newer', %w(old newest notexist)) )
