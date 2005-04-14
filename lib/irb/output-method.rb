@@ -68,18 +68,18 @@ module IRB
     end
 
     def pp(*objs)
-      puts *objs.collect{|obj| obj.inspect}
+      puts(*objs.collect{|obj| obj.inspect})
     end
 
     def ppx(prefix, *objs)
-      puts *objs.collect{|obj| prefix+obj.inspect}
+      puts(*objs.collect{|obj| prefix+obj.inspect})
     end
 
   end
 
   class StdioOutputMethod<OutputMethod
     def print(*opts)
-      STDOUT.print *opts
+      STDOUT.print(*opts)
     end
   end
 end

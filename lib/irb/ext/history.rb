@@ -33,7 +33,7 @@ module IRB
     attr_reader :eval_history
     def eval_history=(no)
       if no
-	if @eval_history 
+	if defined?(@eval_history) && @eval_history
 	  @eval_history_values.size(no)
 	else
 	  @eval_history_values = History.new(no)

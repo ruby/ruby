@@ -52,7 +52,7 @@ module IRB
 
       def puts(*objs)
 	if notify?
-	  @base_notifier.puts *objs.collect{|obj| prefix + obj.to_s}
+	  @base_notifier.puts(*objs.collect{|obj| prefix + obj.to_s})
 	end
       end
 
