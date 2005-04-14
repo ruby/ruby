@@ -1,3 +1,10 @@
+Thu Apr 14 19:05:06 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y [ripper] (regexp): dispatch regexp option.
+	  [ruby-Bugs:1688]
+
+	* ext/ripper/lib/core.rb: regenerated (interface changed).
+
 Thu Apr 14 18:59:43 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (remove_file): ignore exceptions caused by

@@ -3551,7 +3551,7 @@ regexp		: tREGEXP_BEG xstring_contents tREGEXP_END
 			}
 			$$ = node;
 		    /*%
-			$$ = dispatch1(regexp_literal, $2);
+			$$ = dispatch2(regexp_literal, $2, $3);
 		    %*/
 		    }
 		;

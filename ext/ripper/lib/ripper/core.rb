@@ -97,7 +97,7 @@ class Ripper
     :qwords_add => 2,
     :qwords_new => 0,
     :redo => 0,
-    :regexp_literal => 1,
+    :regexp_literal => 2,
     :rescue => 4,
     :rescue_mod => 2,
     :restparam => 1,
@@ -525,7 +525,7 @@ class Ripper
     nil
   end
 
-  def on_regexp_literal(a)
+  def on_regexp_literal(a, b)
     a
   end
 
