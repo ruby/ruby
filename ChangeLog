@@ -1,3 +1,11 @@
+Thu Apr 14 19:18:30 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (remove_file): ignore exceptions caused by
+	  chmod.
+
+	* lib/fileutils.rb (remove_dir): try to get rights to rmdir.
+	  [ruby-Bugs:1502] (2 items backportted from HEAD, rev 1.53-54)
+
 Thu Apr 14 16:57:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* bcc32/Makefile.sub: failed to remove debug information files.
