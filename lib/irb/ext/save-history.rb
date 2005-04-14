@@ -11,11 +11,13 @@
 #   
 #
 
-@RCS_ID='-$Id$-'
-
 require "readline"
 
 module IRB
+  module HistorySavingAbility
+    @RCS_ID='-$Id$-'
+  end
+
   class Context
     def init_save_history
       unless (class<<@io;self;end).include?(HistorySavingAbility)

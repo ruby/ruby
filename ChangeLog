@@ -1,3 +1,12 @@
+Thu Apr 14 18:51:02 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb, lib/irb/slex.rb: bug fix of [ruby-Bugs-1745]
+
+	* lib/irb/ext/loader.rb, lib/irb/ext/save-history.rb:
+	  fix location of @RCS_ID
+
+	* lib/irb/cmd/help.rb: a lost of release IRB 0.9.5.
+
 Thu Apr 14 15:10:30 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb/notifier.rb, lib/irb/output-method.rb, lib/irb/ext/history.rb

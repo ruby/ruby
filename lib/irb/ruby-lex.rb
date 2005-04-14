@@ -100,7 +100,8 @@ class RubyLex
 
   def getc
     while @rests.empty?
-      return nil unless buf_input
+#      return nil unless buf_input
+      @rests.push nil unless buf_input
     end
     c = @rests.shift
     if @here_header
@@ -121,7 +122,7 @@ class RubyLex
   def gets
     l = ""
     while c = getc
-      l.concat c
+      l.concat(c)
       break if c == "\n"
     end
     return nil if l == "" and c.nil?

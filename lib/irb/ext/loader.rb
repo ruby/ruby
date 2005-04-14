@@ -10,14 +10,13 @@
 #   
 #
 
-@RCS_ID='-$Id$-'
-
 
 module IRB
   class LoadAbort < Exception;end
 
   module IrbLoader
     @RCS_ID='-$Id$-'
+
     alias ruby_load load
     alias ruby_require require
 
