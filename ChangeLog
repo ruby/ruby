@@ -1,3 +1,8 @@
+Thu Apr 14 16:57:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* bcc32/Makefile.sub: failed to remove debug information files.
+	  fixed: [ruby-dev:26034]
+
 Wed Apr 13 23:40:21 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION): 0.1.3 -> 0.1.4.
@@ -33,7 +38,7 @@ Tue Apr 12 02:21:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Mon Apr 11 23:47:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/drb/drb.r: [druby-ja:123] fix: When reference of my object is
+	* lib/drb/drb.rb: [druby-ja:123] fix: When reference of my object is
 	  loaded, the object is tainted.
 
 	* test/drb/test_drb.rb: ditto.
