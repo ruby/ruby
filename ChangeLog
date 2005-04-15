@@ -1,3 +1,8 @@
+Fri Apr 15 22:04:07 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c(ole_invoke): retry after converting Qnil
+	  to VT_EMPTY.
+
 Thu Apr 14 19:05:06 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y [ripper] (regexp): dispatch regexp option.

@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.3"
+#define WIN32OLE_VERSION "0.6.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -156,6 +156,7 @@ static FNCOCREATEINSTANCEEX *gCoCreateInstanceEx = NULL;
 static VALUE com_hash;
 static IDispatchVtbl com_vtbl;
 static UINT  cWIN32OLE_cp = CP_ACP;
+static VARTYPE g_nil_to = VT_ERROR;
 
 struct oledata {
     IDispatch *pDispatch;
@@ -834,14 +835,28 @@ ole_val2variant(val, var)
         V_BOOL(var) = VARIANT_FALSE;
         break;
     case T_NIL:
-        V_VT(var) = VT_ERROR;
-        V_ERROR(var) = DISP_E_PARAMNOTFOUND;
+        if (g_nil_to == VT_ERROR) {
+            V_VT(var) = VT_ERROR;
+            V_ERROR(var) = DISP_E_PARAMNOTFOUND;
+        }else {
+            V_VT(var) = VT_EMPTY;
+        }
         break;
     default:
         V_VT(var) = VT_DISPATCH;
         V_DISPATCH(var) = val2dispatch(val);
         break;
     }
+}
+
+static void
+ole_val2variant2(val, var)
+    VALUE val;
+    VARIANT *var;
+{
+    g_nil_to = VT_EMPTY;
+    ole_val2variant(val, var);
+    g_nil_to = VT_ERROR;
 }
 
 static VALUE
@@ -2103,6 +2118,28 @@ ole_invoke(argc, argv, self, wFlags)
                 VariantClear(&op.dp.rgvarg[n]);
             }
         }
+
+        if (FAILED(hr)) {
+            /* retry after converting nil to VT_EMPTY */
+            if (op.dp.cArgs > cNamedArgs) {
+                for(i = cNamedArgs; i < op.dp.cArgs; i++) {
+                    n = op.dp.cArgs - i + cNamedArgs - 1;
+                    param = rb_ary_entry(paramS, i-cNamedArgs);
+                    ole_val2variant2(param, &op.dp.rgvarg[n]);
+                }
+                memset(&excepinfo, 0, sizeof(EXCEPINFO));
+                VariantInit(&result);
+                hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, DispID, 
+                        &IID_NULL, lcid, wFlags,
+                        &op.dp, &result,
+                        &excepinfo, &argErr);
+                for(i = cNamedArgs; i < op.dp.cArgs; i++) {
+                    n = op.dp.cArgs - i + cNamedArgs - 1;
+                    VariantClear(&op.dp.rgvarg[n]);
+                }
+            }
+        }
+
         /* mega kludge. if a method in WORD is called and we ask
          * for a result when one is not returned then
          * hResult == DISP_E_EXCEPTION. this only happens on
