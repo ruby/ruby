@@ -1,3 +1,9 @@
+Sat Apr 16 03:59:42 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: check for OPENSSL_cleanse.
+
+	* ext/openssl/openssl_missing.h: ditto.
+
 Fri Apr 15 22:40:19 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/tests/testWIN32OLE.rb: add test for WIN32OLE.codepage=
