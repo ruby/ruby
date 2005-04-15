@@ -1,3 +1,9 @@
+Sat Apr 16 03:59:42 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/extconf.rb: check for OPENSSL_cleanse.
+
+	* ext/openssl/openssl_missing.h: ditto.
+
 Thu Apr 14 19:18:30 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (remove_file): ignore exceptions caused by

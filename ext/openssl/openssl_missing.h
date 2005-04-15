@@ -103,6 +103,10 @@ int EVP_CIPHER_CTX_copy(EVP_CIPHER_CTX *out, EVP_CIPHER_CTX *in);
 #  define PKCS7_type_is_encrypted(a) (OBJ_obj2nid((a)->type) == NID_pkcs7_encrypted)
 #endif
 
+#if !defined(HAVE_OPENSSL_CLEANSE)
+#define OPENSSL_cleanse(p, l) memset(p, 0, l)
+#endif
+
 void *X509_STORE_get_ex_data(X509_STORE *str, int idx);
 int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data);
 int X509_CRL_set_version(X509_CRL *x, long version);
