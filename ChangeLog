@@ -1,3 +1,9 @@
+Fri Apr 15 22:40:19 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/tests/testWIN32OLE.rb: add test for WIN32OLE.codepage=
+
+	* ext/win32ole/tests/testOLETYPELIB.rb: correct expected message.
+
 Fri Apr 15 22:04:07 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c(ole_invoke): retry after converting Qnil

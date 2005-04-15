@@ -21,7 +21,7 @@ class TestOLETYPELIB < Test::Unit::TestCase
       msg = $!.to_s
       exception_occured = true
     end
-    assert_equal("Not found type library `NON EXIST TYPELIB`", msg)
+    assert_equal("not found type library `NON EXIST TYPELIB`", msg)
     assert(exception_occured)
   end
 

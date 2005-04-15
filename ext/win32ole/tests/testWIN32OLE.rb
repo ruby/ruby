@@ -41,7 +41,7 @@ class TestWin32OLE < RUNIT::TestCase
     exc = assert_exception(WIN32OLERuntimeError) {
       WIN32OLE.new("{000}")
     }
-    assert_match(/Unknown OLE server: `\{000\}'/, exc.message)
+    assert_match(/unknown OLE server: `\{000\}'/, exc.message)
   end
   def test_s_connect
     excel2 = WIN32OLE.connect('Excel.Application')
@@ -94,6 +94,22 @@ class TestWin32OLE < RUNIT::TestCase
 
   def test_const_CP_UTF8
     assert_equal(65001, WIN32OLE::CP_UTF8)
+  end
+
+  def test_s_codepage_changed
+    book = @excel.workbooks.add
+    sheet = book.worksheets(1)
+    begin
+      WIN32OLE.codepage = WIN32OLE::CP_UTF8
+      sheet.range("A1").value = [0x3042].pack("U*")
+      val = sheet.range("A1").value
+      assert_equal("\343\201\202", val)
+      WIN32OLE.codepage = WIN32OLE::CP_ACP
+      val = sheet.range("A1").value
+      assert_equal("\202\240", val)
+    ensure
+      book.saved = true
+    end
   end
 
   def test_get_win32ole_object
