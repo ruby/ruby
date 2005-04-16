@@ -1,3 +1,8 @@
+Sat Apr 16 10:36:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: quick hack... prepend DESTDIR.
+	  still have restriction on DESTDIR ("", "/", "e:")
+
 Sat Apr 16 03:59:42 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: check for OPENSSL_cleanse.
