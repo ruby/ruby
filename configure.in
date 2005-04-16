@@ -195,6 +195,7 @@ esac
 
 AC_PROG_LN_S
 AC_PROG_MAKE_SET
+AC_PROG_INSTALL
 
 # checks for UNIX variants that set C preprocessor variables
 AC_AIX
@@ -202,7 +203,6 @@ AC_MINIX
 
 AC_SUBST(RM, ['rm -f'])
 AC_SUBST(CP, ['cp'])
-AC_SUBST(INSTALL, ['install -p'])
 if $as_mkdir_p; then
   AC_SUBST(MAKEDIRS, ['mkdir -p'])
 else

@@ -1,3 +1,12 @@
+Sat Apr 16 15:27:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_PROG_INSTALL): not add -p option to INSTALL.
+	  files need timestamps to be kept are only ar-archive on a few
+	  platforms, and be installed by instruby.rb but not INSTALL.
+	  fixed: [ruby-core:04721]
+
+	* mkconfig.rb: purge autoconf value variables.
+
 Sat Apr 16 10:33:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: quick hack... prepend DESTDIR.
@@ -57,7 +66,7 @@ Thu Apr 14 05:35:45 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 Thu Apr 14 00:20:31 2005 Keiju Ishitsuka <keiju@ruby-lang.org>
 	* bin/irb lib/irb.rb lib/irb/...: IRB 0.9.5.
-	
+
 Wed Apr 13 23:40:21 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION): 0.1.3 -> 0.1.4.
