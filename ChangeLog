@@ -1,3 +1,8 @@
+Sat Apr 16 10:33:48 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: quick hack... prepend DESTDIR.
+	  still have restriction on DESTDIR ("", "/", "e:")
+
 Sat Apr 16 03:59:42 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/extconf.rb: check for OPENSSL_cleanse.
@@ -99,7 +104,7 @@ Tue Apr 12 02:21:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Mon Apr 11 23:36:04 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
-	* lib/drb/drb.r: [druby-ja:123] fix: When reference of my object is
+	* lib/drb/drb.rb: [druby-ja:123] fix: When reference of my object is
 	  loaded, the object is tainted.
 
 	* test/drb/test_drb.rb: ditto.
