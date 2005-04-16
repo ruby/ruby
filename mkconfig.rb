@@ -44,7 +44,10 @@ File.foreach "config.status" do |line|
   elsif /^s[%,]@(\w+)@[%,](.*)[%,]/ =~ line
     name = $1
     val = $2 || ""
-    next if /^(?:ac_.*|DEFS|configure_input|.*(?:src|build)dir)$/ =~ name
+    next if /^(?:ac_.*|DEFS|configure_input)$/ =~ name
+    next if /^\$\(ac_\w+\)$/ =~ val
+    next if /^\$\{ac_\w+\}$/ =~ val
+    next if /^\$ac_\w+$/ =~ val
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
     v = "  CONFIG[\"" + name + "\"] = " +
@@ -55,7 +58,7 @@ File.foreach "config.status" do |line|
       v_others << v
     end
     has_version = true if name == "MAJOR"
-  elsif /^ac_given_INSTALL=(.*)/ =~ line
+  elsif /^(?:ac_given_)?INSTALL=(.*)/ =~ line
     v_fast << "  CONFIG[\"INSTALL\"] = " + $1 + "\n"
   end
 #  break if /^CEOF/
@@ -71,8 +74,8 @@ end
 
 drive = File::PATH_SEPARATOR == ';'
 
-prefix = Regexp.quote('/lib/ruby/' + RUBY_VERSION.sub(/\.\d+$/, '') + '/' + RUBY_PLATFORM)
-print "  TOPDIR = File.dirname(__FILE__).sub!(%r'#{prefix}\\Z', '')\n"
+prefix = '/lib/ruby/' + RUBY_VERSION.sub(/\.\d+$/, '') + '/' + RUBY_PLATFORM
+print "  TOPDIR = File.dirname(__FILE__).chomp!(#{prefix.dump})\n"
 print "  DESTDIR = ", (drive ? "TOPDIR && TOPDIR[/\\A[a-z]:/i] || " : ""), "'' unless defined? DESTDIR\n"
 print "  CONFIG = {}\n"
 print "  CONFIG[\"DESTDIR\"] = DESTDIR\n"
@@ -118,7 +121,7 @@ print <<EOS
 	'$'
       elsif key = config[v]
 	config[v] = false
-        Config::expand(key, config)
+	Config::expand(key, config)
 	config[v] = key
       else
 	var

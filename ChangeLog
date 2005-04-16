@@ -1,3 +1,12 @@
+Sat Apr 16 15:27:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_PROG_INSTALL): not add -p option to INSTALL.
+	  files need timestamps to be kept are only ar-archive on a few
+	  platforms, and be installed by instruby.rb but not INSTALL.
+	  fixed: [ruby-core:04721]
+
+	* mkconfig.rb: purge autoconf value variables.
+
 Sat Apr 16 10:36:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: quick hack... prepend DESTDIR.
