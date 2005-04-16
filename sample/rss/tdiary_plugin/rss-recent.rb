@@ -109,15 +109,7 @@ def rss_recent_cache_rss(url, cache_file, cache_time)
 			rescue ::RSS::UnknownConversionMethodError
 			end
 
-			rss_recent_pubDate_to_dc_date(rss.channel)
-			rss_infos = [
-				[
-					rss.channel.title,
-					rss.channel.link,
-					rss.channel.dc_date,
-					rss.image && rss.image.url,
-				]
-			]
+			rss_infos = []
 			rss.items.each do |item|
 				rss_recent_pubDate_to_dc_date(item)
 				if item.respond_to?(:image_item) and item.image_item
@@ -127,6 +119,14 @@ def rss_recent_cache_rss(url, cache_file, cache_time)
 				end
 				rss_infos << [item.title, item.link, item.dc_date, image]
 			end
+			rss_recent_pubDate_to_dc_date(rss.channel)
+			rss_infos.unshift([
+				rss.channel.title,
+				rss.channel.link,
+				rss.channel.dc_date ||
+					rss.items.collect{|item| item.dc_date}.compact.first,
+				rss.image && rss.image.url,
+			])
 			rss_recent_write_to_cache(cache_file, rss_infos)
 
 		rescue URI::InvalidURIError
