@@ -1,3 +1,9 @@
+Sat Apr 16 17:01:16 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* sample/rss/tdiary_plugin/rss-recent.rb (rss_recent_cache_rss):
+	  use the first date information of items as site date information
+	  if channel doesn't have date information.
+
 Sat Apr 16 15:27:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_PROG_INSTALL): not add -p option to INSTALL.
