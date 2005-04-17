@@ -156,6 +156,9 @@ def extmake(target)
       return true
     end
     args = sysquote($mflags)
+    unless $destdir.to_s.empty? or $mflags.include?("DESTDIR")
+      args << sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))
+    end
     if $static
       args += ["static"] unless $clean
       $extlist.push [$static, $target, File.basename($target), $preload]
@@ -266,10 +269,6 @@ def parse_args()
   end
 
   $continue = $mflags.set?(?k)
-  if !$destdir.to_s.empty?
-    $destdir = File.expand_path($destdir)
-    $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
-  end
   if $extout
     $extout = '$(topdir)/'+$extout
     $extout_prefix = $extout ? "$(extout)$(target_prefix)/" : ""
@@ -446,6 +445,9 @@ rubies = []
 }
 
 Dir.chdir ".."
+unless $destdir.to_s.empty?
+  $mflags.defined?("DESTDIR") or $mflags << "DESTDIR=#{$destdir}"
+end
 if !$extlist.empty? and $extupdate
   rm_f(Config::CONFIG["LIBRUBY_SO"])
 end
