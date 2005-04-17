@@ -38,7 +38,8 @@ def sysquote(x)
 end
 
 def relative_from(path, base)
-  if File.expand_path(path) == File.expand_path(path, base)
+  dir = File.join(path, "")
+  if File.expand_path(dir) == File.expand_path(dir, base)
     path
   else
     File.join(base, path)
