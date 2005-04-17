@@ -1,3 +1,7 @@
+Sun Apr 17 22:57:09 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake, parse_args): do not expand destdir.
+
 Sat Apr 16 17:01:16 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/tdiary_plugin/rss-recent.rb (rss_recent_cache_rss):
