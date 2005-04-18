@@ -398,7 +398,7 @@ The variable ruby-indent-level controls the amount of indentation.
 	 ((and (not (eobp))
 	       (ruby-expr-beg 'expr-qstr)
 	       (not (looking-at "%="))
-	       (looking-at "%[QqrxWw]?\\(.\\)"))
+	       (looking-at "%[QqrxWw]?\\([^a-zA-Z0-9 \t\n]\\)"))
 	  (goto-char (match-beginning 1))
 	  (setq expand (not (memq (char-before) '(?q ?w))))
 	  (setq w (match-string 1))

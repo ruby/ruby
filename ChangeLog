@@ -1,3 +1,9 @@
+Mon Apr 18 15:37:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_attr): attribute name check added.
+
+	* numeric.c (flo_plus): small typo fix.
+
 Mon Apr 18 11:25:14 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/zlib/zlib.c (zstream_run): fixed SEGV. [ruby-core:4712]

@@ -593,7 +593,7 @@ flo_minus(x, y)
  * call-seq:
  *   float * other   => float
  *
- * Returns a new float with is the product of <code>float</code>
+ * Returns a new float which is the product of <code>float</code>
  * and <code>other</code>.
  */
 

@@ -624,6 +624,9 @@ rb_attr(klass, id, read, write, ex)
 	}
     }
 
+    if (!rb_is_local_id(id) && !rb_is_const_id(id)) {
+	rb_name_error(id, "invalid attribute name `%s'", rb_id2name(id));
+    }
     name = rb_id2name(id);
     if (!name) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
@@ -635,9 +638,7 @@ rb_attr(klass, id, read, write, ex)
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
     }
     if (write) {
-	sprintf(buf, "%s=", name);
-	id = rb_intern(buf);
-	rb_add_method(klass, id, NEW_ATTRSET(attriv), noex);
+	rb_add_method(klass, rb_id_attrset(id), NEW_ATTRSET(attriv), noex);
     }
 }
 
