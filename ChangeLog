@@ -1,3 +1,7 @@
+Tue Apr 19 00:06:20 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: expand path for ext/**/extconf.rb.
+
 Mon Apr 18 11:25:14 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/zlib/zlib.c (zstream_run): fixed SEGV. [ruby-core:4712]
