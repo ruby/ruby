@@ -706,6 +706,7 @@ zstream_run(z, src, len, flush)
 {
     uInt n;
     int err;
+    volatile VALUE guard;
 
     if (NIL_P(z->input) && len == 0) {
 	z->stream.next_in = "";
@@ -715,6 +716,10 @@ zstream_run(z, src, len, flush)
 	zstream_append_input(z, src, len);
 	z->stream.next_in = RSTRING(z->input)->ptr;
 	z->stream.avail_in = RSTRING(z->input)->len;
+	/* keep reference to `z->input' so as not to be garbage collected
+	   after zstream_reset_input() and prevent `z->stream.next_in'
+	   from dangling. */
+	guard = z->input;
     }
 
     if (z->stream.avail_out == 0) {
