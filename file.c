@@ -4142,7 +4142,7 @@ rb_find_file_ext(filep, ext)
 	    OBJ_FREEZE(fname);
 	    found = dln_find_file(StringValueCStr(fname), path);
 	    if (found && file_load_ok(found)) {
-		*filep = fname;
+		*filep = rb_str_new2(found);
 		return j+1;
 	    }
 	}

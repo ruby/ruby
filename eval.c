@@ -6860,49 +6860,68 @@ rb_f_require(obj, fname)
 }
 
 static int
-search_required(fname, featurep, path)
-    VALUE fname, *featurep, *path;
+search_required(fname, path)
+    VALUE fname, *path;
 {
     VALUE tmp;
     char *ext, *ftptr;
     int type;
 
-    *featurep = fname;
     *path = 0;
     ext = strrchr(ftptr = RSTRING(fname)->ptr, '.');
     if (ext && !strchr(ext, '/')) {
 	if (strcmp(".rb", ext) == 0) {
 	    if (rb_feature_p(ftptr, ext, Qtrue)) return 'r';
-	    if (*path = rb_find_file(fname)) return 'r';
+	    if (tmp = rb_find_file(fname)) {
+		tmp = rb_file_expand_path(tmp, Qnil);
+		ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+		if (!rb_feature_p(ftptr, ext, Qtrue))
+		    *path = tmp;
+		return 'r';
+	    }
 	    return 0;
 	}
 	else if (IS_SOEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, Qfalse)) return 's';
 	    tmp = rb_str_new(RSTRING(fname)->ptr, ext-RSTRING(fname)->ptr);
-	    *featurep = tmp;
 #ifdef DLEXT2
 	    OBJ_FREEZE(tmp);
 	    if (rb_find_file_ext(&tmp, loadable_ext+1)) {
-		*featurep = tmp;
-		*path = rb_find_file(tmp);
+		tmp = rb_file_expand_path(tmp, Qnil);
+		ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+		if (!rb_feature_p(ftptr, ext, Qfalse))
+		    *path = tmp;
 		return 's';
 	    }
 #else
 	    rb_str_cat2(tmp, DLEXT);
 	    OBJ_FREEZE(tmp);
-	    if (*path = rb_find_file(tmp)) {
+	    if (tmp = rb_find_file(tmp)) {
+		tmp = rb_file_expand_path(tmp, Qnil);
+		ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+		if (!rb_feature_p(ftptr, ext, Qfalse))
+		    *path = tmp;
 		return 's';
 	    }
 #endif
 	}
 	else if (IS_DLEXT(ext)) {
 	    if (rb_feature_p(ftptr, ext, Qfalse)) return 's';
-	    if (*path = rb_find_file(fname)) return 's';
+	    if (tmp = rb_find_file(fname)) {
+		tmp = rb_file_expand_path(tmp, Qnil);
+		ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
+		if (!rb_feature_p(ftptr, ext, Qfalse))
+		    *path = tmp;
+		return 's';
+	    }
 	}
     }
     tmp = fname;
-    switch (type = rb_find_file_ext(&tmp, loadable_ext)) {
+    type = rb_find_file_ext(&tmp, loadable_ext);
+    tmp = rb_file_expand_path(tmp, Qnil);
+    switch (type) {
       case 0:
+	ftptr = RSTRING(tmp)->ptr;
 	if ((ext = rb_feature_p(ftptr, 0, Qfalse))) {
 	    type = strcmp(".rb", ext);
 	    break;
@@ -6910,10 +6929,9 @@ search_required(fname, featurep, path)
 	return 0;
 
       default:
-	*featurep = tmp;
 	ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
 	if (rb_feature_p(ftptr, ext, !--type)) break;
-	*path = rb_find_file(tmp);
+	*path = tmp;
     }
     return type ? 's' : 'r';
 }
@@ -6947,16 +6965,16 @@ rb_require_safe(fname, safe)
     saved.safe = ruby_safe_level;
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
-	VALUE feature, path;
+	VALUE path;
 	long handle;
 	int found;
 
 	ruby_safe_level = safe;
 	FilePathValue(fname);
 	*(volatile VALUE *)&fname = rb_str_new4(fname);
-	found = search_required(fname, &feature, &path);
+	found = search_required(fname, &path);
 	if (found) {
-	    if (!path || load_wait(RSTRING(feature)->ptr)) {
+	    if (!path || load_wait(RSTRING(path)->ptr)) {
 		result = Qfalse;
 	    }
 	    else {
@@ -6968,7 +6986,7 @@ rb_require_safe(fname, safe)
 			loading_tbl = st_init_strtable();
 		    }
 		    /* partial state */
-		    ftptr = ruby_strdup(RSTRING(feature)->ptr);
+		    ftptr = ruby_strdup(RSTRING(path)->ptr);
 		    st_insert(loading_tbl, (st_data_t)ftptr, (st_data_t)curr_thread);
 		    rb_load(path, 0);
 		    break;
@@ -6984,7 +7002,7 @@ rb_require_safe(fname, safe)
 		    rb_ary_push(ruby_dln_librefs, LONG2NUM(handle));
 		    break;
 		}
-		rb_provide_feature(feature);
+		rb_provide_feature(path);
 		result = Qtrue;
 	    }
 	}

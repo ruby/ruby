@@ -19,12 +19,12 @@ $extlist = []
 $extupdate = false
 $compiled = {}
 
-$:.replace ["."]
+$:.replace([Dir.pwd])
 require 'rbconfig'
 
-srcdir = File.dirname(File.dirname(__FILE__))
+srcdir = File.expand_path("../..", __FILE__)
 
-$:.replace [srcdir, srcdir+"/lib", "."]
+$:.unshift(srcdir, srcdir+"/lib")
 
 $topdir = "."
 $top_srcdir = srcdir
