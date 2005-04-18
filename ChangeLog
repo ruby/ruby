@@ -1,4 +1,4 @@
-Tue Apr 19 00:01:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Apr 19 08:38:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_required, rb_require_safe): expand path in
 	  rb_features.  [ruby-dev:26079]
@@ -6,6 +6,8 @@ Tue Apr 19 00:01:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* file.c (rb_find_file_ext): return absolute path.
 
 	* ext/extmk.rb: expand path for ext/**/extconf.rb.
+
+	* eval.c (search_required): handle static linked extensions.
 
 Mon Apr 18 15:37:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
