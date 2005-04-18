@@ -57,6 +57,60 @@ class TestWin32OLE < RUNIT::TestCase
     assert_equal(-4160, CONST1::XlTop)
   end
 
+  def test_s_codepage
+    assert_equal(WIN32OLE::CP_ACP, WIN32OLE.codepage)
+  end
+
+  def test_s_codepage_set
+    WIN32OLE.codepage = WIN32OLE::CP_UTF8
+    assert_equal(WIN32OLE::CP_UTF8, WIN32OLE.codepage)
+    WIN32OLE.codepage = WIN32OLE::CP_ACP
+  end
+
+  def test_const_CP_ACP
+    assert_equal(0, WIN32OLE::CP_ACP)
+  end
+
+  def test_const_CP_OEMCP
+    assert_equal(1, WIN32OLE::CP_OEMCP)
+  end
+
+  def test_const_CP_MACCP
+    assert_equal(2, WIN32OLE::CP_MACCP)
+  end
+
+  def test_const_CP_THREAD_ACP
+    assert_equal(3, WIN32OLE::CP_THREAD_ACP)
+  end
+
+  def test_const_CP_SYMBOL
+    assert_equal(42, WIN32OLE::CP_SYMBOL)
+  end
+
+  def test_const_CP_UTF7
+    assert_equal(65000, WIN32OLE::CP_UTF7)
+  end
+
+  def test_const_CP_UTF8
+    assert_equal(65001, WIN32OLE::CP_UTF8)
+  end
+
+  def test_s_codepage_changed
+    book = @excel.workbooks.add
+    sheet = book.worksheets(1)
+    begin
+      WIN32OLE.codepage = WIN32OLE::CP_UTF8
+      sheet.range("A1").value = [0x3042].pack("U*")
+      val = sheet.range("A1").value
+      assert_equal("\343\201\202", val)
+      WIN32OLE.codepage = WIN32OLE::CP_ACP
+      val = sheet.range("A1").value
+      assert_equal("\202\240", val)
+    ensure
+      book.saved = true
+    end
+  end
+
   def test_get_win32ole_object
     workbooks = @excel.Workbooks;
     assert_instance_of(WIN32OLE, workbooks)
