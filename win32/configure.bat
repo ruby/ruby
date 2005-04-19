@@ -20,6 +20,7 @@ if "%1" == "--program-suffix" goto :suffix
 if "%1" == "--program-name" goto :progname
 if "%1" == "--enable-install-doc" goto :enable-rdoc
 if "%1" == "--disable-install-doc" goto :disable-rdoc
+if "%1" == "--extout" goto :extout
 if "%1" == "-h" goto :help
 if "%1" == "--help" goto :help
   echo>> ~tmp~.mak 	"%1" \
@@ -65,6 +66,11 @@ goto :loop
 goto :loop
 :disable-rdoc
   echo>> ~tmp~.mak 	"RDOCTARGET=install-nodoc" \
+  shift
+goto :loop
+:extout
+  echo>> ~tmp~.mak 	"EXTOUT=%2" \
+  shift
   shift
 goto :loop
 :help
