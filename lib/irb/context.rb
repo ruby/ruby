@@ -1,9 +1,9 @@
 #
 #   irb/context.rb - irb context
-#   	$Release Version: 0.9$
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -19,7 +19,7 @@ module IRB
     #		      String -- File
     #		      other -- using this as InputMethod
     #
-    def initialize(irb, workspace = nil, input_method = nil)
+    def initialize(irb, workspace = nil, input_method = nil, output_method = nil)
       @irb = irb
       if workspace
 	@workspace = workspace
@@ -71,6 +71,13 @@ module IRB
       else
 	@io = input_method
       end
+      self.save_history = IRB.conf[:SAVE_HISTORY] if IRB.conf[:SAVE_HISTORY]
+
+      if output_method
+	@output_method = output_method
+      else
+	@output_method = StdioOutputMethod.new
+      end
 
       @verbose = IRB.conf[:VERBOSE] 
       @echo = IRB.conf[:ECHO]
@@ -96,13 +103,14 @@ module IRB
     attr_accessor :irb_name
     attr_accessor :irb_path
 
-    attr_accessor :use_readline
+    attr_reader :use_readline
     attr_reader :inspect_mode
 
     attr_reader :prompt_mode
     attr_accessor :prompt_i
     attr_accessor :prompt_s
     attr_accessor :prompt_c
+    attr_accessor :prompt_n
     attr_accessor :auto_indent_mode
     attr_accessor :return_format
 
@@ -141,6 +149,7 @@ module IRB
 
     def set_last_value(value)
       @last_value = value
+      @workspace.evaluate self, "_ = IRB.CurrentContext.last_value"
     end
 
     attr_reader :irb_name
@@ -151,6 +160,7 @@ module IRB
       @prompt_i = pconf[:PROMPT_I]
       @prompt_s = pconf[:PROMPT_S]
       @prompt_c = pconf[:PROMPT_C]
+      @prompt_n = pconf[:PROMPT_N]
       @return_format = pconf[:RETURN]
       if ai = pconf.include?(:AUTO_INDENT)
 	@auto_indent_mode = ai
@@ -177,7 +187,6 @@ module IRB
       @inspect_mode
     end
 
-    undef use_readline=
     def use_readline=(opt)
       @use_readline = opt
       print "use readline module\n" if @use_readline

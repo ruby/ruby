@@ -1,9 +1,9 @@
 #
 #   irb.rb - irb main module
-#   	$Release Version: 0.9 $
+#   	$Release Version: 0.9.5 $
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
@@ -88,8 +88,8 @@ module IRB
   # irb interpriter main routine 
   #
   class Irb
-    def initialize(workspace = nil, input_method = nil)
-      @context = Context.new(self, workspace, input_method)
+    def initialize(workspace = nil, input_method = nil, output_method = nil)
+      @context = Context.new(self, workspace, input_method, output_method)
       @context.main.extend ExtendCommandBundle
       @signal_status = :IN_IRB
 
@@ -106,6 +106,8 @@ module IRB
 	  f = @context.prompt_s
 	elsif continue
 	  f = @context.prompt_c
+	elsif indent > 0
+	  f = @context.prompt_n
 	else @context.prompt_i
 	  f = @context.prompt_i
 	end

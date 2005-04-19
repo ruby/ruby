@@ -1,9 +1,9 @@
 #
-#   irb/input-method.rb - input methods using irb
-#   	$Release Version: 0.9$
+#   irb/input-method.rb - input methods used irb
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(keiju@ishitsuka.com)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #

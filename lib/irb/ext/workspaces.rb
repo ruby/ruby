@@ -1,9 +1,9 @@
 #
 #   push-ws.rb - 
-#   	$Release Version: 0.9$
+#   	$Release Version: 0.9.5$
 #   	$Revision$
 #   	$Date$
-#   	by Keiju ISHITSUKA(Nihon Rational Software Co.,Ltd)
+#   	by Keiju ISHITSUKA(keiju@ruby-lang.org)
 #
 # --
 #
