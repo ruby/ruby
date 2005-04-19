@@ -1,3 +1,10 @@
+Wed Apr 20 07:27:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* {bcc32,win32,wince}/configure.bat, {bcc32,win32,wince}/setup.mak:
+	  add extout option.
+
+	* bcc32/setup.mak: make configuration variables overridable.
+
 Wed Apr 20 04:15:27 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 
 	* lib/irb.rb lib/irb/* doc/irb: IRB 0.9.5

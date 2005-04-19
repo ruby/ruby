@@ -43,6 +43,9 @@ EXTSTATIC = $(EXTSTATIC)
 !if defined(RDOCTARGET)
 RDOCTARGET = $(RDOCTARGET)
 !endif
+!if defined(EXTOUT)
+EXTOUT = $(EXTOUT)
+!endif
 <<
 
 -system-vars-: -osname- -runtime-
