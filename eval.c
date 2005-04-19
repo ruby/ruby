@@ -6916,8 +6916,8 @@ search_required(fname, path)
 	    }
 	}
     }
-    else if (!strchr(ftptr, '/')) {
-	if (rb_feature_p(ftptr, 0, Qfalse)) return 's';
+    else if (ext = rb_feature_p(ftptr, 0, Qfalse)) {
+	return (*ext && (IS_SOEXT(ext) || IS_DLEXT(ext))) ? 's' : 'r';
     }
     tmp = fname;
     type = rb_find_file_ext(&tmp, loadable_ext);

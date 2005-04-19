@@ -229,6 +229,7 @@ VALUE rb_exec_recursive _((VALUE(*)(ANYARGS),VALUE,VALUE));
 /* file.c */
 int eaccess _((const char*, int));
 VALUE rb_file_s_expand_path _((int, VALUE *));
+VALUE rb_file_expand_path _((VALUE, VALUE));
 void rb_file_const _((const char*, VALUE));
 int rb_find_file_ext _((VALUE*, const char* const*));
 VALUE rb_find_file _((VALUE));

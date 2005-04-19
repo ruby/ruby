@@ -1,3 +1,9 @@
+Tue Apr 19 23:02:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (search_required): deal with features with path too.
+
+	* intern.h (rb_file_expand_path): prototype.  fixed: [ruby-dev:26082]
+
 Tue Apr 19 08:38:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_required, rb_require_safe): expand path in
