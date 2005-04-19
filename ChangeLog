@@ -1,3 +1,7 @@
+Tue Apr 19 23:37:09 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/ftools.rb (File.safe_unlink): do not modify a symlinked file.
+
 Tue Apr 19 23:02:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_required): deal with features with path too.
