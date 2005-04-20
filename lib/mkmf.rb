@@ -1038,7 +1038,17 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
       files.each do |f|
 	dest = "#{dir}/#{File.basename(f)}"
 	mfile.print("install-rb#{sfx}: #{dest}\n")
-	mfile.print("#{dest}: #{f}\n\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) #{f} #{dir}\n")
+	mfile.print("#{dest}: #{f}\n\t$(#{$extout ? 'COPY' : 'INSTALL_DATA'}) ")
+	sep = config_string('BUILD_FILE_SEPARATOR')
+	if sep
+	  f = f.gsub("/", sep)
+	  sep = ":/="+sep
+	  f = f.gsub(/(\$\(\w+)(\))/) {$1+sep+$2}
+	  f = f.gsub(/(\$\{\w+)(\})/) {$1+sep+$2}
+	else
+	  sep = ""
+	end
+	mfile.print("#{f} $(@D#{sep})\n")
       end
     end
   end
