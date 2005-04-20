@@ -255,7 +255,7 @@ module Net # :nodoc:
     #    print Net::HTTP.get('www.example.com', '/index.html')
     #
     def HTTP.get(arg1, arg2 = nil, arg3 = nil)
-      get_response(arg1,arg2,arg3).body
+      get_response(arg1, arg2, arg3).body
     end
 
     # Send a GET request to the target and return the response
@@ -293,6 +293,30 @@ module Net # :nodoc:
       }
     end
     private_class_method :get_by_uri
+
+    # Posts HTML form data to the +URL+.
+    # Form data must be represented as a Hash of String to String, e.g:
+    #
+    #   { "cmd" => "search", "q" => "ruby", "max" => "50" }
+    #
+    # This method also does Basic Authentication iff +URL+.user exists.
+    #
+    # Example:
+    #
+    #   require 'net/http'
+    #   require 'uri'
+    #
+    #   HTTP.post_form URI.parse('http://www.example.com/search.cgi'),
+    #                  { "q" => "ruby", "max" => "50" }
+    #
+    def HTTP.post_form(url, params)
+      req = Post.new(url.path)
+      req.form_data = params
+      req.basic_auth url.user, url.password if url.user
+      new(url.host, url.port).start {|http|
+        http.request(req)
+      }
+    end
 
     #
     # HTTP session management
@@ -353,7 +377,7 @@ module Net # :nodoc:
       @close_on_empty_response = false
       @socket  = nil
       @started = false
-      @open_timeout = 30
+      @open_timeout = nil
       @read_timeout = 60
       @debug_output = nil
       @use_ssl = false
@@ -1051,15 +1075,15 @@ module Net # :nodoc:
 
     # Adds header name and field instead of replace.
     #
-    #   request.add_header 'X-My-Header', 'a'
+    #   request.add_field 'X-My-Header', 'a'
     #   p request['X-My-Header']              #=> "a"
-    #   request.add_header 'X-My-Header', 'b'
+    #   request.add_field 'X-My-Header', 'b'
     #   p request['X-My-Header']              #=> "a, b"
-    #   request.add_header 'X-My-Header', 'c'
+    #   request.add_field 'X-My-Header', 'c'
     #   p request['X-My-Header']              #=> "a, b, c"
     #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
     #
-    def add_header(key, val)
+    def add_field(key, val)
       if @header.key?(key.downcase)
         @header[key.downcase].concat Array(val)
       else
@@ -1275,6 +1299,18 @@ module Net # :nodoc:
     end
 
     alias content_type= set_content_type
+
+    def set_form_data(params, sep = '&')
+      self.body = params.map {|k,v| "#{urlencode(k.to_s)}=#{urlencode(v.to_s)}" }.join(sep)
+      self.content_type = 'application/x-www-form-urlencoded'
+    end
+
+    alias form_data= set_form_data
+
+    def urlencode(str)
+      str.gsub(/[^a-zA-Z0-9_\.\-]/n) {|s| sprintf('%%%02x', s[0]) }
+    end
+    private :urlencode
 
     # Set the Authorization: header for "Basic" authorization.
     def basic_auth(account, password)
@@ -1839,7 +1875,7 @@ module Net # :nodoc:
         httpv, code, msg = read_status_line(sock)
         res = response_class(code).new(httpv, code, msg)
         each_response_header(sock) do |k,v|
-          res.add_header k, v
+          res.add_field k, v
         end
         res
       end

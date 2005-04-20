@@ -1,3 +1,13 @@
+Wed Apr 20 22:54:54 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: new method Net::HTTP.post_form.
+
+	* lib/net/http.rb: new method Net::HTTPHeader#set_form_data and
+	  its alias #form_data=.
+
+	* lib/net/http.rb: Net::HTTPHeader#add_header -> add_field
+	  (adjustted to Ruby 1.8).
+
 Wed Apr 20 10:53:30 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_rb.rb (lex_init): use IRB module.

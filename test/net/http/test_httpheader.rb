@@ -7,7 +7,9 @@ class HTTPHeaderTest < Test::Unit::TestCase
     include Net::HTTPHeader
     def initialize
       @header = {}
+      @body = nil
     end
+    attr_accessor :body
   end
 
   def setup
@@ -201,6 +203,26 @@ class HTTPHeaderTest < Test::Unit::TestCase
   end
 
   def test_set_content_type
+  end
+
+  def test_form_data=
+    @c.form_data = {"cmd"=>"search", "q"=>"ruby", "max"=>"50"}
+    assert_equal 'application/x-www-form-urlencoded', @c.content_type
+    assert_equal %w( cmd=search max=50 q=ruby ), @c.body.split('&').sort
+  end
+
+  def test_set_form_data
+    @c.set_form_data "cmd"=>"search", "q"=>"ruby", "max"=>"50"
+    assert_equal 'application/x-www-form-urlencoded', @c.content_type
+    assert_equal %w( cmd=search max=50 q=ruby ), @c.body.split('&').sort
+
+    @c.set_form_data "cmd"=>"search", "q"=>"ruby", "max"=>50
+    assert_equal 'application/x-www-form-urlencoded', @c.content_type
+    assert_equal %w( cmd=search max=50 q=ruby ), @c.body.split('&').sort
+
+    @c.set_form_data({"cmd"=>"search", "q"=>"ruby", "max"=>"50"}, ';')
+    assert_equal 'application/x-www-form-urlencoded', @c.content_type
+    assert_equal %w( cmd=search max=50 q=ruby ), @c.body.split(';').sort
   end
 
   def test_basic_auth
