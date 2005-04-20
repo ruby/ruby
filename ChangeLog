@@ -1,3 +1,7 @@
+Wed Apr 20 23:01:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/ifchange.bat: delete testing files.
+
 Wed Apr 20 22:54:54 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: new method Net::HTTP.post_form.
