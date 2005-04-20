@@ -147,6 +147,7 @@ if test x"${build}" != x"${host}"; then
   AC_CHECK_TOOL(CC, gcc)
 fi
 AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_GCC_TRADITIONAL
 
 RUBY_PROG_GNU_LD
@@ -800,6 +801,7 @@ AC_SUBST(ARCH_FLAG)dnl
 AC_SUBST(STATIC)dnl
 AC_SUBST(CCDLFLAGS)dnl
 AC_SUBST(LDSHARED)dnl
+AC_SUBST(LDSHAREDXX)dnl
 AC_SUBST(DLEXT)dnl
 AC_SUBST(DLEXT2)dnl
 AC_SUBST(LIBEXT)dnl
@@ -951,6 +953,22 @@ if test "$with_dln_a_out" != yes; then
     RPATHFLAG=" -Wl,-R'%1\$-s'"
   fi
 fi
+if test "${LDSHAREDXX}" = ""; then
+    case "${LDSHARED}" in
+	*'$(CC)'*)
+	    LDSHAREDXX=`echo "${LDSHARED}" | sed 's/\$(CC)/$(CXX)/'`
+	    ;;
+	*'${CC}'*)
+	    LDSHAREDXX=`echo "${LDSHARED}" | sed 's/\${CC}/${CXX}/'`
+	    ;;
+	*$CC*)
+	    LDSHAREDXX=`echo "${LDSHARED}" | sed "s|$CC|$CXX|"`
+	    ;;
+	ld" "*)
+	    ;;
+    esac
+fi
+
 AC_SUBST(LINK_SO)
 AC_SUBST(LIBPATHFLAG)
 AC_SUBST(RPATHFLAG)

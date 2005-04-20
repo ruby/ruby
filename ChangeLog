@@ -1,7 +1,10 @@
-Thu Apr 21 06:44:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Apr 21 06:45:28 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (ruby_incpush_expand, proc_options): expand relative path
 	  given with -I option.  [ruby-dev:26090]
+
+	* configure.in, lib/mkmf.rb, {bcc32,win32,wince}/Makefile.sub: improve
+	  C++ support.  [ruby-dev:26089]
 
 Thu Apr 21 01:53:09 2005  Minero Aoki  <aamine@loveruby.net>
 

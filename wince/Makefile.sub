@@ -114,6 +114,9 @@ CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing -I$(srcdir)/wince \
            -DFILENAME_MAX=MAX_PATH -DTLS_OUT_OF_INDEXES=0xFFFFFFFF \
            -DBUFSIZ=512 -D_UNICODE -DUNICODE
 !endif
+!if !defined(CXXFLAGS)
+CXXFLAGS = $(CFLAGS)
+!endif
 !if !defined(LDFLAGS)
 LDFLAGS = -link -incremental:yes -pdb:none -machine:$(MACHINE) -subsystem:$(SUBSYSTEM)
 !endif
@@ -349,6 +352,8 @@ s,@target_vendor@,pc,;t t
 s,@target_os@,$(OS),;t t
 s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
+s,@CXX@,$$(CC),;t t
+s,@LD@,$$(CC),;t t
 s,@YACC@,$(YACC),;t t
 s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t

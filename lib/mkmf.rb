@@ -867,6 +867,7 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
   end
   mk << %{
 CC = #{CONFIG['CC']}
+CXX = #{CONFIG['CXX']}
 LIBRUBY = #{CONFIG['LIBRUBY']}
 LIBRUBY_A = #{CONFIG['LIBRUBY_A']}
 LIBRUBYARG_SHARED = #$LIBRUBYARG_SHARED
@@ -877,6 +878,7 @@ CPPFLAGS = -I. -I$(topdir) -I$(hdrdir) -I$(srcdir) #{$defs.join(" ")} #{$CPPFLAG
 CXXFLAGS = $(CFLAGS) #{CONFIG['CXXFLAGS']}
 DLDFLAGS = #$LDFLAGS #$DLDFLAGS #$ARCH_FLAG
 LDSHARED = #{CONFIG['LDSHARED']}
+LDSHAREDXX = #{config_string('LDSHAREDXX') || '$(LDSHARED)'}
 AR = #{CONFIG['AR']}
 EXEEXT = #{CONFIG['EXEEXT']}
 
@@ -1086,7 +1088,11 @@ site-install-rb: install-rb
   mfile.print "$(DLLIB): ", (makedef ? "$(DEFFILE) " : ""), "$(OBJS)\n\t"
   mfile.print "@-$(RM) $@\n\t"
   mfile.print "@-$(MAKEDIRS) $(@D)\n\t" if $extout
-  mfile.print LINK_SO, "\n\n"
+  link_so = LINK_SO
+  if srcs.any?(&%r"\.(?:#{CXX_EXT.join('|')})\z".method(:===))
+    link_so = link_so.sub(/\bLDSHARED\b/, '\&XX')
+  end
+  mfile.print link_so, "\n\n"
   unless $static.nil?
     mfile.print "$(STATIC_LIB): $(OBJS)\n\t"
     mfile.print "$(AR) #{config_string('ARFLAGS') || 'cru '}$@ $(OBJS)"

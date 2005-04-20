@@ -116,6 +116,9 @@ CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !if !defined(CPPFLAGS)
 CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing
 !endif
+!if !defined(CXXFLAGS)
+CXXFLAGS = $(CFLAGS)
+!endif
 !if !defined(LDFLAGS)
 LDFLAGS = -link -incremental:no -debug -opt:ref -opt:icf
 !endif
@@ -341,6 +344,8 @@ s,@target_vendor@,pc,;t t
 s,@target_os@,$(OS),;t t
 s,@CC@,$(CC),;t t
 s,@CPP@,$(CPP),;t t
+s,@CXX@,$$(CC),;t t
+s,@LD@,$$(CC),;t t
 s,@YACC@,$(YACC),;t t
 s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t

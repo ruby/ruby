@@ -120,6 +120,9 @@ CFLAGS = -q -tWR -tWC $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus -wcp
 !ifndef CPPFLAGS
 CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)missing
 !endif
+!ifndef CXXFLAGS
+CXXFLAGS = $(CFLAGS)
+!endif
 !ifndef LDFLAGS
 LDFLAGS = -S:$(STACK)
 !endif
@@ -326,6 +329,8 @@ s,@target_vendor@,pc,;t t
 s,@target_os@,$(OS),;t t
 s,@CC@,$(CC),;t t
 s,@CPP@,cpp32,;t t
+s,@CXX@,$$(CC),;t t
+s,@LD@,$(LD),;t t
 s,@YACC@,$(YACC),;t t
 s,@RANLIB@,,;t t
 s,@AR@,$(AR),;t t
