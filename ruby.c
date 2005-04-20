@@ -178,8 +178,9 @@ rubylib_mangle(s, l)
 #endif
 
 void
-ruby_incpush(path)
+ruby_push_include(path, filter)
     const char *path;
+    VALUE (*filter)_((VALUE));
 {
     const char sep = PATH_SEP_CHAR;
 
@@ -199,19 +200,49 @@ ruby_incpush(path)
 	while (*p) {
 	    while (*p == sep) p++;
 	    if (s = strchr(p, sep)) {
-		rb_ary_push(ary, rubylib_mangled_path(p, (int)(s-p)));
+		rb_ary_push(ary, (*filter)(rubylib_mangled_path(p, (int)(s-p))));
 		p = s + 1;
 	    }
 	    else {
-		rb_ary_push(ary, rubylib_mangled_path2(p));
+		rb_ary_push(ary, (*filter)(rubylib_mangled_path2(p)));
 		break;
 	    }
 	}
 	rb_ary_concat(rb_load_path, ary);
     }
     else {
-	rb_ary_push(rb_load_path, rubylib_mangled_path2(path));
+	rb_ary_push(rb_load_path, (*filter)(rubylib_mangled_path2(path)));
     }
+}
+
+static VALUE
+identical_path(path)
+     VALUE path;
+{
+    return path;
+}
+
+void 
+ruby_incpush(const char *path)
+{
+    ruby_push_include(path, identical_path);
+}
+
+static VALUE
+expand_include_path(path)
+    VALUE path;
+{
+    char *p = RSTRING(path)->ptr;
+    if (!p) return path;
+    if (*p == '.' && p[1] == '/') return path;
+    return rb_file_expand_path(path, Qnil);
+}
+
+
+void 
+ruby_incpush_expand(const char *path)
+{
+    ruby_push_include(path, expand_include_path);
 }
 
 #if defined DOSISH || defined __CYGWIN__
@@ -626,9 +657,9 @@ proc_options(argc, argv)
 	  case 'I':
 	    forbid_setid("-I");
 	    if (*++s)
-		ruby_incpush(s);
+		ruby_incpush_expand(s);
 	    else if (argv[1]) {
-		ruby_incpush(argv[1]);
+		ruby_incpush_expand(argv[1]);
 		argc--,argv++;
 	    }
 	    break;
