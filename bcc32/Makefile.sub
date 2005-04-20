@@ -172,6 +172,7 @@ DMYOBJS       = dmyext.obj
 OBJEXT        = obj
 
 WINMAINOBJ    = winmain.$(OBJEXT)
+MINIOBJS      = dmydln.$(OBJEXT)
 
 .path.c = .;$(srcdir);$(srcdir)win32;$(srcdir)missing
 .path.h = .;$(srcdir);$(srcdir)win32;$(srcdir)missing
@@ -395,7 +396,7 @@ s,@top_srcdir@,$(srcdir),;t t
 
 miniruby$(EXEEXT):
 		@echo $(LIBS)
-		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ),$@,nul,$(LIBRUBY_A) $(LIBS)
+		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ) $(MINIOBJS),$@,nul,$(LIBRUBY_A) $(LIBS)
 
 $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 		$(LD) $(LDFLAGS) $(XLDFLAGS) $(MAINOBJ),$@,nul,$(LIBRUBYARG) $(LIBS),,$(RUBY_INSTALL_NAME).res

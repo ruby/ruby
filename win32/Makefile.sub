@@ -173,6 +173,7 @@ EXTOBJS       =
 DLDOBJS       = 
 
 WINMAINOBJ    = winmain.$(OBJEXT)
+MINIOBJS      = dmydln.$(OBJEXT)
 
 all: $(srcdir)/win32/Makefile.sub $(srcdir)/common.mk
 
@@ -411,7 +412,7 @@ s,@top_srcdir@,$(srcdir),;t t
 
 miniruby$(EXEEXT):
 		@echo. $(LIBS)
-		$(PURIFY) $(CC) $(MAINOBJ) $(LIBRUBY_A) $(LIBS) -Fe$@ $(LDFLAGS)
+		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(LIBRUBY_A) $(LIBS) -Fe$@ $(LDFLAGS)
 
 $(PROGRAM):	$(RUBY_INSTALL_NAME).res
 		$(PURIFY) $(CC) $(MAINOBJ) $(RUBY_INSTALL_NAME).res \

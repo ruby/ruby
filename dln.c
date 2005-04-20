@@ -91,6 +91,8 @@ char *getenv();
 
 int eaccess();
 
+#ifndef NO_DLN_LOAD
+
 #if defined(HAVE_DLOPEN) && !defined(USE_DLN_A_OUT) && !defined(_AIX) && !defined(__APPLE__) && !defined(_UNICOSMP)
 /* dynamic load with dlopen() */
 # define USE_DLN_DLOPEN
@@ -1256,10 +1258,16 @@ aix_loaderror(const char *pathname)
 }
 #endif
 
+#endif /* NO_DLN_LOAD */
+
 void*
 dln_load(file)
     const char *file;
 {
+#ifdef NO_DLN_LOAD
+    rb_raise(rb_eLoadError, "this executable file can't load extension libraries");
+#else
+
 #if !defined(_AIX) && !defined(NeXT)
     const char *error = 0;
 #define DLN_ERROR() (error = dln_strerror(), strcpy(ALLOCA_N(char, strlen(error) + 1), error))
@@ -1592,6 +1600,8 @@ dln_load(file)
   failed:
     rb_loaderror("%s - %s", error, file);
 #endif
+
+#endif /* NO_DLN_LOAD */
     return 0;			/* dummy return */
 }
 

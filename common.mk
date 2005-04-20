@@ -66,7 +66,7 @@ all: $(MKFILES) $(PREP) $(RBCONFIG) $(LIBRUBY)
 	@$(MINIRUBY) $(srcdir)/ext/extmk.rb $(EXTMK_ARGS)
 prog: $(PROGRAM) $(WPROGRAM)
 
-miniruby$(EXEEXT): config.status $(LIBRUBY_A) $(MAINOBJ) $(OBJS) $(DMYEXT)
+miniruby$(EXEEXT): config.status $(LIBRUBY_A) $(MAINOBJ) $(MINIOBJS) $(OBJS) $(DMYEXT)
 
 $(PROGRAM): $(LIBRUBY) $(MAINOBJ) $(OBJS) $(EXTOBJS) $(SETUP) $(PREP)
 
@@ -216,6 +216,9 @@ dir.$(OBJEXT): {$(VPATH)}dir.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}util.h
 dln.$(OBJEXT): {$(VPATH)}dln.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
+  {$(VPATH)}dln.h
+dmydln.$(OBJEXT): {$(VPATH)}dmydln.c {$(VPATH)}dln.c {$(VPATH)}ruby.h \
+  config.h {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \
   {$(VPATH)}dln.h
 dmyext.$(OBJEXT): {$(VPATH)}dmyext.c
 enum.$(OBJEXT): {$(VPATH)}enum.c {$(VPATH)}ruby.h config.h \
