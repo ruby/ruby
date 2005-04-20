@@ -1,3 +1,5 @@
+MINIOBJS = dmydln.o
+
 include Makefile
 
 ENABLE_SHARED=@ENABLE_SHARED@

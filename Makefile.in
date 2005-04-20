@@ -97,7 +97,7 @@ all:
 
 miniruby$(EXEEXT):
 		@$(RM) $@
-		$(PURIFY) $(CC) $(MAINOBJ) $(LIBRUBY_A) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(MAINLIBS)
+		$(PURIFY) $(CC) $(MAINOBJ) $(MINIOBJS) $(LIBRUBY_A) $(LIBS) $(OUTFLAG)$@ $(LDFLAGS) $(MAINLIBS)
 
 $(PROGRAM):
 		@$(RM) $@
