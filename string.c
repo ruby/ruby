@@ -2543,7 +2543,6 @@ rb_str_to_s(str)
     return str;
 }
 
-VALUE
 /*
  * call-seq:
  *   str.inspect   => string
@@ -2556,6 +2555,7 @@ VALUE
  *    str.inspect       #=> "hel\010o"
  */
 
+VALUE
 rb_str_inspect(str)
     VALUE str;
 {
