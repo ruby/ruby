@@ -1,3 +1,8 @@
+Wed Apr 20 10:53:30 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_rb.rb (lex_init): use IRB module.
+	  [ruby-core:04737]
+
 Wed Apr 20 07:27:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {bcc32,win32,wince}/configure.bat, {bcc32,win32,wince}/setup.mak:

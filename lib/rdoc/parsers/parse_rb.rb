@@ -587,7 +587,7 @@ class RubyLex
   }
 
   def lex_init()
-    @OP = SLex.new
+    @OP = IRB::SLex.new
     @OP.def_rules("\0", "\004", "\032") do |chars, io|
       Token(TkEND_OF_SCRIPT).set_text(chars)
     end
