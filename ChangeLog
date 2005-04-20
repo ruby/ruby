@@ -1,3 +1,7 @@
+Thu Apr 21 01:53:09 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: add rdoc.
+
 Thu Apr 21 00:07:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): support platforms have file separator

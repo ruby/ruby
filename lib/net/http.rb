@@ -46,31 +46,66 @@ module Net # :nodoc:
   # 
   # === Getting Document From WWW Server
   # 
-  # (formal version)
-  # 
-  #     require 'net/http'
-  #     Net::HTTP.start('www.example.com', 80) {|http|
-  #       response = http.get('/index.html')
-  #       puts response.body
-  #     }
-  # 
-  # (shorter version)
+  # Example #1: Simple GET+print
   # 
   #     require 'net/http'
   #     Net::HTTP.get_print 'www.example.com', '/index.html'
   # 
-  #             or
+  # Example #2: Simple GET+print by URL
   # 
   #     require 'net/http'
   #     require 'uri'
   #     Net::HTTP.get_print URI.parse('http://www.example.com/index.html')
   # 
+  # Example #3: More generic GET+print
+  # 
+  #     require 'net/http'
+  #     require 'uri'
+  #
+  #     url = URI.parse('http://www.example.com/index.html')
+  #     res = Net::HTTP.start(url.host, url.port) {|http|
+  #       http.get('/index.html')
+  #     }
+  #     puts res.body
+  #
+  # Example #4: More generic GET+print
+  # 
+  #     require 'net/http'
+  #
+  #     url = URI.parse('http://www.example.com/index.html')
+  #     req = Net::HTTP::Get.new(url.path)
+  #     res = Net::HTTP.start(url.host, url.port) {|http|
+  #       http.request(req)
+  #     }
+  #     puts res.body
+  # 
   # === Posting Form Data
   # 
   #     require 'net/http'
-  #     Net::HTTP.start('some.www.server', 80) {|http|
-  #       response = http.post('/cgi-bin/search.rb', 'query=ruby')
-  #     }
+  #     require 'uri'
+  #
+  #     #1: Simple POST
+  #     res = Net::HTTP.post_form(URI.parse('http://www.example.com/search.cgi'),
+  #                               {'q'=>'ruby', 'max'=>'50'})
+  #     puts res.body
+  #
+  #     #2: POST with basic authentication
+  #     res = Net::HTTP.post_form(URI.parse('http://jack:pass@www.example.com/todo.cgi'),
+  #                                         {'from'=>'2005-01-01', 'to'=>'2005-03-31'})
+  #     puts res.body
+  #
+  #     #3: Detailed control
+  #     url = URI.parse('http://www.example.com/todo.cgi')
+  #     req = Net::HTTP::Post.new(url.path)
+  #     req.basic_auth 'jack', 'pass'
+  #     req.set_form_data({'from'=>'2005-01-01', 'to'=>'2005-03-31'}, ';')
+  #     res = Net::HTTP.new(url.host, url.port).start { http.request(req) }
+  #     case res
+  #     when Net::HTTPSuccess, Net::HTTPRedirection
+  #       # OK
+  #     else
+  #       res.error!
+  #     end
   # 
   # === Accessing via Proxy
   # 
@@ -1467,7 +1502,7 @@ module Net # :nodoc:
   end
 
 
-  class HTTP
+  class HTTP   # reopen
     class Get < HTTPRequest
       METHOD = 'GET'
       REQUEST_HAS_BODY  = false
