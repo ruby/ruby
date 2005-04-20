@@ -6,6 +6,8 @@ echo foo > conftest1.tmp
 echo bar > conftest2.tmp
 fc.exe conftest1.tmp conftest2.tmp > nul
 if not errorlevel 1 goto :brokenfc
+del conftest1.tmp > nul
+del conftest2.tmp > nul
 
 :: target does not exist or new file differs from it.
 if not exist %1 goto :update
