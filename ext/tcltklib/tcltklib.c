@@ -1903,6 +1903,7 @@ ip_set_exc_message(interp, exc)
 
     Tcl_AppendResult(interp, Tcl_DStringValue(&dstr), (char*)NULL);
     DUMP2("error message:%s", Tcl_DStringValue(&dstr));
+    Tcl_DStringFree(&dstr);
     free(buf);
 
 #else /* TCL_VERSION <= 8.0 */
@@ -8383,7 +8384,7 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
-    eTkCallbackBreak = rb_define_class("TkCallbackReturn", rb_eStandardError);
+    eTkCallbackReturn = rb_define_class("TkCallbackReturn", rb_eStandardError);
     eTkCallbackBreak = rb_define_class("TkCallbackBreak", rb_eStandardError);
     eTkCallbackContinue = rb_define_class("TkCallbackContinue",
                                           rb_eStandardError);
