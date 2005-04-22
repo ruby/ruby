@@ -1,8 +1,8 @@
 Fri Apr 22 16:41:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/tk/tcltklib.c (ip_set_exc_message): fixed memory leak.
+	* ext/tcltklib/tcltklib.c (ip_set_exc_message): fixed memory leak.
 
-	* ext/tk/tcltklib.c: eTkCallbackReturn was not initialized.
+	* ext/tcltklib/tcltklib.c: eTkCallbackReturn was not initialized.
 
 Thu Apr 21 00:07:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
