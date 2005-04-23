@@ -1,6 +1,6 @@
 Sat Apr 23 19:49:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/tcltklib/tcltklib.c (ip_RubyExitCommand): exit with status code
+	* ext/tk/tcltklib.c (ip_RubyExitCommand): exit with status code
 	  via TclTkIp#_eval didn't work. [ruby-talk:139390]
 
 Sat Apr 23 11:45:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
