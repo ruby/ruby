@@ -1,3 +1,8 @@
+Sat Apr 23 11:45:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_provided): should check also path name to be loaded.
+	  fixed: [ruby-dev:26093]
+
 Fri Apr 22 16:55:35 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c (ip_set_exc_message): fixed memory leak.

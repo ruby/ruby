@@ -6779,23 +6779,33 @@ static const char *const loadable_ext[] = {
     0
 };
 
+static int search_required _((VALUE, VALUE *));
+
 int
 rb_provided(feature)
     const char *feature;
 {
     int i;
     char *buf;
+    VALUE fname;
 
     if (rb_feature_p(feature, 0, Qfalse))
 	return Qtrue;
-    if (!loading_tbl) return Qfalse;
-    if (st_lookup(loading_tbl, (st_data_t)feature, 0)) return Qtrue;
-    buf = ALLOCA_N(char, strlen(feature)+8);
-    strcpy(buf, feature);
-    for (i=0; ; i++) {
-	if (!loadable_ext[i]) break;
-	strcpy(buf+strlen(feature), loadable_ext[i]);
-	if (st_lookup(loading_tbl, (st_data_t)buf, 0)) return Qtrue;
+    if (loading_tbl) {
+	if (st_lookup(loading_tbl, (st_data_t)feature, 0)) return Qtrue;
+	buf = ALLOCA_N(char, strlen(feature)+8);
+	strcpy(buf, feature);
+	for (i=0; loadable_ext[i]; i++) {
+	    strcpy(buf+strlen(feature), loadable_ext[i]);
+	    if (st_lookup(loading_tbl, (st_data_t)buf, 0)) return Qtrue;
+	}
+    }
+    if (search_required(rb_str_new2(feature), &fname)) {
+	feature = RSTRING(fname)->ptr;
+	if (rb_feature_p(feature, 0, Qfalse))
+	    return Qtrue;
+	if (loading_tbl && st_lookup(loading_tbl, (st_data_t)feature, 0))
+	    return Qtrue;
     }
     return Qfalse;
 }
