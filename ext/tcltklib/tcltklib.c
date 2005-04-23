@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-04-22"
+#define TCLTKLIB_RELEASE_DATE "2005-04-23"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -2860,16 +2860,17 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 
     case 2:
 #if TCL_MAJOR_VERSION >= 8
-        if (!Tcl_GetIntFromObj(interp, argv[1], &state)) {
+        if (Tcl_GetIntFromObj(interp, argv[1], &state) == TCL_ERROR) {
             return TCL_ERROR;
         }
         param = Tcl_GetString(argv[1]);
 #else /* TCL_MAJOR_VERSION < 8 */
         state = (int)strtol(argv[1], &endptr, 0);
-        if (endptr) {
+        if (*endptr) {
             Tcl_AppendResult(interp, 
                              "expected integer but got \"", 
                              argv[1], "\"", (char *)NULL);
+            return TCL_ERROR;
         }
         param = argv[1];
 #endif

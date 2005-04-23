@@ -1,3 +1,8 @@
+Sat Apr 23 19:45:59 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_RubyExitCommand): exit with status code
+	  via TclTkIp#_eval didn't work. [ruby-talk:139390]
+
 Fri Apr 22 16:41:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_set_exc_message): fixed memory leak.
