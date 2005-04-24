@@ -1,3 +1,8 @@
+Mon Apr 25 01:18:43 2005  Tanaka Akira  <akr@m17n.org>
+
+        * oniguruma.h (OnigWarnFunc): add a variadic argument.
+	[ruby-core:4751]
+
 Sat Apr 23 19:49:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c (ip_RubyExitCommand): exit with status code

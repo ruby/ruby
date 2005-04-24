@@ -704,8 +704,8 @@ typedef struct {
   int upper;
 } OnigRepeatRange;
 
-typedef void (*OnigWarnFunc) P_((const char* s));
-extern void onig_null_warn P_((const char* s));
+typedef void (*OnigWarnFunc) P_((const char* s, ...));
+extern void onig_null_warn P_((const char* s, ...));
 #define ONIG_NULL_WARN       onig_null_warn
 
 #define ONIG_CHAR_TABLE_SIZE   256
