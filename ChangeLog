@@ -1,3 +1,8 @@
+Mon Apr 25 13:54:55 2005  speakillof <speakillof@yahoo.co.jp>
+
+	* lib/rexml/encodings/SHIFT-JIS.rb: encoding and decoding were
+	  swapped. [ruby-core:4772]
+
 Mon Apr 25 01:18:43 2005  Tanaka Akira  <akr@m17n.org>
 
         * oniguruma.h (OnigWarnFunc): add a variadic argument.

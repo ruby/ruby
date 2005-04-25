@@ -3,11 +3,11 @@ require 'uconv'
 module REXML
   module Encoding
     def decode_sjis content
-      Uconv::u8tosjis(content)
+      Uconv::sjistou8(content)
     end
 
     def encode_sjis(str)
-      Uconv::sjistou8(str)
+      Uconv::u8tosjis(str)
     end
 
     b = proc do |obj|
