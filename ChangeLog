@@ -1,3 +1,8 @@
+Tue Apr 26 22:58:00 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c (ip_invoke_core): call Tcl's "::unknown"
+	  command when can't get information of target command. 
+
 Mon Apr 25 13:54:55 2005  speakillof <speakillof@yahoo.co.jp>
 
 	* lib/rexml/encodings/SHIFT-JIS.rb: encoding and decoding were
