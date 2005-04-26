@@ -1,3 +1,8 @@
+Tue Apr 26 22:58:00 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c (ip_invoke_core): call Tcl's "::unknown"
+	  command when can't get information of target command. 
+
 Mon Apr 25 01:18:43 2005  Tanaka Akira  <akr@m17n.org>
 
 	* regex.c: declare rb_warn to have variadic argument.  [ruby-core:4751]

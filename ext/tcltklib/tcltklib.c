@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-04-23"
+#define TCLTKLIB_RELEASE_DATE "2005-04-26"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -6469,6 +6469,7 @@ ip_invoke_core(interp, argc, argv)
     int  thr_crit_bup;
     struct invoke_info inf;
     int status;
+    int unknown_flag = 0;
     VALUE ret;
 
 #if TCL_MAJOR_VERSION >= 8
@@ -6505,23 +6506,56 @@ ip_invoke_core(interp, argc, argv)
     DUMP2("call Tcl_GetCommandInfo, %s", cmd);
     if (!Tcl_GetCommandInfo(ptr->ip, cmd, &info)) {
         DUMP1("error Tcl_GetCommandInfo");
-        /* if (event_loop_abort_on_exc || cmd[0] != '.') { */
-        if (event_loop_abort_on_exc > 0) {
-            /* Tcl_Release(ptr->ip); */
-            rbtk_release_ip(ptr);
-            /*rb_ip_raise(obj,rb_eNameError,"invalid command name `%s'",cmd);*/
-            return create_ip_exc(interp, rb_eNameError, 
-                                 "invalid command name `%s'", cmd);
-        } else {
-            if (event_loop_abort_on_exc < 0) {
-                rb_warning("invalid command name `%s' (ignore)", cmd);
+        DUMP1("try auto_load (call 'unknown' command)");
+        if (!Tcl_GetCommandInfo(ptr->ip, 
+#if TCL_MAJOR_VERSION >= 8
+                                "::unknown", 
+#else
+                                "unknown", 
+#endif
+                                &info)) {
+            DUMP1("fail to get 'unknown' command");
+            /* if (event_loop_abort_on_exc || cmd[0] != '.') { */
+            if (event_loop_abort_on_exc > 0) {
+                /* Tcl_Release(ptr->ip); */
+                rbtk_release_ip(ptr);
+                /*rb_ip_raise(obj,rb_eNameError,"invalid command name `%s'",cmd);*/
+                return create_ip_exc(interp, rb_eNameError, 
+                                     "invalid command name `%s'", cmd);
             } else {
-                rb_warn("invalid command name `%s' (ignore)", cmd);
+                if (event_loop_abort_on_exc < 0) {
+                    rb_warning("invalid command name `%s' (ignore)", cmd);
+                } else {
+                    rb_warn("invalid command name `%s' (ignore)", cmd);
+                }
+                Tcl_ResetResult(ptr->ip);
+                /* Tcl_Release(ptr->ip); */
+                rbtk_release_ip(ptr);
+                return rb_tainted_str_new2("");
             }
-            Tcl_ResetResult(ptr->ip);
-            /* Tcl_Release(ptr->ip); */
-            rbtk_release_ip(ptr);
-            return rb_tainted_str_new2("");
+        } else {
+#if TCL_MAJOR_VERSION >= 8
+            Tcl_Obj **unknown_objv;
+#else
+            char **unknown_argv;
+#endif
+            DUMP1("find 'unknown' command -> set arguemnts");
+            unknown_flag = 1;
+
+#if TCL_MAJOR_VERSION >= 8
+            unknown_objv = (Tcl_Obj **)ALLOC_N(Tcl_Obj *, objc+2);
+            unknown_objv[0] = Tcl_NewStringObj("::unknown", 9);
+            Tcl_IncrRefCount(unknown_objv[0]);
+            memcpy(unknown_objv + 1, objv, sizeof(Tcl_Obj *)*objc);
+            unknown_objv[++objc] = (Tcl_Obj*)NULL;
+            objv = unknown_objv;
+#else
+            unknown_argv = (char **)ALLOC_N(char *, argc+2);
+            unknown_argv[0] = strdup("unknown");
+            memcpy(unknown_argv + 1, argv, sizeof(char *)*argc);
+            unknown_argv[++argc] = (char *)NULL;
+            argv = unknown_argv;
+#endif
         }
     }
     DUMP1("end Tcl_GetCommandInfo");
@@ -6605,6 +6639,17 @@ ip_invoke_core(interp, argc, argv)
 #endif
     }
 #endif /* ! wrap tcl-proc call */
+
+    /* free allocated memory for calling 'unknown' command */
+    if (unknown_flag) {
+#if TCL_MAJOR_VERSION >= 8
+        Tcl_DecrRefCount(objv[0]);
+        free(objv);
+#else
+        free(argv[0]);
+        free(argv);
+#endif
+    }
 
     /* exception on mainloop */
     if (pending_exception_check1(thr_crit_bup, ptr)) {
