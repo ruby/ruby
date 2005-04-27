@@ -1,3 +1,8 @@
+Thu Apr 28 08:21:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (set_arg0): use also environment variable space for setting
+	  $0.  [ruby-core:04774]
+
 Wed Apr 27 23:42:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (OPTFLAGS): default global optimization to

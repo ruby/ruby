@@ -977,6 +977,33 @@ VALUE rb_progname;
 VALUE rb_argv;
 VALUE rb_argv0;
 
+#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE) && !defined(DOSISH)
+static struct {
+    char *begin, *end;
+} envspace;
+extern char **environ;
+
+static void
+set_arg0space()
+{
+    char *s;
+    int i;
+
+    if (!environ || (s = environ[0]) == NULL) return;
+    envspace.begin = s;
+    s += strlen(s);
+    for (i = 1; environ[i]; i++) {
+	if (environ[i] == s + 1) {
+	    s++;
+	    s += strlen(s);	/* this one is ok too */
+	}
+    }
+    envspace.end = s;
+}
+#else
+#define set_arg0space() ((void)0)
+#endif
+
 static void
 set_arg0(val, id)
     VALUE val;
@@ -990,19 +1017,19 @@ set_arg0(val, id)
     StringValue(val);
     s = RSTRING(val)->ptr;
     i = RSTRING(val)->len;
-#ifdef __hpux
+#if defined(PSTAT_SETCMD)
     if (i >= PST_CLEN) {
-      union pstun j;
-      j.pst_command = s;
-      i = PST_CLEN;
-      RSTRING(val)->len = i;
-      *(s + i) = '\0';
-      pstat(PSTAT_SETCMD, j, PST_CLEN, 0, 0);
+	union pstun j;
+	j.pst_command = s;
+	i = PST_CLEN;
+	RSTRING(val)->len = i;
+	*(s + i) = '\0';
+	pstat(PSTAT_SETCMD, j, PST_CLEN, 0, 0);
     }
     else {
-      union pstun j;
-      j.pst_command = s;
-      pstat(PSTAT_SETCMD, j, i, 0, 0);
+	union pstun j;
+	j.pst_command = s;
+	pstat(PSTAT_SETCMD, j, i, 0, 0);
     }
     rb_progname = rb_tainted_str_new(s, i);
 #elif defined(HAVE_SETPROCTITLE)
@@ -1024,6 +1051,12 @@ set_arg0(val, id)
 		break;
 	    }
 	}
+#ifndef DOSISH
+	if (s + 1 == envspace.begin) {
+	    s = envspace.end;
+	    ruby_setenv("", NULL); /* duplicate environ vars */
+	}
+#endif
 	len = s - origargv[0];
     }
 
@@ -1174,6 +1207,7 @@ ruby_process_options(argc, argv)
 #if defined(USE_DLN_A_OUT)
     dln_argv0 = argv[0];
 #endif
+    set_arg0space();
     proc_options(argc, argv);
 
     if (do_check && ruby_nerrs == 0) {
