@@ -68,7 +68,10 @@ ARCH = $(PROCESSOR_ARCHITECTURE)
 DEBUGFLAGS = -Zi
 !endif
 !if !defined(OPTFLAGS)
-OPTFLAGS = -O2b2xg-
+OPTFLAGS = -O2b2x
+!if $(MSC_VER) < 1300
+OPTFLAGS = $(OPTFLAGS)g-
+!endif
 !endif
 !if !defined(OS)
 OS = mswin32

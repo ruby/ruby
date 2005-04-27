@@ -108,6 +108,7 @@ int main(int argc, char **argv)
 MAJOR = RUBY_VERSION_MAJOR
 MINOR = RUBY_VERSION_MINOR
 TEENY = RUBY_VERSION_TEENY
+MSC_VER = _MSC_VER
 <<
 
 -generic-: nul

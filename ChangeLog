@@ -1,7 +1,12 @@
+Wed Apr 27 23:42:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/Makefile.sub (OPTFLAGS): default global optimization to
+	  disabled only for VC++6.
+
 Tue Apr 26 22:58:00 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tcltklib.c (ip_invoke_core): call Tcl's "::unknown"
-	  command when can't get information of target command. 
+	  command when can't get information of target command.
 
 Mon Apr 25 13:54:55 2005  speakillof <speakillof@yahoo.co.jp>
 
@@ -10,7 +15,7 @@ Mon Apr 25 13:54:55 2005  speakillof <speakillof@yahoo.co.jp>
 
 Mon Apr 25 01:18:43 2005  Tanaka Akira  <akr@m17n.org>
 
-        * oniguruma.h (OnigWarnFunc): add a variadic argument.
+	* oniguruma.h (OnigWarnFunc): add a variadic argument.
 	[ruby-core:4751]
 
 Sat Apr 23 19:49:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
