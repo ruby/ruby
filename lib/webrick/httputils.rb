@@ -384,9 +384,11 @@ module WEBrick
     end
 
     def escape_path(str)
-      str.split("/").collect{|i|
-        _escape(i, UNESCAPED_PCHAR)
-      }.join("/")
+      result = ""
+      str.scan(%r{/([^/]*)}).each{|i|
+        result << "/" << _escape(i[0], UNESCAPED_PCHAR)
+      }
+      return result
     end
 
     def escape8bit(str)

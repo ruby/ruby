@@ -4,7 +4,7 @@ require "webrick/cgi"
 class TestApp < WEBrick::CGI
   def do_GET(req, res)
     res["content-type"] = "text/plain"
-    if p = req.path_info
+    if (p = req.path_info) && p.length > 0
       res.body = p
     elsif (q = req.query).size > 0
       res.body = q.keys.sort.collect{|key|

@@ -1,3 +1,20 @@
+Sat Apr 30 06:57:39 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb: new methods WEBrick::CGI#[], WEBrick::CGI#logger
+	  and WEBrick::CGI#config.  these are necessary to use an instance of
+	  WEBrick::CGI as the first argument of HTTPServlet#get_instance.
+	  (suggested by Tatsuki Sugiura)
+
+	* lib/webrick/cgi.rb
+	  (WEBrick::CGI#initalize): set a dummy to @config[:ServerSoftware]
+	  if SERVER_SOFTWARE environment variable is not given.
+	  (WEBrick::CGI#start): req.path_info must be a String.
+	  (WEBrick::CGI::Socket#request_line): treat REQUEST_METHOD, PATH_INFO
+	  and SCRIPT_NAME to run in console. 
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.escape_path): should
+	  not use String#split("/"). it removes trailing empty path component.
+
 Thu Apr 28 08:21:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (set_arg0): use also environment variable space for setting
