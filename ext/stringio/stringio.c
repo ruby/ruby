@@ -863,8 +863,7 @@ strio_getline(argc, argv, ptr)
 	    }
 	}
 	s = p;
-	while (p = memchr(p, '\n', e - p)) {
-	    if (p == e) break;
+	while ((p = memchr(p, '\n', e - p)) && (p != e)) {
 	    if (*++p == '\n') {
 		e = p;
 		break;
@@ -873,7 +872,7 @@ strio_getline(argc, argv, ptr)
 	str = rb_str_substr(ptr->string, s - RSTRING(ptr->string)->ptr, e - s); 
     }
     else if (n == 1) {
-	if (p = memchr(s, RSTRING(str)->ptr[0], e - s)) {
+	if ((p = memchr(s, RSTRING(str)->ptr[0], e - s)) != 0) {
 	    e = p + 1;
 	}
 	str = rb_str_substr(ptr->string, ptr->pos, e - s);
