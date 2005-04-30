@@ -429,11 +429,8 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 # define STACK_LEVEL_MAX 655300
 #endif
 
-#ifdef __GNUC__
-# if ( __GNUC__ == 3 && __GNUC_MINOR__ > 0 ) || __GNUC__ > 3
-__attribute__ ((noinline)) 
-# endif
-#endif
+NOINLINE(static void set_stack_end _((VALUE **stack_end_p)));
+
 static void
 set_stack_end(VALUE **stack_end_p)
 {
@@ -510,7 +507,7 @@ init_mark_stack()
 }
 
 #define MARK_STACK_EMPTY (mark_stack_ptr == mark_stack)
-            
+
 static st_table *source_filenames;
 
 char *

@@ -220,6 +220,10 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #if _MSC_VER > 1100
 #define NORETURN(x) __declspec(noreturn) x
 #endif
+#if _MSC_VER >= 1300
+#define DEPRECATED(x) __declspec(deprecated) x
+#define NOINLINE(x) __declspec(noinline) x
+#endif
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_LIMITS_H 1
 #define HAVE_FCNTL_H 1

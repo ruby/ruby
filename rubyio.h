@@ -99,15 +99,6 @@ void rb_io_read_check _((OpenFile*));
 int rb_io_read_pending _((OpenFile*));
 void rb_read_check _((FILE*));
 
-#ifdef __GNUC__
-# if ( __GNUC__ == 3 && __GNUC_MINOR__ > 0 ) || __GNUC__ > 3
-#  define DEPRECATED(x) x __attribute__ ((deprecated))
-# endif
-#endif
-#ifndef DEPRECATED
-# define DEPRECATED(x) x
-#endif
-
 DEPRECATED(int rb_getc _((FILE*)));
 DEPRECATED(long rb_io_fread _((char *, long, FILE *)));
 DEPRECATED(long rb_io_fwrite _((const char *, long, FILE *)));

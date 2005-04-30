@@ -1,3 +1,17 @@
+Sat Apr 30 11:59:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in (RUBY_FUNC_ATTRIBUTE): check for function attribute.
+	  [ruby-dev:26109]
+
+	* eval.c, gc.c: moved noinline to configure.in.
+
+	* rubyio.h (DEPRECATED): moved to configure.in.
+
+	* ruby.h (DEPRECATED, NOINLINE): default definition.
+
+	* win{32,ce}/Makefile.sub (config.h): deprecated and noinline for
+	  __declspec() are available for VC++7 or later.
+
 Sat Apr 30 06:57:39 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb: new methods WEBrick::CGI#[], WEBrick::CGI#logger
@@ -10,7 +24,7 @@ Sat Apr 30 06:57:39 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  if SERVER_SOFTWARE environment variable is not given.
 	  (WEBrick::CGI#start): req.path_info must be a String.
 	  (WEBrick::CGI::Socket#request_line): treat REQUEST_METHOD, PATH_INFO
-	  and SCRIPT_NAME to run in console. 
+	  and SCRIPT_NAME to run in console.
 
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.escape_path): should
 	  not use String#split("/"). it removes trailing empty path component.

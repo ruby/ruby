@@ -263,16 +263,45 @@ if test "$rb_cv_stdarg" = yes; then
   AC_DEFINE(HAVE_STDARG_PROTOTYPES)
 fi
 
-AC_CACHE_CHECK([for noreturn], rb_cv_noreturn,
-[rb_cv_noreturn=x
-for mac in "x __attribute__ ((noreturn))" "__declspec(noreturn) x" x; do
+AC_DEFUN(RUBY_FUNC_ATTRIBUTE, [dnl
+m4_ifval([$2], dnl
+  [AS_VAR_PUSHDEF([attrib],[$2])], dnl
+  [AS_VAR_PUSHDEF([attrib],[FUNC_]AS_TR_CPP($1))] dnl
+)dnl
+m4_ifval([$3], dnl
+  [AS_VAR_PUSHDEF([rbcv],[$3])], dnl
+  [AS_VAR_PUSHDEF([rbcv],[rb_cv_func_][$1])]dnl
+)dnl
+AC_CACHE_CHECK(for [$1] function attribute, rbcv,
+[rbcv=x
+if test "${ac_c_werror_flag+set}"; then
+  rb_c_werror_flag="$ac_c_werror_flag"
+else
+  unset rb_c_werror_flag
+fi
+ac_c_werror_flag=yes
+for mac in "x __attribute__ (($1))" "__declspec($1) x" x; do
   AC_TRY_COMPILE(
-    [#define NORETURN(x) $mac
-NORETURN(void exit(int x));],
-    [],
-    [rb_cv_noreturn="$mac"; break])
-done])
-AC_DEFINE_UNQUOTED([NORETURN(x)], $rb_cv_noreturn)
+    [#define ]attrib[(x) $mac
+    ]attrib[(void conftest_attribute_check(void));], [],
+    [rbcv="$mac"; break])
+done
+if test "${rb_c_werror_flag+set}"; then
+  ac_c_werror_flag="$rb_c_werror_flag"
+else
+  unset ac_c_werror_flag
+fi
+])
+AC_DEFINE_UNQUOTED(attrib[(x)], $rbcv)
+AS_VAR_POPDEF([attrib])
+AS_VAR_POPDEF([rbcv])
+])
+
+RUBY_FUNC_ATTRIBUTE(noreturn, NORETURN)
+RUBY_FUNC_ATTRIBUTE(deprecated, DEPRECATED)
+RUBY_FUNC_ATTRIBUTE(noinline, NOINLINE)
+RUBY_FUNC_ATTRIBUTE(stdcall)
+RUBY_FUNC_ATTRIBUTE(cdecl)
 
 dnl Check whether we need to define sys_nerr locally
 AC_CHECK_DECLS([sys_nerr], [], [], [$ac_includes_default

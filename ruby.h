@@ -56,6 +56,12 @@ extern "C" {
 #ifndef NORETURN
 # define NORETURN(x) x
 #endif
+#ifndef DEPRECATED
+# define DEPRECATED(x) x
+#endif
+#ifndef NOINLINE
+# define NOINLINE(x) x
+#endif
 
 #if defined(HAVE_ALLOCA_H)
 #include <alloca.h>
@@ -633,12 +639,12 @@ rb_class_of(obj)
     VALUE obj;
 #endif
 {
-    if(IMMEDIATE_P(obj)){
+    if (IMMEDIATE_P(obj)) {
 	if (FIXNUM_P(obj)) return rb_cFixnum;
 	if (obj == Qtrue)  return rb_cTrueClass;
 	if (SYMBOL_P(obj)) return rb_cSymbol;
     }
-    else if(!RTEST(obj)){
+    else if (!RTEST(obj)) {
 	if (obj == Qnil)   return rb_cNilClass;
 	if (obj == Qfalse) return rb_cFalseClass;
     }
@@ -653,13 +659,13 @@ rb_type(obj)
    VALUE obj;
 #endif
 {
-    if(IMMEDIATE_P(obj)){
+    if (IMMEDIATE_P(obj)) {
 	if (FIXNUM_P(obj)) return T_FIXNUM;
 	if (obj == Qtrue) return T_TRUE;
 	if (SYMBOL_P(obj)) return T_SYMBOL;
 	if (obj == Qundef) return T_UNDEF;
     }
-    else if(!RTEST(obj)){
+    else if (!RTEST(obj)) {
 	if (obj == Qnil) return T_NIL;
 	if (obj == Qfalse) return T_FALSE;
     }
