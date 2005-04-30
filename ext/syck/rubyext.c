@@ -1,4 +1,4 @@
-/* -*- indent-tabs-mode: nil -*-
+/* -*- indent-tabs-mode: nil -*- */
 /*
  * rubyext.c
  *
