@@ -359,7 +359,7 @@ rb_dlptr_aref(int argc, VALUE argv[], VALUE self)
 	len    = NUM2ULONG(arg1);
 	retval = rb_tainted_str_new((char *)RPTR_DATA(self)->ptr + offset, len);
 	break;
-    defualt:
+    default:
 	rb_bug("rb_dlptr_aref()");
     }
     return retval;
@@ -394,7 +394,7 @@ rb_dlptr_aset(int argc, VALUE argv[], VALUE self)
 	memcpy((char *)RPTR_DATA(self)->ptr + offset, mem, len);
 	retval = arg2;
 	break;
-    defualt:
+    default:
 	rb_bug("rb_dlptr_aset()");
     }
     return retval;
