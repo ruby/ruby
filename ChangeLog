@@ -1,3 +1,8 @@
+Sun May  1 09:13:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_sflag): replace '-' in variable names with '_'.
+	  [ruby-dev:26107]
+
 Wed Apr 27 23:42:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/Makefile.sub (OPTFLAGS): default global optimization to
