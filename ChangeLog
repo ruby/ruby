@@ -1,7 +1,10 @@
-Sun May  1 09:13:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May  1 09:58:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_sflag): replace '-' in variable names with '_'.
 	  [ruby-dev:26107]
+
+	* ruby.c (set_arg0): use also environment variable space for setting
+	  $0.  [ruby-core:04774]
 
 Wed Apr 27 23:42:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
