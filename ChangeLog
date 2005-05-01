@@ -1,3 +1,8 @@
+Sun May  1 09:13:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ruby.c (process_sflag): replace '-' in variable names with '_'.
+	  [ruby-dev:26107]
+
 Sat Apr 30 11:59:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_FUNC_ATTRIBUTE): check for function attribute.

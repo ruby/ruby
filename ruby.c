@@ -199,7 +199,7 @@ ruby_push_include(path, filter)
 	p = path;
 	while (*p) {
 	    while (*p == sep) p++;
-	    if (s = strchr(p, sep)) {
+	    if ((s = strchr(p, sep)) != 0) {
 		rb_ary_push(ary, (*filter)(rubylib_mangled_path(p, (int)(s-p))));
 		p = s + 1;
 	    }
@@ -413,20 +413,43 @@ process_sflag()
 	    VALUE v = *args++;
 	    char *s = StringValuePtr(v);
 	    char *p;
+	    int hyphen = Qfalse;
 
 	    if (s[0] != '-') break;
 	    n--;
 	    if (s[1] == '-' && s[2] == '\0') break;
 
+	    v = Qtrue;
+	    /* check if valid name before replacing - with _ */
+	    for (p = s + 1; *p; p++) {
+		if (*p == '=') {
+		    *p++ = '\0';
+		    v = rb_str_new2(p);
+		    break;
+		}
+		if (*p == '-') {
+		    hyphen = Qtrue;
+		}
+		else if (*p != '_' && !ISALNUM(*p)) {
+		    VALUE name_error[2];
+		    name_error[0] = rb_str_new2("invalid name for global variable - ");
+		    if (!(p = strchr(p, '='))) {
+			rb_str_cat2(name_error[0], s);
+		    }
+		    else {
+			rb_str_cat(name_error[0], s, p - s);
+		    }
+		    name_error[1] = args[-1];
+		    rb_exc_raise(rb_class_new_instance(2, name_error, rb_eNameError));
+		}
+	    }
 	    s[0] = '$';
-	    if (p = strchr(s, '=')) {
-		*p++ = '\0';
-		rb_gv_set(s, rb_str_new2(p));
+	    if (hyphen) {
+		for (p = s + 1; *p; ++p) {
+		    if (*p == '-') *p = '_';
+		}
 	    }
-	    else {
-		rb_gv_set(s, Qtrue);
-	    }
-	    s[0] = '-';
+	    rb_gv_set(s, v);
 	}
 	n = RARRAY(rb_argv)->len - n;
 	while (n--) {
@@ -740,7 +763,7 @@ proc_options(argc, argv)
 
     if (rb_safe_level() == 0 && (s = getenv("RUBYOPT"))) {
 	while (ISSPACE(*s)) s++;
-	if (*s == 'T' || *s == '-' && *(s+1) == 'T') {
+	if (*s == 'T' || (*s == '-' && *(s+1) == 'T')) {
 	    int numlen;
 	    int v = 1;
 
@@ -884,7 +907,7 @@ load_file(fname, script)
 		if (RSTRING(line)->len > 2
 		    && RSTRING(line)->ptr[0] == '#'
 		    && RSTRING(line)->ptr[1] == '!') {
-		    if (p = strstr(RSTRING(line)->ptr, "ruby")) {
+		    if ((p = strstr(RSTRING(line)->ptr, "ruby")) != 0) {
 			goto start_read;
 		    }
 		}
@@ -936,7 +959,7 @@ load_file(fname, script)
 		RSTRING(line)->ptr[RSTRING(line)->len-1] = '\0';
 		if (RSTRING(line)->ptr[RSTRING(line)->len-2] == '\r')
 		    RSTRING(line)->ptr[RSTRING(line)->len-2] = '\0';
-		if (p = strstr(p, " -")) {
+		if ((p = strstr(p, " -")) != 0) {
 		    p++;	/* skip space before `-' */
 		    while (*p == '-') {
 			p = moreswitches(p+1);
