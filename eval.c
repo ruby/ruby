@@ -3226,16 +3226,6 @@ rb_eval(self, n)
 	result = rb_range_new(rb_eval(self, node->nd_beg),
 			      rb_eval(self, node->nd_end),
 			      nd_type(node) == NODE_DOT3);
-	if (node->nd_state) break;
-	if (nd_type(node->nd_beg) == NODE_LIT && FIXNUM_P(node->nd_beg->nd_lit) &&
-	    nd_type(node->nd_end) == NODE_LIT && FIXNUM_P(node->nd_end->nd_lit))
-	{
-	    nd_set_type(node, NODE_LIT);
-	    node->nd_lit = result;
-	}
-	else {
-	    node->nd_state = 1;
-	}
 	break;
 
       case NODE_FLIP2:		/* like AWK */

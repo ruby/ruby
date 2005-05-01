@@ -1,7 +1,10 @@
-Sun May  1 09:13:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sun May  1 09:15:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_sflag): replace '-' in variable names with '_'.
 	  [ruby-dev:26107]
+
+	* eval.c (rb_eval), parse.y (arg): reduce fixnum range literal at
+	  parser.  fixed: [ruby-dev:26113]
 
 Sat Apr 30 11:59:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
