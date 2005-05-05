@@ -11,6 +11,7 @@
 
 #include "ruby.h"
 #include "re.h"
+#include "regint.h"
 #include <ctype.h>
 
 #define MBCTYPE_ASCII         0

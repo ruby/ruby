@@ -1,3 +1,10 @@
+Fri May  6 08:08:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* hash.c:rb_hash_hash_i() should be static.  [ruby-core:04815]
+
+	* re.c should include regint.h for declarations of oniguruma
+	  functions.  [ruby-core:04815]
+
 Sun May  1 09:15:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_sflag): replace '-' in variable names with '_'.

@@ -1496,7 +1496,7 @@ rb_hash_eql(hash1, hash2)
     return hash_equal(hash1, hash2, Qtrue);
 }
 
-
+static int
 rb_hash_hash_i(key, value, hp)
     VALUE key, value;
     long *hp;
