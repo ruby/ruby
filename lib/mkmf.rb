@@ -609,9 +609,7 @@ end
 
 def have_var(var, headers = nil, &b)
   checking_for "#{var}" do
-    libs = append_library($libs, libs)
     if try_var(var, headers, &b)
-      $libs = libs
       $defs.push(format("-DHAVE_%s", var.upcase))
       true
     else
