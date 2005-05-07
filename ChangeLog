@@ -1,3 +1,7 @@
+Sat May  7 22:58:00 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (have_var): no libs argument is given.
+
 Sun May  1 09:58:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ruby.c (process_sflag): replace '-' in variable names with '_'.
