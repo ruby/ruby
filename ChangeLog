@@ -1,3 +1,8 @@
+Sun May  8 16:52:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/profiler.rb: fixed "undefined method `[]' for nil:NilClass"
+	  [ruby-core:4775] [ruby-talk:140401] [ruby-dev:26118]
+
 Sat May  7 22:58:00 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (have_var): no libs argument is given.
@@ -1441,7 +1446,7 @@ Fri Jan 21 00:31:36 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Thu Jan 20 19:03:24 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* ext/extmk.rb (extmake): shoudn't set $extflags on mswin32.
+	* ext/extmk.rb (extmake): shouldn't set $extflags on mswin32.
 
 	* win32/Makefile.sub (LIBRUBY_SO): should use $DLDOBJS instead of
 	  $EXTOBJS.
