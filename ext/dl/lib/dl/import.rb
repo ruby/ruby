@@ -154,12 +154,12 @@ module DL
 
     def struct(signature)
       tys, mems = parse_struct_signature(signature, @type_alias)
-      CStructBuilder.create(CStruct, tys, mems)
+      DL::CStructBuilder.create(CStruct, tys, mems)
     end
 
     def union(signature)
       tys, mems = parse_struct_signature(signature, @type_alias)
-      CStructBuilder.create(CUnion, tys, mems)
+      DL::CStructBuilder.create(CUnion, tys, mems)
     end
 
     def [](name)
