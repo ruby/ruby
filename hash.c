@@ -1480,76 +1480,6 @@ rb_hash_equal(hash1, hash2)
     return hash_equal(hash1, hash2, Qfalse);
 }
 
-/*
- *  call-seq:
- *     hsh.eql?(other_hash)    => true or false
- *  
- *  Returns true if two hashes are equal, i.e they have same key-value set,
- *  and same default values.
- *     
- */
-
-static VALUE
-rb_hash_eql(hash1, hash2)
-    VALUE hash1, hash2;
-{
-    return hash_equal(hash1, hash2, Qtrue);
-}
-
-static int
-rb_hash_hash_i(key, value, hp)
-    VALUE key, value;
-    long *hp;
-{
-    long h = *hp;
-    VALUE n;
-
-    h = (h << 1) | (h<0 ? 1 : 0);
-    n = rb_hash(key);
-    h ^= NUM2LONG(n);
-    h = (h << 1) | (h<0 ? 1 : 0);
-    n = rb_hash(value);
-    h ^= NUM2LONG(n);
-    
-    *hp = h;
-    return ST_CONTINUE;
-}
-
-static VALUE
-recursive_hash(hash, dummy, recur)
-    VALUE hash, dummy;
-    int recur;
-{
-    long h;
-    VALUE n;
-
-    if (recur) {
-	return LONG2FIX(0);
-    }
-    h = RHASH(hash)->tbl->num_entries;
-    rb_hash_foreach(hash, rb_hash_hash_i, (VALUE)&h);
-    h = (h << 1) | (h<0 ? 1 : 0);
-    n = rb_hash(RHASH(hash)->ifnone);
-    h ^= NUM2LONG(n);
-    return LONG2FIX(h);
-}    
-
-/*
- *  call-seq:
- *     hash.hash   -> fixnum
- *
- *  Compute a hash-code for this hash. Two hashes with the same content
- *  will have the same hash code (and will compare using <code>eql?</code>).
- */
-
-static VALUE
-rb_hash_hash(hash)
-    VALUE hash;
-{
-    return rb_exec_recursive(recursive_hash, hash, 0);
-}
-
-
 static int
 rb_hash_invert_i(key, value, hash)
     VALUE key, value;
@@ -2495,8 +2425,6 @@ Init_Hash()
     rb_define_method(rb_cHash,"inspect", rb_hash_inspect, 0);
 
     rb_define_method(rb_cHash,"==", rb_hash_equal, 1);
-    rb_define_method(rb_cHash,"eql?", rb_hash_eql, 1);
-    rb_define_method(rb_cHash,"hash", rb_hash_hash, 0);
     rb_define_method(rb_cHash,"[]", rb_hash_aref, 1);
     rb_define_method(rb_cHash,"fetch", rb_hash_fetch, -1);
     rb_define_method(rb_cHash,"[]=", rb_hash_aset, 2);

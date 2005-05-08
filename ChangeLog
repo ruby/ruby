@@ -1,3 +1,8 @@
+Sun May  8 21:00:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* hash.c (Init_Hash): remove custom "hash" and "eql?".
+	  (ported from 1.8) [ruby-dev:26132]
+
 Sun May  8 16:50:25 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/profiler.rb: fixed "undefined method `[]' for nil:NilClass"
