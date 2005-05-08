@@ -127,7 +127,7 @@ class Tk::Vu::PieSlice
 
   def initialize(parent, *args)
     unless parent.kind_of?(Tk::Vu::Pie)
-      fail ArguemntError, "expect a Tk::Vu::Pie instance for 1st argument"
+      fail ArgumentError, "expect a Tk::Vu::Pie instance for 1st argument"
     end
     @parent = @pie = parent
     @ppath = parent.path
@@ -218,7 +218,7 @@ class Tk::Vu::NamedPieSlice
 
   def initialize(parent, name, *args)
     unless parent.kind_of?(Tk::Vu::Pie)
-      fail ArguemntError, "expect a Tk::Vu::Pie instance for 1st argument"
+      fail ArgumentError, "expect a Tk::Vu::Pie instance for 1st argument"
     end
     @parent = @pie = parent
     @ppath = parent.path

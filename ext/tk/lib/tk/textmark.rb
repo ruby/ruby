@@ -20,7 +20,7 @@ class TkTextMark<TkObject
 
   def initialize(parent, index)
     #unless parent.kind_of?(TkText)
-    #  fail ArguemntError, "expect TkText for 1st argument"
+    #  fail ArgumentError, "expect TkText for 1st argument"
     #end
     @parent = @t = parent
     @tpath = parent.path
@@ -132,7 +132,7 @@ class TkTextNamedMark<TkTextMark
 
   def initialize(parent, name, index=nil)
     #unless parent.kind_of?(TkText)
-    #  fail ArguemntError, "expect TkText for 1st argument"
+    #  fail ArgumentError, "expect TkText for 1st argument"
     #end
     @parent = @t = parent
     @tpath = parent.path

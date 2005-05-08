@@ -249,7 +249,7 @@ class TkTimer
     #  && !interval.kind_of?(Integer) && !interval.kind_of?(Proc)
     if interval != 'idle' && interval != :idle \
       && !interval.kind_of?(Integer) && !TkComm._callback_entry?(interval)
-      fail ArguemntError, "expect Integer or Proc"
+      fail ArgumentError, "expect Integer or Proc"
     end
     @sleep_time = interval
   end
@@ -259,7 +259,7 @@ class TkTimer
     #   && !interval.kind_of?(Integer) && !interval.kind_of?(Proc)
     if interval != 'idle' && interval != :idle \
       && !interval.kind_of?(Integer) && !TkComm._callback_entry?(interval)
-      fail ArguemntError, "expect Integer or Proc for 1st argument"
+      fail ArgumentError, "expect Integer or Proc for 1st argument"
     end
     @sleep_time = interval
 
@@ -283,7 +283,7 @@ class TkTimer
       @loop_exec = 0
     else
       if not loop_exec.kind_of?(Integer)
-        fail ArguemntError, "expect Integer for 2nd argument"
+        fail ArgumentError, "expect Integer for 2nd argument"
       end
       @loop_exec = loop_exec
     end
@@ -334,7 +334,7 @@ class TkTimer
     sleep = @init_sleep unless sleep
 
     if sleep != 'idle' && sleep != :idle && !sleep.kind_of?(Integer)
-      fail ArguemntError, "expect Integer or 'idle' for 1st argument"
+      fail ArgumentError, "expect Integer or 'idle' for 1st argument"
     end
 
     @init_sleep = sleep
@@ -364,7 +364,7 @@ class TkTimer
     if argc > 0
       sleep = init_args.shift
       if sleep != 'idle' && sleep != :idle && !sleep.kind_of?(Integer)
-        fail ArguemntError, "expect Integer or 'idle' for 1st argument"
+        fail ArgumentError, "expect Integer or 'idle' for 1st argument"
       end
       @init_sleep = sleep
     end
@@ -436,7 +436,7 @@ class TkTimer
     fail RuntimeError, "no procedure to continue" unless cmd
     if wait
       unless wait.kind_of?(Integer)
-        fail ArguemntError, "expect Integer for 1st argument"
+        fail ArgumentError, "expect Integer for 1st argument"
       end
       sleep = wait
     end
