@@ -9,7 +9,7 @@ class TkTextWindow<TkObject
 
   def initialize(parent, index, keys = {})
     #unless parent.kind_of?(TkText)
-    #  fail ArguemntError, "expect TkText for 1st argument"
+    #  fail ArgumentError, "expect TkText for 1st argument"
     #end
     @t = parent
     if index == 'end' || index == :end

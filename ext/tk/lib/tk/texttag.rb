@@ -22,7 +22,7 @@ class TkTextTag<TkObject
 
   def initialize(parent, *args)
     #unless parent.kind_of?(TkText)
-    #  fail ArguemntError, "expect TkText for 1st argument"
+    #  fail ArgumentError, "expect TkText for 1st argument"
     #end
     @parent = @t = parent
     @tpath = parent.path
@@ -247,7 +247,7 @@ class TkTextNamedTag<TkTextTag
 
   def initialize(parent, name, *args)
     #unless parent.kind_of?(TkText)
-    #  fail ArguemntError, "expect TkText for 1st argument"
+    #  fail ArgumentError, "expect TkText for 1st argument"
     #end
     @parent = @t = parent
     @tpath = parent.path

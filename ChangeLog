@@ -1,3 +1,7 @@
+Sun May  8 23:17:47 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/timer.rb: fix typo.
+
 Sun May  8 21:00:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* hash.c (Init_Hash): remove custom "hash" and "eql?".

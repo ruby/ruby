@@ -210,7 +210,7 @@ class TkcTag<TkObject
 
   def initialize(parent, mode=nil, *args)
     #unless parent.kind_of?(TkCanvas)
-    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #  fail ArgumentError, "expect TkCanvas for 1st argument"
     #end
     @c = parent
     @cpath = parent.path
@@ -297,7 +297,7 @@ class TkcTagString<TkcTag
 
   def initialize(parent, name, mode=nil, *args)
     #unless parent.kind_of?(TkCanvas)
-    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #  fail ArgumentError, "expect TkCanvas for 1st argument"
     #end
     @c = parent
     @cpath = parent.path
@@ -314,7 +314,7 @@ TkcNamedTag = TkcTagString
 class TkcTagAll<TkcTag
   def initialize(parent)
     #unless parent.kind_of?(TkCanvas)
-    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #  fail ArgumentError, "expect TkCanvas for 1st argument"
     #end
     @c = parent
     @cpath = parent.path
@@ -327,7 +327,7 @@ end
 class TkcTagCurrent<TkcTag
   def initialize(parent)
     #unless parent.kind_of?(TkCanvas)
-    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #  fail ArgumentError, "expect TkCanvas for 1st argument"
     #end
     @c = parent
     @cpath = parent.path
@@ -342,7 +342,7 @@ class TkcGroup<TkcTag
   #def create_self(parent, *args)
   def initialize(parent, *args)
     #unless parent.kind_of?(TkCanvas)
-    #  fail ArguemntError, "expect TkCanvas for 1st argument"
+    #  fail ArgumentError, "expect TkCanvas for 1st argument"
     #end
     @c = parent
     @cpath = parent.path
