@@ -40,6 +40,12 @@ module DL
   end
 
   class TestImport < TestBase
+    def test_malloc()
+      s1 = LIBC::Timeval.malloc()
+      s2 = LIBC::Timeval.malloc()
+      assert_not_equal(s1.to_ptr.to_i, s2.to_ptr.to_i)
+    end
+
     def test_sizeof()
       assert_equal(DL::SIZEOF_VOIDP, LIBC.sizeof("FILE*"))
       assert_equal(LIBC::MyStruct.size(), LIBC.sizeof(LIBC::MyStruct))
