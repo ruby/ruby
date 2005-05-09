@@ -17,16 +17,15 @@ module DL
   module CStructBuilder
     def create(klass, types, members)
       new_class = Class.new(klass){
-        entity = nil
         define_method(:initialize){|addr|
-          entity = klass.entity_class.new(addr, types)
-          entity.assign_names(members)
+          @entity = klass.entity_class.new(addr, types)
+          @entity.assign_names(members)
         }
-        define_method(:to_ptr){ entity }
-        define_method(:to_i){ entity.to_i }
+        define_method(:to_ptr){ @entity }
+        define_method(:to_i){ @entity.to_i }
         members.each{|name|
-          define_method(name){ entity[name] }
-          define_method(name + "="){|val| entity[name] = val }
+          define_method(name){ @entity[name] }
+          define_method(name + "="){|val| @entity[name] = val }
         }
       }
       size = klass.entity_class.size(types)
