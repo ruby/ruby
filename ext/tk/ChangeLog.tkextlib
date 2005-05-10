@@ -1,3 +1,7 @@
+2005-05-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/blt/winop.rb: fix typo
+
 2005-05-08  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/vu/pie.rb: fix typo
