@@ -47,8 +47,8 @@ class << Tk::BLT::Winop
   def image_snap(win, photo, width=None, height=None)
     tk_call('::blt::winop', 'image', 'snap', win, photo, width, height)
   end
-  def image_subample(src, dest, x, y, width, height, 
-                     horiz_filter=None, vert_filter=None)
+  def image_subsample(src, dest, x, y, width, height, 
+                      horiz_filter=None, vert_filter=None)
     tk_call('::blt::winop', 'image', 'subsample', 
             src, dest, x, y, width, height, horiz_filter, vert_filter)
   end
