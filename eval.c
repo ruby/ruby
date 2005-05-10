@@ -2151,8 +2151,8 @@ copy_node_scope(node, rval)
 #ifdef C_ALLOCA
 # define TMP_PROTECT NODE * volatile tmp__protect_tmp=0
 # define TMP_ALLOC(n)							\
-    (tmp__protect_tmp = rb_node_newnode(NODE_ALLOCA,			\
-			     ALLOC_N(VALUE,n),tmp__protect_tmp,n),	\
+    (tmp__protect_tmp = NEW_NODE(NODE_ALLOCA,				\
+				 ALLOC_N(VALUE,n),tmp__protect_tmp,n),	\
      (void*)tmp__protect_tmp->nd_head)
 #else
 # define TMP_PROTECT typedef int foobazzz
