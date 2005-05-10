@@ -1,3 +1,8 @@
+Wed May 11 01:03:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (TMP_ALLOC): use macro NEW_NODE() to get rid of warnings on
+	  platforms which have no alloca().  fixed: [ruby-talk:141301]
+
 Sun May  8 23:17:47 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/timer.rb: fix typo.
