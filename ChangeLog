@@ -1,3 +1,11 @@
+Wed May 11 16:20:01 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb: new methods WEBrick::CGI#[], WEBrick::CGI#logger
+	  and WEBrick::CGI#config. (backported from HEAD)
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.escape_path): should
+	  not use String#split("/"). (backported from HEAD)
+
 Wed May 11 10:39:37 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/tempfile.rb (Tempfile#unlink): fixed typo.
