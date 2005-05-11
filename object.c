@@ -2453,7 +2453,7 @@ VALUE ruby_top_self;
  *     Creating a new Name
  *     
  *  Classes, modules, and objects are interrelated. In the diagram
- *  that follows, the arrows represent inheritance, and the
+ *  that follows, the vertical arrows represent inheritance, and the
  *  parentheses meta-classes. All metaclasses are instances 
  *  of the class `Class'.
  *

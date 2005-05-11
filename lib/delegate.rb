@@ -16,11 +16,11 @@
 #    ...
 #  end
 
-class Delegator
+class Delegator<BasicObject
 
   def initialize(obj)
-    preserved = ::Kernel.public_instance_methods(false)
-    preserved -= ["to_s","to_a","inspect","==","=~","==="]
+    preserved = ::BasicObject.public_instance_methods(false)
+    ::Kernel::p preserved
     for t in self.class.ancestors
       preserved |= t.public_instance_methods(false)
       preserved |= t.private_instance_methods(false)

@@ -4694,6 +4694,9 @@ break_jump(retval)
 	    tt->retval = retval;
 	    JUMP_TAG(TAG_BREAK);
 	    break;
+	  case PROT_FUNC:
+	    tt = 0;
+	    continue;
 	  default:
 	    break;
 	}

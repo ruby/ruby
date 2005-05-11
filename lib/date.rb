@@ -806,12 +806,15 @@ class Date
 
   # Get the minute of this date.
   def min() time[1] end
+  alias :minute :min
 
   # Get the second of this date.
   def sec() time[2] end
+  alias :second :sec
 
   # Get the fraction-of-a-second of this date.
   def sec_fraction() time[3] end
+  alias :second_fraction :sec_fraction
 
   private :hour, :min, :sec, :sec_fraction
 
