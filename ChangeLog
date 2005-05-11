@@ -1,3 +1,7 @@
+Wed May 11 10:41:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/tempfile.rb (Tempfile#unlink): fixed typo.
+
 Wed May 11 01:03:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (TMP_ALLOC): use macro NEW_NODE() to get rid of warnings on
@@ -132,7 +136,7 @@ Thu Apr 21 00:07:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Wed Apr 20 23:22:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* Makefile.in, common.mk: miniruby depens on MINIOBJS.
+	* Makefile.in, common.mk: miniruby depends on MINIOBJS.
 
 	* dmydln.c (dln_load): dummy function to raise LoadError.
 

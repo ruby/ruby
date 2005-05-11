@@ -118,7 +118,7 @@ class Tempfile < DelegateClass(File)
       @@cleanlist.delete(@tmpname)
       @data = @tmpname = nil
       ObjectSpace.undefine_finalizer(self)
-    rescue Errno::EACCESS
+    rescue Errno::EACCES
       # may not be able to unlink on Windows; just ignore
     end
   end
