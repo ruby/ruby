@@ -6016,6 +6016,14 @@ Thu Mar 18 21:44:38 2004  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb: backport drb.rb 1.16.
 
+Fri Mar 18 17:49:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* struct.c (make_struct): allow const_id for accessor names.
+	  [ruby-core:04585]
+
+	* eval.c (rb_attr): check if attribute name is local_id or
+	  const_id.
+
 Thu Mar 18 16:22:38 2004  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (proc_eq): avoid false positive by using scope and

@@ -212,7 +212,7 @@ make_struct(name, members, klass)
     rb_define_singleton_method(nstr, "members", rb_struct_s_members_m, 0);
     for (i=0; i< RARRAY(members)->len; i++) {
 	ID id = SYM2ID(RARRAY(members)->ptr[i]);
-	if (rb_is_local_id(id)) {
+	if (rb_is_local_id(id) || rb_is_const_id(id)) {
 	    if (i<10) {
 		rb_define_method_id(nstr, id, ref_func[i], 0);
 	    }
@@ -488,7 +488,7 @@ inspect_struct(s)
 	}
 	slot = RARRAY(members)->ptr[i];
 	id = SYM2ID(slot);
-	if (rb_is_local_id(id)) {
+	if (rb_is_local_id(id) || rb_is_const_id(id)) {
 	    p = rb_id2name(id);
 	    rb_str_cat2(str, p);
 	}
