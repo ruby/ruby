@@ -1,7 +1,11 @@
-Thu May 12 01:21:13 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu May 12 01:23:55 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval), parse.y (arg): reduce fixnum range literal at
 	  parser.  fixed: [ruby-dev:26113]
+
+	* eval.c (unknown_node): ignore broken NODE to get rid of accessing
+	  possibly inaccessible address.  fixed: [ruby-dev:26122]
+	  should emit more useful information like [ruby-dev:26126], though.
 
 Wed May 11 16:20:01 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
