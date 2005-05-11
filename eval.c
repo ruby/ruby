@@ -2760,6 +2760,15 @@ class_prefix(self, cpath)
 
 NORETURN(static void return_jump _((VALUE)));
 NORETURN(static void break_jump _((VALUE)));
+NORETURN(static void unknown_node _((NODE *)));
+
+static void
+unknown_node(node)
+    NODE *volatile node;
+{
+    ruby_current_node = 0;
+    rb_bug("unknown node type %d", nd_type(node));
+}
 
 static VALUE
 rb_eval(self, n)
@@ -3993,7 +4002,7 @@ rb_eval(self, n)
 	break;
 
       default:
-	rb_bug("unknown node type %d", nd_type(node));
+	unknown_node(node);
     }
   finish:
     CHECK_INTS;
@@ -5842,7 +5851,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	break;
 
       default:
-	rb_bug("unknown node type %d", nd_type(body));
+	unknown_node(body);
 	break;
     }
     POP_FRAME();

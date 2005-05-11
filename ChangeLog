@@ -1,3 +1,9 @@
+Thu May 12 01:23:55 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (unknown_node): ignore broken NODE to get rid of accessing
+	  possibly inaccessible address.  fixed: [ruby-dev:26122]
+	  should emit more useful information like [ruby-dev:26126], though.
+
 Wed May 11 15:58:39 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (break_jump): break should not cross functions.
