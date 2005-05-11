@@ -1,3 +1,8 @@
+Thu May 12 01:21:13 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_eval), parse.y (arg): reduce fixnum range literal at
+	  parser.  fixed: [ruby-dev:26113]
+
 Wed May 11 16:20:01 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb: new methods WEBrick::CGI#[], WEBrick::CGI#logger
