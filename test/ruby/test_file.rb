@@ -245,4 +245,49 @@ class TestFile < Test::Unit::TestCase
     f.truncate(3)
     assert_equal(nil, f.gets)
   end
+
+  def test_truncate_beyond_eof
+    f = Tempfile.new("test-truncate")
+    f.print "abc"
+    f.truncate 10
+    assert_equal("\0" * 7, f.read(100), "[ruby-dev:24532]")
+  end
+
+  def test_read_all_extended_file
+    f = Tempfile.new("test-extended-file")
+    assert_nil(f.getc)
+    open(f.path, "w") {|g| g.print "a" }
+    assert_equal("a", f.read)
+  end
+
+  def test_gets_extended_file
+    f = Tempfile.new("test-extended-file")
+    assert_nil(f.getc)
+    open(f.path, "w") {|g| g.print "a" }
+    assert_equal("a", f.gets("a"))
+  end
+
+  def test_gets_para_extended_file
+    f = Tempfile.new("test-extended-file")
+    assert_nil(f.getc)
+    open(f.path, "w") {|g| g.print "\na" }
+    assert_equal("a", f.gets(""))
+  end
+
+  def test_each_byte_extended_file
+    f = Tempfile.new("test-extended-file")
+    assert_nil(f.getc)
+    open(f.path, "w") {|g| g.print "a" }
+    result = []
+    f.each_byte {|b| result << b }
+    assert_equal([?a], result)
+  end
+
+  def test_getc_extended_file
+    f = Tempfile.new("test-extended-file")
+    assert_nil(f.getc)
+    open(f.path, "w") {|g| g.print "a" }
+    assert_equal(?a, f.getc)
+  end
+
 end
