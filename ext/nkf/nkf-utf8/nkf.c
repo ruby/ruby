@@ -40,12 +40,12 @@
 **    まで御連絡をお願いします。
 ***********************************************************************/
 /* $Id$ */
-#define NKF_VERSION "2.0.4"
-#define NKF_RELEASE_DATE "2005-03-05"
+#define NKF_VERSION "2.0.5"
+#define NKF_RELEASE_DATE "2005-04-10"
 #include "config.h"
 
 static char *CopyRight =
-      "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW, 2002-2004 Kono, Furukawa";
+      "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW, 2002-2005 Kono, Furukawa, Naruse";
 
 
 /*
@@ -208,8 +208,8 @@ static char *CopyRight =
 
 #define		UTF8           12
 #define		UTF8_INPUT     13
-#define		UTF16LE_INPUT  14
-#define		UTF16BE_INPUT  15
+#define		UTF16BE_INPUT  14
+#define		UTF16LE_INPUT  15
 
 #define         WISH_TRUE      15
 
@@ -465,7 +465,7 @@ STATIC void s_status PROTO((struct input_code *, int));
 #ifdef UTF8_INPUT_ENABLE
 STATIC void w_status PROTO((struct input_code *, int));
 STATIC void w16_status PROTO((struct input_code *, int));
-static int             utf16_mode = UTF16LE_INPUT;
+static int             utf16_mode = UTF16BE_INPUT;
 #endif
 
 struct input_code input_code_list[] = {
@@ -1177,12 +1177,17 @@ options(cp)
 #ifdef UTF8_INPUT_ENABLE
         case 'W':           /* UTF-8 input */
             if ('1'== cp[0] && '6'==cp[1]) {
-		input_f = UTF16LE_INPUT;
+		input_f = UTF16BE_INPUT;
+		utf16_mode = UTF16BE_INPUT;
+		cp += 2;
 		if (cp[0]=='L') {
 		    cp++;
+		    input_f = UTF16LE_INPUT;
+		    utf16_mode = UTF16LE_INPUT;
 		} else if (cp[0] == 'B') {
 		    cp++;
 		    input_f = UTF16BE_INPUT;
+		    utf16_mode = UTF16BE_INPUT;
 		}
 	    } else if (cp[0] == '8') {
 		cp++;
@@ -1863,6 +1868,8 @@ module_connection()
 #ifdef UTF8_INPUT_ENABLE
     } else if (input_f == UTF8_INPUT) {
         set_iconv(-TRUE, w_iconv);
+    } else if (input_f == UTF16BE_INPUT) {
+        set_iconv(-TRUE, w_iconv16);
     } else if (input_f == UTF16LE_INPUT) {
         set_iconv(-TRUE, w_iconv16);
 #endif
@@ -2566,13 +2573,13 @@ w_iconv16(c2, c1, c0)
     int ret;
 
     if (c2==0376 && c1==0377){
-	utf16_mode = UTF16LE_INPUT;
-	return 0;    
-    } else if (c2==0377 && c1==0376){
 	utf16_mode = UTF16BE_INPUT;
 	return 0;    
+    } else if (c2==0377 && c1==0376){
+	utf16_mode = UTF16LE_INPUT;
+	return 0;    
     }
-    if (c2 != EOF && utf16_mode == UTF16BE_INPUT) {
+    if (c2 != EOF && utf16_mode == UTF16LE_INPUT) {
 	int tmp;
 	tmp=c1; c1=c2; c2=tmp;
     }
@@ -4625,7 +4632,7 @@ reinit()
         }
     }
 #ifdef UTF8_INPUT_ENABLE
-    utf16_mode = UTF16LE_INPUT;
+    utf16_mode = UTF16BE_INPUT;
 #endif
     mimeout_buf_count = 0;
     mimeout_mode = 0;
