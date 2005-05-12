@@ -6,8 +6,8 @@ module TestEOF
       assert_equal("", f.read(0))
       assert_equal("", f.read(0))
       assert_equal("", f.read)
-      assert_nil(f.read(0))
-      assert_nil(f.read(0))
+      assert_equal("", f.read(0))
+      assert_equal("", f.read(0))
     }
     open_file("") {|f|
       assert_nil(f.read(1))
@@ -43,8 +43,8 @@ module TestEOF
       assert_equal("" , f.read(0))
       assert_equal("" , f.read(0))
       assert_equal("", f.read)
-      assert_nil(f.read(0))
-      assert_nil(f.read(0))
+      assert_equal("", f.read(0))
+      assert_equal("", f.read(0))
     }
     open_file("a") {|f|
       assert_equal("a", f.read(1))
@@ -69,7 +69,7 @@ module TestEOF
     }
     open_file("a") {|f|
       assert_equal("a", f.read)
-      assert_nil(f.read(0))
+      assert_equal("", f.read(0))
     }
     open_file("a") {|f|
       s = "x"
@@ -109,7 +109,7 @@ module TestEOF
         assert_equal(10, f.pos)
         assert_equal("", f.read(0))
         assert_equal("", f.read)
-        assert_nil(f.read(0))
+        assert_equal("", f.read(0))
         assert_equal("", f.read)
       }
     end

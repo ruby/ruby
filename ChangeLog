@@ -1,3 +1,9 @@
+Thu May 12 16:15:01 2005  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_io_eof, remain_size, read_all, io_read, appendline)
+	  (swallow, rb_io_each_byte, rb_io_getc): don't rely EOF flag.
+	  [ruby-talk:141527]
+
 Thu May 12 15:56:20 2005  Tilman Sauerbeck <tilman@code-monkey.de>
 
 	* lib/rdoc/parsers/parse_c.rb: show parsing progress for C files.
