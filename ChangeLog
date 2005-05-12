@@ -1,3 +1,8 @@
+Thu May 12 15:56:20 2005  Tilman Sauerbeck <tilman@code-monkey.de>
+
+	* lib/rdoc/parsers/parse_c.rb: show parsing progress for C files.
+	  [ruby-core:4341]
+
 Thu May 12 13:47:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/drb/test_drb{ssl,unix}.rb: can test drb
