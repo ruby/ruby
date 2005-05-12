@@ -742,8 +742,10 @@ rb_io_eof(io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
 
+    if (feof(fptr->f)) return Qtrue;
     if (READ_DATA_PENDING(fptr->f)) return Qfalse;
     READ_CHECK(fptr->f);
+    clearerr(fptr->f);
     TRAP_BEG;
     ch = getc(fptr->f);
     TRAP_END;
@@ -983,6 +985,7 @@ io_fread(ptr, len, fptr)
         }
         rb_thread_wait_fd(fileno(fptr->f));
         rb_io_check_closed(fptr);
+	clearerr(fptr->f);
 	TRAP_BEG;
 	c = getc(fptr->f);
 	TRAP_END;
@@ -1044,6 +1047,7 @@ remain_size(fptr)
     off_t siz = BUFSIZ;
     off_t pos;
 
+    if (feof(fptr->f)) return 0;
     if (fstat(fileno(fptr->f), &st) == 0  && S_ISREG(st.st_mode)
 #ifdef __BEOS__
 	&& (st.st_dev > 3)
@@ -1084,10 +1088,7 @@ read_all(fptr, siz, str)
 	rb_str_unlocktmp(str);
 	if (n == 0 && bytes == 0) {
 	    if (!fptr->f) break;
-	    if (feof(fptr->f)) {
-		clearerr(fptr->f);
-		break;
-	    }
+	    if (feof(fptr->f)) break;
 	    if (!ferror(fptr->f)) break;
 	    rb_sys_fail(fptr->path);
 	}
@@ -1276,6 +1277,7 @@ io_read(argc, argv, io)
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
+    if (feof(fptr->f)) return Qnil;
     if (len == 0) return str;
 
     rb_str_locktmp(str);
@@ -1288,7 +1290,6 @@ io_read(argc, argv, io)
     if (n == 0) {
 	if (!fptr->f) return Qnil;
 	if (feof(fptr->f)) {
-	    clearerr(fptr->f);
 	    rb_str_resize(str, 0);
 	    return Qnil;
 	}
@@ -1356,6 +1357,7 @@ appendline(fptr, delim, strp)
 #else
 	READ_CHECK(f);
 #endif
+	clearerr(f);
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
@@ -1366,7 +1368,6 @@ appendline(fptr, delim, strp)
 		    rb_sys_fail(fptr->path);
 		continue;
 	    }
-	    clearerr(fptr->f);
 #ifdef READ_DATA_PENDING_PTR
 	    return c;
 #endif
@@ -1434,6 +1435,7 @@ swallow(fptr, term)
 #else
 	READ_CHECK(f);
 #endif
+	clearerr(f);
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
@@ -1442,9 +1444,6 @@ swallow(fptr, term)
 	    return Qtrue;
 	}
     } while (c != EOF);
-    if (!ferror(f)) {
-	clearerr(f);
-    }
     return Qfalse;
 }
 
@@ -1801,6 +1800,7 @@ rb_io_each_byte(io)
 	rb_io_check_readable(fptr);
 	f = fptr->f;
 	READ_CHECK(f);
+	clearerr(f);
 	TRAP_BEG;
 	c = getc(f);
 	TRAP_END;
@@ -1811,7 +1811,6 @@ rb_io_each_byte(io)
 		    rb_sys_fail(fptr->path);
 		continue;
 	    }
-	    clearerr(f);
 	    break;
 	}
 	rb_yield(INT2FIX(c & 0xff));
@@ -1846,6 +1845,7 @@ rb_io_getc(io)
 
   retry:
     READ_CHECK(f);
+    clearerr(f);
     TRAP_BEG;
     c = getc(f);
     TRAP_END;
@@ -1857,7 +1857,6 @@ rb_io_getc(io)
 		rb_sys_fail(fptr->path);
 	    goto retry;
 	}
-	clearerr(f);
 	return Qnil;
     }
     return INT2FIX(c & 0xff);
@@ -1872,6 +1871,7 @@ rb_getc(f)
     if (!READ_DATA_PENDING(f)) {
 	rb_thread_wait_fd(fileno(f));
     }
+    clearerr(f);
     TRAP_BEG;
     c = getc(f);
     TRAP_END;

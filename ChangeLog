@@ -1,3 +1,12 @@
+Thu May 12 17:08:48 2005  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_io_eof, remain_size, read_all, io_read, appendline)
+	  (swallow, rb_io_each_byte, rb_io_getc): revert previous change.
+
+	* io.c (rb_io_eof, io_fread, appendline, swallow, rb_io_each_byte)
+	  (rb_io_getc, rb_getc): call clearerr before getc to avoid
+	  stdio incompatibility.
+
 Thu May 12 16:52:20 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/rdoc/parsers/parse_c.rb: more readability for mixing
