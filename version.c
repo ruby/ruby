@@ -34,6 +34,7 @@ void
 ruby_show_version()
 {
     printf("ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
+    fflush(stdout);
 }
 
 void

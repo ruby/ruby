@@ -1,3 +1,7 @@
+Thu May 12 09:53:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* version.c (ruby_show_version): flush for non-tty stdout.
+
 Thu May 12 01:23:55 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (unknown_node): ignore broken NODE to get rid of accessing
