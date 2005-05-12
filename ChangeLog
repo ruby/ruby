@@ -1,3 +1,8 @@
+Thu May 12 16:50:40 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/rdoc/parsers/parse_c.rb: more readability for mixing
+	  progress "c..." and warning message.
+
 Thu May 12 15:50:56 2005  Tilman Sauerbeck <tilman@code-monkey.de>
 
 	* lib/rdoc/parsers/parse_c.rb: show parsing progress for C files.
