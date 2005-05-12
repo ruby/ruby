@@ -1,3 +1,8 @@
+Thu May 12 16:52:20 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/rdoc/parsers/parse_c.rb: more readability for mixing
+	  progress "c..." and warning message.
+
 Thu May 12 16:31:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf/nkf-utf8/nkf.c: follow nkf 2.0.5

@@ -205,6 +205,12 @@ module RDoc
       end
     end
 
+    def warn(msg)
+      $stderr.puts
+      $stderr.puts msg
+      $stderr.flush
+    end
+
     # remove lines that are commented out that might otherwise get
     # picked up when scanning for classes and methods
 
@@ -220,8 +226,8 @@ module RDoc
       if in_module
         enclosure = @classes[in_module]
         unless enclosure
-          $stderr.puts("Enclosing class/module '#{in_module}' for " +
-                        "#{class_mod} #{class_name} not known")
+          warn("Enclosing class/module '#{in_module}' for " +
+                "#{class_mod} #{class_name} not known")
           return
         end
       else
@@ -417,7 +423,7 @@ module RDoc
       class_obj  = find_class(var_name, class_name)
 
       unless class_obj
-        $stderr.puts("Enclosing class/module '#{const_name}' for not known")
+        warn("Enclosing class/module '#{const_name}' for not known")
         return
       end
       
@@ -570,7 +576,7 @@ module RDoc
           find_call_seq(comment, meth_obj)
           meth_obj.comment = mangle_comment(comment)
         else
-          $stderr.puts "No definition for #{meth_name}"
+          warn "No definition for #{meth_name}"
         end
       end
     end
