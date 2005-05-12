@@ -1,3 +1,8 @@
+Thu May 12 15:50:56 2005  Tilman Sauerbeck <tilman@code-monkey.de>
+
+	* lib/rdoc/parsers/parse_c.rb: show parsing progress for C files.
+	  [ruby-core:4341]
+
 Thu May 12 09:53:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c (ruby_show_version): flush for non-tty stdout.

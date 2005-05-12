@@ -198,6 +198,13 @@ module RDoc
     private
     #######
 
+    def progress(char)
+      unless @options.quiet
+        $stderr.print(char)
+        $stderr.flush
+      end
+    end
+
     # remove lines that are commented out that might otherwise get
     # picked up when scanning for classes and methods
 
@@ -206,6 +213,8 @@ module RDoc
     end
     
     def handle_class_module(var_name, class_mod, class_name, parent, in_module)
+      progress(class_mod[0, 1])
+
       parent_name = @known_classes[parent] || parent
 
       if in_module
@@ -478,6 +487,8 @@ module RDoc
 
     def handle_method(type, var_name, meth_name, 
                       meth_body, param_count, source_file = nil)
+      progress(".")
+
       @stats.num_methods += 1
       class_name = @known_classes[var_name]
 
