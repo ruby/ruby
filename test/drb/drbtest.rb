@@ -2,21 +2,25 @@ require 'test/unit'
 require 'drb/drb'
 require 'drb/extservm'
 require 'timeout'
-require 'rbconfig'
-
-DRb::DRbServer.new(nil)
+begin
+  loadpath = $:.dup
+  $:.replace($: | [File.expand_path("../ruby", File.dirname(__FILE__))])
+  require 'envutil'
+ensure
+  $:.replace(loadpath)
+end
 
 class DRbService
   @@manager = DRb::ExtServManager.new
-  @@ruby = File.join(
-    Config::CONFIG["bindir"],
-    Config::CONFIG["ruby_install_name"] + Config::CONFIG["EXEEXT"]
-  )
+  @@ruby = EnvUtil.rubybin
   @@ruby += " -d" if $DEBUG
-  @@dir = File.dirname(File.expand_path(__FILE__))
+  def self.add_service_command(nm)
+    dir = File.dirname(File.expand_path(__FILE__))
+    DRb::ExtServManager.command[nm] = "#{@@ruby} #{dir}/#{nm}"
+  end
 
   %w(ut_drb.rb ut_array.rb ut_port.rb ut_large.rb ut_safe1.rb ut_eval.rb).each do |nm|
-    DRb::ExtServManager.command[nm] = "#{@@ruby} #{@@dir}/#{nm}"
+    add_service_command(nm)
   end
   @server = @@server = DRb::DRbServer.new(nil, @@manager, {})
   @@manager.uri = @@server.uri

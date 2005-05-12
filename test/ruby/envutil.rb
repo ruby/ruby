@@ -1,5 +1,8 @@
 module EnvUtil
   def rubybin
+    if ruby = ENV["RUBY"]
+      return ruby
+    end
     miniruby = "miniruby"
     3.times do
       if File.exist? miniruby or File.exist? miniruby+".exe"

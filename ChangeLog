@@ -1,3 +1,8 @@
+Thu May 12 09:07:07 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/envutil.rb, test/drb/drbtest.rb: can test drb
+	  before install. (backported from HEAD) [ruby-Bugs-1672]
+
 Thu May 12 01:23:55 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_eval), parse.y (arg): reduce fixnum range literal at
