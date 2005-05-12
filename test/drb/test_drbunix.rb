@@ -10,11 +10,11 @@ if Object.const_defined?("UNIXServer")
 
 class DRbUNIXService < DRbService
   %w(ut_drb_drbunix.rb ut_array_drbunix.rb).each do |nm|
-    DRb::ExtServManager.command[nm] = "#{@@ruby} #{@@dir}/#{nm}"
+    add_service_command(nm)
   end
 
   uri = ARGV.shift if $0 == __FILE__
-  @server = DRb::DRbServer.new(uri || 'drbunix:', @@manager, {})
+  @server = DRb::DRbServer.new(uri || 'drbunix:', self.manager, {})
 end
 
 class TestDRbUNIXCore < Test::Unit::TestCase

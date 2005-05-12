@@ -10,7 +10,7 @@ if Object.const_defined?("OpenSSL")
 
 class DRbSSLService < DRbService
   %w(ut_drb_drbssl.rb ut_array_drbssl.rb).each do |nm|
-    DRb::ExtServManager.command[nm] = "#{@@ruby} #{@@dir}/#{nm}"
+    add_service_command(nm)
   end
   config = Hash.new
 
@@ -30,7 +30,7 @@ class DRbSSLService < DRbService
   end
 
   uri = ARGV.shift if $0 == __FILE__
-  @server = DRb::DRbServer.new(uri || 'drbssl://:0', @@manager, config)
+  @server = DRb::DRbServer.new(uri || 'drbssl://:0', self.manager, config)
 end
 
 class TestDRbSSLCore < Test::Unit::TestCase

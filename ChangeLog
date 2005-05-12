@@ -1,3 +1,8 @@
+Thu May 12 13:47:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/drb/test_drb{ssl,unix}.rb: can test drb
+	  before install. (backported from HEAD) [ruby-dev:26146]
+
 Thu May 12 09:53:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* version.c (ruby_show_version): flush for non-tty stdout.
