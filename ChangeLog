@@ -2,6 +2,8 @@ Fri May 13 12:28:43 2005  Daniel Berger <djberge@qwest.com>
 
 	* array.c (rb_ary_select): can remove argc check. [ruby-core:4911]
 
+	* test/ruby/test_array.rb: add test for find_all.
+
 Fri May 13 11:29:00 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* eval.c (unknown_node): add volatile directive to prototype.
