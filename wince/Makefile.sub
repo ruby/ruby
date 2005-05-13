@@ -366,6 +366,8 @@ s,@LN_S@,$(LN_S),;t t
 s,@SET_MAKE@,$(SET_MAKE),;t t
 s,@CP@,copy > nul,;t t
 s,@INSTALL@,copy > nul,;t t
+s,@INSTALL_PROG@,$$(INSTALL),;t t
+s,@INSTALL_DATA@,$$(INSTALL),;t t
 s,@LIBOBJS@, acosh.obj crypt.obj erf.obj win32.obj isinf.obj isnan.obj,;t t
 s,@ALLOCA@,$(ALLOCA),;t t
 s,@DEFAULT_KCODE@,$(DEFAULT_KCODE),;t t

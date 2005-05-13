@@ -22,9 +22,9 @@ $compiled = {}
 $:.replace([Dir.pwd])
 require 'rbconfig'
 
-srcdir = File.expand_path("../..", __FILE__)
+srcdir = File.dirname(File.dirname(__FILE__))
 
-$:.unshift(srcdir, srcdir+"/lib")
+$:.unshift(srcdir, File.expand_path("lib", srcdir))
 
 $topdir = "."
 $top_srcdir = srcdir

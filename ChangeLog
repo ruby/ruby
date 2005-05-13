@@ -1,3 +1,14 @@
+Fri May 13 23:44:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: keep srcdir unexpanded.
+
+	* lib/mkmf.rb (create_makefile): quote topdir and hdrdir if necessary.
+	  fixed: [ruby-core:04932]
+
+	* lib/mkmf.rb (configuration), {bcc32,win32,wince}/Makefile.sub: make
+	  also INSTALL_PROG and INSTALL_DATA system dependent.
+	  fixed: [ruby-core:04931]
+
 Fri May 13 23:32:55 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (unknown_node): add volatile directive to prototype.

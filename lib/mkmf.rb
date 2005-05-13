@@ -846,8 +846,8 @@ SHELL = /bin/sh
 #### Start of system configuration section. ####
 
 srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {CONFIG[$1||$2]}}
-topdir = #{$extmk ? CONFIG["topdir"] : $topdir}
-hdrdir = #{$extmk ? CONFIG["hdrdir"] : '$(topdir)'}
+topdir = #{($extmk ? CONFIG["topdir"] : $topdir).quote}
+hdrdir = #{$extmk ? CONFIG["hdrdir"].quote : '$(topdir)'}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
 }
   drive = File::PATH_SEPARATOR == ';' ? /\A\w:/ : /\A/
@@ -890,8 +890,8 @@ RUBY = #{($nmake && !$extmk && !$configure_args.has_key?('--ruby')) ? '$(ruby:/=
 RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
 MAKEDIRS = #{config_string('MAKEDIRS') || '@$(RUBY) -run -e mkdir -- -p'}
 INSTALL = #{config_string('INSTALL') || '@$(RUBY) -run -e install -- -vp'}
-INSTALL_PROG = $(INSTALL) -m 0755
-INSTALL_DATA = $(INSTALL) -m 0644
+INSTALL_PROG = #{config_string('INSTALL_PROG') || '$(INSTALL) -m 0755'}
+INSTALL_DATA = #{config_string('INSTALL_DATA') || '$(INSTALL) -m 0644'}
 COPY = #{config_string('CP') || '@$(RUBY) -run -e cp -- -v'}
 
 #### End of system configuration section. ####
