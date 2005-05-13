@@ -126,4 +126,14 @@ class TestArray < Test::Unit::TestCase
     assert_equal([1, 2, 3, 4, 5], x.push(5))
     assert_equal([1, 2, 3, 4, 5], x)
   end
+
+  def test_find_all
+    assert_respond_to([], :find_all)
+    assert_respond_to([], :select)       # Alias
+    assert_equal([], [].find_all{ |obj| obj == "foo"})
+
+    x = ["foo", "bar", "baz", "baz", 1, 2, 3, 3, 4]
+    assert_equal(["baz","baz"], x.find_all{ |obj| obj == "baz" })
+    assert_equal([3,3], x.find_all{ |obj| obj == 3 })
+  end
 end
