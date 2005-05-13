@@ -1,4 +1,4 @@
-Fri May 13 12:28:43 2005  Daniel Berger <djberge@qwest.com>
+Fri May 13 12:28:43 2005  Daniel Berger  <djberge@qwest.com>
 
 	* array.c (rb_ary_select): can remove argc check. [ruby-core:4911]
 
@@ -1474,7 +1474,7 @@ Tue Jan 25 14:05:52 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/sample/tkHTML/ss.rb: local variable scope bug fix
 	  [ruby-dev:25479]
 
-Mon Jan 24 15:44:25 2005  Tilman Sauerbeck <tilman@code-monkey.de>
+Mon Jan 24 15:44:25 2005  Tilman Sauerbeck  <tilman@code-monkey.de>
 
 	* lib/rdoc/parsers/parse_c.rb: allow whitespace after function names.
 	  [ruby-core:4296]
@@ -1482,11 +1482,16 @@ Mon Jan 24 15:44:25 2005  Tilman Sauerbeck <tilman@code-monkey.de>
 	* lib/rdoc/parsers/parse_simple.rb: adds support for private comments
 	  in the "simple" parser. [ruby-core:4301]
 
-Mon Jan 24 15:44:25 2005  Charles Mills <cmills@freeshell.org>
+Mon Jan 24 15:44:25 2005  Charles Mills  <cmills@freeshell.org>
 
 	* lib/rdoc/parsers/parse_c.rb: adds support for constants
 	  (rb_define_const), accessors (rb_define_attr), and makes a
 	  couple fixes. [ruby-core:4307]
+
+Mon Jan 24 15:44:25 2005  Florian Gro  <florgro@gmail.com>
+
+	* lib/rdoc/parsers/parse_rb.rb: Logic for def Builtin.method() end
+	  [ruby-core:4302]
 
 Mon Jan 24 15:44:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
