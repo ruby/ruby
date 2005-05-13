@@ -1799,17 +1799,12 @@ rb_ary_values_at(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_select(argc, argv, ary)
-    int argc;
-    VALUE *argv;
+rb_ary_select(ary)
     VALUE ary;
 {
     VALUE result;
     long i;
 
-    if (argc > 0) {
-	rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
-    }
     result = rb_ary_new2(RARRAY(ary)->len);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
@@ -3017,7 +3012,7 @@ Init_Array()
     rb_define_method(rb_cArray, "collect!", rb_ary_collect_bang, 0);
     rb_define_method(rb_cArray, "map", rb_ary_collect, 0);
     rb_define_method(rb_cArray, "map!", rb_ary_collect_bang, 0);
-    rb_define_method(rb_cArray, "select", rb_ary_select, -1);
+    rb_define_method(rb_cArray, "select", rb_ary_select, 0);
     rb_define_method(rb_cArray, "values_at", rb_ary_values_at, -1);
     rb_define_method(rb_cArray, "delete", rb_ary_delete, 1);
     rb_define_method(rb_cArray, "delete_at", rb_ary_delete_at_m, 1);
