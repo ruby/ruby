@@ -1095,6 +1095,20 @@ Fri Mar  4 16:11:20 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/tk/tcltklib.c: fixed commit mistakes.
 
+Fri Mar  4 12:45:17 2005  Tilman Sauerbeck <tilman@code-monkey.de>
+
+	* lib/rdoc/parsers/parse_c.rb: allow whitespace after function names.
+	  [ruby-core:4296]
+
+	* lib/rdoc/parsers/parse_simple.rb: adds support for private comments
+	  in the "simple" parser. [ruby-core:4301]
+
+Fri Mar  4 12:45:17 2005  Charles Mills <cmills@freeshell.org>
+
+	* lib/rdoc/parsers/parse_c.rb: adds support for constants
+	  (rb_define_const), accessors (rb_define_attr), and makes a
+	  couple fixes. [ruby-core:4307]
+
 Fri Mar  4 12:45:17 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c: replace rb_protect_inspect() and rb_inspecting_p() by
