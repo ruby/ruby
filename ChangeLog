@@ -1,3 +1,8 @@
+Fri May 13 17:54:39 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* variable.c (generic_ivar_get): rb_attr_get should not warn.
+	  [ruby-dev:26010]
+
 Fri May 13 12:28:43 2005  Daniel Berger  <djberge@qwest.com>
 
 	* array.c (rb_ary_select): can remove argc check. [ruby-core:4911]
