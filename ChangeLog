@@ -1,3 +1,8 @@
+Fri May 13 17:50:49 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* variable.c (generic_ivar_get): rb_attr_get should not warn.
+	  [ruby-dev:26010]
+
 Thu May 12 17:41:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf/nkf-utf8/nkf.c: follow nkf 2.0.5

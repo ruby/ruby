@@ -842,9 +842,10 @@ rb_generic_ivar_table(obj)
 }
 
 static VALUE
-generic_ivar_get(obj, id)
+generic_ivar_get(obj, id, warn)
     VALUE obj;
     ID id;
+    int warn;
 {
     st_table *tbl;
     VALUE val;
@@ -856,8 +857,9 @@ generic_ivar_get(obj, id)
 	}
       }
     }
-
-    rb_warning("instance variable %s not initialized", rb_id2name(id));
+    if (warn) {
+	rb_warning("instance variable %s not initialized", rb_id2name(id));
+    }
     return Qnil;
 }
 
@@ -1011,13 +1013,12 @@ ivar_get(obj, id, warn)
 	break;
       default:
 	if (FL_TEST(obj, FL_EXIVAR) || rb_special_const_p(obj))
-	    return generic_ivar_get(obj, id);
+	    return generic_ivar_get(obj, id, warn);
 	break;
     }
-    if (warn && ruby_verbose) {
+    if (warn) {
 	rb_warning("instance variable %s not initialized", rb_id2name(id));
     }
-
     return Qnil;
 }
 
