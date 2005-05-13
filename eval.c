@@ -2760,7 +2760,7 @@ class_prefix(self, cpath)
 
 NORETURN(static void return_jump _((VALUE)));
 NORETURN(static void break_jump _((VALUE)));
-NORETURN(static void unknown_node _((NODE *)));
+NORETURN(static void unknown_node _((NODE * volatile)));
 
 static void
 unknown_node(node)

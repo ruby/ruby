@@ -1,3 +1,7 @@
+Fri May 13 23:32:55 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (unknown_node): add volatile directive to prototype.
+
 Fri May 13 17:50:49 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* variable.c (generic_ivar_get): rb_attr_get should not warn.
@@ -5,7 +9,7 @@ Fri May 13 17:50:49 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Thu May 12 17:41:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/nkf.c: follow nkf 2.0.5
+	* ext/nkf/nkf-utf8/nkf.c: follow nkf 2.0.5
 
 Thu May 12 16:50:40 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
