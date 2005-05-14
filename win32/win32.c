@@ -398,7 +398,7 @@ char *getlogin()
 
 static struct ChildRecord {
     HANDLE hProcess;	/* process handle */
-    pid_t pid;		/* process id */
+    rb_pid_t pid;	/* process id */
 } ChildRecord[MAXCHILDNUM];
 
 #define FOREACH_CHILD(v) do { \
@@ -416,7 +416,7 @@ FindFirstChildSlot(void)
 }
 
 static struct ChildRecord *
-FindChildSlot(pid_t pid)
+FindChildSlot(rb_pid_t pid)
 {
 
     FOREACH_CHILD(child) {
@@ -578,7 +578,7 @@ rb_w32_get_osfhandle(int fh)
     return _get_osfhandle(fh);
 }
 
-pid_t
+rb_pid_t
 pipe_exec(char *cmd, int mode, FILE **fpr, FILE **fpw)
 {
     struct ChildRecord* child;
@@ -993,7 +993,7 @@ CreateChild(const char *cmd, const char *prog, SECURITY_ATTRIBUTES *psa,
     CloseHandle(aProcessInformation.hThread);
 
     child->hProcess = aProcessInformation.hProcess;
-    child->pid = (pid_t)aProcessInformation.dwProcessId;
+    child->pid = (rb_pid_t)aProcessInformation.dwProcessId;
 
     if (!IsWinNT()) {
 	/* On Win9x, make pid positive similarly to cygwin and perl */
@@ -2437,7 +2437,7 @@ fcntl(int fd, int cmd, ...)
 #define WNOHANG -1
 #endif
 
-static pid_t
+static rb_pid_t
 poll_child_status(struct ChildRecord *child, int *stat_loc)
 {
     DWORD exitcode;
@@ -2455,7 +2455,7 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
     }
     if (exitcode != STILL_ACTIVE) {
 	/* If already died, return immediatly. */
-	pid_t pid = child->pid;
+	rb_pid_t pid = child->pid;
 	CloseChildHandle(child);
 	if (stat_loc) *stat_loc = exitcode << 8;
 	return pid;
@@ -2463,8 +2463,8 @@ poll_child_status(struct ChildRecord *child, int *stat_loc)
     return 0;
 }
 
-pid_t
-waitpid (pid_t pid, int *stat_loc, int options)
+rb_pid_t
+waitpid (rb_pid_t pid, int *stat_loc, int options)
 {
     DWORD timeout;
 
@@ -3246,9 +3246,10 @@ void rb_w32_free_environ(char **env)
 }
 
 #undef getpid
-pid_t rb_w32_getpid(void)
+rb_pid_t
+rb_w32_getpid(void)
 {
-    pid_t pid;
+    rb_pid_t pid;
 
     pid = getpid();
 

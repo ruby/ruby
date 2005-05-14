@@ -23,6 +23,9 @@
 #define HAVE_STRING_H 1
 #define HAVE_UTIME_H 1
 #define HAVE_MEMORY_H 1
+#define HAVE_PID_T 1
+#define HAVE_GID_T 1
+#define HAVE_UID_T 1
 /* #define HAVE_ST_BLKSIZE 1  */
 #define HAVE_ST_RDEV 1
 /* #define GETGROUPS_T gid_t */

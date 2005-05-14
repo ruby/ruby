@@ -176,7 +176,6 @@ void xfree _((void*));
 #ifndef X_OK
 #define X_OK 1
 #endif
-typedef int pid_t;
 #endif /* __APPLE__ */
 #endif /* NeXT */
 
