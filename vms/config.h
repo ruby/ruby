@@ -23,6 +23,9 @@
 #define HAVE_GETPGRP 1
 /* #define HAVE_GETPRIORITY 1 */
 /* #define HAVE_GETRLIMIT 1 */
+#define HAVE_PID_T 1
+#define HAVE_GID_T 1
+#define HAVE_UID_T 1
 #define HAVE_HYPOT 1
 #define HAVE_ISASCII 1
 /* #define HAVE_ISINF 1 */

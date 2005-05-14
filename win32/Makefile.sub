@@ -229,8 +229,6 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #define HAVE_FCNTL_H 1
 #define HAVE_SYS_UTIME_H 1
 #define HAVE_FLOAT_H 1
-#define uid_t int
-#define gid_t int
 #define HAVE_STRUCT_STAT_ST_RDEV 1
 #define HAVE_ST_RDEV 1
 #define GETGROUPS_T int

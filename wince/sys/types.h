@@ -19,8 +19,6 @@ typedef unsigned long ino_t;
   #define _MODE_T_DEFINED_
 #endif
 
-//typedef unsigned short gid_t;
-//typedef unsigned short uid_t;
 typedef long clock_t;
 
 #ifndef _PTRDIFF_T_DEFINED
@@ -58,10 +56,5 @@ typedef unsigned int size_t;
 //typedef unsigned long time_t;
 //#define _TIME_T_DEFINED_
 //#endif
-
-#ifndef _PID_T_DEFINED_
-typedef unsigned long pid_t;
-#define _PID_T_DEFINED_
-#endif
 
 #endif

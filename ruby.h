@@ -82,6 +82,24 @@ extern "C" {
 typedef unsigned long VALUE;
 typedef unsigned long ID;
 
+#ifndef HAVE_PID_T
+  typedef int rb_pid_t;
+#else
+  typedef pid_t rb_pid_t;
+#endif
+
+#ifndef HAVE_GID_T
+  typedef int rb_gid_t;
+#else
+  typedef gid_t rb_gid_t;
+#endif
+
+#ifndef HAVE_UID_T
+  typedef int rb_uid_t;
+#else
+  typedef uid_t rb_uid_t;
+#endif
+
 #ifdef __STDC__
 # include <limits.h>
 #else

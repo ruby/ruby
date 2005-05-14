@@ -128,7 +128,7 @@ echild_status(self)
 
 struct pty_info {
     int fd;
-    pid_t child_pid;
+    rb_pid_t child_pid;
     VALUE thread;
 };
 

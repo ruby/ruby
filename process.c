@@ -1847,7 +1847,7 @@ proc_setsid()
     if (pid < 0) rb_sys_fail(0);
     return INT2FIX(pid);
 #elif defined(HAVE_SETPGRP) && defined(TIOCNOTTY)
-  pid_t pid;
+  rb_pid_t pid;
   int ret;
 
   rb_secure(2);
@@ -2642,10 +2642,10 @@ proc_getgroups(VALUE obj)
 #ifdef HAVE_GETGROUPS
     VALUE ary;
     size_t ngroups;
-    gid_t *groups;
+    rb_gid_t *groups;
     int i;
 
-    groups = ALLOCA_N(gid_t, maxgroups);
+    groups = ALLOCA_N(rb_gid_t, maxgroups);
 
     ngroups = getgroups(maxgroups, groups);
     if (ngroups == -1)
@@ -2681,7 +2681,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 {
 #ifdef HAVE_SETGROUPS
     size_t ngroups;
-    gid_t *groups;
+    rb_gid_t *groups;
     int i;
     struct group *gr;
 
@@ -2691,7 +2691,7 @@ proc_setgroups(VALUE obj, VALUE ary)
     if (ngroups > maxgroups)
 	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups);
 
-    groups = ALLOCA_N(gid_t, ngroups);
+    groups = ALLOCA_N(rb_gid_t, ngroups);
 
     for (i = 0; i < ngroups && i < RARRAY(ary)->len; i++) {
 	VALUE g = RARRAY(ary)->ptr[i];
@@ -2749,7 +2749,7 @@ proc_initgroups(obj, uname, base_grp)
     VALUE obj, uname, base_grp;
 {
 #ifdef HAVE_INITGROUPS
-    if (initgroups(StringValuePtr(uname), (gid_t)NUM2INT(base_grp)) != 0) {
+    if (initgroups(StringValuePtr(uname), (rb_gid_t)NUM2INT(base_grp)) != 0) {
 	rb_sys_fail(0);
     }
     return proc_getgroups(obj);

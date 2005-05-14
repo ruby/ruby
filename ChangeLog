@@ -1,3 +1,28 @@
+Sat May 14 23:56:41 2005  Erik Huelsmann  <ehuels@gmail.com>
+
+	* configure.in: Check for the availability of pid_t, gid_t and uid_t and
+	  remove AC_TYPE_UID_T.  fixed: [ruby-core:04745]
+
+	* defines.h: Remove pid_t typedef.
+
+	* ruby.h: Define rb_pid_t, rb_gid_t and rb_uid_t in accordance with
+	 the available system types.
+
+	* process.c: Change instances of pid_t and gid_t to their rb_*
+	 counterparts.
+
+	* ext/pty/pty.c: Change pid_t to rb_pid_t.
+
+	* vms/config.h: Define HAVE_{P,G,U}ID_T to 1.
+
+	* win32/Makefile.sub: Remove #define for {g,u}id_t.
+
+	* win32/win32.c: Change pid_t to rb_pid_t.
+
+	* wince/Makefile.sub: Remove #define for {g,u}id_t.
+
+	* wince/sys/types.h: Remove definitions of {p,g,u}id_t.
+
 Sat May 14 11:47:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (ruby_pragma): prototype.  [ruby-core:04881]
