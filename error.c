@@ -386,7 +386,7 @@ exc_exception(argc, argv, self)
     if (argc == 0) return self;
     if (argc == 1 && self == argv[0]) return self;
     exc = rb_obj_clone(self);
-    exc_initialize(argc, argv, exc);
+    rb_obj_call_init(exc, argc, argv);
 
     return exc;
 }
@@ -580,7 +580,7 @@ exit_initialize(argc, argv, exc)
 	status = *argv++;
 	--argc;
     }
-    exc_initialize(argc, argv, exc);
+    rb_call_super(argc, argv);
     rb_iv_set(exc, "status", status);
     return exc;
 }
@@ -660,7 +660,7 @@ name_err_initialize(argc, argv, self)
     VALUE name;
 
     name = (argc > 1) ? argv[--argc] : Qnil;
-    exc_initialize(argc, argv, self);
+    rb_call_super(argc, argv);
     rb_iv_set(self, "name", name);
     return self;
 }
@@ -965,7 +965,7 @@ syserr_initialize(argc, argv, self)
     else {
 	mesg = rb_str_new2(err);
     }
-    exc_initialize(1, &mesg, self);
+    rb_call_super(1, &mesg);
     rb_iv_set(self, "errno", error);
     return self;
 }

@@ -1,3 +1,8 @@
+Sat May 14 23:59:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (exc_exception, {exit,name_err,syserr}_initialize): call
+	  Execption#initialize.  fixed: [ruby-talk:142593]
+
 Sat May 14 23:56:41 2005  Erik Huelsmann  <ehuels@gmail.com>
 
 	* configure.in: Check for the availability of pid_t, gid_t and uid_t and
