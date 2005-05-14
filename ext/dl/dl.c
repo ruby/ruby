@@ -1,5 +1,6 @@
 #include <ruby.h>
 #include <rubyio.h>
+#include <version.h>
 #include <ctype.h>
 #include "dl.h"
 
@@ -139,7 +140,10 @@ Init_dl()
     rb_define_module_function(rb_mDL, "malloc", rb_dl_malloc, 1);
     rb_define_module_function(rb_mDL, "realloc", rb_dl_realloc, 2);
     rb_define_module_function(rb_mDL, "free", rb_dl_free, 1);
+
     rb_define_const(rb_mDL, "RUBY_FREE", PTR2NUM(ruby_xfree));
+    rb_define_const(rb_mDL, "BUILD_RUBY_PLATFORM", rb_str_new2(RUBY_PLATFORM));
+    rb_define_const(rb_mDL, "BUILD_RUBY_VERSION",  rb_str_new2(RUBY_VERSION));
 
     Init_dlhandle();
     Init_dlcfunc();

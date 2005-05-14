@@ -59,6 +59,9 @@ module DL
     end
 
     def test_io()
+      if( RUBY_PLATFORM != DL::BUILD_RUBY_PLATFORM )
+        return
+      end
       io_in,io_out = IO.pipe()
       LIBC.fprintf(io_out, "hello")
       io_out.flush()
