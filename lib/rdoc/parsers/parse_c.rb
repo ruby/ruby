@@ -180,6 +180,7 @@ module RDoc
       @top_level = top_level
       @classes = Hash.new
       @file_dir = File.dirname(file_name)
+      @progress = $stderr unless options.quiet
     end
 
     # Extract the classes/modules and methods from a C file
@@ -200,8 +201,8 @@ module RDoc
 
     def progress(char)
       unless @options.quiet
-        $stderr.print(char)
-        $stderr.flush
+        @progress.print(char)
+        @progress.flush
       end
     end
 
