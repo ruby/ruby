@@ -1,3 +1,13 @@
+Sat May 14 11:47:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (ruby_pragma): prototype.  [ruby-core:04881]
+
+	* parse.y (parser_pragma): parse Emacsen hack.
+
+	* parse.y (parser_prepare): deal with specific syntax at the top.
+
+	* ruby.c (load_file): read the first line iff it started with shebang.
+
 Fri May 13 23:44:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: keep srcdir unexpanded.

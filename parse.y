@@ -164,6 +164,8 @@ struct parser_params {
     VALUE parsing_thread;
     int toplevel_p;
 #endif
+    int line_count;
+    int has_shebang;
 };
 
 static int parser_yyerror _((struct parser_params*, const char*));
@@ -4431,6 +4433,8 @@ parser_yyerror(parser, msg)
     return 0;
 }
 
+static void parser_prepare _((struct parser_params *parser));
+
 #ifndef RIPPER
 int ruby__end__seen;
 static VALUE ruby_debug_lines;
@@ -4444,6 +4448,7 @@ yycompile(parser, f, line)
     int n;
     NODE *node = 0;
     struct RVarmap *vp, *vars = ruby_dyna_vars;
+    const char *kcode_save;
 
     if (!compile_for_eval && rb_safe_level() == 0 &&
 	rb_const_defined(rb_cObject, rb_intern("SCRIPT_LINES__"))) {
@@ -4460,19 +4465,22 @@ yycompile(parser, f, line)
 	}
 	if (line > 1) {
 	    VALUE str = rb_str_new(0,0);
-	    while (line > 1) {
+	    n = line - 1;
+	    do {
 		rb_ary_push(ruby_debug_lines, str);
-		line--;
-	    }
+	    } while (--n);
 	}
     }
 
+    kcode_save = rb_get_kcode();
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
     ruby_sourceline = line - 1;
+    parser_prepare(parser);
     n = yyparse((void*)parser);
     ruby_debug_lines = 0;
     compile_for_eval = 0;
+    rb_set_kcode(kcode_save);
 
     vp = ruby_dyna_vars;
     ruby_dyna_vars = vars;
@@ -4621,6 +4629,7 @@ parser_nextc(parser)
 		heredoc_end = 0;
 	    }
 	    ruby_sourceline++;
+	    parser->line_count++;
 	    lex_pbeg = lex_p = RSTRING(v)->ptr;
 	    lex_pend = lex_p + RSTRING(v)->len;
 #ifdef RIPPER
@@ -5337,6 +5346,175 @@ lvar_defined_gen(parser, id)
 #endif
 }
 
+/* emacsen -*- hack */
+typedef void (*rb_pragma_setter_t) _((struct parser_params *parser, const char *name, const char *val));
+
+static void
+pragma_encoding(parser, name, val)
+    struct parser_params *parser;
+    const char *name, *val;
+{
+    if (parser && parser->line_count != (parser->has_shebang ? 2 : 1))
+	return;
+    rb_set_kcode(val);
+}
+
+struct pragma {
+    const char *name;
+    rb_pragma_setter_t func;
+};
+
+static const struct pragma pragmas[] = {
+    {"coding", pragma_encoding},
+};
+
+static const char *
+pragma_marker(str, len)
+    const char *str;
+    int len;
+{
+    int i = 2;
+
+    while (i < len) {
+	switch (str[i]) {
+	  case '-':
+	    if (str[i-1] == '*' && str[i-2] == '-') {
+		return str + i + 1;
+	    }
+	    i += 2;
+	    break;
+	  case '*':
+	    if (i + 1 >= len) return 0;
+	    if (str[i+1] != '-') {
+		i += 4;
+	    }
+	    else if (str[i-1] != '-') {
+		i += 2;
+	    }
+	    else {
+		return str + i + 2;
+	    }
+	    break;
+	  default:
+	    i += 3;
+	    break;
+	}
+    }
+    return 0;
+}
+
+static int
+parser_pragma(parser, str, len)
+    struct parser_params *parser;
+    const char *str;
+    int len;
+{
+    VALUE name = 0, val = 0;
+    const char *beg, *end, *vbeg, *vend;
+#define str_copy(_s, _p, _n) ((_s) \
+	? (rb_str_resize((_s), (_n)), \
+	   MEMCPY(RSTRING(_s)->ptr, (_p), char, (_n)), (_s)) \
+	: ((_s) = rb_str_new((_p), (_n))))
+
+    if (len <= 7) return Qfalse;
+    if (!(beg = pragma_marker(str, len))) return Qfalse;
+    if (!(end = pragma_marker(beg, str + len - beg))) return Qfalse;
+    str = beg;
+    len = end - beg - 3;
+    
+    /* %r"([^\\s\'\":;]+)\\s*:\\s*(\"(?:\\\\.|[^\"])*\"|[^\"\\s;]+)[\\s;]*" */
+    while (len > 0) {
+	const struct pragma *p = pragmas;
+	int n = 0;
+
+	for (; len > 0 && *str; str++, --len) {
+	    switch (*str) {
+	      case '\'': case '"': case ':': case ';':
+		continue;
+	    }
+	    if (!ISSPACE(*str)) break;
+	}
+	for (beg = str; len > 0; str++, --len) {
+	    switch (*str) {
+	      case '\'': case '"': case ':': case ';':
+		break;
+	      default:
+		if (ISSPACE(*str)) break;
+		continue;
+	    }
+	    break;
+	}
+	for (end = str; len > 0 && ISSPACE(*str); str++, --len);
+	if (!len) break;
+	if (*str != ':') continue;
+
+	do str++; while (--len > 0 && ISSPACE(*str));
+	if (!len) break;
+	if (*str == '"') {
+	    for (vbeg = ++str; --len > 0 && *str != '"'; str++) {
+		if (*str == '\\') {
+		    --len;
+		    ++str;
+		}
+	    }
+	    vend = str;
+	    if (len) {
+		--len;
+		++str;
+	    }
+	}
+	else {
+	    for (vbeg = str; len > 0 && *str != '"' && !ISSPACE(*str); --len, str++);
+	    vend = str;
+	}
+	while (len > 0 && (*str == ';' || ISSPACE(*str))) --len, str++;
+
+	str_copy(name, beg, end - beg);
+	rb_funcall(name, rb_intern("downcase!"), 0);
+	do {
+	    if (strncmp(p->name, RSTRING(name)->ptr, n) == 0) {
+		str_copy(val, vbeg, vend - vbeg);
+		(*p->func)(parser, RSTRING(name)->ptr, RSTRING(val)->ptr);
+		break;
+	    }
+	} while (++p < pragmas + sizeof(pragmas) / sizeof(*p));
+    }
+
+    return Qtrue;
+}
+
+int
+ruby_pragma(str, len)
+    const char *str;
+    int len;
+{
+    return parser_pragma(0, str, len);
+}
+
+static void
+parser_prepare(parser)
+    struct parser_params *parser;
+{
+    int c = nextc();
+    switch (c) {
+      case '#':
+	if (peek('!')) parser->has_shebang = 1;
+	break;
+      case 0xef:		/* UTF-8 BOM marker */
+	if (lex_pend - lex_p >= 2 &&
+	    (unsigned char)lex_p[0] == 0xbb &&
+	    (unsigned char)lex_p[1] == 0xbf) {
+	    rb_set_kcode("UTF-8");
+	    lex_p += 2;
+	    return;
+	}
+	break;
+      case EOF:
+	return;
+    }
+    pushback(c);
+}
+
 #define IS_ARG() (lex_state == EXPR_ARG || lex_state == EXPR_CMDARG)
 #define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_VALUE || lex_state == EXPR_CLASS)
 
@@ -5403,14 +5581,11 @@ parser_yylex(parser)
 	goto retry;
 
       case '#':		/* it's a comment */
-	while ((c = nextc()) != '\n') {
-	    if (c == -1) {
-#ifdef RIPPER
-                ripper_dispatch_scan_event(parser, tCOMMENT);
-#endif
-		return 0;
-            }
+	if (!parser->has_shebang || parser->line_count != 1) {
+	    /* no pragma in shebang line */
+	    parser_pragma(parser, lex_p, lex_pend - lex_p);
 	}
+	lex_p = lex_pend;
 #ifdef RIPPER
         ripper_dispatch_scan_event(parser, tCOMMENT);
         fallthru = Qtrue;
@@ -8824,6 +8999,7 @@ ripper_parse0(parser_v)
     struct parser_params *parser;
 
     Data_Get_Struct(parser_v, struct parser_params, parser);
+    parser_prepare(parser);
     ripper_yyparse((void*)parser);
     return parser->result;
 }

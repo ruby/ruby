@@ -917,11 +917,11 @@ load_file(fname, script)
 
 	c = rb_io_getc(f);
 	if (c == INT2FIX('#')) {
-	    line = rb_io_gets(f);
-	    if (NIL_P(line)) return;
-	    line_start++;
+	    c = rb_io_getc(f);
+	    if (c == INT2FIX('!')) {
+		line = rb_io_gets(f);
+		if (NIL_P(line)) return;
 
-	    if (RSTRING(line)->len > 2 && RSTRING(line)->ptr[0] == '!') {
 		if ((p = strstr(RSTRING(line)->ptr, "ruby")) == 0) {
 		    /* not ruby script, kick the program */
 		    char **argv;
@@ -965,7 +965,15 @@ load_file(fname, script)
 			p = moreswitches(p+1);
 		    }
 		}
+
+		/* push back shebang for pragma may exist in next line */
+		rb_io_ungetc(f, INT2FIX('\n'));
+		rb_io_ungetc(f, INT2FIX('!'));
 	    }
+	    else if (!NIL_P(c)) {
+		rb_io_ungetc(f, c);
+	    }
+	    rb_io_ungetc(f, INT2FIX('#'));
 	}
 	else if (!NIL_P(c)) {
 	    rb_io_ungetc(f, c);
