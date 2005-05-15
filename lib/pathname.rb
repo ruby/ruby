@@ -862,7 +862,7 @@ class Pathname    # * mixed *
   def unlink()
     begin
       File.unlink @path
-    rescue Errno::EISDIR
+    rescue SystemCallError
       Dir.unlink @path
     end
   end
