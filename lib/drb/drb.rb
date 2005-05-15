@@ -1090,7 +1090,8 @@ module DRb
         raise result
       else
         bt = self.class.prepare_backtrace(@uri, result)
-        raise result, result.message, bt + caller
+	result.set_backtrace(bt + caller)
+        raise result
       end
     end
 
