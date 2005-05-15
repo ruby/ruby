@@ -69,9 +69,9 @@ extern "C++" {
 }
 #endif
 
-#define UIDTYPE int
-#define GIDTYPE int
-#define pid_t   int
+#define rb_pid_t int
+#define rb_gid_t int
+#define rb_uid_t int
 #define WNOHANG -1
 
 #undef getc
@@ -143,7 +143,7 @@ struct timezone {
 #endif
 extern void   NtInitialize(int *, char ***);
 extern int    rb_w32_cmdvector(const char *, char ***);
-extern pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *);
+extern rb_pid_t  rb_w32_pipe_exec(const char *, const char *, int, int *);
 extern int    flock(int fd, int oper);
 extern int    rb_w32_is_socket(int);
 extern int    rb_w32_accept(int, struct sockaddr *, int *);
@@ -187,14 +187,14 @@ extern int rb_w32_snprintf(char *, size_t, const char *, ...);
 extern int chown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
-extern pid_t waitpid (pid_t, int *, int);
+extern rb_pid_t waitpid (rb_pid_t, int *, int);
 extern int rb_w32_argv_size(char *const *);
 extern char *rb_w32_join_argv(char *, char *const *);
 extern int rb_w32_spawn(int, const char *, const char*);
 extern int rb_w32_aspawn(int, const char *, char *const *);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
-extern pid_t rb_w32_getpid(void);
+extern rb_pid_t rb_w32_getpid(void);
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 extern int rb_w32_isatty(int);
 #endif
@@ -271,12 +271,12 @@ extern FILE *rb_w32_fsopen(const char *, const char *, int);
 // stubs
 //
 extern int       ioctl (int, int, ...);
-extern UIDTYPE   getuid (void);
-extern UIDTYPE   geteuid (void);
-extern GIDTYPE   getgid (void);
-extern GIDTYPE   getegid (void);
-extern int       setuid (int);
-extern int       setgid (int);
+extern rb_uid_t  getuid (void);
+extern rb_uid_t  geteuid (void);
+extern rb_gid_t  getgid (void);
+extern rb_gid_t  getegid (void);
+extern int       setuid (rb_uid_t);
+extern int       setgid (rb_gid_t);
 
 extern char *rb_w32_strerror(int);
 

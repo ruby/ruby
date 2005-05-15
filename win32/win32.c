@@ -1772,38 +1772,38 @@ rb_w32_strerror(int e)
 #define ROOT_UID	0
 #define ROOT_GID	0
 
-UIDTYPE
+rb_uid_t
 getuid(void)
 {
 	return ROOT_UID;
 }
 
-UIDTYPE
+rb_uid_t
 geteuid(void)
 {
 	return ROOT_UID;
 }
 
-GIDTYPE
+rb_gid_t
 getgid(void)
 {
 	return ROOT_GID;
 }
 
-GIDTYPE
+rb_gid_t
 getegid(void)
 {
     return ROOT_GID;
 }
 
 int
-setuid(int uid)
+setuid(rb_uid_t uid)
 { 
     return (uid == ROOT_UID ? 0 : -1);
 }
 
 int
-setgid(int gid)
+setgid(rb_gid_t gid)
 {
     return (gid == ROOT_GID ? 0 : -1);
 }

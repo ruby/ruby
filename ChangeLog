@@ -1,3 +1,7 @@
+Mon May 16 03:29:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.{h,c}: define rb_{p,g,u}id_t.
+
 Mon May 16 00:21:02 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#unlink): use SystemCallError instead of
