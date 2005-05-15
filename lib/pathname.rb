@@ -868,10 +868,10 @@ class Pathname    # * mixed *
   # Removes a file or directory, using <tt>File.unlink</tt> or
   # <tt>Dir.unlink</tt> as necessary.
   def unlink()
-    if FileTest.directory? @path
-      Dir.unlink @path
-    else
+    begin
       File.unlink @path
+    rescue Errno::EISDIR
+      Dir.unlink @path
     end
   end
   alias delete unlink
