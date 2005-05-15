@@ -1,3 +1,9 @@
+Mon May 16 00:21:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#unlink): use SystemCallError instead of
+	  Errno::EISDIR because EISDIR is not portable.
+	  [ruby-core:5001]
+
 Sun May 15 22:28:10 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (DRbObject#method_missing): use raise(exception).
