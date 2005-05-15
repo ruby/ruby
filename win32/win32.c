@@ -3490,6 +3490,7 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
 {
     struct tm *tm;
     SYSTEMTIME st;
+    FILETIME lt;
 
     tm = gmtime(&time);
     st.wYear = tm->tm_year + 1900;
@@ -3500,7 +3501,8 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
     st.wMinute = tm->tm_min;
     st.wSecond = tm->tm_sec;
     st.wMilliseconds = 0;
-    if (!SystemTimeToFileTime(&st, ft)) {
+    if (!SystemTimeToFileTime(&st, &lt) ||
+	!LocalFileTimeToFileTime(&lt, ft)) {
 	errno = map_errno(GetLastError());
 	return -1;
     }

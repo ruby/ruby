@@ -1,3 +1,8 @@
+Sun May 15 09:57:30 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.c (unixtime_to_filetime): deal with DST.
+	  [ruby-talk:141817]
+
 Sat May 14 23:59:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exc_exception, {exit,name_err,syserr}_initialize): call
