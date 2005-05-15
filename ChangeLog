@@ -1,3 +1,8 @@
+Sun May 15 18:56:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in, ruby.h: define rb_[pgu]id_t macros instead of typedefs
+	  to get rid of types which might not be defined yet.  [ruby-dev:26165]
+
 Sun May 15 14:35:46 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#unlink): unlink a symlink to a directory

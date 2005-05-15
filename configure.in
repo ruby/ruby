@@ -1,7 +1,7 @@
 dnl Process this file with autoconf to produce a configure script.
 AC_INIT()
 
-AC_PREREQ(2.50)
+AC_PREREQ(2.58)
 
 AC_DEFUN(RUBY_MINGW32,
 [case "$host_os" in
@@ -226,7 +226,10 @@ AC_CHECK_SIZEOF(float, 4)
 AC_CHECK_SIZEOF(double, 8)
 AC_CHECK_SIZEOF(time_t, 0)
 
-AC_CHECK_TYPES([pid_t, gid_t, uid_t])
+for id in pid_t gid_t uid_t; do
+    AC_CHECK_TYPE($id, [typ=$id], [typ=int])
+    AC_DEFINE_UNQUOTED(rb_$id, $typ)
+done
 
 AC_CACHE_CHECK(for prototypes, rb_cv_have_prototypes,
   [AC_TRY_COMPILE([int foo(int x) { return 0; }], [return foo(10);],
