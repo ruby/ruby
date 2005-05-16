@@ -5349,6 +5349,7 @@ lvar_defined_gen(parser, id)
 /* emacsen -*- hack */
 typedef void (*rb_pragma_setter_t) _((struct parser_params *parser, const char *name, const char *val));
 
+static void pragma_encoding _((struct parser_params *, const char *, const char *));
 static void
 pragma_encoding(parser, name, val)
     struct parser_params *parser;

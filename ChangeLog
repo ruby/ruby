@@ -1,10 +1,13 @@
-Mon May 16 22:28:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon May 16 22:40:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.h, {bcc32,win32,wince}/Makefile.sub: moved rb_[ugp]id_t
 	  to get rid of redefinition warnings on mingw.
 
 	* class.c (rb_class_init_copy): singleton class is disallowed to copy,
 	  from its definition.  fixed: [ruby-talk:142749]
+
+	* parse.y (pragma_encoding): add prototype to suppress false warning
+	  by VC.
 
 Mon May 16 03:29:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
