@@ -1,3 +1,8 @@
+Mon May 16 22:21:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* win32/win32.h, {bcc32,win32,wince}/Makefile.sub: moved rb_[ugp]id_t
+	  to get rid of redefinition warnings on mingw.
+
 Mon May 16 03:29:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.{h,c}: define rb_{p,g,u}id_t.
