@@ -105,6 +105,9 @@ rb_class_init_copy(clone, orig)
     if (RCLASS(clone)->super != 0) {
 	rb_raise(rb_eTypeError, "already initialized class");
     }
+    if (FL_TEST(orig, FL_SINGLETON)) {
+	rb_raise(rb_eTypeError, "can't copy singleton class");
+    }
     return rb_mod_init_copy(clone, orig);
 }
 
