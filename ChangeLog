@@ -1,4 +1,4 @@
-Mon May 16 22:40:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon May 16 22:42:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* win32/win32.h, {bcc32,win32,wince}/Makefile.sub: moved rb_[ugp]id_t
 	  to get rid of redefinition warnings on mingw.
@@ -8,6 +8,8 @@ Mon May 16 22:40:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (pragma_encoding): add prototype to suppress false warning
 	  by VC.
+
+	* process.c (proc_spawn_v): use rb_w32_aspawn on Win32.
 
 Mon May 16 03:29:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 

@@ -1095,16 +1095,14 @@ rb_proc_exec(str)
 #endif
 
 #if !defined(HAVE_FORK) && defined(HAVE_SPAWNV)
+#if defined(_WIN32)
+#define proc_spawn_v(argv, prog) rb_w32_aspawn(P_NOWAIT, prog, argv)
+#else
 static int
 proc_spawn_v(argv, prog)
     char **argv;
     char *prog;
 {
-#if defined(_WIN32)
-    char *cmd = ALLOCA_N(char, rb_w32_argv_size(argv));
-    if (!prog) prog = argv[0];
-    return rb_w32_spawn(P_NOWAIT, rb_w32_join_argv(cmd, argv), prog);
-#else
     char *extension;
     int status;
 
@@ -1144,8 +1142,8 @@ proc_spawn_v(argv, prog)
     last_status_set(status == -1 ? 127 : status, 0);
     after_exec();
     return status;
-#endif
 }
+#endif
 
 static int
 proc_spawn_n(argc, argv, prog)
