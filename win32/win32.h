@@ -69,9 +69,6 @@ extern "C++" {
 }
 #endif
 
-#define rb_pid_t int
-#define rb_gid_t int
-#define rb_uid_t int
 #define WNOHANG -1
 
 #undef getc
