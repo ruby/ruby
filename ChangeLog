@@ -1,6 +1,6 @@
 Tue May 17 11:49:18 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
-	* win32/win32.c (unixtime_to_filetime): use localtime() instaed of
+	* win32/win32.c (unixtime_to_filetime): use localtime() instead of
 	  gmtime() when using FileLocalTimeToFileTime().
 
 Mon May 16 22:42:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
