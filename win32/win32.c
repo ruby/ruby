@@ -3492,7 +3492,7 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
     SYSTEMTIME st;
     FILETIME lt;
 
-    tm = gmtime(&time);
+    tm = localtime(&time);
     st.wYear = tm->tm_year + 1900;
     st.wMonth = tm->tm_mon + 1;
     st.wDayOfWeek = tm->tm_wday;
