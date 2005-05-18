@@ -1,3 +1,7 @@
+Wed May 18 13:40:48 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (NtInitialize): fix typo.
+
 Wed May 18 11:07:47 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): get rid of using String.  [ruby-dev:26180]

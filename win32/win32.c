@@ -424,7 +424,7 @@ NtInitialize(int *argc, char ***argv)
     //
     // subvert cmd.exe's feeble attempt at command line parsing
     //
-    *argc = make_cmdvector(GetCommandLine(), argv);
+    *argc = rb_w32_cmdvector(GetCommandLine(), argv);
 
     //
     // Now set up the correct time stuff
