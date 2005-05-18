@@ -422,6 +422,11 @@ NtInitialize(int *argc, char ***argv)
     int ret;
 
     //
+    // subvert cmd.exe's feeble attempt at command line parsing
+    //
+    *argc = make_cmdvector(GetCommandLine(), argv);
+
+    //
     // Now set up the correct time stuff
     //
 
@@ -433,6 +438,11 @@ NtInitialize(int *argc, char ***argv)
 
     // Initialize Winsock
     StartSockets();
+
+#ifdef _WIN32_WCE
+    // free commandline buffer
+    wce_FreeCommandLine();
+#endif
 }
 
 char *

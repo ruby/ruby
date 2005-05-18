@@ -927,7 +927,7 @@ do_stat(path, pst)
 {
     int ret = stat(path, pst);
     if (ret < 0 && errno != ENOENT)
-	rb_sys_warning(path);
+	rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)path, 0);
 
     return ret;
 }
@@ -939,7 +939,7 @@ do_lstat(path, pst)
 {
     int ret = lstat(path, pst);
     if (ret < 0 && errno != ENOENT)
-	rb_sys_warning(path);
+	rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)path, 0);
 
     return ret;
 }
@@ -950,7 +950,7 @@ do_opendir(path)
 {
     DIR *dirp = opendir(path);
     if (dirp == NULL && errno != ENOENT && errno != ENOTDIR)
-	rb_sys_warning(path);
+	rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)path, 0);
 
     return dirp;
 }
@@ -1116,21 +1116,21 @@ glob_free_pattern(list)
     }
 }
 
-static VALUE
+static char *
 join_path(path, dirsep, name)
-    VALUE path;
+    const char *path;
     int dirsep;
     const char *name;
 {
-    long len = RSTRING(path)->len;
-    VALUE buf = rb_str_new(0, RSTRING(path)->len+strlen(name)+(dirsep?1:0));
+    long len = strlen(path);
+    char *buf = ALLOC_N(char, len+strlen(name)+(dirsep?1:0)+1);
 
-    memcpy(RSTRING(buf)->ptr, RSTRING(path)->ptr, len);
+    memcpy(buf, path, len);
     if (dirsep) {
-	strcpy(RSTRING(buf)->ptr+len, "/");
+	strcpy(buf+len, "/");
 	len++;
     }
-    strcpy(RSTRING(buf)->ptr+len, name);
+    strcpy(buf+len, name);
     return buf;
 }
 
@@ -1149,8 +1149,8 @@ enum answer { YES, NO, UNKNOWN };
 #endif
 
 struct glob_args {
-    void (*func) _((VALUE, VALUE));
-    VALUE c;
+    void (*func) _((const char *, VALUE));
+    const char *c;
     VALUE v;
 };
 
@@ -1161,17 +1161,15 @@ glob_func_caller(val)
     VALUE val;
 {
     struct glob_args *args = (struct glob_args *)val;
-    VALUE path = args->c;
 
-    OBJ_TAINT(path);
-    (*args->func)(path, args->v);
+    (*args->func)(args->c, args->v);
     return Qnil;
 }
 
 static int
 glob_call_func(func, path, arg)
-    void (*func) _((VALUE, VALUE));
-    VALUE path;
+    void (*func) _((const char *, VALUE));
+    const char *path;
     VALUE arg;
 {
     int status;
@@ -1187,14 +1185,14 @@ glob_call_func(func, path, arg)
 
 static int
 glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
-    VALUE path;
+    const char *path;
     int dirsep; /* '/' should be placed before appending child entry's name to 'path'. */
     enum answer exist; /* Does 'path' indicate an existing entry? */
     enum answer isdir; /* Does 'path' indicate a directory or a symlink to a directory? */
     struct glob_pattern **beg;
     struct glob_pattern **end;
     int flags;
-    void (*func) _((VALUE, VALUE));
+    void (*func) _((const char *, VALUE));
     VALUE arg;
 {
     struct stat st;
@@ -1225,9 +1223,9 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	}
     }
 
-    if (RSTRING(path)->len > 0) {
+    if (*path) {
 	if (match_all && exist == UNKNOWN) {
-	    if (do_lstat(RSTRING(path)->ptr, &st) == 0) {
+	    if (do_lstat(path, &st) == 0) {
 		exist = YES;
 		isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 	    }
@@ -1238,7 +1236,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	}
 
 	if (match_dir && isdir == UNKNOWN) {
-	    if (do_stat(RSTRING(path)->ptr, &st) == 0) {
+	    if (do_stat(path, &st) == 0) {
 		exist = YES;
 		isdir = S_ISDIR(st.st_mode) ? YES : NO;
 	    }
@@ -1254,7 +1252,9 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	}
 
 	if (match_dir && isdir == YES) {
-	    status = glob_call_func(func, join_path(path, dirsep, ""), arg);
+	    char *tmp = join_path(path, dirsep, "");
+	    status = glob_call_func(func, tmp, arg);
+	    free(tmp);
 	    if (status) return status;
 	}
     }
@@ -1263,17 +1263,17 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
     if (magical || recursive) {
 	struct dirent *dp;
-	DIR *dirp = do_opendir(RSTRING(path)->len > 0 ? RSTRING(path)->ptr : ".");
+	DIR *dirp = do_opendir(path);
 	if (dirp == NULL) return 0;
 
 	for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
-	    VALUE buf = join_path(path, dirsep, dp->d_name);
+	    char *buf = join_path(path, dirsep, dp->d_name);
 
 	    enum answer new_isdir = UNKNOWN;
 	    if (recursive && strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0
 		&& fnmatch("*", dp->d_name, flags) == 0) {
 #ifndef _WIN32
-		if (do_lstat(RSTRING(buf)->ptr, &st) == 0)
+		if (do_lstat(buf, &st) == 0)
 		    new_isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 		else
 		    new_isdir = NO;
@@ -1298,6 +1298,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	    }
 
 	    status = glob_helper(buf, 1, YES, new_isdir, new_beg, new_end, flags, func, arg);
+	    free(buf);
 	    free(new_beg);
 	    if (status) break;
 	}
@@ -1313,7 +1314,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
 	for (cur = copy_beg; cur < copy_end; ++cur) {
 	    if (*cur) {
-		VALUE buf;
+		char *buf;
 		char *name;
 		name = ALLOC_N(char, strlen((*cur)->str) + 1);
 		strcpy(name, (*cur)->str);
@@ -1331,6 +1332,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 		buf = join_path(path, dirsep, name);
 		free(name);
 		status = glob_helper(buf, 1, UNKNOWN, UNKNOWN, new_beg, new_end, flags, func, arg);
+		free(buf);
 		free(new_beg);
 		if (status) break;
 	    }
@@ -1343,16 +1345,15 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 }
 
 static int
-rb_glob2(path, offset, flags, func, arg)
-    VALUE path;
-    long offset;
+rb_glob2(path, flags, func, arg)
+    const char *path;
     int flags;
-    void (*func) _((VALUE, VALUE));
+    void (*func) _((const char *, VALUE));
     VALUE arg;
 {
     struct glob_pattern *list;
     const char *root, *start;
-    VALUE buf;
+    char *buf;
     int n;
     int status;
 
@@ -1360,7 +1361,7 @@ rb_glob2(path, offset, flags, func, arg)
 	rb_warn("Dir.glob() ignores File::FNM_CASEFOLD");
     }
 
-    start = root = StringValuePtr(path) + offset;
+    start = root = path;
 #if defined DOSISH
     flags |= FNM_CASEFOLD;
     root = rb_path_skip_prefix(root);
@@ -1371,11 +1372,14 @@ rb_glob2(path, offset, flags, func, arg)
     if (root && *root == '/') root++;
 
     n = root - start;
-    buf = rb_str_new(start, n);
+    buf = ALLOC_N(char, n + 1);
+    MEMCPY(buf, start, char, n);
+    buf[n] = '\0';
 
     list = glob_make_pattern(root, flags);
     status = glob_helper(buf, 0, UNKNOWN, UNKNOWN, &list, &list + 1, flags, func, arg);
     glob_free_pattern(list);
+    free(buf);
 
     return status;
 }
@@ -1387,10 +1391,11 @@ struct rb_glob_args {
 
 static VALUE
 rb_glob_caller(path, a)
-    VALUE path, a;
+    const char *path;
+    VALUE a;
 {
     struct rb_glob_args *args = (struct rb_glob_args *)a;
-    (*args->func)(RSTRING(path)->ptr, args->arg);
+    (*args->func)(path, args->arg);
     return Qnil;
 }
 
@@ -1405,31 +1410,31 @@ rb_glob(path, func, arg)
 
     args.func = func;
     args.arg = arg;
-    status = rb_glob2(rb_str_new2(path), 0, 0, rb_glob_caller, &args);
+    status = rb_glob2(path, 0, rb_glob_caller, &args);
 
     if (status) rb_jump_tag(status);
 }
 
 static void
 push_pattern(path, ary)
-    VALUE path, ary;
+    const char *path;
+    VALUE ary;
 {
-    rb_ary_push(ary, path);
+    rb_ary_push(ary, rb_tainted_str_new2(path));
 }
 
 static int
-push_glob(VALUE ary, VALUE s, long offset, int flags);
+push_glob(VALUE ary, const char *str, long offset, int flags);
 
 static int
 push_glob(ary, str, offset, flags)
     VALUE ary;
-    VALUE str;
+    const char *str;
     long offset;
     int flags;
 {
     const int escape = !(flags & FNM_NOESCAPE);
-
-    const char *p = RSTRING(str)->ptr + offset;
+    const char *p = str;
     const char *s = p;
     const char *lbrace = 0, *rbrace = 0;
     int nest = 0, status = 0;
@@ -1449,7 +1454,7 @@ push_glob(ary, str, offset, flags)
     }
 
     if (lbrace && rbrace) {
-	VALUE buffer = rb_str_new(0, strlen(s));
+	volatile VALUE buffer = rb_str_new(0, strlen(s));
 	char *buf;
 	long shift;
 
@@ -1470,12 +1475,12 @@ push_glob(ary, str, offset, flags)
 	    }
 	    memcpy(buf+shift, t, p-t);
 	    strcpy(buf+shift+(p-t), rbrace+1);
-	    status = push_glob(ary, buffer, offset, flags);
+	    status = push_glob(ary, buf, offset, flags);
 	    if (status) break;
 	}
     }
     else if (!lbrace && !rbrace) {
-	status = rb_glob2(str, offset, flags, push_pattern, ary);
+	status = rb_glob2(s, flags, push_pattern, ary);
     }
 
     return status;
@@ -1494,7 +1499,7 @@ rb_push_glob(str, flags) /* '\0' is delimiter */
     ary = rb_ary_new();
 
     while (offset < RSTRING(str)->len) {
-	int status = push_glob(ary, str, offset, flags);
+	int status = push_glob(ary, RSTRING(str)->ptr, offset, flags);
 	char *p, *pend;
 	if (status) rb_jump_tag(status);
 	p = RSTRING(str)->ptr + offset;

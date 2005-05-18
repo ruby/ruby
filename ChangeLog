@@ -1,3 +1,10 @@
+Wed May 18 11:07:47 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* dir.c (glob_helper): get rid of using String.  [ruby-dev:26180]
+
+	* eval.c (ruby_options), win32/win32.c (NtInitialize): move argument
+	  intialization back.  [ruby-dev:26180]
+
 Tue May 17 11:49:18 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (unixtime_to_filetime): use localtime() instead of
