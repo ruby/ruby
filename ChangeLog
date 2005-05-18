@@ -1,3 +1,8 @@
+Wed May 18 23:42:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (exc_exception): reverted to call Exception#initialize
+	  directly.  fixed: [ruby-dev:26177]
+
 Wed May 18 17:38:51 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* dir.c (glob_helper): check whether path is "" before calling
