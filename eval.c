@@ -1394,10 +1394,6 @@ ruby_options(argc, argv)
 {
     int state;
 
-#ifdef _WIN32
-    argc = rb_w32_cmdvector(GetCommandLine(), &argv);
-#endif
-
     Init_stack((void*)&state);
     PUSH_TAG(PROT_NONE);
     if ((state = EXEC_TAG()) == 0) {
@@ -1409,11 +1405,6 @@ ruby_options(argc, argv)
 	exit(error_handle(state));
     }
     POP_TAG();
-
-#ifdef _WIN32_WCE
-    // free commandline buffer
-    wce_FreeCommandLine();
-#endif
 }
 
 void rb_exec_end_proc _((void));

@@ -877,8 +877,8 @@ remove_backslashes(p)
 #endif
 
 struct glob_args {
-    void (*func) _((VALUE, VALUE));
-    VALUE c;
+    void (*func) _((const char*, VALUE));
+    const char *c;
     VALUE v;
 };
 
@@ -889,18 +889,15 @@ glob_func_caller(val)
     VALUE val;
 {
     struct glob_args *args = (struct glob_args *)val;
-    VALUE path = args->c;
 
-    OBJ_TAINT(path);
-    RSTRING(path)->len = strlen(RSTRING(path)->ptr);
-    (*args->func)(path, args->v);
+    (*args->func)(args->c, args->v);
     return Qnil;
 }
 
 static int
 glob_call_func(func, path, arg)
-    void (*func) _((VALUE, VALUE));
-    VALUE path;
+    void (*func) _((const char*, VALUE));
+    const char *path;
     VALUE arg;
 {
     int status;
@@ -914,39 +911,53 @@ glob_call_func(func, path, arg)
     return status;
 }
 
-static int glob_helper(VALUE path, char *sub, int flags, void (*func)(VALUE,VALUE), VALUE arg);
+static int glob_helper _((const char *path, const char *sub, int flags, void (*func)(const char *,VALUE), VALUE arg));
 
 static int
-glob_helper(pv, sub, flags, func, arg)
-    VALUE pv;
-    char *sub;
+glob_helper(path, sub, flags, func, arg)
+    const char *path;
+    const char *sub;
     int flags;
-    void (*func) _((VALUE, VALUE));
+    void (*func) _((const char *, VALUE));
     VALUE arg;
 {
     struct stat st;
-    char *p, *m, *path;
+    const char *p, *m;
     int status = 0;
+    char *buf = 0;
+    char *newpath = 0;
 
-    StringValue(pv);
-    path = RSTRING(pv)->ptr;
     p = sub ? sub : path;
     if (!has_magic(p, 0, flags)) {
+	if (
 #if defined DOSISH
-	remove_backslashes(path);
+	    TRUE
 #else
-	if (!(flags & FNM_NOESCAPE)) remove_backslashes(p);
+	    !(flags & FNM_NOESCAPE)
 #endif
+	    )
+	{
+	    newpath = strdup(path);
+	    if (sub) {
+		p = newpath + (sub - path);
+		remove_backslashes(newpath + (sub - path));
+		sub = p;
+	    }
+	    else {
+		remove_backslashes(newpath);
+		p = path = newpath;
+	    }
+	}
 	if (lstat(path, &st) == 0) {
-	    status = glob_call_func(func, pv, arg);
-	    if (status) return status;
+	    status = glob_call_func(func, path, arg);
 	}
 	else if (errno != ENOENT) {
 	    /* In case stat error is other than ENOENT and
 	       we may want to know what is wrong. */
-	    rb_sys_warning(path);
+	    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)path, 0);
 	}
-	return 0;
+	xfree(newpath);
+	return status;
     }
 
     while (p && !status) {
@@ -954,7 +965,6 @@ glob_helper(pv, sub, flags, func, arg)
 	m = strchr(p, '/');
 	if (has_magic(p, m, flags)) {
 	    char *dir, *base, *magic;
-	    VALUE buf;
 	    DIR *dirp;
 	    struct dirent *dp;
 	    int recursive = 0;
@@ -970,7 +980,8 @@ glob_helper(pv, sub, flags, func, arg)
 
 	    magic = extract_elem(p);
 	    if (stat(dir, &st) < 0) {
-	        if (errno != ENOENT) rb_sys_warning(dir);
+	        if (errno != ENOENT)
+		    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)dir, 0);
 	        free(base);
 	        free(magic);
 	        break;
@@ -979,14 +990,14 @@ glob_helper(pv, sub, flags, func, arg)
 		if (m && strcmp(magic, "**") == 0) {
 		    int n = strlen(base);
 		    recursive = 1;
-		    buf = rb_str_new(0, n+strlen(m)+3);
-		    sprintf(RSTRING(buf)->ptr, "%s%s", base, *base ? m : m+1);
-		    status = glob_helper(buf, RSTRING(buf)->ptr+n, flags, func, arg);
+		    REALLOC_N(buf, char, n+strlen(m)+3);
+		    sprintf(buf, "%s%s", base, *base ? m : m+1);
+		    status = glob_helper(buf, buf+n, flags, func, arg);
 		    if (status) goto finalize;
 		}
 		dirp = opendir(dir);
 		if (dirp == NULL) {
-		    rb_sys_warning(dir);
+		    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)dir, 0);
 		    free(base);
 		    free(magic);
 		    break;
@@ -1010,14 +1021,15 @@ glob_helper(pv, sub, flags, func, arg)
 			continue;
 		    if (fnmatch("*", dp->d_name, flags) != 0)
 			continue;
-		    buf = rb_str_new(0, strlen(base)+NAMLEN(dp)+strlen(m)+6);
-		    sprintf(RSTRING(buf)->ptr, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
-		    if (lstat(RSTRING(buf)->ptr, &st) < 0) {
-			if (errno != ENOENT) rb_sys_warning(RSTRING(buf)->ptr);
+		    REALLOC_N(buf, char, strlen(base)+NAMLEN(dp)+strlen(m)+6);
+		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
+		    if (lstat(buf, &st) < 0) {
+			if (errno != ENOENT)
+			    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)buf, 0);
 			continue;
 		    }
 		    if (S_ISDIR(st.st_mode)) {
-			char *t = RSTRING(buf)->ptr+strlen(RSTRING(buf)->ptr);
+			char *t = buf+strlen(buf);
 		        strcpy(t, "/**");
 			strcpy(t+3, m);
 			status = glob_helper(buf, t, flags, func, arg);
@@ -1027,15 +1039,16 @@ glob_helper(pv, sub, flags, func, arg)
 		    continue;
 		}
 		if (fnmatch(magic, dp->d_name, flags) == 0) {
-		    buf = rb_str_new(0, strlen(base)+NAMLEN(dp)+2);
-		    sprintf(RSTRING(buf)->ptr, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
+		    REALLOC_N(buf, char, strlen(base)+NAMLEN(dp)+2);
+		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (!m) {
 			status = glob_call_func(func, buf, arg);
 			if (status) break;
 			continue;
 		    }
 		    tmp = ALLOC(struct d_link);
-		    tmp->path = strdup(RSTRING(buf)->ptr);
+		    tmp->path = buf;
+		    buf = 0;
 		    *tail = tmp;
 		    tail = &tmp->next;
 		}
@@ -1053,13 +1066,13 @@ glob_helper(pv, sub, flags, func, arg)
 				int len = strlen(link->path);
 				int mlen = strlen(m);
 
-				buf = rb_str_new(0, len+mlen+1);
-				sprintf(RSTRING(buf)->ptr, "%s%s", link->path, m);
-				status = glob_helper(buf, RSTRING(buf)->ptr+len, flags, func, arg);
+				REALLOC_N(buf, char, len+mlen+1);
+				sprintf(buf, "%s%s", link->path, m);
+				status = glob_helper(buf, buf+len, flags, func, arg);
 			    }
 			}
 			else {
-			    rb_sys_warning(link->path);
+			    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)link->path, 0);
 			}
 		    }
 		    tmp = link;
@@ -1072,14 +1085,16 @@ glob_helper(pv, sub, flags, func, arg)
 	}
 	p = m;
     }
+    xfree(buf);
+    xfree(newpath);
     return status;
 }
 
 static int
 rb_glob2(path, flags, func, arg)
-    VALUE path;
+    const char *path;
     int flags;
-    void (*func) _((VALUE, VALUE));
+    void (*func) _((const char *, VALUE));
     VALUE arg;
 {
     int status;
@@ -1112,7 +1127,7 @@ rb_glob(path, func, arg)
 
     args.func = func;
     args.arg = arg;
-    status = rb_glob2(rb_str_new2(path), 0, rb_glob_caller, (VALUE)&args);
+    status = rb_glob2(path, 0, rb_glob_caller, (VALUE)&args);
 
     if (status) rb_jump_tag(status);
 }
@@ -1128,23 +1143,23 @@ rb_globi(path, func, arg)
 
     args.func = func;
     args.arg = arg;
-    status = rb_glob2(rb_str_new2(path), FNM_CASEFOLD, rb_glob_caller, (VALUE)&args);
+    status = rb_glob2(path, FNM_CASEFOLD, rb_glob_caller, (VALUE)&args);
 
     if (status) rb_jump_tag(status);
 }
 
 static void
 push_pattern(path, ary)
-    VALUE path;
+    const char *path;
     VALUE ary;
 {
-    rb_ary_push(ary, path);
+    rb_ary_push(ary, rb_tainted_str_new2(path));
 }
 
 static int
 push_globs(ary, s, flags)
     VALUE ary;
-    VALUE s;
+    const char *s;
     int flags;
 {
     return rb_glob2(s, flags, push_pattern, ary);
@@ -1152,17 +1167,18 @@ push_globs(ary, s, flags)
 
 static int
 push_braces(ary, str, flags)
-    VALUE ary, str;
+    VALUE ary;
+    const char *str;
     int flags;
 {
-    VALUE buf;
+    char *buf = 0;
     char *b;
     const char *s, *p, *t;
     const char *lbrace, *rbrace;
     int nest = 0;
     int status = 0;
 
-    s = p = RSTRING(str)->ptr;
+    s = p = str;
     lbrace = rbrace = 0;
     while (*p) {
 	if (*p == '{') {
@@ -1187,11 +1203,16 @@ push_braces(ary, str, flags)
 	    t = p + 1;
 	    for (p = t; *p!='}' && *p!=','; p++) {
 		/* skip inner braces */
-		if (*p == '{') while (*p!='}') p++;
+		if (*p == '{') {
+		    nest = 1;
+		    while (*++p != '}' || --nest) {
+			if (*p == '{') nest++;
+		    }
+		}
 	    }
-	    buf = rb_str_new(0, len+1);
-	    memcpy(RSTRING(buf)->ptr, s, lbrace-s);
-	    b = RSTRING(buf)->ptr + (lbrace-s);
+	    REALLOC_N(buf, char, len+1);
+	    memcpy(buf, s, lbrace-s);
+	    b = buf + (lbrace-s);
 	    memcpy(b, t, p-t);
 	    strcpy(b+(p-t), rbrace+1);
 	    status = push_braces(ary, buf, flags);
@@ -1201,6 +1222,7 @@ push_braces(ary, str, flags)
     else {
 	status = push_globs(ary, str, flags);
     }
+    xfree(buf);
 
     return status;
 }
@@ -1212,9 +1234,7 @@ rb_push_glob(str, flags)
     VALUE str;
     int flags;
 {
-    const char *p, *pend;
-    volatile VALUE buf;
-    char *t;
+    const char *p, *pend, *buf;
     int nest, maxnest;
     int status = 0;
     int noescape = flags & FNM_NOESCAPE;
@@ -1226,20 +1246,17 @@ rb_push_glob(str, flags)
     pend = p + RSTRING(str)->len;
 
     while (p < pend) {
-	buf = rb_str_new(0, pend - p + 1);
-	t = RSTRING(buf)->ptr;
 	nest = maxnest = 0;
 	while (p < pend && isdelim(*p)) p++;
+	buf = p;
 	while (p < pend && !isdelim(*p)) {
 	    if (*p == '{') nest++, maxnest++;
 	    if (*p == '}') nest--;
 	    if (!noescape && *p == '\\') {
-		*t++ = *p++;
-		if (p == pend) break;
+		if (++p == pend) break;
 	    }
-	    *t++ = *p++;
+	    p++;
 	}
-	*t = '\0';
 	if (maxnest == 0) {
 	    status = push_globs(ary, buf, flags);
 	    if (status) break;
