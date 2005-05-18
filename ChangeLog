@@ -1,3 +1,8 @@
+Wed May 18 17:38:51 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* dir.c (glob_helper): check whether path is "" before calling
+	  do_opendir.  [ruby-dev:26183]
+
 Wed May 18 13:40:48 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (NtInitialize): fix typo.

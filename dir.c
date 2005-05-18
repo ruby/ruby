@@ -1263,7 +1263,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 
     if (magical || recursive) {
 	struct dirent *dp;
-	DIR *dirp = do_opendir(path);
+	DIR *dirp = do_opendir(*path ? path : ".");
 	if (dirp == NULL) return 0;
 
 	for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
