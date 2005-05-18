@@ -1,3 +1,8 @@
+Wed May 18 23:42:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* error.c (exc_exception): reverted to call Exception#initialize
+	  directly.  fixed: [ruby-dev:26177]
+
 Wed May 18 23:39:09 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (glob_helper): get rid of using String.  [ruby-dev:26180]
