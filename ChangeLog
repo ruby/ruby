@@ -1,3 +1,14 @@
+Thu May 19 23:33:09 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/readline.c: supported libedit. fixed: [ruby-core:4858]
+
+	* ext/readline/extconf.rb: added new option --enable-libedit.
+
+	* test/readline/test_readline.rb: added assertions for
+	  Readline::HISTORY.
+
+	* lib/irb/input-method.rb: do not use Readline::HISTORY.pop.
+
 Wed May 18 23:42:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* error.c (exc_exception): reverted to call Exception#initialize

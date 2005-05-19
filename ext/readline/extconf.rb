@@ -1,30 +1,60 @@
 require "mkmf"
 
+$readline_headers = ["stdio.h"]
+
+def have_readline_header(header)
+  if have_header(header)
+    $readline_headers.push(header)
+    return true
+  else
+    return false
+  end
+end
+
+def have_readline_var(var)
+  return have_var(var, $readline_headers)
+end
+
 dir_config('curses')
 dir_config('ncurses')
 dir_config('termcap')
 dir_config("readline")
+enable_libedit = enable_config("libedit")
 have_library("user32", nil) if /cygwin/ === RUBY_PLATFORM
-have_library("ncurses", "tgetnum") or
-  have_library("termcap", "tgetnum") or
+have_library("ncurses", "tgetnum") ||
+  have_library("termcap", "tgetnum") ||
   have_library("curses", "tgetnum")
 
-if have_header("readline/readline.h") and
-    have_header("readline/history.h") and
-    have_library("readline", "readline")
-  if have_func("rl_filename_completion_function")
-    $CFLAGS += " -DREADLINE_42_OR_LATER"
+if enable_libedit
+  unless (have_readline_header("editline/readline.h") ||
+          have_readline_header("readline/readline.h")) &&
+          have_library("edit", "readline")
+    exit
   end
-  if have_func("rl_cleanup_after_signal")
-    $CFLAGS += " -DREADLINE_40_OR_LATER"
+else
+  unless ((have_readline_header("readline/readline.h") &&
+           have_readline_header("readline/history.h")) &&
+           (have_library("readline", "readline") ||
+            have_library("edit", "readline"))) ||
+            (have_readline_header("editline/readline.h") &&
+             have_library("edit", "readline"))
+    exit
   end
-  if try_link(<<EOF, $libs)
-#include <stdio.h>
-#include <readline/readline.h>
-main() {rl_completion_append_character = 1;}
-EOF
-    # this feature is implemented in readline-2.1 or later. 
-    $CFLAGS += " -DREADLINE_21_OR_LATER"
-  end
-  create_makefile("readline")
 end
+
+have_readline_var("rl_filename_completion_function")
+have_readline_var("rl_deprep_term_function")
+have_readline_var("rl_completion_append_character")
+have_readline_var("rl_basic_word_break_characters")
+have_readline_var("rl_completer_word_break_characters")
+have_readline_var("rl_basic_quote_characters")
+have_readline_var("rl_completer_quote_characters")
+have_readline_var("rl_filename_quote_characters")
+have_readline_var("rl_attempted_completion_over")
+have_readline_var("rl_library_version")
+have_readline_var("rl_event_hook")
+have_func("rl_cleanup_after_signal")
+have_func("rl_clear_signals")
+have_func("replace_history_entry")
+have_func("remove_history")
+create_makefile("readline")
