@@ -1,3 +1,8 @@
+Fri May 20 01:24:33 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/extconf.rb: check rl_vi_editing_mode() and
+	  rl_emacs_editing_mode().
+
 Thu May 19 23:33:09 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/readline.c: supported libedit. fixed: [ruby-core:4858]

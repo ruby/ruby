@@ -205,18 +205,28 @@ static VALUE
 readline_s_vi_editing_mode(self)
     VALUE self;
 {
+#ifdef HAVE_RL_VI_EDITING_MODE
     rb_secure(4);
     rl_vi_editing_mode(1,0);
     return Qnil;
+#else
+    rb_notimplement();
+    return Qnil; /* not reached */
+#endif /* HAVE_RL_VI_EDITING_MODE */
 }
 
 static VALUE
 readline_s_emacs_editing_mode(self)
     VALUE self;
 {
+#ifdef HAVE_RL_EMACS_EDITING_MODE
     rb_secure(4);
     rl_emacs_editing_mode(1,0);
     return Qnil;
+#else
+    rb_notimplement();
+    return Qnil; /* not reached */
+#endif /* HAVE_RL_EMACS_EDITING_MODE */
 }
 
 static VALUE
@@ -236,10 +246,10 @@ readline_s_set_completion_append_character(self, str)
 	    rl_completion_append_character = RSTRING(str)->ptr[0];
 	}
     }
-
     return self;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_COMPLETION_APPEND_CHARACTER */
 }
 
@@ -256,10 +266,10 @@ readline_s_get_completion_append_character(self)
 
     str = rb_str_new("", 1);
     RSTRING(str)->ptr[0] = rl_completion_append_character;
-
     return str;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_COMPLETION_APPEND_CHARACTER */
 }
 
@@ -283,10 +293,10 @@ readline_s_set_basic_word_break_characters(self, str)
 	    RSTRING(str)->ptr, RSTRING(str)->len);
     basic_word_break_characters[RSTRING(str)->len] = '\0';
     rl_basic_word_break_characters = basic_word_break_characters;
-
     return self;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_BASIC_WORD_BREAK_CHARACTERS */
 }
 
@@ -301,6 +311,7 @@ readline_s_get_basic_word_break_characters(self, str)
     return rb_tainted_str_new2(rl_basic_word_break_characters);
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_BASIC_WORD_BREAK_CHARACTERS */
 }
 
@@ -324,10 +335,10 @@ readline_s_set_completer_word_break_characters(self, str)
 	    RSTRING(str)->ptr, RSTRING(str)->len);
     completer_word_break_characters[RSTRING(str)->len] = '\0';
     rl_completer_word_break_characters = completer_word_break_characters;
-
     return self;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_COMPLETER_WORD_BREAK_CHARACTERS */
 }
 
@@ -342,6 +353,7 @@ readline_s_get_completer_word_break_characters(self, str)
     return rb_tainted_str_new2(rl_completer_word_break_characters);
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_COMPLETER_WORD_BREAK_CHARACTERS */
 }
 
@@ -369,6 +381,7 @@ readline_s_set_basic_quote_characters(self, str)
     return self;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_BASIC_QUOTE_CHARACTERS */
 }
 
@@ -383,6 +396,7 @@ readline_s_get_basic_quote_characters(self, str)
     return rb_tainted_str_new2(rl_basic_quote_characters);
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_BASIC_QUOTE_CHARACTERS */
 }
 
@@ -410,6 +424,7 @@ readline_s_set_completer_quote_characters(self, str)
     return self;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_COMPLETER_QUOTE_CHARACTERS */
 }
 
@@ -424,6 +439,7 @@ readline_s_get_completer_quote_characters(self, str)
     return rb_tainted_str_new2(rl_completer_quote_characters);
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_COMPLETER_QUOTE_CHARACTERS */
 }
 
@@ -451,6 +467,7 @@ readline_s_set_filename_quote_characters(self, str)
     return self;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_FILENAME_QUOTE_CHARACTERS */
 }
 
@@ -465,6 +482,7 @@ readline_s_get_filename_quote_characters(self, str)
     return rb_tainted_str_new2(rl_filename_quote_characters);
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif /* HAVE_RL_FILENAME_QUOTE_CHARACTERS */
 }
 
@@ -515,10 +533,11 @@ hist_set(self, index, str)
     if (entry == NULL) {
 	rb_raise(rb_eIndexError, "invalid index");
     }
+    return str;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif
-    return str;
 }
 
 static VALUE
@@ -565,10 +584,11 @@ rb_remove_history(index)
         free(entry);
         return val;
     }
+    return Qnil;
 #else
     rb_notimplement();
+    return Qnil; /* not reached */
 #endif
-    return Qnil;
 }
 
 static VALUE
