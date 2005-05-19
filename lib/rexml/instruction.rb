@@ -58,5 +58,9 @@ module REXML
     def node_type
       :processing_instruction
     end
+
+    def inspect
+      "<?p-i #{target} ...?>"
+    end
 	end
 end

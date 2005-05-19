@@ -6,6 +6,14 @@ require "rexml/xpath"
 require "rexml/parseexception"
 
 module REXML
+  # An implementation note about namespaces:
+  # As we parse, when we find namespaces we put them in a hash and assign
+  # them a unique ID.  We then convert the namespace prefix for the node
+  # to the unique ID.  This makes namespace lookup much faster for the
+  # cost of extra memory use.  We save the namespace prefix for the
+  # context node and convert it back when we write it.
+  @@namespaces = {}
+
 	# Represents a tagged XML element.  Elements are characterized by
 	# having children, attributes, and names, and can themselves be
 	# children.
@@ -91,18 +99,34 @@ module REXML
 			Element.new self
 		end
 
-		# Evaluates to the root element of the document that this element 
+		# Evaluates to the root node of the document that this element 
 		# belongs to. If this element doesn't belong to a document, but does
 		# belong to another Element, the parent's root will be returned, until the
 		# earliest ancestor is found.
+    #
+    # Note that this is not the same as the document element.
+    # In the following example, <a> is the document element, and the root
+    # node is the parent node of the document element.  You may ask yourself
+    # why the root node is useful: consider the doctype and XML declaration,
+    # and any processing instructions before the document element... they
+    # are children of the root node, or siblings of the document element.
+    # The only time this isn't true is when an Element is created that is
+    # not part of any Document.  In this case, the ancestor that has no
+    # parent acts as the root node.
 		#  d = Document.new '<a><b><c/></b></a>'
 		#  a = d[1] ; c = a[1][1]
-		#  d.root        # These all evaluate to the same Element,
-		#  a.root        # namely, <a>
-		#  c.root        #
-		def root
-			parent.nil? ? self : parent.root
+		#  d.root_node == d   # TRUE
+		#  a.root_node        # namely, d
+		#  c.root_node        # again, d
+		def root_node
+			parent.nil? ? self : parent.root_node
 		end
+
+    def root
+      return elements[1] if self.kind_of? Document
+      return self if parent.kind_of? Document or parent.nil?
+      return parent.root
+    end
 
 		# Evaluates to the document to which this element belongs, or nil if this
 		# element doesn't belong to a document.
@@ -270,7 +294,8 @@ module REXML
 		#  el = doc.add_element 'my-tag', {'attr1'=>'val1', 'attr2'=>'val2'}
 		#  el = Element.new 'my-tag'
 		#  doc.add_element el
-		def add_element element=nil, attrs=nil
+		def add_element element, attrs=nil
+      raise "First argument must be either an element name, or an Element object" if element.nil?
 			el = @elements.add(element)
 			if attrs.kind_of? Hash
 				attrs.each do |key, value|

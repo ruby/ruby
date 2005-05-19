@@ -12,6 +12,7 @@ module REXML
 				@namespace_stack = []
 				@has_listeners = false
 				@tag_stack = []
+        @entities = {}
 			end
 			
       def add_listener( listener )
@@ -143,10 +144,21 @@ module REXML
 							end
 						end
 					when :text
-						normalized = @parser.normalize( event[1] )
-						handle( :characters, normalized )
+            #normalized = @parser.normalize( event[1] )
+            #handle( :characters, normalized )
+            copy = event[1].clone
+            @entities.each { |key, value| copy = copy.gsub("&#{key};", value) }
+            copy.gsub!( Text::NUMERICENTITY ) {|m|
+              m=$1
+              m = "0#{m}" if m[0] == ?x
+              [Integer(m)].pack('U*')
+            }
+            handle( :characters, copy )
+          when :entitydecl
+            @entities[ event[1] ] = event[2] if event.size == 3
+						handle( *event )
 					when :processing_instruction, :comment, :doctype, :attlistdecl, 
-						:elementdecl, :entitydecl, :cdata, :notationdecl, :xmldecl
+						:elementdecl, :cdata, :notationdecl, :xmldecl
 						handle( *event )
 					end
 				end

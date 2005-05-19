@@ -31,9 +31,8 @@ module REXML
 						@listener.instruction( *event[1,2] )
           when :start_doctype
             @listener.doctype( *event[1..-1] )
-          when :notationdecl, :entitydecl, :elementdecl
-            @listener.notationdecl( event[1..-1] )
-					when :comment, :attlistdecl, :elementdecl, :cdata, :xmldecl
+					when :comment, :attlistdecl, :notationdecl, :elementdecl, 
+            :entitydecl, :cdata, :xmldecl, :attlistdecl
 						@listener.send( event[0].to_s, *event[1..-1] )
 					end
 				end

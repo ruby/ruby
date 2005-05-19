@@ -23,13 +23,13 @@ module REXML
 		#  end
 		#
 		# Nat Price gave me some good ideas for the API.
-		class PullParser < BaseParser
+		class PullParser
 			include XMLTokens
 
 			def initialize stream
-				super
 				@entities = {}
         @listeners = nil
+        @parser = BaseParser.new( stream )
 			end
 
       def add_listener( listener )
@@ -44,21 +44,38 @@ module REXML
 			end
 
 			def peek depth=0
-				PullEvent.new(super)
+				PullEvent.new(@parser.peek(depth))
 			end
 
+      def has_next?
+        @parser.has_next?
+      end
+
 			def pull
-				event = super
+				event = @parser.pull
 				case event[0]
 				when :entitydecl
 					@entities[ event[1] ] = 
 						event[2] unless event[2] =~ /PUBLIC|SYSTEM/
 				when :text
-					unnormalized = unnormalize( event[1], @entities )
+					unnormalized = @parser.unnormalize( event[1], @entities )
 					event << unnormalized
 				end
 				PullEvent.new( event )
 			end
+
+      def unshift token
+        @parser.unshift token
+      end
+
+      def entity reference
+        @parser.entity( reference )
+      end
+
+      def empty?
+        @parser.empty?
+      end
+
 		end
 
 		# A parsing event.  The contents of the event are accessed as an +Array?,
@@ -73,44 +90,65 @@ module REXML
 			def initialize(arg)
 				@contents = arg
 			end
-			def []( index )
-				@contents[index+1]
+
+      def []( start, endd=nil)
+        if start.kind_of? Range
+          @contents.slice( start.begin+1 .. start.end )
+        elsif start.kind_of? Numeric
+          if endd.nil?
+            @contents.slice( start+1 )
+          else
+            @contents.slice( start+1, endd )
+          end
+        else
+          raise "Illegal argument #{start.inspect} (#{start.class})"
+        end
 			end
+
 			def event_type
 				@contents[0]
 			end
+
 			# Content: [ String tag_name, Hash attributes ]
 			def start_element?
 				@contents[0] == :start_element
 			end
+
 			# Content: [ String tag_name ]
 			def end_element?
 				@contents[0] == :end_element
 			end
+
 			# Content: [ String raw_text, String unnormalized_text ]
 			def text?
 				@contents[0] == :text
 			end
+
 			# Content: [ String text ]
 			def instruction?
 				@contents[0] == :processing_instruction
 			end
+
 			# Content: [ String text ]
 			def comment?
 				@contents[0] == :comment
 			end
+
 			# Content: [ String name, String pub_sys, String long_name, String uri ]
 			def doctype?
 				@contents[0] == :start_doctype
 			end
+
 			# Content: [ String text ]
 			def attlistdecl?
 				@contents[0] == :attlistdecl
 			end
+
 			# Content: [ String text ]
 			def elementdecl?
 				@contents[0] == :elementdecl
 			end
+
 			# Due to the wonders of DTDs, an entity declaration can be just about
 			# anything.  There's no way to normalize it; you'll have to interpret the
 			# content yourself.  However, the following is true:
@@ -121,28 +159,33 @@ module REXML
 			def entitydecl?
 				@contents[0] == :entitydecl
 			end
+
 			# Content: [ String text ]
 			def notationdecl?
 				@contents[0] == :notationdecl
 			end
+
 			# Content: [ String text ]
 			def entity?
 				@contents[0] == :entity
 			end
+
 			# Content: [ String text ]
 			def cdata?
 				@contents[0] == :cdata
 			end
+
 			# Content: [ String version, String encoding, String standalone ]
 			def xmldecl?
 				@contents[0] == :xmldecl
 			end
+
 			def error?
 				@contents[0] == :error
 			end
 
 			def inspect
-				@contents[0].to_s + ": " + @contents[1..-1].inspect
+        @contents[0].to_s + ": " + @contents[1..-1].inspect
 			end
 		end
 	end

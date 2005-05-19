@@ -94,6 +94,10 @@ module REXML
       @writethis = true
     end
 
+    def inspect
+      START.sub(/\\/u, '') + " ... " + STOP.sub(/\\/u, '')
+    end
+
     private
     def content(enc)
       rv = "version='#@version'"

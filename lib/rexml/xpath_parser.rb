@@ -1,6 +1,27 @@
 require 'rexml/namespace'
 require 'rexml/xmltokens'
+require 'rexml/attribute'
+require 'rexml/syncenumerator'
 require 'rexml/parsers/xpathparser'
+
+class Object
+  def dclone
+    clone
+  end
+end
+class Symbol
+  def dclone
+    self
+  end
+end
+class Array
+  def dclone
+    klone = self.clone
+    klone.clear
+    self.each{|v| klone << v.dclone}
+    klone
+  end
+end
 
 module REXML
   # You don't want to use this class.  Really.  Use XPath, which is a wrapper
@@ -28,258 +49,418 @@ module REXML
     end
 
     def parse path, nodeset
-      path_stack = @parser.parse( path )
-      #puts "PARSE: #{path} => #{path_stack.inspect}"
-      #puts "PARSE: nodeset = #{nodeset.collect{|x|x.to_s}.inspect}"
-      match( path_stack, nodeset )
+     #puts "#"*40
+     path_stack = @parser.parse( path )
+     #puts "PARSE: #{path} => #{path_stack.inspect}"
+     #puts "PARSE: nodeset = #{nodeset.inspect}"
+     match( path_stack, nodeset )
+    end
+
+    def get_first path, nodeset
+     #puts "#"*40
+     path_stack = @parser.parse( path )
+     #puts "PARSE: #{path} => #{path_stack.inspect}"
+     #puts "PARSE: nodeset = #{nodeset.inspect}"
+     first( path_stack, nodeset )
     end
 
     def predicate path, nodeset
-      path_stack = @parser.predicate( path )
-      return Predicate( path_stack, nodeset )
+      path_stack = @parser.parse( path )
+      expr( path_stack, nodeset )
     end
 
     def []=( variable_name, value )
       @variables[ variable_name ] = value
     end
 
-    def match( path_stack, nodeset ) 
-      while ( path_stack.size > 0 and nodeset.size > 0 ) 
-        #puts "PARSE: #{path_stack.inspect} '#{nodeset.collect{|n|n.class}.inspect}'"
-        nodeset = internal_parse( path_stack, nodeset )
-        #puts "NODESET: #{nodeset}"
-        #puts "PATH_STACK: #{path_stack.inspect}"
+
+    # Performs a depth-first (document order) XPath search, and returns the
+    # first match.  This is the fastest, lightest way to return a single result.
+    def first( path_stack, node )
+      #puts "#{depth}) Entering match( #{path.inspect}, #{tree.inspect} )"
+      return nil if path.size == 0
+
+      case path[0]
+      when :document
+        # do nothing 
+        return first( path[1..-1], node )
+      when :child
+        for c in node.children
+          #puts "#{depth}) CHILD checking #{name(c)}"
+          r = first( path[1..-1], c )
+          #puts "#{depth}) RETURNING #{r.inspect}" if r
+          return r if r
+        end
+      when :qname
+        name = path[2]
+        #puts "#{depth}) QNAME #{name(tree)} == #{name} (path => #{path.size})"
+        if node.name == name
+          #puts "#{depth}) RETURNING #{tree.inspect}" if path.size == 3
+          return node if path.size == 3
+          return first( path[3..-1], node )
+        else
+          return nil
+        end
+      when :descendant_or_self
+        r = first( path[1..-1], node )
+        return r if r
+        for c in node.children
+          r = first( path, c )
+          return r if r
+        end
+      when :node
+        return first( path[1..-1], node )
+      when :any
+        return first( path[1..-1], node )
       end
-      nodeset
+      return nil
+    end
+
+
+    def match( path_stack, nodeset ) 
+      #puts "MATCH: path_stack = #{path_stack.inspect}"
+      #puts "MATCH: nodeset = #{nodeset.inspect}"
+      r = expr( path_stack, nodeset )
+      #puts "MAIN EXPR => #{r.inspect}"
+      r
+      
+      #while ( path_stack.size > 0 and nodeset.size > 0 ) 
+      #  #puts "MATCH: #{path_stack.inspect} '#{nodeset.collect{|n|n.class}.inspect}'"
+      #  nodeset = expr( path_stack, nodeset )
+      #  #puts "NODESET: #{nodeset.inspect}"
+      #  #puts "PATH_STACK: #{path_stack.inspect}"
+      #end
+      #nodeset
     end
 
     private
 
-    def internal_parse path_stack, nodeset
-      #puts "INTERNAL_PARSE RETURNING WITH NO RESULTS" if nodeset.size == 0 or path_stack.size == 0
-      return nodeset if nodeset.size == 0 or path_stack.size == 0
-      #puts "INTERNAL_PARSE: #{path_stack.inspect}, #{nodeset.collect{|n| n.class}.inspect}"
-      case path_stack.shift
-      when :document
-        return [ nodeset[0].root.parent ]
 
-      when :qname
-        prefix = path_stack.shift
-        name = path_stack.shift
-        #puts "QNAME #{prefix}#{prefix.size>0?':':''}#{name}"
-        n = nodeset.clone
-        ns = @namespaces[prefix]
-        ns = ns ? ns : ''
-        n.delete_if do |node|
-          # FIXME: This DOUBLES the time XPath searches take
-          ns = node.namespace( prefix ) if node.node_type == :element and ns == ''
-          #puts "NODE: '#{node.to_s}'; node.has_name?( #{name.inspect}, #{ns.inspect} ): #{ node.has_name?( name, ns )}; node.namespace() = #{node.namespace().inspect}; node.prefix = #{node.prefix().inspect}" if node.node_type == :element
-          !(node.node_type == :element and node.name == name and node.namespace == ns )
-        end
-        return n
+    # Expr takes a stack of path elements and a set of nodes (either a Parent
+    # or an Array and returns an Array of matching nodes
+    ALL = [ :attribute, :element, :text, :processing_instruction, :comment ]
+    ELEMENTS = [ :element ]
+    def expr( path_stack, nodeset, context=nil )
+      #puts "#"*15
+      #puts "In expr with #{path_stack.inspect}"
+      #puts "Returning" if path_stack.length == 0 || nodeset.length == 0
+      node_types = ELEMENTS
+      return nodeset if path_stack.length == 0 || nodeset.length == 0
+      while path_stack.length > 0
+        #puts "Path stack = #{path_stack.inspect}"
+        #puts "Nodeset is #{nodeset.inspect}"
+        case (op = path_stack.shift)
+        when :document
+          nodeset = [ nodeset[0].root_node ]
+          #puts ":document, nodeset = #{nodeset.inspect}"
 
-      when :any
-        n = nodeset.clone
-        n.delete_if { |node| node.node_type != :element }
-        return n
-
-      when :self
-        # THIS SPACE LEFT INTENTIONALLY BLANK
-
-      when :processing_instruction
-        target = path_stack.shift
-        n = nodeset.clone
-        n.delete_if do |node|
-          (node.node_type != :processing_instruction) or 
-          ( !target.nil? and ( node.target != target ) )
-        end
-        return n
-
-      when :text
-        #puts ":TEXT"
-        n = nodeset.clone
-        n.delete_if do |node|
-          #puts "#{node} :: #{node.node_type}"
-          node.node_type != :text
-        end
-        return n
-
-      when :comment
-        n = nodeset.clone
-        n.delete_if do |node|
-          node.node_type != :comment
-        end
-        return n
-
-      when :node
-        return nodeset
-      
-      # FIXME:  I suspect the following XPath will fail:
-      # /a/*/*[1]
-      when :child
-        #puts "CHILD"
-        new_nodeset = []
-        nt = nil
-        for node in nodeset
-          nt = node.node_type
-          new_nodeset += node.children if nt == :element or nt == :document
-        end
-        #path_stack[0,(path_stack.size-ps_clone.size)] = []
-        return new_nodeset
-
-      when :literal
-        literal = path_stack.shift
-        if literal =~ /^\d+(\.\d+)?$/
-          return ($1 ? literal.to_f : literal.to_i) 
-        end
-        #puts "RETURNING '#{literal}'"
-        return literal
-        
-      when :attribute
-        new_nodeset = []
-        case path_stack.shift
         when :qname
+          #puts "IN QNAME"
           prefix = path_stack.shift
           name = path_stack.shift
-          for element in nodeset
-            if element.node_type == :element
-              #puts element.name
-              #puts "looking for attribute #{name} in '#{@namespaces[prefix]}'"
-              attr = element.attribute( name, @namespaces[prefix] )
-              #puts ":ATTRIBUTE: attr => #{attr}"
-              new_nodeset << attr if attr
+          ns = @namespaces[prefix]
+          ns = ns ? ns : ''
+          nodeset.delete_if do |node|
+            # FIXME: This DOUBLES the time XPath searches take
+            ns = node.namespace( prefix ) if node.node_type == :element and ns == ''
+            #puts "NS = #{ns.inspect}"
+            #puts "node.node_type == :element => #{node.node_type == :element}"
+            if node.node_type == :element
+              #puts "node.name == #{name} => #{node.name == name}"
+              if node.name == name
+                #puts "node.namespace == #{ns.inspect} => #{node.namespace == ns}"
+              end
             end
+            !(node.node_type == :element and 
+              node.name == name and 
+              node.namespace == ns )
           end
+          node_types = ELEMENTS
+
         when :any
-					#puts "ANY"
-          for element in nodeset
-            if element.node_type == :element
-              new_nodeset += element.attributes.to_a
+          #puts "ANY 1: nodeset = #{nodeset.inspect}"
+          #puts "ANY 1: node_types = #{node_types.inspect}"
+          nodeset.delete_if { |node| !node_types.include?(node.node_type) }
+          #puts "ANY 2: nodeset = #{nodeset.inspect}"
+
+        when :self
+          # This space left intentionally blank
+
+        when :processing_instruction
+          target = path_stack.shift
+          nodeset.delete_if do |node|
+            (node.node_type != :processing_instruction) or 
+            ( target!='' and ( node.target != target ) )
+          end
+
+        when :text
+          nodeset.delete_if { |node| node.node_type != :text }
+
+        when :comment
+          nodeset.delete_if { |node| node.node_type != :comment }
+
+        when :node
+          # This space left intentionally blank
+          node_types = ALL
+
+        when :child
+          new_nodeset = []
+          nt = nil
+          for node in nodeset
+            nt = node.node_type
+            new_nodeset += node.children if nt == :element or nt == :document
+          end
+          nodeset = new_nodeset
+          node_types = ELEMENTS
+
+        when :literal
+          literal = path_stack.shift
+          if literal =~ /^\d+(\.\d+)?$/
+            return ($1 ? literal.to_f : literal.to_i) 
+          end
+          return literal
+        
+        when :attribute
+          new_nodeset = []
+          case path_stack.shift
+          when :qname
+            prefix = path_stack.shift
+            name = path_stack.shift
+            for element in nodeset
+              if element.node_type == :element
+                #puts element.name
+                attr = element.attribute( name, @namespaces[prefix] )
+                new_nodeset << attr if attr
+              end
+            end
+          when :any
+            #puts "ANY"
+            for element in nodeset
+              if element.node_type == :element
+                new_nodeset += element.attributes.to_a
+              end
             end
           end
-        end
-				#puts "RETURNING #{new_nodeset.collect{|n|n.to_s}.inspect}"
-        return new_nodeset
+          nodeset = new_nodeset
 
-      when :parent
-        return internal_parse( path_stack, nodeset.collect{|n| n.parent}.compact )
+        when :parent
+          #puts "PARENT 1: nodeset = #{nodeset}"
+          nodeset = nodeset.collect{|n| n.parent}.compact
+          #nodeset = expr(path_stack.dclone, nodeset.collect{|n| n.parent}.compact)
+          #puts "PARENT 2: nodeset = #{nodeset.inspect}"
+          node_types = ELEMENTS
 
-      when :ancestor
-        #puts "ANCESTOR"
-        new_nodeset = []
-        for node in nodeset
-          while node.parent
-            node = node.parent
-            new_nodeset << node unless new_nodeset.include? node
-          end
-        end
-        #nodeset = new_nodeset.uniq
-        return new_nodeset
-
-      when :ancestor_or_self
-        new_nodeset = []
-        for node in nodeset
-          if node.node_type == :element
-            new_nodeset << node
-            while ( node.parent )
+        when :ancestor
+          new_nodeset = []
+          for node in nodeset
+            while node.parent
               node = node.parent
               new_nodeset << node unless new_nodeset.include? node
             end
           end
-        end
-        #nodeset = new_nodeset.uniq
-        return new_nodeset
+          nodeset = new_nodeset
+          node_types = ELEMENTS
 
-      when :predicate
-        #puts "@"*80
-        #puts "NODESET = #{nodeset.collect{|n|n.to_s}.inspect}"
-        predicate = path_stack.shift
-        new_nodeset = []
-        Functions::size = nodeset.size
-        nodeset.size.times do |index|
-          node = nodeset[index]
-          Functions::node = node
-          Functions::index = index+1
-          #puts "Node #{node} and index=#{index+1}"
-          result = Predicate( predicate, node )
-          #puts "Predicate returned #{result} (#{result.class}) for #{node.class}"
-          if result.kind_of? Numeric
-            #puts "#{result} == #{index} => #{result == index}"
-            new_nodeset << node if result == (index+1)
-          elsif result.instance_of? Array
-            new_nodeset << node if result.size > 0
-          else
-            new_nodeset << node if result
+        when :ancestor_or_self
+          new_nodeset = []
+          for node in nodeset
+            if node.node_type == :element
+              new_nodeset << node
+              while ( node.parent )
+                node = node.parent
+                new_nodeset << node unless new_nodeset.include? node
+              end
+            end
           end
+          nodeset = new_nodeset
+          node_types = ELEMENTS
+
+        when :predicate
+          new_nodeset = []
+          subcontext = { :size => nodeset.size }
+          pred = path_stack.shift
+          nodeset.each_with_index { |node, index|
+            subcontext[ :node ] = node
+            #puts "PREDICATE SETTING CONTEXT INDEX TO #{index+1}"
+            subcontext[ :index ] = index+1
+            pc = pred.dclone
+            #puts "#{node.hash}) Recursing with #{pred.inspect} and [#{node.inspect}]"
+            result = expr( pc, [node], subcontext )
+            result = result[0] if result.kind_of? Array and result.length == 1
+            #puts "#{node.hash}) Result = #{result.inspect} (#{result.class.name})"
+            if result.kind_of? Numeric
+              #puts "Adding node #{node.inspect}" if result == (index+1)
+              new_nodeset << node if result == (index+1)
+            elsif result.instance_of? Array
+              #puts "Adding node #{node.inspect}" if result.size > 0
+              new_nodeset << node if result.size > 0
+            else
+              #puts "Adding node #{node.inspect}" if result
+              new_nodeset << node if result
+            end
+          }
+          #puts "New nodeset = #{new_nodeset.inspect}"
+          #puts "Path_stack  = #{path_stack.inspect}"
+          nodeset = new_nodeset
+=begin
+          predicate = path_stack.shift
+          ns = nodeset.clone
+          result = expr( predicate, ns )
+          #puts "Result = #{result.inspect} (#{result.class.name})"
+          #puts "nodeset = #{nodeset.inspect}"
+          if result.kind_of? Array
+            nodeset = result.zip(ns).collect{|m,n| n if m}.compact
+          else
+            nodeset = result ? nodeset : []
+          end
+          #puts "Outgoing NS = #{nodeset.inspect}"
+=end
+
+        when :descendant_or_self
+          rv = descendant_or_self( path_stack, nodeset )
+          path_stack.clear
+          nodeset = rv
+          node_types = ELEMENTS
+
+        when :descendant
+          results = []
+          nt = nil
+          for node in nodeset
+            nt = node.node_type
+            results += expr( path_stack.dclone.unshift( :descendant_or_self ),
+              node.children ) if nt == :element or nt == :document
+          end
+          nodeset = results
+          node_types = ELEMENTS
+
+        when :following_sibling
+          #puts "FOLLOWING_SIBLING 1: nodeset = #{nodeset}"
+          results = []
+          for node in nodeset
+            all_siblings = node.parent.children
+            current_index = all_siblings.index( node )
+            following_siblings = all_siblings[ current_index+1 .. -1 ]
+            results += expr( path_stack.dclone, following_siblings )
+          end
+          #puts "FOLLOWING_SIBLING 2: nodeset = #{nodeset}"
+          nodeset = results
+
+        when :preceding_sibling
+          results = []
+          for node in nodeset
+            all_siblings = node.parent.children
+            current_index = all_siblings.index( node )
+            preceding_siblings = all_siblings[ 0 .. current_index-1 ].reverse
+            #results += expr( path_stack.dclone, preceding_siblings )
+          end
+          nodeset = preceding_siblings
+          node_types = ELEMENTS
+
+        when :preceding
+          new_nodeset = []
+          for node in nodeset
+            new_nodeset += preceding( node )
+          end
+          #puts "NEW NODESET => #{new_nodeset.inspect}"
+          nodeset = new_nodeset
+          node_types = ELEMENTS
+
+        when :following
+          new_nodeset = []
+          for node in nodeset
+            new_nodeset += following( node )
+          end
+          nodeset = new_nodeset
+          node_types = ELEMENTS
+
+        when :namespace
+          new_set = []
+          for node in nodeset
+            new_nodeset << node.namespace if node.node_type == :element or node.node_type == :attribute
+          end
+          nodeset = new_nodeset
+
+        when :variable
+          var_name = path_stack.shift
+          return @variables[ var_name ]
+
+        # :and, :or, :eq, :neq, :lt, :lteq, :gt, :gteq
+        when :eq, :neq, :lt, :lteq, :gt, :gteq, :and, :or
+          left = expr( path_stack.shift, nodeset, context )
+          #puts "LEFT => #{left.inspect} (#{left.class.name})"
+          right = expr( path_stack.shift, nodeset, context )
+          #puts "RIGHT => #{right.inspect} (#{right.class.name})"
+          res = equality_relational_compare( left, op, right )
+          #puts "RES => #{res.inspect}"
+          return res
+
+        when :div
+          left = Functions::number(expr(path_stack.shift, nodeset, context)).to_f
+          right = Functions::number(expr(path_stack.shift, nodeset, context)).to_f
+          return (left / right)
+
+        when :mod
+          left = Functions::number(expr(path_stack.shift, nodeset, context )).to_f
+          right = Functions::number(expr(path_stack.shift, nodeset, context )).to_f
+          return (left % right)
+
+        when :mult
+          left = Functions::number(expr(path_stack.shift, nodeset, context )).to_f
+          right = Functions::number(expr(path_stack.shift, nodeset, context )).to_f
+          return (left * right)
+
+        when :plus
+          left = Functions::number(expr(path_stack.shift, nodeset, context )).to_f
+          right = Functions::number(expr(path_stack.shift, nodeset, context )).to_f
+          return (left + right)
+
+        when :minus
+          left = Functions::number(expr(path_stack.shift, nodeset, context )).to_f
+          right = Functions::number(expr(path_stack.shift, nodeset, context )).to_f
+          return (left - right)
+
+        when :union
+          left = expr( path_stack.shift, nodeset, context )
+          right = expr( path_stack.shift, nodeset, context )
+          return (left | right)
+
+        when :neg
+          res = expr( path_stack, nodeset, context )
+          return -(res.to_f)
+
+        when :not
+        when :function
+          func_name = path_stack.shift.tr('-','_')
+          arguments = path_stack.shift
+          #puts "FUNCTION 0: #{func_name}(#{arguments.collect{|a|a.inspect}.join(', ')})" 
+          subcontext = context ? nil : { :size => nodeset.size }
+
+          res = []
+          cont = context
+          nodeset.each_with_index { |n, i| 
+            if subcontext
+              subcontext[:node]  = n
+              subcontext[:index] = i
+              cont = subcontext
+            end
+            arg_clone = arguments.dclone
+            args = arg_clone.collect { |arg| 
+              #puts "FUNCTION 1: Calling expr( #{arg.inspect}, [#{n.inspect}] )"
+              expr( arg, [n], cont ) 
+            }
+            #puts "FUNCTION 2: #{func_name}(#{args.collect{|a|a.inspect}.join(', ')})" 
+            Functions.context = cont
+            res << Functions.send( func_name, *args )
+            #puts "FUNCTION 3: #{res[-1].inspect}"
+          }
+          return res
+
         end
-        #puts "Nodeset after predicate #{predicate.inspect} has #{new_nodeset.size} nodes"
-        #puts "NODESET: #{new_nodeset.collect{|n|n.to_s}.inspect}"
-        return new_nodeset
-
-      when :descendant_or_self
-        rv = descendant_or_self( path_stack, nodeset )
-        path_stack.clear
-        return rv
-
-      when :descendant
-        #puts ":DESCENDANT"
-        results = []
-        nt = nil
-        for node in nodeset
-          nt = node.node_type
-          results += internal_parse( path_stack.clone.unshift( :descendant_or_self ),
-            node.children ) if nt == :element or nt == :document
-        end
-        return results
-
-      when :following_sibling
-        results = []
-        for node in nodeset
-          all_siblings = node.parent.children
-          current_index = all_siblings.index( node )
-          following_siblings = all_siblings[ current_index+1 .. -1 ]
-          results += internal_parse( path_stack.clone, following_siblings )
-        end
-        return results
-
-      when :preceding_sibling
-        results = []
-        for node in nodeset
-          all_siblings = node.parent.children
-          current_index = all_siblings.index( node )
-          preceding_siblings = all_siblings[ 0 .. current_index-1 ]
-          results += internal_parse( path_stack.clone, preceding_siblings )
-        end
-        return results
-
-      when :preceding
-        new_nodeset = []
-        for node in nodeset
-          new_nodeset += preceding( node )
-        end
-        return new_nodeset
-
-      when :following
-        new_nodeset = []
-        for node in nodeset
-          new_nodeset += following( node )
-        end
-        return new_nodeset
-
-      when :namespace
-        new_set = []
-        for node in nodeset
-          new_nodeset << node.namespace if node.node_type == :element or node.node_type == :attribute
-        end
-        return new_nodeset
-
-      when :variable
-        var_name = path_stack.shift
-        return @variables[ var_name ]
-
-      end
-      nodeset
+      end # while
+      #puts "EXPR returning #{nodeset.inspect}"
+      return nodeset
     end
+
 
     ##########################################################
     # FIXME
@@ -294,13 +475,16 @@ module REXML
       d_o_s( path_stack, nodeset, rs )
       #puts "RS = #{rs.collect{|n|n.to_s}.inspect}"
       document_order(rs.flatten.compact)
+      #rs.flatten.compact
     end
 
     def d_o_s( p, ns, r )
+      #puts "IN DOS with #{ns.inspect}; ALREADY HAVE #{r.inspect}"
       nt = nil
       ns.each_index do |i|
         n = ns[i]
-        x = match( p.clone, [ n ] )
+        #puts "P => #{p.inspect}"
+        x = expr( p.dclone, [ n ] )
         nt = n.node_type
         d_o_s( p, n.children, x ) if nt == :element or nt == :document and n.children.size > 0
         r.concat(x) if x.size > 0
@@ -310,6 +494,12 @@ module REXML
 
     # Reorders an array of nodes so that they are in document order
     # It tries to do this efficiently.
+    #
+    # FIXME: I need to get rid of this, but the issue is that most of the XPath 
+    # interpreter functions as a filter, which means that we lose context going
+    # in and out of function calls.  If I knew what the index of the nodes was,
+    # I wouldn't have to do this.  Maybe add a document IDX for each node?
+    # Problems with mutable documents.  Or, rewrite everything.
     def document_order( array_of_nodes )
       new_arry = []
       array_of_nodes.each { |node|
@@ -319,8 +509,9 @@ module REXML
           node_idx << np.parent.index( np )
           np = np.parent
         end
-        new_arry << [ node_idx.reverse.join, node ]
+        new_arry << [ node_idx.reverse, node ]
       }
+      #puts "new_arry = #{new_arry.inspect}"
       new_arry.sort{ |s1, s2| s1[0] <=> s2[0] }.collect{ |s| s[1] }
     end
 
@@ -333,124 +524,127 @@ module REXML
     end
 
 
-    # Given a predicate, a node, and a context, evaluates to true or false.
-    def Predicate( predicate, node )
-      predicate = predicate.clone
-      #puts "#"*20
-      #puts "Predicate( #{predicate.inspect}, #{node.class} )"
-      results = []
-      case (predicate[0])
-      when :and, :or, :eq, :neq, :lt, :lteq, :gt, :gteq
-        eq = predicate.shift
-        left = Predicate( predicate.shift, node )
-        right = Predicate( predicate.shift, node )
-        #puts "LEFT = #{left.inspect}"
-        #puts "RIGHT = #{right.inspect}"
-        return equality_relational_compare( left, eq, right )
-
-      when :div, :mod, :mult, :plus, :minus
-        op = predicate.shift
-        left = Predicate( predicate.shift, node )
-        right = Predicate( predicate.shift, node )
-        #puts "LEFT = #{left.inspect}"
-        #puts "RIGHT = #{right.inspect}"
-        left = Functions::number( left )
-        right = Functions::number( right )
-        #puts "LEFT = #{left.inspect}"
-        #puts "RIGHT = #{right.inspect}"
-        case op
-        when :div
-          return left.to_f / right.to_f
-        when :mod
-          return left % right
-        when :mult
-          return left * right
-        when :plus
-          return left + right
-        when :minus
-          return left - right
-        end
-
-      when :union
-        predicate.shift
-        left = Predicate( predicate.shift, node )
-        right = Predicate( predicate.shift, node )
-        return (left | right)
-
-      when :neg
-        predicate.shift
-        operand = Functions::number(Predicate( predicate, node ))
-        return -operand
-
-      when :not
-        predicate.shift
-        return !Predicate( predicate.shift, node )
-
-      when :function
-        predicate.shift
-        func_name = predicate.shift.tr('-', '_')
-        arguments = predicate.shift
-        #puts "\nFUNCTION: #{func_name}"
-        #puts "ARGUMENTS: #{arguments.inspect} #{node.to_s}"
-        args = arguments.collect { |arg| Predicate( arg, node ) }
-        #puts "FUNCTION: #{func_name}( #{args.collect{|n|n.to_s}.inspect} )"
-        result = Functions.send( func_name, *args )
-        #puts "RESULTS: #{result.inspect}"
-        return result
-
-      else
-        return match( predicate, [ node ] )
-
-      end
-    end
-
-    # Builds a nodeset of all of the following nodes of the supplied node,
-    # in document order
-    def following( node )
-      all_siblings = node.parent.children
-      current_index = all_siblings.index( node )
-      following_siblings = all_siblings[ current_index+1 .. -1 ]
-      following = []
-      recurse( following_siblings ) { |node| following << node }
-      following.shift
-      #puts "following is returning #{puta following}"
-      following
-    end
 
     # Builds a nodeset of all of the preceding nodes of the supplied node,
     # in reverse document order
+    # preceding:: includes every element in the document that precedes this node, 
+    # except for ancestors
     def preceding( node )
-      all_siblings = node.parent.children
-      current_index = all_siblings.index( node )
-      preceding_siblings = all_siblings[ 0 .. current_index-1 ]
+      #puts "IN PRECEDING"
+      ancestors = []
+      p = node.parent
+      while p
+        ancestors << p
+        p = p.parent
+      end
 
-      preceding = []
-      recurse( preceding_siblings ) { |node| preceding.unshift( node ) }
-      preceding
+      acc = []
+      p = preceding_node_of( node )
+      #puts "P = #{p.inspect}"
+      while p
+        if ancestors.include? p
+          ancestors.delete(p)
+        else
+          acc << p
+        end
+        p = preceding_node_of( p )
+        #puts "P = #{p.inspect}"
+      end
+      acc
+    end
+
+    def preceding_node_of( node )
+     #puts "NODE: #{node.inspect}"
+     #puts "PREVIOUS NODE: #{node.previous_sibling_node.inspect}"
+     #puts "PARENT NODE: #{node.parent}"
+      psn = node.previous_sibling_node 
+      if psn.nil?
+        if node.parent.nil? or node.parent.class == Document 
+          return nil
+        end
+        return node.parent
+        #psn = preceding_node_of( node.parent )
+      end
+      while psn and psn.kind_of? Element and psn.children.size > 0
+        psn = psn.children[-1]
+      end
+      psn
+    end
+
+    def following( node )
+      #puts "IN PRECEDING"
+      acc = []
+      p = next_sibling_node( node )
+      #puts "P = #{p.inspect}"
+      while p
+        acc << p
+        p = following_node_of( p )
+        #puts "P = #{p.inspect}"
+      end
+      acc
+    end
+
+    def following_node_of( node )
+      #puts "NODE: #{node.inspect}"
+      #puts "PREVIOUS NODE: #{node.previous_sibling_node.inspect}"
+      #puts "PARENT NODE: #{node.parent}"
+      if node.kind_of? Element and node.children.size > 0
+        return node.children[0]
+      end
+      return next_sibling_node(node)
+    end
+
+    def next_sibling_node(node)
+      psn = node.next_sibling_node 
+      while psn.nil?
+        if node.parent.nil? or node.parent.class == Document 
+          return nil
+        end
+        node = node.parent
+        psn = node.next_sibling_node
+        #puts "psn = #{psn.inspect}"
+      end
+      return psn
+    end
+
+    def norm b
+      case b
+      when true, false
+        return b
+      when 'true', 'false'
+        return Functions::boolean( b )
+      when /^\d+(\.\d+)?$/
+        return Functions::number( b )
+      else
+        return Functions::string( b )
+      end
     end
 
     def equality_relational_compare( set1, op, set2 )
-			#puts "#"*80
+      #puts "EQ_REL_COMP(#{set1.inspect} #{op.inspect} #{set2.inspect})"
       if set1.kind_of? Array and set2.kind_of? Array
-				#puts "#{set1.size} & #{set2.size}"
+			  #puts "#{set1.size} & #{set2.size}"
         if set1.size == 1 and set2.size == 1
           set1 = set1[0]
           set2 = set2[0]
         elsif set1.size == 0 or set2.size == 0
           nd = set1.size==0 ? set2 : set1
-          nd.each { |il| return true if compare( il, op, nil ) }
+          rv = nd.collect { |il| compare( il, op, nil ) }
+          #puts "RV = #{rv.inspect}"
+          return rv
         else
-          set1.each do |i1| 
-            i1 = i1.to_s
-            set2.each do |i2| 
-              i2 = i2.to_s
-              return true if compare( i1, op, i2 )
-            end
-          end
-          return false
+          res = []
+          enum = SyncEnumerator.new( set1, set2 ).each { |i1, i2|
+            #puts "i1 = #{i1.inspect} (#{i1.class.name})"
+            #puts "i2 = #{i2.inspect} (#{i2.class.name})"
+            i1 = norm( i1 )
+            i2 = norm( i2 )
+            res << compare( i1, op, i2 )
+          }
+          return res
         end
       end
-			#puts "EQ_REL_COMP: #{set1.class.name} #{set1.inspect}, #{op}, #{set2.class.name} #{set2.inspect}"
+		  #puts "EQ_REL_COMP: #{set1.inspect} (#{set1.class.name}), #{op}, #{set2.inspect} (#{set2.class.name})"
       #puts "COMPARING VALUES"
       # If one is nodeset and other is number, compare number to each item
       # in nodeset s.t. number op number(string(item))
@@ -459,40 +653,28 @@ module REXML
       # If one is nodeset and other is boolean, compare boolean to each item
       # in nodeset s.t. boolean op boolean(item)
       if set1.kind_of? Array or set2.kind_of? Array
-				#puts "ISA ARRAY"
+			  #puts "ISA ARRAY"
         if set1.kind_of? Array
           a = set1
-          b = set2.to_s
+          b = set2
         else
           a = set2
-          b = set1.to_s
+          b = set1
         end
 
         case b
-        when 'true', 'false'
-          b = Functions::boolean( b )
-          for v in a
-            v = Functions::boolean(v)
-            return true if compare( v, op, b )
-          end
+        when true, false
+          return a.collect {|v| compare( Functions::boolean(v), op, b ) }
+        when Numeric
+          return a.collect {|v| compare( Functions::number(v), op, b )}
         when /^\d+(\.\d+)?$/
           b = Functions::number( b )
           #puts "B = #{b.inspect}"
-          for v in a
-            #puts "v = #{v.inspect}"
-            v = Functions::number(v)
-            #puts "v = #{v.inspect}"
-            #puts compare(v,op,b)
-            return true if compare( v, op, b )
-          end
+          return a.collect {|v| compare( Functions::number(v), op, b )}
         else
-					#puts "Functions::string( #{b}(#{b.class.name}) ) = #{Functions::string(b)}"
+				  #puts "Functions::string( #{b}(#{b.class.name}) ) = #{Functions::string(b)}"
           b = Functions::string( b )
-          for v in a
-						#puts "v = #{v.class.name} #{v.inspect}"
-            v = Functions::string(v)
-            return true if compare( v, op, b )
-          end
+          return a.collect { |v| compare( Functions::string(v), op, b ) }
         end
       else
         # If neither is nodeset,
@@ -532,7 +714,7 @@ module REXML
     end
 
     def compare a, op, b
-			#puts "COMPARE #{a.to_s}(#{a.class.name}) #{op} #{b.to_s}(#{a.class.name})"
+      #puts "COMPARE #{a.inspect}(#{a.class.name}) #{op} #{b.inspect}(#{b.class.name})"
       case op
       when :eq
         a == b
