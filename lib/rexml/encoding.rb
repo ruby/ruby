@@ -1,6 +1,16 @@
+# -*- mode: ruby; ruby-indent-level: 2; indent-tabs-mode: t; tab-width: 2 -*- vim: sw=2 ts=2
 module REXML
 	module Encoding
-		@@uconv_available = false
+               @encoding_methods = {}
+               def self.register(enc, &block)
+                       @encoding_methods[enc] = block
+               end
+               def self.apply(obj, enc)
+                       @encoding_methods[enc][obj]
+               end
+               def self.encoding_method(enc)
+                       @encoding_methods[enc]
+               end
 
 		# Native, default format is UTF-8, so it is declared here rather than in
 		# an encodings/ definition.
@@ -18,26 +28,24 @@ module REXML
 				if enc and enc != UTF_8
 					@encoding = enc.upcase
 					begin
-            load 'rexml/encodings/ICONV.rb'
-						instance_eval @@__REXML_encoding_methods
-						Iconv::iconv( UTF_8, @encoding, "" )
+                                               require 'rexml/encodings/ICONV.rb'
+                                               Encoding.apply(self, "ICONV")
 					rescue LoadError, Exception => err
-						raise "Bad encoding name #@encoding" unless @encoding =~ /^[\w-]+$/
+                                               raise ArgumentError, "Bad encoding name #@encoding" unless @encoding =~ /^[\w-]+$/
 						@encoding.untaint 
 						enc_file = File.join( "rexml", "encodings", "#@encoding.rb" )
 						begin
-              load enc_file
-							instance_eval @@__REXML_encoding_methods
+                                                       require enc_file
+                                                       Encoding.apply(self, @encoding)
 						rescue LoadError
-              puts $!.message
-							raise Exception.new( "No decoder found for encoding #@encoding.  Please install iconv." )
+                                                       puts $!.message
+                                                       raise ArgumentError, "No decoder found for encoding #@encoding.  Please install iconv."
 						end
 					end
 				else
-					enc = UTF_8
-					@encoding = enc.upcase
-          load 'rexml/encodings/UTF-8.rb' 
-					instance_eval @@__REXML_encoding_methods
+                                       @encoding = UTF_8
+                                       require 'rexml/encodings/UTF-8.rb'
+                                       Encoding.apply(self, @encoding)
 				end
 			ensure
 				$VERBOSE = old_verbosity

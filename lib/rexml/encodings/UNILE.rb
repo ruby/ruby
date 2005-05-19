@@ -1,7 +1,6 @@
 module REXML
   module Encoding
-    @@__REXML_encoding_methods =<<-EOL
-    def encode content
+    def encode_unile content
       array_utf8 = content.unpack("U*")
       array_enc = []
       array_utf8.each do |num|
@@ -16,7 +15,7 @@ module REXML
       array_enc.pack('C*')
     end
 
-    def decode(str)
+    def decode_unile(str)
       array_enc=str.unpack('C*')
       array_utf8 = []
       2.step(array_enc.size-1, 2){|i| 
@@ -24,6 +23,12 @@ module REXML
       }
       array_utf8.pack('U*')
     end
-    EOL
+
+    register(UNILE) do |obj|
+      class << obj
+        alias decode decode_unile
+        alias encode encode_unile
+      end
+    end
   end
 end
