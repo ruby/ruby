@@ -1,3 +1,8 @@
+Fri May 20 15:52:18 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_attempted_completion_function):
+	  return 2 items if completion_proc returns only 1 item (for libedit).
+
 Fri May 20 01:24:33 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/extconf.rb: check rl_vi_editing_mode() and

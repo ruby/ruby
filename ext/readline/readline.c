@@ -4,6 +4,7 @@
 #include <errno.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <string.h>
 #ifdef HAVE_READLINE_READLINE_H
 #include <readline/readline.h>
 #endif
@@ -167,9 +168,9 @@ readline_attempted_completion_function(text, start, end)
     result[matches + 1] = NULL;
 
     if (matches == 1) {
-	result[0] = result[1];
-	result[1] = NULL;
-    } else {
+        result[0] = strdup(result[1]);
+    }
+    else {
 	register int i = 1;
 	int low = 100000;
 
