@@ -1,3 +1,8 @@
+Sat May 21 10:24:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: tds files were not deleted when DESTDIR
+	  included '\' path delimiter. [ruby-dev:26193]
+
 Thu May 19 19:04:29 2005  speakillof <speakillof@yahoo.co.jp>
 
 	* lib/rexml/encodings/SHIFT-JIS.rb: encoding and decoding were
