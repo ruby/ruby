@@ -1,6 +1,7 @@
 Sun May 22 02:39:57 2005  Minero Aoki  <aamine@loveruby.net>
 
-	* lib/fileutils.rb (rm_r): new option :secure (default = true).
+	* lib/fileutils.rb (rm_r): new option :secure to avoid
+	  time-to-check-to-time-to-use security problem.  [ruby-dev:26100]
 
 	* lib/fileutils.rb (remove_file, remove_dir): try chmod(700) only
 	  on Windows.
