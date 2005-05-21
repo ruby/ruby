@@ -442,7 +442,7 @@ $(RUBY_INSTALL_NAME).rc $(RUBYW_INSTALL_NAME).rc $(RUBY_SO_NAME).rc: rbconfig.rb
 
 post-install-ext::
 	$(MINIRUBY) -I$(srcdir)lib -rrbconfig -rfileutils \
-		-e 'FileUtils.rm_f(Dir["$(DESTDIR)"+Config::CONFIG["archdir"]+"/**/*.tds"])'
+		-e "FileUtils.rm_f(Dir['$(DESTDIR)'+Config::CONFIG['archdir']+'/**/*.tds'])"
 
 clean-local::
 		@$(RM) ext\extinit.c ext\extinit.$(OBJEXT) *.tds *.il? $(RUBY_SO_NAME).lib
