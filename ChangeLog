@@ -1,3 +1,16 @@
+Sun May 22 02:39:57 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (rm_r): new option :secure (default = true).
+
+	* lib/fileutils.rb (remove_file, remove_dir): try chmod(700) only
+	  on Windows.
+
+	* lib/fileutils.rb: does not depend on find.rb.
+
+	* lib/fileutils.rb: new method chmod_R.
+
+	* lib/fileutils.rb (chown_R): did not work.
+
 Sat May 21 10:23:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: tds files were not deleted when DESTDIR
