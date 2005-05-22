@@ -1,5 +1,5 @@
 # SOAP4R - SOAP EncodingStyle handler library
-# Copyright (C) 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2001, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -33,7 +33,7 @@ class SOAPHandler < Handler
     attrs = encode_attrs(generator, ns, data, parent)
 
     if parent && parent.is_a?(SOAPArray) && parent.position
-      attrs[ns.name(AttrPositionName)] = "[#{ parent.position.join(',') }]"
+      attrs[ns.name(AttrPositionName)] = "[#{parent.position.join(',')}]"
     end
 
     name = nil
@@ -75,7 +75,7 @@ class SOAPHandler < Handler
       end
     else
       raise EncodingStyleError.new(
-	"Unknown object:#{ data } in this encodingStyle.")
+	"unknown object:#{data} in this encodingStyle")
     end
   end
 
@@ -156,7 +156,6 @@ class SOAPHandler < Handler
   end
 
   def decode_tag(ns, elename, attrs, parent)
-    # ToDo: check if @textbuf is empty...
     @textbuf = ''
     is_nil, type, arytype, root, offset, position, href, id, extraattr =
       decode_attrs(ns, attrs)
@@ -227,6 +226,7 @@ class SOAPHandler < Handler
   end
 
   def decode_parent(parent, node)
+    return unless parent.node
     case parent.node
     when SOAPUnknown
       newparent = parent.node.as_struct
@@ -247,10 +247,8 @@ class SOAPHandler < Handler
 	parent.node.add(node)
       end
       node.parent = parent.node
-    when SOAPBasetype
-      raise EncodingStyleError.new("SOAP base type must not have a child.")
     else
-      raise EncodingStyleError.new("Illegal parent: #{ parent.node }.")
+      raise EncodingStyleError.new("illegal parent: #{parent.node}")
     end
   end
 
@@ -266,7 +264,7 @@ private
 
   def create_arytype(ns, data)
     XSD::QName.new(data.arytype.namespace,
-      content_typename(data.arytype.name) + "[#{ data.size.join(',') }]")
+      content_typename(data.arytype.name) + "[#{data.size.join(',')}]")
   end
 
   def encode_attrs(generator, ns, data, parent)
@@ -383,7 +381,7 @@ private
 
   def decode_definedtype(elename, typename, typedef, arytypestr)
     unless typedef
-      raise EncodingStyleError.new("Unknown type '#{ typename }'.")
+      raise EncodingStyleError.new("unknown type '#{typename}'")
     end
     if typedef.is_a?(::WSDL::XMLSchema::SimpleType)
       decode_defined_simpletype(elename, typename, typedef, arytypestr)
@@ -419,6 +417,10 @@ private
 	o = SOAPArray.new(typename, 1, expected_arytype)
 	o.elename = elename
       end
+      o.definedtype = typedef
+      return o
+    when :TYPE_EMPTY
+      o = SOAPNil.decode(elename)
       o.definedtype = typedef
       return o
     else
@@ -509,7 +511,7 @@ private
         case qname.name
         when XSD::NilLiteral
           is_nil = NilLiteralMap[value] or
-            raise EncodingStyleError.new("Cannot accept attribute value: #{ value } as the value of xsi:#{ XSD::NilLiteral } (expected 'true', 'false', '1', or '0').")
+            raise EncodingStyleError.new("cannot accept attribute value: #{value} as the value of xsi:#{XSD::NilLiteral} (expected 'true', 'false', '1', or '0')")
           next
         when XSD::AttrType
           type = value
@@ -523,7 +525,7 @@ private
         when AttrRoot
           root = RootLiteralMap[value] or
             raise EncodingStyleError.new(
-	      "Illegal root attribute value: #{ value }.")
+	      "illegal root attribute value: #{value}")
           next
         when AttrOffset
           offset = value
@@ -578,7 +580,7 @@ private
 	  ref.__setobj__(o)
       	  false
 	else
-	  raise EncodingStyleError.new("Unresolved reference: #{ ref.refid }.")
+	  raise EncodingStyleError.new("unresolved reference: #{ref.refid}")
 	end
       }
       count -= 1

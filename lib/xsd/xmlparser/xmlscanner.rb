@@ -1,5 +1,5 @@
 # XSD4R - XMLScan XML parser library.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -21,12 +21,12 @@ class XMLScanner < XSD::XMLParser::Parser
     @attrs = {}
     @curattr = nil
     @scanner = XMLScan::XMLScanner.new(self)
-    @scanner.kcode = ::XSD::Charset.charset_str(charset) if charset
+    @scanner.kcode = XSD::Charset.charset_str(charset) if charset
     @scanner.parse(string_or_readable)
   end
 
   def scanner_kcode=(charset)
-    @scanner.kcode = ::XSD::Charset.charset_str(charset) if charset
+    @scanner.kcode = XSD::Charset.charset_str(charset) if charset
     self.xmldecl_encoding = charset
   end
 

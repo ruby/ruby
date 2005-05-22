@@ -1,5 +1,5 @@
 # WSDL4R - XMLSchema data definitions.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -7,10 +7,13 @@
 
 
 require 'xsd/datatypes'
+require 'wsdl/xmlSchema/annotation'
 require 'wsdl/xmlSchema/schema'
 require 'wsdl/xmlSchema/import'
+require 'wsdl/xmlSchema/include'
 require 'wsdl/xmlSchema/simpleType'
 require 'wsdl/xmlSchema/simpleRestriction'
+require 'wsdl/xmlSchema/simpleExtension'
 require 'wsdl/xmlSchema/complexType'
 require 'wsdl/xmlSchema/complexContent'
 require 'wsdl/xmlSchema/simpleContent'
@@ -22,12 +25,15 @@ require 'wsdl/xmlSchema/sequence'
 require 'wsdl/xmlSchema/attribute'
 require 'wsdl/xmlSchema/unique'
 require 'wsdl/xmlSchema/enumeration'
+require 'wsdl/xmlSchema/length'
+require 'wsdl/xmlSchema/pattern'
 
 module WSDL
 module XMLSchema
 
 
 AllName = XSD::QName.new(XSD::Namespace, 'all')
+AnnotationName = XSD::QName.new(XSD::Namespace, 'annotation')
 AnyName = XSD::QName.new(XSD::Namespace, 'any')
 AttributeName = XSD::QName.new(XSD::Namespace, 'attribute')
 ChoiceName = XSD::QName.new(XSD::Namespace, 'choice')
@@ -37,6 +43,9 @@ ElementName = XSD::QName.new(XSD::Namespace, 'element')
 EnumerationName = XSD::QName.new(XSD::Namespace, 'enumeration')
 ExtensionName = XSD::QName.new(XSD::Namespace, 'extension')
 ImportName = XSD::QName.new(XSD::Namespace, 'import')
+IncludeName = XSD::QName.new(XSD::Namespace, 'include')
+LengthName = XSD::QName.new(XSD::Namespace, 'length')
+PatternName = XSD::QName.new(XSD::Namespace, 'pattern')
 RestrictionName = XSD::QName.new(XSD::Namespace, 'restriction')
 SequenceName = XSD::QName.new(XSD::Namespace, 'sequence')
 SchemaName = XSD::QName.new(XSD::Namespace, 'schema')

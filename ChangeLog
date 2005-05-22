@@ -1,3 +1,82 @@
+Sun May 22 21:54:06 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/{soap,wsdl,xsd}, test/{soap,wsdl,xsd}: imported soap4r/1.5.4.
+
+	  == SOAP client and server ==
+
+	  === for both client side and server side ===
+
+	  * improved document/literal service support.
+	    style(rpc,document)/use(encoding, literal) combination are all
+	    supported.  for the detail about combination, see
+	    test/soap/test_style.rb.
+
+	  * let WSDLEncodedRegistry#soap2obj map SOAP/OM to Ruby according to
+	    WSDL as well as obj2soap.  closes #70.
+
+	  * let SOAP::Mapping::Object handle XML attribute for doc/lit service.
+	    you can set/get XML attribute via accessor methods which as a name
+	    'xmlattr_' prefixed (<foo name="bar"/> -> Foo#xmlattr_name).
+
+	  === client side ===
+
+	  * WSDLDriver capitalized name operation bug fixed.  from
+	    1.5.3-ruby1.8.2, operation which has capitalized name (such as
+	    KeywordSearchRequest in AWS) is defined as a method having
+	    uncapitalized name. (converted with GenSupport.safemethodname
+	    to handle operation name 'foo-bar').  it introduced serious
+	    incompatibility; in the past, it was defined as a capitalized.
+	    define capitalized method as well under that circumstance.
+
+	  * added new factory interface 'WSDLDriverFactory#create_rpc_driver'
+	    to create RPC::Driver, not WSDLDriver (RPC::Driver and WSDLDriver
+	    are merged).  'WSDLDriverFactory#create_driver' still creates
+	    WSDLDriver for compatibility but it warns that the method is
+	    deprecated.  please use create_rpc_driver instead of create_driver.
+
+	  * allow to use an URI object as an endpoint_url even with net/http,
+	    not http-access2.
+
+	  === server side ===
+
+	  * added mod_ruby support to SOAP::CGIStub.  rename a CGI script
+	    server.cgi to server.rb and let mod_ruby's RubyHandler handles the
+	    script.  CGIStub detects if it's running under mod_ruby environment
+	    or not.
+
+	  * added fcgi support to SOAP::CGIStub.  see the sample at
+	    sample/soap/calc/server.fcgi.  (almost same as server.cgi but has
+	    fcgi handler at the bottom.)
+
+	  * allow to return a SOAPFault object to respond customized SOAP fault.
+
+	  * added the interface 'generate_explicit_type' for server side
+	    (CGIStub, HTTPServer).  call 'self.generate_explicit_type = true'
+	    if you want to return simplified XML even if it's rpc/encoded
+	    service.
+
+	  == WSDL ==
+
+	  === WSDL definition ===
+
+	  * improved XML Schema support such as extension, restriction,
+	    simpleType, complexType + simpleContent, ref, length, import,
+	    include.
+
+	  * reduced "unknown element/attribute" warnings (warn only 1 time for
+	    each QName).
+
+	  * importing XSD file at schemaLocation with xsd:import.
+
+	  === code generation from WSDL ===
+
+	  * generator crashed when there's '-' in defined element/attribute
+	    name.
+
+	  * added ApacheMap WSDL definition.
+
+	* sample/{soap,wsdl}: removed.
+
 Sun May 22 19:11:35 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#intialize):

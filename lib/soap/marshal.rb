@@ -14,8 +14,9 @@ module SOAP
 
 
 module Marshal
-  # Trying xsd:dateTime data to be recovered as aTime.  aDateTime if it fails.
-  MarshalMappingRegistry = Mapping::Registry.new(:allow_original_mapping => true)
+  # Trying xsd:dateTime data to be recovered as aTime.
+  MarshalMappingRegistry = Mapping::Registry.new(
+    :allow_original_mapping => true)
   MarshalMappingRegistry.add(
     Time,
     ::SOAP::SOAPDateTime,

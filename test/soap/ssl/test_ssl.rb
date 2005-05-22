@@ -5,7 +5,7 @@ rescue LoadError
 end
 require 'soap/rpc/driver'
 
-if defined?(HTTPAccess2)
+if defined?(HTTPAccess2) and defined?(OpenSSL)
 
 module SOAP; module SSL
 
@@ -130,6 +130,7 @@ __EOP__
       @client.loadproperty(testpropertyname)
       @client.options["protocol.http.ssl_config.verify_callback"] = method(:verify_callback).to_proc
       @verify_callback_called = false
+      # NG with String
       begin
         @client.hello_world("ssl client")
         assert(false)
@@ -137,8 +138,32 @@ __EOP__
         assert_equal("certificate verify failed", ssle.message)
         assert(@verify_callback_called)
       end
-      #
+      # NG with Integer
+      @client.options["protocol.http.ssl_config.verify_depth"] = 0
+      begin
+        @client.hello_world("ssl client")
+        assert(false)
+      rescue OpenSSL::SSL::SSLError => ssle
+        assert_equal("certificate verify failed", ssle.message)
+        assert(@verify_callback_called)
+      end
+      # OK with empty
       @client.options["protocol.http.ssl_config.verify_depth"] = ""
+      @verify_callback_called = false
+      assert_equal("Hello World, from ssl client", @client.hello_world("ssl client"))
+      assert(@verify_callback_called)
+      # OK with nil
+      @client.options["protocol.http.ssl_config.verify_depth"] = nil
+      @verify_callback_called = false
+      assert_equal("Hello World, from ssl client", @client.hello_world("ssl client"))
+      assert(@verify_callback_called)
+      # OK with String
+      @client.options["protocol.http.ssl_config.verify_depth"] = "3"
+      @verify_callback_called = false
+      assert_equal("Hello World, from ssl client", @client.hello_world("ssl client"))
+      assert(@verify_callback_called)
+      # OK with Integer
+      @client.options["protocol.http.ssl_config.verify_depth"] = 3
       @verify_callback_called = false
       assert_equal("Hello World, from ssl client", @client.hello_world("ssl client"))
       assert(@verify_callback_called)

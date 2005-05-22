@@ -495,6 +495,18 @@ require 'date'
 module XSDDateTimeImpl
   SecInDay = 86400	# 24 * 60 * 60
 
+  def to_obj(klass)
+    if klass == Time
+      to_time
+    elsif klass == Date
+      to_date
+    elsif klass == DateTime
+      to_datetime
+    else
+      nil
+    end
+  end
+
   def to_time
     begin
       if @data.offset * SecInDay == Time.now.utc_offset
@@ -509,6 +521,14 @@ module XSDDateTimeImpl
     rescue ArgumentError
       nil
     end
+  end
+
+  def to_date
+    Date.new0(@data.class.jd_to_ajd(@data.jd, 0, 0), 0, @data.start)
+  end
+
+  def to_datetime
+    data
   end
 
   def tz2of(str)
@@ -539,9 +559,18 @@ module XSDDateTimeImpl
   end
 
   def screen_data(t)
-    if (t.is_a?(Date))
+    # convert t to a DateTime as an internal representation.
+    if t.is_a?(DateTime)
       t
-    elsif (t.is_a?(Time))
+    elsif t.is_a?(Date)
+      if t.respond_to?(:to_datetime)    # from 1.9
+        t.to_datetime
+      else
+        t = screen_data_str(t)
+        t <<= 12 if t.year < 0
+        t
+      end
+    elsif t.is_a?(Time)
       sec, min, hour, mday, month, year = t.to_a[0..5]
       diffday = t.usec.to_r / 1000000 / SecInDay
       of = t.utc_offset.to_r / SecInDay

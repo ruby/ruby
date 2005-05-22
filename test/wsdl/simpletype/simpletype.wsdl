@@ -10,17 +10,26 @@
       <xsd:element name="ruby">
         <xsd:complexType>
           <xsd:sequence>
-            <xsd:element minOccurs="1" maxOccurs="1" name="version" type="tns:version"/>
+            <xsd:element minOccurs="1" maxOccurs="1" name="myversion" type="tns:myversion"/>
             <xsd:element minOccurs="0" maxOccurs="1" name="date" type="xsd:dateTime"/>
           </xsd:sequence>
         </xsd:complexType>
       </xsd:element>
 
-      <xsd:simpleType name="version">
+      <xsd:simpleType name="myversion">
         <xsd:restriction base="xsd:string">
           <xsd:enumeration value="1.6"/>
           <xsd:enumeration value="1.8"/>
           <xsd:enumeration value="1.9"/>
+        </xsd:restriction>
+      </xsd:simpleType>
+
+      <xsd:element name="myid" type="tns:ID"/>
+
+      <xsd:simpleType name="ID">
+        <xsd:restriction base="xsd:string">
+          <xsd:length value="18"/>
+          <xsd:pattern value='[a-zA-Z0-9]{18}'/>
         </xsd:restriction>
       </xsd:simpleType>
     </xsd:schema>
@@ -31,17 +40,30 @@
   </message>
 
   <message name="ping_out">
-    <part name="parameters" element="xsd:string"/>
+    <part name="parameters" type="xsd:string"/>
+  </message>
+
+  <message name="ping_id_in">
+    <part name="parameters" element="tns:myid"/>
+  </message>
+
+  <message name="ping_id_out">
+    <part name="parameters" element="tns:myid"/>
   </message>
 
   <message name="versionmsg">
-    <part name="version" element="tns:version"/>
+    <part name="myversion" element="tns:myversion"/>
   </message>
 
   <portType name="ping_port_type">
     <operation name="ping">
       <input message="tns:ping_in"/>
       <output message="tns:ping_out"/>
+    </operation>
+
+    <operation name="ping_id">
+      <input message="tns:ping_id_in"/>
+      <output message="tns:ping_id_out"/>
     </operation>
 
     <operation name="echo_version">
@@ -53,7 +75,13 @@
   <binding name="ping_binding" type="tns:ping_port_type">
     <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document"/>
     <operation name="ping">
-      <soap:operation soapAction="urn:example.com:simpletype" style="document"/>
+      <soap:operation soapAction="urn:example.com:simpletype:ping" style="document"/>
+      <input><soap:body use="literal"/></input>
+      <output><soap:body use="literal"/></output>
+    </operation>
+
+    <operation name="ping_id">
+      <soap:operation soapAction="urn:example.com:simpletype:ping_id" style="document"/>
       <input><soap:body use="literal"/></input>
       <output><soap:body use="literal"/></output>
     </operation>

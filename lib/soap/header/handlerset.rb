@@ -18,6 +18,12 @@ class HandlerSet
     @store = XSD::NamedElements.new
   end
 
+  def dup
+    obj = HandlerSet.new
+    obj.store = @store.dup
+    obj
+  end
+
   def add(handler)
     @store << handler
   end
@@ -50,6 +56,12 @@ class HandlerSet
         raise UnhandledMustUnderstandHeaderError.new(item.element.elename.to_s)
       end
     end
+  end
+
+protected
+
+  def store=(store)
+    @store = store
   end
 end
 

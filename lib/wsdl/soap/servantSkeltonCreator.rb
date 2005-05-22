@@ -1,5 +1,5 @@
 # WSDL4R - Creating servant skelton code from WSDL.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -17,7 +17,7 @@ module SOAP
 
 class ServantSkeltonCreator
   include ClassDefCreatorSupport
-  include ::XSD::CodeGen::GenSupport
+  include XSD::CodeGen::GenSupport
 
   attr_reader :definitions
 
@@ -42,7 +42,7 @@ private
 
   def dump_porttype(name)
     class_name = create_class_name(name)
-    c = ::XSD::CodeGen::ClassDef.new(class_name)
+    c = XSD::CodeGen::ClassDef.new(class_name)
     operations = @definitions.porttype(name).operations
     operations.each do |operation|
       name = safemethodname(operation.name.name)
@@ -50,7 +50,7 @@ private
       params = input.find_message.parts.collect { |part|
         safevarname(part.name)
       }
-      m = ::XSD::CodeGen::MethodDef.new(name, params) do <<-EOD
+      m = XSD::CodeGen::MethodDef.new(name, params) do <<-EOD
             p [#{params.join(", ")}]
             raise NotImplementedError.new
           EOD

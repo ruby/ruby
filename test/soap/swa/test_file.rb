@@ -33,13 +33,6 @@ class TestFile < Test::Unit::TestCase
     @t = Thread.new {
       @server.start
     }
-    while @server.status != :Running
-      sleep 0.1
-      unless @t.alive?
-	@t.join
-	raise
-      end
-    end
     @endpoint = "http://localhost:#{Port}/"
     @client = SOAP::RPC::Driver.new(@endpoint, 'http://www.acmetron.com/soap')
     @client.add_method('get_file')

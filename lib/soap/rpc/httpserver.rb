@@ -24,55 +24,62 @@ class HTTPServer < Logger::Application
     super(config[:SOAPHTTPServerApplicationName] || self.class.name)
     @default_namespace = config[:SOAPDefaultNamespace]
     @webrick_config = config.dup
+    self.level = Logger::Severity::ERROR # keep silent by default
     @webrick_config[:Logger] ||= @log
-    @server = nil
-    @soaplet = ::SOAP::RPC::SOAPlet.new
-    self.level = Logger::Severity::INFO
+    @log = @webrick_config[:Logger]     # sync logger of App and HTTPServer
+    @router = ::SOAP::RPC::Router.new(self.class.name)
+    @soaplet = ::SOAP::RPC::SOAPlet.new(@router)
     on_init
+    @server = WEBrick::HTTPServer.new(@webrick_config)
+    @server.mount('/', @soaplet)
   end
 
   def on_init
-    # define extra methods in derived class.
+    # do extra initialization in a derived class if needed.
   end
 
   def status
-    if @server
-      @server.status
-    else
-      nil
-    end
+    @server.status if @server
   end
 
   def shutdown
     @server.shutdown if @server
   end
-  
+
   def mapping_registry
-    @soaplet.app_scope_router.mapping_registry
+    @router.mapping_registry
   end
 
   def mapping_registry=(mapping_registry)
-    @soaplet.app_scope_router.mapping_registry = mapping_registry
+    @router.mapping_registry = mapping_registry
+  end
+
+  def generate_explicit_type
+    @router.generate_explicit_type
+  end
+
+  def generate_explicit_type=(generate_explicit_type)
+    @router.generate_explicit_type = generate_explicit_type
   end
 
   # servant entry interface
 
-  def add_rpc_request_servant(factory, namespace = @default_namespace,
-      mapping_registry = nil)
-    @soaplet.add_rpc_request_servant(factory, namespace, mapping_registry)
+  def add_rpc_request_servant(factory, namespace = @default_namespace)
+    @router.add_rpc_request_servant(factory, namespace)
   end
 
   def add_rpc_servant(obj, namespace = @default_namespace)
-    @soaplet.add_rpc_servant(obj, namespace)
+    @router.add_rpc_servant(obj, namespace)
   end
   
-  def add_rpc_request_headerhandler(factory)
-    @soaplet.add_rpc_request_headerhandler(factory)
+  def add_request_headerhandler(factory)
+    @router.add_request_headerhandler(factory)
   end
 
-  def add_rpc_headerhandler(obj)
-    @soaplet.add_rpc_headerhandler(obj)
+  def add_headerhandler(obj)
+    @router.add_headerhandler(obj)
   end
+  alias add_rpc_headerhandler add_headerhandler
 
   # method entry interface
 
@@ -81,52 +88,38 @@ class HTTPServer < Logger::Application
   end
   alias add_method add_rpc_method
 
-  def add_document_method(obj, name, req_qname, res_qname)
-    opt = {}
-    opt[:request_style] = opt[:response_style] = :document
-    opt[:request_use] = opt[:response_use] = :literal
-    param_def = [
-      ['input', req_qname.name, [nil, req_qname.namespace, req_qname.name]],
-      ['output', req_qname.name, [nil, res_qname.namespace, res_qname.name]]
-    ]
-    @soaplet.app_scope_router.add_operation(req_qname, nil, obj, name,
-      param_def, opt)
-  end
-
   def add_rpc_method_as(obj, name, name_as, *param)
     qname = XSD::QName.new(@default_namespace, name_as)
     soapaction = nil
-    param_def = create_param_def(obj, name, param)
-    add_operation(qname, soapaction, obj, name, param_def)
+    param_def = SOAPMethod.derive_rpc_param_def(obj, name, *param)
+    @router.add_rpc_operation(obj, qname, soapaction, name, param_def)
   end
   alias add_method_as add_rpc_method_as
 
-  def add_operation(qname, soapaction, obj, name, param_def, opt = {})
-    opt[:request_style] ||= :rpc
-    opt[:response_style] ||= :rpc
-    opt[:request_use] ||= :encoded
-    opt[:response_use] ||= :encoded
-    @soaplet.app_scope_router.add_operation(qname, soapaction, obj, name,
-      param_def, opt)
+  def add_document_method(obj, soapaction, name, req_qnames, res_qnames)
+    param_def = SOAPMethod.create_doc_param_def(req_qnames, res_qnames)
+    @router.add_document_operation(obj, soapaction, name, param_def)
   end
 
-  def create_param_def(obj, name, param = nil)
-    if param.nil? or param.empty?
-      method = obj.method(name)
-      ::SOAP::RPC::SOAPMethod.create_param_def(
-        (1..method.arity.abs).collect { |i| "p#{i}" })
-    elsif param.size == 1 and param[0].is_a?(Array)
-      param[0]
-    else
-      ::SOAP::RPC::SOAPMethod.create_param_def(param)
-    end
+  def add_rpc_operation(receiver, qname, soapaction, name, param_def, opt = {})
+    @router.add_rpc_operation(receiver, qname, soapaction, name, param_def, opt)
+  end
+
+  def add_rpc_request_operation(factory, qname, soapaction, name, param_def, opt = {})
+    @router.add_rpc_request_operation(factory, qname, soapaction, name, param_def, opt)
+  end
+
+  def add_document_operation(receiver, soapaction, name, param_def, opt = {})
+    @router.add_document_operation(receiver, soapaction, name, param_def, opt)
+  end
+
+  def add_document_request_operation(factory, soapaction, name, param_def, opt = {})
+    @router.add_document_request_operation(factory, soapaction, name, param_def, opt)
   end
 
 private
 
   def run
-    @server = WEBrick::HTTPServer.new(@webrick_config)
-    @server.mount('/', @soaplet)
     @server.start
   end
 end

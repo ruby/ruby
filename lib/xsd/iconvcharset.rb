@@ -22,7 +22,7 @@ class IconvCharset
       out << e.success
       ch, str = e.failed.split(//, 2)
       out << '?'
-      STDERR.puts("Failed to convert #{ch}")
+      warn("Failed to convert #{ch}")
       retry
     end
     return out

@@ -64,50 +64,105 @@ end
 # For anyType object: SOAP::Mapping::Object not ::Object
 class Object; include Marshallable
   def initialize
-    @__soap_value_type = {}
-    @__soap_value = {}
+    @__xmlele_type = {}
+    @__xmlele = []
+    @__xmlattr = {}
   end
 
-  def [](name)
-    @__soap_value[name]
+  def inspect
+    sprintf("#<%s:0x%x%s>", self.class.name, __id__,
+      @__xmlele.collect { |name, value| " #{name}=#{value.inspect}" }.join)
   end
 
-  def []=(name, value)
-    @__soap_value[name] = value
+  def __xmlattr
+    @__xmlattr
   end
 
-  def __soap_set_property(name, value)
-    unless @__soap_value.key?(name)
-      __define_attr_accessor(name)
+  def __xmlele
+    @__xmlele
+  end
+
+  def [](qname)
+    unless qname.is_a?(XSD::QName)
+      qname = XSD::QName.new(nil, qname)
     end
-    __soap_set_property_value(name, value)
+    @__xmlele.each do |k, v|
+      return v if k == qname
+    end
+    nil
   end
 
-private
+  def []=(qname, value)
+    unless qname.is_a?(XSD::QName)
+      qname = XSD::QName.new(nil, qname)
+    end
+    found = false
+    @__xmlele.each do |pair|
+      if pair[0] == qname
+        found = true
+        pair[1] = value
+      end
+    end
+    unless found
+      __define_attr_accessor(qname)
+      @__xmlele << [qname, value]
+    end
+    @__xmlele_type[qname] = :single
+  end
 
-  def __soap_set_property_value(name, value)
-    org = self[name]
-    case @__soap_value_type[name]
-    when :single
-      self[name] = [org, value]
-      @__soap_value_type[name] = :multi
-    when :multi
-      org << value
-    else
-      self[name] = value
-      @__soap_value_type[name] = :single
+  def __add_xmlele_value(qname, value)
+    found = false
+    @__xmlele.map! do |k, v|
+      if k == qname
+        found = true
+        [k, __set_xmlele_value(k, v, value)]
+      else
+        [k, v]
+      end
+    end
+    unless found
+      __define_attr_accessor(qname)
+      @__xmlele << [qname, value]
+      @__xmlele_type[qname] = :single
     end
     value
   end
 
-  def __define_attr_accessor(name)
-    sclass = class << self; self; end
-    sclass.__send__(:define_method, name, proc {
-      self[name]
-    })
-    sclass.__send__(:define_method, name + '=', proc { |value|
-      self[name] = value
-    })
+private
+
+  if RUBY_VERSION > "1.7.0"
+    def __define_attr_accessor(qname)
+      name = XSD::CodeGen::GenSupport.safemethodname(qname.name)
+      Mapping.define_attr_accessor(self, name,
+        proc { self[qname] },
+        proc { |value| self[qname] = value })
+    end
+  else
+    def __define_attr_accessor(qname)
+      name = XSD::CodeGen::GenSupport.safemethodname(qname.name)
+      instance_eval <<-EOS
+        def #{name}
+          self[#{qname.dump}]
+        end
+
+        def #{name}=(value)
+          self[#{qname.dump}] = value
+        end
+      EOS
+    end
+  end
+
+  def __set_xmlele_value(key, org, value)
+    case @__xmlele_type[key]
+    when :multi
+      org << value
+      org
+    when :single
+      @__xmlele_type[key] = :multi
+      [org, value]
+    else
+      raise RuntimeError.new("unknown type")
+    end
   end
 end
 
@@ -123,7 +178,7 @@ class Registry
       @registry = registry
     end
 
-    def obj2soap(obj, type_qname = nil)
+    def obj2soap(obj)
       klass = obj.class
       if map = @obj2soap[klass]
         map.each do |soap_class, factory, info|
@@ -131,7 +186,10 @@ class Registry
           return ret if ret
         end
       end
-      ancestors = klass.ancestors[1..-3] # except itself, Object and Kernel
+      ancestors = klass.ancestors
+      ancestors.delete(klass)
+      ancestors.delete(::Object)
+      ancestors.delete(::Kernel)
       ancestors.each do |klass|
         if map = @obj2soap[klass]
           map.each do |soap_class, factory, info|
@@ -145,10 +203,10 @@ class Registry
       nil
     end
 
-    def soap2obj(node)
-      klass = node.class
-      if map = @soap2obj[klass]
+    def soap2obj(node, klass = nil)
+      if map = @soap2obj[node.class]
         map.each do |obj_class, factory, info|
+          next if klass and obj_class != klass
           conv, obj = factory.soap2obj(obj_class, node, info, @registry)
           return true, obj if conv
         end
@@ -177,11 +235,13 @@ class Registry
     end
 
     def find_mapped_soap_class(target_obj_class)
-      @obj2soap[target_obj_class][0]
+      map = @obj2soap[target_obj_class]
+      map.empty? ? nil : map[0][1]
     end
 
     def find_mapped_obj_class(target_soap_class)
-      @soap2obj[target_soap_class][0]
+      map = @soap2obj[target_soap_class]
+      map.empty? ? nil : map[0][0]
     end
   end
 
@@ -202,7 +262,6 @@ class Registry
     [::FalseClass,   ::SOAP::SOAPBoolean,    BasetypeFactory],
     [::String,       ::SOAP::SOAPString,     StringFactory],
     [::DateTime,     ::SOAP::SOAPDateTime,   DateTimeFactory],
-    [::Date,         ::SOAP::SOAPDateTime,   DateTimeFactory],
     [::Date,         ::SOAP::SOAPDate,       DateTimeFactory],
     [::Time,         ::SOAP::SOAPDateTime,   DateTimeFactory],
     [::Time,         ::SOAP::SOAPTime,       DateTimeFactory],
@@ -266,7 +325,6 @@ class Registry
     [::FalseClass,   ::SOAP::SOAPBoolean,    BasetypeFactory],
     [::String,       ::SOAP::SOAPString,     StringFactory],
     [::DateTime,     ::SOAP::SOAPDateTime,   DateTimeFactory],
-    [::Date,         ::SOAP::SOAPDateTime,   DateTimeFactory],
     [::Date,         ::SOAP::SOAPDate,       DateTimeFactory],
     [::Time,         ::SOAP::SOAPDateTime,   DateTimeFactory],
     [::Time,         ::SOAP::SOAPTime,       DateTimeFactory],
@@ -354,17 +412,17 @@ class Registry
   end
   alias set add
 
-  # This mapping registry ignores type hint.
+  # general Registry ignores type_qname
   def obj2soap(obj, type_qname = nil)
-    soap = _obj2soap(obj, type_qname)
+    soap = _obj2soap(obj)
     if @allow_original_mapping
       addextend2soap(soap, obj)
     end
     soap
   end
 
-  def soap2obj(node)
-    obj = _soap2obj(node)
+  def soap2obj(node, klass = nil)
+    obj = _soap2obj(node, klass)
     if @allow_original_mapping
       addextend2obj(obj, node.extraattr[RubyExtendName])
       addiv2obj(obj, node.extraattr[RubyIVarName])
@@ -382,7 +440,7 @@ class Registry
 
 private
 
-  def _obj2soap(obj, type_qname)
+  def _obj2soap(obj)
     ret = nil
     if obj.is_a?(SOAPStruct) or obj.is_a?(SOAPArray)
       obj.replace do |ele|
@@ -393,7 +451,7 @@ private
       return obj
     end
     begin 
-      ret = @map.obj2soap(obj, type_qname) ||
+      ret = @map.obj2soap(obj) ||
         @default_factory.obj2soap(nil, obj, nil, self)
       return ret if ret
     rescue MappingError
@@ -408,12 +466,12 @@ private
   end
 
   # Might return nil as a mapping result.
-  def _soap2obj(node)
+  def _soap2obj(node, klass = nil)
     if node.extraattr.key?(RubyTypeName)
       conv, obj = @rubytype_factory.soap2obj(nil, node, nil, self)
       return obj if conv
     else
-      conv, obj = @map.soap2obj(node)
+      conv, obj = @map.soap2obj(node, klass)
       return obj if conv
       conv, obj = @default_factory.soap2obj(nil, node, nil, self)
       return obj if conv
@@ -435,14 +493,14 @@ private
     attr.__getobj__.each do |name, value|
       vars[name] = Mapping._soap2obj(value, self)
     end
-    Mapping.set_instance_vars(obj, vars)
+    Mapping.set_attributes(obj, vars)
   end
 
   if RUBY_VERSION >= '1.8.0'
     def addextend2obj(obj, attr)
       return unless attr
       attr.split(/ /).reverse_each do |mstr|
-	obj.extend(Mapping.class_from_name(mstr))
+	obj.extend(Mapping.module_from_name(mstr))
       end
     end
   else
@@ -450,8 +508,8 @@ private
     def addextend2obj(obj, attr)
       return unless attr
       attr.split(/ /).reverse_each do |mstr|
-	m = Mapping.class_from_name(mstr)
-	obj.extend(m) if m.class == Module
+	m = Mapping.module_from_name(mstr)
+	obj.extend(m)
       end
     end
   end

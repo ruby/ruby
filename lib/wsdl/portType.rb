@@ -28,7 +28,8 @@ class PortType < Info
   end
 
   def find_binding
-    root.bindings.find { |item| item.type == @name }
+    root.bindings.find { |item| item.type == @name } or
+      raise RuntimeError.new("#{@name} not found")
   end
 
   def locations

@@ -1,5 +1,5 @@
 # SOAP4R - SOAP Simple header item handler
-# Copyright (C) 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2003-2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -30,7 +30,7 @@ class SimpleHandler < SOAP::Header::Handler
 
   def on_outbound
     h = on_simple_outbound
-    h ? SOAPElement.from_obj(h) : nil
+    h ? SOAPElement.from_obj(h, elename.namespace) : nil
   end
 
   def on_inbound(header, mustunderstand)

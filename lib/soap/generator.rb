@@ -175,7 +175,12 @@ public
   def self.assign_ns(attrs, ns, namespace, tag = nil)
     if namespace and !ns.assigned?(namespace)
       tag = ns.assign(namespace, tag)
-      attrs['xmlns:' << tag] = namespace
+      if tag == ''
+        attr = 'xmlns'
+      else
+        attr = "xmlns:#{tag}"
+      end
+      attrs[attr] = namespace
     end
   end
 

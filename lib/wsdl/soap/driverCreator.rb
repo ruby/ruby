@@ -1,5 +1,5 @@
 # WSDL4R - Creating driver code from WSDL.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -46,16 +46,17 @@ private
     methoddef, types = MethodDefCreator.new(@definitions).dump(name)
     mr_creator = MappingRegistryCreator.new(@definitions)
     binding = @definitions.bindings.find { |item| item.type == name }
-    addresses = @definitions.porttype(name).locations
+    return '' unless binding.soapbinding        # not a SOAP binding
+    address = @definitions.porttype(name).locations[0]
 
-    c = ::XSD::CodeGen::ClassDef.new(class_name, "::SOAP::RPC::Driver")
+    c = XSD::CodeGen::ClassDef.new(class_name, "::SOAP::RPC::Driver")
     c.def_require("soap/rpc/driver")
     c.def_const("MappingRegistry", "::SOAP::Mapping::Registry.new")
-    c.def_const("DefaultEndpointUrl", addresses[0].dump)
+    c.def_const("DefaultEndpointUrl", ndq(address))
     c.def_code(mr_creator.dump(types))
     c.def_code <<-EOD
 Methods = [
-#{ methoddef.gsub(/^/, "  ") }
+#{methoddef.gsub(/^/, "  ")}
 ]
     EOD
     c.def_method("initialize", "endpoint_url = nil") do
@@ -69,13 +70,18 @@ Methods = [
     c.def_privatemethod("init_methods") do
       <<-EOD
         Methods.each do |name_as, name, params, soapaction, namespace, style|
-          qname = ::XSD::QName.new(namespace, name_as)
+          qname = XSD::QName.new(namespace, name_as)
           if style == :document
-            @proxy.add_document_method(qname, soapaction, name, params)
-            add_document_method_interface(name, name_as)
+            @proxy.add_document_method(soapaction, name, params)
+            add_document_method_interface(name, params)
           else
             @proxy.add_rpc_method(qname, soapaction, name, params)
             add_rpc_method_interface(name, params)
+          end
+          if name_as != name and name_as.capitalize == name.capitalize
+            ::SOAP::Mapping.define_singleton_method(self, name_as) do |*arg|
+              __send__(name, *arg)
+            end
           end
         end
       EOD

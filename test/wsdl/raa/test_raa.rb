@@ -26,18 +26,11 @@ class TestRAA < Test::Unit::TestCase
       Thread.current.abort_on_exception = true
       @server.start
     }
-    while @server.status != :Running
-      sleep 0.1
-      unless @t.alive?
-	@t.join
-	raise
-      end
-    end
   end
 
   def setup_client
     wsdl = File.join(DIR, 'raa.wsdl')
-    @raa = ::SOAP::WSDLDriverFactory.new(wsdl).create_driver
+    @raa = ::SOAP::WSDLDriverFactory.new(wsdl).create_rpc_driver
     @raa.endpoint_url = "http://localhost:#{Port}/"
   end
 

@@ -1,5 +1,5 @@
 # WSDL4R - WSDL XML Instance parser library.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -51,6 +51,9 @@ public
     @parser = XSD::XMLParser.create_parser(self, opt)
     @parsestack = nil
     @lastnode = nil
+    @ignored = {}
+    @location = opt[:location]
+    @originalroot = opt[:originalroot]
   end
 
   def parse(string_or_readable)
@@ -94,7 +97,7 @@ public
   def end_element(name)
     lastframe = @parsestack.pop
     unless name == lastframe.name
-      raise UnexpectedElementError.new("Closing element name '#{ name }' does not match with opening element '#{ lastframe.name }'.")
+      raise UnexpectedElementError.new("closing element name '#{name}' does not match with opening element '#{lastframe.name}'")
     end
     decode_tag_end(lastframe.ns, lastframe.node)
     @lastnode = lastframe.node
@@ -104,20 +107,31 @@ private
 
   def decode_tag(ns, name, attrs, parent)
     o = nil
-    element = ns.parse(name)
+    elename = ns.parse(name)
     if !parent
-      if element == SchemaName
-	o = Schema.parse_element(element)
+      if elename == SchemaName
+	o = Schema.parse_element(elename)
+        o.location = @location
       else
-	raise UnknownElementError.new("Unknown element #{ element }.")
+	raise UnknownElementError.new("unknown element: #{elename}")
       end
+      o.root = @originalroot if @originalroot   # o.root = o otherwise
     else
-      o = parent.parse_element(element)
+      if elename == AnnotationName
+        # only the first annotation element is allowed for each element.
+        o = Annotation.new
+      else
+        o = parent.parse_element(elename)
+      end
       unless o
-	STDERR.puts("Unknown element #{ element }.")
+        unless @ignored.key?(elename)
+          warn("ignored element: #{elename} of #{parent.class}")
+          @ignored[elename] = elename
+        end
 	o = Documentation.new	# which accepts any element.
       end
       # node could be a pseudo element.  pseudo element has its own parent.
+      o.root = parent.root
       o.parent = parent if o.parent.nil?
     end
     attrs.each do |key, value|
@@ -127,9 +141,12 @@ private
       if attr_ele == IdAttrName
 	o.id = value_ele
       else
-	unless o.parse_attr(attr_ele, value_ele)
-	  STDERR.puts("Unknown attr #{ attr_ele }.")
-   	end
+        unless o.parse_attr(attr_ele, value_ele)
+          unless @ignored.key?(attr_ele)
+            warn("ignored attr: #{attr_ele}")
+            @ignored[attr_ele] = attr_ele
+          end
+        end
       end
     end
     o

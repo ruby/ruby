@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<definitions
+    name="echo"
+    targetNamespace="urn:docrpc"
+    xmlns:tns="urn:docrpc"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+  <types>
+    <xsd:schema elementFormDefault="unqualified" targetNamespace="urn:docrpc">
+      <xsd:complexType name="echo_struct">
+        <xsd:sequence>
+          <xsd:element minOccurs="0" maxOccurs="1" name="m_string" type="xsd:string" />
+          <xsd:element minOccurs="0" maxOccurs="1" name="m_datetime" type="xsd:dateTime" />
+        </xsd:sequence>
+        <xsd:attribute name="m_attr" type="xsd:string" />
+      </xsd:complexType>
+
+      <xsd:element name="echoele">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element minOccurs="0" maxOccurs="1" name="struct1" type="tns:echo_struct" />
+            <xsd:element minOccurs="0" maxOccurs="1" name="struct-2" type="tns:echo_struct" />
+          </xsd:sequence>
+          <xsd:attribute name="attr_string" type="xsd:string" />
+          <xsd:attribute name="attr-int" type="xsd:int" />
+        </xsd:complexType>
+      </xsd:element>
+      <xsd:element name="echo_response">
+        <xsd:complexType>
+          <xsd:sequence>
+            <xsd:element minOccurs="0" maxOccurs="1" name="struct1" type="tns:echo_struct" />
+            <xsd:element minOccurs="0" maxOccurs="1" name="struct-2" type="tns:echo_struct" />
+          </xsd:sequence>
+          <xsd:attribute name="attr_string" type="xsd:string" />
+          <xsd:attribute name="attr-int" type="xsd:int" />
+        </xsd:complexType>
+      </xsd:element>
+    </xsd:schema>
+  </types>
+
+  <message name="echo_in">
+    <part name="parameters" element="tns:echoele" />
+  </message>
+  <message name="echo_out">
+    <part name="parameters" element="tns:echo_response" />
+  </message>
+
+  <portType name="docrpc_porttype">
+    <operation name="echo">
+      <input message="tns:echo_in" />
+      <output message="tns:echo_out" />
+    </operation>
+  </portType>
+
+  <binding name="docrpc_binding" type="tns:docrpc_porttype">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document" />
+    <operation name="echo">
+      <soap:operation soapAction="urn:docrpc:echo" style="document" />
+      <input>
+        <soap:body use="literal" />
+      </input>
+      <output>
+        <soap:body use="literal" />
+      </output>
+    </operation>
+  </binding>
+
+  <service name="docrpc_service">
+    <port name="docprc_service_port" binding="tns:docrpc_binding">
+      <soap:address location="http://localhost:17171/" />
+    </port>
+  </service>
+</definitions>

@@ -1,5 +1,5 @@
 # WSDL4R - XMLSchema simpleContent definition for WSDL.
-# Copyright (C) 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2004, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -15,17 +15,21 @@ module XMLSchema
 
 
 class SimpleContent < Info
-  attr_accessor :base
-  attr_reader :derivetype
-  attr_reader :content
-  attr_reader :attributes
+  attr_reader :restriction
+  attr_reader :extension
+
+  def check_lexical_format(value)
+    check(value)
+  end
 
   def initialize
     super
-    @base = nil
-    @derivetype = nil
-    @content = nil
-    @attributes = XSD::NamedElements.new
+    @restriction = nil
+    @extension = nil
+  end
+
+  def base
+    content.base
   end
 
   def targetnamespace
@@ -34,28 +38,24 @@ class SimpleContent < Info
 
   def parse_element(element)
     case element
-    when RestrictionName, ExtensionName
-      @derivetype = element.name
-      self
-    when AttributeName
-      if @derivetype.nil?
-	raise Parser::ElementConstraintError.new("base attr not found.")
-      end
-      o = Attribute.new
-      @attributes << o
-      o
+    when RestrictionName
+      @restriction = SimpleRestriction.new
+      @restriction
+    when ExtensionName
+      @extension = SimpleExtension.new
+      @extension
     end
   end
 
-  def parse_attr(attr, value)
-    if @derivetype.nil?
-      return nil
-    end
-    case attr
-    when BaseAttrName
-      @base = value
-    else
-      nil
+private
+
+  def content
+    @restriction || @extension
+  end
+
+  def check(value)
+    unless content.valid?(value)
+      raise XSD::ValueSpaceError.new("#{@name}: cannot accept '#{value}'")
     end
   end
 end

@@ -85,18 +85,18 @@ class AuthHeaderPortServer < SOAP::RPC::CGIStub
     end
 
     def on_simple_inbound(my_header, mu)
-      auth_p = false
+      succeeded = false
       userid = my_header["userid"]
       passwd = my_header["passwd"]
       if login(userid, passwd)
-	auth_p = true
+	succeeded = true
       elsif sessionid = my_header["sessionid"]
 	if userid = auth(sessionid)
 	  destroy_session(sessionid)
-	  auth_p = true
+	  succeeded = true
 	end
       end
-      raise RuntimeError.new("authentication failed") unless auth_p
+      raise RuntimeError.new("authentication failed") unless succeeded
       @userid = userid
       @sessionid = create_session(userid)
     end

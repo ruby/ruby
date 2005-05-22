@@ -43,17 +43,22 @@ class NetHttpClient
     raise NotImplementedError.new("not supported for now")
   end
   
-  def proxy=(proxy_str)
-    if proxy_str.nil?
+  def proxy=(proxy)
+    if proxy.nil?
       @proxy = nil
     else
-      @proxy = URI.parse(proxy_str)
+      if proxy.is_a?(URI)
+        @proxy = proxy
+      else
+        @proxy = URI.parse(proxy)
+      end
       if @proxy.scheme == nil or @proxy.scheme.downcase != 'http' or
 	  @proxy.host == nil or @proxy.port == nil
-	raise ArgumentError.new("unsupported proxy `#{proxy_str}'")
+	raise ArgumentError.new("unsupported proxy `#{proxy}'")
       end
-      @proxy
     end
+    reset_all
+    @proxy
   end
 
   def set_basic_auth(uri, user_id, passwd)
@@ -79,7 +84,9 @@ class NetHttpClient
   end
 
   def post(url, req_body, header = {})
-    url = URI.parse(url)
+    unless url.is_a?(URI)
+      url = URI.parse(url)
+    end
     extra = header.dup
     extra['User-Agent'] = @agent if @agent
     res = start(url) { |http|
@@ -89,7 +96,9 @@ class NetHttpClient
   end
 
   def get_content(url, header = {})
-    url = URI.parse(url)
+    unless url.is_a?(URI)
+      url = URI.parse(url)
+    end
     extra = header.dup
     extra['User-Agent'] = @agent if @agent
     res = start(url) { |http|

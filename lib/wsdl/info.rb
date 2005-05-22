@@ -10,16 +10,22 @@ module WSDL
 
 
 class Info
+  attr_accessor :root
   attr_accessor :parent
   attr_accessor :id
 
   def initialize
+    @root = nil
     @parent = nil
     @id = nil
   end
 
-  def root
-    @parent.root
+  def inspect
+    if self.respond_to?(:name)
+      sprintf("#<%s:0x%x %s>", self.class.name, __id__, self.name)
+    else
+      sprintf("#<%s:0x%x>", self.class.name, __id__)
+    end
   end
 
   def parse_element(element); end	# abstract

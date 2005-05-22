@@ -1,5 +1,5 @@
 # XSD4R - XML Schema Namespace library
-# Copyright (C) 2000, 2001, 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000-2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -20,7 +20,7 @@ class NS
 
     def assign(ns)
       @count += 1
-      "n#{ @count }"
+      "n#{@count}"
     end
   end
 
@@ -54,7 +54,7 @@ public
   end
 
   def assigned?(ns)
-    @ns2tag.key?(ns)
+    @default_namespace == ns or @ns2tag.key?(ns)
   end
 
   def assigned_tag?(tag)
@@ -74,7 +74,7 @@ public
     elsif @ns2tag.key?(name.namespace)
       @ns2tag[name.namespace] + ':' << name.name
     else
-      raise FormatError.new('Namespace: ' << name.namespace << ' not defined yet.')
+      raise FormatError.new("namespace: #{name.namespace} not defined yet")
     end
   end
 
@@ -83,7 +83,7 @@ public
       return true if (name == rhs)
     end
     @tag2ns.each do |assigned_tag, assigned_ns|
-      if assigned_ns == ns && "#{ assigned_tag }:#{ name }" == rhs
+      if assigned_ns == ns && "#{assigned_tag}:#{name}" == rhs
 	return true
       end
     end
@@ -103,22 +103,22 @@ public
   end
 
   # For local attribute key parsing
-  #   <foo xmlns="urn:" xmlns:n1="urn:" bar="1" n1:baz="2" />
+  #   <foo xmlns="urn:a" xmlns:n1="urn:a" bar="1" n1:baz="2" />
   #     =>
-  #   {}bar, {urn:}baz
+  #   {}bar, {urn:a}baz
   def parse_local(elem)
     ParseRegexp =~ elem
     if $2
       ns = @tag2ns[$1]
       name = $2
       if !ns
-	raise FormatError.new('Unknown namespace qualifier: ' << $1)
+	raise FormatError.new("unknown namespace qualifier: #{$1}")
       end
     elsif $1
       ns = nil
       name = $1
     else
-      raise FormatError.new("Illegal element format: #{ elem }")
+      raise FormatError.new("illegal element format: #{elem}")
     end
     XSD::QName.new(ns, name)
   end

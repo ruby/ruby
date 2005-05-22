@@ -16,13 +16,6 @@ class TestCalc < Test::Unit::TestCase
     @t = Thread.new {
       @server.start
     }
-    while @server.status != :Running
-      sleep 0.1
-      unless @t.alive?
-	@t.join
-	raise
-      end
-    end
     @endpoint = "http://localhost:#{Port}/"
     @calc = SOAP::RPC::Driver.new(@endpoint, 'http://tempuri.org/calcService')
     @calc.add_method('add', 'lhs', 'rhs')

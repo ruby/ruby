@@ -33,7 +33,7 @@ class Port < Info
   end
 
   def find_binding
-    root.binding(@binding)
+    root.binding(@binding) or raise RuntimeError.new("#{@binding} not found")
   end
 
   def inputoperation_map

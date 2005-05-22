@@ -13,7 +13,7 @@ require 'xsd/charset'
 module SOAP
 
 
-Version = '1.5.3-ruby1.8.2'
+VERSION = Version = '1.5.4'
 PropertyName = 'soap/property'
 
 EnvelopeNamespace = 'http://schemas.xmlsoap.org/soap/envelope/'
@@ -75,6 +75,7 @@ class ArrayIndexOutOfBoundsError < Error; end
 class ArrayStoreError < Error; end
 
 class RPCRoutingError < Error; end
+class EmptyResponseError < Error; end
 
 class UnhandledMustUnderstandHeaderError < Error; end
 
@@ -101,6 +102,7 @@ class FaultError < Error
   end
 end
 
+
 module Env
   def self.getenv(name)
     ENV[name.downcase] || ENV[name.upcase]
@@ -112,4 +114,26 @@ module Env
 end
 
 
+end
+
+
+unless Object.respond_to?(:instance_variable_get)
+  class Object
+    def instance_variable_get(ivarname)
+      instance_eval(ivarname)
+    end
+
+    def instance_variable_set(ivarname, value)
+      instance_eval("#{ivarname} = value")
+    end
+  end
+end
+
+
+unless Kernel.respond_to?(:warn)
+  module Kernel
+    def warn(msg)
+      STDERR.puts(msg + "\n") unless $VERBOSE.nil?
+    end
+  end
 end

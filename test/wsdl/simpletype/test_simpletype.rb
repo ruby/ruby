@@ -10,11 +10,22 @@ module SimpleType
 class TestSimpleType < Test::Unit::TestCase
   class Server < ::SOAP::RPC::StandaloneServer
     def on_init
-      add_method(self, 'ruby', 'version', 'date')
+      add_document_method(self, 'urn:example.com:simpletype:ping', 'ping',
+        XSD::QName.new('urn:example.com:simpletype', 'ruby'),
+        XSD::QName.new('http://www.w3.org/2001/XMLSchema', 'string'))
+      add_document_method(self, 'urn:example.com:simpletype:ping_id', 'ping_id',
+        XSD::QName.new('urn:example.com:simpletype', 'myid'),
+        XSD::QName.new('urn:example.com:simpletype', 'myid'))
     end
   
-    def ruby(version, date)
+    def ping(ruby)
+      version = ruby["myversion"]
+      date = ruby["date"]
       "#{version} (#{date})"
+    end
+
+    def ping_id(id)
+      id
     end
   end
 
@@ -35,9 +46,10 @@ class TestSimpleType < Test::Unit::TestCase
 
   def setup_client
     wsdl = File.join(DIR, 'simpletype.wsdl')
-    @client = ::SOAP::WSDLDriverFactory.new(wsdl).create_driver
+    @client = ::SOAP::WSDLDriverFactory.new(wsdl).create_rpc_driver
     @client.endpoint_url = "http://localhost:#{Port}/"
     @client.generate_explicit_type = false
+    @client.wiredump_dev = STDOUT if $DEBUG
   end
 
   def teardown
@@ -60,19 +72,25 @@ class TestSimpleType < Test::Unit::TestCase
       Thread.current.abort_on_exception = true
       server.start
     }
-    while server.status != :Running
-      sleep 0.1
-      unless t.alive?
-	t.join
-	raise
-      end
-    end
     t
   end
 
   def test_ping
-    header, body = @client.ping(nil, {:version => "1.9", :date => "2004-01-01T00:00:00Z"})
-    assert_equal("1.9 (2004-01-01T00:00:00Z)", body)
+    ret = @client.ping({:myversion => "1.9", :date => "2004-01-01T00:00:00Z"})
+    assert_equal("1.9 (2004-01-01T00:00:00Z)", ret)
+  end
+
+  def test_ping_id
+    ret = @client.ping_id("012345678901234567")
+    assert_equal("012345678901234567", ret)
+    # length
+    assert_raise(XSD::ValueSpaceError) do
+      @client.ping_id("0123456789012345678")
+    end
+    # pattern
+    assert_raise(XSD::ValueSpaceError) do
+      @client.ping_id("01234567890123456;")
+    end
   end
 end
 

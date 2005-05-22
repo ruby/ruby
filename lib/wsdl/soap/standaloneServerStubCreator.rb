@@ -1,5 +1,5 @@
 # WSDL4R - Creating standalone server stub code from WSDL.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -26,10 +26,8 @@ class StandaloneServerStubCreator
   end
 
   def dump(service_name)
-    STDERR.puts "!!! IMPORTANT !!!"
-    STDERR.puts "- Standalone stub can have only 1 port for now.  So creating stub for the first port and rests are ignored."
-    STDERR.puts "- Standalone server stub ignores port location defined in WSDL.  Location is http://localhost:10080/ by default.  Generated client from WSDL must be configured to point this endpoint by hand."
-    STDERR.puts "!!! IMPORTANT !!!"
+    warn("- Standalone stub can have only 1 port for now.  So creating stub for the first port and rests are ignored.")
+    warn("- Standalone server stub ignores port location defined in WSDL.  Location is http://localhost:10080/ by default.  Generated client from WSDL must be configured to point this endpoint manually.")
     port = @definitions.service(service_name).ports[0]
     dump_porttype(port.porttype.name)
   end
@@ -41,28 +39,28 @@ private
     methoddef, types = MethodDefCreator.new(@definitions).dump(name)
     mr_creator = MappingRegistryCreator.new(@definitions)
 
-    c1 = ::XSD::CodeGen::ClassDef.new(class_name)
+    c1 = XSD::CodeGen::ClassDef.new(class_name)
     c1.def_require("soap/rpc/standaloneServer")
     c1.def_require("soap/mapping/registry")
     c1.def_const("MappingRegistry", "::SOAP::Mapping::Registry.new")
     c1.def_code(mr_creator.dump(types))
     c1.def_code <<-EOD
 Methods = [
-#{ methoddef.gsub(/^/, "  ") }
+#{methoddef.gsub(/^/, "  ")}
 ]
     EOD
-    c2 = ::XSD::CodeGen::ClassDef.new(class_name + "App",
+    c2 = XSD::CodeGen::ClassDef.new(class_name + "App",
       "::SOAP::RPC::StandaloneServer")
     c2.def_method("initialize", "*arg") do
       <<-EOD
         super(*arg)
         servant = #{class_name}.new
         #{class_name}::Methods.each do |name_as, name, param_def, soapaction, namespace, style|
-          qname = XSD::QName.new(namespace, name_as)
           if style == :document
-            @soaplet.app_scope_router.add_document_method(servant, qname, soapaction, name, param_def)
+            @router.add_document_operation(servant, soapaction, name, param_def)
           else
-            @soaplet.app_scope_router.add_rpc_method(servant, qname, soapaction, name, param_def)
+            qname = XSD::QName.new(namespace, name_as)
+            @router.add_rpc_operation(servant, qname, soapaction, name, param_def)
           end
         end
         self.mapping_registry = #{class_name}::MappingRegistry

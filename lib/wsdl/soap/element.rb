@@ -21,12 +21,6 @@ class Element < Info
   def attributes
     @local_complextype.attributes
   end
-
-  def each_element
-    @local_complextype.each_element do |element|
-      yield(element)
-    end
-  end
 end
 
 

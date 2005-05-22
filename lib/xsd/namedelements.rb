@@ -1,5 +1,5 @@
 # XSD4R - WSDL named element collection.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -23,6 +23,12 @@ class NamedElements
     o
   end
 
+  def freeze
+    super
+    @elements.freeze
+    self
+  end
+
   def empty?
     size == 0
   end
@@ -41,6 +47,10 @@ class NamedElements
 
   def find_name(name)
     @elements.find { |item| item.name.name == name }
+  end
+
+  def keys
+    collect { |element| element.name }
   end
 
   def each
@@ -68,6 +78,8 @@ class NamedElements
     @elements.concat(rhs.elements)
     self
   end
+
+  Empty = NamedElements.new.freeze
 
 protected
 
