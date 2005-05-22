@@ -32,6 +32,7 @@ class TestMap < Test::Unit::TestCase
 
   def setup_server
     @server = Server.new(
+      :BindAddress => "0.0.0.0",
       :Port => Port,
       :AccessLog => [],
       :SOAPDefaultNamespace => "urn:map"
@@ -41,20 +42,14 @@ class TestMap < Test::Unit::TestCase
       Thread.current.abort_on_exception = true
       @server.start
     }
-    while @server.status != :Running
-      sleep 0.1
-      unless @t.alive?
-	@t.join
-	raise
-      end
-    end
   end
 
   def setup_client
     wsdl = File.join(DIR, 'map.wsdl')
-    @client = ::SOAP::WSDLDriverFactory.new(wsdl).create_driver
+    @client = ::SOAP::WSDLDriverFactory.new(wsdl).create_rpc_driver
     @client.endpoint_url = "http://localhost:#{Port}/"
     @client.generate_explicit_type = true
+    @client.wiredump_dev = STDOUT if $DEBUG
   end
 
   def teardown

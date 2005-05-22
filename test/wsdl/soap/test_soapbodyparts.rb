@@ -10,19 +10,19 @@ module SOAP
 class TestSOAPBodyParts < Test::Unit::TestCase
   class Server < ::SOAP::RPC::StandaloneServer
     def on_init
-      add_method(self, 'foo', 'p1', 'p2')
-      add_method(self, 'bar', 'p1', 'p2')
+      add_method(self, 'foo', 'p1', 'p2', 'p3')
+      add_method(self, 'bar', 'p1', 'p2', 'p3')
       add_method(self, 'baz', 'p1', 'p2', 'p3')
     end
   
-    def foo(p1, p2)
-      [p1, p2]
+    def foo(p1, p2, p3)
+      [p1, p2, p3]
     end
 
     alias bar foo
 
     def baz(p1, p2, p3)
-      [p1, p2, p3]
+      [p3, p2, p1]
     end
   end
 
@@ -42,18 +42,11 @@ class TestSOAPBodyParts < Test::Unit::TestCase
       Thread.current.abort_on_exception = true
       @server.start
     }
-    while @server.status != :Running
-      sleep 0.1
-      unless @t.alive?
-	@t.join
-	raise
-      end
-    end
   end
 
   def setup_client
     wsdl = File.join(DIR, 'soapbodyparts.wsdl')
-    @client = ::SOAP::WSDLDriverFactory.new(wsdl).create_driver
+    @client = ::SOAP::WSDLDriverFactory.new(wsdl).create_rpc_driver
     @client.endpoint_url = "http://localhost:#{Port}/"
     @client.wiredump_dev = STDERR if $DEBUG
   end
@@ -74,10 +67,10 @@ class TestSOAPBodyParts < Test::Unit::TestCase
   end
 
   def test_soapbodyparts
-    assert_equal(["2", "1"], @client.foo("1", "2"))
-    assert_equal(["1", "2"], @client.foo("2", "1"))
-    assert_equal(["2", "3"], @client.bar("2", "3"))
-    assert_equal(["1", "2", "3"], @client.baz("1", "2", "3"))
+    assert_equal(["1", "2", "3"], @client.foo("1", "2", "3"))
+    assert_equal(["3", "2", "1"], @client.foo("3", "2", "1"))
+    assert_equal(["1", "2", "3"], @client.bar("1", "2", "3"))
+    assert_equal(["3", "2", "1"], @client.baz("1", "2", "3"))
   end
 end
 

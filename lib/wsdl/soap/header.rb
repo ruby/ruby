@@ -32,8 +32,12 @@ class Header < Info
     @headerfault = nil
   end
 
+  def targetnamespace
+    parent.targetnamespace
+  end
+
   def find_message
-    root.message(@message)
+    root.message(@message) or raise RuntimeError.new("#{@message} not found")
   end
 
   def find_part
@@ -42,7 +46,7 @@ class Header < Info
 	return part
       end
     end
-    nil
+    raise RuntimeError.new("#{@part} not found")
   end
 
   def parse_element(element)
@@ -59,7 +63,10 @@ class Header < Info
   def parse_attr(attr, value)
     case attr
     when MessageAttrName
-      @message = XSD::QName.new(targetnamespace, value.source)
+      if value.namespace.nil?
+        value = XSD::QName.new(targetnamespace, value.source)
+      end
+      @message = value
     when PartAttrName
       @part = value.source
     when UseAttrName

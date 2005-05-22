@@ -30,6 +30,7 @@ class TestSimpleType < Test::Unit::TestCase
 
   def setup_server
     @server = Server.new(
+      :BindAddress => "0.0.0.0",
       :Port => Port,
       :AccessLog => [],
       :SOAPDefaultNamespace => "urn:example.com:simpletype-rpc"
@@ -40,7 +41,8 @@ class TestSimpleType < Test::Unit::TestCase
 
   def setup_client
     wsdl = File.join(DIR, 'simpletype.wsdl')
-    @client = ::SOAP::WSDLDriverFactory.new(wsdl).create_driver
+    @client = ::SOAP::WSDLDriverFactory.new(wsdl).create_rpc_driver
+    @client.wiredump_dev = STDOUT if $DEBUG
     @client.endpoint_url = "http://localhost:#{Port}/"
     @client.generate_explicit_type = false
   end
@@ -65,13 +67,6 @@ class TestSimpleType < Test::Unit::TestCase
       Thread.current.abort_on_exception = true
       server.start
     }
-    while server.status != :Running
-      sleep 0.1
-      unless t.alive?
-        t.join
-        raise
-      end
-    end
     t
   end
 
@@ -79,10 +74,10 @@ class TestSimpleType < Test::Unit::TestCase
     result = @client.echo_version("1.9")
     assert_equal("1.9", result.version)
     assert_equal("checked", result.msg)
-    assert_raise(::XSD::ValueSpaceError) do
+    assert_raise(XSD::ValueSpaceError) do
       @client.echo_version("2.0")
     end
-    assert_raise(::XSD::ValueSpaceError) do
+    assert_raise(XSD::ValueSpaceError) do
       @client.echo_version(nil) # nil => "2.0" => out of range
     end
   end

@@ -9,6 +9,49 @@
 module XSD
 module CodeGen
 
+# from the file 'keywords' in 1.9.
+KEYWORD = %w(
+__LINE__
+__FILE__
+BEGIN
+END
+alias
+and
+begin
+break
+case
+class
+def
+defined?
+do
+else
+elsif
+end
+ensure
+false
+for
+if
+in
+module
+next
+nil
+not
+or
+redo
+rescue
+retry
+return
+self
+super
+then
+true
+undef
+unless
+until
+when
+while
+yield
+)
 
 module GenSupport
   def capitalize(target)
@@ -25,7 +68,7 @@ module GenSupport
     safename = name.scan(/[a-zA-Z0-9_]+/).collect { |ele|
       GenSupport.capitalize(ele)
     }.join
-    unless /^[A-Z]/ =~ safename
+    if /^[A-Z]/ !~ safename or keyword?(safename)
       safename = "C_#{safename}"
     end
     safename
@@ -33,12 +76,17 @@ module GenSupport
   module_function :safeconstname
 
   def safeconstname?(name)
-    /\A[A-Z][a-zA-Z0-9_]*\z/ =~ name
+    /\A[A-Z][a-zA-Z0-9_]*\z/ =~ name and !keyword?(name)
   end
   module_function :safeconstname?
 
   def safemethodname(name)
-    safevarname(name)
+    safename = name.scan(/[a-zA-Z0-9_]+/).join('_')
+    safename = uncapitalize(safename)
+    if /^[a-z]/ !~ safename
+      safename = "m_#{safename}"
+    end
+    safename
   end
   module_function :safemethodname
 
@@ -50,17 +98,22 @@ module GenSupport
   def safevarname(name)
     safename = name.scan(/[a-zA-Z0-9_]+/).join('_')
     safename = uncapitalize(safename)
-    unless /^[a-z]/ =~ safename
-      safename = "m_#{safename}"
+    if /^[a-z]/ !~ safename or keyword?(safename)
+      safename = "v_#{safename}"
     end
     safename
   end
   module_function :safevarname
 
   def safevarname?(name)
-    /\A[a-z_][a-zA-Z0-9_]*\z/ =~ name
+    /\A[a-z_][a-zA-Z0-9_]*\z/ =~ name and !keyword?(name)
   end
   module_function :safevarname?
+
+  def keyword?(word)
+    KEYWORD.include?(word)
+  end
+  module_function :keyword?
 
   def format(str, indent = nil)
     str = trim_eol(str)
@@ -76,7 +129,7 @@ private
 
   def trim_eol(str)
     str.collect { |line|
-      line.sub(/\r?\n$/, "") + "\n"
+      line.sub(/\r?\n\z/, "") + "\n"
     }.join
   end
 

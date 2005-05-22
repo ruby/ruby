@@ -382,6 +382,9 @@ class TestSOAP < Test::Unit::TestCase
     ]
     targets.each do |data, expected|
       assert_equal(expected, SOAP::SOAPDateTime.new(data).to_s)
+      d = DateTime.parse(data)
+      d >>= 12 if d.year < 0    # XSDDateTime.year(-1) == DateTime.year(0)
+      assert_equal(expected, SOAP::SOAPDateTime.new(d).to_s)
     end
 
     targets = [
@@ -481,6 +484,9 @@ class TestSOAP < Test::Unit::TestCase
     ]
     targets.each do |data, expected|
       assert_equal(expected, SOAP::SOAPDate.new(data).to_s)
+      d = Date.parse(data)
+      d >>= 12 if d.year < 0    # XSDDate.year(-1) == Date.year(0)
+      assert_equal(expected, SOAP::SOAPDate.new(d).to_s)
     end
   end
 

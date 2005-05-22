@@ -24,6 +24,8 @@ class Schema < Info
   attr_accessor :attributeformdefault
   attr_accessor :elementformdefault
 
+  attr_reader :importedschema
+
   def initialize
     super
     @targetnamespace = nil
@@ -33,12 +35,27 @@ class Schema < Info
     @attributes = XSD::NamedElements.new
     @imports = []
     @elementformdefault = "qualified"
+    @importedschema = {}
+    @location = nil
+    @root = self
+  end
+
+  def location
+    @location || (root.nil? ? nil : root.location)
+  end
+
+  def location=(location)
+    @location = location
   end
 
   def parse_element(element)
     case element
     when ImportName
       o = Import.new
+      @imports << o
+      o
+    when IncludeName
+      o = Include.new
       @imports << o
       o
     when ComplexTypeName
@@ -55,6 +72,7 @@ class Schema < Info
       o
     when AttributeName
       o = Attribute.new
+      @attributes << o
       o
     else
       nil
@@ -74,21 +92,39 @@ class Schema < Info
     end
   end
 
+  def collect_attributes
+    result = XSD::NamedElements.new
+    result.concat(@attributes)
+    @imports.each do |import|
+      result.concat(import.content.collect_attributes) if import.content
+    end
+    result
+  end
+
   def collect_elements
     result = XSD::NamedElements.new
     result.concat(@elements)
+    @imports.each do |import|
+      result.concat(import.content.collect_elements) if import.content
+    end
     result
   end
 
   def collect_complextypes
     result = XSD::NamedElements.new
     result.concat(@complextypes)
+    @imports.each do |import|
+      result.concat(import.content.collect_complextypes) if import.content
+    end
     result
   end
 
   def collect_simpletypes
     result = XSD::NamedElements.new
     result.concat(@simpletypes)
+    @imports.each do |import|
+      result.concat(import.content.collect_simpletypes) if import.content
+    end
     result
   end
 

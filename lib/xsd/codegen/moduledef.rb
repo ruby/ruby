@@ -89,7 +89,7 @@ class ModuleDef
     end
     buf << dump_module_def_end
     buf << dump_package_def_end(package) unless package.empty?
-    buf
+    buf.gsub(/^\s+$/, '')
   end
 
 private

@@ -37,7 +37,35 @@ class OperationBinding < Info
   end
 
   def find_operation
-    porttype.operations[@name]
+    porttype.operations[@name] or raise RuntimeError.new("#{@name} not found")
+  end
+
+  def soapoperation_name
+    if @soapoperation
+      @soapoperation.input_info.op_name
+    else
+      find_operation.name
+    end
+  end
+
+  def soapoperation_style
+    style = nil
+    if @soapoperation
+      style = @soapoperation.operation_style
+    elsif parent.soapbinding
+      style = parent.soapbinding.style
+    else
+      raise TypeError.new("operation style definition not found")
+    end
+    style || :document
+  end
+
+  def soapaction
+    if @soapoperation
+      @soapoperation.soapaction
+    else
+      nil
+    end
   end
 
   def parse_element(element)

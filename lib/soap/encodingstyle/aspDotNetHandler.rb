@@ -1,5 +1,5 @@
 # SOAP4R - ASP.NET EncodingStyle handler library
-# Copyright (C) 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2001, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -30,7 +30,7 @@ class ASPDotNetHandler < Handler
   def encode_data(generator, ns, qualified, data, parent)
     attrs = {}
     name = if qualified and data.elename.namespace
-        SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace)
+        SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace, '')
         ns.name(data.elename)
       else
         data.elename.name
@@ -61,8 +61,8 @@ class ASPDotNetHandler < Handler
         yield(child, true)
       end
     else
-      raise EncodingStyleError.new("Unknown object:#{ data } in this encodingSt
-yle.")
+      raise EncodingStyleError.new(
+        "unknown object:#{data} in this encodingStyle")
     end
   end
 
@@ -119,7 +119,6 @@ yle.")
   end
 
   def decode_tag(ns, elename, attrs, parent)
-    # ToDo: check if @textbuf is empty...
     @textbuf = ''
     o = SOAPUnknown.new(self, elename)
     o.parent = parent
@@ -190,11 +189,11 @@ yle.")
       end
 
     when SOAPBasetype
-      raise EncodingStyleError.new("SOAP base type must not have a child.")
+      raise EncodingStyleError.new("SOAP base type must not have a child")
 
     else
       # SOAPUnknown does not have parent.
-      # raise EncodingStyleError.new("Illegal parent: #{ parent }.")
+      # raise EncodingStyleError.new("illegal parent: #{parent}")
     end
   end
 

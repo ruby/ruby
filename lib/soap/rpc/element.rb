@@ -1,5 +1,5 @@
 # SOAP4R - RPC element definition.
-# Copyright (C) 2000, 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000, 2001, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -77,6 +77,8 @@ class SOAPMethod < SOAPStruct
   attr_reader :param_def
   attr_reader :inparam
   attr_reader :outparam
+  attr_reader :retval_name
+  attr_reader :retval_class_name
 
   def initialize(qname, param_def = nil)
     super(nil)
@@ -93,6 +95,7 @@ class SOAPMethod < SOAPStruct
     @inparam = {}
     @outparam = {}
     @retval_name = nil
+    @retval_class_name = nil
 
     init_param(@param_def) if @param_def
   end
@@ -101,12 +104,12 @@ class SOAPMethod < SOAPStruct
     @outparam_names.size > 0
   end
 
-  def each_param_name(*type)
-    @signature.each do |io_type, name, param_type|
-      if type.include?(io_type)
-        yield(name)
-      end
-    end
+  def input_params
+    collect_params(IN, INOUT)
+  end
+
+  def output_params
+    collect_params(OUT, INOUT)
   end
 
   def set_param(params)
@@ -124,7 +127,30 @@ class SOAPMethod < SOAPStruct
     end
   end
 
-  def SOAPMethod.create_param_def(param_names)
+  def SOAPMethod.param_count(param_def, *type)
+    count = 0
+    param_def.each do |io_type, name, param_type|
+      if type.include?(io_type)
+        count += 1
+      end
+    end
+    count
+  end
+
+  def SOAPMethod.derive_rpc_param_def(obj, name, *param)
+    if param.size == 1 and param[0].is_a?(Array)
+      return param[0]
+    end
+    if param.empty?
+      method = obj.method(name)
+      param_names = (1..method.arity.abs).collect { |i| "p#{i}" }
+    else
+      param_names = param
+    end
+    create_rpc_param_def(param_names)
+  end
+
+  def SOAPMethod.create_rpc_param_def(param_names)
     param_def = []
     param_names.each do |param_name|
       param_def.push([IN, param_name, nil])
@@ -133,7 +159,28 @@ class SOAPMethod < SOAPStruct
     param_def
   end
 
+  def SOAPMethod.create_doc_param_def(req_qnames, res_qnames)
+    req_qnames = [req_qnames] if req_qnames.is_a?(XSD::QName)
+    res_qnames = [res_qnames] if res_qnames.is_a?(XSD::QName)
+    param_def = []
+    req_qnames.each do |qname|
+      param_def << [IN, qname.name, [nil, qname.namespace, qname.name]]
+    end
+    res_qnames.each do |qname|
+      param_def << [OUT, qname.name, [nil, qname.namespace, qname.name]]
+    end
+    param_def
+  end
+
 private
+
+  def collect_params(*type)
+    names = []
+    @signature.each do |io_type, name, param_type|
+      names << name if type.include?(io_type)
+    end
+    names
+  end
 
   def init_param(param_def)
     param_def.each do |io_type, name, param_type|
@@ -148,12 +195,20 @@ private
         @signature.push([INOUT, name, param_type])
         @inoutparam_names.push(name)
       when RETVAL
-        if (@retval_name)
-          raise MethodDefinitionError.new('Duplicated retval')
+        if @retval_name
+          raise MethodDefinitionError.new('duplicated retval')
         end
         @retval_name = name
+        @retval_class_name = nil
+        if param_type
+          if param_type[0].is_a?(String)
+            @retval_class_name = Mapping.class_from_name(param_type[0])
+          else
+            @retval_class_name = param_type[0]
+          end
+        end
       else
-        raise MethodDefinitionError.new("Unknown type: #{ io_type }")
+        raise MethodDefinitionError.new("unknown type: #{io_type}")
       end
     end
   end
@@ -168,7 +223,7 @@ class SOAPMethodRequest < SOAPMethod
     param_value = []
     i = 0
     params.each do |param|
-      param_name = "p#{ i }"
+      param_name = "p#{i}"
       i += 1
       param_def << [IN, param_name, nil]
       param_value << [param_name, param]
@@ -186,9 +241,9 @@ class SOAPMethodRequest < SOAPMethod
   end
 
   def each
-    each_param_name(IN, INOUT) do |name|
+    input_params.each do |name|
       unless @inparam[name]
-        raise ParameterError.new("Parameter: #{ name } was not given.")
+        raise ParameterError.new("parameter: #{name} was not given")
       end
       yield(name, @inparam[name])
     end
@@ -200,10 +255,10 @@ class SOAPMethodRequest < SOAPMethod
     req
   end
 
-  def create_method_response
-    SOAPMethodResponse.new(
-      XSD::QName.new(@elename.namespace, @elename.name + 'Response'),
-      @param_def)
+  def create_method_response(response_name = nil)
+    response_name ||=
+      XSD::QName.new(@elename.namespace, @elename.name + 'Response')
+    SOAPMethodResponse.new(response_name, @param_def)
   end
 
 private
@@ -211,7 +266,7 @@ private
   def check_elename(qname)
     # NCName & ruby's method name
     unless /\A[\w_][\w\d_\-]*\z/ =~ qname.name
-      raise MethodDefinitionError.new("Element name '#{qname.name}' not allowed")
+      raise MethodDefinitionError.new("element name '#{qname.name}' not allowed")
     end
   end
 end
@@ -236,11 +291,11 @@ class SOAPMethodResponse < SOAPMethod
       yield(@retval_name, @retval)
     end
 
-    each_param_name(OUT, INOUT) do |param_name|
-      unless @outparam[param_name]
-        raise ParameterError.new("Parameter: #{ param_name } was not given.")
+    output_params.each do |name|
+      unless @outparam[name]
+        raise ParameterError.new("parameter: #{name} was not given")
       end
-      yield(param_name, @outparam[param_name])
+      yield(name, @outparam[name])
     end
   end
 end

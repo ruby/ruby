@@ -1,5 +1,5 @@
 # SOAP4R - Ruby type mapping factory.
-# Copyright (C) 2000, 2001, 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2000-2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -168,7 +168,7 @@ class RubytypeFactory < Factory
         return nil
       end
       if obj.to_s[0] == ?#
-        raise TypeError.new("can't dump anonymous class #{ obj }")
+        raise TypeError.new("can't dump anonymous class #{obj}")
       end
       param = SOAPStruct.new(TYPE_CLASS)
       mark_marshalled_obj(obj, param)
@@ -179,7 +179,7 @@ class RubytypeFactory < Factory
         return nil
       end
       if obj.to_s[0] == ?#
-        raise TypeError.new("can't dump anonymous module #{ obj }")
+        raise TypeError.new("can't dump anonymous module #{obj}")
       end
       param = SOAPStruct.new(TYPE_MODULE)
       mark_marshalled_obj(obj, param)
@@ -222,7 +222,12 @@ class RubytypeFactory < Factory
     when ::SOAP::Mapping::Object
       param = SOAPStruct.new(XSD::AnyTypeName)
       mark_marshalled_obj(obj, param)
-      addiv2soapattr(param, obj, map)
+      obj.__xmlele.each do |key, value|
+        param.add(key.name, Mapping._obj2soap(value, map))
+      end
+      obj.__xmlattr.each do |key, value|
+        param.extraattr[key] = value
+      end
     when ::Exception
       typestr = Mapping.name2elename(obj.class.to_s)
       param = SOAPStruct.new(XSD::QName.new(RubyTypeNamespace, typestr))
@@ -258,12 +263,12 @@ private
 
   def unknownobj2soap(soap_class, obj, info, map)
     if obj.class.name.empty?
-      raise TypeError.new("can't dump anonymous class #{ obj }")
+      raise TypeError.new("can't dump anonymous class #{obj}")
     end
     singleton_class = class << obj; self; end
     if !singleton_methods_true(obj).empty? or
 	!singleton_class.instance_variables.empty?
-      raise TypeError.new("singleton can't be dumped #{ obj }")
+      raise TypeError.new("singleton can't be dumped #{obj}")
     end
     if !(singleton_class.ancestors - obj.class.ancestors).empty?
       typestr = Mapping.name2elename(obj.class.to_s)
@@ -378,7 +383,11 @@ private
       obj = klass.new
       mark_unmarshalled_obj(node, obj)
       node.each do |name, value|
-        obj.__soap_set_property(name, Mapping._soap2obj(value, map))
+        obj.__add_xmlele_value(XSD::QName.new(nil, name),
+          Mapping._soap2obj(value, map))
+      end
+      unless node.extraattr.empty?
+        obj.instance_variable_set('@__xmlattr', node.extraattr)
       end
       return true, obj
     else
@@ -387,7 +396,12 @@ private
   end
 
   def unknowntype2obj(node, info, map)
-    if node.is_a?(SOAPStruct)
+    case node
+    when SOAPBasetype
+      return true, node.data
+    when SOAPArray
+      return @array_factory.soap2obj(Array, node, info, map)
+    when SOAPStruct
       obj = unknownstruct2obj(node, info, map)
       return true, obj if obj
       if !@allow_untyped_struct
@@ -406,6 +420,9 @@ private
     end
     typestr = Mapping.elename2name(node.type.name)
     klass = Mapping.class_from_name(typestr)
+    if klass.nil? and @allow_untyped_struct
+      klass = Mapping.class_from_name(typestr, true)    # lenient
+    end
     if klass.nil?
       return nil
     end
@@ -414,7 +431,13 @@ private
     end
     klass_type = Mapping.class2qname(klass)
     return nil unless node.type.match(klass_type)
-    obj = Mapping.create_empty_object(klass)
+    obj = nil
+    begin
+      obj = Mapping.create_empty_object(klass)
+    rescue
+      # type name "data" tries Data.new which raises TypeError
+      nil
+    end
     mark_unmarshalled_obj(node, obj)
     setiv2obj(obj, node, map)
     obj

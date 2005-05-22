@@ -101,8 +101,7 @@ private
 	"EncodingStyle '#{ soapbody.encodingstyle }' not supported.")
     end
     if soapbody.namespace
-      op_name = op_name.dup
-      op_name.namespace = soapbody.namespace
+      op_name = XSD::QName.new(soapbody.namespace, op_name.name)
     end
     if soapbody.parts
       target = soapbody.parts.split(/\s+/)
@@ -114,8 +113,7 @@ private
     end
 
     faultpart = nil
-    soapaction = parent.soapoperation.soapaction
-    OperationInfo.new(operation_style, op_name, optype_name, headerparts, bodyparts, faultpart, soapaction)
+    OperationInfo.new(operation_style, op_name, optype_name, headerparts, bodyparts, faultpart, parent.soapaction)
   end
 end
 

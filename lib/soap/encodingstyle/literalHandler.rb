@@ -1,5 +1,5 @@
 # SOAP4R - XML Literal EncodingStyle handler library
-# Copyright (C) 2001, 2003, 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2001, 2003-2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -29,11 +29,22 @@ class LiteralHandler < Handler
   def encode_data(generator, ns, qualified, data, parent)
     attrs = {}
     name = if qualified and data.elename.namespace
-        SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace)
+        SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace, '')
         ns.name(data.elename)
       else
         data.elename.name
       end
+    data.extraattr.each do |k, v|
+      if k.is_a?(XSD::QName)
+        if k.namespace
+          SOAPGenerator.assign_ns(attrs, ns, k.namespace)
+          k = ns.name(k)
+        else
+          k = k.name
+        end
+      end
+      attrs[k] = v
+    end
 
     case data
     when SOAPRawString
@@ -62,13 +73,14 @@ class LiteralHandler < Handler
         yield(child, true)
       end
     when SOAPElement
-      generator.encode_tag(name, attrs.update(data.extraattr))
+      generator.encode_tag(name, attrs)
       generator.encode_rawstring(data.text) if data.text
       data.each do |key, value|
 	yield(value, qualified)
       end
     else
-      raise EncodingStyleError.new("Unknown object:#{ data } in this encodingStyle.")
+      raise EncodingStyleError.new(
+        "unknown object:#{data} in this encodingStyle")
     end
   end
 
@@ -78,7 +90,8 @@ class LiteralHandler < Handler
       else
         data.elename.name
       end
-    cr = data.is_a?(SOAPElement) && !data.text
+    cr = (data.is_a?(SOAPCompoundtype) or
+      (data.is_a?(SOAPElement) and !data.text))
     generator.encode_tag_end(name, cr)
   end
 
@@ -128,7 +141,6 @@ class LiteralHandler < Handler
   end
 
   def decode_tag(ns, elename, attrs, parent)
-    # ToDo: check if @textbuf is empty...
     @textbuf = ''
     o = SOAPUnknown.new(self, elename, decode_attrs(ns, attrs))
     o.parent = parent
@@ -172,21 +184,19 @@ class LiteralHandler < Handler
   end
 
   def decode_parent(parent, node)
+    return unless parent.node
     case parent.node
     when SOAPUnknown
       newparent = parent.node.as_element
       node.parent = newparent
       parent.replace_node(newparent)
       decode_parent(parent, node)
-
     when SOAPElement
       parent.node.add(node)
       node.parent = parent.node
-
     when SOAPStruct
       parent.node.add(node.elename.name, node)
       node.parent = parent.node
-
     when SOAPArray
       if node.position
 	parent.node[*(decode_arypos(node.position))] = node
@@ -195,13 +205,8 @@ class LiteralHandler < Handler
 	parent.node.add(node)
       end
       node.parent = parent.node
-
-    when SOAPBasetype
-      raise EncodingStyleError.new("SOAP base type must not have a child.")
-
     else
-      # SOAPUnknown does not have parent.
-      raise EncodingStyleError.new("Illegal parent: #{ parent }.")
+      raise EncodingStyleError.new("illegal parent: #{parent.node}")
     end
   end
 

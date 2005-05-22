@@ -1,5 +1,5 @@
 # WSDL4R - WSDL additional definitions for SOAP.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002-2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -77,13 +77,13 @@ class Definitions < Info
 
   def collect_faulttypes
     result = []
-    collect_fault_messages.each do |message|
-      parts = message(message).parts
-      if parts.size != 1
-	raise RuntimeError.new("Expecting fault message to have only 1 part.")
+    collect_fault_messages.each do |name|
+      faultparts = message(name).parts
+      if faultparts.size != 1
+	raise RuntimeError.new("expecting fault message to have only 1 part")
       end
-      if result.index(parts[0].type).nil?
-	result << parts[0].type
+      if result.index(faultparts[0].type).nil?
+	result << faultparts[0].type
       end
     end
     result
@@ -111,13 +111,13 @@ private
       if op_bind_rpc?(op_bind)
 	operation = op_bind.find_operation
 	if op_bind.input
-	  type = XMLSchema::ComplexType.new(operation_input_name(operation))
+	  type = XMLSchema::ComplexType.new(op_bind.soapoperation_name)
 	  message = messages[operation.input.message]
 	  type.sequence_elements = elements_from_message(message)
 	  types << type
 	end
 	if op_bind.output
-	  type = XMLSchema::ComplexType.new(operation_output_name(operation))
+	  type = XMLSchema::ComplexType.new(operation.outputname)
 	  message = messages[operation.output.message]
 	  type.sequence_elements = elements_from_message(message)
 	  types << type
@@ -127,23 +127,20 @@ private
     types
   end
 
-  def operation_input_name(operation)
-    operation.input.name || operation.name
-  end
-
-  def operation_output_name(operation)
-    operation.output.name ||
-      XSD::QName.new(operation.name.namespace, operation.name.name + "Response")
-  end
-
   def op_bind_rpc?(op_bind)
-    op_bind.soapoperation and op_bind.soapoperation.operation_style == :rpc
+    op_bind.soapoperation_style == :rpc
   end
 
   def elements_from_message(message)
     message.parts.collect { |part|
-      qname = XSD::QName.new(nil, part.name)
-      XMLSchema::Element.new(qname, part.type)
+      if part.element
+        collect_elements[part.element]
+      elsif part.name.nil? or part.type.nil?
+	raise RuntimeError.new("part of a message must be an element or typed")
+      else
+        qname = XSD::QName.new(nil, part.name)
+        XMLSchema::Element.new(qname, part.type)
+      end
     }
   end
 end

@@ -27,6 +27,10 @@ class Fault < Info
     @namespace = nil
   end
 
+  def targetnamespace
+    parent.targetnamespace
+  end
+
   def parse_element(element)
     nil
   end

@@ -45,8 +45,8 @@ end
 # Try to load XML processor.
 loaded = false
 [
-  'xsd/xmlparser/xmlscanner',
   'xsd/xmlparser/xmlparser',
+  'xsd/xmlparser/xmlscanner',
   'xsd/xmlparser/rexmlparser',
 ].each do |lib|
   begin

@@ -10,12 +10,12 @@
     <xsd:schema targetNamespace="urn:example.com:simpletype-rpc-type">
       <xsd:complexType name="version_struct">
 	<xsd:all>
-	  <xsd:element name="version" type="txd:versions" />
+	  <xsd:element name="myversion" type="txd:myversions" />
 	  <xsd:element name="msg" type="xsd:string" />
 	</xsd:all>
       </xsd:complexType>
 
-      <xsd:simpleType name="versions">
+      <xsd:simpleType name="myversions">
         <xsd:restriction base="xsd:string">
           <xsd:enumeration value="1.6"/>
           <xsd:enumeration value="1.8"/>
@@ -26,7 +26,7 @@
   </types>
 
   <message name="msg_version">
-    <part name="version" type="txd:versions"/>
+    <part name="myversion" type="txd:myversions"/>
   </message>
 
   <message name="msg_version_struct">

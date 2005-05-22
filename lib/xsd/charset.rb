@@ -71,7 +71,7 @@ public
   end
 
   def Charset.encoding=(encoding)
-    STDERR.puts("xsd charset is set to #{encoding}") if $DEBUG
+    warn("xsd charset is set to #{encoding}") if $DEBUG
     @encoding = encoding
   end
 

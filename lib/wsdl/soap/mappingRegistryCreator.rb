@@ -1,5 +1,5 @@
 # WSDL4R - Creating MappingRegistry code from WSDL.
-# Copyright (C) 2002, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2002, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -38,7 +38,7 @@ class MappingRegistryCreator
           end
 	end
       end
-    end
+   end
     return map
   end
 
@@ -51,8 +51,10 @@ private
         dump_struct_typemap(definedtype)
       when :TYPE_ARRAY
         dump_array_typemap(definedtype)
+      when :TYPE_MAP, :TYPE_EMPTY
+        nil
       else
-        raise NotImplementedError.new("Must not reach here.")
+        raise NotImplementedError.new("must not reach here")
       end
     end
   end
@@ -61,10 +63,10 @@ private
     ele = definedtype.name
     return <<__EOD__
 MappingRegistry.set(
-  #{ create_class_name(ele) },
+  #{create_class_name(ele)},
   ::SOAP::SOAPStruct,
   ::SOAP::Mapping::Registry::TypedStructFactory,
-  { :type => ::XSD::QName.new("#{ ele.namespace }", "#{ ele.name }") }
+  { :type => #{dqname(ele)} }
 )
 __EOD__
   end
@@ -76,10 +78,10 @@ __EOD__
     @types << type
     return <<__EOD__
 MappingRegistry.set(
-  #{ create_class_name(ele) },
+  #{create_class_name(ele)},
   ::SOAP::SOAPArray,
   ::SOAP::Mapping::Registry::TypedArrayFactory,
-  { :type => ::XSD::QName.new("#{ type.namespace }", "#{ type.name }") }
+  { :type => #{dqname(type)} }
 )
 __EOD__
   end

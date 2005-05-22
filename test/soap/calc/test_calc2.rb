@@ -17,13 +17,6 @@ class TestCalc2 < Test::Unit::TestCase
       Thread.current.abort_on_exception = true
       @server.start
     }
-    while @server.status != :Running
-      sleep 0.1
-      unless @t.alive?
-	@t.join
-	raise
-      end
-    end
     @endpoint = "http://localhost:#{Port}/"
     @var = SOAP::RPC::Driver.new(@endpoint, 'http://tempuri.org/calcService')
     @var.wiredump_dev = STDERR if $DEBUG
