@@ -1,3 +1,9 @@
+Sun May 22 12:30:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h, parse.y (ruby_pragma): removed.  fixed: [ruby-dev:26198]
+
+	* parse.y (parser_pragma): pragma name was ignored.
+
 Sun May 22 02:39:57 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (rm_r): new option :secure to avoid

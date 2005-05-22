@@ -5470,7 +5470,8 @@ parser_pragma(parser, str, len)
 	}
 	while (len > 0 && (*str == ';' || ISSPACE(*str))) --len, str++;
 
-	str_copy(name, beg, end - beg);
+	n = end - beg;
+	str_copy(name, beg, n);
 	rb_funcall(name, rb_intern("downcase!"), 0);
 	do {
 	    if (strncmp(p->name, RSTRING(name)->ptr, n) == 0) {
@@ -5482,14 +5483,6 @@ parser_pragma(parser, str, len)
     }
 
     return Qtrue;
-}
-
-int
-ruby_pragma(str, len)
-    const char *str;
-    int len;
-{
-    return parser_pragma(0, str, len);
 }
 
 static void
