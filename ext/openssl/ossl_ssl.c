@@ -44,6 +44,7 @@ VALUE cSSLSocket;
 #define ossl_sslctx_set_extra_cert(o,v)  rb_iv_set((o),"@extra_chain_cert",(v))
 #define ossl_sslctx_set_client_cert_cb(o,v) rb_iv_set((o),"@client_cert_cb",(v))
 #define ossl_sslctx_set_tmp_dh_cb(o,v)   rb_iv_set((o),"@tmp_dh_callback",(v))
+#define ossl_sslctx_set_sess_id_ctx(o, v) rb_iv_get((o),"@session_id_context"(v))
 
 #define ossl_sslctx_get_cert(o)          rb_iv_get((o),"@cert")
 #define ossl_sslctx_get_key(o)           rb_iv_get((o),"@key")
@@ -59,13 +60,13 @@ VALUE cSSLSocket;
 #define ossl_sslctx_get_extra_cert(o)    rb_iv_get((o),"@extra_chain_cert")
 #define ossl_sslctx_get_client_cert_cb(o) rb_iv_get((o),"@client_cert_cb")
 #define ossl_sslctx_get_tmp_dh_cb(o)     rb_iv_get((o),"@tmp_dh_callback")
+#define ossl_sslctx_get_sess_id_ctx(o)   rb_iv_get((o),"@session_id_context")
 
 static char *ossl_sslctx_attrs[] = {
     "cert", "key", "client_ca", "ca_file", "ca_path",
     "timeout", "verify_mode", "verify_depth",
     "verify_callback", "options", "cert_store", "extra_chain_cert",
-    "client_cert_cb",
-    "tmp_dh_callback",
+    "client_cert_cb", "tmp_dh_callback", "session_id_context",
 };
 
 #define ossl_ssl_get_io(o)           rb_iv_get((o),"@io")
@@ -389,6 +390,15 @@ ossl_sslctx_setup(VALUE self)
     val = ossl_sslctx_get_options(self);
     if(!NIL_P(val)) SSL_CTX_set_options(ctx, NUM2LONG(val));
     rb_obj_freeze(self);
+
+    val = ossl_sslctx_get_sess_id_ctx(self);
+    if (!NIL_P(val)){
+	StringValue(val);
+	if (!SSL_CTX_set_session_id_context(ctx, RSTRING(val)->ptr,
+					    RSTRING(val)->len)){
+	    ossl_raise(eSSLError, "SSL_CTX_set_session_id_context:");
+	}
+    }
 
     return Qtrue;
 }

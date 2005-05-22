@@ -1,3 +1,10 @@
+Sun May 22 19:11:35 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/openssl/ssl.rb (OpenSSL::SSL::SSLServer#intialize):
+	  should initialize session id context. [ruby-core:4663]
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_setup): add session id support.
+
 Sun May 22 12:30:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h, parse.y (ruby_pragma): removed.  fixed: [ruby-dev:26198]
