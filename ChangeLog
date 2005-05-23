@@ -1,3 +1,11 @@
+Tue May 24 00:39:14 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/soap/calc: method name 'set' was able to crash with a class Set.
+	  [ruby-dev:26210]
+
+	* test/wsdl/document/test_rpc.rb: dateTime comparison failed under
+	  TZ=right/Asia/Tokyo (with leap second.) [ruby-dev:26208]
+
 Mon May 23 16:23:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/extconf.rb: Framework support on MacOS X Tiger.
