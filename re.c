@@ -643,6 +643,7 @@ make_regexp(s, len, flags)
     if (err != NULL) {
 	re_free_pattern(rp);
 	rb_reg_raise(s, len, err, 0);
+	return 0;
     }
     return rp;
 }
