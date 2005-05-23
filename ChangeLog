@@ -1,3 +1,8 @@
+Tue May 24 06:45:31 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): string
+	  literals to be matched non-greedy.
+
 Tue May 24 00:39:14 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/soap/calc: method name 'set' was able to crash with a class Set.
