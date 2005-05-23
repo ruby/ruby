@@ -1,3 +1,8 @@
+Mon May 23 15:07:34 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/Makefile.sub ($(PROGRAM)): add dependency on $(LIBRUBY_SO).
+	  [experimental]
+
 Mon May 23 12:21:37 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (make_regexp): should not return junk address during
