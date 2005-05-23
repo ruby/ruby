@@ -3,13 +3,34 @@
 require 'mkmf'
 
 is_win32 = (/mswin32|mingw|cygwin|bccwin32/ =~ RUBY_PLATFORM)
-is_macosx = (/darwin/ =~ RUBY_PLATFORM)
+#is_macosx = (/darwin/ =~ RUBY_PLATFORM)
 
-mac_need_framework = 
-  is_macosx &&
-  enable_config("mac-tcltk-framework", false) &&
-  FileTest.directory?("/Library/Frameworks/Tcl.framework/") &&
-  FileTest.directory?("/Library/Frameworks/Tk.framework/")
+def find_framework(tcl_hdr, tk_hdr)
+  if framework_dir = with_config("tcltk-framework")
+    paths = [framework_dir]
+  else
+    unless tcl_hdr || tk_hdr ||
+        enable_config("tcltk-framework", false) ||
+        enable_config("mac-tcltk-framework", false)
+      return false
+    end
+    paths = ["/Library/Frameworks", "/System/Library/Frameworks"]
+  end
+
+  checking_for('Tcl/Tk Framework') {
+    paths.find{|dir|
+      dir.strip!
+      dir.chomp!('/')
+      (tcl_hdr || FileTest.directory?(dir + "/Tcl.framework/") ) &&
+        (tk_hdr || FileTest.directory?(dir + "/Tk.framework/") )
+    }
+  }
+end
+
+tcl_framework_header = with_config("tcl-framework-header")
+tk_framework_header  = with_config("tk-framework-header")
+
+tcltk_framework = find_framework(tcl_framework_header, tk_framework_header)
 
 unless is_win32
   have_library("nsl", "t_open")
@@ -79,10 +100,8 @@ def pthread_check()
   # Is tcl-thread given by user ?
   case enable_config("tcl-thread")
   when true
-    $CPPFLAGS += ' -DFORCE_TCL_THREAD=1'
     tcl_enable_thread = true
   when false
-    $CPPFLAGS += ' -DFORCE_TCL_THREAD=1'
     tcl_enable_thread = false
   else
     tcl_enable_thread = nil
@@ -155,7 +174,7 @@ def pthread_check()
 **   We cannot check the consistency of pthread support between Ruby 
 **   and Tcl/Tk library on your environment (do coss-compile?). If the 
 **   consistency is not kept, some memory troubles (e.g. "Hang-up" or 
-**   "Segmentation Fault") may bother you. We strongly recommend you to  
+**   "Segmentation Fault") may bother you. We strongly recommend you to 
 **   check the consistency by your own hand.
 **
 *****************************************************************************
@@ -251,7 +270,7 @@ EOF
   end
 end
 
-if mac_need_framework || 
+if tcltk_framework || 
    (have_header("tcl.h") && have_header("tk.h") &&
     (is_win32 || find_library("X11", "XOpenDisplay",
       "/usr/X11/lib", "/usr/lib/X11", "/usr/X11R6/lib", "/usr/openwin/lib")) &&
@@ -260,8 +279,19 @@ if mac_need_framework ||
   $CPPFLAGS += ' -DUSE_TCL_STUBS -DUSE_TK_STUBS' if stubs
   $CPPFLAGS += ' -D_WIN32' if /cygwin/ =~ RUBY_PLATFORM
 
-  if mac_need_framework
-    $CPPFLAGS += ' -I/Library/Frameworks/Tcl.framework/headers -I/Library/Frameworks/Tk.framework/Headers'
+  if tcltk_framework
+    if tcl_framework_header
+      $CPPFLAGS += " -I#{tcl_framework_header}"
+    else
+      $CPPFLAGS += " -I#{tcltk_framework}/Tcl.framework/Headers"
+    end
+
+    if tk_framework_header
+      $CPPFLAGS += " -I#{tk_framework_header}"
+    else
+      $CPPFLAGS += " -I#{tcltk_framework}/Tk.framework/Headers"
+    end
+
     $LDFLAGS += ' -framework Tk -framework Tcl'
   end
 

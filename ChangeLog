@@ -1,3 +1,9 @@
+Mon May 23 16:23:06 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: Framework support on MacOS X Tiger.
+
+	* ext/tk/README.tcltklib: add description of Framework support options.
+
 Mon May 23 15:07:34 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/Makefile.sub ($(PROGRAM)): add dependency on $(LIBRUBY_SO).
