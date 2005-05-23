@@ -20,8 +20,8 @@ class TestCalc2 < Test::Unit::TestCase
     @endpoint = "http://localhost:#{Port}/"
     @var = SOAP::RPC::Driver.new(@endpoint, 'http://tempuri.org/calcService')
     @var.wiredump_dev = STDERR if $DEBUG
-    @var.add_method('set', 'newValue')
-    @var.add_method('get')
+    @var.add_method('set_value', 'newValue')
+    @var.add_method('get_value')
     @var.add_method_as('+', 'add', 'rhs')
     @var.add_method_as('-', 'sub', 'rhs')
     @var.add_method_as('*', 'multi', 'rhs')
@@ -36,7 +36,7 @@ class TestCalc2 < Test::Unit::TestCase
   end
 
   def test_calc2
-    assert_equal(1, @var.set(1))
+    assert_equal(1, @var.set_value(1))
     assert_equal(3, @var + 2)
     assert_equal(-1.2, @var - 2.2)
     assert_equal(2.2, @var * 2.2)

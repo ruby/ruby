@@ -105,13 +105,26 @@ class TestRPC < Test::Unit::TestCase
     echo.xmlattr_attr_int = 5
     ret = @client.echo(echo)
 
-    timeformat = "%Y-%m-%dT%H:%M:%S.%s"
+    # struct#m_datetime in a response is a DateTime even though
+    # struct#m_datetime in a request is a Time.
     assert_equal("mystring2", ret.struct1.m_string)
-    assert_equal(now2.strftime(timeformat), ret.struct1.m_datetime.strftime(timeformat))
+    assert_equal(now2, date2time(ret.struct1.m_datetime))
     assert_equal("mystring1", ret.struct_2.m_string)
-    assert_equal(now1.strftime(timeformat), ret.struct_2.m_datetime.strftime(timeformat))
+    assert_equal(now1, date2time(ret.struct_2.m_datetime))
     assert_equal("attr_string", ret.xmlattr_attr_string)
     assert_equal(5, ret.xmlattr_attr_int)
+  end
+
+  def date2time(date)
+    if date.respond_to?(:to_time)
+      date.to_time
+    else
+      d = date.new_offset(0)
+      d.instance_eval {
+        Time.utc(year, mon, mday, hour, min, sec,
+          (sec_fraction * 86400000000).to_i)
+      }.getlocal
+    end
   end
 
   include ::SOAP
@@ -136,11 +149,11 @@ class TestRPC < Test::Unit::TestCase
     ret = @client.echo(echo)
     timeformat = "%Y-%m-%dT%H:%M:%S"
     assert_equal('mystring2', ret.struct1.m_string)
-    assert_equal('2005-03-17T19:47:32', ret.struct1.m_datetime.strftime(timeformat))
-    #p ret.struct1.class
-    #p ret.struct_2.class
+    assert_equal('2005-03-17T19:47:32',
+      ret.struct1.m_datetime.strftime(timeformat))
     assert_equal("mystring1", ret.struct_2.m_string)
-    assert_equal('2005-03-17T19:47:31', ret.struct_2.m_datetime.strftime(timeformat))
+    assert_equal('2005-03-17T19:47:31',
+      ret.struct_2.m_datetime.strftime(timeformat))
     assert_equal('attr_string', ret.xmlattr_attr_string)
     assert_equal(5, ret.xmlattr_attr_int)
 
@@ -149,9 +162,11 @@ class TestRPC < Test::Unit::TestCase
     ret = @client.echo(echo)
     timeformat = "%Y-%m-%dT%H:%M:%S"
     assert_equal('mystring2', ret.struct1.m_string)
-    assert_equal('2005-03-17T19:47:32', ret.struct1.m_datetime.strftime(timeformat))
+    assert_equal('2005-03-17T19:47:32',
+      ret.struct1.m_datetime.strftime(timeformat))
     assert_equal("mystring1", ret.struct_2.m_string)
-    assert_equal('2005-03-17T19:47:31', ret.struct_2.m_datetime.strftime(timeformat))
+    assert_equal('2005-03-17T19:47:31',
+      ret.struct_2.m_datetime.strftime(timeformat))
   end
 end
 

@@ -3,11 +3,11 @@ class CalcService2
     @value = value
   end
 
-  def set(value)
+  def set_value(value)
     @value = value
   end
 
-  def get
+  def get_value
     @value
   end
 
