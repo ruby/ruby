@@ -651,16 +651,17 @@ make_regexp(s, len, flags, ce)
                         onigenc_get_default_encoding(),
                         OnigDefaultSyntax);
     if (r) {
-	onig_error_code_to_str((UChar* )err, r);
+	onig_error_code_to_str((UChar*)err, r);
 	rb_reg_raise(s, len, err, 0, ce);
     }
 
-    r = onig_compile(rp, (UChar* )s, (UChar* )(s + len), &einfo);
+    r = onig_compile(rp, (UChar*)s, (UChar*)(s + len), &einfo);
 
     if (r != 0) {
 	onig_free(rp);
-	(void )onig_error_code_to_str((UChar* )err, r, &einfo);
+	(void )onig_error_code_to_str((UChar*)err, r, &einfo);
 	rb_reg_raise(s, len, err, 0, ce);
+	return 0;
     }
     return rp;
 }
@@ -871,13 +872,13 @@ rb_reg_prepare_re(re)
 	    kcode_set_option(re);
 	rb_reg_check(re);
 	reg = RREGEXP(re)->ptr;
-	pattern = ((UChar* )RREGEXP(re)->str);
+	pattern = ((UChar*)RREGEXP(re)->str);
 	r = onig_recompile(reg, pattern, pattern + RREGEXP(re)->len,
 			   reg->options, onigenc_get_default_encoding(),
 			   OnigDefaultSyntax, &einfo);
 
 	if (r != 0) {
-	     (void )onig_error_code_to_str((UChar* )err, r, &einfo);
+	     (void )onig_error_code_to_str((UChar*)err, r, &einfo);
 	     rb_reg_raise(pattern, RREGEXP(re)->len, err, re, Qfalse);
 	}
     }
@@ -910,7 +911,7 @@ rb_reg_adjust_startpos(re, str, pos, reverse)
     enc = (RREGEXP(re)->ptr)->enc;
 
     if (pos > 0 && ONIGENC_MBC_MAXLEN(enc) != 1 && pos < RSTRING(str)->len) {
-	 string = (UChar* )RSTRING(str)->ptr;
+	 string = (UChar*)RSTRING(str)->ptr;
 
 	 if (range > 0) {
 	      p = onigenc_get_right_adjust_char_head(enc, string, string + pos);
@@ -955,10 +956,10 @@ rb_reg_search(re, str, pos, reverse)
     }
 
     result = onig_search(RREGEXP(re)->ptr,
-			 (UChar* )(RSTRING(str)->ptr),
-			 ((UChar* )(RSTRING(str)->ptr) + RSTRING(str)->len),
-			 ((UChar* )(RSTRING(str)->ptr) + pos),
-			 ((UChar* )(RSTRING(str)->ptr) + pos + range),
+			 (UChar*)(RSTRING(str)->ptr),
+			 ((UChar*)(RSTRING(str)->ptr) + RSTRING(str)->len),
+			 ((UChar*)(RSTRING(str)->ptr) + pos),
+			 ((UChar*)(RSTRING(str)->ptr) + pos + range),
 			 &regs, ONIG_OPTION_NONE);
 
     if (FL_TEST(re, KCODE_FIXED))
@@ -971,7 +972,7 @@ rb_reg_search(re, str, pos, reverse)
 	}
 	else {
 	    char err[ONIG_MAX_ERROR_MESSAGE_LEN];
-	    onig_error_code_to_str((UChar* )err, result);
+	    onig_error_code_to_str((UChar*)err, result);
 	    rb_reg_raise(RREGEXP(re)->str, RREGEXP(re)->len, err, 0, Qfalse);
 	}
     }
@@ -2315,7 +2316,7 @@ Init_Regexp()
 {
     rb_eRegexpError = rb_define_class("RegexpError", rb_eStandardError);
 
-    onigenc_set_default_caseconv_table((UChar* )casetable);
+    onigenc_set_default_caseconv_table((UChar*)casetable);
 #if DEFAULT_KCODE == KCODE_EUC
     onigenc_set_default_encoding(ONIG_ENCODING_EUC_JP);
 #else

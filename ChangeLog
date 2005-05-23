@@ -1,3 +1,8 @@
+Mon May 23 12:21:37 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* re.c (make_regexp): should not return junk address during
+	  compile time.  [ruby-dev:26206]
+
 Sun May 22 21:54:06 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/{soap,wsdl,xsd}, test/{soap,wsdl,xsd}: imported soap4r/1.5.4.
