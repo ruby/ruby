@@ -999,7 +999,7 @@ balanced expression is found."
 	  ("\\(#\\)[{$@]" 1 (1 . nil))
 	  ;; the last $', $", $` in the respective string is not variable
 	  ;; the last ?', ?", ?` in the respective string is not ascii code
-	  ("\\(^\\|[\[ \t\n<+\(,=]\\)\\(['\"`]\\)\\(\\\\.\\|\\2\\|[^'\"`\n\\\\]\\)*\\\\?[?$]\\(\\2\\)"
+	  ("\\(^\\|[\[ \t\n<+\(,=]\\)\\(['\"`]\\)\\(\\\\.\\|\\2\\|[^'\"`\n\\\\]\\)*?\\\\?[?$]\\(\\2\\)"
 	   (2 (7 . nil))
 	   (4 (7 . nil)))
 	  ;; $' $" $` .... are variables
