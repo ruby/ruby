@@ -1,3 +1,9 @@
+Mon May 23 16:24:05 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/extconf.rb: Framework support on MacOS X Tiger.
+
+	* ext/tcltklib/README.1st: add description of Framework support options.
+
 Mon May 23 12:21:37 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (make_regexp): should not return junk address during
