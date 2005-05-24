@@ -3,7 +3,7 @@ begin
 rescue LoadError
 end
 
-if defined?(Readline)
+if defined?(Readline) && !/EditLine/n.match(Readline::VERSION)
 
 require "test/unit"
 require "tempfile"

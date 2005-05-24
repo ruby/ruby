@@ -1,3 +1,8 @@
+Tue May 24 17:45:59 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/readline/test_readline.rb: do not test libedit.
+	  fixed: [ruby-dev:26217]
+
 Tue May 24 06:45:31 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): string
