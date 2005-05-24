@@ -1,3 +1,8 @@
+Tue May 24 11:56:25 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/getopts.rb: should warn only if verbose mode.
+	  fixed: [ruby-dev:26201]
+
 Tue May 24 06:45:31 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-font-lock-syntactic-keywords): string
