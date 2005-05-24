@@ -2197,6 +2197,9 @@ fix_pow(x, y)
 	    return rb_big_pow(rb_int2big(a), y);
 	}
 	return rb_float_new(pow((double)a, (double)b));
+    } else if (TYPE(y) == T_FLOAT) {
+        long a = FIX2LONG(x);
+        return rb_float_new(pow((double)a, RFLOAT(y)->value));
     }
     return rb_num_coerce_bin(x, y);
 }

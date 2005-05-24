@@ -385,8 +385,11 @@ require_libraries()
     ruby_set_current_source();
     req_list_last = 0;
     while (list) {
+	int state;
+
 	ruby_current_node = 0;
-	rb_require(list->name);
+	rb_protect((VALUE (*)(VALUE))rb_require, (VALUE)list->name, &state);
+	if (state) rb_jump_tag(state);
 	tmp = list->next;
 	free(list->name);
 	free(list);

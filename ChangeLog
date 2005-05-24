@@ -1,3 +1,13 @@
+Tue May 24 23:42:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_pow): support Fixnum ** Float case directly
+	  without coercing.  [ruby-talk:142697] [ruby-talk:143054]
+
+Tue May 24 16:57:24 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.c (require_libraries): caused SEGV when continuation jumped
+	  in to the required library code.
+
 Tue May 24 17:45:59 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* test/readline/test_readline.rb: do not test libedit.
@@ -27,6 +37,7 @@ Mon May 23 15:07:34 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/Makefile.sub ($(PROGRAM)): add dependency on $(LIBRUBY_SO).
 	  [experimental]
 
+>>>>>>> 1.4263
 Mon May 23 12:21:37 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (make_regexp): should not return junk address during

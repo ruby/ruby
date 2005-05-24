@@ -255,6 +255,12 @@ class Context
 
   def debug_command(file, line, id, binding)
     MUTEX.lock
+    unless $debugger_restart
+      callcc{|c| $debugger_restart = c} 
+      at_exit {
+        $debugger_restart.call
+      }
+    end
     set_last_thread(Thread.current)
     frame_pos = 0
     binding_file = file
@@ -523,6 +529,9 @@ class Context
 
 	when /^\s*p\s+/
 	  stdout.printf "%s\n", debug_eval($', binding).inspect
+
+	when /^\s*r(?:estart)?$/
+          $debugger_restart.call
 
 	when /^\s*h(?:elp)?$/
 	  debug_print_help()
