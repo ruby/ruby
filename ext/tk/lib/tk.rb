@@ -1635,6 +1635,41 @@ module TkCore
   def tk_call_with_enc(*args)
     _tk_call_core(true, *args)
   end
+
+  def _tk_call_to_list_core(depth, arg_enc, val_enc, *args)
+    args = _conv_args([], arg_enc, *args)
+    val = _tk_call_core(false, *args)
+    if !depth.kind_of?(Integer) || depth == 0
+      tk_split_simplelist(val, false, val_enc)
+    else
+      tk_split_list(val, depth, false, val_enc)
+    end
+  end
+  #private :_tk_call_to_list_core
+
+  def tk_call_to_list(*args)
+    _tk_call_to_list_core(-1, nil, true, *args)
+  end
+
+  def tk_call_to_list_without_enc(*args)
+    _tk_call_to_list_core(-1, false, false, *args)
+  end
+
+  def tk_call_to_list_with_enc(*args)
+    _tk_call_to_list_core(-1, true, true, *args)
+  end
+
+  def tk_call_to_simplelist(*args)
+    _tk_call_to_list_core(0, nil, true, *args)
+  end
+
+  def tk_call_to_simplelist_without_enc(*args)
+    _tk_call_to_list_core(0, false, false, *args)
+  end
+
+  def tk_call_to_simplelist_with_enc(*args)
+    _tk_call_to_list_core(0, true, true, *args)
+  end
 end
 
 
@@ -3391,6 +3426,25 @@ class TkObject<TkKernel
   end
   # private :tk_send, :tk_send_without_enc, :tk_send_with_enc
 
+  def tk_send_to_list(cmd, *rest)
+    tk_call_to_list(path, cmd, *rest)
+  end
+  def tk_send_to_list_without_enc(cmd, *rest)
+    tk_call_to_list_without_enc(path, cmd, *rest)
+  end
+  def tk_send_to_list_with_enc(cmd, *rest)
+    tk_call_to_list_with_enc(path, cmd, *rest)
+  end
+  def tk_send_to_simplelist(cmd, *rest)
+    tk_call_to_simplelist(path, cmd, *rest)
+  end
+  def tk_send_to_simplelist_without_enc(cmd, *rest)
+    tk_call_to_simplelist_without_enc(path, cmd, *rest)
+  end
+  def tk_send_to_simplelist_with_enc(cmd, *rest)
+    tk_call_to_simplelist_with_enc(path, cmd, *rest)
+  end
+
   def method_missing(id, *args)
     name = id.id2name
     case args.length
@@ -4076,7 +4130,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-05-08'.freeze
+  RELEASE_DATE = '2005-05-26'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
