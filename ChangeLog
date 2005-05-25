@@ -1,3 +1,8 @@
+Wed May 25 12:59:48 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (OpenURI::Meta::RE_QUOTED_STRING): a content of
+	  quoted-string should be zero or more characters.
+
 Tue May 24 23:42:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_pow): support Fixnum ** Float case directly
