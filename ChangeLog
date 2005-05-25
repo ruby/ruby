@@ -1,3 +1,7 @@
+Thu May 26 06:08:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: add shortcut-methods of tk_call + tk_split_list
+
 Wed May 25 22:52:42 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/irb/input-method.rb: do not use Readline::HISTORY.pop.
