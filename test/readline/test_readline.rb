@@ -3,7 +3,7 @@ begin
 rescue LoadError
 end
 
-if defined?(Readline)
+if defined?(Readline) && !/EditLine/n.match(Readline::VERSION)
 
 require "test/unit"
 require "tempfile"
@@ -16,11 +16,15 @@ class TestReadline < Test::Unit::TestCase
       stdin.write("hello\n")
       stdin.close
       stdout.close
-      line = replace_stdio(stdin.path, stdout.path) { Readline.readline("> ") }
+      line = replace_stdio(stdin.path, stdout.path) {
+        Readline.readline("> ", true)
+      }
       assert_equal("hello", line)
       assert_equal(true, line.tainted?)
       stdout.open
       assert_equal("> ", stdout.read(2))
+      assert_equal(1, Readline::HISTORY.length)
+      assert_equal("hello", Readline::HISTORY[0])
       assert_raises(SecurityError) do
         Thread.start {
           $SAFE = 1
@@ -42,35 +46,34 @@ class TestReadline < Test::Unit::TestCase
   end
 
   def test_completion_append_character
-    Readline.completion_append_character = "x"
-    assert_equal("x", Readline.completion_append_character)
-    Readline.completion_append_character = "xyz"
-    assert_equal("x", Readline.completion_append_character)
-    Readline.completion_append_character = nil
-    assert_equal(nil, Readline.completion_append_character)
-    Readline.completion_append_character = ""
-    assert_equal(nil, Readline.completion_append_character)
+    begin
+      Readline.completion_append_character = "x"
+      assert_equal("x", Readline.completion_append_character)
+      Readline.completion_append_character = "xyz"
+      assert_equal("x", Readline.completion_append_character)
+      Readline.completion_append_character = nil
+      assert_equal(nil, Readline.completion_append_character)
+      Readline.completion_append_character = ""
+      assert_equal(nil, Readline.completion_append_character)
+    rescue NotImplementedError
+    end
   end
 
   private
 
   def replace_stdio(stdin_path, stdout_path)
-    open(stdin_path, "r"){|stdin|
-      open(stdout_path, "w"){|stdout|
-        orig_stdin = STDIN.dup
-        orig_stdout = STDOUT.dup
-        STDIN.reopen(stdin)
-        STDOUT.reopen(stdout)
-        begin
-          yield
-        ensure
-          STDIN.reopen(orig_stdin)
-          STDOUT.reopen(orig_stdout)
-          orig_stdin.close
-          orig_stdout.close
-        end
-      }
-    }
+    orig_stdin = STDIN.dup
+    orig_stdout = STDOUT.dup
+    STDIN.reopen(stdin_path, "r")
+    STDOUT.reopen(stdout_path, "w")
+    begin
+      yield
+    ensure
+      STDIN.reopen(orig_stdin)
+      STDOUT.reopen(orig_stdout)
+      orig_stdin.close
+      orig_stdout.close
+    end
   end
 end
 

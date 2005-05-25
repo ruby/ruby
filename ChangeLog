@@ -1,3 +1,11 @@
+Wed May 25 21:55:40 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/readline.c: supported libedit. (backported from HEAD)
+
+	* ext/readline/extconf.rb: ditto.
+
+	* test/readline/test_readline.rb: ditto.
+
 Wed May 25 20:06:27 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: TkComm#tk_split_*list fail to split a kind of SJIS
