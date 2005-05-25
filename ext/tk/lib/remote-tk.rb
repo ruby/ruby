@@ -70,7 +70,7 @@ class RemoteTkIp
     @interp = MultiTkIp.__getip
     @interp.allow_ruby_exit = false
     @appname = @interp._invoke('tk', 'appname')
-    @remote = remote_ip.dup.freeze
+    @remote = remote_ip.to_s.dup.freeze
     if displayof.kind_of?(TkWindow)
       @displayof = displayof.path.dup.freeze
     else
@@ -275,7 +275,8 @@ class RemoteTkIp
     else
       lst = @interp._invoke_without_enc('winfo', 'interps')
     end
-    unless @interp._split_tklist(lst).index(@remote)
+    # unless @interp._split_tklist(lst).index(@remote)
+    unless @interp._split_tklist(lst).index(_toUTF8(@remote))
       true
     else
       false

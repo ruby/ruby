@@ -107,8 +107,11 @@ class TkPanedWindow<TkWindow
       # win = win.epath if win.kind_of?(TkObject)
       win = _epath(win)
       if key
+        #conf = tk_split_list(tk_send_without_enc('paneconfigure', 
+        #                                         win, "-#{key}"))
         conf = tk_split_list(tk_send_without_enc('paneconfigure', 
-                                                 win, "-#{key}"))
+                                                 win, "-#{key}"), 
+                             false, true)
         conf[0] = conf[0][1..-1]
         if conf[0] == 'hide'
           conf[3] = bool(conf[3]) unless conf[3].empty?
@@ -116,9 +119,12 @@ class TkPanedWindow<TkWindow
         end
         conf
       else
-        tk_split_simplelist(tk_send_without_enc('paneconfigure', 
-                                                win)).collect{|conflist|
-          conf = tk_split_simplelist(conflist)
+        #tk_split_simplelist(tk_send_without_enc('paneconfigure', 
+        #                                        win)).collect{|conflist|
+        #  conf = tk_split_simplelist(conflist)
+        tk_split_simplelist(tk_send_without_enc('paneconfigure', win), 
+                            false, false).collect{|conflist|
+          conf = tk_split_simplelist(conflist, false, true)
           conf[0] = conf[0][1..-1]
           if conf[3]
             if conf[0] == 'hide'
@@ -146,8 +152,11 @@ class TkPanedWindow<TkWindow
       # win = win.epath if win.kind_of?(TkObject)
       win = _epath(win)
       if key
+        #conf = tk_split_list(tk_send_without_enc('paneconfigure', 
+        #                                         win, "-#{key}"))
         conf = tk_split_list(tk_send_without_enc('paneconfigure', 
-                                                 win, "-#{key}"))
+                                                 win, "-#{key}"), 
+                             false, true)
         key = conf.shift[1..-1]
         if key == 'hide'
           conf[2] = bool(conf[2]) unless conf[2].empty?
@@ -156,9 +165,12 @@ class TkPanedWindow<TkWindow
         { key => conf }
       else
         ret = {}
-        tk_split_simplelist(tk_send_without_enc('paneconfigure', 
-                                                win)).each{|conflist|
-          conf = tk_split_simplelist(conflist)
+        #tk_split_simplelist(tk_send_without_enc('paneconfigure', 
+        #                                        win)).each{|conflist|
+        #  conf = tk_split_simplelist(conflist)
+        tk_split_simplelist(tk_send_without_enc('paneconfigure', win), 
+                            false, false).each{|conflist|
+          conf = tk_split_simplelist(conflist, false, true)
           key = conf.shift[1..-1]
           if key
             if key == 'hide'

@@ -219,8 +219,12 @@ module TkComm
       val.gsub(/\\ /, ' ')
     when /[^\\] /
       if listobj
-        tk_split_escstr(val).collect{|elt|
-          tk_tcl2ruby(elt, enc_mode, listobj)
+        #tk_split_escstr(val).collect{|elt|
+        #  tk_tcl2ruby(elt, enc_mode, listobj)
+        #}
+        val = _toUTF8(val) unless enc_mode
+        tk_split_escstr(val, false, false).collect{|elt|
+          tk_tcl2ruby(elt, true, listobj)
         }
       elsif enc_mode
         _fromUTF8(val)
@@ -249,13 +253,20 @@ if USE_TCLs_LIST_FUNCTIONS
   # use Tcl function version of split_list
   ###########################################################################
 
-  def tk_split_escstr(str)
-    TkCore::INTERP._split_tklist(str)
+  def tk_split_escstr(str, src_enc=true, dst_enc=true)
+    str = _toUTF8(str) if src_enc
+    if dst_enc
+      TkCore::INTERP._split_tklist(str).map!{|s| _fromUTF8(s)}
+    else
+      TkCore::INTERP._split_tklist(str)
+    end
   end
 
-  def tk_split_sublist(str, depth=-1)
+  def tk_split_sublist(str, depth=-1, src_enc=true, dst_enc=true)
     # return [] if str == ""
     # list = TkCore::INTERP._split_tklist(str)
+    str = _toUTF8(str) if src_enc
+
     if depth == 0
       return "" if str == ""
       list = [str]
@@ -264,27 +275,35 @@ if USE_TCLs_LIST_FUNCTIONS
       list = TkCore::INTERP._split_tklist(str)
     end
     if list.size == 1
-      tk_tcl2ruby(list[0], nil, false)
+      # tk_tcl2ruby(list[0], nil, false)
+      tk_tcl2ruby(list[0], dst_enc, false)
     else
-      list.collect{|token| tk_split_sublist(token, depth - 1)}
+      list.collect{|token| tk_split_sublist(token, depth - 1, false, dst_enc)}
     end
   end
 
-  def tk_split_list(str, depth=0)
+  def tk_split_list(str, depth=0, src_enc=true, dst_enc=true)
     return [] if str == ""
-    TkCore::INTERP._split_tklist(str).collect{|token| 
-      tk_split_sublist(token, depth - 1)
+    str = _toUTF8(str) if src_enc
+    TkCore::INTERP._split_tklist(str).map!{|token|
+      tk_split_sublist(token, depth - 1, false, dst_enc)
     }
   end
 
-  def tk_split_simplelist(str)
+  def tk_split_simplelist(str, src_enc=true, dst_enc=true)
     #lst = TkCore::INTERP._split_tklist(str)
     #if (lst.size == 1 && lst =~ /^\{.*\}$/)
     #  TkCore::INTERP._split_tklist(str[1..-2])
     #else
     #  lst
     #end
-    TkCore::INTERP._split_tklist(str)
+
+    str = _toUTF8(str) if src_enc
+    if dst_enc
+      TkCore::INTERP._split_tklist(str).map!{|s| _fromUTF8(s)}
+    else
+      TkCore::INTERP._split_tklist(str)
+    end
   end
 
   def array2tk_list(ary, enc=nil)
@@ -310,7 +329,7 @@ else
   # use Ruby script version of split_list (traditional methods)
   ###########################################################################
 
-  def tk_split_escstr(str)
+  def tk_split_escstr(str, src_enc=true, dst_enc=true)
     return [] if str == ""
     list = []
     token = nil
@@ -331,7 +350,7 @@ else
     list
   end
 
-  def tk_split_sublist(str, depth=-1)
+  def tk_split_sublist(str, depth=-1, src_enc=true, dst_enc=true)
     #return [] if str == ""
     #return [tk_split_sublist(str[1..-2])] if str =~ /^\{.*\}$/
     #list = tk_split_escstr(str)
@@ -351,9 +370,11 @@ else
     end
   end
 
-  def tk_split_list(str, depth=0)
+  def tk_split_list(str, depth=0, src_enc=true, dst_enc=true)
     return [] if str == ""
-    tk_split_escstr(str).collect{|token| tk_split_sublist(token, depth - 1)}
+    tk_split_escstr(str).collect{|token| 
+      tk_split_sublist(token, depth - 1)
+    }
   end
 =begin
   def tk_split_list(str)
@@ -396,7 +417,7 @@ else
   end
 =end
 
-  def tk_split_simplelist(str)
+  def tk_split_simplelist(str, src_enc=true, dst_enc=true)
     return [] if str == ""
     list = []
     token = nil
@@ -528,11 +549,11 @@ end
   end
 =end
 
-  def list(val, depth=0)
-    tk_split_list(val, depth)
+  def list(val, depth=0, enc=true)
+    tk_split_list(val, depth, enc, enc)
   end
-  def simplelist(val)
-    tk_split_simplelist(val)
+  def simplelist(val, src_enc=true, dst_enc=true)
+    tk_split_simplelist(val, src_enc, dst_enc)
   end
   def window(val)
     if val =~ /^\./
@@ -1848,6 +1869,15 @@ module Tk
   end
 =end
 
+  def Tk.lower_window(win, below=None)
+    tk_call('lower', _epath(win), _epath(below))
+    nil
+  end
+  def Tk.raise_window(win, above=None)
+    tk_call('raise', _epath(win), _epath(above))
+    nil
+  end
+
   def Tk.current_grabs(win = nil)
     if win
       window(tk_call_without_enc('grab', 'current', win))
@@ -2750,7 +2780,8 @@ module TkConfigMethod
       if (slot && 
           slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
         fontkey  = $2
-        conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{fontkey}"))))
+        # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{fontkey}"))))
+        conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{fontkey}")), false, true)
         conf[__configinfo_struct[:key]] = 
           conf[__configinfo_struct[:key]][1..-1]
         if ( ! __configinfo_struct[:alias] \
@@ -2772,7 +2803,8 @@ module TkConfigMethod
             return [slot, '', '', '', self.__send__(method)]
 
           when /^(#{__numval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]])
@@ -2793,7 +2825,8 @@ module TkConfigMethod
             end
 
           when /^(#{__numstrval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]])
@@ -2806,7 +2839,8 @@ module TkConfigMethod
             end
 
           when /^(#{__boolval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]])
@@ -2827,7 +2861,8 @@ module TkConfigMethod
             end
 
           when /^(#{__listval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]])
@@ -2840,7 +2875,8 @@ module TkConfigMethod
             end
 
           when /^(#{__numlistval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]] \
@@ -2855,9 +2891,11 @@ module TkConfigMethod
             end
 
           when /^(#{__strval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
           else
-            conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_list(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), 0, false, true)
           end
           conf[__configinfo_struct[:key]] = 
             conf[__configinfo_struct[:key]][1..-1]
@@ -2872,8 +2910,10 @@ module TkConfigMethod
           conf
 
         else
-          ret = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__confinfo_cmd))).collect{|conflist|
-            conf = tk_split_simplelist(conflist)
+          # ret = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__confinfo_cmd))).collect{|conflist|
+          #  conf = tk_split_simplelist(conflist)
+          ret = tk_split_simplelist(tk_call_without_enc(*__confinfo_cmd), false, false).collect{|conflist|
+            conf = tk_split_simplelist(conflist, false, true)
             conf[__configinfo_struct[:key]] = 
               conf[__configinfo_struct[:key]][1..-1]
 
@@ -3008,7 +3048,8 @@ module TkConfigMethod
       if (slot && 
           slot.to_s =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
         fontkey  = $2
-        conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{fontkey}"))))
+        # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{fontkey}"))))
+        conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{fontkey}")), false, true)
         conf[__configinfo_struct[:key]] = 
           conf[__configinfo_struct[:key]][1..-1]
 
@@ -3035,7 +3076,8 @@ module TkConfigMethod
             return {slot => ['', '', '', self.__send__(method)]}
 
           when /^(#{__numval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]] )
@@ -3056,7 +3098,8 @@ module TkConfigMethod
             end
 
           when /^(#{__numstrval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]] )
@@ -3069,7 +3112,8 @@ module TkConfigMethod
             end
 
           when /^(#{__boolval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]] )
@@ -3090,7 +3134,8 @@ module TkConfigMethod
             end
 
           when /^(#{__listval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]] )
@@ -3103,7 +3148,8 @@ module TkConfigMethod
             end
 
           when /^(#{__numlistval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
 
             if ( __configinfo_struct[:default_value] \
                 && conf[__configinfo_struct[:default_value]] \
@@ -3118,9 +3164,11 @@ module TkConfigMethod
             end
 
           when /^(#{__strval_optkeys.join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
           else
-            conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            # conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
+            conf = tk_split_list(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), 0, false, true)
           end
           conf[__configinfo_struct[:key]] = 
             conf[__configinfo_struct[:key]][1..-1]
@@ -3138,8 +3186,10 @@ module TkConfigMethod
 
         else
           ret = {}
-          tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__confinfo_cmd))).each{|conflist|
-            conf = tk_split_simplelist(conflist)
+          # tk_split_simplelist(_fromUTF8(tk_call_without_enc(*__confinfo_cmd))).each{|conflist|
+          #  conf = tk_split_simplelist(conflist)
+          tk_split_simplelist(tk_call_without_enc(*__confinfo_cmd), false, false).each{|conflist|
+            conf = tk_split_simplelist(conflist, false, true)
             conf[__configinfo_struct[:key]] = 
               conf[__configinfo_struct[:key]][1..-1]
 
@@ -3862,12 +3912,14 @@ class TkWindow<TkObject
     tk_call 'lower', epath, below
     self
   end
+  alias lower_window lower
   def raise(above=None)
     #above = above.epath if above.kind_of?(TkObject)
     above = _epath(above)
     tk_call 'raise', epath, above
     self
   end
+  alias raise_window raise
 
   def command(cmd=nil, &b)
     if cmd

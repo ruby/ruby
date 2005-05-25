@@ -1,3 +1,13 @@
+2005-05-25  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/iwidgets/scrolledlistbox.rb: follow the change
+          of tk.rb. modify to attend encoding.
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb: bug fix on
+	  TkCanvas#delete when given non-TkcItem arguments. 
+
 2005-05-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/blt/winop.rb: fix typo
