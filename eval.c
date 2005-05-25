@@ -1283,7 +1283,7 @@ ruby_init()
 #ifdef __MACOS__
 	_macruby_init();
 #elif defined(__VMS)
-    _vmsruby_init();
+	_vmsruby_init();
 #endif
 	ruby_prog_init();
 	ALLOW_INTS;
