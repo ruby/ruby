@@ -682,8 +682,25 @@ module FileUtils
   #   FileUtils.rm_r '/', :force => true          #  :-)
   #
   # When :secure options is set, this method chmod(700) all directories
-  # under +list+[n] at first.  This option is required to avoid
-  # time-to-check-to-time-to-use security problem.  Default is :secure=>true.
+  # under +list+[n] at first.  This option is required to avoid TOCTTOU
+  # (time-of-check-to-time-of-use) security vulnarability.
+  # Default is :secure=>true.
+  #
+  # WARNING: You must ensure that *ALL* parent directories are not
+  # world writable.  Otherwise this option does not work.
+  #
+  # WARNING: Only the owner of the removing directory tree, or
+  # super user (root) should invoke this method.  Otherwise this
+  # option does not work.
+  #
+  # WARNING: Currently, this option does NOT affect Win32 systems.
+  #
+  # For details of this security vulnerability, see Perl's case:
+  #
+  #   http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
+  #   http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2004-0452
+  #
+  # For fileutils.rb, this vulnarability is reported in [ruby-dev:26100].
   # 
   def rm_r(list, options = {})
     fu_check_options options, :force, :noop, :verbose, :secure
@@ -702,10 +719,7 @@ module FileUtils
       if st.symlink?
         remove_file path, options[:force]
       elsif st.directory?
-        begin
-          fu_clear_permission path if options[:secure]
-        rescue
-        end
+        fu_fix_permission path if options[:secure]
         remove_dir path, options[:force]
       else
         remove_file path, options[:force]
@@ -715,23 +729,32 @@ module FileUtils
 
   OPT_TABLE['rm_r'] = %w( noop verbose force )
 
-  def fu_clear_permission(prefix)
+  # Ensure directories are not world writable.
+  def fu_fix_permission(prefix)   #:nodoc:
     fu_find([prefix]) do |path, lstat|
       if lstat.directory?
+        begin
+          File.chown Process.euid, nil, path
+        rescue Errno::EPERM
+        end
         begin
           File.chmod 0700, path
         rescue Errno::EPERM
         end
       end
     end
+  rescue
   end
-  private :fu_clear_permission
+  private :fu_fix_permission
 
   #
   # Options: noop verbose secure
   # 
   # Same as 
   #   #rm_r(list, :force => true)
+  #
+  # WARNING: This method may cause serious security problem.
+  # Read the documentation of #rm_r first.
   # 
   def rm_rf(list, options = {})
     fu_check_options options, :noop, :verbose, :secure
