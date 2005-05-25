@@ -243,7 +243,8 @@ module TkItemConfigMethod
     if TkComm::GET_CONFIGINFO_AS_ARRAY
       if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
-        conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
+        # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
+        conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}")), false, true)
         conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
           conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
         if ( ! __item_configinfo_struct(tagid(tagOrId))[:alias] \
@@ -265,7 +266,8 @@ module TkItemConfigMethod
             return [slot, '', '', '', self.__send__(method, tagOrId)]
 
           when /^(#{__item_numval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
@@ -286,7 +288,8 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_numstrval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
@@ -299,7 +302,8 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_boolval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
@@ -320,7 +324,8 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_listval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
@@ -333,7 +338,8 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_numlistval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] \
@@ -348,10 +354,12 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_strval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
           else
-            conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_list(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), 0, false, true)
           end
           conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
             conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
@@ -366,8 +374,10 @@ module TkItemConfigMethod
           conf
 
         else
-          ret = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)))))).collect{|conflist|
-            conf = tk_split_simplelist(conflist)
+          # ret = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)))))).collect{|conflist|
+          #   conf = tk_split_simplelist(conflist)
+          ret = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)))), false, false).collect{|conflist|
+            conf = tk_split_simplelist(conflist, false, true)
             conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
               conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
@@ -501,7 +511,8 @@ module TkItemConfigMethod
     else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
       if (slot && slot.to_s =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
         fontkey  = $2
-        conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
+        # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}"))))
+        conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{fontkey}")), false, true)
         conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
           conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
@@ -528,7 +539,8 @@ module TkItemConfigMethod
             return {slot => ['', '', '', self.__send__(method, tagOrId)]}
 
           when /^(#{__item_numval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
@@ -549,7 +561,8 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_numstrval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
@@ -562,7 +575,8 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_boolval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
@@ -583,7 +597,8 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_listval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
@@ -596,7 +611,8 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_numlistval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
             if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
                 && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] \
@@ -611,10 +627,12 @@ module TkItemConfigMethod
             end
 
           when /^(#{__item_strval_optkeys(tagid(tagOrId)).join('|')})$/
-            conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
 
           else
-            conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            # conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}"))))
+            conf = tk_split_list(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), 0, false, true)
           end
           conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
             conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
@@ -632,8 +650,10 @@ module TkItemConfigMethod
 
         else
           ret = {}
-          tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)))))).each{|conflist|
-            conf = tk_split_simplelist(conflist)
+          # tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)))))).each{|conflist|
+          #   conf = tk_split_simplelist(conflist)
+          tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)))), false, false).each{|conflist|
+            conf = tk_split_simplelist(conflist, false, true)
             conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
               conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 

@@ -1,3 +1,43 @@
+Wed May 25 20:06:27 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: TkComm#tk_split_*list fail to split a kind of SJIS
+	  strings. To avoid the trouble, add arguments to control converting
+	  encoding, and do split on a UTF8 string. 
+
+	* ext/tk/lib/multi-tk.rb: modify to attend encoding.
+
+	* ext/tk/lib/remote-tk.rb: ditto.
+
+	* ext/tk/lib/tk/itemconfig.rb: ditto.
+
+	* ext/tk/lib/tk/listbox.rb: ditto.
+
+	* ext/tk/lib/tk/namespace.rb: ditto.
+
+	* ext/tk/lib/tk/panedwindow.rb: ditto.
+
+	* ext/tk/lib/tk/text.rb: ditto.
+
+	* ext/tk/lib/tk/textmark.rb: ditto.
+
+	* ext/tk/lib/tk/texttag.rb: ditto.
+
+	* ext/tk/lib/tk/variable.rb: ditto.
+
+	* ext/tk/lib/tk/winfo.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledlistbox.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: ditto.
+
+	* ext/tk/lib/tk.rb: add TkWindow#lower_window/raise_window and
+	  Tk#lower_window/raise_window by reason of method-name conflict
+
+	* ext/tk/lib/tk/canvas.rb: bug fix on TkCanvas#delete when given
+	  non-TkcItem arguments. 
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb: ditto.
+
 Wed May 25 19:48:12 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (rm_r): does chown(2). [ruby-dev:26199]

@@ -197,7 +197,9 @@ class MultiTkIp
 
   def _destroy_slaves_of_slaveIP(ip)
     unless ip.deleted?
-      ip._split_tklist(ip._invoke('interp', 'slaves')).each{|name|
+      # ip._split_tklist(ip._invoke('interp', 'slaves')).each{|name|
+      ip._split_tklist(ip._invoke_without_enc('interp', 'slaves')).each{|name|
+        name = _fromUTF8(name)
         begin
           # ip._eval_without_enc("#{name} eval {foreach i [after info] {after cancel $i}}")
           after_ids = ip._eval_without_enc("#{name} eval {after info}")
@@ -2397,8 +2399,10 @@ class MultiTkIp
       num_or_str(@interp._invoke('interp', 'limit', _slavearg(slave), 
                                  limit_type, slot))
     else
-      l = @interp._split_tklist(@interp._invoke('interp', 'limit', 
-                                                _slavearg(slave), limit_type))
+      l = @interp._split_tklist(@interp._invoke_without_enc('interp', 'limit', 
+                                                            _slavearg(slave), 
+                                                            limit_type))
+      l.map!{|s| _fromUTF8(s)}
       r = {}
       until l.empty?
         key = l.shift[1..-1]

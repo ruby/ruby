@@ -163,7 +163,9 @@ class Tk::Iwidgets::Scrolledcanvas
   def delete(*args)
     if TkcItem::CItemID_TBL[self.path]
       find('withtag', *args).each{|item| 
-        TkcItem::CItemID_TBL[self.path].delete(item.id)
+        if item.kind_of?(TkcItem)
+          TkcItem::CItemID_TBL[self.path].delete(item.id)
+        end
       }
     end
     tk_send_without_enc('delete', *args.collect{|t| tagid(t)})

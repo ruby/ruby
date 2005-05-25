@@ -250,13 +250,15 @@ class TkText<TkTextWin
   end
 
   def tag_names(index=None)
-    tk_split_simplelist(_fromUTF8(tk_send_without_enc('tag', 'names', _get_eval_enc_str(index)))).collect{|elt|
+    #tk_split_simplelist(_fromUTF8(tk_send_without_enc('tag', 'names', _get_eval_enc_str(index)))).collect{|elt|
+    tk_split_simplelist(tk_send_without_enc('tag', 'names', _get_eval_enc_str(index)), false, true).collect{|elt|
       tagid2obj(elt)
     }
   end
 
   def mark_names
-    tk_split_simplelist(_fromUTF8(tk_send_without_enc('mark', 'names'))).collect{|elt|
+    #tk_split_simplelist(_fromUTF8(tk_send_without_enc('mark', 'names'))).collect{|elt|
+    tk_split_simplelist(tk_send_without_enc('mark', 'names'), false, true).collect{|elt|
       tagid2obj(elt)
     }
   end
@@ -328,15 +330,19 @@ class TkText<TkTextWin
       if slot
         case slot.to_s
         when 'text', 'label', 'show', 'data', 'file'
-          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+          #conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+          conf = tk_split_simplelist(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}"), false, true)
         else
-          conf = tk_split_list(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+          #conf = tk_split_list(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+          conf = tk_split_list(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}"), 0, false, true)
         end
         conf[0] = conf[0][1..-1]
         conf
       else
-        tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)))).collect{|conflist|
-          conf = tk_split_simplelist(conflist)
+        # tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)))).collect{|conflist|
+        #  conf = tk_split_simplelist(conflist)
+        tk_split_simplelist(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)), false, false).collect{|conflist|
+          conf = tk_split_simplelist(conflist, false, true)
           conf[0] = conf[0][1..-1]
           case conf[0]
           when 'text', 'label', 'show', 'data', 'file'
@@ -364,16 +370,20 @@ class TkText<TkTextWin
       if slot
         case slot.to_s
         when 'text', 'label', 'show', 'data', 'file'
-          conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+          #conf = tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+          conf = tk_split_simplelist(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}"), false, true)
         else
-          conf = tk_split_list(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+          #conf = tk_split_list(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}")))
+          conf = tk_split_list(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index), "-#{slot}"), 0, false, true)
         end
         key = conf.shift[1..-1]
         { key => conf }
       else
         ret = {}
-        tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)))).each{|conflist|
-          conf = tk_split_simplelist(conflist)
+        #tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)))).each{|conflist|
+        #  conf = tk_split_simplelist(conflist)
+        tk_split_simplelist(tk_send_without_enc('image', 'configure', _get_eval_enc_str(index)), false, false).each{|conflist|
+          conf = tk_split_simplelist(conflist, false, true)
           key = conf.shift[1..-1]
           case key
           when 'text', 'label', 'show', 'data', 'file'
@@ -426,7 +436,8 @@ class TkText<TkTextWin
   end
 
   def image_names
-    tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'names'))).collect{|elt|
+    #tk_split_simplelist(_fromUTF8(tk_send_without_enc('image', 'names'))).collect{|elt|
+    tk_split_simplelist(tk_send_without_enc('image', 'names'), false, true).collect{|elt|
       tagid2obj(elt)
     }
   end
@@ -853,8 +864,11 @@ class TkText<TkTextWin
   end
 
   def tag_ranges(tag)
+    #l = tk_split_simplelist(tk_send_without_enc('tag', 'ranges',
+    #                                            _get_eval_enc_str(tag)))
     l = tk_split_simplelist(tk_send_without_enc('tag', 'ranges',
-                                                _get_eval_enc_str(tag)))
+                                                _get_eval_enc_str(tag)), 
+                            false, true)
     r = []
     while key=l.shift
       r.push [TkText::IndexString.new(key), TkText::IndexString.new(l.shift)]
@@ -1065,7 +1079,8 @@ class TkText<TkTextWin
 =end
 
   def window_names
-    tk_split_simplelist(_fromUTF8(tk_send_without_enc('window', 'names'))).collect{|elt|
+    # tk_split_simplelist(_fromUTF8(tk_send_without_enc('window', 'names'))).collect{|elt|
+    tk_split_simplelist(tk_send_without_enc('window', 'names'), false, true).collect{|elt|
       tagid2obj(elt)
     }
   end

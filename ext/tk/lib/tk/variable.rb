@@ -412,7 +412,9 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     end
     #tk_split_simplelist(INTERP._eval("global #{@id}; array get #{@id}"))
     INTERP._invoke_without_enc('global', @id)
-    tk_split_simplelist(INTERP._fromUTF8(INTERP._invoke_without_enc('array', 'names', @id)))
+    #tk_split_simplelist(INTERP._fromUTF8(INTERP._invoke_without_enc('array', 'names', @id)))
+    tk_split_simplelist(INTERP._invoke_without_enc('array', 'names', @id), 
+                        false, true)
   end
 
   def size
