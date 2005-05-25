@@ -1,3 +1,8 @@
+Wed May 25 12:59:48 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (OpenURI::Meta::RE_QUOTED_STRING): a content of 
+	  quoted-string should be zero or more characters.
+
 Tue May 24 23:42:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* numeric.c (fix_pow): support Fixnum ** Float case directly
@@ -37,7 +42,6 @@ Mon May 23 15:07:34 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/Makefile.sub ($(PROGRAM)): add dependency on $(LIBRUBY_SO).
 	  [experimental]
 
->>>>>>> 1.4263
 Mon May 23 12:21:37 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* re.c (make_regexp): should not return junk address during
