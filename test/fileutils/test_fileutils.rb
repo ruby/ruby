@@ -23,30 +23,38 @@ def have_file_perm?
   /djgpp|mswin|mingw|bcc|wince|emx/ !~ RUBY_PLATFORM
 end
 
-begin
-  File.symlink 'not_exist', 'symlink_test'
-  HAVE_SYMLINK = true
-rescue NotImplementedError
-  HAVE_SYMLINK = false
-ensure
-  File.unlink 'symlink_test' if File.symlink?('symlink_test')
-end
+$fileutils_rb_have_symlink = nil
+
 def have_symlink?
-  HAVE_SYMLINK
+  if $fileutils_rb_have_symlink == nil
+    $fileutils_rb_have_symlink = check_have_symlink?
+  end
+  $fileutils_rb_have_symlink
 end
 
-begin
-  File.open('linktmp', 'w') {|f| f.puts 'dummy' }
-  File.link 'linktmp', 'linktest'
-  HAVE_HARDLINK = true
-rescue NotImplementedError, SystemCallError
-  HAVE_HARDLINK = false
-ensure
-  File.unlink 'linktest' if File.exist?('linktest')
-  File.unlink 'linktmp' if File.exist?('linktmp')
+def check_have_symlink?
+  File.symlink nil, nil
+rescue NotImplementedError
+  return false
+rescue
+  return true
 end
+
+$fileutils_rb_have_hardlink = nil
+
 def have_hardlink?
-  HAVE_HARDLINK
+  if $fileutils_rb_have_hardlink == nil
+    $fileutils_rb_have_hardlink = check_have_hardlink?
+  end
+  $fileutils_rb_have_hardlink
+end
+
+def check_have_hardlink?
+  File.link nil, nil
+rescue NotImplementedError
+  return false
+rescue
+  return true
 end
 
 begin
@@ -260,8 +268,8 @@ end
     assert_same_file 'tmp/cpr_src/b', 'tmp/cpr_dest/b'
     assert_same_file 'tmp/cpr_src/c', 'tmp/cpr_dest/c'
     assert_directory 'tmp/cpr_dest/d'
-    rm_rf 'tmp/cpr_src'
-    rm_rf 'tmp/cpr_dest'
+    my_rm_rf 'tmp/cpr_src'
+    my_rm_rf 'tmp/cpr_dest'
 
 if have_symlink?
     # symlink in a directory
@@ -275,7 +283,8 @@ if have_symlink?
     ln_s 'cpr_src', 'tmp/cpr_src2'
     cp_r 'tmp/cpr_src2', 'tmp/cpr_dest2'
     assert_directory 'tmp/cpr_dest2'
-    assert_not_symlink 'tmp/cpr_dest2'
+    #assert_not_symlink 'tmp/cpr_dest2'
+    assert_symlink 'tmp/cpr_dest2'   # 2005-05-26: feature change
     assert_symlink 'tmp/cpr_dest2/symlink'
     assert_equal 'SLdest', File.readlink('tmp/cpr_dest2/symlink')
 end
@@ -633,14 +642,14 @@ end
       tmpdir/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a/a
       tmpdir/a/a
     )
-    rm_rf 'tmpdir'
+    my_rm_rf 'tmpdir'
     dirs.each do |d|
       mkdir_p d
       assert_directory d
       assert_file_not_exist "#{d}/a"
       assert_file_not_exist "#{d}/b"
       assert_file_not_exist "#{d}/c"
-      rm_rf 'tmpdir'
+      my_rm_rf 'tmpdir'
     end
     dirs.each do |d|
       mkdir_p d
@@ -733,7 +742,7 @@ end
       touch 'tmp/b'
       mkdir 'tmp/dest'
       install [Pathname.new('tmp/a'), Pathname.new('tmp/b')], 'tmp/dest'
-      rm_rf 'tmp/dest'
+      my_rm_rf 'tmp/dest'
       mkdir 'tmp/dest'
       install [Pathname.new('tmp/a'), Pathname.new('tmp/b')], Pathname.new('tmp/dest')
     }
@@ -783,7 +792,7 @@ end
     end
 
     # duck typing test  [ruby-dev:25369]
-    rm_rf 'tmp'
+    my_rm_rf 'tmp'
     Dir.mkdir 'tmp'
     each_srcdest do |srcpath, destpath|
       File.open(srcpath) {|src|
