@@ -1,3 +1,10 @@
+Thu May 26 08:29:19 2005  Akiyoshi, Masamichi  <akiyoshi@hp.com>
+
+	* vms/vmsruby_private.c, vms/vmsruby_private.h: private routines
+	  for VMS port are added.
+
+	* eval.c (ruby_init): change to call VMS private intialization routine.
+
 Thu May 26 07:39:07 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (rm_r): use lchown(2), not chown(2).
@@ -24,7 +31,7 @@ Wed May 25 20:06:27 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: TkComm#tk_split_*list fail to split a kind of SJIS
 	  strings. To avoid the trouble, add arguments to control converting
-	  encoding, and do split on a UTF8 string. 
+	  encoding, and do split on a UTF8 string.
 
 	* ext/tk/lib/multi-tk.rb: modify to attend encoding.
 
@@ -56,7 +63,7 @@ Wed May 25 20:06:27 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  Tk#lower_window/raise_window by reason of method-name conflict
 
 	* ext/tk/lib/tk/canvas.rb: bug fix on TkCanvas#delete when given
-	  non-TkcItem arguments. 
+	  non-TkcItem arguments.
 
 	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb: ditto.
 
@@ -66,7 +73,7 @@ Wed May 25 19:48:12 2005  Minero Aoki  <aamine@loveruby.net>
 
 Wed May 25 12:59:48 2005  Tanaka Akira  <akr@m17n.org>
 
-	* lib/open-uri.rb (OpenURI::Meta::RE_QUOTED_STRING): a content of 
+	* lib/open-uri.rb (OpenURI::Meta::RE_QUOTED_STRING): a content of
 	  quoted-string should be zero or more characters.
 
 Tue May 24 23:42:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>

@@ -88,6 +88,10 @@ char *strrchr _((const char*,const char));
 #include "macruby_private.h"
 #endif
 
+#ifdef __VMS
+#include "vmsruby_private.h"
+#endif
+
 #ifdef USE_CONTEXT
 typedef struct {
     ucontext_t context;
@@ -1315,6 +1319,8 @@ ruby_init()
 	rb_define_global_const("TOPLEVEL_BINDING", rb_f_binding(ruby_top_self));
 #ifdef __MACOS__
 	_macruby_init();
+#elif defined(__VMS)
+	_vmsruby_init();
 #endif
 	ruby_prog_init();
 	ALLOW_INTS;
