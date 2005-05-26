@@ -315,11 +315,11 @@ end
     # [ruby-talk:124368]
     mkdir 'tmp/tmpdir'
     mkdir_p 'tmp/dest2/tmpdir'
-    assert_raises(Errno::EISDIR) {
+    assert_raises(Errno::EEXIST) {
       mv 'tmp/tmpdir', 'tmp/dest2'
     }
     mkdir 'tmp/dest2/tmpdir/junk'
-    assert_raises(Errno::EISDIR) {
+    assert_raises(Errno::EEXIST) {
       mv 'tmp/tmpdir', 'tmp/dest2'
     }
 
@@ -748,17 +748,39 @@ end
     }
   end
 
+if have_file_perm?
   def test_chmod
-    # FIXME
+    touch 'tmp/a'
+    chmod 0700, 'tmp/a'
+    assert_equal 0700, File.stat('tmp/a').mode & 0777
+    chmod 0500, 'tmp/a'
+    assert_equal 0500, File.stat('tmp/a').mode & 0777
   end
 
+  def test_chmod_R
+    mkdir_p 'tmp/dir/dir'
+    touch %w( tmp/dir/file tmp/dir/dir/file )
+    chmod_R 0700, 'tmp/dir'
+    assert_equal 0700, File.stat('tmp/dir').mode & 0777
+    assert_equal 0700, File.stat('tmp/dir/file').mode & 0777
+    assert_equal 0700, File.stat('tmp/dir/dir').mode & 0777
+    assert_equal 0700, File.stat('tmp/dir/dir/file').mode & 0777
+    chmod_R 0500, 'tmp/dir'
+    assert_equal 0500, File.stat('tmp/dir').mode & 0777
+    assert_equal 0500, File.stat('tmp/dir/file').mode & 0777
+    assert_equal 0500, File.stat('tmp/dir/dir').mode & 0777
+    assert_equal 0500, File.stat('tmp/dir/dir/file').mode & 0777
+    chmod_R 0700, 'tmp/dir'   # to remove
+  end
+
+  # FIXME: How can I test this method?
   def test_chown
-    # FIXME
   end
 
+  # FIXME: How can I test this method?
   def test_chown_R
-    # FIXME
   end
+end
 
   def test_copy_entry
     each_srcdest do |srcpath, destpath|
@@ -767,9 +789,20 @@ end
       assert_equal File.stat(srcpath).ftype, File.stat(destpath).ftype
     end
 if have_symlink?
+    # root is a symlink
     File.symlink 'somewhere', 'tmp/symsrc'
     copy_entry 'tmp/symsrc', 'tmp/symdest'
-    assert_equal File.lstat('tmp/symsrc').ftype, File.lstat('tmp/symdest').ftype
+    assert_symlink 'tmp/symdest'
+    assert_equal 'somewhere', File.readlink('tmp/symdest')
+
+    # content is a symlink
+    mkdir 'tmp/dir'
+    File.symlink 'somewhere', 'tmp/dir/sym'
+    copy_entry 'tmp/dir', 'tmp/dirdest'
+    assert_directory 'tmp/dirdest'
+    assert_not_symlink 'tmp/dirdest'
+    assert_symlink 'tmp/dirdest/sym'
+    assert_equal 'somewhere', File.readlink('tmp/dirdest/sym')
 end
   end
 

@@ -1,3 +1,10 @@
+Thu May 26 20:31:21 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (remove_entry_secure): add documentation.
+
+	* lib/fileutils.rb (remove_entry_secure): should not invoke
+	  unlink(2) against a directory.
+
 Thu May 26 08:29:19 2005  Akiyoshi, Masamichi  <akiyoshi@hp.com>
 
 	* vms/vmsruby_private.c, vms/vmsruby_private.h: private routines

@@ -248,7 +248,6 @@ module FileUtils
     list = fu_list(list)
     fu_output_message "rmdir #{list.join ' '}" if options[:verbose]
     return if options[:noop]
-
     list.each do |dir|
       Dir.rmdir dir.sub(%r</\z>, '')
     end
@@ -259,7 +258,7 @@ module FileUtils
   #
   # Options: force noop verbose
   #
-  # <b><tt>ln( old, new, options = {} )</tt></b>
+  # <b><tt>ln(old, new, options = {})</tt></b>
   #
   # Creates a hard link +new+ which points to +old+.
   # If +new+ already exists and it is a directory, creates a symbolic link +new/old+.
@@ -269,20 +268,19 @@ module FileUtils
   #   FileUtils.ln 'gcc', 'cc', :verbose => true
   #   FileUtils.ln '/usr/bin/emacs21', '/usr/bin/emacs'
   # 
-  # <b><tt>ln( list, destdir, options = {} )</tt></b>
+  # <b><tt>ln(list, destdir, options = {})</tt></b>
   # 
   # Creates several hard links in a directory, with each one pointing to the
   # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
   # 
   #   include FileUtils
-  #   cd '/bin'
-  #   ln %w(cp mv mkdir), '/usr/bin'   # Now /usr/bin/cp and /bin/cp are linked.
+  #   cd '/sbin'
+  #   FileUtils.ln %w(cp mv mkdir), '/bin'   # Now /sbin/cp and /bin/cp are linked.
   # 
   def ln(src, dest, options = {})
     fu_check_options options, :force, :noop, :verbose
     fu_output_message "ln#{options[:force] ? ' -f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
-
     fu_each_src_dest0(src, dest) do |s,d|
       remove_file d, true if options[:force]
       File.link s, d
@@ -297,7 +295,7 @@ module FileUtils
   #
   # Options: force noop verbose
   #
-  # <b><tt>ln_s( old, new, options = {} )</tt></b>
+  # <b><tt>ln_s(old, new, options = {})</tt></b>
   # 
   # Creates a symbolic link +new+ which points to +old+.  If +new+ already
   # exists and it is a directory, creates a symbolic link +new/old+.  If +new+
@@ -307,7 +305,7 @@ module FileUtils
   #   FileUtils.ln_s '/usr/bin/ruby', '/usr/local/bin/ruby'
   #   FileUtils.ln_s 'verylongsourcefilename.c', 'c', :force => true
   # 
-  # <b><tt>ln_s( list, destdir, options = {} )</tt></b>
+  # <b><tt>ln_s(list, destdir, options = {})</tt></b>
   # 
   # Creates several symbolic links in a directory, with each one pointing to the
   # item in +list+.  If +destdir+ is not a directory, raises Errno::ENOTDIR.
@@ -320,7 +318,6 @@ module FileUtils
     fu_check_options options, :force, :noop, :verbose
     fu_output_message "ln -s#{options[:force] ? 'f' : ''} #{[src,dest].flatten.join ' '}" if options[:verbose]
     return if options[:noop]
-
     fu_each_src_dest0(src, dest) do |s,d|
       remove_file d, true if options[:force]
       File.symlink s, d
@@ -470,7 +467,7 @@ module FileUtils
       begin
         if destent.exist?
           if destent.directory?
-            raise Errno::EISDIR, dest
+            raise Errno::EEXIST, dest
           else
             destent.remove_file if rename_cannot_overwrite_file?
           end
@@ -551,20 +548,21 @@ module FileUtils
   #   FileUtils.rm_r Dir.glob('/tmp/*')
   #   FileUtils.rm_r '/', :force => true          #  :-)
   #
-  # SECURITY WARNING: This method causes local vulnerability
+  # WARNING: This method causes local vulnerability
   # if one of parent directories or removing directory tree are world
   # writable, and the current process has strong privilege such as Unix
-  # super user (root).  For secure removing, set :secure option to true.
-  # Default is :secure=>true.
+  # super user (root).  For secure removing, read the documentation of
+  # #remove_entry_secure, and set :secure option to true.
+  # Default is :secure=>false.
   #
   # NOTE: This method calls #remove_entry_secure if :secure option is set.
   # See also #remove_entry_secure.
   #
-  # NOTE: Currently, :secure option does not affect Win32 system.
+  # WARNING: Currently, :secure option does not affect Win32 system.
   # 
   def rm_r(list, options = {})
     fu_check_options options, :force, :noop, :verbose, :secure
-    options[:secure] = true unless options.key?(:secure)
+    # options[:secure] = true unless options.key?(:secure)
     list = fu_list(list)
     fu_output_message "rm -r#{options[:force] ? 'f' : ''} #{list.join ' '}" if options[:verbose]
     return if options[:noop]
@@ -586,7 +584,7 @@ module FileUtils
   #
   #   #rm_r(list, :force => true)
   #
-  # WARNING: This method causes security vulnerability.
+  # WARNING: This method causes local vulnerability.
   # Read the documentation of #rm_r first.
   # 
   def rm_rf(list, options = {})
@@ -602,18 +600,30 @@ module FileUtils
   OPT_TABLE['rmtree'] = %w( noop verbose secure )
 
   #
-  # This method removes a file system entry +path+.
-  # +path+ shall be a regular file, a directory, or something.
-  # If +path+ is a directory, remove it recursively.
-  # This method is required to avoid TOCTTOU (time-of-check-to-time-of-use)
-  # security vulnerability of #rm_r.
+  # This method removes a file system entry +path+.  +path+ shall be a
+  # regular file, a directory, or something.  If +path+ is a directory,
+  # remove it recursively.  This method is required to avoid TOCTTOU
+  # (time-of-check-to-time-of-use) local security vulnerability of #rm_r.
+  # #rm_r causes security hole when and only when:
   #
+  #   * Parent directory is world writable (including /tmp).
+  #   * Removing directory tree includes world writable directory.
+  #
+  # To avoid this security hole, this method applies special preprocess.
   # If +path+ is a directory, this method chown(2) and chmod(2) all
-  # removing directories.  This requires the current process must be
-  # a super user (root), or the owner of the removing whole directory tree.
+  # removing directories.  This requires the current process is the
+  # owner of the removing whole directory tree.
+  #
+  # When parent directory is /tmp (permission 1777), UNIX super user
+  # (root) can remove directory tree safely only on systems which
+  # lchown(2) clears S_ISUID (set-user-id) bit, such as Linux.
+  # Many systems do NOT clear S_ISUID bit, this method is insecure for
+  # cleaning /tmp.  Note that, if parent directory is not world writable,
+  # this method is secure for also super user.
   #
   # WARNING: You must ensure that *ALL* parent directories are not
   # world writable.  Otherwise this method does not work.
+  # Only exception is /tmp, permission 1777.
   #
   # WARNING: Only the owner of the removing directory tree, or
   # super user (root) should invoke this method.  Otherwise this
@@ -633,14 +643,17 @@ module FileUtils
   # For fileutils.rb, this vulnerability is reported in [ruby-dev:26100].
   #
   def remove_entry_secure(path, force = false)
-    fu_try_unlink path and return   # Remove non-directory files.
+    # for /tmp (perm=1777)
     if fu_have_symlink?
       File.lchown Process.euid, nil, path
     else
       File.chown Process.euid, nil, path
     end
     # ---- now lstat(2) becomes secure ----
-    fu_try_unlink path and return   # Ensure a file is a directory
+    unless File.lstat(path).directory?
+      File.unlink path
+      return
+    end
     root = Entry_.new(path)
     root.preorder_traverse do |ent|
       if ent.directory?
@@ -673,14 +686,6 @@ module FileUtils
   rescue
     return true
   end
-
-  def fu_try_unlink(path)   #:nodoc:
-    File.unlink path
-    return true
-  rescue Errno::EISDIR
-    return false
-  end
-  private :fu_try_unlink
 
   #
   # This method removes a file system entry +path+.
