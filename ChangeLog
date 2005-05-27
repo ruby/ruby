@@ -1,3 +1,9 @@
+Sat May 28 02:00:11 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line): 
+	  ENV["REQUEST_URI"] is better to get correct Request-URI
+	  than ENV["SCRIPT_NAME"] + ENV["PATH_INFO"].  [ruby-dev:26235]
+
 Fri May 27 16:32:04 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* lib/mkmf.rb: use the semicolon as the path separator

@@ -150,15 +150,17 @@ module WEBrick
         meth = @env["REQUEST_METHOD"] || "GET"
         url = (@env["SCRIPT_NAME"] || File.expand_path($0)).dup
         url << @env["PATH_INFO"].to_s
-        url = WEBrick::HTTPUtils.escape_path(url)
-        if query_string = @env["QUERY_STRING"]
-          unless query_string.empty?
-            url << "?" << query_string
+        unless url = @env["REQUEST_URI"]
+          url = WEBrick::HTTPUtils.escape_path(url)
+          if query_string = @env["QUERY_STRING"]
+            unless query_string.empty?
+              url << "?" << query_string
+            end
           end
         end
         # we cannot get real HTTP version of client ;)
         httpv = @config[:HTTPVersion]
-        "#{meth} #{url} HTTP/#{httpv}"
+        return "#{meth} #{url} HTTP/#{httpv}"
       end
   
       def setup_header
