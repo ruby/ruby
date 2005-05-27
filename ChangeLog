@@ -1,3 +1,8 @@
+Fri May 27 16:32:04 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* lib/mkmf.rb: use the semicolon as the path separator
+	  in the environment of MSYS.  fixed: [ruby-dev:26232]
+
 Thu May 26 20:31:21 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (remove_entry_secure): add documentation.
