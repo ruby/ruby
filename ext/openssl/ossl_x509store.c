@@ -358,7 +358,7 @@ static VALUE ossl_x509stctx_set_time(VALUE, VALUE);
 static VALUE
 ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
 {
-    VALUE store, cert, chain;
+    VALUE store, cert, chain, t;
     X509_STORE_CTX *ctx;
     X509_STORE *x509st;
     X509 *x509 = NULL;
@@ -380,7 +380,8 @@ ossl_x509stctx_initialize(int argc, VALUE *argv, VALUE self)
     ossl_x509stctx_set_purpose(self, rb_iv_get(store, "@purpose"));
     ossl_x509stctx_set_trust(self, rb_iv_get(store, "@trust"));
 #endif
-    ossl_x509stctx_set_time(self, rb_iv_get(store, "@time"));
+    if (!NIL_P(t = rb_iv_get(store, "@time")))
+	ossl_x509stctx_set_time(self, t);
     rb_iv_set(self, "@verify_callback", rb_iv_get(store, "@verify_callback"));
     rb_iv_set(self, "@cert", cert);
 
@@ -546,17 +547,11 @@ static VALUE
 ossl_x509stctx_set_time(VALUE self, VALUE time)
 {
     X509_STORE_CTX *store;
+    long t;
 
-    if(NIL_P(time)) {
-	GetX509StCtx(self, store);
-	store->flags &= ~X509_V_FLAG_USE_CHECK_TIME;
-    }
-    else {
-	long t = NUM2LONG(rb_Integer(time));
-
-	GetX509StCtx(self, store);
-	X509_STORE_CTX_set_time(store, 0, t);
-    }
+    t = NUM2LONG(rb_Integer(time));
+    GetX509StCtx(self, store);
+    X509_STORE_CTX_set_time(store, 0, t);
 
     return time;
 }
