@@ -16,6 +16,7 @@ class TestWEBrickCGI < Test::Unit::TestCase
     config = {
       :CGIInterpreter => EnvUtil.rubybin,
       :DocumentRoot => File.dirname(__FILE__),
+      :DirectoryIndex => ["webrick.cgi"],
     }
     TestWEBrick.start_httpserver(config){|server, addr, port|
       http = Net::HTTP.new(addr, port)
@@ -41,6 +42,12 @@ class TestWEBrickCGI < Test::Unit::TestCase
       req["Content-Type"] = "application/x-www-form-urlencoded"
       http.request(req, "a=1&a=2&b=x"){|res|
         assert_equal("a=1, a=2, b=x", res.body)}
+      req = Net::HTTP::Get.new("/")
+      http.request(req){|res|
+        ary = res.body.to_a
+        assert_match(%r{/$}, ary[0])
+        assert_match(%r{/webrick.cgi$}, ary[1])
+      }
     }
   end
 end

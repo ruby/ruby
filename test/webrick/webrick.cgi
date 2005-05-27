@@ -12,6 +12,10 @@ class TestApp < WEBrick::CGI
           "#{key}=#{v}"
         }.join(", ")
       }.join(", ")
+    elsif %r{/$} =~ req.request_uri.to_s
+      res.body = ""
+      res.body << req.request_uri.to_s  << "\n"
+      res.body << req.script_name
     else
       res.body = req.script_name
     end
