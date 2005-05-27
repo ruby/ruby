@@ -834,11 +834,15 @@ end
 def configuration(srcdir)
   mk = []
   vpath = %w[$(srcdir) $(topdir) $(hdrdir)]
-  if !CROSS_COMPILING && CONFIG['build_os'] == 'cygwin' && CONFIG['target_os'] != 'cygwin'
-    vpath.each {|p| p.sub!(/.*/, '$(shell cygpath -u \&)')}
-  end
-  if !CROSS_COMPILING && CONFIG['build_os'] == 'msdosdjgpp'
-    CONFIG['PATH_SEPARATOR'] = ';'
+  if !CROSS_COMPILING
+    case CONFIG['build_os']
+    when 'cygwin'
+      if CONFIG['target_os'] != 'cygwin'
+        vpath.each {|p| p.sub!(/.*/, '$(shell cygpath -u \&)')}
+      end
+    when 'msdosdjgpp', 'mingw32'
+      CONFIG['PATH_SEPARATOR'] = ';'
+    end
   end
   mk << %{
 SHELL = /bin/sh
