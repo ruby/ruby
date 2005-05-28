@@ -1,4 +1,9 @@
-Sat May 28 05:15:51 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Sat May 28 16:40:15 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* Sat/openssl/test_x509store.rb: add test for expired CRL 
+	  and refine some assertions.
+
+ May 28 05:15:51 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509store.c (ossl_x509stctx_set_time): should
 	  not set internal flag directry.
