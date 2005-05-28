@@ -1,3 +1,8 @@
+Sat May 28 16:39:21 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* test/openssl/test_x509store.rb: add test for expired CRL
+	  and refine some assertions.
+
 Sat May 28 05:15:44 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509store.c (ossl_x509stctx_set_time): should

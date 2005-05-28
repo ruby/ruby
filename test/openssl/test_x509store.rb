@@ -61,6 +61,9 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     revoke_info = [ [20, now, 1], ]
     crl2   = issue_crl(revoke_info, 1, now, now+1800, [],
                        ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
+    revoke_info = []
+    crl2_2 = issue_crl(revoke_info, 2, now-100, now-1, [],
+                       ca2_cert, @rsa1024, OpenSSL::Digest::SHA1.new)
 
     assert(true, ca1_cert.verify(ca1_cert.public_key))   # self signed
     assert(true, ca2_cert.verify(ca1_cert.public_key))   # issued by ca1
@@ -70,6 +73,7 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     assert(true, crl1.verify(ca1_cert.public_key))       # issued by ca1
     assert(true, crl1_2.verify(ca1_cert.public_key))     # issued by ca1
     assert(true, crl2.verify(ca2_cert.public_key))       # issued by ca2
+    assert(true, crl2_2.verify(ca2_cert.public_key))     # issued by ca2
 
     store = OpenSSL::X509::Store.new
     assert_equal(false, store.verify(ca1_cert))
@@ -107,8 +111,10 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     assert_equal(@ca2.to_der, chain[1].subject.to_der)
     assert_equal(@ca1.to_der, chain[2].subject.to_der)
     assert_equal(false, store.verify(ee3_cert))
+    assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
     assert_match(/expire/i, store.error_string)
     assert_equal(false, store.verify(ee4_cert))
+    assert_equal(OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID, store.error)
     assert_match(/not yet valid/i, store.error_string)
 
     store = OpenSSL::X509::Store.new
@@ -121,23 +127,23 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     store.time = now + 1900
     assert_equal(true, store.verify(ca1_cert))
     assert_equal(false, store.verify(ca2_cert))
-    assert_match(/expire/i, store.error_string)
+    assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
     assert_equal(false, store.verify(ee4_cert))
-    assert_match(/expire/i, store.error_string)
+    assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
     store.time = now + 4000
     assert_equal(false, store.verify(ee1_cert))
-    assert_match(/expire/i, store.error_string)
+    assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
     assert_equal(false, store.verify(ee4_cert))
-    assert_match(/expire/i, store.error_string)
+    assert_equal(OpenSSL::X509::V_ERR_CERT_HAS_EXPIRED, store.error)
 
     # the underlying X509 struct caches the result of the last
     # verification for signature and not-before. so the following code
     # rebuilds new objects to avoid site effect.
     store.time = Time.now - 4000
     assert_equal(false, store.verify(OpenSSL::X509::Certificate.new(ca2_cert)))
-    assert_match(/not yet valid/i, store.error_string)
+    assert_equal(OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID, store.error)
     assert_equal(false, store.verify(OpenSSL::X509::Certificate.new(ee1_cert)))
-    assert_match(/not yet valid/i, store.error_string)
+    assert_equal(OpenSSL::X509::V_ERR_CERT_NOT_YET_VALID, store.error)
 
     return unless defined?(OpenSSL::X509::V_FLAG_CRL_CHECK)
 
@@ -160,7 +166,8 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     store.add_crl(crl2)   # revoke ee2_cert
     assert_equal(true,  store.verify(ca1_cert))
     assert_equal(false, store.verify(ca2_cert))
-    assert_equal(true,  store.verify(ee1_cert, [ca2_cert]))
+    assert_equal(true,  store.verify(ee1_cert, [ca2_cert]),
+      "This test is expected to be success with OpenSSL 0.9.7c or later.")
     assert_equal(false, store.verify(ee2_cert, [ca2_cert]))
 
     store.flags =
@@ -169,6 +176,20 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     assert_equal(false, store.verify(ca2_cert))
     assert_equal(false, store.verify(ee1_cert, [ca2_cert]))
     assert_equal(false, store.verify(ee2_cert, [ca2_cert]))
+
+    store = OpenSSL::X509::Store.new
+    store.purpose = OpenSSL::X509::PURPOSE_ANY
+    store.flags =
+      OpenSSL::X509::V_FLAG_CRL_CHECK|OpenSSL::X509::V_FLAG_CRL_CHECK_ALL
+    store.add_cert(ca1_cert)
+    store.add_cert(ca2_cert)
+    store.add_crl(crl1)
+    store.add_crl(crl2_2) # issued by ca2 but expired.
+    assert_equal(true, store.verify(ca1_cert))
+    assert_equal(true, store.verify(ca2_cert))
+    assert_equal(false, store.verify(ee1_cert))
+    assert_equal(OpenSSL::X509::V_ERR_CRL_HAS_EXPIRED, store.error)
+    assert_equal(false, store.verify(ee2_cert))
   end
 end
 
