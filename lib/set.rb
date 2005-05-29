@@ -1060,6 +1060,8 @@ class TC_Set < Test::Unit::TestCase
 #    assert_equal(set2, set1)
     assert_equal(set2, set2.clone)
     assert_equal(set1.clone, set1)
+
+    assert_not_equal(Set[Exception.new,nil], Set[Exception.new,Exception.new], "[ruby-dev:26127]")
   end
 
   # def test_hash
