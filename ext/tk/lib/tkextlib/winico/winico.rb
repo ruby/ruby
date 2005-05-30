@@ -16,6 +16,11 @@ TkPackage.require('winico')
 
 module Tk
   class Winico < TkObject
+    PACKAGE_NAME = 'winico'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('winico')

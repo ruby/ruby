@@ -38,7 +38,11 @@ module Tk
       lib = ''
     end
     LIB_PATH = TkVarAccess.new('blt_libPath', lib)
-    
+
+    PACKAGE_NAME = 'BLT'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
 
     def self.package_version
       begin

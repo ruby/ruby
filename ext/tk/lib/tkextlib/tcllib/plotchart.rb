@@ -66,6 +66,11 @@ TkPackage.require('Plotchart')
 module Tk
   module Tcllib
     module Plotchart
+      PACKAGE_NAME = 'Plotchart'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('Plotchart')

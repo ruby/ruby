@@ -31,6 +31,11 @@ require 'tkextlib/tcllib.rb'
 module Tk
   module Tcllib
     module Autoscroll
+      PACKAGE_NAME = 'autoscroll'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('autoscroll')

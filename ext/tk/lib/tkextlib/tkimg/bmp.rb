@@ -16,6 +16,11 @@ TkPackage.require('img::bmp')
 module Tk
   module Img
     module BMP
+      PACKAGE_NAME = 'img::bmp'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('img::bmp')

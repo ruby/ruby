@@ -22,6 +22,11 @@ module Tk
     VERSION    = TkCore::INTERP._invoke("set", "::itcl::version").freeze
     PATCHLEVEL = TkCore::INTERP._invoke("set", "::itcl::patchLevel").freeze
 
+    PACKAGE_NAME = 'Itcl'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('Itcl')

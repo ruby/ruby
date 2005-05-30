@@ -20,6 +20,11 @@ module Tk
 
     LIBRARY = TkVarAccess.new('::itk::library')
 
+    PACKAGE_NAME = 'Itk'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('Itk')

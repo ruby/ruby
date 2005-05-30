@@ -16,6 +16,11 @@ TkPackage.require('img::sgi')
 module Tk
   module Img
     module SGI
+      PACKAGE_NAME = 'img::sgi'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('img::sgi')

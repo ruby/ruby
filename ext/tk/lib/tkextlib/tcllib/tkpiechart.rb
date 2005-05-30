@@ -21,6 +21,11 @@ module Tk
 end
 
 module Tk::Tcllib::Tkpiechart
+  PACKAGE_NAME = 'tkpiechart'.freeze
+  def self.package_name
+    PACKAGE_NAME
+  end
+
   def self.package_version
     begin
       TkPackage.require('tkpiechart')

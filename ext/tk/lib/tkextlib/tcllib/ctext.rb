@@ -16,6 +16,11 @@ TkPackage.require('ctext')
 module Tk
   module Tcllib
     class CText < TkText
+      PACKAGE_NAME = 'ctext'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('ctext')

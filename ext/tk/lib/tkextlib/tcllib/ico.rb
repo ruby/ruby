@@ -16,6 +16,11 @@ TkPackage.require('ico')
 module Tk
   module Tcllib
     class ICO < TkImage
+      PACKAGE_NAME = 'ico'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('ico')

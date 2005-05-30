@@ -14,6 +14,11 @@ TkPackage.require('tktrans') rescue Tk.load_tcllibrary('tktrans')
 
 module Tk
   module TkTrans
+    PACKAGE_NAME = 'tktrans'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('tktrans')

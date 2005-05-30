@@ -13,6 +13,11 @@ module TkWinDDE
 
   TkCommandNames = ['dde'.freeze].freeze
 
+  PACKAGE_NAME = 'dde'.freeze
+  def self.package_name
+    PACKAGE_NAME
+  end
+
   if self.const_defined? :FORCE_VERSION
     tk_call_without_enc('package', 'require', 'dde', FORCE_VERSION)
   else

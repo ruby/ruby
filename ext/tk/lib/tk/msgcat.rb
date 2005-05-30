@@ -23,6 +23,11 @@ class TkMsgCatalog < TkObject
 
   tk_call_without_enc('package', 'require', 'Tcl', '8.2')
 
+  PACKAGE_NAME = 'msgcat'.freeze
+  def self.package_name
+    PACKAGE_NAME
+  end
+
   if self.const_defined? :FORCE_VERSION
     tk_call_without_enc('package', 'require', 'msgcat', FORCE_VERSION)
   else

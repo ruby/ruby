@@ -1,3 +1,14 @@
+Mon May 30 23:48:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/macpkg.rb: add PACKAGE_NAME information of Tcl/Tk
+	  Extension.
+
+	* ext/tk/lib/tk/msgcat.rb: ditto.
+
+	* ext/tk/lib/tk/winpkg.rb: ditto.
+
+	* ext/tk/lib/tkextlib/*: ditto.
+
 Sat May 28 16:39:21 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/openssl/test_x509store.rb: add test for expired CRL
