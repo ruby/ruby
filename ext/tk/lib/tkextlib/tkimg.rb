@@ -17,6 +17,11 @@ TkPackage.require('Img')
 
 module Tk
   module Img
+    PACKAGE_NAME = 'Img'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('Img')

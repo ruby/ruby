@@ -12,6 +12,11 @@ require 'tkextlib/tcllib.rb'
 module Tk
   module Tcllib
     module Cursor
+      PACKAGE_NAME = 'cursor'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('cursor')

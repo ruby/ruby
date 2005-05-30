@@ -16,6 +16,11 @@ TkPackage.require('img::xpm')
 module Tk
   module Img
     module XPM
+      PACKAGE_NAME = 'img::xpm'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('img::xpm')

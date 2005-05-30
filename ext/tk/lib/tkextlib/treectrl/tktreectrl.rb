@@ -19,6 +19,11 @@ module Tk
   class TreeCtrl < TkWindow
     BindTag_FileList = TkBindTag.new_by_name('TreeCtrlFileList')
 
+    PACKAGE_NAME = 'treectrl'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('treectrl')

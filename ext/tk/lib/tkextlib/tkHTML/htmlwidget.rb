@@ -16,6 +16,11 @@ TkPackage.require('Tkhtml')
 
 module Tk
   class HTML_Widget < TkWindow
+    PACKAGE_NAME = 'Tkhtml'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('Tkhtml')

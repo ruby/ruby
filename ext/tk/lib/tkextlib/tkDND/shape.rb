@@ -18,6 +18,12 @@ module Tk
   module TkDND
     module Shape
       extend TkCore
+
+      PACKAGE_NAME = 'shape'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
 =begin
       def self.package_version
         begin

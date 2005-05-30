@@ -37,6 +37,11 @@ module Tk
   module Tile
     TkComm::TkExtlibAutoloadModule.unshift(self)
 
+    PACKAGE_NAME = 'tile'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('tile')

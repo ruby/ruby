@@ -25,6 +25,11 @@ TkPackage.require('datefield')
 module Tk
   module Tcllib
     class Datefield < TkEntry
+      PACKAGE_NAME = 'datefield'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('datefield')

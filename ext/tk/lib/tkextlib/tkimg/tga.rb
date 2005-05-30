@@ -16,6 +16,11 @@ TkPackage.require('img::tga')
 module Tk
   module Img
     module TGA
+      PACKAGE_NAME = 'img::tga'.freeze
+      def self.package_name
+        PACKAGE_NAME
+      end
+
       def self.package_version
         begin
           TkPackage.require('img::tga')

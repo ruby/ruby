@@ -15,6 +15,11 @@ TkPackage.require('Tclx')
 
 module Tk
   module TclX
+    PACKAGE_NAME = 'Tclx'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('Tclx')

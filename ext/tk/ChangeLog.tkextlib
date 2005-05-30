@@ -1,11 +1,98 @@
+2005-05-30  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/blt.rb: add PACKAGE_NAME information of Tcl/Tk
+          Extension.
+
+	* lib/tkextlib/bwidget.rb: ditto.
+
+	* lib/tkextlib/iwidgets.rb: ditto.
+
+	* lib/tkextlib/tile.rb: ditto.
+
+	* lib/tkextlib/tkimg.rb: ditto.
+
+	* lib/tkextlib/vu.rb: ditto.
+
+	* lib/tkextlib/ICONS/icons.rb: ditto.
+
+	* lib/tkextlib/itcl/incr_tcl.rb: ditto.
+
+	* lib/tkextlib/itk/incr_tk.rb: ditto.
+
+	* lib/tkextlib/tcllib/autoscroll.rb: ditto.
+
+	* lib/tkextlib/tcllib/ctext.rb: ditto.
+
+	* lib/tkextlib/tcllib/cursor.rb: ditto.
+
+	* lib/tkextlib/tcllib/datefield.rb: ditto.
+
+	* lib/tkextlib/tcllib/ico.rb: ditto.
+
+	* lib/tkextlib/tcllib/ip_entry.rb: ditto.
+
+	* lib/tkextlib/tcllib/plotchart.rb: ditto.
+
+	* lib/tkextlib/tcllib/style.rb: ditto.
+
+	* lib/tkextlib/tcllib/tkpiechart.rb: ditto.
+
+	* lib/tkextlib/tclx/tclx.rb: ditto.
+
+	* lib/tkextlib/tkDND/shape.rb: ditto.
+
+	* lib/tkextlib/tkDND/tkdnd.rb: ditto.
+
+	* lib/tkextlib/tkHTML/htmlwidget.rb: ditto.
+
+	* lib/tkextlib/tkimg/bmp.rb: ditto.
+
+	* lib/tkextlib/tkimg/gif.rb: ditto.
+
+	* lib/tkextlib/tkimg/ico.rb: ditto.
+
+	* lib/tkextlib/tkimg/jpeg.rb: ditto.
+
+	* lib/tkextlib/tkimg/pcx.rb: ditto.
+
+	* lib/tkextlib/tkimg/pixmap.rb: ditto.
+
+	* lib/tkextlib/tkimg/png.rb: ditto.
+
+	* lib/tkextlib/tkimg/ppm.rb: ditto.
+
+	* lib/tkextlib/tkimg/ps.rb: ditto.
+
+	* lib/tkextlib/tkimg/sgi.rb: ditto.
+
+	* lib/tkextlib/tkimg/sun.rb: ditto.
+
+	* lib/tkextlib/tkimg/tga.rb: ditto.
+
+	* lib/tkextlib/tkimg/tiff.rb: ditto.
+
+	* lib/tkextlib/tkimg/window.rb: ditto.
+
+	* lib/tkextlib/tkimg/xbm.rb: ditto.
+
+	* lib/tkextlib/tkimg/xpm.rb: ditto.
+
+	* lib/tkextlib/tktable/tktable.rb: ditto.
+
+	* lib/tkextlib/tktrans/tktrans.rb: ditto.
+
+	* lib/tkextlib/treectrl/tktreectrl.rb: ditto.
+
+	* lib/tkextlib/winico/winico.rb: ditto.
+
 2005-05-25  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/iwidgets/scrolledlistbox.rb: follow the change
           of tk.rb. modify to attend encoding.
 
-	* ext/tk/lib/tkextlib/iwidgets/scrolledtext.rb: ditto.
+	* lib/tkextlib/iwidgets/scrolledtext.rb: ditto.
 
-	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb: bug fix on
+	* lib/tkextlib/iwidgets/scrolledcanvas.rb: bug fix on
 	  TkCanvas#delete when given non-TkcItem arguments. 
 
 2005-05-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>

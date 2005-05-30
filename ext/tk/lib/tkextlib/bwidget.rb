@@ -23,6 +23,11 @@ module Tk
 
     LIBRARY = tk_call('set', '::BWIDGET::LIBRARY')
 
+    PACKAGE_NAME = 'BWidget'.freeze
+    def self.package_name
+      PACKAGE_NAME
+    end
+
     def self.package_version
       begin
         TkPackage.require('BWidget')
