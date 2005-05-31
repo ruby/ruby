@@ -53,6 +53,7 @@ module WEBrick
             timeout -= 0.5
           end
           raise HTTPStatus::EOFError if timeout <= 0
+          raise HTTPStatus::EOFError if sock.eof?
           req.parse(sock)
           res.request_method = req.request_method
           res.request_uri = req.request_uri
@@ -79,7 +80,9 @@ module WEBrick
           res.set_error(ex, true)
         ensure
           if req.request_line
-            req.fixup()
+            if req.keep_alive? && res.keep_alive?
+              req.fixup()
+            end
             res.send_response(sock)
             server.access_log(@config, req, res)
           end

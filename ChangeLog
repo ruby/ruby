@@ -1,3 +1,12 @@
+Tue May 31 15:52:45 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): should
+	  break the loop if the socket reached to EOF. [ruby-talk:142285]
+
+	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): send response
+	  without reading the whole request body if keep-alive is diabled.
+	  [experimental]
+
 Mon May 30 23:48:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/macpkg.rb: add PACKAGE_NAME information of Tcl/Tk
