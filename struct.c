@@ -132,7 +132,9 @@ static VALUE rb_struct_ref7(obj) VALUE obj; {return RSTRUCT(obj)->ptr[7];}
 static VALUE rb_struct_ref8(obj) VALUE obj; {return RSTRUCT(obj)->ptr[8];}
 static VALUE rb_struct_ref9(obj) VALUE obj; {return RSTRUCT(obj)->ptr[9];}
 
-static VALUE (*ref_func[10])() = {
+#define N_REF_FUNC (sizeof(ref_func) / sizeof(VALUE (*)()))
+
+static VALUE (*ref_func[])() = {
     rb_struct_ref0,
     rb_struct_ref1,
     rb_struct_ref2,
@@ -211,7 +213,7 @@ make_struct(name, members, klass)
     for (i=0; i< RARRAY(members)->len; i++) {
 	ID id = SYM2ID(RARRAY(members)->ptr[i]);
 	if (rb_is_local_id(id) || rb_is_const_id(id)) {
-	    if (i<sizeof(ref_func)) {
+	    if (i < N_REF_FUNC) {
 		rb_define_method_id(nstr, id, ref_func[i], 0);
 	    }
 	    else {

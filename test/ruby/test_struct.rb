@@ -21,4 +21,16 @@ class TestStruct < Test::Unit::TestCase
     test.bar = 47
     assert_equal(47, test.bar)
   end
+
+  # [ruby-dev:26247] more than 10 struct members causes segmentation fault
+  def test_morethan10members
+    list = %w( a b c d  e f g h  i j k l  m n o p )
+    until list.empty?
+      c = Struct.new(* list.map {|ch| ch.intern }).new
+      list.each do |ch|
+        c.__send__(ch)
+      end
+      list.pop
+    end
+  end
 end
