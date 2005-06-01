@@ -1,3 +1,8 @@
+Wed Jun  1 11:32:42 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub: can use single quote character in DESTDIR.
+	  [ruby-dev:26205]
+
 Mon May 30 23:48:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/macpkg.rb: add PACKAGE_NAME information of Tcl/Tk
