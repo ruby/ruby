@@ -1,7 +1,11 @@
+common: src rb
+src: ripper.c eventids1.c
+rb: $(srcdir)/lib/ripper/core.rb
+
 ripper.o: ripper.c $(hdrdir)/lex.c eventids1.c $(srcdir)/eventids2.c
 
-ripper.c: ripper.y
-	bison -t -v -o$@ ripper.y
+.y.c:
+	bison -t -v -o$@ $<
 
 ripper.y: $(hdrdir)/parse.y $(srcdir)/tools/preproc.rb
 	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y > $@
@@ -15,8 +19,8 @@ ids1: $(srcdir)/tools/list-parse-event-ids.rb $(hdrdir)/parse.y
 ids2: $(srcdir)/tools/list-scan-event-ids.rb $(srcdir)/eventids2.c
 	$(RUBY) $(srcdir)/tools/list-scan-event-ids.rb -a $(srcdir)/eventids2.c > $@
 
-rb: $(srcdir)/lib/ripper/core.rb.in ids1 ids2 $(srcdir)/tools/generate-ripper_rb.rb
-	$(RUBY) $(srcdir)/tools/generate-ripper_rb.rb $(srcdir)/lib/ripper/core.rb.in ids1 ids2 > $(srcdir)/lib/ripper/core.rb
+$(srcdir)/lib/ripper/core.rb: $(srcdir)/lib/ripper/core.rb.in ids1 ids2 $(srcdir)/tools/generate-ripper_rb.rb
+	$(RUBY) $(srcdir)/tools/generate-ripper_rb.rb $@.in ids1 ids2 > $@
 
 #
 # Entries for only ripper developpers: DO NOT USE

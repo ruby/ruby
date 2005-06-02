@@ -1,6 +1,5 @@
 Makefile
 eventids1.c
-ripper.c
-ripper.y
+ripper.*
 ids1
 ids2

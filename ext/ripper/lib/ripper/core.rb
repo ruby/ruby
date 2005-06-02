@@ -93,6 +93,7 @@ class Ripper
     :params => 4,
     :paren => 1,
     :parse_error => 1,
+    :pragma => 2,
     :program => 1,
     :qwords_add => 2,
     :qwords_new => 0,
@@ -506,6 +507,10 @@ class Ripper
   end
 
   def on_parse_error(a)
+    a
+  end
+
+  def on_pragma(a, b)
     a
   end
 

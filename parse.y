@@ -4559,7 +4559,7 @@ rb_compile_string(f, s, line)
 {
     VALUE volatile vparser = rb_parser_s_new();
     struct parser_params *parser;
-    
+
     Data_Get_Struct(vparser, struct parser_params, parser);
     lex_gets = lex_get_str;
     lex_gets_ptr = 0;
@@ -5359,6 +5359,7 @@ lvar_defined_gen(parser, id)
 }
 
 /* emacsen -*- hack */
+#ifndef RIPPER
 typedef void (*rb_pragma_setter_t) _((struct parser_params *parser, const char *name, const char *val));
 
 static void pragma_encoding _((struct parser_params *, const char *, const char *));
@@ -5380,6 +5381,7 @@ struct pragma {
 static const struct pragma pragmas[] = {
     {"coding", pragma_encoding},
 };
+#endif
 
 static const char *
 pragma_marker(str, len)
@@ -5437,7 +5439,9 @@ parser_pragma(parser, str, len)
     
     /* %r"([^\\s\'\":;]+)\\s*:\\s*(\"(?:\\\\.|[^\"])*\"|[^\"\\s;]+)[\\s;]*" */
     while (len > 0) {
+#ifndef RIPPER
 	const struct pragma *p = pragmas;
+#endif
 	int n = 0;
 
 	for (; len > 0 && *str; str++, --len) {
@@ -5485,6 +5489,7 @@ parser_pragma(parser, str, len)
 	n = end - beg;
 	str_copy(name, beg, n);
 	rb_funcall(name, rb_intern("downcase!"), 0);
+#ifndef RIPPER
 	do {
 	    if (strncmp(p->name, RSTRING(name)->ptr, n) == 0) {
 		str_copy(val, vbeg, vend - vbeg);
@@ -5492,6 +5497,9 @@ parser_pragma(parser, str, len)
 		break;
 	    }
 	} while (++p < pragmas + sizeof(pragmas) / sizeof(*p));
+#else
+	dispatch2(pragma, name, val);
+#endif
     }
 
     return Qtrue;

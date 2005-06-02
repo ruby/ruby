@@ -1,3 +1,7 @@
+Thu Jun  2 23:42:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y: pragma support on ripper.  [ruby-dev:26266]
+
 Thu Jun  2 00:02:16 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* struct.c: accessing >10 member caused segmentation fault.
@@ -54,7 +58,7 @@ Sat May 28 05:15:44 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Sat May 28 02:00:11 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line): 
+	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line):
 	  ENV["REQUEST_URI"] is better to get correct Request-URI
 	  than ENV["SCRIPT_NAME"] + ENV["PATH_INFO"].  [ruby-dev:26235]
 
