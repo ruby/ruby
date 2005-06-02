@@ -13,6 +13,15 @@ Wed Jun  1 11:30:09 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* bcc32/Makefile.sub: Dir.glob in 1.9 doesn't treat \ as path separator.
 	  [ruby-dev:26254]
 
+Wed Jun  1 00:11:06 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (method_call): new experiment: "(expr)(args...)" to
+	  invoke "expr.call(args...)".  [EXPERIMENTAL]
+
+Tue May 31 23:43:41 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (command): revert implicit "call" for local variables.
+
 Tue May 31 15:52:45 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpserver.rb (WEBrick::HTTPServer#run): should

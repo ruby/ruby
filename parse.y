@@ -3316,6 +3316,18 @@ method_call	: operation paren_args
 			$$ = dispatch0(zsuper);
 		    %*/
 		    }
+		| tLPAREN compstmt ')' paren_args
+		    {
+		    /*%%%*/
+			if (!$2) $2 = NEW_NIL();
+			$$ = new_call($2, rb_intern("call"), $4);
+		        fixpos($$, $2);
+		    /*%
+			$$ = dispatch3(call, dispatch1(paren, $2),
+		                       ripper_id2sym('.'), rb_intern("call"));
+			$$ = method_optarg($$, $4);
+		    %*/
+		    }
 		;
 
 brace_block	: '{'
@@ -7869,10 +7881,10 @@ new_fcall_gen(parser, m, a)
     NODE *a;
 {
     if (a && nd_type(a) == NODE_BLOCK_PASS) {
-	a->nd_iter = fcall_gen(parser,m,a->nd_head);
+	a->nd_iter = NEW_FCALL(m,a->nd_head);
 	return a;
     }
-    return fcall_gen(parser, m,a);
+    return NEW_FCALL(m, a);
 }
 
 static NODE*
