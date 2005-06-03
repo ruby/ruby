@@ -734,7 +734,7 @@ class MultiTkIp
       else
         begin
           pathname = @interp._invoke('winfo', 'pathname', new_keys['use'])
-          assco_display = @interp._invoke('winfo', 'screen', pathname)
+          assoc_display = @interp._invoke('winfo', 'screen', pathname)
         rescue
           assoc_display = new_keys['display']
         end
@@ -742,7 +742,7 @@ class MultiTkIp
 
       # match display?
       if assoc_display != new_keys['display']
-        if optkeys.keys?(:display) || optkeys.keys?('display')
+        if optkeys.key?(:display) || optkeys.key?('display')
           fail RuntimeError, 
             "conflicting 'display'=>#{new_keys['display']} " + 
             "and display '#{assoc_display}' on 'use'=>#{new_keys['use']}"

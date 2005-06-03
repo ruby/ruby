@@ -1,3 +1,7 @@
+Fri Jun  3 14:06:12 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: fix typo.
+
 Thu Jun  2 23:42:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y: pragma support on ripper.  [ruby-dev:26266]
