@@ -1,3 +1,8 @@
+Wed May 25 12:59:48 2005  Tanaka Akira  <akr@m17n.org>
+
+	* test/sdbm/test_sdbm.rb: renamed from ext/sdbm/testsdbm.rb with
+	  modification to use test/unit.
+
 Fri Jun  3 14:06:12 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: fix typo.
