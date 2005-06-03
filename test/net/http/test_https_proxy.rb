@@ -3,7 +3,7 @@ require 'test/unit'
 
 class HTTPSProxyTest < Test::Unit::TestCase
   def test_https_proxy_authentication
-    TCPServer.open(0) {|serv|
+    TCPServer.open("127.0.0.1", 0) {|serv|
       _, port, _, _ = serv.addr
       t = Thread.new {
         proxy = Net::HTTP.Proxy("127.0.0.1", port, 'user', 'password')
