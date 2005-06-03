@@ -1,3 +1,8 @@
+Wed May 25 12:59:48 2005  Tanaka Akira  <akr@m17n.org>
+
+	* test/sdbm/test_sdbm.rb: renamed from ext/sdbm/testsdbm.rb with
+	  modification to use test/unit.
+
 Fri Jun  3 23:23:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (rb_fdset_t): deal with fd bit sets over FD_SETSIZE.
