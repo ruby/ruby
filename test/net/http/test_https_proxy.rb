@@ -11,7 +11,6 @@ class HTTPSProxyTest < Test::Unit::TestCase
         http.use_ssl = true
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
         http.start {|http|  }
-        p 1
       }
       sock = serv.accept
       proxy_request = sock.gets("\r\n\r\n")
@@ -20,7 +19,8 @@ class HTTPSProxyTest < Test::Unit::TestCase
         "Host: foo.example.org:8000\r\n" +
         "Proxy-Authorization: Basic dXNlcjpwYXNzd29yZA==\r\n" +
         "\r\n",
-        proxy_request)
+        proxy_request,
+        "[ruby-dev:25673]")
     }
   end
 end
