@@ -888,26 +888,25 @@ ruby_socket(domain, type, proto)
 }
 
 static int
-wait_connectable(fd)
+wait_connectable0(fd, fds_w, fds_e)
     int fd;
+    rb_fdset_t *fds_w, *fds_e;
 {
     int sockerr, sockerrlen;
-    fd_set fds_w;
-    fd_set fds_e;
 
     for (;;) {
-	FD_ZERO(&fds_w);
-	FD_ZERO(&fds_e);
+	rb_fd_zero(fds_w);
+	rb_fd_zero(fds_e);
 
-	FD_SET(fd, &fds_w);
-	FD_SET(fd, &fds_e);
+	rb_fd_set(fd, fds_w);
+	rb_fd_set(fd, fds_e);
 
-	rb_thread_select(fd+1, 0, &fds_w, &fds_e, 0);
+	rb_thread_select(fd+1, 0, rb_fd_ptr(fds_w), rb_fd_ptr(fds_e), 0);
 
-	if (FD_ISSET(fd, &fds_w)) {
+	if (rb_fd_isset(fd, fds_w)) {
 	    return 0;
 	}
-	else if (FD_ISSET(fd, &fds_e)) {
+	else if (rb_fd_isset(fd, fds_e)) {
 	    sockerrlen = sizeof(sockerr);
 	    if (getsockopt(fd, SOL_SOCKET, SO_ERROR, (void *)&sockerr,
 			   &sockerrlen) == 0) {
@@ -920,6 +919,49 @@ wait_connectable(fd)
     }
 
     return 0;
+}
+
+struct wait_connectable_arg {
+    int fd;
+    rb_fdset_t fds_w;
+    rb_fdset_t fds_e;
+};
+
+#ifdef HAVE_RB_FD_INIT
+static VALUE
+try_wait_connectable(arg)
+    VALUE arg;
+{
+    struct wait_connectable_arg *p = (struct wait_connectable_arg *)arg;
+    return (VALUE)wait_connectable0(p->fd, &p->fds_w, &p->fds_e);
+}
+
+static VALUE
+wait_connectable_ensure(arg)
+    VALUE arg;
+{
+    struct wait_connectable_arg *p = (struct wait_connectable_arg *)arg;
+    rb_fd_term(&p->fds_w);
+    rb_fd_term(&p->fds_e);
+    return Qnil;
+}
+#endif
+
+static int
+wait_connectable(fd)
+    int fd;
+{
+    struct wait_connectable_arg arg;
+
+    rb_fd_init(&arg.fds_w);
+    rb_fd_init(&arg.fds_e);
+#ifdef HAVE_RB_FD_INIT
+    arg.fd = fd;
+    return (int)rb_ensure(try_wait_connectable, (VALUE)&arg,
+			  wait_connectable_ensure,(VALUE)&arg);
+#else
+    return wait_connectable0(fd, &arg.fds_w, &arg.fds_e);
+#endif
 }
 
 #ifdef __CYGWIN__
@@ -1734,19 +1776,6 @@ unix_send_io(sock, val)
 #endif
 }
 
-#if defined(HAVE_RECVMSG) && (FD_PASSING_BY_MSG_CONTROL || FD_PASSING_BY_MSG_ACCRIGHTS)
-static void
-thread_read_select(fd)
-    int fd;
-{
-    fd_set fds;
-
-    FD_ZERO(&fds);
-    FD_SET(fd, &fds);
-    rb_thread_select(fd+1, &fds, 0, 0, 0);
-}
-#endif
-
 static VALUE
 unix_recv_io(argc, argv, sock)
     int argc;
@@ -1776,7 +1805,7 @@ unix_recv_io(argc, argv, sock)
 
     GetOpenFile(sock, fptr);
 
-    thread_read_select(fptr->fd);
+    rb_io_wait_readable(fptr->fd);
 
     msg.msg_name = NULL;
     msg.msg_namelen = 0;

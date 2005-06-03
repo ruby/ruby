@@ -1,3 +1,17 @@
+Fri Jun  3 23:23:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (rb_fdset_t): deal with fd bit sets over FD_SETSIZE.
+	  fixed: [ruby-dev:26187]
+
+	* eval.c (rb_fd_init, rb_fd_term, rb_fd_zero, rb_fd_set, rb_fd_clr,
+	  rb_fd_isset, rb_fd_copy): ditto.
+
+	* io.c (rb_io_wait_readable, rb_io_wait_writable, rb_f_select): ditto.
+
+	* ext/io/wait/wait.c (io_wait): ditto.
+
+	* ext/socket/socket.c (wait_connectable, unix_recv_io): ditto.
+
 Fri Jun  3 14:06:12 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: fix typo.

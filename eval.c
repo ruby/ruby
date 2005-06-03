@@ -134,6 +134,10 @@ typedef jmp_buf rb_jmpbuf_t;
 #include <sys/select.h>
 #endif
 
+#ifdef HAVE_SYS_PARAM_H
+#include <sys/param.h>
+#endif
+
 #include <sys/stat.h>
 
 VALUE rb_cProc;
@@ -9771,6 +9775,98 @@ enum thread_status {
 # endif
 #endif
 
+#ifdef NFDBITS
+void
+rb_fd_init(fds)
+    volatile rb_fdset_t *fds;
+{
+    fds->maxfd = 0;
+    fds->fdset = ALLOC(fd_set);
+    FD_ZERO(fds->fdset);
+}
+
+void
+rb_fd_term(fds)
+    rb_fdset_t *fds;
+{
+    if (fds->fdset) free(fds->fdset);
+    fds->maxfd = 0;
+    fds->fdset = 0;
+}
+
+void
+rb_fd_zero(fds)
+    rb_fdset_t *fds;
+{
+    if (fds->fdset) {
+	MEMZERO(fds->fdset, fd_mask, howmany(fds->maxfd, NFDBITS));
+	FD_ZERO(fds->fdset);
+    }
+}
+
+void
+rb_fd_set(n, fds)
+    int n;
+    rb_fdset_t *fds;
+{
+    int m = howmany(n + 1, NFDBITS) * sizeof(fd_mask);
+    int o = howmany(fds->maxfd, NFDBITS) * sizeof(fd_mask);
+
+    if (m < sizeof(fd_set)) m = sizeof(fd_set);
+    if (o < sizeof(fd_set)) o = sizeof(fd_set);
+
+    if (m > o) {
+	fds->fdset = realloc(fds->fdset, m);
+	memset((char *)fds->fdset + o, 0, m - o);
+    }
+    if (n >= fds->maxfd) fds->maxfd = n + 1;
+    FD_SET(n, fds->fdset);
+}
+
+void
+rb_fd_clr(n, fds)
+    int n;
+    rb_fdset_t *fds;
+{
+    if (n >= fds->maxfd) return;
+    FD_CLR(n, fds->fdset);
+}
+
+int
+rb_fd_isset(n, fds)
+    int n;
+    const rb_fdset_t *fds;
+{
+    if (n >= fds->maxfd) return 0;
+    return FD_ISSET(n, fds->fdset);
+}
+
+void
+rb_fd_copy(dst, src, max)
+    rb_fdset_t *dst;
+    const fd_set *src;
+    int max;
+{
+    int size = howmany(max, NFDBITS) * sizeof(fd_mask);
+
+    if (size < sizeof(fd_set)) size = sizeof(fd_set);
+    dst->maxfd = max;
+    dst->fdset = realloc(dst->fdset, size);
+    memcpy(dst->fdset, src, size);
+}
+
+#undef FD_ZERO
+#undef FD_SET
+#undef FD_CLR
+#undef FD_ISSET
+
+#define FD_ZERO(f)	rb_fd_zero(f)
+#define FD_SET(i, f)	rb_fd_set(i, f)
+#define FD_CLR(i, f)	rb_fd_clr(i, f)
+#define FD_ISSET(i, f)	rb_fd_isset(i, f)
+
+#endif
+
 /* typedef struct thread * rb_thread_t; */
 
 struct thread {
@@ -9817,9 +9913,9 @@ struct thread {
     enum thread_status status;
     int wait_for;
     int fd;
-    fd_set readfds;
-    fd_set writefds;
-    fd_set exceptfds;
+    rb_fdset_t readfds;
+    rb_fdset_t writefds;
+    rb_fdset_t exceptfds;
     int select_value;
     double delay;
     rb_thread_t join;
@@ -9857,9 +9953,9 @@ struct thread_status_t {
     enum thread_status status;
     int wait_for;
     int fd;
-    fd_set readfds;
-    fd_set writefds;
-    fd_set exceptfds;
+    rb_fdset_t readfds;
+    rb_fdset_t writefds;
+    rb_fdset_t exceptfds;
     int select_value;
     double delay;
     rb_thread_t join;
@@ -9882,6 +9978,9 @@ struct thread_status_t {
     (dst)->readfds = (src)->readfds,		\
     (dst)->writefds = (src)->writefds,		\
     (dst)->exceptfds = (src)->exceptfds,	\
+    rb_fd_init(&(src)->readfds),		\
+    rb_fd_init(&(src)->writefds),		\
+    rb_fd_init(&(src)->exceptfds),		\
     (dst)->select_value = (src)->select_value,	\
     (dst)->delay = (src)->delay,		\
     (dst)->join = (src)->join,			\
@@ -10110,6 +10209,9 @@ thread_free(th)
 	if (th->prev) th->prev->next = th->next;
 	if (th->next) th->next->prev = th->prev;
     }
+    rb_fd_term(&th->readfds);
+    rb_fd_term(&th->writefds);
+    rb_fd_term(&th->exceptfds);
     if (th != main_thread) free(th);
 }
 
@@ -10433,12 +10535,13 @@ rb_thread_deadlock()
 
 static void
 copy_fds(dst, src, max)
-    fd_set *dst, *src;
+    rb_fdset_t *dst, *src;
     int max;
 {
     int n = 0;
     int i;
 
+    if (max >= rb_fd_max(src)) max = rb_fd_max(src) - 1;
     for (i=0; i<=max; i++) {
 	if (FD_ISSET(i, src)) {
 	    n = i;
@@ -10449,11 +10552,13 @@ copy_fds(dst, src, max)
 
 static int
 match_fds(dst, src, max)
-    fd_set *dst, *src;
+    rb_fdset_t *dst, *src;
     int max;
 {
     int i;
 
+    if (max >= rb_fd_max(src)) max = rb_fd_max(src) - 1;
+    if (max >= rb_fd_max(dst)) max = rb_fd_max(dst) - 1;
     for (i=0; i<=max; i++) {
 	if (FD_ISSET(i, src) && FD_ISSET(i, dst)) {
 	    return Qtrue;
@@ -10464,11 +10569,12 @@ match_fds(dst, src, max)
 
 static int
 intersect_fds(src, dst, max)
-    fd_set *src, *dst;
+    rb_fdset_t *src, *dst;
     int max;
 {
     int i, n = 0;
 
+    if (max >= rb_fd_max(dst)) max = rb_fd_max(dst) - 1;
     for (i=0; i<=max; i++) {
 	if (FD_ISSET(i, dst)) {
 	    if (FD_ISSET(i, src)) {
@@ -10486,11 +10592,12 @@ intersect_fds(src, dst, max)
 
 static int
 find_bad_fds(dst, src, max)
-    fd_set *dst, *src;
+    rb_fdset_t *dst, *src;
     int max;
 {
     int i, test = Qfalse;
 
+    if (max >= rb_fd_max(src)) max = rb_fd_max(src) - 1;
     for (i=0; i<=max; i++) {
 	if (FD_ISSET(i, src) && !FD_ISSET(i, dst)) {
 	    FD_CLR(i, src);
@@ -10508,9 +10615,9 @@ rb_thread_schedule()
     rb_thread_t curr;
     int found = 0;
 
-    fd_set readfds;
-    fd_set writefds;
-    fd_set exceptfds;
+    rb_fdset_t readfds;
+    rb_fdset_t writefds;
+    rb_fdset_t exceptfds;
     struct timeval delay_tv, *delay_ptr;
     double delay, now;	/* OK */
     int n, max;
@@ -10533,6 +10640,10 @@ rb_thread_schedule()
     while (curr->status == THREAD_KILLED) {
 	curr = curr->prev;
     }
+
+    rb_fd_init(&readfds);
+    rb_fd_init(&writefds);
+    rb_fd_init(&exceptfds);
 
   again:
     max = -1;
@@ -10607,11 +10718,20 @@ rb_thread_schedule()
 	    delay_ptr = &delay_tv;
 	}
 
-	n = select(max+1, &readfds, &writefds, &exceptfds, delay_ptr);
+	n = select(max+1, rb_fd_ptr(&readfds), rb_fd_ptr(&writefds), rb_fd_ptr(&exceptfds), delay_ptr);
 	if (n < 0) {
 	    int e = errno;
 
-	    if (rb_trap_pending) rb_trap_exec();
+	    if (rb_trap_pending) {
+		int status;
+		rb_protect((VALUE (*)_((VALUE)))rb_trap_exec, Qnil, &status);
+		if (status) {
+		    rb_fd_term(&readfds);
+		    rb_fd_term(&writefds);
+		    rb_fd_term(&exceptfds);
+		    rb_jump_tag(status);
+		}
+	    }
 	    if (e == EINTR) goto again;
 #ifdef ERESTART
 	    if (e == ERESTART) goto again;
@@ -10681,6 +10801,10 @@ rb_thread_schedule()
 	if (!found && delay != DELAY_INFTY)
 	    goto again;
     }
+
+    rb_fd_term(&readfds);
+    rb_fd_term(&writefds);
+    rb_fd_term(&exceptfds);
 
     FOREACH_THREAD_FROM(curr, th) {
 	if (th->status == THREAD_TO_KILL) {
@@ -10909,11 +11033,11 @@ rb_thread_select(max, read, write, except, timeout)
     }
 
     curr_thread->status = THREAD_STOPPED;
-    if (read) curr_thread->readfds = *read;
+    if (read) rb_fd_copy(&curr_thread->readfds, read, max);
     else FD_ZERO(&curr_thread->readfds);
-    if (write) curr_thread->writefds = *write;
+    if (write) rb_fd_copy(&curr_thread->writefds, write, max);
     else FD_ZERO(&curr_thread->writefds);
-    if (except) curr_thread->exceptfds = *except;
+    if (except) rb_fd_copy(&curr_thread->exceptfds, except, max);
     else FD_ZERO(&curr_thread->exceptfds);
     curr_thread->fd = max;
     curr_thread->wait_for = WAIT_SELECT;
@@ -10923,9 +11047,9 @@ rb_thread_select(max, read, write, except, timeout)
 	curr_thread->wait_for |= WAIT_TIME;
     }
     rb_thread_schedule();
-    if (read) *read = curr_thread->readfds;
-    if (write) *write = curr_thread->writefds;
-    if (except) *except = curr_thread->exceptfds;
+    if (read) *read = *rb_fd_ptr(&curr_thread->readfds);
+    if (write) *write = *rb_fd_ptr(&curr_thread->writefds);
+    if (except) *except = *rb_fd_ptr(&curr_thread->exceptfds);
     return curr_thread->select_value;
 }
 
@@ -11567,9 +11691,9 @@ rb_thread_group(thread)
     th->wait_for = 0;\
     IA64_INIT(th->bstr_ptr = 0);\
     IA64_INIT(th->bstr_len = 0);\
-    FD_ZERO(&th->readfds);\
-    FD_ZERO(&th->writefds);\
-    FD_ZERO(&th->exceptfds);\
+    rb_fd_init(&th->readfds);\
+    rb_fd_init(&th->writefds);\
+    rb_fd_init(&th->exceptfds);\
     th->delay = 0.0;\
     th->join = 0;\
 \

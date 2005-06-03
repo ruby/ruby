@@ -410,11 +410,22 @@ io_fflush(fptr)
     return -1;
 }
 
+#ifdef HAVE_RB_FD_INIT
+static VALUE
+wait_readable(p)
+    VALUE p;
+{
+    rb_fdset_t *rfds = (rb_fdset_t *)p;
+
+    return rb_thread_select(rb_fd_max(rfds), rb_fd_ptr(rfds), NULL, NULL, NULL);
+}
+#endif
+
 int
 rb_io_wait_readable(f)
     int f;
 {
-    fd_set rfds;
+    rb_fdset_t rfds;
 
     switch (errno) {
       case EINTR:
@@ -428,9 +439,14 @@ rb_io_wait_readable(f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-	FD_ZERO(&rfds);
-	FD_SET(f, &rfds);
+	rb_fd_init(&rfds);
+	rb_fd_set(f, &rfds);
+#ifdef HAVE_RB_FD_INIT
+	rb_ensure(wait_readable, (VALUE)&rfds,
+		  (VALUE (*)_((VALUE)))rb_fd_term, (VALUE)&rfds);
+#else
 	rb_thread_select(f + 1, &rfds, NULL, NULL, NULL);
+#endif
 	return Qtrue;
 
       default:
@@ -438,11 +454,22 @@ rb_io_wait_readable(f)
     }
 }
 
+#ifdef HAVE_RB_FD_INIT
+static VALUE
+wait_writable(p)
+    VALUE p;
+{
+    rb_fdset_t *wfds = (rb_fdset_t *)p;
+
+    return rb_thread_select(rb_fd_max(wfds), NULL, rb_fd_ptr(wfds), NULL, NULL);
+}
+#endif
+
 int
 rb_io_wait_writable(f)
     int f;
 {
-    fd_set wfds;
+    rb_fdset_t wfds;
 
     switch (errno) {
       case EINTR:
@@ -456,9 +483,14 @@ rb_io_wait_writable(f)
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
       case EWOULDBLOCK:
 #endif
-	FD_ZERO(&wfds);
-	FD_SET(f, &wfds);
+	rb_fd_init(&wfds);
+	rb_fd_set(f, &wfds);
+#ifdef HAVE_RB_FD_INIT
+	rb_ensure(wait_writable, (VALUE)&wfds,
+		  (VALUE (*)_((VALUE)))rb_fd_term, (VALUE)&wfds);
+#else
 	rb_thread_select(f + 1, NULL, &wfds, NULL, NULL);
+#endif
 	return Qtrue;
 
       default:
@@ -2617,11 +2649,11 @@ rb_fdopen(fd, mode)
 #endif
     file = fdopen(fd, mode);
     if (!file) {
+	if (
 #if defined(sun)
-	if (errno == 0 || errno == EMFILE || errno == ENFILE) {
-#else
-	if (errno == EMFILE || errno == ENFILE) {
+	    errno == 0 ||
 #endif
+	    errno == EMFILE || errno == ENFILE) {
 	    rb_gc();
 #if defined(sun)
 	    errno = 0;
@@ -4511,52 +4543,29 @@ rb_f_backquote(obj, str)
 #include <sys/select.h>
 #endif
 
-/*
- *  call-seq:
- *     IO.select(read_array
- *               [, write_array
- *               [, error_array
- *               [, timeout]]] ) =>  array  or  nil
- *
- *  See <code>Kernel#select</code>.
- */
-
 static VALUE
-rb_f_select(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+select_internal(read, write, except, tp, fds)
+    VALUE read, write, except;
+    struct timeval *tp;
+    rb_fdset_t *fds;
 {
-    VALUE read, write, except, timeout, res, list;
-    fd_set rset, wset, eset, pset;
+    VALUE res, list;
     fd_set *rp, *wp, *ep;
-    struct timeval *tp, timerec;
     OpenFile *fptr;
     long i;
     int max = 0, n;
     int interrupt_flag = 0;
     int pending = 0;
+    struct timeval timerec;
 
-    rb_scan_args(argc, argv, "13", &read, &write, &except, &timeout);
-    if (NIL_P(timeout)) {
-	tp = 0;
-    }
-    else {
-	timerec = rb_time_interval(timeout);
-	tp = &timerec;
-    }
-
-    FD_ZERO(&pset);
     if (!NIL_P(read)) {
 	Check_Type(read, T_ARRAY);
-	rp = &rset;
-	FD_ZERO(rp);
 	for (i=0; i<RARRAY(read)->len; i++) {
 	    GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
-	    FD_SET(fptr->fd, rp);
+	    rb_fd_set(fptr->fd, &fds[0]);
 	    if (READ_DATA_PENDING(fptr)) { /* check for buffered data */
 		pending++;
-		FD_SET(fptr->fd, &pset);
+		rb_fd_set(fptr->fd, &fds[3]);
 	    }
 	    if (max < fptr->fd) max = fptr->fd;
 	}
@@ -4564,32 +4573,31 @@ rb_f_select(argc, argv, obj)
 	    timerec.tv_sec = timerec.tv_usec = 0;
 	    tp = &timerec;
 	}
+	rp = rb_fd_ptr(&fds[0]);
     }
     else
 	rp = 0;
 
     if (!NIL_P(write)) {
 	Check_Type(write, T_ARRAY);
-	wp = &wset;
-	FD_ZERO(wp);
 	for (i=0; i<RARRAY(write)->len; i++) {
 	    GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
-	    FD_SET(fptr->fd, wp);
+	    rb_fd_set(fptr->fd, &fds[1]);
 	    if (max < fptr->fd) max = fptr->fd;
 	}
+	wp = rb_fd_ptr(&fds[1]);
     }
     else
 	wp = 0;
 
     if (!NIL_P(except)) {
 	Check_Type(except, T_ARRAY);
-	ep = &eset;
-	FD_ZERO(ep);
 	for (i=0; i<RARRAY(except)->len; i++) {
 	    GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
-	    FD_SET(fptr->fd, ep);
+	    rb_fd_set(fptr->fd, &fds[2]);
 	    if (max < fptr->fd) max = fptr->fd;
 	}
+	ep = rb_fd_ptr(&fds[2]);
     }
     else {
 	ep = 0;
@@ -4613,8 +4621,8 @@ rb_f_select(argc, argv, obj)
 	    list = RARRAY(res)->ptr[0];
 	    for (i=0; i< RARRAY(read)->len; i++) {
 		GetOpenFile(rb_io_get_io(RARRAY(read)->ptr[i]), fptr);
-		if (FD_ISSET(fptr->fd, rp)
-		    || FD_ISSET(fptr->fd, &pset)) {
+		if (rb_fd_isset(fptr->fd, &fds[0]) ||
+		    rb_fd_isset(fptr->fd, &fds[3])) {
 		    rb_ary_push(list, rb_ary_entry(read, i));
 		}
 	    }
@@ -4624,7 +4632,7 @@ rb_f_select(argc, argv, obj)
 	    list = RARRAY(res)->ptr[1];
 	    for (i=0; i< RARRAY(write)->len; i++) {
 		GetOpenFile(rb_io_get_io(RARRAY(write)->ptr[i]), fptr);
-		if (FD_ISSET(fptr->fd, wp)) {
+		if (rb_fd_isset(fptr->fd, &fds[1])) {
 		    rb_ary_push(list, rb_ary_entry(write, i));
 		}
 	    }
@@ -4634,7 +4642,7 @@ rb_f_select(argc, argv, obj)
 	    list = RARRAY(res)->ptr[2];
 	    for (i=0; i< RARRAY(except)->len; i++) {
 		GetOpenFile(rb_io_get_io(RARRAY(except)->ptr[i]), fptr);
-		if (FD_ISSET(fptr->fd, ep)) {
+		if (rb_fd_isset(fptr->fd, &fds[2])) {
 		    rb_ary_push(list, rb_ary_entry(except, i));
 		}
 	    }
@@ -4642,6 +4650,77 @@ rb_f_select(argc, argv, obj)
     }
 
     return res;			/* returns an empty array on interrupt */
+}
+
+struct select_args {
+    VALUE read, write, except;
+    struct timeval *timeout;
+    rb_fdset_t fdsets[4];
+};
+
+#ifdef HAVE_RB_FD_INIT
+static VALUE
+select_call(arg)
+    VALUE arg;
+{
+    struct select_args *p = (struct select_args *)arg;
+
+    return select_internal(p->read, p->write, p->except, p->timeout, p->fdsets);
+}
+
+static VALUE
+select_end(arg)
+    VALUE arg;
+{
+    struct select_args *p = (struct select_args *)arg;
+    int i;
+
+    for (i = 0; i < sizeof(p->fdsets) / sizeof(p->fdsets[0]); ++i)
+	rb_fd_term(&p->fdsets[i]);
+    return Qnil;
+}
+#endif
+
+/*
+ *  call-seq:
+ *     IO.select(read_array
+ *               [, write_array
+ *               [, error_array
+ *               [, timeout]]] ) =>  array  or  nil
+ *
+ *  See <code>Kernel#select</code>.
+ */
+
+static VALUE
+rb_f_select(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    VALUE timeout;
+    struct select_args args;
+    struct timeval timerec;
+    int i;
+
+    rb_scan_args(argc, argv, "13", &args.read, &args.write, &args.except, &timeout);
+    if (NIL_P(timeout)) {
+	args.timeout = 0;
+    }
+    else {
+	timerec = rb_time_interval(timeout);
+	args.timeout = &timerec;
+    }
+
+    for (i = 0; i < sizeof(args.fdsets) / sizeof(args.fdsets[0]); ++i)
+	rb_fd_init(&args.fdsets[i]);
+
+#ifdef HAVE_RB_FD_INIT
+    return rb_ensure(select_call, (VALUE)&args, select_end, (VALUE)&args);
+#else
+    return select_internal(args.read, args.write, args.except,
+			   args.timeout, args.fdsets);
+#endif
+
 }
 
 #if !defined(MSDOS) && !defined(__human68k__)

@@ -145,6 +145,40 @@ NORETURN(void rb_load_fail _((const char*)));
 NORETURN(void rb_error_frozen _((const char*)));
 void rb_check_frozen _((VALUE));
 /* eval.c */
+#ifdef NFDBITS
+typedef struct {
+    int maxfd;
+    fd_set *fdset;
+} rb_fdset_t;
+
+#define HAVE_RB_FD_INIT 1
+
+void rb_fd_init _((volatile rb_fdset_t *));
+void rb_fd_term _((rb_fdset_t *));
+void rb_fd_zero _((rb_fdset_t *));
+void rb_fd_set _((int, rb_fdset_t *));
+void rb_fd_clr _((int, rb_fdset_t *));
+int rb_fd_isset _((int, const rb_fdset_t *));
+void rb_fd_copy _((rb_fdset_t *, const fd_set *, int));
+
+#define rb_fd_ptr(f)	((f)->fdset)
+#define rb_fd_max(f)	((f)->maxfd)
+
+#else
+
+typedef fd_set rb_fdset_t;
+#define rb_fd_zero(f)	FD_ZERO(f)
+#define rb_fd_set(n, f)	FD_SET(n, f)
+#define rb_fd_clr(n, f)	FD_CLR(n, f)
+#define rb_fd_isset(n, f) FD_ISSET(n, f)
+#define rb_fd_copy(d, s, n) (*(d) = *(s))
+#define rb_fd_ptr(f)	(f)
+#define rb_fd_init(f)	FD_ZERO(f)
+#define rb_fd_term(f)	(f)
+#define rb_fd_max(f)	FD_SETSIZE
+
+#endif
+
 RUBY_EXTERN struct RNode *ruby_current_node;
 void ruby_set_current_source _((void));
 NORETURN(void rb_exc_raise _((VALUE)));
