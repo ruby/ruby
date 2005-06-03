@@ -1,3 +1,7 @@
+Fri Jun  3 14:06:12 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: fix typo.
+
 Wed Jun  1 11:32:42 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub: can use single quote character in DESTDIR.
