@@ -9,6 +9,7 @@ class HTTPSProxyTest < Test::Unit::TestCase
         proxy = Net::HTTP.Proxy(ipaddr, port, 'user', 'password')
         http = proxy.new("foo.example.org", 8000)
         http.use_ssl = true
+        http.verify_mode = OpenSSL::SSL::VERIFY_NONE
         http.start {|http|  }
         p 1
       }
