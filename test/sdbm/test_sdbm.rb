@@ -191,6 +191,13 @@ class TestSDBM < Test::Unit::TestCase
     assert_nil(@sdbm['bar'])
   end
 
+  def test_indexes
+    keys = %w(foo bar baz)
+    values = %w(FOO BAR BAZ)
+    @sdbm[keys[0]], @sdbm[keys[1]], @sdbm[keys[2]] = values
+    assert_equal(values.reverse, @sdbm.indexes(*keys.reverse))
+  end
+
   def test_values_at
     keys = %w(foo bar baz)
     values = %w(FOO BAR BAZ)
@@ -512,4 +519,3 @@ class TestSDBM < Test::Unit::TestCase
     }
   end
 end
-
