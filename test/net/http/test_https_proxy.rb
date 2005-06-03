@@ -4,13 +4,13 @@ require 'test/unit'
 class HTTPSProxyTest < Test::Unit::TestCase
   def test_https_proxy_authentication
     TCPServer.open(0) {|serv|
-      _, port, _, ipaddr = serv.addr
+      _, port, _, _ = serv.addr
       t = Thread.new {
-        proxy = Net::HTTP.Proxy(ipaddr, port, 'user', 'password')
+        proxy = Net::HTTP.Proxy("127.0.0.1", port, 'user', 'password')
         http = proxy.new("foo.example.org", 8000)
         http.use_ssl = true
         http.verify_mode = OpenSSL::SSL::VERIFY_NONE
-        http.start {|http|  }
+        http.start
       }
       sock = serv.accept
       proxy_request = sock.gets("\r\n\r\n")
