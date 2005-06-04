@@ -1,5 +1,9 @@
-Wed May 25 12:59:48 2005  Tanaka Akira  <akr@m17n.org>
+Sat Jun  4 14:55:18 2005  Tanaka Akira  <akr@m17n.org>
 
+	* test/dbm/test_dbm.rb: merged from ext/dbm/testdbm.rb.
+
+	* test/gdbm/test_gdbm.rb: merged from ext/gdbm/testgdbm.rb.
+	  
 	* test/sdbm/test_sdbm.rb: renamed from ext/sdbm/testsdbm.rb with
 	  modification to use test/unit.
 
