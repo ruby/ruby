@@ -36,9 +36,14 @@ class TestSignal < Test::Unit::TestCase
       sleep 0.1
       assert_nothing_raised("[ruby-dev:26128]") {
         Process.kill(:USR1, pid)
-        Timeout.timeout(1) {
-          Process.waitpid pid
-        }
+        begin
+          Timeout.timeout(1) {
+            Process.waitpid pid
+          }
+        rescue Timeout::Error
+          Process.kill(:TERM, pid)
+          raise
+        end
       }
     ensure
       r.close
