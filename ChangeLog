@@ -1,3 +1,9 @@
+Sun Jun  5 23:00:35 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/console.rb: create console when required
+
+	* ext/tk/sample/tkextlib/tile/demo.rb: fix TypeError & create Console
+
 Sun Jun  5 10:23:52 2005  Tanaka Akira  <akr@m17n.org>
 
 	* signal.c (ruby_signal): don't set SA_RESTART.

@@ -130,6 +130,7 @@ end
 #	updates the scrollbar's position.
 #
 def sbstub(sb, cmd, num, units = 'units')
+  num = TkComm.number(num)
   case cmd.to_s
   when 'moveto'
     sb.set(num, num+0.5)
