@@ -1,3 +1,8 @@
+Sun Jun  5 10:23:52 2005  Tanaka Akira  <akr@m17n.org>
+
+	* signal.c (ruby_signal): don't set SA_RESTART.
+	  [ruby-dev:26276]
+
 Sat Jun  4 14:55:18 2005  Tanaka Akira  <akr@m17n.org>
 
 	* test/dbm/test_dbm.rb: merged from ext/dbm/testdbm.rb.
