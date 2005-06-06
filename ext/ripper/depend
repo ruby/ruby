@@ -1,3 +1,4 @@
+.SUFFIXES: .y
 common: src rb
 src: ripper.c eventids1.c
 rb: $(srcdir)/lib/ripper/core.rb
