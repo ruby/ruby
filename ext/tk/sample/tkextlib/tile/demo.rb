@@ -510,6 +510,7 @@ m_file.add(:checkbutton, :label=>'Text check', :underline=>5,
 m_file.insert(:end, :separator)
 
 if Tk.windowingsystem != 'x11'
+  TkConsole.create
   m_file.insert(:end, :checkbutton, :label=>'Console', :underline=>5, 
                 :variable=>$V.ref(:CONSOLE), :command=>proc{toggle_console()})
   def toggle_console
