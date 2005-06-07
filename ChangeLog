@@ -1,3 +1,13 @@
+Wed Jun  8 00:00:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/curses/curses.c (curses_insertln): merged a patch from
+	  TAKAHASHI Tamotsu <ttakah@lapis.plala.or.jp>.  [ruby-ext:02305]
+
+Tue Jun  7 19:34:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/init.rb (IRB::IRB.rc_file_generators): more flexible
+	  IRB.rc_file_generators.  [ruby-core:05163]
+
 Tue Jun  7 18:39:31 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/thread.rb: RDoc documentation from Eric Hodel
