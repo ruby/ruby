@@ -155,8 +155,13 @@ main()
     }
     for (ai = aitop; ai; ai = ai->ai_next) {
       if (ai->ai_family == AF_LOCAL) continue;
-      if (ai->ai_addr == NULL ||
-          ai->ai_addrlen == 0 ||
+      if (ai->ai_addr == NULL)
+        goto bad;
+#if defined(_AIX)
+      ai->ai_addr->sa_len = ai->ai_addrlen;
+      ai->ai_addr->sa_family = ai->ai_family;
+#endif
+      if (ai->ai_addrlen == 0 ||
           getnameinfo(ai->ai_addr, ai->ai_addrlen,
                       straddr, sizeof(straddr), strport, sizeof(strport),
                       NI_NUMERICHOST|NI_NUMERICSERV) != 0) {

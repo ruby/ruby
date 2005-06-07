@@ -1,3 +1,21 @@
+Wed Jun  8 01:27:06 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (bignorm): fixed a bug in normalizing negative numbers
+	  reported from Honda Hiroki <hhonda@ipflex.com>.  normalizing
+	  should not trim preceding zeros from negative numbers.
+
+Wed Jun  8 00:15:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_getaddrinfo__aix): merged a patch from
+	  KUBO Takehiro <kubo@jiubao.org> to support AIX.  [ruby-list:40832]
+
+Wed Jun  8 00:09:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb (Array::to_yaml): merged a patch from
+	  Tilman Sauerbeck <tilman@code-monkey.de>.  [ruby-core:05055]
+
+	* lib/yaml/rubytypes.rb (Hash::to_yaml): ditto.
+
 Wed Jun  8 00:00:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/curses/curses.c (curses_insertln): merged a patch from

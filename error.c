@@ -1172,7 +1172,6 @@ void
 rb_sys_fail(mesg)
     const char *mesg;
 {
-    extern int errno;
     int n = errno;
     VALUE arg;
 

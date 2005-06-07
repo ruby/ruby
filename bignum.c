@@ -105,9 +105,15 @@ bignorm(x)
 	BDIGIT *ds = BDIGITS(x);
 
 	while (len-- && !ds[len]) ;
-	RBIGNUM(x)->len = ++len;
+	len++;
+	if (RBIGNUM(x)->sign) {
+	    RBIGNUM(x)->len = len;
+	}
+	else if (len == 0) {
+	    return x;
+	}
 
-	if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
+	if (RBIGNUM(x)->len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
 	    long num = 0;
 	    while (len--) {
 		num = BIGUP(num) + ds[len];

@@ -169,6 +169,30 @@ ruby_getaddrinfo(nodename, servname, hints, res)
 #define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo((node),(serv),(hints),(res))
 #endif
 
+#if defined(_AIX)
+static int
+ruby_getaddrinfo__aix(nodename, servname, hints, res)
+     char *nodename;
+     char *servname;
+     struct addrinfo *hints;
+     struct addrinfo **res;
+{
+    int error = getaddrinfo(nodename, servname, hints, res);
+    struct addrinfo *r;
+    if (error)
+	return error;
+    for (r = *res; r != NULL; r = r->ai_next) {
+	if (r->ai_addr->sa_family == 0)
+	    r->ai_addr->sa_family = r->ai_family;
+	if (r->ai_addr->sa_len == 0)
+	    r->ai_addr->sa_len = r->ai_addrlen;
+    }
+    return 0;
+}
+#undef getaddrinfo
+#define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__aix((node),(serv),(hints),(res))
+#endif
+
 #ifdef HAVE_CLOSESOCKET
 #undef close
 #define close closesocket
@@ -2504,7 +2528,9 @@ sock_s_getnameinfo(argc, argv)
 		 * 4th element holds numeric form, don't resolve.
 		 * see ipaddr().
 		 */
+#ifdef AI_NUMERICHOST /* AIX 4.3.3 doesn't have AI_NUMERICHOST. */
 		hints.ai_flags |= AI_NUMERICHOST;
+#endif
 	    }
 	}
 	else {
