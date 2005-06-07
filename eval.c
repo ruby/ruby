@@ -4674,6 +4674,14 @@ break_jump(retval)
     localjump_error("unexpected break", retval, TAG_BREAK);
 }
 
+void
+rb_need_block()
+{
+    if (!rb_block_given_p()) {
+	localjump_error("no block given", Qnil, 0);
+    }
+}
+
 static VALUE
 rb_yield_0(val, self, klass, flags, avalue)
     VALUE val, self, klass;	/* OK */
@@ -4691,9 +4699,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     int lambda = flags & YIELD_LAMBDA_CALL;
     int state;
 
-    if (!rb_block_given_p()) {
-	localjump_error("no block given", Qnil, 0);
-    }
+    rb_need_block();
 
     PUSH_VARS();
     block = ruby_block;
@@ -6029,8 +6035,9 @@ backtrace(lev)
 	    }
 	}
     }
-    while (frame && (n = frame->node)) {
+    for (; frame && (n = frame->node); frame = frame->prev) {
 	if (frame->prev && frame->prev->last_func) {
+	    if (frame->prev->node == n) continue;
 	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
 		     n->nd_file, nd_line(n),
 		     rb_id2name(frame->prev->last_func));
@@ -6039,7 +6046,6 @@ backtrace(lev)
 	    snprintf(buf, BUFSIZ, "%s:%d", n->nd_file, nd_line(n));
 	}
 	rb_ary_push(ary, rb_str_new2(buf));
-	frame = frame->prev;
     }
 
     return ary;
