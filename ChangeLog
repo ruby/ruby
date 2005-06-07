@@ -3,8 +3,10 @@ Tue Jun  7 17:20:39 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	* parse.y (parser_yylex): allow ';;' to be block terminator in
 	  place of 'end'.  [highly experimental]
 
-	* misc/ruby-mode.el (ruby-block-end-re): allow ';;' for a negative
-	  indent trigger.  [highly experimental]
+	* misc/ruby-mode.el (ruby-block-end-re): allow ';;' to be a
+	  negative indent trigger.  [highly experimental]
+
+	* parse.y (parser_yylex): small error fixed.
 
 Tue Jun  7 16:45:49 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

@@ -6309,6 +6309,7 @@ parser_yylex(parser)
 	    return kEND;
 	}
 	pushback(c);
+	c = ';';
 	command_start = Qtrue;
       case ',':
 	lex_state = EXPR_BEG;
