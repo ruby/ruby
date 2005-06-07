@@ -1110,11 +1110,13 @@ site-install-rb: install-rb
 
   depend = File.join(srcdir, "depend")
   if File.exist?(depend)
+    suffixes = []
+    depout = []
     open(depend, "r") do |dfile|
       mfile.printf "###\n"
       cont = implicit = nil
       impconv = proc do
-	COMPILE_RULES.each {|rule| mfile.print(rule % implicit[0], implicit[1])}
+	COMPILE_RULES.each {|rule| depout << (rule % implicit[0]) << implicit[1]}
 	implicit = nil
       end
       ruleconv = proc do |line|
@@ -1127,12 +1129,13 @@ site-install-rb: install-rb
 	  end
 	end
 	if m = /\A\.(\w+)\.(\w+)(?:\s*:)/.match(line)
+          suffixes << m[1] << m[2]
 	  implicit = [[m[1], m[2]], [m.post_match]]
 	  next
 	elsif RULE_SUBST and /\A[$\w][^#]*:/ =~ line
 	  line.gsub!(%r"(?<=\s)(?!\.)([^$(){}+=:\s\/\\,]+)(?=\s|\z)") {|*m| RULE_SUBST % m}
 	end
-	mfile.print line
+	depout << line
       end
       while line = dfile.gets()
 	line.gsub!(/\.o\b/, ".#{$OBJEXT}")
@@ -1152,6 +1155,10 @@ site-install-rb: install-rb
 	impconv.call
       end
     end
+    unless suffixes.empty?
+      mfile.print ".SUFFIXES: .", suffixes.uniq.join(" ."), "\n\n"
+    end
+    mfile.print depout
   else
     headers = %w[ruby.h defines.h]
     if RULE_SUBST
