@@ -1,4 +1,7 @@
-require 'net/https'
+begin
+  require 'net/https'
+rescue LoadError
+end
 require 'test/unit'
 
 class HTTPSProxyTest < Test::Unit::TestCase
@@ -23,5 +26,5 @@ class HTTPSProxyTest < Test::Unit::TestCase
         "[ruby-dev:25673]")
     }
   end
-end
+end if defined?(OpenSSL)
  
