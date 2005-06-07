@@ -1,3 +1,11 @@
+Tue Jun  7 17:39:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_cvar_get): Module#class_variable_get(): back
+	  ported from CVS HEAD.  [ruby-talk:144741]
+
+	* object.c (rb_mod_cvar_set): Module#class_variable_set().
+	  [ruby-talk:144741]
+
 Tue Jun  7 16:32:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): raise exception on debug mode (-d),
