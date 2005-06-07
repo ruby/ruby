@@ -446,6 +446,17 @@ curses_deleteln(obj)
     return Qnil;
 }
 
+/* def insertln */
+static VALUE
+curses_insertln(obj)
+    VALUE obj;
+{
+#if defined(HAVE_INSERTLN) || defined(insertln)
+    insertln();
+#endif
+    return Qnil;
+}
+
 /* def keyname */
 static VALUE
 curses_keyname(obj, c)
@@ -1159,6 +1170,20 @@ window_deleteln(obj)
     return Qnil;
 }
 
+/* def insertln */
+static VALUE
+window_insertln(obj)
+    VALUE obj;
+{
+#if defined(HAVE_WINSERTLN) || defined(winsertln)
+    struct windata *winp;
+    
+    GetWINDOW(obj, winp);
+    winsertln(winp->window);
+#endif
+    return Qnil;
+}
+
 static VALUE
 window_scrollok(VALUE obj, VALUE bf)
 {
@@ -1438,6 +1463,7 @@ Init_curses()
     rb_define_module_function(mCurses, "getstr", curses_getstr, 0);
     rb_define_module_function(mCurses, "delch", curses_delch, 0);
     rb_define_module_function(mCurses, "deleteln", curses_deleteln, 0);
+    rb_define_module_function(mCurses, "insertln", curses_insertln, 0);
     rb_define_module_function(mCurses, "keyname", curses_keyname, 1);
     rb_define_module_function(mCurses, "lines", curses_lines, 0);
     rb_define_module_function(mCurses, "cols", curses_cols, 0);
@@ -1505,6 +1531,7 @@ Init_curses()
     rb_define_method(cWindow, "getstr", window_getstr, 0);
     rb_define_method(cWindow, "delch", window_delch, 0);
     rb_define_method(cWindow, "deleteln", window_deleteln, 0);
+    rb_define_method(cWindow, "insertln", window_insertln, 0);
     rb_define_method(cWindow, "scroll", window_scroll, 0);
     rb_define_method(cWindow, "scrollok", window_scrollok, 1);
     rb_define_method(cWindow, "idlok", window_idlok, 1);

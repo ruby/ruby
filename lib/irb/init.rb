@@ -223,6 +223,9 @@ module IRB
 
   # enumerate possible rc-file base name generators
   def IRB.rc_file_generators
+    if irbrc = ENV["IRBRC"]
+      yield proc{|rc| irbrc}
+    end
     if home = ENV["HOME"]
       yield proc{|rc| home+"/.irb#{rc}"} 
     end
