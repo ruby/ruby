@@ -1,3 +1,8 @@
+Tue Jun  7 16:32:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): raise exception on debug mode (-d),
+	  not verbose mode (-w/-w).  [ruby-core:05123]
+
 Tue Jun  7 10:30:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: slave-ip fails to call procedures

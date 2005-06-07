@@ -774,7 +774,7 @@ rb_f_sprintf(argc, argv)
     /* XXX - We cannot validiate the number of arguments because
      *       the format string may contain `n$'-style argument selector.
      */
-    if (RTEST(ruby_verbose) && posarg >= 0 && nextarg < argc) {
+    if (RTEST(ruby_debug) && posarg >= 0 && nextarg < argc) {
 	rb_raise(rb_eArgError, "too many arguments for format string");
     }
     rb_str_resize(result, blen);
