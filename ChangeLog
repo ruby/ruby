@@ -1,3 +1,8 @@
+Tue Jun  7 18:30:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): add .SUFFIXES from depend file.
+	  fixed: [ruby-dev:26294]
+
 Tue Jun  7 17:39:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* object.c (rb_mod_cvar_get): Module#class_variable_get(): back
@@ -53,7 +58,7 @@ Mon May 30 23:48:29 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Sat May 28 16:40:15 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* Sat/openssl/test_x509store.rb: add test for expired CRL 
+	* Sat/openssl/test_x509store.rb: add test for expired CRL
 	  and refine some assertions.
 
  May 28 05:15:51 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
@@ -93,7 +98,7 @@ Wed May 25 20:06:27 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: TkComm#tk_split_*list fail to split a kind of SJIS
 	  strings. To avoid the trouble, add arguments to control converting
-	  encoding, and do split on a UTF8 string. 
+	  encoding, and do split on a UTF8 string.
 
 	* ext/tk/lib/multi-tk.rb: modify to attend encoding.
 
@@ -125,7 +130,7 @@ Wed May 25 20:06:27 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  Tk#lower_window/raise_window by reason of method-name conflict
 
 	* ext/tk/lib/tk/canvas.rb: bug fix on TkCanvas#delete when given
-	  non-TkcItem arguments. 
+	  non-TkcItem arguments.
 
 	* ext/tk/lib/tkextlib/iwidgets/scrolledcanvas.rb: ditto.
 
