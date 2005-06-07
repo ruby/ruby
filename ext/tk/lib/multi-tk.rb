@@ -1333,7 +1333,7 @@ class MultiTkIp
     #self.eval_callback{ TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args)) }
     #ret = self.eval_callback{ TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *args)) }
     ret = self.eval_callback(*args){|safe, *params|
-      $SAFE=safe
+      $SAFE=safe if $SAFE < safe
       TkComm._get_eval_string(TkUtil.eval_cmd(cmd, *params))
     }
     if ret.kind_of?(Exception)
@@ -1511,7 +1511,7 @@ class MultiTkIp
     else
       eval_proc_core(true, 
                      proc{|safe, *params| 
-                       $SAFE=safe
+                       $SAFE=safe if $SAFE < safe
                        Thread.new(*params, &cmd).value
                      },
                      *args)
@@ -1530,7 +1530,8 @@ class MultiTkIp
     Thread.new{
       eval_proc_core(false, 
                      proc{|safe, *params| 
-                       $SAFE=safe; Thread.new(*params, &cmd).value
+                       $SAFE=safe if $SAFE < safe
+                       Thread.new(*params, &cmd).value
                      },
                      *args)
     }
@@ -1545,7 +1546,11 @@ class MultiTkIp
       raise RuntimeError, "A String object is expected for the 'cmd' argument"
     end
 
-    eval_proc_core(true, proc{|safe| $SAFE=safe; Kernel.eval(cmd, *eval_args)})
+    eval_proc_core(true, 
+                   proc{|safe| 
+                     $SAFE=safe if $SAFE < safe
+                     Kernel.eval(cmd, *eval_args)
+                   })
   end
   alias eval_str eval_string
 
@@ -1556,7 +1561,10 @@ class MultiTkIp
     end
     Thread.new{
       eval_proc_core(true, 
-                     proc{|safe| $SAFE=safe; Kernel.eval(cmd, *eval_args)})
+                     proc{|safe| 
+                       $SAFE=safe if $SAFE < safe
+                       Kernel.eval(cmd, *eval_args)
+                     })
     }
   end
   alias background_eval_string bg_eval_string
