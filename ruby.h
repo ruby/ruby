@@ -551,6 +551,7 @@ VALUE rb_yield _((VALUE));
 VALUE rb_yield_values __((int n, ...));
 VALUE rb_yield_splat _((VALUE));
 int rb_block_given_p _((void));
+void rb_need_block _((void));
 VALUE rb_iterate _((VALUE(*)(VALUE),VALUE,VALUE(*)(ANYARGS),VALUE));
 VALUE rb_rescue _((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE));
 VALUE rb_rescue2 __((VALUE(*)(ANYARGS),VALUE,VALUE(*)(ANYARGS),VALUE,...));

@@ -80,11 +80,10 @@ enum_grep(obj, pat)
 static VALUE
 find_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     if (RTEST(rb_yield(i))) {
-	memo->u2.value = Qtrue;
-	memo->u1.value = i;
+	*memo = i;
 	rb_iter_break();
     }
     return Qnil;
@@ -111,13 +110,13 @@ enum_find(argc, argv, obj)
     VALUE* argv;
     VALUE obj;
 {
-    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, Qfalse, 0);
+    VALUE memo = Qundef;
     VALUE if_none;
 
     rb_scan_args(argc, argv, "01", &if_none);
-    rb_iterate(rb_each, obj, find_i, (VALUE)memo);
-    if (memo->u2.value) {
-	return memo->u1.value;
+    rb_iterate(rb_each, obj, find_i, (VALUE)&memo);
+    if (memo != Qundef) {
+	return memo;
     }
     if (!NIL_P(if_none)) {
 	return rb_funcall(if_none, rb_intern("call"), 0, 0);
@@ -257,14 +256,13 @@ enum_to_a(obj)
 static VALUE
 inject_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
-    if (memo->u2.value) {
-        memo->u2.value = Qfalse;
-        memo->u1.value = i;
+    if (*memo == Qundef) {
+        *memo = i;
     }
     else {
-        memo->u1.value = rb_yield_values(2, memo->u1.value, i);
+        *memo = rb_yield_values(2, *memo, i);
     }
     return Qnil;
 }
@@ -305,18 +303,11 @@ enum_inject(argc, argv, obj)
     int argc;
     VALUE *argv, obj;
 {
-    NODE *memo;
-    VALUE n;
+    VALUE memo = Qundef;
 
-    if (rb_scan_args(argc, argv, "01", &n) == 1) {
-        memo = rb_node_newnode(NODE_MEMO, n, Qfalse, 0);
-    }
-    else {
-        memo = rb_node_newnode(NODE_MEMO, Qnil, Qtrue, 0);
-    }
-    rb_iterate(rb_each, obj, inject_i, (VALUE)memo);
-    n = memo->u1.value;
-    return n;
+    rb_scan_args(argc, argv, "01", &memo);
+    rb_iterate(rb_each, obj, inject_i, (VALUE)&memo);
+    return memo;
 }
 
 static VALUE
@@ -507,10 +498,10 @@ enum_sort_by(obj)
 static VALUE
 all_iter_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     if (!RTEST(rb_yield(i))) {
-	memo->u1.value = Qfalse;
+	*memo = Qfalse;
 	rb_iter_break();
     }
     return Qnil;
@@ -519,10 +510,10 @@ all_iter_i(i, memo)
 static VALUE
 all_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     if (!RTEST(i)) {
-	memo->u1.value = Qfalse;
+	*memo = Qfalse;
 	rb_iter_break();
     }
     return Qnil;
@@ -549,22 +540,19 @@ static VALUE
 enum_all(obj)
     VALUE obj;
 {
-    VALUE result;
-    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+    VALUE result = Qtrue;
 
-    memo->u1.value = Qtrue;
-    rb_iterate(rb_each, obj, rb_block_given_p() ? all_iter_i : all_i, (VALUE)memo);
-    result = memo->u1.value;
+    rb_iterate(rb_each, obj, rb_block_given_p() ? all_iter_i : all_i, (VALUE)&result);
     return result;
 }
 
 static VALUE
 any_iter_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     if (RTEST(rb_yield(i))) {
-	memo->u1.value = Qtrue;
+	*memo = Qtrue;
 	rb_iter_break();
     }
     return Qnil;
@@ -573,10 +561,10 @@ any_iter_i(i, memo)
 static VALUE
 any_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     if (RTEST(i)) {
-	memo->u1.value = Qtrue;
+	*memo = Qtrue;
 	rb_iter_break();
     }
     return Qnil;
@@ -604,29 +592,26 @@ static VALUE
 enum_any(obj)
     VALUE obj;
 {
-    VALUE result;
-    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+    VALUE result = Qfalse;
 
-    memo->u1.value = Qfalse;
-    rb_iterate(rb_each, obj, rb_block_given_p() ? any_iter_i : any_i, (VALUE)memo);
-    result = memo->u1.value;
+    rb_iterate(rb_each, obj, rb_block_given_p() ? any_iter_i : any_i, (VALUE)&result);
     return result;
 }
 
 static VALUE
 min_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     VALUE cmp;
 
-    if (NIL_P(memo->u1.value)) {
-	memo->u1.value = i;
+    if (NIL_P(*memo)) {
+	*memo = i;
     }
     else {
-	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
-	if (rb_cmpint(cmp, i, memo->u1.value) < 0) {
-	    memo->u1.value = i;
+	cmp = rb_funcall(i, id_cmp, 1, *memo);
+	if (rb_cmpint(cmp, i, *memo) < 0) {
+	    *memo = i;
 	}
     }
     return Qnil;
@@ -635,17 +620,17 @@ min_i(i, memo)
 static VALUE
 min_ii(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     VALUE cmp;
 
-    if (NIL_P(memo->u1.value)) {
-	memo->u1.value = i;
+    if (NIL_P(*memo)) {
+	*memo = i;
     }
     else {
-	cmp = rb_yield_values(2, i, memo->u1.value);
-	if (rb_cmpint(cmp, i, memo->u1.value) < 0) {
-	    memo->u1.value = i;
+	cmp = rb_yield_values(2, i, *memo);
+	if (rb_cmpint(cmp, i, *memo) < 0) {
+	    *memo = i;
 	}
     }
     return Qnil;
@@ -670,28 +655,26 @@ static VALUE
 enum_min(obj)
     VALUE obj;
 {
-    VALUE result;
-    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+    VALUE result = Qnil;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? min_ii : min_i, (VALUE)memo);
-    result = memo->u1.value;
+    rb_iterate(rb_each, obj, rb_block_given_p() ? min_ii : min_i, (VALUE)&result);
     return result;
 }
 
 static VALUE
 max_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     VALUE cmp;
 
-    if (NIL_P(memo->u1.value)) {
-	memo->u1.value = i;
+    if (NIL_P(*memo)) {
+	*memo = i;
     }
     else {
-	cmp = rb_funcall(i, id_cmp, 1, memo->u1.value);
-	if (rb_cmpint(cmp, i, memo->u1.value) > 0) {
-	    memo->u1.value = i;
+	cmp = rb_funcall(i, id_cmp, 1, *memo);
+	if (rb_cmpint(cmp, i, *memo) > 0) {
+	    *memo = i;
 	}
     }
     return Qnil;
@@ -700,17 +683,17 @@ max_i(i, memo)
 static VALUE
 max_ii(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     VALUE cmp;
 
-    if (NIL_P(memo->u1.value)) {
-	memo->u1.value = i;
+    if (NIL_P(*memo)) {
+	*memo = i;
     }
     else {
-	cmp = rb_yield_values(2, i, memo->u1.value);
-	if (rb_cmpint(cmp, i, memo->u1.value) > 0) {
-	    memo->u1.value = i;
+	cmp = rb_yield_values(2, i, *memo);
+	if (rb_cmpint(cmp, i, *memo) > 0) {
+	    *memo = i;
 	}
     }
     return Qnil;
@@ -734,29 +717,27 @@ static VALUE
 enum_max(obj)
     VALUE obj;
 {
-    VALUE result;
-    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+    VALUE result = Qnil;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)memo);
-    result = memo->u1.value;
+    rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)&result);
     return result;
 }
 
 static VALUE
 min_by_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     VALUE v;
 
     v = rb_yield(i);
-    if (NIL_P(memo->u1.value)) {
-	memo->u1.value = v;
-	memo->u2.value = i;
+    if (NIL_P(memo[0])) {
+	memo[0] = v;
+	memo[1] = i;
     }
-    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo->u1.value), v, memo->u1.value) < 0) {
-	memo->u1.value = v;
-	memo->u2.value = i;
+    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[0]), v, memo[0]) < 0) {
+	memo[0] = v;
+	memo[1] = i;
     }
     return Qnil;
 }
@@ -776,29 +757,29 @@ static VALUE
 enum_min_by(obj)
     VALUE obj;
 {
-    VALUE result;
-    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+    VALUE memo[2];
 
+    rb_need_block();
+    memo[0] = memo[1] = Qnil;
     rb_iterate(rb_each, obj, min_by_i, (VALUE)memo);
-    result = memo->u2.value;
-    return result;
+    return memo[1];
 }
 
 static VALUE
 max_by_i(i, memo)
     VALUE i;
-    NODE *memo;
+    VALUE *memo;
 {
     VALUE v;
 
     v = rb_yield(i);
-    if (NIL_P(memo->u1.value)) {
-	memo->u1.value = v;
-	memo->u2.value = i;
+    if (NIL_P(memo[0])) {
+	memo[0] = v;
+	memo[1] = i;
     }
-    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo->u1.value), v, memo->u1.value) > 0) {
-	memo->u1.value = v;
-	memo->u2.value = i;
+    else if (rb_cmpint(rb_funcall(v, id_cmp, 1, memo[0]), v, memo[0]) > 0) {
+	memo[0] = v;
+	memo[1] = i;
     }
     return Qnil;
 }
@@ -818,21 +799,21 @@ static VALUE
 enum_max_by(obj)
     VALUE obj;
 {
-    VALUE result;
-    NODE *memo = rb_node_newnode(NODE_MEMO, Qnil, 0, 0);
+    VALUE memo[2];
 
+    rb_need_block();
+    memo[0] = memo[1] = Qnil;
     rb_iterate(rb_each, obj, max_by_i, (VALUE)memo);
-    result = memo->u2.value;
-    return result;
+    return memo[1];
 }
 
 static VALUE
 member_i(item, memo)
     VALUE item;
-    NODE *memo;
+    VALUE *memo;
 {
-    if (rb_equal(item, memo->u1.value)) {
-	memo->u2.value = Qtrue;
+    if (rb_equal(item, memo[0])) {
+	memo[1] = Qtrue;
 	rb_iter_break();
     }
     return Qnil;
@@ -855,21 +836,21 @@ static VALUE
 enum_member(obj, val)
     VALUE obj, val;
 {
-    VALUE result;
-    NODE *memo = rb_node_newnode(NODE_MEMO, val, Qfalse, 0);
+    VALUE memo[2];
 
+    memo[0] = val;
+    memo[1] = Qfalse;
     rb_iterate(rb_each, obj, member_i, (VALUE)memo);
-    result = memo->u2.value;
-    return result;
+    return memo[1];
 }
 
 static VALUE
 each_with_index_i(val, memo)
     VALUE val;
-    NODE *memo;
+    VALUE *memo;
 {
-    rb_yield_values(2, val, INT2FIX(memo->u3.cnt));
-    memo->u3.cnt++;
+    rb_yield_values(2, val, INT2FIX(*memo));
+    ++*memo;
     return Qnil;
 }
 
@@ -892,20 +873,21 @@ static VALUE
 enum_each_with_index(obj)
     VALUE obj;
 {
-    NODE *memo = rb_node_newnode(NODE_MEMO, 0, 0, 0);
+    VALUE memo = 0;
 
-    rb_iterate(rb_each, obj, each_with_index_i, (VALUE)memo);
+    rb_need_block();
+    rb_iterate(rb_each, obj, each_with_index_i, (VALUE)&memo);
     return obj;
 }
 
 static VALUE
 zip_i(val, memo)
     VALUE val;
-    NODE *memo;
+    VALUE *memo;
 {
-    VALUE result = memo->u1.value;
-    VALUE args = memo->u2.value;
-    int idx = memo->u3.cnt++;
+    VALUE result = memo[0];
+    VALUE args = memo[1];
+    int idx = memo[2]++;
     VALUE tmp;
     int i;
 
@@ -954,13 +936,15 @@ enum_zip(argc, argv, obj)
 {
     int i;
     VALUE result;
-    NODE *memo;
+    VALUE memo[3];
 
     for (i=0; i<argc; i++) {
 	argv[i] = rb_convert_type(argv[i], T_ARRAY, "Array", "to_a");
     }
     result = rb_block_given_p() ? Qnil : rb_ary_new();
-    memo = rb_node_newnode(NODE_MEMO, result, rb_ary_new4(argc, argv), 0);
+    memo[0] = result;
+    memo[1] = rb_ary_new4(argc, argv);
+    memo[2] = 0;
     rb_iterate(rb_each, obj, zip_i, (VALUE)memo);
 
     return result;

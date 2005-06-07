@@ -1,3 +1,12 @@
+Wed Jun  8 08:33:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_min_by, enum_max_by): return nil if no iteration.
+	  fixed: [ruby-dev:26245]
+
+	* eval.c (rb_need_block): ensure a block is given.
+
+	* eval.c (backtrace): skip successive frames sharing same node.
+
 Wed Jun  8 01:27:06 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bignorm): fixed a bug in normalizing negative numbers
