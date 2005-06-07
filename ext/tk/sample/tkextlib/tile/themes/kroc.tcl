@@ -57,31 +57,60 @@ namespace eval tile::kroc {
         #
         # Elements:
         #
-        style element create Button.button pixmap -images [list  \
-                pressed $Images(button-p) \
-                active	$Images(button-h) \
-                {} $Images(button-n) \
-                ] -border 3 -tiling tile
-        
-        style element create Checkbutton.indicator pixmap -images [list \
-                {pressed selected}	$Images(check-nc) \
-                pressed                	$Images(check-nu) \
-                {active selected} 	$Images(check-hc) \
-                active			$Images(check-hu) \
-                selected		$Images(check-nc) \
-                {}                 	$Images(check-nu) \
-                ] -tiling fixed
-        
-        style element create Radiobutton.indicator pixmap -images [list \
-                {pressed selected}     	$Images(radio-nc) \
-                pressed                	$Images(radio-nu) \
-                {active selected} 	$Images(radio-hc) \
-                active			$Images(radio-hu) \
-                selected		$Images(radio-nc) \
-                {}                 	$Images(radio-nu) \
-                ] -tiling fixed
-        
-        
+        if {[package vsatisfies [package provide tile] 0.5]} {
+
+            style element create Button.button image $Images(button-n) \
+                -map [list  \
+                    pressed		$Images(button-p) \
+                    active		$Images(button-h) \
+                    ] -border 3 -sticky ew
+            
+            style element create Checkbutton.indicator image $Images(check-nu) \
+                -map [list \
+                    {pressed selected}	$Images(check-nc) \
+                    pressed		$Images(check-nu) \
+                    {active selected}	$Images(check-hc) \
+                    active		$Images(check-hu) \
+                    selected		$Images(check-nc) \
+                    ] -sticky w
+            
+            style element create Radiobutton.indicator image $Images(radio-nu) \
+                -map [list \
+                    {pressed selected}	$Images(radio-nc) \
+                    pressed		$Images(radio-nu) \
+                    {active selected}	$Images(radio-hc) \
+                    active		$Images(radio-hu) \
+                    selected		$Images(radio-nc) \
+                    ] -sticky w
+
+        } else {
+
+            style element create Button.button pixmap -images [list  \
+                    pressed		$Images(button-p) \
+                    active		$Images(button-h) \
+                    {}			$Images(button-n) \
+                    ] -border 3 -tiling tile
+            
+            style element create Checkbutton.indicator pixmap -images [list \
+                    {pressed selected}	$Images(check-nc) \
+                    pressed		$Images(check-nu) \
+                    {active selected}	$Images(check-hc) \
+                    active		$Images(check-hu) \
+                    selected		$Images(check-nc) \
+                    {}			$Images(check-nu) \
+                    ] -tiling fixed
+            
+            style element create Radiobutton.indicator pixmap -images [list \
+                    {pressed selected}	$Images(radio-nc) \
+                    pressed		$Images(radio-nu) \
+                    {active selected}	$Images(radio-hc) \
+                    active		$Images(radio-hu) \
+                    selected		$Images(radio-nc) \
+                    {}			$Images(radio-nu) \
+                    ] -tiling fixed
+
+        }
+
         #
         # Settings:
         #
