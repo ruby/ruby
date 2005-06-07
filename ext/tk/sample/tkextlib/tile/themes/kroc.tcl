@@ -15,6 +15,12 @@ namespace eval tile::kroc {
     set imgdir [file join [file dirname [info script]] kroc]
     array set Images [tile::LoadImages $imgdir *.gif]
     
+    if {[package vsatisfies [package provide tile] 0.5]} {
+        set TNoteBook_Tab TNotebook.Tab
+    } else {
+        set TNoteBook_Tab Tab.TNotebook
+    }
+    
     style theme create kroc -parent alt -settings {
         
         style default . -background #FCB64F -troughcolor #F8C278 -borderwidth 1
@@ -24,8 +30,8 @@ namespace eval tile::kroc {
         
         style default TButton -padding "10 4"
         
-        style default TNotebook.Tab -padding {10 3} -font TkDefaultFont
-        style map TNotebook.Tab \
+        style default $TNoteBook_Tab -padding {10 3} -font TkDefaultFont
+        style map $TNoteBook_Tab \
                 -background [list selected #FCB64F {} #FFE6BA] \
                 -foreground [list {} black] \
                 -padding [list selected {10 6 10 3}]
@@ -58,7 +64,7 @@ namespace eval tile::kroc {
         # Elements:
         #
         if {[package vsatisfies [package provide tile] 0.5]} {
-
+            
             style element create Button.button image $Images(button-n) \
                 -map [list  \
                     pressed		$Images(button-p) \
@@ -82,9 +88,9 @@ namespace eval tile::kroc {
                     active		$Images(radio-hu) \
                     selected		$Images(radio-nc) \
                     ] -sticky w
-
+            
         } else {
-
+            
             style element create Button.button pixmap -images [list  \
                     pressed		$Images(button-p) \
                     active		$Images(button-h) \
@@ -108,11 +114,11 @@ namespace eval tile::kroc {
                     selected		$Images(radio-nc) \
                     {}			$Images(radio-nu) \
                     ] -tiling fixed
-
+            
         }
 
         #
-        # Settings:
+        # Settings: (*button.background is not needed in tile 0.5 or above)
         #
         style layout TButton {
 	    Button.button -children {
@@ -126,6 +132,7 @@ namespace eval tile::kroc {
 
         style layout TCheckbutton {
 	    Checkbutton.border -children {
+		Checkbutton.background
 		Checkbutton.padding -children {
 		    Checkbutton.indicator -side left
 		    Checkbutton.focus -side left -children {
@@ -137,6 +144,7 @@ namespace eval tile::kroc {
         
         style layout TRadiobutton {
             Radiobutton.border -children {
+                Radiobutton.background
                 Radiobutton.padding -children  {
                     Radiobutton.indicator -side left
                     Radiobutton.focus -expand true -sticky w -children {

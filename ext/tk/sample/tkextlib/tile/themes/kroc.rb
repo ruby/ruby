@@ -8,6 +8,12 @@
 imgdir = File.join(File.dirname(__FILE__), 'kroc')
 $images = Tk::Tile.load_images(imgdir, '*.gif')
 
+if TkPackage.vcompare(Tk::Tile.package_version, '0.5') >= 0
+  $TNotebook_Tab = Tk::Tile::TNotebook.style('Tab')
+else
+  $TNotebook_Tab = 'Tab.TNotebook'
+end
+
 def kroc_rb_settings
   # Tk::Tile::Style.default(TkRoot, :background=>'#FCB64F', 
   #                         :troughcolor=>'#F8C278', :borderwidth=>1)
@@ -52,10 +58,10 @@ def kroc_rb_settings
   Tk::Tile::Style.default(Tk::Tile::TButton, :padding=>[10,4])
 
   # Tk::Tile::Style.default('TNotebook.Tab', 
-  Tk::Tile::Style.default(Tk::Tile::TNotebook.style('Tab'), 
+  Tk::Tile::Style.default($TNotebook_Tab, 
                           :padding=>[10, 3], :font=>Tk::Tile::Font::Default)
   # Tk::Tile::Style.map('TNotebook.Tab', 
-  Tk::Tile::Style.map(Tk::Tile::TNotebook.style('Tab'), 
+  Tk::Tile::Style.map($TNotebook_Tab, 
                       :background=>[:selected, '#FCB64F', '', '#FFE6BA'], 
                       :foreground=>['', 'black'], 
                       :padding=>[:selected, [10, 6, 10, 3]])
@@ -162,6 +168,7 @@ def kroc_rb_settings
 
   # Tk::Tile::Style.layout(Tk::Tile::TCheckbutton, 
   Tk::Tile::Style.layout('TCheckbutton', [
+      'Checkbutton.background', # this is not needed in tile 0.5 or later
       'Checkbutton.border', {:children=>[
            'Checkbutton.padding', {:children=>[
                 'Checkbutton.indicator', {:side=>:left}, 
@@ -174,6 +181,7 @@ def kroc_rb_settings
 
   # Tk::Tile::Style.layout(Tk::Tile::TRadiobutton, 
   Tk::Tile::Style.layout('TRadiobutton', [
+      'Radiobutton.background', # this is not needed in tile 0.5 or later
       'Radiobutton.border', {:children=>[
            'Radiobutton.padding', {:children=>[
                 'Radiobutton.indicator', {:side=>:left}, 
