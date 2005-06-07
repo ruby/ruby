@@ -770,8 +770,10 @@ rb_f_sprintf(argc, argv)
   sprint_exit:
     /* XXX - We cannot validiate the number of arguments if (digit)$ style used.
      */
-    if (RTEST(ruby_verbose) && posarg >= 0 && nextarg < argc) {
-	rb_raise(rb_eArgError, "too many arguments for format string");
+    if (posarg >= 0 && nextarg < argc) {
+	const char *mesg = "too many arguments for format string";
+	if (RTEST(ruby_debug)) rb_raise(rb_eArgError, mesg);
+	if (RTEST(ruby_verbose)) rb_warn(mesg);
     }
     rb_str_resize(result, blen);
 

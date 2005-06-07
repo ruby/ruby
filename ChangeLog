@@ -1,3 +1,23 @@
+Tue Jun  7 17:20:39 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_yylex): allow ';;' to be block terminator in
+	  place of 'end'.  [highly experimental]
+
+	* misc/ruby-mode.el (ruby-block-end-re): allow ';;' for a negative
+	  indent trigger.  [highly experimental]
+
+Tue Jun  7 16:45:49 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (parser_yylex): "respond_to?:foo" should be interpreted
+	  as "respond_to? :foo" at the command level.  [ruby-talk:144303]
+
+Tue Jun  7 16:32:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sprintf.c (rb_f_sprintf): raise exception on debug mode (-d),
+	  not verbose mode (-w/-w).  [ruby-core:05123]
+
+	* sprintf.c (rb_f_sprintf): warn always on verbose mode.
+
 Tue Jun  7 10:30:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: slave-ip fails to call procedures

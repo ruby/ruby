@@ -6304,6 +6304,11 @@ parser_yylex(parser)
 	return '^';
 
       case ';':
+	if ((c = nextc()) == ';') {
+	    lex_state = EXPR_END;
+	    return kEND;
+	}
+	pushback(c);
 	command_start = Qtrue;
       case ',':
 	lex_state = EXPR_BEG;
@@ -6700,7 +6705,7 @@ parser_yylex(parser)
 		}
 	    }
 
-	    if (lex_state == EXPR_BEG ||
+	    if ((lex_state == EXPR_BEG && !cmd_state) ||
 		lex_state == EXPR_ARG ||
 		lex_state == EXPR_CMDARG) {
 		if (peek(':') && !(lex_p + 1 < lex_pend && lex_p[1] == ':')) {
