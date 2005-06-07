@@ -23,7 +23,8 @@ end
 
 class Thread
   #
-  # FIXME: not documented in Pickaxe or Nutshell.
+  # Wraps a block in Thread.critical, restoring the original value upon exit
+  # from the critical section.
   #
   def Thread.exclusive
     _old = Thread.critical
@@ -37,7 +38,7 @@ class Thread
 end
 
 #
-# +Mutex+ implements a simple semaphore that can be used to coordinate access to
+# Mutex implements a simple semaphore that can be used to coordinate access to
 # shared data from multiple concurrent threads.
 #
 # Example:
@@ -58,6 +59,9 @@ end
 #   }
 #
 class Mutex
+  #
+  # Creates a new Mutex
+  #
   def initialize
     @waiting = []
     @locked = false;
@@ -126,7 +130,7 @@ class Mutex
 
   #
   # Obtains a lock, runs the block, and releases the lock when the block
-  # completes.  See the example under +Mutex+.
+  # completes.  See the example under Mutex.
   #
   def synchronize
     lock
@@ -138,7 +142,8 @@ class Mutex
   end
 
   #
-  # FIXME: not documented in Pickaxe/Nutshell.
+  # If the mutex is locked, unlocks the mutex, wakes one waiting thread, and
+  # yields in a critical section.
   #
   def exclusive_unlock
     return unless @locked
@@ -157,9 +162,9 @@ class Mutex
 end
 
 # 
-# +ConditionVariable+ objects augment class +Mutex+. Using condition variables,
+# ConditionVariable objects augment class Mutex. Using condition variables,
 # it is possible to suspend while in the middle of a critical section until a
-# resource becomes available (see the discussion on page 117).
+# resource becomes available.
 #
 # Example:
 #
@@ -184,6 +189,9 @@ end
 #   }
 #
 class ConditionVariable
+  #
+  # Creates a new ConditionVariable
+  #
   def initialize
     @waiters = []
   end
@@ -233,10 +241,31 @@ class ConditionVariable
 end
 
 #
-# This class provides a way to communicate data between threads.
+# This class provides a way to synchronize communication between threads.
 #
-# TODO: an example (code or English) would really help here.  How do you set up
-# a queue between two threads?
+# Example:
+#
+#   require 'thread'
+#   
+#   queue = Queue.new
+#   
+#   producer = Thread.new do
+#     5.times do |i|
+#       sleep rand(i) # simulate expense
+#       queue << i
+#       puts "#{i} produced"
+#     end
+#   end
+#   
+#   consumer = Thread.new do
+#     5.times do |i|
+#       value = queue.pop
+#       sleep rand(i/2) # simulate expense
+#       puts "consumed #{value}"
+#     end
+#   end
+#   
+#   consumer.join
 #
 class Queue
   #
@@ -269,7 +298,15 @@ class Queue
     rescue ThreadError
     end
   end
+
+  #
+  # Alias of push
+  #
   alias << push
+
+  #
+  # Alias of push
+  #
   alias enq push
 
   #
@@ -287,7 +324,15 @@ class Queue
   ensure
     Thread.critical = false
   end
+
+  #
+  # Alias of pop
+  #
   alias shift pop
+
+  #
+  # Alias of pop
+  #
   alias deq pop
 
   #
@@ -314,9 +359,7 @@ class Queue
   #
   # Alias of length.
   #
-  def size
-    length
-  end
+  alias size length
 
   #
   # Returns the number of threads waiting on the queue.
@@ -327,8 +370,10 @@ class Queue
 end
 
 #
-# This class represents queues of specified size capacity.  The +push+ operation
+# This class represents queues of specified size capacity.  The push operation
 # may be blocked if the capacity is full.
+#
+# See Queue for an example of how a SizedQueue works.
 #
 class SizedQueue<Queue
   #
@@ -373,6 +418,10 @@ class SizedQueue<Queue
     max
   end
 
+  #
+  # Pushes +obj+ to the queue.  If there is no space left in the queue, waits
+  # until space becomes available.
+  #
   def push(obj)
     Thread.critical = true
     while @que.length >= @max
@@ -382,9 +431,20 @@ class SizedQueue<Queue
     end
     super
   end
+
+  #
+  # Alias of push
+  #
   alias << push
+
+  #
+  # Alias of push
+  #
   alias enq push
 
+  #
+  # Retrieves data from the queue and runs a waiting thread, if any.
+  #
   def pop(*args)
     retval = super
     Thread.critical = true
@@ -404,20 +464,24 @@ class SizedQueue<Queue
     end
     retval
   end
+
+  #
+  # Alias of pop
+  #
   alias shift pop
+
+  #
+  # Alias of pop
+  #
   alias deq pop
 
+  #
+  # Returns the number of threads waiting on the queue.
+  #
   def num_waiting
     @waiting.size + @queue_wait.size
   end
 end
 
 # Documentation comments:
-#  - SizedQueue #push and #pop deserve some documentation, as they are different
-#    from the Queue implementations.
-#  - Some methods are not documented in Pickaxe/Nutshell, and are therefore not
-#    documented here.  See FIXME notes.
-#  - Reference to Pickaxe page numbers should be replaced with either a section
-#    name or a summary.
-#  - How do you document aliases?
 #  - How do you make RDoc inherit documentation from superclass?
