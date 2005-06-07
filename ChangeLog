@@ -1,3 +1,8 @@
+Tue Jun  7 10:30:49 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: slave-ip fails to call procedures
+	  delegated by master-ip.
+
 Sun Jun  5 23:00:35 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/console.rb: create console when required
