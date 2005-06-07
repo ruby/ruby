@@ -16,7 +16,7 @@ Tue Jun  7 16:45:49 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Tue Jun  7 16:32:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sprintf.c (rb_f_sprintf): raise exception on debug mode (-d),
-	  not verbose mode (-w/-w).  [ruby-core:05123]
+	  not verbose mode (-v/-w).  [ruby-core:05123]
 
 	* sprintf.c (rb_f_sprintf): warn always on verbose mode.
 
