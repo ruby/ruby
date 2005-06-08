@@ -85,7 +85,7 @@ get2comp(x, carry)		/* get 2's complement */
     if ((ds[RBIGNUM(x)->len-1] & (1<<(BITSPERDIG-1))) == 0) {
 	REALLOC_N(RBIGNUM(x)->digits, BDIGIT, ++RBIGNUM(x)->len);
 	ds = BDIGITS(x);
-	ds[RBIGNUM(x)->len-1] = ~0;
+	ds[RBIGNUM(x)->len-1] = RBIGNUM(x)->sign ? ~0 : 1;
     }
 }
 
@@ -105,15 +105,9 @@ bignorm(x)
 	BDIGIT *ds = BDIGITS(x);
 
 	while (len-- && !ds[len]) ;
-	len++;
-	if (RBIGNUM(x)->sign) {
-	    RBIGNUM(x)->len = len;
-	}
-	else if (len == 0) {
-	    return x;
-	}
+	RBIGNUM(x)->len = ++len;
 
-	if (RBIGNUM(x)->len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
+	if (len*SIZEOF_BDIGITS <= sizeof(VALUE)) {
 	    long num = 0;
 	    while (len--) {
 		num = BIGUP(num) + ds[len];
@@ -1063,11 +1057,30 @@ rb_big_neg(x)
     VALUE z = rb_big_clone(x);
     long i = RBIGNUM(x)->len;
     BDIGIT *ds = BDIGITS(z);
+    int nz = 0;
 
     if (!RBIGNUM(x)->sign) get2comp(z, Qtrue);
-    while (i--) ds[i] = ~ds[i];
-    if (RBIGNUM(x)->sign) get2comp(z, Qfalse);
+    while (i--) {
+	ds[i] = ~ds[i];
+    }
     RBIGNUM(z)->sign = !RBIGNUM(z)->sign;
+    if (RBIGNUM(x)->sign) get2comp(z, Qtrue);
+#if 0
+    i = RBIGNUM(x)->len;
+    if (RBIGNUM(x)->sign) {
+	while (i--) {
+	    if (ds[i]) nz = Qtrue;
+	}
+	if (!nz) {
+	    z = bignew(RBIGNUM(x)->len+1, 1);
+	    for (i=0; i<RBIGNUM(x)->len; i++) {
+		BDIGITS(z)[i] = BDIGITS(x)[i];
+	    }
+	    BDIGITS(z)[i] = 1;
+	    BDIGITS(z)[0] = 0;
+	}
+    }
+#endif
 
     return bignorm(z);
 }
@@ -1688,7 +1701,7 @@ rb_big_and(xx, yy)
     for (; i<l2; i++) {
 	zds[i] = sign?0:ds2[i];
     }
-    if (!RBIGNUM(z)->sign) get2comp(z, Qfalse);
+    if (!RBIGNUM(z)->sign) get2comp(z, Qtrue);
     return bignorm(z);
 }
 
@@ -1745,7 +1758,7 @@ rb_big_or(xx, yy)
     for (; i<l2; i++) {
 	zds[i] = sign?ds2[i]:(BIGRAD-1);
     }
-    if (!RBIGNUM(z)->sign) get2comp(z, Qfalse);
+    if (!RBIGNUM(z)->sign) get2comp(z, Qtrue);
 
     return bignorm(z);
 }
@@ -1806,7 +1819,7 @@ rb_big_xor(xx, yy)
     for (; i<l2; i++) {
 	zds[i] = sign?ds2[i]:~ds2[i];
     }
-    if (!RBIGNUM(z)->sign) get2comp(z, Qfalse);
+    if (!RBIGNUM(z)->sign) get2comp(z, Qtrue);
 
     return bignorm(z);
 }

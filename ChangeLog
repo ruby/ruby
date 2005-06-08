@@ -1,3 +1,8 @@
+Wed Jun  8 11:11:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (get2comp): revert all prior changes, and calculate
+	  proper 2's complement for negative numbers.
+
 Wed Jun  8 08:33:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_min_by, enum_max_by): return nil if no iteration.
@@ -11,7 +16,10 @@ Wed Jun  8 01:27:06 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (bignorm): fixed a bug in normalizing negative numbers
 	  reported from Honda Hiroki <hhonda@ipflex.com>.  normalizing
-	  should not trim preceding zeros from negative numbers.
+	  should not trim leading zeros from negative numbers.
+
+	* bignum.c (rb_cstr_to_inum): must remove leading zeros for this
+	  case.
 
 Wed Jun  8 00:15:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
