@@ -49,7 +49,7 @@ module DL
           begin
             DL.dlopen(lib)
           rescue DLError
-            nil
+            raise(DLError, "can't load #{lib}")
           end
         end
       }.flatten()
