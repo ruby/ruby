@@ -1,3 +1,8 @@
+2005-06-08  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/ICONS/icons.rb: fail to create instances of
+	  Tk::ICONS [ruby-dev:26305].
+
 2005-06-07  ocean  <ocean@ruby-lang.org>
 
 	* sample/tkextlib/tile/themes/kroc.{rb,tcl}: also support tile 0.4.

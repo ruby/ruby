@@ -76,7 +76,11 @@ module Tk
     ##########################################
 
     def self.new(name, keys=nil)
-      Tk_IMGTBL["::icon::#{name}"] || super
+      unless obj = Tk_IMGTBL["::icon::#{name}"]
+        obj = allocate()
+        obj.instance_eval{initialize(name, keys)}
+      end
+      obj
     end
 
     def initialize(name, keys=nil)
