@@ -1,3 +1,9 @@
+Wed Jun  8 11:11:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (get2comp): calculate proper 2's complement for
+	  negative numbers.  a bug in normalizing negative numbers
+	  reported from Honda Hiroki <hhonda@ipflex.com>.
+
 Wed Jun  8 08:33:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_min_by, enum_max_by): return nil if no iteration.
@@ -6,6 +12,18 @@ Wed Jun  8 08:33:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_need_block): ensure a block is given.
 
 	* eval.c (backtrace): skip successive frames sharing same node.
+
+Wed Jun  8 00:15:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_getaddrinfo__aix): merged a patch from
+	  KUBO Takehiro <kubo@jiubao.org> to support AIX.  [ruby-list:40832]
+
+Wed Jun  8 00:09:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb (Array::to_yaml): merged a patch from
+	  Tilman Sauerbeck <tilman@code-monkey.de>.  [ruby-core:05055]
+
+	* lib/yaml/rubytypes.rb (Hash::to_yaml): ditto.
 
 Wed Jun  8 00:00:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

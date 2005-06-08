@@ -77,7 +77,7 @@ hash_proc = Proc.new { |type, val|
 	elsif Hash === val
 	    type, obj_class = YAML.read_type_class( type, Hash )
         if obj_class != Hash
-            o = obj_class.new
+            o = obj_class.allocate
             o.update( val )
             val = o
         end
@@ -236,7 +236,7 @@ array_proc = Proc.new { |type, val|
     if Array === val
         type, obj_class = YAML.read_type_class( type, Array )
         if obj_class != Array
-            o = obj_class.new
+            o = obj_class.allocate
             o.concat( val )
             val = o
         end

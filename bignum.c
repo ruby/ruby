@@ -85,7 +85,7 @@ get2comp(x, carry)		/* get 2's complement */
     if ((ds[RBIGNUM(x)->len-1] & (1<<(BITSPERDIG-1))) == 0) {
 	REALLOC_N(RBIGNUM(x)->digits, BDIGIT, ++RBIGNUM(x)->len);
 	ds = BDIGITS(x);
-	ds[RBIGNUM(x)->len-1] = ~0;
+	ds[RBIGNUM(x)->len-1] = RBIGNUM(x)->sign ? ~0 : 1;
     }
 }
 
@@ -1055,8 +1055,8 @@ rb_big_neg(x)
 
     if (!RBIGNUM(x)->sign) get2comp(z, Qtrue);
     while (i--) ds[i] = ~ds[i];
-    if (RBIGNUM(x)->sign) get2comp(z, Qfalse);
     RBIGNUM(z)->sign = !RBIGNUM(z)->sign;
+    if (RBIGNUM(x)->sign) get2comp(z, Qtrue);
 
     return bignorm(z);
 }
@@ -1677,7 +1677,7 @@ rb_big_and(xx, yy)
     for (; i<l2; i++) {
 	zds[i] = sign?0:ds2[i];
     }
-    if (!RBIGNUM(z)->sign) get2comp(z, Qfalse);
+    if (!RBIGNUM(z)->sign) get2comp(z, Qtrue);
     return bignorm(z);
 }
 
@@ -1734,7 +1734,7 @@ rb_big_or(xx, yy)
     for (; i<l2; i++) {
 	zds[i] = sign?ds2[i]:(BIGRAD-1);
     }
-    if (!RBIGNUM(z)->sign) get2comp(z, Qfalse);
+    if (!RBIGNUM(z)->sign) get2comp(z, Qtrue);
 
     return bignorm(z);
 }
@@ -1795,7 +1795,7 @@ rb_big_xor(xx, yy)
     for (; i<l2; i++) {
 	zds[i] = sign?ds2[i]:~ds2[i];
     }
-    if (!RBIGNUM(z)->sign) get2comp(z, Qfalse);
+    if (!RBIGNUM(z)->sign) get2comp(z, Qtrue);
 
     return bignorm(z);
 }
