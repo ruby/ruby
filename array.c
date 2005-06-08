@@ -2890,11 +2890,16 @@ rb_ary_compact(ary)
 /*
  *  call-seq:
  *     array.nitems -> int
+ *     array.nitems { |item| block }  -> int
  *  
  *  Returns the number of non-<code>nil</code> elements in _self_.
+ *  If a block is given, the elements yielding a true value are
+ *  counted.
+ *
  *  May be zero.
  *     
  *     [ 1, nil, 3, nil, 5 ].nitems   #=> 3
+ *     [5,6,7,8,9].nitems { |x| x % 2 != 0 }  #=> 3
  */
 
 static VALUE
@@ -2902,14 +2907,23 @@ rb_ary_nitems(ary)
     VALUE ary;
 {
     long n = 0;
-    VALUE *p, *pend;
+ 
+    if (rb_block_given_p()) {
+	long i;
 
-    p = RARRAY(ary)->ptr;
-    pend = p + RARRAY(ary)->len;
+	for (i=0; i<RARRAY(ary)->len; i++) {
+	    VALUE v = RARRAY(ary)->ptr[i];
+ 	    if (RTEST(rb_yield(v))) n++;
+ 	}
+    }
+    else {
+	VALUE *p = RARRAY(ary)->ptr;
+	VALUE *pend = p + RARRAY(ary)->len;
 
-    while (p < pend) {
-	if (!NIL_P(*p)) n++;
-	p++;
+ 	while (p < pend) {
+ 	    if (!NIL_P(*p)) n++;
+ 	    p++;
+ 	}
     }
     return LONG2NUM(n);
 }

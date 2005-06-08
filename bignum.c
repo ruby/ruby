@@ -1065,22 +1065,6 @@ rb_big_neg(x)
     }
     RBIGNUM(z)->sign = !RBIGNUM(z)->sign;
     if (RBIGNUM(x)->sign) get2comp(z, Qtrue);
-#if 0
-    i = RBIGNUM(x)->len;
-    if (RBIGNUM(x)->sign) {
-	while (i--) {
-	    if (ds[i]) nz = Qtrue;
-	}
-	if (!nz) {
-	    z = bignew(RBIGNUM(x)->len+1, 1);
-	    for (i=0; i<RBIGNUM(x)->len; i++) {
-		BDIGITS(z)[i] = BDIGITS(x)[i];
-	    }
-	    BDIGITS(z)[i] = 1;
-	    BDIGITS(z)[0] = 0;
-	}
-    }
-#endif
 
     return bignorm(z);
 }

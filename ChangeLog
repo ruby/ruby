@@ -1,3 +1,9 @@
+Wed Jun  8 12:25:59 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_nitems): add the block feature to Array#nitems.
+	  suggested by Bertram Scharpf <lists@bertram-scharpf.de> in
+	  [ruby-talk:134083].
+
 Wed Jun  8 11:11:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (get2comp): revert all prior changes, and calculate

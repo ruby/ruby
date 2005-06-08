@@ -30,7 +30,7 @@ class TestRipper_ParserEvents < Test::Unit::TestCase
 
   def test_void_stmt
     assert_equal '[void()]', parse('')
-    assert_equal '[void()]', parse(';;')
+    assert_equal '[void()]', parse('; ;')
   end
 
   def test_var_ref

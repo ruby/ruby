@@ -640,7 +640,7 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
     assert_equal %w(;),
                  scan('semicolon', ';')
     assert_equal %w(; ;),
-                 scan('semicolon', ';;')
+                 scan('semicolon', '; ;')
     assert_equal %w(; ; ;),
                  scan('semicolon', 'nil;nil;nil;')
     assert_equal %w(; ; ;),
