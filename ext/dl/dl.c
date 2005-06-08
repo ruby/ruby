@@ -435,7 +435,15 @@ c_parray(VALUE v, long *size)
 	ary[i] = (void*)(pdata->ptr);
       }
       else{
-	rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
+        e = rb_funcall(e, rb_intern("to_ptr"), 0);
+        if (rb_obj_is_kind_of(e, rb_cDLPtrData)) {
+	  struct ptr_data *pdata;
+	  Data_Get_Struct(e, struct ptr_data, pdata);
+	  ary[i] = (void*)(pdata->ptr);
+	}
+	else{
+	  rb_raise(rb_eDLTypeError, "unexpected type of the element #%d", i);
+	}
       }
       break;
     }
@@ -494,6 +502,12 @@ rb_ary2cary(char t, VALUE v, long *size)
   case T_DATA:
     if (rb_obj_is_kind_of(val0, rb_cDLPtrData)) {
       return (void*)c_parray(v,size);
+    }
+    else{
+      val0 = rb_funcall(val0, rb_intern("to_ptr"), 0);
+      if (rb_obj_is_kind_of(val0, rb_cDLPtrData)) {
+        return (void*)c_parray(v,size);
+      }
     }
     rb_raise(rb_eDLTypeError, "type mismatch");
   case T_NIL:
