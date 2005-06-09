@@ -1,6 +1,7 @@
 Thu Jun  9 18:24:16 2005  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in, eval.c, gc.c: use libunwind only on HP-UX.
+	  [ruby-dev:26297]
 
 Wed Jun  8 12:25:59 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
