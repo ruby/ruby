@@ -305,8 +305,10 @@ enum_inject(argc, argv, obj)
 {
     VALUE memo = Qundef;
 
-    rb_scan_args(argc, argv, "01", &memo);
+    if (rb_scan_args(argc, argv, "01", &memo) == 0)
+	memo = Qundef;
     rb_iterate(rb_each, obj, inject_i, (VALUE)&memo);
+    if (memo == Qundef) return Qnil;
     return memo;
 }
 

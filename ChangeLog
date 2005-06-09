@@ -1,3 +1,8 @@
+Thu Jun  9 23:35:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_inject): default the result value to Qundef to use
+	  first element as initial value if not given.
+
 Thu Jun  9 19:55:41 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (ruby_longjmp): new macro to call longjmp, setcontext, etc.
