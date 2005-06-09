@@ -23,6 +23,7 @@ net
 observer.rb
 optionparser.rb
 pathname.rb
+resolv.rb
 set.rb
 shellwords.rb
 singleton.rb
