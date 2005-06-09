@@ -53,12 +53,12 @@ Win32API_initialize(self, dllname, proc, import, export)
     hdll = LoadLibrary(RSTRING(dllname)->ptr);
     if (!hdll)
 	rb_raise(rb_eRuntimeError, "LoadLibrary: %s\n", RSTRING(dllname)->ptr);
-    rb_iv_set(self, "__hdll__", Data_Wrap_Struct(rb_cData, 0, Win32API_FreeLibrary, hdll));
-    hproc = GetProcAddress(hdll, RSTRING(proc)->ptr);
+    rb_iv_set(self, "__hdll__", Data_Wrap_Struct(rb_cData, 0, Win32API_FreeLibrary, (void*)hdll));
+    hproc = (HANDLE)GetProcAddress(hdll, RSTRING(proc)->ptr);
     if (!hproc) {
 	str = rb_str_new3(proc);
 	str = rb_str_cat(str, "A", 1);
-	hproc = GetProcAddress(hdll, RSTRING(str)->ptr);
+	hproc = (HANDLE)GetProcAddress(hdll, RSTRING(str)->ptr);
 	if (!hproc)
 	    rb_raise(rb_eRuntimeError, "GetProcAddress: %s or %s\n",
 		RSTRING(proc)->ptr, RSTRING(str)->ptr);
@@ -137,6 +137,9 @@ Win32API_initialize(self, dllname, proc, import, export)
     return Qnil;
 }
 
+#ifdef _MSC_VER
+#pragma optimize("g", off)
+#endif
 static VALUE
 Win32API_Call(argc, argv, obj)
     int argc;
