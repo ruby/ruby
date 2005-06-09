@@ -1,3 +1,13 @@
+Thu Jun  9 19:55:41 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (ruby_longjmp): new macro to call longjmp, setcontext, etc.
+	  (ruby_setjmp): new macro to call setjmp, getcontext, etc.
+	  (ruby_setjmp): call setjmp before getcontext to avoid IA64 register
+	  stack problem.
+	  [ruby-talk:144939]
+
+	* gc.c (Init_stack): remove IA64_MAGIC_STACK_LIMIT.
+
 Thu Jun  9 18:24:16 2005  Tanaka Akira  <akr@m17n.org>
 
 	* configure.in, eval.c, gc.c: use libunwind only on HP-UX.

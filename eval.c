@@ -32,9 +32,8 @@
 #if defined(HAVE_GETCONTEXT) && defined(HAVE_SETCONTEXT)
 #include <ucontext.h>
 #define USE_CONTEXT
-#else
-#include <setjmp.h>
 #endif
+#include <setjmp.h>
 
 #include "st.h"
 #include "dln.h"
@@ -98,8 +97,6 @@ typedef struct {
     volatile int status;
 } rb_jmpbuf_t[1];
 
-#undef longjmp
-#undef setjmp
 NORETURN(static void rb_jump_context(rb_jmpbuf_t, int));
 static inline void
 rb_jump_context(env, val)
@@ -110,15 +107,45 @@ rb_jump_context(env, val)
     setcontext(&env->context);
     abort();			/* ensure noreturn */
 }
-#define longjmp(env, val) rb_jump_context(env, val)
-#define setjmp(j) ((j)->status = 0, getcontext(&(j)->context), (j)->status)
+/*
+ * DUMMY_SETJMP is a magic for getcontext, gcc and IA64 register stack
+ * combination problem.
+ *
+ * Assume following code sequence.
+ * 
+ * 1. set a register in the register stack such as r32.
+ * 2. call getcontext.
+ * 3. use the register.
+ * 4. update the register for other use.
+ * 5. call setcontext directly or indirectly.
+ *
+ * This code should be run as 1->2->3->4->5->3->4.
+ * But after second getcontext return (second 3),
+ * the register is broken (updated).
+ * It's because getcontext/setcontext doesn't preserve the content of the
+ * register stack.
+ *
+ * setjmp also doesn't preserve the content of the register stack.
+ * But it has not the problem because gcc knows setjmp may return twice.
+ * gcc detects setjmp and generates setjmp safe code.
+ *
+ * So setjmp call before getcontext call fix the problem.
+ * It is not required that setjmp is called at run time, since the problem is
+ * register usage.
+ */
+static jmp_buf dummy_setjmp_jmp_buf;
+int dummy_setjmp_false = 0;
+#define DUMMY_SETJMP (dummy_setjmp_false ? setjmp(dummy_setjmp_jmp_buf) : 0)
+#define ruby_longjmp(env, val) rb_jump_context(env, val)
+#define ruby_setjmp(j) ((j)->status = 0, DUMMY_SETJMP, getcontext(&(j)->context), (j)->status)
 #else
 typedef jmp_buf rb_jmpbuf_t;
-#ifndef setjmp
-#ifdef HAVE__SETJMP
-#define setjmp(env) _setjmp(env)
-#define longjmp(env,val) _longjmp(env,val)
-#endif
+#if !defined(setjmp) && defined(HAVE__SETJMP)
+#define ruby_setjmp(env) _setjmp(env)
+#define ruby_longjmp(env,val) _longjmp(env,val)
+#else
+#define ruby_setjmp(env) setjmp(env)
+#define ruby_longjmp(env,val) longjmp(env,val)
 #endif
 #endif
 
@@ -934,12 +961,12 @@ static struct tag *prot_tag;
 #define PROT_YIELD  INT2FIX(3)	/* 7 */
 #define PROT_TOP    INT2FIX(4)	/* 9 */
 
-#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, setjmp(prot_tag->buf))
+#define EXEC_TAG()    (FLUSH_REGISTER_WINDOWS, ruby_setjmp(prot_tag->buf))
 
 #define JUMP_TAG(st) do {		\
     ruby_frame = prot_tag->frame;	\
     ruby_iter = prot_tag->iter;		\
-    longjmp(prot_tag->buf,(st));	\
+    ruby_longjmp(prot_tag->buf,(st));	\
 } while (0)
 
 #define POP_TAG()			\
@@ -10360,7 +10387,7 @@ rb_thread_switch(n)
 
 #define THREAD_SAVE_CONTEXT(th) \
     (rb_thread_save_context(th),\
-     rb_thread_switch((FLUSH_REGISTER_WINDOWS, setjmp((th)->context))))
+     rb_thread_switch((FLUSH_REGISTER_WINDOWS, ruby_setjmp((th)->context))))
 
 NORETURN(static void rb_thread_restore_context _((rb_thread_t,int)));
 NOINLINE(static void stack_extend _((rb_thread_t, int)));
@@ -10451,7 +10478,7 @@ rb_thread_restore_context(th, exit)
     rb_backref_set(tmp->last_match);
     tmp->last_match = tval;
 
-    longjmp(tmp->context, ex);
+    ruby_longjmp(tmp->context, ex);
 }
 
 static void
@@ -11918,7 +11945,7 @@ rb_thread_start_0(fn, arg, th)
 	th->anchor = ip;
 	thread_insert(th);
 	curr_thread = th;
-	longjmp((prot_tag = ip->tag)->buf, TAG_THREAD);
+	ruby_longjmp((prot_tag = ip->tag)->buf, TAG_THREAD);
     }
 
     if (ruby_block) {		/* should nail down higher blocks */

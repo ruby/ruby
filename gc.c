@@ -1469,14 +1469,6 @@ Init_stack(addr)
 	    STACK_LEVEL_MAX = (rlim.rlim_cur - space) / sizeof(VALUE);
 	}
     }
-#if defined(__ia64__) && (!defined(__GNUC__) || __GNUC__ < 2 || defined(__OPTIMIZE__))
-    /* ruby crashes on IA64 if compiled with optimizer on */
-    /* when if STACK_LEVEL_MAX is greater than this magic number */
-    /* I know this is a kludge.  I suspect optimizer bug */
-#define IA64_MAGIC_STACK_LIMIT 49152
-    if (STACK_LEVEL_MAX > IA64_MAGIC_STACK_LIMIT)
-	STACK_LEVEL_MAX = IA64_MAGIC_STACK_LIMIT;
-#endif
 #endif
 }
 
