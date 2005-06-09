@@ -1,3 +1,8 @@
+Thu Jun  9 23:58:12 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/Win32API/Win32API.c (Win32API_Call): disable global
+	  optimization. fixed: [ruby-core:05143]
+
 Thu Jun  9 23:35:22 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_inject): default the result value to Qundef to use
