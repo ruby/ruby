@@ -39,7 +39,7 @@
  */
 #define __libc_ia64_register_backing_store_base (4ULL<<61)
 #else
-#ifdef HAVE_UNWIND_H
+#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
 #include <unwind.h>
 #else
 #pragma weak __libc_ia64_register_backing_store_base
@@ -1347,14 +1347,14 @@ garbage_collect()
     {
 	ucontext_t ctx;
 	VALUE *top, *bot;
-#ifdef HAVE_UNWIND_H
+#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
 	_Unwind_Context *unwctx = _UNW_createContextForSelf();
 #endif
 
 	getcontext(&ctx);
 	mark_locations_array((VALUE*)&ctx.uc_mcontext,
 			     ((size_t)(sizeof(VALUE)-1 + sizeof ctx.uc_mcontext)/sizeof(VALUE)));
-#ifdef HAVE_UNWIND_H
+#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
 	_UNW_currentContext(unwctx);
 	bot = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSP);
 	top = (VALUE*)(long)_UNW_getAR(unwctx, _UNW_AR_BSPSTORE);

@@ -9684,7 +9684,7 @@ Init_Binding()
  */
 #define __libc_ia64_register_backing_store_base (4ULL<<61)
 #else
-#ifdef HAVE_UNWIND_H
+#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
 #include <unwind.h>
 #else
 #pragma weak __libc_ia64_register_backing_store_base
@@ -10271,7 +10271,7 @@ rb_thread_save_context(th)
 #ifdef __ia64__
     {
 	VALUE *top, *bot;
-#ifdef HAVE_UNWIND_H
+#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
 	_Unwind_Context *unwctx = _UNW_createContextForSelf();
 
 	_UNW_currentContext(unwctx);
@@ -10431,7 +10431,7 @@ rb_thread_restore_context(th, exit)
 #ifdef __ia64__
     {
 	VALUE *base;
-#ifdef HAVE_UNWIND_H
+#if defined(HAVE_UNWIND_H) && defined(HAVE__UNW_CREATECONTEXTFORSELF)
 	_Unwind_Context *unwctx = _UNW_createContextForSelf();
 
 	_UNW_currentContext(unwctx);

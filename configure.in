@@ -492,7 +492,8 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      getpriority getrlimit setrlimit\
 	      dlopen sigprocmask sigaction _setjmp\
 	      setsid telldir seekdir fchmod mktime timegm cosh sinh tanh\
-	      setuid setgid daemon)
+	      setuid setgid daemon \
+	      _UNW_createContextForSelf)
 AC_ARG_ENABLE(setreuid,
        [  --enable-setreuid       use setreuid()/setregid() according to need even if obsolete.],
        [use_setreuid=$enableval])
@@ -597,7 +598,7 @@ AC_C_INLINE
 AC_C_VOLATILE
 
 if test x"$target_cpu" = xia64; then
-    if test x"$ac_cv_header_unwind_h" = xyes; then
+    if test x"$ac_cv_header_unwind_h" = xyes -a x"$ac_cv_func__UNW_createContextForSelf" = xyes; then
 	LIBS="-lunwind $LIBS"
     else
 	AC_CACHE_CHECK(IA64 backing store member in mcontext_t, rb_cv_ia64_bspstore,
