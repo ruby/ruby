@@ -1,3 +1,13 @@
+Thu Jun  9 19:55:41 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (ruby_longjmp): new macro to call longjmp, setcontext, etc.
+	  (ruby_setjmp): new macro to call setjmp, getcontext, etc.
+	  (ruby_setjmp): call setjmp before getcontext to avoid IA64 register 
+	  stack problem.
+	  [ruby-talk:144939]
+
+	* gc.c (Init_stack): remove IA64_MAGIC_STACK_LIMIT.
+
 Wed Jun  8 11:11:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (get2comp): calculate proper 2's complement for
