@@ -1,3 +1,7 @@
+Fri Jun 10 23:55:17 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (unknown_node): show more information.  [ruby-dev:26196]
+
 Fri Jun 10 22:54:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing.h: fd_set stuffs need sys/types.h.  fixed: [ruby-core:05179]

@@ -2796,7 +2796,15 @@ unknown_node(node)
     NODE *volatile node;
 {
     ruby_current_node = 0;
-    rb_bug("unknown node type %d", nd_type(node));
+    if (node->flags == 0) {
+        rb_bug("terminated node (0x%lx)", (long)node);
+    }
+    else if (BUILTIN_TYPE(node) != T_NODE) {
+        rb_bug("not a node 0x%02lx (0x%lx)", BUILTIN_TYPE(node), (long)node);
+    }
+    else {
+        rb_bug("unknown node type %d (0x%lx)", nd_type(node), (long)node);
+    }
 }
 
 static VALUE
