@@ -1,3 +1,7 @@
+Fri Jun 10 22:54:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing.h: fd_set stuffs need sys/types.h.  fixed: [ruby-core:05179]
+
 Thu Jun  9 23:58:12 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/Win32API/Win32API.c (Win32API_Call): disable global
