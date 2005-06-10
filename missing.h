@@ -21,6 +21,9 @@ struct timeval {
     time_t tv_usec;	/* microseconds */
 };
 #endif
+#if defined(HAVE_SYS_TYPES_H)
+#  include <sys/types.h>
+#endif
 
 #ifndef HAVE_ACOSH
 extern double acosh _((double));
