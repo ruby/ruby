@@ -2132,7 +2132,7 @@ paren_args	: '(' none ')'
 			$$ = NEW_LIST($2);
 		    /*%
 		        rb_warn0("parenthesize argument for future version");
-			$$ = arg_add(arg_new(), $2);
+			$$ = dispatch1(arg_paren, arg_add(arg_new(), $2));
 		    %*/
 		    }
 		| '(' args ',' block_call rparen
@@ -2142,7 +2142,7 @@ paren_args	: '(' none ')'
 			$$ = list_append($2, $4);
 		    /*%
 		        rb_warn0("parenthesize argument for future version");
-			$$ = dispatch1(arg_paren, arg_add(arg_new(), $4));
+			$$ = dispatch1(arg_paren, arg_add($2, $4));
 		    %*/
 		    }
 		;
