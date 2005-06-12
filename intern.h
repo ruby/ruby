@@ -252,6 +252,7 @@ VALUE rb_thread_create _((VALUE (*)(ANYARGS), void*));
 void rb_thread_interrupt _((void));
 void rb_thread_trap_eval _((VALUE, int, int));
 void rb_thread_signal_raise _((char*));
+void rb_thread_signal_exit _((void));
 int rb_thread_select _((int, fd_set *, fd_set *, fd_set *, struct timeval *));
 void rb_thread_wait_for _((struct timeval));
 VALUE rb_thread_current _((void));

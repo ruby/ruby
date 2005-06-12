@@ -73,6 +73,7 @@ class SimpleDelegator<Delegator
   end
 
   def __setobj__(obj)
+    raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
     @_sd_obj = obj
   end
 
@@ -110,6 +111,7 @@ def DelegateClass(superclass)
       @_dc_obj
     end
     def __setobj__(obj)
+      raise ArgumentError, "cannot delegate to self" if self.equal?(obj)
       @_dc_obj = obj
     end
     def clone

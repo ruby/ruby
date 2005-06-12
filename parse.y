@@ -230,6 +230,7 @@ static NODE *remove_begin _((NODE*));
 static void void_stmts_gen _((struct parser_params*,NODE*));
 #define void_stmts(node) void_stmts_gen(parser, node)
 static void reduce_nodes _((NODE**));
+static void block_dup_check _((NODE*));
 
 static NODE *block_append _((NODE*,NODE*));
 static NODE *list_append _((NODE*,NODE*));
@@ -1136,9 +1137,7 @@ command		: operation command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = new_fcall($1, $2);
 			if ($3) {
-			    if (nd_type($$) == NODE_BLOCK_PASS) {
-				compile_error(PARSER_ARG "both block arg and actual block given");
-			    }
+		            block_dup_check($$);
 			    $3->nd_iter = $$;
 			    $$ = $3;
 			}
@@ -1162,9 +1161,7 @@ command		: operation command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
 			if ($5) {
-			    if (nd_type($$) == NODE_BLOCK_PASS) {
-				compile_error(PARSER_ARG "both block arg and actual block given");
-			    }
+		            block_dup_check($$);
 			    $5->nd_iter = $$;
 			    $$ = $5;
 			}
@@ -1188,9 +1185,7 @@ command		: operation command_args       %prec tLOWEST
 		    /*%%%*/
 			$$ = new_call($1, $3, $4);
 			if ($5) {
-			    if (nd_type($$) == NODE_BLOCK_PASS) {
-				compile_error(PARSER_ARG "both block arg and actual block given");
-			    }
+		            block_dup_check($$);
 			    $5->nd_iter = $$;
 			    $$ = $5;
 			}
@@ -2513,18 +2508,6 @@ primary		: literal
 			$$ = dispatch1(topconst_ref, $2);
 		    %*/
 		    }
-		| primary_value '[' aref_args ']'
-		    {
-		    /*%%%*/
-			if ($1 && nd_type($1) == NODE_SELF)
-			    $$ = NEW_FCALL(tAREF, $3);
-			else
-			    $$ = NEW_CALL($1, tAREF, $3);
-			fixpos($$, $1);
-		    /*%
-			$$ = dispatch2(aref, $1, $3);
-		    %*/
-		    }
 		| tLBRACK aref_args ']'
 		    {
 		    /*%%%*/
@@ -2626,9 +2609,7 @@ primary		: literal
 		| method_call brace_block
 		    {
 		    /*%%%*/
-			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
-			    compile_error(PARSER_ARG "both block arg and actual block given");
-			}
+		        block_dup_check($$);
 			$2->nd_iter = $1;
 			$$ = $2;
 		        fixpos($$, $1);
@@ -3233,9 +3214,7 @@ do_block	: kDO_BLOCK
 block_call	: command do_block
 		    {
 		    /*%%%*/
-			if ($1 && nd_type($1) == NODE_BLOCK_PASS) {
-			    compile_error(PARSER_ARG "both block arg and actual block given");
-			}
+		        block_dup_check($1);
 			$2->nd_iter = $1;
 			$$ = $2;
 		        fixpos($$, $1);
@@ -3326,6 +3305,18 @@ method_call	: operation paren_args
 			$$ = dispatch3(call, dispatch1(paren, $2),
 		                       ripper_id2sym('.'), rb_intern("call"));
 			$$ = method_optarg($$, $4);
+		    %*/
+		    }
+		| primary_value '[' aref_args ']'
+		    {
+		    /*%%%*/
+			if ($1 && nd_type($1) == NODE_SELF)
+			    $$ = NEW_FCALL(tAREF, $3);
+			else
+			    $$ = NEW_CALL($1, tAREF, $3);
+			fixpos($$, $1);
+		    /*%
+			$$ = dispatch2(aref, $1, $3);
 		    %*/
 		    }
 		;
@@ -6309,11 +6300,13 @@ parser_yylex(parser)
 	    return kEND;
 	}
 	pushback(c);
-	c = ';';
+	lex_state = EXPR_BEG;
 	command_start = Qtrue;
+	return ';';
+
       case ',':
 	lex_state = EXPR_BEG;
-	return c;
+	return ',';
 
       case '~':
 	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
@@ -7216,6 +7209,15 @@ aryset_gen(parser, recv, idx)
     else
 	value_expr(recv);
     return NEW_ATTRASGN(recv, tASET, idx);
+}
+
+static void
+block_dup_check(node)
+    NODE *node;
+{
+    if (node && nd_type(node) == NODE_BLOCK_PASS) {
+	compile_error(PARSER_ARG "both block arg and actual block given");
+    }
 }
 
 ID

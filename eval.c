@@ -1393,6 +1393,14 @@ static VALUE exception_error;
 static VALUE sysstack_error;
 
 static int
+sysexit_status(err)
+    VALUE err;
+{
+    VALUE st = rb_iv_get(err, "status");
+    return NUM2INT(st);
+}
+
+static int
 error_handle(ex)
     int ex;
 {
@@ -1438,8 +1446,7 @@ error_handle(ex)
       case TAG_RAISE:
       case TAG_FATAL:
 	if (rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
-	    VALUE st = rb_iv_get(ruby_errinfo, "status");
-	    status = NUM2INT(st);
+	    status = sysexit_status(ruby_errinfo);
 	}
 	else {
 	    error_print();
@@ -4386,6 +4393,9 @@ rb_f_exit(argc, argv)
 	    break;
 	  default:
 	    istatus = NUM2INT(status);
+#if EXIT_SUCCESS != 0
+	    if (istatus == 0) istatus = EXIT_SUCCESS;
+#endif
 	    break;
 	}
     }
@@ -10383,8 +10393,7 @@ rb_thread_switch(n)
       case RESTORE_EXIT:
 	ruby_errinfo = th_raise_exception;
 	ruby_current_node = th_raise_node;
-	error_print();
-	terminate_process(EXIT_FAILURE, 0, 0);
+	terminate_process(sysexit_status(ruby_errinfo), 0, 0);
 	break;
       case RESTORE_NORMAL:
       default:
@@ -12462,6 +12471,28 @@ rb_thread_trap_eval(cmd, sig, safe)
     th_safe = safe;
     curr_thread = main_thread;
     rb_thread_restore_context(curr_thread, RESTORE_TRAP);
+}
+
+void
+rb_thread_signal_exit()
+{
+    VALUE args[2];
+
+    rb_thread_critical = 0;
+    if (curr_thread == main_thread) {
+	rb_thread_ready(curr_thread);
+	rb_exit(EXIT_SUCCESS);
+    }
+    args[0] = INT2NUM(EXIT_SUCCESS);
+    args[1] = rb_str_new2("exit");
+    rb_thread_ready(main_thread);
+    if (!rb_thread_dead(curr_thread)) {
+	if (THREAD_SAVE_CONTEXT(curr_thread)) {
+	    return;
+	}
+    }
+    rb_thread_main_jump(rb_class_new_instance(2, args, rb_eSystemExit), 
+			RESTORE_EXIT);
 }
 
 static VALUE

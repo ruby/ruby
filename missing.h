@@ -84,10 +84,6 @@ extern int memcmp _((char *, char *, int));
 extern void *memmove _((void *, void *, int));
 #endif
 
-#ifndef HAVE_MKDIR
-extern int mkdir _((char *, int));
-#endif
-
 /*
 #ifndef HAVE_MODF
 extern double modf _((double, double *));

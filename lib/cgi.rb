@@ -399,7 +399,12 @@ class CGI
       end
     end
   end
-
+  def CGI::escape_html(str)
+    escapeHTML(str)
+  end
+  def CGI::unescape_html(str)
+    unescapeHTML(str)
+  end
 
   # Escape only the tags of certain HTML elements in +string+.
   #
@@ -445,7 +450,12 @@ class CGI
       string
     end
   end
-
+  def CGI::escape_element(str)
+    escapeElement(str)
+  end
+  def CGI::unescape_element(str)
+    unescapeElement(str)
+  end
 
   # Format a +Time+ object as a String using the format specified by RFC 1123.
   #

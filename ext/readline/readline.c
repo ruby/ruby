@@ -801,8 +801,7 @@ Init_readline()
 #if defined HAVE_RL_LIBRARY_VERSION
     rb_define_const(mReadline, "VERSION", rb_str_new2(rl_library_version));
 #else
-    rb_define_const(mReadline, "VERSION",
-                    rb_str_new2("2.0 or before version"));
+    rb_define_const(mReadline, "VERSION", rb_str_new2("2.0 or prior version"));
 #endif
 
     rl_attempted_completion_function = readline_attempted_completion_function;

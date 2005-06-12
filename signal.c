@@ -33,6 +33,7 @@ static struct signals {
     char *signm;
     int  signo;
 } siglist [] = {
+    {"EXIT", 0},
 #ifdef SIGHUP
     {"HUP", SIGHUP},
 #endif
@@ -592,7 +593,7 @@ sigexit(sig)
     }
 #endif
 
-    rb_exit(0);
+    rb_thread_signal_exit();
 }
 
 static VALUE

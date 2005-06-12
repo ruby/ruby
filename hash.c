@@ -1826,17 +1826,17 @@ ruby_setenv(name, value)
     }
     if (!value) {
 	if (environ != origenviron) {
-	    char **envp = origenviron;
-	    while (*envp && *envp != environ[i]) envp++;
-	    if (!*envp)
-		free(environ[i]);
+	char **envp = origenviron;
+	while (*envp && *envp != environ[i]) envp++;
+	if (!*envp)
+	    free(environ[i]);
 	}
-	while (environ[i]) {
-	    environ[i] = environ[i+1];
-	    i++;
+	    while (environ[i]) {
+		environ[i] = environ[i+1];
+		i++;
+	    }
+	    return;
 	}
-	return;
-    }
     if (!environ[i]) {			/* does not exist yet */
 	REALLOC_N(environ, char*, i+2);	/* just expand it a bit */
 	environ[i+1] = 0;	/* make sure it's null terminated */
@@ -1876,11 +1876,6 @@ env_aset(obj, nm, val)
 
     if (rb_safe_level() >= 4) {
 	rb_raise(rb_eSecurityError, "can't change environment variable");
-    }
-
-    if (NIL_P(val)) {
-	env_delete(obj, nm);
-	return Qnil;
     }
 
     StringValue(nm);

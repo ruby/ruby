@@ -61,13 +61,13 @@
 (defconst ruby-delimiter
   (concat "[?$/%(){}#\"'`.:]\\|<<\\|\\[\\|\\]\\|\\<\\("
 	  ruby-block-beg-re
-	  "\\>\\|" ruby-block-end-re
-	  "\\)\\|^=begin\\|" ruby-here-doc-beg-re)
+	  "\\)\\>\\|" ruby-block-end-re
+	  "\\|^=begin\\|" ruby-here-doc-beg-re)
   )
 
 (defconst ruby-negative
-  (concat "^[ \t]*\\(\\(" ruby-block-mid-re "\\)\\>\\|\\("
-	    ruby-block-end-re "\\)\\|}\\|\\]\\)")
+  (concat "^[ \t]*\\(\\(" ruby-block-mid-re "\\)\\>\\|"
+	    ruby-block-end-re "\\|}\\|\\]\\)")
   )
 
 (defconst ruby-operator-chars "-,.+*/%&|^~=<>:")
@@ -302,8 +302,8 @@ The variable ruby-indent-level controls the amount of indentation.
 (defun ruby-expr-beg (&optional option)
   (save-excursion
     (store-match-data nil)
-    (let ((start (point))
-	  (space (skip-chars-backward " \t")))
+    (let ((space (skip-chars-backward " \t"))
+	  (start (point)))
       (cond
        ((bolp) t)
        ((progn
@@ -327,7 +327,7 @@ The variable ruby-indent-level controls the amount of indentation.
 					   "|" ruby-block-op-re
 					   "|" ruby-block-mid-re "\\)\\>")))
 		   (goto-char (match-end 0))
-                  (not (looking-at "\\s_")))
+                (not (looking-at "\\s_")))
 		  ((eq option 'expr-qstr)
 		   (looking-at "[a-zA-Z][a-zA-z0-9_]* +%[^ \t]"))
 		  ((eq option 'expr-re)
