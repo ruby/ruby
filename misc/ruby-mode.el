@@ -302,8 +302,8 @@ The variable ruby-indent-level controls the amount of indentation.
 (defun ruby-expr-beg (&optional option)
   (save-excursion
     (store-match-data nil)
-    (let ((start (point))
-	  (space (skip-chars-backward " \t")))
+    (let ((space (skip-chars-backward " \t"))
+	  (start (point)))
       (cond
        ((bolp) t)
        ((progn

@@ -1,3 +1,21 @@
+Mon Jun 13 01:54:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (sigexit): call rb_thread_signal_exit() instead of
+	  rb_exit().  [ruby-dev:26347]
+
+	* eval.c (rb_thread_signal_exit): a new function to exit on main
+	  thread.
+
+	* eval.c (rb_thread_switch): exit status should be retrieved from
+	  ruby_errinfo.
+
+	* eval.c (rb_f_exit): ensure exit(0) should call
+	  exit(EXIT_SUCCESS).
+
+Fri Jun 10 23:35:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* missing/mkdir.c: remove. [ruby-core:05177]
+
 Fri Jun 10 22:54:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing.h: fd_set stuffs need sys/types.h.  fixed: [ruby-core:05179]
@@ -21,6 +39,15 @@ Thu Jun  9 19:55:41 2005  Tanaka Akira  <akr@m17n.org>
 	  [ruby-talk:144939]
 
 	* gc.c (Init_stack): remove IA64_MAGIC_STACK_LIMIT.
+
+Thu Jun  9 11:55:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (SimpleDelegator::__setobj__): need check for
+	  recursive delegation.  [ruby-core:04940]
+
+Wed Jun  8 18:47:10 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg): fix looking point drift.
 
 Wed Jun  8 11:11:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
