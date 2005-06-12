@@ -1,3 +1,9 @@
+Mon Jun 13 01:20:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (rb_gc_mark_threads): curr_thread may not be part of the
+	  thread list.
+	  [ruby-dev:26312]
+
 Sat Jun 11 22:34:44 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y: missing arg_paren event.  This patch is contributed by

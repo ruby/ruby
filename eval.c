@@ -10225,9 +10225,9 @@ rb_gc_mark_threads()
     rb_gc_mark((VALUE)ruby_cref);
 
     if (!curr_thread) return;
-    FOREACH_THREAD(th) {
+    FOREACH_THREAD_FROM(main_thread, th) {
 	rb_gc_mark(th->thread);
-    } END_FOREACH(th);
+    } END_FOREACH_FROM(main_thread, th);
     if (new_thread.thread) {
 	rb_gc_mark(new_thread.thread->thread);
 	rb_gc_mark(new_thread.proc);
