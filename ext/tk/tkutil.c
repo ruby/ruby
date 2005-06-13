@@ -949,6 +949,7 @@ struct cbsubst_info {
     char  *type;
     ID    *ivar;
     VALUE proc;
+    VALUE aliases;
 };
 
 static void
@@ -956,6 +957,7 @@ subst_mark(ptr)
     struct cbsubst_info *ptr;
 {
     rb_gc_mark(ptr->proc);
+    rb_gc_mark(ptr->aliases);
 }
 
 static void
@@ -975,7 +977,7 @@ cbsubst_init()
 {
     struct cbsubst_info *inf;
     ID *ivar;
-    volatile VALUE proc;
+    volatile VALUE proc, aliases;
 
     inf = ALLOC(struct cbsubst_info);
 
@@ -992,6 +994,9 @@ cbsubst_init()
 
     proc = rb_hash_new();
     inf->proc = proc;
+
+    aliases = rb_hash_new();
+    inf->aliases = aliases;
 
     rb_const_set(cCB_SUBST, ID_SUBST_INFO, 
                  Data_Wrap_Struct(cSUBST_INFO, subst_mark, subst_free, inf));
@@ -1026,6 +1031,122 @@ cbsubst_ret_val(self, val)
     return val;
 }
 
+static int
+each_attr_def(key, value, klass)
+    VALUE key, value, klass;
+{
+    ID key_id, value_id;
+
+    if (key == Qundef) return ST_CONTINUE;
+
+    switch(TYPE(key)) {
+    case T_STRING:
+        key_id = rb_intern(RSTRING(key)->ptr);
+        break;
+    case T_SYMBOL:
+        key_id = SYM2ID(key);
+        break;
+    default:
+        rb_raise(rb_eArgError, 
+                 "includes invalid key(s). expected a String or a Symbol");
+    }
+
+    switch(TYPE(value)) {
+    case T_STRING:
+        value_id = rb_intern(RSTRING(value)->ptr);
+        break;
+    case T_SYMBOL:
+        value_id = SYM2ID(value);
+        break;
+    default:
+        rb_raise(rb_eArgError, 
+                 "includes invalid value(s). expected a String or a Symbol");
+    }
+
+    rb_alias(klass, key_id, value_id);
+
+    return ST_CONTINUE;
+}
+
+static VALUE
+cbsubst_def_attr_aliases(self, tbl)
+    VALUE self;
+    VALUE tbl;
+{
+    struct cbsubst_info *inf;
+
+    if (TYPE(tbl) != T_HASH) {
+        rb_raise(rb_eArgError, "expected a Hash");
+    }
+
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+                    struct cbsubst_info, inf);
+
+    rb_hash_foreach(tbl, each_attr_def, self);
+
+    return rb_funcall(inf->aliases, rb_intern("update"), 1, tbl);
+}
+
+static VALUE
+cbsubst_get_subst_arg(argc, argv, self)
+    int   argc;
+    VALUE *argv;
+    VALUE self;
+{
+    struct cbsubst_info *inf;
+    char *str, *buf, *ptr;
+    int i, j, len;
+    ID id;
+    volatile VALUE arg_sym, ret;
+
+    Data_Get_Struct(rb_const_get(self, ID_SUBST_INFO), 
+                    struct cbsubst_info, inf);
+
+    buf = ALLOC_N(char, 3*argc + 1);
+    ptr = buf;
+    len = strlen(inf->key);
+
+    for(i = 0; i < argc; i++) {
+        switch(TYPE(argv[i])) {
+        case T_STRING:
+            str = RSTRING(argv[i])->ptr;
+            arg_sym = ID2SYM(rb_intern(str));
+            break;
+        case T_SYMBOL:
+            arg_sym = argv[i];
+            str = rb_id2name(SYM2ID(arg_sym));
+            break;
+        default:
+            rb_raise(rb_eArgError, "arg #%d is not a String or a Symbol", i);
+        }
+
+        if (!NIL_P(ret = rb_hash_aref(inf->aliases, arg_sym))) {
+            str = rb_id2name(SYM2ID(ret));
+        }
+
+        id = rb_intern(RSTRING(rb_str_cat2(rb_str_new2("@"), str))->ptr);
+
+        for(j = 0; j < len; j++) {
+            if (inf->ivar[j] == id) break;
+        }
+
+        if (j >= len) {
+            rb_raise(rb_eArgError, "cannot find attribute :%s", str);
+        }
+
+        *(ptr++) = '%';
+        *(ptr++) = *(inf->key + j);
+        *(ptr++) = ' ';
+    }
+
+    *ptr = '\0';
+
+    ret = rb_str_new2(buf);
+
+    free(buf);
+
+    return ret;
+}
 
 static VALUE
 cbsubst_get_subst_key(self, str)
@@ -1100,6 +1221,7 @@ cbsubst_table_setup(self, key_inf, proc_inf)
     char *type = ALLOC_N(char, len + 1);
     ID *ivar = ALLOC_N(ID, len + 1);
     volatile VALUE proc = rb_hash_new();
+    volatile VALUE aliases = rb_hash_new();
     volatile VALUE inf;
 
     /* init */
@@ -1109,6 +1231,7 @@ cbsubst_table_setup(self, key_inf, proc_inf)
     subst_inf->type = type;
     subst_inf->ivar = ivar;
     subst_inf->proc = proc;
+    subst_inf->aliases = aliases;
 
     /*
      * keys : array of [subst, type, ivar]
@@ -1290,6 +1413,8 @@ Init_tkutil()
     ID_SUBST_INFO = rb_intern("SUBST_INFO");
     rb_define_singleton_method(cCB_SUBST, "ret_val", cbsubst_ret_val, 1);
     rb_define_singleton_method(cCB_SUBST, "scan_args", cbsubst_scan_args, 2);
+    rb_define_singleton_method(cCB_SUBST, "subst_arg", 
+                               cbsubst_get_subst_arg, -1);
     rb_define_singleton_method(cCB_SUBST, "_get_subst_key", 
                                cbsubst_get_subst_key,  1);
     rb_define_singleton_method(cCB_SUBST, "_get_all_subst_keys", 
@@ -1298,6 +1423,8 @@ Init_tkutil()
                                cbsubst_table_setup, 2);
     rb_define_singleton_method(cCB_SUBST, "_get_extra_args_tbl", 
                                cbsubst_get_extra_args_tbl,  0);
+    rb_define_singleton_method(cCB_SUBST, "_define_attribute_aliases", 
+                               cbsubst_def_attr_aliases,  1);
 
     rb_define_method(cCB_SUBST, "initialize", cbsubst_initialize, -1);
 

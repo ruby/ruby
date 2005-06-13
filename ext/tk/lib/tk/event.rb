@@ -130,6 +130,7 @@ module TkEvent
     #  []
     #end
 
+=begin
     alias button num
     alias delta  wheel_delta
     alias root   rootwin_id
@@ -138,6 +139,19 @@ module TkEvent
     alias rooty  y_root
     alias root_y y_root
     alias sendevent send_event
+=end
+    ALIAS_TBL = {
+      :button    => :num, 
+      :delta     => :wheel_delta, 
+      :root      => :rootwin_id, 
+      :rootx     => :x_root, 
+      :root_x    => :x_root, 
+      :rooty     => :y_root, 
+      :root_y    => :y_root, 
+      :sendevent => :send_event
+    }
+
+    _define_attribute_aliases(ALIAS_TBL)
 
   end
 
