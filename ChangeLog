@@ -1,3 +1,7 @@
+Mon Jun 13 13:03:08 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* hash.c (ruby_setenv): fixed SEGV. [ruby-dev:26186]
+
 Mon Jun 13 01:54:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (sigexit): call rb_thread_signal_exit() instead of

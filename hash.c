@@ -1824,26 +1824,23 @@ ruby_setenv(name, value)
 	tmpenv[max] = 0;
 	environ = tmpenv;		/* tell exec where it is now */
     }
-    if (!value) {
-	if (environ != origenviron) {
+    if (environ[i]) {
 	char **envp = origenviron;
 	while (*envp && *envp != environ[i]) envp++;
 	if (!*envp)
 	    free(environ[i]);
-	}
+	if (!value) {
 	    while (environ[i]) {
 		environ[i] = environ[i+1];
 		i++;
 	    }
 	    return;
 	}
-    if (!environ[i]) {			/* does not exist yet */
+    }
+    else {			/* does not exist yet */
+	if (!value) return;
 	REALLOC_N(environ, char*, i+2);	/* just expand it a bit */
 	environ[i+1] = 0;	/* make sure it's null terminated */
-    }
-    else {
-	if (environ[i] != origenviron[i])
-	    free(environ[i]);
     }
     environ[i] = ALLOC_N(char, strlen(name) + strlen(value) + 2);
 #ifndef MSDOS
