@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-03-15"
+#define TKUTIL_RELEASE_DATE "2005-06-14"
 
 #include "ruby.h"
 #include "rubysig.h"
