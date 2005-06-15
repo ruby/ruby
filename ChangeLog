@@ -1,3 +1,10 @@
+Wed Jun 15 18:26:39 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: support "tk inactive" sub-command [for Tcl/Tk8.5a3]
+
+	* ext/tk/lib/tk/namespace.rb: support "namespace path" sub-command and
+	  'namespace ensemble' sub-command [for Tcl/Tk8.5a3]
+
 Tue Jun 14 02:02:43 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil/tkutil.c: add TkUtil::CallbackSubst.subst_arg(m, ...)
