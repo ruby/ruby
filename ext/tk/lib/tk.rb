@@ -1351,6 +1351,19 @@ module TkCore
     end
   end
 
+  def inactive
+    Integer(tk_call_without_enc('tk', 'inactive'))
+  end
+  def inactive_displayof(win)
+    Integer(tk_call_without_enc('tk', 'inactive', '-displayof', win))
+  end
+  def reset_inactive
+    tk_call_without_enc('tk', 'inactive', 'reset')
+  end
+  def reset_inactive_displayof(win)
+    tk_call_without_enc('tk', 'inactive', '-displayof', win, 'reset')
+  end
+
   def appname(name=None)
     tk_call('tk', 'appname', name)
   end
@@ -4130,7 +4143,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-06-03'.freeze
+  RELEASE_DATE = '2005-06-15'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

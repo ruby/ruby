@@ -14,6 +14,99 @@ class TkNamespace < TkObject
   Tk_Namespace_ID_TBL = TkCore::INTERP.create_table
   Tk_Namespace_ID = ["ns".freeze, "00000".taint].freeze
 
+  class Ensemble < TkObject
+    def __cget_cmd
+      ['namespace', 'ensemble', 'configure', self.path]
+    end
+    private :__cget_cmd
+
+    def __config_cmd
+      ['namespace', 'ensemble', 'configure', self.path]
+    end
+    private :__config_cmd
+
+    def __configinfo_struct
+      {:key=>0, :alias=>nil, :db_name=>nil, :db_class=>nil, 
+        :default_value=>nil, :current_value=>2}
+    end
+    private :__configinfo_struct
+
+    def __boolval_optkeys
+      ['prefixes']
+    end
+    private :__boolval_optkeys
+
+    def __listval_optkeys
+      ['map', 'subcommands', 'unknown']
+    end
+    private :__listval_optkeys
+
+    def self.exist?(ensemble)
+      bool(tk_call('namespace', 'ensemble', 'exists', ensemble))
+    end
+
+    def initialize(keys = {})
+      @ensemble = @path = tk_call('namespace', 'ensemble', 'create', keys)
+    end
+
+    def cget(slot)
+      if slot == :namespace || slot == 'namespace'
+        ns = super(slot)
+        if TkNamespace::Tk_Namespace_ID_TBL.key?(ns)
+          TkNamespace::Tk_Namespace_ID_TBL[ns]
+        else
+          ns
+        end
+      else
+        super(slot)
+      end
+    end
+
+    def configinfo(slot = nil)
+      if slot
+        if slot == :namespace || slot == 'namespace'
+          val = super(slot)
+          if TkNamespace::Tk_Namespace_ID_TBL.key?(val)
+            val = TkNamespace::Tk_Namespace_ID_TBL[val]
+          end
+        else
+          val = super(slot)
+        end
+
+        if TkComm::GET_CONFIGINFO_AS_ARRAY
+          [slot.to_s, val]
+        else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
+          {slot.to_s => val}
+        end
+
+      else
+        info = super()
+
+        if TkComm::GET_CONFIGINFO_AS_ARRAY
+          info.map!{|inf| 
+            if inf[0] == 'namespace' && 
+                TkNamespace::Tk_Namespace_ID_TBL.key?(inf[-1])
+              [inf[0], TkNamespace::Tk_Namespace_ID_TBL[inf[-1]]]
+            else
+              inf
+            end
+          }
+        else # ! TkComm::GET_CONFIGINFO_AS_ARRAY
+          val = info['namespace']
+          if TkNamespace::Tk_Namespace_ID_TBL.key?(val)
+            info['namespace'] = TkNamespace::Tk_Namespace_ID_TBL[val]
+          end
+        end
+
+        info
+      end
+    end
+
+    def exists?
+      bool(tk_call('namespace', 'ensemble', 'exists', @path))
+    end
+  end
+
   class ScopeArgs < Array
     include Tk
 
@@ -273,6 +366,16 @@ class TkNamespace < TkObject
   end
   def parent
     tk_call('namespace', 'parent', @fullname)
+  end
+
+  def self.get_path
+    tk_call('namespace', 'path')
+  end
+  def self.set_path(*namespace_list)
+    tk_call('namespace', 'path', array2tk_list(namespace_list))
+  end
+  def set_path
+    tk_call('namespace', 'path', @fullname)
   end
 
   def self.qualifiers(str)
