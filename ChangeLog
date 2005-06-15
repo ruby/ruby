@@ -1,3 +1,12 @@
+Thu Jun 16 00:13:41 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/resolv.rb (Resolv::DNS::Resource#ttl): new attribute.
+	  (Resolv::DNS::Resource#==): ignore @ttl.
+	  (Resolv::DNS::Resource#hash): ditto.
+	  (Resolv::DNS::Message::MessageDecoder#get_rr): save TTL in a
+	  Resource object.
+	  based on [ruby-core:5190] by Eric Hodel.
+
 Wed Jun 15 18:26:39 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: support "tk inactive" sub-command [for Tcl/Tk8.5a3]

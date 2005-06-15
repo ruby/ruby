@@ -1406,7 +1406,9 @@ class Resolv
           name = self.get_name
           type, klass, ttl = self.get_unpack('nnN')
           typeclass = Resource.get_class(type, klass)
-          return name, ttl, self.get_length16 {typeclass.decode_rdata(self)}
+          res = self.get_length16 { typeclass.decode_rdata self }
+          res.instance_variable_set :@ttl, ttl
+          return name, ttl, res
         end
       end
     end
@@ -1429,6 +1431,11 @@ class Resolv
 
     class Resource < Query
 
+      ##
+      # Remaining Time To Live for this Resource.
+
+      attr_reader :ttl
+
       ClassHash = {} # :nodoc:
 
       def encode_rdata(msg) # :nodoc:
@@ -1440,10 +1447,16 @@ class Resolv
       end
 
       def ==(other) # :nodoc:
-        return self.class == other.class &&
-          self.instance_variables == other.instance_variables &&
-          self.instance_variables.collect {|name| self.instance_eval name} ==
-            other.instance_variables.collect {|name| other.instance_eval name}
+        return false unless self.class == other.class
+        s_ivars = self.instance_variables
+        s_ivars.sort!
+        s_ivars.delete "@ttl"
+        o_ivars = other.instance_variables
+        o_ivars.sort!
+        o_ivars.delete "@ttl"
+        return s_ivars == o_ivars &&
+          s_ivars.collect {|name| self.instance_variable_get name} ==
+            o_ivars.collect {|name| other.instance_variable_get name}
       end
 
       def eql?(other) # :nodoc:
@@ -1452,8 +1465,10 @@ class Resolv
 
       def hash # :nodoc:
         h = 0
-        self.instance_variables.each {|name|
-          h ^= self.instance_eval("#{name}.hash")
+        vars = self.instance_variables
+        vars.delete "@ttl"
+        vars.each {|name|
+          h ^= self.instance_variable_get(name).hash
         }
         return h
       end
