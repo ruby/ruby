@@ -60,7 +60,7 @@ TkcRectangle.new($ctext_canvas, 245, 195, 255, 205,
 
 $ctag_text = TkcTag.new($ctext_canvas)
 $ctag_text.withtag(TkcText.new($ctext_canvas, 250, 200, 
-                               'text'=>"これはキャンバスwidgetのテキスト機能をデモするための文字列です。マウスを持っていき、クリックして入力できます。選択してコントロール-Dで消去することもできます。",
+                               'text'=>"これはキャンバスwidgetのテキスト機能をデモするための文字列です。\n上で述べたような編集を可能とするためのバインディングを施しています。",
                                'width'=>440, 'anchor'=>'n', 
                                'font'=>'-*-Helvetica-Medium-R-Normal--*-240-*-*-*-*-*-*', 
                                'kanjifont'=>'-*-r-*--24-*-jisx0208.1983-0', 
