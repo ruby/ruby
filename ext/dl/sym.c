@@ -941,6 +941,7 @@ rb_dlsym_call(int argc, VALUE argv[], VALUE self)
     }
   }
 
+  FREE_ARGS;
 #undef FREE_ARGS
   return rb_assoc_new(val,dvals);
 }

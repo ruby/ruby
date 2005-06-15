@@ -1,3 +1,8 @@
+Thu Jun 16 08:29:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/dl/sym.c (rb_dlsym_call): needs FREE_ARGS before return.
+	  fixed memory leak. [ruby-Bugs-2034]
+
 Wed Jun 15 18:26:39 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: support "tk inactive" sub-command [for Tcl/Tk8.5a3]
