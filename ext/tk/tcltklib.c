@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-04-26"
+#define TCLTKLIB_RELEASE_DATE "2005-06-16"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -3930,6 +3930,7 @@ ip_rb_threadVwaitCommand(clientData, interp, objc, objv)
     rb_thread_critical = thr_crit_bup;
 
     if (ret != TCL_OK) {
+        Tcl_Release(param);
         Tcl_Free((char *)param);
 
 #if TCL_MAJOR_VERSION >= 8
