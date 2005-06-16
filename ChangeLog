@@ -1,3 +1,11 @@
+Thu Jun 16 12:53:24 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time.parse): "Fri Jan  1 08:59:60 +0900 1999" was
+	  parsed as "Fri Jan 01 09:00:00 JST 1999" even on an environment
+	  which supports leap seconds.
+	  (Time.rfc2822): ditto.
+	  (Time.xmlschema): ditto.
+
 Thu Jun 16 00:13:41 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/resolv.rb (Resolv::DNS::Resource#ttl): new attribute.

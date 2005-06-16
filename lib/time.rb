@@ -117,6 +117,7 @@ class Time
       off = zone_offset(zone, year) if zone
 
       if off
+        sec = 59 if sec == 60 && 0 < off
         t = Time.utc(year, mon, day, hour, min, sec) - off
         t.localtime if !zone_utc?(zone)
         t
@@ -124,6 +125,7 @@ class Time
         Time.local(year, mon, day, hour, min, sec)
       end
     end
+    private :make_time
 
     #
     # Parses +date+ using ParseDate.parsedate and converts it to a Time object.
@@ -187,7 +189,7 @@ class Time
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
     #
-    #     Time.parse(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
+    #     Time.strptime(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
     def strptime(date, format, now=Time.now)
       year, mon, day, hour, min, sec, zone, _ = ParseDate.strptime(date, format)
       year = yield(year) if year && block_given?
@@ -238,8 +240,9 @@ class Time
                  year
                end
 
-        t = Time.utc(year, mon, day, hour, min, sec)
-        t -= zone_offset(zone)
+        off = zone_offset(zone)
+        sec = 59 if sec == 60 && 0 < off
+        t = Time.utc(year, mon, day, hour, min, sec) - off
         t.localtime if !zone_utc?(zone)
 	t
       else
@@ -309,7 +312,9 @@ class Time
 	datetime = [$1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i, $6.to_i] 
 	datetime << $7.to_f * 1000000 if $7
 	if $8
-	  Time.utc(*datetime) - zone_offset($8)
+	  off = zone_offset($8)
+          datetime[5] = 59 if datetime[5] == 60 && 0 < off
+	  Time.utc(*datetime) - off
 	else
 	  Time.local(*datetime)
 	end
@@ -652,6 +657,49 @@ if __FILE__ == $0
       assert_equal(false, Time.rfc2822("Sat, 01 Jan 2000 00:00:00 +0000").utc?)
       assert_equal(true, Time.rfc2822("Sat, 01 Jan 2000 00:00:00 UTC").utc?)
     end
+
+    def test_parse_leap_second
+      t = Time.utc(1998,12,31,23,59,59)
+      t += 1
+      if t.sec == 60
+        assert_equal(t, Time.parse("Thu Dec 31 23:59:60 UTC 1998"))
+        assert_equal(t, Time.parse("Fri Dec 31 23:59:60 -0000 1998"))
+        t.localtime
+        assert_equal(t, Time.parse("Fri Jan  1 08:59:60 +0900 1999"))
+        assert_equal(t, Time.parse("Fri Jan  1 00:59:60 +0100 1999"))
+        assert_equal(t, Time.parse("Fri Dec 31 23:59:60 +0000 1998"))
+        assert_equal(t, Time.parse("Fri Dec 31 22:59:60 -0100 1998"))
+      end
+    end
+
+    def test_rfc2822_leap_second
+      t = Time.utc(1998,12,31,23,59,59)
+      t += 1
+      if t.sec == 60
+        assert_equal(t, Time.rfc2822("Thu, 31 Dec 1998 23:59:60 UTC"))
+        assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 -0000"))
+        t.localtime                                  
+        assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 08:59:60 +0900"))
+        assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:59:60 +0100"))
+        assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 +0000"))
+        assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:60 -0100"))
+      end
+    end
+
+    def test_xmlschema_leap_second
+      t = Time.utc(1998,12,31,23,59,59)
+      t += 1
+      if t.sec == 60
+        assert_equal(t, Time.xmlschema("1998-12-31T23:59:60Z"))
+        assert_equal(t, Time.xmlschema("1998-12-31T23:59:60-00:00"))
+        t.localtime
+        assert_equal(t, Time.xmlschema("1999-01-01T08:59:60+09:00"))
+        assert_equal(t, Time.xmlschema("1999-01-01T00:59:60+01:00"))
+        assert_equal(t, Time.xmlschema("1998-12-31T23:59:60+00:00"))
+        assert_equal(t, Time.xmlschema("1998-12-31T22:59:60-01:00"))
+      end
+    end
+
   end
 
 end
