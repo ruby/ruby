@@ -1,3 +1,7 @@
+Thu Jun 16 15:41:32 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ruby.c (load_file): '!' is already read. reported by gotoyuzo.
+
 Thu Jun 16 15:09:38 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c (ip_rb_threadVwaitCommand): Tcl_Release was missing.
