@@ -1,3 +1,10 @@
+2005-06-16  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/SUPPOPRT_STATUS: add RELEASE_DATE information.
+
+	* lib/tkextlib/tile/style.rb: add "style element options <elem>"
+	  command support.
+
 2005-06-08  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/ICONS/icons.rb: fail to create instances of

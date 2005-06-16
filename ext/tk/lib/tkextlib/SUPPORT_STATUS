@@ -1,6 +1,8 @@
 
   [ current support status of Tcl/Tk extensions ]
 
+  *******<<<  RELEASE_DATE of the libraries : 2005/06/16  >>>*******
+
 The following list shows *CURRENT* status when this file was modifyed
 at last. If you want to add other Tcl/Tk extensions to the planed list
 (or change its status position), please request them at the ruby-talk,
@@ -178,6 +180,7 @@ Mk4tcl       ***    http://www.equi4.com/metakit/tcl.html
 
 Memchan      ***    http://memchan.sourceforge.net/
 
+XOTcl        ***    http://www.xotcl.org/
 
 
 ===< tool (may not supprt) >==================================================
