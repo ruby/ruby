@@ -1534,9 +1534,15 @@ module TkCore
   def getOpenFile(keys = nil)
     tk_call('tk_getOpenFile', *hash_kv(keys))
   end
+  def getMultipleOpenFile(keys = nil)
+    simplelist(tk_call('tk_getOpenFile', '-multiple', '1', *hash_kv(keys)))
+  end
 
   def getSaveFile(keys = nil)
     tk_call('tk_getSaveFile', *hash_kv(keys))
+  end
+  def getMultipleSaveFile(keys = nil)
+    simplelist(tk_call('tk_getSaveFile', '-multiple', '1', *hash_kv(keys)))
   end
 
   def chooseColor(keys = nil)
@@ -4143,7 +4149,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-06-15'.freeze
+  RELEASE_DATE = '2005-06-16'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

@@ -1,3 +1,8 @@
+Thu Jun 16 13:34:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: add Tk.getMultiple{Open|Save}File() which return
+	  an Array of selected files.
+
 Thu Jun 16 12:53:24 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.parse): "Fri Jan  1 08:59:60 +0900 1999" was
