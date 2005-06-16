@@ -67,6 +67,10 @@ class << Tk::Tile::Style
     list(tk_call('style', 'element', 'names'))
   end
 
+  def element_options(elem)
+    simplelist(tk_call('style', 'element', 'options', elem))
+  end
+
   def theme_create(name, keys=nil)
     if keys && keys != None
       tk_call('style', 'theme', 'create', name, *hash_kv(keys))
