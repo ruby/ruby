@@ -661,45 +661,37 @@ if __FILE__ == $0
     def test_parse_leap_second
       t = Time.utc(1998,12,31,23,59,59)
       t += 1
-      if t.sec == 60
-        assert_equal(t, Time.parse("Thu Dec 31 23:59:60 UTC 1998"))
-        assert_equal(t, Time.parse("Fri Dec 31 23:59:60 -0000 1998"))
-        t.localtime
-        assert_equal(t, Time.parse("Fri Jan  1 08:59:60 +0900 1999"))
-        assert_equal(t, Time.parse("Fri Jan  1 00:59:60 +0100 1999"))
-        assert_equal(t, Time.parse("Fri Dec 31 23:59:60 +0000 1998"))
-        assert_equal(t, Time.parse("Fri Dec 31 22:59:60 -0100 1998"))
-      end
+      assert_equal(t, Time.parse("Thu Dec 31 23:59:60 UTC 1998"))
+      assert_equal(t, Time.parse("Fri Dec 31 23:59:60 -0000 1998"))
+      t.localtime
+      assert_equal(t, Time.parse("Fri Jan  1 08:59:60 +0900 1999"))
+      assert_equal(t, Time.parse("Fri Jan  1 00:59:60 +0100 1999"))
+      assert_equal(t, Time.parse("Fri Dec 31 23:59:60 +0000 1998"))
+      assert_equal(t, Time.parse("Fri Dec 31 22:59:60 -0100 1998"))
     end
 
     def test_rfc2822_leap_second
       t = Time.utc(1998,12,31,23,59,59)
       t += 1
-      if t.sec == 60
-        assert_equal(t, Time.rfc2822("Thu, 31 Dec 1998 23:59:60 UTC"))
-        assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 -0000"))
-        t.localtime                                  
-        assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 08:59:60 +0900"))
-        assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:59:60 +0100"))
-        assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 +0000"))
-        assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:60 -0100"))
-      end
+      assert_equal(t, Time.rfc2822("Thu, 31 Dec 1998 23:59:60 UTC"))
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 -0000"))
+      t.localtime                                  
+      assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 08:59:60 +0900"))
+      assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:59:60 +0100"))
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 +0000"))
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:60 -0100"))
     end
 
     def test_xmlschema_leap_second
       t = Time.utc(1998,12,31,23,59,59)
       t += 1
-      if t.sec == 60
-        assert_equal(t, Time.xmlschema("1998-12-31T23:59:60Z"))
-        assert_equal(t, Time.xmlschema("1998-12-31T23:59:60-00:00"))
-        t.localtime
-        assert_equal(t, Time.xmlschema("1999-01-01T08:59:60+09:00"))
-        assert_equal(t, Time.xmlschema("1999-01-01T00:59:60+01:00"))
-        assert_equal(t, Time.xmlschema("1998-12-31T23:59:60+00:00"))
-        assert_equal(t, Time.xmlschema("1998-12-31T22:59:60-01:00"))
-      end
+      assert_equal(t, Time.xmlschema("1998-12-31T23:59:60Z"))
+      assert_equal(t, Time.xmlschema("1998-12-31T23:59:60-00:00"))
+      t.localtime
+      assert_equal(t, Time.xmlschema("1999-01-01T08:59:60+09:00"))
+      assert_equal(t, Time.xmlschema("1999-01-01T00:59:60+01:00"))
+      assert_equal(t, Time.xmlschema("1998-12-31T23:59:60+00:00"))
+      assert_equal(t, Time.xmlschema("1998-12-31T22:59:60-01:00"))
     end
-
   end
-
 end
