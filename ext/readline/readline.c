@@ -69,10 +69,6 @@ readline_readline(argc, argv, self)
 
     if (!isatty(0) && errno == EBADF) rb_raise(rb_eIOError, "stdin closed");
 
-    GetOpenFile(rb_stdout, ofp);
-    rl_outstream = rb_io_stdio_file(ofp);
-    GetOpenFile(rb_stdin, ifp);
-    rl_instream = rb_io_stdio_file(ifp);
     buff = (char*)rb_protect((VALUE(*)_((VALUE)))readline, (VALUE)prompt,
                               &status);
     if (status) {
@@ -97,6 +93,32 @@ readline_readline(argc, argv, self)
 	result = Qnil;
     if (buff) free(buff);
     return result;
+}
+
+static VALUE
+readline_s_set_input(self, input)
+    VALUE self, input;
+{
+    OpenFile *ifp;
+
+    rb_secure(4);
+    Check_Type(input, T_FILE);
+    GetOpenFile(input, ifp);
+    rl_instream = rb_io_stdio_file(ifp);
+    return input;
+}
+
+static VALUE
+readline_s_set_output(self, output)
+    VALUE self, output;
+{
+    OpenFile *ofp;
+
+    rb_secure(4);
+    Check_Type(output, T_FILE);
+    GetOpenFile(output, ofp);
+    rl_outstream = rb_io_stdio_file(ofp);
+    return output;
 }
 
 static VALUE
@@ -736,6 +758,10 @@ Init_readline()
     mReadline = rb_define_module("Readline");
     rb_define_module_function(mReadline, "readline",
 			      readline_readline, -1);
+    rb_define_singleton_method(mReadline, "input=",
+			       readline_s_set_input, 1);
+    rb_define_singleton_method(mReadline, "output=",
+			       readline_s_set_output, 1);
     rb_define_singleton_method(mReadline, "completion_proc=",
 			       readline_s_set_completion_proc, 1);
     rb_define_singleton_method(mReadline, "completion_proc",

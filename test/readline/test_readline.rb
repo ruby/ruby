@@ -67,6 +67,8 @@ class TestReadline < Test::Unit::TestCase
     STDIN.reopen(stdin_path, "r")
     STDOUT.reopen(stdout_path, "w")
     begin
+      Readline.input = STDIN
+      Readline.output = STDOUT
       yield
     ensure
       STDIN.reopen(orig_stdin)

@@ -94,6 +94,8 @@ module IRB
       end
 
       def gets
+        Readline.input = STDIN
+        Readline.output = STDOUT
 	if l = readline(@prompt, false)
 	  HISTORY.push(l) if !l.empty?
 	  @line[@line_no += 1] = l + "\n"

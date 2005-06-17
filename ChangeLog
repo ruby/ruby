@@ -1,3 +1,14 @@
+Sat Jun 18 01:15:36 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* ext/readline/readline.c (readline_readline): do not set
+	rl_{in,out}stream.
+
+	* ext/readline/readline.c (readline_s_set_input): new method.
+
+	* ext/readline/readline.c (readline_s_set_output): new method.
+
+	* lib/irb/input-method.rb: set Readline.input and Readline.output.
+
 Fri Jun 17 13:01:40 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.parse): fix previous leap seconds support.
