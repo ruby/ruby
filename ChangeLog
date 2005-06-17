@@ -1,3 +1,9 @@
+Fri Jun 17 13:01:40 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time.parse): fix previous leap seconds support.
+	  (Time.rfc2822): ditto.
+	  (Time.xmlschema): ditto.
+
 Thu Jun 16 15:06:55 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tcltklib/tcltklib.c (ip_rb_threadVwaitCommand): Tcl_Release was missing.
