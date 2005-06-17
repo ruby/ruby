@@ -1,3 +1,9 @@
+Fri Jun 17 13:01:40 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time.parse): fix previous leap seconds support.
+	  (Time.rfc2822): ditto.
+	  (Time.xmlschema): ditto.
+
 Thu Jun 16 15:41:32 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ruby.c (load_file): '!' is already read. reported by gotoyuzo.

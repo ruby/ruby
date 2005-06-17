@@ -94,6 +94,60 @@ class Time
     end
     private :zone_utc?
 
+    LeapYearMonthDays = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    CommonYearMonthDays = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    def month_days(y, m)
+      if ((y % 4 == 0) && (y % 100 != 0)) || (y % 400 == 0)
+        LeapYearMonthDays[m-1]
+      else
+        CommonYearMonthDays[m-1]
+      end
+    end
+    private :month_days
+
+    def apply_offset(year, mon, day, hour, min, sec, off)
+      if off < 0
+        off = -off
+        off, o = off.divmod(60)
+        if o != 0 then sec += o; o, sec = sec.divmod(60); off += o end
+        off, o = off.divmod(60)
+        if o != 0 then min += o; o, min = min.divmod(60); off += o end
+        off, o = off.divmod(24)
+        if o != 0 then hour += o; o, hour = hour.divmod(24); off += o end
+        if off != 0
+          day += off
+          if month_days(year, mon) <= day
+            mon += 1
+            if 12 < mon
+              mon = 1
+              year += 1
+            end
+            day = 1
+          end
+        end
+      elsif 0 < off
+        off, o = off.divmod(60)
+        if o != 0 then sec -= o; o, sec = sec.divmod(60); off -= o end
+        off, o = off.divmod(60)
+        if o != 0 then min -= o; o, min = min.divmod(60); off -= o end
+        off, o = off.divmod(24)
+        if o != 0 then hour -= o; o, hour = hour.divmod(24); off -= o end
+        if off != 0 then
+          day -= off
+          if day < 1
+            mon -= 1
+            if mon < 1
+              year -= 1
+              mon = 12
+            end
+            day = month_days(year, mon)
+          end
+        end
+      end
+      return year, mon, day, hour, min, sec
+    end
+    private :apply_offset
+
     def make_time(year, mon, day, hour, min, sec, zone, now)
       if now
         begin
@@ -117,8 +171,9 @@ class Time
       off = zone_offset(zone, year) if zone
 
       if off
-        sec = 59 if sec == 60 && 0 < off
-        t = Time.utc(year, mon, day, hour, min, sec) - off
+        year, mon, day, hour, min, sec =
+          apply_offset(year, mon, day, hour, min, sec, off)
+        t = Time.utc(year, mon, day, hour, min, sec)
         t.localtime if !zone_utc?(zone)
         t
       else
@@ -240,11 +295,11 @@ class Time
                  year
                end
 
-        off = zone_offset(zone)
-        sec = 59 if sec == 60 && 0 < off
-        t = Time.utc(year, mon, day, hour, min, sec) - off
+        year, mon, day, hour, min, sec =
+          apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
+        t = Time.utc(year, mon, day, hour, min, sec)
         t.localtime if !zone_utc?(zone)
-	t
+        t
       else
         raise ArgumentError.new("not RFC 2822 compliant date: #{date.inspect}")
       end
@@ -309,15 +364,22 @@ class Time
           (\.\d*)?
           (Z|[+-]\d\d:\d\d)?
           \s*\z/ix =~ date
-	datetime = [$1.to_i, $2.to_i, $3.to_i, $4.to_i, $5.to_i, $6.to_i] 
-	datetime << $7.to_f * 1000000 if $7
-	if $8
-	  off = zone_offset($8)
-          datetime[5] = 59 if datetime[5] == 60 && 0 < off
-	  Time.utc(*datetime) - off
-	else
-	  Time.local(*datetime)
-	end
+        year = $1.to_i
+        mon = $2.to_i
+        day = $3.to_i
+        hour = $4.to_i
+        min = $5.to_i
+        sec = $6.to_i
+        usec = 0
+        usec = $7.to_f * 1000000 if $7
+        if $8
+          zone = $8
+          year, mon, day, hour, min, sec =
+            apply_offset(year, mon, day, hour, min, sec, zone_offset(zone))
+          Time.utc(year, mon, day, hour, min, sec, usec)
+        else
+          Time.local(year, mon, day, hour, min, sec, usec)
+        end
       else
         raise ArgumentError.new("invalid date: #{date.inspect}")
       end
@@ -543,7 +605,7 @@ if __FILE__ == $0
       assert_equal(Time.utc(2000, 1, 12, 12, 13, 14),
                    Time.xmlschema("2000-01-12T12:13:14Z"))
       assert_equal(Time.utc(2001, 4, 17, 19, 23, 17, 300000),
-		   Time.xmlschema("2001-04-17T19:23:17.3Z"))
+                   Time.xmlschema("2001-04-17T19:23:17.3Z"))
     end
 
     def test_encode_xmlschema
@@ -660,38 +722,74 @@ if __FILE__ == $0
 
     def test_parse_leap_second
       t = Time.utc(1998,12,31,23,59,59)
+      assert_equal(t, Time.parse("Thu Dec 31 23:59:59 UTC 1998"))
+      assert_equal(t, Time.parse("Fri Dec 31 23:59:59 -0000 1998"));t.localtime
+      assert_equal(t, Time.parse("Fri Jan  1 08:59:59 +0900 1999"))
+      assert_equal(t, Time.parse("Fri Jan  1 00:59:59 +0100 1999"))
+      assert_equal(t, Time.parse("Fri Dec 31 23:59:59 +0000 1998"))
+      assert_equal(t, Time.parse("Fri Dec 31 22:59:59 -0100 1998"));t.utc
       t += 1
       assert_equal(t, Time.parse("Thu Dec 31 23:59:60 UTC 1998"))
-      assert_equal(t, Time.parse("Fri Dec 31 23:59:60 -0000 1998"))
-      t.localtime
+      assert_equal(t, Time.parse("Fri Dec 31 23:59:60 -0000 1998"));t.localtime
       assert_equal(t, Time.parse("Fri Jan  1 08:59:60 +0900 1999"))
       assert_equal(t, Time.parse("Fri Jan  1 00:59:60 +0100 1999"))
       assert_equal(t, Time.parse("Fri Dec 31 23:59:60 +0000 1998"))
-      assert_equal(t, Time.parse("Fri Dec 31 22:59:60 -0100 1998"))
+      assert_equal(t, Time.parse("Fri Dec 31 22:59:60 -0100 1998"));t.utc
+      t += 1 if t.sec == 60
+      assert_equal(t, Time.parse("Thu Jan  1 00:00:00 UTC 1999"))
+      assert_equal(t, Time.parse("Fri Jan  1 00:00:00 -0000 1999"));t.localtime
+      assert_equal(t, Time.parse("Fri Jan  1 09:00:00 +0900 1999"))
+      assert_equal(t, Time.parse("Fri Jan  1 01:00:00 +0100 1999"))
+      assert_equal(t, Time.parse("Fri Jan  1 00:00:00 +0000 1999"))
+      assert_equal(t, Time.parse("Fri Dec 31 23:00:00 -0100 1998"))
     end
 
     def test_rfc2822_leap_second
       t = Time.utc(1998,12,31,23,59,59)
+      assert_equal(t, Time.rfc2822("Thu, 31 Dec 1998 23:59:59 UTC"))
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:59 -0000"));t.localtime                                  
+      assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 08:59:59 +0900"))
+      assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:59:59 +0100"))
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:59 +0000"))
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:59 -0100"));t.utc                                  
       t += 1
       assert_equal(t, Time.rfc2822("Thu, 31 Dec 1998 23:59:60 UTC"))
-      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 -0000"))
-      t.localtime                                  
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 -0000"));t.localtime                                  
       assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 08:59:60 +0900"))
       assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:59:60 +0100"))
       assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:59:60 +0000"))
-      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:60 -0100"))
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 22:59:60 -0100"));t.utc                                  
+      t += 1 if t.sec == 60
+      assert_equal(t, Time.rfc2822("Thu,  1 Jan 1999 00:00:00 UTC"))
+      assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:00:00 -0000"));t.localtime                                  
+      assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 09:00:00 +0900"))
+      assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 01:00:00 +0100"))
+      assert_equal(t, Time.rfc2822("Fri,  1 Jan 1999 00:00:00 +0000"))
+      assert_equal(t, Time.rfc2822("Fri, 31 Dec 1998 23:00:00 -0100"))
     end
 
     def test_xmlschema_leap_second
       t = Time.utc(1998,12,31,23,59,59)
+      assert_equal(t, Time.xmlschema("1998-12-31T23:59:59Z"))
+      assert_equal(t, Time.xmlschema("1998-12-31T23:59:59-00:00"));t.localtime
+      assert_equal(t, Time.xmlschema("1999-01-01T08:59:59+09:00"))
+      assert_equal(t, Time.xmlschema("1999-01-01T00:59:59+01:00"))
+      assert_equal(t, Time.xmlschema("1998-12-31T23:59:59+00:00"))
+      assert_equal(t, Time.xmlschema("1998-12-31T22:59:59-01:00"));t.utc
       t += 1
       assert_equal(t, Time.xmlschema("1998-12-31T23:59:60Z"))
-      assert_equal(t, Time.xmlschema("1998-12-31T23:59:60-00:00"))
-      t.localtime
+      assert_equal(t, Time.xmlschema("1998-12-31T23:59:60-00:00"));t.localtime
       assert_equal(t, Time.xmlschema("1999-01-01T08:59:60+09:00"))
       assert_equal(t, Time.xmlschema("1999-01-01T00:59:60+01:00"))
       assert_equal(t, Time.xmlschema("1998-12-31T23:59:60+00:00"))
-      assert_equal(t, Time.xmlschema("1998-12-31T22:59:60-01:00"))
+      assert_equal(t, Time.xmlschema("1998-12-31T22:59:60-01:00"));t.utc
+      t += 1 if t.sec == 60
+      assert_equal(t, Time.xmlschema("1999-01-01T00:00:00Z"))
+      assert_equal(t, Time.xmlschema("1999-01-01T00:00:00-00:00"));t.localtime
+      assert_equal(t, Time.xmlschema("1999-01-01T09:00:00+09:00"))
+      assert_equal(t, Time.xmlschema("1999-01-01T01:00:00+01:00"))
+      assert_equal(t, Time.xmlschema("1999-01-01T00:00:00+00:00"))
+      assert_equal(t, Time.xmlschema("1998-12-31T23:00:00-01:00"))
     end
   end
 end
