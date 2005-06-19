@@ -42,21 +42,19 @@ asn1time_to_time(ASN1_TIME *time)
 	} else {
 	    tm.tm_year += 1900;
 	}
-	tm.tm_mon -= 1;
 	break;
     case V_ASN1_GENERALIZEDTIME:
 	if (sscanf(time->data, "%4d%2d%2d%2d%2d%2dZ", &tm.tm_year, &tm.tm_mon,
     		&tm.tm_mday, &tm.tm_hour, &tm.tm_min, &tm.tm_sec) != 6) {
 	    ossl_raise(rb_eTypeError, "bad GENERALIZEDTIME format" );
 	} 
-	tm.tm_mon -= 1;
 	break;
     default:
 	rb_warning("unknown time format");
         return Qnil;
     }
     argv[0] = INT2NUM(tm.tm_year);
-    argv[1] = INT2NUM(tm.tm_mon+1);
+    argv[1] = INT2NUM(tm.tm_mon);
     argv[2] = INT2NUM(tm.tm_mday);
     argv[3] = INT2NUM(tm.tm_hour);
     argv[4] = INT2NUM(tm.tm_min);

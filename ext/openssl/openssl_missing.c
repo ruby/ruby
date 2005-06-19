@@ -106,6 +106,9 @@ HMAC_CTX_cleanup(HMAC_CTX *ctx)
 #endif
 
 #if !defined(HAVE_EVP_CIPHER_CTX_COPY)
+#if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_ST_ENGINE)
+#include <openssl/engine.h>
+#endif
 /* 
  * this function does not exist in OpenSSL yet... or ever?.
  * a future version may break this function.
