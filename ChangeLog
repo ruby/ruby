@@ -1,3 +1,11 @@
+Sun Jun 19 14:09:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (run_final): reduce unnecessary object allocation during
+	  finalization.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): deferred finalizers list should
+	  be cleared before calling them.  fixed: [ruby-talk:145790]
+
 Fri Jun 17 13:01:40 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.parse): fix previous leap seconds support.
@@ -16,7 +24,7 @@ Thu Jun 16 13:34:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Thu Jun 16 12:53:24 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.parse): "Fri Jan  1 08:59:60 +0900 1999" was
-	  parsed as "Fri Jan 01 09:00:00 JST 1999" even on an environment 
+	  parsed as "Fri Jan 01 09:00:00 JST 1999" even on an environment
 	  which supports leap seconds.
 	  (Time.rfc2822): ditto.
 	  (Time.xmlschema): ditto.
@@ -35,7 +43,7 @@ Wed Jun 15 18:26:39 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Tue Jun 14 02:02:43 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/tkutil.c: add TkUtil::CallbackSubst.subst_arg(m, ...) & 
+	* ext/tk/tkutil.c: add TkUtil::CallbackSubst.subst_arg(m, ...) &
 	  _define_attribute_aliases(hash) to get substitution-argument from
 	  attributes (e.g. subst_arg(:x,:y,:num,:button) --> "%x %y %b %b ").
 
