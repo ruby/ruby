@@ -1771,7 +1771,7 @@ run_final(obj)
 {
     long i;
     int status, critical_save = rb_thread_critical;
-    VALUE args[3], table;
+    VALUE args[3], table, objid;
 
     objid = rb_obj_id(obj);	/* make obj into id */
     rb_thread_critical = Qtrue;
