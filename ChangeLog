@@ -1,3 +1,10 @@
+Mon Jun 20 01:26:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/openssl_missing.c, ext/openssl/ossl.h,
+	  ext/openssl/ossl_asn1.c, ext/openssl/ossl_bio.c,
+	  ext/openssl/ossl_pkcs12.h, ext/openssl/ossl_x509req.c: avoid
+	  compiler warnings. suggested by Mical Rokos.
+
 Sun Jun 19 14:09:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_final): reduce unnecessary object allocation during
