@@ -1773,17 +1773,20 @@ run_final(obj)
     int status, critical_save = rb_thread_critical;
     VALUE args[3], table;
 
+    objid = rb_obj_id(obj);	/* make obj into id */
     rb_thread_critical = Qtrue;
-    args[1] = rb_ary_new3(1, rb_obj_id(obj)); /* make obj into id */
+    args[1] = 0;
     args[2] = (VALUE)ruby_safe_level;
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	args[0] = RARRAY(finalizers)->ptr[i];
+	if (!args[1]) args[1] = rb_ary_new3(1, objid);
 	rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
     }
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
 	    VALUE final = RARRAY(table)->ptr[i];
 	    args[0] = RARRAY(final)->ptr[1];
+	    if (!args[1]) args[1] = rb_ary_new3(1, objid);
 	    args[2] = FIX2INT(RARRAY(final)->ptr[0]);
 	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
 	}
@@ -1811,7 +1814,9 @@ rb_gc_call_finalizer_at_exit()
 
     /* run finalizers */
     if (need_call_final) {
-	finalize_list(deferred_final_list);
+	p = deferred_final_list;
+	deferred_final_list = 0;
+	finalize_list(p);
 	for (i = 0; i < heaps_used; i++) {
 	    p = heaps[i].slot; pend = p + heaps[i].limit;
 	    while (p < pend) {

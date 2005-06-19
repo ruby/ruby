@@ -1,3 +1,11 @@
+Sun Jun 19 14:09:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (run_final): reduce unnecessary object allocation during
+	  finalization.
+
+	* gc.c (rb_gc_call_finalizer_at_exit): deferred finalizers list should
+	  be cleared before calling them.  fixed: [ruby-talk:145790]
+
 Sat Jun 18 01:15:36 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* ext/readline/readline.c (readline_readline): do not set
