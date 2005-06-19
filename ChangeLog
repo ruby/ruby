@@ -1,3 +1,8 @@
+Mon Jun 20 02:15:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (define_final): document fix: finalizers never get called
+	  before target object is destroyed.
+
 Mon Jun 20 01:26:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/openssl_missing.c, ext/openssl/ossl.h,
@@ -8,8 +13,8 @@ Mon Jun 20 01:26:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Sun Jun 19 17:22:02 CEST 2005  Michael Neumann  <mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/utils.rb: Patch by Nobuhiro IMAI fixes the following
-	  problem: Default value modification on 
-	  Module#public_instance_methods (false -> true) breaks 
+	  problem: Default value modification on
+	  Module#public_instance_methods (false -> true) breaks
 	  s.add_handler(XMLRPC::iPIMethods("sample"), MyHandler.new) style
 	  security protection.
 
