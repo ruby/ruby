@@ -1,3 +1,14 @@
+Sun Jun 19 17:22:02 CEST 2005  Michael Neumann  <mneumann@ruby-lang.org>
+
+	* lib/xmlrpc/utils.rb: Patch by Nobuhiro IMAI fixes the following
+	  problem: Default value modification on 
+	  Module#public_instance_methods (false -> true) breaks 
+	  s.add_handler(XMLRPC::iPIMethods("sample"), MyHandler.new) style
+	  security protection.
+
+	* lib/xmlrpc/client.rb: Aliased XMLRPC::Client#new2 as
+	  XMLRPC::Client#new_from_uri, and #new3 as #new_from_hash.
+
 Sun Jun 19 14:09:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (run_final): reduce unnecessary object allocation during
