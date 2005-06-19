@@ -185,14 +185,14 @@ static st_table *finalizer_table = 0;
 /*
  *  call-seq:
  *     GC.enable    => true or false
- *  
+ *
  *  Enables garbage collection, returning <code>true</code> if garbage
  *  collection was previously disabled.
- *     
+ *
  *     GC.disable   #=> false
  *     GC.enable    #=> true
  *     GC.enable    #=> false
- *     
+ *
  */
 
 VALUE
@@ -207,13 +207,13 @@ rb_gc_enable()
 /*
  *  call-seq:
  *     GC.disable    => true or false
- *  
+ *
  *  Disables garbage collection, returning <code>true</code> if garbage
  *  collection was already disabled.
- *     
+ *
  *     GC.disable   #=> false
  *     GC.disable   #=> true
- *     
+ *
  */
 
 VALUE
@@ -296,7 +296,7 @@ typedef struct RVALUE {
 	struct RFile   file;
 	struct RNode   node;
 	struct RMatch  match;
-	struct RVarmap varmap; 
+	struct RVarmap varmap;
 	struct SCOPE   scope;
     } as;
 #ifdef GC_DEBUG
@@ -703,7 +703,7 @@ rb_gc_mark_maybe(obj)
 
 #define GC_LEVEL_MAX 250
 
-void
+static void
 gc_mark(ptr, lev)
     VALUE ptr;
     int lev;
@@ -713,7 +713,7 @@ gc_mark(ptr, lev)
     obj = RANY(ptr);
     if (rb_special_const_p(ptr)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return;       /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */
     obj->as.basic.flags |= FL_MARK;
 
     if (lev > GC_LEVEL_MAX || (lev == 0 && ruby_stack_check())) {
@@ -751,7 +751,7 @@ gc_mark_children(ptr, lev)
     obj = RANY(ptr);
     if (rb_special_const_p(ptr)) return; /* special const not marked */
     if (obj->as.basic.flags == 0) return;       /* free cell */
-    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */ 
+    if (obj->as.basic.flags & FL_MARK) return;  /* already marked */
     obj->as.basic.flags |= FL_MARK;
 
   marking:
@@ -1330,10 +1330,10 @@ garbage_collect()
     during_gc++;
 
     init_mark_stack();
-    
+
     /* mark frame stack */
     for (frame = ruby_frame; frame; frame = frame->prev) {
-	rb_gc_mark_frame(frame); 
+	rb_gc_mark_frame(frame);
 	if (frame->tmp) {
 	    struct FRAME *tmp = frame->tmp;
 	    while (tmp) {
@@ -1400,7 +1400,7 @@ garbage_collect()
     rb_mark_generic_ivar_tbl();
 
     rb_gc_mark_parser();
-    
+
     /* gc_mark objects whose marking are not completed*/
     while (!MARK_STACK_EMPTY){
 	if (mark_stack_overflow){
@@ -1427,7 +1427,7 @@ rb_gc()
  *     ObjectSpace.garbage_collect  => nil
  *
  *  Initiates garbage collection, unless manually disabled.
- *     
+ *
  */
 
 VALUE
@@ -1493,29 +1493,29 @@ Init_stack(addr)
  *  The <code>ObjectSpace</code> module contains a number of routines
  *  that interact with the garbage collection facility and allow you to
  *  traverse all living objects with an iterator.
- *     
+ *
  *  <code>ObjectSpace</code> also provides support for object
  *  finalizers, procs that will be called when a specific object is
  *  about to be destroyed by garbage collection.
- *     
+ *
  *     include ObjectSpace
- *     
- *     
+ *
+ *
  *     a = "A"
  *     b = "B"
  *     c = "C"
- *     
- *     
+ *
+ *
  *     define_finalizer(a, proc {|id| puts "Finalizer one on #{id}" })
  *     define_finalizer(a, proc {|id| puts "Finalizer two on #{id}" })
  *     define_finalizer(b, proc {|id| puts "Finalizer three on #{id}" })
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     Finalizer three on 537763470
  *     Finalizer one on 537763480
  *     Finalizer two on 537763480
- *     
+ *
  */
 
 void
@@ -1597,7 +1597,7 @@ os_obj_of(of)
 /*
  *  call-seq:
  *     ObjectSpace.each_object([module]) {|obj| ... } => fixnum
- *  
+ *
  *  Calls the block once for each living, nonimmediate object in this
  *  Ruby process. If <i>module</i> is specified, calls the block
  *  for only those classes or modules that match (or are a subclass of)
@@ -1607,15 +1607,15 @@ os_obj_of(of)
  *  never returned. In the example below, <code>each_object</code>
  *  returns both the numbers we defined and several constants defined in
  *  the <code>Math</code> module.
- *     
+ *
  *     a = 102.7
  *     b = 95       # Won't be returned
  *     c = 12345678987654321
  *     count = ObjectSpace.each_object(Numeric) {|x| p x }
  *     puts "Total count: #{count}"
- *     
+ *
  *  <em>produces:</em>
- *     
+ *
  *     12345678987654321
  *     102.7
  *     2.71828182845905
@@ -1624,7 +1624,7 @@ os_obj_of(of)
  *     1.7976931348623157e+308
  *     2.2250738585072e-308
  *     Total count: 7
- *     
+ *
  */
 
 static VALUE
@@ -1700,9 +1700,9 @@ call_final(os, obj)
 /*
  *  call-seq:
  *     ObjectSpace.undefine_finalizer(obj)
- *  
+ *
  *  Removes all finalizers for <i>obj</i>.
- *     
+ *
  */
 
 static VALUE
@@ -1718,10 +1718,10 @@ undefine_final(os, obj)
 /*
  *  call-seq:
  *     ObjectSpace.define_finalizer(obj, aProc=proc())
- *  
- *  Adds <i>aProc</i> as a finalizer, to be called when <i>obj</i>
- *  is about to be destroyed.
- *     
+ *
+ *  Adds <i>aProc</i> as a finalizer, to be called after <i>obj</i>
+ *  was destroyed.
+ *
  */
 
 static VALUE
@@ -1869,14 +1869,14 @@ rb_gc_call_finalizer_at_exit()
 /*
  *  call-seq:
  *     ObjectSpace._id2ref(object_id) -> an_object
- *  
+ *
  *  Converts an object id to a reference to the object. May not be
  *  called on an object id passed as a parameter to a finalizer.
- *     
+ *
  *     s = "I am a string"                    #=> "I am a string"
  *     r = ObjectSpace._id2ref(s.object_id)   #=> "I am a string"
  *     r == s                                 #=> true
- *     
+ *
  */
 
 static VALUE

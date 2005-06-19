@@ -1,3 +1,8 @@
+Mon Jun 20 02:15:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (define_final): document fix: finalizers never get called
+	  before target object is destroyed.
+
 Mon Jun 20 01:26:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/openssl_missing.c, ext/openssl/ossl.h,
