@@ -108,36 +108,54 @@ rb_jump_context(env, val)
     abort();			/* ensure noreturn */
 }
 /*
- * DUMMY_SETJMP is a magic for getcontext, gcc and IA64 register stack
- * combination problem.
+ * FUNCTION_CALL_MAY_RETURN_TWICE is a magic for getcontext, gcc,
+ * IA64 register stack and SPARC register window combination problem.
  *
  * Assume following code sequence.
  * 
- * 1. set a register in the register stack such as r32.
+ * 1. set a register in the register stack/window such as r32/l0.
  * 2. call getcontext.
  * 3. use the register.
  * 4. update the register for other use.
- * 5. call setcontext directly or indirectly.
+ * 5. call setcontext indirectly (or directly).
  *
  * This code should be run as 1->2->3->4->5->3->4.
  * But after second getcontext return (second 3),
  * the register is broken (updated).
  * It's because getcontext/setcontext doesn't preserve the content of the
- * register stack.
+ * register stack/window.
  *
- * setjmp also doesn't preserve the content of the register stack.
+ * setjmp also doesn't preserve the content of the register stack/window.
  * But it has not the problem because gcc knows setjmp may return twice.
  * gcc detects setjmp and generates setjmp safe code.
  *
- * So setjmp call before getcontext call fix the problem.
+ * So setjmp call before getcontext call makes the code somewhat safe.
+ * It fix the problem on IA64.
  * It is not required that setjmp is called at run time, since the problem is
  * register usage.
+ *
+ * Since the magic setjmp is not enough for SPARC,
+ * inline asm is used to prohibit registers in register windows.
  */
-static jmp_buf dummy_setjmp_jmp_buf;
-int dummy_setjmp_false = 0;
-#define DUMMY_SETJMP (dummy_setjmp_false ? setjmp(dummy_setjmp_jmp_buf) : 0)
+#if defined (__GNUC__) && (defined(sparc) || defined(__sparc__))
+#define FUNCTION_CALL_MAY_RETURN_TWICE \
+ ({ __asm__ volatile ("" : : :  \
+    "%o0", "%o1", "%o2", "%o3", "%o4", "%o5", "%o7", \
+    "%l0", "%l1", "%l2", "%l3", "%l4", "%l5", "%l6", "%l7", \
+    "%i0", "%i1", "%i2", "%i3", "%i4", "%i5", "%i7"); })
+#else
+static jmp_buf function_call_may_return_twice_jmp_buf;
+int function_call_may_return_twice_false = 0;
+#define FUNCTION_CALL_MAY_RETURN_TWICE \
+  (function_call_may_return_twice_false ? \
+   setjmp(function_call_may_return_twice_jmp_buf) : \
+   0)
+#endif
 #define ruby_longjmp(env, val) rb_jump_context(env, val)
-#define ruby_setjmp(j) ((j)->status = 0, DUMMY_SETJMP, getcontext(&(j)->context), (j)->status)
+#define ruby_setjmp(j) ((j)->status = 0, \
+    FUNCTION_CALL_MAY_RETURN_TWICE, \
+    getcontext(&(j)->context), \
+    (j)->status)
 #else
 typedef jmp_buf rb_jmpbuf_t;
 #if !defined(setjmp) && defined(HAVE__SETJMP)

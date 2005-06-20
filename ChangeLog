@@ -1,3 +1,9 @@
+Mon Jun 20 18:44:04 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): DUMMY_SETJMP is replaced
+	  because setjmp is not enough to fix getcontext and SPARC register
+	  window problem.
+
 Mon Jun 20 17:15:51 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dbm/dbm.c (fdbm_closed): new method DBM#closed?
