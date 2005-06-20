@@ -11,6 +11,7 @@ Mon Jun 20 16:48:36 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.{ch} (unlink): hook runtime function to change
 	  file attribute before unlinking.
+	  fixed: [ruby-dev:26360]
 
 Mon Jun 20 02:15:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
