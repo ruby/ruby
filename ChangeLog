@@ -1,3 +1,17 @@
+Mon Jun 20 16:48:36 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/dbm/dbm.c (fdbm_closed): new method DBM#closed?
+
+	* ext/gdbm/gdbm.c (fgdbm_closed): new method GDBM#closed?
+
+	* ext/sdbm/init.c (fsdbm_closed): new method SDBM#closed?
+
+	* test/dbm/test_dbm.rb, test/gdbm/test_gdbm.rb, test/sdbm/test_sdbm.rb
+	  (teardown): close all db objects before deleting data files.
+
+	* win32/win32.{ch} (unlink): hook runtime function to change
+	  file attribute before unlinking.
+
 Mon Jun 20 02:15:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* gc.c (define_final): document fix: finalizers never get called

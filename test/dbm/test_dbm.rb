@@ -42,7 +42,9 @@ if defined? DBM
     def teardown
       assert_nil(@dbm.close)
       assert_nil(@dbm_rdonly.close)
-      GC.start
+      ObjectSpace.each_object(DBM) do |obj|
+        obj.close unless obj.closed?
+      end
       File.delete *Dir.glob("tmptest_dbm*").to_a
       p Dir.glob("tmptest_dbm*") if $DEBUG
     end

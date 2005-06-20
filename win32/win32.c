@@ -3433,6 +3433,26 @@ rb_w32_rmdir(const char *path)
     return ret;
 }
 
+#undef unlink
+int
+rb_w32_unlink(const char *path)
+{
+    DWORD attr;
+    int ret;
+    RUBY_CRITICAL({
+	attr = GetFileAttributes(path);
+	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
+	    attr &= ~FILE_ATTRIBUTE_READONLY;
+	    SetFileAttributes(path, attr);
+	}
+	ret = unlink(path);
+	if (ret < 0 && attr != (DWORD)-1) {
+	    SetFileAttributes(path, attr);
+	}
+    });
+    return ret;
+}
+
 #if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
 int
 rb_w32_isatty(int fd)

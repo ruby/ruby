@@ -12,7 +12,9 @@ class TestSDBM < Test::Unit::TestCase
   end
   def teardown
     assert_nil(@sdbm.close)
-    GC.start
+    ObjectSpace.each_object(SDBM) do |obj|
+      obj.close unless obj.closed?
+    end
     File.delete *Dir.glob("tmptest_sdbm*").to_a
     p Dir.glob("tmptest_sdbm*") if $DEBUG
   end

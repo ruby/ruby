@@ -128,6 +128,8 @@ extern "C++" {
 #define mkdir(p, m)		rb_w32_mkdir(p, m)
 #undef rmdir
 #define rmdir(p)		rb_w32_rmdir(p)
+#undef unlink
+#define unlink(p)		rb_w32_unlink(p)
 
 #ifdef __MINGW32__
 struct timezone {
@@ -191,6 +193,7 @@ extern int rb_w32_isatty(int);
 #endif
 extern int rb_w32_mkdir(const char *, int);
 extern int rb_w32_rmdir(const char *);
+extern int rb_w32_unlink(const char*);
 
 #ifdef __BORLANDC__
 extern FILE *rb_w32_fopen(const char *, const char *);

@@ -62,6 +62,21 @@ fsdbm_close(obj)
     return Qnil;
 }
 
+static VALUE
+fsdbm_closed(obj)
+    VALUE obj;
+{
+    struct dbmdata *dbmp;
+
+    Data_Get_Struct(obj, struct dbmdata, dbmp);
+    if (dbmp == 0)
+	return Qtrue;
+    if (dbmp->di_dbm == 0)
+	return Qtrue;
+
+    return Qfalse;
+}
+
 static VALUE fsdbm_alloc _((VALUE));
 static VALUE
 fsdbm_alloc(klass)
@@ -734,6 +749,7 @@ Init_sdbm()
 
     rb_define_method(rb_cDBM, "initialize", fsdbm_initialize, -1);
     rb_define_method(rb_cDBM, "close", fsdbm_close, 0);
+    rb_define_method(rb_cDBM, "closed?", fsdbm_closed, 0);
     rb_define_method(rb_cDBM, "[]", fsdbm_aref, 1);
     rb_define_method(rb_cDBM, "fetch", fsdbm_fetch_m, -1);
     rb_define_method(rb_cDBM, "[]=", fsdbm_store, 2);
