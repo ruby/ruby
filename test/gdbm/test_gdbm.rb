@@ -39,7 +39,9 @@ if defined? GDBM
     def teardown
       assert_nil(@gdbm.close)
       assert_nil(@gdbm_rdonly.close)
-      GC.start
+      ObjectSpace.each_object(GDBM) do |obj|
+        obj.close unless obj.closed?
+      end
       File.delete *Dir.glob("tmptest_gdbm*").to_a
       p Dir.glob("tmptest_gdbm*") if $DEBUG
     end

@@ -72,6 +72,21 @@ fgdbm_close(obj)
     return Qnil;
 }
 
+static VALUE
+fgdbm_closed(obj)
+    VALUE obj;
+{
+    struct dbmdata *dbmp;
+
+    Data_Get_Struct(obj, struct dbmdata, dbmp);
+    if (dbmp == 0)
+	return Qtrue;
+    if (dbmp->di_dbm == 0)
+	return Qtrue;
+
+    return Qfalse;
+}
+
 static VALUE fgdbm_s_alloc _((VALUE));
 
 static VALUE
@@ -909,6 +924,7 @@ Init_gdbm()
 
     rb_define_method(rb_cGDBM, "initialize", fgdbm_initialize, -1);
     rb_define_method(rb_cGDBM, "close", fgdbm_close, 0);
+    rb_define_method(rb_cGDBM, "closed?", fgdbm_closed, 0);
     rb_define_method(rb_cGDBM, "[]", fgdbm_aref, 1);
     rb_define_method(rb_cGDBM, "fetch", fgdbm_fetch_m, -1);
     rb_define_method(rb_cGDBM, "[]=", fgdbm_store, 2);
