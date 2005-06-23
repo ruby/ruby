@@ -18,18 +18,20 @@ while arg = ARGV[0]
   ARGV.shift
 end
 
-require 'rbconfig'
-config = Config::CONFIG
-
 srcdir ||= File.dirname(__FILE__)
 archdir ||= '.'
+
+abs_archdir = File.expand_path(archdir)
+$:.unshift(abs_archdir)
+
+require 'rbconfig'
+config = Config::CONFIG
 
 ruby = File.join(archdir, config["RUBY_INSTALL_NAME"]+config['EXEEXT'])
 unless File.exist?(ruby)
   abort "#{ruby} is not found.\nTry `make' first, then `make test', please.\n"
 end
 
-abs_archdir = File.expand_path(archdir)
 libs = [abs_archdir, File.expand_path("lib", srcdir)]
 if extout
   abs_extout = File.expand_path(extout)
