@@ -8,47 +8,258 @@ end
 ########################
 
 require 'tkutil'
-# require 'tk'
+require 'tk'
 
 ########################
 
 module TkEvent
   class Event < TkUtil::CallbackSubst
-    module TypeNum
-      KeyPress         =  2
-      KeyRelease       =  3
-      ButtonPress      =  4
-      ButtonRelease    =  5
-      MotionNotify     =  6
-      EnterNotify      =  7
-      LeaveNotify      =  8
-      FocusIn          =  9
-      FocusOut         = 10
-      KeymapNotify     = 11
-      Expose           = 12
-      GraphicsExpose   = 13
-      NoExpose         = 14
-      VisibilityNotify = 15
-      CreateNotify     = 16
-      DestroyNotify    = 17
-      UnmapNotify      = 18
-      MapNotify        = 19
-      MapRequest       = 20
-      ReparentNotify   = 21
-      ConfigureNotify  = 22
-      ConfigureRequest = 23
-      GravityNotify    = 24
-      ResizeRequest    = 25
-      CirculateNotify  = 26
-      CirculateRequest = 27
-      PropertyNotify   = 28
-      SelectionClear   = 29
-      SelectionRequest = 30
-      SelectionNotify  = 31
-      ColormapNotify   = 32
-      ClientMessage    = 33
-      MappingNotify    = 34
+    module Grp
+      KEY         =           0x1
+      BUTTON      =           0x2
+      MOTION      =           0x4
+      CROSSING    =           0x8
+      FOCUS       =           0x10
+      EXPOSE      =           0x20
+      VISIBILITY  =           0x40
+      CREATE      =           0x80
+      DESTROY     =           0x100
+      UNMAP       =           0x200
+      MAP         =           0x400
+      REPARENT    =           0x800
+      CONFIG      =           0x1000
+      GRAVITY     =           0x2000
+      CIRC        =           0x4000
+      PROP        =           0x8000
+      COLORMAP    =           0x10000
+      VIRTUAL     =           0x20000
+      ACTIVATE    =           0x40000
+      MAPREQ      =           0x80000
+      CONFIGREQ   =           0x100000
+      RESIZEREQ   =           0x200000
+      CIRCREQ     =           0x400000
+
+      MWHEEL      =           0x10000000
+
+      ALL         =           0xFFFFFFFF
+
+      KEY_BUTTON_MOTION_VIRTUAL  = (KEY|MWHEEL|BUTTON|MOTION|VIRTUAL)
+      KEY_BUTTON_MOTION_CROSSING = (KEY|MWHEEL|BUTTON|MOTION|CROSSING|VIRTUAL)
     end
+
+    type_data = [
+      #-----+-------------------+------------------+-----------------------#
+      #  ID |  const            |  group_flag      |  context_name         #
+      #-----+-------------------+------------------+-----------------------#
+      [  2,  :KeyPress,          Grp::KEY,         'KeyPress',    'Key'    ], 
+      [  3,  :KeyRelease,        Grp::KEY,         'KeyRelease'            ], 
+      [  4,  :ButtonPress,       Grp::BUTTON,      'ButtonPress', 'Button' ], 
+      [  5,  :ButtonRelease,     Grp::BUTTON,      'ButtonRelease'         ], 
+      [  6,  :MotionNotify,      Grp::MOTION,      'Motion'                ], 
+      [  7,  :EnterNotify,       Grp::CROSSING,    'Enter'                 ], 
+      [  8,  :LeaveNotify,       Grp::CROSSING,    'Leave'                 ], 
+      [  9,  :FocusIn,           Grp::FOCUS,       'FocusIn'               ], 
+      [ 10,  :FocusOut,          Grp::FOCUS,       'FocusOut'              ], 
+      [ 11,  :KeymapNotify,      0,                                        ], 
+      [ 12,  :Expose,            Grp::EXPOSE,      'Expose'                ], 
+      [ 13,  :GraphicsExpose,    Grp::EXPOSE,                              ], 
+      [ 14,  :NoExpose,          0,                                        ], 
+      [ 15,  :VisibilityNotify,  Grp::VISIBILITY,  'Visibility'            ], 
+      [ 16,  :CreateNotify,      Grp::CREATE,      'Create'                ], 
+      [ 17,  :DestroyNotify,     Grp::DESTROY,     'Destroy'               ], 
+      [ 18,  :UnmapNotify,       Grp::UNMAP,       'Unmap'                 ], 
+      [ 19,  :MapNotify,         Grp::MAP,         'Map'                   ], 
+      [ 20,  :MapRequest,        Grp::MAPREQ,      'MapRequest'            ], 
+      [ 21,  :ReparentNotify,    Grp::REPARENT,    'Reparent'              ], 
+      [ 22,  :ConfigureNotify,   Grp::CONFIG,      'Configure'             ], 
+      [ 23,  :ConfigureRequest,  Grp::CONFIGREQ,   'ConfigureRequest'      ], 
+      [ 24,  :GravityNotify,     Grp::GRAVITY,     'Gravity'               ], 
+      [ 25,  :ResizeRequest,     Grp::RESIZEREQ,   'ResizeRequest'         ], 
+      [ 26,  :CirculateNotify,   Grp::CIRC,        'Circulate'             ], 
+      [ 27,  :CirculateRequest,  0,                'CirculateRequest'      ], 
+      [ 28,  :PropertyNotify,    Grp::PROP,        'Property'              ], 
+      [ 29,  :SelectionClear,    0,                                        ], 
+      [ 30,  :SelectionRequest,  0,                                        ], 
+      [ 31,  :SelectionNotify,   0,                                        ], 
+      [ 32,  :ColormapNotify,    Grp::COLORMAP,    'Colormap'              ], 
+      [ 33,  :ClientMessage,     0,                                        ], 
+      [ 34,  :MappingNotify,     0,                                        ], 
+      [ 35,  :VirtualEvent,      Grp::VIRTUAL,                             ],
+      [ 36,  :ActivateNotify,    Grp::ACTIVATE,    'Activate'              ],
+      [ 37,  :DeactivateNotify,  Grp::ACTIVATE,    'Deactivate'            ],
+      [ 38,  :MouseWheelEvent,   Grp::MWHEEL,      'MouseWheel'            ],
+      [ 39,  :TK_LASTEVENT,      0,                                        ]
+    ]
+
+    module TypeNum
+    end
+
+    TYPE_NAME_TBL  = Hash.new
+    TYPE_ID_TBL    = Hash.new
+    TYPE_GROUP_TBL = Hash.new
+
+    type_data.each{|id, c_name, g_flag, *t_names|
+      TypeNum.const_set(c_name, id)
+      t_names.each{|t_name| t_name.freeze; TYPE_NAME_TBL[t_name] = id }
+      TYPE_ID_TBL[id]    = t_names
+      TYPE_GROUP_TBL[id] = g_flag
+    }
+
+    TYPE_NAME_TBL.freeze
+    TYPE_ID_TBL.freeze
+
+    def self.type_id(name)
+      TYPE_NAME_TBL[name.to_s]
+    end
+
+    def self.type_name(id)
+      TYPE_ID_TBL[id] && TYPE_ID_TBL[id][0]
+    end
+
+    def self.group_flag(id)
+      TYPE_GROUP_TBL[id] || 0
+    end
+
+    #############################################
+
+    module StateMask
+      ShiftMask      =        (1<<0)
+      LockMask       =        (1<<1)
+      ControlMask    =        (1<<2)
+      Mod1Mask       =        (1<<3)
+      Mod2Mask       =        (1<<4)
+      Mod3Mask       =        (1<<5)
+      Mod4Mask       =        (1<<6)
+      Mod5Mask       =        (1<<7)
+      Button1Mask    =        (1<<8)
+      Button2Mask    =        (1<<9)
+      Button3Mask    =        (1<<10)
+      Button4Mask    =        (1<<11)
+      Button5Mask    =        (1<<12)
+
+      AnyModifier    =        (1<<15)
+
+      META_MASK      =  (AnyModifier<<1)
+      ALT_MASK       =  (AnyModifier<<2)
+      EXTENDED_MASK  =  (AnyModifier<<3)
+
+      CommandMask    =  Mod1Mask
+      OptionMask     =  Mod2Mask
+    end
+
+    #############################################
+
+    FIELD_FLAG = {
+      # key  =>  flag
+      'above'       => Grp::CONFIG, 
+      'borderwidth' => (Grp::CREATE|Grp::CONFIG),
+      'button'      => Grp::BUTTON, 
+      'count'       => Grp::EXPOSE, 
+      'data'        => Grp::VIRTUAL, 
+      'delta'       => Grp::MWHEEL, 
+      'detail'      => (Grp::FOCUS|Grp::CROSSING),
+      'focus'       => Grp::CROSSING,
+      'height'      => (Grp::EXPOSE|Grp::CONFIG),
+      'keycode'     => Grp::KEY,
+      'keysym'      => Grp::KEY,
+      'mode'        => (Grp::CROSSING|Grp::FOCUS),
+      'override'    => (Grp::CREATE|Grp::MAP|Grp::REPARENT|Grp::CONFIG),
+      'place'       => Grp::CIRC,
+      'root'        => (Grp::KEY_BUTTON_MOTION_VIRTUAL|Grp::CROSSING),
+      'rootx'       => (Grp::KEY_BUTTON_MOTION_VIRTUAL|Grp::CROSSING),
+      'rooty'       => (Grp::KEY_BUTTON_MOTION_VIRTUAL|Grp::CROSSING),
+      'sendevent'   => Grp::ALL,
+      'serial'      => Grp::ALL,
+      'state'       => (Grp::KEY_BUTTON_MOTION_VIRTUAL|
+                        Grp::CROSSING|Grp::VISIBILITY),
+      'subwindow'   => (Grp::KEY_BUTTON_MOTION_VIRTUAL|Grp::CROSSING),
+      'time'        => (Grp::KEY_BUTTON_MOTION_VIRTUAL|Grp::CROSSING|
+                        Grp::PROP),
+      'warp'        => Grp::KEY_BUTTON_MOTION_VIRTUAL,
+      'width'       => (Grp::EXPOSE|Grp::CREATE|Grp::CONFIG),
+      'window'      => (Grp::CREATE|Grp::UNMAP|Grp::MAP|Grp::REPARENT|
+                        Grp::CONFIG|Grp::GRAVITY|Grp::CIRC),
+      'when'        => Grp::ALL,
+      'x'           => (Grp::KEY_BUTTON_MOTION_VIRTUAL|Grp::CROSSING|
+                        Grp::EXPOSE|Grp::CREATE|Grp::CONFIG|Grp::GRAVITY|
+                        Grp::REPARENT),
+      'y'           => (Grp::KEY_BUTTON_MOTION_VIRTUAL|Grp::CROSSING|
+                        Grp::EXPOSE|Grp::CREATE|Grp::CONFIG|Grp::GRAVITY|
+                        Grp::REPARENT),
+    }
+
+    FIELD_OPERATION = {
+      'root' => proc{|val| 
+        begin
+          Tk.tk_call_without_enc('winfo', 'pathname', val)
+          val
+        rescue
+          nil
+        end
+      }, 
+
+      'subwindow' => proc{|val| 
+        begin
+          Tk.tk_call_without_enc('winfo', 'pathname', val)
+          val
+        rescue
+          nil
+        end
+      }, 
+
+      'window' => proc{|val| nil}
+    }
+
+    #-------------------------------------------
+
+    def generate(win, modkeys={})
+      klass = self.class
+      type_id = self.type
+
+      type_name  = klass.type_name(type_id)
+      group_flag = klass.group_flag(type_id)
+
+      opts = {}
+
+      FIELD_FLAG.each{|key, flag|
+        next if (flag & group_flag) == 0
+
+        begin
+          val = self.__send__(key)
+          val = FIELD_OPERATION[key].call(val) if FIELD_OPERATION[key]
+        rescue
+          next
+        end
+
+        next if !val || val == '??'
+        opts[key] = val
+      }
+
+      modkeys.each{|key, val|
+        if val
+          opts[key.to_s] = val
+        else
+          opts.delete(key.to_s)
+        end
+      }
+
+      if group_flag != Grp::KEY
+        Tk.event_generate(win, type_name, opts)
+      else
+        # If type is KEY event, focus should be set to target widget.
+        # If not set, original widget will get the same event. 
+        # That will make infinite loop.
+        w = Tk.tk_call_without_enc('focus')
+        begin
+          Tk.tk_call_without_enc('focus', win)
+          Tk.event_generate(win, type_name, opts)
+        ensure
+          Tk.tk_call_without_enc('focus', w)
+        end
+      end
+    end
+
+    #############################################
 
     # [ <'%' subst-key char>, <proc type char>, <instance var (accessor) name>]
     KEY_TBL = [
@@ -75,6 +286,7 @@ module TkEvent
       [ ?E, ?b, :send_event ], 
       [ ?K, ?s, :keysym ], 
       [ ?N, ?n, :keysym_num ], 
+      [ ?P, ?s, :property ], 
       [ ?R, ?s, :rootwin_id ], 
       [ ?S, ?s, :subwindow ], 
       [ ?T, ?n, :type ], 
@@ -148,7 +360,8 @@ module TkEvent
       :root_x    => :x_root, 
       :rooty     => :y_root, 
       :root_y    => :y_root, 
-      :sendevent => :send_event
+      :sendevent => :send_event, 
+      :window    => :widget
     }
 
     _define_attribute_aliases(ALIAS_TBL)

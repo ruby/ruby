@@ -1,3 +1,15 @@
+Thu Jun 23 16:53:15 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/canvastag.rb: TkcGroup.new cannot include given items.
+	  TkcGroup#exclude calls wrong method.
+	  Add alias TkcGroup#add [ruby-talk:146049].
+
+	* ext/tk/lib/tk/canvas.rb: TkCanvas#dtag and some subcommands of
+	  TkCanvas#addtag fail to treat a TkcTag argument.
+
+	* ext/tk/lib/tk/event.rb: add TkEvent::Event#generate to help to send 
+	  current event to other widgets.
+
 Mon Jun 20 18:44:04 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (FUNCTION_CALL_MAY_RETURN_TWICE): DUMMY_SETJMP is replaced
