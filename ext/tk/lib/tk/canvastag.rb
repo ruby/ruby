@@ -13,7 +13,7 @@ require 'tk/canvas'
 
 module TkcTagAccess
   def addtag(tag)
-    @c.addtag(tag, 'with', @id)
+    @c.addtag(tag, 'withtag', @id)
     self
   end
 
@@ -93,6 +93,7 @@ module TkcTagAccess
     @c.dtag(@id, tag_to_del)
     self
   end
+  alias deltag dtag
 
   def find
     @c.find('withtag', @id)
@@ -351,20 +352,23 @@ class TkcGroup<TkcTag
     CTagID_TBL[@cpath] = {} unless CTagID_TBL[@cpath]
     CTagID_TBL[@cpath][@id] = self
     Tk_cGroup_ID[1].succ!
-    add(*args) if args != []
+    include(*args) if args != []
   end
   #private :create_self
   
   def include(*tags)
     for i in tags
-      i.addtag(@id)
+      #i.addtag(@id)
+      @c.addtag_withtag(@id, i)
     end
     self
   end
+  alias add include
 
   def exclude(*tags)
     for i in tags
-      i.delete(@id)
+      #i.dtag(@id)
+      @c.dtag(i, @id)
     end
     self
   end

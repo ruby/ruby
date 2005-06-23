@@ -64,6 +64,10 @@ class TkCanvas<TkWindow
 
 
   def addtag(tag, mode, *args)
+    mode = mode.to_s
+    if args[0] && mode =~ /^(above|below|with(tag)?)$/
+      args[0] = tagid(args[0])
+    end
     tk_send_without_enc('addtag', tagid(tag), mode, *args)
     self
   end
@@ -173,9 +177,10 @@ class TkCanvas<TkWindow
   alias remove delete
 
   def dtag(tag, tag_to_del=None)
-    tk_send_without_enc('dtag', tagid(tag), tag_to_del)
+    tk_send_without_enc('dtag', tagid(tag), tagid(tag_to_del))
     self
   end
+  alias deltag dtag
 
   def find(mode, *args)
     list(tk_send_without_enc('find', mode, *args)).collect!{|id| 
