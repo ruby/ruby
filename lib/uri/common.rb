@@ -541,8 +541,8 @@ module URI
   #
   #   require "uri"
   #
-  #   URI.extract("text here http://foo.bar.org/bla and here mailto:test@ruby.com and here also.")
-  #   # => ["http://foo.bar.com/foobar", "mailto:foo@bar.com"]
+  #   URI.extract("text here http://foo.example.org/bla and here mailto:test@example.com and here also.")
+  #   # => ["http://foo.example.org/bla", "mailto:test@example.com"]
   #
   def self.extract(str, schemes = nil, &block)
     if block_given?
