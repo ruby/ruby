@@ -689,10 +689,10 @@ module URI
     #
     #   require 'uri'
     #
-    #   uri = URI.parse("http://my.rubysite.com")
+    #   uri = URI.parse("http://my.example.com")
     #   uri.merge!("/main.rbx?page=1")
     #   p uri
-    #   # =>  #<URI::HTTP:0x2021f3b0 URL:http://my.rubysite.com/main.rbx?page=1>
+    #   # =>  #<URI::HTTP:0x2021f3b0 URL:http://my.example.com/main.rbx?page=1>
     #
     def merge!(oth)
       t = merge(oth)
@@ -718,9 +718,9 @@ module URI
     #
     #   require 'uri'
     #
-    #   uri = URI.parse("http://my.rubysite.com")
+    #   uri = URI.parse("http://my.example.com")
     #   p uri.merge("/main.rbx?page=1")
-    #   # =>  #<URI::HTTP:0x2021f3b0 URL:http://my.rubysite.com/main.rbx?page=1>
+    #   # =>  #<URI::HTTP:0x2021f3b0 URL:http://my.example.com/main.rbx?page=1>
     #
     def merge(oth)
       begin
@@ -904,8 +904,8 @@ module URI
     #
     #   require 'uri'
     #
-    #   uri = URI.parse('http://my.rubysite.com/main.rbx?page=1')
-    #   p uri.route_from('http://my.rubysite.com')
+    #   uri = URI.parse('http://my.example.com/main.rbx?page=1')
+    #   p uri.route_from('http://my.example.com')
     #   #=> #<URI::Generic:0x20218858 URL:/main.rbx?page=1>
     #
     def route_from(oth)
@@ -944,8 +944,8 @@ module URI
     #
     #   require 'uri'
     #
-    #   uri = URI.parse('http://my.rubysite.com')
-    #   p uri.route_to('http://my.rubysite.com/main.rbx?page=1')
+    #   uri = URI.parse('http://my.example.com')
+    #   p uri.route_to('http://my.example.com/main.rbx?page=1')
     #   #=> #<URI::Generic:0x2020c2f6 URL:/main.rbx?page=1>
     #    
     def route_to(oth)
@@ -1085,9 +1085,9 @@ module URI
     #
     #   require 'uri'
     #
-    #   uri = URI.parse('http://myuser:mypass@my.rubysite.com/test.rbx')
+    #   uri = URI.parse('http://myuser:mypass@my.example.com/test.rbx')
     #   p uri.select(:userinfo, :host, :path)
-    #   # => ["myuser:mypass", "my.rubysite.com", "/test.rbx"]
+    #   # => ["myuser:mypass", "my.example.com", "/test.rbx"]
     #
     def select(*components)
       components.collect do |c|
@@ -1101,7 +1101,7 @@ module URI
     end
 
     def inspect
-      sprintf("#<%s:0x%x URL:%s>", self.class.to_s, self.object_id, self.to_s)
+      sprintf("#<%s:%#0x URL:%s>", self.class.to_s, self.object_id, self.to_s)
     end
 
     def coerce(oth)

@@ -270,12 +270,12 @@ module URI
     #
     #   require 'uri'
     #
-    #   enc_uri = URI.escape("http://foobar.com/?a=\11\15")
+    #   enc_uri = URI.escape("http://example.com/?a=\11\15")
     #   p enc_uri
-    #   # => "http://foobar.com/?a=%09%0D"
+    #   # => "http://example.com/?a=%09%0D"
     #
     #   p URI.unescape(enc_uri)
-    #   # => "http://foobar.com/?a=\t\r"
+    #   # => "http://example.com/?a=\t\r"
     #
     def escape(str, unsafe = UNSAFE)
       unless unsafe.kind_of?(Regexp)
@@ -305,12 +305,12 @@ module URI
     #
     #   require 'uri'
     #
-    #   enc_uri = URI.escape("http://foobar.com/?a=\11\15")
+    #   enc_uri = URI.escape("http://example.com/?a=\11\15")
     #   p enc_uri
-    #   # => "http://foobar.com/?a=%09%0D"
+    #   # => "http://example.com/?a=%09%0D"
     #
     #   p URI.unescape(enc_uri)
-    #   # => "http://foobar.com/?a=\t\r"
+    #   # => "http://example.com/?a=\t\r"
     #
     def unescape(str)
       str.gsub(ESCAPED) do
@@ -509,8 +509,8 @@ module URI
   #
   #   require 'uri'
   #
-  #   p URI.join("http:/localhost/","main.rbx")
-  #   # => #<URI::HTTP:0x2022ac02 URL:http:/localhost/main.php>
+  #   p URI.join("http://localhost/","main.rbx")
+  #   # => #<URI::HTTP:0x2022ac02 URL:http://localhost/main.rbx>
   #
   def self.join(*str)
     u = self.parse(str[0])
