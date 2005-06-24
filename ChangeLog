@@ -1,3 +1,13 @@
+Fri Jun 24 12:23:19 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk.rb: fix typo on Tk.grid_propagate.
+
+	* ext/tk/lib/tk.rb: Tk.event_generate and TkWindow#event_generate
+	  accept TkEvent::Event object as context argument.
+
+	* ext/tk/lib/tk/event.rb: add TkEvent::Event#valid_fields and
+	  valid_for_generate to get field parameters of event_generate.
+
 Thu Jun 23 23:55:59 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* runruby.rb: should load built rbconfig.rb.

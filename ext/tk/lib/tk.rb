@@ -1516,7 +1516,9 @@ module TkCore
 
   def event_generate(win, context, keys=nil)
     #win = win.path if win.kind_of?(TkObject)
-    if keys
+    if context.kind_of?(TkEvent::Event)
+      context.generate(win, ((keys)? keys: {}))
+    elsif keys
       tk_call_without_enc('event', 'generate', win, 
                           "<#{tk_event_sequence(context)}>", 
                           *hash_kv(keys, true))
@@ -3500,7 +3502,9 @@ class TkObject<TkKernel
 =end
 
   def event_generate(context, keys=nil)
-    if keys
+    if context.kind_of?(TkEvent::Event)
+      context.generate(self, ((keys)? keys: {}))
+    elsif keys
       #tk_call('event', 'generate', path, 
       #       "<#{tk_event_sequence(context)}>", *hash_kv(keys))
       tk_call_without_enc('event', 'generate', path, 
@@ -3832,9 +3836,9 @@ class TkWindow<TkObject
     #  self
     #end
     if mode == None
-      TkGrid.propagete(self)
+      TkGrid.propagate(self)
     else
-      TkGrid.propagete(self, mode)
+      TkGrid.propagate(self, mode)
       self
     end
   end
@@ -4149,7 +4153,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-06-23'.freeze
+  RELEASE_DATE = '2005-06-24'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
