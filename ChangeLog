@@ -1,3 +1,8 @@
+Fri Jun 24 13:06:45 2005  akira yamada  <akira@ruby-lang.org>
+
+	* lib/uri/common.rb, lib/uri/generic.rb: fixed typo in documents and
+	  replaced some existent domain name with "example.com".
+
 Fri Jun 24 12:23:19 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix typo on Tk.grid_propagate.
