@@ -69,6 +69,7 @@ call on the remote-side and of course the parameters for the remote procedure.
     Parameter ((|timeout|)) is the time to wait for a XML-RPC response, defaults to 30.
 
 --- XMLRPC::Client.new2( uri, proxy=nil, timeout=nil)
+--- XMLRPC::Client.new_from_uri( uri, proxy=nil, timeout=nil)
 :   uri
     URI specifying protocol (http or https), host, port, path, user and password.
     Example: https://user:password@host:port/path
@@ -80,6 +81,7 @@ call on the remote-side and of course the parameters for the remote procedure.
     Defaults to 30. 
 
 --- XMLRPC::Client.new3( hash={} )
+--- XMLRPC::Client.new_from_hash( hash={} )
     Parameter ((|hash|)) has following case-insensitive keys:
     * host
     * path
@@ -134,6 +136,8 @@ call on the remote-side and of course the parameters for the remote procedure.
     the second value is a return-value ((({true}))) or an object of type
     (({XMLRPC::FaultException})). 
     Both are explained in ((<call|XMLRPC::Client#call>)).
+
+    Simple to remember: The "2" in "call2" denotes the number of values it returns.
 
 --- XMLRPC::Client#multicall( *methods )
     You can use this method to execute several methods on a XMLRPC server which supports
@@ -331,7 +335,9 @@ module XMLRPC
     end
 
 
-    def self.new2(uri, proxy=nil, timeout=nil)
+    class << self
+
+    def new2(uri, proxy=nil, timeout=nil)
       if match = /^([^:]+):\/\/(([^@]+)@)?([^\/]+)(\/.*)?$/.match(uri)
         proto = match[1]
         user, passwd = (match[3] || "").split(":")
@@ -350,9 +356,10 @@ module XMLRPC
 
       self.new(host, path, port, proxy_host, proxy_port, user, passwd, (proto == "https"), timeout)
     end
- 
 
-    def self.new3(hash={})
+    alias new_from_uri new2
+
+    def new3(hash={})
 
       # convert all keys into lowercase strings
       h = {}
@@ -360,6 +367,10 @@ module XMLRPC
 
       self.new(h['host'], h['path'], h['port'], h['proxy_host'], h['proxy_port'], h['user'], h['password'],
                h['use_ssl'], h['timeout'])
+    end
+
+    alias new_from_hash new3
+
     end
 
 
@@ -457,19 +468,19 @@ module XMLRPC
 
     # Proxy generating methods ------------------------------------------
     
-    def proxy(prefix, *args)
+    def proxy(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call)
     end
 
-    def proxy2(prefix, *args)
+    def proxy2(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call2)
     end
 
-    def proxy_async(prefix, *args)
+    def proxy_async(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call_async)
     end
 
-    def proxy2_async(prefix, *args)
+    def proxy2_async(prefix=nil, *args)
       Proxy.new(self, prefix, args, :call2_async)
     end
 
@@ -586,7 +597,7 @@ module XMLRPC
 
       def initialize(server, prefix, args=[], meth=:call, delim=".")
 	@server = server
-	@prefix = prefix + delim
+	@prefix = prefix ? prefix + delim : ""
 	@args   = args 
         @meth   = meth
       end

@@ -126,6 +126,10 @@ class DateTime
     [@year, @month, @day, @hour, @min, @sec]
   end
 
+  def ==(o)
+    Array(self) == Array(o)
+  end
+
 end
 
 

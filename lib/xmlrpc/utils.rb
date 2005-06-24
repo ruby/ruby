@@ -17,13 +17,6 @@ module XMLRPC
   # key/value pair "___class___" => ClassName
   # 
   module Marshallable
-    def __get_instance_variables
-      instance_variables.collect {|var| [var[1..-1], eval(var)] }
-    end
-
-    def __set_instance_variable(key, value)
-      eval("@#$1 = value") if key =~ /^([\w_][\w_0-9]*)$/
-    end
   end
 
 
@@ -138,7 +131,7 @@ module XMLRPC
 
     def get_methods(obj, delim=".")
       prefix = @prefix + delim
-      obj.class.public_instance_methods.collect { |name|
+      obj.class.public_instance_methods(false).collect { |name|
         [prefix + name, obj.method(name).to_proc, nil, nil] 
       }
     end
