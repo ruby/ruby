@@ -212,28 +212,58 @@ module TkEvent
 
     #-------------------------------------------
 
-    def generate(win, modkeys={})
-      klass = self.class
-      type_id = self.type
+    def valid_fields(group_flag=nil)
+      group_flag = self.class.group_flag(self.type) unless group_flag
 
-      type_name  = klass.type_name(type_id)
-      group_flag = klass.group_flag(type_id)
-
-      opts = {}
-
+      fields = {}
       FIELD_FLAG.each{|key, flag|
         next if (flag & group_flag) == 0
-
         begin
           val = self.__send__(key)
-          val = FIELD_OPERATION[key].call(val) if FIELD_OPERATION[key]
         rescue
           next
         end
-
         next if !val || val == '??'
-        opts[key] = val
+        fields[key] = val
       }
+
+      fields
+    end
+
+    def valid_for_generate(group_flag=nil)
+      fields = valid_fields(group_flag)
+
+      FIELD_OPERATION.each{|key, cmd|
+        next unless fields.has_key?(key)
+        val = FIELD_OPERATION[key].call(fields[key])
+        if val
+          fields[key] = val
+        else
+          fields.delete(key)
+        end
+      }
+
+      fields
+    end
+
+    def generate(win, modkeys={})
+      klass = self.class
+
+      if modkeys.has_key?(:type) || modkeys.has_key?('type')
+        modkeys = TkComm._symbolkey2str(modkeys)
+        type_id = modkeys.delete('type')
+      else
+        type_id = self.type
+      end
+
+      type_name  = klass.type_name(type_id)
+      unless type_name
+        fail RuntimeError, "type_id #{type_id} is invalid"
+      end
+
+      group_flag = klass.group_flag(type_id)
+
+      opts = valid_for_generate(group_flag)
 
       modkeys.each{|key, val|
         if val
