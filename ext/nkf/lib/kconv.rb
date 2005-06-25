@@ -1,6 +1,16 @@
+#
+# kconv.rb - Kanji Converter.
+#
+# $Id$
+#
+
 require 'nkf'
 
 module Kconv
+  #
+  # Public Constants
+  #
+  
   #Constant of Encoding
   AUTO = ::NKF::AUTO
   JIS = ::NKF::JIS
@@ -14,59 +24,11 @@ module Kconv
   UTF32 = ::NKF::UTF32
   UNKNOWN = ::NKF::UNKNOWN
   
+  #
+  # Private Constants
+  #
+  
   #Regexp of Encoding
-  Iconv_Shift_JIS = /\A(?:
-		  [\x00-\x7f\xa1-\xdf]                                             |
-		  \x81[\x40-\x7e\x80-\xac\xb8-\xbf\xc8-\xce\xda-\xe8\xf0-\xf7\xfc] |
-		  \x82[\x4f-\x58\x60-\x79\x81-\x9a\x9f-\xf1]                       |
-		  \x83[\x40-\x7e\x80-\x96\x9f-\xb6\xbf-\xd6\x40-\x60]              |
-		  \x84[\x40-\x60\x70-\x7e\x80-\x91\x9f-\xbe\x9f-\xfc]              |
-		  [\x89-\x8f\x90-\x97\x99-\x9f\xe0-\xea][\x40-\x7e]                |
-		  [\x89-\x97\x99-\x9f\xe0-\xe9][\x80-\xfc]                         |
-		  \x98[\x40-\x72\x9f-\xfc]                                         |
-		  \xea[\x80-\xa4]
-		 )*\z/nx
-  Iconv_EUC_JP = /\A(?:
-	       [\x00-\x7f]                                             |
-	       \x8e        [\xa1-\xdf]                                 |
-	       \x8f        [\xa1-\xdf] [\xa1-\xdf]                     |
-	       [\xa1\xb0-\xbce\xd0-\xf3][\xa1-\xfe]                    |
-	       \xa2[\xa1-\xae\xba-\xc1\xca-\xd0\xdc-\xea\xf2-\xf9\xfe] |
-	       \xa3[\xb0-\xb9\xc1-\xda\xe1-\xfa]                       |
-	       \xa4[\xa1-\xf3]                                         |
-	       \xa5[\xa1-\xf6]                                         |
-	       \xa6[\xa1-\xb8\xc1-\xd8]                                |
-	       \xa7[\xa1-\xc1\xd1-\xf1]                                |
-	       \xa8[\xa1-\xc0]                                         |
-	       \xcf[\xa1-\xd3]                                         |
-	       \xf4[\xa1-\xa6]
-	      )*\z/nx
-  Iconv_UTF8  = /\A(?:\xef\xbb\xbf)?(?:
-  [\x00-\x7f]                                                       |
-  \xc2[\x80-\x8d\x90-\x9f\xa1\xaa\xac\xae-\xb1\xb4\xb6\xb8\xba\xbf] |
-  \xc3[\x80-\xbf]                                                   |
-  \xc4[\x80-\x93\x96-\xa2\xa4-\xab\xae-\xbf]                        |
-  \xc5[\x80-\x8d\x90-\xbe]                                          |
-  \xc7[\x8d-\x9c\xb5]                                               |
-  \xcb[\x87\x98-\x9b\x9d]                                           |
-  \xce[\x84-\x86\x88-\x8a\x8c\x8e-\xa1\xa3-\xbf]                    |
-  \xcf[\x80-\x8e]                                                   |
-  \xd0[\x81-\x8c\x8e-\xbf]                                          |
-  \xd1[\x80-\x8f\x91-\x9f]                                          |
-  \xe2\x84[\x83\x96\xa2\xab]                                        |
-  \xe2\x86[\x83\x91-\x93\x96\xa2\xab]                               |
-  \xe2\x87[\x83\x91-\x94\x96\xa2\xab]                               |
-  \xe2\x88[\x82-\x83\x87-\x88\x8b\x91-\x94\x96\x9a\x9d-\x9e\xa0\xa2\xa7-\xac\xb4-\xb5\xbd]  |
-  \xe2\x89[\x82-\x83\x87-\x88\x8b\x91-\x94\x96\x9a\x9d-\x9e\xa0-\xa2\xa6-\xac\xb4-\xb5\xbd] |
-  \xe2[\x8a\x8c][\x82-\x83\x86-\x88\x8b\x91-\x94\x96\x9a\x9d-\x9e\xa0-\xa2\xa5-\xac\xb4-\xb5\xbd] |
-  \xe2[\x94-\x99][\x81-\x83\x86-\x88\x8b-\x8c\x8f-\x94\x96-\x98\x9a-\x9e\xa0-\xac\xaf-\xb0\xb3-\xb5\xb7-\xb8\xbb-\xbd\xbf] |
-  \xe3\x80[\x81-\x83\x85-\x98\x9a-\x9e\xa0-\xad\xaf-\xb0\xb2-\xb5\xb7-\xb8\xbb-\xbd\xbf] |
-  \xe3[\x81-\x83\xb8-\xbf][\x81-\xbf]          |
-  [\xe5-\xe7][\x80-\xbf][\x81-\xbf]            |
-  \xe8[\x80-\xae\xb0-\xbf][\x81-\xbf]          |
-  \xe9[\x80-\x92\x95-\xb1\xb3-\xbe][\x81-\xbf] |
-  \xef[\xbc-\xbe][\x81-\xbf]                   |
-  )*\z/nx
   RegexpShiftjis = /\A(?:
 		       [\x00-\x7f\xa1-\xdf] |
 		       [\x81-\x9f\xe0-\xfc][\x40-\x7e\x80-\xfc] 
@@ -86,7 +48,86 @@ module Kconv
 		    [\xf1-\xf3] [\x80-\xbf] [\x80-\xbf] [\x80-\xbf] |
 		    \xf4        [\x80-\x8f] [\x80-\xbf] [\x80-\xbf]
 		   )*\z/nx
-
+  
+  SYMBOL_TO_OPTION = {
+    :iso2022jp	=> '-j',
+    :jis	=> '-j',
+    :eucjp	=> '-e',
+    :euc	=> '-e',
+    :eucjpms	=> '-e --cp932',
+    :shiftjis	=> '-s',
+    :sjis	=> '-s',
+    :cp932	=> '-s --cp932',
+    :windows31j	=> '-s --cp932',
+    :utf8	=> '-w',
+    :utf8bom	=> '-w8',
+    :utf8n	=> '-w80',
+    :utf16	=> '-w16',
+    :utf16be	=> '-w16B',
+    :utf16ben	=> '-w16B0',
+    :utf16le	=> '-w16L',
+    :utf16len	=> '-w16L0',
+    :noconv	=> '-t',
+    :lf		=> '-Lu',	# LF
+    :cr		=> '-Lm',	# CR
+    :crlf	=> '-Lw',	# CRLF
+    :fj		=> '--fj',	# for fj
+    :unix	=> '--unix',	# for unix
+    :mac	=> '--mac',	# CR
+    :windows	=> '--windows',	# CRLF
+    :mime	=> '--mime',	# MIME encode
+    :base64	=> '--base64',	# BASE64 encode
+    :x0201	=> '--x',	# Hankaku to Zenkaku Conversion off
+    :nox0201	=> '--X',	# Hankaku to Zenkaku Conversion on
+    :x0212	=> '--x0212',	# Convert JISX0212 (Hojo Kanji)
+    :hiragana	=> '--hiragana',# Katakana to Hiragana Conversion
+    :katakana	=> '--katakana',# Hiragana to Katakana Conversion
+    :capinput		=> '--cap-input',	# Convert hex after ':'
+    :urlinput		=> '--url-input',	# decode percent-encoded octets
+    :numcharinput	=> '--numchar-input'	# Convert Unicode Character Reference
+  }
+  
+  CONSTANT_TO_SYMBOL = {
+    JIS		=> :iso2022jp,
+    EUC		=> :eucjp,
+    SJIS	=> :shiftjis,
+    BINARY	=> :binary,
+    NOCONV	=> :noconv,
+    ASCII	=> :ascii,
+    UTF8	=> :utf8,
+    UTF16	=> :utf16,
+    UTF32	=> :utf32,
+    UNKNOWN	=> :unknown
+  }
+  
+  SYMBOL_TO_CONSTANT = {
+    :auto	=> AUTO,
+    :unknown	=> UNKNOWN,
+    :binary	=> BINARY,
+    :ascii	=> ASCII,
+    :ascii	=> ASCII,
+    :shiftjis	=> SJIS,
+    :sjis	=> SJIS,
+    :cp932	=> SJIS,
+    :eucjp	=> EUC,
+    :euc	=> EUC,
+    :eucjpms	=> EUC,
+    :iso2022jp	=> JIS,
+    :jis	=> JIS,
+    :utf8	=> UTF8,
+    :utf8n	=> UTF8,
+    :utf16	=> UTF16,
+    :utf16be	=> UTF16,
+    :utf16ben	=> UTF16,
+    :utf16le	=> UTF16,
+    :utf16len	=> UTF16,
+    :noconv	=> NOCONV
+  }
+  
+  #
+  # Public Methods
+  #
+  
   #
   # kconv
   #
@@ -128,6 +169,36 @@ module Kconv
   module_function :kconv
 
   #
+  # Kconv.conv( str, :to => :"euc-jp", :from => :shift_jis, :opt => [:hiragana,:katakana] )
+  #
+  def conv(str, *args)
+    option = nil
+    if args[0].is_a? Hash
+      option = [
+	args[0][:to]||args[0]['to'],
+	args[0][:from]||args[0]['from'],
+	args[0][:opt]||args[0]['opt'] ]
+    elsif args[0].is_a? String or args[0].is_a? Symbol or args[0].is_a? Integer
+      option = args
+    else
+      return str
+    end
+    
+    to = symbol_to_option(option[0])
+    from = symbol_to_option(option[1]).to_s.sub(/(-[jesw])/o){$1.upcase}
+    opt = Array.new
+    if option[2].is_a? Array
+      opt << option[2].map{|x|symbol_to_option(x)}.compact.join('')
+    elsif option[2].is_a? String
+      opt << option[2]
+    end
+    
+    nkf_opt = ('-x -m0 %s %s %s' % [to, from, opt.join(' ')])
+    result = ::NKF::nkf( nkf_opt, str)
+  end
+  module_function :conv
+
+  #
   # Encode to
   #
 
@@ -156,6 +227,15 @@ module Kconv
   end
   module_function :toutf16
 
+  alias :to_jis :tojis
+  alias :to_euc :toeuc
+  alias :to_eucjp :toeuc
+  alias :to_sjis :tosjis
+  alias :to_shiftjis :tosjis
+  alias :to_iso2022jp :tojis
+  alias :to_utf8 :toutf8
+  alias :to_utf16 :toutf16
+
   #
   # guess
   #
@@ -170,6 +250,11 @@ module Kconv
   end
   module_function :guess_old
 
+  def guess_as_symbol(str)
+    CONSTANT_TO_SYMBOL[guess(str)]
+  end
+  module_function :guess_as_symbol
+
   #
   # isEncoding
   #
@@ -178,7 +263,7 @@ module Kconv
     RegexpEucjp.match( str )
   end
   module_function :iseuc
-
+  
   def issjis(str)
     RegexpShiftjis.match( str )
   end
@@ -189,11 +274,56 @@ module Kconv
   end
   module_function :isutf8
 
+  #
+  # encoding?
+  #
+
+  def eucjp?(str)
+    RegexpEucjp.match( str ) ? true : false
+  end
+  module_function :eucjp?
+
+  def shiftjis?(str)
+    RegexpShiftjis.match( str ) ? true : false
+  end
+  module_function :shiftjis?
+  def utf8?(str)
+    RegexpUtf8.match( str ) ? true : false
+  end
+  module_function :utf8?
+  alias :euc? :eucjp?
+  alias :sjis? :shiftjis?
+  module_function :euc?
+  module_function :sjis?
+
+
+  #
+  # Private Methods
+  #
+  
+  def symbol_to_option(symbol)
+    if symbol.to_s[0] == ?-
+      return symbol.to_s
+    elsif symbol.is_a? Integer
+      symbol = CONSTANT_TO_SYMBOL[symbol]
+    end
+    begin
+      SYMBOL_TO_OPTION[ symbol.to_s.downcase.delete('-_').to_sym ]
+    rescue
+      return nil
+    end
+  end
+private :symbol_to_option
+  module_function :symbol_to_option
 end
 
 class String
   def kconv(out_code, in_code=Kconv::AUTO)
     Kconv::kconv(self, out_code, in_code)
+  end
+  
+  def conv(*args)
+    Kconv::conv(self, *args)
   end
   
   # to Encoding
@@ -212,17 +342,24 @@ class String
   def toutf16
     ::NKF::nkf('-w16', self)
   end
+  alias :to_jis :tojis
+  alias :to_euc :toeuc
+  alias :to_eucjp :toeuc
+  alias :to_sjis :tosjis
+  alias :to_shiftjis :tosjis
+  alias :to_iso2022jp :tojis
+  alias :to_utf8 :toutf8
+  alias :to_utf16 :toutf16
   
   # is Encoding
-  def iseuc
-    Kconv.iseuc( self )
-  end
-
-  def issjis
-    Kconv.issjis( self )
-  end
-
-  def isutf8
-    Kconv.isutf8( self )
-  end
+  def iseuc;	Kconv.iseuc( self ) end
+  def issjis;	Kconv.issjis( self ) end
+  def isutf8;	Kconv.isutf8( self ) end
+  def eucjp?;	Kconv.eucjp?( self ) end
+  def shiftjis?;Kconv.shiftjis?( self ) end
+  def utf8?;	Kconv.utf8?( self ) end
+  alias :euc? :eucjp?
+  alias :sjis? :shiftjis?
+  
+  def guess_as_symbol;	Kconv.guess_as_symbol( self ) end
 end
