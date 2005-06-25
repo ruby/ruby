@@ -1,16 +1,21 @@
+Sat Jun 25 15:49:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_min, enum_max, enum_min_by, enum_max_by): do not ignore
+	  nil as the first element.
+
 Sat Jun 25 15:13:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/set.rb (Set#==): [ruby-dev:25206] (ported from ruby_1_8 branch)
 
 Sat Jun 25 11:37:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/lib/kconv.rb: remove constants
-          Iconv_Shift_JIS, Uconv_EUC_JP, Iconv_UTF8
-        * ext/nkf/lib/kconv.rb: add module functions to Kconv
-          conv, {eucjp, shiftjis, utf8}?, guess_as_symbol
-        * ext/nkf/lib/kconv.rb: add instance methods to String
-          conv, {eucjp, shiftjis, utf8}?
-        * ext/nkf/lib/kconv.rb: add aliases Kconv.to_* and String#to_*
+	* ext/nkf/lib/kconv.rb: remove constants
+	  Iconv_Shift_JIS, Uconv_EUC_JP, Iconv_UTF8
+	* ext/nkf/lib/kconv.rb: add module functions to Kconv
+	  conv, {eucjp, shiftjis, utf8}?, guess_as_symbol
+	* ext/nkf/lib/kconv.rb: add instance methods to String
+	  conv, {eucjp, shiftjis, utf8}?
+	* ext/nkf/lib/kconv.rb: add aliases Kconv.to_* and String#to_*
 
 Fri Jun 24 13:17:45 2005  akira yamada  <akira@ruby-lang.org>
 
