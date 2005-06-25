@@ -1,3 +1,7 @@
+Sat Jun 25 15:13:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/set.rb (Set#==): [ruby-dev:25206] (ported from ruby_1_8 branch)
+
 Sat Jun 25 11:37:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf/lib/kconv.rb: remove constants
@@ -114,7 +118,8 @@ Thu Jun 16 15:41:32 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 Thu Jun 16 15:09:38 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/tk/tcltklib.c (ip_rb_threadVwaitCommand): Tcl_Release was missing.
+	* ext/tk/tcltklib.c (ip_rb_threadVwaitCommand): Tcl_Release
+	  was missing.
 
 Thu Jun 16 13:34:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -745,7 +750,7 @@ Mon May 16 22:42:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon May 16 03:29:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* win32/win32.{h,c}: define rb_{p,g,u}id_t.
+	* win32/win32.{h,c}: define rb_[pgu]id_t.
 
 Mon May 16 00:21:02 2005  Tanaka Akira  <akr@m17n.org>
 

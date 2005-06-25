@@ -193,7 +193,7 @@ class Set
   # Adds the given object to the set and returns self.  Use +merge+ to
   # add several elements at once.
   def add(o)
-    @hash[o] = o
+    @hash[o] = true
     self
   end
   alias << add
@@ -251,7 +251,7 @@ class Set
   # Merges the elements of the given enumerable object to the set and
   # returns self.
   def merge(enum)
-    if enum.class == self.class
+    if enum.is_a?(Set)
       @hash.update(enum.instance_eval { @hash })
     else
       enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
@@ -291,7 +291,7 @@ class Set
   def &(enum)
     enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     n = self.class.new
-    enum.each { |o| include?(o) and n.add(o) }
+    enum.each { |o| n.add(o) if include?(o) }
     n
   end
   alias intersection &	##
@@ -313,7 +313,8 @@ class Set
 
     set.is_a?(Set) && size == set.size or return false
 
-    set.all? { |o| @hash.value?(o) }
+    hash = @hash.dup
+    set.all? { |o| hash.include?(o) }
   end
 
   def hash	# :nodoc:
@@ -321,7 +322,8 @@ class Set
   end
 
   def eql?(o)	# :nodoc:
-    @hash.hash == o.hash
+    return false unless o.is_a?(Set)
+    @hash.eql?(o.instance_eval{@hash})
   end
 
   # Classifies the set by the return value of the given block and
@@ -471,7 +473,7 @@ class SortedSet < Set
 
 	  def add(o)
 	    @keys = nil
-	    @hash[o] = o
+	    @hash[o] = true
 	    self
 	  end
 	  alias << add
@@ -556,7 +558,7 @@ end
 #     if @proc.arity == 2
 #       instance_eval %{
 # 	def add(o)
-# 	  @hash[o] = o if @proc.call(self, o)
+# 	  @hash[o] = true if @proc.call(self, o)
 # 	  self
 # 	end
 # 	alias << add
@@ -565,7 +567,7 @@ end
 # 	  if include?(o) || !@proc.call(self, o)
 # 	    nil
 # 	  else
-# 	    @hash[o] = o
+# 	    @hash[o] = true
 # 	    self
 # 	  end
 # 	end
@@ -588,7 +590,9 @@ end
 #     else
 #       instance_eval %{
 # 	def add(o)
-# 	  @hash[o] = o if @proc.call(o)
+#         if @proc.call(o)
+# 	    @hash[o] = true 
+#         end
 # 	  self
 # 	end
 # 	alias << add
@@ -597,7 +601,7 @@ end
 # 	  if include?(o) || !@proc.call(o)
 # 	    nil
 # 	  else
-# 	    @hash[o] = o
+# 	    @hash[o] = true
 # 	    self
 # 	  end
 # 	end
