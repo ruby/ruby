@@ -259,8 +259,6 @@ fsdbm_select(argc, argv, obj)
 		rb_ary_push(new, assoc);
 	    }
 	    GetDBM2(obj, dbmp, dbm);
-            if (RTEST(rb_yield(assoc)))
-                rb_ary_push(new, assoc);
         }
     }
     else {

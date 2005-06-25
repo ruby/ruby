@@ -1,3 +1,8 @@
+Sat Jun 25 14:40:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/sdbm/init.c (fsdbm_select): SDBM#select had returned the array
+	  which contained each elements twice. [ruby-dev:26358]
+
 Fri Jun 24 22:06:47 CEST 2005	Michael Neumann <mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/*, test/xmlrpc/*: backported changes from HEAD into 1.8
@@ -82,7 +87,8 @@ Fri Jun 17 13:01:40 2005  Tanaka Akira  <akr@m17n.org>
 
 Thu Jun 16 15:06:55 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/tcltklib/tcltklib.c (ip_rb_threadVwaitCommand): Tcl_Release was missing.
+	* ext/tcltklib/tcltklib.c (ip_rb_threadVwaitCommand): Tcl_Release
+	  was missing.
 
 Thu Jun 16 13:34:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
@@ -524,7 +530,7 @@ Mon May 16 22:28:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon May 16 08:52:29 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* win32/win32.{h,c}: define rb_{p,g,u}id_t.
+	* win32/win32.{h,c}: define rb_[pgu]id_t.
 
 Mon May 16 00:21:02 2005  Tanaka Akira  <akr@m17n.org>
 
