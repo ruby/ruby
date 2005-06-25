@@ -294,6 +294,7 @@ module WEBrick
       query = Hash.new
       if str
         str.split(/[&;]/).each{|x|
+          next if x.empty?
           key, val = x.split(/=/,2)
           key = unescape_form(key)
           val = unescape_form(val.to_s)
