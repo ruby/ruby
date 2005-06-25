@@ -1,3 +1,7 @@
+Sat Jun 25 15:49:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_min, enum_max): do not ignore nil as the first element.
+
 Sat Jun 25 14:40:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/sdbm/init.c (fsdbm_select): SDBM#select had returned the array

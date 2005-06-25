@@ -607,7 +607,7 @@ min_i(i, memo)
 {
     VALUE cmp;
 
-    if (NIL_P(*memo)) {
+    if (*memo == Qundef) {
 	*memo = i;
     }
     else {
@@ -626,7 +626,7 @@ min_ii(i, memo)
 {
     VALUE cmp;
 
-    if (NIL_P(*memo)) {
+    if (*memo == Qundef) {
 	*memo = i;
     }
     else {
@@ -657,7 +657,7 @@ static VALUE
 enum_min(obj)
     VALUE obj;
 {
-    VALUE result = Qnil;
+    VALUE result = Qundef;
 
     rb_iterate(rb_each, obj, rb_block_given_p() ? min_ii : min_i, (VALUE)&result);
     return result;
@@ -684,7 +684,7 @@ max_i(i, memo)
 {
     VALUE cmp;
 
-    if (NIL_P(*memo)) {
+    if (*memo == Qundef) {
 	*memo = i;
     }
     else {
@@ -703,7 +703,7 @@ max_ii(i, memo)
 {
     VALUE cmp;
 
-    if (NIL_P(*memo)) {
+    if (*memo == Qundef) {
 	*memo = i;
     }
     else {
@@ -733,7 +733,7 @@ static VALUE
 enum_max(obj)
     VALUE obj;
 {
-    VALUE result = Qnil;
+    VALUE result = Qundef;
 
     rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)&result);
     return result;
