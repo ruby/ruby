@@ -1,3 +1,8 @@
+Sat Jun 25 17:15:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.parse_query): should
+	  discard if key=val pair is empty. patch from Gary Wright.
+
 Sat Jun 25 15:49:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_min, enum_max): do not ignore nil as the first element.
@@ -73,7 +78,7 @@ Mon Jun 20 01:26:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* ext/openssl/openssl_missing.c, ext/openssl/ossl.h,
 	  ext/openssl/ossl_asn1.c, ext/openssl/ossl_bio.c,
 	  ext/openssl/ossl_pkcs12.h, ext/openssl/ossl_x509req.c: avoid
-	  compiler warnings. suggested by Mical Rokos.
+	  compiler warnings. suggested by Michal Rokos.
 
 Sun Jun 19 14:09:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
