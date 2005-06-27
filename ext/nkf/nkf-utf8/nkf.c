@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.5"
-#define NKF_RELEASE_DATE "2005-04-10"
+#define NKF_RELEASE_DATE "2005-06-28"
 #include "config.h"
 
 static char *CopyRight =
@@ -970,13 +970,9 @@ options(cp)
 
     if (option_mode==1)
 	return;
-    if (*cp++ != '-') 
-	return;
+    while(*cp && *cp++!='-');
     while (*cp) {
-	if (p && !*cp) {
-	    cp = p;
-	    p = 0;
-	}
+	p = 0;
         switch (*cp++) {
         case '-':  /* literal options */
 	    if (!*cp) {        /* ignore the rest of arguments */
@@ -986,8 +982,8 @@ options(cp)
             for (i=0;i<sizeof(long_option)/sizeof(long_option[0]);i++) {
 		int j;
                 p = (unsigned char *)long_option[i].name;
-                for (j=0;*p && (*p != '=') && *p == cp[j];p++, j++);
-		if (*p == cp[j]){
+                for (j=0;*p && *p != '=' && *p == cp[j];p++, j++);
+		if (*p == cp[j] || cp[j] == ' '){
 		    p = &cp[j];
 		    break;
 		}
@@ -996,6 +992,7 @@ options(cp)
 	    if (p == 0) return;
             cp = (unsigned char *)long_option[i].alias;
             if (!*cp){
+	        cp = p;
 #ifdef OVERWRITE
                 if (strcmp(long_option[i].name, "overwrite") == 0){
                     file_out = TRUE;
@@ -1122,8 +1119,8 @@ options(cp)
             continue;
         case 'h':
             /*  
-                bit:1   hira -> kata
-                bit:2   kata -> hira
+                bit:1   katakana->hiragana
+                bit:2   hiragana->katakana
             */
             if ('9'>= *cp && *cp>='0') 
                 hira_f |= (*cp++ -'0');
@@ -1320,8 +1317,7 @@ options(cp)
             continue;
         case ' ':    
         /* module muliple options in a string are allowed for Perl moudle  */
-	    while(*cp && *cp!='-') cp++;
-            if(*cp=='-') cp++;
+	    while(*cp && *cp++!='-');
             continue;
         default:
             /* bogus option but ignored */
@@ -4732,7 +4728,7 @@ usage()
     fprintf(stderr,"t        no conversion\n");
     fprintf(stderr,"i_/o_    Output sequence to designate JIS-kanji/ASCII (DEFAULT B)\n");
     fprintf(stderr,"r        {de/en}crypt ROT13/47\n");
-    fprintf(stderr,"h        1 hirakana->katakana, 2 katakana->hirakana,3 both\n");
+    fprintf(stderr,"h        1 katakana->hiragana, 2 hiragana->katakana, 3 both\n");
     fprintf(stderr,"v        Show this usage. V: show version\n");
     fprintf(stderr,"m[BQN0]  MIME decode [B:base64,Q:quoted,N:non-strict,0:no decode]\n");
     fprintf(stderr,"M[BQ]    MIME encode [B:base64 Q:quoted]\n");
@@ -4755,6 +4751,7 @@ usage()
     fprintf(stderr," --hiragana, --katakana    Hiragana/Katakana Conversion\n");
     fprintf(stderr," --x0212                   Convert JISX0212\n");
     fprintf(stderr," --cp932, --no-cp932       CP932 compatibility\n");
+    fprintf(stderr," --prefix=    Insert escape before troublesome characters of Shift_JIS\n");
 #ifdef INPUT_OPTION
     fprintf(stderr," --cap-input, --url-input  Convert hex after ':' or '%%'\n");
 #endif

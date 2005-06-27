@@ -11,6 +11,8 @@ module Kconv
   # Public Constants
   #
   
+  VERSION = '1.8'
+  
   #Constant of Encoding
   AUTO = ::NKF::AUTO
   JIS = ::NKF::JIS
@@ -27,6 +29,8 @@ module Kconv
   #
   # Private Constants
   #
+  
+  REVISON = %q$Revison$
   
   #Regexp of Encoding
   RegexpShiftjis = /\A(?:
@@ -100,30 +104,6 @@ module Kconv
     UNKNOWN	=> :unknown
   }
   
-  SYMBOL_TO_CONSTANT = {
-    :auto	=> AUTO,
-    :unknown	=> UNKNOWN,
-    :binary	=> BINARY,
-    :ascii	=> ASCII,
-    :ascii	=> ASCII,
-    :shiftjis	=> SJIS,
-    :sjis	=> SJIS,
-    :cp932	=> SJIS,
-    :eucjp	=> EUC,
-    :euc	=> EUC,
-    :eucjpms	=> EUC,
-    :iso2022jp	=> JIS,
-    :jis	=> JIS,
-    :utf8	=> UTF8,
-    :utf8n	=> UTF8,
-    :utf16	=> UTF16,
-    :utf16be	=> UTF16,
-    :utf16ben	=> UTF16,
-    :utf16le	=> UTF16,
-    :utf16len	=> UTF16,
-    :noconv	=> NOCONV
-  }
-  
   #
   # Public Methods
   #
@@ -186,14 +166,9 @@ module Kconv
     
     to = symbol_to_option(option[0])
     from = symbol_to_option(option[1]).to_s.sub(/(-[jesw])/o){$1.upcase}
-    opt = Array.new
-    if option[2].is_a? Array
-      opt << option[2].map{|x|symbol_to_option(x)}.compact.join('')
-    elsif option[2].is_a? String
-      opt << option[2]
-    end
+    opt = option[2..-1].to_a.map{|x|symbol_to_option(x)}.compact.join('')
     
-    nkf_opt = ('-x -m0 %s %s %s' % [to, from, opt.join(' ')])
+    nkf_opt = ('-x -m0 %s %s %s' % [to, from, opt])
     result = ::NKF::nkf( nkf_opt, str)
   end
   module_function :conv
@@ -300,12 +275,12 @@ module Kconv
   #
   # Private Methods
   #
-  
+  private
   def symbol_to_option(symbol)
-    if symbol.to_s[0] == ?-
-      return symbol.to_s
-    elsif symbol.is_a? Integer
+    if symbol.is_a? Integer
       symbol = CONSTANT_TO_SYMBOL[symbol]
+    elsif symbol.to_s[0] == ?-
+      return symbol.to_s
     end
     begin
       SYMBOL_TO_OPTION[ symbol.to_s.downcase.delete('-_').to_sym ]
@@ -313,13 +288,12 @@ module Kconv
       return nil
     end
   end
-private :symbol_to_option
   module_function :symbol_to_option
 end
 
 class String
-  def kconv(out_code, in_code=Kconv::AUTO)
-    Kconv::kconv(self, out_code, in_code)
+  def kconv(*args)
+    Kconv::kconv(self, *args)
   end
   
   def conv(*args)

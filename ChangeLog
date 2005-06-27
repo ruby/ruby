@@ -1,3 +1,10 @@
+Tue Jun 28 01:52:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/lib/kconv.rb: add Kconv::VERSION
+	* ext/nkf/lib/kconv.rb (conv): can process arrayed options
+	* ext/nkf/nkf-utf8/nkf.c: imported Revision 1.69
+	* ext/nkf/nkf-utf8/utf8tbl.c: imported Revision 1.9
+
 Sat Jun 25 17:12:20 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.parse_query): should
