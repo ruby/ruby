@@ -1057,7 +1057,6 @@ rb_big_neg(x)
     VALUE z = rb_big_clone(x);
     long i = RBIGNUM(x)->len;
     BDIGIT *ds = BDIGITS(z);
-    int nz = 0;
 
     if (!RBIGNUM(x)->sign) get2comp(z, Qtrue);
     while (i--) {

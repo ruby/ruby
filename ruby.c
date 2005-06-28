@@ -1045,7 +1045,9 @@ set_arg0(val, id)
 {
     char *s;
     long i;
+#if !defined(PSTAT_SETCMD) && !defined(HAVE_SETPROCTITLE)
     static int len;
+#endif
 
     if (origargv == 0) rb_raise(rb_eRuntimeError, "$0 not initialized");
     StringValue(val);

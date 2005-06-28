@@ -1046,8 +1046,8 @@ rb_proc_exec(str)
 	    if (nl) s = nl;
 	}
 	if (*s != ' ' && !ISALPHA(*s) && strchr("*?{}[]<>()~&|\\$;'`\"\n",*s)) {
-	    int status;
 #if defined(MSDOS)
+	    int status;
 	    before_exec();
 	    status = system(str);
 	    after_exec();
@@ -1055,7 +1055,7 @@ rb_proc_exec(str)
 		exit(status);
 #elif defined(__human68k__) || defined(__CYGWIN32__) || defined(__EMX__)
 	    char *shell = dln_find_exe("sh", 0);
-	    status = -1;
+	    int status = -1;
 	    before_exec();
 	    if (shell)
 		execl(shell, "sh", "-c", str, (char *) NULL);
@@ -1532,7 +1532,13 @@ rb_syswait(pid)
     int pid;
 {
     static int overriding;
-    RETSIGTYPE (*hfunc)_((int)), (*qfunc)_((int)), (*ifunc)_((int));
+#ifdef SIGHUP
+    RETSIGTYPE (*hfunc)_((int));
+#endif
+#ifdef SIGQUIT
+    RETSIGTYPE (*qfunc)_((int));
+#endif
+    RETSIGTYPE (*ifunc)_((int));
     int status;
     int i, hooked = Qfalse;
 

@@ -1220,6 +1220,8 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 	case MATCH_DIR:
 	    match_dir = 1;
 	    break;
+	case RECURSIVE:
+	    rb_bug("continuous RECURSIVEs");
 	}
     }
 
@@ -1234,7 +1236,6 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 		isdir = NO;
 	    }
 	}
-
 	if (match_dir && isdir == UNKNOWN) {
 	    if (do_stat(path, &st) == 0) {
 		exist = YES;
@@ -1245,12 +1246,10 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 		isdir = NO;
 	    }
 	}
-
 	if (match_all && exist == YES) {
 	    status = glob_call_func(func, path, arg);
 	    if (status) return status;
 	}
-
 	if (match_dir && isdir == YES) {
 	    char *tmp = join_path(path, dirsep, "");
 	    status = glob_call_func(func, tmp, arg);
@@ -1612,7 +1611,6 @@ static VALUE
 dir_open_dir(path)
     VALUE path;
 {
-    struct dir_data *dp;
     VALUE dir = rb_funcall(rb_cDir, rb_intern("open"), 1, path);
 
     if (TYPE(dir) != T_DATA ||

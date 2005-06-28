@@ -1569,8 +1569,6 @@ ruby_cleanup(ex)
 
 extern NODE *ruby_eval_tree;
 
-static void cont_call _((VALUE));
-
 static int
 ruby_exec_internal()
 {
@@ -1583,11 +1581,6 @@ ruby_exec_internal()
     if ((state = EXEC_TAG()) == 0) {
 	eval_node(ruby_top_self, ruby_eval_tree);
     }
-#if 0
-    else if (state == TAG_CONTCALL) {
-	cont_call(prot_tag->retval);
-    }
-#endif
     else if (state == TAG_THREAD) {
 	rb_thread_start_1();
     }
@@ -6092,7 +6085,7 @@ rb_call_super(argc, argv)
     int argc;
     const VALUE *argv;
 {
-    VALUE result, self, klass, k;
+    VALUE result, self, klass;
 
     if (ruby_frame->this_class == 0) {
 	rb_name_error(ruby_frame->callee, "calling `super' from `%s' is prohibited",
@@ -8743,7 +8736,6 @@ rb_block_pass(func, arg, proc)
     VALUE proc;
 {
     VALUE b;
-    struct BLOCK * volatile old_block;
     struct BLOCK _block;
     struct BLOCK *data;
     volatile VALUE result = Qnil;
@@ -11041,7 +11033,9 @@ rb_thread_select(max, read, write, except, timeout)
     fd_set *read, *write, *except;
     struct timeval *timeout;
 {
+#ifndef linux
     double limit;
+#endif
     int n;
 
     if (!read && !write && !except) {
@@ -11053,10 +11047,12 @@ rb_thread_select(max, read, write, except, timeout)
 	return 0;
     }
 
+#ifndef linux
     if (timeout) {
 	limit = timeofday()+
 	    (double)timeout->tv_sec+(double)timeout->tv_usec*1e-6;
     }
+#endif
 
     if (rb_thread_critical ||
 	curr_thread == curr_thread->next ||
@@ -13099,7 +13095,6 @@ thgroup_add(group, thread)
 
 /* variables for recursive traversals */
 static ID recursive_key;
-static VALUE recursive_tbl;
 
 
 /*

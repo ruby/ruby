@@ -48,8 +48,6 @@
 	 ((id)&ID_SCOPE_MASK) == ID_INSTANCE || \
 	 ((id)&ID_SCOPE_MASK) == ID_CLASS))
 
-static int is_valid_lvar _((ID id));
-
 #ifndef RIPPER
 char *ruby_sourcefile;		/* current source file */
 int   ruby_sourceline;		/* current line no. */
