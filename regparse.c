@@ -3254,13 +3254,17 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
     switch (c) {
     case '.':
       if (! IS_SYNTAX_OP(syn, ONIG_SYN_OP_DOT_ANYCHAR)) break;
+#ifdef USE_VARIABLE_META_CHARS
     any_char:
+#endif
       tok->type = TK_ANYCHAR;
       break;
 
     case '*':
       if (! IS_SYNTAX_OP(syn, ONIG_SYN_OP_ASTERISK_ZERO_INF)) break;
+#ifdef USE_VARIABLE_META_CHARS
     anytime:
+#endif
       tok->type = TK_OP_REPEAT;
       tok->u.repeat.lower = 0;
       tok->u.repeat.upper = REPEAT_INFINITE;
@@ -3269,7 +3273,9 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 
     case '+':
       if (! IS_SYNTAX_OP(syn, ONIG_SYN_OP_PLUS_ONE_INF)) break;
+#ifdef USE_VARIABLE_META_CHARS
     one_or_more_time:
+#endif
       tok->type = TK_OP_REPEAT;
       tok->u.repeat.lower = 1;
       tok->u.repeat.upper = REPEAT_INFINITE;
@@ -3278,7 +3284,9 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
 
     case '?':
       if (! IS_SYNTAX_OP(syn, ONIG_SYN_OP_QMARK_ZERO_ONE)) break;
+#ifdef USE_VARIABLE_META_CHARS
     zero_or_one_time:
+#endif
       tok->type = TK_OP_REPEAT;
       tok->u.repeat.lower = 0;
       tok->u.repeat.upper = 1;
@@ -3381,7 +3389,9 @@ fetch_token(OnigToken* tok, UChar** src, UChar* end, ScanEnv* env)
     }
   }
 
+#ifdef USE_VARIABLE_META_CHARS
  out:
+#endif
   *src = p;
   return tok->type;
 }

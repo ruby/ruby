@@ -1,3 +1,8 @@
+Wed Jun 29 00:03:20 2005  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* regparse.c (fetch_token): avoid warning of unused goto tag.
+	  [ruby-dev:26389]
+
 Tue Jun 28 21:59:29 2005  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* dir.c, eval.c, parse.y, process.c, ruby.c: avoid warning "unused
