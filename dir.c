@@ -1332,7 +1332,6 @@ static VALUE
 dir_open_dir(path)
     VALUE path;
 {
-    struct dir_data *dp;
     VALUE dir = rb_funcall(rb_cDir, rb_intern("open"), 1, path);
 
     if (TYPE(dir) != T_DATA ||
