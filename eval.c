@@ -3256,9 +3256,11 @@ rb_eval(self, n)
 
       case NODE_DOT2:
       case NODE_DOT3:
-	result = rb_range_new(rb_eval(self, node->nd_beg),
-			      rb_eval(self, node->nd_end),
-			      nd_type(node) == NODE_DOT3);
+        {
+	    VALUE beg = rb_eval(self, node->nd_beg);
+	    VALUE end = rb_eval(self, node->nd_end);
+	    result = rb_range_new(beg, end, nd_type(node) == NODE_DOT3);
+	}	
 	break;
 
       case NODE_FLIP2:		/* like AWK */
@@ -9905,9 +9907,9 @@ rb_gc_mark_threads()
     rb_gc_mark((VALUE)ruby_cref);
 
     if (!curr_thread) return;
-    FOREACH_THREAD(th) {
+    FOREACH_THREAD_FROM(main_thread, th) {
 	rb_gc_mark(th->thread);
-    } END_FOREACH(th);
+    } END_FOREACH_FROM(main_thread, th);
 }
 
 static void

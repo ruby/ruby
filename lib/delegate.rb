@@ -49,6 +49,14 @@ class Delegator
   end
   alias initialize_methods initialize
 
+  def method_missing(m, *args)
+    target = self.__getobj__
+    unless target.respond_to?(m)
+      super(m, *args)
+    end
+    target.__send__(m, *args)
+  end
+
   def __getobj__
     raise NotImplementedError, "need to define `__getobj__'"
   end

@@ -845,7 +845,7 @@ detach_process_watcer(pid_p)
 
     for (;;) {
 	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
-	if (cpid == -1) return Qnil;
+	if (cpid != 0) return Qnil;
 	rb_thread_sleep(1);
     }
 }

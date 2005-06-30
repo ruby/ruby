@@ -1,3 +1,14 @@
+Thu Jun 30 15:13:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): pre-evaluate argument for unambiguous
+	  evaluation order.  [ruby-dev:26383]
+
+Thu Jun 30 09:53:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator::method_missing): forward unknown
+	  method to the destination.  suggested by
+	  <christophe.poucet@gmail.com>.  [ruby-talk:146776]
+
 Tue Jun 28 21:59:29 2005  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* dir.c, eval.c, hash.c, process.c, ruby.c: avoid warning "unused
@@ -7,6 +18,11 @@ Sat Jun 25 17:15:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httputils.rb (WEBrick::HTTPUtils.parse_query): should
 	  discard if key=val pair is empty. patch from Gary Wright.
+
+Sat Jun 25 23:30:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (detach_process_watcher): terminate process watcher
+	  thread right after rb_waitpid() succeed.  [ruby-talk:146430]
 
 Sat Jun 25 15:49:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
@@ -141,6 +157,7 @@ Mon Jun 13 13:01:05 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* hash.c (ruby_setenv): fixed SEGV. [ruby-dev:26186]
 
+>>>>>>> 1.2673.2.1092
 Mon Jun 13 01:54:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (sigexit): call rb_thread_signal_exit() instead of
@@ -154,6 +171,11 @@ Mon Jun 13 01:54:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_f_exit): ensure exit(0) should call
 	  exit(EXIT_SUCCESS).
+
+Mon Jun 13 01:20:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (rb_gc_mark_threads): curr_thread may not be part of the
+	  thread list.  [ruby-dev:26312]
 
 Fri Jun 10 23:35:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
