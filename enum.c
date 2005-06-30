@@ -660,6 +660,7 @@ enum_min(obj)
     VALUE result = Qundef;
 
     rb_iterate(rb_each, obj, rb_block_given_p() ? min_ii : min_i, (VALUE)&result);
+    if (result == Qundef) return Qnil;
     return result;
 }
 
@@ -736,6 +737,7 @@ enum_max(obj)
     VALUE result = Qundef;
 
     rb_iterate(rb_each, obj, rb_block_given_p() ? max_ii : max_i, (VALUE)&result);
+    if (result == Qundef) return Qnil;
     return result;
 }
 

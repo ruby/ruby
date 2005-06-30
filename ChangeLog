@@ -1,3 +1,8 @@
+Fri Jul  1 01:45:21 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_min, enum_max): must not return Qundef.
+	  fixed: [ruby-core:05299]
+
 Fri Jul  1 00:18:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator::respond_to): respond_to? must check
@@ -5,8 +10,8 @@ Fri Jul  1 00:18:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Thu Jun 30 19:00:21 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 	* lib/irb/ruby-lex.rb (RubyLex::identify_number): alternative implements
-	  for [ruby-dev:26410]. And support a numeric form of 0d99999. 
-	
+	  for [ruby-dev:26410]. And support a numeric form of 0d99999.
+
 Thu Jun 30 17:28:10 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb (RubyLex::identify_number): should not treat
