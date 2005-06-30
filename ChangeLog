@@ -1,3 +1,8 @@
+Fri Jul  1 00:18:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator::respond_to): respond_to? must check
+	  destination object.  [ruby-talk:146894]
+
 Thu Jun 30 19:00:21 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
 	* lib/irb/ruby-lex.rb (RubyLex::identify_number): alternative implements
 	  for [ruby-dev:26410]. And support a numeric form of 0d99999. 
