@@ -1,3 +1,8 @@
+Thu Jun 30 17:28:10 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/irb/ruby-lex.rb (RubyLex::identify_number): should not treat
+	  plain zero as an octal number.  [ruby-dev:26410]
+
 Thu Jun 30 15:13:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_eval): pre-evaluate argument for unambiguous
