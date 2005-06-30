@@ -652,6 +652,9 @@ trap(arg)
     if (func == SIG_IGN || func == SIG_DFL) {
 	command = 0;
     }
+    else {
+	command = arg->cmd;
+    }
 
     switch (TYPE(arg->sig)) {
       case T_FIXNUM:
