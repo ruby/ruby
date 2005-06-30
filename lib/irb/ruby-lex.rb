@@ -936,6 +936,8 @@ class RubyLex
     @lex_state = EXPR_END
 
     if peek(0) == "0" && peek(1) !~ /[.eE]/
+      len0 = true
+      non_digit = false
       getc
       if /[xX]/ =~ peek(0)
 	ch = getc
@@ -948,10 +950,9 @@ class RubyLex
 	match = /[0-7_]/
       else
 	match = /[0-7_]/
+        len0 = false
       end
 
-      len0 = true
-      non_digit = false
       while ch = getc
 	if match =~ ch
 	  if ch == "_"
