@@ -936,23 +936,30 @@ class RubyLex
     @lex_state = EXPR_END
 
     if peek(0) == "0" && peek(1) !~ /[.eE]/
-      len0 = true
-      non_digit = false
       getc
-      if /[xX]/ =~ peek(0)
+      case peek(0)
+      when /[xX]/
 	ch = getc
 	match = /[0-9a-fA-F_]/
-      elsif /[bB]/ =~ peek(0)
+      when /[bB]/
 	ch = getc
 	match = /[01_]/
-      elsif /[oO]/ =~ peek(0)
+      when /[oO]/
 	ch = getc
 	match = /[0-7_]/
-      else
+      when /[dD]/
+	ch = getc
+	match = /[0-9_]/
+      when /[0-7]/
 	match = /[0-7_]/
-        len0 = false
+      when /[89]/
+	RubyLex.fail SyntaxError, "Illegal octal digit"
+      else 
+	return Token(TkINTEGER)
       end
-
+      
+      len0 = true
+      non_digit = false
       while ch = getc
 	if match =~ ch
 	  if ch == "_"

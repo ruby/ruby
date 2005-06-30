@@ -1,3 +1,7 @@
+Thu Jun 30 19:00:21 2005  Keiju Ishitsuka  <keiju@ruby-lang.org>
+	* lib/irb/ruby-lex.rb (RubyLex::identify_number): alternative implements
+	  for [ruby-dev:26410]. And support a numeric form of 0d99999. 
+
 Thu Jun 30 17:28:10 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/irb/ruby-lex.rb (RubyLex::identify_number): should not treat
