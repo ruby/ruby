@@ -593,6 +593,14 @@ sigexit(sig)
     }
 #endif
 
+    if (trap_list[sig].cmd == 0 && ATOMIC_TEST(rb_trap_immediate)) {
+	IN_MAIN_CONTEXT(signal_exec, sig);
+	ATOMIC_SET(rb_trap_immediate, 1);
+    }
+    else {
+	ATOMIC_INC(rb_trap_pending);
+	ATOMIC_INC(trap_pending_list[sig]);
+    }
     rb_thread_signal_exit();
 }
 
@@ -601,39 +609,43 @@ trap(arg)
     struct trap_arg *arg;
 {
     sighandler_t func, oldfunc;
-    VALUE command, oldcmd;
+    VALUE command, tmp, oldcmd;
     int sig = -1;
     char *s;
 
     func = sighandler;
-    command = arg->cmd;
-    if (NIL_P(command)) {
+    if (NIL_P(arg->cmd)) {
 	func = SIG_IGN;
     }
-    else if (TYPE(command) == T_STRING) {
-	SafeStringValue(command);	/* taint check */
-	if (RSTRING(command)->len == 0) {
-	    func = SIG_IGN;
-	}
-	else if (RSTRING(command)->len == 7) {
-	    if (strncmp(RSTRING(command)->ptr, "SIG_IGN", 7) == 0) {
+    else {
+	command = rb_check_string_type(arg->cmd);
+	if (!NIL_P(command)) {
+	    SafeStringValue(command);	/* taint check */
+	    switch (RSTRING(command)->len) {
+	      case 0:
 		func = SIG_IGN;
-	    }
-	    else if (strncmp(RSTRING(command)->ptr, "SIG_DFL", 7) == 0) {
-		func = SIG_DFL;
-	    }
-	    else if (strncmp(RSTRING(command)->ptr, "DEFAULT", 7) == 0) {
-		func = SIG_DFL;
-	    }
-	}
-	else if (RSTRING(command)->len == 6) {
-	    if (strncmp(RSTRING(command)->ptr, "IGNORE", 6) == 0) {
-		func = SIG_IGN;
-	    }
-	}
-	else if (RSTRING(command)->len == 4) {
-	    if (strncmp(RSTRING(command)->ptr, "EXIT", 4) == 0) {
-		func = sigexit;
+		break;
+	      case 7:
+		if (strncmp(RSTRING(command)->ptr, "SIG_IGN", 7) == 0) {
+		    func = SIG_IGN;
+		}
+		else if (strncmp(RSTRING(command)->ptr, "SIG_DFL", 7) == 0) {
+		    func = SIG_DFL;
+		}
+		else if (strncmp(RSTRING(command)->ptr, "DEFAULT", 7) == 0) {
+		    func = SIG_DFL;
+		}
+		break;
+	      case 6:
+		if (strncmp(RSTRING(command)->ptr, "IGNORE", 6) == 0) {
+		    func = SIG_IGN;
+		}
+		break;
+	      case 4:
+		if (strncmp(RSTRING(command)->ptr, "EXIT", 4) == 0) {
+		    func = sigexit;
+		}
+		break;
 	    }
 	}
     }

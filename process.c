@@ -851,7 +851,7 @@ detach_process_watcher(pid_p)
 
     for (;;) {
 	cpid = rb_waitpid(*pid_p, &status, WNOHANG);
-	if (cpid == -1) return rb_last_status;
+	if (cpid != 0) return rb_last_status;
 	rb_thread_sleep(1);
     }
 }

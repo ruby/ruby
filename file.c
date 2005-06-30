@@ -1997,7 +1997,7 @@ sys_fail2(s1, s2)
 
     len = RSTRING(s1)->len + RSTRING(s2)->len + 5;
     buf = ALLOCA_N(char, len);
-    snprintf(buf, len, "%s or %s", RSTRING(s1)->ptr, RSTRING(s2)->ptr);
+    snprintf(buf, len, "(%s, %s)", RSTRING(s1)->ptr, RSTRING(s2)->ptr);
     rb_sys_fail(buf);
 }
 

@@ -56,6 +56,7 @@ int   ruby_sourceline;		/* current line no. */
 enum lex_state_e {
     EXPR_BEG,			/* ignore newline, +/- is a sign. */
     EXPR_END,			/* newline significant, +/- is a operator. */
+    EXPR_END2,			/* newline significant, +/- is a operator. */
     EXPR_ARG,			/* newline significant, +/- is a operator. */
     EXPR_CMDARG,		/* newline significant, +/- is a operator. */
     EXPR_ENDARG,		/* newline significant, +/- is a operator. */
@@ -5725,6 +5726,7 @@ parser_yylex(parser)
 	c = nextc();
 	if (c == '<' &&
 	    lex_state != EXPR_END &&
+	    lex_state != EXPR_END2 &&
 	    lex_state != EXPR_DOT &&
 	    lex_state != EXPR_ENDARG &&
 	    lex_state != EXPR_CLASS &&
@@ -5803,7 +5805,9 @@ parser_yylex(parser)
 	return tSTRING_BEG;
 
       case '?':
-	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG) {
+	if (lex_state == EXPR_END ||
+	    lex_state == EXPR_END2 ||
+	    lex_state == EXPR_ENDARG) {
 	    lex_state = EXPR_VALUE;
 	    return '?';
 	}
@@ -6232,7 +6236,8 @@ parser_yylex(parser)
 	    lex_state = EXPR_DOT;
 	    return tCOLON2;
 	}
-	if (lex_state == EXPR_END || lex_state == EXPR_ENDARG || ISSPACE(c)) {
+	if (lex_state == EXPR_END || lex_state == EXPR_END2 ||
+	    lex_state == EXPR_ENDARG || ISSPACE(c)) {
 	    pushback(c);
 	    lex_state = EXPR_BEG;
 	    return ':';
@@ -6293,11 +6298,10 @@ parser_yylex(parser)
 	return '^';
 
       case ';':
-	if ((c = nextc()) == ';') {
-	    lex_state = EXPR_END;
+	if (lex_state != EXPR_END2 && peek(';')) {
+	    lex_state = EXPR_END2;
 	    return kEND;
 	}
-	pushback(c);
 	lex_state = EXPR_BEG;
 	command_start = Qtrue;
 	return ';';
@@ -6363,7 +6367,7 @@ parser_yylex(parser)
 	return c;
 
       case '{':
-	if (IS_ARG() || lex_state == EXPR_END)
+	if (IS_ARG() || lex_state == EXPR_END || lex_state == EXPR_END2)
 	    c = '{';          /* block (primary) */
 	else if (lex_state == EXPR_ENDARG)
 	    c = tLBRACE_ARG;  /* block (expr) */

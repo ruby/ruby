@@ -3287,9 +3287,11 @@ rb_eval(self, n)
 
       case NODE_DOT2:
       case NODE_DOT3:
-	result = rb_range_new(rb_eval(self, node->nd_beg),
-			      rb_eval(self, node->nd_end),
-			      nd_type(node) == NODE_DOT3);
+        {
+	    VALUE beg = rb_eval(self, node->nd_beg);
+	    VALUE end = rb_eval(self, node->nd_end);
+	    result = rb_range_new(beg, end, nd_type(node) == NODE_DOT3);
+	}
 	break;
 
       case NODE_FLIP2:		/* like AWK */

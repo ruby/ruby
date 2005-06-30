@@ -1,3 +1,8 @@
+Thu Jun 30 15:13:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_eval): pre-evaluate argument for unambiguous
+	  evaluation order.  [ruby-dev:26383]
+
 Thu Jun 30 14:48:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/net/http.rb (Net::HTTP#connect, Net::HTTP#request): should
@@ -6,6 +11,12 @@ Thu Jun 30 14:48:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/net/http.rb (Net::HTTP::ProxyDelta#edit_path): should not
 	  send HTTPS scheme URL to origine servers. [ruby-dev:25689]
+
+Thu Jun 30 09:53:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator::method_missing): forward unknown
+	  method to the destination.  suggested by
+	  <christophe.poucet@gmail.com>.  [ruby-talk:146776]
 
 Wed Jun 29 00:03:20 2005  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
@@ -26,6 +37,11 @@ Tue Jun 28 01:52:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 	* ext/nkf/lib/kconv.rb (conv): can process arrayed options
 	* ext/nkf/nkf-utf8/nkf.c: imported Revision 1.69
 	* ext/nkf/nkf-utf8/utf8tbl.c: imported Revision 1.9
+
+Sat Jun 25 23:30:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (detach_process_watcher): terminate process watcher
+	  thread right after rb_waitpid() succeed.  [ruby-talk:146430]
 
 Sat Jun 25 17:12:20 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
@@ -201,6 +217,7 @@ Mon Jun 13 13:03:08 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* hash.c (ruby_setenv): fixed SEGV. [ruby-dev:26186]
 
+>>>>>>> 1.4337
 Mon Jun 13 01:54:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (sigexit): call rb_thread_signal_exit() instead of

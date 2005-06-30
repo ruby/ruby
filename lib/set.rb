@@ -101,7 +101,6 @@ class Set
     if enum.class == self.class
       @hash.replace(enum.instance_eval { @hash })
     else
-      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
       clear
       enum.each { |o| add(o) }
     end
@@ -254,7 +253,6 @@ class Set
     if enum.is_a?(Set)
       @hash.update(enum.instance_eval { @hash })
     else
-      enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
       enum.each { |o| add(o) }
     end
 
@@ -264,7 +262,6 @@ class Set
   # Deletes every element that appears in the given enumerable object
   # and returns self.
   def subtract(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     enum.each { |o| delete(o) }
     self
   end
@@ -272,7 +269,6 @@ class Set
   # Returns a new set built by merging the set and the elements of the
   # given enumerable object.
   def |(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     dup.merge(enum)
   end
   alias + |		##
@@ -281,7 +277,6 @@ class Set
   # Returns a new set built by duplicating the set, removing every
   # element that appears in the given enumerable object.
   def -(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     dup.subtract(enum)
   end
   alias difference -	##
@@ -289,7 +284,6 @@ class Set
   # Returns a new array containing elements common to the set and the
   # given enumerable object.
   def &(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     n = self.class.new
     enum.each { |o| n.add(o) if include?(o) }
     n
@@ -300,7 +294,6 @@ class Set
   # and the given enumerable object.  (set ^ enum) is equivalent to
   # ((set | enum) - (set & enum)).
   def ^(enum)
-    enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
     n = dup
     enum.each { |o| if n.include?(o) then n.delete(o) else n.add(o) end }
     n
@@ -519,6 +512,7 @@ end
 
 module Enumerable
   # Makes a set from the enumerable object with given arguments.
+  # Needs to +require "set"+ to use this method.
   def to_set(klass = Set, *args, &block)
     klass.new(self, *args, &block)
   end
@@ -573,7 +567,6 @@ end
 # 	end
 # 
 # 	def replace(enum)
-# 	  enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
 # 	  clear
 # 	  enum.each { |o| add(o) }
 # 
@@ -581,7 +574,6 @@ end
 # 	end
 # 
 # 	def merge(enum)
-# 	  enum.is_a?(Enumerable) or raise ArgumentError, "value must be enumerable"
 # 	  enum.each { |o| add(o) }
 # 
 # 	  self
