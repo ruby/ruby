@@ -57,6 +57,11 @@ class Delegator
     target.__send__(m, *args)
   end
 
+  def respond_to?(m)
+    return true if super
+    return self.__getobj__.respond_to?(m)
+  end
+
   def __getobj__
     raise NotImplementedError, "need to define `__getobj__'"
   end
@@ -114,6 +119,10 @@ def DelegateClass(superclass)
         super(m, *args)
       end
       @_dc_obj.__send__(m, *args)
+    end
+    def respond_to?(m)
+      return true if super
+      return @_dc_obj.respond_to?(m)
     end
     def __getobj__
       @_dc_obj

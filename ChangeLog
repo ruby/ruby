@@ -1,3 +1,8 @@
+Fri Jul  1 00:18:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb (Delegator::respond_to): respond_to? must check
+	  destination object.  [ruby-talk:146894]
+
 Thu Jun 30 23:52:12 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* signal.c (trap): non-string trap hander was ignored.
