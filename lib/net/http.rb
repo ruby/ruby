@@ -521,6 +521,12 @@ module Net # :nodoc:
         if proxy?
           @socket.writeline sprintf('CONNECT %s:%s HTTP/%s',
                                     @address, @port, HTTPVersion)
+          @socket.writeline "Host: #{@address}:#{@port}"
+          if proxy_user
+            credential = ["#{proxy_user}:#{proxy_pass}"].pack('m')
+            credential.delete!("\r\n")
+            @socket.writeline "Proxy-Authorization: Basic #{credential}"
+          end
           @socket.writeline ''
           HTTPResponse.read_new(@socket).value
         end
@@ -660,11 +666,7 @@ module Net # :nodoc:
       end
 
       def edit_path(path)
-        if use_ssl?
-          "https://#{addr_port()}#{path}"
-        else
-          "http://#{addr_port()}#{path}"
-        end
+        use_ssl? ? path : "http://#{addr_port()}#{path}"
       end
     end
 
@@ -983,7 +985,9 @@ module Net # :nodoc:
         }
       end
       if proxy_user()
-        req.proxy_basic_auth proxy_user(), proxy_pass()
+        unless use_ssl?
+          req.proxy_basic_auth proxy_user(), proxy_pass()
+        end
       end
 
       req.set_body_internal body

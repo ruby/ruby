@@ -1,3 +1,12 @@
+Thu Jun 30 14:48:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/net/http.rb (Net::HTTP#connect, Net::HTTP#request): should
+	  not send proxy username and password to origin servers.
+	  [ruby-dev:25673]
+
+	* lib/net/http.rb (Net::HTTP::ProxyDelta#edit_path): should not
+	  send HTTPS scheme URL to origine servers. [ruby-dev:25689]
+
 Wed Jun 29 00:03:20 2005  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
 
 	* regparse.c (fetch_token): avoid warning of unused goto tag.
