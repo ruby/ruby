@@ -1,3 +1,8 @@
+Fri Jul  1 01:45:21 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enum_min, enum_max): must not return Qundef.
+	  fixed: [ruby-core:05299]
+
 Fri Jul  1 00:18:40 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb (Delegator::respond_to): respond_to? must check
