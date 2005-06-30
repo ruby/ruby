@@ -813,7 +813,7 @@ proc_waitall()
 	if (pid == -1) {
 	    if (errno == ECHILD)
 		break;
-            if (errno == EINTR) {
+	    if (errno == EINTR) {
 		rb_thread_schedule();
 		continue;
 	    }
@@ -838,7 +838,7 @@ proc_waitall()
 }
 
 static VALUE
-detach_process_watcer(pid_p)
+detach_process_watcher(pid_p)
     int *pid_p;
 {
     int cpid, status;
@@ -854,7 +854,7 @@ VALUE
 rb_detach_process(pid)
     int pid;
 {
-    return rb_thread_create(detach_process_watcer, (void*)&pid);
+    return rb_thread_create(detach_process_watcher, (void*)&pid);
 }
 
 
@@ -2426,11 +2426,11 @@ proc_getgroups(VALUE obj)
 
     ngroups = getgroups(maxgroups, groups);
     if (ngroups == -1)
-        rb_sys_fail(0);
+	rb_sys_fail(0);
 
     ary = rb_ary_new();
     for (i = 0; i < ngroups; i++)
-        rb_ary_push(ary, INT2NUM(groups[i]));
+	rb_ary_push(ary, INT2NUM(groups[i]));
 
     return ary;
 #else
@@ -2466,15 +2466,15 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     ngroups = RARRAY(ary)->len;
     if (ngroups > maxgroups)
-        rb_raise(rb_eArgError, "too many groups, %d max", maxgroups);
+	rb_raise(rb_eArgError, "too many groups, %d max", maxgroups);
 
     groups = ALLOCA_N(rb_gid_t, ngroups);
 
     for (i = 0; i < ngroups && i < RARRAY(ary)->len; i++) {
-        VALUE g = RARRAY(ary)->ptr[i];
+	VALUE g = RARRAY(ary)->ptr[i];
 
 	if (FIXNUM_P(g)) {
-            groups[i] = FIX2INT(g);
+	    groups[i] = FIX2INT(g);
 	}
 	else {
 	    VALUE tmp = rb_check_string_type(g);
@@ -2494,7 +2494,7 @@ proc_setgroups(VALUE obj, VALUE ary)
 
     i = setgroups(ngroups, groups);
     if (i == -1)
-        rb_sys_fail(0);
+	rb_sys_fail(0);
 
     return proc_getgroups(obj);
 #else
