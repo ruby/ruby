@@ -216,6 +216,12 @@ extern FILE *rb_w32_fsopen(const char *, const char *, int);
 #ifndef finite
 #define finite(x) _finite(x)
 #endif
+#ifndef copysign
+#define copysign(a, b) _copysign(a, b)
+#endif
+#ifndef scalb
+#define scalb(a, b) _scalb(a, b)
+#endif
 #endif
 
 #if 0 && defined __BORLANDC__

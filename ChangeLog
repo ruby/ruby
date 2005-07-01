@@ -1,3 +1,10 @@
+Fri Jul  1 15:50:12 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* missing/erf.c: need to include some headers for some platforms.
+
+	* win32/win32.c (copysign, scalb): define for compatibility with
+	  other platforms. [ruby-dev:26430]
+
 Fri Jul  1 15:37:42 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* missing/crypt.c: modified to make it compilable on platforms

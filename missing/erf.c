@@ -31,6 +31,10 @@
 static char sccsid[] = "@(#)erf.c	8.1 (Berkeley) 6/4/93";
 #endif /* not lint */
 
+#include <stdio.h>
+#include "config.h"
+#include "defines.h"
+
 #if defined(vax)||defined(tahoe)
 
 /* Deal with different ways to concatenate in cpp */
