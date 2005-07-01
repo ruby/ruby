@@ -243,10 +243,15 @@ module OpenURI
 
     resp = nil
     http.start {
-      if http.respond_to?(:verify_mode) &&
-         (http.verify_mode & OpenSSL::SSL::VERIFY_PEER) != 0
+      if target.class == URI::HTTPS
         # xxx: information hiding violation
-        http.instance_variable_get(:@socket).io.post_connection_check(target_host)
+        sock = http.instance_variable_get(:@socket)
+        if sock.respond_to?(:io)
+          sock = sock.io # 1.9
+        else
+          sock = sock.instance_variable_get(:@socket) # 1.8
+        end
+        sock.post_connection_check(target_host)
       end
       req = Net::HTTP::Get.new(request_uri, header)
       if options.include? :http_basic_authentication
