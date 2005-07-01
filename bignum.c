@@ -1055,10 +1055,12 @@ rb_big_neg(x)
     VALUE x;
 {
     VALUE z = rb_big_clone(x);
-    BDIGIT *ds = BDIGITS(z);
-    long i = RBIGNUM(x)->len;
+    BDIGIT *ds;
+    long i;
 
     if (!RBIGNUM(x)->sign) get2comp(z);
+    ds = BDIGITS(z);
+    i = RBIGNUM(x)->len;
     while (i--) {
 	ds[i] = ~ds[i];
     }
