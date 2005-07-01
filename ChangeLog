@@ -1,3 +1,12 @@
+Fri Jul  1 11:34:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* missing/crypt.c: replaced with 4.4BSD version.
+
+	* missing/erf.c: ditto.
+
+	* missing/vsnprintf.c: removed the third provision from the old
+	  BSD license.  [ruby-core:05177]
+
 Fri Jul  1 01:45:21 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enum_min, enum_max): must not return Qundef.
