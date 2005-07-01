@@ -1,3 +1,9 @@
+Fri Jul  1 17:48:52 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (get2comp): revert all prior changes, and calculate
+	  proper 2's complement for negative numbers.  backported from
+	  HEAD.
+
 Fri Jul  1 15:50:12 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* missing/erf.c: need to include some headers for some platforms.
