@@ -1,3 +1,10 @@
+Fri Jul  1 15:37:42 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* missing/crypt.c: modified to make it compilable on platforms
+	  other than BSD.  [ruby-dev:26430]
+
+	* missing/erf.c: ditto.  code from <exp.c> merged.
+
 Fri Jul  1 12:44:56 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (OpenURI.open_http): refine post_connection_check

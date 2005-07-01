@@ -31,6 +31,111 @@
 static char sccsid[] = "@(#)erf.c	8.1 (Berkeley) 6/4/93";
 #endif /* not lint */
 
+#if defined(vax)||defined(tahoe)
+
+/* Deal with different ways to concatenate in cpp */
+#  ifdef __STDC__
+#    define	cat3(a,b,c) a ## b ## c
+#  else
+#    define	cat3(a,b,c) a/**/b/**/c
+#  endif
+
+/* Deal with vax/tahoe byte order issues */
+#  ifdef vax
+#    define	cat3t(a,b,c) cat3(a,b,c)
+#  else
+#    define	cat3t(a,b,c) cat3(a,c,b)
+#  endif
+
+#  define vccast(name) (*(const double *)(cat3(name,,x)))
+
+   /*
+    * Define a constant to high precision on a Vax or Tahoe.
+    *
+    * Args are the name to define, the decimal floating point value,
+    * four 16-bit chunks of the float value in hex
+    * (because the vax and tahoe differ in float format!), the power
+    * of 2 of the hex-float exponent, and the hex-float mantissa.
+    * Most of these arguments are not used at compile time; they are
+    * used in a post-check to make sure the constants were compiled
+    * correctly.
+    *
+    * People who want to use the constant will have to do their own
+    *     #define foo vccast(foo)
+    * since CPP cannot do this for them from inside another macro (sigh).
+    * We define "vccast" if this needs doing.
+    */
+#  define vc(name, value, x1,x2,x3,x4, bexp, xval) \
+	const static long cat3(name,,x)[] = {cat3t(0x,x1,x2), cat3t(0x,x3,x4)};
+
+#  define ic(name, value, bexp, xval) ;
+
+#else	/* vax or tahoe */
+
+   /* Hooray, we have an IEEE machine */
+#  undef vccast
+#  define vc(name, value, x1,x2,x3,x4, bexp, xval) ;
+
+#  define ic(name, value, bexp, xval) \
+	const static double name = value;
+
+#endif	/* defined(vax)||defined(tahoe) */
+
+const static double ln2hi = 6.9314718055829871446E-1;
+const static double ln2lo = 1.6465949582897081279E-12;
+const static double lnhuge = 9.4961163736712506989E1;
+const static double lntiny = -9.5654310917272452386E1;
+const static double invln2 = 1.4426950408889634148E0;
+const static double ep1 = 1.6666666666666601904E-1;
+const static double ep2 = -2.7777777777015593384E-3;
+const static double ep3 = 6.6137563214379343612E-5;
+const static double ep4 = -1.6533902205465251539E-6;
+const static double ep5 = 4.1381367970572384604E-8;
+
+/* returns exp(r = x + c) for |c| < |x| with no overlap.  */
+double __exp__D(x, c)
+double x, c;
+{
+	double  z,hi,lo, t;
+	int k;
+
+#if !defined(vax)&&!defined(tahoe)
+	if (x!=x) return(x);	/* x is NaN */
+#endif	/* !defined(vax)&&!defined(tahoe) */
+	if ( x <= lnhuge ) {
+		if ( x >= lntiny ) {
+
+		    /* argument reduction : x --> x - k*ln2 */
+			z = invln2*x;
+			k = z + copysign(.5, x);
+
+		    /* express (x+c)-k*ln2 as hi-lo and let x=hi-lo rounded */
+
+			hi=(x-k*ln2hi);			/* Exact. */
+			x= hi - (lo = k*ln2lo-c);
+		    /* return 2^k*[1+x+x*c/(2+c)]  */
+			z=x*x;
+			c= x - z*(ep1+z*(ep2+z*(ep3+z*(ep4+z*ep5))));
+			c = (x*c)/(2.0-c);
+
+			return  scalb(1.+(hi-(lo - c)), k);
+		}
+		/* end of x > lntiny */
+
+		else 
+		     /* exp(-big#) underflows to zero */
+		     if(finite(x))  return(scalb(1.0,-5000));
+
+		     /* exp(-INF) is zero */
+		     else return(0.0);
+	}
+	/* end of x < lnhuge */
+
+	else 
+	/* exp(INF) is INF, exp(+big#) overflows to INF */
+	    return( finite(x) ?  scalb(1.0,5000)  : x);
+}
+
 /* Modified Nov 30, 1992 P. McILROY:
  *	Replaced expansions for x >= 1.25 (error 1.7ulp vs ~6ulp)
  * Replaced even+odd with direct calculation for x < .84375,
@@ -155,7 +260,7 @@ static char sccsid[] = "@(#)erf.c	8.1 (Berkeley) 6/4/93";
 #include "ieee_libm.h"
 #endif
 
-static double
+const static double
 tiny	    = 1e-300,
 half	    = 0.5,
 one	    = 1.0,
@@ -318,7 +423,7 @@ double erf(x)
 double erfc(x) 
 	double x;
 {
-	double R,S,P,Q,s,ax,y,z,r,fabs(),__exp__D();
+	double R,S,P,Q,s,ax,y,z,r,fabs();
 	if (!finite(x)) {
 		if (isnan(x))		/* erfc(NaN) = NaN */
 			return(x);
