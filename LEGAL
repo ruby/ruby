@@ -134,14 +134,12 @@ st.[ch]:
 x68/*:
 missing/alloca.c:
 missing/dup2.c:
-missing/erf.c:
 missing/finite.c:
 missing/hypot.c:
 missing/isinf.c:
 missing/isnan.c:
 missing/memcmp.c:
 missing/memmove.c:
-missing/mkdir.c:
 missing/strcasecmp.c:
 missing/strchr.c:
 missing/streror.c:
@@ -186,6 +184,8 @@ missing/strtoul.c:
     software for any purpose.  It is provided "as is" without
     express or implied warranty.
 
+missing/erf.c:
+missing/crypt.c:
 missing/vsnprintf.c:
 
   This file is under the old-style BSD license.  Note that the
@@ -205,11 +205,7 @@ missing/vsnprintf.c:
     2. Redistributions in binary form must reproduce the above copyright
        notice, this list of conditions and the following disclaimer in the
        documentation and/or other materials provided with the distribution.
-    3. All advertising materials mentioning features or use of this software
-       must display the following acknowledgement:
-         This product includes software developed by the University of
-         California, Berkeley and its contributors.
-    4. Neither the name of the University nor the names of its contributors
+    3. Neither the name of the University nor the names of its contributors
        may be used to endorse or promote products derived from this software
        without specific prior written permission.
 

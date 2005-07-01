@@ -34,9 +34,17 @@
 static char sccsid[] = "@(#)crypt.c	8.1 (Berkeley) 6/4/93";
 #endif /* LIBC_SCCS and not lint */
 
+#ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
 #include <limits.h>
+#ifdef HAVE_PWD_H
 #include <pwd.h>
+#endif
+#include <stdio.h>
+#ifndef _PASSWORD_EFMT1
+#define _PASSWORD_EFMT1 '_'
+#endif
 
 /*
  * UNIX password, and DES, encryption.
