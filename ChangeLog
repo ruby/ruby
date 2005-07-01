@@ -1,3 +1,8 @@
+Fri Jul  1 12:44:56 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb (OpenURI.open_http): refine post_connection_check 
+	  call.
+
 Fri Jul  1 11:34:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* missing/crypt.c: replaced with 4.4BSD version.
