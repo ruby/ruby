@@ -413,7 +413,7 @@ class Pathname
   #
   # Iterates over each component of the path.
   #
-  #   Pathname.new("/usr/bin/ruby").each_filename
+  #   Pathname.new("/usr/bin/ruby").each_filename {|filename| ... }
   #     # yields "usr", "bin", and "ruby".
   #
   def each_filename # :yield: s
