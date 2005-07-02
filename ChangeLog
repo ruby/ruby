@@ -1,3 +1,10 @@
+Sat Jul  2 15:19:41 2005  Tanaka Akira  <akr@m17n.org>
+
+	* configure.in: check select_large_fdset.
+
+	* eval.c: use select_large_fdset to support large file descriptors
+	  on Solaris.  [ruby-dev:26404]
+
 Fri Jul  1 17:55:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (rb_big_neg): may be accessing bogus pointer value.

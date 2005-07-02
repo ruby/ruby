@@ -179,6 +179,16 @@ typedef jmp_buf rb_jmpbuf_t;
 #include <sys/select.h>
 #endif
 
+/*
+  Solaris sys/select.h switches select to select_large_fdset to support larger
+  file descriptors if FD_SETSIZE is larger than 1024 on 32bit environment.
+  But Ruby doesn't change FD_SETSIZE because fd_set is allocated dynamically.
+  So following definition is required to use select_large_fdset.
+*/
+#ifdef HAVE_SELECT_LARGE_FDSET
+#define select(n, r, w, e, t) select_large_fdset(n, r, w, e, t)
+#endif
+
 #ifdef HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
