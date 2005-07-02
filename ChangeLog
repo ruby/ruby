@@ -1,3 +1,10 @@
+Sat Jul  2 17:06:23 2005  Tanaka Akira  <akr@m17n.org>
+
+       * defines.h (FLUSH_REGISTER_WINDOWS): defined for IA64.
+	 (flush_register_windows): declare flush_register_windows.
+
+       * eval.c (flush_register_windows): new function.
+
 Fri Jul  1 17:48:52 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bignum.c (get2comp): revert all prior changes, and calculate

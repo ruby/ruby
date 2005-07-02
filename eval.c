@@ -12823,3 +12823,13 @@ rb_throw(tag, val)
     argv[1] = val;
     rb_f_throw(2, argv);
 }
+
+/* flush_register_windows must not be inlined because flushrs doesn't flush
+ * current frame in register stack. */
+#ifdef __ia64__
+void flush_register_windows(void)
+{
+    __asm__ ("flushrs");
+}
+#endif
+

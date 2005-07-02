@@ -224,6 +224,13 @@ flush_register_windows(void)
 	;
 }
 #  define FLUSH_REGISTER_WINDOWS flush_register_windows()
+#elif defined(__ia64__)
+void flush_register_windows(void)
+#  if ( __GNUC__ == 3 && __GNUC_MINOR__ > 0 ) || __GNUC__ > 3
+__attribute__ ((noinline))
+#  endif
+  ;
+#  define FLUSH_REGISTER_WINDOWS flush_register_windows()
 #else
 #  define FLUSH_REGISTER_WINDOWS ((void)0)
 #endif
