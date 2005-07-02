@@ -13416,7 +13416,7 @@ rb_exec_recursive(func, obj, arg)
 #ifdef __ia64__
 void flush_register_windows(void)
 {
-      __asm__ ("flushrs");
+    __asm__ ("flushrs");
 }
 #endif
 
