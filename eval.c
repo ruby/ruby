@@ -13410,3 +13410,13 @@ rb_exec_recursive(func, obj, arg)
 	return result;
     }
 }
+
+/* flush_register_windows must not be inlined because flushrs doesn't flush
+ * current frame in register stack. */
+#ifdef __ia64__
+void flush_register_windows(void)
+{
+      __asm__ ("flushrs");
+}
+#endif
+

@@ -19,6 +19,11 @@ extern "C" {
 #endif
 
 #include "config.h"
+
+#ifndef NOINLINE
+# define NOINLINE(x) x
+#endif
+
 #include "defines.h"
 
 #ifdef HAVE_STDLIB_H
@@ -58,9 +63,6 @@ extern "C" {
 #endif
 #ifndef DEPRECATED
 # define DEPRECATED(x) x
-#endif
-#ifndef NOINLINE
-# define NOINLINE(x) x
 #endif
 
 #if defined(HAVE_ALLOCA_H)
