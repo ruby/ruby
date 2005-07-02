@@ -1703,7 +1703,7 @@ unix_send_io(sock, val)
     msg.msg_control = (caddr_t)&cmsg;
     msg.msg_controllen = CMSG_SPACE(sizeof(int));
     msg.msg_flags = 0;
-    cmsg.hdr.cmsg_len = CMSG_SPACE(0) + sizeof(int);
+    cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
     cmsg.fd = fd;
@@ -1778,7 +1778,7 @@ unix_recv_io(argc, argv, sock)
     msg.msg_control = (caddr_t)&cmsg;
     msg.msg_controllen = CMSG_SPACE(sizeof(int));
     msg.msg_flags = 0;
-    cmsg.hdr.cmsg_len = CMSG_SPACE(0) + sizeof(int);
+    cmsg.hdr.cmsg_len = CMSG_LEN(sizeof(int));
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
     cmsg.fd = -1;
