@@ -1701,9 +1701,9 @@ unix_send_io(sock, val)
 
 #if FD_PASSING_BY_MSG_CONTROL
     msg.msg_control = (caddr_t)&cmsg;
-    msg.msg_controllen = sizeof(struct cmsghdr) + sizeof(int);
+    msg.msg_controllen = CMSG_SPACE(sizeof(int));
     msg.msg_flags = 0;
-    cmsg.hdr.cmsg_len = sizeof(struct cmsghdr) + sizeof(int);
+    cmsg.hdr.cmsg_len = CMSG_SPACE(0) + sizeof(int);
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
     cmsg.fd = fd;
@@ -1776,9 +1776,9 @@ unix_recv_io(argc, argv, sock)
 
 #if FD_PASSING_BY_MSG_CONTROL
     msg.msg_control = (caddr_t)&cmsg;
-    msg.msg_controllen = sizeof(struct cmsghdr) + sizeof(int);
+    msg.msg_controllen = CMSG_SPACE(sizeof(int));
     msg.msg_flags = 0;
-    cmsg.hdr.cmsg_len = sizeof(struct cmsghdr) + sizeof(int);
+    cmsg.hdr.cmsg_len = CMSG_SPACE(0) + sizeof(int);
     cmsg.hdr.cmsg_level = SOL_SOCKET;
     cmsg.hdr.cmsg_type = SCM_RIGHTS;
     cmsg.fd = -1;
@@ -1791,18 +1791,34 @@ unix_recv_io(argc, argv, sock)
     if (recvmsg(fileno(fptr->f), &msg, 0) == -1)
 	rb_sys_fail("recvmsg(2)");
 
-    if (
 #if FD_PASSING_BY_MSG_CONTROL
-	msg.msg_controllen != sizeof(struct cmsghdr) + sizeof(int) ||
-        cmsg.hdr.cmsg_len != sizeof(struct cmsghdr) + sizeof(int) ||
-	cmsg.hdr.cmsg_level != SOL_SOCKET ||
-	cmsg.hdr.cmsg_type != SCM_RIGHTS
-#else
-        msg.msg_accrightslen != sizeof(fd)
-#endif
-	) {
-	rb_raise(rb_eSocket, "file descriptor was not passed");
+    if (msg.msg_controllen != CMSG_SPACE(sizeof(int))) {
+      rb_raise(rb_eSocket,
+          "file descriptor was not passed (msg_controllen : %d != %d)",
+          msg.msg_controllen, CMSG_SPACE(sizeof(int)));
     }
+    if (cmsg.hdr.cmsg_len != CMSG_SPACE(0) + sizeof(int)) {
+      rb_raise(rb_eSocket,
+          "file descriptor was not passed (cmsg_len : %d != %d)",
+          cmsg.hdr.cmsg_len, CMSG_SPACE(0) + sizeof(int));
+    }
+    if (cmsg.hdr.cmsg_level != SOL_SOCKET) {
+      rb_raise(rb_eSocket,
+          "file descriptor was not passed (cmsg_level : %d != %d)",
+          cmsg.hdr.cmsg_level, SOL_SOCKET);
+    }
+    if (cmsg.hdr.cmsg_type != SCM_RIGHTS) {
+      rb_raise(rb_eSocket,
+          "file descriptor was not passed (cmsg_type : %d != %d)",
+          cmsg.hdr.cmsg_type, SCM_RIGHTS);
+    }
+#else
+    if (msg.msg_accrightslen != sizeof(fd)) {
+	rb_raise(rb_eSocket,
+            "file descriptor was not passed (accrightslen) : %d != %d",
+            msg.msg_accrightslen, sizeof(fd));
+    }
+#endif
 
 #if FD_PASSING_BY_MSG_CONTROL
     fd = cmsg.fd;
