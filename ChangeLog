@@ -1,3 +1,8 @@
+Sat Jul  2 22:41:04 2005  Tanaka Akira  <akr@m17n.org>
+
+	* ext/socket/socket.c (unix_send_io, unix_recv_io): support x86-64 and
+	  IA64.
+
 Sat Jul  2 17:06:23 2005  Tanaka Akira  <akr@m17n.org>
 
 	* defines.h (FLUSH_REGISTER_WINDOWS): defined for IA64.
