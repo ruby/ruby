@@ -27,12 +27,15 @@ class TestSignal < Test::Unit::TestCase
   def test_exit_action
     begin
       r, w = IO.pipe
+      r0, w0 = IO.pipe
       pid = fork {
-        r0, w0 = IO.pipe
         trap(:USR1, "EXIT")
+        w0.close
+        w.syswrite("a")
         Thread.start { Thread.pass }
         r0.sysread(4096)
       }
+      r.sysread(1)
       sleep 0.1
       assert_nothing_raised("[ruby-dev:26128]") {
         Process.kill(:USR1, pid)
@@ -48,6 +51,8 @@ class TestSignal < Test::Unit::TestCase
     ensure
       r.close
       w.close
+      r0.close
+      w0.close
     end
   end
 end
