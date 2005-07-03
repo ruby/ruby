@@ -1,3 +1,9 @@
+Sun Jul  3 23:26:30 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/wsdl/document/test_rpc.rb: compare formatted time string of
+	  Time objects instead of comparing Time objects itself to avoid
+	  unintended conflict of usec part.  [ruby-dev:26220]
+
 Sat Jul  2 22:41:04 2005  Tanaka Akira  <akr@m17n.org>
 
 	* ext/socket/socket.c (unix_send_io, unix_recv_io): support x86-64 and
