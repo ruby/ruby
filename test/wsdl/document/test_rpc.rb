@@ -107,10 +107,13 @@ class TestRPC < Test::Unit::TestCase
 
     # struct#m_datetime in a response is a DateTime even though
     # struct#m_datetime in a request is a Time.
+    timeformat = "%Y-%m-%dT%H:%M:%S"
     assert_equal("mystring2", ret.struct1.m_string)
-    assert_equal(now2, date2time(ret.struct1.m_datetime))
+    assert_equal(now2.strftime(timeformat),
+      date2time(ret.struct1.m_datetime).strftime(timeformat))
     assert_equal("mystring1", ret.struct_2.m_string)
-    assert_equal(now1, date2time(ret.struct_2.m_datetime))
+    assert_equal(now1.strftime(timeformat),
+      date2time(ret.struct_2.m_datetime).strftime(timeformat))
     assert_equal("attr_string", ret.xmlattr_attr_string)
     assert_equal(5, ret.xmlattr_attr_int)
   end
