@@ -61,6 +61,15 @@ if defined? DBM
       end
     end
 
+    def have_fork?
+      begin
+        fork{}
+        true
+      rescue NotImplementedError
+        false
+      end
+    end
+
     def test_s_new_has_no_block
       # DBM.new ignore the block
       foo = true
@@ -77,6 +86,7 @@ if defined? DBM
       assert_equal(DBM.open("tmptest_dbm") { :foo }, :foo)
     end
     def test_s_open_lock
+      return unless have_fork?	# snip this test
       fork() {
         assert_instance_of(DBM, dbm = DBM.open("tmptest_dbm", 0644))
         sleep 2
@@ -115,6 +125,7 @@ if defined? DBM
       if not defined? DBM::NOLOCK
         return
       end
+      return unless have_fork?	# snip this test
 
       fork() {
         assert_instance_of(DBM, dbm  = DBM.open("tmptest_dbm", 0644,

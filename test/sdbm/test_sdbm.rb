@@ -31,6 +31,15 @@ class TestSDBM < Test::Unit::TestCase
     end
   end
 
+    def have_fork?
+      begin
+        fork{}
+        true
+      rescue NotImplementedError
+        false
+      end
+    end
+
   def test_version
     assert(! SDBM.const_defined?(:VERSION))
   end
@@ -70,6 +79,7 @@ class TestSDBM < Test::Unit::TestCase
     if not defined? SDBM::NOLOCK
       return
     end
+    return unless have_fork?	# snip this test
 
     fork() {
       assert_instance_of(SDBM, sdbm  = SDBM.open("tmptest_sdbm", 0644,
