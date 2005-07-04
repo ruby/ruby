@@ -58,6 +58,15 @@ if defined? GDBM
       end
     end
 
+    def have_fork?
+      begin
+        fork{}
+        true
+      rescue NotImplementedError
+        false
+      end
+    end
+
     def test_s_new_has_no_block
       # GDBM.new ignore the block
       foo = true
@@ -108,6 +117,7 @@ if defined? GDBM
       assert_equal(GDBM.open("tmptest_gdbm") { :foo }, :foo)
     end
     def test_s_open_lock
+      return unless have_fork?	# snip this test
       fork() {
         assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644))
         sleep 2
@@ -146,6 +156,7 @@ if defined? GDBM
       if not defined? GDBM::NOLOCK
         return
       end
+      return unless have_fork?	# snip this test
 
       fork() {
         assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644,

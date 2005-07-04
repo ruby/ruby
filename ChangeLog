@@ -1,3 +1,8 @@
+Mon Jul  4 11:15:37 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/{dbm,gdbm,sdbm}/test_{dbm,gdbm,sdbm}.rb: skip some tests
+	  which using fork on fork-less platforms.
+
 Sun Jul  3 23:26:30 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/wsdl/document/test_rpc.rb: compare formatted time string of
@@ -389,7 +394,7 @@ Sat May 28 16:40:15 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	* test/openssl/test_x509store.rb: add test for expired CRL
 	  and refine some assertions.
 
- May 28 05:15:51 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Sat May 28 05:15:51 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_x509store.c (ossl_x509stctx_set_time): should
 	  not set internal flag directry.
