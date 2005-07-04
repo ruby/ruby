@@ -642,10 +642,10 @@ class TC_Set < Test::Unit::TestCase
       Set.new('a'..'c')
       Set.new('XYZ')
     }
-    assert_raises(ArgumentError) {
+    assert_raises(NoMethodError) {
       Set.new(false)
     }
-    assert_raises(ArgumentError) {
+    assert_raises(NoMethodError) {
       Set.new(1)
     }
     assert_raises(ArgumentError) {

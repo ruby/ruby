@@ -1,3 +1,7 @@
+Mon Jul  4 19:29:32 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/set.rb: test change to follow revision 1.28. (duck typing?)
+
 Mon Jul  4 11:23:50 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/{dbm,gdbm,sdbm}/test_{dbm,gdbm,sdbm}.rb: skip some tests
