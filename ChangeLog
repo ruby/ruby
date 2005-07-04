@@ -1,3 +1,8 @@
+Mon Jul  4 13:25:21 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* missing/erf.c: original erf.c by prof. Okumura is confirmed to
+	  be public domain.  reverted BSD implementation.
+
 Mon Jul  4 11:15:37 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/{dbm,gdbm,sdbm}/test_{dbm,gdbm,sdbm}.rb: skip some tests
