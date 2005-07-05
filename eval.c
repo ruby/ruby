@@ -10329,7 +10329,9 @@ rb_thread_save_context(th)
     th->stk_len = 0;
     th->stk_pos = pos;
     if (len > th->stk_max) {
-	REALLOC_N(th->stk_ptr, VALUE, len);
+	VALUE *ptr = realloc(th->stk_ptr, sizeof(VALUE) * len);
+	if (!ptr) rb_memerror();
+	th->stk_ptr = ptr;
 	th->stk_max = len;
     }
     th->stk_len = len;

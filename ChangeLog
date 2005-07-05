@@ -1,7 +1,10 @@
-Tue Jul  5 23:23:09 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Jul  5 23:27:14 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (sort_2): get rid of yet another bcc's bug.
 	  fixed: [ruby-core:05152]
+
+	* eval.c (rb_thread_save_context): must not switch contexts during
+	  re-allocating stack.  fixed: [ruby-core:05219]
 
 Tue Jul  5 15:15:10 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
