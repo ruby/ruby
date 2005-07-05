@@ -115,19 +115,19 @@ class TkNamespace < TkObject
     # alias __tk_call_with_enc    tk_call_with_enc
     def tk_call(*args)
       #super('namespace', 'eval', @namespace, *args)
-      args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
+      args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
       super('namespace', 'eval', @namespace, 
             TkCore::INTERP._merge_tklist(*args))
     end
     def tk_call_without_enc(*args)
       #super('namespace', 'eval', @namespace, *args)
-      args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
+      args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
       super('namespace', 'eval', @namespace, 
             TkCore::INTERP._merge_tklist(*args))
     end
     def tk_call_with_enc(*args)
       #super('namespace', 'eval', @namespace, *args)
-      args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
+      args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
       super('namespace', 'eval', @namespace, 
             TkCore::INTERP._merge_tklist(*args))
     end
@@ -159,19 +159,19 @@ class TkNamespace < TkObject
   alias __tk_call_with_enc    tk_call_with_enc
   def tk_call(*args)
     #super('namespace', 'eval', @fullname, *args)
-    args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
+    args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
     super('namespace', 'eval', @fullname, 
           TkCore::INTERP._merge_tklist(*args))
   end
   def tk_call_without_enc(*args)
     #super('namespace', 'eval', @fullname, *args)
-    args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
+    args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
     super('namespace', 'eval', @fullname,  
           TkCore::INTERP._merge_tklist(*args))
   end
   def tk_call_with_enc(*args)
     #super('namespace', 'eval', @fullname, *args)
-    args = args.collect{|arg| (s = _get_eval_string(arg))? s: ''}
+    args = args.collect{|arg| (s = _get_eval_string(arg, true))? s: ''}
     super('namespace', 'eval', @fullname, 
           TkCore::INTERP._merge_tklist(*args))
   end

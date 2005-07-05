@@ -1,5 +1,5 @@
 (tof)
-                                    2004/03/28  Hidetoshi NAGAI
+                                    2005/07/05  Hidetoshi NAGAI
 
 This document discribes about the 'tcltklib' library. Although there
 is the 'tcltk' library (tcltk.rb) under this directory, no description
@@ -126,7 +126,7 @@ module TclTklib
          : defined as 0. 
 
   [module methods]
-    mainloop(check_root = true)
+     mainloop(check_root = true)
        : Starts the eventloop. If 'check_root' is true, this method 
        : doesn't return when a root widget exists. 
        : If 'check_root' is false, doen't return by the other
@@ -227,8 +227,8 @@ module TclTklib
        : Convert the argument to a valid Tcl list element with
        : Tcl/Tk's library function.
 
-    _toUTF8(str, encoding)
-    _fromUTF8(str, encoding)
+    _toUTF8(str, encoding=nil)
+    _fromUTF8(str, encoding=nil)
        : Call the function (which is internal function of Tcl/Tk) to
        : convert to/from a UTF8 string.
 
@@ -238,6 +238,16 @@ module TclTklib
        : give a sixteen-bit hexadecimal value for Unicode character).
        : _subst_Tcl_backslash method parses all backslash sequence. 
        : _subst_UTF_backslash method parses \uhhhh only.
+
+    encoding_system
+    encoding_system=(encoding)
+       : Get and set Tcl's system encoding.
+
+    encoding
+    encoding=(encoding)
+       : alias of encoding_system / encoding_system=
+       : ( probably, Ruby/Tk's tk.rb will override them )
+
 
 class TclTkIp
   [class methods]
@@ -322,8 +332,8 @@ class TclTkIp
        : to _eval and regist the command once, after that, the
        : command can be called by _invoke. 
 
-    _toUTF8(str, encoding)
-    _fromUTF8(str, encoding)
+    _toUTF8(str, encoding=nil)
+    _fromUTF8(str, encoding=nil)
        : Call the function (which is internal function of Tcl/Tk) to
        : convert to/from a UTF8 string.
 

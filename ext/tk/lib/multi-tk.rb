@@ -1730,11 +1730,11 @@ class << MultiTkIp
     __getip._invoke_with_enc(*args)
   end
 
-  def _toUTF8(str, encoding)
+  def _toUTF8(str, encoding=nil)
     __getip._toUTF8(str, encoding)
   end
 
-  def _fromUTF8(str, encoding)
+  def _fromUTF8(str, encoding=nil)
     __getip._fromUTF8(str, encoding)
   end
 
@@ -2119,11 +2119,11 @@ class MultiTkIp
     @interp._invoke_with_enc(*args)
   end
 
-  def _toUTF8(str, encoding)
+  def _toUTF8(str, encoding=nil)
     @interp._toUTF8(str, encoding)
   end
 
-  def _fromUTF8(str, encoding)
+  def _fromUTF8(str, encoding=nil)
     @interp._fromUTF8(str, encoding)
   end
 

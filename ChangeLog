@@ -1,3 +1,41 @@
+Tue Jul  5 14:52:56 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: bug fix on treating Unicode strings. 
+
+	* ext/tk/tcltklib.c: add methods to treat encoding mode.
+
+	* ext/tk/MANUAL_tcltklib.eng: add description of TclTkLib#encoding, 
+	  encoding_system, and so on.
+
+	* ext/tk/MANUAL_tcltklib.eucj: ditto.
+
+	* ext/tk/tkutil/tkutil.c: fail to create a Tcl's list string from 
+	  an array including multiple kind of encoded strings.
+
+	* ext/tk/lib/tk.rb: ditto.
+
+	* ext/tk/lib/multi-tk.rb: 2nd arg of _{to|from}UTF8 is omissible.
+
+	* ext/tk/lib/remote-tk.rb: ditto.
+
+	* ext/tk/lib/tk.rb: override TclTkLib#encoding and encoding= to 
+	  use TkCore::INTERP.encoding and encoding=.
+
+	* ext/tk/lib/tk.rb: when "require 'tk'" and $KCODE=='NONE', check 
+	  DEFAULT_TK_ENCODING to decide Ruby/Tk's system encoding mode.
+
+	* ext/tk/lib/tk/encodedstr.rb: check both of Tk.encoding and
+	  Tk.encoding_system. Tk.encoding has higher priority.
+
+	* ext/tk/lib/tk/optiondb.rb: ditto.
+
+	* ext/tk/lib/tk/spinbox.rb: ditto.
+
+	* ext/tk/lib/tk/validation.rb: ditto.
+
+	* ext/tk/lib/tk/namespace.rb: arguemnts for TclTkIp#_merge_tklist
+	  should be UTF-8 strings.
+
 Mon Jul  4 19:29:32 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/set.rb: test change to follow revision 1.28. (duck typing?)

@@ -309,19 +309,48 @@ if USE_TCLs_LIST_FUNCTIONS
   def array2tk_list(ary, enc=nil)
     return "" if ary.size == 0
 
+    sys_enc = TkCore::INTERP.encoding
+    sys_enc = TclTkLib.encoding_system unless sys_enc
+
+    dst_enc = (enc == nil)? sys_enc: enc
+
     dst = ary.collect{|e|
       if e.kind_of? Array
-        array2tk_list(e, enc)
+        s = array2tk_list(e, enc)
       elsif e.kind_of? Hash
         tmp_ary = []
         #e.each{|k,v| tmp_ary << k << v }
         e.each{|k,v| tmp_ary << "-#{_get_eval_string(k)}" << v }
-        array2tk_list(tmp_ary, enc)
+        s = array2tk_list(tmp_ary, enc)
       else
-        _get_eval_string(e, enc)
+        s = _get_eval_string(e, enc)
       end
+
+      if dst_enc != true && dst_enc != false
+        if (s_enc = s.instance_variable_get(:@encoding))
+          s_enc = s_enc.to_s
+        else
+          s_enc = sys_enc
+        end
+        dst_enc = true if s_enc != dst_enc
+      end
+
+      s
     }
-    TkCore::INTERP._merge_tklist(*dst)
+
+    if sys_enc && dst_enc
+      dst.map!{|s| _toUTF8(s)}
+      ret = TkCore::INTERP._merge_tklist(*dst)
+      if dst_enc.kind_of?(String)
+        ret = _fromUTF8(ret, dst_enc)
+        ret.instance_variable_set(:@encoding, dst_enc)
+      else
+        ret.instance_variable_set(:@encoding, 'utf-8')
+      end
+      ret
+    else
+      TkCore::INTERP._merge_tklist(*dst)
+    end
   end
 
 else
@@ -2163,6 +2192,15 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
 =end
   end
 
+  module TclTkLib
+    def self.encoding=(name)
+      TkCore::INTERP.encoding = name
+    end
+    def self.encoding
+      TkCore::INTERP.encoding
+    end
+  end
+
   module Tk
     module Encoding
       extend Encoding
@@ -2231,6 +2269,9 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
     Tk.encoding = 'utf-8'
     Tk.encoding_system = 'utf-8'
   else        # NONE
+    if defined? DEFAULT_TK_ENCODING
+      Tk.encoding_system = DEFAULT_TK_ENCODING
+    end
     begin
       Tk.encoding = Tk.encoding_system
     rescue StandardError, NameError
@@ -4153,7 +4194,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-06-24'.freeze
+  RELEASE_DATE = '2005-07-05'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

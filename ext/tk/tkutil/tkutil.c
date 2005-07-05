@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-06-14"
+#define TKUTIL_RELEASE_DATE "2005-07-05"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -31,12 +31,15 @@ static ID ID_toUTF8;
 static ID ID_fromUTF8;
 static ID ID_path;
 static ID ID_at_path;
+static ID ID_at_enc;
 static ID ID_to_eval;
 static ID ID_to_s;
 static ID ID_source;
 static ID ID_downcase;
 static ID ID_install_cmd;
 static ID ID_merge_tklist;
+static ID ID_encoding;
+static ID ID_encoding_system;
 static ID ID_call;
 
 static ID ID_SUBST_INFO;
@@ -237,9 +240,23 @@ ary2list(ary, enc_flag, self)
     VALUE enc_flag;
     VALUE self;
 {
-    int idx, idx2, size, size2;
-    volatile VALUE val, val2;
+    int idx, idx2, size, size2, req_chk_flag;
+    volatile VALUE val, val2, str_val;
     volatile VALUE dst;
+    volatile VALUE sys_enc, dst_enc, str_enc;
+
+    sys_enc = rb_funcall(cTclTkLib, ID_encoding, 0, 0);
+    if NIL_P(sys_enc) {
+      sys_enc = rb_funcall(cTclTkLib, ID_encoding_system, 0, 0);
+    }
+
+    if NIL_P(enc_flag) {
+        dst_enc = sys_enc;
+        req_chk_flag = 1;
+    } else {
+        dst_enc = enc_flag;
+        req_chk_flag = 0;
+    }
 
     /* size = RARRAY(ary)->len; */
     size = 0;
@@ -255,10 +272,25 @@ ary2list(ary, enc_flag, self)
     RARRAY(dst)->len = 0;
     for(idx = 0; idx < RARRAY(ary)->len; idx++) {
         val = RARRAY(ary)->ptr[idx];
+        str_val = Qnil;
         switch(TYPE(val)) {
         case T_ARRAY:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-              = ary2list(val, enc_flag, self);
+            str_val = ary2list(val, enc_flag, self);
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+
+            if (req_chk_flag) {
+                str_enc = rb_ivar_get(str_val, ID_at_enc);
+                if NIL_P(str_enc) {
+                    str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
+                } else {
+                    str_enc = sys_enc;
+                }
+                if (!rb_str_cmp(str_enc, dst_enc)) {
+                    dst_enc = Qtrue;
+                    req_chk_flag = 0;
+                }
+            }
+
             break;
 
         case T_HASH:
@@ -273,24 +305,36 @@ ary2list(ary, enc_flag, self)
                 val2 = RARRAY(val)->ptr[idx2];
                 switch(TYPE(val2)) {
                 case T_ARRAY:
-                    RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                        = ary2list(val2, enc_flag, self);
+                    str_val = ary2list(val2, enc_flag, self);
+                    RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
                     break;
 
                 case T_HASH:
                     if (RTEST(enc_flag)) {
-                        RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                            = hash2list_enc(val2, self);
+                        str_val = hash2list_enc(val2, self);
                     } else {
-                        RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                            = hash2list(val2, self);
+                        str_val = hash2list(val2, self);
                     }
+                    RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
                     break;
 
                 default:
                     if (val2 != TK_None) {
-                        RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                            = get_eval_string_core(val2, enc_flag, self);
+                        str_val = get_eval_string_core(val2, enc_flag, self);
+                        RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+                    }
+                }
+
+                if (req_chk_flag) {
+                    str_enc = rb_ivar_get(str_val, ID_at_enc);
+                    if NIL_P(str_enc) {
+                        str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
+                    } else {
+                        str_enc = sys_enc;
+                    }
+                    if (!rb_str_cmp(str_enc, dst_enc)) {
+                        dst_enc = Qtrue;
+                        req_chk_flag = 0;
                     }
                 }
             }
@@ -298,12 +342,46 @@ ary2list(ary, enc_flag, self)
 
         default:
             if (val != TK_None) {
-                RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                    = get_eval_string_core(val, enc_flag, self);
+                str_val = get_eval_string_core(val, enc_flag, self);
+                RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+
+                if (req_chk_flag) {
+                    str_enc = rb_ivar_get(str_val, ID_at_enc);
+                    if NIL_P(str_enc) {
+                        str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
+                    } else {
+                        str_enc = sys_enc;
+                    }
+                    if (!rb_str_cmp(str_enc, dst_enc)) {
+                        dst_enc = Qtrue;
+                        req_chk_flag = 0;
+                    }
+                }
             }
         }
     }
-    return rb_apply(cTclTkLib, ID_merge_tklist, dst);
+
+    if (RTEST(dst_enc) && !NIL_P(sys_enc)) {
+        for(idx = 0; idx < RARRAY(dst)->len; idx++) {
+            str_val = RARRAY(dst)->ptr[idx];
+            if (rb_respond_to(self, ID_toUTF8)) {
+                str_val = rb_funcall(self, ID_toUTF8, 1, str_val);
+            } else {
+                str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
+            }
+            RARRAY(dst)->ptr[idx] = str_val;
+        }
+        val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
+        if (TYPE(dst_enc) == T_STRING) {
+            val = rb_fun_call(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
+            rb_ivar_set(val, ID_at_enc, dst_enc);
+        } else {
+            rb_ivar_set(val, ID_at_enc, rb_str_new2("utf-8"));
+        }
+        return val;
+    } else {
+        return rb_apply(cTclTkLib, ID_merge_tklist, dst);
+    }
 }
 
 static VALUE
@@ -312,38 +390,88 @@ ary2list2(ary, enc_flag, self)
     VALUE enc_flag;
     VALUE self;
 {
-    int idx, size;
-    volatile VALUE val;
+    int idx, size, req_chk_flag;
+    volatile VALUE val, str_val;
     volatile VALUE dst;
+    volatile VALUE sys_enc, dst_enc, str_enc;
+
+    sys_enc = rb_funcall(cTclTkLib, ID_encoding, 0, 0);
+    if NIL_P(sys_enc) {
+      sys_enc = rb_funcall(cTclTkLib, ID_encoding_system, 0, 0);
+    }
+
+    if NIL_P(enc_flag) {
+        dst_enc = sys_enc;
+        req_chk_flag = 1;
+    } else {
+        dst_enc = enc_flag;
+        req_chk_flag = 0;
+    }
 
     size = RARRAY(ary)->len;
     dst = rb_ary_new2(size);
     RARRAY(dst)->len = 0;
     for(idx = 0; idx < RARRAY(ary)->len; idx++) {
         val = RARRAY(ary)->ptr[idx];
+        str_val = Qnil;
         switch(TYPE(val)) {
         case T_ARRAY:
-            RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-              = ary2list(val, enc_flag, self);
+            str_val = ary2list(val, enc_flag, self);
             break;
 
         case T_HASH:
             if (RTEST(enc_flag)) {
-                RARRAY(dst)->ptr[RARRAY(dst)->len++] = hash2list(val, self);
+                str_val = hash2list(val, self);
             } else {
-                RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                    = hash2list_enc(val, self);
+                str_val = hash2list_enc(val, self);
             }
             break;
 
         default:
             if (val != TK_None) {
-                RARRAY(dst)->ptr[RARRAY(dst)->len++] 
-                    = get_eval_string_core(val, enc_flag, self);
+                str_val = get_eval_string_core(val, enc_flag, self);
+            }
+        }
+
+        if (!NIL_P(str_val)) {
+            RARRAY(dst)->ptr[RARRAY(dst)->len++] = str_val;
+
+            if (req_chk_flag) {
+                str_enc = rb_ivar_get(str_val, ID_at_enc);
+                if NIL_P(str_enc) {
+                    str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
+                } else {
+                    str_enc = sys_enc;
+                }
+                if (!rb_str_cmp(str_enc, dst_enc)) {
+                    dst_enc = Qtrue;
+                    req_chk_flag = 0;
+                }
             }
         }
     }
-    return rb_apply(cTclTkLib, ID_merge_tklist, dst);
+
+    if (RTEST(dst_enc) && !NIL_P(sys_enc)) {
+        for(idx = 0; idx < RARRAY(dst)->len; idx++) {
+            str_val = RARRAY(dst)->ptr[idx];
+            if (rb_respond_to(self, ID_toUTF8)) {
+                str_val = rb_funcall(self, ID_toUTF8, 1, str_val);
+            } else {
+                str_val = rb_funcall(cTclTkLib, ID_toUTF8, 1, str_val);
+            }
+            RARRAY(dst)->ptr[idx] = str_val;
+        }
+        val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
+        if (TYPE(dst_enc) == T_STRING) {
+            val = rb_fun_call(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
+            rb_ivar_set(val, ID_at_enc, dst_enc);
+        } else {
+            rb_ivar_set(val, ID_at_enc, rb_str_new2("utf-8"));
+        }
+        return val;
+    } else {
+        return rb_apply(cTclTkLib, ID_merge_tklist, dst);
+    }
 }
 
 static VALUE
@@ -1395,12 +1523,15 @@ Init_tkutil()
 
     ID_path = rb_intern("path");
     ID_at_path = rb_intern("@path");
+    ID_at_enc = rb_intern("@encoding");
     ID_to_eval = rb_intern("to_eval");
     ID_to_s = rb_intern("to_s");
     ID_source = rb_intern("source");
     ID_downcase = rb_intern("downcase");
     ID_install_cmd = rb_intern("install_cmd");
     ID_merge_tklist = rb_intern("_merge_tklist");
+    ID_encoding = rb_intern("encoding");
+    ID_encoding_system = rb_intern("encoding_system");
     ID_call = rb_intern("call");
 
     /* --------------------- */

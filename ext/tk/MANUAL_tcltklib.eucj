@@ -1,5 +1,5 @@
 (tof)
-                                    2004/03/28  Hidetoshi NAGAI
+                                    2005/07/05  Hidetoshi NAGAI
 
 本ドキュメントには古い tcltk ライブラリ，tcltklib ライブラリの説明
 が含まれていますが，その記述内容は古いものとなっています．
@@ -341,8 +341,8 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : 一つのリスト要素として適切な表現になるように変換した文
          : 字列を返す．
 
-      _toUTF8(str, encoding)
-      _fromUTF8(str, encoding)
+      _toUTF8(str, encoding=nil)
+      _fromUTF8(str, encoding=nil)
          : Tcl/Tk が内蔵している UTF8 変換処理を呼び出す．
 
       _subst_UTF_backslash(str)
@@ -352,6 +352,16 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : _subst_Tcl_backslash はすべてのバックスラッシュ記法を
          : 置き換えるのに対し，_subst_UTF_backslash は \uhhhh 
          : による Unicode 文字表現だけを置き換える．
+
+      encoding_system
+      encoding_system=(encoding)
+         : Tcl の system encoding の獲得および設定
+
+      encoding
+      encoding=(encoding)
+         : encoding_system / encoding_system= の alias
+         : ( Ruby/Tk の tk.rb では置き換えられる予定のもの．)
+
 
 クラス TclTkIp
    クラスメソッド
@@ -433,8 +443,8 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : して登録に成功しさえすれば，以降は _invoke でも利用で
          : きるようになる．
 
-      _toUTF8(str, encoding)
-      _fromUTF8(str, encoding)
+      _toUTF8(str, encoding=nil)
+      _fromUTF8(str, encoding=nil)
          : Tcl/Tk が内蔵している UTF8 変換処理を呼び出す．
 
       _thread_vwait(var_name)
