@@ -321,11 +321,11 @@ class RemoteTkIp
     _appsend(true, false, *args)
   end
 
-  def _toUTF8(str, encoding)
+  def _toUTF8(str, encoding=nil)
     @interp._toUTF8(str, encoding)
   end
 
-  def _fromUTF8(str, encoding)
+  def _fromUTF8(str, encoding=nil)
     @interp._fromUTF8(str, encoding)
   end
 

@@ -44,7 +44,7 @@ module TkOptionDB
         "can't call 'TkOptionDB.read_entries' on a safe interpreter"
     end
 
-    i_enc = Tk.encoding()
+    i_enc = ((Tk.encoding)? Tk.encoding : Tk.encoding_system)
 
     unless f_enc
       f_enc = i_enc

@@ -67,9 +67,13 @@ module Tk
 
     def initialize(str, enc = nil)
       super(str)
+      # @encoding = ( enc || 
+      #              ((self.class::Encoding)? 
+      #                  self.class::Encoding : Tk.encoding_system) )
       @encoding = ( enc || 
-                   ((self.class::Encoding)? 
-                       self.class::Encoding : Tk.encoding_system) )
+                   ((self.class::Encoding)?
+                         self.class::Encoding : 
+                         ((Tk.encoding)? Tk.encoding : Tk.encoding_system) ) )
     end
 
     attr_reader :encoding

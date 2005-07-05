@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-06-16"
+#define TCLTKLIB_RELEASE_DATE "2005-07-05"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -1894,7 +1894,7 @@ ip_set_exc_message(interp, exc)
 
     /* to avoid a garbled error message dialog */
     buf = ALLOC_N(char, (RSTRING(msg)->len)+1);
-    strncpy(buf, RSTRING(msg)->ptr, RSTRING(msg)->len);
+    memcpy(buf, RSTRING(msg)->ptr, RSTRING(msg)->len);
     buf[RSTRING(msg)->len] = 0;
 
     Tcl_DStringInit(&dstr);
@@ -1990,10 +1990,10 @@ ip_ruby_eval_body(arg)
             errtype_len = strlen(errtype);
             len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
             buf = ALLOC_N(char, len + 1);
-            strncpy(buf, errtype, errtype_len);
-            strncpy(buf + errtype_len, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
+            memcpy(buf, errtype, errtype_len);
+            memcpy(buf + errtype_len, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
             RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackReturn, buf);
@@ -2005,10 +2005,10 @@ ip_ruby_eval_body(arg)
             errtype_len = strlen(errtype);
             len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
             buf = ALLOC_N(char, len + 1);
-            strncpy(buf, errtype, errtype_len);
-            strncpy(buf + errtype_len, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
+            memcpy(buf, errtype, errtype_len);
+            memcpy(buf + errtype_len, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
             RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackBreak, buf);
@@ -2020,10 +2020,10 @@ ip_ruby_eval_body(arg)
             errtype_len = strlen(errtype);
             len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
             buf = ALLOC_N(char, len + 1);
-            strncpy(buf, errtype, errtype_len);
-            strncpy(buf + errtype_len, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
+            memcpy(buf, errtype, errtype_len);
+            memcpy(buf + errtype_len, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
             RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackContinue,buf);
@@ -2155,7 +2155,7 @@ ip_ruby_eval(clientData, interp, argc, argv)
 
       str = Tcl_GetStringFromObj(argv[1], &len);
       arg->string = ALLOC_N(char, len + 1);
-      strncpy(arg->string, str, len);
+      memcpy(arg->string, str, len);
       arg->string[len] = 0;
 
       rb_thread_critical = thr_crit_bup;
@@ -2377,10 +2377,10 @@ ip_ruby_cmd_body(arg)
             errtype_len = strlen(errtype);
             len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
             buf = ALLOC_N(char, len + 1);
-            strncpy(buf, errtype, errtype_len);
-            strncpy(buf + errtype_len, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
+            memcpy(buf, errtype, errtype_len);
+            memcpy(buf + errtype_len, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
             RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackReturn, buf);
@@ -2392,10 +2392,10 @@ ip_ruby_cmd_body(arg)
             errtype_len = strlen(errtype);
             len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
             buf = ALLOC_N(char, len + 1);
-            strncpy(buf, errtype, errtype_len);
-            strncpy(buf + errtype_len, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
+            memcpy(buf, errtype, errtype_len);
+            memcpy(buf + errtype_len, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
             RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackBreak, buf);
@@ -2407,10 +2407,10 @@ ip_ruby_cmd_body(arg)
             errtype_len = strlen(errtype);
             len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
             buf = ALLOC_N(char, len + 1);
-            strncpy(buf, errtype, errtype_len);
-            strncpy(buf + errtype_len, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
+            memcpy(buf, errtype, errtype_len);
+            memcpy(buf + errtype_len, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
+                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
             RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackContinue,buf);
@@ -2559,7 +2559,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
         len = strlen(str);
         buf = ALLOC_N(char, len + 2);
         buf[0] = '$';
-        strncpy(buf + 1, str, len);
+        memcpy(buf + 1, str, len);
         buf[len + 1] = 0;
         receiver = rb_gv_get(buf);
         free(buf);
@@ -5814,7 +5814,7 @@ ip_eval(self, str)
     *alloc_done = 0;
 
     eval_str = ALLOC_N(char, RSTRING(str)->len + 1);
-    strncpy(eval_str, RSTRING(str)->ptr, RSTRING(str)->len);
+    memcpy(eval_str, RSTRING(str)->ptr, RSTRING(str)->len);
     eval_str[RSTRING(str)->len] = 0;
 
     /* allocate memory (freed by Tcl_ServiceEvent) */
@@ -6101,9 +6101,8 @@ lib_toUTF8_core(ip_obj, src, encodename)
         rb_thread_critical = thr_crit_bup;
         return str;
     }
-
     buf = ALLOC_N(char,(RSTRING(str)->len)+1);
-    strncpy(buf, RSTRING(str)->ptr, RSTRING(str)->len);
+    memcpy(buf, RSTRING(str)->ptr, RSTRING(str)->len);
     buf[RSTRING(str)->len] = 0;
 
     Tcl_DStringInit(&dstr);
@@ -6112,7 +6111,8 @@ lib_toUTF8_core(ip_obj, src, encodename)
     Tcl_ExternalToUtfDString(encoding, buf, RSTRING(str)->len, &dstr);
 
     /* str = rb_tainted_str_new2(Tcl_DStringValue(&dstr)); */
-    str = rb_str_new2(Tcl_DStringValue(&dstr));
+    /* str = rb_str_new2(Tcl_DStringValue(&dstr)); */
+    str = rb_str_new(Tcl_DStringValue(&dstr), Tcl_DStringLength(&dstr));
     rb_ivar_set(str, ID_at_enc, rb_tainted_str_new2("utf-8"));
     if (taint_flag) OBJ_TAINT(str);
 
@@ -6261,7 +6261,7 @@ lib_fromUTF8_core(ip_obj, src, encodename)
     }
 
     buf = ALLOC_N(char,strlen(RSTRING(str)->ptr)+1);
-    strncpy(buf, RSTRING(str)->ptr, RSTRING(str)->len);
+    memcpy(buf, RSTRING(str)->ptr, RSTRING(str)->len);
     buf[RSTRING(str)->len] = 0;
 
     Tcl_DStringInit(&dstr);
@@ -6270,7 +6270,8 @@ lib_fromUTF8_core(ip_obj, src, encodename)
     Tcl_UtfToExternalDString(encoding,buf,RSTRING(str)->len,&dstr);
 
     /* str = rb_tainted_str_new2(Tcl_DStringValue(&dstr)); */
-    str = rb_str_new2(Tcl_DStringValue(&dstr));
+    /* str = rb_str_new2(Tcl_DStringValue(&dstr)); */
+    str = rb_str_new(Tcl_DStringValue(&dstr), Tcl_DStringLength(&dstr));
     rb_ivar_set(str, ID_at_enc, encodename);
 
     if (taint_flag) OBJ_TAINT(str);
@@ -6337,7 +6338,7 @@ lib_UTF_backslash_core(self, str, all_bs)
     rb_thread_critical = Qtrue;
 
     src_buf = ALLOC_N(char,(RSTRING(str)->len)+1);
-    strncpy(src_buf, RSTRING(str)->ptr, RSTRING(str)->len);
+    memcpy(src_buf, RSTRING(str)->ptr, RSTRING(str)->len);
     src_buf[RSTRING(str)->len] = 0;
 
     dst_buf = ALLOC_N(char,(RSTRING(str)->len)+1);
@@ -6378,6 +6379,41 @@ lib_Tcl_backslash(self, str)
     VALUE str;
 {
     return lib_UTF_backslash_core(self, str, 1);
+}
+
+static VALUE
+lib_get_system_encoding(self)
+    VALUE self;
+{
+#if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION > 0)
+    return rb_str_new2(Tcl_GetEncodingName((Tcl_Encoding)NULL));
+#else
+    return Qnil;
+#endif
+}
+
+static VALUE
+lib_set_system_encoding(self, enc_name)
+    VALUE self;
+    VALUE enc_name;
+{
+#if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION > 0)
+    if NIL_P(enc_name) {
+        Tcl_SetSystemEncoding((Tcl_Interp *)NULL, (CONST char *)NULL);
+        return lib_get_system_encoding(self);
+    }
+
+    enc_name = rb_funcall(enc_name, ID_to_s, 0, 0);
+    if (Tcl_SetSystemEncoding((Tcl_Interp *)NULL, 
+                              RSTRING(enc_name)->ptr) != TCL_OK) {
+        rb_raise(rb_eArgError, "unknown encoding name '%s'", 
+                 RSTRING(enc_name)->ptr);
+    }
+
+    return enc_name;
+#else
+    return Qnil;
+#endif
 }
 
 
@@ -8499,6 +8535,15 @@ Init_tcltklib()
                               lib_UTF_backslash, 1);
     rb_define_module_function(lib, "_subst_Tcl_backslash", 
                               lib_Tcl_backslash, 1);
+
+    rb_define_module_function(lib, "encoding_system", 
+                              lib_get_system_encoding, 0);
+    rb_define_module_function(lib, "encoding_system=", 
+                              lib_set_system_encoding, 1);
+    rb_define_module_function(lib, "encoding", 
+                              lib_get_system_encoding, 0);
+    rb_define_module_function(lib, "encoding=", 
+                              lib_set_system_encoding, 1);
 
     /* --------------------------------------------------------------- */
 
