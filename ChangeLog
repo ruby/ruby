@@ -1,3 +1,7 @@
+Tue Jul  5 23:44:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* instruby.rb: expand source library path.
+
 Tue Jul  5 23:27:14 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c (sort_2): get rid of yet another bcc's bug.
