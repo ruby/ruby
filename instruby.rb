@@ -4,7 +4,7 @@ load "./rbconfig.rb"
 include Config
 
 srcdir = File.dirname(__FILE__)
-$:.unshift File.join(srcdir, "lib")
+$:.unshift File.expand_path("lib", srcdir)
 require 'fileutils'
 require 'shellwords'
 require 'optparse'
@@ -66,7 +66,7 @@ end
 
 def install(src, dest, options = {})
   options[:preserve] = true
-  super src, dest, options
+  super
 end
 
 $made_dirs = {}
@@ -82,7 +82,7 @@ def makedirs(dirs)
 end
 
 def with_destdir(dir)
-  return dir if $destdir.empty?
+  return dir if !$destdir or $destdir.empty?
   dir = dir.sub(/\A\w:/, '') if File::PATH_SEPARATOR == ';'
   $destdir + dir
 end
