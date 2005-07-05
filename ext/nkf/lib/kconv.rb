@@ -11,8 +11,6 @@ module Kconv
   # Public Constants
   #
   
-  VERSION = '1.8'
-  
   #Constant of Encoding
   AUTO = ::NKF::AUTO
   JIS = ::NKF::JIS
@@ -30,7 +28,7 @@ module Kconv
   # Private Constants
   #
   
-  REVISON = %q$Revison$
+  REVISION = %q$Revision$
   
   #Regexp of Encoding
   RegexpShiftjis = /\A(?:
@@ -66,6 +64,7 @@ module Kconv
     :utf8	=> '-w',
     :utf8bom	=> '-w8',
     :utf8n	=> '-w80',
+    :utf8mac	=> '-w --utf8mac-input',
     :utf16	=> '-w16',
     :utf16be	=> '-w16B',
     :utf16ben	=> '-w16B0',
@@ -89,6 +88,7 @@ module Kconv
     :capinput		=> '--cap-input',	# Convert hex after ':'
     :urlinput		=> '--url-input',	# decode percent-encoded octets
     :numcharinput	=> '--numchar-input'	# Convert Unicode Character Reference
+    :internalunicode	=> '--internal-unicode'	# Use Unicode as internal encoding
   }
   
   CONSTANT_TO_SYMBOL = {
@@ -149,7 +149,7 @@ module Kconv
   module_function :kconv
 
   #
-  # Kconv.conv( str, :to => :"euc-jp", :from => :shift_jis, :opt => [:hiragana,:katakana] )
+  # Kconv.conv( str, :to => :"euc-jp", :from => :shift_jis, :opt => [:hiragana, :katakana] )
   #
   def conv(str, *args)
     option = nil
@@ -166,9 +166,9 @@ module Kconv
     
     to = symbol_to_option(option[0])
     from = symbol_to_option(option[1]).to_s.sub(/(-[jesw])/o){$1.upcase}
-    opt = option[2..-1].to_a.map{|x|symbol_to_option(x)}.compact.join('')
+    opt = option[2..-1].to_a.flatten.map{|x|symbol_to_option(x)}.compact.join(' ')
     
-    nkf_opt = ('-x -m0 %s %s %s' % [to, from, opt])
+    nkf_opt = '-x -m0 %s %s %s' % [to, from, opt]
     result = ::NKF::nkf( nkf_opt, str)
   end
   module_function :conv

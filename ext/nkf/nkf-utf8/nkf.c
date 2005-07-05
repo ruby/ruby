@@ -41,7 +41,7 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.5"
-#define NKF_RELEASE_DATE "2005-06-28"
+#define NKF_RELEASE_DATE "2005-07-05"
 #include "config.h"
 
 static char *CopyRight =
@@ -104,6 +104,11 @@ static char *CopyRight =
 
 #ifdef PERL_XS
 #undef OVERWRITE
+#endif
+#if defined( UTF8_OUTPUT_ENABLE ) || defined( UTF8_INPUT_ENABLE )
+#define UNICODE_ENABLE
+#else
+#undef UNICODE_NORMALIZATION
 #endif
 
 #ifndef PERL_XS
@@ -246,7 +251,7 @@ static char *CopyRight =
 #define         GETA2   0x2e
 
 
-#if defined( UTF8_OUTPUT_ENABLE ) || defined( UTF8_INPUT_ENABLE )
+#ifdef UNICODE_ENABLE
 #define sizeof_euc_utf8 94
 #define sizeof_euc_to_utf8_1byte 94
 #define sizeof_euc_to_utf8_2bytes 94
@@ -389,17 +394,21 @@ static int             x0201_f = TRUE;         /* Assume JISX0201 kana */
 static int             x0201_f = NO_X0201;     /* Assume NO JISX0201 */
 #endif
 static int             iso2022jp_f = FALSE;    /* convert ISO-2022-JP */
+#ifdef UNICODE_ENABLE
+static int             internal_unicode_f = FALSE;   /* Internal Unicode Processing */
+#endif
 #ifdef UTF8_OUTPUT_ENABLE
 static int             unicode_bom_f= 0;   /* Output Unicode BOM */
 static int             w_oconv16_LE = 0;   /* utf-16 little endian */
 static int             ms_ucs_map_f = FALSE;   /* Microsoft UCS Mapping Compatible */
 #endif
 
-
-#ifdef NUMCHAR_OPTION
-
-#define CLASS_MASK  0x0f000000
-#define CLASS_UTF16 0x01000000
+#ifdef UNICODE_NORMALIZATION
+static int nfc_f = FALSE;
+static int (*i_nfc_getc)PROTO((FILE *)) = std_getc; /* input of ugetc */
+static int (*i_nfc_ungetc)PROTO((int c ,FILE *f)) = std_ungetc;
+STATIC int nfc_getc PROTO((FILE *f));
+STATIC int nfc_ungetc PROTO((int c,FILE *f));
 #endif
 
 #ifdef INPUT_OPTION
@@ -414,7 +423,11 @@ static int (*i_ugetc)PROTO((FILE *)) = std_getc; /* input of ugetc */
 static int (*i_uungetc)PROTO((int c ,FILE *f)) = std_ungetc;
 STATIC int url_getc PROTO((FILE *f));
 STATIC int url_ungetc PROTO((int c,FILE *f));
+#endif
 
+#ifdef NUMCHAR_OPTION
+#define CLASS_MASK  0x0f000000
+#define CLASS_UTF16 0x01000000
 static int numchar_f = FALSE;
 static int (*i_ngetc)PROTO((FILE *)) = std_getc; /* input of ugetc */
 static int (*i_nungetc)PROTO((int c ,FILE *f)) = std_ungetc;
@@ -926,6 +939,9 @@ struct {
 #ifdef X0212_ENABLE
     {"x0212", ""},
 #endif
+#ifdef UNICODE_ENABLE
+    {"internal-unicode", ""},
+#endif
 #ifdef UTF8_OUTPUT_ENABLE
     {"utf8", "w"},
     {"utf16", "w16"},
@@ -934,6 +950,9 @@ struct {
 #ifdef UTF8_INPUT_ENABLE
     {"utf8-input", "W"},
     {"utf16-input", "W16"},
+#endif
+#ifdef UNICODE_NORMALIZATION
+    {"utf8mac-input", ""},
 #endif
 #ifdef OVERWRITE
     {"overwrite", ""},
@@ -1070,11 +1089,24 @@ options(cp)
                       return;
                   }
 #endif
+#ifdef UNICODE_ENABLE
+                if (strcmp(long_option[i].name, "internal-unicode") == 0){
+                    internal_unicode_f = TRUE;
+                    continue;
+                }
+#endif
 #ifdef UTF8_OUTPUT_ENABLE
                 if (strcmp(long_option[i].name, "ms-ucs-map") == 0){
                     ms_ucs_map_f = TRUE;
                     continue;
                 }
+#endif
+#ifdef UNICODE_NORMALIZATION
+		if (strcmp(long_option[i].name, "utf8mac-input") == 0){
+		    input_f = UTF8_INPUT;
+		    nfc_f = TRUE;
+		    continue;
+		}
 #endif
                 if (strcmp(long_option[i].name, "prefix=") == 0){
                     if (*p == '=' && ' ' < p[1] && p[1] < 128){
@@ -1849,6 +1881,12 @@ module_connection()
         i_nungetc = i_ungetc; i_ungetc= numchar_ungetc;
     }
 #endif
+#ifdef UNICODE_NORMALIZATION
+    if (nfc_f && input_f == UTF8_INPUT){
+        i_nfc_getc = i_getc; i_getc = nfc_getc;
+        i_nfc_ungetc = i_ungetc; i_ungetc= nfc_ungetc;
+    }
+#endif
     if (mime_f && mimebuf_f==FIXED_MIME) {
 	i_mgetc = i_getc; i_getc = mime_getc;
 	i_mungetc = i_ungetc; i_ungetc = mime_ungetc;
@@ -2480,7 +2518,30 @@ w_iconv(c2, c1, c0)
     int    c2,
                     c1, c0;
 {
-    int ret = w2e_conv(c2, c1, c0, &c2, &c1);
+    int ret = 0;
+    unsigned short val = 0;
+    
+    if (c0 == 0){
+	if (c2 < 0x80 || (c2 & 0xc0) == 0xdf) /* 0x00-0x7f 0xc0-0xdf */
+	    ; /* 1 or 2ytes */
+	else if ((c2 & 0xf0) == 0xe0) /* 0xe0-0xef */
+	    return -1; /* 3bytes */
+	/*else if (0xf0 <= c2)
+	    return 0; /* 4,5,6bytes */
+	else if ((c2 & 0xc0) == 0x80) /* 0x80-0xbf */
+	    return 0; /* trail byte */
+	else return 0;
+    }
+    if (c2 == EOF);
+    else if (c2 == 0xef && c1 == 0xbb && c0 == 0xbf)
+	return 0; /* throw BOM */
+    else if (internal_unicode_f && (output_conv == w_oconv || output_conv == w_oconv16)){
+	val = ww16_conv(c2, c1, c0);
+	c2 = (val >> 8) & 0xff;
+	c1 = val & 0xff;
+    } else {
+	ret = w2e_conv(c2, c1, c0, &c2, &c1);
+    }
     if (ret == 0){
         (*oconv)(c2, c1);
     }
@@ -2566,7 +2627,7 @@ int
 w_iconv16(c2, c1, c0)
     int    c2, c1,c0;
 {
-    int ret;
+    int ret = 0;
 
     if (c2==0376 && c1==0377){
 	utf16_mode = UTF16BE_INPUT;
@@ -2583,7 +2644,8 @@ w_iconv16(c2, c1, c0)
 	(*oconv)(c2, c1);
 	return 0;
     }
-    ret = w16e_conv(((c2<<8)&0xff00) + c1, &c2, &c1);
+    if (internal_unicode_f && (output_conv == w_oconv || output_conv == w_oconv16));
+    else ret = w16e_conv(((c2<<8)&0xff00) + c1, &c2, &c1);
     if (ret) return ret;
     (*oconv)(c2, c1);
     return 0;
@@ -2668,6 +2730,7 @@ w_oconv(c2, c1)
                     c1;
 {
     int c0;
+    unsigned short val;
     if (c2 == EOF) {
         (*o_putc)(EOF);
         return;
@@ -2699,9 +2762,10 @@ w_oconv(c2, c1)
 	output_mode = ISO8859_1;
         (*o_putc)(c1 | 0x080);
     } else {
-        unsigned short val;
         output_mode = UTF8;
-        val = e2w_conv(c2, c1);
+	if (internal_unicode_f && (iconv == w_iconv || iconv == w_iconv16))
+	    val = ((c2<<8)&0xff00) + c1;
+	else val = e2w_conv(c2, c1);
         if (val){
             w16w_conv(val, &c2, &c1, &c0);
             (*o_putc)(c2);
@@ -2734,7 +2798,8 @@ w_oconv16(c2, c1)
 	unicode_bom_f=1;
     }
 
-    if (c2 == ISO8859_1) {
+    if (internal_unicode_f && (iconv == w_iconv || iconv == w_iconv16)){
+    } else if (c2 == ISO8859_1) {
         c2 = 0;
         c1 |= 0x80;
 #ifdef NUMCHAR_OPTION
@@ -3862,6 +3927,57 @@ numchar_ungetc(c, f)
 }
 #endif
 
+#ifdef UNICODE_NORMALIZATION
+
+/* Normalization Form C */
+int
+nfc_getc(f)
+     FILE *f;
+{
+    int (*g)() = i_nfc_getc;
+    int (*u)() = i_nfc_ungetc;
+    int i=0, j, k=1, lower, upper;
+    int buf[9];
+    int *array = NULL;
+    extern struct normalization_pair normalization_table[];
+    
+    buf[i] = (*g)(f);
+    while (k > 0 && ((buf[i] & 0xc0) != 0x80)){
+	lower=0, upper=NORMALIZATION_TABLE_LENGTH-1;
+	while (upper >= lower) {
+	    j = (lower+upper) / 2;
+	    array = normalization_table[j].nfd;
+	    for (k=0; k < NORMALIZATION_TABLE_NFD_LENGTH && array[k]; k++){
+		if (array[k] != buf[k]){
+		    array[k] < buf[k] ? (lower = j + 1) : (upper = j - 1);
+		    k = 0;
+		    break;
+		} else if (k >= i)
+		    buf[++i] = (*g)(f);
+	    }
+	    if (k > 0){
+		array = normalization_table[j].nfc;
+		for (i=0; i < NORMALIZATION_TABLE_NFC_LENGTH && array[i]; i++)
+		    buf[i] = array[i];
+		i--;
+		break;
+	    }
+	}
+	while (i > 0)
+	    (*u)(buf[i--], f);
+    }
+    return buf[0];
+}
+
+int
+nfc_ungetc(c, f)
+     int c;
+     FILE *f;
+{
+    return (*i_nfc_ungetc)(c, f);
+}
+#endif /* UNICODE_NORMALIZATION */
+
 
 int 
 mime_getc(f)
@@ -4597,10 +4713,16 @@ reinit()
      x0201_f = NO_X0201;
 #endif
     iso2022jp_f = FALSE;
+#ifdef UNICODE_ENABLE
+    internal_unicode_f = TRUE;
+#endif
 #ifdef UTF8_OUTPUT_ENABLE
     unicode_bom_f = 0;
     w_oconv16_LE = 0;
     ms_ucs_map_f = FALSE;
+#endif
+#ifdef UNICODE_NORMALIZATION
+    nfc_f = FALSE;
 #endif
 #ifdef INPUT_OPTION
     cap_f = FALSE;

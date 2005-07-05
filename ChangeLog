@@ -1,3 +1,10 @@
+Wed Jul  6 00:15:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+        * ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c,config.h}:
+          imported nkf.c 1.70 (support UTF-8-MAC)
+
+        * ext/nkf/lib/kconv.rb: add :utf8mac and :internalunicode
+
 Tue Jul  5 23:44:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* instruby.rb: expand source library path.
