@@ -1,19 +1,24 @@
+Tue Jul  5 23:23:09 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c (sort_2): get rid of yet another bcc's bug.
+	  fixed: [ruby-core:05152]
+
 Tue Jul  5 15:15:10 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/tkutil.c: fix typo.
 
 Tue Jul  5 14:51:35 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/tcltklib.c: bug fix on treating Unicode strings. 
+	* ext/tcltklib/tcltklib.c: bug fix on treating Unicode strings.
 
 	* ext/tcltklib/tcltklib.c: add methods to treat encoding mode.
 
-	* ext/tcltklib/MANUAL.eng: add description of TclTkLib#encoding, 
+	* ext/tcltklib/MANUAL.eng: add description of TclTkLib#encoding,
 	  encoding_system, and so on.
 
 	* ext/tcltklib/MANUAL.euc: ditto.
 
-	* ext/tk/tkutil.c: fail to create a Tcl's list string from an 
+	* ext/tk/tkutil.c: fail to create a Tcl's list string from an
 	  array including multiple kind of encoded strings.
 
 	* ext/tk/lib/tk.rb: ditto.
@@ -22,10 +27,10 @@ Tue Jul  5 14:51:35 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/remote-tk.rb: ditto.
 
-	* ext/tk/lib/tk.rb: override TclTkLib#encoding and encoding= to 
+	* ext/tk/lib/tk.rb: override TclTkLib#encoding and encoding= to
 	  use TkCore::INTERP.encoding and encoding=.
 
-	* ext/tk/lib/tk.rb: when "require 'tk'" and $KCODE=='NONE', check 
+	* ext/tk/lib/tk.rb: when "require 'tk'" and $KCODE=='NONE', check
 	  DEFAULT_TK_ENCODING to decide Ruby/Tk's system encoding mode.
 
 	* ext/tk/lib/tk/encodedstr.rb: check both of Tk.encoding and
@@ -90,7 +95,7 @@ Fri Jul  1 15:37:42 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Fri Jul  1 12:44:56 2005  Tanaka Akira  <akr@m17n.org>
 
-	* lib/open-uri.rb (OpenURI.open_http): refine post_connection_check 
+	* lib/open-uri.rb (OpenURI.open_http): refine post_connection_check
 	  call.
 
 Fri Jul  1 11:34:08 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>

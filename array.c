@@ -1584,8 +1584,8 @@ sort_2(ap, bp, data)
 	if ((long)a < (long)b) return -1;
 	return 0;
     }
-    if (TYPE(a) == T_STRING && TYPE(b) == T_STRING) {
-	return rb_str_cmp(a, b);
+    if (TYPE(a) == T_STRING) {
+	if (TYPE(b) == T_STRING) return rb_str_cmp(a, b);
     }
 
     retval = rb_funcall(a, id_cmp, 1, b);
