@@ -373,7 +373,7 @@ ary2list(ary, enc_flag, self)
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
         if (TYPE(dst_enc) == T_STRING) {
-            val = rb_fun_call(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
+            val = rb_funcall(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
             rb_ivar_set(val, ID_at_enc, dst_enc);
         } else {
             rb_ivar_set(val, ID_at_enc, rb_str_new2("utf-8"));
@@ -463,7 +463,7 @@ ary2list2(ary, enc_flag, self)
         }
         val = rb_apply(cTclTkLib, ID_merge_tklist, dst);
         if (TYPE(dst_enc) == T_STRING) {
-            val = rb_fun_call(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
+            val = rb_funcall(cTclTkLib, ID_fromUTF8, 2, val, dst_enc);
             rb_ivar_set(val, ID_at_enc, dst_enc);
         } else {
             rb_ivar_set(val, ID_at_enc, rb_str_new2("utf-8"));

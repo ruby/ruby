@@ -1,3 +1,7 @@
+Tue Jul  5 15:15:10 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil.c: fix typo.
+
 Tue Jul  5 14:51:35 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: bug fix on treating Unicode strings. 
