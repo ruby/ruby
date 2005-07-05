@@ -87,7 +87,7 @@ module Kconv
     :katakana	=> '--katakana',# Hiragana to Katakana Conversion
     :capinput		=> '--cap-input',	# Convert hex after ':'
     :urlinput		=> '--url-input',	# decode percent-encoded octets
-    :numcharinput	=> '--numchar-input'	# Convert Unicode Character Reference
+    :numcharinput	=> '--numchar-input',	# Convert Unicode Character Reference
     :internalunicode	=> '--internal-unicode'	# Use Unicode as internal encoding
   }
   
