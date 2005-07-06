@@ -1012,7 +1012,7 @@ rb_false(obj)
 
 /*
  *  call-seq:
- *     obj =~ other  => false
+ *     obj =~ other  => nil
  *  
  *  Pattern Match---Overridden by descendents (notably
  *  <code>Regexp</code> and <code>String</code>) to provide meaningful
@@ -1023,7 +1023,7 @@ static VALUE
 rb_obj_pattern_match(obj1, obj2)
     VALUE obj1, obj2;
 {
-    return Qfalse;
+    return Qnil;
 }
 
 /**********************************************************************

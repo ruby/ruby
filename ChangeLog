@@ -1,3 +1,18 @@
+Wed Jul  6 18:45:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_obj_pattern_match): now returns nil.
+	  [ruby-core:05391]
+
+Mon Jul  4 14:35:52 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* sample/svr.rb: service can be stopped by ill-behaved client; use
+	  tsvr.rb instead. 
+
+Mon Jul  4 13:25:21 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* missing/erf.c: original erf.c by prof. Okumura is confirmed to
+	  be public domain.  reverted BSD implementation.
+
 Wed Jul  6 11:15:21 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (open_ifs_socket): new function.

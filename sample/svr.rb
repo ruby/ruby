@@ -1,6 +1,9 @@
 # socket example - server side
 # usage: ruby svr.rb
 
+# this server might be blocked by an ill-behaved client.
+# see tsvr.rb which is safe from client blocking.
+
 require "socket"
 
 gs = TCPserver.open(0)
@@ -22,10 +25,9 @@ loop do
 	print(s, " is gone\n")
 	s.close
 	socks.delete(s)
-      else
-	if str = s.gets
+      # single thread gets may block whole service
+      elsif str = s.gets   
 	  s.write(str)
-	end
       end
     end
   end
