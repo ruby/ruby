@@ -1996,21 +1996,6 @@ StartSockets(void)
 
     atexit((void (*)(void)) WSACleanup);
 
-#ifndef SO_SYNCHRONOUS_NONALERT
-#define SO_SYNCHRONOUS_NONALERT 0x20
-#endif
-
-    iSockOpt = SO_SYNCHRONOUS_NONALERT;
-    /*
-     * Enable the use of sockets as filehandles
-     */
-#ifndef SO_OPENTYPE
-#define SO_OPENTYPE     0x7008
-#endif
-
-    setsockopt(INVALID_SOCKET, SOL_SOCKET, SO_OPENTYPE,
-	       (char *)&iSockOpt, sizeof(iSockOpt));
-
     main_thread.handle = GetCurrentThreadHandle();
     main_thread.id = GetCurrentThreadId();
 
@@ -2274,6 +2259,49 @@ rb_w32_shutdown(int s, int how)
     return r;
 }
 
+static SOCKET
+open_ifs_socket(int af, int type, int protocol)
+{
+    char *s;
+    unsigned long proto_buffers_len = 0;
+    int error_code;
+    SOCKET out = INVALID_SOCKET;
+
+    if (WSAEnumProtocols(NULL, NULL, &proto_buffers_len) == SOCKET_ERROR) {
+	error_code = WSAGetLastError();
+	if (error_code == WSAENOBUFS) {
+	    WSAPROTOCOL_INFO *proto_buffers;
+	    int protocols_available = 0;
+
+	    proto_buffers = (WSAPROTOCOL_INFO *)malloc(proto_buffers_len);
+
+	    protocols_available =
+		WSAEnumProtocols(NULL, proto_buffers, &proto_buffers_len);
+	    if (protocols_available != SOCKET_ERROR) {
+		int i;
+		for (i = 0; i < protocols_available; i++) {
+		    WSAPROTOCOL_INFO proto_info;
+
+		    if ((af != AF_UNSPEC && af != proto_buffers[i].iAddressFamily) ||
+			(type != proto_buffers[i].iSocketType) ||
+			(protocol != 0 && protocol != proto_buffers[i].iProtocol))
+			continue;
+
+		    if ((proto_buffers[i].dwServiceFlags1 & XP1_IFS_HANDLES) == 0)
+			continue;
+
+		    out = WSASocket(af, type, protocol, &(proto_buffers[i]), 0, 0);
+		    break;
+		}
+	    }
+
+	    free(proto_buffers);
+	}
+    }
+
+    return out;
+}
+
 #undef socket
 
 int 
@@ -2286,7 +2314,7 @@ rb_w32_socket(int af, int type, int protocol)
 	StartSockets();
     }
     RUBY_CRITICAL({
-	s = socket(af, type, protocol);
+	s = open_ifs_socket(af, type, protocol);
 	if (s == INVALID_SOCKET) {
 	    errno = map_errno(WSAGetLastError());
 	    fd = -1;

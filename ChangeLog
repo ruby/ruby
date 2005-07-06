@@ -1,9 +1,17 @@
+Wed Jul  6 11:15:21 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (open_ifs_socket): new function.
+
+	* win32/win32.c (StartSockets, rb_w32_socket): use open_ifs_socket()
+	  instead of socket().
+	  all changes are derived from [ruby-core:5388].
+
 Wed Jul  6 00:15:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
-        * ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c,config.h}:
-          imported nkf.c 1.70 (support UTF-8-MAC)
+	* ext/nkf/nkf-utf8/{nkf.c,utf8tbl.c,config.h}:
+	  imported nkf.c 1.70 (support UTF-8-MAC)
 
-        * ext/nkf/lib/kconv.rb: add :utf8mac and :internalunicode
+	* ext/nkf/lib/kconv.rb: add :utf8mac and :internalunicode
 
 Tue Jul  5 23:44:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

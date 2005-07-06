@@ -31,14 +31,14 @@ class TestSDBM < Test::Unit::TestCase
     end
   end
 
-    def have_fork?
-      begin
-        fork{}
-        true
-      rescue NotImplementedError
-        false
-      end
+  def have_fork?
+    begin
+      fork{}
+      true
+    rescue NotImplementedError
+      false
     end
+  end
 
   def test_version
     assert(! SDBM.const_defined?(:VERSION))
