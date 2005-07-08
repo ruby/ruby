@@ -544,40 +544,28 @@ EOR
     end
 
     def test_category20
-
-      attrs = [
-        ["domain", CATEGORY_DOMAIN],
-      ]
+      values = [nil, CATEGORY_DOMAIN]
       
-      (attrs.size + 1).times do |i|
-        missing_attr = attrs[i]
-        if missing_attr
-          meth = :missing_attribute
-          args = ["category", missing_attr[0]]
-        else
-          meth = :nothing_raised
-          args = []
-        end
-
-        category_attrs = []
-        attrs.each_with_index do |attr, j|
-          unless i == j
-            category_attrs << %Q[#{attr[0]}="#{attr[1]}"]
-          end
-        end
+      values.each do |value|
+        domain = ""
+        domain << %Q[domain="#{value}"] if value
 
         ["", "Example Text"].each do |text|
-          assert_parse(make_rss20(<<-EOR), meth, *args)
+          rss_src = make_rss20(<<-EOR)
 #{make_channel20(%Q[
 #{make_item20(%Q[
-<category
-  #{category_attrs.join("\n")}>#{text}</category>
+<category #{domain}>#{text}</category>
     ])}
   ])}
 EOR
+          assert_parse(rss_src, :nothing_raised)
+
+          rss = RSS::Parser.parse(rss_src)
+          category = rss.items.last.categories.first
+          assert_equal(value, category.domain)
+          assert_equal(text, category.content)
         end
       end
-
     end
 
     def test_ignore
