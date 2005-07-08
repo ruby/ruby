@@ -1982,8 +1982,7 @@ StartSockets(void)
 {
     WORD version;
     WSADATA retdata;
-    int iSockOpt;
-    
+
     //
     // initalize the winsock interface and insure that it's
     // cleaned up at exit.
@@ -2262,7 +2261,6 @@ rb_w32_shutdown(int s, int how)
 static SOCKET
 open_ifs_socket(int af, int type, int protocol)
 {
-    char *s;
     unsigned long proto_buffers_len = 0;
     int error_code;
     SOCKET out = INVALID_SOCKET;
@@ -2280,8 +2278,6 @@ open_ifs_socket(int af, int type, int protocol)
 	    if (protocols_available != SOCKET_ERROR) {
 		int i;
 		for (i = 0; i < protocols_available; i++) {
-		    WSAPROTOCOL_INFO proto_info;
-
 		    if ((af != AF_UNSPEC && af != proto_buffers[i].iAddressFamily) ||
 			(type != proto_buffers[i].iSocketType) ||
 			(protocol != 0 && protocol != proto_buffers[i].iProtocol))
