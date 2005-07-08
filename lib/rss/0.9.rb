@@ -572,7 +572,7 @@ module RSS
           include RSS09
           
           [
-            ["domain", nil, true]
+            ["domain", nil, false]
           ].each do |name, uri, required|
             install_get_attribute(name, uri, required)
           end
@@ -588,7 +588,7 @@ module RSS
           private
           def _attrs
             [
-              ["domain", true]
+              ["domain", false]
             ]
           end
 
