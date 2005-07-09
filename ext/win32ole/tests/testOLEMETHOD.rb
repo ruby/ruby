@@ -84,4 +84,9 @@ class TestOLEMETHOD < RUNIT::TestCase
     m = WIN32OLE_METHOD.new(@excel_app, 'QueryInterface')
     assert_equal(0, m.offset_vtbl)
   end
+  def test_dispid
+    tobj = WIN32OLE_TYPE.new('Microsoft Shell Controls And Automation', 'FolderItem2')
+    method = WIN32OLE_METHOD.new(tobj, 'InvokeVerb')
+    assert_equal(1610743824, method.dispid)
+  end
 end

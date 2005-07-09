@@ -1,3 +1,14 @@
+Sat Jul  9 22:02:37 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (ole_method_dispid): convert dispid 
+	  in Ruby and C by INT2NUM and NUM2INT.
+
+	* ext/win32ole/win32ole.c (ole_invoke2): ditto.
+
+	* ext/win32ole/test/testWIN32OLE.rb: ditto.
+
+	* ext/win32ole/test/testOLEMETHOD.rb: ditto.
+
 Fri Jul  8 15:45:04 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/rss.rb (RSS::VERSION): 0.1.4 -> 0.1.5.
