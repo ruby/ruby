@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.1"
+#define WIN32OLE_VERSION "0.6.2"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2274,7 +2274,7 @@ ole_invoke2(self, dispid, args, types, dispkind)
         dispParams.rgdispidNamedArgs[0] = DISPID_PROPERTYPUT;
     }
 
-    hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, FIX2INT(dispid),
+    hr = pole->pDispatch->lpVtbl->Invoke(pole->pDispatch, NUM2INT(dispid),
                                          &IID_NULL, LOCALE_SYSTEM_DEFAULT,
                                          dispkind,
                                          &dispParams, &result,
@@ -4443,7 +4443,7 @@ ole_method_dispid(pTypeInfo, method_index)
     hr = pTypeInfo->lpVtbl->GetFuncDesc(pTypeInfo, method_index, &pFuncDesc);
     if (FAILED(hr))
         return dispid;
-    dispid = INT2FIX(pFuncDesc->memid); 
+    dispid = INT2NUM(pFuncDesc->memid); 
     pTypeInfo->lpVtbl->ReleaseFuncDesc(pTypeInfo, pFuncDesc);
     return dispid;
 }

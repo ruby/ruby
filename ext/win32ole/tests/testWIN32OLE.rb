@@ -303,6 +303,11 @@ class TestWin32OLE_WITH_MSI < RUNIT::TestCase
     @record[ "StringData", 1 ] =  'ffff'
     assert_equal('ffff', @record.StringData(1))
   end
+
+  def test__invoke
+    shell=WIN32OLE.new('Shell.Application')
+    assert_equal(shell.NameSpace(0).title, shell._invoke(0x60020002, [0], [WIN32OLE::VARIANT::VT_VARIANT]).title)
+  end
 end
 
 # ---------------------
