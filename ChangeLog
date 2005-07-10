@@ -1,12 +1,17 @@
+Mon Jul 11 08:31:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regparse.c (fetch_escaped_value): mask values following \c in
+	  regexp.  fixed: [ruby-dev:26500]
+
 Sun Jul 10 22:18:17 CEST 2005 Michael Neumann <mneumann@ruby-lang.org>
 
-	* lib/xmlrpc/server.rb (XMLRPC::Server): Switch from GServer over to 
+	* lib/xmlrpc/server.rb (XMLRPC::Server): Switch from GServer over to
 	  WEBrick. This makes file lib/xmlrpc/httpserver.rb obsolete (at least it is
 		no further used by the XML-RPC library).
 
 Mon Jul 11 02:50:23 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
-	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line): 
+	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line):
 	  mistook to merge the patch of [ruby-dev:26235] at
 	  revision 1.11.
 

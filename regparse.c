@@ -2361,7 +2361,7 @@ fetch_escaped_value(UChar** src, UChar* end, ScanEnv* env)
       if (c == MC_ESC(enc)) {
 	v = fetch_escaped_value(&p, end, env);
 	if (v < 0) return v;
-        c = (OnigCodePoint )v;
+        c = (OnigCodePoint )(v & 0x9f);
       }
       else if (c == '?')
 	c = 0177;
