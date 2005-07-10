@@ -1,3 +1,8 @@
+Mon Jul 11 08:31:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regex.c (read_special): fix parsing backslashes following \c in
+	  regexp.  fixed: [ruby-dev:26500]
+
 Sun Jul 10 22:18:17 CEST 2005	Michael Neumann	<mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/server.rb (XMLRPC::Server): Switch from GServer over to

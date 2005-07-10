@@ -1162,7 +1162,7 @@ read_special(p, pend, pp)
     PATFETCH_RAW(c);
     *pp = p;
     if (c == '\\') {
-      return read_special(p, pend, pp) | 0x80;
+      return read_special(--p, pend, pp) | 0x80;
     }
     else if (c == -1) return ~0;
     else {
@@ -1176,12 +1176,13 @@ read_special(p, pend, pp)
     PATFETCH_RAW(c);
     *pp = p;
     if (c == '\\') {
-      c = read_special(p, pend, pp);
+      c = read_special(--p, pend, pp);
     }
     else if (c == '?') return 0177;
     else if (c == -1) return ~0;
     return c & 0x9f;
   default:
+    *pp = p + 1;
     return read_backslash(c);
   }
 
@@ -1577,7 +1578,7 @@ re_compile_pattern(pattern, size, bufp)
 	  case 'C':
 	  case 'c':
 	    {
-	      char *pp;
+	      const char *pp;
 
 	      --p;
 	      c = read_special(p, pend, &pp);
