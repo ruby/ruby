@@ -1,3 +1,9 @@
+Sun Jul 10 22:18:17 CEST 2005	Michael Neumann	<mneumann@ruby-lang.org>
+
+	* lib/xmlrpc/server.rb (XMLRPC::Server): Switch from GServer over to
+	  WEBrick. This makes file lib/xmlrpc/httpserver.rb obsolete (at least it is
+		no further used by the XML-RPC library).
+
 Mon Jul 11 02:53:00 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line):

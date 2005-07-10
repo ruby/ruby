@@ -1,6 +1,6 @@
 =begin
 = xmlrpc/server.rb
-Copyright (C) 2001, 2002, 2003 by Michael Neumann (mneumann@ntecs.de)
+Copyright (C) 2001, 2002, 2003, 2005 by Michael Neumann (mneumann@ntecs.de)
 
 Released under the same term of license as Ruby.
 
@@ -145,7 +145,6 @@ the same class.
 require "xmlrpc/parser"
 require "xmlrpc/create"
 require "xmlrpc/config"
-require "xmlrpc/httpserver"
 require "xmlrpc/utils"         # ParserWriterChooseMixin
 
 
@@ -323,11 +322,11 @@ class BasicServer
   def dispatch(methodname, *args)
     for name, obj in @handler
       if obj.kind_of? Proc
-	next unless methodname == name
+        next unless methodname == name
       else
-	next unless methodname =~ /^#{name}(.+)$/
+        next unless methodname =~ /^#{name}(.+)$/
         next unless obj.respond_to? $1
-	obj = obj.method($1)
+        obj = obj.method($1)
       end
 
       if check_arity(obj, args.size)
@@ -573,9 +572,6 @@ class ModRubyServer < BasicServer
 
 end
 
-
-
-
 =begin
 = XMLRPC::Server
 == Synopsis
@@ -607,7 +603,7 @@ Implements a standalone XML-RPC server. The method (({serve}))) is left if a SIG
 program.
 
 == Superclass
-((<XMLRPC::BasicServer>))
+((<XMLRPC::WEBrickServlet>))
 
 == Class Methods
 --- XMLRPC::Server.new( port=8080, host="127.0.0.1", maxConnections=4, stdlog=$stdout, audit=true, debug=true, *a )
@@ -615,12 +611,10 @@ program.
     port ((|port|)) and accepts requests for the host ((|host|)), which is by default only the localhost. 
     The server is not started, to start it you have to call ((<serve|XMLRPC::Server#serve>)).
 
-    The parameters ((|maxConnections|)), ((|stdlog|)), ((|audit|)) and ((|debug|)) are passed to the HTTP server and
-    specify it's behaviour more precise.
+    Parameters ((|audit|)) and ((|debug|)) are obsolete!
 
     All additionally given parameters in ((|*a|)) are by-passed to ((<XMLRPC::BasicServer.new>)). 
     
-
 == Instance Methods
 --- XMLRPC::Server#serve
     Call this after you have added all you handlers to the server.
@@ -628,23 +622,19 @@ program.
 
 --- XMLRPC::Server#shutdown
     Stops and shuts the server down.
-
---- XMLRPC::Server#set_valid_ip( *ip_addr )
-    Specifies the valid IP addresses that are allowed to connect to the server.
-    Each IP is either a (({String})) or a (({Regexp})).
-
---- XMLRPC::Server#get_valid_ip
-    Return the via method ((<set_valid_ip|XMLRPC::Server#set_valid_ip>)) specified
-    valid IP addresses.
     
 =end
 
-class Server < BasicServer
+class WEBrickServlet < BasicServer; end # forward declaration
+
+class Server < WEBrickServlet
 
   def initialize(port=8080, host="127.0.0.1", maxConnections=4, stdlog=$stdout, audit=true, debug=true, *a)
     super(*a)
-    @server = ::HttpServer.new(self, port, host, maxConnections, stdlog, audit, debug)
-    @valid_ip = nil
+    require 'webrick'
+    @server = WEBrick::HTTPServer.new(:Port => port, :BindAddress => host, :MaxClients => maxConnections, 
+                                      :Logger => WEBrick::Log.new(stdlog))
+    @server.mount("/RPC2", self)
   end
   
   def serve
@@ -661,80 +651,8 @@ class Server < BasicServer
   def shutdown
     @server.shutdown
   end
-
-  def set_valid_ip(*ip_addr)
-    if ip_addr.size == 1 and ip_addr[0].nil?
-      @valid_ip = nil
-    else
-      @valid_ip = ip_addr
-    end
-  end
-
-  def get_valid_ip
-    @valid_ip
-  end
-
-  # methods that get called by HttpServer ------------------------------------------
-
-  def request_handler(request, response)
-    $stderr.puts "in request_handler" if $DEBUG
-
-    if request.method != "POST"
-      # Method not allowed
-      response.status = 405
-      return
-    end
-
-    if parse_content_type(request.header['Content-type']).first != "text/xml" 
-      # Bad request
-      response.status = 400
-      return
-    end 
-
-    length = request.content_length || 0
-    
-    unless length > 0
-      # Length required
-      response.status = 411
-      return
-    end
-
-    data = request.data.read(length)
-
-    if data.nil? or data.size != length
-      # Bad request
-      response.status = 400
-      return
-    end
-
-    resp = process(data)
-    raise if resp.nil? or resp.size <= 0  # => Internal Server Error
-
-    response.status = 200
-    response.header['Content-Length'] = resp.size
-    response.header['Content-Type']   = "text/xml"
-    response.body = resp 
-    
-   end
-
-   ##
-   # Is called before request_handler and should return true if
-   # the client is allowed to connect to the server.
-   # `io' is a Socket object.
-   def ip_auth_handler(io)
-     if @valid_ip
-       client_ip = io.peeraddr[3]
-       @valid_ip.each { |ip|
-         return true if client_ip =~ ip
-       }
-       false
-     else
-       true
-     end
-   end
-  
+ 
 end
-
 
 =begin
 = XMLRPC::WEBrickServlet
@@ -765,6 +683,17 @@ end
     httpserver.mount("/RPC2", s)
     trap("HUP") { httpserver.shutdown }   # use 1 instead of "HUP" on Windows
     httpserver.start
+
+== Instance Methods
+
+--- XMLRPC::WEBrickServlet#set_valid_ip( *ip_addr )
+    Specifies the valid IP addresses that are allowed to connect to the server.
+    Each IP is either a (({String})) or a (({Regexp})).
+
+--- XMLRPC::WEBrickServlet#get_valid_ip
+    Return the via method ((<set_valid_ip|XMLRPC::Server#set_valid_ip>)) specified
+    valid IP addresses.
+ 
 == Description
 Implements a servlet for use with WEBrick, a pure Ruby (HTTP-) server framework.
 
@@ -777,6 +706,7 @@ class WEBrickServlet < BasicServer
   def initialize(*a)
     super
     require "webrick/httpstatus"
+    @valid_ip = nil
   end
 
   # deprecated from WEBrick/1.2.2. 
@@ -790,7 +720,24 @@ class WEBrickServlet < BasicServer
     self
   end
 
+  def set_valid_ip(*ip_addr)
+    if ip_addr.size == 1 and ip_addr[0].nil?
+      @valid_ip = nil
+    else
+      @valid_ip = ip_addr
+    end
+  end
+
+  def get_valid_ip
+    @valid_ip
+  end
+
   def service(request, response)
+
+    if @valid_ip 
+      raise WEBrick::HTTPStatus::Forbidden unless @valid_ip.any? { |ip| request.peeraddr[3] =~ ip }
+    end
+
     if request.request_method != "POST"
       raise WEBrick::HTTPStatus::MethodNotAllowed,
             "unsupported method `#{request.request_method}'."
