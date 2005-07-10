@@ -1,6 +1,11 @@
+Sun Jul 10 12:47:01 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/debug.rb (debug_command): added a deficient format specifier.
+	  fixed: [ruby-core:05419]
+
 Sat Jul  9 21:28:46 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_method_dispid): convert dispid 
+	* ext/win32ole/win32ole.c (ole_method_dispid): convert dispid
 	  in Ruby and C by INT2NUM and NUM2INT.
 
 	* ext/win32ole/win32ole.c (ole_invoke2): ditto.

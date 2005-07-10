@@ -324,7 +324,7 @@ class Context
 	when /^\s*wat(?:ch)?\s+(.+)$/
 	  exp = $1
 	  break_points.push [true, 1, exp]
-	  stdout.printf "Set watchpoint %d\n", break_points.size, exp
+	  stdout.printf "Set watchpoint %d:%s\n", break_points.size, exp
 
 	when /^\s*b(?:reak)?$/
 	  if break_points.find{|b| b[1] == 0}
