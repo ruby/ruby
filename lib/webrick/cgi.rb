@@ -148,9 +148,9 @@ module WEBrick
 
       def request_line
         meth = @env["REQUEST_METHOD"] || "GET"
-        url = (@env["SCRIPT_NAME"] || File.expand_path($0)).dup
-        url << @env["PATH_INFO"].to_s
         unless url = @env["REQUEST_URI"]
+          url = (@env["SCRIPT_NAME"] || File.expand_path($0)).dup
+          url << @env["PATH_INFO"].to_s
           url = WEBrick::HTTPUtils.escape_path(url)
           if query_string = @env["QUERY_STRING"]
             unless query_string.empty?
