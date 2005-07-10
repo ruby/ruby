@@ -1,3 +1,9 @@
+Mon Jul 11 02:53:00 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#request_line):
+	  mistook in merging the patch of [ruby-dev:26235] at
+	  revision 1.4.2.6.
+
 Sun Jul 10 23:58:04 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#unlink): try Dir.unlink first to
