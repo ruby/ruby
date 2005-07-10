@@ -1,3 +1,9 @@
+Sun Jul 10 23:58:04 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#unlink): try Dir.unlink first to
+	  avoid unlink a directory by root.
+	  cf. [ruby-dev:26237]
+
 Sun Jul 10 12:47:01 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/debug.rb (debug_command): added a deficient format specifier.
