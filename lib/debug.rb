@@ -255,7 +255,7 @@ class Context
 
   def debug_command(file, line, id, binding)
     MUTEX.lock
-    unless $debugger_restart
+    unless defined?($debugger_restart) and $debugger_restart
       callcc{|c| $debugger_restart = c} 
       at_exit {
         $debugger_restart.call
@@ -330,7 +330,7 @@ class Context
 	when /^\s*wat(?:ch)?\s+(.+)$/
 	  exp = $1
 	  break_points.push [true, 1, exp]
-	  stdout.printf "Set watchpoint %d\n", break_points.size, exp
+	  stdout.printf "Set watchpoint %d:%s\n", break_points.size, exp
 
 	when /^\s*b(?:reak)?$/
 	  if break_points.find{|b| b[1] == 0}
