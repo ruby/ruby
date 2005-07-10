@@ -869,9 +869,9 @@ class Pathname    # * mixed *
   # <tt>Dir.unlink</tt> as necessary.
   def unlink()
     begin
-      File.unlink @path
-    rescue SystemCallError
       Dir.unlink @path
+    rescue Errno::ENOTDIR
+      File.unlink @path
     end
   end
   alias delete unlink
