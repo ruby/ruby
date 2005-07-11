@@ -203,7 +203,6 @@ static void rb_f_END _((void));
 static VALUE rb_f_block_given_p _((void));
 static VALUE block_pass _((VALUE,NODE*));
 static VALUE rb_cMethod;
-static VALUE method_call _((int, VALUE*, VALUE));
 static VALUE rb_cUnboundMethod;
 static VALUE umethod_bind _((VALUE, VALUE));
 static VALUE rb_mod_define_method _((int, VALUE*, VALUE));
@@ -8524,8 +8523,8 @@ proc_invoke(proc, args, self, klass)
  *     	from prog.rb:5
  */
 
-static VALUE
-proc_call(proc, args)
+VALUE
+rb_proc_call(proc, args)
     VALUE proc, args;		/* OK */
 {
     return proc_invoke(proc, args, Qundef, 0);
@@ -9046,7 +9045,7 @@ method_unbind(obj)
  *     m.call   #=> "Hello, @iv = Fred"
  */
 
-static VALUE
+VALUE
 rb_obj_method(obj, vid)
     VALUE obj;
     VALUE vid;
@@ -9126,8 +9125,8 @@ method_clone(self)
  *     m.call(20)   #=> 32
  */
 
-static VALUE
-method_call(argc, argv, method)
+VALUE
+rb_method_call(argc, argv, method)
     int argc;
     VALUE *argv;
     VALUE method;
@@ -9454,7 +9453,7 @@ bmcall(args, method)
     volatile VALUE a;
 
     a = svalue_to_avalue(args);
-    return method_call(RARRAY(a)->len, RARRAY(a)->ptr, method);
+    return rb_method_call(RARRAY(a)->len, RARRAY(a)->ptr, method);
 }
 
 VALUE
@@ -9654,9 +9653,9 @@ Init_Proc()
 
     rb_define_method(rb_cProc, "clone", proc_clone, 0);
     rb_define_method(rb_cProc, "dup", proc_dup, 0);
-    rb_define_method(rb_cProc, "call", proc_call, -2);
+    rb_define_method(rb_cProc, "call", rb_proc_call, -2);
     rb_define_method(rb_cProc, "arity", proc_arity, 0);
-    rb_define_method(rb_cProc, "[]", proc_call, -2);
+    rb_define_method(rb_cProc, "[]", rb_proc_call, -2);
     rb_define_method(rb_cProc, "==", proc_eq, 1);
     rb_define_method(rb_cProc, "eql?", proc_eq, 1);
     rb_define_method(rb_cProc, "hash", proc_hash, 0);
@@ -9674,8 +9673,8 @@ Init_Proc()
     rb_define_method(rb_cMethod, "eql?", method_eq, 1);
     rb_define_method(rb_cMethod, "hash", method_hash, 0);
     rb_define_method(rb_cMethod, "clone", method_clone, 0);
-    rb_define_method(rb_cMethod, "call", method_call, -1);
-    rb_define_method(rb_cMethod, "[]", method_call, -1);
+    rb_define_method(rb_cMethod, "call", rb_method_call, -1);
+    rb_define_method(rb_cMethod, "[]", rb_method_call, -1);
     rb_define_method(rb_cMethod, "arity", method_arity_m, 0);
     rb_define_method(rb_cMethod, "inspect", method_inspect, 0);
     rb_define_method(rb_cMethod, "to_s", method_inspect, 0);

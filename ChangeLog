@@ -1,3 +1,11 @@
+Mon Jul 11 23:50:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c, intern.h (rb_proc_call, rb_obj_method, rb_method_call):
+	  export.
+
+	* ext/enumerator/enumerator.c (enumerator_with_index): [EXPERIMENTAL]
+	  added a new method Enumerator#with_index.  [ruby-talk:147728]
+
 Mon Jul 11 08:31:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regparse.c (fetch_escaped_value): mask values following \c in
@@ -1462,7 +1470,7 @@ Tue Apr 12 19:30:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (OptionParser#make_switch, OptionParser#order!):
 	  added non-option and end-of-args handler.  [ruby-talk:136878]
-	  (EXPERIMENTAL
+	  [EXPERIMENTAL]
 
 Tue Apr 12 15:33:09 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
