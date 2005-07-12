@@ -1,3 +1,7 @@
+Tue Jul 12 23:32:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: keep curdir unexpanded.
+
 Mon Jul 11 08:31:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* regex.c (read_special): fix parsing backslashes following \c in
