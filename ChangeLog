@@ -1,3 +1,7 @@
+Tue Jul 12 23:32:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb: keep curdir unexpanded.
+
 Mon Jul 11 23:50:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c, intern.h (rb_proc_call, rb_obj_method, rb_method_call):

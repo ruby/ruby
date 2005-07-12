@@ -1242,8 +1242,11 @@ end
 Config::CONFIG["srcdir"] = CONFIG["srcdir"] =
   $srcdir = arg_config("--srcdir", File.dirname($0))
 $configure_args["--topsrcdir"] ||= $srcdir
-$curdir = arg_config("--curdir", Dir.pwd)
-Config.expand(curdir = $curdir.dup)
+if $curdir = arg_config("--curdir")
+  Config.expand(curdir = $curdir.dup)
+else
+  curdir = $curdir = "."
+end
 unless File.expand_path(Config::CONFIG["topdir"]) == File.expand_path(curdir)
   CONFIG["topdir"] = $curdir
   Config::CONFIG["topdir"] = curdir
