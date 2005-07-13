@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-07-05"
+#define TCLTKLIB_RELEASE_DATE "2005-07-13"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -1790,7 +1790,7 @@ lib_do_one_event_core(argc, argv, self, is_ip)
     int flags;
     int found_event;
 
-    if (eventloop_thread) {
+    if (!NIL_P(eventloop_thread)) {
         rb_raise(rb_eRuntimeError, "eventloop is already running");
     }
 
@@ -3084,7 +3084,8 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
     }
 #endif
 
-    if (rb_thread_alone() || eventloop_thread == current_thread) {
+    if (rb_thread_alone() 
+        || NIL_P(eventloop_thread) || eventloop_thread == current_thread) {
 #if TCL_MAJOR_VERSION >= 8
         DUMP1("call ip_rbUpdateObjCmd");
         return ip_rbUpdateObjCmd(clientData, interp, objc, objv);
@@ -5477,10 +5478,10 @@ tk_funcall(func, argc, argv, obj)
     }
 
     if (NIL_P(eventloop_thread) || current == eventloop_thread) {
-        if (eventloop_thread) {
-            DUMP2("tk_funcall from current eventloop %lx", current);
-        } else {
+        if (NIL_P(eventloop_thread)) {
             DUMP2("tk_funcall from thread:%lx but no eventloop", current);
+        } else {
+            DUMP2("tk_funcall from current eventloop %lx", current);
         }
         result = (func)(ip_obj, argc, argv);
         if (rb_obj_is_kind_of(result, rb_eException)) {
@@ -5792,10 +5793,10 @@ ip_eval(self, str)
     rb_thread_critical = thr_crit_bup;
 
     if (NIL_P(eventloop_thread) || current == eventloop_thread) {
-        if (eventloop_thread) {
-            DUMP2("eval from current eventloop %lx", current);
-        } else {
+        if (NIL_P(eventloop_thread)) {
             DUMP2("eval from thread:%lx but no eventloop", current);
+        } else {
+            DUMP2("eval from current eventloop %lx", current);
         }
         result = ip_eval_real(self, RSTRING(str)->ptr, RSTRING(str)->len);
         if (rb_obj_is_kind_of(result, rb_eException)) {
@@ -6961,10 +6962,10 @@ ip_invoke_with_position(argc, argv, obj, position)
         rb_raise(rb_eArgError, "command name missing");
     }
     if (NIL_P(eventloop_thread) || current == eventloop_thread) {
-        if (eventloop_thread) {
-            DUMP2("invoke from current eventloop %lx", current);
-        } else {
+        if (NIL_P(eventloop_thread)) {
             DUMP2("invoke from thread:%lx but no eventloop", current);
+        } else {
+            DUMP2("invoke from current eventloop %lx", current);
         }
         result = ip_invoke_real(argc, argv, ip_obj);
         if (rb_obj_is_kind_of(result, rb_eException)) {
