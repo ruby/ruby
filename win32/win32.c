@@ -152,6 +152,7 @@ static struct {
     {	ERROR_NEGATIVE_SEEK,		EINVAL		},
     {	ERROR_SEEK_ON_DEVICE,		EACCES		},
     {	ERROR_DIR_NOT_EMPTY,		ENOTEMPTY	},
+    {	ERROR_DIRECTORY,		ENOTDIR		},
     {	ERROR_NOT_LOCKED,		EACCES		},
     {	ERROR_BAD_PATHNAME,		ENOENT		},
     {	ERROR_MAX_THRDS_REACHED,	EAGAIN		},
@@ -3623,19 +3624,17 @@ rb_w32_isatty(int fd)
 }
 #endif
 
-#undef mkdir
-#undef rmdir
 int
 rb_w32_mkdir(const char *path, int mode)
 {
     int ret = -1;
     RUBY_CRITICAL(do {
-	if (mkdir(path) == -1)
+	if (CreateDirectory(path, NULL) == FALSE) {
+	    errno = map_errno(GetLastError());
 	    break;
+	}
 	if (chmod(path, mode) == -1) {
-	    int save_errno = errno;
-	    rmdir(path);
-	    errno = save_errno;
+	    RemoveDirectory(path);
 	    break;
 	}
 	ret = 0;
@@ -3646,37 +3645,38 @@ rb_w32_mkdir(const char *path, int mode)
 int
 rb_w32_rmdir(const char *path)
 {
-    DWORD attr;
-    int ret;
+    int ret = 0;
     RUBY_CRITICAL({
-	attr = GetFileAttributes(path);
+	const DWORD attr = GetFileAttributes(path);
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
-	    attr &= ~FILE_ATTRIBUTE_READONLY;
-	    SetFileAttributes(path, attr);
+	    SetFileAttributes(path, attr & ~FILE_ATTRIBUTE_READONLY);
 	}
-	ret = rmdir(path);
-	if (ret < 0 && attr != (DWORD)-1) {
-	    SetFileAttributes(path, attr);
+	if (RemoveDirectory(path) == FALSE) {
+	    errno = map_errno(GetLastError());
+	    ret = -1;
+	    if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
+		SetFileAttributes(path, attr);
+	    }
 	}
     });
     return ret;
 }
 
-#undef unlink
 int
 rb_w32_unlink(const char *path)
 {
-    DWORD attr;
-    int ret;
+    int ret = 0;
     RUBY_CRITICAL({
-	attr = GetFileAttributes(path);
+	const DWORD attr = GetFileAttributes(path);
 	if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
-	    attr &= ~FILE_ATTRIBUTE_READONLY;
-	    SetFileAttributes(path, attr);
+	    SetFileAttributes(path, attr & ~FILE_ATTRIBUTE_READONLY);
 	}
-	ret = unlink(path);
-	if (ret < 0 && attr != (DWORD)-1) {
-	    SetFileAttributes(path, attr);
+	if (DeleteFile(path) == FALSE) {
+	    errno = map_errno(GetLastError());
+	    ret = -1;
+	    if (attr != (DWORD)-1 && (attr & FILE_ATTRIBUTE_READONLY)) {
+		SetFileAttributes(path, attr);
+	    }
 	}
     });
     return ret;
