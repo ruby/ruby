@@ -144,13 +144,14 @@ struct parser_params {
     int parser_lex_gets_ptr;
     VALUE (*parser_lex_gets) _((struct parser_params*,VALUE));
     struct local_vars *parser_lvtbl;
+    int parser_ruby__end__seen;
 #ifndef RIPPER
     /* Ruby core only */
     NODE *parser_eval_tree_begin;
     NODE *parser_eval_tree;
+    VALUE debug_lines;
 #else
     /* Ripper only */
-    int parser_ruby__end__seen;
     int parser_ruby_sourceline;
     VALUE parser_ruby_sourcefile;
     char *tokp;
@@ -199,10 +200,12 @@ static int parser_yyerror _((struct parser_params*, const char*));
 #define lex_gets_ptr		(parser->parser_lex_gets_ptr)
 #define lex_gets		(parser->parser_lex_gets)
 #define lvtbl			(parser->parser_lvtbl)
-#ifdef RIPPER
 #define ruby__end__seen		(parser->parser_ruby__end__seen)
+#ifdef RIPPER
 #define ruby_sourceline		(parser->parser_ruby_sourceline)
 #define ruby_sourcefile		(parser->parser_ruby_sourcefile)
+#else
+#define ruby_debug_lines	(parser->debug_lines)
 #endif
 
 static int yylex _((void*, void*));
@@ -4438,9 +4441,6 @@ parser_yyerror(parser, msg)
 static void parser_prepare _((struct parser_params *parser));
 
 #ifndef RIPPER
-int ruby__end__seen;
-static VALUE ruby_debug_lines;
-
 static NODE*
 yycompile(parser, f, line)
     struct parser_params *parser;
@@ -4547,7 +4547,18 @@ rb_compile_string(f, s, line)
     VALUE s;
     int line;
 {
-    VALUE volatile vparser = rb_parser_s_new();
+    VALUE volatile vparser = rb_parser_new();
+
+    return rb_parser_compile_string(vparser, f, s, line);
+}
+
+NODE*
+rb_parser_compile_string(vparser, f, s, line)
+    volatile VALUE vparser;
+    const char *f;
+    VALUE s;
+    int line;
+{
     struct parser_params *parser;
 
     Data_Get_Struct(vparser, struct parser_params, parser);
@@ -4568,6 +4579,15 @@ rb_compile_cstr(f, s, len, line)
     return rb_compile_string(f, rb_str_new(s, len), line);
 }
 
+NODE*
+rb_parser_compile_cstr(vparser, f, s, len, line)
+    volatile VALUE vparser;
+    const char *f, *s;
+    int len, line;
+{
+    return rb_parser_compile_string(vparser, f, rb_str_new(s, len), line);
+}
+
 static VALUE lex_io_gets _((struct parser_params *, VALUE));
 static VALUE
 lex_io_gets(parser, io)
@@ -4583,7 +4603,18 @@ rb_compile_file(f, file, start)
     VALUE file;
     int start;
 {
-    VALUE volatile vparser = rb_parser_s_new();
+    VALUE volatile vparser = rb_parser_new();
+
+    return rb_parser_compile_file(vparser, f, file, start);
+}
+
+NODE*
+rb_parser_compile_file(vparser, f, file, start)
+    volatile VALUE vparser;
+    const char *f;
+    VALUE file;
+    int start;
+{
     struct parser_params *parser;
     
     Data_Get_Struct(vparser, struct parser_params, parser);
@@ -6673,7 +6704,7 @@ parser_yylex(parser)
 	    }
 
 	    if (lex_state != EXPR_DOT) {
-		struct kwtable *kw;
+		const struct kwtable *kw;
 
 		/* See if it is a reserved word.  */
 		kw = rb_reserved_word(tok(), toklen());
@@ -8159,7 +8190,6 @@ dyna_init_gen(parser, node, pre)
 void
 rb_gc_mark_parser()
 {
-    rb_gc_mark(ruby_debug_lines);
 }
 
 NODE*
@@ -8211,7 +8241,7 @@ rb_parser_while_loop(node, chop, split)
     return node;
 }
 
-static struct {
+static const struct {
     ID token;
     char *name;
 } op_tbl[] = {
@@ -8257,22 +8287,23 @@ static struct {
     {0,	0}
 };
 
-static st_table *sym_tbl;
-static st_table *sym_rev_tbl;
+static struct symbols {
+    ID last_id;
+    st_table *tbl;
+    st_table *rev;
+} global_symbols = {tLAST_TOKEN};
 
 void
 Init_sym()
 {
-    sym_tbl = st_init_strtable_with_size(200);
-    sym_rev_tbl = st_init_numtable_with_size(200);
+    global_symbols.tbl = st_init_strtable_with_size(200);
+    global_symbols.rev = st_init_numtable_with_size(200);
 }
-
-static ID last_id = tLAST_TOKEN;
 
 static ID
 internal_id()
 {
-    return ID_INTERNAL | (++last_id << ID_SCOPE_SHIFT);
+    return ID_INTERNAL | (++global_symbols.last_id << ID_SCOPE_SHIFT);
 }
 
 ID
@@ -8283,7 +8314,7 @@ rb_intern(name)
     ID id;
     int last;
 
-    if (st_lookup(sym_tbl, (st_data_t)name, (st_data_t *)&id))
+    if (st_lookup(global_symbols.tbl, (st_data_t)name, (st_data_t *)&id))
 	return id;
 
     last = strlen(name)-1;
@@ -8343,11 +8374,11 @@ rb_intern(name)
 	m += mbclen(*m);
     }
     if (*m) id = ID_JUNK;
-    id |= ++last_id << ID_SCOPE_SHIFT;
+    id |= ++global_symbols.last_id << ID_SCOPE_SHIFT;
   id_regist:
     name = strdup(name);
-    st_add_direct(sym_tbl, (st_data_t)name, id);
-    st_add_direct(sym_rev_tbl, id, (st_data_t)name);
+    st_add_direct(global_symbols.tbl, (st_data_t)name, id);
+    st_add_direct(global_symbols.rev, id, (st_data_t)name);
     return id;
 }
 
@@ -8366,7 +8397,7 @@ rb_id2name(id)
 	}
     }
 
-    if (st_lookup(sym_rev_tbl, id, (st_data_t *)&name))
+    if (st_lookup(global_symbols.rev, id, (st_data_t *)&name))
 	return name;
 
     if (is_attrset_id(id)) {
@@ -8419,9 +8450,9 @@ symbols_i(key, value, ary)
 VALUE
 rb_sym_all_symbols()
 {
-    VALUE ary = rb_ary_new2(sym_tbl->num_entries);
+    VALUE ary = rb_ary_new2(global_symbols.tbl->num_entries);
 
-    st_foreach(sym_tbl, symbols_i, ary);
+    st_foreach(global_symbols.tbl, symbols_i, ary);
     return ary;
 }
 
@@ -8470,7 +8501,7 @@ special_local_set(c, val)
     char c;
     VALUE val;
 {
-    VALUE volatile vparser = rb_parser_s_new();
+    VALUE volatile vparser = rb_parser_new();
     struct parser_params *parser;
     int cnt;
     
@@ -8552,6 +8583,7 @@ parser_initialize(parser)
     parser->parser_lex_p = 0;
     parser->parser_lex_pend = 0;
     parser->parser_lvtbl = 0;
+    parser->parser_ruby__end__seen = 0;
 #ifndef RIPPER
     parser->parser_eval_tree_begin = 0;
     parser->parser_eval_tree = 0;
@@ -8577,6 +8609,7 @@ parser_mark(ptr)
 #ifndef RIPPER
     rb_gc_mark((VALUE)p->parser_eval_tree_begin) ;
     rb_gc_mark((VALUE)p->parser_eval_tree) ;
+    rb_gc_mark(p->debug_lines);
 #else
     rb_gc_mark(p->parser_ruby_sourcefile);
     rb_gc_mark(p->delayed);
@@ -8616,14 +8649,31 @@ parser_new()
     return p;
 }
 
-static VALUE
-rb_parser_s_new()
+VALUE
+rb_parser_new()
 {
     struct parser_params *p = parser_new();
 
     return Data_Wrap_Struct(0, parser_mark, parser_free, p);
 }
 #endif
+
+/*
+ *  call-seq:
+ *    ripper#end_seen?   -> Boolean
+ *
+ *  Return if parsed source ended by +\_\_END\_\_+.
+ *  This number starts from 1.
+ */
+VALUE
+rb_parser_end_seen_p(vparser)
+    VALUE vparser;
+{
+    struct parser_params *parser;
+
+    Data_Get_Struct(vparser, struct parser_params, parser);
+    return ruby__end__seen ? Qtrue : Qfalse;
+}
 
 #ifdef RIPPER
 #ifdef RIPPER_DEBUG
@@ -8976,7 +9026,6 @@ ripper_initialize(argc, argv, self)
     parser_initialize(parser);
     parser->parser_ruby_sourcefile = fname;
     parser->parser_ruby_sourceline = NIL_P(lineno) ? 0 : NUM2INT(lineno) - 1;
-    parser->parser_ruby__end__seen = 0;
 
     return Qnil;
 }
@@ -9147,6 +9196,7 @@ Init_ripper()
     rb_define_method(Ripper, "parse", ripper_parse, 0);
     rb_define_method(Ripper, "column", ripper_column, 0);
     rb_define_method(Ripper, "lineno", ripper_lineno, 0);
+    rb_define_method(Ripper, "end_seen?", rb_parser_end_seen_p, 0);
 #ifdef RIPPER_DEBUG
     rb_define_method(rb_mKernel, "assert_Qundef", ripper_assert_Qundef, 2);
     rb_define_method(rb_mKernel, "rawVALUE", ripper_value, 1);

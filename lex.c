@@ -1,7 +1,7 @@
 /* C code produced by gperf version 2.7.2 */
-/* Command-line: gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' keywords  */
+/* Command-line: gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k'1,3,$' keywords  */
 struct kwtable {char *name; int id[2]; enum lex_state_e state;};
-struct kwtable *rb_reserved_word _((const char *, unsigned int));
+const struct kwtable *rb_reserved_word _((const char *, unsigned int));
 #ifndef RIPPER
 ;
 
@@ -24,7 +24,7 @@ hash (str, len)
      register const char *str;
      register unsigned int len;
 {
-  static unsigned char asso_values[] =
+  static const unsigned char asso_values[] =
     {
       56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
       56, 56, 56, 56, 56, 56, 56, 56, 56, 56,
@@ -71,12 +71,12 @@ hash (str, len)
 #ifdef __GNUC__
 __inline
 #endif
-struct kwtable *
+const struct kwtable *
 rb_reserved_word (str, len)
      register const char *str;
      register unsigned int len;
 {
-  static struct kwtable wordlist[] =
+  static const struct kwtable wordlist[] =
     {
       {""}, {""}, {""}, {""}, {""}, {""},
       {"end", {kEND, kEND}, EXPR_END},

@@ -154,7 +154,7 @@ $(srcdir)/configure: $(srcdir)/configure.in
 
 lex.c: keywords
 	@-$(RM) $@
-	gperf -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@ || \
+	gperf -C -p -j1 -i 1 -g -o -t -N rb_reserved_word -k1,3,$$ $? > $@ || \
 	cp "$(srcdir)/$@" .
 
 .y.c:

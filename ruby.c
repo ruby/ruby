@@ -388,7 +388,7 @@ require_libraries()
 	int state;
 
 	ruby_current_node = 0;
-	rb_protect((VALUE (*)(VALUE))rb_require, (VALUE)list->name, &state);
+	rb_protect((VALUE (*)_((VALUE)))rb_require, (VALUE)list->name, &state);
 	if (state) rb_jump_tag(state);
 	tmp = list->next;
 	free(list->name);
@@ -864,14 +864,13 @@ proc_options(argc, argv)
     }
 }
 
-extern int ruby__end__seen;
-
 static void
 load_file(fname, script)
     const char *fname;
     int script;
 {
     extern VALUE rb_stdin;
+    VALUE parser;
     VALUE f;
     int line_start = 1;
 
@@ -984,8 +983,9 @@ load_file(fname, script)
 	require_libraries();	/* Why here? unnatural */
 	if (NIL_P(c)) return;
     }
-    ruby_eval_tree = rb_compile_file(fname, f, line_start);
-    if (script && ruby__end__seen) {
+    parser = rb_parser_new();
+    ruby_eval_tree = rb_parser_compile_file(parser, fname, f, line_start);
+    if (script && rb_parser_end_seen_p(parser)) {
 	rb_define_global_const("DATA", f);
     }
     else if (f != rb_stdin) {

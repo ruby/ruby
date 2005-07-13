@@ -350,6 +350,13 @@ typedef struct RNode {
 
 #define NOEX_UNDEF     NOEX_NOSUPER
 
+VALUE rb_parser_new _((void));
+VALUE rb_parser_end_seen_p _((VALUE));
+
+NODE *rb_parser_compile_cstr _((volatile VALUE, const char*, const char*, int, int));
+NODE *rb_parser_compile_string _((volatile VALUE, const char*, VALUE, int));
+NODE *rb_parser_compile_file _((volatile VALUE, const char*, VALUE, int));
+
 NODE *rb_compile_cstr _((const char*, const char*, int, int));
 NODE *rb_compile_string _((const char*, VALUE, int));
 NODE *rb_compile_file _((const char*, VALUE, int));

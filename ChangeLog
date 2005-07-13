@@ -1,3 +1,7 @@
+Wed Jul 13 22:44:00 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y: remove static variables.  [ruby-dev:26530]
+
 Wed Jul 13 19:36:29 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_mkdir): should set EEXIST (not EACCES)
