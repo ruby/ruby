@@ -1,3 +1,7 @@
+Thu Jul 14 00:45:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* LEGAL (ext/nkf/nkf-utf8): updated from nkf1.7 to nkf-utf8.
+
 Wed Jul 13 19:37:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_mkdir): should set EEXIST (not EACCES)
