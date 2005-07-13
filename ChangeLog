@@ -1,7 +1,7 @@
 Wed Jul 13 19:36:29 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_mkdir): should set EEXIST (not EACCES)
-	  if file or directory already exists. (bcc32)
+	  if file or directory already exists. (bcc32) [ruby-dev:26508]
 
 	* win32/win32.c (rb_w32_rmdir): should set ENOTDIR (not EINVAL)
 	  if it is not directory. (bcc32, win32)
