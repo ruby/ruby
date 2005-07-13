@@ -1,3 +1,9 @@
+Wed Jul 13 12:40:00 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: TclTkLib.do_one_event doesn't work.
+
+	* ext/tk/lib/tk.rb: Tk.thread_update is available.
+
 Tue Jul 12 23:32:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb: keep curdir unexpanded.

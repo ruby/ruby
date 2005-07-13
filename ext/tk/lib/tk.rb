@@ -1940,8 +1940,10 @@ module Tk
     self
   end
 
-=begin
-  #  See tcltklib.c for the reason of why the following methods are disabled. 
+  # NOTE::
+  #   If no eventloop-thread is running, "thread_update" method is same 
+  #   to "update" method. Else, "thread_update" method waits to complete 
+  #   idletask operation on the eventloop-thread. 
   def Tk.thread_update(idle=nil)
     if idle
       tk_call_without_enc('thread_update', 'idletasks')
@@ -1952,7 +1954,6 @@ module Tk
   def Tk.thread_update_idletasks
     thread_update(true)
   end
-=end
 
   def Tk.lower_window(win, below=None)
     tk_call('lower', _epath(win), _epath(below))
@@ -4194,7 +4195,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-07-05'.freeze
+  RELEASE_DATE = '2005-07-13'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
