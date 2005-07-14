@@ -17,6 +17,15 @@
 VALUE rb_mEnumerable;
 static ID id_each, id_eqq, id_cmp;
 
+static VALUE
+enumeratorize(argc, argv, obj)
+    int argc;
+    VALUE *argv;
+    VALUE obj;
+{
+    return rb_enumeratorize(obj, ID2SYM(rb_frame_this_func()), argc, argv);
+}
+
 VALUE
 rb_each(obj)
     VALUE obj;
@@ -114,6 +123,8 @@ enum_find(argc, argv, obj)
     VALUE if_none;
 
     rb_scan_args(argc, argv, "01", &if_none);
+    if (!rb_block_given_p())
+	return enumeratorize(argc, argv, obj);
     rb_iterate(rb_each, obj, find_i, (VALUE)&memo);
     if (memo != Qundef) {
 	return memo;
@@ -151,8 +162,11 @@ static VALUE
 enum_find_all(obj)
     VALUE obj;
 {
-    VALUE ary = rb_ary_new();
+    VALUE ary;
     
+    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+
+    ary = rb_ary_new();
     rb_iterate(rb_each, obj, find_all_i, ary);
 
     return ary;
@@ -183,8 +197,11 @@ static VALUE
 enum_reject(obj)
     VALUE obj;
 {
-    VALUE ary = rb_ary_new();
+    VALUE ary;
     
+    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+
+    ary = rb_ary_new();
     rb_iterate(rb_each, obj, reject_i, ary);
 
     return ary;
@@ -225,9 +242,12 @@ static VALUE
 enum_collect(obj)
     VALUE obj;
 {
-    VALUE ary = rb_ary_new();
+    VALUE ary;
 
-    rb_iterate(rb_each, obj, rb_block_given_p() ? collect_i : collect_all, ary);
+    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+
+    ary = rb_ary_new();
+    rb_iterate(rb_each, obj, collect_i, ary);
 
     return ary;
 }
@@ -342,6 +362,8 @@ enum_partition(obj)
     VALUE obj;
 {
     VALUE ary[2];
+
+    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
 
     ary[0] = rb_ary_new();
     ary[1] = rb_ary_new();
@@ -475,6 +497,8 @@ enum_sort_by(obj)
 {
     VALUE ary;
     long i;
+
+    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
 
     if (TYPE(obj) == T_ARRAY) {
 	ary  = rb_ary_new2(RARRAY(obj)->len);
@@ -763,7 +787,8 @@ enum_min_by(obj)
 {
     VALUE memo[2];
 
-    rb_need_block();
+    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+
     memo[0] = Qundef;
     memo[1] = Qnil;
     rb_iterate(rb_each, obj, min_by_i, (VALUE)memo);
@@ -806,7 +831,8 @@ enum_max_by(obj)
 {
     VALUE memo[2];
 
-    rb_need_block();
+    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+
     memo[0] = Qundef;
     memo[1] = Qnil;
     rb_iterate(rb_each, obj, max_by_i, (VALUE)memo);
@@ -843,6 +869,8 @@ enum_member(obj, val)
     VALUE obj, val;
 {
     VALUE memo[2];
+
+    if (!rb_block_given_p()) return enumeratorize(1, &val, obj);
 
     memo[0] = val;
     memo[1] = Qfalse;
@@ -881,7 +909,8 @@ enum_each_with_index(obj)
 {
     VALUE memo = 0;
 
-    rb_need_block();
+    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+
     rb_iterate(rb_each, obj, each_with_index_i, (VALUE)&memo);
     return obj;
 }

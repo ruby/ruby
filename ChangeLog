@@ -1,3 +1,10 @@
+Thu Jul 15 00:11:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enum.c (enumeratorize): create new enumerator for current method if
+	  no block is given.
+
+	* enumerator.c: moved from ext/enumerator.
+
 Thu Jul 14 18:27:35 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_strerror): should return correct message

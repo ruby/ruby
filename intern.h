@@ -131,6 +131,8 @@ VALUE rb_singleton_class _((VALUE));
 int rb_cmpint _((VALUE, VALUE, VALUE));
 NORETURN(void rb_cmperr _((VALUE, VALUE)));
 /* enum.c */
+/* enumerator.c */
+VALUE rb_enumeratorize _((VALUE, VALUE, int, VALUE *));
 /* error.c */
 RUBY_EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));
