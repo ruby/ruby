@@ -870,8 +870,6 @@ enum_member(obj, val)
 {
     VALUE memo[2];
 
-    if (!rb_block_given_p()) return enumeratorize(1, &val, obj);
-
     memo[0] = val;
     memo[1] = Qfalse;
     rb_iterate(rb_each, obj, member_i, (VALUE)memo);
