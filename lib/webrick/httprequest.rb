@@ -306,7 +306,12 @@ module WEBrick
     def read_chunked(socket, block)
       chunk_size, = read_chunk_size(socket)
       while chunk_size > 0
-        data = read_data(socket, chunk_size) # read chunk-data
+        data = ""
+        while data.size < chunk_size
+          tmp = read_data(socket, chunk_size-data.size) # read chunk-data
+          break unless tmp
+          data << tmp
+        end
         if data.nil? || data.size != chunk_size
           raise BadRequest, "bad chunk data size."
         end

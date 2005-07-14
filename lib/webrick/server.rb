@@ -146,6 +146,7 @@ module WEBrick
       begin
         sock = svr.accept
         sock.sync = true
+        Utils::set_non_blocking(sock)
         Utils::set_close_on_exec(sock)
       rescue Errno::ECONNRESET, Errno::ECONNABORTED, Errno::EPROTO => ex
         # TCP connection was established but RST segment was sent

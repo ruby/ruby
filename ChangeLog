@@ -1,3 +1,14 @@
+Fri Jul 15 07:58:56 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/server.rb (WEBrick::GenericServer#accept_client):
+	  sockets should be non-blocking mode. [ruby-dev:26405]
+
+	* lib/webrick/utils.rb (WEBrick::Utils.set_non_blocking): new method.
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#read_chunked):
+	  should call sock.read repeatedly until the preferred size data
+	  is obtained.
+
 Thu Jul 14 18:27:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_strerror): should return correct message
