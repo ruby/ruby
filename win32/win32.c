@@ -3621,22 +3621,6 @@ rb_w32_snprintf(char *buf, size_t size, const char *format, ...)
     return ret;
 }
 
-#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
-int
-rb_w32_isatty(int fd)
-{
-    if (!(_osfile(fd) & FOPEN)) {
-	errno = EBADF;
-	return 0;
-    }
-    if (!(_osfile(fd) & FDEV)) {
-	errno = ENOTTY;
-	return 0;
-    }
-    return 1;
-}
-#endif
-
 int
 rb_w32_mkdir(const char *path, int mode)
 {
@@ -3694,6 +3678,22 @@ rb_w32_unlink(const char *path)
     });
     return ret;
 }
+
+#if !defined(__BORLANDC__) && !defined(_WIN32_WCE)
+int
+rb_w32_isatty(int fd)
+{
+    if (!(_osfile(fd) & FOPEN)) {
+	errno = EBADF;
+	return 0;
+    }
+    if (!(_osfile(fd) & FDEV)) {
+	errno = ENOTTY;
+	return 0;
+    }
+    return 1;
+}
+#endif
 
 //
 // Fix bcc32's stdio bug
