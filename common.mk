@@ -18,6 +18,7 @@ OBJS	      = array.$(OBJEXT) \
 		dir.$(OBJEXT) \
 		dln.$(OBJEXT) \
 		enum.$(OBJEXT) \
+		enumerator.$(OBJEXT) \
 		error.$(OBJEXT) \
 		euc_jp.$(OBJEXT) \
 		eval.$(OBJEXT) \
