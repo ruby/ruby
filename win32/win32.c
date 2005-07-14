@@ -1752,6 +1752,15 @@ rb_w32_strerror(int e)
     DWORD source = 0;
     char *p;
 
+#if defined __BORLANDC__ && defined ENOTEMPTY // _sys_errlist is broken
+    switch (e) {
+      case ENAMETOOLONG:
+	return "Filename too long";
+      case ENOTEMPTY:
+	return "Directory not empty";
+    }
+#endif
+
     if (e < 0 || e > sys_nerr) {
 	if (e < 0)
 	    e = GetLastError();
@@ -1760,13 +1769,17 @@ rb_w32_strerror(int e)
 			  buffer, 512, NULL) == 0) {
 	    strcpy(buffer, "Unknown Error");
 	}
-	for (p = buffer + strlen(buffer) - 1; buffer <= p; p--) {
-	    if (*p != '\r' && *p != '\n') break;
-	    *p = 0;
-	}
-	return buffer;
     }
-    return strerror(e);
+    else {
+	strncpy(buffer, strerror(e), sizeof(buffer));
+	buffer[sizeof(buffer) - 1] = 0;
+    }
+
+    for (p = buffer + strlen(buffer) - 1; buffer <= p; p--) {
+	if (*p != '\r' && *p != '\n') break;
+	*p = 0;
+    }
+    return buffer;
 }
 
 //
