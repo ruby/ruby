@@ -1,3 +1,11 @@
+Thu Jul 14 18:27:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (rb_w32_strerror): should return correct message
+	  for ENAMETOOLONG and ENOTEMPTY. (bcc32) [ruby-dev:26533]
+
+	* win32/win32.c (rb_w32_strerror): stripped CR LF on the tail.
+	  (bcc32) [ruby-dev:26533]
+
 Thu Jul 14 00:45:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* LEGAL (ext/nkf/nkf-utf8): updated from nkf1.7 to nkf-utf8.
