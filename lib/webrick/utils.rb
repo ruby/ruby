@@ -18,6 +18,14 @@ end
 
 module WEBrick
   module Utils
+    def set_non_blocking(io)
+      flag = File::NONBLOCK
+      if defined?(Fcntl::F_GETFL)
+        flag |= io.fcntl(Fcntl::F_GETFL)
+      end
+      io.fcntl(Fcntl::F_SETFL, flag)
+    end
+    module_function :set_non_blocking
 
     def set_close_on_exec(io)
       if defined?(Fcntl::FD_CLOEXEC)
