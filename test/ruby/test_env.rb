@@ -6,13 +6,13 @@ class TestEnv < Test::Unit::TestCase
   def setup
     @backup = ENV['test']
     @BACKUP = ENV['TEST']
-    ENV['test'] = nil
-    ENV['TEST'] = nil
+    ENV.delete('test')
+    ENV.delete('TEST')
   end
 
   def teardown
-    ENV['test'] = @backup
-    ENV['TEST'] = @BACKUP
+    ENV['test'] = @backup if @backup
+    ENV['TEST'] = @BACKUP if @BACKUP
   end
 
   def test_bracket
