@@ -325,7 +325,6 @@ enumerator_initialize(argc, argv, obj)
     VALUE *argv;
     VALUE obj;
 {
-    struct enumerator *ptr = enumerator_ptr(obj);
     VALUE recv, meth = sym_each;
 
     if (argc == 0)
@@ -405,12 +404,8 @@ enumerator_with_index(obj)
 void
 Init_Enumerator()
 {
-    VALUE rb_mEnumerable;
-
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -2);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -2);
-
-    rb_mEnumerable = rb_path2class("Enumerable");
 
     rb_define_method(rb_mEnumerable, "enum_with_index", enumerator_enum_with_index, 0);
     rb_define_method(rb_mEnumerable, "each_slice", enum_each_slice, 1);

@@ -1,3 +1,7 @@
+Fri Jul 15 23:20:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (Init_Enumerator): use an internal directly.
+
 Fri Jul 15 07:58:10 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/server.rb (WEBrick::GenericServer#accept_client):
