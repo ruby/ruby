@@ -1,3 +1,13 @@
+Fri Jul 15 23:59:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/parsers/parse_c.rb (handle_class_module): handle a
+	  module enclosed in a built-in module.  fixed: [ruby-talk:148239]
+
+	* lib/rdoc/parsers/parse_c.rb (find_body): allow macros as methods.
+
+	* lib/rdoc/parsers/parse_c.rb (find_call_seq): allow :nodoc: modifier
+	  in C.  [ruby-core:04572]
+
 Fri Jul 15 18:00:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub (COMMON_HEADERS): ruby_1_8 is using winsock.h.

@@ -227,6 +227,13 @@ module RDoc
       if in_module
         enclosure = @classes[in_module]
         unless enclosure
+          if enclosure = @known_classes[in_module]
+            handle_class_module(in_module, (/^rb_m/ =~ in_module ? "module" : "class"),
+                                enclosure, nil, nil)
+            enclosure = @classes[in_module]
+          end
+        end
+        unless enclosure
           warn("Enclosing class/module '#{in_module}' for " +
                 "#{class_mod} #{class_name} not known")
           return
@@ -234,7 +241,7 @@ module RDoc
       else
         enclosure = @top_level
       end
-      
+
       if class_mod == "class" 
         cm = enclosure.add_class(NormalClass, class_name, parent_name)
         @stats.num_classes += 1
@@ -524,24 +531,25 @@ module RDoc
         end
 
         if source_file
-		  file_name = File.join(@file_dir, source_file)
+          file_name = File.join(@file_dir, source_file)
           body = (@@known_bodies[source_file] ||= File.read(file_name))
         else
           body = @body
         end
-        find_body(meth_body, meth_obj, body)
-        class_obj.add_method(meth_obj)
+        if find_body(meth_body, meth_obj, body) and meth_obj.document_self
+          class_obj.add_method(meth_obj)
+        end
       end
     end
     
     ############################################################
 
     # Find the C code corresponding to a Ruby method
-    def find_body(meth_name, meth_obj, body)
-      if body =~ %r{((?>/\*.*?\*/\s*))(static\s+)?VALUE\s+#{meth_name}
-                    \s*(\(.*?\)).*?^}xm
-
-        comment, params = $1, $3
+    def find_body(meth_name, meth_obj, body, quiet = false)
+      case body
+      when %r{((?>/\*.*?\*/\s*))(?:static\s+)?VALUE\s+#{meth_name}
+              \s*(\(.*?\)).*?^}xm
+        comment, params = $1, $2
         body_text = $&
 
         # see if we can find the whole body
@@ -561,25 +569,36 @@ module RDoc
         override_comment = find_override_comment(meth_obj.name)
         comment = override_comment if override_comment
 
-        find_call_seq(comment, meth_obj) if comment
+        find_modifiers(comment, meth_obj) if comment
         
 #        meth_obj.params = params
         meth_obj.start_collecting_tokens
         meth_obj.add_token(RubyToken::Token.new(1,1).set_text(body_text))
         meth_obj.comment = mangle_comment(comment)
-        
+      when %r{((?>/\*.*?\*/\s*))^\s*\#\s*define\s+#{meth_name}\s+(\w+)}m
+        comment = $1
+        find_body($2, meth_obj, body, true)
+        find_modifiers(comment, meth_obj)
+        meth_obj.comment = mangle_comment(comment) + meth_obj.comment
+      when %r{^\s*\#\s*define\s+#{meth_name}\s+(\w+)}m
+        unless find_body($1, meth_obj, body, true)
+          warn "No definition for #{meth_name}" unless quiet
+          return false
+        end
       else
 
         # No body, but might still have an override comment
         comment = find_override_comment(meth_obj.name)
 
         if comment
-          find_call_seq(comment, meth_obj)
+          find_modifiers(comment, meth_obj)
           meth_obj.comment = mangle_comment(comment)
         else
-          warn "No definition for #{meth_name}"
+          warn "No definition for #{meth_name}" unless quiet
+          return false
         end
       end
+      true
     end
 
 
@@ -590,8 +609,13 @@ module RDoc
     #        Array.new
     #        Array.new(10)
     # use it for the parameters
-    def find_call_seq(comment, meth_obj)
-      if comment.sub!(/call-seq:(.*?)^\s*\*?\s*$/m, '')
+    def find_modifiers(comment, meth_obj)
+      if comment.sub!(/:nodoc:\s*^\s*\*?\s*$/m, '') or
+         comment.sub!(/\A\/\*\s*:nodoc:\s*\*\/\Z/, '')
+        meth_obj.document_self = false
+      end
+      if comment.sub!(/call-seq:(.*?)^\s*\*?\s*$/m, '') or
+         comment.sub!(/\A\/\*\s*call-seq:(.*?)\*\/\Z/, '')
         seq = $1
         seq.gsub!(/^\s*\*\s*/, '')
         meth_obj.call_seq = seq
