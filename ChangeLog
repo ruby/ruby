@@ -1,3 +1,8 @@
+Fri Jul 15 18:00:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub (COMMON_HEADERS): ruby_1_8 is using winsock.h.
+	  failed to compile ext/socket on bcc5.6.4. [ruby-dev:26193]
+
 Fri Jul 15 07:58:56 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/server.rb (WEBrick::GenericServer#accept_client):
