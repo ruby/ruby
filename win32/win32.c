@@ -410,7 +410,7 @@ static void init_env(void)
     NTLoginName[len] = '\0';
 }
 
-static void init_stdhandle();
+static void init_stdhandle(void);
 
 //
 // Initialization stuff
@@ -447,7 +447,7 @@ NtInitialize(int *argc, char ***argv)
 }
 
 char *
-getlogin()
+getlogin(void)
 {
     return NTLoginName;
 }
@@ -1664,7 +1664,7 @@ rb_w32_open_osfhandle(long osfhandle, int flags)
 }
 
 static void
-init_stdhandle()
+init_stdhandle(void)
 {
     if (fileno(stdin) < 0) {
 	stdin->_file = 0;
@@ -1682,7 +1682,7 @@ init_stdhandle()
 #define _set_osflags(fh, flags) (void)((fh), (flags))
 
 static void
-init_stdhandle()
+init_stdhandle(void)
 {
 }
 #endif
@@ -2044,7 +2044,7 @@ rb_w32_accept(int s, struct sockaddr *addr, int *addrlen)
 #undef bind
 
 int 
-rb_w32_bind(int s, struct sockaddr *addr, int addrlen)
+rb_w32_bind(int s, const struct sockaddr *addr, int addrlen)
 {
     int r;
 
@@ -2062,7 +2062,7 @@ rb_w32_bind(int s, struct sockaddr *addr, int addrlen)
 #undef connect
 
 int 
-rb_w32_connect(int s, struct sockaddr *addr, int addrlen)
+rb_w32_connect(int s, const struct sockaddr *addr, int addrlen)
 {
     int r;
     if (!NtSocketsInitialized) {
@@ -2206,7 +2206,7 @@ rb_w32_recvfrom(int s, char *buf, int len, int flags,
 #undef send
 
 int 
-rb_w32_send(int s, char *buf, int len, int flags)
+rb_w32_send(int s, const char *buf, int len, int flags)
 {
     int r;
     if (!NtSocketsInitialized) {
@@ -2223,8 +2223,8 @@ rb_w32_send(int s, char *buf, int len, int flags)
 #undef sendto
 
 int 
-rb_w32_sendto(int s, char *buf, int len, int flags, 
-	      struct sockaddr *to, int tolen)
+rb_w32_sendto(int s, const char *buf, int len, int flags, 
+	      const struct sockaddr *to, int tolen)
 {
     int r;
     if (!NtSocketsInitialized) {
@@ -2241,7 +2241,7 @@ rb_w32_sendto(int s, char *buf, int len, int flags,
 #undef setsockopt
 
 int 
-rb_w32_setsockopt(int s, int level, int optname, char *optval, int optlen)
+rb_w32_setsockopt(int s, int level, int optname, const char *optval, int optlen)
 {
     int r;
     if (!NtSocketsInitialized) {
@@ -2339,7 +2339,7 @@ rb_w32_socket(int af, int type, int protocol)
 #undef gethostbyaddr
 
 struct hostent *
-rb_w32_gethostbyaddr (char *addr, int len, int type)
+rb_w32_gethostbyaddr (const char *addr, int len, int type)
 {
     struct hostent *r;
     if (!NtSocketsInitialized) {
@@ -2356,7 +2356,7 @@ rb_w32_gethostbyaddr (char *addr, int len, int type)
 #undef gethostbyname
 
 struct hostent *
-rb_w32_gethostbyname (char *name)
+rb_w32_gethostbyname (const char *name)
 {
     struct hostent *r;
     if (!NtSocketsInitialized) {
@@ -2390,7 +2390,7 @@ rb_w32_gethostname (char *name, int len)
 #undef getprotobyname
 
 struct protoent *
-rb_w32_getprotobyname (char *name)
+rb_w32_getprotobyname (const char *name)
 {
     struct protoent *r;
     if (!NtSocketsInitialized) {
@@ -2424,7 +2424,7 @@ rb_w32_getprotobynumber (int num)
 #undef getservbyname
 
 struct servent *
-rb_w32_getservbyname (char *name, char *proto)
+rb_w32_getservbyname (const char *name, const char *proto)
 {
     struct servent *r;
     if (!NtSocketsInitialized) {
@@ -2441,7 +2441,7 @@ rb_w32_getservbyname (char *name, char *proto)
 #undef getservbyport
 
 struct servent *
-rb_w32_getservbyport (int port, char *proto)
+rb_w32_getservbyport (int port, const char *proto)
 {
     struct servent *r;
     if (!NtSocketsInitialized) {
@@ -2568,9 +2568,9 @@ void endservent(void) {}
 
 struct netent *getnetent (void) {return (struct netent *) NULL;}
 
-struct netent *getnetbyaddr(char *name) {return (struct netent *)NULL;}
+struct netent *getnetbyaddr(long net, int type) {return (struct netent *)NULL;}
 
-struct netent *getnetbyname(long net, int type) {return (struct netent *)NULL;}
+struct netent *getnetbyname(const char *name) {return (struct netent *)NULL;}
 
 struct protoent *getprotoent (void) {return (struct protoent *) NULL;}
 
@@ -2737,9 +2737,7 @@ gettimeofday(struct timeval *tv, struct timezone *tz)
 }
 
 char *
-rb_w32_getcwd(buffer, size)
-    char *buffer;
-    int size;
+rb_w32_getcwd(char *buffer, int size)
 {
     int length;
     char *bp;
@@ -3701,7 +3699,7 @@ rb_w32_isatty(int fd)
 
 #ifdef __BORLANDC__
 static int
-too_many_files()
+too_many_files(void)
 {
     FILE *f;
     for (f = _streams; f < _streams + _nfile; f++) {

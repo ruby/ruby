@@ -1,3 +1,7 @@
+Sat Jul 16 15:52:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.[hc]: constified socket functions. [ruby-dev:26553]
+
 Fri Jul 15 23:59:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/rdoc/parsers/parse_c.rb (handle_class_module): handle a
