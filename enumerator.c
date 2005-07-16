@@ -404,8 +404,8 @@ enumerator_with_index(obj)
 void
 Init_Enumerator()
 {
-    rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -2);
-    rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -2);
+    rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
+    rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);
 
     rb_define_method(rb_mEnumerable, "enum_with_index", enumerator_enum_with_index, 0);
     rb_define_method(rb_mEnumerable, "each_slice", enum_each_slice, 1);

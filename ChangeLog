@@ -1,3 +1,8 @@
+Sat Jul 16 23:43:16 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c (Init_Enumerator): wrong argument specs.
+	  [ruby-core:05481]
+
 Sat Jul 16 15:52:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.[hc]: constified socket functions. [ruby-dev:26553]
