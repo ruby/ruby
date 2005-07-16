@@ -146,7 +146,7 @@
 #
 # 1. Original interface.
 #
-#      logger.level = Logger::WARN
+#      logger.sev_threshold = Logger::WARN
 #
 # 2. Log4r (somewhat) compatible interface.
 #
@@ -247,7 +247,6 @@ class Logger
   # required.
   #
   def initialize(logdev, shift_age = 0, shift_size = 1048576)
-    @logdev = nil
     @progname = nil
     @level = DEBUG
     @datetime_format = nil
@@ -460,8 +459,8 @@ private
     #
     # == Synopsis
     #
-    #   Logger::LogDev.new(name, :shift_age => 'daily|weekly|monthly')
-    #   Logger::LogDev.new(name, :shift_age => 10, :shift_size => 1024*1024)
+    #   Logger::LogDevice.new(name, :shift_age => 'daily|weekly|monthly')
+    #   Logger::LogDevice.new(name, :shift_age => 10, :shift_size => 1024*1024)
     #
     # == Args
     #
