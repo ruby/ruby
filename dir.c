@@ -1299,8 +1299,7 @@ dir_s_aref(obj, str)
  *  <i>string</i>, either as an <i>array</i> or as parameters to the
  *  block. Note that this pattern is not a regexp (it's closer to a
  *  shell glob). See <code>File::fnmatch</code> for the meaning of
- *  the <i>flags</i> parameter. Note that case sensitivity 
- *  depends on your system (so <code>File::FNM_CASEFOLD</code> is ignored)
+ *  the <i>flags</i> parameter.
  *
  *  <code>*</code>::        Matches any file. Can be restricted by
  *                          other values in the glob. <code>*</code>
