@@ -104,12 +104,12 @@ io_wait(argc, argv, io)
     if (rb_thread_select(fd + 1, &rd, NULL, NULL, tp) < 0)
 	rb_sys_fail(0);
     rb_io_check_closed(fptr);
+    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
     if (ioctl(fileno(fp), FIONREAD, &n)) rb_sys_fail(0);
     if (n > 0) return io;
     return Qnil;
 }
 
-    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
 void
 Init_wait()
 {
