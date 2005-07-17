@@ -1,3 +1,8 @@
+Mon Jul 18 05:00:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+        * ext/nkf/nkf-utf8/nkf.c: import nkf.c 1.73
+          fix: TestKconv 1F
+
 Sun Jul 17 13:46:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/extconf.rb, ext/io/wait/wait.c: Win32 platforms support.
