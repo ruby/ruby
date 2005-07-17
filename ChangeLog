@@ -1,3 +1,7 @@
+Sun Jul 17 13:46:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/extconf.rb, ext/io/wait/wait.c: Win32 platforms support.
+
 Sat Jul 16 23:43:16 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (Init_Enumerator): wrong argument specs.

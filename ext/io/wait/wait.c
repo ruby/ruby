@@ -15,7 +15,17 @@
 #include "rubyio.h"
 
 #include <sys/types.h>
+#if defined(FIONREAD_HEADER)
 #include FIONREAD_HEADER
+#elif defined(HAVE_RB_W32_IOCTLSOCKET)
+#define ioctl ioctlsocket
+#endif
+
+#ifdef HAVE_RB_W32_IS_SOCKET
+#define FIONREAD_POSSIBLE_P(fd) rb_w32_is_socket(fptr->fd)
+#else
+#define FIONREAD_POSSIBLE_P(fd) Qtrue
+#endif
 
 static VALUE io_ready_p _((VALUE io));
 static VALUE io_wait _((int argc, VALUE *argv, VALUE io));
@@ -45,6 +55,7 @@ io_ready_p(io)
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (rb_io_read_pending(fptr)) return Qtrue;
+    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
     if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
     if (n > 0) return INT2NUM(n);
     return Qnil;
@@ -98,6 +109,7 @@ io_wait(argc, argv, io)
     }
 
     if (rb_io_read_pending(fptr)) return Qtrue;
+    if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
     fd = fptr->fd;
     rb_fd_init(&arg.fds);
     rb_fd_set(fd, &arg.fds);
