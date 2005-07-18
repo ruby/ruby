@@ -17,14 +17,21 @@
 #include <sys/types.h>
 #if defined(FIONREAD_HEADER)
 #include FIONREAD_HEADER
-#elif defined(HAVE_RB_W32_IOCTLSOCKET)
+#endif
+
+#ifdef HAVE_RB_W32_IOCTLSOCKET
 #define ioctl ioctlsocket
+#define ioctl_arg u_long
+#define ioctl_arg2num(i) ULONG2NUM(i)
+#else
+#define ioctl_arg int
+#define ioctl_arg2num(i) INT2NUM(i)
 #endif
 
 #ifdef HAVE_RB_W32_IS_SOCKET
-#define FIONREAD_POSSIBLE_P(fd) rb_w32_is_socket(fptr->fd)
+#define FIONREAD_POSSIBLE_P(fd) rb_w32_is_socket(fd)
 #else
-#define FIONREAD_POSSIBLE_P(fd) Qtrue
+#define FIONREAD_POSSIBLE_P(fd) ((fd),Qtrue)
 #endif
 
 static VALUE io_ready_p _((VALUE io));
@@ -50,14 +57,14 @@ io_ready_p(io)
     VALUE io;
 {
     OpenFile *fptr;
-    int n;
+    ioctl_arg n;
 
     GetOpenFile(io, fptr);
     rb_io_check_readable(fptr);
     if (rb_io_read_pending(fptr)) return Qtrue;
     if (!FIONREAD_POSSIBLE_P(fptr->fd)) return Qfalse;
     if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
-    if (n > 0) return INT2NUM(n);
+    if (n > 0) return ioctl_arg2num(n);
     return Qnil;
 }
 
@@ -93,7 +100,8 @@ io_wait(argc, argv, io)
 {
     OpenFile *fptr;
     struct wait_readable_arg arg;
-    int fd, n;
+    int fd, i;
+    ioctl_arg n;
     VALUE timeout;
     struct timeval timerec;
 
@@ -114,12 +122,12 @@ io_wait(argc, argv, io)
     rb_fd_init(&arg.fds);
     rb_fd_set(fd, &arg.fds);
 #ifdef HAVE_RB_FD_INIT
-    n = (int)rb_ensure(wait_readable, (VALUE)&arg,
+    i = (int)rb_ensure(wait_readable, (VALUE)&arg,
 		       (VALUE (*)_((VALUE)))rb_fd_term, (VALUE)&arg.fds);
 #else
-    n = rb_thread_select(fd + 1, rb_fd_ptr(&rd), NULL, NULL, tp)
+    i = rb_thread_select(fd + 1, rb_fd_ptr(&arg.fds), NULL, NULL, arg.timeout);
 #endif
-    if (n < 0)
+    if (i < 0)
 	rb_sys_fail(0);
     rb_io_check_closed(fptr);
     if (ioctl(fptr->fd, FIONREAD, &n)) rb_sys_fail(0);
