@@ -373,10 +373,28 @@ io_alloc(klass)
 }
 
 static int
+wsplit_p(OpenFile *fptr)
+{
+    int r;
+    if (!(fptr->mode & FMODE_WSPLIT_INITIALIZED)) {
+        struct stat buf;
+        if (fstat(fptr->fd, &buf) == 0 &&
+            !(S_ISREG(buf.st_mode) ||
+              S_ISDIR(buf.st_mode)) &&
+            (r = fcntl(fptr->fd, F_GETFL)) != -1 &&
+            !(r & O_NONBLOCK)) {
+            fptr->mode |= FMODE_WSPLIT;
+        }
+        fptr->mode |= FMODE_WSPLIT_INITIALIZED;
+    }
+    return fptr->mode & FMODE_WSPLIT;
+}
+
+static int
 io_fflush(fptr)
     OpenFile *fptr;
 {
-    int r;
+    int r, l;
     int wbuf_off, wbuf_len;
 
     rb_io_check_closed(fptr);
@@ -390,8 +408,15 @@ io_fflush(fptr)
         return 0;
     wbuf_off = fptr->wbuf_off;
     wbuf_len = fptr->wbuf_len;
+    l = fptr->wbuf_len;
+    if (PIPE_BUF < l &&
+        !rb_thread_critical &&
+        !rb_thread_alone() &&
+        wsplit_p(fptr)) {
+        l = PIPE_BUF;
+    }
     TRAP_BEG;
-    r = write(fptr->fd, fptr->wbuf+fptr->wbuf_off, fptr->wbuf_len);
+    r = write(fptr->fd, fptr->wbuf+fptr->wbuf_off, l);
     TRAP_END; /* xxx: signal handler may modify wbuf */
     if (r == fptr->wbuf_len) {
         fptr->wbuf_off = 0;
@@ -504,7 +529,7 @@ io_fwrite(str, fptr)
     VALUE str;
     OpenFile *fptr;
 {
-    long len, n, r, offset = 0;
+    long len, n, r, l, offset = 0;
 
     len = RSTRING(str)->len;
     if ((n = len) <= 0) return n;
@@ -537,8 +562,15 @@ io_fwrite(str, fptr)
 	    rb_io_check_closed(fptr);
 	}
       retry:
+        l = n;
+        if (PIPE_BUF < l &&
+            !rb_thread_critical &&
+            !rb_thread_alone() &&
+            wsplit_p(fptr)) {
+            l = PIPE_BUF;
+        }
         TRAP_BEG;
-	r = write(fptr->fd, RSTRING(str)->ptr+offset, n);
+	r = write(fptr->fd, RSTRING(str)->ptr+offset, l);
         TRAP_END; /* xxx: signal handler may modify given string. */
         if (r == n) return len;
         if (0 <= r) {

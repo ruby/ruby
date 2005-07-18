@@ -1,3 +1,12 @@
+Mon Jul 18 09:36:25 2005  Tanaka Akira  <akr@m17n.org>
+
+	* rubyio.h (FMODE_WSPLIT, FMODE_WSPLIT_INITIALIZED): new constant.
+
+	* io.c (wsplit_p): new function.
+	  (io_fflush): split writing data by PIPE_BUF if wsplit_p is true in
+	  multi-threaded mode.
+	  (io_fwrite): ditto.
+
 Mon Jul 18 05:00:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
         * ext/nkf/nkf-utf8/nkf.c: import nkf.c 1.73

@@ -48,6 +48,8 @@ typedef struct OpenFile {
 #define FMODE_SYNC      8
 #define FMODE_TTY      16
 #define FMODE_DUPLEX   32
+#define FMODE_WSPLIT  0x200
+#define FMODE_WSPLIT_INITIALIZED  0x400
 
 #define GetOpenFile(obj,fp) rb_io_check_closed((fp) = RFILE(rb_io_taint_check(obj))->fptr)
 
