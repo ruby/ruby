@@ -1,3 +1,11 @@
+Mon Jul 18 09:36:25 2005  Tanaka Akira  <akr@m17n.org>
+
+        * rubyio.h (FMODE_WSPLIT, FMODE_WSPLIT_INITIALIZED): new constant.
+
+        * io.c (wsplit_p): new function.
+          (io_fwrite): split writing data by PIPE_BUF if wsplit_p is true in
+          multi-threaded mode.
+
 Sun Jul 17 13:46:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/extconf.rb, ext/io/wait/wait.c: Win32 platforms support.

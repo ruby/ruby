@@ -388,13 +388,32 @@ rb_io_wait_writable(f)
     }
 }
 
+static int
+wsplit_p(OpenFile *fptr)
+{
+    FILE *f = GetWriteFile(fptr);
+    int r;
+    if (!(fptr->mode & FMODE_WSPLIT_INITIALIZED)) {
+        struct stat buf;
+        if (fstat(fileno(f), &buf) == 0 &&
+            !(S_ISREG(buf.st_mode) ||
+              S_ISDIR(buf.st_mode)) &&
+            (r = fcntl(fileno(f), F_GETFL)) != -1 &&
+            !(r & O_NONBLOCK)) {
+            fptr->mode |= FMODE_WSPLIT;
+        }
+        fptr->mode |= FMODE_WSPLIT_INITIALIZED;
+    }
+    return fptr->mode & FMODE_WSPLIT;
+}
+
 /* writing functions */
 static long
 io_fwrite(str, fptr)
     VALUE str;
     OpenFile *fptr;
 {
-    long len, n, r, offset = 0;
+    long len, n, r, l, offset = 0;
     FILE *f = GetWriteFile(fptr);
 
     len = RSTRING(str)->len;
@@ -405,7 +424,14 @@ io_fwrite(str, fptr)
 	    rb_io_check_closed(fptr);
 	}
       retry:
-	r = write(fileno(f), RSTRING(str)->ptr+offset, n);
+        l = n;
+        if (PIPE_BUF < l &&
+            !rb_thread_critical &&
+            !rb_thread_alone() &&
+            wsplit_p(fptr)) {
+            l = PIPE_BUF;
+        }
+	r = write(fileno(f), RSTRING(str)->ptr+offset, l);
         if (r == n) return len;
         if (0 <= r) {
             offset += r;
