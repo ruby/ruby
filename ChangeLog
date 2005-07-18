@@ -1,3 +1,8 @@
+Mon Jul 18 21:40:20 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* eval.c (rb_call0): make the pointer to NODE volatile
+	  instead of NODE itself.
+
 Mon Jul 18 14:32:21 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (rb_call0): make body volatile to avoid optimization problem.

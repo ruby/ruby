@@ -5603,7 +5603,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     ID    oid;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
-    volatile NODE *body;
+    NODE * volatile body;
     int nosuper;
 {
     NODE *b2;		/* OK */
