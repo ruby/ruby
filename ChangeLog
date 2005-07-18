@@ -1,3 +1,8 @@
+Mon Jul 18 14:32:21 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (rb_call0): make body volatile to avoid optimization problem.
+	  [ruby-dev:26195]
+
 Mon Jul 18 12:23:27 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/io/wait/wait.c: wrong backport from trunk.  fixed: [ruby-dev:26562]
@@ -9,6 +14,7 @@ Mon Jul 18 09:36:25 2005  Tanaka Akira  <akr@m17n.org>
 	* io.c (wsplit_p): new function.
 	  (io_fwrite): split writing data by PIPE_BUF if wsplit_p is true in
 	  multi-threaded mode.
+	  [ruby-dev:26540]
 
 Sun Jul 17 13:46:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
