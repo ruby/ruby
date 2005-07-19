@@ -1,3 +1,8 @@
+Tue Jul 19 22:47:29 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (syserr_initialize): need to allocate an additional byte
+	  for NUL at the end.  [ruby-dev:26574]
+
 Tue Jul 19 17:16:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* signal.c (trap): remove sigexit(); handle "EXIT" via sig_exec().

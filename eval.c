@@ -8667,7 +8667,7 @@ proc_to_s(self)
     NODE *node;
     char *cname = rb_obj_classname(self);
     const int w = (SIZEOF_LONG * CHAR_BIT) / 4;
-    long len = strlen(cname)+6+w; /* 6:tags 16:addr */
+    long len = strlen(cname)+6+w+1; /* 6:tags 16:addr NUL */
     VALUE str;
 
     Data_Get_Struct(self, struct BLOCK, data);
