@@ -8667,20 +8667,20 @@ proc_to_s(self)
     NODE *node;
     char *cname = rb_obj_classname(self);
     const int w = (SIZEOF_LONG * CHAR_BIT) / 4;
-    long len = strlen(cname)+6+w+1; /* 6:tags 16:addr NUL */
+    long len = strlen(cname)+6+w; /* 6:tags 16:addr */
     VALUE str;
 
     Data_Get_Struct(self, struct BLOCK, data);
     if ((node = data->frame.node) || (node = data->body)) {
 	len += strlen(node->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
 	str = rb_str_new(0, len);
-	snprintf(RSTRING(str)->ptr, len,
+	snprintf(RSTRING(str)->ptr, len+1,
 		 "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
 		 node->nd_file, nd_line(node));
     }
     else {
 	str = rb_str_new(0, len);
-	snprintf(RSTRING(str)->ptr, len,
+	snprintf(RSTRING(str)->ptr, len+1,
 		 "#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
     }
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
