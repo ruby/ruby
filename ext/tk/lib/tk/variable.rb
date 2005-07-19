@@ -918,6 +918,7 @@ end
     #string(value).to_s
     _value
   end
+  alias string to_s
   def element_to_s(*idxs)
     _element_value(*idxs)
   end
