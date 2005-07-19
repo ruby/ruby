@@ -1,3 +1,13 @@
+Tue Jul 19 14:08:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tcltklib/tcltklib.c: rbtk_eventloop_depth is used as int.
+
+	* ext/tcltklib/tcltklib.c: rbtk_pending_exception is tested with
+	  NIL_P, so should assign Qnil instead of 0 (Qfalse).
+
+	* ext/tcltklib/tcltklib.c (ip_invoke_real): fixed memory leak when
+	  ip is deleted.
+
 Tue Jul 19 13:19:46 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: For symmetry, add TkVariable#string. It

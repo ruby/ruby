@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-07-13"
+#define TCLTKLIB_RELEASE_DATE "2005-07-19"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -550,7 +550,7 @@ rbtk_release_ip(ptr)
 
 /* treat excetiopn on Tcl side */
 static VALUE rbtk_pending_exception;
-static VALUE rbtk_eventloop_depth = 0;
+static int rbtk_eventloop_depth = 0;
 
 
 static int
@@ -1110,7 +1110,7 @@ lib_eventloop_core(check_root, update_flag, check_var)
                         if (!NIL_P(rbtk_pending_exception)) {
                             if (rbtk_eventloop_depth == 0) {
                                 VALUE exc = rbtk_pending_exception;
-                                rbtk_pending_exception = 0;
+                                rbtk_pending_exception = Qnil;
                                 rb_exc_raise(exc);
                             } else {
                                 return 0;
@@ -1226,7 +1226,7 @@ lib_eventloop_core(check_root, update_flag, check_var)
                                 if (!NIL_P(rbtk_pending_exception)) {
                                     if (rbtk_eventloop_depth == 0) {
                                         VALUE exc = rbtk_pending_exception;
-                                        rbtk_pending_exception = 0;
+                                        rbtk_pending_exception = Qnil;
                                         rb_exc_raise(exc);
                                     } else {
                                         return 0;
@@ -1298,7 +1298,7 @@ lib_eventloop_core(check_root, update_flag, check_var)
                                     if (!NIL_P(rbtk_pending_exception)) {
                                         if (rbtk_eventloop_depth == 0) {
                                             VALUE exc = rbtk_pending_exception;
-                                            rbtk_pending_exception = 0;
+                                            rbtk_pending_exception = Qnil;
                                             rb_exc_raise(exc);
                                         } else {
                                             return 0;
@@ -6846,9 +6846,6 @@ ip_invoke_real(argc, argv, interp)
 
     DUMP2("invoke_real called by thread:%lx", rb_thread_current());
 
-    /* allocate memory for arguments */
-    av = alloc_invoke_arguments(argc, argv);
-
     /* get the data struct */
     ptr = get_ip(interp);
 
@@ -6857,6 +6854,9 @@ ip_invoke_real(argc, argv, interp)
         DUMP1("ip is deleted");
         return rb_tainted_str_new2("");
     }
+
+    /* allocate memory for arguments */
+    av = alloc_invoke_arguments(argc, argv);
 
     /* Invoke the C procedure */
     Tcl_ResetResult(ptr->ip);
