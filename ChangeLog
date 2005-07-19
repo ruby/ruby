@@ -1,3 +1,9 @@
+Wed Jul 20 03:12:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/socket/socket.c: should not undef close on win32.
+	  it's defined to rb_w32_close, otherwise handle leaks.
+	  [ruby-Bugs-2131]
+
 Tue Jul 19 22:47:29 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* error.c (syserr_initialize): add 1 byte for snprintf() size for
