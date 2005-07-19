@@ -1,3 +1,8 @@
+Tue Jul 19 22:47:29 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (syserr_initialize): need to allocate an additional byte
+	  for NUL at the end.  [ruby-dev:26574]
+
 Tue Jul 19 16:39:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (rb_io_inspect): replace sprintf() with "%s" format all
