@@ -650,6 +650,7 @@ rb_attr(klass, id, read, write, ex)
     char *buf;
     ID attriv;
     int noex;
+    size_t len;
 
     if (!ex) noex = NOEX_PUBLIC;
     else {
@@ -674,8 +675,9 @@ rb_attr(klass, id, read, write, ex)
     if (!name) {
 	rb_raise(rb_eArgError, "argument needs to be symbol or string");
     }
-    buf = ALLOCA_N(char,strlen(name)+2);
-    sprintf(buf, "@%s", name);
+    len = strlen(name)+2;
+    buf = ALLOCA_N(char,len);
+    snprintf(buf, len, "@%s", name);
     attriv = rb_intern(buf);
     if (read) {
 	rb_add_method(klass, id, NEW_IVAR(attriv), noex);
@@ -8508,12 +8510,14 @@ proc_to_s(self)
     if ((node = data->frame.node) || (node = data->body)) {
 	len += strlen(node->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
 	str = rb_str_new(0, len);
-	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
-		node->nd_file, nd_line(node));
+	snprintf(RSTRING(str)->ptr, len,
+		 "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
+		 node->nd_file, nd_line(node));
     }
     else {
 	str = rb_str_new(0, len);
-	sprintf(RSTRING(str)->ptr, "#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
+	snprintf(RSTRING(str)->ptr, len,
+		 "#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
     }
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
@@ -12262,9 +12266,10 @@ rb_thread_inspect(thread)
     rb_thread_t th = rb_thread_check(thread);
     const char *status = thread_status_name(th->status);
     VALUE str;
+    size_t len = strlen(cname)+7+16+9+1;
 
-    str = rb_str_new(0, strlen(cname)+7+16+9+1); /* 7:tags 16:addr 9:status 1:nul */
-    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx %s>", cname, thread, status);
+    str = rb_str_new(0, len); /* 7:tags 16:addr 9:status 1:nul */
+    snprintf(RSTRING(str)->ptr, len, "#<%s:0x%lx %s>", cname, thread, status);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     OBJ_INFECT(str, thread);
 

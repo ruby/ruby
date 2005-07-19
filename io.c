@@ -952,7 +952,7 @@ rb_io_inspect(obj)
 	len += 9;
     }
     buf = ALLOCA_N(char, len);
-    sprintf(buf, "#<%s:%s%s>", cname, fptr->path, st);
+    snprintf(buf, len, "#<%s:%s%s>", cname, fptr->path, st);
     return rb_str_new2(buf);
 }
 

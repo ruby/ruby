@@ -354,10 +354,12 @@ rb_any_to_s(obj)
     VALUE obj;
 {
     char *cname = rb_obj_classname(obj);
+    size_t len;
     VALUE str;
 
-    str = rb_str_new(0, strlen(cname)+6+16+1); /* 6:tags 16:addr 1:nul */
-    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx>", cname, obj);
+    len = strlen(cname)+6+16+1;
+    str = rb_str_new(0, len); /* 6:tags 16:addr 1:nul */
+    snprintf(RSTRING(str)->ptr, len, "#<%s:0x%lx>", cname, obj);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
 
@@ -433,17 +435,20 @@ rb_obj_inspect(obj)
 	&& ROBJECT(obj)->iv_tbl
 	&& ROBJECT(obj)->iv_tbl->num_entries > 0) {
 	VALUE str;
+	size_t len;
 	char *c;
 
 	c = rb_obj_classname(obj);
 	if (rb_inspecting_p(obj)) {
-	    str = rb_str_new(0, strlen(c)+10+16+1); /* 10:tags 16:addr 1:nul */
-	    sprintf(RSTRING(str)->ptr, "#<%s:0x%lx ...>", c, obj);
+	    len = strlen(c)+10+16+1;
+	    str = rb_str_new(0, len); /* 10:tags 16:addr 1:nul */
+	    snprintf(RSTRING(str)->ptr, len, "#<%s:0x%lx ...>", c, obj);
 	    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	    return str;
 	}
-	str = rb_str_new(0, strlen(c)+6+16+1); /* 6:tags 16:addr 1:nul */
-	sprintf(RSTRING(str)->ptr, "-<%s:0x%lx", c, obj);
+	len = strlen(c)+6+16+1;
+	str = rb_str_new(0, len);     /* 6:tags 16:addr 1:nul */
+	snprintf(RSTRING(str)->ptr, len, "-<%s:0x%lx", c, obj);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return rb_protect_inspect(inspect_obj, obj, str);
     }

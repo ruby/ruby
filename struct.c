@@ -518,9 +518,10 @@ rb_struct_inspect(s)
 {
     if (rb_inspecting_p(s)) {
 	char *cname = rb_class2name(rb_obj_class(s));
-	VALUE str = rb_str_new(0, strlen(cname) + 15);
+	size_t len = strlen(cname) + 15;
+	VALUE str = rb_str_new(0, len);
 
-	sprintf(RSTRING(str)->ptr, "#<struct %s:...>", cname);
+	snprintf(RSTRING(str)->ptr, len, "#<struct %s:...>", cname);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return str;
     }

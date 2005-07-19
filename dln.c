@@ -962,8 +962,9 @@ load_lib(lib)
     dln_errno = DLN_EBADLIB;
 
     if (lib[0] == '-' && lib[1] == 'l') {
-	char *p = alloca(strlen(lib) + 4);
-	sprintf(p, "lib%s.a", lib+2);
+	long len = strlen(lib) + 4;
+	char *p = alloca(len);
+	snprintf(p, len, "lib%s.a", lib+2);
 	lib = p;
     }
 

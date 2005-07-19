@@ -1820,7 +1820,7 @@ ruby_setenv(name, value)
     else
 	unsetenv(name);
 #else  /* WIN32 */
-
+    size_t len;
     int i=envix(name);		        /* where does it go? */
 
     if (environ == origenviron) {	/* need we copy environment? */
@@ -1853,9 +1853,10 @@ ruby_setenv(name, value)
 	REALLOC_N(environ, char*, i+2);	/* just expand it a bit */
 	environ[i+1] = 0;	/* make sure it's null terminated */
     }
-    environ[i] = ALLOC_N(char, strlen(name) + strlen(value) + 2);
+    len = strlen(name) + strlen(value) + 2;
+    environ[i] = ALLOC_N(char, len);
 #ifndef MSDOS
-    sprintf(environ[i],"%s=%s",name,value); /* all that work just for this */
+    snprintf(environ[i],len,"%s=%s",name,value); /* all that work just for this */
 #else
     /* MS-DOS requires environment variable names to be in uppercase */
     /* [Tom Dinger, 27 August 1990: Well, it doesn't _require_ it, but
