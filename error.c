@@ -956,9 +956,10 @@ syserr_initialize(argc, argv, self)
     else err = "unknown error";
     if (!NIL_P(mesg)) {
 	VALUE str = mesg;
+	size_t len = strlen(err)+RSTRING(str)->len+3;
 	StringValue(str);
-	mesg = rb_str_new(0, strlen(err)+RSTRING(str)->len+3);
-	sprintf(RSTRING(mesg)->ptr, "%s - %.*s", err,
+	mesg = rb_str_new(0, len);
+	snprintf(RSTRING(mesg)->ptr, len, "%s - %.*s", err,
 		(int)RSTRING(str)->len, RSTRING(str)->ptr);
 	rb_str_resize(mesg, strlen(RSTRING(mesg)->ptr));
     }

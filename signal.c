@@ -424,6 +424,9 @@ signal_exec(sig)
 	    break;
 	}
     }
+    else if (trap_list[sig].cmd == Qundef) {
+	rb_thread_signal_exit();
+    }
     else {
 	rb_thread_trap_eval(trap_list[sig].cmd, sig, trap_list[sig].safe);
     }
@@ -581,29 +584,6 @@ static sigset_t trap_last_mask;
 static int trap_last_mask;
 # endif
 
-static RETSIGTYPE sigexit _((int));
-static RETSIGTYPE
-sigexit(sig)
-    int sig;
-{
-#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
-    if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
-        sigsend_to_ruby_thread(sig);
-        return;
-    }
-#endif
-
-    if (trap_list[sig].cmd == 0 && ATOMIC_TEST(rb_trap_immediate)) {
-	IN_MAIN_CONTEXT(signal_exec, sig);
-	ATOMIC_SET(rb_trap_immediate, 1);
-    }
-    else {
-	ATOMIC_INC(rb_trap_pending);
-	ATOMIC_INC(trap_pending_list[sig]);
-    }
-    rb_thread_signal_exit();
-}
-
 static VALUE
 trap(arg)
     struct trap_arg *arg;
@@ -643,7 +623,7 @@ trap(arg)
 		break;
 	      case 4:
 		if (strncmp(RSTRING(command)->ptr, "EXIT", 4) == 0) {
-		    func = sigexit;
+		    arg->cmd = Qundef;
 		}
 		break;
 	    }

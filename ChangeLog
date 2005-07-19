@@ -1,3 +1,11 @@
+Tue Jul 19 17:16:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* signal.c (trap): remove sigexit(); handle "EXIT" via sig_exec().
+	  [ruby-dev:26440]
+
+	* io.c (rb_io_inspect): replace sprintf() with "%s" format all
+	  over the place by snprintf() to avoid integer overflow.
+
 Tue Jul 19 14:10:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c: rbtk_eventloop_depth is used as int.
