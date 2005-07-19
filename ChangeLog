@@ -1,3 +1,11 @@
+Wed Jul 20 04:01:55 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/socket/socket.c: sorry, BeOS also uses HAVE_CLOSESOCKET,
+	  so reverted.
+
+	* ext/socket/extconf.rb: should not define HAVE_CLOSESOCKET
+	  on windows.
+
 Wed Jul 20 03:16:43 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/socket/socket.c: should not undef close() on win32.
