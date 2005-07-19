@@ -4,7 +4,6 @@ case RUBY_PLATFORM
 when /(ms|bcc)win32|mingw/
   test_func = "WSACleanup"
   have_library("ws2_32", "WSACleanup")
-  have_func("closesocket")
 when /cygwin/
   test_func = "socket"
 when /beos/

@@ -193,6 +193,11 @@ ruby_getaddrinfo__aix(nodename, servname, hints, res)
 #define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__aix((node),(serv),(hints),(res))
 #endif
 
+#ifdef HAVE_CLOSESOCKET
+#undef close
+#define close closesocket
+#endif
+
 static VALUE
 init_sock(sock, fd)
     VALUE sock;
