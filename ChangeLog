@@ -1,3 +1,7 @@
+Wed Jul 20 19:20:37 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* io.c (S_ISREG): need to define S_ISREG before it is used first.
+
 Wed Jul 20 18:40:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* io.c (wsplit_p): patch for the environment where

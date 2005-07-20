@@ -388,6 +388,10 @@ rb_io_wait_writable(f)
     }
 }
 
+#ifndef S_ISREG
+#   define S_ISREG(m) ((m & S_IFMT) == S_IFREG)
+#endif
+
 static int
 wsplit_p(OpenFile *fptr)
 {
@@ -1060,10 +1064,6 @@ rb_io_fread(ptr, len, f)
     of.f2 = NULL;
     return io_fread(ptr, len, &of);
 }
-
-#ifndef S_ISREG
-#   define S_ISREG(m) ((m & S_IFMT) == S_IFREG)
-#endif
 
 #define SMALLBUF 100
 
