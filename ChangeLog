@@ -1,3 +1,9 @@
+Wed Jul 20 18:40:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* io.c (wsplit_p): patch for the environment where
+	  fcntl(F_GETFL, O_NONBLOCK) is not supported. in that case,
+	  set FMODE_WSPLIT without fcntl check. [ruby-dev:26566]
+
 Wed Jul 20 18:07:11 2005  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (rb_io_ctl): update FMODE_WSPLIT_INITIALIZED and FMODE_WSPLIT 
