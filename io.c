@@ -372,6 +372,10 @@ io_alloc(klass)
     return (VALUE)io;
 }
 
+#ifndef S_ISREG
+#   define S_ISREG(m) ((m & S_IFMT) == S_IFREG)
+#endif
+
 static int
 wsplit_p(OpenFile *fptr)
 {
@@ -1180,10 +1184,6 @@ rb_io_fread(ptr, len, f)
     MEMCPY(ptr, RSTRING(str)->ptr, char, n);
     return n;
 }
-
-#ifndef S_ISREG
-#   define S_ISREG(m) ((m & S_IFMT) == S_IFREG)
-#endif
 
 #define SMALLBUF 100
 
