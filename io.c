@@ -4843,6 +4843,16 @@ rb_io_ctl(io, req, arg, io_p)
 	rb_raise(rb_eArgError, "return value overflowed string");
     }
 
+    if (!io_p && cmd == F_SETFL) {
+      if (narg & O_NONBLOCK) {
+        fptr->mode |= FMODE_WSPLIT_INITIALIZED;
+        fptr->mode &= ~FMODE_WSPLIT;
+      }
+      else {
+        fptr->mode &= ~(FMODE_WSPLIT_INITIALIZED|FMODE_WSPLIT);
+      }
+    }
+
     return INT2NUM(retval);
 #else
     rb_notimplement();
