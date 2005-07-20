@@ -396,8 +396,7 @@ wsplit_p(OpenFile *fptr)
     if (!(fptr->mode & FMODE_WSPLIT_INITIALIZED)) {
         struct stat buf;
         if (fstat(fileno(f), &buf) == 0 &&
-            !(S_ISREG(buf.st_mode) ||
-              S_ISDIR(buf.st_mode))
+            !S_ISREG(buf.st_mode)
 #if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(O_NONBLOCK)
             && (r = fcntl(fileno(f), F_GETFL)) != -1 &&
             !(r & O_NONBLOCK)
