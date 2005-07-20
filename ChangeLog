@@ -1,3 +1,8 @@
+Wed Jul 20 10:04:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* variable.c (rb_class_path): need to adjust snprintf() len for
+	  teminating NUL.  [ruby-dev:26581]
+
 Wed Jul 20 04:01:55 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/socket/socket.c: sorry, BeOS also uses HAVE_CLOSESOCKET,
@@ -11,6 +16,11 @@ Wed Jul 20 03:16:43 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* ext/socket/socket.c: should not undef close() on win32.
 	  it's defined to rb_w32_close(), otherwise handle leaks.
 	  [ruby-Bugs-2131]
+
+Wed Jul 20 00:48:16 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* error.c (syserr_initialize): don't use str before StringValue()
+	  check.  [ruby-dev:26579]
 
 Tue Jul 19 22:47:29 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

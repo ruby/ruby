@@ -208,7 +208,7 @@ rb_class_path(klass)
 	}
 	len = 2 + strlen(s) + 3 + 2 * SIZEOF_LONG + 1;
 	path = rb_str_new(0, len);
-	snprintf(RSTRING(path)->ptr, len, "#<%s:0x%lx>", s, klass);
+	snprintf(RSTRING(path)->ptr, len+1, "#<%s:0x%lx>", s, klass);
 	RSTRING(path)->len = strlen(RSTRING(path)->ptr);
 	rb_ivar_set(klass, tmp_classpath, path);
 
