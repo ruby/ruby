@@ -380,9 +380,12 @@ wsplit_p(OpenFile *fptr)
         struct stat buf;
         if (fstat(fptr->fd, &buf) == 0 &&
             !(S_ISREG(buf.st_mode) ||
-              S_ISDIR(buf.st_mode)) &&
-            (r = fcntl(fptr->fd, F_GETFL)) != -1 &&
-            !(r & O_NONBLOCK)) {
+              S_ISDIR(buf.st_mode))
+#if defined(HAVE_FCNTL) && defined(F_GETFL) && defined(O_NONBLOCK)
+            && (r = fcntl(fileno(f), F_GETFL)) != -1 &&
+            !(r & O_NONBLOCK)
+#endif
+            ) {
             fptr->mode |= FMODE_WSPLIT;
         }
         fptr->mode |= FMODE_WSPLIT_INITIALIZED;
