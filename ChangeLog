@@ -1,3 +1,8 @@
+Wed Jul 20 18:07:11 2005  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (rb_io_ctl): update FMODE_WSPLIT_INITIALIZED and FMODE_WSPLIT 
+	  by F_SETFL.
+
 Wed Jul 20 10:04:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* variable.c (rb_class_path): need to adjust snprintf() len for

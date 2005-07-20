@@ -4725,6 +4725,16 @@ rb_io_ctl(io, req, arg, io_p)
 	io_cntl(fileno(fptr->f2), cmd, narg, io_p);
     }
 
+    if (!io_p && cmd == F_SETFL) {
+      if (narg & O_NONBLOCK) {
+        fptr->mode |= FMODE_WSPLIT_INITIALIZED;
+        fptr->mode &= ~FMODE_WSPLIT;
+      }
+      else {
+        fptr->mode &= ~(FMODE_WSPLIT_INITIALIZED|FMODE_WSPLIT);
+      }
+    }
+
     return INT2NUM(retval);
 #else
     rb_notimplement();
