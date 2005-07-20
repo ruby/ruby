@@ -477,10 +477,10 @@ inspect_struct(s, dummy, recur)
 
     if (recur) {
 	char *cname = rb_class2name(rb_obj_class(s));
-	size_t len = strlen(cname) + 15;
+	size_t len = strlen(cname) + 14;
 	VALUE str = rb_str_new(0, len);
 
-	snprintf(RSTRING(str)->ptr, len, "#<struct %s:...>", cname);
+	snprintf(RSTRING(str)->ptr, len+1, "#<struct %s:...>", cname);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return str;
     }
