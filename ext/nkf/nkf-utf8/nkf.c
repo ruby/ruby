@@ -41,11 +41,11 @@
 ***********************************************************************/
 /* $Id$ */
 #define NKF_VERSION "2.0.5"
-#define NKF_RELEASE_DATE "2005-07-18"
+#define NKF_RELEASE_DATE "2005-07-22"
 #include "config.h"
 
-static char *CopyRight =
-      "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW, 2002-2005 Kono, Furukawa, Naruse";
+#define COPY_RIGHT \
+    "Copyright (C) 1987, FUJITSU LTD. (I.Ichikawa),2000 S. Kono, COW, 2002-2005 Kono, Furukawa, Naruse"
 
 
 /*
@@ -105,17 +105,13 @@ static char *CopyRight =
 #ifdef PERL_XS
 #undef OVERWRITE
 #endif
-#if defined( UTF8_OUTPUT_ENABLE ) || defined( UTF8_INPUT_ENABLE )
-#define UNICODE_ENABLE
-#else
-#undef UNICODE_NORMALIZATION
-#endif
 
 #ifndef PERL_XS
 #include <stdio.h>
 #endif
 
 #include <stdlib.h>
+#include <string.h>
 
 #if defined(MSDOS) || defined(__OS2__) 
 #include <fcntl.h>
@@ -149,7 +145,6 @@ static char *CopyRight =
 
 #ifdef OVERWRITE
 /* added by satoru@isoternet.org */
-#include <string.h>
 #include <sys/stat.h>
 #ifndef MSDOS /* UNIX, OS/2 */
 #include <unistd.h>
@@ -251,7 +246,7 @@ static char *CopyRight =
 #define         GETA2   0x2e
 
 
-#ifdef UNICODE_ENABLE
+#if defined(UTF8_OUTPUT_ENABLE) || defined(UTF8_INPUT_ENABLE)
 #define sizeof_euc_utf8 94
 #define sizeof_euc_to_utf8_1byte 94
 #define sizeof_euc_to_utf8_2bytes 94
@@ -263,7 +258,6 @@ static char *CopyRight =
 
 /* MIME preprocessor */
 
-
 #ifdef EASYWIN /*Easy Win */
 extern POINT _BufferSize;
 #endif
@@ -273,9 +267,11 @@ extern POINT _BufferSize;
 #ifdef ANSI_C_PROTOTYPE
 #define PROTO(x)  x 
 #define STATIC static
+#define CONST const
 #else
 #define PROTO(x)  ()
 #define STATIC
+#define CONST
 #endif
 
 struct input_code{
@@ -291,7 +287,12 @@ struct input_code{
 
 STATIC char *input_codename = "";
 
+#ifndef PERL_XS
+STATIC const char *CopyRight = COPY_RIGHT;
+#endif
+#if !defined(PERL_XS) && !defined(WIN32DLL)
 STATIC  int     noconvert PROTO((FILE *f));
+#endif
 STATIC  int     kanji_convert PROTO((FILE *f));
 STATIC  int     h_conv PROTO((FILE *f,int c2,int c1));
 STATIC  int     push_hold_buf PROTO((int c2));
@@ -303,7 +304,7 @@ STATIC  int     e_iconv PROTO((int c2,int c1,int c0));
 STATIC  int     w2e_conv PROTO((int c2,int c1,int c0,int *p2,int *p1));
 STATIC  int     w_iconv PROTO((int c2,int c1,int c0));
 STATIC  int     w_iconv16 PROTO((int c2,int c1,int c0));
-STATIC  int	w_iconv_common PROTO((int c1,int c0,unsigned short **pp,int psize,int *p2,int *p1));
+STATIC  int	w_iconv_common PROTO((int c1,int c0,const unsigned short *const *pp,int psize,int *p2,int *p1));
 STATIC  int     ww16_conv PROTO((int c2, int c1, int c0));
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
@@ -342,15 +343,17 @@ STATIC  int     mime_ungetc PROTO((int c,FILE *f));
 STATIC  int     mime_begin_strict PROTO((FILE *f));
 STATIC  int     mime_getc_buf PROTO((FILE *f));
 STATIC  int     mime_ungetc_buf  PROTO((int c,FILE *f));
-STATIC  int     mime_integrity PROTO((FILE *f,unsigned char *p));
+STATIC  int     mime_integrity PROTO((FILE *f,const unsigned char *p));
 
 STATIC  int     base64decode PROTO((int c));
 STATIC  void    mime_prechar PROTO((int c2, int c1));
 STATIC  void    mime_putc PROTO((int c));
 STATIC  void    open_mime PROTO((int c));
 STATIC  void    close_mime PROTO(());
+#ifndef PERL_XS
 STATIC  void    usage PROTO(());
 STATIC  void    version PROTO(());
+#endif
 STATIC  void    options PROTO((unsigned char *c));
 #if defined(PERL_XS) || defined(WIN32DLL)
 STATIC  void    reinit PROTO(());
@@ -358,70 +361,72 @@ STATIC  void    reinit PROTO(());
 
 /* buffers */
 
-static unsigned char   stdibuf[IOBUF_SIZE];
-static unsigned char   stdobuf[IOBUF_SIZE];
-static unsigned char   hold_buf[HOLD_SIZE*2];
-static int             hold_count;
+#if !defined(PERL_XS) && !defined(WIN32DLL)
+STATIC unsigned char   stdibuf[IOBUF_SIZE];
+STATIC unsigned char   stdobuf[IOBUF_SIZE];
+#endif
+STATIC unsigned char   hold_buf[HOLD_SIZE*2];
+STATIC int             hold_count;
 
 /* MIME preprocessor fifo */
 
 #define MIME_BUF_SIZE   (1024)    /* 2^n ring buffer */
 #define MIME_BUF_MASK   (MIME_BUF_SIZE-1)   
 #define Fifo(n)         mime_buf[(n)&MIME_BUF_MASK]
-static unsigned char           mime_buf[MIME_BUF_SIZE];
-static unsigned int            mime_top = 0;
-static unsigned int            mime_last = 0;  /* decoded */
-static unsigned int            mime_input = 0; /* undecoded */
-static int (*mime_iconv_back)PROTO((int c2,int c1,int c0)) = NULL;
+STATIC unsigned char           mime_buf[MIME_BUF_SIZE];
+STATIC unsigned int            mime_top = 0;
+STATIC unsigned int            mime_last = 0;  /* decoded */
+STATIC unsigned int            mime_input = 0; /* undecoded */
+STATIC int (*mime_iconv_back)PROTO((int c2,int c1,int c0)) = NULL;
 
 /* flags */
-static int             unbuf_f = FALSE;
-static int             estab_f = FALSE;
-static int             nop_f = FALSE;
-static int             binmode_f = TRUE;       /* binary mode */
-static int             rot_f = FALSE;          /* rot14/43 mode */
-static int             hira_f = FALSE;          /* hira/kata henkan */
-static int             input_f = FALSE;        /* non fixed input code  */
-static int             alpha_f = FALSE;        /* convert JIx0208 alphbet to ASCII */
-static int             mime_f = STRICT_MIME;   /* convert MIME B base64 or Q */
-static int             mime_decode_f = FALSE;  /* mime decode is explicitly on */
-static int             mimebuf_f = FALSE;      /* MIME buffered input */
-static int             broken_f = FALSE;       /* convert ESC-less broken JIS */
-static int             iso8859_f = FALSE;      /* ISO8859 through */
-static int             mimeout_f = FALSE;       /* base64 mode */
+STATIC int             unbuf_f = FALSE;
+STATIC int             estab_f = FALSE;
+STATIC int             nop_f = FALSE;
+STATIC int             binmode_f = TRUE;       /* binary mode */
+STATIC int             rot_f = FALSE;          /* rot14/43 mode */
+STATIC int             hira_f = FALSE;          /* hira/kata henkan */
+STATIC int             input_f = FALSE;        /* non fixed input code  */
+STATIC int             alpha_f = FALSE;        /* convert JIx0208 alphbet to ASCII */
+STATIC int             mime_f = STRICT_MIME;   /* convert MIME B base64 or Q */
+STATIC int             mime_decode_f = FALSE;  /* mime decode is explicitly on */
+STATIC int             mimebuf_f = FALSE;      /* MIME buffered input */
+STATIC int             broken_f = FALSE;       /* convert ESC-less broken JIS */
+STATIC int             iso8859_f = FALSE;      /* ISO8859 through */
+STATIC int             mimeout_f = FALSE;       /* base64 mode */
 #if defined(MSDOS) || defined(__OS2__) 
-static int             x0201_f = TRUE;         /* Assume JISX0201 kana */
+STATIC int             x0201_f = TRUE;         /* Assume JISX0201 kana */
 #else
-static int             x0201_f = NO_X0201;     /* Assume NO JISX0201 */
+STATIC int             x0201_f = NO_X0201;     /* Assume NO JISX0201 */
 #endif
-static int             iso2022jp_f = FALSE;    /* convert ISO-2022-JP */
-#ifdef UNICODE_ENABLE
-static int             internal_unicode_f = FALSE;   /* Internal Unicode Processing */
+STATIC int             iso2022jp_f = FALSE;    /* convert ISO-2022-JP */
+#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
+STATIC int             internal_unicode_f = FALSE;   /* Internal Unicode Processing */
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
-static int             unicode_bom_f= 0;   /* Output Unicode BOM */
-static int             w_oconv16_LE = 0;   /* utf-16 little endian */
-static int             ms_ucs_map_f = FALSE;   /* Microsoft UCS Mapping Compatible */
+STATIC int             unicode_bom_f= 0;   /* Output Unicode BOM */
+STATIC int             w_oconv16_LE = 0;   /* utf-16 little endian */
+STATIC int             ms_ucs_map_f = FALSE;   /* Microsoft UCS Mapping Compatible */
 #endif
 
 #ifdef UNICODE_NORMALIZATION
-static int nfc_f = FALSE;
-static int (*i_nfc_getc)PROTO((FILE *)) = std_getc; /* input of ugetc */
-static int (*i_nfc_ungetc)PROTO((int c ,FILE *f)) = std_ungetc;
+STATIC int nfc_f = FALSE;
+STATIC int (*i_nfc_getc)PROTO((FILE *)) = std_getc; /* input of ugetc */
+STATIC int (*i_nfc_ungetc)PROTO((int c ,FILE *f)) = std_ungetc;
 STATIC int nfc_getc PROTO((FILE *f));
 STATIC int nfc_ungetc PROTO((int c,FILE *f));
 #endif
 
 #ifdef INPUT_OPTION
-static int cap_f = FALSE;
-static int (*i_cgetc)PROTO((FILE *)) = std_getc; /* input of cgetc */
-static int (*i_cungetc)PROTO((int c ,FILE *f)) = std_ungetc;
+STATIC int cap_f = FALSE;
+STATIC int (*i_cgetc)PROTO((FILE *)) = std_getc; /* input of cgetc */
+STATIC int (*i_cungetc)PROTO((int c ,FILE *f)) = std_ungetc;
 STATIC int cap_getc PROTO((FILE *f));
 STATIC int cap_ungetc PROTO((int c,FILE *f));
 
-static int url_f = FALSE;
-static int (*i_ugetc)PROTO((FILE *)) = std_getc; /* input of ugetc */
-static int (*i_uungetc)PROTO((int c ,FILE *f)) = std_ungetc;
+STATIC int url_f = FALSE;
+STATIC int (*i_ugetc)PROTO((FILE *)) = std_getc; /* input of ugetc */
+STATIC int (*i_uungetc)PROTO((int c ,FILE *f)) = std_ungetc;
 STATIC int url_getc PROTO((FILE *f));
 STATIC int url_ungetc PROTO((int c,FILE *f));
 #endif
@@ -429,29 +434,31 @@ STATIC int url_ungetc PROTO((int c,FILE *f));
 #ifdef NUMCHAR_OPTION
 #define CLASS_MASK  0x0f000000
 #define CLASS_UTF16 0x01000000
-static int numchar_f = FALSE;
-static int (*i_ngetc)PROTO((FILE *)) = std_getc; /* input of ugetc */
-static int (*i_nungetc)PROTO((int c ,FILE *f)) = std_ungetc;
+STATIC int numchar_f = FALSE;
+STATIC int (*i_ngetc)PROTO((FILE *)) = std_getc; /* input of ugetc */
+STATIC int (*i_nungetc)PROTO((int c ,FILE *f)) = std_ungetc;
 STATIC int numchar_getc PROTO((FILE *f));
 STATIC int numchar_ungetc PROTO((int c,FILE *f));
 #endif
 
 #ifdef CHECK_OPTION
-static int noout_f = FALSE;
+STATIC int noout_f = FALSE;
 STATIC void no_putc PROTO((int c));
-static int debug_f = FALSE;
-STATIC void debug PROTO((char *str));
-static int (*iconv_for_check)() = 0;
+STATIC int debug_f = FALSE;
+STATIC void debug PROTO((const char *str));
+STATIC int (*iconv_for_check)() = 0;
 #endif
 
-static int guess_f = FALSE;
+STATIC int guess_f = FALSE;
+#if !defined PERL_XS
 STATIC  void    print_guessed_code PROTO((char *filename));
+#endif
 STATIC  void    set_input_codename PROTO((char *codename));
-static int is_inputcode_mixed = FALSE;
-static int is_inputcode_set   = FALSE;
+STATIC int is_inputcode_mixed = FALSE;
+STATIC int is_inputcode_set   = FALSE;
 
 #ifdef EXEC_IO
-static int exec_f = 0;
+STATIC int exec_f = 0;
 #endif
 
 #ifdef SHIFTJIS_CP932
@@ -468,8 +475,8 @@ STATIC int cp932inv_f = TRUE;
 
 #ifdef X0212_ENABLE
 STATIC int x0212_f = FALSE;
-static int x0212_shift PROTO((int c));
-static int x0212_unshift PROTO((int c));
+STATIC int x0212_shift PROTO((int c));
+STATIC int x0212_unshift PROTO((int c));
 #endif
 
 STATIC unsigned char prefix_table[256];
@@ -480,39 +487,41 @@ STATIC void s_status PROTO((struct input_code *, int));
 #ifdef UTF8_INPUT_ENABLE
 STATIC void w_status PROTO((struct input_code *, int));
 STATIC void w16_status PROTO((struct input_code *, int));
-static int             utf16_mode = UTF16BE_INPUT;
+STATIC int             utf16_mode = UTF16BE_INPUT;
 #endif
 
 struct input_code input_code_list[] = {
     {"EUC-JP",    0, 0, 0, {0, 0, 0}, e_status, e_iconv, 0},
     {"Shift_JIS", 0, 0, 0, {0, 0, 0}, s_status, s_iconv, 0},
+#ifdef UTF8_INPUT_ENABLE
     {"UTF-8",     0, 0, 0, {0, 0, 0}, w_status, w_iconv, 0},
     {"UTF-16",    0, 0, 0, {0, 0, 0}, w16_status, w_iconv16, 0},
+#endif
     {0}
 };
 
-static int              mimeout_mode = 0;
-static int              base64_count = 0;
+STATIC int              mimeout_mode = 0;
+STATIC int              base64_count = 0;
 
 /* X0208 -> ASCII converter */
 
 /* fold parameter */
-static int             f_line = 0;    /* chars in line */
-static int             f_prev = 0;
-static int             fold_preserve_f = FALSE; /* preserve new lines */
-static int             fold_f  = FALSE;
-static int             fold_len  = 0;
+STATIC int             f_line = 0;    /* chars in line */
+STATIC int             f_prev = 0;
+STATIC int             fold_preserve_f = FALSE; /* preserve new lines */
+STATIC int             fold_f  = FALSE;
+STATIC int             fold_len  = 0;
 
 /* options */
-static unsigned char   kanji_intro = DEFAULT_J;
-static unsigned char   ascii_intro = DEFAULT_R;
+STATIC unsigned char   kanji_intro = DEFAULT_J;
+STATIC unsigned char   ascii_intro = DEFAULT_R;
 
 /* Folding */
 
 #define FOLD_MARGIN  10
 #define DEFAULT_FOLD 60
 
-static int             fold_margin  = FOLD_MARGIN;
+STATIC int             fold_margin  = FOLD_MARGIN;
 
 /* converters */
 
@@ -530,50 +539,50 @@ static int             fold_margin  = FOLD_MARGIN;
 #endif
 
 /* process default */
-static void (*output_conv)PROTO((int c2,int c1)) = DEFAULT_CONV;   
+STATIC void (*output_conv)PROTO((int c2,int c1)) = DEFAULT_CONV;   
 
-static void (*oconv)PROTO((int c2,int c1)) = no_connection; 
+STATIC void (*oconv)PROTO((int c2,int c1)) = no_connection; 
 /* s_iconv or oconv */
-static int (*iconv)PROTO((int c2,int c1,int c0)) = no_connection2;   
+STATIC int (*iconv)PROTO((int c2,int c1,int c0)) = no_connection2;   
 
-static void (*o_zconv)PROTO((int c2,int c1)) = no_connection; 
-static void (*o_fconv)PROTO((int c2,int c1)) = no_connection; 
-static void (*o_crconv)PROTO((int c2,int c1)) = no_connection; 
-static void (*o_rot_conv)PROTO((int c2,int c1)) = no_connection; 
-static void (*o_hira_conv)PROTO((int c2,int c1)) = no_connection; 
-static void (*o_base64conv)PROTO((int c2,int c1)) = no_connection;
-static void (*o_iso2022jp_check_conv)PROTO((int c2,int c1)) = no_connection;
+STATIC void (*o_zconv)PROTO((int c2,int c1)) = no_connection; 
+STATIC void (*o_fconv)PROTO((int c2,int c1)) = no_connection; 
+STATIC void (*o_crconv)PROTO((int c2,int c1)) = no_connection; 
+STATIC void (*o_rot_conv)PROTO((int c2,int c1)) = no_connection; 
+STATIC void (*o_hira_conv)PROTO((int c2,int c1)) = no_connection; 
+STATIC void (*o_base64conv)PROTO((int c2,int c1)) = no_connection;
+STATIC void (*o_iso2022jp_check_conv)PROTO((int c2,int c1)) = no_connection;
 
-/* static redirections */
+/* STATIC redirections */
 
-static  void   (*o_putc)PROTO((int c)) = std_putc;
+STATIC  void   (*o_putc)PROTO((int c)) = std_putc;
 
-static  int    (*i_getc)PROTO((FILE *f)) = std_getc; /* general input */
-static  int    (*i_ungetc)PROTO((int c,FILE *f)) =std_ungetc;
+STATIC  int    (*i_getc)PROTO((FILE *f)) = std_getc; /* general input */
+STATIC  int    (*i_ungetc)PROTO((int c,FILE *f)) =std_ungetc;
 
-static  int    (*i_bgetc)PROTO((FILE *)) = std_getc; /* input of mgetc */
-static  int    (*i_bungetc)PROTO((int c ,FILE *f)) = std_ungetc;
+STATIC  int    (*i_bgetc)PROTO((FILE *)) = std_getc; /* input of mgetc */
+STATIC  int    (*i_bungetc)PROTO((int c ,FILE *f)) = std_ungetc;
 
-static  void   (*o_mputc)PROTO((int c)) = std_putc ; /* output of mputc */
+STATIC  void   (*o_mputc)PROTO((int c)) = std_putc ; /* output of mputc */
 
-static  int    (*i_mgetc)PROTO((FILE *)) = std_getc; /* input of mgetc */
-static  int    (*i_mungetc)PROTO((int c ,FILE *f)) = std_ungetc;
+STATIC  int    (*i_mgetc)PROTO((FILE *)) = std_getc; /* input of mgetc */
+STATIC  int    (*i_mungetc)PROTO((int c ,FILE *f)) = std_ungetc;
 
 /* for strict mime */
-static  int    (*i_mgetc_buf)PROTO((FILE *)) = std_getc; /* input of mgetc_buf */
-static  int    (*i_mungetc_buf)PROTO((int c,FILE *f)) = std_ungetc;
+STATIC  int    (*i_mgetc_buf)PROTO((FILE *)) = std_getc; /* input of mgetc_buf */
+STATIC  int    (*i_mungetc_buf)PROTO((int c,FILE *f)) = std_ungetc;
 
 /* Global states */
-static int output_mode = ASCII,    /* output kanji mode */
+STATIC int output_mode = ASCII,    /* output kanji mode */
            input_mode =  ASCII,    /* input kanji mode */
            shift_mode =  FALSE;    /* TRUE shift out, or X0201  */
-static int mime_decode_mode =   FALSE;    /* MIME mode B base64, Q hex */
+STATIC int mime_decode_mode =   FALSE;    /* MIME mode B base64, Q hex */
 
 /* X0201 / X0208 conversion tables */
 
 /* X0201 kana conversion table */
 /* 90-9F A0-DF */
-static
+STATIC const
 unsigned char cv[]= {
     0x21,0x21,0x21,0x23,0x21,0x56,0x21,0x57,
     0x21,0x22,0x21,0x26,0x25,0x72,0x25,0x21,
@@ -596,7 +605,7 @@ unsigned char cv[]= {
 
 /* X0201 kana conversion table for daguten */
 /* 90-9F A0-DF */
-static
+STATIC const
 unsigned char dv[]= { 
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -618,7 +627,7 @@ unsigned char dv[]= {
 
 /* X0201 kana conversion table for han-daguten */
 /* 90-9F A0-DF */
-static
+STATIC const
 unsigned char ev[]= { 
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
     0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,
@@ -641,7 +650,7 @@ unsigned char ev[]= {
 
 /* X0208 kigou conversion table */
 /* 0x8140 - 0x819e */
-static
+STATIC const
 unsigned char fv[] = {
 
     0x00,0x00,0x00,0x00,0x2c,0x2e,0x00,0x3a,
@@ -661,14 +670,14 @@ unsigned char fv[] = {
 
 #define    CRLF      1
 
-static int             file_out = FALSE;
+STATIC int             file_out = FALSE;
 #ifdef OVERWRITE
-static int             overwrite = FALSE;
+STATIC int             overwrite = FALSE;
 #endif
 
-static int             crmode_f = 0;   /* CR, NL, CRLF */
+STATIC int             crmode_f = 0;   /* CR, NL, CRLF */
 #ifdef EASYWIN /*Easy Win */
-static int             end_check;
+STATIC int             end_check;
 #endif /*Easy Win */
 
 #define STD_GC_BUFSIZE (256)
@@ -914,10 +923,10 @@ main(argc, argv)
 }
 #endif /* WIN32DLL */
 
-static 
+STATIC const
 struct {
-    char *name;
-    char *alias;
+    const char *name;
+    const char *alias;
 } long_option[] = {
     {"base64","jMB"},
     {"euc","e"},
@@ -944,7 +953,7 @@ struct {
 #ifdef X0212_ENABLE
     {"x0212", ""},
 #endif
-#ifdef UNICODE_ENABLE
+#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
     {"internal-unicode", ""},
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
@@ -983,7 +992,7 @@ struct {
     {"prefix=", ""},
 };
 
-static int option_mode = 0;
+STATIC int option_mode = 0;
 
 void
 options(cp) 
@@ -1094,7 +1103,7 @@ options(cp)
                       return;
                   }
 #endif
-#ifdef UNICODE_ENABLE
+#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
                 if (strcmp(long_option[i].name, "internal-unicode") == 0){
                     internal_unicode_f = TRUE;
                     continue;
@@ -1430,14 +1439,14 @@ void set_iconv(f, iconv_func)
 
 #define SCORE_INIT (SCORE_iMIME)
 
-int score_table_A0[] = {
+const int score_table_A0[] = {
     0, 0, 0, 0,
     0, 0, 0, 0,
     0, SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND, SCORE_NO_EXIST,
 };
 
-int score_table_F0[] = {
+const int score_table_F0[] = {
     SCORE_L2, SCORE_L2, SCORE_L2, SCORE_L2,
     SCORE_L2, SCORE_DEPEND, SCORE_NO_EXIST, SCORE_NO_EXIST,
     SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND, SCORE_DEPEND,
@@ -1466,7 +1475,9 @@ void code_score(ptr)
      struct input_code *ptr;
 {
     int c2 = ptr->buf[0];
+#ifdef UTF8_OUTPUT_ENABLE
     int c1 = ptr->buf[1];
+#endif
     if (c2 < 0){
         set_code_score(ptr, SCORE_ERROR);
     }else if (c2 == SSO){
@@ -1808,6 +1819,7 @@ int c;
 }
 #endif /*WIN32DLL*/
 
+#if !defined(PERL_XS) && !defined(WIN32DLL)
 int
 noconvert(f)
     FILE  *f;
@@ -1818,7 +1830,7 @@ noconvert(f)
       (*o_putc)(c);
     return 1;
 }
-
+#endif
 
 void
 module_connection()
@@ -2106,7 +2118,9 @@ kanji_convert(f)
                         input_mode = X0208;
                         shift_mode = FALSE;
                         set_input_codename("ISO-2022-JP");
+#ifdef CHECK_OPTION
                         debug(input_codename);
+#endif
                         NEXT;
                     } else if (c1 == '(') {
                         if ((c1 = (*i_getc)(f)) == EOF) {
@@ -2374,10 +2388,12 @@ int s2e_conv(c2, c1, p2, p1)
      int c2, c1;
      int *p2, *p1;
 {
+#if defined(SHIFTJIS_CP932) || defined(X0212_ENABLE)
     int val;
+#endif
 #ifdef SHIFTJIS_CP932
     if (cp932_f && CP932_TABLE_BEGIN <= c2 && c2 <= CP932_TABLE_END){
-        extern unsigned short shiftjis_cp932[3][189];
+        extern const unsigned short shiftjis_cp932[3][189];
         val = shiftjis_cp932[c2 - CP932_TABLE_BEGIN][c1 - 0x40];
         if (val){
             c2 = val >> 8;
@@ -2387,7 +2403,7 @@ int s2e_conv(c2, c1, p2, p1)
 #endif /* SHIFTJIS_CP932 */
 #ifdef X0212_ENABLE
     if (x0212_f && 0xfa <= c2 && c2 <= 0xfc){
-        extern unsigned short shiftjis_x0212[3][189];
+        extern const unsigned short shiftjis_x0212[3][189];
         val = shiftjis_x0212[c2 - 0xfa][c1 - 0x40];
         if (val){
             if (val & 0x8000){
@@ -2484,12 +2500,12 @@ w2e_conv(c2, c1, c0, p2, p1)
     int    c2, c1, c0;
     int *p2, *p1;
 {
-    extern unsigned short * utf8_to_euc_2bytes[];
-    extern unsigned short ** utf8_to_euc_3bytes[];
+    extern const unsigned short *const utf8_to_euc_2bytes[];
+    extern const unsigned short *const *const utf8_to_euc_3bytes[];
     int ret = 0;
 
     if (0xc0 <= c2 && c2 <= 0xef) {
-        unsigned short **pp;
+        const unsigned short *const *pp;
 
         if (0xe0 <= c2) {
             if (c0 == 0) return -1;
@@ -2520,11 +2536,12 @@ w_iconv(c2, c1, c0)
                     c1, c0;
 {
     int ret = 0;
-    unsigned short val = 0;
     
     if (c0 == 0){
-	if (c2 < 0x80 || (c2 & 0xc0) == 0xdf) /* 0x00-0x7f 0xc0-0xdf */
-	    ; /* 1 or 2ytes */
+	if (c2 == 0) /* 0x00-0x7f */
+	    ; /* 1byte */
+	else if ((c2 & 0xe0) == 0xc0) /* 0xc0-0xdf */
+	    ; /* 2ytes */
 	else if ((c2 & 0xf0) == 0xe0) /* 0xe0-0xef */
 	    return -1; /* 3bytes */
 #ifdef __COMMENT__
@@ -2536,9 +2553,11 @@ w_iconv(c2, c1, c0)
 	else return 0;
     }
     if (c2 == EOF);
-    else if (c2 == 0xef && c1 == 0xbb && c0 == 0xbf)
+    else if (c2 == 0xef && c1 == 0xbb && c0 == 0xbf) {
 	return 0; /* throw BOM */
-    else if (internal_unicode_f && (output_conv == w_oconv || output_conv == w_oconv16)){
+#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
+    } else if (internal_unicode_f && (output_conv == w_oconv || output_conv == w_oconv16)){
+	unsigned short val = 0;
 	if(c2 == 0){
 	    c2 = c1;
 	    c1 = 0;
@@ -2546,6 +2565,7 @@ w_iconv(c2, c1, c0)
 	val = ww16_conv(c2, c1, c0);
 	c2 = (val >> 8) & 0xff;
 	c1 = val & 0xff;
+#endif
     } else {
 	ret = w2e_conv(c2, c1, c0, &c2, &c1);
     }
@@ -2598,10 +2618,10 @@ w16e_conv(val, p2, p1)
      unsigned short val;
      int *p2, *p1;
 {
-    extern unsigned short * utf8_to_euc_2bytes[];
-    extern unsigned short ** utf8_to_euc_3bytes[];
+    extern const unsigned short *const utf8_to_euc_2bytes[];
+    extern const unsigned short *const *const utf8_to_euc_3bytes[];
     int c2, c1, c0;
-    unsigned short **pp;
+    const unsigned short *const *pp;
     int psize;
     int ret = 0;
 
@@ -2651,7 +2671,9 @@ w_iconv16(c2, c1, c0)
 	(*oconv)(c2, c1);
 	return 0;
     }
+#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
     if (internal_unicode_f && (output_conv == w_oconv || output_conv == w_oconv16));
+#endif
     else ret = w16e_conv(((c2<<8)&0xff00) + c1, &c2, &c1);
     if (ret) return ret;
     (*oconv)(c2, c1);
@@ -2661,12 +2683,12 @@ w_iconv16(c2, c1, c0)
 int
 w_iconv_common(c1, c0, pp, psize, p2, p1)
     int    c1,c0;
-    unsigned short **pp;
+    const unsigned short *const *pp;
     int psize;
     int *p2, *p1;
 {
     int c2;
-    unsigned short *p ;
+    const unsigned short *p;
     unsigned short val;
 
     if (pp == 0) return 1;
@@ -2700,16 +2722,16 @@ int
 e2w_conv(c2, c1)
     int    c2, c1;
 {
-    extern unsigned short euc_to_utf8_1byte[];
-    extern unsigned short * euc_to_utf8_2bytes[];
-    extern unsigned short * euc_to_utf8_2bytes_ms[];
-    unsigned short *p;
+    extern const unsigned short euc_to_utf8_1byte[];
+    extern const unsigned short *const euc_to_utf8_2bytes[];
+    extern const unsigned short *const euc_to_utf8_2bytes_ms[];
+    const unsigned short *p;
 
     if (c2 == X0201) {
         p = euc_to_utf8_1byte;
 #ifdef X0212_ENABLE
     } else if (c2 >> 8 == 0x8f){
-        extern unsigned short * x0212_to_utf8_2bytes[];
+        extern const unsigned short *const x0212_to_utf8_2bytes[];
         c2 = (c2&0x7f) - 0x21;
         if (0<=c2 && c2<sizeof_euc_to_utf8_2bytes)
 	    p = x0212_to_utf8_2bytes[c2];
@@ -2925,11 +2947,11 @@ int
 e2s_conv(c2, c1, p2, p1)
      int c2, c1, *p2, *p1;
 {
-    int val = 0;
-    unsigned short *ptr;
-    int ndx;
-    extern unsigned short *x0212_shiftjis[];
 #ifdef X0212_ENABLE
+    int val = 0;
+    const unsigned short *ptr;
+    int ndx;
+    extern const unsigned short *const x0212_shiftjis[];
     if ((c2 & 0xff00) == 0x8f00){
         ndx = c2 & 0x7f;
         if (0x21 <= ndx && ndx <= 0x7e){
@@ -2998,7 +3020,7 @@ s_oconv(c2, c1)
 #ifdef SHIFTJIS_CP932
         if (cp932inv_f
             && CP932INV_TABLE_BEGIN <= c2 && c2 <= CP932INV_TABLE_END){
-            extern unsigned short cp932inv[2][189];
+            extern const unsigned short cp932inv[2][189];
             int c = cp932inv[c2 - CP932INV_TABLE_BEGIN][c1 - 0x40];
             if (c){
                 c2 = c >> 8;
@@ -3093,9 +3115,9 @@ base64_conv(c2, c1)
 }
 
 
-static int broken_buf[3];
-static int broken_counter = 0;
-static int broken_last = 0;
+STATIC int broken_buf[3];
+STATIC int broken_counter = 0;
+STATIC int broken_last = 0;
 int
 broken_getc(f)
 FILE *f;
@@ -3146,7 +3168,7 @@ FILE *f;
     return c;
 }
 
-static int prev_cr = 0;
+STATIC int prev_cr = 0;
 
 void
 cr_conv(c2,c1) 
@@ -3492,7 +3514,7 @@ void
 iso2022jp_check_conv(c2,c1)
 int    c2, c1;
 {
-    static int range[RANGE_NUM_MAX][2] = {
+    STATIC const int range[RANGE_NUM_MAX][2] = {
         {0x222f, 0x2239,},
         {0x2242, 0x2249,},
         {0x2251, 0x225b,},
@@ -3539,19 +3561,19 @@ int    c2, c1;
 
 /* This converts  =?ISO-2022-JP?B?HOGE HOGE?= */
 
-unsigned char *mime_pattern[] = {
-   (unsigned char *)"\075?EUC-JP?B?",
-   (unsigned char *)"\075?SHIFT_JIS?B?",
-   (unsigned char *)"\075?ISO-8859-1?Q?",
-   (unsigned char *)"\075?ISO-8859-1?B?",
-   (unsigned char *)"\075?ISO-2022-JP?B?",
-   (unsigned char *)"\075?ISO-2022-JP?Q?",
+const unsigned char *mime_pattern[] = {
+    (const unsigned char *)"\075?EUC-JP?B?",
+    (const unsigned char *)"\075?SHIFT_JIS?B?",
+    (const unsigned char *)"\075?ISO-8859-1?Q?",
+    (const unsigned char *)"\075?ISO-8859-1?B?",
+    (const unsigned char *)"\075?ISO-2022-JP?B?",
+    (const unsigned char *)"\075?ISO-2022-JP?Q?",
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
-   (unsigned char *)"\075?UTF-8?B?",
-   (unsigned char *)"\075?UTF-8?Q?",
+    (const unsigned char *)"\075?UTF-8?B?",
+    (const unsigned char *)"\075?UTF-8?Q?",
 #endif
-   (unsigned char *)"\075?US-ASCII?Q?",
-   NULL
+    (const unsigned char *)"\075?US-ASCII?Q?",
+    NULL
 };
 
 
@@ -3564,7 +3586,7 @@ int (*mime_priority_func[])PROTO((int c2, int c1, int c0)) = {
     0,
 };
 
-int      mime_encode[] = {
+const int mime_encode[] = {
     JAPANESE_EUC, SHIFT_JIS,ISO8859_1, ISO8859_1, X0208, X0201,
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
     UTF8, UTF8,
@@ -3573,7 +3595,7 @@ int      mime_encode[] = {
     0
 };
 
-int      mime_encode_method[] = {
+const int mime_encode_method[] = {
     'B', 'B','Q', 'B', 'B', 'Q',
 #if defined(UTF8_INPUT_ENABLE) || defined(UTF8_OUTPUT_ENABLE)
     'B', 'Q',
@@ -3626,7 +3648,7 @@ FILE *f;
 {
     int c1 = 0;
     int i,j,k;
-    unsigned char *p,*q;
+    const unsigned char *p,*q;
     int r[MAXRECOVER];    /* recovery buffer, max mime pattern lenght */
 
     mime_decode_mode = FALSE;
@@ -3760,7 +3782,7 @@ no_putc(c)
 }
 
 void debug(str)
-     char *str;
+    const char *str;
 {
     if (debug_f){
         fprintf(stderr, "%s\n", str);
@@ -3783,7 +3805,7 @@ set_input_codename (codename)
     is_inputcode_set = TRUE;
 }
 
-#ifndef WIN32DLL
+#if !defined(PERL_XS) && !defined(WIN32DLL)
 void
 print_guessed_code (filename)
     char *filename;
@@ -3948,8 +3970,8 @@ nfc_getc(f)
     int (*u)() = i_nfc_ungetc;
     int i=0, j, k=1, lower, upper;
     int buf[9];
-    int *array = NULL;
-    extern struct normalization_pair normalization_table[];
+    const int *array = NULL;
+    extern const struct normalization_pair normalization_table[];
     
     buf[i] = (*g)(f);
     while (k > 0 && ((buf[i] & 0xc0) != 0x80)){
@@ -4018,8 +4040,7 @@ FILE *f;
 restart_mime_q:
         if (c1=='_') return ' ';
 	if (c1<=' ' || DEL<=c1) {
-	    mime_decode_mode = FALSE; /* quit */
-	    unswitch_mime_getc();
+	    mime_decode_mode = exit_mode; /* prepare for quit */
 	    return c1;
 	}
         if (c1!='=' && c1!='?') {
@@ -4267,8 +4288,8 @@ FILE  *f;
 
 int
 mime_integrity(f,p)
-FILE *f;
-unsigned char *p;
+    FILE *f;
+    const unsigned char *p;
 {
     int c,d;
     unsigned int q;
@@ -4276,6 +4297,7 @@ unsigned char *p;
      */
     mime_input = mime_top;
     mime_last = mime_top;
+    
     while(*p) Fifo(mime_input++) = *p++;
     d = 0;
     q = mime_input;
@@ -4326,10 +4348,10 @@ base64decode(c)
     return (i);
 }
 
-static char basis_64[] =
+STATIC const char basis_64[] =
    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-static int b64c;
+STATIC int b64c;
 #define MIMEOUT_BUF_LENGTH (60)
 char mimeout_buf[MIMEOUT_BUF_LENGTH+1];
 int mimeout_buf_count = 0;
@@ -4340,7 +4362,7 @@ void
 open_mime(mode)
 int mode;
 {
-    unsigned char *p;
+    const unsigned char *p;
     int i;
     int j;
     p  = mime_pattern[0];
@@ -4727,7 +4749,7 @@ reinit()
      x0201_f = NO_X0201;
 #endif
     iso2022jp_f = FALSE;
-#ifdef UNICODE_ENABLE
+#if defined(UTF8_OUTPUT_ENABLE) && defined(UTF8_INPUT_ENABLE)
     internal_unicode_f = FALSE;
 #endif
 #ifdef UTF8_OUTPUT_ENABLE
