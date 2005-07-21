@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-07-05"
+#define TKUTIL_RELEASE_DATE "2005-07-22"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -892,14 +892,14 @@ tk_conv_args(argc, argv, self)
     int thr_crit_bup;
     VALUE old_gc;
 
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-
-    old_gc = rb_gc_disable();
-
     if (argc < 2) {
       rb_raise(rb_eArgError, "too few arguments");
     }
+
+    thr_crit_bup = rb_thread_critical;
+    rb_thread_critical = Qtrue;
+    old_gc = rb_gc_disable();
+
     for(size = 0, idx = 2; idx < argc; idx++) {
         if (TYPE(argv[idx]) == T_HASH) {
             size += 2 * RHASH(argv[idx])->tbl->num_entries;
@@ -1605,6 +1605,7 @@ Init_tkutil()
                                tk_get_eval_string, -1);
     rb_define_singleton_method(mTK, "_get_eval_enc_str", 
                                tk_get_eval_enc_str, 1);
+    rb_define_singleton_method(mTK, "_conv_args", tk_conv_args, -1);
 
     rb_define_singleton_method(mTK, "bool", tcl2rb_bool, 1);
     rb_define_singleton_method(mTK, "number", tcl2rb_number, 1);

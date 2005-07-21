@@ -7,7 +7,7 @@ require 'tkutil'
 require 'thread'
 
 if defined? Tk
-  fail RuntimeError, "'multi-tk' library must be required before requiring 'tk'"
+  fail RuntimeError,"'multi-tk' library must be required before requiring 'tk'"
 end
 
 ################################################
@@ -54,7 +54,7 @@ MultiTkIp_OK.freeze
 ################################################
 # methods for construction
 class MultiTkIp
-  SLAVE_IP_ID = ['slave'.freeze, '0'.taint].freeze
+  @@SLAVE_IP_ID = ['slave'.freeze, '0'.taint].freeze
 
   @@IP_TABLE = {}.taint unless defined?(@@IP_TABLE)
 
@@ -86,9 +86,26 @@ class MultiTkIp
           @ip.cb_eval(@cmd, *args)
         rescue TkCallbackBreak, TkCallbackContinue => e
           fail e
+	rescue SecurityError => e
+          # in 'exit', 'exit!', and 'abort' : security error --> delete IP
+          if e.backtrace[0] =~ /^(.+?):(\d+):in `(exit|exit!|abort)'/
+	    @ip.delete
+          elsif @ip.safe?
+	    if @ip.respond_to?(:cb_error)
+              @ip.cb_error(e)
+            else
+              nil # ignore
+            end
+          else
+            fail e
+          end
         rescue Exception => e
           if @ip.safe?
-            nil # ignore
+	    if @ip.respond_to?(:cb_error)
+              @ip.cb_error(e)
+            else
+              nil # ignore
+            end
           else
             fail e
           end
@@ -161,6 +178,18 @@ class MultiTkIp
 
   ######################################
 
+  def set_cb_error(cmd = Proc.new)
+    @cb_error_proc[0] = cmd
+  end
+
+  def cb_error(e)
+    if @cb_error_proc[0].respond_to?(:call)
+      @cb_error_proc[0].call(e)
+    end
+  end
+
+  ######################################
+
   def set_safe_level(safe)
     if safe > @safe_level[0]
       @safe_level[0] = safe
@@ -192,7 +221,7 @@ class MultiTkIp
   end
 
   def running_mainloop?
-    @wait_on_mainloop[1]
+    @wait_on_mainloop[1] > 0
   end
 
   def _destroy_slaves_of_slaveIP(ip)
@@ -442,13 +471,21 @@ class MultiTkIp
   private :_receiver_eval_proc, :_receiver_eval_proc_core
 
   def _receiver_mainloop(check_root)
-    Thread.new{
-      while !@interp.deleted?
-        inf = @interp._invoke_without_enc('info', 'command', '.')
-        break if !inf.kind_of?(String) || inf != '.'
-        sleep 0.5
-      end
-    }
+    if @evloop_thread[0] && @evloop_thread[0].alive?
+      @evloop_thread[0]
+    else
+      @evloop_thread[0] = Thread.new{
+	while !@interp.deleted?
+	  #if check_root
+	  #  inf = @interp._invoke_without_enc('info', 'command', '.')
+	  #  break if !inf.kind_of?(String) || inf != '.'
+	  #end
+          break if check_root && !@interp.has_mainwindow?
+	  sleep 0.5
+	end
+      }
+      @evloop_thread[0]
+    end
   end
 
   def _create_receiver_and_watchdog(lvl = $SAFE)
@@ -456,7 +493,7 @@ class MultiTkIp
 
     # command-procedures receiver
     receiver = Thread.new(lvl){|safe_level|
-      last_thread = nil
+      last_thread = {}
 
       loop do
         break if @interp.deleted?
@@ -479,8 +516,9 @@ class MultiTkIp
 
         else
           # procedure
-          last_thread = _receiver_eval_proc(last_thread, safe_level, 
-                                            thread, cmd, *args)
+          last_thread[thread] = _receiver_eval_proc(last_thread[thread], 
+						    safe_level, thread, 
+						    cmd, *args)
         end
       end
     }
@@ -539,6 +577,8 @@ class MultiTkIp
 
     @slave_ip_top = {}.taint
 
+    @evloop_thread = [].taint
+
     unless keys.kind_of? Hash
       fail ArgumentError, "expecting a Hash object for the 2nd argument"
     end
@@ -548,7 +588,7 @@ class MultiTkIp
 
     @system = Object.new
 
-    @wait_on_mainloop = [true, false]
+    @wait_on_mainloop = [true, 0].taint
 
     @threadgroup  = Thread.current.group
 
@@ -657,7 +697,7 @@ class MultiTkIp
 
   ######################################
 
-  SAFE_OPT_LIST = [
+  @@SAFE_OPT_LIST = [
     'accessPath'.freeze, 
     'statics'.freeze, 
     'nested'.freeze, 
@@ -676,7 +716,7 @@ class MultiTkIp
         name = v 
       elsif k_str == 'safe'
         safe = v
-      elsif SAFE_OPT_LIST.member?(k_str)
+      elsif @@SAFE_OPT_LIST.member?(k_str)
         safe_opts[k_str] = v
       else
         tk_opts[k_str] = v
@@ -692,8 +732,8 @@ class MultiTkIp
   private :_parse_slaveopts
 
   def _create_slave_ip_name
-    name = SLAVE_IP_ID.join('')
-    SLAVE_IP_ID[1].succ!
+    name = @@SLAVE_IP_ID.join('')
+    @@SLAVE_IP_ID[1].succ!
     name
   end
   private :_create_slave_ip_name
@@ -924,11 +964,15 @@ class MultiTkIp
     @tk_table_list = []
     @slave_ip_tbl = {}
     @slave_ip_top = {}
+    @cb_error_proc = []
+    @evloop_thread = []
 
     @tk_windows.taint unless @tk_windows.tainted?
     @tk_table_list.taint unless @tk_table_list.tainted?
     @slave_ip_tbl.taint unless @slave_ip_tbl.tainted?
     @slave_ip_top.taint unless @slave_ip_top.tainted?
+    @cb_error_proc.taint unless @cb_error_proc.tainted?
+    @evloop_thread.taint unless @evloop_thread.tainted?
 
     name, safe, safe_opts, tk_opts = _parse_slaveopts(keys)
 
@@ -975,7 +1019,8 @@ class MultiTkIp
 
     @system = Object.new
 
-    @wait_on_mainloop = [true, false]
+    @wait_on_mainloop = [true, 0].taint
+    # @wait_on_mainloop = [false, 0].taint
 
     @threadgroup  = ThreadGroup.new
 
@@ -1088,7 +1133,10 @@ class << MultiTkIp
     end
 
     ip = __new(__getip, nil, keys)
-    ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
+    #ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
+     if block_given?
+       Thread.new{ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call)}
+     end
     ip
   end
 
@@ -1109,7 +1157,10 @@ class << MultiTkIp
     end
 
     ip = __new(__getip, false, keys)
-    ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
+    # ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
+    if block_given?
+      Thread.new{ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call)}
+    end
     ip
   end
   alias new_trusted_slave new_slave
@@ -1127,7 +1178,10 @@ class << MultiTkIp
     end
 
     ip = __new(__getip, true, keys)
-    ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
+    # ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call) if block_given?
+    if block_given?
+      Thread.new{ip.eval_proc(proc{$SAFE=ip.safe_level; Proc.new}.call)}
+    end
     ip
   end
   alias new_safeTk new_safe_slave
@@ -1504,7 +1558,11 @@ class MultiTkIp
       backup_ip = current['callback_ip']
       current['callback_ip'] = self
       begin
-        eval_proc_core(false, cmd, safe_level, *args)
+        eval_proc_core(false, 
+	               proc{|safe, *params|
+		         $SAFE=safe if $SAFE < safe
+                         cmd.call(*params)
+                       }, safe_level, *args)
       ensure
         current['callback_ip'] = backup_ip
       end
@@ -1514,7 +1572,7 @@ class MultiTkIp
                        $SAFE=safe if $SAFE < safe
                        Thread.new(*params, &cmd).value
                      },
-                     *args)
+                     safe_level, *args)
     end
   end
   alias call eval_proc
@@ -1528,15 +1586,19 @@ class MultiTkIp
       end
     end
     Thread.new{
+      eval_proc(cmd, *args)
+=begin
       eval_proc_core(false, 
                      proc{|safe, *params| 
                        $SAFE=safe if $SAFE < safe
                        Thread.new(*params, &cmd).value
                      },
-                     *args)
+                     safe_level, *args)
+=end
     }
   end
   alias background_eval_proc bg_eval_proc
+  alias thread_eval_proc bg_eval_proc
   alias bg_call bg_eval_proc
   alias background_call bg_eval_proc
 
@@ -1550,7 +1612,7 @@ class MultiTkIp
                    proc{|safe| 
                      $SAFE=safe if $SAFE < safe
                      Kernel.eval(cmd, *eval_args)
-                   })
+                   }, safe_level)
   end
   alias eval_str eval_string
 
@@ -1564,7 +1626,7 @@ class MultiTkIp
                      proc{|safe| 
                        $SAFE=safe if $SAFE < safe
                        Kernel.eval(cmd, *eval_args)
-                     })
+                     }, safe_level)
     }
   end
   alias background_eval_string bg_eval_string
@@ -1677,6 +1739,10 @@ class << MultiTkIp
 
   def deleted?
     __getip.deleted?
+  end
+
+  def has_mainwindow?
+    __getip.has_mainwindow?
   end
 
   def invalid_namespace?
@@ -1860,22 +1926,24 @@ class MultiTkIp
     if self != @@DEFAULT_MASTER
       if @wait_on_mainloop[0]
         begin
-          @wait_on_mainloop[1] = true
-          @cmd_queue.enq([@system, 'call_mainloop', 
-                           Thread.current, check_root])
-          Thread.stop
+          @wait_on_mainloop[1] += 1
+          if $SAFE >= 4
+	    _receiver_mainloop(check_root).join
+          else
+            @cmd_queue.enq([@system, 'call_mainloop', 
+                            Thread.current, check_root])
+            Thread.stop
+          end
         rescue MultiTkIp_OK => ret
           # return value
-          @wait_on_mainloop[1] = false
           if ret.value.kind_of?(Thread)
             return ret.value.value
           else
             return ret.value
           end
-        rescue SystemExit
+        rescue SystemExit => e
           # exit IP
           warn("Warning: " + $! + " on " + self.inspect) if $DEBUG
-          @wait_on_mainloop[1] = false
           begin
             self._eval_without_enc('exit')
           rescue Exception
@@ -1887,17 +1955,18 @@ class MultiTkIp
                  ((e.message.length > 0)? ' "' + e.message + '"': '') +  
                  " on " + self.inspect) 
           end
-          @wait_on_mainloop[1] = false
           return e
+        rescue Exception => e
+	  return e
         ensure
-          @wait_on_mainloop[1] = false
+          @wait_on_mainloop[1] -= 1
         end
       end
       return
     end
 
     unless restart_on_dead
-      @wait_on_mainloop[1] = true
+      @wait_on_mainloop[1] += 1
 =begin
       begin
         @interp.mainloop(check_root)
@@ -1909,11 +1978,13 @@ class MultiTkIp
         end
       end
 =end
-      @interp.mainloop(check_root)
-      @wait_on_mainloop[1] = false
+      begin
+	@interp.mainloop(check_root)
+      ensure
+	@wait_on_mainloop[1] -= 1
+      end
     else
       loop do
-        @wait_on_mainloop[1] = true
         break unless self.alive?
         if check_root
           begin
@@ -1924,6 +1995,7 @@ class MultiTkIp
         end
         break if @interp.deleted?
         begin
+	  @wait_on_mainloop[1] += 1
           @interp.mainloop(check_root)
         rescue StandardError => e
           if TclTkLib.mainloop_abort_on_exception != nil
@@ -1948,7 +2020,7 @@ class MultiTkIp
 =end
           raise e
         ensure
-          @wait_on_mainloop[1] = false
+          @wait_on_mainloop[1] -= 1
           Thread.pass  # avoid eventloop conflict
         end
       end
@@ -2038,6 +2110,10 @@ class MultiTkIp
 
   def deleted?
     @interp.deleted?
+  end
+
+  def has_mainwindow?
+    @interp.has_mainwindow?
   end
 
   def invalid_namespace?

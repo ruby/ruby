@@ -60,8 +60,6 @@ class << RemoteTkIp
 end
 
 class RemoteTkIp
-  include TkUtil
-
   def initialize(remote_ip, displayof=nil, timeout=5)
     if $SAFE >= 4
       fail SecurityError, "cannot access another interpreter at level #{$SAFE}"
@@ -96,7 +94,7 @@ class RemoteTkIp
 
     @safe_level = [$SAFE]
 
-    @wait_on_mainloop = [true, false]
+    @wait_on_mainloop = [true, 0]
 
     @cmd_queue = Queue.new
 
@@ -179,7 +177,7 @@ class RemoteTkIp
       fail SecurityError, "cannot send tainted commands at level #{$SAFE}"
     end
 
-    cmds = @interp._merge_tklist(*_conv_args([], enc_mode, *cmds))
+    cmds = @interp._merge_tklist(*TkUtil::_conv_args([], enc_mode, *cmds))
     if @displayof
       if async
         @interp.__invoke('send', '-async', '-displayof', @displayof, 
@@ -283,6 +281,19 @@ class RemoteTkIp
     end
   end
 
+  def has_mainwindow?
+    begin
+      inf = @interp._invoke_without_enc('info', 'command', '.')
+    rescue Exception
+      return nil
+    end
+    if !inf.kind_of?(String) || inf != '.'
+      false
+    else
+      true
+    end
+  end
+
   def invalid_namespace?
     false
   end
@@ -343,25 +354,25 @@ class RemoteTkIp
 
   def _get_variable(var_name, flag)
     # ignore flag
-    _appsend(false, 'set', _get_eval_string(var_name))
+    _appsend(false, 'set', TkComm::_get_eval_string(var_name))
   end
   def _get_variable2(var_name, index_name, flag)
     # ignore flag
-    _appsend(false, 'set', "#{_get_eval_string(var_name)}(#{_get_eval_string(index_name)})")
+    _appsend(false, 'set', "#{TkComm::_get_eval_string(var_name)}(#{TkComm::_get_eval_string(index_name)})")
   end
 
   def _set_variable(var_name, value, flag)
     # ignore flag
-    _appsend(false, 'set', _get_eval_string(var_name), _get_eval_string(value))
+    _appsend(false, 'set', TkComm::_get_eval_string(var_name), TkComm::_get_eval_string(value))
   end
   def _set_variable2(var_name, index_name, value, flag)
     # ignore flag
-    _appsend(false, 'set', "#{_get_eval_string(var_name)}(#{_get_eval_string(index_name)})", _get_eval_string(value))
+    _appsend(false, 'set', "#{TkComm::_get_eval_string(var_name)}(#{TkComm::_get_eval_string(index_name)})", TkComm::_get_eval_string(value))
   end
 
   def _unset_variable(var_name, flag)
     # ignore flag
-    _appsend(false, 'unset', _get_eval_string(var_name))
+    _appsend(false, 'unset', TkComm::_get_eval_string(var_name))
   end
   def _unset_variable2(var_name, index_name, flag)
     # ignore flag
@@ -369,21 +380,21 @@ class RemoteTkIp
   end
 
   def _get_global_var(var_name)
-    _appsend(false, 'set', _get_eval_string(var_name))
+    _appsend(false, 'set', TkComm::_get_eval_string(var_name))
   end
   def _get_global_var2(var_name, index_name)
-    _appsend(false, 'set', "#{_get_eval_string(var_name)}(#{_get_eval_string(index_name)})")
+    _appsend(false, 'set', "#{TkComm::_get_eval_string(var_name)}(#{TkComm::_get_eval_string(index_name)})")
   end
 
   def _set_global_var(var_name, value)
-    _appsend(false, 'set', _get_eval_string(var_name), _get_eval_string(value))
+    _appsend(false, 'set', TkComm::_get_eval_string(var_name), TkComm::_get_eval_string(value))
   end
   def _set_global_var2(var_name, index_name, value)
-    _appsend(false, 'set', "#{_get_eval_string(var_name)}(#{_get_eval_string(index_name)})", _get_eval_string(value))
+    _appsend(false, 'set', "#{TkComm::_get_eval_string(var_name)}(#{TkComm::_get_eval_string(index_name)})", TkComm::_get_eval_string(value))
   end
 
   def _unset_global_var(var_name)
-    _appsend(false, 'unset', _get_eval_string(var_name))
+    _appsend(false, 'unset', TkComm::_get_eval_string(var_name))
   end
   def _unset_global_var2(var_name, index_name)
     _appsend(false, 'unset', "#{var_name}(#{index_name})")

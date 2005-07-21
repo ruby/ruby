@@ -422,6 +422,11 @@ require "tcltklib" すると, 以下のモジュール, クラスが利用可能です.
          : delete 済みでコマンドを受け付けない状態になっているならば
          : true を返す．
 
+      has_mainwindow?
+         : Tcl/Tk インタープリタにメインウィンドウ (root widget) が
+         : 存在すれば true を，存在しなければ false を返す．
+         : インタープリタが既に delete 済みであれば nil を返す．
+
       restart
          : Tcl/Tk インタープリタの Tk 部分の初期化，再起動を行う．
          : 一旦 root widget を破壊した後に再度 Tk の機能が必要と
