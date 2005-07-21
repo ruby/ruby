@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-07-19"
+#define TCLTKLIB_RELEASE_DATE "2005-07-22"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -511,6 +511,7 @@ get_ip(self)
     }
     if (ptr->ip == (Tcl_Interp*)NULL) {
         /* rb_raise(rb_eRuntimeError, "deleted IP"); */
+        return((struct tcltkip *)NULL);
     }
     return ptr;
 }
@@ -5293,6 +5294,22 @@ ip_is_deleted_p(self)
     }
 }
 
+static VALUE
+ip_has_mainwindow_p(self)
+    VALUE self;
+{
+    struct tcltkip *ptr = get_ip(self);
+
+    if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp *)NULL 
+        || Tcl_InterpDeleted(ptr->ip)) {
+        return Qnil;
+    } else if (Tk_MainWindow(ptr->ip) == (Tk_Window)NULL) {
+        return Qfalse;
+    } else {
+        return Qtrue;
+    }
+}
+
 
 static VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
@@ -8557,6 +8574,7 @@ Init_tcltklib()
     rb_define_method(ip, "allow_ruby_exit=", ip_allow_ruby_exit_set, 1);
     rb_define_method(ip, "delete", ip_delete, 0);
     rb_define_method(ip, "deleted?", ip_is_deleted_p, 0);
+    rb_define_method(ip, "has_mainwindow?", ip_has_mainwindow_p, 0);
     rb_define_method(ip, "invalid_namespace?", ip_has_invalid_namespace_p, 0);
     rb_define_method(ip, "_eval", ip_eval, 1);
     rb_define_method(ip, "_toUTF8", ip_toUTF8, -1);

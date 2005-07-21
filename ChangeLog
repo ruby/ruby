@@ -1,3 +1,42 @@
+Fri Jul 22 07:01:42 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tkutil.c (tk_conv_args): forget to revert thread_critical
+	  and gc_disable when raise ArgumentError.
+
+	* ext/tk/lib/remote-tk.rb: RemoteTkIp doesn't need to include TkUtil.
+
+	* ext/tcltklib/tcltklib.c: add TclTkIp#has_mainwindow? method.
+
+	* ext/tk/lib/tk.rb: add Tk.has_mainwindow? method. 
+
+	* ext/tk/lib/multi-tk.rb: add MultiTkIp#has_mainwindow? method. 
+
+	* ext/tk/lib/remote-tk.rb: add RemoteTkIp#has_mainwindow? method. 
+
+	* ext/tk/lib/multi-tk.rb: slave IP fail to exit itself when $SAFE==4.
+
+	* ext/tk/lib/multi-tk.rb: remove constants from MultiTkIp module to 
+	  avoid access from external.
+
+	* ext/tk/lib/multi-tk.rb: check_root flag is ignored on slave IPs' 
+	  mainloop. 
+
+	* ext/tk/lib/multi-tk.rb: hang-up Tk.mainloop called on a slave IP 
+	  with $SAFE==4.
+
+	* ext/tk/lib/multi-tk.rb: MultiTkIp#bg_eval_proc doesn't work
+	  properly. 
+
+	* ext/tk/lib/multi-tk.rb: add MultiTkIp#set_cb_error(proc) and
+	  cb_error(exc) to log errors at callbacks on safe slave IPs. 
+
+	* ext/tk/lib/multi-tk.rb: fail to get an available slave IP object 
+	  when call Tk.mainloop in the block which is given to new_* method, 
+	    because cannot finish initialize while the root widget is alive. 
+
+	* ext/tk/lib/multi-tk.rb: fail to control a slave IP when Tk.mainloop 
+	  runs on the IP.
+
 Wed Jul 20 19:20:37 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* io.c (S_ISREG): need to define S_ISREG before it is used first.

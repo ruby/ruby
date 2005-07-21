@@ -310,6 +310,11 @@ class TclTkIp
        : Check whether the interpreter is already deleted.
        : If deleted, returns true. 
 
+    has_mainwindow?
+       : Check whether the interpreter has a MainWindow (root widget).
+       : If has, returns true. If doesn't, returns false.  
+       : If IP is already deleted, returns nil. 
+
     restart
        : Restart Tk part of the interpreter. 
        : Use this when you need Tk functions after destroying the
