@@ -20,7 +20,7 @@ require "rss/rss"
 
 RSS_RECENT_FIELD_SEPARATOR = "\0"
 RSS_RECENT_ENTRY_SEPARATOR = "\1"
-RSS_RECENT_VERSION = "0.0.6"
+RSS_RECENT_VERSION = "0.0.7"
 RSS_RECENT_HTTP_HEADER = {
 	"User-Agent" => "tDiary RSS recent plugin version #{RSS_RECENT_VERSION}. " <<
 		"Using RSS parser version is #{::RSS::VERSION}.",
@@ -49,12 +49,12 @@ def rss_recent(url, max=5, cache_time=3600)
   
 	have_entry = infos.size > 0 && max > 0
   
-	rv << "<ul>\n" if have_entry
+	rv << "<ul class='rss-recent'>\n" if have_entry
 	i = 0
 	infos.each do |title, url, time, image|
 		break if i >= max
 		next if title.nil?
-		rv << '<li>'
+		rv << "<li class='rss-recent-item'>"
 		rv << %Q[<span class="#{rss_recent_modified_class(time)}">]
 		rv << rss_recent_entry_to_html(title, url, time, image)
 		rv << %Q[</span>]
@@ -78,17 +78,7 @@ def rss_recent_cache_rss(url, cache_file, cache_time)
 
 	if cached_time.nil? or Time.now > cached_time + cache_time
 		require 'time'
-		require 'open-uri'
-		require 'net/http'
-		require 'uri/generic'
-		require 'rss/parser'
-		require 'rss/1.0'
-		require 'rss/2.0'
-		require 'rss/dublincore'
-		begin
-			require 'rss/image'
-		rescue LoadError
-		end
+		require 'rss'
 		
 		begin
 			uri = URI.parse(url)

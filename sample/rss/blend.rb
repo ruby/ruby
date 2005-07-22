@@ -1,9 +1,6 @@
 #!/usr/bin/env ruby
 
-require "rss/1.0"
-require "rss/2.0"
-require "rss/dublincore"
-require "rss/maker"
+require "rss"
 
 feeds = []
 verbose = false
