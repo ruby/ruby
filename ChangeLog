@@ -1,3 +1,19 @@
+Fri Jul 22 15:02:39 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/rss.rb: moved copyright description to lib/rss.rb.
+
+	* lib/rss.rb: added for convenience.
+
+	* sample/rss/re_read.rb: added #to_s sample.
+
+	* sample/rss/blend.rb: use 'require "rss"' instead of
+	  'require "rss/*"'.
+	* sample/rss/list_description.rb: ditto.
+	* sample/rss/rss_recent.rb: ditto.
+	* sample/rss/tdiary-plugin/rss-recent.rb: ditto.
+
+	* sample/rss/tdiary-plugin/rss-recent.rb: 0.0.6 -> 0.0.7.
+	
 Fri Jul 22 14:37:43 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb (RSS::Parser#initialize): accept HTTP/FTP

@@ -10,9 +10,7 @@ class String
   end
 end
 
-require "rss/1.0"
-require "rss/2.0"
-require "rss/dublincore"
+require "rss"
 
 items = []
 verbose = false
