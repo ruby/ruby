@@ -1,4 +1,5 @@
 require "forwardable"
+require "open-uri"
 
 require "rss/rss"
 
@@ -77,7 +78,36 @@ module RSS
                    :do_validate=)
 
     def initialize(rss, parser_class=self.class.default_parser)
-      @parser = parser_class.new(rss)
+      @parser = parser_class.new(normalize_rss(rss))
+    end
+
+    private
+    def normalize_rss(rss)
+      return rss if maybe_xml?(rss)
+
+      uri = to_uri(rss)
+      
+      if uri.respond_to?(:read)
+        uri.read
+      elsif !rss.tainted? and File.readable?(rss)
+        File.open(rss) {|f| f.read}
+      else
+        rss
+      end
+    end
+
+    def maybe_xml?(source)
+      source.is_a?(String) and /</ =~ source
+    end
+
+    def to_uri(rss)
+      return rss if rss.is_a?(::URI::Generic)
+
+      begin
+        URI(rss)
+      rescue ::URI::Error
+        rss
+      end
     end
   end
 
