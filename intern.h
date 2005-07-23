@@ -168,6 +168,7 @@ void rb_fd_set _((int, rb_fdset_t *));
 void rb_fd_clr _((int, rb_fdset_t *));
 int rb_fd_isset _((int, const rb_fdset_t *));
 void rb_fd_copy _((rb_fdset_t *, const fd_set *, int));
+int rb_fd_select _((int, rb_fdset_t *, rb_fdset_t *, rb_fdset_t *, struct timeval *));
 
 #define rb_fd_ptr(f)	((f)->fdset)
 #define rb_fd_max(f)	((f)->maxfd)
@@ -184,6 +185,7 @@ typedef fd_set rb_fdset_t;
 #define rb_fd_init(f)	FD_ZERO(f)
 #define rb_fd_term(f)	(f)
 #define rb_fd_max(f)	FD_SETSIZE
+#define rb_fd_select(n, rfds, wfds, efds, timeout)	select(n, rfds, wfds, efds, timeout)
 
 #endif
 

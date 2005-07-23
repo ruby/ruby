@@ -9871,8 +9871,8 @@ rb_fd_zero(fds)
     }
 }
 
-void
-rb_fd_set(n, fds)
+static void
+rb_fd_resize(n, fds)
     int n;
     rb_fdset_t *fds;
 {
@@ -9887,6 +9887,14 @@ rb_fd_set(n, fds)
 	memset((char *)fds->fdset + o, 0, m - o);
     }
     if (n >= fds->maxfd) fds->maxfd = n + 1;
+}
+
+void
+rb_fd_set(n, fds)
+    int n;
+    rb_fdset_t *fds;
+{
+    rb_fd_resize(n, fds);
     FD_SET(n, fds->fdset);
 }
 
@@ -9920,6 +9928,18 @@ rb_fd_copy(dst, src, max)
     dst->maxfd = max;
     dst->fdset = realloc(dst->fdset, size);
     memcpy(dst->fdset, src, size);
+}
+
+int
+rb_fd_select(n, readfds, writefds, exceptfds, timeout)
+    int n;
+    rb_fdset_t *readfds, *writefds, *exceptfds;
+    struct timeval *timeout;
+{
+    rb_fd_resize(n - 1, readfds);
+    rb_fd_resize(n - 1, writefds);
+    rb_fd_resize(n - 1, exceptfds);
+    return select(n, rb_fd_ptr(readfds), rb_fd_ptr(writefds), rb_fd_ptr(exceptfds), timeout);
 }
 
 #undef FD_ZERO
@@ -10786,7 +10806,7 @@ rb_thread_schedule()
 	    delay_ptr = &delay_tv;
 	}
 
-	n = select(max+1, rb_fd_ptr(&readfds), rb_fd_ptr(&writefds), rb_fd_ptr(&exceptfds), delay_ptr);
+	n = rb_fd_select(max+1, &readfds, &writefds, &exceptfds, delay_ptr);
 	if (n < 0) {
 	    int e = errno;
 

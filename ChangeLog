@@ -1,3 +1,8 @@
+Sat Jul 23 11:46:30 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (rb_fd_select): the all three fd_sets must be long enough for
+	  select.  fixed: [ruby-talk:149059]
+
 Sat Jul 23 10:01:41 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c (rb_vsprintf, rb_sprintf): new functions return new String,
