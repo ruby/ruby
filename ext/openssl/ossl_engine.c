@@ -60,7 +60,7 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
         return Qtrue;
     }
     StringValue(name);
-    OSSL_ENGINE_LOAD_IF_MATCH(openssl);
+#ifndef OPENSSL_NO_STATIC_ENGINE
     OSSL_ENGINE_LOAD_IF_MATCH(dynamic);
     OSSL_ENGINE_LOAD_IF_MATCH(cswift);
     OSSL_ENGINE_LOAD_IF_MATCH(chil);
@@ -70,9 +70,11 @@ ossl_engine_s_load(int argc, VALUE *argv, VALUE klass)
     OSSL_ENGINE_LOAD_IF_MATCH(aep);
     OSSL_ENGINE_LOAD_IF_MATCH(sureware);
     OSSL_ENGINE_LOAD_IF_MATCH(4758cca);
+#endif
 #ifdef HAVE_ENGINE_LOAD_OPENBSD_DEV_CRYPTO
     OSSL_ENGINE_LOAD_IF_MATCH(openbsd_dev_crypto);
 #endif
+    OSSL_ENGINE_LOAD_IF_MATCH(openssl);
     rb_warning("no such builtin loader for `%s'", RSTRING(name)->ptr);
     return Qnil;
 #endif /* HAVE_ENGINE_LOAD_BUILTIN_ENGINES */

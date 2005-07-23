@@ -1,3 +1,8 @@
+Sat Jul 23 16:48:12 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should check
+	  OPENSSL_NO_STATIC_ENGINE.
+
 Sat Jul 23 11:46:30 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (rb_fd_select): the all three fd_sets must be long enough for
