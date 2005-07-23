@@ -1,3 +1,8 @@
+Sat Jul 23 16:49:04 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should check
+	  OPENSSL_NO_STATIC_ENGINE.
+
 Fri Jul 22 21:06:08 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
 
 	* bignum.c (rb_big_eq): reduce isnan().  [ruby-dev:26600]
