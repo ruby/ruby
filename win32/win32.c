@@ -3602,9 +3602,7 @@ rb_w32_utime(const char *path, struct utimbuf *times)
 int
 rb_w32_vsnprintf(char *buf, size_t size, const char *format, va_list va)
 {
-    int ret = _vsnprintf(buf, size, format, va);
-    if (size > 0) buf[size - 1] = 0;
-    return ret;
+    return vsnprintf(buf, size, format, va);
 }
 
 int

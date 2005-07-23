@@ -280,8 +280,7 @@ pst_inspect(st)
     pid = pst_pid(st);
     status = NUM2INT(st);
 
-    snprintf(buf, sizeof(buf), "#<%s: pid=%ld", rb_class2name(CLASS_OF(st)), NUM2LONG(pid));
-    str = rb_str_new2(buf);
+    str = rb_sprintf("#<%s: pid=%ld", rb_class2name(CLASS_OF(st)), NUM2LONG(pid));
     if (WIFSTOPPED(status)) {
 	int stopsig = WSTOPSIG(status);
 	const char *signame = ruby_signal_name(stopsig);

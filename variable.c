@@ -196,7 +196,6 @@ rb_class_path(klass)
     }
     else {
 	char *s = "Class";
-	size_t len;
 
 	if (TYPE(klass) == T_MODULE) {
 	    if (rb_obj_class(klass) == rb_cModule) {
@@ -206,10 +205,7 @@ rb_class_path(klass)
 		s = rb_class2name(RBASIC(klass)->klass);
 	    }
 	}
-	len = 2 + strlen(s) + 3 + 2 * SIZEOF_LONG + 1;
-	path = rb_str_new(0, len);
-	snprintf(RSTRING(path)->ptr, len+1, "#<%s:0x%lx>", s, klass);
-	RSTRING(path)->len = strlen(RSTRING(path)->ptr);
+	path = rb_sprintf("#<%s:0x%lx>", s, klass);
 	rb_ivar_set(klass, tmp_classpath, path);
 
 	return path;

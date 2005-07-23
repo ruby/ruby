@@ -6120,7 +6120,7 @@ backtrace(lev)
     int lev;
 {
     struct FRAME *frame = ruby_frame;
-    char buf[BUFSIZ];
+    VALUE str;
     volatile VALUE ary;
     NODE *n;
 
@@ -6131,17 +6131,16 @@ backtrace(lev)
     if (lev < 0) {
 	ruby_set_current_source();
 	if (frame->this_func) {
-	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
-		     ruby_sourcefile, ruby_sourceline,
-		     rb_id2name(frame->this_func));
+	    str = rb_sprintf("%s:%d:in `%s'", ruby_sourcefile, ruby_sourceline,
+			     rb_id2name(frame->this_func));
 	}
 	else if (ruby_sourceline == 0) {
-	    snprintf(buf, BUFSIZ, "%s", ruby_sourcefile);
+	    str = rb_str_new2(ruby_sourcefile);
 	}
 	else {
-	    snprintf(buf, BUFSIZ, "%s:%d", ruby_sourcefile, ruby_sourceline);
+	    str = rb_sprintf("%s:%d", ruby_sourcefile, ruby_sourceline);
 	}
-	rb_ary_push(ary, rb_str_new2(buf));
+	rb_ary_push(ary, str);
 	if (lev < -1) return ary;
     }
     else {
@@ -6156,14 +6155,13 @@ backtrace(lev)
     for (; frame && (n = frame->node); frame = frame->prev) {
 	if (frame->prev && frame->prev->this_func) {
 	    if (frame->prev->node == n) continue;
-	    snprintf(buf, BUFSIZ, "%s:%d:in `%s'",
-		     n->nd_file, nd_line(n),
-		     rb_id2name(frame->prev->this_func));
+	    str = rb_sprintf("%s:%d:in `%s'", n->nd_file, nd_line(n),
+			     rb_id2name(frame->prev->this_func));
 	}
 	else {
-	    snprintf(buf, BUFSIZ, "%s:%d", n->nd_file, nd_line(n));
+	    str = rb_sprintf("%s:%d", n->nd_file, nd_line(n));
 	}
-	rb_ary_push(ary, rb_str_new2(buf));
+	rb_ary_push(ary, str);
     }
 
     return ary;
@@ -8667,23 +8665,16 @@ proc_to_s(self)
     NODE *node;
     char *cname = rb_obj_classname(self);
     const int w = (SIZEOF_LONG * CHAR_BIT) / 4;
-    long len = strlen(cname)+6+w; /* 6:tags 16:addr */
     VALUE str;
 
     Data_Get_Struct(self, struct BLOCK, data);
     if ((node = data->frame.node) || (node = data->body)) {
-	len += strlen(node->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
-	str = rb_str_new(0, len);
-	snprintf(RSTRING(str)->ptr, len+1,
-		 "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
-		 node->nd_file, nd_line(node));
+	str = rb_sprintf("#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
+			 node->nd_file, nd_line(node));
     }
     else {
-	str = rb_str_new(0, len);
-	snprintf(RSTRING(str)->ptr, len+1,
-		 "#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
+	str = rb_sprintf("#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
     }
-    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
 
     return str;
@@ -12761,11 +12752,8 @@ rb_thread_inspect(thread)
     rb_thread_t th = rb_thread_check(thread);
     const char *status = thread_status_name(th->status);
     VALUE str;
-    size_t len = strlen(cname)+7+16+9+1;
 
-    str = rb_str_new(0, len); /* 7:tags 16:addr 9:status 1:nul */
-    snprintf(RSTRING(str)->ptr, len, "#<%s:0x%lx %s>", cname, thread, status);
-    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+    str = rb_sprintf("#<%s:0x%lx %s>", cname, thread, status);
     OBJ_INFECT(str, thread);
 
     return str;

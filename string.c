@@ -444,22 +444,13 @@ rb_str_times(str, times)
  */
 
 static VALUE
-rb_str_format(str, arg)
+rb_str_format_m(str, arg)
     VALUE str, arg;
 {
-    VALUE *argv;
-
     if (TYPE(arg) == T_ARRAY) {
-	argv = ALLOCA_N(VALUE, RARRAY(arg)->len + 1);
-	argv[0] = str;
-	MEMCPY(argv+1, RARRAY(arg)->ptr, VALUE, RARRAY(arg)->len);
-	return rb_f_sprintf(RARRAY(arg)->len+1, argv);
+	return rb_str_format(RARRAY(arg)->len, RARRAY(arg)->ptr, str);
     }
-    
-    argv = ALLOCA_N(VALUE, 2);
-    argv[0] = str;
-    argv[1] = arg;
-    return rb_f_sprintf(2, argv);
+    return rb_str_format(1, &arg, str);
 }
 
 static int
@@ -4669,7 +4660,7 @@ Init_String()
     rb_define_method(rb_cString, "casecmp", rb_str_casecmp, 1);
     rb_define_method(rb_cString, "+", rb_str_plus, 1);
     rb_define_method(rb_cString, "*", rb_str_times, 1);
-    rb_define_method(rb_cString, "%", rb_str_format, 1);
+    rb_define_method(rb_cString, "%", rb_str_format_m, 1);
     rb_define_method(rb_cString, "[]", rb_str_aref_m, -1);
     rb_define_method(rb_cString, "[]=", rb_str_aset_m, -1);
     rb_define_method(rb_cString, "insert", rb_str_insert, 2);

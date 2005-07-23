@@ -476,19 +476,11 @@ inspect_struct(s, dummy, recur)
     long i;
 
     if (recur) {
-	char *cname = rb_class2name(rb_obj_class(s));
-	size_t len = strlen(cname) + 14;
-	VALUE str = rb_str_new(0, len);
-
-	snprintf(RSTRING(str)->ptr, len+1, "#<struct %s:...>", cname);
-	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
-	return str;
+	return rb_sprintf("#<struct %s:...>", cname);
     }
 
     members = rb_struct_members(s);
-    str = rb_str_buf_new2("#<struct ");
-    rb_str_cat2(str, cname);
-    rb_str_cat2(str, " ");
+    str = rb_sprintf("#<struct %s ", cname);
     for (i=0; i<RSTRUCT(s)->len; i++) {
 	VALUE slot;
 	ID id;

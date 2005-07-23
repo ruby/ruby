@@ -1093,19 +1093,14 @@ rb_io_inspect(obj)
 {
     OpenFile *fptr;
     char *buf, *cname, *st = "";
-    long len;
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     if (!fptr || !fptr->path) return rb_any_to_s(obj);
     cname = rb_obj_classname(obj);
-    len = strlen(cname) + strlen(fptr->path) + 5;
     if (fptr->fd < 0) {
 	st = " (closed)";
-	len += 9;
     }
-    buf = ALLOCA_N(char, len);
-    snprintf(buf, len, "#<%s:%s%s>", cname, fptr->path, st);
-    return rb_str_new2(buf);
+    return rb_sprintf("#<%s:%s%s>", cname, fptr->path, st);
 }
 
 /*

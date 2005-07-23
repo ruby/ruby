@@ -65,8 +65,14 @@
 #define u_short unsigned short
 #define u_int unsigned int
 
-#undef __P
+#if !defined(HAVE_STDARG_PROTOTYPES)
 #if defined(__STDC__)
+#define HAVE_STDARG_PROTOTYPES 1
+#endif
+#endif
+
+#undef __P
+#if defined(HAVE_STDARG_PROTOTYPES)
 # include <stdarg.h>
 # if !defined(__P)
 #  define __P(x) x
@@ -151,12 +157,15 @@ struct __sbuf {
  */
 typedef	struct __sFILE {
 	unsigned char *_p;	/* current position in (some) buffer */
+#if 0
 	int	_r;		/* read space left for getc() */
+#endif
 	int	_w;		/* write space left for putc() */
 	short	_flags;		/* flags, below; this FILE is free if 0 */
 	short	_file;		/* fileno, if Unix descriptor, else -1 */
 	struct	__sbuf _bf;	/* the buffer (at least 1 byte, if !NULL) */
 	int	_lbfsize;	/* 0 or -_bf._size, for inline putc */
+	int	(*vwrite)(/* struct __sFILE*, struct __suio * */);
 } FILE;
 
 
@@ -673,10 +682,9 @@ reswitch:	switch (ch) {
 					uqval = -uqval;
 					sign = '-';
 				}
-			} else {
-#else /* _HAVE_SANE_QUAD_ */
-			{
+			} else
 #endif /* _HAVE_SANE_QUAD_ */
+			{
 				ulval = SARG();
 				if ((long)ulval < 0) {
 					ulval = -ulval;
@@ -1083,6 +1091,7 @@ vsnprintf(str, n, fmt, ap)
 	f._flags = __SWR | __SSTR;
 	f._bf._base = f._p = (unsigned char *)str;
 	f._bf._size = f._w = n - 1;
+	f.vwrite = BSD__sfvwrite;
 	ret = BSD_vfprintf(&f, fmt, ap);
 	*f._p = 0;
 	return (ret);
@@ -1092,14 +1101,8 @@ vsnprintf(str, n, fmt, ap)
 static char sccsid[] = "@(#)snprintf.c	8.1 (Berkeley) 6/4/93";
 #endif /* LIBC_SCCS and not lint */
 
-#if defined(__STDC__)
-# include <stdarg.h>
-#else
-# include <varargs.h>
-#endif
-
 int
-#if defined(__STDC__)
+#if defined(HAVE_STDARG_PROTOTYPES)
 snprintf(char *str, size_t n, char const *fmt, ...)
 #else
 snprintf(str, n, fmt, va_alist)
@@ -1115,7 +1118,7 @@ va_dcl
 	if ((int)n < 1)
 		return (EOF);
 
-#if defined(__STDC__)
+#if defined(HAVE_STDARG_PROTOTYPES)
 	va_start(ap, fmt);
 #else
 	va_start(ap);
@@ -1123,6 +1126,7 @@ va_dcl
 	f._flags = __SWR | __SSTR;
 	f._bf._base = f._p = (unsigned char *)str;
 	f._bf._size = f._w = n - 1;
+	f.vwrite = BSD__sfvwrite;
 	ret = BSD_vfprintf(&f, fmt, ap);
 	*f._p = 0;
 	va_end(ap);

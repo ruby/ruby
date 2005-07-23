@@ -15,6 +15,12 @@
 #ifndef RUBY_INTERN_H
 #define RUBY_INTERN_H 1
 
+#ifdef HAVE_STDARG_PROTOTYPES
+# include <stdarg.h>
+#else
+# include <varargs.h>
+#endif
+
 /* 
  * Functions and variables that are used by more than one source file of
  * the kernel.
@@ -449,7 +455,14 @@ void rb_trap_exit _((void));
 void rb_trap_exec _((void));
 const char *ruby_signal_name _((int));
 /* sprintf.c */
-VALUE rb_f_sprintf _((int, VALUE*));
+VALUE rb_f_sprintf _((int, const VALUE*));
+VALUE rb_sprintf __((const char*, ...))
+#ifdef __GNUC__
+    __attribute__((format(printf,1,2)))
+#endif
+    ;
+VALUE rb_vsprintf _((const char*, va_list));
+VALUE rb_str_format _((int, const VALUE *, VALUE));
 /* string.c */
 VALUE rb_str_new _((const char*, long));
 VALUE rb_str_new2 _((const char*));

@@ -353,7 +353,6 @@ mingw*)		LIBS="-lshell32 -lws2_32 $LIBS"
 		ac_cv_func_times=yes
 		ac_cv_func_waitpid=yes
 		ac_cv_func_fsync=yes
-		ac_cv_func_vsnprintf=yes
 		ac_cv_func_seekdir=yes
 		ac_cv_func_telldir=yes
 		ac_cv_func_isinf=yes
@@ -482,7 +481,7 @@ AC_TYPE_SIGNAL
 AC_FUNC_ALLOCA
 AC_FUNC_MEMCMP
 AC_REPLACE_FUNCS(dup2 memmove strcasecmp strncasecmp strerror strftime\
-		 strchr strstr strtoul crypt flock vsnprintf\
+		 strchr strstr strtoul crypt flock\
 		 isnan finite isinf hypot acosh erf)
 AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd\
 	      truncate chsize times utimes fcntl lockf lstat link symlink readlink\

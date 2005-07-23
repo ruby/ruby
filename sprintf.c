@@ -15,6 +15,13 @@
 #include "ruby.h"
 #include <ctype.h>
 #include <math.h>
+#ifdef HAVE_STDARG_PROTOTYPES
+#include <stdarg.h>
+#define va_init_list(a,b) va_start(a,b)
+#else
+#include <varargs.h>
+#define va_init_list(a,b) va_start(a)
+#endif
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
@@ -93,6 +100,12 @@ sign_bits(base, p)
 #define PUSH(s, l) do { \
     CHECK(l);\
     memcpy(&buf[blen], s, l);\
+    blen += (l);\
+} while (0)
+
+#define FILL(c, l) do { \
+    CHECK(l);\
+    memset(&buf[blen], c, l);\
     blen += (l);\
 } while (0)
 
@@ -230,9 +243,17 @@ sign_bits(base, p)
 VALUE
 rb_f_sprintf(argc, argv)
     int argc;
-    VALUE *argv;
+    const VALUE *argv;
 {
+    return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
+}
+
+VALUE
+rb_str_format(argc, argv, fmt)
+    int argc;
+    const VALUE *argv;
     VALUE fmt;
+{
     const char *p, *end;
     char *buf;
     int blen, bsiz;
@@ -246,7 +267,8 @@ rb_f_sprintf(argc, argv)
     VALUE tmp;
     VALUE str;
 
-    fmt = GETNTHARG(0);
+    ++argc;
+    --argv;
     if (OBJ_TAINTED(fmt)) tainted = 1;
     StringValue(fmt);
     fmt = rb_str_new4(fmt);
@@ -380,13 +402,14 @@ rb_f_sprintf(argc, argv)
 		VALUE val = GETARG();
 		char c;
 
-		if (!(flags & FMINUS))
-		    while (--width > 0)
-			PUSH(" ", 1);
 		c = NUM2INT(val) & 0xff;
-		PUSH(&c, 1);
-		while (--width > 0)
-		    PUSH(" ", 1);
+		if (!(flags & FWIDTH)) {
+		    PUSH(&c, 1);
+		}
+		else {
+		    FILL(' ', width);
+		    buf[blen - ((flags & FMINUS) ? width : 1)] = c;
+		}
 	    }
 	    break;
 
@@ -806,4 +829,82 @@ fmt_setup(buf, c, flags, width, prec)
 
     *buf++ = c;
     *buf = '\0';
+}
+
+#undef FILE
+#define FILE rb_printf_buffer
+#define __sbuf rb_printf_sbuf
+#define __sFILE rb_printf_sfile
+#undef feof
+#undef ferror
+#undef fileno
+#include "missing/vsnprintf.c"
+
+static int
+ruby__sfvwrite(fp, uio)
+    register rb_printf_buffer *fp;
+    register struct __suio *uio;
+{
+    struct __siov *iov;
+    VALUE result = (VALUE)fp->_bf._base;
+    char *buf = fp->_p;
+    size_t len, n;
+    int blen = buf - RSTRING(result)->ptr, bsiz = fp->_w;
+
+    if (RBASIC(result)->klass) {
+	rb_raise(rb_eRuntimeError, "rb_vsprintf reentered");
+    }
+    if ((len = uio->uio_resid) == 0)
+	return 0;
+    CHECK(len);
+    fp->_w = bsiz;
+    for (iov = uio->uio_iov; len > 0; ++iov) {
+	MEMCPY(buf, iov->iov_base, char, n = iov->iov_len);
+	buf += n;
+	len -= n;
+    }
+    fp->_p = (unsigned char *)buf;
+    return 0;
+}
+
+VALUE
+rb_vsprintf(fmt, ap)
+    const char *fmt;
+    va_list ap;
+{
+    rb_printf_buffer f;
+    VALUE result;
+
+    f._flags = __SWR | __SSTR;
+    f._bf._size = 0;
+    f._w = 120;
+    result = rb_str_buf_new(f._w);
+    f._bf._base = (unsigned char *)result;
+    f._p = (unsigned char *)RSTRING(result)->ptr;
+    RBASIC(result)->klass = 0;
+    f.vwrite = ruby__sfvwrite;
+    BSD_vfprintf(&f, fmt, ap);
+    RBASIC(result)->klass = rb_cString;
+    rb_str_resize(result, (char *)f._p - RSTRING(result)->ptr);
+
+    return result;
+}
+
+VALUE
+#ifdef HAVE_STDARG_PROTOTYPES
+rb_sprintf(const char *format, ...)
+#else
+ruby_sprintf(format, va_alist)
+    const char *format;
+    va_dcl
+#endif
+{
+    VALUE result;
+    va_list ap;
+
+    va_init_list(ap, format);
+    result = rb_vsprintf(format, ap);
+    va_end(ap);
+
+    return result;
 }

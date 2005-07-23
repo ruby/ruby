@@ -8904,13 +8904,13 @@ ripper_compile_error(parser, fmt, va_alist)
     va_dcl
 #endif
 {
-    char buf[BUFSIZ];
+    VALUE str;
     va_list args;
 
     va_init_list(args, fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
+    str = rb_vsprintf(fmt, args);
     va_end(args);
-    rb_funcall(parser->value, rb_intern("compile_error"), 1, rb_str_new2(buf));
+    rb_funcall(parser->value, rb_intern("compile_error"), 1, str);
 }
 
 static void

@@ -178,10 +178,8 @@ extern int    rb_w32_rename(const char *, const char *);
 extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
 
-#define vsnprintf(s,n,f,l) rb_w32_vsnprintf(s,n,f,l)
-#define snprintf   rb_w32_snprintf
-extern int rb_w32_vsnprintf(char *, size_t, const char *, va_list);
-extern int rb_w32_snprintf(char *, size_t, const char *, ...);
+DEPRECATED(extern int rb_w32_vsnprintf(char *, size_t, const char *, va_list));
+DEPRECATED(extern int rb_w32_snprintf(char *, size_t, const char *, ...));
 
 extern int chown(const char *, int, int);
 extern int link(const char *, const char *);

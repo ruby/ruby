@@ -178,7 +178,6 @@ flock.$(OBJEXT): {$(VPATH)}flock.c
 memcmp.$(OBJEXT): {$(VPATH)}memcmp.c
 memmove.$(OBJEXT): {$(VPATH)}memmove.c
 mkdir.$(OBJEXT): {$(VPATH)}mkdir.c
-vsnprintf.$(OBJEXT): {$(VPATH)}vsnprintf.c
 strcasecmp.$(OBJEXT): {$(VPATH)}strcasecmp.c
 strncasecmp.$(OBJEXT): {$(VPATH)}strncasecmp.c
 strchr.$(OBJEXT): {$(VPATH)}strchr.c
@@ -302,7 +301,7 @@ signal.$(OBJEXT): {$(VPATH)}signal.c {$(VPATH)}ruby.h config.h \
 sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h config.h
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}missing/vsnprintf.c
 st.$(OBJEXT): {$(VPATH)}st.c config.h {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \

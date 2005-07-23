@@ -298,13 +298,9 @@ rb_any_to_s(obj)
     VALUE obj;
 {
     char *cname = rb_obj_classname(obj);
-    size_t len;
     VALUE str;
 
-    len = strlen(cname)+6+16;
-    str = rb_str_new(0, len); /* 6:tags 16:addr */
-    snprintf(RSTRING(str)->ptr, len+1, "#<%s:0x%lx>", cname, obj);
-    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+    str = rb_sprintf("#<%s:0x%lx>", cname, obj);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
 
     return str;
@@ -385,14 +381,10 @@ rb_obj_inspect(obj)
 	&& ROBJECT(obj)->iv_tbl
 	&& ROBJECT(obj)->iv_tbl->num_entries > 0) {
 	VALUE str;
-	size_t len;
 	char *c;
 
 	c = rb_obj_classname(obj);
-	len = strlen(c)+10+16;
-	str = rb_str_new(0, len); /* 10:tags 16:addr */
-	snprintf(RSTRING(str)->ptr, len+1, "-<%s:0x%lx", c, obj);
-	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
+	str = rb_sprintf("-<%s:0x%lx", c, obj);
 	return rb_exec_recursive(inspect_obj, obj, str);
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);
