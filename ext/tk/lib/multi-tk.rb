@@ -1411,7 +1411,7 @@ class MultiTkIp
     if @cmd_receiver == Thread.current || 
         (!req_val && TclTkLib.mainloop_thread? != false) # callback
       begin
-        ret = cmd.call(*args)
+        ret = cmd.call(safe_level, *args)
       rescue SystemExit => e
         # exit IP
         warn("Warning: "+ $! + " on " + self.inspect) if $DEBUG
@@ -1492,35 +1492,11 @@ class MultiTkIp
   end
   private :eval_proc_core
 
-=begin
-  def eval_callback(*args)
-    if block_given?
-      eval_proc_core(false, proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
-    else
-      eval_proc_core(false, *args)
-    end
-  end
-=end
-=begin
-  def eval_callback(*args)
-    if block_given?
-      eval_proc_core(false, Proc.new, *args)
-#      eval_proc_core(Thread.current, Proc.new, *args)
-    else
-      cmd = args.shift
-      eval_proc_core(false, *args)
-#      eval_proc_core(Thread.current, *args)
-    end
-  end
-=end
   def eval_callback(*args)
     if block_given?
       cmd = Proc.new
     else
       cmd = args.shift
-    end
-    if TclTkLib.mainloop_thread? != false
-      args.unshift(safe_level)
     end
     current = Thread.current
     backup_ip = current['callback_ip']
@@ -1532,15 +1508,6 @@ class MultiTkIp
     end
   end
 
-=begin
-  def eval_proc(*args)
-    if block_given?
-      eval_proc_core(true, proc{$SAFE=@safe_level[0]; Proc.new}.call, *args)
-    else
-      eval_proc_core(true, *args)
-    end
-  end
-=end
   def eval_proc(*args)
     # The scope of the eval-block of 'eval_proc' method is different from 
     # the external. If you want to pass local values to the eval-block, 
@@ -1562,7 +1529,7 @@ class MultiTkIp
 	               proc{|safe, *params|
 		         $SAFE=safe if $SAFE < safe
                          cmd.call(*params)
-                       }, safe_level, *args)
+                       }, *args)
       ensure
         current['callback_ip'] = backup_ip
       end
@@ -1572,7 +1539,7 @@ class MultiTkIp
                        $SAFE=safe if $SAFE < safe
                        Thread.new(*params, &cmd).value
                      },
-                     safe_level, *args)
+                     *args)
     end
   end
   alias call eval_proc
@@ -1636,28 +1603,10 @@ end
 
 class << MultiTkIp
   # class method
-=begin
-  def eval_proc(cmd = proc{$SAFE=__getip.safe_level; Proc.new}.call, *args)
-    # class ==> interp object
-    __getip.eval_proc(cmd, *args)
-  end
-=end
-=begin
-  def eval_proc(*args)
-    # class ==> interp object
-    if block_given?
-      __getip.eval_proc(proc{$SAFE=__getip.safe_level; Proc.new}.call, *args)
-    else
-      __getip.eval_proc(*args)
-    end
-  end
-=end
-#=begin
   def eval_proc(*args, &blk)
     # class ==> interp object
     __getip.eval_proc(*args, &blk)
   end
-#=end
   alias call eval_proc
   alias eval_string eval_proc
 end
@@ -2059,8 +2008,10 @@ class MultiTkIp
 =end
       begin
         # subip._eval_without_enc("foreach i [after info] {after cancel $i}")
-        after_ids = subip._eval_without_enc("after info")
-        subip._eval_without_enc("foreach i {#{after_ids}} {after cancel $i}")
+	unless subip.deleted?
+	  after_ids = subip._eval_without_enc("after info")
+	  subip._eval_without_enc("foreach i {#{after_ids}} {after cancel $i}")
+	end
       rescue Exception
       end
 
