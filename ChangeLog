@@ -1,4 +1,4 @@
-Mon Jul 25 21:29:20 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Mon Jul 25 21:30:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk: Borland MAKE doesn't look for file names which have paths
 	  from VPATH.  fixed: [ruby-dev:26604]
@@ -6,6 +6,9 @@ Mon Jul 25 21:29:20 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ruby.h (NORETURN, DEPRECATED): moved just after config.h.
 
 	* {win32,wince}/Makefile.sub: vsnprintf() is in missing now.
+
+	* {bcc32,win32,wince}/Makefile.sub: moved CPPFLAGS only for ruby
+	  source to XCFLAGS.
 
 Mon Jul 25 14:10:02 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 

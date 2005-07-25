@@ -109,8 +109,7 @@ OUTFLAG       = -Fe
 CFLAGS = $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
 !if !defined(CPPFLAGS)
-CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing -I$(srcdir)/wince \
-           $(CECPUDEF) -DUNDER_CE -D_WIN32_WCE=$(SUBSYSVERSION:.=) \
+CPPFLAGS = $(CECPUDEF) -DUNDER_CE -D_WIN32_WCE=$(SUBSYSVERSION:.=) \
            -DFILENAME_MAX=MAX_PATH -DTLS_OUT_OF_INDEXES=0xFFFFFFFF \
            -DBUFSIZ=512 -D_UNICODE -DUNICODE
 !endif
@@ -141,7 +140,7 @@ ARFLAGS = -machine:$(MACHINE) -out:
 CC = $(CC) -nologo
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT
+XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing -I$(srcdir)/wince
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS = 
 

@@ -116,9 +116,6 @@ OUTFLAG       = -Fe
 !if !defined(CFLAGS)
 CFLAGS = -MD $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG)
 !endif
-!if !defined(CPPFLAGS)
-CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)/missing
-!endif
 !if !defined(CXXFLAGS)
 CXXFLAGS = $(CFLAGS)
 !endif
@@ -141,7 +138,7 @@ ARFLAGS = -machine:$(MACHINE) -out:
 CC = $(CC) -nologo
 LD = $(CC)
 LDSHARED = $(LD) -LD
-XCFLAGS = -DRUBY_EXPORT
+XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)/missing
 DLDFLAGS = $(LDFLAGS) -dll
 SOLIBS = 
 

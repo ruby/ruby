@@ -117,9 +117,6 @@ OUTFLAG       = -o
 !ifndef CFLAGS
 CFLAGS = -q -tWR -tWC $(DEBUGFLAGS) $(OPTFLAGS) $(PROCESSOR_FLAG) -w- -wsus -wcpt -wdup -wext -wrng -wrpt -wzdi
 !endif
-!ifndef CPPFLAGS
-CPPFLAGS = -I. -I$(srcdir) -I$(srcdir)missing
-!endif
 !ifndef CXXFLAGS
 CXXFLAGS = $(CFLAGS)
 !endif
@@ -139,7 +136,7 @@ MISSING = acosh.obj crypt.obj erf.obj win32.obj
 STACK = 0x2000000
 !endif
 
-XCFLAGS = -DRUBY_EXPORT
+XCFLAGS = -DRUBY_EXPORT -I. -I$(srcdir) -I$(srcdir)missing
 
 ARFLAGS = /a
 LD = ilink32 -q -Gn
