@@ -833,12 +833,13 @@ flo_eq(x, y)
 	break;
       case T_FLOAT:
 	b = RFLOAT(y)->value;
+	if (isnan(b)) return Qfalse;
 	break;
       default:
 	return num_equal(x, y);
     }
     a = RFLOAT(x)->value;
-    if (isnan(a) || isnan(b)) return Qfalse;
+    if (isnan(a)) return Qfalse;
     return (a == b)?Qtrue:Qfalse;
 }
 
@@ -938,12 +939,13 @@ flo_gt(x, y)
 
       case T_FLOAT:
 	b = RFLOAT(y)->value;
+	if (isnan(b)) return Qfalse;
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y);
     }
-    if (isnan(a) || isnan(b)) return Qfalse;
+    if (isnan(a)) return Qfalse;
     return (a > b)?Qtrue:Qfalse;
 }
 
@@ -973,12 +975,13 @@ flo_ge(x, y)
 
       case T_FLOAT:
 	b = RFLOAT(y)->value;
+	if (isnan(b)) return Qfalse;
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y);
     }
-    if (isnan(a) || isnan(b)) return Qfalse;
+    if (isnan(a)) return Qfalse;
     return (a >= b)?Qtrue:Qfalse;
 }
 
@@ -1007,12 +1010,13 @@ flo_lt(x, y)
 
       case T_FLOAT:
 	b = RFLOAT(y)->value;
+	if (isnan(b)) return Qfalse;
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y);
     }
-    if (isnan(a) || isnan(b)) return Qfalse;
+    if (isnan(a)) return Qfalse;
     return (a < b)?Qtrue:Qfalse;
 }
 
@@ -1042,12 +1046,13 @@ flo_le(x, y)
 
       case T_FLOAT:
 	b = RFLOAT(y)->value;
+	if (isnan(b)) return Qfalse;
 	break;
 
       default:
 	return rb_num_coerce_relop(x, y);
     }
-    if (isnan(a) || isnan(b)) return Qfalse;
+    if (isnan(a)) return Qfalse;
     return (a <= b)?Qtrue:Qfalse;
 }
 

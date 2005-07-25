@@ -983,8 +983,8 @@ rb_big_eq(x, y)
 	    volatile double a, b;
 
 	    a = RFLOAT(y)->value;
+	    if (isnan(a)) return Qfalse;
 	    b = rb_big2dbl(x);
-	    if (isnan(a) || isnan(b)) return Qfalse;
 	    return (a == b)?Qtrue:Qfalse;
 	}
       default:
