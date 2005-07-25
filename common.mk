@@ -301,7 +301,7 @@ signal.$(OBJEXT): {$(VPATH)}signal.c {$(VPATH)}ruby.h config.h \
 sjis.$(OBJEXT): {$(VPATH)}sjis.c {$(VPATH)}regenc.h \
   {$(VPATH)}oniguruma.h config.h
 sprintf.$(OBJEXT): {$(VPATH)}sprintf.c {$(VPATH)}ruby.h config.h \
-  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}missing/vsnprintf.c
+  {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h {$(VPATH)}vsnprintf.c
 st.$(OBJEXT): {$(VPATH)}st.c config.h {$(VPATH)}st.h
 string.$(OBJEXT): {$(VPATH)}string.c {$(VPATH)}ruby.h config.h \
   {$(VPATH)}defines.h {$(VPATH)}intern.h {$(VPATH)}missing.h \

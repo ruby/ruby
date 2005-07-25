@@ -20,6 +20,13 @@ extern "C" {
 
 #include "config.h"
 
+#define NORETURN_STYLE_NEW 1
+#ifndef NORETURN
+# define NORETURN(x) x
+#endif
+#ifndef DEPRECATED
+# define DEPRECATED(x) x
+#endif
 #ifndef NOINLINE
 # define NOINLINE(x) x
 #endif
@@ -55,14 +62,6 @@ extern "C" {
 #define ISALPHA(c) (ISASCII(c) && isalpha((int)(unsigned char)(c)))
 #define ISDIGIT(c) (ISASCII(c) && isdigit((int)(unsigned char)(c)))
 #define ISXDIGIT(c) (ISASCII(c) && isxdigit((int)(unsigned char)(c)))
-#endif
-
-#define NORETURN_STYLE_NEW 1
-#ifndef NORETURN
-# define NORETURN(x) x
-#endif
-#ifndef DEPRECATED
-# define DEPRECATED(x) x
 #endif
 
 #if defined(HAVE_ALLOCA_H)

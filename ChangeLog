@@ -1,3 +1,12 @@
+Mon Jul 25 21:29:20 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk: Borland MAKE doesn't look for file names which have paths
+	  from VPATH.  fixed: [ruby-dev:26604]
+
+	* ruby.h (NORETURN, DEPRECATED): moved just after config.h.
+
+	* {win32,wince}/Makefile.sub: vsnprintf() is in missing now.
+
 Mon Jul 25 14:10:02 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: fix en-bugged part in the last commit.
