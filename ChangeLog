@@ -1,3 +1,8 @@
+Mon Jul 25 21:30:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* {bcc32,win32,wince}/Makefile.sub: moved CPPFLAGS only for ruby
+	  source to XCFLAGS.
+
 Mon Jul 25 13:45:18 2005  NAJIMA Hiroki  <najima@mickey.ai.kyutech.ac.jp>
 
 	* io.c: check HAVE_SYS_IOCTL_H before including the header.
@@ -33,7 +38,7 @@ Fri Jul 22 15:02:39 2005  Kouhei Sutou  <kou@cozmixng.org>
 	* sample/rss/tdiary-plugin/rss-recent.rb: ditto.
 
 	* sample/rss/tdiary-plugin/rss-recent.rb: 0.0.6 -> 0.0.7.
-	
+
 Fri Jul 22 14:37:43 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/parser.rb (RSS::Parser#initialize): accept HTTP/FTP
@@ -51,34 +56,34 @@ Fri Jul 22 07:01:42 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: add TclTkIp#has_mainwindow? method.
 
-	* ext/tk/lib/tk.rb: add Tk.has_mainwindow? method. 
+	* ext/tk/lib/tk.rb: add Tk.has_mainwindow? method.
 
-	* ext/tk/lib/multi-tk.rb: add MultiTkIp#has_mainwindow? method. 
+	* ext/tk/lib/multi-tk.rb: add MultiTkIp#has_mainwindow? method.
 
-	* ext/tk/lib/remote-tk.rb: add RemoteTkIp#has_mainwindow? method. 
+	* ext/tk/lib/remote-tk.rb: add RemoteTkIp#has_mainwindow? method.
 
 	* ext/tk/lib/multi-tk.rb: slave IP fail to exit itself when $SAFE==4.
 
-	* ext/tk/lib/multi-tk.rb: remove constants from MultiTkIp module to 
+	* ext/tk/lib/multi-tk.rb: remove constants from MultiTkIp module to
 	  avoid access from external.
 
-	* ext/tk/lib/multi-tk.rb: check_root flag is ignored on slave IPs' 
-	  mainloop. 
+	* ext/tk/lib/multi-tk.rb: check_root flag is ignored on slave IPs'
+	  mainloop.
 
-	* ext/tk/lib/multi-tk.rb: hang-up Tk.mainloop called on a slave IP 
+	* ext/tk/lib/multi-tk.rb: hang-up Tk.mainloop called on a slave IP
 	  with $SAFE==4.
 
 	* ext/tk/lib/multi-tk.rb: MultiTkIp#bg_eval_proc doesn't work
-	  properly. 
+	  properly.
 
 	* ext/tk/lib/multi-tk.rb: add MultiTkIp#set_cb_error(proc) and
-	  cb_error(exc) to log errors at callbacks on safe slave IPs. 
+	  cb_error(exc) to log errors at callbacks on safe slave IPs.
 
-	* ext/tk/lib/multi-tk.rb: fail to get an available slave IP object 
-	  when call Tk.mainloop in the block which is given to new_* method, 
-	    because cannot finish initialize while the root widget is alive. 
+	* ext/tk/lib/multi-tk.rb: fail to get an available slave IP object
+	  when call Tk.mainloop in the block which is given to new_* method,
+	    because cannot finish initialize while the root widget is alive.
 
-	* ext/tk/lib/multi-tk.rb: fail to control a slave IP when Tk.mainloop 
+	* ext/tk/lib/multi-tk.rb: fail to control a slave IP when Tk.mainloop
 	  runs on the IP.
 
 Wed Jul 20 19:20:37 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
@@ -93,7 +98,7 @@ Wed Jul 20 18:40:50 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Wed Jul 20 18:07:11 2005  Tanaka Akira  <akr@m17n.org>
 
-	* io.c (rb_io_ctl): update FMODE_WSPLIT_INITIALIZED and FMODE_WSPLIT 
+	* io.c (rb_io_ctl): update FMODE_WSPLIT_INITIALIZED and FMODE_WSPLIT
 	  by F_SETFL.
 
 Wed Jul 20 10:04:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -143,7 +148,7 @@ Tue Jul 19 14:08:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 Tue Jul 19 13:19:46 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: For symmetry, add TkVariable#string. It
-	  returns a string even if the default value type of the TkVariable 
+	  returns a string even if the default value type of the TkVariable
 	  object is not "string".
 
 Mon Jul 18 21:40:20 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
@@ -342,7 +347,7 @@ Tue Jul  5 14:51:35 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 Mon Jul  4 14:35:52 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* sample/svr.rb: service can be stopped by ill-behaved client; use
-	  tsvr.rb instead. 
+	  tsvr.rb instead.
 
 Mon Jul  4 13:25:21 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
