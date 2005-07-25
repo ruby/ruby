@@ -1,3 +1,8 @@
+Mon Jul 25 13:45:18 2005  NAJIMA Hiroki  <najima@mickey.ai.kyutech.ac.jp>
+
+	* io.c: check HAVE_SYS_IOCTL_H before including the header.
+	  [ruby-dev:26610]
+
 Mon Jul 25 14:10:02 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: fix en-bugged part in the last commit.
