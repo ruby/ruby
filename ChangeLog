@@ -1,3 +1,7 @@
+Mon Jul 25 14:10:02 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: fix en-bugged part in the last commit.
+
 Sat Jul 23 16:48:12 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_engine.c (ossl_engine_s_load): should check
