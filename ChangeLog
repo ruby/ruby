@@ -1,3 +1,7 @@
+Mon Jul 25 23:48:55 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.[ch]: (rb_w32_vsnprintf, rb_w32_snprintf): removed.
+
 Mon Jul 25 21:30:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk: Borland MAKE doesn't look for file names which have paths
