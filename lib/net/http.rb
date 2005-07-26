@@ -262,19 +262,13 @@ module Net # :nodoc:
     #
     # or:
     #
-    #    Net::HTTP.get_print('www.example.com', '/index.html')
+    #    Net::HTTP.get_print 'www.example.com', '/index.html'
     #
-    def HTTP.get_print(arg1, arg2 = nil, port = nil)
-      if arg2
-        addr, path = arg1, arg2
-      else
-        uri = arg1
-        addr = uri.host
-        path = uri.request_uri
-        port = uri.port
-      end
-      new(addr, port || HTTP.default_port).start {|http|
-        http.get path, nil, $stdout
+    def HTTP.get_print(uri_or_host, path = nil, port = nil)
+      get_response(uri_or_host, path, port) {|res|
+        res.read_body do |chunk|
+          $stdout.print chunk
+        end
       }
       nil
     end
@@ -289,8 +283,8 @@ module Net # :nodoc:
     #
     #    print Net::HTTP.get('www.example.com', '/index.html')
     #
-    def HTTP.get(arg1, arg2 = nil, arg3 = nil)
-      get_response(arg1, arg2, arg3).body
+    def HTTP.get(uri_or_host, path = nil, port = nil)
+      get_response(uri_or_host, path, port).body
     end
 
     # Send a GET request to the target and return the response
@@ -305,29 +299,19 @@ module Net # :nodoc:
     #    res = Net::HTTP.get_response('www.example.com', '/index.html')
     #    print res.body
     #
-    def HTTP.get_response(arg1, arg2 = nil, arg3 = nil)
-      if arg2
-        get_by_path(arg1, arg2, arg3)
+    def HTTP.get_response(uri_or_host, path = nil, port = nil, &block)
+      if path
+        host = uri_or_host
+        new(host, port || HTTP.default_port).start {|http|
+          return http.request_get(path, &block)
+        }
       else
-        get_by_uri(arg1)
+        uri = uri_or_host
+        new(uri.host, uri.port).start {|http|
+          return http.request_get(uri.request_uri, &block)
+        }
       end
     end
-
-    def HTTP.get_by_path(addr, path, port = nil)   #:nodoc:
-      new(addr, port || HTTP.default_port).start {|http|
-        return http.request(Get.new(path))
-      }
-    end
-    private_class_method :get_by_path
-
-    def HTTP.get_by_uri(uri)   #:nodoc:
-      # Should we allow this?
-      # uri = URI.parse(uri) unless uri.respond_to?(:host)
-      new(uri.host, uri.port).start {|http|
-        return http.request(Get.new(uri.request_uri))
-      }
-    end
-    private_class_method :get_by_uri
 
     # Posts HTML form data to the +URL+.
     # Form data must be represented as a Hash of String to String, e.g:
@@ -759,14 +743,8 @@ module Net # :nodoc:
     # the socket.  Note that in this case, the returned response
     # object will *not* contain a (meaningful) body.
     #
-    # +dest+ is an alternative method of collecting the body.  It
-    # must be an object responding to the "<<" operator (such as
-    # a String or an Array).  Each fragment of the entity body
-    # will be "<<"-ed in turn onto +dest+ if provided, and it will
-    # also become the body of the returned response object.
-    #
-    # You must *not* provide both +dest+ and a block; doing so
-    # will result in an ArgumentError.
+    # +dest+ argument is obsolete.
+    # It still works but you must not use it.
     # 
     # In version 1.1, this method might raise an exception for 
     # 3xx (redirect). In this case you can get an HTTPResponse object

@@ -1,3 +1,8 @@
+Tue Jul 26 22:05:12 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: merge a patch contributed by Daniel Berger,
+	  with some modification. (RubyForge #2128)
+
 Tue Jul 26 18:11:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h: support LLP64 model.  [ruby-talk:149524]
