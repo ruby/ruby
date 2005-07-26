@@ -894,7 +894,7 @@ VALUE
 #ifdef HAVE_STDARG_PROTOTYPES
 rb_sprintf(const char *format, ...)
 #else
-ruby_sprintf(format, va_alist)
+rb_sprintf(format, va_alist)
     const char *format;
     va_dcl
 #endif
