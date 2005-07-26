@@ -1,3 +1,10 @@
+Tue Jul 26 22:41:28 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/lib/ripper/sexp.rb: new method Ripper.sexp_raw.
+
+	* ext/ripper/lib/ripper/sexp.rb (Ripper.sexp): returns more
+	  readable tree.  This is suggested by Kirill A. Shutemov.
+
 Tue Jul 26 22:05:12 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: merge a patch contributed by Daniel Berger,

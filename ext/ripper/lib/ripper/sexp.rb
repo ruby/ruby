@@ -33,23 +33,63 @@ class Ripper
   #             nil]]]]
   #
   def Ripper.sexp(src, filename = '-', lineno = 1)
+    SexpBuilderPP.new(src, filename, lineno).parse
+  end
+
+  def Ripper.sexp_raw(src, filename = '-', lineno = 1)
     SexpBuilder.new(src, filename, lineno).parse
+  end
+
+  class SexpBuilderPP < ::Ripper   #:nodoc:
+    private
+
+    PARSER_EVENTS.each do |event|
+      case event.to_s
+      when /_new\z/
+        module_eval(<<-End, __FILE__, __LINE__ + 1)
+          def on_#{event}(*args)
+            []
+          end
+        End
+      when /_add\z/
+        module_eval(<<-End, __FILE__, __LINE__ + 1)
+          def on_#{event}(list, item)
+            list.push item
+            list
+          end
+        End
+      else
+        module_eval(<<-End, __FILE__, __LINE__ + 1)
+          def on_#{event}(*args)
+            [:#{event}, *args]
+          end
+        End
+      end
+    end
+
+    SCANNER_EVENTS.each do |event|
+      module_eval(<<-End, __FILE__, __LINE__ + 1)
+        def on_#{event}(tok)
+          [:@#{event}, tok, [lineno(), column()]]
+        end
+      End
+    end
   end
 
   class SexpBuilder < ::Ripper   #:nodoc:
     private
 
     PARSER_EVENTS.each do |event|
-      module_eval(<<-End)
-        def on_#{event}(*list)
-          list.unshift :#{event}
-          list
+      module_eval(<<-End, __FILE__, __LINE__ + 1)
+        def on_#{event}(*args)
+          args.unshift :#{event}
+          args
         end
       End
     end
 
     SCANNER_EVENTS.each do |event|
-      module_eval(<<-End)
+      module_eval(<<-End, __FILE__, __LINE__ + 1)
         def on_#{event}(tok)
           [:@#{event}, tok, [lineno(), column()]]
         end
