@@ -1,3 +1,7 @@
+Tue Jul 26 18:11:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h: support LLP64 model.  [ruby-talk:149524]
+
 Tue Jul 26 12:57:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/openssl_missin.c: include <openssl/engine.h> before  

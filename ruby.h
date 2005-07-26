@@ -70,11 +70,18 @@ extern "C" {
 # define alloca __alloca
 #endif
 
-#if SIZEOF_LONG != SIZEOF_VOIDP
-# error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
-#endif
+#if SIZEOF_LONG == SIZEOF_VOIDP
 typedef unsigned long VALUE;
 typedef unsigned long ID;
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+typedef unsigned long long VALUE;
+typedef unsigned long long ID;
+#elif SIZEOF___INT64 == SIZEOF_VOIDP
+typedef unsigned __int64 VALUE;
+typedef unsigned __int64 ID;
+#else
+# error ---->> ruby requires sizeof(void*) == sizeof(long) to be compiled. <<----
+#endif
 
 #ifdef __STDC__
 # include <limits.h>
