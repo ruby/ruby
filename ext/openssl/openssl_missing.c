@@ -8,6 +8,10 @@
  * This program is licenced under the same licence as Ruby.
  * (See the file 'LICENCE'.)
  */
+#if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_ST_ENGINE)
+# include <openssl/engine.h>
+#endif
+#include <openssl/x509_vfy.h>
 
 #if !defined(OPENSSL_NO_HMAC)
 #include <string.h> /* memcpy() */
@@ -30,7 +34,6 @@ HMAC_CTX_copy(HMAC_CTX *out, HMAC_CTX *in)
 #endif /* NO_HMAC */
 
 #if !defined(HAVE_X509_STORE_SET_EX_DATA)
-#include <openssl/x509_vfy.h>
 
 int X509_STORE_set_ex_data(X509_STORE *str, int idx, void *data)
 {
@@ -106,9 +109,6 @@ HMAC_CTX_cleanup(HMAC_CTX *ctx)
 #endif
 
 #if !defined(HAVE_EVP_CIPHER_CTX_COPY)
-#if defined(HAVE_OPENSSL_ENGINE_H) && defined(HAVE_ST_ENGINE)
-#include <openssl/engine.h>
-#endif
 /* 
  * this function does not exist in OpenSSL yet... or ever?.
  * a future version may break this function.

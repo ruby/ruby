@@ -1,3 +1,9 @@
+Tue Jul 26 12:57:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/openssl_missin.c: include <openssl/engine.h> before  
+	  <openssl/x509_vfy.h> to avoid compilation error of mswin32.
+	  suggested by NAKAMURA Usaku.
+
 Mon Jul 25 21:30:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* {bcc32,win32,wince}/Makefile.sub: moved CPPFLAGS only for ruby
