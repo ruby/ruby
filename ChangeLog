@@ -1,3 +1,7 @@
+Tue Jul 26 18:11:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ruby.h: support LLP64 model.  [ruby-talk:149524]
+
 Tue Jul 26 12:57:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/openssl_missin.c: include <openssl/engine.h> before
@@ -23,6 +27,11 @@ Mon Jul 25 21:30:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Mon Jul 25 14:10:02 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: fix en-bugged part in the last commit.
+
+Mon Jul 25 13:45:18 2005  NAJIMA Hiroki  <najima@mickey.ai.kyutech.ac.jp>
+
+	* io.c: check HAVE_SYS_IOCTL_H before including the header.
+	  [ruby-dev:26610]
 
 Sat Jul 23 16:48:12 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
