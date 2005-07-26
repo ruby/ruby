@@ -1,3 +1,9 @@
+Tue Jul 26 12:57:40 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/openssl_missin.c: include <openssl/engine.h> before
+	  <openssl/x509_vfy.h> to avoid compilation error of mswin32.
+	  suggested by NAKAMURA Usaku.
+
 Mon Jul 25 23:48:55 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.[ch]: (rb_w32_vsnprintf, rb_w32_snprintf): removed.
