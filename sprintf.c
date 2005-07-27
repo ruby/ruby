@@ -842,6 +842,7 @@ fmt_setup(buf, c, flags, width, prec)
 # if  SIZEOF_LONG_LONG == SIZEOF_VOIDP
 #  define _HAVE_SANE_QUAD_
 #  define _HAVE_LLP64_
+#  define quad_t LONG_LONG
 #  define u_quad_t unsigned LONG_LONG
 # endif
 #endif

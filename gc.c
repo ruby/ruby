@@ -984,7 +984,7 @@ gc_mark_children(ptr, lev)
 	break;
 
       default:
-	rb_bug("rb_gc_mark(): unknown data type %p(%p) %s",
+	rb_bug("rb_gc_mark(): unknown data type 0x%lx(%p) %s",
 	       obj->as.basic.flags & T_MASK, obj,
 	       is_pointer_to_heap(obj) ? "corrupted object" : "non object");
     }
@@ -1236,8 +1236,8 @@ obj_free(obj)
 	break;
 
       default:
-	rb_bug("gc_sweep(): unknown data type %p(%ld)", obj,
-	       RANY(obj)->as.basic.flags & T_MASK);
+	rb_bug("gc_sweep(): unknown data type 0x%lx(%p)", 
+	       RANY(obj)->as.basic.flags & T_MASK, obj);
     }
 }
 

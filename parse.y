@@ -3178,7 +3178,8 @@ lambda		: {
 		  lambda_body
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA($2, $4);
+			$$ = $2;
+                        $$->nd_body = block_append($$->nd_body, $4);
 			dyna_pop($<vars>1);
 		    /*%
 		    	$$ = dispatch2(lambda, $2, $4);
@@ -3186,42 +3187,42 @@ lambda		: {
 		    }
 		;
 
-f_larglist	: '(' f_args rparen
+f_larglist	: '(' f_args opt_bv_decl rparen
 		    {
 		    /*%%%*/
-			$$ = $2;
+			$$ = NEW_LAMBDA($2, $3);
 		    /*%
 			$$ = dispatch1(paren, $2);
 		    %*/
 		    }
-		| f_arg opt_terms
+		| f_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_ARGS($1, 0, 0);
+			$$ = NEW_LAMBDA(NEW_ARGS($1, 0, 0), $2);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, Qnil, Qnil);
 		    %*/
 		    }
-		| f_arg ',' f_rest_arg opt_terms
+		| f_arg ',' f_rest_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_ARGS($1, 0, $3);
+			$$ = NEW_LAMBDA(NEW_ARGS($1, 0, $3), $4);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, $3, Qnil);
 		    %*/
 		    }
-		| f_rest_arg opt_terms
+		| f_rest_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_ARGS(0, 0, $1);
+			$$ = NEW_LAMBDA(NEW_ARGS(0, 0, $1), $2);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, $1, Qnil);
 		    %*/
 		    }
-		| /* none */
+		| opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_ARGS(0, 0, 0);
+			$$ = NEW_LAMBDA(NEW_ARGS(0, 0, 0), $1);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, Qnil, Qnil);
 		    %*/
