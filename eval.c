@@ -5848,7 +5848,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     struct cache_entry *ent;
 
     if (!klass) {
-	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (0x%lx)",
+	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (%p)",
 		 rb_id2name(mid), recv);
     }
     /* is it in the method cache? */
@@ -8502,7 +8502,7 @@ proc_to_s(self)
     struct BLOCK *data;
     NODE *node;
     char *cname = rb_obj_classname(self);
-    const int w = (SIZEOF_LONG * CHAR_BIT) / 4;
+    const int w = (sizeof(VALUE) * CHAR_BIT) / 4;
     long len = strlen(cname)+6+w; /* 6:tags 16:addr */
     VALUE str;
 
@@ -8511,13 +8511,13 @@ proc_to_s(self)
 	len += strlen(node->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
 	str = rb_str_new(0, len);
 	snprintf(RSTRING(str)->ptr, len+1,
-		 "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
+		 "#<%s:%p@%s:%d>", cname, (VALUE)data->body,
 		 node->nd_file, nd_line(node));
     }
     else {
 	str = rb_str_new(0, len);
 	snprintf(RSTRING(str)->ptr, len+1,
-		 "#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
+		 "#<%s:%p>", cname, (VALUE)data->body);
     }
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
@@ -10229,7 +10229,7 @@ rb_thread_deadlock()
     char msg[21+SIZEOF_LONG*2];
     VALUE e;
 
-    sprintf(msg, "Thread(0x%lx): deadlock", curr_thread->thread);
+    sprintf(msg, "Thread(%p): deadlock", curr_thread->thread);
     e = rb_exc_new2(rb_eFatal, msg);
     if (curr_thread == main_thread) {
 	rb_exc_raise(e);
@@ -10509,13 +10509,13 @@ rb_thread_schedule()
 	    TRAP_END;
 	}
 	FOREACH_THREAD_FROM(curr, th) {
-	    warn_printf("deadlock 0x%lx: %s:",
+	    warn_printf("deadlock %p: %s:",
 			th->thread, thread_status_name(th->status));
 	    if (th->wait_for & WAIT_FD) warn_printf("F(%d)", th->fd);
 	    if (th->wait_for & WAIT_SELECT) warn_printf("S");
 	    if (th->wait_for & WAIT_TIME) warn_printf("T(%f)", th->delay);
 	    if (th->wait_for & WAIT_JOIN)
-		warn_printf("J(0x%lx)", th->join ? th->join->thread : 0);
+		warn_printf("J(%p)", th->join ? th->join->thread : 0);
 	    if (th->wait_for & WAIT_PID) warn_printf("P");
 	    if (!th->wait_for) warn_printf("-");
 	    warn_printf(" %s - %s:%d\n",
@@ -10752,10 +10752,10 @@ rb_thread_join(th, limit)
     if (rb_thread_critical) rb_thread_deadlock();
     if (!rb_thread_dead(th)) {
 	if (th == curr_thread)
-	    rb_raise(rb_eThreadError, "thread 0x%lx tried to join itself",
+	    rb_raise(rb_eThreadError, "thread %p tried to join itself",
 		     th->thread);
 	if ((th->wait_for & WAIT_JOIN) && th->join == curr_thread)
-	    rb_raise(rb_eThreadError, "Thread#join: deadlock 0x%lx - mutual join(0x%lx)",
+	    rb_raise(rb_eThreadError, "Thread#join: deadlock %p - mutual join(%p)",
 		     curr_thread->thread, th->thread);
 	if (curr_thread->status == THREAD_TO_KILL)
 	    last_status = THREAD_TO_KILL;
@@ -12269,7 +12269,7 @@ rb_thread_inspect(thread)
     size_t len = strlen(cname)+7+16+9+1;
 
     str = rb_str_new(0, len); /* 7:tags 16:addr 9:status 1:nul */
-    snprintf(RSTRING(str)->ptr, len, "#<%s:0x%lx %s>", cname, thread, status);
+    snprintf(RSTRING(str)->ptr, len, "#<%s:%p %s>", cname, thread, status);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     OBJ_INFECT(str, thread);
 
@@ -12803,7 +12803,7 @@ rb_f_throw(argc, argv)
 	    break;
 	}
 	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread 0x%lx",
+	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread %p",
 		     rb_id2name(SYM2ID(tag)),
 		     curr_thread);
 	}
