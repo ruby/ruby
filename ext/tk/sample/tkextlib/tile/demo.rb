@@ -411,7 +411,7 @@ mb.menu(m)
 $V[:rmbIndicatoron] = mb.indicatoron
 m.add(:checkbutton, :label=>'Indicator?', #'
       :variable=>$V.ref(:rmbIndicatoron), 
-      :command=>proc{mb.indicatoron($V[:rmbIndicatoron].value)})
+      :command=>proc{mb.indicatoron($V[:rmbIndicatoron])})
 m.add(:separator)
 fillMenu(m)
 
