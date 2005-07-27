@@ -771,6 +771,7 @@ gc_mark_children(ptr, lev)
 	  case NODE_RESCUE:
 	  case NODE_RESBODY:
 	  case NODE_CLASS:
+	  case NODE_ARGS:
 	    gc_mark((VALUE)obj->as.node.u2.node, lev);
 	    /* fall through */
 	  case NODE_BLOCK:	/* 1,3 */
@@ -838,7 +839,6 @@ gc_mark_children(ptr, lev)
 	  case NODE_NEXT:
 	  case NODE_YIELD:
 	  case NODE_COLON2:
-	  case NODE_ARGS:
 	  case NODE_SPLAT:
 	  case NODE_TO_ARY:
 	  case NODE_SVALUE:
@@ -984,7 +984,7 @@ gc_mark_children(ptr, lev)
 	break;
 
       default:
-	rb_bug("rb_gc_mark(): unknown data type 0x%lx(0x%lx) %s",
+	rb_bug("rb_gc_mark(): unknown data type %p(%p) %s",
 	       obj->as.basic.flags & T_MASK, obj,
 	       is_pointer_to_heap(obj) ? "corrupted object" : "non object");
     }
@@ -1236,7 +1236,7 @@ obj_free(obj)
 	break;
 
       default:
-	rb_bug("gc_sweep(): unknown data type 0x%lx(%ld)", obj,
+	rb_bug("gc_sweep(): unknown data type %p(%ld)", obj,
 	       RANY(obj)->as.basic.flags & T_MASK);
     }
 }
@@ -1871,10 +1871,18 @@ static VALUE
 id2ref(obj, id)
     VALUE obj, id;
 {
-    unsigned long ptr, p0;
+#if SIZEOF_LONG == SIZEOF_VOIDP
+#define NUM2PTR(x) NUM2ULONG(x)
+#elif SIZEOF_LONG_LONG == SIZEOF_VOIDP
+#define NUM2PTR(x) NUM2ULL(x)
+#endif
+    VALUE ptr;
+    void *p0;
 
     rb_secure(4);
-    p0 = ptr = NUM2ULONG(id);
+    ptr = NUM2PTR(id);
+    p0 = (void *)ptr;
+
     if (ptr == Qtrue) return Qtrue;
     if (ptr == Qfalse) return Qfalse;
     if (ptr == Qnil) return Qnil;
@@ -1885,10 +1893,10 @@ id2ref(obj, id)
 
     ptr = id ^ FIXNUM_FLAG;	/* unset FIXNUM_FLAG */
     if (!is_pointer_to_heap((void *)ptr)|| BUILTIN_TYPE(ptr) >= T_BLOCK) {
-	rb_raise(rb_eRangeError, "0x%lx is not id value", p0);
+	rb_raise(rb_eRangeError, "%p is not id value", p0);
     }
     if (BUILTIN_TYPE(ptr) == 0 || RBASIC(ptr)->klass == 0) {
-	rb_raise(rb_eRangeError, "0x%lx is recycled object", p0);
+	rb_raise(rb_eRangeError, "%p is recycled object", p0);
     }
     return (VALUE)ptr;
 }

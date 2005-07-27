@@ -300,7 +300,7 @@ rb_any_to_s(obj)
     char *cname = rb_obj_classname(obj);
     VALUE str;
 
-    str = rb_sprintf("#<%s:0x%lx>", cname, obj);
+    str = rb_sprintf("#<%s:%p>", cname, obj);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
 
     return str;
@@ -384,7 +384,7 @@ rb_obj_inspect(obj)
 	char *c;
 
 	c = rb_obj_classname(obj);
-	str = rb_sprintf("-<%s:0x%lx", c, obj);
+	str = rb_sprintf("-<%s:%p", c, obj);
 	return rb_exec_recursive(inspect_obj, obj, str);
     }
     return rb_funcall(obj, rb_intern("to_s"), 0, 0);

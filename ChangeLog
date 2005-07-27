@@ -1,3 +1,30 @@
+Wed Jul 27 16:25:59 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (lambda): Perl6 style -> lambda expression. [NEW]
+	  [VERY EXPERIMENTAL]
+
+Wed Jul 27 10:43:14 2005   Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (id2ref): must not assign pointers to long int.  use
+	  LONG_LONG instead if SIZEOF_LONG < SIZEOF_VOIDP.
+	  [ruby-talk:149645]
+
+	* ruby.h: use LONG_LONG to simplify the change.
+	  [ruby-talk:149645]
+
+Wed Jul 27 10:59:02 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_each): rewinddir(3) before iteration.
+	  [ruby-talk:149628]
+
+Wed Jul 27 02:34:58 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_throw): replace all '0x%lx' by '%p'.
+	  [ruby-talk:149553]
+
+	* missing/vsnprintf.c (BSD_vfprintf): '%p' need to handle 64bit
+	  size pointer.  [ruby-talk:149553]
+
 Tue Jul 26 22:41:28 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/lib/ripper/sexp.rb: new method Ripper.sexp_raw.

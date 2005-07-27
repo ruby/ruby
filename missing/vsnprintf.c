@@ -789,14 +789,19 @@ fp_begin:		_double = va_arg(ap, double);
 			 * defined manner.''
 			 *	-- ANSI X3J11
 			 */
+#ifdef _HAVE_LLP64_
+			uqval = (u_long)va_arg(ap, void *);
+			flags = (flags) | QUADINT | HEXPREFIX;
+#else
 			ulval = (u_long)va_arg(ap, void *);
-			base = 16;
-			xdigs = "0123456789abcdef";
 #ifdef _HAVE_SANE_QUAD_
 			flags = (flags & ~QUADINT) | HEXPREFIX;
 #else /* _HAVE_SANE_QUAD_ */
 			flags = (flags) | HEXPREFIX;
 #endif /* _HAVE_SANE_QUAD_ */
+#endif
+			base = 16;
+			xdigs = "0123456789abcdef";
 			ch = 'x';
 			goto nosign;
 		case 's':

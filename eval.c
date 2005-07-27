@@ -198,6 +198,7 @@ typedef jmp_buf rb_jmpbuf_t;
 VALUE rb_cProc;
 static VALUE rb_cBinding;
 static VALUE proc_invoke _((VALUE,VALUE,VALUE,VALUE));
+static VALUE proc_lambda _((void));
 static VALUE rb_f_binding _((VALUE));
 static void rb_f_END _((void));
 static VALUE rb_f_block_given_p _((void));
@@ -1104,6 +1105,7 @@ static VALUE module_setup _((VALUE,NODE*));
 
 static VALUE massign _((VALUE,NODE*,VALUE,int));
 static void assign _((VALUE,NODE*,VALUE,int));
+static void formal_assign _((VALUE, NODE*, int, VALUE*, VALUE*));
 
 typedef struct event_hook {
     rb_event_hook_func_t func;
@@ -2826,13 +2828,13 @@ unknown_node(node)
 {
     ruby_current_node = 0;
     if (node->flags == 0) {
-        rb_bug("terminated node (0x%lx)", (long)node);
+        rb_bug("terminated node (%p)", node);
     }
     else if (BUILTIN_TYPE(node) != T_NODE) {
-        rb_bug("not a node 0x%02lx (0x%lx)", BUILTIN_TYPE(node), (long)node);
+        rb_bug("not a node 0x%02lx (%p)", BUILTIN_TYPE(node), node);
     }
     else {
-        rb_bug("unknown node type %d (0x%lx)", nd_type(node), (long)node);
+        rb_bug("unknown node type %d (%p)", nd_type(node), node);
     }
 }
 
@@ -3113,9 +3115,21 @@ rb_eval(self, n)
 	result = block_pass(self, node);
 	break;
 
+      case NODE_LAMBDA:
+	PUSH_TAG(PROT_LOOP);
+	PUSH_BLOCK(node->nd_var, node->nd_body);
+
+	state = EXEC_TAG();
+	PUSH_ITER(ITER_PRE);
+	ruby_iter->iter = ruby_frame->iter = ITER_CUR;
+	result = proc_lambda();
+	POP_ITER();
+	POP_BLOCK();
+	POP_TAG();
+	break;
+
       case NODE_ITER:
       case NODE_FOR:
-      case NODE_LAMBDA:
 	{
 	    PUSH_TAG(PROT_LOOP);
 	    PUSH_BLOCK(node->nd_var, node->nd_body);
@@ -4872,6 +4886,12 @@ rb_yield_0(val, self, klass, flags, avalue)
 		}
 		massign(self, var, val, lambda);
 	    }
+	    else if (nd_type(var) == NODE_ARGS) {
+		if (!avalue) {
+		    val = svalue_to_mrhs(val, var->nd_head);
+		}
+		formal_assign(self, var, RARRAY(val)->len, RARRAY(val)->ptr, 0);
+	    }
 	    else {
 		int len = 0;
 		if (avalue) {
@@ -5694,6 +5714,74 @@ call_cfunc(func, recv, len, argc, argv)
     return Qnil;		/* not reached */
 }
 
+static void
+formal_assign(recv, node, argc, argv, local_vars)
+    VALUE recv;
+    NODE *node;
+    int argc;
+    VALUE *argv;
+    VALUE *local_vars;
+{
+    int i;
+
+    if (nd_type(node) != NODE_ARGS) {
+	rb_bug("no argument-node");
+    }
+
+    i = node->nd_frml ? RARRAY(node->nd_frml)->len : 0;
+    if (i > argc) {
+	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, i);
+    }
+    if (!node->nd_rest) {
+	int nopt = i;
+	NODE *optnode = node->nd_opt;
+
+	while (optnode) {
+	    nopt++;
+	    optnode = optnode->nd_next;
+	}
+	if (nopt < argc) {
+	    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, nopt);
+	}
+    }
+    if (local_vars) {
+	if (i > 0) {
+	    /* +2 for $_ and $~ */
+	    MEMCPY(local_vars+2, argv, VALUE, i);
+	}
+    }
+    else {
+	int j;
+	VALUE a = node->nd_frml;
+
+	for (j=0; j<i; j++) {
+	    dvar_asgn_curr(SYM2ID(RARRAY(a)->ptr[j]), argv[j]);
+	}
+    }
+    argv += i; argc -= i;
+    if (node->nd_opt) {
+	NODE *opt = node->nd_opt;
+
+	while (opt && argc) {
+	    assign(recv, opt->nd_head, *argv, 1);
+	    argv++; argc--;
+	    opt = opt->nd_next;
+	}
+	if (opt) {
+	    rb_eval(recv, opt);
+	}
+    }
+    if (node->nd_rest && !NIL_P(node->nd_rest)) {
+	VALUE v;
+
+	if (argc > 0)
+	    v = rb_ary_new4(argc,argv);
+	else
+	    v = rb_ary_new2(0);
+	assign(recv, node->nd_rest, v, 1);
+    }
+}
+
 static VALUE
 rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     VALUE klass, recv;
@@ -5824,7 +5912,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 	    if ((state = EXEC_TAG()) == 0) {
 		NODE *node = 0;
-		int i;
 
 		if (nd_type(body) == NODE_ARGS) {
 		    node = body;
@@ -5835,60 +5922,10 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		    body = body->nd_next;
 		}
 		if (node) {
-		    if (nd_type(node) != NODE_ARGS) {
-			rb_bug("no argument-node");
+		    formal_assign(recv, node, argc, argv, local_vars);
+		    if (node->nd_rest) {
+			ruby_frame->argc = -(ruby_frame->argc - argc)-1;
 		    }
-
-		    i = node->nd_cnt;
-		    if (i > argc) {
-			rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, i);
-		    }
-		    if ((long)node->nd_rest == -1) {
-			int opt = i;
-			NODE *optnode = node->nd_opt;
-
-			while (optnode) {
-			    opt++;
-			    optnode = optnode->nd_next;
-			}
-			if (opt < argc) {
-			    rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
-				     argc, opt);
-			}
-			ruby_frame->argc = opt;
-		    }
-
-		    if (local_vars) {
-			if (i > 0) {
-			    /* +2 for $_ and $~ */
-			    MEMCPY(local_vars+2, argv, VALUE, i);
-			}
-			argv += i; argc -= i;
-			if (node->nd_opt) {
-			    NODE *opt = node->nd_opt;
-
-			    while (opt && argc) {
-				assign(recv, opt->nd_head, *argv, 1);
-				argv++; argc--;
-				opt = opt->nd_next;
-			    }
-			    if (opt) {
-				rb_eval(recv, opt);
-			    }
-			}
-			if ((long)node->nd_rest >= 0) {
-			    VALUE v;
-
-			    if (argc > 0)
-				v = rb_ary_new4(argc,argv);
-			    else
-				v = rb_ary_new2(0);
-			    ruby_scope->local_vars[node->nd_rest] = v;
-			}
-		    }
-		}
-		if ((long)node->nd_rest >= 0) {
-		    ruby_frame->argc = -(ruby_frame->argc - argc)-1;
 		}
 
 		if (event_hooks) {
@@ -5950,7 +5987,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
     struct cache_entry *ent;
 
     if (!klass) {
-	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (0x%lx)",
+	rb_raise(rb_eNotImpError, "method `%s' called on terminated object (%p)",
 		 rb_id2name(mid), recv);
     }
     /* is it in the method cache? */
@@ -8664,16 +8701,15 @@ proc_to_s(self)
     struct BLOCK *data;
     NODE *node;
     char *cname = rb_obj_classname(self);
-    const int w = (SIZEOF_LONG * CHAR_BIT) / 4;
     VALUE str;
 
     Data_Get_Struct(self, struct BLOCK, data);
     if ((node = data->frame.node) || (node = data->body)) {
-	str = rb_sprintf("#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
+	str = rb_sprintf("#<%s:%p@%s:%d>", cname, data->body,
 			 node->nd_file, nd_line(node));
     }
     else {
-	str = rb_sprintf("#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
+	str = rb_sprintf("#<%s:%p>", cname, data->body);
     }
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);
 
@@ -9291,7 +9327,7 @@ rb_node_arity(body)
 	    body = body->nd_head;
 	if (!body) return 0;
 	n = body->nd_cnt;
-	if (body->nd_opt || body->nd_rest != -1)
+	if (body->nd_opt || body->nd_rest)
 	    n = -n-1;
 	return n;
       default:
@@ -10613,7 +10649,7 @@ rb_thread_deadlock()
     char msg[21+SIZEOF_LONG*2];
     VALUE e;
 
-    sprintf(msg, "Thread(0x%lx): deadlock", curr_thread->thread);
+    sprintf(msg, "Thread(%p): deadlock", curr_thread->thread);
     e = rb_exc_new2(rb_eFatal, msg);
     if (curr_thread == main_thread) {
 	rb_exc_raise(e);
@@ -10915,13 +10951,13 @@ rb_thread_schedule()
 	    TRAP_END;
 	}
 	FOREACH_THREAD_FROM(curr, th) {
-	    warn_printf("deadlock 0x%lx: %s:",
+	    warn_printf("deadlock %p: %s:",
 			th->thread, thread_status_name(th->status));
 	    if (th->wait_for & WAIT_FD) warn_printf("F(%d)", th->fd);
 	    if (th->wait_for & WAIT_SELECT) warn_printf("S");
 	    if (th->wait_for & WAIT_TIME) warn_printf("T(%f)", th->delay);
 	    if (th->wait_for & WAIT_JOIN)
-		warn_printf("J(0x%lx)", th->join ? th->join->thread : 0);
+		warn_printf("J(%p)", th->join ? th->join->thread : 0);
 	    if (th->wait_for & WAIT_PID) warn_printf("P");
 	    if (!th->wait_for) warn_printf("-");
 	    warn_printf(" %s - %s:%d\n",
@@ -11157,10 +11193,10 @@ rb_thread_join(th, limit)
     if (rb_thread_critical) rb_thread_deadlock();
     if (!rb_thread_dead(th)) {
 	if (th == curr_thread)
-	    rb_raise(rb_eThreadError, "thread 0x%lx tried to join itself",
+	    rb_raise(rb_eThreadError, "thread %p tried to join itself",
 		     th->thread);
 	if ((th->wait_for & WAIT_JOIN) && th->join == curr_thread)
-	    rb_raise(rb_eThreadError, "Thread#join: deadlock 0x%lx - mutual join(0x%lx)",
+	    rb_raise(rb_eThreadError, "Thread#join: deadlock %p - mutual join(%p)",
 		     curr_thread->thread, th->thread);
 	if (curr_thread->status == THREAD_TO_KILL)
 	    last_status = THREAD_TO_KILL;
@@ -12773,7 +12809,7 @@ rb_thread_inspect(thread)
     const char *status = thread_status_name(th->status);
     VALUE str;
 
-    str = rb_sprintf("#<%s:0x%lx %s>", cname, thread, status);
+    str = rb_sprintf("#<%s:%p %s>", cname, thread, status);
     OBJ_INFECT(str, thread);
 
     return str;
@@ -13310,7 +13346,7 @@ rb_f_throw(argc, argv)
 	    break;
 	}
 	if (tt->tag == PROT_THREAD) {
-	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread 0x%lx",
+	    rb_raise(rb_eThreadError, "uncaught throw `%s' in thread %p",
 		     rb_id2name(SYM2ID(tag)),
 		     curr_thread);
 	}

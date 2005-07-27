@@ -838,6 +838,13 @@ fmt_setup(buf, c, flags, width, prec)
 #undef feof
 #undef ferror
 #undef fileno
+#if SIZEOF_LONG < SIZEOF_VOIDP
+# if  SIZEOF_LONG_LONG == SIZEOF_VOIDP
+#  define _HAVE_SANE_QUAD_
+#  define _HAVE_LLP64_
+#  define u_quad_t unsigned LONG_LONG
+# endif
+#endif
 #include "missing/vsnprintf.c"
 
 static int

@@ -44,7 +44,7 @@
 #endif
 
 #include <sys/types.h>
-#if !defined(DJGPP) && !defined(_WIN32) && !defined(__human68k__)
+#if defined(HAVE_SYS_IOCTL_H) && !defined(DJGPP) && !defined(_WIN32) && !defined(__human68k__)
 #include <sys/ioctl.h>
 #endif
 #if defined(HAVE_FCNTL_H) || defined(_WIN32)

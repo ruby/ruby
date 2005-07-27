@@ -505,15 +505,15 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 %type <node> args when_args call_args call_args2 open_args paren_args opt_paren_args
 %type <node> command_args aref_args opt_block_arg block_arg var_ref var_lhs
 %type <node> mrhs superclass block_call block_command
-%type <node> f_arglist f_args f_optarg f_opt f_block_arg opt_f_block_arg
+%type <node> f_arglist f_args f_rest_arg f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
 %type <node> for_var block_var opt_block_var block_var_def block_param
-%type <node> opt_bv_decl bv_decls bv_decl
+%type <node> opt_bv_decl bv_decls bv_decl lambda f_larglist lambda_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
 %type <id>   fsym variable sym symbol operation operation2 operation3
-%type <id>   cname fname op f_rest_arg
-%type <num>  f_norm_arg f_arg
+%type <id>   cname fname op f_norm_arg
+%type <val>  f_arg
 /*%%%*/
 /*%
 %type <val> program reswords then do dot_or_colon
@@ -544,6 +544,8 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 %token tLBRACE_ARG	/* { */
 %token tSTAR		/* * */
 %token tAMPER		/* & */
+%token tLAMBDA		/* -> */
+%token tLAMBDA_ARG	/* -> */
 %token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG
 %token tSTRING_DBEG tSTRING_DVAR tSTRING_END
 
@@ -1032,11 +1034,6 @@ expr		: command_call
 		    /*%
 		    	$$ = dispatch2(unary, ID2SYM('!'), $2);
 		    %*/
-		    }
-		| do_block
-		    {
-			$$ = $1;
-			nd_set_type($$, NODE_LAMBDA);
 		    }
 		| arg
 		;
@@ -2531,29 +2528,6 @@ primary		: literal
 			$$ = dispatch1(hash, escape_Qundef($2));
 		    %*/
 		    }
-		| tLBRACE
-		    {
-		    /*%%%*/
-			$<vars>$ = dyna_push();
-			$<num>1 = ruby_sourceline;
-		    /*%
-		    %*/
-		    }
-		  block_var_def {$<vars>$ = ruby_dyna_vars;}
-		  compstmt
-		  '}'
-		    {
-		    /*%%%*/
-			$3->nd_body = block_append($3->nd_body,
-						   dyna_init($5, $<vars>4));
-			$$ = $3;
-		        nd_set_type($3, NODE_LAMBDA);
-			nd_set_line($$, $<num>1);
-			dyna_pop($<vars>2);
-		    /*%
-			$$ = dispatch2(brace_block, escape_Qundef($3), $5);
-		    %*/
-		    }
 		| kRETURN
 		    {
 		    /*%%%*/
@@ -2618,6 +2592,11 @@ primary		: literal
 		    /*%
 			$$ = dispatch2(iter_block, $1, $2);
 		    %*/
+		    }
+		| tLAMBDA
+		  lambda
+		    {
+			$$ = $2;
 		    }
 		| kIF expr_value then
 		  compstmt
@@ -3185,6 +3164,84 @@ bv_decl		:  tIDENTIFIER
 		    }
 		;
 
+lambda		: {
+		    /*%%%*/
+			$<vars>$ = dyna_push();
+		    /*%
+		    %*/
+		    }
+		  f_larglist
+		    {
+			lex_state = EXPR_END;
+		        $<vars>$ = ruby_dyna_vars;
+		    }
+		  lambda_body
+		    {
+		    /*%%%*/
+			$$ = NEW_LAMBDA($2, $4);
+			dyna_pop($<vars>1);
+		    /*%
+		    	$$ = dispatch2(lambda, $2, $4);
+		    %*/
+		    }
+		;
+
+f_larglist	: '(' f_args rparen
+		    {
+		    /*%%%*/
+			$$ = $2;
+		    /*%
+			$$ = dispatch1(paren, $2);
+		    %*/
+		    }
+		| f_arg opt_terms
+		    {
+		    /*%%%*/
+			$$ = NEW_ARGS($1, 0, 0);
+		    /*%
+			$$ = dispatch4(params, $1, Qnil, Qnil, Qnil);
+		    %*/
+		    }
+		| f_arg ',' f_rest_arg opt_terms
+		    {
+		    /*%%%*/
+			$$ = NEW_ARGS($1, 0, $3);
+		    /*%
+			$$ = dispatch4(params, $1, Qnil, $3, Qnil);
+		    %*/
+		    }
+		| f_rest_arg opt_terms
+		    {
+		    /*%%%*/
+			$$ = NEW_ARGS(0, 0, $1);
+		    /*%
+			$$ = dispatch4(params, Qnil, Qnil, $1, Qnil);
+		    %*/
+		    }
+		| /* none */
+		    {
+		    /*%%%*/
+			$$ = NEW_ARGS(0, 0, 0);
+		    /*%
+			$$ = dispatch4(params, Qnil, Qnil, Qnil, Qnil);
+		    %*/
+		    }
+		;
+
+lambda_body	: '{'
+		  compstmt
+		  '}'
+		    {
+			$$ = $2;
+		    }
+		| kDO
+		  compstmt
+		  kEND
+		    {
+			$$ = $2;
+		    }
+		;
+
 do_block	: kDO_BLOCK
 		    {
 		    /*%%%*/
@@ -3373,6 +3430,17 @@ brace_block	: '{'
 			dyna_pop($<vars>2);
 		    /*%
 			$$ = dispatch2(do_block, escape_Qundef($3), $5);
+		    %*/
+		    }
+		| tLAMBDA_ARG
+		  lambda
+		    {
+		    /*%%%*/
+			$$ = $2;
+			nd_set_type($$, NODE_ITER);
+		    /*%
+			$$ = $2;
+			$$ = dispatch1(do_block, $2);
 		    %*/
 		    }
 		;
@@ -3922,7 +3990,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_arg ',' f_optarg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS($1, $3, -1), $4);
+			$$ = block_append(NEW_ARGS($1, $3, 0), $4);
 		    /*%
 			$$ = dispatch4(params, $1, $3, Qnil, escape_Qundef($4));
 		    %*/
@@ -3938,7 +4006,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_arg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS($1, 0, -1), $2);
+			$$ = block_append(NEW_ARGS($1, 0, 0), $2);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, Qnil, escape_Qundef($2));
 		    %*/
@@ -3954,7 +4022,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_optarg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS(0, $1, -1), $2);
+			$$ = block_append(NEW_ARGS(0, $1, 0), $2);
 		    /*%
 			$$ = dispatch4(params, Qnil, $1, Qnil, escape_Qundef($2));
 		    %*/
@@ -3970,7 +4038,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS(0, 0, -1), $1);
+			$$ = block_append(NEW_ARGS(0, 0, 0), $1);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, Qnil, $1);
 		    %*/
@@ -3978,7 +4046,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| /* none */
 		    {
 		    /*%%%*/
-			$$ = NEW_ARGS(0, 0, -1);
+			$$ = NEW_ARGS(0, 0, 0);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, Qnil, Qnil);
 		    %*/
@@ -4024,8 +4092,13 @@ f_norm_arg	: tCONSTANT
 			    yyerror("formal argument must be local variable");
 			else if (local_id($1))
 			    yyerror("duplicate argument name");
-			local_cnt($1);
-			$$ = 1;
+			if (dyna_in_block()) {
+			    dyna_var($1);
+			}
+			else {
+			    local_cnt($1);
+			}
+			$$ = $1;
 		    /*%
 			$$ = $1;
 		    %*/
@@ -4033,18 +4106,11 @@ f_norm_arg	: tCONSTANT
 		;
 
 f_arg		: f_norm_arg
-		    /*%c%*/
-		    /*%c
-		    { $$ = rb_ary_new3(1, $1); }
-		    %*/
+		    { $$ = rb_ary_new3(1, ID2SYM($1)); }
 		| f_arg ',' f_norm_arg
 		    {
-		    /*%%%*/
-			$$ += 1;
-		    /*%
 			$$ = $1;
-			rb_ary_push($$, $3);
-		    %*/
+			rb_ary_push($$, ID2SYM($3));
 		    }
 		;
 
@@ -4092,7 +4158,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 			    yyerror("rest argument must be local variable");
 			else if (local_id($2))
 			    yyerror("duplicate rest argument name");
-			$$ = local_cnt($2);
+			$$ = assignable($2, 0);
 		    /*%
 			$$ = dispatch1(restparam, $2);
 		    %*/
@@ -4100,7 +4166,7 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		| restarg_mark
 		    {
 		    /*%%%*/
-			$$ = local_append((ID)0);
+			$$ = (NODE*)Qnil;
 		    /*%
 			$$ = dispatch1(restparam, Qnil);
 		    %*/
@@ -5999,6 +6065,19 @@ parser_yylex(parser)
             set_yylval_id('-');
 	    lex_state = EXPR_BEG;
 	    return tOP_ASGN;
+	}
+	if (c == '>') {
+	    enum lex_state_e state = lex_state;
+	    lex_state = EXPR_ARG;
+	    switch (state) {
+	      case EXPR_CMDARG:
+	      case EXPR_ENDARG:
+	      case EXPR_ARG:
+	      case EXPR_END:
+		return tLAMBDA_ARG;
+	      default:
+		return tLAMBDA;
+	    }
 	}
 	if (IS_BEG() ||
 	    (IS_ARG() && space_seen && !ISSPACE(c))) {
@@ -8692,7 +8771,7 @@ ripper_validate_object(self, x)
     if (FIXNUM_P(x)) return x;
     if (SYMBOL_P(x)) return x;
     if (!rb_is_pointer_to_heap(x))
-        rb_raise(rb_eArgError, "invalid pointer: 0x%x", x);
+        rb_raise(rb_eArgError, "invalid pointer: %p", x);
     switch (TYPE(x)) {
       case T_STRING:
       case T_OBJECT:
@@ -8701,9 +8780,9 @@ ripper_validate_object(self, x)
       case T_FLOAT:
         return x;
       case T_NODE:
-        rb_raise(rb_eArgError, "NODE given: 0x%x", x);
+        rb_raise(rb_eArgError, "NODE given: %p", x);
       default:
-        rb_raise(rb_eArgError, "wrong type of ruby object: 0x%x (%s)",
+        rb_raise(rb_eArgError, "wrong type of ruby object: %p (%s)",
                  x, rb_obj_classname(x));
     }
     return x;

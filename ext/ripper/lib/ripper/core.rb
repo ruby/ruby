@@ -61,6 +61,7 @@ class Ripper
     :def => 3,
     :defined => 1,
     :defs => 5,
+    :do_block => 1,
     :do_block => 2,
     :dot2 => 2,
     :dot3 => 2,
@@ -76,6 +77,7 @@ class Ripper
     :if_mod => 2,
     :ifop => 3,
     :iter_block => 2,
+    :lambda => 2,
     :massign => 2,
     :method_add_arg => 2,
     :mlhs_add => 2,
@@ -382,6 +384,10 @@ class Ripper
     a
   end
 
+  def on_do_block(a)
+    a
+  end
+
   def on_do_block(a, b)
     a
   end
@@ -439,6 +445,10 @@ class Ripper
   end
 
   def on_iter_block(a, b)
+    a
+  end
+
+  def on_lambda(a, b)
     a
   end
 

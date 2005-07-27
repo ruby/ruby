@@ -208,8 +208,8 @@ typedef struct RNode {
 
 #define nd_lit   u1.value
 
-#define nd_frml  u1.node
-#define nd_rest  u2.argc
+#define nd_frml  u3.value
+#define nd_rest  u2.node
 #define nd_opt   u1.node
 
 #define nd_recv  u1.node
@@ -258,6 +258,7 @@ typedef struct RNode {
 #define NEW_UNTIL(c,b,n) NEW_NODE(NODE_UNTIL,c,b,n)
 #define NEW_FOR(v,i,b) NEW_NODE(NODE_FOR,v,b,i)
 #define NEW_ITER(v,i,b) NEW_NODE(NODE_ITER,v,b,i)
+#define NEW_LAMBDA(a,b) NEW_NODE(NODE_LAMBDA,a,b,0)
 #define NEW_BREAK(s) NEW_NODE(NODE_BREAK,s,0,0)
 #define NEW_NEXT(s) NEW_NODE(NODE_NEXT,s,0,0)
 #define NEW_REDO() NEW_NODE(NODE_REDO,0,0,0)
