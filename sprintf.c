@@ -809,10 +809,3 @@ fmt_setup(buf, c, flags, width, prec)
     *buf++ = c;
     *buf = '\0';
 }
-#if SIZEOF_LONG < SIZEOF_VOIDP
-# if  SIZEOF_LONG_LONG == SIZEOF_VOIDP
-#  define _HAVE_SANE_QUAD_
-#  define _HAVE_LLP64_
-#  define u_quad_t unsigned LONG_LONG
-# endif
-#endif

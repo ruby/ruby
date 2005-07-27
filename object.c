@@ -359,7 +359,7 @@ rb_any_to_s(obj)
 
     len = strlen(cname)+6+16;
     str = rb_str_new(0, len); /* 6:tags 16:addr */
-    snprintf(RSTRING(str)->ptr, len+1, "#<%s:%p>", cname, obj);
+    snprintf(RSTRING(str)->ptr, len+1, "#<%s:0x%lx>", cname, obj);
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(obj)) OBJ_TAINT(str);
 
@@ -442,13 +442,13 @@ rb_obj_inspect(obj)
 	if (rb_inspecting_p(obj)) {
 	    len = strlen(c)+10+16+1;
 	    str = rb_str_new(0, len); /* 10:tags 16:addr 1:nul */
-	    snprintf(RSTRING(str)->ptr, len, "#<%s:%p ...>", c, obj);
+	    snprintf(RSTRING(str)->ptr, len, "#<%s:0x%lx ...>", c, obj);
 	    RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	    return str;
 	}
 	len = strlen(c)+6+16+1;
 	str = rb_str_new(0, len);     /* 6:tags 16:addr 1:nul */
-	snprintf(RSTRING(str)->ptr, len, "-<%s:%p", c, obj);
+	snprintf(RSTRING(str)->ptr, len, "-<%s:0x%lx", c, obj);
 	RSTRING(str)->len = strlen(RSTRING(str)->ptr);
 	return rb_protect_inspect(inspect_obj, obj, str);
     }
