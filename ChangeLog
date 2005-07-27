@@ -1,3 +1,8 @@
+Wed Jul 27 19:11:53 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (cd): follow :noop option change. (This patch
+	  is contributed by Doug Kearns)
+
 Wed Jul 27 16:25:59 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (lambda): Perl6 style -> lambda expression. [NEW]
