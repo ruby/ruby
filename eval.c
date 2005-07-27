@@ -8511,13 +8511,13 @@ proc_to_s(self)
 	len += strlen(node->nd_file) + 2 + (SIZEOF_LONG*CHAR_BIT-NODE_LSHIFT)/3;
 	str = rb_str_new(0, len);
 	snprintf(RSTRING(str)->ptr, len+1,
-		 "#<%s:0x%lx@%s:%d>", cname, (VALUE)data->body,
+		 "#<%s:0x%.*lx@%s:%d>", cname, w, (VALUE)data->body,
 		 node->nd_file, nd_line(node));
     }
     else {
 	str = rb_str_new(0, len);
 	snprintf(RSTRING(str)->ptr, len+1,
-		 "#<%s:0x%lx>", cname, (VALUE)data->body);
+		 "#<%s:0x%.*lx>", cname, w, (VALUE)data->body);
     }
     RSTRING(str)->len = strlen(RSTRING(str)->ptr);
     if (OBJ_TAINTED(self)) OBJ_TAINT(str);

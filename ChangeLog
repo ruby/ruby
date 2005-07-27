@@ -1,3 +1,8 @@
+Wed Jul 27 23:23:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* gc.c (obj_free): make message formant consistent with one from
+	  gc_mark().  [ruby-talk:149668]
+
 Wed Jul 27 22:11:37 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* sample/rss/tdiary_plugin: removed. because the plugin

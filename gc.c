@@ -1256,8 +1256,8 @@ obj_free(obj)
 	break;
 
       default:
-	rb_bug("gc_sweep(): unknown data type 0x%lx(%ld)", obj,
-	       RANY(obj)->as.basic.flags & T_MASK);
+	rb_bug("gc_sweep(): unknown data type 0x%lx(0x%lx)",
+	       RANY(obj)->as.basic.flags & T_MASK, obj);
     }
 }
 
