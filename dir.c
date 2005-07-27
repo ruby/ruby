@@ -409,6 +409,7 @@ dir_each(dir)
     struct dirent *dp;
 
     GetDIR(dir, dirp);
+    rewinddir(dirp->dir);
     for (dp = readdir(dirp->dir); dp != NULL; dp = readdir(dirp->dir)) {
 	rb_yield(rb_tainted_str_new(dp->d_name, NAMLEN(dp)));
 	if (dirp->dir == NULL) dir_closed();

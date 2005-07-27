@@ -1,3 +1,8 @@
+Wed Jul 27 10:59:02 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* dir.c (dir_each): rewinddir(3) before iteration.
+	  [ruby-talk:149628]
+
 Tue Jul 26 18:11:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ruby.h: support LLP64 model.  [ruby-talk:149524]
