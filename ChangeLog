@@ -1,3 +1,8 @@
+Wed Jul 27 22:11:37 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* sample/rss/tdiary_plugin: removed. because the plugin
+	  is imported in the tDiary plugin packages.
+
 Wed Jul 27 19:11:53 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (cd): follow :noop option change. (This patch
