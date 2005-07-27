@@ -1,3 +1,8 @@
+Wed Jul 27 22:11:37 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* sample/rss/tdiary_plugin: removed. because the plugin
+	  is imported in the tDiary plugin packages.
+
 Wed Jul 27 10:59:02 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* dir.c (dir_each): rewinddir(3) before iteration.
