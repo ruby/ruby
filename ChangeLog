@@ -5193,6 +5193,11 @@ Wed Sep  8 15:19:49 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/text.rb: add TkText#clear and erase
 
+Tue Sep  7 15:17:49 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): break immediately if a
+	  socket is non-blocking.  [ruby-talk:111654]
+
 Mon Sep  6 11:08:50 2004  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/lib/tk/menu.rb(TkOptionMenubutton#insert): call correct method
