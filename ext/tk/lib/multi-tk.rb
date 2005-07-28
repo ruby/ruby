@@ -1579,7 +1579,7 @@ class MultiTkIp
                    proc{|safe| 
                      $SAFE=safe if $SAFE < safe
                      Kernel.eval(cmd, *eval_args)
-                   }, safe_level)
+                   })
   end
   alias eval_str eval_string
 
@@ -1593,7 +1593,7 @@ class MultiTkIp
                      proc{|safe| 
                        $SAFE=safe if $SAFE < safe
                        Kernel.eval(cmd, *eval_args)
-                     }, safe_level)
+                     })
     }
   end
   alias background_eval_string bg_eval_string

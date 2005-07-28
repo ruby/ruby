@@ -8,7 +8,7 @@
 
 ************************************************/
 
-#define TKUTIL_RELEASE_DATE "2005-07-22"
+#define TKUTIL_RELEASE_DATE "2005-07-28"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -246,15 +246,19 @@ ary2list(ary, enc_flag, self)
     volatile VALUE sys_enc, dst_enc, str_enc;
 
     sys_enc = rb_funcall(cTclTkLib, ID_encoding, 0, 0);
-    if NIL_P(sys_enc) {
+    if (NIL_P(sys_enc)) {
       sys_enc = rb_funcall(cTclTkLib, ID_encoding_system, 0, 0);
+      sys_enc = rb_funcall(sys_enc, ID_to_s, 0, 0);
     }
 
     if NIL_P(enc_flag) {
         dst_enc = sys_enc;
         req_chk_flag = 1;
-    } else {
+    } else if (TYPE(enc_flag) == T_TRUE || TYPE(enc_flag) == T_FALSE) {
         dst_enc = enc_flag;
+        req_chk_flag = 0;
+    } else {
+        dst_enc = rb_funcall(enc_flag, ID_to_s, 0, 0);
         req_chk_flag = 0;
     }
 
@@ -280,7 +284,7 @@ ary2list(ary, enc_flag, self)
 
             if (req_chk_flag) {
                 str_enc = rb_ivar_get(str_val, ID_at_enc);
-                if NIL_P(str_enc) {
+                if (!NIL_P(str_enc)) {
                     str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
                 } else {
                     str_enc = sys_enc;
@@ -327,7 +331,7 @@ ary2list(ary, enc_flag, self)
 
                 if (req_chk_flag) {
                     str_enc = rb_ivar_get(str_val, ID_at_enc);
-                    if NIL_P(str_enc) {
+                    if (!NIL_P(str_enc)) {
                         str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
                     } else {
                         str_enc = sys_enc;
@@ -347,7 +351,7 @@ ary2list(ary, enc_flag, self)
 
                 if (req_chk_flag) {
                     str_enc = rb_ivar_get(str_val, ID_at_enc);
-                    if NIL_P(str_enc) {
+                    if (!NIL_P(str_enc)) {
                         str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
                     } else {
                         str_enc = sys_enc;
@@ -398,13 +402,17 @@ ary2list2(ary, enc_flag, self)
     sys_enc = rb_funcall(cTclTkLib, ID_encoding, 0, 0);
     if NIL_P(sys_enc) {
       sys_enc = rb_funcall(cTclTkLib, ID_encoding_system, 0, 0);
+      sys_enc = rb_funcall(sys_enc, ID_to_s, 0, 0);
     }
 
     if NIL_P(enc_flag) {
         dst_enc = sys_enc;
         req_chk_flag = 1;
-    } else {
+    } else if (TYPE(enc_flag) == T_TRUE || TYPE(enc_flag) == T_FALSE) {
         dst_enc = enc_flag;
+        req_chk_flag = 0;
+    } else {
+        dst_enc = rb_funcall(enc_flag, ID_to_s, 0, 0);
         req_chk_flag = 0;
     }
 
@@ -438,7 +446,7 @@ ary2list2(ary, enc_flag, self)
 
             if (req_chk_flag) {
                 str_enc = rb_ivar_get(str_val, ID_at_enc);
-                if NIL_P(str_enc) {
+                if (!NIL_P(str_enc)) {
                     str_enc = rb_funcall(str_enc, ID_to_s, 0, 0);
                 } else {
                     str_enc = sys_enc;
@@ -884,7 +892,7 @@ tk_get_eval_enc_str(self, obj)
 static VALUE
 tk_conv_args(argc, argv, self)
     int   argc;
-    VALUE *argv;
+    VALUE *argv; /* [0]:base_array, [1]:enc_mode, [2]..[n]:args */
     VALUE self;
 {
     int idx, size;

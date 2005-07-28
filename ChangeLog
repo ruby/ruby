@@ -1,3 +1,36 @@
+Thu Jul 28 18:09:55 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/stubs.c: When --enable-tcltk-stubs, the initialize
+	  routine creates a Tcl/Tk interpreter and deletes it. However, 
+	  init cost of Tk's MainWindow is not so small. And that makes it 
+	  impossible to use libraries written with Tcl functions only on 
+	  an environment without a graphical display. This changes support
+	  delaying initalization of Tk_Stubs until the script needs Tk.
+
+	* ext/tk/stubs.h: New file. Define prototypes and return codes of 
+	  functions on stubs.c.
+
+	* ext/tk/tcltklib.c: Support delaying initalization of Tk_Stubs 
+	  until the script needs Tk.
+
+	* ext/tk/tcltklib.c: Show friendly error messages for errors on 
+	  initialization.
+
+	* ext/tk/tcltklib.c: Avoid SEGV on ip_finalize() when ruby is 
+	  exiting and $DEBUG is true. (Not fix. If you know the reason of 
+	  why, please fix it.)
+
+	* ext/tk/tkutil/tkutil.c (ary2list, ary2list2): bug fix on handling 
+	  of encoding.
+
+	* ext/tk/lib/multi-tk.rb: MultiTkIp#eval_string and bg_eval_string
+	  don't work propery. 
+
+	* ext/tk/lib/tk.rb: Forget extending Tk::Encoding module to Tk.
+
+	* ext/tk/lib/tk/variable.rb: TkVarAccess fails to initialize the 
+	  object for an element of a Tcl's array variable.
+
 Thu Jul 28 17:23:37 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (f_larglist): allow block argument in lambda parameter

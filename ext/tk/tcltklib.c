@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-07-22"
+#define TCLTKLIB_RELEASE_DATE "2005-07-28"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -22,15 +22,12 @@
 #include <tcl.h>
 #include <tk.h>
 
+#include "stubs.h"
+
 #ifndef TCL_ALPHA_RELEASE
 #define TCL_ALPHA_RELEASE       0
 #define TCL_BETA_RELEASE        1
 #define TCL_FINAL_RELEASE       2
-#endif
-
-#ifdef __MACOS__
-# include <tkMac.h>
-# include <Quickdraw.h>
 #endif
 
 #if TCL_MAJOR_VERSION >= 8
@@ -81,6 +78,7 @@ static char *finalize_hook_name = "INTERP_FINALIZE_HOOK";
 
 static void ip_finalize _((Tcl_Interp*));
 
+
 /* for callback break & continue */
 static VALUE eTkCallbackReturn;
 static VALUE eTkCallbackBreak;
@@ -113,7 +111,6 @@ static VALUE ip_invoke_real _((int, VALUE*, VALUE));
 static VALUE ip_invoke _((int, VALUE*, VALUE));
 
 static VALUE tk_funcall _((VALUE(), int, VALUE*, VALUE));
-
 
 /* safe Tcl_Eval and Tcl_GlobalEval */
 static int
@@ -549,6 +546,128 @@ rbtk_release_ip(ptr)
 }
 
 
+static VALUE
+#ifdef HAVE_STDARG_PROTOTYPES
+create_ip_exc(VALUE interp, VALUE exc, const char *fmt, ...)
+#else
+create_ip_exc(interp, exc, fmt, va_alist)
+    VALUE interp:
+    VALUE exc;
+    const char *fmt;
+    va_dcl
+#endif
+{
+    va_list args;
+    char buf[BUFSIZ];
+    VALUE einfo;
+    struct tcltkip *ptr = get_ip(interp);
+
+    va_init_list(args,fmt);
+    vsnprintf(buf, BUFSIZ, fmt, args);
+    buf[BUFSIZ - 1] = '\0';
+    va_end(args);
+    einfo = rb_exc_new2(exc, buf);
+    rb_ivar_set(einfo, ID_at_interp, interp);
+    if (ptr) {
+        Tcl_ResetResult(ptr->ip);
+    }
+
+    return einfo;
+}
+
+
+/* stub status */
+static void
+tcl_stubs_check()
+{
+    if (!tcl_stubs_init_p()) {
+        int st = ruby_tcl_stubs_init();
+        switch(st) {
+        case TCLTK_STUBS_OK:
+            break;
+        case NO_TCL_DLL:
+            rb_raise(rb_eLoadError, "tcltklib: fail to open tcl_dll");
+        case NO_FindExecutable:
+            rb_raise(rb_eLoadError, "tcltklib: can't find Tcl_FindExecutable");
+        case NO_CreateInterp:
+            rb_raise(rb_eLoadError, "tcltklib: can't find Tcl_CreateInterp()");
+        case NO_DeleteInterp:
+            rb_raise(rb_eLoadError, "tcltklib: can't find Tcl_DeleteInterp()");
+        case FAIL_CreateInterp:
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to create a new IP to call Tcl_InitStubs()");
+        case FAIL_Tcl_InitStubs:
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tcl_InitStubs()");
+        default:
+            rb_raise(rb_eRuntimeError, "tcltklib: unknown error(%d) on ruby_tcl_stubs_init()", st);
+        }
+    }
+}
+
+
+static VALUE
+tcltkip_init_tk(interp)
+    VALUE interp;
+{
+    struct tcltkip *ptr = get_ip(interp);
+
+#if TCL_MAJOR_VERSION >= 8
+    int  st;
+
+    if (Tcl_IsSafe(ptr->ip)) {
+        DUMP1("Tk_SafeInit");
+        st = ruby_tk_stubs_safeinit(ptr->ip);
+        switch(st) {
+        case TCLTK_STUBS_OK:
+            break;
+        case NO_Tk_Init:
+            return rb_exc_new2(rb_eLoadError, 
+                               "tcltklib: can't find Tk_SafeInit()");
+        case FAIL_Tk_Init:
+            return create_ip_exc(interp, rb_eRuntimeError, 
+                                 "tcltklib: fail to Tk_SafeInit(). %s", 
+                                 Tcl_GetStringResult(ptr->ip));
+        case FAIL_Tk_InitStubs:
+            return create_ip_exc(interp, rb_eRuntimeError, 
+                                 "tcltklib: fail to Tk_InitStubs(). %s", 
+                                 Tcl_GetStringResult(ptr->ip));
+        default:
+            return create_ip_exc(interp, rb_eRuntimeError, 
+                                 "tcltklib: unknown error(%d) on ruby_tk_stubs_safeinit", st);
+        }
+    } else {
+        DUMP1("Tk_Init");
+        st = ruby_tk_stubs_init(ptr->ip);
+        switch(st) {
+        case TCLTK_STUBS_OK:
+            break;
+        case NO_Tk_Init:
+            return rb_exc_new2(rb_eLoadError, 
+                               "tcltklib: can't find Tk_Init()");
+        case FAIL_Tk_Init:
+            return create_ip_exc(interp, rb_eRuntimeError, 
+                                 "tcltklib: fail to Tk_Init(). %s", 
+                                 Tcl_GetStringResult(ptr->ip));
+        case FAIL_Tk_InitStubs:
+            return create_ip_exc(interp, rb_eRuntimeError, 
+                                 "tcltklib: fail to Tk_InitStubs(). %s", 
+                                 Tcl_GetStringResult(ptr->ip));
+        default:
+            return create_ip_exc(interp, rb_eRuntimeError, 
+                                 "tcltklib: unknown error(%d) on ruby_tk_stubs_init", st);
+        }
+    }
+
+#else /* TCL_MAJOR_VERSION < 8 */
+    DUMP1("Tk_Init");
+    if (ruby_tk_stubs_init(ptr->ip) != TCLTK_STUBS_OK) {
+        return rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
+    }
+#endif
+
+    return Qnil;
+}
+
+
 /* treat excetiopn on Tcl side */
 static VALUE rbtk_pending_exception;
 static int rbtk_eventloop_depth = 0;
@@ -645,7 +764,8 @@ call_original_exit(ptr, state)
         char **argv;
         argv = (char **)ALLOC_N(char *, 3);
         argv[0] = "exit";
-        argv[1] = Tcl_GetString(state_obj);
+        /* argv[1] = Tcl_GetString(state_obj); */
+        argv[1] = Tcl_GetStringFromObj(state_obj, (int*)NULL);
         argv[2] = (char *)NULL;
 
         ptr->return_value = (*(info->proc))(info->clientData, ptr->ip, 
@@ -694,13 +814,13 @@ _timer_for_tcl(clientData)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
-    Tk_DeleteTimerHandler(timer_token);
+    Tcl_DeleteTimerHandler(timer_token);
 
     run_timer_flag = 1;
 
     if (timer_tick > 0) {
-        timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
-                                            (ClientData)0);
+        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+                                             (ClientData)0);
     } else {
         timer_token = (Tcl_TimerToken)NULL;
     }
@@ -730,13 +850,13 @@ set_eventloop_tick(self, tick)
     rb_thread_critical = Qtrue;
 
     /* delete old timer callback */
-    Tk_DeleteTimerHandler(timer_token);
+    Tcl_DeleteTimerHandler(timer_token);
 
     timer_tick = req_timer_tick = ttick;
     if (timer_tick > 0) {
         /* start timer callback */
-        timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
-                                            (ClientData)0);
+        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+                                             (ClientData)0);
     } else {
         timer_token = (Tcl_TimerToken)NULL;
     }
@@ -995,7 +1115,11 @@ static VALUE
 lib_num_of_mainwindows(self)
     VALUE self;
 {
-    return INT2FIX(Tk_GetNumMainWindows());
+    if (tk_stubs_init_p()) {
+        return INT2FIX(Tk_GetNumMainWindows());
+    } else {
+        return INT2FIX(0);
+    }
 }
 
 
@@ -1060,13 +1184,13 @@ lib_eventloop_core(check_root, update_flag, check_var)
     t.tv_sec = (time_t)0;
     t.tv_usec = (time_t)(no_event_wait*1000.0);
 
-    Tk_DeleteTimerHandler(timer_token);
+    Tcl_DeleteTimerHandler(timer_token);
     run_timer_flag = 0;
     if (timer_tick > 0) {
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
-        timer_token = Tk_CreateTimerHandler(timer_tick, _timer_for_tcl, 
-                                            (ClientData)0);
+        timer_token = Tcl_CreateTimerHandler(timer_tick, _timer_for_tcl, 
+                                             (ClientData)0);
         rb_thread_critical = thr_crit_bup;
     } else {
         timer_token = (Tcl_TimerToken)NULL;
@@ -1085,9 +1209,9 @@ lib_eventloop_core(check_root, update_flag, check_var)
 
             if (timer_tick == 0 && update_flag == 0) {
                 timer_tick = NO_THREAD_INTERRUPT_TIME;
-                timer_token = Tk_CreateTimerHandler(timer_tick, 
-                                                    _timer_for_tcl, 
-                                                    (ClientData)0);
+                timer_token = Tcl_CreateTimerHandler(timer_tick, 
+                                                     _timer_for_tcl, 
+                                                     (ClientData)0);
             }
 
             if (check_var != (int *)NULL) {
@@ -1166,7 +1290,7 @@ lib_eventloop_core(check_root, update_flag, check_var)
             }
 
             DUMP1("check Root Widget");
-            if (check_root && Tk_GetNumMainWindows() == 0) {
+            if (check_root && tk_stubs_init_p() && Tk_GetNumMainWindows() == 0) {
                 run_timer_flag = 0;
                 if (rb_trap_pending) {
                     if (rb_prohibit_interrupt || check_var != (int*)NULL) {
@@ -1341,7 +1465,7 @@ lib_eventloop_core(check_root, update_flag, check_var)
                 }
 
                 DUMP1("check Root Widget");
-                if (check_root && Tk_GetNumMainWindows() == 0) {
+                if (check_root && tk_stubs_init_p() && Tk_GetNumMainWindows() == 0) {
                     run_timer_flag = 0;
                     if (rb_trap_pending) {
                         if (rb_prohibit_interrupt || check_var != (int*)NULL) {
@@ -1457,7 +1581,7 @@ lib_eventloop_ensure(args)
         }
 
         if (NIL_P(eventloop_thread)) {
-          Tk_DeleteTimerHandler(timer_token);
+          Tcl_DeleteTimerHandler(timer_token);
           timer_token = (Tcl_TimerToken)NULL;
 
           break; 
@@ -1486,6 +1610,8 @@ lib_eventloop_launcher(check_root, update_flag, check_var)
     volatile VALUE parent_evloop = eventloop_thread;
     int depth = rbtk_eventloop_depth;
     struct evloop_params *args = ALLOC(struct evloop_params);
+
+    tcl_stubs_check();
 
     eventloop_thread = rb_thread_current();
 
@@ -1624,7 +1750,7 @@ lib_watchdog_core(check_rootwidget)
             }
             /* rb_thread_schedule(); */
         }
-    } while(!check || Tk_GetNumMainWindows() != 0);
+    } while(!check || !tk_stubs_init_p() || Tk_GetNumMainWindows() != 0);
 
     return Qnil;
 }
@@ -1794,6 +1920,8 @@ lib_do_one_event_core(argc, argv, self, is_ip)
     if (!NIL_P(eventloop_thread)) {
         rb_raise(rb_eRuntimeError, "eventloop is already running");
     }
+
+    tcl_stubs_check();
 
     if (rb_scan_args(argc, argv, "01", &vflags) == 0) {
         flags = TCL_ALL_EVENTS | TCL_DONT_WAIT;
@@ -2776,6 +2904,7 @@ ip_InterpExitCommand(clientData, interp, argc, argv)
     char *argv[];
 #endif
 {
+    DUMP1("start ip_InterpExitCommand");
     if (interp != (Tcl_Interp*)NULL 
         && !Tcl_InterpDeleted(interp)
 #if TCL_NAMESPACE_DEBUG
@@ -2810,8 +2939,11 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
     int state;
     char *cmd, *param;
 
+    DUMP1("start ip_RubyExitCommand");
+
 #if TCL_MAJOR_VERSION >= 8
-    cmd = Tcl_GetString(argv[0]);
+    /* cmd = Tcl_GetString(argv[0]); */
+    cmd = Tcl_GetStringFromObj(argv[0], (int*)NULL);
 
 #else /* TCL_MAJOR_VERSION < 8 */
     char *endptr;
@@ -2864,7 +2996,8 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
         if (Tcl_GetIntFromObj(interp, argv[1], &state) == TCL_ERROR) {
             return TCL_ERROR;
         }
-        param = Tcl_GetString(argv[1]);
+        /* param = Tcl_GetString(argv[1]); */
+        param = Tcl_GetStringFromObj(argv[1], (int*)NULL);
 #else /* TCL_MAJOR_VERSION < 8 */
         state = (int)strtol(argv[1], &endptr, 0);
         if (*endptr) {
@@ -3601,13 +3734,16 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
 
-        if (Tk_MainWindow(interp) == (Tk_Window)NULL) {
+        if (!tk_stubs_init_p() || Tk_MainWindow(interp) == (Tk_Window)NULL) {
             window = NULL;
         } else {
             window = Tk_NameToWindow(interp, nameString, tkwin);
         }
 
         if (window == NULL) {
+            Tcl_AppendResult(interp, "tkwait: ", 
+                             "no main-window (not Tk application?)", 
+                             (char*)NULL);
             rb_thread_critical = thr_crit_bup;
 #if TCL_MAJOR_VERSION >= 8
             Tcl_DecrRefCount(objv[2]);
@@ -3695,7 +3831,7 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
             
-        if (Tk_MainWindow(interp) == (Tk_Window)NULL) {
+        if (!tk_stubs_init_p() || Tk_MainWindow(interp) == (Tk_Window)NULL) {
             window = NULL;
         } else {
             window = Tk_NameToWindow(interp, nameString, tkwin);
@@ -3706,6 +3842,9 @@ ip_rbTkWaitCommand(clientData, interp, objc, objv)
 #endif
 
         if (window == NULL) {
+            Tcl_AppendResult(interp, "tkwait: ", 
+                             "no main-window (not Tk application?)", 
+                             (char*)NULL);
             rb_thread_critical = thr_crit_bup;
             Tcl_Release(interp);
             return TCL_ERROR;
@@ -4165,13 +4304,17 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
 
-        if (Tk_MainWindow(interp) == (Tk_Window)NULL) {
+        if (!tk_stubs_init_p() || Tk_MainWindow(interp) == (Tk_Window)NULL) {
             window = NULL;
         } else {
             window = Tk_NameToWindow(interp, nameString, tkwin);
         }
 
         if (window == NULL) {
+            Tcl_AppendResult(interp, "thread_tkwait: ", 
+                             "no main-window (not Tk application?)", 
+                             (char*)NULL);
+
             rb_thread_critical = thr_crit_bup;
 
             Tcl_Release(param);
@@ -4250,7 +4393,7 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
 
-        if (Tk_MainWindow(interp) == (Tk_Window)NULL) {
+        if (!tk_stubs_init_p() || Tk_MainWindow(interp) == (Tk_Window)NULL) {
             window = NULL;
         } else {
             window = Tk_NameToWindow(interp, nameString, tkwin);
@@ -4261,6 +4404,10 @@ ip_rb_threadTkWaitCommand(clientData, interp, objc, objv)
 #endif
 
         if (window == NULL) {
+            Tcl_AppendResult(interp, "thread_tkwait: ", 
+                             "no main-window (not Tk application?)", 
+                             (char*)NULL);
+
             rb_thread_critical = thr_crit_bup;
 
             Tcl_Release(param);
@@ -4388,7 +4535,8 @@ delete_slaves(ip)
                 if (elem == (Tcl_Obj*)NULL) continue;
 
                 /* get slave */
-                slave_name = Tcl_GetString(elem);
+                /* slave_name = Tcl_GetString(elem); */
+                slave_name = Tcl_GetStringFromObj(elem, (int*)NULL);
                 DUMP2("delete slave:'%s'", slave_name);
 
                 Tcl_DecrRefCount(elem);
@@ -4418,23 +4566,32 @@ ip_finalize(ip)
 {
     Tcl_CmdInfo info;
     int  thr_crit_bup;
+    int  rb_debug_bup;  /* When ruby is exiting, printing debug messages in 
+                           some callback operations from Tcl-IP sometimes 
+                           cause SEGV. I don't know the reason. But I got 
+                           SEGV when calling "rb_io_write(rb_stdout, ...)".
+                           So, in some part of this function, debug mode is 
+                           disabled. If you know the reason, please fix it.
+                           --  Hidetoshi NAGAI (nagai@ai.kyutech.ac.jp) */
 
     DUMP1("start ip_finalize");
 
     if (ip == (Tcl_Interp*)NULL) {
-      DUMP1("ip is NULL");
-      return;
+        DUMP1("ip is NULL");
+        return;
     }
 
 #if TCL_NAMESPACE_DEBUG
     if (ip_null_namespace(ip)) {
-      DUMP2("ip(%lx) has null namespace", ip);
-      return;
+        DUMP2("ip(%lx) has null namespace", ip);
+        return;
     }
 #endif
 
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
+
+    rb_debug_bup = ruby_debug;
 
     Tcl_Preserve(ip);
 
@@ -4442,29 +4599,45 @@ ip_finalize(ip)
     delete_slaves(ip);
 
     /* delete root widget */
+#if 0
     DUMP1("check `destroy'");
     if (Tcl_GetCommandInfo(ip, "destroy", &info)) {
         DUMP1("call `destroy'");
         Tcl_GlobalEval(ip, "destroy .");
     }
+#endif
+#if 1
+    DUMP1("destroy root widget");
+    if (tk_stubs_init_p() && Tk_MainWindow(ip) != (Tk_Window)NULL) {
+        DUMP1("call Tk_DestroyWindow");
+        ruby_debug = 0;
+        Tk_DestroyWindow(Tk_MainWindow(ip));
+        ruby_debug = rb_debug_bup;
+    }
+#endif
 
     /* call finalize-hook-proc */
     DUMP1("check `finalize-hook-proc'");
     if (Tcl_GetCommandInfo(ip, finalize_hook_name, &info)) {
         DUMP2("call finalize hook proc '%s'", finalize_hook_name);
+        ruby_debug = 0;
         Tcl_GlobalEval(ip, finalize_hook_name);
+        ruby_debug = rb_debug_bup;
     }
 
     DUMP1("check `foreach' & `after'");
     if ( Tcl_GetCommandInfo(ip, "foreach", &info)
          && Tcl_GetCommandInfo(ip, "after", &info) ) {
         DUMP1("cancel after callbacks");
+        ruby_debug = 0;
         Tcl_GlobalEval(ip, "foreach id [after info] {after cancel $id}");
+        ruby_debug = rb_debug_bup;
     }
 
     Tcl_Release(ip);
 
     DUMP1("finish ip_finalize");
+    ruby_debug = rb_debug_bup;
     rb_thread_critical = thr_crit_bup;
 }
 
@@ -4629,7 +4802,8 @@ ip_rbNamespaceObjCmd(clientData, interp, objc, objv)
         argv = (char **)Tcl_Alloc(sizeof(char *) * (objc + 1));
 
         for(i = 0; i < objc; i++) {
-            argv[i] = Tcl_GetString(objv[i]);
+            /* argv[i] = Tcl_GetString(objv[i]); */
+            argv[i] = Tcl_GetStringFromObj(objv[i], (int*)NULL);
         }
         argv[objc] = (char *)NULL;
 
@@ -4706,8 +4880,9 @@ ip_init(argc, argv, self)
     struct tcltkip *ptr;        /* tcltkip data struct */
     VALUE argv0, opts;
     int cnt;
+    int st;
     int with_tk = 1;
-    Tk_Window mainWin;
+    Tk_Window mainWin = (Tk_Window)NULL;
 
     /* security check */
     if (ruby_safe_level >= 4) {
@@ -4726,9 +4901,26 @@ ip_init(argc, argv, self)
 
     /* from Tk_Main() */
     DUMP1("Tcl_CreateInterp");
-    ptr->ip = Tcl_CreateInterp();
+    ptr->ip = ruby_tcl_create_ip_and_stubs_init(&st);
     if (ptr->ip == NULL) {
-        rb_raise(rb_eRuntimeError, "fail to create a new Tk interpreter");
+        switch(st) {
+        case TCLTK_STUBS_OK:
+            break;
+        case NO_TCL_DLL:
+            rb_raise(rb_eLoadError, "tcltklib: fail to open tcl_dll");
+        case NO_FindExecutable:
+            rb_raise(rb_eLoadError, "tcltklib: can't find Tcl_FindExecutable");
+        case NO_CreateInterp:
+            rb_raise(rb_eLoadError, "tcltklib: can't find Tcl_CreateInterp()");
+        case NO_DeleteInterp:
+            rb_raise(rb_eLoadError, "tcltklib: can't find Tcl_DeleteInterp()");
+        case FAIL_CreateInterp:
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to create a new IP");
+        case FAIL_Tcl_InitStubs:
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tcl_InitStubs()");
+        default:
+            rb_raise(rb_eRuntimeError, "tcltklib: unknown error(%d) on ruby_tcl_create_ip_and_stubs_init", st);
+        }
     }
 
 #if TCL_MAJOR_VERSION >= 8
@@ -4790,13 +4982,32 @@ ip_init(argc, argv, self)
     /* from Tcl_AppInit() */
     if (with_tk) {
         DUMP1("Tk_Init");
-        if (Tk_Init(ptr->ip) == TCL_ERROR) {
+        st = ruby_tk_stubs_init(ptr->ip);
+        switch(st) {
+        case TCLTK_STUBS_OK:
+            break;
+        case NO_Tk_Init:
+            rb_raise(rb_eLoadError, "tcltklib: can't find Tk_Init()");
+        case FAIL_Tk_Init:
 #if TCL_MAJOR_VERSION >= 8
-            rb_raise(rb_eRuntimeError, "%s", Tcl_GetStringResult(ptr->ip));
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_Init(). %s", 
+                     Tcl_GetStringResult(ptr->ip));
 #else /* TCL_MAJOR_VERSION < 8 */
-            rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_Init(). %s", 
+                     ptr->ip->result);
 #endif
+        case FAIL_Tk_InitStubs:
+#if TCL_MAJOR_VERSION >= 8
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_InitStubs(). %s", 
+                     Tcl_GetStringResult(ptr->ip));
+#else /* TCL_MAJOR_VERSION < 8 */
+            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_InitStubs(). %s", 
+                     ptr->ip->result);
+#endif
+        default:
+            rb_raise(rb_eRuntimeError, "tcltklib: unknown error(%d) on ruby_tk_stubs_init", st);
         }
+
         DUMP1("Tcl_StaticPackage(\"Tk\")");
 #if TCL_MAJOR_VERSION >= 8
         Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init, Tk_SafeInit);
@@ -4804,11 +5015,11 @@ ip_init(argc, argv, self)
         Tcl_StaticPackage(ptr->ip, "Tk", Tk_Init,
                           (Tcl_PackageInitProc *) NULL);
 #endif
-    }
 
-    /* get main window */
-    mainWin = Tk_MainWindow(ptr->ip);
-    Tk_Preserve((ClientData)mainWin);
+        /* get main window */
+        mainWin = Tk_MainWindow(ptr->ip);
+        Tk_Preserve((ClientData)mainWin);
+    }
 
     /* add ruby command to the interpreter */
 #if TCL_MAJOR_VERSION >= 8
@@ -4865,7 +5076,9 @@ ip_init(argc, argv, self)
     /* set finalizer */
     Tcl_CallWhenDeleted(ptr->ip, ip_CallWhenDeleted, (ClientData)mainWin);
 
-    Tk_Release((ClientData)mainWin);
+    if (mainWin != (Tk_Window)NULL) {
+        Tk_Release((ClientData)mainWin);
+    }
 
     return self;
 }
@@ -4892,7 +5105,7 @@ ip_create_slave_core(interp, argc, argv)
                            "deleted master cannot create a new slave");
     }
 
-    name = argv[0];
+    name     = argv[0];
     safemode = argv[1];
 
     if (Tcl_IsSafe(master->ip) == 1) {
@@ -4906,6 +5119,20 @@ ip_create_slave_core(interp, argc, argv)
 
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
+
+#if 0
+    /* init Tk */
+    if (RTEST(with_tk)) {
+        volatile VALUE exc;
+        if (!tk_stubs_init_p()) {
+            exc = tcltkip_init_tk(interp);
+            if (!NIL_P(exc)) {
+                rb_thread_critical = thr_crit_bup;
+                return exc;
+            }
+        }
+    }
+#endif
 
     /* create slave-ip */
     slave->ref_count = 0;
@@ -4929,7 +5156,7 @@ ip_create_slave_core(interp, argc, argv)
         = Tcl_GetCommandInfo(slave->ip, "exit", &(slave->orig_exit_info));
 
     /* replace 'exit' command --> 'interp_exit' command */
-    mainWin = Tk_MainWindow(slave->ip);
+    mainWin = (tk_stubs_init_p())? Tk_MainWindow(slave->ip): (Tk_Window)NULL;
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"interp_exit\"");
     Tcl_CreateObjCommand(slave->ip, "exit", ip_InterpExitObjCmd, 
@@ -4974,7 +5201,7 @@ ip_create_slave(argc, argv, self)
                  "deleted master cannot create a new slave interpreter");
     }
 
-    /* safe-mode check */
+    /* argument check */
     if (rb_scan_args(argc, argv, "11", &name, &safemode) == 1) {
         safemode = Qfalse;
     }
@@ -5020,10 +5247,13 @@ ip_create_console_core(interp, argc, argv)
 {
     struct tcltkip *ptr = get_ip(interp);
 
+    if (!tk_stubs_init_p()) {
+        tcltkip_init_tk(interp);
+    }
+
     if (Tcl_GetVar(ptr->ip,"tcl_interactive",TCL_GLOBAL_ONLY) == (char*)NULL) {
         Tcl_SetVar(ptr->ip, "tcl_interactive", "0", TCL_GLOBAL_ONLY);
     }
-
 
 #if TCL_MAJOR_VERSION > 8 \
     || (TCL_MAJOR_VERSION == 8 \
@@ -5101,7 +5331,7 @@ ip_make_safe_core(interp, argc, argv)
     ptr->allow_ruby_exit = 0;
 
     /* replace 'exit' command --> 'interp_exit' command */
-    mainWin = Tk_MainWindow(ptr->ip);
+    mainWin = (tk_stubs_init_p())? Tk_MainWindow(ptr->ip): (Tk_Window)NULL;
 #if TCL_MAJOR_VERSION >= 8
     DUMP1("Tcl_CreateObjCommand(\"exit\") --> \"interp_exit\"");
     Tcl_CreateObjCommand(ptr->ip, "exit", ip_InterpExitObjCmd, 
@@ -5195,7 +5425,7 @@ ip_allow_ruby_exit_set(self, val)
                  "insecure operation on a safe interpreter");
     }
 
-    mainWin = Tk_MainWindow(ptr->ip);
+    mainWin = (tk_stubs_init_p())? Tk_MainWindow(ptr->ip): (Tk_Window)NULL;
 
     if (RTEST(val)) {
         ptr->allow_ruby_exit = 1;
@@ -5301,43 +5531,13 @@ ip_has_mainwindow_p(self)
     struct tcltkip *ptr = get_ip(self);
 
     if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp *)NULL 
-        || Tcl_InterpDeleted(ptr->ip)) {
+        || Tcl_InterpDeleted(ptr->ip) || !tk_stubs_init_p()) {
         return Qnil;
     } else if (Tk_MainWindow(ptr->ip) == (Tk_Window)NULL) {
         return Qfalse;
     } else {
         return Qtrue;
     }
-}
-
-
-static VALUE
-#ifdef HAVE_STDARG_PROTOTYPES
-create_ip_exc(VALUE interp, VALUE exc, const char *fmt, ...)
-#else
-create_ip_exc(interp, exc, fmt, va_alist)
-    VALUE interp:
-    VALUE exc;
-    const char *fmt;
-    va_dcl
-#endif
-{
-    va_list args;
-    char buf[BUFSIZ];
-    VALUE einfo;
-    struct tcltkip *ptr = get_ip(interp);
-
-    va_init_list(args,fmt);
-    vsnprintf(buf, BUFSIZ, fmt, args);
-    buf[BUFSIZ - 1] = '\0';
-    va_end(args);
-    einfo = rb_exc_new2(exc, buf);
-    rb_ivar_set(einfo, ID_at_interp, interp);
-    if (ptr) {
-        Tcl_ResetResult(ptr->ip);
-    }
-
-    return einfo;
 }
 
 static VALUE
@@ -5657,26 +5857,33 @@ ip_eval_real(self, cmd_str, cmd_len)
     }
 
     if (pending_exception_check1(thr_crit_bup, ptr)) {
+        rbtk_release_ip(ptr);
         return rbtk_pending_exception;
     }
 
     if (ptr->return_value == TCL_ERROR) {
-        volatile VALUE exc;
-
-        exc = create_ip_exc(self, rb_eRuntimeError, 
-                            "%s", Tcl_GetStringResult(ptr->ip));
-
-        /* Tcl_Release(ptr->ip); */
-        rbtk_release_ip(ptr);
-
-        rb_thread_critical = thr_crit_bup;
-        rb_exc_raise(exc);
+        if (event_loop_abort_on_exc > 0 && !Tcl_InterpDeleted(ptr->ip)) {
+            volatile VALUE exc;
+            exc = create_ip_exc(self, rb_eRuntimeError, 
+                                "%s", Tcl_GetStringResult(ptr->ip));
+            rbtk_release_ip(ptr);
+            rb_thread_critical = thr_crit_bup;
+            return exc;
+        } else {
+            if (event_loop_abort_on_exc < 0) {
+                rb_warning("%s (ignore)", Tcl_GetStringResult(ptr->ip));
+            } else {
+                rb_warn("%s (ignore)", Tcl_GetStringResult(ptr->ip));
+            }
+            Tcl_ResetResult(ptr->ip);
+            rbtk_release_ip(ptr);
+            rb_thread_critical = thr_crit_bup;
+            return rb_tainted_str_new2("");
+        }
     }
-    DUMP2("(TCL_Eval result) %d", ptr->return_value);
 
     /* pass back the result (as string) */
     ret =  ip_get_result_string_obj(ptr->ip);
-    /* Tcl_Release(ptr->ip); */
     rbtk_release_ip(ptr);
     rb_thread_critical = thr_crit_bup;
     return ret;
@@ -5702,6 +5909,7 @@ ip_eval_real(self, cmd_str, cmd_len)
     }
 
     if (pending_exception_check1(thr_crit_bup, ptr)) {
+        rbtk_release_ip(ptr);
         return rbtk_pending_exception;
     }
 
@@ -5710,15 +5918,13 @@ ip_eval_real(self, cmd_str, cmd_len)
 
         exc = create_ip_exc(self, rb_eRuntimeError, "%s", ptr->ip->result);
 
-        /* Tcl_Release(ptr->ip); */
         rbtk_release_ip(ptr);
-        rb_exc_raise(exc);
+        return exc;
     }
     DUMP2("(TCL_Eval result) %d", ptr->return_value);
 
     /* pass back the result (as string) */
     ret =  ip_get_result_string_obj(ptr->ip);
-    /* Tcl_Release(ptr->ip); */
     rbtk_release_ip(ptr);
     return ret;
 #endif
@@ -5894,8 +6100,11 @@ lib_restart_core(interp, argc, argv)
     volatile VALUE exc;
     struct tcltkip *ptr = get_ip(interp);
     int  thr_crit_bup;
+    int  st;
 
     /* rb_secure(4); */ /* already checked */
+
+    /* tcl_stubs_check(); */ /* already checked */
 
     /* ip is deleted? */
     if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp*)NULL 
@@ -5934,36 +6143,13 @@ lib_restart_core(interp, argc, argv)
     DUMP2("(TCL_Eval result) %d", ptr->return_value);
     Tcl_ResetResult(ptr->ip);
 
-    /* execute Tk_Init of Tk_SafeInit */
-#if TCL_MAJOR_VERSION >= 8
-    if (Tcl_IsSafe(ptr->ip)) {
-        DUMP1("Tk_SafeInit");
-        if (Tk_SafeInit(ptr->ip) == TCL_ERROR) {
-            exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-            /* Tcl_Release(ptr->ip); */
-            rbtk_release_ip(ptr);
-            rb_thread_critical = thr_crit_bup;
-            return exc;
-        }
-    } else {
-        DUMP1("Tk_Init");
-        if (Tk_Init(ptr->ip) == TCL_ERROR) {
-            exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-            /* Tcl_Release(ptr->ip); */
-            rbtk_release_ip(ptr);
-            rb_thread_critical = thr_crit_bup;
-            return exc;
-        }
-    }
-#else /* TCL_MAJOR_VERSION < 8 */
-    DUMP1("Tk_Init");
-    if (Tk_Init(ptr->ip) == TCL_ERROR) {
-        exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-        /* Tcl_Release(ptr->ip); */
+    /* execute Tk_Init or Tk_SafeInit */
+    exc = tcltkip_init_tk(interp);
+    if (!NIL_P(exc)) {
+        rb_thread_critical = thr_crit_bup;
         rbtk_release_ip(ptr);
         return exc;
     }
-#endif
 
     /* Tcl_Release(ptr->ip); */
     rbtk_release_ip(ptr);
@@ -5983,6 +6169,8 @@ lib_restart(self)
     int  thr_crit_bup;
 
     rb_secure(4);
+
+    tcl_stubs_check();
 
     /* ip is deleted? */
     if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp*)NULL 
@@ -6006,6 +6194,8 @@ ip_restart(self)
     struct tcltkip *ptr = get_ip(self);
 
     rb_secure(4);
+
+    tcl_stubs_check();
 
     /* ip is deleted? */
     if (ptr == (struct tcltkip *)NULL || ptr->ip == (Tcl_Interp*)NULL 
@@ -6038,6 +6228,8 @@ lib_toUTF8_core(ip_obj, src, encodename)
     char *buf;
     int thr_crit_bup;
 #endif
+
+    tcl_stubs_check();
 
     if (NIL_P(src)) {
       return rb_str_new2("");
@@ -6191,6 +6383,8 @@ lib_fromUTF8_core(ip_obj, src, encodename)
     char *buf;
     int thr_crit_bup;
 #endif
+
+    tcl_stubs_check();
 
     if (NIL_P(src)) {
       return rb_str_new2("");
@@ -6347,6 +6541,8 @@ lib_UTF_backslash_core(self, str, all_bs)
     int taint_flag = OBJ_TAINTED(str);
     int thr_crit_bup;
 
+    tcl_stubs_check();
+
     StringValue(str);
     if (!RSTRING(str)->len) {
         return str;
@@ -6404,6 +6600,7 @@ lib_get_system_encoding(self)
     VALUE self;
 {
 #if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION > 0)
+    tcl_stubs_check();
     return rb_str_new2(Tcl_GetEncodingName((Tcl_Encoding)NULL));
 #else
     return Qnil;
@@ -6416,7 +6613,9 @@ lib_set_system_encoding(self, enc_name)
     VALUE enc_name;
 {
 #if TCL_MAJOR_VERSION > 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION > 0)
-    if NIL_P(enc_name) {
+    tcl_stubs_check();
+
+    if (NIL_P(enc_name)) {
         Tcl_SetSystemEncoding((Tcl_Interp *)NULL, (CONST char *)NULL);
         return lib_get_system_encoding(self);
     }
@@ -8053,6 +8252,8 @@ lib_split_tklist_core(ip_obj, list_str)
     int result;
     VALUE old_gc;
 
+    tcl_stubs_check();
+
     if (NIL_P(ip_obj)) {
         interp = (Tcl_Interp *)NULL;
     } else if (get_ip(ip_obj) == (struct tcltkip *)NULL) {
@@ -8250,6 +8451,8 @@ lib_merge_tklist(argc, argv, obj)
 
     if (argc == 0) return rb_str_new2("");
 
+    tcl_stubs_check();
+
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
     old_gc = rb_gc_disable();
@@ -8314,6 +8517,8 @@ lib_conv_listelement(self, src)
     int   taint_flag = OBJ_TAINTED(src);
     int thr_crit_bup;
 
+    tcl_stubs_check();
+
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
@@ -8340,15 +8545,6 @@ lib_conv_listelement(self, src)
     return dst;
 }
 
-
-#ifdef __MACOS__
-static void
-_macinit()
-{
-    tcl_macQdPtr = &qd; /* setup QuickDraw globals */
-    Tcl_MacSetEventProc(TkMacConvertEvent); /* setup event handler */
-}
-#endif
 
 static VALUE
 tcltklib_compile_info()
@@ -8410,28 +8606,18 @@ tcltklib_compile_info()
     return ret;
 }
 
-
 /*---- initialization ----*/
 void
 Init_tcltklib()
 {
     int  thr_crit_bup;
+    int  ret;
 
     VALUE lib = rb_define_module("TclTkLib");
     VALUE ip = rb_define_class("TclTkIp", rb_cObject);
 
     VALUE ev_flag = rb_define_module_under(lib, "EventFlag");
     VALUE var_flag = rb_define_module_under(lib, "VarAccessFlag");
-
-    /* --------------------------------------------------------------- */
-
-#if defined USE_TCL_STUBS && defined USE_TK_STUBS
-    extern int ruby_tcltk_stubs();
-    int ret = ruby_tcltk_stubs();
-
-    if (ret)
-        rb_raise(rb_eLoadError, "tcltklib: tcltk_stubs init error(%d)", ret);
-#endif
 
     /* --------------------------------------------------------------- */
 
@@ -8641,13 +8827,17 @@ Init_tcltklib()
 
     /* --------------------------------------------------------------- */
 
-#ifdef __MACOS__
-    _macinit();
-#endif
-
-    /* from Tk_Main() */
-    DUMP1("Tcl_FindExecutable");
-    Tcl_FindExecutable(RSTRING(rb_argv0)->ptr);
+    ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr);
+    switch(ret) {
+    case TCLTK_STUBS_OK:
+        break;
+    case NO_TCL_DLL:
+        rb_raise(rb_eLoadError, "tcltklib: fail to open tcl_dll");
+    case NO_FindExecutable:
+        rb_raise(rb_eLoadError, "tcltklib: can't find Tcl_FindExecutable");
+    default:
+        rb_raise(rb_eLoadError, "tcltklib: unknown error(%d) on ruby_open_tcl_dll", ret);
+    }
 
     /* --------------------------------------------------------------- */
 }
