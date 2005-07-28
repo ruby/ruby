@@ -837,6 +837,7 @@ fmt_setup(buf, c, flags, width, prec)
 #define __sFILE rb_printf_sfile
 #undef feof
 #undef ferror
+#undef clearerr
 #undef fileno
 #if SIZEOF_LONG < SIZEOF_VOIDP
 # if  SIZEOF_LONG_LONG == SIZEOF_VOIDP

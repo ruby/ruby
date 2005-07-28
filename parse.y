@@ -8791,7 +8791,6 @@ rb_parser_new()
 
     return Data_Wrap_Struct(0, parser_mark, parser_free, p);
 }
-#endif
 
 /*
  *  call-seq:
@@ -8809,6 +8808,7 @@ rb_parser_end_seen_p(vparser)
     Data_Get_Struct(vparser, struct parser_params, parser);
     return ruby__end__seen ? Qtrue : Qfalse;
 }
+#endif
 
 #ifdef RIPPER
 #ifdef RIPPER_DEBUG
