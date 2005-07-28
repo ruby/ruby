@@ -1,3 +1,8 @@
+Thu Jul 28 17:23:37 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_larglist): allow block argument in lambda parameter
+	  list without parenthesis.
+
 Thu Jul 28 17:14:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* hash.c (each_i): typo fixed.  [ruby-dev:26622]

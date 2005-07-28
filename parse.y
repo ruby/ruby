@@ -3200,34 +3200,34 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 			$$ = dispatch1(paren, $2);
 		    %*/
 		    }
-		| f_arg opt_bv_decl
+		| f_arg opt_f_block_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(new_args($1, 0, 0, 0), $2);
+			$$ = NEW_LAMBDA(new_args($1, 0, 0, $2), $3);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, Qnil, Qnil);
 		    %*/
 		    }
-		| f_arg ',' f_rest_arg opt_bv_decl
+		| f_arg ',' opt_f_block_arg f_rest_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(new_args($1, 0, $3, 0), $4);
+			$$ = NEW_LAMBDA(new_args($1, 0, $3, $4), $5);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, $3, Qnil);
 		    %*/
 		    }
-		| f_rest_arg opt_bv_decl
+		| f_rest_arg opt_f_block_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(new_args(0, 0, $1, 0), $2);
+			$$ = NEW_LAMBDA(new_args(0, 0, $1, $2), $3);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, $1, Qnil);
 		    %*/
 		    }
-		| opt_bv_decl
+		| opt_f_block_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(new_args(0, 0, 0, 0), $1);
+			$$ = NEW_LAMBDA(new_args(0, 0, 0, $1), $2);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, Qnil, Qnil);
 		    %*/
