@@ -1,3 +1,11 @@
+Thu Jul 28 11:30:57 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_larglist): allow bv_decl at the end of lambda
+	  argument list.  [EXPERIMENTAL]
+
+	* parse.y (new_bv_gen): allow local variable shadowing, with
+	  warning in verbose mode.
+
 Wed Jul 27 23:23:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* gc.c (obj_free): make message formant consistent with one from
@@ -7090,6 +7098,11 @@ Wed Sep  8 15:19:49 2004  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	  erase
 
 	* ext/tk/lib/tk/text.rb: add TkText#clear and erase
+
+Tue Sep  7 15:17:49 2004  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): break immediately if a
+	  socket is non-blocking.  [ruby-talk:111654]
 
 Tue Sep  7 12:48:22 2004  NAKAMURA Usaku  <usa@ruby-lang.org>
 

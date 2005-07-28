@@ -855,7 +855,7 @@ ruby__sfvwrite(fp, uio)
 {
     struct __siov *iov;
     VALUE result = (VALUE)fp->_bf._base;
-    char *buf = fp->_p;
+    char *buf = (char*)fp->_p;
     size_t len, n;
     int blen = buf - RSTRING(result)->ptr, bsiz = fp->_w;
 

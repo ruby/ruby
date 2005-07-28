@@ -916,7 +916,8 @@ wait_connectable0(fd, fds_w, fds_e)
     int fd;
     rb_fdset_t *fds_w, *fds_e;
 {
-    int sockerr, sockerrlen;
+    int sockerr;
+    socklen_t sockerrlen;
 
     for (;;) {
 	rb_fd_zero(fds_w);
@@ -1011,7 +1012,9 @@ ruby_connect(fd, sockaddr, len, socks)
     int socks;
 {
     int status;
+#if defined(HAVE_FCNTL)
     int mode;
+#endif
 #if WAIT_IN_PROGRESS > 0
     int wait_in_progress = -1;
     int sockerr, sockerrlen;
@@ -1054,6 +1057,9 @@ ruby_connect(fd, sockaddr, len, socks)
 	      case EAGAIN:
 #ifdef EINPROGRESS
 	      case EINPROGRESS:
+#endif
+#if defined(HAVE_FCNTL)
+		if (mode & NONBLOCKING) break;
 #endif
 #if WAIT_IN_PROGRESS > 0
 		sockerrlen = sizeof(sockerr);

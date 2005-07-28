@@ -393,15 +393,18 @@ static VALUE ripper_id2sym _((ID));
 # define rb_warnI(fmt,a)  rb_warn(fmt,a)
 # define rb_warnS(fmt,a)  rb_warn(fmt,a)
 # define rb_warning0(fmt) rb_warning(fmt)
+# define rb_warningS(fmt,a) rb_warning(fmt,a)
 #else
 # define rb_warn0(fmt)    ripper_warn0(parser, fmt)
 # define rb_warnI(fmt,a)  ripper_warnI(parser, fmt, a)
 # define rb_warnS(fmt,a)  ripper_warnS(parser, fmt, a)
 # define rb_warning0(fmt) ripper_warning0(parser, fmt)
+# define rb_warningS(fmt,a) ripper_warningS(parser, fmt, a)
 static void ripper_warn0 _((struct parser_params*, const char*));
 static void ripper_warnI _((struct parser_params*, const char*, int));
 static void ripper_warnS _((struct parser_params*, const char*, const char*));
 static void ripper_warning0 _((struct parser_params*, const char*));
+static void ripper_warningS _((struct parser_params*, const char*, const char*));
 #endif
 
 #ifdef RIPPER
@@ -414,7 +417,7 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 # define PARSER_ARG
 #endif
 
-#define NEW_BLOCK_VAR(b, v) NEW_NODE(NODE_BLOCK_PASS, 0, b, v)
+#define NEW_BLOCK_PARAM(b, v) NEW_NODE(NODE_BLOCK_PASS, 0, b, v)
 
 /* Older versions of Yacc set YYMAXDEPTH to a very low value by default (150,
    for instance).  This is too low for Ruby to parse some files, such as
@@ -507,7 +510,7 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 %type <node> mrhs superclass block_call block_command
 %type <node> f_arglist f_args f_rest_arg f_optarg f_opt f_block_arg opt_f_block_arg
 %type <node> assoc_list assocs assoc undef_list backref string_dvar
-%type <node> for_var block_var opt_block_var block_var_def block_param
+%type <node> for_var block_param opt_block_param block_param_def block_param0
 %type <node> opt_bv_decl bv_decls bv_decl lambda f_larglist lambda_body
 %type <node> brace_block cmd_brace_block do_block lhs none fitem
 %type <node> mlhs mlhs_head mlhs_basic mlhs_entry mlhs_item mlhs_node
@@ -1106,7 +1109,7 @@ cmd_brace_block	: tLBRACE_ARG
 		    /*%
 		    %*/
 		    }
-		  opt_block_var {$<vars>$ = ruby_dyna_vars;}
+		  opt_block_param {$<vars>$ = ruby_dyna_vars;}
 		  compstmt
 		  '}'
 		    {
@@ -2962,7 +2965,7 @@ for_var 	: lhs
 		| mlhs
 		;
 
-block_param	: mlhs_item
+block_param0	: mlhs_item
 		    {
 		    /*%%%*/
 			$$ = NEW_LIST($1);
@@ -2970,7 +2973,7 @@ block_param	: mlhs_item
 			$$ = mlhs_add(mlhs_new(), $1);
 		    %*/
 		    }
-		| block_param ',' mlhs_item
+		| block_param0 ',' mlhs_item
 		    {
 		    /*%%%*/
 			$$ = list_append($1, $3);
@@ -2980,7 +2983,7 @@ block_param	: mlhs_item
 		    }
 		;
 
-block_var	: block_param
+block_param	: block_param0
 		    {
 		    /*%%%*/
 			if ($1->nd_alen == 1) {
@@ -2994,7 +2997,7 @@ block_var	: block_param
 			$$ = blockvar_new($1);
 		    %*/
 		    }
-		| block_param ','
+		| block_param0 ','
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, 0);
@@ -3002,33 +3005,33 @@ block_var	: block_param
 			$$ = blockvar_new($1);
 		    %*/
 		    }
-		| block_param ',' tAMPER lhs
+		| block_param0 ',' tAMPER lhs
 		    {
 		    /*%%%*/
-			$$ = NEW_BLOCK_VAR($4, NEW_MASGN($1, 0));
+			$$ = NEW_BLOCK_PARAM($4, NEW_MASGN($1, 0));
 		    /*%
 			$$ = blockvar_add_block(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_param ',' tSTAR lhs ',' tAMPER lhs
+		| block_param0 ',' tSTAR lhs ',' tAMPER lhs
 		    {
 		    /*%%%*/
-			$$ = NEW_BLOCK_VAR($7, NEW_MASGN($1, $4));
+			$$ = NEW_BLOCK_PARAM($7, NEW_MASGN($1, $4));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new($1), $4);
 			$$ = blockvar_add_block($$, $7);
 		    %*/
 		    }
-		| block_param ',' tSTAR ',' tAMPER lhs
+		| block_param0 ',' tSTAR ',' tAMPER lhs
 		    {
 		    /*%%%*/
-			$$ = NEW_BLOCK_VAR($6, NEW_MASGN($1, -1));
+			$$ = NEW_BLOCK_PARAM($6, NEW_MASGN($1, -1));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new($1), Qnil);
 			$$ = blockvar_add_block($$, $6);
 		    %*/
 		    }
-		| block_param ',' tSTAR lhs
+		| block_param0 ',' tSTAR lhs
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, $4);
@@ -3036,7 +3039,7 @@ block_var	: block_param
 			$$ = blockvar_add_star(blockvar_new($1), $4);
 		    %*/
 		    }
-		| block_param ',' tSTAR
+		| block_param0 ',' tSTAR
 		    {
 		    /*%%%*/
 			$$ = NEW_MASGN($1, -1);
@@ -3047,7 +3050,7 @@ block_var	: block_param
 		| tSTAR lhs ',' tAMPER lhs
 		    {
 		    /*%%%*/
-			$$ = NEW_BLOCK_VAR($5, NEW_MASGN(0, $2));
+			$$ = NEW_BLOCK_PARAM($5, NEW_MASGN(0, $2));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new(Qnil), $2);
 			$$ = blockvar_add_block($$, $5);
@@ -3056,7 +3059,7 @@ block_var	: block_param
 		| tSTAR ',' tAMPER lhs
 		    {
 		    /*%%%*/
-			$$ = NEW_BLOCK_VAR($4, NEW_MASGN(0, -1));
+			$$ = NEW_BLOCK_PARAM($4, NEW_MASGN(0, -1));
 		    /*%
 			$$ = blockvar_add_star(blockvar_new(Qnil), Qnil);
 			$$ = blockvar_add_block($$, $4);
@@ -3081,24 +3084,24 @@ block_var	: block_param
 		| tAMPER lhs
 		    {
 		    /*%%%*/
-			$$ = NEW_BLOCK_VAR($2, (NODE*)1);
+			$$ = NEW_BLOCK_PARAM($2, (NODE*)1);
 		    /*%
 			$$ = blockvar_add_block(blockvar_new(Qnil), $2);
 		    %*/
 		    }
 		;
 
-opt_block_var	: none
+opt_block_param	: none
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER(0, 0, 0);
 		    /*%
 		    %*/
 		    }
-		| block_var_def
+		| block_param_def
 		;
 
-block_var_def	: '|' opt_bv_decl '|'
+block_param_def	: '|' opt_bv_decl '|'
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER((NODE*)1, 0, $2);
@@ -3114,7 +3117,7 @@ block_var_def	: '|' opt_bv_decl '|'
 			$$ = blockvar_new(mlhs_new());
 		    %*/
 		    }
-		| '|' block_var opt_bv_decl '|'
+		| '|' block_param opt_bv_decl '|'
 		    {
 		    /*%%%*/
 			$$ = NEW_ITER($2, 0, $3);
@@ -3250,7 +3253,7 @@ do_block	: kDO_BLOCK
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
-		  opt_block_var
+		  opt_block_param
 		    {
 		    /*%%%*/
 			$<vars>$ = ruby_dyna_vars;
@@ -3388,7 +3391,7 @@ brace_block	: '{'
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
-		  opt_block_var
+		  opt_block_param
 		    {
 		    /*%%%*/
 			$<vars>$ = ruby_dyna_vars;
@@ -3414,7 +3417,7 @@ brace_block	: '{'
 			$<num>1 = ruby_sourceline;
 		    /*% %*/
 		    }
-		  opt_block_var
+		  opt_block_param
 		    {
 		    /*%%%*/
 			$<vars>$ = ruby_dyna_vars;
@@ -7302,16 +7305,18 @@ new_bv_gen(parser, name, val)
     ID name;
     NODE *val;
 {
-    if (is_local_id(name) && !rb_dvar_defined(name) && !local_id(name)) {
-	dyna_var(name);
-	return NEW_DASGN_CURR(name, val);
-    }
-    else {
-	compile_error(PARSER_ARG "local variable name conflict - %s",
+    if (!is_local_id(name)) {
+	compile_error(PARSER_ARG "invalid local variable - %s",
 		      rb_id2name(name));
 	return 0;
     }
+    if (rb_dvar_defined(name) || local_id(name)) {
+	rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
+    }
+    dyna_var(name);
+    return NEW_DASGN_CURR(name, val);
 }
+
 static NODE *
 aryset_gen(parser, recv, idx)
     struct parser_params *parser;
@@ -9027,6 +9032,16 @@ ripper_warning0(parser, fmt)
     const char *fmt;
 {
     rb_funcall(parser->value, rb_intern("warning"), 1, rb_str_new2(fmt));
+}
+
+static void
+ripper_warningS(parser, fmt)
+    struct parser_params *parser;
+    const char *fmt;
+    const char *str;
+{
+    rb_funcall(parser->value, rb_intern("warning"), 2,
+    	       rb_str_new2(fmt), rb_str_new2(str));
 }
 
 static VALUE ripper_lex_get_generic _((struct parser_params *, VALUE));
