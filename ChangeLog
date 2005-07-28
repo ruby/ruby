@@ -1,3 +1,18 @@
+Thu Jul 28 15:04:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_arg): better argument name duplication check
+
+	* parse.y (new_args_gen): factored out name duplication check for
+	  optional and rest arguments.
+
+	* parse.y (new_bv_gen): allow shadowing outer local variables;
+	  warning remains.
+
+Thu Jul 28 13:46:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ripper_warningS): the argument was omitted.
+	  [ruby-dev:26621]
+
 Thu Jul 28 11:30:57 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (f_larglist): allow bv_decl at the end of lambda

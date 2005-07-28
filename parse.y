@@ -245,6 +245,9 @@ static NODE *evstr2dstr _((NODE*));
 static NODE *call_op_gen _((struct parser_params*,NODE*,ID,int,NODE*));
 #define call_op(recv,id,narg,arg1) call_op_gen(parser, recv,id,narg,arg1)
 
+static NODE *new_args_gen _((struct parser_params*,VALUE,NODE*,NODE*,NODE*));
+#define new_args(f,o,r,b) new_args_gen(parser, f,o,r,b)
+
 static NODE *negate_lit _((NODE*));
 static NODE *ret_args _((NODE*));
 static NODE *arg_blk_pass _((NODE*,NODE*));
@@ -3175,7 +3178,6 @@ lambda		: {
 		    }
 		  f_larglist
 		    {
-			lex_state = EXPR_END;
 		        $<vars>$ = ruby_dyna_vars;
 		    }
 		  lambda_body
@@ -3201,7 +3203,7 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 		| f_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(NEW_ARGS($1, 0, 0), $2);
+			$$ = NEW_LAMBDA(new_args($1, 0, 0, 0), $2);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, Qnil, Qnil);
 		    %*/
@@ -3209,7 +3211,7 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 		| f_arg ',' f_rest_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(NEW_ARGS($1, 0, $3), $4);
+			$$ = NEW_LAMBDA(new_args($1, 0, $3, 0), $4);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, $3, Qnil);
 		    %*/
@@ -3217,7 +3219,7 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 		| f_rest_arg opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(NEW_ARGS(0, 0, $1), $2);
+			$$ = NEW_LAMBDA(new_args(0, 0, $1, 0), $2);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, $1, Qnil);
 		    %*/
@@ -3225,7 +3227,7 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 		| opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(NEW_ARGS(0, 0, 0), $1);
+			$$ = NEW_LAMBDA(new_args(0, 0, 0, 0), $1);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, Qnil, Qnil);
 		    %*/
@@ -3986,7 +3988,7 @@ f_arglist	: '(' f_args rparen
 f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS($1, $3, $5), $6);
+			$$ = new_args($1, $3, $5, $6);
 		    /*%
 			$$ = dispatch4(params, $1, $3, $5, escape_Qundef($6));
 		    %*/
@@ -3994,7 +3996,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_arg ',' f_optarg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS($1, $3, 0), $4);
+			$$ = new_args($1, $3, 0, $4);
 		    /*%
 			$$ = dispatch4(params, $1, $3, Qnil, escape_Qundef($4));
 		    %*/
@@ -4002,7 +4004,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_arg ',' f_rest_arg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS($1, 0, $3), $4);
+			$$ = new_args($1, 0, $3, $4);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, $3, escape_Qundef($4));
 		    %*/
@@ -4010,7 +4012,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_arg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS($1, 0, 0), $2);
+			$$ = new_args($1, 0, 0, $2);
 		    /*%
 			$$ = dispatch4(params, $1, Qnil, Qnil, escape_Qundef($2));
 		    %*/
@@ -4018,7 +4020,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_optarg ',' f_rest_arg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS(0, $1, $3), $4);
+			$$ = new_args(0, $1, $3, $4);
 		    /*%
 			$$ = dispatch4(params, Qnil, $1, $3, escape_Qundef($4));
 		    %*/
@@ -4026,7 +4028,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_optarg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS(0, $1, 0), $2);
+			$$ = new_args(0, $1, 0, $2);
 		    /*%
 			$$ = dispatch4(params, Qnil, $1, Qnil, escape_Qundef($2));
 		    %*/
@@ -4034,7 +4036,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_rest_arg opt_f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS(0, 0, $1), $2);
+			$$ = new_args(0, 0, $1, $2);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, $1, escape_Qundef($2));
 		    %*/
@@ -4042,7 +4044,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| f_block_arg
 		    {
 		    /*%%%*/
-			$$ = block_append(NEW_ARGS(0, 0, 0), $1);
+			$$ = new_args(0, 0, 0, $1);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, Qnil, $1);
 		    %*/
@@ -4050,7 +4052,7 @@ f_args		: f_arg ',' f_optarg ',' f_rest_arg opt_f_block_arg
 		| /* none */
 		    {
 		    /*%%%*/
-			$$ = NEW_ARGS(0, 0, 0);
+			$$ = new_args(0, 0, 0, 0);
 		    /*%
 			$$ = dispatch4(params, Qnil, Qnil, Qnil, Qnil);
 		    %*/
@@ -4094,8 +4096,6 @@ f_norm_arg	: tCONSTANT
 		    /*%%%*/
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
-			else if (local_id($1))
-			    yyerror("duplicate argument name");
 			if (dyna_in_block()) {
 			    dyna_var($1);
 			}
@@ -4114,6 +4114,9 @@ f_arg		: f_norm_arg
 		| f_arg ',' f_norm_arg
 		    {
 			$$ = $1;
+			if (rb_ary_includes($$, ID2SYM($3))) {
+			    yyerror("duplicated argument name");
+			}
 			rb_ary_push($$, ID2SYM($3));
 		    }
 		;
@@ -4123,8 +4126,6 @@ f_opt		: tIDENTIFIER '=' arg_value
 		    /*%%%*/
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
-			else if (local_id($1))
-			    yyerror("duplicate optional argument name");
 			$$ = assignable($1, $3);
 		    /*%
 			$$ = rb_assoc_new($1, $3);
@@ -4160,8 +4161,6 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    /*%%%*/
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
-			else if (local_id($2))
-			    yyerror("duplicate rest argument name");
 			$$ = assignable($2, 0);
 		    /*%
 			$$ = dispatch1(restparam, $2);
@@ -4186,8 +4185,8 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 		    /*%%%*/
 			if (!is_local_id($2))
 			    yyerror("block argument must be local variable");
-			else if (local_id($2))
-			    yyerror("duplicate block argument name");
+			else if (!dyna_in_block() && local_id($2))
+			    yyerror("duplicated block argument name");
 			$$ = NEW_BLOCK_ARG($2);
 		    /*%
 			$$ = $2;
@@ -7981,6 +7980,57 @@ arg_prepend(node1, node2)
     return 0;			/* not reached */
 }
 
+static int
+arg_dup_check(vid, m, list, node)
+    ID vid;
+    VALUE m, list;
+    NODE *node;
+{
+    VALUE sym = ID2SYM(vid);
+    if ((m && rb_ary_includes(m, sym)) || rb_ary_includes(list, sym)) {
+	ruby_sourceline = nd_line(node);
+	return 1;
+    }
+    rb_ary_push(list, sym);		  
+    return 0;
+}
+
+static NODE*
+new_args_gen(parser, m, o, r, b)
+    struct parser_params *parser;
+    VALUE m;
+    NODE *o, *r, *b;
+{
+    int saved_line = ruby_sourceline;
+    NODE *tmp;
+    VALUE list;
+
+    list = rb_ary_new();
+    tmp = o;
+    while (tmp) {
+	if (!tmp->nd_head) break;
+	if (arg_dup_check(tmp->nd_head->nd_vid, m, list, tmp)) {
+	    yyerror("duplicated optional argument name");
+	    return 0;	
+	}
+	tmp = tmp->nd_next;
+    }
+    if (r && !NIL_P(r)) {
+	if (arg_dup_check(r->nd_vid, m, list, r)) {
+	    yyerror("duplicated rest argument name");
+	    return 0;
+	}
+    }
+    if (b) {
+	if (arg_dup_check(b->nd_vid, m, list, b)) {
+	    yyerror("duplicated block argument name");
+	    return 0;
+	}
+    }
+    ruby_sourceline = saved_line;
+    return block_append(NEW_ARGS(m, o, r), b);
+}
+
 static NODE*
 new_call(r,m,a)
     NODE *r;
@@ -9035,7 +9085,7 @@ ripper_warning0(parser, fmt)
 }
 
 static void
-ripper_warningS(parser, fmt)
+ripper_warningS(parser, fmt, str)
     struct parser_params *parser;
     const char *fmt;
     const char *str;
