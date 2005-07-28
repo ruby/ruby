@@ -1531,7 +1531,16 @@ class TkVarAccess<TkVariable
     @element_type = Hash.new{|k,v| var.default_value_type }
 
     # teach Tk-ip that @id is global var
-    INTERP._invoke_without_enc('global', @id)
+    begin
+      INTERP._invoke_without_enc('global', @id)
+    rescue => e
+      if @id =~ /^(.+)\([^()]+\)$/
+        # is an element --> varname == $1
+        INTERP._invoke_without_enc('global', $1)
+      else
+        fail e
+      end
+    end
 
     if val
       if val.kind_of?(Hash)

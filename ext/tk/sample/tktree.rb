@@ -25,7 +25,7 @@ class TkTree < TkCanvas
     end
     begin
       tk_call('::tktree::treecreate', *args)
-    rescue NameError
+    rescue NameError, RuntimeError
       Tk.load_tclscript(TkTree::TCL_SCRIPT_PATH)
       tk_call('::tktree::treecreate', *args)
     end

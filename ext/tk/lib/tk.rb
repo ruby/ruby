@@ -2325,6 +2325,8 @@ else
       end
       alias encoding_convert_to encoding_convertto
     end
+
+    extend Encoding
   end
 end
 
@@ -4199,7 +4201,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-07-25'.freeze
+  RELEASE_DATE = '2005-07-28'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
