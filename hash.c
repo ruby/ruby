@@ -1086,7 +1086,7 @@ each_i(key, value)
     VALUE key, value;
 {
     if (key == Qundef) return ST_CONTINUE;
-    rb_yield(rb_assoc(key, value));
+    rb_yield(rb_assoc_new(key, value));
     return ST_CONTINUE;
 }
 
