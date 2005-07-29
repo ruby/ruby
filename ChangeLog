@@ -1,7 +1,10 @@
-Fri Jul 29 09:57:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 29 09:59:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_call0): fix calling zsuper from a method with anonymous
 	  rest argument.  [ruby-dev:26639]
+
+	* eval.c (rb_yield_0): push yielded node instead of yielding.
+	  fixed: [yarv-dev:549]
 
 Thu Jul 28 21:49:17 2005  IWATSUKI Hiroyuki  <don@na.rim.or.jp>
 

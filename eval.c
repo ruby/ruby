@@ -4833,6 +4833,7 @@ rb_yield_0(val, self, klass, flags, avalue)
     block = ruby_block;
     frame = block->frame;
     frame.prev = ruby_frame;
+    frame.node = cnode;
     ruby_frame = &(frame);
     old_cref = (VALUE)ruby_cref;
     ruby_cref = block->cref;
