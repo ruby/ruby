@@ -5771,7 +5771,7 @@ formal_assign(recv, node, argc, argv, local_vars)
 	    rb_eval(recv, opt);
 	}
     }
-    if (node->nd_rest && !NIL_P(node->nd_rest)) {
+    if (RTEST(node->nd_rest)) {
 	VALUE v;
 
 	if (argc > 0)
@@ -5923,7 +5923,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		}
 		if (node) {
 		    formal_assign(recv, node, argc, argv, local_vars);
-		    if (node->nd_rest) {
+		    if (RTEST(node->nd_rest)) {
 			ruby_frame->argc = -(ruby_frame->argc - argc)-1;
 		    }
 		}

@@ -8015,7 +8015,7 @@ new_args_gen(parser, m, o, r, b)
 	}
 	tmp = tmp->nd_next;
     }
-    if (r && !NIL_P(r)) {
+    if (RTEST(r)) {
 	if (arg_dup_check(r->nd_vid, m, list, r)) {
 	    yyerror("duplicated rest argument name");
 	    return 0;

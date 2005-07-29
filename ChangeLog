@@ -1,3 +1,8 @@
+Fri Jul 29 09:57:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_call0): fix calling zsuper from a method with anonymous
+	  rest argument.  [ruby-dev:26639]
+
 Thu Jul 28 21:49:17 2005  IWATSUKI Hiroyuki  <don@na.rim.or.jp>
 
 	* parse.y (rb_parser_end_seen_p): exclude from ripper.
