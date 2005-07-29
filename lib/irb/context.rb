@@ -58,12 +58,24 @@ module IRB
 
       case input_method
       when nil
-	if (defined?(ReadlineInputMethod) &&
-            (use_readline? || IRB.conf[:PROMPT_MODE] != :INF_RUBY && STDIN.tty?))
-	  @io = ReadlineInputMethod.new
-	else
+	case use_readline?
+	when nil
+	  if (defined?(ReadlineInputMethod) && STDIN.tty? &&
+	      IRB.conf[:PROMPT_MODE] != :INF_RUBY)
+	    @io = ReadlineInputMethod.new
+	  else
+	    @io = StdioInputMethod.new
+	  end
+	when false
 	  @io = StdioInputMethod.new
+	when true
+	  if defined?(ReadlineInputMethod)
+	    @io = ReadlineInputMethod.new
+	  else
+	    @io = StdioInputMethod.new
+	  end
 	end
+
       when String
 	@io = FileInputMethod.new(input_method)
 	@irb_name = File.basename(input_method)
