@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.5"
+#define WIN32OLE_VERSION "0.6.6"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -2980,6 +2980,31 @@ fole_func_methods( self )
     return ole_methods( self, INVOKE_FUNC);
 }
 
+static VALUE
+ole_type_from_itypeinfo(pTypeInfo)
+    ITypeInfo *pTypeInfo;
+{
+    ITypeLib *pTypeLib;
+    VALUE type = Qnil;
+    HRESULT hr;
+    unsigned int index;
+    BSTR bstr;
+
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib( pTypeInfo, &pTypeLib, &index );
+    if(FAILED(hr)) {
+        return Qnil;
+    }
+    hr = pTypeLib->lpVtbl->GetDocumentation( pTypeLib, index,
+                                             &bstr, NULL, NULL, NULL);
+    OLE_RELEASE(pTypeLib);
+    if (FAILED(hr)) {
+        return Qnil;
+    }
+    type = foletype_s_allocate(cWIN32OLE_TYPE);
+    oletype_set_member(type, pTypeInfo, WC2VSTR(bstr));
+    return type;
+}
+
 /*
  *   call-seq:
  *      WIN32OLE#ole_type
@@ -2993,12 +3018,9 @@ static VALUE
 fole_type( self )
     VALUE self;
 {
-    unsigned int index;
     ITypeInfo *pTypeInfo;
-    ITypeLib *pTypeLib;
     HRESULT hr;
     struct oledata *pole;
-    BSTR bstr;
     LCID  lcid = LOCALE_SYSTEM_DEFAULT;
     VALUE type = Qnil;
 
@@ -3008,20 +3030,11 @@ fole_type( self )
     if(FAILED(hr)) {
         ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
     }
-    hr = pTypeInfo->lpVtbl->GetContainingTypeLib( pTypeInfo, &pTypeLib, &index );
-    if(FAILED(hr)) {
-        OLE_RELEASE(pTypeInfo);
-        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
-    }
-    hr = pTypeLib->lpVtbl->GetDocumentation( pTypeLib, index,
-                                             &bstr, NULL, NULL, NULL);
-    if (SUCCEEDED(hr)) {
-        type = foletype_s_allocate(cWIN32OLE_TYPE);
-        oletype_set_member(type, pTypeInfo, WC2VSTR(bstr));
-    }
-    OLE_RELEASE(pTypeLib);
+    type = ole_type_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
-
+    if (type == Qnil) {
+        rb_raise(rb_eRuntimeError, "failed to create WIN32OLE_TYPE obj from ITypeInfo");
+    }
     return type;
 }
 
@@ -3036,6 +3049,41 @@ make_oletypelib_obj(guid, major_version, minor_version)
     rb_ary_push(args, major_version);
     rb_ary_push(args, minor_version);
     return rb_apply(cWIN32OLE_TYPELIB, rb_intern("new"), args);
+}
+
+static VALUE
+ole_typelib_from_itypeinfo(pTypeInfo)
+    ITypeInfo *pTypeInfo;
+{
+    HRESULT hr;
+    ITypeLib *pTypeLib;
+    TLIBATTR *pTLibAttr;
+    OLECHAR bstr[80];
+    int len;
+    VALUE guid = Qnil;
+    VALUE major;
+    VALUE minor;
+    unsigned int index;
+
+    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
+    if(FAILED(hr)) {
+        return Qnil;
+    }
+
+    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
+
+    len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
+    if (len > 3) {
+        guid = ole_wc2vstr(bstr, FALSE);
+    }
+    major = INT2NUM(pTLibAttr->wMajorVerNum);
+    minor = INT2NUM(pTLibAttr->wMinorVerNum);
+    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
+    OLE_RELEASE(pTypeLib);
+    if (guid == Qnil) {
+        return Qnil;
+    }
+    return make_oletypelib_obj(guid, major, minor);
 }
 
 /*
@@ -3056,15 +3104,8 @@ fole_typelib(self)
     struct oledata *pole;
     HRESULT hr;
     ITypeInfo *pTypeInfo;
-    ITypeLib *pTypeLib;
-    TLIBATTR *pTLibAttr;
-    unsigned int index;
-    OLECHAR bstr[80];
-    int len;
-    VALUE guid = Qnil;
-    VALUE major;
-    VALUE minor;
     LCID  lcid = LOCALE_SYSTEM_DEFAULT;
+    VALUE vtlib = Qnil;
 
     OLEData_Get_Struct(self, pole);
     hr = pole->pDispatch->lpVtbl->GetTypeInfo(pole->pDispatch,
@@ -3072,27 +3113,12 @@ fole_typelib(self)
     if(FAILED(hr)) {
         ole_raise(hr, rb_eRuntimeError, "failed to GetTypeInfo");
     }
-    hr = pTypeInfo->lpVtbl->GetContainingTypeLib(pTypeInfo, &pTypeLib, &index);
-    if(FAILED(hr)) {
-        OLE_RELEASE(pTypeInfo);
-        ole_raise(hr, rb_eRuntimeError, "failed to GetContainingTypeLib");
-    }
+    vtlib = ole_typelib_from_itypeinfo(pTypeInfo);
     OLE_RELEASE(pTypeInfo);
-
-    hr = pTypeLib->lpVtbl->GetLibAttr(pTypeLib, &pTLibAttr);
-
-    len = StringFromGUID2(&pTLibAttr->guid, bstr, sizeof(bstr)/sizeof(OLECHAR));
-    if (len > 3) {
-        guid = ole_wc2vstr(bstr, FALSE);
+    if (vtlib == Qnil) {
+        rb_raise(rb_eRuntimeError, "failed to get type library info.");
     }
-    major = INT2NUM(pTLibAttr->wMajorVerNum);
-    minor = INT2NUM(pTLibAttr->wMinorVerNum);
-    pTypeLib->lpVtbl->ReleaseTLibAttr(pTypeLib, pTLibAttr);
-    OLE_RELEASE(pTypeLib);
-    if (guid == Qnil) {
-        rb_raise(eWIN32OLE_RUNTIME_ERROR, "failed to get typelib");
-    }
-    return make_oletypelib_obj(guid, major, minor);
+    return vtlib;
 }
 
 static HRESULT
@@ -4429,6 +4455,81 @@ foletype_helpcontext(self)
     struct oletypedata *ptype;
     Data_Get_Struct(self, struct oletypedata, ptype);
     return ole_type_helpcontext(ptype->pTypeInfo);
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPE#ole_typelib
+ * 
+ *  Returns the WIN32OLE_TYPELIB object which is including the WIN32OLE_TYPE 
+ *  object. If it is not found, then returns nil.
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *     puts tobj.ole_typelib # => 'Microsoft Excel 9.0 Object Library'
+ */
+static VALUE
+foletype_ole_typelib(self)
+    VALUE self;
+{
+    struct oletypedata *ptype;
+    Data_Get_Struct(self, struct oletypedata, ptype);
+    return ole_typelib_from_itypeinfo(ptype->pTypeInfo);
+}
+
+static VALUE
+ole_type_impl_ole_types(pTypeInfo)
+    ITypeInfo *pTypeInfo;
+{
+    HRESULT hr;
+    ITypeInfo *pRefTypeInfo;
+    HREFTYPE href;
+    WORD i;
+    VALUE type;
+    TYPEATTR *pTypeAttr;
+    int flags;
+
+    VALUE types = rb_ary_new();
+    hr = OLE_GET_TYPEATTR(pTypeInfo, &pTypeAttr);
+    if (FAILED(hr)) {
+        return types;
+    }
+    for (i = 0; i < pTypeAttr->cImplTypes; i++) {
+        hr = pTypeInfo->lpVtbl->GetImplTypeFlags(pTypeInfo, i, &flags);
+        if (FAILED(hr))
+            continue;
+
+        hr = pTypeInfo->lpVtbl->GetRefTypeOfImplType(pTypeInfo, i, &href);
+        if (FAILED(hr))
+            continue;
+        hr = pTypeInfo->lpVtbl->GetRefTypeInfo(pTypeInfo, href, &pRefTypeInfo);
+        if (FAILED(hr)) 
+            continue;
+        type = ole_type_from_itypeinfo(pRefTypeInfo);
+        if (type != Qnil) {
+            rb_ary_push(types, type);
+        }
+
+        OLE_RELEASE(pRefTypeInfo);
+    }
+    OLE_RELEASE_TYPEATTR(pTypeInfo, pTypeAttr);
+    return types;
+}
+
+/*
+ *  call-seq:
+ *     WIN32OLE_TYPE#implemented_ole_types
+ * 
+ *  Returns the array of WIN32OLE_TYPE object which is implemented by the WIN32OLE_TYPE 
+ *  object. 
+ *     tobj = WIN32OLE_TYPE.new('Microsoft Excel 9.0 Object Library', 'Worksheet')
+ *     p tobj.implemented_ole_types # => [_Worksheet, DocEvents]
+ */
+static VALUE
+foletype_impl_ole_types(self)
+    VALUE self;
+{
+    struct oletypedata *ptype;
+    Data_Get_Struct(self, struct oletypedata, ptype);
+    return ole_type_impl_ole_types(ptype->pTypeInfo);
 }
 
 static VALUE
@@ -6709,6 +6810,8 @@ Init_win32ole()
     rb_define_method(cWIN32OLE_TYPE, "helpcontext", foletype_helpcontext, 0);
     rb_define_method(cWIN32OLE_TYPE, "variables", foletype_variables, 0);
     rb_define_method(cWIN32OLE_TYPE, "ole_methods", foletype_methods, -1);
+    rb_define_method(cWIN32OLE_TYPE, "ole_typelib", foletype_ole_typelib, 0);
+    rb_define_method(cWIN32OLE_TYPE, "implemented_ole_types", foletype_impl_ole_types, 0);
 
     cWIN32OLE_VARIABLE = rb_define_class("WIN32OLE_VARIABLE", rb_cObject);
     rb_define_method(cWIN32OLE_VARIABLE, "name", folevariable_name, 0);

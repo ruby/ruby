@@ -93,4 +93,19 @@ class TestOLETYPE < RUNIT::TestCase
     type = WIN32OLE_TYPE.new(MS_EXCEL_TYPELIB, 'Application')
     assert_equal("Application", "#{type}");
   end
+  def test_ole_typelib
+    type = WIN32OLE_TYPE.new(MS_EXCEL_TYPELIB, 'Application')
+    tlib = type.ole_typelib
+    assert_instance_of(WIN32OLE_TYPELIB, tlib);
+    assert_equal(MS_EXCEL_TYPELIB, tlib.name);
+  end
+
+  def test_implemented_ole_types
+    type = WIN32OLE_TYPE.new(MS_EXCEL_TYPELIB, 'Application')
+    impltypes = type.implemented_ole_types
+    assert_instance_of(Array, impltypes);
+    assert_equal('_Application', impltypes[0].name)
+    assert_equal('AppEvents', impltypes[1].name)
+  end
+
 end
