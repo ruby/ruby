@@ -1,3 +1,6 @@
+Mon Aug  1 00:07:32 2005  Keiju Ishitsuka <keiju@ruby-lang.org>
+	* lib/irb/context.rb: fix `irb --readline` option. [ruby-list:40955]
+	
 Fri Jul 29 09:59:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_yield_0): push yielded node instead of yielding.
