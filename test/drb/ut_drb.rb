@@ -126,8 +126,21 @@ class DRbEx
     [self]
   end
 
+  def method_missing(msg, *a, &b)
+    if msg == :missing
+      return true
+    else
+      super(msg, *a, &b)
+    end
+  end
+
   private
   def call_private_method
+    true
+  end
+
+  protected
+  def call_protected_method
     true
   end
 end
