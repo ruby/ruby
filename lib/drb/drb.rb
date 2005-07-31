@@ -1448,7 +1448,9 @@ module DRb
     # Coerce an object to a string, providing our own representation if
     # to_s is not defined for the object.
     def any_to_s(obj)
-      obj.to_s rescue sprintf("#<%s:0x%lx>", obj.class, obj.__id__)      
+      obj.to_s + ":#{obj.class}"
+    rescue
+      sprintf("#<%s:0x%lx>", obj.class, obj.__id__)      
     end
 
     # Check that a method is callable via dRuby.
@@ -1463,22 +1465,19 @@ module DRb
       return true if Proc === obj && msg_id == :__drb_yield
       raise(ArgumentError, "#{any_to_s(msg_id)} is not a symbol") unless Symbol == msg_id.class
       raise(SecurityError, "insecure method `#{msg_id}'") if insecure_method?(msg_id)
-      unless obj.respond_to?(msg_id)
+      
+      if obj.private_methods.include?(msg_id.to_s)
 	desc = any_to_s(obj)
-	if desc.nil? || desc[0] == '#'
-	  desc << ":#{obj.class}"
-	end
-	
-	if obj.private_methods.include?(msg_id.to_s)
-	  raise NameError, "private method `#{msg_id}' called for #{desc}"
-	else
-	  raise NameError, "undefined method `#{msg_id}' called for #{desc}"
-	end
+        raise NoMethodError, "private method `#{msg_id}' called for #{desc}"
+      elsif obj.protected_methods.include?(msg_id.to_s)
+	desc = any_to_s(obj)
+        raise NoMethodError, "protected method `#{msg_id}' called for #{desc}"
+      else
+        true
       end
-      true
     end
     public :check_insecure_method
-
+    
     class InvokeMethod  # :nodoc:
       def initialize(drb_server, client)
 	@drb_server = drb_server

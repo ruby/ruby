@@ -1,3 +1,13 @@
+Mon Aug  1 01:08:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/drb/drb.rb (check_insecure_method): use private_methods and
+	  protected_methods instead of respond_to? to check method visibility. 
+	  [ruby-dev:26616]
+
+	* test/drb/drbtest.rb: ditto.
+
+	* test/drb/ut_drb.rb: ditto.
+
 Sat Jul 30 18:49:44 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_TYPE#ole_typelib, 
