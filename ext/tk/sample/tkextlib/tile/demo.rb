@@ -301,6 +301,8 @@ def makeNotebook
   nb.add(client, :text=>'Demo', :underline=>0)
   nb.select(client)
 
+  combo = Tk::Tile::TFrame.new(nb)
+  nb.add(combo, :text=>'Combobox', :underline=>7)
   others = Tk::Tile::TFrame.new(nb)
   nb.add(others, :text=>'Others', :underline=>4)
   nb.add(Tk::Tile::TLabel.new(nb, :text=>'Nothing to see here...'), 
@@ -308,10 +310,10 @@ def makeNotebook
   nb.add(Tk::Tile::TLabel.new(nb, :text=>'Nothing to see here either.'), 
          :text=>'More Stuff', :sticky=>:se)
 
-  [nb, client, others]
+  [nb, client, combo, others]
 end
 
-nb, client, others = makeNotebook()
+nb, client, combo, others = makeNotebook()
 
 #
 # Side-by side check, radio, and menu button comparison:
@@ -535,6 +537,23 @@ menu.add(:cascade, :label=>'Theme', :underline=>3,
          :menu=>makeThemeMenu(menu))
 
 setTheme($V[:THEME])
+
+#
+# Combobox demo pane:
+#
+values = %w(list abc def ghi jkl mno pqr stu vwx yz)
+2.times {|i|
+  cb = Tk::Tile::TCombobox.new(
+    combo, :values=>values, :textvariable=>$V.ref(:COMBO))
+  cb.pack(:side=>:top, :padx=>2, :pady=>2, :expand=>false, :fill=>:x)
+  if i == 1
+    cb.state :readonly
+    begin
+      cb.current = 3 # ignore if unsupported (tile0.4)
+    rescue
+    end
+  end
+}
 
 #
 # Other demos:
