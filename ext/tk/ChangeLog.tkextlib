@@ -1,5 +1,15 @@
 2005-08-01  ocean  <ocean@ruby-lang.org>
 
+	* lib/tkextlib/tile.rb: fixed autoload for Treeview.
+
+	* lib/tkextlib/tile/treeview.rb: replaced `ary2tk_list(items)' with
+	  `*items'.
+
+	* sample/tkextlib/tile: added treeview demo. (tile 0.5 or later is
+	  needed) [ruby-dev:26668]
+
+2005-08-01  ocean  <ocean@ruby-lang.org>
+
 	* sample/tkextlib/tile/demo.rb: added combobox demo.
 
 2005-07-27  ocean  <ocean@ruby-lang.org>

@@ -129,17 +129,17 @@ class Tk::Tile::Treeview < TkWindow
     list(tk_send_without_enc('children', item))
   end
   def children=(item, *items)
-    tk_send_without_enc('children', item, ary2tk_list(items))
+    tk_send_without_enc('children', item, *items)
     items
   end
 
   def delete(*items)
-    tk_send_without_enc('delete', ary2tk_list(items))
+    tk_send_without_enc('delete', *items)
     self
   end
 
   def detach(*items)
-    tk_send_without_enc('detach', ary2tk_list(items))
+    tk_send_without_enc('detach', *items)
     self
   end
 
@@ -193,19 +193,19 @@ class Tk::Tile::Treeview < TkWindow
   end
 
   def selection_add(*items)
-    tk_send_without_enc('selection', 'add', ary2tk_list(items))
+    tk_send_without_enc('selection', 'add', *items)
     self
   end
   def selection_remove(*items)
-    tk_send_without_enc('selection', 'remove', ary2tk_list(items))
+    tk_send_without_enc('selection', 'remove', *items)
     self
   end
   def selection_set(*items)
-    tk_send_without_enc('selection', 'set', ary2tk_list(items))
+    tk_send_without_enc('selection', 'set', *items)
     self
   end
   def selection_toggle(*items)
-    tk_send_without_enc('selection', 'toggle', ary2tk_list(items))
+    tk_send_without_enc('selection', 'toggle', *items)
     self
   end
 

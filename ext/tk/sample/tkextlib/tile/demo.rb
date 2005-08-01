@@ -303,6 +303,8 @@ def makeNotebook
 
   combo = Tk::Tile::TFrame.new(nb)
   nb.add(combo, :text=>'Combobox', :underline=>7)
+  tree = Tk::Tile::TFrame.new(nb)
+  nb.add(tree, :text=>'Tree')
   others = Tk::Tile::TFrame.new(nb)
   nb.add(others, :text=>'Others', :underline=>4)
   nb.add(Tk::Tile::TLabel.new(nb, :text=>'Nothing to see here...'), 
@@ -310,10 +312,10 @@ def makeNotebook
   nb.add(Tk::Tile::TLabel.new(nb, :text=>'Nothing to see here either.'), 
          :text=>'More Stuff', :sticky=>:se)
 
-  [nb, client, combo, others]
+  [nb, client, combo, tree, others]
 end
 
-nb, client, combo, others = makeNotebook()
+nb, client, combo, tree, others = makeNotebook()
 
 #
 # Side-by side check, radio, and menu button comparison:
@@ -554,6 +556,52 @@ values = %w(list abc def ghi jkl mno pqr stu vwx yz)
     end
   end
 }
+
+#
+# Treeview widget demo pane:
+#
+if TkPackage.vcompare(Tk::Tile.package_version, '0.5') >= 0
+
+  treeview = nil # avoid 'undefined' error
+  scrollbar = Tk::Tile::TScrollbar.new(tree,
+      :command=>proc{|*args| treeview.yview(*args)})
+  treeview = Tk::Tile::Treeview.new(tree, :columns=>%w(Class), :padding=>4,
+      :yscrollcommand=>proc{|*args| scrollbar.set(*args)})
+
+  Tk.grid(treeview, scrollbar, :sticky=>'news')
+  tree.grid_columnconfigure(0, :weight=>1)
+  tree.grid_rowconfigure(0, :weight=>1)
+  tree.grid_propagate(0)
+
+  # Add initial tree node: 
+  # Later nodes will be added in <<TreeviewOpen>> binding.
+  treeview.insert('', 0, :id=>'.', :text=>'Main Window', :open=>false,
+      :values=>[TkWinfo.classname('.')])
+  Tk.tk_call(treeview, 'heading', '#0', :text=>'Widget')
+  Tk.tk_call(treeview, 'heading', 'Class', :text=>'Class')
+  treeview.bind('<TreeviewOpen>', proc{fillTree(treeview)})
+
+  def fillTree(treeview)
+    id = treeview.focus_item
+    unless TkWinfo.exist?(id)
+      treeview.delete(id)
+    end
+    # Replace tree item children with current list of child windows.
+    treeview.delete(treeview.children(id))
+    for child in TkWinfo.children(id)
+      treeview.insert(id, :end, :id=>child, :text=>TkWinfo.appname(child),
+          :open=>false, :values=>[TkWinfo.classname(child)])
+      unless TkWinfo.children(child).empty?
+        # insert dummy child to show [+] indicator
+        treeview.insert(child, :end)
+      end
+    end
+  end
+
+else
+  Tk::Tile::TLabel.new(tree,
+      :text=>'Treeview is supported on tile 0.5 or later...').pack
+end
 
 #
 # Other demos:

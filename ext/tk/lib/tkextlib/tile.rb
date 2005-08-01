@@ -142,7 +142,7 @@ module Tk
 
     autoload :TSquare,       'tkextlib/tile/tsquare'
 
-    autoload :TreeView,      'tkextlib/tile/treeview'
+    autoload :Treeview,      'tkextlib/tile/treeview'
 
     autoload :Style,         'tkextlib/tile/style'
   end
