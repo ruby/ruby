@@ -1,3 +1,8 @@
+Mon Aug  1 13:53:55 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/tcltklib.c (deleted_ip): refactoring - interpreter deletion
+	  check.
+
 Mon Aug  1 01:08:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (check_insecure_method): use private_methods and
@@ -101,7 +106,7 @@ Thu Jul 28 11:30:57 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 Wed Jul 27 23:23:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* gc.c (obj_free): make message formant consistent with one from
+	* gc.c (obj_free): make message format consistent with one from
 	  gc_mark().  [ruby-talk:149668]
 
 	* sprintf.c (quad_t): prepare quad_t as well.  [ruby-talk:149668]
