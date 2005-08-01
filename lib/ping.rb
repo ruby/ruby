@@ -49,7 +49,7 @@ module Ping
       end
     rescue Errno::ECONNREFUSED
       return true
-    rescue Timeout::Error
+    rescue Timeout::Error, StandardError
       return false
     end
     return true

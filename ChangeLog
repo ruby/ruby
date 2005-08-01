@@ -1,3 +1,8 @@
+Tue Aug  2 01:40:38 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/ping.rb (Ping.pingecho): should rescue StandardError.
+	  [ruby-dev:26677]
+
 Mon Aug  1 19:02:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c: refactoring - replaced rb_ivar_defined &
