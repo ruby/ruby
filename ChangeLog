@@ -1,7 +1,7 @@
 Mon Aug  1 13:53:55 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* ext/tk/tcltklib.c (deleted_ip): refactoring - interpreter deletion
-	  check.
+	* ext/tk/tcltklib.c (deleted_ip): refactoring - interpreter
+	  deletion check. [ruby-dev:26664]
 
 Mon Aug  1 01:08:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
