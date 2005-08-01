@@ -1,3 +1,8 @@
+Mon Aug  1 18:44:08 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/tcltklib.c (Tcl_GetStringResult): refactoring - define
+	  alternative macro on Tcl7.x or earlier.
+
 Mon Aug  1 13:53:55 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c (deleted_ip): refactoring - interpreter

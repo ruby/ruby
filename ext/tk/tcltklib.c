@@ -141,6 +141,10 @@ tcl_global_eval(interp, cmd)
 #undef Tcl_GlobalEval
 #define Tcl_GlobalEval tcl_global_eval
 
+/* Tcl_GetStringResult for tcl7.x or earlier */
+#if TCL_MAJOR_VERSION < 8
+#define Tcl_GetStringResult(interp) ((interp)->result)
+#endif
 
 /* from tkAppInit.c */
 
@@ -2265,12 +2269,8 @@ ip_ruby_eval(clientData, interp, argc, argv)
         sprintf(buf, "%d", argc-1);
         Tcl_AppendResult(interp, "wrong number of arguments (", 
                          buf, " for 1)", (char *)NULL);
-#if TCL_MAJOR_VERSION >= 8
         rbtk_pending_exception = rb_exc_new2(rb_eArgError, 
                                              Tcl_GetStringResult(interp));
-#else
-        rbtk_pending_exception = rb_exc_new2(rb_eArgError, interp->result);
-#endif
         return TCL_ERROR;
 #endif
     }
@@ -2655,12 +2655,8 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 #else
         Tcl_ResetResult(interp);
         Tcl_AppendResult(interp, "too few arguments", (char *)NULL);
-#if TCL_MAJOR_VERSION >= 8
         rbtk_pending_exception = rb_exc_new2(rb_eArgError, 
                                              Tcl_GetStringResult(interp));
-#else
-        rbtk_pending_exception = rb_exc_new2(rb_eArgError, interp->result);
-#endif
         return TCL_ERROR;
 #endif
     }
@@ -2706,12 +2702,8 @@ ip_ruby_cmd(clientData, interp, argc, argv)
         Tcl_ResetResult(interp);
         Tcl_AppendResult(interp, "unknown class/module/global-variable '", 
                          str, "'", (char *)NULL);
-#if TCL_MAJOR_VERSION >= 8
         rbtk_pending_exception = rb_exc_new2(rb_eArgError, 
                                              Tcl_GetStringResult(interp));
-#else
-        rbtk_pending_exception = rb_exc_new2(rb_eArgError, interp->result);
-#endif
         return TCL_ERROR;
 #endif
     }
@@ -2986,12 +2978,8 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
         Tcl_AppendResult(interp, 
                          "fail to call \"", cmd, "\"", (char *)NULL);
 
-#if TCL_MAJOR_VERSION >= 8
         rbtk_pending_exception = rb_exc_new2(rb_eSystemExit, 
                                              Tcl_GetStringResult(interp));
-#else
-        rbtk_pending_exception = rb_exc_new2(rb_eSystemExit, interp->result);
-#endif
         rb_iv_set(rbtk_pending_exception, "status", INT2FIX(0));
 
         return TCL_RETURN;
@@ -3018,12 +3006,8 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
         Tcl_AppendResult(interp, "fail to call \"", cmd, " ", 
                          param, "\"", (char *)NULL);
 
-#if TCL_MAJOR_VERSION >= 8
         rbtk_pending_exception = rb_exc_new2(rb_eSystemExit, 
                                              Tcl_GetStringResult(interp));
-#else
-        rbtk_pending_exception = rb_exc_new2(rb_eSystemExit, interp->result);
-#endif
         rb_iv_set(rbtk_pending_exception, "status", INT2FIX(state));
 
         return TCL_RETURN;
@@ -4948,11 +4932,7 @@ ip_init(argc, argv, self)
     /* from Tcl_AppInit() */
     DUMP1("Tcl_Init");
     if (Tcl_Init(ptr->ip) == TCL_ERROR) {
-#if TCL_MAJOR_VERSION >= 8
         rb_raise(rb_eRuntimeError, "%s", Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-        rb_raise(rb_eRuntimeError, "%s", ptr->ip->result);
-#endif
     }
 
     /* set variables */
@@ -4994,21 +4974,11 @@ ip_init(argc, argv, self)
         case NO_Tk_Init:
             rb_raise(rb_eLoadError, "tcltklib: can't find Tk_Init()");
         case FAIL_Tk_Init:
-#if TCL_MAJOR_VERSION >= 8
             rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_Init(). %s", 
                      Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_Init(). %s", 
-                     ptr->ip->result);
-#endif
         case FAIL_Tk_InitStubs:
-#if TCL_MAJOR_VERSION >= 8
             rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_InitStubs(). %s", 
                      Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            rb_raise(rb_eRuntimeError, "tcltklib: fail to Tk_InitStubs(). %s", 
-                     ptr->ip->result);
-#endif
         default:
             rb_raise(rb_eRuntimeError, "tcltklib: unknown error(%d) on ruby_tk_stubs_init", st);
         }
@@ -5318,11 +5288,7 @@ ip_make_safe_core(interp, argc, argv)
     }
 
     if (Tcl_MakeSafe(ptr->ip) == TCL_ERROR) {
-#if TCL_MAJOR_VERSION >= 8
         return rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-        return rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
     }
 
     ptr->allow_ruby_exit = 0;
@@ -6867,26 +6833,13 @@ ip_invoke_core(interp, argc, argv)
     if (ptr->return_value == TCL_ERROR) {
         if (event_loop_abort_on_exc > 0 && !Tcl_InterpDeleted(ptr->ip)) {
 
-#if TCL_MAJOR_VERSION >= 8
             return create_ip_exc(interp, rb_eRuntimeError, 
                                  "%s", Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            return create_ip_exc(interp, rb_eRuntimeError, 
-                                 "%s", ptr->ip->result);
-#endif
         } else {
             if (event_loop_abort_on_exc < 0) {
-#if TCL_MAJOR_VERSION >= 8
                 rb_warning("%s (ignore)", Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-                rb_warning("%s (ignore)", ptr->ip->result);
-#endif
             } else {
-#if TCL_MAJOR_VERSION >= 8
                 rb_warn("%s (ignore)", Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-                rb_warn("%s (ignore)", ptr->ip->result);
-#endif
             }
             Tcl_ResetResult(ptr->ip);
             return rb_tainted_str_new2("");
@@ -7288,11 +7241,7 @@ ip_get_variable_core(interp, argc, argv)
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
-#if TCL_MAJOR_VERSION >= 8
             exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -7347,11 +7296,7 @@ ip_get_variable_core(interp, argc, argv)
 
         if (ret == (char*)NULL) {
             volatile VALUE exc;
-#if TCL_MAJOR_VERSION >= 8
             exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -7445,11 +7390,7 @@ ip_get_variable2_core(interp, argc, argv)
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
-#if TCL_MAJOR_VERSION >= 8
             exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -7504,11 +7445,7 @@ ip_get_variable2_core(interp, argc, argv)
 
         if (ret == (char*)NULL) {
             volatile VALUE exc;
-#if TCL_MAJOR_VERSION >= 8
             exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -7640,11 +7577,7 @@ ip_set_variable_core(interp, argc, argv)
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
-#if TCL_MAJOR_VERSION >= 8
             exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -7829,11 +7762,7 @@ ip_set_variable2_core(interp, argc, argv)
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
-#if TCL_MAJOR_VERSION >= 8
             exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            exc = rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
             /* Tcl_Release(ptr->ip); */
             rbtk_release_ip(ptr);
             rb_thread_critical = thr_crit_bup;
@@ -7961,11 +7890,7 @@ ip_unset_variable_core(interp, argc, argv)
                                      FIX2INT(flag));
     if (ptr->return_value == TCL_ERROR) {
         if (FIX2INT(flag) & TCL_LEAVE_ERR_MSG) {
-#if TCL_MAJOR_VERSION >= 8
             return rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            return rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
         }
         return Qfalse;
     }
@@ -8024,11 +7949,7 @@ ip_unset_variable2_core(interp, argc, argv)
                                       RSTRING(index)->ptr, FIX2INT(flag));
     if (ptr->return_value == TCL_ERROR) {
         if (FIX2INT(flag) & TCL_LEAVE_ERR_MSG) {
-#if TCL_MAJOR_VERSION >= 8
             return rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-#else /* TCL_MAJOR_VERSION < 8 */
-            return rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-#endif
         }
         return Qfalse;
     }
@@ -8208,11 +8129,7 @@ lib_split_tklist_core(ip_obj, list_str)
             if (interp == (Tcl_Interp*)NULL) {
                 rb_raise(rb_eRuntimeError, "can't get elements from list");
             } else {
-#if TCL_MAJOR_VERSION >= 8
                 rb_raise(rb_eRuntimeError, "%s", Tcl_GetStringResult(interp));
-#else /* TCL_MAJOR_VERSION < 8 */
-                rb_raise(rb_eRuntimeError, "%s", interp->result);
-#endif
             }
         }
 
