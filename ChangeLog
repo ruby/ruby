@@ -1,3 +1,8 @@
+Mon Aug  1 19:02:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/tcltklib.c: refactoring - replaced rb_ivar_defined &
+	  rb_ivar_get with single rb_attr_get call.
+
 Mon Aug  1 18:44:08 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c (Tcl_GetStringResult): refactoring - define
