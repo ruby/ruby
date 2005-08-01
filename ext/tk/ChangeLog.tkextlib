@@ -1,3 +1,7 @@
+2005-08-01  ocean  <ocean@ruby-lang.org>
+
+	* sample/tkextlib/tile/demo.rb: added combobox demo.
+
 2005-07-27  ocean  <ocean@ruby-lang.org>
 
 	* sample/tkextlib/tile/demo.rb: fixed typo.
