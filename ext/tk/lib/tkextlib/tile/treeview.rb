@@ -10,93 +10,124 @@ module Tk
     class Treeview < TkWindow
     end
 
-    module TreeviewItemConfig
+    module TreeviewConfig
       include TkItemConfigMethod
 
       def __item_cget_cmd(id)
-        [self.path, 'item', id]
+        [self.path, id[0], id[1]]
       end
       private :__item_cget_cmd
 
       def __item_config_cmd(id)
-        [self.path, 'item', id]
+        [self.path, id[0], id[1]]
       end
       private :__item_config_cmd
 
       def __item_numstrval_optkeys(id)
-        ['width']
+        case id[0]
+        when :item, 'item'
+          ['width']
+        when :column, 'column'
+          super(id[1])
+        when :heading, 'heading'
+          super(id[1])
+        end
       end
       private :__item_numstrval_optkeys
 
       def __item_strval_optkeys(id)
-        # maybe need to override
-        super(id) + ['id']
+        case id[0]
+        when :item, 'item'
+          super(id) + ['id']
+        when :column, 'column'
+          super(id[1])
+        when :heading, 'heading'
+          super(id[1])
+        end
       end
       private :__item_strval_optkeys
 
       def __item_boolval_optkeys(id)
-        ['open']
+        case id[0]
+        when :item, 'item'
+          ['open']
+        when :column, 'column'
+          super(id[1])
+        when :heading, 'heading'
+          super(id[1])
+        end
       end
       private :__item_boolval_optkeys
 
       def __item_listval_optkeys(id)
-        ['values']
-      end
-      private :__item_listval_optkeys
-    end
-
-    module TreeviewColumnConfig
-      include TkItemConfigMethod
-
-      def __item_cget_cmd(id)
-        [self.path, 'column', id]
-      end
-      private :__item_cget_cmd
-
-      def __item_config_cmd(id)
-        [self.path, 'column', id]
-      end
-      private :__item_config_cmd
-
-      def __item_listval_optkeys(id)
-        []
+        case id[0]
+        when :item, 'item'
+          ['values']
+        when :column, 'column'
+          []
+        when :heading, 'heading'
+          []
+        end
       end
       private :__item_listval_optkeys
 
-      alias columncget itemcget
-      alias columnconfigure itemconfigure
-      alias columnconfiginfo itemconfiginfo
-      alias current_columnconfiginfo current_itemconfiginfo
+      alias __itemcget itemcget
+      alias __itemconfigure itemconfigure
+      alias __itemconfiginfo itemconfiginfo
+      alias __current_itemconfiginfo current_itemconfiginfo
 
-      private :itemcget, :itemconfigure
-      private :itemconfiginfo, :current_itemconfiginfo
-    end
+      private :__itemcget, :__itemconfigure
+      private :__itemconfiginfo, :__current_itemconfiginfo
 
-    module TreeviewHeadingConfig
-      include TkItemConfigMethod
-
-      def __item_cget_cmd(id)
-        [self.path, 'heading', id]
+      # Treeview Item
+      def itemcget(tagOrId, option)
+        __itemcget([:item, tagOrId], option)
       end
-      private :__item_cget_cmd
-
-      def __item_config_cmd(id)
-        [self.path, 'heading', id]
+      def itemconfigure(tagOrId, slot, value=None)
+        __itemconfigure([:item, tagOrId], slot, value)
       end
-      private :__item_config_cmd
-
-      def __item_listval_optkeys(id)
-        []
+      def itemconfiginfo(tagOrId, slot=nil)
+        __itemconfiginfo([:item, tagOrId], slot)
       end
-      private :__item_listval_optkeys
+      def current_itemconfiginfo(tagOrId, slot=nil)
+        __current_itemconfiginfo([:item, tagOrId], slot)
+      end
 
-      alias headingcget itemcget
-      alias headingconfigure itemconfigure
-      alias headingconfiginfo itemconfiginfo
-      alias current_headingconfiginfo current_itemconfiginfo
+      # Treeview Column
+      def columncget(tagOrId, option)
+        __itemcget([:column, tagOrId], option)
+      end
+      def columnconfigure(tagOrId, slot, value=None)
+        __itemconfigure([:column, tagOrId], slot, value)
+      end
+      def columnconfiginfo(tagOrId, slot=nil)
+        __itemconfiginfo([:column, tagOrId], slot)
+      end
+      def current_columnconfiginfo(tagOrId, slot=nil)
+        __current_itemconfiginfo([:column, tagOrId], slot)
+      end
+      alias column_cget columncget
+      alias column_configure columnconfigure
+      alias column_configinfo columnconfiginfo
+      alias current_column_configinfo current_columnconfiginfo
 
-      private :itemcget, :itemconfigure
-      private :itemconfiginfo, :current_itemconfiginfo
+      # Treeview Heading
+      def headingcget(tagOrId, option)
+        __itemcget([:heading, tagOrId], option)
+      end
+      def headingconfigure(tagOrId, slot, value=None)
+        __itemconfigure([:heading, tagOrId], slot, value)
+      end
+      def headingconfiginfo(tagOrId, slot=nil)
+        __itemconfiginfo([:heading, tagOrId], slot)
+      end
+      def current_headingconfiginfo(tagOrId, slot=nil)
+        __current_itemconfiginfo([:heading, tagOrId], slot)
+      end
+      alias heading_cget headingcget
+      alias heading_configure headingconfigure
+      alias heading_configinfo headingconfiginfo
+      alias current_heading_configinfo current_headingconfiginfo
     end
   end
 end
@@ -105,9 +136,7 @@ class Tk::Tile::Treeview < TkWindow
   include Tk::Tile::TileWidget
   include Scrollable
 
-  include Tk::Tile::TreeviewColumnConfig
-  include Tk::Tile::TreeviewHeadingConfig
-  include Tk::Tile::TreeviewItemConfig
+  include Tk::Tile::TreeviewConfig
 
   if Tk::Tile::USE_TTK_NAMESPACE
     TkCommandNames = ['::ttk::treeview'.freeze].freeze
@@ -122,98 +151,119 @@ class Tk::Tile::Treeview < TkWindow
   end
 
   def tagid(id)
-    _get_eval_string(id)
+    if id.kind_of?(Array)
+      [id[0], _get_eval_string(id[1])]
+    else
+      _get_eval_string(id)
+    end
   end
 
   def children(item)
-    list(tk_send_without_enc('children', item))
+    simplelist(tk_send_without_enc('children', item))
   end
-  def children=(item, *items)
-    tk_send_without_enc('children', item, *items)
-    items
+  def set_children(item, *items)
+    tk_send_without_enc('children', item, 
+                        array2tk_list(items.flatten, true))
+    self
   end
 
   def delete(*items)
-    tk_send_without_enc('delete', *items)
+    tk_send_without_enc('delete', array2tk_list(items.flatten, true))
     self
   end
 
   def detach(*items)
-    tk_send_without_enc('detach', *items)
+    tk_send_without_enc('detach', array2tk_list(items.flatten, true))
     self
   end
 
   def exist?(item)
-    bool(tk_send_without_enc('exists', item))
+    bool(tk_send_without_enc('exists', _get_eval_enc_str(item)))
   end
 
   def focus_item(item = None)
-    tk_send_without_enc('focus', item)
+    tk_send('focus', item)
   end
 
   def identify(x, y)
-    tk_send_without_enc('identify', x, y)
+    ret = simplelist(tk_send('identify', x, y))
+    case ret[0]
+    when 'heading', 'separator', 'cell'
+      ret[-1] = num_or_str(ret[-1])
+    end
   end
 
   def index(item)
-    number(tk_send_without_enc('index', item))
+    number(tk_send('index', item))
   end
 
   def insert(parent, idx, keys={})
     keys = _symbolkey2str(keys)
     id = keys.delete('id')
     if id
-      tk_send_without_enc('insert', parent, idx, '-id', id, *hash_kv(keys))
+      tk_send('insert', parent, idx, '-id', id, *hash_kv(keys))
     else
-      tk_send_without_enc('insert', parent, idx, *hash_kv(keys))
+      tk_send('insert', parent, idx, *hash_kv(keys))
     end
     self
   end
 
+  def instate(spec, cmd=Proc.new)
+    tk_send('instate', spec, cmd)
+  end
+  def state(spec=None)
+    tk_send('state', spec)
+  end
+
   def move(item, parent, idx)
-    tk_send_without_enc('move', item, parent, idx)
+    tk_send('move', item, parent, idx)
     self
   end
 
   def next(item)
-    tk_send_without_enc('next', item)
+    tk_send('next', item)
   end
 
   def parent(item)
-    tk_send_without_enc('parent', item)
+    tk_send('parent', item)
   end
 
   def prev(item)
-    tk_send_without_enc('prev', item)
+    tk_send('prev', item)
   end
 
   def see(item)
-    tk_send_without_enc('see', item)
+    tk_send('see', item)
     self
   end
 
+  def selection
+    simplelist(tk_send('selection'))
+  end
+  alias selection_get selection
+
   def selection_add(*items)
-    tk_send_without_enc('selection', 'add', *items)
+    tk_send('selection', 'add', array2tk_list(items.flatten, true))
     self
   end
   def selection_remove(*items)
-    tk_send_without_enc('selection', 'remove', *items)
+    tk_send('selection', 'remove', array2tk_list(items.flatten, true))
     self
   end
   def selection_set(*items)
-    tk_send_without_enc('selection', 'set', *items)
+    tk_send('selection', 'set', array2tk_list(items.flatten, true))
     self
   end
   def selection_toggle(*items)
-    tk_send_without_enc('selection', 'toggle', *items)
+    tk_send('selection', 'toggle', array2tk_list(items.flatten, true))
     self
   end
 
   def get(item, col)
-    tk_send_without_enc('set', item, col)
+    tk_send('set', item, col)
   end
   def set(item, col, value)
-    tk_send_without_enc('set', item, col, value)
+    tk_send('set', item, col, value)
     self
   end
 end
