@@ -1,7 +1,12 @@
+Wed Aug  3 08:22:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): revert [ruby-talk:111654]
+	  changes at 2004-09-07.  [ruby-dev:26656]
+
 Wed Aug  3 06:53:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c (rb_ary_or): wraps the operand in an array if it is not
-	  an array.  [ruby-talk:150495]
+	  an array.  [ruby-talk:150495] [EXPERIMENTAL]
 
 	* array.c (rb_ary_and, rb_ary_plus, rb_ary_diff): ditto.
 
