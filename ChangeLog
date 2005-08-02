@@ -1,3 +1,13 @@
+Tue Aug  2 10:20:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tcltklib/tcltklib.c: use Tcl_[GS]etVar2Ex instead of
+	  Tcl_Obj[GS]etVar2. (avoid Tcl_NewStringObj on supported platforms)
+
+	* ext/tcltklib/tcltklib.c: use ip_{get,set,unset}_variable2_core from
+	  ip_{get,set,unset}_variable.
+
+	* ext/tcltklib/tcltklib.c: replaced Tcl_Panic with rb_bug.
+
 Tue Aug  2 01:41:28 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/ping.rb (Ping.pingecho): should rescue StandardError.

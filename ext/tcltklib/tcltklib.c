@@ -146,6 +146,66 @@ tcl_global_eval(interp, cmd)
 #define Tcl_GetStringResult(interp) ((interp)->result)
 #endif
 
+/* Tcl_[GS]etVar2Ex for tcl8.0 */
+#if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
+static Tcl_Obj *
+Tcl_GetVar2Ex(interp, name1, name2, flags)
+    Tcl_Interp *interp;
+    CONST char *name1;
+    CONST char *name2;
+    int flags;
+{
+    Tcl_Obj *nameObj1, *nameObj2 = NULL, *retObj;
+
+    nameObj1 = Tcl_NewStringObj(name1, -1);
+    Tcl_IncrRefCount(nameObj1);
+
+    if (name2) {
+        nameObj2 = Tcl_NewStringObj(name2, -1);
+        Tcl_IncrRefCount(nameObj2);
+    }
+
+    retObj = Tcl_ObjGetVar2(interp, nameObj1, nameObj2, flags);
+
+    if (name2) {
+        Tcl_DecrRefCount(nameObj2);
+    }
+
+    Tcl_DecrRefCount(nameObj1);
+
+    return retObj;
+}
+
+static Tcl_Obj *
+Tcl_SetVar2Ex(interp, name1, name2, newValObj, flags)
+    Tcl_Interp *interp;
+    CONST char *name1;
+    CONST char *name2;
+    Tcl_Obj *newValObj;
+    int flags;
+{
+    Tcl_Obj *nameObj1, *nameObj2 = NULL, *retObj;
+
+    nameObj1 = Tcl_NewStringObj(name1, -1);
+    Tcl_IncrRefCount(nameObj1);
+
+    if (name2) {
+        nameObj2 = Tcl_NewStringObj(name2, -1);
+        Tcl_IncrRefCount(nameObj2);
+    }
+
+    retObj = Tcl_ObjSetVar2(interp, nameObj1, nameObj2, newValObj, flags);
+
+    if (name2) {
+        Tcl_DecrRefCount(nameObj2);
+    }
+
+    Tcl_DecrRefCount(nameObj1);
+
+    return retObj;
+}
+#endif
+
 /* from tkAppInit.c */
 
 #if TCL_MAJOR_VERSION < 8 || (TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION < 4)
@@ -3079,7 +3139,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
                 break;
             }
             default: {
-                Tcl_Panic("ip_rbUpdateObjCmd: bad option index to UpdateOptions");
+                rb_bug("ip_rbUpdateObjCmd: bad option index to UpdateOptions");
             }
         }
     } else {
@@ -3231,7 +3291,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
                 break;
             }
             default: {
-                Tcl_Panic("ip_rb_threadUpdateObjCmd: bad option index to UpdateOptions");
+                rb_bug("ip_rb_threadUpdateObjCmd: bad option index to UpdateOptions");
             }
         }
     } else {
@@ -7179,148 +7239,6 @@ ip_invoke_immediate(argc, argv, obj)
 
 /* access Tcl variables */
 static VALUE
-ip_get_variable_core(interp, argc, argv)
-    VALUE interp;
-    int   argc;
-    VALUE *argv;
-{
-    struct tcltkip *ptr = get_ip(interp);
-    int thr_crit_bup;
-    volatile VALUE varname, flag;
-
-    varname = argv[0];
-    flag    = argv[1];
-
-    /* StringValue(varname); */
-
-#if TCL_MAJOR_VERSION >= 8
-    {
-        Tcl_Obj *nameobj, *ret;
-        char *s;
-        int  len;
-        volatile VALUE strval;
-
-        thr_crit_bup = rb_thread_critical;
-        rb_thread_critical = Qtrue;
-
-        nameobj = Tcl_NewStringObj(RSTRING(varname)->ptr, 
-                                   RSTRING(varname)->len);
-        Tcl_IncrRefCount(nameobj);
-
-        /* ip is deleted? */
-        if (deleted_ip(ptr)) {
-            Tcl_DecrRefCount(nameobj);
-            rb_thread_critical = thr_crit_bup;
-            return rb_tainted_str_new2("");
-        } else {
-            /* Tcl_Preserve(ptr->ip); */
-            rbtk_preserve_ip(ptr);
-            ret = Tcl_ObjGetVar2(ptr->ip, nameobj, (Tcl_Obj*)NULL, 
-                                 FIX2INT(flag));
-        }
-
-        Tcl_DecrRefCount(nameobj);
-
-        if (ret == (Tcl_Obj*)NULL) {
-            volatile VALUE exc;
-            exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-            /* Tcl_Release(ptr->ip); */
-            rbtk_release_ip(ptr);
-            rb_thread_critical = thr_crit_bup;
-            return exc;
-        }
-
-        Tcl_IncrRefCount(ret);
-
-# if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-        s = Tcl_GetStringFromObj(ret, &len);
-        strval = rb_tainted_str_new(s, len);
-        Tcl_DecrRefCount(ret);
-        /* Tcl_Release(ptr->ip); */
-        rbtk_release_ip(ptr);
-        rb_thread_critical = thr_crit_bup;
-        return(strval);
-
-# else /* TCL_VERSION >= 8.1 */
-        if (Tcl_GetCharLength(ret) 
-            != Tcl_UniCharLen(Tcl_GetUnicode(ret))) {
-            /* possibly binary string */
-            s = Tcl_GetByteArrayFromObj(ret, &len);
-            strval = rb_tainted_str_new(s, len);
-            rb_ivar_set(strval, ID_at_enc, rb_tainted_str_new2("binary"));
-        } else {
-            /* possibly text string */
-            s = Tcl_GetStringFromObj(ret, &len);
-            strval = rb_tainted_str_new(s, len);
-        }
-
-        Tcl_DecrRefCount(ret);
-        /* Tcl_Release(ptr->ip); */
-        rbtk_release_ip(ptr);
-        rb_thread_critical = thr_crit_bup;
-
-        return(strval);
-# endif
-    }
-#else /* TCL_MAJOR_VERSION < 8 */
-    {
-        char *ret;
-
-        /* ip is deleted? */
-        if (deleted_ip(ptr)) {
-            return rb_tainted_str_new2("");
-        } else {
-            /* Tcl_Preserve(ptr->ip); */
-            rbtk_preserve_ip(ptr);
-            ret = Tcl_GetVar2(ptr->ip, RSTRING(varname)->ptr, 
-                              (char*)NULL, FIX2INT(flag));
-        }
-
-        if (ret == (char*)NULL) {
-            volatile VALUE exc;
-            exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-            /* Tcl_Release(ptr->ip); */
-            rbtk_release_ip(ptr);
-            rb_thread_critical = thr_crit_bup;
-            return exc;
-        }
-
-        strval = rb_tainted_str_new2(ret);
-        /* Tcl_Release(ptr->ip); */
-        rbtk_release_ip(ptr);
-        rb_thread_critical = thr_crit_bup;
-
-        return(strval);
-    }
-#endif
-}
-
-static VALUE
-ip_get_variable(self, varname, flag)
-    VALUE self;
-    VALUE varname;
-    VALUE flag;
-{
-    VALUE *argv;
-    VALUE retval;
-
-    argv = ALLOC_N(VALUE, 2);
-    StringValue(varname);
-    argv[0] = varname;
-    argv[1] = flag;
-
-    retval = tk_funcall(ip_get_variable_core, 2, argv, self);
-
-    free(argv);
-
-    if (NIL_P(retval)) {
-        return rb_tainted_str_new2("");
-    } else {
-        return retval;
-    }
-}
-
-static VALUE
 ip_get_variable2_core(interp, argc, argv)
     VALUE interp;
     int   argc;
@@ -7336,12 +7254,12 @@ ip_get_variable2_core(interp, argc, argv)
 
     /* 
     StringValue(varname);
-    StringValue(index);
+    if (!NIL_P(index)) StringValue(index);
     */
 
 #if TCL_MAJOR_VERSION >= 8
     {
-        Tcl_Obj *nameobj, *idxobj, *ret;
+        Tcl_Obj *ret;
         char *s;
         int  len;
         volatile VALUE strval;
@@ -7349,26 +7267,17 @@ ip_get_variable2_core(interp, argc, argv)
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
 
-        nameobj = Tcl_NewStringObj(RSTRING(varname)->ptr, 
-                                   RSTRING(varname)->len);
-        Tcl_IncrRefCount(nameobj);
-        idxobj  = Tcl_NewStringObj(RSTRING(index)->ptr, RSTRING(index)->len);
-        Tcl_IncrRefCount(idxobj);
-
         /* ip is deleted? */
         if (deleted_ip(ptr)) {
-            Tcl_DecrRefCount(nameobj);
-            Tcl_DecrRefCount(idxobj);
             rb_thread_critical = thr_crit_bup;
             return rb_tainted_str_new2("");
         } else {
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
-            ret = Tcl_ObjGetVar2(ptr->ip, nameobj, idxobj, FIX2INT(flag));
+            ret = Tcl_GetVar2Ex(ptr->ip, RSTRING(varname)->ptr,
+                                NIL_P(index) ? NULL : RSTRING(index)->ptr,
+                                FIX2INT(flag));
         }
-
-        Tcl_DecrRefCount(nameobj);
-        Tcl_DecrRefCount(idxobj);
 
         if (ret == (Tcl_Obj*)NULL) {
             volatile VALUE exc;
@@ -7422,7 +7331,8 @@ ip_get_variable2_core(interp, argc, argv)
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
             ret = Tcl_GetVar2(ptr->ip, RSTRING(varname)->ptr, 
-                              RSTRING(index)->ptr, FIX2INT(flag));
+                              NIL_P(index) ? NULL : RSTRING(index)->ptr,
+                              FIX2INT(flag));
         }
 
         if (ret == (char*)NULL) {
@@ -7454,194 +7364,15 @@ ip_get_variable2(self, varname, index, flag)
     VALUE *argv;
     VALUE retval;
 
-    argv = ALLOC_N(VALUE, 3);
     StringValue(varname);
-    argv[0] = varname;
-
-    if (NIL_P(index)) {
-        argv[1] = flag;
-        retval = tk_funcall(ip_get_variable_core, 2, argv, self);
-    } else {
-        StringValue(index);
-        argv[1] = index;
-        argv[2] = flag;
-        retval = tk_funcall(ip_get_variable2_core, 3, argv, self);
-    }
-
-    free(argv);
-
-    if (NIL_P(retval)) {
-        return rb_tainted_str_new2("");
-    } else {
-        return retval;
-    }
-}
-
-static VALUE
-ip_set_variable_core(interp, argc, argv)
-    VALUE interp;
-    int   argc;
-    VALUE *argv;
-{
-    struct tcltkip *ptr = get_ip(interp);
-    int thr_crit_bup;
-    volatile VALUE varname, value, flag;
-
-    varname = argv[0];
-    value   = argv[1];
-    flag    = argv[2];
-
-    /*
-    StringValue(varname);
-    StringValue(value);
-    */
-
-#if TCL_MAJOR_VERSION >= 8
-    {
-        Tcl_Obj *nameobj, *valobj, *ret;
-        char *s;
-        int  len;
-        volatile VALUE strval;
-
-        thr_crit_bup = rb_thread_critical;
-        rb_thread_critical = Qtrue;
-
-        nameobj = Tcl_NewStringObj(RSTRING(varname)->ptr, 
-                                   RSTRING(varname)->len);
-
-        Tcl_IncrRefCount(nameobj);
-
-# if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-        valobj  = Tcl_NewStringObj(RSTRING(value)->ptr, 
-                                   RSTRING(value)->len); 
-        Tcl_IncrRefCount(valobj);
-# else /* TCL_VERSION >= 8.1 */
-        {
-            volatile VALUE enc = rb_attr_get(value, ID_at_enc);
-
-            if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
-                /* binary string */
-                valobj = Tcl_NewByteArrayObj(RSTRING(value)->ptr, 
-                                             RSTRING(value)->len);
-            } else if (strlen(RSTRING(value)->ptr) != RSTRING(value)->len) {
-                /* probably binary string */
-                valobj = Tcl_NewByteArrayObj(RSTRING(value)->ptr, 
-                                             RSTRING(value)->len);
-            } else {
-                /* probably text string */
-                valobj = Tcl_NewStringObj(RSTRING(value)->ptr, 
-                                          RSTRING(value)->len); 
-            }
-
-            Tcl_IncrRefCount(valobj);
-        }
-# endif
-
-        /* ip is deleted? */
-        if (deleted_ip(ptr)) {
-            Tcl_DecrRefCount(nameobj);
-            Tcl_DecrRefCount(valobj);
-            rb_thread_critical = thr_crit_bup;
-            return rb_tainted_str_new2("");
-        } else {
-            /* Tcl_Preserve(ptr->ip); */
-            rbtk_preserve_ip(ptr);
-            ret = Tcl_ObjSetVar2(ptr->ip, nameobj, (Tcl_Obj*)NULL, valobj, 
-                                 FIX2INT(flag));
-        }
-
-        Tcl_DecrRefCount(nameobj);
-        Tcl_DecrRefCount(valobj);
-
-        if (ret == (Tcl_Obj*)NULL) {
-            volatile VALUE exc;
-            exc = rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-            /* Tcl_Release(ptr->ip); */
-            rbtk_release_ip(ptr);
-            rb_thread_critical = thr_crit_bup;
-            return exc;
-        }
-
-        Tcl_IncrRefCount(ret);
-
-# if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-        s = Tcl_GetStringFromObj(ret, &len); 
-        strval = rb_tainted_str_new(s, len);
-# else /* TCL_VERSION >= 8.1 */
-        {
-            VALUE old_gc;
-
-            old_gc = rb_gc_disable();
-
-            if (Tcl_GetCharLength(ret) != Tcl_UniCharLen(Tcl_GetUnicode(ret))) {
-                /* possibly binary string */
-                s = Tcl_GetByteArrayFromObj(ret, &len);
-                strval = rb_tainted_str_new(s, len);
-                rb_ivar_set(strval, ID_at_enc, rb_str_new2("binary"));
-            } else {
-                /* possibly text string */
-                s = Tcl_GetStringFromObj(ret, &len);
-                strval = rb_tainted_str_new(s, len);
-            }
-            if (old_gc == Qfalse) rb_gc_enable();
-        }
-# endif
-
-        Tcl_DecrRefCount(ret);
-
-        /* Tcl_Release(ptr->ip); */
-        rbtk_release_ip(ptr);
-        rb_thread_critical = thr_crit_bup;
-
-        return(strval);
-    }
-#else /* TCL_MAJOR_VERSION < 8 */
-    {
-        CONST char *ret;
-
-        /* ip is deleted? */
-        if (deleted_ip(ptr)) {
-            return rb_tainted_str_new2("");
-        } else {
-            /* Tcl_Preserve(ptr->ip); */
-            rbtk_preserve_ip(ptr);
-            ret = Tcl_SetVar2(ptr->ip, RSTRING(varname)->ptr, (char*)NULL, 
-                              RSTRING(value)->ptr, (int)FIX2INT(flag));
-        }
-
-        if (ret == NULL) {
-            return rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
-        }
-
-        strval = rb_tainted_str_new2(ret);
-        /* Tcl_Release(ptr->ip); */
-        rbtk_release_ip(ptr);
-        rb_thread_critical = thr_crit_bup;
-
-        return(strval);
-    }
-#endif
-}
-
-static VALUE
-ip_set_variable(self, varname, value, flag)
-    VALUE self;
-    VALUE varname;
-    VALUE value;
-    VALUE flag;
-{
-    VALUE *argv;
-    VALUE retval;
-
-    StringValue(varname);
-    StringValue(value);
+    if (!NIL_P(index)) StringValue(index);
 
     argv = ALLOC_N(VALUE, 3);
     argv[0] = varname;
-    argv[1] = value;
+    argv[1] = index;
     argv[2] = flag;
 
-    retval = tk_funcall(ip_set_variable_core, 3, argv, self);
+    retval = tk_funcall(ip_get_variable2_core, 3, argv, self);
 
     free(argv);
 
@@ -7650,6 +7381,15 @@ ip_set_variable(self, varname, value, flag)
     } else {
         return retval;
     }
+}
+
+static VALUE
+ip_get_variable(self, varname, flag)
+    VALUE self;
+    VALUE varname;
+    VALUE flag;
+{
+    return ip_get_variable2(self, varname, Qnil, flag);
 }
 
 static VALUE
@@ -7669,27 +7409,19 @@ ip_set_variable2_core(interp, argc, argv)
 
     /*
     StringValue(varname);
-    StringValue(index);
+    if (!NIL_P(index)) StringValue(index);
     StringValue(value);
     */
 
 #if TCL_MAJOR_VERSION >= 8
     {
-        Tcl_Obj *nameobj, *idxobj, *valobj, *ret;
+        Tcl_Obj *valobj, *ret;
         char *s;
         int  len;
         volatile VALUE strval;
 
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
-
-        nameobj = Tcl_NewStringObj(RSTRING(varname)->ptr, 
-                                   RSTRING(varname)->len);
-        Tcl_IncrRefCount(nameobj);
-
-        idxobj  = Tcl_NewStringObj(RSTRING(index)->ptr, 
-                                   RSTRING(index)->len);
-        Tcl_IncrRefCount(idxobj);
 
 # if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
         valobj  = Tcl_NewStringObj(RSTRING(value)->ptr, 
@@ -7718,20 +7450,17 @@ ip_set_variable2_core(interp, argc, argv)
 
         /* ip is deleted? */
         if (deleted_ip(ptr)) {
-            Tcl_DecrRefCount(nameobj);
-            Tcl_DecrRefCount(idxobj);
             Tcl_DecrRefCount(valobj);
             rb_thread_critical = thr_crit_bup;
             return rb_tainted_str_new2("");
         } else {
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
-            ret = Tcl_ObjSetVar2(ptr->ip, nameobj, idxobj, valobj, 
-                                 FIX2INT(flag));
+            ret = Tcl_SetVar2Ex(ptr->ip, RSTRING(varname)->ptr,
+                                NIL_P(index) ? NULL : RSTRING(index)->ptr,
+                                valobj, FIX2INT(flag));
         }
 
-        Tcl_DecrRefCount(nameobj);
-        Tcl_DecrRefCount(idxobj);
         Tcl_DecrRefCount(valobj);
 
         if (ret == (Tcl_Obj*)NULL) {
@@ -7779,7 +7508,7 @@ ip_set_variable2_core(interp, argc, argv)
             /* Tcl_Preserve(ptr->ip); */
             rbtk_preserve_ip(ptr);
             ret = Tcl_SetVar2(ptr->ip, RSTRING(varname)->ptr, 
-                              RSTRING(index)->ptr, 
+                              NIL_P(index) ? NULL : RSTRING(index)->ptr, 
                               RSTRING(value)->ptr, FIX2INT(flag));
         }
 
@@ -7812,23 +7541,17 @@ ip_set_variable2(self, varname, index, value, flag)
     VALUE *argv;
     VALUE retval;
 
-    argv = ALLOC_N(VALUE, 4);
     StringValue(varname);
-    argv[0] = varname;
+    if (!NIL_P(index)) StringValue(index);
+    StringValue(value);
 
-    if (NIL_P(index)) {
-        StringValue(value);
-        argv[1] = value;
-        argv[2] = flag;
-        retval = tk_funcall(ip_set_variable_core, 3, argv, self);
-    } else {
-        StringValue(index);
-        StringValue(value);
-        argv[1] = index;
-        argv[2] = value;
-        argv[3] = flag;
-        retval = tk_funcall(ip_set_variable2_core, 4, argv, self);
-    }
+    argv = ALLOC_N(VALUE, 4);
+    argv[0] = varname;
+    argv[1] = index;
+    argv[2] = value;
+    argv[3] = flag;
+
+    retval = tk_funcall(ip_set_variable2_core, 4, argv, self);
 
     free(argv);
 
@@ -7840,60 +7563,13 @@ ip_set_variable2(self, varname, index, value, flag)
 }
 
 static VALUE
-ip_unset_variable_core(interp, argc, argv)
-    VALUE interp;
-    int   argc;
-    VALUE *argv;
-{
-    struct tcltkip *ptr = get_ip(interp);
-    volatile VALUE varname, flag;
-
-    varname = argv[0];
-    flag    = argv[1];
-
-    /*
-    StringValue(varname);
-    */
-
-    /* ip is deleted? */
-    if (deleted_ip(ptr)) {
-        return Qtrue;
-    }
-
-    ptr->return_value = Tcl_UnsetVar(ptr->ip, RSTRING(varname)->ptr, 
-                                     FIX2INT(flag));
-    if (ptr->return_value == TCL_ERROR) {
-        if (FIX2INT(flag) & TCL_LEAVE_ERR_MSG) {
-            return rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
-        }
-        return Qfalse;
-    }
-    return Qtrue;
-}
-
-static VALUE
-ip_unset_variable(self, varname, flag)
+ip_set_variable(self, varname, value, flag)
     VALUE self;
     VALUE varname;
+    VALUE value;
     VALUE flag;
 {
-    VALUE *argv;
-    VALUE retval;
-
-    argv = ALLOC_N(VALUE, 2);
-    StringValue(varname);
-    argv[0] = varname;
-    argv[1] = flag;
-
-    retval = tk_funcall(ip_unset_variable_core, 2, argv, self);
-
-    free(argv);
-
-    if (NIL_P(retval)) {
-        return rb_tainted_str_new2("");
-    } else {
-        return retval;
-    }
+    return ip_set_variable2(self, varname, Qnil, value, flag);
 }
 
 static VALUE
@@ -7911,7 +7587,7 @@ ip_unset_variable2_core(interp, argc, argv)
 
     /* 
     StringValue(varname);
-    StringValue(index);
+    if (!NIL_P(index)) StringValue(index);
     */
 
     /* ip is deleted? */
@@ -7920,7 +7596,9 @@ ip_unset_variable2_core(interp, argc, argv)
     }
 
     ptr->return_value = Tcl_UnsetVar2(ptr->ip, RSTRING(varname)->ptr, 
-                                      RSTRING(index)->ptr, FIX2INT(flag));
+                                      NIL_P(index) ? NULL : RSTRING(index)->ptr,
+                                      FIX2INT(flag));
+
     if (ptr->return_value == TCL_ERROR) {
         if (FIX2INT(flag) & TCL_LEAVE_ERR_MSG) {
             return rb_exc_new2(rb_eRuntimeError, Tcl_GetStringResult(ptr->ip));
@@ -7940,19 +7618,15 @@ ip_unset_variable2(self, varname, index, flag)
     VALUE *argv;
     VALUE retval;
 
-    argv = ALLOC_N(VALUE, 3);
     StringValue(varname);
-    argv[0] = varname;
+    if (!NIL_P(index)) StringValue(index);
 
-    if (NIL_P(index)) {
-        argv[1] = flag;
-        retval = tk_funcall(ip_unset_variable_core, 2, argv, self);
-    } else {
-        StringValue(index);
-        argv[1] = index;
-        argv[2] = flag;
-        retval = tk_funcall(ip_unset_variable2_core, 3, argv, self);
-    }
+    argv = ALLOC_N(VALUE, 3);
+    argv[0] = varname;
+    argv[1] = index;
+    argv[2] = flag;
+
+    retval = tk_funcall(ip_unset_variable2_core, 3, argv, self);
 
     free(argv);
 
@@ -7961,6 +7635,15 @@ ip_unset_variable2(self, varname, index, flag)
     } else {
         return retval;
     }
+}
+
+static VALUE
+ip_unset_variable(self, varname, flag)
+    VALUE self;
+    VALUE varname;
+    VALUE flag;
+{
+    return ip_unset_variable2(self, varname, Qnil, flag);
 }
 
 static VALUE
