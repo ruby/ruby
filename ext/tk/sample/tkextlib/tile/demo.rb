@@ -10,6 +10,7 @@ Tk::AUTO_PATH.lappend('.', demodir, File.join(demodir, 'themes'))
 require 'tkextlib/tile'
 
 Tk.load_tclscript(File.join(demodir, 'toolbutton.tcl'))
+Tk.load_tclscript(File.join(demodir, 'repeater.tcl'))
 
 # This forces an update of the available packages list. It's required
 # for package names to find the themes in demos/themes/*.tcl
@@ -307,10 +308,6 @@ def makeNotebook
   nb.add(tree, :text=>'Tree')
   others = Tk::Tile::TFrame.new(nb)
   nb.add(others, :text=>'Others', :underline=>4)
-  nb.add(Tk::Tile::TLabel.new(nb, :text=>'Nothing to see here...'), 
-         :text=>'Stuff', :sticky=>:new)
-  nb.add(Tk::Tile::TLabel.new(nb, :text=>'Nothing to see here either.'), 
-         :text=>'More Stuff', :sticky=>:se)
 
   [nb, client, combo, tree, others]
 end
@@ -624,7 +621,11 @@ showDescription.bind('Leave', proc{|w| msg.text('')}, '%W')
     "Shows how Tile and standard scrollbars differ when they're sized too large" ], 
 
   [ :trackFocus, "Track keyboard focus..." , 
-    "Display the name of the widget that currently has focus" ]
+    "Display the name of the widget that currently has focus" ],
+
+  [ :repeatDemo, "Repeating buttons...",
+    "Demonstrates custom classes (see demos/repeater.tcl)" ]
+
 ].each{|demo_cmd, label, description|
   b = Tk::Tile::TButton.new(others, :text=>label, 
                             :command=>proc{ self.__send__(demo_cmd) })
@@ -722,7 +723,6 @@ end
 #
 # Widget state demo:
 #
-
 $Widget = TkVariable.new
 
 TkBindTag::ALL.bind('Control-Shift-ButtonPress-1', 
@@ -806,6 +806,34 @@ def changeState(st)
       $Widget.window.state("!#{st}")
     end
   end
+end
+
+#
+# Repeating buttons demo:
+#
+def repeatDemo
+  if defined?($repeatDemo) && $repeatDemo.exist?
+    $repeatDemo.deiconify; return
+  end
+  $repeatDemo = TkToplevel.new(:title=>'Repeating button')
+
+  f = Tk::Tile::TFrame.new($repeatDemo)
+  b = Tk::Tile::TButton.new(f, :class=>'Repeater', :text=>'Press and hold')
+  begin
+    p = Tk::Tile::TProgressbar.new(f, :orient=>:horizontal, :maximum=>10)
+  rescue # progressbar is not supported (tile 0.4)
+    p = Tk::Tile::TLabel.new(f, :text=>0)
+    def p.step
+      i = self.text.to_i + 1
+      i = 0 if i >= 10
+      self.text(i.to_s)
+    end
+  end
+  b.command {p.step}
+
+  b.pack(:side=>:left, :expand=>false, :fill=>:none, :padx=>6, :pady=>6)
+  p.pack(:side=>:right, :expand=>true, :fill=>:x, :padx=>6, :pady=>6)
+  f.pack(:expand=>true, :fill=>:both)
 end
 
 Tk.mainloop
