@@ -14,7 +14,10 @@ Tk.load_tclscript(File.join(demodir, 'repeater.tcl'))
 
 # This forces an update of the available packages list. It's required
 # for package names to find the themes in demos/themes/*.tcl
-Tk.tk_call(TkPackage.unknown_proc, 'Tcl', TkPackage.provide('Tcl'))
+## Tk.tk_call(TkPackage.unknown_proc, 'Tcl', TkPackage.provide('Tcl'))
+##  --> This doesn't work. 
+##      Because, unknown_proc may be "command + some arguments".
+Tk.ip_eval("#{TkPackage.unknown_proc}  Tcl #{TkPackage.provide('Tcl')}")
 
 TkRoot.new{
   title 'Tile demo'
@@ -574,8 +577,8 @@ if TkPackage.vcompare(Tk::Tile.package_version, '0.5') >= 0
   # Later nodes will be added in <<TreeviewOpen>> binding.
   treeview.insert('', 0, :id=>'.', :text=>'Main Window', :open=>false,
       :values=>[TkWinfo.classname('.')])
-  Tk.tk_call(treeview, 'heading', '#0', :text=>'Widget')
-  Tk.tk_call(treeview, 'heading', 'Class', :text=>'Class')
+  treeview.headingconfigure('#0', :text=>'Widget')
+  treeview.headingconfigure('Class', :text=>'Class')
   treeview.bind('<TreeviewOpen>', proc{fillTree(treeview)})
 
   def fillTree(treeview)

@@ -1,4 +1,11 @@
-2005-08-01  ocean  <ocean@ruby-lang.org>
+2005-08-03  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/tile/treeview.rb: Tk::Tile::Treeview#headingconfigure
+	  is now working and more. [ruby-dev:26716]
+
+	* sample/tkextlib/tile/demo.rb: use Tk::Tile::Treeview#headingconfigure 	  instead of direct Tk.tk_call.
+
+2005-08-02  ocean  <ocean@ruby-lang.org>
 
 	* lib/tkextlib/tile/tprogressbar.rb: Tk::Tile::TProgressbar#start
 	  takes optional argument `interval'.
@@ -6,7 +13,7 @@
 	* sample/tkextlib/tile/demo.rb: emulate Tk::Tile::TProgressbar
 	  with Tk::Tile::TProgress in tile 0.4. (repeating buttons demo)
 
-2005-08-01  ocean  <ocean@ruby-lang.org>
+2005-08-02  ocean  <ocean@ruby-lang.org>
 
 	* sample/tkextlib/tile/demo.rb: added repeating buttons demo.
 
