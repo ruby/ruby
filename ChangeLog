@@ -1,3 +1,10 @@
+Wed Aug  3 06:53:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c (rb_ary_or): wraps the operand in an array if it is not
+	  an array.  [ruby-talk:150495]
+
+	* array.c (rb_ary_and, rb_ary_plus, rb_ary_diff): ditto.
+
 Tue Aug  2 10:23:12 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c: use Tcl_[GS]etVar2Ex instead of

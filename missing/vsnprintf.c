@@ -789,6 +789,7 @@ fp_begin:		_double = va_arg(ap, double);
 			 * defined manner.''
 			 *	-- ANSI X3J11
 			 */
+		        prec = sizeof(void*)*CHAR_BIT/4;
 #ifdef _HAVE_LLP64_
 			uqval = (u_long)va_arg(ap, void *);
 			flags = (flags) | QUADINT | HEXPREFIX;
