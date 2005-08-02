@@ -34,8 +34,8 @@ class Tk::Tile::TProgressbar
     tk_send_without_enc('step', amount)
   end
 
-  def start
-    tk_call_without_enc('::tile::progressbar::start', @path)
+  def start(interval=None)
+    tk_call_without_enc('::tile::progressbar::start', @path, interval)
   end
 
   def stop
