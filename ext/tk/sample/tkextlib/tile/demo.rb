@@ -822,11 +822,11 @@ def repeatDemo
   begin
     p = Tk::Tile::TProgressbar.new(f, :orient=>:horizontal, :maximum=>10)
   rescue # progressbar is not supported (tile 0.4)
-    p = Tk::Tile::TLabel.new(f, :text=>0)
+    p = Tk::Tile::TProgress.new(f, :orient=>:horizontal, :from=>0, :to=>10)
     def p.step
-      i = self.text.to_i + 1
-      i = 0 if i >= 10
-      self.text(i.to_s)
+      i = self.get + 1
+      i = self.from if i > self.to
+      self.set(i)
     end
   end
   b.command {p.step}

@@ -1,5 +1,13 @@
 2005-08-01  ocean  <ocean@ruby-lang.org>
 
+	* lib/tkextlib/tile/tprogressbar.rb: Tk::Tile::TProgressbar#start
+	  takes optional argument `interval'.
+
+	* sample/tkextlib/tile/demo.rb: emulate Tk::Tile::TProgressbar
+	  with Tk::Tile::TProgress in tile 0.4. (repeating buttons demo)
+
+2005-08-01  ocean  <ocean@ruby-lang.org>
+
 	* sample/tkextlib/tile/demo.rb: added repeating buttons demo.
 
 	* sample/tkextlib/tile/repeater.tcl: ditto. (new file)
