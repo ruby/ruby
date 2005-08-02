@@ -1,3 +1,8 @@
+Wed Aug  3 08:22:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/socket/socket.c (ruby_connect): revert [ruby-talk:111654]
+	  changes at 2004-09-07.  [ruby-dev:26656]
+
 Tue Aug  2 10:20:54 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tcltklib/tcltklib.c: use Tcl_[GS]etVar2Ex instead of
