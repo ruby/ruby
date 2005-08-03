@@ -1,3 +1,8 @@
+Thu Aug  4 08:03:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb (extmake): should not modify $mflags for each
+	  extentions.
+
 Thu Aug  4 00:25:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* common.mk, Makefile.in, {bcc32,win32,wince}/Makefile.sub: integrated

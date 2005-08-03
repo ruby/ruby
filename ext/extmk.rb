@@ -158,7 +158,7 @@ def extmake(target)
     end
     args = sysquote($mflags)
     unless $destdir.to_s.empty? or $mflags.include?("DESTDIR")
-      args << sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))
+      args += sysquote("DESTDIR=" + relative_from($destdir, "../"+prefix))
     end
     if $static
       args += ["static"] unless $clean
@@ -429,7 +429,7 @@ SRC
   $extpath.delete("$(topdir)")
   $extflags = libpathflag($extpath) << " " << $extflags.strip
   conf = [
-    ['SETUP', $setup], [$enable_shared ? 'DLDOBJS' : 'EXTOBJS', $extobjs],
+    ['SETUP', $setup], [$enable_shared && !$force_static ? 'DLDOBJS' : 'EXTOBJS', $extobjs],
     ['EXTLIBS', $extlibs.join(' ')], ['EXTLDFLAGS', $extflags]
   ].map {|n, v|
     "#{n}=#{v}" if v and !(v = v.strip).empty?
@@ -456,6 +456,9 @@ puts "making #{rubies.join(', ')}"
 $stdout.flush
 $mflags.concat(rubies)
 
+if $nmake == ?b
+  $mflags.collect {|flag| flag.sub!(/\A(?=\w+=)/, "-D")}
+end
 system($make, *sysquote($mflags)) or exit($?.exitstatus)
 
 #Local variables:
