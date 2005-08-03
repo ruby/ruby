@@ -1,3 +1,7 @@
+Thu Aug  4 00:24:59 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* sprintf.c: replacing is no longer needed.
+
 Wed Aug  3 21:59:16 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: TkVariable#trace didn't work on

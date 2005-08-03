@@ -849,8 +849,6 @@ fmt_setup(buf, c, flags, width, prec)
 #endif
 #undef vsnprintf
 #undef snprintf
-#define vsnprintf ruby_vsnprintf
-#define snprintf ruby_snprintf
 #include "missing/vsnprintf.c"
 
 static int
