@@ -168,7 +168,6 @@ LIBRUBYARG    = $(LIBRUBY)
 
 PREP          = miniruby$(EXEEXT)
 
-DMYOBJS       = dmyext.obj
 OBJEXT        = obj
 
 WINMAINOBJ    = winmain.$(OBJEXT)
@@ -416,16 +415,16 @@ $(PROGRAM):	$(MAINOBJ) $(LIBRUBY_SO) $(RUBY_INSTALL_NAME).res
 $(WPROGRAM):	$(MAINOBJ) $(WINMAINOBJ) $(LIBRUBY_SO) $(RUBYW_INSTALL_NAME).res
 		$(LD) $(LDFLAGS) $(WLDFLAGS) $(MAINOBJ) $(WINMAINOBJ),$@,nul,$(LIBRUBYARG) $(LIBS),,$(RUBYW_INSTALL_NAME).res
 
-$(LIBRUBY_A):	$(OBJS) dmyext.obj
+$(LIBRUBY_A):	$(OBJS) $(DMYEXT)
 		@-if exist $@ del $@
-		$(AR) $(ARFLAGS) "$@" $(OBJS) dmyext.obj
+		$(AR) $(ARFLAGS) "$@" $(OBJS) $(DMYEXT)
 
 # $(LIBRUBY):	$(LIBRUBY_SO)
 #		implib $@ $(LIBRUBY_SO)
 
-$(LIBRUBY_SO): $(LIBRUBY_A) $(EXTOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
-		@echo $(EXTOBJS)
-		$(LIBRUBY_LDSHARED) $(LIBRUBY_DLDFLAGS) $(EXTOBJS:/=\),$(LIBRUBY_SO),nul,$(LIBRUBY_A) $(LIBS),$(RUBYDEF),$(RUBY_SO_NAME).res
+$(LIBRUBY_SO): $(LIBRUBY_A) $(DLDOBJS) $(RUBYDEF) $(RUBY_SO_NAME).res
+		@echo $(DLDOBJS)
+		$(LIBRUBY_LDSHARED) $(LIBRUBY_DLDFLAGS) $(DLDOBJS:/=\),$(LIBRUBY_SO),nul,$(LIBRUBY_A) $(LIBS),$(RUBYDEF),$(RUBY_SO_NAME).res
 
 $(LIBRUBY): $(LIBRUBY_SO)
 

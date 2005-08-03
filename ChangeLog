@@ -1,3 +1,12 @@
+Thu Aug  4 00:25:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, Makefile.in, {bcc32,win32,wince}/Makefile.sub: integrated
+	  macro definitions.
+
+	* bcc32/Makefile.sub: LIBRUBY_SO should use DLDOBJS, not EXTOBJS.
+
+	* {win32,wince}/Makefile.sub: separate config.h for compiler versions.
+
 Thu Aug  4 00:24:59 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* sprintf.c: replacing is no longer needed.

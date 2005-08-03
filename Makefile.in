@@ -78,12 +78,6 @@ ARFLAGS       = rcu
 RANLIB        = @RANLIB@
 
 OBJEXT        = @OBJEXT@
-
-EXTOBJS	      = 
-DLDOBJS	      = $(DMYEXT)
-
-MAINOBJ	      = main.$(OBJEXT)
-
 MANTYPE	      = @MANTYPE@
 
 #### End of variables
