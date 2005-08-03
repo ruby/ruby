@@ -1,3 +1,14 @@
+Wed Aug  3 12:40:28 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
+
+	* numeric.c (fix_minus, fix_mul, fix_quo, fix_div, fix_mod,
+	  fix_divmod, fix_pow): ditto.
+
+	* numeric.c (fix_plus): reduce coercing when a method knows about
+	  a operand type.  [ruby-dev:26723]
+
+	* bignum.c (rb_big_div, rb_big_modulo): export to reduce
+	  coercing.
+
 Wed Aug  3 10:13:52 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* configure.in, {bcc32,win32,wince}/Makefile.sub (HAVE_SNPRINTF,

@@ -1424,7 +1424,7 @@ bigdivmod(x, y, divp, modp)
  *  Divides big by other, returning the result.
  */
 
-static VALUE
+VALUE
 rb_big_div(x, y)
     VALUE x, y;
 {
@@ -1458,7 +1458,7 @@ rb_big_div(x, y)
  *  information.
  */
 
-static VALUE
+VALUE
 rb_big_modulo(x, y)
     VALUE x, y;
 {

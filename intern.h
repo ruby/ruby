@@ -98,6 +98,8 @@ double rb_big2dbl _((VALUE));
 VALUE rb_big_plus _((VALUE, VALUE));
 VALUE rb_big_minus _((VALUE, VALUE));
 VALUE rb_big_mul _((VALUE, VALUE));
+VALUE rb_big_div _((VALUE, VALUE));
+VALUE rb_big_modulo _((VALUE, VALUE));
 VALUE rb_big_divmod _((VALUE, VALUE));
 VALUE rb_big_pow _((VALUE, VALUE));
 VALUE rb_big_and _((VALUE, VALUE));
