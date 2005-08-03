@@ -1,3 +1,8 @@
+Wed Aug  3 21:59:16 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/variable.rb: TkVariable#trace didn't work on
+	  TkVariable retrived from TkVariable.new_hash.ref. [ruby-dev:26721]
+
 Wed Aug  3 12:40:28 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
 
 	* numeric.c (fix_minus, fix_mul, fix_quo, fix_div, fix_mod,

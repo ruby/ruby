@@ -41,13 +41,13 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
   EOL
 
   #def TkVariable.callback(args)
-  def TkVariable.callback(name1, name2, op)
+  def TkVariable.callback(id, name1, name2, op)
     #name1,name2,op = tk_split_list(args)
     #name1,name2,op = tk_split_simplelist(args)
-    if TkVar_CB_TBL[name1]
+    if TkVar_CB_TBL[id]
       #_get_eval_string(TkVar_CB_TBL[name1].trace_callback(name2,op))
       begin
-        _get_eval_string(TkVar_CB_TBL[name1].trace_callback(name2, op))
+        _get_eval_string(TkVar_CB_TBL[id].trace_callback(name2, op))
       rescue SystemExit
         exit(0)
       rescue Interrupt
@@ -269,6 +269,9 @@ TkCore::INTERP.add_tk_procs('rb_var', 'args', <<-'EOL')
     @id = Tk_VARIABLE_ID.join(TkCore::INTERP._ip_id_)
     Tk_VARIABLE_ID[1].succ!
     TkVar_ID_TBL[@id] = self
+
+    @var  = @id
+    @elem = nil
 
     @def_default = false
     @default_val = nil
@@ -805,6 +808,7 @@ end
   end
 
   def variable
+    # keeps a Tcl's variable name
     TkVarAccess.new(self._value)
   end
   def variable_element(*idxs)
@@ -1264,12 +1268,14 @@ end
   def trace(opts, cmd = Proc.new)
     @trace_var = [] if @trace_var == nil
     #opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
-    opts = ['r','w','u'].find_all{|c| opts.to_s.index(c)}.join('')
+    opts = opts.to_s
+    opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
     @trace_var.unshift([opts,cmd])
     if @trace_opts == nil
       TkVar_CB_TBL[@id] = self
       @trace_opts = opts.dup
-      Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 'rb_var')
+      Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 
+                             'rb_var ' << @id)
 =begin
       if /^(8\.([4-9]|[1-9][0-9])|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION
         # TCL_VERSION >= 8.4
@@ -1285,9 +1291,11 @@ end
       #opts.each_byte{|c| newopts += c.chr unless newopts.index(c)}
       opts.each_byte{|c| newopts.concat(c.chr) unless newopts.index(c)}
       if newopts != @trace_opts
-        Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 'rb_var')
+        Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 
+                               'rb_var ' << @id)
         @trace_opts.replace(newopts)
-        Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 'rb_var')
+        Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 
+                               'rb_var ' << @id)
 =begin
         if /^(8\.([4-9]|[1-9][0-9])|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION
           # TCL_VERSION >= 8.4
@@ -1311,15 +1319,20 @@ end
   end
 
   def trace_element(elem, opts, cmd = Proc.new)
+    if @elem
+      fail(RuntimeError, 
+           "invalid for a TkVariable which denotes an element of Tcl's array")
+    end
     @trace_elem = {} if @trace_elem == nil
     @trace_elem[elem] = [] if @trace_elem[elem] == nil
-    #opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
-    opts = ['r','w','u'].find_all{|c| opts.to_s.index(c)}.join('')
+    opts = opts.to_s
+    opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
     @trace_elem[elem].unshift([opts,cmd])
     if @trace_opts == nil
       TkVar_CB_TBL[@id] = self
       @trace_opts = opts.dup
-      Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 'rb_var')
+      Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 
+                             'rb_var ' << @id)
 =begin
       if /^(8\.([4-9]|[1-9][0-9])|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION
         # TCL_VERSION >= 8.4
@@ -1336,9 +1349,11 @@ end
       # opts.each_byte{|c| newopts += c.chr unless newopts.index(c)}
       opts.each_byte{|c| newopts.concat(c.chr) unless newopts.index(c)}
       if newopts != @trace_opts
-        Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 'rb_var')
+        Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 
+                               'rb_var ' << @id)
         @trace_opts.replace(newopts)
-        Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 'rb_var')
+        Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 
+                               'rb_var ' << @id)
 =begin
         if /^(8\.([4-9]|[1-9][0-9])|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION
           # TCL_VERSION >= 8.4
@@ -1365,7 +1380,12 @@ end
     return [] unless @trace_var
     @trace_var.dup
   end
-  def trace_vinfo_for_element(elem)
+
+  def _trace_vinfo_for_element(elem)
+    if @elem
+      fail(RuntimeError, 
+           "invalid for a TkVariable which denotes an element of Tcl's array")
+    end
     return [] unless @trace_elem
     return [] unless @trace_elem[elem]
     @trace_elem[elem].dup
@@ -1373,8 +1393,8 @@ end
 
   def trace_vdelete(opts,cmd)
     return self unless @trace_var.kind_of? Array
-    #opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
-    opts = ['r','w','u'].find_all{|c| opts.to_s.index(c)}.join('')
+    opts = opts.to_s
+    opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
     idx = -1
     newopts = ''
     @trace_var.each_with_index{|e,i| 
@@ -1398,10 +1418,11 @@ end
       }
     }
 
-    #newopts = ['r','w','u'].find_all{|c| newopts.index(c)}.join('')
-    newopts = ['r','w','u'].find_all{|c| newopts.to_s.index(c)}.join('')
+    newopts = newopts.to_s
+    newopts = ['r','w','u'].find_all{|c| newopts.index(c)}.join('')
     if newopts != @trace_opts
-      Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 'rb_var')
+      Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 
+                             'rb_var ' << @id)
 =begin
       if /^(8\.([4-9]|[1-9][0-9])|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION
         # TCL_VERSION >= 8.4
@@ -1415,7 +1436,8 @@ end
 =end
       @trace_opts.replace(newopts)
       if @trace_opts != ''
-        Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 'rb_var')
+        Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 
+                               'rb_var ' << @id)
 =begin
         if /^(8\.([4-9]|[1-9][0-9])|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION
           # TCL_VERSION >= 8.4
@@ -1434,10 +1456,14 @@ end
   end
 
   def trace_vdelete_for_element(elem,opts,cmd)
+    if @elem
+      fail(RuntimeError, 
+           "invalid for a TkVariable which denotes an element of Tcl's array")
+    end
     return self unless @trace_elem.kind_of? Hash
     return self unless @trace_elem[elem].kind_of? Array
-    # opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
-    opts = ['r','w','u'].find_all{|c| opts.to_s.index(c)}.join('')
+    opts = opts.to_s
+    opts = ['r','w','u'].find_all{|c| opts.index(c)}.join('')
     idx = -1
     @trace_elem[elem].each_with_index{|e,i| 
       if idx < 0 && e[0] == opts && e[1] == cmd
@@ -1463,10 +1489,11 @@ end
       }
     }
 
-    #newopts = ['r','w','u'].find_all{|c| newopts.index(c)}.join('')
-    newopts = ['r','w','u'].find_all{|c| newopts.to_s.index(c)}.join('')
+    newopts = newopts.to_s
+    newopts = ['r','w','u'].find_all{|c| newopts.index(c)}.join('')
     if newopts != @trace_opts
-      Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 'rb_var')
+      Tk.tk_call_without_enc('trace', 'vdelete', @id, @trace_opts, 
+                             'rb_var ' << @id)
 =begin
       if /^(8\.([4-9]|[1-9][0-9])|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION
         # TCL_VERSION >= 8.4
@@ -1480,7 +1507,8 @@ end
 =end
       @trace_opts.replace(newopts)
       if @trace_opts != ''
-        Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 'rb_var')
+        Tk.tk_call_without_enc('trace', 'variable', @id, @trace_opts, 
+                               'rb_var ' << @id)
 =begin
         if /^(8\.([4-9]|[1-9][0-9])|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION
           # TCL_VERSION >= 8.4
@@ -1519,6 +1547,9 @@ class TkVarAccess<TkVariable
     @id = varname
     TkVar_ID_TBL[@id] = self
 
+    @var  = @id
+    @elem = nil
+
     @def_default = false
     @default_val = nil
 
@@ -1530,7 +1561,16 @@ class TkVarAccess<TkVariable
     var = self
     @element_type = Hash.new{|k,v| var.default_value_type }
 
+    # is an element?
+    if @id =~ /^([^(]+)\((.+)\)$/
+      # is an element --> var == $1, elem == $2
+      @var  = $1
+      @elem = $2
+    end
+
     # teach Tk-ip that @id is global var
+    INTERP._invoke_without_enc('global', @var)
+=begin
     begin
       INTERP._invoke_without_enc('global', @id)
     rescue => e
@@ -1541,6 +1581,7 @@ class TkVarAccess<TkVariable
         fail e
       end
     end
+=end
 
     if val
       if val.kind_of?(Hash)
