@@ -1,3 +1,8 @@
+Wed Aug  3 21:59:16 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/variable.rb: TkVariable#trace didn't work on
+	  TkVariable retrived from TkVariable.new_hash.ref. [ruby-dev:26721]
+
 Wed Aug  3 08:22:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): revert [ruby-talk:111654]
