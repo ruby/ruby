@@ -168,9 +168,6 @@ EXTSTATIC     =
 
 OBJEXT = obj
 
-EXTOBJS       = 
-DLDOBJS       = 
-
 WINMAINOBJ    = winmain.$(OBJEXT)
 MINIOBJS      = dmydln.$(OBJEXT)
 
@@ -210,9 +207,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/win32/Makefile.sub
 #define HAVE_PROTOTYPES 1
 #define TOKEN_PASTE(x,y) x##y
 #define HAVE_STDARG_PROTOTYPES 1
-#if _MSC_VER > 1100
+!if $(MSC_VER) > 1100
 #define NORETURN(x) __declspec(noreturn) x
-#endif
+!endif
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_LIMITS_H 1
 #define HAVE_FCNTL_H 1

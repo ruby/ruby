@@ -172,9 +172,6 @@ EXTSTATIC     =
 
 OBJEXT = obj
 
-EXTOBJS       = 
-DLDOBJS       = 
-
 WINMAINOBJ    = wincemain.$(OBJEXT)
 
 all: $(srcdir)/wince/Makefile.sub $(srcdir)/common.mk
@@ -215,9 +212,9 @@ $(CONFIG_H): $(MKFILES) $(srcdir)/wince/Makefile.sub
 #define HAVE_PROTOTYPES 1
 #define TOKEN_PASTE(x,y) x##y
 #define HAVE_STDARG_PROTOTYPES 1
-#if _MSC_VER > 1100
+!if $(MSC_VER) > 1100
 #define NORETURN(x) __declspec(noreturn) x
-#endif
+!endif
 #define HAVE_DECL_SYS_NERR 1
 #define HAVE_FCNTL_H 1
 #define HAVE_SYS_UTIME_H 1

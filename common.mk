@@ -9,6 +9,8 @@ RBCONFIG      = ./.rbconfig.time
 
 DMYEXT	      = dmyext.$(OBJEXT)
 MAINOBJ	      = main.$(OBJEXT)
+EXTOBJS	      = 
+DLDOBJS	      = $(DMYEXT)
 
 OBJS	      = array.$(OBJEXT) \
 		bignum.$(OBJEXT) \

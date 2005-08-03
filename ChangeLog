@@ -1,3 +1,12 @@
+Thu Aug  4 00:25:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* common.mk, Makefile.in, {bcc32,win32,wince}/Makefile.sub: integrated
+	  macro definitions.
+
+	* bcc32/Makefile.sub: LIBRUBY_SO should use DLDOBJS, not EXTOBJS.
+
+	* {win32,wince}/Makefile.sub: separate config.h for compiler versions.
+
 Wed Aug  3 21:59:16 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/variable.rb: TkVariable#trace didn't work on
@@ -50,7 +59,7 @@ Mon Aug  1 01:17:40 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Mon Aug  1 00:07:32 2005  Keiju Ishitsuka <keiju@ruby-lang.org>
 	* lib/irb/context.rb: fix `irb --readline` option. [ruby-list:40955]
-	
+
 Fri Jul 29 09:59:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_yield_0): push yielded node instead of yielding.
