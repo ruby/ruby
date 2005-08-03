@@ -3600,6 +3600,26 @@ rb_w32_utime(const char *path, struct utimbuf *times)
 }
 
 int
+rb_w32_vsnprintf(char *buf, size_t size, const char *format, va_list va)
+{
+    int ret = _vsnprintf(buf, size, format, va);
+    if (size > 0) buf[size - 1] = 0;
+    return ret;
+}
+
+int
+rb_w32_snprintf(char *buf, size_t size, const char *format, ...)
+{
+    int ret;
+    va_list va;
+
+    va_start(va, format);
+    ret = vsnprintf(buf, size, format, va);
+    va_end(va);
+    return ret;
+}
+
+int
 rb_w32_mkdir(const char *path, int mode)
 {
     int ret = -1;

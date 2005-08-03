@@ -1,3 +1,11 @@
+Wed Aug  3 10:13:52 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* configure.in, {bcc32,win32,wince}/Makefile.sub (HAVE_SNPRINTF,
+	  HAVE_VSNPRINTF): use win32/win32.c's implementation instead of
+	  missing/vsnprintf.c's.
+
+	* win32/win32.[ch] (rb_w32_snprintf, rb_w32_vsnprintf): reverted.
+
 Wed Aug  3 10:05:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in: check vsnprintf() and snprintf().
