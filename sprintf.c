@@ -847,6 +847,10 @@ fmt_setup(buf, c, flags, width, prec)
 #  define u_quad_t unsigned LONG_LONG
 # endif
 #endif
+#undef vsnprintf
+#undef snprintf
+#define vsnprintf ruby_vsnprintf
+#define snprintf ruby_snprintf
 #include "missing/vsnprintf.c"
 
 static int

@@ -1,3 +1,10 @@
+Wed Aug  3 10:05:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* configure.in: check vsnprintf() and snprintf().
+
+	* sprintf.c, missing/vsnprintf.c: made vsnprintf() and snprintf()
+	  private.  fixed: [ruby-dev:26651]
+
 Wed Aug  3 08:22:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/socket/socket.c (ruby_connect): revert [ruby-talk:111654]
@@ -43,7 +50,7 @@ Mon Aug  1 13:53:55 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 Mon Aug  1 01:08:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/drb/drb.rb (check_insecure_method): use private_methods and
-	  protected_methods instead of respond_to? to check method visibility. 
+	  protected_methods instead of respond_to? to check method visibility.
 	  [ruby-dev:26616]
 
 	* test/drb/drbtest.rb: ditto.
@@ -52,14 +59,14 @@ Mon Aug  1 01:08:21 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Sat Jul 30 18:49:44 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c: add WIN32OLE_TYPE#ole_typelib, 
+	* ext/win32ole/win32ole.c: add WIN32OLE_TYPE#ole_typelib,
 	  WIN32OLE_TYPE#implemented_ole_types.
 
 	* ext/win32ole/tests/testOLETYPE.rb: ditto.
 
 Fri Jul 29 16:12:02 005	 Keiju Ishitsuka <keiju@ruby-lang.org>
 	* lib/irb/context.rb: fix `irb --readline` option. [ruby-dev:40955]
-	
+
 Fri Jul 29 09:59:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_call0): fix calling zsuper from a method with anonymous

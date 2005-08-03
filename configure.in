@@ -489,7 +489,7 @@ AC_CHECK_FUNCS(fmod killpg wait4 waitpid fork spawnv syscall chroot fsync getcwd
 	      setrgid setegid setregid setresgid issetugid pause lchown lchmod\
 	      getpgrp setpgrp getpgid setpgid initgroups getgroups setgroups\
 	      getpriority getrlimit setrlimit\
-	      dlopen sigprocmask sigaction _setjmp\
+	      dlopen sigprocmask sigaction _setjmp vsnprintf snprintf\
 	      setsid telldir seekdir fchmod mktime timegm cosh sinh tanh\
 	      setuid setgid daemon select_large_fdset \
 	      _UNW_createContextForSelf)

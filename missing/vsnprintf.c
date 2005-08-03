@@ -1082,6 +1082,7 @@ exponent(p0, exp, fmtch)
 }
 #endif /* FLOATING_POINT */
 
+#ifndef HAVE_VSNPRINTF
 int
 vsnprintf(str, n, fmt, ap)
 	char *str;
@@ -1102,11 +1103,13 @@ vsnprintf(str, n, fmt, ap)
 	*f._p = 0;
 	return (ret);
 }
+#endif
 
 #if defined(LIBC_SCCS) && !defined(lint)
 static char sccsid[] = "@(#)snprintf.c	8.1 (Berkeley) 6/4/93";
 #endif /* LIBC_SCCS and not lint */
 
+#ifndef HAVE_SNPRINTF
 int
 #if defined(HAVE_STDARG_PROTOTYPES)
 snprintf(char *str, size_t n, char const *fmt, ...)
@@ -1138,3 +1141,4 @@ va_dcl
 	va_end(ap);
 	return (ret);
 }
+#endif
