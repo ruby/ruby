@@ -9,6 +9,10 @@ Tk::AUTO_PATH.lappend('.', demodir, File.join(demodir, 'themes'))
 
 require 'tkextlib/tile'
 
+def version?(ver)
+  TkPackage.vcompare(Tk::Tile.package_version, ver) >= 0
+end
+
 Tk.load_tclscript(File.join(demodir, 'toolbutton.tcl'))
 Tk.load_tclscript(File.join(demodir, 'repeater.tcl'))
 
@@ -37,7 +41,10 @@ $V = TkVariable.new_hash(:THEME      => 'default',
                          :COMPOUND   => 'top', 
                          :CONSOLE    => false, 
                          :MENURADIO1 => 'One', 
-                         :MENUCHECK1 => true)
+                         :MENUCHECK1 => true,
+                         :PBMODE     => 'determinate',
+                         :SELECTED   => true,
+                         :CHOICE     => 2)
 
 # Add in any available loadable themes.
 TkPackage.names.find_all{|n| n =~ /^tile::theme::/}.each{|pkg|
@@ -305,6 +312,8 @@ def makeNotebook
   nb.add(client, :text=>'Demo', :underline=>0)
   nb.select(client)
 
+  scales = Tk::Tile::TFrame.new(nb)
+  nb.add(scales, :text=>'Scales')
   combo = Tk::Tile::TFrame.new(nb)
   nb.add(combo, :text=>'Combobox', :underline=>7)
   tree = Tk::Tile::TFrame.new(nb)
@@ -312,10 +321,10 @@ def makeNotebook
   others = Tk::Tile::TFrame.new(nb)
   nb.add(others, :text=>'Others', :underline=>4)
 
-  [nb, client, combo, tree, others]
+  [nb, client, scales, combo, tree, others]
 end
 
-nb, client, combo, tree, others = makeNotebook()
+nb, client, scales, combo, tree, others = makeNotebook()
 
 #
 # Side-by side check, radio, and menu button comparison:
@@ -334,7 +343,7 @@ def fillMenu(menu)
   menu.add(:command, :label=>'Quit', :command=>proc{Tk.root.destroy})
 end
 
-l = Tk::Tile::TLabelframe.new(client, :text=>'Styled', :padding=>6)
+l = Tk::Tile::TLabelframe.new(client, :text=>'Themed', :padding=>6)
 r = TkLabelframe.new(client, :text=>'Standard', :padx=>6, :pady=>6)
 
 ## Styled frame
@@ -360,27 +369,6 @@ e.selection_range(6, :end)
 
 ltext_f, ltext = scrolledWidget(l, TkText, true, 
                                 :width=>12, :height=>5, :wrap=>:none)
-
-scales = Tk::Tile::TFrame.new(l)
-sc = Tk::Tile::TScale.new(scales, :orient=>:horizontal, :from=>0, :to=>100, 
-                          :variable=>$V.ref(:SCALE))
-vsc = Tk::Tile::TScale.new(scales, :orient=>:vertical, :from=>-25, :to=>25,  
-                           :variable=>$V.ref(:VSCALE))
-
-prg = Tk::Tile::TProgress.new(scales, :orient=>:horizontal, 
-                              :from=>0, :to=>100)
-vprg = Tk::Tile::TProgress.new(scales, :orient=>:vertical, 
-                               :from=>-25, :to=>25)
-
-sc.command{|*args| prg.set(*args)}
-vsc.command{|*args| vprg.set(*args)}
-
-Tk.grid(sc, :columnspan=>2, :sticky=>:ew)
-Tk.grid(prg, :columnspan=>2, :sticky=>:ew)
-Tk.grid(vsc, vprg, :sticky=>:nws)
-TkGrid.columnconfigure(scales, 0, :weight=>1)
-TkGrid.columnconfigure(scales, 1, :weight=>1)
-
 # NOTE TO MAINTAINERS: 
 # The checkbuttons are -sticky ew / -expand x  on purpose:
 # it demonstrates one of the differences between TCheckbuttons
@@ -394,7 +382,6 @@ Tk.grid(btn, :sticky=>:ew, :padx=>2, :pady=>2)
 Tk.grid(mb, :sticky=>:ew, :padx=>2, :pady=>2)
 Tk.grid(e, :sticky=>:ew, :padx=>2, :pady=>2)
 Tk.grid(ltext_f, :sticky=>:news)
-Tk.grid(scales, :sticky=>:news, :pady=>2)
 
 TkGrid.columnconfigure(l, 0, :weight=>1)
 TkGrid.rowconfigure(l, 7, :weight=>1) # text widget (grid is a PITA)
@@ -424,11 +411,6 @@ e = TkEntry.new(r, :textvariable=>$entryText)
 rtext_f, rtext = scrolledWidget(r, TkText, false, 
                                 :width=>12, :height=>5, :wrap=>:none)
 
-sc = TkScale.new(r, :orient=>:horizontal, :from=>0, :to=>100, 
-                 :variable=>$V.ref(:SCALE))
-vsc = TkScale.new(r, :orient=>:vertical, :from=>-25, :to=>25,  
-                  :variable=>$V.ref(:VSCALE))
-
 Tk.grid(cb, :sticky=>:ew)
 Tk.grid(rb1, :sticky=>:ew)
 Tk.grid(rb2, :sticky=>:ew)
@@ -437,8 +419,6 @@ Tk.grid(btn, :sticky=>:ew, :padx=>2, :pady=>2)
 Tk.grid(mb, :sticky=>:ew, :padx=>2, :pady=>2)
 Tk.grid(e, :sticky=>:ew, :padx=>2, :pady=>2)
 Tk.grid(rtext_f, :sticky=>:news)
-Tk.grid(sc, :sticky=>:news)
-Tk.grid(vsc, :sticky=>:nws)
 
 TkGrid.columnconfigure(l, 0, :weight=>1)
 TkGrid.rowconfigure(l, 7, :weight=>1) # text widget (grid is a PITA)
@@ -467,6 +447,135 @@ nmsgs = msgs.size
   ltext.insert(:end, "#{n}: #{msg}\n")
   rtext.insert(:end, "#{n}: #{msg}\n")
 }
+#
+# Scales and sliders pane:
+#
+l = Tk::Tile::TLabelframe.new(scales, :text=>'Themed', :padding=>6)
+r = TkLabelframe.new(scales, :text=>'Standard', :padx=>6, :pady=>6)
+
+if version?('0.6')
+
+  # thremed frame
+  scale = Tk::Tile::TScale.new(l, :orient=>:horizontal, :from=>0, :to=>100,
+          :variable=>$V.ref(:SCALE))
+  vscale = Tk::Tile::TScale.new(l, :orient=>:vertical, :from=>0, :to=>100,
+          :variable=>$V.ref(:VSCALE))
+  progress = Tk::Tile::TProgressbar.new(l, :orient=>:horizontal, :maximum=>100)
+  vprogress = Tk::Tile::TProgressbar.new(l, :orient=>:vertical, :maximum=>100)
+
+  if true
+    def progress.inverted(w, value)
+      w.value(w.maximum - value)
+    end
+    scale.command {|value| progress.value(value)}
+    vscale.command {|value| progress.inverted(vprogress, value) }
+  else
+    # This would also work, but the Tk scale widgets 
+    # in the right hand pane cause some interference when 
+    # in autoincrement/indeterminate mode.
+    #
+    progress.variable $V.ref(:SCALE)
+    vprogress.variable $V.ref(:VSCALE)
+  end
+
+  scale.set(50)
+  vscale.set(50)
+
+  lmode = Tk::Tile::TLabel.new(l, :text=>'Progress bar mode')
+  pbmode0 = Tk::Tile::TRadiobutton.new(l, :variable=>$V.ref(:PBMODE),
+          :text=>'determinate', :value=>'determinate',
+          :command=>proc{pbMode(progress, vprogress)})
+  pbmode1 = Tk::Tile::TRadiobutton.new(l, :variable=>$V.ref(:PBMODE),
+          :text=>'indeterminate', :value=>'indeterminate',
+          :command=>proc{pbMode(progress, vprogress)})
+  def pbMode(progress, vprogress)
+    progress.mode $V[:PBMODE]
+    vprogress.mode $V[:PBMODE]
+  end
+
+  start = Tk::Tile::TButton.new(l, :text=>"Start",
+          :command=>proc{pbStart(progress, vprogress)})
+  def pbStart(progress, vprogress)
+    $V[:PBMODE] = 'indeterminate'; pbMode(progress, vprogress)
+    progress.start 10
+    vprogress.start
+  end
+
+  stop = Tk::Tile::TButton.new(l, :text=>'Stop',
+          :command=>proc{pbStop(progress, vprogress)})
+  def pbStop(progress, vprogress)
+    progress.stop
+    vprogress.stop
+  end
+
+  Tk.grid(scale, :columnspan=>2, :sticky=>'ew')
+  Tk.grid(progress, :columnspan=>2, :sticky=>'ew')
+  Tk.grid(vscale, vprogress, :sticky=>'nws')
+
+  Tk.grid(lmode, :sticky=>'we', :columnspan=>2)
+  Tk.grid(pbmode0, :sticky=>'we', :columnspan=>2)
+  Tk.grid(pbmode1, :sticky=>'we', :columnspan=>2)
+  Tk.grid(start, :sticky=>'we', :columnspan=>2)
+  Tk.grid(stop, :sticky=>'we', :columnspan=>2)
+
+  l.grid_columnconfigure(0, :weight=>1)
+  l.grid_columnconfigure(1, :weight=>1)
+  l.grid_rowconfigure(99, :weight=>1)
+
+  # standard frame
+  TkScale.new(r, :orient=>:horizontal, :from=>0, :to=>100,
+          :variable=>$V.ref(:SCALE)).grid(:sticky=>'news')
+  TkScale.new(r, :orient=>:vertical, :from=>0, :to=>100,
+          :variable=>$V.ref(:VSCALE)).grid(:sticky=>'nws')
+
+  r.grid_columnconfigure(0, :weight=>1)
+  r.grid_columnconfigure(1, :weight=>1)
+  r.grid_rowconfigure(99, :weight=>1)
+
+else # tile 0.5 or earlier
+
+  # themed frame
+  scale = Tk::Tile::TScale.new(l, :variable=>$V.ref(:SCALE),
+          :orient=>:horizontal, :from=>0, :to=>100)
+  vscale = Tk::Tile::TScale.new(l, :variable=>$V.ref(:VSCALE),
+          :orient=>:vertical, :from=>-25, :to=>25)
+
+  progress = Tk::Tile::TProgress.new(l,
+          :orient=>:horizontal, :from=>0, :to=>100)
+  vprogress = Tk::Tile::TProgress.new(l,
+          :orient=>:vertical, :from=>-25, :to=>25)
+
+  if true
+    scale.command{|value| progress.set(value)}
+    vscale.command{|value| vprogress.set(value)}
+  else # this would also work. (via TkVariable#trace)
+    v1 = $V.ref(:SCALE) 
+    v2 = $V.ref(:VSCALE)
+    v1.trace('w', proc{ progress.set(v1.value) })
+    v2.trace('w', proc{ vprogress.set(v2.value) })
+  end
+
+  Tk.grid(scale, :columnspan=>2, :sticky=>:ew)
+  Tk.grid(progress, :columnspan=>2, :sticky=>:ew)
+  Tk.grid(vscale, vprogress, :sticky=>:nws)
+  TkGrid.columnconfigure(l, 0, :weight=>1)
+  TkGrid.columnconfigure(l, 1, :weight=>1)
+
+  # standard frame
+  TkScale.new(r, :variable=>$V.ref(:SCALE),
+          :orient=>:horizontal, :from=>0, :to=>100).grid(:sticky=>'news')
+  TkScale.new(r, :variable=>$V.ref(:VSCALE),
+          :orient=>:vertical, :from=>-25, :to=>25).grid(:sticky=>'nws')
+
+  TkGrid.columnconfigure(r, 0, :weight=>1)
+  TkGrid.columnconfigure(r, 1, :weight=>1)
+end
+
+# layout frames
+Tk.grid(l, r, :sticky=>'nwes', :padx=>6, :pady=>6)
+scales.grid_columnconfigure(0, :weight=>1)
+scales.grid_columnconfigure(1, :weight=>1)
+scales.grid_rowconfigure(0, :weight=>1)
 
 #
 # Command box:
@@ -560,7 +669,7 @@ values = %w(list abc def ghi jkl mno pqr stu vwx yz)
 #
 # Treeview widget demo pane:
 #
-if TkPackage.vcompare(Tk::Tile.package_version, '0.5') >= 0
+if version?('0.5')
 
   treeview = nil # avoid 'undefined' error
   scrollbar = Tk::Tile::TScrollbar.new(tree,
@@ -822,9 +931,9 @@ def repeatDemo
 
   f = Tk::Tile::TFrame.new($repeatDemo)
   b = Tk::Tile::TButton.new(f, :class=>'Repeater', :text=>'Press and hold')
-  begin
+  if version?('0.6')
     p = Tk::Tile::TProgressbar.new(f, :orient=>:horizontal, :maximum=>10)
-  rescue # progressbar is not supported (tile 0.4)
+  else # progressbar is not supported
     p = Tk::Tile::TProgress.new(f, :orient=>:horizontal, :from=>0, :to=>10)
     def p.step
       i = self.get + 1
