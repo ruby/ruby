@@ -68,8 +68,8 @@ def makeThemeControl(parent)
   c = Tk::Tile::Labelframe.new(parent, :text=>'Theme')
   $THEMELIST.each{|theme, name|
     b = Tk::Tile::Radiobutton.new(c, :text=>name, :value=>theme, 
-                                   :variable=>$V.ref(:THEME), 
-                                   :command=>proc{setTheme(theme)})
+                                  :variable=>$V.ref(:THEME), 
+                                  :command=>proc{setTheme(theme)})
     b.grid(:sticky=>:ew)
     unless (TkPackage.names.find{|n| n == "tile::theme::#{theme}"})
       b.state(:disabled)
@@ -77,8 +77,8 @@ def makeThemeControl(parent)
   }
   $RUBY_THEMELIST.each{|theme, name, available|
     b = Tk::Tile::Radiobutton.new(c, :text=>name, :value=>theme, 
-                                   :variable=>$V.ref(:THEME), 
-                                   :command=>proc{setTheme(theme)})
+                                  :variable=>$V.ref(:THEME), 
+                                  :command=>proc{setTheme(theme)})
     b.grid(:sticky=>:ew)
     b.state(:disabled) unless available
   }
@@ -191,21 +191,21 @@ def makeToolbars
   $BUTTONS.each{|icon|
     i += 1
     Tk::Tile::Button.new(tb, :text=>icon, :image=>$ICON[icon], 
-                          :compound=>$V[:COMPOUND], 
-                          :style=>:Toolbutton).grid(:row=>0, :column=>i, 
-                                                    :sticky=>:news)
+                         :compound=>$V[:COMPOUND], 
+                         :style=>:Toolbutton).grid(:row=>0, :column=>i, 
+                                                   :sticky=>:news)
   }
   $CHECKBOXES.each{|icon|
     i += 1
     Tk::Tile::Checkbutton.new(tb, :text=>icon, :image=>$ICON[icon], 
-                               :variable=>$V.ref(icon), 
-                               :compound=>$V[:COMPOUND], 
-                               :style=>:Toolbutton).grid(:row=>0, :column=>i, 
-                                                         :sticky=>:news)
+                              :variable=>$V.ref(icon), 
+                              :compound=>$V[:COMPOUND], 
+                              :style=>:Toolbutton).grid(:row=>0, :column=>i, 
+                                                        :sticky=>:news)
   }
 
   mb = Tk::Tile::Menubutton.new(tb, :text=>'toolbar', :image=>$ICON['file'], 
-                                 :compound=>$V[:COMPOUND])
+                                :compound=>$V[:COMPOUND])
   mb.configure(:menu=>makeCompoundMenu(mb))
   i += 1
   mb.grid(:row=>0, :column=>i, :sticky=>:news)
@@ -348,14 +348,14 @@ r = TkLabelframe.new(client, :text=>'Standard', :padx=>6, :pady=>6)
 
 ## Styled frame
 cb = Tk::Tile::Checkbutton.new(l, :text=>'Checkbutton', 
-                                :variable=>$V.ref(:SELECTED), :underline=>2)
+                               :variable=>$V.ref(:SELECTED), :underline=>2)
 rb1 = Tk::Tile::Radiobutton.new(l, :text=>'One', :variable=>$V.ref(:CHOICE), 
-                                 :value=>1, :underline=>0)
+                                :value=>1, :underline=>0)
 rb2 = Tk::Tile::Radiobutton.new(l, :text=>'Two', :variable=>$V.ref(:CHOICE), 
-                                 :value=>2)
+                                :value=>2)
 rb3 = Tk::Tile::Radiobutton.new(l, :text=>'Three', 
-                                 :variable=>$V.ref(:CHOICE), 
-                                 :value=>3, :underline=>0)
+                                :variable=>$V.ref(:CHOICE), 
+                                :value=>3, :underline=>0)
 btn = Tk::Tile::Button.new(l, :text=>'Button', :underline=>0)
 
 mb = Tk::Tile::Menubutton.new(l, :text=>'Menubutton', :underline=>2)
@@ -582,10 +582,10 @@ scales.grid_rowconfigure(0, :weight=>1)
 #
 cmd = Tk::Tile::Frame.new($BASE)
 b_close = Tk::Tile::Button.new(cmd, :text=>'Close', 
-                                :underline=>0, :default=>:normal, 
-                                :command=>proc{Tk.root.destroy})
+                               :underline=>0, :default=>:normal, 
+                               :command=>proc{Tk.root.destroy})
 b_help = Tk::Tile::Button.new(cmd, :text=>'Help', :underline=>0, 
-                               :default=>:normal, :command=>proc{showHelp()})
+                              :default=>:normal, :command=>proc{showHelp()})
 Tk.grid('x', b_close, b_help, :pady=>[6, 4], :padx=>4)
 TkGrid.columnconfigure(cmd, 0, :weight=>1)
 
@@ -740,7 +740,7 @@ showDescription.bind('Leave', proc{|w| msg.text('')}, '%W')
 
 ].each{|demo_cmd, label, description|
   b = Tk::Tile::Button.new(others, :text=>label, 
-                            :command=>proc{ self.__send__(demo_cmd) })
+                           :command=>proc{ self.__send__(demo_cmd) })
   $Desc[b.path] = description
   b.bindtags <<= showDescription
 
@@ -801,8 +801,8 @@ def trackFocus
   ].each{|label, var_index|
     Tk.grid(Tk::Tile::Label.new($focus, :text=>label, :anchor=>:e), 
             Tk::Tile::Label.new($focus, 
-                                 :textvariable=>$FocusInf.ref(var_index), 
-                                 :width=>40, :anchor=>:w, :relief=>:groove), 
+                                :textvariable=>$FocusInf.ref(var_index), 
+                                :width=>40, :anchor=>:w, :relief=>:groove), 
             :sticky=>:ew)
     i += 1
   }
@@ -862,17 +862,17 @@ def trackStates
   l_inf = Tk::Tile::Label.new($states, :text=>"Press Control-Shift-Button-1 on any widget")
 
   l_lw = Tk::Tile::Label.new($states, :text=>'Widget:', 
-                              :anchor=>:e, :relief=>:groove)
+                             :anchor=>:e, :relief=>:groove)
   l_w = Tk::Tile::Label.new($states, :textvariable=>$Widget, 
-                              :anchor=>:w, :relief=>:groove)
+                             :anchor=>:w, :relief=>:groove)
 
   Tk.grid(l_inf, '-', :sticky=>:ew, :padx=>6, :pady=>6)
   Tk.grid(l_lw, l_w, :sticky=>:ew)
 
   $states_list.each{|st|
     cb = Tk::Tile::Checkbutton.new($states, :text=>st, 
-                                    :variable=>$State.ref(st), 
-                                    :command=>proc{ changeState(st) })
+                                   :variable=>$State.ref(st), 
+                                   :command=>proc{ changeState(st) })
     $states_btns[st] = cb
     Tk.grid('x', cb, :sticky=>:nsew)
   }
@@ -883,7 +883,7 @@ def trackStates
   Tk.grid('x', f_cmd, :sticky=>:nse)
 
   b_close = Tk::Tile::Button.new(f_cmd, :text=>'Close', 
-                                  :command=>proc{ $states.destroy })
+                                 :command=>proc{ $states.destroy })
   Tk.grid('x', b_close, :padx=>4, :pady=>[6,4])
   f_cmd.grid_columnconfigure(0, :weight=>1)
 
