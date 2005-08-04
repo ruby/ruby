@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TLabelframe < Tk::Tile::TFrame
     end
+    Labelframe = TLabelframe
   end
 end
 

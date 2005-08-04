@@ -65,9 +65,9 @@ else
 end
 
 def makeThemeControl(parent)
-  c = Tk::Tile::TLabelframe.new(parent, :text=>'Theme')
+  c = Tk::Tile::Labelframe.new(parent, :text=>'Theme')
   $THEMELIST.each{|theme, name|
-    b = Tk::Tile::TRadiobutton.new(c, :text=>name, :value=>theme, 
+    b = Tk::Tile::Radiobutton.new(c, :text=>name, :value=>theme, 
                                    :variable=>$V.ref(:THEME), 
                                    :command=>proc{setTheme(theme)})
     b.grid(:sticky=>:ew)
@@ -76,7 +76,7 @@ def makeThemeControl(parent)
     end
   }
   $RUBY_THEMELIST.each{|theme, name, available|
-    b = Tk::Tile::TRadiobutton.new(c, :text=>name, :value=>theme, 
+    b = Tk::Tile::Radiobutton.new(c, :text=>name, :value=>theme, 
                                    :variable=>$V.ref(:THEME), 
                                    :command=>proc{setTheme(theme)})
     b.grid(:sticky=>:ew)
@@ -185,26 +185,26 @@ def makeToolbars
   #
   # Tile toolbar:
   #
-  tb = Tk::Tile::TFrame.new($BASE, :class=>'Toolbar')
+  tb = Tk::Tile::Frame.new($BASE, :class=>'Toolbar')
   $TOOLBARS << tb
   i = 0
   $BUTTONS.each{|icon|
     i += 1
-    Tk::Tile::TButton.new(tb, :text=>icon, :image=>$ICON[icon], 
+    Tk::Tile::Button.new(tb, :text=>icon, :image=>$ICON[icon], 
                           :compound=>$V[:COMPOUND], 
                           :style=>:Toolbutton).grid(:row=>0, :column=>i, 
                                                     :sticky=>:news)
   }
   $CHECKBOXES.each{|icon|
     i += 1
-    Tk::Tile::TCheckbutton.new(tb, :text=>icon, :image=>$ICON[icon], 
+    Tk::Tile::Checkbutton.new(tb, :text=>icon, :image=>$ICON[icon], 
                                :variable=>$V.ref(icon), 
                                :compound=>$V[:COMPOUND], 
                                :style=>:Toolbutton).grid(:row=>0, :column=>i, 
                                                          :sticky=>:news)
   }
 
-  mb = Tk::Tile::TMenubutton.new(tb, :text=>'toolbar', :image=>$ICON['file'], 
+  mb = Tk::Tile::Menubutton.new(tb, :text=>'toolbar', :image=>$ICON['file'], 
                                  :compound=>$V[:COMPOUND])
   mb.configure(:menu=>makeCompoundMenu(mb))
   i += 1
@@ -261,7 +261,7 @@ end
 makeToolbars()
 
 ## CONTROLS
-control = Tk::Tile::TFrame.new($BASE)
+control = Tk::Tile::Frame.new($BASE)
 
 #
 # Overall theme control:
@@ -281,10 +281,10 @@ end
 
 def scrolledWidget(parent, klass, themed, *args)
   if themed
-    f = Tk::Tile::TFrame.new(parent)
+    f = Tk::Tile::Frame.new(parent)
     t = klass.new(f, *args)
-    vs = Tk::Tile::TScrollbar.new(f)
-    hs = Tk::Tile::TScrollbar.new(f)
+    vs = Tk::Tile::Scrollbar.new(f)
+    hs = Tk::Tile::Scrollbar.new(f)
   else
     f = TkFrame.new(parent)
     t = klass.new(f, *args)
@@ -306,19 +306,19 @@ end
 # Notebook demonstration:
 #
 def makeNotebook
-  nb = Tk::Tile::TNotebook.new($BASE, :padding=>6)
+  nb = Tk::Tile::Notebook.new($BASE, :padding=>6)
   nb.enable_traversal
-  client = Tk::Tile::TFrame.new(nb)
+  client = Tk::Tile::Frame.new(nb)
   nb.add(client, :text=>'Demo', :underline=>0)
   nb.select(client)
 
-  scales = Tk::Tile::TFrame.new(nb)
+  scales = Tk::Tile::Frame.new(nb)
   nb.add(scales, :text=>'Scales')
-  combo = Tk::Tile::TFrame.new(nb)
+  combo = Tk::Tile::Frame.new(nb)
   nb.add(combo, :text=>'Combobox', :underline=>7)
-  tree = Tk::Tile::TFrame.new(nb)
+  tree = Tk::Tile::Frame.new(nb)
   nb.add(tree, :text=>'Tree')
-  others = Tk::Tile::TFrame.new(nb)
+  others = Tk::Tile::Frame.new(nb)
   nb.add(others, :text=>'Others', :underline=>4)
 
   [nb, client, scales, combo, tree, others]
@@ -343,28 +343,28 @@ def fillMenu(menu)
   menu.add(:command, :label=>'Quit', :command=>proc{Tk.root.destroy})
 end
 
-l = Tk::Tile::TLabelframe.new(client, :text=>'Themed', :padding=>6)
+l = Tk::Tile::Labelframe.new(client, :text=>'Themed', :padding=>6)
 r = TkLabelframe.new(client, :text=>'Standard', :padx=>6, :pady=>6)
 
 ## Styled frame
-cb = Tk::Tile::TCheckbutton.new(l, :text=>'Checkbutton', 
+cb = Tk::Tile::Checkbutton.new(l, :text=>'Checkbutton', 
                                 :variable=>$V.ref(:SELECTED), :underline=>2)
-rb1 = Tk::Tile::TRadiobutton.new(l, :text=>'One', :variable=>$V.ref(:CHOICE), 
+rb1 = Tk::Tile::Radiobutton.new(l, :text=>'One', :variable=>$V.ref(:CHOICE), 
                                  :value=>1, :underline=>0)
-rb2 = Tk::Tile::TRadiobutton.new(l, :text=>'Two', :variable=>$V.ref(:CHOICE), 
+rb2 = Tk::Tile::Radiobutton.new(l, :text=>'Two', :variable=>$V.ref(:CHOICE), 
                                  :value=>2)
-rb3 = Tk::Tile::TRadiobutton.new(l, :text=>'Three', 
+rb3 = Tk::Tile::Radiobutton.new(l, :text=>'Three', 
                                  :variable=>$V.ref(:CHOICE), 
                                  :value=>3, :underline=>0)
-btn = Tk::Tile::TButton.new(l, :text=>'Button', :underline=>0)
+btn = Tk::Tile::Button.new(l, :text=>'Button', :underline=>0)
 
-mb = Tk::Tile::TMenubutton.new(l, :text=>'Menubutton', :underline=>2)
+mb = Tk::Tile::Menubutton.new(l, :text=>'Menubutton', :underline=>2)
 #m = TkMenu.new(mb)
 #mb.menu(m)
 #fillMenu(m)
 
 $entryText = TkVariable.new('Entry widget')
-e = Tk::Tile::TEntry.new(l, :textvariable=>$entryText)
+e = Tk::Tile::Entry.new(l, :textvariable=>$entryText)
 e.selection_range(6, :end)
 
 ltext_f, ltext = scrolledWidget(l, TkText, true, 
@@ -450,18 +450,18 @@ nmsgs = msgs.size
 #
 # Scales and sliders pane:
 #
-l = Tk::Tile::TLabelframe.new(scales, :text=>'Themed', :padding=>6)
+l = Tk::Tile::Labelframe.new(scales, :text=>'Themed', :padding=>6)
 r = TkLabelframe.new(scales, :text=>'Standard', :padx=>6, :pady=>6)
 
 if version?('0.6')
 
   # thremed frame
-  scale = Tk::Tile::TScale.new(l, :orient=>:horizontal, :from=>0, :to=>100,
+  scale = Tk::Tile::Scale.new(l, :orient=>:horizontal, :from=>0, :to=>100,
           :variable=>$V.ref(:SCALE))
-  vscale = Tk::Tile::TScale.new(l, :orient=>:vertical, :from=>0, :to=>100,
+  vscale = Tk::Tile::Scale.new(l, :orient=>:vertical, :from=>0, :to=>100,
           :variable=>$V.ref(:VSCALE))
-  progress = Tk::Tile::TProgressbar.new(l, :orient=>:horizontal, :maximum=>100)
-  vprogress = Tk::Tile::TProgressbar.new(l, :orient=>:vertical, :maximum=>100)
+  progress = Tk::Tile::Progressbar.new(l, :orient=>:horizontal, :maximum=>100)
+  vprogress = Tk::Tile::Progressbar.new(l, :orient=>:vertical, :maximum=>100)
 
   if true
     def progress.inverted(w, value)
@@ -481,11 +481,11 @@ if version?('0.6')
   scale.set(50)
   vscale.set(50)
 
-  lmode = Tk::Tile::TLabel.new(l, :text=>'Progress bar mode')
-  pbmode0 = Tk::Tile::TRadiobutton.new(l, :variable=>$V.ref(:PBMODE),
+  lmode = Tk::Tile::Label.new(l, :text=>'Progress bar mode')
+  pbmode0 = Tk::Tile::Radiobutton.new(l, :variable=>$V.ref(:PBMODE),
           :text=>'determinate', :value=>'determinate',
           :command=>proc{pbMode(progress, vprogress)})
-  pbmode1 = Tk::Tile::TRadiobutton.new(l, :variable=>$V.ref(:PBMODE),
+  pbmode1 = Tk::Tile::Radiobutton.new(l, :variable=>$V.ref(:PBMODE),
           :text=>'indeterminate', :value=>'indeterminate',
           :command=>proc{pbMode(progress, vprogress)})
   def pbMode(progress, vprogress)
@@ -493,7 +493,7 @@ if version?('0.6')
     vprogress.mode $V[:PBMODE]
   end
 
-  start = Tk::Tile::TButton.new(l, :text=>"Start",
+  start = Tk::Tile::Button.new(l, :text=>"Start",
           :command=>proc{pbStart(progress, vprogress)})
   def pbStart(progress, vprogress)
     $V[:PBMODE] = 'indeterminate'; pbMode(progress, vprogress)
@@ -501,7 +501,7 @@ if version?('0.6')
     vprogress.start
   end
 
-  stop = Tk::Tile::TButton.new(l, :text=>'Stop',
+  stop = Tk::Tile::Button.new(l, :text=>'Stop',
           :command=>proc{pbStop(progress, vprogress)})
   def pbStop(progress, vprogress)
     progress.stop
@@ -535,14 +535,14 @@ if version?('0.6')
 else # tile 0.5 or earlier
 
   # themed frame
-  scale = Tk::Tile::TScale.new(l, :variable=>$V.ref(:SCALE),
+  scale = Tk::Tile::Scale.new(l, :variable=>$V.ref(:SCALE),
           :orient=>:horizontal, :from=>0, :to=>100)
-  vscale = Tk::Tile::TScale.new(l, :variable=>$V.ref(:VSCALE),
+  vscale = Tk::Tile::Scale.new(l, :variable=>$V.ref(:VSCALE),
           :orient=>:vertical, :from=>-25, :to=>25)
 
-  progress = Tk::Tile::TProgress.new(l,
+  progress = Tk::Tile::Progress.new(l,
           :orient=>:horizontal, :from=>0, :to=>100)
-  vprogress = Tk::Tile::TProgress.new(l,
+  vprogress = Tk::Tile::Progress.new(l,
           :orient=>:vertical, :from=>-25, :to=>25)
 
   if true
@@ -580,11 +580,11 @@ scales.grid_rowconfigure(0, :weight=>1)
 #
 # Command box:
 #
-cmd = Tk::Tile::TFrame.new($BASE)
-b_close = Tk::Tile::TButton.new(cmd, :text=>'Close', 
+cmd = Tk::Tile::Frame.new($BASE)
+b_close = Tk::Tile::Button.new(cmd, :text=>'Close', 
                                 :underline=>0, :default=>:normal, 
                                 :command=>proc{Tk.root.destroy})
-b_help = Tk::Tile::TButton.new(cmd, :text=>'Help', :underline=>0, 
+b_help = Tk::Tile::Button.new(cmd, :text=>'Help', :underline=>0, 
                                :default=>:normal, :command=>proc{showHelp()})
 Tk.grid('x', b_close, b_help, :pady=>[6, 4], :padx=>4)
 TkGrid.columnconfigure(cmd, 0, :weight=>1)
@@ -654,7 +654,7 @@ setTheme($V[:THEME])
 #
 values = %w(list abc def ghi jkl mno pqr stu vwx yz)
 2.times {|i|
-  cb = Tk::Tile::TCombobox.new(
+  cb = Tk::Tile::Combobox.new(
     combo, :values=>values, :textvariable=>$V.ref(:COMBO))
   cb.pack(:side=>:top, :padx=>2, :pady=>2, :expand=>false, :fill=>:x)
   if i == 1
@@ -672,7 +672,7 @@ values = %w(list abc def ghi jkl mno pqr stu vwx yz)
 if version?('0.5')
 
   treeview = nil # avoid 'undefined' error
-  scrollbar = Tk::Tile::TScrollbar.new(tree,
+  scrollbar = Tk::Tile::Scrollbar.new(tree,
       :command=>proc{|*args| treeview.yview(*args)})
   treeview = Tk::Tile::Treeview.new(tree, :columns=>%w(Class), :padding=>4,
       :yscrollcommand=>proc{|*args| scrollbar.set(*args)})
@@ -708,7 +708,7 @@ if version?('0.5')
   end
 
 else
-  Tk::Tile::TLabel.new(tree,
+  Tk::Tile::Label.new(tree,
       :text=>'Treeview is supported on tile 0.5 or later...').pack
 end
 
@@ -739,7 +739,7 @@ showDescription.bind('Leave', proc{|w| msg.text('')}, '%W')
     "Demonstrates custom classes (see demos/repeater.tcl)" ]
 
 ].each{|demo_cmd, label, description|
-  b = Tk::Tile::TButton.new(others, :text=>label, 
+  b = Tk::Tile::Button.new(others, :text=>label, 
                             :command=>proc{ self.__send__(demo_cmd) })
   $Desc[b.path] = description
   b.bindtags <<= showDescription
@@ -764,7 +764,7 @@ def scrollbarResizeDemo
   end
   $scrollbars = TkToplevel.new(:title=>'Scrollbars', :geometry=>'200x200')
   f = TkFrame.new($scrollbars, :height=>200)
-  tsb = Tk::Tile::TScrollbar.new(f, :command=>proc{|*args| sbstub(tsb, *args)})
+  tsb = Tk::Tile::Scrollbar.new(f, :command=>proc{|*args| sbstub(tsb, *args)})
   sb = TkScrollbar.new(f, :command=>proc{|*args| sbstub(sb, *args)})
   Tk.grid(tsb, sb, :sticky=>:news)
 
@@ -799,8 +799,8 @@ def trackFocus
     ["Grab:", :Grab], 
     ["Status:", :GrabStatus]
   ].each{|label, var_index|
-    Tk.grid(Tk::Tile::TLabel.new($focus, :text=>label, :anchor=>:e), 
-            Tk::Tile::TLabel.new($focus, 
+    Tk.grid(Tk::Tile::Label.new($focus, :text=>label, :anchor=>:e), 
+            Tk::Tile::Label.new($focus, 
                                  :textvariable=>$FocusInf.ref(var_index), 
                                  :width=>40, :anchor=>:w, :relief=>:groove), 
             :sticky=>:ew)
@@ -859,18 +859,18 @@ def trackStates
   end
   $states = TkToplevel.new(:title=>'Widget states')
 
-  l_inf = Tk::Tile::TLabel.new($states, :text=>"Press Control-Shift-Button-1 on any widget")
+  l_inf = Tk::Tile::Label.new($states, :text=>"Press Control-Shift-Button-1 on any widget")
 
-  l_lw = Tk::Tile::TLabel.new($states, :text=>'Widget:', 
+  l_lw = Tk::Tile::Label.new($states, :text=>'Widget:', 
                               :anchor=>:e, :relief=>:groove)
-  l_w = Tk::Tile::TLabel.new($states, :textvariable=>$Widget, 
+  l_w = Tk::Tile::Label.new($states, :textvariable=>$Widget, 
                               :anchor=>:w, :relief=>:groove)
 
   Tk.grid(l_inf, '-', :sticky=>:ew, :padx=>6, :pady=>6)
   Tk.grid(l_lw, l_w, :sticky=>:ew)
 
   $states_list.each{|st|
-    cb = Tk::Tile::TCheckbutton.new($states, :text=>st, 
+    cb = Tk::Tile::Checkbutton.new($states, :text=>st, 
                                     :variable=>$State.ref(st), 
                                     :command=>proc{ changeState(st) })
     $states_btns[st] = cb
@@ -879,10 +879,10 @@ def trackStates
 
   $states.grid_columnconfigure(1, :weight=>1)
 
-  f_cmd = Tk::Tile::TFrame.new($states)
+  f_cmd = Tk::Tile::Frame.new($states)
   Tk.grid('x', f_cmd, :sticky=>:nse)
 
-  b_close = Tk::Tile::TButton.new(f_cmd, :text=>'Close', 
+  b_close = Tk::Tile::Button.new(f_cmd, :text=>'Close', 
                                   :command=>proc{ $states.destroy })
   Tk.grid('x', b_close, :padx=>4, :pady=>[6,4])
   f_cmd.grid_columnconfigure(0, :weight=>1)
@@ -929,12 +929,12 @@ def repeatDemo
   end
   $repeatDemo = TkToplevel.new(:title=>'Repeating button')
 
-  f = Tk::Tile::TFrame.new($repeatDemo)
-  b = Tk::Tile::TButton.new(f, :class=>'Repeater', :text=>'Press and hold')
+  f = Tk::Tile::Frame.new($repeatDemo)
+  b = Tk::Tile::Button.new(f, :class=>'Repeater', :text=>'Press and hold')
   if version?('0.6')
-    p = Tk::Tile::TProgressbar.new(f, :orient=>:horizontal, :maximum=>10)
+    p = Tk::Tile::Progressbar.new(f, :orient=>:horizontal, :maximum=>10)
   else # progressbar is not supported
-    p = Tk::Tile::TProgress.new(f, :orient=>:horizontal, :from=>0, :to=>10)
+    p = Tk::Tile::Progress.new(f, :orient=>:horizontal, :from=>0, :to=>10)
     def p.step
       i = self.get + 1
       i = self.from if i > self.to

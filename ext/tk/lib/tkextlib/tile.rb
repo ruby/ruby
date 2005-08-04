@@ -110,39 +110,63 @@ module Tk
     ######################################
 
     autoload :TButton,       'tkextlib/tile/tbutton'
+    autoload :Button,        'tkextlib/tile/tbutton'
 
     autoload :TCheckButton,  'tkextlib/tile/tcheckbutton'
+    autoload :CheckButton,   'tkextlib/tile/tcheckbutton'
     autoload :TCheckbutton,  'tkextlib/tile/tcheckbutton'
+    autoload :Checkbutton,   'tkextlib/tile/tcheckbutton'
 
     autoload :TEntry,        'tkextlib/tile/tentry'
+    autoload :Entry,         'tkextlib/tile/tentry'
+
     autoload :TCombobox,     'tkextlib/tile/tcombobox'
+    autoload :Combobox,      'tkextlib/tile/tcombobox'
 
     autoload :TFrame,        'tkextlib/tile/tframe'
+    autoload :Frame,         'tkextlib/tile/tframe'
+
     autoload :TLabelframe,   'tkextlib/tile/tlabelframe'
+    autoload :Labelframe,    'tkextlib/tile/tlabelframe'
 
     autoload :TLabel,        'tkextlib/tile/tlabel'
+    autoload :Label,         'tkextlib/tile/tlabel'
 
     autoload :TMenubutton,   'tkextlib/tile/tmenubutton'
+    autoload :Menubutton,    'tkextlib/tile/tmenubutton'
 
     autoload :TNotebook,     'tkextlib/tile/tnotebook'
+    autoload :Notebook,      'tkextlib/tile/tnotebook'
 
     autoload :TPaned,        'tkextlib/tile/tpaned'
+    autoload :Paned,         'tkextlib/tile/tpaned'
 
     autoload :TProgressbar,  'tkextlib/tile/tprogressbar'
+    autoload :Progressbar,   'tkextlib/tile/tprogressbar'
 
     autoload :TRadioButton,  'tkextlib/tile/tradiobutton'
+    autoload :RadioButton,   'tkextlib/tile/tradiobutton'
     autoload :TRadiobutton,  'tkextlib/tile/tradiobutton'
+    autoload :Radiobutton,   'tkextlib/tile/tradiobutton'
 
     autoload :TScale,        'tkextlib/tile/tscale'
+    autoload :Scale,         'tkextlib/tile/tscale'
     autoload :TProgress,     'tkextlib/tile/tscale'
+    autoload :Progress,      'tkextlib/tile/tscale'
 
     autoload :TScrollbar,    'tkextlib/tile/tscrollbar'
+    autoload :Scrollbar,     'tkextlib/tile/tscrollbar'
 
     autoload :TSeparator,    'tkextlib/tile/tseparator'
+    autoload :Separator,     'tkextlib/tile/tseparator'
 
     autoload :TSquare,       'tkextlib/tile/tsquare'
+    autoload :Square,        'tkextlib/tile/tsquare'
 
+    autoload :TTreeview,     'tkextlib/tile/treeview'
     autoload :Treeview,      'tkextlib/tile/treeview'
+    autoload :TTreeView,     'tkextlib/tile/treeview'
+    autoload :TreeView,      'tkextlib/tile/treeview'
 
     autoload :Style,         'tkextlib/tile/style'
   end

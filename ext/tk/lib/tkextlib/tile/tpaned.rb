@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TPaned < TkWindow
     end
+    Paned = TPaned
   end
 end
 

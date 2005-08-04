@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TFrame < TkFrame
     end
+    Frame = TFrame
   end
 end
 

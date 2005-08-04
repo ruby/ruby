@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TSquare < TkWindow
     end
+    Square = TSquare
   end
 end
 
