@@ -1,3 +1,8 @@
+Fri Aug  5 00:25:12 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/tk/tcltklib.c: refactoring - extract ruby string <->
+	  tcl object conversion as get_str_from_obj and get_obj_from_str.
+
 Fri Aug  5 00:19:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (Init_Enumerator): provided features should have
