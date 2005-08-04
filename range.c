@@ -467,17 +467,19 @@ rb_range_beg_len(range, begp, lenp, len, err)
     int err;
 {
     VALUE b, e;
-    long beg, end;
+    long beg, end, excl;
 
     if (rb_obj_is_kind_of(range, rb_cRange)) {
 	b = rb_ivar_get(range, id_beg);
 	e = rb_ivar_get(range, id_end);
+	excl = EXCL(range);
     }
     else {
 	b = rb_check_to_integer(range, "begin");
 	if (NIL_P(b)) return Qnil;
 	e = rb_check_to_integer(range, "end");
 	if (NIL_P(e)) return Qnil;
+	excl = RTEST(rb_funcall(range, rb_intern("exclude_end?"), 0));
     }
     beg = NUM2LONG(b);
     end = NUM2LONG(e);
@@ -491,7 +493,7 @@ rb_range_beg_len(range, begp, lenp, len, err)
 	if (end > len) end = len;
     }
     if (end < 0) end += len;
-    if (!EXCL(range)) end++;	/* include end point */
+    if (!excl) end++;		/* include end point */
     len = end - beg;
     if (len < 0) len = 0;
 
@@ -502,7 +504,7 @@ rb_range_beg_len(range, begp, lenp, len, err)
   out_of_range:
     if (err) {
 	rb_raise(rb_eRangeError, "%ld..%s%ld out of range",
-		 b, EXCL(range)? "." : "", e);
+		 b, excl ? "." : "", e);
     }
     return Qnil;
 }
