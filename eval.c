@@ -6850,7 +6850,7 @@ static st_table *loading_tbl;
 #define IS_DLEXT(e) (strcmp(e, DLEXT) == 0)
 #endif
 
-static char *
+static int
 rb_feature_p(feature, ext, rb)
     const char *feature, *ext;
     int rb;
@@ -6873,14 +6873,14 @@ rb_feature_p(feature, ext, rb)
 	if (strncmp(f, feature, len) != 0) continue;
 	if (!*(e = f + len)) {
 	    if (ext) continue;
-	    return e;
+	    return 'u';
 	}
 	if (*e != '.') continue;
 	if ((!rb || !ext) && (IS_SOEXT(e) || IS_DLEXT(e))) {
-	    return e;
+	    return 's';
 	}
 	if ((rb || !ext) && (strcmp(e, ".rb") == 0)) {
-	    return e;
+	    return 'r';
 	}
     }
     return 0;
@@ -6990,7 +6990,7 @@ search_required(fname, path)
 {
     VALUE tmp;
     char *ext, *ftptr;
-    int type;
+    int type, ft = 0;
 
     *path = 0;
     ext = strrchr(ftptr = RSTRING(fname)->ptr, '.');
@@ -7041,8 +7041,8 @@ search_required(fname, path)
 	    }
 	}
     }
-    else if (ext = rb_feature_p(ftptr, 0, Qfalse)) {
-	return (*ext && (IS_SOEXT(ext) || IS_DLEXT(ext))) ? 's' : 'r';
+    else if ((ft = rb_feature_p(ftptr, 0, Qfalse)) == 'r') {
+	return 'r';
     }
     tmp = fname;
     type = rb_find_file_ext(&tmp, loadable_ext);
@@ -7050,13 +7050,12 @@ search_required(fname, path)
     switch (type) {
       case 0:
 	ftptr = RSTRING(tmp)->ptr;
-	if ((ext = rb_feature_p(ftptr, 0, Qfalse))) {
-	    type = strcmp(".rb", ext);
-	    break;
-	}
-	return 0;
+	if (ft) break;
+	return rb_feature_p(ftptr, 0, Qfalse);
 
       default:
+	if (ft) break;
+      case 1:
 	ext = strrchr(ftptr = RSTRING(tmp)->ptr, '.');
 	if (rb_feature_p(ftptr, ext, !--type)) break;
 	*path = tmp;

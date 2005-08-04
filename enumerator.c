@@ -426,5 +426,5 @@ Init_Enumerator()
     sym_each_slice	= ID2SYM(rb_intern("each_slice"));
     sym_each_cons	= ID2SYM(rb_intern("each_cons"));
 
-    rb_provide("enumerator");	/* for backward compatibility */
+    rb_provide("enumerator.so");	/* for backward compatibility */
 }
