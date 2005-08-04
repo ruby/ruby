@@ -4169,7 +4169,12 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		| restarg_mark
 		    {
 		    /*%%%*/
-			$$ = (NODE*)Qnil;
+			if (dyna_in_block()) {
+			    $$ = NEW_DASGN_CURR(internal_id(), 0);
+			}
+			else {
+			    $$ = NEW_NODE(NODE_LASGN,0,0,local_append(0));
+			}
 		    /*%
 			$$ = dispatch1(restparam, Qnil);
 		    %*/

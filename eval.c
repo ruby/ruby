@@ -1105,7 +1105,7 @@ static VALUE module_setup _((VALUE,NODE*));
 
 static VALUE massign _((VALUE,NODE*,VALUE,int));
 static void assign _((VALUE,NODE*,VALUE,int));
-static void formal_assign _((VALUE, NODE*, int, VALUE*, VALUE*));
+static int formal_assign _((VALUE, NODE*, int, VALUE*, VALUE*));
 
 typedef struct event_hook {
     rb_event_hook_func_t func;
@@ -5715,7 +5715,7 @@ call_cfunc(func, recv, len, argc, argv)
     return Qnil;		/* not reached */
 }
 
-static void
+static int
 formal_assign(recv, node, argc, argv, local_vars)
     VALUE recv;
     NODE *node;
@@ -5766,13 +5766,14 @@ formal_assign(recv, node, argc, argv, local_vars)
 	while (opt && argc) {
 	    assign(recv, opt->nd_head, *argv, 1);
 	    argv++; argc--;
+	    ++i;
 	    opt = opt->nd_next;
 	}
 	if (opt) {
 	    rb_eval(recv, opt);
 	}
     }
-    if (RTEST(node->nd_rest)) {
+    if (node->nd_rest) {
 	VALUE v;
 
 	if (argc > 0)
@@ -5780,7 +5781,9 @@ formal_assign(recv, node, argc, argv, local_vars)
 	else
 	    v = rb_ary_new2(0);
 	assign(recv, node->nd_rest, v, 1);
+	if (argc > 0) return -i - 1;
     }
+    return i;
 }
 
 static VALUE
@@ -5923,10 +5926,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 		    body = body->nd_next;
 		}
 		if (node) {
-		    formal_assign(recv, node, argc, argv, local_vars);
-		    if (RTEST(node->nd_rest)) {
-			ruby_frame->argc = -(ruby_frame->argc - argc)-1;
-		    }
+		    ruby_frame->argc = formal_assign(recv, node, argc, argv, local_vars);
 		}
 
 		if (event_hooks) {

@@ -1,4 +1,4 @@
-Fri Aug  5 00:08:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Aug  5 00:18:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enumerator.c (Init_Enumerator): provided features should have
 	  extensions.
@@ -8,6 +8,11 @@ Fri Aug  5 00:08:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (search_required): ruby library should be prior to statically
 	  linked extentions.  fixed: [ruby-dev:26711]
+
+	* eval.c (formal_assign): returns position of rest arguments variable.
+
+	* parse.y (f_rest_arg): use anonymous variable for rest arguments.
+	  fixed: [ruby-dev:26647]
 
 Thu Aug  4 20:03:18 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
 
