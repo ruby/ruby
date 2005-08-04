@@ -5613,63 +5613,75 @@ ip_has_mainwindow_p(self)
     }
 }
 
+/*** ruby string <=> tcl object ***/
+#if TCL_MAJOR_VERSION >= 8
+static VALUE
+get_str_from_obj(obj)
+    Tcl_Obj *obj;
+{
+    int len, binary = 0;
+    const char *s;
+    volatile VALUE str;
+
+#if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
+    s = Tcl_GetStringFromObj(obj, &len);
+#else /* TCL_VERSION >= 8.1 */
+    if (Tcl_GetCharLength(obj) != Tcl_UniCharLen(Tcl_GetUnicode(obj))) {
+        /* possibly binary string */
+        s = Tcl_GetByteArrayFromObj(obj, &len);
+        binary = 1;
+    } else {
+        /* possibly text string */
+        s = Tcl_GetStringFromObj(obj, &len);
+    }
+#endif
+    str = s ? rb_str_new(s, len) : rb_str_new2("");
+    if (binary) rb_ivar_set(str, ID_at_enc, rb_str_new2("binary"));
+    return str;
+}
+
+static Tcl_Obj *
+get_obj_from_str(str)
+    VALUE str;
+{
+    const char *s = StringValuePtr(str);
+
+#if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
+    return Tcl_NewStringObj(s, RSTRING(str)->len);
+#else /* TCL_VERSION >= 8.1 */
+    VALUE enc = rb_attr_get(str, ID_at_enc);
+    if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
+        /* binary string */
+        return Tcl_NewByteArrayObj(s, RSTRING(str)->len);
+    } else if (strlen(s) != RSTRING(str)->len) {
+        /* probably binary string */
+        return Tcl_NewByteArrayObj(s, RSTRING(str)->len);
+    } else {
+        /* probably text string */
+        return Tcl_NewStringObj(s, RSTRING(str)->len);
+    }
+#endif
+}
+#endif /* ruby string <=> tcl object */
+
 static VALUE
 ip_get_result_string_obj(interp)
     Tcl_Interp *interp;
 {
 #if TCL_MAJOR_VERSION >= 8
-    int len;
-    char *s;
-
-# if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-    s = Tcl_GetStringFromObj(Tcl_GetObjResult(interp), &len);
-    if (s == (char*)NULL) {
-        return rb_tainted_str_new2("");
-    } else {
-        return(rb_tainted_str_new(s, len));
-    }
-
-# else /* TCL_VERSION >= 8.1 */
+    Tcl_Obj *retObj;
     volatile VALUE strval;
-    Tcl_Obj *retobj = Tcl_GetObjResult(interp);
-    int thr_crit_bup;
 
-    Tcl_IncrRefCount(retobj);
-
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-
-    if (Tcl_GetCharLength(retobj) != Tcl_UniCharLen(Tcl_GetUnicode(retobj))) {
-        /* possibly binary string */
-        s = Tcl_GetByteArrayFromObj(retobj, &len);
-        if (s == (char*)NULL) {
-            strval = rb_tainted_str_new2("");
-        } else {
-            strval = rb_tainted_str_new(s, len);
-        }
-        rb_ivar_set(strval, ID_at_enc, rb_str_new2("binary"));
-    } else {
-        /* possibly text string */
-        s = Tcl_GetStringFromObj(retobj, &len);
-        if (s == (char*)NULL) {
-            strval = rb_tainted_str_new2("");
-        } else {
-            strval = rb_tainted_str_new(s, len);
-        }
-    }
-
-    rb_thread_critical = thr_crit_bup;
-
-    Tcl_DecrRefCount(retobj);
-
-    return(strval);
-
-# endif
-#else /* TCL_MAJOR_VERSION < 8 */
-    return(rb_tainted_str_new2(interp->result));
+    retObj = Tcl_GetObjResult(interp);
+    Tcl_IncrRefCount(retObj);
+    strval = get_str_from_obj(retObj);
+    OBJ_TAINT(strval);
+    Tcl_DecrRefCount(retObj);
+    return strval;
+#else
+    return rb_tainted_str_new2(interp->result);
 #endif
 }
-
 
 /* call Tcl/Tk functions on the eventloop thread */
 static VALUE
@@ -6971,15 +6983,12 @@ alloc_invoke_arguments(argc, argv)
     VALUE *argv;
 {
     int i;
-    VALUE v;
-    char *s;
     int thr_crit_bup;
 
 #if TCL_MAJOR_VERSION >= 8
-    Tcl_Obj **av = (Tcl_Obj **)NULL;
-    Tcl_Obj *resultPtr;
+    Tcl_Obj **av;
 #else /* TCL_MAJOR_VERSION < 8 */
-    char **av = (char **)NULL;
+    char **av;
 #endif
 
     thr_crit_bup = rb_thread_critical;
@@ -6987,42 +6996,20 @@ alloc_invoke_arguments(argc, argv)
 
     /* memory allocation */
 #if TCL_MAJOR_VERSION >= 8
-    av = (Tcl_Obj **)ALLOC_N(Tcl_Obj *, argc+1);
+    av = ALLOC_N(Tcl_Obj *, argc+1);
     for (i = 0; i < argc; ++i) {
-        VALUE enc;
-
-        v = argv[i];
-        s = StringValuePtr(v);
-
-# if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-        av[i] = Tcl_NewStringObj(s, RSTRING(v)->len);
-# else /* TCL_VERSION >= 8.1 */
-        enc = rb_attr_get(v, ID_at_enc);
-        if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
-            /* binary string */
-            av[i] = Tcl_NewByteArrayObj(s, RSTRING(v)->len);
-        } else if (strlen(s) != RSTRING(v)->len) {
-            /* probably binary string */
-            av[i] = Tcl_NewByteArrayObj(s, RSTRING(v)->len);
-        } else {
-            /* probably text string */
-            av[i] = Tcl_NewStringObj(s, RSTRING(v)->len);
-        }
-# endif
+        av[i] = get_obj_from_str(argv[i]);
         Tcl_IncrRefCount(av[i]);
     }
-    av[argc] = (Tcl_Obj *)NULL;
+    av[argc] = NULL;
 
 #else /* TCL_MAJOR_VERSION < 8 */
     /* string interface */
-    av = (char **)ALLOC_N(char *, argc+1);
+    av = ALLOC_N(char *, argc+1);
     for (i = 0; i < argc; ++i) {
-        v = argv[i];
-        s = StringValuePtr(v);
-        av[i] = ALLOC_N(char, strlen(s)+1);
-        strcpy(av[i], s);
+        av[i] = strdup(StringValuePtr(argv[i]));
     }
-    av[argc] = (char *)NULL;
+    av[argc] = NULL;
 #endif
 
     rb_thread_critical = thr_crit_bup;
@@ -7325,8 +7312,6 @@ ip_get_variable2_core(interp, argc, argv)
 #if TCL_MAJOR_VERSION >= 8
     {
         Tcl_Obj *ret;
-        char *s;
-        int  len;
         volatile VALUE strval;
 
         thr_crit_bup = rb_thread_critical;
@@ -7354,36 +7339,14 @@ ip_get_variable2_core(interp, argc, argv)
         }
 
         Tcl_IncrRefCount(ret);
-
-# if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-        s = Tcl_GetStringFromObj(ret, &len);
-        strval = rb_tainted_str_new(s, len);
+        strval = get_str_from_obj(ret);
+        OBJ_TAINT(strval);
         Tcl_DecrRefCount(ret);
+
         /* Tcl_Release(ptr->ip); */
         rbtk_release_ip(ptr);
         rb_thread_critical = thr_crit_bup;
         return(strval);
-
-# else /* TCL_VERSION >= 8.1 */
-        if (Tcl_GetCharLength(ret) 
-            != Tcl_UniCharLen(Tcl_GetUnicode(ret))) {
-            /* possibly binary string */
-            s = Tcl_GetByteArrayFromObj(ret, &len);
-            strval = rb_tainted_str_new(s, len);
-            rb_ivar_set(strval, ID_at_enc, rb_tainted_str_new2("binary"));
-        } else {
-            /* possibly text string */
-            s = Tcl_GetStringFromObj(ret, &len);
-            strval = rb_tainted_str_new(s, len);
-        }
-
-        Tcl_DecrRefCount(ret);
-        /* Tcl_Release(ptr->ip); */
-        rbtk_release_ip(ptr);
-        rb_thread_critical = thr_crit_bup;
-
-        return(strval);
-# endif
     }
 #else /* TCL_MAJOR_VERSION < 8 */
     {
@@ -7482,36 +7445,12 @@ ip_set_variable2_core(interp, argc, argv)
 #if TCL_MAJOR_VERSION >= 8
     {
         Tcl_Obj *valobj, *ret;
-        char *s;
-        int  len;
         volatile VALUE strval;
 
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
 
-# if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-        valobj  = Tcl_NewStringObj(RSTRING(value)->ptr, 
-                                   RSTRING(value)->len); 
-# else /* TCL_VERSION >= 8.1 */
-        {
-            VALUE enc = rb_attr_get(value, ID_at_enc);
-
-            if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
-                /* binary string */
-                valobj = Tcl_NewByteArrayObj(RSTRING(value)->ptr, 
-                                             RSTRING(value)->len);
-            } else if (strlen(RSTRING(value)->ptr) != RSTRING(value)->len) {
-                /* probably binary string */
-                valobj = Tcl_NewByteArrayObj(RSTRING(value)->ptr, 
-                                             RSTRING(value)->len);
-            } else {
-                /* probably text string */
-                valobj = Tcl_NewStringObj(RSTRING(value)->ptr, 
-                                          RSTRING(value)->len); 
-            }
-        }
-
-# endif
+        valobj = get_obj_from_str(value);
         Tcl_IncrRefCount(valobj);
 
         /* ip is deleted? */
@@ -7539,24 +7478,10 @@ ip_set_variable2_core(interp, argc, argv)
         }
 
         Tcl_IncrRefCount(ret);
-
-# if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-        s = Tcl_GetStringFromObj(ret, &len); 
-        strval = rb_tainted_str_new(s, len);
-# else /* TCL_VERSION >= 8.1 */
-        if (Tcl_GetCharLength(ret) != Tcl_UniCharLen(Tcl_GetUnicode(ret))) {
-            /* possibly binary string */
-            s = Tcl_GetByteArrayFromObj(ret, &len);
-            strval = rb_tainted_str_new(s, len);
-            rb_ivar_set(strval, ID_at_enc, rb_str_new2("binary"));
-        } else {
-            /* possibly text string */
-            s = Tcl_GetStringFromObj(ret, &len);
-            strval = rb_tainted_str_new(s, len);
-        }
-# endif
-
+        strval = get_str_from_obj(ret);
+        OBJ_TAINT(strval);
         Tcl_DecrRefCount(ret);
+
         /* Tcl_Release(ptr->ip); */
         rbtk_release_ip(ptr);
         rb_thread_critical = thr_crit_bup;
@@ -7583,11 +7508,8 @@ ip_set_variable2_core(interp, argc, argv)
             return rb_exc_new2(rb_eRuntimeError, ptr->ip->result);
         }
 
-        Tcl_IncrRefCount(ret);
-
         strval = rb_tainted_str_new2(ret);
 
-        Tcl_DecrRefCount(ret);
         /* Tcl_Release(ptr->ip); */
         rbtk_release_ip(ptr);
         rb_thread_critical = thr_crit_bup;
@@ -7806,39 +7728,7 @@ lib_split_tklist_core(ip_obj, list_str)
         Tcl_Obj **objv;
         int thr_crit_bup;
 
-# if 1
-#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-        listobj = Tcl_NewStringObj(RSTRING(list_str)->ptr, 
-                                   RSTRING(list_str)->len); 
-#  else /* TCL_VERSION >= 8.1 */
-        thr_crit_bup = rb_thread_critical;
-        rb_thread_critical = Qtrue;
-
-        {
-            VALUE enc = rb_attr_get(list_str, ID_at_enc);
-
-            if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
-                /* binary string */
-                listobj = Tcl_NewByteArrayObj(RSTRING(list_str)->ptr, 
-                                              RSTRING(list_str)->len);
-            } else if (strlen(RSTRING(list_str)->ptr)
-                                    != RSTRING(list_str)->len) {
-                /* probably binary string */
-                listobj = Tcl_NewByteArrayObj(RSTRING(list_str)->ptr, 
-                                              RSTRING(list_str)->len);
-            } else {
-                /* probably text string */
-                listobj = Tcl_NewStringObj(RSTRING(list_str)->ptr, 
-                                           RSTRING(list_str)->len); 
-            }
-        }
-
-        rb_thread_critical = thr_crit_bup;
-#  endif
-# else
-        listobj = Tcl_NewStringObj(RSTRING(list_str)->ptr, 
-                                   RSTRING(list_str)->len); 
-# endif
+        listobj = get_obj_from_str(list_str);
 
         Tcl_IncrRefCount(listobj);
 
@@ -7866,31 +7756,7 @@ lib_split_tklist_core(ip_obj, list_str)
         old_gc = rb_gc_disable();
 
         for(idx = 0; idx < objc; idx++) {
-            char *str;
-            int  len;
-
-# if 1
-#  if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-            str = Tcl_GetStringFromObj(objv[idx], &len);
-            elem = rb_str_new(str, len);
-#  else /* TCL_VERSION >= 8.1 */
-            if (Tcl_GetCharLength(objv[idx]) 
-                != Tcl_UniCharLen(Tcl_GetUnicode(objv[idx]))) {
-                /* possibly binary string */
-                str = Tcl_GetByteArrayFromObj(objv[idx], &len);
-                elem = rb_str_new(str, len);
-                rb_ivar_set(elem, ID_at_enc, rb_tainted_str_new2("binary"));
-            } else {
-                /* possibly text string */
-                str = Tcl_GetStringFromObj(objv[idx], &len);
-                elem = rb_str_new(str, len);
-            }
-#  endif
-# else
-            str = Tcl_GetStringFromObj(objv[idx], &len);
-            elem = rb_str_new(str, len);
-# endif
-
+            elem = get_str_from_obj(objv[idx]);
             if (taint_flag) OBJ_TAINT(elem);
             RARRAY(ary)->ptr[idx] = elem;
         }
