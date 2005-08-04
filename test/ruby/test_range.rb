@@ -14,4 +14,16 @@ class TestRange < Test::Unit::TestCase
     r = (arr.shift)..(arr.shift)
     assert_equal(1..2, r, "[ruby-dev:26383]")
   end
+
+  class DuckRange
+    def initialize(b,e)
+      @begin = b
+      @end = e
+    end
+    attr_reader :begin, :end
+  end
+
+  def test_duckrange
+    assert_equal("bc", "abcd"[DuckRange.new(1,2)])
+  end
 end
