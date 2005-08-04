@@ -45,12 +45,22 @@ class TkToplevel<TkWindow
 #  end
 #################
 
+  def __methodcall_optkeys  # { key=>method, ... }
+    TOPLEVEL_METHODCALL_OPTKEYS
+  end
+  private :__methodcall_optkeys
+
   def _wm_command_option_chk(keys)
     keys = {} unless keys
     new_keys = {}
     wm_cmds = {}
+
+    conf_methods = _symbolkey2str(__methodcall_optkeys())
+
     keys.each{|k,v|
-      if Wm.method_defined?(k)
+      if conf_methods.key?(k)
+        wm_cmds[conf_methods[k]] = v
+      elsif Wm.method_defined?(k)
         case k
         when 'screen','class','colormap','container','use','visual'
           new_keys[k] = v

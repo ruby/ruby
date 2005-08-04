@@ -1,3 +1,23 @@
+Thu Aug  4 18:38:36 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: cannot compile for Tcl7.6/Tk4.2.
+
+	* ext/tcltklib/tcltklib.c: add nativethread consistency check.
+
+	* ext/tcltklib/stubs.c: ditto.
+
+	* ext/tk/lib/tk.rb: forgot to define TclTkIp.encoding and encoding= 
+	  when Tcl is 7.6 or 8.0.
+
+	* ext/tk/lib/tk/wm.rb: support to make some methods as options of 
+	  root or toplevel widget. [ruby-talk:150336]
+
+	* ext/tk/lib/tk/root.rb: ditto.
+
+	* ext/tk/lib/tk/toplevel.rb: ditto.
+
+	* ext/tk/lib/tkextlib/SUPPRT_STATUS: update RELEASE_DATE
+
 Thu Aug  4 08:03:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): should not modify $mflags for each
