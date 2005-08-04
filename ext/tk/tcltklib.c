@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-08-01"
+#define TCLTKLIB_RELEASE_DATE "2005-08-04"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -140,6 +140,12 @@ tcl_global_eval(interp, cmd)
 
 #undef Tcl_GlobalEval
 #define Tcl_GlobalEval tcl_global_eval
+
+/* Tcl_{Incr|Decr}RefCount for tcl7.x or earlier */
+#if TCL_MAJOR_VERSION < 8
+#define Tcl_IncrRefCount(obj) (1)
+#define Tcl_DecrRefCount(obj) (1)
+#endif
 
 /* Tcl_GetStringResult for tcl7.x or earlier */
 #if TCL_MAJOR_VERSION < 8
@@ -2992,16 +2998,16 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 {
     int state;
     char *cmd, *param;
+#if TCL_MAJOR_VERSION < 8
+    char *endptr;
+    cmd = argv[0];
+#endif
 
     DUMP1("start ip_RubyExitCommand");
 
 #if TCL_MAJOR_VERSION >= 8
     /* cmd = Tcl_GetString(argv[0]); */
     cmd = Tcl_GetStringFromObj(argv[0], (int*)NULL);
-
-#else /* TCL_MAJOR_VERSION < 8 */
-    char *endptr;
-    cmd = argv[0];
 #endif
 
     if (argc < 1 || argc > 2) {
@@ -3129,6 +3135,7 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
         flags = TCL_ALL_EVENTS|TCL_DONT_WAIT;
 
     } else if (objc == 2) {
+#if TCL_MAJOR_VERSION >= 8
         if (Tcl_GetIndexFromObj(interp, objv[1], (CONST84 char **)updateOptions,
                 "option", 0, &optionIndex) != TCL_OK) {
             return TCL_ERROR;
@@ -3142,6 +3149,14 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
                 rb_bug("ip_rbUpdateObjCmd: bad option index to UpdateOptions");
             }
         }
+#else
+        if (strncmp(objv[1], "idletasks", strlen(objv[1])) != 0) {
+            Tcl_AppendResult(interp, "bad option \"", objv[1],
+                    "\": must be idletasks", (char *) NULL);
+            return TCL_ERROR;
+        }
+        flags = TCL_WINDOW_EVENTS|TCL_IDLE_EVENTS|TCL_DONT_WAIT;
+#endif
     } else {
 #ifdef Tcl_WrongNumArgs
         Tcl_WrongNumArgs(interp, 1, objv, "[ idletasks ]");
@@ -3281,6 +3296,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
         flags = TCL_ALL_EVENTS|TCL_DONT_WAIT;
 
     } else if (objc == 2) {
+#if TCL_MAJOR_VERSION >= 8
         if (Tcl_GetIndexFromObj(interp, objv[1], (CONST84 char **)updateOptions,
                 "option", 0, &optionIndex) != TCL_OK) {
             return TCL_ERROR;
@@ -3294,6 +3310,14 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
                 rb_bug("ip_rb_threadUpdateObjCmd: bad option index to UpdateOptions");
             }
         }
+#else
+        if (strncmp(objv[1], "idletasks", strlen(objv[1])) != 0) {
+            Tcl_AppendResult(interp, "bad option \"", objv[1],
+                    "\": must be idletasks", (char *) NULL);
+            return TCL_ERROR;
+        }
+        flags = TCL_WINDOW_EVENTS|TCL_IDLE_EVENTS|TCL_DONT_WAIT;
+#endif
     } else {
 #ifdef Tcl_WrongNumArgs
         Tcl_WrongNumArgs(interp, 1, objv, "[ idletasks ]");
@@ -4555,6 +4579,7 @@ ip_thread_tkwait(self, mode, target)
 
 
 /* delete slave interpreters */
+#if TCL_MAJOR_VERSION >= 8
 static void
 delete_slaves(ip)
     Tcl_Interp *ip;
@@ -4603,6 +4628,46 @@ delete_slaves(ip)
 
     rb_thread_critical = thr_crit_bup;
 }
+#else /* TCL_MAJOR_VERSION < 8 */
+static void
+delete_slaves(ip)
+    Tcl_Interp *ip;
+{
+    int  thr_crit_bup;
+    Tcl_Interp *slave;
+    int argc;
+    char **argv;
+    char *slave_list;
+    char *slave_name;
+    int i, len;
+
+    DUMP1("delete slaves");
+    thr_crit_bup = rb_thread_critical;
+    rb_thread_critical = Qtrue;
+
+    if (!Tcl_InterpDeleted(ip) && Tcl_Eval(ip, "interp slaves") == TCL_OK) {
+        slave_list = ip->result;
+        if (Tcl_SplitList((Tcl_Interp*)NULL, 
+                          slave_list, &argc, &argv) == TCL_OK) {
+            for(i = 0; i < argc; i++) {
+                slave_name = argv[i];
+
+                DUMP2("delete slave:'%s'", slave_name);
+
+                slave = Tcl_GetSlave(ip, slave_name);
+                if (slave == (Tcl_Interp*)NULL) continue;
+
+                /* call ip_finalize */
+                ip_finalize(slave);
+
+                Tcl_DeleteInterp(slave);
+            }
+        }
+    }
+
+    rb_thread_critical = thr_crit_bup;
+}
+#endif
 
 
 /* finalize operation */
@@ -4870,11 +4935,8 @@ static void
 ip_wrap_namespace_command(interp)
     Tcl_Interp *interp; 
 {
+#if TCL_MAJOR_VERSION >= 8
     Tcl_CmdInfo orig_info;
-
-#if TCL_MAJOR_VERSION < 8
-    return;
-#endif
 
     if (!Tcl_GetCommandInfo(interp, "namespace", &(orig_info))) {
         return;
@@ -4892,6 +4954,7 @@ ip_wrap_namespace_command(interp)
 
     Tcl_CreateObjCommand(interp, "namespace", ip_rbNamespaceObjCmd, 
                          (ClientData) 0, (Tcl_CmdDeleteProc *)NULL);
+#endif
 }
 
 
@@ -5776,6 +5839,7 @@ tk_funcall(func, argc, argv, obj)
 
 
 /* eval string in tcl by Tcl_Eval() */
+#if TCL_MAJOR_VERSION >= 8
 struct call_eval_info {
     struct tcltkip *ptr;
     Tcl_Obj *cmd;
@@ -5791,6 +5855,7 @@ call_tcl_eval(arg)
 
     return Qnil;
 }
+#endif
 
 static VALUE
 ip_eval_real(self, cmd_str, cmd_len)
@@ -7323,6 +7388,7 @@ ip_get_variable2_core(interp, argc, argv)
 #else /* TCL_MAJOR_VERSION < 8 */
     {
         char *ret;
+        volatile VALUE strval;
 
         /* ip is deleted? */
         if (deleted_ip(ptr)) {
@@ -7500,6 +7566,7 @@ ip_set_variable2_core(interp, argc, argv)
 #else /* TCL_MAJOR_VERSION < 8 */
     {
         CONST char *ret;
+        volatile VALUE strval;
 
         /* ip is deleted? */
         if (deleted_ip(ptr)) {
@@ -8065,6 +8132,7 @@ tcltklib_compile_info()
     return ret;
 }
 
+
 /*---- initialization ----*/
 void
 Init_tcltklib()
@@ -8283,6 +8351,12 @@ Init_tcltklib()
     watchdog_thread  = Qnil;
 
     rbtk_pending_exception = Qnil;
+
+    /* --------------------------------------------------------------- */
+
+    /* if ruby->nativethread-supprt and tcltklib->doen't, 
+       the following will cause link-error. */
+    is_ruby_native_thread();
 
     /* --------------------------------------------------------------- */
 

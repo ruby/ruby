@@ -24,6 +24,37 @@ _macinit()
 
 /*------------------------------*/
 
+static int nativethread_checked = 0;
+
+static void
+_nativethread_consistency_check(ip)
+    Tcl_Interp *ip;
+{
+    if (nativethread_checked || ip == (Tcl_Interp *)NULL) {
+        return;
+    }
+
+    if (Tcl_Eval(ip, "set ::tcl_platform(threaded)") == TCL_OK) {
+#ifdef HAVE_NATIVETHREAD
+        /* consistent */
+#else
+        rb_warn("Inconsistency. Loaded Tcl/Tk libraries are enabled nativethread-support. But `tcltklib' is not. The inconsistency causes SEGV or other troubles frequently.");
+#endif
+    } else {
+#ifdef HAVE_NATIVETHREAD
+        rb_warning("Inconsistency.`tcltklib' is enabled nativethread-support. But loaded Tcl/Tk libraries are not. (Probably, the inconsistency doesn't cause any troubles.)");
+#else
+        /* consistent */
+#endif
+    }
+
+    Tcl_ResetResult(ip);
+
+    nativethread_checked = 1;
+}
+
+/*------------------------------*/
+
 #if defined USE_TCL_STUBS && defined USE_TK_STUBS
 
 #if defined _WIN32 || defined __CYGWIN__
@@ -158,14 +189,25 @@ Tcl_Interp *
 ruby_tcl_create_ip_and_stubs_init(st)
     int *st;
 {
+    Tcl_Interp *tcl_ip;
+
     if (st) *st = 0;
 
     if (tcl_stubs_init_p()) {
-        return Tcl_CreateInterp();
+        tcl_ip = Tcl_CreateInterp();
+
+        if (!tcl_ip) {
+            if (st) *st = FAIL_CreateInterp;
+            return (Tcl_Interp*)NULL;
+        }
+
+        _nativethread_consistency_check(tcl_ip);
+
+        return tcl_ip;
+
     } else {
         Tcl_Interp *(*p_Tcl_CreateInterp)();
         Tcl_Interp *(*p_Tcl_DeleteInterp)();
-        Tcl_Interp *tcl_ip;
 
         if (!tcl_dll) {
             int ret = ruby_open_tcl_dll(RSTRING(rb_argv0)->ptr);
@@ -194,6 +236,8 @@ ruby_tcl_create_ip_and_stubs_init(st)
             if (st) *st = FAIL_CreateInterp;
             return (Tcl_Interp*)NULL;
         }
+
+        _nativethread_consistency_check(tcl_ip);
 
         if (!Tcl_InitStubs(tcl_ip, "8.1", 0)) {
             if (st) *st = FAIL_Tcl_InitStubs;
@@ -401,6 +445,9 @@ ruby_tcl_create_ip_and_stubs_init(st)
         if (st) *st = FAIL_CreateInterp;
         return (Tcl_Interp*)NULL;
     }
+
+    _nativethread_consistency_check(tcl_ip);
+
     return tcl_ip;
 }
 

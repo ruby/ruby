@@ -9,6 +9,11 @@ class TkRoot<TkWindow
   include Wm
   include TkMenuSpec
 
+  def __methodcall_optkeys  # { key=>method, ... }
+    TOPLEVEL_METHODCALL_OPTKEYS
+  end
+  private :__methodcall_optkeys
+
 =begin
   ROOT = []
   def TkRoot.new(keys=nil)
@@ -36,7 +41,18 @@ class TkRoot<TkWindow
         super(:without_creating=>true, :widgetname=>'.'){}
     end
     root = TkCore::INTERP.tk_windows['.']
-    if keys  # wm commands
+
+    keys = _symbolkey2str(keys)
+
+    # wm commands
+    root.instance_eval{
+      __methodcall_optkeys.each{|key, method|
+        value = keys.delete(key.to_s)
+        self.__send__(method, value) if value
+      }
+    }
+
+    if keys  # wm commands ( for backward comaptibility )
       keys.each{|k,v|
         if v.kind_of? Array
           root.__send__(k,*v)
@@ -45,6 +61,7 @@ class TkRoot<TkWindow
         end
       }
     end
+
     root.instance_eval(&b) if block_given?
     root
   end

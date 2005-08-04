@@ -2288,6 +2288,8 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
 else
   # dummy methods
   class TclTkIp
+    attr_accessor :encoding
+
     alias __eval _eval
     alias __invoke _invoke
 
@@ -4201,7 +4203,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-08-03'.freeze
+  RELEASE_DATE = '2005-08-04'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
