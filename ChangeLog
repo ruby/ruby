@@ -1,3 +1,8 @@
+Thu Aug  4 13:30:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_div): should not convert the result into
+	  integer.  [ruby-core:05524]
+
 Thu Aug  4 08:03:39 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb (extmake): should not modify $mflags for each

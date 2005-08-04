@@ -2155,7 +2155,7 @@ fix_div(x, y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_div(x, y);
       case T_FLOAT:
-	return rb_Integer(rb_float_new((double)FIX2LONG(x) / RFLOAT(y)->value));	
+	return rb_float_new((double)FIX2LONG(x) / RFLOAT(y)->value);	
       default:
 	return rb_num_coerce_bin(x, y);
     }

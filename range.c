@@ -466,12 +466,21 @@ rb_range_beg_len(range, begp, lenp, len, err)
     long len;
     int err;
 {
-    long beg, end, b, e;
+    VALUE b, e;
+    long beg, end;
 
-    if (!rb_obj_is_kind_of(range, rb_cRange)) return Qfalse;
-
-    beg = b = NUM2LONG(rb_ivar_get(range, id_beg));
-    end = e = NUM2LONG(rb_ivar_get(range, id_end));
+    if (rb_obj_is_kind_of(range, rb_cRange)) {
+	b = rb_ivar_get(range, id_beg);
+	e = rb_ivar_get(range, id_end);
+    }
+    else {
+	b = rb_check_to_integer(range, "begin");
+	if (NIL_P(b)) return Qnil;
+	e = rb_check_to_integer(range, "end");
+	if (NIL_P(e)) return Qnil;
+    }
+    beg = NUM2LONG(b);
+    end = NUM2LONG(e);
 
     if (beg < 0) {
 	beg += len;

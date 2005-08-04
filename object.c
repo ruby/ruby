@@ -2094,6 +2094,18 @@ rb_to_integer(val, method)
 }
 
 VALUE
+rb_check_to_integer(val, method)
+    VALUE val;
+    char *method;
+{
+    VALUE v = convert_type(val, "Integer", method, Qfalse);
+    if (!rb_obj_is_kind_of(v, rb_cInteger)) {
+	return Qnil;
+    }
+    return v;
+}
+
+VALUE
 rb_to_int(val)
     VALUE val;
 {
