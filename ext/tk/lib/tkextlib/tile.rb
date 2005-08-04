@@ -163,10 +163,7 @@ module Tk
     autoload :TSquare,       'tkextlib/tile/tsquare'
     autoload :Square,        'tkextlib/tile/tsquare'
 
-    autoload :TTreeview,     'tkextlib/tile/treeview'
     autoload :Treeview,      'tkextlib/tile/treeview'
-    autoload :TTreeView,     'tkextlib/tile/treeview'
-    autoload :TreeView,      'tkextlib/tile/treeview'
 
     autoload :Style,         'tkextlib/tile/style'
   end
