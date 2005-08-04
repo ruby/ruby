@@ -1,3 +1,13 @@
+2005-08-04  ocean  <ocean@ruby-lang.org>
+
+	* sample/tkextlib/tile/demo.rb: fixed: Tk::Tile::TProgressbar is
+	  supported on tile 0.6 or later, not tile 0.5.
+
+	* sample/tkextlib/tile/demo.rb: updated scales demo to use
+	  Tk::Tile::TProgressbar for tile 0.6 or later.
+
+	* sample/tkextlib/tile/demo.rb: set some TkVariable default values.
+
 2005-08-03  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* lib/tkextlib/tile/treeview.rb: Tk::Tile::Treeview#headingconfigure
