@@ -9,6 +9,9 @@ module Tk
   module Tile
     class Treeview < TkWindow
     end
+    TTreeview = Treeview
+    TTreeView = Treeview
+    TreeView  = Treeview
 
     module TreeviewConfig
       include TkItemConfigMethod

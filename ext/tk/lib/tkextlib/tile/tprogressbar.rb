@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TProgressbar < TkWindow
     end
+    Progressbar = TProgressbar
   end
 end
 

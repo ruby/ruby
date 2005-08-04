@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TSeparator < TkWindow
     end
+    Separator = TSeparator
   end
 end
 

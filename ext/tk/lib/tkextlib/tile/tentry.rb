@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TEntry < TkEntry
     end
+    Entry = TEntry
   end
 end
 

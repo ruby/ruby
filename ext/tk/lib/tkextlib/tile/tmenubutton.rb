@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TMenubutton < TkMenubutton
     end
+    Menubutton = TMenubutton
   end
 end
 

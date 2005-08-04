@@ -10,6 +10,8 @@ module Tk
     class TCheckButton < TkCheckButton
     end
     TCheckbutton = TCheckButton
+    CheckButton  = TCheckButton
+    Checkbutton  = TCheckButton
   end
 end
 

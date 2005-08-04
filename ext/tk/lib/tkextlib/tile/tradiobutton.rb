@@ -10,6 +10,8 @@ module Tk
     class TRadioButton < TkRadioButton
     end
     TRadiobutton = TRadioButton
+    RadioButton  = TRadioButton
+    Radiobutton  = TRadioButton
   end
 end
 

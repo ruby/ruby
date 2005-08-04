@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TScrollbar < TkScrollbar
     end
+    Scrollbar = TScrollbar
   end
 end
 

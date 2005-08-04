@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TLabel < TkLabel
     end
+    Label = TLabel
   end
 end
 

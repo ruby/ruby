@@ -1,5 +1,17 @@
 2005-08-04  ocean  <ocean@ruby-lang.org>
 
+	* sample/tkextlib/tile/demo.rb: followed previous changes.
+
+2005-08-04  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* lib/tkextlib/tile/t*.rb: aliased class names starting with 'T'
+	  to non 'T' ones. (ie. Tk::Tile::TButton -> Tk::Tile::Button)
+	  [ruby-dev:26724]
+
+	* lib/tkextlib/tile.rb: ditto. (autoload support)
+
+2005-08-04  ocean  <ocean@ruby-lang.org>
+
 	* sample/tkextlib/tile/demo.rb: fixed: Tk::Tile::TProgressbar is
 	  supported on tile 0.6 or later, not tile 0.5.
 

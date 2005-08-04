@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TNotebook < TkWindow
     end
+    Notebook = TNotebook
   end
 end
 

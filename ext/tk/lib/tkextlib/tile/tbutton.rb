@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TButton < TkButton
     end
+    Button = TButton
   end
 end
 

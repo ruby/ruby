@@ -9,6 +9,7 @@ module Tk
   module Tile
     class TCombobox < Tk::Tile::TEntry
     end
+    Combobox = TCombobox
   end
 end
 

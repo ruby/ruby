@@ -9,8 +9,11 @@ module Tk
   module Tile
     class TScale < TkScale
     end
+    Scale = TScale
+
     class TProgress < TScale
     end
+    Progress = TProgress
   end
 end
 
