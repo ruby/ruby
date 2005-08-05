@@ -1025,7 +1025,17 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
     dest = "#{dir}/#{f}"
     mfile.print "install-so: #{dest}\n"
     unless $extout
-      mfile.print "#{dest}: #{f}\n\t$(INSTALL_PROG) #{f} #{dir}\n"
+      mfile.print "#{dest}: #{f}\n"
+      if (sep = config_string('BUILD_FILE_SEPARATOR'))
+        f.gsub!("/", sep)
+        dir.gsub!("/", sep)
+        sep = ":/="+sep
+        f.gsub!(/(\$\(\w+)(\))/) {$1+sep+$2}
+        f.gsub!(/(\$\{\w+)(\})/) {$1+sep+$2}
+        dir.gsub!(/(\$\(\w+)(\))/) {$1+sep+$2}
+        dir.gsub!(/(\$\{\w+)(\})/) {$1+sep+$2}
+      end
+      mfile.print "\t$(INSTALL_PROG) #{f} #{dir}\n"
     end
   end
   dirs << (dir = "$(RUBYLIBDIR)")
