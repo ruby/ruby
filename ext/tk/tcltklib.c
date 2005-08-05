@@ -2262,6 +2262,131 @@ tcl_protect(proc, data, failed)
     return ret;
 }
 
+static int
+tcl_check_result(interp, ret, res)
+    Tcl_Interp *interp;
+    VALUE ret;
+    VALUE res; /* exception */
+{
+    int thr_crit_bup;
+
+    /* status check */
+    if (!NIL_P(res)) {
+        VALUE eclass;
+        volatile VALUE bt_ary;
+        volatile VALUE backtrace;
+
+        Tcl_ResetResult(interp);
+
+        eclass = rb_obj_class(res);
+
+        thr_crit_bup = rb_thread_critical;
+        rb_thread_critical = Qtrue;
+
+        DUMP1("set backtrace");
+        if (!NIL_P(bt_ary = rb_funcall(res, ID_backtrace, 0, 0))) {
+          backtrace = rb_ary_join(bt_ary, rb_str_new2("\n"));
+          StringValue(backtrace);
+          Tcl_AddErrorInfo(interp, RSTRING(backtrace)->ptr);
+        }
+
+        rb_thread_critical = thr_crit_bup;
+
+        if (eclass == eTkCallbackReturn) {
+            ip_set_exc_message(interp, res);
+            return TCL_RETURN;
+
+        } else if (eclass == eTkCallbackBreak) {
+            ip_set_exc_message(interp, res);
+            return TCL_BREAK;
+
+        } else if (eclass == eTkCallbackContinue) {
+            ip_set_exc_message(interp, res);
+            return TCL_CONTINUE;
+
+        } else if (eclass == rb_eSystemExit) {
+            ip_set_exc_message(interp, res);
+            rbtk_pending_exception = res;
+            return TCL_RETURN;
+
+#if 0
+            thr_crit_bup = rb_thread_critical;
+            rb_thread_critical = Qtrue;
+
+#if 0 /* REMOVE : fail to rescue SystemExit */
+            /* Tcl_Eval(interp, "destroy ."); */
+            if (Tk_GetNumMainWindows() > 0) {
+                Tk_Window main_win = Tk_MainWindow(interp);
+                if (main_win != (Tk_Window)NULL) {
+                    Tk_DestroyWindow(main_win);
+                }
+            }
+#endif
+
+            /* StringValue(res); */
+            res = rb_funcall(res, ID_message, 0, 0);
+
+            Tcl_AppendResult(interp, RSTRING(res)->ptr, (char*)NULL);
+
+            rb_thread_critical = thr_crit_bup;
+
+            rb_raise(rb_eSystemExit, RSTRING(res)->ptr);
+#endif
+        } else if (eclass == rb_eInterrupt) {
+            ip_set_exc_message(interp, res);
+            rbtk_pending_exception = res;
+            return TCL_RETURN;
+
+        } else if (rb_obj_is_kind_of(res, eLocalJumpError)) {
+            VALUE reason = rb_ivar_get(res, ID_at_reason);
+
+            if (TYPE(reason) != T_SYMBOL) {
+                ip_set_exc_message(interp, res);
+                return TCL_ERROR;
+            }
+
+            if (SYM2ID(reason) == ID_return) {
+                ip_set_exc_message(interp, res);
+                return TCL_RETURN;
+
+            } else if (SYM2ID(reason) == ID_break) {
+                ip_set_exc_message(interp, res);
+                return TCL_BREAK;
+
+            } else if (SYM2ID(reason) == ID_next) {
+                ip_set_exc_message(interp, res);
+                return TCL_CONTINUE;
+
+            } else {
+                ip_set_exc_message(interp, res);
+                return TCL_ERROR;
+            }
+        } else {
+            ip_set_exc_message(interp, res);
+            return TCL_ERROR;
+        }
+    }
+
+    /* result must be string or nil */
+    if (NIL_P(ret)) {
+        Tcl_ResetResult(interp);
+        return TCL_OK;
+    }
+
+    /* copy result to the tcl interpreter */
+    thr_crit_bup = rb_thread_critical;
+    rb_thread_critical = Qtrue;
+
+    ret = TkStringValue(ret);
+    DUMP1("Tcl_AppendResult");
+    Tcl_ResetResult(interp);
+    Tcl_AppendResult(interp, RSTRING(ret)->ptr, (char *)NULL);
+
+    rb_thread_critical = thr_crit_bup;
+
+    return TCL_OK;
+}
+
 
 /* Tcl command `ruby'|`ruby_eval' */
 static VALUE
@@ -2399,127 +2524,7 @@ ip_ruby_eval(clientData, interp, argc, argv)
 
     free(arg);
 
-    /* status check */
-    /* if (arg.failed) { */
-    if (!NIL_P(RARRAY(exception)->ptr[0])) {
-        VALUE eclass;
-        volatile VALUE bt_ary;
-        volatile VALUE backtrace;
-
-        DUMP1("(rb_eval_string result) failed");
-
-        Tcl_ResetResult(interp);
-
-        res = RARRAY(exception)->ptr[0];
-        eclass = rb_obj_class(res);
-
-        thr_crit_bup = rb_thread_critical;
-        rb_thread_critical = Qtrue;
-
-        DUMP1("set backtrace");
-        if (!NIL_P(bt_ary = rb_funcall(res, ID_backtrace, 0, 0))) {
-          backtrace = rb_ary_join(bt_ary, rb_str_new2("\n"));
-          StringValue(backtrace);
-          Tcl_AddErrorInfo(interp, RSTRING(backtrace)->ptr);
-        }
-
-        rb_thread_critical = thr_crit_bup;
-
-        if (eclass == eTkCallbackReturn) {
-            ip_set_exc_message(interp, res);
-            return TCL_RETURN;
-
-        } else if (eclass == eTkCallbackBreak) {
-            ip_set_exc_message(interp, res);
-            return TCL_BREAK;
-
-        } else if (eclass == eTkCallbackContinue) {
-            ip_set_exc_message(interp, res);
-            return TCL_CONTINUE;
-
-        } else if (eclass == rb_eSystemExit) {
-            ip_set_exc_message(interp, res);
-            rbtk_pending_exception = res;
-            return TCL_RETURN;
-
-#if 0
-            thr_crit_bup = rb_thread_critical;
-            rb_thread_critical = Qtrue;
-
-#if 0 /* REMOVE : fail to rescue SystemExit */
-            /* Tcl_Eval(interp, "destroy ."); */
-            if (Tk_GetNumMainWindows() > 0) {
-                Tk_Window main_win = Tk_MainWindow(interp);
-                if (main_win != (Tk_Window)NULL) {
-                    Tk_DestroyWindow(main_win);
-                }
-            }
-#endif
-
-            /* StringValue(res); */
-            res = rb_funcall(res, ID_message, 0, 0);
-
-            Tcl_AppendResult(interp, RSTRING(res)->ptr, (char*)NULL);
-
-            rb_thread_critical = thr_crit_bup;
-
-            rb_raise(rb_eSystemExit, RSTRING(res)->ptr);
-#endif
-        } else if (eclass == rb_eInterrupt) {
-            ip_set_exc_message(interp, res);
-            rbtk_pending_exception = res;
-            return TCL_RETURN;
-
-        } else if (rb_obj_is_kind_of(res, eLocalJumpError)) {
-            VALUE reason = rb_ivar_get(res, ID_at_reason);
-
-            if (TYPE(reason) != T_SYMBOL) {
-                ip_set_exc_message(interp, res);
-                return TCL_ERROR;
-            }
-
-            if (SYM2ID(reason) == ID_return) {
-                ip_set_exc_message(interp, res);
-                return TCL_RETURN;
-
-            } else if (SYM2ID(reason) == ID_break) {
-                ip_set_exc_message(interp, res);
-                return TCL_BREAK;
-
-            } else if (SYM2ID(reason) == ID_next) {
-                ip_set_exc_message(interp, res);
-                return TCL_CONTINUE;
-
-            } else {
-                ip_set_exc_message(interp, res);
-                return TCL_ERROR;
-            }
-        } else {
-            ip_set_exc_message(interp, res);
-            return TCL_ERROR;
-        }
-    }
-
-    /* result must be string or nil */
-    if (NIL_P(res)) {
-        DUMP1("(rb_eval_string result) nil");
-        Tcl_ResetResult(interp);
-        return TCL_OK;
-    }
-
-    /* copy result to the tcl interpreter */
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-
-    res = TkStringValue(res);
-    DUMP2("(rb_eval_string result) %s", RSTRING(res)->ptr);
-    DUMP1("Tcl_AppendResult");
-    Tcl_ResetResult(interp);
-    Tcl_AppendResult(interp, RSTRING(res)->ptr, (char *)NULL);
-
-    rb_thread_critical = thr_crit_bup;
-
-    return TCL_OK;
+    return tcl_check_result(interp, res, RARRAY(exception)->ptr[0]);
 }
 
 
@@ -2730,133 +2735,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 
     free(arg);
 
-    /* status check */
-    /* if (arg.failed) { */
-    if (!NIL_P(RARRAY(exception)->ptr[0])) {
-        VALUE eclass;
-        volatile VALUE bt_ary;
-        volatile VALUE backtrace;
-
-        DUMP1("(rb_eval_cmd result) failed");
-
-        Tcl_ResetResult(interp);
-
-        res = RARRAY(exception)->ptr[0];
-        eclass = rb_obj_class(res);
-
-        thr_crit_bup = rb_thread_critical;
-        rb_thread_critical = Qtrue;
-
-        DUMP1("set backtrace");
-        if (!NIL_P(bt_ary = rb_funcall(res, ID_backtrace, 0, 0))) {
-          backtrace = rb_ary_join(bt_ary, rb_str_new2("\n"));
-          StringValue(backtrace);
-          Tcl_AddErrorInfo(interp, RSTRING(backtrace)->ptr);
-        }
-
-        rb_thread_critical = thr_crit_bup;
-
-        if (eclass == eTkCallbackReturn) {
-            ip_set_exc_message(interp, res);
-            return TCL_RETURN;
-
-        } else if (eclass == eTkCallbackBreak) {
-            ip_set_exc_message(interp, res);
-            return TCL_BREAK;
-
-        } else if (eclass == eTkCallbackContinue) {
-            ip_set_exc_message(interp, res);
-            return TCL_CONTINUE;
-
-        } else if (eclass == rb_eSystemExit) {
-            ip_set_exc_message(interp, res);
-            rbtk_pending_exception = res;
-            return TCL_RETURN;
-
-#if 0
-            thr_crit_bup = rb_thread_critical;
-            rb_thread_critical = Qtrue;
-
-#if 0 /* REMOVE : fail to rescue SystemExit */
-            /* Tcl_Eval(interp, "destroy ."); */
-            if (Tk_GetNumMainWindows() > 0) {
-                Tk_Window main_win = Tk_MainWindow(interp);
-                if (main_win != (Tk_Window)NULL) {
-                    Tk_DestroyWindow(main_win);
-                }
-            }
-#endif
-
-            /* StringValue(res); */
-            res = rb_funcall(res, ID_message, 0, 0);
-
-            Tcl_AppendResult(interp, RSTRING(res)->ptr, (char*)NULL);
-
-            rb_thread_critical = thr_crit_bup;
-
-            rb_raise(rb_eSystemExit, RSTRING(res)->ptr);
-#endif
-        } else if (eclass == rb_eInterrupt) {
-            ip_set_exc_message(interp, res);
-            rbtk_pending_exception = res;
-            return TCL_RETURN;
-
-        } else if (rb_obj_is_kind_of(res, eLocalJumpError)) {
-            VALUE reason = rb_ivar_get(res, ID_at_reason);
-
-            if (TYPE(reason) != T_SYMBOL) {
-                ip_set_exc_message(interp, res);
-                return TCL_ERROR;
-            }
-
-            if (SYM2ID(reason) == ID_return) {
-                ip_set_exc_message(interp, res);
-                return TCL_RETURN;
-
-            } else if (SYM2ID(reason) == ID_break) {
-                ip_set_exc_message(interp, res);
-                return TCL_BREAK;
-
-            } else if (SYM2ID(reason) == ID_next) {
-                ip_set_exc_message(interp, res);
-                return TCL_CONTINUE;
-
-            } else {
-                ip_set_exc_message(interp, res);
-                return TCL_ERROR;
-            }
-        } else {
-            ip_set_exc_message(interp, res);
-            return TCL_ERROR;
-        }
-    }
-
-    /* result must be string or nil */
-    if (NIL_P(res)) {
-        DUMP1("(rb_eval_cmd result) nil");
-        Tcl_ResetResult(interp);
-        return TCL_OK;
-    }
-
-
-    /* copy result to the tcl interpreter */
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-
-    old_gc = rb_gc_disable();
-
-    res = TkStringValue(res);
-
-    if (old_gc == Qfalse) rb_gc_enable();
-    DUMP2("(rb_eval_cmd result) '%s'", RSTRING(res)->ptr);
-    DUMP1("Tcl_AppendResult");
-    Tcl_ResetResult(interp);
-    Tcl_AppendResult(interp, RSTRING(res)->ptr, (char *)NULL);
-
-    rb_thread_critical = thr_crit_bup;
-
-    DUMP1("end of ip_ruby_cmd");
-    return TCL_OK;
+    return tcl_check_result(interp, res, RARRAY(exception)->ptr[0]);
 }
 
 
