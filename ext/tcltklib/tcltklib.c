@@ -2157,56 +2157,25 @@ tcl_protect(proc, data, failed)
     ret = rb_protect(proc, data, &status);
     rb_thread_critical = Qtrue;
     if (status) {
-        char *errtype, *buf;
-        int  errtype_len, len;
-        VALUE old_gc;
+        char *buf;
+        VALUE old_gc, type, str;
 
         old_gc = rb_gc_disable();
 
         switch(status) {
         case TAG_RETURN:
-            errtype = "LocalJumpError: ";
-            errtype_len = strlen(errtype);
-            len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
-            buf = ALLOC_N(char, len + 1);
-            memcpy(buf, errtype, errtype_len);
-            memcpy(buf + errtype_len, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
-            *(buf + len) = 0;
-
-            RARRAY(failed)->ptr[0] = rb_exc_new2(eTkCallbackReturn, buf);
-            free(buf);
-            break;
-
+            type = eTkCallbackReturn;
+            goto error;
         case TAG_BREAK:
-            errtype = "LocalJumpError: ";
-            errtype_len = strlen(errtype);
-            len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
-            buf = ALLOC_N(char, len + 1);
-            memcpy(buf, errtype, errtype_len);
-            memcpy(buf + errtype_len, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
-            *(buf + len) = 0;
-
-            RARRAY(failed)->ptr[0] = rb_exc_new2(eTkCallbackBreak, buf);
-            free(buf);
-            break;
-
+            type = eTkCallbackBreak;
+            goto error;
         case TAG_NEXT:
-            errtype = "LocalJumpError: ";
-            errtype_len = strlen(errtype);
-            len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
-            buf = ALLOC_N(char, len + 1);
-            memcpy(buf, errtype, errtype_len);
-            memcpy(buf + errtype_len, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
-            *(buf + len) = 0;
-
-            RARRAY(failed)->ptr[0] = rb_exc_new2(eTkCallbackContinue,buf);
-            free(buf);
+            type = eTkCallbackContinue;
+            goto error;
+        error:
+            str = rb_str_new2("LocalJumpError: ");
+            rb_str_append(str, rb_obj_as_string(ruby_errinfo));
+            RARRAY(failed)->ptr[0] = rb_exc_new3(type, str);
             break;
 
         case TAG_RETRY:
@@ -2815,13 +2784,7 @@ ip_RubyExitCommand(clientData, interp, argc, argv)
 
     Tcl_ResetResult(interp);
 
-    if (rb_safe_level() >= 4) {
-        ip_finalize(interp);
-        Tcl_DeleteInterp(interp);
-        Tcl_Release(interp);
-        return TCL_OK;
-
-    } else if (Tcl_IsSafe(interp)) {
+    if (rb_safe_level() >= 4 || Tcl_IsSafe(interp)) {
         ip_finalize(interp);
         Tcl_DeleteInterp(interp);
         Tcl_Release(interp);
@@ -4334,7 +4297,6 @@ ip_thread_vwait(self, var)
     VALUE var;
 {
     VALUE argv[2];
-    VALUE retval;
     volatile VALUE cmd_str = rb_str_new2("thread_vwait");
 
     argv[0] = cmd_str;
@@ -4350,7 +4312,6 @@ ip_thread_tkwait(self, mode, target)
     VALUE target;
 {
     VALUE argv[3];
-    VALUE retval;
     volatile VALUE cmd_str = rb_str_new2("thread_tkwait");
 
     argv[0] = cmd_str;
