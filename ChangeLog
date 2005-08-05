@@ -1,3 +1,9 @@
+Fri Aug  5 08:08:05 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (return_jump): fix "can't across thread" error message
+	  when no thread associated.
+	  http://www.namikilab.tuat.ac.jp/~sasada/diary/200507.html#d31
+
 Fri Aug  5 00:25:12 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tk/tcltklib.c: refactoring - extract ruby string <->

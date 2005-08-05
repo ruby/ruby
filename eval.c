@@ -4763,7 +4763,7 @@ return_jump(retval)
 	    tt->retval = retval;
 	    JUMP_TAG(TAG_RETURN);
 	}
-	if (tt->tag == PROT_THREAD) {
+	if (tt->tag == PROT_THREAD && tt->prev) {
 	    rb_raise(rb_eThreadError, "return can't jump across threads");
 	}
 	tt = tt->prev;
