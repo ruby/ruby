@@ -16,11 +16,16 @@ class TestRange < Test::Unit::TestCase
   end
 
   class DuckRange
-    def initialize(b,e)
+    def initialize(b,e,excl=false)
       @begin = b
       @end = e
+      @excl = excl
     end
     attr_reader :begin, :end
+
+    def exclude_end?
+      @excl
+    end
   end
 
   def test_duckrange
