@@ -4540,19 +4540,14 @@ ip_thread_vwait(self, var)
     VALUE self;
     VALUE var;
 {
-    VALUE *argv;
+    VALUE argv[2];
     VALUE retval;
     volatile VALUE cmd_str = rb_str_new2("thread_vwait");
 
-    argv = ALLOC_N(VALUE, 2);
     argv[0] = cmd_str;
     argv[1] = var;
 
-    retval = ip_invoke_real(2, argv, self);
-
-    free(argv);
-
-    return retval;
+    return ip_invoke_real(2, argv, self);
 }
 
 static VALUE
@@ -4561,20 +4556,15 @@ ip_thread_tkwait(self, mode, target)
     VALUE mode;
     VALUE target;
 {
-    VALUE *argv;
+    VALUE argv[3];
     VALUE retval;
     volatile VALUE cmd_str = rb_str_new2("thread_tkwait");
 
-    argv = ALLOC_N(VALUE, 3);
     argv[0] = cmd_str;
     argv[1] = mode;
     argv[2] = target;
 
-    retval = ip_invoke_real(3, argv, self);
-
-    free(argv);
-
-    return retval;
+    return ip_invoke_real(3, argv, self);
 }
 
 
@@ -5283,8 +5273,7 @@ ip_create_slave(argc, argv, self)
     struct tcltkip *master = get_ip(self);
     VALUE safemode;
     VALUE name;
-    VALUE *callargv;
-    VALUE retval;
+    VALUE callargv[2];
 
     /* ip is deleted? */
     if (deleted_ip(master)) {
@@ -5301,16 +5290,11 @@ ip_create_slave(argc, argv, self)
         rb_secure(4);
     }
 
-    callargv = ALLOC_N(VALUE, 2);
     StringValue(name);
     callargv[0] = name;
     callargv[1] = safemode;
 
-    retval = tk_funcall(ip_create_slave_core, 2, callargv, self);
-
-    free(callargv);
-
-    return retval;
+    return tk_funcall(ip_create_slave_core, 2, callargv, self);
 }
 
 #if defined(MAC_TCL) || defined(__WIN32__)
@@ -5796,6 +5780,13 @@ tk_funcall(func, argc, argv, obj)
     thr_crit_bup = rb_thread_critical;
     rb_thread_critical = Qtrue;
 
+    /* allocate memory (argv cross over thread : must be in heap) */
+    if (argv) {
+        VALUE *temp = ALLOC_N(VALUE, argc);
+        MEMCPY(temp, argv, VALUE, argc);
+        argv = temp;
+    }
+
     /* allocate memory (keep result) */
     alloc_done = (int*)ALLOC(int);
     *alloc_done = 0;
@@ -5836,6 +5827,7 @@ tk_funcall(func, argc, argv, obj)
     /* get result & free allocated memory */
     ret = RARRAY(result)->ptr[0];
     free(alloc_done);
+    if (argv) free(argv);
 
     Tcl_Release(callq);
 
@@ -7046,15 +7038,9 @@ ip_invoke_real(argc, argv, interp)
 {
     VALUE v;
     struct tcltkip *ptr;        /* tcltkip data struct */
-    int i;
-    Tcl_CmdInfo info;
-    char *s;
-    int  len;
-    int thr_crit_bup;
 
 #if TCL_MAJOR_VERSION >= 8
     Tcl_Obj **av = (Tcl_Obj **)NULL;
-    Tcl_Obj *resultPtr;
 #else /* TCL_MAJOR_VERSION < 8 */
     char **av = (char **)NULL;
 #endif
@@ -7390,20 +7376,17 @@ ip_get_variable2(self, varname, index, flag)
     VALUE index;
     VALUE flag;
 {
-    VALUE *argv;
+    VALUE argv[3];
     VALUE retval;
 
     StringValue(varname);
     if (!NIL_P(index)) StringValue(index);
 
-    argv = ALLOC_N(VALUE, 3);
     argv[0] = varname;
     argv[1] = index;
     argv[2] = flag;
 
     retval = tk_funcall(ip_get_variable2_core, 3, argv, self);
-
-    free(argv);
 
     if (NIL_P(retval)) {
         return rb_tainted_str_new2("");
@@ -7527,22 +7510,19 @@ ip_set_variable2(self, varname, index, value, flag)
     VALUE value;
     VALUE flag;
 {
-    VALUE *argv;
+    VALUE argv[4];
     VALUE retval;
 
     StringValue(varname);
     if (!NIL_P(index)) StringValue(index);
     StringValue(value);
 
-    argv = ALLOC_N(VALUE, 4);
     argv[0] = varname;
     argv[1] = index;
     argv[2] = value;
     argv[3] = flag;
 
     retval = tk_funcall(ip_set_variable2_core, 4, argv, self);
-
-    free(argv);
 
     if (NIL_P(retval)) {
         return rb_tainted_str_new2("");
@@ -7604,20 +7584,17 @@ ip_unset_variable2(self, varname, index, flag)
     VALUE index;
     VALUE flag;
 {
-    VALUE *argv;
+    VALUE argv[3];
     VALUE retval;
 
     StringValue(varname);
     if (!NIL_P(index)) StringValue(index);
 
-    argv = ALLOC_N(VALUE, 3);
     argv[0] = varname;
     argv[1] = index;
     argv[2] = flag;
 
     retval = tk_funcall(ip_unset_variable2_core, 3, argv, self);
-
-    free(argv);
 
     if (NIL_P(retval)) {
         return rb_tainted_str_new2("");
