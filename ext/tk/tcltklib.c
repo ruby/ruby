@@ -2143,40 +2143,18 @@ TkStringValue(obj)
     return rb_funcall(obj, ID_inspect, 0, 0);
 }
 
-/* Tcl command `ruby'|`ruby_eval' */
 static VALUE
-ip_ruby_eval_rescue(failed, einfo)
+tcl_protect(proc, data, failed)
+    VALUE (*proc)();
+    VALUE data;
     VALUE failed;
-    VALUE einfo;
-{
-    DUMP1("call ip_ruby_eval_rescue");
-    RARRAY(failed)->ptr[0] = einfo;
-    return Qnil;
-}
-
-static VALUE
-ip_ruby_eval_body(arg)
-    struct eval_body_arg *arg;
 {
     volatile VALUE ret;
     int status = 0;
-    int thr_crit_bup;
-
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-
-    DUMP1("call ip_ruby_eval_body");
-    rb_trap_immediate = 0;
-
-#if 0
-    ret = rb_rescue2(rb_eval_string, (VALUE)arg->string, 
-                      ip_ruby_eval_rescue, arg->failed,
-                      rb_eStandardError, rb_eScriptError, rb_eSystemExit, 
-                      (VALUE)0);
-#else
+    int thr_crit_bup = rb_thread_critical;
 
     rb_thread_critical = Qfalse;
-    ret = rb_eval_string_protect(arg->string, &status);
+    ret = rb_protect(proc, data, &status);
     rb_thread_critical = Qtrue;
     if (status) {
         char *errtype, *buf;
@@ -2197,7 +2175,7 @@ ip_ruby_eval_body(arg)
                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
-            RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackReturn, buf);
+            RARRAY(failed)->ptr[0] = rb_exc_new2(eTkCallbackReturn, buf);
             free(buf);
             break;
 
@@ -2212,7 +2190,7 @@ ip_ruby_eval_body(arg)
                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
-            RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackBreak, buf);
+            RARRAY(failed)->ptr[0] = rb_exc_new2(eTkCallbackBreak, buf);
             free(buf);
             break;
 
@@ -2227,49 +2205,49 @@ ip_ruby_eval_body(arg)
                    RSTRING(rb_obj_as_string(ruby_errinfo))->len);
             *(buf + len) = 0;
 
-            RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackContinue,buf);
+            RARRAY(failed)->ptr[0] = rb_exc_new2(eTkCallbackContinue,buf);
             free(buf);
             break;
 
         case TAG_RETRY:
         case TAG_REDO:
             if (NIL_P(ruby_errinfo)) {
-                rb_jump_tag(status);
+                rb_jump_tag(status); /* danger */
             } else {
-                RARRAY(arg->failed)->ptr[0] = ruby_errinfo;
+                RARRAY(failed)->ptr[0] = ruby_errinfo;
             }
             break;
 
         case TAG_RAISE:
             if (NIL_P(ruby_errinfo)) {
-                RARRAY(arg->failed)->ptr[0] 
+                RARRAY(failed)->ptr[0] 
                     = rb_exc_new2(rb_eException, "unknown exception");
             } else {
-                RARRAY(arg->failed)->ptr[0] = ruby_errinfo;
+                RARRAY(failed)->ptr[0] = ruby_errinfo;
             }
             break;
 
         case TAG_FATAL:
             if (NIL_P(ruby_errinfo)) {
-                RARRAY(arg->failed)->ptr[0] 
+                RARRAY(failed)->ptr[0] 
                     = rb_exc_new2(rb_eFatal, "FATAL");
             } else {
-                RARRAY(arg->failed)->ptr[0] = ruby_errinfo;
+                RARRAY(failed)->ptr[0] = ruby_errinfo;
             }
             break;
 
         case TAG_THROW:
             if (NIL_P(ruby_errinfo)) {
-                rb_jump_tag(TAG_THROW);
+                rb_jump_tag(TAG_THROW); /* danger */
             } else {
-                RARRAY(arg->failed)->ptr[0] = ruby_errinfo;
+                RARRAY(failed)->ptr[0] = ruby_errinfo;
             }
             break;
 
         default:
             buf = ALLOC_N(char, 256);
             sprintf(buf, "unknown loncaljmp status %d", status);
-            RARRAY(arg->failed)->ptr[0] = rb_exc_new2(rb_eException, buf);
+            RARRAY(failed)->ptr[0] = rb_exc_new2(rb_eException, buf);
             free(buf);
             break;
         }
@@ -2278,6 +2256,44 @@ ip_ruby_eval_body(arg)
 
         ret = Qnil;
     }
+
+    rb_thread_critical = thr_crit_bup;
+
+    return ret;
+}
+
+
+/* Tcl command `ruby'|`ruby_eval' */
+static VALUE
+ip_ruby_eval_rescue(failed, einfo)
+    VALUE failed;
+    VALUE einfo;
+{
+    DUMP1("call ip_ruby_eval_rescue");
+    RARRAY(failed)->ptr[0] = einfo;
+    return Qnil;
+}
+
+static VALUE
+ip_ruby_eval_body(arg)
+    struct eval_body_arg *arg;
+{
+    volatile VALUE ret;
+    int thr_crit_bup;
+
+    thr_crit_bup = rb_thread_critical;
+    rb_thread_critical = Qtrue;
+
+    DUMP1("call ip_ruby_eval_body");
+    rb_trap_immediate = 0;
+
+#if 0
+    ret = rb_rescue2(rb_eval_string, (VALUE)arg->string, 
+                      ip_ruby_eval_rescue, arg->failed,
+                      rb_eStandardError, rb_eScriptError, rb_eSystemExit, 
+                      (VALUE)0);
+#else
+    ret = tcl_protect(rb_eval_string, (VALUE)arg->string, arg->failed);
 #endif
 
     rb_thread_critical = thr_crit_bup;
@@ -2540,9 +2556,7 @@ ip_ruby_cmd_body(arg)
     struct cmd_body_arg *arg;
 {
     volatile VALUE ret;
-    int status = 0;
     int thr_crit_bup;
-    VALUE old_gc;
 
     volatile VALUE receiver = arg->receiver;
     volatile VALUE args     = arg->args;
@@ -2560,107 +2574,7 @@ ip_ruby_cmd_body(arg)
                      rb_eStandardError, rb_eScriptError, rb_eSystemExit, 
                      (VALUE)0);
 #else
-    ret = rb_protect(ip_ruby_cmd_core, (VALUE)arg, &status);
-
-    if (status) {
-        char *errtype, *buf;
-        int  errtype_len, len;
-
-        old_gc = rb_gc_disable();
-
-        switch(status) {
-        case TAG_RETURN:
-            errtype = "LocalJumpError: ";
-            errtype_len = strlen(errtype);
-            len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
-            buf = ALLOC_N(char, len + 1);
-            memcpy(buf, errtype, errtype_len);
-            memcpy(buf + errtype_len, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
-            *(buf + len) = 0;
-
-            RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackReturn, buf);
-            free(buf);
-            break;
-
-        case TAG_BREAK:
-            errtype = "LocalJumpError: ";
-            errtype_len = strlen(errtype);
-            len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
-            buf = ALLOC_N(char, len + 1);
-            memcpy(buf, errtype, errtype_len);
-            memcpy(buf + errtype_len, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
-            *(buf + len) = 0;
-
-            RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackBreak, buf);
-            free(buf);
-            break;
-
-        case TAG_NEXT:
-            errtype = "LocalJumpError: ";
-            errtype_len = strlen(errtype);
-            len = errtype_len + RSTRING(rb_obj_as_string(ruby_errinfo))->len;
-            buf = ALLOC_N(char, len + 1);
-            memcpy(buf, errtype, errtype_len);
-            memcpy(buf + errtype_len, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->ptr, 
-                   RSTRING(rb_obj_as_string(ruby_errinfo))->len);
-            *(buf + len) = 0;
-
-            RARRAY(arg->failed)->ptr[0] = rb_exc_new2(eTkCallbackContinue,buf);
-            free(buf);
-            break;
-
-        case TAG_RETRY:
-        case TAG_REDO:
-            if (NIL_P(ruby_errinfo)) {
-                rb_jump_tag(status);
-            } else {
-                RARRAY(arg->failed)->ptr[0] = ruby_errinfo;
-            }
-            break;
-
-        case TAG_RAISE:
-            if (NIL_P(ruby_errinfo)) {
-                RARRAY(arg->failed)->ptr[0] 
-                    = rb_exc_new2(rb_eException, "unknown exception");
-            } else {
-                RARRAY(arg->failed)->ptr[0] = ruby_errinfo;
-            }
-            break;
-
-        case TAG_FATAL:
-            if (NIL_P(ruby_errinfo)) {
-                RARRAY(arg->failed)->ptr[0] 
-                    = rb_exc_new2(rb_eFatal, "FATAL");
-            } else {
-                RARRAY(arg->failed)->ptr[0] = ruby_errinfo;
-            }
-            break;
-
-        case TAG_THROW:
-            if (NIL_P(ruby_errinfo)) {
-                rb_jump_tag(TAG_THROW);
-            } else {
-                RARRAY(arg->failed)->ptr[0] = ruby_errinfo;
-            }
-            break;
-
-        default:
-            buf = ALLOC_N(char, 256);
-            rb_warn(buf, "unknown loncaljmp status %d", status);
-            RARRAY(arg->failed)->ptr[0] = rb_exc_new2(rb_eException, buf);
-            free(buf);
-            break;
-        }
-
-        if (old_gc == Qfalse) rb_gc_enable();
-
-        ret = Qnil;
-    }
+    ret = tcl_protect(ip_ruby_cmd_core, (VALUE)arg, arg->failed);
 #endif
 
     rb_thread_critical = thr_crit_bup;
