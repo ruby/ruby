@@ -1,3 +1,13 @@
+Sun Aug  7 01:31:15 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c (WIN32OLE_EVENT#on_event): should set 
+	  only one event handler.
+
+	* ext/win32ole/tests/testOLEEVENT.rb: ditto.
+
+	* ext/win32ole/tests/testOLEPARAM.rb: remove re-defined 
+	  test_ole_type_detail method.
+
 Sat Aug  6 12:35:24 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/{tk.rb,tk/itemconfig.rb}: configure creates
