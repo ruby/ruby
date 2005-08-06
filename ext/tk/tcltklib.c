@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-08-04"
+#define TCLTKLIB_RELEASE_DATE "2005-08-07"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -342,16 +342,10 @@ static int ip_ruby_eval _((ClientData, Tcl_Interp *, int, char **));
 static int ip_ruby_cmd _((ClientData, Tcl_Interp *, int, char **));
 #endif
 
-struct eval_body_arg {
-    char  *string;
-    VALUE failed;
-};
-
 struct cmd_body_arg {
     VALUE receiver;
     ID    method;
     VALUE args;
-    VALUE failed;
 };
 
 
@@ -2143,13 +2137,13 @@ TkStringValue(obj)
     return rb_funcall(obj, ID_inspect, 0, 0);
 }
 
-static VALUE
-tcl_protect(proc, data, failed)
+static int
+tcl_protect_core(interp, proc, data) /* should not raise exception */
+    Tcl_Interp *interp;
     VALUE (*proc)();
     VALUE data;
-    VALUE failed;
 {
-    volatile VALUE ret;
+    volatile VALUE ret, exc = Qnil;
     int status = 0;
     int thr_crit_bup = rb_thread_critical;
 
@@ -2175,7 +2169,7 @@ tcl_protect(proc, data, failed)
         error:
             str = rb_str_new2("LocalJumpError: ");
             rb_str_append(str, rb_obj_as_string(ruby_errinfo));
-            RARRAY(failed)->ptr[0] = rb_exc_new3(type, str);
+            exc = rb_exc_new3(type, str);
             break;
 
         case TAG_RETRY:
@@ -2183,25 +2177,23 @@ tcl_protect(proc, data, failed)
             if (NIL_P(ruby_errinfo)) {
                 rb_jump_tag(status); /* danger */
             } else {
-                RARRAY(failed)->ptr[0] = ruby_errinfo;
+                exc = ruby_errinfo;
             }
             break;
 
         case TAG_RAISE:
             if (NIL_P(ruby_errinfo)) {
-                RARRAY(failed)->ptr[0] 
-                    = rb_exc_new2(rb_eException, "unknown exception");
+                exc = rb_exc_new2(rb_eException, "unknown exception");
             } else {
-                RARRAY(failed)->ptr[0] = ruby_errinfo;
+                exc = ruby_errinfo;
             }
             break;
 
         case TAG_FATAL:
             if (NIL_P(ruby_errinfo)) {
-                RARRAY(failed)->ptr[0] 
-                    = rb_exc_new2(rb_eFatal, "FATAL");
+                exc = rb_exc_new2(rb_eFatal, "FATAL");
             } else {
-                RARRAY(failed)->ptr[0] = ruby_errinfo;
+                exc = ruby_errinfo;
             }
             break;
 
@@ -2209,14 +2201,14 @@ tcl_protect(proc, data, failed)
             if (NIL_P(ruby_errinfo)) {
                 rb_jump_tag(TAG_THROW); /* danger */
             } else {
-                RARRAY(failed)->ptr[0] = ruby_errinfo;
+                exc = ruby_errinfo;
             }
             break;
 
         default:
             buf = ALLOC_N(char, 256);
             sprintf(buf, "unknown loncaljmp status %d", status);
-            RARRAY(failed)->ptr[0] = rb_exc_new2(rb_eException, buf);
+            exc = rb_exc_new2(rb_eException, buf);
             free(buf);
             break;
         }
@@ -2228,181 +2220,95 @@ tcl_protect(proc, data, failed)
 
     rb_thread_critical = thr_crit_bup;
 
-    return ret;
-}
-
-static int
-tcl_check_result(interp, ret, res)
-    Tcl_Interp *interp;
-    VALUE ret;
-    VALUE res; /* exception */
-{
-    int thr_crit_bup;
+    Tcl_ResetResult(interp);
 
     /* status check */
-    if (!NIL_P(res)) {
-        VALUE eclass;
-        volatile VALUE bt_ary;
+    if (!NIL_P(exc)) {
+        volatile VALUE eclass = rb_obj_class(exc);
         volatile VALUE backtrace;
-
-        Tcl_ResetResult(interp);
-
-        eclass = rb_obj_class(res);
 
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
 
         DUMP1("set backtrace");
-        if (!NIL_P(bt_ary = rb_funcall(res, ID_backtrace, 0, 0))) {
-          backtrace = rb_ary_join(bt_ary, rb_str_new2("\n"));
-          StringValue(backtrace);
-          Tcl_AddErrorInfo(interp, RSTRING(backtrace)->ptr);
+        if (!NIL_P(backtrace = rb_funcall(exc, ID_backtrace, 0, 0))) {
+            backtrace = rb_ary_join(backtrace, rb_str_new2("\n"));
+            Tcl_AddErrorInfo(interp, StringValuePtr(backtrace));
         }
 
         rb_thread_critical = thr_crit_bup;
 
-        if (eclass == eTkCallbackReturn) {
-            ip_set_exc_message(interp, res);
+        ip_set_exc_message(interp, exc);
+
+        if (eclass == eTkCallbackReturn)
             return TCL_RETURN;
 
-        } else if (eclass == eTkCallbackBreak) {
-            ip_set_exc_message(interp, res);
+        if (eclass == eTkCallbackBreak)
             return TCL_BREAK;
 
-        } else if (eclass == eTkCallbackContinue) {
-            ip_set_exc_message(interp, res);
+        if (eclass == eTkCallbackContinue)
             return TCL_CONTINUE;
 
-        } else if (eclass == rb_eSystemExit) {
-            ip_set_exc_message(interp, res);
-            rbtk_pending_exception = res;
+        if (eclass == rb_eSystemExit || eclass == rb_eInterrupt) {
+            rbtk_pending_exception = exc;
             return TCL_RETURN;
-
-#if 0
-            thr_crit_bup = rb_thread_critical;
-            rb_thread_critical = Qtrue;
-
-#if 0 /* REMOVE : fail to rescue SystemExit */
-            /* Tcl_Eval(interp, "destroy ."); */
-            if (Tk_GetNumMainWindows() > 0) {
-                Tk_Window main_win = Tk_MainWindow(interp);
-                if (main_win != (Tk_Window)NULL) {
-                    Tk_DestroyWindow(main_win);
-                }
-            }
-#endif
-
-            /* StringValue(res); */
-            res = rb_funcall(res, ID_message, 0, 0);
-
-            Tcl_AppendResult(interp, RSTRING(res)->ptr, (char*)NULL);
-
-            rb_thread_critical = thr_crit_bup;
-
-            rb_raise(rb_eSystemExit, RSTRING(res)->ptr);
-#endif
-        } else if (eclass == rb_eInterrupt) {
-            ip_set_exc_message(interp, res);
-            rbtk_pending_exception = res;
-            return TCL_RETURN;
-
-        } else if (rb_obj_is_kind_of(res, eLocalJumpError)) {
-            VALUE reason = rb_ivar_get(res, ID_at_reason);
-
-            if (TYPE(reason) != T_SYMBOL) {
-                ip_set_exc_message(interp, res);
-                return TCL_ERROR;
-            }
-
-            if (SYM2ID(reason) == ID_return) {
-                ip_set_exc_message(interp, res);
-                return TCL_RETURN;
-
-            } else if (SYM2ID(reason) == ID_break) {
-                ip_set_exc_message(interp, res);
-                return TCL_BREAK;
-
-            } else if (SYM2ID(reason) == ID_next) {
-                ip_set_exc_message(interp, res);
-                return TCL_CONTINUE;
-
-            } else {
-                ip_set_exc_message(interp, res);
-                return TCL_ERROR;
-            }
-        } else {
-            ip_set_exc_message(interp, res);
-            return TCL_ERROR;
         }
+
+        if (rb_obj_is_kind_of(exc, eLocalJumpError)) {
+            VALUE reason = rb_ivar_get(exc, ID_at_reason);
+
+            if (TYPE(reason) == T_SYMBOL) {
+                if (SYM2ID(reason) == ID_return)
+                    return TCL_RETURN;
+
+                if (SYM2ID(reason) == ID_break)
+                    return TCL_BREAK;
+
+                if (SYM2ID(reason) == ID_next)
+                    return TCL_CONTINUE;
+            }
+        }
+
+        return TCL_ERROR;
     }
 
     /* result must be string or nil */
-    if (NIL_P(ret)) {
-        Tcl_ResetResult(interp);
-        return TCL_OK;
+    if (!NIL_P(ret)) {
+        /* copy result to the tcl interpreter */
+        thr_crit_bup = rb_thread_critical;
+        rb_thread_critical = Qtrue;
+
+        ret = TkStringValue(ret);
+        DUMP1("Tcl_AppendResult");
+        Tcl_AppendResult(interp, RSTRING(ret)->ptr, (char *)NULL);
+
+        rb_thread_critical = thr_crit_bup;
     }
-
-    /* copy result to the tcl interpreter */
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-
-    ret = TkStringValue(ret);
-    DUMP1("Tcl_AppendResult");
-    Tcl_ResetResult(interp);
-    Tcl_AppendResult(interp, RSTRING(ret)->ptr, (char *)NULL);
-
-    rb_thread_critical = thr_crit_bup;
 
     return TCL_OK;
 }
 
-
-/* Tcl command `ruby'|`ruby_eval' */
-static VALUE
-ip_ruby_eval_rescue(failed, einfo)
-    VALUE failed;
-    VALUE einfo;
+static int
+tcl_protect(interp, proc, data)
+    Tcl_Interp *interp;
+    VALUE (*proc)();
+    VALUE data;
 {
-    DUMP1("call ip_ruby_eval_rescue");
-    RARRAY(failed)->ptr[0] = einfo;
-    return Qnil;
-}
+    int old_trapflag = rb_trap_immediate;
+    int code;
 
-static VALUE
-ip_ruby_eval_body(arg)
-    struct eval_body_arg *arg;
-{
-    volatile VALUE ret;
-    int thr_crit_bup;
-
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-
-    DUMP1("call ip_ruby_eval_body");
-    rb_trap_immediate = 0;
-
-#if 0
-    ret = rb_rescue2(rb_eval_string, (VALUE)arg->string, 
-                      ip_ruby_eval_rescue, arg->failed,
-                      rb_eStandardError, rb_eScriptError, rb_eSystemExit, 
-                      (VALUE)0);
-#else
-    ret = tcl_protect(rb_eval_string, (VALUE)arg->string, arg->failed);
+#ifdef HAVE_NATIVETHREAD
+    if (!is_ruby_native_thread()) {
+        rb_bug("cross-thread violation on tcl_protect()");
+    }
 #endif
 
-    rb_thread_critical = thr_crit_bup;
+    rb_trap_immediate = 0;
+    code = tcl_protect_core(interp, proc, data);
+    rb_trap_immediate = old_trapflag;
 
-    return ret;
+    return code;
 }
-
-static VALUE
-ip_ruby_eval_ensure(trapflag)
-    VALUE trapflag;
-{
-    rb_trap_immediate = NUM2INT(trapflag);
-    return Qnil;
-}
-
 
 static int
 #if TCL_MAJOR_VERSION >= 8
@@ -2419,11 +2325,9 @@ ip_ruby_eval(clientData, interp, argc, argv)
     char *argv[];
 #endif
 {
-    volatile VALUE res;
-    volatile VALUE exception = rb_ary_new2(1);
-    int old_trapflag;
-    struct eval_body_arg *arg;
+    char *arg;
     int thr_crit_bup;
+    int code;
 
     if (interp == (Tcl_Interp*)NULL) {
         rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
@@ -2448,9 +2352,6 @@ ip_ruby_eval(clientData, interp, argc, argv)
 #endif
     }
 
-    /* allocate */
-    arg = ALLOC(struct eval_body_arg);
-
     /* get C string from Tcl object */
 #if TCL_MAJOR_VERSION >= 8
     {
@@ -2461,39 +2362,27 @@ ip_ruby_eval(clientData, interp, argc, argv)
       rb_thread_critical = Qtrue;
 
       str = Tcl_GetStringFromObj(argv[1], &len);
-      arg->string = ALLOC_N(char, len + 1);
-      memcpy(arg->string, str, len);
-      arg->string[len] = 0;
+      arg = ALLOC_N(char, len + 1);
+      memcpy(arg, str, len);
+      arg[len] = 0;
 
       rb_thread_critical = thr_crit_bup;
 
     }
 #else /* TCL_MAJOR_VERSION < 8 */
-    arg->string = argv[1];
+    arg = argv[1];
 #endif
-    /* arg.failed = 0; */
-    RARRAY(exception)->ptr[0] = Qnil;
-    RARRAY(exception)->len = 1;
-    arg->failed = exception;
 
     /* evaluate the argument string by ruby */
-    DUMP2("rb_eval_string(%s)", arg->string);
-    old_trapflag = rb_trap_immediate;
-#ifdef HAVE_NATIVETHREAD
-    if (!is_ruby_native_thread()) {
-        rb_bug("cross-thread violation on ip_ruby_eval()");
-    }
-#endif
-    res = rb_ensure(ip_ruby_eval_body, (VALUE)arg, 
-                    ip_ruby_eval_ensure, INT2FIX(old_trapflag));
+    DUMP2("rb_eval_string(%s)", arg);
+
+    code = tcl_protect(interp, rb_eval_string, (VALUE)arg);
 
 #if TCL_MAJOR_VERSION >= 8
-    free(arg->string);
+    free(arg);
 #endif
 
-    free(arg);
-
-    return tcl_check_result(interp, res, RARRAY(exception)->ptr[0]);
+    return code;
 }
 
 
@@ -2515,56 +2404,6 @@ ip_ruby_cmd_core(arg)
     return ret;
 }
 
-static VALUE
-ip_ruby_cmd_rescue(failed, einfo)
-    VALUE failed;
-    VALUE einfo;
-{
-    DUMP1("call ip_ruby_cmd_rescue");
-    RARRAY(failed)->ptr[0] = einfo;
-    return Qnil;
-}
-
-static VALUE
-ip_ruby_cmd_body(arg)
-    struct cmd_body_arg *arg;
-{
-    volatile VALUE ret;
-    int thr_crit_bup;
-
-    volatile VALUE receiver = arg->receiver;
-    volatile VALUE args     = arg->args;
-    volatile VALUE failed   = arg->failed;
-
-    thr_crit_bup = rb_thread_critical;
-    rb_thread_critical = Qtrue;
-
-    DUMP1("call ip_ruby_cmd_body");
-    rb_trap_immediate = 0;
-
-#if 0
-    ret = rb_rescue2(ip_ruby_cmd_core, (VALUE)arg, 
-                     ip_ruby_cmd_rescue, arg->failed,
-                     rb_eStandardError, rb_eScriptError, rb_eSystemExit, 
-                     (VALUE)0);
-#else
-    ret = tcl_protect(ip_ruby_cmd_core, (VALUE)arg, arg->failed);
-#endif
-
-    rb_thread_critical = thr_crit_bup;
-    DUMP1("finish ip_ruby_cmd_body");
-
-    return ret;
-}
-
-static VALUE
-ip_ruby_cmd_ensure(trapflag)
-    VALUE trapflag;
-{
-    rb_trap_immediate = NUM2INT(trapflag);
-    return Qnil;
-}
-
 /* ruby_cmd receiver method arg ... */
 static int
 #if TCL_MAJOR_VERSION >= 8
@@ -2581,18 +2420,16 @@ ip_ruby_cmd(clientData, interp, argc, argv)
     char *argv[];
 #endif
 {
-    volatile VALUE res;
     volatile VALUE receiver;
     volatile ID method;
     volatile VALUE args = rb_ary_new2(argc - 2);
-    volatile VALUE exception = rb_ary_new2(1);
     char *str;
     int i;
     int  len;
-    int old_trapflag;
     struct cmd_body_arg *arg;
     int thr_crit_bup;
     VALUE old_gc;
+    int code;
 
     if (interp == (Tcl_Interp*)NULL) {
         rbtk_pending_exception = rb_exc_new2(rb_eRuntimeError, 
@@ -2683,28 +2520,16 @@ ip_ruby_cmd(clientData, interp, argc, argv)
     if (old_gc == Qfalse) rb_gc_enable();
     rb_thread_critical = thr_crit_bup;
 
-    RARRAY(exception)->ptr[0] = Qnil;
-    RARRAY(exception)->len = 1;
-
     arg->receiver = receiver;
     arg->method = method;
     arg->args = args;
-    arg->failed = exception;
 
     /* evaluate the argument string by ruby */
-    old_trapflag = rb_trap_immediate;
-#ifdef HAVE_NATIVETHREAD
-    if (!is_ruby_native_thread()) {
-        rb_bug("cross-thread violation on ip_ruby_cmd()");
-    }
-#endif
-
-    res = rb_ensure(ip_ruby_cmd_body, (VALUE)arg, 
-                    ip_ruby_cmd_ensure, INT2FIX(old_trapflag));
+    code = tcl_protect(interp, ip_ruby_cmd_core, (VALUE)arg);
 
     free(arg);
 
-    return tcl_check_result(interp, res, RARRAY(exception)->ptr[0]);
+    return code;
 }
 
 
@@ -2868,11 +2693,10 @@ ip_rbUpdateCommand(clientData, interp, objc, objv)
 #endif
 {
     int  optionIndex;
-    int  ret, done;
+    int  ret;
     int  flags = 0;
     static CONST char *updateOptions[] = {"idletasks", (char *) NULL};
     enum updateOptions {REGEXP_IDLETASKS};
-    char *nameString;
     int  dummy;
 
     DUMP1("Ruby's 'update' is called");
@@ -3015,7 +2839,7 @@ ip_rb_threadUpdateCommand(clientData, interp, objc, objv)
 #endif
 {
     int  optionIndex;
-    int  ret, done;
+    int  ret;
     int  flags = 0;
     int  dummy;
     struct th_update_param *param;
@@ -4503,7 +4327,6 @@ ip_free(ptr)
     struct tcltkip *ptr;
 {
     int  thr_crit_bup;
-    struct ip_free_queue *q;
 
     DUMP2("free Tcl Interp %lx", ptr->ip);
     if (ptr) {
@@ -5622,8 +5445,6 @@ ip_eval_real(self, cmd_str, cmd_len)
     int  cmd_len;
 {
     volatile VALUE ret;
-    char *s;
-    int  len;
     struct tcltkip *ptr = get_ip(self);
     int thr_crit_bup;
 
