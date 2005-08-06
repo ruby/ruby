@@ -549,8 +549,8 @@ else # tile 0.5 or earlier
     scale.command{|value| progress.set(value)}
     vscale.command{|value| vprogress.set(value)}
   else # this would also work. (via TkVariable#trace)
-    v1 = $V.ref(:SCALE) 
-    v2 = $V.ref(:VSCALE)
+    v1 = scale.variable
+    v2 = vscale.variable
     v1.trace('w', proc{ progress.set(v1.value) })
     v2.trace('w', proc{ vprogress.set(v2.value) })
   end

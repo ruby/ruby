@@ -15,8 +15,4 @@ class TkLabel<TkWindow
   #  end
   #end
   #private :create_self
-
-  def textvariable(v)
-    configure 'textvariable', tk_trace_variable(v)
-  end
 end
