@@ -2233,10 +2233,13 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
       end
 
       def encoding_convertfrom(str, enc=nil)
-        # str must be a Tcl's internal string expression in enc. 
+        # str is an usual enc string or a Tcl's internal string expression
+        # in enc (which is returned from 'encoding_convertto' method). 
         # the return value is a UTF-8 string.
         enc = encoding_system unless enc
-        TkCore::INTERP.__invoke('encoding', 'convertfrom', enc, str)
+        ret = TkCore::INTERP.__invoke('encoding', 'convertfrom', enc, str)
+        ret.instance_variable_set('@encoding', 'utf-8')
+        ret
       end
       alias encoding_convert_from encoding_convertfrom
 
@@ -2245,7 +2248,9 @@ if (/^(8\.[1-9]|9\.|[1-9][0-9])/ =~ Tk::TCL_VERSION && !Tk::JAPANIZED_TK)
         # The return value is a Tcl's internal string expression in enc. 
         # To get an usual enc string, use Tk.fromUTF8(ret_val, enc).
         enc = encoding_system unless enc
-        TkCore::INTERP.__invoke('encoding', 'convertto', enc, str)
+        ret = TkCore::INTERP.__invoke('encoding', 'convertto', enc, str)
+        ret.instance_variable_set('@encoding', 'binary')
+        ret
       end
       alias encoding_convert_to encoding_convertto
     end
@@ -2710,6 +2715,11 @@ module TkConfigMethod
   end
   private :__numlistval_optkeys
 
+  def __tkvariable_optkeys
+    ['variable', 'textvariable']
+  end
+  private :__tkvariable_optkeys
+
   def __methodcall_optkeys  # { key=>method, ... }
     {}
   end
@@ -2814,6 +2824,10 @@ module TkConfigMethod
       else
         fnt
       end
+
+    when /^(#{__tkvariable_optkeys.join('|')})$/
+      v = tk_call_without_enc(*(__cget_cmd << "-#{slot}"))
+      (v.empty?)? nil: TkVarAccess.new(v)
 
     else
       tk_tcl2ruby(tk_call_without_enc(*(__cget_cmd << "-#{slot}")), true)
@@ -2999,6 +3013,28 @@ module TkConfigMethod
           when /^(#{__strval_optkeys.join('|')})$/
             # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
             conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
+
+          when /^(#{__tkvariable_optkeys.join('|')})$/
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
+
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]])
+              v = conf[__configinfo_struct[:default_value]]
+              if v.empty?
+                conf[__configinfo_struct[:default_value]] = nil
+              else
+                conf[__configinfo_struct[:default_value]] = TkVarAccess.new(v)
+              end
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              v = conf[__configinfo_struct[:current_value]]
+              if v.empty?
+                conf[__configinfo_struct[:current_value]] = nil
+              else
+                conf[__configinfo_struct[:current_value]] = TkVarAccess.new(v)
+              end
+            end
+
           else
             # conf = tk_split_list(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
             conf = tk_split_list(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), 0, false, true)
@@ -3098,6 +3134,25 @@ module TkConfigMethod
                   && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
                 conf[__configinfo_struct[:current_value]] = 
                   list(conf[__configinfo_struct[:current_value]])
+              end
+
+            when /^(#{__tkvariable_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                v = conf[__configinfo_struct[:default_value]]
+                if v.empty?
+                  conf[__configinfo_struct[:default_value]] = nil
+                else
+                  conf[__configinfo_struct[:default_value]] = TkVarAccess.new(v)
+                end
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                v = conf[__configinfo_struct[:current_value]]
+                if v.empty?
+                  conf[__configinfo_struct[:current_value]] = nil
+                else
+                  conf[__configinfo_struct[:current_value]] = TkVarAccess.new(v)
+                end
               end
 
             else
@@ -3269,6 +3324,27 @@ module TkConfigMethod
                 list(conf[__configinfo_struct[:current_value]])
             end
 
+          when /^(#{__tkvariable_optkeys.join('|')})$/
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
+
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] )
+              v = conf[__configinfo_struct[:default_value]]
+              if v.empty?
+                conf[__configinfo_struct[:default_value]] = nil
+              else
+                conf[__configinfo_struct[:default_value]] = TkVarAccess.new(v)
+              end
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              v = conf[__configinfo_struct[:current_value]]
+              if v.empty?
+                conf[__configinfo_struct[:current_value]] = nil
+              else
+                conf[__configinfo_struct[:current_value]] = TkVarAccess.new(v)
+              end
+            end
+
           when /^(#{__strval_optkeys.join('|')})$/
             # conf = tk_split_simplelist(_fromUTF8(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}"))))
             conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
@@ -3374,6 +3450,25 @@ module TkConfigMethod
                   && conf[__configinfo_struct[:current_value]] =~ /^[0-9]/ )
                 conf[__configinfo_struct[:current_value]] = 
                   list(conf[__configinfo_struct[:current_value]])
+              end
+
+            when /^(#{__tkvariable_optkeys.join('|')})$/
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                v = conf[__configinfo_struct[:default_value]]
+                if v.empty?
+                  conf[__configinfo_struct[:default_value]] = nil
+                else
+                  conf[__configinfo_struct[:default_value]] = TkVarAccess.new
+                end
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                v = conf[__configinfo_struct[:current_value]]
+                if v.empty?
+                  conf[__configinfo_struct[:current_value]] = nil
+                else
+                  conf[__configinfo_struct[:current_value]] = TkVarAccess.new
+                end
               end
 
             else

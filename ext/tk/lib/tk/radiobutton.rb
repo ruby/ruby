@@ -25,9 +25,6 @@ class TkRadioButton<TkButton
     tk_send_without_enc('select')
     self
   end
-  def variable(v)
-    configure 'variable', tk_trace_variable(v)
-  end
 
   def get_value
     var = tk_send_without_enc('cget', '-variable')

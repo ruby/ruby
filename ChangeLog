@@ -1,3 +1,14 @@
+Sat Aug  6 12:35:24 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/{tk.rb,tk/itemconfig.rb}: configure creates
+	  TkVariable if key name is 'variable' or 'textvariable'
+	  by default. [ruby-dev:26749]
+
+	* ext/tk/lib/tk/{label,radiobutton}.rb: removed its own
+	  {variable,textvariable} function.
+
+	* ext/tk/lib/tk/variable.rb: retains backward conpatibility.
+
 Fri Aug  5 12:50:32 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/tcltklib/tcltklib.c: fixed memory leak when tk_funcall raised

@@ -1529,12 +1529,36 @@ end
 
 class TkVarAccess<TkVariable
   def self.new(name, *args)
-    return TkVar_ID_TBL[name] if TkVar_ID_TBL[name]
+    if name.kind_of?(TkVariable)
+      name.value = args[0] unless args.empty?
+      return name 
+    end
+
+    if v = TkVar_ID_TBL[name]
+      v.value = args[0] unless args.empty?
+      return v
+    end
+
     super(name, *args)
   end
 
   def self.new_hash(name, *args)
-    return TkVar_ID_TBL[name] if TkVar_ID_TBL[name]
+    if name.kind_of?(TkVariable)
+      unless name.is_hash?
+        fail ArgumentError, "already exist as a scalar variable"
+      end
+      name.value = args[0] unless args.empty?
+      return name 
+    end
+
+    if v = TkVar_ID_TBL[name]
+      unless v.is_hash?
+        fail ArgumentError, "already exist as a scalar variable"
+      end
+      v.value = args[0] unless args.empty?
+      return v
+    end
+
     INTERP._invoke_without_enc('global', name)
     if args.empty? && INTERP._invoke_without_enc('array', 'exist', name) == '0'
       self.new(name, {})  # force creating
