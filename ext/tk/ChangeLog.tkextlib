@@ -1,3 +1,7 @@
+2005-08-06  ocean  <ocean@ruby-lang.org>
+
+	* sample/tkextlib/tile/demo.rb: use Tk::Tile::Scale#variable.
+
 2005-08-04  ocean  <ocean@ruby-lang.org>
 
 	* sample/tkextlib/tile/demo.rb: followed previous changes.
