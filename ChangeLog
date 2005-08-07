@@ -1,3 +1,12 @@
+Mon Aug  8 05:16:55 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.c (ossl_raise): should use ERR_peek_last_error
+	  to get last error on the current thread. And should report 
+	  if errors are on the stack while OpenSSL.debug is true.
+
+	* ext/openssl/ossl.c (ossl_get_errors): new method for debugging
+	  this library.
+
 Mon Aug  8 05:15:19 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/httpproxy.rb (HTTPProxyServer#intialize),
