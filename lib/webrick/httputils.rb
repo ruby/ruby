@@ -90,6 +90,7 @@ module WEBrick
       "tiff"  => "image/tiff",
       "txt"   => "text/plain",
       "xbm"   => "image/x-xbitmap",
+      "xhtml" => "text/html",
       "xls"   => "application/vnd.ms-excel",
       "xml"   => "text/xml",
       "xpm"   => "image/x-xpixmap",

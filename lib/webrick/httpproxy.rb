@@ -24,8 +24,8 @@ module WEBrick
   end
 
   class HTTPProxyServer < HTTPServer
-    def initialize(config)
-      super
+    def initialize(config={}, default=Config::HTTP)
+      super(config, default)
       c = @config
       @via = "#{c[:HTTPVersion]} #{c[:ServerName]}:#{c[:Port]}"
     end

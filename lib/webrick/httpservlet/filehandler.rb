@@ -20,7 +20,7 @@ module WEBrick
 
     class DefaultFileHandler < AbstractServlet
       def initialize(server, local_path)
-        super
+        super(server, local_path)
         @local_path = local_path
       end
 

@@ -1,3 +1,15 @@
+Mon Aug  8 05:15:19 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/httpproxy.rb (HTTPProxyServer#intialize),
+	  lib/webrick/httpserver.rb (HTTPServer#intialize),
+	  lib/webrick/httpservlet/cgihandler.rb (CGIHandler#initialize),
+	  lib/webrick/httpservlet/erbhandler.rb (ERBHandler#initialize),
+	  lib/webrick/httpservlet/filehandler.rb(DefaultFileHandler#initialize):
+	  super (called with no arguments) takes default value of optional
+	  arguments. [ruby-dev:26743]
+
+	* lib/webrick/httputils.rb: add a media-type "text/html" for .xhtml.
+
 Sun Aug  7 23:52:39 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/test_super.rb: added optional arg tests.  [ruby-dev:26743]

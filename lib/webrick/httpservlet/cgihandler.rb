@@ -23,7 +23,7 @@ module WEBrick
       CGIRunner = "\"#{Ruby}\" \"#{Config::LIBDIR}/httpservlet/cgi_runner.rb\""
 
       def initialize(server, name)
-        super
+        super(server, name)
         @script_filename = name
         @tempdir = server[:TempDir]
         @cgicmd = "#{CGIRunner} #{server[:CGIInterpreter]}"

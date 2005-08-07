@@ -17,7 +17,7 @@ module WEBrick
 
     class ERBHandler < AbstractServlet
       def initialize(server, name)
-        super
+        super(server, name)
         @script_filename = name
       end
 

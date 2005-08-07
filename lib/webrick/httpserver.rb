@@ -21,7 +21,7 @@ module WEBrick
 
   class HTTPServer < ::WEBrick::GenericServer
     def initialize(config={}, default=Config::HTTP)
-      super
+      super(config, default)
       @http_version = HTTPVersion::convert(@config[:HTTPVersion])
 
       @mount_tab = MountTable.new
