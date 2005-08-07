@@ -5,6 +5,7 @@ class TestSuper < Test::Unit::TestCase
     def single(a) a end
     def double(a, b) [a,b] end
     def array(*a) a end
+    def optional(a = 0) a end
   end
   class Single1 < Base
     def single(*) super end
@@ -32,6 +33,15 @@ class TestSuper < Test::Unit::TestCase
   end
   class Array4 < Base
     def array(a,b,c,*) super end
+  end
+  class Optional1 < Base
+    def optional(a = 1) super end
+  end
+  class Optional2 < Base
+    def optional(a, b = 1) super end
+  end
+  class Optional3 < Base
+    def single(a = 1) super end
   end
 
   def test_single1
@@ -64,6 +74,25 @@ class TestSuper < Test::Unit::TestCase
   def test_array4
     assert_equal([1,2,3], Array4.new.array(1, 2, 3))
     assert_equal([1,2,3,4], Array4.new.array(1, 2, 3, 4))
+  end
+  def test_optional1
+    assert_equal(9, Optional1.new.optional(9))
+    assert_equal(1, Optional1.new.optional)
+  end
+  def test_optional2
+    assert_raise(ArgumentError) do
+      # call Base#optional with 2 arguments; the 2nd arg is supplied
+      assert_equal(9, Optional2.new.optional(9))
+    end
+    assert_raise(ArgumentError) do
+      # call Base#optional with 2 arguments
+      assert_equal(9, Optional2.new.optional(9, 2))
+    end
+  end
+  def test_optional3
+    assert_equal(9, Optional3.new.single(9))
+    # call Base#single with 1 argument; the arg is supplied
+    assert_equal(1, Optional3.new.single)
   end
 
   class A

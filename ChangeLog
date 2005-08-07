@@ -1,3 +1,7 @@
+Sun Aug  7 23:50:14 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/ruby/test_super.rb: added from HEAD. [ruby-dev:26743]
+
 Sun Aug  7 01:31:15 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (WIN32OLE_EVENT#on_event): should set 
