@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-08-07"
+#define TCLTKLIB_RELEASE_DATE "2005-08-09"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -65,9 +65,12 @@
 #define DUMP1(ARG1) if (ruby_debug) { fprintf(stderr, "tcltklib: %s\n", ARG1); fflush(stderr); }
 #define DUMP2(ARG1, ARG2) if (ruby_debug) { fprintf(stderr, "tcltklib: ");\
 fprintf(stderr, ARG1, ARG2); fprintf(stderr, "\n"); fflush(stderr); }
+#define DUMP3(ARG1, ARG2, ARG3) if (ruby_debug) { fprintf(stderr, "tcltklib: ");\
+fprintf(stderr, ARG1, ARG2, ARG3); fprintf(stderr, "\n"); fflush(stderr); }
 /*
 #define DUMP1(ARG1)
 #define DUMP2(ARG1, ARG2)
+#define DUMP3(ARG1, ARG2, ARG3)
 */
 
 /* release date */
@@ -1689,12 +1692,10 @@ lib_eventloop_launcher(check_root, update_flag, check_var)
 
     eventloop_thread = rb_thread_current();
 
-    if (ruby_debug) {
-        if (parent_evloop == eventloop_thread) {
-            DUMP2("eventloop: recursive call on %lx", parent_evloop);
-        }
+    if (parent_evloop == eventloop_thread) {
+        DUMP2("eventloop: recursive call on %lx", parent_evloop);
+        rbtk_eventloop_depth++;
     }
-    if (parent_evloop == eventloop_thread) rbtk_eventloop_depth++;
 
     if (!NIL_P(parent_evloop) && parent_evloop != eventloop_thread) {
         DUMP2("wait for stop of parent_evloop %lx", parent_evloop);
@@ -1707,10 +1708,8 @@ lib_eventloop_launcher(check_root, update_flag, check_var)
 
     rb_ary_push(eventloop_stack, parent_evloop);
 
-    if (ruby_debug) { 
-        fprintf(stderr, "tcltklib: eventloop-thread : %lx -> %lx\n", 
+    DUMP3("tcltklib: eventloop-thread : %lx -> %lx\n", 
                 parent_evloop, eventloop_thread);
-    }
 
     args->check_root  = check_root;
     args->update_flag = update_flag;
@@ -2227,6 +2226,8 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
         volatile VALUE eclass = rb_obj_class(exc);
         volatile VALUE backtrace;
 
+        DUMP1("(failed)");
+
         thr_crit_bup = rb_thread_critical;
         rb_thread_critical = Qtrue;
 
@@ -2284,6 +2285,8 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
 
         rb_thread_critical = thr_crit_bup;
     }
+
+    DUMP2("(result) %s", NIL_P(ret) ? "nil" : RSTRING(ret)->ptr);
 
     return TCL_OK;
 }
@@ -2422,7 +2425,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
 {
     volatile VALUE receiver;
     volatile ID method;
-    volatile VALUE args = rb_ary_new2(argc - 2);
+    volatile VALUE args;
     char *str;
     int i;
     int  len;
@@ -2505,6 +2508,7 @@ ip_ruby_cmd(clientData, interp, argc, argv)
     method = rb_intern(str);
 
     /* get args */
+    args = rb_ary_new2(argc - 2);
     RARRAY(args)->len = 0;
     for(i = 3; i < argc; i++) {
 #if TCL_MAJOR_VERSION >= 8
