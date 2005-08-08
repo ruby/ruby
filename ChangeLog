@@ -1,3 +1,7 @@
+Mon Aug  8 21:28:13 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/test_fnmatch.rb: separated from test_file.rb.
+
 Mon Aug  8 20:40:35 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/test_method.rb: added.  [ruby-dev:26761]
