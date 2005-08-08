@@ -1,3 +1,7 @@
+Mon Aug  8 20:43:02 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/ruby/test_method.rb: added.  [ruby-dev:26761]
+
 Sun Aug  7 23:50:14 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/test_super.rb: added from HEAD. [ruby-dev:26743]
