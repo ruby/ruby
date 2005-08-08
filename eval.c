@@ -4893,6 +4893,13 @@ rb_yield_0(val, self, klass, flags, avalue)
 		}
 		formal_assign(self, var, RARRAY(val)->len, RARRAY(val)->ptr, 0);
 	    }
+	    else if (nd_type(var) == NODE_BLOCK) {
+		if (var->nd_next) {
+		    bvar = var->nd_next->nd_head;
+		}
+		var = var->nd_head;
+		goto block_var;
+	    }
 	    else {
 		int len = 0;
 		if (avalue) {
@@ -5268,13 +5275,6 @@ assign(self, lhs, val, pcall)
 	    }
 	}
 	break;
-
-      case NODE_BLOCK:
-	lhs = lhs->nd_head;
-	if (nd_type(lhs) == NODE_ARGS) {
-	    formal_assign(self, lhs, 1, &val, 0);
-	    break;
-	}
 
       default:
 	rb_bug("bug in variable assignment");

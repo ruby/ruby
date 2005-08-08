@@ -1,3 +1,8 @@
+Tue Aug  9 08:24:05 2005  Mauricio Fernandez  <mfp@acm.org>
+
+	* parse.y (f_block_arg), eval.c (rb_yield_0): deal with dynamic
+	  variable lambda arguments.  [ruby-core:05540]
+
 Mon Aug  8 22:13:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (assign): deal with new block argument.
