@@ -3208,7 +3208,7 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 			$$ = dispatch4(params, $1, Qnil, Qnil, Qnil);
 		    %*/
 		    }
-		| f_arg ',' opt_f_block_arg f_rest_arg opt_bv_decl
+               | f_arg ',' f_rest_arg opt_f_block_arg opt_bv_decl
 		    {
 		    /*%%%*/
 			$$ = NEW_LAMBDA(new_args($1, 0, $3, $4), $5);
