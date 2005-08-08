@@ -1,3 +1,11 @@
+Mon Aug  8 22:13:48 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (assign): deal with new block argument.
+	  fixed: [ruby-core:05536]
+
+	* eval.c (rb_node_arity): follow change of NODE_ARGS.
+	  fixed: [ruby-dev:26761]
+
 Mon Aug  8 21:28:13 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_fnmatch.rb: separated from test_file.rb.
@@ -13,7 +21,7 @@ Mon Aug  8 01:26:37 2005  Mauricio Fernandez  <mfp@acm.org>
 Mon Aug  8 05:16:55 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.c (ossl_raise): should use ERR_peek_last_error
-	  to get last error on the current thread. And should report 
+	  to get last error on the current thread. And should report
 	  if errors are on the stack while OpenSSL.debug is true.
 
 	* ext/openssl/ossl.c (ossl_get_errors): new method for debugging

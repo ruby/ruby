@@ -5269,6 +5269,13 @@ assign(self, lhs, val, pcall)
 	}
 	break;
 
+      case NODE_BLOCK:
+	lhs = lhs->nd_head;
+	if (nd_type(lhs) == NODE_ARGS) {
+	    formal_assign(self, lhs, 1, &val, 0);
+	    break;
+	}
+
       default:
 	rb_bug("bug in variable assignment");
 	break;
@@ -9326,7 +9333,7 @@ rb_node_arity(body)
 	if (nd_type(body) == NODE_BLOCK)
 	    body = body->nd_head;
 	if (!body) return 0;
-	n = body->nd_cnt;
+	n = body->nd_frml ? RARRAY(body->nd_frml)->len : 0;
 	if (body->nd_opt || body->nd_rest)
 	    n = -n-1;
 	return n;
