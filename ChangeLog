@@ -1,3 +1,7 @@
+Mon Aug  8 20:40:35 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/ruby/test_method.rb: added.  [ruby-dev:26761]
+
 Mon Aug  8 01:26:37 2005  Mauricio Fernandez  <mfp@acm.org>
 
 	* parse.y (f_larglist): mistake in syntax rule.  [ruby-core:05535]
