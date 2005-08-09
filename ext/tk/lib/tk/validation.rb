@@ -337,7 +337,7 @@ module TkValidation
   #####################################
 
   def __validation_class_list
-    super << ValidateCmd
+    super() << ValidateCmd
   end
 
   Tk::ValidateConfigure.__def_validcmd(binding, ValidateCmd)

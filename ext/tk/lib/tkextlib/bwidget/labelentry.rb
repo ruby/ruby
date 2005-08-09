@@ -23,6 +23,11 @@ class Tk::BWidget::LabelEntry
   WidgetClassName = 'LabelEntry'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __tkvariable_optkeys
+    super() << 'helpvar'
+  end
+  private :__tkvariable_optkeys
+
   #def entrybind(*args)
   #  _bind([path, 'bind'], *args)
   #  self

@@ -97,7 +97,7 @@ module TkComposite
     rescue
     end
 
-    super
+    super(slot)
   end
 
   def configure(slot, value=None)
@@ -134,7 +134,7 @@ module TkComposite
     rescue
     end
 
-    super
+    super(slot, value)
   end
 
   def configinfo(slot = nil)
@@ -171,10 +171,10 @@ module TkComposite
         rescue
         end
 
-        super
+        super(slot)
 
       else # slot == nil
-        info_list = super
+        info_list = super(slot)
 
         tbl = @delegates['DEFAULT']
         if tbl
@@ -250,10 +250,10 @@ module TkComposite
         rescue
         end
 
-        super
+        super(slot)
 
       else # slot == nil
-        info_list = super
+        info_list = super(slot)
 
         tbl = @delegates['DEFAULT']
         if tbl

@@ -20,6 +20,11 @@ class Tk::BWidget::MainFrame
   WidgetClassName = 'MainFrame'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __tkvariable_optkeys
+    super() << 'progressvar'
+  end
+  private :__tkvariable_optkeys
+
   def add_indicator(keys={}, &b)
     win = window(tk_send('addindicator', *hash_kv(keys)))
     win.instance_eval(&b) if b

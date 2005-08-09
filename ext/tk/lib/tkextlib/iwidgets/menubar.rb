@@ -18,6 +18,11 @@ class Tk::Iwidgets::Menubar
   WidgetClassName = 'Menubar'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __tkvariable_optkeys
+    super() << 'helpvariable'
+  end
+  private :__tkvariable_optkeys
+
   ####################################
 
   include TkItemConfigMethod

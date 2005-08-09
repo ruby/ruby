@@ -17,6 +17,14 @@ class TkRadioButton<TkButton
   #end
   #private :create_self
 
+  def __ruby2val_optkeys  # { key=>proc, ... }
+    {
+      'variable'=>proc{|v| tk_trace_variable(v)}  # for backward compatibility
+    }
+  end
+  private :__ruby2val_optkeys
+
+
   def deselect
     tk_send_without_enc('deselect')
     self

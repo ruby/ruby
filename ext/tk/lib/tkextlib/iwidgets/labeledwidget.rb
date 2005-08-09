@@ -20,6 +20,11 @@ class Tk::Iwidgets::Labeledwidget
   WidgetClassName = 'Labeledwidget'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __tkvariable_optkeys
+    super() << 'labelvariable'
+  end
+  private :__tkvariable_optkeys
+
   def self.alignlabels(*wins)
     tk_call('::iwidgets::Labeledwidget::alignlabels', *wins)
   end

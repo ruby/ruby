@@ -45,7 +45,7 @@ class Tk::Iwidgets::Calendar
   end
 
   def __validation_class_list
-    super << CalendarCommand
+    super() << CalendarCommand
   end
 
   Tk::ValidateConfigure.__def_validcmd(binding, CalendarCommand)

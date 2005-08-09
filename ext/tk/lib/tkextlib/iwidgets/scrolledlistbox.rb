@@ -19,6 +19,11 @@ class Tk::Iwidgets::Scrolledlistbox
   WidgetClassName = 'Scrolledlistbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __tkvariable_optkeys
+    super() << 'listvariable'
+  end
+  private :__tkvariable_optkeys
+
   ################################
 
   def initialize(*args)

@@ -51,7 +51,7 @@ class TkSpinbox<TkEntry
   end
 
   def __validation_class_list
-    super << SpinCommand
+    super() << SpinCommand
   end
 
   Tk::ValidateConfigure.__def_validcmd(binding, SpinCommand)

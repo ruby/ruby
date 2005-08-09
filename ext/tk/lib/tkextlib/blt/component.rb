@@ -43,7 +43,13 @@ module Tk::BLT
         ['dashes']
       end
       private :__item_numlistval_optkeys
+
+      def __item_tkvariable_optkeys(id)
+        ['variable', 'textvariable', 'colormap', 'fontmap']
+      end
+      private :__item_tkvariable_optkeys
     end
+
     include OptKeys
 
     def __item_cget_cmd(id)

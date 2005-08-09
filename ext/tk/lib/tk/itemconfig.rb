@@ -40,12 +40,30 @@ module TkItemConfigOptkeys
   end
   private :__item_numlistval_optkeys
 
-  def __item_tkvariable_optkeys
-    ['variable']
+  def __item_tkvariable_optkeys(id)
+    ['variable', 'textvariable']
   end
   private :__item_tkvariable_optkeys
 
+  def __item_val2ruby_optkeys(id)  # { key=>method, ... }
+    # The method is used to convert a opt-value to a ruby's object.
+    # When get the value of the option "key", "method.call(id, val)" is called.
+    {}
+  end
+  private :__item_val2ruby_optkeys
+
+  def __item_ruby2val_optkeys(id)  # { key=>method, ... }
+    # The method is used to convert a ruby's object to a opt-value.
+    # When set the value of the option "key", "method.call(id, val)" is called.
+    # That is, "-#{key} #{method.call(id, value)}".
+    {}
+  end
+  private :__item_ruby2val_optkeys
+
   def __item_methodcall_optkeys(id)  # { key=>method, ... }
+    # Use the method for both of get and set.
+    # Usually, the 'key' will not be a widget option.
+    #
     # maybe need to override
     # {'coords'=>'coords'}
     {}
@@ -133,6 +151,16 @@ module TkItemConfigMethod
       fail ArgumentError, "Invalid option `#{orig_opt.inspect}'"
     end
 
+    if ( method = _symbolkey2str(__item_val2ruby_optkeys(tagid(tagOrId)))[option] )
+      optval = tk_call_without_enc(*(__item_cget_cmd(tagid(tagOrId)) << "-#{option}"))
+      begin
+        return method.call(tagOrId, optval)
+      rescue => e
+        warn("Warning:: #{e.message} (when #{method}.call(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+        return optval
+      end
+    end
+
     if ( method = _symbolkey2str(__item_methodcall_optkeys(tagid(tagOrId)))[option] )
       return self.__send__(method, tagOrId)
     end
@@ -200,6 +228,12 @@ module TkItemConfigMethod
         self.__send__(method, tagOrId, value) if value
       }
 
+      __item_ruby2val_optkeys(tagid(tagOrId)).each{|key, method|
+        key = key.to_s
+        value = slot[key]
+        slot[key] = method.call(tagOrId, value) if value
+      }
+
       __item_keyonly_optkeys(tagid(tagOrId)).each{|defkey, undefkey|
         conf = slot.find{|kk, vv| kk == defkey.to_s}
         if conf
@@ -233,6 +267,8 @@ module TkItemConfigMethod
         elsif undefkey
           tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{undefkey}"))
         end
+      elsif ( method = _symbolkey2str(__item_ruby2val_optkeys(tagid(tagOrId)))[slot] )
+        method.call(tagOrId, value)
       elsif ( method = _symbolkey2str(__item_methodcall_optkeys(tagid(tagOrId)))[slot] )
         self.__send__(method, tagOrId, value)
       elsif (slot =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)
@@ -270,6 +306,31 @@ module TkItemConfigMethod
         if slot
           slot = slot.to_s
           case slot
+          when /^(#{__item_val2ruby_optkeys(tagid(tagOrId)).keys.join('|')})$/
+            method = _symbolkey2str(__item_val2ruby_optkeys(tagid(tagOrId)))[slot]
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
+            if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
+                && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
+              optval = conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
+              begin
+                val = method.call(tagOrId, optval)
+              rescue => e
+                warn("Warning:: #{e.message} (when #{method}.call(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+                val = optval
+              end
+              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = val
+            end
+            if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
+              optval = conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]
+              begin
+                val = method.call(tagOrId, optval)
+              rescue => e
+                warn("Warning:: #{e.message} (when #{method}lcall(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+                val = optval
+              end
+              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = val
+            end
+
           when /^(#{__item_methodcall_optkeys(tagid(tagOrId)).keys.join('|')})$/
             method = _symbolkey2str(__item_methodcall_optkeys(tagid(tagOrId)))[slot]
             return [slot, '', '', '', self.__send__(method, tagOrId)]
@@ -411,7 +472,32 @@ module TkItemConfigMethod
             conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
               conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
-            case conf[__item_configinfo_struct(tagid(tagOrId))[:key]]
+            optkey = conf[__item_configinfo_struct(tagid(tagOrId))[:key]]
+            case optkey
+            when /^(#{__item_val2ruby_optkeys(tagid(tagOrId)).keys.join('|')})$/
+              method = _symbolkey2str(__item_val2ruby_optkeys(tagid(tagOrId)))[optkey]
+              if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
+                  && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
+                optval = conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
+                begin
+                  val = method(tagOrId, optval)
+                rescue => e
+                  warn("Warning:: #{e.message} (when #{method}.call(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+                  val = optval
+                end
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = val
+              end
+              if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
+                optval = conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]
+                begin
+                  val = method.call(tagOrId, optval)
+                rescue => e
+                  warn("Warning:: #{e.message} (when #{method}.call(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+                  val = optval
+                end
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = val
+              end
+
             when /^(#{__item_strval_optkeys(tagid(tagOrId)).join('|')})$/
               # do nothing
 
@@ -583,6 +669,31 @@ module TkItemConfigMethod
         if slot
           slot = slot.to_s
           case slot
+          when /^(#{__item_val2ruby_optkeys(tagid(tagOrId)).keys.join('|')})$/
+            method = _symbolkey2str(__item_val2ruby_optkeys(tagid(tagOrId)))[slot]
+            conf = tk_split_simplelist(tk_call_without_enc(*(__item_confinfo_cmd(tagid(tagOrId)) << "-#{slot}")), false, true)
+            if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
+                && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
+              optval = conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
+              begin
+                val = method.call(tagOrId, optval)
+              rescue => e
+                warn("Warning:: #{e.message} (when #{method}.call(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+                val = optval
+              end
+              conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = val
+            end
+            if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
+              optval = conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]
+              begin
+                val = method.call(tagOrId, optval)
+              rescue => e
+                warn("Warning:: #{e.message} (when #{method}.call(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+                val = optval
+              end
+              conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = val
+            end
+
           when /^(#{__item_methodcall_optkeys(tagid(tagOrId)).keys.join('|')})$/
             method = _symbolkey2str(__item_methodcall_optkeys(tagid(tagOrId)))[slot]
             return {slot => ['', '', '', self.__send__(method, tagOrId)]}
@@ -727,7 +838,32 @@ module TkItemConfigMethod
             conf[__item_configinfo_struct(tagid(tagOrId))[:key]] = 
               conf[__item_configinfo_struct(tagid(tagOrId))[:key]][1..-1]
 
-            case conf[__item_configinfo_struct(tagid(tagOrId))[:key]]
+            optkey = conf[__item_configinfo_struct(tagid(tagOrId))[:key]]
+            case optkey
+            when /^(#{__item_val2ruby_optkeys(tagid(tagOrId)).keys.join('|')})$/
+              method = _symbolkey2str(__item_val2ruby_optkeys(tagid(tagOrId)))[optkey]
+              if ( __item_configinfo_struct(tagid(tagOrId))[:default_value] \
+                  && conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] )
+                optval = conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]]
+                begin
+                  val = method.call(tagOrId, optval)
+                rescue => e
+                  warn("Warning:: #{e.message} (when #{method}.call(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+                  val = optval
+                end
+                conf[__item_configinfo_struct(tagid(tagOrId))[:default_value]] = val
+              end
+              if ( conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] )
+                optval = conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]]
+                begin
+                  val = method.call(tagOrId, optval)
+                rescue => e
+                  warn("Warning:: #{e.message} (when #{method}.call(#{tagOrId.inspect}, #{optval.inspect})") if $DEBUG
+                  val = optval
+                end
+                conf[__item_configinfo_struct(tagid(tagOrId))[:current_value]] = val
+              end
+
             when /^(#{__item_strval_optkeys(tagid(tagOrId)).join('|')})$/
               # do nothing
 
