@@ -5731,6 +5731,7 @@ formal_assign(recv, node, argc, argv, local_vars)
     VALUE *local_vars;
 {
     int i;
+    int nopt = 0;
 
     if (nd_type(node) != NODE_ARGS) {
 	rb_bug("no argument-node");
@@ -5741,9 +5742,9 @@ formal_assign(recv, node, argc, argv, local_vars)
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)", argc, i);
     }
     if (!node->nd_rest) {
-	int nopt = i;
 	NODE *optnode = node->nd_opt;
 
+	nopt = i;
 	while (optnode) {
 	    nopt++;
 	    optnode = optnode->nd_next;
@@ -5780,15 +5781,20 @@ formal_assign(recv, node, argc, argv, local_vars)
 	    rb_eval(recv, opt);
 	}
     }
-    if (node->nd_rest) {
+    if (!node->nd_rest) {
+	i = nopt;
+    }
+    else {
 	VALUE v;
 
-	if (argc > 0)
+	if (argc > 0) {
 	    v = rb_ary_new4(argc,argv);
-	else
+	    i = -i - 1;
+	}
+	else {
 	    v = rb_ary_new2(0);
+	}
 	assign(recv, node->nd_rest, v, 1);
-	if (argc > 0) return -i - 1;
     }
     return i;
 }
