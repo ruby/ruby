@@ -46,7 +46,7 @@ class Tk::Iwidgets::Entryfield
   end
 
   def __validation_class_list
-    super << EntryfieldValidate
+    super() << EntryfieldValidate
   end
 
   Tk::ValidateConfigure.__def_validcmd(binding, EntryfieldValidate)

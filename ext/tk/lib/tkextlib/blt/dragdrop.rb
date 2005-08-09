@@ -105,7 +105,7 @@ module Tk::BLT
     end
 
     def self.__validation_class_list
-      super << PackageCommand << SiteCommand
+      super() << PackageCommand << SiteCommand
     end
 
     class << self

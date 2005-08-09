@@ -39,6 +39,6 @@ class TkPixmapImage<TkImage
 
   def initialize(*args)
     @type = 'pixmap'
-    super
+    super(*args)
   end
 end

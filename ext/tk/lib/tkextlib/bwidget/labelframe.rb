@@ -19,6 +19,11 @@ class Tk::BWidget::LabelFrame
   WidgetClassName = 'LabelFrame'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __tkvariable_optkeys
+    super() << 'helpvar'
+  end
+  private :__tkvariable_optkeys
+
   def self.align(*args)
     tk_call('LabelFrame::align', *args)
   end

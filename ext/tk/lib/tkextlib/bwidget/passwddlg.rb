@@ -19,6 +19,12 @@ class Tk::BWidget::PasswdDlg
   WidgetClassName = 'PasswdDlg'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __tkvariable_optkeys
+    super() << 'loginhelpvar' << 'logintextvariable' << 
+      'passwdhelpvar' << 'passwdtextvariable'
+  end
+  private :__tkvariable_optkeys
+
   def create
     login, passwd = simplelist(tk_call(self.class::TkCommandNames[0], 
                                        @path, *hash_kv(@keys)))

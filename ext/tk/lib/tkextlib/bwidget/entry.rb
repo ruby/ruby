@@ -21,6 +21,11 @@ class Tk::BWidget::Entry
   WidgetClassName = 'Entry'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __tkvariable_optkeys
+    super() << 'helpvar'
+  end
+  private :__tkvariable_optkeys
+
   def invoke
     tk_send_without_enc('invoke')
     self

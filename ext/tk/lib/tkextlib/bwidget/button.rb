@@ -18,4 +18,9 @@ class Tk::BWidget::Button
   TkCommandNames = ['Button'.freeze].freeze
   WidgetClassName = 'Button'.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  def __tkvariable_optkeys
+    super() << 'helpvar'
+  end
+  private :__tkvariable_optkeys
 end

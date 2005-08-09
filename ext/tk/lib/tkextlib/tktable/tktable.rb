@@ -340,7 +340,7 @@ class Tk::TkTable
   #################################
 
   def __validation_class_list
-    super << 
+    super() << 
       BrowseCommand << CellCommand << SelectionCommand << ValidateCommand
   end
 

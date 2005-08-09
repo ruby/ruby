@@ -1,3 +1,28 @@
+Tue Aug  9 15:12:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: remove dangerous 'rb_jump_tag's.
+
+	* ext/tk/lib/tk.rb: add __val2ruby_optkeys and __ruby2val_optkeys to
+	  help to convert option values between ruby and tcl.
+
+	* ext/tk/lib/tk/itemconfig.rb: add __item_val2ruby_optkeys and 
+	  __item_ruby2val_optkeys to help to convert option values between 
+	    ruby and tcl.
+
+	* ext/tk/lib/tk/radiobutton.rb: use __ruby2val_optkeys for 'variable' 
+	  option (for the reason of backward compatibility).
+
+	* ext/tk/lib/tk/composite.rb: clarify the arguments of super().
+
+	* ext/tk/lib/tk/spinbox.rb: ditto.
+
+	* ext/tk/lib/tk/text.rb: ditto.
+
+	* ext/tk/lib/tk/validation.rb: ditto.
+
+	* ext/tk/lib/tkextlib/*: support to treat tkvariable-type
+	  configure options.
+
 Tue Aug  9 08:24:05 2005  Mauricio Fernandez  <mfp@acm.org>
 
 	* parse.y (f_block_arg), eval.c (rb_yield_0): deal with dynamic

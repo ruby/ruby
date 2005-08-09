@@ -26,6 +26,11 @@ module Tk::BLT
     end
     private :__strval_optkeys
 
+    def __tkvariable_optkeys
+      super() << 'colormap' << 'fontmap'
+    end
+    private :__tkvariable_optkeys
+
 =begin
     BarElement_ID = ['blt_barchart_bar'.freeze, '00000'.taint].freeze
 

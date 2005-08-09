@@ -234,7 +234,7 @@ class Tk::BLT::Treeview
   end
 
   def __validation_class_list
-    super << OpenCloseCommand
+    super() << OpenCloseCommand
   end
 
   Tk::ValidateConfigure.__def_validcmd(binding, OpenCloseCommand)

@@ -2720,7 +2720,24 @@ module TkConfigMethod
   end
   private :__tkvariable_optkeys
 
+  def __val2ruby_optkeys  # { key=>proc, ... }
+    # The method is used to convert a opt-value to a ruby's object.
+    # When get the value of the option "key", "proc.call(value)" is called.
+    {}
+  end
+  private :__val2ruby_optkeys
+
+  def __ruby2val_optkeys  # { key=>proc, ... }
+    # The method is used to convert a ruby's object to a opt-value.
+    # When set the value of the option "key", "proc.call(value)" is called.
+    # That is, "-#{key} #{proc.call(value)}".
+    {}
+  end
+  private :__ruby2val_optkeys
+
   def __methodcall_optkeys  # { key=>method, ... }
+    # The method is used to both of get and set.
+    # Usually, the 'key' will not be a widget option.
     {}
   end
   private :__methodcall_optkeys
@@ -2773,6 +2790,16 @@ module TkConfigMethod
  
    if slot.length == 0
       fail ArgumentError, "Invalid option `#{orig_slot.inspect}'"
+    end
+
+    if ( method = _symbolkey2str(__val2ruby_optkeys())[slot] )
+      optval = tk_call_without_enc(*(__cget_cmd << "-#{slot}"))
+      begin
+        return method.call(optval)
+      rescue => e
+        warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+        return optval
+      end
     end
 
     if ( method = _symbolkey2str(__methodcall_optkeys)[slot] )
@@ -2843,6 +2870,12 @@ module TkConfigMethod
         self.__send__(method, value) if value
       }
 
+      __ruby2val_optkeys.each{|key, method|
+        key = key.to_s
+        value = slot[key]
+        slot[key] = method.call(value) if value
+      }
+
       __keyonly_optkeys.each{|defkey, undefkey|
         conf = slot.find{|kk, vv| kk == defkey.to_s}
         if conf
@@ -2876,6 +2909,8 @@ module TkConfigMethod
         elsif undefkey
           tk_call(*(__config_cmd << "-#{undefkey}"))
         end
+      elsif ( method = _symbolkey2str(__ruby2val_optkeys)[slot] )
+        method.call(value)
       elsif ( method = _symbolkey2str(__methodcall_optkeys)[slot] )
         self.__send__(method, value)
       elsif (slot =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
@@ -2918,6 +2953,31 @@ module TkConfigMethod
         if slot
           slot = slot.to_s
           case slot
+          when /^(#{__val2ruby_optkeys().keys.join('|')})$/
+            method = _symbolkey2str(__val2ruby_optkeys())[slot]
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd() << "-#{slot}")), false, true)
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] )
+              optval = conf[__configinfo_struct[:default_value]]
+              begin
+                val = method.call(optval)
+              rescue => e
+                warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+                val = optval
+              end
+              conf[__configinfo_struct[:default_value]] = val
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              optval = conf[__configinfo_struct[:current_value]]
+              begin
+                val = method.call(optval)
+              rescue => e
+                warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+                val = optval
+              end
+              conf[__configinfo_struct[:current_value]] = val
+            end
+
           when /^(#{__methodcall_optkeys.keys.join('|')})$/
             method = _symbolkey2str(__methodcall_optkeys)[slot]
             return [slot, '', '', '', self.__send__(method)]
@@ -3059,7 +3119,32 @@ module TkConfigMethod
             conf[__configinfo_struct[:key]] = 
               conf[__configinfo_struct[:key]][1..-1]
 
-            case conf[__configinfo_struct[:key]]
+            optkey = conf[__configinfo_struct[:key]]
+            case optkey
+            when /^(#{__val2ruby_optkeys().keys.join('|')})$/
+              method = _symbolkey2str(__val2ruby_optkeys())[optkey]
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                optval = conf[__configinfo_struct[:default_value]]
+                begin
+                  val = method.call(optval)
+                rescue => e
+                  warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+                  val = optval
+                end
+                conf[__configinfo_struct[:default_value]] = val
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                optval = conf[__configinfo_struct[:current_value]]
+                begin
+                  val = method.call(optval)
+                rescue => e
+                  warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+                  val = optval
+                end
+                conf[__configinfo_struct[:current_value]] = val
+              end
+
             when /^(#{__strval_optkeys.join('|')})$/
               # do nothing
 
@@ -3232,6 +3317,31 @@ module TkConfigMethod
         if slot
           slot = slot.to_s
           case slot
+          when /^(#{__val2ruby_optkeys().keys.join('|')})$/
+            method = _symbolkey2str(__val2ruby_optkeys())[slot]
+            conf = tk_split_simplelist(tk_call_without_enc(*(__confinfo_cmd << "-#{slot}")), false, true)
+            if ( __configinfo_struct[:default_value] \
+                && conf[__configinfo_struct[:default_value]] )
+              optval = conf[__configinfo_struct[:default_value]]
+              begin
+                val = method.call(optval)
+              rescue => e
+                warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+                val = optval
+              end
+              conf[__configinfo_struct[:default_value]] = val
+            end
+            if ( conf[__configinfo_struct[:current_value]] )
+              optval = conf[__configinfo_struct[:current_value]]
+              begin
+                val = method.call(optval)
+              rescue => e
+                warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+                val = optval
+              end
+              conf[__configinfo_struct[:current_value]] = val
+            end
+
           when /^(#{__methodcall_optkeys.keys.join('|')})$/
             method = _symbolkey2str(__methodcall_optkeys)[slot]
             return {slot => ['', '', '', self.__send__(method)]}
@@ -3375,7 +3485,32 @@ module TkConfigMethod
             conf[__configinfo_struct[:key]] = 
               conf[__configinfo_struct[:key]][1..-1]
 
-            case conf[__configinfo_struct[:key]]
+            optkey = conf[__configinfo_struct[:key]]
+            case optkey
+            when /^(#{__val2ruby_optkeys().keys.join('|')})$/
+              method = _symbolkey2str(__val2ruby_optkeys())[optkey]
+              if ( __configinfo_struct[:default_value] \
+                  && conf[__configinfo_struct[:default_value]] )
+                optval = conf[__configinfo_struct[:default_value]]
+                begin
+                  val = method.call(optval)
+                rescue => e
+                  warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+                  val = optval
+                end
+                conf[__configinfo_struct[:default_value]] = val
+              end
+              if ( conf[__configinfo_struct[:current_value]] )
+                optval = conf[__configinfo_struct[:current_value]]
+                begin
+                  val = method.call(optval)
+                rescue => e
+                  warn("Warning:: #{e.message} (when #{method}.call(#{optval.inspect})") if $DEBUG
+                  val = optval
+                end
+                conf[__configinfo_struct[:current_value]] = val
+              end
+
             when /^(#{__strval_optkeys.join('|')})$/
               # do nothing
 
@@ -3745,6 +3880,12 @@ class TkWindow<TkObject
         __methodcall_optkeys.each{|key|
           key = key.to_s
           methodkeys[key] = keys.delete(key) if keys.key?(key)
+        }
+
+        __ruby2val_optkeys.each{|key, method|
+          key = key.to_s
+          value = keys[key]
+          keys[key] = method.call(value) if value
         }
       end
       if without_creating && keys

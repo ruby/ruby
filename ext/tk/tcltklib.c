@@ -89,6 +89,11 @@ static VALUE eTkCallbackContinue;
 
 static VALUE eLocalJumpError;
 
+static VALUE eTkLocalJumpError;
+static VALUE eTkCallbackRetry;
+static VALUE eTkCallbackRedo;
+static VALUE eTkCallbackThrow;
+
 static ID ID_at_enc;
 static ID ID_at_interp;
 
@@ -192,7 +197,7 @@ Tcl_SetVar2Ex(interp, name1, name2, newValObj, flags)
     CONST char *name2;
     Tcl_Obj *newValObj;
     int flags;
-{
+
     Tcl_Obj *nameObj1, *nameObj2 = NULL, *retObj;
 
     nameObj1 = Tcl_NewStringObj(name1, -1);
@@ -765,6 +770,18 @@ pending_exception_check0()
             return 1; /* pending */
         } else {
             rbtk_pending_exception = Qnil;
+
+            if (rb_obj_is_kind_of(exc, eTkCallbackRetry)) {
+                DUMP1("pending_exception_check0: call rb_jump_tag(retry)");
+                rb_jump_tag(TAG_RETRY);
+            } else if (rb_obj_is_kind_of(exc, eTkCallbackRedo)) {
+                DUMP1("pending_exception_check0: call rb_jump_tag(redo)");
+                rb_jump_tag(TAG_REDO);
+            } else if (rb_obj_is_kind_of(exc, eTkCallbackThrow)) {
+                DUMP1("pending_exception_check0: call rb_jump_tag(throw)");
+                rb_jump_tag(TAG_THROW);
+            }
+
             rb_exc_raise(exc);
         }
     } else {
@@ -794,6 +811,16 @@ pending_exception_check1(thr_crit_bup, ptr)
 
             rb_thread_critical = thr_crit_bup;
 
+            if (rb_obj_is_kind_of(exc, eTkCallbackRetry)) {
+                DUMP1("pending_exception_check1: call rb_jump_tag(retry)");
+                rb_jump_tag(TAG_RETRY);
+            } else if (rb_obj_is_kind_of(exc, eTkCallbackRedo)) {
+                DUMP1("pending_exception_check1: call rb_jump_tag(redo)");
+                rb_jump_tag(TAG_REDO);
+            } else if (rb_obj_is_kind_of(exc, eTkCallbackThrow)) {
+                DUMP1("pending_exception_check1: call rb_jump_tag(throw)");
+                rb_jump_tag(TAG_THROW);
+            }
             rb_exc_raise(exc);
         }
     } else {
@@ -2172,9 +2199,18 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
             break;
 
         case TAG_RETRY:
+            if (NIL_P(ruby_errinfo)) {
+                DUMP1("rb_protect: retry");
+                exc = rb_exc_new2(eTkCallbackRetry, "retry jump error");
+            } else {
+                exc = ruby_errinfo;
+            }
+            break;
+
         case TAG_REDO:
             if (NIL_P(ruby_errinfo)) {
-                rb_jump_tag(status); /* danger */
+                DUMP1("rb_protect: redo");
+                exc = rb_exc_new2(eTkCallbackRedo,  "redo jump error");
             } else {
                 exc = ruby_errinfo;
             }
@@ -2198,7 +2234,8 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
 
         case TAG_THROW:
             if (NIL_P(ruby_errinfo)) {
-                rb_jump_tag(TAG_THROW); /* danger */
+                DUMP1("rb_protect: throw");
+                exc = rb_exc_new2(eTkCallbackThrow,  "throw jump error");
             } else {
                 exc = ruby_errinfo;
             }
@@ -2253,6 +2290,11 @@ tcl_protect_core(interp, proc, data) /* should not raise exception */
         if (eclass == rb_eSystemExit || eclass == rb_eInterrupt) {
             rbtk_pending_exception = exc;
             return TCL_RETURN;
+        }
+
+        if (rb_obj_is_kind_of(exc, eTkLocalJumpError)) {
+            rbtk_pending_exception = exc;
+            return TCL_ERROR;
         }
 
         if (rb_obj_is_kind_of(exc, eLocalJumpError)) {
@@ -5215,9 +5257,16 @@ get_obj_from_str(str)
     return Tcl_NewStringObj(s, RSTRING(str)->len);
 #else /* TCL_VERSION >= 8.1 */
     VALUE enc = rb_attr_get(str, ID_at_enc);
-    if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
-        /* binary string */
-        return Tcl_NewByteArrayObj(s, RSTRING(str)->len);
+
+    if (!NIL_P(enc)) {
+        StringValue(enc);
+        if (strcmp(RSTRING(enc)->ptr, "binary") == 0) {
+            /* binary string */
+            return Tcl_NewByteArrayObj(s, RSTRING(str)->len);
+        } else {
+            /* text string */
+            return Tcl_NewStringObj(s, RSTRING(str)->len);
+        }
     } else if (strlen(s) != RSTRING(str)->len) {
         /* probably binary string */
         return Tcl_NewByteArrayObj(s, RSTRING(str)->len);
@@ -6030,9 +6079,12 @@ lib_fromUTF8_core(ip_obj, src, encodename)
 
         if (TYPE(str) == T_STRING) {
             enc = rb_attr_get(str, ID_at_enc);
-            if (!NIL_P(enc) && strcmp(StringValuePtr(enc), "binary") == 0) {
-                rb_thread_critical = thr_crit_bup;
-                return str;
+            if (!NIL_P(enc)) {
+                StringValue(enc);
+                if (strcmp(RSTRING(enc)->ptr, "binary") == 0) {
+                    rb_thread_critical = thr_crit_bup;
+                    return str;
+                }
             }
         }
 
@@ -7628,6 +7680,14 @@ Init_tcltklib()
     /* --------------------------------------------------------------- */
 
     eLocalJumpError = rb_const_get(rb_cObject, rb_intern("LocalJumpError"));
+
+    eTkLocalJumpError = rb_define_class("TkLocalJumpError", eLocalJumpError);
+
+    eTkCallbackRetry  = rb_define_class("TkCallbackRetry", eTkLocalJumpError);
+    eTkCallbackRedo   = rb_define_class("TkCallbackRedo",  eTkLocalJumpError);
+    eTkCallbackThrow  = rb_define_class("TkCallbackThrow", eTkLocalJumpError);
+
+    /* --------------------------------------------------------------- */
 
     ID_at_enc = rb_intern("@encoding");
     ID_at_interp = rb_intern("@interp");
