@@ -1214,15 +1214,8 @@ rb_big_minus(x, y)
     }
 }
 
-/*
- *  call-seq:
- *     big * other  => Numeric
- *
- *  Multiplies big and other, returning the result.
- */
-
-VALUE
-rb_big_mul(x, y)
+static VALUE
+rb_big_mul0(x, y)
     VALUE x, y;
 {
     long i, j;
@@ -1230,7 +1223,6 @@ rb_big_mul(x, y)
     VALUE z;
     BDIGIT *zds;
 
-    if (FIXNUM_P(x)) x = rb_int2big(FIX2LONG(x));
     switch (TYPE(y)) {
       case T_FIXNUM:
 	y = rb_int2big(FIX2LONG(y));
@@ -1264,8 +1256,21 @@ rb_big_mul(x, y)
 	    zds[i + j] = n;
 	}
     }
+    return z;
+}
 
-    return bignorm(z);
+/*
+ *  call-seq:
+ *     big * other  => Numeric
+ *
+ *  Multiplies big and other, returning the result.
+ */
+
+VALUE
+rb_big_mul(x, y)
+    VALUE x, y;
+{
+    return bignorm(rb_big_mul0(x, y));
 }
 
 static void
@@ -1619,9 +1624,9 @@ rb_big_pow(x, y)
 		if (yy == 0) break;
 		while (yy % 2 == 0) {
 		    yy /= 2;
-		    x = rb_big_mul(x, x);
+		    x = rb_big_mul0(x, x);
 		}
-		z = rb_big_mul(z, x);
+		z = rb_big_mul0(z, x);
 	    }
 	    return bignorm(z);
 	}
@@ -1978,6 +1983,9 @@ rb_big_coerce(x, y)
 {
     if (FIXNUM_P(y)) {
 	return rb_assoc_new(rb_int2big(FIX2LONG(y)), x);
+    }
+    else if (TYPE(y) == T_BIGNUM) {
+       return rb_assoc_new(y, x);
     }
     else {
 	rb_raise(rb_eTypeError, "can't coerce %s to Bignum",

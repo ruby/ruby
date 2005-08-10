@@ -302,17 +302,6 @@ to_ary(ary)
 }
 
 static VALUE
-make_ary(ary)
-    VALUE ary;
-{
-    VALUE tmp = rb_check_array_type(ary);
-    if (NIL_P(tmp)) {
-	return rb_ary_new3(1, ary);
-    }
-    return tmp;
-}
-
-static VALUE
 to_a(ary)
     VALUE ary;
 {
@@ -2355,16 +2344,10 @@ VALUE
 rb_ary_plus(x, y)
     VALUE x, y;
 {
-    VALUE tmp, z;
+    VALUE z;
     long len;
 
-    tmp = rb_check_array_type(y);
-    if (NIL_P(tmp)) {
-	z = rb_ary_dup(x);
-	rb_ary_push(z, y);
-	return z;
-    }
-    y = tmp;
+    y = to_ary(y);
     len = RARRAY(x)->len + RARRAY(y)->len;
     z = rb_ary_new2(len);
     MEMCPY(RARRAY(z)->ptr, RARRAY(x)->ptr, VALUE, RARRAY(x)->len);
@@ -2711,10 +2694,10 @@ static VALUE
 rb_ary_diff(ary1, ary2)
     VALUE ary1, ary2;
 {
-    VALUE tmp, ary3, hash;
+    VALUE ary3, hash;
     long i;
 
-    hash = ary_make_hash(make_ary(ary2), 0);
+    hash = ary_make_hash(to_ary(ary2), 0);
     ary3 = rb_ary_new();
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
@@ -2742,9 +2725,9 @@ rb_ary_and(ary1, ary2)
     VALUE hash, ary3, v, vv;
     long i;
 
-    ary2 = make_ary(ary2);
+    ary2 = to_ary(ary2);
     ary3 = rb_ary_new2(RARRAY(ary1)->len < RARRAY(ary2)->len ?
-		       RARRAY(ary1)->len : RARRAY(ary2)->len);
+	    RARRAY(ary1)->len : RARRAY(ary2)->len);
     hash = ary_make_hash(ary2, 0);
 
     for (i=0; i<RARRAY(ary1)->len; i++) {
@@ -2776,7 +2759,7 @@ rb_ary_or(ary1, ary2)
     VALUE v, vv;
     long i;
 
-    ary2 = make_ary(ary2);
+    ary2 = to_ary(ary2);
     ary3 = rb_ary_new2(RARRAY(ary1)->len+RARRAY(ary2)->len);
     hash = ary_make_hash(ary1, ary2);
 

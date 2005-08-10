@@ -247,6 +247,8 @@ static NODE *call_op_gen _((struct parser_params*,NODE*,ID,int,NODE*));
 
 static NODE *new_args_gen _((struct parser_params*,VALUE,NODE*,NODE*,NODE*));
 #define new_args(f,o,r,b) new_args_gen(parser, f,o,r,b)
+static void shadowing_lvar_gen _((struct parser_params*,ID));
+#define shadowing_lvar(name) shadowing_lvar_gen(parser, name)
 
 static NODE *negate_lit _((NODE*));
 static NODE *ret_args _((NODE*));
@@ -4097,6 +4099,7 @@ f_norm_arg	: tCONSTANT
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
 			if (dyna_in_block()) {
+		            shadowing_lvar($1);
 			    dyna_var($1);
 			}
 			else {
@@ -4110,7 +4113,9 @@ f_norm_arg	: tCONSTANT
 		;
 
 f_arg		: f_norm_arg
-		    { $$ = rb_ary_new3(1, ID2SYM($1)); }
+		    {
+		        $$ = rb_ary_new3(1, ID2SYM($1));
+		    }
 		| f_arg ',' f_norm_arg
 		    {
 			$$ = $1;
@@ -4126,7 +4131,11 @@ f_opt		: tIDENTIFIER '=' arg_value
 		    /*%%%*/
 			if (!is_local_id($1))
 			    yyerror("formal argument must be local variable");
-			$$ = assignable($1, $3);
+			if (dyna_in_block()) {
+		            shadowing_lvar($1);
+			    dyna_var($1);
+			}
+		        $$ = assignable($1, $3);
 		    /*%
 			$$ = rb_assoc_new($1, $3);
 		    %*/
@@ -4161,6 +4170,10 @@ f_rest_arg	: restarg_mark tIDENTIFIER
 		    /*%%%*/
 			if (!is_local_id($2))
 			    yyerror("rest argument must be local variable");
+			if (dyna_in_block()) {
+		            shadowing_lvar($2);
+			    dyna_var($2);
+			}
 			$$ = assignable($2, 0);
 		    /*%
 			$$ = dispatch1(restparam, $2);
@@ -7303,6 +7316,16 @@ assignable_gen(parser, id, val)
     return 0;
 }
 
+static void
+shadowing_lvar_gen(parser, name)
+    struct parser_params *parser;
+    ID name;
+{
+    if (rb_dvar_defined(name) || local_id(name)) {
+	rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
+    }
+}
+
 static NODE*
 new_bv_gen(parser, name, val)
     struct parser_params *parser;
@@ -7314,9 +7337,7 @@ new_bv_gen(parser, name, val)
 		      rb_id2name(name));
 	return 0;
     }
-    if (rb_dvar_defined(name) || local_id(name)) {
-	rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
-    }
+    shadowing_lvar(name);
     dyna_var(name);
     return NEW_DASGN_CURR(name, val);
 }

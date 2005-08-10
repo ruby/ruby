@@ -1,3 +1,25 @@
+Wed Aug 10 10:38:50 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bignum.c (rb_big_mul0): multiply two numbers (x, y) without
+	  normalizing the result.  x should be a big number.
+	  [ruby-dev:26778]
+
+	* bignum.c (rb_big_pow): use rb_big_mul0() instead of
+	  rb_big_mul().
+
+	* array.c (rb_ary_or, rb_ary_and, rb_ary_plus, rb_ary_diff):
+	  revert the change on 2005-08-03.  Set operation on other item
+	  should have in separate methods.
+
+	* parse.y (shadowing_lvar_gen): warn when arguments shadows
+	  external local variables.
+
+	* parse.y (f_opt): optional arguments should not clobber external
+	  local variables.
+
+	* parse.y (f_rest_arg): rest arguments should not clobber external
+	  local variables.
+
 Wed Aug 10 10:29:40 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix bug on handling __ruby2val_optkeys(). 
@@ -13,6 +35,11 @@ Tue Aug  9 21:53:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (formal_assign): let default values override
 	  arguments to zsuper.  fixed: [ruby-dev:26743]
+
+Tue Aug  9 20:30:19 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
+
+	* bignum.c (rb_big_coerce): allow bignum x bignum coercing.
+	  [ruby-dev:26778]
 
 Tue Aug  9 15:12:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
