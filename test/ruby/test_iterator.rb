@@ -189,6 +189,14 @@ class TestIterator < Test::Unit::TestCase
     assert(!m2())
   end
 
+  def m3(var, &block)
+    m(yield(var), &block)
+  end
+
+  def test_block_passing
+    assert_equal(100, m3(10) {|x|x*x})
+  end
+
   class C
     include Enumerable
     def initialize
