@@ -230,8 +230,7 @@ module TkItemConfigMethod
 
       __item_ruby2val_optkeys(tagid(tagOrId)).each{|key, method|
         key = key.to_s
-        value = slot[key]
-        slot[key] = method.call(tagOrId, value) if value
+        slot[key] = method.call(tagOrId, slot[key]) if slot.has_key?(key)
       }
 
       __item_keyonly_optkeys(tagid(tagOrId)).each{|defkey, undefkey|
@@ -268,7 +267,7 @@ module TkItemConfigMethod
           tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{undefkey}"))
         end
       elsif ( method = _symbolkey2str(__item_ruby2val_optkeys(tagid(tagOrId)))[slot] )
-        method.call(tagOrId, value)
+        tk_call(*(__item_config_cmd(tagid(tagOrId)) << "-#{slot}" << method.call(tagOrId, value)))
       elsif ( method = _symbolkey2str(__item_methodcall_optkeys(tagid(tagOrId)))[slot] )
         self.__send__(method, tagOrId, value)
       elsif (slot =~ /^(|latin|ascii|kanji)(#{__item_font_optkeys(tagid(tagOrId)).join('|')})$/)

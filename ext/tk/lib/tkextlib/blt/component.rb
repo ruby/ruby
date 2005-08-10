@@ -906,6 +906,11 @@ module Tk::BLT
             methodkeys[key] = keys.delete(key) if keys.key?(key)
           }
 
+          __item_ruby2val_optkeys(nil).each{|key, method|
+            key = key.to_s
+            keys[key] = method.call(keys[key]) if keys.has_key?(key)
+          }
+
           args = itemconfig_hash_kv(nil, keys)
         else
           args = []

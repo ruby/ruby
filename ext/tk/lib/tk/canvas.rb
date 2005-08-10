@@ -606,6 +606,11 @@ class TkcItem<TkObject
         methodkeys[key] = keys.delete(key) if keys.key?(key)
       }
 
+      __item_ruby2val_optkeys(nil).each{|key, method|
+        key = key.to_s
+        keys[key] = method.call(keys[key]) if keys.has_key?(key)
+      }
+
       #args = args.flatten.concat(hash_kv(keys))
       args = args.flatten.concat(itemconfig_hash_kv(nil, keys))
     else

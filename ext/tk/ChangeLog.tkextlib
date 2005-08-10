@@ -1,3 +1,8 @@
+2005-08-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/blt/component.rb: didn't check
+	  __item_ruby2val_optkeys().
+
 2005-08-09  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/blt/barchart.rb: support to treat tkvariable-type
