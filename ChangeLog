@@ -34,6 +34,11 @@ Tue Aug  9 15:12:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tkextlib/*: support to treat tkvariable-type
 	  configure options.
 
+Tue Aug  9 20:30:19 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
+
+	* bignum.c (rb_big_coerce): allow bignum x bignum coercing.
+	  [ruby-dev:26778]
+
 Mon Aug  8 20:43:02 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/ruby/test_method.rb: added.  [ruby-dev:26761]

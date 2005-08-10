@@ -1969,6 +1969,9 @@ rb_big_coerce(x, y)
     if (FIXNUM_P(y)) {
 	return rb_assoc_new(rb_int2big(FIX2LONG(y)), x);
     }
+    else if (TYPE(y) == T_BIGNUM) {
+       return rb_assoc_new(y, x);
+    }
     else {
 	rb_raise(rb_eTypeError, "can't coerce %s to Bignum",
 		 rb_obj_classname(y));
