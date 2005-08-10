@@ -1,3 +1,59 @@
+2005-08-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/blt/component.rb: didn't check
+	  __item_ruby2val_optkeys().
+
+2005-08-09  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/blt/barchart.rb: support to treat tkvariable-type
+	  configure options.
+
+	* ext/tk/lib/tkextlib/blt/component.rb: ditto.
+
+	* ext/tk/lib/tkextlib/blt/dragdrop.rb: ditto.
+
+	* ext/tk/lib/tkextlib/blt/treeview.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/button.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/entry.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/label.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/labelentry.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/labelframe.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/mainframe.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/passwddlg.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/spinbox.rb: ditto.
+
+	* ext/tk/lib/tkextlib/bwidget/tree.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/calendar.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/entryfield.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/hierarchy.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/labeledframe.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/labeledwidget.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/menubar.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/scrolledlistbox.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/spinner.rb: ditto.
+
+	* ext/tk/lib/tkextlib/iwidgets/toolbar.rb: ditto.
+
+	* ext/tk/lib/tkextlib/tkimg/pixmap.rb: ditto.
+
+	* ext/tk/lib/tkextlib/tktable/tktable.rb: ditto.
+
 2005-08-06  ocean  <ocean@ruby-lang.org>
 
 	* sample/tkextlib/tile/demo.rb: use Tk::Tile::Scale#variable.

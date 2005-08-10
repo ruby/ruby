@@ -2872,8 +2872,7 @@ module TkConfigMethod
 
       __ruby2val_optkeys.each{|key, method|
         key = key.to_s
-        value = slot[key]
-        slot[key] = method.call(value) if value
+        slot[key] = method.call(slot[key]) if slot.has_key?(key)
       }
 
       __keyonly_optkeys.each{|defkey, undefkey|
@@ -2910,7 +2909,7 @@ module TkConfigMethod
           tk_call(*(__config_cmd << "-#{undefkey}"))
         end
       elsif ( method = _symbolkey2str(__ruby2val_optkeys)[slot] )
-        method.call(value)
+        tk_call(*(__config_cmd << "-#{slot}" << method.call(value)))
       elsif ( method = _symbolkey2str(__methodcall_optkeys)[slot] )
         self.__send__(method, value)
       elsif (slot =~ /^(|latin|ascii|kanji)(#{__font_optkeys.join('|')})$/)
@@ -3884,8 +3883,7 @@ class TkWindow<TkObject
 
         __ruby2val_optkeys.each{|key, method|
           key = key.to_s
-          value = keys[key]
-          keys[key] = method.call(value) if value
+          keys[key] = method.call(keys[key]) if keys.has_key?(key)
         }
       end
       if without_creating && keys
@@ -4439,7 +4437,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-08-04'.freeze
+  RELEASE_DATE = '2005-08-10'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'
