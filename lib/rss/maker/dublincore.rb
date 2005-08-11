@@ -103,10 +103,10 @@ EOC
     class ChannelBase
       include DublinCoreModel
       
-      remove_method(:dc_date)
-      remove_method(:dc_date=)
-      alias_method(:dc_date, :date)
-      alias_method(:dc_date=, :date=)
+      remove_method(:date)
+      remove_method(:date=)
+      alias_method(:date, :dc_date)
+      alias_method(:date=, :dc_date=)
     end
     
     class ImageBase; include DublinCoreModel; end
@@ -114,10 +114,10 @@ EOC
       class ItemBase
         include DublinCoreModel
         
-        remove_method(:dc_date)
-        remove_method(:dc_date=)
-        alias_method(:dc_date, :date)
-        alias_method(:dc_date=, :date=)
+        remove_method(:date)
+        remove_method(:date=)
+        alias_method(:date, :dc_date)
+        alias_method(:date=, :dc_date=)
       end
     end
     class TextinputBase; include DublinCoreModel; end

@@ -279,7 +279,7 @@ module RSS
       end
       
       def setup_maker_attributes(channel)
-        channel.about = self.about
+        channel.about = about
       end
 
       class Image < Element

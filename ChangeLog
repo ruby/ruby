@@ -1,3 +1,25 @@
+Thu Aug 11 13:01:48 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/1.0.rb (RSS::RDF::Channel#setup_maker_attributes):
+	  removed self.
+
+	* lib/rss/maker/base.rb (RSS::Maker::ItemsBase#<=>): use #date
+	  instead of @date.
+	  (RSS::Maker::Base::self.def_array_element): added #size.
+
+	* lib/rss/maker/1.0.rb
+	  (RSS::Maker::RSS10::Channel#to_rss,
+	   RSS::Maker::RSS10::Items::Item#to_rss): cleared dc_dates set
+	  upped by using #date.
+
+	* lib/rss/maker/dublincore.rb
+	  (RSS::Maker::ChannelBase, RSS::Maker::ItemsBase::ItemBase):
+	  fixed opposite alias.
+
+	* test/rss/test_setup_maker_1.0.rb
+	  (RSS::TestSetupMaker10::test_setup_maker_items_sort): added some
+	  tests for RSS::Maker::ItemsBase#do_sort.
+
 Wed Aug 10 10:29:40 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk.rb: fix bug on handling __ruby2val_optkeys(). 

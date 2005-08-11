@@ -31,6 +31,7 @@ module RSS
             channel = RDF::Channel.new(@about)
             set = setup_values(channel)
             if set
+              channel.dc_dates.clear
               rss.channel = channel
               setup_items(rss)
               setup_image(rss)
@@ -143,6 +144,7 @@ module RSS
               item = RDF::Item.new(@link)
               set = setup_values(item)
               if set
+                item.dc_dates.clear
                 rss.items << item
                 setup_other_elements(rss)
               end
