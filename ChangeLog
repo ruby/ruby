@@ -1,5 +1,7 @@
 Thu Aug 11 13:01:48 2005  Kouhei Sutou  <kou@cozmixng.org>
 
+	* lib/rss: fixed sort bug. [ruby-list:41018]
+
 	* lib/rss/1.0.rb (RSS::RDF::Channel#setup_maker_attributes):
 	  removed self.
 
