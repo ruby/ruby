@@ -52,7 +52,7 @@ module RSS
 
           def_delegators("@\#{name}", :<<, :[], :[]=, :first, :last)
           def_delegators("@\#{name}", :push, :pop, :shift, :unshift)
-          def_delegators("@\#{name}", :each)
+          def_delegators("@\#{name}", :each, :size)
           
           add_need_initialize_variable(name, "[]")
         end
@@ -457,9 +457,9 @@ EOC
         alias_method(:pubDate=, :date=)
 
         def <=>(other)
-          if @date and other.date
-            @date <=> other.date
-          elsif @date
+          if date and other.date
+            date <=> other.date
+          elsif date
             1
           elsif other.date
             -1

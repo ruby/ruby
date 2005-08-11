@@ -225,7 +225,57 @@ module RSS
           assert_equal(@trackback_elems[:about][i], about.value)
         end
       end
+    end
 
+    def test_setup_maker_items_sort
+      title = "TITLE"
+      link = "http://hoge.com/"
+      description = "text hoge fuga"
+      item_size = 5
+
+      
+      rss = RSS::Maker.make("1.0") do |maker|
+        setup_dummy_channel(maker)
+        
+        item_size.times do |i|
+          item = RSS::RDF::Item.new("#{link}#{i}")
+          item.title = "#{title}#{i}"
+          item.link = "#{link}#{i}"
+          item.description = "#{description}#{i}"
+          item.dc_date = Time.now + i * 60
+          item.setup_maker(maker)
+        end
+        maker.items.do_sort = false
+      end
+      assert_equal(item_size, rss.items.size)
+      rss.items.each_with_index do |item, i|
+        assert_equal("#{link}#{i}", item.about)
+        assert_equal("#{title}#{i}", item.title)
+        assert_equal("#{link}#{i}", item.link)
+        assert_equal("#{description}#{i}", item.description)
+      end
+
+      
+      rss = RSS::Maker.make("1.0") do |maker|
+        setup_dummy_channel(maker)
+        
+        item_size.times do |i|
+          item = RSS::RDF::Item.new("#{link}#{i}")
+          item.title = "#{title}#{i}"
+          item.link = "#{link}#{i}"
+          item.description = "#{description}#{i}"
+          item.dc_date = Time.now + i * 60
+          item.setup_maker(maker)
+        end
+        maker.items.do_sort = true
+      end
+      assert_equal(item_size, rss.items.size)
+      rss.items.reverse.each_with_index do |item, i|
+        assert_equal("#{link}#{i}", item.about)
+        assert_equal("#{title}#{i}", item.title)
+        assert_equal("#{link}#{i}", item.link)
+        assert_equal("#{description}#{i}", item.description)
+      end
     end
 
     def test_setup_maker
