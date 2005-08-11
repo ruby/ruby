@@ -1,3 +1,7 @@
+Thu Aug 11 23:29:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c: keep holding string after closed.
+
 Thu Aug 11 13:01:48 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss: fixed sort bug. [ruby-list:41018]
@@ -24,9 +28,9 @@ Thu Aug 11 13:01:48 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 Wed Aug 10 10:29:40 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk.rb: fix bug on handling __ruby2val_optkeys(). 
+	* ext/tk/lib/tk.rb: fix bug on handling __ruby2val_optkeys().
 
-	* ext/tk/lib/tk/itemconfig.rb: fix bug on handling 
+	* ext/tk/lib/tk/itemconfig.rb: fix bug on handling
 	  __item_ruby2val_optkeys().
 
 	* ext/tk/lib/tk/canvas.rb: didn't check __item_ruby2val_optkeys().
@@ -40,11 +44,11 @@ Tue Aug  9 15:12:04 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 	* ext/tk/lib/tk.rb: add __val2ruby_optkeys and __ruby2val_optkeys to
 	  help to convert option values between ruby and tcl.
 
-	* ext/tk/lib/tk/itemconfig.rb: add __item_val2ruby_optkeys and 
-	  __item_ruby2val_optkeys to help to convert option values between 
+	* ext/tk/lib/tk/itemconfig.rb: add __item_val2ruby_optkeys and
+	  __item_ruby2val_optkeys to help to convert option values between
 	    ruby and tcl.
 
-	* ext/tk/lib/tk/radiobutton.rb: use __ruby2val_optkeys for 'variable' 
+	* ext/tk/lib/tk/radiobutton.rb: use __ruby2val_optkeys for 'variable'
 	  option (for the reason of backward compatibility).
 
 	* ext/tk/lib/tk/composite.rb: clarify the arguments of super().
@@ -73,12 +77,12 @@ Sun Aug  7 23:50:14 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 Sun Aug  7 01:31:15 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (WIN32OLE_EVENT#on_event): should set 
+	* ext/win32ole/win32ole.c (WIN32OLE_EVENT#on_event): should set
 	  only one event handler.
 
 	* ext/win32ole/tests/testOLEEVENT.rb: ditto.
 
-	* ext/win32ole/tests/testOLEPARAM.rb: remove re-defined 
+	* ext/win32ole/tests/testOLEPARAM.rb: remove re-defined
 	  test_ole_type_detail method.
 
 Sat Aug  6 12:35:24 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>

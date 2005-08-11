@@ -384,10 +384,9 @@ strio_close(self)
     VALUE self;
 {
     struct StringIO *ptr = StringIO(self);
-    if (CLOSED(ptr)) {
+    if (CLOSED(ptr) || !(ptr->flags & FMODE_READWRITE)) {
 	rb_raise(rb_eIOError, "closed stream");
     }
-    ptr->string = Qnil;
     ptr->flags &= ~FMODE_READWRITE;
     return Qnil;
 }
@@ -407,9 +406,7 @@ strio_close_read(self)
     if (!READABLE(ptr)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for reading");
     }
-    if (!((ptr->flags &= ~FMODE_READABLE) & FMODE_READWRITE)) {
-	ptr->string = Qnil;
-    }
+    ptr->flags &= ~FMODE_READABLE;
     return Qnil;
 }
 
@@ -428,9 +425,7 @@ strio_close_write(self)
     if (!WRITABLE(ptr)) {
 	rb_raise(rb_eIOError, "closing non-duplex IO for writing");
     }
-    if (!((ptr->flags &= ~FMODE_WRITABLE) & FMODE_READWRITE)) {
-	ptr->string = Qnil;
-    }
+    ptr->flags &= ~FMODE_WRITABLE;
     return Qnil;
 }
 
