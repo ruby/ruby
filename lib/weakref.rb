@@ -18,7 +18,8 @@ class WeakRef<Delegator
 
   @@id_map =  {}                # obj -> [ref,...]
   @@id_rev_map =  {}            # ref -> obj
-  @@final = lambda{|id|
+  @@final = lambda {|id|
+    printf "final: %p\n", id
     __old_status = Thread.critical
     Thread.critical = true
     begin
@@ -42,6 +43,7 @@ class WeakRef<Delegator
 
   def initialize(orig)
     @__id = orig.object_id
+    printf "orig: %p\n", @__id
     ObjectSpace.define_finalizer orig, @@final
     ObjectSpace.define_finalizer self, @@final
     __old_status = Thread.critical
@@ -53,7 +55,7 @@ class WeakRef<Delegator
     end
     @@id_map[@__id].push self.object_id
     @@id_rev_map[self.object_id] = @__id
-    super 
+    super
   end
 
   def __getobj__
@@ -66,6 +68,8 @@ class WeakRef<Delegator
       Kernel::raise RefError, "Illegal Reference - probably recycled", Kernel::caller(2)
     end
   end
+  def __setobj__(obj)
+  end
 
   def weakref_alive?
     @@id_rev_map[self.object_id] == @__id
@@ -73,11 +77,12 @@ class WeakRef<Delegator
 end
 
 if __FILE__ == $0
-  require 'thread'
+#  require 'thread'
   foo = Object.new
   p foo.to_s			# original's class
   foo = WeakRef.new(foo)
   p foo.to_s			# should be same class
+  ObjectSpace.garbage_collect
   ObjectSpace.garbage_collect
   p foo.to_s			# should raise exception (recycled)
 end

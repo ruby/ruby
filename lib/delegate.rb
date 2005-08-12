@@ -17,44 +17,27 @@
 #  end
 
 class Delegator
+  preserved = ["__id__", "object_id", "__send__", "respond_to?"]
+  instance_methods.each do |m|
+    next if preserved.include?(m)
+    undef_method m
+  end
 
   def initialize(obj)
-    preserved = ::Kernel.public_instance_methods(false)
-    preserved -= ["to_s","to_a","inspect","==","=~","==="]
-    for t in self.class.ancestors
-      preserved |= t.public_instance_methods(false)
-      preserved |= t.private_instance_methods(false)
-      preserved |= t.protected_instance_methods(false)
-      break if t == Delegator
-    end
-    preserved << "singleton_method_added"
-    for method in obj.methods
-      next if preserved.include? method
-      begin
-	eval <<-EOS
-	  def self.#{method}(*args, &block)
-	    begin
-	      __getobj__.__send__(:#{method}, *args, &block)
-	    rescue Exception
-	      $@.delete_if{|s| /:in `__getobj__'$/ =~ s} #`
-	      $@.delete_if{|s| /^\\(eval\\):/ =~ s}
-	      ::Kernel::raise
-	    end
-	  end
-	EOS
-      rescue SyntaxError
-        raise NameError, "invalid identifier %s" % method, caller(4)
-      end
-    end
+    __setobj__(obj)
   end
-  alias initialize_methods initialize
 
   def method_missing(m, *args)
-    target = self.__getobj__
-    unless target.respond_to?(m)
-      super(m, *args)
+    begin
+      target = self.__getobj__
+      unless target.respond_to?(m)
+        super(m, *args)
+      end
+      target.__send__(m, *args)
+    rescue Exception
+      $@.delete_if{|s| /^#{__FILE__}:\d+:in `method_missing'$/ =~ s} #`
+      ::Kernel::raise
     end
-    target.__send__(m, *args)
   end
 
   def respond_to?(m)
@@ -66,21 +49,19 @@ class Delegator
     raise NotImplementedError, "need to define `__getobj__'"
   end
 
+  def __setobj__(obj)
+    raise NotImplementedError, "need to define `__setobj__'"
+  end
+
   def marshal_dump
     __getobj__
   end
   def marshal_load(obj)
-    initialize_methods(obj)
+    __setobj__(obj)
   end
 end
 
 class SimpleDelegator<Delegator
-
-  def initialize(obj)
-    super
-    @_sd_obj = obj
-  end
-
   def __getobj__
     @_sd_obj
   end
@@ -91,12 +72,14 @@ class SimpleDelegator<Delegator
   end
 
   def clone
-    super
-    __setobj__(__getobj__.clone)
+    copy = super
+    copy.__setobj__(__getobj__.clone)
+    copy
   end
   def dup
-    super
-    __setobj__(__getobj__.dup)
+    copy = super
+    copy.__setobj__(__getobj__.dup)
+    copy
   end
 end
 
@@ -108,8 +91,11 @@ SimpleDelegater = SimpleDelegator
 def DelegateClass(superclass)
   klass = Class.new
   methods = superclass.public_instance_methods(true)
-  methods -= ::Kernel.public_instance_methods(false)
-  methods |= ["to_s","to_a","inspect","==","=~","==="]
+  methods -= [
+    "__id__", "object_id", "__send__", "respond_to?",
+    "initialize", "method_missing", "__getobj__", "__setobj__",
+    "clone", "dup", "marshal_dump", "marshal_load",
+  ]
   klass.module_eval {
     def initialize(obj)
       @_dc_obj = obj

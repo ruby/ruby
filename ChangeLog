@@ -2,6 +2,12 @@ Thu Aug 11 23:29:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c: keep holding string after closed.
 
+Thu Aug 11 20:48:40 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
+
+	* numeric.c (fix_equal, fix_cmp, fix_gt, fix_ge, fix_lt, fix_le):
+	  reduce coercing when a method knows about a operand type.
+	  [ruby-dev:26789]
+
 Thu Aug 11 13:01:48 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss: fixed sort bug. [ruby-list:41018]
@@ -25,6 +31,11 @@ Thu Aug 11 13:01:48 2005  Kouhei Sutou  <kou@cozmixng.org>
 	* test/rss/test_setup_maker_1.0.rb
 	  (RSS::TestSetupMaker10::test_setup_maker_items_sort): added some
 	  tests for RSS::Maker::ItemsBase#do_sort.
+
+Wed Aug 10 12:01:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb: simplifies Delegator classes; SimpleDelegator
+	  now uses method_missing for all methods.
 
 Wed Aug 10 10:38:50 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -251,11 +262,11 @@ Wed Aug  3 21:59:16 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 Wed Aug  3 12:40:28 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
 
-	* numeric.c (fix_minus, fix_mul, fix_quo, fix_div, fix_mod,
-	  fix_divmod, fix_pow): ditto.
-
 	* numeric.c (fix_plus): reduce coercing when a method knows about
 	  a operand type.  [ruby-dev:26723]
+
+	* numeric.c (fix_minus, fix_mul, fix_quo, fix_div, fix_mod,
+	  fix_divmod, fix_pow): ditto.
 
 	* bignum.c (rb_big_div, rb_big_modulo): export to reduce
 	  coercing.
