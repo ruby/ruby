@@ -36,8 +36,6 @@ module REXML
 		# 	If an Element, the object will be shallowly cloned; name, 
 		# 	attributes, and namespaces will be copied.  Children will +not+ be
 		# 	copied.
-		# 	If a Source, the source will be scanned and parsed for an Element,
-		# 	and all child elements will be recursively parsed as well.
 		# parent:: 
 		# 	if supplied, must be a Parent, and will be used as
 		# 	the parent of this object.
@@ -223,7 +221,7 @@ module REXML
 		#  b.namespace("y")      # -> '2'
 		def namespace(prefix=nil)
 			if prefix.nil?
-				prefix = self.prefix()
+				prefix = prefix()
 			end
 			if prefix == ''
 				prefix = "xmlns"

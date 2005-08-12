@@ -98,6 +98,10 @@ module REXML
 			@buffer == ""
 		end
 
+    def position
+      @orig.index( @buffer )
+    end
+
 		# @return the current line in the source
 		def current_line
 			lines = @orig.split
@@ -193,6 +197,10 @@ module REXML
 		def empty?
 			super and ( @source.nil? || @source.eof? )
 		end
+
+    def position
+      @er_source.pos
+    end
 
 		# @return the current line in the source
 		def current_line

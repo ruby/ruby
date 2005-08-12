@@ -90,5 +90,7 @@ module REXML
 		# @p comment The content of the comment
 		def comment comment
 		end
+    def progress position
+    end
 	end	
 end

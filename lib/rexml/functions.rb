@@ -339,6 +339,8 @@ module REXML
     end
 
     def Functions::sum( nodes )
+      nodes = [nodes] unless nodes.kind_of? Array
+      nodes.inject(0) { |r,n| r += number(string(n)) }
     end
     
     def Functions::floor( number )

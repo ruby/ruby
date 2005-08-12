@@ -101,20 +101,20 @@ module REXML
 			end
 
 			@unnormalized = nil
-			@value = @normalized = Text::normalize( @value, doctype )
+			@normalized = Text::normalize( @value, doctype )
 		end
 
 		# Returns the UNNORMALIZED value of this attribute.  That is, entities
 		# have been expanded to their values
 		def value
-			@unnormalized if @unnormalized
+			return @unnormalized if @unnormalized
 			doctype = nil
 			if @element
 				doc = @element.document
 				doctype = doc.doctype if doc
 			end
 			@normalized = nil
-			@value = @unnormalized = Text::unnormalize( @value, doctype )
+			@unnormalized = Text::unnormalize( @value, doctype )
 		end
 
 		# Returns a copy of this attribute

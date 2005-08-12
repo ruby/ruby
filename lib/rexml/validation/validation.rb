@@ -82,9 +82,12 @@ module REXML
         @event_arg = event_arg
       end
 
-      attr_reader :done?
       attr_reader :event_type
       attr_accessor :event_arg
+
+      def done?
+        @done
+      end
 
       def single?
         return (@event_type != :start_element and @event_type != :start_attribute)

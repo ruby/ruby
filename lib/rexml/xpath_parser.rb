@@ -76,6 +76,8 @@ module REXML
 
     # Performs a depth-first (document order) XPath search, and returns the
     # first match.  This is the fastest, lightest way to return a single result.
+    #
+    # FIXME: This method is incomplete!
     def first( path_stack, node )
       #puts "#{depth}) Entering match( #{path.inspect}, #{tree.inspect} )"
       return nil if path.size == 0
@@ -123,14 +125,6 @@ module REXML
       r = expr( path_stack, nodeset )
       #puts "MAIN EXPR => #{r.inspect}"
       r
-      
-      #while ( path_stack.size > 0 and nodeset.size > 0 ) 
-      #  #puts "MATCH: #{path_stack.inspect} '#{nodeset.collect{|n|n.class}.inspect}'"
-      #  nodeset = expr( path_stack, nodeset )
-      #  #puts "NODESET: #{nodeset.inspect}"
-      #  #puts "PATH_STACK: #{path_stack.inspect}"
-      #end
-      #nodeset
     end
 
     private
