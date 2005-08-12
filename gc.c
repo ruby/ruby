@@ -1802,8 +1802,8 @@ rb_gc_finalize_deferred()
     deferred_final_list = 0;
     if (p) {
 	finalize_list(p);
-	free_unused_heaps();
     }
+    free_unused_heaps();
 }
 
 void

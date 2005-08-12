@@ -922,7 +922,7 @@ rb_big_to_f(x)
  *     
  */
 
-static VALUE
+VALUE
 rb_big_cmp(x, y)
     VALUE x, y;
 {
@@ -968,7 +968,7 @@ rb_big_cmp(x, y)
  *     68719476736 == 68719476736.0   #=> true
  */
 
-static VALUE
+VALUE
 rb_big_eq(x, y)
     VALUE x, y;
 {

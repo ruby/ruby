@@ -1,3 +1,12 @@
+Fri Aug 12 17:06:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (f_larglist): allow optional arguments even when
+	  parentheses are omitted.  based on Nobu's patch from
+	  http://www.rubyist.net/~nobu/t/20050805.html
+
+	* parse.y (parser_yylex): update & maintain lpar_beg for detect
+	  lambda parameters.
+
 Thu Aug 11 23:29:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c: keep holding string after closed.

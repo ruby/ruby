@@ -95,6 +95,8 @@ void rb_quad_pack _((char*,VALUE));
 VALUE rb_quad_unpack _((const char*,int));
 VALUE rb_dbl2big _((double));
 double rb_big2dbl _((VALUE));
+VALUE rb_big_cmp _((VALUE, VALUE));
+VALUE rb_big_eq _((VALUE, VALUE));
 VALUE rb_big_plus _((VALUE, VALUE));
 VALUE rb_big_minus _((VALUE, VALUE));
 VALUE rb_big_mul _((VALUE, VALUE));

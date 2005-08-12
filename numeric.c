@@ -2289,7 +2289,12 @@ fix_equal(x, y)
     if (FIXNUM_P(y)) {
 	return (FIX2LONG(x) == FIX2LONG(y))?Qtrue:Qfalse;
     }
-    else {
+    switch (TYPE(y)) {
+      case T_BIGNUM:
+	return rb_big_eq(y, x);
+      case T_FLOAT:
+	return (double)FIX2LONG(x) == RFLOAT(y)->value ? Qtrue : Qfalse;
+      default:
 	return num_equal(x, y);
     }
 }
@@ -2314,7 +2319,12 @@ fix_cmp(x, y)
 	if (a > b) return INT2FIX(1);
 	return INT2FIX(-1);
     }
-    else {
+    switch (TYPE(y)) {
+      case T_BIGNUM:
+	return rb_big_cmp(rb_int2big(FIX2LONG(x)), y);
+      case T_FLOAT:
+	return rb_dbl_cmp((double)FIX2LONG(x), RFLOAT(y)->value);
+      default:
 	return rb_num_coerce_cmp(x, y);
     }
 }
@@ -2337,7 +2347,12 @@ fix_gt(x, y)
 	if (a > b) return Qtrue;
 	return Qfalse;
     }
-    else {
+    switch (TYPE(y)) {
+      case T_BIGNUM:
+	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) > 0 ? Qtrue : Qfalse;
+      case T_FLOAT:
+	return (double)FIX2LONG(x) > RFLOAT(y)->value ? Qtrue : Qfalse;
+      default:
 	return rb_num_coerce_relop(x, y);
     }
 }
@@ -2360,7 +2375,12 @@ fix_ge(x, y)
 	if (a >= b) return Qtrue;
 	return Qfalse;
     }
-    else {
+    switch (TYPE(y)) {
+      case T_BIGNUM:
+	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) >= 0 ? Qtrue : Qfalse;
+      case T_FLOAT:
+	return (double)FIX2LONG(x) >= RFLOAT(y)->value ? Qtrue : Qfalse;
+      default:
 	return rb_num_coerce_relop(x, y);
     }
 }
@@ -2383,7 +2403,12 @@ fix_lt(x, y)
 	if (a < b) return Qtrue;
 	return Qfalse;
     }
-    else {
+    switch (TYPE(y)) {
+      case T_BIGNUM:
+	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) < 0 ? Qtrue : Qfalse;
+      case T_FLOAT:
+	return (double)FIX2LONG(x) < RFLOAT(y)->value ? Qtrue : Qfalse;
+      default:
 	return rb_num_coerce_relop(x, y);
     }
 }
@@ -2406,7 +2431,12 @@ fix_le(x, y)
 	if (a <= b) return Qtrue;
 	return Qfalse;
     }
-    else {
+    switch (TYPE(y)) {
+      case T_BIGNUM:
+	return FIX2INT(rb_big_cmp(rb_int2big(FIX2LONG(x)), y)) <= 0 ? Qtrue : Qfalse;
+      case T_FLOAT:
+	return (double)FIX2LONG(x) <= RFLOAT(y)->value ? Qtrue : Qfalse;
+      default:
 	return rb_num_coerce_relop(x, y);
     }
 }

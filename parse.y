@@ -126,6 +126,8 @@ struct parser_params {
     stack_type parser_cond_stack;
     stack_type parser_cmdarg_stack;
     int parser_class_nest;
+    int parser_paren_nest;
+    int parser_lpar_beg;
     int parser_in_single;
     int parser_in_def;
     int parser_compile_for_eval;
@@ -182,6 +184,8 @@ static int parser_yyerror _((struct parser_params*, const char*));
 #define cond_stack		(parser->parser_cond_stack)
 #define cmdarg_stack		(parser->parser_cmdarg_stack)
 #define class_nest		(parser->parser_class_nest)
+#define paren_nest		(parser->parser_paren_nest)
+#define lpar_beg		(parser->parser_lpar_beg)
 #define in_single		(parser->parser_in_single)
 #define in_def			(parser->parser_in_def)
 #define compile_for_eval	(parser->parser_compile_for_eval)
@@ -476,6 +480,7 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 	kDO
 	kDO_COND
 	kDO_BLOCK
+	kDO_LAMBDA
 	kRETURN
 	kYIELD
 	kSUPER
@@ -555,7 +560,7 @@ static void ripper_compile_error _((struct parser_params*, const char *fmt, ...)
 %token tLAMBDA		/* -> */
 %token tLAMBDA_ARG	/* -> */
 %token tSYMBEG tSTRING_BEG tXSTRING_BEG tREGEXP_BEG tWORDS_BEG tQWORDS_BEG
-%token tSTRING_DBEG tSTRING_DVAR tSTRING_END
+%token tSTRING_DBEG tSTRING_DVAR tSTRING_END tLAMBEG
 
 /*
  *	precedence table
@@ -3173,6 +3178,8 @@ bv_decl		:  tIDENTIFIER
 		;
 
 lambda		: {
+			$<num>$ = lpar_beg;
+			lpar_beg = ++paren_nest;
 		    /*%%%*/
 			$<vars>$ = dyna_push();
 		    /*%
@@ -3202,47 +3209,23 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 			$$ = dispatch1(paren, $2);
 		    %*/
 		    }
-		| f_arg opt_f_block_arg opt_bv_decl
+		| f_args opt_bv_decl
 		    {
 		    /*%%%*/
-			$$ = NEW_LAMBDA(new_args($1, 0, 0, $2), $3);
+			$$ = NEW_LAMBDA($1, $2);
 		    /*%
-			$$ = dispatch4(params, $1, Qnil, Qnil, Qnil);
-		    %*/
-		    }
-               | f_arg ',' f_rest_arg opt_f_block_arg opt_bv_decl
-		    {
-		    /*%%%*/
-			$$ = NEW_LAMBDA(new_args($1, 0, $3, $4), $5);
-		    /*%
-			$$ = dispatch4(params, $1, Qnil, $3, Qnil);
-		    %*/
-		    }
-		| f_rest_arg opt_f_block_arg opt_bv_decl
-		    {
-		    /*%%%*/
-			$$ = NEW_LAMBDA(new_args(0, 0, $1, $2), $3);
-		    /*%
-			$$ = dispatch4(params, Qnil, Qnil, $1, Qnil);
-		    %*/
-		    }
-		| opt_f_block_arg opt_bv_decl
-		    {
-		    /*%%%*/
-			$$ = NEW_LAMBDA(new_args(0, 0, 0, $1), $2);
-		    /*%
-			$$ = dispatch4(params, Qnil, Qnil, Qnil, Qnil);
+			$$ = $1;
 		    %*/
 		    }
 		;
 
-lambda_body	: '{'
+lambda_body	: tLAMBEG
 		  compstmt
 		  '}'
 		    {
 			$$ = $2;
 		    }
-		| kDO
+		| kDO_LAMBDA
 		  compstmt
 		  kEND
 		    {
@@ -6348,9 +6331,10 @@ parser_yylex(parser)
 	    return tINTEGER;
 	}
 
+      case ')':
+	paren_nest--;
       case ']':
       case '}':
-      case ')':
 	COND_LEXPOP();
 	CMDARG_LEXPOP();
 	lex_state = EXPR_END;
@@ -6468,6 +6452,7 @@ parser_yylex(parser)
 		c = '(';
 	    }
 	}
+	paren_nest++;
 	COND_PUSH(0);
 	CMDARG_PUSH(0);
 	lex_state = EXPR_BEG;
@@ -6498,6 +6483,10 @@ parser_yylex(parser)
 	return c;
 
       case '{':
+	if (lpar_beg && lpar_beg == paren_nest) {
+	    lex_state = EXPR_BEG;
+	    return tLAMBEG;
+	}
 	if (IS_ARG() || lex_state == EXPR_END || lex_state == EXPR_END2)
 	    c = '{';          /* block (primary) */
 	else if (lex_state == EXPR_ENDARG)
@@ -6815,6 +6804,9 @@ parser_yylex(parser)
                         set_yylval_id(rb_intern(kw->name));
 		    }
 		    if (kw->id[0] == kDO) {
+			if (lpar_beg && lpar_beg == paren_nest) {
+			    return kDO_LAMBDA;
+			}
 			if (COND_P()) return kDO_COND;
 			if (CMDARG_P() && state != EXPR_CMDARG)
 			    return kDO_BLOCK;
