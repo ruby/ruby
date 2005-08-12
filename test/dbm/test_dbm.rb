@@ -87,7 +87,7 @@ if defined? DBM
     end
     def test_s_open_lock
       return unless have_fork?	# snip this test
-      fork() {
+      pid = fork() {
         assert_instance_of(DBM, dbm = DBM.open("tmptest_dbm", 0644))
         sleep 2
       }
@@ -101,7 +101,7 @@ if defined? DBM
           end
         }
       ensure
-        Process.wait
+        Process.wait pid
       end
     end
 
@@ -127,7 +127,7 @@ if defined? DBM
       end
       return unless have_fork?	# snip this test
 
-      fork() {
+      pid = fork() {
         assert_instance_of(DBM, dbm  = DBM.open("tmptest_dbm", 0644,
                                                   DBM::NOLOCK))
         sleep 2
@@ -139,13 +139,13 @@ if defined? DBM
           assert_instance_of(DBM, dbm2 = DBM.open("tmptest_dbm", 0644))
         }
       ensure
-        Process.wait
+        Process.wait pid
         dbm2.close if dbm2
       end
 
       p Dir.glob("tmptest_dbm*") if $DEBUG
 
-      fork() {
+      pid = fork() {
         assert_instance_of(DBM, dbm  = DBM.open("tmptest_dbm", 0644))
         sleep 2
       }
@@ -158,7 +158,7 @@ if defined? DBM
                                                      DBM::NOLOCK))
         }
       ensure
-        Process.wait
+        Process.wait pid
         dbm2.close if dbm2
       end
     end
@@ -590,8 +590,32 @@ if defined? DBM
       FileUtils.rm_rf TMPROOT if File.directory?(TMPROOT)
     end
 
+    def test_reader_open_notexist
+      assert_raise(Errno::ENOENT) {
+        DBM.open("#{TMPROOT}/a", 0666, DBM::READER)
+      }
+    end
+
+    def test_writer_open_notexist
+      assert_raise(Errno::ENOENT) {
+        DBM.open("#{TMPROOT}/a", 0666, DBM::WRITER)
+      }
+    end
+
+    def test_wrcreat_open_notexist
+      v = DBM.open("#{TMPROOT}/a", 0666, DBM::WRCREAT)
+      assert_instance_of(DBM, v)
+      v.close
+    end
+
+    def test_newdb_open_notexist
+      v = DBM.open("#{TMPROOT}/a", 0666, DBM::NEWDB)
+      assert_instance_of(DBM, v)
+      v.close
+    end
+
     def test_reader_open
-      DBM.open("#{TMPROOT}/a") {}
+      DBM.open("#{TMPROOT}/a") {} # create a db.
       v = DBM.open("#{TMPROOT}/a", nil, DBM::READER) {|d|
         # Errno::EPERM is raised on Solaris which use ndbm.
         # DBMError is raised on Debian which use gdbm. 

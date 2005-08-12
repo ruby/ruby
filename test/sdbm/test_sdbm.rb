@@ -81,7 +81,7 @@ class TestSDBM < Test::Unit::TestCase
     end
     return unless have_fork?	# snip this test
 
-    fork() {
+    pid = fork() {
       assert_instance_of(SDBM, sdbm  = SDBM.open("tmptest_sdbm", 0644,
 						SDBM::NOLOCK))
       sleep 2
@@ -93,13 +93,13 @@ class TestSDBM < Test::Unit::TestCase
 	assert_instance_of(SDBM, sdbm2 = SDBM.open("tmptest_sdbm", 0644))
       }
     ensure
-      Process.wait
+      Process.wait pid
       sdbm2.close if sdbm2
     end
 
     p Dir.glob("tmptest_sdbm*") if $DEBUG
 
-    fork() {
+    pid = fork() {
       assert_instance_of(SDBM, sdbm  = SDBM.open("tmptest_sdbm", 0644))
       sleep 2
     }
@@ -112,7 +112,7 @@ class TestSDBM < Test::Unit::TestCase
 						   SDBM::NOLOCK))
       }
     ensure
-      Process.wait
+      Process.wait pid
       sdbm2.close if sdbm2
     end
   end

@@ -118,7 +118,7 @@ if defined? GDBM
     end
     def test_s_open_lock
       return unless have_fork?	# snip this test
-      fork() {
+      pid = fork() {
         assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644))
         sleep 2
       }
@@ -132,7 +132,7 @@ if defined? GDBM
           end
         }
       ensure
-        Process.wait
+        Process.wait pid
       end
     end
 
@@ -158,7 +158,7 @@ if defined? GDBM
       end
       return unless have_fork?	# snip this test
 
-      fork() {
+      pid = fork() {
         assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644,
                                                   GDBM::NOLOCK))
         sleep 2
@@ -170,13 +170,13 @@ if defined? GDBM
           assert_instance_of(GDBM, gdbm2 = GDBM.open("tmptest_gdbm", 0644))
         }
       ensure
-        Process.wait
+        Process.wait pid
         gdbm2.close if gdbm2
       end
 
       p Dir.glob("tmptest_gdbm*") if $DEBUG
 
-      fork() {
+      pid = fork() {
         assert_instance_of(GDBM, gdbm  = GDBM.open("tmptest_gdbm", 0644))
         sleep 2
       }
@@ -189,7 +189,7 @@ if defined? GDBM
                                                      GDBM::NOLOCK))
         }
       ensure
-        Process.wait
+        Process.wait pid
         gdbm2.close if gdbm2
       end
     end
@@ -660,8 +660,32 @@ if defined? GDBM
       FileUtils.rm_rf TMPROOT if File.directory?(TMPROOT)
     end
 
+    def test_reader_open_notexist
+      assert_raise(Errno::ENOENT) {
+        GDBM.open("#{TMPROOT}/a", 0666, GDBM::READER)
+      }
+    end
+
+    def test_writer_open_notexist
+      assert_raise(Errno::ENOENT) {
+        GDBM.open("#{TMPROOT}/a", 0666, GDBM::WRITER)
+      }
+    end
+
+    def test_wrcreat_open_notexist
+      v = GDBM.open("#{TMPROOT}/a", 0666, GDBM::WRCREAT)
+      assert_instance_of(GDBM, v)
+      v.close
+    end
+
+    def test_newdb_open_notexist
+      v = GDBM.open("#{TMPROOT}/a", 0666, GDBM::NEWDB)
+      assert_instance_of(GDBM, v)
+      v.close
+    end
+
     def test_reader_open
-      GDBM.open("#{TMPROOT}/a.dbm") {}
+      GDBM.open("#{TMPROOT}/a.dbm") {} # create a db.
       v = GDBM.open("#{TMPROOT}/a.dbm", nil, GDBM::READER) {|d|
         assert_raises(GDBMError) { d["k"] = "v" }
         true
