@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.6"
+#define WIN32OLE_VERSION "0.6.7"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -6050,6 +6050,33 @@ STDMETHODIMP EVENTSINK_GetIDsOfNames(
     return DISP_E_UNKNOWNNAME;
 }
 
+static long
+ole_search_event_at(ary, ev)
+    VALUE ary;
+    VALUE ev;
+{
+    VALUE event;
+    VALUE def_event;
+    VALUE event_name;
+    long i, len; 
+    long ret = -1;
+    def_event = Qnil;
+    len = RARRAY(ary)->len;
+    for(i = 0; i < len; i++) {
+        event = rb_ary_entry(ary, i);
+        event_name = rb_ary_entry(event, 1);
+        if(NIL_P(event_name) && NIL_P(ev)) {
+            ret = i;
+            break;
+        }
+        else if (rb_str_cmp(ev, event_name) == 0) {
+            ret = i;
+            break;
+        }
+    }
+    return ret;
+}
+
 static VALUE
 ole_search_event(ary, ev, is_default)
     VALUE ary;
@@ -6616,16 +6643,22 @@ fev_s_msg_loop(klass)
 
 
 static void
-add_event_call_back(obj, data)
+add_event_call_back(obj, event, data)
     VALUE obj;
+    VALUE event;
     VALUE data;
 {
-    VALUE ary = rb_ivar_get(obj, id_events);
-    if (NIL_P(ary) || TYPE(ary) != T_ARRAY) {
-        ary = rb_ary_new();
-        rb_ivar_set(obj, id_events, ary);
+    long at;
+    VALUE events = rb_ivar_get(obj, id_events);
+    if (NIL_P(events) || TYPE(events) != T_ARRAY) {
+        events = rb_ary_new();
+        rb_ivar_set(obj, id_events, events);
     }
-    rb_ary_push(ary, data);
+    at = ole_search_event_at(events, event);
+    if (at >= -1) {
+        rb_ary_delete_at(events, at);
+    }
+    rb_ary_push(events, data);
 }
 
 static VALUE
@@ -6641,7 +6674,7 @@ ev_on_event(argc, argv, self, is_ary_arg)
         Check_SafeStr(event);
     }
     data = rb_ary_new3(4, rb_block_proc(), event, args, is_ary_arg);
-    add_event_call_back(self, data);
+    add_event_call_back(self, event, data);
     return Qnil;
 }
 
