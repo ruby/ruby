@@ -1,3 +1,8 @@
+Sat Aug 13 08:01:59 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+        * ext/nkf/lib/kconv.rb: Kconv.kconv is now alias of Kconv.conv
+        * ext/nkf/lib/kconv.rb: remove nkf dependend symbols fomr SYMBOL_TO_OPTION
+
 Fri Aug 12 17:06:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (f_larglist): allow optional arguments even when

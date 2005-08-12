@@ -51,6 +51,9 @@ module Kconv
 		    \xf4        [\x80-\x8f] [\x80-\xbf] [\x80-\xbf]
 		   )*\z/nx
   
+  # SYMBOL_TO_OPTION is the table for Kconv#conv
+  # Kconv#conv is intended to generic convertion method,
+  # so this table specifies symbols which can be supported not only nkf...
   SYMBOL_TO_OPTION = {
     :iso2022jp	=> '-j',
     :jis	=> '-j',
@@ -70,25 +73,9 @@ module Kconv
     :utf16ben	=> '-w16B0',
     :utf16le	=> '-w16L',
     :utf16len	=> '-w16L0',
-    :noconv	=> '-t',
     :lf		=> '-Lu',	# LF
     :cr		=> '-Lm',	# CR
     :crlf	=> '-Lw',	# CRLF
-    :fj		=> '--fj',	# for fj
-    :unix	=> '--unix',	# for unix
-    :mac	=> '--mac',	# CR
-    :windows	=> '--windows',	# CRLF
-    :mime	=> '--mime',	# MIME encode
-    :base64	=> '--base64',	# BASE64 encode
-    :x0201	=> '--x',	# Hankaku to Zenkaku Conversion off
-    :nox0201	=> '--X',	# Hankaku to Zenkaku Conversion on
-    :x0212	=> '--x0212',	# Convert JISX0212 (Hojo Kanji)
-    :hiragana	=> '--hiragana',# Katakana to Hiragana Conversion
-    :katakana	=> '--katakana',# Hiragana to Katakana Conversion
-    :capinput		=> '--cap-input',	# Convert hex after ':'
-    :urlinput		=> '--url-input',	# decode percent-encoded octets
-    :numcharinput	=> '--numchar-input',	# Convert Unicode Character Reference
-    :internalunicode	=> '--internal-unicode'	# Use Unicode as internal encoding
   }
   
   CONSTANT_TO_SYMBOL = {
@@ -108,46 +95,6 @@ module Kconv
   # Public Methods
   #
   
-  #
-  # kconv
-  #
-  
-  def kconv(str, out_code, in_code = AUTO)
-    opt = '-'
-    case in_code
-    when ::NKF::JIS
-      opt << 'J'
-    when ::NKF::EUC
-      opt << 'E'
-    when ::NKF::SJIS
-      opt << 'S'
-    when ::NKF::UTF8
-      opt << 'W'
-    when ::NKF::UTF16
-      opt << 'W16'
-    end
-
-    case out_code
-    when ::NKF::JIS
-      opt << 'j'
-    when ::NKF::EUC
-      opt << 'e'
-    when ::NKF::SJIS
-      opt << 's'
-    when ::NKF::UTF8
-      opt << 'w'
-    when ::NKF::UTF16
-      opt << 'w16'
-    when ::NKF::NOCONV
-      return str
-    end
-
-    opt = '' if opt == '-'
-
-    ::NKF::nkf(opt, str)
-  end
-  module_function :kconv
-
   #
   # Kconv.conv( str, :to => :"euc-jp", :from => :shift_jis, :opt => [:hiragana, :katakana] )
   #
@@ -172,6 +119,7 @@ module Kconv
     result = ::NKF::nkf( nkf_opt, str)
   end
   module_function :conv
+  alias :kconv :conv
 
   #
   # Encode to
