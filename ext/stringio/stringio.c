@@ -98,9 +98,9 @@ get_strio(self)
 
 #define StringIO(obj) get_strio(obj)
 
-#define CLOSED(ptr) NIL_P((ptr)->string)
-#define READABLE(ptr) (!CLOSED(ptr) && ((ptr)->flags & FMODE_READABLE))
-#define WRITABLE(ptr) (!CLOSED(ptr) && ((ptr)->flags & FMODE_WRITABLE))
+#define CLOSED(ptr) (!((ptr)->flags & FMODE_READWRITE))
+#define READABLE(ptr) ((ptr)->flags & FMODE_READABLE)
+#define WRITABLE(ptr) ((ptr)->flags & FMODE_WRITABLE)
 
 static struct StringIO*
 readable(ptr)
@@ -363,10 +363,8 @@ strio_set_string(self, string)
 
     if (!OBJ_TAINTED(self)) rb_secure(4);
     ptr->flags &= ~FMODE_READWRITE;
-    if (!NIL_P(string)) {
-	StringValue(string);
-	ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
-    }
+    StringValue(string);
+    ptr->flags = OBJ_FROZEN(string) ? FMODE_READABLE : FMODE_READWRITE;
     ptr->pos = 0;
     ptr->lineno = 0;
     return ptr->string = string;
@@ -384,7 +382,7 @@ strio_close(self)
     VALUE self;
 {
     struct StringIO *ptr = StringIO(self);
-    if (CLOSED(ptr) || !(ptr->flags & FMODE_READWRITE)) {
+    if (CLOSED(ptr)) {
 	rb_raise(rb_eIOError, "closed stream");
     }
     ptr->flags &= ~FMODE_READWRITE;

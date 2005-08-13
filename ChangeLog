@@ -1,3 +1,8 @@
+Sat Aug 13 18:35:27 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/stringio/stringio.c (strio_set_string): disallow nil.
+	  http://www.rubyist.net/~nobu/t/20050811.html#c05
+
 Thu Aug 11 23:29:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/stringio/stringio.c: keep holding string after closed.
