@@ -113,7 +113,7 @@ module FileUtils
   def cd(dir, options = {}, &block) # :yield: dir
     fu_check_options options, :verbose
     fu_output_message "cd #{dir}" if options[:verbose]
-    Dir.chdir(dir, &block)
+    Dir.chdir(dir, &block) unless options[:noop]
     fu_output_message 'cd -' if options[:verbose] and block
   end
 
@@ -552,13 +552,14 @@ module FileUtils
   # if one of parent directories or removing directory tree are world
   # writable, and the current process has strong privilege such as Unix
   # super user (root).  For secure removing, read the documentation of
-  # #remove_entry_secure, and set :secure option to true.
+  # #remove_entry_secure carefully, and set :secure option to true.
   # Default is :secure=>false.
   #
   # NOTE: This method calls #remove_entry_secure if :secure option is set.
   # See also #remove_entry_secure.
   #
-  # WARNING: Currently, :secure option does not affect Win32 system.
+  # WARNING: On Win32 systems, you MUST set correct ACL (Access Control List)
+  # always.  Never provide full-control for "Everybody" user.
   # 
   def rm_r(list, options = {})
     fu_check_options options, :force, :noop, :verbose, :secure
@@ -612,28 +613,21 @@ module FileUtils
   # To avoid this security hole, this method applies special preprocess.
   # If +path+ is a directory, this method chown(2) and chmod(2) all
   # removing directories.  This requires the current process is the
-  # owner of the removing whole directory tree.
-  #
-  # When parent directory is /tmp (permission 1777), UNIX super user
-  # (root) can remove directory tree safely only on systems which
-  # lchown(2) clears S_ISUID (set-user-id) bit, such as Linux.
-  # Many systems do NOT clear S_ISUID bit, this method is insecure for
-  # cleaning /tmp.  Note that, if parent directory is not world writable,
-  # this method is secure for also super user.
+  # owner of the removing whole directory tree, or is the super user (root).
   #
   # WARNING: You must ensure that *ALL* parent directories are not
   # world writable.  Otherwise this method does not work.
-  # Only exception is /tmp, permission 1777.
+  # Only exception is temporary directory like /tmp and /var/tmp,
+  # whose permission is 1777.
   #
-  # WARNING: Only the owner of the removing directory tree, or
-  # super user (root) should invoke this method.  Otherwise this
-  # method does not work.
+  # WARNING: Only the owner of the removing directory tree should invoke
+  # this method.  Otherwise this method does not work.
   #
-  # WARNING: This method does not work if system have symbolic link
-  # but do not have lchown(2).  This method raises NotImplementedError
-  # on such system.
+  # WARNING: remove_entry_secure uses chdir(2), this method is not
+  # multi-thread safe, nor reentrant.
   #
-  # WARNING: Currently, this method does NOT work Win32 systems.
+  # WARNING: This method does not work on Win32 systems.
+  # (You never need this method while you set NTFS ACL correctly)
   #
   # For details of this security vulnerability, see Perl's case:
   #
@@ -643,21 +637,38 @@ module FileUtils
   # For fileutils.rb, this vulnerability is reported in [ruby-dev:26100].
   #
   def remove_entry_secure(path, force = false)
-    # for /tmp (perm=1777)
-    if fu_have_symlink?
-      File.lchown Process.euid, nil, path
-    else
-      File.chown Process.euid, nil, path
-    end
-    # ---- now lstat(2) becomes secure ----
-    unless File.lstat(path).directory?
-      File.unlink path
+    fullpath = File.expand_path(path)
+    st = File.stat(File.dirname(fullpath))
+    unless st.world_writable?
+      remove_entry path, force
       return
     end
+    unless st.sticky?
+      raise ArgumentError, "parent directory is insecure: #{path}"
+    end
+    euid = Process.euid
+    prevcwd = Dir.getwd
+    begin
+      begin
+        Dir.chdir(fullpath)
+      rescue SystemCallError
+        # seems a file
+        File.unlink fullpath
+        return
+      end
+      unless fu_stat_identical_entry?(File.lstat(fullpath), File.stat('.'))
+        # seems TOC-to-TOU attack
+        File.unlink fullpath
+        return
+      end
+      File.chown euid, nil, '.'
+      File.chmod 0700, '.'
+    end
+    # ---- tree root is frozen ----
     root = Entry_.new(path)
     root.preorder_traverse do |ent|
       if ent.directory?
-        ent.chown Process.euid, nil
+        ent.chown euid, nil
         ent.chmod 0700
       end
     end
@@ -672,19 +683,8 @@ module FileUtils
     raise unless force
   end
 
-  def fu_have_symlink?
-    if $fileutils_rb_have_symlink == nil
-      $fileutils_rb_have_symlink = fu_check_have_symlink?
-    end
-    $fileutils_rb_have_symlink
-  end
-
-  def fu_check_have_symlink?
-    File.symlink nil, nil
-  rescue NotImplementedError
-    return false
-  rescue
-    return true
+  def fu_stat_identical_entry?(a, b)
+    a.dev == b.dev and a.ino == b.ino
   end
 
   #

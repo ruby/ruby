@@ -1,3 +1,8 @@
+Sat Aug 13 22:07:49 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (remove_entry_secure): uses chdir(2) and check
+	  if current directory is correct. [ruby-dev:26100] [ruby-dev:26226]
+
 Sat Aug 13 21:11:05 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: add WIN32OLE_VARIANT class.
