@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.7"
+#define WIN32OLE_VERSION "0.6.8"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -144,6 +144,7 @@ VALUE cWIN32OLE_VARIABLE;
 VALUE cWIN32OLE_METHOD;
 VALUE cWIN32OLE_PARAM;
 VALUE cWIN32OLE_EVENT;
+VALUE cWIN32OLE_VARIANT;
 VALUE eWIN32OLE_RUNTIME_ERROR;
 VALUE mWIN32OLE_VARIANT;
 
@@ -190,6 +191,11 @@ struct oleeventdata {
 struct oleparam {
     DISPPARAMS dp;
     OLECHAR** pNamedArgs;
+};
+
+struct olevariantdata {
+    VARIANT realvar;
+    VARIANT var;
 };
 
 static VALUE folemethod_s_allocate _((VALUE));
@@ -270,7 +276,9 @@ static HRESULT ( STDMETHODCALLTYPE GetIDsOfNames )(
     /* [in] */ LCID lcid,
     /* [size_is][out] */ DISPID __RPC_FAR *rgDispId)
 {
+    /*
     Win32OLEIDispatch* p = (Win32OLEIDispatch*)This;
+    */
     char* psz = ole_wc2mb(*rgszNames); // support only one method
     *rgDispId = rb_intern(psz);
     free(psz);
@@ -496,7 +504,7 @@ ole_hresult2msg(hr)
     DWORD dwCount;
 
     char strhr[100];
-    sprintf(strhr, "    HRESULT error code:0x%08x\n      ", hr);
+    sprintf(strhr, "    HRESULT error code:0x%08x\n      ", (unsigned)hr);
     msg = rb_str_new2(strhr);
 
     dwCount = FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER |
@@ -848,6 +856,178 @@ ole_val2variant(val, var)
         break;
     }
 }
+
+static void
+ole_val2ptr_variant(val, var)
+    VALUE val;
+    VARIANT *var;
+{
+    switch (TYPE(val)) {
+    case T_STRING:
+        if (V_VT(var) == (VT_BSTR | VT_BYREF)) {
+            *V_BSTRREF(var) = ole_mb2wc(StringValuePtr(val), -1);
+        }
+        break;
+    case T_FIXNUM:
+        switch(V_VT(var)) {
+        case (VT_UI1 | VT_BYREF) :
+            *V_UI1REF(var) = NUM2CHR(val);
+            break;
+        case (VT_I2 | VT_BYREF) :
+            *V_I2REF(var) = (short)NUM2INT(val);
+            break;
+        case (VT_I4 | VT_BYREF) :
+            *V_I4REF(var) = NUM2INT(val);
+            break;
+        case (VT_R4 | VT_BYREF) :
+            *V_R4REF(var) = (float)NUM2INT(val);
+            break;
+        case (VT_R8 | VT_BYREF) :
+            *V_R8REF(var) = NUM2INT(val);
+            break;
+        default:
+            break;
+        }
+        break;
+    case T_FLOAT:
+        switch(V_VT(var)) {
+        case (VT_I2 | VT_BYREF) :
+            *V_I2REF(var) = (short)NUM2INT(val);
+            break;
+        case (VT_I4 | VT_BYREF) :
+            *V_I4REF(var) = NUM2INT(val);
+            break;
+        case (VT_R4 | VT_BYREF) :
+            *V_R4REF(var) = (float)NUM2DBL(val);
+            break;
+        case (VT_R8 | VT_BYREF) :
+            *V_R8REF(var) = NUM2DBL(val);
+            break;
+        default:
+            break;
+        }
+        break;
+    case T_BIGNUM:
+        if (V_VT(var) == (VT_R8 | VT_BYREF)) {
+            *V_R8REF(var) = rb_big2dbl(val);
+        }
+        break;
+    case T_TRUE:
+        if (V_VT(var) == (VT_BOOL | VT_BYREF)) {
+            *V_BOOLREF(var) = VARIANT_TRUE;
+        }
+        break;
+    case T_FALSE:
+        if (V_VT(var) == (VT_BOOL | VT_BYREF)) {
+            *V_BOOLREF(var) = VARIANT_FALSE;
+        }
+        break;
+    default:
+        break;
+    }
+}
+
+static void
+ole_var2ptr_var(var, pvar)
+    VARIANT *var;
+    VARIANT *pvar;
+{
+    VARTYPE vt = V_VT(var);
+    V_VT(pvar) = V_VT(var) | VT_BYREF;
+    switch(vt) {
+    case VT_UI1:
+        V_UI1REF(pvar) = &V_UI1(var);
+        break;
+    case VT_I2:
+        V_I2REF(pvar) = &V_I2(var);
+        break;
+    case VT_I4:
+        V_I4REF(pvar) = &V_I4(var);
+        break;
+    case VT_UI4:
+        V_UI4REF(pvar) = &V_UI4(var);
+        break;
+/*
+    case VT_I8:
+        V_I8REF(pvar) = &V_I8(var);
+        break;
+*/
+    case VT_R4:
+        V_R4REF(pvar) = &V_R4(var);
+        break;
+    case VT_R8:
+        V_R8REF(pvar) = &V_R8(var);
+        break;
+    case VT_CY:
+        V_CYREF(pvar) = &V_CY(var);
+        break;
+    case VT_DATE:
+        V_DATEREF(pvar) = &V_DATE(var);
+        break;
+    case VT_BSTR:
+        V_BSTRREF(pvar) = &V_BSTR(var);
+        break;
+    case VT_DISPATCH:
+        V_DISPATCHREF(pvar) = &V_DISPATCH(var);
+        break;
+    case VT_ERROR:
+        V_ERRORREF(pvar) = &V_ERROR(var);
+        break;
+    case VT_BOOL:
+        V_BOOLREF(pvar) = &V_BOOL(var);
+        break;
+/*
+    case VT_VARIANT:
+        V_VARIANTREF(pvar) = &V_VARIANT(var);
+        break;
+*/
+    case VT_UNKNOWN:
+        V_UNKNOWNREF(pvar) = &V_UNKNOWN(var);
+        break;
+    case VT_ARRAY:
+        V_ARRAYREF(pvar) = &V_ARRAY(var);
+        break;
+    default:
+        break;
+    }
+}
+
+static void
+ole_val2olevariantdata(val, vtype, pvar)
+    VALUE val;
+    VARTYPE vtype;
+    struct olevariantdata *pvar;
+{
+    HRESULT hr = S_OK;
+    VARIANT var;
+    ole_val2variant(val, &(pvar->realvar));
+    if (vtype & VT_BYREF) {
+        if ( (vtype & ~VT_BYREF) == V_VT(&(pvar->realvar))) {
+            ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+        } else {
+            VariantInit(&var);
+            hr = VariantChangeTypeEx(&(var), &(pvar->realvar), 
+                                     LOCALE_SYSTEM_DEFAULT, 0, vtype & ~VT_BYREF);
+            if (SUCCEEDED(hr)) {
+                VariantClear(&(pvar->realvar));
+                hr = VariantCopy(&(pvar->realvar), &var);
+                VariantClear(&var);
+                ole_var2ptr_var(&(pvar->realvar), &(pvar->var));
+            }
+        }
+    } else {
+        if (vtype == V_VT(&(pvar->realvar))) {
+            hr = VariantCopy(&(pvar->var), &(pvar->realvar));
+        } else {
+            hr = VariantChangeTypeEx(&(pvar->var), &(pvar->realvar), 
+                                     LOCALE_SYSTEM_DEFAULT, 0, vtype);
+        }
+    }
+    if (FAILED(hr)) {
+        ole_raise(hr, rb_eRuntimeError, "failed to change type");
+    }
+}
+
 
 static void
 ole_val2variant2(val, var)
@@ -1997,6 +2177,7 @@ ole_invoke(argc, argv, self, wFlags)
     unsigned int cNamedArgs;
     int n;
     struct oleparam op;
+    struct olevariantdata *pvar;
     memset(&excepinfo, 0, sizeof(EXCEPINFO));
 
     VariantInit(&result);
@@ -2077,11 +2258,14 @@ ole_invoke(argc, argv, self, wFlags)
             VariantInit(&realargs[n]);
             VariantInit(&op.dp.rgvarg[n]);
             param = rb_ary_entry(paramS, i-cNamedArgs);
-            
-             ole_val2variant(param, &realargs[n]);
-            V_VT(&op.dp.rgvarg[n]) = VT_VARIANT | VT_BYREF;
-             V_VARIANTREF(&op.dp.rgvarg[n]) = &realargs[n];
-
+            if (rb_obj_is_kind_of(param, cWIN32OLE_VARIANT)) {
+                Data_Get_Struct(param, struct olevariantdata, pvar);
+                VariantCopy(&op.dp.rgvarg[n], &(pvar->var));
+            } else {
+                ole_val2variant(param, &realargs[n]);
+                V_VT(&op.dp.rgvarg[n]) = VT_VARIANT | VT_BYREF;
+                V_VARIANTREF(&op.dp.rgvarg[n]) = &realargs[n];
+            }
         }
     }
     /* apparent you need to call propput, you need this */
@@ -6105,75 +6289,6 @@ ole_search_event(ary, ev, is_default)
     return def_event;
 }
 
-static void
-val2ptr_variant(val, var)
-    VALUE val;
-    VARIANT *var;
-{
-    switch (TYPE(val)) {
-    case T_STRING:
-        if (V_VT(var) == (VT_BSTR | VT_BYREF)) {
-            *V_BSTRREF(var) = ole_mb2wc(StringValuePtr(val), -1);
-        }
-        break;
-    case T_FIXNUM:
-        switch(V_VT(var)) {
-        case (VT_UI1 | VT_BYREF) :
-            *V_UI1REF(var) = NUM2CHR(val);
-            break;
-        case (VT_I2 | VT_BYREF) :
-            *V_I2REF(var) = (short)NUM2INT(val);
-            break;
-        case (VT_I4 | VT_BYREF) :
-            *V_I4REF(var) = NUM2INT(val);
-            break;
-        case (VT_R4 | VT_BYREF) :
-            *V_R4REF(var) = (float)NUM2INT(val);
-            break;
-        case (VT_R8 | VT_BYREF) :
-            *V_R8REF(var) = NUM2INT(val);
-            break;
-        default:
-            break;
-        }
-        break;
-    case T_FLOAT:
-        switch(V_VT(var)) {
-        case (VT_I2 | VT_BYREF) :
-            *V_I2REF(var) = (short)NUM2INT(val);
-            break;
-        case (VT_I4 | VT_BYREF) :
-            *V_I4REF(var) = NUM2INT(val);
-            break;
-        case (VT_R4 | VT_BYREF) :
-            *V_R4REF(var) = (float)NUM2DBL(val);
-            break;
-        case (VT_R8 | VT_BYREF) :
-            *V_R8REF(var) = NUM2DBL(val);
-            break;
-        default:
-            break;
-        }
-        break;
-    case T_BIGNUM:
-        if (V_VT(var) == (VT_R8 | VT_BYREF)) {
-            *V_R8REF(var) = rb_big2dbl(val);
-        }
-        break;
-    case T_TRUE:
-        if (V_VT(var) == (VT_BOOL | VT_BYREF)) {
-            *V_BOOLREF(var) = VARIANT_TRUE;
-        }
-        break;
-    case T_FALSE:
-        if (V_VT(var) == (VT_BOOL | VT_BYREF)) {
-            *V_BOOLREF(var) = VARIANT_FALSE;
-        }
-        break;
-    default:
-        break;
-    }
-}
 
 static void
 ary2ptr_dispparams(ary, pdispparams)
@@ -6186,7 +6301,7 @@ ary2ptr_dispparams(ary, pdispparams)
     for(i = 0; i < RARRAY(ary)->len && (unsigned int) i < pdispparams->cArgs; i++) {
         v = rb_ary_entry(ary, i);
         pvar = &pdispparams->rgvarg[pdispparams->cArgs-i-1];
-        val2ptr_variant(v, pvar);
+        ole_val2ptr_variant(v, pvar);
     }
 }
 
@@ -6714,6 +6829,68 @@ fev_on_event_with_outargs(argc, argv, self)
     return ev_on_event(argc, argv, self, Qtrue);
 }
 
+static void 
+olevariant_free(pvar)
+    struct olevariantdata *pvar;
+{
+    VariantClear(&(pvar->realvar));
+    VariantClear(&(pvar->var));
+}
+
+static VALUE folevariant_s_allocate _((VALUE));
+static VALUE
+folevariant_s_allocate(klass)
+    VALUE klass;
+{
+    struct olevariantdata *pvar;
+    VALUE obj;
+    ole_initialize();
+    obj = Data_Make_Struct(klass,struct olevariantdata,0,olevariant_free,pvar);
+    VariantInit(&(pvar->var));
+    VariantInit(&(pvar->realvar));
+    return obj;
+}
+
+static VALUE
+folevariant_initialize(self, args) 
+    VALUE self;
+    VALUE args;
+{
+    long len = 0;
+    VARIANT var;
+    VALUE val;
+    VALUE vvt;
+    VARTYPE vt;
+    HRESULT hr;
+    struct olevariantdata *pvar;
+
+    len = RARRAY(args)->len;
+    if (len < 1 || len > 3) {
+        rb_raise(rb_eArgError, "wrong number of arguments (%d for 1..3)", len);
+    }
+    VariantInit(&var);
+    val = rb_ary_entry(args, 0);
+    Data_Get_Struct(self, struct olevariantdata, pvar);
+    if (len == 1) {
+        ole_val2variant(val, &(pvar->var));
+    } else {
+        vvt = rb_ary_entry(args, 1);
+        vt = NUM2INT(vvt);
+        ole_val2olevariantdata(val, vt, pvar);
+    }
+    return self;
+}
+
+static VALUE
+folevariant_value(self)
+    VALUE self;
+{
+    struct olevariantdata *pvar;
+    VALUE val = Qnil;
+    Data_Get_Struct(self, struct olevariantdata, pvar);
+    val = ole_variant2val(&(pvar->var));
+    return val;
+}
 
 void
 Init_win32ole()
@@ -6898,5 +7075,11 @@ Init_win32ole()
 
     rb_define_method(cWIN32OLE_EVENT, "on_event", fev_on_event, -1);
     rb_define_method(cWIN32OLE_EVENT, "on_event_with_outargs", fev_on_event_with_outargs, -1);
+
+    cWIN32OLE_VARIANT = rb_define_class("WIN32OLE_VARIANT", rb_cObject);
+    rb_define_alloc_func(cWIN32OLE_VARIANT, folevariant_s_allocate);
+    rb_define_method(cWIN32OLE_VARIANT, "initialize", folevariant_initialize, -2);
+    rb_define_method(cWIN32OLE_VARIANT, "value", folevariant_value, 0);
+
     eWIN32OLE_RUNTIME_ERROR = rb_define_class("WIN32OLERuntimeError", rb_eRuntimeError);
 }
