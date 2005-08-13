@@ -603,7 +603,7 @@ module FileUtils
   # regular file, a directory, or something.  If +path+ is a directory,
   # remove it recursively.  This method is required to avoid TOCTTOU
   # (time-of-check-to-time-of-use) local security vulnerability of #rm_r.
-  # #rm_r causes security hole when and only when:
+  # #rm_r causes security hole when:
   #
   #   * Parent directory is world writable (including /tmp).
   #   * Removing directory tree includes world writable directory.
