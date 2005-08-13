@@ -550,16 +550,14 @@ module FileUtils
   #
   # WARNING: This method causes local vulnerability
   # if one of parent directories or removing directory tree are world
-  # writable, and the current process has strong privilege such as Unix
-  # super user (root).  For secure removing, read the documentation of
-  # #remove_entry_secure carefully, and set :secure option to true.
+  # writable (including /tmp, whose permission is 1777), and the current
+  # process has strong privilege such as Unix super user (root), and the
+  # system has symbolic link.  For secure removing, read the documentation
+  # of #remove_entry_secure carefully, and set :secure option to true.
   # Default is :secure=>false.
   #
   # NOTE: This method calls #remove_entry_secure if :secure option is set.
   # See also #remove_entry_secure.
-  #
-  # WARNING: On Win32 systems, you MUST set correct ACL (Access Control List)
-  # always.  Never provide full-control for "Everybody" user.
   # 
   def rm_r(list, options = {})
     fu_check_options options, :force, :noop, :verbose, :secure
@@ -609,6 +607,7 @@ module FileUtils
   #
   #   * Parent directory is world writable (including /tmp).
   #   * Removing directory tree includes world writable directory.
+  #   * The system has symbolic link.
   #
   # To avoid this security hole, this method applies special preprocess.
   # If +path+ is a directory, this method chown(2) and chmod(2) all
@@ -620,14 +619,12 @@ module FileUtils
   # Only exception is temporary directory like /tmp and /var/tmp,
   # whose permission is 1777.
   #
-  # WARNING: Only the owner of the removing directory tree should invoke
-  # this method.  Otherwise this method does not work.
+  # WARNING: Only the owner of the removing directory tree, or Unix super
+  # user (root) should invoke this method.  Otherwise this method does not
+  # work.
   #
   # WARNING: remove_entry_secure uses chdir(2), this method is not
   # multi-thread safe, nor reentrant.
-  #
-  # WARNING: This method does not work on Win32 systems.
-  # (You never need this method while you set NTFS ACL correctly)
   #
   # For details of this security vulnerability, see Perl's case:
   #
@@ -663,6 +660,8 @@ module FileUtils
       end
       File.chown euid, nil, '.'
       File.chmod 0700, '.'
+    ensure
+      Dir.chdir prevcwd
     end
     # ---- tree root is frozen ----
     root = Entry_.new(path)

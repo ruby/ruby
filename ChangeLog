@@ -1,3 +1,7 @@
+Sat Aug 13 22:16:12 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (remove_entry_secure): forgot final chdir.
+
 Sat Aug 13 22:07:49 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (remove_entry_secure): uses chdir(2) and check
