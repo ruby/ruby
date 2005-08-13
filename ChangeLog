@@ -3,11 +3,6 @@ Sat Aug 13 18:51:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_block_pass): distinguish current block from others.
 	  fixed: [ruby-dev:26274]
 
-Sat Aug 13 18:51:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* eval.c (rb_block_pass): distinguish current block from others.
-	  fixed: [ruby-dev:26274]
-
 	* ext/stringio/stringio.c (strio_set_string): disallow nil.
 	  http://www.rubyist.net/~nobu/t/20050811.html#c05
 
