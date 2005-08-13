@@ -947,6 +947,7 @@ static struct iter *ruby_iter;
 #define ITER_NOT 0
 #define ITER_PRE 1
 #define ITER_CUR 2
+#define ITER_PAS 3
 
 #define PUSH_ITER(i) do {		\
     struct iter _iter;			\
@@ -5818,6 +5819,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
     switch (ruby_iter->iter) {
       case ITER_PRE:
+      case ITER_PAS:
 	itr = ITER_CUR;
 	break;
       case ITER_CUR:
@@ -8820,7 +8822,7 @@ rb_block_pass(func, arg, proc)
     }
 
     if (ruby_block && ruby_block->block_obj == proc) {
-	PUSH_ITER(ITER_PRE);
+	PUSH_ITER(ITER_PAS);
 	result = (*func)(arg);
 	POP_ITER();
 	return result;
