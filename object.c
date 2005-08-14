@@ -2082,7 +2082,7 @@ rb_check_convert_type(val, type, tname, method)
 static VALUE
 rb_to_integer(val, method)
     VALUE val;
-    char *method;
+    const char *method;
 {
     VALUE v = convert_type(val, "Integer", method, Qtrue);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {
@@ -2096,7 +2096,7 @@ rb_to_integer(val, method)
 VALUE
 rb_check_to_integer(val, method)
     VALUE val;
-    char *method;
+    const char *method;
 {
     VALUE v = convert_type(val, "Integer", method, Qfalse);
     if (!rb_obj_is_kind_of(v, rb_cInteger)) {

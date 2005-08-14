@@ -1,3 +1,9 @@
+Mon Aug 15 07:24:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* intern.h (rb_check_to_integer): add declaration.
+
+	* object.c (rb_to_integer, rb_check_to_integer): argument constified.
+
 Mon Aug 15 00:38:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_rescue2): reduce PUSH_TAG() as well as NODE_RESCUE.
