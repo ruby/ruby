@@ -5241,17 +5241,23 @@ rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
     int state;
     volatile VALUE result;
     volatile VALUE e_info = ruby_errinfo;
+    volatile int handle;
+    VALUE eclass;
     va_list args;
 
     PUSH_TAG(PROT_NONE);
-    if ((state = EXEC_TAG()) == 0) {
-      retry_entry:
+    switch (state = EXEC_TAG()) {
+      case TAG_RETRY:
+	if (!handle) break;
+	handle = Qfalse;
+	state = 0;
+	ruby_errinfo = Qnil;
+      case 0:
 	result = (*b_proc)(data1);
-    }
-    else if (state == TAG_RAISE) {
-	int handle = Qfalse;
-	VALUE eclass;
-
+	break;
+      case TAG_RAISE:
+	if (handle) break;
+	handle = Qfalse;
 	va_init_list(args, data2);
 	while (eclass = va_arg(args, VALUE)) {
 	    if (rb_obj_is_kind_of(ruby_errinfo, eclass)) {
@@ -5262,25 +5268,14 @@ rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
 	va_end(args);
 
 	if (handle) {
+	    state = 0;
 	    if (r_proc) {
-		PUSH_TAG(PROT_NONE);
-		if ((state = EXEC_TAG()) == 0) {
-		    result = (*r_proc)(data2, ruby_errinfo);
-		}
-		POP_TAG();
-		if (state == TAG_RETRY) {
-		    state = 0;
-		    ruby_errinfo = Qnil;
-		    goto retry_entry;
-		}
+		result = (*r_proc)(data2, ruby_errinfo);
 	    }
 	    else {
 		result = Qnil;
-		state = 0;
 	    }
-	    if (state == 0) {
-		ruby_errinfo = e_info;
-	    }
+	    ruby_errinfo = e_info;
 	}
     }
     POP_TAG();

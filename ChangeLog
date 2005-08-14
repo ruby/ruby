@@ -1,3 +1,10 @@
+Mon Aug 15 00:38:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_rescue2): reduce PUSH_TAG() as well as NODE_RESCUE.
+	  [ruby-dev:26800]
+
+	* range.c (range_check, range_init): reduce uselse exceptions.
+
 Sat Aug 13 18:51:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_block_pass): distinguish current block from others.
