@@ -1,3 +1,10 @@
+Mon Aug 15 00:38:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_rescue2): reduce PUSH_TAG() as well as NODE_RESCUE.
+	  [ruby-dev:26800]
+
+	* range.c (range_check, range_init): reduce uselse exceptions.
+
 Sat Aug 13 22:16:12 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (remove_entry_secure): forgot final chdir.

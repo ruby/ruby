@@ -29,11 +29,7 @@ static VALUE
 range_check(args)
     VALUE *args;
 {
-    VALUE v;
-
-    v = rb_funcall(args[0], id_cmp, 1, args[1]);
-    if (NIL_P(v)) range_failed();
-    return Qnil;
+    return rb_funcall(args[0], id_cmp, 1, args[1]);
 }
 
 static void
@@ -47,7 +43,10 @@ range_init(range, beg, end, exclude_end)
     args[1] = end;
     
     if (!FIXNUM_P(beg) || !FIXNUM_P(end)) {
-	rb_rescue(range_check, (VALUE)args, range_failed, 0);
+	VALUE v;
+
+	v = rb_rescue(range_check, (VALUE)args, range_failed, 0);
+	if (NIL_P(v)) range_failed();
     }
 
     SET_EXCL(range, exclude_end);
