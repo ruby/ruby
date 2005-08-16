@@ -7805,11 +7805,11 @@ Init_eval()
 /*
  *  call-seq:
  *     mod.autoload(name, filename)   => nil
- *  
+ *
  *  Registers _filename_ to be loaded (using <code>Kernel::require</code>) 
- *  the first time that _module_ (which may be a <code>String</code> or
+ *  the first time that _name_ (which may be a <code>String</code> or
  *  a symbol) is accessed in the namespace of _mod_.
- *     
+ *
  *     module A
  *     end
  *     A.autoload(:B, "b")
@@ -7830,7 +7830,16 @@ rb_mod_autoload(mod, sym, file)
 }
 
 /*
- * MISSING: documentation
+ *  call-seq:
+ *     mod.autoload?(name)   => String or nil
+ *
+ *  Returns _filename_ to be loaded if _name_ is registered as
+ *  +autoload+ in the namespace of _mod_.
+ *
+ *     module A
+ *     end
+ *     A.autoload(:B, "b")
+ *     A.autoload?(:B)            # => "b"
  */
 
 static VALUE
@@ -7860,9 +7869,15 @@ rb_f_autoload(obj, sym, file)
     return rb_mod_autoload(ruby_cbase, sym, file);
 }
 
-
 /*
- * MISSING: documentation
+ *  call-seq:
+ *     autoload(module, filename)   => nil
+ *
+ *  Registers _filename_ to be loaded (using <code>Kernel::require</code>)
+ *  the first time that _module_ (which may be a <code>String</code> or
+ *  a symbol) is accessed.
+ *
+ *     autoload(:MyModule, "/usr/local/lib/modules/my_module.rb")
  */
 
 static VALUE
