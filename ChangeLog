@@ -47,7 +47,6 @@ Sat Aug 13 21:11:05 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/tests/testOLEVARIANT.rb: ditto.
 
->>>>>>> 1.4488
 Sat Aug 13 18:51:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_block_pass): distinguish current block from others.
