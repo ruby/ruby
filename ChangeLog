@@ -1,3 +1,18 @@
+Wed Aug 17 00:05:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_add_method): preserve safe level in the environment
+	  where a method is defined .
+
+	* eval.c (rb_call0): restore preserved safe level in the method
+	  execution. 
+
+	* parse.y (lambda): need separate block variable stack
+	  manipulation and lpar_beg maintenance.  based on a patch found
+	  in [ruby-core:05551] from Mauricio Fernandez <mfp@acm.org>.
+
+	* parse.y (parser_yylex): adjust lpar_beg after tLAMBEG and
+	  kDO_LAMBDA. [ruby-core:05551]
+
 Mon Aug 15 07:24:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* intern.h (rb_check_to_integer): add declaration.
@@ -10,6 +25,10 @@ Mon Aug 15 00:38:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  [ruby-dev:26800]
 
 	* range.c (range_check, range_init): reduce uselse exceptions.
+
+Mon Aug 15 00:34:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y (yycompile): remove unreachable code.  [yarv-dev:570]
 
 Sat Aug 13 22:16:12 2005  Minero Aoki  <aamine@loveruby.net>
 
@@ -28,6 +47,7 @@ Sat Aug 13 21:11:05 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/tests/testOLEVARIANT.rb: ditto.
 
+>>>>>>> 1.4488
 Sat Aug 13 18:51:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_block_pass): distinguish current block from others.

@@ -2606,8 +2606,7 @@ primary		: literal
 			$$ = dispatch2(iter_block, $1, $2);
 		    %*/
 		    }
-		| tLAMBDA
-		  lambda
+		| tLAMBDA lambda
 		    {
 			$$ = $2;
 		    }
@@ -3178,13 +3177,15 @@ bv_decl		:  tIDENTIFIER
 		;
 
 lambda		: {
-			$<num>$ = lpar_beg;
-			lpar_beg = ++paren_nest;
 		    /*%%%*/
 			$<vars>$ = dyna_push();
 		    /*%
 		    %*/
-		    }
+		  }
+                  {
+			$<num>$ = lpar_beg;
+ 			lpar_beg = ++paren_nest;
+		  }
 		  f_larglist
 		    {
 		        $<vars>$ = ruby_dyna_vars;
@@ -3192,11 +3193,12 @@ lambda		: {
 		  lambda_body
 		    {
 		    /*%%%*/
-			$$ = $2;
-                        $$->nd_body = block_append($$->nd_body, $4);
+			$$ = $3;
+                        $$->nd_body = block_append($$->nd_body, $5);
 			dyna_pop($<vars>1);
+			lpar_beg = $<num>2;
 		    /*%
-		    	$$ = dispatch2(lambda, $2, $4);
+		    	$$ = dispatch2(lambda, $3, $5);
 		    %*/
 		    }
 		;
@@ -3219,15 +3221,11 @@ f_larglist	: '(' f_args opt_bv_decl rparen
 		    }
 		;
 
-lambda_body	: tLAMBEG
-		  compstmt
-		  '}'
+lambda_body	: tLAMBEG compstmt '}'
 		    {
 			$$ = $2;
 		    }
-		| kDO_LAMBDA
-		  compstmt
-		  kEND
+		| kDO_LAMBDA compstmt kEND
 		    {
 			$$ = $2;
 		    }
@@ -4360,7 +4358,6 @@ none		: /* none */
 		    }
 		;
 %%
-
 # undef parser
 # undef yylex
 # undef yylval
@@ -4568,10 +4565,6 @@ yycompile(parser, f, line)
     else {
 	return ruby_eval_tree;
     }
-
-    if (n == 0) node = ruby_eval_tree;
-    else ruby_eval_tree_begin = 0;
-    return node;
 }
 #endif /* !RIPPER */
 
@@ -6485,6 +6478,8 @@ parser_yylex(parser)
       case '{':
 	if (lpar_beg && lpar_beg == paren_nest) {
 	    lex_state = EXPR_BEG;
+	    lpar_beg = 0;
+	    --paren_nest;
 	    return tLAMBEG;
 	}
 	if (IS_ARG() || lex_state == EXPR_END || lex_state == EXPR_END2)
@@ -6805,6 +6800,8 @@ parser_yylex(parser)
 		    }
 		    if (kw->id[0] == kDO) {
 			if (lpar_beg && lpar_beg == paren_nest) {
+			    lpar_beg = 0;
+			    --paren_nest;
 			    return kDO_LAMBDA;
 			}
 			if (COND_P()) return kDO_COND;
@@ -8722,6 +8719,8 @@ parser_initialize(parser)
     parser->parser_cond_stack = 0;
     parser->parser_cmdarg_stack = 0;
     parser->parser_class_nest = 0;
+    parser->parser_paren_nest = 0;
+    parser->parser_lpar_beg = 0;
     parser->parser_in_single = 0;
     parser->parser_in_def = 0;
     parser->parser_in_defined = 0;

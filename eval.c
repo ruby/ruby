@@ -377,6 +377,9 @@ static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
 static ID __id__, __send__, respond_to;
 
+#define NOEX_WITH_SAFE(n) ((n) | ruby_safe_level << 4)
+#define NOEX_SAFE(n) ((n) >> 4)
+
 void
 rb_add_method(klass, mid, node, noex)
     VALUE klass;
@@ -403,7 +406,7 @@ rb_add_method(klass, mid, node, noex)
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     rb_clear_cache_by_id(mid);
-    body = NEW_METHOD(node, noex);
+    body = NEW_METHOD(node, NOEX_WITH_SAFE(noex));
     st_insert(RCLASS(klass)->m_tbl, mid, (st_data_t)body);
     if (node && mid != ID_ALLOCATOR && ruby_running) {
 	if (FL_TEST(klass, FL_SINGLETON)) {
@@ -5796,20 +5799,21 @@ formal_assign(recv, node, argc, argv, local_vars)
 }
 
 static VALUE
-rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
+rb_call0(klass, recv, id, oid, argc, argv, body, flags)
     VALUE klass, recv;
     ID    id;
     ID    oid;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
     NODE * volatile body;
-    int nosuper;
+    int flags;
 {
     NODE *b2;		/* OK */
     volatile VALUE result = Qnil;
     int itr;
     static int tick;
     volatile VALUE args;
+    volatile int safe = -1;
     TMP_PROTECT;
 
     switch (ruby_iter->iter) {
@@ -5838,7 +5842,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
     PUSH_FRAME();
     ruby_frame->callee = id;
     ruby_frame->this_func = oid;
-    ruby_frame->this_class = nosuper?0:klass;
+    ruby_frame->this_class = (flags & NOEX_NOSUPER)?0:klass;
     ruby_frame->self = recv;
     ruby_frame->argc = argc;
 
@@ -5902,7 +5906,6 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    NODE *saved_cref = 0;
 
 	    PUSH_SCOPE();
-
 	    if (body->nd_rval) {
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)body->nd_rval;
@@ -5923,7 +5926,10 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 
 	    PUSH_VARS();
 	    PUSH_TAG(PROT_FUNC);
-
+	    if (NOEX_SAFE(flags) > ruby_safe_level) {
+		safe = ruby_safe_level;
+		ruby_safe_level = NOEX_SAFE(flags);
+	    }
 	    if ((state = EXEC_TAG()) == 0) {
 		NODE *node = 0;
 
@@ -5953,6 +5959,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, nosuper)
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
+	    if (safe > 0) ruby_safe_level = safe;
 	    if (event_hooks) {
 		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
 	    }
@@ -6035,7 +6042,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	}
     }
 
-    return rb_call0(klass, recv, mid, id, argc, argv, body, noex & NOEX_NOSUPER);
+    return rb_call0(klass, recv, mid, id, argc, argv, body, noex);
 }
 
 VALUE
@@ -8825,10 +8832,9 @@ rb_block_pass(func, arg, proc)
 	proc = b;
     }
 
-    if (ruby_safe_level >= 1 && OBJ_TAINTED(proc)) {
-	if (ruby_safe_level > proc_get_safe_level(proc)) {
-	    rb_raise(rb_eSecurityError, "Insecure: tainted block value");
-	}
+    if (ruby_safe_level >= 1 && OBJ_TAINTED(proc) &&
+	ruby_safe_level > proc_get_safe_level(proc)) {
+	rb_raise(rb_eSecurityError, "Insecure: tainted block value");
     }
 
     if (ruby_block && ruby_block->block_obj == proc) {
@@ -8914,6 +8920,7 @@ struct METHOD {
     VALUE klass, rklass;
     VALUE recv;
     ID id, oid;
+    int safe_level;
     NODE *body;
 };
 
@@ -8961,6 +8968,7 @@ mnew(klass, obj, id, mklass)
     data->body = body;
     data->rklass = rklass;
     data->oid = oid;
+    data->safe_level = NOEX_WITH_SAFE(0);
     OBJ_INFECT(method, klass);
 
     return method;
@@ -9189,26 +9197,15 @@ rb_method_call(argc, argv, method)
 {
     VALUE result = Qnil;	/* OK */
     struct METHOD *data;
-    int state;
-    volatile int safe = -1;
 
     Data_Get_Struct(method, struct METHOD, data);
     if (data->recv == Qundef) {
 	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
-    PUSH_TAG(PROT_NONE);
-    if (OBJ_TAINTED(method)) {
-	safe = ruby_safe_level;
-	if (ruby_safe_level < 4) ruby_safe_level = 4;
-    }
-    if ((state = EXEC_TAG()) == 0) {
-	result = rb_call0(data->klass,data->recv,data->id,data->oid,argc,argv,data->body,0);
-    }
-    POP_TAG();
+    result = rb_call0(data->klass,data->recv,data->id,data->oid,argc,argv,data->body,
+		      data->safe_level);
     POP_ITER();
-    if (safe >= 0) ruby_safe_level = safe;
-    if (state) JUMP_TAG(state);
     return result;
 }
 
