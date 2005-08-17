@@ -1,3 +1,10 @@
+Wed Aug 17 23:58:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (terminate_process): take String message.
+
+	* eval.c (rb_thread_switch): propagate the exception caused thread
+	  termination directly.  fixed: [ruby-core:05552]
+
 Wed Aug 17 21:20:05 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 
 	* ext/nkf/lib/kconv.rb: ensure that symbol_to_option is private_class_method
@@ -10,7 +17,7 @@ Wed Aug 17 00:05:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 	  where a method is defined .
 
 	* eval.c (rb_call0): restore preserved safe level in the method
-	  execution. 
+	  execution.
 
 	* parse.y (lambda): need separate block variable stack
 	  manipulation and lpar_beg maintenance.  based on a patch found
