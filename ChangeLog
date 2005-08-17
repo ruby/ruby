@@ -1,6 +1,11 @@
-Mon Aug 15 07:24:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Aug 17 23:58:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_to_integer): argument constified.
+
+	* eval.c (terminate_process): take String message.
+
+	* eval.c (rb_thread_switch): propagate the exception caused thread
+	  termination directly.  fixed: [ruby-core:05552]
 
 Mon Aug 15 00:38:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

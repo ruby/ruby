@@ -4281,16 +4281,15 @@ rb_mod_protected_method_defined(mod, mid)
     return Qfalse;
 }
 
-NORETURN(static VALUE terminate_process _((int, const char *, long)));
+NORETURN(static VALUE terminate_process _((int, VALUE)));
 static VALUE
-terminate_process(status, mesg, mlen)
+terminate_process(status, mesg)
     int status;
-    const char *mesg;
-    long mlen;
+    VALUE mesg;
 {
     VALUE args[2];
     args[0] = INT2NUM(status);
-    args[1] = rb_str_new(mesg, mlen);
+    args[1] = mesg;
 
     rb_exc_raise(rb_class_new_instance(2, args, rb_eSystemExit));
 }
@@ -4300,7 +4299,7 @@ rb_exit(status)
     int status;
 {
     if (prot_tag) {
-	terminate_process(status, "exit", 4);
+	terminate_process(status, rb_str_new("exit", 4));
     }
     ruby_finalize();
     exit(status);
@@ -4405,9 +4404,9 @@ rb_f_abort(argc, argv)
 	VALUE mesg;
 
 	rb_scan_args(argc, argv, "1", &mesg);
-	StringValue(argv[0]);
-	rb_io_puts(argc, argv, rb_stderr);
-	terminate_process(EXIT_FAILURE, RSTRING(argv[0])->ptr, RSTRING(argv[0])->len);
+	StringValue(mesg);
+	rb_io_puts(1, &mesg, rb_stderr);
+	terminate_process(EXIT_FAILURE, mesg);
     }
     return Qnil;		/* not reached */
 }
@@ -10070,7 +10069,7 @@ rb_thread_switch(n)
       case RESTORE_EXIT:
 	ruby_errinfo = th_raise_exception;
 	ruby_current_node = th_raise_node;
-	terminate_process(sysexit_status(ruby_errinfo), 0, 0);
+	rb_exc_raise(th_raise_exception);
 	break;
       case RESTORE_NORMAL:
       default:
