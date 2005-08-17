@@ -1,3 +1,9 @@
+Wed Aug 17 21:20:05 2005  NARUSE, Yui  <naruse@ruby-lang.org>
+
+	* ext/nkf/lib/kconv.rb: ensure that symbol_to_option is private_class_method
+	  and all other methods are module_function
+	  fixed: [ruby-dev:26808]
+
 Wed Aug 17 00:05:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_add_method): preserve safe level in the environment

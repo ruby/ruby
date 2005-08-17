@@ -118,7 +118,6 @@ module Kconv
     nkf_opt = '-x -m0 %s %s %s' % [to, from, opt]
     result = ::NKF::nkf( nkf_opt, str)
   end
-  module_function :conv
   alias :kconv :conv
 
   #
@@ -128,27 +127,22 @@ module Kconv
   def tojis(str)
     ::NKF::nkf('-j', str)
   end
-  module_function :tojis
 
   def toeuc(str)
     ::NKF::nkf('-e', str)
   end
-  module_function :toeuc
 
   def tosjis(str)
     ::NKF::nkf('-s', str)
   end
-  module_function :tosjis
 
   def toutf8(str)
     ::NKF::nkf('-w', str)
   end
-  module_function :toutf8
 
   def toutf16(str)
     ::NKF::nkf('-w16', str)
   end
-  module_function :toutf16
 
   alias :to_jis :tojis
   alias :to_euc :toeuc
@@ -166,17 +160,14 @@ module Kconv
   def guess(str)
     ::NKF::guess(str)
   end
-  module_function :guess
 
   def guess_old(str)
     ::NKF::guess1(str)
   end
-  module_function :guess_old
 
   def guess_as_symbol(str)
     CONSTANT_TO_SYMBOL[guess(str)]
   end
-  module_function :guess_as_symbol
 
   #
   # isEncoding
@@ -185,17 +176,14 @@ module Kconv
   def iseuc(str)
     RegexpEucjp.match( str )
   end
-  module_function :iseuc
   
   def issjis(str)
     RegexpShiftjis.match( str )
   end
-  module_function :issjis
 
   def isutf8(str)
     RegexpUtf8.match( str )
   end
-  module_function :isutf8
 
   #
   # encoding?
@@ -204,26 +192,21 @@ module Kconv
   def eucjp?(str)
     RegexpEucjp.match( str ) ? true : false
   end
-  module_function :eucjp?
 
   def shiftjis?(str)
     RegexpShiftjis.match( str ) ? true : false
   end
-  module_function :shiftjis?
+
   def utf8?(str)
     RegexpUtf8.match( str ) ? true : false
   end
-  module_function :utf8?
+
   alias :euc? :eucjp?
   alias :sjis? :shiftjis?
-  module_function :euc?
-  module_function :sjis?
-
 
   #
   # Private Methods
   #
-  private
   def symbol_to_option(symbol)
     if symbol.is_a? Integer
       symbol = CONSTANT_TO_SYMBOL[symbol]
@@ -236,7 +219,13 @@ module Kconv
       return nil
     end
   end
-  module_function :symbol_to_option
+
+  #
+  # Make them module functions
+  #
+  module_function(*instance_methods(false))
+  private_class_method :symbol_to_option
+
 end
 
 class String
