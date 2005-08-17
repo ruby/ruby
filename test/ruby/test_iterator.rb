@@ -193,7 +193,13 @@ class TestIterator < Test::Unit::TestCase
     m(yield(var), &block)
   end
 
+  def m4(&block)
+    m(m1(), &block)
+  end
+
   def test_block_passing
+    assert(!m4())
+    assert(!m4 {})
     assert_equal(100, m3(10) {|x|x*x})
   end
 
