@@ -1,3 +1,9 @@
+Thu Aug 18 11:05:36 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (socketpair_internal): need to call open_ifs_socket()
+	  to create sockets instead of winsock's socket().
+	  fixed: [yarv-dev:581]
+
 Wed Aug 17 23:58:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (terminate_process): take String message.

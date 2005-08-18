@@ -2503,7 +2503,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 
     RUBY_CRITICAL({
 	do {
-	    svr = socket(af, type, protocol);
+	    svr = open_ifs_socket(af, type, protocol);
 	    if (svr == INVALID_SOCKET)
 		break;
 	    if (bind(svr, addr, len) < 0)
@@ -2513,7 +2513,7 @@ socketpair_internal(int af, int type, int protocol, SOCKET *sv)
 	    if (type == SOCK_STREAM)
 		listen(svr, 5);
 
-	    w = socket(af, type, protocol);
+	    w = open_ifs_socket(af, type, protocol);
 	    if (w == INVALID_SOCKET)
 		break;
 	    if (connect(w, addr, len) < 0)
