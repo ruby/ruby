@@ -22,8 +22,13 @@
 // There is function-name conflitct, so we rename it
 #if !defined(IN) && !defined(FLOAT)
 #define OpenFile  WINAPI_OpenFile
+#ifdef __BORLANDC__
+#include <winsock2.h>
+#include <windows.h>
+#else
 #include <windows.h>
 #include <winsock.h>
+#endif
 #undef OpenFile
 #endif
 

@@ -1,3 +1,11 @@
+Thu Aug 18 12:46:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bcc32/Makefile.sub (COMMON_HEADERS): reverted 1.42.2.24.
+	  I misunderstood, bccwin32 on ruby_1_8 uses winsock2 originally.
+	  [ruby-dev:26806]
+
+	* win32/win32.h: include winsock2.h instead of winsock.h. (bcc32)
+
 Wed Aug 17 23:58:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (rb_to_integer): argument constified.
