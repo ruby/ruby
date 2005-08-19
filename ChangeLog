@@ -1,3 +1,8 @@
+Fri Aug 19 18:13:39 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time.apply_offset): fix a problem with last day of 
+	  month.  reported by Lucas Nussbaum.  [ruby-talk:152866]
+
 Thu Aug 18 12:46:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bcc32/Makefile.sub (COMMON_HEADERS): reverted 1.42.2.24.

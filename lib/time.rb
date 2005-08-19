@@ -116,7 +116,7 @@ class Time
         if o != 0 then hour += o; o, hour = hour.divmod(24); off += o end
         if off != 0
           day += off
-          if month_days(year, mon) <= day
+          if month_days(year, mon) < day
             mon += 1
             if 12 < mon
               mon = 1
@@ -773,6 +773,12 @@ if __FILE__ == $0
       assert_equal(t, Time.xmlschema("1999-01-01T01:00:00+01:00"))
       assert_equal(t, Time.xmlschema("1999-01-01T00:00:00+00:00"))
       assert_equal(t, Time.xmlschema("1998-12-31T23:00:00-01:00"))
+    end
+
+    def test_ruby_talk_152866
+      t = Time::xmlschema('2005-08-30T22:48:00-07:00')
+      assert_equal(31, t.day)
+      assert_equal(8, t.mon)
     end
   end
 end
