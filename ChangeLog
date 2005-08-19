@@ -1,3 +1,8 @@
+Fri Aug 19 18:13:39 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time.apply_offset): fix a problem with last day of
+	  month.  reported by Lucas Nussbaum.  [ruby-talk:152866]
+
 Thu Aug 18 11:05:36 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (socketpair_internal): need to call open_ifs_socket()
