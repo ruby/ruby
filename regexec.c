@@ -1170,7 +1170,7 @@ code_is_in_cclass_node(void* node, OnigCodePoint code, int enclen)
   unsigned int in_cc;
   CClassNode* cc = (CClassNode* )node;
 
-  if (enclen == 1) {
+  if (enclen == 1 && code < SINGLE_BYTE_SIZE) {
     in_cc = BITSET_AT(cc->bs, code);
   }
   else {

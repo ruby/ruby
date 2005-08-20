@@ -6325,8 +6325,8 @@ parser_yylex(parser)
 	}
 
       case ')':
-	paren_nest--;
       case ']':
+	paren_nest--;
       case '}':
 	COND_LEXPOP();
 	CMDARG_LEXPOP();
@@ -6452,6 +6452,7 @@ parser_yylex(parser)
 	return c;
 
       case '[':
+	paren_nest++;
 	if (lex_state == EXPR_FNAME || lex_state == EXPR_DOT) {
 	    lex_state = EXPR_ARG;
 	    if ((c = nextc()) == ']') {
