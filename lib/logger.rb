@@ -1,4 +1,7 @@
-#
+# logger.rb - saimple logging utility
+# Copyright (C) 2000-2003, 2005  NAKAMURA, Hiroshi <nakahiro@sarion.co.jp>.
+
+
 # = logger.rb
 #
 # Simple logging utility.
@@ -19,7 +22,6 @@
 #
 # The Logger class provides a simple but sophisticated logging utility that
 # anyone can use because it's included in the Ruby 1.8.x standard library.
-# For more advanced logging, see the "Log4r" package on the RAA.
 #
 # The HOWTOs below give a code-based overview of Logger's usage, but the basic
 # concept is as follows.  You create a Logger object (output to a file or
@@ -75,10 +77,6 @@
 # auto-rolling of log files, setting the format of log messages, and
 # specifying a program name in conjunction with the message.  The next section
 # shows you how to achieve these things.
-#
-# See http://raa.ruby-lang.org/list.rhtml?name=log4r for Log4r, which contains
-# many advanced features like file-based configuration, a wide range of
-# logging targets, simultaneous logging, and hierarchical logging.
 #
 #
 # == HOWTOs
@@ -174,6 +172,11 @@
 # There is currently no supported way to change the overall format, but you may
 # have some luck hacking the Format constant.
 #
+
+
+require 'monitor'
+
+
 class Logger
   /: (\S+),v (\S+)/ =~ %q$Id$
   ProgName = "#{$1}/#{$2}"
@@ -490,6 +493,8 @@ private
     #
     def initialize(log = nil, opt = {})
       @dev = @filename = @shift_age = @shift_size = nil
+      @mutex = Object.new
+      @mutex.extend(MonitorMixin)
       if log.respond_to?(:write) and log.respond_to?(:close)
 	@dev = log
       else
@@ -508,22 +513,25 @@ private
     # mixed.
     #
     def write(message)
-      if shift_log?
-       	begin
-  	  shift_log
-   	rescue
-  	  raise Logger::ShiftingError.new("Shifting failed. #{$!}")
-   	end
+      @mutex.synchronize do
+        if @shift_age and @dev.respond_to?(:stat)
+          begin
+            check_shift_log
+          rescue
+            raise Logger::ShiftingError.new("Shifting failed. #{$!}")
+          end
+        end
+        @dev.write(message)
       end
-
-      @dev.write(message)
     end
 
     #
     # Close the logging device.
     #
     def close
-      @dev.close
+      @mutex.synchronize do
+        @dev.close
+      end
     end
 
   private
@@ -551,64 +559,55 @@ private
 
     SiD = 24 * 60 * 60
 
-    def shift_log?
-      if !@shift_age or !@dev.respond_to?(:stat)
-     	return false
-      end
-      if (@shift_age.is_a?(Integer))
-	# Note: always returns false if '0'.
-	return (@filename && (@shift_age > 0) && (@dev.stat.size > @shift_size))
+    def check_shift_log
+      if @shift_age.is_a?(Integer)
+        # Note: always returns false if '0'.
+        if @filename && (@shift_age > 0) && (@dev.stat.size > @shift_size)
+          shift_log_age
+        end
       else
-	now = Time.now
-	limit_time = case @shift_age
-	  when /^daily$/
-	    eod(now - 1 * SiD)
-	  when /^weekly$/
-	    eod(now - ((now.wday + 1) * SiD))
-	  when /^monthly$/
-	    eod(now - now.mday * SiD)
-	  else
-	    now
-	  end
-	return (@dev.stat.mtime <= limit_time)
+        now = Time.now
+        if @dev.stat.mtime <= previous_period_end(now)
+          shift_log_period(now)
+        end
       end
     end
 
-    def shift_log
-      # At first, close the device if opened.
-      if @dev
-      	@dev.close
-       	@dev = nil
+    def shift_log_age
+      (@shift_age-3).downto(0) do |i|
+        if FileTest.exist?("#{@filename}.#{i}")
+          File.rename("#{@filename}.#{i}", "#{@filename}.#{i+1}")
+        end
       end
-      if (@shift_age.is_a?(Integer))
-	(@shift_age-3).downto(0) do |i|
-	  if (FileTest.exist?("#{@filename}.#{i}"))
-	    File.rename("#{@filename}.#{i}", "#{@filename}.#{i+1}")
-	  end
-	end
-	File.rename("#{@filename}", "#{@filename}.0")
-      else
-	now = Time.now
-	postfix_time = case @shift_age
-	  when /^daily$/
-	    eod(now - 1 * SiD)
-	  when /^weekly$/
-	    eod(now - ((now.wday + 1) * SiD))
-	  when /^monthly$/
-	    eod(now - now.mday * SiD)
-	  else
-	    now
-	  end
-	postfix = postfix_time.strftime("%Y%m%d")	# YYYYMMDD
-	age_file = "#{@filename}.#{postfix}"
-	if (FileTest.exist?(age_file))
-	  raise RuntimeError.new("'#{ age_file }' already exists.")
-	end
-	File.rename("#{@filename}", age_file)
-      end
-
+      @dev.close
+      File.rename("#{@filename}", "#{@filename}.0")
       @dev = create_logfile(@filename)
       return true
+    end
+
+    def shift_log_period(now)
+      postfix = previous_period_end(now).strftime("%Y%m%d")	# YYYYMMDD
+      age_file = "#{@filename}.#{postfix}"
+      if FileTest.exist?(age_file)
+        raise RuntimeError.new("'#{ age_file }' already exists.")
+      end
+      @dev.close
+      File.rename("#{@filename}", age_file)
+      @dev = create_logfile(@filename)
+      return true
+    end
+
+    def previous_period_end(now)
+      case @shift_age
+      when /^daily$/
+        eod(now - 1 * SiD)
+      when /^weekly$/
+        eod(now - ((now.wday + 1) * SiD))
+      when /^monthly$/
+        eod(now - now.mday * SiD)
+      else
+        now
+      end
     end
 
     def eod(t)

@@ -90,15 +90,9 @@ class TestLogger < Test::Unit::TestCase
     logger = Logger.new(dummy)
     log = log_add(logger, INFO, "foo")
     assert_match(/^\d\d\d\d-\d\d-\d\dT\d\d:\d\d:\d\d.\s*\d+ $/, log.datetime)
-    # [ruby-dev:24828]
-    #logger.datetime_format = "%d%b%Y@%H:%M:%S"
-    #log = log_add(logger, INFO, "foo")
-    #assert_match(/^\d\d\w\w\w\d\d\d\d@\d\d:\d\d:\d\d$/, log.datetime)
-    #
-    # don't run the next test at 23:59, or just run again if failed.
-    logger.datetime_format = "@%d%b%Y@"
+    logger.datetime_format = "%d%b%Y@%H:%M:%S"
     log = log_add(logger, INFO, "foo")
-    assert_equal(Time.now.strftime("@%d%b%Y@"), log.datetime)
+    assert_match(/^\d\d\w\w\w\d\d\d\d@\d\d:\d\d:\d\d$/, log.datetime)
     logger.datetime_format = ""
     log = log_add(logger, INFO, "foo")
     assert_match(/^$/, log.datetime)
@@ -278,5 +272,73 @@ class TestLogDevice < Test::Unit::TestCase
     logdev.close
     assert(w.closed?)
     r.close
+  end
+
+  def test_shifting_size
+    logfile = File.basename(__FILE__) + '_1.log'
+    logfile0 = logfile + '.0'
+    logfile1 = logfile + '.1'
+    logfile2 = logfile + '.2'
+    logfile3 = logfile + '.3'
+    File.unlink(logfile) if File.exist?(logfile)
+    File.unlink(logfile0) if File.exist?(logfile0)
+    File.unlink(logfile1) if File.exist?(logfile1)
+    File.unlink(logfile2) if File.exist?(logfile2)
+    logger = Logger.new(logfile, 4, 100)
+    logger.error("0" * 15)
+    assert(File.exist?(logfile))
+    assert(!File.exist?(logfile0))
+    logger.error("0" * 15)
+    assert(File.exist?(logfile0))
+    assert(!File.exist?(logfile1))
+    logger.error("0" * 15)
+    assert(File.exist?(logfile1))
+    assert(!File.exist?(logfile2))
+    logger.error("0" * 15)
+    assert(File.exist?(logfile2))
+    assert(!File.exist?(logfile3))
+    logger.error("0" * 15)
+    assert(!File.exist?(logfile3))
+    logger.error("0" * 15)
+    assert(!File.exist?(logfile3))
+    File.unlink(logfile)
+    File.unlink(logfile0)
+    File.unlink(logfile1)
+    File.unlink(logfile2)
+
+    logfile = File.basename(__FILE__) + '_2.log'
+    logfile0 = logfile + '.0'
+    logfile1 = logfile + '.1'
+    logfile2 = logfile + '.2'
+    logfile3 = logfile + '.3'
+    logger = Logger.new(logfile, 4, 150)
+    logger.error("0" * 15)
+    assert(File.exist?(logfile))
+    assert(!File.exist?(logfile0))
+    logger.error("0" * 15)
+    assert(!File.exist?(logfile0))
+    logger.error("0" * 15)
+    assert(File.exist?(logfile0))
+    assert(!File.exist?(logfile1))
+    logger.error("0" * 15)
+    assert(!File.exist?(logfile1))
+    logger.error("0" * 15)
+    assert(File.exist?(logfile1))
+    assert(!File.exist?(logfile2))
+    logger.error("0" * 15)
+    assert(!File.exist?(logfile2))
+    logger.error("0" * 15)
+    assert(File.exist?(logfile2))
+    assert(!File.exist?(logfile3))
+    logger.error("0" * 15)
+    assert(!File.exist?(logfile3))
+    logger.error("0" * 15)
+    assert(!File.exist?(logfile3))
+    logger.error("0" * 15)
+    assert(!File.exist?(logfile3))
+    File.unlink(logfile)
+    File.unlink(logfile0)
+    File.unlink(logfile1)
+    File.unlink(logfile2)
   end
 end
