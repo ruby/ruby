@@ -1,3 +1,10 @@
+Sat Aug 20 22:37:13 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/logger.rb (write, shift_log?, shift_log): file shifting race
+	  condition bug fixed.  [ruby-dev:26764]
+
+	* test/logger/test_logger.rb: tests.
+
 Fri Aug 19 18:13:39 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.apply_offset): fix a problem with last day of
