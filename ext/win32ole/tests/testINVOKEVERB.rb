@@ -26,15 +26,13 @@ class TestInvokeVerb < Test::Unit::TestCase
     # Yes, I know the string in the Windows 2000 Japanese Edition.
     # But I do not know about the string in any other Windows.
     # 
-    @fi2.verbs.each do |v|
-      #
-      # We expect the 'Create Shortcut' string is end with '(&S)'.
-      #
-      if /.*\(\&S\)$/ =~ v.name
-        @shortcut = v.name
-        break
-      end
-    end
+    verbs = @fi2.verbs
+    verbs.extend(Enumerable)
+    @shortcut = verbs.collect{|verb| 
+      verb.name
+    }.find {|name|
+      /.*\(\&S\)$/ =~ name
+    }
   end
 
   def test_invokeverb
