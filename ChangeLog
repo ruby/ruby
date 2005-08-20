@@ -1,4 +1,10 @@
-Sat Aug 20 2005 22:05:25 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
+Sun Aug 21 00:10:23 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/wsdl/xmlSchema/importer.rb (WSDL::XMLSchema::Importer#fetch): add
+	  a workaround for importing an WSDL whose path begins with drive
+	  letter.  [ruby-dev:26242]
+
+Sat Aug 20 22:05:25 2005  K.Kosako <sndgk393 AT ybb.ne.jp>
 
 	* regexec.c (code_is_in_cclass_node): check code size.
 	  [ruby-dev:26840]
