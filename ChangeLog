@@ -1,3 +1,9 @@
+Tue Aug 23 06:07:02 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/lib/digest.rb: added SHA224, SHA256, SHA384 and SHA512.
+	  these features are enabled if this library is compiled with
+	  OpenSSL 0.9.8 or later.
+
 Tue Aug 23 05:47:04 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ns_spki.c (ossl_spki_initialize): try to decode
