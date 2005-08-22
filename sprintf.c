@@ -868,6 +868,7 @@ ruby__sfvwrite(fp, uio)
     if ((len = uio->uio_resid) == 0)
 	return 0;
     CHECK(len);
+    buf += blen;
     fp->_w = bsiz;
     for (iov = uio->uio_iov; len > 0; ++iov) {
 	MEMCPY(buf, iov->iov_base, char, n = iov->iov_len);

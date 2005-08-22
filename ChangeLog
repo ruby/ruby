@@ -1,3 +1,8 @@
+Tue Aug 23 01:11:40 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* sprintf.c (ruby__sfvwrite): should move `buf' to the end of
+	  `result'. [ruby-dev:26859]
+
 Mon Aug 22 23:51:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y: ONIG_OPTION_CAPTURE_GROUP conflicts with
