@@ -400,7 +400,7 @@ ossl_x509req_set_attributes(VALUE self, VALUE ary)
     X509_REQ *req;
     X509_ATTRIBUTE *attr;
     int i;
-    VALUE tmp, item;
+    VALUE item;
 
     Check_Type(ary, T_ARRAY);
     for (i=0;i<RARRAY(ary)->len; i++) {

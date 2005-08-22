@@ -477,7 +477,7 @@ ossl_sslctx_set_ciphers(VALUE self, VALUE v)
         return Qnil;
     }
     if (!SSL_CTX_set_cipher_list(ctx, RSTRING(str)->ptr)) {
-        ossl_raise(eSSLError, "SSL_CTX_set_ciphers:");
+        ossl_raise(eSSLError, "SSL_CTX_set_cipher_list:");
     }
 
     return v;

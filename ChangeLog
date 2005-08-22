@@ -1,3 +1,26 @@
+Tue Aug 23 05:47:04 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_ns_spki.c (ossl_spki_initialize): try to decode
+	  the argument as a string.
+
+	* ext/openssl/ossl_ns_pki.c (ossl_spki_to_der): new method.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_initialize): should
+	  set @time to avoid warning.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_set_default_paths,
+	  X509_STORE_add_cert, X509_STORE_add_crl): should raise error if
+	  wrapped functions fails.
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_set_ciphers): fix error message.
+
+	* ext/openssl/ossl_x509req.c (ossl_x509req_set_attributes): get rid
+	  of unused variable.
+
+	* test/openssl/test_ns_spki.rb: add new file.
+
+	* test/openssl/test_x509store.rb: add test for error.
+
 Tue Aug 23 01:11:40 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* sprintf.c (ruby__sfvwrite): should move `buf' to the end of
