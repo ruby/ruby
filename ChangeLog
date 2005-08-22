@@ -1,3 +1,8 @@
+Mon Aug 22 20:11:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* missing/vsnprintf.c (BSD__sprint): needs to call vwrite function
+	  pointer.  fixed: [ruby-dev:26854]
+
 Sat Aug 20 23:55:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* parse.y (parser_yylex): update paren_nest for brackets [].

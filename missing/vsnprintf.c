@@ -324,7 +324,7 @@ BSD__sprint(fp, uio)
 		uio->uio_iovcnt = 0;
 		return (0);
 	}
-	err = BSD__sfvwrite(fp, uio);
+	err = (*fp->vwrite)(fp, uio);
 	uio->uio_resid = 0;
 	uio->uio_iovcnt = 0;
 	return (err);
