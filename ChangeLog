@@ -1,3 +1,8 @@
+Mon Aug 22 23:51:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* parse.y: ONIG_OPTION_CAPTURE_GROUP conflicts with
+	  RE_OPTION_ONCE.  [ruby-dev:26852]
+
 Mon Aug 22 20:11:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* missing/vsnprintf.c (BSD__sprint): needs to call vwrite function

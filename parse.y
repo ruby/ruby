@@ -318,7 +318,7 @@ static void top_local_setup_gen _((struct parser_params*));
 static int lvar_defined_gen _((struct parser_params*, ID));
 #define lvar_defined(id) lvar_defined_gen(parser, id)
 
-#define RE_OPTION_ONCE 0x80
+#define RE_OPTION_ONCE (1<<16)
 
 #define NODE_STRTERM NODE_ZARRAY	/* nothing to gc */
 #define NODE_HEREDOC NODE_ARRAY 	/* 1, 3 to gc */
