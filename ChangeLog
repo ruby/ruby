@@ -1,3 +1,9 @@
+Wed Aug 24 11:01:26 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/logger/test_logger.rb (test_shifting_size): should close log
+	  device before unlink, since some platform cannot unlink opened
+	  file.
+
 Tue Aug 23 06:07:02 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/lib/digest.rb: added SHA224, SHA256, SHA384 and SHA512.
