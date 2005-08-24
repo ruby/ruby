@@ -12,6 +12,7 @@ module URI
   
   #
   # Base class for all URI classes.
+  # Implements generic URI syntax as per RFC 2396.
   #
   class Generic
     include URI

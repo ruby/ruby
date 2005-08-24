@@ -6,14 +6,14 @@
 
 # But for now
 
+English.rb
 abbrev.rb
 base64.rb
 benchmark.rb
-cgi.rb
 cgi
+cgi.rb
 complex.rb
 date.rb
-English.rb
 fileutils.rb
 find.rb
 generator.rb
@@ -32,4 +32,5 @@ test/unit.rb
 thread.rb
 thwait.rb
 time.rb
+uri
 yaml.rb

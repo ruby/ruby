@@ -40,7 +40,13 @@ class GetoptLong
   class InvalidOption    < Error; end
 
   #
-  # Initializer.
+  # The arguments are passed to new() as an array of arrays. Each
+  # subarray has a number of option names which carry the same
+  # meaning, and a ARGUMENT_FLAG, being one of
+  # GetoptLong::NO_ARGUMENT, GetoptLong::REQUIRED_ARGUMENT or
+  # GetoptLong::OPTIONAL_ARGUMENT.  These determine whether the
+  # option takes an argument or not, or whether it is optional The
+  # actual processing is done later with #each().
   #
   def initialize(*arguments)
     #
@@ -103,7 +109,11 @@ class GetoptLong
   end
 
   #
-  # Set ordering.
+  # Set the handling of the ordering of options.  The supplied
+  # argument ordering must be a member of ORDERINGS, i.e one of
+  # GetoptLong::REQUIRE_ORDER, GetoptLong::PERMUTE,
+  # GetoptLong::RETURN_IN_ORDER.  A RuntimeError is raised if
+  # option processin has already started.
   #
   def ordering=(ordering)
     #
@@ -250,7 +260,7 @@ class GetoptLong
   end
 
   #
-  # Set an error (protected).
+  # Set an error (a protected method).
   #
   def set_error(type, message)
     $deferr.print("#{$0}: #{message}\n") if !@quiet
@@ -285,6 +295,8 @@ class GetoptLong
 
   #
   # Get next option name and its argument as an array.
+  # Return nil if the processing is complete (as determined by
+  # STATUS_TERMINATED).
   #
   def get
     option_name, option_argument = nil, ''
@@ -451,7 +463,8 @@ class GetoptLong
   alias get_option get
 
   #
-  # Iterator version of `get'.
+  # Iterator version of `get', passes the option and the
+  # corresponding argument to the supplied block for processing.
   #
   def each
     loop do
