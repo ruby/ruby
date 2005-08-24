@@ -301,6 +301,7 @@ class TestLogDevice < Test::Unit::TestCase
     assert(!File.exist?(logfile3))
     logger.error("0" * 15)
     assert(!File.exist?(logfile3))
+    logger.close
     File.unlink(logfile)
     File.unlink(logfile0)
     File.unlink(logfile1)
@@ -336,6 +337,7 @@ class TestLogDevice < Test::Unit::TestCase
     assert(!File.exist?(logfile3))
     logger.error("0" * 15)
     assert(!File.exist?(logfile3))
+    logger.close
     File.unlink(logfile)
     File.unlink(logfile0)
     File.unlink(logfile1)

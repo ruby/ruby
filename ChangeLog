@@ -1,3 +1,9 @@
+Wed Aug 24 10:53:28 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/logger/test_logger.rb (test_shifting_size): should close log
+	  device before unlink, since some platform cannot unlink opened
+	  file.
+
 Sun Aug 21 00:13:27 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/wsdl/xmlSchema/importer.rb (WSDL::XMLSchema::Importer#fetch): add
