@@ -1007,7 +1007,7 @@ ole_val2olevariantdata(val, vtype, pvar)
         } else {
             VariantInit(&var);
             hr = VariantChangeTypeEx(&(var), &(pvar->realvar), 
-                                     LOCALE_SYSTEM_DEFAULT, 0, vtype & ~VT_BYREF);
+                                     LOCALE_SYSTEM_DEFAULT, 0, (VARTYPE)(vtype & ~VT_BYREF));
             if (SUCCEEDED(hr)) {
                 VariantClear(&(pvar->realvar));
                 hr = VariantCopy(&(pvar->realvar), &var);
@@ -6861,7 +6861,6 @@ folevariant_initialize(self, args)
     VALUE val;
     VALUE vvt;
     VARTYPE vt;
-    HRESULT hr;
     struct olevariantdata *pvar;
 
     len = RARRAY(args)->len;
