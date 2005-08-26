@@ -31,6 +31,8 @@ module IRB
         Kconv::EUC
       when "ja_JP.sjis", "ja_JP.SJIS"
         Kconv::SJIS
+      when /ja_JP.utf-?8/i
+	Kconv::UTF8
       end
     end
     private :lc2kconv
