@@ -49,7 +49,7 @@ while TRUE
   n = 0
   while TRUE
     c = getch.chr
-    if c =~ "[0-9]" then
+    if c =~ /[0-9]/
       n = 10 * n + c.to_i
     else
       break

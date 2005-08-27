@@ -1,3 +1,13 @@
+Sat Aug 27 20:20:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/curses/curses.c ({curses,window}_clrtoeol): added. suggested
+	  by Reyn Vlietstra.
+
+	* ext/curses/curses.c: chtype in curses is not `char', rahter `long'.
+	  [ruby-Bugs:2298]
+
+	* ext/curses/view.rb: String =~ String is deprecated.
+
 Wed Aug 24 10:53:28 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/logger/test_logger.rb (test_shifting_size): should close log
@@ -44,7 +54,7 @@ Mon Aug 15 00:38:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* eval.c (rb_rescue2): reduce PUSH_TAG() as well as NODE_RESCUE.
 	  [ruby-dev:26800]
 
-	* range.c (range_check, range_init): reduce uselse exceptions.
+	* range.c (range_check, range_init): reduce useless exceptions.
 
 Sat Aug 13 18:51:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
