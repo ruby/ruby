@@ -1,3 +1,13 @@
+Sat Aug 27 20:13:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* ext/curses/curses.c ({curses,window}_clrtoeol): added. suggested
+	  by Reyn Vlietstra.
+
+	* ext/curses/curses.c: chtype in curses is not `char', rahter `long'.
+	  [ruby-Bugs:2298]
+
+	* ext/curses/view.rb: String =~ String is deprecated.
+
 Thu Aug 25 15:48:58 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/win32ole/win32ole.c: supress warnings. (win32)

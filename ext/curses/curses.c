@@ -54,6 +54,9 @@
 # define USE_MOUSE 1
 #endif
 
+#define NUM2CH NUM2LONG
+#define CH2FIX LONG2FIX
+
 static VALUE mCurses;
 static VALUE mKey;
 static VALUE cWindow;
@@ -180,6 +183,15 @@ curses_clear(obj)
 {
     curses_stdscr();
     wclear(stdscr);
+    return Qnil;
+}
+
+/* def clrtoeol */
+static VALUE
+curses_clrtoeol()
+{
+    curses_stdscr();
+    clrtoeol();
     return Qnil;
 }
 
@@ -362,7 +374,7 @@ curses_inch(obj)
     VALUE obj;
 {
     curses_stdscr();
-    return CHR2FIX(inch());
+    return CH2FIX(inch());
 }
 
 /* def addch(ch) */
@@ -372,7 +384,7 @@ curses_addch(obj, ch)
     VALUE ch;
 {
     curses_stdscr();
-    addch(NUM2CHR(ch));
+    addch(NUM2CH(ch));
     return Qnil;
 }
 
@@ -383,7 +395,7 @@ curses_insch(obj, ch)
     VALUE ch;
 {
     curses_stdscr();
-    insch(NUM2CHR(ch));
+    insch(NUM2CH(ch));
     return Qnil;
 }
 
@@ -547,7 +559,7 @@ static VALUE
 curses_bkgdset(VALUE obj, VALUE ch)
 {
 #ifdef HAVE_BKGDSET
-  bkgdset(NUM2CHR(ch));
+  bkgdset(NUM2CH(ch));
 #endif
   return Qnil;
 }
@@ -556,7 +568,7 @@ static VALUE
 curses_bkgd(VALUE obj, VALUE ch)
 {
 #ifdef HAVE_BKGD
-  return (bkgd(NUM2CHR(ch)) == OK) ? Qtrue : Qfalse;
+  return (bkgd(NUM2CH(ch)) == OK) ? Qtrue : Qfalse;
 #else
   return Qfalse;
 #endif
@@ -829,6 +841,19 @@ window_clear(obj)
     return Qnil;
 }
 
+/* def clrtoeol */
+static VALUE
+window_clrtoeol(obj)
+    VALUE obj;
+{
+    struct windata *winp;
+    
+    GetWINDOW(obj, winp);
+    wclrtoeol(winp->window);
+    
+    return Qnil;
+}
+
 /* def refresh */
 static VALUE
 window_refresh(obj)
@@ -1002,13 +1027,13 @@ window_box(argc, argv, self)
     rb_scan_args(argc, argv, "21", &vert, &hor, &corn);
 
     GetWINDOW(self, winp);
-    box(winp->window, NUM2CHR(vert), NUM2CHR(hor));
+    box(winp->window, NUM2CH(vert), NUM2CH(hor));
 
     if (!NIL_P(corn)) {
       int cur_x, cur_y, x, y;
-      char c;
+      chtype c;
 
-      c = NUM2CHR(corn);
+      c = NUM2CH(corn);
       getyx(winp->window, cur_y, cur_x);
       x = NUM2INT(window_maxx(self)) - 1;
       y = NUM2INT(window_maxy(self)) - 1;
@@ -1058,7 +1083,7 @@ window_inch(obj)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    return CHR2FIX(winch(winp->window));
+    return CH2FIX(winch(winp->window));
 }
 
 /* def addch(ch) */
@@ -1070,7 +1095,7 @@ window_addch(obj, ch)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    waddch(winp->window, NUM2CHR(ch));
+    waddch(winp->window, NUM2CH(ch));
     
     return Qnil;
 }
@@ -1084,7 +1109,7 @@ window_insch(obj, ch)
     struct windata *winp;
     
     GetWINDOW(obj, winp);
-    winsch(winp->window, NUM2CHR(ch));
+    winsch(winp->window, NUM2CH(ch));
     
     return Qnil;
 }
@@ -1313,7 +1338,7 @@ window_bkgdset(VALUE obj, VALUE ch)
   struct windata *winp;
 
   GetWINDOW(obj,winp);
-  wbkgdset(winp->window, NUM2CHR(ch));
+  wbkgdset(winp->window, NUM2CH(ch));
 #endif
   return Qnil;
 }
@@ -1325,7 +1350,7 @@ window_bkgd(VALUE obj, VALUE ch)
   struct windata *winp;
 
   GetWINDOW(obj,winp);
-  return (wbkgd(winp->window, NUM2CHR(ch)) == OK) ? Qtrue : Qfalse;
+  return (wbkgd(winp->window, NUM2CH(ch)) == OK) ? Qtrue : Qfalse;
 #else
   return Qfalse;
 #endif
@@ -1335,11 +1360,11 @@ static VALUE
 window_getbkgd(VALUE obj)
 {
 #ifdef HAVE_WGETBKGD
-  char c;
+  chtype c;
   struct windata *winp;
 
   GetWINDOW(obj,winp);
-  return (c = getbkgd(winp->window) != ERR) ? CHR2FIX(c) : Qnil;
+  return (c = getbkgd(winp->window) != ERR) ? CH2FIX(c) : Qnil;
 #else
   return Qnil;
 #endif
@@ -1439,6 +1464,7 @@ Init_curses()
     rb_define_module_function(mCurses, "refresh", curses_refresh, 0);
     rb_define_module_function(mCurses, "doupdate", curses_doupdate, 0);
     rb_define_module_function(mCurses, "clear", curses_clear, 0);
+    rb_define_module_function(mCurses, "clrtoeol", curses_clrtoeol, 0);
     rb_define_module_function(mCurses, "echo", curses_echo, 0);
     rb_define_module_function(mCurses, "noecho", curses_noecho, 0);
     rb_define_module_function(mCurses, "raw", curses_raw, 0);
@@ -1506,6 +1532,7 @@ Init_curses()
     rb_define_method(cWindow, "subwin", window_subwin, 4);
     rb_define_method(cWindow, "close", window_close, 0);
     rb_define_method(cWindow, "clear", window_clear, 0);
+    rb_define_method(cWindow, "clrtoeol", window_clrtoeol, 0);
     rb_define_method(cWindow, "refresh", window_refresh, 0);
     rb_define_method(cWindow, "noutrefresh", window_noutrefresh, 0);
     rb_define_method(cWindow, "box", window_box, -1);
