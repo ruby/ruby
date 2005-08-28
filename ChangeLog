@@ -1,3 +1,8 @@
+Mon Aug 29 01:19:57 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb (Time.parse): extract fractional seconds using
+	  Date._parse.  [ruby-talk:153859]
+
 Sat Aug 27 20:20:01 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/curses/curses.c ({curses,window}_clrtoeol): added. suggested
