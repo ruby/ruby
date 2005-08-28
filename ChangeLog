@@ -1,3 +1,10 @@
+Mon Aug 29 00:35:09 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/time.rb: require 'date/format' instead of 'parsedate'.
+	  (Time.parse): extract fractional seconds using Date._parse.
+	  (Time.strptime): extract fractional seconds using Date._strptime.
+	  [ruby-talk:153859]
+
 Sat Aug 27 20:13:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/curses/curses.c ({curses,window}_clrtoeol): added. suggested

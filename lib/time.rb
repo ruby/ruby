@@ -7,7 +7,7 @@
 #   * date-time defined by RFC 2822
 #   * HTTP-date defined by RFC 2616
 #   * dateTime defined by XML Schema Part 2: Datatypes (ISO 8601)
-#   * various formats handled by ParseDate (string to time only)
+#   * various formats handled by Date._parse (string to time only)
 # 
 # == Design Issues
 # 
@@ -40,7 +40,7 @@
 # $Id$
 #
 
-require 'parsedate'
+require 'date/format'
 
 #
 # Implements the extensions to the Time class that are described in the
@@ -148,7 +148,9 @@ class Time
     end
     private :apply_offset
 
-    def make_time(year, mon, day, hour, min, sec, zone, now)
+    def make_time(year, mon, day, hour, min, sec, sec_fraction, zone, now)
+      usec = nil
+      usec = (sec_fraction * 1000000).to_i if sec_fraction
       if now
         begin
           break if year; year = now.year
@@ -157,6 +159,7 @@ class Time
           break if hour; hour = now.hour
           break if min; min = now.min
           break if sec; sec = now.sec
+          break if sec_fraction; usec = now.tv_usec
         end until true
       end
 
@@ -166,6 +169,7 @@ class Time
       hour ||= 0
       min ||= 0
       sec ||= 0
+      usec ||= 0
 
       off = nil
       off = zone_offset(zone, year) if zone
@@ -173,17 +177,17 @@ class Time
       if off
         year, mon, day, hour, min, sec =
           apply_offset(year, mon, day, hour, min, sec, off)
-        t = Time.utc(year, mon, day, hour, min, sec)
+        t = Time.utc(year, mon, day, hour, min, sec, usec)
         t.localtime if !zone_utc?(zone)
         t
       else
-        Time.local(year, mon, day, hour, min, sec)
+        Time.local(year, mon, day, hour, min, sec, usec)
       end
     end
     private :make_time
 
     #
-    # Parses +date+ using ParseDate.parsedate and converts it to a Time object.
+    # Parses +date+ using Date._parse and converts it to a Time object.
     #
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
@@ -221,7 +225,7 @@ class Time
     # If the extracted timezone abbreviation does not match any of them,
     # it is ignored and the given time is regarded as a local time.
     #
-    # ArgumentError is raised if ParseDate cannot extract information from
+    # ArgumentError is raised if Date._parse cannot extract information from
     # +date+ or Time class cannot represent specified date.
     #
     # This method can be used as fail-safe for other parsing methods as:
@@ -233,22 +237,25 @@ class Time
     # A failure for Time.parse should be checked, though.
     #
     def parse(date, now=Time.now)
-      year, mon, day, hour, min, sec, zone, _ = ParseDate.parsedate(date)
+      d = Date._parse(date, false)
+      year = d[:year]
       year = yield(year) if year && block_given?
-      make_time(year, mon, day, hour, min, sec, zone, now)
+      make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
     end
 
     #
-    # Parses +date+ using ParseDate.strptime and converts it to a Time object.
+    # Parses +date+ using Date._strptime and converts it to a Time object.
     #
     # If a block is given, the year described in +date+ is converted by the
     # block.  For example:
     #
     #     Time.strptime(...) {|y| y < 100 ? (y >= 69 ? y + 1900 : y + 2000) : y}
     def strptime(date, format, now=Time.now)
-      year, mon, day, hour, min, sec, zone, _ = ParseDate.strptime(date, format)
+      d = Date._strptime(date, format)
+      raise ArgumentError, "invalid strptime format - `#{format}'" unless d
+      year = d[:year]
       year = yield(year) if year && block_given?
-      make_time(year, mon, day, hour, min, sec, zone, now)
+      make_time(year, d[:mon], d[:mday], d[:hour], d[:min], d[:sec], d[:sec_fraction], d[:zone], now)
     end
 
     MonthValue = {
@@ -796,6 +803,14 @@ if __FILE__ == $0
       t = Time::xmlschema('2005-08-30T22:48:00-07:00')
       assert_equal(31, t.day)
       assert_equal(8, t.mon)
+    end
+
+    def test_parse_fraction
+      assert_equal(500000, Time.parse("2000-01-01T00:00:00.5+00:00").tv_usec)
+    end
+
+    def test_strptime
+      assert_equal(Time.utc(2005, 8, 28, 06, 54, 20), Time.strptime("28/Aug/2005:06:54:20 +0000", "%d/%b/%Y:%T %z"))
     end
   end
 end
