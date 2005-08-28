@@ -422,6 +422,74 @@ class Pathname
     @path.scan(%r{[^/]+}) { yield $& }
   end
 
+  # Iterates over and yields a new Pathname object
+  # for each element in the given path in descending order.
+  #
+  #  Pathname.new('/path/to/some/file.rb').descend {|v| p v}
+  #     #<Pathname:/>
+  #     #<Pathname:/path>
+  #     #<Pathname:/path/to>
+  #     #<Pathname:/path/to/some>
+  #     #<Pathname:/path/to/some/file.rb>
+  #
+  #  Pathname.new('path/to/some/file.rb').descend {|v| p v}
+  #     #<Pathname:path>
+  #     #<Pathname:path/to>
+  #     #<Pathname:path/to/some>
+  #     #<Pathname:path/to/some/file.rb>
+  #
+  def descend
+    paths = []
+    v = self
+    if absolute?
+      until v.root?
+        paths << v
+        v = v.dirname
+      end
+      paths << v
+    else
+      until v.to_s == '.'
+        paths << v
+        v = v.dirname
+      end
+    end
+    paths.reverse_each {|path| yield path }
+  end
+
+  # Iterates over and yields a new Pathname object
+  # for each element in the given path in ascending order.
+  #
+  #  Pathname.new('/path/to/some/file.rb').ascend {|v| p v}
+  #     #<Pathname:/path/to/some/file.rb>
+  #     #<Pathname:/path/to/some>
+  #     #<Pathname:/path/to>
+  #     #<Pathname:/path>
+  #     #<Pathname:/>
+  #
+  #  Pathname.new('path/to/some/file.rb').ascend {|v| p v}
+  #     #<Pathname:path/to/some/file.rb>
+  #     #<Pathname:path/to/some>
+  #     #<Pathname:path/to>
+  #     #<Pathname:path>
+  #
+  def ascend
+    paths = []
+    v = self
+    if absolute?
+      until v.root?
+        paths << v
+        v = v.dirname
+      end
+      paths << v
+    else
+      until v.to_s == '.'
+        paths << v
+        v = v.dirname
+      end
+    end
+    paths.each {|path| yield path }
+  end
+
   #
   # Pathname#+ appends a pathname fragment to this one to produce a new Pathname
   # object.
@@ -1202,6 +1270,34 @@ if $0 == __FILE__
       }
       assert_equal(1, count)
       assert_equal(2, result)
+    end
+
+    def test_descend_abs
+      rs = %w[/ /a /a/b /a/b/c]
+      Pathname.new("/a/b/c").descend {|v|
+        assert_equal(Pathname.new(rs.shift), v)
+      }
+    end
+
+    def test_descend_rel
+      rs = %w[a a/b a/b/c]
+      Pathname.new("a/b/c").descend {|v|
+        assert_equal(Pathname.new(rs.shift), v)
+      }
+    end
+
+    def test_ascend_abs
+      rs = %w[/a/b/c /a/b /a /]
+      Pathname.new("/a/b/c").ascend {|v|
+        assert_equal(Pathname.new(rs.shift), v)
+      }
+    end
+
+    def test_ascend_rel
+      rs = %w[a/b/c a/b a]
+      Pathname.new("a/b/c").ascend {|v|
+        assert_equal(Pathname.new(rs.shift), v)
+      }
     end
   end
 end

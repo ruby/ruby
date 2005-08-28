@@ -1,3 +1,8 @@
+Mon Aug 29 01:43:05 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#descend): new method.
+	  (Pathname#ascend): ditto.
+
 Mon Aug 29 00:35:09 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb: require 'date/format' instead of 'parsedate'.
