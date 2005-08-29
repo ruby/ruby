@@ -1,3 +1,10 @@
+Mon Aug 29 19:54:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/rdoc/usage.rb: improper exceptions. [ruby-dev:26870]
+
+	* lib/rdoc/usage.rb: support the case when non-ruby code exists before
+	  shebang. (this is needed when ri.bat is executed on windows)
+
 Mon Aug 29 01:19:57 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.parse): extract fractional seconds using
