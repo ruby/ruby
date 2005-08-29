@@ -139,7 +139,7 @@ module RDoc
   end
 
   def RDoc.find_comment(file)
-    catch (:exit) do
+    catch(:exit) do
       # skip leading blank lines
       0 while (line = gets(file)) && (line =~ /^\s*$/)
 
