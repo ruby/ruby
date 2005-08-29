@@ -1,3 +1,10 @@
+Mon Aug 29 18:58:05 2005 Keiju Ishitsuka <keiju@ruby-lang.org>
+	* lib/irb/init.rb: make IRB -I option that is same befavior for ruby.
+	  [ruby-dev:26872]
+	
+	* lib/irb/locale.rb: support to print help message when OS locale is
+	  ja_JP.utf-8. [ruby-dev:26872]
+	
 Mon Aug 29 01:43:05 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#descend): new method.
@@ -20,6 +27,7 @@ Sat Aug 27 20:13:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/curses/view.rb: String =~ String is deprecated.
 
+>>>>>>> 1.4509
 Thu Aug 25 15:48:58 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/win32ole/win32ole.c: supress warnings. (win32)
