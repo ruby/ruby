@@ -193,7 +193,7 @@ module IRB
       end
     end
     if RUBY_VERSION >= FEATURE_IOPT_CHANGE_VERSION
-      load_path.collect do |path|
+      load_path.collect! do |path|
 	/\A\.\// =~ path ? path : File.expand_path(path)
       end
     end
