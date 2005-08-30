@@ -1,3 +1,10 @@
+Tue Aug 30 23:49:34 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* array.c, dir.c, enum.c, hash.c, io.c, range.c, string.c, struct.c:
+	  let enumerable methods return Enumerator.  [ruby-dev:26924]
+
+	* intern.h (RETURN_ENUMERATOR): utility macro for enumerable methods.
+
 Tue Aug 30 23:25:45 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/debug.rb: no need to restart at exit.

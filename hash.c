@@ -833,6 +833,7 @@ rb_hash_select(hash)
 {
     VALUE result;
 
+    RETURN_ENUMERATOR(hash, 0, 0);
     result = rb_ary_new();
     rb_hash_foreach(hash, select_i, result);
     return result;
@@ -1011,6 +1012,7 @@ static VALUE
 rb_hash_each_value(hash)
     VALUE hash;
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_foreach(hash, each_value_i, 0);
     return hash;
 }
@@ -1043,6 +1045,7 @@ static VALUE
 rb_hash_each_key(hash)
     VALUE hash;
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_foreach(hash, each_key_i, 0);
     return hash;
 }
@@ -1077,6 +1080,7 @@ static VALUE
 rb_hash_each_pair(hash)
     VALUE hash;
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_foreach(hash, each_pair_i, 0);
     return hash;
 }
@@ -1114,6 +1118,7 @@ static VALUE
 rb_hash_each(hash)
     VALUE hash;
 {
+    RETURN_ENUMERATOR(hash, 0, 0);
     rb_hash_foreach(hash, each_i, 0);
     return hash;
 }
@@ -1930,6 +1935,7 @@ env_each_key(ehash)
     VALUE keys;
     long i;
 
+    RETURN_ENUMERATOR(ehash, 0, 0);
     rb_secure(4);
     keys = env_keys();
     for (i=0; i<RARRAY(keys)->len; i++) {
@@ -1965,6 +1971,7 @@ env_each_value(ehash)
     VALUE values = env_values();
     long i;
 
+    RETURN_ENUMERATOR(ehash, 0, 0);
     rb_secure(4);
     values = env_values();
     for (i=0; i<RARRAY(values)->len; i++) {
@@ -2010,6 +2017,7 @@ static VALUE
 env_each(ehash)
     VALUE ehash;
 {
+    RETURN_ENUMERATOR(ehash, 0, 0);
     return env_each_i(ehash, Qfalse);
 }
 
@@ -2017,6 +2025,7 @@ static VALUE
 env_each_pair(ehash)
     VALUE ehash;
 {
+    RETURN_ENUMERATOR(ehash, 0, 0);
     return env_each_i(ehash, Qtrue);
 }
 
@@ -2067,11 +2076,13 @@ env_values_at(argc, argv)
 }
 
 static VALUE
-env_select()
+env_select(ehash)
+    VALUE ehash;
 {
     VALUE result;
     char **env;
 
+    RETURN_ENUMERATOR(ehash, 0, 0);
     rb_secure(4);
     result = rb_ary_new();
     env = GET_ENVIRON(environ);

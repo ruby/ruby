@@ -542,6 +542,7 @@ dir_each(dir)
     struct dir_data *dirp;
     struct dirent *dp;
 
+    RETURN_ENUMERATOR(dir, 0, 0);
     GetDIR(dir, dirp);
     rewinddir(dirp->dir);
     for (dp = readdir(dirp->dir); dp != NULL; dp = readdir(dirp->dir)) {

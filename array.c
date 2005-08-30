@@ -992,6 +992,7 @@ rb_ary_index(argc, argv, ary)
     long i;
 
     if (rb_scan_args(argc, argv, "01", &val) == 0) {
+	RETURN_ENUMERATOR(ary, 0, 0);
 	for (i=0; i<RARRAY(ary)->len; i++) {
 	    if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
 		return LONG2NUM(i);
@@ -1033,6 +1034,7 @@ rb_ary_rindex(argc, argv, ary)
 
     if (rb_scan_args(argc, argv, "01", &val) == 0) {
 	while (i--) {
+	    RETURN_ENUMERATOR(ary, 0, 0);
 	    if (RTEST(rb_yield(RARRAY(ary)->ptr[i])))
 		return LONG2NUM(i);
 	    if (i > RARRAY(ary)->len) {
@@ -1246,6 +1248,7 @@ rb_ary_each(ary)
 {
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	rb_yield(RARRAY(ary)->ptr[i]);
     }
@@ -1273,6 +1276,7 @@ rb_ary_each_index(ary)
 {
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	rb_yield(LONG2NUM(i));
     }
@@ -1300,6 +1304,7 @@ rb_ary_reverse_each(ary)
 {
     long len = RARRAY(ary)->len;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     while (len--) {
 	rb_yield(RARRAY(ary)->ptr[len]);
 	if (RARRAY(ary)->len < len) {
@@ -1736,10 +1741,7 @@ rb_ary_collect(ary)
     long i;
     VALUE collect;
 
-    if (!rb_block_given_p()) {
-	return rb_ary_new4(RARRAY(ary)->len, RARRAY(ary)->ptr);
-    }
-
+    RETURN_ENUMERATOR(ary, 0, 0);
     collect = rb_ary_new2(RARRAY(ary)->len);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	rb_ary_push(collect, rb_yield(RARRAY(ary)->ptr[i]));
@@ -1767,6 +1769,7 @@ rb_ary_collect_bang(ary)
 {
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     rb_ary_modify(ary);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	rb_ary_store(ary, i, rb_yield(RARRAY(ary)->ptr[i]));
@@ -1851,6 +1854,7 @@ rb_ary_select(ary)
     VALUE result;
     long i;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     result = rb_ary_new2(RARRAY(ary)->len);
     for (i = 0; i < RARRAY(ary)->len; i++) {
 	if (RTEST(rb_yield(RARRAY(ary)->ptr[i]))) {
@@ -2027,6 +2031,7 @@ rb_ary_reject_bang(ary)
 {
     long i1, i2;
 
+    RETURN_ENUMERATOR(ary, 0, 0);
     rb_ary_modify(ary);
     for (i1 = i2 = 0; i1 < RARRAY(ary)->len; i1++) {
 	VALUE v = RARRAY(ary)->ptr[i1];
@@ -2055,6 +2060,7 @@ static VALUE
 rb_ary_reject(ary)
     VALUE ary;
 {
+    RETURN_ENUMERATOR(ary, 0, 0);
     ary = rb_ary_dup(ary);
     rb_ary_reject_bang(ary);
     return ary;

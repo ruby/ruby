@@ -2048,15 +2048,17 @@ str_gsub(argc, argv, str, bang)
     char *buf, *bp, *sp, *cp;
     int tainted = 0;
 
-    if (argc == 1 && rb_block_given_p()) {
+    switch (argc) {
+      case 1:
+	RETURN_ENUMERATOR(str, argc, argv);
 	iter = 1;
-    }
-    else if (argc == 2) {
+	break;
+      case 2:
 	repl = argv[1];
 	StringValue(repl);
 	if (OBJ_TAINTED(repl)) tainted = 1;
-    }
-    else {
+	break;
+      default:
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for 2)", argc);
     }
 
@@ -3692,6 +3694,8 @@ rb_str_each_line(argc, argv, str)
 	rs = rb_rs;
     }
 
+    RETURN_ENUMERATOR(str, argc, argv);
+
     if (NIL_P(rs)) {
 	rb_yield(str);
 	return str;
@@ -3751,6 +3755,7 @@ rb_str_each_byte(str)
 {
     long i;
 
+    RETURN_ENUMERATOR(str, 0, 0);
     for (i=0; i<RSTRING(str)->len; i++) {
 	rb_yield(INT2FIX(RSTRING(str)->ptr[i] & 0xff));
     }
@@ -4266,6 +4271,8 @@ rb_str_scan(str, pat)
     VALUE result;
     long start = 0;
     VALUE match = Qnil;
+
+    RETURN_ENUMERATOR(str, 1, &pat);
 
     pat = get_pat(pat, 1);
     if (!rb_block_given_p()) {

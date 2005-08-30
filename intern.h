@@ -143,6 +143,11 @@ NORETURN(void rb_cmperr _((VALUE, VALUE)));
 /* enum.c */
 /* enumerator.c */
 VALUE rb_enumeratorize _((VALUE, VALUE, int, VALUE *));
+#define RETURN_ENUMERATOR(obj, argc, argv) do {				\
+	if (!rb_block_given_p())					\
+	    return rb_enumeratorize(obj, ID2SYM(rb_frame_this_func()),	\
+				    argc, argv);			\
+    } while (0)
 /* error.c */
 RUBY_EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));

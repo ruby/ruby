@@ -17,15 +17,6 @@
 VALUE rb_mEnumerable;
 static ID id_each, id_eqq, id_cmp;
 
-static VALUE
-enumeratorize(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
-{
-    return rb_enumeratorize(obj, ID2SYM(rb_frame_this_func()), argc, argv);
-}
-
 VALUE
 rb_each(obj)
     VALUE obj;
@@ -123,8 +114,7 @@ enum_find(argc, argv, obj)
     VALUE if_none;
 
     rb_scan_args(argc, argv, "01", &if_none);
-    if (!rb_block_given_p())
-	return enumeratorize(argc, argv, obj);
+    RETURN_ENUMERATOR(obj, argc, argv);
     rb_iterate(rb_each, obj, find_i, (VALUE)&memo);
     if (memo != Qundef) {
 	return memo;
@@ -164,7 +154,7 @@ enum_find_all(obj)
 {
     VALUE ary;
     
-    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     ary = rb_ary_new();
     rb_iterate(rb_each, obj, find_all_i, ary);
@@ -199,7 +189,7 @@ enum_reject(obj)
 {
     VALUE ary;
     
-    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     ary = rb_ary_new();
     rb_iterate(rb_each, obj, reject_i, ary);
@@ -244,7 +234,7 @@ enum_collect(obj)
 {
     VALUE ary;
 
-    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     ary = rb_ary_new();
     rb_iterate(rb_each, obj, collect_i, ary);
@@ -363,7 +353,7 @@ enum_partition(obj)
 {
     VALUE ary[2];
 
-    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     ary[0] = rb_ary_new();
     ary[1] = rb_ary_new();
@@ -498,7 +488,7 @@ enum_sort_by(obj)
     VALUE ary;
     long i;
 
-    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     if (TYPE(obj) == T_ARRAY) {
 	ary  = rb_ary_new2(RARRAY(obj)->len);
@@ -787,7 +777,7 @@ enum_min_by(obj)
 {
     VALUE memo[2];
 
-    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     memo[0] = Qundef;
     memo[1] = Qnil;
@@ -831,7 +821,7 @@ enum_max_by(obj)
 {
     VALUE memo[2];
 
-    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     memo[0] = Qundef;
     memo[1] = Qnil;
@@ -907,7 +897,7 @@ enum_each_with_index(obj)
 {
     VALUE memo = 0;
 
-    if (!rb_block_given_p()) return enumeratorize(0, 0, obj);
+    RETURN_ENUMERATOR(obj, 0, 0);
 
     rb_iterate(rb_each, obj, each_with_index_i, (VALUE)&memo);
     return obj;

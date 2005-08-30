@@ -1851,6 +1851,7 @@ rb_io_each_line(argc, argv, io)
     VALUE str;
     VALUE rs;
 
+    RETURN_ENUMERATOR(io, argc, argv);
     if (argc == 0) {
 	rs = rb_rs;
     }
@@ -1885,6 +1886,7 @@ rb_io_each_byte(io)
     OpenFile *fptr;
     int c;
 
+    RETURN_ENUMERATOR(io, 0, 0);
     GetOpenFile(io, fptr);
 
     for (;;) {
@@ -5153,13 +5155,15 @@ io_s_foreach(arg)
  */
 
 static VALUE
-rb_io_s_foreach(argc, argv)
+rb_io_s_foreach(argc, argv, self)
     int argc;
     VALUE *argv;
+    VALUE self;
 {
     VALUE fname;
     struct foreach_arg arg;
 
+    RETURN_ENUMERATOR(self, argc, argv);
     rb_scan_args(argc, argv, "11", &fname, &arg.sep);
     FilePathValue(fname);
     if (argc == 1) {
@@ -5453,12 +5457,14 @@ argf_readchar()
 }
 
 static VALUE
-argf_each_line(argc, argv)
+argf_each_line(argc, argv, self)
     int argc;
     VALUE *argv;
+    VALUE self;
 {
     VALUE str;
 
+    RETURN_ENUMERATOR(self, argc, argv);
     if (!next_argv()) return Qnil;
     if (TYPE(current_file) != T_FILE) {
 	for (;;) {
@@ -5474,10 +5480,12 @@ argf_each_line(argc, argv)
 }
 
 static VALUE
-argf_each_byte()
+argf_each_byte(self)
+    VALUE self;
 {
     VALUE byte;
 
+    RETURN_ENUMERATOR(self, 0, 0);
     while (!NIL_P(byte = argf_getc())) {
 	rb_yield(byte);
     }
