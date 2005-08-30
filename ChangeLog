@@ -1,3 +1,9 @@
+Tue Aug 30 19:34:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/digest/md5/md5ossl.h, ext/digest/rmd160/rmd160ossl.h,
+	  ext/digest/sha1/sha1ossl.h: include <stddef.h> to avoid
+	  error in compilation with OpenSSL-0.9.8. [ruby-list:41068] 
+
 Mon Aug 29 19:54:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/rdoc/usage.rb: improper exceptions. [ruby-dev:26870]
