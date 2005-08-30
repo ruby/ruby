@@ -4186,7 +4186,14 @@ f_block_arg	: blkarg_mark tIDENTIFIER
 			    yyerror("block argument must be local variable");
 			else if (!dyna_in_block() && local_id($2))
 			    yyerror("duplicated block argument name");
-			$$ = dyna_in_block() ? assignable($2, 0) : NEW_BLOCK_ARG($2);
+			if (dyna_in_block()) {
+		            shadowing_lvar($2);
+			    dyna_var($2);
+			    $$ = assignable($2, 0);
+			}
+		        else {
+			    $$ = NEW_BLOCK_ARG($2);
+		        }
 		    /*%
 			$$ = $2;
 		    %*/

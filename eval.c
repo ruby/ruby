@@ -5844,6 +5844,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
     ruby_frame->this_class = (flags & NOEX_NOSUPER)?0:klass;
     ruby_frame->self = recv;
     ruby_frame->argc = argc;
+    ruby_frame->flags = (flags & NOEX_RECV) ? FRAME_FUNC : 0;
 
     switch (nd_type(body)) {
       case NODE_CFUNC:
@@ -6040,7 +6041,9 @@ rb_call(klass, recv, mid, argc, argv, scope)
 		return method_missing(recv, mid, argc, argv, CSTAT_PROT);
 	}
     }
-
+    if (scope > 0) {		/* pass receiver info */
+	noex |= NOEX_RECV;
+    }
     return rb_call0(klass, recv, mid, id, argc, argv, body, noex);
 }
 
@@ -6084,12 +6087,13 @@ rb_f_send(argc, argv, recv)
     VALUE recv;
 {
     VALUE vid;
+    int scope = (ruby_frame->flags & FRAME_FUNC) ? 1 : 0;
 
     if (argc == 0) rb_raise(rb_eArgError, "no method name given");
 
     vid = *argv++; argc--;
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
-    vid = rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, 1);
+    vid = rb_call(CLASS_OF(recv), recv, rb_to_id(vid), argc, argv, scope);
     POP_ITER();
 
     return vid;

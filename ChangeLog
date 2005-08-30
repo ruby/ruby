@@ -1,3 +1,8 @@
+Tue Aug 30 12:45:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_send): do not call private methods if the receiver
+	  is specified.  [ruby-talk:153672]
+
 Mon Aug 29 19:47:18 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/rdoc/usage.rb: improper exceptions. [ruby-dev:26870]
@@ -34,7 +39,6 @@ Sat Aug 27 20:13:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/curses/view.rb: String =~ String is deprecated.
 
->>>>>>> 1.4509
 Thu Aug 25 15:48:58 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* ext/win32ole/win32ole.c: supress warnings. (win32)

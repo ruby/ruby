@@ -350,6 +350,7 @@ typedef struct RNode {
 #define NOEX_MASK      6 
 
 #define NOEX_UNDEF     NOEX_NOSUPER
+#define NOEX_RECV      8
 
 VALUE rb_parser_new _((void));
 VALUE rb_parser_end_seen_p _((VALUE));

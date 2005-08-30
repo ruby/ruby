@@ -30,6 +30,7 @@ RUBY_EXTERN struct FRAME {
 void rb_gc_mark_frame _((struct FRAME *));
 
 #define FRAME_DMETH  1
+#define FRAME_FUNC   2
 
 RUBY_EXTERN struct SCOPE {
     struct RBasic super;
