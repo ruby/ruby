@@ -1,3 +1,7 @@
+Tue Aug 30 23:25:45 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/debug.rb: no need to restart at exit.
+
 Tue Aug 30 23:20:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_rescue2): intialization miss.  fixed: [ruby-dev:26917]

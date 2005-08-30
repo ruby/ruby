@@ -257,9 +257,6 @@ class Context
     MUTEX.lock
     unless defined?($debugger_restart) and $debugger_restart
       callcc{|c| $debugger_restart = c} 
-      at_exit {
-        $debugger_restart.call
-      }
     end
     set_last_thread(Thread.current)
     frame_pos = 0
