@@ -1,6 +1,13 @@
-Tue Aug 30 23:06:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Aug 30 23:20:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_rescue2): intialization miss.  fixed: [ruby-dev:26917]
+
+	* lib/mkmf.rb (xsystem, xpopen): no longer expand by Config.
+
+	* lib/mkmf.rb (link_command, cc_command, cpp_command): expand
+	  variables at once, and quote hdrdir.  fixed: [ruby-core:05680]
+
+	* lib/mkmf.rb (libpathflag): quote paths.
 
 Tue Aug 30 19:34:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
