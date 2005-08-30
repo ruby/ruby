@@ -78,6 +78,67 @@ enum_grep(obj, pat)
 }
 
 static VALUE
+count_i(i, arg)
+    VALUE i, *arg;
+{
+    if (rb_equal(i, arg[0])) {
+	arg[1]++;
+    }
+    return Qnil;
+}
+
+static VALUE
+count_iter_i(i, n)
+    VALUE i;
+    long *n;
+{
+    if (RTEST(rb_yield(i))) {
+	(*n)++;
+    }
+    return Qnil;
+}
+
+/*
+ *  call-seq:
+ *     enum.count(item)             => int
+ *     enum.count {| obj | block }  => int
+ *  
+ *  Returns the number of items in <i>enum</i> for which equals to <i>item</i>.
+ *  If a block is given, counts the number of elements yielding a true value.
+ *     
+ *     ary = [1, 2, 4, 2]
+ *     ary.count(2)          # => 2
+ *     ary.count{|x|x%2==0}  # => 3
+ *     
+ */
+
+static VALUE
+enum_count(argc, argv, obj)
+    int argc;
+    VALUE* argv;
+    VALUE obj;
+{
+    if (argc == 1) {
+	VALUE item, args[2];
+
+	if (rb_block_given_p()) {
+	    rb_warn("given block not used");
+	}
+	rb_scan_args(argc, argv, "1", &item);
+	args[0] = item;
+	args[1] = 0;
+	rb_iterate(rb_each, obj, count_i, (VALUE)&args);
+	return INT2NUM(args[1]);
+    }
+    else {
+	long n = 0;
+
+	rb_iterate(rb_each, obj, count_iter_i, (VALUE)&n);
+	return INT2NUM(n);
+    }
+}
+
+static VALUE
 find_i(i, memo)
     VALUE i;
     VALUE *memo;
@@ -995,6 +1056,7 @@ Init_Enumerable()
     rb_define_method(rb_mEnumerable,"sort", enum_sort, 0);
     rb_define_method(rb_mEnumerable,"sort_by", enum_sort_by, 0);
     rb_define_method(rb_mEnumerable,"grep", enum_grep, 1);
+    rb_define_method(rb_mEnumerable,"count", enum_count, -1);
     rb_define_method(rb_mEnumerable,"find", enum_find, -1);
     rb_define_method(rb_mEnumerable,"detect", enum_find, -1);
     rb_define_method(rb_mEnumerable,"find_all", enum_find_all, 0);
