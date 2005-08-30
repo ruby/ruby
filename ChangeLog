@@ -1,3 +1,8 @@
+Tue Aug 30 13:28:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/drb/ssl.rb (SSLConfig#accept) fixed "Undefined method verbose"
+	  [ruby-Bugs:1701]
+
 Tue Aug 30 12:45:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_f_send): do not call private methods if the receiver
