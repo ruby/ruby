@@ -1,4 +1,11 @@
-Tue Aug 30 16:19:40 005	  Keiju Ishitsuka <keiju@ruby-lang.org>
+Tue Aug 30 19:34:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/digest/md5/md5ossl.h, ext/digest/rmd160/rmd160ossl.h,
+	  ext/digest/sha1/sha1ossl.h: include <stddef.h> to avoid
+	  error in compilation with OpenSSL-0.9.8. [ruby-list:41068]
+
+Tue Aug 30 16:19:40 2005  Keiju Ishitsuka <keiju@ruby-lang.org>
+
 	* lib/irb/init.rb: bug fix. [ruby-dev: 26920]
 
 Tue Aug 30 12:45:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>

@@ -3,6 +3,7 @@
 #ifndef RMD160OSSL_H_INCLUDED
 #define RMD160OSSL_H_INCLUDED
 
+#include <stddef.h>
 #include <openssl/ripemd.h>
 
 #define RMD160_CTX	RIPEMD160_CTX

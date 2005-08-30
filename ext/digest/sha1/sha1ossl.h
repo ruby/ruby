@@ -3,6 +3,7 @@
 #ifndef SHA1OSSL_H_INCLUDED
 #define SHA1OSSL_H_INCLUDED
 
+#include <stddef.h>
 #include <openssl/sha.h>
 
 #define SHA1_CTX	SHA_CTX
