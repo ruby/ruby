@@ -215,7 +215,6 @@ module Logging
 end
 
 def xsystem command
-  Config.expand(command)
   Logging::open do
     puts command.quote
     system(command)
@@ -223,7 +222,6 @@ def xsystem command
 end
 
 def xpopen command, *mode, &block
-  Config.expand(command)
   Logging::open do
     case mode[0]
     when nil, /^r/
@@ -262,31 +260,33 @@ end
 
 def link_command(ldflags, opt="", libpath=$LIBPATH)
   Config::expand(TRY_LINK.dup,
-		 'hdrdir' => $hdrdir,
-		 'src' => CONFTEST_C,
-		 'INCFLAGS' => $INCFLAGS,
-		 'CPPFLAGS' => $CPPFLAGS,
-		 'CFLAGS' => "#$CFLAGS",
-		 'ARCH_FLAG' => "#$ARCH_FLAG",
-		 'LDFLAGS' => "#$LDFLAGS #{ldflags}",
-		 'LIBPATH' => libpathflag(libpath),
-		 'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
-		 'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS")
+                 CONFIG.merge('hdrdir' => $hdrdir.quote,
+                              'src' => CONFTEST_C,
+                              'INCFLAGS' => $INCFLAGS,
+                              'CPPFLAGS' => $CPPFLAGS,
+                              'CFLAGS' => "#$CFLAGS",
+                              'ARCH_FLAG' => "#$ARCH_FLAG",
+                              'LDFLAGS' => "#$LDFLAGS #{ldflags}",
+                              'LIBPATH' => libpathflag(libpath),
+                              'LOCAL_LIBS' => "#$LOCAL_LIBS #$libs",
+                              'LIBS' => "#$LIBRUBYARG_STATIC #{opt} #$LIBS"))
 end
 
 def cc_command(opt="")
-  "$(CC) -c #$INCFLAGS -I#{$hdrdir} " \
-  "#$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} #{CONFTEST_C}"
+  Config::expand("$(CC) -c #$INCFLAGS -I$(hdrdir) " \
+                 "#$CPPFLAGS #$CFLAGS #$ARCH_FLAG #{opt} #{CONFTEST_C}",
+		 CONFIG.merge('hdrdir' => $hdrdir.quote))
 end
 
 def cpp_command(outfile, opt="")
-  "$(CPP) #$INCFLAGS -I#{$hdrdir} " \
-  "#$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}"
+  Config::expand("$(CPP) #$INCFLAGS -I$(hdrdir) " \
+                 "#$CPPFLAGS #$CFLAGS #{opt} #{CONFTEST_C} #{outfile}",
+		 CONFIG.merge('hdrdir' => $hdrdir.quote))
 end
 
 def libpathflag(libpath=$LIBPATH)
   libpath.map{|x|
-    (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % x
+    (x == "$(topdir)" ? LIBPATHFLAG : LIBPATHFLAG+RPATHFLAG) % x.quote
   }.join
 end
 
@@ -849,7 +849,7 @@ SHELL = /bin/sh
 
 #### Start of system configuration section. ####
 
-srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {CONFIG[$1||$2]}}
+srcdir = #{srcdir.gsub(/\$\((srcdir)\)|\$\{(srcdir)\}/) {CONFIG[$1||$2]}.quote}
 topdir = #{($extmk ? CONFIG["topdir"] : $topdir).quote}
 hdrdir = #{$extmk ? CONFIG["hdrdir"].quote : '$(topdir)'}
 VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
