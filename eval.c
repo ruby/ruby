@@ -5240,7 +5240,7 @@ rb_rescue2(b_proc, data1, r_proc, data2, va_alist)
     int state;
     volatile VALUE result;
     volatile VALUE e_info = ruby_errinfo;
-    volatile int handle;
+    volatile int handle = Qfalse;
     VALUE eclass;
     va_list args;
 

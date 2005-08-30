@@ -1,8 +1,12 @@
+Tue Aug 30 23:06:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_rescue2): intialization miss.  fixed: [ruby-dev:26917]
+
 Tue Aug 30 19:34:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/digest/md5/md5ossl.h, ext/digest/rmd160/rmd160ossl.h,
 	  ext/digest/sha1/sha1ossl.h: include <stddef.h> to avoid
-	  error in compilation with OpenSSL-0.9.8. [ruby-list:41068] 
+	  error in compilation with OpenSSL-0.9.8. [ruby-list:41068]
 
 Mon Aug 29 19:54:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
@@ -47,7 +51,7 @@ Sat Aug 20 22:37:13 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 Fri Aug 19 18:13:39 2005  Tanaka Akira  <akr@m17n.org>
 
-	* lib/time.rb (Time.apply_offset): fix a problem with last day of 
+	* lib/time.rb (Time.apply_offset): fix a problem with last day of
 	  month.  reported by Lucas Nussbaum.  [ruby-talk:152866]
 
 Thu Aug 18 12:46:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
