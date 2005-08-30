@@ -4272,8 +4272,6 @@ rb_str_scan(str, pat)
     long start = 0;
     VALUE match = Qnil;
 
-    RETURN_ENUMERATOR(str, 1, &pat);
-
     pat = get_pat(pat, 1);
     if (!rb_block_given_p()) {
 	VALUE ary = rb_ary_new();

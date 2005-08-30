@@ -1,3 +1,8 @@
+Wed Aug 31 06:59:01 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_scan): already String#scan behaves differently
+	  regarding if block is given.
+
 Tue Aug 30 23:49:34 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* array.c, dir.c, enum.c, hash.c, io.c, range.c, string.c, struct.c:
