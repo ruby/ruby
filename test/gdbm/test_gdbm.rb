@@ -42,8 +42,8 @@ if defined? GDBM
       ObjectSpace.each_object(GDBM) do |obj|
         obj.close unless obj.closed?
       end
-      File.delete *Dir.glob("tmptest_gdbm*").to_a
-      p Dir.glob("tmptest_gdbm*") if $DEBUG
+      File.delete *Dir.glob("*tmptest_gdbm*").to_a
+      p Dir.glob("*tmptest_gdbm*") if $DEBUG
     end
 
     def check_size(expect, gdbm=@gdbm)
