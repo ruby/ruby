@@ -1,3 +1,8 @@
+Wed Aug 31 10:36:09 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* process.c (proc_detach, proc_setmaxgroups): missing argument type
+	  declaration. (I recomment ANSI-style function)
+
 Wed Aug 31 06:59:01 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_scan): already String#scan behaves differently
@@ -16,7 +21,7 @@ Tue Aug 30 23:25:45 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 Tue Aug 30 23:20:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* eval.c (rb_rescue2): intialization miss.  fixed: [ruby-dev:26917]
+	* eval.c (rb_rescue2): initialization miss.  fixed: [ruby-dev:26917]
 
 	* lib/mkmf.rb (xsystem, xpopen): no longer expand by Config.
 

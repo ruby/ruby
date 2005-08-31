@@ -910,8 +910,7 @@ rb_detach_process(pid)
  */
 
 static VALUE
-proc_detach(obj, pid)
-    VALUE pid;
+proc_detach(VALUE obj, VALUE pid)
 {
     rb_secure(2);
     return rb_detach_process(NUM2INT(pid));
@@ -1437,8 +1436,8 @@ rb_fork(status, chfunc, charg)
  *  the parent, returning the process ID of the child, and once in
  *  the child, returning _nil_. The child process can exit using
  *  <code>Kernel.exit!</code> to avoid running any
- *  <code>at_exit</code> functions. The parent process should 
- *  use <code>Process.wait</code> to collect the termination statuses 
+ *  <code>at_exit</code> functions. The parent process should
+ *  use <code>Process.wait</code> to collect the termination statuses
  *  of its children or use <code>Process.detach</code> to register
  *  disinterest in their status; otherwise, the operating system
  *  may accumulate zombie processes.
@@ -2790,8 +2789,7 @@ proc_getmaxgroups(obj)
  */
 
 static VALUE
-proc_setmaxgroups(obj, val)
-    VALUE obj;
+proc_setmaxgroups(VALUE obj, VALUE val)
 {
     size_t  ngroups = FIX2INT(val);
 
