@@ -1,3 +1,7 @@
+Thu Sep  1 17:11:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): wrong condition for $SAFE restoration.
+
 Thu Sep  1 14:12:45 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: On Tcl8.5, MultiTkIp#invoke_hidden doesn't 
@@ -15,7 +19,7 @@ Wed Aug 31 14:41:30 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Aug 31 10:36:09 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* process.c (proc_detach, proc_setmaxgroups): missing argument type
-	  declaration. (I recomment ANSI-style function)
+	  declaration. (I recommend ANSI-style function)
 
 Wed Aug 31 06:59:01 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

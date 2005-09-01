@@ -5959,7 +5959,7 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	    POP_CLASS();
 	    POP_SCOPE();
 	    ruby_cref = saved_cref;
-	    if (safe > 0) ruby_safe_level = safe;
+	    if (safe >= 0) ruby_safe_level = safe;
 	    if (event_hooks) {
 		EXEC_EVENT_HOOK(RUBY_EVENT_RETURN, body, recv, id, klass);
 	    }
