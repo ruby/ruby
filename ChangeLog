@@ -1,3 +1,7 @@
+Thu Sep  1 17:11:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): wrong condition for $SAFE restoration.
+
 Thu Sep  1 14:12:45 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: On Tcl8.5, MultiTkIp#invoke_hidden doesn't 
