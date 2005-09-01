@@ -121,8 +121,11 @@ module IRB
     @CONF[:LC_MESSAGES].load("irb/error.rb")
   end
 
+  FEATURE_IOPT_CHANGE_VERSION = "1.9.0"
+
   # option analyzing
   def IRB.parse_opts
+    load_path = []
     while opt = ARGV.shift
       case opt
       when "-f"
@@ -136,7 +139,7 @@ module IRB
 	@CONF[:LOAD_MODULES].push opt if opt
       when /^-I(.+)?/
         opt = $1 || ARGV.shift
-        $LOAD_PATH.push opt if opt
+	load_path.concat(opt.split(File::PATH_SEPARATOR)) if opt
       when /^-K(.)/
 	$KCODE = $1
       when "--inspect"
@@ -189,6 +192,12 @@ module IRB
 	break
       end
     end
+    if RUBY_VERSION >= FEATURE_IOPT_CHANGE_VERSION
+      load_path.collect! do |path|
+	/\A\.\// =~ path ? path : File.expand_path(path)
+      end
+    end
+    $LOAD_PATH.unshift(*load_path)
   end
 
   # running config
