@@ -46,6 +46,11 @@ Mon Aug 29 19:54:21 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* lib/rdoc/usage.rb: support the case when non-ruby code exists before
 	  shebang. (this is needed when ri.bat is executed on windows)
 
+Mon Aug 29 17:48:17 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (method_arity): should return proper arity value.
+	  [ruby-dev:26390]
+
 Mon Aug 29 01:19:57 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/time.rb (Time.parse): extract fractional seconds using
@@ -101,6 +106,14 @@ Wed Aug 17 23:58:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_switch): propagate the exception caused thread
 	  termination directly.  fixed: [ruby-core:05552]
+
+Wed Aug 17 00:05:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_add_method): preserve safe level in the environment
+	  where a method is defined .
+
+	* eval.c (rb_call0): restore preserved safe level in the method
+	  execution. 
 
 Mon Aug 15 00:38:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
