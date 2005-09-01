@@ -1,3 +1,15 @@
+Thu Sep  1 17:11:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): wrong condition for $SAFE restoration.
+
+Wed Aug 17 00:05:46 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_add_method): preserve safe level in the environment
+	  where a method is defined .
+
+	* eval.c (rb_call0): restore preserved safe level in the method
+	  execution. 
+
 Fri Apr 16 13:48:29 2004  Akinori MUSHA  <knu@iDaemons.org>
 
 	* ext/socket/extconf.rb: Merge from 1.8: explicity specify

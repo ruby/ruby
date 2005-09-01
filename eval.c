@@ -242,6 +242,9 @@ rb_clear_cache_by_class(klass)
     }
 }
 
+#define NOEX_WITH_SAFE(n) ((n) | ruby_safe_level << 4)
+#define NOEX_SAFE(n) ((n) >> 4)
+
 void
 rb_add_method(klass, mid, node, noex)
     VALUE klass;
@@ -257,7 +260,7 @@ rb_add_method(klass, mid, node, noex)
     }
     if (OBJ_FROZEN(klass)) rb_error_frozen("class/module");
     rb_clear_cache_by_id(mid);
-    body = NEW_METHOD(node, noex);
+    body = NEW_METHOD(node, NOEX_WITH_SAFE(noex));
     st_insert(RCLASS(klass)->m_tbl, mid, body);
 }
 
@@ -4349,19 +4352,20 @@ call_cfunc(func, recv, len, argc, argv)
 }
 
 static VALUE
-rb_call0(klass, recv, id, argc, argv, body, nosuper)
+rb_call0(klass, recv, id, argc, argv, body, flags)
     VALUE klass, recv;
     ID    id;
     int argc;			/* OK */
     VALUE *argv;		/* OK */
     NODE *body;			/* OK */
-    int nosuper;
+    int flags;
 {
     NODE *b2;		/* OK */
     volatile VALUE result = Qnil;
     int itr;
     static int tick;
     TMP_PROTECT;
+    volatile int safe = -1;
 
     switch (ruby_iter->iter) {
       case ITER_PRE:
@@ -4381,7 +4385,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
     PUSH_FRAME();
 
     ruby_frame->last_func = id;
-    ruby_frame->last_class = nosuper?0:klass;
+    ruby_frame->last_class = (flags & NOEX_UNDEF)?0:klass;
     ruby_frame->self = recv;
     ruby_frame->argc = argc;
     ruby_frame->argv = argv;
@@ -4445,7 +4449,6 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 	    NODE *saved_cref = 0;
 
 	    PUSH_SCOPE();
-
 	    if (body->nd_rval) {
 		saved_cref = ruby_cref;
 		ruby_cref = (NODE*)body->nd_rval;
@@ -4467,7 +4470,10 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 
 	    PUSH_VARS();
 	    PUSH_TAG(PROT_FUNC);
-
+	    if (NOEX_SAFE(flags) > ruby_safe_level) {
+		safe = ruby_safe_level;
+		ruby_safe_level = NOEX_SAFE(flags);
+	    }
 	    if ((state = EXEC_TAG()) == 0) {
 		NODE *node = 0;
 		int i;
@@ -4551,6 +4557,7 @@ rb_call0(klass, recv, id, argc, argv, body, nosuper)
 		result = prot_tag->retval;
 		state = 0;
 	    }
+	    if (safe >= 0) ruby_safe_level = safe;
 	    POP_TAG();
 	    POP_VARS();
 	    POP_SCOPE();
@@ -4638,7 +4645,7 @@ rb_call(klass, recv, mid, argc, argv, scope)
 	}
     }
 
-    return rb_call0(klass, recv, id, argc, argv, body, noex & NOEX_UNDEF);
+    return rb_call0(klass, recv, id, argc, argv, body, noex);
 }
 
 VALUE
@@ -6633,6 +6640,7 @@ struct METHOD {
     VALUE klass, oklass;
     VALUE recv;
     ID id, oid;
+    int safe_level;
     NODE *body;
 };
 
@@ -6675,6 +6683,7 @@ mnew(klass, obj, id, mklass)
     data->body = body;
     data->oklass = oklass;
     data->oid = oid;
+    data->safe_level = NOEX_WITH_SAFE(0);
     OBJ_INFECT(method, klass);
 
     return method;
@@ -6695,6 +6704,7 @@ method_unbind(obj)
     data->body = orig->body;
     data->oklass = orig->oklass;
     data->oid = orig->oid;
+    data->safe_level = NOEX_WITH_SAFE(0);
     OBJ_INFECT(method, obj);
 
     return method;
@@ -6746,22 +6756,12 @@ method_call(argc, argv, method)
 {
     VALUE result;
     struct METHOD *data;
-    int state;
-    volatile int safe = ruby_safe_level;
 
     Data_Get_Struct(method, struct METHOD, data);
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
-    PUSH_TAG(PROT_NONE);
-    if (OBJ_TAINTED(method) && ruby_safe_level < 4) {
-	ruby_safe_level = 4;
-    }
-    if ((state = EXEC_TAG()) == 0) {
-	result = rb_call0(data->klass,data->recv,data->id,argc,argv,data->body,0);
-    }
-    POP_TAG();
+    result = rb_call0(data->klass,data->recv,data->id,argc,argv,data->body,
+		      data->safe_level);
     POP_ITER();
-    ruby_safe_level = safe;
-    if (state) JUMP_TAG(state);
     return result;
 }
 
