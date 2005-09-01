@@ -2360,11 +2360,12 @@ class MultiTkIp
     else
       keys = []
     end
+    keys << _slavearg(slave)
     if Tk::TCL_MAJOR_VERSION > 8 ||
         (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION >= 5) 
       keys << '--'
     end
-    keys << _slavearg(slave) << cmd
+    keys << cmd
     keys.concat(args)
     @interp._invoke('interp', 'invokehidden', *keys)
   end
@@ -2378,17 +2379,35 @@ class MultiTkIp
     else
       keys = []
     end
+    keys << _slavearg(slave)
     keys << '-global'
     if Tk::TCL_MAJOR_VERSION > 8 ||
         (Tk::TCL_MAJOR_VERSION == 8 && Tk::TCL_MINOR_VERSION >= 5) 
       keys << '--'
     end
-    keys << _slavearg(slave) << cmd
+    keys << cmd
     keys.concat(args)
     @interp._invoke('interp', 'invokehidden', *keys)
   end
   def self.invoke_hidden_on_global(slave, cmd, *args)
     __getip.invoke_hidden_on_global(slave, cmd, *args)
+  end
+
+  def invoke_hidden_on_namespace(slave, ns, cmd, *args)
+    # for Tcl8.5 or later
+    if args[-1].kind_of?(Hash)
+      keys = _symbolkey2str(args.pop)
+    else
+      keys = []
+    end
+    keys << _slavearg(slave)
+    keys << '-namespace' << TkComm._get_eval_string(ns)
+    keys << '--' << cmd
+    keys.concat(args)
+    @interp._invoke('interp', 'invokehidden', *keys)
+  end
+  def self.invoke_hidden_on_namespace(slave, ns, cmd, *args)
+    __getip.invoke_hidden_on_namespace(slave, ns, cmd, *args)
   end
 
   def mark_trusted(slave = '')
