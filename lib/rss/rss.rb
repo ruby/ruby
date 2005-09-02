@@ -659,7 +659,7 @@ EOC
         if parent.respond_to?(plural_name)
           target = parent.__send__(plural_name)
           __send__(plural_name).each do |elem|
-            elem.__send__("setup_maker", target)
+            elem.setup_maker(target)
           end
         end
       end

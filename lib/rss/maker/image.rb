@@ -11,8 +11,8 @@ module RSS
         name = "#{RSS::IMAGE_PREFIX}_item"
         klass.add_need_initialize_variable(name, "make_#{name}")
         klass.add_other_element(name)
-        klass.__send__(:attr_reader, name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__)
+        klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
+          attr_reader :#{name}
           def setup_#{name}(rss, current)
             if @#{name}
               @#{name}.to_rss(rss, current)
@@ -52,8 +52,8 @@ EOC
         name = "#{RSS::IMAGE_PREFIX}_favicon"
         klass.add_need_initialize_variable(name, "make_#{name}")
         klass.add_other_element(name)
-        klass.__send__(:attr_reader, name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__)
+        klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
+          attr_reader :#{name}
           def setup_#{name}(rss, current)
             if @#{name}
               @#{name}.to_rss(rss, current)

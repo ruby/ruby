@@ -159,13 +159,14 @@ class WSDLDriver
     if RUBY_VERSION >= "1.7.0"
       def __attr_proxy(symbol, assignable = false)
         name = symbol.to_s
-        self.__send__(:define_method, name, proc {
+        define_method(name) {
           @servant.__send__(name)
-        })
+        }
         if assignable
-          self.__send__(:define_method, name + '=', proc { |rhs|
-            @servant.__send__(name + '=', rhs)
-          })
+          aname = name + '='
+          define_method(aname) { |rhs|
+            @servant.__send__(aname, rhs)
+          }
         end
       end
     else

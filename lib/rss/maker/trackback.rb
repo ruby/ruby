@@ -11,8 +11,8 @@ module RSS
         name = "#{RSS::TRACKBACK_PREFIX}_ping"
         klass.add_need_initialize_variable(name)
         klass.add_other_element(name)
-        klass.__send__(:attr_accessor, name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__)
+        klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
+          attr_accessor :#{name}
           def setup_#{name}(rss, current)
             if #{name} and current.respond_to?(:#{name}=)
               current.#{name} = #{name}
@@ -23,8 +23,8 @@ module RSS
         name = "#{RSS::TRACKBACK_PREFIX}_abouts"
         klass.add_need_initialize_variable(name, "make_#{name}")
         klass.add_other_element(name)
-        klass.__send__(:attr_accessor, name)
-        klass.module_eval(<<-EOC, __FILE__, __LINE__)
+        klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
+          attr_accessor :#{name}
           def make_#{name}
             self.class::TrackBackAbouts.new(self)
           end

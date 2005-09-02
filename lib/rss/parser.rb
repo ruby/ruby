@@ -409,7 +409,7 @@ module RSS
       next_element.do_validate = @do_validate
       prefix = ""
       prefix << "#{klass.required_prefix}_" if klass.required_prefix
-      previous.__send__(:set_next_element, prefix, tag_name, next_element)
+      previous.instance_eval {set_next_element(prefix, tag_name, next_element)}
       @last_element = next_element
       @proc_stack.push Proc.new { |text, tags|
         p(@last_element.class) if DEBUG
