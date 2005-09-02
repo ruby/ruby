@@ -38,7 +38,7 @@ module RSS
       super
 
       unless klass.class == Module
-        klass.__send__(:include, TrackBackUtils)
+        klass.module_eval {include TrackBackUtils}
 
         %w(ping).each do |name|
           var_name = "#{TRACKBACK_PREFIX}_#{name}"

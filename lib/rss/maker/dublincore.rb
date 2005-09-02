@@ -18,8 +18,8 @@ module RSS
           klass.add_need_initialize_variable(full_plural_name,
                                              "make_#{full_plural_name}")
           klass.add_other_element(full_plural_name)
-          klass.__send__(:attr_accessor, full_plural_name)
-          klass.module_eval(<<-EOC, __FILE__, __LINE__)
+          klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
+            attr_accessor :#{full_plural_name}
             def make_#{full_plural_name}
               #{full_plural_klass_name}.new(@maker)
             end

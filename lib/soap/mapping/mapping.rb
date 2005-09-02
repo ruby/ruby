@@ -254,7 +254,7 @@ module Mapping
 
   def self.define_singleton_method(obj, name, &block)
     sclass = (class << obj; self; end)
-    sclass.__send__(:define_method, name, &block)
+    sclass.class_eval {define_method(name, &block)}
   end
 
   def self.get_attribute(obj, attr_name)

@@ -1,7 +1,9 @@
-Fri Sep  2 23:51:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep  2 23:51:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_arg): f_norm_arg is a VALUE in ripper, not an ID.
 	  fixed: [ruby-dev:26942]
+
+	* lib: do not use __send__ to access private methods.  [ruby-dev:26935]
 
 Thu Sep  1 17:11:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

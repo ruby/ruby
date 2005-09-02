@@ -10,8 +10,8 @@ module RSS
         ::RSS::ContentModel::ELEMENTS.each do |element|
           klass.add_need_initialize_variable(element)
           klass.add_other_element(element)
-          klass.__send__(:attr_accessor, element)
-          klass.module_eval(<<-EOC, __FILE__, __LINE__)
+          klass.module_eval(<<-EOC, __FILE__, __LINE__+1)
+            attr_accessor :#{element}
             def setup_#{element}(rss, current)
               if #{element} and current.respond_to?(:#{element}=)
                 current.#{element} = @#{element} if @#{element}
