@@ -4095,15 +4095,25 @@ f_norm_arg	: tCONSTANT
 
 f_arg		: f_norm_arg
 		    {
-		        $$ = rb_ary_new3(1, ID2SYM($1));
+		    /*%%%*/
+			VALUE arg = ID2SYM($1);
+		    /*%
+			VALUE arg = $1;
+		    %*/
+		        $$ = rb_ary_new3(1, arg);
 		    }
 		| f_arg ',' f_norm_arg
 		    {
+		    /*%%%*/
+			VALUE arg = ID2SYM($3);
+		    /*%
+			VALUE arg = $3;
+		    %*/
 			$$ = $1;
-			if (rb_ary_includes($$, ID2SYM($3))) {
-			    yyerror("duplicated argument name");
+			if (rb_ary_includes($$, arg)) {
+			    yyerror("duplicated argument arg");
 			}
-			rb_ary_push($$, ID2SYM($3));
+			rb_ary_push($$, arg);
 		    }
 		;
 

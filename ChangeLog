@@ -1,14 +1,19 @@
+Fri Sep  2 23:51:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (f_arg): f_norm_arg is a VALUE in ripper, not an ID.
+	  fixed: [ruby-dev:26942]
+
 Thu Sep  1 17:11:25 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): wrong condition for $SAFE restoration.
 
 Thu Sep  1 14:12:45 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/multi-tk.rb: On Tcl8.5, MultiTkIp#invoke_hidden doesn't 
-	  work (gives wrong order of arguments). 
+	* ext/tk/lib/multi-tk.rb: On Tcl8.5, MultiTkIp#invoke_hidden doesn't
+	  work (gives wrong order of arguments).
 
-	* ext/tk/lib/multi-tk.rb: add MultiTkIp#invoke_hidden_on_namespace 
-	  to support '-namespace' option of 'interp invokehidden' command 
+	* ext/tk/lib/multi-tk.rb: add MultiTkIp#invoke_hidden_on_namespace
+	  to support '-namespace' option of 'interp invokehidden' command
 	  on Tcl8.5.
 
 Wed Aug 31 14:41:30 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
