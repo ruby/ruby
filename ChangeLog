@@ -1,3 +1,9 @@
+Sat Sep  3 13:59:31 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#descend): Pathname.new("./a/b/c").descend
+	  didn't yield "."
+	  (Pathname#ascend): ditto.
+
 Fri Sep  2 23:51:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (f_arg): f_norm_arg is a VALUE in ripper, not an ID.

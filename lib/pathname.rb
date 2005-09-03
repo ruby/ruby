@@ -448,10 +448,11 @@ class Pathname
       end
       paths << v
     else
-      until v.to_s == '.'
+      until v.basename == v
         paths << v
         v = v.dirname
       end
+      paths << v
     end
     paths.reverse_each {|path| yield path }
   end
@@ -482,10 +483,11 @@ class Pathname
       end
       paths << v
     else
-      until v.to_s == '.'
+      until v.basename == v
         paths << v
         v = v.dirname
       end
+      paths << v
     end
     paths.each {|path| yield path }
   end
@@ -1273,31 +1275,40 @@ if $0 == __FILE__
     end
 
     def test_descend_abs
-      rs = %w[/ /a /a/b /a/b/c]
-      Pathname.new("/a/b/c").descend {|v|
-        assert_equal(Pathname.new(rs.shift), v)
-      }
+      rs = %w[/ /a /a/b /a/b/c].map {|s| Pathname.new(s) }
+      Pathname.new("/a/b/c").descend {|v| assert_equal(rs.shift, v) }
+      assert_equal([], rs)
     end
 
     def test_descend_rel
-      rs = %w[a a/b a/b/c]
-      Pathname.new("a/b/c").descend {|v|
-        assert_equal(Pathname.new(rs.shift), v)
-      }
+      rs = %w[a a/b a/b/c].map {|s| Pathname.new(s) }
+      Pathname.new("a/b/c").descend {|v| assert_equal(rs.shift, v) }
+      assert_equal([], rs)
+    end
+
+    def test_descend_rel_with_current_dir
+      rs = %w[. ./a ./a/b ./a/b/c].map {|s| Pathname.new(s) }
+      Pathname.new("./a/b/c").descend {|v| assert_equal(rs.shift, v) }
+      assert_equal([], rs)
     end
 
     def test_ascend_abs
-      rs = %w[/a/b/c /a/b /a /]
-      Pathname.new("/a/b/c").ascend {|v|
-        assert_equal(Pathname.new(rs.shift), v)
-      }
+      rs = %w[/a/b/c /a/b /a /].map {|s| Pathname.new(s) }
+      Pathname.new("/a/b/c").ascend {|v| assert_equal(rs.shift, v) }
+      assert_equal([], rs)
     end
 
     def test_ascend_rel
-      rs = %w[a/b/c a/b a]
-      Pathname.new("a/b/c").ascend {|v|
-        assert_equal(Pathname.new(rs.shift), v)
-      }
+      rs = %w[a/b/c a/b a].map {|s| Pathname.new(s) }
+      Pathname.new("a/b/c").ascend {|v| assert_equal(rs.shift, v) }
+      assert_equal([], rs)
     end
+
+    def test_ascend_rel_with_current_dir
+      rs = %w[./a/b/c ./a/b ./a .].map {|s| Pathname.new(s) }
+      Pathname.new("./a/b/c").ascend {|v| assert_equal(rs.shift, v) }
+      assert_equal([], rs)
+    end
+
   end
 end
