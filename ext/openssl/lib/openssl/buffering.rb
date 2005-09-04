@@ -182,7 +182,7 @@ module Buffering
         remain -= nwrote
         nwritten += nwrote
       end
-      @wbuffer = ""
+      @wbuffer[0,nwritten] = ""
     end
   end
 

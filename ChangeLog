@@ -1,3 +1,8 @@
+Mon Sep  5 07:01:12 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/openssl/lib/openssl/buffering.rb (Buffering#do_write):
+	  should clear data from the buffer which already been output.
+
 Fri Sep  2 23:51:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib: do not use __send__ to access private methods.  [ruby-dev:26935]
