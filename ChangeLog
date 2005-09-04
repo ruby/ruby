@@ -1,3 +1,8 @@
+Mon Sep  5 07:01:12 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/openssl/lib/openssl/buffering.rb (Buffering#do_write):
+	  should clear data from the buffer which already been output.
+
 Sun Sep  4 15:01:35 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (f_arg): Ripper should not do semantic check.
