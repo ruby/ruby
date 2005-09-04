@@ -4106,14 +4106,14 @@ f_arg		: f_norm_arg
 		    {
 		    /*%%%*/
 			VALUE arg = ID2SYM($3);
-		    /*%
-			VALUE arg = $3;
-		    %*/
 			$$ = $1;
 			if (rb_ary_includes($$, arg)) {
 			    yyerror("duplicated argument arg");
 			}
 			rb_ary_push($$, arg);
+		    /*%
+			rb_ary_push($$, $3);
+		    %*/
 		    }
 		;
 

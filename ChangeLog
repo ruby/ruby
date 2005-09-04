@@ -1,3 +1,8 @@
+Sun Sep  4 15:01:35 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (f_arg): Ripper should not do semantic check.
+	  [ruby-dev:26948]
+
 Sat Sep  3 13:59:31 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/pathname.rb (Pathname#descend): Pathname.new("./a/b/c").descend
