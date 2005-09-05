@@ -118,14 +118,15 @@ module Observable
 
   #
   # Add +observer+ as an observer on this object. +observer+ will now receive
-  # notifications.
+  # notifications.  The second optional argument specifies a method to notify
+  # updates, of which default value is +update+.
   #
-  def add_observer(observer)
-    @observer_peers = [] unless defined? @observer_peers
-    unless observer.respond_to? :update
-      raise NoMethodError, "observer needs to respond to `update'" 
+  def add_observer(observer, func=:update)
+    @observer_peers = {} unless defined? @observer_peers
+    unless observer.respond_to? func
+      raise NoMethodError, "observer does not respond to `#{func.to_s}'"
     end
-    @observer_peers.push observer
+    @observer_peers[observer] = func
   end
 
   #
@@ -181,9 +182,9 @@ module Observable
   def notify_observers(*arg)
     if defined? @observer_state and @observer_state
       if defined? @observer_peers
-	for i in @observer_peers.dup
-	  i.update(*arg)
-	end
+       @observer_peers.each { |k, v|
+      k.send v, *arg
+    }
       end
       @observer_state = false
     end

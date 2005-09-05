@@ -33,10 +33,9 @@ module Find
   # See the +Find+ module documentation for an example.
   #
   def find(*paths) # :yield: path
-    paths.collect!{|d| d.dup}
+    paths.collect!{|d| open(d){}; d.dup}
     while file = paths.shift
       catch(:prune) do
-        next unless File.exist? file
 	yield file.dup.taint
 	begin
 	  if File.lstat(file).directory? then

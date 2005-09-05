@@ -87,11 +87,11 @@ module MonitorMixin
     class Timeout < Exception; end
     
     def wait(timeout = nil)
-      @monitor.instance_eval {mon_check_owner()}
+      @monitor.fcall(:mon_check_owner)
       timer = create_timer(timeout)
       
       Thread.critical = true
-      count = @monitor.instance_eval {mon_exit_for_cond()}
+      count = @monitor.fcall(:mon_exit_for_cond)
       @waiters.push(Thread.current)
 
       begin
@@ -107,7 +107,7 @@ module MonitorMixin
 	if @waiters.include?(Thread.current)  # interrupted?
 	  @waiters.delete(Thread.current)
 	end
-        @monitor.instance_eval {mon_enter_for_cond(count)}
+        @monitor.fcall(:mon_enter_for_cond, count)
 	Thread.critical = false
       end
     end
@@ -125,7 +125,7 @@ module MonitorMixin
     end
     
     def signal
-      @monitor.instance_eval {mon_check_owner()}
+      @monitor.fcall(:mon_check_owner)
       Thread.critical = true
       t = @waiters.shift
       t.wakeup if t
@@ -134,7 +134,7 @@ module MonitorMixin
     end
     
     def broadcast
-      @monitor.instance_eval {mon_check_owner()}
+      @monitor.fcall(:mon_check_owner)
       Thread.critical = true
       for t in @waiters
 	t.wakeup
@@ -172,7 +172,7 @@ module MonitorMixin
   
   def self.extend_object(obj)
     super(obj)
-    obj.instance_eval {mon_initialize()}
+    obj.fcall(:mon_initialize)
   end
   
   #
