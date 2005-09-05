@@ -42,6 +42,10 @@ static ID ripper_id_qwords_beg;
 static ID ripper_id_words_sep;
 static ID ripper_id_regexp_beg;
 static ID ripper_id_regexp_end;
+static ID ripper_id_label;
+static ID ripper_id_lambda;
+static ID ripper_id_lambda_arg;
+static ID ripper_id_lambeg;
 
 static ID ripper_id_ignored_nl;
 static ID ripper_id_comment;
@@ -90,6 +94,10 @@ ripper_init_eventids2()
     ripper_id_words_sep = rb_intern("on_words_sep");
     ripper_id_regexp_beg = rb_intern("on_regexp_beg");
     ripper_id_regexp_end = rb_intern("on_regexp_end");
+    ripper_id_label = rb_intern("on_label");
+    ripper_id_lambda = rb_intern("on_lambda");
+    ripper_id_lambda_arg = rb_intern("on_lambda_arg");
+    ripper_id_lambeg = rb_intern("on_lambeg");
 
     ripper_id_ignored_nl = rb_intern("on_ignored_nl");
     ripper_id_comment = rb_intern("on_comment");
@@ -234,6 +242,10 @@ static struct token_assoc {
     {tUPLUS,		&ripper_id_op},
     {tWORDS_BEG,	&ripper_id_words_beg},
     {tXSTRING_BEG,	&ripper_id_backtick},
+    {tLABEL,		&ripper_id_label},
+    {tLAMBDA,		&ripper_id_lambda},
+    {tLAMBDA_ARG,	&ripper_id_lambda_arg},
+    {tLAMBEG,		&ripper_id_lambeg},
 
     /* ripper specific tokens */
     {tIGNORED_NL,       &ripper_id_ignored_nl},

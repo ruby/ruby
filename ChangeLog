@@ -1,3 +1,10 @@
+Mon Sep  5 22:28:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (stmt, mlhs_node, lhs, arg, method_call): aref_args might be
+	  nothing.  fixed: [ruby-dev:26952]
+
+	* ext/ripper/eventids2.c: added new tokens.  fixed: [ruby-dev:26952]
+
 Mon Sep  5 17:03:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/ostruct.rb: a patch from Florian Gross <florgro@gmail.com>

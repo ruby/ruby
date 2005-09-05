@@ -921,7 +921,7 @@ stmt		: kALIAS fitem {lex_state = EXPR_FNAME;} fitem
 			$$ = NEW_OP_ASGN1($1, $5, args);
 		        fixpos($$, $1);
 		    /*%
-			$$ = dispatch2(aref_field, $1, $3);
+			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
 		    	$$ = dispatch3(opassign, $$, $5, $6);
 		    %*/
 		    }
@@ -1341,7 +1341,7 @@ mlhs_node	: variable
 		    /*%%%*/
 			$$ = aryset($1, $3);
 		    /*%
-			$$ = dispatch2(aref_field, $1, $3);
+			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
 		    %*/
 		    }
 		| primary_value '.' tIDENTIFIER
@@ -1415,7 +1415,7 @@ lhs		: variable
 		    /*%%%*/
 			$$ = aryset($1, $3);
 		    /*%
-			$$ = dispatch2(aref_field, $1, $3);
+			$$ = dispatch2(aref_field, $1, escape_Qundef($3));
 		    %*/
 		    }
 		| primary_value '.' tIDENTIFIER
@@ -1676,7 +1676,7 @@ arg		: lhs '=' arg
 			$$ = NEW_OP_ASGN1($1, $5, args);
 		        fixpos($$, $1);
 		    /*%
-			$1 = dispatch2(aref_field, $1, $3);
+			$1 = dispatch2(aref_field, $1, escape_Qundef($3));
 		    	$$ = dispatch3(opassign, $1, $5, $6);
 		    %*/
 		    }
@@ -3364,7 +3364,7 @@ method_call	: operation paren_args
 			    $$ = NEW_CALL($1, tAREF, $3);
 			fixpos($$, $1);
 		    /*%
-			$$ = dispatch2(aref, $1, $3);
+			$$ = dispatch2(aref, $1, escape_Qundef($3));
 		    %*/
 		    }
 		;

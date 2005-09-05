@@ -176,6 +176,10 @@ class Ripper
     :int => 1,
     :ivar => 1,
     :kw => 1,
+    :label => 1,
+    :lambda => 1,
+    :lambda_arg => 1,
+    :lambeg => 1,
     :lbrace => 1,
     :lbracket => 1,
     :lparen => 1,
@@ -813,6 +817,22 @@ class Ripper
   end
 
   def on_kw(token)
+    token
+  end
+
+  def on_label(token)
+    token
+  end
+
+  def on_lambda(token)
+    token
+  end
+
+  def on_lambda_arg(token)
+    token
+  end
+
+  def on_lambeg(token)
     token
   end
 
