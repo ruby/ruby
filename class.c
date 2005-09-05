@@ -407,7 +407,8 @@ rb_include_module(klass, module)
 		break;
 	    }
 	}
-	c = RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
+	RCLASS(c)->super = include_class_new(module, RCLASS(c)->super);
+	c = RCLASS(c)->super;
 	changed = 1;
       skip:
 	module = RCLASS(module)->super;

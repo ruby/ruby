@@ -1,3 +1,15 @@
+Mon Sep  5 17:03:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/ostruct.rb: a patch from Florian Gross <florgro@gmail.com>
+	  merged to allow recursive inspect (and to_s) for OpenStruct.
+	  [ruby-core:05532]
+
+Mon Sep  5 08:20:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/observer.rb: a patch from nornagon <nornagon@gmail.com>
+	  merged to allow arbitrary names for update methods.
+	  [ruby-core:05416]
+
 Mon Sep  5 07:01:12 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/openssl/lib/openssl/buffering.rb (Buffering#do_write):
@@ -7,6 +19,11 @@ Sun Sep  4 15:01:35 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* parse.y (f_arg): Ripper should not do semantic check.
 	  [ruby-dev:26948]
+
+Sat Sep  3 23:52:35 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_f_fcall): new method to avoid inefficiency of
+	  obj.instance_eval{send(...)} tricks.
 
 Sat Sep  3 13:59:31 2005  Tanaka Akira  <akr@m17n.org>
 
@@ -3333,7 +3350,7 @@ Fri Mar  4 12:45:17 2005  Charles Mills  <cmills@freeshell.org>
 	  (rb_define_const), accessors (rb_define_attr), and makes a
 	  couple fixes. [ruby-core:4307]
 
-Fri Mar  4 12:45:17 2005  Florian Gro  <florgro@gmail.com>
+Fri Mar  4 12:45:17 2005  Florian Gross  <florgro@gmail.com>
 
 	* lib/rdoc/parsers/parse_rb.rb: Logic for def Builtin.method() end
 	  [ruby-core:4302]

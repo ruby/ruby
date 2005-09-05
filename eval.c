@@ -6062,32 +6062,14 @@ rb_apply(recv, mid, args)
     return rb_call(CLASS_OF(recv), recv, mid, argc, argv, 1);
 }
 
-/*
- *  call-seq:
- *     obj.send(symbol [, args...])        => obj
- *     obj.__send__(symbol [, args...])    => obj
- *  
- *  Invokes the method identified by _symbol_, passing it any
- *  arguments specified. You can use <code>__send__</code> if the name
- *  +send+ clashes with an existing method in _obj_.
- *     
- *     class Klass
- *       def hello(*args)
- *         "Hello " + args.join(' ')
- *       end
- *     end
- *     k = Klass.new
- *     k.send :hello, "gentle", "readers"   #=> "Hello gentle readers"
- */
-
 static VALUE
-rb_f_send(argc, argv, recv)
+send_fcall(argc, argv, recv, scope)
     int argc;
     VALUE *argv;
     VALUE recv;
+    int scope;
 {
     VALUE vid;
-    int scope = (ruby_frame->flags & FRAME_FUNC) ? 1 : 0;
 
     if (argc == 0) rb_raise(rb_eArgError, "no method name given");
 
@@ -6097,6 +6079,61 @@ rb_f_send(argc, argv, recv)
     POP_ITER();
 
     return vid;
+}
+
+/*
+ *  call-seq:
+ *     obj.send(symbol [, args...])        => obj
+ *     obj.__send__(symbol [, args...])    => obj
+ *  
+ *  Invokes the method identified by _symbol_, passing it any
+ *  arguments specified. You can use <code>__send__</code> if the name
+ *  +send+ clashes with an existing method in _obj_.  Raises an
+ *  NoMethodError exception for private methods except when it is
+ *  called in function call style.
+ *     
+ *     class Klass
+ *       def hello(*args)
+ *         "Hello " + args.join(' ')
+ *       end
+ *     end
+ *     k = Klass.new
+ *     k.send :hello, "gentle", "readers"   #=> "Hello gentle readers"
+ *
+ *     1.send(:puts, "foo")  # NoMethodError exception
+ *     send(:puts, "foo")    # prints "foo"
+ */
+
+static VALUE
+rb_f_send(argc, argv, recv)
+    int argc;
+    VALUE *argv;
+    VALUE recv;
+{
+    int scope = (ruby_frame->flags & FRAME_FUNC) ? 1 : 0;
+
+    return send_fcall(argc, argv, recv, scope);
+}
+
+/*
+ *  call-seq:
+ *     obj.fcall(symbol [, args...])        => obj
+ *  
+ *  Invokes the method identified by _symbol_, passing it any
+ *  arguments specified. Unlike send, which calls private methods only
+ *  when it is invoked in function call style, fcall always aware of
+ *  private methods.
+ *     
+ *     1.fcall(:puts, "hello")  # prints "foo"
+ */
+
+static VALUE
+rb_f_fcall(argc, argv, recv)
+    int argc;
+    VALUE *argv;
+    VALUE recv;
+{
+    return send_fcall(argc, argv, recv, 1);
 }
 
 VALUE
@@ -7458,18 +7495,18 @@ rb_mod_modfunc(argc, argv, module)
  */
 
 static VALUE
-rb_mod_append_features(module, include)
-    VALUE module, include;
+rb_mod_append_features(module, dest)
+    VALUE module, dest;
 {
-    switch (TYPE(include)) {
+    switch (TYPE(dest)) {
       case T_CLASS:
       case T_MODULE:
 	break;
       default:
-	Check_Type(include, T_CLASS);
+	Check_Type(dest, T_CLASS);
 	break;
     }
-    rb_include_module(include, module);
+    rb_include_module(dest, module);
 
     return module;
 }
@@ -7907,6 +7944,7 @@ Init_eval()
 
     rb_define_method(rb_mKernel, "send", rb_f_send, -1);
     rb_define_method(rb_mKernel, "__send__", rb_f_send, -1);
+    rb_define_method(rb_mKernel, "fcall", rb_f_fcall, -1);
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
 
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
