@@ -47,7 +47,7 @@ class OpenStruct
     @table = {}
     if hash
       for k,v in hash
-	@table[k.to_sym] = v
+        @table[k.to_sym] = v
         new_ostruct_member(k)
       end
     end
@@ -68,11 +68,11 @@ class OpenStruct
   end
 
   def new_ostruct_member(name)
+    name = name.to_sym
     unless self.respond_to?(name)
-      self.instance_eval %{
-        def #{name}; @table[:#{name}]; end
-        def #{name}=(x); @table[:#{name}] = x; end
-      }
+      meta = class << self; self; end
+      meta.send(:define_method, name) { @table[name] }
+      meta.send(:define_method, :"#{name}=") { |x| @table[name] = x }
     end
   end
 
@@ -81,14 +81,14 @@ class OpenStruct
     len = args.length
     if mname =~ /=$/
       if len != 1
-	raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
+        raise ArgumentError, "wrong number of arguments (#{len} for 1)", caller(1)
       end
       if self.frozen?
-	raise TypeError, "can't modify frozen #{self.class}", caller(1)
+        raise TypeError, "can't modify frozen #{self.class}", caller(1)
       end
       mname.chop!
-      @table[mname.intern] = args[0]
       self.new_ostruct_member(mname)
+      @table[mname.intern] = args[0]
     elsif len == 0
       @table[mid]
     else
@@ -103,16 +103,35 @@ class OpenStruct
     @table.delete name.to_sym
   end
 
+  InspectKey = :__inspect_key__ # :nodoc:
+
   #
   # Returns a string containing a detailed summary of the keys and values.
   #
   def inspect
-    str = "<#{self.class}"
-    for k,v in @table
-      str << " #{k}=#{v.inspect}"
+    str = "#<#{self.class}"
+
+    Thread.current[InspectKey] ||= []
+    if Thread.current[InspectKey].include?(self) then
+      str << " ..."
+    else
+      first = true
+      for k,v in @table
+        str << "," unless first
+        first = false
+
+        Thread.current[InspectKey] << v
+        begin
+          str << " #{k}=#{v.inspect}"
+        ensure
+          Thread.current[InspectKey].pop
+        end
+      end
     end
+
     str << ">"
   end
+  alias :to_s :inspect
 
   attr_reader :table # :nodoc:
   protected :table
