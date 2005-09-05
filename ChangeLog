@@ -1,3 +1,9 @@
+Mon Sep  5 17:03:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/ostruct.rb: a patch from Florian Gross <florgro@gmail.com>
+	  merged to allow recursive inspect (and to_s) for OpenStruct.
+	  [ruby-core:05532]
+
 Mon Sep  5 07:01:12 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/openssl/lib/openssl/buffering.rb (Buffering#do_write):
