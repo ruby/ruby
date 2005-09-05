@@ -755,13 +755,32 @@ rb_io_rewind(io)
  *  call-seq:
  *     ios.eof     => true or false
  *     ios.eof?    => true or false
- *  
- *  Returns true if <em>ios</em> is at end of file. The stream must be
- *  opened for reading or an <code>IOError</code> will be raised.
- *     
+ *
+ *  Returns true if <em>ios</em> is at end of file that means
+ *  there are no more data to read.
+ *  The stream must be opened for reading or an <code>IOError</code> will be
+ *  raised.
+ *
  *     f = File.new("testfile")
  *     dummy = f.readlines
  *     f.eof   #=> true
+ *
+ *  If <em>ios</em> is a stream such as pipe or socket, <code>IO#eof?</code>
+ *  blocks until the other end sends some data or closes it.
+ *
+ *     r, w = IO.pipe
+ *     Thread.new { sleep 1; w.close }
+ *     r.eof?  #=> true after 1 second blocking
+ *
+ *     r, w = IO.pipe
+ *     Thread.new { sleep 1; w.puts "a" }
+ *     r.eof?  #=> false after 1 second blocking
+ *
+ *     r, w = IO.pipe
+ *     r.eof?  # blocks forever
+ *
+ *  Note that <code>IO#eof?</code> reads data to a input buffer.
+ *  So <code>IO#sysread</code> doesn't work with <code>IO#eof?</code>.
  */
 
 VALUE
