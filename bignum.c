@@ -42,11 +42,11 @@ static VALUE
 bignew_1(klass, len, sign)
     VALUE klass;
     long len;
-    char sign;
+    int sign;
 {
     NEWOBJ(big, struct RBignum);
     OBJSETUP(big, klass, T_BIGNUM);
-    big->sign = sign;
+    big->sign = (char)sign;
     big->len = len;
     big->digits = ALLOC_N(BDIGIT, len);
 
@@ -1036,7 +1036,7 @@ rb_big_uminus(x)
     return bignorm(z);
 }
 
-static VALUE bigadd _((VALUE,VALUE,char));
+static VALUE bigadd _((VALUE,VALUE,int));
 
 /*
  * call-seq:
@@ -1120,7 +1120,7 @@ bigsub(x, y)
 static VALUE
 bigadd(x, y, sign)
     VALUE x, y;
-    char sign;
+    int sign;
 {
     VALUE z;
     BDIGIT_DBL num;

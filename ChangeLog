@@ -1,3 +1,16 @@
+Wed Sep  7 08:22:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* Makefile.in, configure.in (MINIOBJS): miniruby on HP-UX can not load
+	  extension libraries.
+
+	* bignum.c (bignew_1, bigadd): K&R style argument actually can't be
+	  defined as char.
+
+	* missing/vsnprintf.c: ANSI compiler supports const keyword.
+
+	* ext/digest/sha2/extconf.rb: reject platforms which has inttypes.h
+	  but no 64bit integer.
+
 Mon Sep  5 22:28:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (stmt, mlhs_node, lhs, arg, method_call): aref_args might be
