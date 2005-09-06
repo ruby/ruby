@@ -23,6 +23,10 @@
 #include <grp.h>
 #endif
 
+#ifndef HAVE_TYPE_UID_T
+#define uid_t int
+#endif
+
 static VALUE sPasswd, sGroup;
 
 #ifndef _WIN32
@@ -84,7 +88,7 @@ setup_passwd(pwd)
 			 INT2FIX(pwd->pw_quota),
 #endif
 #ifdef HAVE_ST_PW_AGE
-			 INT2FIX(pwd->pw_age),
+			 PW_AGE2VAL(pwd->pw_age),
 #endif
 #ifdef HAVE_ST_PW_CLASS
 			 safe_setup_str(pwd->pw_class),
