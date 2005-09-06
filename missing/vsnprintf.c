@@ -95,7 +95,7 @@
 # endif
 #endif
 
-#if defined(__hpux) && !defined(__GNUC__)
+#if defined(__hpux) && !defined(__GNUC__) && !defined(__STDC__)
 #define const
 #endif
 

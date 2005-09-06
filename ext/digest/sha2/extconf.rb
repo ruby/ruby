@@ -17,12 +17,6 @@ have_header("inttypes.h")
 
 have_header("unistd.h")
 
-if try_cpp(<<SRC, $defs.join(' '))
-#include "defs.h"
-#ifdef NO_UINT64_T
-  #error ** Cannot find a 64bit integer type - skipping the SHA2 module.
-#endif
-SRC
-then
+if have_type("uint64_t", "defs.h", $defs.join(' '))
   create_makefile("digest/sha2")
 end
