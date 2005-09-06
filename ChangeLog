@@ -1,4 +1,4 @@
-Wed Sep  7 08:22:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Sep  7 08:35:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in (MINIOBJS): miniruby on HP-UX can not load
 	  extension libraries.
@@ -10,6 +10,11 @@ Wed Sep  7 08:22:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/digest/sha2/extconf.rb: reject platforms which has inttypes.h
 	  but no 64bit integer.
+
+	* lib/mkmf.rb (what_type?): guesstimate type.
+
+	* ext/etc/etc.c (setup_passwd), ext/etc/extconf.rb: pw_age might be
+	  char*.  fixed: [ruby-core:05470]
 
 Mon Sep  5 17:03:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

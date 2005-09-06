@@ -706,6 +706,61 @@ def check_sizeof(type, header = nil, &b)
   size
 end
 
+def scalar_ptr_type?(type, member = nil, headers = nil, &b)
+  try_compile(<<"SRC", &b)   # pointer
+#{COMMON_HEADERS}
+#{cpp_include(headers)}
+/*top*/
+volatile #{type} conftestval;
+int main() { return 0; }
+int t() {return (int)(1-*(conftestval#{member ? ".#{member}" : ""}));}
+SRC
+end
+
+def scalar_type?(type, member = nil, headers = nil, &b)
+  try_compile(<<"SRC", &b)   # pointer
+#{COMMON_HEADERS}
+#{cpp_include(headers)}
+/*top*/
+volatile #{type} conftestval;
+int main() { return 0; }
+int t() {return (int)(1-(conftestval#{member ? ".#{member}" : ""}));}
+SRC
+end
+
+def what_type?(type, member = nil, headers = nil, &b)
+  m = "#{type}"
+  name = type
+  if member
+    m << "." << member
+    name = "(((#{type} *)0)->#{member})"
+  end
+  m << " in #{headers.inspect}" if headers
+  fmt = "seems %s"
+  def fmt.%(x)
+    x ? super : "unknown"
+  end
+  checking_for m, fmt do
+    if scalar_ptr_type?(type, member, headers, &b)
+      if try_static_assert("sizeof(*#{name}) == 1", headers)
+        "string"
+      end
+    elsif scalar_type?(type, member, headers, &b)
+      if try_static_assert("sizeof(#{name}) > sizeof(long)", headers)
+        "long long"
+      elsif try_static_assert("sizeof(#{name}) > sizeof(int)", headers)
+        "long"
+      elsif try_static_assert("sizeof(#{name}) > sizeof(short)", headers)
+        "int"
+      elsif try_static_assert("sizeof(#{name}) > 1", headers)
+        "short"
+      else
+        "char"
+      end
+    end
+  end
+end
+
 def find_executable0(bin, path = nil)
   path = (path || ENV['PATH']).split(File::PATH_SEPARATOR)
   ext = config_string('EXEEXT')
