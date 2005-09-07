@@ -1,3 +1,11 @@
+Wed Sep  7 10:45:15 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_switch): convert all exceptions to
+	  SystemExit.  fixed: [ruby-core:05724]
+
+	* eval.c (rb_thread_terminated): show backtrace before propagate
+	  exceptions to main thread.
+
 Wed Sep  7 08:35:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* Makefile.in, configure.in (MINIOBJS): miniruby on HP-UX can not load
