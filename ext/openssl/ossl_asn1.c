@@ -75,6 +75,15 @@ time_to_time_t(VALUE time)
 }
 
 /*
+ * STRING conversion
+ */
+VALUE
+asn1str_to_str(ASN1_STRING *str)
+{
+    return rb_str_new(str->data, str->length);
+}
+
+/*
  * ASN1_INTEGER conversions
  * TODO: Make a decision what's the right way to do this.
  */

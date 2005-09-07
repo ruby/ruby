@@ -13,7 +13,8 @@
 
 extern VALUE mPKCS7;
 extern VALUE cPKCS7;
-extern VALUE cPKCS7SignerInfo;
+extern VALUE cPKCS7Signer;
+extern VALUE cPKCS7Recipient;
 extern VALUE ePKCS7Error;
 
 void Init_ossl_pkcs7(void);

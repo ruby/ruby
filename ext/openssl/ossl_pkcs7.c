@@ -44,6 +44,23 @@
     GetPKCS7si(obj, p7si); \
 } while (0)
 
+#define WrapPKCS7ri(klass, obj, p7ri) do { \
+    if (!p7ri) { \
+	ossl_raise(rb_eRuntimeError, "PKCS7ri wasn't initialized."); \
+    } \
+    obj = Data_Wrap_Struct(klass, 0, PKCS7_RECIP_INFO_free, p7ri); \
+} while (0)
+#define GetPKCS7ri(obj, p7ri) do { \
+    Data_Get_Struct(obj, PKCS7_RECIP_INFO, p7ri); \
+    if (!p7ri) { \
+	ossl_raise(rb_eRuntimeError, "PKCS7ri wasn't initialized."); \
+    } \
+} while (0)
+#define SafeGetPKCS7ri(obj, p7ri) do { \
+    OSSL_Check_Kind(obj, cPKCS7Recipient); \
+    GetPKCS7ri(obj, p7ri); \
+} while (0)
+
 #define numberof(ary) (sizeof(ary)/sizeof(ary[0]))
 
 #define ossl_pkcs7_set_data(o,v)       rb_iv_set((o), "@data", (v))
@@ -57,6 +74,7 @@
 VALUE mPKCS7;
 VALUE cPKCS7;
 VALUE cPKCS7Signer;
+VALUE cPKCS7Recipient;
 VALUE ePKCS7Error;
 
 /*
@@ -83,6 +101,32 @@ DupPKCS7SignerPtr(VALUE obj)
 	
     SafeGetPKCS7si(obj, p7si);
     if (!(pkcs7 = PKCS7_SIGNER_INFO_dup(p7si))) {
+	ossl_raise(ePKCS7Error, NULL);
+    }
+
+    return pkcs7;
+}
+
+static VALUE
+ossl_pkcs7ri_new(PKCS7_RECIP_INFO *p7ri)
+{
+    PKCS7_RECIP_INFO *pkcs7;
+    VALUE obj;
+
+    pkcs7 = p7ri ? PKCS7_RECIP_INFO_dup(p7ri) : PKCS7_RECIP_INFO_new();
+    if (!pkcs7) ossl_raise(ePKCS7Error, NULL);
+    WrapPKCS7ri(cPKCS7Recipient, obj, pkcs7);
+
+    return obj;
+}
+
+static PKCS7_RECIP_INFO *
+DupPKCS7RecipientPtr(VALUE obj)
+{
+    PKCS7_RECIP_INFO *p7ri, *pkcs7;
+	
+    SafeGetPKCS7ri(obj, p7ri);
+    if (!(pkcs7 = PKCS7_RECIP_INFO_dup(p7ri))) {
 	ossl_raise(ePKCS7Error, NULL);
     }
 
@@ -441,27 +485,47 @@ ossl_pkcs7_get_signer(VALUE self)
 }
 
 static VALUE
-ossl_pkcs7_add_recipient(VALUE self, VALUE cert)
+ossl_pkcs7_add_recipient(VALUE self, VALUE recip)
 {
     PKCS7 *pkcs7;
     PKCS7_RECIP_INFO *ri;
-    X509 *x509;
-	
-    x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
-    if (!(ri = PKCS7_RECIP_INFO_new())) {
-	ossl_raise(ePKCS7Error, NULL);
-    }
-    if (!PKCS7_RECIP_INFO_set(ri, x509)) {
-	PKCS7_RECIP_INFO_free(ri);
-	ossl_raise(ePKCS7Error, NULL);
-    }
+
+    ri = DupPKCS7RecipientPtr(recip); /* NEED TO DUP */
     GetPKCS7(self, pkcs7);
     if (!PKCS7_add_recipient_info(pkcs7, ri)) {
 	PKCS7_RECIP_INFO_free(ri);
-	ossl_raise(ePKCS7Error, NULL);
+	ossl_raise(ePKCS7Error, "Could not add recipient.");
     }
 
     return self;
+}
+
+static VALUE
+ossl_pkcs7_get_recipient(VALUE self)
+{
+    PKCS7 *pkcs7;
+    STACK_OF(PKCS7_RECIP_INFO) *sk;
+    PKCS7_RECIP_INFO *si;
+    int num, i;
+    VALUE ary;
+    
+    GetPKCS7(self, pkcs7);
+    if (PKCS7_type_is_enveloped(pkcs7))
+	sk = pkcs7->d.enveloped->recipientinfo;
+    else if (PKCS7_type_is_signedAndEnveloped(pkcs7))
+	sk = pkcs7->d.signed_and_enveloped->recipientinfo;
+    else sk = NULL;
+    if (!sk) return rb_ary_new();
+    if ((num = sk_PKCS7_RECIP_INFO_num(sk)) < 0) {
+	ossl_raise(ePKCS7Error, "Negative number of recipient!");
+    }
+    ary = rb_ary_new2(num);
+    for (i=0; i<num; i++) {
+	si = sk_PKCS7_RECIP_INFO_value(sk, i);
+	rb_ary_push(ary, ossl_pkcs7ri_new(si));
+    }
+
+    return ary;
 }
 
 static VALUE
@@ -750,7 +814,7 @@ ossl_pkcs7si_initialize(VALUE self, VALUE cert, VALUE key, VALUE digest)
 }
 
 static VALUE
-ossl_pkcs7si_get_name(VALUE self)
+ossl_pkcs7si_get_issuer(VALUE self)
 {
     PKCS7_SIGNER_INFO *p7si;
 
@@ -793,6 +857,68 @@ ossl_pkcs7si_get_signed_time(VALUE self)
 }
 
 /*
+ * RECIPIENT INFO
+ */
+static VALUE
+ossl_pkcs7ri_alloc(VALUE klass)
+{
+    PKCS7_RECIP_INFO *p7ri;
+    VALUE obj;
+
+    if (!(p7ri = PKCS7_RECIP_INFO_new())) {
+	ossl_raise(ePKCS7Error, NULL);
+    }
+    WrapPKCS7ri(klass, obj, p7ri);
+
+    return obj;
+}
+
+static VALUE
+ossl_pkcs7ri_initialize(VALUE self, VALUE cert)
+{
+    PKCS7_RECIP_INFO *p7ri;
+    X509 *x509;
+
+    x509 = GetX509CertPtr(cert); /* NO NEED TO DUP */
+    GetPKCS7ri(self, p7ri);
+    if (!PKCS7_RECIP_INFO_set(p7ri, x509)) {
+	ossl_raise(ePKCS7Error, NULL);
+    }
+
+    return self;
+}
+
+static VALUE
+ossl_pkcs7ri_get_issuer(VALUE self)
+{
+    PKCS7_RECIP_INFO *p7ri;
+
+    GetPKCS7ri(self, p7ri);
+
+    return ossl_x509name_new(p7ri->issuer_and_serial->issuer);
+}
+
+static VALUE
+ossl_pkcs7ri_get_serial(VALUE self)
+{
+    PKCS7_RECIP_INFO *p7ri;
+
+    GetPKCS7ri(self, p7ri);
+
+    return asn1integer_to_num(p7ri->issuer_and_serial->serial);
+}
+
+static VALUE
+ossl_pkcs7ri_get_enc_key(VALUE self)
+{
+    PKCS7_RECIP_INFO *p7ri;
+
+    GetPKCS7ri(self, p7ri);
+
+    return asn1str_to_str(p7ri->enc_key);
+}
+
+/*
  * INIT
  */
 void
@@ -821,6 +947,7 @@ Init_ossl_pkcs7()
     rb_define_method(cPKCS7, "add_signer", ossl_pkcs7_add_signer, 1);
     rb_define_method(cPKCS7, "signers", ossl_pkcs7_get_signer, 0);
     rb_define_method(cPKCS7, "add_recipient", ossl_pkcs7_add_recipient, 1);
+    rb_define_method(cPKCS7, "recipients", ossl_pkcs7_get_recipient, 0);
     rb_define_method(cPKCS7, "add_certificate", ossl_pkcs7_add_certificate, 1);
     rb_define_method(cPKCS7, "certificates=", ossl_pkcs7_set_certificates, 1);
     rb_define_method(cPKCS7, "certificates", ossl_pkcs7_get_certificates, 0);
@@ -835,12 +962,21 @@ Init_ossl_pkcs7()
     rb_define_alias(cPKCS7,  "to_s", "to_pem");
     rb_define_method(cPKCS7, "to_der", ossl_pkcs7_to_der, 0);
 
-    cPKCS7Signer = rb_define_class_under(mPKCS7, "Signer", rb_cObject);
+    cPKCS7Signer = rb_define_class_under(mPKCS7, "SignerInfo", rb_cObject);
+    rb_define_const(mPKCS7, "Signer", cPKCS7Signer);
     rb_define_alloc_func(cPKCS7Signer, ossl_pkcs7si_alloc);
     rb_define_method(cPKCS7Signer, "initialize", ossl_pkcs7si_initialize,3);
-    rb_define_method(cPKCS7Signer, "name", ossl_pkcs7si_get_name,0);
+    rb_define_method(cPKCS7Signer, "issuer", ossl_pkcs7si_get_issuer, 0);
+    rb_define_alias(cPKCS7Signer, "name", "issuer");
     rb_define_method(cPKCS7Signer, "serial", ossl_pkcs7si_get_serial,0);
-    rb_define_method(cPKCS7Signer, "signed_time", ossl_pkcs7si_get_signed_time,0);
+    rb_define_method(cPKCS7Signer,"signed_time",ossl_pkcs7si_get_signed_time,0);
+
+    cPKCS7Recipient = rb_define_class_under(mPKCS7,"RecipientInfo",rb_cObject);
+    rb_define_alloc_func(cPKCS7Recipient, ossl_pkcs7ri_alloc);
+    rb_define_method(cPKCS7Recipient, "initialize", ossl_pkcs7ri_initialize,1); 
+    rb_define_method(cPKCS7Recipient, "issuer", ossl_pkcs7ri_get_issuer,0);
+    rb_define_method(cPKCS7Recipient, "serial", ossl_pkcs7ri_get_serial,0);
+    rb_define_method(cPKCS7Recipient, "enc_key", ossl_pkcs7ri_get_enc_key,0); 
 
 #define DefPKCS7Const(x) rb_define_const(mPKCS7, #x, INT2NUM(PKCS7_##x))
 

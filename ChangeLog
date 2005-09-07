@@ -1,3 +1,16 @@
+Wed Sep  7 15:48:37 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.c (asn1str_to_str): new function.
+
+	* ext/openssl/ossl_pkcs7.c: new class OpenSSL::PKCS7::RecipientInfo.
+	  this class wraps PKCS7_RECIP_INFO struct.
+
+	* ext/openssl/ossl_pkcs7.c: OpenSSL::PKCS7::Signer is renamed to
+	  OpenSSL::PKCS7::SignerInfo. ("Signer" remains as an alias of
+	  SignerInfo.)
+
+	* test/openssl/test_pkcs7.rb: new file.
+
 Wed Sep  7 12:55:08 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: abolish mod === tempfile to avoid a problem
