@@ -1,3 +1,8 @@
+Wed Sep  7 12:55:08 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/open-uri.rb: abolish mod === tempfile to avoid a problem
+	  [ruby-dev:26967].
+
 Wed Sep  7 10:45:15 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_thread_switch): convert all exceptions to
