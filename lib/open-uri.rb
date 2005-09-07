@@ -314,14 +314,14 @@ module OpenURI
         require 'tempfile'
         io = Tempfile.new('open-uri')
         io.binmode
-        Meta.init io, @io if Meta === @io
+        Meta.init io, @io if @io.respond_to? :meta
         io << @io.string
         @io = io
       end
     end
 
     def io
-      Meta.init @io unless Meta === @io
+      Meta.init @io unless @io.respond_to? :meta
       @io
     end
   end
