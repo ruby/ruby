@@ -187,10 +187,10 @@ extern int chown(const char *, int, int);
 extern int link(const char *, const char *);
 extern int gettimeofday(struct timeval *, struct timezone *);
 extern rb_pid_t waitpid (rb_pid_t, int *, int);
-extern int rb_w32_argv_size(char *const *);
-extern char *rb_w32_join_argv(char *, char *const *);
-extern int rb_w32_spawn(int, const char *, const char*);
-extern int rb_w32_aspawn(int, const char *, char *const *);
+extern int rb_w32_argv_size(const char *const *);
+extern char *rb_w32_join_argv(char *, const char *const *);
+extern int rb_w32_spawn(int, const char *, const char *);
+extern int rb_w32_aspawn(int, const char *, const char *const *);
 extern int kill(int, int);
 extern int fcntl(int, int, ...);
 extern rb_pid_t rb_w32_getpid(void);
@@ -199,7 +199,8 @@ extern int rb_w32_isatty(int);
 #endif
 extern int rb_w32_mkdir(const char *, int);
 extern int rb_w32_rmdir(const char *);
-extern int rb_w32_unlink(const char*);
+extern int rb_w32_unlink(const char *);
+extern int rb_w32_stat(const char *, struct stat *);
 
 #ifdef __BORLANDC__
 extern int rb_w32_fstat(int, struct stat *);
@@ -519,7 +520,7 @@ int  rb_w32_putc(int, FILE*);
 int  rb_w32_getc(FILE*);
 int  rb_w32_close(int);
 int  rb_w32_fclose(FILE*);
-int  rb_w32_utime(const char *, struct utimbuf *);
+int  rb_w32_utime(const char *, const struct utimbuf *);
 #define Sleep(msec) (void)rb_w32_sleep(msec)
 
 /*

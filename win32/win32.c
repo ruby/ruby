@@ -352,7 +352,8 @@ flock(int fd, int oper)
 			      (DWORD)-1);
 }
 
-static void init_env(void)
+static void
+init_env(void)
 {
     char env[_MAX_PATH];
     DWORD len;
@@ -617,10 +618,9 @@ rb_w32_get_osfhandle(int fh)
 }
 
 int
-rb_w32_argv_size(char *const *argv)
+rb_w32_argv_size(const char *const *argv)
 {
-    const char *p;
-    char *const *t;
+    const char *p, *const *t;
     int len, n, bs, quote;
 
     for (t = argv, len = 0; *t; t++) {
@@ -648,10 +648,10 @@ rb_w32_argv_size(char *const *argv)
 }
 
 char *
-rb_w32_join_argv(char *cmd, char *const *argv)
+rb_w32_join_argv(char *cmd, const char *const *argv)
 {
-    const char *p, *s;
-    char *q, *const *t;
+    const char *p, *s, *const *t;
+    char *q;
     int n, bs, quote;
 
     for (t = argv, q = cmd; p = *t; t++) {
@@ -846,7 +846,7 @@ rb_w32_spawn(int mode, const char *cmd, const char *prog)
 }
 
 int
-rb_w32_aspawn(int mode, const char *prog, char *const *argv)
+rb_w32_aspawn(int mode, const char *prog, const char *const *argv)
 {
     int len = rb_w32_argv_size(argv);
     char *cmd = ALLOCA_N(char, len);
@@ -3555,12 +3555,8 @@ unixtime_to_filetime(time_t time, FILETIME *ft)
     return 0;
 }
 
-#undef utime
-#ifdef __BORLANDC__
-#define utime _utime
-#endif
 int
-rb_w32_utime(const char *path, struct utimbuf *times)
+rb_w32_utime(const char *path, const struct utimbuf *times)
 {
     HANDLE hFile;
     SYSTEMTIME st;
