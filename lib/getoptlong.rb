@@ -113,7 +113,7 @@ class GetoptLong
   # argument ordering must be a member of ORDERINGS, i.e one of
   # GetoptLong::REQUIRE_ORDER, GetoptLong::PERMUTE,
   # GetoptLong::RETURN_IN_ORDER.  A RuntimeError is raised if
-  # option processin has already started.
+  # option processing has already started.
   #
   def ordering=(ordering)
     #
