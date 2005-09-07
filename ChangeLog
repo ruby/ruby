@@ -1,3 +1,11 @@
+Wed Sep  7 10:45:15 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_thread_switch): convert all exceptions to
+	  SystemExit.  fixed: [ruby-core:05724]
+
+	* eval.c (rb_thread_terminated): show backtrace before propagate
+	  exceptions to main thread.
+
 Wed Sep  7 09:21:41 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.[hc] (rb_w32_utime): constified.

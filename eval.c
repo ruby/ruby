@@ -10530,6 +10530,9 @@ rb_thread_switch(n)
       case RESTORE_EXIT:
 	ruby_errinfo = th_raise_exception;
 	ruby_current_node = th_raise_node;
+	if (!rb_obj_is_kind_of(ruby_errinfo, rb_eSystemExit)) {
+	    terminate_process(EXIT_FAILURE, ruby_errinfo);
+	}
 	rb_exc_raise(th_raise_exception);
 	break;
       case RESTORE_NORMAL:
@@ -12170,6 +12173,7 @@ rb_thread_terminated(th, state, status)
 	}
 	else if (th->safe < 4 && (ruby_thread_abort || th->abort || RTEST(ruby_debug))) {
 	    /* exit on main_thread */
+	    error_print();
 	    rb_thread_main_jump(ruby_errinfo, RESTORE_EXIT);
 	}
 	else {
