@@ -2054,7 +2054,10 @@ rb_obj_ivar_set(obj, iv, val)
  *     class Fred
  *       @@foo = 99
  *     end
- *     Fred.class_variable_get(:@foo)     #=> 99
+ *
+ *     def Fred.foo
+ *       class_variable_get(:@@foo)     #=> 99
+ *     end
  */
 
 static VALUE
@@ -2083,7 +2086,11 @@ rb_mod_cvar_get(obj, iv)
  *         @@foo
  *       end
  *     end
- *     Fred.class_variable_set(:@foo, 101)      #=> 101
+ *
+ *     def Fred.foo
+ *       class_variable_set(:@@foo, 101)      #=> 101
+ *     end
+ *     Fred.foo
  *     Fred.new.foo                             #=> 101
  */
 

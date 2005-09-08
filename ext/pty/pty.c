@@ -103,8 +103,6 @@ char	*MasterDevice = "/dev/pty%s",
 
 static char SlaveName[DEVICELEN];
 
-extern int errno;
-
 #ifndef HAVE_SETEUID
 # ifdef HAVE_SETREUID
 #  define seteuid(e)	setreuid(-1, (e))

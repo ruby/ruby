@@ -1,3 +1,8 @@
+Thu Sep  8 14:58:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* merged a patch from Takahiro Kambe <taca@back-street.net> to
+	  support DragonFly BSD.  [ruby-dev:26984]
+
 Wed Sep  7 12:55:08 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: abolish mod === tempfile to avoid a problem
@@ -28,6 +33,15 @@ Wed Sep  7 08:35:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (setup_passwd), ext/etc/extconf.rb: pw_age might be
 	  char*.  fixed: [ruby-core:05470]
+
+Wed Sep  7 08:32:47 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_mod_cvar_get, rb_mod_cvar_set): document fix from
+	  sheepman <sheepman@sheepman.sakura.ne.jp>; a bug in visibility
+	  description.  [ruby-dev:26965]
+
+	* sprintf.c (rb_f_sprintf): warn "too many argument" on verbose
+	  mode (-v/-w); backported from 1.9.  [ruby-dev:26963]
 
 Mon Sep  5 17:03:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
