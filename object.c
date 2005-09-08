@@ -2646,10 +2646,10 @@ Init_Object()
 		     rb_mod_const_missing, 1); /* in variable.c */
     rb_define_method(rb_cModule, "class_variables", 
 		     rb_mod_class_variables, 0); /* in variable.c */
-    rb_define_private_method(rb_cModule, "remove_class_variable", 
-			     rb_mod_remove_cvar, 1); /* in variable.c */
-    rb_define_private_method(rb_cModule, "class_variable_get", rb_mod_cvar_get, 1);
-    rb_define_private_method(rb_cModule, "class_variable_set", rb_mod_cvar_set, 2);
+    rb_define_method(rb_cModule, "remove_class_variable", 
+		     rb_mod_remove_cvar, 1); /* in variable.c */
+    rb_define_method(rb_cModule, "class_variable_get", rb_mod_cvar_get, 1);
+    rb_define_method(rb_cModule, "class_variable_set", rb_mod_cvar_set, 2);
 
     rb_define_method(rb_cClass, "allocate", rb_obj_alloc, 0);
     rb_define_method(rb_cClass, "new", rb_class_new_instance, -1);

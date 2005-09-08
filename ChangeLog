@@ -1,9 +1,15 @@
+Thu Sep  8 13:14:57 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
+
+	* missing/strchr.c (strrchr): fixed a bug in detecting NUL in a
+	  string.  [ruby-dev:26985]
+
 Wed Sep  7 17:29:27 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_engine.c (ossl_engine_s_by_id):
-	  OpenSSL::Engine.by_id calls given block before calling ENGINE_init
-	  (block parameter is the return value of this method itself).
-	  this functionality is useful to load dynamic shared engines. 
+	  OpenSSL::Engine.by_id calls given block before calling
+	  ENGINE_init (block parameter is the return value of this method
+	  itself).  this functionality is useful to load dynamic shared
+	  engines.
 
 		require "openssl"
 		pkcs11 = OpenSSL::Engine.by_id("dynamic"){|e|
@@ -72,6 +78,13 @@ Wed Sep  7 08:35:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/etc/etc.c (setup_passwd), ext/etc/extconf.rb: pw_age might be
 	  char*.  fixed: [ruby-core:05470]
+
+Wed Sep  7 08:32:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* string.c (rb_str_times): should taint empty strings as well.
+
+	* object.c (Init_Object): make class_variable_{get,set} public.
+	  [ruby-dev:26965]
 
 Mon Sep  5 22:28:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
