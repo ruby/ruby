@@ -2281,7 +2281,6 @@ static VALUE
 p_uid_change_privilege(obj, id)
     VALUE obj, id;
 {
-    extern int errno;
     int uid;
 
     check_uid_switch();
@@ -2886,7 +2885,6 @@ static VALUE
 p_gid_change_privilege(obj, id)
     VALUE obj, id;
 {
-    extern int errno;
     int gid;
 
     check_gid_switch();
@@ -3413,7 +3411,6 @@ static VALUE
 p_uid_switch(obj)
     VALUE obj;
 {
-    extern int errno;
     int uid, euid;
 
     check_uid_switch();
@@ -3455,7 +3452,6 @@ static VALUE
 p_uid_switch(obj)
     VALUE obj;
 {
-    extern int errno;
     int uid, euid;
 
     check_uid_switch();
@@ -3526,7 +3522,6 @@ static VALUE
 p_gid_switch(obj)
     VALUE obj;
 {
-    extern int errno;
     int gid, egid;
 
     check_gid_switch();
@@ -3567,7 +3562,6 @@ static VALUE
 p_gid_switch(obj)
     VALUE obj;
 {
-    extern int errno;
     int gid, egid;
 
     check_gid_switch();

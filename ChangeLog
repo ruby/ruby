@@ -1,3 +1,8 @@
+Thu Sep  8 14:58:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* merged a patch from Takahiro Kambe <taca@back-street.net> to
+	  support DragonFly BSD.  [ruby-dev:26984]
+
 Thu Sep  8 13:14:57 2005  Tadashi Saito  <shiba@mail2.accsnet.ne.jp>
 
 	* missing/strchr.c (strrchr): fixed a bug in detecting NUL in a
