@@ -19,8 +19,10 @@ strrchr(s, c)
     char *s;
     int c;
 {
-    char *save = 0;
+    char *save;
 
+    if (c == 0) return s + strlen(s);
+    save = 0;
     while (*s) {
 	if (*s == c)
 	    save = s;
