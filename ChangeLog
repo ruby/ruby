@@ -1,3 +1,8 @@
+Fri Sep  9 16:35:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* string.c (rb_str_times): make empty strings to keep taintness,
+	  and a little improvement.  [ruby-dev:26900]
+
 Thu Sep  8 14:58:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* merged a patch from Takahiro Kambe <taca@back-street.net> to

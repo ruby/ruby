@@ -416,17 +416,16 @@ rb_str_times(str, times)
     long i, len;
 
     len = NUM2LONG(times);
-    if (len == 0) return rb_str_new5(str,0,0);
     if (len < 0) {
 	rb_raise(rb_eArgError, "negative argument");
     }
-    if (LONG_MAX/len <  RSTRING(str)->len) {
+    if (len && LONG_MAX/len <  RSTRING(str)->len) {
 	rb_raise(rb_eArgError, "argument too big");
     }
 
-    str2 = rb_str_new5(str,0, RSTRING(str)->len*len);
-    for (i=0; i<len; i++) {
-	memcpy(RSTRING(str2)->ptr+(i*RSTRING(str)->len),
+    str2 = rb_str_new5(str,0, len *= RSTRING(str)->len);
+    for (i = 0; i < len; i += RSTRING(str)->len) {
+	memcpy(RSTRING(str2)->ptr + i,
 	       RSTRING(str)->ptr, RSTRING(str)->len);
     }
     RSTRING(str2)->ptr[RSTRING(str2)->len] = '\0';
