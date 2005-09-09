@@ -1,3 +1,8 @@
+Fri Sep  9 22:13:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_call0): prohibit calling tainted method (>2) when
+	  $SAFE == 0.
+
 Fri Sep  9 16:45:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_times): make empty strings to keep taintness,
