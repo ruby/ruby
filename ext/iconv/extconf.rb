@@ -21,9 +21,7 @@ if have_func("iconv", "iconv.h") or
         /\bconst\b/ =~ second
       end
     end
-    $defs.push('-DICONV_INPTR_CAST=""')
-  else
-    $defs.push('-DICONV_INPTR_CAST="(char **)"')
+    $defs.push('-DICONV_INPTR_CONST')
   end
   if conf
     prefix = '$(srcdir)'

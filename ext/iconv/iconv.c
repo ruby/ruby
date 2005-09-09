@@ -243,6 +243,11 @@ iconv_try
     size_t *outlen;
 #endif /* HAVE_PROTOTYPES */
 {
+#ifdef ICONV_INPTR_CONST
+#define ICONV_INPTR_CAST
+#else
+#define ICONV_INPTR_CAST (char **)
+#endif
     size_t ret = iconv(cd, ICONV_INPTR_CAST inptr, inlen, outptr, outlen);
     if (ret == (size_t)-1) {
 	if (!*inlen)

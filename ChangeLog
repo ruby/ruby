@@ -1,7 +1,10 @@
-Fri Sep  9 16:35:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep  9 16:45:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_times): make empty strings to keep taintness,
 	  and a little improvement.  [ruby-dev:26900]
+
+	* ext/iconv/iconv.c (iconv_try), ext/iconv/extconf.rb: get rid of meta
+	  characters in command line option.  fixed: [ruby-talk:155369]
 
 Thu Sep  8 14:58:11 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
