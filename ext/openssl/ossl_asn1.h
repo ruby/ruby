@@ -18,6 +18,11 @@ VALUE asn1time_to_time(ASN1_TIME *);
 time_t time_to_time_t(VALUE);
 
 /*
+ * ASN1_STRING conversions
+ */
+VALUE asn1str_to_str(ASN1_STRING *);
+
+/*
  * ASN1_INTEGER conversions
  */
 VALUE asn1integer_to_num(ASN1_INTEGER *);
