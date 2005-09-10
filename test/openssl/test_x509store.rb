@@ -191,6 +191,28 @@ class OpenSSL::TestX509Store < Test::Unit::TestCase
     assert_equal(OpenSSL::X509::V_ERR_CRL_HAS_EXPIRED, store.error)
     assert_equal(false, store.verify(ee2_cert))
   end
+
+  def test_set_errors
+    now = Time.now
+    ca1_cert = issue_cert(@ca1, @rsa2048, 1, now, now+3600, [],
+                          nil, nil, OpenSSL::Digest::SHA1.new)
+    store = OpenSSL::X509::Store.new
+    store.add_cert(ca1_cert)
+    assert_raises(OpenSSL::X509::StoreError){
+      store.add_cert(ca1_cert)  # add same certificate twice
+    }
+
+    revoke_info = []
+    crl1 = issue_crl(revoke_info, 1, now, now+1800, [],
+                     ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+    revoke_info = [ [2, now, 1], ]
+    crl2 = issue_crl(revoke_info, 2, now+1800, now+3600, [],
+                     ca1_cert, @rsa2048, OpenSSL::Digest::SHA1.new)
+    store.add_crl(crl1)
+    assert_raises(OpenSSL::X509::StoreError){
+      store.add_crl(crl2) # add CRL issued by same CA twice.
+    }
+  end
 end
 
 end

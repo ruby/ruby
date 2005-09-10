@@ -137,6 +137,7 @@ ossl_x509store_initialize(int argc, VALUE *argv, VALUE self)
     rb_iv_set(self, "@error", Qnil);
     rb_iv_set(self, "@error_string", Qnil);
     rb_iv_set(self, "@chain", Qnil);
+    rb_iv_set(self, "@time", Qnil);
 
     return self;
 }
@@ -244,7 +245,9 @@ ossl_x509store_set_default_paths(VALUE self)
     X509_STORE *store;
 
     GetX509Store(self, store);
-    X509_STORE_set_default_paths(store);
+    if (X509_STORE_set_default_paths(store) != 1){
+        ossl_raise(eX509StoreError, NULL);
+    }
 
     return Qnil;
 }
@@ -257,7 +260,9 @@ ossl_x509store_add_cert(VALUE self, VALUE arg)
 
     cert = GetX509CertPtr(arg); /* NO NEED TO DUP */
     GetX509Store(self, store);
-    X509_STORE_add_cert(store, cert);
+    if (X509_STORE_add_cert(store, cert) != 1){
+        ossl_raise(eX509StoreError, NULL);
+    }
 
     return self;
 }
@@ -270,7 +275,9 @@ ossl_x509store_add_crl(VALUE self, VALUE arg)
 
     crl = GetX509CRLPtr(arg); /* NO NEED TO DUP */
     GetX509Store(self, store);
-    X509_STORE_add_crl(store, crl);
+    if (X509_STORE_add_crl(store, crl) != 1){
+        ossl_raise(eX509StoreError, NULL);
+    }
 
     return self;
 }

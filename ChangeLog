@@ -1,3 +1,26 @@
+Sat Sep 10 09:51:30 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.c (ossl_raise): should use ERR_peek_last_error
+	  to get last error on the current thread. And should report
+	  errors are on the stack while OpenSSL.debug is true.
+
+	* ext/openssl/ossl.c (ossl_get_errors): new method for debugging
+	  this library.
+
+	* ext/openssl/ossl_ssl.c (ossl_sslctx_set_ciphers): fix error message.
+
+	* ext/openssl/ossl_x509req.c (ossl_x509req_set_attributes): get rid
+	  of unused variable.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_initialize): should
+	  set @time to avoid warning.
+
+	* ext/openssl/ossl_x509store.c (ossl_x509store_set_default_paths,
+	  X509_STORE_add_cert, X509_STORE_add_crl): should raise error if
+	  wrapped functions failed.
+
+	* test/openssl/test_x509store.rb: add test for errors.
+
 Fri Sep  9 22:13:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (rb_call0): prohibit calling tainted method (>2) when

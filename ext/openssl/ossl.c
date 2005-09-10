@@ -278,7 +278,7 @@ ossl_raise(VALUE exc, const char *fmt, ...)
     va_list args;
     char buf[BUFSIZ];
     const char *msg;
-    long e = ERR_get_error();
+    long e = ERR_peek_last_error();
     int len = 0;
 
     if (fmt) {
@@ -291,13 +291,32 @@ ossl_raise(VALUE exc, const char *fmt, ...)
 	    msg = ERR_error_string(e, NULL);
 	else
 	    msg = ERR_reason_error_string(e);
-	ERR_clear_error();
 	fmt = len ? ": %s" : "%s";
 	len += snprintf(buf+len, BUFSIZ-len, fmt, msg);
     }
+    if (dOSSL == Qtrue){ /* show all errors on the stack */
+	while ((e = ERR_get_error()) != 0){
+	    rb_warn("error on stack: %s", ERR_error_string(e, NULL));
+	}
+    }
+    ERR_clear_error();
 
     if(len > BUFSIZ) len = strlen(buf);
     rb_exc_raise(rb_exc_new(exc, buf, len));
+}
+
+VALUE
+ossl_get_errors()
+{
+    VALUE ary;
+    long e;
+
+    ary = rb_ary_new();
+    while ((e = ERR_get_error()) != 0){
+        rb_ary_push(ary, rb_str_new2(ERR_error_string(e, NULL)));
+    }
+
+    return ary;
 }
 
 /*
@@ -411,6 +430,7 @@ Init_openssl()
     dOSSL = Qfalse;
     rb_define_module_function(mOSSL, "debug", ossl_debug_get, 0);
     rb_define_module_function(mOSSL, "debug=", ossl_debug_set, 1);
+    rb_define_module_function(mOSSL, "errors", ossl_get_errors, 0);
 
     /*
      * Get ID of to_der
