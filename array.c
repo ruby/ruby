@@ -25,9 +25,7 @@ static ID id_cmp;
 
 
 void
-rb_mem_clear(mem, size)
-    register VALUE *mem;
-    register long size;
+rb_mem_clear(register VALUE *mem, register long size)
 {
     while (size--) {
 	*mem++ = Qnil;
@@ -35,10 +33,7 @@ rb_mem_clear(mem, size)
 }
 
 static inline void
-memfill(mem, size, val)
-    register VALUE *mem;
-    register long size;
-    register VALUE val;
+memfill(register VALUE *mem, register long size, register VALUE val)
 {
     while (size--) {
 	*mem++ = val;
@@ -48,8 +43,7 @@ memfill(mem, size, val)
 #define ARY_TMPLOCK  FL_USER1
 
 static inline void
-rb_ary_modify_check(ary)
-    VALUE ary;
+rb_ary_modify_check(VALUE ary)
 {
     if (OBJ_FROZEN(ary)) rb_error_frozen("array");
     if (FL_TEST(ary, ARY_TMPLOCK))
@@ -59,8 +53,7 @@ rb_ary_modify_check(ary)
 }
 
 static void
-rb_ary_modify(ary)
-    VALUE ary;
+rb_ary_modify(VALUE ary)
 {
     VALUE *ptr;
 
@@ -75,8 +68,7 @@ rb_ary_modify(ary)
 }
 
 VALUE
-rb_ary_freeze(ary)
-    VALUE ary;
+rb_ary_freeze(VALUE ary)
 {
     return rb_obj_freeze(ary);
 }
@@ -90,18 +82,15 @@ rb_ary_freeze(ary)
  */
 
 static VALUE
-rb_ary_frozen_p(ary)
-    VALUE ary;
+rb_ary_frozen_p(VALUE ary)
 {
     if (OBJ_FROZEN(ary)) return Qtrue;
     if (FL_TEST(ary, ARY_TMPLOCK)) return Qtrue;
     return Qfalse;
 }
 
-static VALUE ary_alloc(VALUE);
 static VALUE
-ary_alloc(klass)
-    VALUE klass;
+ary_alloc(VALUE klass)
 {
     NEWOBJ(ary, struct RArray);
     OBJSETUP(ary, klass, T_ARRAY);
@@ -114,9 +103,7 @@ ary_alloc(klass)
 }
 
 static VALUE
-ary_new(klass, len)
-    VALUE klass;
-    long len;
+ary_new(VALUE klass, long len)
 {
     VALUE ary;
 
@@ -136,15 +123,14 @@ ary_new(klass, len)
 }
 
 VALUE
-rb_ary_new2(len)
-    long len;
+rb_ary_new2(long len)
 {
     return ary_new(rb_cArray, len);
 }
 
 
 VALUE
-rb_ary_new()
+rb_ary_new(void)
 {
     return rb_ary_new2(ARY_DEFAULT_SIZE);
 }
@@ -158,13 +144,7 @@ rb_ary_new()
 #endif
 
 VALUE
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_ary_new3(long n, ...)
-#else
-rb_ary_new3(n, va_alist)
-    long n;
-    va_dcl
-#endif
 {
     va_list ar;
     VALUE ary;
@@ -183,9 +163,7 @@ rb_ary_new3(n, va_alist)
 }
 
 VALUE
-rb_ary_new4(n, elts)
-    long n;
-    const VALUE *elts;
+rb_ary_new4(long n, const VALUE *elts)
 {
     VALUE ary;
 
@@ -199,13 +177,7 @@ rb_ary_new4(n, elts)
 }
 
 VALUE
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_values_new(long n, ...)
-#else
-rb_values_new(n, va_alist)
-    long n;
-    va_dcl
-#endif
 {
     va_list ar;
     VALUE val;
@@ -223,9 +195,7 @@ rb_values_new(n, va_alist)
 }
 
 VALUE
-rb_values_new2(n, elts)
-    long n;
-    const VALUE *elts;
+rb_values_new2(long n, const VALUE *elts)
 {
     VALUE val;
 
@@ -239,8 +209,7 @@ rb_values_new2(n, elts)
 }
 
 static VALUE
-ary_make_shared(ary)
-    VALUE ary;
+ary_make_shared(VALUE ary)
 {
     if (!FL_TEST(ary, ELTS_SHARED)) {
 	NEWOBJ(shared, struct RArray);
@@ -260,8 +229,7 @@ ary_make_shared(ary)
 }
 
 static VALUE
-ary_shared_array(klass, ary)
-    VALUE klass, ary;
+ary_shared_array(VALUE klass, VALUE ary)
 {
     VALUE val = ary_alloc(klass);
 
@@ -274,48 +242,42 @@ ary_shared_array(klass, ary)
 }
 
 VALUE
-rb_values_from_ary(ary)
-    VALUE ary;
+rb_values_from_ary(VALUE ary)
 {
     return ary_shared_array(rb_cValues, ary);
 }
 
 VALUE
-rb_ary_from_values(val)
-    VALUE val;
+rb_ary_from_values(VALUE val)
 {
     return ary_shared_array(rb_cArray, val);
 }
 
 VALUE
-rb_assoc_new(car, cdr)
-    VALUE car, cdr;
+rb_assoc_new(VALUE car, VALUE cdr)
 {
     return rb_values_new(2, car, cdr);
 }
 
 static VALUE
-to_ary(ary)
-    VALUE ary;
+to_ary(VALUE ary)
 {
     return rb_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
 static VALUE
-to_a(ary)
-    VALUE ary;
+to_a(VALUE ary)
 {
     return rb_convert_type(ary, T_ARRAY, "Array", "to_a");
 }
 
 VALUE
-rb_check_array_type(ary)
-    VALUE ary;
+rb_check_array_type(VALUE ary)
 {
     return rb_check_convert_type(ary, T_ARRAY, "Array", "to_ary");
 }
 
-static VALUE rb_ary_replace _((VALUE, VALUE));
+static VALUE rb_ary_replace(VALUE, VALUE);
 
 /*
  *  call-seq:
@@ -356,10 +318,7 @@ static VALUE rb_ary_replace _((VALUE, VALUE));
  */
 
 static VALUE
-rb_ary_initialize(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_initialize(int argc, VALUE *argv, VALUE ary)
 {
     long len;
     VALUE size, val;
@@ -421,10 +380,7 @@ rb_ary_initialize(argc, argv, ary)
 */
 
 static VALUE
-rb_ary_s_create(argc, argv, klass)
-    int argc;
-    VALUE *argv;
-    VALUE klass;
+rb_ary_s_create(int argc, VALUE *argv, VALUE klass)
 {
     VALUE ary = ary_alloc(klass);
 
@@ -438,10 +394,7 @@ rb_ary_s_create(argc, argv, klass)
 }
 
 void
-rb_ary_store(ary, idx, val)
-    VALUE ary;
-    long idx;
-    VALUE val;
+rb_ary_store(VALUE ary, long idx, VALUE val)
 {
     if (idx < 0) {
 	idx += RARRAY(ary)->len;
@@ -477,10 +430,7 @@ rb_ary_store(ary, idx, val)
 }
 
 static VALUE
-ary_shared_first(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+ary_shared_first(int argc, VALUE *argv, VALUE ary)
 {
     VALUE nv, result;
     long n;
@@ -499,10 +449,7 @@ ary_shared_first(argc, argv, ary)
 }
 
 static VALUE
-ary_shared_last(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+ary_shared_last(int argc, VALUE *argv, VALUE ary)
 {
     VALUE result = ary_shared_first(argc, argv, ary);
 
@@ -524,9 +471,7 @@ ary_shared_last(argc, argv, ary)
  */
 
 VALUE
-rb_ary_push(ary, item)
-    VALUE ary;
-    VALUE item;
+rb_ary_push(VALUE ary, VALUE item)
 {
     rb_ary_store(ary, RARRAY(ary)->len, item);
     return ary;
@@ -546,10 +491,7 @@ rb_ary_push(ary, item)
  */
 
 static VALUE
-rb_ary_push_m(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_push_m(int argc, VALUE *argv, VALUE ary)
 {
     while (argc--) {
 	rb_ary_push(ary, *argv++);
@@ -558,8 +500,7 @@ rb_ary_push_m(argc, argv, ary)
 }
 
 VALUE
-rb_ary_pop(ary)
-    VALUE ary;
+rb_ary_pop(VALUE ary)
 {
     rb_ary_modify_check(ary);
     if (RARRAY(ary)->len == 0) return Qnil;
@@ -586,10 +527,7 @@ rb_ary_pop(ary)
  */
 
 static VALUE
-rb_ary_pop_m(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_pop_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE result;
 
@@ -605,8 +543,7 @@ rb_ary_pop_m(argc, argv, ary)
 }
 
 VALUE
-rb_ary_shift(ary)
-    VALUE ary;
+rb_ary_shift(VALUE ary)
 {
     VALUE top;
 
@@ -638,10 +575,7 @@ rb_ary_shift(ary)
  */
 
 static VALUE
-rb_ary_shift_m(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_shift_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE result;
     long n;
@@ -661,8 +595,7 @@ rb_ary_shift_m(argc, argv, ary)
 }
 
 VALUE
-rb_ary_unshift(ary, item)
-    VALUE ary, item;
+rb_ary_unshift(VALUE ary, VALUE item)
 {
     rb_ary_modify(ary);
     if (RARRAY(ary)->len == RARRAY(ary)->aux.capa) {
@@ -696,10 +629,7 @@ rb_ary_unshift(ary, item)
  */
 
 static VALUE
-rb_ary_unshift_m(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_unshift_m(int argc, VALUE *argv, VALUE ary)
 {
     long len = RARRAY(ary)->len;
 
@@ -717,9 +647,7 @@ rb_ary_unshift_m(argc, argv, ary)
 
 /* faster version - use this if you don't need to treat negative offset */
 static inline VALUE
-rb_ary_elt(ary, offset)
-    VALUE ary;
-    long offset;
+rb_ary_elt(VALUE ary, long offset)
 {
     if (RARRAY(ary)->len == 0) return Qnil;
     if (offset < 0 || RARRAY(ary)->len <= offset) {
@@ -729,9 +657,7 @@ rb_ary_elt(ary, offset)
 }
 
 VALUE
-rb_ary_entry(ary, offset)
-    VALUE ary;
-    long offset;
+rb_ary_entry(VALUE ary, long offset)
 {
     if (offset < 0) {
 	offset += RARRAY(ary)->len;
@@ -740,9 +666,7 @@ rb_ary_entry(ary, offset)
 }
 
 static VALUE
-rb_ary_subseq(ary, beg, len)
-    VALUE ary;
-    long beg, len;
+rb_ary_subseq(VALUE ary, long beg, long len)
 {
     VALUE klass, ary2, shared;
     VALUE *ptr;
@@ -802,10 +726,7 @@ rb_ary_subseq(ary, beg, len)
  */
 
 VALUE
-rb_ary_aref(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_aref(int argc, VALUE *argv, VALUE ary)
 {
     VALUE arg;
     long beg, len;
@@ -854,8 +775,7 @@ rb_ary_aref(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_at(ary, pos)
-    VALUE ary, pos;
+rb_ary_at(VALUE ary, VALUE pos)
 {
     return rb_ary_entry(ary, NUM2LONG(pos));
 }
@@ -874,10 +794,7 @@ rb_ary_at(ary, pos)
  */
 
 static VALUE
-rb_ary_first(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_first(int argc, VALUE *argv, VALUE ary)
 {
     if (argc == 0) {
 	if (RARRAY(ary)->len == 0) return Qnil;
@@ -902,10 +819,7 @@ rb_ary_first(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_last(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_last(int argc, VALUE *argv, VALUE ary)
 {
     if (argc == 0) {
 	if (RARRAY(ary)->len == 0) return Qnil;
@@ -937,10 +851,7 @@ rb_ary_last(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_fetch(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_fetch(int argc, VALUE *argv, VALUE ary)
 {
     VALUE pos, ifnone;
     long block_given;
@@ -983,10 +894,7 @@ rb_ary_fetch(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_index(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_index(int argc, VALUE *argv, VALUE ary)
 {
     VALUE val;
     long i;
@@ -1024,10 +932,7 @@ rb_ary_index(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_rindex(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_rindex(int argc, VALUE *argv, VALUE ary)
 {
     VALUE val;
     long i = RARRAY(ary)->len;
@@ -1055,8 +960,7 @@ rb_ary_rindex(argc, argv, ary)
 }
 
 VALUE
-rb_ary_to_ary(obj)
-    VALUE obj;
+rb_ary_to_ary(VALUE obj)
 {
     if (TYPE(obj) == T_ARRAY) {
 	return obj;
@@ -1068,10 +972,7 @@ rb_ary_to_ary(obj)
 }
 
 static void
-rb_ary_splice(ary, beg, len, rpl)
-    VALUE ary;
-    long beg, len;
-    VALUE rpl;
+rb_ary_splice(VALUE ary, long beg, long len, VALUE rpl)
 {
     long rlen;
 
@@ -1161,10 +1062,7 @@ rb_ary_splice(ary, beg, len, rpl)
  */
 
 static VALUE
-rb_ary_aset(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_aset(int argc, VALUE *argv, VALUE ary)
 {
     long offset, beg, len;
 
@@ -1204,10 +1102,7 @@ fixnum:
  */
 
 static VALUE
-rb_ary_insert(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_insert(int argc, VALUE *argv, VALUE ary)
 {
     long pos;
 
@@ -1243,8 +1138,7 @@ rb_ary_insert(argc, argv, ary)
  */
 
 VALUE
-rb_ary_each(ary)
-    VALUE ary;
+rb_ary_each(VALUE ary)
 {
     long i;
 
@@ -1271,8 +1165,7 @@ rb_ary_each(ary)
  */
 
 static VALUE
-rb_ary_each_index(ary)
-    VALUE ary;
+rb_ary_each_index(VALUE ary)
 {
     long i;
 
@@ -1299,8 +1192,7 @@ rb_ary_each_index(ary)
  */
 
 static VALUE
-rb_ary_reverse_each(ary)
-    VALUE ary;
+rb_ary_reverse_each(VALUE ary)
 {
     long len = RARRAY(ary)->len;
 
@@ -1324,8 +1216,7 @@ rb_ary_reverse_each(ary)
  */
 
 static VALUE
-rb_ary_length(ary)
-    VALUE ary;
+rb_ary_length(VALUE ary)
 {
     return LONG2NUM(RARRAY(ary)->len);
 }
@@ -1340,8 +1231,7 @@ rb_ary_length(ary)
  */
 
 static VALUE
-rb_ary_empty_p(ary)
-    VALUE ary;
+rb_ary_empty_p(VALUE ary)
 {
     if (RARRAY(ary)->len == 0)
 	return Qtrue;
@@ -1349,8 +1239,7 @@ rb_ary_empty_p(ary)
 }
 
 VALUE
-rb_ary_dup(ary)
-    VALUE ary;
+rb_ary_dup(VALUE ary)
 {
     VALUE dup = rb_ary_new2(RARRAY(ary)->len);
 
@@ -1363,10 +1252,7 @@ rb_ary_dup(ary)
 extern VALUE rb_output_fs;
 
 static VALUE
-recursive_join(ary, arg, recur)
-    VALUE ary;
-    VALUE *arg;
-    int recur;
+recursive_join(VALUE ary, VALUE *arg, int recur)
 {
     if (recur) {
 	return rb_str_new2("[...]");
@@ -1375,8 +1261,7 @@ recursive_join(ary, arg, recur)
 }
 
 VALUE
-rb_ary_join(ary, sep)
-    VALUE ary, sep;
+rb_ary_join(VALUE ary, VALUE sep)
 {
     long len = 1, i;
     int taint = Qfalse;
@@ -1433,10 +1318,7 @@ rb_ary_join(ary, sep)
  */
 
 static VALUE
-rb_ary_join_m(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_join_m(int argc, VALUE *argv, VALUE ary)
 {
     VALUE sep;
 
@@ -1457,8 +1339,7 @@ rb_ary_join_m(argc, argv, ary)
  */
 
 VALUE
-rb_ary_to_s(ary)
-    VALUE ary;
+rb_ary_to_s(VALUE ary)
 {
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
     
@@ -1466,10 +1347,7 @@ rb_ary_to_s(ary)
 }
 
 static VALUE
-inspect_ary(ary, dummy, recur)
-    VALUE ary;
-    VALUE dummy;
-    int recur;
+inspect_ary(VALUE ary, VALUE dummy, int recur)
 {
     int tainted = OBJ_TAINTED(ary);
     long i;
@@ -1496,8 +1374,7 @@ inspect_ary(ary, dummy, recur)
  */
 
 static VALUE
-rb_ary_inspect(ary)
-    VALUE ary;
+rb_ary_inspect(VALUE ary)
 {
     if (RARRAY(ary)->len == 0) return rb_str_new2("[]");
     return rb_exec_recursive(inspect_ary, ary, 0);
@@ -1512,8 +1389,7 @@ rb_ary_inspect(ary)
  */
 
 static VALUE
-rb_ary_to_a(ary)
-    VALUE ary;
+rb_ary_to_a(VALUE ary)
 {
     if (rb_obj_class(ary) != rb_cArray) {
 	VALUE dup = rb_ary_new2(RARRAY(ary)->len);
@@ -1531,15 +1407,13 @@ rb_ary_to_a(ary)
  */
 
 static VALUE
-rb_ary_to_ary_m(ary)
-    VALUE ary;
+rb_ary_to_ary_m(VALUE ary)
 {
     return ary;
 }
 
 VALUE
-rb_ary_reverse(ary)
-    VALUE ary;
+rb_ary_reverse(VALUE ary)
 {
     VALUE *p1, *p2;
     VALUE tmp;
@@ -1570,8 +1444,7 @@ rb_ary_reverse(ary)
  */
 
 static VALUE
-rb_ary_reverse_bang(ary)
-    VALUE ary;
+rb_ary_reverse_bang(VALUE ary)
 {
     return rb_ary_reverse(ary);
 }
@@ -1587,8 +1460,7 @@ rb_ary_reverse_bang(ary)
  */
 
 static VALUE
-rb_ary_reverse_m(ary)
-    VALUE ary;
+rb_ary_reverse_m(VALUE ary)
 {
     return rb_ary_reverse(rb_ary_dup(ary));
 }
@@ -1600,8 +1472,7 @@ struct ary_sort_data {
 };
 
 static void
-ary_sort_check(data)
-    struct ary_sort_data *data;
+ary_sort_check(struct ary_sort_data *data)
 {
     if (RARRAY(data->ary)->ptr != data->ptr || RARRAY(data->ary)->len != data->len) {
 	rb_raise(rb_eRuntimeError, "array modified during sort");
@@ -1609,9 +1480,7 @@ ary_sort_check(data)
 }
 
 static int
-sort_1(a, b, data)
-    VALUE *a, *b;
-    struct ary_sort_data *data;
+sort_1(VALUE *a, VALUE *b, struct ary_sort_data *data)
 {
     VALUE retval = rb_yield_values(2, *a, *b);
     int n;
@@ -1622,9 +1491,7 @@ sort_1(a, b, data)
 }
 
 static int
-sort_2(ap, bp, data)
-    VALUE *ap, *bp;
-    struct ary_sort_data *data;
+sort_2(VALUE *ap, VALUE *bp, struct ary_sort_data *data)
 {
     VALUE retval;
     VALUE a = *ap, b = *bp;
@@ -1647,8 +1514,7 @@ sort_2(ap, bp, data)
 }
 
 static VALUE
-sort_internal(ary)
-    VALUE ary;
+sort_internal(VALUE ary)
 {
     struct ary_sort_data data;
 
@@ -1660,8 +1526,7 @@ sort_internal(ary)
 }
 
 static VALUE
-sort_unlock(ary)
-    VALUE ary;
+sort_unlock(VALUE ary)
 {
     FL_UNSET(ary, ARY_TMPLOCK);
     return ary;
@@ -1684,8 +1549,7 @@ sort_unlock(ary)
  */
 
 VALUE
-rb_ary_sort_bang(ary)
-    VALUE ary;
+rb_ary_sort_bang(VALUE ary)
 {
     rb_ary_modify(ary);
     if (RARRAY(ary)->len > 1) {
@@ -1712,8 +1576,7 @@ rb_ary_sort_bang(ary)
  */
 
 VALUE
-rb_ary_sort(ary)
-    VALUE ary;
+rb_ary_sort(VALUE ary)
 {
     ary = rb_ary_dup(ary);
     rb_ary_sort_bang(ary);
@@ -1735,8 +1598,7 @@ rb_ary_sort(ary)
  */
 
 static VALUE
-rb_ary_collect(ary)
-    VALUE ary;
+rb_ary_collect(VALUE ary)
 {
     long i;
     VALUE collect;
@@ -1764,8 +1626,7 @@ rb_ary_collect(ary)
  */
 
 static VALUE
-rb_ary_collect_bang(ary)
-    VALUE ary;
+rb_ary_collect_bang(VALUE ary)
 {
     long i;
 
@@ -1778,12 +1639,7 @@ rb_ary_collect_bang(ary)
 }
 
 VALUE
-rb_get_values_at(obj, olen, argc, argv, func)
-    VALUE obj;
-    long olen;
-    int argc;
-    VALUE *argv;
-    VALUE (*func) _((VALUE,long));
+rb_get_values_at(VALUE obj, long olen, int argc, VALUE *argv, VALUE (*func) (VALUE, long))
 {
     VALUE result = rb_ary_new2(argc);
     long beg, len, i, j;
@@ -1827,10 +1683,7 @@ rb_get_values_at(obj, olen, argc, argv, func)
  */
 
 static VALUE
-rb_ary_values_at(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_values_at(int argc, VALUE *argv, VALUE ary)
 {
     return rb_get_values_at(ary, RARRAY(ary)->len, argc, argv, rb_ary_entry);
 }
@@ -1848,8 +1701,7 @@ rb_ary_values_at(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_select(ary)
-    VALUE ary;
+rb_ary_select(VALUE ary)
 {
     VALUE result;
     long i;
@@ -1882,9 +1734,7 @@ rb_ary_select(ary)
  */
 
 VALUE
-rb_ary_delete(ary, item)
-    VALUE ary;
-    VALUE item;
+rb_ary_delete(VALUE ary, VALUE item)
 {
     long i1, i2;
 
@@ -1918,9 +1768,7 @@ rb_ary_delete(ary, item)
 }
 
 VALUE
-rb_ary_delete_at(ary, pos)
-    VALUE ary;
-    long pos;
+rb_ary_delete_at(VALUE ary, long pos)
 {
     long i, len = RARRAY(ary)->len;
     VALUE del;
@@ -1956,8 +1804,7 @@ rb_ary_delete_at(ary, pos)
  */
 
 static VALUE
-rb_ary_delete_at_m(ary, pos)
-    VALUE ary, pos;
+rb_ary_delete_at_m(VALUE ary, VALUE pos)
 {
     return rb_ary_delete_at(ary, NUM2LONG(pos));
 }
@@ -1988,10 +1835,7 @@ rb_ary_delete_at_m(ary, pos)
  */
 
 static VALUE
-rb_ary_slice_bang(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_slice_bang(int argc, VALUE *argv, VALUE ary)
 {
     VALUE arg1, arg2;
     long pos, len;
@@ -2026,8 +1870,7 @@ rb_ary_slice_bang(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_reject_bang(ary)
-    VALUE ary;
+rb_ary_reject_bang(VALUE ary)
 {
     long i1, i2;
 
@@ -2057,8 +1900,7 @@ rb_ary_reject_bang(ary)
  */
 
 static VALUE
-rb_ary_reject(ary)
-    VALUE ary;
+rb_ary_reject(VALUE ary)
 {
     RETURN_ENUMERATOR(ary, 0, 0);
     ary = rb_ary_dup(ary);
@@ -2078,8 +1920,7 @@ rb_ary_reject(ary)
  */
 
 static VALUE
-rb_ary_delete_if(ary)
-    VALUE ary;
+rb_ary_delete_if(VALUE ary)
 {
     rb_ary_reject_bang(ary);
     return ary;
@@ -2108,10 +1949,7 @@ rb_ary_delete_if(ary)
  */
 
 static VALUE
-rb_ary_zip(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_zip(int argc, VALUE *argv, VALUE ary)
 {
     int i, j;
     long len;
@@ -2158,8 +1996,7 @@ rb_ary_zip(argc, argv, ary)
  */
 
 static VALUE
-rb_ary_transpose(ary)
-    VALUE ary;
+rb_ary_transpose(VALUE ary)
 {
     long elen = -1, alen, i, j;
     VALUE tmp, result = 0;
@@ -2199,8 +2036,7 @@ rb_ary_transpose(ary)
  */
 
 static VALUE
-rb_ary_replace(copy, orig)
-    VALUE copy, orig;
+rb_ary_replace(VALUE copy, VALUE orig)
 {
     VALUE shared;
 
@@ -2229,8 +2065,7 @@ rb_ary_replace(copy, orig)
  */
 
 VALUE
-rb_ary_clear(ary)
-    VALUE ary;
+rb_ary_clear(VALUE ary)
 {
     rb_ary_modify(ary);
     RARRAY(ary)->len = 0;
@@ -2266,10 +2101,7 @@ rb_ary_clear(ary)
  */
 
 static VALUE
-rb_ary_fill(argc, argv, ary)
-    int argc;
-    VALUE *argv;
-    VALUE ary;
+rb_ary_fill(int argc, VALUE *argv, VALUE ary)
 {
     VALUE item, arg1, arg2;
     long beg, end, len;
@@ -2347,8 +2179,7 @@ rb_ary_fill(argc, argv, ary)
  */
 
 VALUE
-rb_ary_plus(x, y)
-    VALUE x, y;
+rb_ary_plus(VALUE x, VALUE y)
 {
     VALUE z;
     long len;
@@ -2373,8 +2204,7 @@ rb_ary_plus(x, y)
 
 
 VALUE
-rb_ary_concat(x, y)
-    VALUE x, y;
+rb_ary_concat(VALUE x, VALUE y)
 {
     y = to_ary(y);
     if (RARRAY(y)->len > 0) {
@@ -2400,8 +2230,7 @@ rb_ary_concat(x, y)
  */
 
 static VALUE
-rb_ary_times(ary, times)
-    VALUE ary, times;
+rb_ary_times(VALUE ary, VALUE times)
 {
     VALUE ary2, tmp;
     long i, len;
@@ -2453,8 +2282,7 @@ rb_ary_times(ary, times)
  */
 
 VALUE
-rb_ary_assoc(ary, key)
-    VALUE ary, key;
+rb_ary_assoc(VALUE ary, VALUE key)
 {
     long i;
     VALUE v;
@@ -2484,8 +2312,7 @@ rb_ary_assoc(ary, key)
  */
 
 VALUE
-rb_ary_rassoc(ary, value)
-    VALUE ary, value;
+rb_ary_rassoc(VALUE ary, VALUE value)
 {
     long i;
     VALUE v;
@@ -2515,8 +2342,7 @@ rb_ary_rassoc(ary, value)
  */
 
 static VALUE
-rb_ary_equal(ary1, ary2)
-    VALUE ary1, ary2;
+rb_ary_equal(VALUE ary1, VALUE ary2)
 {
     long i;
 
@@ -2544,8 +2370,7 @@ rb_ary_equal(ary1, ary2)
  */
 
 static VALUE
-rb_ary_eql(ary1, ary2)
-    VALUE ary1, ary2;
+rb_ary_eql(VALUE ary1, VALUE ary2)
 {
     long i;
 
@@ -2560,9 +2385,7 @@ rb_ary_eql(ary1, ary2)
 }
 
 static VALUE
-recursive_hash(ary, dummy, recur)
-    VALUE ary, dummy;
-    int recur;
+recursive_hash(VALUE ary, VALUE dummy, int recur)
 {
     long i, h;
     VALUE n;
@@ -2588,8 +2411,7 @@ recursive_hash(ary, dummy, recur)
  */
 
 static VALUE
-rb_ary_hash(ary)
-    VALUE ary;
+rb_ary_hash(VALUE ary)
 {
     return rb_exec_recursive(recursive_hash, ary, 0);
 }
@@ -2608,9 +2430,7 @@ rb_ary_hash(ary)
  */
 
 VALUE
-rb_ary_includes(ary, item)
-    VALUE ary;
-    VALUE item;
+rb_ary_includes(VALUE ary, VALUE item)
 {
     long i;
     
@@ -2644,8 +2464,7 @@ rb_ary_includes(ary, item)
  */
 
 VALUE
-rb_ary_cmp(ary1, ary2)
-    VALUE ary1, ary2;
+rb_ary_cmp(VALUE ary1, VALUE ary2)
 {
     long i, len;
 
@@ -2667,8 +2486,7 @@ rb_ary_cmp(ary1, ary2)
 }
 
 static VALUE
-ary_make_hash(ary1, ary2)
-    VALUE ary1, ary2;
+ary_make_hash(VALUE ary1, VALUE ary2)
 {
     VALUE hash = rb_hash_new();
     long i;
@@ -2697,8 +2515,7 @@ ary_make_hash(ary1, ary2)
  */
 
 static VALUE
-rb_ary_diff(ary1, ary2)
-    VALUE ary1, ary2;
+rb_ary_diff(VALUE ary1, VALUE ary2)
 {
     VALUE ary3, hash;
     long i;
@@ -2725,8 +2542,7 @@ rb_ary_diff(ary1, ary2)
 
 
 static VALUE
-rb_ary_and(ary1, ary2)
-    VALUE ary1, ary2;
+rb_ary_and(VALUE ary1, VALUE ary2)
 {
     VALUE hash, ary3, v, vv;
     long i;
@@ -2758,8 +2574,7 @@ rb_ary_and(ary1, ary2)
  */
 
 static VALUE
-rb_ary_or(ary1, ary2)
-    VALUE ary1, ary2;
+rb_ary_or(VALUE ary1, VALUE ary2)
 {
     VALUE hash, ary3;
     VALUE v, vv;
@@ -2799,8 +2614,7 @@ rb_ary_or(ary1, ary2)
  */
 
 static VALUE
-rb_ary_uniq_bang(ary)
-    VALUE ary;
+rb_ary_uniq_bang(VALUE ary)
 {
     VALUE hash, v, vv;
     long i, j;
@@ -2832,8 +2646,7 @@ rb_ary_uniq_bang(ary)
  */
 
 static VALUE
-rb_ary_uniq(ary)
-    VALUE ary;
+rb_ary_uniq(VALUE ary)
 {
     ary = rb_ary_dup(ary);
     rb_ary_uniq_bang(ary);
@@ -2852,8 +2665,7 @@ rb_ary_uniq(ary)
  */
 
 static VALUE
-rb_ary_compact_bang(ary)
-    VALUE ary;
+rb_ary_compact_bang(VALUE ary)
 {
     VALUE *p, *t, *end;
 
@@ -2885,8 +2697,7 @@ rb_ary_compact_bang(ary)
  */
 
 static VALUE
-rb_ary_compact(ary)
-    VALUE ary;
+rb_ary_compact(VALUE ary)
 {
     ary = rb_ary_dup(ary);
     rb_ary_compact_bang(ary);
@@ -2909,8 +2720,7 @@ rb_ary_compact(ary)
  */
 
 static VALUE
-rb_ary_nitems(ary)
-    VALUE ary;
+rb_ary_nitems(VALUE ary)
 {
     long n = 0;
  
@@ -2935,10 +2745,7 @@ rb_ary_nitems(ary)
 }
 
 static long
-flatten(ary, idx, ary2, memo)
-    VALUE ary;
-    long idx;
-    VALUE ary2, memo;
+flatten(VALUE ary, long idx, VALUE ary2, VALUE memo)
 {
     VALUE id;
     long i = idx;
@@ -2980,8 +2787,7 @@ flatten(ary, idx, ary2, memo)
  */
 
 static VALUE
-rb_ary_flatten_bang(ary)
-    VALUE ary;
+rb_ary_flatten_bang(VALUE ary)
 {
     long i = 0;
     int mod = 0;
@@ -3020,8 +2826,7 @@ rb_ary_flatten_bang(ary)
  */
 
 static VALUE
-rb_ary_flatten(ary)
-    VALUE ary;
+rb_ary_flatten(VALUE ary)
 {
     ary = rb_ary_dup(ary);
     rb_ary_flatten_bang(ary);
@@ -3037,7 +2842,7 @@ rb_ary_flatten(ary)
  */
 
 void
-Init_Array()
+Init_Array(void)
 {
     rb_cArray  = rb_define_class("Array", rb_cObject);
     rb_include_module(rb_cArray, rb_mEnumerable);

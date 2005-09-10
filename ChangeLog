@@ -1,3 +1,12 @@
+Sat Sep 10 22:34:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* array.c: protoize.
+
+Sat Sep 10 00:23:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (splat_value): simpler and consistent array conversion
+	  for argument splat.  [yarv-dev:599]
+
 Fri Sep  9 16:45:25 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* string.c (rb_str_times): make empty strings to keep taintness,

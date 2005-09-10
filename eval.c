@@ -377,8 +377,10 @@ static ID init, eqq, each, aref, aset, match, missing;
 static ID added, singleton_added;
 static ID __id__, __send__, respond_to;
 
-#define NOEX_WITH_SAFE(n) ((n) | ruby_safe_level << 4)
+#define NOEX_TAINTED 8
 #define NOEX_SAFE(n) ((n) >> 4)
+#define NOEX_WITH(n, v) ((n) | (v) << 4)
+#define NOEX_WITH_SAFE(n) NOEX_WITH(n, ruby_safe_level)
 
 void
 rb_add_method(klass, mid, node, noex)
@@ -2778,11 +2780,11 @@ static VALUE
 splat_value(v)
     VALUE v;
 {
-    VALUE val;
+    VALUE tmp = rb_check_array_type(v);
 
-    if (NIL_P(v)) val = rb_ary_new3(1, Qnil);
-    else val = rb_Array(v);
-    return rb_values_from_ary(val);
+    if (NIL_P(tmp)) v = rb_ary_new3(1, v);
+    else v = tmp;
+    return rb_values_from_ary(v);
 }
 
 static VALUE
@@ -5924,12 +5926,16 @@ rb_call0(klass, recv, id, oid, argc, argv, body, flags)
 	    }
 	    b2 = body = body->nd_next;
 
-	    PUSH_VARS();
-	    PUSH_TAG(PROT_FUNC);
 	    if (NOEX_SAFE(flags) > ruby_safe_level) {
+		if (ruby_safe_level == 0 && NOEX_SAFE(flags) > 2) {
+		    rb_raise(rb_eSecurityError, "calling insecure method: %s",
+			     rb_id2name(id));
+		}
 		safe = ruby_safe_level;
 		ruby_safe_level = NOEX_SAFE(flags);
 	    }
+	    PUSH_VARS();
+	    PUSH_TAG(PROT_FUNC);
 	    if ((state = EXEC_TAG()) == 0) {
 		NODE *node = 0;
 
@@ -8359,9 +8365,11 @@ static void
 proc_save_safe_level(data)
     VALUE data;
 {
-    int safe = ruby_safe_level;
-    if (safe > PROC_TMAX) safe = PROC_TMAX;
-    FL_SET(data, (safe << PROC_TSHIFT) & PROC_TMASK);
+    if (ruby_safe_level >= 3) {
+	int safe = ruby_safe_level;
+	if (safe > PROC_TMAX) safe = PROC_TMAX;
+	FL_SET(data, (safe << PROC_TSHIFT) & PROC_TMASK);
+    }
 }
 
 static int
@@ -8575,7 +8583,7 @@ proc_invoke(proc, args, self, klass)
     ruby_block = old_block;
     ruby_wrapper = old_wrapper;
     POP_VARS();
-    if (proc_safe_level_p(proc)) ruby_safe_level = safe;
+    ruby_safe_level = safe;
 
     switch (state) {
       case 0:
@@ -9238,14 +9246,20 @@ rb_method_call(argc, argv, method)
 {
     VALUE result = Qnil;	/* OK */
     struct METHOD *data;
+    int safe;
 
     Data_Get_Struct(method, struct METHOD, data);
     if (data->recv == Qundef) {
 	rb_raise(rb_eTypeError, "can't call unbound method; bind first");
     }
+    if (OBJ_TAINTED(method)) {
+        safe = NOEX_WITH(data->safe_level, 4)|NOEX_TAINTED;
+    }
+    else {
+	safe = data->safe_level;
+    }
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
-    result = rb_call0(data->klass,data->recv,data->id,data->oid,argc,argv,data->body,
-		      data->safe_level);
+    result = rb_call0(data->klass,data->recv,data->id,data->oid,argc,argv,data->body,safe);
     POP_ITER();
     return result;
 }
