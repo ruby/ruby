@@ -181,7 +181,7 @@ Wed Aug 31 11:35:43 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 Wed Aug 31 10:30:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* process.c (proc_detach, proc_setmaxgroups): missing argument type
-	  declaration. (I recomment ANSI-style function)
+	  declaration. (I recommend ANSI-style function)
 
 Tue Aug 30 23:20:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
