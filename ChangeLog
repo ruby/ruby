@@ -1,3 +1,16 @@
+Sat Sep 10 10:09:47 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_asn1.c (asn1str_to_str): new function.
+
+	* ext/openssl/ossl_pkcs7.c: new class OpenSSL::PKCS7::RecipientInfo.
+	  this class wraps PKCS7_RECIP_INFO struct.
+
+	* ext/openssl/ossl_pkcs7.c: OpenSSL::PKCS7::Signer is renamed to
+	  OpenSSL::PKCS7::SignerInfo. ("Signer" remains as an alias of
+	  SignerInfo.)
+
+	* test/openssl/test_pkcs7.rb: new file.
+
 Sat Sep 10 10:05:51 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_ns_spki.c (ossl_spki_initialize): assume that
