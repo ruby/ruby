@@ -1173,7 +1173,7 @@ Fri Jul 15 07:58:10 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/utils.rb (WEBrick::Utils.set_non_blocking): new method.
 
-Thu Jul 15 00:11:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Jul 15 00:11:36 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* enum.c (enumeratorize): create new enumerator for current method if
 	  no block is given.
