@@ -1,3 +1,27 @@
+Sat Sep 10 10:17:03 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl_engine.c (ossl_engine_s_by_id):
+	  OpenSSL::Engine.by_id calls given block before calling
+	  ENGINE_init (block parameter is the return value of this method
+	  itself).  this functionality is useful to load dynamic shared
+	  engines. the following code is a sample of loading a key using
+	  OpenSC PKCS #11 module.
+
+		require "openssl"
+		pkcs11 = OpenSSL::Engine.by_id("dynamic"){|e|
+		  e.ctrl_cmd("SO_PATH", "/usr/lib/opensc/engine_pkcs11.so")
+		  e.ctrl_cmd("LIST_ADD", "1")
+		  e.ctrl_cmd("LOAD")
+		}
+		pkcs11.ctrl_cmd("PIN", "secret")
+		key = pkcs11.load_private_key
+
+	* ext/openssl/ossl_engine.c (ossl_engine_ctrl_cmd): new method
+  	  OpenSSL::Engine#ctrl_cmd. it wraps ENGINE_ctrl_cmd_string.
+
+	* ext/openssl/ossl_engine.c (ossl_engine_get_cmds): new method
+  	  OpenSSL::Engine#cmds. it returms engine command definitions.
+
 Sat Sep 10 10:09:47 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_asn1.c (asn1str_to_str): new function.
