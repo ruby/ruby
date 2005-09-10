@@ -56,17 +56,42 @@ ossl_spki_initialize(int argc, VALUE *argv, VALUE self)
 {
     NETSCAPE_SPKI *spki;
     VALUE buffer;
+    unsigned char *p;
 	
     if (rb_scan_args(argc, argv, "01", &buffer) == 0) {
 	return self;
     }
-    if (!(spki = NETSCAPE_SPKI_b64_decode(StringValuePtr(buffer), -1))) {
-	ossl_raise(eSPKIError, NULL);
+    StringValue(buffer);
+    if (!(spki = NETSCAPE_SPKI_b64_decode(RSTRING(buffer)->ptr, -1))) {
+	p = RSTRING(buffer)->ptr;
+	if (!(spki = d2i_NETSCAPE_SPKI(NULL, &p, RSTRING(buffer)->len))) {
+	    ossl_raise(eSPKIError, NULL);
+	}
     }
     NETSCAPE_SPKI_free(DATA_PTR(self));
     DATA_PTR(self) = spki;
 
     return self;
+}
+
+static VALUE
+ossl_spki_to_der(VALUE self)
+{
+    NETSCAPE_SPKI *spki;
+    VALUE str;
+    long len;
+    unsigned char *p;
+
+    GetSPKI(self, spki);
+    if ((len = i2d_NETSCAPE_SPKI(spki, NULL)) <= 0)
+        ossl_raise(eX509CertError, NULL);
+    str = rb_str_new(0, len);
+    p = RSTRING(str)->ptr;
+    if (i2d_NETSCAPE_SPKI(spki, &p) <= 0)
+        ossl_raise(eX509CertError, NULL);
+    ossl_str_adjust(str, p);
+    
+    return str;
 }
 
 static VALUE
@@ -217,6 +242,7 @@ Init_ossl_ns_spki()
     rb_define_alloc_func(cSPKI, ossl_spki_alloc);
     rb_define_method(cSPKI, "initialize", ossl_spki_initialize, -1);
 	
+    rb_define_method(cSPKI, "to_der", ossl_spki_to_der, 0);
     rb_define_method(cSPKI, "to_pem", ossl_spki_to_pem, 0);
     rb_define_alias(cSPKI, "to_s", "to_pem");
     rb_define_method(cSPKI, "to_text", ossl_spki_print, 0);
