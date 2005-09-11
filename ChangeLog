@@ -1,3 +1,8 @@
+Sun Sep 11 22:18:07 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* bin/erb (ERB::Main#run): set ERB#filename so that it is used
+	  when reporting syntax/runtime errors. Tabs converted to spaces.
+
 Sat Sep 10 22:34:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* array.c: protoize.
