@@ -1,3 +1,8 @@
+Sun Sep 11 22:05:51 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* bin/erb (ERB::Main#run): set ERB#filename so that it is used
+	  when reporting syntax/runtime errors. Tabs converted to spaces.
+
 Sat Sep 10 10:17:03 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_engine.c (ossl_engine_s_by_id):
