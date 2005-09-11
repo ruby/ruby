@@ -322,6 +322,24 @@ module Net
       send_command("LOGOUT")
     end
 
+    # Sends a STARTTLS command to start TLS session.
+    def starttls(ctx = nil)
+      if @sock.kind_of?(OpenSSL::SSL::SSLSocket)
+        raise RuntimeError, "already using SSL"
+      end
+      send_command("STARTTLS") do |resp|
+        if resp.kind_of?(TaggedResponse) && resp.name == "OK"
+          if ctx
+            @sock = OpenSSL::SSL::SSLSocket.new(@sock, ctx)
+          else
+            @sock = OpenSSL::SSL::SSLSocket.new(@sock)
+          end
+          @sock.sync_close = true
+          @sock.connect
+        end
+      end
+    end
+
     # Sends an AUTHENTICATE command to authenticate the client.
     # The +auth_type+ parameter is a string that represents
     # the authentication mechanism to be used. Currently Net::IMAP

@@ -1,3 +1,7 @@
+Sun Sep 11 23:23:02 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb (starttls): supported the STARTTLS command.
+
 Sun Sep 11 22:18:07 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb (ERB::Main#run): set ERB#filename so that it is used
