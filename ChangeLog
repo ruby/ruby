@@ -38,6 +38,11 @@ Mon Sep 12 19:26:29 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  sprintf.c, st.c, string.c, struct.c, time.c, util.h, variable.c,
 	  version.c: ditto.
 
+Mon Sep 12 14:03:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/dbm/test_dbm.rb: remove locking test, which may not be
+	  supported on some platforms.  [ruby-dev:27030]
+
 Sun Sep 11 23:23:02 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (starttls): supported the STARTTLS command.
@@ -49,7 +54,7 @@ Sun Sep 11 22:18:07 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 Sat Sep 10 22:34:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
-	* array.c: protoize.
+	* array.c, bignum.c: protoize.
 
 Sat Sep 10 00:23:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

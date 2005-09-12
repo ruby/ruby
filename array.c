@@ -23,7 +23,6 @@ static ID id_cmp;
 
 #define ARY_DEFAULT_SIZE 16
 
-
 void
 rb_mem_clear(register VALUE *mem, register long size)
 {

@@ -135,7 +135,6 @@ cmp_lt(VALUE x, VALUE y)
     return Qfalse;
 }
 
-
 /*
  *  call-seq:
  *     obj <= other    => true or false

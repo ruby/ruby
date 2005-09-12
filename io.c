@@ -130,7 +130,7 @@ static VALUE lineno = INT2FIX(0);
 #elif defined(__BEOS__)
 #  define STDIO_READ_DATA_PENDING(fp) (fp->_state._eof == 0)
 #elif defined(__VMS)
-#  define STDIO_READ_DATA_PENDING(fp)       (((unsigned int)(*(fp))->_cnt) > 0)
+#  define STDIO_READ_DATA_PENDING(fp) (((unsigned int)(*(fp))->_cnt) > 0)
 #else
 #  define STDIO_READ_DATA_PENDING(fp) (!feof(fp))
 #endif
