@@ -118,7 +118,7 @@ extern VALUE rb_load_path;
 
 #if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__
 static char *
-rubylib_mangle(char *s, unsigned int l)
+rubylib_mangle(const char *s, unsigned int l)
 {
     static char *newp, *oldp;
     static int newl, oldl, notfound;

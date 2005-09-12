@@ -1045,7 +1045,7 @@ static VALUE module_setup _((VALUE,NODE*));
 
 static VALUE massign _((VALUE,NODE*,VALUE,int));
 static void assign _((VALUE,NODE*,VALUE,int));
-static int formal_assign _((VALUE, NODE*, int, VALUE*, VALUE*));
+static int formal_assign _((VALUE, NODE*, int, const VALUE*, VALUE*));
 
 typedef struct event_hook {
     rb_event_hook_func_t func;
@@ -5337,7 +5337,7 @@ static int last_call_status;
  */
 
 static VALUE
-rb_method_missing(int argc, VALUE *argv, VALUE obj)
+rb_method_missing(int argc, const VALUE *argv, VALUE obj)
 {
     ID id;
     VALUE exc = rb_eNoMethodError;
@@ -5412,7 +5412,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 }
 
 static inline VALUE
-call_cfunc(VALUE (*func) (/* ??? */), VALUE recv, int len, int argc, VALUE *argv)
+call_cfunc(VALUE (*func) (/* ??? */), VALUE recv, int len, int argc, const VALUE *argv)
 {
     if (len >= 0 && argc != len) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
@@ -5496,7 +5496,7 @@ call_cfunc(VALUE (*func) (/* ??? */), VALUE recv, int len, int argc, VALUE *argv
 }
 
 static int
-formal_assign(VALUE recv, NODE *node, int argc, VALUE *argv, VALUE *local_vars)
+formal_assign(VALUE recv, NODE *node, int argc, const VALUE *argv, VALUE *local_vars)
 {
     int i;
     int nopt = 0;
@@ -5569,7 +5569,7 @@ formal_assign(VALUE recv, NODE *node, int argc, VALUE *argv, VALUE *local_vars)
 
 static VALUE
 rb_call0(VALUE klass, VALUE recv, ID id, ID oid,
-    int argc /* OK */, VALUE *argv /* OK */, NODE *volatile body, int flags)
+    int argc /* OK */, const VALUE *argv /* OK */, NODE *volatile body, int flags)
 {
     NODE *b2;		/* OK */
     volatile VALUE result = Qnil;

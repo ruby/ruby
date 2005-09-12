@@ -1603,7 +1603,7 @@ dln_load(const char *file)
     return 0;			/* dummy return */
 }
 
-static char *dln_find_1(char *fname, char *path, int exe_flag);
+static char *dln_find_1(const char *fname, const char *path, int exe_flag);
 
 char *
 dln_find_exe(const char *fname, const char *path)
@@ -1665,30 +1665,32 @@ conv_to_posix_path(win32, posix, len)
 static char fbuf[MAXPATHLEN];
 
 static char *
-dln_find_1(char *fname, char *path, int exe_flag /* non 0 if looking for executable. */)
+dln_find_1(const char *fname, const char *path, int exe_flag /* non 0 if looking for executable. */)
 {
-    register char *dp;
-    register char *ep;
+    register const char *dp;
+    register const char *ep;
     register char *bp;
     struct stat st;
 #ifdef __MACOS__
     const char* mac_fullpath;
 #endif
 
-    if (!fname) return fname;
-    if (fname[0] == '/') return fname;
-    if (strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0)
-      return fname;
-    if (exe_flag && strchr(fname, '/')) return fname;
+#define RETURN_IF(expr) if (expr) return (char *)fname;
+
+    RETURN_IF(!fname);
+    RETURN_IF(fname[0] == '/');
+    RETURN_IF(strncmp("./", fname, 2) == 0 || strncmp("../", fname, 3) == 0);
+    RETURN_IF(exe_flag && strchr(fname, '/'));
 #ifdef DOSISH
-    if (fname[0] == '\\') return fname;
+    RETURN_IF(fname[0] == '\\');
 # ifdef DOSISH_DRIVE_LETTER
-    if (strlen(fname) > 2 && fname[1] == ':') return fname;
+    RETURN_IF(strlen(fname) > 2 && fname[1] == ':');
 # endif
-    if (strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0)
-      return fname;
-    if (exe_flag && strchr(fname, '\\')) return fname;
+    RETURN_IF(strncmp(".\\", fname, 2) == 0 || strncmp("..\\", fname, 3) == 0);
+    RETURN_IF(exe_flag && strchr(fname, '\\'));
 #endif
+
+#undef RETURN_IF
 
     for (dp = path;; dp = ++ep) {
 	register int l;

@@ -2632,7 +2632,7 @@ rb_file_open(const char *fname, const char *mode)
 }
 
 static VALUE
-rb_file_sysopen_internal(VALUE io, char *fname, int flags, int mode)
+rb_file_sysopen_internal(VALUE io, const char *fname, int flags, int mode)
 {
     OpenFile *fptr;
 
