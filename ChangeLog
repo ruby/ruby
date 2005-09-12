@@ -1,3 +1,8 @@
+Mon Sep 12 14:03:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/dbm/test_dbm.rb: remove locking test, which may not be
+	  supported on some platforms.  [ruby-dev:27030]
+
 Mon Sep 12 10:45:58 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/dl/dl.c (rb_io_to_ptr): merged a patch for DragonFly BSD

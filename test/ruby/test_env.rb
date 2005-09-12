@@ -4,15 +4,13 @@ class TestEnv < Test::Unit::TestCase
   IGNORE_CASE = /djgpp|bccwin|mswin|mingw/ =~ RUBY_PLATFORM
 
   def setup
-    @backup = ENV['test']
-    @BACKUP = ENV['TEST']
-    ENV['test'] = nil
-    ENV['TEST'] = nil
+    @backup = ENV.delete('test')
+    @BACKUP = ENV.delete('TEST')
   end
 
   def teardown
-    ENV['test'] = @backup
-    ENV['TEST'] = @BACKUP
+    ENV['test'] = @backup if @backup
+    ENV['TEST'] = @BACKUP if @BACKUP
   end
 
   def test_bracket
