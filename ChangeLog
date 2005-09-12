@@ -1,3 +1,8 @@
+Mon Sep 12 10:45:58 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dl/dl.c (rb_io_to_ptr): merged a patch for DragonFly BSD
+	  from Takahiro Kambe <taca@back-street.net>.  [ruby-dev:27023]
+
 Sun Sep 11 22:05:51 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb (ERB::Main#run): set ERB#filename so that it is used
