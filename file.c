@@ -97,7 +97,7 @@ rb_get_path(VALUE obj)
 }
 
 static long
-apply2files(void (*func) (/* ??? */), VALUE vargs, void *arg)
+apply2files(void (*func)(const char *, void *), VALUE vargs, void *arg)
 {
     long i;
     VALUE path;
@@ -1275,9 +1275,7 @@ test_grpowned(VALUE obj, VALUE fname)
 
 #if defined(S_ISUID) || defined(S_ISGID) || defined(S_ISVTX)
 static VALUE
-check3rdbyte(fname, mode)
-    VALUE fname;
-    int mode;
+check3rdbyte(VALUE fname, int mode)
 {
     struct stat st;
 
@@ -1358,7 +1356,7 @@ rb_file_s_size(VALUE klass, VALUE fname)
 }
 
 static VALUE
-rb_file_ftype(struct stat *st)
+rb_file_ftype(const struct stat *st)
 {
     char *t;
 
@@ -1561,9 +1559,9 @@ rb_file_ctime(VALUE obj)
 }
 
 static void
-chmod_internal(const char *path, int mode)
+chmod_internal(const char *path, void *mode)
 {
-    if (chmod(path, mode) < 0)
+    if (chmod(path, (int)mode) < 0)
 	rb_sys_fail(path);
 }
 
@@ -1633,11 +1631,9 @@ rb_file_chmod(VALUE obj, VALUE vmode)
 
 #if defined(HAVE_LCHMOD)
 static void
-lchmod_internal(path, mode)
-    const char *path;
-    int mode;
+lchmod_internal(const char *path, void *mode)
 {
-    if (lchmod(path, mode) < 0)
+    if (lchmod(path, (int)mode) < 0)
 	rb_sys_fail(path);
 }
 
@@ -1652,9 +1648,7 @@ lchmod_internal(path, mode)
  */
 
 static VALUE
-rb_file_s_lchmod(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_lchmod(int argc, VALUE *argv)
 {
     VALUE vmode;
     VALUE rest;
@@ -1681,8 +1675,9 @@ struct chown_args {
 };
 
 static void
-chown_internal(const char *path, struct chown_args *args)
+chown_internal(const char *path, void *arg)
 {
+    struct chown_args *args = arg;
     if (chown(path, args->owner, args->group) < 0)
 	rb_sys_fail(path);
 }
@@ -1767,10 +1762,9 @@ rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 
 #if defined(HAVE_LCHOWN) && !defined(__CHECKER__)
 static void
-lchown_internal(path, args)
-    const char *path;
-    struct chown_args *args;
+lchown_internal(const char *path, void *arg)
 {
+    struct chown_args *args = arg;
     if (lchown(path, args->owner, args->group) < 0)
 	rb_sys_fail(path);
 }
@@ -1788,9 +1782,7 @@ lchown_internal(path, args)
  */
 
 static VALUE
-rb_file_s_lchown(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_lchown(int argc, VALUE *argv)
 {
     VALUE o, g, rest;
     struct chown_args arg;
@@ -1827,10 +1819,9 @@ struct timeval rb_time_timeval(VALUE time);
 #if defined(HAVE_UTIMES) && !defined(__CHECKER__)
 
 static void
-utime_internal(path, tvp)
-    char *path;
-    struct timeval tvp[];
+utime_internal(const char *path, void *arg)
 {
+    struct timeval *tvp = arg;
     if (utimes(path, tvp) < 0)
 	rb_sys_fail(path);
 }
@@ -1845,9 +1836,7 @@ utime_internal(path, tvp)
  */
 
 static VALUE
-rb_file_s_utime(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_utime(int argc, VALUE *argv)
 {
     VALUE atime, mtime, rest;
     struct timeval tvp[2];
@@ -1872,8 +1861,9 @@ struct utimbuf {
 #endif
 
 static void
-utime_internal(const char *path, struct utimbuf *utp)
+utime_internal(const char *path, void *arg)
 {
+    struct utimbuf *utp = arg;
     if (utime(path, utp) < 0)
 	rb_sys_fail(path);
 }
@@ -2014,7 +2004,7 @@ rb_file_s_readlink(VALUE klass, VALUE path)
 }
 
 static void
-unlink_internal(const char *path)
+unlink_internal(const char *path, void *arg)
 {
     if (unlink(path) < 0)
 	rb_sys_fail(path);
@@ -3841,8 +3831,7 @@ is_absolute_path(const char *path)
 
 #ifndef DOSISH
 static int
-path_check_1(path)
-     VALUE path;
+path_check_1(VALUE path)
 {
     struct stat st;
     char *p0 = StringValueCStr(path);
@@ -3882,10 +3871,10 @@ path_check_1(path)
 #endif
 
 int
-rb_path_check(char *path)
+rb_path_check(const char *path)
 {
 #ifndef DOSISH
-    char *p0, *p, *pend;
+    const char *p0, *p, *pend;
     const char sep = PATH_SEP_CHAR;
 
     if (!path) return 1;
@@ -3910,8 +3899,7 @@ rb_path_check(char *path)
 
 #if defined(__MACOS__) || defined(riscos)
 static int
-is_macos_native_path(path)
-    const char *path;
+is_macos_native_path(const char *path)
 {
     if (strchr(path, ':')) return 1;
     return 0;
@@ -3919,7 +3907,7 @@ is_macos_native_path(path)
 #endif
 
 static int
-file_load_ok(char *file)
+file_load_ok(const char *file)
 {
     FILE *f;
 

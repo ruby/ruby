@@ -1,3 +1,9 @@
+Tue Sep 13 00:02:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (apply2files): stricter callback definition.
+
+	* file.c (rb_path_check): constified.
+
 Mon Sep 12 20:53:06 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/openssl/test_pkcs7.rb (test_enveloped): skip this test
