@@ -1,3 +1,10 @@
+Mon Sep 12 20:53:06 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* test/openssl/test_pkcs7.rb (test_enveloped): skip this test
+	  to avoid a bug of PKCS7_enctypt() (only if ext/openssl is
+	  compiled with OpenSSL-0.9.7d or earlier versions).
+	  http://www.mail-archive.com/openssl-dev@openssl.org/msg17376.html
+
 Mon Sep 12 20:32:00 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.[hc] (rb_w32_argv_size, ...): reverted my latest change
