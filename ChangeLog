@@ -1,3 +1,8 @@
+Mon Sep 12 20:32:00 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.[hc] (rb_w32_argv_size, ...): reverted my latest change
+	  to avoid incompatible pointer warning. (mingw32)
+
 Mon Sep 12 19:58:53 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* dln.c: avoid warning of const to non-const convertion.
