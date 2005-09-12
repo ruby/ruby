@@ -61,7 +61,7 @@ class TestBasicSocket < Test::Unit::TestCase
   def test_listen
     s = nil
     log = Object.new
-    class << log; self end.fcall(:define_method, :to_int) {
+    class << log; self end.send(:define_method, :to_int) {
       s.close
       2
     }
