@@ -1,3 +1,10 @@
+Mon Sep 12 20:53:06 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* test/openssl/test_pkcs7.rb (test_enveloped): skip this test
+	  to avoid a bug of PKCS7_enctypt() (only if ext/openssl is
+	  compiled with OpenSSL-0.9.7d or earlier versions).
+	  http://www.mail-archive.com/openssl-dev@openssl.org/msg17376.html
+
 Mon Sep 12 14:03:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/dbm/test_dbm.rb: remove locking test, which may not be
