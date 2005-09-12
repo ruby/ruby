@@ -70,9 +70,10 @@ class OpenStruct
   def new_ostruct_member(name)
     name = name.to_sym
     unless self.respond_to?(name)
-      meta = class << self; self; end
-      meta.send(:define_method, name) { @table[name] }
-      meta.send(:define_method, :"#{name}=") { |x| @table[name] = x }
+      class << self; self; end.class_eval do
+        define_method(name) { @table[name] }
+        define_method(:"#{name}=") { |x| @table[name] = x }
+      end
     end
   end
 

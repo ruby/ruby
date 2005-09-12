@@ -114,7 +114,7 @@ EOR
         @parents.each do |parent|
           meth = "#{RSS::TRACKBACK_PREFIX}_#{name}_element"
           meth << "s" if name == :about
-          assert_equal(excepted, @rss.send(parent).send(meth))
+          assert_equal(excepted, @rss.send(parent).fcall(meth))
         end
       end
       

@@ -146,7 +146,7 @@ class TestEval < Test::Unit::TestCase
     assert_nothing_raised {
       def temporally_method_for_test_eval_and_define_method(&block)
         lambda {
-          class << Object.new; self end.__send__(:define_method, :zzz, &block)
+          class << Object.new; self end.fcall(:define_method, :zzz, &block)
         }
       end
       v = eval("temporally_method_for_test_eval_and_define_method {}")

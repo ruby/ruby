@@ -38,7 +38,7 @@ class TestLambdaParameters < Test::Unit::TestCase
     assert_equal(1, ->(&b){ b.call }.call { 1 })
     b = nil
     assert_equal(1, ->(&b){ b.call }.call { 1 })
-    assert_not_nil(b)
+    assert_nil(b)
   end
 
   def foo
