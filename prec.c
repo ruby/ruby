@@ -32,8 +32,7 @@ static ID prc_pr, prc_if;
  */
 
 static VALUE
-prec_prec(x, klass)
-    VALUE x, klass;
+prec_prec(VALUE x, VALUE klass)
 {
     return rb_funcall(klass, prc_if, 1, x);
 }
@@ -47,8 +46,7 @@ prec_prec(x, klass)
  */
 
 static VALUE
-prec_prec_i(x)
-    VALUE x;
+prec_prec_i(VALUE x)
 {
     VALUE klass = rb_cInteger;
 
@@ -64,8 +62,7 @@ prec_prec_i(x)
  */
 
 static VALUE
-prec_prec_f(x)
-    VALUE x;
+prec_prec_f(VALUE x)
 {
     VALUE klass = rb_cFloat;
 
@@ -86,8 +83,7 @@ prec_prec_f(x)
  */
 
 static VALUE
-prec_induced_from(module, x)
-    VALUE module, x;
+prec_induced_from(VALUE module, VALUE x)
 {
     rb_raise(rb_eTypeError, "undefined conversion from %s into %s",
             rb_obj_classname(x), rb_class2name(module));
@@ -104,8 +100,7 @@ prec_induced_from(module, x)
  */
 
 static VALUE
-prec_included(module, include)
-    VALUE module, include;
+prec_included(VALUE module, VALUE include)
 {
     switch (TYPE(include)) {
       case T_CLASS:
@@ -128,7 +123,7 @@ prec_included(module, include)
 */
 
 void
-Init_Precision()
+Init_Precision(void)
 {
     rb_mPrecision = rb_define_module("Precision");
     rb_define_singleton_method(rb_mPrecision, "included", prec_included, 1);

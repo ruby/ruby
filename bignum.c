@@ -39,10 +39,7 @@ VALUE rb_cBignum;
 #define BIGZEROP(x) (RBIGNUM(x)->len == 0 || (RBIGNUM(x)->len == 1 && BDIGITS(x)[0] == 0))
 
 static VALUE
-bignew_1(klass, len, sign)
-    VALUE klass;
-    long len;
-    int sign;
+bignew_1(VALUE klass, long len, int sign)
 {
     NEWOBJ(big, struct RBignum);
     OBJSETUP(big, klass, T_BIGNUM);
@@ -56,8 +53,7 @@ bignew_1(klass, len, sign)
 #define bignew(len,sign) bignew_1(rb_cBignum,len,sign)
 
 VALUE
-rb_big_clone(x)
-    VALUE x;
+rb_big_clone(VALUE x)
 {
     VALUE z = bignew_1(CLASS_OF(x), RBIGNUM(x)->len, RBIGNUM(x)->sign);
 
@@ -88,15 +84,13 @@ get2comp(VALUE x)
 }
 
 void
-rb_big_2comp(x)			/* get 2's complement */
-    VALUE x;
+rb_big_2comp(VALUE x)			/* get 2's complement */
 {
     get2comp(x);
 }
 
 static VALUE
-bignorm(x)
-    VALUE x;
+bignorm(VALUE x)
 {
     if (!FIXNUM_P(x)) {
 	long len = RBIGNUM(x)->len;
@@ -122,15 +116,13 @@ bignorm(x)
 }
 
 VALUE
-rb_big_norm(x)
-    VALUE x;
+rb_big_norm(VALUE x)
 {
     return bignorm(x);
 }
 
 VALUE
-rb_uint2big(n)
-    unsigned long n;
+rb_uint2big(unsigned long n)
 {
     BDIGIT_DBL num = n;
     long i = 0;
@@ -151,8 +143,7 @@ rb_uint2big(n)
 }
 
 VALUE
-rb_int2big(n)
-    long n;
+rb_int2big(long n)
 {
     long neg = 0;
     VALUE big;
@@ -169,16 +160,14 @@ rb_int2big(n)
 }
 
 VALUE
-rb_uint2inum(n)
-    unsigned long n;
+rb_uint2inum(unsigned long n)
 {
     if (POSFIXABLE(n)) return LONG2FIX(n);
     return rb_uint2big(n);
 }
 
 VALUE
-rb_int2inum(n)
-    long n;
+rb_int2inum(long n)
 {
     if (FIXABLE(n)) return LONG2FIX(n);
     return rb_int2big(n);
@@ -187,9 +176,7 @@ rb_int2inum(n)
 #ifdef HAVE_LONG_LONG
 
 void
-rb_quad_pack(buf, val)
-    char *buf;
-    VALUE val;
+rb_quad_pack(char *buf, VALUE val)
 {
     LONG_LONG q;
 
@@ -216,9 +203,7 @@ rb_quad_pack(buf, val)
 }
 
 VALUE
-rb_quad_unpack(buf, sign)
-    const char *buf;
-    int sign;
+rb_quad_unpack(const char *buf, int sign)
 {
     unsigned LONG_LONG q;
     long neg = 0;
@@ -313,10 +298,7 @@ rb_quad_unpack(buf, sign)
 #endif
 
 VALUE
-rb_cstr_to_inum(str, base, badcheck)
-    const char *str;
-    int base;
-    int badcheck;
+rb_cstr_to_inum(const char *str, int base, int badcheck)
 {
     const char *s = str;
     char *end;
@@ -508,10 +490,7 @@ rb_cstr_to_inum(str, base, badcheck)
 }
 
 VALUE
-rb_str_to_inum(str, base, badcheck)
-    VALUE str;
-    int base;
-    int badcheck;
+rb_str_to_inum(VALUE str, int base, int badcheck)
 {
     char *s;
     long len;
@@ -539,8 +518,7 @@ rb_str_to_inum(str, base, badcheck)
 #if HAVE_LONG_LONG
 
 VALUE
-rb_ull2big(n)
-    unsigned LONG_LONG n;
+rb_ull2big(unsigned LONG_LONG n)
 {
     BDIGIT_DBL num = n;
     long i = 0;
@@ -561,8 +539,7 @@ rb_ull2big(n)
 }
 
 VALUE
-rb_ll2big(n)
-    LONG_LONG n;
+rb_ll2big(LONG_LONG n)
 {
     long neg = 0;
     VALUE big;
@@ -579,16 +556,14 @@ rb_ll2big(n)
 }
 
 VALUE
-rb_ull2inum(n)
-    unsigned LONG_LONG n;
+rb_ull2inum(unsigned LONG_LONG n)
 {
     if (POSFIXABLE(n)) return LONG2FIX(n);
     return rb_ull2big(n);
 }
 
 VALUE
-rb_ll2inum(n)
-    LONG_LONG n;
+rb_ll2inum(LONG_LONG n)
 {
     if (FIXABLE(n)) return LONG2FIX(n);
     return rb_ll2big(n);
@@ -597,26 +572,20 @@ rb_ll2inum(n)
 #endif  /* HAVE_LONG_LONG */
  
 VALUE
-rb_cstr2inum(str, base)
-    const char *str;
-    int base;
+rb_cstr2inum(const char *str, int base)
 {
     return rb_cstr_to_inum(str, base, base==0);
 }
 
 VALUE
-rb_str2inum(str, base)
-    VALUE str;
-    int base;
+rb_str2inum(VALUE str, int base)
 {
     return rb_str_to_inum(str, base, base==0);
 }
 
 const char ruby_digitmap[] = "0123456789abcdefghijklmnopqrstuvwxyz";
 VALUE
-rb_big2str(x, base)
-    VALUE x;
-    int base;
+rb_big2str(VALUE x, int base)
 {
     volatile VALUE t;
     BDIGIT *ds;
@@ -712,10 +681,7 @@ rb_big2str(x, base)
  */
 
 static VALUE
-rb_big_to_s(argc, argv, x)
-    int argc;
-    VALUE *argv;
-    VALUE x;
+rb_big_to_s(int argc, VALUE *argv, VALUE x)
 {
     VALUE b;
     int base;
@@ -727,10 +693,7 @@ rb_big_to_s(argc, argv, x)
 }
 
 static unsigned long
-big2ulong(x, type, check)
-    VALUE x;
-    char *type;
-    int check;
+big2ulong(VALUE x, char *type, int check)
 {
     long len = RBIGNUM(x)->len;
     BDIGIT_DBL num;
@@ -751,8 +714,7 @@ big2ulong(x, type, check)
 }
 
 unsigned long
-rb_big2ulong_pack(x)
-    VALUE x;
+rb_big2ulong_pack(VALUE x)
 {
     unsigned long num = big2ulong(x, "unsigned long", Qfalse);
     if (!RBIGNUM(x)->sign) {
@@ -762,8 +724,7 @@ rb_big2ulong_pack(x)
 }
 
 unsigned long
-rb_big2ulong(x)
-    VALUE x;
+rb_big2ulong(VALUE x)
 {
     unsigned long num = big2ulong(x, "unsigned long", Qtrue);
 
@@ -777,8 +738,7 @@ rb_big2ulong(x)
 }
 
 long
-rb_big2long(x)
-    VALUE x;
+rb_big2long(VALUE x)
 {
     unsigned long num = big2ulong(x, "long", Qtrue);
 
@@ -792,9 +752,7 @@ rb_big2long(x)
 #if HAVE_LONG_LONG
 
 static unsigned LONG_LONG
-big2ull(x, type)
-    VALUE x;
-    char *type;
+big2ull(VALUE x, char *type)
 {
     long len = RBIGNUM(x)->len;
     BDIGIT_DBL num;
@@ -812,8 +770,7 @@ big2ull(x, type)
 }
 
 unsigned LONG_LONG
-rb_big2ull(x)
-    VALUE x;
+rb_big2ull(VALUE x)
 {
     unsigned LONG_LONG num = big2ull(x, "unsigned long long");
 
@@ -822,8 +779,7 @@ rb_big2ull(x)
 }
 
 LONG_LONG
-rb_big2ll(x)
-    VALUE x;
+rb_big2ll(VALUE x)
 {
     unsigned LONG_LONG num = big2ull(x, "long long");
 
@@ -838,8 +794,7 @@ rb_big2ll(x)
 #endif  /* HAVE_LONG_LONG */
 
 static VALUE
-dbl2big(d)
-    double d;
+dbl2big(double d)
 {
     long i = 0;
     BDIGIT c;
@@ -871,15 +826,13 @@ dbl2big(d)
 }
 
 VALUE
-rb_dbl2big(d)
-    double d;
+rb_dbl2big(double d)
 {
     return bignorm(dbl2big(d));
 }
 
 double
-rb_big2dbl(x)
-    VALUE x;
+rb_big2dbl(VALUE x)
 {
     double d = 0.0;
     long i = RBIGNUM(x)->len;
@@ -906,8 +859,7 @@ rb_big2dbl(x)
  */
 
 static VALUE
-rb_big_to_f(x)
-    VALUE x;
+rb_big_to_f(VALUE x)
 {
     return rb_float_new(rb_big2dbl(x));
 }
@@ -923,8 +875,7 @@ rb_big_to_f(x)
  */
 
 VALUE
-rb_big_cmp(x, y)
-    VALUE x, y;
+rb_big_cmp(VALUE x, VALUE y)
 {
     long xlen = RBIGNUM(x)->len;
 
@@ -969,8 +920,7 @@ rb_big_cmp(x, y)
  */
 
 VALUE
-rb_big_eq(x, y)
-    VALUE x, y;
+rb_big_eq(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -1008,8 +958,7 @@ rb_big_eq(x, y)
  */
 
 static VALUE
-rb_big_eql(x, y)
-    VALUE x, y;
+rb_big_eql(VALUE x, VALUE y)
 {
     if (TYPE(y) != T_BIGNUM) return Qfalse;
     if (RBIGNUM(x)->sign != RBIGNUM(y)->sign) return Qfalse;
@@ -1026,8 +975,7 @@ rb_big_eql(x, y)
  */
 
 static VALUE
-rb_big_uminus(x)
-    VALUE x;
+rb_big_uminus(VALUE x)
 {
     VALUE z = rb_big_clone(x);
 
@@ -1035,8 +983,6 @@ rb_big_uminus(x)
 
     return bignorm(z);
 }
-
-static VALUE bigadd _((VALUE,VALUE,int));
 
 /*
  * call-seq:
@@ -1051,8 +997,7 @@ static VALUE bigadd _((VALUE,VALUE,int));
  */
 
 static VALUE
-rb_big_neg(x)
-    VALUE x;
+rb_big_neg(VALUE x)
 {
     VALUE z = rb_big_clone(x);
     BDIGIT *ds;
@@ -1071,8 +1016,7 @@ rb_big_neg(x)
 }
 
 static VALUE
-bigsub(x, y)
-    VALUE x, y;
+bigsub(VALUE x, VALUE y)
 {
     VALUE z = 0;
     BDIGIT *zds;
@@ -1118,9 +1062,7 @@ bigsub(x, y)
 }
 
 static VALUE
-bigadd(x, y, sign)
-    VALUE x, y;
-    int sign;
+bigadd(VALUE x, VALUE y, int sign)
 {
     VALUE z;
     BDIGIT_DBL num;
@@ -1170,8 +1112,7 @@ bigadd(x, y, sign)
  */
 
 VALUE
-rb_big_plus(x, y)
-    VALUE x, y;
+rb_big_plus(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -1196,8 +1137,7 @@ rb_big_plus(x, y)
  */
 
 VALUE
-rb_big_minus(x, y)
-    VALUE x, y;
+rb_big_minus(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -1215,8 +1155,7 @@ rb_big_minus(x, y)
 }
 
 static VALUE
-rb_big_mul0(x, y)
-    VALUE x, y;
+rb_big_mul0(VALUE x, VALUE y)
 {
     long i, j;
     BDIGIT_DBL n = 0;
@@ -1267,16 +1206,13 @@ rb_big_mul0(x, y)
  */
 
 VALUE
-rb_big_mul(x, y)
-    VALUE x, y;
+rb_big_mul(VALUE x, VALUE y)
 {
     return bignorm(rb_big_mul0(x, y));
 }
 
 static void
-bigdivrem(x, y, divp, modp)
-    VALUE x, y;
-    VALUE *divp, *modp;
+bigdivrem(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 {
     long nx = RBIGNUM(x)->len, ny = RBIGNUM(y)->len;
     long i, j;
@@ -1404,9 +1340,7 @@ bigdivrem(x, y, divp, modp)
 }
 
 static void
-bigdivmod(x, y, divp, modp)
-    VALUE x, y;
-    VALUE *divp, *modp;
+bigdivmod(VALUE x, VALUE y, VALUE *divp, VALUE *modp)
 {
     VALUE mod;
 
@@ -1430,8 +1364,7 @@ bigdivmod(x, y, divp, modp)
  */
 
 VALUE
-rb_big_div(x, y)
-    VALUE x, y;
+rb_big_div(VALUE x, VALUE y)
 {
     VALUE z;
 
@@ -1464,8 +1397,7 @@ rb_big_div(x, y)
  */
 
 VALUE
-rb_big_modulo(x, y)
-    VALUE x, y;
+rb_big_modulo(VALUE x, VALUE y)
 {
     VALUE z;
 
@@ -1495,8 +1427,7 @@ rb_big_modulo(x, y)
  *     -1234567890987654321.remainder(13731.24)   #=> -9906.22531493148
  */
 static VALUE
-rb_big_remainder(x, y)
-    VALUE x, y;
+rb_big_remainder(VALUE x, VALUE y)
 {
     VALUE z;
 
@@ -1524,8 +1455,7 @@ rb_big_remainder(x, y)
  *     
  */
 VALUE
-rb_big_divmod(x, y)
-    VALUE x, y;
+rb_big_divmod(VALUE x, VALUE y)
 {
     VALUE div, mod;
 
@@ -1558,8 +1488,7 @@ rb_big_divmod(x, y)
  */
 
 static VALUE
-rb_big_quo(x, y)
-    VALUE x, y;
+rb_big_quo(VALUE x, VALUE y)
 {
     double dx = rb_big2dbl(x);
     double dy;
@@ -1597,8 +1526,7 @@ rb_big_quo(x, y)
  */
 
 VALUE
-rb_big_pow(x, y)
-    VALUE x, y;
+rb_big_pow(VALUE x, VALUE y)
 {
     double d;
     long yy;
@@ -1647,8 +1575,7 @@ rb_big_pow(x, y)
  */
 
 VALUE
-rb_big_and(xx, yy)
-    VALUE xx, yy;
+rb_big_and(VALUE xx, VALUE yy)
 {
     volatile VALUE x, y, z;
     BDIGIT *ds1, *ds2, *zds;
@@ -1703,8 +1630,7 @@ rb_big_and(xx, yy)
  */
 
 VALUE
-rb_big_or(xx, yy)
-    VALUE xx, yy;
+rb_big_or(VALUE xx, VALUE yy)
 {
     volatile VALUE x, y, z;
     BDIGIT *ds1, *ds2, *zds;
@@ -1761,8 +1687,7 @@ rb_big_or(xx, yy)
  */
 
 VALUE
-rb_big_xor(xx, yy)
-    VALUE xx, yy;
+rb_big_xor(VALUE xx, VALUE yy)
 {
     volatile VALUE x, y;
     VALUE z;
@@ -1824,8 +1749,7 @@ static VALUE rb_big_rshift _((VALUE,VALUE));
  */
 
 VALUE
-rb_big_lshift(x, y)
-    VALUE x, y;
+rb_big_lshift(VALUE x, VALUE y)
 {
     BDIGIT *xds, *zds;
     int shift = NUM2INT(y);
@@ -1860,8 +1784,7 @@ rb_big_lshift(x, y)
  */
 
 static VALUE
-rb_big_rshift(x, y)
-    VALUE x, y;
+rb_big_rshift(VALUE x, VALUE y)
 {
     BDIGIT *xds, *zds;
     int shift = NUM2INT(y);
@@ -1921,8 +1844,7 @@ rb_big_rshift(x, y)
  */
 
 static VALUE
-rb_big_aref(x, y)
-    VALUE x, y;
+rb_big_aref(VALUE x, VALUE y)
 {
     BDIGIT *xds;
     int shift;
@@ -1960,8 +1882,7 @@ rb_big_aref(x, y)
  */
 
 static VALUE
-rb_big_hash(x)
-    VALUE x;
+rb_big_hash(VALUE x)
 {
     long i, len, key;
     BDIGIT *digits;
@@ -1978,8 +1899,7 @@ rb_big_hash(x)
  */
 
 static VALUE
-rb_big_coerce(x, y)
-    VALUE x, y;
+rb_big_coerce(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	return rb_assoc_new(rb_int2big(FIX2LONG(y)), x);
@@ -2005,8 +1925,7 @@ rb_big_coerce(x, y)
  */
 
 static VALUE
-rb_big_abs(x)
-    VALUE x;
+rb_big_abs(VALUE x)
 {
     if (!RBIGNUM(x)->sign) {
 	x = rb_big_clone(x);
@@ -2016,9 +1935,7 @@ rb_big_abs(x)
 }
 
 VALUE
-rb_big_rand(max, rand_buf)
-    VALUE max;
-    double *rand_buf;
+rb_big_rand(VALUE max, double *rand_buf)
 {
     VALUE v;
     long len = RBIGNUM(max)->len;
@@ -2049,8 +1966,7 @@ rb_big_rand(max, rand_buf)
  */
 
 static VALUE
-rb_big_size(big)
-    VALUE big;
+rb_big_size(VALUE big)
 {
     return LONG2FIX(RBIGNUM(big)->len*SIZEOF_BDIGITS);
 }
@@ -2074,7 +1990,7 @@ rb_big_size(big)
  */
 
 void
-Init_Bignum()
+Init_Bignum(void)
 {
     rb_cBignum = rb_define_class("Bignum", rb_cInteger);
 

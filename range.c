@@ -19,23 +19,20 @@ static ID id_cmp, id_succ, id_beg, id_end, id_excl;
 #define SET_EXCL(r,v) rb_ivar_set((r), id_excl, (v) ? Qtrue : Qfalse)
 
 static VALUE
-range_failed()
+range_failed(void)
 {
     rb_raise(rb_eArgError, "bad value for range");
     return Qnil;		/* dummy */
 }
 
 static VALUE
-range_check(args)
-    VALUE *args;
+range_check(VALUE *args)
 {
     return rb_funcall(args[0], id_cmp, 1, args[1]);
 }
 
 static void
-range_init(range, beg, end, exclude_end)
-    VALUE range, beg, end;
-    int exclude_end;
+range_init(VALUE range, VALUE beg, VALUE end, int exclude_end)
 {
     VALUE args[2];
 
@@ -55,9 +52,7 @@ range_init(range, beg, end, exclude_end)
 }
 
 VALUE
-rb_range_new(beg, end, exclude_end)
-    VALUE beg, end;
-    int exclude_end;
+rb_range_new(VALUE beg, VALUE end, int exclude_end)
 {
     VALUE range = rb_obj_alloc(rb_cRange);
 
@@ -75,10 +70,7 @@ rb_range_new(beg, end, exclude_end)
  */
 
 static VALUE
-range_initialize(argc, argv, range)
-    int argc;
-    VALUE *argv;
-    VALUE range;
+range_initialize(int argc, VALUE *argv, VALUE range)
 {
     VALUE beg, end, flags;
     
@@ -100,8 +92,7 @@ range_initialize(argc, argv, range)
  */
 
 static VALUE
-range_exclude_end_p(range)
-    VALUE range;
+range_exclude_end_p(VALUE range)
 {
     return EXCL(range) ? Qtrue : Qfalse;
 }
@@ -122,8 +113,7 @@ range_exclude_end_p(range)
  */
 
 static VALUE
-range_eq(range, obj)
-    VALUE range, obj;
+range_eq(VALUE range, VALUE obj)
 {
     if (range == obj) return Qtrue;
     if (!rb_obj_is_instance_of(obj, rb_obj_class(range)))
@@ -140,8 +130,7 @@ range_eq(range, obj)
 }
 
 static int
-r_lt(a, b)
-    VALUE a, b;
+r_lt(VALUE a, VALUE b)
 {
     VALUE r = rb_funcall(a, id_cmp, 1, b);
 
@@ -151,8 +140,7 @@ r_lt(a, b)
 }
 
 static int
-r_le(a, b)
-    VALUE a, b;
+r_le(VALUE a, VALUE b)
 {
     int c;
     VALUE r = rb_funcall(a, id_cmp, 1, b);
@@ -180,8 +168,7 @@ r_le(a, b)
  */
 
 static VALUE
-range_eql(range, obj)
-    VALUE range, obj;
+range_eql(VALUE range, VALUE obj)
 {
     if (range == obj) return Qtrue;
     if (!rb_obj_is_instance_of(obj, rb_obj_class(range)))
@@ -207,8 +194,7 @@ range_eql(range, obj)
  */
 
 static VALUE
-range_hash(range)
-    VALUE range;
+range_hash(VALUE range)
 {
     long hash = EXCL(range);
     VALUE v;
@@ -223,18 +209,15 @@ range_hash(range)
 }
 
 static VALUE
-str_step(args)
-    VALUE *args;
+str_step(VALUE arg)
 {
+    VALUE *args = (VALUE *)arg;
+
     return rb_str_upto(args[0], args[1], EXCL(args[2]));
 }
 
 static void
-range_each_func(range, func, v, e, arg)
-    VALUE range;
-    void (*func) _((VALUE, void*));
-    VALUE v, e;
-    void *arg;
+range_each_func(VALUE range, VALUE (*func) (VALUE, void *), VALUE v, VALUE e, void *arg)
 {
     int c;
 
@@ -254,10 +237,10 @@ range_each_func(range, func, v, e, arg)
 }
 
 static VALUE
-step_i(i, iter)
-    VALUE i;
-    long *iter;
+step_i(VALUE i, void *arg)
 {
+    long *iter = (long *)arg;
+
     iter[0]--;
     if (iter[0] == 0) {
 	rb_yield(i);
@@ -295,10 +278,7 @@ step_i(i, iter)
 
 
 static VALUE
-range_step(argc, argv, range)
-    int argc;
-    VALUE *argv;
-    VALUE range;
+range_step(int argc, VALUE *argv, VALUE range)
 {
     VALUE b, e, step;
     long unit;
@@ -335,8 +315,7 @@ range_step(argc, argv, range)
 	    b = tmp;
 	    args[0] = b; args[1] = e; args[2] = range;
 	    iter[0] = 1; iter[1] = unit;
-	    rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i,
-		       (VALUE)iter);
+	    rb_iterate(str_step, (VALUE)args, step_i, (VALUE)iter);
 	}
 	else if (rb_obj_is_kind_of(b, rb_cNumeric)) {
 	    ID c = rb_intern(EXCL(range) ? "<" : "<=");
@@ -362,12 +341,11 @@ range_step(argc, argv, range)
     return range;
 }
 
-static void
-each_i(v, arg)
-    VALUE v;
-    void *arg;
+static VALUE
+each_i(VALUE v, void *arg)
 {
     rb_yield(v);
+    return Qnil;
 }
 
 /*
@@ -389,8 +367,7 @@ each_i(v, arg)
  */
 
 static VALUE
-range_each(range)
-    VALUE range;
+range_each(VALUE range)
 {
     VALUE beg, end;
 
@@ -418,8 +395,7 @@ range_each(range)
 
 	args[0] = beg; args[1] = end; args[2] = range;
 	iter[0] = 1; iter[1] = 1;
-	rb_iterate((VALUE(*)_((VALUE)))str_step, (VALUE)args, step_i,
-		   (VALUE)iter);
+	rb_iterate(str_step, (VALUE)args, step_i, (VALUE)iter);
     }
     else {
 	range_each_func(range, each_i, beg, end, NULL);
@@ -436,8 +412,7 @@ range_each(range)
  */
 
 static VALUE
-range_first(range)
-    VALUE range;
+range_first(VALUE range)
 {
     return rb_ivar_get(range, id_beg);
 }
@@ -456,18 +431,13 @@ range_first(range)
 
 
 static VALUE
-range_last(range)
-    VALUE range;
+range_last(VALUE range)
 {
     return rb_ivar_get(range, id_end);
 }
 
 VALUE
-rb_range_beg_len(range, begp, lenp, len, err)
-    VALUE range;
-    long *begp, *lenp;
-    long len;
-    int err;
+rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
 {
     VALUE b, e;
     long beg, end, excl;
@@ -520,8 +490,7 @@ rb_range_beg_len(range, begp, lenp, len, err)
  */
 
 static VALUE
-range_to_s(range)
-    VALUE range;
+range_to_s(VALUE range)
 {
     VALUE str, str2;
 
@@ -546,8 +515,7 @@ range_to_s(range)
 
 
 static VALUE
-range_inspect(range)
-    VALUE range;
+range_inspect(VALUE range)
 {
     VALUE str, str2;
 
@@ -584,8 +552,7 @@ range_inspect(range)
  */
 
 static VALUE
-range_include(range, val)
-    VALUE range, val;
+range_include(VALUE range, VALUE val)
 {
     VALUE beg, end;
 
@@ -656,7 +623,7 @@ range_include(range, val)
  */
 
 void
-Init_Range()
+Init_Range(void)
 {
     rb_cRange = rb_define_class("Range", rb_cObject);
     rb_include_module(rb_cRange, rb_mEnumerable);

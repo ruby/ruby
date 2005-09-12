@@ -227,7 +227,7 @@ onig_region_init(OnigRegion* region)
 }
 
 extern OnigRegion*
-onig_region_new()
+onig_region_new(void)
 {
   OnigRegion* r;
 

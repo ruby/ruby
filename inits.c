@@ -48,7 +48,7 @@ void Init_var_tables _((void));
 void Init_version _((void));
 
 void
-rb_call_inits()
+rb_call_inits(void)
 {
     Init_sym();
     Init_var_tables();

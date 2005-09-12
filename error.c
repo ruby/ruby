@@ -15,13 +15,7 @@
 #include "st.h"
 
 #include <stdio.h>
-#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start(a)
-#endif
 #ifdef HAVE_STDLIB_H
 #include <stdlib.h>
 #endif
@@ -34,9 +28,7 @@ extern const char ruby_version[], ruby_release_date[], ruby_platform[];
 int ruby_nerrs;
 
 static int
-err_position(buf, len)
-    char *buf;
-    long len;
+err_position(char *buf, long len)
 {
     ruby_set_current_source();
     if (!ruby_sourcefile) {
@@ -51,11 +43,7 @@ err_position(buf, len)
 }
 
 static void
-err_snprintf(buf, len, fmt, args)
-    char *buf;
-    long len;
-    const char *fmt;
-    va_list args;
+err_snprintf(char *buf, long len, const char *fmt, va_list args)
 {
     long n;
 
@@ -67,9 +55,7 @@ err_snprintf(buf, len, fmt, args)
 
 static void err_append _((const char*));
 static void
-err_print(fmt, args)
-    const char *fmt;
-    va_list args;
+err_print(const char *fmt, va_list args)
 {
     char buf[BUFSIZ];
 
@@ -78,44 +64,30 @@ err_print(fmt, args)
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_compile_error(const char *fmt, ...)
-#else
-rb_compile_error(fmt, va_alist)
-    const char *fmt;
-    va_dcl
-#endif
 {
     va_list args;
 
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     err_print(fmt, args);
     va_end(args);
     ruby_nerrs++;
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_compile_error_append(const char *fmt, ...)
-#else
-rb_compile_error_append(fmt, va_alist)
-    const char *fmt;
-    va_dcl
-#endif
 {
     va_list args;
     char buf[BUFSIZ];
 
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
     err_append(buf);
 }
 
 static void
-warn_print(fmt, args)
-    const char *fmt;
-    va_list args;
+warn_print(const char *fmt, va_list args)
 {
     char buf[BUFSIZ];
     int len;
@@ -127,13 +99,7 @@ warn_print(fmt, args)
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_warn(const char *fmt, ...)
-#else
-rb_warn(fmt, va_alist)
-    const char *fmt;
-    va_dcl
-#endif
 {
     char buf[BUFSIZ];
     va_list args;
@@ -142,20 +108,14 @@ rb_warn(fmt, va_alist)
 
     snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     warn_print(buf, args);
     va_end(args);
 }
 
 /* rb_warning() reports only in verbose mode */
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_warning(const char *fmt, ...)
-#else
-rb_warning(fmt, va_alist)
-    const char *fmt;
-    va_dcl
-#endif
 {
     char buf[BUFSIZ];
     va_list args;
@@ -164,7 +124,7 @@ rb_warning(fmt, va_alist)
 
     snprintf(buf, BUFSIZ, "warning: %s", fmt);
 
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     warn_print(buf, args);
     va_end(args);
 }
@@ -178,8 +138,7 @@ rb_warning(fmt, va_alist)
  */
 
 static VALUE
-rb_warn_m(self, mesg)
-    VALUE self, mesg;
+rb_warn_m(VALUE self, VALUE mesg)
 {
     if (!NIL_P(ruby_verbose)) {
 	rb_io_write(rb_stderr, mesg);
@@ -189,13 +148,7 @@ rb_warn_m(self, mesg)
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_bug(const char *fmt, ...)
-#else
-rb_bug(fmt, va_alist)
-    const char *fmt;
-    va_dcl
-#endif
 {
     char buf[BUFSIZ];
     va_list args;
@@ -205,7 +158,7 @@ rb_bug(fmt, va_alist)
     if (fwrite(buf, 1, len, out) == len ||
 	fwrite(buf, 1, len, (out = stdout)) == len) {
 	fputs("[BUG] ", out);
-	va_init_list(args, fmt);
+	va_start(args, fmt);
 	vfprintf(out, fmt, args);
 	va_end(args);
 	fprintf(out, "\nruby %s (%s) [%s]\n\n",
@@ -245,9 +198,7 @@ static struct types {
 };
 
 void
-rb_check_type(x, t)
-    VALUE x;
-    int t;
+rb_check_type(VALUE x, int t)
 {
     struct types *type = builtin_types;
 
@@ -315,25 +266,19 @@ VALUE rb_mErrno;
 static VALUE eNOERROR;
 
 VALUE
-rb_exc_new(etype, ptr, len)
-    VALUE etype;
-    const char *ptr;
-    long len;
+rb_exc_new(VALUE etype, const char *ptr, long len)
 {
     return rb_funcall(etype, rb_intern("new"), 1, rb_str_new(ptr, len));
 }
 
 VALUE
-rb_exc_new2(etype, s)
-    VALUE etype;
-    const char *s;
+rb_exc_new2(VALUE etype, const char *s)
 {
     return rb_exc_new(etype, s, strlen(s));
 }
 
 VALUE
-rb_exc_new3(etype, str)
-    VALUE etype, str;
+rb_exc_new3(VALUE etype, VALUE str)
 {
     StringValue(str);
     return rb_funcall(etype, rb_intern("new"), 1, str);
@@ -348,10 +293,7 @@ rb_exc_new3(etype, str)
  */
 
 static VALUE
-exc_initialize(argc, argv, exc)
-    int argc;
-    VALUE *argv;
-    VALUE exc;
+exc_initialize(int argc, VALUE *argv, VALUE exc)
 {
     VALUE arg;
 
@@ -376,10 +318,7 @@ exc_initialize(argc, argv, exc)
  */
 
 static VALUE
-exc_exception(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+exc_exception(int argc, VALUE *argv, VALUE self)
 {
     VALUE exc;
 
@@ -400,8 +339,7 @@ exc_exception(argc, argv, self)
  */
 
 static VALUE
-exc_to_s(exc)
-    VALUE exc;
+exc_to_s(VALUE exc)
 {
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
 
@@ -421,8 +359,7 @@ exc_to_s(exc)
  */
 
 static VALUE
-exc_message(exc)
-    VALUE exc;
+exc_message(VALUE exc)
 {
     return rb_funcall(exc, rb_intern("to_s"), 0, 0);
 }
@@ -435,8 +372,7 @@ exc_message(exc)
  */
 
 static VALUE
-exc_inspect(exc)
-    VALUE exc;
+exc_inspect(VALUE exc)
 {
     VALUE str, klass;
 
@@ -486,8 +422,7 @@ exc_inspect(exc)
 */
 
 static VALUE
-exc_backtrace(exc)
-    VALUE exc;
+exc_backtrace(VALUE exc)
 {
     ID bt = rb_intern("bt");
 
@@ -496,8 +431,7 @@ exc_backtrace(exc)
 }
 
 static VALUE
-check_backtrace(bt)
-    VALUE bt;
+check_backtrace(VALUE bt)
 {
     long i;
     static char *err = "backtrace must be Array of String";
@@ -529,9 +463,7 @@ check_backtrace(bt)
  */
 
 static VALUE
-exc_set_backtrace(exc, bt)
-    VALUE exc;
-    VALUE bt;
+exc_set_backtrace(VALUE exc, VALUE bt)
 {
     return rb_iv_set(exc, "bt", check_backtrace(bt));
 }
@@ -546,9 +478,7 @@ exc_set_backtrace(exc, bt)
  */
 
 static VALUE
-exc_equal(exc, obj)
-    VALUE exc;
-    VALUE obj;
+exc_equal(VALUE exc, VALUE obj)
 {
     ID id_mesg = rb_intern("mesg");
 
@@ -570,10 +500,7 @@ exc_equal(exc, obj)
  */
 
 static VALUE
-exit_initialize(argc, argv, exc)
-    int argc;
-    VALUE *argv;
-    VALUE exc;
+exit_initialize(int argc, VALUE *argv, VALUE exc)
 {
     VALUE status = INT2FIX(EXIT_SUCCESS);
     if (argc > 0 && FIXNUM_P(argv[0])) {
@@ -594,8 +521,7 @@ exit_initialize(argc, argv, exc)
  */
 
 static VALUE
-exit_status(exc)
-    VALUE exc;
+exit_status(VALUE exc)
 {
     return rb_attr_get(exc, rb_intern("status"));
 }
@@ -609,8 +535,7 @@ exit_status(exc)
  */
 
 static VALUE
-exit_success_p(exc)
-    VALUE exc;
+exit_success_p(VALUE exc)
 {
     VALUE status = rb_attr_get(exc, rb_intern("status"));
     if (NIL_P(status)) return Qtrue;
@@ -619,20 +544,13 @@ exit_success_p(exc)
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_name_error(ID id, const char *fmt, ...)
-#else
-rb_name_error(id, fmt, va_alist)
-    ID id;
-    const char *fmt;
-    va_dcl
-#endif
 {
     VALUE exc, argv[2];
     va_list args;
     char buf[BUFSIZ];
 
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
 
@@ -652,10 +570,7 @@ rb_name_error(id, fmt, va_alist)
  */
 
 static VALUE
-name_err_initialize(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+name_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE name;
 
@@ -673,8 +588,7 @@ name_err_initialize(argc, argv, self)
  */
 
 static VALUE
-name_err_name(self)
-    VALUE self;
+name_err_name(VALUE self)
 {
     return rb_attr_get(self, rb_intern("name"));
 }
@@ -687,8 +601,7 @@ name_err_name(self)
  */
 
 static VALUE
-name_err_to_s(exc)
-    VALUE exc;
+name_err_to_s(VALUE exc)
 {
     VALUE mesg = rb_attr_get(exc, rb_intern("mesg"));
     VALUE str = mesg;
@@ -713,10 +626,7 @@ name_err_to_s(exc)
  */
 
 static VALUE
-nometh_err_initialize(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+nometh_err_initialize(int argc, VALUE *argv, VALUE self)
 {
     VALUE args = (argc > 2) ? argv[--argc] : Qnil;
     name_err_initialize(argc, argv, self);
@@ -726,16 +636,14 @@ nometh_err_initialize(argc, argv, self)
 
 /* :nodoc: */
 static void
-name_err_mesg_mark(ptr)
-    VALUE *ptr;
+name_err_mesg_mark(VALUE *ptr)
 {
     rb_gc_mark_locations(ptr, ptr+3);
 }
 
 /* :nodoc: */
 static VALUE
-name_err_mesg_new(obj, mesg, recv, method)
-    VALUE obj, mesg, recv, method;
+name_err_mesg_new(VALUE obj, VALUE mesg, VALUE recv, VALUE method)
 {
     VALUE *ptr = ALLOC_N(VALUE, 3);
 
@@ -747,8 +655,7 @@ name_err_mesg_new(obj, mesg, recv, method)
 
 /* :nodoc: */
 static VALUE
-name_err_mesg_equal(obj1, obj2)
-    VALUE obj1, obj2;
+name_err_mesg_equal(VALUE obj1, VALUE obj2)
 {
     VALUE *ptr1, *ptr2;
     int i;
@@ -768,8 +675,7 @@ name_err_mesg_equal(obj1, obj2)
 
 /* :nodoc: */
 static VALUE
-name_err_mesg_to_str(obj)
-    VALUE obj;
+name_err_mesg_to_str(VALUE obj)
 {
     VALUE *ptr, mesg;
     Data_Get_Struct(obj, VALUE, ptr);
@@ -815,8 +721,7 @@ name_err_mesg_to_str(obj)
 
 /* :nodoc: */
 static VALUE
-name_err_mesg_load(klass, str)
-    VALUE klass, str;
+name_err_mesg_load(VALUE klass, VALUE str)
 {
     return str;
 }
@@ -830,15 +735,13 @@ name_err_mesg_load(klass, str)
  */
 
 static VALUE
-nometh_err_args(self)
-    VALUE self;
+nometh_err_args(VALUE self)
 {
     return rb_attr_get(self, rb_intern("args"));
 }
 
 void
-rb_invalid_str(str, type)
-    const char *str, *type;
+rb_invalid_str(const char *str, const char *type)
 {
     VALUE s = rb_str_inspect(rb_str_new2(str));
 
@@ -879,9 +782,7 @@ rb_invalid_str(str, type)
 static st_table *syserr_tbl;
 
 static VALUE
-set_syserr(n, name)
-    int n;
-    const char *name;
+set_syserr(int n, const char *name)
 {
     VALUE error;
 
@@ -897,8 +798,7 @@ set_syserr(n, name)
 }
 
 static VALUE
-get_syserr(n)
-    int n;
+get_syserr(int n)
 {
     VALUE error;
 
@@ -923,10 +823,7 @@ get_syserr(n)
  */
 
 static VALUE
-syserr_initialize(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+syserr_initialize(int argc, VALUE *argv, VALUE self)
 {
 #if !defined(_WIN32) && !defined(__VMS)
     char *strerror();
@@ -977,8 +874,7 @@ syserr_initialize(argc, argv, self)
  */
 
 static VALUE
-syserr_errno(self)
-    VALUE self;
+syserr_errno(VALUE self)
 {
     return rb_attr_get(self, rb_intern("errno"));
 }
@@ -992,8 +888,7 @@ syserr_errno(self)
  */
 
 static VALUE
-syserr_eqq(self, exc)
-    VALUE self, exc;
+syserr_eqq(VALUE self, VALUE exc)
 {
     VALUE num, e;
 
@@ -1022,8 +917,7 @@ syserr_eqq(self, exc)
  * Returns default SystemCallError class.
  */
 static VALUE
-errno_missing(self, id)
-    VALUE self, id;
+errno_missing(VALUE self, VALUE id)
 {
     return eNOERROR;
 }
@@ -1039,7 +933,7 @@ errno_missing(self, id)
  */
 
 void
-Init_Exception()
+Init_Exception(void)
 {
     rb_eException   = rb_define_class("Exception", rb_cObject);
     rb_define_singleton_method(rb_eException, "exception", rb_class_new_instance, -1);
@@ -1103,44 +997,31 @@ Init_Exception()
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_raise(VALUE exc, const char *fmt, ...)
-#else
-rb_raise(exc, fmt, va_alist)
-    VALUE exc;
-    const char *fmt;
-    va_dcl
-#endif
 {
     va_list args;
     char buf[BUFSIZ];
 
-    va_init_list(args,fmt);
+    va_start(args,fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
     rb_exc_raise(rb_exc_new2(exc, buf));
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_loaderror(const char *fmt, ...)
-#else
-rb_loaderror(fmt, va_alist)
-    const char *fmt;
-    va_dcl
-#endif
 {
     va_list args;
     char buf[BUFSIZ];
 
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
     rb_exc_raise(rb_exc_new2(rb_eLoadError, buf));
 }
 
 void
-rb_notimplement()
+rb_notimplement(void)
 {
     rb_raise(rb_eNotImpError,
 	     "The %s() function is unimplemented on this machine",
@@ -1148,18 +1029,12 @@ rb_notimplement()
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_fatal(const char *fmt, ...)
-#else
-rb_fatal(fmt, va_alist)
-    const char *fmt;
-    va_dcl
-#endif
 {
     va_list args;
     char buf[BUFSIZ];
 
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     vsnprintf(buf, BUFSIZ, fmt, args);
     va_end(args);
 
@@ -1168,8 +1043,7 @@ rb_fatal(fmt, va_alist)
 }
 
 void
-rb_sys_fail(mesg)
-    const char *mesg;
+rb_sys_fail(const char *mesg)
 {
     int n = errno;
     VALUE arg;
@@ -1184,13 +1058,7 @@ rb_sys_fail(mesg)
 }
 
 void
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_sys_warning(const char *fmt, ...)
-#else
-rb_sys_warning(fmt, va_alist)
-     const char *fmt;
-     va_dcl
-#endif
 {
      char buf[BUFSIZ];
      va_list args;
@@ -1203,35 +1071,32 @@ rb_sys_warning(fmt, va_alist)
      snprintf(buf, BUFSIZ, "warning: %s", fmt);
      snprintf(buf+strlen(buf), BUFSIZ-strlen(buf), ": %s", strerror(errno_save));
      
-     va_init_list(args, fmt);
+     va_start(args, fmt);
      warn_print(buf, args);
      va_end(args);
      errno = errno_save;
 }
 
 void
-rb_load_fail(path)
-    const char *path;
+rb_load_fail(const char *path)
 {
     rb_loaderror("%s -- %s", strerror(errno), path);
 }
 
 void
-rb_error_frozen(what)
-    const char *what;
+rb_error_frozen(const char *what)
 {
     rb_raise(rb_eRuntimeError, "can't modify frozen %s", what);
 }
 
 void
-rb_check_frozen(obj)
-    VALUE obj;
+rb_check_frozen(VALUE obj)
 {
     if (OBJ_FROZEN(obj)) rb_error_frozen(rb_obj_classname(obj));
 }
 
 void
-Init_syserr()
+Init_syserr(void)
 {
 #ifdef EPERM
     set_syserr(EPERM, "EPERM");
@@ -1603,8 +1468,7 @@ Init_syserr()
 }
 
 static void
-err_append(s)
-    const char *s;
+err_append(const char *s)
 {
     extern VALUE ruby_errinfo;
 

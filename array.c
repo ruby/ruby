@@ -135,13 +135,7 @@ rb_ary_new(void)
     return rb_ary_new2(ARY_DEFAULT_SIZE);
 }
 
-#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start(a)
-#endif
 
 VALUE
 rb_ary_new3(long n, ...)
@@ -152,7 +146,7 @@ rb_ary_new3(long n, ...)
 
     ary = rb_ary_new2(n);
 
-    va_init_list(ar, n);
+    va_start(ar, n);
     for (i=0; i<n; i++) {
 	RARRAY(ary)->ptr[i] = va_arg(ar, VALUE);
     }
@@ -184,7 +178,7 @@ rb_values_new(long n, ...)
     long i;
 
     val = ary_new(rb_cValues, n);
-    va_init_list(ar, n);
+    va_start(ar, n);
     for (i=0; i<n; i++) {
 	RARRAY(val)->ptr[i] = va_arg(ar, VALUE);
     }

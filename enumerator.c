@@ -24,8 +24,7 @@ static VALUE rb_cEnumerator;
 static VALUE sym_each, sym_each_with_index, sym_each_slice, sym_each_cons;
 
 static VALUE
-proc_call(proc, args)
-    VALUE proc, args;
+proc_call(VALUE proc, VALUE args)
 {
     if (TYPE(args) != T_ARRAY) {
 	args = rb_values_new(1, args);
@@ -34,8 +33,7 @@ proc_call(proc, args)
 }
 
 static VALUE
-method_call(method, args)
-    VALUE method, args;
+method_call(VALUE method, VALUE args)
 {
     int argc = 0;
     VALUE *argv = 0;
@@ -53,10 +51,8 @@ struct enumerator {
     VALUE (*iter)_((VALUE, struct enumerator *));
 };
 
-static void enumerator_mark _((void *));
 static void
-enumerator_mark(p)
-    void *p;
+enumerator_mark(void *p)
 {
     struct enumerator *ptr = p;
     rb_gc_mark(ptr->method);
@@ -65,8 +61,7 @@ enumerator_mark(p)
 }
 
 static struct enumerator *
-enumerator_ptr(obj)
-    VALUE obj;
+enumerator_ptr(VALUE obj)
 {
     struct enumerator *ptr;
 
@@ -82,11 +77,8 @@ enumerator_ptr(obj)
     return ptr;
 }
 
-static VALUE enumerator_iter_i _((VALUE, struct enumerator *));
 static VALUE
-enumerator_iter_i(i, e)
-    VALUE i;
-    struct enumerator *e;
+enumerator_iter_i(VALUE i, struct enumerator *e)
 {
     return rb_yield(proc_call(e->proc, i));
 }
@@ -110,10 +102,7 @@ enumerator_iter_i(i, e)
  *
  */
 static VALUE
-obj_to_enum(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+obj_to_enum(int argc, VALUE *argv, VALUE obj)
 {
     VALUE meth = sym_each;
 
@@ -132,16 +121,13 @@ obj_to_enum(argc, argv, obj)
  *
  */
 static VALUE
-enumerator_enum_with_index(obj)
-    VALUE obj;
+enumerator_enum_with_index(VALUE obj)
 {
     return rb_enumeratorize(obj, sym_each_with_index, 0, 0);
 }
 
 static VALUE
-each_slice_i(val, memo)
-    VALUE val;
-    VALUE *memo;
+each_slice_i(VALUE val, VALUE *memo)
 {
     VALUE ary = memo[0];
     long size = (long)memo[1];
@@ -172,8 +158,7 @@ each_slice_i(val, memo)
  *
  */
 static VALUE
-enum_each_slice(obj, n)
-    VALUE obj, n;
+enum_each_slice(VALUE obj, VALUE n)
 {
     long size = NUM2LONG(n);
     VALUE args[2], ary;
@@ -199,16 +184,13 @@ enum_each_slice(obj, n)
  *
  */
 static VALUE
-enumerator_enum_slice(obj, n)
-    VALUE obj, n;
+enumerator_enum_slice(VALUE obj, VALUE n)
 {
     return rb_enumeratorize(obj, sym_each_slice, 1, &n);
 }
 
 static VALUE
-each_cons_i(val, memo)
-    VALUE val;
-    VALUE *memo;
+each_cons_i(VALUE val, VALUE *memo)
 {
     VALUE ary = memo[0];
     long size = (long)memo[1];
@@ -244,8 +226,7 @@ each_cons_i(val, memo)
  *
  */
 static VALUE
-enum_each_cons(obj, n)
-    VALUE obj, n;
+enum_each_cons(VALUE obj, VALUE n)
 {
     long size = NUM2LONG(n);
     VALUE args[2];
@@ -267,16 +248,13 @@ enum_each_cons(obj, n)
  *
  */
 static VALUE
-enumerator_enum_cons(obj, n)
-    VALUE obj, n;
+enumerator_enum_cons(VALUE obj, VALUE n)
 {
     return rb_enumeratorize(obj, sym_each_cons, 1, &n);
 }
 
-static VALUE enumerator_allocate _((VALUE));
 static VALUE
-enumerator_allocate(klass)
-    VALUE klass;
+enumerator_allocate(VALUE klass)
 {
     struct enumerator *ptr;
     return Data_Make_Struct(rb_cEnumerator, struct enumerator,
@@ -284,10 +262,7 @@ enumerator_allocate(klass)
 }
 
 VALUE
-enumerator_init(enum_obj, obj, meth, argc, argv)
-    VALUE enum_obj, obj, meth;
-    int argc;
-    VALUE *argv;
+enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 {
     struct enumerator *ptr = enumerator_ptr(enum_obj);
 
@@ -320,10 +295,7 @@ enumerator_init(enum_obj, obj, meth, argc, argv)
  *
  */
 static VALUE
-enumerator_initialize(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+enumerator_initialize(int argc, VALUE *argv, VALUE obj)
 {
     VALUE recv, meth = sym_each;
 
@@ -338,18 +310,13 @@ enumerator_initialize(argc, argv, obj)
 }
 
 VALUE
-rb_enumeratorize(obj, meth, argc, argv)
-    VALUE obj, meth;
-    int argc;
-    VALUE *argv;
+rb_enumeratorize(VALUE obj, VALUE meth, int argc, VALUE *argv)
 {
     return enumerator_init(enumerator_allocate(rb_cEnumerator), obj, meth, argc, argv);
 }
 
-static VALUE enumerator_iter _((VALUE));
 static VALUE
-enumerator_iter(memo)
-    VALUE memo;
+enumerator_iter(VALUE memo)
 {
     struct enumerator *e = (struct enumerator *)memo;
 
@@ -365,8 +332,7 @@ enumerator_iter(memo)
  *
  */
 static VALUE
-enumerator_each(obj)
-    VALUE obj;
+enumerator_each(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
 
@@ -374,8 +340,7 @@ enumerator_each(obj)
 }
 
 static VALUE
-enumerator_with_index_i(val, memo)
-    VALUE val, *memo;
+enumerator_with_index_i(VALUE val, VALUE *memo)
 {
     val = rb_yield_values(2, val, INT2FIX(*memo));
     ++*memo;
@@ -391,8 +356,7 @@ enumerator_with_index_i(val, memo)
  *
  */
 static VALUE
-enumerator_with_index(obj)
-    VALUE obj;
+enumerator_with_index(VALUE obj)
 {
     struct enumerator *e = enumerator_ptr(obj);
     VALUE memo = 0;
@@ -402,7 +366,7 @@ enumerator_with_index(obj)
 }
 
 void
-Init_Enumerator()
+Init_Enumerator(void)
 {
     rb_define_method(rb_mKernel, "to_enum", obj_to_enum, -1);
     rb_define_method(rb_mKernel, "enum_for", obj_to_enum, -1);

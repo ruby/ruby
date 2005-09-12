@@ -303,7 +303,7 @@ extern Node*  onig_node_new_anchor P_((int type));
 extern Node*  onig_node_new_str P_((const UChar* s, const UChar* end));
 extern Node*  onig_node_new_list P_((Node* left, Node* right));
 extern void   onig_node_str_clear P_((Node* node));
-extern int    onig_free_node_list();
+extern int    onig_free_node_list(void);
 extern int    onig_names_free P_((regex_t* reg));
 extern int    onig_parse_make_tree P_((Node** root, const UChar* pattern, const UChar* end, regex_t* reg, ScanEnv* env));
 

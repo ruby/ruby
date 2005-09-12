@@ -19,8 +19,7 @@
 extern st_table *rb_class_tbl;
 
 VALUE
-rb_class_boot(super)
-    VALUE super;
+rb_class_boot(VALUE super)
 {
     NEWOBJ(klass, struct RClass);
     OBJSETUP(klass, rb_cClass, T_CLASS);
@@ -35,8 +34,7 @@ rb_class_boot(super)
 }
 
 void
-rb_check_inheritable(super)
-    VALUE super;
+rb_check_inheritable(VALUE super)
 {
     if (TYPE(super) != T_CLASS) {
 	rb_raise(rb_eTypeError, "superclass must be a Class (%s given)",
@@ -48,8 +46,7 @@ rb_check_inheritable(super)
 }
 
 VALUE
-rb_class_new(super)
-    VALUE super;
+rb_class_new(VALUE super)
 {
     Check_Type(super, T_CLASS);
     rb_check_inheritable(super);
@@ -60,10 +57,7 @@ rb_class_new(super)
 }
 
 static int
-clone_method(mid, body, tbl)
-    ID mid;
-    NODE *body;
-    st_table *tbl;
+clone_method(ID mid, NODE *body, st_table *tbl)
 {
     st_insert(tbl, mid, (st_data_t)NEW_METHOD(body->nd_body, body->nd_noex));
     return ST_CONTINUE;
@@ -71,8 +65,7 @@ clone_method(mid, body, tbl)
 
 /* :nodoc: */
 VALUE
-rb_mod_init_copy(clone, orig)
-    VALUE clone, orig;
+rb_mod_init_copy(VALUE clone, VALUE orig)
 {
     rb_obj_init_copy(clone, orig);
     if (!FL_TEST(CLASS_OF(clone), FL_SINGLETON)) {
@@ -99,8 +92,7 @@ rb_mod_init_copy(clone, orig)
 
 /* :nodoc: */
 VALUE
-rb_class_init_copy(clone, orig)
-    VALUE clone, orig;
+rb_class_init_copy(VALUE clone, VALUE orig)
 {
     if (RCLASS(clone)->super != 0) {
 	rb_raise(rb_eTypeError, "already initialized class");
@@ -112,8 +104,7 @@ rb_class_init_copy(clone, orig)
 }
 
 VALUE
-rb_singleton_class_clone(obj)
-    VALUE obj;
+rb_singleton_class_clone(VALUE obj)
 {
     VALUE klass = RBASIC(obj)->klass;
 
@@ -147,8 +138,7 @@ rb_singleton_class_clone(obj)
 }
 
 void
-rb_singleton_class_attached(klass, obj)
-    VALUE klass, obj;
+rb_singleton_class_attached(VALUE klass, VALUE obj)
 {
     if (FL_TEST(klass, FL_SINGLETON)) {
 	if (!RCLASS(klass)->iv_tbl) {
@@ -159,8 +149,7 @@ rb_singleton_class_attached(klass, obj)
 }
 
 VALUE
-rb_make_metaclass(obj, super)
-    VALUE obj, super;
+rb_make_metaclass(VALUE obj, VALUE super)
 {
     if (BUILTIN_TYPE(obj) == T_CLASS && FL_TEST(obj, FL_SINGLETON)) {
 	return RBASIC(obj)->klass = rb_cClass;
@@ -183,9 +172,7 @@ rb_make_metaclass(obj, super)
 }
 
 VALUE
-rb_define_class_id(id, super)
-    ID id;
-    VALUE super;
+rb_define_class_id(ID id, VALUE super)
 {
     VALUE klass;
 
@@ -197,17 +184,14 @@ rb_define_class_id(id, super)
 }
 
 VALUE
-rb_class_inherited(super, klass)
-    VALUE super, klass;
+rb_class_inherited(VALUE super, VALUE klass)
 {
     if (!super) super = rb_cObject;
     return rb_funcall(super, rb_intern("inherited"), 1, klass);
 }
 
 VALUE
-rb_define_class(name, super)
-    const char *name;
-    VALUE super;
+rb_define_class(const char *name, VALUE super)
 {
     VALUE klass;
     ID id;
@@ -236,10 +220,7 @@ rb_define_class(name, super)
 }
 
 VALUE
-rb_define_class_under(outer, name, super)
-    VALUE outer;
-    const char *name;
-    VALUE super;
+rb_define_class_under(VALUE outer, const char *name, VALUE super)
 {
     VALUE klass;
     ID id;
@@ -268,7 +249,7 @@ rb_define_class_under(outer, name, super)
 }
 
 VALUE
-rb_module_new()
+rb_module_new(void)
 {
     NEWOBJ(mdl, struct RClass);
     OBJSETUP(mdl, rb_cModule, T_MODULE);
@@ -282,8 +263,7 @@ rb_module_new()
 }
 
 VALUE
-rb_define_module_id(id)
-    ID id;
+rb_define_module_id(ID id)
 {
     VALUE mdl;
 
@@ -294,8 +274,7 @@ rb_define_module_id(id)
 }
 
 VALUE
-rb_define_module(name)
-    const char *name;
+rb_define_module(const char *name)
 {
     VALUE module;
     ID id;
@@ -315,9 +294,7 @@ rb_define_module(name)
 }
 
 VALUE
-rb_define_module_under(outer, name)
-    VALUE outer;
-    const char *name;
+rb_define_module_under(VALUE outer, const char *name)
 {
     VALUE module;
     ID id;
@@ -338,8 +315,7 @@ rb_define_module_under(outer, name)
 }
 
 static VALUE
-include_class_new(module, super)
-    VALUE module, super;
+include_class_new(VALUE module, VALUE super)
 {
     NEWOBJ(klass, struct RClass);
     OBJSETUP(klass, rb_cClass, T_ICLASS);
@@ -366,8 +342,7 @@ include_class_new(module, super)
 }
 
 void
-rb_include_module(klass, module)
-    VALUE klass, module;
+rb_include_module(VALUE klass, VALUE module)
 {
     VALUE p, c;
     int changed = 0;
@@ -434,8 +409,7 @@ rb_include_module(klass, module)
  */
 
 VALUE
-rb_mod_included_modules(mod)
-    VALUE mod;
+rb_mod_included_modules(VALUE mod)
 {
     VALUE ary = rb_ary_new();
     VALUE p;
@@ -468,9 +442,7 @@ rb_mod_included_modules(mod)
  */
 
 VALUE
-rb_mod_include_p(mod, mod2)
-    VALUE mod;
-    VALUE mod2;
+rb_mod_include_p(VALUE mod, VALUE mod2)
 {
     VALUE p;
 
@@ -500,8 +472,7 @@ rb_mod_include_p(mod, mod2)
  */
 
 VALUE
-rb_mod_ancestors(mod)
-    VALUE mod;
+rb_mod_ancestors(VALUE mod)
 {
     VALUE p, ary = rb_ary_new();
 
@@ -522,11 +493,7 @@ rb_mod_ancestors(mod)
 #define VISI_CHECK(x,f) (VISI(x) == (f))
 
 static int
-ins_methods_push(name, type, ary, visi)
-    ID name;
-    long type;
-    VALUE ary;
-    long visi;
+ins_methods_push(ID name, long type, VALUE ary, long visi)
 {
     if (type == -1) return ST_CONTINUE;
     switch (visi) {
@@ -546,46 +513,31 @@ ins_methods_push(name, type, ary, visi)
 }
 
 static int
-ins_methods_i(name, type, ary)
-    ID name;
-    long type;
-    VALUE ary;
+ins_methods_i(ID name, long type, VALUE ary)
 {
     return ins_methods_push(name, type, ary, -1); /* everything but private */
 }
 
 static int
-ins_methods_prot_i(name, type, ary)
-    ID name;
-    long type;
-    VALUE ary;
+ins_methods_prot_i(ID name, long type, VALUE ary)
 {
     return ins_methods_push(name, type, ary, NOEX_PROTECTED);
 }
 
 static int
-ins_methods_priv_i(name, type, ary)
-    ID name;
-    long type;
-    VALUE ary;
+ins_methods_priv_i(ID name, long type, VALUE ary)
 {
     return ins_methods_push(name, type, ary, NOEX_PRIVATE);
 }
 
 static int
-ins_methods_pub_i(name, type, ary)
-    ID name;
-    long type;
-    VALUE ary;
+ins_methods_pub_i(ID name, long type, VALUE ary)
 {
     return ins_methods_push(name, type, ary, NOEX_PUBLIC);
 }
 
 static int
-method_entry(key, body, list)
-    ID key;
-    NODE *body;
-    st_table *list;
+method_entry(ID key, NODE *body, st_table *list)
 {
     long type;
 
@@ -599,11 +551,7 @@ method_entry(key, body, list)
 }
 
 static VALUE
-class_instance_method_list(argc, argv, mod, func)
-    int argc;
-    VALUE *argv;
-    VALUE mod;
-    int (*func) _((ID, long, VALUE));
+class_instance_method_list(int argc, VALUE *argv, VALUE mod, int (*func) (ID, long, VALUE))
 {
     VALUE ary;
     int recur;
@@ -660,10 +608,7 @@ class_instance_method_list(argc, argv, mod, func)
  */
 
 VALUE
-rb_class_instance_methods(argc, argv, mod)
-    int argc;
-    VALUE *argv;
-    VALUE mod;
+rb_class_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, ins_methods_i);
 }
@@ -678,10 +623,7 @@ rb_class_instance_methods(argc, argv, mod)
  */
 
 VALUE
-rb_class_protected_instance_methods(argc, argv, mod)
-    int argc;
-    VALUE *argv;
-    VALUE mod;
+rb_class_protected_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, ins_methods_prot_i);
 }
@@ -704,10 +646,7 @@ rb_class_protected_instance_methods(argc, argv, mod)
  */
 
 VALUE
-rb_class_private_instance_methods(argc, argv, mod)
-    int argc;
-    VALUE *argv;
-    VALUE mod;
+rb_class_private_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, ins_methods_priv_i);
 }
@@ -722,10 +661,7 @@ rb_class_private_instance_methods(argc, argv, mod)
  */
 
 VALUE
-rb_class_public_instance_methods(argc, argv, mod)
-    int argc;
-    VALUE *argv;
-    VALUE mod;
+rb_class_public_instance_methods(int argc, VALUE *argv, VALUE mod)
 {
     return class_instance_method_list(argc, argv, mod, ins_methods_pub_i);
 }
@@ -763,10 +699,7 @@ rb_class_public_instance_methods(argc, argv, mod)
  */
 
 VALUE
-rb_obj_singleton_methods(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
 {
     VALUE recur, ary, klass;
     st_table *list;
@@ -795,49 +728,31 @@ rb_obj_singleton_methods(argc, argv, obj)
 }
 
 void
-rb_define_method_id(klass, name, func, argc)
-    VALUE klass;
-    ID name;
-    VALUE (*func)();
-    int argc;
+rb_define_method_id(VALUE klass, ID name, VALUE (*func) (/* ??? */), int argc)
 {
     rb_add_method(klass, name, NEW_CFUNC(func,argc), NOEX_PUBLIC);
 }
 
 void
-rb_define_method(klass, name, func, argc)
-    VALUE klass;
-    const char *name;
-    VALUE (*func)();
-    int argc;
+rb_define_method(VALUE klass, const char *name, VALUE (*func) (/* ??? */), int argc)
 {
     rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PUBLIC);
 }
 
 void
-rb_define_protected_method(klass, name, func, argc)
-    VALUE klass;
-    const char *name;
-    VALUE (*func)();
-    int argc;
+rb_define_protected_method(VALUE klass, const char *name, VALUE (*func) (/* ??? */), int argc)
 {
     rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PROTECTED);
 }
 
 void
-rb_define_private_method(klass, name, func, argc)
-    VALUE klass;
-    const char *name;
-    VALUE (*func)();
-    int argc;
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func) (/* ??? */), int argc)
 {
     rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PRIVATE);
 }
 
 void
-rb_undef_method(klass, name)
-    VALUE klass;
-    const char *name;
+rb_undef_method(VALUE klass, const char *name)
 {
     rb_add_method(klass, rb_intern(name), 0, NOEX_UNDEF);
 }
@@ -849,8 +764,7 @@ rb_undef_method(klass, name)
 } while (0)
 
 VALUE
-rb_singleton_class(obj)
-    VALUE obj;
+rb_singleton_class(VALUE obj)
 {
     VALUE klass;
 
@@ -885,77 +799,47 @@ rb_singleton_class(obj)
 }
 
 void
-rb_define_singleton_method(obj, name, func, argc)
-    VALUE obj;
-    const char *name;
-    VALUE (*func)();
-    int argc;
+rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func) (/* ??? */), int argc)
 {
     rb_define_method(rb_singleton_class(obj), name, func, argc);
 }
 
 void
-rb_define_module_function(module, name, func, argc)
-    VALUE module;
-    const char *name;
-    VALUE (*func)();
-    int argc;
+rb_define_module_function(VALUE module, const char *name, VALUE (*func) (/* ??? */), int argc)
 {
     rb_define_private_method(module, name, func, argc);
     rb_define_singleton_method(module, name, func, argc);
 }
 
 void
-rb_define_global_function(name, func, argc)
-    const char *name;
-    VALUE (*func)();
-    int argc;
+rb_define_global_function(const char *name, VALUE (*func) (/* ??? */), int argc)
 {
     rb_define_module_function(rb_mKernel, name, func, argc);
 }
 
 void
-rb_define_alias(klass, name1, name2)
-    VALUE klass;
-    const char *name1, *name2;
+rb_define_alias(VALUE klass, const char *name1, const char *name2)
 {
     rb_alias(klass, rb_intern(name1), rb_intern(name2));
 }
 
 void
-rb_define_attr(klass, name, read, write)
-    VALUE klass;
-    const char *name;
-    int read, write;
+rb_define_attr(VALUE klass, const char *name, int read, int write)
 {
     rb_attr(klass, rb_intern(name), read, write, Qfalse);
 }
 
-#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start(a)
-#endif
 
 int
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_scan_args(int argc, const VALUE *argv, const char *fmt, ...)
-#else
-rb_scan_args(argc, argv, fmt, va_alist)
-    int argc;
-    const VALUE *argv;
-    const char *fmt;
-    va_dcl
-#endif
 {
     int n, i = 0;
     const char *p = fmt;
     VALUE *var;
     va_list vargs;
 
-    va_init_list(vargs, fmt);
+    va_start(vargs, fmt);
 
     if (*p == '*') goto rest_arg;
 

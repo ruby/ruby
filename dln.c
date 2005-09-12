@@ -89,7 +89,7 @@ char *getenv();
 # include <image.h>
 #endif
 
-int eaccess();
+int eaccess(const char *, int);
 
 #ifndef NO_DLN_LOAD
 
@@ -107,9 +107,7 @@ int eaccess();
 #endif
 
 static int
-init_funcname_len(buf, file)
-    char **buf;
-    const char *file;
+init_funcname_len(char **buf, const char *file)
 {
     char *p;
     const char *slash;
@@ -1161,7 +1159,7 @@ dln_sym(name)
 #endif
 
 static const char *
-dln_strerror()
+dln_strerror(void)
 {
 #ifdef USE_DLN_A_OUT
     char *strerror();
@@ -1262,8 +1260,7 @@ aix_loaderror(const char *pathname)
 #endif /* NO_DLN_LOAD */
 
 void*
-dln_load(file)
-    const char *file;
+dln_load(const char *file)
 {
 #ifdef NO_DLN_LOAD
     rb_raise(rb_eLoadError, "this executable file can't load extension libraries");
@@ -1606,12 +1603,10 @@ dln_load(file)
     return 0;			/* dummy return */
 }
 
-static char *dln_find_1();
+static char *dln_find_1(char *fname, char *path, int exe_flag);
 
 char *
-dln_find_exe(fname, path)
-    const char *fname;
-    const char *path;
+dln_find_exe(const char *fname, const char *path)
 {
     if (!path) {
 	path = getenv(PATH_ENV);
@@ -1628,9 +1623,7 @@ dln_find_exe(fname, path)
 }
 
 char *
-dln_find_file(fname, path)
-    const char *fname;
-    const char *path;
+dln_find_file(const char *fname, const char *path)
 {
 #ifndef __MACOS__
     if (!path) path = ".";
@@ -1672,10 +1665,7 @@ conv_to_posix_path(win32, posix, len)
 static char fbuf[MAXPATHLEN];
 
 static char *
-dln_find_1(fname, path, exe_flag)
-    char *fname;
-    char *path;
-    int exe_flag;		/* non 0 if looking for executable. */
+dln_find_1(char *fname, char *path, int exe_flag /* non 0 if looking for executable. */)
 {
     register char *dp;
     register char *ep;

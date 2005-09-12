@@ -19,7 +19,7 @@ const char ruby_release_date[] = RUBY_RELEASE_DATE;
 const char ruby_platform[] = RUBY_PLATFORM;
 
 void
-Init_version()
+Init_version(void)
 {
     VALUE v = rb_obj_freeze(rb_str_new2(ruby_version));
     VALUE d = rb_obj_freeze(rb_str_new2(ruby_release_date));
@@ -31,14 +31,14 @@ Init_version()
 }
 
 void
-ruby_show_version()
+ruby_show_version(void)
 {
     printf("ruby %s (%s) [%s]\n", RUBY_VERSION, RUBY_RELEASE_DATE, RUBY_PLATFORM);
     fflush(stdout);
 }
 
 void
-ruby_show_copyright()
+ruby_show_copyright(void)
 {
     printf("ruby - Copyright (C) 1993-%d Yukihiro Matsumoto\n", RUBY_RELEASE_YEAR);
     exit(0);

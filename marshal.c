@@ -31,9 +31,7 @@
 #define SHORTLEN(x) (x)
 #else
 static int
-shortlen(len, ds)
-    long len;
-    BDIGIT *ds;
+shortlen(long len, BDIGIT *ds)
 {
     BDIGIT num;
     int offset = 0;
@@ -99,8 +97,7 @@ struct dump_call_arg {
 };
 
 static VALUE
-class2path(klass)
-    VALUE klass;
+class2path(VALUE klass)
 {
     VALUE path = rb_class_path(klass);
     char *n = RSTRING(path)->ptr;
@@ -119,10 +116,7 @@ class2path(klass)
 static void w_long _((long, struct dump_arg*));
 
 static void
-w_nbyte(s, n, arg)
-    char *s;
-    int n;
-    struct dump_arg *arg;
+w_nbyte(char *s, int n, struct dump_arg *arg)
 {
     VALUE buf = arg->str;
     rb_str_buf_cat(buf, s, n);
@@ -134,36 +128,27 @@ w_nbyte(s, n, arg)
 }
 
 static void
-w_byte(c, arg)
-    char c;
-    struct dump_arg *arg;
+w_byte(char c, struct dump_arg *arg)
 {
     w_nbyte(&c, 1, arg);
 }
 
 static void
-w_bytes(s, n, arg)
-    char *s;
-    int n;
-    struct dump_arg *arg;
+w_bytes(char *s, int n, struct dump_arg *arg)
 {
     w_long(n, arg);
     w_nbyte(s, n, arg);
 }
 
 static void
-w_short(x, arg)
-    int x;
-    struct dump_arg *arg;
+w_short(int x, struct dump_arg *arg)
 {
     w_byte((x >> 0) & 0xff, arg);
     w_byte((x >> 8) & 0xff, arg);
 }
 
 static void
-w_long(x, arg)
-    long x;
-    struct dump_arg *arg;
+w_long(long x, struct dump_arg *arg)
 {
     char buf[sizeof(long)+1];
     int i, len = 0;
@@ -219,9 +204,7 @@ w_long(x, arg)
 #endif
 
 static int
-save_mantissa(d, buf)
-    double d;
-    char *buf;
+save_mantissa(double d, char *buf)
 {
     int e, i = 0;
     unsigned long m;
@@ -250,10 +233,7 @@ save_mantissa(d, buf)
 }
 
 static double
-load_mantissa(d, buf, len)
-    double d;
-    const char *buf;
-    int len;
+load_mantissa(double d, const char *buf, int len)
 {
     if (--len > 0 && !*buf++) {	/* binary mantissa mark */
 	int e, s = d < 0, dig = 0;
@@ -294,9 +274,7 @@ load_mantissa(d, buf, len)
 #endif
 
 static void
-w_float(d, arg)
-    double d;
-    struct dump_arg *arg;
+w_float(double d, struct dump_arg *arg)
 {
     char buf[100];
 
@@ -324,9 +302,7 @@ w_float(d, arg)
 }
 
 static void
-w_symbol(id, arg)
-    ID id;
-    struct dump_arg *arg;
+w_symbol(ID id, struct dump_arg *arg)
 {
     char *sym = rb_id2name(id);
     st_data_t num;
@@ -343,9 +319,7 @@ w_symbol(id, arg)
 }
 
 static void
-w_unique(s, arg)
-    char *s;
-    struct dump_arg *arg;
+w_unique(char *s, struct dump_arg *arg)
 {
     if (s[0] == '#') {
 	rb_raise(rb_eTypeError, "can't dump anonymous class %s", s);
@@ -356,9 +330,7 @@ w_unique(s, arg)
 static void w_object _((VALUE,struct dump_arg*,int));
 
 static int
-hash_each(key, value, arg)
-    VALUE key, value;
-    struct dump_call_arg *arg;
+hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
 {
     w_object(key, arg->arg, arg->limit);
     w_object(value, arg->arg, arg->limit);
@@ -366,10 +338,7 @@ hash_each(key, value, arg)
 }
 
 static void
-w_extended(klass, arg, check)
-    VALUE klass;
-    struct dump_arg *arg;
-    int check;
+w_extended(VALUE klass, struct dump_arg *arg, int check)
 {
     char *path;
 
@@ -389,11 +358,7 @@ w_extended(klass, arg, check)
 }
 
 static void
-w_class(type, obj, arg, check)
-    int type;
-    VALUE obj;
-    struct dump_arg *arg;
-    int check;
+w_class(int type, VALUE obj, struct dump_arg *arg, int check)
 {
     char *path;
 
@@ -405,9 +370,7 @@ w_class(type, obj, arg, check)
 }
 
 static void
-w_uclass(obj, base_klass, arg)
-    VALUE obj, base_klass;
-    struct dump_arg *arg;
+w_uclass(VALUE obj, VALUE base_klass, struct dump_arg *arg)
 {
     VALUE klass = CLASS_OF(obj);
 
@@ -420,10 +383,7 @@ w_uclass(obj, base_klass, arg)
 }
 
 static int
-w_obj_each(id, value, arg)
-    ID id;
-    VALUE value;
-    struct dump_call_arg *arg;
+w_obj_each(ID id, VALUE value, struct dump_call_arg *arg)
 {
     w_symbol(id, arg->arg);
     w_object(value, arg->arg, arg->limit);
@@ -431,9 +391,7 @@ w_obj_each(id, value, arg)
 }
 
 static void
-w_ivar(tbl, arg)
-    st_table *tbl;
-    struct dump_call_arg *arg;
+w_ivar(st_table *tbl, struct dump_call_arg *arg)
 {
     if (tbl) {
 	w_long(tbl->num_entries, arg->arg);
@@ -445,10 +403,7 @@ w_ivar(tbl, arg)
 }
 
 static void
-w_object(obj, arg, limit)
-    VALUE obj;
-    struct dump_arg *arg;
-    int limit;
+w_object(VALUE obj, struct dump_arg *arg, int limit)
 {
     struct dump_call_arg c_arg;
     st_table *ivtbl = 0;
@@ -675,8 +630,7 @@ w_object(obj, arg, limit)
 }
 
 static VALUE
-dump(arg)
-    struct dump_call_arg *arg;
+dump(struct dump_call_arg *arg)
 {
     w_object(arg->obj, arg->arg, arg->limit);
     if (arg->arg->dest) {
@@ -687,8 +641,7 @@ dump(arg)
 }
 
 static VALUE
-dump_ensure(arg)
-    struct dump_arg *arg;
+dump_ensure(struct dump_arg *arg)
 {
     st_free_table(arg->symbols);
     st_free_table(arg->data);
@@ -725,9 +678,7 @@ dump_ensure(arg)
  *     obj.sayHello   #=> "hello\n"
  */
 static VALUE
-marshal_dump(argc, argv)
-    int argc;
-    VALUE* argv;
+marshal_dump(int argc, VALUE *argv)
 {
     VALUE obj, port, a1, a2;
     int limit = -1;
@@ -790,8 +741,7 @@ struct load_arg {
 static VALUE r_object _((struct load_arg *arg));
 
 static int
-r_byte(arg)
-    struct load_arg *arg;
+r_byte(struct load_arg *arg)
 {
     int c;
 
@@ -813,8 +763,7 @@ r_byte(arg)
 }
 
 static void
-long_toobig(size)
-    int size;
+long_toobig(int size)
 {
     rb_raise(rb_eTypeError, "long too big for this architecture (size %d, given %d)",
 	     sizeof(long), size);
@@ -829,8 +778,7 @@ long_toobig(size)
 #endif
 
 static long
-r_long(arg)
-    struct load_arg *arg;
+r_long(struct load_arg *arg)
 {
     register long x;
     int c = SIGN_EXTEND_CHAR(r_byte(arg));
@@ -865,9 +813,7 @@ r_long(arg)
 #define r_bytes(arg) r_bytes0(r_long(arg), (arg))
 
 static VALUE
-r_bytes0(len, arg)
-    long len;
-    struct load_arg *arg;
+r_bytes0(long len, struct load_arg *arg)
 {
     VALUE str;
 
@@ -895,8 +841,7 @@ r_bytes0(len, arg)
 }
 
 static ID
-r_symlink(arg)
-    struct load_arg *arg;
+r_symlink(struct load_arg *arg)
 {
     ID id;
     long num = r_long(arg);
@@ -908,8 +853,7 @@ r_symlink(arg)
 }
 
 static ID
-r_symreal(arg)
-    struct load_arg *arg;
+r_symreal(struct load_arg *arg)
 {
     ID id;
 
@@ -920,8 +864,7 @@ r_symreal(arg)
 }
 
 static ID
-r_symbol(arg)
-    struct load_arg *arg;
+r_symbol(struct load_arg *arg)
 {
     if (r_byte(arg) == TYPE_SYMLINK) {
 	return r_symlink(arg);
@@ -930,23 +873,19 @@ r_symbol(arg)
 }
 
 static char*
-r_unique(arg)
-    struct load_arg *arg;
+r_unique(struct load_arg *arg)
 {
     return rb_id2name(r_symbol(arg));
 }
 
 static VALUE
-r_string(arg)
-    struct load_arg *arg;
+r_string(struct load_arg *arg)
 {
     return r_bytes(arg);
 }
 
 static VALUE
-r_entry(v, arg)
-    VALUE v;
-    struct load_arg *arg;
+r_entry(VALUE v, struct load_arg *arg)
 {
     rb_hash_aset(arg->data, INT2FIX(RHASH(arg->data)->tbl->num_entries), v);
     if (arg->taint) OBJ_TAINT(v);
@@ -954,9 +893,7 @@ r_entry(v, arg)
 }
 
 static void
-r_ivar(obj, arg)
-    VALUE obj;
-    struct load_arg *arg;
+r_ivar(VALUE obj, struct load_arg *arg)
 {
     long len;
 
@@ -971,8 +908,7 @@ r_ivar(obj, arg)
 }
 
 static VALUE
-path2class(path)
-    char *path;
+path2class(char *path)
 {
     VALUE v = rb_path2class(path);
 
@@ -983,8 +919,7 @@ path2class(path)
 }
 
 static VALUE
-path2module(path)
-    char *path;
+path2module(char *path)
 {
     VALUE v = rb_path2class(path);
 
@@ -995,11 +930,7 @@ path2module(path)
 }
 
 static VALUE
-r_object0(arg, proc, ivp, extmod)
-    struct load_arg *arg;
-    VALUE proc;
-    int *ivp;
-    VALUE extmod;
+r_object0(struct load_arg *arg, VALUE proc, int *ivp, VALUE extmod)
 {
     VALUE v = Qnil;
     int type = r_byte(arg);
@@ -1350,22 +1281,19 @@ r_object0(arg, proc, ivp, extmod)
 }
 
 static VALUE
-r_object(arg)
-    struct load_arg *arg;
+r_object(struct load_arg *arg)
 {
     return r_object0(arg, arg->proc, 0, Qnil);
 }
 
 static VALUE
-load(arg)
-    struct load_arg *arg;
+load(struct load_arg *arg)
 {
     return r_object(arg);
 }
 
 static VALUE
-load_ensure(arg)
-    struct load_arg *arg;
+load_ensure(struct load_arg *arg)
 {
     st_free_table(arg->symbols);
     return 0;
@@ -1383,9 +1311,7 @@ load_ensure(arg)
  * is deserialized.
  */
 static VALUE
-marshal_load(argc, argv)
-    int argc;
-    VALUE *argv;
+marshal_load(int argc, VALUE *argv)
 {
     VALUE port, proc;
     int major, minor;
@@ -1465,7 +1391,7 @@ marshal_load(argc, argv)
  * The class method _load should take a String and return an object of this class.
  */
 void
-Init_marshal()
+Init_marshal(void)
 {
     VALUE rb_mMarshal = rb_define_module("Marshal");
 
@@ -1490,8 +1416,7 @@ Init_marshal()
 }
 
 VALUE
-rb_marshal_dump(obj, port)
-    VALUE obj, port;
+rb_marshal_dump(VALUE obj, VALUE port)
 {
     int argc = 1;
     VALUE argv[2];
@@ -1503,8 +1428,7 @@ rb_marshal_dump(obj, port)
 }
 
 VALUE
-rb_marshal_load(port)
-    VALUE port;
+rb_marshal_load(VALUE port)
 {
     return marshal_load(1, &port);
 }

@@ -105,10 +105,7 @@ emx_mblen(p)
 # define Inc(p) ((p) = Next(p))
 # define Compare(p1, p2) (CompareImpl(p1, p2, nocase))
 static int
-CompareImpl(p1, p2, nocase)
-    const char *p1;
-    const char *p2;
-    int nocase;
+CompareImpl(const char *p1, const char *p2, int nocase)
 {
     const int len1 = Next(p1) - p1;
     const int len2 = Next(p2) - p2;
@@ -165,10 +162,10 @@ CompareImpl(p1, p2, nocase)
 #endif /* environment */
 
 static char *
-bracket(p, s, flags)
-    const char *p; /* pattern (next to '[') */
-    const char *s; /* string */
-    int flags;
+bracket(
+    const char *p, /* pattern (next to '[') */
+    const char *s, /* string */
+    int flags)
 {
     const int nocase = flags & FNM_CASEFOLD;
     const int escape = !(flags & FNM_NOESCAPE);
@@ -215,10 +212,10 @@ bracket(p, s, flags)
 #define RETURN(val) return *pcur = p, *scur = s, (val);
 
 static int
-fnmatch_helper(pcur, scur, flags)
-    const char **pcur; /* pattern */
-    const char **scur; /* string */
-    int flags;
+fnmatch_helper(
+    const char **pcur, /* pattern */
+    const char **scur, /* string */
+    int flags)
 {
     const int period = !(flags & FNM_DOTMATCH);
     const int pathname = flags & FNM_PATHNAME;
@@ -292,10 +289,10 @@ fnmatch_helper(pcur, scur, flags)
 }
 
 static int
-fnmatch(p, s, flags)
-    const char *p; /* pattern */
-    const char *s; /* string */
-    int flags;
+fnmatch(
+    const char *p, /* pattern */
+    const char *s, /* string */
+    int flags)
 {
     const int period = !(flags & FNM_DOTMATCH);
     const int pathname = flags & FNM_PATHNAME;
@@ -345,8 +342,7 @@ struct dir_data {
 };
 
 static void
-free_dir(dir)
-    struct dir_data *dir;
+free_dir(struct dir_data *dir)
 {
     if (dir) {
 	if (dir->dir) closedir(dir->dir);
@@ -357,10 +353,8 @@ free_dir(dir)
 
 static VALUE dir_close _((VALUE));
 
-static VALUE dir_s_alloc _((VALUE));
 static VALUE
-dir_s_alloc(klass)
-    VALUE klass;
+dir_s_alloc(VALUE klass)
 {
     struct dir_data *dirp;
     VALUE obj = Data_Make_Struct(klass, struct dir_data, 0, free_dir, dirp);
@@ -378,8 +372,7 @@ dir_s_alloc(klass)
  *  Returns a new directory object for the named directory.
  */
 static VALUE
-dir_initialize(dir, dirname)
-    VALUE dir, dirname;
+dir_initialize(VALUE dir, VALUE dirname)
 {
     struct dir_data *dp;
 
@@ -416,8 +409,7 @@ dir_initialize(dir, dirname)
  *  block.
  */
 static VALUE
-dir_s_open(klass, dirname)
-    VALUE klass, dirname;
+dir_s_open(VALUE klass, VALUE dirname)
 {
     struct dir_data *dp;
     VALUE dir = Data_Make_Struct(klass, struct dir_data, 0, free_dir, dp);
@@ -431,7 +423,7 @@ dir_s_open(klass, dirname)
 }
 
 static void
-dir_closed()
+dir_closed(void)
 {
     rb_raise(rb_eIOError, "closed directory");
 }
@@ -448,8 +440,7 @@ dir_closed()
  *  Return a string describing this Dir object.
  */
 static VALUE
-dir_inspect(dir)
-    VALUE dir;
+dir_inspect(VALUE dir)
 {
     struct dir_data *dirp;
 
@@ -474,8 +465,7 @@ dir_inspect(dir)
  *     d.path   #=> ".."
  */
 static VALUE
-dir_path(dir)
-    VALUE dir;
+dir_path(VALUE dir)
 {
     struct dir_data *dirp;
 
@@ -497,8 +487,7 @@ dir_path(dir)
  *     d.read   #=> "config.h"
  */
 static VALUE
-dir_read(dir)
-    VALUE dir;
+dir_read(VALUE dir)
 {
     struct dir_data *dirp;
     struct dirent *dp;
@@ -536,8 +525,7 @@ dir_read(dir)
  *     Got main.rb
  */
 static VALUE
-dir_each(dir)
-    VALUE dir;
+dir_each(VALUE dir)
 {
     struct dir_data *dirp;
     struct dirent *dp;
@@ -566,8 +554,7 @@ dir_each(dir)
  *     d.tell   #=> 12
  */
 static VALUE
-dir_tell(dir)
-    VALUE dir;
+dir_tell(VALUE dir)
 {
 #ifdef HAVE_TELLDIR
     struct dir_data *dirp;
@@ -596,8 +583,7 @@ dir_tell(dir)
  *     d.read                   #=> ".."
  */
 static VALUE
-dir_seek(dir, pos)
-    VALUE dir, pos;
+dir_seek(VALUE dir, VALUE pos)
 {
     struct dir_data *dirp;
     off_t p = NUM2OFFT(pos);
@@ -626,8 +612,7 @@ dir_seek(dir, pos)
  *     d.read                   #=> ".."
  */
 static VALUE
-dir_set_pos(dir, pos)
-    VALUE dir, pos;
+dir_set_pos(VALUE dir, VALUE pos)
 {
     dir_seek(dir, pos);
     return pos;
@@ -645,8 +630,7 @@ dir_set_pos(dir, pos)
  *     d.read     #=> "."
  */
 static VALUE
-dir_rewind(dir)
-    VALUE dir;
+dir_rewind(VALUE dir)
 {
     struct dir_data *dirp;
 
@@ -666,8 +650,7 @@ dir_rewind(dir)
  *     d.close   #=> nil
  */
 static VALUE
-dir_close(dir)
-    VALUE dir;
+dir_close(VALUE dir)
 {
     struct dir_data *dirp;
 
@@ -679,8 +662,7 @@ dir_close(dir)
 }
 
 static void
-dir_chdir(path)
-    VALUE path;
+dir_chdir(VALUE path)
 {
     if (chdir(RSTRING(path)->ptr) < 0)
 	rb_sys_fail(RSTRING(path)->ptr);
@@ -695,8 +677,7 @@ struct chdir_data {
 };
 
 static VALUE
-chdir_yield(args)
-    struct chdir_data *args;
+chdir_yield(struct chdir_data *args)
 {
     dir_chdir(args->new_path);
     args->done = Qtrue;
@@ -707,8 +688,7 @@ chdir_yield(args)
 }
 
 static VALUE
-chdir_restore(args)
-    struct chdir_data *args;
+chdir_restore(struct chdir_data *args)
 {
     if (args->done) {
 	chdir_blocking--;
@@ -759,10 +739,7 @@ chdir_restore(args)
  *     /var/spool/mail
  */
 static VALUE
-dir_s_chdir(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+dir_s_chdir(int argc, VALUE *argv, VALUE obj)
 {
     VALUE path = Qnil;
 
@@ -810,8 +787,7 @@ dir_s_chdir(argc, argv, obj)
  *     Dir.getwd           #=> "/tmp"
  */
 static VALUE
-dir_s_getwd(dir)
-    VALUE dir;
+dir_s_getwd(VALUE dir)
 {
     char *path;
     VALUE cwd;
@@ -824,10 +800,8 @@ dir_s_getwd(dir)
     return cwd;
 }
 
-static void check_dirname _((volatile VALUE *));
 static void
-check_dirname(dir)
-    volatile VALUE *dir;
+check_dirname(volatile VALUE *dir)
 {
     char *path, *pend;
 
@@ -849,8 +823,7 @@ check_dirname(dir)
  *  information.
  */
 static VALUE
-dir_s_chroot(dir, path)
-    VALUE dir, path;
+dir_s_chroot(VALUE dir, VALUE path)
 {
 #if defined(HAVE_CHROOT) && !defined(__CHECKER__)
     check_dirname(&path);
@@ -879,10 +852,7 @@ dir_s_chroot(dir, path)
  *
  */
 static VALUE
-dir_s_mkdir(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+dir_s_mkdir(int argc, VALUE *argv, VALUE obj)
 {
     VALUE path, vmode;
     int mode;
@@ -911,8 +881,7 @@ dir_s_mkdir(argc, argv, obj)
  *  <code>SystemCallError</code> if the directory isn't empty.
  */
 static VALUE
-dir_s_rmdir(obj, dir)
-    VALUE obj, dir;
+dir_s_rmdir(VALUE obj, VALUE dir)
 {
     check_dirname(&dir);
     if (rmdir(RSTRING(dir)->ptr) < 0)
@@ -923,9 +892,7 @@ dir_s_rmdir(obj, dir)
 
 /* System call with warning */
 static int
-do_stat(path, pst)
-    const char *path;
-    struct stat *pst;
+do_stat(const char *path, struct stat *pst)
 {
     int ret = stat(path, pst);
     if (ret < 0 && errno != ENOENT)
@@ -935,9 +902,7 @@ do_stat(path, pst)
 }
 
 static int
-do_lstat(path, pst)
-    const char *path;
-    struct stat *pst;
+do_lstat(const char *path, struct stat *pst)
 {
     int ret = lstat(path, pst);
     if (ret < 0 && errno != ENOENT)
@@ -947,8 +912,7 @@ do_lstat(path, pst)
 }
 
 static DIR *
-do_opendir(path)
-    const char *path;
+do_opendir(const char *path)
 {
     DIR *dirp = opendir(path);
     if (dirp == NULL && errno != ENOENT && errno != ENOTDIR)
@@ -959,9 +923,7 @@ do_opendir(path)
 
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
-has_magic(s, flags)
-    const char *s;
-    int flags;
+has_magic(const char *s, int flags)
 {
     const int escape = !(flags & FNM_NOESCAPE);
 
@@ -989,9 +951,7 @@ has_magic(s, flags)
 
 /* Find separator in globbing pattern. */
 static char *
-find_dirsep(s, flags)
-    const char *s;
-    int flags;
+find_dirsep(const char *s, int flags)
 {
     const int escape = !(flags & FNM_NOESCAPE);
 
@@ -1027,8 +987,7 @@ find_dirsep(s, flags)
 
 /* Remove escaping baskclashes */
 static void
-remove_backslashes(p)
-    char *p;
+remove_backslashes(char *p)
 {
     char *t = p;
     char *s = p;
@@ -1060,9 +1019,7 @@ struct glob_pattern {
 };
 
 static struct glob_pattern *
-glob_make_pattern(p, flags)
-    const char *p;
-    int flags;
+glob_make_pattern(const char *p, int flags)
 {
     struct glob_pattern *list, *tmp, **tail = &list;
     int dirsep = 0; /* pattern is terminated with '/' */
@@ -1106,8 +1063,7 @@ glob_make_pattern(p, flags)
 }
 
 static void
-glob_free_pattern(list)
-    struct glob_pattern *list;
+glob_free_pattern(struct glob_pattern *list)
 {
     while (list) {
 	struct glob_pattern *tmp = list;
@@ -1119,10 +1075,7 @@ glob_free_pattern(list)
 }
 
 static char *
-join_path(path, dirsep, name)
-    const char *path;
-    int dirsep;
-    const char *name;
+join_path(const char *path, int dirsep, const char *name)
 {
     long len = strlen(path);
     char *buf = ALLOC_N(char, len+strlen(name)+(dirsep?1:0)+1);
@@ -1156,11 +1109,8 @@ struct glob_args {
     VALUE v;
 };
 
-static VALUE glob_func_caller _((VALUE));
-
 static VALUE
-glob_func_caller(val)
-    VALUE val;
+glob_func_caller(VALUE val)
 {
     struct glob_args *args = (struct glob_args *)val;
 
@@ -1169,10 +1119,7 @@ glob_func_caller(val)
 }
 
 static int
-glob_call_func(func, path, arg)
-    void (*func) _((const char *, VALUE));
-    const char *path;
-    VALUE arg;
+glob_call_func(void (*func) (const char *, VALUE), const char *path, VALUE arg)
 {
     int status;
     struct glob_args args;
@@ -1186,16 +1133,16 @@ glob_call_func(func, path, arg)
 }
 
 static int
-glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
-    const char *path;
-    int dirsep; /* '/' should be placed before appending child entry's name to 'path'. */
-    enum answer exist; /* Does 'path' indicate an existing entry? */
-    enum answer isdir; /* Does 'path' indicate a directory or a symlink to a directory? */
-    struct glob_pattern **beg;
-    struct glob_pattern **end;
-    int flags;
-    void (*func) _((const char *, VALUE));
-    VALUE arg;
+glob_helper(
+    const char *path,
+    int dirsep, /* '/' should be placed before appending child entry's name to 'path'. */
+    enum answer exist, /* Does 'path' indicate an existing entry? */
+    enum answer isdir, /* Does 'path' indicate a directory or a symlink to a directory? */
+    struct glob_pattern **beg,
+    struct glob_pattern **end,
+    int flags,
+    void (*func) (const char *, VALUE),
+    VALUE arg)
 {
     struct stat st;
     int status = 0;
@@ -1346,11 +1293,7 @@ glob_helper(path, dirsep, exist, isdir, beg, end, flags, func, arg)
 }
 
 static int
-rb_glob2(path, flags, func, arg)
-    const char *path;
-    int flags;
-    void (*func) _((const char *, VALUE));
-    VALUE arg;
+rb_glob2(const char *path, int flags, void (*func) (const char *, VALUE), VALUE arg)
 {
     struct glob_pattern *list;
     const char *root, *start;
@@ -1390,49 +1333,34 @@ struct rb_glob_args {
     VALUE arg;
 };
 
-static VALUE
-rb_glob_caller(path, a)
-    const char *path;
-    VALUE a;
+static void
+rb_glob_caller(const char *path, VALUE a)
 {
     struct rb_glob_args *args = (struct rb_glob_args *)a;
     (*args->func)(path, args->arg);
-    return Qnil;
 }
 
 void
-rb_glob(path, func, arg)
-    const char *path;
-    void (*func) _((const char*, VALUE));
-    VALUE arg;
+rb_glob(const char *path, void (*func) (const char *, VALUE), VALUE arg)
 {
     struct rb_glob_args args;
     int status;
 
     args.func = func;
     args.arg = arg;
-    status = rb_glob2(path, 0, rb_glob_caller, &args);
+    status = rb_glob2(path, 0, rb_glob_caller, (VALUE)&args);
 
     if (status) rb_jump_tag(status);
 }
 
 static void
-push_pattern(path, ary)
-    const char *path;
-    VALUE ary;
+push_pattern(const char *path, VALUE ary)
 {
     rb_ary_push(ary, rb_tainted_str_new2(path));
 }
 
 static int
-push_glob(VALUE ary, const char *str, long offset, int flags);
-
-static int
-push_glob(ary, str, offset, flags)
-    VALUE ary;
-    const char *str;
-    long offset;
-    int flags;
+push_glob(VALUE ary, const char *str, long offset, int flags)
 {
     const int escape = !(flags & FNM_NOESCAPE);
     const char *p = str;
@@ -1488,9 +1416,7 @@ push_glob(ary, str, offset, flags)
 }
 
 static VALUE
-rb_push_glob(str, flags) /* '\0' is delimiter */
-    VALUE str;
-    int flags;
+rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
 {
     long offset = 0;
     VALUE ary;
@@ -1527,8 +1453,7 @@ rb_push_glob(str, flags) /* '\0' is delimiter */
  *
  */
 static VALUE
-dir_s_aref(obj, str)
-    VALUE obj, str;
+dir_s_aref(VALUE obj, VALUE str)
 {
     return rb_push_glob(str, 0);
 }
@@ -1593,10 +1518,7 @@ dir_s_aref(obj, str)
  *     Dir.glob(librbfiles)                #=> ["lib/song.rb"]
  */
 static VALUE
-dir_s_glob(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+dir_s_glob(int argc, VALUE *argv, VALUE obj)
 {
     VALUE str, rflags;
     int flags;
@@ -1610,8 +1532,7 @@ dir_s_glob(argc, argv, obj)
 }
 
 static VALUE
-dir_open_dir(path)
-    VALUE path;
+dir_open_dir(VALUE path)
 {
     VALUE dir = rb_funcall(rb_cDir, rb_intern("open"), 1, path);
 
@@ -1642,8 +1563,7 @@ dir_open_dir(path)
  *
  */
 static VALUE
-dir_foreach(io, dirname)
-    VALUE io, dirname;
+dir_foreach(VALUE io, VALUE dirname)
 {
     VALUE dir;
 
@@ -1664,8 +1584,7 @@ dir_foreach(io, dirname)
  *
  */
 static VALUE
-dir_entries(io, dirname)
-    VALUE io, dirname;
+dir_entries(VALUE io, VALUE dirname)
 {
     VALUE dir;
 
@@ -1753,10 +1672,7 @@ dir_entries(io, dirname)
  *     File.fnmatch('** IGNORE /foo', 'a/.b/c/foo', File::FNM_PATHNAME | File::FNM_DOTMATCH) #=> true
  */
 static VALUE
-file_s_fnmatch(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+file_s_fnmatch(int argc, VALUE *argv, VALUE obj)
 {
     VALUE pattern, path;
     VALUE rflags;
@@ -1788,7 +1704,7 @@ file_s_fnmatch(argc, argv, obj)
  *  (<code>.</code>).
  */
 void
-Init_Dir()
+Init_Dir(void)
 {
     rb_cDir = rb_define_class("Dir", rb_cObject);
 

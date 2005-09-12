@@ -33,8 +33,7 @@ VALUE rb_mMath;
  */
 
 static VALUE
-math_atan2(obj, y, x)
-    VALUE obj, x, y;
+math_atan2(VALUE obj, VALUE y, VALUE x)
 {
     Need_Float2(y, x);
     return rb_float_new(atan2(RFLOAT(y)->value, RFLOAT(x)->value));
@@ -51,8 +50,7 @@ math_atan2(obj, y, x)
  */
 
 static VALUE
-math_cos(obj, x)
-    VALUE obj, x;
+math_cos(VALUE obj, VALUE x)
 {
     Need_Float(x);
     return rb_float_new(cos(RFLOAT(x)->value));
@@ -67,8 +65,7 @@ math_cos(obj, x)
  */
 
 static VALUE
-math_sin(obj, x)
-    VALUE obj, x;
+math_sin(VALUE obj, VALUE x)
 {
     Need_Float(x);
 
@@ -84,8 +81,7 @@ math_sin(obj, x)
  */
 
 static VALUE
-math_tan(obj, x)
-    VALUE obj, x;
+math_tan(VALUE obj, VALUE x)
 {
     Need_Float(x);
 
@@ -100,8 +96,7 @@ math_tan(obj, x)
  */
 
 static VALUE
-math_acos(obj, x)
-    VALUE obj, x;
+math_acos(VALUE obj, VALUE x)
 {
     double d;
 
@@ -122,8 +117,7 @@ math_acos(obj, x)
  */
 
 static VALUE
-math_asin(obj, x)
-    VALUE obj, x;
+math_asin(VALUE obj, VALUE x)
 {
     double d;
 
@@ -144,8 +138,7 @@ math_asin(obj, x)
  */
 
 static VALUE
-math_atan(obj, x)
-    VALUE obj, x;
+math_atan(VALUE obj, VALUE x)
 {
     Need_Float(x);
     return rb_float_new(atan(RFLOAT(x)->value));
@@ -168,8 +161,7 @@ cosh(x)
  */
 
 static VALUE
-math_cosh(obj, x)
-    VALUE obj, x;
+math_cosh(VALUE obj, VALUE x)
 {
     Need_Float(x);
     
@@ -194,8 +186,7 @@ sinh(x)
  */
 
 static VALUE
-math_sinh(obj, x)
-    VALUE obj, x;
+math_sinh(VALUE obj, VALUE x)
 {
     Need_Float(x);
     return rb_float_new(sinh(RFLOAT(x)->value));
@@ -219,8 +210,7 @@ tanh(x)
  */
 
 static VALUE
-math_tanh(obj, x)
-    VALUE obj, x;
+math_tanh(VALUE obj, VALUE x)
 {
     Need_Float(x);
     return rb_float_new(tanh(RFLOAT(x)->value));
@@ -234,8 +224,7 @@ math_tanh(obj, x)
  */
 
 static VALUE
-math_acosh(obj, x)
-    VALUE obj, x;
+math_acosh(VALUE obj, VALUE x)
 {
     double d;
 
@@ -256,8 +245,7 @@ math_acosh(obj, x)
  */
 
 static VALUE
-math_asinh(obj, x)
-    VALUE obj, x;
+math_asinh(VALUE obj, VALUE x)
 {
     Need_Float(x);
     return rb_float_new(asinh(RFLOAT(x)->value));
@@ -271,8 +259,7 @@ math_asinh(obj, x)
  */
 
 static VALUE
-math_atanh(obj, x)
-    VALUE obj, x;
+math_atanh(VALUE obj, VALUE x)
 {
     double d;
 
@@ -293,8 +280,7 @@ math_atanh(obj, x)
  */
 
 static VALUE
-math_exp(obj, x)
-    VALUE obj, x;
+math_exp(VALUE obj, VALUE x)
 {
     Need_Float(x);
     return rb_float_new(exp(RFLOAT(x)->value));
@@ -317,8 +303,7 @@ math_exp(obj, x)
  */
 
 static VALUE
-math_log(obj, x)
-    VALUE obj, x;
+math_log(VALUE obj, VALUE x)
 {
     double d;
 
@@ -339,8 +324,7 @@ math_log(obj, x)
  */
 
 static VALUE
-math_log10(obj, x)
-    VALUE obj, x;
+math_log10(VALUE obj, VALUE x)
 {
     double d;
 
@@ -362,8 +346,7 @@ math_log10(obj, x)
  */
 
 static VALUE
-math_sqrt(obj, x)
-    VALUE obj, x;
+math_sqrt(VALUE obj, VALUE x)
 {
     double d;
 
@@ -389,8 +372,7 @@ math_sqrt(obj, x)
  */
 
 static VALUE
-math_frexp(obj, x)
-    VALUE obj, x;
+math_frexp(VALUE obj, VALUE x)
 {
     double d;
     int exp;
@@ -412,8 +394,7 @@ math_frexp(obj, x)
  */
 
 static VALUE
-math_ldexp(obj, x, n)
-    VALUE obj, x, n;
+math_ldexp(VALUE obj, VALUE x, VALUE n)
 {
     Need_Float(x);
     return rb_float_new(ldexp(RFLOAT(x)->value, NUM2INT(n)));
@@ -430,8 +411,7 @@ math_ldexp(obj, x, n)
  */
 
 static VALUE
-math_hypot(obj, x, y)
-    VALUE obj, x, y;
+math_hypot(VALUE obj, VALUE x, VALUE y)
 {
     Need_Float2(x, y);
     return rb_float_new(hypot(RFLOAT(x)->value, RFLOAT(y)->value));
@@ -445,8 +425,7 @@ math_hypot(obj, x, y)
  */
 
 static VALUE
-math_erf(obj, x)
-    VALUE obj, x;
+math_erf(VALUE obj, VALUE x)
 {
     Need_Float(x);
     return rb_float_new(erf(RFLOAT(x)->value));
@@ -460,8 +439,7 @@ math_erf(obj, x)
  */
 
 static VALUE
-math_erfc(obj, x)
-    VALUE obj, x;
+math_erfc(VALUE obj, VALUE x)
 {
     Need_Float(x);
     return rb_float_new(erfc(RFLOAT(x)->value));
@@ -476,7 +454,7 @@ math_erfc(obj, x)
 
 
 void
-Init_Math()
+Init_Math(void)
 {
     rb_mMath = rb_define_module("Math");
 

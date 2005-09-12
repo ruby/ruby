@@ -169,8 +169,7 @@ static struct signals {
 };
 
 static int
-signm2signo(nm)
-    char *nm;
+signm2signo(char *nm)
 {
     struct signals *sigs;
 
@@ -181,8 +180,7 @@ signm2signo(nm)
 }
 
 static char*
-signo2signm(no)
-    int no;
+signo2signm(int no)
 {
     struct signals *sigs;
 
@@ -193,8 +191,7 @@ signo2signm(no)
 }
 
 const char *
-ruby_signal_name(no)
-    int no;
+ruby_signal_name(int no)
 {
     return signo2signm(no);
 }
@@ -224,9 +221,7 @@ ruby_signal_name(no)
  */
 
 VALUE
-rb_f_kill(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_kill(int argc, VALUE *argv)
 {
     int negative = 0;
     int sig;
@@ -310,7 +305,7 @@ rb_atomic_t rb_trap_immediate;
 int rb_prohibit_interrupt = 1;
 
 void
-rb_gc_mark_trap_list()
+rb_gc_mark_trap_list(void)
 {
 #ifndef MACOS_UNUSE_SIGNAL
     int i;
@@ -382,9 +377,7 @@ posix_nativethread_signal(signum, handler)
 #define ruby_signal(sig,handler) (rb_trap_accept_nativethreads[sig] = 0, signal((sig),(handler)))
 #ifdef HAVE_NATIVETHREAD
 static sighandler_t
-ruby_nativethread_signal(signum, handler)
-    int signum;
-    sighandler_t handler;
+ruby_nativethread_signal(int signum, sighandler_t handler)
 {
     sighandler_t old;
 
@@ -395,10 +388,8 @@ ruby_nativethread_signal(signum, handler)
 #endif
 #endif
 
-static void signal_exec _((int sig));
 static void
-signal_exec(sig)
-    int sig;
+signal_exec(int sig)
 {
     if (trap_list[sig].cmd == 0) {
 	switch (sig) {
@@ -433,8 +424,7 @@ signal_exec(sig)
 }
 
 static void
-sigsend_to_ruby_thread(sig)
-    int sig;
+sigsend_to_ruby_thread(int sig)
 {
 #ifdef HAVE_NATIVETHREAD_KILL
 # ifdef HAVE_SIGPROCMASK
@@ -457,8 +447,7 @@ sigsend_to_ruby_thread(sig)
 
 static RETSIGTYPE sighandler _((int));
 static RETSIGTYPE
-sighandler(sig)
-    int sig;
+sighandler(int sig)
 {
 #ifdef _WIN32
 #define IN_MAIN_CONTEXT(f, a) (rb_w32_main_context(a, f) ? (void)0 : f(a))
@@ -495,10 +484,8 @@ sighandler(sig)
 }
 
 #ifdef SIGBUS
-static RETSIGTYPE sigbus _((int));
 static RETSIGTYPE
-sigbus(sig)
-    int sig;
+sigbus(int sig)
 {
 #if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
     if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
@@ -512,10 +499,8 @@ sigbus(sig)
 #endif
 
 #ifdef SIGSEGV
-static RETSIGTYPE sigsegv _((int));
 static RETSIGTYPE
-sigsegv(sig)
-    int sig;
+sigsegv(int sig)
 {
 #if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
     if (!is_ruby_native_thread() && !rb_trap_accept_nativethreads[sig]) {
@@ -529,17 +514,15 @@ sigsegv(sig)
 #endif
 
 #ifdef SIGPIPE
-static RETSIGTYPE sigpipe _((int));
 static RETSIGTYPE
-sigpipe(sig)
-    int sig;
+sigpipe(int sig)
 {
     /* do nothing */
 }
 #endif
 
 void
-rb_trap_exit()
+rb_trap_exit(void)
 {
 #ifndef MACOS_UNUSE_SIGNAL
     if (trap_list[0].cmd) {
@@ -552,7 +535,7 @@ rb_trap_exit()
 }
 
 void
-rb_trap_exec()
+rb_trap_exec(void)
 {
 #ifndef MACOS_UNUSE_SIGNAL
     int i;
@@ -585,8 +568,7 @@ static int trap_last_mask;
 # endif
 
 static VALUE
-trap(arg)
-    struct trap_arg *arg;
+trap(struct trap_arg *arg)
 {
     sighandler_t func, oldfunc;
     VALUE command, tmp, oldcmd;
@@ -740,7 +722,7 @@ trap_ensure(arg)
 #endif
 
 void
-rb_trap_restore_mask()
+rb_trap_restore_mask(void)
 {
 #ifndef _WIN32
 # ifdef HAVE_SIGPROCMASK
@@ -780,9 +762,7 @@ rb_trap_restore_mask()
  *     Terminating: 27460
  */
 static VALUE
-sig_trap(argc, argv)
-    int argc;
-    VALUE *argv;
+sig_trap(int argc, VALUE *argv)
 {
     struct trap_arg arg;
 
@@ -827,7 +807,7 @@ sig_trap(argc, argv)
  * Signal.list   #=> {"ABRT"=>6, "ALRM"=>14, "BUS"=>7, "CHLD"=>17, "CLD"=>17, "CONT"=>18, "FPE"=>8, "HUP"=>1, "ILL"=>4, "INT"=>2, "IO"=>29, "IOT"=>6, "KILL"=>9, "PIPE"=>13, "POLL"=>29, "PROF"=>27, "PWR"=>30, "QUIT"=>3, "SEGV"=>11, "STOP"=>19, "SYS"=>31, "TERM"=>15, "TRAP"=>5, "TSTP"=>20, "TTIN"=>21, "TTOU"=>22, "URG"=>23, "USR1"=>10, "USR2"=>12, "VTALRM"=>26, "WINCH"=>28, "XCPU"=>24, "XFSZ"=>25}
  */
 static VALUE
-sig_list()
+sig_list(void)
 {
     VALUE h = rb_hash_new();
     struct signals *sigs;
@@ -839,9 +819,7 @@ sig_list()
 }
 
 static void
-install_sighandler(signum, handler)
-    int signum;
-    sighandler_t handler;
+install_sighandler(int signum, sighandler_t handler)
 {
     sighandler_t old;
 
@@ -853,9 +831,7 @@ install_sighandler(signum, handler)
 
 #ifdef HAVE_NATIVETHREAD
 static void
-install_nativethread_sighandler(signum, handler)
-    int signum;
-    sighandler_t handler;
+install_nativethread_sighandler(int signum, sighandler_t handler)
 {
     sighandler_t old;
     int old_st;
@@ -873,8 +849,7 @@ install_nativethread_sighandler(signum, handler)
 #endif
 
 static void
-init_sigchld(sig)
-    int sig;
+init_sigchld(int sig)
 {
     sighandler_t oldfunc;
 #ifndef _WIN32
@@ -952,7 +927,7 @@ init_sigchld(sig)
  * systems; in particular signal delivery may not always be reliable.
  */
 void
-Init_signal()
+Init_signal(void)
 {
 #ifndef MACOS_UNUSE_SIGNAL
     VALUE mSignal = rb_define_module("Signal");

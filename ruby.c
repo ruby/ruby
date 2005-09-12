@@ -74,8 +74,7 @@ static int origargc;
 static char **origargv;
 
 static void
-usage(name)
-    const char *name;
+usage(const char *name)
 {
     /* This message really ought to be max 23 lines.
      * Removed -h because the user already knows that option. Others? */
@@ -119,9 +118,7 @@ extern VALUE rb_load_path;
 
 #if defined _WIN32 || defined __CYGWIN__ || defined __DJGPP__
 static char *
-rubylib_mangle(s, l)
-    char *s;
-    unsigned int l;
+rubylib_mangle(char *s, unsigned int l)
 {
     static char *newp, *oldp;
     static int newl, oldl, notfound;
@@ -178,9 +175,7 @@ rubylib_mangle(s, l)
 #endif
 
 void
-ruby_push_include(path, filter)
-    const char *path;
-    VALUE (*filter)_((VALUE));
+ruby_push_include(const char *path, VALUE (*filter) (VALUE))
 {
     const char sep = PATH_SEP_CHAR;
 
@@ -216,8 +211,7 @@ ruby_push_include(path, filter)
 }
 
 static VALUE
-identical_path(path)
-     VALUE path;
+identical_path(VALUE path)
 {
     return path;
 }
@@ -229,8 +223,7 @@ ruby_incpush(const char *path)
 }
 
 static VALUE
-expand_include_path(path)
-    VALUE path;
+expand_include_path(VALUE path)
 {
     char *p = RSTRING(path)->ptr;
     if (!p) return path;
@@ -250,12 +243,8 @@ ruby_incpush_expand(const char *path)
 #endif
 
 #if defined DOSISH || defined __CYGWIN__
-static inline void translate_char _((char *, int, int));
-
 static inline void
-translate_char(p, from, to)
-    char *p;
-    int from, to;
+translate_char(char *p, int from, int to)
 {
     while (*p) {
 	if ((unsigned char)*p == from)
@@ -270,7 +259,7 @@ translate_char(p, from, to)
 #endif
 
 void
-ruby_init_loadpath()
+ruby_init_loadpath(void)
 {
 #if defined LOAD_RELATIVE
     char libpath[MAXPATHLEN+1];
@@ -353,8 +342,7 @@ struct req_list {
 static struct req_list req_list_head, *req_list_last = &req_list_head;
 
 static void
-add_modules(mod)
-    const char *mod;
+add_modules(const char *mod)
 {
     struct req_list *list;
 
@@ -369,7 +357,7 @@ add_modules(mod)
 extern void Init_ext _((void));
 
 static void
-require_libraries()
+require_libraries(void)
 {
     extern NODE *ruby_eval_tree;
     NODE *save[3];
@@ -404,7 +392,7 @@ require_libraries()
 }
 
 static void
-process_sflag()
+process_sflag(void)
 {
     if (sflag) {
 	long n;
@@ -465,8 +453,7 @@ process_sflag()
 static void proc_options _((int argc, char **argv));
 
 static char*
-moreswitches(s)
-    char *s;
+moreswitches(char *s)
 {
     int argc; char *argv[3];
     char *p = s;
@@ -487,9 +474,7 @@ moreswitches(s)
 NODE *ruby_eval_tree;
 
 static void
-proc_options(argc, argv)
-    int argc;
-    char **argv;
+proc_options(int argc, char **argv)
 {
     char *argv0 = argv[0];
     int do_search;
@@ -865,9 +850,7 @@ proc_options(argc, argv)
 }
 
 static void
-load_file(fname, script)
-    const char *fname;
-    int script;
+load_file(const char *fname, int script)
 {
     extern VALUE rb_stdin;
     VALUE parser;
@@ -994,14 +977,13 @@ load_file(fname, script)
 }
 
 void
-rb_load_file(fname)
-    const char *fname;
+rb_load_file(const char *fname)
 {
     load_file(fname, 0);
 }
 
 static void
-load_stdin()
+load_stdin(void)
 {
     forbid_setid("program input from stdin");
     load_file("-", 1);
@@ -1039,9 +1021,7 @@ set_arg0space()
 #endif
 
 static void
-set_arg0(val, id)
-    VALUE val;
-    ID id;
+set_arg0(VALUE val, ID id)
 {
     char *s;
     long i;
@@ -1115,8 +1095,7 @@ set_arg0(val, id)
 }
 
 void
-ruby_script(name)
-    const char *name;
+ruby_script(const char *name)
 {
     if (name) {
 	rb_progname = rb_tainted_str_new2(name);
@@ -1127,7 +1106,7 @@ ruby_script(name)
 static int uid, euid, gid, egid;
 
 static void
-init_ids()
+init_ids(void)
 {
     uid = (int)getuid();
     euid = (int)geteuid();
@@ -1143,8 +1122,7 @@ init_ids()
 }
 
 static void
-forbid_setid(s)
-    const char *s;
+forbid_setid(const char *s)
 {
     if (euid != uid)
         rb_raise(rb_eSecurityError, "no %s allowed while running setuid", s);
@@ -1155,18 +1133,13 @@ forbid_setid(s)
 }
 
 static void
-verbose_setter(val, id, variable)
-    VALUE val;
-    ID id;
-    VALUE *variable;
+verbose_setter(VALUE val, ID id, VALUE *variable)
 {
     ruby_verbose = RTEST(val) ? Qtrue : val;
 }
 
 static VALUE
-opt_W_getter(val, id)
-    VALUE val;
-    ID id;
+opt_W_getter(VALUE val, ID id)
 {
     if (ruby_verbose == Qnil) return INT2FIX(0);
     if (ruby_verbose == Qfalse) return INT2FIX(1);
@@ -1175,7 +1148,7 @@ opt_W_getter(val, id)
 }
 
 void
-ruby_prog_init()
+ruby_prog_init(void)
 {
     init_ids();
 
@@ -1209,9 +1182,7 @@ ruby_prog_init()
 }
 
 void
-ruby_set_argv(argc, argv)
-    int argc;
-    char **argv;
+ruby_set_argv(int argc, char **argv)
 {
     int i;
 
@@ -1232,9 +1203,7 @@ NODE *rb_parser_append_print _((NODE*));
 NODE *rb_parser_while_loop _((NODE*, int, int));
 
 void
-ruby_process_options(argc, argv)
-    int argc;
-    char **argv;
+ruby_process_options(int argc, char **argv)
 {
     origargc = argc; origargv = argv;
 

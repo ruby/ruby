@@ -76,8 +76,7 @@ static unsigned long *next;
 
 /* initializes state[N] with a seed */
 static void
-init_genrand(s)
-    unsigned long s;
+init_genrand(unsigned long s)
 {
     int j;
     state[0]= s & 0xffffffffUL;
@@ -124,7 +123,7 @@ init_by_array(unsigned long init_key[], int key_length)
 }
 
 static void
-next_state()
+next_state(void)
 {
     unsigned long *p=state;
     int j;
@@ -165,7 +164,7 @@ genrand_int32(void)
 
 /* generates a random number on [0,1) with 53-bit resolution*/
 static double
-genrand_real(void) 
+genrand_real(void)
 { 
     unsigned long a=genrand_int32()>>5, b=genrand_int32()>>6; 
     return(a*67108864.0+b)*(1.0/9007199254740992.0); 
@@ -193,8 +192,7 @@ static int first = 1;
 static VALUE saved_seed = INT2FIX(0);
 
 static VALUE
-rand_init(vseed)
-    VALUE vseed;
+rand_init(VALUE vseed)
 {
     volatile VALUE seed;
     VALUE old;
@@ -253,7 +251,7 @@ rand_init(vseed)
 }
 
 static VALUE
-random_seed()
+random_seed(void)
 {
     static int n = 0;
     struct timeval tv;
@@ -320,10 +318,7 @@ random_seed()
  */
 
 static VALUE
-rb_f_srand(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_f_srand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE seed, old;
 
@@ -436,10 +431,7 @@ limited_big_rand(struct RBignum *limit)
  */
 
 static VALUE
-rb_f_rand(argc, argv, obj)
-    int argc;
-    VALUE *argv;
-    VALUE obj;
+rb_f_rand(int argc, VALUE *argv, VALUE obj)
 {
     VALUE vmax;
     long val, max;
@@ -495,7 +487,7 @@ rb_f_rand(argc, argv, obj)
 }
 
 void
-Init_Random()
+Init_Random(void)
 {
     rb_define_global_function("srand", rb_f_srand, -1);
     rb_define_global_function("rand", rb_f_rand, -1);

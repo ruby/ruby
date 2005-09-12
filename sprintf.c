@@ -15,22 +15,14 @@
 #include "ruby.h"
 #include <ctype.h>
 #include <math.h>
-#ifdef HAVE_STDARG_PROTOTYPES
 #include <stdarg.h>
-#define va_init_list(a,b) va_start(a,b)
-#else
-#include <varargs.h>
-#define va_init_list(a,b) va_start(a)
-#endif
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
 static void fmt_setup _((char*,int,int,int,int));
 
 static char*
-remove_sign_bits(str, base)
-    char *str;
-    int base;
+remove_sign_bits(char *str, int base)
 {
     char *s, *t;
     
@@ -61,9 +53,7 @@ remove_sign_bits(str, base)
 }
 
 static char
-sign_bits(base, p)
-    int base;
-    const char *p;
+sign_bits(int base, const char *p)
 {
     char c = '.';
 
@@ -241,18 +231,13 @@ sign_bits(base, p)
  */
 
 VALUE
-rb_f_sprintf(argc, argv)
-    int argc;
-    const VALUE *argv;
+rb_f_sprintf(int argc, const VALUE *argv)
 {
     return rb_str_format(argc - 1, argv + 1, GETNTHARG(0));
 }
 
 VALUE
-rb_str_format(argc, argv, fmt)
-    int argc;
-    const VALUE *argv;
-    VALUE fmt;
+rb_str_format(int argc, const VALUE *argv, VALUE fmt)
 {
     const char *p, *end;
     char *buf;
@@ -805,10 +790,7 @@ rb_str_format(argc, argv, fmt)
 }
 
 static void
-fmt_setup(buf, c, flags, width, prec)
-    char *buf;
-    int c;
-    int flags, width, prec;
+fmt_setup(char *buf, int c, int flags, int width, int prec)
 {
     *buf++ = '%';
     if (flags & FSHARP) *buf++ = '#';
@@ -852,9 +834,7 @@ fmt_setup(buf, c, flags, width, prec)
 #include "missing/vsnprintf.c"
 
 static int
-ruby__sfvwrite(fp, uio)
-    register rb_printf_buffer *fp;
-    register struct __suio *uio;
+ruby__sfvwrite(register rb_printf_buffer *fp, register struct __suio *uio)
 {
     struct __siov *iov;
     VALUE result = (VALUE)fp->_bf._base;
@@ -880,9 +860,7 @@ ruby__sfvwrite(fp, uio)
 }
 
 VALUE
-rb_vsprintf(fmt, ap)
-    const char *fmt;
-    va_list ap;
+rb_vsprintf(const char *fmt, va_list ap)
 {
     rb_printf_buffer f;
     VALUE result;
@@ -903,18 +881,12 @@ rb_vsprintf(fmt, ap)
 }
 
 VALUE
-#ifdef HAVE_STDARG_PROTOTYPES
 rb_sprintf(const char *format, ...)
-#else
-rb_sprintf(format, va_alist)
-    const char *format;
-    va_dcl
-#endif
 {
     VALUE result;
     va_list ap;
 
-    va_init_list(ap, format);
+    va_start(ap, format);
     result = rb_vsprintf(format, ap);
     va_end(ap);
 

@@ -23,7 +23,7 @@ st_table *rb_class_tbl;
 static ID autoload, classpath, tmp_classpath;
 
 void
-Init_var_tables()
+Init_var_tables(void)
 {
     rb_global_tbl = st_init_numtable();
     rb_class_tbl = st_init_numtable();
@@ -41,9 +41,7 @@ struct fc_result {
 };
 
 static VALUE
-fc_path(fc, name)
-    struct fc_result *fc;
-    ID name;
+fc_path(struct fc_result *fc, ID name)
 {
     VALUE path, tmp;
 
@@ -68,10 +66,7 @@ fc_path(fc, name)
 }
 
 static int
-fc_i(key, value, res)
-    ID key;
-    VALUE value;
-    struct fc_result *res;
+fc_i(ID key, VALUE value, struct fc_result *res)
 {
     if (!rb_is_const_id(key)) return ST_CONTINUE;
 
@@ -113,8 +108,7 @@ fc_i(key, value, res)
 }
 
 static VALUE
-find_class_path(klass)
-    VALUE klass;
+find_class_path(VALUE klass)
 {
     struct fc_result arg;
 
@@ -141,8 +135,7 @@ find_class_path(klass)
 }
 
 static VALUE
-classname(klass)
-    VALUE klass;
+classname(VALUE klass)
 {
     VALUE path = Qnil;
 
@@ -174,8 +167,7 @@ classname(klass)
  */
 
 VALUE
-rb_mod_name(mod)
-    VALUE mod;
+rb_mod_name(VALUE mod)
 {
     VALUE path = classname(mod);
 
@@ -184,8 +176,7 @@ rb_mod_name(mod)
 }
 
 VALUE
-rb_class_path(klass)
-    VALUE klass;
+rb_class_path(VALUE klass)
 {
     VALUE path = classname(klass);
 
@@ -213,9 +204,7 @@ rb_class_path(klass)
 }
 
 void
-rb_set_class_path(klass, under, name)
-    VALUE klass, under;
-    const char *name;
+rb_set_class_path(VALUE klass, VALUE under, const char *name)
 {
     VALUE str;
 
@@ -231,8 +220,7 @@ rb_set_class_path(klass, under, name)
 }
 
 VALUE
-rb_path2class(path)
-    const char *path;
+rb_path2class(const char *path)
 {
     const char *pbeg, *p;
     ID id;
@@ -271,30 +259,25 @@ rb_path2class(path)
 }
 
 void
-rb_name_class(klass, id)
-    VALUE klass;
-    ID id;
+rb_name_class(VALUE klass, ID id)
 {
     rb_iv_set(klass, "__classid__", ID2SYM(id));
 }
 
 VALUE
-rb_class_name(klass)
-    VALUE klass;
+rb_class_name(VALUE klass)
 {
     return rb_class_path(rb_class_real(klass));
 }
 
 char *
-rb_class2name(klass)
-    VALUE klass;
+rb_class2name(VALUE klass)
 {
     return RSTRING(rb_class_name(klass))->ptr;
 }
 
 char *
-rb_obj_classname(obj)
-    VALUE obj;
+rb_obj_classname(VALUE obj)
 {
     return rb_class2name(CLASS_OF(obj));
 }
@@ -321,21 +304,20 @@ struct global_entry {
     ID id;
 };
 
-static VALUE undef_getter();
-static void  undef_setter();
-static void  undef_marker();
+static VALUE undef_getter(ID id);
+static void  undef_setter(VALUE val, ID id, void *data, struct global_variable *var);
+static void  undef_marker(void);
 
-static VALUE val_getter();
-static void  val_setter();
-static void  val_marker();
+static VALUE val_getter(ID id, VALUE val);
+static void  val_setter(VALUE val, ID id, void *data, struct global_variable *var);
+static void  val_marker(VALUE data);
 
-static VALUE var_getter();
-static void  var_setter();
-static void  var_marker();
+static VALUE var_getter(ID id, VALUE *var);
+static void  var_setter(VALUE val, ID id, VALUE *var);
+static void  var_marker(VALUE *var);
 
 struct global_entry*
-rb_global_entry(id)
-    ID id;
+rb_global_entry(ID id)
 {
     struct global_entry *entry;
 
@@ -359,8 +341,7 @@ rb_global_entry(id)
 }
 
 static VALUE
-undef_getter(id)
-    ID id;
+undef_getter(ID id)
 {
     rb_warning("global variable `%s' not initialized", rb_id2name(id));
 
@@ -368,11 +349,7 @@ undef_getter(id)
 }
 
 static void
-undef_setter(val, id, data, var)
-    VALUE val;
-    ID id;
-    void *data;
-    struct global_variable *var;
+undef_setter(VALUE val, ID id, void *data, struct global_variable *var)
 {
     var->getter = val_getter;
     var->setter = val_setter;
@@ -382,73 +359,55 @@ undef_setter(val, id, data, var)
 }
 
 static void
-undef_marker()
+undef_marker(void)
 {
 }
 
 static VALUE
-val_getter(id, val)
-    ID id;
-    VALUE val;
+val_getter(ID id, VALUE val)
 {
     return val;
 }
 
 static void
-val_setter(val, id, data, var)
-    VALUE val;
-    ID id;
-    void *data;
-    struct global_variable *var;
+val_setter(VALUE val, ID id, void *data, struct global_variable *var)
 {
     var->data = (void*)val;
 }
 
 static void
-val_marker(data)
-    VALUE data;
+val_marker(VALUE data)
 {
     if (data) rb_gc_mark_maybe(data);
 }
 
 static VALUE
-var_getter(id, var)
-    ID id;
-    VALUE *var;
+var_getter(ID id, VALUE *var)
 {
     if (!var) return Qnil;
     return *var;
 }
 
 static void
-var_setter(val, id, var)
-    VALUE val;
-    ID id;
-    VALUE *var;
+var_setter(VALUE val, ID id, VALUE *var)
 {
     *var = val;
 }
 
 static void
-var_marker(var)
-    VALUE *var;
+var_marker(VALUE *var)
 {
     if (var) rb_gc_mark_maybe(*var);
 }
 
 static void
-readonly_setter(val, id, var)
-    VALUE val;
-    ID id;
-    void *var;
+readonly_setter(VALUE val, ID id, void *var)
 {
     rb_name_error(id, "%s is a read-only variable", rb_id2name(id));
 }
 
 static int
-mark_global_entry(key, entry)
-    ID key;
-    struct global_entry *entry;
+mark_global_entry(ID key, struct global_entry *entry)
 {
     struct trace_var *trace;
     struct global_variable *var = entry->var;
@@ -463,14 +422,13 @@ mark_global_entry(key, entry)
 }
 
 void
-rb_gc_mark_global_tbl()
+rb_gc_mark_global_tbl(void)
 {
     st_foreach_safe(rb_global_tbl, mark_global_entry, 0);
 }
 
 static ID
-global_id(name)
-    const char *name;
+global_id(const char *name)
 {
     ID id;
 
@@ -485,11 +443,11 @@ global_id(name)
 }
 
 void
-rb_define_hooked_variable(name, var, getter, setter)
-    const char  *name;
-    VALUE *var;
-    VALUE (*getter)();
-    void  (*setter)();
+rb_define_hooked_variable(
+    const char *name,
+    VALUE *var,
+    VALUE (*getter) (/* ??? */),
+    void  (*setter) (/* ??? */))
 {
     struct global_variable *gvar;
     ID id = global_id(name);
@@ -502,26 +460,22 @@ rb_define_hooked_variable(name, var, getter, setter)
 }
 
 void
-rb_define_variable(name, var)
-    const char  *name;
-    VALUE *var;
+rb_define_variable(const char *name, VALUE *var)
 {
     rb_define_hooked_variable(name, var, 0, 0);
 }
 
 void
-rb_define_readonly_variable(name, var)
-    const char  *name;
-    VALUE *var;
+rb_define_readonly_variable(const char *name, VALUE *var)
 {
     rb_define_hooked_variable(name, var, 0, readonly_setter);
 }
 
 void
-rb_define_virtual_variable(name, getter, setter)
-    const char  *name;
-    VALUE (*getter)();
-    void  (*setter)();
+rb_define_virtual_variable(
+    const char *name,
+    VALUE (*getter) (/* ??? */),
+    void  (*setter) (/* ??? */))
 {
     if (!getter) getter = val_getter;
     if (!setter) setter = readonly_setter;
@@ -529,8 +483,7 @@ rb_define_virtual_variable(name, getter, setter)
 }
 
 static void
-rb_trace_eval(cmd, val)
-    VALUE cmd, val;
+rb_trace_eval(VALUE cmd, VALUE val)
 {
     rb_eval_cmd(cmd, rb_ary_new3(1, val), 0);
 }
@@ -559,9 +512,7 @@ rb_trace_eval(cmd, val)
  */
 
 VALUE
-rb_f_trace_var(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_trace_var(int argc, VALUE *argv)
 {
     VALUE var, cmd;
     struct global_entry *entry;
@@ -589,8 +540,7 @@ rb_f_trace_var(argc, argv)
 }
 
 static void
-remove_trace(var)
-    struct global_variable *var;
+remove_trace(struct global_variable *var)
 {
     struct trace_var *trace = var->trace;
     struct trace_var t;
@@ -622,9 +572,7 @@ remove_trace(var)
  */
 
 VALUE
-rb_f_untrace_var(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_untrace_var(int argc, VALUE *argv)
 {
     VALUE var, cmd;
     ID id;
@@ -665,8 +613,7 @@ rb_f_untrace_var(argc, argv)
 }
 
 VALUE
-rb_gvar_get(entry)
-    struct global_entry *entry;
+rb_gvar_get(struct global_entry *entry)
 {
     struct global_variable *var = entry->var;
     return (*var->getter)(entry->id, var->data, var);
@@ -678,8 +625,7 @@ struct trace_data {
 };
 
 static VALUE
-trace_ev(data)
-    struct trace_data *data;
+trace_ev(struct trace_data *data)
 {
     struct trace_var *trace = data->trace;
 
@@ -691,8 +637,7 @@ trace_ev(data)
 }
 
 static VALUE
-trace_en(var)
-    struct global_variable *var;
+trace_en(struct global_variable *var)
 {
     var->block_trace = 0;
     remove_trace(var);
@@ -700,9 +645,7 @@ trace_en(var)
 }
 
 VALUE
-rb_gvar_set(entry, val)
-    struct global_entry *entry;
-    VALUE val;
+rb_gvar_set(struct global_entry *entry, VALUE val)
 {
     struct trace_data trace;
     struct global_variable *var = entry->var;
@@ -721,9 +664,7 @@ rb_gvar_set(entry, val)
 }
 
 VALUE
-rb_gv_set(name, val)
-    const char *name;
-    VALUE val;
+rb_gv_set(const char *name, VALUE val)
 {
     struct global_entry *entry;
 
@@ -732,8 +673,7 @@ rb_gv_set(name, val)
 }
 
 VALUE
-rb_gv_get(name)
-    const char *name;
+rb_gv_get(const char *name)
 {
     struct global_entry *entry;
 
@@ -742,18 +682,14 @@ rb_gv_get(name)
 }
 
 VALUE
-rb_gvar_defined(entry)
-    struct global_entry *entry;
+rb_gvar_defined(struct global_entry *entry)
 {
     if (entry->var->getter == undef_getter) return Qfalse;
     return Qtrue;
 }
 
 static int
-gvar_i(key, entry, ary)
-    ID key;
-    struct global_entry *entry;
-    VALUE ary;
+gvar_i(ID key, struct global_entry *entry, VALUE ary)
 {
     rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     return ST_CONTINUE;
@@ -769,7 +705,7 @@ gvar_i(key, entry, ary)
  */
 
 VALUE
-rb_f_global_variables()
+rb_f_global_variables(void)
 {
     VALUE ary = rb_ary_new();
     char buf[4];
@@ -786,9 +722,7 @@ rb_f_global_variables()
 }
 
 void
-rb_alias_variable(name1, name2)
-    ID name1;
-    ID name2;
+rb_alias_variable(ID name1, ID name2)
 {
     struct global_entry *entry1, *entry2;
 
@@ -828,8 +762,7 @@ static int special_generic_ivar = 0;
 static st_table *generic_iv_tbl;
 
 st_table*
-rb_generic_ivar_table(obj)
-    VALUE obj;
+rb_generic_ivar_table(VALUE obj)
 {
     st_table *tbl;
 
@@ -840,10 +773,7 @@ rb_generic_ivar_table(obj)
 }
 
 static VALUE
-generic_ivar_get(obj, id, warn)
-    VALUE obj;
-    ID id;
-    int warn;
+generic_ivar_get(VALUE obj, ID id, int warn)
 {
     st_table *tbl;
     VALUE val;
@@ -862,10 +792,7 @@ generic_ivar_get(obj, id, warn)
 }
 
 static void
-generic_ivar_set(obj, id, val)
-    VALUE obj;
-    ID id;
-    VALUE val;
+generic_ivar_set(VALUE obj, ID id, VALUE val)
 {
     st_table *tbl;
 
@@ -887,9 +814,7 @@ generic_ivar_set(obj, id, val)
 }
 
 static VALUE
-generic_ivar_defined(obj, id)
-    VALUE obj;
-    ID id;
+generic_ivar_defined(VALUE obj, ID id)
 {
     st_table *tbl;
     VALUE val;
@@ -903,10 +828,7 @@ generic_ivar_defined(obj, id)
 }
 
 static int
-generic_ivar_remove(obj, id, valp)
-    VALUE obj;
-    ID id;
-    VALUE *valp;
+generic_ivar_remove(VALUE obj, ID id, VALUE *valp)
 {
     st_table *tbl;
     int status;
@@ -922,8 +844,7 @@ generic_ivar_remove(obj, id, valp)
 }
 
 void
-rb_mark_generic_ivar(obj)
-    VALUE obj;
+rb_mark_generic_ivar(VALUE obj)
 {
     st_table *tbl;
 
@@ -934,18 +855,14 @@ rb_mark_generic_ivar(obj)
 }
 
 static int
-givar_mark_i(key, value)
-    ID key;
-    VALUE value;
+givar_mark_i(ID key, VALUE value)
 {
     rb_gc_mark(value);
     return ST_CONTINUE;
 }
 
 static int
-givar_i(obj, tbl)
-    VALUE obj;
-    st_table *tbl;
+givar_i(VALUE obj, st_table *tbl)
 {
     if (rb_special_const_p(obj)) {
 	st_foreach_safe(tbl, givar_mark_i, 0);
@@ -954,7 +871,7 @@ givar_i(obj, tbl)
 }
 
 void
-rb_mark_generic_ivar_tbl()
+rb_mark_generic_ivar_tbl(void)
 {
     if (!generic_iv_tbl) return;
     if (special_generic_ivar == 0) return;
@@ -962,8 +879,7 @@ rb_mark_generic_ivar_tbl()
 }
 
 void
-rb_free_generic_ivar(obj)
-    VALUE obj;
+rb_free_generic_ivar(VALUE obj)
 {
     st_table *tbl;
 
@@ -973,8 +889,7 @@ rb_free_generic_ivar(obj)
 }
 
 void
-rb_copy_generic_ivar(clone, obj)
-    VALUE clone, obj;
+rb_copy_generic_ivar(VALUE clone, VALUE obj)
 {
     st_table *tbl;
 
@@ -995,10 +910,7 @@ rb_copy_generic_ivar(clone, obj)
 }
 
 static VALUE
-ivar_get(obj, id, warn)
-    VALUE obj;
-    ID id;
-    int warn;
+ivar_get(VALUE obj, ID id, int warn)
 {
     VALUE val;
 
@@ -1021,26 +933,19 @@ ivar_get(obj, id, warn)
 }
 
 VALUE
-rb_ivar_get(obj, id)
-    VALUE obj;
-    ID id;
+rb_ivar_get(VALUE obj, ID id)
 {
     return ivar_get(obj, id, Qtrue);
 }
 
 VALUE
-rb_attr_get(obj, id)
-    VALUE obj;
-    ID id;
+rb_attr_get(VALUE obj, ID id)
 {
     return ivar_get(obj, id, Qfalse);
 }
 
 VALUE
-rb_ivar_set(obj, id, val)
-    VALUE obj;
-    ID id;
-    VALUE val;
+rb_ivar_set(VALUE obj, ID id, VALUE val)
 {
     if (!OBJ_TAINTED(obj) && rb_safe_level() >= 4)
 	rb_raise(rb_eSecurityError, "Insecure: can't modify instance variable");
@@ -1060,9 +965,7 @@ rb_ivar_set(obj, id, val)
 }
 
 VALUE
-rb_ivar_defined(obj, id)
-    VALUE obj;
-    ID id;
+rb_ivar_defined(VALUE obj, ID id)
 {
     switch (TYPE(obj)) {
       case T_OBJECT:
@@ -1080,10 +983,7 @@ rb_ivar_defined(obj, id)
 }
 
 static int
-ivar_i(key, entry, ary)
-    ID key;
-    struct global_entry *entry;
-    VALUE ary;
+ivar_i(ID key, struct global_entry *entry, VALUE ary)
 {
     if (rb_is_instance_id(key)) {
 	rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
@@ -1109,8 +1009,7 @@ ivar_i(key, entry, ary)
  */
 
 VALUE
-rb_obj_instance_variables(obj)
-    VALUE obj;
+rb_obj_instance_variables(VALUE obj)
 {
     VALUE ary;
 
@@ -1160,8 +1059,7 @@ rb_obj_instance_variables(obj)
  */
 
 VALUE
-rb_obj_remove_instance_variable(obj, name)
-    VALUE obj, name;
+rb_obj_remove_instance_variable(VALUE obj, VALUE name)
 {
     VALUE val = Qnil;
     ID id = rb_to_id(name);
@@ -1195,9 +1093,7 @@ rb_obj_remove_instance_variable(obj, name)
 
 NORETURN(static void uninitialized_constant _((VALUE, ID)));
 static void
-uninitialized_constant(klass, id)
-    VALUE klass;
-    ID id;
+uninitialized_constant(VALUE klass, ID id)
 {
     if (klass && klass != rb_cObject)
 	rb_name_error(id, "uninitialized constant %s::%s",
@@ -1209,9 +1105,7 @@ uninitialized_constant(klass, id)
 }
 
 static VALUE
-const_missing(klass, id)
-    VALUE klass;
-    ID id;
+const_missing(VALUE klass, ID id)
 {
     return rb_funcall(klass, rb_intern("const_missing"), 1, ID2SYM(id));
 }
@@ -1246,8 +1140,7 @@ const_missing(klass, id)
  */
 
 VALUE
-rb_mod_const_missing(klass, name)
-    VALUE klass, name;
+rb_mod_const_missing(VALUE klass, VALUE name)
 {
     ruby_frame = ruby_frame->prev; /* pop frame for "const_missing" */
     uninitialized_constant(klass, rb_to_id(name));
@@ -1255,8 +1148,7 @@ rb_mod_const_missing(klass, name)
 }
 
 static struct st_table *
-check_autoload_table(av)
-    VALUE av;
+check_autoload_table(VALUE av)
 {
     Check_Type(av, T_DATA);
     if (RDATA(av)->dmark != (RUBY_DATA_FUNC)rb_mark_tbl ||
@@ -1267,10 +1159,7 @@ check_autoload_table(av)
 }
 
 void
-rb_autoload(mod, id, file)
-    VALUE mod;
-    ID id;
-    const char *file;
+rb_autoload(VALUE mod, ID id, const char *file)
 {
     VALUE av, fn;
     struct st_table *tbl;
@@ -1302,9 +1191,7 @@ rb_autoload(mod, id, file)
 }
 
 static NODE*
-autoload_delete(mod, id)
-    VALUE mod;
-    ID id;
+autoload_delete(VALUE mod, ID id)
 {
     VALUE val;
     st_data_t load = 0;
@@ -1329,9 +1216,7 @@ autoload_delete(mod, id)
 }
 
 void
-rb_autoload_load(klass, id)
-    VALUE klass;
-    ID id;
+rb_autoload_load(VALUE klass, ID id)
 {
     VALUE file;
     NODE *load = autoload_delete(klass, id);
@@ -1343,9 +1228,7 @@ rb_autoload_load(klass, id)
 }
 
 static VALUE
-autoload_file(mod, id)
-    VALUE mod;
-    ID id;
+autoload_file(VALUE mod, ID id)
 {
     VALUE val, file;
     struct st_table *tbl;
@@ -1378,9 +1261,7 @@ autoload_file(mod, id)
 }
 
 VALUE
-rb_autoload_p(mod, id)
-    VALUE mod;
-    ID id;
+rb_autoload_p(VALUE mod, ID id)
 {
     struct st_table *tbl = RCLASS(mod)->iv_tbl;
     VALUE val;
@@ -1392,10 +1273,7 @@ rb_autoload_p(mod, id)
 }
 
 static VALUE
-rb_const_get_0(klass, id, exclude, recurse)
-    VALUE klass;
-    ID id;
-    int exclude, recurse;
+rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
 {
     VALUE value, tmp;
     int mod_retry = 0;
@@ -1427,25 +1305,19 @@ rb_const_get_0(klass, id, exclude, recurse)
 }
 
 VALUE
-rb_const_get_from(klass, id)
-    VALUE klass;
-    ID id;
+rb_const_get_from(VALUE klass, ID id)
 {
     return rb_const_get_0(klass, id, Qtrue, Qtrue);
 }
 
 VALUE
-rb_const_get(klass, id)
-    VALUE klass;
-    ID id;
+rb_const_get(VALUE klass, ID id)
 {
     return rb_const_get_0(klass, id, Qfalse, Qtrue);
 }
 
 VALUE
-rb_const_get_at(klass, id)
-    VALUE klass;
-    ID id;
+rb_const_get_at(VALUE klass, ID id)
 {
     return rb_const_get_0(klass, id, Qtrue, Qfalse);
 }
@@ -1460,8 +1332,7 @@ rb_const_get_at(klass, id)
  */
 
 VALUE
-rb_mod_remove_const(mod, name)
-    VALUE mod, name;
+rb_mod_remove_const(VALUE mod, VALUE name)
 {
     ID id = rb_to_id(name);
     VALUE val;
@@ -1490,10 +1361,7 @@ rb_mod_remove_const(mod, name)
 }
 
 static int
-sv_i(key, value, tbl)
-    ID key;
-    VALUE value;
-    st_table *tbl;
+sv_i(ID key, VALUE value, st_table *tbl)
 {
     if (rb_is_const_id(key)) {
 	if (!st_lookup(tbl, key, 0)) {
@@ -1504,9 +1372,7 @@ sv_i(key, value, tbl)
 }
 
 void*
-rb_mod_const_at(mod, data)
-    VALUE mod;
-    void *data;
+rb_mod_const_at(VALUE mod, void *data)
 {
     st_table *tbl = data;
     if (!tbl) {
@@ -1519,9 +1385,7 @@ rb_mod_const_at(mod, data)
 }
 
 void*
-rb_mod_const_of(mod, data)
-    VALUE mod;
-    void *data;
+rb_mod_const_of(VALUE mod, void *data)
 {
     VALUE tmp = mod;
     for (;;) {
@@ -1534,17 +1398,14 @@ rb_mod_const_of(mod, data)
 }
 
 static int
-list_i(key, value, ary)
-    ID key, value;
-    VALUE ary;
+list_i(ID key, ID value, VALUE ary)
 {
     rb_ary_push(ary, rb_str_new2(rb_id2name(key)));
     return ST_CONTINUE;
 }
 
 VALUE
-rb_const_list(data)
-    void *data;
+rb_const_list(void *data)
 {
     st_table *tbl = data;
     VALUE ary;
@@ -1567,17 +1428,13 @@ rb_const_list(data)
  */
 
 VALUE
-rb_mod_constants(mod)
-    VALUE mod;
+rb_mod_constants(VALUE mod)
 {
     return rb_const_list(rb_mod_const_of(mod, 0));
 }
 
 static int
-rb_const_defined_0(klass, id, exclude, recurse)
-    VALUE klass;
-    ID id;
-    int exclude, recurse;
+rb_const_defined_0(VALUE klass, ID id, int exclude, int recurse)
 {
     VALUE value, tmp;
     int mod_retry = 0;
@@ -1602,35 +1459,25 @@ rb_const_defined_0(klass, id, exclude, recurse)
 }
 
 int
-rb_const_defined_from(klass, id)
-    VALUE klass;
-    ID id;
+rb_const_defined_from(VALUE klass, ID id)
 {
     return rb_const_defined_0(klass, id, Qtrue, Qtrue);
 }
 
 int
-rb_const_defined(klass, id)
-    VALUE klass;
-    ID id;
+rb_const_defined(VALUE klass, ID id)
 {
     return rb_const_defined_0(klass, id, Qfalse, Qtrue);
 }
 
 int
-rb_const_defined_at(klass, id)
-    VALUE klass;
-    ID id;
+rb_const_defined_at(VALUE klass, ID id)
 {
     return rb_const_defined_0(klass, id, Qtrue, Qfalse);
 }
 
 static void
-mod_av_set(klass, id, val, isconst)
-    VALUE klass;
-    ID id;
-    VALUE val;
-    int isconst;
+mod_av_set(VALUE klass, ID id, VALUE val, int isconst)
 {
     char *dest = isconst ? "constant" : "class variable";
 
@@ -1662,19 +1509,13 @@ mod_av_set(klass, id, val, isconst)
 }
 
 void
-rb_const_set(klass, id, val)
-    VALUE klass;
-    ID id;
-    VALUE val;
+rb_const_set(VALUE klass, ID id, VALUE val)
 {
     mod_av_set(klass, id, val, Qtrue);
 }
 
 void
-rb_define_const(klass, name, val)
-    VALUE klass;
-    const char *name;
-    VALUE val;
+rb_define_const(VALUE klass, const char *name, VALUE val)
 {
     ID id = rb_intern(name);
 
@@ -1688,27 +1529,19 @@ rb_define_const(klass, name, val)
 }
 
 void
-rb_define_global_const(name, val)
-    const char *name;
-    VALUE val;
+rb_define_global_const(const char *name, VALUE val)
 {
     rb_define_const(rb_cObject, name, val);
 }
 
 void
-rb_cvar_set(klass, id, val, warn)
-    VALUE klass;
-    ID id;
-    VALUE val;
-    int warn;
+rb_cvar_set(VALUE klass, ID id, VALUE val, int warn)
 {
     mod_av_set(klass, id, val, Qfalse);
 }
 
 VALUE
-rb_cvar_get(klass, id)
-    VALUE klass;
-    ID id;
+rb_cvar_get(VALUE klass, ID id)
 {
     VALUE value;
 
@@ -1722,9 +1555,7 @@ rb_cvar_get(klass, id)
 }
 
 VALUE
-rb_cvar_defined(klass, id)
-    VALUE klass;
-    ID id;
+rb_cvar_defined(VALUE klass, ID id)
 {
     if (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl,id,0)) {
 	return Qtrue;
@@ -1733,10 +1564,7 @@ rb_cvar_defined(klass, id)
 }
 
 void
-rb_cv_set(klass, name, val)
-    VALUE klass;
-    const char *name;
-    VALUE val;
+rb_cv_set(VALUE klass, const char *name, VALUE val)
 {
     ID id = rb_intern(name);
     if (!rb_is_class_id(id)) {
@@ -1746,9 +1574,7 @@ rb_cv_set(klass, name, val)
 }
 
 VALUE
-rb_cv_get(klass, name)
-    VALUE klass;
-    const char *name;
+rb_cv_get(VALUE klass, const char *name)
 {
     ID id = rb_intern(name);
     if (!rb_is_class_id(id)) {
@@ -1758,10 +1584,7 @@ rb_cv_get(klass, name)
 }
 
 void
-rb_define_class_variable(klass, name, val)
-    VALUE klass;
-    const char *name;
-    VALUE val;
+rb_define_class_variable(VALUE klass, const char *name, VALUE val)
 {
     ID id = rb_intern(name);
 
@@ -1772,10 +1595,7 @@ rb_define_class_variable(klass, name, val)
 }
 
 static int
-cv_i(key, value, ary)
-    ID key;
-    VALUE value;
-    VALUE ary;
+cv_i(ID key, VALUE value, VALUE ary)
 {
     if (rb_is_class_id(key)) {
 	VALUE kval = rb_str_new2(rb_id2name(key));
@@ -1803,8 +1623,7 @@ cv_i(key, value, ary)
  */
 
 VALUE
-rb_mod_class_variables(obj)
-    VALUE obj;
+rb_mod_class_variables(VALUE obj)
 {
     VALUE ary = rb_ary_new();
 
@@ -1835,8 +1654,7 @@ rb_mod_class_variables(obj)
  */
 
 VALUE
-rb_mod_remove_cvar(mod, name)
-    VALUE mod, name;
+rb_mod_remove_cvar(VALUE mod, VALUE name)
 {
     ID id = rb_to_id(name);
     VALUE val;
@@ -1861,9 +1679,7 @@ rb_mod_remove_cvar(mod, name)
 }
 
 VALUE
-rb_iv_get(obj, name)
-    VALUE obj;
-    const char *name;
+rb_iv_get(VALUE obj, const char *name)
 {
     ID id = rb_intern(name);
 
@@ -1871,10 +1687,7 @@ rb_iv_get(obj, name)
 }
 
 VALUE
-rb_iv_set(obj, name, val)
-    VALUE obj;
-    const char *name;
-    VALUE val;
+rb_iv_set(VALUE obj, const char *name, VALUE val)
 {
     ID id = rb_intern(name);
 

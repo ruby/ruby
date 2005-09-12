@@ -1050,7 +1050,7 @@ onig_node_free(Node* node)
 
 #ifdef USE_RECYCLE_NODE
 extern int
-onig_free_node_list()
+onig_free_node_list(void)
 {
   FreeNode* n;
 
@@ -1066,7 +1066,7 @@ onig_free_node_list()
 #endif
 
 static Node*
-node_new()
+node_new(void)
 {
   Node* node;
 
@@ -1094,7 +1094,7 @@ initialize_cclass(CClassNode* cc)
 }
 
 static Node*
-node_new_cclass()
+node_new_cclass(void)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
@@ -1163,7 +1163,7 @@ node_new_ctype(int type)
 }
 
 static Node*
-node_new_anychar()
+node_new_anychar(void)
 {
   Node* node = node_new();
   CHECK_NULL_RETURN(node);
@@ -1434,7 +1434,7 @@ node_new_str_raw(UChar* s, UChar* end)
 }
 
 static Node*
-node_new_empty()
+node_new_empty(void)
 {
   return node_new_str(NULL, NULL);
 }
@@ -4660,7 +4660,7 @@ i_free_shared_class(type_cclass_key* key, Node* node, void* arg)
 }
 
 extern int
-onig_free_shared_cclass_table()
+onig_free_shared_cclass_table(void)
 {
   if (IS_NOT_NULL(OnigTypeCClassTable)) {
     onig_st_foreach(OnigTypeCClassTable, i_free_shared_class, 0);

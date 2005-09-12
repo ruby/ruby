@@ -40,7 +40,7 @@ unsigned long scan_oct _((const char*, int, int*));
 unsigned long scan_hex _((const char*, int, int*));
 
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(_WIN32)
-void ruby_add_suffix();
+void ruby_add_suffix(VALUE str, char *suffix);
 #endif
 
 void ruby_qsort _((void*, const int, const int, int (*)(), void*));

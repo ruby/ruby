@@ -74,7 +74,7 @@ VALUE rb_eZeroDivError;
 VALUE rb_eFloatDomainError;
 
 void
-rb_num_zerodiv()
+rb_num_zerodiv(void)
 {
     rb_raise(rb_eZeroDivError, "divided by 0");
 }
@@ -97,8 +97,7 @@ rb_num_zerodiv()
  */
 
 static VALUE
-num_coerce(x, y)
-    VALUE x, y;
+num_coerce(VALUE x, VALUE y)
 {
     if (CLASS_OF(x) == CLASS_OF(y))
 	return rb_assoc_new(y, x);
@@ -106,15 +105,13 @@ num_coerce(x, y)
 }
 
 static VALUE
-coerce_body(x)
-    VALUE *x;
+coerce_body(VALUE *x)
 {
     return rb_funcall(x[1], id_coerce, 1, x[0]);
 }
 
 static VALUE
-coerce_rescue(x)
-    VALUE *x;
+coerce_rescue(VALUE *x)
 {
     volatile VALUE v = rb_inspect(x[1]);
 
@@ -127,9 +124,7 @@ coerce_rescue(x)
 }
 
 static int
-do_coerce(x, y, err)
-    VALUE *x, *y;
-    int err;
+do_coerce(VALUE *x, VALUE *y, int err)
 {
     VALUE ary;
     VALUE a[2];
@@ -150,16 +145,14 @@ do_coerce(x, y, err)
 }
 
 VALUE
-rb_num_coerce_bin(x, y)
-    VALUE x, y;
+rb_num_coerce_bin(VALUE x, VALUE y)
 {
     do_coerce(&x, &y, Qtrue);
     return rb_funcall(x, rb_frame_this_func(), 1, y);
 }
 
 VALUE
-rb_num_coerce_cmp(x, y)
-    VALUE x, y;
+rb_num_coerce_cmp(VALUE x, VALUE y)
 {
     if (do_coerce(&x, &y, Qfalse)) 
 	return rb_funcall(x, rb_frame_this_func(), 1, y);
@@ -167,8 +160,7 @@ rb_num_coerce_cmp(x, y)
 }
 
 VALUE
-rb_num_coerce_relop(x, y)
-    VALUE x, y;
+rb_num_coerce_relop(VALUE x, VALUE y)
 {
     VALUE c, x0 = x, y0 = y;
 
@@ -186,8 +178,7 @@ rb_num_coerce_relop(x, y)
  */
 
 static VALUE
-num_sadded(x, name)
-    VALUE x, name;
+num_sadded(VALUE x, VALUE name)
 {
     ruby_frame = ruby_frame->prev; /* pop frame for "singleton_method_added" */
     /* Numerics should be values; singleton_methods should not be added to them */
@@ -200,8 +191,7 @@ num_sadded(x, name)
 
 /* :nodoc: */
 static VALUE
-num_init_copy(x, y)
-    VALUE x, y;
+num_init_copy(VALUE x, VALUE y)
 {
     /* Numerics are immutable values, which should not be copied */
     rb_raise(rb_eTypeError, "can't copy %s", rb_obj_classname(x));
@@ -216,8 +206,7 @@ num_init_copy(x, y)
  */
 
 static VALUE
-num_uplus(num)
-    VALUE num;
+num_uplus(VALUE num)
 {
     return num;
 }
@@ -230,8 +219,7 @@ num_uplus(num)
  */
 
 static VALUE
-num_uminus(num)
-    VALUE num;
+num_uminus(VALUE num)
 {
     VALUE zero;
 
@@ -249,8 +237,7 @@ num_uminus(num)
  */
 
 static VALUE
-num_quo(x, y)
-    VALUE x, y;
+num_quo(VALUE x, VALUE y)
 {
     return rb_funcall(x, '/', 1, y);
 }
@@ -266,8 +253,7 @@ num_quo(x, y)
  */
 
 static VALUE
-num_div(x, y)
-    VALUE x, y;
+num_div(VALUE x, VALUE y)
 {
     return rb_Integer(rb_funcall(x, '/', 1, y));
 }
@@ -315,8 +301,7 @@ num_div(x, y)
  */
 
 static VALUE
-num_divmod(x, y)
-    VALUE x, y;
+num_divmod(VALUE x, VALUE y)
 {
     return rb_assoc_new(num_div(x, y), rb_funcall(x, '%', 1, y));
 }
@@ -330,8 +315,7 @@ num_divmod(x, y)
  */
 
 static VALUE
-num_modulo(x, y)
-    VALUE x, y;
+num_modulo(VALUE x, VALUE y)
 {
     return rb_funcall(x, '%', 1, y);
 }
@@ -349,8 +333,7 @@ num_modulo(x, y)
  */
 
 static VALUE
-num_remainder(x, y)
-    VALUE x, y;
+num_remainder(VALUE x, VALUE y)
 {
     VALUE z = rb_funcall(x, '%', 1, y);
 
@@ -373,8 +356,7 @@ num_remainder(x, y)
  */
 
 static VALUE
-num_int_p(num)
-    VALUE num;
+num_int_p(VALUE num)
 {
     return Qfalse;
 }
@@ -391,8 +373,7 @@ num_int_p(num)
  */
 
 static VALUE
-num_abs(num)
-    VALUE num;
+num_abs(VALUE num)
 {
     if (RTEST(rb_funcall(num, '<', 1, INT2FIX(0)))) {
 	return rb_funcall(num, rb_intern("-@"), 0);
@@ -409,8 +390,7 @@ num_abs(num)
  */
 
 static VALUE
-num_zero_p(num)
-    VALUE num;
+num_zero_p(VALUE num)
 {
     if (rb_equal(num, INT2FIX(0))) {
 	return Qtrue;
@@ -432,8 +412,7 @@ num_zero_p(num)
  */
 
 static VALUE
-num_nonzero_p(num)
-    VALUE num;
+num_nonzero_p(VALUE num)
 {
     if (RTEST(rb_funcall(num, rb_intern("zero?"), 0, 0))) {
 	return Qnil;
@@ -450,8 +429,7 @@ num_nonzero_p(num)
  */
 
 static VALUE
-num_to_int(num)
-    VALUE num;
+num_to_int(VALUE num)
 {
     return rb_funcall(num, id_to_i, 0, 0);
 }
@@ -466,8 +444,7 @@ num_to_int(num)
  */
 
 VALUE
-rb_float_new(d)
-    double d;
+rb_float_new(double d)
 {
     NEWOBJ(flt, struct RFloat);
     OBJSETUP(flt, rb_cFloat, T_FLOAT);
@@ -487,8 +464,7 @@ rb_float_new(d)
  */
 
 static VALUE
-flo_to_s(flt)
-    VALUE flt;
+flo_to_s(VALUE flt)
 {
     char buf[32];
     double value = RFLOAT(flt)->value;
@@ -521,8 +497,7 @@ flo_to_s(flt)
  */
 
 static VALUE
-flo_coerce(x, y)
-    VALUE x, y;
+flo_coerce(VALUE x, VALUE y)
 {
     return rb_assoc_new(rb_Float(y), x);
 }
@@ -535,8 +510,7 @@ flo_coerce(x, y)
  */
 
 static VALUE
-flo_uminus(flt)
-    VALUE flt;
+flo_uminus(VALUE flt)
 {
     return rb_float_new(-RFLOAT(flt)->value);
 }
@@ -550,8 +524,7 @@ flo_uminus(flt)
  */
 
 static VALUE
-flo_plus(x, y)
-    VALUE x, y;
+flo_plus(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -574,8 +547,7 @@ flo_plus(x, y)
  */
 
 static VALUE
-flo_minus(x, y)
-    VALUE x, y;
+flo_minus(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -598,8 +570,7 @@ flo_minus(x, y)
  */
 
 static VALUE
-flo_mul(x, y)
-    VALUE x, y;
+flo_mul(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -622,8 +593,7 @@ flo_mul(x, y)
  */
 
 static VALUE
-flo_div(x, y)
-    VALUE x, y;
+flo_div(VALUE x, VALUE y)
 {
     long f_y;
     double d;
@@ -644,9 +614,7 @@ flo_div(x, y)
 
 
 static void
-flodivmod(x, y, divp, modp)
-    double x, y;
-    double *divp, *modp;
+flodivmod(double x, double y, double *divp, double *modp)
 {
     double div, mod;
 
@@ -682,8 +650,7 @@ flodivmod(x, y, divp, modp)
  */
 
 static VALUE
-flo_mod(x, y)
-    VALUE x, y;
+flo_mod(VALUE x, VALUE y)
 {
     double fy, mod;
 
@@ -712,8 +679,7 @@ flo_mod(x, y)
  */
 
 static VALUE
-flo_divmod(x, y)
-    VALUE x, y;
+flo_divmod(VALUE x, VALUE y)
 {
     double fy, div, mod;
     volatile VALUE a, b;
@@ -746,8 +712,7 @@ flo_divmod(x, y)
  */
  
 static VALUE
-flo_pow(x, y)
-    VALUE x, y;
+flo_pow(VALUE x, VALUE y)
 {
     switch (TYPE(y)) {
       case T_FIXNUM:
@@ -774,8 +739,7 @@ flo_pow(x, y)
  */
 
 static VALUE
-num_eql(x, y)
-    VALUE x, y;
+num_eql(VALUE x, VALUE y)
 {
     if (TYPE(x) != TYPE(y)) return Qfalse;
 
@@ -791,16 +755,14 @@ num_eql(x, y)
  */
 
 static VALUE
-num_cmp(x, y)
-    VALUE x, y;
+num_cmp(VALUE x, VALUE y)
 {
     if (x == y) return INT2FIX(0);
     return Qnil;
 }
 
 static VALUE
-num_equal(x, y)
-    VALUE x, y;
+num_equal(VALUE x, VALUE y)
 {
     if (x == y) return Qtrue;
     return rb_funcall(y, id_eq, 1, x);
@@ -819,8 +781,7 @@ num_equal(x, y)
  */
 
 static VALUE
-flo_eq(x, y)
-    VALUE x, y;
+flo_eq(VALUE x, VALUE y)
 {
     volatile double a, b;
 
@@ -851,8 +812,7 @@ flo_eq(x, y)
  */
 
 static VALUE
-flo_hash(num)
-    VALUE num;
+flo_hash(VALUE num)
 {
     double d;
     char *c;
@@ -869,8 +829,7 @@ flo_hash(num)
 }
 
 VALUE
-rb_dbl_cmp(a, b)
-    double a, b;
+rb_dbl_cmp(double a, double b)
 {
     if (isnan(a) || isnan(b)) return Qnil;
     if (a == b) return INT2FIX(0);
@@ -889,8 +848,7 @@ rb_dbl_cmp(a, b)
  */
 
 static VALUE
-flo_cmp(x, y)
-    VALUE x, y;
+flo_cmp(VALUE x, VALUE y)
 {
     double a, b;
 
@@ -922,8 +880,7 @@ flo_cmp(x, y)
  */
 
 static VALUE
-flo_gt(x, y)
-    VALUE x, y;
+flo_gt(VALUE x, VALUE y)
 {
     double a, b;
 
@@ -958,8 +915,7 @@ flo_gt(x, y)
  */
 
 static VALUE
-flo_ge(x, y)
-    VALUE x, y;
+flo_ge(VALUE x, VALUE y)
 {
     double a, b;
 
@@ -993,8 +949,7 @@ flo_ge(x, y)
  */
 
 static VALUE
-flo_lt(x, y)
-    VALUE x, y;
+flo_lt(VALUE x, VALUE y)
 {
     double a, b;
 
@@ -1029,8 +984,7 @@ flo_lt(x, y)
  */
 
 static VALUE
-flo_le(x, y)
-    VALUE x, y;
+flo_le(VALUE x, VALUE y)
 {
     double a, b;
 
@@ -1068,8 +1022,7 @@ flo_le(x, y)
  */
 
 static VALUE
-flo_eql(x, y)
-    VALUE x, y;
+flo_eql(VALUE x, VALUE y)
 {
     if (TYPE(y) == T_FLOAT) {
 	double a = RFLOAT(x)->value;
@@ -1089,8 +1042,7 @@ flo_eql(x, y)
  */
 
 static VALUE
-flo_to_f(num)
-    VALUE num;
+flo_to_f(VALUE num)
 {
     return num;
 }
@@ -1107,8 +1059,7 @@ flo_to_f(num)
  */
 
 static VALUE
-flo_abs(flt)
-    VALUE flt;
+flo_abs(VALUE flt)
 {
     double val = fabs(RFLOAT(flt)->value);
     return rb_float_new(val);
@@ -1123,8 +1074,7 @@ flo_abs(flt)
  */
 
 static VALUE
-flo_zero_p(num)
-    VALUE num;
+flo_zero_p(VALUE num)
 {
     if (RFLOAT(num)->value == 0.0) {
 	return Qtrue;
@@ -1146,8 +1096,7 @@ flo_zero_p(num)
  */
 
 static VALUE
-flo_is_nan_p(num)
-     VALUE num;
+flo_is_nan_p(VALUE num)
 {     
     double value = RFLOAT(num)->value;
 
@@ -1167,8 +1116,7 @@ flo_is_nan_p(num)
  */
 
 static VALUE
-flo_is_infinite_p(num)
-     VALUE num;
+flo_is_infinite_p(VALUE num)
 {     
     double value = RFLOAT(num)->value;
 
@@ -1190,8 +1138,7 @@ flo_is_infinite_p(num)
  */
 
 static VALUE
-flo_is_finite_p(num)
-     VALUE num;
+flo_is_finite_p(VALUE num)
 {     
     double value = RFLOAT(num)->value;
 
@@ -1219,8 +1166,7 @@ flo_is_finite_p(num)
  */
 
 static VALUE
-flo_floor(num)
-    VALUE num;
+flo_floor(VALUE num)
 {
     double f = floor(RFLOAT(num)->value);
     long val;
@@ -1246,8 +1192,7 @@ flo_floor(num)
  */
 
 static VALUE
-flo_ceil(num)
-    VALUE num;
+flo_ceil(VALUE num)
 {
     double f = ceil(RFLOAT(num)->value);
     long val;
@@ -1277,8 +1222,7 @@ flo_ceil(num)
  */
 
 static VALUE
-flo_round(num)
-    VALUE num;
+flo_round(VALUE num)
 {
     double f = RFLOAT(num)->value;
     long val;
@@ -1303,8 +1247,7 @@ flo_round(num)
  */
 
 static VALUE
-flo_truncate(num)
-    VALUE num;
+flo_truncate(VALUE num)
 {
     double f = RFLOAT(num)->value;
     long val;
@@ -1333,8 +1276,7 @@ flo_truncate(num)
  */
 
 static VALUE
-num_floor(num)
-    VALUE num;
+num_floor(VALUE num)
 {
     return flo_floor(rb_Float(num));
 }
@@ -1356,8 +1298,7 @@ num_floor(num)
  */
 
 static VALUE
-num_ceil(num)
-    VALUE num;
+num_ceil(VALUE num)
 {
     return flo_ceil(rb_Float(num));
 }
@@ -1372,8 +1313,7 @@ num_ceil(num)
  */
 
 static VALUE
-num_round(num)
-    VALUE num;
+num_round(VALUE num)
 {
     return flo_round(rb_Float(num));
 }
@@ -1388,8 +1328,7 @@ num_round(num)
  */
 
 static VALUE
-num_truncate(num)
-    VALUE num;
+num_truncate(VALUE num)
 {
     return flo_truncate(rb_Float(num));
 }
@@ -1423,10 +1362,7 @@ num_truncate(num)
  */
 
 static VALUE
-num_step(argc, argv, from)
-    int argc;
-    VALUE *argv;
-    VALUE from;
+num_step(int argc, VALUE *argv, VALUE from)
 {
     VALUE to, step;
 
@@ -1502,8 +1438,7 @@ num_step(argc, argv, from)
 }
 
 long
-rb_num2long(val)
-    VALUE val;
+rb_num2long(VALUE val)
 {
     if (NIL_P(val)) {
 	rb_raise(rb_eTypeError, "no implicit conversion from nil to integer");
@@ -1536,8 +1471,7 @@ rb_num2long(val)
 }
 
 unsigned long
-rb_num2ulong(val)
-    VALUE val;
+rb_num2ulong(VALUE val)
 {
     if (TYPE(val) == T_BIGNUM) {
 	return rb_big2ulong(val);
@@ -1622,23 +1556,20 @@ rb_fix2uint(val)
 }
 #else
 long
-rb_num2int(val)
-    VALUE val;
+rb_num2int(VALUE val)
 {
     return rb_num2long(val);
 }
 
 long
-rb_fix2int(val)
-    VALUE val;
+rb_fix2int(VALUE val)
 {
     return FIX2INT(val);
 }
 #endif
 
 VALUE
-rb_num2fix(val)
-    VALUE val;
+rb_num2fix(VALUE val)
 {
     long v;
 
@@ -1653,8 +1584,7 @@ rb_num2fix(val)
 #if HAVE_LONG_LONG
 
 LONG_LONG
-rb_num2ll(val)
-    VALUE val;
+rb_num2ll(VALUE val)
 {
     if (NIL_P(val)) {
 	rb_raise(rb_eTypeError, "no implicit conversion from nil");
@@ -1696,8 +1626,7 @@ rb_num2ll(val)
 }
 
 unsigned LONG_LONG
-rb_num2ull(val)
-    VALUE val;
+rb_num2ull(VALUE val)
 {
     if (TYPE(val) == T_BIGNUM) {
 	return rb_big2ull(val);
@@ -1731,8 +1660,7 @@ rb_num2ull(val)
  */
 
 static VALUE
-int_to_i(num)
-    VALUE num;
+int_to_i(VALUE num)
 {
     return num;
 }
@@ -1745,8 +1673,7 @@ int_to_i(num)
  */
 
 static VALUE
-int_int_p(num)
-    VALUE num;
+int_int_p(VALUE num)
 {
     return Qtrue;
 }
@@ -1763,8 +1690,7 @@ int_int_p(num)
  */
 
 static VALUE
-int_succ(num)
-    VALUE num;
+int_succ(VALUE num)
 {
     if (FIXNUM_P(num)) {
 	long i = FIX2LONG(num) + 1;
@@ -1786,8 +1712,7 @@ int_succ(num)
  */
 
 static VALUE
-int_chr(num)
-    VALUE num;
+int_chr(VALUE num)
 {
     char c;
     long i = NUM2LONG(num);
@@ -1826,8 +1751,7 @@ int_chr(num)
  */
 
 static VALUE
-rb_fix_induced_from(klass, x)
-    VALUE klass, x;
+rb_fix_induced_from(VALUE klass, VALUE x)
 {
     return rb_num2fix(x);
 }
@@ -1840,8 +1764,7 @@ rb_fix_induced_from(klass, x)
  */
 
 static VALUE
-rb_int_induced_from(klass, x)
-    VALUE klass, x;
+rb_int_induced_from(VALUE klass, VALUE x)
 {
     switch (TYPE(x)) {
     case T_FIXNUM:
@@ -1863,8 +1786,7 @@ rb_int_induced_from(klass, x)
  */
 
 static VALUE
-rb_flo_induced_from(klass, x)
-    VALUE klass, x;
+rb_flo_induced_from(VALUE klass, VALUE x)
 {
     switch (TYPE(x)) {
     case T_FIXNUM:
@@ -1886,16 +1808,13 @@ rb_flo_induced_from(klass, x)
  */
 
 static VALUE
-fix_uminus(num)
-    VALUE num;
+fix_uminus(VALUE num)
 {
     return LONG2NUM(-FIX2LONG(num));
 }
 
 VALUE
-rb_fix2str(x, base)
-    VALUE x;
-    int base;
+rb_fix2str(VALUE x, int base)
 {
     extern const char ruby_digitmap[];
     char buf[SIZEOF_LONG*CHAR_BIT + 2], *b = buf + sizeof buf;
@@ -1939,10 +1858,7 @@ rb_fix2str(x, base)
  *
  */
 static VALUE
-fix_to_s(argc, argv, x)
-    int argc;
-    VALUE *argv;
-    VALUE x;
+fix_to_s(int argc, VALUE *argv, VALUE x)
 {
     VALUE b;
     int base;
@@ -1968,8 +1884,7 @@ fix_to_s(argc, argv, x)
  */
 
 static VALUE
-fix_plus(x, y)
-    VALUE x, y;
+fix_plus(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a, b, c;
@@ -2005,8 +1920,7 @@ fix_plus(x, y)
  */
 
 static VALUE
-fix_minus(x, y)
-    VALUE x, y;
+fix_minus(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a, b, c;
@@ -2043,8 +1957,7 @@ fix_minus(x, y)
  */
 
 static VALUE
-fix_mul(x, y)
-    VALUE x, y;
+fix_mul(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a, b, c;
@@ -2073,9 +1986,7 @@ fix_mul(x, y)
 }
 
 static void
-fixdivmod(x, y, divp, modp)
-    long x, y;
-    long *divp, *modp;
+fixdivmod(long x, long y, long *divp, long *modp)
 {
     long div, mod;
 
@@ -2114,8 +2025,7 @@ fixdivmod(x, y, divp, modp)
  */
 
 static VALUE
-fix_quo(x, y)
-    VALUE x, y;
+fix_quo(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	return rb_float_new((double)FIX2LONG(x) / (double)FIX2LONG(y));
@@ -2141,8 +2051,7 @@ fix_quo(x, y)
  */
 
 static VALUE
-fix_div(x, y)
-    VALUE x, y;
+fix_div(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long div;
@@ -2171,8 +2080,7 @@ fix_div(x, y)
  */
 
 static VALUE
-fix_mod(x, y)
-    VALUE x, y;
+fix_mod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long mod;
@@ -2203,8 +2111,7 @@ fix_mod(x, y)
  *  See <code>Numeric#divmod</code>.
  */
 static VALUE
-fix_divmod(x, y)
-    VALUE x, y;
+fix_divmod(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long div, mod;
@@ -2245,8 +2152,7 @@ fix_divmod(x, y)
  */
 
 static VALUE
-fix_pow(x, y)
-    VALUE x, y;
+fix_pow(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a, b;
@@ -2283,8 +2189,7 @@ fix_pow(x, y)
  */
 
 static VALUE
-fix_equal(x, y)
-    VALUE x, y;
+fix_equal(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	return (FIX2LONG(x) == FIX2LONG(y))?Qtrue:Qfalse;
@@ -2309,8 +2214,7 @@ fix_equal(x, y)
  */
 
 static VALUE
-fix_cmp(x, y)
-    VALUE x, y;
+fix_cmp(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a = FIX2LONG(x), b = FIX2LONG(y);
@@ -2338,8 +2242,7 @@ fix_cmp(x, y)
  */
 
 static VALUE
-fix_gt(x, y)
-    VALUE x, y;
+fix_gt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a = FIX2LONG(x), b = FIX2LONG(y);
@@ -2366,8 +2269,7 @@ fix_gt(x, y)
  */
 
 static VALUE
-fix_ge(x, y)
-    VALUE x, y;
+fix_ge(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a = FIX2LONG(x), b = FIX2LONG(y);
@@ -2394,8 +2296,7 @@ fix_ge(x, y)
  */
 
 static VALUE
-fix_lt(x, y)
-    VALUE x, y;
+fix_lt(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a = FIX2LONG(x), b = FIX2LONG(y);
@@ -2422,8 +2323,7 @@ fix_lt(x, y)
  */
 
 static VALUE
-fix_le(x, y)
-    VALUE x, y;
+fix_le(VALUE x, VALUE y)
 {
     if (FIXNUM_P(y)) {
 	long a = FIX2LONG(x), b = FIX2LONG(y);
@@ -2449,8 +2349,7 @@ fix_le(x, y)
  */
 
 static VALUE
-fix_rev(num)
-    VALUE num;
+fix_rev(VALUE num)
 {
     long val = FIX2LONG(num);
 
@@ -2466,8 +2365,7 @@ fix_rev(num)
  */
 
 static VALUE
-fix_and(x, y)
-    VALUE x, y;
+fix_and(VALUE x, VALUE y)
 {
     long val;
 
@@ -2486,8 +2384,7 @@ fix_and(x, y)
  */
 
 static VALUE
-fix_or(x, y)
-    VALUE x, y;
+fix_or(VALUE x, VALUE y)
 {
     long val;
 
@@ -2506,8 +2403,7 @@ fix_or(x, y)
  */
 
 static VALUE
-fix_xor(x, y)
-    VALUE x, y;
+fix_xor(VALUE x, VALUE y)
 {
     long val;
 
@@ -2528,8 +2424,7 @@ static VALUE fix_rshift _((VALUE, VALUE));
  */
 
 static VALUE
-fix_lshift(x, y)
-    VALUE x, y;
+fix_lshift(VALUE x, VALUE y)
 {
     long val, width;
 
@@ -2553,8 +2448,7 @@ fix_lshift(x, y)
  */
 
 static VALUE
-fix_rshift(x, y)
-    VALUE x, y;
+fix_rshift(VALUE x, VALUE y)
 {
     long i, val;
 
@@ -2588,8 +2482,7 @@ fix_rshift(x, y)
  */
 
 static VALUE
-fix_aref(fix, idx)
-    VALUE fix, idx;
+fix_aref(VALUE fix, VALUE idx)
 {
     long val = FIX2LONG(fix);
     long i;
@@ -2623,8 +2516,7 @@ fix_aref(fix, idx)
  */
 
 static VALUE
-fix_to_f(num)
-    VALUE num;
+fix_to_f(VALUE num)
 {
     double val;
 
@@ -2645,8 +2537,7 @@ fix_to_f(num)
  */
 
 static VALUE
-fix_abs(fix)
-    VALUE fix;
+fix_abs(VALUE fix)
 {
     long i = FIX2LONG(fix);
 
@@ -2671,8 +2562,7 @@ fix_abs(fix)
  */
 
 static VALUE
-fix_id2name(fix)
-    VALUE fix;
+fix_id2name(VALUE fix)
 {
     char *name = rb_id2name(FIX2UINT(fix));
     if (name) return rb_str_new2(name);
@@ -2693,8 +2583,7 @@ fix_id2name(fix)
  */
 
 static VALUE
-fix_to_sym(fix)
-    VALUE fix;
+fix_to_sym(VALUE fix)
 {
     ID id = FIX2UINT(fix);
 
@@ -2718,8 +2607,7 @@ fix_to_sym(fix)
  */
 
 static VALUE
-fix_size(fix)
-    VALUE fix;
+fix_size(VALUE fix)
 {
     return INT2FIX(sizeof(long));
 }
@@ -2739,8 +2627,7 @@ fix_size(fix)
  */
 
 static VALUE
-int_upto(from, to)
-    VALUE from, to;
+int_upto(VALUE from, VALUE to)
 {
     if (FIXNUM_P(from) && FIXNUM_P(to)) {
 	long i, end;
@@ -2778,8 +2665,7 @@ int_upto(from, to)
  */
 
 static VALUE
-int_downto(from, to)
-    VALUE from, to;
+int_downto(VALUE from, VALUE to)
 {
     if (FIXNUM_P(from) && FIXNUM_P(to)) {
 	long i, end;
@@ -2818,8 +2704,7 @@ int_downto(from, to)
  */
 
 static VALUE
-int_dotimes(num)
-    VALUE num;
+int_dotimes(VALUE num)
 {
     if (FIXNUM_P(num)) {
 	long i, end;
@@ -2850,8 +2735,7 @@ int_dotimes(num)
  */
 
 static VALUE
-fix_zero_p(num)
-    VALUE num;
+fix_zero_p(VALUE num)
 {
     if (FIX2LONG(num) == 0) {
 	return Qtrue;
@@ -2860,7 +2744,7 @@ fix_zero_p(num)
 }
 
 void
-Init_Numeric()
+Init_Numeric(void)
 {
 #if defined(__FreeBSD__) && __FreeBSD__ < 4
     /* allow divide by zero -- Inf */

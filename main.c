@@ -22,9 +22,7 @@ static void objcdummyfunction( void ) { objc_msgSend(); }
 #endif
 
 int
-main(argc, argv, envp)
-    int argc;
-    char **argv, **envp;
+main(int argc, char **argv, char **envp)
 {
 #ifdef _WIN32
     NtInitialize(&argc, &argv);

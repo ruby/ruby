@@ -73,8 +73,7 @@ VALUE rb_mFileTest;
 static VALUE rb_cStat;
 
 VALUE
-rb_get_path(obj)
-    VALUE obj;
+rb_get_path(VALUE obj)
 {
     VALUE tmp;
     static ID to_path;
@@ -98,10 +97,7 @@ rb_get_path(obj)
 }
 
 static long
-apply2files(func, vargs, arg)
-    void (*func)();
-    VALUE vargs;
-    void *arg;
+apply2files(void (*func) (/* ??? */), VALUE vargs, void *arg)
 {
     long i;
     VALUE path;
@@ -129,8 +125,7 @@ apply2files(func, vargs, arg)
  */
 
 static VALUE
-rb_file_path(obj)
-    VALUE obj;
+rb_file_path(VALUE obj)
 {
     OpenFile *fptr;
 
@@ -141,9 +136,7 @@ rb_file_path(obj)
 }
 
 static VALUE
-stat_new_0(klass, st)
-    VALUE klass;
-    struct stat *st;
+stat_new_0(VALUE klass, struct stat *st)
 {
     struct stat *nst = 0;
 
@@ -155,15 +148,13 @@ stat_new_0(klass, st)
 }
 
 static VALUE
-stat_new(st)
-    struct stat *st;
+stat_new(struct stat *st)
 {
     return stat_new_0(rb_cStat, st);
 }
 
 static struct stat*
-get_stat(self)
-    VALUE self;
+get_stat(VALUE self)
 {
     struct stat* st;
     Data_Get_Struct(self, struct stat, st);
@@ -185,8 +176,7 @@ get_stat(self)
  */
 
 static VALUE
-rb_stat_cmp(self, other)
-    VALUE self, other;
+rb_stat_cmp(VALUE self, VALUE other)
 {
     if (rb_obj_is_kind_of(other, rb_obj_class(self))) {
 	time_t t1 = get_stat(self)->st_mtime;
@@ -212,8 +202,7 @@ rb_stat_cmp(self, other)
  */
 
 static VALUE
-rb_stat_dev(self)
-    VALUE self;
+rb_stat_dev(VALUE self)
 {
     return INT2NUM(get_stat(self)->st_dev);
 }
@@ -230,8 +219,7 @@ rb_stat_dev(self)
  */
 
 static VALUE
-rb_stat_dev_major(self)
-    VALUE self;
+rb_stat_dev_major(VALUE self)
 {
 #if defined(major)
     long dev = get_stat(self)->st_dev;
@@ -253,8 +241,7 @@ rb_stat_dev_major(self)
  */
 
 static VALUE
-rb_stat_dev_minor(self)
-    VALUE self;
+rb_stat_dev_minor(VALUE self)
 {
 #if defined(minor)
     long dev = get_stat(self)->st_dev;
@@ -276,8 +263,7 @@ rb_stat_dev_minor(self)
  */
 
 static VALUE
-rb_stat_ino(self)
-    VALUE self;
+rb_stat_ino(VALUE self)
 {
 #ifdef HUGE_ST_INO
     return ULL2NUM(get_stat(self)->st_ino);
@@ -300,8 +286,7 @@ rb_stat_ino(self)
  */
 
 static VALUE
-rb_stat_mode(self)
-    VALUE self;
+rb_stat_mode(VALUE self)
 {
 #ifdef __BORLANDC__
     return UINT2NUM((unsigned short)(get_stat(self)->st_mode));
@@ -323,8 +308,7 @@ rb_stat_mode(self)
  */
 
 static VALUE
-rb_stat_nlink(self)
-    VALUE self;
+rb_stat_nlink(VALUE self)
 {
     return UINT2NUM(get_stat(self)->st_nlink);
 }
@@ -341,8 +325,7 @@ rb_stat_nlink(self)
  */
 
 static VALUE
-rb_stat_uid(self)
-    VALUE self;
+rb_stat_uid(VALUE self)
 {
     return UINT2NUM(get_stat(self)->st_uid);
 }
@@ -358,8 +341,7 @@ rb_stat_uid(self)
  */
 
 static VALUE
-rb_stat_gid(self)
-    VALUE self;
+rb_stat_gid(VALUE self)
 {
     return UINT2NUM(get_stat(self)->st_gid);
 }
@@ -378,8 +360,7 @@ rb_stat_gid(self)
  */
 
 static VALUE
-rb_stat_rdev(self)
-    VALUE self;
+rb_stat_rdev(VALUE self)
 {
 #ifdef HAVE_ST_RDEV
     return ULONG2NUM(get_stat(self)->st_rdev);
@@ -400,8 +381,7 @@ rb_stat_rdev(self)
  */
 
 static VALUE
-rb_stat_rdev_major(self)
-    VALUE self;
+rb_stat_rdev_major(VALUE self)
 {
 #if defined(HAVE_ST_RDEV) && defined(major)
     long rdev = get_stat(self)->st_rdev;
@@ -423,8 +403,7 @@ rb_stat_rdev_major(self)
  */
 
 static VALUE
-rb_stat_rdev_minor(self)
-    VALUE self;
+rb_stat_rdev_minor(VALUE self)
 {
 #if defined(HAVE_ST_RDEV) && defined(minor)
     long rdev = get_stat(self)->st_rdev;
@@ -444,8 +423,7 @@ rb_stat_rdev_minor(self)
  */
 
 static VALUE
-rb_stat_size(self)
-    VALUE self;
+rb_stat_size(VALUE self)
 {
     return OFFT2NUM(get_stat(self)->st_size);
 }
@@ -462,8 +440,7 @@ rb_stat_size(self)
  */
 
 static VALUE
-rb_stat_blksize(self)
-    VALUE self;
+rb_stat_blksize(VALUE self)
 {
 #ifdef HAVE_ST_BLKSIZE
     return ULONG2NUM(get_stat(self)->st_blksize);
@@ -484,8 +461,7 @@ rb_stat_blksize(self)
  */
 
 static VALUE
-rb_stat_blocks(self)
-    VALUE self;
+rb_stat_blocks(VALUE self)
 {
 #ifdef HAVE_ST_BLOCKS
     return ULONG2NUM(get_stat(self)->st_blocks);
@@ -507,8 +483,7 @@ rb_stat_blocks(self)
  */
 
 static VALUE
-rb_stat_atime(self)
-    VALUE self;
+rb_stat_atime(VALUE self)
 {
     return rb_time_new(get_stat(self)->st_atime, 0);
 }
@@ -524,8 +499,7 @@ rb_stat_atime(self)
  */
 
 static VALUE
-rb_stat_mtime(self)
-    VALUE self;
+rb_stat_mtime(VALUE self)
 {
     return rb_time_new(get_stat(self)->st_mtime, 0);
 }
@@ -543,8 +517,7 @@ rb_stat_mtime(self)
  */
 
 static VALUE
-rb_stat_ctime(self)
-    VALUE self;
+rb_stat_ctime(VALUE self)
 {
     return rb_time_new(get_stat(self)->st_ctime, 0);
 }
@@ -564,8 +537,7 @@ rb_stat_ctime(self)
  */
 
 static VALUE
-rb_stat_inspect(self)
-    VALUE self;
+rb_stat_inspect(VALUE self)
 {
     VALUE str;
     int i;
@@ -624,9 +596,7 @@ rb_stat_inspect(self)
 }
 
 static int
-rb_stat(file, st)
-    VALUE file;
-    struct stat *st;
+rb_stat(VALUE file, struct stat *st)
 {
     VALUE tmp;
 
@@ -654,8 +624,7 @@ rb_stat(file, st)
  */
 
 static VALUE
-rb_file_s_stat(klass, fname)
-    VALUE klass, fname;
+rb_file_s_stat(VALUE klass, VALUE fname)
 {
     struct stat st;
 
@@ -683,8 +652,7 @@ rb_file_s_stat(klass, fname)
  */
 
 static VALUE
-rb_io_stat(obj)
-    VALUE obj;
+rb_io_stat(VALUE obj)
 {
     OpenFile *fptr;
     struct stat st;
@@ -711,8 +679,7 @@ rb_io_stat(obj)
  */
 
 static VALUE
-rb_file_s_lstat(klass, fname)
-    VALUE klass, fname;
+rb_file_s_lstat(VALUE klass, VALUE fname)
 {
 #ifdef HAVE_LSTAT
     struct stat st;
@@ -744,8 +711,7 @@ rb_file_s_lstat(klass, fname)
  */
 
 static VALUE
-rb_file_lstat(obj)
-    VALUE obj;
+rb_file_lstat(VALUE obj)
 {
 #ifdef HAVE_LSTAT
     OpenFile *fptr;
@@ -764,8 +730,7 @@ rb_file_lstat(obj)
 }
 
 static int
-group_member(gid)
-    GETGROUPS_T gid;
+group_member(GETGROUPS_T gid)
 {
 #ifndef _WIN32
     if (getgid() ==  gid)
@@ -798,9 +763,7 @@ group_member(gid)
 #endif
 
 int
-eaccess(path, mode)
-     const char *path;
-     int mode;
+eaccess(const char *path, int mode)
 {
 #if defined(S_IXGRP) && !defined(_WIN32) && !defined(__CYGWIN__)
     struct stat st;
@@ -862,8 +825,7 @@ eaccess(path, mode)
  */
 
 static VALUE
-test_d(obj, fname)
-    VALUE obj, fname;
+test_d(VALUE obj, VALUE fname)
 {
 #ifndef S_ISDIR
 #   define S_ISDIR(m) ((m & S_IFMT) == S_IFDIR)
@@ -884,8 +846,7 @@ test_d(obj, fname)
  */
 
 static VALUE
-test_p(obj, fname)
-    VALUE obj, fname;
+test_p(VALUE obj, VALUE fname)
 {
 #ifdef S_IFIFO
 #  ifndef S_ISFIFO
@@ -909,8 +870,7 @@ test_p(obj, fname)
  */
 
 static VALUE
-test_l(obj, fname)
-    VALUE obj, fname;
+test_l(VALUE obj, VALUE fname)
 {
 #ifndef S_ISLNK
 #  ifdef _S_ISLNK
@@ -946,8 +906,7 @@ test_l(obj, fname)
  */
 
 static VALUE
-test_S(obj, fname)
-    VALUE obj, fname;
+test_S(VALUE obj, VALUE fname)
 {
 #ifndef S_ISSOCK
 #  ifdef _S_ISSOCK
@@ -981,8 +940,7 @@ test_S(obj, fname)
  */
 
 static VALUE
-test_b(obj, fname)
-    VALUE obj, fname;
+test_b(VALUE obj, VALUE fname)
 {
 #ifndef S_ISBLK
 #   ifdef S_IFBLK
@@ -1009,8 +967,7 @@ test_b(obj, fname)
  * Returns <code>true</code> if the named file is a character device.
  */
 static VALUE
-test_c(obj, fname)
-    VALUE obj, fname;
+test_c(VALUE obj, VALUE fname)
 {
 #ifndef S_ISCHR
 #   define S_ISCHR(m) ((m & S_IFMT) == S_IFCHR)
@@ -1034,8 +991,7 @@ test_c(obj, fname)
  */
 
 static VALUE
-test_e(obj, fname)
-    VALUE obj, fname;
+test_e(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1052,8 +1008,7 @@ test_e(obj, fname)
  */
 
 static VALUE
-test_r(obj, fname)
-    VALUE obj, fname;
+test_r(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1070,8 +1025,7 @@ test_r(obj, fname)
  */
 
 static VALUE
-test_R(obj, fname)
-    VALUE obj, fname;
+test_R(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1102,8 +1056,7 @@ test_R(obj, fname)
  */
 
 static VALUE
-test_wr(obj, fname)
-    VALUE obj, fname;
+test_wr(VALUE obj, VALUE fname)
 {
 #ifdef S_IROTH
     struct stat st;
@@ -1125,8 +1078,7 @@ test_wr(obj, fname)
  */
 
 static VALUE
-test_w(obj, fname)
-    VALUE obj, fname;
+test_w(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1143,8 +1095,7 @@ test_w(obj, fname)
  */
 
 static VALUE
-test_W(obj, fname)
-    VALUE obj, fname;
+test_W(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1167,8 +1118,7 @@ test_W(obj, fname)
  */
 
 static VALUE
-test_ww(obj, fname)
-    VALUE obj, fname;
+test_ww(VALUE obj, VALUE fname)
 {
 #ifdef S_IWOTH
     struct stat st;
@@ -1190,8 +1140,7 @@ test_ww(obj, fname)
  */
 
 static VALUE
-test_x(obj, fname)
-    VALUE obj, fname;
+test_x(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1208,8 +1157,7 @@ test_x(obj, fname)
  */
 
 static VALUE
-test_X(obj, fname)
-    VALUE obj, fname;
+test_X(VALUE obj, VALUE fname)
 {
     rb_secure(2);
     FilePathValue(fname);
@@ -1230,8 +1178,7 @@ test_X(obj, fname)
  */
 
 static VALUE
-test_f(obj, fname)
-    VALUE obj, fname;
+test_f(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1249,8 +1196,7 @@ test_f(obj, fname)
  */
 
 static VALUE
-test_z(obj, fname)
-    VALUE obj, fname;
+test_z(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1268,8 +1214,7 @@ test_z(obj, fname)
  */
 
 static VALUE
-test_s(obj, fname)
-    VALUE obj, fname;
+test_s(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1288,8 +1233,7 @@ test_s(obj, fname)
  */
 
 static VALUE
-test_owned(obj, fname)
-    VALUE obj, fname;
+test_owned(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1299,8 +1243,7 @@ test_owned(obj, fname)
 }
 
 static VALUE
-test_rowned(obj, fname)
-    VALUE obj, fname;
+test_rowned(VALUE obj, VALUE fname)
 {
     struct stat st;
 
@@ -1319,8 +1262,7 @@ test_rowned(obj, fname)
  */
 
 static VALUE
-test_grpowned(obj, fname)
-    VALUE obj, fname;
+test_grpowned(VALUE obj, VALUE fname)
 {
 #ifndef _WIN32
     struct stat st;
@@ -1355,8 +1297,7 @@ check3rdbyte(fname, mode)
  */
 
 static VALUE
-test_suid(obj, fname)
-    VALUE obj, fname;
+test_suid(VALUE obj, VALUE fname)
 {
 #ifdef S_ISUID
     return check3rdbyte(fname, S_ISUID);
@@ -1373,8 +1314,7 @@ test_suid(obj, fname)
  */
 
 static VALUE
-test_sgid(obj, fname)
-    VALUE obj, fname;
+test_sgid(VALUE obj, VALUE fname)
 {
 #ifdef S_ISGID
     return check3rdbyte(fname, S_ISGID);
@@ -1391,8 +1331,7 @@ test_sgid(obj, fname)
  */
 
 static VALUE
-test_sticky(obj, fname)
-    VALUE obj, fname;
+test_sticky(VALUE obj, VALUE fname)
 {
 #ifdef S_ISVTX
     return check3rdbyte(fname, S_ISVTX);
@@ -1409,8 +1348,7 @@ test_sticky(obj, fname)
  */
 
 static VALUE
-rb_file_s_size(klass, fname)
-    VALUE klass, fname;
+rb_file_s_size(VALUE klass, VALUE fname)
 {
     struct stat st;
 
@@ -1420,8 +1358,7 @@ rb_file_s_size(klass, fname)
 }
 
 static VALUE
-rb_file_ftype(st)
-    struct stat *st;
+rb_file_ftype(struct stat *st)
 {
     char *t;
 
@@ -1477,8 +1414,7 @@ rb_file_ftype(st)
  */
 
 static VALUE
-rb_file_s_ftype(klass, fname)
-    VALUE klass, fname;
+rb_file_s_ftype(VALUE klass, VALUE fname)
 {
     struct stat st;
 
@@ -1502,8 +1438,7 @@ rb_file_s_ftype(klass, fname)
  */
 
 static VALUE
-rb_file_s_atime(klass, fname)
-    VALUE klass, fname;
+rb_file_s_atime(VALUE klass, VALUE fname)
 {
     struct stat st;
 
@@ -1524,8 +1459,7 @@ rb_file_s_atime(klass, fname)
  */
 
 static VALUE
-rb_file_atime(obj)
-    VALUE obj;
+rb_file_atime(VALUE obj)
 {
     OpenFile *fptr;
     struct stat st;
@@ -1548,8 +1482,7 @@ rb_file_atime(obj)
  */
 
 static VALUE
-rb_file_s_mtime(klass, fname)
-    VALUE klass, fname;
+rb_file_s_mtime(VALUE klass, VALUE fname)
 {
     struct stat st;
 
@@ -1569,8 +1502,7 @@ rb_file_s_mtime(klass, fname)
  */
 
 static VALUE
-rb_file_mtime(obj)
-    VALUE obj;
+rb_file_mtime(VALUE obj)
 {
     OpenFile *fptr;
     struct stat st;
@@ -1595,8 +1527,7 @@ rb_file_mtime(obj)
  */
 
 static VALUE
-rb_file_s_ctime(klass, fname)
-    VALUE klass, fname;
+rb_file_s_ctime(VALUE klass, VALUE fname)
 {
     struct stat st;
 
@@ -1617,8 +1548,7 @@ rb_file_s_ctime(klass, fname)
  */
 
 static VALUE
-rb_file_ctime(obj)
-    VALUE obj;
+rb_file_ctime(VALUE obj)
 {
     OpenFile *fptr;
     struct stat st;
@@ -1631,9 +1561,7 @@ rb_file_ctime(obj)
 }
 
 static void
-chmod_internal(path, mode)
-    const char *path;
-    int mode;
+chmod_internal(const char *path, int mode)
 {
     if (chmod(path, mode) < 0)
 	rb_sys_fail(path);
@@ -1653,9 +1581,7 @@ chmod_internal(path, mode)
  */
 
 static VALUE
-rb_file_s_chmod(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_chmod(int argc, VALUE *argv)
 {
     VALUE vmode;
     VALUE rest;
@@ -1684,8 +1610,7 @@ rb_file_s_chmod(argc, argv)
  */
 
 static VALUE
-rb_file_chmod(obj, vmode)
-    VALUE obj, vmode;
+rb_file_chmod(VALUE obj, VALUE vmode)
 {
     OpenFile *fptr;
     int mode;
@@ -1744,9 +1669,7 @@ rb_file_s_lchmod(argc, argv)
 }
 #else
 static VALUE
-rb_file_s_lchmod(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_lchmod(int argc, VALUE *argv)
 {
     rb_notimplement();
     return Qnil;		/* not reached */
@@ -1758,9 +1681,7 @@ struct chown_args {
 };
 
 static void
-chown_internal(path, args)
-    const char *path;
-    struct chown_args *args;
+chown_internal(const char *path, struct chown_args *args)
 {
     if (chown(path, args->owner, args->group) < 0)
 	rb_sys_fail(path);
@@ -1782,9 +1703,7 @@ chown_internal(path, args)
  */
 
 static VALUE
-rb_file_s_chown(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_chown(int argc, VALUE *argv)
 {
     VALUE o, g, rest;
     struct chown_args arg;
@@ -1825,8 +1744,7 @@ rb_file_s_chown(argc, argv)
  */
 
 static VALUE
-rb_file_chown(obj, owner, group)
-    VALUE obj, owner, group;
+rb_file_chown(VALUE obj, VALUE owner, VALUE group)
 {
     OpenFile *fptr;
     int o, g;
@@ -1898,15 +1816,13 @@ rb_file_s_lchown(argc, argv)
 }
 #else
 static VALUE
-rb_file_s_lchown(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_lchown(int argc, VALUE *argv)
 {
     rb_notimplement();
 }
 #endif
 
-struct timeval rb_time_timeval();
+struct timeval rb_time_timeval(VALUE time);
 
 #if defined(HAVE_UTIMES) && !defined(__CHECKER__)
 
@@ -1956,18 +1872,14 @@ struct utimbuf {
 #endif
 
 static void
-utime_internal(path, utp)
-    const char *path;
-    struct utimbuf *utp;
+utime_internal(const char *path, struct utimbuf *utp)
 {
     if (utime(path, utp) < 0)
 	rb_sys_fail(path);
 }
 
 static VALUE
-rb_file_s_utime(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_utime(int argc, VALUE *argv)
 {
     VALUE atime, mtime, rest;
     long n;
@@ -1989,8 +1901,7 @@ rb_file_s_utime(argc, argv)
 
 NORETURN(static void sys_fail2 _((VALUE,VALUE)));
 static void
-sys_fail2(s1, s2)
-    VALUE s1, s2;
+sys_fail2(VALUE s1, VALUE s2)
 {
     char *buf;
     int len;
@@ -2014,8 +1925,7 @@ sys_fail2(s1, s2)
  */
 
 static VALUE
-rb_file_s_link(klass, from, to)
-    VALUE klass, from, to;
+rb_file_s_link(VALUE klass, VALUE from, VALUE to)
 {
 #ifdef HAVE_LINK
     rb_secure(2);
@@ -2045,8 +1955,7 @@ rb_file_s_link(klass, from, to)
  */
 
 static VALUE
-rb_file_s_symlink(klass, from, to)
-    VALUE klass, from, to;
+rb_file_s_symlink(VALUE klass, VALUE from, VALUE to)
 {
 #ifdef HAVE_SYMLINK
     rb_secure(2);
@@ -2075,8 +1984,7 @@ rb_file_s_symlink(klass, from, to)
  */
 
 static VALUE
-rb_file_s_readlink(klass, path)
-    VALUE klass, path;
+rb_file_s_readlink(VALUE klass, VALUE path)
 {
 #ifdef HAVE_READLINK
     char *buf;
@@ -2106,8 +2014,7 @@ rb_file_s_readlink(klass, path)
 }
 
 static void
-unlink_internal(path)
-    const char *path;
+unlink_internal(const char *path)
 {
     if (unlink(path) < 0)
 	rb_sys_fail(path);
@@ -2124,8 +2031,7 @@ unlink_internal(path)
  */
 
 static VALUE
-rb_file_s_unlink(klass, args)
-    VALUE klass, args;
+rb_file_s_unlink(VALUE klass, VALUE args)
 {
     long n;
 
@@ -2145,8 +2051,7 @@ rb_file_s_unlink(klass, args)
  */
 
 static VALUE
-rb_file_s_rename(klass, from, to)
-    VALUE klass, from, to;
+rb_file_s_rename(VALUE klass, VALUE from, VALUE to)
 {
     const char *src, *dst;
 
@@ -2193,9 +2098,7 @@ rb_file_s_rename(klass, from, to)
  */
 
 static VALUE
-rb_file_s_umask(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_umask(int argc, VALUE *argv)
 {
     int omask = 0;
 
@@ -2235,8 +2138,7 @@ rb_file_s_umask(argc, argv)
 
 #ifdef DOSISH_DRIVE_LETTER
 static inline int
-has_drive_letter(buf)
-    const char *buf;
+has_drive_letter(const char *buf)
 {
     if (ISALPHA(buf[0]) && buf[1] == ':') {
 	return 1;
@@ -2247,8 +2149,7 @@ has_drive_letter(buf)
 }
 
 static char*
-getcwdofdrv(drv)
-    int drv;
+getcwdofdrv(int drv)
 {
     char drive[4];
     char *drvcwd, *oldcwd;
@@ -2276,8 +2177,7 @@ getcwdofdrv(drv)
 #endif
 
 static inline char *
-skiproot(path)
-    const char *path;
+skiproot(const char *path)
 {
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(path)) path += 2;
@@ -2288,8 +2188,7 @@ skiproot(path)
 
 #define nextdirsep rb_path_next
 char *
-rb_path_next(s)
-    const char *s;
+rb_path_next(const char *s)
 {
     while (*s && !isdirsep(*s)) {
 	s = CharNext(s);
@@ -2299,8 +2198,7 @@ rb_path_next(s)
 
 #define skipprefix rb_path_skip_prefix
 char *
-rb_path_skip_prefix(path)
-    const char *path;
+rb_path_skip_prefix(const char *path)
 {
 #if defined(DOSISH_UNC) || defined(DOSISH_DRIVE_LETTER) 
 #ifdef DOSISH_UNC
@@ -2320,8 +2218,7 @@ rb_path_skip_prefix(path)
 
 #define strrdirsep rb_path_last_separator
 char *
-rb_path_last_separator(path)
-    const char *path;
+rb_path_last_separator(const char *path)
 {
     char *last = NULL;
     while (*path) {
@@ -2340,8 +2237,7 @@ rb_path_last_separator(path)
 
 #define chompdirsep rb_path_end
 char *
-rb_path_end(path)
-    const char *path;
+rb_path_end(const char *path)
 {
     while (*path) {
 	if (isdirsep(*path)) {
@@ -2379,8 +2275,7 @@ rb_path_end(path)
 static int is_absolute_path _((const char*));
 
 static VALUE
-file_expand_path(fname, dname, result)
-    VALUE fname, dname, result;
+file_expand_path(VALUE fname, VALUE dname, VALUE result)
 {
     char *s, *buf, *b, *p, *pend, *root;
     long buflen, dirlen;
@@ -2579,8 +2474,7 @@ file_expand_path(fname, dname, result)
 }
 
 VALUE
-rb_file_expand_path(fname, dname)
-    VALUE fname, dname;
+rb_file_expand_path(VALUE fname, VALUE dname)
 {
     return file_expand_path(fname, dname, rb_str_new(0, MAXPATHLEN + 2));
 }
@@ -2603,9 +2497,7 @@ rb_file_expand_path(fname, dname)
  */
 
 VALUE
-rb_file_s_expand_path(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_expand_path(int argc, VALUE *argv)
 {
     VALUE fname, dname;
 
@@ -2618,8 +2510,7 @@ rb_file_s_expand_path(argc, argv)
 }
 
 static int
-rmext(p, e)
-    const char *p, *e;
+rmext(const char *p, const char *e)
 {
     int l1, l2;
 
@@ -2655,9 +2546,7 @@ rmext(p, e)
  */
 
 static VALUE
-rb_file_s_basename(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_file_s_basename(int argc, VALUE *argv)
 {
     VALUE fname, fext, basename;
     char *name, *p;
@@ -2710,8 +2599,7 @@ rb_file_s_basename(argc, argv)
  */
 
 static VALUE
-rb_file_s_dirname(klass, fname)
-    VALUE klass, fname;
+rb_file_s_dirname(VALUE klass, VALUE fname)
 {
     char *name, *root, *p;
     VALUE dirname;
@@ -2755,8 +2643,7 @@ rb_file_s_dirname(klass, fname)
  */
 
 static VALUE
-rb_file_s_extname(klass, fname)
-    VALUE klass, fname;
+rb_file_s_extname(VALUE klass, VALUE fname)
 {
     char *name, *p, *e;
     VALUE extname;
@@ -2788,8 +2675,7 @@ rb_file_s_extname(klass, fname)
  */
 
 static VALUE
-rb_file_s_path(klass, fname)
-    VALUE klass, fname;
+rb_file_s_path(VALUE klass, VALUE fname)
 {
     return rb_get_path(fname);
 }
@@ -2806,8 +2692,7 @@ rb_file_s_path(klass, fname)
  */
 
 static VALUE
-rb_file_s_split(klass, path)
-    VALUE klass, path;
+rb_file_s_split(VALUE klass, VALUE path)
 {
     StringValue(path);		/* get rid of converting twice */
     return rb_assoc_new(rb_file_s_dirname(Qnil, path), rb_file_s_basename(1,&path));
@@ -2818,17 +2703,14 @@ static VALUE separator;
 static VALUE rb_file_join _((VALUE ary, VALUE sep));
 
 static VALUE
-file_inspect_join(ary, arg, recur)
-    VALUE ary;
-    VALUE *arg;
+file_inspect_join(VALUE ary, VALUE *arg, int recur)
 {
     if (recur) return rb_str_new2("[...]");
     return rb_file_join(arg[0], arg[1]);
 }
 
 static VALUE
-rb_file_join(ary, sep)
-    VALUE ary, sep;
+rb_file_join(VALUE ary, VALUE sep)
 {
     long len, i;
     int taint = 0;
@@ -2892,8 +2774,7 @@ rb_file_join(ary, sep)
  */
 
 static VALUE
-rb_file_s_join(klass, args)
-    VALUE klass, args;
+rb_file_s_join(VALUE klass, VALUE args)
 {
     return rb_file_join(args, separator);
 }
@@ -2914,8 +2795,7 @@ rb_file_s_join(klass, args)
  */
 
 static VALUE
-rb_file_s_truncate(klass, path, len)
-    VALUE klass, path, len;
+rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 {
     off_t pos;
 
@@ -2967,8 +2847,7 @@ rb_file_s_truncate(klass, path, len)
  */
 
 static VALUE
-rb_file_truncate(obj, len)
-    VALUE obj, len;
+rb_file_truncate(VALUE obj, VALUE len)
 {
     OpenFile *fptr;
     off_t pos;
@@ -3009,9 +2888,7 @@ rb_file_truncate(obj, len)
 
 #if 1
 static int
-rb_thread_flock(fd, op, fptr)
-    int fd, op;
-    OpenFile *fptr;
+rb_thread_flock(int fd, int op, OpenFile *fptr)
 {
     if (rb_thread_alone() || (op & LOCK_NB)) {
 	return flock(fd, op);
@@ -3066,9 +2943,7 @@ rb_thread_flock(fd, op, fptr)
  */
 
 static VALUE
-rb_file_flock(obj, operation)
-    VALUE obj;
-    VALUE operation;
+rb_file_flock(VALUE obj, VALUE operation)
 {
 #ifndef __CHECKER__
     OpenFile *fptr;
@@ -3104,9 +2979,7 @@ rb_file_flock(obj, operation)
 #undef flock
 
 static void
-test_check(n, argc, argv)
-    int n, argc;
-    VALUE *argv;
+test_check(int n, int argc, VALUE *argv)
 {
     int i;
 
@@ -3187,9 +3060,7 @@ test_check(n, argc, argv)
  */
 
 static VALUE
-rb_f_test(argc, argv)
-    int argc;
-    VALUE *argv;
+rb_f_test(int argc, VALUE *argv)
 {
     int cmd;
 
@@ -3338,10 +3209,8 @@ rb_f_test(argc, argv)
  *  meaningful on all systems. See also <code>Kernel#test</code>.
  */
 
-static VALUE rb_stat_s_alloc _((VALUE));
 static VALUE
-rb_stat_s_alloc(klass)
-    VALUE klass;
+rb_stat_s_alloc(VALUE klass)
 {
     return stat_new_0(klass, 0);
 }
@@ -3356,8 +3225,7 @@ rb_stat_s_alloc(klass)
  */
 
 static VALUE
-rb_stat_init(obj, fname)
-    VALUE obj, fname;
+rb_stat_init(VALUE obj, VALUE fname)
 {
     struct stat st, *nst;
 
@@ -3379,8 +3247,7 @@ rb_stat_init(obj, fname)
 
 /* :nodoc: */
 static VALUE
-rb_stat_init_copy(copy, orig)
-    VALUE copy, orig;
+rb_stat_init_copy(VALUE copy, VALUE orig)
 {
     struct stat *nst;
 
@@ -3418,8 +3285,7 @@ rb_stat_init_copy(copy, orig)
  */
 
 static VALUE
-rb_stat_ftype(obj)
-    VALUE obj;
+rb_stat_ftype(VALUE obj)
 {
     return rb_file_ftype(get_stat(obj));
 }
@@ -3436,8 +3302,7 @@ rb_stat_ftype(obj)
  */
 
 static VALUE
-rb_stat_d(obj)
-    VALUE obj;
+rb_stat_d(VALUE obj)
 {
     if (S_ISDIR(get_stat(obj)->st_mode)) return Qtrue;
     return Qfalse;
@@ -3452,8 +3317,7 @@ rb_stat_d(obj)
  */
 
 static VALUE
-rb_stat_p(obj)
-    VALUE obj;
+rb_stat_p(VALUE obj)
 {
 #ifdef S_IFIFO
     if (S_ISFIFO(get_stat(obj)->st_mode)) return Qtrue;
@@ -3480,8 +3344,7 @@ rb_stat_p(obj)
  */
 
 static VALUE
-rb_stat_l(obj)
-    VALUE obj;
+rb_stat_l(VALUE obj)
 {
 #ifdef S_ISLNK
     if (S_ISLNK(get_stat(obj)->st_mode)) return Qtrue;
@@ -3502,8 +3365,7 @@ rb_stat_l(obj)
  */
 
 static VALUE
-rb_stat_S(obj)
-    VALUE obj;
+rb_stat_S(VALUE obj)
 {
 #ifdef S_ISSOCK
     if (S_ISSOCK(get_stat(obj)->st_mode)) return Qtrue;
@@ -3526,8 +3388,7 @@ rb_stat_S(obj)
  */
 
 static VALUE
-rb_stat_b(obj)
-    VALUE obj;
+rb_stat_b(VALUE obj)
 {
 #ifdef S_ISBLK
     if (S_ISBLK(get_stat(obj)->st_mode)) return Qtrue;
@@ -3549,8 +3410,7 @@ rb_stat_b(obj)
  */
 
 static VALUE
-rb_stat_c(obj)
-    VALUE obj;
+rb_stat_c(VALUE obj)
 {
     if (S_ISCHR(get_stat(obj)->st_mode)) return Qtrue;
 
@@ -3570,16 +3430,14 @@ rb_stat_c(obj)
  */
 
 static VALUE
-rb_stat_owned(obj)
-    VALUE obj;
+rb_stat_owned(VALUE obj)
 {
     if (get_stat(obj)->st_uid == geteuid()) return Qtrue;
     return Qfalse;
 }
 
 static VALUE
-rb_stat_rowned(obj)
-    VALUE obj;
+rb_stat_rowned(VALUE obj)
 {
     if (get_stat(obj)->st_uid == getuid()) return Qtrue;
     return Qfalse;
@@ -3598,8 +3456,7 @@ rb_stat_rowned(obj)
  */
 
 static VALUE
-rb_stat_grpowned(obj)
-    VALUE obj;
+rb_stat_grpowned(VALUE obj)
 {
 #ifndef _WIN32
     if (get_stat(obj)->st_gid == getegid()) return Qtrue;
@@ -3619,8 +3476,7 @@ rb_stat_grpowned(obj)
  */
 
 static VALUE
-rb_stat_r(obj)
-    VALUE obj;
+rb_stat_r(VALUE obj)
 {
     struct stat *st = get_stat(obj);
 
@@ -3652,8 +3508,7 @@ rb_stat_r(obj)
  */
 
 static VALUE
-rb_stat_R(obj)
-    VALUE obj;
+rb_stat_R(VALUE obj)
 {
     struct stat *st = get_stat(obj);
 
@@ -3685,8 +3540,7 @@ rb_stat_R(obj)
  */
 
 static VALUE
-rb_stat_wr(obj)
-    VALUE obj;
+rb_stat_wr(VALUE obj)
 {
 #ifdef S_IROTH
     if ((get_stat(obj)->st_mode & (S_IROTH)) == S_IROTH) {
@@ -3710,8 +3564,7 @@ rb_stat_wr(obj)
  */
 
 static VALUE
-rb_stat_w(obj)
-    VALUE obj;
+rb_stat_w(VALUE obj)
 {
     struct stat *st = get_stat(obj);
 
@@ -3741,8 +3594,7 @@ rb_stat_w(obj)
  */
 
 static VALUE
-rb_stat_W(obj)
-    VALUE obj;
+rb_stat_W(VALUE obj)
 {
     struct stat *st = get_stat(obj);
 
@@ -3774,8 +3626,7 @@ rb_stat_W(obj)
  */
 
 static VALUE
-rb_stat_ww(obj)
-    VALUE obj;
+rb_stat_ww(VALUE obj)
 {
 #ifdef S_IROTH
     if ((get_stat(obj)->st_mode & (S_IWOTH)) == S_IWOTH) {
@@ -3801,8 +3652,7 @@ rb_stat_ww(obj)
  */
 
 static VALUE
-rb_stat_x(obj)
-    VALUE obj;
+rb_stat_x(VALUE obj)
 {
     struct stat *st = get_stat(obj);
 
@@ -3830,8 +3680,7 @@ rb_stat_x(obj)
 
 
 static VALUE
-rb_stat_X(obj)
-    VALUE obj;
+rb_stat_X(VALUE obj)
 {
     struct stat *st = get_stat(obj);
 
@@ -3861,8 +3710,7 @@ rb_stat_X(obj)
  */
 
 static VALUE
-rb_stat_f(obj)
-    VALUE obj;
+rb_stat_f(VALUE obj)
 {
     if (S_ISREG(get_stat(obj)->st_mode)) return Qtrue;
     return Qfalse;
@@ -3880,8 +3728,7 @@ rb_stat_f(obj)
  */
 
 static VALUE
-rb_stat_z(obj)
-    VALUE obj;
+rb_stat_z(VALUE obj)
 {
     if (get_stat(obj)->st_size == 0) return Qtrue;
     return Qfalse;
@@ -3899,8 +3746,7 @@ rb_stat_z(obj)
  */
 
 static VALUE
-rb_stat_s(obj)
-    VALUE obj;
+rb_stat_s(VALUE obj)
 {
     off_t size = get_stat(obj)->st_size;
 
@@ -3920,8 +3766,7 @@ rb_stat_s(obj)
  */
 
 static VALUE
-rb_stat_suid(obj)
-    VALUE obj;
+rb_stat_suid(VALUE obj)
 {
 #ifdef S_ISUID
     if (get_stat(obj)->st_mode & S_ISUID) return Qtrue;
@@ -3942,8 +3787,7 @@ rb_stat_suid(obj)
  */
 
 static VALUE
-rb_stat_sgid(obj)
-    VALUE obj;
+rb_stat_sgid(VALUE obj)
 {
 #ifdef S_ISGID
     if (get_stat(obj)->st_mode & S_ISGID) return Qtrue;
@@ -3964,8 +3808,7 @@ rb_stat_sgid(obj)
  */
 
 static VALUE
-rb_stat_sticky(obj)
-    VALUE obj;
+rb_stat_sticky(VALUE obj)
 {
 #ifdef S_ISVTX
     if (get_stat(obj)->st_mode & S_ISVTX) return Qtrue;
@@ -3976,16 +3819,13 @@ rb_stat_sticky(obj)
 static VALUE rb_mFConst;
 
 void
-rb_file_const(name, value)
-    const char *name;
-    VALUE value;
+rb_file_const(const char *name, VALUE value)
 {
     rb_define_const(rb_mFConst, name, value);
 }
 
 static int
-is_absolute_path(path)
-    const char *path;
+is_absolute_path(const char *path)
 {
 #ifdef DOSISH_DRIVE_LETTER
     if (has_drive_letter(path) && isdirsep(path[2])) return 1;
@@ -4042,8 +3882,7 @@ path_check_1(path)
 #endif
 
 int
-rb_path_check(path)
-    char *path;
+rb_path_check(char *path)
 {
 #ifndef DOSISH
     char *p0, *p, *pend;
@@ -4080,8 +3919,7 @@ is_macos_native_path(path)
 #endif
 
 static int
-file_load_ok(file)
-    char *file;
+file_load_ok(char *file)
 {
     FILE *f;
 
@@ -4095,9 +3933,7 @@ file_load_ok(file)
 extern VALUE rb_load_path;
 
 int
-rb_find_file_ext(filep, ext)
-    VALUE *filep;
-    const char * const *ext;
+rb_find_file_ext(VALUE *filep, const char *const *ext)
 {
     char *path, *found;
     char *f = RSTRING(*filep)->ptr;
@@ -4151,8 +3987,7 @@ rb_find_file_ext(filep, ext)
 }
 
 VALUE
-rb_find_file(path)
-    VALUE path;
+rb_find_file(VALUE path)
 {
     VALUE tmp;
     char *f = StringValueCStr(path);
@@ -4230,10 +4065,7 @@ rb_find_file(path)
 }
 
 static void
-define_filetest_function(name, func, argc)
-    const char *name;
-    VALUE (*func)();
-    int argc;
+define_filetest_function(const char *name, VALUE (*func) (/* ??? */), int argc)
 {
     rb_define_module_function(rb_mFileTest, name, func, argc);
     rb_define_singleton_method(rb_cFile, name, func, argc);
@@ -4273,7 +4105,7 @@ define_filetest_function(name, func, argc)
  */
 
 void
-Init_File()
+Init_File(void)
 {
     rb_mFileTest = rb_define_module("FileTest");
     rb_cFile = rb_define_class("File", rb_cIO);

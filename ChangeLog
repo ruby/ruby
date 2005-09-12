@@ -1,3 +1,18 @@
+Mon Sep 12 19:26:29 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* array.c: moved to ANSI function style from K&R function style.
+	  (used protoize on windows, so still K&R remains on #ifdef part of
+	   other platforms. And  `foo _((boo))' stuff is still there)
+	   [ruby-dev:26975]
+
+	* bignum.c, class.c, compar.c, dir.c, dln.c, dmyext.c, enum.c,
+	  enumerator.c, error.c, eval.c, file.c, gc.c, hash.c, inits.c,
+	  io.c, main.c, marshal.c, math.c, numeric.c, object.c, pack.c,
+	  prec.c, process.c, random.c, range.c, re.c, regcomp.c, regenc.c,
+	  regerror.c, regexec.c, regparse.c, regparse.h, ruby.c, signal.c,
+	  sprintf.c, st.c, string.c, struct.c, time.c, util.h, variable.c,
+	  version.c: ditto.
+
 Sun Sep 11 23:23:02 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb (starttls): supported the STARTTLS command.
