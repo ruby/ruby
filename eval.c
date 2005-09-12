@@ -7968,11 +7968,9 @@ bind_eval(int argc, VALUE *argv, VALUE bind)
 static void
 proc_save_safe_level(VALUE data)
 {
-    if (ruby_safe_level >= 3) {
-	int safe = ruby_safe_level;
-	if (safe > PROC_TMAX) safe = PROC_TMAX;
-	FL_SET(data, (safe << PROC_TSHIFT) & PROC_TMASK);
-    }
+    int safe = ruby_safe_level;
+    if (safe > PROC_TMAX) safe = PROC_TMAX;
+    FL_SET(data, (safe << PROC_TSHIFT) & PROC_TMASK);
 }
 
 static int

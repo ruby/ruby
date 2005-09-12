@@ -483,7 +483,6 @@ Message: <"Error">
       def test_assert_send
         object = Object.new
         class << object
-          private
           def return_argument(argument, bogus)
             return argument
           end
