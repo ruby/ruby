@@ -1,3 +1,17 @@
+Tue Sep 13 22:09:40 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/logger.rb (Logger): added formatter accessor to logger for
+	  dictating the way in which the logger should format the messages it
+	  displays.  Thanks to Nicholas Seckar (cf. [ruby-talk:153391]) and
+	  Daniel Berger.
+
+	* lib/logger.rb (Logger): added VERSION constant.
+
+	* lib/logger.rb: removed document for LogDevice. It is an
+	  implementation detail and is not a public interface.
+
+	* test/logger/test_logger.rb: added tests.
+
 Tue Sep 13 21:47:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (BEGIN_CALLARGS): pop halfly pushed status.
@@ -96,10 +110,10 @@ Sat Sep 10 10:17:03 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 		key = pkcs11.load_private_key
 
 	* ext/openssl/ossl_engine.c (ossl_engine_ctrl_cmd): new method
-  	  OpenSSL::Engine#ctrl_cmd. it wraps ENGINE_ctrl_cmd_string.
+	  OpenSSL::Engine#ctrl_cmd. it wraps ENGINE_ctrl_cmd_string.
 
 	* ext/openssl/ossl_engine.c (ossl_engine_get_cmds): new method
-  	  OpenSSL::Engine#cmds. it returms engine command definitions.
+	  OpenSSL::Engine#cmds. it returms engine command definitions.
 
 Sat Sep 10 10:09:47 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
