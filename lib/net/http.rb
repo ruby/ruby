@@ -1,9 +1,9 @@
 #
 # = net/http.rb
 #
-# Copyright (C) 1999-2005 Yukihiro Matsumoto
-# Copyright (C) 1999-2005 Minero Aoki
-# Copyright (C) 2001 GOTOU Yuuzou
+# Copyright (c) 1999-2005 Yukihiro Matsumoto
+# Copyright (c) 1999-2005 Minero Aoki
+# Copyright (c) 2001 GOTOU Yuuzou
 # 
 # Written and maintained by Minero Aoki <aamine@loveruby.net>.
 # HTTPS support added by GOTOU Yuuzou <gotoyuzo@notwork.org>.
@@ -16,7 +16,7 @@
 # modify this program under the same terms of ruby itself ---
 # Ruby Distribution License or GNU General Public License.
 #
-# See Net:::HTTP for an overview and examples. 
+# See Net::HTTP for an overview and examples. 
 # 
 # NOTE: You can find Japanese version of this document here:
 # http://www.ruby-lang.org/ja/man/?cmd=view;name=net%2Fhttp.rb
@@ -28,7 +28,7 @@
 require 'net/protocol'
 require 'uri'
 
-module Net # :nodoc:
+module Net   #:nodoc:
 
   # :stopdoc:
   class HTTPBadResponse < StandardError; end
@@ -185,9 +185,78 @@ module Net # :nodoc:
   #       print response.body
   #     }
   # 
+  # === HTTP Request Classes
+  #
+  # Here is HTTP request class hierarchy.
+  #
+  #   Net::HTTPRequest
+  #       Net::HTTP::Get
+  #       Net::HTTP::Head
+  #       Net::HTTP::Post
+  #       Net::HTTP::Put
+  #       Net::HTTP::Proppatch
+  #       Net::HTTP::Lock
+  #       Net::HTTP::Unlock
+  #       Net::HTTP::Options
+  #       Net::HTTP::Propfind
+  #       Net::HTTP::Delete
+  #       Net::HTTP::Move
+  #       Net::HTTP::Copy
+  #       Net::HTTP::Mkcol
+  #       Net::HTTP::Trace
+  #
   # === HTTP Response Classes
   #
-  # TODO: write me.
+  # Here is HTTP response class hierarchy.
+  # All classes are defined in Net module.
+  #
+  #   HTTPResponse
+  #       HTTPUnknownResponse
+  #       HTTPInformation                    # 1xx
+  #           HTTPContinue                       # 100
+  #           HTTPSwitchProtocl                  # 101
+  #       HTTPSuccess                        # 2xx
+  #           HTTPOK                             # 200
+  #           HTTPCreated                        # 201
+  #           HTTPAccepted                       # 202
+  #           HTTPNonAuthoritativeInformation    # 203
+  #           HTTPNoContent                      # 204
+  #           HTTPResetContent                   # 205
+  #           HTTPPartialContent                 # 206
+  #       HTTPRedirection                    # 3xx
+  #           HTTPMultipleChoice                 # 300
+  #           HTTPMovedPermanently               # 301
+  #           HTTPFound                          # 302
+  #           HTTPSeeOther                       # 303
+  #           HTTPNotModified                    # 304
+  #           HTTPUseProxy                       # 305
+  #           HTTPTemporaryRedirect              # 307
+  #       HTTPClientError                    # 4xx
+  #           HTTPBadRequest                     # 400
+  #           HTTPUnauthorized                   # 401
+  #           HTTPPaymentRequired                # 402
+  #           HTTPForbidden                      # 403
+  #           HTTPNotFound                       # 404
+  #           HTTPMethodNotAllowed               # 405
+  #           HTTPNotAcceptable                  # 406
+  #           HTTPProxyAuthenticationRequired    # 407
+  #           HTTPRequestTimeOut                 # 408
+  #           HTTPConflict                       # 409
+  #           HTTPGone                           # 410
+  #           HTTPLengthRequired                 # 411
+  #           HTTPPreconditionFailed             # 412
+  #           HTTPRequestEntityTooLarge          # 413
+  #           HTTPRequestURITooLong              # 414
+  #           HTTPUnsupportedMediaType           # 415
+  #           HTTPRequestedRangeNotSatisfiable   # 416
+  #           HTTPExpectationFailed              # 417
+  #       HTTPServerError                    # 5xx
+  #           HTTPInternalServerError            # 500
+  #           HTTPNotImplemented                 # 501
+  #           HTTPBadGateway                     # 502
+  #           HTTPServiceUnavailable             # 503
+  #           HTTPGatewayTimeOut                 # 504
+  #           HTTPVersionNotSupported            # 505
   # 
   # == Switching Net::HTTP versions
   # 
@@ -211,7 +280,7 @@ module Net # :nodoc:
     # :stopdoc:
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
-    @newimpl = true    # for backward compatability
+    @newimpl = true
     # :startdoc:
 
     # Turns on net/http 1.2 (ruby 1.8) features.
@@ -357,7 +426,7 @@ module Net # :nodoc:
     end
 
     def HTTP.socket_type   #:nodoc: obsolete
-      InternetMessageIO
+      BufferedIO
     end
 
     # creates a new Net::HTTP object and opens its TCP connection and 
@@ -1090,12 +1159,16 @@ module Net # :nodoc:
       @header[key.downcase] = Array(val).map {|s| s.to_str }
     end
 
-    # Adds header name and field instead of replace.
+    # Adds header field instead of replace.
+    # Second argument +val+ must be a String.
+    # See also #[]=, #[] and #get_fields.
     #
     #   request.add_field 'X-My-Header', 'a'
     #   p request['X-My-Header']              #=> "a"
+    #   p request.get_fields('X-My-Header')   #=> ["a"]
     #   request.add_field 'X-My-Header', 'b'
     #   p request['X-My-Header']              #=> "a, b"
+    #   p request.get_fields('X-My-Header')   #=> ["a", "b"]
     #   request.add_field 'X-My-Header', 'c'
     #   p request['X-My-Header']              #=> "a, b, c"
     #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
@@ -1108,9 +1181,9 @@ module Net # :nodoc:
       end
     end
 
-    # Returns the header field by Array, corresponding to the
-    # case-insensitive key.  This method allows you to get duplicated
-    # fields without any processing.
+    # Returns an array of header field strings corresponding to the
+    # case-insensitive +key+.  This method allows you to get duplicated
+    # header fields without any processing.  See also #[].
     #
     #   p response.get_fields('Set-Cookie')
     #     #=> ["session=al98axx; expires=Fri, 31-Dec-1999 23:58:23",
@@ -1485,6 +1558,10 @@ module Net # :nodoc:
 
 
   class HTTP   # reopen
+    #
+    # HTTP 1.1 methods --- RFC2616
+    #
+
     class Get < HTTPRequest
       METHOD = 'GET'
       REQUEST_HAS_BODY  = false
@@ -1509,9 +1586,55 @@ module Net # :nodoc:
       RESPONSE_HAS_BODY = true
     end
 
+    class Delete < HTTPRequest
+      METHOD = 'DELETE'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Options < HTTPRequest
+      METHOD = 'OPTIONS'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = false
+    end
+
+    class Trace < HTTPRequest
+      METHOD = 'TRACE'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    #
+    # WebDAV methods --- RFC2518
+    #
+
+    class Propfind < HTTPRequest
+      METHOD = 'PROPFIND'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
     class Proppatch < HTTPRequest
       METHOD = 'PROPPATCH'
       REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Mkcol < HTTPRequest
+      METHOD = 'MKCOL'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Copy < HTTPRequest
+      METHOD = 'COPY'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Move < HTTPRequest
+      METHOD = 'MOVE'
+      REQUEST_HAS_BODY = false
       RESPONSE_HAS_BODY = true
     end
 
@@ -1524,48 +1647,6 @@ module Net # :nodoc:
     class Unlock < HTTPRequest
       METHOD = 'UNLOCK'
       REQUEST_HAS_BODY = true
-      RESPONSE_HAS_BODY = true
-    end
-
-    class Options < HTTPRequest
-      METHOD = 'OPTIONS'
-      REQUEST_HAS_BODY = false
-      RESPONSE_HAS_BODY = false
-    end
-
-    class Propfind < HTTPRequest
-      METHOD = 'PROPFIND'
-      REQUEST_HAS_BODY = true
-      RESPONSE_HAS_BODY = true
-    end
-
-    class Delete < HTTPRequest
-      METHOD = 'DELETE'
-      REQUEST_HAS_BODY = false
-      RESPONSE_HAS_BODY = true
-    end
-
-    class Move < HTTPRequest
-      METHOD = 'MOVE'
-      REQUEST_HAS_BODY = false
-      RESPONSE_HAS_BODY = true
-    end
-
-    class Copy < HTTPRequest
-      METHOD = 'COPY'
-      REQUEST_HAS_BODY = false
-      RESPONSE_HAS_BODY = true
-    end
-
-    class Mkcol < HTTPRequest
-      METHOD = 'MKCOL'
-      REQUEST_HAS_BODY = true
-      RESPONSE_HAS_BODY = true
-    end
-
-    class Trace < HTTPRequest
-      METHOD = 'TRACE'
-      REQUEST_HAS_BODY = false
       RESPONSE_HAS_BODY = true
     end
   end
@@ -1671,7 +1752,7 @@ module Net # :nodoc:
     def HTTPResponse.exception_type   # :nodoc: internal use only
       self::EXCEPTION_TYPE
     end
-  end   # redefined after
+  end   # reopened after
 
   # :stopdoc:
 
@@ -1831,7 +1912,7 @@ module Net # :nodoc:
   # :startdoc:
 
 
-  class HTTPResponse   # redefine
+  class HTTPResponse   # reopen
 
     CODE_CLASS_TO_OBJ = {
       '1' => HTTPInformation,
