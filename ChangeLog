@@ -1,3 +1,15 @@
+Wed Sep 14 01:26:03 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/https.rb: backported from trunk, rev 1.3.
+	  [ruby-dev:25673] (again), [ruby-dev:26617] (again),
+	  [ruby-dev:27062]
+
+	* ext/openssl/lib/net/https.rb: removed.
+
+	* ext/openssl/lib/net/protocols.rb: removed.
+
+	* lib/net/http.rb: #use_ssl?, #use_ssl are moved from net/https.
+
 Tue Sep 13 22:09:40 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/logger.rb (Logger): added formatter accessor to logger for

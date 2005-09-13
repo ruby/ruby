@@ -104,13 +104,6 @@ require 'openssl'
 module Net
 
   class HTTP
-    remove_method :use_ssl?
-    def use_ssl?
-      @use_ssl
-    end
-
-    alias use_ssl use_ssl?   # for backward compatibility
-
     # Turn on/off SSL.
     # This flag must be set before starting session.
     # If you change use_ssl value after session started,
@@ -160,7 +153,8 @@ module Net
       @ssl_context.timeout = sec
     end
 
-    alias timeout= ssl_timeout=   # for backward compatibility
+    # For backward compatibility
+    alias timeout= ssl_timeout=
 
     def peer_cert
       return nil if not use_ssl? or not @socket

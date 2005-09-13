@@ -523,8 +523,10 @@ module Net   #:nodoc:
 
     # returns true if use SSL/TLS with HTTP.
     def use_ssl?
-      false   # redefined in net/https
+      @use_ssl
     end
+
+    alias use_ssl use_ssl?   #:nodoc: obsolete
 
     # Opens TCP connection and HTTP session.
     # 
