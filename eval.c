@@ -2148,8 +2148,10 @@ copy_node_scope(NODE *node, NODE *rval)
 #define BEGIN_CALLARGS do {\
     struct BLOCK *tmp_block = ruby_block;\
     int tmp_iter = ruby_iter->iter;\
-    if (tmp_iter == ITER_PRE) {\
+    switch (tmp_iter) {\
+      case ITER_PRE:\
 	ruby_block = ruby_block->outer;\
+      case ITER_PAS:\
 	tmp_iter = ITER_NOT;\
     }\
     PUSH_ITER(tmp_iter)

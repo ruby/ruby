@@ -1,3 +1,8 @@
+Tue Sep 13 21:47:17 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (BEGIN_CALLARGS): pop halfly pushed status.
+	  fixed: [ruby-dev:26881]
+
 Tue Sep 13 20:24:37 2005  Tanaka Akira  <akr@m17n.org>
 
 	* ruby.h (PRINTF_ARGS): new macro for printf style argument checking.
@@ -27,9 +32,9 @@ Tue Sep 13 12:33:05 2005    <why@ruby-lang.org>
 	  continue support of Object#to_yaml_type.
 
 	* ext/syck/rubyext.c: new emitter code.  yaml_new and yaml_initialize
-	  get called, should they be present.  consolidated all the diaspora of internal 
-	  node types into the family below YAML::Syck::Node -- Map, 
-	  Seq, Scalar -- all of whom are SyckNode structs pointing to 
+	  get called, should they be present.  consolidated all the diaspora of internal
+	  node types into the family below YAML::Syck::Node -- Map,
+	  Seq, Scalar -- all of whom are SyckNode structs pointing to
 	  Ruby data.  moved Object#yaml_new into the node_import and made it the
 	  default behavior.  the target_class is always called wih yaml_new, prepended
 	  a parameter, which is the klass.  loaded nodes through GenericResolver show their style.
