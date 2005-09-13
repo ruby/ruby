@@ -1,3 +1,41 @@
+Tue Sep 13 12:33:05 2005    <why@ruby-lang.org>
+
+	* lib/yaml.rb: reworking YAML::Stream to use the new
+	  emitter.
+
+	* lib/yaml/stream.rb: ditto.
+
+	* lib/yaml/rubytypes.rb: added Object#yaml_new.
+
+	* lib/yaml/tag.rb: the tag_subclasses? method now
+	  shows up in the class.  allow taguri to be set using an accessor.
+	  continue support of Object#to_yaml_type.
+
+	* ext/syck/rubyext.c: new emitter code.  yaml_new and yaml_initialize
+	  get called, should they be present.  consolidated all the diaspora of internal 
+	  node types into the family below YAML::Syck::Node -- Map, 
+	  Seq, Scalar -- all of whom are SyckNode structs pointing to 
+	  Ruby data.  moved Object#yaml_new into the node_import and made it the
+	  default behavior.  the target_class is always called wih yaml_new, prepended
+	  a parameter, which is the klass.  loaded nodes through GenericResolver show their style.
+	  new Resolver#tagurize converts type ids to taguris.
+
+	* ext/syck/implicit.re: were 'y' and 'n' seriously omitted??
+
+	* ext/syck/emitter.c: renovated emitter, walks the tree in advance.
+	  consolidated redundant block_styles struct into
+	  the scalar_style struct.  (this means loaded nodes can now
+	  be sent back to emitter and preserve at least its very basic
+	  formatting.)
+
+	* ext/syck/gram.c: headless documents of any kind allowed.
+
+	* ext/syck/node.c: new syck_replace_str methods and syck_empty_*
+	  methods for rewriting node contents, while keeping the ID
+	  and other setup info.  added syck_seq_assign.
+
+	* ext/syck/syck.h: reflect block_styles and new node functions.
+
 Mon Sep 12 20:53:06 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* test/openssl/test_pkcs7.rb (test_enveloped): skip this test

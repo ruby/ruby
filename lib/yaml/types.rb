@@ -8,15 +8,14 @@ module YAML
 	# Default private type
 	#
 	class PrivateType
+        def self.tag_subclasses?; false; end
 		attr_accessor :type_id, :value
 		def initialize( type, val )
 			@type_id = type; @value = val
+            @value.taguri = "x-private:#{ @type_id }"
 		end
 		def to_yaml( opts = {} )
-			YAML::quick_emit( self.object_id, opts ) { |out|
-				out << " !!#{@type_id}"
-				value.to_yaml( :Emitter => out )
-			}
+            @value.to_yaml( opts )
 		end
 	end
 
@@ -24,29 +23,37 @@ module YAML
     # Default domain type
     #
     class DomainType
+        def self.tag_subclasses?; false; end
 		attr_accessor :domain, :type_id, :value
 		def initialize( domain, type, val )
 			@domain = domain; @type_id = type; @value = val
+            @value.taguri = "tag:#{ @domain }:#{ @type_id }"
 		end
-        def to_yaml_type
-            dom = @domain.dup
-            if dom =~ /\.yaml\.org,2002$/
-                dom = $`
-            end
-            "#{dom}/#{@type_id}"
-        end
 		def to_yaml( opts = {} )
-			YAML::quick_emit( self.object_id, opts ) { |out|
-				out << " !#{to_yaml_type} "
-				value.to_yaml( :Emitter => out )
-			}
+            @value.to_yaml( opts )
+		end
+	end
+
+    #
+    # Unresolved objects
+    #
+    class Object
+        def self.tag_subclasses?; false; end
+		def to_yaml( opts = {} )
+            YAML::quick_emit( object_id, opts ) do |out|
+                out.map( "tag:ruby.yaml.org,2002:object:#{ @class }", to_yaml_style ) do |map|
+                    @ivars.each do |k,v|
+                        map.add( k, v )
+                    end
+                end
+            end
 		end
 	end
 
 	#
 	# YAML Hash class to support comments and defaults
 	#
-	class SpecialHash < Object::Hash 
+	class SpecialHash < ::Hash 
 		attr_accessor :default
         def inspect
             self.default.to_s
@@ -69,12 +76,27 @@ module YAML
     #
     # Builtin collection: !omap
     #
-    class Omap < Array
+    class Omap < ::Array
+        yaml_as "tag:yaml.org,2002:omap"
+        def yaml_initialize( tag, val )
+            if Array === val
+                val.each do |v|
+                    if Hash === v
+                        concat( v.to_a )		# Convert the map to a sequence
+                    else
+                        raise YAML::Error, "Invalid !omap entry: " + val.inspect
+                    end
+                end
+            else
+                raise YAML::Error, "Invalid !omap: " + val.inspect
+            end
+            self
+        end
         def self.[]( *vals )
             o = Omap.new
-            0.step( vals.length - 1, 2 ) { |i|
+            0.step( vals.length - 1, 2 ) do |i|
                 o[vals[i]] = vals[i+1]
-            }
+            end
             o
         end
         def []( k )
@@ -96,36 +118,35 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.object_id, opts ) { |out|
-                out.seq( "!omap" ) { |seq|
-                    self.each { |v|
+            YAML::quick_emit( self.object_id, opts ) do |out|
+                out.seq( taguri, to_yaml_style ) do |seq|
+                    self.each do |v|
                         seq.add( Hash[ *v ] )
-                    }
-                }
-            }
+                    end
+                end
+            end
         end
     end
-
-    YAML.add_builtin_type( "omap" ) { |type, val|
-        if Array === val
-            p = Omap.new
-            val.each { |v|
-                if Hash === v
-                    p.concat( v.to_a )		# Convert the map to a sequence
-                else
-                    raise YAML::Error, "Invalid !omap entry: " + val.inspect
-                end
-            }
-        else
-            raise YAML::Error, "Invalid !omap: " + val.inspect
-        end
-        p
-    }
 
     #
     # Builtin collection: !pairs
     #
-    class Pairs < Array
+    class Pairs < ::Array
+        yaml_as "tag:yaml.org,2002:pairs"
+        def yaml_initialize( tag, val )
+            if Array === val
+                val.each do |v|
+                    if Hash === v
+                        concat( v.to_a )		# Convert the map to a sequence
+                    else
+                        raise YAML::Error, "Invalid !pairs entry: " + val.inspect
+                    end
+                end
+            else
+                raise YAML::Error, "Invalid !pairs: " + val.inspect
+            end
+            self
+        end
         def self.[]( *vals )
             p = Pairs.new
             0.step( vals.length - 1, 2 ) { |i|
@@ -147,50 +168,20 @@ module YAML
             true
         end
         def to_yaml( opts = {} )
-            YAML::quick_emit( self.object_id, opts ) { |out|
-                out.seq( "!pairs" ) { |seq|
-                    self.each { |v|
+            YAML::quick_emit( self.object_id, opts ) do |out|
+                out.seq( taguri, to_yaml_style ) do |seq|
+                    self.each do |v|
                         seq.add( Hash[ *v ] )
-                    }
-                }
-            }
+                    end
+                end
+            end
         end
     end
-
-    YAML.add_builtin_type( "pairs" ) { |type, val|
-        if Array === val
-            p = Pairs.new
-            val.each { |v|
-                if Hash === v
-                    p.concat( v.to_a )		# Convert the map to a sequence
-                else
-                    raise YAML::Error, "Invalid !pairs entry: " + val.inspect
-                end
-            }
-        else
-            raise YAML::Error, "Invalid !pairs: " + val.inspect
-        end
-        p
-    }
 
     #
     # Builtin collection: !set
     #
-    class Set < Hash
-        def to_yaml_type
-            "!set"
-        end
+    class Set < ::Hash
+        yaml_as "tag:yaml.org,2002:set"
     end
-
-    YAML.add_builtin_type( 'set' ) { |type, val|
-        if Array === val
-            val = Set[ *val ]
-        elsif Hash === val
-            Set[ val ]
-        else
-            raise YAML::Error, "Invalid map explicitly tagged !map: " + val.inspect
-        end
-        val
-    }
-
 end

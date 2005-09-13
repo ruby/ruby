@@ -31,6 +31,9 @@ syck_hdlr_add_node( SyckParser *p, SyckNode *n )
 SyckNode *
 syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
 {
+    char *atmp = NULL;
+    SyckNode *ntmp = NULL;
+
     n->anchor = a;
     if ( p->bad_anchors != NULL )
     {
@@ -48,6 +51,13 @@ syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
     {
         p->anchors = st_init_strtable();
     }
+    if ( st_lookup( p->anchors, (st_data_t)a, (st_data_t *)&ntmp ) )
+    {
+        if ( ntmp != (void *)1 )
+        {
+            syck_free_node( ntmp );
+        }
+    }
     st_insert( p->anchors, (st_data_t)a, (st_data_t)n );
     return n;
 }
@@ -55,9 +65,18 @@ syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
 void
 syck_hdlr_remove_anchor( SyckParser *p, char *a )
 {
+    char *atmp = a;
+    SyckNode *ntmp;
     if ( p->anchors == NULL )
     {
         p->anchors = st_init_strtable();
+    }
+    if ( st_delete( p->anchors, (st_data_t *)&atmp, (st_data_t *)&ntmp ) )
+    {
+        if ( ntmp != (void *)1 )
+        {
+            syck_free_node( ntmp );
+        }
     }
     st_insert( p->anchors, (st_data_t)a, (st_data_t)1 );
 }
