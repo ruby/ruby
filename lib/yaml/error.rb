@@ -29,5 +29,6 @@ module YAML
     
 	class Error < StandardError; end
 	class ParseError < Error; end
+    class TypeError < StandardError; end
 
 end

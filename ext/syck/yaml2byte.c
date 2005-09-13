@@ -1,5 +1,5 @@
 /*
- * ybext.c
+ * yaml2byte.c
  *
  * $Author$
  * $Date$

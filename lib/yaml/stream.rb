@@ -24,19 +24,15 @@ module YAML
 			@documents[ doc_num ] = doc
 		end
 
-		def emit
-            opts = @options.dup
-			opts[:UseHeader] = true if @documents.length > 1
-			ct = 0
-            out = YAML::Syck::Emitter.new( opts )
+		def emit( io = nil )
+            # opts = @options.dup
+			# opts[:UseHeader] = true if @documents.length > 1
+            out = YAML.emitter
+            out.reset( io || io2 = StringIO.new )
             @documents.each { |v|
-                if ct > 0
-                    out << "\n--- " 
-                end
-                v.to_yaml( :Emitter => out )
-                ct += 1
+                v.to_yaml( out )
             }
-            out.end_object
+            io || ( io2.rewind; io2.read )
 		end
 
 	end

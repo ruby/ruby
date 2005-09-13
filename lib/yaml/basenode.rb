@@ -25,7 +25,7 @@ module YAML
                 matches.each { |m|
                     result.push m.last
                 }
-                self.class.new( 'seq', result )
+                YAML.transfer( 'seq', result )
             end
         end
 

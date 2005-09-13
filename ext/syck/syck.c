@@ -209,15 +209,6 @@ void
 syck_st_free( SyckParser *p )
 {
     /*
-     * Free the adhoc symbol table
-     */
-    if ( p->syms != NULL )
-    {
-        st_free_table( p->syms );
-        p->syms = NULL;
-    }
-
-    /*
      * Free the anchor tables
      */
     if ( p->anchors != NULL )
@@ -238,6 +229,15 @@ syck_st_free( SyckParser *p )
 void
 syck_free_parser( SyckParser *p )
 {
+    /*
+     * Free the adhoc symbol table
+     */
+    if ( p->syms != NULL )
+    {
+        st_free_table( p->syms );
+        p->syms = NULL;
+    }
+
     /*
      * Free tables, levels
      */

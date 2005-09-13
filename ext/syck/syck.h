@@ -13,7 +13,7 @@
 #define SYCK_YAML_MAJOR 1
 #define SYCK_YAML_MINOR 0
 
-#define SYCK_VERSION    "0.45"
+#define SYCK_VERSION    "0.55"
 #define YAML_DOMAIN     "yaml.org,2002"
 
 #include <stdio.h>
@@ -63,12 +63,16 @@ extern "C" {
 #define BLOCK_FOLD  10
 #define BLOCK_LIT   20
 #define BLOCK_PLAIN 30
-#define NL_CHOMP    130
-#define NL_KEEP     140
+#define NL_CHOMP    40
+#define NL_KEEP     50
 
 /*
  * Node definitions
  */
+#ifndef ST_DATA_T_DEFINED
+typedef long st_data_t;
+#endif
+
 #define SYMID unsigned long
 
 typedef struct _syck_node SyckNode;
@@ -84,12 +88,23 @@ enum map_part {
     map_value
 };
 
+enum map_style {
+    map_none,
+    map_inline
+};
+
+enum seq_style {
+    seq_none,
+    seq_inline
+};
+
 enum scalar_style {
     scalar_none,
-    scalar_plain,
     scalar_1quote,
     scalar_2quote,
-    scalar_block
+    scalar_fold,
+    scalar_literal,
+    scalar_plain
 };
 
 /*
@@ -107,6 +122,7 @@ struct _syck_node {
     union {
         /* Storage for map data */
         struct SyckMap {
+            enum map_style style;
             SYMID *keys;
             SYMID *values;
             long capa;
@@ -114,6 +130,7 @@ struct _syck_node {
         } *pairs;
         /* Storage for sequence data */
         struct SyckSeq {
+            enum seq_style style;
             SYMID *items;
             long capa;
             long idx;
@@ -163,9 +180,13 @@ enum syck_level_status {
     syck_lvl_map,
     syck_lvl_block,
     syck_lvl_str,
-    syck_lvl_inline,
+    syck_lvl_iseq,
+    syck_lvl_imap,
     syck_lvl_end,
-    syck_lvl_pause
+    syck_lvl_pause,
+    syck_lvl_anctag,
+    syck_lvl_mapx,
+    syck_lvl_seqx
 };
 
 /*
@@ -186,9 +207,16 @@ struct _syck_str {
 };
 
 struct _syck_level {
+    /* Indent */
     int spaces;
+    /* Counts nodes emitted at this level, useful for parsing 
+     * keys and pairs in bytecode */
     int ncount;
+    /* Does node have anchors or tags? */
+    int anctag;
+    /* Domain prefixing at the given level */
     char *domain;
+    /* Keeps a node status */
     enum syck_level_status status;
 };
 
@@ -231,6 +259,7 @@ struct _syck_parser {
     SyckLevel *levels;
     int lvl_idx;
     int lvl_capa;
+    /* Pointer for extension's use */
     void *bonus;
 };
 
@@ -241,17 +270,12 @@ typedef struct _syck_emitter SyckEmitter;
 typedef struct _syck_emitter_node SyckEmitterNode;
 
 typedef void (*SyckOutputHandler)(SyckEmitter *, char *, long); 
+typedef void (*SyckEmitterHandler)(SyckEmitter *, st_data_t); 
 
 enum doc_stage {
     doc_open,
     doc_need_header,
     doc_processing
-};
-
-enum block_styles {
-    block_arbitrary,
-    block_fold,
-    block_literal
 };
 
 /*
@@ -260,8 +284,6 @@ enum block_styles {
 struct _syck_emitter {
     /* Headerless doc flag */
     int headless;
-    /* Sequence map shortcut flag */
-    int seq_map;
     /* Force header? */
     int use_header;
     /* Force version? */
@@ -275,7 +297,7 @@ struct _syck_emitter {
     /* Best width on folded scalars */
     int best_width;
     /* Use literal[1] or folded[2] blocks on all text? */
-    enum block_styles block_style;
+    enum scalar_style style;
     /* Stage of written document */
     enum doc_stage stage;
     /* Level counter */
@@ -285,15 +307,21 @@ struct _syck_emitter {
     /* Object ignore ID */
     SYMID ignore_id;
     /* Symbol table for anchors */
-    st_table *markers, *anchors;
+    st_table *markers, *anchors, *anchored;
     /* Custom buffer size */
     size_t bufsize;
     /* Buffer */
     char *buffer, *marker;
     /* Absolute position of the buffer */
     long bufpos;
+    /* Handler for emitter nodes */
+    SyckEmitterHandler emitter_handler;
     /* Handler for output */
-    SyckOutputHandler handler;
+    SyckOutputHandler output_handler;
+    /* Levels of indentation */
+    SyckLevel *levels;
+    int lvl_idx;
+    int lvl_capa;
     /* Pointer for extension's use */
     void *bonus;
 };
@@ -320,6 +348,7 @@ SyckNode *syck_hdlr_get_anchor( SyckParser *, char * );
 void syck_add_transfer( char *, SyckNode *, int );
 char *syck_xprivate( char *, int );
 char *syck_taguri( char *, char *, int );
+int syck_tagcmp( char *, char * );
 int syck_add_sym( SyckParser *, char * );
 int syck_lookup_sym( SyckParser *, SYMID, char ** );
 int syck_try_implicit( SyckNode * );
@@ -336,20 +365,38 @@ long syck_io_str_read( char *, SyckIoStr *, long, long );
 char *syck_base64enc( char *, long );
 char *syck_base64dec( char *, long );
 SyckEmitter *syck_new_emitter();
+SYMID syck_emitter_mark_node( SyckEmitter *, st_data_t );
 void syck_emitter_ignore_id( SyckEmitter *, SYMID );
-void syck_emitter_handler( SyckEmitter *, SyckOutputHandler );
+void syck_output_handler( SyckEmitter *, SyckOutputHandler );
+void syck_emitter_handler( SyckEmitter *, SyckEmitterHandler );
 void syck_free_emitter( SyckEmitter * );
 void syck_emitter_clear( SyckEmitter * );
-void syck_emitter_simple( SyckEmitter *, char *, long );
 void syck_emitter_write( SyckEmitter *, char *, long );
+void syck_emitter_escape( SyckEmitter *, char *, long );
 void syck_emitter_flush( SyckEmitter *, long );
-char *syck_emitter_start_obj( SyckEmitter *, SYMID );
-void syck_emitter_end_obj( SyckEmitter * );
+void syck_emit( SyckEmitter *, st_data_t );
+void syck_emit_scalar( SyckEmitter *, char *, enum scalar_style, int, int, char, char *, long );
+void syck_emit_1quoted( SyckEmitter *, int, char *, long );
+void syck_emit_2quoted( SyckEmitter *, int, char *, long );
+void syck_emit_folded( SyckEmitter *, int, char, char *, long );
+void syck_emit_literal( SyckEmitter *, char, char *, long );
+void syck_emit_seq( SyckEmitter *, char *, enum seq_style );
+void syck_emit_item( SyckEmitter *, st_data_t );
+void syck_emit_map( SyckEmitter *, char *, enum map_style );
+void syck_emit_end( SyckEmitter * );
+void syck_emit_tag( SyckEmitter *, char *, char * );
+void syck_emit_indent( SyckEmitter * );
+SyckLevel *syck_emitter_current_level( SyckEmitter * );
+SyckLevel *syck_emitter_parent_level( SyckEmitter * );
+void syck_emitter_pop_level( SyckEmitter * );
+void syck_emitter_add_level( SyckEmitter *, int, enum syck_level_status );
+void syck_emitter_reset_levels( SyckEmitter * );
 SyckParser *syck_new_parser();
 void syck_free_parser( SyckParser * );
 void syck_parser_set_root_on_error( SyckParser *, SYMID );
 void syck_parser_implicit_typing( SyckParser *, int );
 void syck_parser_taguri_expansion( SyckParser *, int );
+int syck_scan_scalar( int, char *, long );
 void syck_parser_handler( SyckParser *, SyckNodeHandler );
 void syck_parser_error_handler( SyckParser *, SyckErrorHandler );
 void syck_parser_bad_anchor_handler( SyckParser *, SyckBadAnchorHandler );
@@ -362,7 +409,6 @@ void syck_parser_pop_level( SyckParser * );
 void free_any_io( SyckParser * );
 long syck_parser_read( SyckParser * );
 long syck_parser_readlen( SyckParser *, long );
-void syck_parser_init( SyckParser *, int );
 SYMID syck_parse( SyckParser * );
 void syck_default_error_handler( SyckParser *, char * );
 SYMID syck_yaml2byte_handler( SyckParser *, SyckNode * );
@@ -378,29 +424,28 @@ void syck_free_node( SyckNode * );
 void syck_free_members( SyckNode * );
 SyckNode *syck_new_str( char *, enum scalar_style );
 SyckNode *syck_new_str2( char *, long, enum scalar_style );
+void syck_replace_str( SyckNode *, char *, enum scalar_style );
+void syck_replace_str2( SyckNode *, char *, long, enum scalar_style );
 void syck_str_blow_away_commas( SyckNode * );
 char *syck_str_read( SyckNode * );
 SyckNode *syck_new_map( SYMID, SYMID );
+void syck_map_empty( SyckNode * );
 void syck_map_add( SyckNode *, SYMID, SYMID );
 SYMID syck_map_read( SyckNode *, enum map_part, long );
 void syck_map_assign( SyckNode *, enum map_part, long, SYMID );
 long syck_map_count( SyckNode * );
 void syck_map_update( SyckNode *, SyckNode * );
 SyckNode *syck_new_seq( SYMID );
+void syck_seq_empty( SyckNode * );
 void syck_seq_add( SyckNode *, SYMID );
+void syck_seq_assign( SyckNode *, long, SYMID );
 SYMID syck_seq_read( SyckNode *, long );
 long syck_seq_count( SyckNode * );
-
-void apply_seq_in_map( SyckParser *, SyckNode * );
 
 /*
  * Lexer prototypes
  */
 void syckerror( char * );
-
-#ifndef ST_DATA_T_DEFINED
-typedef long st_data_t;
-#endif
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

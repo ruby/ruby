@@ -33,9 +33,15 @@ syck_free_node( SyckNode *n )
 {
     syck_free_members( n );
     if ( n->type_id != NULL )
+    {
         S_FREE( n->type_id );
+        n->type_id = NULL;
+    }
     if ( n->anchor != NULL )
+    {
         S_FREE( n->anchor );
+        n->anchor = NULL;
+    }
     S_FREE( n );
 }
 
@@ -46,6 +52,7 @@ syck_alloc_map()
     struct SyckMap *m;
 
     m = S_ALLOC( struct SyckMap );
+    m->style = map_none;
     m->idx = 0;
     m->capa = ALLOC_CT;
     m->keys = S_ALLOC_N( SYMID, m->capa );
@@ -64,6 +71,7 @@ syck_alloc_seq()
     struct SyckSeq *s;
 
     s = S_ALLOC( struct SyckSeq );
+    s->style = seq_none;
     s->idx = 0;
     s->capa = ALLOC_CT;
     s->items = S_ALLOC_N( SYMID, s->capa );
@@ -113,6 +121,28 @@ syck_new_str2( char *str, long len, enum scalar_style style )
 }
 
 void
+syck_replace_str( SyckNode *n, char *str, enum scalar_style style )
+{
+    return syck_replace_str2( n, str, strlen( str ), style );
+}
+
+void
+syck_replace_str2( SyckNode *n, char *str, long len, enum scalar_style style )
+{
+    if ( n->data.str != NULL ) 
+    {
+        S_FREE( n->data.str->ptr );
+        n->data.str->ptr = NULL;
+        n->data.str->len = 0;
+    }
+    n->data.str->ptr = S_ALLOC_N( char, len + 1 );
+    n->data.str->len = len;
+    n->data.str->style = style;
+    memcpy( n->data.str->ptr, str, len );
+    n->data.str->ptr[len] = '\0';
+}
+
+void
 syck_str_blow_away_commas( SyckNode *n )
 {
     char *go, *end;
@@ -146,6 +176,22 @@ syck_new_map( SYMID key, SYMID value )
     syck_map_add( n, key, value );
 
     return n;
+}
+
+void
+syck_map_empty( SyckNode *n )
+{
+    struct SyckMap *m;
+    ASSERT( n != NULL );
+    ASSERT( n->data.list != NULL );
+
+    S_FREE( n->data.pairs->keys );
+    S_FREE( n->data.pairs->values );
+    m = n->data.pairs;
+    m->idx = 0;
+    m->capa = ALLOC_CT;
+    m->keys = S_ALLOC_N( SYMID, m->capa );
+    m->values = S_ALLOC_N( SYMID, m->capa );
 }
 
 void
@@ -258,6 +304,20 @@ syck_new_seq( SYMID value )
 }
 
 void
+syck_seq_empty( SyckNode *n )
+{
+    struct SyckSeq *s;
+    ASSERT( n != NULL );
+    ASSERT( n->data.list != NULL );
+
+    S_FREE( n->data.list->items );
+    s = n->data.list;
+    s->idx = 0;
+    s->capa = ALLOC_CT;
+    s->items = S_ALLOC_N( SYMID, s->capa );
+}
+
+void
 syck_seq_add( SyckNode *arr, SYMID value )
 {
     struct SyckSeq *s;
@@ -283,6 +343,17 @@ syck_seq_count( SyckNode *seq )
     ASSERT( seq != NULL );
     ASSERT( seq->data.list != NULL );
     return seq->data.list->idx;
+}
+
+void
+syck_seq_assign( SyckNode *seq, long idx, SYMID id )
+{
+    struct SyckSeq *s;
+
+    ASSERT( map != NULL );
+    s = seq->data.list;
+    ASSERT( m != NULL );
+    s->items[idx] = id;
 }
 
 SYMID
