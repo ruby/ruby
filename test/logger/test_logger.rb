@@ -36,13 +36,17 @@ class TestLogger < Test::Unit::TestCase
   end
 
   def log(logger, msg_id, *arg, &block)
+    Log.new(log_raw(logger, msg_id, *arg, &block))
+  end
+
+  def log_raw(logger, msg_id, *arg, &block)
     logdev = Tempfile.new(File.basename(__FILE__) + '.log')
     logger.instance_eval { @logdev = Logger::LogDevice.new(logdev) }
     logger.__send__(msg_id, *arg, &block)
     logdev.open
     msg = logdev.read
     logdev.close
-    Log.new(msg)
+    msg
   end
 
   def test_level
@@ -96,6 +100,32 @@ class TestLogger < Test::Unit::TestCase
     logger.datetime_format = ""
     log = log_add(logger, INFO, "foo")
     assert_match(/^$/, log.datetime)
+  end
+
+  def test_formatter
+    dummy = STDERR
+    logger = Logger.new(dummy)
+    # default
+    log = log(logger, :info, "foo")
+    assert_equal("foo\n", log.msg)
+    # config
+    logger.formatter = proc { |severity, timestamp, progname, msg|
+      "#{severity}:#{msg}\n\n"
+    }
+    line = log_raw(logger, :info, "foo")
+    assert_equal("INFO:foo\n\n", line)
+    # recover
+    logger.formatter = nil
+    log = log(logger, :info, "foo")
+    assert_equal("foo\n", log.msg)
+    # again
+    o = Object.new
+    def o.call(severity, timestamp, progname, msg)
+      "<<#{severity}-#{msg}>>\n"
+    end
+    logger.formatter = o
+    line = log_raw(logger, :info, "foo")
+    assert_equal("<<INFO-foo>>\n", line)
   end
 
   def test_initialize
@@ -301,7 +331,6 @@ class TestLogDevice < Test::Unit::TestCase
     assert(!File.exist?(logfile3))
     logger.error("0" * 15)
     assert(!File.exist?(logfile3))
-    logger.close
     File.unlink(logfile)
     File.unlink(logfile0)
     File.unlink(logfile1)
@@ -337,7 +366,6 @@ class TestLogDevice < Test::Unit::TestCase
     assert(!File.exist?(logfile3))
     logger.error("0" * 15)
     assert(!File.exist?(logfile3))
-    logger.close
     File.unlink(logfile)
     File.unlink(logfile0)
     File.unlink(logfile1)
