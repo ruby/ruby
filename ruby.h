@@ -31,6 +31,13 @@ extern "C" {
 # define NOINLINE(x) x
 #endif
 
+#ifdef __GNUC__
+#define PRINTF_ARGS(decl, string_index, first_to_check) \
+  decl __attribute__((format(printf, string_index, first_to_check)))
+#else
+#define PRINTF_ARGS(decl, string_index, first_to_check) decl
+#endif
+
 #include "defines.h"
 
 #ifdef HAVE_STDLIB_H
@@ -539,17 +546,20 @@ VALUE rb_equal _((VALUE,VALUE));
 
 RUBY_EXTERN VALUE ruby_verbose, ruby_debug;
 
-NORETURN(void rb_raise __((VALUE, const char*, ...)));
-NORETURN(void rb_fatal __((const char*, ...)));
-NORETURN(void rb_bug __((const char*, ...)));
+PRINTF_ARGS(NORETURN(void rb_raise __((VALUE, const char*, ...))), 2, 3);
+PRINTF_ARGS(NORETURN(void rb_fatal __((const char*, ...))), 1, 2);
+PRINTF_ARGS(NORETURN(void rb_bug __((const char*, ...))), 1, 2);
 NORETURN(void rb_sys_fail _((const char*)));
 NORETURN(void rb_iter_break _((void)));
 NORETURN(void rb_exit _((int)));
 NORETURN(void rb_notimplement _((void)));
 
-void rb_warning __((const char*, ...));		/* reports if `-w' specified */
-void rb_sys_warning __((const char*, ...));	/* reports if `-w' specified */
-void rb_warn __((const char*, ...));		/* reports always */
+/* reports if `-w' specified */
+PRINTF_ARGS(void rb_warning __((const char*, ...)), 1, 2);
+/* reports if `-w' specified */
+PRINTF_ARGS(void rb_sys_warning __((const char*, ...)), 1, 2);
+/* reports always */
+PRINTF_ARGS(void rb_warn __((const char*, ...)), 1, 2);
 
 VALUE rb_each _((VALUE));
 VALUE rb_yield _((VALUE));

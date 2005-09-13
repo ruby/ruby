@@ -1,3 +1,7 @@
+Tue Sep 13 20:24:37 2005  Tanaka Akira  <akr@m17n.org>
+
+	* ruby.h (PRINTF_ARGS): new macro for printf style argument checking.
+
 Tue Sep 13 15:41:29 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/http.rb: wrote docuemntation of HTTPRequest/HTTPResponse

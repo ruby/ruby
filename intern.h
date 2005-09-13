@@ -153,11 +153,11 @@ RUBY_EXTERN int ruby_nerrs;
 VALUE rb_exc_new _((VALUE, const char*, long));
 VALUE rb_exc_new2 _((VALUE, const char*));
 VALUE rb_exc_new3 _((VALUE, VALUE));
-NORETURN(void rb_loaderror __((const char*, ...)));
-NORETURN(void rb_name_error __((ID, const char*, ...)));
+PRINTF_ARGS(NORETURN(void rb_loaderror __((const char*, ...))), 1, 2);
+PRINTF_ARGS(NORETURN(void rb_name_error __((ID, const char*, ...))), 2, 3);
 NORETURN(void rb_invalid_str _((const char*, const char*)));
-void rb_compile_error __((const char*, ...));
-void rb_compile_error_append __((const char*, ...));
+PRINTF_ARGS(void rb_compile_error __((const char*, ...)), 1, 2);
+PRINTF_ARGS(void rb_compile_error_append __((const char*, ...)), 1, 2);
 NORETURN(void rb_load_fail _((const char*)));
 NORETURN(void rb_error_frozen _((const char*)));
 void rb_check_frozen _((VALUE));
@@ -468,11 +468,7 @@ void rb_trap_exec _((void));
 const char *ruby_signal_name _((int));
 /* sprintf.c */
 VALUE rb_f_sprintf _((int, const VALUE*));
-VALUE rb_sprintf __((const char*, ...))
-#ifdef __GNUC__
-    __attribute__((format(printf,1,2)))
-#endif
-    ;
+PRINTF_ARGS(VALUE rb_sprintf __((const char*, ...)), 1, 2);
 VALUE rb_vsprintf _((const char*, va_list));
 VALUE rb_str_format _((int, const VALUE *, VALUE));
 /* string.c */
