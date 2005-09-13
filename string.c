@@ -4141,7 +4141,7 @@ rb_str_oct(VALUE str)
 static VALUE
 rb_str_crypt(VALUE str, VALUE salt)
 {
-    extern char *crypt(char *, char *);
+    extern char *crypt(const char *, const char *);
     VALUE result;
     char *s;
 

@@ -1,3 +1,9 @@
+Tue Sep 13 14:27:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* string.c, missing.h: failed to build on powerpc-apple-darwin7.9.0
+	  because of crypt argument's constness mismatch. (I hope this works)
+	  (http://mput.dip.jp/autobuild/ruby-trunk/log/20050913T110001.gz)
+
 Tue Sep 13 12:33:05 2005    <why@ruby-lang.org>
 
 	* lib/yaml.rb: reworking YAML::Stream to use the new
