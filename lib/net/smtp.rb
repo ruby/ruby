@@ -390,7 +390,7 @@ module Net
       raise IOError, 'SMTP session already started' if @started
       check_auth_args user, secret, authtype if user or secret
 
-      @socket = InternetMessageIO.open(@address, @port,
+      @socket = InternetMessageIO.old_open(@address, @port,
                                        @open_timeout, @read_timeout,
                                        @debug_output)
       check_response(critical { recv_response() })

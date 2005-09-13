@@ -3,8 +3,10 @@
 #
 # Copyright (c) 1999-2005 Yukihiro Matsumoto
 # Copyright (c) 1999-2005 Minero Aoki
+# Copyright (c) 2001 GOTOU Yuuzou
 # 
-# Written & maintained by Minero Aoki <aamine@loveruby.net>.
+# Written and maintained by Minero Aoki <aamine@loveruby.net>.
+# HTTPS support added by GOTOU Yuuzou <gotoyuzo@notwork.org>.
 #
 # This file is derived from "http-access.rb".
 #
@@ -26,7 +28,7 @@
 require 'net/protocol'
 require 'uri'
 
-module Net # :nodoc:
+module Net   #:nodoc:
 
   # :stopdoc:
   class HTTPBadResponse < StandardError; end
@@ -44,31 +46,66 @@ module Net # :nodoc:
   # 
   # === Getting Document From WWW Server
   # 
-  # (formal version)
-  # 
-  #     require 'net/http'
-  #     Net::HTTP.start('www.example.com', 80) {|http|
-  #       response = http.get('/index.html')
-  #       puts response.body
-  #     }
-  # 
-  # (shorter version)
+  # Example #1: Simple GET+print
   # 
   #     require 'net/http'
   #     Net::HTTP.get_print 'www.example.com', '/index.html'
   # 
-  #             or
+  # Example #2: Simple GET+print by URL
   # 
   #     require 'net/http'
   #     require 'uri'
   #     Net::HTTP.get_print URI.parse('http://www.example.com/index.html')
   # 
+  # Example #3: More generic GET+print
+  # 
+  #     require 'net/http'
+  #     require 'uri'
+  #
+  #     url = URI.parse('http://www.example.com/index.html')
+  #     res = Net::HTTP.start(url.host, url.port) {|http|
+  #       http.get('/index.html')
+  #     }
+  #     puts res.body
+  #
+  # Example #4: More generic GET+print
+  # 
+  #     require 'net/http'
+  #
+  #     url = URI.parse('http://www.example.com/index.html')
+  #     req = Net::HTTP::Get.new(url.path)
+  #     res = Net::HTTP.start(url.host, url.port) {|http|
+  #       http.request(req)
+  #     }
+  #     puts res.body
+  # 
   # === Posting Form Data
   # 
   #     require 'net/http'
-  #     Net::HTTP.start('some.www.server', 80) {|http|
-  #       response = http.post('/cgi-bin/search.rb', 'query=ruby')
-  #     }
+  #     require 'uri'
+  #
+  #     #1: Simple POST
+  #     res = Net::HTTP.post_form(URI.parse('http://www.example.com/search.cgi'),
+  #                               {'q'=>'ruby', 'max'=>'50'})
+  #     puts res.body
+  #
+  #     #2: POST with basic authentication
+  #     res = Net::HTTP.post_form(URI.parse('http://jack:pass@www.example.com/todo.cgi'),
+  #                                         {'from'=>'2005-01-01', 'to'=>'2005-03-31'})
+  #     puts res.body
+  #
+  #     #3: Detailed control
+  #     url = URI.parse('http://www.example.com/todo.cgi')
+  #     req = Net::HTTP::Post.new(url.path)
+  #     req.basic_auth 'jack', 'pass'
+  #     req.set_form_data({'from'=>'2005-01-01', 'to'=>'2005-03-31'}, ';')
+  #     res = Net::HTTP.new(url.host, url.port).start { http.request(req) }
+  #     case res
+  #     when Net::HTTPSuccess, Net::HTTPRedirection
+  #       # OK
+  #     else
+  #       res.error!
+  #     end
   # 
   # === Accessing via Proxy
   # 
@@ -148,9 +185,78 @@ module Net # :nodoc:
   #       print response.body
   #     }
   # 
+  # === HTTP Request Classes
+  #
+  # Here is HTTP request class hierarchy.
+  #
+  #   Net::HTTPRequest
+  #       Net::HTTP::Get
+  #       Net::HTTP::Head
+  #       Net::HTTP::Post
+  #       Net::HTTP::Put
+  #       Net::HTTP::Proppatch
+  #       Net::HTTP::Lock
+  #       Net::HTTP::Unlock
+  #       Net::HTTP::Options
+  #       Net::HTTP::Propfind
+  #       Net::HTTP::Delete
+  #       Net::HTTP::Move
+  #       Net::HTTP::Copy
+  #       Net::HTTP::Mkcol
+  #       Net::HTTP::Trace
+  #
   # === HTTP Response Classes
   #
-  # TODO: write me.
+  # Here is HTTP response class hierarchy.
+  # All classes are defined in Net module.
+  #
+  #   HTTPResponse
+  #       HTTPUnknownResponse
+  #       HTTPInformation                    # 1xx
+  #           HTTPContinue                       # 100
+  #           HTTPSwitchProtocl                  # 101
+  #       HTTPSuccess                        # 2xx
+  #           HTTPOK                             # 200
+  #           HTTPCreated                        # 201
+  #           HTTPAccepted                       # 202
+  #           HTTPNonAuthoritativeInformation    # 203
+  #           HTTPNoContent                      # 204
+  #           HTTPResetContent                   # 205
+  #           HTTPPartialContent                 # 206
+  #       HTTPRedirection                    # 3xx
+  #           HTTPMultipleChoice                 # 300
+  #           HTTPMovedPermanently               # 301
+  #           HTTPFound                          # 302
+  #           HTTPSeeOther                       # 303
+  #           HTTPNotModified                    # 304
+  #           HTTPUseProxy                       # 305
+  #           HTTPTemporaryRedirect              # 307
+  #       HTTPClientError                    # 4xx
+  #           HTTPBadRequest                     # 400
+  #           HTTPUnauthorized                   # 401
+  #           HTTPPaymentRequired                # 402
+  #           HTTPForbidden                      # 403
+  #           HTTPNotFound                       # 404
+  #           HTTPMethodNotAllowed               # 405
+  #           HTTPNotAcceptable                  # 406
+  #           HTTPProxyAuthenticationRequired    # 407
+  #           HTTPRequestTimeOut                 # 408
+  #           HTTPConflict                       # 409
+  #           HTTPGone                           # 410
+  #           HTTPLengthRequired                 # 411
+  #           HTTPPreconditionFailed             # 412
+  #           HTTPRequestEntityTooLarge          # 413
+  #           HTTPRequestURITooLong              # 414
+  #           HTTPUnsupportedMediaType           # 415
+  #           HTTPRequestedRangeNotSatisfiable   # 416
+  #           HTTPExpectationFailed              # 417
+  #       HTTPServerError                    # 5xx
+  #           HTTPInternalServerError            # 500
+  #           HTTPNotImplemented                 # 501
+  #           HTTPBadGateway                     # 502
+  #           HTTPServiceUnavailable             # 503
+  #           HTTPGatewayTimeOut                 # 504
+  #           HTTPVersionNotSupported            # 505
   # 
   # == Switching Net::HTTP versions
   # 
@@ -174,7 +280,7 @@ module Net # :nodoc:
     # :stopdoc:
     Revision = %q$Revision$.split[1]
     HTTPVersion = '1.1'
-    @@newimpl = true    # for backward compatability
+    @newimpl = true    # for backward compatability
     # :startdoc:
 
     # Turns on net/http 1.2 (ruby 1.8) features.
@@ -186,37 +292,31 @@ module Net # :nodoc:
     #   Net::HTTP.version_1_2
     #
     def HTTP.version_1_2
-      @@newimpl = true
+      @newimpl = true
     end
 
     # Turns on net/http 1.1 (ruby 1.6) features.
     # Defaults to OFF in ruby 1.8.
     def HTTP.version_1_1
-      @@newimpl = false
+      @newimpl = false
     end
 
     # true if net/http is in version 1.2 mode.
     # Defaults to true.
     def HTTP.version_1_2?
-      @@newimpl
+      @newimpl
     end
 
     # true if net/http is in version 1.1 compatible mode.
     # Defaults to true.
     def HTTP.version_1_1?
-      not @@newimpl
+      not @newimpl
     end
 
     class << HTTP
       alias is_version_1_1? version_1_1?   #:nodoc:
       alias is_version_1_2? version_1_2?   #:nodoc:
     end
-
-    def HTTP.setimplversion(obj)   #:nodoc:
-      f = @@newimpl
-      obj.instance_eval { @newimpl = f }
-    end
-    private_class_method :setimplversion
 
     #
     # short cut methods
@@ -231,19 +331,13 @@ module Net # :nodoc:
     #
     # or:
     #
-    #    Net::HTTP.get_print('www.example.com', '/index.html')
+    #    Net::HTTP.get_print 'www.example.com', '/index.html'
     #
-    def HTTP.get_print(arg1, arg2 = nil, port = nil)
-      if arg2
-        addr, path = arg1, arg2
-      else
-        uri = arg1
-        addr = uri.host
-        path = uri.request_uri
-        port = uri.port
-      end
-      new(addr, port || HTTP.default_port).start {|http|
-        http.get path, nil, $stdout
+    def HTTP.get_print(uri_or_host, path = nil, port = nil)
+      get_response(uri_or_host, path, port) {|res|
+        res.read_body do |chunk|
+          $stdout.print chunk
+        end
       }
       nil
     end
@@ -258,8 +352,8 @@ module Net # :nodoc:
     #
     #    print Net::HTTP.get('www.example.com', '/index.html')
     #
-    def HTTP.get(arg1, arg2 = nil, arg3 = nil)
-      get_response(arg1,arg2,arg3).body
+    def HTTP.get(uri_or_host, path = nil, port = nil)
+      get_response(uri_or_host, path, port).body
     end
 
     # Send a GET request to the target and return the response
@@ -274,29 +368,43 @@ module Net # :nodoc:
     #    res = Net::HTTP.get_response('www.example.com', '/index.html')
     #    print res.body
     #
-    def HTTP.get_response(arg1, arg2 = nil, arg3 = nil)
-      if arg2
-        get_by_path(arg1, arg2, arg3)
+    def HTTP.get_response(uri_or_host, path = nil, port = nil, &block)
+      if path
+        host = uri_or_host
+        new(host, port || HTTP.default_port).start {|http|
+          return http.request_get(path, &block)
+        }
       else
-        get_by_uri(arg1)
+        uri = uri_or_host
+        new(uri.host, uri.port).start {|http|
+          return http.request_get(uri.request_uri, &block)
+        }
       end
     end
 
-    def HTTP.get_by_path(addr, path, port = nil)   #:nodoc:
-      new(addr, port || HTTP.default_port).start {|http|
-        return http.request(Get.new(path))
+    # Posts HTML form data to the +URL+.
+    # Form data must be represented as a Hash of String to String, e.g:
+    #
+    #   { "cmd" => "search", "q" => "ruby", "max" => "50" }
+    #
+    # This method also does Basic Authentication iff +URL+.user exists.
+    #
+    # Example:
+    #
+    #   require 'net/http'
+    #   require 'uri'
+    #
+    #   HTTP.post_form URI.parse('http://www.example.com/search.cgi'),
+    #                  { "q" => "ruby", "max" => "50" }
+    #
+    def HTTP.post_form(url, params)
+      req = Post.new(url.path)
+      req.form_data = params
+      req.basic_auth url.user, url.password if url.user
+      new(url.host, url.port).start {|http|
+        http.request(req)
       }
     end
-    private_class_method :get_by_path
-
-    def HTTP.get_by_uri(uri)   #:nodoc:
-      # Should we allow this?
-      # uri = URI.parse(uri) unless uri.respond_to?(:host)
-      new(uri.host, uri.port).start {|http|
-        return http.request(Get.new(uri.request_uri))
-      }
-    end
-    private_class_method :get_by_uri
 
     #
     # HTTP session management
@@ -304,35 +412,47 @@ module Net # :nodoc:
 
     # The default port to use for HTTP requests; defaults to 80.
     def HTTP.default_port
+      http_default_port()
+    end
+
+    # The default port to use for HTTP requests; defaults to 80.
+    def HTTP.http_default_port
       80
     end
 
+    # The default port to use for HTTPS requests; defaults to 443.
+    def HTTP.https_default_port
+      443
+    end
+
     def HTTP.socket_type   #:nodoc: obsolete
-      InternetMessageIO
+      BufferedIO
+    end
+
+    # creates a new Net::HTTP object and opens its TCP connection and 
+    # HTTP session.  If the optional block is given, the newly 
+    # created Net::HTTP object is passed to it and closed when the 
+    # block finishes.  In this case, the return value of this method
+    # is the return value of the block.  If no block is given, the
+    # return value of this method is the newly created Net::HTTP object
+    # itself, and the caller is responsible for closing it upon completion.
+    def HTTP.start(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block) # :yield: +http+
+      new(address, port, p_addr, p_port, p_user, p_pass).start(&block)
     end
 
     class << HTTP
-      # creates a new Net::HTTP object and opens its TCP connection and 
-      # HTTP session.  If the optional block is given, the newly 
-      # created Net::HTTP object is passed to it and closed when the 
-      # block finishes.  In this case, the return value of this method
-      # is the return value of the block.  If no block is given, the
-      # return value of this method is the newly created Net::HTTP object
-      # itself, and the caller is responsible for closing it upon completion.
-      def start(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil, &block) # :yield: +http+
-        new(address, port, p_addr, p_port, p_user, p_pass).start(&block)
-      end
-
       alias newobj new
+    end
 
-      # Creates a new Net::HTTP object.
-      # If +proxy_addr+ is given, creates an Net::HTTP object with proxy support.
-      # This method does not open the TCP connection.
-      def new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)
-        obj = Proxy(p_addr, p_port, p_user, p_pass).newobj(address, port)
-        setimplversion obj
-        obj
-      end
+    # Creates a new Net::HTTP object.
+    # If +proxy_addr+ is given, creates an Net::HTTP object with proxy support.
+    # This method does not open the TCP connection.
+    def HTTP.new(address, port = nil, p_addr = nil, p_port = nil, p_user = nil, p_pass = nil)
+      h = Proxy(p_addr, p_port, p_user, p_pass).newobj(address, port)
+      h.instance_eval {
+        @newimpl = ::Net::HTTP.version_1_2?
+      }
+      h
     end
 
     # Creates a new Net::HTTP object for the specified +address+.
@@ -340,17 +460,16 @@ module Net # :nodoc:
     def initialize(address, port = nil)
       @address = address
       @port    = (port || HTTP.default_port)
-
       @curr_http_version = HTTPVersion
       @seems_1_0_server = false
       @close_on_empty_response = false
       @socket  = nil
       @started = false
-
-      @open_timeout = 30
+      @open_timeout = nil
       @read_timeout = 60
-
       @debug_output = nil
+      @use_ssl = false
+      @ssl_context = nil
     end
 
     def inspect
@@ -402,6 +521,11 @@ module Net # :nodoc:
 
     attr_accessor :close_on_empty_response
 
+    # returns true if use SSL/TLS with HTTP.
+    def use_ssl?
+      false   # redefined in net/https
+    end
+
     # Opens TCP connection and HTTP session.
     # 
     # When this method is called with block, gives a HTTP object
@@ -426,13 +550,44 @@ module Net # :nodoc:
     end
 
     def do_start
-      @socket = self.class.socket_type.open(conn_address(), conn_port(),
-                                            @open_timeout, @read_timeout,
-                                            @debug_output)
-      on_connect
+      connect
       @started = true
     end
     private :do_start
+
+    def connect
+      D "opening connection to #{conn_address()}..."
+      s = timeout(@open_timeout) { TCPSocket.open(conn_address(), conn_port()) }
+      D "opened"
+      if use_ssl?
+        unless @ssl_context.verify_mode
+          warn "warning: peer certificate won't be verified in this SSL session"
+          @ssl_context.verify_mode = OpenSSL::SSL::VERIFY_NONE
+        end
+        s = OpenSSL::SSL::SSLSocket.new(s, @ssl_context)
+        s.sync_close = true
+      end
+      @socket = BufferedIO.new(s)
+      @socket.read_timeout = @read_timeout
+      @socket.debug_output = @debug_output
+      if use_ssl?
+        if proxy?
+          @socket.writeline sprintf('CONNECT %s:%s HTTP/%s',
+                                    @address, @port, HTTPVersion)
+          @socket.writeline "Host: #{@address}:#{@port}"
+          if proxy_user
+            credential = ["#{proxy_user}:#{proxy_pass}"].pack('m')
+            credential.delete!("\r\n")
+            @socket.writeline "Proxy-Authorization: Basic #{credential}"
+          end
+          @socket.writeline ''
+          HTTPResponse.read_new(@socket).value
+        end
+        s.connect
+      end
+      on_connect
+    end
+    private :connect
 
     def on_connect
     end
@@ -508,7 +663,7 @@ module Net # :nodoc:
       attr_reader :proxy_pass
     end
 
-    # True if self is a HTTP proxy class
+    # True if self is a HTTP proxy class.
     def proxy?
       self.class.proxy_class?
     end
@@ -541,11 +696,11 @@ module Net # :nodoc:
     # without proxy
 
     def conn_address
-      address
+      address()
     end
 
     def conn_port
-      port
+      port()
     end
 
     def edit_path(path)
@@ -564,7 +719,7 @@ module Net # :nodoc:
       end
 
       def edit_path(path)
-        'http://' + addr_port() + path
+        use_ssl? ? path : "http://#{addr_port()}#{path}"
       end
     end
 
@@ -657,14 +812,8 @@ module Net # :nodoc:
     # the socket.  Note that in this case, the returned response
     # object will *not* contain a (meaningful) body.
     #
-    # +dest+ is an alternative method of collecting the body.  It
-    # must be an object responding to the "<<" operator (such as
-    # a String or an Array).  Each fragment of the entity body
-    # will be "<<"-ed in turn onto +dest+ if provided, and it will
-    # also become the body of the returned response object.
-    #
-    # You must *not* provide both +dest+ and a block; doing so
-    # will result in an ArgumentError.
+    # +dest+ argument is obsolete.
+    # It still works but you must not use it.
     # 
     # In version 1.1, this method might raise an exception for 
     # 3xx (redirect). In this case you can get an HTTPResponse object
@@ -702,6 +851,66 @@ module Net # :nodoc:
       res = request(Put.new(path, initheader), data)
       res.value unless @newimpl
       res
+    end
+
+    # Sends a PROPPATCH request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def proppatch(path, body, initheader = nil)
+      request(Proppatch.new(path, initheader), body)
+    end
+
+    # Sends a LOCK request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def lock(path, body, initheader = nil)
+      request(Lock.new(path, initheader), body)
+    end
+
+    # Sends a UNLOCK request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def unlock(path, body, initheader = nil)
+      request(Unlock.new(path, initheader), body)
+    end
+
+    # Sends a OPTIONS request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def options(path, initheader = nil)
+      request(Options.new(path, initheader))
+    end
+
+    # Sends a PROPFIND request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def propfind(path, body = nil, initheader = {'Depth' => '0'})
+      request(Propfind.new(path, initheader), body)
+    end
+
+    # Sends a DELETE request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def delete(path, initheader = {'Depth' => 'Infinity'})
+      request(Delete.new(path, initheader))
+    end
+
+    # Sends a MOVE request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def move(path, initheader = nil)
+      request(Move.new(path, initheader))
+    end
+
+    # Sends a COPY request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def copy(path, initheader = nil)
+      request(Copy.new(path, initheader))
+    end
+
+    # Sends a MKCOL request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def mkcol(path, body = nil, initheader = nil)
+      request(Mkcol.new(path, initheader), body)
+    end
+
+    # Sends a TRACE request to the +path+ and gets a response,
+    # as an HTTPResponse object.
+    def trace(path, initheader = nil)
+      request(Trace.new(path, initheader))
     end
 
     # Sends a GET request to the +path+ and gets a response,
@@ -823,11 +1032,14 @@ module Net # :nodoc:
         }
       end
       if proxy_user()
-        req.proxy_basic_auth proxy_user(), proxy_pass()
+        unless use_ssl?
+          req.proxy_basic_auth proxy_user(), proxy_pass()
+        end
       end
 
+      req.set_body_internal body
       begin_transport req
-        req.exec @socket, @curr_http_version, edit_path(req.path), body
+        req.exec @socket, @curr_http_version, edit_path(req.path)
         begin
           res = HTTPResponse.read_new(@socket)
         end while res.kind_of?(HTTPContinue)
@@ -843,8 +1055,7 @@ module Net # :nodoc:
 
     def begin_transport(req)
       if @socket.closed?
-        @socket.reopen @open_timeout
-        on_connect
+        connect
       end
       if @seems_1_0_server
         req['connection'] ||= 'close'
@@ -889,7 +1100,11 @@ module Net # :nodoc:
     private
 
     def addr_port
-      address + (port == HTTP.default_port ? '' : ":#{port}")
+      if use_ssl?
+        address() + (port == HTTP.https_default_port ? '' : ":#{port()}")
+      else
+        address() + (port == HTTP.http_default_port ? '' : ":#{port()}")
+      end
     end
 
     def D(msg)
@@ -902,6 +1117,7 @@ module Net # :nodoc:
 
   HTTPSession = HTTP
 
+
   #
   # Header module.
   #
@@ -912,16 +1128,14 @@ module Net # :nodoc:
   #
   module HTTPHeader
 
-    def initialize_http_header(h)
+    def initialize_http_header(initheader)
       @header = {}
-      return unless h
-      h.each do |k,v|
-        key = k.downcase
-        $stderr.puts "net/http: warning: duplicated HTTP header: #{k}" if @header.key?(key) and $VERBOSE
-        @header[key] = [v.strip]
+      return unless initheader
+      initheader.each do |key, value|
+        warn "net/http: warning: duplicated HTTP header: #{key}" if key?(key) and $VERBOSE
+        @header[key.downcase] = [value.strip]
       end
     end
-    private :initialize_http_header
 
     def size   #:nodoc: obsolete
       @header.size
@@ -930,46 +1144,19 @@ module Net # :nodoc:
     alias length size   #:nodoc: obsolete
 
     # Returns the header field corresponding to the case-insensitive key.
-    # See also #get_fields.
-    #
-    #   p response['Content-Type']   #=> "text/html; charset=utf-8"
-    #   p response['cOnTeNt-tYpE']   #=> "text/html; charset=utf-8"
-    #
+    # For example, a key of "Content-Type" might return "text/html"
     def [](key)
       a = @header[key.downcase] or return nil
       a.join(', ')
     end
 
-    # [Ruby 1.8.3]
-    # Returns an array of header field strings corresponding to the
-    # case-insensitive +key+.  This method allows you to get duplicated
-    # header fields without any processing.  See also #[].
-    #
-    #   p response.get_fields('Set-Cookie')
-    #     #=> ["session=al98axx; expires=Fri, 31-Dec-1999 23:58:23",
-    #          "query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"]
-    #   p response['Set-Cookie']
-    #     #=> "session=al98axx; expires=Fri, 31-Dec-1999 23:58:23, query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"
-    #
-    def get_fields(key)
-      return nil unless @header[key.downcase]
-      @header[key.downcase].dup
-    end
-
     # Sets the header field corresponding to the case-insensitive key.
-    # See also #add_field.
-    #
-    #   request['My-Header'] = 'a'
-    #   p request['My-Header']      #=> "a"
-    #   request['My-Header'] = 'b'
-    #   p request['My-Header']      #=> "b"
-    #
     def []=(key, val)
       unless val
         @header.delete key.downcase
         return val
       end
-      @header[key.downcase] = [val].flatten.map {|s| s.to_str }
+      @header[key.downcase] = Array(val).map {|s| s.to_str }
     end
 
     # [Ruby 1.8.3]
@@ -988,23 +1175,40 @@ module Net # :nodoc:
     #   p request.get_fields('X-My-Header')   #=> ["a", "b", "c"]
     #
     def add_field(key, val)
-      if @header[key.downcase]
-        @header[key.downcase].push val
+      if @header.key?(key.downcase)
+        @header[key.downcase].concat Array(val)
       else
-        @header[key.downcase] = [val]
+        @header[key.downcase] = Array(val).dup
       end
+    end
+
+    # [Ruby 1.8.3]
+    # Returns an array of header field strings corresponding to the
+    # case-insensitive +key+.  This method allows you to get duplicated
+    # header fields without any processing.  See also #[].
+    #
+    #   p response.get_fields('Set-Cookie')
+    #     #=> ["session=al98axx; expires=Fri, 31-Dec-1999 23:58:23",
+    #          "query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"]
+    #   p response['Set-Cookie']
+    #     #=> "session=al98axx; expires=Fri, 31-Dec-1999 23:58:23, query=rubyscript; expires=Fri, 31-Dec-1999 23:58:23"
+    #
+    def get_fields(key)
+      return nil unless @header[key.downcase]
+      @header[key.downcase].dup
     end
 
     # Returns the header field corresponding to the case-insensitive key.
     # Returns the default value +args+, or the result of the block, or nil,
     # if there's no header field named key.  See Hash#fetch
     def fetch(key, *args, &block)   #:yield: +key+
-      @header.fetch(key.downcase, *args, &block).join(', ')
+      a = @header.fetch(key.downcase, *args, &block)
+      a.join(', ')
     end
 
     # Iterates for each header names and values.
-    def each_header(&block)   #:yield: +key+, +value+
-      @header.each do |k, va|
+    def each_header   #:yield: +key+, +value+
+      @header.each do |k,va|
         yield k, va.join(', ')
       end
     end
@@ -1012,12 +1216,21 @@ module Net # :nodoc:
     alias each each_header
 
     # Iterates for each header names.
-    def each_key(&block)   #:yield: +key+
+    def each_name(&block)   #:yield: +key+
       @header.each_key(&block)
     end
 
+    alias each_key each_name
+
+    # Iterates for each capitalized header names.
+    def each_capitalized_name(&block)   #:yield: +key+
+      @header.each_key do |k|
+        yield capitalize(k)
+      end
+    end
+
     # Iterates for each header values.
-    def each_value(&block)   #:yield: +value+
+    def each_value   #:yield: +value+
       @header.each_value do |va|
         yield va.join(', ')
       end
@@ -1035,26 +1248,24 @@ module Net # :nodoc:
 
     # Returns a Hash consist of header names and values.
     def to_hash
-      h = {}
-      @header.each do |k, va|
-        h[k] = va.join(', ')
-      end
-      h
+      @header.dup
     end
 
     # As for #each_header, except the keys are provided in capitalized form.
-    def canonical_each
-      @header.each do |k, va|
-        yield canonical(k), va.join(', ')
+    def each_capitalized
+      @header.each do |k,v|
+        yield capitalize(k), v.join(', ')
       end
     end
 
-    def canonical(k)
-      k.split(/-/).map {|i| i.capitalize }.join('-')
-    end
-    private :canonical
+    alias canonical_each each_capitalized
 
-    # Returns a Range object which represents Range: header field,
+    def capitalize(name)
+      name.split(/-/).map {|s| s.capitalize }.join('-')
+    end
+    private :capitalize
+
+    # Returns an Array of Range objects which represents Range: header field,
     # or +nil+ if there is no such header.
     def range
       return nil unless @header['range']
@@ -1073,44 +1284,57 @@ module Net # :nodoc:
     end
 
     # Set Range: header from Range (arg r) or beginning index and
-    # length from it (arg i&len).
-    def range=(r, fin = nil)
-      r = (r ... r + fin) if fin
+    # length from it (arg idx&len).
+    #
+    #   req.range = (0..1023)
+    #   req.set_range 0, 1023
+    #
+    def set_range(r, e = nil)
+      unless r
+        @header.delete 'range'
+        return r
+      end
+      r = (r...r+e) if e
       case r
       when Numeric
-        s = r > 0 ? "0-#{r - 1}" : "-#{-r}"
+        n = r.to_i
+        rangestr = (n > 0 ? "0-#{n-1}" : "-#{-n}")
       when Range
         first = r.first
         last = r.last
-        if r.exclude_end?
-          last -= 1
-        end
-
+        last -= 1 if r.exclude_end?
         if last == -1
-          s = first > 0 ? "#{first}-" : "-#{-first}"
+          rangestr = (first > 0 ? "#{first}-" : "-#{-first}")
         else
-          first >= 0 or raise HTTPHeaderSyntaxError, 'range.first is negative' 
-          last > 0  or raise HTTPHeaderSyntaxError, 'range.last is negative' 
-          first < last or raise HTTPHeaderSyntaxError, 'must be .first < .last'
-          s = "#{first}-#{last}"
+          raise HTTPHeaderSyntaxError, 'range.first is negative' if first < 0
+          raise HTTPHeaderSyntaxError, 'range.last is negative' if last < 0
+          raise HTTPHeaderSyntaxError, 'must be .first < .last' if first > last
+          rangestr = "#{first}-#{last}"
         end
       else
         raise TypeError, 'Range/Integer is required'
       end
-
-      @header['range'] = ["bytes=#{s}"]
+      @header['range'] = ["bytes=#{rangestr}"]
       r
     end
 
-    alias set_range range=
+    alias range= set_range
 
     # Returns an Integer object which represents the Content-Length: header field
     # or +nil+ if that field is not provided.
     def content_length
-      return nil unless @header['content-length']
+      return nil unless key?('Content-Length')
       len = self['Content-Length'].slice(/\d+/) or
-              raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
+          raise HTTPHeaderSyntaxError, 'wrong Content-Length format'
       len.to_i
+    end
+    
+    def content_length=(len)
+      unless len
+        @header.delete 'content-length'
+        return nil
+      end
+      @header['content-length'] = [len.to_i.to_s]
     end
 
     # Returns "true" if the "transfer-encoding" header is present and
@@ -1118,9 +1342,9 @@ module Net # :nodoc:
     # the content to be sent in "chunks" without at the outset
     # stating the entire content length.
     def chunked?
-      return false unless @header.key?('transfer-encoding')
-      s = self['Transfer-Encoding']
-      /(?:\A|[^\-\w])chunked(?:[^\-\w]|\z)/i =~ s ? true : false
+      return false unless @header['transfer-encoding']
+      field = self['Transfer-Encoding']
+      (/(?:\A|[^\-\w])chunked(?![\-\w])/i =~ field) ? true : false
     end
 
     # Returns a Range object which represents Content-Range: header field.
@@ -1128,16 +1352,57 @@ module Net # :nodoc:
     # fits inside the full entity body, as range of byte offsets.
     def content_range
       return nil unless @header['content-range']
-      m = %r<bytes\s+(\d+)-(\d+)/(?:\d+|\*)>i.match(self['Content-Range']) or
-              raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
+      m = %r<bytes\s+(\d+)-(\d+)/(\d+|\*)>i.match(self['Content-Range']) or
+          raise HTTPHeaderSyntaxError, 'wrong Content-Range format'
       m[1].to_i .. m[2].to_i + 1
     end
 
-    # The length of the range represented in Range: header.
+    # The length of the range represented in Content-Range: header.
     def range_length
       r = content_range() or return nil
       r.end - r.begin
     end
+
+    def content_type
+      "#{main_type()}/#{sub_type()}"
+    end
+
+    def main_type
+      return nil unless @header['content-type']
+      self['Content-Type'].split(';').first.to_s.split('/')[0].to_s.strip
+    end
+    
+    def sub_type
+      return nil unless @header['content-type']
+      self['Content-Type'].split(';').first.to_s.split('/')[1].to_s.strip
+    end
+
+    def type_params
+      result = {}
+      self['Content-Type'].to_s.split(';')[1..-1].each do |param|
+        k, v = *param.split('=', 2)
+        result[k.strip] = v.strip
+      end
+      result
+    end
+
+    def set_content_type(type, params = {})
+      @header['content-type'] = [type + params.map{|k,v|"; #{k}=#{v}"}.join('')]
+    end
+
+    alias content_type= set_content_type
+
+    def set_form_data(params, sep = '&')
+      self.body = params.map {|k,v| "#{urlencode(k.to_s)}=#{urlencode(v.to_s)}" }.join(sep)
+      self.content_type = 'application/x-www-form-urlencoded'
+    end
+
+    alias form_data= set_form_data
+
+    def urlencode(str)
+      str.gsub(/[^a-zA-Z0-9_\.\-]/n) {|s| sprintf('%%%02x', s[0]) }
+    end
+    private :urlencode
 
     # Set the Authorization: header for "Basic" authorization.
     def basic_auth(account, password)
@@ -1156,6 +1421,7 @@ module Net # :nodoc:
 
   end
 
+
   #
   # Parent of HTTPRequest class.  Do not use this directly; use
   # a subclass of HTTPRequest.
@@ -1170,9 +1436,12 @@ module Net # :nodoc:
       @method = m
       @request_has_body = reqbody
       @response_has_body = resbody
+      raise ArgumentError, "HTTP request path is empty" if path.empty?
       @path = path
       initialize_http_header initheader
       self['Accept'] ||= '*/*'
+      @body = nil
+      @body_stream = nil
     end
 
     attr_reader :method
@@ -1190,43 +1459,82 @@ module Net # :nodoc:
       @response_has_body
     end
 
-    alias body_exist? response_body_permitted?
+    def body_exist?
+      warn "Net::HTTPRequest#body_exist? is obsolete; use response_body_permitted?" if $VERBOSE
+      response_body_permitted?
+    end
+
+    attr_reader :body
+
+    def body=(str)
+      @body = str
+      @body_stream = nil
+      str
+    end
+
+    attr_reader :body_stream
+
+    def body_stream=(input)
+      @body = nil
+      @body_stream = input
+      input
+    end
+
+    def set_body_internal(str)   #:nodoc: internal use only
+      raise ArgumentError, "both of body argument and HTTPRequest#body set" if str and (@body or @body_stream)
+      self.body = str if str
+    end
 
     #
     # write
     #
 
-    def exec(sock, ver, path, body)   #:nodoc: internal use only
-      if body
-        check_body_permitted
-        send_request_with_body sock, ver, path, body
+    def exec(sock, ver, path)   #:nodoc: internal use only
+      if @body
+        send_request_with_body sock, ver, path, @body
+      elsif @body_stream
+        send_request_with_body_stream sock, ver, path, @body_stream
       else
-        request sock, ver, path
+        write_header sock, ver, path
       end
     end
 
     private
 
-    def check_body_permitted
-      request_body_permitted? or
-          raise ArgumentError, 'HTTP request body is not permitted'
-    end
-
     def send_request_with_body(sock, ver, path, body)
-      self['Content-Length'] = body.length.to_s
-      self.delete 'Transfer-Encoding'
-      unless self['Content-Type']
-        $stderr.puts 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
-        self['Content-Type'] = 'application/x-www-form-urlencoded'
+      self.content_length = body.length
+      delete 'Transfer-Encoding'
+      unless content_type()
+        warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
+        set_content_type 'application/x-www-form-urlencoded'
       end
-      request sock, ver, path
+      write_header sock, ver, path
       sock.write body
     end
 
-    def request(sock, ver, path)
+    def send_request_with_body_stream(sock, ver, path, f)
+      raise ArgumentError, "Content-Length not given and Transfer-Encoding is not `chunked'" unless content_length() or chunked?
+      unless content_type()
+        warn 'net/http: warning: Content-Type did not set; using application/x-www-form-urlencoded' if $VERBOSE
+        set_content_type 'application/x-www-form-urlencoded'
+      end
+      write_header sock, ver, path
+      if chunked?
+        while s = f.read(1024)
+          sock.write(sprintf("%x\r\n", s.length) << s << "\r\n")
+        end
+        sock.write "0\r\n\r\n"
+      else
+        while s = f.read(1024)
+          sock.write s
+        end
+      end
+    end
+
+    def write_header(sock, ver, path)
       buf = "#{@method} #{path} HTTP/#{ver}\r\n"
-      canonical_each do |k,v|
-        buf << k + ': ' + v + "\r\n"
+      each_capitalized do |k,v|
+        buf << "#{k}: #{v}\r\n"
       end
       buf << "\r\n"
       sock.write buf
@@ -1251,7 +1559,10 @@ module Net # :nodoc:
   end
 
 
-  class HTTP
+  class HTTP   # reopen
+    #
+    # HTTP 1.1 methods --- RFC2616
+    #
 
     class Get < HTTPRequest
       METHOD = 'GET'
@@ -1277,6 +1588,69 @@ module Net # :nodoc:
       RESPONSE_HAS_BODY = true
     end
 
+    class Delete < HTTPRequest
+      METHOD = 'DELETE'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Options < HTTPRequest
+      METHOD = 'OPTIONS'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = false
+    end
+
+    class Trace < HTTPRequest
+      METHOD = 'TRACE'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    #
+    # WebDAV methods --- RFC2518
+    #
+
+    class Propfind < HTTPRequest
+      METHOD = 'PROPFIND'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Proppatch < HTTPRequest
+      METHOD = 'PROPPATCH'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Mkcol < HTTPRequest
+      METHOD = 'MKCOL'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Copy < HTTPRequest
+      METHOD = 'COPY'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Move < HTTPRequest
+      METHOD = 'MOVE'
+      REQUEST_HAS_BODY = false
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Lock < HTTPRequest
+      METHOD = 'LOCK'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
+
+    class Unlock < HTTPRequest
+      METHOD = 'UNLOCK'
+      REQUEST_HAS_BODY = true
+      RESPONSE_HAS_BODY = true
+    end
   end
 
 
@@ -1380,7 +1754,7 @@ module Net # :nodoc:
     def HTTPResponse.exception_type   # :nodoc: internal use only
       self::EXCEPTION_TYPE
     end
-  end   # redefined after
+  end   # reopened after
 
   # :stopdoc:
 
@@ -1540,7 +1914,7 @@ module Net # :nodoc:
   # :startdoc:
 
 
-  class HTTPResponse   # redefine
+  class HTTPResponse   # reopen
 
     CODE_CLASS_TO_OBJ = {
       '1' => HTTPInformation,
@@ -1596,9 +1970,7 @@ module Net # :nodoc:
       '505' => HTTPVersionNotSupported
     }
 
-
-    class << self
-
+    class << HTTPResponse
       def read_new(sock)   #:nodoc: internal use only
         httpv, code, msg = read_status_line(sock)
         res = response_class(code).new(httpv, code, msg)
@@ -1613,8 +1985,8 @@ module Net # :nodoc:
       def read_status_line(sock)
         str = sock.readline
         m = /\AHTTP(?:\/(\d+\.\d+))?\s+(\d\d\d)\s*(.*)\z/in.match(str) or
-                raise HTTPBadResponse, "wrong status line: #{str.dump}"
-        m.to_a[1,3]
+          raise HTTPBadResponse, "wrong status line: #{str.dump}"
+        m.captures
       end
 
       def response_class(code)
@@ -1632,7 +2004,6 @@ module Net # :nodoc:
           yield m[1], m.post_match
         end
       end
-
     end
 
     # next is to fix bug in RDoc, where the private inside class << self
@@ -1663,7 +2034,7 @@ module Net # :nodoc:
     alias msg message   # :nodoc: obsolete
 
     def inspect
-      "#<#{self.class} #{@code} readbody=#{@read}>"
+      "#<#{self.class} #{@code} #{@message} readbody=#{@read}>"
     end
 
     # For backward compatibility.
@@ -1673,7 +2044,11 @@ module Net # :nodoc:
     # 
     def to_ary
       warn "net/http.rb: warning: Net::HTTP v1.1 style assignment found at #{caller(1)[0]}; use `response = http.get(...)' instead." if $VERBOSE
-      [self, body()]
+      res = self.dup
+      class << res
+        undef to_ary
+      end
+      [res, res.body]
     end
 
     #
@@ -1694,7 +2069,7 @@ module Net # :nodoc:
 
     # Raises HTTP error if the response is not 2xx.
     def value
-      error! unless HTTPSuccess === self
+      error! unless self.kind_of?(HTTPSuccess)
     end
 
     #
@@ -1702,11 +2077,19 @@ module Net # :nodoc:
     #
 
     def response   #:nodoc:
+      warn "#{caller(1)[0]}: warning: HTTPResponse#response is obsolete" if $VERBOSE
       self
     end
 
-    alias header response        #:nodoc:
-    alias read_header response   #:nodoc:
+    def header   #:nodoc:
+      warn "#{caller(1)[0]}: warning: HTTPResponse#header is obsolete" if $VERBOSE
+      self
+    end
+
+    def read_header   #:nodoc:
+      warn "#{caller(1)[0]}: warning: HTTPResponse#read_header is obsolete" if $VERBOSE
+      self
+    end
 
     #
     # body
@@ -1788,19 +2171,19 @@ module Net # :nodoc:
     def read_body_0(dest)
       if chunked?
         read_chunked dest
-      else
-        clen = content_length()
-        if clen
-          @socket.read clen, dest, true   # ignore EOF
-        else
-          clen = range_length()
-          if clen
-            @socket.read clen, dest
-          else
-            @socket.read_all dest
-          end
-        end
+        return
       end
+      clen = content_length()
+      if clen
+        @socket.read clen, dest, true   # ignore EOF
+        return
+      end
+      clen = range_length()
+      if clen
+        @socket.read clen, dest
+        return
+      end
+      @socket.read_all dest
     end
 
     def read_chunked(dest)
@@ -1839,8 +2222,8 @@ module Net # :nodoc:
 
   # :enddoc:
 
+  #--
   # for backward compatibility
- 
   class HTTP
     ProxyMod = ProxyDelta
   end

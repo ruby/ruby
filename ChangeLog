@@ -1,3 +1,17 @@
+Tue Sep 13 16:26:45 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/net/http.rb: backported from trunk, rev 1.128.
+	  [ruby-dev:25673] [ruby-dev:26617]
+
+	* lib/net/protocol.rb: backported from trunk, rev 1.78.
+
+	* lib/net/protocol.rb: new method #old_open to support net/smtp
+	  and net/pop.
+
+	* lib/net/smtp.rb: use #old_open.
+
+	* lib/net/pop.rb: ditto.
+
 Tue Sep 13 12:33:05 2005    <why@ruby-lang.org>
 
 	* lib/yaml.rb: reworking YAML::Stream to use the new

@@ -435,7 +435,7 @@ module Net
     end
 
     def do_start( account, password )
-      @socket = self.class.socket_type.open(@address, @port,
+      @socket = self.class.socket_type.old_open(@address, @port,
                                    @open_timeout, @read_timeout, @debug_output)
       on_connect
       @command = POP3Command.new(@socket)
