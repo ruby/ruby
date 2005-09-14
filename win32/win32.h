@@ -93,6 +93,7 @@ extern "C++" {
 #define strcasecmp(s1, s2)	stricmp(s1, s2)
 #define strncasecmp(s1, s2, n)	strnicmp(s1, s2, n)
 
+#define pipe(p)			_pipe(p, 2048L, O_BINARY)
 #define close(h)		rb_w32_close(h)
 #define fclose(f)		rb_w32_fclose(f)
 #define getpid()		rb_w32_getpid()

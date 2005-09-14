@@ -4850,11 +4850,7 @@ rb_io_s_pipe(VALUE klass)
     int pipes[2], state;
     VALUE r, w, args[3];
 
-#ifdef _WIN32
-    if (_pipe(pipes, 1024, O_BINARY) == -1)
-#else
     if (pipe(pipes) == -1)
-#endif
 	rb_sys_fail(0);
 
     args[0] = klass;

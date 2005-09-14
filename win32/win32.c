@@ -1910,7 +1910,7 @@ rb_w32_fdisset(int fd, fd_set *set)
 static int NtSocketsInitialized = 0;
 
 static int
-extract_file_fd(fd_set *set, fd_set *fileset)
+collect_file_fd(fd_set *set, fd_set *fileset)
 {
     int idx;
 
@@ -1939,6 +1939,76 @@ extract_file_fd(fd_set *set, fd_set *fileset)
     return fileset->fd_count;
 }
 
+static int
+extract_pipe_fd(fd_set *set, fd_set *fileset)
+{
+    int idx;
+
+    fileset->fd_count = 0;
+    if (!set)
+	return 0;
+    for (idx = 0; idx < set->fd_count; idx++) {
+	DWORD type;
+	int fd = set->fd_array[idx];
+	RUBY_CRITICAL(type = GetFileType((HANDLE)fd));
+
+	if (type == FILE_TYPE_PIPE) {
+	    int i;
+
+	    for (i = 0; i < fileset->fd_count; i++) {
+		if (fileset->fd_array[i] == fd) {
+		    break;
+		}
+	    }
+	    if (i == fileset->fd_count) {
+		if (fileset->fd_count < FD_SETSIZE) {
+		    fileset->fd_array[i] = fd;
+		    fileset->fd_count++;
+		}
+	    }
+
+	    for (i = idx; i < set->fd_count - 1; i++) {
+		set->fd_array[i] = set->fd_array[i + 1];
+		i++;
+	    }
+	    set->fd_count--;
+	    idx--;
+	}
+    }
+    return fileset->fd_count;
+}
+
+static int
+peek_pipe(fd_set *set, fd_set *fileset)
+{
+    int idx;
+
+    fileset->fd_count = 0;
+    for (idx = 0; idx < set->fd_count; idx++) {
+	DWORD n;
+	int fd = set->fd_array[idx];
+	if (PeekNamedPipe((HANDLE)fd, NULL, 0, NULL, &n, NULL) && n > 0) {
+	    int i;
+
+	    for (i = 0; i < fileset->fd_count; i++) {
+		if (fileset->fd_array[i] == fd) {
+		    break;
+		}
+	    }
+	    if (i == fileset->fd_count) {
+		if (fileset->fd_count < FD_SETSIZE) {
+		    fileset->fd_array[i] = fd;
+		    fileset->fd_count++;
+		}
+	    }
+	}
+    }
+
+    return fileset->fd_count;
+}
+
+#define PIPE_PEEK_INTERVAL (10 * 1000)	/* usec */
+
 long 
 rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	      struct timeval *timeout)
@@ -1946,10 +2016,14 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     long r;
     fd_set file_rd;
     fd_set file_wr;
+    fd_set pipe_rd;
 #ifdef USE_INTERRUPT_WINSOCK
     fd_set trap;
 #endif /* USE_INTERRUPT_WINSOCK */
     int file_nfds;
+    int pipe_nfds;
+    struct timeval remainder;
+    struct timeval wait;
 
     if (!NtSocketsInitialized) {
 	StartSockets();
@@ -1963,11 +2037,13 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	Sleep(timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
 	return 0;
     }
-    file_nfds = extract_file_fd(rd, &file_rd);
-    file_nfds += extract_file_fd(wr, &file_wr);
-    if (file_nfds)
-    {
-	// assume normal files are always readable/writable
+    pipe_nfds = extract_pipe_fd(rd, &pipe_rd);
+    nfds -= pipe_nfds;
+    file_nfds = collect_file_fd(rd, &file_rd);
+    file_nfds += collect_file_fd(wr, &file_wr);
+    if (file_nfds) {
+	// assume normal files are always readable/writable,
+	// and pipes are always writable.
 	// fake read/write fd_set and return value
 	if (rd) *rd = file_rd;
 	if (wr) *wr = file_wr;
@@ -1985,12 +2061,52 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     ex = &trap;
 #endif /* USE_INTERRUPT_WINSOCK */
 
-    RUBY_CRITICAL({
-	r = select(nfds, rd, wr, ex, timeout);
-	if (r == SOCKET_ERROR) {
-	    errno = map_errno(WSAGetLastError());
+    if (timeout)
+	remainder = *timeout;
+    wait.tv_sec = 0;
+    RUBY_CRITICAL(do{
+	if (pipe_nfds) {
+	    r = peek_pipe(&pipe_rd, &file_rd);
+	    if (r > 0) {
+		if (rd) *rd = file_rd;
+		if (wr) wr->fd_count = 0;
+		break;
+	    }
 	}
-    });
+	if (timeout && remainder.tv_sec == 0 &&
+	    remainder.tv_usec < PIPE_PEEK_INTERVAL) {
+	    wait.tv_usec = remainder.tv_usec;
+	    remainder.tv_usec = 0;
+	}
+	else if (timeout && remainder.tv_usec < PIPE_PEEK_INTERVAL) {
+	    remainder.tv_sec--;
+	    remainder.tv_usec += 1000 * 1000 * 1000L- PIPE_PEEK_INTERVAL;
+	    wait.tv_usec = PIPE_PEEK_INTERVAL;
+	}
+	else {
+	    if (timeout)
+		remainder.tv_usec -= PIPE_PEEK_INTERVAL;
+	    wait.tv_usec = PIPE_PEEK_INTERVAL;
+	}
+	if (nfds == 0) {
+	    Sleep(wait.tv_sec * 1000 + wait.tv_usec / 1000);
+	}
+	else {
+	    r = select(nfds, rd, wr, ex, &wait);
+	    if (r == SOCKET_ERROR) {
+		errno = map_errno(WSAGetLastError());
+		r = -1;
+		break;
+	    }
+	    else if (r > 0) {
+		break;
+	    }
+	    else if (timeout &&
+		     remainder.tv_sec == 0 && remainder.tv_usec == 0) {
+		break;
+	    }
+	}
+    } while (0));
     return r;
 }
 

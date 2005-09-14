@@ -1,3 +1,11 @@
+Wed Sep 14 23:28:28 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (collect_file_fd): rename from extract_file_fd.
+
+	* win32/win32.c (extract_pipe_fd, peek_pipe): new functions.
+
+	* win32/win32.c (rb_w32_select): check pipes by polling them.
+
 Wed Sep 14 22:40:26 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* dir.c (ruby_glob): glob function not using ruby exception system.
