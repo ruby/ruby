@@ -890,33 +890,38 @@ dir_s_rmdir(VALUE obj, VALUE dir)
     return INT2FIX(0);
 }
 
+#define GLOB_VERBOSE	(1 << (sizeof(int) * CHAR_BIT - 1))
+#define sys_warning(val) \
+    ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)(VALUE))rb_sys_warning, (VALUE)(val), 0))
+
 /* System call with warning */
 static int
-do_stat(const char *path, struct stat *pst)
+do_stat(const char *path, struct stat *pst, int flags)
+
 {
     int ret = stat(path, pst);
     if (ret < 0 && errno != ENOENT)
-	rb_protect((VALUE (*)(VALUE))rb_sys_warning, (VALUE)path, 0);
+	sys_warning(path);
 
     return ret;
 }
 
 static int
-do_lstat(const char *path, struct stat *pst)
+do_lstat(const char *path, struct stat *pst, int flags)
 {
     int ret = lstat(path, pst);
     if (ret < 0 && errno != ENOENT)
-	rb_protect((VALUE (*)(VALUE))rb_sys_warning, (VALUE)path, 0);
+	sys_warning(path);
 
     return ret;
 }
 
 static DIR *
-do_opendir(const char *path)
+do_opendir(const char *path, int flags)
 {
     DIR *dirp = opendir(path);
     if (dirp == NULL && errno != ENOENT && errno != ENOTDIR)
-	rb_protect((VALUE (*)(VALUE))rb_sys_warning, (VALUE)path, 0);
+	sys_warning(path);
 
     return dirp;
 }
@@ -1118,19 +1123,7 @@ glob_func_caller(VALUE val)
     return Qnil;
 }
 
-static int
-glob_call_func(void (*func) (const char *, VALUE), const char *path, VALUE arg)
-{
-    int status;
-    struct glob_args args;
-
-    args.func = func;
-    args.c = path;
-    args.v = arg;
-
-    rb_protect(glob_func_caller, (VALUE)&args, &status);
-    return status;
-}
+#define glob_call_func(func, path, arg) (*func)(path, arg)
 
 static int
 glob_helper(
@@ -1141,7 +1134,7 @@ glob_helper(
     struct glob_pattern **beg,
     struct glob_pattern **end,
     int flags,
-    void (*func) (const char *, VALUE),
+    int (*func)(const char *, VALUE),
     VALUE arg)
 {
     struct stat st;
@@ -1176,7 +1169,7 @@ glob_helper(
 
     if (*path) {
 	if (match_all && exist == UNKNOWN) {
-	    if (do_lstat(path, &st) == 0) {
+	    if (do_lstat(path, &st, flags) == 0) {
 		exist = YES;
 		isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 	    }
@@ -1186,7 +1179,7 @@ glob_helper(
 	    }
 	}
 	if (match_dir && isdir == UNKNOWN) {
-	    if (do_stat(path, &st) == 0) {
+	    if (do_stat(path, &st, flags) == 0) {
 		exist = YES;
 		isdir = S_ISDIR(st.st_mode) ? YES : NO;
 	    }
@@ -1211,7 +1204,7 @@ glob_helper(
 
     if (magical || recursive) {
 	struct dirent *dp;
-	DIR *dirp = do_opendir(*path ? path : ".");
+	DIR *dirp = do_opendir(*path ? path : ".", flags);
 	if (dirp == NULL) return 0;
 
 	for (dp = readdir(dirp); dp != NULL; dp = readdir(dirp)) {
@@ -1221,7 +1214,7 @@ glob_helper(
 	    if (recursive && strcmp(dp->d_name, ".") != 0 && strcmp(dp->d_name, "..") != 0
 		&& fnmatch("*", dp->d_name, flags) == 0) {
 #ifndef _WIN32
-		if (do_lstat(buf, &st) == 0)
+		if (do_lstat(buf, &st, flags) == 0)
 		    new_isdir = S_ISDIR(st.st_mode) ? YES : S_ISLNK(st.st_mode) ? UNKNOWN : NO;
 		else
 		    new_isdir = NO;
@@ -1293,17 +1286,13 @@ glob_helper(
 }
 
 static int
-rb_glob2(const char *path, int flags, void (*func) (const char *, VALUE), VALUE arg)
+ruby_glob0(const char *path, int flags, int (*func)(const char *, VALUE), VALUE arg)
 {
     struct glob_pattern *list;
     const char *root, *start;
     char *buf;
     int n;
     int status;
-
-    if (flags & FNM_CASEFOLD) {
-	rb_warn("Dir.glob() ignores File::FNM_CASEFOLD");
-    }
 
     start = root = path;
 #if defined DOSISH
@@ -1328,28 +1317,42 @@ rb_glob2(const char *path, int flags, void (*func) (const char *, VALUE), VALUE 
     return status;
 }
 
-struct rb_glob_args {
-    void (*func)(const char*, VALUE);
-    VALUE arg;
-};
+int
+ruby_glob(const char *path, int flags, int (*func)(const char *, VALUE), VALUE arg)
+{
+    return ruby_glob0(path, flags & ~GLOB_VERBOSE, func, arg);
+}
 
-static void
+static int
 rb_glob_caller(const char *path, VALUE a)
 {
-    struct rb_glob_args *args = (struct rb_glob_args *)a;
-    (*args->func)(path, args->arg);
+    int status;
+    struct glob_args *args = (struct glob_args *)a;
+
+    args->c = path;
+    rb_protect(glob_func_caller, a, &status);
+    return status;
+}
+
+static int
+rb_glob2(const char *path, int flags, void (*func)(const char *, VALUE), VALUE arg)
+{
+    struct glob_args args;
+
+    args.func = func;
+    args.v = arg;
+
+    if (flags & FNM_CASEFOLD) {
+	rb_warn("Dir.glob() ignores File::FNM_CASEFOLD");
+    }
+
+    return ruby_glob0(path, flags | GLOB_VERBOSE, rb_glob_caller, (VALUE)&args);
 }
 
 void
 rb_glob(const char *path, void (*func) (const char *, VALUE), VALUE arg)
 {
-    struct rb_glob_args args;
-    int status;
-
-    args.func = func;
-    args.arg = arg;
-    status = rb_glob2(path, 0, rb_glob_caller, (VALUE)&args);
-
+    int status = rb_glob2(path, 0, func, arg);
     if (status) rb_jump_tag(status);
 }
 

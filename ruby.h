@@ -16,6 +16,9 @@
 
 #if defined(__cplusplus)
 extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
 #endif
 
 #include "config.h"
@@ -490,6 +493,7 @@ struct RBignum {
 void rb_obj_infect(VALUE,VALUE);
 
 void rb_glob(const char*,void(*)(const char*,VALUE),VALUE);
+int ruby_glob(const char*,int,int(*)(const char*,VALUE),VALUE);
 
 VALUE rb_define_class(const char*,VALUE);
 VALUE rb_define_module(const char*);
@@ -735,6 +739,9 @@ void ruby_native_thread_kill(int);
 #endif
 
 #if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
 }  /* extern "C" { */
 #endif
 
