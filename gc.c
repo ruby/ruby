@@ -1723,7 +1723,7 @@ run_final(VALUE obj)
     for (i=0; i<RARRAY(finalizers)->len; i++) {
 	args[0] = RARRAY(finalizers)->ptr[i];
 	if (!args[1]) args[1] = rb_ary_new3(1, objid);
-	rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
+	rb_protect((VALUE(*)(VALUE))run_single_final, (VALUE)args, &status);
     }
     if (finalizer_table && st_delete(finalizer_table, (st_data_t*)&obj, &table)) {
 	for (i=0; i<RARRAY(table)->len; i++) {
@@ -1731,7 +1731,7 @@ run_final(VALUE obj)
 	    args[0] = RARRAY(final)->ptr[1];
 	    if (!args[1]) args[1] = rb_ary_new3(1, objid);
 	    args[2] = FIX2INT(RARRAY(final)->ptr[0]);
-	    rb_protect((VALUE(*)_((VALUE)))run_single_final, (VALUE)args, &status);
+	    rb_protect((VALUE(*)(VALUE))run_single_final, (VALUE)args, &status);
 	}
     }
     rb_thread_critical = critical_save;

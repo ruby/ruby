@@ -394,7 +394,7 @@ struct RData {
 #define DATA_PTR(dta) (RDATA(dta)->data)
 
 /*
-#define RUBY_DATA_FUNC(func) ((void (*)_((void*)))func)
+#define RUBY_DATA_FUNC(func) ((void (*)(void*))func)
 */
 typedef void (*RUBY_DATA_FUNC)(void*);
 

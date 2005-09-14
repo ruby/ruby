@@ -896,7 +896,7 @@ do_stat(const char *path, struct stat *pst)
 {
     int ret = stat(path, pst);
     if (ret < 0 && errno != ENOENT)
-	rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)path, 0);
+	rb_protect((VALUE (*)(VALUE))rb_sys_warning, (VALUE)path, 0);
 
     return ret;
 }
@@ -906,7 +906,7 @@ do_lstat(const char *path, struct stat *pst)
 {
     int ret = lstat(path, pst);
     if (ret < 0 && errno != ENOENT)
-	rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)path, 0);
+	rb_protect((VALUE (*)(VALUE))rb_sys_warning, (VALUE)path, 0);
 
     return ret;
 }
@@ -916,7 +916,7 @@ do_opendir(const char *path)
 {
     DIR *dirp = opendir(path);
     if (dirp == NULL && errno != ENOENT && errno != ENOTDIR)
-	rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)path, 0);
+	rb_protect((VALUE (*)(VALUE))rb_sys_warning, (VALUE)path, 0);
 
     return dirp;
 }

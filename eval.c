@@ -1589,7 +1589,7 @@ rb_eval_string(const char *str)
 VALUE
 rb_eval_string_protect(const char *str, int *state)
 {
-    return rb_protect((VALUE (*)_((VALUE)))rb_eval_string, (VALUE)str, state);
+    return rb_protect((VALUE (*)(VALUE))rb_eval_string, (VALUE)str, state);
 }
 
 VALUE
@@ -8540,7 +8540,7 @@ block_pass(VALUE self, NODE *node)
     struct block_arg arg;
     arg.self = self;
     arg.iter = node->nd_iter;
-    return rb_block_pass((VALUE (*)_((VALUE)))call_block,
+    return rb_block_pass((VALUE (*)(VALUE))call_block,
 			 (VALUE)&arg, rb_eval(self, node->nd_body));
 }
 
@@ -9124,7 +9124,7 @@ rb_proc_new(
     VALUE val)
 {
     struct BLOCK *data;
-    VALUE proc = rb_iterate((VALUE(*)_((VALUE)))mproc, 0, func, val);
+    VALUE proc = rb_iterate((VALUE(*)(VALUE))mproc, 0, func, val);
 
     Data_Get_Struct(proc, struct BLOCK, data);
     data->body->nd_state = YIELD_FUNC_AVALUE;
@@ -9149,7 +9149,7 @@ method_proc(VALUE method)
     if (nd_type(mdata->body) == NODE_BMETHOD) {
 	return mdata->body->nd_cval;
     }
-    proc = rb_iterate((VALUE(*)_((VALUE)))mproc, 0, bmcall, method);
+    proc = rb_iterate((VALUE(*)(VALUE))mproc, 0, bmcall, method);
     Data_Get_Struct(proc, struct BLOCK, bdata);
     bdata->body->nd_file = mdata->body->nd_file;
     nd_set_line(bdata->body, nd_line(mdata->body));
@@ -10445,7 +10445,7 @@ rb_thread_schedule(void)
 
 	    if (rb_trap_pending) {
 		int status;
-		rb_protect((VALUE (*)_((VALUE)))rb_trap_exec, Qnil, &status);
+		rb_protect((VALUE (*)(VALUE))rb_trap_exec, Qnil, &status);
 		if (status) {
 		    rb_fd_term(&readfds);
 		    rb_fd_term(&writefds);
@@ -12825,7 +12825,7 @@ catch_i(VALUE tag)
 VALUE
 rb_catch(const char *tag, VALUE (*func) (/* ??? */), VALUE data)
 {
-    return rb_iterate((VALUE(*)_((VALUE)))catch_i, ID2SYM(rb_intern(tag)), func, data);
+    return rb_iterate((VALUE(*)(VALUE))catch_i, ID2SYM(rb_intern(tag)), func, data);
 }
 
 /*

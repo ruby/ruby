@@ -1263,7 +1263,7 @@ rb_exec(const struct rb_exec_arg *e)
 #ifdef HAVE_FORK
 #ifdef FD_CLOEXEC
 #if SIZEOF_INT == SIZEOF_LONG
-#define proc_syswait (VALUE (*)_((VALUE)))rb_syswait
+#define proc_syswait (VALUE (*)(VALUE))rb_syswait
 #else
 static VALUE
 proc_syswait(pid)
@@ -1486,12 +1486,12 @@ rb_syswait(int pid)
 {
     static int overriding;
 #ifdef SIGHUP
-    RETSIGTYPE (*hfunc)_((int));
+    RETSIGTYPE (*hfunc)(int);
 #endif
 #ifdef SIGQUIT
-    RETSIGTYPE (*qfunc)_((int));
+    RETSIGTYPE (*qfunc)(int);
 #endif
-    RETSIGTYPE (*ifunc)_((int));
+    RETSIGTYPE (*ifunc)(int);
     int status;
     int i, hooked = Qfalse;
 
@@ -1542,7 +1542,7 @@ rb_spawn(int argc, VALUE *argv)
     earg.argc = argc;
     earg.argv = argv;
     earg.prog = prog ? RSTRING(prog)->ptr : 0;
-    status = rb_fork(&status, (int (*)_((void*)))rb_exec, &earg);
+    status = rb_fork(&status, (int (*)(void*))rb_exec, &earg);
     if (prog && argc) argv[0] = prog;
 #elif defined HAVE_SPAWNV
     if (!argc) {

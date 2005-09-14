@@ -413,7 +413,7 @@ int rb_proc_exec_n(int, VALUE*, const char*);
 int rb_proc_exec(const char*);
 VALUE rb_check_argv(int, VALUE*);
 int rb_exec(const struct rb_exec_arg*);
-int rb_fork(int*, int (*)_((void*)), void*);
+int rb_fork(int*, int (*)(void*), void*);
 VALUE rb_f_exec(int,VALUE*);
 int rb_waitpid(int,int*,int);
 void rb_syswait(int);

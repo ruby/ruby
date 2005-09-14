@@ -321,7 +321,7 @@ rb_gc_mark_trap_list(void)
 #define sighandler_t sh_t
 #endif
 
-typedef RETSIGTYPE (*sighandler_t)_((int));
+typedef RETSIGTYPE (*sighandler_t)(int);
 
 #ifdef POSIX_SIGNAL
 static sighandler_t

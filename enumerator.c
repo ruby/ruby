@@ -48,7 +48,7 @@ struct enumerator {
     VALUE method;
     VALUE proc;
     VALUE args;
-    VALUE (*iter)_((VALUE, struct enumerator *));
+    VALUE (*iter)(VALUE, struct enumerator *);
 };
 
 static void

@@ -459,7 +459,7 @@ rb_io_wait_readable(int f)
 	rb_fd_set(f, &rfds);
 #ifdef HAVE_RB_FD_INIT
 	rb_ensure(wait_readable, (VALUE)&rfds,
-		  (VALUE (*)_((VALUE)))rb_fd_term, (VALUE)&rfds);
+		  (VALUE (*)(VALUE))rb_fd_term, (VALUE)&rfds);
 #else
 	rb_thread_select(f + 1, &rfds, NULL, NULL, NULL);
 #endif
@@ -502,7 +502,7 @@ rb_io_wait_writable(int f)
 	rb_fd_set(f, &wfds);
 #ifdef HAVE_RB_FD_INIT
 	rb_ensure(wait_writable, (VALUE)&wfds,
-		  (VALUE (*)_((VALUE)))rb_fd_term, (VALUE)&wfds);
+		  (VALUE (*)(VALUE))rb_fd_term, (VALUE)&wfds);
 #else
 	rb_thread_select(f + 1, NULL, &wfds, NULL, NULL);
 #endif

@@ -1,3 +1,10 @@
+Wed Sep 14 17:24:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* dir.c: changed `foo (*bar)_((boo))' to `foo (*bar)(boo)`.
+
+	* enumerator.c, eval.c, gc.c, intern.h, io.c, process.c, ruby.c,
+	  ruby.h, signal.c: ditto.
+
 Wed Sep 14 15:06:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bignum.c: changed `foo _((boo))' to `foo(boo)`. [ruby-dev:27056]
