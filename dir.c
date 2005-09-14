@@ -786,6 +786,10 @@ dir_s_rmdir(obj, dir)
     return INT2FIX(0);
 }
 
+#define GLOB_VERBOSE	(1 << (sizeof(int) * CHAR_BIT - 1))
+#define sys_warning(val) \
+    ((flags & GLOB_VERBOSE) && rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)(val), 0))
+
 /* Return nonzero if S has any special globbing chars in it.  */
 static int
 has_magic(s, send, flags)
@@ -895,31 +899,16 @@ glob_func_caller(val)
     return Qnil;
 }
 
-static int
-glob_call_func(func, path, arg)
-    void (*func) _((const char*, VALUE));
-    const char *path;
-    VALUE arg;
-{
-    int status;
-    struct glob_args args;
+#define glob_call_func(func, path, arg) (*func)(path, arg)
 
-    args.func = func;
-    args.c = path;
-    args.v = arg;
-
-    rb_protect(glob_func_caller, (VALUE)&args, &status);
-    return status;
-}
-
-static int glob_helper _((const char *path, const char *sub, int flags, void (*func)(const char *,VALUE), VALUE arg));
+static int glob_helper _((const char *path, const char *sub, int flags, int (*func)(const char *,VALUE), VALUE arg));
 
 static int
 glob_helper(path, sub, flags, func, arg)
     const char *path;
     const char *sub;
     int flags;
-    void (*func) _((const char *, VALUE));
+    int (*func) _((const char *, VALUE));
     VALUE arg;
 {
     struct stat st;
@@ -955,7 +944,7 @@ glob_helper(path, sub, flags, func, arg)
 	else if (errno != ENOENT) {
 	    /* In case stat error is other than ENOENT and
 	       we may want to know what is wrong. */
-	    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)path, 0);
+	    sys_warning(path);
 	}
 	xfree(newpath);
 	return status;
@@ -982,7 +971,7 @@ glob_helper(path, sub, flags, func, arg)
 	    magic = extract_elem(p);
 	    if (stat(dir, &st) < 0) {
 	        if (errno != ENOENT)
-		    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)dir, 0);
+		    sys_warning(dir);
 	        free(base);
 	        free(magic);
 	        break;
@@ -998,7 +987,7 @@ glob_helper(path, sub, flags, func, arg)
 		}
 		dirp = opendir(dir);
 		if (dirp == NULL) {
-		    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)dir, 0);
+		    sys_warning(dir);
 		    free(base);
 		    free(magic);
 		    break;
@@ -1026,7 +1015,7 @@ glob_helper(path, sub, flags, func, arg)
 		    sprintf(buf, "%s%s%s", base, (BASE) ? "/" : "", dp->d_name);
 		    if (lstat(buf, &st) < 0) {
 			if (errno != ENOENT)
-			    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)buf, 0);
+			    sys_warning(buf);
 			continue;
 		    }
 		    if (S_ISDIR(st.st_mode)) {
@@ -1073,7 +1062,7 @@ glob_helper(path, sub, flags, func, arg)
 			    }
 			}
 			else {
-			    rb_protect((VALUE (*)_((VALUE)))rb_sys_warning, (VALUE)link->path, 0);
+			    sys_warning(link->path);
 			}
 		    }
 		    tmp = link;
@@ -1091,6 +1080,41 @@ glob_helper(path, sub, flags, func, arg)
     return status;
 }
 
+int
+ruby_glob(path, flags, func, arg)
+    const char *path;
+    int flags;
+    int (*func) _((const char *, VALUE));
+    VALUE arg;
+{
+    return glob_helper(path, 0, flags & ~GLOB_VERBOSE, func, arg);
+}
+
+int
+ruby_globi(path, flags, func, arg)
+    const char *path;
+    int flags;
+    int (*func) _((const char *, VALUE));
+    VALUE arg;
+{
+    return glob_helper(path, 0, flags | FNM_CASEFOLD, func, arg);
+}
+
+static int rb_glob_caller _((const char *, VALUE));
+
+static int
+rb_glob_caller(path, a)
+    const char *path;
+    VALUE a;
+{
+    int status;
+    struct glob_args *args = (struct glob_args *)a;
+
+    args->c = path;
+    rb_protect(glob_func_caller, a, &status);
+    return status;
+}
+
 static int
 rb_glob2(path, flags, func, arg)
     const char *path;
@@ -1098,23 +1122,12 @@ rb_glob2(path, flags, func, arg)
     void (*func) _((const char *, VALUE));
     VALUE arg;
 {
-    int status;
+    struct glob_args args;
 
-    status = glob_helper(path, 0, flags, func, arg);
-    return status;
-}
+    args.func = func;
+    args.v = arg;
 
-struct rb_glob_args {
-    void (*func) _((const char*, VALUE));
-    VALUE arg;
-};
-
-static void
-rb_glob_caller(path, a)
-    VALUE path, a;
-{
-    struct rb_glob_args *args = (struct rb_glob_args *)a;
-    (*args->func)(RSTRING(path)->ptr, args->arg);
+    return glob_helper(path, 0, flags | GLOB_VERBOSE, rb_glob_caller, (VALUE)&args);
 }
 
 void
@@ -1123,13 +1136,7 @@ rb_glob(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    struct rb_glob_args args;
-    int status;
-
-    args.func = func;
-    args.arg = arg;
-    status = rb_glob2(path, 0, rb_glob_caller, (VALUE)&args);
-
+    int status = rb_glob2(path, 0, func, arg);
     if (status) rb_jump_tag(status);
 }
 
@@ -1139,13 +1146,7 @@ rb_globi(path, func, arg)
     void (*func) _((const char*, VALUE));
     VALUE arg;
 {
-    struct rb_glob_args args;
-    int status;
-
-    args.func = func;
-    args.arg = arg;
-    status = rb_glob2(path, FNM_CASEFOLD, rb_glob_caller, (VALUE)&args);
-
+    int status = rb_glob2(path, FNM_CASEFOLD, func, arg);
     if (status) rb_jump_tag(status);
 }
 

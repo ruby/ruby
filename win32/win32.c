@@ -1027,7 +1027,7 @@ typedef struct _NtCmdLineElement {
 #define NTMALLOC 0x2	// string in element was malloc'ed
 #define NTSTRING 0x4	// element contains a quoted string
 
-static void
+static int
 insert(const char *path, VALUE vinfo)
 {
     NtCmdLineElement *tmpcurr;
@@ -1041,6 +1041,8 @@ insert(const char *path, VALUE vinfo)
     strcpy(tmpcurr->str, path);
     **tail = tmpcurr;
     *tail = &tmpcurr->next;
+
+    return 0;
 }
 
 #ifdef HAVE_SYS_PARAM_H
@@ -1065,7 +1067,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    rb_globi(buf, insert, (VALUE)&tail);
+    ruby_globi(buf, 0, insert, (VALUE)&tail);
     if (buf != buffer)
 	free(buf);
 

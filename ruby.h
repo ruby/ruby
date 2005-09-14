@@ -16,6 +16,9 @@
 
 #if defined(__cplusplus)
 extern "C" {
+#if 0
+} /* satisfy cc-mode */
+#endif
 #endif
 
 #include "config.h"
@@ -483,6 +486,8 @@ void rb_extend_object _((VALUE,VALUE));
 void rb_define_variable _((const char*,VALUE*));
 void rb_define_virtual_variable _((const char*,VALUE(*)(ANYARGS),void(*)(ANYARGS)));
 void rb_define_hooked_variable _((const char*,VALUE*,VALUE(*)(ANYARGS),void(*)(ANYARGS)));
+int ruby_glob _((const char*,int,int(*)(const char*,VALUE),VALUE));
+int ruby_globi _((const char*,int,int(*)(const char*,VALUE),VALUE));
 void rb_define_readonly_variable _((const char*,VALUE*));
 void rb_define_const _((VALUE,const char*,VALUE));
 void rb_define_global_const _((const char*,VALUE));
@@ -698,6 +703,9 @@ RUBY_EXTERN int is_ruby_native_thread();
 #endif
 
 #if defined(__cplusplus)
+#if 0
+{ /* satisfy cc-mode */
+#endif
 }  /* extern "C" { */
 #endif
 
