@@ -1,3 +1,8 @@
+Thu Sep 15 01:39:19 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/tuplespace.rb (Rinda::TemplateEntry::initialize): pull
+	  up method. Tabs converted to spaces.
+
 Thu Sep 15 00:18:24 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/net/telnet.rb (Net::Telnet::waitfor): replace sysread with
