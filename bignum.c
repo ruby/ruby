@@ -1739,7 +1739,7 @@ rb_big_xor(VALUE xx, VALUE yy)
     return bignorm(z);
 }
 
-static VALUE rb_big_rshift _((VALUE,VALUE));
+static VALUE rb_big_rshift(VALUE,VALUE);
 
 /*
  * call-seq:

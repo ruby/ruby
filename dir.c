@@ -56,7 +56,7 @@ char *getenv();
 #endif
 
 #ifndef HAVE_STRING_H
-char *strchr _((char*,char));
+char *strchr(char*,char);
 #endif
 
 #include <ctype.h>
@@ -351,7 +351,7 @@ free_dir(struct dir_data *dir)
     free(dir);
 }
 
-static VALUE dir_close _((VALUE));
+static VALUE dir_close(VALUE);
 
 static VALUE
 dir_s_alloc(VALUE klass)
@@ -1104,7 +1104,7 @@ enum answer { YES, NO, UNKNOWN };
 #endif
 
 struct glob_args {
-    void (*func) _((const char *, VALUE));
+    void (*func)(const char *, VALUE);
     const char *c;
     VALUE v;
 };
@@ -1329,7 +1329,7 @@ rb_glob2(const char *path, int flags, void (*func) (const char *, VALUE), VALUE 
 }
 
 struct rb_glob_args {
-    void (*func) _((const char*, VALUE));
+    void (*func)(const char*, VALUE);
     VALUE arg;
 };
 

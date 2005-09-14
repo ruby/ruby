@@ -46,10 +46,10 @@
 #define xrealloc ruby_xrealloc
 #define xfree ruby_xfree
 
-void *xmalloc _((long));
-void *xcalloc _((long,long));
-void *xrealloc _((void*,long));
-void xfree _((void*));
+void *xmalloc(long);
+void *xcalloc(long,long);
+void *xrealloc(void*,long);
+void xfree(void*);
 
 #if SIZEOF_LONG_LONG > 0
 # define LONG_LONG long long

@@ -270,7 +270,7 @@ rb_obj_as_string(VALUE obj)
     return str;
 }
 
-static VALUE rb_str_replace _((VALUE, VALUE));
+static VALUE rb_str_replace(VALUE, VALUE);
 
 VALUE
 rb_str_dup(VALUE str)
@@ -1203,7 +1203,7 @@ rb_str_match(VALUE x, VALUE y)
 }
 
 
-static VALUE get_pat _((VALUE, int));
+static VALUE get_pat(VALUE, int);
 
 
 /*
@@ -2848,7 +2848,7 @@ trnext(struct tr *t)
     }
 }
 
-static VALUE rb_str_delete_bang _((int,VALUE*,VALUE));
+static VALUE rb_str_delete_bang(int,VALUE*,VALUE);
 
 static VALUE
 tr_trans(VALUE str, VALUE src, VALUE repl, int sflag)

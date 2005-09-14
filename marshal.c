@@ -113,7 +113,7 @@ class2path(VALUE klass)
     return path;
 }
 
-static void w_long _((long, struct dump_arg*));
+static void w_long(long, struct dump_arg*);
 
 static void
 w_nbyte(char *s, int n, struct dump_arg *arg)
@@ -327,7 +327,7 @@ w_unique(char *s, struct dump_arg *arg)
     w_symbol(rb_intern(s), arg);
 }
 
-static void w_object _((VALUE,struct dump_arg*,int));
+static void w_object(VALUE,struct dump_arg*,int);
 
 static int
 hash_each(VALUE key, VALUE value, struct dump_call_arg *arg)
@@ -738,7 +738,7 @@ struct load_arg {
     int taint;
 };
 
-static VALUE r_object _((struct load_arg *arg));
+static VALUE r_object(struct load_arg *arg);
 
 static int
 r_byte(struct load_arg *arg)

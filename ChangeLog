@@ -1,3 +1,13 @@
+Wed Sep 14 15:06:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bignum.c: changed `foo _((boo))' to `foo(boo)`. [ruby-dev:27056]
+
+	* defines.h, dir.c, dln.h, enumerator.c, env.h, error.c, eval.c, file.c,
+	  gc.c, hash.c, inits.c, intern.h, io.c, lex.c, marshal.c, missing.h,
+	  node.h, numeric.c, pack.c, process.c, re.h, ruby.c, ruby.h, rubyio.h,
+	  rubysig.h, signal.c, sprintf.c, st.h, string.c, struct.c, time.c,
+	  util.c, util.h, variable.c: ditto.
+
 Tue Sep 13 22:09:40 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* lib/logger.rb (Logger): added formatter accessor to logger for

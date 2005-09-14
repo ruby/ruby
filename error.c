@@ -53,7 +53,7 @@ err_snprintf(char *buf, long len, const char *fmt, va_list args)
     }
 }
 
-static void err_append _((const char*));
+static void err_append(const char*);
 static void
 err_print(const char *fmt, va_list args)
 {

@@ -52,7 +52,7 @@ extern unsigned long __libc_ia64_register_backing_store_base;
 #include <windows.h>
 #endif
 
-int rb_io_fptr_finalize _((struct OpenFile*));
+int rb_io_fptr_finalize(struct OpenFile*);
 
 #if !defined(setjmp) && defined(HAVE__SETJMP)
 #define setjmp(env) _setjmp(env)
@@ -417,7 +417,7 @@ static unsigned int STACK_LEVEL_MAX = 655300;
 # define STACK_LEVEL_MAX 655300
 #endif
 
-NOINLINE(static void set_stack_end _((VALUE **stack_end_p)));
+NOINLINE(static void set_stack_end(VALUE **stack_end_p));
 
 static void
 set_stack_end(VALUE **stack_end_p)
@@ -534,8 +534,8 @@ sweep_source_filename(char *key, char *value)
     }
 }
 
-static void gc_mark _((VALUE ptr, int lev));
-static void gc_mark_children _((VALUE ptr, int lev));
+static void gc_mark(VALUE ptr, int lev);
+static void gc_mark_children(VALUE ptr, int lev);
 
 static void
 gc_mark_all(void)
@@ -952,7 +952,7 @@ gc_mark_children(VALUE ptr, int lev)
     }
 }
 
-static void obj_free _((VALUE));
+static void obj_free(VALUE);
 
 static void
 finalize_list(RVALUE *p)

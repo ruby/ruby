@@ -373,9 +373,9 @@ time_arg(int argc, VALUE *argv, struct tm *tm, time_t *usec)
 	rb_raise(rb_eArgError, "argument out of range");
 }
 
-static VALUE time_gmtime _((VALUE));
-static VALUE time_localtime _((VALUE));
-static VALUE time_get_tm _((VALUE, int));
+static VALUE time_gmtime(VALUE);
+static VALUE time_localtime(VALUE);
+static VALUE time_get_tm(VALUE, int);
 
 static int
 leap_year_p(long y)

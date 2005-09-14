@@ -22,7 +22,7 @@
 
 #include "util.h"
 #ifndef HAVE_STRING_H
-char *strchr _((char*,char));
+char *strchr(char*,char);
 #endif
 
 unsigned long

@@ -72,7 +72,7 @@
 #include <unistd.h>
 #endif
 
-extern void Init_File _((void));
+extern void Init_File(void);
 
 #ifdef __BEOS__
 # ifndef NOFILE
@@ -110,7 +110,7 @@ static ID id_write, id_read, id_getc, id_flush;
 
 extern char *ruby_inplace_mode;
 
-struct timeval rb_time_interval _((VALUE));
+struct timeval rb_time_interval(VALUE);
 
 static VALUE filename, current_file;
 static int gets_lineno;
@@ -202,7 +202,7 @@ rb_io_check_closed(OpenFile *fptr)
     }
 }
 
-static int io_fflush _((OpenFile *));
+static int io_fflush(OpenFile *);
 
 static VALUE
 rb_io_get_io(VALUE io)
@@ -2693,7 +2693,7 @@ pipe_del_fptr(OpenFile *fptr)
 }
 
 static void
-pipe_atexit _((void))
+pipe_atexit(void)
 {
     struct pipe_list *list = pipe_list;
     struct pipe_list *tmp;

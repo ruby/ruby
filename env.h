@@ -27,7 +27,7 @@ RUBY_EXTERN struct FRAME {
     unsigned long uniq;
 } *ruby_frame;
 
-void rb_gc_mark_frame _((struct FRAME *));
+void rb_gc_mark_frame(struct FRAME *);
 
 #define FRAME_DMETH  1
 #define FRAME_FUNC   2

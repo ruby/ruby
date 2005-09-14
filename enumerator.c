@@ -272,7 +272,7 @@ enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 	ptr->iter = enumerator_iter_i;
     }
     else {
-	ptr->iter = (VALUE (*) _((VALUE, struct enumerator *)))rb_yield;
+	ptr->iter = (VALUE (*)(VALUE, struct enumerator *))rb_yield;
     }
     if (argc) ptr->args = rb_ary_new4(argc, argv);
 

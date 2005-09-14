@@ -29,12 +29,12 @@
 # define _(args) ()
 #endif
 
-char *dln_find_exe _((const char*,const char*));
-char *dln_find_file _((const char*,const char*));
+char *dln_find_exe(const char*,const char*);
+char *dln_find_file(const char*,const char*);
 
 #ifdef USE_DLN_A_OUT
 extern char *dln_argv0;
 #endif
 
-void *dln_load _((const char*));
+void *dln_load(const char*);
 #endif

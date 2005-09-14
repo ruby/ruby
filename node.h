@@ -352,27 +352,27 @@ typedef struct RNode {
 #define NOEX_UNDEF     NOEX_NOSUPER
 #define NOEX_RECV      8
 
-VALUE rb_parser_new _((void));
-VALUE rb_parser_end_seen_p _((VALUE));
+VALUE rb_parser_new(void);
+VALUE rb_parser_end_seen_p(VALUE);
 
-NODE *rb_parser_compile_cstr _((volatile VALUE, const char*, const char*, int, int));
-NODE *rb_parser_compile_string _((volatile VALUE, const char*, VALUE, int));
-NODE *rb_parser_compile_file _((volatile VALUE, const char*, VALUE, int));
+NODE *rb_parser_compile_cstr(volatile VALUE, const char*, const char*, int, int);
+NODE *rb_parser_compile_string(volatile VALUE, const char*, VALUE, int);
+NODE *rb_parser_compile_file(volatile VALUE, const char*, VALUE, int);
 
-NODE *rb_compile_cstr _((const char*, const char*, int, int));
-NODE *rb_compile_string _((const char*, VALUE, int));
-NODE *rb_compile_file _((const char*, VALUE, int));
+NODE *rb_compile_cstr(const char*, const char*, int, int);
+NODE *rb_compile_string(const char*, VALUE, int);
+NODE *rb_compile_file(const char*, VALUE, int);
 
-void rb_add_method _((VALUE, ID, NODE *, int));
-NODE *rb_node_newnode _((enum node_type,VALUE,VALUE,VALUE));
+void rb_add_method(VALUE, ID, NODE *, int);
+NODE *rb_node_newnode(enum node_type,VALUE,VALUE,VALUE);
 
-NODE* rb_method_node _((VALUE klass, ID id));
-int rb_node_arity _((NODE* node));
+NODE* rb_method_node(VALUE klass, ID id);
+int rb_node_arity(NODE* node);
 
-struct global_entry *rb_global_entry _((ID));
-VALUE rb_gvar_get _((struct global_entry *));
-VALUE rb_gvar_set _((struct global_entry *, VALUE));
-VALUE rb_gvar_defined _((struct global_entry *));
+struct global_entry *rb_global_entry(ID);
+VALUE rb_gvar_get(struct global_entry *);
+VALUE rb_gvar_set(struct global_entry *, VALUE);
+VALUE rb_gvar_defined(struct global_entry *);
 
 typedef unsigned int rb_event_t;
 
@@ -387,9 +387,9 @@ typedef unsigned int rb_event_t;
 #define RUBY_EVENT_RAISE    0x80
 #define RUBY_EVENT_ALL      0xff
 
-typedef void (*rb_event_hook_func_t) _((rb_event_t,NODE*,VALUE,ID,VALUE));
-void rb_add_event_hook _((rb_event_hook_func_t,rb_event_t));
-int rb_remove_event_hook _((rb_event_hook_func_t));
+typedef void (*rb_event_hook_func_t)(rb_event_t,NODE*,VALUE,ID,VALUE);
+void rb_add_event_hook(rb_event_hook_func_t,rb_event_t);
+int rb_remove_event_hook(rb_event_hook_func_t);
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

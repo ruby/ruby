@@ -2414,7 +2414,7 @@ fix_xor(VALUE x, VALUE y)
     return LONG2NUM(val);
 }
 
-static VALUE fix_rshift _((VALUE, VALUE));
+static VALUE fix_rshift(VALUE, VALUE);
 
 /*
  * call-seq:

@@ -26,103 +26,103 @@ struct timeval {
 #endif
 
 #ifndef HAVE_ACOSH
-extern double acosh _((double));
-extern double asinh _((double));
-extern double atanh _((double));
+extern double acosh(double);
+extern double asinh(double);
+extern double atanh(double);
 #endif
 
 #ifndef HAVE_CRYPT
-extern char *crypt _((const char *, const char *));
+extern char *crypt(const char *, const char *);
 #endif
 
 #ifndef HAVE_DUP2
-extern int dup2 _((int, int));
+extern int dup2(int, int);
 #endif
 
 #ifndef HAVE_FINITE
-extern int finite _((double));
+extern int finite(double);
 #endif
 
 #ifndef HAVE_FLOCK
-extern int flock _((int, int));
+extern int flock(int, int);
 #endif
 
 /*
 #ifndef HAVE_FREXP
-extern double frexp _((double, int *));
+extern double frexp(double, int *);
 #endif
 */
 
 #ifndef HAVE_HYPOT
-extern double hypot _((double, double));
+extern double hypot(double, double);
 #endif
 
 #ifndef HAVE_ERF
-extern double erf _((double));
-extern double erfc _((double));
+extern double erf(double);
+extern double erfc(double);
 #endif
 
 #ifndef HAVE_ISINF
 # if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
 # define isinf(x) (!finite(x) && !isnan(x))
 # else
-extern int isinf _((double));
+extern int isinf(double);
 # endif
 #endif
 
 #ifndef HAVE_ISNAN
-extern int isnan _((double));
+extern int isnan(double);
 #endif
 
 /*
 #ifndef HAVE_MEMCMP
-extern int memcmp _((char *, char *, int));
+extern int memcmp(char *, char *, int);
 #endif
 */
 
 #ifndef HAVE_MEMMOVE
-extern void *memmove _((void *, void *, int));
+extern void *memmove(void *, void *, int);
 #endif
 
 /*
 #ifndef HAVE_MODF
-extern double modf _((double, double *));
+extern double modf(double, double *);
 #endif
 */
 
 #ifndef HAVE_STRCASECMP
-extern int strcasecmp _((char *, char *));
+extern int strcasecmp(char *, char *);
 #endif
 
 #ifndef HAVE_STRNCASECMP
-extern int strncasecmp _((char *, char *, int));
+extern int strncasecmp(char *, char *, int);
 #endif
 
 #ifndef HAVE_STRCHR
-extern char *strchr _((char *, int));
-extern char *strrchr _((char *, int));
+extern char *strchr(char *, int);
+extern char *strrchr(char *, int);
 #endif
 
 #ifndef HAVE_STRERROR
-extern char *strerror _((int));
+extern char *strerror(int);
 #endif
 
 #ifndef HAVE_STRFTIME
-extern size_t strftime _((char *, size_t, const char *, const struct tm *));
+extern size_t strftime(char *, size_t, const char *, const struct tm *);
 #endif
 
 #ifndef HAVE_STRSTR
-extern char *strstr _((char *, char *));
+extern char *strstr(char *, char *);
 #endif
 
 /*
 #ifndef HAVE_STRTOL
-extern long strtol _((char *, char **, int));
+extern long strtol(char *, char **, int);
 #endif
 */
 
 #ifndef HAVE_STRTOUL
-extern unsigned long strtoul _((char *, char **, int));
+extern unsigned long strtoul(char *, char **, int);
 #endif
 
 #ifndef HAVE_VSNPRINTF
@@ -131,8 +131,8 @@ extern unsigned long strtoul _((char *, char **, int));
 # else
 #  include <varargs.h>
 # endif
-extern int snprintf __((char *, size_t n, char const *, ...));
-extern int vsnprintf _((char *, size_t n, char const *, va_list));
+extern int snprintf(char *, size_t n, char const *, ...);
+extern int vsnprintf(char *, size_t n, char const *, va_list);
 #endif
 
 #endif /* MISSING_H */

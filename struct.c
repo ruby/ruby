@@ -14,7 +14,7 @@
 
 VALUE rb_cStruct;
 
-static VALUE struct_alloc _((VALUE));
+static VALUE struct_alloc(VALUE);
 
 VALUE
 rb_struct_iv_get(VALUE c, char *name)

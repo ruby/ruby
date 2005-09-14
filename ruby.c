@@ -41,9 +41,9 @@
 #endif
 
 #ifndef HAVE_STRING_H
-char *strchr _((const char*,const char));
-char *strrchr _((const char*,const char));
-char *strstr _((const char*,const char*));
+char *strchr(const char*,const char);
+char *strrchr(const char*,const char);
+char *strstr(const char*,const char*);
 #endif
 
 #include "util.h"
@@ -60,9 +60,9 @@ extern int ruby_yydebug;
 
 char *ruby_inplace_mode = Qfalse;
 
-static void load_stdin _((void));
-static void load_file _((const char *, int));
-static void forbid_setid _((const char *));
+static void load_stdin(void);
+static void load_file(const char *, int);
+static void forbid_setid(const char *);
 
 static VALUE do_loop = Qfalse, do_print = Qfalse;
 static VALUE do_check = Qfalse, do_line = Qfalse;
@@ -354,7 +354,7 @@ add_modules(const char *mod)
     req_list_last = list;
 }
 
-extern void Init_ext _((void));
+extern void Init_ext(void);
 
 static void
 require_libraries(void)
@@ -450,7 +450,7 @@ process_sflag(void)
     sflag = 0;
 }
 
-static void proc_options _((int argc, char **argv));
+static void proc_options(int argc, char **argv);
 
 static char*
 moreswitches(char *s)
@@ -1199,8 +1199,8 @@ ruby_set_argv(int argc, char **argv)
     }
 }
 
-NODE *rb_parser_append_print _((NODE*));
-NODE *rb_parser_while_loop _((NODE*, int, int));
+NODE *rb_parser_append_print(NODE*);
+NODE *rb_parser_while_loop(NODE*, int, int);
 
 void
 ruby_process_options(int argc, char **argv)

@@ -40,7 +40,7 @@
 #define EXIT_FAILURE 1
 #endif
 
-struct timeval rb_time_interval _((VALUE));
+struct timeval rb_time_interval(VALUE);
 
 #ifdef HAVE_SYS_WAIT_H
 # include <sys/wait.h>
@@ -1298,7 +1298,7 @@ proc_syswait(pid)
 int
 rb_fork(status, chfunc, charg)
     int *status;
-    int (*chfunc) _((void *));
+    int (*chfunc)(void *);
     void *charg;
 {
     int pid, err, state = 0;

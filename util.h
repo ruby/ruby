@@ -35,32 +35,32 @@
 #endif
 
 #define scan_oct ruby_scan_oct
-unsigned long scan_oct _((const char*, int, int*));
+unsigned long scan_oct(const char*, int, int*);
 #define scan_hex ruby_scan_hex
-unsigned long scan_hex _((const char*, int, int*));
+unsigned long scan_hex(const char*, int, int*);
 
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(_WIN32)
 void ruby_add_suffix(VALUE str, char *suffix);
 #endif
 
-void ruby_qsort _((void*, const int, const int, int (*)(), void*));
+void ruby_qsort(void*, const int, const int, int (*)(), void*);
 #define qsort(b,n,s,c,d) ruby_qsort(b,n,s,c,d)
 
-void ruby_setenv _((const char*, const char*));
-void ruby_unsetenv _((const char*));
+void ruby_setenv(const char*, const char*);
+void ruby_unsetenv(const char*);
 #undef setenv
 #undef unsetenv
 #define setenv(name,val) ruby_setenv(name,val)
 #define unsetenv(name,val) ruby_unsetenv(name);
 
-char *ruby_strdup _((const char*));
+char *ruby_strdup(const char*);
 #undef strdup
 #define strdup(s) ruby_strdup(s)
 
-char *ruby_getcwd _((void));
+char *ruby_getcwd(void);
 #define my_getcwd() ruby_getcwd()
 
-double ruby_strtod _((const char*, char **));
+double ruby_strtod(const char*, char **);
 #define strtod(s,e) ruby_strtod(s,e)
 
 #endif /* UTIL_H */

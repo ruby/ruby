@@ -29,7 +29,7 @@
 #ifdef HAVE_SYS_FILE_H
 # include <sys/file.h>
 #else
-int flock _((int, int));
+int flock(int, int);
 #endif
 
 #ifdef HAVE_SYS_PARAM_H
@@ -41,7 +41,7 @@ int flock _((int, int));
 
 #include <time.h>
 
-VALUE rb_time_new _((time_t, time_t));
+VALUE rb_time_new(time_t, time_t);
 
 #ifdef HAVE_UTIME_H
 #include <utime.h>
@@ -54,7 +54,7 @@ VALUE rb_time_new _((time_t, time_t));
 #endif
 
 #ifndef HAVE_STRING_H
-char *strrchr _((const char*,const char));
+char *strrchr(const char*,const char);
 #endif
 
 #include <sys/types.h>
@@ -1889,7 +1889,7 @@ rb_file_s_utime(int argc, VALUE *argv)
 
 #endif
 
-NORETURN(static void sys_fail2 _((VALUE,VALUE)));
+NORETURN(static void sys_fail2(VALUE,VALUE));
 static void
 sys_fail2(VALUE s1, VALUE s2)
 {
@@ -2262,7 +2262,7 @@ rb_path_end(const char *path)
 #define TOLOWER(c) (ISUPPER(c) ? tolower(c) : (c))
 #endif
 
-static int is_absolute_path _((const char*));
+static int is_absolute_path(const char*);
 
 static VALUE
 file_expand_path(VALUE fname, VALUE dname, VALUE result)
@@ -2690,7 +2690,7 @@ rb_file_s_split(VALUE klass, VALUE path)
 
 static VALUE separator;
 
-static VALUE rb_file_join _((VALUE ary, VALUE sep));
+static VALUE rb_file_join(VALUE ary, VALUE sep);
 
 static VALUE
 file_inspect_join(VALUE ary, VALUE *arg, int recur)

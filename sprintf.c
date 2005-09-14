@@ -19,7 +19,7 @@
 
 #define BIT_DIGITS(N)   (((N)*146)/485 + 1)  /* log2(10) =~ 146/485 */
 
-static void fmt_setup _((char*,int,int,int,int));
+static void fmt_setup(char*,int,int,int,int);
 
 static char*
 remove_sign_bits(char *str, int base)

@@ -27,7 +27,7 @@ typedef struct OpenFile {
     int pid;			/* child's pid (for pipes) */
     int lineno;			/* number of lines read */
     char *path;			/* pathname for file */
-    void (*finalize) _((struct OpenFile*,int)); /* finalize proc */
+    void (*finalize)(struct OpenFile*,int); /* finalize proc */
     long refcnt;
     char *wbuf;                 /* wbuf_off + wbuf_len <= wbuf_capa */
     int wbuf_off;
@@ -81,28 +81,28 @@ typedef struct OpenFile {
 
 FILE *rb_io_stdio_file(OpenFile *fptr);
 
-FILE *rb_fopen _((const char*, const char*));
-FILE *rb_fdopen _((int, const char*));
-int  rb_io_mode_flags _((const char*));
-int  rb_io_modenum_flags _((int));
-void rb_io_check_writable _((OpenFile*));
-void rb_io_check_readable _((OpenFile*));
-int rb_io_fptr_finalize _((OpenFile*));
-void rb_io_synchronized _((OpenFile*));
-void rb_io_check_initialized _((OpenFile*));
-void rb_io_check_closed _((OpenFile*));
-int rb_io_wait_readable _((int));
-int rb_io_wait_writable _((int));
+FILE *rb_fopen(const char*, const char*);
+FILE *rb_fdopen(int, const char*);
+int  rb_io_mode_flags(const char*);
+int  rb_io_modenum_flags(int);
+void rb_io_check_writable(OpenFile*);
+void rb_io_check_readable(OpenFile*);
+int rb_io_fptr_finalize(OpenFile*);
+void rb_io_synchronized(OpenFile*);
+void rb_io_check_initialized(OpenFile*);
+void rb_io_check_closed(OpenFile*);
+int rb_io_wait_readable(int);
+int rb_io_wait_writable(int);
 
-VALUE rb_io_taint_check _((VALUE));
-NORETURN(void rb_eof_error _((void)));
+VALUE rb_io_taint_check(VALUE);
+NORETURN(void rb_eof_error(void));
 
-void rb_io_read_check _((OpenFile*));
-int rb_io_read_pending _((OpenFile*));
-void rb_read_check _((FILE*));
+void rb_io_read_check(OpenFile*);
+int rb_io_read_pending(OpenFile*);
+void rb_read_check(FILE*);
 
-DEPRECATED(int rb_getc _((FILE*)));
-DEPRECATED(long rb_io_fread _((char *, long, FILE *)));
-DEPRECATED(long rb_io_fwrite _((const char *, long, FILE *)));
-DEPRECATED(int rb_read_pending _((FILE*)));
+DEPRECATED(int rb_getc(FILE*));
+DEPRECATED(long rb_io_fread(char *, long, FILE *));
+DEPRECATED(long rb_io_fwrite(const char *, long, FILE *));
+DEPRECATED(int rb_read_pending(FILE*));
 #endif

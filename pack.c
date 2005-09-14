@@ -330,7 +330,7 @@ endian()
 #define VTOHD(x,y)	vtohd(x)
 #endif
 
-unsigned long rb_big2ulong_pack _((VALUE x));
+unsigned long rb_big2ulong_pack(VALUE x);
 
 static unsigned long
 num2i32(VALUE x)
@@ -364,11 +364,11 @@ num2i32(VALUE x)
 #endif
 static char *toofew = "too few arguments";
 
-static void encodes _((VALUE,char*,long,int));
-static void qpencode _((VALUE,VALUE,long));
+static void encodes(VALUE,char*,long,int);
+static void qpencode(VALUE,VALUE,long);
 
-static int uv_to_utf8 _((char*,unsigned long));
-static unsigned long utf8_to_uv _((char*,long*));
+static int uv_to_utf8(char*,unsigned long);
+static unsigned long utf8_to_uv(char*,long*);
 
 /*
  *  call-seq:

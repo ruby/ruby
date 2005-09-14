@@ -445,7 +445,7 @@ sigsend_to_ruby_thread(int sig)
 #endif
 }
 
-static RETSIGTYPE sighandler _((int));
+static RETSIGTYPE sighandler(int);
 static RETSIGTYPE
 sighandler(int sig)
 {

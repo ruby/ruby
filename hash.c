@@ -196,7 +196,7 @@ rb_hash_foreach(VALUE hash, int (*func) (/* ??? */), VALUE farg)
     rb_ensure(hash_foreach_call, (VALUE)&arg, hash_foreach_ensure, hash);
 }
 
-static VALUE hash_alloc _((VALUE));
+static VALUE hash_alloc(VALUE);
 
 static VALUE
 hash_alloc(VALUE klass)

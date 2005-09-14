@@ -66,7 +66,7 @@ void *alloca ();
 #include <stdarg.h>
 
 #ifndef HAVE_STRING_H
-char *strrchr _((const char*,const char));
+char *strrchr(const char*,const char);
 #endif
 
 #ifdef HAVE_UNISTD_H
@@ -191,18 +191,18 @@ typedef jmp_buf rb_jmpbuf_t;
 
 VALUE rb_cProc;
 static VALUE rb_cBinding;
-static VALUE proc_invoke _((VALUE,VALUE,VALUE,VALUE));
-static VALUE proc_lambda _((void));
-static VALUE rb_f_binding _((VALUE));
-static void rb_f_END _((void));
-static VALUE rb_f_block_given_p _((void));
-static VALUE block_pass _((VALUE,NODE*));
+static VALUE proc_invoke(VALUE,VALUE,VALUE,VALUE);
+static VALUE proc_lambda(void);
+static VALUE rb_f_binding(VALUE);
+static void rb_f_END(void);
+static VALUE rb_f_block_given_p(void);
+static VALUE block_pass(VALUE,NODE*);
 static VALUE rb_cMethod;
 static VALUE rb_cUnboundMethod;
-static VALUE umethod_bind _((VALUE, VALUE));
-static VALUE rb_mod_define_method _((int, VALUE*, VALUE));
-NORETURN(static void rb_raise_jump _((VALUE)));
-static VALUE rb_make_exception _((int argc, VALUE *argv));
+static VALUE umethod_bind(VALUE, VALUE);
+static VALUE rb_mod_define_method(int, VALUE*, VALUE);
+NORETURN(static void rb_raise_jump(VALUE));
+static VALUE rb_make_exception(int argc, VALUE *argv);
 
 static int scope_vmode;
 #define SCOPE_PUBLIC    0
@@ -223,8 +223,8 @@ int ruby_safe_level = 0;
    4 - no global (non-tainted) variable modification/no direct output
 */
 
-static VALUE safe_getter _((void));
-static void safe_setter _((VALUE val));
+static VALUE safe_getter(void);
+static void safe_setter(VALUE val);
 
 void
 rb_secure(int level)
@@ -271,7 +271,7 @@ rb_check_safe_str(VALUE x)
     }
 }
 
-NORETURN(static void print_undef _((VALUE, ID)));
+NORETURN(static void print_undef(VALUE, ID));
 static void
 print_undef(VALUE klass, ID id)
 {
@@ -987,7 +987,7 @@ static NODE *top_cref;
 typedef struct thread * rb_thread_t;
 static rb_thread_t curr_thread = 0;
 static rb_thread_t main_thread;
-static void scope_dup _((struct SCOPE *));
+static void scope_dup(struct SCOPE *);
 
 #define POP_SCOPE() 			\
     if (ruby_scope->flags & SCOPE_DONT_RECYCLE) {\
@@ -1016,8 +1016,8 @@ struct ruby_env {
     NODE *cref;
 };
 
-static void push_thread_anchor _((struct ruby_env *));
-static void pop_thread_anchor _((struct ruby_env *));
+static void push_thread_anchor(struct ruby_env *);
+static void pop_thread_anchor(struct ruby_env *);
 
 #define PUSH_THREAD_TAG() PUSH_TAG(PROT_THREAD); \
     do {					 \
@@ -1028,11 +1028,11 @@ static void pop_thread_anchor _((struct ruby_env *));
     } while (0);				 \
     POP_TAG()
 
-static VALUE rb_eval _((VALUE,NODE*));
-static VALUE eval _((VALUE,VALUE,VALUE,char*,int));
-static NODE *compile _((VALUE, char*, int));
+static VALUE rb_eval(VALUE,NODE*);
+static VALUE eval(VALUE,VALUE,VALUE,char*,int);
+static NODE *compile(VALUE, char*, int);
 
-static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
+static VALUE rb_yield_0(VALUE, VALUE, VALUE, int, int);
 
 #define YIELD_LAMBDA_CALL 1
 #define YIELD_PROC_CALL   2
@@ -1040,12 +1040,12 @@ static VALUE rb_yield_0 _((VALUE, VALUE, VALUE, int, int));
 #define YIELD_FUNC_AVALUE 1
 #define YIELD_FUNC_SVALUE 2
 
-static VALUE rb_call _((VALUE,VALUE,ID,int,const VALUE*,int));
-static VALUE module_setup _((VALUE,NODE*));
+static VALUE rb_call(VALUE,VALUE,ID,int,const VALUE*,int);
+static VALUE module_setup(VALUE,NODE*);
 
-static VALUE massign _((VALUE,NODE*,VALUE,int));
-static void assign _((VALUE,NODE*,VALUE,int));
-static int formal_assign _((VALUE, NODE*, int, const VALUE*, VALUE*));
+static VALUE massign(VALUE,NODE*,VALUE,int);
+static void assign(VALUE,NODE*,VALUE,int);
+static int formal_assign(VALUE, NODE*, int, const VALUE*, VALUE*);
 
 typedef struct event_hook {
     rb_event_hook_func_t func;
@@ -1067,7 +1067,7 @@ static rb_event_hook_t *event_hooks;
 
 static VALUE trace_func = 0;
 static int tracing = 0;
-static void call_trace_func _((rb_event_t,NODE*,VALUE,ID,VALUE));
+static void call_trace_func(rb_event_t,NODE*,VALUE,ID,VALUE);
 
 #if 0
 #define SET_CURRENT_SOURCE() (ruby_sourcefile = ruby_current_node->nd_file, \
@@ -1247,10 +1247,10 @@ extern char **environ;
 #endif
 char **rb_origenviron;
 
-void rb_call_inits _((void));
-void Init_stack _((VALUE*));
-void Init_heap _((void));
-void Init_ext _((void));
+void rb_call_inits(void);
+void Init_stack(VALUE*);
+void Init_heap(void);
+void Init_ext(void);
 
 #ifdef HAVE_NATIVETHREAD
 static rb_nativethread_t ruby_thid;
@@ -1270,7 +1270,7 @@ ruby_native_thread_kill(sig)
 # endif
 #endif
 
-NORETURN(static void rb_thread_start_1 _((void)));
+NORETURN(static void rb_thread_start_1(void));
 
 void
 ruby_init(void)
@@ -1344,8 +1344,8 @@ eval_node(VALUE self, NODE *node)
 
 int ruby_in_eval;
 
-static void rb_thread_cleanup _((void));
-static void rb_thread_wait_other_threads _((void));
+static void rb_thread_cleanup(void);
+static void rb_thread_wait_other_threads(void);
 
 static int thread_set_raised(void);
 static int thread_reset_raised(void);
@@ -1440,7 +1440,7 @@ ruby_options(int argc, char **argv)
     POP_THREAD_TAG();
 }
 
-void rb_exec_end_proc _((void));
+void rb_exec_end_proc(void);
 
 static void
 ruby_finalize_0(void)
@@ -1679,7 +1679,7 @@ localjump_reason(VALUE exc)
     return rb_iv_get(exc, "@reason");
 }
 
-NORETURN(static void jump_tag_but_local_jump _((int,VALUE)));
+NORETURN(static void jump_tag_but_local_jump(int,VALUE));
 static void
 jump_tag_but_local_jump(int state, VALUE val)
 {
@@ -2163,7 +2163,7 @@ copy_node_scope(NODE *node, NODE *rval)
 
 #define MATCH_DATA *rb_svar(node->nd_cnt)
 
-static const char* is_defined _((VALUE, NODE*, char*, int));
+static const char* is_defined(VALUE, NODE*, char*, int);
 
 static char*
 arg_defined(VALUE self, NODE *node, char *buf, char *type)
@@ -2366,7 +2366,7 @@ is_defined(VALUE self, NODE *node /* OK */, char *buf, int noeval)
     return 0;
 }
 
-static int handle_rescue _((VALUE,NODE*));
+static int handle_rescue(VALUE,NODE*);
 
 static void blk_free(struct BLOCK *data);
 
@@ -2686,9 +2686,9 @@ class_prefix(VALUE self, NODE *cpath)
   }\
 } while (0)
 
-NORETURN(static void return_jump _((VALUE)));
-NORETURN(static void break_jump _((VALUE)));
-NORETURN(static void unknown_node _((NODE * volatile)));
+NORETURN(static void return_jump(VALUE));
+NORETURN(static void break_jump(VALUE));
+NORETURN(static void unknown_node(NODE * volatile));
 
 static void
 unknown_node(NODE *volatile node)
@@ -4202,7 +4202,7 @@ rb_mod_protected_method_defined(VALUE mod, VALUE mid)
     return Qfalse;
 }
 
-NORETURN(static VALUE terminate_process _((int, VALUE)));
+NORETURN(static VALUE terminate_process(int, VALUE));
 static VALUE
 terminate_process(int status, VALUE mesg)
 {
@@ -4331,8 +4331,8 @@ rb_iter_break(void)
     break_jump(Qnil);
 }
 
-NORETURN(static void rb_longjmp _((int, VALUE)));
-static VALUE make_backtrace _((void));
+NORETURN(static void rb_longjmp(int, VALUE));
+static VALUE make_backtrace(void);
 
 static void
 rb_longjmp(int tag, VALUE mesg)
@@ -4631,8 +4631,8 @@ break_jump(VALUE retval)
     localjump_error("unexpected break", retval, TAG_BREAK);
 }
 
-static VALUE bmcall _((VALUE, VALUE));
-static int method_arity _((VALUE));
+static VALUE bmcall(VALUE, VALUE);
+static int method_arity(VALUE);
 
 void
 rb_need_block(void)
@@ -6453,7 +6453,7 @@ rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
 
 VALUE rb_load_path;
 
-NORETURN(static void load_failed _((VALUE)));
+NORETURN(static void load_failed(VALUE));
 
 void
 rb_load(VALUE fname, int wrap)
@@ -6649,7 +6649,7 @@ static const char *const loadable_ext[] = {
     0
 };
 
-static int search_required _((VALUE, VALUE *));
+static int search_required(VALUE, VALUE *);
 
 int
 rb_provided(const char *feature)
@@ -7368,8 +7368,8 @@ rb_f_local_variables(void)
     return ary;
 }
 
-static VALUE rb_f_catch _((VALUE,VALUE));
-NORETURN(static VALUE rb_f_throw _((int,VALUE*)));
+static VALUE rb_f_catch(VALUE,VALUE);
+NORETURN(static VALUE rb_f_throw(int,VALUE*));
 
 struct end_proc_data {
     void (*func)();
@@ -9750,7 +9750,7 @@ thread_reset_raised(void)
     return 1;
 }
 
-static void rb_thread_ready _((rb_thread_t));
+static void rb_thread_ready(rb_thread_t);
 
 static VALUE
 run_trap_eval(VALUE arg)
@@ -9964,7 +9964,7 @@ rb_thread_check(VALUE data)
     return (rb_thread_t)RDATA(data)->data;
 }
 
-static VALUE rb_thread_raise _((int, VALUE*, rb_thread_t));
+static VALUE rb_thread_raise(int, VALUE*, rb_thread_t);
 
 static VALUE th_raise_exception;
 static NODE *th_raise_node;
@@ -10096,8 +10096,8 @@ rb_thread_switch(int n)
     (rb_thread_save_context(th),\
      rb_thread_switch((FLUSH_REGISTER_WINDOWS, ruby_setjmp((th)->context))))
 
-NORETURN(static void rb_thread_restore_context _((rb_thread_t,int)));
-NOINLINE(static void stack_extend _((rb_thread_t, int)));
+NORETURN(static void rb_thread_restore_context(rb_thread_t,int));
+NOINLINE(static void stack_extend(rb_thread_t, int));
 
 static void
 stack_extend(rb_thread_t th, int exit)
@@ -10237,7 +10237,7 @@ rb_thread_fd_close(int fd)
     END_FOREACH(th);
 }
 
-NORETURN(static void rb_thread_main_jump _((VALUE, int)));
+NORETURN(static void rb_thread_main_jump(VALUE, int));
 static void
 rb_thread_main_jump(VALUE err, int tag)
 {
@@ -10247,7 +10247,7 @@ rb_thread_main_jump(VALUE err, int tag)
     rb_thread_restore_context(main_thread, tag);
 }
 
-NORETURN(static void rb_thread_deadlock _((void)));
+NORETURN(static void rb_thread_deadlock(void));
 static void
 rb_thread_deadlock(void)
 {
@@ -10677,7 +10677,7 @@ rb_thread_wait_for(struct timeval time)
     rb_thread_schedule();
 }
 
-void rb_thread_sleep_forever _((void));
+void rb_thread_sleep_forever(void);
 
 int
 rb_thread_alone(void)
@@ -11526,8 +11526,8 @@ rb_thread_stop_timer()
 int rb_thread_tick = THREAD_TICK;
 #endif
 
-NORETURN(static void rb_thread_terminated _((rb_thread_t, int, enum thread_status)));
-static VALUE rb_thread_yield _((VALUE, rb_thread_t));
+NORETURN(static void rb_thread_terminated(rb_thread_t, int, enum thread_status));
+static VALUE rb_thread_yield(VALUE, rb_thread_t);
 
 static void
 push_thread_anchor(struct ruby_env *ip)
