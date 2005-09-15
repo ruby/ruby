@@ -199,13 +199,14 @@ class TkDialogObj < TkWindow
   end
 
   def name
-    @buttons[@val]
+    (@val)? @buttons[@val]: nil
   end
-  ######################################################
-  #                                                    #
-  # these methods must be overridden for each dialog   #
-  #                                                    #
-  ######################################################
+
+  ############################################################
+  #                                                          #
+  #  following methods should be overridden for each dialog  #
+  #                                                          #
+  ############################################################
   private
 
   def title
