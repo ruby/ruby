@@ -20,7 +20,8 @@ module Mapping
   ApacheSOAPTypeNamespace = 'http://xml.apache.org/xml-soap'
 
 
-  # TraverseSupport breaks Thread.current[:SOAPMarshalDataKey].
+  # TraverseSupport breaks following thread variables.
+  #   Thread.current[:SOAPMarshalDataKey]
   module TraverseSupport
     def mark_marshalled_obj(obj, soap_obj)
       raise if obj.nil?
@@ -35,41 +36,56 @@ module Mapping
   end
 
 
-  def self.obj2soap(obj, registry = nil, type = nil)
+  EMPTY_OPT = {}
+  def self.obj2soap(obj, registry = nil, type = nil, opt = EMPTY_OPT)
     registry ||= Mapping::DefaultRegistry
-    Thread.current[:SOAPMarshalDataKey] = {}
-    soap_obj = _obj2soap(obj, registry, type)
-    Thread.current[:SOAPMarshalDataKey] = nil
+    soap_obj = nil
+    protect_threadvars(:SOAPMarshalDataKey, :SOAPExternalCES, :SOAPMarshalNoReference) do
+      Thread.current[:SOAPMarshalDataKey] = {}
+      Thread.current[:SOAPExternalCES] = opt[:external_ces] || $KCODE
+      Thread.current[:SOAPMarshalNoReference] = opt[:no_reference]
+      soap_obj = _obj2soap(obj, registry, type)
+    end
     soap_obj
   end
 
-  def self.soap2obj(node, registry = nil, klass = nil)
+  def self.soap2obj(node, registry = nil, klass = nil, opt = EMPTY_OPT)
     registry ||= Mapping::DefaultRegistry
-    Thread.current[:SOAPMarshalDataKey] = {}
-    obj = _soap2obj(node, registry, klass)
-    Thread.current[:SOAPMarshalDataKey] = nil
+    obj = nil
+    protect_threadvars(:SOAPMarshalDataKey, :SOAPExternalCES, :SOAPMarshalNoReference) do
+      Thread.current[:SOAPMarshalDataKey] = {}
+      Thread.current[:SOAPExternalCES] = opt[:external_ces] || $KCODE
+      Thread.current[:SOAPMarshalNoReference] = opt[:no_reference]
+      obj = _soap2obj(node, registry, klass)
+    end
     obj
   end
 
-  def self.ary2soap(ary, type_ns = XSD::Namespace, typename = XSD::AnyTypeLiteral, registry = nil)
+  def self.ary2soap(ary, type_ns = XSD::Namespace, typename = XSD::AnyTypeLiteral, registry = nil, opt = EMPTY_OPT)
     registry ||= Mapping::DefaultRegistry
     type = XSD::QName.new(type_ns, typename)
     soap_ary = SOAPArray.new(ValueArrayName, 1, type)
-    Thread.current[:SOAPMarshalDataKey] = {}
-    ary.each do |ele|
-      soap_ary.add(_obj2soap(ele, registry, type))
+    protect_threadvars(:SOAPMarshalDataKey, :SOAPExternalCES, :SOAPMarshalNoReference) do
+      Thread.current[:SOAPMarshalDataKey] = {}
+      Thread.current[:SOAPExternalCES] = opt[:external_ces] || $KCODE
+      Thread.current[:SOAPMarshalNoReference] = opt[:no_reference]
+      ary.each do |ele|
+        soap_ary.add(_obj2soap(ele, registry, type))
+      end
     end
-    Thread.current[:SOAPMarshalDataKey] = nil
     soap_ary
   end
 
-  def self.ary2md(ary, rank, type_ns = XSD::Namespace, typename = XSD::AnyTypeLiteral, registry = nil)
+  def self.ary2md(ary, rank, type_ns = XSD::Namespace, typename = XSD::AnyTypeLiteral, registry = nil, opt = EMPTY_OPT)
     registry ||= Mapping::DefaultRegistry
     type = XSD::QName.new(type_ns, typename)
     md_ary = SOAPArray.new(ValueArrayName, rank, type)
-    Thread.current[:SOAPMarshalDataKey] = {}
-    add_md_ary(md_ary, ary, [], registry)
-    Thread.current[:SOAPMarshalDataKey] = nil
+    protect_threadvars(:SOAPMarshalDataKey, :SOAPExternalCES, :SOAPMarshalNoReference) do
+      Thread.current[:SOAPMarshalDataKey] = {}
+      Thread.current[:SOAPExternalCES] = opt[:external_ces] || $KCODE
+      Thread.current[:SOAPMarshalNoReference] = opt[:no_reference]
+      add_md_ary(md_ary, ary, [], registry)
+    end
     md_ary
   end
 
@@ -104,7 +120,8 @@ module Mapping
   end
 
   def self._obj2soap(obj, registry, type = nil)
-    if referent = Thread.current[:SOAPMarshalDataKey][obj.__id__]
+    if referent = Thread.current[:SOAPMarshalDataKey][obj.__id__] and
+        !Thread.current[:SOAPMarshalNoReference]
       SOAPReference.new(referent)
     elsif registry
       registry.obj2soap(obj, type)
@@ -114,10 +131,13 @@ module Mapping
   end
 
   def self._soap2obj(node, registry, klass = nil)
-    if node.is_a?(SOAPReference)
+    if node.nil?
+      return nil
+    elsif node.is_a?(SOAPReference)
       target = node.__getobj__
       # target.id is not Object#id but SOAPReference#id
-      if referent = Thread.current[:SOAPMarshalDataKey][target.id]
+      if referent = Thread.current[:SOAPMarshalDataKey][target.id] and
+          !Thread.current[:SOAPMarshalNoReference]
         return referent
       else
         return _soap2obj(target, registry, klass)
@@ -216,16 +236,8 @@ module Mapping
   end
 
   def self.class2qname(klass)
-    name = if klass.class_variables.include?('@@schema_type')
-        klass.class_eval('@@schema_type')
-      else
-        nil
-      end
-    namespace = if klass.class_variables.include?('@@schema_ns')
-        klass.class_eval('@@schema_ns')
-      else
-        nil
-      end
+    name = schema_type_definition(klass)
+    namespace = schema_ns_definition(klass)
     XSD::QName.new(namespace, name)
   end
 
@@ -254,7 +266,9 @@ module Mapping
 
   def self.define_singleton_method(obj, name, &block)
     sclass = (class << obj; self; end)
-    sclass.class_eval {define_method(name, &block)}
+    sclass.class_eval {
+      define_method(name, &block)
+    }
   end
 
   def self.get_attribute(obj, attr_name)
@@ -301,28 +315,56 @@ module Mapping
     define_singleton_method(obj, name + '=', &setterproc) if setterproc
   end
 
+  def self.schema_type_definition(klass)
+    class_schema_variable(:schema_type, klass)
+  end
+
+  def self.schema_ns_definition(klass)
+    class_schema_variable(:schema_ns, klass)
+  end
+
   def self.schema_element_definition(klass)
-    return nil unless klass.class_variables.include?('@@schema_element')
-    elements = {}
+    schema_element = class_schema_variable(:schema_element, klass) or return nil
+    schema_ns = schema_ns_definition(klass)
+    elements = []
     as_array = []
-    klass.class_eval('@@schema_element').each do |varname, definition|
+    schema_element.each do |varname, definition|
       class_name, name = definition
       if /\[\]$/ =~ class_name
         class_name = class_name.sub(/\[\]$/, '')
-        as_array << class_name
+        as_array << (name ? name.name : varname)
       end
-      elements[name ? name.name : varname] = class_name
+      elements << [name || XSD::QName.new(schema_ns, varname), class_name]
     end
     [elements, as_array]
   end
 
   def self.schema_attribute_definition(klass)
-    return nil unless klass.class_variables.include?('@@schema_attribute')
-    klass.class_eval('@@schema_attribute')
+    class_schema_variable(:schema_attribute, klass)
   end
 
   class << Mapping
   private
+
+    def class_schema_variable(sym, klass)
+      var = "@@#{sym}"
+      klass.class_variables.include?(var) ? klass.class_eval(var) : nil
+    end
+
+    def protect_threadvars(*symbols)
+      backup = {}
+      begin
+        symbols.each do |sym|
+          backup[sym] = Thread.current[sym]
+        end
+        yield
+      ensure
+        symbols.each do |sym|
+          Thread.current[sym] = backup[sym]
+        end
+      end
+    end
+
     def add_md_ary(md_ary, ary, indices, registry)
       for idx in 0..(ary.size - 1)
         if ary[idx].is_a?(Array)

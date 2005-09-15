@@ -45,7 +45,7 @@ class WSDLDriverFactory
   def create_driver(servicename = nil, portname = nil)
     warn("WSDLDriverFactory#create_driver is depricated.  Use create_rpc_driver instead.")
     port = find_port(servicename, portname)
-    WSDLDriver.new(@wsdl, port, @logdev)
+    WSDLDriver.new(@wsdl, port, nil)
   end
 
   # Backward compatibility.
@@ -66,11 +66,14 @@ private
     end
     if portname
       port = service.ports[XSD::QName.new(@wsdl.targetnamespace, portname)]
+      if port.nil?
+        raise FactoryError.new("port #{portname} not found in WSDL")
+      end
     else
-      port = service.ports[0]
-    end
-    if port.nil?
-      raise FactoryError.new("port #{portname} not found in WSDL")
+      port = service.ports.find { |port| !port.soap_address.nil? }
+      if port.nil?
+        raise FactoryError.new("no ports have soap:address")
+      end
     end
     if port.soap_address.nil?
       raise FactoryError.new("soap:address element not found in WSDL")
@@ -96,10 +99,14 @@ private
       orgname = op_name.name
       name = XSD::CodeGen::GenSupport.safemethodname(orgname)
       param_def = create_param_def(op_bind)
-      opt = {}
-      opt[:request_style] = opt[:response_style] = op_bind.soapoperation_style
-      opt[:request_use] = (op_bind.input.soapbody.use || 'literal').intern
-      opt[:response_use] = (op_bind.output.soapbody.use || 'literal').intern
+      opt = {
+        :request_style => op_bind.soapoperation_style,
+        :response_style => op_bind.soapoperation_style,
+        :request_use => op_bind.input.soapbody_use,
+        :response_use => op_bind.output.soapbody_use,
+        :elementformdefault => false,
+        :attributeformdefault => false
+      }
       if op_bind.soapoperation_style == :rpc
         drv.add_rpc_operation(op_name, soapaction, name, param_def, opt)
       else
@@ -126,7 +133,7 @@ private
     end
     # the first element of typedef in param_def is a String like
     # "::SOAP::SOAPStruct".  turn this String to a class.
-    param_def.collect { |io, typedef, name|
+    param_def.collect { |io, name, typedef|
       typedef[0] = Mapping.class_from_name(typedef[0])
       [io, name, typedef]
     }
@@ -153,9 +160,6 @@ end
 
 class WSDLDriver
   class << self
-    def __attr_proxy(symbol, assignable = false)
-    end
-
     if RUBY_VERSION >= "1.7.0"
       def __attr_proxy(symbol, assignable = false)
         name = symbol.to_s
@@ -285,7 +289,9 @@ class WSDLDriver
       # Convert a map which key is QName, to a Hash which key is String.
       @operation = {}
       @port.inputoperation_map.each do |op_name, op_info|
-	@operation[op_name.name] = op_info
+        orgname = op_name.name
+        name = XSD::CodeGen::GenSupport.safemethodname(orgname)
+	@operation[name] = @operation[orgname] = op_info
 	add_method_interface(op_info)
       end
       @proxy = ::SOAP::RPC::Proxy.new(endpoint_url, @soapaction, @options)
@@ -354,8 +360,10 @@ class WSDLDriver
     # req_body: SOAPBasetype/SOAPCompoundtype
     def document_send(name, header_obj, body_obj)
       set_wiredump_file_base(name)
-      op_info = @operation[name]
-      req_header = header_from_obj(header_obj, op_info)
+      unless op_info = @operation[name]
+        raise RuntimeError, "method: #{name} not defined"
+      end
+      req_header = header_obj ? header_from_obj(header_obj, op_info) : nil
       req_body = body_from_obj(body_obj, op_info)
       opt = create_options({
         :soapaction => op_info.soapaction || @soapaction,
@@ -429,8 +437,10 @@ class WSDLDriver
 
     def create_method_obj(names, params)
       o = Object.new
-      for idx in 0 ... params.length
+      idx = 0
+      while idx < params.length
         o.instance_variable_set('@' + names[idx], params[idx])
+        idx += 1
       end
       o
     end
@@ -466,7 +476,7 @@ class WSDLDriver
       elsif obj.is_a?(SOAPHeaderItem)
 	obj
       else
-	@doc_mapper.obj2soap(obj, name)
+        Mapping.obj2soap(obj, @doc_mapper, name)
       end
     end
 
@@ -500,7 +510,7 @@ class WSDLDriver
       elsif obj.is_a?(SOAPElement)
 	obj
       else
-	@doc_mapper.obj2soap(obj, name)
+        Mapping.obj2soap(obj, @doc_mapper, name)
       end
     end
 
@@ -536,7 +546,7 @@ class WSDLDriver
     end
 
     def add_document_method_interface(name, parts_names)
-      ::SOAP::Mapping.define_singleton_method(@host, name) do |*arg|
+      ::SOAP::Mapping.define_singleton_method(@host, name) do |h, b|
         @servant.document_send(name, h, b)
       end
       @host.method(name)
@@ -553,7 +563,7 @@ class WSDLDriver
       opt.add_hook("protocol.wiredump_file_base") do |key, value|
 	@wiredump_file_base = value
       end
-      opt["protocol.http.charset"] ||= XSD::Charset.encoding_label
+      opt["protocol.http.charset"] ||= XSD::Charset.xml_encoding_label
       opt["protocol.http.proxy"] ||= Env::HTTP_PROXY
       opt["protocol.http.no_proxy"] ||= Env::NO_PROXY
       opt
