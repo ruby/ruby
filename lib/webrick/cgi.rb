@@ -128,6 +128,7 @@ module WEBrick
         @header_part = StringIO.new
         @body_part = stdin
         @out_port = stdout
+        @out_port.binmode
   
         @server_addr = @env["SERVER_ADDR"] || "0.0.0.0"
         @server_name = @env["SERVER_NAME"]
