@@ -1,3 +1,7 @@
+Thu Sep 15 23:02:57 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.h (rb_w32_stat): added prototype.
+
 Thu Sep 15 22:35:55 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_signal.rb (test_exit_action): skip the test using

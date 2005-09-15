@@ -175,6 +175,7 @@ extern struct servent  * rb_w32_getservbyname(char *, char *);
 extern struct servent  * rb_w32_getservbyport(int, char *);
 extern char * rb_w32_getenv(const char *);
 extern int    rb_w32_rename(const char *, const char *);
+extern int    rb_w32_stat(const char *, struct stat *);
 extern char **rb_w32_get_environ(void);
 extern void   rb_w32_free_environ(char **);
 
