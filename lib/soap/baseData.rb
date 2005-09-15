@@ -44,9 +44,9 @@ module SOAPType
   attr_accessor :definedtype
 
   def initialize(*arg)
-    super(*arg)
+    super
     @encodingstyle = nil
-    @elename = XSD::QName.new
+    @elename = XSD::QName::EMPTY
     @id = nil
     @precedents = []
     @root = false
@@ -82,7 +82,7 @@ module SOAPBasetype
   include SOAP
 
   def initialize(*arg)
-    super(*arg)
+    super
   end
 end
 
@@ -95,7 +95,7 @@ module SOAPCompoundtype
   include SOAP
 
   def initialize(*arg)
-    super(*arg)
+    super
   end
 end
 
@@ -114,7 +114,7 @@ public
   # Override the definition in SOAPBasetype.
   def initialize(obj = nil)
     super()
-    @type = XSD::QName.new
+    @type = XSD::QName::EMPTY
     @refid = nil
     @obj = nil
     __setobj__(obj) if obj
@@ -178,7 +178,7 @@ class SOAPExternalReference < XSD::NSDBase
 
   def initialize
     super()
-    @type = XSD::QName.new
+    @type = XSD::QName::EMPTY
   end
 
   def referred
@@ -399,7 +399,7 @@ public
 
   def initialize(type = nil)
     super()
-    @type = type || XSD::QName.new
+    @type = type || XSD::QName::EMPTY
     @array = []
     @data = []
   end
@@ -470,8 +470,10 @@ public
   end
 
   def each
-    for i in 0..(@array.length - 1)
-      yield(@array[i], @data[i])
+    idx = 0
+    while idx < @array.length
+      yield(@array[idx], @data[idx])
+      idx += 1
     end
   end
 
@@ -529,7 +531,7 @@ class SOAPElement
     @position = nil
     @extraattr = {}
 
-    @qualified = false
+    @qualified = nil
 
     @array = []
     @data = []
@@ -598,8 +600,10 @@ class SOAPElement
   end
 
   def each
-    for i in 0..(@array.length - 1)
-      yield(@array[i], @data[i])
+    idx = 0
+    while idx < @array.length
+      yield(@array[idx], @data[idx])
+      idx += 1
     end
   end
 
@@ -737,27 +741,25 @@ public
         " does not match rank: #{@rank}")
     end
 
-    for i in 0..(idxary.size - 1)
-      if idxary[i] + 1 > @size[i]
-	@size[i] = idxary[i] + 1
+    idx = 0
+    while idx < idxary.size
+      if idxary[idx] + 1 > @size[idx]
+	@size[idx] = idxary[idx] + 1
       end
+      idx += 1
     end
 
     data = retrieve(idxary[0, idxary.size - 1])
     data[idxary.last] = value
 
     if value.is_a?(SOAPType)
-      value.elename = value.elename.dup_name('item')
-      
+      value.elename = ITEM_NAME
       # Sync type
       unless @type.name
 	@type = XSD::QName.new(value.type.namespace,
 	  SOAPArray.create_arytype(value.type.name, @rank))
       end
-
-      unless value.type
-	value.type = @type
-      end
+      value.type ||= @type
     end
 
     @offset = idxary
@@ -787,7 +789,7 @@ public
 	deep_map(ele, &block)
       else
 	new_obj = block.call(ele)
-	new_obj.elename = new_obj.elename.dup_name('item')
+	new_obj.elename = ITEM_NAME
 	new_obj
       end
     end
@@ -815,13 +817,15 @@ public
   def soap2array(ary)
     traverse_data(@data) do |v, *position|
       iteary = ary
-      for rank in 1..(position.size - 1)
+      rank = 1
+      while rank < position.size
 	idx = position[rank - 1]
 	if iteary[idx].nil?
 	  iteary = iteary[idx] = Array.new
 	else
 	  iteary = iteary[idx]
 	end
+        rank += 1
       end
       if block_given?
 	iteary[position.last] = yield(v)
@@ -837,21 +841,26 @@ public
 
 private
 
+  ITEM_NAME = XSD::QName.new(nil, 'item')
+
   def retrieve(idxary)
     data = @data
-    for rank in 1..(idxary.size)
+    rank = 1
+    while rank <= idxary.size
       idx = idxary[rank - 1]
       if data[idx].nil?
 	data = data[idx] = Array.new
       else
 	data = data[idx]
       end
+      rank += 1
     end
     data
   end
 
   def traverse_data(data, rank = 1)
-    for idx in 0..(ranksize(rank) - 1)
+    idx = 0
+    while idx < ranksize(rank)
       if rank < @rank
 	traverse_data(data[idx], rank + 1) do |*v|
 	  v[1, 0] = idx
@@ -860,6 +869,7 @@ private
       else
 	yield(data[idx], idx)
       end
+      idx += 1
     end
   end
 

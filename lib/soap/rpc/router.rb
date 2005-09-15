@@ -28,6 +28,7 @@ class Router
   attr_accessor :mapping_registry
   attr_accessor :literal_mapping_registry
   attr_accessor :generate_explicit_type
+  attr_accessor :external_ces
 
   def initialize(actor)
     @actor = actor
@@ -35,6 +36,7 @@ class Router
     @headerhandler = Header::HandlerSet.new
     @literal_mapping_registry = ::SOAP::Mapping::WSDLLiteralRegistry.new
     @generate_explicit_type = true
+    @external_ces = nil
     @operation_by_soapaction = {}
     @operation_by_qname = {}
     @headerhandlerfactory = []
@@ -163,7 +165,8 @@ class Router
     soap_response = default_encodingstyle = nil
     begin
       soap_response =
-        op.call(env.body, @mapping_registry, @literal_mapping_registry)
+        op.call(env.body, @mapping_registry, @literal_mapping_registry,
+          create_mapping_opt)
       default_encodingstyle = op.response_default_encodingstyle
     rescue Exception
       soap_response = fault($!)
@@ -240,7 +243,8 @@ private
       return op
     end
     if soapaction
-      raise RPCRoutingError.new("operation: #{soapaction} not supported")
+      raise RPCRoutingError.new(
+        "operation: #{soapaction} #{qname} not supported")
     else
       raise RPCRoutingError.new("operation: #{qname} not supported")
     end
@@ -323,6 +327,10 @@ private
       Mapping.obj2soap(detail, @mapping_registry))
   end
 
+  def create_mapping_opt
+    { :external_ces => @external_ces }
+  end
+
   class Operation
     attr_reader :name
     attr_reader :soapaction
@@ -349,14 +357,19 @@ private
         @rpc_response_qname = opt[:response_qname]
       else
         @doc_request_qnames = []
+        @doc_request_qualified = []
         @doc_response_qnames = []
-        param_def.each do |inout, paramname, typeinfo|
+        @doc_response_qualified = []
+        param_def.each do |inout, paramname, typeinfo, eleinfo|
           klass, nsdef, namedef = typeinfo
+          qualified = eleinfo
           case inout
           when SOAPMethod::IN
             @doc_request_qnames << XSD::QName.new(nsdef, namedef)
+            @doc_request_qualified << qualified
           when SOAPMethod::OUT
             @doc_response_qnames << XSD::QName.new(nsdef, namedef)
+            @doc_response_qualified << qualified
           else
             raise ArgumentError.new(
               "illegal inout definition for document style: #{inout}")
@@ -373,18 +386,20 @@ private
       (@response_use == :encoded) ? EncodingNamespace : LiteralNamespace
     end
 
-    def call(body, mapping_registry, literal_mapping_registry)
+    def call(body, mapping_registry, literal_mapping_registry, opt)
       if @request_style == :rpc
-        values = request_rpc(body, mapping_registry, literal_mapping_registry)
+        values = request_rpc(body, mapping_registry, literal_mapping_registry,
+          opt)
       else
-        values = request_document(body, mapping_registry, literal_mapping_registry)
+        values = request_document(body, mapping_registry,
+          literal_mapping_registry, opt)
       end
       result = receiver.method(@name.intern).call(*values)
       return result if result.is_a?(SOAPFault)
       if @response_style == :rpc
-        response_rpc(result, mapping_registry, literal_mapping_registry)
+        response_rpc(result, mapping_registry, literal_mapping_registry, opt)
       else
-        response_doc(result, mapping_registry, literal_mapping_registry)
+        response_doc(result, mapping_registry, literal_mapping_registry, opt)
       end
     end
 
@@ -394,61 +409,61 @@ private
       raise NotImplementedError.new('must be defined in derived class')
     end
 
-    def request_rpc(body, mapping_registry, literal_mapping_registry)
+    def request_rpc(body, mapping_registry, literal_mapping_registry, opt)
       request = body.request
       unless request.is_a?(SOAPStruct)
         raise RPCRoutingError.new("not an RPC style")
       end
       if @request_use == :encoded
-        request_rpc_enc(request, mapping_registry)
+        request_rpc_enc(request, mapping_registry, opt)
       else
-        request_rpc_lit(request, literal_mapping_registry)
+        request_rpc_lit(request, literal_mapping_registry, opt)
       end
     end
 
-    def request_document(body, mapping_registry, literal_mapping_registry)
+    def request_document(body, mapping_registry, literal_mapping_registry, opt)
       # ToDo: compare names with @doc_request_qnames
       if @request_use == :encoded
-        request_doc_enc(body, mapping_registry)
+        request_doc_enc(body, mapping_registry, opt)
       else
-        request_doc_lit(body, literal_mapping_registry)
+        request_doc_lit(body, literal_mapping_registry, opt)
       end
     end
 
-    def request_rpc_enc(request, mapping_registry)
-      param = Mapping.soap2obj(request, mapping_registry)
+    def request_rpc_enc(request, mapping_registry, opt)
+      param = Mapping.soap2obj(request, mapping_registry, nil, opt)
       request.collect { |key, value|
         param[key]
       }
     end
 
-    def request_rpc_lit(request, mapping_registry)
+    def request_rpc_lit(request, mapping_registry, opt)
       request.collect { |key, value|
-        Mapping.soap2obj(value, mapping_registry)
+        Mapping.soap2obj(value, mapping_registry, nil, opt)
       }
     end
 
-    def request_doc_enc(body, mapping_registry)
+    def request_doc_enc(body, mapping_registry, opt)
       body.collect { |key, value|
-        Mapping.soap2obj(value, mapping_registry)
+        Mapping.soap2obj(value, mapping_registry, nil, opt)
       }
     end
 
-    def request_doc_lit(body, mapping_registry)
+    def request_doc_lit(body, mapping_registry, opt)
       body.collect { |key, value|
-        Mapping.soap2obj(value, mapping_registry)
+        Mapping.soap2obj(value, mapping_registry, nil, opt)
       }
     end
 
-    def response_rpc(result, mapping_registry, literal_mapping_registry)
+    def response_rpc(result, mapping_registry, literal_mapping_registry, opt)
       if @response_use == :encoded
-        response_rpc_enc(result, mapping_registry)
+        response_rpc_enc(result, mapping_registry, opt)
       else
-        response_rpc_lit(result, literal_mapping_registry)
+        response_rpc_lit(result, literal_mapping_registry, opt)
       end
     end
     
-    def response_doc(result, mapping_registry, literal_mapping_registry)
+    def response_doc(result, mapping_registry, literal_mapping_registry, opt)
       if @doc_response_qnames.size == 1 and !result.is_a?(Array)
         result = [result]
       end
@@ -457,34 +472,13 @@ private
           "but #{result.size} given"
       end
       if @response_use == :encoded
-        response_doc_enc(result, mapping_registry)
+        response_doc_enc(result, mapping_registry, opt)
       else
-        response_doc_lit(result, literal_mapping_registry)
+        response_doc_lit(result, literal_mapping_registry, opt)
       end
     end
 
-    def response_rpc_enc(result, mapping_registry)
-      soap_response =
-        @rpc_method_factory.create_method_response(@rpc_response_qname)
-      if soap_response.have_outparam?
-        unless result.is_a?(Array)
-          raise RPCRoutingError.new("out parameter was not returned")
-        end
-        outparams = {}
-        i = 1
-        soap_response.output_params.each do |outparam|
-          outparams[outparam] = Mapping.obj2soap(result[i], mapping_registry)
-          i += 1
-        end
-        soap_response.set_outparam(outparams)
-        soap_response.retval = Mapping.obj2soap(result[0], mapping_registry)
-      else
-        soap_response.retval = Mapping.obj2soap(result, mapping_registry)
-      end
-      soap_response
-    end
-
-    def response_rpc_lit(result, mapping_registry)
+    def response_rpc_enc(result, mapping_registry, opt)
       soap_response =
         @rpc_method_factory.create_method_response(@rpc_response_qname)
       if soap_response.have_outparam?
@@ -495,30 +489,60 @@ private
         i = 1
         soap_response.output_params.each do |outparam|
           outparams[outparam] = Mapping.obj2soap(result[i], mapping_registry,
-            XSD::QName.new(nil, outparam))
+            nil, opt)
           i += 1
         end
         soap_response.set_outparam(outparams)
         soap_response.retval = Mapping.obj2soap(result[0], mapping_registry,
-          XSD::QName.new(nil, soap_response.elename))
+          nil, opt)
       else
-        soap_response.retval = Mapping.obj2soap(result, mapping_registry,
-          XSD::QName.new(nil, soap_response.elename))
+        soap_response.retval = Mapping.obj2soap(result, mapping_registry, nil,
+          opt)
       end
       soap_response
     end
 
-    def response_doc_enc(result, mapping_registry)
+    def response_rpc_lit(result, mapping_registry, opt)
+      soap_response =
+        @rpc_method_factory.create_method_response(@rpc_response_qname)
+      if soap_response.have_outparam?
+        unless result.is_a?(Array)
+          raise RPCRoutingError.new("out parameter was not returned")
+        end
+        outparams = {}
+        i = 1
+        soap_response.output_params.each do |outparam|
+          outparams[outparam] = Mapping.obj2soap(result[i], mapping_registry,
+            XSD::QName.new(nil, outparam), opt)
+          i += 1
+        end
+        soap_response.set_outparam(outparams)
+        soap_response.retval = Mapping.obj2soap(result[0], mapping_registry,
+          XSD::QName.new(nil, soap_response.elename), opt)
+      else
+        soap_response.retval = Mapping.obj2soap(result, mapping_registry,
+          XSD::QName.new(nil, soap_response.elename), opt)
+      end
+      soap_response
+    end
+
+    def response_doc_enc(result, mapping_registry, opt)
       (0...result.size).collect { |idx|
-        ele = Mapping.obj2soap(result[idx], mapping_registry)
+        ele = Mapping.obj2soap(result[idx], mapping_registry, nil, opt)
         ele.elename = @doc_response_qnames[idx]
         ele
       }
     end
 
-    def response_doc_lit(result, mapping_registry)
+    def response_doc_lit(result, mapping_registry, opt)
       (0...result.size).collect { |idx|
-        mapping_registry.obj2soap(result[idx], @doc_response_qnames[idx])
+        ele = Mapping.obj2soap(result[idx], mapping_registry,
+          @doc_response_qnames[idx])
+        ele.encodingstyle = LiteralNamespace
+        if ele.respond_to?(:qualified)
+          ele.qualified = @doc_response_qualified[idx]
+        end
+        ele
       }
     end
 

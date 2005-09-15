@@ -72,7 +72,7 @@ public
     if (name.namespace == @default_namespace)
       name.name
     elsif @ns2tag.key?(name.namespace)
-      @ns2tag[name.namespace] + ':' << name.name
+      "#{@ns2tag[name.namespace]}:#{name.name}"
     else
       raise FormatError.new("namespace: #{name.namespace} not defined yet")
     end

@@ -36,6 +36,14 @@ class Param < Info
     root.message(@message) or raise RuntimeError.new("#{@message} not found")
   end
 
+  def soapbody_use
+    if @soapbody
+      @soapbody.use || :literal
+    else
+      raise RuntimeError.new("soap:body not found")
+    end
+  end
+
   def parse_element(element)
     case element
     when SOAPBodyName

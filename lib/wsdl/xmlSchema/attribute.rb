@@ -18,9 +18,8 @@ class Attribute < Info
     if RUBY_VERSION > "1.7.0"
       def attr_reader_ref(symbol)
         name = symbol.to_s
-        iv = "@#{name}"
         define_method(name) {
-          instance_variable_get(iv) ||
+          instance_variable_get("@#{name}") ||
             (refelement ? refelement.__send__(name) : nil)
         }
       end
@@ -94,7 +93,11 @@ class Attribute < Info
     when FormAttrName
       @form = value.source
     when NameAttrName
-      @name = XSD::QName.new(targetnamespace, value.source)
+      if directelement?
+        @name = XSD::QName.new(targetnamespace, value.source)
+      else
+        @name = XSD::QName.new(nil, value.source)
+      end
     when TypeAttrName
       @type = value
     when DefaultAttrName
@@ -110,6 +113,12 @@ class Attribute < Info
     else
       nil
     end
+  end
+
+private
+
+  def directelement?
+    parent.is_a?(Schema)
   end
 end
 

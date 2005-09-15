@@ -20,30 +20,30 @@ class SOAPBody < SOAPStruct
   end
 
   def response
+    root = root_node
     if !@is_fault
-      if void?
+      if root.nil?
         nil
+      elsif root.is_a?(SOAPBasetype)
+        root
       else
         # Initial element is [retval].
-        root_node[0]
+        root[0]
       end
     else
-      root_node
+      root
     end
   end
 
   def outparams
-    if !@is_fault and !void?
-      op = root_node[1..-1]
+    root = root_node
+    if !@is_fault and !root.nil? and !root.is_a?(SOAPBasetype)
+      op = root[1..-1]
       op = nil if op && op.empty?
       op
     else
       nil
     end
-  end
-
-  def void?
-    root_node.nil?
   end
 
   def fault

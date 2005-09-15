@@ -1,3 +1,87 @@
+Thu Sep 15 23:25:21 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* lib/{soap,wsdl,xsd}, test/{soap,wsdl,xsd}: imported soap4r/1.5.5.
+
+	  #nnn is a ticket number at http://dev.ctor.org/soap4r
+
+	  * SOAP
+
+	    * allow to configure an envelope namespace of SOAP request. (#124)
+	   	TemporaryNamespace = 'http://www.w3.org/2003/05/soap-envelope'
+	  	@client.options["soap.envelope.requestnamespace"] =
+		  TemporaryNamespace
+	 	@client.options["soap.envelope.responsenamespace"] =
+		  TemporaryNamespace
+		@client.do_proc(...)
+
+	    * let SOAP request XML indent space configuable.  see
+	      "soap.envelope.no_indent" option. (#130)
+
+	    * let external CES configuable.
+	      ex. client["soap.mapping.external_ces"] = 'SJIS'.  $KCODE is used
+	      by default. (#133)
+		external CES ::= CES used in Ruby object of client and server
+		internal CES ::= CES used in SOAP/OM
+
+	    * add iso-8859-1 external CES support. (#106)
+
+	    * fixed illegal 'qualified' handling of elements.  it caused
+	      ASP.NET inteoperability problem. (#144)
+
+	    * added 'soap.envelope.use_numeric_character_reference' (boolean)
+	      option to let query XML use numeric character reference in XML,
+	      not plain UTF-8 character.  !GoogleSearch server seems to not
+	      allow plain UTF-8 character since 2005-08-15 update. (#147)
+
+	    * SOAP::Header::SimpleHeader (de)serialization throws an exception
+	      on !SimpleHeader.on_(in|out)bound when header is a String.  so we
+	      could not use a simple single element headerItem.  fixed.  thanks
+	      to emil. (#129)
+
+	    * out parameter of rpc operation did not work.  (#132)
+
+	    * follow HTTP redirect only if using http-access2.  (#125) (#145)
+
+	    * add a workaround for importing an WSDL whose path begins with
+	      drive letter.  (#115)
+
+	  * WSDL
+
+	    * SOAP Data which is defined as a simpletype was not mapped
+	      correctly to Ruby obj when using wsdl2ruby.rb generated classdef
+	      file. (#123)
+
+	    * rpc/literal support. (#118)
+
+	    * re-implemented local element qualify/unqualify control.  handles
+	      elementFormDefault and form in WSDL.  (#119)
+
+	    * Array of an element which has simpleType causes a crash. (#128)
+
+	    * prarmeterOrder may not contain return part so it can be shorter
+	      than parts size.  Thanks to Hugh.  (#139)
+
+	  * Samples
+
+	    * added !BasicAuth client sample. (#117)
+
+	    * added Base64 client/server sample.
+
+	    * added Flickr SOAP interface client sample. (#122)
+
+	    * added !SalesForce client sample. (#135)
+
+	    * updated Thawte CA certificate for !GoogleAdWords sample.
+
+	    * updated a client script with the newer version made by Johan.
+	      thanks!
+
+	    * shortened long file names. (#120)
+
+	    * fixed typo in authheader sample. (#129)
+
+	    * updated deprecated method usage.  (#138)
+
 Thu Sep 15 22:40:27 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* test/ruby/test_signal.rb (test_exit_action): skip the test using

@@ -57,7 +57,8 @@ private
   def dump_element
     @elements.collect { |ele|
       if ele.local_complextype
-        dump_classdef(ele.name, ele.local_complextype)
+        dump_classdef(ele.name, ele.local_complextype,
+          ele.elementform == 'qualified')
       elsif ele.local_simpletype
         dump_simpletypedef(ele.name, ele.local_simpletype)
       else
@@ -117,7 +118,7 @@ private
     c.dump
   end
 
-  def dump_classdef(qname, typedef)
+  def dump_classdef(qname, typedef, qualified = false)
     if @faulttypes and @faulttypes.index(qname)
       c = XSD::CodeGen::ClassDef.new(create_class_name(qname),
         '::StandardError')
@@ -127,6 +128,7 @@ private
     c.comment = "#{qname}"
     c.def_classvar('schema_type', ndq(qname.name))
     c.def_classvar('schema_ns', ndq(qname.namespace))
+    c.def_classvar('schema_qualified', dq('true')) if qualified
     schema_element = []
     init_lines = ''
     params = []
@@ -158,7 +160,10 @@ private
       else
         params << "#{varname} = nil"
       end
-      eleqname = (varname == name) ? nil : element.name
+      # nil means @@schema_ns + varname
+      eleqname =
+        (varname == name && element.name.namespace == qname.namespace) ?
+        nil : element.name
       schema_element << [varname, eleqname, type]
     end
     unless typedef.attributes.empty?
@@ -256,13 +261,50 @@ private
     raise RuntimeError.new("cannot define name of #{attribute}")
   end
 
+  DEFAULT_ITEM_NAME = XSD::QName.new(nil, 'item')
+
   def dump_arraydef(complextype)
     qname = complextype.name
     c = XSD::CodeGen::ClassDef.new(create_class_name(qname), '::Array')
     c.comment = "#{qname}"
-    type = complextype.child_type
-    c.def_classvar('schema_type', ndq(type.name))
-    c.def_classvar('schema_ns', ndq(type.namespace))
+    child_type = complextype.child_type
+    c.def_classvar('schema_type', ndq(child_type.name))
+    c.def_classvar('schema_ns', ndq(child_type.namespace))
+    child_element = complextype.find_aryelement
+    schema_element = []
+    if child_type == XSD::AnyTypeName
+      type = nil
+    elsif child_element and (klass = element_basetype(child_element))
+      type = klass.name
+    elsif child_type
+      type = create_class_name(child_type)
+    else
+      type = nil
+    end
+    if child_element
+      if child_element.map_as_array?
+        type << '[]' if type
+      end
+      child_element_name = child_element.name
+    else
+      child_element_name = DEFAULT_ITEM_NAME
+    end
+    schema_element << [child_element_name.name, child_element_name, type]
+    c.def_classvar('schema_element',
+      '[' +
+        schema_element.collect { |varname, name, type|
+          '[' +
+            (
+              if name
+                varname.dump + ', [' + ndq(type) + ', ' + dqname(name) + ']'
+              else
+                varname.dump + ', ' + ndq(type)
+              end
+            ) +
+          ']'
+        }.join(', ') +
+      ']'
+    )
     c.dump
   end
 end

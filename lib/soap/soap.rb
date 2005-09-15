@@ -13,7 +13,7 @@ require 'xsd/charset'
 module SOAP
 
 
-VERSION = Version = '1.5.4'
+VERSION = Version = '1.5.5'
 PropertyName = 'soap/property'
 
 EnvelopeNamespace = 'http://schemas.xmlsoap.org/soap/envelope/'
@@ -40,21 +40,21 @@ AttrOffset = 'offset'
 AttrPosition = 'position'
 ValueArray = 'Array'
 
-EleEnvelopeName = XSD::QName.new(EnvelopeNamespace, EleEnvelope)
-EleHeaderName = XSD::QName.new(EnvelopeNamespace, EleHeader)
-EleBodyName = XSD::QName.new(EnvelopeNamespace, EleBody)
-EleFaultName = XSD::QName.new(EnvelopeNamespace, EleFault)
-EleFaultStringName = XSD::QName.new(nil, EleFaultString)
-EleFaultActorName = XSD::QName.new(nil, EleFaultActor)
-EleFaultCodeName = XSD::QName.new(nil, EleFaultCode)
-EleFaultDetailName = XSD::QName.new(nil, EleFaultDetail)
-AttrMustUnderstandName = XSD::QName.new(EnvelopeNamespace, AttrMustUnderstand)
-AttrEncodingStyleName = XSD::QName.new(EnvelopeNamespace, AttrEncodingStyle)
-AttrRootName = XSD::QName.new(EncodingNamespace, AttrRoot)
-AttrArrayTypeName = XSD::QName.new(EncodingNamespace, AttrArrayType)
-AttrOffsetName = XSD::QName.new(EncodingNamespace, AttrOffset)
-AttrPositionName = XSD::QName.new(EncodingNamespace, AttrPosition)
-ValueArrayName = XSD::QName.new(EncodingNamespace, ValueArray)
+EleEnvelopeName = XSD::QName.new(EnvelopeNamespace, EleEnvelope).freeze
+EleHeaderName = XSD::QName.new(EnvelopeNamespace, EleHeader).freeze
+EleBodyName = XSD::QName.new(EnvelopeNamespace, EleBody).freeze
+EleFaultName = XSD::QName.new(EnvelopeNamespace, EleFault).freeze
+EleFaultStringName = XSD::QName.new(nil, EleFaultString).freeze
+EleFaultActorName = XSD::QName.new(nil, EleFaultActor).freeze
+EleFaultCodeName = XSD::QName.new(nil, EleFaultCode).freeze
+EleFaultDetailName = XSD::QName.new(nil, EleFaultDetail).freeze
+AttrMustUnderstandName = XSD::QName.new(EnvelopeNamespace, AttrMustUnderstand).freeze
+AttrEncodingStyleName = XSD::QName.new(EnvelopeNamespace, AttrEncodingStyle).freeze
+AttrRootName = XSD::QName.new(EncodingNamespace, AttrRoot).freeze
+AttrArrayTypeName = XSD::QName.new(EncodingNamespace, AttrArrayType).freeze
+AttrOffsetName = XSD::QName.new(EncodingNamespace, AttrOffset).freeze
+AttrPositionName = XSD::QName.new(EncodingNamespace, AttrPosition).freeze
+ValueArrayName = XSD::QName.new(EncodingNamespace, ValueArray).freeze
 
 Base64Literal = 'base64'
 
@@ -76,6 +76,7 @@ class ArrayStoreError < Error; end
 
 class RPCRoutingError < Error; end
 class EmptyResponseError < Error; end
+class ResponseFormatError < Error; end
 
 class UnhandledMustUnderstandHeaderError < Error; end
 

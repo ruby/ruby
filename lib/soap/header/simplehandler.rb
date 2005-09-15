@@ -19,12 +19,12 @@ class SimpleHandler < SOAP::Header::Handler
     super(elename)
   end
 
-  # Should return a Hash or nil.
+  # Should return a Hash, String or nil.
   def on_simple_outbound
     nil
   end
 
-  # Given header is a Hash or nil.
+  # Given header is a Hash, String or nil.
   def on_simple_inbound(header, mustunderstand)
   end
 
@@ -34,7 +34,7 @@ class SimpleHandler < SOAP::Header::Handler
   end
 
   def on_inbound(header, mustunderstand)
-    h = header.to_obj
+    h = header.respond_to?(:to_obj) ? header.to_obj : header.data
     on_simple_inbound(h, mustunderstand)
   end
 end

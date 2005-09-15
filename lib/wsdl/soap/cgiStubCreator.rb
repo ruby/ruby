@@ -53,12 +53,12 @@ Methods = [
       <<-EOD
         super(*arg)
         servant = #{class_name}.new
-        #{class_name}::Methods.each do |name_as, name, param_def, soapaction, namespace, style|
-          if style == :document
-            @router.add_document_operation(servant, soapaction, name, param_def)
+        #{class_name}::Methods.each do |definitions|
+          opt = definitions.last
+          if opt[:request_style] == :document
+            @router.add_document_operation(servant, *definitions)
           else
-            qname = XSD::QName.new(namespace, name_as)
-            @router.add_rpc_operation(servant, qname, soapaction, name, param_def)
+            @router.add_rpc_operation(servant, *definitions)
           end
         end
         self.mapping_registry = #{class_name}::MappingRegistry

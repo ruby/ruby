@@ -1,5 +1,6 @@
 require 'test/unit'
 require 'soap/baseData'
+require 'soap/mapping'
 
 
 module SOAP
@@ -36,7 +37,7 @@ class TestSOAPElement < Test::Unit::TestCase
     assert_equal(LiteralNamespace, obj.encodingstyle)
     assert_equal({}, obj.extraattr)
     assert_equal([], obj.precedents)
-    assert_equal(false, obj.qualified)
+    assert_equal(nil, obj.qualified)
     assert_equal(nil, obj.text)
     assert(obj.members.empty?)
 

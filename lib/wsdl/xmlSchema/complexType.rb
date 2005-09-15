@@ -37,7 +37,13 @@ class ComplexType < Info
   end
 
   def targetnamespace
-    parent.is_a?(WSDL::XMLSchema::Element) ? nil : parent.targetnamespace
+    # inner elements can be qualified
+    # parent.is_a?(WSDL::XMLSchema::Element) ? nil : parent.targetnamespace
+    parent.targetnamespace
+  end
+
+  def elementformdefault
+    parent.elementformdefault
   end
  
   AnyAsElement = Element.new(XSD::QName.new(nil, 'any'), XSD::AnyTypeName)

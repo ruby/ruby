@@ -20,18 +20,6 @@ module SOAP
 
 
 class StreamHandler
-  Client = begin
-      require 'http-access2'
-      if HTTPAccess2::VERSION < "2.0"
-	raise LoadError.new("http-access/2.0 or later is required.")
-      end
-      HTTPAccess2::Client
-    rescue LoadError
-      warn("Loading http-access2 failed.  Net/http is used.") if $DEBUG
-      require 'soap/netHttpClient'
-      SOAP::NetHttpClient
-    end
-
   RUBY_VERSION_STRING = "ruby #{ RUBY_VERSION } (#{ RUBY_RELEASE_DATE }) [#{ RUBY_PLATFORM }]"
 
   class ConnectionData
@@ -70,12 +58,27 @@ end
 class HTTPStreamHandler < StreamHandler
   include SOAP
 
+  begin
+    require 'http-access2'
+    if HTTPAccess2::VERSION < "2.0"
+      raise LoadError.new("http-access/2.0 or later is required.")
+    end
+    Client = HTTPAccess2::Client
+    RETRYABLE = true
+  rescue LoadError
+    warn("Loading http-access2 failed.  Net/http is used.") if $DEBUG
+    require 'soap/netHttpClient'
+    Client = SOAP::NetHttpClient
+    RETRYABLE = false
+  end
+
+
 public
   
   attr_reader :client
   attr_accessor :wiredump_file_base
   
-  NofRetry = 10       	# [times]
+  MAX_RETRY_COUNT = 10       	# [times]
 
   def initialize(options)
     super()
@@ -119,7 +122,7 @@ private
 
   def set_options
     HTTPConfigLoader.set_options(@client, @options)
-    @charset = @options["charset"] || XSD::Charset.charset_label($KCODE)
+    @charset = @options["charset"] || XSD::Charset.xml_encoding_label
     @options.add_hook("charset") do |key, value|
       @charset = value
     end
@@ -140,6 +143,7 @@ private
   end
 
   def set_cookie_store_file(value)
+    value = nil if value and value.empty?
     @cookie_store = value
     @client.set_cookie_store(@cookie_store) if @cookie_store
   end
@@ -161,7 +165,20 @@ private
     send_string = conn_data.send_string
     @wiredump_dev << "Wire dump:\n\n" if @wiredump_dev
     begin
-      res = @client.post(endpoint_url, send_string, extra)
+      retry_count = 0
+      while true
+        res = @client.post(endpoint_url, send_string, extra)
+        if RETRYABLE and HTTP::Status.redirect?(res.status)
+          retry_count += 1
+          if retry_count >= MAX_RETRY_COUNT
+            raise HTTPStreamError.new("redirect count exceeded")
+          end
+          endpoint_url = res.header["location"][0]
+          puts "redirected to #{endpoint_url}" if $DEBUG
+        else
+          break
+        end
+      end
     rescue
       @client.reset(endpoint_url)
       raise

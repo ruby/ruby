@@ -36,7 +36,11 @@ class Body < Info
     when PartsAttrName
       @parts = value.source
     when UseAttrName
-      @use = value.source
+      if ['literal', 'encoded'].include?(value.source)
+        @use = value.source.intern
+      else
+        raise RuntimeError.new("unknown use of soap:body: #{value.source}")
+      end
     when EncodingStyleAttrName
       @encodingstyle = value.source
     when NamespaceAttrName

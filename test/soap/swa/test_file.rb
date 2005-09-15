@@ -47,11 +47,14 @@ class TestFile < Test::Unit::TestCase
     @client.reset_stream
   end
 
-  def test_file
+  def test_get_file
     assert_equal(
       File.open(THIS_FILE) { |f| f.read },
       @client.get_file['file'].content
     )
+  end
+
+  def test_put_file
     assert_equal(
       "File 'foo' was received ok.",
       @client.put_file('foo',

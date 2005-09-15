@@ -60,6 +60,9 @@ module_function
   def set_ssl_config(client, ssl_config)
     ssl_config.each do |key, value|
       cfg = client.ssl_config
+      if cfg.nil?
+        raise NotImplementedError.new("SSL not supported")
+      end
       case key
       when 'client_cert'
         cfg.client_cert = cert_from_file(value)

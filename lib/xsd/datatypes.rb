@@ -560,23 +560,20 @@ module XSDDateTimeImpl
 
   def screen_data(t)
     # convert t to a DateTime as an internal representation.
-    if t.is_a?(DateTime)
+    if t.respond_to?(:to_datetime)      # 1.9 or later
+      t.to_datetime
+    elsif t.is_a?(DateTime)
       t
     elsif t.is_a?(Date)
-      if t.respond_to?(:to_datetime)    # from 1.9
-        t.to_datetime
-      else
-        t = screen_data_str(t)
-        t <<= 12 if t.year < 0
-        t
-      end
+      t = screen_data_str(t)
+      t <<= 12 if t.year < 0
+      t
     elsif t.is_a?(Time)
-      sec, min, hour, mday, month, year = t.to_a[0..5]
-      diffday = t.usec.to_r / 1000000 / SecInDay
+      jd = DateTime.civil_to_jd(t.year, t.mon, t.mday, DateTime::ITALY)
+      fr = DateTime.time_to_day_fraction(t.hour, t.min, [t.sec, 59].min) +
+        t.usec.to_r / 1000000 / SecInDay
       of = t.utc_offset.to_r / SecInDay
-      data = DateTime.civil(year, month, mday, hour, min, sec, of)
-      data += diffday
-      data
+      DateTime.new0(DateTime.jd_to_ajd(jd, fr, of), of, DateTime::ITALY)
     else
       screen_data_str(t)
     end

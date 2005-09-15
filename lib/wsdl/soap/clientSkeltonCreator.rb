@@ -42,8 +42,8 @@ private
 endpoint_url = ARGV.shift
 obj = #{ drv_name }.new(endpoint_url)
 
-# Uncomment the below line to see SOAP wiredumps.
-# obj.wiredump_dev = STDERR
+# run ruby with -d to see SOAP wiredumps.
+obj.wiredump_dev = STDERR if $DEBUG
 
 __EOD__
     @definitions.porttype(name).operations.each do |operation|

@@ -26,15 +26,11 @@ class LiteralHandler < Handler
   ###
   ## encode interface.
   #
-  def encode_data(generator, ns, qualified, data, parent)
+  def encode_data(generator, ns, data, parent)
     attrs = {}
-    name = if qualified and data.elename.namespace
-        SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace, '')
-        ns.name(data.elename)
-      else
-        data.elename.name
-      end
+    name = generator.encode_name(ns, data, attrs)
     data.extraattr.each do |k, v|
+      # ToDo: check generator.attributeformdefault here
       if k.is_a?(XSD::QName)
         if k.namespace
           SOAPGenerator.assign_ns(attrs, ns, k.namespace)
@@ -45,7 +41,6 @@ class LiteralHandler < Handler
       end
       attrs[k] = v
     end
-
     case data
     when SOAPRawString
       generator.encode_tag(name, attrs)
@@ -61,22 +56,25 @@ class LiteralHandler < Handler
     when SOAPStruct
       generator.encode_tag(name, attrs)
       data.each do |key, value|
-	if !value.elename.namespace
-	  value.elename.namespace = data.elename.namespace
-	end
-        yield(value, true)
+        generator.encode_child(ns, value, data)
       end
     when SOAPArray
       generator.encode_tag(name, attrs)
       data.traverse do |child, *rank|
 	data.position = nil
-        yield(child, true)
+        generator.encode_child(ns, child, data)
       end
     when SOAPElement
+      # passes 2 times for simplifying namespace definition
+      data.each do |key, value|
+        if value.elename.namespace
+          SOAPGenerator.assign_ns(attrs, ns, value.elename.namespace)
+        end
+      end
       generator.encode_tag(name, attrs)
       generator.encode_rawstring(data.text) if data.text
       data.each do |key, value|
-	yield(value, qualified)
+        generator.encode_child(ns, value, data)
       end
     else
       raise EncodingStyleError.new(
@@ -84,12 +82,8 @@ class LiteralHandler < Handler
     end
   end
 
-  def encode_data_end(generator, ns, qualified, data, parent)
-    name = if qualified and data.elename.namespace
-        ns.name(data.elename)
-      else
-        data.elename.name
-      end
+  def encode_data_end(generator, ns, data, parent)
+    name = generator.encode_name_end(ns, data)
     cr = (data.is_a?(SOAPCompoundtype) or
       (data.is_a?(SOAPElement) and !data.text))
     generator.encode_tag_end(name, cr)

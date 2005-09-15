@@ -205,7 +205,7 @@ private
     opt.add_hook("protocol.wiredump_file_base") do |key, value|
       @wiredump_file_base = value
     end
-    opt["protocol.http.charset"] ||= XSD::Charset.encoding_label
+    opt["protocol.http.charset"] ||= XSD::Charset.xml_encoding_label
     opt["protocol.http.proxy"] ||= Env::HTTP_PROXY
     opt["protocol.http.no_proxy"] ||= Env::NO_PROXY
     opt
