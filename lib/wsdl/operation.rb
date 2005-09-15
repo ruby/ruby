@@ -120,9 +120,8 @@ private
     if result.length == 0
       return parts.dup
     end
-    if parts.length != result.length
-      raise RuntimeError.new("Incomplete prarmeterOrder list.")
-    end
+    # result length can be shorter than parts's.
+    # return part must not be a part of the parameterOrder.
     result
   end
 end

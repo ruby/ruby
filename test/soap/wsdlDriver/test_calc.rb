@@ -73,8 +73,7 @@ class TestCalc < Test::Unit::TestCase
     assert_equal(0.3, @client.add(0.1, 0.2))
   end
 
-  # test for backward compatibility
-  def __NOTEST__test_old_driver
+  def test_old_driver
     @client = ::SOAP::WSDLDriverFactory.new(@wsdl).create_driver
     @client.wiredump_dev = STDOUT if $DEBUG
     @client.endpoint_url = "http://localhost:#{Port}/"

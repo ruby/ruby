@@ -1,5 +1,5 @@
 # SOAP4R - SOAP XML Instance Generator library.
-# Copyright (C) 2001, 2003  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2001, 2003, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -28,14 +28,19 @@ public
   attr_accessor :charset
   attr_accessor :default_encodingstyle
   attr_accessor :generate_explicit_type
+  attr_accessor :use_numeric_character_reference
 
   def initialize(opt = {})
     @reftarget = nil
     @handlers = {}
-    @charset = opt[:charset] || XSD::Charset.encoding_label
+    @charset = opt[:charset] || XSD::Charset.xml_encoding_label
     @default_encodingstyle = opt[:default_encodingstyle] || EncodingNamespace
     @generate_explicit_type =
       opt.key?(:generate_explicit_type) ? opt[:generate_explicit_type] : true
+    @elementformdefault = opt[:elementformdefault]
+    @attributeformdefault = opt[:attributeformdefault]
+    @use_numeric_character_reference = opt[:use_numeric_character_reference]
+    @indentstr = opt[:no_indent] ? '' : '  '
     @buf = @indent = @curr = nil
   end
 
@@ -50,7 +55,7 @@ public
 
     ns = XSD::NS.new
     @buf << xmldecl
-    encode_data(ns, true, obj, nil)
+    encode_data(ns, obj, nil)
 
     @handlers.each do |uri, handler|
       handler.encode_epilogue
@@ -60,42 +65,33 @@ public
     @buf
   end
 
-  def encode_data(ns, qualified, obj, parent)
+  def encode_data(ns, obj, parent)
     if obj.is_a?(SOAPEnvelopeElement)
-      encode_element(ns, qualified, obj, parent)
+      encode_element(ns, obj, parent)
       return
     end
-
     if @reftarget && !obj.precedents.empty?
       add_reftarget(obj.elename.name, obj)
       ref = SOAPReference.new(obj)
-      ref.elename.name = obj.elename.name
+      ref.elename = ref.elename.dup_name(obj.elename.name)
       obj.precedents.clear	# Avoid cyclic delay.
       obj.encodingstyle = parent.encodingstyle
       # SOAPReference is encoded here.
       obj = ref
     end
-
     encodingstyle = obj.encodingstyle
     # Children's encodingstyle is derived from its parent.
     encodingstyle ||= parent.encodingstyle if parent
     obj.encodingstyle = encodingstyle
-
     handler = find_handler(encodingstyle || @default_encodingstyle)
     unless handler
       raise FormatEncodeError.new("Unknown encodingStyle: #{ encodingstyle }.")
     end
-
     if !obj.elename.name
       raise FormatEncodeError.new("Element name not defined: #{ obj }.")
     end
-
-    handler.encode_data(self, ns, qualified, obj, parent) do |child, nextq|
-      indent_backup, @indent = @indent, @indent + '  '
-      encode_data(ns.clone_ns, nextq, child, obj)
-      @indent = indent_backup
-    end
-    handler.encode_data_end(self, ns, qualified, obj, parent)
+    handler.encode_data(self, ns, obj, parent)
+    handler.encode_data_end(self, ns, obj, parent)
   end
 
   def add_reftarget(name, node)
@@ -105,13 +101,19 @@ public
     @reftarget.add(name, node)
   end
 
-  def encode_element(ns, qualified, obj, parent)
+  def encode_child(ns, child, parent)
+    indent_backup, @indent = @indent, @indent + @indentstr
+    encode_data(ns.clone_ns, child, parent)
+    @indent = indent_backup
+  end
+
+  def encode_element(ns, obj, parent)
     attrs = {}
     if obj.is_a?(SOAPBody)
       @reftarget = obj
-      obj.encode(self, ns, attrs) do |child, nextq|
-	indent_backup, @indent = @indent, @indent + '  '
-        encode_data(ns.clone_ns, nextq, child, obj)
+      obj.encode(self, ns, attrs) do |child|
+	indent_backup, @indent = @indent, @indent + @indentstr
+        encode_data(ns.clone_ns, child, obj)
 	@indent = indent_backup
       end
       @reftarget = nil
@@ -124,11 +126,32 @@ public
           SOAPGenerator.assign_ns(attrs, ns, XSD::Namespace, XSDNamespaceTag)
         end
       end
-      obj.encode(self, ns, attrs) do |child, nextq|
-	indent_backup, @indent = @indent, @indent + '  '
-        encode_data(ns.clone_ns, nextq, child, obj)
+      obj.encode(self, ns, attrs) do |child|
+	indent_backup, @indent = @indent, @indent + @indentstr
+        encode_data(ns.clone_ns, child, obj)
 	@indent = indent_backup
       end
+    end
+  end
+
+  def encode_name(ns, data, attrs)
+    if element_local?(data)
+      data.elename.name
+    else
+      if element_qualified?(data)
+        SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace, '')
+      else
+        SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace)
+      end
+      ns.name(data.elename)
+    end
+  end
+
+  def encode_name_end(ns, data)
+    if element_local?(data)
+      data.elename.name
+    else
+      ns.name(data.elename)
     end
   end
 
@@ -142,7 +165,7 @@ public
       @buf << "\n#{ @indent }<#{ elename } " <<
         attrs.collect { |key, value|
           %Q[#{ key }="#{ value }"]
-        }.join("\n#{ @indent }    ") <<
+        }.join("\n#{ @indent }#{ @indentstr * 2 }") <<
 	'>'
     end
   end
@@ -169,11 +192,41 @@ public
   }
   EncodeCharRegexp = Regexp.new("[#{EncodeMap.keys.join}]")
   def encode_string(str)
-    @buf << str.gsub(EncodeCharRegexp) { |c| EncodeMap[c] }
+    if @use_numeric_character_reference and !XSD::Charset.is_us_ascii(str)
+      str.gsub!(EncodeCharRegexp) { |c| EncodeMap[c] }
+      @buf << str.unpack("U*").collect { |c|
+        if c == 0x9 or c == 0xa or c == 0xd or (c >= 0x20 and c <= 0x7f)
+          c.chr
+        else
+          sprintf("&#x%x;", c)
+        end
+      }.join
+    else
+      @buf << str.gsub(EncodeCharRegexp) { |c| EncodeMap[c] }
+    end
+  end
+
+  def element_local?(element)
+    element.elename.namespace.nil?
+  end
+
+  def element_qualified?(element)
+    if element.respond_to?(:qualified)
+      if element.qualified.nil?
+        @elementformdefault
+      else
+        element.qualified
+      end
+    else
+      @elementformdefault
+    end
   end
 
   def self.assign_ns(attrs, ns, namespace, tag = nil)
-    if namespace and !ns.assigned?(namespace)
+    if namespace.nil?
+      raise FormatEncodeError.new("empty namespace")
+    end
+    unless ns.assigned?(namespace)
       tag = ns.assign(namespace, tag)
       if tag == ''
         attr = 'xmlns'

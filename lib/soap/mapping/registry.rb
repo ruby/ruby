@@ -49,8 +49,7 @@ class SOAPException; include Marshallable
       e.set_backtrace(@cause.backtrace)
       return e
     end
-    klass = Mapping.class_from_name(
-      Mapping.elename2name(@excn_type_name.to_s))
+    klass = Mapping.class_from_name(Mapping.elename2name(@excn_type_name.to_s))
     if klass.nil? or not klass <= ::Exception
       return RuntimeError.new(@cause.inspect)
     end
@@ -88,6 +87,10 @@ class Object; include Marshallable
     end
     @__xmlele.each do |k, v|
       return v if k == qname
+    end
+    # fallback
+    @__xmlele.each do |k, v|
+      return v if k.name == qname.name
     end
     nil
   end

@@ -179,14 +179,14 @@ __EOP__
     cfg["protocol.http.ssl_config.ca_file"] = File.join(DIR, "ca.cert")
     cfg["protocol.http.ssl_config.ca_file"] = File.join(DIR, "subca.cert")
     #cfg.timeout = 123
-    assert_equal("Hello World, from ssl client", @client.hello_world("ssl client"))
-    #
     cfg["protocol.http.ssl_config.ciphers"] = "!ALL"
+    #
     begin
       @client.hello_world("ssl client")
       assert(false)
     rescue OpenSSL::SSL::SSLError => ssle
-      assert_equal("no ciphers available", ssle.message)
+      # depends on OpenSSL version. (?:0.9.8|0.9.7)
+      assert_match(/\A(?:SSL_CTX_set_cipher_list:: no cipher match|no ciphers available)\z/, ssle.message)
     end
     #
     cfg["protocol.http.ssl_config.ciphers"] = "ALL"
@@ -201,7 +201,7 @@ private
 
   def setup_server
     svrcmd = "#{q(RUBY)} "
-    svrcmd << "-d " if $DEBUG
+    #svrcmd << "-d " if $DEBUG
     svrcmd << File.join(DIR, "sslsvr.rb")
     svrout = IO.popen(svrcmd)
     @serverpid = Integer(svrout.gets.chomp)

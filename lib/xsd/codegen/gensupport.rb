@@ -1,5 +1,5 @@
 # XSD4R - Code generation support
-# Copyright (C) 2004  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
+# Copyright (C) 2004, 2005  NAKAMURA, Hiroshi <nahi@ruby-lang.org>.
 
 # This program is copyrighted free software by NAKAMURA, Hiroshi.  You can
 # redistribute it and/or modify it under the same terms of Ruby's license;
@@ -10,7 +10,8 @@ module XSD
 module CodeGen
 
 # from the file 'keywords' in 1.9.
-KEYWORD = %w(
+KEYWORD = {}
+%w(
 __LINE__
 __FILE__
 BEGIN
@@ -51,7 +52,7 @@ until
 when
 while
 yield
-)
+).each { |k| KEYWORD[k] = nil }
 
 module GenSupport
   def capitalize(target)
@@ -96,12 +97,12 @@ module GenSupport
   module_function :safemethodname?
 
   def safevarname(name)
-    safename = name.scan(/[a-zA-Z0-9_]+/).join('_')
-    safename = uncapitalize(safename)
+    safename = uncapitalize(name.scan(/[a-zA-Z0-9_]+/).join('_'))
     if /^[a-z]/ !~ safename or keyword?(safename)
-      safename = "v_#{safename}"
+      "v_#{safename}"
+    else
+      safename
     end
-    safename
   end
   module_function :safevarname
 
@@ -111,7 +112,7 @@ module GenSupport
   module_function :safevarname?
 
   def keyword?(word)
-    KEYWORD.include?(word)
+    KEYWORD.key?(word)
   end
   module_function :keyword?
 

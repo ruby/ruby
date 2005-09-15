@@ -29,21 +29,12 @@ class SOAPHandler < Handler
   ###
   ## encode interface.
   #
-  def encode_data(generator, ns, qualified, data, parent)
+  def encode_data(generator, ns, data, parent)
     attrs = encode_attrs(generator, ns, data, parent)
-
     if parent && parent.is_a?(SOAPArray) && parent.position
       attrs[ns.name(AttrPositionName)] = "[#{parent.position.join(',')}]"
     end
-
-    name = nil
-    if qualified and data.elename.namespace
-      SOAPGenerator.assign_ns(attrs, ns, data.elename.namespace)
-      name = ns.name(data.elename)
-    else
-      name = data.elename.name
-    end
-
+    name = generator.encode_name(ns, data, attrs)
     case data
     when SOAPReference
       attrs['href'] = data.refidstr
@@ -65,13 +56,13 @@ class SOAPHandler < Handler
     when SOAPStruct
       generator.encode_tag(name, attrs)
       data.each do |key, value|
-	yield(value, false)
+        generator.encode_child(ns, value, data)
       end
     when SOAPArray
       generator.encode_tag(name, attrs)
       data.traverse do |child, *rank|
 	data.position = data.sparse ? rank : nil
-	yield(child, false)
+        generator.encode_child(ns, child, data)
       end
     else
       raise EncodingStyleError.new(
@@ -79,12 +70,8 @@ class SOAPHandler < Handler
     end
   end
 
-  def encode_data_end(generator, ns, qualified, data, parent)
-    name = if qualified and data.elename.namespace
-        ns.name(data.elename)
-      else
-        data.elename.name
-      end
+  def encode_data_end(generator, ns, data, parent)
+    name = generator.encode_name_end(ns, data)
     cr = data.is_a?(SOAPCompoundtype)
     generator.encode_tag_end(name, cr)
   end
@@ -268,8 +255,8 @@ private
   end
 
   def encode_attrs(generator, ns, data, parent)
-    return {} if data.is_a?(SOAPReference)
     attrs = {}
+    return attrs if data.is_a?(SOAPReference)
 
     if !parent || parent.encodingstyle != EncodingNamespace
       if @generate_explicit_type

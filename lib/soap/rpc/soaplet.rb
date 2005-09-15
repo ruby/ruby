@@ -84,6 +84,7 @@ public
     begin
       conn_data = ::SOAP::StreamHandler::ConnectionData.new
       setup_req(conn_data, req)
+      @router.external_ces = @options[:external_ces]
       conn_data = @router.route(conn_data)
       setup_res(conn_data, req, res)
     rescue Exception => e

@@ -98,7 +98,7 @@ __EOX__
   end
 
   def parse_req_header(str)
-    if ::SOAP::StreamHandler::Client.to_s == 'SOAP::NetHttpClient'
+    if ::SOAP::HTTPStreamHandler::Client.to_s == 'SOAP::NetHttpClient'
       str = eval(str.split(/\r?\n/)[4][3..-1])
     end
     parse_req_header_http_access2(str)

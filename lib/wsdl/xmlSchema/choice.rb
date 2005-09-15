@@ -29,6 +29,10 @@ class Choice < Info
     parent.targetnamespace
   end
 
+  def elementformdefault
+    parent.elementformdefault
+  end
+
   def <<(element)
     @elements << element
   end

@@ -38,14 +38,14 @@ class WSDLLiteralRegistry < Registry
     if ele = @definedelements[qname]
       soap_obj = obj2elesoap(obj, ele)
     elsif type = @definedtypes[qname]
-      soap_obj = obj2typesoap(obj, type)
+      soap_obj = obj2typesoap(obj, type, true)
     else
       soap_obj = any2soap(obj, qname)
     end
     return soap_obj if soap_obj
     if @excn_handler_obj2soap
       soap_obj = @excn_handler_obj2soap.call(obj) { |yield_obj|
-        Mapping._obj2soap(yield_obj, self)
+        Mapping.obj2soap(yield_obj, nil, nil, MAPPING_OPT)
       }
       return soap_obj if soap_obj
     end
@@ -54,9 +54,7 @@ class WSDLLiteralRegistry < Registry
 
   # node should be a SOAPElement
   def soap2obj(node, obj_class = nil)
-    unless obj_class.nil?
-      raise MappingError.new("must not reach here")
-    end
+    # obj_class is given when rpc/literal service.  but ignored for now.
     begin
       return any2obj(node)
     rescue MappingError
@@ -64,45 +62,50 @@ class WSDLLiteralRegistry < Registry
     if @excn_handler_soap2obj
       begin
         return @excn_handler_soap2obj.call(node) { |yield_node|
-	    Mapping._soap2obj(yield_node, self)
+	    Mapping.soap2obj(yield_node, nil, nil, MAPPING_OPT)
 	  }
       rescue Exception
       end
     end
-    raise MappingError.new("cannot map #{node.type.name} to Ruby object")
+    if node.respond_to?(:type)
+      raise MappingError.new("cannot map #{node.type.name} to Ruby object")
+    else
+      raise MappingError.new("cannot map #{node.elename.name} to Ruby object")
+    end
   end
 
 private
 
+  MAPPING_OPT = { :no_reference => true }
+
   def obj2elesoap(obj, ele)
     o = nil
+    qualified = (ele.elementform == 'qualified')
     if ele.type
       if type = @definedtypes[ele.type]
-        o = obj2typesoap(obj, type)
+        o = obj2typesoap(obj, type, qualified)
       elsif type = TypeMap[ele.type]
         o = base2soap(obj, type)
       else
         raise MappingError.new("cannot find type #{ele.type}")
       end
-      o.elename = ele.name
     elsif ele.local_complextype
-      o = obj2typesoap(obj, ele.local_complextype)
-      o.elename = ele.name
+      o = obj2typesoap(obj, ele.local_complextype, qualified)
       add_attributes2soap(obj, o)
     elsif ele.local_simpletype
-      o = obj2typesoap(obj, ele.local_simpletype)
-      o.elename = ele.name
+      o = obj2typesoap(obj, ele.local_simpletype, qualified)
     else
       raise MappingError.new('illegal schema?')
     end
+    o.elename = ele.name
     o
   end
 
-  def obj2typesoap(obj, type)
+  def obj2typesoap(obj, type, qualified)
     if type.is_a?(::WSDL::XMLSchema::SimpleType)
       simpleobj2soap(obj, type)
     else
-      complexobj2soap(obj, type)
+      complexobj2soap(obj, type, qualified)
     end
   end
 
@@ -113,15 +116,17 @@ private
     o
   end
 
-  def complexobj2soap(obj, type)
+  def complexobj2soap(obj, type, qualified)
     o = SOAPElement.new(type.name)
+    o.qualified = qualified
     type.each_element do |child_ele|
       child = Mapping.get_attribute(obj, child_ele.name.name)
       if child.nil?
         if child_ele.nillable
           # ToDo: test
           # add empty element
-          o.add(obj2elesoap(nil))
+          child_soap = obj2elesoap(nil, child_ele)
+          o.add(child_soap)
         elsif Integer(child_ele.minoccurs) == 0
           # nothing to do
         else
@@ -129,10 +134,12 @@ private
         end
       elsif child_ele.map_as_array?
         child.each do |item|
-          o.add(obj2elesoap(item, child_ele))
+          child_soap = obj2elesoap(item, child_ele)
+          o.add(child_soap)
         end
       else
-        o.add(obj2elesoap(child, child_ele))
+        child_soap = obj2elesoap(child, child_ele)
+        o.add(child_soap)
       end
     end
     o
@@ -153,7 +160,7 @@ private
       # expected to be a basetype or an anyType.
       # SOAPStruct, etc. is used instead of SOAPElement.
       begin
-        ele = Mapping.obj2soap(obj)
+        ele = Mapping.obj2soap(obj, nil, nil, MAPPING_OPT)
         ele.elename = qname
         ele
       rescue MappingError
@@ -170,6 +177,9 @@ private
 
   def stubobj2soap(obj, qname)
     ele = SOAPElement.new(qname)
+    ele.qualified =
+      (obj.class.class_variables.include?('@@schema_qualified') and
+      obj.class.class_eval('@@schema_qualified'))
     add_elements2soap(obj, ele)
     add_attributes2soap(obj, ele)
     ele
@@ -196,15 +206,17 @@ private
     elements, as_array = schema_element_definition(obj.class)
     if elements
       elements.each do |elename, type|
-        child = Mapping.get_attribute(obj, elename)
-        unless child.nil?
-          name = XSD::QName.new(nil, elename)
-          if as_array.include?(type)
+        if child = Mapping.get_attribute(obj, elename.name)
+          if as_array.include?(elename.name)
             child.each do |item|
-              ele.add(obj2soap(item, name))
+              ele.add(obj2soap(item, elename))
             end
           else
-            ele.add(obj2soap(child, name))
+            ele.add(obj2soap(child, elename))
+          end
+        elsif obj.is_a?(::Array) and as_array.include?(elename.name)
+          obj.each do |item|
+            ele.add(obj2soap(item, elename))
           end
         end
       end
@@ -225,8 +237,9 @@ private
   def base2soap(obj, type)
     soap_obj = nil
     if type <= XSD::XSDString
-      soap_obj = type.new(XSD::Charset.is_ces(obj, $KCODE) ?
-        XSD::Charset.encoding_conv(obj, $KCODE, XSD::Charset.encoding) : obj)
+      str = XSD::Charset.encoding_conv(obj.to_s,
+        Thread.current[:SOAPExternalCES], XSD::Charset.encoding)
+      soap_obj = type.new(str)
     else
       soap_obj = type.new(obj)
     end
@@ -253,7 +266,7 @@ private
         # SOAPArray for literal?
       soapele2plainobj(node)
     else
-      obj = Mapping._soap2obj(node, Mapping::DefaultRegistry, obj_class)
+      obj = Mapping.soap2obj(node, nil, obj_class, MAPPING_OPT)
       add_attributes2plainobj(node, obj)
       obj
     end
@@ -277,8 +290,11 @@ private
     elements, as_array = schema_element_definition(obj.class)
     vars = {}
     node.each do |name, value|
-      if class_name = elements[name]
+      item = elements.find { |k, v| k.name == name }
+      if item
+        elename, class_name = item
         if klass = Mapping.class_from_name(class_name)
+          # klass must be a SOAPBasetype or a class
           if klass.ancestors.include?(::SOAP::SOAPBasetype)
             if value.respond_to?(:data)
               child = klass.new(value.data).data
@@ -288,13 +304,21 @@ private
           else
             child = any2obj(value, klass)
           end
+        elsif klass = Mapping.module_from_name(class_name)
+          # simpletype
+          if value.respond_to?(:data)
+            child = value.data
+          else
+            raise MappingError.new(
+              "cannot map to a module value: #{class_name}")
+          end
         else
-          raise MappingError.new("unknown class: #{class_name}")
+          raise MappingError.new("unknown class/module: #{class_name}")
         end
       else      # untyped element is treated as anyType.
         child = any2obj(value)
       end
-      if as_array.include?(class_name)
+      if as_array.include?(elename.name)
         (vars[name] ||= []) << child
       else
         vars[name] = child
@@ -323,7 +347,7 @@ private
 
   def add_elements2plainobj(node, obj)
     node.each do |name, value|
-      obj.__add_xmlele_value(XSD::QName.new(nil, name), any2obj(value))
+      obj.__add_xmlele_value(value.elename, any2obj(value))
     end
   end
 

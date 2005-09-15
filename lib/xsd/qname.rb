@@ -31,9 +31,6 @@ class QName
   end
 
   def match(rhs)
-    unless self.class === rhs
-      return false
-    end
     if rhs.namespace and (rhs.namespace != @namespace)
       return false
     end
@@ -44,7 +41,7 @@ class QName
   end
 
   def ==(rhs)
-    (self.class === rhs && @namespace == rhs.namespace && @name == rhs.name)
+    !rhs.nil? and @namespace == rhs.namespace and @name == rhs.name
   end
 
   def ===(rhs)
@@ -73,6 +70,8 @@ class QName
     NormalizedNameRegexp =~ str
     self.new($1, $2)
   end
+
+  EMPTY = QName.new.freeze
 end
 
 

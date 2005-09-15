@@ -69,18 +69,18 @@ Methods = [
     end
     c.def_privatemethod("init_methods") do
       <<-EOD
-        Methods.each do |name_as, name, params, soapaction, namespace, style|
-          qname = XSD::QName.new(namespace, name_as)
-          if style == :document
-            @proxy.add_document_method(soapaction, name, params)
-            add_document_method_interface(name, params)
+        Methods.each do |definitions|
+          opt = definitions.last
+          if opt[:request_style] == :document
+            add_document_operation(*definitions)
           else
-            @proxy.add_rpc_method(qname, soapaction, name, params)
-            add_rpc_method_interface(name, params)
-          end
-          if name_as != name and name_as.capitalize == name.capitalize
-            ::SOAP::Mapping.define_singleton_method(self, name_as) do |*arg|
-              __send__(name, *arg)
+            add_rpc_operation(*definitions)
+            qname = definitions[0]
+            name = definitions[2]
+            if qname.name != name and qname.name.capitalize == name.capitalize
+              ::SOAP::Mapping.define_singleton_method(self, qname.name) do |*arg|
+                __send__(name, *arg)
+              end
             end
           end
         end

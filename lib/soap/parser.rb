@@ -60,6 +60,7 @@ private
 
 public
 
+  attr_accessor :envelopenamespace
   attr_accessor :default_encodingstyle
   attr_accessor :decode_typemap
   attr_accessor :allow_unqualified_element
@@ -70,6 +71,7 @@ public
     @parsestack = nil
     @lastnode = nil
     @handlers = {}
+    @envelopenamespace = opt[:envelopenamespace] || EnvelopeNamespace
     @default_encodingstyle = opt[:default_encodingstyle] || EncodingNamespace
     @decode_typemap = opt[:decode_typemap] || nil
     @allow_unqualified_element = opt[:allow_unqualified_element] || false
@@ -134,10 +136,7 @@ public
     lastframe = @parsestack.last
     if lastframe
       # Need not to be cloned because character does not have attr.
-      ns = lastframe.ns
-      parent = lastframe.node
-      encodingstyle = lastframe.encodingstyle
-      decode_text(ns, text, encodingstyle)
+      decode_text(lastframe.ns, text, lastframe.encodingstyle)
     else
       # Ignore Text outside of SOAP Envelope.
       p text if $DEBUG
@@ -157,7 +156,7 @@ private
 
   def find_encodingstyle(ns, attrs)
     attrs.each do |key, value|
-      if (ns.compare(EnvelopeNamespace, AttrEncodingStyle, key))
+      if (ns.compare(@envelopenamespace, AttrEncodingStyle, key))
 	return value
       end
     end
@@ -168,7 +167,7 @@ private
     ele = ns.parse(name)
 
     # Envelope based parsing.
-    if ((ele.namespace == EnvelopeNamespace) ||
+    if ((ele.namespace == @envelopenamespace) ||
 	(@allow_unqualified_element && ele.namespace.nil?))
       o = decode_soap_envelope(ns, ele, attrs, parent)
       return o if o

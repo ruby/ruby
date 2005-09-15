@@ -92,6 +92,14 @@ public
     opt[:response_style] ||= :document
     opt[:request_use] ||= :literal
     opt[:response_use] ||= :literal
+    # default values of these values are unqualified in XML Schema.
+    # set true for backward compatibility.
+    unless opt.key?(:elementformdefault)
+      opt[:elementformdefault] = true
+    end
+    unless opt.key?(:attributeformdefault)
+      opt[:attributeformdefault] = true
+    end
     @operation[name] = Operation.new(soapaction, param_def, opt)
   end
 
@@ -101,7 +109,7 @@ public
   alias add_document_method add_document_operation
 
   def invoke(req_header, req_body, opt = nil)
-    opt ||= create_options
+    opt ||= create_encoding_opt
     route(req_header, req_body, opt, opt)
   end
 
@@ -109,15 +117,27 @@ public
     unless op_info = @operation[name]
       raise MethodDefinitionError, "method: #{name} not defined"
     end
+    mapping_opt = create_mapping_opt
     req_header = create_request_header
     req_body = SOAPBody.new(
-      op_info.request_body(params, @mapping_registry, @literal_mapping_registry)
+      op_info.request_body(params, @mapping_registry,
+        @literal_mapping_registry, mapping_opt)
     )
-    reqopt = create_options({
+    reqopt = create_encoding_opt(
       :soapaction => op_info.soapaction || @soapaction,
-      :default_encodingstyle => op_info.request_default_encodingstyle})
-    resopt = create_options({
-      :default_encodingstyle => op_info.response_default_encodingstyle})
+      :envelopenamespace => @options["soap.envelope.requestnamespace"],
+      :default_encodingstyle =>
+        @default_encodingstyle || op_info.request_default_encodingstyle,
+      :elementformdefault => op_info.elementformdefault,
+      :attributeformdefault => op_info.attributeformdefault
+    )
+    resopt = create_encoding_opt(
+      :envelopenamespace => @options["soap.envelope.responsenamespace"],
+      :default_encodingstyle =>
+        @default_encodingstyle || op_info.response_default_encodingstyle,
+      :elementformdefault => op_info.elementformdefault,
+      :attributeformdefault => op_info.attributeformdefault
+    )
     env = route(req_header, req_body, reqopt, resopt)
     raise EmptyResponseError unless env
     receive_headers(env.header)
@@ -126,11 +146,15 @@ public
     rescue ::SOAP::FaultError => e
       op_info.raise_fault(e, @mapping_registry, @literal_mapping_registry)
     end
-    op_info.response_obj(env.body, @mapping_registry, @literal_mapping_registry)
+    op_info.response_obj(env.body, @mapping_registry,
+      @literal_mapping_registry, mapping_opt)
   end
 
   def route(req_header, req_body, reqopt, resopt)
-    req_env = SOAPEnvelope.new(req_header, req_body)
+    req_env = ::SOAP::SOAPEnvelope.new(req_header, req_body)
+    unless reqopt[:envelopenamespace].nil?
+      set_envelopenamespace(req_env, reqopt[:envelopenamespace])
+    end
     reqopt[:external_content] = nil
     conn_data = marshal(req_env, reqopt)
     if ext = reqopt[:external_content]
@@ -158,6 +182,16 @@ public
   end
 
 private
+
+  def set_envelopenamespace(env, namespace)
+    env.elename = XSD::QName.new(namespace, env.elename.name)
+    if env.header
+      env.header.elename = XSD::QName.new(namespace, env.header.elename.name)
+    end
+    if env.body
+      env.body.elename = XSD::QName.new(namespace, env.body.elename.name)
+    end
+  end
 
   def create_request_header
     headers = @headerhandler.on_outbound
@@ -201,6 +235,10 @@ private
 	::SOAP::StreamHandler.parse_media_type(contenttype)
       env = Processor.unmarshal(conn_data.receive_string, opt)
     end
+    unless env.is_a?(::SOAP::SOAPEnvelope)
+      raise ResponseFormatError.new(
+        "response is not a SOAP envelope: #{conn_data.receive_string}")
+    end
     env
   end
 
@@ -212,11 +250,22 @@ private
     header
   end
 
-  def create_options(hash = nil)
+  def create_encoding_opt(hash = nil)
     opt = {}
     opt[:default_encodingstyle] = @default_encodingstyle
     opt[:allow_unqualified_element] = @allow_unqualified_element
     opt[:generate_explicit_type] = @generate_explicit_type
+    opt[:no_indent] = @options["soap.envelope.no_indent"]
+    opt[:use_numeric_character_reference] =
+      @options["soap.envelope.use_numeric_character_reference"]
+    opt.update(hash) if hash
+    opt
+  end
+
+  def create_mapping_opt(hash = nil)
+    opt = {
+      :external_ces => @options["soap.mapping.external_ces"]
+    }
     opt.update(hash) if hash
     opt
   end
@@ -227,6 +276,8 @@ private
     attr_reader :response_style
     attr_reader :request_use
     attr_reader :response_use
+    attr_reader :elementformdefault
+    attr_reader :attributeformdefault
 
     def initialize(soapaction, param_def, opt)
       @soapaction = soapaction
@@ -234,6 +285,9 @@ private
       @response_style = opt[:response_style]
       @request_use = opt[:request_use]
       @response_use = opt[:response_use]
+      # set nil(unqualified) by default
+      @elementformdefault = opt[:elementformdefault]
+      @attributeformdefault = opt[:attributeformdefault]
       check_style(@request_style)
       check_style(@response_style)
       check_use(@request_use)
@@ -247,17 +301,22 @@ private
           RPC::SOAPMethodRequest.new(@rpc_request_qname, param_def, @soapaction)
       else
         @doc_request_qnames = []
+        @doc_request_qualified = []
         @doc_response_qnames = []
-        param_def.each do |inout, paramname, typeinfo|
+        @doc_response_qualified = []
+        param_def.each do |inout, paramname, typeinfo, eleinfo|
           klass_not_used, nsdef, namedef = typeinfo
+          qualified = eleinfo
           if namedef.nil?
             raise MethodDefinitionError.new("qname must be given")
           end
           case inout
           when SOAPMethod::IN
             @doc_request_qnames << XSD::QName.new(nsdef, namedef)
+            @doc_request_qualified << qualified
           when SOAPMethod::OUT
             @doc_response_qnames << XSD::QName.new(nsdef, namedef)
+            @doc_response_qualified << qualified
           else
             raise MethodDefinitionError.new(
               "illegal inout definition for document style: #{inout}")
@@ -274,19 +333,19 @@ private
       (@response_use == :encoded) ? EncodingNamespace : LiteralNamespace
     end
 
-    def request_body(values, mapping_registry, literal_mapping_registry)
+    def request_body(values, mapping_registry, literal_mapping_registry, opt)
       if @request_style == :rpc
-        request_rpc(values, mapping_registry, literal_mapping_registry)
+        request_rpc(values, mapping_registry, literal_mapping_registry, opt)
       else
-        request_doc(values, mapping_registry, literal_mapping_registry)
+        request_doc(values, mapping_registry, literal_mapping_registry, opt)
       end
     end
 
-    def response_obj(body, mapping_registry, literal_mapping_registry)
+    def response_obj(body, mapping_registry, literal_mapping_registry, opt)
       if @response_style == :rpc
-        response_rpc(body, mapping_registry, literal_mapping_registry)
+        response_rpc(body, mapping_registry, literal_mapping_registry, opt)
       else
-        response_doc(body, mapping_registry, literal_mapping_registry)
+        response_doc(body, mapping_registry, literal_mapping_registry, opt)
       end
     end
 
@@ -312,86 +371,89 @@ private
       end
     end
 
-    def request_rpc(values, mapping_registry, literal_mapping_registry)
+    def request_rpc(values, mapping_registry, literal_mapping_registry, opt)
       if @request_use == :encoded
-        request_rpc_enc(values, mapping_registry)
+        request_rpc_enc(values, mapping_registry, opt)
       else
-        request_rpc_lit(values, literal_mapping_registry)
+        request_rpc_lit(values, literal_mapping_registry, opt)
       end
     end
 
-    def request_doc(values, mapping_registry, literal_mapping_registry)
+    def request_doc(values, mapping_registry, literal_mapping_registry, opt)
       if @request_use == :encoded
-        request_doc_enc(values, mapping_registry)
+        request_doc_enc(values, mapping_registry, opt)
       else
-        request_doc_lit(values, literal_mapping_registry)
+        request_doc_lit(values, literal_mapping_registry, opt)
       end
     end
 
-    def request_rpc_enc(values, mapping_registry)
+    def request_rpc_enc(values, mapping_registry, opt)
       method = @rpc_method_factory.dup
       names = method.input_params
       obj = create_request_obj(names, values)
-      soap = Mapping.obj2soap(obj, mapping_registry, @rpc_request_qname)
+      soap = Mapping.obj2soap(obj, mapping_registry, @rpc_request_qname, opt)
       method.set_param(soap)
       method
     end
 
-    def request_rpc_lit(values, mapping_registry)
+    def request_rpc_lit(values, mapping_registry, opt)
       method = @rpc_method_factory.dup
       params = {}
       idx = 0
       method.input_params.each do |name|
         params[name] = Mapping.obj2soap(values[idx], mapping_registry, 
-          XSD::QName.new(nil, name))
+          XSD::QName.new(nil, name), opt)
         idx += 1
       end
       method.set_param(params)
       method
     end
 
-    def request_doc_enc(values, mapping_registry)
+    def request_doc_enc(values, mapping_registry, opt)
       (0...values.size).collect { |idx|
-        ele = Mapping.obj2soap(values[idx], mapping_registry)
+        ele = Mapping.obj2soap(values[idx], mapping_registry, nil, opt)
         ele.elename = @doc_request_qnames[idx]
         ele
       }
     end
 
-    def request_doc_lit(values, mapping_registry)
+    def request_doc_lit(values, mapping_registry, opt)
       (0...values.size).collect { |idx|
         ele = Mapping.obj2soap(values[idx], mapping_registry,
-          @doc_request_qnames[idx])
+          @doc_request_qnames[idx], opt)
         ele.encodingstyle = LiteralNamespace
+        if ele.respond_to?(:qualified)
+          ele.qualified = @doc_request_qualified[idx]
+        end
         ele
       }
     end
 
-    def response_rpc(body, mapping_registry, literal_mapping_registry)
+    def response_rpc(body, mapping_registry, literal_mapping_registry, opt)
       if @response_use == :encoded
-        response_rpc_enc(body, mapping_registry)
+        response_rpc_enc(body, mapping_registry, opt)
       else
-        response_rpc_lit(body, literal_mapping_registry)
+        response_rpc_lit(body, literal_mapping_registry, opt)
       end
     end
 
-    def response_doc(body, mapping_registry, literal_mapping_registry)
+    def response_doc(body, mapping_registry, literal_mapping_registry, opt)
       if @response_use == :encoded
-        return *response_doc_enc(body, mapping_registry)
+        return *response_doc_enc(body, mapping_registry, opt)
       else
-        return *response_doc_lit(body, literal_mapping_registry)
+        return *response_doc_lit(body, literal_mapping_registry, opt)
       end
     end
 
-    def response_rpc_enc(body, mapping_registry)
+    def response_rpc_enc(body, mapping_registry, opt)
       ret = nil
       if body.response
         ret = Mapping.soap2obj(body.response, mapping_registry,
-          @rpc_method_factory.retval_class_name)
+          @rpc_method_factory.retval_class_name, opt)
       end
       if body.outparams
         outparams = body.outparams.collect { |outparam|
-          Mapping.soap2obj(outparam, mapping_regisry)
+          Mapping.soap2obj(outparam, mapping_registry, nil, opt)
         }
         [ret].concat(outparams)
       else
@@ -399,20 +461,20 @@ private
       end
     end
 
-    def response_rpc_lit(body, mapping_registry)
+    def response_rpc_lit(body, mapping_registry, opt)
       body.root_node.collect { |key, value|
         Mapping.soap2obj(value, mapping_registry,
-          @rpc_method_factory.retval_class_name)
+          @rpc_method_factory.retval_class_name, opt)
       }
     end
 
-    def response_doc_enc(body, mapping_registry)
+    def response_doc_enc(body, mapping_registry, opt)
       body.collect { |key, value|
-        Mapping.soap2obj(value, mapping_registry)
+        Mapping.soap2obj(value, mapping_registry, nil, opt)
       }
     end
 
-    def response_doc_lit(body, mapping_registry)
+    def response_doc_lit(body, mapping_registry, opt)
       body.collect { |key, value|
         Mapping.soap2obj(value, mapping_registry)
       }
@@ -420,8 +482,10 @@ private
 
     def create_request_obj(names, params)
       o = Object.new
-      for idx in 0 ... params.length
+      idx = 0
+      while idx < params.length
         o.instance_variable_set('@' + names[idx], params[idx])
+        idx += 1
       end
       o
     end
