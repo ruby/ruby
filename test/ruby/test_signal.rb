@@ -2,6 +2,15 @@ require 'test/unit'
 require 'timeout'
 
 class TestSignal < Test::Unit::TestCase
+  def have_fork?
+    begin
+      fork{}
+      true
+    rescue NotImplementedError
+      false
+    end
+  end
+
   def test_signal
     defined?(Process.kill) or return
     begin
@@ -25,6 +34,7 @@ class TestSignal < Test::Unit::TestCase
   end
 
   def test_exit_action
+    return unless have_fork?	# snip this test
     begin
       r, w = IO.pipe
       r0, w0 = IO.pipe

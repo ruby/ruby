@@ -1,3 +1,8 @@
+Thu Sep 15 22:40:27 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_signal.rb (test_exit_action): skip the test using
+	  fork on fork-less platforms.
+
 Thu Sep 15 13:54:33 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb: add :read_timeout option.
