@@ -1,3 +1,11 @@
+Thu Sep 15 11:01:58 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (rb_w32_pipe_exec): remove unnecessary CloseHandle().
+
+	* win32/win32.c (extract_console_fd, peek_console): new functions.
+
+	* win32/win32.c (rb_w32_select): check consoles by polling them.
+
 Wed Sep 14 23:28:28 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (collect_file_fd): rename from extract_file_fd.

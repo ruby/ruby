@@ -687,7 +687,6 @@ rb_w32_join_argv(char *cmd, char *const *argv)
     return cmd;
 }
 
-
 static int socketpair_internal(int af, int type, int protocol, SOCKET *sv);
 
 rb_pid_t
@@ -698,7 +697,6 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
     HANDLE hDupFile;
     HANDLE hCurProc;
     SECURITY_ATTRIBUTES sa;
-    BOOL fRet;
     BOOL reading, writing;
     SOCKET pair[2];
     int fd;
@@ -707,6 +705,10 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 
     /* Figure out what we're doing... */
     if (mode & O_RDWR) {
+	if (IsWin95()) {
+	    errno = EINVAL;
+	    return -1;
+	}
 	reading = writing = TRUE;
 	pipemode = _O_RDWR;
     }
@@ -747,8 +749,7 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 	    hOrg = hIn = hOut = (HANDLE)pair[0];
 	}
 	else if (reading) {
-	    fRet = CreatePipe(&hIn, &hOut, &sa, 2048L);
-	    if (!fRet) {
+	    if (!CreatePipe(&hIn, &hOut, &sa, 2048L)) {
 		errno = map_errno(GetLastError());
 		break;
 	    }
@@ -757,7 +758,6 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 		errno = map_errno(GetLastError());
 		CloseHandle(hIn);
 		CloseHandle(hOut);
-		CloseHandle(hCurProc);
 		break;
 	    }
 	    CloseHandle(hIn);
@@ -765,8 +765,7 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 	    hOrg = hOut;
 	}
 	else {	/* writing */
-	    fRet = CreatePipe(&hIn, &hOut, &sa, 2048L);
-	    if (!fRet) {
+	    if (!CreatePipe(&hIn, &hOut, &sa, 2048L)) {
 		errno = map_errno(GetLastError());
 		break;
 	    }
@@ -775,14 +774,12 @@ rb_w32_pipe_exec(const char *cmd, const char *prog, int mode, int *pipe)
 		errno = map_errno(GetLastError());
 		CloseHandle(hIn);
 		CloseHandle(hOut);
-		CloseHandle(hCurProc);
 		break;
 	    }
 	    CloseHandle(hOut);
 	    hOut = NULL;
 	    hOrg = hIn;
 	}
-	CloseHandle(hCurProc);
 
 	/* create child process */
 	child = CreateChild(cmd, prog, &sa, hIn, hOut, NULL);
@@ -2007,6 +2004,83 @@ peek_pipe(fd_set *set, fd_set *fileset)
     return fileset->fd_count;
 }
 
+static int
+extract_console_fd(fd_set *set, fd_set *fileset)
+{
+    int idx;
+
+    fileset->fd_count = 0;
+    if (!set)
+	return 0;
+    for (idx = 0; idx < set->fd_count; idx++) {
+	BOOL ret;
+	static INPUT_RECORD ir;
+	DWORD n;
+	int fd = set->fd_array[idx];
+	RUBY_CRITICAL(ret = PeekConsoleInput((HANDLE)fd, &ir, 1, &n));
+
+	if (ret) {
+	    int i;
+
+	    for (i = 0; i < fileset->fd_count; i++) {
+		if (fileset->fd_array[i] == fd) {
+		    break;
+		}
+	    }
+	    if (i == fileset->fd_count) {
+		if (fileset->fd_count < FD_SETSIZE) {
+		    fileset->fd_array[i] = fd;
+		    fileset->fd_count++;
+		}
+	    }
+
+	    for (i = idx; i < set->fd_count - 1; i++) {
+		set->fd_array[i] = set->fd_array[i + 1];
+		i++;
+	    }
+	    set->fd_count--;
+	    idx--;
+	}
+    }
+    return fileset->fd_count;
+}
+
+static int
+peek_console(fd_set *set, fd_set *fileset)
+{
+    int idx;
+    INPUT_RECORD ir;
+
+    fileset->fd_count = 0;
+    for (idx = 0; idx < set->fd_count; idx++) {
+	DWORD n;
+	int fd = set->fd_array[idx];
+	if (PeekConsoleInput((HANDLE)fd, &ir, 1, &n) && n > 0) {
+	    if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown &&
+		ir.Event.KeyEvent.uChar.AsciiChar) {
+		int i;
+
+		for (i = 0; i < fileset->fd_count; i++) {
+		    if (fileset->fd_array[i] == fd) {
+			break;
+		    }
+		}
+		if (i == fileset->fd_count) {
+		    if (fileset->fd_count < FD_SETSIZE) {
+			fileset->fd_array[i] = fd;
+			fileset->fd_count++;
+		    }
+		}
+	    }
+	    else {
+		ReadConsoleInput((HANDLE)fd, &ir, 1, &n);
+	    }
+	}
+    }
+
+    return fileset->fd_count;
+}
+
 #define PIPE_PEEK_INTERVAL (10 * 1000)	/* usec */
 
 long 
@@ -2017,11 +2091,13 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     fd_set file_rd;
     fd_set file_wr;
     fd_set pipe_rd;
+    fd_set cons_rd;
 #ifdef USE_INTERRUPT_WINSOCK
     fd_set trap;
 #endif /* USE_INTERRUPT_WINSOCK */
     int file_nfds;
     int pipe_nfds;
+    int cons_nfds;
     struct timeval remainder;
     struct timeval wait;
 
@@ -2038,6 +2114,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	return 0;
     }
     pipe_nfds = extract_pipe_fd(rd, &pipe_rd);
+    cons_nfds = extract_console_fd(rd, &cons_rd);
     nfds -= pipe_nfds;
     file_nfds = collect_file_fd(rd, &file_rd);
     file_nfds += collect_file_fd(wr, &file_wr);
@@ -2067,6 +2144,14 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     RUBY_CRITICAL(do{
 	if (pipe_nfds) {
 	    r = peek_pipe(&pipe_rd, &file_rd);
+	    if (r > 0) {
+		if (rd) *rd = file_rd;
+		if (wr) wr->fd_count = 0;
+		break;
+	    }
+	}
+	if (cons_nfds) {
+	    r = peek_console(&cons_rd, &file_rd);
 	    if (r > 0) {
 		if (rd) *rd = file_rd;
 		if (wr) wr->fd_count = 0;
