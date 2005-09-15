@@ -1,3 +1,8 @@
+Fri Sep 16 00:17:03 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/logger/test_logger.rb: unintentionally overwritten changes by
+	  Usa.  reverted.
+
 Fri Sep 16 00:03:11 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI::Socket#initialize): should set
