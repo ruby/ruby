@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+xmlns:s="http://www.w3.org/2001/XMLSchema"
+xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+xmlns:tns="http://localhost/WebService/"
+xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/"
+xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+targetNamespace="http://localhost/WebService/"
+xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified"
+targetNamespace="http://localhost/WebService/">
+      <s:element name="HelloWorld">
+        <s:complexType />
+      </s:element>
+      <s:element name="HelloWorldResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1"
+name="HelloWorldResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="SayHello">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="name"
+type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="SayHelloResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1"
+name="SayHelloResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="HelloWorldSoapIn">
+    <wsdl:part name="parameters" element="tns:HelloWorld" />
+  </wsdl:message>
+  <wsdl:message name="HelloWorldSoapOut">
+    <wsdl:part name="parameters" element="tns:HelloWorldResponse" />
+  </wsdl:message>
+  <wsdl:message name="SayHelloSoapIn">
+    <wsdl:part name="parameters" element="tns:SayHello" />
+  </wsdl:message>
+  <wsdl:message name="SayHelloSoapOut">
+    <wsdl:part name="parameters" element="tns:SayHelloResponse" />
+  </wsdl:message>
+  <wsdl:portType name="Service1Soap">
+    <wsdl:operation name="HelloWorld">
+      <wsdl:input message="tns:HelloWorldSoapIn" />
+      <wsdl:output message="tns:HelloWorldSoapOut" />
+    </wsdl:operation>
+    <wsdl:operation name="SayHello">
+      <wsdl:input message="tns:SayHelloSoapIn" />
+      <wsdl:output message="tns:SayHelloSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="Service1Soap" type="tns:Service1Soap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http"
+style="document" />
+    <wsdl:operation name="HelloWorld">
+      <soap:operation
+soapAction="http://localhost/WebService/HelloWorld" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+    <wsdl:operation name="SayHello">
+      <soap:operation soapAction="http://localhost/WebService/SayHello"
+style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="Service1">
+    <documentation xmlns="http://schemas.xmlsoap.org/wsdl/" />
+    <wsdl:port name="Service1Soap" binding="tns:Service1Soap">
+      <soap:address
+location="http://localhost/WebService/Service1.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

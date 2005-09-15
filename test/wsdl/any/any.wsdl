@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<definitions name="echo"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    xmlns:tns="urn:example.com:echo"
+    xmlns:txd="urn:example.com:echo-type"
+    targetNamespace="urn:example.com:echo"
+    xmlns="http://schemas.xmlsoap.org/wsdl/">
+  <types>
+    <xsd:schema targetNamespace="urn:example.com:echo-type">
+      <xsd:complexType name="foo.bar">
+        <xsd:sequence>
+          <xsd:any />
+        </xsd:sequence>
+      </xsd:complexType>
+    </xsd:schema>
+  </types>
+
+  <message name="msg_echoitem">
+    <part name="echoitem" type="txd:foo.bar"/>
+  </message>
+
+  <portType name="echo_port_type">
+    <operation name="echo">
+      <input message="tns:msg_echoitem"/>
+      <output message="tns:msg_echoitem"/>
+    </operation>
+  </portType>
+
+  <binding name="echo_binding" type="tns:echo_port_type">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="rpc"/>
+    <operation name="echo">
+      <soap:operation soapAction="urn:example.com:echo"/>
+      <input>
+        <soap:body use="encoded" namespace="urn:example.com:echo"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </input>
+      <output>
+        <soap:body use="encoded" namespace="urn:example.com:echo"
+	    encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="echo_service">
+    <port name="echo_port" binding="tns:echo_binding">
+      <soap:address location="http://localhost:10080"/>
+    </port>
+  </service>
+</definitions>

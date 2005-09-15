@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wsdl:definitions xmlns:http="http://schemas.xmlsoap.org/wsdl/http/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:s="http://www.w3.org/2001/XMLSchema" xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/" xmlns:tns="http://www50.brinkster.com/vbfacileinpt/np" xmlns:tm="http://microsoft.com/wsdl/mime/textMatching/" xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/" targetNamespace="http://www50.brinkster.com/vbfacileinpt/np" xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/">
+  <wsdl:types>
+    <s:schema elementFormDefault="qualified" targetNamespace="http://www50.brinkster.com/vbfacileinpt/np">
+      <s:element name="GetPrimeNumbers">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="Max" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+      <s:element name="GetPrimeNumbersResponse">
+        <s:complexType>
+          <s:sequence>
+            <s:element minOccurs="0" maxOccurs="1" name="GetPrimeNumbersResult" type="s:string" />
+          </s:sequence>
+        </s:complexType>
+      </s:element>
+    </s:schema>
+  </wsdl:types>
+  <wsdl:message name="GetPrimeNumbersSoapIn">
+    <wsdl:part name="parameters" element="tns:GetPrimeNumbers" />
+  </wsdl:message>
+  <wsdl:message name="GetPrimeNumbersSoapOut">
+    <wsdl:part name="parameters" element="tns:GetPrimeNumbersResponse" />
+  </wsdl:message>
+  <wsdl:portType name="pnumSoap">
+    <wsdl:operation name="GetPrimeNumbers">
+      <wsdl:input message="tns:GetPrimeNumbersSoapIn" />
+      <wsdl:output message="tns:GetPrimeNumbersSoapOut" />
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="pnumSoap" type="tns:pnumSoap">
+    <soap:binding transport="http://schemas.xmlsoap.org/soap/http" style="document" />
+    <wsdl:operation name="GetPrimeNumbers">
+      <soap:operation soapAction="http://www50.brinkster.com/vbfacileinpt/np/GetPrimeNumbers" style="document" />
+      <wsdl:input>
+        <soap:body use="literal" />
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal" />
+      </wsdl:output>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="pnum">
+    <wsdl:port name="pnumSoap" binding="tns:pnumSoap">
+      <soap:address location="http://www50.brinkster.com/vbfacileinpt/np.asmx" />
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>
