@@ -1,3 +1,8 @@
+Thu Sep 15 22:35:55 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* test/ruby/test_signal.rb (test_exit_action): skip the test using
+	  fork on fork-less platforms.
+
 Thu Sep 15 11:39:18 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tk/dialog.rb: If a dialog does not show up yet, 
