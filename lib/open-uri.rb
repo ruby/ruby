@@ -97,6 +97,7 @@ module OpenURI
     :progress_proc => true,
     :content_length_proc => true,
     :http_basic_authentication => true,
+    :read_timeout => true,
   }
 
   def OpenURI.check_options(options) # :nodoc:
@@ -236,6 +237,9 @@ module OpenURI
       store = OpenSSL::X509::Store.new
       store.set_default_paths
       http.cert_store = store
+    end
+    if options.include? :read_timeout
+      http.read_timeout = options[:read_timeout]
     end
 
     header = {}
@@ -523,6 +527,13 @@ module OpenURI
     #      :progress_proc => lambda {|s|
     #        pbar.set s if pbar
     #      }) {|f| ... }
+    #
+    # [:read_timeout]
+    #  Synopsis:
+    #    :read_timeout=>nil     (no timeout)
+    #    :read_timeout=>10      (10 second)
+    #
+    #  :read_timeout option specifies a timeout of read for http connections.
     #
     # OpenURI::OpenRead#open returns an IO like object if block is not given.
     # Otherwise it yields the IO object and return the value of the block.
