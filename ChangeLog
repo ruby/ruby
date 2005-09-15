@@ -1,3 +1,8 @@
+Thu Sep 15 11:39:18 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tk/dialog.rb: If a dialog does not show up yet, 
+	  TkDialogObj#name raises an exception. [ruby-talk:156109]
+
 Thu Sep 15 01:39:19 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb (Rinda::TemplateEntry::initialize): pull
