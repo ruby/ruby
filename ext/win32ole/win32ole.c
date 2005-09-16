@@ -78,7 +78,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.3"
+#define WIN32OLE_VERSION "0.6.4"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -4878,7 +4878,9 @@ ole_search_event_at(ary, ev)
             ret = i;
             break;
         }
-        else if (rb_str_cmp(ev, event_name) == 0) {
+        else if (TYPE(ev) == T_STRING &&
+                 TYPE(event_name) == T_STRING &&
+                 rb_str_cmp(ev, event_name) == 0) {
             ret = i;
             break;
         }
@@ -5453,7 +5455,7 @@ add_event_call_back(obj, event, data)
         rb_ivar_set(obj, id_events, events);
     }
     at = ole_search_event_at(events, event);
-    if (at >= -1) {
+    if (at > -1) {
         rb_ary_delete_at(events, at);
     }
     rb_ary_push(events, data);
