@@ -2675,7 +2675,7 @@ rb_file_s_extname(klass, fname)
  	p++;
  
      e = strrchr(p, '.');	/* get the last dot of the last component */
-     if (!e || e == p)		/* no dot, or the only dot is first? */
+     if (!e || e == p || !e[1])	/* no dot, or the only dot is first or end? */
 	 return rb_str_new2("");
      extname = rb_str_new(e, chompdirsep(e) - e);	/* keep the dot, too! */
      OBJ_INFECT(extname, fname);
@@ -2720,7 +2720,7 @@ rb_file_join(ary, sep)
     long len, i;
     int taint = 0;
     VALUE result, tmp;
-    char *name;
+    char *name, *tail;
 
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
     if (OBJ_TAINTED(ary)) taint = 1;
@@ -2757,11 +2757,18 @@ rb_file_join(ary, sep)
 	    }
 	    break;
 	  default:
-	    tmp = rb_obj_as_string(tmp);
+	    StringValueCStr(tmp);
 	}
 	name = StringValueCStr(result);
-	if (i > 0 && !NIL_P(sep) && !*chompdirsep(name))
-	    rb_str_buf_append(result, sep);
+	if (i > 0 && !NIL_P(sep)) {
+	    tail = chompdirsep(name);
+	    if (isdirsep(RSTRING(tmp)->ptr[0])) {
+		RSTRING(result)->len = tail - name;
+	    }
+	    else if (!*tail) {
+		rb_str_buf_append(result, sep);
+	    }
+	}
 	rb_str_buf_append(result, tmp);
 	if (OBJ_TAINTED(tmp)) taint = 1;
     }
