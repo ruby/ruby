@@ -1834,6 +1834,11 @@ Sat Jun 25 11:37:00 2005  NARUSE, Yui  <naruse@ruby-lang.org>
 	  conv, {eucjp, shiftjis, utf8}?
 	* ext/nkf/lib/kconv.rb: add aliases Kconv.to_* and String#to_*
 
+Fri Jun 24 17:00:00 2005  Shigeo Kobayashi <shigeo@tinyforest.jp>
+
+	* ext/bigdecimal/bigdecimal.c: patch from "NATORI Shin"
+	  (u-tokyo.ac.jp) applied to fix rounding bug.
+
 Fri Jun 24 13:17:45 2005  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/common.rb, lib/uri/generic.rb: fixed typo in documents and
