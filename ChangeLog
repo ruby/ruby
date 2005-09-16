@@ -1,3 +1,11 @@
+Fri Sep 16 22:41:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_s_extname): empty string for path name ending with a
+	  period.  fixed: [ruby-core:05651]
+
+	* file.c (rb_file_join): smarter behavior at edge cases.
+	  fixed: [ruby-core:05706]
+
 Fri Sep 16 18:34:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/node.c (syck_replace_str): was using return from the
@@ -119,7 +127,7 @@ Thu Sep 15 13:54:33 2005  Tanaka Akira  <akr@m17n.org>
 
 Thu Sep 15 11:39:18 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/lib/tk/dialog.rb: If a dialog does not show up yet, 
+	* ext/tk/lib/tk/dialog.rb: If a dialog does not show up yet,
 	  TkDialogObj#name raises an exception. [ruby-talk:156109]
 
 Thu Sep 15 11:01:58 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
