@@ -1,3 +1,8 @@
+Fri Sep 16 12:02:12 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_resolver_transfer): remove C++ style
+	  comment (//).  [ruby-core:05793]
+
 Fri Sep 16 00:17:03 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/logger/test_logger.rb: unintentionally overwritten changes by
@@ -114,6 +119,11 @@ Thu Sep 15 11:01:58 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* win32/win32.c (extract_console_fd, peek_console): new functions.
 
 	* win32/win32.c (rb_w32_select): check consoles by polling them.
+
+Thu Sep 15 00:18:24 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/net/telnet.rb (Net::Telnet::waitfor): replace sysread with
+	  readpartial.  [ruby-talk:127641]
 
 Wed Sep 14 23:28:28 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 

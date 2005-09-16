@@ -554,7 +554,7 @@ module Net
           raise TimeoutError, "timed out while waiting for more data"
         end
         begin
-          c = @sock.sysread(1024 * 1024)
+          c = @sock.readpartial(1024 * 1024)
           @dumplog.log_dump('<', c) if @options.has_key?("Dump_log")
           if @options["Telnetmode"]
             c = rest + c

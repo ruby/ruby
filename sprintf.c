@@ -149,7 +149,7 @@ sign_bits(int base, const char *p)
  *
  *    Flag     | Applies to   | Meaning
  *    ---------+--------------+-----------------------------------------
- *    space    | bdeEfgGioxXu | Leave a space at the start of 
+ *    space    | bdeEfgGiouxX | Leave a space at the start of 
  *             |              | positive numbers.
  *    ---------+--------------+-----------------------------------------
  *    (digit)$ | all          | Specifies the absolute argument number
@@ -165,11 +165,11 @@ sign_bits(int base, const char *p)
  *             |              | point to be added, even if no digits follow.
  *             |              | For `g' and 'G', do not remove trailing zeros.
  *    ---------+--------------+-----------------------------------------
- *    +        | bdeEfgGioxXu | Add a leading plus sign to positive numbers.
+ *    +        | bdeEfgGiouxX | Add a leading plus sign to positive numbers.
  *    ---------+--------------+-----------------------------------------
  *    -        | all          | Left-justify the result of this conversion.
  *    ---------+--------------+-----------------------------------------
- *    0 (zero) | all          | Pad with zeros, not spaces.
+ *    0 (zero) | bdeEfgGiouxX | Pad with zeros, not spaces.
  *    ---------+--------------+-----------------------------------------
  *    *        | all          | Use the next argument as the field width. 
  *             |              | If negative, left-justify the result. If the
