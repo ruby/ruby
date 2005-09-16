@@ -1,4 +1,4 @@
-Fri Sep 16 22:44:47 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Fri Sep 16 22:45:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): empty string for path name ending with a
 	  period.  fixed: [ruby-core:05651]
@@ -11,6 +11,13 @@ Fri Sep 16 22:44:47 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  [ruby-dev:27104]
 
 	* gc.c (garbage_collect): return whether GC could run.
+
+	* dir.c (rb_push_glob): fix delimiter bug.  fixed: [ruby-dev:27105]
+
+	* dir.c (dir_s_aref, dir_s_glob): allow multiple patterns.
+	  [ruby-dev:27110]
+
+	* win32/win32.c (cmdglob): enable brace expansion.
 
 Fri Sep 16 18:34:01 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

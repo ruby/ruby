@@ -1061,7 +1061,7 @@ cmdglob(NtCmdLineElement *patt, NtCmdLineElement **tail)
     for (p = buf; *p; p = CharNext(p))
 	if (*p == '\\')
 	    *p = '/';
-    ruby_glob(buf, 0, insert, (VALUE)&tail);
+    ruby_brace_glob(buf, 0, insert, (VALUE)&tail);
     if (buf != buffer)
 	free(buf);
 

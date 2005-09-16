@@ -1110,8 +1110,8 @@ enum answer { YES, NO, UNKNOWN };
 
 struct glob_args {
     void (*func)(const char *, VALUE);
-    const char *c;
-    VALUE v;
+    const char *path;
+    VALUE value;
 };
 
 static VALUE
@@ -1119,7 +1119,7 @@ glob_func_caller(VALUE val)
 {
     struct glob_args *args = (struct glob_args *)val;
 
-    (*args->func)(args->c, args->v);
+    (*args->func)(args->path, args->value);
     return Qnil;
 }
 
@@ -1134,7 +1134,7 @@ glob_helper(
     struct glob_pattern **beg,
     struct glob_pattern **end,
     int flags,
-    int (*func)(const char *, VALUE),
+    ruby_glob_func *func,
     VALUE arg)
 {
     struct stat st;
@@ -1286,7 +1286,7 @@ glob_helper(
 }
 
 static int
-ruby_glob0(const char *path, int flags, int (*func)(const char *, VALUE), VALUE arg)
+ruby_glob0(const char *path, int flags, ruby_glob_func *func, VALUE arg)
 {
     struct glob_pattern *list;
     const char *root, *start;
@@ -1318,7 +1318,7 @@ ruby_glob0(const char *path, int flags, int (*func)(const char *, VALUE), VALUE 
 }
 
 int
-ruby_glob(const char *path, int flags, int (*func)(const char *, VALUE), VALUE arg)
+ruby_glob(const char *path, int flags, ruby_glob_func *func, VALUE arg)
 {
     return ruby_glob0(path, flags & ~GLOB_VERBOSE, func, arg);
 }
@@ -1329,7 +1329,7 @@ rb_glob_caller(const char *path, VALUE a)
     int status;
     struct glob_args *args = (struct glob_args *)a;
 
-    args->c = path;
+    args->path = path;
     rb_protect(glob_func_caller, a, &status);
     return status;
 }
@@ -1340,7 +1340,7 @@ rb_glob2(const char *path, int flags, void (*func)(const char *, VALUE), VALUE a
     struct glob_args args;
 
     args.func = func;
-    args.v = arg;
+    args.value = arg;
 
     if (flags & FNM_CASEFOLD) {
 	rb_warn("Dir.glob() ignores File::FNM_CASEFOLD");
@@ -1350,7 +1350,7 @@ rb_glob2(const char *path, int flags, void (*func)(const char *, VALUE), VALUE a
 }
 
 void
-rb_glob(const char *path, void (*func) (const char *, VALUE), VALUE arg)
+rb_glob(const char *path, void (*func)(const char *, VALUE), VALUE arg)
 {
     int status = rb_glob2(path, 0, func, arg);
     if (status) rb_jump_tag(status);
@@ -1362,8 +1362,8 @@ push_pattern(const char *path, VALUE ary)
     rb_ary_push(ary, rb_tainted_str_new2(path));
 }
 
-static int
-push_glob(VALUE ary, const char *str, long offset, int flags)
+int
+ruby_brace_expand(const char *str, int flags, ruby_glob_func *func, VALUE arg)
 {
     const int escape = !(flags & FNM_NOESCAPE);
     const char *p = str;
@@ -1386,11 +1386,9 @@ push_glob(VALUE ary, const char *str, long offset, int flags)
     }
 
     if (lbrace && rbrace) {
-	volatile VALUE buffer = rb_str_new(0, strlen(s));
-	char *buf;
+	char *buf = ALLOC_N(char, strlen(s) + 1);
 	long shift;
 
-	buf = RSTRING(buffer)->ptr;
 	memcpy(buf, s, lbrace-s);
 	shift = (lbrace-s);
 	p = lbrace;
@@ -1407,15 +1405,57 @@ push_glob(VALUE ary, const char *str, long offset, int flags)
 	    }
 	    memcpy(buf+shift, t, p-t);
 	    strcpy(buf+shift+(p-t), rbrace+1);
-	    status = push_glob(ary, buf, offset, flags);
+	    status = ruby_brace_expand(buf, flags, func, arg);
 	    if (status) break;
 	}
+	free(buf);
     }
     else if (!lbrace && !rbrace) {
-	status = rb_glob2(s, flags, push_pattern, ary);
+	status = (*func)(s, arg);
     }
 
     return status;
+}
+
+struct brace_args {
+    ruby_glob_func *func;
+    VALUE value;
+    int flags;
+};
+
+static int
+glob_brace(const char *path, VALUE val)
+{
+    struct brace_args *arg = (struct brace_args *)val;
+
+    return ruby_glob0(path, arg->flags, arg->func, arg->value);
+}
+
+static int
+ruby_brace_glob0(const char *str, int flags, ruby_glob_func *func, VALUE arg)
+{
+    struct brace_args args;
+
+    args.func = func;
+    args.value = arg;
+    args.flags = flags;
+    return ruby_brace_expand(str, flags, glob_brace, (VALUE)&args);
+}
+
+int
+ruby_brace_glob(const char *str, int flags, ruby_glob_func *func, VALUE arg)
+{
+    return ruby_brace_glob0(str, flags & ~GLOB_VERBOSE, func, arg);
+}
+
+static int
+push_glob(VALUE ary, const char *str, int flags)
+{
+    struct glob_args args;
+
+    args.func = push_pattern;
+    args.value = ary;
+    return ruby_brace_glob0(str, flags | GLOB_VERBOSE, rb_glob_caller, (VALUE)&args);
 }
 
 static VALUE
@@ -1429,9 +1469,10 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
     ary = rb_ary_new();
 
     while (offset < RSTRING(str)->len) {
-	int status = push_glob(ary, RSTRING(str)->ptr, offset, flags);
+	int status = push_glob(ary, RSTRING(str)->ptr + offset, flags);
 	char *p, *pend;
 	if (status) rb_jump_tag(status);
+	if (offset >= RSTRING(str)->len) break;
 	p = RSTRING(str)->ptr + offset;
 	p += strlen(p) + 1;
 	pend = RSTRING(str)->ptr + RSTRING(str)->len;
@@ -1440,38 +1481,57 @@ rb_push_glob(VALUE str, int flags) /* '\0' is delimiter */
 	offset = p - RSTRING(str)->ptr;
     }
 
-    if (rb_block_given_p()) {
-	rb_ary_each(ary);
-	return Qnil;
+    return ary;
+}
+
+static VALUE
+dir_globs(long argc, VALUE *argv, int flags)
+{
+    VALUE ary = rb_ary_new();
+    long i;
+
+    for (i = 0; i < argc; ++i) {
+	int status;
+	VALUE str = argv[i];
+	FilePathValue(str);
+	status = push_glob(ary, RSTRING(str)->ptr, flags);
+	if (status) rb_jump_tag(status);
     }
+
     return ary;
 }
 
 /*
  *  call-seq:
- *     Dir[ string ] => array
+ *     Dir[ array ]                 => array
+ *     Dir[ string [, string ...] ] => array
  *
  *  Equivalent to calling
- *  <em>dir</em>.<code>glob(</code><i>string,</i><code>0)</code>.
+ *  <code>Dir.glob(</code><i>array,</i><code>0)</code> and 
+ *  <code>Dir.glob([</code><i>string,...</i><code>],0)</code>.
  *
  */
 static VALUE
-dir_s_aref(VALUE obj, VALUE str)
+dir_s_aref(int argc, VALUE *argv, VALUE obj)
 {
-    return rb_push_glob(str, 0);
+    if (argc == 1) {
+	return rb_push_glob(argv[0], 0);
+    }
+    return dir_globs(argc, argv, 0);
 }
 
 /*
  *  call-seq:
- *     Dir.glob( string, [flags] ) => array
- *     Dir.glob( string, [flags] ) {| filename | block }  => nil
+ *     Dir.glob( pattern, [flags] ) => array
+ *     Dir.glob( pattern, [flags] ) {| filename | block }  => nil
  *
- *  Returns the filenames found by expanding the pattern given in
- *  <i>string</i>, either as an <i>array</i> or as parameters to the
- *  block. Note that this pattern is not a regexp (it's closer to a
- *  shell glob). See <code>File::fnmatch</code> for the meaning of
- *  the <i>flags</i> parameter. Note that case sensitivity 
- *  depends on your system (so <code>File::FNM_CASEFOLD</code> is ignored)
+ *  Returns the filenames found by expanding <i>pattern</i> which is
+ *  an +Array+ of the patterns or the pattern +String+, either as an
+ *  <i>array</i> or as parameters to the block. Note that this pattern
+ *  is not a regexp (it's closer to a shell glob). See
+ *  <code>File::fnmatch</code> for the meaning of the <i>flags</i>
+ *  parameter. Note that case sensitivity depends on your system (so
+ *  <code>File::FNM_CASEFOLD</code> is ignored)
  *
  *  <code>*</code>::        Matches any file. Can be restricted by
  *                          other values in the glob. <code>*</code>
@@ -1523,7 +1583,7 @@ dir_s_aref(VALUE obj, VALUE str)
 static VALUE
 dir_s_glob(int argc, VALUE *argv, VALUE obj)
 {
-    VALUE str, rflags;
+    VALUE str, rflags, ary;
     int flags;
 
     if (rb_scan_args(argc, argv, "11", &str, &rflags) == 2)
@@ -1531,7 +1591,20 @@ dir_s_glob(int argc, VALUE *argv, VALUE obj)
     else
 	flags = 0;
 
-    return rb_push_glob(str, flags);
+    ary = rb_check_array_type(str);
+    if (NIL_P(ary)) {
+	ary = rb_push_glob(str, flags);
+    }
+    else {
+	volatile VALUE v = ary;
+	ary = dir_globs(RARRAY(ary)->len, RARRAY(ary)->ptr, flags);
+    }
+
+    if (rb_block_given_p()) {
+	rb_ary_each(ary);
+	return Qnil;
+    }
+    return ary;
 }
 
 static VALUE
@@ -1740,7 +1813,7 @@ Init_Dir(void)
     rb_define_singleton_method(rb_cDir,"unlink", dir_s_rmdir, 1);
 
     rb_define_singleton_method(rb_cDir,"glob", dir_s_glob, -1);
-    rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, 1);
+    rb_define_singleton_method(rb_cDir,"[]", dir_s_aref, -1);
 
     rb_define_singleton_method(rb_cFile,"fnmatch", file_s_fnmatch, -1);
     rb_define_singleton_method(rb_cFile,"fnmatch?", file_s_fnmatch, -1);
