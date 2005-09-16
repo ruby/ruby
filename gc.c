@@ -91,14 +91,14 @@ static unsigned long malloc_increase = 0;
 static unsigned long malloc_limit = GC_MALLOC_LIMIT;
 static void run_final(VALUE obj);
 static VALUE nomem_error;
-static void garbage_collect(void);
+static int garbage_collect(void);
 
 void
 rb_memerror(void)
 {
     static int recurse = 0;
 
-    if (recurse > 0 && rb_safe_level() < 4) {
+    if (!nomem_error || (recurse > 0 && rb_safe_level() < 4)) {
 	fprintf(stderr, "[FATAL] failed to allocate memory\n");
 	exit(1);
     }
@@ -122,8 +122,9 @@ ruby_xmalloc(long size)
     }
     RUBY_CRITICAL(mem = malloc(size));
     if (!mem) {
-	garbage_collect();
-	RUBY_CRITICAL(mem = malloc(size));
+	if (garbage_collect()) {
+	    RUBY_CRITICAL(mem = malloc(size));
+	}
 	if (!mem) {
 	    rb_memerror();
 	}
@@ -156,8 +157,9 @@ ruby_xrealloc(void *ptr, long size)
     malloc_increase += size;
     RUBY_CRITICAL(mem = realloc(ptr, size));
     if (!mem) {
-	garbage_collect();
-	RUBY_CRITICAL(mem = realloc(ptr, size));
+	if (garbage_collect()) {
+	    RUBY_CRITICAL(mem = realloc(ptr, size));
+	}
 	if (!mem) {
 	    rb_memerror();
         }
@@ -372,7 +374,8 @@ rb_newobj(void)
 {
     VALUE obj;
 
-    if (!freelist) garbage_collect();
+    if (!freelist && !garbage_collect())
+	rb_memerror();
 
     obj = (VALUE)freelist;
     freelist = freelist->as.free.next;
@@ -1244,7 +1247,7 @@ int rb_setjmp (rb_jmp_buf);
 #endif /* __human68k__ or DJGPP */
 #endif /* __GNUC__ */
 
-static void
+static int
 garbage_collect(void)
 {
     struct gc_list *list;
@@ -1252,6 +1255,7 @@ garbage_collect(void)
     jmp_buf save_regs_gc_mark;
     SET_STACK_END;
 
+    if (!heaps) return Qfalse;
 #ifdef HAVE_NATIVETHREAD
     if (!is_ruby_native_thread()) {
 	rb_bug("cross-thread violation on rb_gc()");
@@ -1261,7 +1265,7 @@ garbage_collect(void)
 	if (!freelist) {
 	    add_heap();
 	}
-	return;
+	return Qfalse;
     }
     if (during_gc) return;
     during_gc++;
@@ -1355,6 +1359,8 @@ garbage_collect(void)
 	}
     }
     gc_sweep();
+
+    return Qtrue;
 }
 
 void
