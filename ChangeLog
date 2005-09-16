@@ -1,3 +1,10 @@
+Sat Sep 17 08:02:53 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/imap.rb: supported DIGEST-MD5.  Thanks, Mathieu Arnold.
+
+	* lib/net/imap.rb: use fcall instead of send.  Thanks, Satoru
+	Takabayashi.
+
 Fri Sep 16 22:45:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_s_extname): empty string for path name ending with a
