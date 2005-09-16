@@ -2709,6 +2709,7 @@ static VALUE
 file_inspect_join(ary, arg)
     VALUE ary;
     VALUE *arg;
+    int recur;
 {
     return rb_file_join(arg[0], arg[1]);
 }
