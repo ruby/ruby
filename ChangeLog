@@ -1,3 +1,7 @@
+Fri Sep 16 14:48:48 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: fix typo on MultiTkIp#bg_eval_string
+
 Fri Sep 16 12:02:12 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/syck/rubyext.c (syck_resolver_transfer): remove C++ style

@@ -1583,7 +1583,7 @@ class MultiTkIp
   end
   alias eval_str eval_string
 
-  def bg_eval_string(*args)
+  def bg_eval_string(cmd, *eval_args)
     # cmd string ==> proc
     unless cmd.kind_of?(String)
       raise RuntimeError, "A String object is expected for the 'cmd' argument"
