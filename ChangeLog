@@ -406,6 +406,7 @@ Fri Sep  2 23:51:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib: do not use __send__ to access private methods.  [ruby-dev:26935]
 
 Fri Sep  2 03:29:00 2005 Keiju Ishitsuka <keiju@ruby-lang.org>
+
 	* lib/irb/init.rb: make IRB -I option that is same befavior for ruby.
 	  [ruby-dev:26872], [ruby-dev: 26920]
 
