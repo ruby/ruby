@@ -1120,8 +1120,10 @@ syck_resolver_transfer( self, type, val )
                         }
                         else if ( rb_cObject == target_class && subclass_v == Qnil )
                         {
-                            // StringValue(subclass);
-                            // printf( "No class: %s\n", RSTRING(subclass)->ptr );
+                            /*
+                              StringValue(subclass);
+                              printf( "No class: %s\n", RSTRING(subclass)->ptr );
+                            */
                             target_class = cYObject;
                             type = subclass;
                             subclass = cYObject;

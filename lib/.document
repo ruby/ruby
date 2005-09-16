@@ -30,4 +30,5 @@ test/unit.rb
 thread.rb
 thwait.rb
 time.rb
+uri
 yaml.rb

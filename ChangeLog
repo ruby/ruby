@@ -1,3 +1,8 @@
+Fri Sep 16 12:02:12 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/syck/rubyext.c (syck_resolver_transfer): remove C++ style
+	  comment (//).  [ruby-core:05793]
+
 Fri Sep 16 00:14:14 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
 
 	* test/logger/test_logger.rb: unintentionally overwritten changes by
