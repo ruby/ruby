@@ -123,7 +123,7 @@ syck_new_str2( char *str, long len, enum scalar_style style )
 void
 syck_replace_str( SyckNode *n, char *str, enum scalar_style style )
 {
-    return syck_replace_str2( n, str, strlen( str ), style );
+    syck_replace_str2( n, str, strlen( str ), style );
 }
 
 void
