@@ -1261,6 +1261,11 @@ Fri Jun 24 22:06:47 CEST 2005	Michael Neumann <mneumann@ruby-lang.org>
 
 	* lib/xmlrpc/*, test/xmlrpc/*: backported changes from HEAD into 1.8
 
+Fri Jun 24 17:00:00 2005  Shigeo Kobayashi <shigeo@tinyforest.jp>
+
+	* ext/bigdecimal/bigdecimal.c: patch from "NATORI Shin"
+	  (u-tokyo.ac.jp) applied to fix rounding bug.
+
 Fri Jun 24 13:06:45 2005  akira yamada  <akira@ruby-lang.org>
 
 	* lib/uri/common.rb, lib/uri/generic.rb: fixed typo in documents and

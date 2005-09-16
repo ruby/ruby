@@ -3723,28 +3723,45 @@ VpMidRound(Real *y, int f, int nf)
  *   nf: digit location to round from the the decimal point.
  */
 {
-    int n,i,ix,ioffset;
-    U_LONG v;
+    /* fracf: any positive digit under rounding position? */
+    /* exptoadd: number of digits needed to compensate negative nf */
+    int n,i,ix,ioffset,fracf,exptoadd;
+    U_LONG v,shifter;
     U_LONG div;
 
     nf += y->exponent*((int)BASE_FIG);
+    exptoadd=0;
+    if (nf < 0) {
+        exptoadd = -nf;
+        nf = 0;
+    }
     /* ix: x->fraq[ix] contains round position */
     ix = nf/(int)BASE_FIG;
-    if(ix<0 || ((U_LONG)ix)>=y->Prec) return 0; /* Unable to round */
+    if(((U_LONG)ix)>=y->Prec) return 0; /* Unable to round */
     ioffset = nf - ix*((int)BASE_FIG);
 
-    memset(y->frac+ix+1, 0, (y->Prec - (ix+1)) * sizeof(U_LONG));
     v = y->frac[ix];
     /* drop digits after pointed digit */
     n = BASE_FIG - ioffset - 1;
-    for(i=0;i<n;++i) v /= 10;
+    for(shifter=1,i=0;i<n;++i) shifter *= 10;
+    fracf = (v%(shifter*10) > 0);
+    v /= shifter;
     div = v/10;
     v = v - div*10;
+    if (fracf == 0) {
+        for(i=ix+1;i<y->Prec;i++) {
+            if (y->frac[i]%BASE) {
+                fracf = 1;
+                break;
+            }
+        }
+    }
+    memset(y->frac+ix+1, 0, (y->Prec - (ix+1)) * sizeof(U_LONG));
     switch(f) {
     case VP_ROUND_DOWN: /* Truncate */
          break;
     case VP_ROUND_UP:   /* Roundup */
-        if(v) ++div;
+        if(fracf) ++div;
          break;
     case VP_ROUND_HALF_UP:   /* Round half up  */
         if(v>=5) ++div;
@@ -3753,10 +3770,10 @@ VpMidRound(Real *y, int f, int nf)
         if(v>=6) ++div;
         break;
     case VP_ROUND_CEIL: /* ceil */
-        if(v && (VpGetSign(y)>0)) ++div;
+        if(fracf && (VpGetSign(y)>0)) ++div;
         break;
     case VP_ROUND_FLOOR: /* floor */
-        if(v && (VpGetSign(y)<0)) ++div;
+        if(fracf && (VpGetSign(y)<0)) ++div;
         break;
     case VP_ROUND_HALF_EVEN: /* Banker's rounding */
         if(v>5) ++div;
@@ -3776,12 +3793,25 @@ VpMidRound(Real *y, int f, int nf)
             VpRdup(y,ix);
         } else {
             S_INT s = VpGetSign(y);
+            int e = y->exponent;
             VpSetOne(y);
             VpSetSign(y,s);
+            y->exponent = e+1;
         }
     } else {
         y->frac[ix] = div;
         VpNmlz(y);
+    }
+    if (exptoadd > 0) {
+        y->exponent += exptoadd/BASE_FIG;
+        exptoadd %= BASE_FIG;
+        for(i=0;i<exptoadd;i++) {
+            y->frac[0] *= 10;
+            if (y->frac[0] >= BASE) {
+                y->frac[0] /= BASE;
+                y->exponent++;
+            }
+        }
     }
     return 1;
 }
