@@ -1,3 +1,11 @@
+Sat Sep 17 08:35:39 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb (RSS::Maker::ItemsBase#normalize): fixed
+	strange RSS::Maker::Item#max_size behavior.
+	Thanks to Kazuhiko <kazuhiko@fdiary.net>.
+
+	* test/rss/test_maker_1.0.rb (RSS::TestMaker10#test_items): ditto.
+
 Fri Sep 16 23:09:20 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c (ole_search_event_at): bug fix 

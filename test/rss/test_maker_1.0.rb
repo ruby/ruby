@@ -256,6 +256,60 @@ module RSS
         assert_equal("#{link}#{i}", item.link)
         assert_equal("#{description}#{i}", item.description)
       end
+
+      max_size = item_size / 2
+      rss = RSS::Maker.make("1.0") do |maker|
+        setup_dummy_channel(maker)
+        
+        item_size.times do |i|
+          item = maker.items.new_item
+          item.title = "#{title}#{i}"
+          item.link = "#{link}#{i}"
+          item.description = "#{description}#{i}"
+        end
+        maker.items.max_size = max_size
+      end
+      assert_equal(max_size, rss.items.size)
+      rss.items.each_with_index do |item, i|
+        assert_equal("#{link}#{i}", item.about)
+        assert_equal("#{title}#{i}", item.title)
+        assert_equal("#{link}#{i}", item.link)
+        assert_equal("#{description}#{i}", item.description)
+      end
+
+      max_size = 0
+      rss = RSS::Maker.make("1.0") do |maker|
+        setup_dummy_channel(maker)
+        
+        item_size.times do |i|
+          item = maker.items.new_item
+          item.title = "#{title}#{i}"
+          item.link = "#{link}#{i}"
+          item.description = "#{description}#{i}"
+        end
+        maker.items.max_size = max_size
+      end
+      assert_equal(max_size, rss.items.size)
+
+      max_size = -2
+      rss = RSS::Maker.make("1.0") do |maker|
+        setup_dummy_channel(maker)
+        
+        item_size.times do |i|
+          item = maker.items.new_item
+          item.title = "#{title}#{i}"
+          item.link = "#{link}#{i}"
+          item.description = "#{description}#{i}"
+        end
+        maker.items.max_size = max_size
+      end
+      assert_equal(item_size + max_size + 1, rss.items.size)
+      rss.items.each_with_index do |item, i|
+        assert_equal("#{link}#{i}", item.about)
+        assert_equal("#{title}#{i}", item.title)
+        assert_equal("#{link}#{i}", item.link)
+        assert_equal("#{description}#{i}", item.description)
+      end
     end
 
     def test_not_valid_items
