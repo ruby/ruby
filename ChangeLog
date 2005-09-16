@@ -1,3 +1,11 @@
+Sat Sep 17 08:35:39 2005  Kouhei Sutou  <kou@cozmixng.org>
+
+	* lib/rss/maker/base.rb (RSS::Maker::ItemsBase#normalize): fixed
+	strange RSS::Maker::Item#max_size behavior.
+	Thanks to Kazuhiko <kazuhiko@fdiary.net>.
+
+	* test/rss/test_maker_1.0.rb (RSS::TestMaker10#test_items): ditto.
+
 Sat Sep 17 08:02:53 2005  Shugo Maeda  <shugo@ruby-lang.org>
 
 	* lib/net/imap.rb: supported DIGEST-MD5.  Thanks, Mathieu Arnold.

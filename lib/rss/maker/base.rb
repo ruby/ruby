@@ -401,7 +401,11 @@ EOC
       end
       
       def normalize
-        sort_if_need[0..@max_size]
+        if @max_size >= 0
+          sort_if_need[0...@max_size]
+        else
+          sort_if_need[0..@max_size]
+        end
       end
       
       def current_element(rss)
