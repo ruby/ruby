@@ -24,7 +24,7 @@ Sat Sep 17 11:24:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  for socket handle returns FILE_TYPE_PIPE. Of course, it's not a
 	  pipe. So socket handle didn't reach winsock's select function.
 
-	* win32/win32.c (rb_w32_select): read for pipe still kept brocking
+	* win32/win32.c (rb_w32_select): read for pipe was still blocked
 	  even if writer handle was closed.
 
 	    r,w = IO.pipe
@@ -42,7 +42,7 @@ Sat Sep 17 11:24:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	      puts r.gets
 	    end
 
-	* win32/win32.c (rb_w32_select): temprary reverted console support
+	* win32/win32.c (rb_w32_select): temporary reverted console support
 	  but it'll be back soon.
 
 Sat Sep 17 10:42:13 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
