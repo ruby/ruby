@@ -1969,6 +1969,42 @@ is_readable_pipe(SOCKET sock) /* call this for pipe only */
     return ret;
 }
 
+static int
+is_console(SOCKET sock) /* DONT call this for SOCKET! */
+{
+    int ret;
+    DWORD n = 0;
+    INPUT_RECORD ir;
+
+    RUBY_CRITICAL(
+	ret = (PeekConsoleInput((HANDLE)sock, &ir, 1, &n))
+    );
+
+    return ret;
+}
+
+static int
+is_readable_console(SOCKET sock) /* call this for console only */
+{
+    int ret = 0;
+    DWORD n = 0;
+    INPUT_RECORD ir;
+
+    RUBY_CRITICAL(
+	if (PeekConsoleInput((HANDLE)sock, &ir, 1, &n) && n > 0) {
+	    if (ir.EventType == KEY_EVENT && ir.Event.KeyEvent.bKeyDown &&
+		ir.Event.KeyEvent.uChar.AsciiChar) {
+		ret = 1;
+	    }
+	    else {
+		ReadConsoleInput((HANDLE)sock, &ir, 1, &n);
+	    }
+	}
+    );
+
+    return ret;
+}
+
 static long 
 do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
             struct timeval *timeout)
@@ -1995,6 +2031,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 {
     long r;
     fd_set pipe_rd;
+    fd_set cons_rd;
     fd_set unknown_rd;
     fd_set unknown_wr;
 #ifdef USE_INTERRUPT_WINSOCK
@@ -2010,12 +2047,14 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     }
 
     pipe_rd.fd_count = 0;
+    cons_rd.fd_count = 0;
     unknown_rd.fd_count = 0;
     unknown_wr.fd_count = 0;
 
     extract_fd(&unknown_rd, rd, is_not_socket); /* must exclude socket first! */
     extract_fd(&unknown_wr, wr, is_not_socket); /* must exclude socket first! */
     extract_fd(&pipe_rd, &unknown_rd, is_pipe); /* don't call is_pipe for socket! */
+    extract_fd(&cons_rd, &unknown_rd, is_console); /* probably ditto */
 
     if (unknown_rd.fd_count + unknown_wr.fd_count) {
 	// assume unknown handles are always readable/writable
@@ -2043,12 +2082,14 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 #endif /* USE_INTERRUPT_WINSOCK */
 
     RUBY_CRITICAL(
-	if (pipe_rd.fd_count) {
+	if (pipe_rd.fd_count || cons_rd.fd_count) {
 	    long sec = timeout ? timeout->tv_sec + 1 : 0/*dummy*/;
 	    while (!timeout || sec--) {
 		fd_set buf; buf.fd_count = 0;
 		// pipe
 		extract_fd(&buf, &pipe_rd, is_readable_pipe);
+		// console
+		extract_fd(&buf, &cons_rd, is_readable_console);
 		// socket
 		if (buf.fd_count) {
 		    struct timeval val; val.tv_sec = 0; val.tv_usec = 0;
