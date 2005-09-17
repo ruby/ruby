@@ -1,3 +1,7 @@
+Sun Sep 18 01:10:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* gc.c (garbage_collect): return false if no GC run.
+
 Sat Sep 17 23:25:04 2005  sheepman  <sheepman@sheepman.sakura.ne.jp>
 
 	* lib/mathn.rb (Rational::inspect): should preserve original
@@ -67,8 +71,8 @@ Sat Sep 17 11:24:16 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 Sat Sep 17 10:42:13 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: MultiTkIp#eval_string and bg_eval_string
-	  should call Kernel.eval on caller's safe-level instead of slave's 
-	  safe-level (Of course, the given script should be evaluated on 
+	  should call Kernel.eval on caller's safe-level instead of slave's
+	  safe-level (Of course, the given script should be evaluated on
 	  slave's safe-level).
 
 Sat Sep 17 09:45:26 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>

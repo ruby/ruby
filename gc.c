@@ -1267,7 +1267,7 @@ garbage_collect(void)
 	}
 	return Qfalse;
     }
-    if (during_gc) return;
+    if (during_gc) return Qfalse;
     during_gc++;
 
     init_mark_stack();
