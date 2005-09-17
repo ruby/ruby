@@ -2064,6 +2064,12 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	StartSockets();
     }
 
+    // assume else_{rd,wr} (other than socket, pipe reader, console reader)
+    // are always readable/writable. but this implementation still has
+    // problem. if pipe's buffer is full, writing to pipe will block
+    // until some data is read from pipe. but ruby is single threaded system,
+    // so whole system will be blocked forever.
+
     else_rd.fd_count = 0;
     nonsock += extract_fd(&else_rd, rd, is_not_socket);
 
@@ -2100,17 +2106,18 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	    struct timeval zero;
 	    if (timeout) rest = *timeout;
 	    wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
-	    zero.tv_sec = 0; zero.tv_usec = 0;         // poling
+	    zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
 	    do {
-		// this is safe because handle is moved, function returns anway.
+		// modifying {else,pipe,cons}_rd is safe because
+		// if they are modified, function returns immediately.
 		extract_fd(&else_rd, &pipe_rd, is_readable_pipe);
 		extract_fd(&else_rd, &cons_rd, is_readable_console);
 
 		if (else_rd.fd_count || else_wr.fd_count) {
-		    r = do_select(nfds, rd, wr, ex, &zero);
+		    r = do_select(nfds, rd, wr, ex, &zero); // polling
 		    if (r < 0) break; // XXX: should I ignore error and return signaled handles?
-		    r += extract_fd(rd, &else_rd, NULL);
-		    r += extract_fd(wr, &else_wr, NULL);
+		    r += extract_fd(rd, &else_rd, NULL); // move all
+		    r += extract_fd(wr, &else_wr, NULL); // move all
 		    break;
 		}
 		else {
@@ -2121,7 +2128,7 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		    if (wr) orig_wr = *wr;
 		    if (ex) orig_ex = *ex;
 		    r = do_select(nfds, rd, wr, ex, &wait);
-		    if (r) break; // signaled or error
+		    if (r != 0) break; // signaled or error
 		    if (rd) *rd = orig_rd;
 		    if (wr) *wr = orig_wr;
 		    if (ex) *ex = orig_ex;
