@@ -1,3 +1,10 @@
+Sat Sep 17 10:42:13 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/multi-tk.rb: MultiTkIp#eval_string and bg_eval_string
+	  should call Kernel.eval on caller's safe-level instead of slave's 
+	  safe-level (Of course, the given script should be evaluated on 
+	  slave's safe-level).
+
 Sat Sep 17 08:35:39 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 	* lib/rss/maker/base.rb (RSS::Maker::ItemsBase#normalize): fixed
