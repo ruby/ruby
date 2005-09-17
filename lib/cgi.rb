@@ -883,7 +883,6 @@ class CGI
     raw_cookie.split(/[;,] /).each do |pairs|
       name, values = pairs.split('=',2)
       next unless name and values
-      p [name, values]
       name = CGI::unescape(name)
       values ||= ""
       values = values.split('&').collect{|v| CGI::unescape(v) }
