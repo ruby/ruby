@@ -2025,6 +2025,21 @@ do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     return r;
 }
 
+static int 
+subst(struct timeval *rest, const struct timeval *wait)
+{
+    while (rest->tv_usec < wait->tv_usec) {
+	if (rest->tv_sec <= wait->tv_sec) {
+	    return 0;
+	}
+	rest->tv_sec -= 1;
+	rest->tv_usec += 1000 * 1000;
+    }
+    rest->tv_sec -= wait->tv_sec;
+    rest->tv_usec -= wait->tv_usec;
+    return 1;
+}
+
 long 
 rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	      struct timeval *timeout)
@@ -2083,8 +2098,11 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 
     RUBY_CRITICAL(
 	if (pipe_rd.fd_count || cons_rd.fd_count) {
-	    long sec = timeout ? timeout->tv_sec + 1 : 0/*dummy*/;
-	    while (!timeout || sec--) {
+	    struct timeval rest;
+	    struct timeval wait;
+	    if (timeout) rest = *timeout;
+	    wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
+	    do {
 		fd_set buf; buf.fd_count = 0;
 		// pipe
 		extract_fd(&buf, &pipe_rd, is_readable_pipe);
@@ -2092,21 +2110,19 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 		extract_fd(&buf, &cons_rd, is_readable_console);
 		// socket
 		if (buf.fd_count) {
-		    struct timeval val; val.tv_sec = 0; val.tv_usec = 0;
-		    r = do_select(nfds, rd, wr, ex, &val);
+		    r = do_select(nfds, rd, wr, ex, &wait);
 		    if (r >= 0) {
 			r += buf.fd_count;
 			extract_fd(rd, &buf, NULL); // move all `buf' contents into `rd'.
 		    }
-		    // XXX: should I ignore socket error and returns only readable pipe?
+		    // XXX: should I ignore socket error and returns readable pipe/console?
 		    break;
 		}
 		else {
-		    struct timeval val; val.tv_sec = 1; val.tv_usec = 0;
-		    r = do_select(nfds, rd, wr, ex, &val);
+		    r = do_select(nfds, rd, wr, ex, &wait);
 		    if (r) break; // readable or error (not pending)
 		}
-	    } 
+	    } while (!timeout || subst(&rest, &wait));
 	}
 	else
 	    r = do_select(nfds, rd, wr, ex, timeout);
