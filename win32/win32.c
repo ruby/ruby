@@ -1906,11 +1906,11 @@ rb_w32_fdisset(int fd, fd_set *set)
 
 static int NtSocketsInitialized = 0;
 
-static void
+static int
 extract_fd(fd_set *dst, fd_set *src, int (*func)(SOCKET))
 {
     int s = 0;
-    if (!src) return;
+    if (!src || !dst) return 0;
 
     while (s < src->fd_count) {
         SOCKET fd = src->fd_array[s];
@@ -1931,6 +1931,8 @@ extract_fd(fd_set *dst, fd_set *src, int (*func)(SOCKET))
 	}
 	else s++;
     }
+
+    return dst->fd_count;
 }
 
 static int
@@ -2047,11 +2049,12 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     long r;
     fd_set pipe_rd;
     fd_set cons_rd;
-    fd_set unknown_rd;
-    fd_set unknown_wr;
+    fd_set else_rd;
+    fd_set else_wr;
 #ifdef USE_INTERRUPT_WINSOCK
     fd_set trap;
 #endif /* USE_INTERRUPT_WINSOCK */
+    int nonsock = 0;
 
     if (nfds < 0 || (timeout && (timeout->tv_sec < 0 || timeout->tv_usec < 0))) {
 	errno = EINVAL;
@@ -2061,23 +2064,17 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 	StartSockets();
     }
 
+    else_rd.fd_count = 0;
+    nonsock += extract_fd(&else_rd, rd, is_not_socket);
+
     pipe_rd.fd_count = 0;
+    extract_fd(&pipe_rd, &else_rd, is_pipe); // should not call is_pipe for socket
+
     cons_rd.fd_count = 0;
-    unknown_rd.fd_count = 0;
-    unknown_wr.fd_count = 0;
+    extract_fd(&cons_rd, &else_rd, is_console); // ditto
 
-    extract_fd(&unknown_rd, rd, is_not_socket); /* must exclude socket first! */
-    extract_fd(&unknown_wr, wr, is_not_socket); /* must exclude socket first! */
-    extract_fd(&pipe_rd, &unknown_rd, is_pipe); /* don't call is_pipe for socket! */
-    extract_fd(&cons_rd, &unknown_rd, is_console); /* probably ditto */
-
-    if (unknown_rd.fd_count + unknown_wr.fd_count) {
-	// assume unknown handles are always readable/writable
-	// fake read/write fd_set and return value
-	if (rd) *rd = unknown_rd;
-	if (wr) *wr = unknown_wr;
-	return unknown_rd.fd_count + unknown_wr.fd_count;
-    }
+    else_wr.fd_count = 0;
+    nonsock += extract_fd(&else_wr, wr, is_not_socket);
 
     r = 0;
     if (rd && rd->fd_count > r) r = rd->fd_count;
@@ -2097,30 +2094,37 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
 #endif /* USE_INTERRUPT_WINSOCK */
 
     RUBY_CRITICAL(
-	if (pipe_rd.fd_count || cons_rd.fd_count) {
+	if (nonsock) {
 	    struct timeval rest;
 	    struct timeval wait;
+	    struct timeval zero;
 	    if (timeout) rest = *timeout;
 	    wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
+	    zero.tv_sec = 0; zero.tv_usec = 0;         // poling
 	    do {
-		fd_set buf; buf.fd_count = 0;
-		// pipe
-		extract_fd(&buf, &pipe_rd, is_readable_pipe);
-		// console
-		extract_fd(&buf, &cons_rd, is_readable_console);
-		// socket
-		if (buf.fd_count) {
-		    r = do_select(nfds, rd, wr, ex, &wait);
-		    if (r >= 0) {
-			r += buf.fd_count;
-			extract_fd(rd, &buf, NULL); // move all `buf' contents into `rd'.
-		    }
-		    // XXX: should I ignore socket error and returns readable pipe/console?
+		// this is safe because handle is moved, function returns anway.
+		extract_fd(&else_rd, &pipe_rd, is_readable_pipe);
+		extract_fd(&else_rd, &cons_rd, is_readable_console);
+
+		if (else_rd.fd_count || else_wr.fd_count) {
+		    r = do_select(nfds, rd, wr, ex, &zero);
+		    if (r < 0) break; // XXX: should I ignore error and return signaled handles?
+		    r += extract_fd(rd, &else_rd, NULL);
+		    r += extract_fd(wr, &else_wr, NULL);
 		    break;
 		}
 		else {
+		    fd_set orig_rd;
+		    fd_set orig_wr;
+		    fd_set orig_ex;
+		    if (rd) orig_rd = *rd;
+		    if (wr) orig_wr = *wr;
+		    if (ex) orig_ex = *ex;
 		    r = do_select(nfds, rd, wr, ex, &wait);
-		    if (r) break; // readable or error (not pending)
+		    if (r) break; // signaled or error
+		    if (rd) *rd = orig_rd;
+		    if (wr) *wr = orig_wr;
+		    if (ex) *ex = orig_ex;
 		}
 	    } while (!timeout || subst(&rest, &wait));
 	}

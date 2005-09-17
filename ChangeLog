@@ -1,3 +1,9 @@
+Sat Sep 17 20:58:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* win32/win32.c (rb_w32_select): fixed deadlock bug.
+	  because select(2) modifies its fd_set arguments, it must be
+	  restored sometimes.
+
 Sat Sep 17 14:54:40 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_readpartial.rb (test_open_pipe, test_with_stdio):
