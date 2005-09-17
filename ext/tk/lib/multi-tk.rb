@@ -1577,8 +1577,8 @@ class MultiTkIp
 
     eval_proc_core(true, 
                    proc{|safe| 
-                     $SAFE=safe if $SAFE < safe
-                     Kernel.eval(cmd, *eval_args)
+                     Kernel.eval("$SAFE=#{safe} if $SAFE < #{safe};" << cmd,
+                                 *eval_args)
                    })
   end
   alias eval_str eval_string
@@ -1591,8 +1591,8 @@ class MultiTkIp
     Thread.new{
       eval_proc_core(true, 
                      proc{|safe| 
-                       $SAFE=safe if $SAFE < safe
-                       Kernel.eval(cmd, *eval_args)
+                       Kernel.eval("$SAFE=#{safe} if $SAFE < #{safe};" << cmd,
+                                   *eval_args)
                      })
     }
   end
