@@ -2703,13 +2703,10 @@ static VALUE
 rb_file_join(VALUE ary, VALUE sep)
 {
     long len, i;
-    int taint = 0;
     VALUE result, tmp;
     char *name, *tail;
 
     if (RARRAY(ary)->len == 0) return rb_str_new(0, 0);
-    if (OBJ_TAINTED(ary)) taint = 1;
-    if (OBJ_TAINTED(sep)) taint = 1;
 
     len = 1;
     for (i=0; i<RARRAY(ary)->len; i++) {
@@ -2724,6 +2721,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	len += RSTRING(sep)->len * RARRAY(ary)->len - 1;
     }
     result = rb_str_buf_new(len);
+    OBJ_INFECT(result, ary);
     for (i=0; i<RARRAY(ary)->len; i++) {
 	tmp = RARRAY(ary)->ptr[i];
 	switch (TYPE(tmp)) {
@@ -2739,7 +2737,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	    }
 	    break;
 	  default:
-	    StringValueCStr(tmp);
+	    tmp = rb_obj_as_string(tmp);
 	}
 	name = StringValueCStr(result);
 	if (i > 0 && !NIL_P(sep)) {
@@ -2752,10 +2750,8 @@ rb_file_join(VALUE ary, VALUE sep)
 	    }
 	}
 	rb_str_buf_append(result, tmp);
-	if (OBJ_TAINTED(tmp)) taint = 1;
     }
 
-    if (taint) OBJ_TAINT(result);
     return result;
 }
 
@@ -2828,7 +2824,6 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 #endif
     return INT2FIX(0);
 }
-    int recur;
 
 /*
  *  call-seq:
