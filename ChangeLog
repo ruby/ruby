@@ -1,3 +1,19 @@
+Sun Sep 18 02:10:47 2005  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb: remove comments that are bungling up
+	  the rdoc and ri output.  output symbols as plain scalars.  
+
+	* ext/syck/rubyext.c (syck_emitter_reset): emit headless 
+	  documents always.
+
+	* ext/syck/emitter.c (syck_scan_scalar): quote scalars with any 
+	  kind of surrounding line space, tabs or spaces alike.
+
+	* ext/syck/token.c: accept tabs as whitespace, not for indentation,
+	  but strip from plain scalars.
+
+	* test/yaml/test_yaml.rb: remove outdated tests.
+
 Sat Sep 17 23:25:04 2005  sheepman  <sheepman@sheepman.sakura.ne.jp>
 
 	* lib/mathn.rb (Rational::inspect): should preserve original
@@ -228,7 +244,7 @@ Tue Sep 13 16:26:45 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/net/pop.rb: ditto.
 
-Tue Sep 13 12:33:05 2005    <why@ruby-lang.org>
+Tue Sep 13 12:33:05 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml.rb: reworking YAML::Stream to use the new
 	  emitter.

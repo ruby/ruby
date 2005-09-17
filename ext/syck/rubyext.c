@@ -46,13 +46,6 @@ typedef struct {
 
 #define RUBY_DOMAIN   "ruby.yaml.org,2002"
 
-#ifndef StringValue
-#define StringValue(v) (v)
-#endif
-#ifndef rb_attr_get
-#define rb_attr_get(o, i)  rb_ivar_get(o, i)
-#endif
-
 /*
  * symbols and constants
  */
@@ -1120,10 +1113,6 @@ syck_resolver_transfer( self, type, val )
                         }
                         else if ( rb_cObject == target_class && subclass_v == Qnil )
                         {
-                            /*
-                              StringValue(subclass);
-                              printf( "No class: %s\n", RSTRING(subclass)->ptr );
-                            */
                             target_class = cYObject;
                             type = subclass;
                             subclass = cYObject;
@@ -2030,6 +2019,7 @@ syck_emitter_reset( argc, argv, self )
         rb_ivar_set(self, s_options, options);
     }
     
+    emitter->headless = 1;
     emitter->bonus = (void *)bonus;
     rb_ivar_set(self, s_level, INT2FIX(0));
     rb_ivar_set(self, s_resolver, Qnil);
