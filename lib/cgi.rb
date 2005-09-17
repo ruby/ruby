@@ -870,15 +870,16 @@ class CGI
     cookies = Hash.new([])
     return cookies unless raw_cookie
 
-    raw_cookie.split(/; /).each do |pairs|
+    raw_cookie.split(/[;,] /).each do |pairs|
       name, values = pairs.split('=',2)
       next unless name and values
       name = CGI::unescape(name)
       values ||= ""
       values = values.split('&').collect{|v| CGI::unescape(v) }
-      unless cookies.has_key?(name)
-        cookies[name] = Cookie::new({ "name" => name, "value" => values })
+      if cookies.has_key?(name)
+        values = cookies[name].value + values
       end
+      cookies[name] = Cookie::new({ "name" => name, "value" => values })
     end
 
     cookies

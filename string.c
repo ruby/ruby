@@ -605,9 +605,10 @@ rb_str_substr(str, beg, len)
     if (len < 0) {
 	len = 0;
     }
-    if (len == 0) return rb_str_new5(str,0,0);
-
-    if (len > sizeof(struct RString)/2 &&
+    if (len == 0) {
+	str2 = rb_str_new5(str,0,0);
+    }
+    else if (len > sizeof(struct RString)/2 &&
 	beg + len == RSTRING(str)->len && !FL_TEST(str, STR_ASSOC)) {
 	str2 = rb_str_new3(rb_str_new4(str));
 	RSTRING(str2)->ptr += RSTRING(str2)->len - len;
@@ -1539,13 +1540,17 @@ rb_str_aref(str, indx)
 	/* check if indx is Range */
 	{
 	    long beg, len;
+	    VALUE tmp;
+
 	    switch (rb_range_beg_len(indx, &beg, &len, RSTRING(str)->len, 0)) {
 	      case Qfalse:
 		break;
 	      case Qnil:
 		return Qnil;
 	      default:
-		return rb_str_substr(str, beg, len);
+		tmp = rb_str_substr(str, beg, len);
+		OBJ_INFECT(tmp, indx);
+		return tmp;
 	    }
 	}
 	idx = NUM2LONG(indx);
