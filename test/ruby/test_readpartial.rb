@@ -43,7 +43,6 @@ class TestReadPartial < Test::Unit::TestCase
     }
   end
 
-  if !File::ALT_SEPARATOR # read on pipe cannot timeout on Windows.
   def test_open_pipe
     pipe {|r, w|
       w << 'abc'
@@ -67,7 +66,6 @@ class TestReadPartial < Test::Unit::TestCase
         timeout(0.1) { r.readpartial(2) }
       }
     }
-  end
   end
 
 end

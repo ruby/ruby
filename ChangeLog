@@ -1,3 +1,8 @@
+Sat Sep 17 14:54:40 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/ruby/test_readpartial.rb (test_open_pipe, test_with_stdio):
+	  these tests are working now, so turned on. (windows)
+
 Sat Sep 17 14:18:15 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* win32/win32.c (rb_w32_select): I hope performance problem was
