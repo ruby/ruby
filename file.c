@@ -2828,6 +2828,7 @@ rb_file_s_truncate(VALUE klass, VALUE path, VALUE len)
 #endif
     return INT2FIX(0);
 }
+    int recur;
 
 /*
  *  call-seq:

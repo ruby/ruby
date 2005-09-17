@@ -15,12 +15,12 @@ class TestTCPSocket < Test::Unit::TestCase
       ObjectSpace.each_object(String) {|s|
         s.replace "a" if s.length == 0x10000 and !s.frozen?
       }
-      c.print("x"*0x10000)
+      c.print("x"*0x1000)
     }
     addr = svr.addr
     sock = TCPSocket.open(addr[2], addr[1])
     assert_raise(RuntimeError, SocketError) {
-      p sock.recvfrom(0x10000)
+      sock.recvfrom(0x10000)
     }
   ensure
     th.join
