@@ -1,5 +1,8 @@
 Sun Sep 18 01:10:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
+	* file.c (rb_file_join): convert components by to_s instead of to_str.
+	  fixed: [ruby-dev:27127]
+
 	* gc.c (garbage_collect): return false if no GC run.
 
 Sat Sep 17 23:25:04 2005  sheepman  <sheepman@sheepman.sakura.ne.jp>
