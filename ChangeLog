@@ -1,3 +1,19 @@
+Sun Sep 18 02:10:47 2005  why the lucky stiff  <why@ruby-lang.org>
+
+	* lib/yaml/rubytypes.rb: remove comments that are bungling up
+	  the rdoc and ri output.  output symbols as plain scalars.  
+
+	* ext/syck/rubyext.c (syck_emitter_reset): emit headless 
+	  documents always.
+
+	* ext/syck/emitter.c (syck_scan_scalar): quote scalars with any 
+	  kind of surrounding line space, tabs or spaces alike.
+
+	* ext/syck/token.c: accept tabs as whitespace, not for indentation,
+	  but strip from plain scalars.
+
+	* test/yaml/test_yaml.rb: remove outdated tests.
+
 Sun Sep 18 01:10:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): convert components by to_s instead of to_str.
