@@ -1,3 +1,16 @@
+Mon Sep 19 03:17:48 2005  Tanaka Akira  <akr@m17n.org>
+
+	* file.c (rb_thread_flock): wrap the flock system call by
+	  TRAP_BEG/TRAP_END to enable signals.  [ruby-dev:27122]
+
+	* ext/socket/socket.c (bsock_send): wrap the sendto and send system
+	  call by TRAP_BEG/TRAP_END to enable signals when writing to a socket
+	  which is full.  [ruby-dev:27132]
+
+	* io.c (rb_io_syswrite): wrap the write system call by
+	  TRAP_BEG/TRAP_END to enable signals when writing to a pipe which is
+	  full.  [ruby-dev:27134]
+
 Mon Sep 19 03:02:08 2005  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (io_fwrite): wrap the write system call by TRAP_BEG/TRAP_END to

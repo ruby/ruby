@@ -499,11 +499,15 @@ bsock_send(argc, argv, sock)
     rb_thread_fd_writable(fd);
   retry:
     if (!NIL_P(to)) {
+        TRAP_BEG;
 	n = sendto(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags),
 		   (struct sockaddr*)RSTRING(to)->ptr, RSTRING(to)->len);
+        TRAP_END;
     }
     else {
+        TRAP_BEG;
 	n = send(fd, RSTRING(mesg)->ptr, RSTRING(mesg)->len, NUM2INT(flags));
+        TRAP_END;
     }
     if (n < 0) {
 	if (rb_io_wait_writable(fd)) {

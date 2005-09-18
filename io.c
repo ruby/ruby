@@ -2331,7 +2331,9 @@ rb_io_syswrite(io, str)
     if (!rb_thread_fd_writable(fileno(f))) {
         rb_io_check_closed(fptr);
     }
+    TRAP_BEG;
     n = write(fileno(f), RSTRING(str)->ptr, RSTRING(str)->len);
+    TRAP_END;
 
     if (n == -1) rb_sys_fail(fptr->path);
 
