@@ -126,7 +126,7 @@ Fri Sep 16 22:45:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  fixed: [ruby-core:05706]
 
 	* gc.c (rb_memerror, ruby_xmalloc, ruby_xrealloc, rb_newobj): just
-	  abondon if no memoray available, when interpreter is not running.
+	  abondon if no memory available, when interpreter is not running.
 	  [ruby-dev:27104]
 
 	* gc.c (garbage_collect): return whether GC could run.
