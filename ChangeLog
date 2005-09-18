@@ -1,3 +1,8 @@
+Mon Sep 19 06:38:03 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: method renaming: collect_methods ->
+	  collect_method.
+
 Mon Sep 19 05:58:59 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: use module_function instead of single extend.

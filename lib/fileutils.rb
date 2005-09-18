@@ -1480,9 +1480,9 @@ module FileUtils
   #
   # Returns an Array of method names which have the option +opt+.
   #
-  #   p FileUtils.collect_methods(:preserve) #=> ["cp", "cp_r", "copy", "install"]
+  #   p FileUtils.collect_method(:preserve) #=> ["cp", "cp_r", "copy", "install"]
   #
-  def FileUtils.collect_methods(opt)
+  def FileUtils.collect_method(opt)
     OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt.to_s) }
   end
 
@@ -1495,7 +1495,7 @@ module FileUtils
     include FileUtils
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    ::FileUtils.collect_methods('verbose').each do |name|
+    ::FileUtils.collect_method('verbose').each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
           super(*fu_update_option(args, :verbose => true))
@@ -1514,7 +1514,7 @@ module FileUtils
     include FileUtils
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    ::FileUtils.collect_methods('noop').each do |name|
+    ::FileUtils.collect_method('noop').each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
           super(*fu_update_option(args, :noop => true))
@@ -1534,7 +1534,7 @@ module FileUtils
     include FileUtils
     @fileutils_output  = $stderr
     @fileutils_label   = ''
-    ::FileUtils.collect_methods('noop').each do |name|
+    ::FileUtils.collect_method('noop').each do |name|
       module_eval(<<-EOS, __FILE__, __LINE__ + 1)
         def #{name}(*args)
           super(*fu_update_option(args, :noop => true, :verbose => true))
