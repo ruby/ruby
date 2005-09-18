@@ -1,3 +1,8 @@
+Mon Sep 19 03:02:08 2005  Tanaka Akira  <akr@m17n.org>
+
+	* io.c (io_fwrite): wrap the write system call by TRAP_BEG/TRAP_END to
+	  enable signals when writing to a pipe which is full. 
+
 Sun Sep 18 02:10:47 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: remove comments that are bungling up

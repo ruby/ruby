@@ -437,7 +437,9 @@ io_fwrite(str, fptr)
             wsplit_p(fptr)) {
             l = PIPE_BUF;
         }
+        TRAP_BEG;
 	r = write(fileno(f), RSTRING(str)->ptr+offset, l);
+        TRAP_END;
         if (r == n) return len;
         if (0 <= r) {
             offset += r;
