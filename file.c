@@ -2884,7 +2884,11 @@ static int
 rb_thread_flock(int fd, int op, OpenFile *fptr)
 {
     if (rb_thread_alone() || (op & LOCK_NB)) {
-	return flock(fd, op);
+        int ret;
+        TRAP_BEG;
+	ret = flock(fd, op);
+        TRAP_END;
+	return ret;
     }
     op |= LOCK_NB;
     while (flock(fd, op) < 0) {
