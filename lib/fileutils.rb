@@ -84,7 +84,10 @@
 
 module FileUtils
 
-  # All methods are module_function.
+  def self.private_module_function(name)   #:nodoc:
+    module_function name
+    private_class_method name
+  end
 
   # This hash table holds command options.
   OPT_TABLE = {}   #:nodoc: internal use only
@@ -97,8 +100,10 @@ module FileUtils
   def pwd
     Dir.pwd
   end
+  module_function :pwd
 
   alias getwd pwd
+  module_function :getwd
 
   #
   # Options: verbose
@@ -116,8 +121,10 @@ module FileUtils
     Dir.chdir(dir, &block) unless options[:noop]
     fu_output_message 'cd -' if options[:verbose] and block
   end
+  module_function :cd
 
   alias chdir cd
+  module_function :chdir
 
   OPT_TABLE['cd']    =
   OPT_TABLE['chdir'] = %w( verbose )
@@ -143,6 +150,7 @@ module FileUtils
     end
     true
   end
+  module_function :uptodate?
 
   #
   # Options: mode noop verbose
@@ -164,6 +172,7 @@ module FileUtils
       fu_mkdir dir, options[:mode]
     end
   end
+  module_function :mkdir
 
   OPT_TABLE['mkdir'] = %w( noop verbose mode )
 
@@ -214,15 +223,18 @@ module FileUtils
 
     return *list
   end
+  module_function :mkdir_p
 
   alias mkpath    mkdir_p
   alias makedirs  mkdir_p
+  module_function :mkpath
+  module_function :makedirs
 
   OPT_TABLE['mkdir_p']  =
   OPT_TABLE['mkpath']   =
   OPT_TABLE['makedirs'] = %w( noop verbose )
 
-  def fu_mkdir(path, mode)
+  def fu_mkdir(path, mode)   #:nodoc:
     path = path.sub(%r</\z>, '')
     if mode
       Dir.mkdir path, mode
@@ -231,7 +243,7 @@ module FileUtils
       Dir.mkdir path
     end
   end
-  private :fu_mkdir
+  private_module_function :fu_mkdir
 
   #
   # Options: noop, verbose
@@ -252,6 +264,7 @@ module FileUtils
       Dir.rmdir dir.sub(%r</\z>, '')
     end
   end
+  module_function :rmdir
 
   OPT_TABLE['rmdir'] = %w( noop verbose )
 
@@ -286,8 +299,10 @@ module FileUtils
       File.link s, d
     end
   end
+  module_function :ln
 
   alias link ln
+  module_function :link
 
   OPT_TABLE['ln']   =
   OPT_TABLE['link'] = %w( noop verbose force )
@@ -323,8 +338,10 @@ module FileUtils
       File.symlink s, d
     end
   end
+  module_function :ln_s
 
   alias symlink ln_s
+  module_function :symlink
 
   OPT_TABLE['ln_s']    =
   OPT_TABLE['symlink'] = %w( noop verbose force )
@@ -341,6 +358,7 @@ module FileUtils
     options[:force] = true
     ln_s src, dest, options
   end
+  module_function :ln_sf
 
   OPT_TABLE['ln_sf'] = %w( noop verbose )
 
@@ -365,8 +383,10 @@ module FileUtils
       copy_file s, d, options[:preserve]
     end
   end
+  module_function :cp
 
   alias copy cp
+  module_function :copy
 
   OPT_TABLE['cp']   =
   OPT_TABLE['copy'] = %w( noop verbose preserve )
@@ -402,6 +422,7 @@ module FileUtils
       copy_entry s, d, options[:preserve], options[:dereference_root]
     end
   end
+  module_function :cp_r
 
   OPT_TABLE['cp_r'] = %w( noop verbose preserve dereference_root )
 
@@ -426,6 +447,7 @@ module FileUtils
       ent.copy_metadata destent.path if preserve
     end
   end
+  module_function :copy_entry
 
   #
   # Copies file contents of +src+ to +dest+.
@@ -436,6 +458,7 @@ module FileUtils
     ent.copy_file dest
     ent.copy_metadata dest if preserve
   end
+  module_function :copy_file
 
   #
   # Copies stream +src+ to +dest+.
@@ -445,6 +468,7 @@ module FileUtils
   def copy_stream(src, dest)
     fu_copy_stream0 src, dest, fu_stream_blksize(src, dest)
   end
+  module_function :copy_stream
 
   #
   # Options: force noop verbose
@@ -482,8 +506,10 @@ module FileUtils
       end
     end
   end
+  module_function :mv
 
   alias move mv
+  module_function :move
 
   OPT_TABLE['mv']   =
   OPT_TABLE['move'] = %w( noop verbose force )
@@ -491,7 +517,7 @@ module FileUtils
   def rename_cannot_overwrite_file?   #:nodoc:
     /djgpp|cygwin|mswin|mingw|bccwin|wince|emx/ =~ RUBY_PLATFORM
   end
-  private :rename_cannot_overwrite_file?
+  private_module_function :rename_cannot_overwrite_file?
 
   #
   # Options: force noop verbose
@@ -513,8 +539,10 @@ module FileUtils
       remove_file path, options[:force]
     end
   end
+  module_function :rm
 
   alias remove rm
+  module_function :remove
 
   OPT_TABLE['rm']     =
   OPT_TABLE['remove'] = %w( noop verbose force )
@@ -532,8 +560,10 @@ module FileUtils
     options[:force] = true
     rm list, options
   end
+  module_function :rm_f
 
   alias safe_unlink rm_f
+  module_function :safe_unlink
 
   OPT_TABLE['rm_f']        =
   OPT_TABLE['safe_unlink'] = %w( noop verbose )
@@ -573,6 +603,7 @@ module FileUtils
       end
     end
   end
+  module_function :rm_r
 
   OPT_TABLE['rm_r'] = %w( noop verbose force secure )
 
@@ -592,8 +623,10 @@ module FileUtils
     options[:force] = true
     rm_r list, options
   end
+  module_function :rm_rf
 
   alias rmtree rm_rf
+  module_function :rmtree
 
   OPT_TABLE['rm_rf']  =
   OPT_TABLE['rmtree'] = %w( noop verbose secure )
@@ -679,19 +712,21 @@ module FileUtils
   rescue
     raise unless force
   end
+  module_function :remove_entry_secure
 
-  def fu_have_symlink?
+  def fu_have_symlink?   #:nodoc
     File.symlink nil, nil
   rescue NotImplementedError
     return false
   rescue
     return true
   end
+  private_module_function :fu_have_symlink?
 
-  def fu_stat_identical_entry?(a, b)
+  def fu_stat_identical_entry?(a, b)   #:nodoc:
     a.dev == b.dev and a.ino == b.ino
   end
-  private :fu_stat_identical_entry?
+  private_module_function :fu_stat_identical_entry?
 
   #
   # This method removes a file system entry +path+.
@@ -711,6 +746,7 @@ module FileUtils
   rescue
     raise unless force
   end
+  module_function :remove_entry
 
   #
   # Removes a file +path+.
@@ -721,6 +757,7 @@ module FileUtils
   rescue
     raise unless force
   end
+  module_function :remove_file
 
   #
   # Removes a directory +dir+ and its contents recursively.
@@ -729,6 +766,7 @@ module FileUtils
   def remove_dir(path, force = false)
     remove_entry path, force   # FIXME?? check if it is a directory
   end
+  module_function :remove_dir
 
   #
   # Returns true if the contents of a file A and a file B are identical.
@@ -744,9 +782,12 @@ module FileUtils
       }
     }
   end
+  module_function :compare_file
 
   alias identical? compare_file
   alias cmp compare_file
+  module_function :identical?
+  module_function :cmp
 
   #
   # Returns true if the contents of a stream +a+ and +b+ are identical.
@@ -765,6 +806,7 @@ module FileUtils
     end
     false
   end
+  module_function :compare_stream
 
   #
   # Options: mode noop verbose
@@ -789,6 +831,7 @@ module FileUtils
       end
     end
   end
+  module_function :install
 
   OPT_TABLE['install'] = %w( noop verbose preserve mode )
 
@@ -811,6 +854,7 @@ module FileUtils
       Entry_.new(path).chmod mode
     end
   end
+  module_function :chmod
 
   OPT_TABLE['chmod'] = %w( noop verbose )
 
@@ -839,6 +883,7 @@ module FileUtils
       end
     end
   end
+  module_function :chmod_R
 
   OPT_TABLE['chmod_R'] = %w( noop verbose )
 
@@ -867,6 +912,7 @@ module FileUtils
       Entry_.new(path).chown uid, gid
     end
   end
+  module_function :chown
 
   OPT_TABLE['chown'] = %w( noop verbose )
 
@@ -903,6 +949,7 @@ module FileUtils
       end
     end
   end
+  module_function :chown_R
 
   OPT_TABLE['chown_R'] = %w( noop verbose )
 
@@ -917,7 +964,7 @@ module FileUtils
       else Etc.getpwnam(user).uid
       end
     end
-    private :fu_get_uid
+    private_module_function :fu_get_uid
 
     def fu_get_gid(group)   #:nodoc:
       return nil unless group
@@ -926,7 +973,7 @@ module FileUtils
       else Etc.getgrnam(group).gid
       end
     end
-    private :fu_get_gid
+    private_module_function :fu_get_gid
 
   rescue LoadError
     # need Win32 support???
@@ -934,10 +981,12 @@ module FileUtils
     def fu_get_uid(user)   #:nodoc:
       user    # FIXME
     end
+    private_module_function :fu_get_uid
 
     def fu_get_gid(group)   #:nodoc:
       group   # FIXME
     end
+    private_module_function :fu_get_gid
   end
 
   #
@@ -965,6 +1014,7 @@ module FileUtils
       end
     end
   end
+  module_function :touch
 
   OPT_TABLE['touch'] = %w( noop verbose )
 
@@ -1006,6 +1056,7 @@ module FileUtils
   end
 
   include StreamUtils_
+  extend StreamUtils_
 
   class Entry_   #:nodoc: internal use only
     include StreamUtils_
@@ -1310,18 +1361,20 @@ module FileUtils
     end
   end   # class Entry_
 
-  def fu_list(arg)
+  def fu_list(arg)   #:nodoc:
     [arg].flatten.map {|path| File.path(path) }
   end
+  private_module_function :fu_list
 
-  def fu_each_src_dest(src, dest)
+  def fu_each_src_dest(src, dest)   #:nodoc:
     fu_each_src_dest0(src, dest) do |s, d|
       raise ArgumentError, "same file: #{s} and #{d}" if fu_same?(s, d)
       yield s, d
     end
   end
+  private_module_function :fu_each_src_dest
 
-  def fu_each_src_dest0(src, dest)
+  def fu_each_src_dest0(src, dest)   #:nodoc:
     if src.is_a?(Array)
       src.each do |s|
         s = File.path(s)
@@ -1336,8 +1389,9 @@ module FileUtils
       end
     end
   end
+  private_module_function :fu_each_src_dest0
 
-  def fu_same?(a, b)
+  def fu_same?(a, b)   #:nodoc:
     if fu_have_st_ino?
       st1 = File.stat(a)
       st2 = File.stat(b)
@@ -1348,20 +1402,23 @@ module FileUtils
   rescue Errno::ENOENT
     return false
   end
+  private_module_function :fu_same?
 
-  def fu_have_st_ino?
+  def fu_have_st_ino?   #:nodoc:
     not fu_windows?
   end
+  private_module_function :fu_have_st_ino?
 
-  def fu_check_options(options, *optdecl)
+  def fu_check_options(options, *optdecl)   #:nodoc:
     h = options.dup
     optdecl.each do |name|
       h.delete name
     end
     raise ArgumentError, "no such option: #{h.keys.join(' ')}" unless h.empty?
   end
+  private_module_function :fu_check_options
 
-  def fu_update_option(args, new)
+  def fu_update_option(args, new)   #:nodoc:
     if args.last.is_a?(Hash)
       args[-1] = args.last.dup.update(new)
     else
@@ -1369,18 +1426,17 @@ module FileUtils
     end
     args
   end
+  private_module_function :fu_update_option
 
   @fileutils_output = $stderr
   @fileutils_label  = ''
 
-  def fu_output_message(msg)
+  def fu_output_message(msg)   #:nodoc:
     @fileutils_output ||= $stderr
     @fileutils_label  ||= ''
     @fileutils_output.puts @fileutils_label + msg
   end
-
-  # All Methods are public instance method and are public class method.
-  extend self
+  private_module_function :fu_output_message
 
   #
   # Returns an Array of method names which have any options.

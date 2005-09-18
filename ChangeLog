@@ -1,3 +1,10 @@
+Mon Sep 19 05:58:59 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: use module_function instead of single extend.
+
+	* test/fileutils/test_fileutils.rb: test existence of singleton
+	  methods.
+
 Mon Sep 19 05:32:41 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (remove_entry_secure): does not use chdir(2).

@@ -76,6 +76,10 @@ class TestFileUtils
 
   include FileUtils
 
+  def check_singleton(name)
+    assert_equal true, ::FileUtils.public_methods.include?(name.to_s)
+  end
+
   def my_rm_rf(path)
     if File.exist?('/bin/rm')
       system %Q[/bin/rm -rf "#{path}"]
@@ -164,6 +168,8 @@ class TestFileUtils
   #
 
   def test_pwd
+    check_singleton :pwd
+
     assert_equal Dir.pwd, pwd()
 
     cwd = Dir.pwd
@@ -181,6 +187,8 @@ end
   end
 
   def test_cmp
+    check_singleton :cmp
+
     TARGETS.each do |fname|
       assert cmp(fname, fname), 'not same?'
     end
@@ -198,6 +206,8 @@ end
   end
 
   def test_cp
+    check_singleton :cp
+
     each_srcdest do |srcpath, destpath|
       cp srcpath, destpath
       assert_same_file srcpath, destpath
@@ -245,6 +255,8 @@ end
   end
 
   def test_cp_r
+    check_singleton :cp_r
+
     cp_r 'data', 'tmp'
     TARGETS.each do |fname|
       assert_same_file fname, "tmp/#{fname}"
@@ -299,6 +311,8 @@ end
   end
 
   def test_mv
+    check_singleton :mv
+
     mkdir 'tmp/dest'
     TARGETS.each do |fname|
       cp fname, 'tmp/mvsrc'
@@ -356,6 +370,8 @@ end
   end
 
   def test_rm
+    check_singleton :rm
+
     TARGETS.each do |fname|
       cp fname, 'tmp/rmsrc'
       rm 'tmp/rmsrc'
@@ -376,6 +392,8 @@ end
   end
 
   def test_rm_f
+    check_singleton :rm_f
+
     TARGETS.each do |fname|
       cp fname, 'tmp/rmsrc'
       rm_f 'tmp/rmsrc'
@@ -421,6 +439,8 @@ end
   end
 
   def test_rm_r
+    check_singleton :rm_r
+
     my_rm_rf 'tmpdatadir'
 
     Dir.mkdir 'tmpdatadir'
@@ -477,6 +497,64 @@ end
     assert_file_not_exist 'tmp/tmpdir1'
     assert_file_not_exist 'tmp/tmpdir2'
     assert_file_not_exist 'tmp/tmpdir3'
+  end
+
+  def test_remove_entry_secure
+    check_singleton :remove_entry_secure
+
+    my_rm_rf 'tmpdatadir'
+
+    Dir.mkdir 'tmpdatadir'
+    remove_entry_secure 'tmpdatadir'
+    assert_file_not_exist 'tmpdatadir'
+
+    Dir.mkdir 'tmpdatadir'
+    remove_entry_secure 'tmpdatadir/'
+    assert_file_not_exist 'tmpdatadir'
+
+    Dir.mkdir 'tmp/tmpdir'
+    remove_entry_secure 'tmp/tmpdir/'
+    assert_file_not_exist 'tmp/tmpdir'
+    assert_file_exist     'tmp'
+
+    Dir.mkdir 'tmp/tmpdir'
+    remove_entry_secure 'tmp/tmpdir'
+    assert_file_not_exist 'tmp/tmpdir'
+    assert_file_exist     'tmp'
+
+    Dir.mkdir 'tmp/tmpdir'
+    File.open('tmp/tmpdir/a', 'w') {|f| f.puts 'dummy' }
+    File.open('tmp/tmpdir/b', 'w') {|f| f.puts 'dummy' }
+    File.open('tmp/tmpdir/c', 'w') {|f| f.puts 'dummy' }
+    remove_entry_secure 'tmp/tmpdir'
+    assert_file_not_exist 'tmp/tmpdir'
+    assert_file_exist     'tmp'
+
+    Dir.mkdir 'tmp/tmpdir'
+    File.open('tmp/tmpdir/a', 'w') {|f| f.puts 'dummy' }
+    File.open('tmp/tmpdir/c', 'w') {|f| f.puts 'dummy' }
+    remove_entry_secure 'tmp/tmpdir/a', true
+    remove_entry_secure 'tmp/tmpdir/b', true
+    remove_entry_secure 'tmp/tmpdir/c', true
+    assert_file_not_exist 'tmp/tmpdir/a'
+    assert_file_not_exist 'tmp/tmpdir/c'
+    Dir.rmdir 'tmp/tmpdir'
+
+if have_symlink?
+    # [ruby-talk:94635] a symlink to the directory
+    Dir.mkdir 'tmp/tmpdir'
+    File.symlink '..', 'tmp/tmpdir/symlink_to_dir'
+    remove_entry_secure 'tmp/tmpdir'
+    assert_file_not_exist 'tmp/tmpdir'
+    assert_file_exist     'tmp'
+end
+
+    # pathname
+    Dir.mkdir 'tmp/tmpdir1'; touch 'tmp/tmpdir1/tmp'
+    assert_nothing_raised {
+      remove_entry_secure Pathname.new('tmp/tmpdir1')
+    }
+    assert_file_not_exist 'tmp/tmpdir1'
   end
 
   def test_with_big_file
@@ -545,6 +623,8 @@ end
 
 if have_symlink?
   def test_ln_s
+    check_singleton :ln_s
+
     TARGETS.each do |fname|
       ln_s fname, 'tmp/lnsdest'
       assert FileTest.symlink?('tmp/lnsdest'), 'not symlink'
@@ -568,6 +648,8 @@ end
 
 if have_symlink?
   def test_ln_sf
+    check_singleton :ln_sf
+
     TARGETS.each do |fname|
       ln_sf fname, 'tmp/lnsdest'
       assert FileTest.symlink?('tmp/lnsdest'), 'not symlink'
@@ -590,6 +672,8 @@ if have_symlink?
 end
 
   def test_mkdir
+    check_singleton :mkdir
+
     my_rm_rf 'tmpdatadir'
     mkdir 'tmpdatadir'
     assert_directory 'tmpdatadir'
@@ -629,6 +713,8 @@ end
   end
 
   def test_mkdir_p
+    check_singleton :mkdir_p
+
     dirs = %w(
       tmpdir/dir/
       tmpdir/dir/./
@@ -692,6 +778,8 @@ end
   end
 
   def test_install
+    check_singleton :install
+
     File.open('tmp/aaa', 'w') {|f| f.puts 'aaa' }
     File.open('tmp/bbb', 'w') {|f| f.puts 'bbb' }
     install 'tmp/aaa', 'tmp/bbb', :mode => 0600
@@ -750,6 +838,8 @@ end
 
 if have_file_perm?
   def test_chmod
+    check_singleton :chmod
+
     touch 'tmp/a'
     chmod 0700, 'tmp/a'
     assert_equal 0700, File.stat('tmp/a').mode & 0777
@@ -758,6 +848,8 @@ if have_file_perm?
   end
 
   def test_chmod_R
+    check_singleton :chmod_R
+
     mkdir_p 'tmp/dir/dir'
     touch %w( tmp/dir/file tmp/dir/dir/file )
     chmod_R 0700, 'tmp/dir'
@@ -775,14 +867,18 @@ if have_file_perm?
 
   # FIXME: How can I test this method?
   def test_chown
+    check_singleton :chown
   end
 
   # FIXME: How can I test this method?
   def test_chown_R
+    check_singleton :chown_R
   end
 end
 
   def test_copy_entry
+    check_singleton :copy_entry
+
     each_srcdest do |srcpath, destpath|
       copy_entry srcpath, destpath
       assert_same_file srcpath, destpath
@@ -807,6 +903,8 @@ end
   end
 
   def test_copy_file
+    check_singleton :copy_file
+
     each_srcdest do |srcpath, destpath|
       copy_file srcpath, destpath
       assert_same_file srcpath, destpath
@@ -814,6 +912,7 @@ end
   end
 
   def test_copy_stream
+    check_singleton :copy_stream
     # IO
     each_srcdest do |srcpath, destpath|
       File.open(srcpath) {|src|
@@ -838,6 +937,7 @@ end
   end
 
   def test_remove_file
+    check_singleton :remove_file
     File.open('data/tmp', 'w') {|f| f.puts 'dummy' }
     remove_file 'data/tmp'
     assert_file_not_exist 'data/tmp'
@@ -850,6 +950,7 @@ end
   end
 
   def test_remove_dir
+    check_singleton :remove_dir
     Dir.mkdir 'data/tmpdir'
     File.open('data/tmpdir/a', 'w') {|f| f.puts 'dummy' }
     remove_dir 'data/tmpdir'
@@ -863,10 +964,12 @@ end
   end
 
   def test_compare_file
+    check_singleton :compare_file
     # FIXME
   end
 
   def test_compare_stream
+    check_singleton :compare_stream
     # FIXME
   end
 
@@ -885,6 +988,7 @@ end
   end
 
   def test_uptodate?
+    check_singleton :uptodate?
     prepare_time_data
     Dir.chdir('data') {
       assert(   uptodate?('newest', %w(old newer notexist)) )
@@ -902,6 +1006,77 @@ end
       uptodate? 'tmp/a', ['tmp/b', Pathname.new('tmp/c')]
       uptodate? Pathname.new('tmp/a'), [Pathname.new('tmp/b'), Pathname.new('tmp/c')]
     }
+  end
+
+  def test_cd
+    check_singleton :cd
+  end
+
+  def test_chdir
+    check_singleton :chdir
+  end
+
+  def test_getwd
+    check_singleton :getwd
+  end
+
+  def test_identical?
+    check_singleton :identical?
+  end
+
+  def test_link
+    check_singleton :link
+  end
+
+  def test_makedirs
+    check_singleton :makedirs
+  end
+
+  def test_mkpath
+    check_singleton :mkpath
+  end
+
+  def test_move
+    check_singleton :move
+  end
+
+  def test_rm_rf
+    check_singleton :rm_rf
+  end
+
+  def test_rmdir
+    check_singleton :rmdir
+  end
+
+  def test_rmtree
+    check_singleton :rmtree
+  end
+
+  def test_safe_unlink
+    check_singleton :safe_unlink
+  end
+
+  def test_symlink
+    check_singleton :symlink
+  end
+
+  def test_touch
+    check_singleton :touch
+  end
+
+  def test_collect_methods
+  end
+
+  def test_commands
+  end
+
+  def test_have_option?
+  end
+
+  def test_options
+  end
+
+  def test_options_of
   end
 
 end
