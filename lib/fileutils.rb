@@ -623,9 +623,6 @@ module FileUtils
   # user (root) should invoke this method.  Otherwise this method does not
   # work.
   #
-  # WARNING: remove_entry_secure uses chdir(2), this method is not
-  # multi-thread safe, nor reentrant.
-  #
   # For details of this security vulnerability, see Perl's case:
   #
   #   http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=CAN-2005-0448
@@ -634,40 +631,41 @@ module FileUtils
   # For fileutils.rb, this vulnerability is reported in [ruby-dev:26100].
   #
   def remove_entry_secure(path, force = false)
-    fullpath = File.expand_path(path)
-    st = File.stat(File.dirname(fullpath))
-    unless st.world_writable?
+    unless fu_have_symlink?
       remove_entry path, force
       return
     end
-    unless st.sticky?
-      raise ArgumentError, "parent directory is insecure: #{path}"
+    fullpath = File.expand_path(path)
+    st = File.lstat(fullpath)
+    unless st.directory?
+      File.unlink fullpath
+      return
     end
+    # is a directory.
+    parent_st = File.stat(File.dirname(fullpath))
+    unless parent_st.world_writable?
+      remove_entry path, force
+      return
+    end
+    unless parent_st.sticky?
+      raise ArgumentError, "parent directory is world writable, FileUtils#remove_entry_secure does not work; abort: #{path.inspect} (parent directory mode #{'%o' % parent_st.mode})"
+    end
+    # freeze tree root
     euid = Process.euid
-    prevcwd = Dir.getwd
-    begin
-      begin
-        Dir.chdir(fullpath)
-      rescue SystemCallError
-        # seems a file
+    File.open(fullpath + '/.') {|f|
+      unless fu_stat_identical_entry?(st, f.stat)
+        # symlink (TOC-to-TOU attack?)
         File.unlink fullpath
         return
       end
-      unless fu_stat_identical_entry?(File.lstat(fullpath), File.stat('.'))
-        # seems TOC-to-TOU attack
-        File.unlink fullpath
-        return
-      end
-      File.chown euid, nil, '.'
-      File.chmod 0700, '.'
-    ensure
-      Dir.chdir prevcwd
-    end
+      f.chown euid, -1
+      f.chmod 0700
+    }
     # ---- tree root is frozen ----
     root = Entry_.new(path)
     root.preorder_traverse do |ent|
       if ent.directory?
-        ent.chown euid, nil
+        ent.chown euid, -1
         ent.chmod 0700
       end
     end
@@ -682,9 +680,18 @@ module FileUtils
     raise unless force
   end
 
+  def fu_have_symlink?
+    File.symlink nil, nil
+  rescue NotImplementedError
+    return false
+  rescue
+    return true
+  end
+
   def fu_stat_identical_entry?(a, b)
     a.dev == b.dev and a.ino == b.ino
   end
+  private :fu_stat_identical_entry?
 
   #
   # This method removes a file system entry +path+.
