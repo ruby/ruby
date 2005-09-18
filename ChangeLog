@@ -1,3 +1,41 @@
+Mon Sep 19 06:41:32 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: backported from trunk (rev 1.65):
+
+	* lib/fileutils.rb (rm_r): new option :secure.
+
+	* lib/fileutils.rb (rm_rf): new option :secure.
+
+	* lib/fileutils.rb: new method #remove_entry_secure.
+
+	* lib/fileutils.rb (cd): remove option :noop.
+
+	* lib/fileutils.rb (cp_r): new option :dereference_root.
+
+	* lib/fileutils.rb (cp_r): new option :dereference_root.
+
+	* lib/fileutils.rb: new method #remove_entry.
+
+	* lib/fileutils.rb: new method #chmod_R.
+
+	* lib/fileutils.rb: new method #chown.
+
+	* lib/fileutils.rb: new method #chown_R.
+
+	* lib/fileutils.rb: new method .commands.
+
+	* lib/fileutils.rb: new method .options.
+
+	* lib/fileutils.rb: new method .have_option?.
+
+	* lib/fileutils.rb: new method .options_of.
+
+	* lib/fileutils.rb: new method .collect_method.
+
+	* lib/fileutils.rb: use module_function instead of single extend.
+
+	* test/fileutils/test_fileutils.rb: backported from trunk (1.36).
+
 Mon Sep 19 03:17:48 2005  Tanaka Akira  <akr@m17n.org>
 
 	* file.c (rb_thread_flock): wrap the flock system call by
