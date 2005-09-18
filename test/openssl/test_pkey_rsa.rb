@@ -33,6 +33,17 @@ class OpenSSL::TestPKeyRSA < Test::Unit::TestCase
     assert_raise(ArgumentError){ key.private_encrypt("hi", 1, nil) }
     assert_raise(OpenSSL::PKey::RSAError){ key.private_encrypt(plain0, 666) }
   end
+
+  def test_private
+    key = OpenSSL::PKey::RSA.new(512, 3)
+    assert(key.private?)
+    key2 = OpenSSL::PKey::RSA.new(key.to_der)
+    assert(key2.private?)
+    key3 = key.public_key
+    assert(!key3.private?)
+    key4 = OpenSSL::PKey::RSA.new(key3.to_der)
+    assert(!key4.private?)
+  end
 end
 
 end

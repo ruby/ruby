@@ -20,12 +20,7 @@
 } while (0)
 
 #define RSA_HAS_PRIVATE(rsa) ((rsa)->p && (rsa)->q)
-
-#ifdef OSSL_ENGINE_ENABLED
-#  define RSA_PRIVATE(rsa) (RSA_HAS_PRIVATE(rsa) || (rsa)->engine)
-#else
-#  define RSA_PRIVATE(rsa) RSA_HAS_PRIVATE(rsa)
-#endif
+#define RSA_PRIVATE(obj,rsa) (RSA_HAS_PRIVATE(rsa)||OSSL_PKEY_IS_PRIVATE(obj))
 
 /*
  * Classes
@@ -181,8 +176,8 @@ ossl_rsa_is_private(VALUE self)
     EVP_PKEY *pkey;
 	
     GetPKeyRSA(self, pkey);
-	
-    return (RSA_PRIVATE(pkey->pkey.rsa)) ? Qtrue : Qfalse;
+    
+    return (RSA_PRIVATE(self, pkey->pkey.rsa)) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -303,7 +298,7 @@ ossl_rsa_private_encrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
-    if (!RSA_PRIVATE(pkey->pkey.rsa)) {
+    if (!RSA_PRIVATE(self, pkey->pkey.rsa)) {
 	ossl_raise(eRSAError, "private key needed.");
     }	
     rb_scan_args(argc, argv, "11", &buffer, &padding);
@@ -328,7 +323,7 @@ ossl_rsa_private_decrypt(int argc, VALUE *argv, VALUE self)
     VALUE str, buffer, padding;
 
     GetPKeyRSA(self, pkey);
-    if (!RSA_PRIVATE(pkey->pkey.rsa)) {
+    if (!RSA_PRIVATE(self, pkey->pkey.rsa)) {
 	ossl_raise(eRSAError, "private key needed.");
     }
     rb_scan_args(argc, argv, "11", &buffer, &padding);

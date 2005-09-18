@@ -16,11 +16,16 @@ extern VALUE cPKey;
 extern VALUE ePKeyError;
 extern ID id_private_q;
 
+#define OSSL_PKEY_SET_PRIVATE(obj) rb_iv_set((obj), "private", Qtrue)
+#define OSSL_PKEY_SET_PUBLIC(obj)  rb_iv_set((obj), "private", Qfalse)
+#define OSSL_PKEY_IS_PRIVATE(obj)  (rb_iv_get((obj), "private") == Qtrue)
+
 #define WrapPKey(klass, obj, pkey) do { \
     if (!pkey) { \
 	rb_raise(rb_eRuntimeError, "PKEY wasn't initialized!"); \
     } \
     obj = Data_Wrap_Struct(klass, 0, EVP_PKEY_free, pkey); \
+    OSSL_PKEY_SET_PUBLIC(obj); \
 } while (0)
 #define GetPKey(obj, pkey) do {\
     Data_Get_Struct(obj, EVP_PKEY, pkey);\

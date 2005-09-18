@@ -20,13 +20,7 @@
 } while (0)
 
 #define DSA_HAS_PRIVATE(dsa) ((dsa)->priv_key)
-
-#ifdef OSSL_ENGINE_ENABLED
-#  define DSA_PRIVATE(dsa) (DSA_HAS_PRIVATE(dsa) || (dsa)->engine)
-#else
-#  define DSA_PRIVATE(dsa) DSA_HAS_PRIVATE(dsa)
-#endif
-
+#define DSA_PRIVATE(obj,dsa) (DSA_HAS_PRIVATE(dsa)||OSSL_PKEY_IS_PRIVATE(obj))
 
 /*
  * Classes
@@ -190,7 +184,7 @@ ossl_dsa_is_private(VALUE self)
 	
     GetPKeyDSA(self, pkey);
 	
-    return (DSA_PRIVATE(pkey->pkey.dsa)) ? Qtrue : Qfalse;
+    return (DSA_PRIVATE(self, pkey->pkey.dsa)) ? Qtrue : Qfalse;
 }
 
 static VALUE
@@ -336,7 +330,7 @@ ossl_dsa_sign(VALUE self, VALUE data)
 
     GetPKeyDSA(self, pkey);
     StringValue(data);
-    if (!DSA_PRIVATE(pkey->pkey.dsa)) {
+    if (!DSA_PRIVATE(self, pkey->pkey.dsa)) {
 	ossl_raise(eDSAError, "Private DSA key needed!");
     }
     str = rb_str_new(0, ossl_dsa_buf_size(pkey));

@@ -217,7 +217,7 @@ ossl_engine_load_privkey(int argc, VALUE *argv, VALUE self)
 {
     ENGINE *e;
     EVP_PKEY *pkey;
-    VALUE id, data;
+    VALUE id, data, obj;
     char *sid, *sdata;
 
     rb_scan_args(argc, argv, "02", &id, &data);
@@ -230,8 +230,10 @@ ossl_engine_load_privkey(int argc, VALUE *argv, VALUE self)
     pkey = ENGINE_load_private_key(e, sid, NULL, sdata);
 #endif
     if (!pkey) ossl_raise(eEngineError, NULL);
+    obj = ossl_pkey_new(pkey);
+    OSSL_PKEY_SET_PRIVATE(obj);
 
-    return ossl_pkey_new(pkey);
+    return obj;
 }
 
 static VALUE
@@ -242,8 +244,8 @@ ossl_engine_load_pubkey(int argc, VALUE *argv, VALUE self)
     VALUE id, data;
     char *sid, *sdata;
 
-    rb_scan_args(argc, argv, "11", &id, &data);
-    sid = StringValuePtr(id);
+    rb_scan_args(argc, argv, "02", &id, &data);
+    sid = NIL_P(id) ? NULL : StringValuePtr(id);
     sdata = NIL_P(data) ? NULL : StringValuePtr(data);
     GetEngine(self, e);
 #if OPENSSL_VERSION_NUMBER < 0x00907000L
