@@ -645,6 +645,9 @@ Mon Sep  5 22:28:46 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 Mon Sep  5 17:03:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
+	* lib/find.rb: should raise ENOENT if root entry does not exist.
+	  [ruby-dev:41054]
+
 	* lib/ostruct.rb: a patch from Florian Gross <florgro@gmail.com>
 	  merged to allow recursive inspect (and to_s) for OpenStruct.
 	  [ruby-core:05532]
