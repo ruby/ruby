@@ -81,6 +81,23 @@ Sat Sep 17 20:58:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  because select(2) modifies its fd_set arguments, it must be
 	  restored sometimes.
 
+	* win32/win32.c (rb_w32_select): performance improvement when
+	 'always readable/writable handles' and sockets are passed.
+	  sockets should be polled every time.
+
+	    require "net/http"
+
+	    Thread.new {
+	      loop do
+	        STDOUT.write(".") # busy on console (this is worst case though)
+	      end
+	    }
+
+	    # socket operation took long time. (sometimes timed out)
+	    Net::HTTP.start("www.ruby-lang.org") do |http|
+	        http.get("/cgi-bin/cvsweb.cgi/ruby/array.c?rev=1.179")
+	    end
+
 Sat Sep 17 14:54:40 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/ruby/test_readpartial.rb (test_open_pipe, test_with_stdio):
