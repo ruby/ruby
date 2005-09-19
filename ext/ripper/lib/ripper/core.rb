@@ -61,7 +61,6 @@ class Ripper
     :def => 3,
     :defined => 1,
     :defs => 5,
-    :do_block => 1,
     :do_block => 2,
     :dot2 => 2,
     :dot3 => 2,
@@ -385,10 +384,6 @@ class Ripper
   end
 
   def on_defs(a, b, c, d, e)
-    a
-  end
-
-  def on_do_block(a)
     a
   end
 

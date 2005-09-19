@@ -1,3 +1,12 @@
+Mon Sep 19 14:39:46 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* parse.y (do_block): do_block event dispatches 2 args.
+	  [ruby-dev:26964]
+
+	* ext/ripper/lib/ripper/core.rb: updated.
+
+	* ext/ripper/tools/list-parser-event-ids.rb: check arity mismatch.
+
 Mon Sep 19 07:45:37 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkey.h, ossl_pkey_rsa.c, ossl_pkey_dsa.c:

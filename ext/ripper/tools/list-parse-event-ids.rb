@@ -17,17 +17,23 @@ def main
 end
 
 def extract_ids(f)
-  results = []
+  ids = {}
   f.each do |line|
-    next if /\A\#\s*define\s+s?dispatch/ === line
-    next if /ripper_dispatch/ === line
+    next if /\A\#\s*define\s+s?dispatch/ =~ line
+    next if /ripper_dispatch/ =~ line
     if a = line.scan(/dispatch(\d)\((\w+)/)
       a.each do |arity, event|
-        results.push [event, arity.to_i]
+        if ids[event]
+          unless ids[event] == arity.to_i
+            $stderr.puts "arity mismatch: #{event} (#{ids[event]} vs #{arity})"
+            exit 1
+          end
+        end
+        ids[event] = arity.to_i
       end
     end
   end
-  results.uniq.sort
+  ids.to_a.sort
 end
 
 main
