@@ -1,3 +1,9 @@
+Tue Sep 20 01:01:41 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/mathn.rb (Fixnum): remove debug print.
+
+	* lib/rational.rb (Rational): ditto.
+
 Tue Sep 20 00:34:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_close): call rb_io_close() directly if io is a T_FILE

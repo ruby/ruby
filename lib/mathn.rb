@@ -118,9 +118,6 @@ end
 class Fixnum
   remove_method :/
   alias / quo
-  alias_method :/, :quo
-  p :fixdiv
-  p [[:fixdiv, 1.div(1)]]
 end
 
 class Bignum
