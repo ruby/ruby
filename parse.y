@@ -3428,8 +3428,7 @@ brace_block	: '{'
 			$$ = $2;
 			nd_set_type($$, NODE_ITER);
 		    /*%
-			$$ = $2;
-			$$ = dispatch1(do_block, $2);
+			$$ = dispatch2(do_block, Qnil, $2);
 		    %*/
 		    }
 		;
