@@ -1,3 +1,9 @@
+Mon Sep 19 14:17:04 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/syck/emitter.c (syck_emit): passing an int* value to the
+	  long* parameter causes unaligned access on LP64 systems.
+	  [ruby-dev:27161]
+
 Mon Sep 19 13:44:03 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: avoid core dump with WIN32OLE_EVENT.

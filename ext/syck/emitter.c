@@ -359,7 +359,8 @@ syck_emit( SyckEmitter *e, st_data_t n )
 {
     SYMID oid;
     char *anchor_name = NULL;
-    int indent = 0, x = 0;
+    int indent = 0;
+    long x = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
     
     /*
