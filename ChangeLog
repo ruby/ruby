@@ -1,10 +1,14 @@
+Mon Sep 19 18:58:10 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* file.c (rb_file_chown): should accept nil. [ruby-dev:27171]
+
 Mon Sep 19 15:12:15 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/depend: do not make ripper/core.rb. [ruby-dev:26462]
 
 Mon Sep 19 14:49:19 2005  Minero Aoki  <aamine@loveruby.net>
 
-	* ext/ripper/eventids2.c: add prefix `t' to lambda related lexer
+	* ext/ripper/eventids2.c: add prefix `t' to tLAMBDA-related lexer
 	  events.
 
 	* ext/ripper/lib/ripper/core.rb: updated.
