@@ -1,3 +1,8 @@
+Mon Sep 19 13:44:03 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
+
+	* ext/win32ole/win32ole.c: avoid core dump with WIN32OLE_EVENT.
+	  [ruby-dev:27133]
+
 Mon Sep 19 10:36:06 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (cp_r): default is :dereference_root=>true for
