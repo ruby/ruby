@@ -176,9 +176,6 @@ class Ripper
     :ivar => 1,
     :kw => 1,
     :label => 1,
-    :lambda => 1,
-    :lambda_arg => 1,
-    :lambeg => 1,
     :lbrace => 1,
     :lbracket => 1,
     :lparen => 1,
@@ -194,6 +191,9 @@ class Ripper
     :semicolon => 1,
     :sp => 1,
     :symbeg => 1,
+    :tlambda => 1,
+    :tlambda_arg => 1,
+    :tlambeg => 1,
     :tstring_beg => 1,
     :tstring_content => 1,
     :tstring_end => 1,
@@ -819,18 +819,6 @@ class Ripper
     token
   end
 
-  def on_lambda(token)
-    token
-  end
-
-  def on_lambda_arg(token)
-    token
-  end
-
-  def on_lambeg(token)
-    token
-  end
-
   def on_lbrace(token)
     token
   end
@@ -888,6 +876,18 @@ class Ripper
   end
 
   def on_symbeg(token)
+    token
+  end
+
+  def on_tlambda(token)
+    token
+  end
+
+  def on_tlambda_arg(token)
+    token
+  end
+
+  def on_tlambeg(token)
     token
   end
 
