@@ -259,7 +259,6 @@ num_div(VALUE x, VALUE y)
 }
 
 
-
 /*
  *  call-seq:
  *     num.divmod( aNumeric ) -> anArray
@@ -2825,6 +2824,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "-", fix_minus, 1);
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
+    rb_define_method(rb_cFixnum, "div", fix_div, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);

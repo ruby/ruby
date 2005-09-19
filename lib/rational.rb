@@ -37,6 +37,7 @@
 #
 
 def Rational(a, b = 1)
+  p [:Rational, a, b]
   if a.kind_of?(Rational) && b == 1
     a
   else
@@ -54,9 +55,13 @@ class Rational < Numeric
       num = -num
       den = -den
     end
+    p [:reduce, num, den]
     gcd = num.gcd(den)
+    p [:div1, num, num.class, gcd]
     num = num.div(gcd)
+    p [:div2, den, gcd]
     den = den.div(gcd)
+    p [:gcd=, gcd]
     if den == 1 && defined?(Unify)
       num
     else
@@ -333,6 +338,7 @@ end
 class Fixnum
   undef quo
   def quo(other)
+    p [:quo, self, other]
     Rational.new!(self,1) / other
   end
   alias rdiv quo

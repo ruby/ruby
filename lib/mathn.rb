@@ -116,17 +116,22 @@ class Prime
 end
 
 class Fixnum
+  remove_method :/
   alias / quo
+  alias_method :/, :quo
+  p :fixdiv
+  p [[:fixdiv, 1.div(1)]]
 end
 
 class Bignum
+  remove_method :/
   alias / quo
 end
 
 class Rational
   Unify = true
 
-  remove_method(:inspect)
+  remove_method :inspect
   def inspect
     format "%s/%s", numerator.inspect, denominator.inspect
   end

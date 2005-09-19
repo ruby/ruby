@@ -88,7 +88,8 @@ rb_get_path(VALUE obj)
     if (rb_respond_to(obj, to_path)) {
 	obj = rb_funcall(obj, to_path, 0, 0);
     }
-    tmp = rb_str_to_str(obj);
+    tmp = obj;
+    StringValueCStr(tmp);
   exit:
     if (obj != tmp) {
 	rb_check_safe_obj(tmp);
@@ -2271,6 +2272,7 @@ file_expand_path(VALUE fname, VALUE dname, VALUE result)
     long buflen, dirlen;
     int tainted;
 
+    FilePathValue(fname);
     s = StringValuePtr(fname);
     BUFINIT();
     tainted = OBJ_TAINTED(fname);
@@ -2737,7 +2739,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	    }
 	    break;
 	  default:
-	    tmp = rb_obj_as_string(tmp);
+	    FilePathValue(tmp);
 	}
 	name = StringValueCStr(result);
 	if (i > 0 && !NIL_P(sep)) {
@@ -2884,11 +2886,20 @@ static int
 rb_thread_flock(int fd, int op, OpenFile *fptr)
 {
     if (rb_thread_alone() || (op & LOCK_NB)) {
+<<<<<<< file.c
+	int n;
+
+	TRAP_BEG;
+	n = flock(fd, op);
+	TRAP_END;
+	return n;
+=======
         int ret;
         TRAP_BEG;
 	ret = flock(fd, op);
         TRAP_END;
 	return ret;
+>>>>>>> 1.208
     }
     op |= LOCK_NB;
     while (flock(fd, op) < 0) {

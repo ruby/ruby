@@ -1,6 +1,16 @@
+Tue Sep 20 00:34:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_close): call rb_io_close() directly if io is a T_FILE
+	  object.  [ruby-dev:27156]
+
 Mon Sep 19 18:58:10 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* file.c (rb_file_chown): should accept nil. [ruby-dev:27171]
+
+Mon Sep 19 18:29:54 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (file_expand_path): allow pathnames to expand.
+	  [ruby-dev:27152]
 
 Mon Sep 19 15:12:15 2005  Minero Aoki  <aamine@loveruby.net>
 
@@ -63,6 +73,22 @@ Mon Sep 19 03:17:48 2005  Tanaka Akira  <akr@m17n.org>
           TRAP_BEG/TRAP_END to run signal hander in syswrite method.
           [ruby-dev:27134]
 
+Mon Sep 19 01:07:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (Init_Numeric): should define Fixnum#div.
+	  [ruby-dev:27129]
+
+	* file.c (rb_thread_flock): wrap flock(2) by TRAP_BEG and
+	  TRAP_END.  [ruby-dev:27122]
+
+	* file.c (rb_file_join): call FilePathValue() to all Pathnames to
+	  join.  [ruby-dev:27127]
+
+	* file.c (rb_get_path): call StringValueCStr() to ensure no nul
+	  bytes in path strings.
+
+	* gc.c (garbage_collect): need value for return.  [ruby-dev:27127]
+
 Sun Sep 18 02:10:47 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: remove comments that are bungling up
@@ -80,9 +106,6 @@ Sun Sep 18 02:10:47 2005  why the lucky stiff  <why@ruby-lang.org>
 	* test/yaml/test_yaml.rb: remove outdated tests.
 
 Sun Sep 18 01:10:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
-
-	* file.c (rb_file_join): convert components by to_s instead of to_str.
-	  fixed: [ruby-dev:27127]
 
 	* gc.c (garbage_collect): return false if no GC run.
 
