@@ -33,13 +33,19 @@ class Test_Webrick < Test::Unit::TestCase
   end
 
   def setup_http_server(port, use_ssl)
-    require 'webrick/https'
-    start_server(
+    option = {
       :Port => port, 
       :SSLEnable => use_ssl,
-      :SSLVerifyClient => ::OpenSSL::SSL::VERIFY_NONE, 
-      :SSLCertName => []
-      ) {|w| w.mount('/RPC2', create_servlet) }
+    }
+    if use_ssl
+      require 'webrick/https'
+      option.update(
+        :SSLVerifyClient => ::OpenSSL::SSL::VERIFY_NONE, 
+        :SSLCertName => []
+      )
+    end
+
+    start_server(option) {|w| w.mount('/RPC2', create_servlet) }
 
     @s = XMLRPC::Client.new3(:port => port, :use_ssl => use_ssl)
   end

@@ -1,3 +1,9 @@
+Tue Sep 20 05:48:26 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/xmlrpc/test_webrick_server.rb (setup_http_server):
+	  should not include 'webrick/https' unless 'use_ssl' because
+	  it fails where openssl is not installed.
+
 Tue Sep 20 01:01:41 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/mathn.rb (Fixnum): remove debug print.
