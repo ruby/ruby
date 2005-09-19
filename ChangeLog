@@ -1,3 +1,8 @@
+Tue Sep 20 00:34:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* io.c (io_close): call rb_io_close() directly if io is a T_FILE
+	  object.  [ruby-dev:27156]
+
 Mon Sep 19 19:09:08 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* file.c (rb_file_chown): should accept nil. [ruby-dev:27171]
