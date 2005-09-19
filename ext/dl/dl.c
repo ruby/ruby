@@ -558,7 +558,7 @@ rb_io_to_ptr(VALUE self)
   fp = fptr->f;
 
 #if defined(__DragonFly__)
-  return fp ? rb_dlptr_new(fp, 1, 0) : Qnil;
+  return fp ? rb_dlptr_new(fp, 0, 0) : Qnil;
 #else
   return fp ? rb_dlptr_new(fp, sizeof(FILE), 0) : Qnil;
 #endif

@@ -1,3 +1,8 @@
+Mon Sep 19 18:35:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/dl/dl.c (rb_io_to_ptr): fix DragonFlyBSD support.
+	  [ruby-dev:27151]
+
 Mon Sep 19 14:17:04 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/syck/emitter.c (syck_emit): passing an int* value to the
