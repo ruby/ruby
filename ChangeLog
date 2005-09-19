@@ -1,3 +1,10 @@
+Mon Sep 19 10:36:06 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (cp_r): default is :dereference_root=>true for
+	  backward compatibility. [ruby-dev:27145]
+
+	* test/fileutils/test_fileutils.rb (test_cp_r): test it.
+
 Mon Sep 19 09:57:39 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/fileutils/test_fileutils.rb: backported from trunk (1.36).

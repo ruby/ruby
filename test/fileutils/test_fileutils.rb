@@ -296,7 +296,10 @@ if have_symlink?
     cp_r 'tmp/cpr_src2', 'tmp/cpr_dest2'
     assert_directory 'tmp/cpr_dest2'
     #assert_not_symlink 'tmp/cpr_dest2'
-    assert_symlink 'tmp/cpr_dest2'   # 2005-05-26: feature change
+    # * 2005-05-26: feature change on trunk
+    #assert_symlink 'tmp/cpr_dest2'
+    # * 2005-09-19: revert for 1.8 (:dereference_root => true by default)
+    assert_not_symlink 'tmp/cpr_dest2'
     assert_symlink 'tmp/cpr_dest2/symlink'
     assert_equal 'SLdest', File.readlink('tmp/cpr_dest2/symlink')
 end
