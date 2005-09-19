@@ -1,3 +1,7 @@
+Mon Sep 19 15:12:15 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper/depend: do not make ripper/core.rb. [ruby-dev:26462]
+
 Mon Sep 19 14:49:19 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/eventids2.c: add prefix `t' to lambda related lexer
