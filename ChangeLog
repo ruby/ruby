@@ -1,3 +1,9 @@
+Tue Sep 20 05:50:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/xmlrpc/test_webrick_server.rb (setup_http_server):
+	  should not include 'webrick/https' unless 'use_ssl' because
+	  it fails where openssl is not installed.
+
 Tue Sep 20 00:34:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* io.c (io_close): call rb_io_close() directly if io is a T_FILE
