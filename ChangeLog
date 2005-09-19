@@ -1,3 +1,8 @@
+Mon Sep 19 09:57:39 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* test/fileutils/test_fileutils.rb: backported from trunk (1.36).
+	  (again) [ruby-dev:27145]
+
 Mon Sep 19 07:45:37 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkey.h, ossl_pkey_rsa.c, ossl_pkey_dsa.c:
