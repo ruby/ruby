@@ -543,22 +543,22 @@ rb_stat_inspect(VALUE self)
     VALUE str;
     int i;
     static struct {
-        char *name;
-        VALUE (*func)();
+	char *name;
+	VALUE (*func)(VALUE);
     } member[] = {
-        {"dev",     rb_stat_dev},
-        {"ino",     rb_stat_ino},
-        {"mode",    rb_stat_mode},
-        {"nlink",   rb_stat_nlink},
-        {"uid",     rb_stat_uid},
-        {"gid",     rb_stat_gid},
-        {"rdev",    rb_stat_rdev},
-        {"size",    rb_stat_size},
-        {"blksize", rb_stat_blksize},
-        {"blocks",  rb_stat_blocks},
-        {"atime",   rb_stat_atime},
-        {"mtime",   rb_stat_mtime},
-        {"ctime",   rb_stat_ctime},
+	{"dev",	    rb_stat_dev},
+	{"ino",	    rb_stat_ino},
+	{"mode",    rb_stat_mode},
+	{"nlink",   rb_stat_nlink},
+	{"uid",	    rb_stat_uid},
+	{"gid",	    rb_stat_gid},
+	{"rdev",    rb_stat_rdev},
+	{"size",    rb_stat_size},
+	{"blksize", rb_stat_blksize},
+	{"blocks",  rb_stat_blocks},
+	{"atime",   rb_stat_atime},
+	{"mtime",   rb_stat_mtime},
+	{"ctime",   rb_stat_ctime},
     };
 
     str = rb_str_buf_new2("#<");
@@ -2647,12 +2647,12 @@ rb_file_s_extname(VALUE klass, VALUE fname)
     else
  	p++;
  
-     e = strrchr(p, '.');	/* get the last dot of the last component */
-     if (!e || e == p || !e[1])	/* no dot, or the only dot is first or end? */
-	 return rb_str_new2("");
-     extname = rb_str_new(e, chompdirsep(e) - e);	/* keep the dot, too! */
-     OBJ_INFECT(extname, fname);
-     return extname;
+    e = strrchr(p, '.');	/* get the last dot of the last component */
+    if (!e || e == p || !e[1])	/* no dot, or the only dot is first or end? */
+	return rb_str_new2("");
+    extname = rb_str_new(e, chompdirsep(e) - e);	/* keep the dot, too! */
+    OBJ_INFECT(extname, fname);
+    return extname;
 }
 
 /*
@@ -2886,23 +2886,23 @@ static int
 rb_thread_flock(int fd, int op, OpenFile *fptr)
 {
     if (rb_thread_alone() || (op & LOCK_NB)) {
-        int ret;
-        TRAP_BEG;
+	int ret;
+	TRAP_BEG;
 	ret = flock(fd, op);
-        TRAP_END;
+	TRAP_END;
 	return ret;
     }
     op |= LOCK_NB;
     while (flock(fd, op) < 0) {
 	switch (errno) {
-          case EAGAIN:
-          case EACCES:
+	  case EAGAIN:
+	  case EACCES:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
 	    rb_thread_polling();	/* busy wait */
 	    rb_io_check_closed(fptr);
-            continue;
+	    continue;
 	  default:
 	    return -1;
 	}
@@ -2953,23 +2953,23 @@ rb_file_flock(VALUE obj, VALUE operation)
     GetOpenFile(obj, fptr);
 
     if (fptr->mode & FMODE_WRITABLE) {
-        rb_io_flush(obj);
+	rb_io_flush(obj);
     }
   retry:
     if (flock(fptr->fd, op) < 0) {
-        switch (errno) {
-          case EAGAIN:
-          case EACCES:
+	switch (errno) {
+	  case EAGAIN:
+	  case EACCES:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-          case EWOULDBLOCK:
+	  case EWOULDBLOCK:
 #endif
-              return Qfalse;
+	      return Qfalse;
 	  case EINTR:
 #if defined(ERESTART)
 	  case ERESTART:
 #endif
 	    goto retry;
-        }
+	}
 	rb_sys_fail(fptr->path);
     }
 #endif
@@ -2990,7 +2990,7 @@ test_check(int n, int argc, VALUE *argv)
 	  case T_STRING:
 	  default:
 	    FilePathValue(argv[i]);
-    	    break;
+	    break;
 	  case T_FILE:
 	    break;
 	}
@@ -3172,7 +3172,7 @@ rb_f_test(int argc, VALUE *argv)
 	  case '-':
 	    if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
 		return Qtrue;
-            return Qfalse;
+	    return Qfalse;
 
 	  case '=':
 	    if (st1.st_mtime == st2.st_mtime) return Qtrue;
@@ -3185,7 +3185,7 @@ rb_f_test(int argc, VALUE *argv)
 	  case '<':
 	    if (st1.st_mtime < st2.st_mtime) return Qtrue;
 	    return Qfalse;
-        }
+	}
     }
     /* unknown command */
     rb_raise(rb_eArgError, "unknown command ?%c", cmd);
@@ -4062,7 +4062,7 @@ rb_find_file(VALUE path)
 }
 
 static void
-define_filetest_function(const char *name, VALUE (*func) (/* ??? */), int argc)
+define_filetest_function(const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_define_module_function(rb_mFileTest, name, func, argc);
     rb_define_singleton_method(rb_cFile, name, func, argc);

@@ -1,7 +1,9 @@
-Tue Sep 20 21:26:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Sep 20 22:25:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/lib/nonblock.rb: disable on platforms non-blocking flag
 	  is not available.  fixed: [ruby-dev:27187]
+
+	* file.c (rb_stat_inspect): protoized function pointer.
 
 Tue Sep 20 18:23:04 2005  Tanaka Akira  <akr@m17n.org>
 
