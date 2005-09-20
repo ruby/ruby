@@ -18,6 +18,9 @@ class TestWEBrickCGI < Test::Unit::TestCase
       :DocumentRoot => File.dirname(__FILE__),
       :DirectoryIndex => ["webrick.cgi"],
     }
+    if RUBY_PLATFORM =~ /mswin32|mingw|cygwin|bccwin32/
+      config[:CGIPathEnv] = ENV['PATH'] # runtime dll may not be in system dir.
+    end
     TestWEBrick.start_httpserver(config){|server, addr, port|
       http = Net::HTTP.new(addr, port)
       req = Net::HTTP::Get.new("/webrick.cgi")

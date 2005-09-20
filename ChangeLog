@@ -1,3 +1,9 @@
+Tue Sep 20 17:34:46 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* test/webrick/test_cgi.rb: set ENV["PATH"] to CGIEnvPath on
+	  windows. bcc32's runtime is not installed into system directory,
+	  so it cannot be found without this setting. [ruby-dev:27166]
+
 Tue Sep 20 17:10:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/dbm/test_dbm.rb (TestDBM::test_s_open_error): remove
