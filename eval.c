@@ -9883,6 +9883,7 @@ thread_mark(th)
     rb_gc_mark((VALUE)th->scope);
     rb_gc_mark((VALUE)th->dyna_vars);
     rb_gc_mark(th->errinfo);
+    rb_gc_mark(th->last_status);
     rb_gc_mark(th->last_line);
     rb_gc_mark(th->last_match);
     rb_mark_tbl(th->locals);

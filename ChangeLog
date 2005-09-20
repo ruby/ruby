@@ -1,3 +1,7 @@
+Tue Sep 20 18:23:04 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (thread_mark): mark th->last_status.  [ruby-dev:27179]
+
 Tue Sep 20 18:20:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/yaml.rb: require 'yaml/constants'.  [ruby-core:5776]
