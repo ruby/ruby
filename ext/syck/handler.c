@@ -31,7 +31,6 @@ syck_hdlr_add_node( SyckParser *p, SyckNode *n )
 SyckNode *
 syck_hdlr_add_anchor( SyckParser *p, char *a, SyckNode *n )
 {
-    char *atmp = NULL;
     SyckNode *ntmp = NULL;
 
     n->anchor = a;

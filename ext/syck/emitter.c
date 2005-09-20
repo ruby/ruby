@@ -359,7 +359,8 @@ syck_emit( SyckEmitter *e, st_data_t n )
 {
     SYMID oid;
     char *anchor_name = NULL;
-    int indent = 0, x = 0;
+    int indent = 0;
+    long x = 0;
     SyckLevel *lvl = syck_emitter_current_level( e );
     
     /*
@@ -559,7 +560,8 @@ syck_scan_scalar( int req_width, char *cursor, long len )
     }
     if ( ( cursor[0] == '-' || cursor[0] == ':' ||
            cursor[0] == '?' || cursor[0] == ',' ) &&
-           cursor[1] == ' ' ) {
+           ( cursor[1] == ' ' || cursor[1] == '\n' || len == 1 ) )
+    {
             flags |= SCAN_INDIC_S;
     }
 
@@ -618,11 +620,13 @@ syck_scan_scalar( int req_width, char *cursor, long len )
         }
         /* remember, if plain collections get implemented, to add nb-plain-flow-char */
         else if ( ( cursor[i] == ' ' && cursor[i+1] == '#' ) ||
-                  ( cursor[i] == ':' && cursor[i+1] == ' ' ) )
+                  ( cursor[i] == ':' && 
+                    ( cursor[i+1] == ' ' || cursor[i+1] == '\n' || i == len - 1 ) ) )
         {
             flags |= SCAN_INDIC_C;
         }
-        else if ( cursor[i] == ',' && cursor[i+1] == ' ' )
+        else if ( cursor[i] == ',' && 
+                  ( cursor[i+1] == ' ' || cursor[i+1] == '\n' || i == len - 1 ) )
         {
             flags |= SCAN_FLOWMAP;
             flags |= SCAN_FLOWSEQ;
@@ -642,7 +646,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     enum scalar_style favor_style = scalar_literal;
     SyckLevel *parent = syck_emitter_parent_level( e );
     SyckLevel *lvl = syck_emitter_current_level( e );
-    int scan;
+    int scan = 0;
     char *implicit;
     
     if ( str == NULL ) str = "";
@@ -663,6 +667,14 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     if ( syck_tagcmp( tag, implicit ) != 0 && syck_tagcmp( tag, "tag:yaml.org,2002:str" ) == 0 ) {
         force_style = scalar_2quote;
     } else {
+        /* complex key */
+        if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 &&
+             ( !( tag == NULL || 
+             ( implicit != NULL && syck_tagcmp( tag, implicit ) == 0 && e->explicit_typing == 0 ) ) ) ) 
+        {
+            syck_emitter_write( e, "? ", 2 );
+            parent->status = syck_lvl_mapx;
+        }
         syck_emit_tag( e, tag, implicit );
     }
     S_FREE( implicit );
@@ -710,7 +722,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
     }
 
     /* For now, all ambiguous keys are going to be double-quoted */
-    if ( parent->status == syck_lvl_map && parent->ncount % 2 == 1 ) {
+    if ( ( parent->status == syck_lvl_map || parent->status == syck_lvl_mapx ) && parent->ncount % 2 == 1 ) {
         if ( force_style != scalar_plain ) {
             force_style = scalar_2quote;
         }
@@ -737,6 +749,7 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
             syck_emit_1quoted( e, force_width, str, len );
         break;
 
+        case scalar_none:
         case scalar_2quote:
             syck_emit_2quoted( e, force_width, str, len );
         break;
@@ -752,6 +765,11 @@ void syck_emit_scalar( SyckEmitter *e, char *tag, enum scalar_style force_style,
         case scalar_plain:
             syck_emitter_write( e, str, len );
         break;
+    }
+
+    if ( parent->status == syck_lvl_mapx )
+    {
+        syck_emitter_write( e, "\n", 1 );
     }
 }
 
@@ -1122,6 +1140,8 @@ void syck_emit_item( SyckEmitter *e, st_data_t n )
             }
         }
         break;
+
+        default: break;
     }
     lvl->ncount++;
 
@@ -1162,6 +1182,8 @@ void syck_emit_end( SyckEmitter *e )
         case syck_lvl_imap:
             syck_emitter_write( e, "}\n", 1 );
         break;
+
+        default: break;
     }
 }
 

@@ -1,3 +1,19 @@
+Tue Sep 20 15:39:40 2005  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/emitter.c (syck_scan_scalar): prevent indicators from
+	  appearing alone or at the end of plain scalars. [ruby-core:5826]
+
+	* ext/syck/emitter.c (syck_emit_scalar): treat typed scalar nodes
+	  as complex keys.
+
+	* lib/syck.h: version 0.60.
+
+	* lib/yaml/basenode.rb (YAML::BaseNode#at): transform keys during
+	  key searches.
+
+	* ext/syck/rubyext.c: loading of binary-typed nodes.  prevent
+	  emission of plain strings that look like symbols, but which aren't.
+
 Tue Sep 20 05:48:26 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/xmlrpc/test_webrick_server.rb (setup_http_server):
