@@ -242,8 +242,10 @@ rb_clear_cache_by_class(klass)
     }
 }
 
-#define NOEX_WITH_SAFE(n) ((n) | ruby_safe_level << 4)
+#define NOEX_TAINTED 8
 #define NOEX_SAFE(n) ((n) >> 4)
+#define NOEX_WITH(n, v) ((n) | (v) << 4)
+#define NOEX_WITH_SAFE(n) NOEX_WITH(n, ruby_safe_level)
 
 void
 rb_add_method(klass, mid, node, noex)
@@ -4468,12 +4470,16 @@ rb_call0(klass, recv, id, argc, argv, body, flags)
 	    }
 	    b2 = body = body->nd_next;
 
-	    PUSH_VARS();
-	    PUSH_TAG(PROT_FUNC);
 	    if (NOEX_SAFE(flags) > ruby_safe_level) {
+		if (!(flags&NOEX_TAINTED) && ruby_safe_level == 0 && NOEX_SAFE(flags) > 2) {
+		    rb_raise(rb_eSecurityError, "calling insecure method: %s",
+			     rb_id2name(id));
+		}
 		safe = ruby_safe_level;
 		ruby_safe_level = NOEX_SAFE(flags);
 	    }
+	    PUSH_VARS();
+	    PUSH_TAG(PROT_FUNC);
 	    if ((state = EXEC_TAG()) == 0) {
 		NODE *node = 0;
 		int i;
@@ -6756,11 +6762,17 @@ method_call(argc, argv, method)
 {
     VALUE result;
     struct METHOD *data;
+    int safe;
 
     Data_Get_Struct(method, struct METHOD, data);
+    if (OBJ_TAINTED(method)) {
+        safe = NOEX_WITH(data->safe_level, 4)|NOEX_TAINTED;
+    }
+    else {
+	safe = data->safe_level;
+    }
     PUSH_ITER(rb_block_given_p()?ITER_PRE:ITER_NOT);
-    result = rb_call0(data->klass,data->recv,data->id,argc,argv,data->body,
-		      data->safe_level);
+    result = rb_call0(data->klass,data->recv,data->id,argc,argv,data->body,safe);
     POP_ITER();
     return result;
 }
