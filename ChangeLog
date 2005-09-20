@@ -1,3 +1,8 @@
+Wed Sep 21 07:43:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (default_argv, Arguable#options): defaults strings
+	  to be parsed to Arguable instance.
+
 Tue Sep 20 22:25:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/lib/nonblock.rb: disable on platforms non-blocking flag
