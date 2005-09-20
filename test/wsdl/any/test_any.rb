@@ -21,7 +21,9 @@ class TestAny < Test::Unit::TestCase
     gen.opt['servant_skelton'] = nil
     gen.opt['standalone_server_stub'] = nil
     gen.opt['force'] = true
-    gen.run
+    suppress_warning do
+      gen.run
+    end
     compare("expectedDriver.rb", "echoDriver.rb")
     compare("expectedEcho.rb", "echo.rb")
     compare("expectedService.rb", "echo_service.rb")
@@ -39,6 +41,16 @@ class TestAny < Test::Unit::TestCase
 
   def loadfile(file)
     File.open(pathname(file)) { |f| f.read }
+  end
+
+  def suppress_warning
+    back = $VERBOSE
+    $VERBOSE = nil
+    begin
+      yield
+    ensure
+      $VERBOSE = back
+    end
   end
 end
 

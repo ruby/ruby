@@ -1,3 +1,9 @@
+Tue Sep 20 22:29:49 2005  NAKAMURA, Hiroshi  <nakahiro@sarion.co.jp>
+
+	* test/wsdl/simpletype/rpc/test_rpc.rb, test/wsdl/ref/test_ref.rb,
+	  test/wsdl/any/test_any.rb test/soap/wsdlDriver/test_calc.rb:
+	  suppress deliberate warnings with $VERBOSE = nil.
+
 Tue Sep 20 21:26:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/lib/nonblock.rb: disable on platforms non-blocking flag

@@ -74,13 +74,25 @@ class TestCalc < Test::Unit::TestCase
   end
 
   def test_old_driver
-    @client = ::SOAP::WSDLDriverFactory.new(@wsdl).create_driver
+    silent do
+      @client = ::SOAP::WSDLDriverFactory.new(@wsdl).create_driver
+    end
     @client.wiredump_dev = STDOUT if $DEBUG
     @client.endpoint_url = "http://localhost:#{Port}/"
     @client.generate_explicit_type = true
     assert_equal(0.3, @client.add(0.1, 0.2))
     @client.generate_explicit_type = false
     assert_equal(0.3, @client.add(0.1, 0.2))
+  end
+
+  def silent
+    back = $VERBOSE
+    $VERBOSE = nil
+    begin
+      yield
+    ensure
+      $VERBOSE = back
+    end
   end
 end
 

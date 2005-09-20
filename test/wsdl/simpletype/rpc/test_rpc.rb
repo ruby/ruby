@@ -23,7 +23,9 @@ class TestRPC < Test::Unit::TestCase
     gen.opt['servant_skelton'] = nil
     gen.opt['standalone_server_stub'] = nil
     gen.opt['force'] = true
-    gen.run
+    suppress_warning do
+      gen.run
+    end
     compare("expectedEchoVersion.rb", "echo_version.rb")
     compare("expectedDriver.rb", "echo_versionDriver.rb")
     compare("expectedService.rb", "echo_version_service.rb")
@@ -43,6 +45,16 @@ class TestRPC < Test::Unit::TestCase
 
   def loadfile(file)
     File.open(pathname(file)) { |f| f.read }
+  end
+
+  def suppress_warning
+    back = $VERBOSE
+    $VERBOSE = nil
+    begin
+      yield
+    ensure
+      $VERBOSE = back
+    end
   end
 end
 

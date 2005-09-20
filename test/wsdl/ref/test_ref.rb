@@ -19,7 +19,9 @@ class TestRef < Test::Unit::TestCase
     gen.logger.level = Logger::FATAL
     gen.opt['classdef'] = nil
     gen.opt['force'] = true
-    gen.run
+    suppress_warning do
+      gen.run
+    end
     compare("expectedProduct.rb", "product.rb")
     File.unlink(pathname('product.rb'))
   end
@@ -34,6 +36,16 @@ class TestRef < Test::Unit::TestCase
 
   def pathname(filename)
     File.join(DIR, filename)
+  end
+
+  def suppress_warning
+    back = $VERBOSE
+    $VERBOSE = nil
+    begin
+      yield
+    ensure
+      $VERBOSE = back
+    end
   end
 end
 
