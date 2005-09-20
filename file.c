@@ -3896,7 +3896,7 @@ fpath_check(path)
     char *path;
 {
 #ifndef DOSISH
-    return path_check_0(path, Qfalse);
+    return path_check_0(rb_str_new2(path), Qfalse);
 #else
     return 1;
 #endif
