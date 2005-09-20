@@ -94,6 +94,14 @@ extern void Init_File _((void));
 # error off_t is bigger than long, but you have no long long...
 #endif
 
+#ifndef PIPE_BUF
+# ifdef _POSIX_PIPE_BUF
+#  define PIPE_BUF _POSIX_PIPE_BUF
+# else
+#  define PIPE_BUF 512 /* is this ok? */
+# endif
+#endif
+
 VALUE rb_cIO;
 VALUE rb_eEOFError;
 VALUE rb_eIOError;

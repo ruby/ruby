@@ -1,3 +1,8 @@
+Tue Sep 20 17:08:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* io.c: PIPE_BUF is not defined on BeOS. use _POSIX_PIPE_BUF instead.
+	  [ruby-dev:27185]
+
 Tue Sep 20 16:53:53 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* test/readline/test_readline.rb (TestReadline::replace_stdio):
