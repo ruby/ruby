@@ -1,3 +1,8 @@
+Tue Sep 20 17:14:10 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* io.c: PIPE_BUF is not defined in BeOS. use _POSIX_PIPE_BUF instead.
+	  [ruby-dev:27185]
+
 Tue Sep 20 15:39:40 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* ext/syck/emitter.c (syck_scan_scalar): prevent indicators from
