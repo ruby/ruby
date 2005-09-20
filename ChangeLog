@@ -1,3 +1,8 @@
+Tue Sep 20 21:26:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/lib/nonblock.rb: disable on platforms non-blocking flag
+	  is not available.  fixed: [ruby-dev:27187]
+
 Tue Sep 20 18:23:04 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (thread_mark): mark th->last_status.  [ruby-dev:27179]
@@ -79,7 +84,7 @@ Mon Sep 19 07:45:37 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl_pkey.h, ossl_pkey_rsa.c, ossl_pkey_dsa.c:
 	  an instance variable "private" is added to OpenSSL::PKey class.
-          this ivar is a flag that shows whether there is a private key
+	  this ivar is a flag that shows whether there is a private key
 	  in the instance.
 
 	* ext/openssl/ossl_engine.c: (ossl_engine_load_privkey): set private
@@ -105,16 +110,16 @@ Mon Sep 19 05:32:41 2005  Minero Aoki  <aamine@loveruby.net>
 
 Mon Sep 19 03:17:48 2005  Tanaka Akira  <akr@m17n.org>
 
-        * file.c (rb_thread_flock): wrap the flock system call by
-          TRAP_BEG/TRAP_END to enable signals.  [ruby-dev:27122]
+	* file.c (rb_thread_flock): wrap the flock system call by
+	  TRAP_BEG/TRAP_END to enable signals.  [ruby-dev:27122]
 
-        * ext/socket/socket.c (bsock_send): wrap the sendto and send system
-          call by TRAP_BEG/TRAP_END to enable signals when writing to a socket
-          which is full.  [ruby-dev:27132]
+	* ext/socket/socket.c (bsock_send): wrap the sendto and send system
+	  call by TRAP_BEG/TRAP_END to enable signals when writing to a socket
+	  which is full.  [ruby-dev:27132]
 
-        * io.c (rb_io_syswrite): wrap the write system call by
-          TRAP_BEG/TRAP_END to run signal hander in syswrite method.
-          [ruby-dev:27134]
+	* io.c (rb_io_syswrite): wrap the write system call by
+	  TRAP_BEG/TRAP_END to run signal hander in syswrite method.
+	  [ruby-dev:27134]
 
 Mon Sep 19 01:07:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
@@ -135,12 +140,12 @@ Mon Sep 19 01:07:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sun Sep 18 02:10:47 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: remove comments that are bungling up
-	  the rdoc and ri output.  output symbols as plain scalars.  
+	  the rdoc and ri output.  output symbols as plain scalars.
 
-	* ext/syck/rubyext.c (syck_emitter_reset): emit headless 
+	* ext/syck/rubyext.c (syck_emitter_reset): emit headless
 	  documents always.
 
-	* ext/syck/emitter.c (syck_scan_scalar): quote scalars with any 
+	* ext/syck/emitter.c (syck_scan_scalar): quote scalars with any
 	  kind of surrounding line space, tabs or spaces alike.
 
 	* ext/syck/token.c: accept tabs as whitespace, not for indentation,

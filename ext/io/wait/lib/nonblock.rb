@@ -20,4 +20,4 @@ class IO
   ensure
     self.nonblock = nb
   end
-end
+end if defined?(Fcntl::F_GETFL)
