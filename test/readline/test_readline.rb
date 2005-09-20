@@ -62,6 +62,7 @@ class TestReadline < Test::Unit::TestCase
   private
 
   def replace_stdio(stdin_path, stdout_path)
+    STDIN.seek(0, File::SEEK_SET) rescue nil
     orig_stdin = STDIN.dup
     orig_stdout = STDOUT.dup
     STDIN.reopen(stdin_path, "r")
