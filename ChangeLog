@@ -1,3 +1,7 @@
+Wed Sep 21 08:20:24 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* README.EXT, README.EXT.ja: add new features.
+
 Wed Sep 21 07:43:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/optparse.rb (default_argv, Arguable#options): defaults strings

@@ -331,6 +331,17 @@ privateメソッドとは関数形式でしか呼び出すことの出来ないメソッ
 
   void rb_define_alias(VALUE module, const char* new, const char* old);
 
+クラスメソッドallocateを定義したり削除したりするための関数は
+以下の通りです。
+
+  void rb_define_alloc_func(VALUE klass, VALUE (*func)(VALUE klass));
+  void rb_undef_alloc_func(VALUE klass);
+
+funcはクラスを引数として受け取って、新しく割り当てられたイン
+スタンスを返さなくてはなりません。このインスタンスは、外部リ
+ソースなどを含まない、できるだけ「空」のままにしておいたほう
+がよいでしょう。
+
 2.1.3 定数定義
 
 拡張ライブラリが必要な定数はあらかじめ定義しておいた方が良い
@@ -710,8 +721,14 @@ Makefileを作る場合の雛型になるextconf.rbというファイルを作り
 
 以下の変数を使うことができます．
 
-  $CFLAGS: コンパイル時に追加的に指定するフラグ(-Iなど)
+  $CFLAGS: コンパイル時に追加的に指定するフラグ(-Oなど)
+  $CPPFLAGS: プリプロセッサに追加的に指定するフラグ(-Iや-Dなど)
   $LDFLAGS: リンク時に追加的に指定するフラグ(-Lなど)
+  $objs: リンクされるオブジェクトファイル名のリスト
+
+オブジェクトファイルのリストは、通常はソースファイルを検索し
+て自動的に生成されますが、makeの途中でソースを生成するような
+場合は明示的に指定する必要があります。
 
 ライブラリをコンパイルする条件が揃わず，そのライブラリをコン
 パイルしない時にはcreate_makefileを呼ばなければMakefileは生
@@ -891,7 +908,9 @@ NUM2INT(value)
 INT2NUM(i)
 NUM2DBL(value)
 rb_float_new(f)
-STR2CSTR(value)
+StringValue(value)
+StringValuePtr(value)
+StringValueCStr(value)
 rb_str_new2(s)
 
 ** クラス/モジュール定義
