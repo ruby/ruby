@@ -1,3 +1,14 @@
+Tue Sep 20 17:48:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client::do_rpc): add charset
+	  information to content-type header.[ruby-core:5127]
+
+	* lib/xmlrpc/server.rb (CGIServer::serve): ditto.
+
+	* lib/xmlrpc/server.rb (ModRubyServer::serve): ditto.
+
+	* lib/xmlrpc/server.rb (WEBrickServlet::service): ditto.
+
 Tue Sep 20 17:34:46 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/webrick/test_cgi.rb: set ENV["PATH"] to CGIEnvPath on

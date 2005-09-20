@@ -456,7 +456,7 @@ class CGIServer < BasicServer
 
       http_error(400, "Bad Request")        if data.nil? or data.size != length
 
-      http_write(process(data), "Content-type" => "text/xml")
+      http_write(process(data), "Content-type" => "text/xml; charset=utf-8")
     }
   end
 
@@ -531,7 +531,7 @@ class ModRubyServer < BasicServer
 
       http_error(400, "Bad Request")        if data.nil? or data.size != length
 
-      http_write(process(data), 200, "Content-type" => "text/xml")
+      http_write(process(data), 200, "Content-type" => "text/xml; charset=utf-8")
     }
   end
 
@@ -764,7 +764,7 @@ class WEBrickServlet < BasicServer
 
     response.status = 200
     response['Content-Length'] = resp.size
-    response['Content-Type']   = "text/xml"
+    response['Content-Type']   = "text/xml; charset=utf-8"
     response.body = resp 
   end
 end
