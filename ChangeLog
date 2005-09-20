@@ -1,3 +1,8 @@
+Tue Sep 20 21:26:23 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/io/wait/lib/nonblock.rb: disable on platforms non-blocking flag
+	  is not available.  fixed: [ruby-dev:27187]
+
 Tue Sep 20 18:23:04 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (thread_mark): mark th->last_status.  [ruby-dev:27179]
@@ -163,17 +168,17 @@ Mon Sep 19 03:17:48 2005  Tanaka Akira  <akr@m17n.org>
 Mon Sep 19 03:02:08 2005  Tanaka Akira  <akr@m17n.org>
 
 	* io.c (io_fwrite): wrap the write system call by TRAP_BEG/TRAP_END to
-	  enable signals when writing to a pipe which is full. 
+	  enable signals when writing to a pipe which is full.
 
 Sun Sep 18 02:10:47 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml/rubytypes.rb: remove comments that are bungling up
-	  the rdoc and ri output.  output symbols as plain scalars.  
+	  the rdoc and ri output.  output symbols as plain scalars.
 
-	* ext/syck/rubyext.c (syck_emitter_reset): emit headless 
+	* ext/syck/rubyext.c (syck_emitter_reset): emit headless
 	  documents always.
 
-	* ext/syck/emitter.c (syck_scan_scalar): quote scalars with any 
+	* ext/syck/emitter.c (syck_scan_scalar): quote scalars with any
 	  kind of surrounding line space, tabs or spaces alike.
 
 	* ext/syck/token.c: accept tabs as whitespace, not for indentation,
@@ -194,8 +199,8 @@ Sat Sep 17 23:20:27 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 Sat Sep 17 10:42:13 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/multi-tk.rb: MultiTkIp#eval_string and bg_eval_string
-	  should call Kernel.eval on caller's safe-level instead of slave's 
-	  safe-level (Of course, the given script should be evaluated on 
+	  should call Kernel.eval on caller's safe-level instead of slave's
+	  safe-level (Of course, the given script should be evaluated on
 	  slave's safe-level).
 
 Sat Sep 17 09:45:26 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -216,7 +221,7 @@ Sat Sep 17 08:35:39 2005  Kouhei Sutou  <kou@cozmixng.org>
 
 Fri Sep 16 23:09:20 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
-	* ext/win32ole/win32ole.c (ole_search_event_at): bug fix 
+	* ext/win32ole/win32ole.c (ole_search_event_at): bug fix
 	  in ext/win32ole/sample/ienavi.rb.
 
 	* ext/win32ole/win32ole/tests/testOLEEVENT.rb: ditto.
