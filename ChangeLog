@@ -1,3 +1,9 @@
+Tue Sep 20 17:10:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/dbm/test_dbm.rb (TestDBM::test_s_open_error): remove
+	  test_s_open_error test to detect duplicate open.
+	  [ruby-dev:27202]
+
 Tue Sep 20 17:08:31 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* io.c: PIPE_BUF is not defined on BeOS. use _POSIX_PIPE_BUF instead.

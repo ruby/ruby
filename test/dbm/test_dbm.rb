@@ -86,14 +86,6 @@ if defined? DBM
       assert_equal(DBM.open("tmptest_dbm") { :foo }, :foo)
     end
 
-    def test_s_open_error
-      assert_instance_of(DBM, dbm = DBM.open("tmptest_dbm", 0))
-      assert_raise(Errno::EACCES, "NEVER MIND IF YOU USE Berkeley DB3") {
-        DBM.open("tmptest_dbm", 0)
-      }
-      dbm.close
-    end
-
     def test_close
       assert_instance_of(DBM, dbm = DBM.open("tmptest_dbm"))
       assert_nil(dbm.close)
