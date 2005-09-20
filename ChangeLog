@@ -1,3 +1,8 @@
+Wed Sep 21 08:52:25 2005  why the lucky stiff  <why@ruby-lang.org>
+
+	* ext/syck/token.c: correctly compute identation of a block
+	  scalar's parent node. [ruby-talk:150620]
+
 Wed Sep 21 08:53:45 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* stable version 1.8.3 released.
