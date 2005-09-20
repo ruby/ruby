@@ -1,3 +1,8 @@
+Wed Sep 21 07:43:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (default_argv, Arguable#options): defaults strings
+	  to be parsed to Arguable instance.
+
 Wed Sep 21 02:44:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* file.c (path_check_0): disallow sticky world writable directory

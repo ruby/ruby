@@ -810,6 +810,7 @@ class OptionParser
     @banner = banner
     @summary_width = width
     @summary_indent = indent
+    @default_argv = ARGV
     add_officious
     yield self if block_given?
   end
@@ -885,9 +886,13 @@ class OptionParser
 --- OptionParser#program_name=(name)
     Program name to be emitted in error message and default banner,
     defaulted to (({$0})).
+--- OptionParser#default_argv
+--- OptionParser#default_argv=(argv)
+    Strings to be parsed in default.
 =end #'#"#`#
   attr_writer :banner, :program_name
   attr_accessor :summary_width, :summary_indent
+  attr_accessor :default_argv
 
   def banner
     @banner ||= "Usage: #{program_name} [options]"
@@ -1260,7 +1265,7 @@ class OptionParser
     order!(argv, &block)
   end
 
-  def order!(argv = ARGV, &nonopt)
+  def order!(argv = default_argv, &nonopt)
     opt, arg, sw, val, rest = nil
     nonopt ||= proc {|arg| throw :terminate, arg}
     argv.unshift(arg) if arg = catch(:terminate) {
@@ -1340,7 +1345,7 @@ class OptionParser
     permute!(argv)
   end
 
-  def permute!(argv = ARGV)
+  def permute!(argv = default_argv)
     nonopts = []
     arg = nil
     order!(argv) {|arg| nonopts << arg}
@@ -1366,7 +1371,7 @@ class OptionParser
     parse!(argv)
   end
 
-  def parse!(argv = ARGV)
+  def parse!(argv = default_argv)
     if ENV.include?('POSIXLY_CORRECT')
       order!(argv)
     else
@@ -1760,6 +1765,7 @@ Extends command line arguments array to parse itself.
 =end #'#"#`#
     def options
       @optparse ||= OptionParser.new
+      @optparse.default_argv = self
       block_given? or return @optparse
       begin
         yield @optparse
