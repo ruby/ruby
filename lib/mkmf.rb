@@ -922,6 +922,12 @@ VPATH = #{vpath.join(CONFIG['PATH_SEPARATOR'])}
     next unless /^(?:src|top|hdr|(.*))dir$/ =~ key and $1
     mk << "#{key} = #{with_destdir(var.sub(drive, ''))}\n"
   end
+  if !$extmk and !$configure_args.has_key?('--ruby') and
+      sep = config_string('BUILD_FILE_SEPARATOR')
+    sep = ":/=#{sep}"
+  else
+    sep = ""
+  end
   mk << %{
 CC = #{CONFIG['CC']}
 CXX = #{CONFIG['CXX']}
@@ -945,7 +951,7 @@ arch = #{CONFIG['arch']}
 sitearch = #{CONFIG['sitearch']}
 ruby_version = #{Config::CONFIG['ruby_version']}
 ruby = #{$ruby}
-RUBY = #{($nmake && !$extmk && !$configure_args.has_key?('--ruby')) ? '$(ruby:/=\)' : '$(ruby)'}
+RUBY = $(ruby#{sep})
 RM = #{config_string('RM') || '$(RUBY) -run -e rm -- -f'}
 MAKEDIRS = #{config_string('MAKEDIRS') || '@$(RUBY) -run -e mkdir -- -p'}
 INSTALL = #{config_string('INSTALL') || '@$(RUBY) -run -e install -- -vp'}

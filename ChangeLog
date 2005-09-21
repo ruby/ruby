@@ -1,3 +1,7 @@
+Wed Sep 21 23:30:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (configuration): generalized nmake dependent code.
+
 Wed Sep 21 14:16:30 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/ripper/depend (SUFFIXES): no longer needed.
