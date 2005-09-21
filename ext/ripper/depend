@@ -1,5 +1,4 @@
-.SUFFIXES: .y
-c: ripper.c eventids1.c
+c : ripper.c eventids1.c
 dev: c rb
 
 ripper.o: ripper.c $(hdrdir)/lex.c eventids1.c $(srcdir)/eventids2.c
