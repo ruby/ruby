@@ -791,13 +791,13 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
   def test_label
   end
 
-  def test_lambda
+  def test_tlambda
   end
 
-  def test_lambeg
+  def test_tlambeg
   end
 
-  def test_lambda_arg
+  def test_tlambda_arg
   end
 
 end
