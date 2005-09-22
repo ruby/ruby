@@ -1,3 +1,10 @@
+Fri Sep 23 06:57:52 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* test/ripper/tools/generate.rb: check parser event arity.
+
+	* test/ripper/tools/generate.rb: detect crash of parser-event-IDs
+	  and scanner-event-IDs.
+
 Fri Sep 23 06:01:30 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ruby/test_file.rb: check File#chown(nil,nil).

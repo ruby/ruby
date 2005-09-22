@@ -42,7 +42,13 @@ def main
     usage 'no --ids1src' unless ids1src
     usage 'no --ids2src' unless ids2src
     usage 'no --template' unless template
-    result = generate_ripper_core(template, read_ids1(ids1src), read_ids2(ids2src))
+    ids1 = read_ids1(ids1src)
+    ids2 = read_ids2(ids2src)
+    unless (ids1.keys & ids2).empty?
+      $stderr.puts "event crash: #{(ids1.keys & ids2).join(' ')}"
+      exit 1
+    end
+    result = generate_ripper_core(template, ids1, ids2)
   when 'eventids1', 'eventids1.c'
     usage 'no --ids1src' unless ids1src
     result = generate_eventids1(read_ids1(ids1src))
@@ -130,45 +136,37 @@ def generate_eventids1(ids)
 end
 
 def read_ids1(path)
-  check_arity path
-  ids = {}
+  h = read_ids1_with_locations(path)
+  check_arity h
+  h.map {|event, list| [event, list.first[1]] }\
+      .sort_by {|event, arity| event.to_s }
+end
+
+def check_arity(h)
+  invalid = false
+  h.each do |event, list|
+    unless list.map {|line, arity| arity }.uniq.size == 1
+      invalid = true
+      $stderr.puts "arity crash [event=#{event}]: #{
+                     list.map {|line,a| "#{line}:#{a}" }.join(', ')
+                   }"
+    end
+  end
+  exit 1 if invalid
+end
+
+def read_ids1_with_locations(path)
+  h = {}
   File.open(path) {|f|
     f.each do |line|
       next if /\A\#\s*define\s+s?dispatch/ =~ line
       next if /ripper_dispatch/ =~ line
-      if a = line.scan(/dispatch(\d)\((\w+)/)
-        a.each do |arity, event|
-          ids[event] = arity.to_i
-        end
+      line.scan(/dispatch(\d)\((\w+)/) do |arity, event|
+        (h[event] ||= []).push [f.lineno, arity]
       end
     end
   }
-  ids.to_a.sort_by {|event, arity| event.to_s }
-end
-
-def check_arity(path)
-  invalid = false
-  table = {}
-  File.open(path) {|f|
-    File.foreach(path) do |line|
-      next if /\A\#\s*define\s+s?dispatch\d/ =~ line
-      next if /ripper_dispatch\d/ =~ line
-      line.scan(/dispatch(\d)\((\w+)/) do |num, ev|
-        num = num.to_i
-        if table.key?(ev)
-          locations, arity = *table[ev]
-          unless num == arity
-            invalid = true
-            $stderr.puts "arity differ [event=#{ev}]: #{f.lineno}=#{num}; #{locations.join(',')}=#{arity}"
-          end
-          locations.push f.lineno
-        else
-          table[ev] = [[f.lineno], num.to_i]
-        end
-      end
-    end
-  }
-  exit 1 if invalid
+  h
 end
 
 def read_ids2(path)
