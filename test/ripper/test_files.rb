@@ -13,7 +13,6 @@ class TestRipper_Generic < Test::Unit::TestCase
   def test_parse_files
     Find.find("#{SRCDIR}/lib", "#{SRCDIR}/ext", "#{SRCDIR}/sample", "#{SRCDIR}/test") {|n|
       next if /\.rb\z/ !~ n || !File.file?(n)
-$stderr.print '#'
       assert_nothing_raised { Parser.new(File.read(n)).parse }
     }
   end
