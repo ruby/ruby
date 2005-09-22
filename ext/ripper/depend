@@ -3,13 +3,13 @@ ripper.o: ripper.c eventids1.c $(srcdir)/eventids2.c $(hdrdir)/lex.c
 .y.c:
 	bison -t -v -o$@ $<
 
-ripper.y: $(hdrdir)/parse.y $(srcdir)/tools/preproc.rb
-	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y > $@
+ripper.y: $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y
+	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y --output=$@
 
-$(srcdir)/lib/ripper/core.rb: $(srcdir)/lib/ripper/core.rb.in $(srcdir)/tools/generate.rb
+$(srcdir)/lib/ripper/core.rb: $(srcdir)/tools/generate.rb $(srcdir)/lib/ripper/core.rb.in $(hdrdir)/parse.y $(hdrdir)/eventids2.c
 	$(RUBY) $(srcdir)/tools/generate.rb --mode=ripper/core --template=$@.in --output=$@ --ids1src=$(hdrdir)/parse.y --ids2src=$(srcdir)/eventids2.c
 
-eventids1.c: $(hdrdir)/parse.y $(srcdir)/tools/generate.rb
+eventids1.c: $(srcdir)/tools/generate.rb $(hdrdir)/parse.y
 	$(RUBY) $(srcdir)/tools/generate.rb --mode=eventids1 --ids1src=$(hdrdir)/parse.y --output=$@
 
 # Entries for Ripper maintainer

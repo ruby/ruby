@@ -1,3 +1,11 @@
+Fri Sep 23 07:07:47 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* test/ripper/depend: use --output option instead of redirect;
+	  nmake does not remove a target when the target file is created by
+	  redirect. [ruby-dev:26466]
+
+	* test/ripper/tools/preproc.rb: new option --output.
+
 Fri Sep 23 06:57:52 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/ripper/tools/generate.rb: check parser event arity.
