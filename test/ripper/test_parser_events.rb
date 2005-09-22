@@ -1,11 +1,18 @@
-#
-# test_parser_events.rb
-#
-
 require 'dummyparser'
 require 'test/unit'
 
 class TestRipper_ParserEvents < Test::Unit::TestCase
+
+  # should be enabled
+=begin
+  def test_event_coverage
+    dispatched = Ripper::PARSER_EVENTS.map {|event,*| event }
+    dispatched.each do |e|
+      assert_equal true, respond_to?("test_#{e}", true),
+                   "event not tested: #{e.inspect}"
+    end
+  end
+=end
 
   def parse(str)
     DummyParser.new(str).parse.to_s

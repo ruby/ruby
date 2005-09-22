@@ -13,13 +13,12 @@ Requirements
 ------------
 
   * ruby 1.9 (support CVS HEAD only)
-  * bison 1.28 or later (You MUST use bison)
+  * bison 1.28 or later (Other yaccs do not work)
 
 Usage
 -----
 
   See test/ripper/* and sample/ripper/*.
-  To know thrown events, see lib/ripper.rb.
 
 License
 -------

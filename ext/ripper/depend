@@ -1,39 +1,18 @@
-c : ripper.c eventids1.c
-dev: c rb
-
-ripper.o: ripper.c $(hdrdir)/lex.c eventids1.c $(srcdir)/eventids2.c
+ripper.o: ripper.c eventids1.c $(srcdir)/eventids2.c $(hdrdir)/lex.c
 
 .y.c:
 	bison -t -v -o$@ $<
 
 ripper.y: $(hdrdir)/parse.y $(srcdir)/tools/preproc.rb
-	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y > $@
+	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y $@
 
-eventids1.c: $(hdrdir)/parse.y $(srcdir)/tools/generate-eventids1.rb ids1
-	$(RUBY) $(srcdir)/tools/generate-eventids1.rb ids1 > $@
+$(srcdir)/lib/ripper/core.rb: $(srcdir)/lib/ripper/core.rb.in $(srcdir)/tools/generate.rb
+	$(RUBY) $(srcdir)/tools/generate.rb --mode=ripper/core --template=$@.in --output=$@ --ids1src=$(hdrdir)/parse.y --ids2src=$(srcdir)/eventids2.c
 
-ids1: $(srcdir)/tools/list-parse-event-ids.rb $(hdrdir)/parse.y
-	$(RUBY) $(srcdir)/tools/list-parse-event-ids.rb -a $(hdrdir)/parse.y > $@
+eventids1.c: $(hdrdir)/parse.y $(srcdir)/tools/generate.rb
+	$(RUBY) $(srcdir)/tools/generate.rb --mode=eventids1 --ids2src=$(hdrdir)/parse.y --output=$@
 
-ids2: $(srcdir)/tools/list-scan-event-ids.rb $(srcdir)/eventids2.c
-	$(RUBY) $(srcdir)/tools/list-scan-event-ids.rb -a $(srcdir)/eventids2.c > $@
-
-#
-# Entries for only ripper developpers: DO NOT USE
-#
-
-# [WARNING]
-# Never make core.rb automatically; it causes line terminator problem.
-# See [ruby-dev:26462]
-rb: $(srcdir)/lib/ripper/core.rb.in ids1 ids2 $(srcdir)/tools/generate-ripper_rb.rb
-	$(RUBY) $(srcdir)/tools/generate-ripper_rb.rb $(srcdir)/lib/ripper/core.rb.in ids1 ids2 > $(srcdir)/lib/ripper/core.rb
-
-test:
-	$(RUBY) test/check-event-arity.rb $(hdrdir)/parse.y
-	sh test/check-event-coverage.sh
-	$(RUBY) test/check-scanner-event-coverage.rb
-	$(RUBY) test/validate.rb > /dev/null
-	@echo OK
+# Entries for Ripper maintainer
 
 preproc: ripper.E
 ripper.E: ripper.c

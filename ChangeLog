@@ -1,3 +1,47 @@
+Fri Sep 23 05:57:23 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper: refactoring code generation tools. [ruby-dev:27247]
+	  [ruby-dev:27273]
+
+	* ext/ripper/depend: use generate.rb.
+
+	* ext/ripper/lib/ripper/core.rb: removed.
+
+	* ext/ripper/tools/generate-eventids1.rb: removed (code moved to
+	  generate.rb).
+
+	* ext/ripper/tools/generate-ripper_rb.rb: removed (code moved to
+	  generate.rb).
+
+	* ext/ripper/tools/list-parse-event-ids.rb: removed (code moved to
+	  generate.rb).
+
+	* ext/ripper/tools/list-scan-event-ids.rb: removed (code moved to
+	  generate.rb).
+
+	* ext/ripper/lib/ripper/core.rb: removed.
+
+	* ext/ripper: refactoring tests. [ruby-dev:27273]
+
+	* ext/ripper/test/check-event-arity.rb: removed (code moved to
+	  tools/generate.rb).
+
+	* ext/ripper/test/check-event-coverage.rb: removed (code moved to
+	  test/ripper/test_parser_events.rb).
+
+	* ext/ripper/test/check-scanner-event-coverage.rb: removed (code
+	  moved to test/ripper/test_scanner_events.rb).
+
+	* ext/ripper/test/list-called-events.rb: removed.
+
+	* ext/ripper/test/src_rb: removed.
+
+	* ext/ripper/test/validate.rb: removed.
+
+	* test/ripper/test_scanner_events.rb: check event coverage.
+
+	* ext/ripper/lib/ripper/core.rb.in: update copyright year.
+
 Thu Sep 22 23:40:19 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (find_executable0): default path if environment is not

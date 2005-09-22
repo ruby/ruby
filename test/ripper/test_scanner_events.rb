@@ -7,6 +7,13 @@ require 'test/unit'
 
 class TestRipper_ScannerEvents < Test::Unit::TestCase
 
+  def test_event_coverage
+    dispatched = Ripper::SCANNER_EVENTS.map {|event,_| event }
+    dispatched.each do |e|
+      assert_equal true, respond_to?("test_#{e}", true), "event not tested: #{e}"
+    end
+  end
+
   def scan(target, str)
     sym = "on_#{target}".intern
     Ripper.lex(str).select {|_,type,_| type == sym }.map {|_,_,tok| tok }
@@ -177,9 +184,9 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  scan('embexpr_beg', "m(<<EOS)\n\#{expr}\nEOS")
   end
 
-=begin
-  # currently detected as "rbrace"
   def test_embexpr_end
+=begin
+    # currently detected as "rbrace"
     assert_equal [],
                  scan('embexpr_end', '')
     assert_equal ['}'],
@@ -190,8 +197,8 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  scan('embexpr_end', '%Q[#{expr}]')
     assert_equal ['}'],
                  scan('embexpr_end', "m(<<EOS)\n\#{expr}\nEOS")
-  end
 =end
+  end
 
   def test_embvar
     assert_equal [],
@@ -779,6 +786,18 @@ class TestRipper_ScannerEvents < Test::Unit::TestCase
                  scan('CHAR', "@")
     assert_equal [],
                  scan('CHAR', "@ivar")
+  end
+
+  def test_label
+  end
+
+  def test_lambda
+  end
+
+  def test_lambeg
+  end
+
+  def test_lambda_arg
   end
 
 end
