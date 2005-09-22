@@ -1,3 +1,8 @@
+Thu Sep 22 16:33:12 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* test/readline/test_readline.rb (TestReadline::replace_stdio):
+	  merged the patch of [ruby-dev:25232] instead of [ruby-dev:25223].
+
 Wed Sep 21 23:30:44 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (configuration): generalized nmake dependent code.
