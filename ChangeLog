@@ -1,3 +1,8 @@
+Fri Sep 23 06:01:30 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* test/ruby/test_file.rb: check File#chown(nil,nil).
+	  [ruby-dev:27140]
+
 Fri Sep 23 05:57:23 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper: refactoring code generation tools. [ruby-dev:27247]

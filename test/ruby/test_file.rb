@@ -99,4 +99,19 @@ class TestFile < Test::Unit::TestCase
     assert_equal(?a, f.getc)
   end
 
+  def test_s_chown
+    assert_nothing_raised { File.chown -1, -1 }
+    assert_nothing_raised { File.chown nil, nil }
+  end
+
+  def test_chown
+    assert_nothing_raised {
+      File.open(__FILE__) {|f| f.chown -1, -1 }
+    }
+    # [ruby-dev:27140]
+    assert_nothing_raised {
+      File.open(__FILE__) {|f| f.chown nil, nil }
+    }
+  end
+
 end
