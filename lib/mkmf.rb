@@ -762,8 +762,17 @@ def what_type?(type, member = nil, headers = nil, &b)
 end
 
 def find_executable0(bin, path = nil)
-  path = (path || ENV['PATH']).split(File::PATH_SEPARATOR)
   ext = config_string('EXEEXT')
+  if File.expand_path(bin) == bin
+    return bin if File.executable?(bin)
+    return file if ext and File.executable?(file = bin + ext)
+    return nil
+  end
+  if path ||= ENV['PATH']
+    path = path.split(File::PATH_SEPARATOR)
+  else
+    path = %w[/usr/local/bin /usr/ucb /usr/bin /bin]
+  end
   file = nil
   path.each do |dir|
     return file if File.executable?(file = File.join(dir, bin))
