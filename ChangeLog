@@ -1,5 +1,10 @@
+Thu Sep 22 23:36:24 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (find_executable0): default path if environment is not
+	  set.  [ruby-dev:27281]
+
 Thu Sep 22 17:31:48 2005  Shugo Maeda  <shugo@ruby-lang.org>
-	
+
 	* test/readline/test_readline.rb (TestReadline::replace_stdio):
 	  merged the patch of [ruby-dev:25232] instead of [ruby-dev:25223].
 	  (merged from ruby_1_8 branch)
