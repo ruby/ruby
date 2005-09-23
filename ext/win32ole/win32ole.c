@@ -79,7 +79,7 @@
 
 #define WC2VSTR(x) ole_wc2vstr((x), TRUE)
 
-#define WIN32OLE_VERSION "0.6.8"
+#define WIN32OLE_VERSION "0.6.9"
 
 typedef HRESULT (STDAPICALLTYPE FNCOCREATEINSTANCEEX)
     (REFCLSID, IUnknown*, DWORD, COSERVERINFO*, DWORD, MULTI_QI*);
@@ -135,6 +135,7 @@ typedef struct tagIEVENTSINKOBJ {
     DWORD m_dwCookie;
     IConnectionPoint *pConnectionPoint;
     ITypeInfo *pTypeInfo;
+    int *ptr_freed;
 }IEVENTSINKOBJ, *PIEVENTSINKOBJ;
 
 VALUE cWIN32OLE;
@@ -186,6 +187,7 @@ struct oleparamdata {
 
 struct oleeventdata {
     IEVENTSINKOBJ *pEvent;
+    int freed;
 };
 
 struct oleparam {
@@ -6253,7 +6255,9 @@ ole_search_event_at(ary, ev)
             ret = i;
             break;
         }
-        else if (rb_str_cmp(ev, event_name) == 0) {
+        else if (TYPE(ev) == T_STRING &&
+                 TYPE(event_name) == T_STRING &&
+                 rb_str_cmp(ev, event_name) == 0) {
             ret = i;
             break;
         }
@@ -6399,6 +6403,7 @@ EVENTSINK_Constructor() {
     pEv->m_dwCookie = 0;
     pEv->pConnectionPoint = NULL;
     pEv->pTypeInfo = NULL;
+    pEv->ptr_freed = NULL;
     return pEv;
 }
 
@@ -6406,6 +6411,7 @@ void EVENTSINK_Destructor(
     PIEVENTSINKOBJ pEVObj
     ) {
     if(pEVObj != NULL) {
+        *(pEVObj->ptr_freed) = 1;
         free(pEVObj);
     }
 }
@@ -6627,6 +6633,9 @@ ole_event_free(poleev)
     ITypeInfo *pti = NULL;
     IConnectionPoint *pcp = NULL;
 
+    if (poleev->freed == 1) {
+        return;
+    }
     if(poleev->pEvent) {
         pti = poleev->pEvent->pTypeInfo;
         if(pti) OLE_RELEASE(pti);
@@ -6737,7 +6746,8 @@ fev_initialize(argc, argv, self)
     poleev->pEvent->pConnectionPoint = pConnectionPoint;
     poleev->pEvent->pTypeInfo = pTypeInfo;
     poleev->pEvent->m_dwCookie = dwCookie;
-
+    poleev->freed = 0;
+    poleev->pEvent->ptr_freed = &(poleev->freed);
     rb_ary_push(ary_ole_event, self);
     return self;
 }

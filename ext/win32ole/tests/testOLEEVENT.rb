@@ -6,6 +6,7 @@ class TestWIN32OLE_EVENT < RUNIT::TestCase
     @excel = WIN32OLE.new("Excel.Application")
     @excel.visible = true
     @event = ""
+    @event2 = ""
   end
   def test_on_event
     book = @excel.workbooks.Add
@@ -31,6 +32,10 @@ class TestWIN32OLE_EVENT < RUNIT::TestCase
   end
   def handler2
     @event += "handler2"
+  end
+
+  def handler3
+    @event += "handler3"
   end
 
   def test_on_event2
@@ -63,6 +68,19 @@ class TestWIN32OLE_EVENT < RUNIT::TestCase
     assert_equal("handler2", @event)
   end
 
+  def test_on_event4
+    book = @excel.workbooks.Add
+    begin
+      ev = WIN32OLE_EVENT.new(book, 'WorkbookEvents')
+      ev.on_event{ handler1 }
+      ev.on_event{ handler2 }
+      ev.on_event('SheetChange'){|arg1, arg2| handler3 }
+      book.Worksheets(1).Range("A1").value = "OK"
+    ensure
+      book.saved = true
+    end
+    assert_equal("handler3", @event)
+  end
 
   def teardown
     @excel.quit
