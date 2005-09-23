@@ -1,3 +1,9 @@
+Sat Sep 24 07:59:01 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* sample/ripper/colorize.rb: removed (replaced by ruby2html.rb).
+
+	* sample/ripper/ruby2html.rb: added.
+
 Sat Sep 24 06:35:15 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper: no longer generates .rb files.
