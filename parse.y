@@ -9362,7 +9362,7 @@ ripper_value(self, obj)
 #endif
 
 void
-Init_ripper()
+Init_ripper(void)
 {
     VALUE Ripper;
 
@@ -9383,8 +9383,8 @@ Init_ripper()
 #endif
 
     ripper_id_gets = rb_intern("gets");
-    ripper_init_eventids1();
-    ripper_init_eventids2();
+    ripper_init_eventids1(Ripper);
+    ripper_init_eventids2(Ripper);
     /* ensure existing in symbol table */
     rb_intern("||");
     rb_intern("&&");

@@ -58,8 +58,10 @@ static ID ripper_id_heredoc_end;
 static ID ripper_id___end__;
 static ID ripper_id_CHAR;
 
+#include "eventids2table.c"
+
 static void
-ripper_init_eventids2()
+ripper_init_eventids2(VALUE self)
 {
     ripper_id_backref = rb_intern("on_backref");
     ripper_id_backtick = rb_intern("on_backtick");
@@ -109,6 +111,8 @@ ripper_init_eventids2()
     ripper_id_heredoc_end = rb_intern("on_heredoc_end");
     ripper_id___end__ = rb_intern("on___end__");
     ripper_id_CHAR = rb_intern("on_CHAR");
+
+    ripper_init_eventids2_table(self);
 }
 
 static struct token_assoc {

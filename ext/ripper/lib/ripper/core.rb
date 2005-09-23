@@ -1,7 +1,7 @@
 #
-# ripper/core.rb
+# $Id$
 #
-# Copyright (C) 2003-2005 Minero Aoki
+# Copyright (c) 2003-2005 Minero Aoki
 #
 # This program is free software.
 # You can distribute and/or modify this program under the Ruby License.
@@ -11,37 +11,35 @@
 require 'ripper.so'
 
 class Ripper
+
   # Parses Ruby program read from _src_.
   # _src_ must be a String or a IO or a object which has #gets method.
   def Ripper.parse(src, filename = '(ripper)', lineno = 1)
     new(src, filename, lineno).parse
   end
 
-  # This table contains name of parser events and its arity.
-  PARSER_EVENT_TABLE = {
-#include ids1
-  }
-
   # This array contains name of parser events.
   PARSER_EVENTS = PARSER_EVENT_TABLE.keys
-
-  # This table contains name of scanner events and its arity
-  # (arity is always 1 for all scanner events).
-  SCANNER_EVENT_TABLE = {
-#include ids2
-  }
 
   # This array contains name of scanner events.
   SCANNER_EVENTS = SCANNER_EVENT_TABLE.keys
 
-  # This table contains name of all ripper events.
+  # This array contains name of all ripper events.
   EVENTS = PARSER_EVENTS + SCANNER_EVENTS
 
-  ###                ###
-  ### Event Handlers ###
-  ###                ###
-
   private
+
+  #
+  # Parser Events
+  #
+
+  PARSER_EVENT_TABLE.each do |id, arity|
+    module_eval(<<-End, __FILE__, __LINE__ + 1)
+      def on_#{id}(#{ ('a'..'z').to_a[0, arity].join(', ') })
+        #{arity == 0 ? 'nil' : 'a'}
+      end
+    End
+  end
 
   # This method is called when weak warning is produced by the parser.
   # _fmt_ and _args_ is printf style.
@@ -58,12 +56,15 @@ class Ripper
   end
 
   #
-  # Parser Events
+  # Scanner Events
   #
-#include handlers1
 
-  #
-  # Lexer Events
-  #
-#include handlers2
+  SCANNER_EVENTS.each do |id|
+    module_eval(<<-End, __FILE__, __LINE__ + 1)
+      def on_#{id}(token)
+        token
+      end
+    End
+  end
+
 end

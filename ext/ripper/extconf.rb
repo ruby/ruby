@@ -11,7 +11,7 @@ def main
     end
   end
   $objs = %w(ripper.o)
-  $cleanfiles.concat %w(ripper.y ripper.c ripper.E ripper.output eventids1.c ids1 ids2)
+  $cleanfiles.concat %w(ripper.y ripper.c ripper.E ripper.output eventids1.c eventids2table.c)
   $CPPFLAGS += ' -DRIPPER'
   $CPPFLAGS += ' -DRIPPER_DEBUG' if $debug
   create_makefile 'ripper'

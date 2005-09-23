@@ -1,3 +1,38 @@
+Sat Sep 24 06:35:15 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/ripper: no longer generates .rb files.
+
+	* parse.y (Init_ripper): ripper_init_eventids*() takes 1 argument,
+	  self (class Ripper).
+
+	* ext/ripper/depend: target removed: `lib/ripper/core.rb'.
+
+	* ext/ripper/depend: new target `eventids2table.c'.
+
+	* ext/ripper/depend: new target `check'.
+
+	* ext/ripper/eventids2.c: include eventids2table.c.
+
+	* ext/ripper/eventids2.c: initialize SCANNER_EVENT_TABLE.
+
+	* ext/ripper/extconf.rb: update $cleanfiles list.
+
+	* ext/ripper/tools/generate.rb: no longer generate ripper/core.rb.
+
+	* ext/ripper/tools/generate.rb: new mode `check'.
+
+	* ext/ripper/tools/generate.rb: new mode `eventids2table'.
+
+	* ext/ripper/lib/ripper/core.rb.in: removed.
+
+	* ext/ripper/lib/ripper/core.rb: added.
+
+	* ext/ripper/lib/ripper/filter.rb: update copyright year.
+
+	* ext/ripper/lib/ripper/lexer.rb: ditto.
+
+	* ext/ripper/lib/ripper/sexp.rb: ditto.
+
 Fri Sep 23 20:10:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/tools/generate.rb, ext/ripper/tools/preproc.rb: StringIO

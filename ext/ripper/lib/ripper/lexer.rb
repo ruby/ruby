@@ -1,7 +1,7 @@
 #
-# ripper/lexer.rb
+# $Id$
 #
-# Copyright (C) 2004,2005 Minero Aoki
+# Copyright (c) 2004,2005 Minero Aoki
 #
 # This program is free software.
 # You can distribute and/or modify this program under the Ruby License.

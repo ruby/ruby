@@ -1,18 +1,25 @@
-src: ripper.c eventids1.c $(srcdir)/lib/ripper/core.rb
+GEN  = $(srcdir)/tools/generate.rb
+SRC1 = $(hdrdir)/parse.y
+SRC2 = $(srcdir)/eventids2.c
 
-ripper.o: ripper.c eventids1.c $(srcdir)/eventids2.c $(hdrdir)/lex.c
+src: ripper.c eventids1.c eventids2table.c
+
+ripper.o: ripper.c $(hdrdir)/lex.c eventids1.c $(srcdir)/eventids2.c eventids2table.c
 
 .y.c:
 	bison -t -v -o$@ $<
 
-ripper.y: $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y
+ripper.y: check $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y
 	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y --output=$@
 
-$(srcdir)/lib/ripper/core.rb: $(srcdir)/tools/generate.rb $(srcdir)/lib/ripper/core.rb.in $(hdrdir)/parse.y $(srcdir)/eventids2.c
-	$(RUBY) $(srcdir)/tools/generate.rb --mode=ripper/core --template=$@.in --output=$@ --ids1src=$(hdrdir)/parse.y --ids2src=$(srcdir)/eventids2.c
+check: $(GEN) $(SRC1) $(SRC2)
+	$(RUBY) $(GEN) --mode=check --ids1src=$(SRC1) --ids2src=$(SRC2)
 
-eventids1.c: $(srcdir)/tools/generate.rb $(hdrdir)/parse.y
-	$(RUBY) $(srcdir)/tools/generate.rb --mode=eventids1 --ids1src=$(hdrdir)/parse.y --output=$@
+eventids1.c: $(srcdir)/tools/generate.rb $(SRC1)
+	$(RUBY) $(GEN) --mode=eventids1 --ids1src=$(SRC1) --output=$@
+
+eventids2table.c: $(srcdir)/tools/generate.rb $(SRC2)
+	$(RUBY) $(GEN) --mode=eventids2table --ids2src=$(SRC2) --output=$@
 
 # Entries for Ripper maintainer
 
