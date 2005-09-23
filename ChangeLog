@@ -1,3 +1,8 @@
+Fri Sep 23 20:10:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/ripper/tools/generate.rb, ext/ripper/tools/preproc.rb: StringIO
+	  is not available for miniruby.  fixed: [ruby-dev:27307]
+
 Fri Sep 23 17:36:48 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: avoid core dump with WIN32OLE_EVENT.

@@ -1,3 +1,5 @@
+src: ripper.c eventids1.c $(srcdir)/lib/ripper/core.rb
+
 ripper.o: ripper.c eventids1.c $(srcdir)/eventids2.c $(hdrdir)/lex.c
 
 .y.c:
@@ -6,7 +8,7 @@ ripper.o: ripper.c eventids1.c $(srcdir)/eventids2.c $(hdrdir)/lex.c
 ripper.y: $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y
 	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y --output=$@
 
-$(srcdir)/lib/ripper/core.rb: $(srcdir)/tools/generate.rb $(srcdir)/lib/ripper/core.rb.in $(hdrdir)/parse.y $(hdrdir)/eventids2.c
+$(srcdir)/lib/ripper/core.rb: $(srcdir)/tools/generate.rb $(srcdir)/lib/ripper/core.rb.in $(hdrdir)/parse.y $(srcdir)/eventids2.c
 	$(RUBY) $(srcdir)/tools/generate.rb --mode=ripper/core --template=$@.in --output=$@ --ids1src=$(hdrdir)/parse.y --ids2src=$(srcdir)/eventids2.c
 
 eventids1.c: $(srcdir)/tools/generate.rb $(hdrdir)/parse.y

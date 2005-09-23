@@ -1,6 +1,5 @@
 # $Id$
 
-require 'stringio'
 require 'optparse'
 
 def main
@@ -12,20 +11,19 @@ def main
   }
   parser.on('--help', 'Prints this message and quit.') {
     puts parser.help
-    exit 0
+    exit true
   }
   begin
     parser.parse!
   rescue OptionParser::ParseError => err
     $stderr.puts err.message
     $stderr.puts parser.help
-    exit 1
+    exit false
   end
   unless ARGV.size == 1
-    $stderr.puts "wrong number of arguments (#{ARGV.size} for 1)"
-    exit 1
+    abort "wrong number of arguments (#{ARGV.size} for 1)"
   end
-  out = StringIO.new
+  out = ""
   File.open(ARGV[0]) {|f|
     prelude f, out
     grammar f, out
@@ -33,10 +31,10 @@ def main
   }
   if output
     File.open(output, 'w') {|f|
-      f.write out.string
+      f.write out
     }
   else
-    print out.string
+    print out
   end
 end
 
@@ -44,20 +42,20 @@ def prelude(f, out)
   while line = f.gets
     case line
     when %r</\*%%%\*/>
-      out.puts '/*'
+      out << '/*' << $/
     when %r</\*%>
-      out.puts '*/'
+      out << '*/' << $/
     when %r<%\*/>
-      out.puts
+      out << $/
     when /\A%%/
-      out.puts '%%'
+      out << '%%' << $/
       return
     when /\A%token/
-      out.puts line.sub(/<\w+>/, '<val>')
+      out << line.sub(/<\w+>/, '<val>') << $/
     when /\A%type/
-      out.puts line.sub(/<\w+>/, '<val>')
+      out << line.sub(/<\w+>/, '<val>') << $/
     else
-      out.print line
+      out << line
     end
   end
 end
@@ -66,27 +64,27 @@ def grammar(f, out)
   while line = f.gets
     case line
     when %r</\*%%%\*/>
-      out.puts '#if 0'
+      out << '#if 0' << $/
     when %r</\*%c%\*/>
-      out.puts '/*'
+      out << '/*' << $/
     when %r</\*%c>
-      out.puts '*/'
+      out << '*/' << $/
     when %r</\*%>
-      out.puts '#endif'
+      out << '#endif' << $/
     when %r<%\*/>
-      out.puts
+      out << $/
     when /\A%%/
-      out.puts '%%'
+      out << '%%' << $/
       return
     else
-      out.print line
+      out << line
     end
   end
 end
 
 def usercode(f, out)
   while line = f.gets
-    out.print line
+    out << line
   end
 end
 
