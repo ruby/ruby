@@ -1080,7 +1080,7 @@ module FileUtils
 
     def path
       if @path
-        @path
+        File.path(@path)
       else
         join(@prefix, @rel)
       end
@@ -1486,6 +1486,9 @@ module FileUtils
     OPT_TABLE.keys.select {|m| OPT_TABLE[m].include?(opt.to_s) }
   end
 
+  METHODS = singleton_methods() - %w( private_module_function
+      commands options have_option? options_of collect_method )
+
   # 
   # This module has all methods of FileUtils module, but it outputs messages
   # before acting.  This equates to passing the <tt>:verbose</tt> flag to
@@ -1500,9 +1503,15 @@ module FileUtils
         def #{name}(*args)
           super(*fu_update_option(args, :verbose => true))
         end
+        private :#{name}
       EOS
     end
     extend self
+    class << self
+      ::FileUtils::METHODS.each do |m|
+        public m
+      end
+    end
   end
 
   # 
@@ -1519,9 +1528,15 @@ module FileUtils
         def #{name}(*args)
           super(*fu_update_option(args, :noop => true))
         end
+        private :#{name}
       EOS
     end
     extend self
+    class << self
+      ::FileUtils::METHODS.each do |m|
+        public m
+      end
+    end
   end
 
   # 
@@ -1539,9 +1554,15 @@ module FileUtils
         def #{name}(*args)
           super(*fu_update_option(args, :noop => true, :verbose => true))
         end
+        private :#{name}
       EOS
     end
     extend self
+    class << self
+      ::FileUtils::METHODS.each do |m|
+        public m
+      end
+    end
   end
 
 end

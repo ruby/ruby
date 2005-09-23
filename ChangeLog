@@ -1,3 +1,14 @@
+Sat Sep 24 08:29:36 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: fix visibility of FileUtils::NoWrite, Verbose,
+	  DryRun. [ruby-core:05954]
+
+	* test/fileutils/test_nowrite.rb: test it.
+
+	* test/fileutils/test_dryrun.rb: new file.
+
+	* test/fileutils/test_verbose.rb: new file.
+
 Sat Sep 24 07:59:01 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* sample/ripper/colorize.rb: removed (replaced by ruby2html.rb).
