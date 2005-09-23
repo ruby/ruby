@@ -1443,6 +1443,8 @@ module FileUtils
   end
   private_module_function :fu_output_message
 
+  METHODS = singleton_methods() - ['private_module_function']
+
   #
   # Returns an Array of method names which have any options.
   #
@@ -1505,9 +1507,15 @@ module FileUtils
         def #{name}(*args)
           super(*fu_update_option(args, :verbose => true))
         end
+        private :#{name}
       EOS
     end
     extend self
+    class << self
+      ::FileUtils::METHODS.each do |m|
+        public m
+      end
+    end
   end
 
   # 
@@ -1524,9 +1532,15 @@ module FileUtils
         def #{name}(*args)
           super(*fu_update_option(args, :noop => true))
         end
+        private :#{name}
       EOS
     end
     extend self
+    class << self
+      ::FileUtils::METHODS.each do |m|
+        public m
+      end
+    end
   end
 
   # 
@@ -1544,9 +1558,15 @@ module FileUtils
         def #{name}(*args)
           super(*fu_update_option(args, :noop => true, :verbose => true))
         end
+        private :#{name}
       EOS
     end
     extend self
+    class << self
+      ::FileUtils::METHODS.each do |m|
+        public m
+      end
+    end
   end
 
 end

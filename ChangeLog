@@ -1,3 +1,14 @@
+Sat Sep 24 08:38:07 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb: fix visibility of FileUtils::NoWrite, Verbose,
+	  DryRun (backported from trunk, rev 1.66). [ruby-core:05954]
+
+	* test/fileutils/test_nowrite.rb: test it.
+
+	* test/fileutils/test_dryrun.rb: new file.
+
+	* test/fileutils/test_verbose.rb: new file.
+
 Thu Sep 22 23:36:24 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (find_executable0): default path if environment is not

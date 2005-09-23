@@ -5,9 +5,24 @@ require 'fileasserts'
 require 'tmpdir'
 require 'test/unit'
 
-class TestNoWrite < Test::Unit::TestCase
+class TestFileUtilsNoWrite < Test::Unit::TestCase
 
   include FileUtils::NoWrite
+
+  def test_visibility
+    FileUtils::METHODS.each do |m|
+      assert_equal true, FileUtils::NoWrite.respond_to?(m, true),
+                   "FileUtils::NoWrite.#{m} is not defined"
+      assert_equal true, FileUtils::NoWrite.respond_to?(m, false),
+                   "FileUtils::NoWrite.#{m} is not public"
+    end
+    FileUtils::METHODS.each do |m|
+      assert_equal true, respond_to?(m, true),
+                   "FileUtils::NoWrite\##{m} is not defined"
+      assert_equal true, FileUtils::NoWrite.private_method_defined?(m),
+                   "FileUtils::NoWrite\##{m} is not private"
+    end
+  end
 
   def my_rm_rf(path)
     if File.exist?('/bin/rm')
