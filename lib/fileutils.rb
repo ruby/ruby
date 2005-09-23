@@ -118,7 +118,7 @@ module FileUtils
   def cd(dir, options = {}, &block) # :yield: dir
     fu_check_options options, :verbose
     fu_output_message "cd #{dir}" if options[:verbose]
-    Dir.chdir(dir, &block) unless options[:noop]
+    Dir.chdir(dir, &block)
     fu_output_message 'cd -' if options[:verbose] and block
   end
   module_function :cd

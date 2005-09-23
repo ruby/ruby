@@ -1,3 +1,9 @@
+Sat Sep 24 08:56:01 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* lib/fileutils.rb (cd): no longer accept :noop option, related
+	  code is useless (backported from trunk, rev 1.67).
+	  [ruby-core:05858] [ruby-Bugs:2494]
+
 Sat Sep 24 08:38:07 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: fix visibility of FileUtils::NoWrite, Verbose,
