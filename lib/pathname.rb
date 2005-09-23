@@ -235,7 +235,11 @@ class Pathname
     "#<#{self.class}:#{@path}>"
   end
 
-  #
+  # Return a pathname which is substituted by String#sub.
+  def sub(pattern, *rest, &block)
+    Pathname.new(@path.sub(pattern, *rest, &block))
+  end
+
   # Returns clean pathname of +self+ with consecutive slashes and useless dots
   # removed.  The filesystem is not accessed.
   #
@@ -438,6 +442,8 @@ class Pathname
   #     #<Pathname:path/to/some>
   #     #<Pathname:path/to/some/file.rb>
   #
+  # It doesn't access actual filesystem.
+  #
   def descend
     paths = []
     v = self
@@ -472,6 +478,8 @@ class Pathname
   #     #<Pathname:path/to/some>
   #     #<Pathname:path/to>
   #     #<Pathname:path>
+  #
+  # It doesn't access actual filesystem.
   #
   def ascend
     paths = []

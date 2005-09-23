@@ -1,3 +1,7 @@
+Sat Sep 24 08:30:00 2005  Tanaka Akira  <akr@m17n.org>
+
+	* lib/pathname.rb (Pathname#sub): new method.
+
 Sat Sep 24 08:29:36 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb: fix visibility of FileUtils::NoWrite, Verbose,
