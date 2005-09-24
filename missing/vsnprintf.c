@@ -220,13 +220,14 @@ struct __suio {
 	int	uio_resid;
 };
 
+#if !defined(HAVE_VSNPRINTF) || !defined(HAVE_SNPRINTF)
 /*
  * Write some memory regions.  Return zero on success, EOF on error.
  *
  * This routine is large and unsightly, but most of the ugliness due
  * to the three different kinds of output buffering is handled here.
  */
-static BSD__sfvwrite(fp, uio)
+static int BSD__sfvwrite(fp, uio)
 	register FILE *fp;
 	register struct __suio *uio;
 {
@@ -293,11 +294,8 @@ static BSD__sfvwrite(fp, uio)
 		*/
 	}
 	return (0);
-
-err:
-	fp->_flags |= __SERR;
-	return (EOF);
 }
+#endif
 
 /*
  * Actual printf innards.
