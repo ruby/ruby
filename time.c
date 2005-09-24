@@ -1896,6 +1896,7 @@ time_mload(VALUE time, VALUE str)
     }
 
     if ((p & (1<<31)) == 0) {
+        gmt = 0;
 	sec = p;
 	usec = s;
     }
