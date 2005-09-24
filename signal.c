@@ -423,15 +423,15 @@ signal_exec(int sig)
     }
 }
 
+#if defined(HAVE_NATIVETHREAD) && defined(HAVE_NATIVETHREAD_KILL)
 static void
 sigsend_to_ruby_thread(int sig)
 {
-#ifdef HAVE_NATIVETHREAD_KILL
-# ifdef HAVE_SIGPROCMASK
+#ifdef HAVE_SIGPROCMASK
     sigset_t mask, old_mask;
-# else
+#else
     int mask, old_mask;
-# endif
+#endif
 
 #ifdef HAVE_SIGPROCMASK
     sigfillset(&mask);
@@ -442,8 +442,8 @@ sigsend_to_ruby_thread(int sig)
 #endif
 
     ruby_native_thread_kill(sig);
-#endif
 }
+#endif
 
 static RETSIGTYPE sighandler(int);
 static RETSIGTYPE
