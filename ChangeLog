@@ -1,3 +1,7 @@
+Sun Sep 25 00:18:11 2005  Tanaka Akira  <akr@m17n.org>
+
+	* eval.c (unknown_node): show more information.  [ruby-dev:26196]
+
 Sat Sep 24 08:56:01 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (cd): no longer accept :noop option, related
