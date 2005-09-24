@@ -1,3 +1,12 @@
+Sun Sep 25 00:42:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-expr-beg): deal with heredoc separately.
+	  fixed: [ruby-list:41168]
+
+	* misc/ruby-mode.el (ruby-calculate-indent): not to deepen indent
+	  level for continuous line inside parentheses.
+	  http://nabeken.tdiary.net/20050915.html#p02
+
 Sat Sep 24 21:19:39 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c: document enhancement.

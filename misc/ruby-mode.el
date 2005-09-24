@@ -152,7 +152,7 @@
 Also ignores spaces after parenthesis when 'space."
   :group 'ruby)
 
-(defcustom ruby-deep-indent-paren '(?\( t)
+(defcustom ruby-deep-indent-paren '(?\( ?\[ t)
   "*Deep indent lists in parenthesis when non-nil. t means continuous line.
 Also ignores spaces after parenthesis when 'space."
   :group 'ruby)
@@ -312,11 +312,10 @@ The variable ruby-indent-level controls the amount of indentation.
 	       (or (eq (char-syntax (char-before (point))) ?w)
 		   (ruby-special-char-p))))
 	nil)
-       ((or (save-excursion (goto-char start) (looking-at ruby-operator-re))
+       ((and (eq option 'heredoc) (< space 0)) t)
+       ((or (looking-at ruby-operator-re)
 	    (looking-at "[\\[({,;]")
-	    (and (or (not (eq option 'heredoc))
-		     (< space 0))
-		 (looking-at "[!?]")
+	    (and (looking-at "[!?]")
 		 (or (not (eq option 'modifier))
 		     (bolp)
 		     (save-excursion (forward-char -1) (looking-at "\\Sw"))))
@@ -327,7 +326,7 @@ The variable ruby-indent-level controls the amount of indentation.
 					   "|" ruby-block-op-re
 					   "|" ruby-block-mid-re "\\)\\>")))
 		   (goto-char (match-end 0))
-                (not (looking-at "\\s_")))
+		   (not (looking-at "\\s_")))
 		  ((eq option 'expr-qstr)
 		   (looking-at "[a-zA-Z][a-zA-z0-9_]* +%[^ \t]"))
 		  ((eq option 'expr-re)
@@ -727,6 +726,7 @@ The variable ruby-indent-level controls the amount of indentation.
 		     (goto-char (or begin parse-start))
 		     (skip-syntax-forward " ")
 		     (current-column)))
+		  ((car (nth 1 state)) indent)
 		  (t
 		   (+ indent ruby-indent-level))))))))
       indent)))
