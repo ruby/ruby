@@ -1,3 +1,8 @@
+Sun Sep 25 08:19:53 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* test/rss/test_content.rb, test/rss/test_syndication.rb: use fcall
+	  instead of send in order to override visibility.
+
 Sun Sep 25 01:46:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-calculate-indent): arrange deep-indent

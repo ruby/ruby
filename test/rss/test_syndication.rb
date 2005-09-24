@@ -74,9 +74,9 @@ EOR
       
       @elems.each do |name, value|
         @parents.each do |parent|
-          assert_equal(value, @rss.send(parent).send("sy_#{name}"))
-          @rss.send(parent).send("sy_#{name}=", new_value[name].to_s)
-          assert_equal(new_value[name], @rss.send(parent).send("sy_#{name}"))
+          assert_equal(value, @rss.send(parent).fcall("sy_#{name}"))
+          @rss.send(parent).fcall("sy_#{name}=", new_value[name].to_s)
+          assert_equal(new_value[name], @rss.send(parent).fcall("sy_#{name}"))
         end
       end
       
@@ -103,7 +103,7 @@ EOR
       @elems.each do |name, value|
         excepted = "<#{@prefix}:#{name}>#{value}</#{@prefix}:#{name}>"
         @parents.each do |parent|
-          assert_equal(excepted, @rss.send(parent).send("sy_#{name}_element"))
+          assert_equal(excepted, @rss.send(parent).fcall("sy_#{name}_element"))
         end
       end
       
