@@ -1,7 +1,8 @@
 Sat Sep 24 20:20:05 2005  Minero Aoki  <aamine@loveruby.net>
 
-	* test/net/http/test_http.rb (teardown): ensure that Net::HTTP is
-	  version 1.2. [ruby-dev:27312]
+	* test/net/http/test_http.rb (teardown): Net::HTTP.version_1_1 breaks
+	  many other tests; ensure that Net::HTTP is version 1.2 after test.
+	  [ruby-dev:27312]
 
 Sat Sep 24 11:44:28 2005  Minero Aoki  <aamine@loveruby.net>
 
