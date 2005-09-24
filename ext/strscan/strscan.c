@@ -1,17 +1,12 @@
 /*
+    $Id$
 
-    strscan.c
-
-    Copyright (c) 1999-2004 Minero Aoki
+    Copyright (c) 1999-2005 Minero Aoki
 
     This program is free software.
     You can distribute/modify this program under the terms of
     the Ruby License. For details, see the file COPYING.
-
-    $Id$
-
 */
-
 
 #include "ruby.h"
 #include "re.h"
@@ -154,11 +149,9 @@ extract_beg_len(p, beg_i, len)
     return infect(rb_str_new(S_PBEG(p) + beg_i, len), p);
 }
 
-
 /* =======================================================================
                                Constructor
    ======================================================================= */
-
 
 static void
 strscan_mark(p)
@@ -250,7 +243,6 @@ strscan_init_copy(vself, vorig)
 
     return vself;
 }
-
 
 /* =======================================================================
                           Instance Methods
@@ -379,7 +371,7 @@ strscan_concat(self, str)
  * value is zero.  In the 'terminated' position (i.e. the string is exhausted),
  * this value is the length of the string.
  *
- * In short, it's a 1-based index into the string.
+ * In short, it's a 0-based index into the string.
  *
  *   s = StringScanner.new('test string')
  *   s.pos               # -> 0
@@ -422,7 +414,6 @@ strscan_set_pos(self, v)
     p->curr = i;
     return INT2NUM(i);
 }
-
 
 /* I should implement this function? */
 #define strscan_prepare_re(re)  /* none */
@@ -475,13 +466,7 @@ strscan_do_scan(self, regex, succptr, getstr, headonly)
 }
 
 /*
- * call-seq:
- *   scanner.scan(pattern) => String
- *
- */
-
-/*
- * call-seq: scan(pattern)
+ * call-seq: scan(pattern) => String
  *
  * Tries to match with +pattern+ at the current position. If there's a match,
  * the scanner advances the "scan pointer" and returns the matched string.
@@ -582,7 +567,6 @@ strscan_scan_full(self, re, s, f)
 {
     return strscan_do_scan(self, re, RTEST(s), RTEST(f), 1);
 }
-
 
 /*
  * call-seq: scan_until(pattern)
@@ -692,10 +676,16 @@ adjust_registers_to_matched(p)
 
 /*
  * Scans one character and returns it.
+ * This method is multibyte character sensitive.
  *
- *   s = StringScanner.new('ab')
+ *   s = StringScanner.new("ab")
  *   s.getch           # => "a"
  *   s.getch           # => "b"
+ *   s.getch           # => nil
+ *
+ *   $KCODE = 'EUC'
+ *   s = StringScanner.new("\244\242")
+ *   s.getch           # => "\244\242"   # Japanese hira-kana "A" in EUC-JP
  *   s.getch           # => nil
  */
 static VALUE
@@ -711,8 +701,9 @@ strscan_getch(self)
         return Qnil;
 
     len = mbclen(*CURPTR(p));
-    if (p->curr + len > S_LEN(p))
+    if (p->curr + len > S_LEN(p)) {
         len = S_LEN(p) - p->curr;
+    }
     p->prev = p->curr;
     p->curr += len;
     MATCHED(p);
@@ -722,12 +713,20 @@ strscan_getch(self)
 }
 
 /*
- * Scans one byte and returns it.  Similar to, but not the same as, #getch.
+ * Scans one byte and returns it.
+ * This method is not multibyte character sensitive.
+ * See also: #getch.
  *
- *  s = StringScanner.new('ab')
- *  s.get_byte         # => "a"
- *  s.get_byte         # => "b"
- *  s.get_byte         # => nil
+ *   s = StringScanner.new('ab')
+ *   s.get_byte         # => "a"
+ *   s.get_byte         # => "b"
+ *   s.get_byte         # => nil
+ *
+ *   $KCODE = 'EUC'
+ *   s = StringScanner.new("\244\242")
+ *   s.get_byte         # => "\244"
+ *   s.get_byte         # => "\242"
+ *   s.get_byte         # => nil
  */
 static VALUE
 strscan_get_byte(self)
@@ -810,7 +809,7 @@ strscan_peep(self, vlen)
  *   s.unscan
  *   s.scan(/../)         # => "te"
  *   s.scan(/\d/)         # => nil
- *   s.unscan             # ScanError: can't unscan: prev match had failed
+ *   s.unscan             # ScanError: unscan failed: previous match record not exist
  */
 static VALUE
 strscan_unscan(self)
@@ -820,8 +819,7 @@ strscan_unscan(self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p))
-        rb_raise(ScanError, "can't unscan: prev match had failed");
-
+        rb_raise(ScanError, "unscan failed: previous match record not exist");
     p->curr = p->prev;
     CLEAR_MATCH_STATUS(p);
     return self;
@@ -868,10 +866,7 @@ strscan_eos_p(self)
     struct strscanner *p;
 
     GET_SCANNER(self, p);
-    if (EOS_P(p))
-        return Qtrue;
-    else
-        return Qfalse;
+    return EOS_P(p) ? Qtrue : Qfalse;
 }
 
 /*
@@ -901,10 +896,7 @@ strscan_rest_p(self)
     struct strscanner *p;
 
     GET_SCANNER(self, p);
-    if (EOS_P(p))
-        return Qfalse;
-    else
-        return Qtrue;
+    return EOS_P(p) ? Qfalse : Qtrue;
 }
 
 /*
@@ -923,10 +915,7 @@ strscan_matched_p(self)
     struct strscanner *p;
 
     GET_SCANNER(self, p);
-    if (MATCHED_P(p))
-        return Qtrue;
-    else
-        return Qfalse;
+    return MATCHED_P(p) ? Qtrue : Qfalse;
 }
 
 /*
@@ -944,7 +933,6 @@ strscan_matched(self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-
     return extract_range(p, p->prev + p->regs.beg[0],
                             p->prev + p->regs.end[0]);
 }
@@ -967,7 +955,6 @@ strscan_matched_size(self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-
     return INT2NUM(p->regs.end[0] - p->regs.beg[0]);
 }
 
@@ -1035,7 +1022,6 @@ strscan_pre_match(self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-
     return extract_range(p, 0, p->prev + p->regs.beg[0]);
 }
 
@@ -1056,7 +1042,6 @@ strscan_post_match(self)
 
     GET_SCANNER(self, p);
     if (! MATCHED_P(p)) return Qnil;
-
     return extract_range(p, p->prev + p->regs.end[0], S_LEN(p));
 }
 
@@ -1091,7 +1076,6 @@ strscan_rest_size(self)
     if (EOS_P(p)) {
         return INT2FIX(0);
     }
-
     i = S_LEN(p) - p->curr;
     return INT2FIX(i);
 }
@@ -1261,7 +1245,7 @@ inspect2(p)
  * === Advancing the Scan Pointer
  *
  * - #getch
- * - #getbyte
+ * - #get_byte
  * - #scan
  * - #scan_until
  * - #skip
@@ -1277,7 +1261,7 @@ inspect2(p)
  *
  * === Finding Where we Are
  *
- * - #bol?
+ * - #beginning_of_line? (#bol?)
  * - #eos?
  * - #rest?
  * - #rest_size
@@ -1363,7 +1347,7 @@ Init_strscan()
     rb_define_method(StringScanner, "unscan",      strscan_unscan,      0);
 
     rb_define_method(StringScanner, "beginning_of_line?", strscan_bol_p, 0);
-    rb_define_method(StringScanner, "bol?",        strscan_bol_p,       0);
+    rb_alias(StringScanner, rb_intern("bol?"), rb_intern("beginning_of_line?"));
     rb_define_method(StringScanner, "eos?",        strscan_eos_p,       0);
     rb_define_method(StringScanner, "empty?",      strscan_empty_p,     0);
     rb_define_method(StringScanner, "rest?",       strscan_rest_p,      0);

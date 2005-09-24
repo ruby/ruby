@@ -1,3 +1,11 @@
+Sat Sep 24 21:19:39 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c: document enhancement.
+
+	* ext/strscan/strscan.c: update copyright year.
+
+	* ext/strscan/strscan.c: update coding style.
+
 Sat Sep 24 20:20:05 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/net/http/test_http.rb (teardown): Net::HTTP.version_1_1 breaks
