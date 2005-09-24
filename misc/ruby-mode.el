@@ -152,7 +152,7 @@
 Also ignores spaces after parenthesis when 'space."
   :group 'ruby)
 
-(defcustom ruby-deep-indent-paren '(?\( ?\[ t)
+(defcustom ruby-deep-indent-paren '(?\( ?\[ ?\] t)
   "*Deep indent lists in parenthesis when non-nil. t means continuous line.
 Also ignores spaces after parenthesis when 'space."
   :group 'ruby)
@@ -617,7 +617,11 @@ The variable ruby-indent-level controls the amount of indentation.
 			   (t (setq indent (ruby-indent-size (1- indent) 1))))))
 	    (if (nth 3 state) (goto-char (nth 3 state))
 	      (goto-char parse-start) (back-to-indentation))
-	    (setq indent (ruby-indent-size (current-column) (nth 2 state))))))
+	    (setq indent (ruby-indent-size (current-column) (nth 2 state))))
+	  (and (eq (car (nth 1 state)) paren)
+	       (ruby-deep-indent-paren-p (matching-paren paren))
+	       (search-backward (char-to-string paren))
+	       (setq indent (current-column)))))
        ((and (nth 2 state) (> (nth 2 state) 0)) ; in nest
 	(if (null (cdr (nth 1 state)))
 	    (error "invalid nest"))
