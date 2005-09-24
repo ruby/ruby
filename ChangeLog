@@ -1,3 +1,8 @@
+Sun Sep 25 01:46:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* misc/ruby-mode.el (ruby-calculate-indent): arrange deep-indent
+	  closing parenthesis at same column as the opening.
+
 Sun Sep 25 01:33:41 2005  Tanaka Akira  <akr@m17n.org>
 
 	* process.c (proc_setrlimit): make the third argument (rlim_max)
