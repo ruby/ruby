@@ -48,7 +48,7 @@ rb_struct_members(VALUE s)
     VALUE members = rb_struct_s_members(rb_obj_class(s));
 
     if (RSTRUCT(s)->len != RARRAY(members)->len) {
-	rb_raise(rb_eTypeError, "struct size differs (%d required %d given)",
+	rb_raise(rb_eTypeError, "struct size differs (%ld required %ld given)",
 		 RARRAY(members)->len, RSTRUCT(s)->len);
     }
     return members;
@@ -583,7 +583,7 @@ rb_struct_aset_id(VALUE s, ID id, VALUE val)
     rb_struct_modify(s);
     len = RARRAY(members)->len;
     if (RSTRUCT(s)->len != RARRAY(members)->len) {
-	rb_raise(rb_eTypeError, "struct size differs (%d required %d given)",
+	rb_raise(rb_eTypeError, "struct size differs (%ld required %ld given)",
 		 RARRAY(members)->len, RSTRUCT(s)->len);
     }
     for (i=0; i<len; i++) {

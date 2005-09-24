@@ -2056,7 +2056,7 @@ utf8_to_uv(char *p, long *lenp)
 	rb_raise(rb_eArgError, "malformed UTF-8 character");
     }
     if (n > *lenp) {
-	rb_raise(rb_eArgError, "malformed UTF-8 character (expected %d bytes, given %d bytes)",
+	rb_raise(rb_eArgError, "malformed UTF-8 character (expected %ld bytes, given %ld bytes)",
 		 n, *lenp);
     }
     *lenp = n--;

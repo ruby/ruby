@@ -571,7 +571,7 @@ static VALUE
 trap(struct trap_arg *arg)
 {
     sighandler_t func, oldfunc;
-    VALUE command, tmp, oldcmd;
+    VALUE command, oldcmd;
     int sig = -1;
     char *s;
 

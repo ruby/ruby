@@ -1079,7 +1079,7 @@ static VALUE
 rb_io_inspect(VALUE obj)
 {
     OpenFile *fptr;
-    char *buf, *cname, *st = "";
+    char *cname, *st = "";
 
     fptr = RFILE(rb_io_taint_check(obj))->fptr;
     if (!fptr || !fptr->path) return rb_any_to_s(obj);

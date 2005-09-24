@@ -2006,7 +2006,7 @@ rb_ary_transpose(VALUE ary)
 	    }
 	}
 	else if (elen != RARRAY(tmp)->len) {
-	    rb_raise(rb_eIndexError, "element size differs (%d should be %d)",
+	    rb_raise(rb_eIndexError, "element size differs (%ld should be %ld)",
 		     RARRAY(tmp)->len, elen);
 	}
 	for (j=0; j<elen; j++) {

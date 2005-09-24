@@ -338,7 +338,6 @@ fgdbm_select(obj)
     VALUE obj;
 {
     VALUE new = rb_ary_new();
-    int i;
     GDBM_FILE dbm;
     struct dbmdata *dbmp;
     VALUE keystr;

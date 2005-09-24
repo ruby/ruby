@@ -574,7 +574,6 @@ ossl_start_ssl(VALUE self, int (*func)())
 {
     SSL *ssl;
     OpenFile *fptr;
-    VALUE cb;
     int ret;
 
     Data_Get_Struct(self, SSL, ssl);

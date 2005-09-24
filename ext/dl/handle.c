@@ -126,7 +126,6 @@ VALUE
 rb_dlhandle_sym(VALUE self, VALUE sym)
 {
     void (*func)();
-    struct sym_data *data;
     struct dl_handle *dlhandle;
     void *handle;
     const char *name;

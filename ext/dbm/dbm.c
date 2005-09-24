@@ -242,7 +242,6 @@ fdbm_select(obj)
     VALUE obj;
 {
     VALUE new = rb_ary_new();
-    int i;
     datum key, val;
     DBM *dbm;
     struct dbmdata *dbmp;

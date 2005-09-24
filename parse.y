@@ -4379,9 +4379,6 @@ none		: /* none */
 # undef yylval
 # define yylval  (*((YYSTYPE*)(parser->parser_yylval)))
 
-#ifndef RIPPER
-static VALUE rb_parser_s_new _((void));
-#endif
 static int parser_regx_options _((struct parser_params*));
 static int parser_tokadd_string _((struct parser_params*,int,int,int,long*));
 static int parser_parse_string _((struct parser_params*,NODE*));
@@ -4531,7 +4528,6 @@ yycompile(parser, f, line)
     int line;
 {
     int n;
-    NODE *node = 0;
     struct RVarmap *vp, *vars = ruby_dyna_vars;
     const char *kcode_save;
 
@@ -7397,7 +7393,7 @@ rb_backref_error(node)
 {
     switch (nd_type(node)) {
       case NODE_NTH_REF:
-	rb_compile_error("Can't set variable $%d", node->nd_nth);
+	rb_compile_error("Can't set variable $%ld", node->nd_nth);
 	break;
       case NODE_BACK_REF:
 	rb_compile_error("Can't set variable $%c", (int)node->nd_nth);
@@ -8074,20 +8070,6 @@ new_call(r,m,a)
 	return a;
     }
     return NEW_CALL(r,m,a);
-}
-
-static NODE*
-fcall_gen(parser, m, a)
-    struct parser_params *parser;
-    ID m;
-    NODE *a;
-{
-    if (is_local_id(m)) {
-	if ((dyna_in_block() && rb_dvar_defined(m)) || local_id(m)) {
-	    return NEW_CALL(gettable(m), rb_intern("call"), a);
-	}
-    }
-    return NEW_FCALL(m,a);
 }
 
 static NODE*
