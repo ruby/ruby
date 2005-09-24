@@ -1938,22 +1938,29 @@ proc_getrlimit(VALUE obj, VALUE resource)
 /*
  *  call-seq:
  *     Process.setrlimit(resource, cur_limit, max_limit)        => nil
+ *     Process.setrlimit(resource, cur_limit)                   => nil
  *
  *  Sets the resource limit of the process.
  *  _cur_limit_ means current (soft) limit and
  *  _max_limit_ means maximum (hard) limit.
  *
- *  _resource_ indicates the kind of resource to limit.
- *  Although the list of resources are OS dependent,
- *  SUSv3 defines following resources.
+ *  If _max_limit_ is not given, _cur_limit_ is used.
  *
- *  [Process::RLIMIT_CORE] core size (bytes)
- *  [Process::RLIMIT_CPU] CPU time (seconds)
- *  [Process::RLIMIT_DATA] data segment (bytes)
- *  [Process::RLIMIT_FSIZE] file size (bytes)
- *  [Process::RLIMIT_NOFILE] file descriptors (number)
- *  [Process::RLIMIT_STACK] stack size (bytes)
- *  [Process::RLIMIT_AS] total available memory (bytes)
+ *  _resource_ indicates the kind of resource to limit.
+ *  The list of resources are OS dependent.
+ *  Ruby may support following resources.
+ *
+ *  [Process::RLIMIT_CORE] core size (bytes) (SUSv3)
+ *  [Process::RLIMIT_CPU] CPU time (seconds) (SUSv3)
+ *  [Process::RLIMIT_DATA] data segment (bytes) (SUSv3)
+ *  [Process::RLIMIT_FSIZE] file size (bytes) (SUSv3)
+ *  [Process::RLIMIT_NOFILE] file descriptors (number) (SUSv3)
+ *  [Process::RLIMIT_STACK] stack size (bytes) (SUSv3)
+ *  [Process::RLIMIT_AS] total available memory (bytes) (SUSv3, NetBSD, FreeBSD, OpenBSD but 4.4BSD-Lite)
+ *  [Process::RLIMIT_MEMLOCK] total size for mlock(2) (bytes) (4.4BSD, GNU/Linux)
+ *  [Process::RLIMIT_NPROC] number of processes for the user (number) (4.4BSD, GNU/Linux)
+ *  [Process::RLIMIT_RSS] resident memory size (bytes) (4.2BSD, GNU/Linux)
+ *  [Process::RLIMIT_SBSIZE] all socket buffers (bytes) (NetBSD, FreeBSD)
  *
  *  Other <code>Process::RLIMIT_???</code> constants may be defined.
  *
@@ -1966,12 +1973,17 @@ proc_getrlimit(VALUE obj, VALUE resource)
  */
 
 static VALUE
-proc_setrlimit(VALUE obj, VALUE resource, VALUE rlim_cur, VALUE rlim_max)
+proc_setrlimit(int argc, VALUE *argv, VALUE obj)
 {
 #if defined(HAVE_SETRLIMIT) && defined(NUM2RLIM)
+    VALUE resource, rlim_cur, rlim_max;
     struct rlimit rlim;
 
     rb_secure(2);
+
+    rb_scan_args(argc, argv, "21", &resource, &rlim_cur, &rlim_max);
+    if (rlim_max == Qnil)
+        rlim_max = rlim_cur;
 
     rlim.rlim_cur = NUM2RLIM(rlim_cur);
     rlim.rlim_max = NUM2RLIM(rlim_max);
@@ -3626,7 +3638,7 @@ Init_process(void)
     rb_define_module_function(rb_mProcess, "getrlimit", proc_getrlimit, 1);
 #endif
 #ifdef HAVE_SETRLIMIT
-    rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, 3);
+    rb_define_module_function(rb_mProcess, "setrlimit", proc_setrlimit, -1);
 #endif
 #ifdef RLIM2NUM
 #ifdef RLIM_INFINITY

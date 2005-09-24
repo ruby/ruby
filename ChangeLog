@@ -1,3 +1,8 @@
+Sun Sep 25 01:33:41 2005  Tanaka Akira  <akr@m17n.org>
+
+	* process.c (proc_setrlimit): make the third argument (rlim_max)
+	  optional.
+
 Sun Sep 25 00:42:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* misc/ruby-mode.el (ruby-expr-beg): deal with heredoc separately.
