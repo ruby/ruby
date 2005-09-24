@@ -270,6 +270,11 @@ module TestNetHTTPUtils
     spawn_server
   end
 
+  def teardown
+    # resume global state
+    Net::HTTP.version_1_2
+  end
+
   def spawn_server
     return if $test_net_http_server_running
     server = WEBrick::HTTPServer.new(
