@@ -4413,11 +4413,11 @@ static int parser_here_document _((struct parser_params*,NODE*));
 # define set_yylval_node(x) yylval.node = x
 # define yylval_id() yylval.id
 #else
-# define set_yylval_str(x) x
-# define set_yylval_num(x) x
-# define set_yylval_id(x) x
-# define set_yylval_literal(x) x
-# define set_yylval_node(x) x
+# define set_yylval_str(x) (void)(x)
+# define set_yylval_num(x) (void)(x)
+# define set_yylval_id(x) (void)(x)
+# define set_yylval_literal(x) (void)(x)
+# define set_yylval_node(x) (void)(x)
 # define yylval_id() SYM2ID(yylval.val)
 #endif
 
