@@ -21,7 +21,7 @@ module Rinda
 
     def initialize(ary, sec=nil)
       @cancel = false
-      @ary = make_tuple(ary)
+      @tuple = make_tuple(ary)
       @renewer = nil
       renew(sec)
     end
@@ -37,7 +37,7 @@ module Rinda
 
     # Return the object which makes up the tuple itself: the Array
     # or Hash.
-    def value; @ary.value; end
+    def value; @tuple.value; end
 
     def canceled?; @cancel; end
 
@@ -76,26 +76,26 @@ module Rinda
     def make_expires(sec=nil)
       case sec
       when Numeric
-	Time.now + sec
+        Time.now + sec
       when true
-	Time.at(1)
+        Time.at(1)
       when nil
-	Time.at(2**31-1)
+        Time.at(2**31-1)
       end
     end
 
     # Accessor method for the tuple.
     def [](key)
-      @ary[key]
+      @tuple[key]
     end
 
     def fetch(key)
-      @ary.fetch(key)
+      @tuple.fetch(key)
     end
 
     # The size of the tuple.
     def size
-      @ary.size
+      @tuple.size
     end
 
     # Create a new tuple from the supplied object (array-like).
@@ -110,13 +110,13 @@ module Rinda
     def get_renewer(it)
       case it
       when Numeric, true, nil
-	return it, nil
+        return it, nil
       else
-	begin
-	  return it.renew, it
-	rescue Exception
-	  return it, nil
-	end
+        begin
+          return it.renew, it
+        rescue Exception
+          return it, nil
+        end
       end
     end
   end
@@ -125,19 +125,11 @@ module Rinda
   # The same as a TupleEntry but with methods to do matching.
   #
   class TemplateEntry < TupleEntry
-    def initialize(ary, expires=nil)
-      super(ary, expires)
-      @template = Rinda::Template.new(ary)
-    end
-
     def match(tuple)
-      @template.match(tuple)
+      @tuple.match(tuple)
     end
-
-    # An alias for #match.
-    def ===(tuple)
-      match(tuple)
-    end
+    
+    alias === match
 
     # Create a new Template from the supplied object.
     def make_tuple(ary)
@@ -173,7 +165,7 @@ module Rinda
 
     def signal
       @place.synchronize do
-	@cond.signal
+        @cond.signal
       end
     end
   end
@@ -245,14 +237,14 @@ module Rinda
     # Finds all tuples that match the template and are alive.
     def find_all(template)
       @hash.fetch(template.size, []).find_all do |tuple|
-	tuple.alive? && template.match(tuple)
+        tuple.alive? && template.match(tuple)
       end
     end
 
     # Finds a template that matches and is alive.
     def find(template)
       @hash.fetch(template.size, []).find do |tuple|
-	tuple.alive? && template.match(tuple)
+        tuple.alive? && template.match(tuple)
       end
     end
 
@@ -260,7 +252,7 @@ module Rinda
     # templates, match the supplied tuple and are alive.
     def find_all_template(tuple)
       @hash.fetch(tuple.size, []).find_all do |template|
-	template.alive? && template.match(tuple)
+        template.alive? && template.match(tuple)
       end
     end
 
@@ -269,15 +261,15 @@ module Rinda
     def delete_unless_alive
       deleted = []
       @hash.keys.each do |size|
-	ary = []
-	@hash[size].each do |tuple|
-	  if tuple.alive?
-	    ary.push(tuple)
-	  else
-	    deleted.push(tuple)
-	  end
-	end
-	@hash[size] = ary
+        ary = []
+        @hash[size].each do |tuple|
+          if tuple.alive?
+            ary.push(tuple)
+          else
+            deleted.push(tuple)
+          end
+        end
+        @hash[size] = ary
       end
       deleted
     end
@@ -305,22 +297,22 @@ module Rinda
       entry = TupleEntry.new(tuple, sec)
       start_keeper
       synchronize do
-	if entry.expired?
-	  @read_waiter.find_all_template(entry).each do |template|
-	    template.read(tuple)
-	  end
-	  notify_event('write', entry.value)
-	  notify_event('delete', entry.value)
-	else
-	  @bag.push(entry)
-	  @read_waiter.find_all_template(entry).each do |template|
-	    template.read(tuple)
-	  end
-	  @take_waiter.find_all_template(entry).each do |template|
-	    template.signal
-	  end
-	  notify_event('write', entry.value)
-	end
+        if entry.expired?
+          @read_waiter.find_all_template(entry).each do |template|
+            template.read(tuple)
+          end
+          notify_event('write', entry.value)
+          notify_event('delete', entry.value)
+        else
+          @bag.push(entry)
+          @read_waiter.find_all_template(entry).each do |template|
+            template.read(tuple)
+          end
+          @take_waiter.find_all_template(entry).each do |template|
+            template.signal
+          end
+          notify_event('write', entry.value)
+        end
       end
       entry
     end
@@ -335,32 +327,32 @@ module Rinda
       yield(template) if block_given?
       start_keeper
       synchronize do
-	entry = @bag.find(template)
-	if entry
-	  port.push(entry.value) if port
-	  @bag.delete(entry)
-	  notify_event('take', entry.value)
-	  return entry.value
-	end
+        entry = @bag.find(template)
+        if entry
+          port.push(entry.value) if port
+          @bag.delete(entry)
+          notify_event('take', entry.value)
+          return entry.value
+        end
         raise RequestExpiredError if template.expired?
 
-	begin
-	  @take_waiter.push(template)
-	  while true
-	    raise RequestCanceledError if template.canceled?
-	    raise RequestExpiredError if template.expired?
-	    entry = @bag.find(template)
-	    if entry
-	      port.push(entry.value) if port
-	      @bag.delete(entry)
-	      notify_event('take', entry.value)
-	      return entry.value
-	    end
-	    template.wait
-	  end
-	ensure
-	  @take_waiter.delete(template)
-	end
+        begin
+          @take_waiter.push(template)
+          while true
+            raise RequestCanceledError if template.canceled?
+            raise RequestExpiredError if template.expired?
+            entry = @bag.find(template)
+            if entry
+              port.push(entry.value) if port
+              @bag.delete(entry)
+              notify_event('take', entry.value)
+              return entry.value
+            end
+            template.wait
+          end
+        ensure
+          @take_waiter.delete(template)
+        end
       end
     end
 
@@ -369,36 +361,36 @@ module Rinda
       yield(template) if block_given?
       start_keeper
       synchronize do
-	entry = @bag.find(template)
-	return entry.value if entry
+        entry = @bag.find(template)
+        return entry.value if entry
         raise RequestExpiredError if template.expired?
 
-	begin
-	  @read_waiter.push(template)
-	  template.wait
-	  raise RequestCanceledError if template.canceled?
-	  raise RequestExpiredError if template.expired?
-	  return template.found
-	ensure
-	  @read_waiter.delete(template)
-	end
+        begin
+          @read_waiter.push(template)
+          template.wait
+          raise RequestCanceledError if template.canceled?
+          raise RequestExpiredError if template.expired?
+          return template.found
+        ensure
+          @read_waiter.delete(template)
+        end
       end
     end
 
     def read_all(tuple)
       template = WaitTemplateEntry.new(self, tuple, nil)
       synchronize do
-	entry = @bag.find_all(template)
-	entry.collect do |e|
-	  e.value
-	end
+        entry = @bag.find_all(template)
+        entry.collect do |e|
+          e.value
+        end
       end
     end
 
     def notify(event, tuple, sec=nil)
       template = NotifyTemplateEntry.new(self, event, tuple, sec)
       synchronize do
-	@notify_waiter.push(template)
+        @notify_waiter.push(template)
       end
       template
     end
@@ -406,25 +398,25 @@ module Rinda
     private
     def keep_clean
       synchronize do
-	@read_waiter.delete_unless_alive.each do |e|
-	  e.signal
-	end
-	@take_waiter.delete_unless_alive.each do |e|
-	  e.signal
-	end
-	@notify_waiter.delete_unless_alive.each do |e|
-	  e.notify(['close'])
-	end
-	@bag.delete_unless_alive.each do |e|
-	  notify_event('delete', e.value)
-	end
+        @read_waiter.delete_unless_alive.each do |e|
+          e.signal
+        end
+        @take_waiter.delete_unless_alive.each do |e|
+          e.signal
+        end
+        @notify_waiter.delete_unless_alive.each do |e|
+          e.notify(['close'])
+        end
+        @bag.delete_unless_alive.each do |e|
+          notify_event('delete', e.value)
+        end
       end
     end
 
     def notify_event(event, tuple)
       ev = [event, tuple]
       @notify_waiter.find_all_template(ev).each do |template|
-	template.notify(ev)
+        template.notify(ev)
       end
     end
 
@@ -434,7 +426,7 @@ module Rinda
         while need_keeper?
           keep_clean
           sleep(@period)
-	end
+        end
       end
     end
 
