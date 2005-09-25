@@ -454,11 +454,14 @@ class OptionParser
       # Raises an exception if argument is not present.
       #
       def parse(arg, argv, &error)
-        unless arg
-          raise MissingArgument if argv.empty?
-          arg = argv.shift
+        opt = (val = parse_arg(val, &error))[1]
+        val = conv_arg(*val)
+        if opt and !arg
+          argv.shift
+        else
+          val[0] = nil
         end
-        conv_arg(*parse_arg(arg, &error))
+        val
       end
     end
 
@@ -479,24 +482,17 @@ class OptionParser
     end
 
     #
-    # ?
+    # Switch that takes an argument, which does not begin with '-'.
     #
-    class PlacedArgument < self
+    class PlacedArgument < RequiredArgument
       #
-      # ?
+      # Returns nil if argument is not present or begins with '-'.
       #
       def parse(arg, argv, &error)
         if !(val = arg) and (argv.empty? or /\A-/ =~ (val = argv[0]))
           return nil, block, nil
         end
-        opt = (val = parse_arg(val, &error))[1]
-        val = conv_arg(*val)
-        if opt and !arg
-          argv.shift
-        else
-          val[0] = nil
-        end
-        val
+        super
       end
     end
   end
