@@ -144,7 +144,7 @@ struct parser_params {
     int parser_heredoc_end;
     int parser_command_start;
     int parser_lex_gets_ptr;
-    VALUE (*parser_lex_gets) _((struct parser_params*,VALUE));
+    VALUE (*parser_lex_gets)(struct parser_params*,VALUE);
     struct local_vars *parser_lvtbl;
     int parser_ruby__end__seen;
 #ifndef RIPPER
@@ -170,7 +170,7 @@ struct parser_params {
     int has_shebang;
 };
 
-static int parser_yyerror _((struct parser_params*, const char*));
+static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, msg)
 
 #define YYPARSE_PARAM parser_v
@@ -212,110 +212,110 @@ static int parser_yyerror _((struct parser_params*, const char*));
 #define ruby_debug_lines	(parser->debug_lines)
 #endif
 
-static int yylex _((void*, void*));
+static int yylex(void*, void*);
 
 #ifndef RIPPER
 #define yyparse parser_yyparse
 #define yydebug ruby_yydebug
 
-static NODE *cond_gen _((struct parser_params*,NODE*));
+static NODE *cond_gen(struct parser_params*,NODE*);
 #define cond(node) cond_gen(parser, node)
-static NODE *logop_gen _((struct parser_params*,enum node_type,NODE*,NODE*));
+static NODE *logop_gen(struct parser_params*,enum node_type,NODE*,NODE*);
 #define logop(type,node1,node2) logop_gen(parser, type, node1, node2)
 
-static int cond_negative _((NODE**));
+static int cond_negative(NODE**);
 
-static NODE *newline_node _((NODE*));
-static void fixpos  _((NODE*,NODE*));
+static NODE *newline_node(NODE*);
+static void fixpos(NODE*,NODE*);
 
-static int value_expr_gen _((struct parser_params*,NODE*));
-static void void_expr_gen _((struct parser_params*,NODE*));
-static NODE *remove_begin _((NODE*));
+static int value_expr_gen(struct parser_params*,NODE*);
+static void void_expr_gen(struct parser_params*,NODE*);
+static NODE *remove_begin(NODE*);
 #define value_expr(node) value_expr_gen(parser, (node) = remove_begin(node))
 #define void_expr(node) void_expr_gen(parser, (node) = remove_begin(node))
-static void void_stmts_gen _((struct parser_params*,NODE*));
+static void void_stmts_gen(struct parser_params*,NODE*);
 #define void_stmts(node) void_stmts_gen(parser, node)
-static void reduce_nodes _((NODE**));
-static void block_dup_check _((NODE*));
+static void reduce_nodes(NODE**);
+static void block_dup_check(NODE*);
 
-static NODE *block_append _((NODE*,NODE*));
-static NODE *list_append _((NODE*,NODE*));
-static NODE *list_concat _((NODE*,NODE*));
-static NODE *arg_concat _((NODE*,NODE*));
-static NODE *literal_concat _((NODE*,NODE*));
-static NODE *new_evstr _((NODE*));
-static NODE *evstr2dstr _((NODE*));
+static NODE *block_append(NODE*,NODE*);
+static NODE *list_append(NODE*,NODE*);
+static NODE *list_concat(NODE*,NODE*);
+static NODE *arg_concat(NODE*,NODE*);
+static NODE *literal_concat(NODE*,NODE*);
+static NODE *new_evstr(NODE*);
+static NODE *evstr2dstr(NODE*);
 
-static NODE *call_op_gen _((struct parser_params*,NODE*,ID,int,NODE*));
+static NODE *call_op_gen(struct parser_params*,NODE*,ID,int,NODE*);
 #define call_op(recv,id,narg,arg1) call_op_gen(parser, recv,id,narg,arg1)
 
-static NODE *new_args_gen _((struct parser_params*,VALUE,NODE*,NODE*,NODE*));
+static NODE *new_args_gen(struct parser_params*,VALUE,NODE*,NODE*,NODE*);
 #define new_args(f,o,r,b) new_args_gen(parser, f,o,r,b)
-static void shadowing_lvar_gen _((struct parser_params*,ID));
+static void shadowing_lvar_gen(struct parser_params*,ID);
 #define shadowing_lvar(name) shadowing_lvar_gen(parser, name)
 
-static NODE *negate_lit _((NODE*));
-static NODE *ret_args _((NODE*));
-static NODE *arg_blk_pass _((NODE*,NODE*));
-static NODE *new_call _((NODE*,ID,NODE*));
-static NODE *new_fcall_gen _((struct parser_params*,ID,NODE*));
+static NODE *negate_lit(NODE*);
+static NODE *ret_args(NODE*);
+static NODE *arg_blk_pass(NODE*,NODE*);
+static NODE *new_call(NODE*,ID,NODE*);
+static NODE *new_fcall_gen(struct parser_params*,ID,NODE*);
 #define new_fcall(id,args) new_fcall_gen(parser, id, args)
-static NODE *new_super  _((NODE*));
-static NODE *new_yield  _((NODE*));
+static NODE *new_super(NODE*);
+static NODE *new_yield(NODE*);
 
-static NODE *gettable_gen _((struct parser_params*,ID));
+static NODE *gettable_gen(struct parser_params*,ID);
 #define gettable(id) gettable_gen(parser,id)
-static NODE *assignable_gen _((struct parser_params*,ID,NODE*));
+static NODE *assignable_gen(struct parser_params*,ID,NODE*);
 #define assignable(id,node) assignable_gen(parser, id, node)
-static NODE *new_bv_gen _((struct parser_params*,ID,NODE*));
+static NODE *new_bv_gen(struct parser_params*,ID,NODE*);
 #define new_bv(id,node) new_bv_gen(parser, id, node)
-static NODE *aryset_gen _((struct parser_params*,NODE*,NODE*));
+static NODE *aryset_gen(struct parser_params*,NODE*,NODE*);
 #define aryset(node1,node2) aryset_gen(parser, node1, node2)
-static NODE *attrset_gen _((struct parser_params*,NODE*,ID));
+static NODE *attrset_gen(struct parser_params*,NODE*,ID);
 #define attrset(node,id) attrset_gen(parser, node, id)
 
-static void rb_backref_error _((NODE*));
-static NODE *node_assign_gen _((struct parser_params*,NODE*,NODE*));
+static void rb_backref_error(NODE*);
+static NODE *node_assign_gen(struct parser_params*,NODE*,NODE*);
 #define node_assign(node1, node2) node_assign_gen(parser, node1, node2)
 
-static NODE *match_op_gen _((struct parser_params*,NODE*,NODE*));
+static NODE *match_op_gen(struct parser_params*,NODE*,NODE*);
 #define match_op(node1,node2) match_op_gen(parser, node1, node2)
 
-static void local_push_gen _((struct parser_params*,int));
+static void local_push_gen(struct parser_params*,int);
 #define local_push(top) local_push_gen(parser,top)
-static void local_pop_gen _((struct parser_params*));
+static void local_pop_gen(struct parser_params*);
 #define local_pop() local_pop_gen(parser)
-static int  local_append_gen _((struct parser_params*, ID));
+static int  local_append_gen(struct parser_params*, ID);
 #define local_append(id) local_append_gen(parser, id)
-static int  local_cnt_gen _((struct parser_params*, ID));
+static int  local_cnt_gen(struct parser_params*, ID);
 #define local_cnt(id) local_cnt_gen(parser, id)
-static int  local_id_gen _((struct parser_params*, ID));
+static int  local_id_gen(struct parser_params*, ID);
 #define local_id(id) local_id_gen(parser, id)
-static ID  *local_tbl_gen _((struct parser_params*));
+static ID  *local_tbl_gen(struct parser_params*);
 #define local_tbl() local_tbl_gen(parser)
-static ID   internal_id _((void));
+static ID   internal_id(void);
 
-static struct RVarmap *dyna_push_gen _((struct parser_params*));
+static struct RVarmap *dyna_push_gen(struct parser_params*);
 #define dyna_push() dyna_push_gen(parser)
-static void dyna_pop_gen _((struct parser_params*, struct RVarmap*));
+static void dyna_pop_gen(struct parser_params*, struct RVarmap*);
 #define dyna_pop(vars) dyna_pop_gen(parser, vars)
-static int dyna_in_block_gen _((struct parser_params*));
+static int dyna_in_block_gen(struct parser_params*);
 #define dyna_in_block() dyna_in_block_gen(parser)
-static NODE *dyna_init_gen _((struct parser_params*, NODE*, struct RVarmap *));
+static NODE *dyna_init_gen(struct parser_params*, NODE*, struct RVarmap *);
 #define dyna_init(node, pre) dyna_init_gen(parser, node, pre)
-static void dyna_var_gen _((struct parser_params*,ID));
+static void dyna_var_gen(struct parser_params*,ID);
 #define dyna_var(id) dyna_var_gen(parser, id)
-static void dyna_check_gen _((struct parser_params*,ID));
+static void dyna_check_gen(struct parser_params*,ID);
 #define dyna_check(id) dyna_check_gen(parser, id)
 
-static void top_local_init_gen _((struct parser_params*));
+static void top_local_init_gen(struct parser_params*);
 #define top_local_init() top_local_init_gen(parser)
-static void top_local_setup_gen _((struct parser_params*));
+static void top_local_setup_gen(struct parser_params*);
 #define top_local_setup() top_local_setup_gen(parser)
 #else
 #define remove_begin(node) (node)
 #endif /* !RIPPER */
-static int lvar_defined_gen _((struct parser_params*, ID));
+static int lvar_defined_gen(struct parser_params*, ID);
 #define lvar_defined(id) lvar_defined_gen(parser, id)
 
 #define RE_OPTION_ONCE (1<<16)
@@ -341,12 +341,12 @@ static int lvar_defined_gen _((struct parser_params*, ID));
 #include "eventids2.c"
 static ID ripper_id_gets;
 
-static VALUE ripper_dispatch0 _((struct parser_params*,ID));
-static VALUE ripper_dispatch1 _((struct parser_params*,ID,VALUE));
-static VALUE ripper_dispatch2 _((struct parser_params*,ID,VALUE,VALUE));
-static VALUE ripper_dispatch3 _((struct parser_params*,ID,VALUE,VALUE,VALUE));
-static VALUE ripper_dispatch4 _((struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE));
-static VALUE ripper_dispatch5 _((struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,VALUE));
+static VALUE ripper_dispatch0(struct parser_params*,ID);
+static VALUE ripper_dispatch1(struct parser_params*,ID,VALUE);
+static VALUE ripper_dispatch2(struct parser_params*,ID,VALUE,VALUE);
+static VALUE ripper_dispatch3(struct parser_params*,ID,VALUE,VALUE,VALUE);
+static VALUE ripper_dispatch4(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE);
+static VALUE ripper_dispatch5(struct parser_params*,ID,VALUE,VALUE,VALUE,VALUE,VALUE);
 
 #define dispatch0(n)            ripper_dispatch0(parser, TOKEN_PASTE(ripper_id_, n))
 #define dispatch1(n,a)          ripper_dispatch1(parser, TOKEN_PASTE(ripper_id_, n), a)
@@ -358,8 +358,8 @@ static VALUE ripper_dispatch5 _((struct parser_params*,ID,VALUE,VALUE,VALUE,VALU
 #define yyparse ripper_yyparse
 #define yydebug ripper_yydebug
 
-static VALUE ripper_intern _((const char*));
-static VALUE ripper_id2sym _((ID));
+static VALUE ripper_intern(const char*);
+static VALUE ripper_id2sym(ID);
 
 #define arg_new() dispatch0(arglist_new)
 #define arg_add(l,a) dispatch2(arglist_add, l, a)
@@ -409,15 +409,15 @@ static VALUE ripper_id2sym _((ID));
 # define rb_warnS(fmt,a)  ripper_warnS(parser, fmt, a)
 # define rb_warning0(fmt) ripper_warning0(parser, fmt)
 # define rb_warningS(fmt,a) ripper_warningS(parser, fmt, a)
-static void ripper_warn0 _((struct parser_params*, const char*));
-static void ripper_warnI _((struct parser_params*, const char*, int));
-static void ripper_warnS _((struct parser_params*, const char*, const char*));
-static void ripper_warning0 _((struct parser_params*, const char*));
-static void ripper_warningS _((struct parser_params*, const char*, const char*));
+static void ripper_warn0(struct parser_params*, const char*);
+static void ripper_warnI(struct parser_params*, const char*, int);
+static void ripper_warnS(struct parser_params*, const char*, const char*);
+static void ripper_warning0(struct parser_params*, const char*);
+static void ripper_warningS(struct parser_params*, const char*, const char*);
 #endif
 
 #ifdef RIPPER
-static void ripper_compile_error _((struct parser_params*, const char *fmt, ...));
+static void ripper_compile_error(struct parser_params*, const char *fmt, ...);
 # define rb_compile_error ripper_compile_error
 # define compile_error ripper_compile_error
 # define PARSER_ARG parser,
@@ -4379,10 +4379,10 @@ none		: /* none */
 # undef yylval
 # define yylval  (*((YYSTYPE*)(parser->parser_yylval)))
 
-static int parser_regx_options _((struct parser_params*));
-static int parser_tokadd_string _((struct parser_params*,int,int,int,long*));
-static int parser_parse_string _((struct parser_params*,NODE*));
-static int parser_here_document _((struct parser_params*,NODE*));
+static int parser_regx_options(struct parser_params*);
+static int parser_tokadd_string(struct parser_params*,int,int,int,long*);
+static int parser_parse_string(struct parser_params*,NODE*);
+static int parser_here_document(struct parser_params*,NODE*);
 
 # define nextc()                   parser_nextc(parser)
 # define pushback(c)               parser_pushback(parser, c)
@@ -4518,7 +4518,7 @@ parser_yyerror(parser, msg)
     return 0;
 }
 
-static void parser_prepare _((struct parser_params *parser));
+static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
 static NODE*
@@ -4580,7 +4580,7 @@ yycompile(parser, f, line)
 }
 #endif /* !RIPPER */
 
-static VALUE lex_get_str _((struct parser_params *, VALUE));
+static VALUE lex_get_str(struct parser_params *, VALUE);
 static VALUE
 lex_get_str(parser, s)
     struct parser_params *parser;
@@ -4663,7 +4663,7 @@ rb_parser_compile_cstr(vparser, f, s, len, line)
     return rb_parser_compile_string(vparser, f, rb_str_new(s, len), line);
 }
 
-static VALUE lex_io_gets _((struct parser_params *, VALUE));
+static VALUE lex_io_gets(struct parser_params *, VALUE);
 static VALUE
 lex_io_gets(parser, io)
     struct parser_params *parser;
@@ -5456,9 +5456,9 @@ lvar_defined_gen(parser, id)
 
 /* emacsen -*- hack */
 #ifndef RIPPER
-typedef void (*rb_pragma_setter_t) _((struct parser_params *parser, const char *name, const char *val));
+typedef void (*rb_pragma_setter_t)(struct parser_params *parser, const char *name, const char *val);
 
-static void pragma_encoding _((struct parser_params *, const char *, const char *));
+static void pragma_encoding(struct parser_params *, const char *, const char *);
 static void
 pragma_encoding(parser, name, val)
     struct parser_params *parser;
@@ -7752,7 +7752,7 @@ warning_unless_e_option(node, str)
     if (!e_option_supplied()) parser_warning(node, str);
 }
 
-static NODE *cond0 _((struct parser_params*,NODE*));
+static NODE *cond0(struct parser_params*,NODE*);
 
 static NODE*
 range_op(parser, node)
@@ -8828,7 +8828,7 @@ rb_parser_end_seen_p(vparser)
 
 #ifdef RIPPER
 #ifdef RIPPER_DEBUG
-extern int rb_is_pointer_to_heap _((VALUE));
+extern int rb_is_pointer_to_heap(VALUE);
 
 /* :nodoc: */
 static VALUE
@@ -9110,7 +9110,7 @@ ripper_warningS(parser, fmt, str)
     	       rb_str_new2(fmt), rb_str_new2(str));
 }
 
-static VALUE ripper_lex_get_generic _((struct parser_params *, VALUE));
+static VALUE ripper_lex_get_generic(struct parser_params *, VALUE);
 
 static VALUE
 ripper_lex_get_generic(parser, src)
@@ -9120,7 +9120,7 @@ ripper_lex_get_generic(parser, src)
     return rb_funcall(src, ripper_id_gets, 0);
 }
 
-static VALUE ripper_s_allocate _((VALUE));
+static VALUE ripper_s_allocate(VALUE);
 
 static VALUE
 ripper_s_allocate(klass)
@@ -9218,7 +9218,7 @@ ripper_s_set_yydebug(self, flag)
     return flag;
 }
 
-extern VALUE rb_thread_pass _((void));
+extern VALUE rb_thread_pass(void);
 
 struct ripper_args {
     struct parser_params *parser;

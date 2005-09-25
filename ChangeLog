@@ -1,3 +1,7 @@
+Sun Sep 25 09:34:22 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* parse.y: replaced `foo _((boo))' with `foo(boo)'.
+
 Sun Sep 25 08:19:53 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* test/rss/test_content.rb, test/rss/test_syndication.rb: use fcall
