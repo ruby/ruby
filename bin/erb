@@ -102,7 +102,7 @@ class ERB
   -x               print ruby script
   -n               print ruby script with line number
   -v               enable verbose mode
-  -d               set $DBEUG to true
+  -d               set $DEBUG to true
   -r [library]     load a library
   -K [kcode]       specify KANJI code-set
   -S [safe_level]  set $SAFE (0..4)
