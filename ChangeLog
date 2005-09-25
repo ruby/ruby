@@ -1,3 +1,7 @@
+Sun Sep 25 12:02:04 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* bin/erb: typo fixed.
+
 Sun Sep 25 11:54:11 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/tuplespace.rb (Rinda::TemplateEntry::initialize): pull
