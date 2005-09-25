@@ -1,3 +1,8 @@
+Mon Sep 26 07:55:06 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/optparse.rb (RequiredArgument#parse): not consume unmatched
+	  argument.  fixed [ruby-dev:27316]
+
 Sun Sep 25 12:05:10 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb: typo fixed.
