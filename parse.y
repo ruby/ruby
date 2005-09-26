@@ -4425,9 +4425,7 @@ static int parser_here_document(struct parser_params*,NODE*);
 #define ripper_flush(p) (p->tokp = p->parser_lex_p)
 
 static void
-ripper_dispatch_scan_event(parser, t)
-    struct parser_params *parser;
-    int t;
+ripper_dispatch_scan_event(struct parser_params *parser, int t)
 {
     VALUE str;
 
@@ -4439,9 +4437,7 @@ ripper_dispatch_scan_event(parser, t)
 }
 
 static void
-ripper_dispatch_delayed_token(parser, t)
-    struct parser_params *parser;
-    int t;
+ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 {
     int saved_line = ruby_sourceline;
     char *saved_tokp = parser->tokp;
@@ -4472,9 +4468,7 @@ ripper_dispatch_delayed_token(parser, t)
 #define is_identchar(c) (SIGN_EXTEND_CHAR(c)!=-1&&(ISALNUM(c) || (c) == '_' || ismbchar(c)))
 
 static int
-parser_yyerror(parser, msg)
-    struct parser_params *parser;
-    const char *msg;
+parser_yyerror(struct parser_params *parser, const char *msg)
 {
 #ifndef RIPPER
     char *p, *pe, *buf;
@@ -4522,10 +4516,7 @@ static void parser_prepare(struct parser_params *parser);
 
 #ifndef RIPPER
 static NODE*
-yycompile(parser, f, line)
-    struct parser_params *parser;
-    char *f;
-    int line;
+yycompile(struct parser_params *parser, const char *f, int line)
 {
     int n;
     struct RVarmap *vp, *vars = ruby_dyna_vars;
@@ -4580,11 +4571,8 @@ yycompile(parser, f, line)
 }
 #endif /* !RIPPER */
 
-static VALUE lex_get_str(struct parser_params *, VALUE);
 static VALUE
-lex_get_str(parser, s)
-    struct parser_params *parser;
-    VALUE s;
+lex_get_str(struct parser_params *parser, VALUE s)
 {
     char *beg, *end, *pend;
 
@@ -4603,8 +4591,7 @@ lex_get_str(parser, s)
 }
 
 static VALUE
-lex_getline(parser)
-    struct parser_params *parser;
+lex_getline(struct parser_params *parser)
 {
     VALUE line = (*parser->parser_lex_gets)(parser, parser->parser_lex_input);
 #ifndef RIPPER
@@ -4617,10 +4604,7 @@ lex_getline(parser)
 
 #ifndef RIPPER
 NODE*
-rb_compile_string(f, s, line)
-    const char *f;
-    VALUE s;
-    int line;
+rb_compile_string(const char *f, VALUE s, int line)
 {
     VALUE volatile vparser = rb_parser_new();
 
@@ -4628,11 +4612,7 @@ rb_compile_string(f, s, line)
 }
 
 NODE*
-rb_parser_compile_string(vparser, f, s, line)
-    volatile VALUE vparser;
-    const char *f;
-    VALUE s;
-    int line;
+rb_parser_compile_string(volatile VALUE vparser, const char *f, VALUE s, int line)
 {
     struct parser_params *parser;
 
@@ -4647,36 +4627,25 @@ rb_parser_compile_string(vparser, f, s, line)
 }
 
 NODE*
-rb_compile_cstr(f, s, len, line)
-    const char *f, *s;
-    int len, line;
+rb_compile_cstr(const char *f, const char *s, int len, int line)
 {
     return rb_compile_string(f, rb_str_new(s, len), line);
 }
 
 NODE*
-rb_parser_compile_cstr(vparser, f, s, len, line)
-    volatile VALUE vparser;
-    const char *f, *s;
-    int len, line;
+rb_parser_compile_cstr(volatile VALUE vparser, const char *f, const char *s, int len, int line)
 {
     return rb_parser_compile_string(vparser, f, rb_str_new(s, len), line);
 }
 
-static VALUE lex_io_gets(struct parser_params *, VALUE);
 static VALUE
-lex_io_gets(parser, io)
-    struct parser_params *parser;
-    VALUE io;
+lex_io_gets(struct parser_params *parser, VALUE io)
 {
     return rb_io_gets(io);
 }
 
 NODE*
-rb_compile_file(f, file, start)
-    const char *f;
-    VALUE file;
-    int start;
+rb_compile_file(const char *f, VALUE file, int start)
 {
     VALUE volatile vparser = rb_parser_new();
 
@@ -4684,14 +4653,10 @@ rb_compile_file(f, file, start)
 }
 
 NODE*
-rb_parser_compile_file(vparser, f, file, start)
-    volatile VALUE vparser;
-    const char *f;
-    VALUE file;
-    int start;
+rb_parser_compile_file(volatile VALUE vparser, const char *f, VALUE file, int start)
 {
     struct parser_params *parser;
-    
+
     Data_Get_Struct(vparser, struct parser_params, parser);
     lex_gets = lex_io_gets;
     lex_input = file;
@@ -4702,8 +4667,7 @@ rb_parser_compile_file(vparser, f, file, start)
 #endif  /* !RIPPER */
 
 static inline int
-parser_nextc(parser)
-    struct parser_params *parser;
+parser_nextc(struct parser_params *parser)
 {
     int c;
 
@@ -4760,9 +4724,7 @@ parser_nextc(parser)
 }
 
 static void
-parser_pushback(parser, c)
-    struct parser_params *parser;
-    int c;
+parser_pushback(struct parser_params *parser, int c)
 {
     if (c == -1) return;
     lex_p--;
@@ -4781,8 +4743,7 @@ parser_pushback(parser, c)
 #define toklast() (tokidx>0?tokenbuf[tokidx-1]:0)
 
 static char*
-parser_newtok(parser)
-    struct parser_params *parser;
+parser_newtok(struct parser_params *parser)
 {
     tokidx = 0;
     if (!tokenbuf) {
@@ -4797,9 +4758,7 @@ parser_newtok(parser)
 }
 
 static void
-parser_tokadd(parser, c)
-    struct parser_params *parser;
-    char c;
+parser_tokadd(struct parser_params *parser, char c)
 {
     tokenbuf[tokidx++] = c;
     if (tokidx >= toksiz) {
@@ -4809,8 +4768,7 @@ parser_tokadd(parser, c)
 }
 
 static int
-parser_read_escape(parser)
-    struct parser_params *parser;
+parser_read_escape(struct parser_params *parser)
 {
     int c;
 
@@ -4909,9 +4867,7 @@ parser_read_escape(parser)
 }
 
 static int
-parser_tokadd_escape(parser, term)
-    struct parser_params *parser;
-    int term;
+parser_tokadd_escape(struct parser_params *parser, int term)
 {
     int c;
 
@@ -4996,8 +4952,7 @@ parser_tokadd_escape(parser, term)
 }
 
 static int
-parser_regx_options(parser)
-    struct parser_params *parser;
+parser_regx_options(struct parser_params *parser)
 {
     char kcode = 0;
     int options = 0;
@@ -5063,18 +5018,15 @@ enum string_type {
 };
 
 static void
-dispose_string(str)
-    VALUE str;
+dispose_string(VALUE str)
 {
     xfree(RSTRING(str)->ptr);
     rb_gc_force_recycle(str);
 }
 
 static int
-parser_tokadd_string(parser, func, term, paren, nest)
-    struct parser_params *parser;
-    int func, term, paren;
-    long *nest;
+parser_tokadd_string(struct parser_params *parser,
+    int func, int term, int paren, long *nest)
 {
     int c;
     unsigned char uc;
@@ -5160,9 +5112,7 @@ parser_tokadd_string(parser, func, term, paren, nest)
 #else
 # define NEW_STRTERM(func, term, paren) ripper_new_strterm(parser, func, term, paren)
 static NODE *
-ripper_new_strterm(parser, func, term, paren)
-    struct parser_params *parser;
-    VALUE func, term, paren;
+ripper_new_strterm(struct parser_params *parser, VALUE func, VALUE term, VALUE paren)
 {
     NODE *node = NEW_STRTERM0(func, term, paren);
     nd_set_line(node, ruby_sourceline);
@@ -5171,9 +5121,7 @@ ripper_new_strterm(parser, func, term, paren)
 #endif
 
 static int
-parser_parse_string(parser, quote)
-    struct parser_params *parser;
-    NODE *quote;
+parser_parse_string(struct parser_params *parser, NODE *quote)
 {
     int func = quote->nd_func;
     int term = nd_term(quote);
@@ -5224,8 +5172,7 @@ parser_parse_string(parser, quote)
 }
 
 static int
-parser_heredoc_identifier(parser)
-    struct parser_params *parser;
+parser_heredoc_identifier(struct parser_params *parser)
 {
     int c = nextc(), term, func = 0, len;
     unsigned int uc;
@@ -5296,9 +5243,7 @@ parser_heredoc_identifier(parser)
 }
 
 static void
-parser_heredoc_restore(parser, here)
-    struct parser_params *parser;
-    NODE *here;
+parser_heredoc_restore(struct parser_params *parser, NODE *here)
 {
     VALUE line;
 
@@ -5323,10 +5268,8 @@ parser_heredoc_restore(parser, here)
 }
 
 static int
-parser_whole_match_p(parser, eos, len, indent)
-    struct parser_params *parser;
-    char *eos;
-    int len, indent;
+parser_whole_match_p(struct parser_params *parser,
+    const char *eos, int len, int indent)
 {
     char *p = lex_pbeg;
     int n;
@@ -5341,9 +5284,7 @@ parser_whole_match_p(parser, eos, len, indent)
 }
 
 static int
-parser_here_document(parser, here)
-    struct parser_params *parser;
-    NODE *here;
+parser_here_document(struct parser_params *parser, NODE *here)
 {
     int c, func, indent = 0;
     char *eos, *p, *pend;
@@ -5428,14 +5369,13 @@ parser_here_document(parser, here)
 
 #ifndef RIPPER
 static void
-arg_ambiguous()
+arg_ambiguous(void)
 {
     rb_warning("ambiguous first argument; put parentheses or even spaces");
 }
 #else
 static void
-ripper_arg_ambiguous(parser)
-    struct parser_params *parser;
+ripper_arg_ambiguous(struct parser_params *parser)
 {
     dispatch0(arg_ambiguous);
 }
@@ -5443,9 +5383,7 @@ ripper_arg_ambiguous(parser)
 #endif
 
 static int
-lvar_defined_gen(parser, id)
-    struct parser_params *parser;
-    ID id;
+lvar_defined_gen(struct parser_params *parser, ID id)
 {
 #ifndef RIPPER
     return (dyna_in_block() && rb_dvar_defined(id)) || local_id(id);
@@ -5458,11 +5396,8 @@ lvar_defined_gen(parser, id)
 #ifndef RIPPER
 typedef void (*rb_pragma_setter_t)(struct parser_params *parser, const char *name, const char *val);
 
-static void pragma_encoding(struct parser_params *, const char *, const char *);
 static void
-pragma_encoding(parser, name, val)
-    struct parser_params *parser;
-    const char *name, *val;
+pragma_encoding(struct parser_params *parser, const char *name, const char *val)
 {
     if (parser && parser->line_count != (parser->has_shebang ? 2 : 1))
 	return;
@@ -5480,9 +5415,7 @@ static const struct pragma pragmas[] = {
 #endif
 
 static const char *
-pragma_marker(str, len)
-    const char *str;
-    int len;
+pragma_marker(const char *str, int len)
 {
     int i = 2;
 
@@ -5515,10 +5448,7 @@ pragma_marker(str, len)
 }
 
 static int
-parser_pragma(parser, str, len)
-    struct parser_params *parser;
-    const char *str;
-    int len;
+parser_pragma(struct parser_params *parser, const char *str, int len)
 {
     VALUE name = 0, val = 0;
     const char *beg, *end, *vbeg, *vend;
@@ -5602,8 +5532,7 @@ parser_pragma(parser, str, len)
 }
 
 static void
-parser_prepare(parser)
-    struct parser_params *parser;
+parser_prepare(struct parser_params *parser)
 {
     int c = nextc();
     switch (c) {
@@ -5629,8 +5558,7 @@ parser_prepare(parser)
 #define IS_BEG() (lex_state == EXPR_BEG || lex_state == EXPR_MID || lex_state == EXPR_VALUE || lex_state == EXPR_CLASS)
 
 static int
-parser_yylex(parser)
-    struct parser_params *parser;
+parser_yylex(struct parser_params *parser)
 {
     register int c;
     int space_seen = 0;
@@ -6872,11 +6800,9 @@ parser_yylex(parser)
 
 #if YYPURE
 static int
-yylex(lval, p)
-    void *lval, *p;
+yylex(void *lval, void *p)
 #else
-yylex(p)
-    void *p;
+yylex(void *p)
 #endif
 {
     struct parser_params *parser = (struct parser_params*)p;
@@ -6901,9 +6827,7 @@ yylex(p)
 
 #ifndef RIPPER
 NODE*
-rb_node_newnode(type, a0, a1, a2)
-    enum node_type type;
-    VALUE a0, a1, a2;
+rb_node_newnode(enum node_type type, VALUE a0, VALUE a1, VALUE a2)
 {
     NODE *n = (NODE*)rb_newobj();
 
@@ -6920,22 +6844,19 @@ rb_node_newnode(type, a0, a1, a2)
 }
 
 static enum node_type
-nodetype(node)			/* for debug */
-    NODE *node;
+nodetype(NODE *node)			/* for debug */
 {
     return (enum node_type)nd_type(node);
 }
 
 static int
-nodeline(node)
-    NODE *node;
+nodeline(NODE *node)
 {
     return nd_line(node);
 }
 
 static NODE*
-newline_node(node)
-    NODE *node;
+newline_node(NODE *node)
 {
     if (node) {
 	node->flags |= NODE_NEWLINE;
@@ -6944,8 +6865,7 @@ newline_node(node)
 }
 
 static void
-fixpos(node, orig)
-    NODE *node, *orig;
+fixpos(NODE *node, NODE *orig)
 {
     if (!node) return;
     if (!orig) return;
@@ -6955,9 +6875,7 @@ fixpos(node, orig)
 }
 
 static void
-parser_warning(node, mesg)
-    NODE *node;
-    const char *mesg;
+parser_warning(NODE *node, const char *mesg)
 {
     int line = ruby_sourceline;
     ruby_sourceline = nd_line(node);
@@ -6966,9 +6884,7 @@ parser_warning(node, mesg)
 }
 
 static void
-parser_warn(node, mesg)
-    NODE *node;
-    const char *mesg;
+parser_warn(NODE *node, const char *mesg)
 {
     int line = ruby_sourceline;
     ruby_sourceline = nd_line(node);
@@ -6977,8 +6893,7 @@ parser_warn(node, mesg)
 }
 
 static NODE*
-block_append(head, tail)
-    NODE *head, *tail;
+block_append(NODE *head, NODE *tail)
 {
     NODE *end, *h = head, *nd;
 
@@ -7032,8 +6947,7 @@ block_append(head, tail)
 
 /* append item to the list */
 static NODE*
-list_append(list, item)
-    NODE *list, *item;
+list_append(NODE *list, NODE *item)
 {
     NODE *last;
 
@@ -7053,8 +6967,7 @@ list_append(list, item)
 
 /* concat two lists */
 static NODE*
-list_concat(head, tail)
-    NODE *head, *tail;
+list_concat(NODE *head, NODE *tail)
 {
     NODE *last;
 
@@ -7079,8 +6992,7 @@ list_concat(head, tail)
 
 /* concat two string literals */
 static NODE *
-literal_concat(head, tail)
-    NODE *head, *tail;
+literal_concat(NODE *head, NODE *tail)
 {
     enum node_type htype;
 
@@ -7129,8 +7041,7 @@ literal_concat(head, tail)
 }
 
 static NODE *
-evstr2dstr(node)
-    NODE *node;
+evstr2dstr(NODE *node)
 {
     if (nd_type(node) == NODE_EVSTR) {
 	node = list_append(NEW_DSTR(rb_str_new(0, 0)), node);
@@ -7139,8 +7050,7 @@ evstr2dstr(node)
 }
 
 static NODE *
-new_evstr(node)
-    NODE *node;
+new_evstr(NODE *node)
 {
     NODE *head = node;
 
@@ -7154,12 +7064,7 @@ new_evstr(node)
 }
 
 static NODE *
-call_op_gen(parser, recv, id, narg, arg1)
-    struct parser_params *parser;
-    NODE *recv;
-    ID id;
-    int narg;
-    NODE *arg1;
+call_op_gen(struct parser_params *parser, NODE *recv, ID id, int narg, NODE *arg1)
 {
     value_expr(arg1);
     if (narg == 1) {
@@ -7173,10 +7078,7 @@ call_op_gen(parser, recv, id, narg, arg1)
 }
 
 static NODE*
-match_op_gen(parser, node1, node2)
-    struct parser_params *parser;
-    NODE *node1;
-    NODE *node2;
+match_op_gen(struct parser_params *parser, NODE *node1, NODE *node2)
 {
     local_cnt('~');
 
@@ -7212,9 +7114,7 @@ match_op_gen(parser, node1, node2)
 }
 
 static NODE*
-gettable_gen(parser, id)
-    struct parser_params *parser;
-    ID id;
+gettable_gen(struct parser_params *parser, ID id)
 {
     if (id == kSELF) {
 	return NEW_SELF();
@@ -7258,10 +7158,7 @@ gettable_gen(parser, id)
 }
 
 static NODE*
-assignable_gen(parser, id, val)
-    struct parser_params *parser;
-    ID id;
-    NODE *val;
+assignable_gen(struct parser_params *parser, ID id, NODE *val)
 {
     value_expr(val);
     if (id == kSELF) {
@@ -7319,9 +7216,7 @@ assignable_gen(parser, id, val)
 }
 
 static void
-shadowing_lvar_gen(parser, name)
-    struct parser_params *parser;
-    ID name;
+shadowing_lvar_gen(struct parser_params *parser, ID name)
 {
     if (rb_dvar_defined(name) || local_id(name)) {
 	rb_warningS("shadowing outer local variable - %s", rb_id2name(name));
@@ -7329,10 +7224,7 @@ shadowing_lvar_gen(parser, name)
 }
 
 static NODE*
-new_bv_gen(parser, name, val)
-    struct parser_params *parser;
-    ID name;
-    NODE *val;
+new_bv_gen(struct parser_params *parser, ID name, NODE *val)
 {
     if (!is_local_id(name)) {
 	compile_error(PARSER_ARG "invalid local variable - %s",
@@ -7345,9 +7237,7 @@ new_bv_gen(parser, name, val)
 }
 
 static NODE *
-aryset_gen(parser, recv, idx)
-    struct parser_params *parser;
-    NODE *recv, *idx;
+aryset_gen(struct parser_params *parser, NODE *recv, NODE *idx)
 {
     if (recv && nd_type(recv) == NODE_SELF)
 	recv = (NODE *)1;
@@ -7357,8 +7247,7 @@ aryset_gen(parser, recv, idx)
 }
 
 static void
-block_dup_check(node)
-    NODE *node;
+block_dup_check(NODE *node)
 {
     if (node && nd_type(node) == NODE_BLOCK_PASS) {
 	compile_error(PARSER_ARG "both block arg and actual block given");
@@ -7366,8 +7255,7 @@ block_dup_check(node)
 }
 
 ID
-rb_id_attrset(id)
-    ID id;
+rb_id_attrset(ID id)
 {
     id &= ~ID_SCOPE_MASK;
     id |= ID_ATTRSET;
@@ -7375,10 +7263,7 @@ rb_id_attrset(id)
 }
 
 static NODE *
-attrset_gen(parser, recv, id)
-    struct parser_params *parser;
-    NODE *recv;
-    ID id;
+attrset_gen(struct parser_params *parser, NODE *recv, ID id)
 {
     if (recv && nd_type(recv) == NODE_SELF)
 	recv = (NODE *)1;
@@ -7388,8 +7273,7 @@ attrset_gen(parser, recv, id)
 }
 
 static void
-rb_backref_error(node)
-    NODE *node;
+rb_backref_error(NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_NTH_REF:
@@ -7402,18 +7286,14 @@ rb_backref_error(node)
 }
 
 static NODE *
-arg_concat(node1, node2)
-    NODE *node1;
-    NODE *node2;
+arg_concat(NODE *node1, NODE *node2)
 {
     if (!node2) return node1;
     return NEW_ARGSCAT(node1, node2);
 }
 
 static NODE *
-arg_add(node1, node2)
-    NODE *node1;
-    NODE *node2;
+arg_add(NODE *node1, NODE *node2)
 {
     if (!node1) return NEW_LIST(node2);
     if (nd_type(node1) == NODE_ARRAY) {
@@ -7425,9 +7305,7 @@ arg_add(node1, node2)
 }
 
 static NODE*
-node_assign_gen(parser, lhs, rhs)
-    struct parser_params *parser;
-    NODE *lhs, *rhs;
+node_assign_gen(struct parser_params *parser, NODE *lhs, NODE *rhs)
 {
     if (!lhs) return 0;
 
@@ -7459,9 +7337,7 @@ node_assign_gen(parser, lhs, rhs)
 }
 
 static int
-value_expr_gen(parser, node)
-    struct parser_params *parser;
-    NODE *node;
+value_expr_gen(struct parser_params *parser, NODE *node)
 {
     int cond = 0;
 
@@ -7512,9 +7388,7 @@ value_expr_gen(parser, node)
 }
 
 static void
-void_expr_gen(parser, node)
-    struct parser_params *parser;
-    NODE *node;
+void_expr_gen(struct parser_params *parser, NODE *node)
 {
     char *useless = 0;
 
@@ -7604,9 +7478,7 @@ void_expr_gen(parser, node)
 }
 
 static void
-void_stmts_gen(parser, node)
-    struct parser_params *parser;
-    NODE *node;
+void_stmts_gen(struct parser_params *parser, NODE *node)
 {
     if (!RTEST(ruby_verbose)) return;
     if (!node) return;
@@ -7620,8 +7492,7 @@ void_stmts_gen(parser, node)
 }
 
 static NODE *
-remove_begin(node)
-    NODE *node;
+remove_begin(NODE *node)
 {
     NODE **n = &node;
     while (*n) {
@@ -7634,8 +7505,7 @@ remove_begin(node)
 }
 
 static void
-reduce_nodes(body)
-    NODE **body;
+reduce_nodes(NODE **body)
 {
     NODE *node = *body;
 
@@ -7688,9 +7558,7 @@ reduce_nodes(body)
 }
 
 static int
-assign_in_cond(parser, node)
-    struct parser_params *parser;
-    NODE *node;
+assign_in_cond(struct parser_params *parser, NODE *node)
 {
     switch (nd_type(node)) {
       case NODE_MASGN:
@@ -7729,7 +7597,7 @@ assign_in_cond(parser, node)
 }
 
 static int
-e_option_supplied()
+e_option_supplied(void)
 {
     if (strcmp(ruby_sourcefile, "-e") == 0)
 	return Qtrue;
@@ -7737,17 +7605,13 @@ e_option_supplied()
 }
 
 static void
-warn_unless_e_option(node, str)
-    NODE *node;
-    const char *str;
+warn_unless_e_option(NODE *node, const char *str)
 {
     if (!e_option_supplied()) parser_warn(node, str);
 }
 
 static void
-warning_unless_e_option(node, str)
-    NODE *node;
-    const char *str;
+warning_unless_e_option(NODE *node, const char *str)
 {
     if (!e_option_supplied()) parser_warning(node, str);
 }
@@ -7755,9 +7619,7 @@ warning_unless_e_option(node, str)
 static NODE *cond0(struct parser_params*,NODE*);
 
 static NODE*
-range_op(parser, node)
-    struct parser_params *parser;
-    NODE *node;
+range_op(struct parser_params *parser, NODE *node)
 {
     enum node_type type;
 
@@ -7775,8 +7637,7 @@ range_op(parser, node)
 }
 
 static int
-literal_node(node)
-    NODE *node;
+literal_node(NODE *node)
 {
     if (!node) return 1;	/* same as NODE_NIL */
     switch (nd_type(node)) {
@@ -7797,9 +7658,7 @@ literal_node(node)
 }
 
 static NODE*
-cond0(parser, node)
-    struct parser_params *parser;
-    NODE *node;
+cond0(struct parser_params *parser, NODE *node)
 {
     if (node == 0) return 0;
     assign_in_cond(parser, node);
@@ -7861,9 +7720,7 @@ cond0(parser, node)
 }
 
 static NODE*
-cond_gen(parser, node)
-    struct parser_params *parser;
-    NODE *node;
+cond_gen(struct parser_params *parser, NODE *node)
 {
     if (node == 0) return 0;
     value_expr(node);
@@ -7871,10 +7728,7 @@ cond_gen(parser, node)
 }
 
 static NODE*
-logop_gen(parser, type, left, right)
-    struct parser_params *parser;
-    enum node_type type;
-    NODE *left, *right;
+logop_gen(struct parser_params *parser, enum node_type type, NODE *left, NODE *right)
 {
     value_expr(left);
     if (left && nd_type(left) == type) {
@@ -7889,8 +7743,7 @@ logop_gen(parser, type, left, right)
 }
 
 static int
-cond_negative(nodep)
-    NODE **nodep;
+cond_negative(NODE **nodep)
 {
     NODE *c = *nodep;
 
@@ -7904,8 +7757,7 @@ cond_negative(nodep)
 }
 
 static void
-no_blockarg(node)
-    NODE *node;
+no_blockarg(NODE *node)
 {
     if (node && nd_type(node) == NODE_BLOCK_PASS) {
 	rb_compile_error("block argument should not be given");
@@ -7913,8 +7765,7 @@ no_blockarg(node)
 }
 
 static NODE *
-ret_args(node)
-    NODE *node;
+ret_args(NODE *node)
 {
     if (node) {
 	no_blockarg(node);
@@ -7934,8 +7785,7 @@ ret_args(node)
 }
 
 static NODE *
-new_yield(node)
-    NODE *node;
+new_yield(NODE *node)
 {
     long state = Qtrue;
 
@@ -7956,8 +7806,7 @@ new_yield(node)
 }
 
 static NODE*
-negate_lit(node)
-    NODE *node;
+negate_lit(NODE *node)
 {
     switch (TYPE(node->nd_lit)) {
       case T_FIXNUM:
@@ -7976,9 +7825,7 @@ negate_lit(node)
 }
 
 static NODE *
-arg_blk_pass(node1, node2)
-    NODE *node1;
-    NODE *node2;
+arg_blk_pass(NODE *node1, NODE *node2)
 {
     if (node2) {
 	node2->nd_head = node1;
@@ -7988,8 +7835,7 @@ arg_blk_pass(node1, node2)
 }
 
 static NODE*
-arg_prepend(node1, node2)
-    NODE *node1, *node2;
+arg_prepend(NODE *node1, NODE *node2)
 {
     switch (nd_type(node2)) {
       case NODE_ARRAY:
@@ -8009,10 +7855,7 @@ arg_prepend(node1, node2)
 }
 
 static int
-arg_dup_check(vid, m, list, node)
-    ID vid;
-    VALUE m, list;
-    NODE *node;
+arg_dup_check(ID vid, VALUE m, VALUE list, NODE *node)
 {
     VALUE sym = ID2SYM(vid);
     if ((m && rb_ary_includes(m, sym)) || rb_ary_includes(list, sym)) {
@@ -8024,10 +7867,7 @@ arg_dup_check(vid, m, list, node)
 }
 
 static NODE*
-new_args_gen(parser, m, o, r, b)
-    struct parser_params *parser;
-    VALUE m;
-    NODE *o, *r, *b;
+new_args_gen(struct parser_params *parser, VALUE m, NODE *o, NODE *r, NODE *b)
 {
     int saved_line = ruby_sourceline;
     NODE *tmp;
@@ -8060,10 +7900,7 @@ new_args_gen(parser, m, o, r, b)
 }
 
 static NODE*
-new_call(r,m,a)
-    NODE *r;
-    ID m;
-    NODE *a;
+new_call(NODE *r, ID m, NODE *a)
 {
     if (a && nd_type(a) == NODE_BLOCK_PASS) {
 	a->nd_iter = NEW_CALL(r,m,a->nd_head);
@@ -8073,10 +7910,7 @@ new_call(r,m,a)
 }
 
 static NODE*
-new_fcall_gen(parser, m, a)
-    struct parser_params *parser;
-    ID m;
-    NODE *a;
+new_fcall_gen(struct parser_params *parser, ID m, NODE *a)
 {
     if (a && nd_type(a) == NODE_BLOCK_PASS) {
 	a->nd_iter = NEW_FCALL(m,a->nd_head);
@@ -8086,8 +7920,7 @@ new_fcall_gen(parser, m, a)
 }
 
 static NODE*
-new_super(a)
-    NODE *a;
+new_super(NODE *a)
 {
     if (a && nd_type(a) == NODE_BLOCK_PASS) {
 	a->nd_iter = NEW_SUPER(a->nd_head);
@@ -8097,9 +7930,7 @@ new_super(a)
 }
 
 static void
-local_push_gen(parser, top)
-    struct parser_params *parser;
-    int top;
+local_push_gen(struct parser_params *parser, int top)
 {
     struct local_vars *local;
 
@@ -8121,8 +7952,7 @@ local_push_gen(parser, top)
 }
 
 static void
-local_pop_gen(parser)
-    struct parser_params *parser;
+local_pop_gen(struct parser_params *parser)
 {
     struct local_vars *local = lvtbl->prev;
 
@@ -8139,17 +7969,14 @@ local_pop_gen(parser)
 }
 
 static ID*
-local_tbl_gen(parser)
-    struct parser_params *parser;
+local_tbl_gen(struct parser_params *parser)
 {
     lvtbl->nofree = 1;
     return lvtbl->tbl;
 }
 
 static int
-local_append_gen(parser, id)
-    struct parser_params *parser;
-    ID id;
+local_append_gen(struct parser_params *parser, ID id)
 {
     if (lvtbl->tbl == 0) {
 	lvtbl->tbl = ALLOC_N(ID, 4);
@@ -8169,9 +7996,7 @@ local_append_gen(parser, id)
 }
 
 static int
-local_cnt_gen(parser, id)
-    struct parser_params *parser;
-    ID id;
+local_cnt_gen(struct parser_params *parser, ID id)
 {
     int cnt, max;
 
@@ -8184,9 +8009,7 @@ local_cnt_gen(parser, id)
 }
 
 static int
-local_id_gen(parser, id)
-    struct parser_params *parser;
-    ID id;
+local_id_gen(struct parser_params *parser, ID id)
 {
     int i, max;
 
@@ -8198,8 +8021,7 @@ local_id_gen(parser, id)
 }
 
 static void
-top_local_init_gen(parser)
-    struct parser_params *parser;
+top_local_init_gen(struct parser_params *parser)
 {
     local_push(1);
     lvtbl->cnt = ruby_scope->local_tbl?ruby_scope->local_tbl[0]:0;
@@ -8217,8 +8039,7 @@ top_local_init_gen(parser)
 }
 
 static void
-top_local_setup_gen(parser)
-    struct parser_params *parser;
+top_local_setup_gen(struct parser_params *parser)
 {
     int len = lvtbl->cnt;
     int i;
@@ -8258,9 +8079,7 @@ top_local_setup_gen(parser)
 }
 
 static void
-dyna_var_gen(parser, id)
-    struct parser_params *parser;
-    ID id;
+dyna_var_gen(struct parser_params *parser, ID id)
 {
     int i;
 
@@ -8278,9 +8097,7 @@ dyna_var_gen(parser, id)
 }
 
 static void
-dyna_check_gen(parser, id)
-    struct parser_params *parser;
-    ID id;
+dyna_check_gen(struct parser_params *parser, ID id)
 {
     int i;
 
@@ -8294,8 +8111,7 @@ dyna_check_gen(parser, id)
 }
 
 static struct RVarmap*
-dyna_push_gen(parser)
-    struct parser_params *parser;
+dyna_push_gen(struct parser_params *parser)
 {
     struct RVarmap* vars = ruby_dyna_vars;
 
@@ -8305,26 +8121,20 @@ dyna_push_gen(parser)
 }
 
 static void
-dyna_pop_gen(parser, vars)
-    struct parser_params *parser;
-    struct RVarmap* vars;
+dyna_pop_gen(struct parser_params *parser, struct RVarmap* vars)
 {
     lvtbl->dlev--;
     ruby_dyna_vars = vars;
 }
 
 static int
-dyna_in_block_gen(parser)
-    struct parser_params *parser;
+dyna_in_block_gen(struct parser_params *parser)
 {
     return (lvtbl->dlev > 0);
 }
 
 static NODE *
-dyna_init_gen(parser, node, pre)
-    struct parser_params *parser;
-    NODE *node;
-    struct RVarmap *pre;
+dyna_init_gen(struct parser_params *parser, NODE *node, struct RVarmap *pre)
 {
     struct RVarmap *post = ruby_dyna_vars;
     NODE *var;
@@ -8337,13 +8147,12 @@ dyna_init_gen(parser, node, pre)
 }
 
 void
-rb_gc_mark_parser()
+rb_gc_mark_parser(void)
 {
 }
 
 NODE*
-rb_parser_append_print(node)
-    NODE *node;
+rb_parser_append_print(NODE *node)
 {
     NODE *prelude = 0;
 
@@ -8362,9 +8171,7 @@ rb_parser_append_print(node)
 }
 
 NODE *
-rb_parser_while_loop(node, chop, split)
-    NODE *node;
-    int chop, split;
+rb_parser_while_loop(NODE *node, int chop, int split)
 {
     NODE *prelude = 0;
 
@@ -8443,21 +8250,20 @@ static struct symbols {
 } global_symbols = {tLAST_TOKEN};
 
 void
-Init_sym()
+Init_sym(void)
 {
     global_symbols.tbl = st_init_strtable_with_size(200);
     global_symbols.rev = st_init_numtable_with_size(200);
 }
 
 static ID
-internal_id()
+internal_id(void)
 {
     return ID_INTERNAL | (++global_symbols.last_id << ID_SCOPE_SHIFT);
 }
 
 ID
-rb_intern(name)
-    const char *name;
+rb_intern(const char *name)
 {
     const char *m = name;
     ID id;
@@ -8532,8 +8338,7 @@ rb_intern(name)
 }
 
 char *
-rb_id2name(id)
-    ID id;
+rb_id2name(ID id)
 {
     char *name;
 
@@ -8571,10 +8376,7 @@ rb_id2name(id)
 }
 
 static int
-symbols_i(key, value, ary)
-    char *key;
-    ID value;
-    VALUE ary;
+symbols_i(char *key, ID value, VALUE ary)
 {
     rb_ary_push(ary, ID2SYM(value));
     return ST_CONTINUE;
@@ -8597,7 +8399,7 @@ symbols_i(key, value, ary)
  */
 
 VALUE
-rb_sym_all_symbols()
+rb_sym_all_symbols(void)
 {
     VALUE ary = rb_ary_new2(global_symbols.tbl->num_entries);
 
@@ -8606,49 +8408,42 @@ rb_sym_all_symbols()
 }
 
 int
-rb_is_const_id(id)
-    ID id;
+rb_is_const_id(ID id)
 {
     if (is_const_id(id)) return Qtrue;
     return Qfalse;
 }
 
 int
-rb_is_class_id(id)
-    ID id;
+rb_is_class_id(ID id)
 {
     if (is_class_id(id)) return Qtrue;
     return Qfalse;
 }
 
 int
-rb_is_instance_id(id)
-    ID id;
+rb_is_instance_id(ID id)
 {
     if (is_instance_id(id)) return Qtrue;
     return Qfalse;
 }
 
 int
-rb_is_local_id(id)
-    ID id;
+rb_is_local_id(ID id)
 {
     if (is_local_id(id)) return Qtrue;
     return Qfalse;
 }
 
 int
-rb_is_junk_id(id)
-    ID id;
+rb_is_junk_id(ID id)
 {
     if (is_junk_id(id)) return Qtrue;
     return Qfalse;
 }
 
 static void
-special_local_set(c, val)
-    char c;
-    VALUE val;
+special_local_set(char c, VALUE val)
 {
     VALUE volatile vparser = rb_parser_new();
     struct parser_params *parser;
@@ -8662,7 +8457,7 @@ special_local_set(c, val)
 }
 
 VALUE
-rb_backref_get()
+rb_backref_get(void)
 {
     VALUE *var = rb_svar(1);
     if (var) {
@@ -8672,8 +8467,7 @@ rb_backref_get()
 }
 
 void
-rb_backref_set(val)
-    VALUE val;
+rb_backref_set(VALUE val)
 {
     VALUE *var = rb_svar(1);
     if (var) {
@@ -8685,7 +8479,7 @@ rb_backref_set(val)
 }
 
 VALUE
-rb_lastline_get()
+rb_lastline_get(void)
 {
     VALUE *var = rb_svar(0);
     if (var) {
@@ -8695,8 +8489,7 @@ rb_lastline_get()
 }
 
 void
-rb_lastline_set(val)
-    VALUE val;
+rb_lastline_set(VALUE val)
 {
     VALUE *var = rb_svar(0);
     if (var) {
@@ -8709,8 +8502,7 @@ rb_lastline_set(val)
 #endif /* !RIPPER */
 
 static void
-parser_initialize(parser)
-    struct parser_params *parser;
+parser_initialize(struct parser_params *parser)
 {
     parser->eofp = Qfalse;
 
@@ -8749,8 +8541,7 @@ parser_initialize(parser)
 }
 
 static void
-parser_mark(ptr)
-    void *ptr;
+parser_mark(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
 
@@ -8770,8 +8561,7 @@ parser_mark(ptr)
 }
 
 static void
-parser_free(ptr)
-    void *ptr;
+parser_free(void *ptr)
 {
     struct parser_params *p = (struct parser_params*)ptr;
     struct local_vars *local, *prev;
@@ -8790,7 +8580,7 @@ parser_free(ptr)
 
 #ifndef RIPPER
 static struct parser_params *
-parser_new()
+parser_new(void)
 {
     struct parser_params *p;
 
@@ -8801,7 +8591,7 @@ parser_new()
 }
 
 VALUE
-rb_parser_new()
+rb_parser_new(void)
 {
     struct parser_params *p = parser_new();
 
@@ -8816,8 +8606,7 @@ rb_parser_new()
  *  This number starts from 1.
  */
 VALUE
-rb_parser_end_seen_p(vparser)
-    VALUE vparser;
+rb_parser_end_seen_p(VALUE vparser)
 {
     struct parser_params *parser;
 
@@ -8832,8 +8621,7 @@ extern int rb_is_pointer_to_heap(VALUE);
 
 /* :nodoc: */
 static VALUE
-ripper_validate_object(self, x)
-    VALUE self, x;
+ripper_validate_object(VALUE self, VALUE x)
 {
     if (x == Qfalse) return x;
     if (x == Qtrue) return x;
@@ -8864,28 +8652,20 @@ ripper_validate_object(self, x)
 #define validate(x)
 
 static VALUE
-ripper_dispatch0(parser, mid)
-    struct parser_params *parser;
-    ID mid;
+ripper_dispatch0(struct parser_params *parser, ID mid)
 {
     return rb_funcall(parser->value, mid, 0);
 }
 
 static VALUE
-ripper_dispatch1(parser, mid, a)
-    struct parser_params *parser;
-    ID mid;
-    VALUE a;
+ripper_dispatch1(struct parser_params *parser, ID mid, VALUE a)
 {
     validate(a);
     return rb_funcall(parser->value, mid, 1, a);
 }
 
 static VALUE
-ripper_dispatch2(parser, mid, a, b)
-    struct parser_params *parser;
-    ID mid;
-    VALUE a, b;
+ripper_dispatch2(struct parser_params *parser, ID mid, VALUE a, VALUE b)
 {
     validate(a);
     validate(b);
@@ -8893,10 +8673,7 @@ ripper_dispatch2(parser, mid, a, b)
 }
 
 static VALUE
-ripper_dispatch3(parser, mid, a, b, c)
-    struct parser_params *parser;
-    ID mid;
-    VALUE a, b, c;
+ripper_dispatch3(struct parser_params *parser, ID mid, VALUE a, VALUE b, VALUE c)
 {
     validate(a);
     validate(b);
@@ -8905,10 +8682,7 @@ ripper_dispatch3(parser, mid, a, b, c)
 }
 
 static VALUE
-ripper_dispatch4(parser, mid, a, b, c, d)
-    struct parser_params *parser;
-    ID mid;
-    VALUE a, b, c, d;
+ripper_dispatch4(struct parser_params *parser, ID mid, VALUE a, VALUE b, VALUE c, VALUE d)
 {
     validate(a);
     validate(b);
@@ -8918,10 +8692,7 @@ ripper_dispatch4(parser, mid, a, b, c, d)
 }
 
 static VALUE
-ripper_dispatch5(parser, mid, a, b, c, d, e)
-    struct parser_params *parser;
-    ID mid;
-    VALUE a, b, c, d, e;
+ripper_dispatch5(struct parser_params *parser, ID mid, VALUE a, VALUE b, VALUE c, VALUE d, VALUE e)
 {
     validate(a);
     validate(b);
@@ -8986,8 +8757,7 @@ static struct kw_assoc {
 };
 
 static const char*
-keyword_id_to_str(id)
-    ID id;
+keyword_id_to_str(ID id)
 {
     struct kw_assoc *a;
 
@@ -8999,8 +8769,7 @@ keyword_id_to_str(id)
 }
 
 static VALUE
-ripper_id2sym(id)
-    ID id;
+ripper_id2sym(ID id)
 {
     const char *name;
     char buf[8];
@@ -9031,100 +8800,64 @@ ripper_id2sym(id)
 }
 
 static VALUE
-ripper_intern(s)
-    const char *s;
+ripper_intern(const char *s)
 {
     return ID2SYM(rb_intern(s));
 }
 
-#ifdef HAVE_STDARG_PROTOTYPES
-# include <stdarg.h>
-# define va_init_list(a,b) va_start(a,b)
-#else
-# include <varargs.h>
-# define va_init_list(a,b) va_start(a)
-#endif
-
 static void
-#ifdef HAVE_STDARG_PROTOTYPES
 ripper_compile_error(struct parser_params *parser, const char *fmt, ...)
-#else
-ripper_compile_error(parser, fmt, va_alist)
-    struct parser_params *parser;
-    const char *fmt;
-    va_dcl
-#endif
 {
     VALUE str;
     va_list args;
 
-    va_init_list(args, fmt);
+    va_start(args, fmt);
     str = rb_vsprintf(fmt, args);
     va_end(args);
     rb_funcall(parser->value, rb_intern("compile_error"), 1, str);
 }
 
 static void
-ripper_warn0(parser, fmt)
-    struct parser_params *parser;
-    const char *fmt;
+ripper_warn0(struct parser_params *parser, const char *fmt)
 {
     rb_funcall(parser->value, rb_intern("warn"), 1, rb_str_new2(fmt));
 }
 
 static void
-ripper_warnI(parser, fmt, a)
-    struct parser_params *parser;
-    const char *fmt;
-    int a;
+ripper_warnI(struct parser_params *parser, const char *fmt, int a)
 {
     rb_funcall(parser->value, rb_intern("warn"), 2,
                rb_str_new2(fmt), INT2NUM(a));
 }
 
 static void
-ripper_warnS(parser, fmt, str)
-    struct parser_params *parser;
-    const char *fmt;
-    const char *str;
+ripper_warnS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warn"), 2,
     	       rb_str_new2(fmt), rb_str_new2(str));
 }
 
 static void
-ripper_warning0(parser, fmt)
-    struct parser_params *parser;
-    const char *fmt;
+ripper_warning0(struct parser_params *parser, const char *fmt)
 {
     rb_funcall(parser->value, rb_intern("warning"), 1, rb_str_new2(fmt));
 }
 
 static void
-ripper_warningS(parser, fmt, str)
-    struct parser_params *parser;
-    const char *fmt;
-    const char *str;
+ripper_warningS(struct parser_params *parser, const char *fmt, const char *str)
 {
     rb_funcall(parser->value, rb_intern("warning"), 2,
     	       rb_str_new2(fmt), rb_str_new2(str));
 }
 
-static VALUE ripper_lex_get_generic(struct parser_params *, VALUE);
-
 static VALUE
-ripper_lex_get_generic(parser, src)
-    struct parser_params *parser;
-    VALUE src;
+ripper_lex_get_generic(struct parser_params *parser, VALUE src)
 {
     return rb_funcall(src, ripper_id_gets, 0);
 }
 
-static VALUE ripper_s_allocate(VALUE);
-
 static VALUE
-ripper_s_allocate(klass)
-    VALUE klass;
+ripper_s_allocate(VALUE klass)
 {
     struct parser_params *p;
     VALUE self;
@@ -9137,8 +8870,7 @@ ripper_s_allocate(klass)
 }
 
 static int
-obj_respond_to(obj, mid)
-    VALUE obj, mid;
+obj_respond_to(VALUE obj, VALUE mid)
 {
     VALUE st;
 
@@ -9159,10 +8891,7 @@ obj_respond_to(obj, mid)
  *  See also Ripper#parse and Ripper.parse.
  */
 static VALUE
-ripper_initialize(argc, argv, self)
-    int argc;
-    VALUE *argv;
-    VALUE self;
+ripper_initialize(int argc, VALUE *argv, VALUE self)
 {
     struct parser_params *parser;
     VALUE src, fname, lineno;
@@ -9198,8 +8927,7 @@ ripper_initialize(argc, argv, self)
  *  Get yydebug.
  */
 static VALUE
-ripper_s_get_yydebug(self)
-    VALUE self;
+ripper_s_get_yydebug(VALUE self)
 {
     return ripper_yydebug ? Qtrue : Qfalse;
 }
@@ -9211,8 +8939,7 @@ ripper_s_get_yydebug(self)
  *  Set yydebug.
  */
 static VALUE
-ripper_s_set_yydebug(self, flag)
-    VALUE self, flag;
+ripper_s_set_yydebug(VALUE self, VALUE flag)
 {
     ripper_yydebug = RTEST(flag);
     return flag;
@@ -9227,8 +8954,7 @@ struct ripper_args {
 };
 
 static VALUE
-ripper_parse0(parser_v)
-    VALUE parser_v;
+ripper_parse0(VALUE parser_v)
 {
     struct parser_params *parser;
 
@@ -9239,8 +8965,7 @@ ripper_parse0(parser_v)
 }
 
 static VALUE
-ripper_ensure(parser_v)
-    VALUE parser_v;
+ripper_ensure(VALUE parser_v)
 {
     struct parser_params *parser;
 
@@ -9256,8 +8981,7 @@ ripper_ensure(parser_v)
  *  Start parsing and returns the value of the root action.
  */
 static VALUE
-ripper_parse(self)
-    VALUE self;
+ripper_parse(VALUE self)
 {
     struct parser_params *parser;
 
@@ -9285,8 +9009,7 @@ ripper_parse(self)
  *  This number starts from 0.
  */
 static VALUE
-ripper_column(self)
-    VALUE self;
+ripper_column(VALUE self)
 {
     struct parser_params *parser;
     long col;
@@ -9308,8 +9031,7 @@ ripper_column(self)
  *  This number starts from 1.
  */
 static VALUE
-ripper_lineno(self)
-    VALUE self;
+ripper_lineno(VALUE self)
 {
     struct parser_params *parser;
 
@@ -9324,8 +9046,7 @@ ripper_lineno(self)
 #ifdef RIPPER_DEBUG
 /* :nodoc: */
 static VALUE
-ripper_assert_Qundef(self, obj, msg)
-    VALUE self, obj, msg;
+ripper_assert_Qundef(VALUE self, VALUE obj, VALUE msg)
 {
     StringValue(msg);
     if (obj == Qundef) {
@@ -9336,8 +9057,7 @@ ripper_assert_Qundef(self, obj, msg)
 
 /* :nodoc: */
 static VALUE
-ripper_value(self, obj)
-    VALUE self, obj;
+ripper_value(VALUE self, VALUE obj)
 {
     return ULONG2NUM(obj);
 }
