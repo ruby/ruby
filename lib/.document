@@ -13,6 +13,8 @@ cgi.rb
 cgi
 complex.rb
 date.rb
+delegate.rb
+erb.rb
 English.rb
 fileutils.rb
 find.rb

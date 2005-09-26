@@ -2545,6 +2545,7 @@ set_trace_func(obj, trace)
 {
     rb_event_hook_t *hook;
 
+    rb_secure(4);
     if (NIL_P(trace)) {
 	trace_func = 0;
 	rb_remove_event_hook(call_trace_func);

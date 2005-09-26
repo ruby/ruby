@@ -1,3 +1,8 @@
+Mon Sep 26 22:32:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (set_trace_func): add rb_secure(4) to prevent adding
+	  tracing function.
+
 Sun Sep 25 12:05:10 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb: typo fixed.
@@ -36,6 +41,11 @@ Sat Sep 24 08:38:07 2005  Minero Aoki  <aamine@loveruby.net>
 	* test/fileutils/test_dryrun.rb: new file.
 
 	* test/fileutils/test_verbose.rb: new file.
+
+Sat Sep 24 02:40:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb: document update from James Edward Gray II
+	  <james@grayproductions.net>.  [ruby-core:05942]
 
 Thu Sep 22 23:36:24 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
