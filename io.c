@@ -3516,6 +3516,7 @@ rb_io_reopen(argc, argv, file)
     return file;
 }
 
+/* :nodoc: */
 static VALUE
 rb_io_init_copy(dest, io)
     VALUE dest, io;
@@ -3632,7 +3633,7 @@ rb_f_printf(argc, argv)
  *     ios.print(obj, ...)     => nil
  *  
  *  Writes the given object(s) to <em>ios</em>. The stream must be
- *  opened for writing. If the output record separator (<code>$\</code>)
+ *  opened for writing. If the output record separator (<code>$\\</code>)
  *  is not <code>nil</code>, it will be appended to the output. If no
  *  arguments are given, prints <code>$_</code>. Objects that aren't
  *  strings will be converted by calling their <code>to_s</code> method.
@@ -3688,7 +3689,7 @@ rb_io_print(argc, argv, out)
  *  Prints each object in turn to <code>$stdout</code>. If the output
  *  field separator (<code>$,</code>) is not +nil+, its
  *  contents will appear between each field. If the output record
- *  separator (<code>$\</code>) is not +nil+, it will be
+ *  separator (<code>$\\</code>) is not +nil+, it will be
  *  appended to the output. If no arguments are given, prints
  *  <code>$_</code>. Objects that aren't strings will be converted by
  *  calling their <code>to_s</code> method.
