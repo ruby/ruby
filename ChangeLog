@@ -1,3 +1,8 @@
+Wed Sep 28 03:23:35 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* rubysig.h: fixed build problem with --enable-pthread on platforms
+	  which don't have setitimer().
+
 Mon Sep 26 22:32:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* eval.c (set_trace_func): add rb_secure(4) to prevent adding
