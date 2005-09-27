@@ -1020,8 +1020,10 @@ read_buffered_data(ptr, len, f)
     if (n > len) n = len;
     return fread(ptr, 1, n, f);
 #else
-    for (n = 0; n < len && READ_DATA_PENDING(f); ++n) {
-        *ptr++ = getc(f);
+    int c;
+
+    for (n = 0; n < len && READ_DATA_PENDING(f) && (c = getc(f)) != EOF; ++n) {
+	*ptr++ = c;
     }
     return n;
 #endif
