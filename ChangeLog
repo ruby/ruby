@@ -1,3 +1,8 @@
+Wed Sep 28 03:16:41 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* rubysig.h: fixed build problem with --enable-pthread on platforms
+	  which don't have setitimer().
+
 Mon Sep 26 20:59:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* parse.y: changed to ANSI function style.
