@@ -55,13 +55,14 @@ class Module # :nodoc: all
     # in YAML.  See YAML::tag_class for detailed information on typing and
     # taguris.
     def yaml_as( tag, sc = true )
-        class_eval <<-"end;"
-            attr_accessor :taguri
+        verbose, $VERBOSE = $VERBOSE, nil
+        class_eval <<-"end;", __FILE__, __LINE__+1
+            attr_writer :taguri
             def taguri
                 if respond_to? :to_yaml_type
                     YAML::tagurize( to_yaml_type[1..-1] )
                 else
-                    return @taguri if @taguri
+                    return @taguri if defined?(@taguri) and @taguri
                     tag = #{ tag.dump }
                     if self.class.yaml_tag_subclasses? and self.class != YAML::tagged_classes[tag]
                         tag = "\#{ tag }:\#{ self.class.yaml_tag_class_name }"
@@ -72,6 +73,8 @@ class Module # :nodoc: all
             def self.yaml_tag_subclasses?; #{ sc ? 'true' : 'false' }; end
         end;
         YAML::tag_class tag, self
+    ensure
+        $VERBOSE = verbose
     end
     # Transforms the subclass name into a name suitable for display
     # in a subclassed tag.
