@@ -1,3 +1,12 @@
+Wed Sep 28 07:56:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/yaml/basenode.rb (YAML::BaseNode::match_segment): fix typo.
+	  [ruby-dev:27237], [ruby-core:05854]
+
+	* lib/yaml/tag.rb (Module#yaml_as): suppress warnings.
+
+	* lib/yaml/types.rb (YAML::PrivateType, YAML::DomainType): ditto.
+
 Wed Sep 28 03:16:41 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* rubysig.h: fixed build problem with --enable-pthread on platforms

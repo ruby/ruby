@@ -148,7 +148,7 @@ module YAML
             if pred
                 case pred
                 when /^\.=/
-                    pred = $'
+                    pred = $'   # '
                     match_nodes.reject! { |n|
                         n.last.value != pred
                     }
@@ -187,7 +187,7 @@ module YAML
                 v = @value.detect { |k,v| k.transform == key.first }
                 v[1] if v
             elsif Array === @value
-                @value.[]( *k )
+                @value.[]( *key )
             end
         end
 

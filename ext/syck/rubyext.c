@@ -76,6 +76,9 @@ SyckNode * rb_syck_bad_anchor_handler _((SyckParser *, char *));
 void rb_syck_output_handler _((SyckEmitter *, char *, long));
 void rb_syck_emitter_handler _((SyckEmitter *, st_data_t));
 int syck_parser_assign_io _((SyckParser *, VALUE));
+VALUE syck_scalar_alloc _((VALUE class));
+VALUE syck_seq_alloc _((VALUE class));
+VALUE syck_map_alloc _((VALUE class));
 
 struct parser_xtra {
     VALUE data;  /* Borrowed this idea from marshal.c to fix [ruby-core:8067] problem */
