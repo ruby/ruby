@@ -1215,16 +1215,16 @@ autoload_delete(VALUE mod, ID id)
     return (NODE *)load;
 }
 
-void
+VALUE
 rb_autoload_load(VALUE klass, ID id)
 {
     VALUE file;
     NODE *load = autoload_delete(klass, id);
 
     if (!load || !(file = load->nd_lit) || rb_provided(RSTRING(file)->ptr)) {
-	const_missing(klass, id);
+	return Qfalse;
     }
-    rb_require_safe(file, load->nd_nth);
+    return rb_require_safe(file, load->nd_nth);
 }
 
 static VALUE
@@ -1283,7 +1283,7 @@ rb_const_get_0(VALUE klass, ID id, int exclude, int recurse)
     while (tmp) {
 	while (RCLASS(tmp)->iv_tbl && st_lookup(RCLASS(tmp)->iv_tbl,id,&value)) {
 	    if (value == Qundef) {
-		rb_autoload_load(tmp, id);
+		if (!RTEST(rb_autoload_load(tmp, id))) break;
 		continue;
 	    }
 	    if (exclude && tmp == rb_cObject && klass != rb_cObject) {

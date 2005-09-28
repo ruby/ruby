@@ -531,7 +531,7 @@ VALUE rb_path2class(const char*);
 void rb_name_class(VALUE, ID);
 VALUE rb_class_name(VALUE);
 void rb_autoload(VALUE, ID, const char*);
-void rb_autoload_load(VALUE, ID);
+VALUE rb_autoload_load(VALUE, ID);
 VALUE rb_autoload_p(VALUE, ID);
 void rb_gc_mark_global_tbl(void);
 VALUE rb_f_trace_var(int, VALUE*);
