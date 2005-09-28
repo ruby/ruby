@@ -5846,7 +5846,7 @@ send_fcall(int argc, VALUE *argv, VALUE recv, int scope)
  *     obj.__send__(symbol [, args...])    => obj
  *  
  *  Invokes the method identified by _symbol_, passing it any
- *  arguments specified. You can use <code>__send__</code> if the name
+ *  arguments specified. You can use <code>\_\_send__</code> if the name
  *  +send+ clashes with an existing method in _obj_.  Raises an
  *  NoMethodError exception for private methods except when it is
  *  called in function call style.
