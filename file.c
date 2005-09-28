@@ -3304,6 +3304,7 @@ rb_stat_init(obj, fname)
     return Qnil;
 }
 
+/* :nodoc: */
 static VALUE
 rb_stat_init_copy(copy, orig)
     VALUE copy, orig;

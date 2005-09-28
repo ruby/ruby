@@ -198,6 +198,7 @@ num_sadded(x, name)
     return Qnil;		/* not reached */
 }
 
+/* :nodoc: */
 static VALUE
 num_init_copy(x, y)
     VALUE x, y;

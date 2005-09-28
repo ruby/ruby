@@ -1,8 +1,13 @@
-Wed Sep 28 23:41:34 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Wed Sep 28 23:42:15 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (apply2files): add prototype.
 
 	* file.c (rb_stat_inspect): constified.
+
+	* class.c (rb_mod_init_copy, rb_class_init_copy), file.c (rb_stat_init_copy),
+	  numeric.c (num_init_copy), object.c (rb_obj_init_copy, Init_Object),
+	  re.c (match_init_copy, rb_reg_init_copy), time.c (time_init_copy):
+	  undocumented.
 
 Wed Sep 28 23:09:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
