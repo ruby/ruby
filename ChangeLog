@@ -1,3 +1,7 @@
+Wed Sep 28 10:45:44 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/tcltklib.c: cannot compile with Tcl/Tk8.0.x [ruby-dev:27335]. 
+
 Wed Sep 28 07:56:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/yaml/basenode.rb (YAML::BaseNode::match_segment): fix typo.

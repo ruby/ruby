@@ -4,7 +4,7 @@
  *              Oct. 24, 1997   Y. Matsumoto
  */
 
-#define TCLTKLIB_RELEASE_DATE "2005-08-09"
+#define TCLTKLIB_RELEASE_DATE "2005-09-28"
 
 #include "ruby.h"
 #include "rubysig.h"
@@ -171,11 +171,11 @@ Tcl_GetVar2Ex(interp, name1, name2, flags)
 {
     Tcl_Obj *nameObj1, *nameObj2 = NULL, *retObj;
 
-    nameObj1 = Tcl_NewStringObj(name1, -1);
+    nameObj1 = Tcl_NewStringObj((char*)name1, -1);
     Tcl_IncrRefCount(nameObj1);
 
     if (name2) {
-        nameObj2 = Tcl_NewStringObj(name2, -1);
+        nameObj2 = Tcl_NewStringObj((char*)name2, -1);
         Tcl_IncrRefCount(nameObj2);
     }
 
@@ -197,14 +197,14 @@ Tcl_SetVar2Ex(interp, name1, name2, newValObj, flags)
     CONST char *name2;
     Tcl_Obj *newValObj;
     int flags;
-
+{
     Tcl_Obj *nameObj1, *nameObj2 = NULL, *retObj;
 
-    nameObj1 = Tcl_NewStringObj(name1, -1);
+    nameObj1 = Tcl_NewStringObj((char*)name1, -1);
     Tcl_IncrRefCount(nameObj1);
 
     if (name2) {
-        nameObj2 = Tcl_NewStringObj(name2, -1);
+        nameObj2 = Tcl_NewStringObj((char*)name2, -1);
         Tcl_IncrRefCount(nameObj2);
     }
 
@@ -5254,7 +5254,7 @@ get_obj_from_str(str)
     const char *s = StringValuePtr(str);
 
 #if TCL_MAJOR_VERSION == 8 && TCL_MINOR_VERSION == 0
-    return Tcl_NewStringObj(s, RSTRING(str)->len);
+    return Tcl_NewStringObj((char*)s, RSTRING(str)->len);
 #else /* TCL_VERSION >= 8.1 */
     VALUE enc = rb_attr_get(str, ID_at_enc);
 
