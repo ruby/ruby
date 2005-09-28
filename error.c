@@ -231,7 +231,7 @@ rb_check_type(VALUE x, int t)
 	    }
 	    type++;
 	}
-	rb_bug("unknown type 0x%x (%p given)", t, TYPE(x));
+	rb_bug("unknown type 0x%x (0x%x given)", t, TYPE(x));
     }
 }
 
