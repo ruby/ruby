@@ -66,6 +66,7 @@ module WEBrick
         req.parse(sock)
         req.script_name = (env["SCRIPT_NAME"] || File.expand_path($0)).dup
         req.path_info = (env["PATH_INFO"] || "").dup
+        req.query_string = env["QUERY_STRING"]
         req.user = env["REMOTE_USER"]
         res.request_method = req.request_method
         res.request_uri = req.request_uri

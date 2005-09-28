@@ -1,3 +1,11 @@
+Wed Sep 28 15:14:19 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/cgi.rb (WEBrick::CGI#start): req.query_string should
+	  refer the value of QUERY_STRING. [ruby-list:41186]
+
+	* lib/webrick/httprequest.rb (WEBrick::HTTPRequest#query_string=):
+	  add new method.
+
 Wed Sep 28 10:45:44 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: cannot compile with Tcl/Tk8.0.x
