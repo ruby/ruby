@@ -1,3 +1,8 @@
+Wed Sep 28 10:45:44 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tcltklib/tcltklib.c: cannot compile with Tcl/Tk8.0.x
+	  [ruby-dev:27335]. 
+
 Wed Sep 28 08:12:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (read_buffered_data): check if reached EOF.  fixed: [ruby-dev:27334]
