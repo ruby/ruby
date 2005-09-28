@@ -1837,7 +1837,7 @@ ev_const_get(cref, id, self)
 	if (NIL_P(klass)) return rb_const_get(CLASS_OF(self), id);
 	while (RCLASS(klass)->iv_tbl && st_lookup(RCLASS(klass)->iv_tbl, id, &result)) {
 	    if (result == Qundef) {
-		rb_autoload_load(klass, id);
+		if (!RTEST(rb_autoload_load(klass, id))) break;
 		continue;
 	    }
 	    return result;

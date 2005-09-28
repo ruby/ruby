@@ -449,7 +449,7 @@ VALUE rb_path2class _((const char*));
 void rb_name_class _((VALUE, ID));
 VALUE rb_class_name _((VALUE));
 void rb_autoload _((VALUE, ID, const char*));
-void rb_autoload_load _((VALUE, ID));
+VALUE rb_autoload_load _((VALUE, ID));
 VALUE rb_autoload_p _((VALUE, ID));
 void rb_gc_mark_global_tbl _((void));
 VALUE rb_f_trace_var _((int, VALUE*));

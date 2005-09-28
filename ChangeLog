@@ -1,3 +1,11 @@
+Thu Sep 29 00:57:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (ev_const_get), variable.c (rb_const_get_0): retry only when
+	  autoload succeeded.
+
+	* variable.c (rb_autoload_load): now return true if autoload
+	  succeeded.  fixed: [ruby-dev:27331]
+
 Wed Sep 28 23:42:15 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (apply2files): add prototype.
