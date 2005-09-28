@@ -1,3 +1,8 @@
+Thu Sep 29 07:22:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* evalc. (rb_f_send): underscores need to be escaped.
+	  fixed by Doug Kearns.  [ruby-core:06053]
+
 Thu Sep 29 00:57:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (ev_const_get), variable.c (rb_const_get_0): retry only when
