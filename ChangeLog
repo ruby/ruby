@@ -1,3 +1,7 @@
+Wed Sep 28 23:40:04 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_stat_inspect): constified.
+
 Wed Sep 28 15:12:28 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI#start): req.query_string should
@@ -8,7 +12,7 @@ Wed Sep 28 15:12:28 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 Wed Sep 28 10:45:44 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tk/tcltklib.c: cannot compile with Tcl/Tk8.0.x [ruby-dev:27335]. 
+	* ext/tk/tcltklib.c: cannot compile with Tcl/Tk8.0.x [ruby-dev:27335].
 
 Wed Sep 28 07:56:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
