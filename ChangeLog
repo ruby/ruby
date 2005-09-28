@@ -1,3 +1,8 @@
+Wed Sep 28 23:09:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb: document update from James Edward Gray II
+	  <james@grayproductions.net>.  [ruby-core:06027]
+
 Wed Sep 28 15:14:19 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/cgi.rb (WEBrick::CGI#start): req.query_string should

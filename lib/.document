@@ -18,6 +18,7 @@ erb.rb
 English.rb
 fileutils.rb
 find.rb
+forwardable.rb
 generator.rb
 logger.rb
 matrix.rb

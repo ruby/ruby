@@ -195,6 +195,7 @@ end
 #
 class SimpleDelegator<Delegator
 
+  # Pass in the _obj_ you would like to delegate method calls to.
   def initialize(obj)
     super
     @_sd_obj = obj
