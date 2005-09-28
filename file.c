@@ -75,9 +75,10 @@ VALUE rb_cFile;
 VALUE rb_mFileTest;
 static VALUE rb_cStat;
 
+static long apply2files _((void (*)(const char *, void *), VALUE, void *));
 static long
 apply2files(func, vargs, arg)
-    void (*func)();
+    void (*func)_((const char *, void *));
     VALUE vargs;
     void *arg;
 {
@@ -178,6 +179,20 @@ rb_stat_cmp(self, other)
     }
     return Qnil;
 }
+
+static VALUE rb_stat_dev _((VALUE));
+static VALUE rb_stat_ino _((VALUE));
+static VALUE rb_stat_mode _((VALUE));
+static VALUE rb_stat_nlink _((VALUE));
+static VALUE rb_stat_uid _((VALUE));
+static VALUE rb_stat_gid _((VALUE));
+static VALUE rb_stat_rdev _((VALUE));
+static VALUE rb_stat_size _((VALUE));
+static VALUE rb_stat_blksize _((VALUE));
+static VALUE rb_stat_blocks _((VALUE));
+static VALUE rb_stat_atime _((VALUE));
+static VALUE rb_stat_mtime _((VALUE));
+static VALUE rb_stat_ctime _((VALUE));
 
 /*
  *  call-seq:
@@ -547,23 +562,23 @@ rb_stat_inspect(self)
 {
     VALUE str;
     int i;
-    static struct {
-        char *name;
-        VALUE (*func)();
+    static const struct {
+	const char *name;
+	VALUE (*func)_((VALUE));
     } member[] = {
-        {"dev",     rb_stat_dev},
-        {"ino",     rb_stat_ino},
-        {"mode",    rb_stat_mode},
-        {"nlink",   rb_stat_nlink},
-        {"uid",     rb_stat_uid},
-        {"gid",     rb_stat_gid},
-        {"rdev",    rb_stat_rdev},
-        {"size",    rb_stat_size},
-        {"blksize", rb_stat_blksize},
-        {"blocks",  rb_stat_blocks},
-        {"atime",   rb_stat_atime},
-        {"mtime",   rb_stat_mtime},
-        {"ctime",   rb_stat_ctime},
+	{"dev",	    rb_stat_dev},
+	{"ino",	    rb_stat_ino},
+	{"mode",    rb_stat_mode},
+	{"nlink",   rb_stat_nlink},
+	{"uid",	    rb_stat_uid},
+	{"gid",	    rb_stat_gid},
+	{"rdev",    rb_stat_rdev},
+	{"size",    rb_stat_size},
+	{"blksize", rb_stat_blksize},
+	{"blocks",  rb_stat_blocks},
+	{"atime",   rb_stat_atime},
+	{"mtime",   rb_stat_mtime},
+	{"ctime",   rb_stat_ctime},
     };
 
     str = rb_str_buf_new2("#<");
@@ -1545,12 +1560,13 @@ rb_file_ctime(obj)
     return rb_time_new(st.st_ctime, 0);
 }
 
+static void chmod_internal _((const char *, void *));
 static void
 chmod_internal(path, mode)
     const char *path;
-    int mode;
+    void *mode;
 {
-    if (chmod(path, mode) < 0)
+    if (chmod(path, (int)mode) < 0)
 	rb_sys_fail(path);
 }
 
@@ -1622,12 +1638,13 @@ rb_file_chmod(obj, vmode)
 }
 
 #if defined(HAVE_LCHMOD)
+static void lchmod_internal _((const char *, void *));
 static void
 lchmod_internal(path, mode)
     const char *path;
-    int mode;
+    void *mode;
 {
-    if (lchmod(path, mode) < 0)
+    if (lchmod(path, (int)mode) < 0)
 	rb_sys_fail(path);
 }
 
@@ -1823,13 +1840,16 @@ rb_file_s_lchown(argc, argv)
 
 struct timeval rb_time_timeval();
 
+static void utime_internal _((const char *, void *));
+
 #if defined(HAVE_UTIMES) && !defined(__CHECKER__)
 
 static void
-utime_internal(path, tvp)
-    char *path;
-    struct timeval tvp[];
+utime_internal(path, arg)
+    const char *path;
+    void *arg;
 {
+    struct timeval *tvp = arg;
     if (utimes(path, tvp) < 0)
 	rb_sys_fail(path);
 }
@@ -1871,10 +1891,11 @@ struct utimbuf {
 #endif
 
 static void
-utime_internal(path, utp)
+utime_internal(path, arg)
     const char *path;
-    struct utimbuf *utp;
+    void *arg;
 {
+    struct utimbuf *utp = arg;
     if (utime(path, utp) < 0)
 	rb_sys_fail(path);
 }
@@ -2012,9 +2033,11 @@ rb_file_s_readlink(klass, path)
 #endif
 }
 
+static void unlink_internal _((const char *, void *));
 static void
-unlink_internal(path)
+unlink_internal(path, arg)
     const char *path;
+    void *arg;
 {
     if (unlink(path) < 0)
 	rb_sys_fail(path);
@@ -2625,8 +2648,8 @@ rb_file_s_dirname(klass, fname)
     name = StringValueCStr(fname);
     root = skiproot(name);
 #ifdef DOSISH_UNC
-    if (root > name + 2 && isdirsep(*name))
-	name = root - 2;
+    if (root > name + 1 && isdirsep(*name))
+	root = skipprefix(name = root - 2);
 #else
     if (root > name + 1)
 	name = root - 1;
@@ -2915,23 +2938,23 @@ rb_thread_flock(fd, op, fptr)
     OpenFile *fptr;
 {
     if (rb_thread_alone() || (op & LOCK_NB)) {
-        int ret;
-        TRAP_BEG;
+	int ret;
+	TRAP_BEG;
 	ret = flock(fd, op);
-        TRAP_END;
+	TRAP_END;
 	return ret;
     }
     op |= LOCK_NB;
     while (flock(fd, op) < 0) {
 	switch (errno) {
-          case EAGAIN:
-          case EACCES:
+	  case EAGAIN:
+	  case EACCES:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
 	  case EWOULDBLOCK:
 #endif
 	    rb_thread_polling();	/* busy wait */
 	    rb_io_check_closed(fptr);
-            continue;
+	    continue;
 	  default:
 	    return -1;
 	}
@@ -2988,19 +3011,19 @@ rb_file_flock(obj, operation)
     }
   retry:
     if (flock(fileno(fptr->f), op) < 0) {
-        switch (errno) {
-          case EAGAIN:
-          case EACCES:
+	switch (errno) {
+	  case EAGAIN:
+	  case EACCES:
 #if defined(EWOULDBLOCK) && EWOULDBLOCK != EAGAIN
-          case EWOULDBLOCK:
+	  case EWOULDBLOCK:
 #endif
-              return Qfalse;
+	      return Qfalse;
 	  case EINTR:
 #if defined(ERESTART)
 	  case ERESTART:
 #endif
 	    goto retry;
-        }
+	}
 	rb_sys_fail(fptr->path);
     }
 #endif
@@ -3206,7 +3229,7 @@ rb_f_test(argc, argv)
 	  case '-':
 	    if (st1.st_dev == st2.st_dev && st1.st_ino == st2.st_ino)
 		return Qtrue;
-            return Qfalse;
+	    return Qfalse;
 
 	  case '=':
 	    if (st1.st_mtime == st2.st_mtime) return Qtrue;
@@ -3219,7 +3242,7 @@ rb_f_test(argc, argv)
 	  case '<':
 	    if (st1.st_mtime < st2.st_mtime) return Qtrue;
 	    return Qfalse;
-        }
+	}
     }
     /* unknown command */
     rb_raise(rb_eArgError, "unknown command ?%c", cmd);

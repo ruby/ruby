@@ -1,3 +1,9 @@
+Wed Sep 28 23:41:34 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (apply2files): add prototype.
+
+	* file.c (rb_stat_inspect): constified.
+
 Wed Sep 28 23:09:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb: document update from James Edward Gray II
@@ -14,7 +20,7 @@ Wed Sep 28 15:14:19 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 Wed Sep 28 10:45:44 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tcltklib/tcltklib.c: cannot compile with Tcl/Tk8.0.x
-	  [ruby-dev:27335]. 
+	  [ruby-dev:27335].
 
 Wed Sep 28 08:12:18 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
