@@ -426,7 +426,7 @@ rb_dlptr_s_to_ptr(VALUE self, VALUE val)
 #else
 	fp = fptr->f;
 #endif
-	return rb_dlptr_new(fp, sizeof(FILE), NULL);
+	return rb_dlptr_new(fp, 0, NULL);
     }
     else if( rb_obj_is_kind_of(val, rb_cString) == Qtrue ){
         char *ptr = StringValuePtr(val);
