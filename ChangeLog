@@ -1,3 +1,8 @@
+Thu Sep 29 10:26:18 2005  Tanaka Akira  <akr@m17n.org>
+
+	* ext/dl/dl.c (rb_io_to_ptr): abolish sizeof(FILE).
+	  [ruby-dev:27317]
+
 Thu Sep 29 07:22:05 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* evalc. (rb_f_send): underscores need to be escaped.
