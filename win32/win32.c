@@ -61,7 +61,7 @@
 #endif
 
 #if HAVE_WSAWAITFORMULTIPLEEVENTS
-# define USE_INTERRUPT_WINSOCK
+# define USE_INTERRUPT_WINSOCK 1
 #endif
 
 #if USE_INTERRUPT_WINSOCK
@@ -2007,21 +2007,34 @@ is_readable_console(SOCKET sock) /* call this for console only */
     return ret;
 }
 
+static void catch_interrupt(void);
 static long 
 do_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
             struct timeval *timeout)
 {
     long r = 0;
 
-    if (nfds == 0 && timeout) {
-	Sleep(timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
+    if (nfds == 0) {
+	if (timeout)
+	    rb_w32_sleep(timeout->tv_sec * 1000 + timeout->tv_usec / 1000);
+	else
+	    rb_w32_sleep(INFINITE);
     }
     else {
-	r = select(nfds, rd, wr, ex, timeout);
-	if (r == SOCKET_ERROR) {
-	    errno = map_errno(WSAGetLastError());
-	    r = -1;
-	}
+#if !USE_INTERRUPT_WINSOCK
+	int trap_immediate = rb_trap_immediate;
+#endif	/* !USE_INTERRUPT_WINSOCK */
+	RUBY_CRITICAL(
+	    r = select(nfds, rd, wr, ex, timeout);
+	    if (r == SOCKET_ERROR) {
+		errno = map_errno(WSAGetLastError());
+		r = -1;
+	    }
+	);
+#if !USE_INTERRUPT_WINSOCK
+	rb_trap_immediate = trap_immediate;
+	catch_interrupt();
+#endif	/* !USE_INTERRUPT_WINSOCK */
     }
 
     return r;
@@ -2051,8 +2064,9 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     fd_set cons_rd;
     fd_set else_rd;
     fd_set else_wr;
-#ifdef USE_INTERRUPT_WINSOCK
+#if USE_INTERRUPT_WINSOCK
     fd_set trap;
+    int ret;
 #endif /* USE_INTERRUPT_WINSOCK */
     int nonsock = 0;
 
@@ -2099,45 +2113,54 @@ rb_w32_select(int nfds, fd_set *rd, fd_set *wr, fd_set *ex,
     ex = &trap;
 #endif /* USE_INTERRUPT_WINSOCK */
 
-    RUBY_CRITICAL(
-	if (nonsock) {
-	    struct timeval rest;
-	    struct timeval wait;
-	    struct timeval zero;
-	    if (timeout) rest = *timeout;
-	    wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
-	    zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
-	    do {
-		// modifying {else,pipe,cons}_rd is safe because
-		// if they are modified, function returns immediately.
-		extract_fd(&else_rd, &pipe_rd, is_readable_pipe);
-		extract_fd(&else_rd, &cons_rd, is_readable_console);
+    if (nonsock) {
+	struct timeval rest;
+	struct timeval wait;
+	struct timeval zero;
+	if (timeout) rest = *timeout;
+	wait.tv_sec = 0; wait.tv_usec = 10 * 1000; // 10ms
+	zero.tv_sec = 0; zero.tv_usec = 0;         //  0ms
+	do {
+	    // modifying {else,pipe,cons}_rd is safe because
+	    // if they are modified, function returns immediately.
+	    extract_fd(&else_rd, &pipe_rd, is_readable_pipe);
+	    extract_fd(&else_rd, &cons_rd, is_readable_console);
 
-		if (else_rd.fd_count || else_wr.fd_count) {
-		    r = do_select(nfds, rd, wr, ex, &zero); // polling
-		    if (r < 0) break; // XXX: should I ignore error and return signaled handles?
-		    r += extract_fd(rd, &else_rd, NULL); // move all
-		    r += extract_fd(wr, &else_wr, NULL); // move all
-		    break;
-		}
-		else {
-		    fd_set orig_rd;
-		    fd_set orig_wr;
-		    fd_set orig_ex;
-		    if (rd) orig_rd = *rd;
-		    if (wr) orig_wr = *wr;
-		    if (ex) orig_ex = *ex;
-		    r = do_select(nfds, rd, wr, ex, &wait);
-		    if (r != 0) break; // signaled or error
-		    if (rd) *rd = orig_rd;
-		    if (wr) *wr = orig_wr;
-		    if (ex) *ex = orig_ex;
-		}
-	    } while (!timeout || subst(&rest, &wait));
-	}
-	else
-	    r = do_select(nfds, rd, wr, ex, timeout);
-    );
+	    if (else_rd.fd_count || else_wr.fd_count) {
+		r = do_select(nfds, rd, wr, ex, &zero); // polling
+		if (r < 0) break; // XXX: should I ignore error and return signaled handles?
+		r += extract_fd(rd, &else_rd, NULL); // move all
+		r += extract_fd(wr, &else_wr, NULL); // move all
+		break;
+	    }
+	    else {
+		fd_set orig_rd;
+		fd_set orig_wr;
+		fd_set orig_ex;
+		if (rd) orig_rd = *rd;
+		if (wr) orig_wr = *wr;
+		if (ex) orig_ex = *ex;
+		r = do_select(nfds, rd, wr, ex, &wait);
+		if (r != 0) break; // signaled or error
+		if (rd) *rd = orig_rd;
+		if (wr) *wr = orig_wr;
+		if (ex) *ex = orig_ex;
+	    }
+	} while (!timeout || subst(&rest, &wait));
+    }
+    else
+	r = do_select(nfds, rd, wr, ex, timeout);
+
+#if USE_INTERRUPT_WINSOCK
+    RUBY_CRITICAL(ret = __WSAFDIsSet((SOCKET)interrupted_event, ex));
+    if (ret) {
+	// In this case, we must restore all FDs. But this is only a test
+	// code, so we think about that later.
+	errno = EINTR;
+	r = -1;
+    }
+#endif /* USE_INTERRUPT_WINSOCK */
+
     return r;
 }
 
