@@ -1934,25 +1934,6 @@ rb_big_abs(VALUE x)
     return x;
 }
 
-VALUE
-rb_big_rand(VALUE max, double *rand_buf)
-{
-    VALUE v;
-    long len = RBIGNUM(max)->len;
-
-    if (BIGZEROP(max)) {
-	return rb_float_new(rand_buf[0]);
-    }
-    v = bignew(len,1);
-    len--;
-    BDIGITS(v)[len] = BDIGITS(max)[len] * rand_buf[len];    
-    while (len--) {
-	BDIGITS(v)[len] = ((BDIGIT)~0) * rand_buf[len];
-    }
-
-    return v;
-}
-
 /*
  *  call-seq:
  *     big.size -> integer

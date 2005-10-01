@@ -1,3 +1,7 @@
+Sat Oct  1 12:57:02 2005  Tanaka Akira  <akr@m17n.org>
+
+	* bignum.c (rb_big_rand): removed.  [ruby-dev:25405]
+
 Sat Oct  1 01:46:51 2005  Tanaka Akira  <akr@m17n.org>
 
 	* lib/open-uri.rb (OpenURI.open_loop): prohibit multiple proxy
