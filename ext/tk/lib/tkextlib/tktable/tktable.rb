@@ -360,16 +360,16 @@ class Tk::TkTable
   end
 
   def border_mark(x, y)
-    simplelist(tk_send('scan', 'mark', x, y))
+    simplelist(tk_send('border', 'mark', x, y))
   end
   def border_mark_row(x, y)
-    tk_send('scan', 'mark', x, y, 'row')
+    tk_send('border', 'mark', x, y, 'row')
   end
   def border_mark_col(x, y)
-    tk_send('scan', 'mark', x, y, 'col')
+    tk_send('border', 'mark', x, y, 'col')
   end
   def border_dragto(x, y)
-    tk_send('scan', 'dragto', x, y)
+    tk_send('border', 'dragto', x, y)
   end
 
   def clear_cache(first=None, last=None)
