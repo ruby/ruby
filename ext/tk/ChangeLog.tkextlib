@@ -1,3 +1,8 @@
+2005-10-04  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/tktable/tktable.rb: border_* instance methods
+	  don't call 'border' subcommands.
+
 2005-08-10  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/blt/component.rb: didn't check
