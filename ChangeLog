@@ -1,3 +1,8 @@
+Wed Oct 05 04:42:38 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/xmlrpc/server.rb (XMLRPC::Server#initialize): should mount the
+	  servlet on "/".
+
 Wed Oct 05 04:06:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/xmlrpc/server.rb (XMLRPC::Server#serve): delete wrong call
