@@ -1,3 +1,8 @@
+Wed Oct 05 04:06:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/xmlrpc/server.rb (XMLRPC::Server#serve): delete wrong call
+	  of "join".
+
 Sat Oct  1 23:55:24 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (do_select, rb_w32_select): brush up.
