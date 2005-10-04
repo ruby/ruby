@@ -645,7 +645,7 @@ class Server < WEBrickServlet
     end
     trap(signal) { @server.shutdown }
 
-    @server.start.join
+    @server.start
   end
   
   def shutdown
