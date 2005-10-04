@@ -634,7 +634,7 @@ class Server < WEBrickServlet
     require 'webrick'
     @server = WEBrick::HTTPServer.new(:Port => port, :BindAddress => host, :MaxClients => maxConnections, 
                                       :Logger => WEBrick::Log.new(stdlog))
-    @server.mount("/RPC2", self)
+    @server.mount("/", self)
   end
   
   def serve
