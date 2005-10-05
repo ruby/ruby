@@ -2039,18 +2039,8 @@ fix_quo(VALUE x, VALUE y)
     }
 }
 
-/*
- * call-seq:
- *   fix / numeric      =>  numeric_result
- *   fix.div(numeric)   =>  numeric_result
- *
- * Performs division: the class of the resulting object depends on
- * the class of <code>numeric</code> and on the magnitude of the 
- * result.
- */
-
 static VALUE
-fix_div(VALUE x, VALUE y)
+fix_divide(VALUE x, VALUE y, int flo)
 {
     if (FIXNUM_P(y)) {
 	long div;
@@ -2063,10 +2053,44 @@ fix_div(VALUE x, VALUE y)
 	x = rb_int2big(FIX2LONG(x));
 	return rb_big_div(x, y);
       case T_FLOAT:
-	return rb_float_new((double)FIX2LONG(x) / RFLOAT(y)->value);	
+	if (flo) {
+	    return rb_float_new((double)FIX2LONG(x) / RFLOAT(y)->value);
+	}
+	else {
+	    long div = (double)FIX2LONG(x) / RFLOAT(y)->value;
+	    return LONG2NUM(div);
+	}
       default:
 	return rb_num_coerce_bin(x, y);
     }
+}
+
+/*
+ * call-seq:
+ *   fix / numeric      =>  numeric_result
+ *
+ * Performs division: the class of the resulting object depends on
+ * the class of <code>numeric</code> and on the magnitude of the 
+ * result.
+ */
+
+static VALUE
+fix_div(VALUE x, VALUE y)
+{
+    return fix_divide(x, y, Qtrue);
+}
+
+/*
+ * call-seq:
+ *   fix.div(numeric)   =>  numeric_result
+ *
+ * Performs integer division: returns integer value.
+ */
+
+static VALUE
+fix_idiv(VALUE x, VALUE y)
+{
+    return fix_divide(x, y, Qfalse);
 }
 
 /*
@@ -2824,7 +2848,7 @@ Init_Numeric(void)
     rb_define_method(rb_cFixnum, "-", fix_minus, 1);
     rb_define_method(rb_cFixnum, "*", fix_mul, 1);
     rb_define_method(rb_cFixnum, "/", fix_div, 1);
-    rb_define_method(rb_cFixnum, "div", fix_div, 1);
+    rb_define_method(rb_cFixnum, "div", fix_idiv, 1);
     rb_define_method(rb_cFixnum, "%", fix_mod, 1);
     rb_define_method(rb_cFixnum, "modulo", fix_mod, 1);
     rb_define_method(rb_cFixnum, "divmod", fix_divmod, 1);

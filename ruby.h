@@ -479,9 +479,9 @@ struct RBignum {
 #define OBJ_FROZEN(x) FL_TEST((x), FL_FREEZE)
 #define OBJ_FREEZE(x) FL_SET((x), FL_FREEZE)
 
-#define ALLOC_N(type,n) (type*)xmalloc(sizeof(type)*(n))
+#define ALLOC_N(type,n) (type*)xmalloc2((n),sizeof(type))
 #define ALLOC(type) (type*)xmalloc(sizeof(type))
-#define REALLOC_N(var,type,n) (var)=(type*)xrealloc((char*)(var),sizeof(type)*(n))
+#define REALLOC_N(var,type,n) (var)=(type*)xrealloc2((char*)(var),(n),sizeof(type))
 
 #define ALLOCA_N(type,n) (type*)alloca(sizeof(type)*(n))
 

@@ -11,6 +11,7 @@ require 'yaml/error'
 require 'yaml/syck'
 require 'yaml/tag'
 require 'yaml/stream'
+require 'yaml/constants'
 
 # == YAML
 #

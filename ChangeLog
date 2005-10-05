@@ -1,12 +1,21 @@
-Wed Oct 05 04:42:38 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Thu Oct  6 01:02:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* range.c (rb_range_beg_len): should return Qfalse for non-range
+	  object.
+
+Wed Oct  5 04:42:38 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/xmlrpc/server.rb (XMLRPC::Server#initialize): should mount the
 	  servlet on "/".
 
-Wed Oct 05 04:06:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+Wed Oct  5 04:06:49 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/xmlrpc/server.rb (XMLRPC::Server#serve): delete wrong call
 	  of "join".
+
+Mon Oct  3 00:04:00 2005  Kazuhiro NISHIYAMA  <zn@mbf.nifty.com>
+
+	* pack.c (EXTEND16): [ruby-dev:27383]
 
 Sat Oct  1 23:55:24 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -73,6 +82,11 @@ Wed Sep 28 03:16:41 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 	* rubysig.h: fixed build problem with --enable-pthread on platforms
 	  which don't have setitimer().
 
+Mon Sep 26 22:32:13 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (set_trace_func): add rb_secure(4) to prevent adding
+	  tracing function.
+
 Mon Sep 26 20:59:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* parse.y: changed to ANSI function style.
@@ -132,6 +146,7 @@ Sat Sep 24 11:44:28 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/net/http/test_http.rb: new file.
 
+>>>>>>> 1.4662
 Sat Sep 24 08:54:05 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (cd): no longer accept :noop option, related
@@ -193,6 +208,17 @@ Sat Sep 24 06:35:15 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/ripper/lib/ripper/sexp.rb: ditto.
 
+Sat Sep 24 02:40:20 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/delegate.rb: document update from James Edward Gray II
+	  <james@grayproductions.net>.  [ruby-core:05942]
+
+Sat Sep 24 02:05:51 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* process.c (proc_daemon): should restrict execution on levels
+	  higher than $SAFE=2.  suggested by URABE Shyouhei
+	  <shyouhei@ice.uec.ac.jp>.
+
 Fri Sep 23 20:10:35 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/ripper/tools/generate.rb, ext/ripper/tools/preproc.rb: StringIO
@@ -202,6 +228,11 @@ Fri Sep 23 17:36:48 2005  Masaki Suketa  <masaki.suketa@nifty.ne.jp>
 
 	* ext/win32ole/win32ole.c: avoid core dump with WIN32OLE_EVENT.
 	  [ruby-dev:27133]
+
+Fri Sep 23 16:27:39 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/forwardable.rb: replaced by new implementation from
+	  <Daniel.Berger@qwest.com>.  [ruby-core:05899]
 
 Fri Sep 23 07:07:47 2005  Minero Aoki  <aamine@loveruby.net>
 
@@ -304,6 +335,16 @@ Wed Sep 21 07:43:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* lib/optparse.rb (default_argv, Arguable#options): defaults strings
 	  to be parsed to Arguable instance.
 
+Wed Sep 21 02:44:09 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* file.c (path_check_0): disallow sticky world writable directory
+	  in PATH (and $LOAD_PATH).  [ruby-dev:27226]
+
+Wed Sep 21 00:32:22 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* numeric.c (fix_idiv): 1.div(1.0) should return integer value.
+	  [ruby-dev:27235]
+
 Tue Sep 20 22:25:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/io/wait/lib/nonblock.rb: disable on platforms non-blocking flag
@@ -315,6 +356,21 @@ Tue Sep 20 18:23:04 2005  Tanaka Akira  <akr@m17n.org>
 
 	* eval.c (thread_mark): mark th->last_status.  [ruby-dev:27179]
 
+Tue Sep 20 18:20:33 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/yaml.rb: require 'yaml/constants'.  [ruby-core:5776]
+
+Tue Sep 20 17:48:34 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/xmlrpc/client.rb (XMLRPC::Client::do_rpc): add charset
+	  information to content-type header.[ruby-core:5127]
+
+	* lib/xmlrpc/server.rb (CGIServer::serve): ditto.
+
+	* lib/xmlrpc/server.rb (ModRubyServer::serve): ditto.
+
+	* lib/xmlrpc/server.rb (WEBrickServlet::service): ditto.
+
 Tue Sep 20 17:26:42 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* test/webrick/test_cgi.rb: set ENV["PATH"] to CGIEnvPath on
@@ -325,6 +381,12 @@ Tue Sep 20 17:14:10 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* io.c: PIPE_BUF is not defined in BeOS. use _POSIX_PIPE_BUF instead.
 	  [ruby-dev:27185]
+
+Tue Sep 20 17:10:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* test/dbm/test_dbm.rb (TestDBM::test_s_open_error): remove
+	  test_s_open_error test to detect duplicate open.
+	  [ruby-dev:27202]
 
 Tue Sep 20 15:39:40 2005  why the lucky stiff  <why@ruby-lang.org>
 
@@ -347,6 +409,12 @@ Tue Sep 20 05:48:26 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	* test/xmlrpc/test_webrick_server.rb (setup_http_server):
 	  should not include 'webrick/https' unless 'use_ssl' because
 	  it fails where openssl is not installed.
+
+Tue Sep 20 01:24:45 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (splat_value): use to_a to splat non Array object.
+
+	* object.c (nil_to_a): remove nil.to_a.  [experimental]
 
 Tue Sep 20 01:01:41 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 

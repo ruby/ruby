@@ -449,9 +449,9 @@ rb_range_beg_len(VALUE range, long *begp, long *lenp, long len, int err)
     }
     else {
 	b = rb_check_to_integer(range, "begin");
-	if (NIL_P(b)) return Qnil;
+	if (NIL_P(b)) return Qfalse;
 	e = rb_check_to_integer(range, "end");
-	if (NIL_P(e)) return Qnil;
+	if (NIL_P(e)) return Qfalse;
 	excl = RTEST(rb_funcall(range, rb_intern("exclude_end?"), 0));
     }
     beg = NUM2LONG(b);

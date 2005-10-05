@@ -729,21 +729,6 @@ nil_to_s(VALUE obj)
 
 /*
  *  call-seq:
- *     nil.to_a    => []
- *  
- *  Always returns an empty array.
- *     
- *     nil.to_a   #=> []
- */
-
-static VALUE
-nil_to_a(VALUE obj)
-{
-    return rb_ary_new2(0);
-}
-
-/*
- *  call-seq:
  *    nil.inspect  => "nil"
  *
  *  Always returns the string "nil".
@@ -2448,7 +2433,6 @@ Init_Object(void)
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
-    rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
     rb_define_method(rb_cNilClass, "&", false_and, 1);
     rb_define_method(rb_cNilClass, "|", false_or, 1);

@@ -42,13 +42,17 @@
 #endif
 
 #define xmalloc ruby_xmalloc
+#define xmalloc2 ruby_xmalloc2
 #define xcalloc ruby_xcalloc
 #define xrealloc ruby_xrealloc
+#define xrealloc2 ruby_xrealloc2
 #define xfree ruby_xfree
 
 void *xmalloc(long);
+void *xmalloc2(long,long);
 void *xcalloc(long,long);
 void *xrealloc(void*,long);
+void *xrealloc2(void*,long,long);
 void xfree(void*);
 
 #if SIZEOF_LONG_LONG > 0

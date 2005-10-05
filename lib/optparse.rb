@@ -352,7 +352,7 @@ class OptionParser
     #    : (({block}))
     #      (({yields})) at semi-error condition, instead of raises exception.
     #
-    def conv_arg(arg, val = nil)
+    def conv_arg(arg, val = [])
       if block
         if conv
           val = conv.call(*val)

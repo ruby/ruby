@@ -2756,6 +2756,7 @@ proc_daemon(int argc, VALUE *argv)
     VALUE nochdir, noclose;
     int n;
 
+    rb_secure(2);
     rb_scan_args(argc, argv, "02", &nochdir, &noclose);
 
 #if defined(HAVE_DAEMON)

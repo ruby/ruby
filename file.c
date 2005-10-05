@@ -3840,7 +3840,7 @@ is_absolute_path(const char *path)
 
 #ifndef DOSISH
 static int
-path_check_1(VALUE path)
+path_check_0(VALUE path, int loadpath)
 {
     struct stat st;
     char *p0 = StringValueCStr(path);
@@ -3855,7 +3855,7 @@ path_check_1(VALUE path)
 
 	rb_str_cat2(newpath, "/");
 	rb_str_cat2(newpath, p0);
-	return path_check_1(newpath);
+	return path_check_0(newpath, loadpath);
     }
     for (;;) {
 #ifndef S_IWOTH
@@ -3863,7 +3863,7 @@ path_check_1(VALUE path)
 #endif
 	if (stat(p0, &st) == 0 && S_ISDIR(st.st_mode) && (st.st_mode & S_IWOTH)
 #ifdef S_ISVTX
-	    && !(st.st_mode & S_ISVTX)
+	    && (loadpath || !(st.st_mode & S_ISVTX))
 #endif
 	    && !access(p0, W_OK)) {
 	    rb_warn("Insecure world writable dir %s, mode 0%o", p0, st.st_mode);
@@ -3878,6 +3878,17 @@ path_check_1(VALUE path)
     }
 }
 #endif
+
+static int
+fpath_check(path)
+    char *path;
+{
+#ifndef DOSISH
+    return path_check_0(rb_str_new2(path), Qfalse);
+#else
+    return 1;
+#endif
+}
 
 int
 rb_path_check(const char *path)
@@ -3894,7 +3905,7 @@ rb_path_check(const char *path)
     if (!p) p = pend;
 
     for (;;) {
-	if (!path_check_1(rb_str_new(p0, p - p0))) {
+	if (!path_check_0(rb_str_new(p0, p - p0), Qtrue)) {
 	    return 0;		/* not safe */
 	}
 	p0 = p + 1;
@@ -4001,7 +4012,7 @@ rb_find_file(VALUE path)
 
 #if defined(__MACOS__) || defined(riscos)
     if (is_macos_native_path(f)) {
-	if (rb_safe_level() >= 1 && !rb_path_check(f)) {
+	if (rb_safe_level() >= 1 && !fpath_check(f)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
 	if (file_load_ok(f)) return path;
@@ -4009,7 +4020,7 @@ rb_find_file(VALUE path)
 #endif
 
     if (is_absolute_path(f)) {
-	if (rb_safe_level() >= 1 && !rb_path_check(f)) {
+	if (rb_safe_level() >= 1 && !fpath_check(f)) {
 	    rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
 	}
 	if (file_load_ok(f)) return path;
@@ -4050,7 +4061,7 @@ rb_find_file(VALUE path)
 	return 0;		/* no path, no load */
     }
     f = dln_find_file(f, lpath);
-    if (rb_safe_level() >= 1 && !rb_path_check(f)) {
+    if (rb_safe_level() >= 1 && !fpath_check(f)) {
 	rb_raise(rb_eSecurityError, "loading from unsafe file %s", f);
     }
     if (file_load_ok(f)) {

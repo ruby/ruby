@@ -23,14 +23,14 @@ module WEBrick_Testing
     }
 
     Timeout.timeout(5) {
-      nil until @__started # wait until the server is ready
+      Thread.pass until @__started # wait until the server is ready
     }
   end
 
   def stop_server
     Timeout.timeout(5) {
       @__server.shutdown
-      nil while @__started # wait until the server is down
+      Thread.pass while @__started # wait until the server is down
     }
     @__server = nil
   end

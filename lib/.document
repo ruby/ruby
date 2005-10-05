@@ -14,8 +14,11 @@ cgi
 cgi.rb
 complex.rb
 date.rb
+delegate.rb
+erb.rb
 fileutils.rb
 find.rb
+forwardable.rb
 generator.rb
 logger.rb
 matrix.rb

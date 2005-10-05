@@ -2464,6 +2464,7 @@ set_trace_func(VALUE obj, VALUE trace)
 {
     rb_event_hook_t *hook;
 
+    rb_secure(4);
     if (NIL_P(trace)) {
 	trace_func = 0;
 	rb_remove_event_hook(call_trace_func);
@@ -2644,11 +2645,7 @@ avalue_splat(VALUE v)
 static VALUE
 splat_value(VALUE v)
 {
-    VALUE tmp = rb_check_array_type(v);
-
-    if (NIL_P(tmp)) v = rb_ary_new3(1, v);
-    else v = tmp;
-    return rb_values_from_ary(v);
+    return rb_values_from_ary(rb_convert_type(v, T_ARRAY, "Array", "to_a"));
 }
 
 static VALUE

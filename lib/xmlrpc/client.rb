@@ -500,7 +500,7 @@ module XMLRPC
     def do_rpc(request, async=false)
       header = {  
        "User-Agent"     =>  USER_AGENT,
-       "Content-Type"   => "text/xml",
+       "Content-Type"   => "text/xml; charset=utf-8",
        "Content-Length" => request.size.to_s, 
        "Connection"     => (async ? "close" : "keep-alive")
       }
