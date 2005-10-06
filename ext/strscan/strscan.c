@@ -176,7 +176,6 @@ strscan_free(p)
     struct strscanner *p;
 {
     re_free_registers(&(p->regs));
-    memset(p, sizeof(struct strscanner), 0);
     free(p);
 }
 

@@ -1,3 +1,9 @@
+Thu Oct  6 20:12:16 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c (strscan_free): remove useless code.
+	  [ruby-dev:26368] [ruby-dev:27389]
+	  (backported from trunk, rev 1.22)
+
 Wed Oct 05 04:42:38 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/xmlrpc/server.rb (XMLRPC::Server#initialize): should mount the
