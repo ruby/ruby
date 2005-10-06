@@ -1,3 +1,8 @@
+Thu Oct  6 20:10:38 2005  Minero Aoki  <aamine@loveruby.net>
+
+	* ext/strscan/strscan.c (strscan_free): remove useless code.
+	  [ruby-dev:26368] [ruby-dev:27389]
+
 Thu Oct  6 01:02:19 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* range.c (rb_range_beg_len): should return Qfalse for non-range

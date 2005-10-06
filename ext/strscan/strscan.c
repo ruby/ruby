@@ -165,7 +165,6 @@ strscan_free(p)
     struct strscanner *p;
 {
     onig_region_free(&(p->regs), 0);
-    memset(p, sizeof(struct strscanner), 0);
     free(p);
 }
 
