@@ -351,12 +351,12 @@ num2i32(x)
 # define EXTEND32(x) 
 #else
 /* invariant in modulo 1<<31 */
-# define EXTEND32(x) do {if (!natint) {(x) = (I32)(((1<<31)-1-(x))^~(~0<<31))}} while(0)
+# define EXTEND32(x) do {if (!natint) {(x) = (I32)(((1<<31)-1-(x))^~(~0<<31));}} while(0)
 #endif
 #if SIZEOF_SHORT == SIZE16
 # define EXTEND16(x) 
 #else
-# define EXTEND16(x) do { if (!natint) {(x) = (short)(((1<<15)-1-(x))^~(~0<<15))}} while(0)
+# define EXTEND16(x) do { if (!natint) {(x) = (short)(((1<<15)-1-(x))^~(~0<<15));}} while(0)
 #endif
 
 #ifdef HAVE_LONG_LONG
