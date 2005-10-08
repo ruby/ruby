@@ -13,6 +13,10 @@
 %{
 
 #define YYDEBUG 1
+#define YYERROR_VERBOSE 1
+#ifndef YYSTACK_USE_ALLOCA
+#define YYSTACK_USE_ALLOCA 0
+#endif
 
 #include "ruby.h"
 #include "env.h"
@@ -22,6 +26,19 @@
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
+
+#define YYMALLOC	rb_parser_malloc
+#define YYREALLOC	rb_parser_realloc
+#define YYCALLOC	rb_parser_calloc
+#define YYFREE 	rb_parser_free
+#define malloc	YYMALLOC
+#define realloc	YYREALLOC
+#define calloc	YYCALLOC
+#define free	YYFREE
+static void *rb_parser_malloc _((size_t));
+static void *rb_parser_realloc _((void *, size_t));
+static void *rb_parser_calloc _((size_t, size_t));
+static void rb_parser_free _((void *));
 
 #define yyparse ruby_yyparse
 #define yylex ruby_yylex
@@ -2528,6 +2545,7 @@ int ruby_in_compile = 0;
 int ruby__end__seen;
 
 static VALUE ruby_debug_lines;
+static NODE *parser_heap;
 
 static NODE*
 yycompile(f, line)
@@ -2567,6 +2585,7 @@ yycompile(f, line)
     lex_strterm = 0;
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
+    parser_heap = 0;
     n = yyparse();
     ruby_debug_lines = 0;
     compile_for_eval = 0;
@@ -2578,6 +2597,7 @@ yycompile(f, line)
     in_single = 0;
     in_def = 0;
     cur_mid = 0;
+    parser_heap = 0;
 
     vp = ruby_dyna_vars;
     ruby_dyna_vars = vars;
@@ -5726,7 +5746,7 @@ dyna_init(node, pre)
 int
 ruby_parser_stack_on_heap()
 {
-#if defined(YYBISON) && !defined(C_ALLOCA)
+#if defined(YYMALLOC)
     return Qfalse;
 #else
     return Qtrue;
@@ -5743,6 +5763,7 @@ rb_gc_mark_parser()
     rb_gc_mark(lex_lastline);
     rb_gc_mark(lex_input);
     rb_gc_mark((VALUE)lex_strterm);
+    rb_gc_mark((VALUE)parser_heap);
 }
 
 void
@@ -6085,3 +6106,65 @@ rb_lastline_set(val)
 	special_local_set('_', val);
     }
 }
+
+#ifdef YYMALLOC
+#define HEAPCNT(n, size) ((size) % sizeof(YYSTYPE) ? 0 : (n) * (size) / sizeof(YYSTYPE))
+#define NEWHEAP(cnt) rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parser_heap, cnt)
+#define ADD2HEAP(n, ptr) ((parser_heap = (n))->u1.node = (ptr))
+
+static void *
+rb_parser_malloc(size)
+    size_t size;
+{
+    NODE *n = NEWHEAP(HEAPCNT(1, size));
+
+    return ADD2HEAP(n, xmalloc(size));
+}
+
+static void *
+rb_parser_calloc(nelem, size)
+    size_t nelem, size;
+{
+    NODE *n = NEWHEAP(HEAPCNT(nelem, size));
+
+    return ADD2HEAP(n, xcalloc(nelem, size));
+}
+
+static void *
+rb_parser_realloc(ptr, size)
+    void *ptr;
+    size_t size;
+{
+    NODE *n;
+    size_t cnt = HEAPCNT(1, size);
+
+    if (ptr && (n = parser_heap) != NULL) {
+	do {
+	    if (n->u1.node == ptr) {
+		n->u1.node = ptr = xrealloc(ptr, size);
+		if (n->u3.cnt) n->u3.cnt = cnt;
+		return ptr;
+	    }
+	} while ((n = n->u2.node) != NULL);
+    }
+    n = NEWHEAP(cnt);
+    return ADD2HEAP(n, xrealloc(ptr, size));
+}
+
+static void
+rb_parser_free(ptr)
+    void *ptr;
+{
+    NODE **prev = &parser_heap, *n;
+
+    while (n = *prev) {
+	if (n->u1.node == ptr) {
+	    *prev = n->u2.node;
+	    rb_gc_force_recycle((VALUE)n);
+	    break;
+	}
+	prev = &n->u2.node;
+    }
+    xfree(ptr);
+}
+#endif

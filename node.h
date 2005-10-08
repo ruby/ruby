@@ -115,9 +115,7 @@ enum node_type {
     NODE_DEFINED,
     NODE_NEWLINE,
     NODE_POSTEXE,
-#ifdef C_ALLOCA
     NODE_ALLOCA,
-#endif
     NODE_DMETHOD,
     NODE_BMETHOD,
     NODE_MEMO,

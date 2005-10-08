@@ -1,3 +1,8 @@
+Sat Oct  8 18:56:37 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_parser_malloc, rb_parser_free): manage parser stack on
+	  heap.  [ruby-list:41199]
+
 Fri Oct  7 09:54:00 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/cgi.rb (CGI::Cookie::parse): Cookies from Nokia devices may
