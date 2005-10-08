@@ -13,6 +13,8 @@
 %{
 
 #define YYDEBUG 1
+#define YYERROR_VERBOSE 1
+#define YYSTACK_USE_ALLOCA 0
 
 #include "ruby.h"
 #include "env.h"
@@ -22,6 +24,15 @@
 #include <stdio.h>
 #include <errno.h>
 #include <ctype.h>
+
+#define YYMALLOC(size)		rb_parser_malloc(parser, size)
+#define YYREALLOC(ptr, size)	rb_parser_realloc(parser, ptr, size)
+#define YYCALLOC(nelem, size)	rb_parser_calloc(parser, nelem, size)
+#define YYFREE(ptr)		rb_parser_free(parser, ptr)
+#define malloc	YYMALLOC
+#define realloc	YYREALLOC
+#define calloc	YYCALLOC
+#define free	YYFREE
 
 #define ID_SCOPE_SHIFT 3
 #define ID_SCOPE_MASK 0x07
@@ -168,7 +179,18 @@ struct parser_params {
 #endif
     int line_count;
     int has_shebang;
+
+#ifdef YYMALLOC
+    NODE *heap;
+#endif
 };
+
+#ifdef YYMALLOC
+void *rb_parser_malloc(struct parser_params *, size_t);
+void *rb_parser_realloc(struct parser_params *, void *, size_t);
+void *rb_parser_calloc(struct parser_params *, size_t, size_t);
+void rb_parser_free(struct parser_params *, void *);
+#endif
 
 static int parser_yyerror(struct parser_params*, const char*);
 #define yyerror(msg) parser_yyerror(parser, msg)
@@ -2487,11 +2509,10 @@ primary		: literal
 		    }
 		| tLPAREN_ARG expr {lex_state = EXPR_ENDARG;} rparen
 		    {
+		        rb_warning0("(...) interpreted as grouped expression");
 		    /*%%%*/
-		        rb_warning("(...) interpreted as grouped expression");
 			$$ = $2;
 		    /*%
-		        rb_warning0("(...) interpreted as grouped expression");
 			$$ = dispatch1(paren, $2);
 		    %*/
 		    }
@@ -8538,6 +8559,9 @@ parser_initialize(struct parser_params *parser)
     parser->parsing_thread = Qnil;
     parser->toplevel_p = Qtrue;
 #endif
+#ifdef YYMALLOC
+    parser->heap = NULL;
+#endif
 }
 
 static void
@@ -8557,6 +8581,9 @@ parser_mark(void *ptr)
     rb_gc_mark(p->delayed);
     rb_gc_mark(p->result);
     rb_gc_mark(p->parsing_thread);
+#endif
+#ifdef YYMALLOC
+    rb_gc_mark((VALUE)p->heap);
 #endif
 }
 
@@ -8613,6 +8640,63 @@ rb_parser_end_seen_p(VALUE vparser)
     Data_Get_Struct(vparser, struct parser_params, parser);
     return ruby__end__seen ? Qtrue : Qfalse;
 }
+
+#ifdef YYMALLOC
+#define HEAPCNT(n, size) ((size) % sizeof(YYSTYPE) ? 0 : (n) * (size) / sizeof(YYSTYPE))
+#define NEWHEAP(cnt) rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parserp->heap, cnt)
+#define ADD2HEAP(n, ptr) ((parserp->heap = (n))->u1.node = (ptr))
+
+void *
+rb_parser_malloc(struct parser_params *parserp, size_t size)
+{
+    NODE *n = NEWHEAP(HEAPCNT(1, size));
+
+    return ADD2HEAP(n, xmalloc(size));
+}
+
+void *
+rb_parser_calloc(struct parser_params *parserp, size_t nelem, size_t size)
+{
+    NODE *n = NEWHEAP(HEAPCNT(nelem, size));
+
+    return ADD2HEAP(n, xcalloc(nelem, size));
+}
+
+void *
+rb_parser_realloc(struct parser_params *parserp, void *ptr, size_t size)
+{
+    NODE *n;
+    size_t cnt = HEAPCNT(1, size);
+
+    if (ptr && (n = parserp->heap) != NULL) {
+	do {
+	    if (n->u1.node == ptr) {
+		n->u1.node = ptr = xrealloc(ptr, size);
+		if (n->u3.cnt) n->u3.cnt = cnt;
+		return ptr;
+	    }
+	} while ((n = n->u2.node) != NULL);
+    }
+    n = NEWHEAP(cnt);
+    return ADD2HEAP(n, xrealloc(ptr, size));
+}
+
+void
+rb_parser_free(struct parser_params *parserp, void *ptr)
+{
+    NODE **prev = &parserp->heap, *n;
+
+    while (n = *prev) {
+	if (n->u1.node == ptr) {
+	    *prev = n->u2.node;
+	    rb_gc_force_recycle((VALUE)n);
+	    break;
+	}
+	prev = &n->u2.node;
+    }
+    xfree(ptr);
+}
+#endif
 #endif
 
 #ifdef RIPPER
@@ -8869,15 +8953,6 @@ ripper_s_allocate(VALUE klass)
     return self;
 }
 
-static int
-obj_respond_to(VALUE obj, VALUE mid)
-{
-    VALUE st;
-
-    st = rb_funcall(obj, rb_intern("respond_to?"), 2, mid, Qfalse);
-    return RTEST(st);
-}
-
 #define ripper_initialized_p(r) ((r)->parser_lex_input != 0)
 
 /*
@@ -8898,7 +8973,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 
     Data_Get_Struct(self, struct parser_params, parser);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
-    if (obj_respond_to(src, ID2SYM(ripper_id_gets))) {
+    if (rb_respond_to(src, ripper_id_gets)) {
         parser->parser_lex_gets = ripper_lex_get_generic;
     }
     else {

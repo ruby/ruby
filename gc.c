@@ -859,13 +859,11 @@ gc_mark_children(VALUE ptr, int lev)
 	  case NODE_BLOCK_ARG:
 	  case NODE_POSTEXE:
 	    break;
-#ifdef C_ALLOCA
 	  case NODE_ALLOCA:
 	    mark_locations_array((VALUE*)obj->as.node.u1.value,
 				 obj->as.node.u3.cnt);
 	    ptr = (VALUE)obj->as.node.u2.node;
 	    goto again;
-#endif
 
 	  default:		/* unlisted NODE */
 	    if (is_pointer_to_heap(obj->as.node.u1.node)) {
@@ -1192,11 +1190,9 @@ obj_free(VALUE obj)
 		RUBY_CRITICAL(free(RANY(obj)->as.node.u1.tbl));
 	    }
 	    break;
-#ifdef C_ALLOCA
 	  case NODE_ALLOCA:
 	    RUBY_CRITICAL(free(RANY(obj)->as.node.u1.node));
 	    break;
-#endif
 	}
 	return;			/* no need to free iv_tbl */
 

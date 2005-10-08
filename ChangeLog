@@ -1,3 +1,12 @@
+Sat Oct  8 18:57:52 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_parser_malloc, rb_parser_free): manage parser stack on
+	  heap.  [ruby-list:41199]
+
+	* parse.y (ripper_initialize): use rb_respond_to().
+
+	* ext/ripper/depend (check): get rid of re-generating ripper.y always.
+
 Thu Oct  6 20:10:38 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* ext/strscan/strscan.c (strscan_free): remove useless code.

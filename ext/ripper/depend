@@ -1,15 +1,18 @@
 GEN  = $(srcdir)/tools/generate.rb
 SRC1 = $(hdrdir)/parse.y
 SRC2 = $(srcdir)/eventids2.c
+BISON = bison
 
 src: ripper.c eventids1.c eventids2table.c
 
 ripper.o: ripper.c $(hdrdir)/lex.c eventids1.c $(srcdir)/eventids2.c eventids2table.c
 
 .y.c:
-	bison -t -v -o$@ $<
+	$(BISON) -t -v -o$@ $<
 
-ripper.y: check $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y
+all static: check
+
+ripper.y: $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y
 	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y --output=$@
 
 check: $(GEN) $(SRC1) $(SRC2)
