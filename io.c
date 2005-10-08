@@ -3433,7 +3433,7 @@ rb_io_init_copy(VALUE dest, VALUE io)
     rb_io_flush(io);
 
     /* copy OpenFile structure */
-    fptr->mode = orig->mode;
+    fptr->mode = orig->mode & ~FMODE_PREP;
     fptr->pid = orig->pid;
     fptr->lineno = orig->lineno;
     if (orig->path) fptr->path = strdup(orig->path);

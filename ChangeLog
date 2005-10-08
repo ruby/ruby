@@ -1,3 +1,8 @@
+Sat Oct  8 19:32:56 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* io.c (rb_io_init_copy): clear PREP flag for copied IO.
+	  fixed: [ruby-dev:27371]
+
 Sat Oct  8 19:15:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_parser_malloc, rb_parser_free): manage parser stack on
