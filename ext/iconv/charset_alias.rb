@@ -1,11 +1,12 @@
 #! /usr/bin/ruby
 # :stopdoc:
 require 'rbconfig'
+require 'optparse'
 
 # http://www.ctan.org/tex-archive/macros/texinfo/texinfo/intl/config.charset
 # Fri, 30 May 2003 00:09:00 GMT'
 
-OS = Config::CONFIG["target"]
+OS = Config::CONFIG["target_os"]
 SHELL = Config::CONFIG['SHELL']
 
 class Hash::Ordered < Hash
@@ -24,12 +25,26 @@ end
 def charset_alias(config_charset, mapfile, target = OS)
   map = Hash::Ordered.new
   comments = []
-  IO.foreach("|#{SHELL} #{config_charset} #{target}") do |list|
-    next comments << list if /^\#/ =~ list
-    next unless /^(\S+)\s+(\S+)$/ =~ list
-    sys, can = $1, $2
-    can.downcase!
-    map[can] = sys
+  match = false
+  open(config_charset) do |input|
+    input.find {|line| /^case "\$os" in/ =~ line} or return
+    input.find {|line|
+      /^\s*([-\w\*]+(?:\s*\|\s*[-\w\*]+)*)(?=\))/ =~ line and
+      $&.split('|').any? {|pattern| File.fnmatch?(pattern.strip, target)}
+    } or return
+    input.find do |line|
+      case line
+      when /^\s*echo "(?:\$\w+\.)?([-\w*]+)\s+([-\w]+)"/
+        sys, can = $1, $2
+        can.downcase!
+        map[can] = sys
+        false
+      when /^\s*;;/
+        true
+      else
+        false
+      end
+    end
   end
   case target
   when /linux|-gnu/
@@ -38,7 +53,7 @@ def charset_alias(config_charset, mapfile, target = OS)
     # get rid of tilde/yen problem.
     map['shift_jis'] = 'cp932'
   end
-  open(mapfile, "w") do |f|
+  writer = proc do |f|
     f.puts("require 'iconv.so'")
     f.puts
     f.puts(comments)
@@ -46,7 +61,18 @@ def charset_alias(config_charset, mapfile, target = OS)
     map.each {|can, sys| f.puts("  charset_map['#{can}'.freeze] = '#{sys}'.freeze")}
     f.puts("end")
   end
+  if mapfile
+    open(mapfile, "w", &writer)
+  else
+    writer[STDOUT]
+  end
 end
 
-(2..3) === ARGV.size or abort "usage: #$0 config.status map.rb [target]"
-charset_alias(*ARGV)
+target = OS
+opt = nil
+ARGV.options do |opt|
+  opt.banner << " config.status map.rb"
+  opt.on("--target OS") {|t| target = t}
+  opt.parse! and (1..2) === ARGV.size
+end or abort opt.to_s
+charset_alias(ARGV[0], ARGV[1], target)
