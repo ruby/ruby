@@ -467,11 +467,11 @@ module Scanf
     end
 
     def letter
-      /%\*?\d*([a-z\[])/.match(@spec_string).to_a[1]
+      @spec_string[/%\*?\d*([a-z\[])/, 1]
     end
 
     def width
-      w = /%\*?(\d+)/.match(@spec_string).to_a[1]
+      w = @spec_string[/%\*?(\d+)/, 1]
       w && w.to_i
     end
 

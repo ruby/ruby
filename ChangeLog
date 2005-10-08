@@ -1,3 +1,15 @@
+Sat Oct  8 19:45:16 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/scanf.rb (Scanf::FormatSpecifier#letter, #width): use matched
+	  substring directly.
+
+	* ext/nkf/lib/kconv.rb (Kconv.conv): get rid of nil.to_a.
+
+	* test/ruby/test_assignment.rb, test/ruby/test_iterator.rb: followed
+	  change of sample/test.rb.
+
+	* test/net/http/test_http.rb: removed superfluous splatting stars.
+
 Sat Oct  8 19:32:56 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* io.c (rb_io_init_copy): clear PREP flag for copied IO.

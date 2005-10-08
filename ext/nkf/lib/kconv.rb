@@ -113,7 +113,7 @@ module Kconv
     
     to = symbol_to_option(option[0])
     from = symbol_to_option(option[1]).to_s.sub(/(-[jesw])/o){$1.upcase}
-    opt = option[2..-1].to_a.flatten.map{|x|symbol_to_option(x)}.compact.join(' ')
+    opt = option[2..-1] and opt = opt.flatten.map{|x|symbol_to_option(x)}.compact.join(' ')
     
     nkf_opt = '-x -m0 %s %s %s' % [to, from, opt]
     result = ::NKF::nkf( nkf_opt, str)

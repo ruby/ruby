@@ -29,8 +29,6 @@ class TestAssignment < Test::Unit::TestCase
     a = [*[1]]; assert_equal([1], a)
     a = [*[1,2]]; assert_equal([1,2], a)
 
-    a = *nil; assert_nil(a)
-    a = *1; assert_equal(1, a)
     a = *[]; assert_nil(a)
     a = *[1]; assert_equal(1, a)
     a = *[nil]; assert_nil(a)
@@ -51,8 +49,6 @@ class TestAssignment < Test::Unit::TestCase
     *a = [*[1]]; assert_equal([[1]], a)
     *a = [*[1,2]]; assert_equal([[1,2]], a)
 
-    *a = *nil; assert_equal([nil], a)
-    *a = *1; assert_equal([1], a)
     *a = *[]; assert_equal([], a)
     *a = *[1]; assert_equal([1], a)
     *a = *[nil]; assert_equal([nil], a)
@@ -73,8 +69,6 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = [*[1]]; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = [*[1,2]]; assert_equal([1,2,[]], [a,b,c])
 
-    a,b,*c = *nil; assert_equal([nil,nil,[]], [a,b,c])
-    a,b,*c = *1; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = *[]; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = *[1]; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = *[nil]; assert_equal([nil,nil,[]], [a,b,c])
@@ -96,8 +90,6 @@ class TestAssignment < Test::Unit::TestCase
     def f; yield([*[1]]); end; f {|a| assert_equal([1], a)}; undef f
     def f; yield([*[1,2]]); end; f {|a| assert_equal([1,2], a)}; undef f
 
-    def f; yield(*nil); end; f {|a| assert_nil(a)}; undef f
-    def f; yield(*1); end; f {|a| assert_equal(1, a)}; undef f
     def f; yield(*[1]); end; f {|a| assert_equal(1, a)}; undef f
     def f; yield(*[nil]); end; f {|a| assert_nil(a)}; undef f
     def f; yield(*[[]]); end; f {|a| assert_equal([], a)}; undef f
@@ -115,8 +107,6 @@ class TestAssignment < Test::Unit::TestCase
     def f; yield([*[1]]); end; f {|*a| assert_equal([[1]], a)}; undef f
     def f; yield([*[1,2]]); end; f {|*a| assert_equal([[1,2]], a)}; undef f
 
-    def f; yield(*nil); end; f {|*a| assert_equal([nil], a)}; undef f
-    def f; yield(*1); end; f {|*a| assert_equal([1], a)}; undef f
     def f; yield(*[]); end; f {|*a| assert_equal([], a)}; undef f
     def f; yield(*[1]); end; f {|*a| assert_equal([1], a)}; undef f
     def f; yield(*[nil]); end; f {|*a| assert_equal([nil], a)}; undef f
@@ -136,8 +126,6 @@ class TestAssignment < Test::Unit::TestCase
     def f; yield([*[1]]); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
     def f; yield([*[1,2]]); end; f {|a,b,*c| assert_equal([1,2,[]], [a,b,c])}; undef f
 
-    def f; yield(*nil); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
-    def f; yield(*1); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
     def f; yield(*[]); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
     def f; yield(*[1]); end; f {|a,b,*c| assert_equal([1,nil,[]], [a,b,c])}; undef f
     def f; yield(*[nil]); end; f {|a,b,*c| assert_equal([nil,nil,[]], [a,b,c])}; undef f
@@ -159,8 +147,6 @@ class TestAssignment < Test::Unit::TestCase
     def r; return [*[1]]; end; a = r(); assert_equal([1], a); undef r
     def r; return [*[1,2]]; end; a = r(); assert_equal([1,2], a); undef r
 
-    def r; return *nil; end; a = r(); assert_nil(a); undef r
-    def r; return *1; end; a = r(); assert_equal(1, a); undef r
     def r; return *[]; end; a = r(); assert_nil(a); undef r
     def r; return *[1]; end; a = r(); assert_equal(1, a); undef r
     def r; return *[nil]; end; a = r(); assert_nil(a); undef r
@@ -169,14 +155,7 @@ class TestAssignment < Test::Unit::TestCase
     def r; return *[*[1]]; end; a = r(); assert_equal(1, a); undef r
     def r; return *[*[1,2]]; end; a = r(); assert_equal([1,2], a); undef r
 
-    def r; return *nil; end; a = *r(); assert_nil(a); undef r
-    def r; return *1; end; a = *r(); assert_equal(1, a); undef r
-    def r; return *[]; end; a = *r(); assert_nil(a); undef r
-    def r; return *[1]; end; a = *r(); assert_equal(1, a); undef r
-    def r; return *[nil]; end; a = *r(); assert_nil(a); undef r
     def r; return *[[]]; end; a = *r(); assert_nil(a); undef r
-    def r; return *[*[]]; end; a = *r(); assert_nil(a); undef r
-    def r; return *[*[1]]; end; a = *r(); assert_equal(1, a); undef r
     def r; return *[*[1,2]]; end; a = *r(); assert_equal([1,2], a); undef r
 
     def r; return; end; *a = r(); assert_equal([nil], a); undef r
@@ -191,8 +170,6 @@ class TestAssignment < Test::Unit::TestCase
     def r; return [*[1]]; end; *a = r(); assert_equal([[1]], a); undef r
     def r; return [*[1,2]]; end; *a = r(); assert_equal([[1,2]], a); undef r
 
-    def r; return *nil; end; *a = r(); assert_equal([nil], a); undef r
-    def r; return *1; end; *a = r(); assert_equal([1], a); undef r
     def r; return *[]; end; *a = r(); assert_equal([nil], a); undef r
     def r; return *[1]; end; *a = r(); assert_equal([1], a); undef r
     def r; return *[nil]; end; *a = r(); assert_equal([nil], a); undef r
@@ -202,15 +179,8 @@ class TestAssignment < Test::Unit::TestCase
     def r; return *[*[1]]; end; *a = r(); assert_equal([1], a); undef r
     def r; return *[*[1,2]]; end; *a = r(); assert_equal([[1,2]], a); undef r
 
-    def r; return *nil; end; *a = *r(); assert_equal([nil], a); undef r
-    def r; return *1; end; *a = *r(); assert_equal([1], a); undef r
-    def r; return *[]; end; *a = *r(); assert_equal([nil], a); undef r
-    def r; return *[1]; end; *a = *r(); assert_equal([1], a); undef r
-    def r; return *[nil]; end; *a = *r(); assert_equal([nil], a); undef r
     def r; return *[[]]; end; *a = *r(); assert_equal([], a); undef r
     def r; return *[1,2]; end; *a = *r(); assert_equal([1,2], a); undef r
-    def r; return *[*[]]; end; *a = *r(); assert_equal([nil], a); undef r
-    def r; return *[*[1]]; end; *a = *r(); assert_equal([1], a); undef r
     def r; return *[*[1,2]]; end; *a = *r(); assert_equal([1,2], a); undef r
 
     def r; return; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
@@ -225,8 +195,6 @@ class TestAssignment < Test::Unit::TestCase
     def r; return [*[1]]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
     def r; return [*[1,2]]; end; a,b,*c = r(); assert_equal([1,2,[]], [a,b,c]); undef r
 
-    def r; return *nil; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
-    def r; return *1; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
     def r; return *[]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
     def r; return *[1]; end; a,b,*c = r(); assert_equal([1,nil,[]], [a,b,c]); undef r
     def r; return *[nil]; end; a,b,*c = r(); assert_equal([nil,nil,[]], [a,b,c]); undef r
@@ -292,8 +260,6 @@ class TestAssignment < Test::Unit::TestCase
     a = loop do break [*[1]]; end; assert_equal([1], a)
     a = loop do break [*[1,2]]; end; assert_equal([1,2], a)
 
-    a = loop do break *nil; end; assert_nil(a)
-    a = loop do break *1; end; assert_equal(1, a)
     a = loop do break *[]; end; assert_nil(a)
     a = loop do break *[1]; end; assert_equal(1, a)
     a = loop do break *[nil]; end; assert_nil(a)
@@ -314,8 +280,6 @@ class TestAssignment < Test::Unit::TestCase
     *a = loop do break [*[1]]; end; assert_equal([[1]], a)
     *a = loop do break [*[1,2]]; end; assert_equal([[1,2]], a)
 
-    *a = loop do break *nil; end; assert_equal([nil], a)
-    *a = loop do break *1; end; assert_equal([1], a)
     *a = loop do break *[]; end; assert_equal([nil], a)
     *a = loop do break *[1]; end; assert_equal([1], a)
     *a = loop do break *[nil]; end; assert_equal([nil], a)
@@ -325,15 +289,8 @@ class TestAssignment < Test::Unit::TestCase
     *a = loop do break *[*[1]]; end; assert_equal([1], a)
     *a = loop do break *[*[1,2]]; end; assert_equal([[1,2]], a)
 
-    *a = *loop do break *nil; end; assert_equal([nil], a)
-    *a = *loop do break *1; end; assert_equal([1], a)
-    *a = *loop do break *[]; end; assert_equal([nil], a)
-    *a = *loop do break *[1]; end; assert_equal([1], a)
-    *a = *loop do break *[nil]; end; assert_equal([nil], a)
     *a = *loop do break *[[]]; end; assert_equal([], a)
     *a = *loop do break *[1,2]; end; assert_equal([1,2], a)
-    *a = *loop do break *[*[]]; end; assert_equal([nil], a)
-    *a = *loop do break *[*[1]]; end; assert_equal([1], a)
     *a = *loop do break *[*[1,2]]; end; assert_equal([1,2], a)
 
     a,b,*c = loop do break; end; assert_equal([nil,nil,[]], [a,b,c])
@@ -348,8 +305,6 @@ class TestAssignment < Test::Unit::TestCase
     a,b,*c = loop do break [*[1]]; end; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = loop do break [*[1,2]]; end; assert_equal([1,2,[]], [a,b,c])
 
-    a,b,*c = loop do break *nil; end; assert_equal([nil,nil,[]], [a,b,c])
-    a,b,*c = loop do break *1; end; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = loop do break *[]; end; assert_equal([nil,nil,[]], [a,b,c])
     a,b,*c = loop do break *[1]; end; assert_equal([1,nil,[]], [a,b,c])
     a,b,*c = loop do break *[nil]; end; assert_equal([nil,nil,[]], [a,b,c])
@@ -373,8 +328,6 @@ class TestAssignment < Test::Unit::TestCase
     r([1]){next [*[1]]}
     r([1,2]){next [*[1,2]]}
 
-    r(nil){next *nil}
-    r(1){next *1}
     r(nil){next *[]}
     r(1){next *[1]}
     r(nil){next *[nil]}
@@ -399,15 +352,8 @@ class TestAssignment < Test::Unit::TestCase
     undef r
 
     def r(val); *a = *yield(); assert_equal(val, a); end
-    r([nil]){next *nil}
-    r([1]){next *1}
-    r([nil]){next *[]}
-    r([1]){next *[1]}
-    r([nil]){next *[nil]}
     r([]){next *[[]]}
     r([1,2]){next *[1,2]}
-    r([nil]){next *[*[]]}
-    r([1]){next *[*[1]]}
     r([1,2]){next *[*[1,2]]}
     undef r
 
@@ -426,15 +372,8 @@ class TestAssignment < Test::Unit::TestCase
     undef r
 
     def r(val); a,b,*c = *yield(); assert_equal(val, [a,b,c]); end
-    r([nil,nil,[]]){next *nil}
-    r([1,nil,[]]){next *1}
-    r([nil,nil,[]]){next *[]}
-    r([1,nil,[]]){next *[1]}
-    r([nil,nil,[]]){next *[nil]}
     r([nil,nil,[]]){next *[[]]}
     r([1,2,[]]){next *[1,2]}
-    r([nil,nil,[]]){next *[*[]]}
-    r([1,nil,[]]){next *[*[1]]}
     r([1,2,[]]){next *[*[1,2]]}
     undef r
   end

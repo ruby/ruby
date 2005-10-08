@@ -31,7 +31,7 @@ module TestNetHTTP_version_1_1_methods
   end
 
   def _test_get__get(http)
-    res, body = *http.get('/')
+    res, body = http.get('/')
     assert_kind_of Net::HTTPResponse, res
     assert_kind_of String, res.body
     assert_kind_of String, body
@@ -61,7 +61,7 @@ module TestNetHTTP_version_1_1_methods
 
   def _test_get__chunked(http)
     buf = ''
-    res, body = *http.get('/') {|s| buf << s }
+    res, body = http.get('/') {|s| buf << s }
     assert_kind_of Net::HTTPResponse, res
     # assert_kind_of String, res.body
     # assert_kind_of String, body
@@ -86,7 +86,7 @@ module TestNetHTTP_version_1_1_methods
   end
 
   def test_get__implicit_start
-    res, body = *new().get('/')
+    res, body = new().get('/')
     assert_kind_of Net::HTTPResponse, res
     assert_kind_of String, body
     assert_kind_of String, res.body
