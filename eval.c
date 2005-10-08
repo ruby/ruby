@@ -9392,6 +9392,7 @@ rb_mod_define_method(argc, argv, mod)
 	noex = NOEX_PUBLIC;
     }
     rb_add_method(mod, id, node, noex);
+    rb_define_method(rb_cBinding, "dup", proc_dup, 0);
     return body;
 }
 

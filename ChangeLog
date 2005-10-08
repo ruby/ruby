@@ -1,4 +1,6 @@
-Sat Oct  8 19:15:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Oct  8 20:04:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (Init_Binding): add Binding#dup method.  [yarv-dev:666]
 
 	* parse.y (rb_parser_malloc, rb_parser_free): manage parser stack on
 	  heap.  [ruby-list:41199]
