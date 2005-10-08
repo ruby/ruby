@@ -60,7 +60,6 @@ Wed Sep 28 23:42:15 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  re.c (match_init_copy, rb_reg_init_copy), time.c (time_init_copy):
 	  undocumented.
 
->>>>>>> 1.2673.2.1315
 Wed Sep 28 23:09:23 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* lib/delegate.rb: document update from James Edward Gray II
