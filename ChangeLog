@@ -162,7 +162,6 @@ Sat Sep 24 11:44:28 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* test/net/http/test_http.rb: new file.
 
->>>>>>> 1.4662
 Sat Sep 24 08:54:05 2005  Minero Aoki  <aamine@loveruby.net>
 
 	* lib/fileutils.rb (cd): no longer accept :noop option, related
