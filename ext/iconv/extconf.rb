@@ -33,7 +33,7 @@ if have_func("iconv", "iconv.h") or
       require 'uri'
       scheme = URI.parse(conf).scheme
     else
-      conf = prefix + "config.charset"
+      conf = "$(srcdir)/config.charset"
     end
     $cleanfiles << wrapper
   end
@@ -42,7 +42,7 @@ if have_func("iconv", "iconv.h") or
     open("Makefile", "a") do |mf|
       mf.print("\nall: #{wrapper}\n\n#{wrapper}: #{prefix}charset_alias.rb")
       mf.print(" ", conf) unless scheme
-      mf.print("\n\t$(RUBY) ", prefix, "charset_alias.rb ", conf, " $@\n")
+      mf.print("\n\t$(RUBY) $(srcdir)/charset_alias.rb #{conf} $@\n")
     end
   end
 end
