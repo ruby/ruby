@@ -1,21 +1,9 @@
-Sat Oct  8 19:45:16 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Sat Oct  8 19:49:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/scanf.rb (Scanf::FormatSpecifier#letter, #width): use matched
-	  substring directly.
-
-	* ext/nkf/lib/kconv.rb (Kconv.conv): get rid of nil.to_a.
-
-	* test/ruby/test_assignment.rb, test/ruby/test_iterator.rb: followed
-	  change of sample/test.rb.
-
-	* test/net/http/test_http.rb: removed superfluous splatting stars.
-
-Sat Oct  8 19:32:56 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* eval.c (Init_Binding): add Binding#dup method.  [yarv-dev:666]
 
 	* io.c (rb_io_init_copy): clear PREP flag for copied IO.
 	  fixed: [ruby-dev:27371]
-
-Sat Oct  8 19:15:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (rb_parser_malloc, rb_parser_free): manage parser stack on
 	  heap.  [ruby-list:41199]
@@ -25,6 +13,16 @@ Sat Oct  8 19:15:02 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* ext/ripper/depend (check): get rid of re-generating ripper.y always.
 
 	* ext/iconv/charset_alias.rb: parse config.charset_alias file directly.
+
+	* ext/nkf/lib/kconv.rb (Kconv.conv): get rid of nil.to_a.
+
+	* lib/scanf.rb (Scanf::FormatSpecifier#letter, #width): use matched
+	  substring directly.
+
+	* test/ruby/test_assignment.rb, test/ruby/test_iterator.rb: followed
+	  change of sample/test.rb.
+
+	* test/net/http/test_http.rb: removed superfluous splatting stars.
 
 Thu Oct  6 20:10:38 2005  Minero Aoki  <aamine@loveruby.net>
 
