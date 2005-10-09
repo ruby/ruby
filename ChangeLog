@@ -1,3 +1,8 @@
+Mon Oct 10 00:09:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (ripper_initialize): rollback obj_respond_to().
+	  fixed: [ruby-dev:27406]
+
 Sat Oct  8 19:49:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (Init_Binding): add Binding#dup method.  [yarv-dev:666]

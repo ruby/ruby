@@ -8953,6 +8953,15 @@ ripper_s_allocate(VALUE klass)
     return self;
 }
 
+static int
+obj_respond_to(VALUE obj, VALUE mid)
+{
+    VALUE st;
+
+    st = rb_funcall(obj, rb_intern("respond_to?"), 2, mid, Qfalse);
+    return RTEST(st);
+}
+
 #define ripper_initialized_p(r) ((r)->parser_lex_input != 0)
 
 /*
@@ -8973,7 +8982,7 @@ ripper_initialize(int argc, VALUE *argv, VALUE self)
 
     Data_Get_Struct(self, struct parser_params, parser);
     rb_scan_args(argc, argv, "12", &src, &fname, &lineno);
-    if (rb_respond_to(src, ripper_id_gets)) {
+    if (obj_respond_to(src, ID2SYM(ripper_id_gets))) {
         parser->parser_lex_gets = ripper_lex_get_generic;
     }
     else {
