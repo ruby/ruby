@@ -38,7 +38,7 @@ class TestGeneric < Test::Unit::TestCase
     exp = [
       'ftp', 
       nil, 'ftp.is.co.za', URI::FTP.default_port, 
-      '/rfc/rfc1808.txt', nil,
+      'rfc/rfc1808.txt', nil,
     ]
     ary = uri_to_ary(url)
     assert_equal(exp, ary)
