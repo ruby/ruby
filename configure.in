@@ -285,7 +285,7 @@ else
   unset rb_c_werror_flag
 fi
 ac_c_werror_flag=yes
-for mac in "x __attribute__ (($1))" "__declspec($1) x" x; do
+for mac in "__attribute__ (($1)) x" "x __attribute__ (($1))" "__declspec($1) x" x; do
   AC_TRY_COMPILE(
     [#define ]attrib[(x) $mac
     ]attrib[(void conftest_attribute_check(void));], [],
