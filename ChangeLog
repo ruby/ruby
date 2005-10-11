@@ -1,4 +1,4 @@
-Tue Oct 11 21:30:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 11 21:41:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_FUNC_ATTRIBUTE): check prefixed attribute form
 	  first.  [ruby-dev:27398]
@@ -9,10 +9,10 @@ Tue Oct 11 21:30:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* util.h (qsort): removed the definition incompatible to ANSI.
 	  fixed: [ruby-core:06147]
 
-Mon Oct 10 00:09:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+	* eval.c (rb_obj_respond_to): check if obj responds to the given
+	  method with the given visibility.  [ruby-dev:27408]
 
-	* parse.y (ripper_initialize): rollback obj_respond_to().
-	  fixed: [ruby-dev:27406]
+	* eval.c (rb_respond_to): conform to Object#respond_to?.  [ruby-dev:27411]
 
 Sat Oct  8 19:49:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

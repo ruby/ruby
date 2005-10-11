@@ -221,6 +221,7 @@ void rb_dvar_asgn(ID, VALUE);
 void rb_dvar_push(ID, VALUE);
 VALUE *rb_svar(int);
 VALUE rb_eval_cmd(VALUE, VALUE, int);
+int rb_obj_respond_to(VALUE, ID, int);
 int rb_respond_to(VALUE, ID);
 void rb_interrupt(void);
 VALUE rb_apply(VALUE, ID, VALUE);

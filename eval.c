@@ -4011,19 +4011,27 @@ module_setup(VALUE module, NODE *n)
 static NODE *basic_respond_to = 0;
 
 int
-rb_respond_to(VALUE obj, ID id)
+rb_obj_respond_to(VALUE obj, ID id, int priv)
 {
     VALUE klass = CLASS_OF(obj);
-    if (rb_method_node(klass, respond_to) == basic_respond_to &&
-	rb_method_boundp(klass, id, 0)) {
-	return Qtrue;
+
+    if (rb_method_node(klass, respond_to) == basic_respond_to) {
+	return rb_method_boundp(klass, id, !priv);
     }
-    else{
-	return rb_funcall(obj, respond_to, 1, ID2SYM(id));
+    else {
+	VALUE args[2];
+	int n = 0;
+	args[n++] = ID2SYM(id);
+	if (priv) args[n++] = Qtrue;
+	return rb_funcall2(obj, respond_to, n, args);
     }
-    return Qfalse;
 }
 
+int
+rb_respond_to(VALUE obj, ID id)
+{
+    return rb_obj_respond_to(obj, id, Qfalse);
+}
 
 /*
  *  call-seq:
@@ -4035,7 +4043,7 @@ rb_respond_to(VALUE obj, ID id)
  */
 
 static VALUE
-rb_obj_respond_to(int argc, VALUE *argv, VALUE obj)
+obj_respond_to(int argc, VALUE *argv, VALUE obj)
 {
     VALUE mid, priv;
     ID id;
@@ -7553,7 +7561,7 @@ Init_eval(void)
     rb_define_global_function("method_missing", rb_method_missing, -1);
     rb_define_global_function("loop", rb_f_loop, 0);
 
-    rb_define_method(rb_mKernel, "respond_to?", rb_obj_respond_to, -1);
+    rb_define_method(rb_mKernel, "respond_to?", obj_respond_to, -1);
     respond_to   = rb_intern("respond_to?");
     basic_respond_to = rb_method_node(rb_cObject, respond_to);
     rb_global_variable((VALUE*)&basic_respond_to);
