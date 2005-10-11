@@ -1,7 +1,13 @@
-Tue Oct 11 21:28:38 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Tue Oct 11 21:30:11 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_FUNC_ATTRIBUTE): check prefixed attribute form
 	  first.  [ruby-dev:27398]
+
+	* array.c, enum.c, eval.c, util.c: safer function pointer usage.
+	  fixed: [ruby-core:06143]
+
+	* util.h (qsort): removed the definition incompatible to ANSI.
+	  fixed: [ruby-core:06147]
 
 Mon Oct 10 00:09:54 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 

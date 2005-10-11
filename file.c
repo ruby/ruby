@@ -2695,8 +2695,9 @@ static VALUE separator;
 static VALUE rb_file_join(VALUE ary, VALUE sep);
 
 static VALUE
-file_inspect_join(VALUE ary, VALUE *arg, int recur)
+file_inspect_join(VALUE ary, VALUE argp, int recur)
 {
+    VALUE *arg = (VALUE *)argp;
     if (recur) return rb_str_new2("[...]");
     return rb_file_join(arg[0], arg[1]);
 }

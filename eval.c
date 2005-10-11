@@ -12943,9 +12943,7 @@ recursive_pop(void)
 }
 
 VALUE
-rb_exec_recursive(VALUE (*func) (/* ??? */), VALUE obj, VALUE arg)
-                           	/* VALUE obj, VALUE arg, int flag */
-                   
+rb_exec_recursive(VALUE (*func)(VALUE, VALUE, int), VALUE obj, VALUE arg)
 {
     if (recursive_check(obj)) {
 	return (*func)(obj, arg, Qtrue);

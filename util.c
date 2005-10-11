@@ -470,12 +470,9 @@ typedef struct { char *LL, *RR; } stack_node; /* Stack structure for L,l,R,r */
                        ((*cmp)(b,c,d)<0 ? b : ((*cmp)(a,c,d)<0 ? c : a)) : \
                        ((*cmp)(b,c,d)>0 ? b : ((*cmp)(a,c,d)<0 ? a : c)))
 
-void ruby_qsort (base, nel, size, cmp, d)
-     void* base;
-     const int nel;
-     const int size;
-     int (*cmp)();
-     void *d;
+void
+ruby_qsort(void* base, const int nel, const int size,
+	   int (*cmp)(const void*, const void*, void*), void *d)
 {
   register char *l, *r, *m;          	/* l,r:left,right group   m:median point */
   register int  t, eq_l, eq_r;       	/* eq_l: all items in left group are equal to S */

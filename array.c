@@ -1245,8 +1245,9 @@ rb_ary_dup(VALUE ary)
 extern VALUE rb_output_fs;
 
 static VALUE
-recursive_join(VALUE ary, VALUE *arg, int recur)
+recursive_join(VALUE ary, VALUE argp, int recur)
 {
+    VALUE *arg = (VALUE *)argp;
     if (recur) {
 	return rb_str_new2("[...]");
     }
@@ -1473,21 +1474,22 @@ ary_sort_check(struct ary_sort_data *data)
 }
 
 static int
-sort_1(VALUE *a, VALUE *b, struct ary_sort_data *data)
+sort_1(const void *ap, const void *bp, void *data)
 {
-    VALUE retval = rb_yield_values(2, *a, *b);
+    VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
+    VALUE retval = rb_yield_values(2, a, b);
     int n;
 
-    n = rb_cmpint(retval, *a, *b);
-    ary_sort_check(data);
+    n = rb_cmpint(retval, a, b);
+    ary_sort_check((struct ary_sort_data *)data);
     return n;
 }
 
 static int
-sort_2(VALUE *ap, VALUE *bp, struct ary_sort_data *data)
+sort_2(const void *ap, const void *bp, void *data)
 {
     VALUE retval;
-    VALUE a = *ap, b = *bp;
+    VALUE a = *(const VALUE *)ap, b = *(const VALUE *)bp;
     int n;
 
     if (FIXNUM_P(a) && FIXNUM_P(b)) {
@@ -1501,7 +1503,7 @@ sort_2(VALUE *ap, VALUE *bp, struct ary_sort_data *data)
 
     retval = rb_funcall(a, id_cmp, 1, b);
     n = rb_cmpint(retval, a, b);
-    ary_sort_check(data);
+    ary_sort_check((struct ary_sort_data *)data);
 
     return n;
 }
@@ -1513,8 +1515,8 @@ sort_internal(VALUE ary)
 
     data.ary = ary;
     data.ptr = RARRAY(ary)->ptr; data.len = RARRAY(ary)->len;
-    qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),
-	  rb_block_given_p()?sort_1:sort_2, &data);
+    ruby_qsort(RARRAY(ary)->ptr, RARRAY(ary)->len, sizeof(VALUE),
+	       rb_block_given_p()?sort_1:sort_2, &data);
     return ary;
 }
 
