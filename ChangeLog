@@ -1,3 +1,10 @@
+Tue Oct 11 21:41:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* eval.c (rb_obj_respond_to): check if obj responds to the given
+	  method with the given visibility.  [ruby-dev:27408]
+
+	* eval.c (rb_respond_to): conform to Object#respond_to?.  [ruby-dev:27411]
+
 Sat Oct  8 20:04:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (Init_Binding): add Binding#dup method.  [yarv-dev:666]
