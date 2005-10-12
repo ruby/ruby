@@ -382,6 +382,7 @@ Init_openssl()
      */
     /* CRYPTO_malloc_init(); */
     /* ENGINE_load_builtin_engines(); */
+    OpenSSL_add_ssl_algorithms();
     OpenSSL_add_all_algorithms();
     ERR_load_crypto_strings();
     SSL_load_error_strings();

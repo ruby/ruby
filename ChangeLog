@@ -1,3 +1,8 @@
+Wed Oct 12 12:51:56 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* ext/openssl/ossl.c (Init_openssl): should call
+	  OpenSSL_add_ssl_algorithms().
+
 Wed Oct 12 11:08:54 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
 
 	* file.c (rb_f_test): typo in RDoc comments.
