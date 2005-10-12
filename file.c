@@ -3023,9 +3023,9 @@ test_check(int n, int argc, VALUE *argv)
  *     ?G  | boolean | True if file1 exists and has a group
  *         |         | ownership equal to the caller's group
  *     ?k  | boolean | True if file1 exists and has the sticky bit set
- *     ?l  | boolean | True if files exists and is a symbolic link
+ *     ?l  | boolean | True if file1 exists and is a symbolic link
  *     ?M  | Time    | Last modification time for file1
- *     ?o  | boolean | True if files exists and is owned by 
+ *     ?o  | boolean | True if file1 exists and is owned by 
  *         |         | the caller's effective uid
  *     ?O  | boolean | True if file1 exists and is owned by
  *         |         | the caller's real uid
@@ -3034,7 +3034,7 @@ test_check(int n, int argc, VALUE *argv)
  *         |         | uid/gid of the caller
  *     ?R  | boolean | True if file is readable by the real
  *         |         | uid/gid of the caller
- *     ?s  | int/nil | If files has nonzero size, return the size,
+ *     ?s  | int/nil | If file1 has nonzero size, return the size,
  *         |         | otherwise return nil
  *     ?S  | boolean | True if file1 exists and is a socket
  *     ?u  | boolean | True if file1 has the setuid bit set
