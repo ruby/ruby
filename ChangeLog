@@ -1,3 +1,7 @@
+Wed Oct 12 11:08:54 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (rb_f_test): typo in RDoc comments.
+
 Tue Oct 11 21:41:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_obj_respond_to): check if obj responds to the given
