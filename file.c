@@ -3018,7 +3018,7 @@ test_check(int n, int argc, VALUE *argv)
  *     ?d  | boolean | True if file1 exists and is a directory
  *     ?e  | boolean | True if file1 exists
  *     ?f  | boolean | True if file1 exists and is a regular file
- *     ?g  | boolean | True if files has the \CF{setgid} bit
+ *     ?g  | boolean | True if file1 has the \CF{setgid} bit
  *         |         | set (false under NT)
  *     ?G  | boolean | True if file1 exists and has a group
  *         |         | ownership equal to the caller's group

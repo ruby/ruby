@@ -1,3 +1,7 @@
+Wed Oct 12 11:08:54 2005  WATANABE Hirofumi  <eban@ruby-lang.org>
+
+	* file.c (rb_f_test): typo in RDoc comments.
+
 Tue Oct 11 21:41:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in (RUBY_FUNC_ATTRIBUTE): check prefixed attribute form
