@@ -27,8 +27,12 @@ if have_func("iconv", "iconv.h") or
   if conf
     prefix = '$(srcdir)'
     prefix =  $nmake ? "{#{prefix}}" : "#{prefix}/"
-    wrapper = "./iconv.rb"
-    $INSTALLFILES = [[wrapper, "$(RUBYARCHDIR)"]]
+    if $extout
+      wrapper = "$(RUBYARCHDIR)/iconv.rb"
+    else
+      wrapper = "./iconv.rb"
+      $INSTALLFILES = [[wrapper, "$(RUBYARCHDIR)"]]
+    end
     if String === conf
       require 'uri'
       scheme = URI.parse(conf).scheme

@@ -1,4 +1,5 @@
 #! /usr/bin/ruby
+# :stopdoc:
 require 'rbconfig'
 require 'optparse'
 
@@ -27,13 +28,12 @@ end
 def charset_alias(config_charset, mapfile, target = OS)
   map = Hash::Ordered.new
   comments = []
-  match = false
   open(config_charset) do |input|
-    input.find {|line| /^case "\$os" in/ =~ line} or return
+    input.find {|line| /^case "\$os" in/ =~ line} or break
     input.find {|line|
       /^\s*([-\w\*]+(?:\s*\|\s*[-\w\*]+)*)(?=\))/ =~ line and
       $&.split('|').any? {|pattern| File.fnmatch?(pattern.strip, target)}
-    } or return
+    } or break
     input.find do |line|
       case line
       when /^\s*echo "(?:\$\w+\.)?([-\w*]+)\s+([-\w]+)"/
@@ -50,7 +50,7 @@ def charset_alias(config_charset, mapfile, target = OS)
   end
   case target
   when /linux|-gnu/
-#    map.delete('ascii')
+    # map.delete('ascii')
   when /cygwin|os2-emx/
     # get rid of tilde/yen problem.
     map['shift_jis'] = 'cp932'
