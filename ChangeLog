@@ -1,3 +1,8 @@
+Thu Oct 13 23:25:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (HEAPCNT): bison allocates indivisible size.
+	  fixed: [ruby-core:06261]
+
 Wed Oct 12 12:52:57 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* ext/openssl/ossl.c (Init_openssl): should call

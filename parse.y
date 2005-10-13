@@ -6108,7 +6108,7 @@ rb_lastline_set(val)
 }
 
 #ifdef YYMALLOC
-#define HEAPCNT(n, size) ((size) % sizeof(YYSTYPE) ? 0 : (n) * (size) / sizeof(YYSTYPE))
+#define HEAPCNT(n, size) ((n) * (size) / sizeof(YYSTYPE))
 #define NEWHEAP(cnt) rb_node_newnode(NODE_ALLOCA, 0, (VALUE)parser_heap, cnt)
 #define ADD2HEAP(n, ptr) ((parser_heap = (n))->u1.node = (ptr))
 
