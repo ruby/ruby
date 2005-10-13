@@ -2036,7 +2036,7 @@ uv_to_utf8(buf, uv)
     rb_raise(rb_eRangeError, "pack(U): value out of range");
 }
 
-static const long utf8_limits[] = {
+static const unsigned long utf8_limits[] = {
     0x0,			/* 1 */
     0x80,			/* 2 */
     0x800,			/* 3 */

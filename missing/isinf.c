@@ -23,6 +23,7 @@ isinf(n)
 
 #if defined(HAVE_FINITE) && defined(HAVE_ISNAN)
 
+#include <math.h>
 #ifdef HAVE_IEEEFP_H
 #include <ieeefp.h>
 #endif

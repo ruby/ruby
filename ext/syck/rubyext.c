@@ -1339,7 +1339,7 @@ syck_badalias_cmp( alias1, alias2 )
  */
 VALUE
 syck_domaintype_initialize( self, domain, type_id, val )
-    VALUE self, type_id, val;
+    VALUE self, domain, type_id, val;
 {
     rb_iv_set( self, "@domain", domain );
     rb_iv_set( self, "@type_id", type_id );

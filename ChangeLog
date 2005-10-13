@@ -1,7 +1,10 @@
-Thu Oct 13 23:25:10 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 13 23:29:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (HEAPCNT): bison allocates indivisible size.
 	  fixed: [ruby-core:06261]
+
+	* io.c, pack.c, ext/syck/rubyext.c, ext/syck/syck.h, missing/isinf.c:
+	  get rid of warnings.  fixed: [ruby-core:06247]
 
 Wed Oct 12 12:52:57 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 

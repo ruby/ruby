@@ -445,6 +445,9 @@ long syck_seq_count( SyckNode * );
  * Lexer prototypes
  */
 void syckerror( char * );
+int syckparse( void * );
+union YYSTYPE;
+int sycklex( union YYSTYPE *, SyckParser * );
 
 #if defined(__cplusplus)
 }  /* extern "C" { */

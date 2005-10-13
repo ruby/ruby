@@ -72,6 +72,10 @@
 #endif
 
 #ifdef HAVE_UNISTD_H
+#ifdef HAVE_SYSCALL_H
+#include <syscall.h>
+#endif
+
 #include <unistd.h>
 #endif
 
