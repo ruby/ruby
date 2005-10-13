@@ -72,6 +72,10 @@
 #include <unistd.h>
 #endif
 
+#ifdef HAVE_SYSCALL_H
+#include <syscall.h>
+#endif
+
 extern void Init_File(void);
 
 #ifdef __BEOS__
