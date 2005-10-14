@@ -1797,6 +1797,7 @@ int
   ioctl(int i, unsigned int u, long data)
 #endif
 {
+    errno = EINVAL;
     return -1;
 }
 

@@ -1,3 +1,7 @@
+Fri Oct 14 22:08:26 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* win32/win32.c (ioctl): should set errno.
+
 Fri Oct 14 16:57:32 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 
 	* lib/webrick/config.rb (Config::FileHandler): :UserDir should be nil.
