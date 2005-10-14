@@ -1,3 +1,9 @@
+Fri Oct 14 16:39:37 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
+
+	* lib/webrick/config.rb (Config::FileHandler): :UserDir should be nil.
+	  It is harmful to permit the access to ~/public_html by default.
+	  suggested by Hiroyuki Iwatsuki.
+
 Thu Oct 13 23:29:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (HEAPCNT): bison allocates indivisible size.

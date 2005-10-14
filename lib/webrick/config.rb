@@ -71,7 +71,7 @@ module WEBrick
       :HandlerCallback   => nil,
       :DirectoryCallback => nil,
       :FileCallback      => nil,
-      :UserDir           => "public_html",
+      :UserDir           => nil,  # e.g. "public_html"
       :AcceptableLanguages => []  # ["en", "ja", ... ]
     }
 
