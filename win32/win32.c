@@ -1839,6 +1839,7 @@ setgid(rb_gid_t gid)
 int
 ioctl(int i, int u, ...)
 {
+    errno = EINVAL;
     return -1;
 }
 
