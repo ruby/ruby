@@ -139,7 +139,12 @@ $(CPU) = $(PROCESSOR_LEVEL)
 	@$(APPEND) $(CPU) = 6
 
 -epilogue-: nul
+!if exist(confargs.c)
+	@$(CPP) confargs.c | findstr /v /r ^^$$ >> $(MAKEFILE)
+	@del confargs.c
+!endif
 	@type << >>$(MAKEFILE)
+
 # OS = $(OS)
 # RUBY_INSTALL_NAME = ruby
 # RUBY_SO_NAME = $$(RT)-$$(RUBY_INSTALL_NAME)$$(MAJOR)$$(MINOR)
@@ -153,5 +158,4 @@ $(CPU) = $(PROCESSOR_LEVEL)
 
 $(BANG)include $$(srcdir)/win32/Makefile.sub
 <<
-	@$(srcdir:/=\)\win32\rm.bat config.h config.status
 	@echo type `$(MAKE)' to make ruby for $(OS).
