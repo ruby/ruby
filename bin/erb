@@ -107,7 +107,7 @@ class ERB
   -K [kcode]       specify KANJI code-set
   -S [safe_level]  set $SAFE (0..4)
   -T [trim_mode]   specify trim_mode (0..2, -)
-  -P               disregard the lin which starts in "%" 
+  -P               ignore lines which start with "%"
 EOU
         exit 1
       end
