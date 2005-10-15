@@ -26,7 +26,6 @@ if "%1" == "--extout" goto :extout
 if "%1" == "--path" goto :path
 if "%1" == "-h" goto :help
 if "%1" == "--help" goto :help
-  echo>> ~tmp~.mak 	"%1" \
   echo>>confargs.tmp %1 \
   shift
 goto :loop
