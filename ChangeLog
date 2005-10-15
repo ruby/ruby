@@ -1,3 +1,7 @@
+Sat Oct 15 19:56:38 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* bin/erb: typo fixed, again. thanks, Doug Kearns.
+
 Fri Oct 14 22:08:26 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/win32.c (ioctl): should set errno.
