@@ -1,3 +1,10 @@
+Sat Oct 15 23:52:07 2005  Shugo Maeda  <shugo@ruby-lang.org>
+
+	* lib/net/ftp.rb: (getbinaryfile): allow nil for localfile, and
+	  returns retrieved data if localfile is nil.
+
+	* lib/net/ftp.rb: (gettextfile): ditto.
+
 Sat Oct 15 19:51:29 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb: typo fixed, again. thanks, Doug Kearns.

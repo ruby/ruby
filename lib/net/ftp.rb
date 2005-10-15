@@ -507,43 +507,60 @@ module Net
 
     #
     # Retrieves +remotefile+ in binary mode, storing the result in +localfile+.
+    # If +localfile+ is nil, returns retrieved data.
     # If a block is supplied, it is passed the retrieved data in +blocksize+
     # chunks.
     #
     def getbinaryfile(remotefile, localfile = File.basename(remotefile),
-		      blocksize = DEFAULT_BLOCKSIZE, &block) # :yield: data
-      if @resume
-	rest_offset = File.size?(localfile)
-	f = open(localfile, "a")
-      else
-	rest_offset = nil
-	f = open(localfile, "w")
+		      blocksize = DEFAULT_BLOCKSIZE) # :yield: data
+      result = nil
+      if localfile
+        if @resume
+          rest_offset = File.size?(localfile)
+          f = open(localfile, "a")
+        else
+          rest_offset = nil
+          f = open(localfile, "w")
+        end
+      elsif !block_given?
+        result = ""
       end
       begin
-	f.binmode
+	f.binmode if localfile
 	retrbinary("RETR " + remotefile, blocksize, rest_offset) do |data|
-	  f.write(data)
-	  yield(data) if block
+	  f.write(data) if localfile
+	  yield(data) if block_given?
+          result.concat(data) if result
 	end
+        return result
       ensure
-	f.close
+	f.close if localfile
       end
     end
     
     #
     # Retrieves +remotefile+ in ASCII (text) mode, storing the result in
-    # +localfile+. If a block is supplied, it is passed the retrieved data one
+    # +localfile+.
+    # If +localfile+ is nil, returns retrieved data.
+    # If a block is supplied, it is passed the retrieved data one
     # line at a time.
     #
-    def gettextfile(remotefile, localfile = File.basename(remotefile), &block) # :yield: line
-      f = open(localfile, "w")
+    def gettextfile(remotefile, localfile = File.basename(remotefile)) # :yield: line
+      result = nil
+      if localfile
+        f = open(localfile, "w")
+      elsif !block_given?
+        result = ""
+      end
       begin
 	retrlines("RETR " + remotefile) do |line|
-	  f.puts(line)
-	  yield(line) if block
+	  f.puts(line) if localfile
+	  yield(line) if block_given?
+          result.concat(line + "\n") if result
 	end
+        return result
       ensure
-	f.close
+	f.close if localfile
       end
     end
 
