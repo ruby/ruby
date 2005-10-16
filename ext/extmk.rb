@@ -350,12 +350,15 @@ end unless $extstatic
 
 ext_prefix = "#{$top_srcdir}/ext"
 exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
-exts |= $extension if $extension
-exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
-  d = File.dirname(d)
-  d.slice!(0, ext_prefix.length + 1)
-  d
-}.sort unless $extension
+if $extension
+  exts |= $extension.select {|d| File.directory?("#{ext_prefix}/#{d}")}
+else
+  exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
+    d = File.dirname(d)
+    d.slice!(0, ext_prefix.length + 1)
+    d
+  }.sort
+end
 
 if $extout
   Config.expand(extout = "#$extout", Config::CONFIG.merge("topdir"=>$topdir))

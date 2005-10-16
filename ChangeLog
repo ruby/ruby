@@ -1,3 +1,7 @@
+Sun Oct 16 22:16:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* ext/extmk.rb: omit non-existing directories.
+
 Sun Oct 16 14:30:05 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/rinda.rb (Rinda::Tuple#initialize): check remote hash
