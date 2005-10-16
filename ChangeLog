@@ -1,3 +1,10 @@
+Sun Oct 16 14:40:54 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/rinda.rb (Rinda::Tuple#initialize): check remote hash
+	  tuple. fixed: [ruby-list:41227]
+
+	* test/rinda/test_rinda.rb: test it.
+
 Sun Oct 16 00:13:14 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/configure.bat: remove unnecessary line which prevents
