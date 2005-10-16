@@ -1,3 +1,10 @@
+Sun Oct 16 14:30:05 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/rinda.rb (Rinda::Tuple#initialize): check remote hash
+	  tuple. fixed: [ruby-list:41227]
+
+	* test/rinda/test_rinda.rb: test it.
+
 Sat Oct 15 19:56:38 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb: typo fixed, again. thanks, Doug Kearns.

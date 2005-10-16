@@ -31,7 +31,7 @@ module Rinda
   class Tuple
     # Initialize a tuple with an Array or a Hash.
     def initialize(ary_or_hash)
-      if Hash === ary_or_hash
+      if hash?(ary_or_hash)
 	init_with_hash(ary_or_hash)
       else
 	init_with_ary(ary_or_hash)
@@ -68,6 +68,10 @@ module Rinda
     end
 
     private
+    def hash?(ary_or_hash)
+      ary_or_hash.respond_to?(:keys)
+    end
+    
     def init_with_ary(ary)
       @tuple = Array.new(ary.size)
       @tuple.size.times do |i|

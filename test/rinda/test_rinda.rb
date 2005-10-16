@@ -510,6 +510,14 @@ class TupleSpaceProxyTest < Test::Unit::TestCase
     @ts = Rinda::TupleSpaceProxy.new(@ts_base)
   end
 
+  def test_remote_array_and_hash
+    @ts.write(DRbObject.new([1, 2, 3]))
+    assert_equal([1, 2, 3], @ts.take([1, 2, 3], 0))
+    @ts.write(DRbObject.new({'head' => 1, 'tail' => 2}))
+    assert_equal({'head' => 1, 'tail' => 2},
+                 @ts.take({'head' => 1, 'tail' => 2}, 0))
+  end
+
   @server = DRb.primary_server || DRb.start_service
 end
 
