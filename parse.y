@@ -2545,7 +2545,9 @@ int ruby_in_compile = 0;
 int ruby__end__seen;
 
 static VALUE ruby_debug_lines;
+#ifdef YYMALLOC
 static NODE *parser_heap;
+#endif
 
 static NODE*
 yycompile(f, line)
@@ -2585,7 +2587,6 @@ yycompile(f, line)
     lex_strterm = 0;
     ruby_current_node = 0;
     ruby_sourcefile = rb_source_filename(f);
-    parser_heap = 0;
     n = yyparse();
     ruby_debug_lines = 0;
     compile_for_eval = 0;
@@ -2597,7 +2598,6 @@ yycompile(f, line)
     in_single = 0;
     in_def = 0;
     cur_mid = 0;
-    parser_heap = 0;
 
     vp = ruby_dyna_vars;
     ruby_dyna_vars = vars;
@@ -3012,7 +3012,7 @@ static void
 dispose_string(str)
     VALUE str;
 {
-    free(RSTRING(str)->ptr);
+    xfree(RSTRING(str)->ptr);
     rb_gc_force_recycle(str);
 }
 
@@ -5583,11 +5583,11 @@ local_pop()
     struct local_vars *local = lvtbl->prev;
 
     if (lvtbl->tbl) {
-	if (!lvtbl->nofree) free(lvtbl->tbl);
+	if (!lvtbl->nofree) xfree(lvtbl->tbl);
 	else lvtbl->tbl[0] = lvtbl->cnt;
     }
     ruby_dyna_vars = lvtbl->dyna_vars;
-    free(lvtbl);
+    xfree(lvtbl);
     lvtbl = local;
 }
 
@@ -5695,7 +5695,7 @@ top_local_setup()
 		rb_mem_clear(ruby_scope->local_vars+i, len-i);
 	    }
 	    if (ruby_scope->local_tbl && ruby_scope->local_vars[-1] == 0) {
-		free(ruby_scope->local_tbl);
+		xfree(ruby_scope->local_tbl);
 	    }
 	    ruby_scope->local_vars[-1] = 0;
 	    ruby_scope->local_tbl = local_tbl();
@@ -5756,6 +5756,7 @@ ruby_parser_stack_on_heap()
 void
 rb_gc_mark_parser()
 {
+    rb_gc_mark((VALUE)parser_heap);
     if (!ruby_in_compile) return;
 
     rb_gc_mark_maybe((VALUE)yylval.node);
@@ -5763,7 +5764,6 @@ rb_gc_mark_parser()
     rb_gc_mark(lex_lastline);
     rb_gc_mark(lex_input);
     rb_gc_mark((VALUE)lex_strterm);
-    rb_gc_mark((VALUE)parser_heap);
 }
 
 void

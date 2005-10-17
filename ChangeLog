@@ -1,3 +1,8 @@
+Mon Oct 17 21:18:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (parser_heap): byacc never free parser stack.
+	  fixed: [ruby-dev:27428]
+
 Mon Oct 17 16:04:47 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* file.c (chmod_internal, lchmod_internal): fixed type of 2nd argument.
