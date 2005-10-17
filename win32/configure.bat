@@ -31,7 +31,7 @@ if "%1" == "--help" goto :help
 goto :loop
 :srcdir
   echo>> ~tmp~.mak 	"srcdir=%2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp --srcdir=%2 \
   shift
   shift
 goto :loop
@@ -61,7 +61,7 @@ goto :loop
 goto :loop
 :target
   echo>> ~tmp~.mak 	"%2" \
-  echo>>confargs.tmp %1=%2 \
+  echo>>confargs.tmp --target=%2 \
   shift
   shift
 goto :loop

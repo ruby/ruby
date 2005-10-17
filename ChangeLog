@@ -1,3 +1,9 @@
+Mon Oct 17 09:42:50 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* mkconfig.rb: fixup configure_args for mswin32 configure.
+
+	* win32/configure.bat (srcdir, target): ditto.
+
 Sun Oct 16 22:16:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: omit non-existing directories.
