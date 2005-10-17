@@ -1689,11 +1689,13 @@ struct chown_args {
     int owner, group;
 };
 
+static void chown_internal _((const char *, void *));
 static void
-chown_internal(path, args)
+chown_internal(path, argp)
     const char *path;
-    struct chown_args *args;
+    void *argp;
 {
+    struct chown_args *args = (struct chown_args *)argp;
     if (chown(path, args->owner, args->group) < 0)
 	rb_sys_fail(path);
 }
@@ -1780,11 +1782,13 @@ rb_file_chown(obj, owner, group)
 }
 
 #if defined(HAVE_LCHOWN) && !defined(__CHECKER__)
+static void lchown_internal _((const char *, void *));
 static void
-lchown_internal(path, args)
+lchown_internal(path, argp)
     const char *path;
-    struct chown_args *args;
+    void *argp;
 {
+    struct chown_args *args = (struct chown_args *)argp;
     if (lchown(path, args->owner, args->group) < 0)
 	rb_sys_fail(path);
 }
