@@ -7,7 +7,7 @@ end
 $INSTALLFILES = [
   ["dl.h", "$(archdir)$(target_prefix)", ""],
 ]
-$distcleanfiles = "callback.h"
+$distcleanfiles << "callback.h"
 
 
 check = true
