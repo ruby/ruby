@@ -649,7 +649,7 @@ mark_entry(key, value, lev)
     return ST_CONTINUE;
 }
 
-void
+static void
 mark_tbl(tbl, lev)
     st_table *tbl;
     int lev;
@@ -676,7 +676,7 @@ mark_keyvalue(key, value, lev)
     return ST_CONTINUE;
 }
 
-void
+static void
 mark_hash(tbl, lev)
     st_table *tbl;
     int lev;

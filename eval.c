@@ -12570,7 +12570,7 @@ thgroup_list(group)
  *     ThreadError: can't move from the enclosed thread group
  */
 
-VALUE
+static VALUE
 thgroup_enclose(group)
     VALUE group;
 {
