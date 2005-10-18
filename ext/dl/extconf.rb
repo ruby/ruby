@@ -7,6 +7,8 @@ end
 $INSTALLFILES = [
   ["dl.h", "$(archdir)$(target_prefix)", ""],
 ]
+$distcleanfiles = "callback.h"
+
 
 check = true
 if( have_header("dlfcn.h") )

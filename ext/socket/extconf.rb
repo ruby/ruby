@@ -268,6 +268,8 @@ end
 have_header("sys/un.h")
 have_header("sys/uio.h")
 
+$distcleanfiles = "constants.h"
+
 if have_func(test_func)
   have_func("hsterror")
   have_func("getipnodebyname") or have_func("gethostbyname2")

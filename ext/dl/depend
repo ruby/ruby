@@ -1,5 +1,3 @@
-DISTCLEANFILES = $(srcdir)/callback.h
-
 cfunc.o: cfunc.c dl.h
 
 cptr.o: cptr.c dl.h
