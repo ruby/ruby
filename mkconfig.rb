@@ -50,6 +50,7 @@ File.foreach "config.status" do |line|
     next if /^\$ac_\w+$/ =~ val
     next if $install_name and /^RUBY_INSTALL_NAME$/ =~ name
     next if $so_name and /^RUBY_SO_NAME$/ =~  name
+    val.gsub!(/ +(?!-)/, "=") if name == "configure_args" && /mswin32/ =~ RUBY_PLATFORM
     v = "  CONFIG[\"" + name + "\"] = " +
       val.gsub(/\$(?:\$|\{?(\w+)\}?)/) {$1 ? "$(#{$1})" : $&}.dump + "\n"
     if fast[name]
