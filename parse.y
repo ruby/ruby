@@ -237,7 +237,7 @@ static int parser_yyerror(struct parser_params*, const char*);
 static int yylex(void*, void*);
 
 #ifndef RIPPER
-#define yyparse parser_yyparse
+#define yyparse ruby_yyparse
 #define yydebug ruby_yydebug
 
 static NODE *cond_gen(struct parser_params*,NODE*);

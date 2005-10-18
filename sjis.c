@@ -76,7 +76,7 @@ sjis_mbc_enc_len(const UChar* p)
   return EncLen_SJIS[*p];
 }
 
-extern int
+static int
 sjis_code_to_mbclen(OnigCodePoint code)
 {
   if (code < 256) {

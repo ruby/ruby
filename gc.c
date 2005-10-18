@@ -643,7 +643,7 @@ mark_entry(ID key, VALUE value, int lev)
     return ST_CONTINUE;
 }
 
-void
+static void
 mark_tbl(st_table *tbl, int lev)
 {
     if (!tbl) return;
@@ -664,7 +664,7 @@ mark_keyvalue(VALUE key, VALUE value, int lev)
     return ST_CONTINUE;
 }
 
-void
+static void
 mark_hash(st_table *tbl, int lev)
 {
     if (!tbl) return;

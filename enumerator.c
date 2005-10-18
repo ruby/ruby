@@ -261,7 +261,7 @@ enumerator_allocate(VALUE klass)
 			    enumerator_mark, -1, ptr);
 }
 
-VALUE
+static VALUE
 enumerator_init(VALUE enum_obj, VALUE obj, VALUE meth, int argc, VALUE *argv)
 {
     struct enumerator *ptr = enumerator_ptr(enum_obj);

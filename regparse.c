@@ -1104,7 +1104,7 @@ node_new_cclass(void)
   return node;
 }
 
-extern Node*
+static Node*
 node_new_cclass_by_codepoint_range(int not,
                    OnigCodePoint sbr[], OnigCodePoint mbr[])
 {

@@ -104,7 +104,7 @@ time_init(VALUE time)
 #define NDIV(x,y) (-(-((x)+1)/(y))-1)
 #define NMOD(x,y) ((y)-(-((x)+1)%(y))-1)
 
-void
+static void
 time_overflow_p(time_t *secp, time_t *usecp)
 {
     time_t tmp, sec = *secp, usec = *usecp;

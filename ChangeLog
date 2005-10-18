@@ -1,3 +1,8 @@
+Wed Oct 19 02:34:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* enumerator.c, eval.c, gc.c, parse.y, regparse.c, sjis.c, time.c:
+	  made internal symbols static.  [ruby-dev:27435]
+
 Tue Oct 18 10:58:27 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* ext/dl/depend, ext/dl/extconf.rb, ext/socket/depend,
