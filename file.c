@@ -2745,7 +2745,7 @@ rb_file_join(VALUE ary, VALUE sep)
 	name = StringValueCStr(result);
 	if (i > 0 && !NIL_P(sep)) {
 	    tail = chompdirsep(name);
-	    if (isdirsep(RSTRING(tmp)->ptr[0])) {
+	    if (RSTRING(tmp)->ptr && isdirsep(RSTRING(tmp)->ptr[0])) {
 		RSTRING(result)->len = tail - name;
 	    }
 	    else if (!*tail) {
