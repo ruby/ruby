@@ -1,3 +1,8 @@
+Wed Oct 19 08:28:32 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* file.c (rb_file_join): elements may contain null pointer strings.
+	  report and fixed by Lloyd Zusman (hippoman): [ruby-core:06326]
+
 Wed Oct 19 02:34:33 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c, gc.c, time.c: made internal symbols static.  [ruby-dev:27435]
