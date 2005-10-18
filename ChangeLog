@@ -1,3 +1,8 @@
+Wed Oct 19 01:27:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* regex.c (re_compile_pattern): numeric literal inside character class
+	  disabled succeeding backtrack.  fixed: [ruby-list:41328]
+
 Mon Oct 17 21:18:50 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (parser_heap): byacc never free parser stack.

@@ -1725,6 +1725,7 @@ re_compile_pattern(pattern, size, bufp)
 	memmove(&b[(unsigned char)b[-1]], &b[(1 << BYTEWIDTH) / BYTEWIDTH],
 		2 + EXTRACT_UNSIGNED(&b[(1 << BYTEWIDTH) / BYTEWIDTH])*8);
       b += b[-1] + 2 + EXTRACT_UNSIGNED(&b[(unsigned char)b[-1]])*8;
+      had_num_literal = 0;
       break;
 
     case '(':
