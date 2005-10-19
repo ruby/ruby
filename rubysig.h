@@ -94,11 +94,11 @@ RUBY_EXTERN int rb_thread_tick;
 #define CHECK_INTS do {\
     if (!(rb_prohibit_interrupt | rb_thread_critical)) {\
 	if (rb_thread_tick-- <= 0) {\
-	    rb_thread_tick = THREAD_TICK;
-            rb_thread_schedule();
+	    rb_thread_tick = THREAD_TICK;\
+            rb_thread_schedule();\
 	}\
     }\
-   if (rb_trap_pending) rb_trap_exec();\
+    if (rb_trap_pending) rb_trap_exec();\
 } while (0)
 #endif
 
