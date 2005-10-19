@@ -1,7 +1,7 @@
 Wed Oct 19 23:58:03 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
-	* lib/mkmf.rb (create_makefile): do not unnecessary empty directories.
-	  fixed: [ruby-dev:27451]
+	* lib/mkmf.rb (create_makefile): do not create unnecessary empty
+	  directories.  fixed: [ruby-dev:27451]
 
 Wed Oct 19 08:28:32 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
