@@ -1108,10 +1108,9 @@ static:		$(STATIC_LIB)#{$extout ? " install-rb" : ""}
       mfile.print "\t$(INSTALL_PROG) #{f} #{dir}\n"
     end
   end
-  dirs << (dir = "$(RUBYLIBDIR)")
   mfile.print("install-rb: pre-install-rb install-rb-default\n")
   mfile.print("install-rb-default: pre-install-rb-default\n")
-  mfile.print("pre-install-rb pre-install-rb-default: #{dir}\n")
+  mfile.print("pre-install-rb pre-install-rb-default:\n")
   for sfx, i in [["-default", [["lib/**/*.rb", "$(RUBYLIBDIR)", "lib"]]], ["", $INSTALLFILES]]
     files = install_files(mfile, i, nil, srcprefix) or next
     for dir, *files in files
@@ -1209,7 +1208,7 @@ site-install-rb: install-rb
 	  end
 	end
 	if m = /\A\.(\w+)\.(\w+)(?:\s*:)/.match(line)
-          suffixes << m[1] << m[2]
+	  suffixes << m[1] << m[2]
 	  implicit = [[m[1], m[2]], [m.post_match]]
 	  next
 	elsif RULE_SUBST and /\A[$\w][^#]*:/ =~ line
