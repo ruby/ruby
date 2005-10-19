@@ -37,6 +37,17 @@ Sun Oct 16 14:30:05 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* test/rinda/test_rinda.rb: test it.
 
+Sun Oct 16 03:38:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* rubysig.h (CHECK_INTS): prevent signal handler to run during
+	  critical section.  [ruby-core:04039]
+
+	* eval.c (load_wait): need not to call rb_thread_schedule()
+	  explicitly.  [ruby-core:04039]
+
+	* eval.c (rb_thread_schedule): clear rb_thread_critical.
+	  [ruby-core:04039]
+
 Sat Oct 15 19:56:38 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* bin/erb: typo fixed, again. thanks, Doug Kearns.
@@ -74,6 +85,11 @@ Tue Oct 11 21:41:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  method with the given visibility.  [ruby-dev:27408]
 
 	* eval.c (rb_respond_to): conform to Object#respond_to?.  [ruby-dev:27411]
+
+Tue Oct 11 00:01:21 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (st_free_table): do not call free() but xfree().
+	  [ruby-core:06205]
 
 Sat Oct  8 20:04:40 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
