@@ -10,7 +10,8 @@ ripper.o: ripper.c $(hdrdir)/lex.c eventids1.c $(srcdir)/eventids2.c eventids2ta
 .y.c:
 	$(BISON) -t -v -o$@ $<
 
-all static: check
+all: check
+static: check
 
 ripper.y: $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y
 	$(RUBY) $(srcdir)/tools/preproc.rb $(hdrdir)/parse.y --output=$@
