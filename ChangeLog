@@ -1,3 +1,8 @@
+Thu Oct 20 07:55:09 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/mkmf.rb (create_makefile): get rid of a restriction
+	  of Borland make.  fixed: [ruby-dev:27460]
+
 Thu Oct 20 00:13:18 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* rubysig.h (CHECK_INTS): fix typo.
