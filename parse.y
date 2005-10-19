@@ -2467,6 +2467,10 @@ terms		: term
 none		: /* none */ {$$ = 0;}
 		;
 %%
+#ifdef yystacksize
+#undef YYMALLOC
+#endif
+
 #include "regex.h"
 #include "util.h"
 
@@ -5756,7 +5760,12 @@ ruby_parser_stack_on_heap()
 void
 rb_gc_mark_parser()
 {
+#if defined YYMALLOC
     rb_gc_mark((VALUE)parser_heap);
+#elif defined yystacksize
+    if (yyvsp) rb_gc_mark_locations((VALUE *)yyvs, (VALUE *)yyvsp);
+#endif
+
     if (!ruby_in_compile) return;
 
     rb_gc_mark_maybe((VALUE)yylval.node);

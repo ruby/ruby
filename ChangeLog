@@ -1,3 +1,8 @@
+Wed Oct 19 19:26:15 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* parse.y (rb_gc_mark_parser): get rid of segfault with old yacc.
+	  fixed: [ruby-dev:27439]
+
 Wed Oct 19 08:28:32 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* file.c (rb_file_join): elements may contain null pointer strings.
