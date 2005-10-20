@@ -1,3 +1,9 @@
+Thu Oct 20 09:36:06 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* lib/mkmf.rb (create_makefile): Borland make seems not to allow
+	  empty dependency list. If this change is not good, please correct
+	  it.
+
 Thu Oct 20 07:55:09 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* lib/mkmf.rb (create_makefile): get rid of a restriction
@@ -523,7 +529,7 @@ Tue Sep 20 17:26:42 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 Tue Sep 20 17:14:10 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
-	* io.c: PIPE_BUF is not defined in BeOS. use _POSIX_PIPE_BUF instead.
+	* io.c: PIPE_BUF is not defined on BeOS. use _POSIX_PIPE_BUF instead.
 	  [ruby-dev:27185]
 
 Tue Sep 20 17:10:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
@@ -1011,7 +1017,7 @@ Tue Sep 13 14:27:47 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  because of crypt argument's constness mismatch. (I hope this works)
 	  (http://mput.dip.jp/autobuild/ruby-trunk/log/20050913T110001.gz)
 
-Tue Sep 13 12:33:05 2005    <why@ruby-lang.org>
+Tue Sep 13 12:33:05 2005  why the lucky stiff  <why@ruby-lang.org>
 
 	* lib/yaml.rb: reworking YAML::Stream to use the new
 	  emitter.
@@ -1025,12 +1031,12 @@ Tue Sep 13 12:33:05 2005    <why@ruby-lang.org>
 	  continue support of Object#to_yaml_type.
 
 	* ext/syck/rubyext.c: new emitter code.  yaml_new and yaml_initialize
-	  get called, should they be present.  consolidated all the diaspora of internal
-	  node types into the family below YAML::Syck::Node -- Map,
+	  get called, should they be present.  consolidated all the diaspora of 	  internal node types into the family below YAML::Syck::Node -- Map,
 	  Seq, Scalar -- all of whom are SyckNode structs pointing to
-	  Ruby data.  moved Object#yaml_new into the node_import and made it the
-	  default behavior.  the target_class is always called wih yaml_new, prepended
-	  a parameter, which is the klass.  loaded nodes through GenericResolver show their style.
+	  Ruby data.  moved Object#yaml_new into the node_import and made it
+	  the default behavior.  the target_class is always called wih
+	  yaml_new, prepended a parameter, which is the klass.  loaded nodes
+	  through GenericResolver show their style.
 	  new Resolver#tagurize converts type ids to taguris.
 
 	* ext/syck/implicit.re: were 'y' and 'n' seriously omitted??
