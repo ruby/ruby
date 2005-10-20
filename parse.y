@@ -149,9 +149,9 @@ struct parser_params {
     int parser_toksiz;
     VALUE parser_lex_input;
     VALUE parser_lex_lastline;
-    char *parser_lex_pbeg;
-    char *parser_lex_p;
-    char *parser_lex_pend;
+    const char *parser_lex_pbeg;
+    const char *parser_lex_p;
+    const char *parser_lex_pend;
     int parser_heredoc_end;
     int parser_command_start;
     int parser_lex_gets_ptr;
@@ -167,7 +167,7 @@ struct parser_params {
     /* Ripper only */
     int parser_ruby_sourceline;
     VALUE parser_ruby_sourcefile;
-    char *tokp;
+    const char *tokp;
     VALUE delayed;
     int delayed_line;
     int delayed_col;
@@ -4461,7 +4461,7 @@ static void
 ripper_dispatch_delayed_token(struct parser_params *parser, int t)
 {
     int saved_line = ruby_sourceline;
-    char *saved_tokp = parser->tokp;
+    const char *saved_tokp = parser->tokp;
 
     ruby_sourceline = parser->delayed_line;
     parser->tokp = lex_pbeg + parser->delayed_col;
@@ -4492,7 +4492,8 @@ static int
 parser_yyerror(struct parser_params *parser, const char *msg)
 {
 #ifndef RIPPER
-    char *p, *pe, *buf;
+    const char *p, *pe;
+    char *buf;
     int len, i;
 
     rb_compile_error("%s", msg);
@@ -4511,17 +4512,18 @@ parser_yyerror(struct parser_params *parser, const char *msg)
 
     len = pe - p;
     if (len > 4) {
+	char *p2;
 	buf = ALLOCA_N(char, len+2);
 	MEMCPY(buf, p, char, len);
 	buf[len] = '\0';
 	rb_compile_error_append("%s", buf);
 
 	i = lex_p - p;
-	p = buf; pe = p + len;
+	p2 = buf; pe = buf + len;
 
-	while (p < pe) {
-	    if (*p != '\t') *p = ' ';
-	    p++;
+	while (p2 < pe) {
+	    if (*p2 != '\t') *p2 = ' ';
+	    p2++;
 	}
 	buf[i] = '^';
 	buf[i+1] = '\0';
@@ -5292,7 +5294,7 @@ static int
 parser_whole_match_p(struct parser_params *parser,
     const char *eos, int len, int indent)
 {
-    char *p = lex_pbeg;
+    const char *p = lex_pbeg;
     int n;
 
     if (indent) {
@@ -5308,7 +5310,7 @@ static int
 parser_here_document(struct parser_params *parser, NODE *here)
 {
     int c, func, indent = 0;
-    char *eos, *p, *pend;
+    const char *eos, *p, *pend;
     long len;
     VALUE str = 0;
 
@@ -6570,7 +6572,7 @@ parser_yylex(struct parser_params *parser)
 	    c = '_';
 	    /* fall through */
 	  case '~':		/* $~: match-data */
-	    local_cnt(c);
+	    (void)local_cnt(c);
 	    /* fall through */
 	  case '*':		/* $*: argv */
 	  case '$':		/* $$: pid */
@@ -8362,6 +8364,7 @@ char *
 rb_id2name(ID id)
 {
     char *name;
+    st_data_t data;
 
     if (id < tLAST_TOKEN) {
 	int i = 0;
@@ -8372,8 +8375,8 @@ rb_id2name(ID id)
 	}
     }
 
-    if (st_lookup(global_symbols.rev, id, (st_data_t *)&name))
-	return name;
+    if (st_lookup(global_symbols.rev, id, &data))
+	return (char *)data;
 
     if (is_attrset_id(id)) {
 	ID id2 = (id & ~ID_SCOPE_MASK) | ID_LOCAL;
@@ -8686,7 +8689,7 @@ rb_parser_free(struct parser_params *parserp, void *ptr)
 {
     NODE **prev = &parserp->heap, *n;
 
-    while (n = *prev) {
+    while ((n = *prev) != NULL) {
 	if (n->u1.node == ptr) {
 	    *prev = n->u2.node;
 	    rb_gc_force_recycle((VALUE)n);
