@@ -51,9 +51,9 @@ def prelude(f, out)
       out << '%%' << $/
       return
     when /\A%token/
-      out << line.sub(/<\w+>/, '<val>') << $/
+      out << line.sub(/<\w+>/, '<val>')
     when /\A%type/
-      out << line.sub(/<\w+>/, '<val>') << $/
+      out << line.sub(/<\w+>/, '<val>')
     else
       out << line
     end

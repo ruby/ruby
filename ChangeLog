@@ -1,6 +1,9 @@
-Thu Oct 20 22:14:43 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+Thu Oct 20 22:22:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parser.y (struct parser_params): parser never modify input string.
+
+	* ext/ripper/tools/preproc.rb (prelude): do not append surplus
+	  newlines to fix line numbers.
 
 Thu Oct 20 11:41:57 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
