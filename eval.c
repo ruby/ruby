@@ -65,10 +65,6 @@ void *alloca ();
 
 #include <stdarg.h>
 
-#ifndef HAVE_STRING_H
-char *strrchr(const char*,const char);
-#endif
-
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
@@ -1029,8 +1025,8 @@ static void pop_thread_anchor(struct ruby_env *);
     POP_TAG()
 
 static VALUE rb_eval(VALUE,NODE*);
-static VALUE eval(VALUE,VALUE,VALUE,char*,int);
-static NODE *compile(VALUE, char*, int);
+static VALUE eval(VALUE,VALUE,VALUE,const char*,int);
+static NODE *compile(VALUE, const char*, int);
 
 static VALUE rb_yield_0(VALUE, VALUE, VALUE, int, int);
 
@@ -6066,7 +6062,7 @@ rb_frame_this_func(void)
 }
 
 static NODE*
-compile(VALUE src, char *file, int line)
+compile(VALUE src, const char *file, int line)
 {
     NODE *node;
     int critical;
@@ -6083,7 +6079,7 @@ compile(VALUE src, char *file, int line)
 }
 
 static VALUE
-eval(VALUE self, VALUE src, VALUE scope, char *file, int line)
+eval(VALUE self, VALUE src, VALUE scope, const char *file, int line)
 {
     struct BLOCK *data = NULL;
     volatile VALUE result = Qnil;

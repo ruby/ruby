@@ -1,20 +1,19 @@
 /* public domain rewrite of strstr(3) */
 
 char *
-strstr(haystack, needle)
-    char *haystack, *needle;
+strstr(const char *haystack, const char *needle)
 {
-    char *hend;
-    char *a, *b;
+    const char *hend;
+    const char *a, *b;
 
-    if (*needle == 0) return haystack;
+    if (*needle == 0) return (char *)haystack;
     hend = haystack + strlen(haystack) - strlen(needle) + 1;
     while (haystack < hend) {
 	if (*haystack == *needle) {
 	    a = haystack;
 	    b = needle;
 	    for (;;) {
-		if (*b == 0) return haystack;
+		if (*b == 0) return (char *)haystack;
 		if (*a++ != *b++) {
 		    break;
 		}

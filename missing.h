@@ -99,8 +99,8 @@ extern int strncasecmp(char *, char *, int);
 #endif
 
 #ifndef HAVE_STRCHR
-extern char *strchr(char *, int);
-extern char *strrchr(char *, int);
+extern char *strchr(const char *, int);
+extern char *strrchr(const char *, int);
 #endif
 
 #ifndef HAVE_STRERROR
@@ -112,7 +112,7 @@ extern size_t strftime(char *, size_t, const char *, const struct tm *);
 #endif
 
 #ifndef HAVE_STRSTR
-extern char *strstr(char *, char *);
+extern char *strstr(const char *, const char *);
 #endif
 
 /*

@@ -53,10 +53,6 @@ VALUE rb_time_new(time_t, time_t);
 #include <pwd.h>
 #endif
 
-#ifndef HAVE_STRING_H
-char *strrchr(const char*,const char);
-#endif
-
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -3881,8 +3877,7 @@ path_check_0(VALUE path, int loadpath)
 #endif
 
 static int
-fpath_check(path)
-    char *path;
+fpath_check(const char *path)
 {
 #ifndef DOSISH
     return path_check_0(rb_str_new2(path), Qfalse);

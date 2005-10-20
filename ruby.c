@@ -40,12 +40,6 @@
 # define MAXPATHLEN 1024
 #endif
 
-#ifndef HAVE_STRING_H
-char *strchr(const char*,const char);
-char *strrchr(const char*,const char);
-char *strstr(const char*,const char*);
-#endif
-
 #include "util.h"
 
 #ifndef HAVE_STDLIB_H
