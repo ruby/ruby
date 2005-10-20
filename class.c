@@ -728,25 +728,25 @@ rb_obj_singleton_methods(int argc, VALUE *argv, VALUE obj)
 }
 
 void
-rb_define_method_id(VALUE klass, ID name, VALUE (*func) (/* ??? */), int argc)
+rb_define_method_id(VALUE klass, ID name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_add_method(klass, name, NEW_CFUNC(func,argc), NOEX_PUBLIC);
 }
 
 void
-rb_define_method(VALUE klass, const char *name, VALUE (*func) (/* ??? */), int argc)
+rb_define_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PUBLIC);
 }
 
 void
-rb_define_protected_method(VALUE klass, const char *name, VALUE (*func) (/* ??? */), int argc)
+rb_define_protected_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PROTECTED);
 }
 
 void
-rb_define_private_method(VALUE klass, const char *name, VALUE (*func) (/* ??? */), int argc)
+rb_define_private_method(VALUE klass, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_add_method(klass, rb_intern(name), NEW_CFUNC(func, argc), NOEX_PRIVATE);
 }
@@ -799,20 +799,20 @@ rb_singleton_class(VALUE obj)
 }
 
 void
-rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func) (/* ??? */), int argc)
+rb_define_singleton_method(VALUE obj, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_define_method(rb_singleton_class(obj), name, func, argc);
 }
 
 void
-rb_define_module_function(VALUE module, const char *name, VALUE (*func) (/* ??? */), int argc)
+rb_define_module_function(VALUE module, const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_define_private_method(module, name, func, argc);
     rb_define_singleton_method(module, name, func, argc);
 }
 
 void
-rb_define_global_function(const char *name, VALUE (*func) (/* ??? */), int argc)
+rb_define_global_function(const char *name, VALUE (*func)(ANYARGS), int argc)
 {
     rb_define_module_function(rb_mKernel, name, func, argc);
 }

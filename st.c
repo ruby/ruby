@@ -458,7 +458,7 @@ st_cleanup_safe(st_table *table, st_data_t never)
 }
 
 int
-st_foreach(st_table *table, int (*func) (/* ??? */), st_data_t arg)
+st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 {
     st_table_entry *ptr, *last, *tmp;
     enum st_retval retval;

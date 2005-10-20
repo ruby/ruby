@@ -446,8 +446,8 @@ void
 rb_define_hooked_variable(
     const char *name,
     VALUE *var,
-    VALUE (*getter) (/* ??? */),
-    void  (*setter) (/* ??? */))
+    VALUE (*getter)(ANYARGS),
+    void  (*setter)(ANYARGS))
 {
     struct global_variable *gvar;
     ID id = global_id(name);
@@ -474,8 +474,8 @@ rb_define_readonly_variable(const char *name, VALUE *var)
 void
 rb_define_virtual_variable(
     const char *name,
-    VALUE (*getter) (/* ??? */),
-    void  (*setter) (/* ??? */))
+    VALUE (*getter)(ANYARGS),
+    void  (*setter)(ANYARGS))
 {
     if (!getter) getter = val_getter;
     if (!setter) setter = readonly_setter;

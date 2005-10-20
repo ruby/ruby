@@ -1,3 +1,8 @@
+Thu Oct 20 11:41:57 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* class.c, eval.c, hash.c, st.c, variable.c: changed /* ??? */ stuff
+	  protoize generated to ANYARGS.
+
 Thu Oct 20 11:18:11 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* eval.c, file.c, ruby.c: removed strchr, strrchr, strstr definition

@@ -5098,7 +5098,7 @@ assign(VALUE self, NODE *lhs, VALUE val, int pcall)
 }
 
 VALUE
-rb_iterate(VALUE (*it_proc) (VALUE), VALUE data1, VALUE (*bl_proc) (/* ??? */), VALUE data2)
+rb_iterate(VALUE (*it_proc)(VALUE), VALUE data1, VALUE (*bl_proc)(ANYARGS), VALUE data2)
 {
     int state;
     volatile VALUE retval = Qnil;
@@ -5208,7 +5208,7 @@ rb_rescue2(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*r_proc)(ANYARGS), VALU
 }
 
 VALUE
-rb_rescue(VALUE (*b_proc) (/* ??? */), VALUE data1, VALUE (*r_proc) (/* ??? */), VALUE data2)
+rb_rescue(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*r_proc)(ANYARGS), VALUE data2)
 {
     return rb_rescue2(b_proc, data1, r_proc, data2, rb_eStandardError, (VALUE)0);
 }
@@ -5242,7 +5242,7 @@ rb_protect(VALUE (*proc) (VALUE), VALUE data, int *state)
 }
 
 VALUE
-rb_ensure(VALUE (*b_proc) (/* ??? */), VALUE data1, VALUE (*e_proc) (/* ??? */), VALUE data2)
+rb_ensure(VALUE (*b_proc)(ANYARGS), VALUE data1, VALUE (*e_proc)(ANYARGS), VALUE data2)
 {
     int state;
     volatile VALUE result = Qnil;
@@ -5261,7 +5261,7 @@ rb_ensure(VALUE (*b_proc) (/* ??? */), VALUE data1, VALUE (*e_proc) (/* ??? */),
 }
 
 VALUE
-rb_with_disable_interrupt(VALUE (*proc) (/* ??? */), VALUE data)
+rb_with_disable_interrupt(VALUE (*proc)(ANYARGS), VALUE data)
 {
     VALUE result = Qnil;	/* OK */
     int status;
@@ -5415,7 +5415,7 @@ method_missing(VALUE obj, ID id, int argc, const VALUE *argv, int call_status)
 }
 
 static inline VALUE
-call_cfunc(VALUE (*func) (/* ??? */), VALUE recv, int len, int argc, const VALUE *argv)
+call_cfunc(VALUE (*func)(ANYARGS), VALUE recv, int len, int argc, const VALUE *argv)
 {
     if (len >= 0 && argc != len) {
 	rb_raise(rb_eArgError, "wrong number of arguments (%d for %d)",
@@ -11566,7 +11566,7 @@ thread_insert(rb_thread_t th)
 }
 
 static VALUE
-rb_thread_start_0(VALUE (*fn) (/* ??? */), VALUE arg, rb_thread_t th)
+rb_thread_start_0(VALUE (*fn)(ANYARGS), VALUE arg, rb_thread_t th)
 {
     volatile rb_thread_t th_save = th;
     volatile VALUE thread = th->thread;
@@ -11732,7 +11732,7 @@ rb_thread_start_1(void)
 }
 
 VALUE
-rb_thread_create(VALUE (*fn) (/* ??? */), void *arg)
+rb_thread_create(VALUE (*fn)(ANYARGS), void *arg)
 {
     Init_stack((VALUE*)&arg);
     return rb_thread_start_0(fn, (VALUE)arg, rb_thread_alloc(rb_cThread));
@@ -12826,7 +12826,7 @@ catch_i(VALUE tag)
 }
 
 VALUE
-rb_catch(const char *tag, VALUE (*func) (/* ??? */), VALUE data)
+rb_catch(const char *tag, VALUE (*func)(ANYARGS), VALUE data)
 {
     return rb_iterate((VALUE(*)(VALUE))catch_i, ID2SYM(rb_intern(tag)), func, data);
 }

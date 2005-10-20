@@ -119,7 +119,7 @@ foreach_safe_i(st_data_t key, st_data_t value, struct foreach_safe_arg *arg)
 }
 
 void
-st_foreach_safe(st_table *table, int (*func) (/* ??? */), st_data_t a)
+st_foreach_safe(st_table *table, int (*func)(ANYARGS), st_data_t a)
 {
     struct foreach_safe_arg arg;
 
@@ -185,7 +185,7 @@ hash_foreach_call(struct hash_foreach_arg *arg)
 }
 
 void
-rb_hash_foreach(VALUE hash, int (*func) (/* ??? */), VALUE farg)
+rb_hash_foreach(VALUE hash, int (*func)(ANYARGS), VALUE farg)
 {
     struct hash_foreach_arg arg;
 
