@@ -437,7 +437,7 @@ getaddrinfo(hostname, servname, hints, res)
 			s = socket(afd->a_af, SOCK_DGRAM, 0);
 			if (s < 0)
 				continue;
-#if defined(HAVE_CLOSESOCKET)
+#if defined(__BEOS__)
 			closesocket(s);
 #else
 			close(s);

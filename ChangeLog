@@ -1,3 +1,23 @@
+Fri Oct 21 15:42:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* intern.h, struct.c (rb_struct_iv_get): constified.
+
+	* marshal.c: avoid one VC++6 warning for implicit conversion
+	  from int to char.
+
+	* ruby.h: ANSI styled.
+
+	* bcc32/Makefile.sub (HAVE_HYPOT): added.
+
+	* ext/socket/extconf.rb: BeOS is only one platform should call
+	  closesocket, so check __BEOS__ macro directly. (I was worried
+	  accidently HAVE_CLOSESOCKET is defined on windows again because
+	  it has it)
+
+	* ext/socket/{getaddrinfo.c,socket.c}: ditto.
+
+	... these are all cosmetic changes.
+
 Fri Oct 21 15:23:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bignum.c (bignew_1): convertion from `int' to `char' discards

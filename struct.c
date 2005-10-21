@@ -17,7 +17,7 @@ VALUE rb_cStruct;
 static VALUE struct_alloc(VALUE);
 
 VALUE
-rb_struct_iv_get(VALUE c, char *name)
+rb_struct_iv_get(VALUE c, const char *name)
 {
     ID id;
 
@@ -123,9 +123,9 @@ static VALUE rb_struct_ref7(VALUE obj) {return RSTRUCT(obj)->ptr[7];}
 static VALUE rb_struct_ref8(VALUE obj) {return RSTRUCT(obj)->ptr[8];}
 static VALUE rb_struct_ref9(VALUE obj) {return RSTRUCT(obj)->ptr[9];}
 
-#define N_REF_FUNC (sizeof(ref_func) / sizeof(VALUE (*)()))
+#define N_REF_FUNC (sizeof(ref_func) / sizeof(ref_func[0]))
 
-static VALUE (*ref_func[])() = {
+static VALUE (*ref_func[])(VALUE) = {
     rb_struct_ref0,
     rb_struct_ref1,
     rb_struct_ref2,
@@ -213,8 +213,6 @@ make_struct(VALUE name, VALUE members, VALUE klass)
 
     return nstr;
 }
-
-#include <stdarg.h>
 
 VALUE
 rb_struct_define(const char *name, ...)

@@ -116,7 +116,7 @@ class2path(VALUE klass)
 static void w_long(long, struct dump_arg*);
 
 static void
-w_nbyte(char *s, int n, struct dump_arg *arg)
+w_nbyte(const char *s, int n, struct dump_arg *arg)
 {
     VALUE buf = arg->str;
     rb_str_buf_cat(buf, s, n);
@@ -134,7 +134,7 @@ w_byte(char c, struct dump_arg *arg)
 }
 
 static void
-w_bytes(char *s, int n, struct dump_arg *arg)
+w_bytes(const char *s, int n, struct dump_arg *arg)
 {
     w_long(n, arg);
     w_nbyte(s, n, arg);
@@ -319,7 +319,7 @@ w_symbol(ID id, struct dump_arg *arg)
 }
 
 static void
-w_unique(char *s, struct dump_arg *arg)
+w_unique(const char *s, struct dump_arg *arg)
 {
     if (s[0] == '#') {
 	rb_raise(rb_eTypeError, "can't dump anonymous class %s", s);
@@ -358,7 +358,7 @@ w_extended(VALUE klass, struct dump_arg *arg, int check)
 }
 
 static void
-w_class(int type, VALUE obj, struct dump_arg *arg, int check)
+w_class(char type, VALUE obj, struct dump_arg *arg, int check)
 {
     char *path;
 
@@ -908,7 +908,7 @@ r_ivar(VALUE obj, struct load_arg *arg)
 }
 
 static VALUE
-path2class(char *path)
+path2class(const char *path)
 {
     VALUE v = rb_path2class(path);
 
@@ -919,7 +919,7 @@ path2class(char *path)
 }
 
 static VALUE
-path2module(char *path)
+path2module(const char *path)
 {
     VALUE v = rb_path2class(path);
 

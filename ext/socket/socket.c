@@ -193,7 +193,7 @@ ruby_getaddrinfo__aix(nodename, servname, hints, res)
 #define getaddrinfo(node,serv,hints,res) ruby_getaddrinfo__aix((node),(serv),(hints),(res))
 #endif
 
-#ifdef HAVE_CLOSESOCKET
+#ifdef __BEOS__
 #undef close
 #define close closesocket
 #endif

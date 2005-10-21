@@ -655,12 +655,7 @@ RUBY_EXTERN VALUE rb_stdin, rb_stdout, rb_stderr;
 RUBY_EXTERN VALUE ruby_errinfo;
 
 static inline VALUE
-#if defined(HAVE_PROTOTYPES)
 rb_class_of(VALUE obj)
-#else
-rb_class_of(obj)
-    VALUE obj;
-#endif
 {
     if (IMMEDIATE_P(obj)) {
 	if (FIXNUM_P(obj)) return rb_cFixnum;
@@ -675,12 +670,7 @@ rb_class_of(obj)
 }
 
 static inline int
-#if defined(HAVE_PROTOTYPES)
 rb_type(VALUE obj)
-#else
-rb_type(obj)
-   VALUE obj;
-#endif
 {
     if (IMMEDIATE_P(obj)) {
 	if (FIXNUM_P(obj)) return T_FIXNUM;
@@ -696,12 +686,7 @@ rb_type(obj)
 }
 
 static inline int
-#if defined(HAVE_PROTOTYPES)
 rb_special_const_p(VALUE obj)
-#else
-rb_special_const_p(obj)
-    VALUE obj;
-#endif
 {
     if (SPECIAL_CONST_P(obj)) return Qtrue;
     return Qfalse;

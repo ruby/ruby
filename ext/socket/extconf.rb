@@ -9,7 +9,6 @@ when /cygwin/
 when /beos/
   test_func = "socket"
   have_library("net", "socket")
-  have_func("closesocket")
 when /i386-os2_emx/
   test_func = "socket"
   have_library("socket", "socket")
