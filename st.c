@@ -4,12 +4,10 @@
 
 #include "config.h"
 #include <stdio.h>
+#ifdef HAVE_STDLIB_H
 #include <stdlib.h>
-#include <string.h>
-
-#ifdef _WIN32
-#include <malloc.h>
 #endif
+#include <string.h>
 
 #ifdef NOT_RUBY
 #include "regint.h"
@@ -216,12 +214,12 @@ st_free_table(st_table *table)
 	ptr = table->bins[i];
 	while (ptr != 0) {
 	    next = ptr->next;
-	    free(ptr);
+	    xfree(ptr);
 	    ptr = next;
 	}
     }
-    free(table->bins);
-    free(table);
+    xfree(table->bins);
+    xfree(table);
 }
 
 #define PTR_NOT_EQUAL(table, ptr, hash_val, key) \
@@ -330,7 +328,7 @@ rehash(register st_table *table)
 	    ptr = next;
 	}
     }
-    free(table->bins);
+    xfree(table->bins);
     table->num_bins = new_num_bins;
     table->bins = new_bins;
 }
@@ -352,7 +350,7 @@ st_copy(st_table *old_table)
 	Calloc((unsigned)num_bins, sizeof(st_table_entry*));
 
     if (new_table->bins == 0) {
-	free(new_table);
+	xfree(new_table);
 	return 0;
     }
 
@@ -362,8 +360,8 @@ st_copy(st_table *old_table)
 	while (ptr != 0) {
 	    entry = alloc(st_table_entry);
 	    if (entry == 0) {
-		free(new_table->bins);
-		free(new_table);
+		xfree(new_table->bins);
+		xfree(new_table);
 		return 0;
 	    }
 	    *entry = *ptr;
@@ -395,7 +393,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 	table->num_entries--;
 	if (value != 0) *value = ptr->record;
 	*key = ptr->key;
-	free(ptr);
+	xfree(ptr);
 	return 1;
     }
 
@@ -406,7 +404,7 @@ st_delete(register st_table *table, register st_data_t *key, st_data_t *value)
 	    table->num_entries--;
 	    if (value != 0) *value = tmp->record;
 	    *key = tmp->key;
-	    free(tmp);
+	    xfree(tmp);
 	    return 1;
 	}
     }
@@ -496,7 +494,7 @@ st_foreach(st_table *table, int (*func)(ANYARGS), st_data_t arg)
 		    last->next = ptr->next;
 		}
 		ptr = ptr->next;
-		free(tmp);
+		xfree(tmp);
 		table->num_entries--;
 	    }
 	}

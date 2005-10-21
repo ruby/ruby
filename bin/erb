@@ -60,7 +60,7 @@ class ERB
             $DEBUG = true
           when '-r'                        # require
             require ARGV.req_arg
-          when '-S'                        # sacurity level
+          when '-S'                        # security level
             arg = ARGV.req_arg
             raise "invalid safe_level #{arg.dump}" unless arg =~ /^[0-4]$/
             safe_level = arg.to_i

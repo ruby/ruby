@@ -689,30 +689,6 @@ static unsigned long frame_unique = 0;
     ruby_frame = _frame.prev;		\
 } while (0)
 
-struct BLOCK {
-    NODE *var;
-    NODE *body;
-    VALUE self;
-    struct FRAME frame;
-    struct SCOPE *scope;
-    VALUE klass;
-    NODE *cref;
-    int iter;
-    int vmode;
-    int flags;
-    int uniq;
-    struct RVarmap *dyna_vars;
-    VALUE orig_thread;
-    VALUE wrapper;
-    VALUE block_obj;
-    struct BLOCK *outer;
-    struct BLOCK *prev;
-};
-
-#define BLOCK_D_SCOPE 1
-#define BLOCK_LAMBDA  2
-#define BLOCK_FROM_METHOD  4
-
 static struct BLOCK *ruby_block;
 static unsigned long block_unique = 0;
 
@@ -2641,7 +2617,7 @@ avalue_splat(VALUE v)
 static VALUE
 splat_value(VALUE v)
 {
-    return rb_values_from_ary(rb_convert_type(v, T_ARRAY, "Array", "to_a"));
+    return rb_values_from_ary(rb_Array(v));
 }
 
 static VALUE
@@ -5827,7 +5803,7 @@ rb_apply(VALUE recv, ID mid, VALUE args)
 }
 
 static VALUE
-send_fcall(int argc, VALUE *argv, VALUE recv, int scope)
+send_funcall(int argc, VALUE *argv, VALUE recv, int scope)
 {
     VALUE vid;
 
@@ -5869,25 +5845,25 @@ rb_f_send(int argc, VALUE *argv, VALUE recv)
 {
     int scope = (ruby_frame->flags & FRAME_FUNC) ? 1 : 0;
 
-    return send_fcall(argc, argv, recv, scope);
+    return send_funcall(argc, argv, recv, scope);
 }
 
 /*
  *  call-seq:
- *     obj.fcall(symbol [, args...])        => obj
+ *     obj.funcall(symbol [, args...])        => obj
  *  
  *  Invokes the method identified by _symbol_, passing it any
  *  arguments specified. Unlike send, which calls private methods only
- *  when it is invoked in function call style, fcall always aware of
+ *  when it is invoked in function call style, funcall always aware of
  *  private methods.
  *     
- *     1.fcall(:puts, "hello")  # prints "foo"
+ *     1.funcall(:puts, "hello")  # prints "foo"
  */
 
 static VALUE
-rb_f_fcall(int argc, VALUE *argv, VALUE recv)
+rb_f_funcall(int argc, VALUE *argv, VALUE recv)
 {
-    return send_fcall(argc, argv, recv, 1);
+    return send_funcall(argc, argv, recv, 1);
 }
 
 VALUE
@@ -6336,16 +6312,25 @@ eval_under(VALUE under, VALUE self, VALUE src, const char *file, int line)
 }
 
 static VALUE
-yield_under_i(VALUE self)
+yield_under_i(VALUE arg)
 {
-    return rb_yield_0(self, self, ruby_class, YIELD_PUBLIC_DEF, Qfalse);
+    VALUE *args = (VALUE *)arg;
+    VALUE avalue = Qtrue;
+    if (args[0] == Qundef) {
+	avalue = Qfalse;
+	args[0] = args[1];
+    }
+    return rb_yield_0(args[0], args[1], ruby_class, YIELD_PUBLIC_DEF, avalue);
 }
 
 /* block eval under the class/module context */
 static VALUE
-yield_under(VALUE under, VALUE self)
+yield_under(VALUE under, VALUE self, VALUE values)
 {
-    return exec_under(yield_under_i, under, 0, self);
+    VALUE args[4];
+    args[0] = values;
+    args[1] = self;
+    return exec_under(yield_under_i, under, 0, (VALUE)args);
 }
 
 static VALUE
@@ -6355,7 +6340,7 @@ specific_eval(int argc, VALUE *argv, VALUE klass, VALUE self)
 	if (argc > 0) {
 	    rb_raise(rb_eArgError, "wrong number of arguments (%d for 0)", argc);
 	}
-	return yield_under(klass, self);
+	return yield_under(klass, self, Qundef);
     }
     else {
 	char *file = "(eval)";
@@ -6424,6 +6409,38 @@ rb_obj_instance_eval(int argc, VALUE *argv, VALUE self)
 
 /*
  *  call-seq:
+ *     obj.instance_exec(arg...) {|var...| block }                       => obj
+ *  
+ *  Executes the given block within the context of the receiver
+ *  (_obj_). In order to set the context, the variable +self+ is set
+ *  to _obj_ while the code is executing, giving the code access to
+ *  _obj_'s instance variables.  Arguments are passed as block parameters.
+ *     
+ *     class Klass
+ *       def initialize
+ *         @secret = 99
+ *       end
+ *     end
+ *     k = Klass.new
+ *     k.instance_eval(5) {|x| @secret+x }   #=> 104
+ */
+
+VALUE
+rb_obj_instance_exec(int argc, VALUE *argv, VALUE self)
+{
+    VALUE klass;
+
+    if (FIXNUM_P(self) || SYMBOL_P(self)) {
+	klass = Qnil;
+    }
+    else {
+	klass = rb_singleton_class(self);
+    }
+    return yield_under(klass, self, rb_values_new2(argc, argv));
+}
+
+/*
+ *  call-seq:
  *     mod.class_eval(string [, filename [, lineno]])  => obj
  *     mod.module_eval {|| block }                     => obj
  *  
@@ -6450,6 +6467,32 @@ VALUE
 rb_mod_module_eval(int argc, VALUE *argv, VALUE mod)
 {
     return specific_eval(argc, argv, mod, mod);
+}
+
+/*
+ *  call-seq:
+ *     mod.module_exec(arg...) {|var...| block }       => obj
+ *     mod.class_exec(arg...) {|var...| block }        => obj
+ *  
+ *  Evaluates the given block in the context of the class/module.
+ *  The method defined in the block will belong to the receiver.
+ *     
+ *     class Thing
+ *     end
+ *     Thing.class_exec{
+ *       def hello() "Hello there!" end
+ *     }
+ *     puts Thing.new.hello()
+ *     
+ *  <em>produces:</em>
+ *     
+ *     Hello there!
+ */
+
+VALUE
+rb_mod_module_exec(int argc, VALUE *argv, VALUE mod)
+{
+    return yield_under(mod, mod, rb_values_new2(argc, argv));
 }
 
 VALUE rb_load_path;
@@ -6699,10 +6742,9 @@ load_wait(char *ftptr)
 
     if (!loading_tbl) return Qfalse;
     if (!st_lookup(loading_tbl, (st_data_t)ftptr, &th)) return Qfalse;
-    if ((rb_thread_t)th == curr_thread) return Qtrue;
     do {
+	if ((rb_thread_t)th == curr_thread) return Qtrue;
 	CHECK_INTS;
-	rb_thread_schedule();
     } while (st_lookup(loading_tbl, (st_data_t)ftptr, &th));
     return Qtrue;
 }
@@ -7579,8 +7621,9 @@ Init_eval(void)
 
     rb_define_method(rb_mKernel, "send", rb_f_send, -1);
     rb_define_method(rb_mKernel, "__send__", rb_f_send, -1);
-    rb_define_method(rb_mKernel, "fcall", rb_f_fcall, -1);
+    rb_define_method(rb_mKernel, "funcall", rb_f_funcall, -1);
     rb_define_method(rb_mKernel, "instance_eval", rb_obj_instance_eval, -1);
+    rb_define_method(rb_mKernel, "instance_exec", rb_obj_instance_exec, -1);
 
     rb_define_private_method(rb_cModule, "append_features", rb_mod_append_features, 1);
     rb_define_private_method(rb_cModule, "extend_object", rb_mod_extend_object, 1);
@@ -7597,6 +7640,8 @@ Init_eval(void)
     rb_define_method(rb_cModule, "private_class_method", rb_mod_private_method, -1);
     rb_define_method(rb_cModule, "module_eval", rb_mod_module_eval, -1);
     rb_define_method(rb_cModule, "class_eval", rb_mod_module_eval, -1);
+    rb_define_method(rb_cModule, "module_exec", rb_mod_module_exec, -1);
+    rb_define_method(rb_cModule, "class_exec", rb_mod_module_exec, -1);
 
     rb_undef_method(rb_cClass, "module_function");
 
@@ -8544,14 +8589,6 @@ block_pass(VALUE self, NODE *node)
     return rb_block_pass((VALUE (*)(VALUE))call_block,
 			 (VALUE)&arg, rb_eval(self, node->nd_body));
 }
-
-struct METHOD {
-    VALUE klass, rklass;
-    VALUE recv;
-    ID id, oid;
-    int safe_level;
-    NODE *body;
-};
 
 static void
 bm_mark(struct METHOD *data)
@@ -10353,7 +10390,7 @@ rb_thread_schedule(void)
 	rb_bug("cross-thread violation on rb_thread_schedule()");
     }
 #endif
-    rb_thread_pending = 0;
+    rb_thread_pending = rb_thread_critical = 0;
     if (curr_thread == curr_thread->next
 	&& curr_thread->status == THREAD_RUNNABLE)
 	return;

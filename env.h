@@ -56,4 +56,36 @@ struct RVarmap {
 };
 RUBY_EXTERN struct RVarmap *ruby_dyna_vars;
 
+struct METHOD {
+    VALUE klass, rklass;
+    VALUE recv;
+    ID id, oid;
+    int safe_level;
+    struct RNode *body;
+};
+
+struct BLOCK {
+    struct RNode *var;
+    struct RNode *body;
+    VALUE self;
+    struct FRAME frame;
+    struct SCOPE *scope;
+    VALUE klass;
+    struct RNode *cref;
+    int iter;
+    int vmode;
+    int flags;
+    int uniq;
+    struct RVarmap *dyna_vars;
+    VALUE orig_thread;
+    VALUE wrapper;
+    VALUE block_obj;
+    struct BLOCK *outer;
+    struct BLOCK *prev;
+};
+
+#define BLOCK_D_SCOPE 1
+#define BLOCK_LAMBDA  2
+#define BLOCK_FROM_METHOD  4
+
 #endif /* ENV_H */

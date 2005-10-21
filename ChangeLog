@@ -1,3 +1,7 @@
+Fri Oct 21 17:49:32 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bin/erb (ERB::Main::run): typo fixed.  [ruby-core:06337]
+
 Fri Oct 21 15:42:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* intern.h, struct.c (rb_struct_iv_get): constified.
@@ -89,6 +93,11 @@ Mon Oct 17 09:42:50 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
 	* win32/configure.bat (srcdir, target): ditto.
 
+Mon Oct 17 05:01:50 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* env.h: move struct METHOD and struct BLOCK from eval.c to
+	  support NodeWrap and ParseTree.
+
 Sun Oct 16 22:16:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb: omit non-existing directories.
@@ -99,6 +108,17 @@ Sun Oct 16 14:40:54 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 	  tuple. fixed: [ruby-list:41227]
 
 	* test/rinda/test_rinda.rb: test it.
+
+Sun Oct 16 03:38:07 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* rubysig.h (CHECK_INTS): prevent signal handler to run during
+	  critical section.  [ruby-core:04039]
+
+	* eval.c (load_wait): need not to call rb_thread_schedule()
+	  explicitly.  [ruby-core:04039]
+
+	* eval.c (rb_thread_schedule): clear rb_thread_critical.
+	  [ruby-core:04039]
 
 Sun Oct 16 00:13:14 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
 
@@ -134,6 +154,14 @@ Fri Oct 14 16:39:37 2005  GOTOU Yuuzou  <gotoyuzo@notwork.org>
 	  It is harmful to permit the access to ~/public_html by default.
 	  suggested by Hiroyuki Iwatsuki.
 
+Fri Oct 14 04:58:38 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (rb_obj_instance_exec): create instance_exec and
+	  module_exec which pass arguments to the block.
+
+	* eval.c (rb_f_funcall): rename fcall to funcall to follow
+	  tradition.
+
 Thu Oct 13 23:29:51 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parse.y (HEAPCNT): bison allocates indivisible size.
@@ -167,6 +195,11 @@ Tue Oct 11 21:41:58 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (rb_respond_to): conform to Object#respond_to?.  [ruby-dev:27411]
 
+Tue Oct 11 00:01:21 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* st.c (st_free_table): do not call free() but xfree().
+	  [ruby-core:06205]
+
 Sat Oct  8 19:49:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* eval.c (Init_Binding): add Binding#dup method.  [yarv-dev:666]
@@ -192,6 +225,24 @@ Sat Oct  8 19:49:42 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	  change of sample/test.rb.
 
 	* test/net/http/test_http.rb: removed superfluous splatting stars.
+
+Fri Oct  7 16:41:43 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* eval.c (splat_value): call rb_Array() to convert svalue to
+	  values.  [ruby-dev:27397]
+
+Fri Oct  7 09:54:00 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* lib/cgi.rb (CGI::Cookie::parse): Cookies from Nokia devices may
+	  not be parsed correctly.  A patch from August Z. Flatby
+	  (augustzf) in [ruby-Patches-2595].  [ruby-core:06183]
+
+Thu Oct  6 22:51:30 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* object.c (rb_Array): Array() to raise error for objects without
+	  to_ary, nor to_a.
+
+	* object.c (nil_to_a): revert NilClass#to_a.
 
 Thu Oct  6 20:10:38 2005  Minero Aoki  <aamine@loveruby.net>
 

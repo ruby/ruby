@@ -729,6 +729,22 @@ nil_to_s(VALUE obj)
 
 /*
  *  call-seq:
+ *     nil.to_a    => []
+ *  
+ *  Always returns an empty array.
+ *     
+ *     nil.to_a   #=> []
+ */
+
+static VALUE
+nil_to_a(obj)
+    VALUE obj;
+{
+    return rb_ary_new2(0);
+}
+
+/*
+ *  call-seq:
  *    nil.inspect  => "nil"
  *
  *  Always returns the string "nil".
@@ -2236,10 +2252,7 @@ rb_Array(VALUE val)
     VALUE tmp = rb_check_array_type(val);
 
     if (NIL_P(tmp)) {
-	tmp = rb_check_convert_type(val, T_ARRAY, "Array", "to_a");
-	if (NIL_P(tmp)) {
-	    return rb_ary_new3(1, val);
-	}
+	return rb_convert_type(val, T_ARRAY, "Array", "to_a");
     }
     return tmp;
 }
@@ -2250,8 +2263,6 @@ rb_Array(VALUE val)
  *  
  *  Returns <i>arg</i> as an <code>Array</code>. First tries to call
  *  <i>arg</i><code>.to_ary</code>, then <i>arg</i><code>.to_a</code>.
- *  If both fail, creates a single element array containing <i>arg</i>
- *  (unless <i>arg</i> is <code>nil</code>).
  *     
  *     Array(1..5)   #=> [1, 2, 3, 4, 5]
  */
@@ -2433,6 +2444,7 @@ Init_Object(void)
     rb_define_method(rb_cNilClass, "to_i", nil_to_i, 0);
     rb_define_method(rb_cNilClass, "to_f", nil_to_f, 0);
     rb_define_method(rb_cNilClass, "to_s", nil_to_s, 0);
+    rb_define_method(rb_cNilClass, "to_a", nil_to_a, 0);
     rb_define_method(rb_cNilClass, "inspect", nil_inspect, 0);
     rb_define_method(rb_cNilClass, "&", false_and, 1);
     rb_define_method(rb_cNilClass, "|", false_or, 1);

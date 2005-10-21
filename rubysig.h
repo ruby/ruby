@@ -82,10 +82,9 @@ void rb_thread_schedule(void);
 #if defined(HAVE_SETITIMER) || defined(_THREAD_SAFE)
 RUBY_EXTERN int rb_thread_pending;
 # define CHECK_INTS do {\
-    if (!rb_prohibit_interrupt) {\
+    if (!(rb_prohibit_interrupt | rb_thread_critical)) {\
+        if (rb_thread_pending) rb_thread_schedule();\
 	if (rb_trap_pending) rb_trap_exec();\
-	if (rb_thread_pending && !rb_thread_critical)\
-	    rb_thread_schedule();\
     }\
 } while (0)
 #else
@@ -93,15 +92,13 @@ RUBY_EXTERN int rb_thread_pending;
 RUBY_EXTERN int rb_thread_tick;
 #define THREAD_TICK 500
 #define CHECK_INTS do {\
-    if (!rb_prohibit_interrupt) {\
-	if (rb_trap_pending) rb_trap_exec();\
-	if (!rb_thread_critical) {\
-	    if (rb_thread_tick-- <= 0) {\
-		rb_thread_tick = THREAD_TICK;\
-		rb_thread_schedule();\
-	    }\
+    if (!(rb_prohibit_interrupt | rb_thread_critical)) {\
+	if (rb_thread_tick-- <= 0) {\
+	    rb_thread_tick = THREAD_TICK;
+            rb_thread_schedule();
 	}\
     }\
+   if (rb_trap_pending) rb_trap_exec();\
 } while (0)
 #endif
 
