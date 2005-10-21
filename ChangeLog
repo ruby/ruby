@@ -1,3 +1,7 @@
+Fri Oct 21 19:16:08 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* rubysig.h (CHECK_INTS): fixed typo. (I believe bit-or is improper)
+
 Fri Oct 21 17:49:32 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* bin/erb (ERB::Main::run): typo fixed.  [ruby-core:06337]
