@@ -6,6 +6,8 @@ Fri Oct 21 15:23:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  (but I believe this won't cause actual bug in current implementation)
 	  [ruby-dev:27055]
 
+	* time.c: should use LONG_LONG instead of `long long'.
+
 Thu Oct 20 22:22:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parser.y (struct parser_params): parser never modify input string.

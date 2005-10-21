@@ -1206,7 +1206,7 @@ typedef unsigned long unsigned_time_t;
 #elif SIZEOF_TIME_T == SIZEOF_INT
 typedef unsigned int unsigned_time_t;
 #elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-typedef unsigned long long unsigned_time_t;
+typedef unsigned LONG_LONG unsigned_time_t;
 #else
 # error cannot find integer type which size is same as time_t.
 #endif
@@ -1670,10 +1670,9 @@ time_to_a(VALUE time)
 
 #define SMALLBUF 100
 static int
-rb_strftime(
-    char ** volatile buf,
-    char * volatile format,
-    struct tm * volatile time)
+rb_strftime(char ** volatile buf,
+            char * volatile format,
+            struct tm * volatile time)
 {
     volatile int size;
     int len, flen;
