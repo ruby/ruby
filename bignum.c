@@ -46,7 +46,7 @@ bignew_1(klass, len, sign)
 {
     NEWOBJ(big, struct RBignum);
     OBJSETUP(big, klass, T_BIGNUM);
-    big->sign = (char)sign;
+    big->sign = sign?1:0;
     big->len = len;
     big->digits = ALLOC_N(BDIGIT, len);
 
@@ -1088,7 +1088,7 @@ bigsub(x, y)
 	}
     }
 
-    z = bignew(RBIGNUM(x)->len, (z == 0)?1:0);
+    z = bignew(RBIGNUM(x)->len, z==0);
     zds = BDIGITS(z);
 
     for (i = 0, num = 0; i < RBIGNUM(y)->len; i++) { 
