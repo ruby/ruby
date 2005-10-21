@@ -6,6 +6,8 @@ Fri Oct 21 15:27:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 	  (but I believe this won't cause actual bug in current implementation)
 	  [ruby-dev:27055]
 
+	* time.c: should use LONG_LONG instead of `long long'.
+
 Thu Oct 20 09:37:15 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* lib/mkmf.rb (create_makefile): Borland make seems not to allow

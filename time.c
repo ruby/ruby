@@ -1260,7 +1260,7 @@ typedef unsigned long unsigned_time_t;
 #elif SIZEOF_TIME_T == SIZEOF_INT
 typedef unsigned int unsigned_time_t;
 #elif SIZEOF_TIME_T == SIZEOF_LONG_LONG
-typedef unsigned long long unsigned_time_t;
+typedef unsigned LONG_LONG unsigned_time_t;
 #else
 # error cannot find integer type which size is same as time_t.
 #endif
