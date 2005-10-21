@@ -43,7 +43,7 @@ bignew_1(VALUE klass, long len, int sign)
 {
     NEWOBJ(big, struct RBignum);
     OBJSETUP(big, klass, T_BIGNUM);
-    big->sign = (char)sign;
+    big->sign = sign?1:0;
     big->len = len;
     big->digits = ALLOC_N(BDIGIT, len);
 
@@ -693,7 +693,7 @@ rb_big_to_s(int argc, VALUE *argv, VALUE x)
 }
 
 static unsigned long
-big2ulong(VALUE x, char *type, int check)
+big2ulong(VALUE x, const char *type, int check)
 {
     long len = RBIGNUM(x)->len;
     BDIGIT_DBL num;
@@ -752,7 +752,7 @@ rb_big2long(VALUE x)
 #if HAVE_LONG_LONG
 
 static unsigned LONG_LONG
-big2ull(VALUE x, char *type)
+big2ull(VALUE x, const char *type)
 {
     long len = RBIGNUM(x)->len;
     BDIGIT_DBL num;
@@ -1040,7 +1040,7 @@ bigsub(VALUE x, VALUE y)
 	}
     }
 
-    z = bignew(RBIGNUM(x)->len, (z == 0)?1:0);
+    z = bignew(RBIGNUM(x)->len, z==0);
     zds = BDIGITS(z);
 
     for (i = 0, num = 0; i < RBIGNUM(y)->len; i++) { 

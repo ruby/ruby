@@ -1,3 +1,11 @@
+Fri Oct 21 15:23:23 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* bignum.c (bignew_1): convertion from `int' to `char' discards
+	  upper bits, (ie. (char)0xff00 -> 0) so it's better to test if
+	  nonzero and set 0 or 1 instead of simply casting ... as a flag usage.
+	  (but I believe this won't cause actual bug in current implementation)
+	  [ruby-dev:27055]
+
 Thu Oct 20 22:22:49 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* parser.y (struct parser_params): parser never modify input string.
