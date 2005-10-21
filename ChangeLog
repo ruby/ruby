@@ -1,3 +1,7 @@
+Fri Oct 21 19:21:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* rubysig.h (CHECK_INTS): fixed typo. (I believe bit-or is improper)
+
 Fri Oct 21 15:27:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* bignum.c (bignew_1): convertion from `int' to `char' discards
