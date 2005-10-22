@@ -398,6 +398,7 @@ int rb_is_instance_id(ID);
 int rb_is_class_id(ID);
 int rb_is_local_id(ID);
 int rb_is_junk_id(ID);
+int rb_symname_p(const char*);
 VALUE rb_backref_get(void);
 void rb_backref_set(VALUE);
 VALUE rb_lastline_get(void);

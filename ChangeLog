@@ -1,3 +1,10 @@
+Sat Oct 22 13:08:21 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* object.c (sym_inspect), parse.y (parser_yylex, rb_symname_p): check
+	  if valid as a symbol name more strictly.  [ruby-dev:27478]
+
+	* test/ruby/test_symbol.rb: tests for [ruby-core:03573].
+
 Sat Oct 22 10:08:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* missing.h, missing/*.c: SUSv3 compatible strcasecmp and strncasecmp,
