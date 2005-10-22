@@ -1743,12 +1743,11 @@ time_to_a(time)
 #define SMALLBUF 100
 static int
 rb_strftime(buf, format, time)
-    char ** volatile buf;
-    char * volatile format;
-    struct tm * volatile time;
+    char **buf;
+    const char *format;
+    struct tm *time;
 {
-    volatile int size;
-    int len, flen;
+    int size, len, flen;
 
     (*buf)[0] = '\0';
     flen = strlen(format);
@@ -1820,8 +1819,8 @@ time_strftime(time, format)
     VALUE time, format;
 {
     struct time_object *tobj;
-    char buffer[SMALLBUF];
-    char *fmt, *buf = buffer;
+    char buffer[SMALLBUF], *buf = buffer;
+    const char *fmt;
     long len;
     VALUE str;
 
@@ -1838,19 +1837,19 @@ time_strftime(time, format)
     }
     else if (strlen(fmt) < len) {
 	/* Ruby string may contain \0's. */
-	char *p = fmt, *pe = fmt + len;
+	const char *p = fmt, *pe = fmt + len;
 
 	str = rb_str_new(0, 0);
 	while (p < pe) {
 	    len = rb_strftime(&buf, p, &tobj->tm);
 	    rb_str_cat(str, buf, len);
 	    p += strlen(p) + 1;
-	    if (p <= pe)
-		rb_str_cat(str, "\0", 1);
 	    if (buf != buffer) {
 		free(buf);
 		buf = buffer;
 	    }
+	    for (fmt = p; p < pe && !*p; ++p);
+	    if (p > fmt) rb_str_cat(str, fmt, p - fmt);
 	}
 	return str;
     }
