@@ -21,15 +21,9 @@
 #endif
 
 #include "util.h"
-#ifndef HAVE_STRING_H
-char *strchr(char*,char);
-#endif
 
 unsigned long
-scan_oct(start, len, retlen)
-    const char *start;
-    int len;
-    int *retlen;
+ruby_scan_oct(const char *start, int len, int *retlen)
 {
     register const char *s = start;
     register unsigned long retval = 0;
@@ -43,10 +37,7 @@ scan_oct(start, len, retlen)
 }
 
 unsigned long
-scan_hex(start, len, retlen)
-    const char *start;
-    int len;
-    int *retlen;
+ruby_scan_hex(const char *start, int len, int *retlen)
 {
     static char hexdigit[] = "0123456789abcdef0123456789ABCDEF";
     register const char *s = start;
@@ -145,19 +136,17 @@ scan_hex(start, len, retlen)
  */
 
 
-static int valid_filename(char *s);
+static int valid_filename(const char *s);
 
-static char suffix1[] = ".$$$";
-static char suffix2[] = ".~~~";
+static const char suffix1[] = ".$$$";
+static const char suffix2[] = ".~~~";
 
 #define ext (&buf[1000])
 
 #define strEQ(s1,s2) (strcmp(s1,s2) == 0)
 
 void
-ruby_add_suffix(str, suffix)
-    VALUE str;
-    char *suffix;
+ruby_add_suffix(VALUE str, const char *suffix)
 {
     int baselen;
     int extlen = strlen(suffix);
@@ -227,7 +216,7 @@ fallback:
 
 #if defined(__CYGWIN32__) || defined(_WIN32)
 static int 
-valid_filename(char *s)
+valid_filename(const char *s)
 {
     int fd;
 
@@ -620,8 +609,7 @@ ruby_qsort(void* base, const int nel, const int size,
 }
 
 char *
-ruby_strdup(str)
-    const char *str;
+ruby_strdup(const char *str)
 {
     char *tmp;
     int len = strlen(str) + 1;
@@ -633,7 +621,7 @@ ruby_strdup(str)
 }
 
 char *
-ruby_getcwd()
+ruby_getcwd(void)
 {
 #ifdef HAVE_GETCWD
     int size = 200;
@@ -715,8 +703,8 @@ static double powersOf10[] = {	/* Table giving binary powers of 10.  Entry */
  */
 
 double
-ruby_strtod(string, endPtr)
-    const char *string;		/* A decimal ASCII floating-point number,
+ruby_strtod(
+    const char *string,		/* A decimal ASCII floating-point number,
 				 * optionally preceded by white space.
 				 * Must have form "-I.FE-X", where I is the
 				 * integer part of the mantissa, F is the
@@ -729,7 +717,7 @@ ruby_strtod(string, endPtr)
 				 * The "E" may actually be an "e".  E and X
 				 * may both be omitted (but not just one).
 				 */
-    char **endPtr;		/* If non-NULL, store terminating character's
+    char **endPtr)		/* If non-NULL, store terminating character's
 				 * address here. */
 {
     int sign, expSign = FALSE;

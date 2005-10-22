@@ -35,12 +35,12 @@
 #endif
 
 #define scan_oct ruby_scan_oct
-unsigned long scan_oct(const char*, int, int*);
+unsigned long ruby_scan_oct(const char*, int, int*);
 #define scan_hex ruby_scan_hex
-unsigned long scan_hex(const char*, int, int*);
+unsigned long ruby_scan_hex(const char*, int, int*);
 
 #if defined(MSDOS) || defined(__CYGWIN32__) || defined(_WIN32)
-void ruby_add_suffix(VALUE str, char *suffix);
+void ruby_add_suffix(VALUE str, const char *suffix);
 #endif
 
 void ruby_qsort(void*, const int, const int, int (*)(const void*,const void*,void*), void*);

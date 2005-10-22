@@ -1,3 +1,13 @@
+Sat Oct 22 14:25:43 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* util.[hc] (ruby_add_suffix): constified.
+
+	* util.[hc] (ruby_scan_{oct,hex}): fixed typo. (renamed from
+	  scan_{oct,hex})
+
+	* util.c: almostly ANSI styled. (except for functions depending on
+	  macro and K&R tecknique)
+
 Sat Oct 22 13:26:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* object.c (sym_inspect), parse.y (parser_yylex, rb_symname_p): check
