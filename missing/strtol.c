@@ -3,13 +3,10 @@
 #include <ctype.h>
 
 long
-strtol(nptr, endptr, base)
-    char *nptr;
-    char **endptr;
-    int base;
+strtol(const char *nptr, char **endptr, int base)
 {
     long result;
-    char *p = nptr;
+    const char *p = nptr;
 
     while (isspace(*p)) {
 	p++;
@@ -23,7 +20,7 @@ strtol(nptr, endptr, base)
 	result = strtoul(p, endptr, base);
     }
     if (endptr != 0 && *endptr == p) {
-	*endptr = nptr;
+	*endptr = (char *)nptr;
     }
     return result;
 }

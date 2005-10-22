@@ -21,7 +21,7 @@
  * (100 for non-digit characters).
  */
 
-static char cvtIn[] = {
+static const char cvtIn[] = {
     0, 1, 2, 3, 4, 5, 6, 7, 8, 9,		/* '0' - '9' */
     100, 100, 100, 100, 100, 100, 100,		/* punctuation */
     10, 11, 12, 13, 14, 15, 16, 17, 18, 19,	/* 'A' - 'Z' */
@@ -53,22 +53,22 @@ static char cvtIn[] = {
  */
 
 unsigned long int
-strtoul(string, endPtr, base)
-    char *string;		/* String of ASCII digits, possibly
+strtoul(
+    const char *string,		/* String of ASCII digits, possibly
 				 * preceded by white space.  For bases
 				 * greater than 10, either lower- or
 				 * upper-case digits may be used.
 				 */
-    char **endPtr;		/* Where to store address of terminating
+    char **endPtr,		/* Where to store address of terminating
 				 * character, or NULL. */
-    int base;			/* Base for conversion.  Must be less
+    int base)			/* Base for conversion.  Must be less
 				 * than 37.  If 0, then the base is chosen
 				 * from the leading characters of string:
 				 * "0x" means hex, "0" means octal, anything
 				 * else means decimal.
 				 */
 {
-    register char *p;
+    register const char *p;
     register unsigned long int result = 0;
     register unsigned digit;
     int anyDigits = 0;
@@ -177,7 +177,7 @@ strtoul(string, endPtr, base)
     }
 
     if (endPtr != 0) {
-	*endPtr = p;
+	*endPtr = (char *)p;
     }
 
     return result;

@@ -1,3 +1,8 @@
+Sat Oct 22 10:08:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
+
+	* missing.h, missing/*.c: SUSv3 compatible strcasecmp and strncasecmp,
+	  ANSI compatible strtol and strtoul, and ANSI styled other functions.
+
 Fri Oct 21 19:16:08 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* rubysig.h (CHECK_INTS): fixed typo. (I believe bit-or is improper)

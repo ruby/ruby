@@ -3,8 +3,7 @@
 #include <ctype.h>
 
 int
-strcasecmp(p1, p2)
-    char *p1, *p2;
+strcasecmp(const char *p1, const char *p2)
 {
     while (*p1 && *p2) {
 	if (toupper(*p1) != toupper(*p2))

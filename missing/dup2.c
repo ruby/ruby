@@ -24,8 +24,7 @@
 #define BADEXIT -1
 
 int
-dup2(fd1, fd2)
-int fd1, fd2;
+dup2(int fd1, int fd2)
 {
 #if defined(HAVE_FCNTL) && defined(F_DUPFD)
 	if (fd1 != fd2) {

@@ -91,11 +91,11 @@ extern double modf(double, double *);
 */
 
 #ifndef HAVE_STRCASECMP
-extern int strcasecmp(char *, char *);
+extern int strcasecmp(const char *, const char *);
 #endif
 
 #ifndef HAVE_STRNCASECMP
-extern int strncasecmp(char *, char *, int);
+extern int strncasecmp(const char *, const char *, size_t);
 #endif
 
 #ifndef HAVE_STRCHR
@@ -117,20 +117,16 @@ extern char *strstr(const char *, const char *);
 
 /*
 #ifndef HAVE_STRTOL
-extern long strtol(char *, char **, int);
+extern long strtol(const char *, char **, int);
 #endif
 */
 
 #ifndef HAVE_STRTOUL
-extern unsigned long strtoul(char *, char **, int);
+extern unsigned long strtoul(const char *, char **, int);
 #endif
 
 #ifndef HAVE_VSNPRINTF
-# ifdef HAVE_STDARG_PROTOTYPES
-#  include <stdarg.h>
-# else
-#  include <varargs.h>
-# endif
+# include <stdarg.h>
 extern int snprintf(char *, size_t n, char const *, ...);
 extern int vsnprintf(char *, size_t n, char const *, va_list);
 #endif

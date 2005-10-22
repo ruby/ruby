@@ -33,8 +33,7 @@
 
 #ifndef HAVE_ACOSH
 double
-acosh(x)
-    double x;
+acosh(double x)
 {
     if (x < 1)
 	x = -1;			/* NaN */
@@ -50,8 +49,7 @@ acosh(x)
 
 #ifndef HAVE_ASINH
 double
-asinh(x)
-    double x;
+asinh(double x)
 {
     int neg = x < 0;
     double z = fabs(x);
@@ -74,8 +72,7 @@ asinh(x)
 
 #ifndef HAVE_ATANH
 double
-atanh(x)
-    double x;
+atanh(double x)
 {
     int neg = x < 0;
     double z = fabs(x);

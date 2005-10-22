@@ -1,12 +1,10 @@
 /* public domain rewrite of strncasecmp(3) */
 
 #include <ctype.h>
+#include <stddef.h>
 
 int
-strncasecmp(p1, p2, len)
-    char *p1;
-    char *p2;
-    int len;
+strncasecmp(const char *p1, const char *p2, size_t len)
 {
     while (len != 0) {
 	if (toupper(*p1) != toupper(*p2)) {
