@@ -793,11 +793,25 @@ def arg_config(config, *defaults, &block)
   $configure_args.fetch(config.tr('_', '-'), *defaults, &block)
 end
 
-def with_config(config, *defaults, &block)
-  unless /^--with[-_]/ =~ config
-    config = '--with-' + config
+def with_config(config, *defaults)
+  config = config.sub(/^--with[-_]/, '')
+  val = arg_config("--with-"+config) do
+    if arg_config("--without-"+config)
+      false
+    elsif block_given?
+      yield(config, *defaults)
+    else
+      break *defaults
+    end
   end
-  arg_config(config, *defaults, &block)
+  case val
+  when "yes"
+    true
+  when "no"
+    false
+  else
+    val
+  end
 end
 
 def enable_config(config, *defaults)

@@ -353,10 +353,25 @@ exts = $static_ext.sort_by {|t, i| i}.collect {|t, i| t}
 if $extension
   exts |= $extension.select {|d| File.directory?("#{ext_prefix}/#{d}")}
 else
+  withes, withouts = %w[--with --without].collect {|w|
+    if not (w = %w[-extensions -ext].collect {|opt|arg_config(w+opt)}).any?
+      proc {false}
+    elsif (w = w.grep(String)).empty?
+      proc {true}
+    else
+      w.collect {|opt| opt.split(/,/)}.flatten.method(:any?)
+    end
+  }
+  cond = proc {|ext|
+    cond1 = proc {|n| File.fnmatch(n, ext, File::FNM_PATHNAME)}
+    withes.call(&cond1) or !withouts.call(&cond1)
+  }
   exts |= Dir.glob("#{ext_prefix}/*/**/extconf.rb").collect {|d|
     d = File.dirname(d)
     d.slice!(0, ext_prefix.length + 1)
     d
+  }.find_all {|ext|
+    with_config(ext, &cond)
   }.sort
 end
 
