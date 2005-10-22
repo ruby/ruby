@@ -44,6 +44,19 @@ module Tk::BLT::Treeview::ConfigMethod
   end
   private :__item_boolval_optkeys
 
+  def __item_strval_optkeys(id)
+    case id
+    when Array
+      # id := [ 'column', name ]
+      super() << 'titleforeground' << 'titleshadow'
+    when 'sort'
+      ['decreasing']
+    else
+      []
+    end
+  end
+  private :__item_strval_optkeys
+
   def __item_listval_optkeys(id)
     case id
     when 'entry'
@@ -197,10 +210,15 @@ class Tk::BLT::Treeview
   ########################
 
   def __boolval_optkeys
-    ['autocreate', 'exportselection', 'flat', 'hideroot', 
+    ['autocreate', 'allowduplicates', 'exportselection', 'flat', 'hideroot', 
       'newtags', 'showtitles', 'sortselection']
   end
   private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() + ['focusforeground', 'linecolor', 'separator', 'trim']
+  end
+  private :__strval_optkeys
 
   ########################
 

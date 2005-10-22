@@ -18,10 +18,20 @@ module TkMenuEntryConfig
   end
   private :__item_config_cmd
 
+  def __item_strval_optkeys(id)
+    super(id) << 'selectcolor'
+  end
+  private :__item_strval_optkeys
+
   def __item_listval_optkeys(id)
     []
   end
   private :__item_listval_optkeys
+
+  def __item_val2ruby_optkeys(id)  # { key=>proc, ... }
+    super(id).update('menu'=>proc{|i, v| window(v)})
+  end
+  private :__val2ruby_optkeys
 
   alias entrycget itemcget
   alias entryconfigure itemconfigure
@@ -48,6 +58,16 @@ class TkMenu<TkWindow
   #  end
   #end
   #private :create_self
+
+  def __strval_optkeys
+    super() << 'selectcolor' << 'title'
+  end
+  private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() << 'tearoff'
+  end
+  private :__boolval_optkeys
 
   def self.new_menuspec(menu_spec, parent = nil, tearoff = false, keys = nil)
     if parent.kind_of?(Hash)
@@ -411,6 +431,12 @@ class TkMenubutton<TkLabel
     end
   end
   private :create_self
+
+  def __boolval_optkeys
+    super() << 'indicatoron'
+  end
+  private :__boolval_optkeys
+
 end
 TkMenuButton = TkMenubutton
 

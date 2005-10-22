@@ -20,14 +20,24 @@ if ver[0].to_i == 0 && ver[1].to_i <= 4
   # version 0.4 or former
   module Tk
     module Tile
-      USE_TTK_NAMESPACE = false
+      USE_TILE_NAMESPACE = true
+      TILE_SPEC_VERSION_ID = 0
+    end
+  end
+elsif ver[0].to_i == 0 && ver[1].to_i <= 6
+  # version 0.5 -- version 0.6
+  module Tk
+    module Tile
+      USE_TILE_NAMESPACE = true
+      TILE_SPEC_VERSION_ID = 5
     end
   end
 else
-  # version 0.5 or later
+  # version 0.7 or later
   module Tk
     module Tile
-      USE_TTK_NAMESPACE = true
+      USE_TILE_NAMESPACE = false
+      TILE_SPEC_VERSION_ID = 7
     end
   end
 end
@@ -48,6 +58,10 @@ module Tk
       rescue
         ''
       end
+    end
+
+    def self.__Import_Tile_Widgets__!
+      Tk.tk_call('namespace', 'import', 'ttk::*')
     end
 
     def self.load_images(imgdir, pat=TkComm::None)
@@ -87,7 +101,42 @@ module Tk
       Icon         = 'TkIconFont'
     end
 
+    module ParseStyleLayout
+      def _style_layout(lst)
+        ret = []
+        until lst.empty?
+          sub = [lst.shift]
+          keys = {}
+
+          until lst.empty?
+            if lst[0][0] == ?-
+              k = lst.shift[1..-1]
+              children = lst.shift 
+              children = _style_layout(children) if children.kind_of?(Array)
+              keys[k] = children
+            else
+              break
+            end
+          end
+
+          sub << keys unless keys.empty?
+          ret << sub
+        end
+        ret
+      end
+      private :_style_layout
+    end
+
     module TileWidget
+      include Tk::Tile::ParseStyleLayout
+
+      def __val2ruby_optkeys  # { key=>proc, ... }
+        # The method is used to convert a opt-value to a ruby's object.
+        # When get the value of the option "key", "proc.call(value)" is called.
+        super().update('style'=>proc{|v| _style_layout(list(v))})
+      end
+      private :__val2ruby_optkeys
+
       def instate(state, script=nil, &b)
         if script
           tk_send('instate', state, script)
@@ -116,6 +165,8 @@ module Tk
     autoload :CheckButton,   'tkextlib/tile/tcheckbutton'
     autoload :TCheckbutton,  'tkextlib/tile/tcheckbutton'
     autoload :Checkbutton,   'tkextlib/tile/tcheckbutton'
+
+    autoload :Dialog,        'tkextlib/tile/dialog'
 
     autoload :TEntry,        'tkextlib/tile/tentry'
     autoload :Entry,         'tkextlib/tile/tentry'

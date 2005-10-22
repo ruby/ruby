@@ -51,6 +51,11 @@ class Tk::Tcllib::IP_Entry
   end
   private :create_self
 
+  def __strval_optkeys
+    super() << 'fg' << 'bg' << 'insertbackground'
+  end
+  private :__strval_optkeys
+
   def complete?
     bool(tk_send_without_enc('complete'))
   end

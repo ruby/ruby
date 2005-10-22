@@ -64,6 +64,21 @@ class TkSpinbox<TkEntry
   #end
   #private :create_self
 
+  def __boolval_optkeys
+    super() << 'wrap'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'buttonbackground' << 'format'
+  end
+  private :__strval_optkeys
+
+  def __listval_optkeys
+    super() << 'values'
+  end
+  private :__listval_optkeys
+
   def identify(x, y)
     tk_send_without_enc('identify', x, y)
   end

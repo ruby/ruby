@@ -18,6 +18,11 @@ class Tk::Iwidgets::Entryfield
   WidgetClassName = 'Entryfield'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __font_optkeys
+    super() << 'textfont'
+  end
+  private :__font_optkeys
+
   ####################################
 
   include Tk::ValidateConfigure

@@ -101,6 +101,21 @@ class Tk::Iwidgets::Hierarchy
 
   ####################################
 
+  def __boolval_optkeys
+    super() << 'alwaysquery' << 'expanded' << 'filter'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'markbackground' << 'markforeground' << 'textbackground'
+  end
+  private :__strval_optkeys
+
+  def __font_optkeys
+    super() << 'textfont'
+  end
+  private :__font_optkeys
+
   def clear
     tk_call(@path, 'clear')
     self

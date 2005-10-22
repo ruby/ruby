@@ -140,6 +140,11 @@ class << Tk::BLT::Table
   private :__itemcget, :__itemconfigure
   private :__itemconfiginfo, :__current_itemconfiginfo
 
+  def __boolval_optkeys
+    super() << 'propagate'
+  end
+  private :__boolval_optkeys
+
   def tagid(tag)
     if tag.kind_of?(Array)
       case tag[0]

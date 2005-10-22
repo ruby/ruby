@@ -39,6 +39,7 @@ module Tk::Tcllib
 end
 
 # TkPackage.require('style', '0.1')
+# TkPackage.require('style', '0.3')
 TkPackage.require('style')
 
 module Tk::Tcllib

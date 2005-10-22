@@ -22,6 +22,16 @@ class Tk::BWidget::Dialog
 
   include TkItemConfigMethod
 
+  def __strval_optkeys
+    super() << 'title'
+  end
+  private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() << 'transient' << 'homogeneous'
+  end
+  private :__boolval_optkeys
+
   def initialize(parent=nil, keys=nil)
     @relative = ''
     if parent.kind_of?(Hash)

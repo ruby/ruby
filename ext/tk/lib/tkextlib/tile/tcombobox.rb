@@ -24,6 +24,16 @@ class Tk::Tile::TCombobox < Tk::Tile::TEntry
   WidgetClassName = 'TCombobox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'exportselection'
+  end
+  private :__boolval_optkeys
+
+  def __listval_optkeys
+    super() << 'values'
+  end
+  private :__listval_optkeys
+
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end

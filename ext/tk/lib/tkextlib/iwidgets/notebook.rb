@@ -23,12 +23,12 @@ class Tk::Iwidgets::Notebook
   include TkItemConfigMethod
 
   def __item_cget_cmd(id)
-    [self.path, 'tabcget', id]
+    [self.path, 'pagecget', id]
   end
   private :__item_cget_cmd
 
   def __item_config_cmd(id)
-    [self.path, 'tabconfigure', id]
+    [self.path, 'pageconfigure', id]
   end
   private :__item_config_cmd
 
@@ -50,6 +50,11 @@ class Tk::Iwidgets::Notebook
   private :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
+
+  def __boolval_optkeys
+    super() << 'auto'
+  end
+  private :__boolval_optkeys
 
   def add(keys={})
     window(tk_call(@path, 'add', *hash_kv(keys)))

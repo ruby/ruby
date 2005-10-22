@@ -18,6 +18,16 @@ class Tk::Iwidgets::Canvasprintbox
   WidgetClassName = 'Canvasprintbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'filename'
+  end
+  private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() << 'stretch'
+  end
+  private :__boolval_optkeys
+
   def get_output
     tk_call(@path, 'getoutput')
   end

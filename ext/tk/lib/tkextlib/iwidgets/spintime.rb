@@ -18,6 +18,16 @@ class Tk::Iwidgets::Spintime
   WidgetClassName = 'Spintime'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'houron' << 'militaryon' << 'minutelabel' << 'secondlabel'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'hourlabel' << 'minuteon' << 'secondon'
+  end
+  private :__strval_optkeys
+
   def get_string
     tk_call(@path, 'get', '-string')
   end

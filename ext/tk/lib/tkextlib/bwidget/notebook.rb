@@ -29,6 +29,11 @@ class Tk::BWidget::NoteBook
     end
   end
 
+  def __boolval_optkeys
+    super() << 'homogeneous'
+  end
+  private :__boolval_optkeys
+
   def tagid(id)
     if id.kind_of?(TkWindow)
       #id.path

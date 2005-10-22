@@ -51,6 +51,16 @@ class Tk::Iwidgets::Tabset
 
   ####################################
 
+  def __boolval_optkeys
+    super() << 'equaltabs' << 'raiseselect' << 'tabborders'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'backdrop'
+  end
+  private :__strval_optkeys
+
   def add(keys={})
     window(tk_call(@path, 'add', *hash_kv(keys)))
   end

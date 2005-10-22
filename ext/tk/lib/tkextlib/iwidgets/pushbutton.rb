@@ -18,6 +18,11 @@ class Tk::Iwidgets::Pushbutton
   WidgetClassName = 'Pushbutton'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'defaultring'
+  end
+  private :__boolval_optkeys
+
   def invoke
     tk_call_without_enc(@path, 'invoke')
     self

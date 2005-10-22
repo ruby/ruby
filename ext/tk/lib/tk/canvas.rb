@@ -11,10 +11,24 @@ require 'tk/scrollable'
 module TkCanvasItemConfig
   include TkItemConfigMethod
 
+  def __item_strval_optkeys(id)
+    # maybe need to override
+    super(id) + [
+      'fill', 'activefill', 'disabledfill', 
+      'outline', 'activeoutline', 'disabledoutline'
+    ]
+  end
+  private :__item_strval_optkeys
+
   def __item_methodcall_optkeys(id)
     {'coords'=>'coords'}
   end
   private :__item_methodcall_optkeys
+
+  def __item_val2ruby_optkeys(id)  # { key=>proc, ... }
+    super(id).update('window'=>proc{|i, v| window(v)})
+  end
+  private :__val2ruby_optkeys
 
   def __item_pathname(tagOrId)
     if tagOrId.kind_of?(TkcItem) || tagOrId.kind_of?(TkcTag)
@@ -46,6 +60,16 @@ class TkCanvas<TkWindow
   #  end
   #end
   #private :create_self
+
+  def __numval_optkeys
+    super() + ['closeenough']
+  end
+  private :__numval_optkeys
+
+  def __boolval_optkeys
+    super() + ['confine']
+  end
+  private :__boolval_optkeys
 
   def tagid(tag)
     if tag.kind_of?(TkcItem) || tag.kind_of?(TkcTag)

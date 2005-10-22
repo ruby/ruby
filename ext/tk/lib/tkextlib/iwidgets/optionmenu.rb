@@ -18,6 +18,11 @@ class Tk::Iwidgets::Optionmenu
   WidgetClassName = 'Optionmenu'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'cyclicon'
+  end
+  private :__boolval_optkeys
+
   def delete(first, last=nil)
     if last
       tk_call(@path, 'delete', first, last)

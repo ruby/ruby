@@ -1,3 +1,27 @@
+Sun Oct 23 07:11:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/extconf.rb: improbe messages [ruby-core:06325].
+
+	* ext/tk/lib/tk.rb, ext/tk/lib/tk/canvas.rb, ext/tk/lib/tk/entry.rb, 
+	  ext/tk/lib/tk/frame.rb, ext/tk/lib/tk/image.rb, 
+	  ext/tk/lib/tk/itemconfig.rb, ext/tk/lib/tk/labelframe.rb, 
+	  ext/tk/lib/tk/listbox.rb, ext/tk/lib/tk/menu.rb, 
+	  ext/tk/lib/tk/radiobutton.rb, ext/tk/lib/tk/scale.rb, 
+	  ext/tk/lib/tk/spinbox.rb, ext/tk/lib/tk/text.rb, 
+	  ext/tk/lib/tk/toplevel.rb: improve conversion of option values.
+
+	* ext/tk/lib/tkextlib/*: ditto.
+
+	* ext/tk/lib/tkextlib/*: update to support ActiveTcl8.4.11.2.
+
+	* ext/tk/lib/tkextlib/trofs/*: support Trofs 0.4.3.
+
+	* ext/tk/lib/tkextlib/tile/*: support Tile 0.7.2.
+
+	* ext/tk/lib/tkextlib/vu/*: support vu 2.3.0.
+
+	* ext/tk/lib/tkextlib/tcllib/*: support Tcllib 1.8 (Tklib 0.3).
+
 Sat Oct 22 23:54:07 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* ext/extmk.rb, lib/mkmf.rb (with_config): support --with-extension

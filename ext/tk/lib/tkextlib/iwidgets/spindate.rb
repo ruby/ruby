@@ -18,6 +18,16 @@ class Tk::Iwidgets::Spindate
   WidgetClassName = 'Spindate'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'dayon' << 'monthon' << 'yearon'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'daylabel' << 'monthformat' << 'monthlabel' << 'yearlabel'
+  end
+  private :__strval_optkeys
+
   def get_string
     tk_call(@path, 'get', '-string')
   end

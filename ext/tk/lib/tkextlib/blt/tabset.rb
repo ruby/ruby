@@ -189,6 +189,16 @@ module Tk::BLT
 
     ########################################
 
+    def __boolval_optkeys
+      super() << 'samewidth' << 'tearoff'
+    end
+    private :__strval_optkeys
+
+    def __strval_optkeys
+      super() << 'tabbackground' << 'tabforeground'
+    end
+    private :__strval_optkeys
+
     def __item_cget_cmd(id)
       [self.path, 'tab', 'cget', id]
     end
@@ -212,6 +222,11 @@ module Tk::BLT
     alias tab_configure itemconfigure
     alias tab_configinfo itemconfiginfo
     alias current_tab_configinfo current_itemconfiginfo
+
+    def __item_strval_optkeys(id)
+      super(id) << 'shadow'
+    end
+    private :__item_strval_optkeys
 
     def tagid(tab)
       if tab.kind_of?(Tk::BLT::Tabset::Tab)

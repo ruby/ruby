@@ -21,6 +21,16 @@ class Tk::Iwidgets::Scrolledcanvas
 
   ################################
 
+  def __boolval_optkeys
+    super() << 'autoresize'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'textbackground'
+  end
+  private :__strval_optkeys
+
   def initialize(*args)
     super(*args)
     @canvas = component_widget('canvas')

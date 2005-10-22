@@ -51,6 +51,11 @@ class Tk::Iwidgets::Panedwindow
 
   ####################################
 
+  def __boolval_optkeys
+    super() << 'showhandle'
+  end
+  private :__boolval_optkeys
+
   def add(tag=nil, keys={})
     if tag.kind_of?(Hash)
       keys = tag

@@ -17,6 +17,16 @@ class TkRadioButton<TkButton
   #end
   #private :create_self
 
+  def __boolval_optkeys
+    super() << 'indicatoron'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'selectcolor'
+  end
+  private :__strval_optkeys
+
   def __ruby2val_optkeys  # { key=>proc, ... }
     {
       'variable'=>proc{|v| tk_trace_variable(v)}  # for backward compatibility

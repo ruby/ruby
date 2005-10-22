@@ -13,3 +13,20 @@ module Tk::BLT
     CItemTypeToClass[CItemTypeName] = self
   end
 end
+
+class TkCanvas
+  alias __BLT_EPS_item_strval_optkeys __item_strval_optkeys
+  def __item_strval_optkeys(id)
+    __BLT_EPS_item_strval_optkeys(id) + [
+      'shadowcolor', 'title', 'titlecolor'
+    ]
+  end
+  private :__item_strval_optkeys
+
+  alias __BLT_EPS_item_boolval_optkeys __item_boolval_optkeys
+  def __item_boolval_optkeys(id)
+    __BLT_EPS_item_boolval_optkeys(id) + ['showimage']
+  end
+  private :__item_boolval_optkeys
+end
+

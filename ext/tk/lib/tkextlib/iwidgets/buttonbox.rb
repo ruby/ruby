@@ -32,6 +32,11 @@ class Tk::Iwidgets::Buttonbox
   end
   private :__item_config_cmd
 
+  def __item_boolval_optkeys(id)
+    super(id) << 'defaultring'
+  end
+  private :__item_boolval_optkeys
+
   def tagid(tagOrId)
     if tagOrId.kind_of?(Tk::Itk::Component)
       tagOrId.name

@@ -21,6 +21,11 @@ module Tk::BWidget::DynamicHelp
     'DynamicHelp::configure'
   end
 
+  def __strval_optkeys
+    super() << 'topbackground'
+  end
+  private :__strval_optkeys
+
   def self.__cget_cmd
     ['DynamicHelp::configure']
   end

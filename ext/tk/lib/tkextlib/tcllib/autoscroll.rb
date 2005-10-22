@@ -125,6 +125,7 @@ class TkScrollbar
 end
 
 # TkPackage.require('autoscroll', '1.0')
+# TkPackage.require('autoscroll', '1.1')
 TkPackage.require('autoscroll')
 
 module Tk
@@ -142,7 +143,16 @@ module Tk
       def self.unautoscroll(win)
         tk_call_without_enc('::autoscroll::unautoscroll', win.path)
       end
+
+      def self.wrap
+        # v1.1
+        tk_call_without_enc('::autoscroll::wrap')
+      end
+
+      def self.unwrap
+        # v1.1
+        tk_call_without_enc('::autoscroll::unwrap')
+      end
     end
   end
 end
-

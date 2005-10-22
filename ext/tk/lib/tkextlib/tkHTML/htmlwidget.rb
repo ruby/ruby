@@ -104,6 +104,11 @@ class Tk::HTML_Widget
   end
   private :create_self
 
+  def __strval_optkeys
+    super() << 'base' << 'selectioncolor' << 'unvisitedcolor' << 'visitedcolor'
+  end
+  private :__strval_optkeys
+
   ###################################
   #  class methods
   ###################################

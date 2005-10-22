@@ -21,6 +21,11 @@ class Tk::BWidget::ButtonBox
 
   include TkItemConfigMethod
 
+  def __boolval_optkeys
+    super() << 'homogeneous'
+  end
+  private :__boolval_optkeys
+
   def tagid(tagOrId)
     if tagOrId.kind_of?(Tk::BWidget::Button)
       name = tagOrId[:name]

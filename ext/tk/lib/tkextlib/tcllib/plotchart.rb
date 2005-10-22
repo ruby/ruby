@@ -61,6 +61,7 @@ require 'tk'
 require 'tkextlib/tcllib.rb'
 
 # TkPackage.require('Plotchart', '0.9')
+# TkPackage.require('Plotchart', '1.1')
 TkPackage.require('Plotchart')
 
 module Tk
@@ -272,6 +273,51 @@ module Tk::Tcllib::Plotchart
       self
     end
 
+    def contourlines(xcrd, ycrd, vals, clss=None)
+      xcrd = array2tk_list(xcrd) if xcrd.kind_of?(Array)
+      ycrd = array2tk_list(ycrd) if ycrd.kind_of?(Array)
+      vals = array2tk_list(vals) if vals.kind_of?(Array)
+      clss = array2tk_list(clss) if clss.kind_of?(Array)
+
+      tk_call_without_enc(@chart, 'contourlines', xcrd, ycrd, vals, clss)
+      self
+    end
+
+    def contourfill(xcrd, ycrd, vals, klasses=None)
+      xcrd = array2tk_list(xcrd) if xcrd.kind_of?(Array)
+      ycrd = array2tk_list(ycrd) if ycrd.kind_of?(Array)
+      vals = array2tk_list(vals) if vals.kind_of?(Array)
+      clss = array2tk_list(clss) if clss.kind_of?(Array)
+
+      tk_call_without_enc(@chart, 'contourfill', xcrd, ycrd, vals, clss)
+      self
+    end
+
+    def contourbox(xcrd, ycrd, vals, klasses=None)
+      xcrd = array2tk_list(xcrd) if xcrd.kind_of?(Array)
+      ycrd = array2tk_list(ycrd) if ycrd.kind_of?(Array)
+      vals = array2tk_list(vals) if vals.kind_of?(Array)
+      clss = array2tk_list(clss) if clss.kind_of?(Array)
+
+      tk_call_without_enc(@chart, 'contourbox', xcrd, ycrd, vals, clss)
+      self
+    end
+
+    def color_map(colors)
+      colors = array2tk_list(colors) if colors.kind_of?(Array)
+
+      tk_call_without_enc(@chart, 'colorMap', colors)
+      self
+    end
+
+    def grid_cells(xcrd, ycrd)
+      xcrd = array2tk_list(xcrd) if xcrd.kind_of?(Array)
+      ycrd = array2tk_list(ycrd) if ycrd.kind_of?(Array)
+
+      tk_call_without_enc(@chart, 'grid', xcrd, ycrd)
+      self
+    end
+
     def dataconfig(series, key, value=None)
       if key.kind_of?(Hash)
         tk_call_without_enc(@chart, 'dataconfig', series, *hash_kv(key, true))
@@ -479,6 +525,13 @@ module Tk::Tcllib::Plotchart
       self
     end
 
+    def plot_funcont(conts, cmd=Proc.new)
+      conts = array2tk_list(conts) if conts.kind_of?(Array)
+      Tk.ip_eval("proc #{@path}_#{@chart} {x y} {#{install_cmd(cmd)} $x $y}")
+      tk_call_without_enc(@chart, 'plotfuncont', "#{@path}_#{@chart}", conts)
+      self
+    end
+
     def grid_size(nxcells, nycells)
       tk_call_without_enc(@chart, 'gridsize', nxcells, nycells)
       self
@@ -633,7 +686,7 @@ module Tk::Tcllib::Plotchart
       # time_end   := String of time format (e.g. "1 january 2004")
       # items := Expected/maximum number of items
       #          ( This determines the vertical spacing. )
-      if args[0].kind_of?(Array)
+      if args[0].kind_of?(String)
         @time_begin = args.shift
         @time_end   = args.shift
         @items      = args.shift
@@ -675,6 +728,105 @@ module Tk::Tcllib::Plotchart
 
     def vertline(txt, time)
       tk_call_without_enc(@chart, 'vertline', txt, time)
+      self
+    end
+  end
+
+  ############################
+  class Gnattchart < TkCanvas
+    include ChartMethod
+
+    TkCommandNames = [
+      'canvas'.freeze,
+      '::Plotchart::createGnattchart'.freeze
+    ].freeze
+
+    def initialize(*args)
+      # args := ([parent,] time_begin, time_end, items [, text_width] [, keys])
+      # time_begin := String of time format (e.g. "1 january 2004")
+      # time_end   := String of time format (e.g. "1 january 2004")
+      # items := Expected/maximum number of items
+      #          ( This determines the vertical spacing. )
+      if args[0].kind_of?(String)
+        @time_begin = args.shift
+        @time_end   = args.shift
+        @items      = args.shift
+
+        if args[0].kind_of?(Fixnum)
+          @text_width = args.shift
+        else
+          @text_width = None
+        end
+
+        super(*args) # create canvas widget
+      else
+        parent = args.shift
+
+        @time_begin = args.shift
+        @time_end   = args.shift
+        @items      = args.shift
+
+        if args[0].kind_of?(Fixnum)
+          @text_width = args.shift
+        else
+          @text_width = None
+        end
+
+        if parent.kind_of?(TkCanvas)
+          @path = parent.path
+        else
+          super(parent, *args) # create canvas widget
+        end
+      end
+
+      @chart = _create_chart
+    end
+
+    def _create_chart
+      p self.class::TkCommandNames[1] if $DEBUG
+      tk_call_without_enc(self.class::TkCommandNames[1], @path, 
+                          @time_begin, @time_end, @items, @text_width)
+    end
+    private :_create_chart
+
+    def task(txt, time_begin, time_end, completed=0.0)
+      list(tk_call_without_enc(@chart, 'task', txt, time_begin, time_end, 
+                               completed)).collect!{|id|
+        TkcItem.id2obj(self, id)
+      }
+    end
+
+    def milestone(txt, time, col=None)
+      tk_call_without_enc(@chart, 'milestone', txt, time, col)
+      self
+    end
+
+    def vertline(txt, time)
+      tk_call_without_enc(@chart, 'vertline', txt, time)
+      self
+    end
+
+    def connect(from_task, to_task)
+      from_task = array2tk_list(from_task) if from_task.kind_of?(Array)
+      to_task   = array2tk_list(to_task)   if to_task.kind_of?(Array)
+
+      tk_call_without_enc(@chart, 'connect', from_task, to_task)
+      self
+    end
+
+    def summary(txt, tasks)
+      tasks = array2tk_list(tasks) if tasks.kind_of?(Array)
+      tk_call_without_enc(@chart, 'summary', tasks)
+      self
+    end
+
+    def color_of_part(keyword, newcolor)
+      tk_call_without_enc(@chart, 'color', keyword, newcolor)
+      self
+    end
+
+    def font_of_part(keyword, newfont)
+      tk_call_without_enc(@chart, 'font', keyword, newfont)
       self
     end
   end

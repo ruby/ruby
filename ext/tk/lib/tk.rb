@@ -2696,12 +2696,18 @@ module TkConfigMethod
   private :__numstrval_optkeys
 
   def __boolval_optkeys
-    []
+    ['exportselection', 'jump', 'setgrid', 'takefocus']
   end
   private :__boolval_optkeys
 
   def __strval_optkeys
-    ['text', 'label', 'show', 'data', 'file']
+    [
+      'text', 'label', 'show', 'data', 'file', 
+      'activebackground', 'activeforeground', 'background', 
+      'disabledforeground', 'disabledbackground', 'foreground', 
+      'highlightbackground', 'highlightcolor', 'insertbackground', 
+      'selectbackground', 'selectforeground', 'troughcolor'
+    ]
   end
   private :__strval_optkeys
 
@@ -4437,7 +4443,7 @@ end
 #Tk.freeze
 
 module Tk
-  RELEASE_DATE = '2005-09-17'.freeze
+  RELEASE_DATE = '2005-10-23'.freeze
 
   autoload :AUTO_PATH,        'tk/variable'
   autoload :TCL_PACKAGE_PATH, 'tk/variable'

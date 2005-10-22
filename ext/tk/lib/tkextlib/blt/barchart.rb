@@ -17,12 +17,13 @@ module Tk::BLT
     include GraphCommand
 
     def __boolval_optkeys
-      ['bufferelements', 'invertxy']
+      ['bufferelements', 'buffergraph', 'invertxy']
     end
     private :__boolval_optkeys
 
     def __strval_optkeys
-      ['text', 'label', 'title', 'file']
+      ['text', 'label', 'title', 'file', 
+        'background', 'plotbackground']
     end
     private :__strval_optkeys
 

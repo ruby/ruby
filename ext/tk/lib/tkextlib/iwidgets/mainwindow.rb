@@ -18,6 +18,21 @@ class Tk::Iwidgets::Mainwindow
   WidgetClassName = 'Mainwindow'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'helpline' << 'statusline'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'menubarbackground' << 'menubarforeground' << 'toolbarforeground'
+  end
+  private :__strval_optkeys
+
+  def __font_optkeys
+    super() << 'menubarfont' << 'toolbarfont'
+  end
+  private :__font_optkeys
+
   def child_site
     window(tk_call(@path, 'childsite'))
   end

@@ -47,6 +47,17 @@ class Tk::Tcllib::CText
   end
   private :create_self
 
+  def __strval_optkeys
+    super() << 'linemapfg' << 'linemapbg' << 
+      'linemap_select_fg' << 'linemap_select_bg'
+  end
+  private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() << 'highlight' << 'linemap_markable'
+  end
+  private :__boolval_optkeys
+
   def append(*args)
     tk_send('append', *args)
   end

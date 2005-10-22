@@ -259,6 +259,17 @@ class Tk::Tile::Treeview < TkWindow
     self
   end
 
+  def get_directory(item)
+    # tile-0.7+
+    ret = []
+    lst = simplelist(tk_send('set', item))
+    until lst.empty?
+      col = lst.shift
+      val = lst.shift
+      ret << [col, val]
+    end
+    ret
+  end
   def get(item, col)
     tk_send('set', item, col)
   end

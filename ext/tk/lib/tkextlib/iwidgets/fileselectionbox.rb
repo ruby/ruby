@@ -18,6 +18,19 @@ class Tk::Iwidgets::Fileselectionbox
   WidgetClassName = 'Fileselectionbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() + [
+      'directory', 'dirslabel', 'fileslabel', 'filterlabel', 'mask', 
+      'nomatchstring', 'selectionlabel'
+    ]
+  end
+  private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() + ['dirson', 'fileson', 'filteron', 'selectionon']
+  end
+  private :__boolval_optkeys
+
   def child_site
     window(tk_call(@path, 'childsite'))
   end

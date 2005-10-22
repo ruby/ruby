@@ -17,4 +17,9 @@ class Tk::Iwidgets::Timeentry
   TkCommandNames = ['::iwidgets::timeentry'.freeze].freeze
   WidgetClassName = 'Timeentry'.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  def __strval_optkeys
+    super() << 'closetext'
+  end
+  private :__strval_optkeys
 end
