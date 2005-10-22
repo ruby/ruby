@@ -1227,7 +1227,7 @@ module Net
 
     class RawData # :nodoc:
       def send_data(imap)
-        imap.fcall(:put_string, @data)
+        imap.funcall(:put_string, @data)
       end
 
       private
@@ -1239,7 +1239,7 @@ module Net
 
     class Atom # :nodoc:
       def send_data(imap)
-        imap.fcall(:put_string, @data)
+        imap.funcall(:put_string, @data)
       end
 
       private
@@ -1251,7 +1251,7 @@ module Net
 
     class QuotedString # :nodoc:
       def send_data(imap)
-        imap.fcall(:send_quoted_string, @data)
+        imap.funcall(:send_quoted_string, @data)
       end
 
       private
@@ -1263,7 +1263,7 @@ module Net
 
     class Literal # :nodoc:
       def send_data(imap)
-        imap.fcall(:send_literal, @data)
+        imap.funcall(:send_literal, @data)
       end
 
       private
@@ -1275,7 +1275,7 @@ module Net
 
     class MessageSet # :nodoc:
       def send_data(imap)
-        imap.fcall(:put_string, format_internal(@data))
+        imap.funcall(:put_string, format_internal(@data))
       end
 
       private

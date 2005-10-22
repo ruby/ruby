@@ -151,7 +151,7 @@ EOR
       @elems.each do |name, value|
         excepted = "<#{@prefix}:#{name}>#{value}</#{@prefix}:#{name}>"
         @parents.each do |parent|
-          assert_equal(excepted, @rss.send(parent).fcall("dc_#{name}_elements"))
+          assert_equal(excepted, @rss.send(parent).funcall("dc_#{name}_elements"))
         end
         
         excepted = Array.new(2, excepted).join("\n")
@@ -161,7 +161,7 @@ EOR
           klass_name = "DublinCore#{Utils.to_class_name(name.to_s)}"
           klass = DublinCoreModel.const_get(klass_name)
           elems << klass.new(@rss.send(parent).send("dc_#{name}"))
-          assert_equal(excepted, @rss.send(parent).fcall("dc_#{name}_elements"))
+          assert_equal(excepted, @rss.send(parent).funcall("dc_#{name}_elements"))
         end
       end
       

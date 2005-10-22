@@ -8,6 +8,14 @@ Sat Oct 22 13:26:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 	* time.c (rb_strftime): removed meaningless volatile modifiers, and
 	  concatenate successive nul characters at once.  [ruby-dev:27472]
 
+	* ext/tk/lib/tk/font.rb, ext/tk/lib/tkextlib/ICONS/icons.rb,
+	  ext/tk/sample/tkextlib/treectrl/demo.rb, lib/net/imap.rb,
+	  lib/rss/parser.rb, test/rss/test_content.rb,
+	  test/rss/test_dublincore.rb, test/rss/test_syndication.rb,
+	  test/rss/test_trackback.rb, test/ruby/test_eval.rb,
+	  test/socket/test_socket.rb, test/socket/test_udp.rb:
+	  Object#fcall was renamed as Object#funcall.
+	
 Sat Oct 22 10:08:28 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* missing.h, missing/*.c: SUSv3 compatible strcasecmp and strncasecmp,

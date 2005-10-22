@@ -78,7 +78,7 @@ module Tk
     def self.new(name, keys=nil)
       unless obj = Tk_IMGTBL["::icon::#{name}"]
         obj = allocate()
-        obj.fcall(:initialize, name, keys)
+        obj.funcall(:initialize, name, keys)
       end
       obj
     end

@@ -1186,13 +1186,13 @@ class TkFont
   def dup
     src = self
     obj = super()
-    obj.fcall(:initialize, src)
+    obj.funcall(:initialize, src)
     obj
   end
   def clone
     src = self
     obj = super()
-    obj.fcall(:initialize, src)
+    obj.funcall(:initialize, src)
     obj
   end
 =end
