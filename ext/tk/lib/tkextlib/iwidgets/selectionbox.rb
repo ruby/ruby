@@ -18,6 +18,16 @@ class Tk::Iwidgets::Selectionbox
   WidgetClassName = 'Selectionbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'itemson' << 'selectionon'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'itemslabel' << 'selectionlabel'
+  end
+  private :__strval_optkeys
+
   def child_site
     window(tk_call(@path, 'childsite'))
   end

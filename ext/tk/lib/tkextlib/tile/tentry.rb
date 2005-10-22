@@ -24,6 +24,16 @@ class Tk::Tile::TEntry < TkEntry
   WidgetClassName = 'TEntry'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'exportselection'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'show'
+  end
+  private :__strval_optkeys
+
   def self.style(*args)
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end

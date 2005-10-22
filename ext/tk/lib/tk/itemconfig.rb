@@ -19,13 +19,19 @@ module TkItemConfigOptkeys
   private :__item_numstrval_optkeys
 
   def __item_boolval_optkeys(id)
-    []
+    ['exportselection', 'jump', 'setgrid', 'takefocus']
   end
   private :__item_boolval_optkeys
 
   def __item_strval_optkeys(id)
     # maybe need to override
-    ['text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile']
+    [
+      'text', 'label', 'show', 'data', 'file', 'maskdata', 'maskfile', 
+      'activebackground', 'activeforeground', 'background', 
+      'disabledforeground', 'disabledbackground', 'foreground', 
+      'highlightbackground', 'highlightcolor', 'insertbackground', 
+      'selectbackground', 'selectforeground', 'troughcolor'
+    ]
   end
   private :__item_strval_optkeys
 

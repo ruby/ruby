@@ -1,7 +1,7 @@
 
   [ current support status of Tcl/Tk extensions ]
 
-  *******<<<  RELEASE_DATE of the libraries : 2005/10/04  >>>*******
+  *******<<<  RELEASE_DATE of the libraries : 2005/10/23  >>>*******
 
 The following list shows *CURRENT* status when this file was modifyed
 at last. If you want to add other Tcl/Tk extensions to the planed list
@@ -55,7 +55,7 @@ script may give you some hints about that.
 
 ===< support with some examples (may be beta quality) >=======================
 
-Tcllib       1.7     http://sf.net/projects/tcllib
+Tcllib       1.8     http://sf.net/projects/tcllib
                        ==> tcllib  (partial support; Tklib part only)
 
 IWidgets     4.0.2   http://sf.net/projects/incrTcl              ==> iwidgets
@@ -66,7 +66,7 @@ TkTable      2.9     http://sf.net/projects/tktable              ==> tktable
                          * see also <http://www.korus.hu/~fery/ruby/tktable.rb>
                                     written by Ferenc Engard (ferenc@engard.hu)
 
-vu           2.1.0   http://tktable.sourceforge.net              ==> vu
+vu           2.3.0   http://tktable.sourceforge.net              ==> vu
 
 TkHTML       2.0     http://www.hwaci.com/sw/tkhtml/index.html   ==> tkHTML
 
@@ -75,15 +75,16 @@ ICONS        1.0     http://www.satisoft.com/tcltk/icons/        ==> ICONS
 TkImg        1.3     http://sf.net/projects/tkimg                ==> tkimg
 
 
-BLT          2.4z   http://sourceforge.net/projects/blt
+BLT          2.4z    http://sourceforge.net/projects/blt
                         * see also tcltk-ext library on RAA 
                                 (http://raa.ruby-lang.org/)
                       ==> blt
 
 TkTreeCtrl   CVS/Hd(2005-03-25)
-                    http://tktreectrl.sourceforge.net/           ==> treectrl
+                     http://tktreectrl.sourceforge.net/          ==> treectrl
 
-Tile         0.6     http://tktable.sourceforge.net/tile/        ==> tile
+Tile         0.7.2   http://tktable.sourceforge.net/tile/        ==> tile
+
 
 
 ===< support (may be alpha or beta quality) >=================================
@@ -96,97 +97,99 @@ TclX         CVS/Hd(2005-02-07)
                        ==> tclx (partial support; infox command and 
                                                    XPG/3 message catalogs only)
 
+Trofs        0.4.3   http://math.nist.gov/~DPorter/tcltk/trofs/
+
 
 
 ===< possibly available (not tested; alpha quality) >=========================
 
-winico       CVS/Hd(2004-11-02)
-                    http://tktable.sourceforge.net
-                      ==> winico (win32 only)
+winico       0.6
+                     http://tktable.sourceforge.net
+                       ==> winico (win32 only)
 
 TkTrans      latest(2004-10-11)
-                    http://www2.cmp.uea.ac.uk/~fuzz/tktrans/default.html
-                      ==>  tktrans (win32 only)
+                     http://www2.cmp.uea.ac.uk/~fuzz/tktrans/default.html
+                       ==>  tktrans (win32 only)
 
-TkDND        1.0a2  http://sourceforge.net/projects/tkdnd       ==> tkDND
+TkDND        1.0a2   http://sourceforge.net/projects/tkdnd       ==> tkDND
 
 
 
 ===< plan to support (alpha quality libraries may be included) >==============
 
-GraphViz     ***    http://www.graphviz.org/
+GraphViz     ***     http://www.graphviz.org/
 
-Tkgeomap     ***    http://tkgeomap.sourceforge.net/index.html
+Tkgeomap     ***     http://tkgeomap.sourceforge.net/index.html
 
 
 
 ===< not determined to supprt or not >========================================
 
-Tix          ***    http://tixlibrary.sourceforge.net/
+Tix          ***     http://tixlibrary.sourceforge.net/
                         * see also tcltk-ext library on RAA 
                                 (http://raa.ruby-lang.org/)
 
-TkZinc       ***    http://www.tkzinc.org/
+TkZinc       ***     http://www.tkzinc.org/
 
-Wbc          ***    http://home.t-online.de/home/csaba.nemethi/
+Wbc          ***     http://home.t-online.de/home/csaba.nemethi/
 
-Mentry       ***    http://home.t-online.de/home/csaba.nemethi/
+Mentry       ***     http://home.t-online.de/home/csaba.nemethi/
 
-Tablelist    ***    http://home.t-online.de/home/csaba.nemethi/
+Tablelist    ***     http://home.t-online.de/home/csaba.nemethi/
 
-ANIGIF       ***    http://cardtable.sourceforge.net/tcltk/
+ANIGIF       ***     http://cardtable.sourceforge.net/tcltk/
 
-IMG_ROTATE   ***    http://cardtable.sourceforge.net/tcltk/
+IMG_ROTATE   ***     http://cardtable.sourceforge.net/tcltk/
 
-TclVfs       ***    http://sourceforge.net/projects/tclvfs/
+TclVfs       ***     http://sourceforge.net/projects/tclvfs/
 
-vfwtcl       ***    http://sourceforge.net/projects/avicaptcl
+vfwtcl       ***     http://sourceforge.net/projects/avicaptcl
                         * Win32 only
 
-multicast    ***    http://sourceforge.net/projects/avicaptcl
+multicast    ***     http://sourceforge.net/projects/avicaptcl
                         * Win32 only
 
-XBit         ***    http://www.geocities.com/~chengye/
+XBit         ***     http://www.geocities.com/~chengye/
                         * current implementation is for Windows only
 
-QuickTimeTcl ***    http://hem.fyristorg.com/matben/qt/
+QuickTimeTcl ***     http://hem.fyristorg.com/matben/qt/
                         * works under Mac OS (8,9,X) or Windows
 
 
 
 ===< may not support (already exist, out of Ruby/Tk scope, and so on) >=======
 
-TkCon        ***    http://sf.net/projects/tkcon
+TkCon        ***     http://sf.net/projects/tkcon
 
-Expect       ***    http://sf.net/projects/expect
+Expect       ***     http://sf.net/projects/expect
 
-TclXML       ***    http://sf.net/projects/tclxml
+TclXML       ***     http://sf.net/projects/tclxml
 
-TclXSLT      ***    http://sf.net/projects/tclxml
+TclXSLT      ***     http://sf.net/projects/tclxml
 
-TclDOM       ***    http://sf.net/projects/tclxml
+TclDOM       ***     http://sf.net/projects/tclxml
 
-TclSOAP      ***    http://sf.net/projects/tclsoap
+TclSOAP      ***     http://sf.net/projects/tclsoap
 
-Snack        ***    http://www.speech.kth.se/~kare/snack2.2.tar.gz
+Snack        ***     http://www.speech.kth.se/~kare/snack2.2.tar.gz
                         * use Snack for Ruby 
                               (see http://rbsnack.sourceforge.net/)
 
-Tcom         ***    http://www.vex.net/~cthuang/tcom/
+Tcom         ***     http://www.vex.net/~cthuang/tcom/
 
-tDOM         ***    http://www.tdom.org
+tDOM         ***     http://www.tdom.org
 
-Mk4tcl       ***    http://www.equi4.com/metakit/tcl.html
+Mk4tcl       ***     http://www.equi4.com/metakit/tcl.html
 
-Memchan      ***    http://memchan.sourceforge.net/
+Memchan      ***     http://memchan.sourceforge.net/
 
-XOTcl        ***    http://www.xotcl.org/
+XOTcl        ***     http://www.xotcl.org/
 
 
 ===< tool (may not supprt) >==================================================
 
 tbcload/tclcompiler 
-             ***    http://www.tcl.tk/software/tclpro/
+             ***     http://www.tcl.tk/software/tclpro/
 
 
 (End of List)

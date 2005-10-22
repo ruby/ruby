@@ -37,6 +37,11 @@ class Tk::Iwidgets::Toolbar
   end
   private :__item_config_cmd
 
+  def __item_strval_optkeys(id)
+    super(id) << 'helpstr' << 'balloonstr'
+  end
+  private :__item_strval_optkeys
+
   def tagid(tagOrId)
     if tagOrId.kind_of?(Tk::Itk::Component)
       tagOrId.name
@@ -47,6 +52,21 @@ class Tk::Iwidgets::Toolbar
   end
 
   ####################################
+
+  def __strval_optkeys
+    super() << 'balloonbackground' << 'balloonforeground'
+  end
+  private :__strval_optkeys
+
+  def __tkvariable_optkeys
+    super() << 'helpvariable'
+  end
+  private :__tkvariable_optkeys
+
+  def __font_optkeys
+    super() << 'balloonfont'
+  end
+  private :__font_optkeys
 
   def add(type, tag=nil, keys={})
     if tag.kind_of?(Hash)

@@ -25,9 +25,15 @@ class Tk::BWidget::SelectFont
   WidgetClassName = 'SelectFont'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'sampletext' <<  'title'
+  end
+  private :__strval_optkeys
+
   def __font_optkeys
     [] # without fontobj operation
   end
+  private :__font_optkeys
 
   def create
     tk_call(self.class::TkCommandNames[0], @path, *hash_kv(@keys))

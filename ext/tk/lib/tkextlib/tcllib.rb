@@ -43,24 +43,45 @@ module Tk
     TkComm::TkExtlibAutoloadModule.unshift(self)
 
     # package:: ctext
-    autoload :CText,      'tkextlib/tcllib/ctext'
+    autoload :CText,              'tkextlib/tcllib/ctext'
+
+    # package:: getstring
+    autoload :GetString_Dialog,   'tkextlib/tcllib/getstring'
+
+    # package:: history
+    autoload :History,            'tkextlib/tcllib/history'
 
     # package:: datefield
-    autoload :Datefield,  'tkextlib/tcllib/datefield'
-    autoload :DateField,  'tkextlib/tcllib/datefield'
+    autoload :Datefield,          'tkextlib/tcllib/datefield'
+    autoload :DateField,          'tkextlib/tcllib/datefield'
 
     # package:: ico
-    autoload :ICO,        'tkextlib/tcllib/ico'
+    autoload :ICO,                'tkextlib/tcllib/ico'
 
     # package:: ipentry
-    autoload :IP_Entry,   'tkextlib/tcllib/ip_entry'
-    autoload :IPEntry,    'tkextlib/tcllib/ip_entry'
+    autoload :IP_Entry,           'tkextlib/tcllib/ip_entry'
+    autoload :IPEntry,            'tkextlib/tcllib/ip_entry'
+
+    # package:: swaplist
+    autoload :Swaplist_Dialog,    'tkextlib/tcllib/swaplist'
 
     # package:: Plotchart
-    autoload :Plotchart,  'tkextlib/tcllib/plotchart'
+    autoload :Plotchart,          'tkextlib/tcllib/plotchart'
+
+    # package:: tablelist
+    autoload :Tablelist,           'tkextlib/tcllib/tablelist'
+    autoload :TableList,           'tkextlib/tcllib/tablelist'
+    autoload :Tablelist_Tile,      'tkextlib/tcllib/tablelist_tile'
+    autoload :TableList_Tile,      'tkextlib/tcllib/tablelist_tile'
 
     # package:: tkpiechart
-    autoload :Tkpiechart, 'tkextlib/tcllib/tkpiechart'
+    autoload :Tkpiechart,         'tkextlib/tcllib/tkpiechart'
+
+    # package:: tooltip
+    autoload :Tooltip,            'tkextlib/tcllib/tooltip'
+
+    # package:: widget
+    autoload :Wdiget,             'tkextlib/tcllib/widget'
   end
 end
 

@@ -19,6 +19,16 @@ class Tk::Iwidgets::Scrolledtext
   WidgetClassName = 'Scrolledtext'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'textbackground'
+  end
+  private :__strval_optkeys
+
+  def __font_optkeys
+    super() << 'textfont'
+  end
+  private :__font_optkeys
+
   ################################
 
   def initialize(*args)

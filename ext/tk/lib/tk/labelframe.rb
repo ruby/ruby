@@ -16,5 +16,10 @@ class TkLabelFrame<TkFrame
   #  end
   #end
   #private :create_self
+
+  def __val2ruby_optkeys  # { key=>proc, ... }
+    super().update('labelwidget'=>proc{|v| window(v)})
+  end
+  private :__val2ruby_optkeys
 end
 TkLabelframe = TkLabelFrame

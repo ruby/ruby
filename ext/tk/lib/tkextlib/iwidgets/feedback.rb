@@ -18,6 +18,11 @@ class Tk::Iwidgets::Feedback
   WidgetClassName = 'Feedback'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'barcolor'
+  end
+  private :__strval_optkeys
+
   def reset
     tk_call(@path, 'reset')
     self

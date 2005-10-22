@@ -30,7 +30,8 @@ module Tk::BLT
 
       def __item_strval_optkeys(id)
         ['text', 'label', 'limits', 'title', 
-          'show', 'file', 'maskdata', 'maskfile']
+          'show', 'file', 'maskdata', 'maskfile', 
+          'color', 'titlecolor', 'fill', 'outline', 'offdash']
       end
       private :__item_strval_optkeys
 
@@ -40,7 +41,7 @@ module Tk::BLT
       private :__item_listval_optkeys
 
       def __item_numlistval_optkeys(id)
-        ['dashes']
+        ['dashes', 'majorticks', 'minorticks']
       end
       private :__item_numlistval_optkeys
 

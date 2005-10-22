@@ -45,6 +45,21 @@ class TkToplevel<TkWindow
 #  end
 #################
 
+  def __boolval_optkeys
+    super() << 'container'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'screen'
+  end
+  private :__strval_optkeys
+
+  def __val2ruby_optkeys  # { key=>proc, ... }
+    super().update('menu'=>proc{|v| window(v)})
+  end
+  private :__val2ruby_optkeys
+
   def __methodcall_optkeys  # { key=>method, ... }
     TOPLEVEL_METHODCALL_OPTKEYS
   end

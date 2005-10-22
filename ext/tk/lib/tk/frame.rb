@@ -30,6 +30,11 @@ class TkFrame<TkWindow
 #  end
 #################
 
+  def __boolval_optkeys
+    super() << 'container'
+  end
+  private :__boolval_optkeys
+
   def initialize(parent=nil, keys=nil)
     my_class_name = nil
     if self.class < WidgetClassNames[self.class::WidgetClassName]

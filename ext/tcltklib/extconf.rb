@@ -172,10 +172,11 @@ def pthread_check()
 ** PTHREAD SUPPORT CHECK WARNING: 
 **
 **   We cannot check the consistency of pthread support between Ruby 
-**   and Tcl/Tk library on your environment (do coss-compile?). If the 
-**   consistency is not kept, some memory troubles (e.g. "Hang-up" or 
-**   "Segmentation Fault") may bother you. We strongly recommend you to 
-**   check the consistency by your own hand.
+**   and the Tcl/Tk library in your environment (are you perhaps
+**   cross-compiling?). If pthread support for these 2 packages is
+**   inconsistent you may find you get errors when running Ruby/Tk
+**   (e.g. hangs or segmentation faults).  We strongly recommend
+**   you to check the consistency manually.
 **
 *****************************************************************************
 ')
@@ -215,17 +216,17 @@ EOF
 **
 ** PTHREAD SUPPORT MODE WARNING: 
 **
-**   Ruby is compiled with --enable-pthread, but your Tcl/Tk libraries
-**   seems to be compiled without "pthread support". Although You can 
-**   create tcltklib library, this combination may cause memory trouble 
-**   (e.g. "Hang-up" or "Segmentation Fault"). If you have no reason you
-**   must have to keep current pthread support status, we recommend you 
-**   to make both or neither libraries to support pthread.
+**   Ruby is compiled with --enable-pthread, but your Tcl/Tk library
+**   seems to be compiled without pthread support. Although you can
+**   create the tcltklib library, this combination may cause errors
+**   (e.g. hangs or segmentation faults). If you have no reason to
+**   keep the current pthread support status, we recommend you reconfigure
+**   and recompile the libraries so that both or neither support pthreads.
 **
 **   If you want change the status of pthread support, please recompile 
 **   Ruby without "--enable-pthread" configure option or recompile Tcl/Tk 
 **   with "--enable-threads" configure option (if your Tcl/Tk is later 
-**   than  or equal to Tcl/Tk8.1).
+**   than or equal to Tcl/Tk 8.1).
 **
 *****************************************************************************
 ')
@@ -247,16 +248,16 @@ EOF
       puts(%Q'\
 *****************************************************************************
 **
-** PTHREAD SUPPORT MODE ERRROR: 
+** PTHREAD SUPPORT MODE ERROR: 
 **
 **   Ruby is not compiled with --enable-pthread, but your Tcl/Tk 
-**   libararies seems to be compiled with "pthread support". This 
-**   combination possibly cause "Hang-up" or "Segmentation Fault" 
-**   frequently when Ruby/Tk is working. We NEVER recommend you to 
-**   create the library under such combination of pthread support. 
+**   library seems to be compiled with pthread support. This
+**   combination may cause frequent hang or segmentation fault
+**   errors when Ruby/Tk is working. We recommend that you NEVER
+**   create the library with such a combination of pthread support.
 **
-**   Please recompile Ruby with "--enable-pthread" configure option 
-**   or recompile Tcl/Tk with "--disable-threads" configure option.
+**   Please recompile Ruby with the "--enable-pthread" configure option
+**   or recompile Tcl/Tk with the "--disable-threads" configure option.
 **
 *****************************************************************************
 ')

@@ -23,14 +23,19 @@ class Tk::Iwidgets::Tabnotebook
   include TkItemConfigMethod
 
   def __item_cget_cmd(id)
-    [self.path, 'tabcget', id]
+    [self.path, 'pagecget', id]
   end
   private :__item_cget_cmd
 
   def __item_config_cmd(id)
-    [self.path, 'tabconfigure', id]
+    [self.path, 'pageconfigure', id]
   end
   private :__item_config_cmd
+
+  def __item_strval_optkeys(id)
+    super(id) << 'tabbackground' << 'tabforeground'
+  end
+  private :__item_strval_optkeys
 
   def tagid(tagOrId)
     if tagOrId.kind_of?(Tk::Itk::Component)
@@ -50,6 +55,16 @@ class Tk::Iwidgets::Tabnotebook
   private :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
+
+  def __boolval_optkeys
+    super() << 'auto' << 'equaltabs' << 'raiseselect' << 'tabborders'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'backdrop' << 'tabbackground' << 'tabforeground'
+  end
+  private :__strval_optkeys
 
   def initialize(*args)
     super(*args)

@@ -23,10 +23,20 @@ class Tk::BWidget::LabelEntry
   WidgetClassName = 'LabelEntry'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'helptext' << 'insertbackground' << 'entryfg' << 'entrybg'
+  end
+  private :__strval_optkeys
+
   def __tkvariable_optkeys
     super() << 'helpvar'
   end
   private :__tkvariable_optkeys
+
+  def __font_optkeys
+    super() << 'labelfont'
+  end
+  private :__font_optkeys
 
   #def entrybind(*args)
   #  _bind([path, 'bind'], *args)

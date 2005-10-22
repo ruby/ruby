@@ -28,6 +28,16 @@ class Tk::Vu::Bargraph < TkWindow
   end
   private :__boolval_optkeys
 
+  def __strval_optkeys
+    super() + [
+      'title', 
+      'barbackground', 'barcolor', 'barcolour', 
+      'tickcolor', 'tickcolour', 
+      'textcolor', 'textcolour', 
+    ]
+  end
+  private :__strval_optkeys
+
   def __listval_optkeys
     ['alabels', 'blabels']
   end

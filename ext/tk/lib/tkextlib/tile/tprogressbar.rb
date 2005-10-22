@@ -28,18 +28,26 @@ class Tk::Tile::TProgressbar
     [self::WidgetClassName, *(args.map!{|a| _get_eval_string(a)})].join('.')
   end
 
-  def step
-    tk_send_without_enc('step').to_f
+  def step(amount=None)
+    tk_send_without_enc('step', amount).to_f
   end
-  def step=(amount)
-    tk_send_without_enc('step', amount)
-  end
+  #def step=(amount)
+  #  tk_send_without_enc('step', amount)
+  #end
 
   def start(interval=None)
-    tk_call_without_enc('::tile::progressbar::start', @path, interval)
+    if Tk::Tile::TILE_SPEC_VERSION_ID < 5
+      tk_call_without_enc('::tile::progressbar::start', @path, interval)
+    else
+      tk_send_without_enc('start', interval)
+    end
   end
 
-  def stop
-    tk_call_without_enc('::tile::progressbar::stop', @path)
+  def stop(amount=None)
+    if Tk::Tile::TILE_SPEC_VERSION_ID < 5
+      tk_call_without_enc('::tile::progressbar::stop', @path)
+    else
+      tk_send_without_enc('stop', amount)
+    end
   end
 end

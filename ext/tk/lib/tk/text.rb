@@ -187,6 +187,11 @@ class TkText<TkTextWin
   end
   private :create_self
 
+  def __strval_optkeys
+    super() << 'inactiveseletcionbackground'
+  end
+  private :__strval_optkeys
+
   def self.at(x, y)
     TkText::IndexString.at(x, y)
   end

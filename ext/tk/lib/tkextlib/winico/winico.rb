@@ -12,6 +12,7 @@ require 'tkextlib/setup.rb'
 require 'tkextlib/winico/setup.rb'
 
 # TkPackage.require('winico', '0.5')
+# TkPackage.require('winico', '0.6')
 TkPackage.require('winico')
 
 module Tk

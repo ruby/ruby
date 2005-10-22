@@ -32,6 +32,11 @@ class TkListbox<TkTextWin
   #end
   #private :create_self
 
+  def __tkvariable_optkeys
+    super() << 'listvariable'
+  end
+  private :__tkvariable_optkeys
+
   def tagid(id)
     #id.to_s
     _get_eval_string(id)

@@ -18,6 +18,16 @@ class Tk::Iwidgets::Hyperhelp
   WidgetClassName = 'Hyperhelp'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'helpdir'
+  end
+  private :__strval_optkeys
+
+  def __listval_optkeys
+    super() << 'topics'
+  end
+  private :__listval_optkeys
+
   def show_topic(topic)
     tk_call(@path, 'showtopic', topic)
     self

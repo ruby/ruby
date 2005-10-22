@@ -39,6 +39,21 @@ module Tk::BLT
       end
       private :__item_config_cmd
 
+      def __item_boolval_optkeys(id)
+        super(id) << 'selftarget'
+      end
+      private :__item_boolval_optkeys
+
+      def __item_listval_optkeys(id)
+        super(id) << 'send'
+      end
+      private :__item_listval_optkeys
+
+      def __item_strval_optkeys(id)
+        super(id) << 'rejectbg' << 'rejectfg' << 'tokenbg'
+      end
+      private :__item_strval_optkeys
+
       undef itemcget
       private :itemconfigure, :itemconfiginfo, :current_itemconfiginfo
 

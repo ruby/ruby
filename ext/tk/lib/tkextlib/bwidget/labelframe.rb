@@ -6,6 +6,7 @@
 require 'tk'
 require 'tk/frame'
 require 'tkextlib/bwidget.rb'
+require 'tkextlib/bwidget/label'
 
 module Tk
   module BWidget
@@ -18,6 +19,16 @@ class Tk::BWidget::LabelFrame
   TkCommandNames = ['LabelFrame'.freeze].freeze
   WidgetClassName = 'LabelFrame'.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  def __strval_optkeys
+    super() << 'helptext'
+  end
+  private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() << 'dragenabled' << 'dropenabled'
+  end
+  private :__boolval_optkeys
 
   def __tkvariable_optkeys
     super() << 'helpvar'

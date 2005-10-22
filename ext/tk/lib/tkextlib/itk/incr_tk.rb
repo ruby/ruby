@@ -115,6 +115,11 @@ module Tk
 
       include Wm
       include TkMenuSpec
+
+      def __strval_optkeys
+        super() << 'title'
+      end
+      private :__strval_optkeys
     end
 
     ############################

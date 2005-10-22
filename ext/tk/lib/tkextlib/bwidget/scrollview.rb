@@ -17,4 +17,9 @@ class Tk::BWidget::ScrollView
   TkCommandNames = ['ScrollView'.freeze].freeze
   WidgetClassName = 'ScrollView'.freeze
   WidgetClassNames[WidgetClassName] = self
+
+  def __strval_optkeys
+    super() << 'fill'
+  end
+  private :__strval_optkeys
 end

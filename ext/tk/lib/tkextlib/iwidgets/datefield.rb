@@ -18,6 +18,21 @@ class Tk::Iwidgets::Datefield
   WidgetClassName = 'Datefield'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'gmt'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'textbackground'
+  end
+  private :__strval_optkeys
+
+  def __font_optkeys
+    super() << 'textfont'
+  end
+  private :__font_optkeys
+
   def get_string
     tk_call(@path, 'get', '-string')
   end

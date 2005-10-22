@@ -18,6 +18,21 @@ class Tk::Iwidgets::Scrolledhtml
   WidgetClassName = 'Scrolledhtml'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'update'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'fontname' << 'link' << 'alink' << 'textbackground'
+  end
+  private :__strval_optkeys
+
+  def __font_optkeys
+    super() << 'fixedfont'
+  end
+  private :__font_optkeys
+
   def import(href)
     tk_call(@path, 'import', href)
     self

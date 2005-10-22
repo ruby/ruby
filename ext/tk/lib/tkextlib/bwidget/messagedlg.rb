@@ -5,6 +5,7 @@
 
 require 'tk'
 require 'tkextlib/bwidget.rb'
+require 'tkextlib/bwidget/dialog.rb'
 
 module Tk
   module BWidget
@@ -42,6 +43,16 @@ class Tk::BWidget::MessageDlg
     @info = nil
   end
   private :create_self
+
+  def __strval_optkeys
+    super() << 'message' << 'title'
+  end
+  private :__strval_optkeys
+
+  def __listval_optkeys
+    super() << 'buttons'
+  end
+  private :__listval_optkeys
 
   def cget(slot)
     slot = slot.to_s

@@ -35,6 +35,11 @@ class Tk::BWidget::ListBox
     end
   end
 
+  def __boolval_optkeys
+    super() << 'autofocus' << 'dragenabled' << 'dropenabled' << 'selectfill'
+  end
+  private :__boolval_optkeys
+
   def tagid(tag)
     if tag.kind_of?(Tk::BWidget::ListBox::Item)
       tag.id

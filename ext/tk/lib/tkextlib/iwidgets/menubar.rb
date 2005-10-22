@@ -18,6 +18,11 @@ class Tk::Iwidgets::Menubar
   WidgetClassName = 'Menubar'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'menubuttons'
+  end
+  private :__strval_optkeys
+
   def __tkvariable_optkeys
     super() << 'helpvariable'
   end
@@ -36,6 +41,16 @@ class Tk::Iwidgets::Menubar
     [self.path, 'menuconfigure', id]
   end
   private :__item_config_cmd
+
+  def __item_strval_optkeys(id)
+    super(id) << 'selectcolor'
+  end
+  private :__item_strval_optkeys
+
+  def __item_tkvariable_optkeys(id)
+    super(id) << 'helpstr'
+  end
+  private :__item_tkvariable_optkeys
 
   def tagid(tagOrId)
     if tagOrId.kind_of?(Tk::Itk::Component)

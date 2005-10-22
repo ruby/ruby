@@ -216,6 +216,10 @@ module Tk::TreeCtrl::ConfigMethod
   end
 
   def __item_cget_cmd(mixed_id)
+    if mixed_id[0] == 'column' && mixed_id[1] == 'drag'
+      return [self.path, 'column', 'dragcget']
+    end 
+
     if mixed_id[1].kind_of?(Array)
       id = mixed_id[1]
     else
@@ -231,6 +235,10 @@ module Tk::TreeCtrl::ConfigMethod
   private :__item_cget_cmd
 
   def __item_config_cmd(mixed_id)
+    if mixed_id[0] == 'column' && mixed_id[1] == 'drag'
+      return [self.path, 'column', 'dragconfigure']
+    end 
+
     if mixed_id[1].kind_of?(Array)
       id = mixed_id[1]
     else
@@ -306,9 +314,14 @@ module Tk::TreeCtrl::ConfigMethod
       when 'item'
         ['button', 'visible']
       when 'column'
-        ['button', 'expand', 'squeeze', 'sunken', 'visible', 'widthhack']
+        if id[1] == 'drag'
+          ['enable']
+        else
+          ['button', 'expand', 'resize', 'squeeze', 'sunken', 
+            'visible', 'widthhack']
+        end
       when 'element'
-        ['filled', 'showfocus']
+        ['draw', 'filled', 'showfocus', 'destroy']
       when 'notify'
         ['active']
       when 'style'
@@ -329,6 +342,19 @@ module Tk::TreeCtrl::ConfigMethod
   def __item_strval_optkeys(id)
     if id == 'debug'
       ['erasecolor']
+    elsif id.kind_of?(Array)
+      case id[0]
+      when 'column'
+        if id[1] == 'drag'
+          ['indicatorcolor']
+        else
+          super(id) << 'textcolor'
+        end
+      when 'element'
+        super(id) << 'fill' << 'outline' << 'format'
+      else
+        super(id)
+      end
     else
       super(id)
     end
@@ -381,6 +407,19 @@ module Tk::TreeCtrl::ConfigMethod
   end
   def current_column_configinfo(tagOrId, slot=nil)
     current_itemconfiginfo(['column', tagOrId], slot)
+  end
+
+  def column_dragcget(option)
+    itemcget(['column', 'drag'], option)
+  end
+  def column_dragconfigure(slot, value=None)
+    itemconfigure(['column', 'drag'], slot, value)
+  end
+  def column_dragconfiginfo(slot=nil)
+    itemconfiginfo(['column', 'drag'], slot)
+  end
+  def current_column_dragconfiginfo(slot=nil)
+    current_itemconfiginfo(['column', 'drag'], slot)
   end
 
   def debug_cget(option)
@@ -513,8 +552,16 @@ class Tk::TreeCtrl
 
   #########################
 
+  def __strval_optkeys
+    super() + [
+      'buttoncolor', 'columnprefix', 'itemprefix', 'linecolor'
+    ]
+  end
+  private :__strval_optkeys
+
   def __boolval_optkeys
     [
+      'itemwidthequal', 'usetheme', 
       'showbuttons', 'showheader', 'showlines', 'showroot', 
       'showrootbutton', 'showrootlines',
     ]
@@ -574,6 +621,14 @@ class Tk::TreeCtrl
     list(tk_send('column', 'bbox', idx))
   end
 
+  def column_compare(column1, op, column2)
+    bool(tk_send('column', 'compare', column1, op, column2))
+  end
+
+  def column_count
+    num_or_str(tk_send('column', 'count'))
+  end
+
   def column_create(keys=nil)
     if keys && keys.kind_of?(Hash)
       num_or_str(tk_send('column', 'create', *hash_kv(keys)))
@@ -594,6 +649,21 @@ class Tk::TreeCtrl
     num_or_str(tk_send('column', 'index', idx))
   end
 
+  def column_id(idx)
+    tk_send('column', 'id', idx)
+  end
+
+  def column_list(visible=false)
+    if visible
+      simplelist(tk_send('column', 'list', '-visible'))
+    else
+      simplelist(tk_send('column', 'list'))
+    end
+  end
+  def column_visible_list
+    column_list(true)
+  end
+
   def column_move(idx, before)
     tk_send('column', 'move', idx, before)
     self
@@ -603,6 +673,17 @@ class Tk::TreeCtrl
     num_or_str(tk_send('column', 'neededwidth', idx))
   end
   alias column_neededwidth column_needed_width
+
+  def column_order(column, visible=false)
+    if visible
+      num_or_str(tk_send('column', 'order', column, '-visible'))
+    else
+      num_or_str(tk_send('column', 'order', column))
+    end
+  end
+  def column_visible_order(column)
+    column_order(column, true)
+  end
 
   def column_width(idx)
     num_or_str(tk_send('column', 'width', idx))
@@ -682,6 +763,22 @@ class Tk::TreeCtrl
     list(tk_send('element', 'names')).collect!{|elem|
       Tk::TreeCtrl::Element.id2obj(self, elem)
     }
+  end
+
+  def _conv_element_perstate_val(opt, val)
+    case opt
+    when 'background', 'foreground', 'fill', 'outline', 'format'
+      val
+    when 'draw', 'filled', 'showfocus', 'destroy'
+      bool(val)
+    else
+      tk_tcl2ruby(val)
+    end
+  end
+  private :_conv_element_perstate_val
+
+  def element_perstate(elem, opt, st_list)
+    tk_send('element', 'perstate', elem, "-{opt}", st_list)
   end
 
   def element_type(elem)
@@ -767,11 +864,19 @@ class Tk::TreeCtrl
     self
   end
 
+  def item_compare(item1, op, item2)
+    bool(tk_send('item', 'compare', item1, op, item2))
+  end
+
   def item_complex(item, *args)
     tk_send_without_enc('item', 'complex', 
                         _get_eval_string(item, true), 
                         *(args.map!{|arg| _get_eval_string(arg, true)}))
     self
+  end
+
+  def item_count
+    num_or_str(tk_send('item', 'count'))
   end
 
   def item_create(keys={})
@@ -810,6 +915,10 @@ class Tk::TreeCtrl
 
   def item_element_actual(item, column, elem, key)
     tk_send('item', 'element', 'actual', item, column, elem, "-#{key}")
+  end
+
+  def item_element_perstate(elem, opt, st_list)
+    tk_send('item', 'element', 'perstate', elem, "-{opt}", st_list)
   end
 
   def item_expand(item)
@@ -853,6 +962,32 @@ class Tk::TreeCtrl
     item_hasbutton(item)
   end
   alias item_has_button? item_hasbutton?
+
+  def item_id(item)
+    tk_send('item', 'id', item)
+  end
+
+  def item_image(item, column=nil, *args)
+    if args.empty?
+      if column
+        img = tk_send('item', 'image', item, column)
+        TkImage::Tk_IMGTBL[img]? TkImage::Tk_IMGTBL[img] : img
+      else
+        simplelist(tk_send('item', 'image', item)).collect!{|img|
+          TkImage::Tk_IMGTBL[img]? TkImage::Tk_IMGTBL[img] : img
+        }
+      end
+    else
+      tk_send('item', 'image', item, column, *args)
+      self
+    end
+  end
+  def get_item_image(item, column=nil)
+    item_image(item, column)
+  end
+  def set_item_image(item, col, img, *args)
+    item_image(item, col, img, *args)
+  end
 
   def item_index(item)
     list(tk_send('item', 'index', item))
@@ -906,6 +1041,19 @@ class Tk::TreeCtrl
   alias item_num_children  item_numchildren
   alias item_children_size item_numchildren
 
+  def item_order(item, visible=false)
+    if visible
+      ret = num_or_str(tk_send('item', 'order', item, '-visible'))
+    else
+      ret = num_or_str(tk_send('item', 'order', item))
+    end
+
+    (ret.kind_of?(Fixnum) && ret < 0)? nil: ret
+  end
+  def item_visible_order(item)
+    item_order(item, true)
+  end
+
   def item_parent(item)
     id = num_or_str(tk_send('item', 'parent', item))
     Tk::TreeCtrl::Item.id2obj(self, id)
@@ -921,6 +1069,10 @@ class Tk::TreeCtrl
     end
   end
   alias item_prev_sibling item_prevsibling
+
+  def item_range(first, last)
+    simplelist(tk_send('item', 'range', first, last))
+  end
 
   def item_remove(item)
     tk_send('item', 'remove', item)
@@ -992,6 +1144,25 @@ class Tk::TreeCtrl
   end
   def item_sort_not_really(item, *opts)
     _item_sort_core(false, item, *opts)
+  end
+
+  def item_span(item, column=nil, *args)
+    if args.empty?
+      if column
+        list(tk_send('item', 'span', item, column))
+      else
+        simplelist(tk_send('item', 'span', item)).collect!{|elem| list(elem)}
+      end
+    else
+      tk_send('item', 'span', item, column, *args)
+      self
+    end
+  end
+  def get_item_span(item, column=nil)
+    item_span(item, column)
+  end
+  def set_item_span(item, col, num, *args)
+    item_span(item, col, num, *args)
   end
 
   def item_state_forcolumn(item, column, *args)
@@ -1234,6 +1405,15 @@ class Tk::TreeCtrl
     end
   end
 
+  def notify_unbind(pattern=nil)
+    if pattern
+      tk_send('notify', 'unbind', "<#{pattern}>")
+    else
+      tk_send('notify', 'unbind')
+    end
+    self
+  end
+
   def notify_uninstall(pattern)
     pattern = "<#{pattern}>"
     tk_send('notify', 'uninstall', pattern)
@@ -1365,7 +1545,7 @@ class Tk::TreeCtrl
     when 'padx', 'pady', 'ipadx', 'ipady'
       lst = list(val)
       (lst.size == 1)? lst[0]: lst
-    when 'detach'
+    when 'detach', 'indent'
       bool(val)
     when 'union'
       simplelist(val).collect!{|elem|
@@ -1394,6 +1574,16 @@ class Tk::TreeCtrl
         ret[k] = _conv_style_layout_val(k, v)
       }
       ret
+    end
+  end
+  def get_style_layout(style, elem, opt=None)
+    style_layout(style, elem, opt)
+  end
+  def set_style_layout(style, elem, slot, value=None)
+    if slot.kind_of?(Hash)
+      style_layout(style, elem, slot)
+    else
+      style_layout(style, elem, {slot=>value})
     end
   end
 

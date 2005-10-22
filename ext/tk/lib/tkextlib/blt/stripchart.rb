@@ -22,7 +22,8 @@ module Tk::BLT
     private :__boolval_optkeys
 
     def __strval_optkeys
-      ['text', 'label', 'title', 'file']
+      ['text', 'label', 'title', 'file', 
+        'background', 'plotbackground']
     end
     private :__strval_optkeys
 

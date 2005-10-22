@@ -18,6 +18,11 @@ class Tk::Iwidgets::Disjointlistbox
   WidgetClassName = 'Disjointlistbox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'lhslabeltext' << 'rhslabeltext' << 'lhsbuttonlabel' << 'rhsbuttonlabel'
+  end
+  private :__strval_optkeys
+
   def set_lhs(*items)
     tk_call(@path, 'setlhs', items)
     self

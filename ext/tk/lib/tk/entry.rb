@@ -21,6 +21,11 @@ class TkEntry<TkLabel
   #end
   #private :create_self
 
+  def __strval_optkeys
+    super() + ['show', 'disabledbackground', 'readonlybackground']
+  end
+  private :__strval_optkeys
+
   def bbox(index)
     list(tk_send_without_enc('bbox', index))
   end

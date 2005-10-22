@@ -13,6 +13,11 @@ module Tk::BLT
     WidgetClassNames[WidgetClassName] = self
   end
 
+  def __strval_optkeys
+    super() << 'name'
+  end
+  private :__strval_optkeys
+
   def find_command(pat)
     list(tk_send_without_enc(tk_call(self.path, 'find', '-command', pat)))
   end

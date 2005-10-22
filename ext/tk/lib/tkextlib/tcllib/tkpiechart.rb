@@ -56,6 +56,22 @@ module Tk::Tcllib::Tkpiechart
         :default_value=>1, :current_value=>2}
     end
     private :__configinfo_struct
+
+    def __boolval_optkeys
+      super() << 'select' << 'autoupdate' << 'selectable'
+    end
+    private :__boolval_optkeys
+
+    def __strval_optkeys
+      super() << 'bordercolor' << 'textbackground' << 
+        'widestvaluetext' << 'title'
+    end
+    private :__strval_optkeys
+
+    def __listval_optkeys
+      super() << 'colors'
+    end
+    private :__listval_optkeys
   end
 
   ####################################

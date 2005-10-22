@@ -18,6 +18,17 @@ class Tk::Iwidgets::Watch
   WidgetClassName = 'Watch'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'showampm'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'clockcolor' << 'hourcolor' << 'minutecolor' << 
+      'pivotcolor' << 'secondcolor' << 'tickcolor'
+  end
+  private :__strval_optkeys
+
   def get_string
     tk_call(@path, 'get', '-string')
   end

@@ -1,3 +1,17 @@
+2005-10-23  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
+
+	* ext/tk/lib/tkextlib/*: update to support ActiveTcl8.4.11.2
+
+	* ext/tk/lib/tkextlib/trofs/*: support Trofs 0.4.3
+
+	* ext/tk/lib/tkextlib/tile/*: support Tile 0.7.2
+
+	* ext/tk/lib/tkextlib/vu/*: support vu 2.3.0
+
+	* ext/tk/lib/tkextlib/tcllib/*: support Tcllib 1.8 (Tklib 0.3)
+
+	* ext/tk/lib/tkextlib/*: improve conversion of option values
+
 2005-10-04  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
 	* ext/tk/lib/tkextlib/tktable/tktable.rb: border_* instance methods

@@ -17,19 +17,26 @@ module Tk::Tile::Style
 end
 
 class << Tk::Tile::Style
-  def default(style=nil, keys=nil)
+  def configure(style=nil, keys=nil)
     if style.kind_of?(Hash)
       keys = style
       style = nil
     end
     style = '.' unless style
 
-    if keys && keys != None
-      tk_call('style', 'default', style, *hash_kv(keys))
+    if Tk::Tile::TILE_SPEC_VERSION_ID < 7
+      sub_cmd = 'default'
     else
-      tk_call('style', 'default', style)
+      sub_cmd = 'configure'
+    end
+
+    if keys && keys != None
+      tk_call('style', sub_cmd, style, *hash_kv(keys))
+    else
+      tk_call('style', sub_cmd, style)
     end
   end
+  alias default configure
 
   def map(style=nil, keys=nil)
     if style.kind_of?(Hash)
@@ -45,6 +52,8 @@ class << Tk::Tile::Style
     end
   end
 
+  include Tk::Tile::ParseStyleLayout
+
   def layout(style=nil, spec=nil)
     if style.kind_of?(Hash)
       spec = style
@@ -55,7 +64,7 @@ class << Tk::Tile::Style
     if spec
       tk_call('style', 'layout', style, spec)
     else
-      tk_call('style', 'layout', style)
+      _style_layout(list(tk_call('style', 'layout', style)))
     end
   end
 

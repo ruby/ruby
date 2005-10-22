@@ -96,6 +96,11 @@ class TkImage<TkObject
 end
 
 class TkBitmapImage<TkImage
+  def __strval_optkeys
+    super() + ['maskdata', 'maskfile']
+  end
+  private :__strval_optkeys
+
   def initialize(*args)
     @type = 'bitmap'
     super(*args)

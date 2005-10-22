@@ -18,6 +18,16 @@ class Tk::Iwidgets::Extbutton
   WidgetClassName = 'Extbutton'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() << 'bitmapforeground' << 'ringbackground'
+  end
+  private :__strval_optkeys
+
+  def __boolval_optkeys
+    super() << 'defaultring'
+  end
+  private :__boolval_optkeys
+
   def invoke
     tk_call(@path, 'invoke')
     self

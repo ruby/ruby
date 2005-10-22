@@ -41,6 +41,11 @@ class Tk::Iwidgets::Messagebox
     end
   end
 
+  def __item_boolval_optkeys(id)
+    super(id) << 'bell' << 'show'
+  end
+  private :__item_boolval_optkeys
+
   alias typecget itemcget
   alias typeconfigure itemconfigure
   alias typeconfiginfo itemconfiginfo
@@ -50,6 +55,11 @@ class Tk::Iwidgets::Messagebox
   private :itemconfiginfo, :current_itemconfiginfo
 
   ####################################
+
+  def __strval_optkeys
+    super() << 'filename' << 'savedir'
+  end
+  private :__strval_optkeys
 
   def type_add(tag=nil, keys={})
     if tag.kind_of?(Hash)

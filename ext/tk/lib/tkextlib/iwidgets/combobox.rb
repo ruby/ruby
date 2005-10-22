@@ -18,6 +18,11 @@ class Tk::Iwidgets::Combobox
   WidgetClassName = 'Combobox'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __boolval_optkeys
+    super() << 'completion' << 'dropdown' << 'editable' << 'unique'
+  end
+  private :__boolval_optkeys
+
   def clear(component=None)
     tk_call(@path, 'clear', component)
     self

@@ -18,15 +18,14 @@ class Tk::Tile::TNotebook < TkWindow
   include TkItemConfigMethod
   
   def __item_cget_cmd(id)
-    [self.path, 'tabcget', id]
+    [self.path, 'tab', id]
   end
   private :__item_cget_cmd
 
   def __item_config_cmd(id)
-    [self.path, 'tabconfigure', id]
+    [self.path, 'tab', id]
   end
   private :__item_config_cmd
-
 
   def __item_listval_optkeys
     []
@@ -38,10 +37,14 @@ class Tk::Tile::TNotebook < TkWindow
   end
   private :__item_listval_optkeys
 
-  alias tabcget itemcget
+  #alias tabcget itemcget
   alias tabconfigure itemconfigure
   alias tabconfiginfo itemconfiginfo
   alias current_tabconfiginfo current_itemconfiginfo
+
+  def tabcget(tagOrId, option)
+    tabconfigure(tagOrId, option)[-1]
+  end
   ################################
 
   include Tk::Tile::TileWidget
@@ -59,7 +62,13 @@ class Tk::Tile::TNotebook < TkWindow
   end
 
   def enable_traversal()
-    tk_call_without_enc('::tile::notebook::enableTraversal', @path)
+    if Tk::Tile::TILE_SPEC_VERSION_ID < 5
+      tk_call_without_enc('::tile::enableNotebookTraversal', @path)
+    elsif Tk::Tile::TILE_SPEC_VERSION_ID < 7
+      tk_call_without_enc('::tile::notebook::enableTraversal', @path)
+    else
+      tk_call_without_enc('::ttk::notebook::enableTraversal', @path)
+    end
     self
   end
 

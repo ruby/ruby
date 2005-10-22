@@ -18,6 +18,19 @@ class Tk::Iwidgets::Finddialog
   WidgetClassName = 'Finddialog'.freeze
   WidgetClassNames[WidgetClassName] = self
 
+  def __strval_optkeys
+    super() + [
+      'patternbackground', 'patternforeground', 
+      'searchbackground', 'searchforeground'
+    ]
+  end
+  private :__strval_optkeys
+
+  def __val2ruby_optkeys  # { key=>proc, ... }
+    super().update('textwidget'=>proc{|v| window(v)})
+  end
+  private :__val2ruby_optkeys
+
   def clear
     tk_call(@path, 'clear')
     self

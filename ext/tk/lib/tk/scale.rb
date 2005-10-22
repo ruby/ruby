@@ -24,6 +24,11 @@ class TkScale<TkWindow
   end
   private :create_self
 
+  def __strval_optkeys
+    super() << 'label'
+  end
+  private :__strval_optkeys
+
   def _wrap_command_arg(cmd)
     proc{|val|
       if val.kind_of?(String)

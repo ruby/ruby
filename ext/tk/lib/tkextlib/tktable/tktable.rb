@@ -59,6 +59,21 @@ module Tk::TkTable::ConfigMethod
   end
   private :__item_pathname
 
+  def __item_boolval_optkeys(id)
+    super(id) << 'multiline' << 'showtext' << 'wrap'
+  end
+  private :__item_boolval_optkeys
+
+  def __item_strval_optkeys(id)
+    super(id) << 'ellipsis'
+  end
+  private :__item_strval_optkeys
+
+  def __item_val2ruby_optkeys(id)  # { key=>method, ... }
+    super(id).update('window'=>proc{|v| window(v)})
+  end
+  private :__item_val2ruby_optkeys
+
   def tag_cget(tagOrId, option)
     itemcget(['tag', tagid(tagOrId)], option)
   end
@@ -207,6 +222,18 @@ class Tk::TkTable
   def __destroy_hook__
     Tk::TkTable::CelTag::CellTagID_TBL.delete(@path)
   end
+
+  def __boolval_optkeys
+    super() << 'autoclear' << 'flashmode' << 'invertselected' <<
+      'multiline' << 'selecttitle' << 'wrap'
+  end
+  private :__boolval_optkeys
+
+  def __strval_optkeys
+    super() << 'colseparator' << 'ellipsis' << 'rowseparator' << 'sparsearray'
+  end
+  private :__strval_optkeys
+
 
   #################################
 
