@@ -3344,6 +3344,7 @@ yylex()
     register int c;
     int space_seen = 0;
     int cmd_state;
+    enum lex_state last_state;
 
     if (lex_strterm) {
 	int token;
@@ -4231,6 +4232,7 @@ yylex()
 	return '%';
 
       case '$':
+	last_state = lex_state;
 	lex_state = EXPR_END;
 	newtok();
 	c = nextc();
@@ -4273,7 +4275,13 @@ yylex()
 	    tokadd('$');
 	    tokadd(c);
 	    c = nextc();
-	    tokadd(c);
+	    if (is_identchar(c)) {
+		tokadd(c);
+	    }
+	    else {
+		pushback(c);
+	    }
+	  gvar:
 	    tokfix();
 	    yylval.id = rb_intern(tok());
 	    /* xxx shouldn't check if valid option variable */
@@ -4283,6 +4291,11 @@ yylex()
 	  case '`':		/* $`: string before last match */
 	  case '\'':		/* $': string after last match */
 	  case '+':		/* $+: string matches last paren. */
+	    if (last_state == EXPR_FNAME) {
+		tokadd('$');
+		tokadd(c);
+		goto gvar;
+	    }
 	    yylval.node = NEW_BACK_REF(c);
 	    return tBACK_REF;
 
@@ -4295,6 +4308,7 @@ yylex()
 		c = nextc();
 	    } while (ISDIGIT(c));
 	    pushback(c);
+	    if (last_state == EXPR_FNAME) goto gvar;
 	    tokfix();
 	    yylval.node = NEW_NTH_REF(atoi(tok()+1));
 	    return tNTH_REF;
@@ -4372,8 +4386,8 @@ yylex()
 
     {
 	int result = 0;
-	enum lex_state last_state = lex_state;
 
+	last_state = lex_state;
 	switch (tok()[0]) {
 	  case '$':
 	    lex_state = EXPR_END;
@@ -5867,6 +5881,99 @@ internal_id()
     return ID_INTERNAL | (++last_id << ID_SCOPE_SHIFT);
 }
 
+static int
+is_special_global_name(m)
+    const char *m;
+{
+    switch (*m) {
+      case '~': case '*': case '$': case '?': case '!': case '@':
+      case '/': case '\\': case ';': case ',': case '.': case '=':
+      case ':': case '<': case '>': case '\"':
+      case '&': case '`': case '\'': case '+':
+      case '0':
+	++m;
+	break;
+      case '-':
+	++m;
+	if (is_identchar(*m)) m += mbclen(*m);
+	break;
+      default:
+	if (!ISDIGIT(*m)) return 0;
+	do ++m; while (ISDIGIT(*m));
+    }
+    return !*m;
+}
+
+int
+rb_symname_p(name)
+    const char *name;
+{
+    const char *m = name;
+    int localid = Qfalse;
+
+    if (!m) return Qfalse;
+    switch (*m) {
+      case '\0':
+	return Qfalse;
+
+      case '$':
+	if (is_special_global_name(++m)) return Qtrue;
+	goto id;
+
+      case '@':
+	if (*++m == '@') ++m;
+	goto id;
+
+      case '<':
+	switch (*++m) {
+	  case '<': ++m; break;
+	  case '=': if (*++m == '>') ++m; break;
+	  default: break;
+	}
+	break;
+
+      case '>':
+	if (*++m == '>') ++m;
+	break;
+
+      case '=':
+	switch (*++m) {
+	  case '~': ++m; break;
+	  case '=': if (*++m == '=') ++m; break;
+	  default: return Qfalse;
+	}
+	break;
+
+      case '*':
+	if (*++m == '*') ++m;
+	break;
+
+      case '+': case '-':
+	if (*++m == '@') ++m;
+	break;
+
+      case '|': case '^': case '&': case '/': case '%': case '~': case '`':
+	break;
+
+      case '[':
+	if (*++m == ']' && *++m == '=') ++m;
+	break;
+
+      default:
+	localid = !ISUPPER(*m);
+      id:
+	if (*m != '_' && !ISALPHA(*m) && !ismbchar(*m)) return Qfalse;
+	while (is_identchar(*m)) m += mbclen(*m);
+	if (localid) {
+	    switch (*m) {
+	      case '!': case '?': case '=': ++m;
+	    }
+	}
+	break;
+    }
+    return *m ? Qfalse : Qtrue;
+}
+
 ID
 rb_intern(name)
     const char *name;
@@ -5883,8 +5990,7 @@ rb_intern(name)
     switch (*name) {
       case '$':
 	id |= ID_GLOBAL;
-	m++;
-	if (!is_identchar(*m)) m++;
+	if (is_special_global_name(++m)) goto new_id;
 	break;
       case '@':
 	if (name[1] == '@') {
@@ -5897,7 +6003,7 @@ rb_intern(name)
 	m++;
 	break;
       default:
-	if (name[0] != '_' && !ISALPHA(name[0]) && !ismbchar(name[0])) {
+	if (name[0] != '_' && ISASCII(name[0]) && !ISALNUM(name[0])) {
 	    /* operators */
 	    int i;
 
@@ -5931,10 +6037,13 @@ rb_intern(name)
 	}
 	break;
     }
-    while (m <= name + last && is_identchar(*m)) {
-	m += mbclen(*m);
+    if (!ISDIGIT(*m)) {
+	while (m <= name + last && is_identchar(*m)) {
+	    m += mbclen(*m);
+	}
     }
     if (*m) id = ID_JUNK;
+  new_id:
     id |= ++last_id << ID_SCOPE_SHIFT;
   id_regist:
     name = strdup(name);

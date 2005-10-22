@@ -1174,7 +1174,7 @@ sym_inspect(sym)
     str = rb_str_new(0, strlen(name)+1);
     RSTRING(str)->ptr[0] = ':';
     strcpy(RSTRING(str)->ptr+1, name);
-    if (rb_is_junk_id(id)) {
+    if (!rb_symname_p(name)) {
 	str = rb_str_dump(str);
 	strncpy(RSTRING(str)->ptr, ":\"", 2);
     }
