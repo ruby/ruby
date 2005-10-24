@@ -1,3 +1,8 @@
+Tue Oct 25 00:27:35 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
+
+	* lib/rinda/*: RDoc documentation from Eric Hodel
+	  <drbrain@segment7.net> added.
+
 Mon Oct 24 21:14:29 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 
 	* configure.in, io.c: use sys/syscall.h if syscall.h is not available.
