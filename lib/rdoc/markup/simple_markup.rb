@@ -194,8 +194,7 @@ module SM  #:nodoc:
     LABEL_LIST_RE = /^(
                         (  \[.*?\]    (?# labeled  )
                           |\S.*::     (?# note     )
-                        )(?=\s|$)
-                        \s*
+                        )(?:\s+|$)
                       )/x
 
 

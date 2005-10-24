@@ -1,3 +1,8 @@
+Tue Oct 25 02:12:08 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
+
+	* lib/rdoc/markup/simple_markup.rb (SM::SimpleMarkup::LABEL_LIST_RE):
+	  reduce redundant backtrack.  [ruby-talk:161771]
+
 Tue Oct 25 00:35:33 2005  Masatoshi SEKI  <m_seki@mva.biglobe.ne.jp>
 
 	* lib/rinda/*: RDoc documentation from Eric Hodel
