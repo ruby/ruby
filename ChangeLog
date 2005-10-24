@@ -1,3 +1,8 @@
+Mon Oct 24 20:49:45 2005  NAKAMURA Usaku  <usa@ruby-lang.org>
+
+	* ext/Win32API/lib/win32/resolv.rb (get_info): support multiple DNS.
+	  fixed: [ruby-list:40058], [ruby-dev:27479]
+
 Mon Oct 24 07:57:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
 
 	* ext/tk/lib/tk/canvas.rb (TkCanvasItemConfig::__item_val2ruby_optkeys): 

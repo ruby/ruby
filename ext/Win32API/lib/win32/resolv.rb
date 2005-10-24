@@ -84,7 +84,7 @@ if info.unpack('V5')[4] == 2  # VER_PLATFORM_WIN32_NT
                   [ 'NameServer', 'DhcpNameServer' ].each do |key|
                     ns = regif.read_s(key)
                     unless ns.empty?
-                      nameserver.concat(ns.split(/\s+/))
+                      nameserver.concat(ns.split(/[,\s]\s*/))
                       break
                     end
                   end
@@ -141,7 +141,7 @@ else
               slist = reg.read_s("SearchList")
               search << domain unless domain.empty?
               search.concat(slist.split(/,\s*/))
-              nameserver.concat(ns.split(/,\s*/))
+              nameserver.concat(ns.split(/[,\s]\s*/))
             end
           end
         rescue Registry::Error
