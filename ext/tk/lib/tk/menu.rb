@@ -31,7 +31,7 @@ module TkMenuEntryConfig
   def __item_val2ruby_optkeys(id)  # { key=>proc, ... }
     super(id).update('menu'=>proc{|i, v| window(v)})
   end
-  private :__val2ruby_optkeys
+  private :__item_val2ruby_optkeys
 
   alias entrycget itemcget
   alias entryconfigure itemconfigure

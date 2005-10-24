@@ -1,5 +1,6 @@
 # Add files to this as they become documented
 
+enumerator/enumerator.c
 iconv/iconv.c
 stringio/stringio.c
 strscan/strscan.c

@@ -28,7 +28,7 @@ module TkCanvasItemConfig
   def __item_val2ruby_optkeys(id)  # { key=>proc, ... }
     super(id).update('window'=>proc{|i, v| window(v)})
   end
-  private :__val2ruby_optkeys
+  private :__item_val2ruby_optkeys
 
   def __item_pathname(tagOrId)
     if tagOrId.kind_of?(TkcItem) || tagOrId.kind_of?(TkcTag)

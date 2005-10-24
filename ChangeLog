@@ -1,6 +1,20 @@
+Mon Oct 24 07:57:56 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/tk/lib/tk/canvas.rb (TkCanvasItemConfig::__item_val2ruby_optkeys): 
+	  typo fixed.  [ruby-talk:162187]
+
+	* ext/tk/lib/tk/menu.rb (TkMenuEntryConfig::__item_val2ruby_optkeys):
+	  ditto.  [ruby-core:06359]
+
+Sun Oct 23 21:50:15 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* ext/enumerator/enumerator.c: applied documentation patch from
+	  James Edward Gray II <james@grayproductions.net>.
+	  [ruby-core:06348]
+
 Sun Oct 23 07:11:11 2005  Hidetoshi NAGAI  <nagai@ai.kyutech.ac.jp>
 
-	* ext/tcltklib/extconf.rb: improbe messages [ruby-core:06325].
+	* ext/tcltklib/extconf.rb: improve messages [ruby-core:06325].
 
 	* ext/tk/lib/tk.rb, ext/tk/lib/tk/canvas.rb, ext/tk/lib/tk/entry.rb, 
 	  ext/tk/lib/tk/frame.rb, ext/tk/lib/tk/image.rb, 
@@ -40,6 +54,10 @@ Sat Oct 22 13:26:57 2005  Nobuyoshi Nakada  <nobu@ruby-lang.org>
 Fri Oct 21 19:21:56 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
 	* rubysig.h (CHECK_INTS): fixed typo. (I believe bit-or is improper)
+
+Fri Oct 21 17:49:32 2005  Yukihiro Matsumoto  <matz@ruby-lang.org>
+
+	* bin/erb (ERB::Main::run): typo fixed.  [ruby-core:06337]
 
 Fri Oct 21 15:27:17 2005  Hirokazu Yamamoto  <ocean@m2.ccsnet.ne.jp>
 
