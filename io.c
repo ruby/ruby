@@ -74,6 +74,8 @@
 
 #ifdef HAVE_SYSCALL_H
 #include <syscall.h>
+#elif defined HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
 #endif
 
 extern void Init_File(void);
