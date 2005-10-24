@@ -74,6 +74,8 @@
 #ifdef HAVE_UNISTD_H
 #ifdef HAVE_SYSCALL_H
 #include <syscall.h>
+#elif defined HAVE_SYS_SYSCALL_H
+#include <sys/syscall.h>
 #endif
 
 #include <unistd.h>
